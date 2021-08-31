@@ -5,13 +5,13 @@ require_relative 'fixtures/classes'
 describe "String#inspect" do
   ruby_version_is ''...'2.7' do
     it "taints the result if self is tainted" do
-      "foo".taint.inspect.tainted?.should == true
-      "foo\n".taint.inspect.tainted?.should == true
+      "foo".taint.inspect.should.tainted?
+      "foo\n".taint.inspect.should.tainted?
     end
 
     it "untrusts the result if self is untrusted" do
-      "foo".untrust.inspect.untrusted?.should == true
-      "foo\n".untrust.inspect.untrusted?.should == true
+      "foo".untrust.inspect.should.untrusted?
+      "foo\n".untrust.inspect.should.untrusted?
     end
   end
 
@@ -500,6 +500,12 @@ describe "String#inspect" do
     describe "and the string's encoding is ASCII-compatible but the characters are non-ASCII" do
       it "returns a string with the non-ASCII characters replaced by \\x notation" do
         "\u{3042}".encode("EUC-JP").inspect.should == '"\\x{A4A2}"'
+      end
+    end
+
+    describe "and the string has both ASCII-compatible and ASCII-incompatible chars" do
+      it "returns a string with the non-ASCII characters replaced by \\u notation" do
+        "hello привет".encode("utf-16le").inspect.should == '"hello \\u043F\\u0440\\u0438\\u0432\\u0435\\u0442"'
       end
     end
   end

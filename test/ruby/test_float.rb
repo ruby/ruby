@@ -305,6 +305,7 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(1.0, 1.0 ** (2**32))
     assert_equal(1.0, 1.0 ** 1.0)
     assert_raise(TypeError) { 1.0 ** nil }
+    assert_equal(9.0, 3.0 ** 2)
   end
 
   def test_eql
@@ -881,6 +882,11 @@ class TestFloat < Test::Unit::TestCase
     end
 
     assert_equal([5.0, 4.0, 3.0, 2.0], 5.0.step(1.5, -1).to_a)
+
+    assert_equal(11, ((0.24901079128550474)..(340.2500808898068)).step(34.00010700985213).to_a.size)
+    assert_equal(11, ((0.24901079128550474)..(340.25008088980684)).step(34.00010700985213).to_a.size)
+    assert_equal(11, ((-0.24901079128550474)..(-340.2500808898068)).step(-34.00010700985213).to_a.size)
+    assert_equal(11, ((-0.24901079128550474)..(-340.25008088980684)).step(-34.00010700985213).to_a.size)
   end
 
   def test_step2
@@ -892,6 +898,7 @@ class TestFloat < Test::Unit::TestCase
       a = rand
       b = a+rand*1000
       s = (b - a) / 10
+      b = a + s*9.999999
       seq = (a...b).step(s)
       assert_equal(10, seq.to_a.length, seq.inspect)
     end
@@ -902,6 +909,11 @@ class TestFloat < Test::Unit::TestCase
     (1.0 ... e).step(1E-16) do |n|
       assert_operator(n, :<=, e)
     end
+
+    assert_equal(10, ((0.24901079128550474)...(340.2500808898068)).step(34.00010700985213).to_a.size)
+    assert_equal(11, ((0.24901079128550474)...(340.25008088980684)).step(34.00010700985213).to_a.size)
+    assert_equal(10, ((-0.24901079128550474)...(-340.2500808898068)).step(-34.00010700985213).to_a.size)
+    assert_equal(11, ((-0.24901079128550474)...(-340.25008088980684)).step(-34.00010700985213).to_a.size)
   end
 
   def test_singleton_method

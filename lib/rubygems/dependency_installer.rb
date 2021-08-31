@@ -1,19 +1,17 @@
 # frozen_string_literal: true
-require 'rubygems'
-require 'rubygems/dependency_list'
-require 'rubygems/package'
-require 'rubygems/installer'
-require 'rubygems/spec_fetcher'
-require 'rubygems/user_interaction'
-require 'rubygems/source'
-require 'rubygems/available_set'
-require 'rubygems/deprecate'
+require_relative '../rubygems'
+require_relative 'dependency_list'
+require_relative 'package'
+require_relative 'installer'
+require_relative 'spec_fetcher'
+require_relative 'user_interaction'
+require_relative 'available_set'
+require_relative 'deprecate'
 
 ##
 # Installs a gem along with all its dependencies from local and remote gems.
 
 class Gem::DependencyInstaller
-
   include Gem::UserInteraction
   extend Gem::Deprecate
 
@@ -29,7 +27,7 @@ class Gem::DependencyInstaller
     :wrappers            => true,
     :build_args          => nil,
     :build_docs_in_background => false,
-    :install_as_default => false
+    :install_as_default => false,
   }.freeze
 
   ##
@@ -105,27 +103,6 @@ class Gem::DependencyInstaller
 
     @errors = []
   end
-
-  ##
-  # Creates an AvailableSet to install from based on +dep_or_name+ and
-  # +version+
-
-  def available_set_for(dep_or_name, version) # :nodoc:
-    if String === dep_or_name
-      Gem::Deprecate.skip_during do
-        find_spec_by_name_and_version dep_or_name, version, @prerelease
-      end
-    else
-      dep = dep_or_name.dup
-      dep.prerelease = @prerelease
-      @available = Gem::Deprecate.skip_during do
-        find_gems_with_sources dep
-      end
-    end
-
-    @available.pick_best!
-  end
-  deprecate :available_set_for, :none, 2019, 12
 
   ##
   # Indicated, based on the requested domain, if local
@@ -216,57 +193,7 @@ class Gem::DependencyInstaller
 
     set
   end
-  deprecate :find_gems_with_sources, :none, 2019, 12
-
-  ##
-  # Finds a spec and the source_uri it came from for gem +gem_name+ and
-  # +version+.  Returns an Array of specs and sources required for
-  # installation of the gem.
-
-  def find_spec_by_name_and_version(gem_name,
-                                    version = Gem::Requirement.default,
-                                    prerelease = false)
-    set = Gem::AvailableSet.new
-
-    if consider_local?
-      if gem_name =~ /\.gem$/ and File.file? gem_name
-        src = Gem::Source::SpecificFile.new(gem_name)
-        set.add src.spec, src
-      elsif gem_name =~ /\.gem$/
-        Dir[gem_name].each do |name|
-          begin
-            src = Gem::Source::SpecificFile.new name
-            set.add src.spec, src
-          rescue Gem::Package::FormatError
-          end
-        end
-      else
-        local = Gem::Source::Local.new
-
-        if s = local.find_gem(gem_name, version)
-          set.add s, local
-        end
-      end
-    end
-
-    if set.empty?
-      dep = Gem::Dependency.new gem_name, version
-      dep.prerelease = true if prerelease
-
-      set = Gem::Deprecate.skip_during do
-        find_gems_with_sources(dep, true)
-      end
-
-      set.match_platform!
-    end
-
-    if set.empty?
-      raise Gem::SpecificGemNotFoundException.new(gem_name, version, @errors)
-    end
-
-    @available = set
-  end
-  deprecate :find_spec_by_name_and_version, :none, 2019, 12
+  rubygems_deprecate :find_gems_with_sources
 
   def in_background(what) # :nodoc:
     fork_happened = false
@@ -356,10 +283,10 @@ class Gem::DependencyInstaller
     request_set.development_shallow = @dev_shallow
     request_set.soft_missing = @force
     request_set.prerelease = @prerelease
-    request_set.remote = false unless consider_remote?
 
     installer_set = Gem::Resolver::InstallerSet.new @domain
-    installer_set.ignore_installed = @only_install_dir
+    installer_set.ignore_installed = (@minimal_deps == false) || @only_install_dir
+    installer_set.force = @force
 
     if consider_local?
       if dep_or_name =~ /\.gem$/ and File.file? dep_or_name
@@ -380,6 +307,7 @@ class Gem::DependencyInstaller
 
     dependency =
       if spec = installer_set.local?(dep_or_name)
+        installer_set.remote = nil if spec.dependencies.none?
         Gem::Dependency.new spec.name, version
       elsif String === dep_or_name
         Gem::Dependency.new dep_or_name, version
@@ -394,6 +322,7 @@ class Gem::DependencyInstaller
     installer_set.add_always_install dependency
 
     request_set.always_install = installer_set.always_install
+    request_set.remote = installer_set.consider_remote?
 
     if @ignore_dependencies
       installer_set.ignore_dependencies = true
@@ -407,5 +336,4 @@ class Gem::DependencyInstaller
 
     request_set
   end
-
 end

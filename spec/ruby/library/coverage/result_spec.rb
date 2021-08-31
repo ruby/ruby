@@ -5,11 +5,13 @@ describe 'Coverage.result' do
   before :all do
     @class_file = fixture __FILE__, 'some_class.rb'
     @config_file = fixture __FILE__, 'start_coverage.rb'
+    @eval_code_file = fixture __FILE__, 'eval_code.rb'
   end
 
   after :each do
     $LOADED_FEATURES.delete(@class_file)
     $LOADED_FEATURES.delete(@config_file)
+    $LOADED_FEATURES.delete(@eval_code_file)
   end
 
   it 'gives the covered files as a hash with arrays of count or nil' do
@@ -74,5 +76,17 @@ describe 'Coverage.result' do
   it 'does not include the file starting coverage since it is not tracked' do
     require @config_file.chomp('.rb')
     Coverage.result.should_not include(@config_file)
+  end
+
+  it 'returns the correct results when eval is used' do
+    Coverage.start
+    require @eval_code_file.chomp('.rb')
+    result = Coverage.result
+
+    result.should == {
+        @eval_code_file => [
+            1, nil, 1, nil, 1, nil, nil, nil, nil, nil, 1
+        ]
+    }
   end
 end

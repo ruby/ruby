@@ -1,0 +1,19 @@
+prelude: |
+  def call(*val)
+    case val
+      in [String => body]
+        [200, {}, [body]]
+      in [Integer => status]
+        [status, {}, [""]]
+      in [Integer, String] => response
+        [response[0], {}, [response[1]]]
+      in [Integer, Hash, String] => response
+        [response[0], response[1], [response[2]]]
+    end
+  end
+
+benchmark:
+  first_match: call("ok")
+  second_match: call(401)
+  third_match: call(200, "ok")
+  fourth_match: call(201, {}, "created")

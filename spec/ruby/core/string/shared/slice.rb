@@ -85,9 +85,9 @@ describe :string_slice_index_length, shared: true do
       str = "hello world"
       str.taint
 
-      str.send(@method, 0,0).tainted?.should == true
-      str.send(@method, 0,1).tainted?.should == true
-      str.send(@method, 2,1).tainted?.should == true
+      str.send(@method, 0,0).should.tainted?
+      str.send(@method, 0,1).should.tainted?
+      str.send(@method, 2,1).should.tainted?
     end
   end
 
@@ -121,6 +121,8 @@ describe :string_slice_index_length, shared: true do
 
     "x".send(@method, -2,0).should == nil
     "x".send(@method, -2,1).should == nil
+
+    "x".send(@method, fixnum_max, 1).should == nil
   end
 
   it "returns nil if the length is negative" do
@@ -161,11 +163,22 @@ describe :string_slice_index_length, shared: true do
     -> { "hello".send(@method, 0, bignum_value) }.should raise_error(RangeError)
   end
 
-  it "returns subclass instances" do
-    s = StringSpecs::MyString.new("hello")
-    s.send(@method, 0,0).should be_an_instance_of(StringSpecs::MyString)
-    s.send(@method, 0,4).should be_an_instance_of(StringSpecs::MyString)
-    s.send(@method, 1,4).should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances" do
+      s = StringSpecs::MyString.new("hello")
+      s.send(@method, 0,0).should be_an_instance_of(StringSpecs::MyString)
+      s.send(@method, 0,4).should be_an_instance_of(StringSpecs::MyString)
+      s.send(@method, 1,4).should be_an_instance_of(StringSpecs::MyString)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns String instances" do
+      s = StringSpecs::MyString.new("hello")
+      s.send(@method, 0,0).should be_an_instance_of(String)
+      s.send(@method, 0,4).should be_an_instance_of(String)
+      s.send(@method, 1,4).should be_an_instance_of(String)
+    end
   end
 
   it "handles repeated application" do
@@ -241,20 +254,31 @@ describe :string_slice_range, shared: true do
       str = "hello world"
       str.taint
 
-      str.send(@method, 0..0).tainted?.should == true
-      str.send(@method, 0...0).tainted?.should == true
-      str.send(@method, 0..1).tainted?.should == true
-      str.send(@method, 0...1).tainted?.should == true
-      str.send(@method, 2..3).tainted?.should == true
-      str.send(@method, 2..0).tainted?.should == true
+      str.send(@method, 0..0).should.tainted?
+      str.send(@method, 0...0).should.tainted?
+      str.send(@method, 0..1).should.tainted?
+      str.send(@method, 0...1).should.tainted?
+      str.send(@method, 2..3).should.tainted?
+      str.send(@method, 2..0).should.tainted?
     end
   end
 
-  it "returns subclass instances" do
-    s = StringSpecs::MyString.new("hello")
-    s.send(@method, 0...0).should be_an_instance_of(StringSpecs::MyString)
-    s.send(@method, 0..4).should be_an_instance_of(StringSpecs::MyString)
-    s.send(@method, 1..4).should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances" do
+      s = StringSpecs::MyString.new("hello")
+      s.send(@method, 0...0).should be_an_instance_of(StringSpecs::MyString)
+      s.send(@method, 0..4).should be_an_instance_of(StringSpecs::MyString)
+      s.send(@method, 1..4).should be_an_instance_of(StringSpecs::MyString)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns String instances" do
+      s = StringSpecs::MyString.new("hello")
+      s.send(@method, 0...0).should be_an_instance_of(String)
+      s.send(@method, 0..4).should be_an_instance_of(String)
+      s.send(@method, 1..4).should be_an_instance_of(String)
+    end
   end
 
   it "calls to_int on range arguments" do
@@ -293,6 +317,32 @@ describe :string_slice_range, shared: true do
     "hello world".send(@method, 6..5).send(@method, -1..-1).should == nil
     "hello world".send(@method, 6..5).send(@method, 1..1).should == nil
   end
+
+  it "raises a type error if a range is passed with a length" do
+    ->{ "hello".send(@method, 1..2, 1) }.should raise_error(TypeError)
+  end
+
+  it "raises a RangeError if one of the bound is too big" do
+    -> { "hello".send(@method, bignum_value..(bignum_value + 1)) }.should raise_error(RangeError)
+    -> { "hello".send(@method, 0..bignum_value) }.should raise_error(RangeError)
+  end
+
+  it "works with endless ranges" do
+    "hello there".send(@method, eval("(2..)")).should == "llo there"
+    "hello there".send(@method, eval("(2...)")).should == "llo there"
+    "hello there".send(@method, eval("(-4..)")).should == "here"
+    "hello there".send(@method, eval("(-4...)")).should == "here"
+  end
+
+  ruby_version_is "2.7" do
+    it "works with beginless ranges" do
+      "hello there".send(@method, eval("(..5)")).should == "hello "
+      "hello there".send(@method, eval("(...5)")).should == "hello"
+      "hello there".send(@method, eval("(..-4)")).should == "hello th"
+      "hello there".send(@method, eval("(...-4)")).should == "hello t"
+      "hello there".send(@method, eval("(...nil)")).should == "hello there"
+    end
+  end
 end
 
 describe :string_slice_regexp, shared: true do
@@ -318,7 +368,7 @@ describe :string_slice_regexp, shared: true do
           tainted_re = /./
           tainted_re.taint
 
-          str.send(@method, tainted_re).tainted?.should == true
+          str.send(@method, tainted_re).should.tainted?
         end
       end
 
@@ -328,10 +378,20 @@ describe :string_slice_regexp, shared: true do
     end
   end
 
-  it "returns subclass instances" do
-    s = StringSpecs::MyString.new("hello")
-    s.send(@method, //).should be_an_instance_of(StringSpecs::MyString)
-    s.send(@method, /../).should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances" do
+      s = StringSpecs::MyString.new("hello")
+      s.send(@method, //).should be_an_instance_of(StringSpecs::MyString)
+      s.send(@method, /../).should be_an_instance_of(StringSpecs::MyString)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns String instances" do
+      s = StringSpecs::MyString.new("hello")
+      s.send(@method, //).should be_an_instance_of(String)
+      s.send(@method, /../).should be_an_instance_of(String)
+    end
   end
 
   it "sets $~ to MatchData when there is a match and nil when there's none" do
@@ -375,9 +435,9 @@ describe :string_slice_regexp_index, shared: true do
         tainted_re = /(.)(.)(.)/
         tainted_re.taint
 
-        str.send(@method, tainted_re, 0).tainted?.should == true
-        str.send(@method, tainted_re, 1).tainted?.should == true
-        str.send(@method, tainted_re, -1).tainted?.should == true
+        str.send(@method, tainted_re, 0).should.tainted?
+        str.send(@method, tainted_re, 1).should.tainted?
+        str.send(@method, tainted_re, -1).should.tainted?
       end
     end
 
@@ -416,10 +476,20 @@ describe :string_slice_regexp_index, shared: true do
     -> { "hello".send(@method, /(.)(.)(.)/, nil) }.should raise_error(TypeError)
   end
 
-  it "returns subclass instances" do
-    s = StringSpecs::MyString.new("hello")
-    s.send(@method, /(.)(.)/, 0).should be_an_instance_of(StringSpecs::MyString)
-    s.send(@method, /(.)(.)/, 1).should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances" do
+      s = StringSpecs::MyString.new("hello")
+      s.send(@method, /(.)(.)/, 0).should be_an_instance_of(StringSpecs::MyString)
+      s.send(@method, /(.)(.)/, 1).should be_an_instance_of(StringSpecs::MyString)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns String instances" do
+      s = StringSpecs::MyString.new("hello")
+      s.send(@method, /(.)(.)/, 0).should be_an_instance_of(String)
+      s.send(@method, /(.)(.)/, 1).should be_an_instance_of(String)
+    end
   end
 
   it "sets $~ to MatchData when there is a match and nil when there's none" do
@@ -473,11 +543,22 @@ describe :string_slice_string, shared: true do
     -> { "hello".send(@method, o) }.should raise_error(TypeError)
   end
 
-  it "returns a subclass instance when given a subclass instance" do
-    s = StringSpecs::MyString.new("el")
-    r = "hello".send(@method, s)
-    r.should == "el"
-    r.should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns a subclass instance when given a subclass instance" do
+      s = StringSpecs::MyString.new("el")
+      r = "hello".send(@method, s)
+      r.should == "el"
+      r.should be_an_instance_of(StringSpecs::MyString)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns a String instance when given a subclass instance" do
+      s = StringSpecs::MyString.new("el")
+      r = "hello".send(@method, s)
+      r.should == "el"
+      r.should be_an_instance_of(String)
+    end
   end
 end
 
@@ -547,9 +628,18 @@ describe :string_slice_regexp_group, shared: true do
       -> { "hello".send(@method, /(?<q>)/, '') }.should raise_error(IndexError)
     end
 
-    it "returns subclass instances" do
-      s = StringSpecs::MyString.new("hello")
-      s.send(@method, /(?<q>.)/, 'q').should be_an_instance_of(StringSpecs::MyString)
+    ruby_version_is ''...'3.0' do
+      it "returns subclass instances" do
+        s = StringSpecs::MyString.new("hello")
+        s.send(@method, /(?<q>.)/, 'q').should be_an_instance_of(StringSpecs::MyString)
+      end
+    end
+
+    ruby_version_is '3.0' do
+      it "returns String instances" do
+        s = StringSpecs::MyString.new("hello")
+        s.send(@method, /(?<q>.)/, 'q').should be_an_instance_of(String)
+      end
     end
 
     it "sets $~ to MatchData when there is a match and nil when there's none" do

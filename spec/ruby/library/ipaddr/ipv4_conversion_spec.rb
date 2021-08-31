@@ -8,11 +8,11 @@ describe "IPAddr#ipv4_compat" do
     a.to_s.should == "::192.168.1.2"
     a.to_string.should == "0000:0000:0000:0000:0000:0000:c0a8:0102"
     a.family.should == Socket::AF_INET6
-    a.ipv4_compat?.should == true
+    a.should.ipv4_compat?
     b = a.native
     b.to_s.should == "192.168.1.2"
     b.family.should == Socket::AF_INET
-    b.ipv4_compat?.should == false
+    b.should_not.ipv4_compat?
 
     a = IPAddr.new("192.168.1.2")
     b = a.ipv4_compat
@@ -29,11 +29,11 @@ describe "IPAddr#ipv4_mapped" do
     a.to_s.should == "::ffff:192.168.1.2"
     a.to_string.should == "0000:0000:0000:0000:0000:ffff:c0a8:0102"
     a.family.should == Socket::AF_INET6
-    a.ipv4_mapped?.should == true
+    a.should.ipv4_mapped?
     b = a.native
     b.to_s.should == "192.168.1.2"
     b.family.should == Socket::AF_INET
-    b.ipv4_mapped?.should == false
+    b.should_not.ipv4_mapped?
 
     a = IPAddr.new("192.168.1.2")
     b = a.ipv4_mapped

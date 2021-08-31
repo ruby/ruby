@@ -10,11 +10,12 @@ require 'rbconfig'
 
 dir_config 'zlib'
 
-
+libs = $libs
 if %w'z libz zlib1 zlib zdll zlibwapi'.find {|z| have_library(z, 'deflateReset')} and
     have_header('zlib.h') then
   have_zlib = true
 else
+  $libs = libs
   unless File.directory?(zsrc = "#{$srcdir}/zlib")
     dirs = Dir.open($srcdir) {|z| z.grep(/\Azlib-\d+[.\d]*\z/) {|x|"#{$srcdir}/#{x}"}}
     dirs.delete_if {|x| !File.directory?(x)}
@@ -31,9 +32,12 @@ else
       $extso << dll
       $cleanfiles << "$(topdir)/#{dll}" << "$(ZIMPLIB)"
       zmk = "\t$(MAKE) -f $(ZMKFILE) TOP=$(ZSRC)"
+      zopts = []
       if $nmake
         zmkfile = "$(ZSRC)/win32/Makefile.msc"
         m = "#{zsrc}/win32/Makefile.msc"
+        # zopts << "USE_ASM=1"
+        zopts << "ARCH=#{RbConfig::CONFIG['target_cpu']}"
       else
         zmkfile = "$(ZSRC)/win32/Makefile.gcc"
         m = "#{zsrc}/win32/Makefile.gcc"
@@ -43,7 +47,7 @@ else
       end
       m = File.read(m)
       zimplib = m[/^IMPLIB[ \t]*=[ \t]*(\S+)/, 1]
-      $LOCAL_LIBS << " " << zimplib
+      ($LOCAL_LIBS << " ./" << zimplib).strip!
       unless $nmake or /^TOP[ \t]/ =~ m
         m.gsub!(/win32\/zlib\.def/, '$(TOP)/\&')
         m.gsub!(/^(\t.*[ \t])(\S+\.rc)/, '\1-I$(<D) $<')
@@ -55,10 +59,11 @@ else
       addconf.push(
         "ZMKFILE = #{zmkfile}\n",
         "ZIMPLIB = #{zimplib}\n",
+        "ZOPTS = #{zopts.join(' ')}\n",
         "$(TARGET_SO): $(ZIMPLIB)\n",
         "$(ZIMPLIB):\n",
-        "#{zmk} $@\n",
-        "install-so: $(topdir)/#{dll}",
+        "#{zmk} $(ZOPTS) $@\n",
+        "install-so static: $(topdir)/#{dll}",
         "$(topdir)/#{dll}: $(ZIMPLIB)\n",
         "\t$(Q) $(COPY) #{dll} $(@D)\n",
         "clean: clean-zsrc\n",

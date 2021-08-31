@@ -1,6 +1,12 @@
 ---
 version: '{build}'
-shallow_clone: true
+init:
+  - git config --global user.name git
+  - git config --global user.email svn-admin@ruby-lang.org
+  - git config --global core.autocrlf false
+  - git config --global core.eol lf
+  - git config --global advice.detachedHead 0
+clone_depth: 10
 platform:
   - x64
 environment:
@@ -18,7 +24,6 @@ environment:
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GEMS_FOR_TEST: ""
   RELINE_TEST_ENCODING: "Windows-31J"
-  UPDATE_UNICODE: "UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
 for:
 -
   matrix:
@@ -43,14 +48,15 @@ for:
     - echo>> Makefile RT_VER=0
     - echo>> Makefile BUILTIN_ENCOBJS=nul
     - type win32\Makefile.sub >> Makefile
-    - nmake %mflags% touch-unicode-files
-    - nmake %mflags% %UPDATE_UNICODE% up incs
+    - nmake %mflags% up VCSUP="echo Update OK"
+    - nmake %mflags% extract-extlibs
     - del Makefile
     - mkdir \usr\local\bin
     - mkdir \usr\local\include
     - mkdir \usr\local\lib
-    - curl -fsSL -o zlib%zlib_version:.=%.zip --retry 10 https://zlib.net/zlib%zlib_version:.=%.zip
-    - 7z x -o%APPVEYOR_BUILD_FOLDER%\ext\zlib zlib%zlib_version:.=%.zip
+    - SET ZLIB_ZIP=.downloaded-cache\zlib%zlib_version:.=%.zip
+    - if not exist %ZLIB_ZIP% curl -fsSL -o %ZLIB_ZIP% --retry 10 https://zlib.net/zlib%zlib_version:.=%.zip
+    - 7z x -aos -o%APPVEYOR_BUILD_FOLDER%\ext\zlib %ZLIB_ZIP%
     - for %%I in (%OPENSSL_DIR%\*.dll) do mklink /h \usr\local\bin\%%~nxI %%I
     - attrib +r /s /d
     - mkdir %Platform%-mswin_%vs%
@@ -72,21 +78,18 @@ for:
     - nmake -l "TESTOPTS=-v --timeout-scale=3.0 --excludes=../test/excludes/_appveyor" test-all TESTS="../test/win32ole ../test/ruby/test_bignum.rb ../test/ruby/test_syntax.rb ../test/open-uri/test_open-uri.rb ../test/rubygems/test_bundled_ca.rb"
     - nmake -l test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
 notifications:
-  # Using "Webhook" with templated body to skip notification on Pull Request
   - provider: Webhook
     method: POST
     url:
-      secure: iMINHMS0nZabaDsxN9omRDsekxzVvAAzEq5ev7lN6vb+gUETT+rbDKLGxBxBpEpxlnPlLdzroIJ+DTKlwfJA8VkGawTn9EXNsucH0OkSf2M= # AppVeyor CI
+      secure: CcFlJNDJ/a6to7u3Z4Fnz6dScEPNx7hTha2GkSRlV+1U6dqmxY/7uBcLXYb9gR3jfQk6w+2o/HrjNAyXMNGU/JOka3s2WRI4VKitzM+lQ08owvJIh0R7LxrGH0J2e81U # ruby-lang slack: ruby/simpler-alerts-bot
     body: >-
       {{^isPullRequest}}
         {
-          "attachments": [
-            {
-              "text": "Build <{{buildUrl}}|#{{buildVersion}}> (<{{commitUrl}}|{{commitId}}>) of {{repositoryName}}@{{branch}} by {{commitAuthor}} {{status}}",
-              "color": "{{#passed}}good{{/passed}}{{#failed}}danger{{/failed}}"
-            }
-          ],
-          "channel": "#alerts"
+          "ci": "AppVeyor CI",
+          "env": "Visual Studio 2013 / 2015",
+          "url": "{{buildUrl}}",
+          "commit": "{{commitId}}",
+          "branch": "{{branch}}"
         }
       {{/isPullRequest}}
     on_build_success: false

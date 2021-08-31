@@ -6,21 +6,13 @@ describe :erb_util_url_encode, shared: true do
     ERB::Util.__send__(@method, input).should == expected
   end
 
-  ruby_version_is ""..."2.5" do
-    it "escapes tilde" do
-      ERB::Util.__send__(@method, "~").should == "%7E"
-    end
-  end
-
-  ruby_version_is "2.5" do
-    it "does not escape tilde" do
-      ERB::Util.__send__(@method, "~").should == "~"
-    end
+  it "does not escape tilde" do
+    ERB::Util.__send__(@method, "~").should == "~"
   end
 
   it "encode unicode string" do
-    input = "http://ja.wikipedia.org/wiki/\343\203\255\343\203\240\343\202\271\343\202\253\343\203\273\343\203\221\343\203\255\343\203\273\343\202\246\343\203\253\343\203\273\343\203\251\343\203\224\343\203\245\343\202\277"
-    expected = 'http%3A%2F%2Fja.wikipedia.org%2Fwiki%2F%E3%83%AD%E3%83%A0%E3%82%B9%E3%82%AB%E3%83%BB%E3%83%91%E3%83%AD%E3%83%BB%E3%82%A6%E3%83%AB%E3%83%BB%E3%83%A9%E3%83%94%E3%83%A5%E3%82%BF'
+    input = "https://ja.wikipedia.org/wiki/\343\203\255\343\203\240\343\202\271\343\202\253\343\203\273\343\203\221\343\203\255\343\203\273\343\202\246\343\203\253\343\203\273\343\203\251\343\203\224\343\203\245\343\202\277"
+    expected = 'https%3A%2F%2Fja.wikipedia.org%2Fwiki%2F%E3%83%AD%E3%83%A0%E3%82%B9%E3%82%AB%E3%83%BB%E3%83%91%E3%83%AD%E3%83%BB%E3%82%A6%E3%83%AB%E3%83%BB%E3%83%A9%E3%83%94%E3%83%A5%E3%82%BF'
     ERB::Util.__send__(@method, input).should == expected
   end
 

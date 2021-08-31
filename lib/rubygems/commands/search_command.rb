@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/query_utils'
+require_relative '../command'
+require_relative '../query_utils'
 
 class Gem::Commands::SearchCommand < Gem::Command
-
   include Gem::QueryUtils
 
   def initialize
@@ -38,5 +37,4 @@ To list local gems use the list command.
   def usage # :nodoc:
     "#{program_name} [REGEXP]"
   end
-
 end

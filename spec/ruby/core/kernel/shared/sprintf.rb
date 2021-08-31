@@ -336,21 +336,36 @@ describe :kernel_sprintf, shared: true do
           @method.call("%s", obj)
         }.should raise_error(NoMethodError)
       end
+
+      it "formats a partial substring without including omitted characters" do
+        long_string = "aabbccddhelloddccbbaa"
+        sub_string = long_string[8, 5]
+        sprintf("%.#{1 * 3}s", sub_string).should == "hel"
+      end
+
+      it "formats string with precision" do
+        Kernel.format("%.3s", "hello").should == "hel"
+        Kernel.format("%-3.3s", "hello").should == "hel"
+      end
+
+      it "formats multibyte string with precision" do
+        Kernel.format("%.2s", "été").should == "ét"
+      end
+
+      it "preserves encoding of the format string" do
+        str = format('%s'.encode(Encoding::UTF_8), 'foobar')
+        str.encoding.should == Encoding::UTF_8
+
+        str = format('%s'.encode(Encoding::US_ASCII), 'foobar')
+        str.encoding.should == Encoding::US_ASCII
+      end
     end
 
     describe "%" do
-      ruby_version_is ""..."2.5" do
-        it "alone displays the percent sign" do
-          @method.call("%").should == "%"
-        end
-      end
-
-      ruby_version_is "2.5" do
-        it "alone raises an ArgumentError" do
-          -> {
-            @method.call("%")
-          }.should raise_error(ArgumentError)
-        end
+      it "alone raises an ArgumentError" do
+        -> {
+          @method.call("%")
+        }.should raise_error(ArgumentError)
       end
 
       it "is escaped by %" do
@@ -870,22 +885,20 @@ describe :kernel_sprintf, shared: true do
       }.should raise_error(KeyError)
     end
 
-    ruby_version_is "2.5" do
-      it "sets the Hash as the receiver of KeyError" do
-        -> {
-          @method.call("%<foo>s", @object)
-        }.should raise_error(KeyError) { |err|
-          err.receiver.should equal(@object)
-        }
-      end
+    it "sets the Hash as the receiver of KeyError" do
+      -> {
+        @method.call("%<foo>s", @object)
+      }.should raise_error(KeyError) { |err|
+        err.receiver.should equal(@object)
+      }
+    end
 
-      it "sets the unmatched key as the key of KeyError" do
-        -> {
-          @method.call("%<foo>s", @object)
-        }.should raise_error(KeyError) { |err|
-          err.key.to_s.should == 'foo'
-        }
-      end
+    it "sets the unmatched key as the key of KeyError" do
+      -> {
+        @method.call("%<foo>s", @object)
+      }.should raise_error(KeyError) { |err|
+        err.key.to_s.should == 'foo'
+      }
     end
   end
 end

@@ -2,10 +2,8 @@ require_relative '../../spec_helper'
 require 'bigdecimal'
 
 describe "BigDecimal constants" do
-  ruby_version_is "2.5" do
-    it "defines a VERSION value" do
-      BigDecimal.const_defined?(:VERSION).should be_true
-    end
+  it "defines a VERSION value" do
+    BigDecimal.const_defined?(:VERSION).should be_true
   end
 
   it "has a BASE value" do

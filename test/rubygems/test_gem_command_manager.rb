@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/command_manager'
 
 class TestGemCommandManager < Gem::TestCase
-
   PROJECT_DIR = File.expand_path('../../..', __FILE__).tap(&Gem::UNTAINT)
 
   def setup
@@ -23,7 +22,7 @@ class TestGemCommandManager < Gem::TestCase
   end
 
   def test_find_command_ambiguous
-    e = assert_raises Gem::CommandLineError do
+    e = assert_raise Gem::CommandLineError do
       @command_manager.find_command 'u'
     end
 
@@ -51,11 +50,25 @@ class TestGemCommandManager < Gem::TestCase
   end
 
   def test_find_command_unknown
-    e = assert_raises Gem::CommandLineError do
+    e = assert_raise Gem::UnknownCommandError do
       @command_manager.find_command 'xyz'
     end
 
     assert_equal 'Unknown command xyz', e.message
+  end
+
+  def test_find_command_unknown_suggestions
+    e = assert_raise Gem::UnknownCommandError do
+      @command_manager.find_command 'pish'
+    end
+
+    message = 'Unknown command pish'.dup
+
+    if RUBY_VERSION >= "2.4" && defined?(DidYouMean::SPELL_CHECKERS) && defined?(DidYouMean::Correctable)
+      message << "\nDid you mean?  \"push\""
+    end
+
+    assert_equal message, e.message
   end
 
   def test_run_interrupt
@@ -66,7 +79,7 @@ class TestGemCommandManager < Gem::TestCase
     @command_manager.register_command :interrupt
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @command_manager.run %w[interrupt]
       end
       assert_equal '', ui.output
@@ -83,7 +96,7 @@ class TestGemCommandManager < Gem::TestCase
 
     @command_manager.register_command :crash
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @command_manager.run %w[crash]
       end
       assert_equal '', ui.output
@@ -97,7 +110,7 @@ class TestGemCommandManager < Gem::TestCase
 
   def test_process_args_bad_arg
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @command_manager.process_args %w[--bad-arg]
       end
     end
@@ -266,7 +279,7 @@ class TestGemCommandManager < Gem::TestCase
 
     #check defaults
     @command_manager.process_args %w[update]
-    assert_includes check_options[:document], 'rdoc'
+    assert_includes check_options[:document], 'ri'
 
     #check settings
     check_options = nil
@@ -281,7 +294,7 @@ class TestGemCommandManager < Gem::TestCase
     foo_command = Class.new(Gem::Command) do
       extend Gem::Deprecate
 
-      deprecate_command(2099, 4)
+      rubygems_deprecate_command
 
       def execute
         say "pew pew!"
@@ -296,9 +309,8 @@ class TestGemCommandManager < Gem::TestCase
     end
 
     assert_equal "pew pew!\n", @ui.output
-    assert_equal("WARNING:  foo command is deprecated. It will be removed on or after 2099-04-01.\n", @ui.error)
+    assert_match(/WARNING:  foo command is deprecated. It will be removed in Rubygems [0-9]+/, @ui.error)
   ensure
     Gem::Commands.send(:remove_const, :FooCommand)
   end
-
 end

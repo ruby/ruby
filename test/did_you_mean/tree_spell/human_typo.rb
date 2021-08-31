@@ -4,6 +4,9 @@ module TreeSpell
   # Simulate an error prone human typist
   # see doc/human_typo_api.md for the api description
   class HumanTypo
+    POPULAR_CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ?<>,.!`+=-_":;@#$%^&*()'.split("").freeze
+    ACTION_TYPES  = %i(insert transpose delete substitute).freeze
+
     def initialize(input, lambda: 0.05)
       @input = input
       check_input
@@ -15,7 +18,7 @@ module TreeSpell
       @word = input.dup
       i_place = initialize_i_place
       loop do
-        action = action_type
+        action = ACTION_TYPES.sample
         @word = make_change action, i_place
         @len = word.length
         i_place += exponential
@@ -41,40 +44,17 @@ module TreeSpell
       (rand / (lambda / 2)).to_i
     end
 
-    def rand_char
-      popular_chars =  alphabetic_characters + special_characters
-      n = popular_chars.length
-      popular_chars[rand(n)]
-    end
-
-    def alphabetic_characters
-      ('a'..'z').to_a.join + ('A'..'Z').to_a.join
-    end
-
-    def special_characters
-      '?<>,.!`+=-_":;@#$%^&*()'
-    end
-
-    def toss
-      return +1 if rand >= 0.5
-      -1
-    end
-
-    def action_type
-      [:insert, :transpose, :delete, :substitute][rand(4)]
-    end
-
     def make_change(action, i_place)
       cw = ChangeWord.new(word)
       case action
       when :delete
         cw.deletion(i_place)
       when :insert
-        cw.insertion(i_place, rand_char)
+        cw.insertion(i_place, POPULAR_CHARS.sample)
       when :substitute
-        cw.substitution(i_place, rand_char)
+        cw.substitution(i_place, POPULAR_CHARS.sample)
       when :transpose
-        cw.transposition(i_place, toss)
+        cw.transposition(i_place, rand >= 0.5 ? +1 : -1)
       end
     end
 

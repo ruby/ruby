@@ -36,26 +36,26 @@ describe :proc_equal, shared: true do
     a.send(@method, b).should be_false
   end
 
-  it "returns true if both procs have the same body and environment" do
+  it "returns false if procs are distinct but have the same body and environment" do
     p = proc { :foo }
     p2 = proc { :foo }
-    p.send(@method, p2).should be_true
+    p.send(@method, p2).should be_false
   end
 
-  it "returns true if both lambdas with the same body and environment" do
+  it "returns false if lambdas are distinct but have same body and environment" do
     x = -> { :foo }
     x2 = -> { :foo }
-    x.send(@method, x2).should be_true
+    x.send(@method, x2).should be_false
   end
 
-  it "returns true if both different kinds of procs with the same body and env" do
+  it "returns false if using comparing lambda to proc, even with the same body and env" do
     p = -> { :foo }
     p2 = proc { :foo }
-    p.send(@method, p2).should be_true
+    p.send(@method, p2).should be_false
 
     x = proc { :bar }
     x2 = -> { :bar }
-    x.send(@method, x2).should be_true
+    x.send(@method, x2).should be_false
   end
 
   it "returns false if other is not a Proc" do

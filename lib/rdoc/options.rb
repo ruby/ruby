@@ -338,8 +338,9 @@ class RDoc::Options
 
   attr_reader :visibility
 
-  def initialize # :nodoc:
+  def initialize loaded_options = nil # :nodoc:
     init_ivars
+    override loaded_options if loaded_options
   end
 
   def init_ivars # :nodoc:
@@ -415,6 +416,37 @@ class RDoc::Options
 
   def yaml_initialize tag, map # :nodoc:
     init_with map
+  end
+
+  def override map # :nodoc:
+    if map.has_key?('encoding')
+      encoding = map['encoding']
+      @encoding = encoding ? Encoding.find(encoding) : encoding
+    end
+
+    @charset        = map['charset']        if map.has_key?('charset')
+    @exclude        = map['exclude']        if map.has_key?('exclude')
+    @generator_name = map['generator_name'] if map.has_key?('generator_name')
+    @hyperlink_all  = map['hyperlink_all']  if map.has_key?('hyperlink_all')
+    @line_numbers   = map['line_numbers']   if map.has_key?('line_numbers')
+    @locale_name    = map['locale_name']    if map.has_key?('locale_name')
+    @locale_dir     = map['locale_dir']     if map.has_key?('locale_dir')
+    @main_page      = map['main_page']      if map.has_key?('main_page')
+    @markup         = map['markup']         if map.has_key?('markup')
+    @op_dir         = map['op_dir']         if map.has_key?('op_dir')
+    @show_hash      = map['show_hash']      if map.has_key?('show_hash')
+    @tab_width      = map['tab_width']      if map.has_key?('tab_width')
+    @template_dir   = map['template_dir']   if map.has_key?('template_dir')
+    @title          = map['title']          if map.has_key?('title')
+    @visibility     = map['visibility']     if map.has_key?('visibility')
+    @webcvs         = map['webcvs']         if map.has_key?('webcvs')
+
+    if map.has_key?('rdoc_include')
+      @rdoc_include = sanitize_path map['rdoc_include']
+    end
+    if map.has_key?('static_path')
+      @static_path  = sanitize_path map['static_path']
+    end
   end
 
   def == other # :nodoc:
@@ -755,7 +787,7 @@ Usage: #{opt.program_name} [options] [names...]
 
       opt.on("--[no-]force-update", "-U",
              "Forces rdoc to scan all sources even if",
-             "newer than the flag file.") do |value|
+             "no files are newer than the flag file.") do |value|
         @force_update = value
       end
 

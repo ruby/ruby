@@ -1032,8 +1032,8 @@ module IXMLDOMDocument
   end
 
   # VOID save
-  # save the document to a specified desination
-  #   VARIANT arg0 --- desination [IN]
+  # save the document to a specified destination
+  #   VARIANT arg0 --- destination [IN]
   def save(arg0)
     ret = _invoke(64, [arg0], [VT_VARIANT])
     @lastargs = WIN32OLE::ARGV
@@ -6224,8 +6224,8 @@ class Microsoft_XMLDOM_1_0 # DOMDocument
   end
 
   # VOID save
-  # save the document to a specified desination
-  #   VARIANT arg0 --- desination [IN]
+  # save the document to a specified destination
+  #   VARIANT arg0 --- destination [IN]
   def save(arg0)
     ret = @dispatch._invoke(64, [arg0], [VT_VARIANT])
     @lastargs = WIN32OLE::ARGV
@@ -6831,8 +6831,8 @@ class Microsoft_FreeThreadedXMLDOM_1_0 # DOMFreeThreadedDocument
   end
 
   # VOID save
-  # save the document to a specified desination
-  #   VARIANT arg0 --- desination [IN]
+  # save the document to a specified destination
+  #   VARIANT arg0 --- destination [IN]
   def save(arg0)
     ret = @dispatch._invoke(64, [arg0], [VT_VARIANT])
     @lastargs = WIN32OLE::ARGV

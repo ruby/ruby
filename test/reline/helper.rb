@@ -1,4 +1,7 @@
 $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
+
+ENV['TERM'] = 'xterm' # for some CI environments
+
 require 'reline'
 require 'test/unit'
 
@@ -7,6 +10,12 @@ module Reline
     def test_mode
         remove_const('IOGate') if const_defined?('IOGate')
         const_set('IOGate', Reline::GeneralIO)
+        if ENV['RELINE_TEST_ENCODING']
+          encoding = Encoding.find(ENV['RELINE_TEST_ENCODING'])
+        else
+          encoding = Encoding::UTF_8
+        end
+        Reline::GeneralIO.reset(encoding: encoding)
         send(:core).config.instance_variable_set(:@test_mode, true)
         send(:core).config.reset
     end
@@ -17,12 +26,13 @@ module Reline
   end
 end
 
-RELINE_TEST_ENCODING ||=
-  if ENV['RELINE_TEST_ENCODING']
-    Encoding.find(ENV['RELINE_TEST_ENCODING'])
-  else
-    Encoding::UTF_8
-  end
+def start_pasting
+  Reline::GeneralIO.start_pasting
+end
+
+def finish_pasting
+  Reline::GeneralIO.finish_pasting
+end
 
 class Reline::TestCase < Test::Unit::TestCase
   private def convert_str(input, options = {}, normalized = nil)
@@ -86,5 +96,19 @@ class Reline::TestCase < Test::Unit::TestCase
 
   def assert_cursor_max(expected)
     assert_equal(expected, @line_editor.instance_variable_get(:@cursor_max))
+  end
+
+  def assert_line_index(expected)
+    assert_equal(expected, @line_editor.instance_variable_get(:@line_index))
+  end
+
+  def assert_whole_lines(expected)
+    previous_line_index = @line_editor.instance_variable_get(:@previous_line_index)
+    if previous_line_index
+      lines = @line_editor.whole_lines(index: previous_line_index)
+    else
+      lines = @line_editor.whole_lines
+    end
+    assert_equal(expected, lines)
   end
 end

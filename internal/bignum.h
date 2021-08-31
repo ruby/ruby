@@ -1,22 +1,22 @@
-#ifndef INTERNAL_BIGNUM_H /* -*- C -*- */
+#ifndef INTERNAL_BIGNUM_H                                /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_BIGNUM_H
 /**
  * @file
- * @brief      Internal header for Bignums.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Bignums.
  */
-#include "ruby/config.h"        /* for HAVE_LIBGMP */
+#include "ruby/internal/config.h"      /* for HAVE_LIBGMP */
 #include <stddef.h>             /* for size_t */
 
 #ifdef HAVE_SYS_TYPES_H
 # include <sys/types.h>         /* for ssize_t (note: on Windows ssize_t is */
 #endif                          /* `#define`d in ruby/config.h) */
 
-#include "internal/stdbool.h"   /* for bool */
+#include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for struct RBasic */
 
 #ifndef BDIGIT
@@ -74,7 +74,7 @@
 # define PRIXBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"X"
 #endif
 
-#define RBIGNUM(obj) (R_CAST(RBignum)(obj))
+#define RBIGNUM(obj) ((struct RBignum *)(obj))
 #define BIGNUM_SIGN_BIT FL_USER1
 #define BIGNUM_EMBED_FLAG ((VALUE)FL_USER2)
 #define BIGNUM_EMBED_LEN_NUMBITS 3
@@ -83,8 +83,8 @@
 #define BIGNUM_EMBED_LEN_SHIFT \
     (FL_USHIFT+3) /* bit offset of BIGNUM_EMBED_LEN_MASK */
 #ifndef BIGNUM_EMBED_LEN_MAX
-# if (SIZEOF_VALUE*RVALUE_EMBED_LEN_MAX/SIZEOF_ACTUAL_BDIGIT) < (1 << BIGNUM_EMBED_LEN_NUMBITS)-1
-#  define BIGNUM_EMBED_LEN_MAX (SIZEOF_VALUE*RVALUE_EMBED_LEN_MAX/SIZEOF_ACTUAL_BDIGIT)
+# if (SIZEOF_VALUE*RBIMPL_RVALUE_EMBED_LEN_MAX/SIZEOF_ACTUAL_BDIGIT) < (1 << BIGNUM_EMBED_LEN_NUMBITS)-1
+#  define BIGNUM_EMBED_LEN_MAX (SIZEOF_VALUE*RBIMPL_RVALUE_EMBED_LEN_MAX/SIZEOF_ACTUAL_BDIGIT)
 # else
 #  define BIGNUM_EMBED_LEN_MAX ((1 << BIGNUM_EMBED_LEN_NUMBITS)-1)
 # endif
@@ -131,6 +131,7 @@ VALUE rb_big_ge(VALUE x, VALUE y);
 VALUE rb_big_lt(VALUE x, VALUE y);
 VALUE rb_big_le(VALUE x, VALUE y);
 VALUE rb_int_powm(int const argc, VALUE * const argv, VALUE const num);
+VALUE rb_big_isqrt(VALUE n);
 static inline bool BIGNUM_SIGN(VALUE b);
 static inline bool BIGNUM_POSITIVE_P(VALUE b);
 static inline bool BIGNUM_NEGATIVE_P(VALUE b);

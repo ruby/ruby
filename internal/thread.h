@@ -1,13 +1,13 @@
-#ifndef INTERNAL_THREAD_H /* -*- C -*- */
+#ifndef INTERNAL_THREAD_H                                /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_THREAD_H
 /**
  * @file
- * @brief      Internal header for Thread.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Thread.
  */
 #include "ruby/ruby.h"          /* for VALUE */
 #include "ruby/intern.h"        /* for rb_blocking_function_t */
@@ -36,6 +36,8 @@ int rb_thread_to_be_killed(VALUE thread);
 void rb_mutex_allow_trap(VALUE self, int val);
 VALUE rb_uninterruptible(VALUE (*b_proc)(VALUE), VALUE data);
 VALUE rb_mutex_owned_p(VALUE self);
+
+int rb_thread_wait_for_single_fd(int fd, int events, struct timeval * timeout);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* Temporary.  This API will be removed (renamed). */

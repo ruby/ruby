@@ -37,7 +37,7 @@ void
 Init_typeddata(void)
 {
     VALUE mBug = rb_define_module("Bug");
-    VALUE klass = rb_define_class_under(mBug, "TypedData", rb_cData);
+    VALUE klass = rb_define_class_under(mBug, "TypedData", rb_cObject);
     rb_define_alloc_func(klass, test_alloc);
     rb_define_singleton_method(klass, "check", test_check, 1);
     rb_define_singleton_method(klass, "make", test_make, 1);

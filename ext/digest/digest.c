@@ -406,7 +406,7 @@ rb_digest_instance_digest_length(VALUE self)
 
     /* never blindly assume that #digest() returns a string */
     StringValue(digest);
-    return INT2NUM(RSTRING_LEN(digest));
+    return LONG2NUM(RSTRING_LEN(digest));
 }
 
 /*
@@ -725,7 +725,7 @@ rb_digest_base_digest_length(VALUE self)
 
     algo = get_digest_obj_metadata(self);
 
-    return INT2NUM(algo->digest_len);
+    return SIZET2NUM(algo->digest_len);
 }
 
 /*
@@ -740,7 +740,7 @@ rb_digest_base_block_length(VALUE self)
 
     algo = get_digest_obj_metadata(self);
 
-    return INT2NUM(algo->block_len);
+    return SIZET2NUM(algo->block_len);
 }
 
 void
@@ -764,6 +764,10 @@ InitVM_digest(void)
      * module Digest
      */
     rb_mDigest = rb_define_module("Digest");
+
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
 
     /* module functions */
     rb_define_module_function(rb_mDigest, "hexencode", rb_digest_s_hexencode, 1);

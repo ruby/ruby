@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-describe Kernel, "#instance_of?" do
+describe "Kernel#instance_of?" do
   before :each do
     @o = KernelSpecs::InstanceClass.new
   end

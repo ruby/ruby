@@ -1,15 +1,15 @@
-#ifndef INTERNAL_PROCESS_H /* -*- C -*- */
+#ifndef INTERNAL_PROCESS_H                               /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_PROCESS_H
 /**
  * @file
- * @brief      Internal header for Process.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for Process.
  */
-#include "ruby/config.h"        /* for rb_pid_t */
+#include "ruby/internal/config.h"      /* for rb_pid_t */
 #include <stddef.h>             /* for size_t */
 
 #ifdef HAVE_SYS_TYPES_H
@@ -22,6 +22,7 @@
 
 #include "ruby/ruby.h"          /* for VALUE */
 #include "internal/imemo.h"     /* for RB_IMEMO_TMPBUF_PTR */
+#include "internal/warnings.h"  /* for COMPILER_WARNING_PUSH */
 
 #define RB_MAX_GROUPS (65536)
 
@@ -78,6 +79,12 @@ void rb_last_status_clear(void);
 static inline char **ARGVSTR2ARGV(VALUE argv_str);
 static inline size_t ARGVSTR2ARGC(VALUE argv_str);
 
+#ifdef HAVE_PWD_H
+VALUE rb_getlogin(void);
+VALUE rb_getpwdirnam_for_login(VALUE login);  /* read as: "get pwd db home dir by username for login" */
+VALUE rb_getpwdiruid(void);                   /* read as: "get pwd db home dir for getuid()" */
+#endif
+
 RUBY_SYMBOL_EXPORT_BEGIN
 /* process.c (export) */
 int rb_exec_async_signal_safe(const struct rb_execarg *e, char *errmsg, size_t errmsg_buflen);
@@ -112,5 +119,18 @@ ARGVSTR2ARGC(VALUE argv_str)
         ;
     return i - 1;
 }
+
+#ifdef HAVE_WORKING_FORK
+COMPILER_WARNING_PUSH
+#if __has_warning("-Wdeprecated-declarations") || RBIMPL_COMPILER_IS(GCC)
+COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
+#endif
+static inline rb_pid_t
+rb_fork(void)
+{
+    return fork();
+}
+COMPILER_WARNING_POP
+#endif
 
 #endif /* INTERNAL_PROCESS_H */

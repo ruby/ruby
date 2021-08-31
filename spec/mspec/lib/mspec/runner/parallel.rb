@@ -15,7 +15,7 @@ class ParallelRunner
       @output_files << name
 
       env = {
-        "SPEC_TEMP_DIR" => "rubyspec_temp_#{i}",
+        "SPEC_TEMP_DIR" => "#{SPEC_TEMP_DIR}_#{i}",
         "MSPEC_MULTI" => i.to_s
       }
       command = @argv + ["-fy", "-o", name]

@@ -150,9 +150,10 @@ RSpec.describe Bundler::Fetcher do
       end
 
       it "from many CI" do
-        with_env_vars("TRAVIS" => "foo", "CI_NAME" => "my_ci") do
+        with_env_vars("TRAVIS" => "foo", "GITLAB_CI" => "gitlab", "CI_NAME" => "my_ci") do
           ci_part = fetcher.user_agent.split(" ").find {|x| x.start_with?("ci/") }
           expect(ci_part).to match("travis")
+          expect(ci_part).to match("gitlab")
           expect(ci_part).to match("my_ci")
         end
       end

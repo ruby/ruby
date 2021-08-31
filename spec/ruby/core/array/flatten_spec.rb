@@ -75,12 +75,24 @@ describe "Array#flatten" do
     [[obj]].flatten(1)
   end
 
-  it "returns subclass instance for Array subclasses" do
-    ArraySpecs::MyArray[].flatten.should be_an_instance_of(ArraySpecs::MyArray)
-    ArraySpecs::MyArray[1, 2, 3].flatten.should be_an_instance_of(ArraySpecs::MyArray)
-    ArraySpecs::MyArray[1, [2], 3].flatten.should be_an_instance_of(ArraySpecs::MyArray)
-    ArraySpecs::MyArray[1, [2, 3], 4].flatten.should == ArraySpecs::MyArray[1, 2, 3, 4]
-    [ArraySpecs::MyArray[1, 2, 3]].flatten.should be_an_instance_of(Array)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instance for Array subclasses" do
+      ArraySpecs::MyArray[].flatten.should be_an_instance_of(ArraySpecs::MyArray)
+      ArraySpecs::MyArray[1, 2, 3].flatten.should be_an_instance_of(ArraySpecs::MyArray)
+      ArraySpecs::MyArray[1, [2], 3].flatten.should be_an_instance_of(ArraySpecs::MyArray)
+      ArraySpecs::MyArray[1, [2, 3], 4].flatten.should == ArraySpecs::MyArray[1, 2, 3, 4]
+      [ArraySpecs::MyArray[1, 2, 3]].flatten.should be_an_instance_of(Array)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns Array instance for Array subclasses" do
+      ArraySpecs::MyArray[].flatten.should be_an_instance_of(Array)
+      ArraySpecs::MyArray[1, 2, 3].flatten.should be_an_instance_of(Array)
+      ArraySpecs::MyArray[1, [2], 3].flatten.should be_an_instance_of(Array)
+      ArraySpecs::MyArray[1, [2, 3], 4].flatten.should == [1, 2, 3, 4]
+      [ArraySpecs::MyArray[1, 2, 3]].flatten.should be_an_instance_of(Array)
+    end
   end
 
   it "is not destructive" do
@@ -109,20 +121,10 @@ describe "Array#flatten" do
       -> { [@obj].flatten }.should raise_error(TypeError)
     end
 
-    ruby_version_is ""..."2.5" do
-      it "calls respond_to_missing?(:to_ary, false) to try coercing" do
-        def @obj.respond_to_missing?(*args) ScratchPad << args; false end
-        [@obj].flatten.should == [@obj]
-        ScratchPad.recorded.should == [[:to_ary, false]]
-      end
-    end
-
-    ruby_version_is "2.5" do
-      it "calls respond_to_missing?(:to_ary, true) to try coercing" do
-        def @obj.respond_to_missing?(*args) ScratchPad << args; false end
-        [@obj].flatten.should == [@obj]
-        ScratchPad.recorded.should == [[:to_ary, true]]
-      end
+    it "calls respond_to_missing?(:to_ary, true) to try coercing" do
+      def @obj.respond_to_missing?(*args) ScratchPad << args; false end
+      [@obj].flatten.should == [@obj]
+      ScratchPad.recorded.should == [[:to_ary, true]]
     end
 
     it "does not call #to_ary if not defined when #respond_to_missing? returns false" do
@@ -272,15 +274,15 @@ describe "Array#flatten!" do
     ary.should == [1, 2, 3]
   end
 
-  it "raises a #{frozen_error_class} on frozen arrays when the array is modified" do
+  it "raises a FrozenError on frozen arrays when the array is modified" do
     nested_ary = [1, 2, []]
     nested_ary.freeze
-    -> { nested_ary.flatten! }.should raise_error(frozen_error_class)
+    -> { nested_ary.flatten! }.should raise_error(FrozenError)
   end
 
   # see [ruby-core:23663]
-  it "raises a #{frozen_error_class} on frozen arrays when the array would not be modified" do
-    -> { ArraySpecs.frozen_array.flatten! }.should raise_error(frozen_error_class)
-    -> { ArraySpecs.empty_frozen_array.flatten! }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on frozen arrays when the array would not be modified" do
+    -> { ArraySpecs.frozen_array.flatten! }.should raise_error(FrozenError)
+    -> { ArraySpecs.empty_frozen_array.flatten! }.should raise_error(FrozenError)
   end
 end

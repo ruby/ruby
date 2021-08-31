@@ -9,25 +9,10 @@ reference - Haruhiko Okumura: C-gengo niyoru saishin algorithm jiten
 /***********************************************************
     gamma.c -- Gamma function
 ***********************************************************/
-#include "ruby/config.h"
+#include "ruby/internal/config.h"
 #include "ruby/missing.h"
 #include <math.h>
 #include <errno.h>
-
-#ifdef _WIN32
-# include <float.h>
-# if !defined __MINGW32__ || defined __NO_ISOCEXT
-#  ifndef isnan
-#   define isnan(x) _isnan(x)
-#  endif
-#  ifndef isinf
-#   define isinf(x) (!_finite(x) && !_isnan(x))
-#  endif
-#  ifndef finite
-#   define finite(x) _finite(x)
-#  endif
-# endif
-#endif
 
 #ifndef HAVE_LGAMMA_R
 

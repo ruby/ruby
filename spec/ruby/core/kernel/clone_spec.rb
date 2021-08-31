@@ -33,16 +33,22 @@ describe "Kernel#clone" do
     @obj.freeze
     o3 = @obj.clone
 
-    o2.frozen?.should == false
-    o3.frozen?.should == true
+    o2.should_not.frozen?
+    o3.should.frozen?
   end
 
-  it 'takes an option to copy freeze state or not' do
-    @obj.clone(freeze: true).frozen?.should == false
-    @obj.clone(freeze: false).frozen?.should == false
+  ruby_version_is '3.0' do
+    it 'takes an freeze: true option to frozen copy' do
+      @obj.clone(freeze: true).should.frozen?
+      @obj.freeze
+      @obj.clone(freeze: true).should.frozen?
+    end
+  end
+
+  it 'takes an freeze: false option to not return frozen copy' do
+    @obj.clone(freeze: false).should_not.frozen?
     @obj.freeze
-    @obj.clone(freeze: true).frozen?.should == true
-    @obj.clone(freeze: false).frozen?.should == false
+    @obj.clone(freeze: false).should_not.frozen?
   end
 
   it "copies instance variables" do

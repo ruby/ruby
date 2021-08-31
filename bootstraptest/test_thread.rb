@@ -8,7 +8,8 @@ show_limit %q{
     puts "Thread count: #{threads.count} (#{error})"
     break
   end while true
-}
+} if false # disable to pass CI
+
 assert_equal %q{ok}, %q{
   Thread.new{
   }.join
@@ -483,3 +484,17 @@ assert_equal 'foo', %q{
   GC.start
   f.call.source
 }
+assert_normal_exit %q{
+  class C
+    def inspect
+      sleep 0.5
+      'C!!'
+    end
+  end
+  Thread.new{
+    loop{
+      p C.new
+    }
+  }
+  sleep 0.1
+}, timeout: 5

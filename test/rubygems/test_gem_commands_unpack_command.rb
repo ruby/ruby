@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/commands/unpack_command'
 
 class TestGemCommandsUnpackCommand < Gem::TestCase
-
   def setup
     super
 
@@ -152,7 +151,7 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
   end
 
   def test_execute_sudo
-    skip 'Cannot perform this test on windows (chmod)' if win_platform?
+    pend 'Cannot perform this test on windows (chmod)' if win_platform?
 
     util_make_gems
 
@@ -211,7 +210,7 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
       end
     end
 
-    assert_path_exists File.join(@tempdir, foo_spec.full_name)
+    assert_path_exist File.join(@tempdir, foo_spec.full_name)
   end
 
   def test_handle_options_metadata
@@ -221,5 +220,4 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
 
     assert @cmd.options[:spec]
   end
-
 end

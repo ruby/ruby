@@ -40,6 +40,11 @@ describe "Module#const_defined?" do
     ConstantSpecs::ContainerA::ChildA.const_defined?(:CS_CONST4, true).should be_true
   end
 
+  it "coerces the inherit flag to a boolean" do
+    ConstantSpecs::ContainerA::ChildA.const_defined?(:CS_CONST4, nil).should be_false
+    ConstantSpecs::ContainerA::ChildA.const_defined?(:CS_CONST4, :true).should be_true
+  end
+
   it "returns true if the given String names a constant defined in the receiver" do
     ConstantSpecs.const_defined?("CS_CONST2").should == true
     ConstantSpecs.const_defined?("ModuleA").should == true

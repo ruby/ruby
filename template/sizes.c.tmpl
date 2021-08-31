@@ -43,7 +43,7 @@ Init_sizeof(void)
 %     next
 %   end
 %   cond = conditions[type]
-#if SIZEOF_<%= type.tr_cpp %> != 0<%= " && #{cond}" if cond %>
+#if defined(SIZEOF_<%= type.tr_cpp %>) && SIZEOF_<%= type.tr_cpp %> != 0<%= " && #{cond}" if cond %>
     DEFINE(<%= type %>, <%= type.tr_cpp %>);
 #endif
 % end

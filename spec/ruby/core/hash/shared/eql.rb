@@ -118,7 +118,7 @@ describe :hash_eql_additional, shared: true do
     { 1.0 => "x" }.send(@method, { 1 => "x" }).should be_false
   end
 
-  it "returns true iff other Hash has the same number of keys and each key-value pair matches" do
+  it "returns true if and only if other Hash has the same number of keys and each key-value pair matches" do
     a = { a: 5 }
     b = {}
     a.send(@method, b).should be_false

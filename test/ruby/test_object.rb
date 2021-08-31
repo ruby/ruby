@@ -5,7 +5,6 @@ require 'test/unit'
 class TestObject < Test::Unit::TestCase
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -47,15 +46,27 @@ class TestObject < Test::Unit::TestCase
     a = Object.new
     def a.b; 2 end
 
+    c = a.clone
+    assert_equal(false, c.frozen?)
+    assert_equal(false, a.frozen?)
+    assert_equal(2, c.b)
+
+    c = a.clone(freeze: true)
+    assert_equal(true, c.frozen?)
+    assert_equal(false, a.frozen?)
+    assert_equal(2, c.b)
+
     a.freeze
     c = a.clone
     assert_equal(true, c.frozen?)
+    assert_equal(true, a.frozen?)
     assert_equal(2, c.b)
 
     assert_raise(ArgumentError) {a.clone(freeze: [])}
     d = a.clone(freeze: false)
     def d.e; 3; end
     assert_equal(false, d.frozen?)
+    assert_equal(true, a.frozen?)
     assert_equal(2, d.b)
     assert_equal(3, d.e)
 
@@ -348,6 +359,7 @@ class TestObject < Test::Unit::TestCase
     o = Object.new
     def o.to_s; 1; end
     assert_raise(TypeError) { String(o) }
+    o.singleton_class.remove_method(:to_s)
     def o.to_s; "o"; end
     assert_equal("o", String(o))
     def o.to_str; "O"; end
@@ -360,6 +372,7 @@ class TestObject < Test::Unit::TestCase
     o = Object.new
     def o.to_a; 1; end
     assert_raise(TypeError) { Array(o) }
+    o.singleton_class.remove_method(:to_a)
     def o.to_a; [1]; end
     assert_equal([1], Array(o))
     def o.to_ary; [2]; end
@@ -377,6 +390,7 @@ class TestObject < Test::Unit::TestCase
     o = Object.new
     def o.to_hash; {a: 1, b: 2}; end
     assert_equal({a: 1, b: 2}, Hash(o))
+    o.singleton_class.remove_method(:to_hash)
     def o.to_hash; 9; end
     assert_raise(TypeError) { Hash(o) }
   end
@@ -385,6 +399,7 @@ class TestObject < Test::Unit::TestCase
     o = Object.new
     def o.to_i; nil; end
     assert_raise(TypeError) { Integer(o) }
+    o.singleton_class.remove_method(:to_i)
     def o.to_i; 42; end
     assert_equal(42, Integer(o))
     def o.respond_to?(*) false; end
@@ -619,7 +634,7 @@ class TestObject < Test::Unit::TestCase
 
     called = []
     p.singleton_class.class_eval do
-      define_method(:respond_to?) do |a|
+      define_method(:respond_to?) do |a, priv = false|
         called << [:respond_to?, a]
         false
       end
@@ -762,7 +777,7 @@ class TestObject < Test::Unit::TestCase
     e = assert_raise(NoMethodError) {
       o.never_defined_test_no_superclass_method
     }
-    assert_equal(m1, e.message, bug2312)
+    assert_equal(m1.lines.first, e.message.lines.first, bug2312)
   end
 
   def test_superclass_method
@@ -977,14 +992,5 @@ class TestObject < Test::Unit::TestCase
         GC.start
       end
     EOS
-  end
-
-  def test_matcher
-    assert_warning(/deprecated Object#=~ is called on Object/) do
-      assert_equal(Object.new =~ 42, nil)
-    end
-    assert_warning(/deprecated Object#=~ is called on Array/) do
-      assert_equal([] =~ 42, nil)
-    end
   end
 end

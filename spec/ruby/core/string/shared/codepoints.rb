@@ -26,9 +26,9 @@ describe :string_codepoints, shared: true do
     -> { s.send(@method) { } }.should raise_error(ArgumentError)
   end
 
-  it "yields codepoints as Fixnums" do
+  it "yields codepoints as Integers" do
     "glark\u{20}".send(@method).to_a.each do |codepoint|
-      codepoint.should be_an_instance_of(Fixnum)
+      codepoint.should be_an_instance_of(Integer)
     end
   end
 

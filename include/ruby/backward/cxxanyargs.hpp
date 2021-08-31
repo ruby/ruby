@@ -1,7 +1,6 @@
-#ifndef RUBY_BACKWARD_CXXANYARGS_HPP // -*- C++ -*-
+#ifndef RUBY_BACKWARD_CXXANYARGS_HPP                       //-*-C++-*-vi:ft=cpp
 #define RUBY_BACKWARD_CXXANYARGS_HPP
 /// @file
-/// @brief      Provides old prototypes for C++ programs.
 /// @author     \@shyouhei
 /// @copyright  This  file  is  a  part   of  the  programming  language  Ruby.
 ///             Permission  is hereby  granted, to  either redistribute  and/or
@@ -10,6 +9,21 @@
 /// @note       DO NOT  MODERNIZE THIS FILE!   As the  file name implies  it is
 ///             meant to  be a backwards  compatibility shim.  Please  stick to
 ///             C++ 98 and never use newer features, like `constexpr`.
+/// @brief      Provides old prototypes for C++ programs.
+#include "ruby/internal/config.h"
+#include "ruby/internal/intern/class.h"
+#include "ruby/internal/intern/cont.h"
+#include "ruby/internal/intern/hash.h"
+#include "ruby/internal/intern/proc.h"
+#include "ruby/internal/intern/thread.h"
+#include "ruby/internal/intern/variable.h"
+#include "ruby/internal/intern/vm.h"
+#include "ruby/internal/iterator.h"
+#include "ruby/internal/method.h"
+#include "ruby/internal/value.h"
+#include "ruby/internal/variable.h"
+#include "ruby/backward/2/stdarg.h"
+#include "ruby/st.h"
 
 extern "C++" {
 
@@ -176,6 +190,7 @@ rb_define_hooked_variable(const char *q, VALUE *w, std::nullptr_t e, void_type *
 /// @name Exceptions and tag jumps
 /// @{
 
+// RUBY_CXX_DEPRECATED("by rb_block_call since 1.9")
 RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
 /// @brief       Old way to implement iterators.
 /// @param[in]   q  A function that can yield.
@@ -190,14 +205,15 @@ inline VALUE
 rb_iterate(onearg_type *q, VALUE w, type *e, VALUE r)
 {
     rb_block_call_func_t t = reinterpret_cast<rb_block_call_func_t>(e);
-    return ::rb_iterate(q, w, t, r);
+    return backward::rb_iterate_deprecated(q, w, t, r);
 }
 
 #ifdef HAVE_NULLPTR
+RUBY_CXX_DEPRECATED("by rb_block_call since 1.9")
 inline VALUE
 rb_iterate(onearg_type *q, VALUE w, std::nullptr_t e, VALUE r)
 {
-    return ::rb_iterate(q, w, e, r);
+    return backward::rb_iterate_deprecated(q, w, e, r);
 }
 #endif
 
@@ -636,32 +652,32 @@ struct rb_define_global_function  : public driver0<const char *, ::rb_define_glo
 /// @brief        Defines klass\#mid.
 /// @param        klass  Where the method lives.
 /// @copydetails  #rb_define_global_function(mid, func, arity)
-#define rb_define_method(klass, mid, func, arity)           ruby::backward::cxxanyargs::define_method::rb_define_method::specific<arity>::define(klass, mid, func)
+#define rb_define_method(klass, mid, func, arity)           ::ruby::backward::cxxanyargs::define_method::rb_define_method::specific<arity>::define(klass, mid, func)
 
 /// @copydoc #rb_define_method(klass, mid, func, arity)
-#define rb_define_method_id(klass, mid, func, arity)        ruby::backward::cxxanyargs::define_method::rb_define_method_id::specific<arity>::define(klass, mid, func)
+#define rb_define_method_id(klass, mid, func, arity)        ::ruby::backward::cxxanyargs::define_method::rb_define_method_id::specific<arity>::define(klass, mid, func)
 
 /// @brief        Defines klass\#mid and makes it private.
 /// @copydetails  #rb_define_method(klass, mid, func, arity)
-#define rb_define_private_method(klass, mid, func, arity)   ruby::backward::cxxanyargs::define_method::rb_define_private_method::specific<arity>::define(klass, mid, func)
+#define rb_define_private_method(klass, mid, func, arity)   ::ruby::backward::cxxanyargs::define_method::rb_define_private_method::specific<arity>::define(klass, mid, func)
 
 /// @brief        Defines klass\#mid and makes it protected.
 /// @copydetails  #rb_define_method
-#define rb_define_protected_method(klass, mid, func, arity) ruby::backward::cxxanyargs::define_method::rb_define_protected_method::specific<arity>::define(klass, mid, func)
+#define rb_define_protected_method(klass, mid, func, arity) ::ruby::backward::cxxanyargs::define_method::rb_define_protected_method::specific<arity>::define(klass, mid, func)
 
 /// @brief        Defines klass.mid.(klass, mid, func, arity)
 /// @copydetails  #rb_define_method
-#define rb_define_singleton_method(klass, mid, func, arity) ruby::backward::cxxanyargs::define_method::rb_define_singleton_method::specific<arity>::define(klass, mid, func)
+#define rb_define_singleton_method(klass, mid, func, arity) ::ruby::backward::cxxanyargs::define_method::rb_define_singleton_method::specific<arity>::define(klass, mid, func)
 
 /// @brief        Defines klass\#mid and makes it a module function.
 /// @copydetails  #rb_define_method(klass, mid, func, arity)
-#define rb_define_module_function(klass, mid, func, arity)  ruby::backward::cxxanyargs::define_method::rb_define_module_function::specific<arity>::define(klass, mid, func)
+#define rb_define_module_function(klass, mid, func, arity)  ::ruby::backward::cxxanyargs::define_method::rb_define_module_function::specific<arity>::define(klass, mid, func)
 
 /// @brief Defines ::rb_mKernel \#mid.
 /// @param mid    Name of the defining method.
 /// @param func   Implementation of \#mid.
 /// @param arity  Arity of \#mid.
-#define rb_define_global_function(mid, func, arity)         ruby::backward::cxxanyargs::define_method::rb_define_global_function::specific<arity>::define(mid, func)
+#define rb_define_global_function(mid, func, arity)         ::ruby::backward::cxxanyargs::define_method::rb_define_global_function::specific<arity>::define(mid, func)
 
 }}}}}
 

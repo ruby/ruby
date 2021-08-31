@@ -13,13 +13,11 @@ module Gem
   # already activated gems or that RubyGems is otherwise unable to activate.
 
   class LoadError < ::LoadError
-
     # Name of gem
     attr_accessor :name
 
     # Version requirement of gem
     attr_accessor :requirement
-
   end
 
   ##
@@ -27,15 +25,15 @@ module Gem
   # system.  Instead of rescuing from this class, make sure to rescue from the
   # superclass Gem::LoadError to catch all types of load errors.
   class MissingSpecError < Gem::LoadError
-
-    def initialize(name, requirement)
+    def initialize(name, requirement, extra_message=nil)
       @name        = name
       @requirement = requirement
+      @extra_message = extra_message
     end
 
     def message # :nodoc:
       build_message +
-        "Checked in 'GEM_PATH=#{Gem.path.join(File::PATH_SEPARATOR)}', execute `gem env` for more information"
+        "Checked in 'GEM_PATH=#{Gem.path.join(File::PATH_SEPARATOR)}' #{@extra_message}, execute `gem env` for more information"
     end
 
     private
@@ -44,7 +42,6 @@ module Gem
       total = Gem::Specification.stubs.size
       "Could not find '#{name}' (#{requirement}) among #{total} total gem(s)\n"
     end
-
   end
 
   ##
@@ -52,7 +49,6 @@ module Gem
   # not the requested version. Instead of rescuing from this class, make sure to
   # rescue from the superclass Gem::LoadError to catch all types of load errors.
   class MissingSpecVersionError < MissingSpecError
-
     attr_reader :specs
 
     def initialize(name, requirement, specs)
@@ -69,13 +65,11 @@ module Gem
       names = specs.map(&:full_name)
       "Could not find '#{name}' (#{requirement}) - did find: [#{names.join ','}]\n"
     end
-
   end
 
   # Raised when there are conflicting gem specs loaded
 
   class ConflictError < LoadError
-
     ##
     # A Hash mapping conflicting specifications to the dependencies that
     # caused the conflict
@@ -100,7 +94,6 @@ module Gem
 
       super("Unable to activate #{target.full_name}, because #{reason}")
     end
-
   end
 
   class ErrorReason; end
@@ -112,7 +105,6 @@ module Gem
   # in figuring out why a gem couldn't be installed.
   #
   class PlatformMismatch < ErrorReason
-
     ##
     # the name of the gem
     attr_reader :name
@@ -150,7 +142,6 @@ module Gem
          @platforms.size == 1 ? '' : 's',
          @platforms.join(' ,')]
     end
-
   end
 
   ##
@@ -158,7 +149,6 @@ module Gem
   # data from a source
 
   class SourceFetchProblem < ErrorReason
-
     ##
     # Creates a new SourceFetchProblem for the given +source+ and +error+.
 
@@ -189,6 +179,5 @@ module Gem
     # The "exception" alias allows you to call raise on a SourceFetchProblem.
 
     alias exception error
-
   end
 end

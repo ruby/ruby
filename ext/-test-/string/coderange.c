@@ -38,10 +38,10 @@ str_coderange_scan(VALUE str)
 void
 Init_string_coderange(VALUE klass)
 {
-    sym_7bit = ID2SYM(rb_intern("7bit"));
-    sym_valid = ID2SYM(rb_intern("valid"));
-    sym_unknown = ID2SYM(rb_intern("unknown"));
-    sym_broken = ID2SYM(rb_intern("broken"));
+    sym_7bit = ID2SYM(rb_intern_const("7bit"));
+    sym_valid = ID2SYM(rb_intern_const("valid"));
+    sym_unknown = ID2SYM(rb_intern_const("unknown"));
+    sym_broken = ID2SYM(rb_intern_const("broken"));
     rb_define_method(klass, "coderange", str_coderange, 0);
     rb_define_method(klass, "coderange_scan", str_coderange_scan, 0);
 }

@@ -13,29 +13,33 @@ describe "Dir.mkdir" do
   it "creates the named directory with the given permissions" do
     DirSpecs.clear_dirs
 
+    nonexisting = DirSpecs.mock_dir('nonexisting')
+    default_perms = DirSpecs.mock_dir('default_perms')
+    reduced = DirSpecs.mock_dir('reduced')
     begin
-      File.should_not.exist?('nonexisting')
-      Dir.mkdir 'nonexisting'
-      File.should.exist?('nonexisting')
+      File.should_not.exist?(nonexisting)
+      Dir.mkdir nonexisting
+      File.should.exist?(nonexisting)
       platform_is_not :windows do
-        Dir.mkdir 'default_perms'
-        a = File.stat('default_perms').mode
-        Dir.mkdir 'reduced', (a - 1)
-        File.stat('reduced').mode.should_not == a
+        Dir.mkdir default_perms
+        a = File.stat(default_perms).mode
+        Dir.mkdir reduced, (a - 1)
+        File.stat(reduced).mode.should_not == a
       end
       platform_is :windows do
-        Dir.mkdir 'default_perms', 0666
-        a = File.stat('default_perms').mode
-        Dir.mkdir 'reduced', 0444
-        File.stat('reduced').mode.should_not == a
+        Dir.mkdir default_perms, 0666
+        a = File.stat(default_perms).mode
+        Dir.mkdir reduced, 0444
+        File.stat(reduced).mode.should_not == a
       end
 
-      Dir.mkdir('always_returns_0').should == 0
+      always_returns_0 = DirSpecs.mock_dir('always_returns_0')
+      Dir.mkdir(always_returns_0).should == 0
       platform_is_not(:windows) do
-        File.chmod(0777, "nonexisting","default_perms","reduced","always_returns_0")
+        File.chmod(0777, nonexisting, default_perms, reduced, always_returns_0)
       end
       platform_is_not(:windows) do
-        File.chmod(0644, "nonexisting","default_perms","reduced","always_returns_0")
+        File.chmod(0644, nonexisting, default_perms, reduced, always_returns_0)
       end
     ensure
       DirSpecs.clear_dirs
@@ -45,7 +49,7 @@ describe "Dir.mkdir" do
   it "calls #to_path on non-String arguments" do
     DirSpecs.clear_dirs
     p = mock('path')
-    p.should_receive(:to_path).and_return('nonexisting')
+    p.should_receive(:to_path).and_return(DirSpecs.mock_dir('nonexisting'))
     Dir.mkdir(p)
     DirSpecs.clear_dirs
   end

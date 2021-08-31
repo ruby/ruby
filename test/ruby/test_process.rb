@@ -338,6 +338,13 @@ class TestProcess < Test::Unit::TestCase
     ensure
       ENV["hmm"] = old
     end
+
+    assert_raise_with_message(ArgumentError, /fo=fo/) {
+      system({"fo=fo"=>"ha"}, *ENVCOMMAND)
+    }
+    assert_raise_with_message(ArgumentError, /\u{30c0}=\u{30e1}/) {
+      system({"\u{30c0}=\u{30e1}"=>"ha"}, *ENVCOMMAND)
+    }
   end
 
   def test_execopt_env_path
@@ -1418,6 +1425,8 @@ class TestProcess < Test::Unit::TestCase
       assert_equal(s.to_i >> 1, s >> 1)
       assert_equal(false, s.stopped?)
       assert_equal(nil, s.stopsig)
+
+      assert_equal(s, Marshal.load(Marshal.dump(s)))
     end
   end
 
@@ -1435,6 +1444,8 @@ class TestProcess < Test::Unit::TestCase
       assert_equal(expected,
                    [s.exited?, s.signaled?, s.stopped?, s.success?],
                    "[s.exited?, s.signaled?, s.stopped?, s.success?]")
+
+      assert_equal(s, Marshal.load(Marshal.dump(s)))
     end
   end
 
@@ -1449,6 +1460,27 @@ class TestProcess < Test::Unit::TestCase
                    "[s.exited?, s.signaled?, s.stopped?, s.success?]")
       assert_equal("#<Process::Status: pid #{ s.pid } SIGQUIT (signal #{ s.termsig })>",
                    s.inspect.sub(/ \(core dumped\)(?=>\z)/, ''))
+
+      assert_equal(s, Marshal.load(Marshal.dump(s)))
+    end
+  end
+
+  def test_status_fail
+    ret = Process::Status.wait($$)
+    assert_instance_of(Process::Status, ret)
+    assert_equal(-1, ret.pid)
+  end
+
+
+  def test_status_wait
+    IO.popen([RUBY, "-e", "gets"], "w") do |io|
+      pid = io.pid
+      assert_nil(Process::Status.wait(pid, Process::WNOHANG))
+      io.puts
+      ret = Process::Status.wait(pid)
+      assert_instance_of(Process::Status, ret)
+      assert_equal(pid, ret.pid)
+      assert_predicate(ret, :exited?)
     end
   end
 
@@ -1598,6 +1630,34 @@ class TestProcess < Test::Unit::TestCase
   rescue NotImplementedError
   end
 
+  if Process::UID.respond_to?(:from_name)
+    def test_uid_from_name
+      if u = Etc.getpwuid(Process.uid)
+        assert_equal(Process.uid, Process::UID.from_name(u.name), u.name)
+      end
+      assert_raise_with_message(ArgumentError, /\u{4e0d 5b58 5728}/) {
+        Process::UID.from_name("\u{4e0d 5b58 5728}")
+      }
+    end
+  end
+
+  if Process::GID.respond_to?(:from_name) && !RUBY_PLATFORM.include?("android")
+    def test_gid_from_name
+      if g = Etc.getgrgid(Process.gid)
+        assert_equal(Process.gid, Process::GID.from_name(g.name), g.name)
+      end
+      expected_excs = [ArgumentError]
+      expected_excs << Errno::ENOENT if defined?(Errno::ENOENT)
+      expected_excs << Errno::ESRCH if defined?(Errno::ESRCH) # WSL 2 actually raises Errno::ESRCH
+      expected_excs << Errno::EBADF if defined?(Errno::EBADF)
+      expected_excs << Errno::EPERM if defined?(Errno::EPERM)
+      exc = assert_raise(*expected_excs) do
+        Process::GID.from_name("\u{4e0d 5b58 5728}") # fu son zai ("absent" in Kanji)
+      end
+      assert_match(/\u{4e0d 5b58 5728}/, exc.message) if exc.is_a?(ArgumentError)
+    end
+  end
+
   def test_uid_re_exchangeable_p
     r = Process::UID.re_exchangeable?
     assert_include([true, false], r)
@@ -1646,7 +1706,7 @@ class TestProcess < Test::Unit::TestCase
       Process.wait pid
       assert_send [sig_r, :wait_readable, 5], 'self-pipe not readable'
     end
-    if RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE. It may trigger extra SIGCHLD.
+    if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # checking -DMJIT_FORCE_ENABLE. It may trigger extra SIGCHLD.
       assert_equal [true], signal_received.uniq, "[ruby-core:19744]"
     else
       assert_equal [true], signal_received, "[ruby-core:19744]"
@@ -1711,6 +1771,7 @@ class TestProcess < Test::Unit::TestCase
     min = 1_000 / (cmd.size + sep.size)
     cmds = Array.new(min, cmd)
     exs = [Errno::ENOENT]
+    exs << Errno::EINVAL if windows?
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
     opts = {[STDOUT, STDERR]=>File::NULL}
     opts[:rlimit_nproc] = 128 if defined?(Process::RLIMIT_NPROC)
@@ -2372,7 +2433,7 @@ EOS
         rescue SystemCallError
           w.syswrite("exec failed\n")
         end
-        q = Queue.new
+        q = Thread::Queue.new
         th1 = Thread.new { i = 0; i += 1 while q.empty?; i }
         th2 = Thread.new { j = 0; j += 1 while q.empty? && Thread.pass.nil?; j }
         sleep 0.5
@@ -2381,7 +2442,7 @@ EOS
       end
       w.close
       assert_equal "exec failed\n", r.gets
-      vals = r.gets.chomp.split.map!(&:to_i)
+      vals = r.gets.split.map!(&:to_i)
       assert_operator vals[0], :>, vals[1], vals.inspect
       _, status = Process.waitpid2(pid)
     end
@@ -2455,5 +2516,18 @@ EOS
   def test_last_status
     Process.wait spawn(RUBY, "-e", "exit 13")
     assert_same(Process.last_status, $?)
+  end
+
+  def test_last_status_failure
+    assert_nil system("sad")
+    assert_not_predicate $?, :success?
+    assert_equal $?.exitstatus, 127
+  end
+
+  def test_exec_failure_leaves_no_child
+    assert_raise(Errno::ENOENT) do
+      spawn('inexistent_command')
+    end
+    assert_empty(Process.waitall)
   end
 end

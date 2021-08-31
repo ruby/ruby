@@ -5,7 +5,7 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/user_interaction'
+require_relative 'user_interaction'
 require 'rbconfig'
 
 ##
@@ -37,7 +37,6 @@ require 'rbconfig'
 # - per environment (gemrc files listed in the GEMRC environment variable)
 
 class Gem::ConfigFile
-
   include Gem::UserInteraction
 
   DEFAULT_BACKTRACE = false
@@ -46,6 +45,7 @@ class Gem::ConfigFile
   DEFAULT_UPDATE_SOURCES = true
   DEFAULT_CONCURRENT_DOWNLOADS = 8
   DEFAULT_CERT_EXPIRATION_LENGTH_DAYS = 365
+  DEFAULT_IPV4_FALLBACK_ENABLED = false
 
   ##
   # For Ruby packagers to set configuration defaults.  Set in
@@ -142,6 +142,12 @@ class Gem::ConfigFile
   attr_accessor :cert_expiration_length_days
 
   ##
+  # == Experimental ==
+  # Fallback to IPv4 when IPv6 is not reachable or slow (default: false)
+
+  attr_accessor :ipv4_fallback_enabled
+
+  ##
   # Path name of directory or file of openssl client certificate, used for remote https connection with client authentication
 
   attr_reader :ssl_client_cert
@@ -176,6 +182,7 @@ class Gem::ConfigFile
     @update_sources = DEFAULT_UPDATE_SOURCES
     @concurrent_downloads = DEFAULT_CONCURRENT_DOWNLOADS
     @cert_expiration_length_days = DEFAULT_CERT_EXPIRATION_LENGTH_DAYS
+    @ipv4_fallback_enabled = ENV['IPV4_FALLBACK_ENABLED'] == 'true' || DEFAULT_IPV4_FALLBACK_ENABLED
 
     operating_system_config = Marshal.load Marshal.dump(OPERATING_SYSTEM_DEFAULTS)
     platform_config = Marshal.load Marshal.dump(PLATFORM_DEFAULTS)
@@ -204,6 +211,7 @@ class Gem::ConfigFile
     @disable_default_gem_server  = @hash[:disable_default_gem_server]  if @hash.key? :disable_default_gem_server
     @sources                     = @hash[:sources]                     if @hash.key? :sources
     @cert_expiration_length_days = @hash[:cert_expiration_length_days] if @hash.key? :cert_expiration_length_days
+    @ipv4_fallback_enabled       = @hash[:ipv4_fallback_enabled]       if @hash.key? :ipv4_fallback_enabled
 
     @ssl_verify_mode  = @hash[:ssl_verify_mode]  if @hash.key? :ssl_verify_mode
     @ssl_ca_cert      = @hash[:ssl_ca_cert]      if @hash.key? :ssl_ca_cert
@@ -261,7 +269,12 @@ if you believe they were disclosed to a third party.
   # Location of RubyGems.org credentials
 
   def credentials_path
-    File.join Gem.user_home, '.gem', 'credentials'
+    credentials = File.join Gem.user_home, '.gem', 'credentials'
+    if File.exist? credentials
+      credentials
+    else
+      File.join Gem.data_home, "gem", "credentials"
+    end
   end
 
   def load_api_keys
@@ -307,7 +320,8 @@ if you believe they were disclosed to a third party.
     config = load_file(credentials_path).merge(host => api_key)
 
     dirname = File.dirname credentials_path
-    Dir.mkdir(dirname) unless File.exist? dirname
+    require 'fileutils'
+    FileUtils.mkdir_p(dirname)
 
     Gem.load_yaml
 
@@ -429,7 +443,7 @@ if you believe they were disclosed to a third party.
     yaml_hash[:ssl_client_cert] =
       @hash[:ssl_client_cert] if @hash.key? :ssl_client_cert
 
-    keys = yaml_hash.keys.map { |key| key.to_s }
+    keys = yaml_hash.keys.map {|key| key.to_s }
     keys << 'debug'
     re = Regexp.union(*keys)
 
@@ -444,6 +458,9 @@ if you believe they were disclosed to a third party.
 
   # Writes out this config file, replacing its source.
   def write
+    require 'fileutils'
+    FileUtils.mkdir_p File.dirname(config_file_name)
+
     File.open config_file_name, 'w' do |io|
       io.write to_yaml
     end
@@ -488,5 +505,4 @@ if you believe they were disclosed to a third party.
       end
     end
   end
-
 end

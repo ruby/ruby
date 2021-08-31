@@ -4,6 +4,7 @@
 # Returns instances of APISpecification.
 
 class Gem::Resolver::APISet < Gem::Resolver::Set
+  autoload :GemParser, File.expand_path("api_set/gem_parser", __dir__)
 
   ##
   # The URI for the dependency API this APISet uses.
@@ -25,15 +26,15 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   # API URL +dep_uri+ which is described at
   # https://guides.rubygems.org/rubygems-org-api
 
-  def initialize(dep_uri = 'https://rubygems.org/api/v1/dependencies')
+  def initialize(dep_uri = 'https://index.rubygems.org/info/')
     super()
 
-    dep_uri = URI dep_uri unless URI === dep_uri # for ruby 1.8
+    dep_uri = URI dep_uri unless URI === dep_uri
 
     @dep_uri = dep_uri
-    @uri     = dep_uri + '../..'
+    @uri     = dep_uri + '..'
 
-    @data   = Hash.new { |h,k| h[k] = [] }
+    @data   = Hash.new {|h,k| h[k] = [] }
     @source = Gem::Source.new @uri
 
     @to_fetch = []
@@ -53,7 +54,7 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
     end
 
     versions(req.name).each do |ver|
-      if req.dependency.match? req.name, ver[:number]
+      if req.dependency.match? req.name, ver[:number], @prerelease
         res << Gem::Resolver::APISpecification.new(self, ver)
       end
     end
@@ -67,7 +68,7 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
 
   def prefetch(reqs)
     return unless @remote
-    names = reqs.map { |r| r.dependency.name }
+    names = reqs.map {|r| r.dependency.name }
     needed = names - @data.keys - @to_fetch
 
     @to_fetch += needed
@@ -76,20 +77,8 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   def prefetch_now # :nodoc:
     needed, @to_fetch = @to_fetch, []
 
-    uri = @dep_uri + "?gems=#{needed.sort.join ','}"
-    str = Gem::RemoteFetcher.fetcher.fetch_path uri
-
-    loaded = []
-
-    Marshal.load(str).each do |ver|
-      name = ver[:name]
-
-      @data[name] << ver
-      loaded << name
-    end
-
-    (needed - loaded).each do |missing|
-      @data[missing] = []
+    needed.sort.each do |name|
+      versions(name)
     end
   end
 
@@ -112,14 +101,32 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
       return @data[name]
     end
 
-    uri = @dep_uri + "?gems=#{name}"
+    uri = @dep_uri + name
     str = Gem::RemoteFetcher.fetcher.fetch_path uri
 
-    Marshal.load(str).each do |ver|
-      @data[ver[:name]] << ver
+    lines(str).each do |ver|
+      number, platform, dependencies, requirements = parse_gem(ver)
+
+      platform ||= "ruby"
+      dependencies = dependencies.map {|dep_name, reqs| [dep_name, reqs.join(", ")] }
+      requirements = requirements.map {|req_name, reqs| [req_name.to_sym, reqs] }.to_h
+
+      @data[name] << { name: name, number: number, platform: platform, dependencies: dependencies, requirements: requirements }
     end
 
     @data[name]
   end
 
+  private
+
+  def lines(str)
+    lines = str.split("\n")
+    header = lines.index("---")
+    header ? lines[header + 1..-1] : lines
+  end
+
+  def parse_gem(string)
+    @gem_parser ||= GemParser.new
+    @gem_parser.parse(string)
+  end
 end

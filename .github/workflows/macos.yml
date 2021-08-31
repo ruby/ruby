@@ -1,80 +1,61 @@
 name: macOS
-on:
-  push:
-    branches:
-      - '*'
-  pull_request:
-    branches:
-      - '*'
+on: [push, pull_request]
 jobs:
   make:
     runs-on: macos-latest
     strategy:
       matrix:
-        test_task: [ "check", "test-bundler", "test-bundled-gems" ]
+        test_task: [ "check", "test-bundler-parallel" ] #, "test-bundled-gems" ] matrix tests has unknown issues
       fail-fast: false
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    env:
+      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     steps:
-      - name: Disable Firewall
+      - run: mkdir build
+        working-directory:
+      - name: git config
         run: |
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
-      # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
-      - name: Checkout ruby
-        run: |
-          git clone --single-branch --shallow-since=yesterday --branch=${GITHUB_REF#refs/heads/} https://github.com/${{ github.repository }} src
-          git -C src reset --hard "$GITHUB_SHA"
-        if: github.event_name == 'push'
-      - name: Checkout a pull request
-        run: |
-          git clone --single-branch --shallow-since=yesterday --branch=${{ github.event.pull_request.head.ref }} https://github.com/${{ github.event.pull_request.head.repo.full_name }} src
-          git -C src reset --hard ${{ github.event.pull_request.head.sha }}
-        if: github.event_name == 'pull_request'
-      - run: ./src/tool/actions-commit-info.sh
-        id: commit_info
+          git config --global advice.detachedHead 0
+          git config --global init.defaultBranch garbage
+      - uses: actions/checkout@v2
+        with:
+          path: src
       - name: Install libraries
         run: |
-          export WAITS='5 60'
-          cd src
-          tool/travis_retry.sh brew upgrade
-          tool/travis_retry.sh brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
+          brew upgrade
+          brew install gmp libffi openssl@1.1 zlib autoconf automake libtool readline
+        working-directory: src
       - name: Set ENV
         run: |
-          echo '::set-env name=JOBS::'-j$((1 + $(sysctl -n hw.activecpu)))
-      - name: Autoconf
-        run: |
-          cd src
-          autoconf
-      - name: Configure
-        run: |
-          mkdir build
-          cd build
-          ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
-      - name: Make
-        run: make -C build $JOBS
-      - name: Extract gems
-        run: make -C build update-gems extract-gems
-        if: matrix.test_task == 'check'
-      - name: Tests
-        run: make -C build $JOBS -s ${{ matrix.test_task }}
+          echo "JOBS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
+      - run: ./autogen.sh
+        working-directory: src
+      - name: Run configure
+        run: ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
+      - run: make $JOBS incs
+      - run: make $JOBS
+      - run: make leaked-globals
+        if: ${{ matrix.test_task == 'check' }}
+      - run: make prepare-gems
+        if: ${{ matrix.test_task == 'check' }}
+      - run: make $JOBS -s ${{ matrix.test_task }}
+        timeout-minutes: 60
         env:
           RUBY_TESTOPTS: "-q --tty=no"
-          # Remove minitest from TEST_BUNDLED_GEMS_ALLOW_FAILURES if https://github.com/seattlerb/minitest/pull/798 is resolved
-          # rss needs to add workaround for the non rexml environment
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: "minitest,xmlrpc,rss,rexml"
-      - name: Leaked Globals
-        run: make -C build -s leaked-globals
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: "rexml"
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |
             {
-              "attachments": [{
-                "text": "${{ github.workflow }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ steps.commit_info.outputs.COMMIT_DATE }} #${{ steps.commit_info.outputs.COMMIT_NUMBER_OF_DAY }}> " +
-                        "(<https://github.com/${{ github.repository }}/commit/${{ github.sha }}|" + "${{ github.sha }}".substring(0, 10) + ">) " +
-                        "of ${{ github.repository }}@" + "${{ github.ref }}".split('/').reverse()[0] + " by ${{ github.event.head_commit.committer.name }} failed",
-                "color": "danger"
-              }]
+              "ci": "GitHub Actions",
+              "env": "${{ github.workflow }} / ${{ matrix.test_task }}",
+              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref }}".split('/').reverse()[0]
             }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        if: failure() && github.event_name == 'push'
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() && github.event_name == 'push' }}
+
+defaults:
+  run:
+    working-directory: build

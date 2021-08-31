@@ -59,6 +59,10 @@ class RDoc::Markup::AttributeManager
   attr_reader :regexp_handlings
 
   ##
+  # A bits of exclusive maps
+  attr_reader :exclusive_bitmap
+
+  ##
   # Creates a new attribute manager that understands bold, emphasized and
   # teletype text.
 
@@ -68,17 +72,18 @@ class RDoc::Markup::AttributeManager
     @protectable = %w[<]
     @regexp_handlings = []
     @word_pair_map = {}
+    @exclusive_bitmap = 0
     @attributes = RDoc::Markup::Attributes.new
 
-    add_word_pair "*", "*", :BOLD
-    add_word_pair "_", "_", :EM
-    add_word_pair "+", "+", :TT
+    add_word_pair "*", "*", :BOLD, true
+    add_word_pair "_", "_", :EM, true
+    add_word_pair "+", "+", :TT, true
 
-    add_html "em", :EM
-    add_html "i",  :EM
-    add_html "b",  :BOLD
-    add_html "tt",   :TT
-    add_html "code", :TT
+    add_html "em", :EM, true
+    add_html "i",  :EM, true
+    add_html "b",  :BOLD, true
+    add_html "tt",   :TT, true
+    add_html "code", :TT, true
   end
 
   ##
@@ -122,29 +127,67 @@ class RDoc::Markup::AttributeManager
     res
   end
 
+  def exclusive?(attr)
+    (attr & @exclusive_bitmap) != 0
+  end
+
+  NON_PRINTING_START = "\1" # :nodoc:
+  NON_PRINTING_END = "\2" # :nodoc:
+
   ##
   # Map attributes like <b>text</b>to the sequence
   # \001\002<char>\001\003<char>, where <char> is a per-attribute specific
   # character
 
-  def convert_attrs(str, attrs)
+  def convert_attrs(str, attrs, exclusive = false)
+    convert_attrs_matching_word_pairs(str, attrs, exclusive)
+    convert_attrs_word_pair_map(str, attrs, exclusive)
+  end
+
+  def convert_attrs_matching_word_pairs(str, attrs, exclusive)
     # first do matching ones
-    tags = @matching_word_pairs.keys.join("")
+    tags = @matching_word_pairs.select { |start, bitmap|
+      if exclusive && exclusive?(bitmap)
+        true
+      elsif !exclusive && !exclusive?(bitmap)
+        true
+      else
+        false
+      end
+    }.keys
+    return if tags.empty?
+    all_tags = @matching_word_pairs.keys
 
-    re = /(^|\W)([#{tags}])([#\\]?[\w:.\/-]+?\S?)\2(\W|$)/
+    re = /(^|\W|[#{all_tags.join("")}])([#{tags.join("")}])(\2*[#\\]?[\w:.\/\[\]-]+?\S?)\2(?!\2)([#{all_tags.join("")}]|\W|$)/
 
-    1 while str.gsub!(re) do
+    1 while str.gsub!(re) { |orig|
       attr = @matching_word_pairs[$2]
-      attrs.set_attrs($`.length + $1.length + $2.length, $3.length, attr)
-      $1 + NULL * $2.length + $3 + NULL * $2.length + $4
-    end
+      attr_updated = attrs.set_attrs($`.length + $1.length + $2.length, $3.length, attr)
+      if attr_updated
+        $1 + NULL * $2.length + $3 + NULL * $2.length + $4
+      else
+        $1 + NON_PRINTING_START + $2 + NON_PRINTING_END + $3 + NON_PRINTING_START + $2 + NON_PRINTING_END + $4
+      end
+    }
+    str.delete!(NON_PRINTING_START + NON_PRINTING_END)
+  end
 
+  def convert_attrs_word_pair_map(str, attrs, exclusive)
     # then non-matching
     unless @word_pair_map.empty? then
       @word_pair_map.each do |regexp, attr|
-        str.gsub!(regexp) {
-          attrs.set_attrs($`.length + $1.length, $2.length, attr)
-          NULL * $1.length + $2 + NULL * $3.length
+        if !exclusive
+          next if exclusive?(attr)
+        else
+          next if !exclusive?(attr)
+        end
+        1 while str.gsub!(regexp) { |orig|
+          updated = attrs.set_attrs($`.length + $1.length, $2.length, attr)
+          if updated
+            NULL * $1.length + $2 + NULL * $3.length
+          else
+            orig
+          end
         }
       end
     end
@@ -153,10 +196,18 @@ class RDoc::Markup::AttributeManager
   ##
   # Converts HTML tags to RDoc attributes
 
-  def convert_html(str, attrs)
-    tags = @html_tags.keys.join '|'
+  def convert_html(str, attrs, exclusive = false)
+    tags = @html_tags.select { |start, bitmap|
+      if exclusive && exclusive?(bitmap)
+        true
+      elsif !exclusive && !exclusive?(bitmap)
+        true
+      else
+        false
+      end
+    }.keys.join '|'
 
-    1 while str.gsub!(/<(#{tags})>(.*?)<\/\1>/i) {
+    1 while str.gsub!(/<(#{tags})>(.*?)<\/\1>/i) { |orig|
       attr = @html_tags[$1.downcase]
       html_length = $1.length + 2
       seq = NULL * html_length
@@ -168,8 +219,13 @@ class RDoc::Markup::AttributeManager
   ##
   # Converts regexp handling sequences to RDoc attributes
 
-  def convert_regexp_handlings str, attrs
+  def convert_regexp_handlings str, attrs, exclusive = false
     @regexp_handlings.each do |regexp, attribute|
+      if exclusive
+        next if !exclusive?(attribute)
+      else
+        next if exclusive?(attribute)
+      end
       str.scan(regexp) do
         capture = $~.size == 1 ? 0 : 1
 
@@ -205,7 +261,7 @@ class RDoc::Markup::AttributeManager
   #
   #   am.add_word_pair '*', '*', :BOLD
 
-  def add_word_pair(start, stop, name)
+  def add_word_pair(start, stop, name, exclusive = false)
     raise ArgumentError, "Word flags may not start with '<'" if
       start[0,1] == '<'
 
@@ -220,6 +276,8 @@ class RDoc::Markup::AttributeManager
 
     @protectable << start[0,1]
     @protectable.uniq!
+
+    @exclusive_bitmap |= bitmap if exclusive
   end
 
   ##
@@ -228,8 +286,10 @@ class RDoc::Markup::AttributeManager
   #
   #   am.add_html 'em', :EM
 
-  def add_html(tag, name)
-    @html_tags[tag.downcase] = @attributes.bitmap_for name
+  def add_html(tag, name, exclusive = false)
+    bitmap = @attributes.bitmap_for name
+    @html_tags[tag.downcase] = bitmap
+    @exclusive_bitmap |= bitmap if exclusive
   end
 
   ##
@@ -238,8 +298,10 @@ class RDoc::Markup::AttributeManager
   #
   #   @am.add_regexp_handling(/((https?:)\S+\w)/, :HYPERLINK)
 
-  def add_regexp_handling pattern, name
-    @regexp_handlings << [pattern, @attributes.bitmap_for(name)]
+  def add_regexp_handling pattern, name, exclusive = false
+    bitmap = @attributes.bitmap_for(name)
+    @regexp_handlings << [pattern, bitmap]
+    @exclusive_bitmap |= bitmap if exclusive
   end
 
   ##
@@ -250,8 +312,11 @@ class RDoc::Markup::AttributeManager
 
     mask_protected_sequences
 
-    @attrs = RDoc::Markup::AttrSpan.new @str.length
+    @attrs = RDoc::Markup::AttrSpan.new @str.length, @exclusive_bitmap
 
+    convert_attrs            @str, @attrs, true
+    convert_html             @str, @attrs, true
+    convert_regexp_handlings @str, @attrs, true
     convert_attrs            @str, @attrs
     convert_html             @str, @attrs
     convert_regexp_handlings @str, @attrs

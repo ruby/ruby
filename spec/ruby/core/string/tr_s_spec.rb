@@ -45,8 +45,16 @@ describe "String#tr_s" do
     "bla".tr_s(from_str, to_str).should == "BlA"
   end
 
-  it "returns subclass instances when called on a subclass" do
-    StringSpecs::MyString.new("hello").tr_s("e", "a").should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances when called on a subclass" do
+      StringSpecs::MyString.new("hello").tr_s("e", "a").should be_an_instance_of(StringSpecs::MyString)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns String instances when called on a subclass" do
+      StringSpecs::MyString.new("hello").tr_s("e", "a").should be_an_instance_of(String)
+    end
   end
 
   ruby_version_is ''...'2.7' do
@@ -54,10 +62,10 @@ describe "String#tr_s" do
       ["h", "hello"].each do |str|
         tainted_str = str.dup.taint
 
-        tainted_str.tr_s("e", "a").tainted?.should == true
+        tainted_str.tr_s("e", "a").should.tainted?
 
-        str.tr_s("e".taint, "a").tainted?.should == false
-        str.tr_s("e", "a".taint).tainted?.should == false
+        str.tr_s("e".taint, "a").should_not.tainted?
+        str.tr_s("e", "a".taint).should_not.tainted?
       end
     end
   end
@@ -127,10 +135,10 @@ describe "String#tr_s!" do
     s.should == "hello"
   end
 
-  it "raises a #{frozen_error_class} if self is frozen" do
+  it "raises a FrozenError if self is frozen" do
     s = "hello".freeze
-    -> { s.tr_s!("el", "ar") }.should raise_error(frozen_error_class)
-    -> { s.tr_s!("l", "r")   }.should raise_error(frozen_error_class)
-    -> { s.tr_s!("", "")     }.should raise_error(frozen_error_class)
+    -> { s.tr_s!("el", "ar") }.should raise_error(FrozenError)
+    -> { s.tr_s!("l", "r")   }.should raise_error(FrozenError)
+    -> { s.tr_s!("", "")     }.should raise_error(FrozenError)
   end
 end

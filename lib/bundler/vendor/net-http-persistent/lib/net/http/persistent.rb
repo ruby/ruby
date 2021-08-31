@@ -12,15 +12,11 @@ autoload :OpenSSL, 'openssl'
 # servers you wish to talk to.  For each host:port you communicate with a
 # single persistent connection is created.
 #
-# Multiple Bundler::Persistent::Net::HTTP::Persistent objects will share the same set of
-# connections.
+# Connections will be shared across threads through a connection pool to
+# increase reuse of connections.
 #
-# For each thread you start a new connection will be created.  A
-# Bundler::Persistent::Net::HTTP::Persistent connection will not be shared across threads.
-#
-# You can shut down the HTTP connections when done by calling #shutdown.  You
-# should name your Bundler::Persistent::Net::HTTP::Persistent object if you intend to call this
-# method.
+# You can shut down any remaining HTTP connections when done by calling
+# #shutdown.
 #
 # Example:
 #
@@ -28,7 +24,7 @@ autoload :OpenSSL, 'openssl'
 #
 #   uri = Bundler::URI 'http://example.com/awesome/web/service'
 #
-#   http = Bundler::Persistent::Net::HTTP::Persistent.new name: 'my_app_name'
+#   http = Bundler::Persistent::Net::HTTP::Persistent.new
 #
 #   # perform a GET
 #   response = http.request uri
@@ -50,14 +46,14 @@ autoload :OpenSSL, 'openssl'
 # to use Bundler::URI#request_uri not Bundler::URI#path.  The request_uri contains the query
 # params which are sent in the body for other requests.
 #
-# == SSL
+# == TLS/SSL
 #
-# SSL connections are automatically created depending upon the scheme of the
-# Bundler::URI.  SSL connections are automatically verified against the default
+# TLS connections are automatically created depending upon the scheme of the
+# Bundler::URI.  TLS connections are automatically verified against the default
 # certificate store for your computer.  You can override this by changing
 # verify_mode or by specifying an alternate cert_store.
 #
-# Here are the SSL settings, see the individual methods for documentation:
+# Here are the TLS settings, see the individual methods for documentation:
 #
 # #certificate        :: This client's certificate
 # #ca_file            :: The certificate-authorities
@@ -67,7 +63,7 @@ autoload :OpenSSL, 'openssl'
 # #private_key        :: The client's SSL private key
 # #reuse_ssl_sessions :: Reuse a previously opened SSL session for a new
 #                        connection
-# #ssl_timeout        :: SSL session lifetime
+# #ssl_timeout        :: Session lifetime
 # #ssl_version        :: Which specific SSL version to use
 # #verify_callback    :: For server certificate verification
 # #verify_depth       :: Depth of certificate verification
@@ -96,14 +92,15 @@ autoload :OpenSSL, 'openssl'
 #
 # === Segregation
 #
-# By providing an application name to ::new you can separate your connections
-# from the connections of other applications.
+# Each Bundler::Persistent::Net::HTTP::Persistent instance has its own pool of connections.  There
+# is no sharing with other instances (as was true in earlier versions).
 #
 # === Idle Timeout
 #
-# If a connection hasn't been used for this number of seconds it will automatically be
-# reset upon the next use to avoid attempting to send to a closed connection.
-# The default value is 5 seconds. nil means no timeout. Set through #idle_timeout.
+# If a connection hasn't been used for this number of seconds it will
+# automatically be reset upon the next use to avoid attempting to send to a
+# closed connection.  The default value is 5 seconds. nil means no timeout.
+# Set through #idle_timeout.
 #
 # Reducing this value may help avoid the "too many connection resets" error
 # when sending non-idempotent requests while increasing this value will cause
@@ -118,8 +115,9 @@ autoload :OpenSSL, 'openssl'
 #
 # The number of requests that should be made before opening a new connection.
 # Typically many keep-alive capable servers tune this to 100 or less, so the
-# 101st request will fail with ECONNRESET. If unset (default), this value has no
-# effect, if set, connections will be reset on the request after max_requests.
+# 101st request will fail with ECONNRESET. If unset (default), this value has
+# no effect, if set, connections will be reset on the request after
+# max_requests.
 #
 # === Open Timeout
 #
@@ -130,45 +128,6 @@ autoload :OpenSSL, 'openssl'
 #
 # Socket options may be set on newly-created connections.  See #socket_options
 # for details.
-#
-# === Non-Idempotent Requests
-#
-# By default non-idempotent requests will not be retried per RFC 2616.  By
-# setting retry_change_requests to true requests will automatically be retried
-# once.
-#
-# Only do this when you know that retrying a POST or other non-idempotent
-# request is safe for your application and will not create duplicate
-# resources.
-#
-# The recommended way to handle non-idempotent requests is the following:
-#
-#   require 'bundler/vendor/net-http-persistent/lib/net/http/persistent'
-#
-#   uri = Bundler::URI 'http://example.com/awesome/web/service'
-#   post_uri = uri + 'create'
-#
-#   http = Bundler::Persistent::Net::HTTP::Persistent.new name: 'my_app_name'
-#
-#   post = Net::HTTP::Post.new post_uri.path
-#   # ... fill in POST request
-#
-#   begin
-#     response = http.request post_uri, post
-#   rescue Bundler::Persistent::Net::HTTP::Persistent::Error
-#
-#     # POST failed, make a new request to verify the server did not process
-#     # the request
-#     exists_uri = uri + '...'
-#     response = http.get exists_uri
-#
-#     # Retry if it failed
-#     retry if response.code == '404'
-#   end
-#
-# The method of determining if the resource was created or not is unique to
-# the particular service you are using.  Of course, you will want to add
-# protection from infinite looping.
 #
 # === Connection Termination
 #
@@ -195,33 +154,27 @@ class Bundler::Persistent::Net::HTTP::Persistent
   HAVE_OPENSSL = defined? OpenSSL::SSL # :nodoc:
 
   ##
-  # The default connection pool size is 1/4 the allowed open files.
+  # The default connection pool size is 1/4 the allowed open files
+  # (<code>ulimit -n</code>) or 256 if your OS does not support file handle
+  # limits (typically windows).
 
-  if Gem.win_platform? then
-    DEFAULT_POOL_SIZE = 256
+  if Process.const_defined? :RLIMIT_NOFILE
+    open_file_limits = Process.getrlimit(Process::RLIMIT_NOFILE)
+
+    # Under JRuby on Windows Process responds to `getrlimit` but returns something that does not match docs
+    if open_file_limits.respond_to?(:first)
+      DEFAULT_POOL_SIZE = open_file_limits.first / 4
+    else
+      DEFAULT_POOL_SIZE = 256
+    end
   else
-    DEFAULT_POOL_SIZE = Process.getrlimit(Process::RLIMIT_NOFILE).first / 4
+    DEFAULT_POOL_SIZE = 256
   end
 
   ##
   # The version of Bundler::Persistent::Net::HTTP::Persistent you are using
 
-  VERSION = '3.1.0'
-
-  ##
-  # Exceptions rescued for automatic retry on ruby 2.0.0.  This overlaps with
-  # the exception list for ruby 1.x.
-
-  RETRIED_EXCEPTIONS = [ # :nodoc:
-    (Net::ReadTimeout if Net.const_defined? :ReadTimeout),
-    IOError,
-    EOFError,
-    Errno::ECONNRESET,
-    Errno::ECONNABORTED,
-    Errno::EPIPE,
-    (OpenSSL::SSL::SSLError if HAVE_OPENSSL),
-    Timeout::Error,
-  ].compact
+  VERSION = '4.0.0'
 
   ##
   # Error class for errors raised by Bundler::Persistent::Net::HTTP::Persistent.  Various
@@ -349,6 +302,13 @@ class Bundler::Persistent::Net::HTTP::Persistent
   attr_accessor :max_requests
 
   ##
+  # Number of retries to perform if a request fails.
+  #
+  # See also #max_retries=, Net::HTTP#max_retries=.
+
+  attr_reader :max_retries
+
+  ##
   # The value sent in the Keep-Alive header.  Defaults to 30.  Not needed for
   # HTTP/1.1 servers.
   #
@@ -360,8 +320,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   attr_accessor :keep_alive
 
   ##
-  # A name for this connection.  Allows you to keep your connections apart
-  # from everybody else's.
+  # The name for this collection of persistent connections.
 
   attr_reader :name
 
@@ -491,22 +450,10 @@ class Bundler::Persistent::Net::HTTP::Persistent
   attr_reader :verify_mode
 
   ##
-  # Enable retries of non-idempotent requests that change data (e.g. POST
-  # requests) when the server has disconnected.
-  #
-  # This will in the worst case lead to multiple requests with the same data,
-  # but it may be useful for some applications.  Take care when enabling
-  # this option to ensure it is safe to POST or perform other non-idempotent
-  # requests to the server.
-
-  attr_accessor :retry_change_requests
-
-  ##
   # Creates a new Bundler::Persistent::Net::HTTP::Persistent.
   #
-  # Set +name+ to keep your connections apart from everybody else's.  Not
-  # required currently, but highly recommended.  Your library name should be
-  # good enough.  This parameter will be required in a future version.
+  # Set a +name+ for fun.  Your library name should be good enough, but this
+  # otherwise has no purpose.
   #
   # +proxy+ may be set to a Bundler::URI::HTTP or :ENV to pick up proxy options from
   # the environment.  See proxy_from_env for details.
@@ -519,8 +466,9 @@ class Bundler::Persistent::Net::HTTP::Persistent
   #   proxy.password = 'hunter2'
   #
   # Set +pool_size+ to limit the maximum number of connections allowed.
-  # Defaults to 1/4 the number of allowed file handles.  You can have no more
-  # than this many threads with active HTTP transactions.
+  # Defaults to 1/4 the number of allowed file handles or 256 if your OS does
+  # not support a limit on allowed file handles.  You can have no more than
+  # this many threads with active HTTP transactions.
 
   def initialize name: nil, proxy: nil, pool_size: DEFAULT_POOL_SIZE
     @name = name
@@ -537,6 +485,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
     @write_timeout    = nil
     @idle_timeout     = 5
     @max_requests     = nil
+    @max_retries      = 1
     @socket_options   = []
     @ssl_generation   = 0 # incremented when SSL session variables change
 
@@ -567,8 +516,6 @@ class Bundler::Persistent::Net::HTTP::Persistent
       @verify_mode        = OpenSSL::SSL::VERIFY_PEER
       @reuse_ssl_sessions = OpenSSL::SSL.const_defined? :Session
     end
-
-    @retry_change_requests = false
 
     self.proxy = proxy if proxy
   end
@@ -630,7 +577,9 @@ class Bundler::Persistent::Net::HTTP::Persistent
 
     net_http_args = [uri.hostname, uri.port]
 
-    if @proxy_uri and not proxy_bypass? uri.hostname, uri.port then
+    # I'm unsure if uri.host or uri.hostname should be checked against
+    # the proxy bypass list.
+    if @proxy_uri and not proxy_bypass? uri.host, uri.port then
       net_http_args.concat @proxy_args
     else
       net_http_args.concat [nil, nil, nil, nil]
@@ -650,9 +599,11 @@ class Bundler::Persistent::Net::HTTP::Persistent
       reset connection
     end
 
-    http.read_timeout = @read_timeout if @read_timeout
-    http.write_timeout = @write_timeout if @write_timeout && http.respond_to?(:write_timeout=)
-    http.keep_alive_timeout = @idle_timeout if @idle_timeout
+    http.keep_alive_timeout = @idle_timeout  if @idle_timeout
+    http.max_retries        = @max_retries   if http.respond_to?(:max_retries=)
+    http.read_timeout       = @read_timeout  if @read_timeout
+    http.write_timeout      = @write_timeout if
+      @write_timeout && http.respond_to?(:write_timeout=)
 
     return yield connection
   rescue Errno::ECONNREFUSED
@@ -670,27 +621,14 @@ class Bundler::Persistent::Net::HTTP::Persistent
   end
 
   ##
-  # Returns an error message containing the number of requests performed on
-  # this connection
-
-  def error_message connection
-    connection.requests -= 1 # fixup
-
-    age = Time.now - connection.last_use
-
-    "after #{connection.requests} requests on #{connection.http.object_id}, " \
-      "last used #{age} seconds ago"
-  end
-
-  ##
-  # Bundler::URI::escape wrapper
+  # CGI::escape wrapper
 
   def escape str
     CGI.escape str if str
   end
 
   ##
-  # Bundler::URI::unescape wrapper
+  # CGI::unescape wrapper
 
   def unescape str
     CGI.unescape str if str
@@ -733,6 +671,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   def finish connection
     connection.finish
 
+    connection.http.instance_variable_set :@last_communicated, nil
     connection.http.instance_variable_set :@ssl_session, nil unless
       @reuse_ssl_sessions
   end
@@ -741,24 +680,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   # Returns the HTTP protocol version for +uri+
 
   def http_version uri
-    @http_versions["#{uri.host}:#{uri.port}"]
-  end
-
-  ##
-  # Is +req+ idempotent according to RFC 2616?
-
-  def idempotent? req
-    case req.method
-    when 'DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT', 'TRACE' then
-      true
-    end
-  end
-
-  ##
-  # Is the request +req+ idempotent or is retry_change_requests allowed.
-
-  def can_retry? req
-    @retry_change_requests && !idempotent?(req)
+    @http_versions["#{uri.hostname}:#{uri.port}"]
   end
 
   ##
@@ -766,6 +688,23 @@ class Bundler::Persistent::Net::HTTP::Persistent
 
   def normalize_uri uri
     (uri =~ /^https?:/) ? uri : "http://#{uri}"
+  end
+
+  ##
+  # Set the maximum number of retries for a request.
+  #
+  # Defaults to one retry.
+  #
+  # Set this to 0 to disable retries.
+
+  def max_retries= retries
+    retries = retries.to_int
+
+    raise ArgumentError, "max_retries must be positive" if retries < 0
+
+    @max_retries = retries
+
+    reconnect
   end
 
   ##
@@ -806,7 +745,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
 
     if @proxy_uri then
       @proxy_args = [
-        @proxy_uri.host,
+        @proxy_uri.hostname,
         @proxy_uri.port,
         unescape(@proxy_uri.user),
         unescape(@proxy_uri.password),
@@ -881,14 +820,15 @@ class Bundler::Persistent::Net::HTTP::Persistent
   end
 
   ##
-  # Forces reconnection of HTTP connections.
+  # Forces reconnection of all HTTP connections, including TLS/SSL
+  # connections.
 
   def reconnect
     @generation += 1
   end
 
   ##
-  # Forces reconnection of SSL connections.
+  # Forces reconnection of only TLS/SSL connections.
 
   def reconnect_ssl
     @ssl_generation += 1
@@ -921,14 +861,8 @@ class Bundler::Persistent::Net::HTTP::Persistent
   # the response will not have been read).
   #
   # +req+ must be a Net::HTTPGenericRequest subclass (see Net::HTTP for a list).
-  #
-  # If there is an error and the request is idempotent according to RFC 2616
-  # it will be retried automatically.
 
   def request uri, req = nil, &block
-    retried      = false
-    bad_response = false
-
     uri      = Bundler::URI uri
     req      = request_setup req || uri
     response = nil
@@ -942,37 +876,12 @@ class Bundler::Persistent::Net::HTTP::Persistent
         response = http.request req, &block
 
         if req.connection_close? or
-           (response.http_version <= '1.0' and
+          (response.http_version <= '1.0' and
             not response.connection_keep_alive?) or
-           response.connection_close? then
+            response.connection_close? then
           finish connection
         end
-      rescue Net::HTTPBadResponse => e
-        message = error_message connection
-
-        finish connection
-
-        raise Error, "too many bad responses #{message}" if
-        bad_response or not can_retry? req
-
-        bad_response = true
-        retry
-      rescue *RETRIED_EXCEPTIONS => e
-        request_failed e, req, connection if
-          retried or not can_retry? req
-
-        reset connection
-
-        retried = true
-        retry
-      rescue Errno::EINVAL, Errno::ETIMEDOUT => e # not retried on ruby 2
-        request_failed e, req, connection if retried or not can_retry? req
-
-        reset connection
-
-        retried = true
-        retry
-      rescue Exception => e
+      rescue Exception # make sure to close the connection when it was interrupted
         finish connection
 
         raise
@@ -981,24 +890,9 @@ class Bundler::Persistent::Net::HTTP::Persistent
       end
     end
 
-    @http_versions["#{uri.host}:#{uri.port}"] ||= response.http_version
+    @http_versions["#{uri.hostname}:#{uri.port}"] ||= response.http_version
 
     response
-  end
-
-  ##
-  # Raises an Error for +exception+ which resulted from attempting the request
-  # +req+ on the +connection+.
-  #
-  # Finishes the +connection+.
-
-  def request_failed exception, req, connection # :nodoc:
-    due_to = "(due to #{exception.message} - #{exception.class})"
-    message = "too many connection resets #{due_to} #{error_message connection}"
-
-    finish connection
-
-    raise Error, message, exception.backtrace
   end
 
   ##
@@ -1008,7 +902,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   # Returns the request.
 
   def request_setup req_or_uri # :nodoc:
-    req = if Bundler::URI === req_or_uri then
+    req = if req_or_uri.respond_to? 'request_uri' then
             Net::HTTP::Get.new req_or_uri.request_uri
           else
             req_or_uri
@@ -1172,7 +1066,6 @@ application:
 
     reconnect_ssl
   end
-
 end
 
 require_relative 'persistent/connection'

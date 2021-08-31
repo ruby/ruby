@@ -3,7 +3,6 @@
 
 require 'tempfile'
 require 'stringio'
-require 'minitest/autorun'
 
 class MiniTest::Unit::TestCase
   def clean s

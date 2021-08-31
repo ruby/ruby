@@ -116,7 +116,7 @@ describe "Integer#<=>" do
     describe "with an Object" do
       before :each do
         @big = bignum_value
-        @num = mock("value for Bignum#<=>")
+        @num = mock("value for Integer#<=>")
       end
 
       it "calls #coerce on other" do
@@ -124,23 +124,11 @@ describe "Integer#<=>" do
         @big <=> @num
       end
 
-      ruby_version_is ""..."2.5" do
-        it "returns nil if #coerce raises an exception" do
-          @num.should_receive(:coerce).with(@big).and_raise(RuntimeError)
-          -> {
-            @result = (@big <=> @num)
-          }.should complain(/Numerical comparison operators will no more rescue exceptions/)
-          @result.should be_nil
-        end
-      end
-
-      ruby_version_is "2.5" do
-        it "lets the exception go through if #coerce raises an exception" do
-          @num.should_receive(:coerce).with(@big).and_raise(RuntimeError.new("my error"))
-          -> {
-            @big <=> @num
-          }.should raise_error(RuntimeError, "my error")
-        end
+      it "lets the exception go through if #coerce raises an exception" do
+        @num.should_receive(:coerce).with(@big).and_raise(RuntimeError.new("my error"))
+        -> {
+          @big <=> @num
+        }.should raise_error(RuntimeError, "my error")
       end
 
       it "raises an exception if #coerce raises a non-StandardError exception" do

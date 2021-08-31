@@ -74,6 +74,12 @@ describe "String#upto" do
     a.should == ["a", "b", "c"]
   end
 
+  it "works with non-ASCII ranges" do
+    a = []
+    'Σ'.upto('Ω') { |s| a << s }
+    a.should == ["Σ", "Τ", "Υ", "Φ", "Χ", "Ψ", "Ω"]
+  end
+
   describe "on sequence of numbers" do
     it "calls the block as Integer#upto"  do
       "8".upto("11").to_a.should == 8.upto(11).map(&:to_s)

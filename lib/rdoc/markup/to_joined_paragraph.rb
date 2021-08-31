@@ -41,6 +41,7 @@ class RDoc::Markup::ToJoinedParagraph < RDoc::Markup::Formatter
   alias accept_raw             ignore
   alias accept_rule            ignore
   alias accept_verbatim        ignore
+  alias accept_table           ignore
 
 end
 

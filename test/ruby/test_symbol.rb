@@ -105,6 +105,12 @@ class TestSymbol < Test::Unit::TestCase
     end
   end
 
+  def test_name
+    assert_equal("foo", :foo.name)
+    assert_same(:foo.name, :foo.name)
+    assert_predicate(:foo.name, :frozen?)
+  end
+
   def test_to_proc
     assert_equal %w(1 2 3), (1..3).map(&:to_s)
     [
@@ -523,12 +529,14 @@ class TestSymbol < Test::Unit::TestCase
     assert_nothing_raised(NoMethodError, bug10259) {obj.send("unagi=".intern, 1)}
   end
 
-  def test_symbol_fstr_leak
+  def test_symbol_fstr_memory_leak
     bug10686 = '[ruby-core:67268] [Bug #10686]'
-    x = x = 0
-    assert_no_memory_leak([], '200_000.times { |i| i.to_s.to_sym }; GC.start', "#{<<-"begin;"}\n#{<<-"end;"}", bug10686, limit: 1.71, rss: true, timeout: 20)
+    assert_no_memory_leak([], "#{<<~"begin;"}\n#{<<~'else;'}", "#{<<~'end;'}", bug10686, limit: 1.71, rss: true, timeout: 20)
     begin;
-      200_000.times { |i| (i + 200_000).to_s.to_sym }
+      n = 100_000
+      n.times { |i| i.to_s.to_sym }
+    else;
+      (2 * n).times { |i| (i + n).to_s.to_sym }
     end;
   end
 

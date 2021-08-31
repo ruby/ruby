@@ -7,6 +7,9 @@
 #   v2 = dispatch0(void_stmt);
 #   $$ = dispatch2(stmts_add, v1, v2);
 
+$dollar = "$$"
+alias $$ $dollar
+
 class DSL
   def initialize(code, options)
     @events = {}

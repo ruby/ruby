@@ -99,4 +99,13 @@ class TestCall < Test::Unit::TestCase
     ary = [1, 2]
     assert_equal([0, 1, 2, 1], aaa(0, *ary, ary.shift), bug12860)
   end
+
+  def test_call_block_order
+    bug16504 = '[ruby-core:96769] [Bug# 16504]'
+    b = proc{}
+    ary = [1, 2, b]
+    assert_equal([1, 2, b], aaa(*ary, &ary.pop), bug16504)
+    ary = [1, 2, b]
+    assert_equal([0, 1, 2, b], aaa(0, *ary, &ary.pop), bug16504)
+  end
 end

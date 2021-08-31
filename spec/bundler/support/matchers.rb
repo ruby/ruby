@@ -75,16 +75,6 @@ module Spec
       end
     end
 
-    RSpec::Matchers.define :have_rubyopts do |*args|
-      args = args.flatten
-      args = args.first.split(/\s+/) if args.size == 1
-
-      match do |actual|
-        actual = actual.split(/\s+/) if actual.is_a?(String)
-        args.all? {|arg| actual.include?(arg) } && actual.uniq.size == actual.size
-      end
-    end
-
     RSpec::Matchers.define :be_sorted do
       diffable
       attr_reader :expected
@@ -124,34 +114,49 @@ module Spec
       match do
         opts = names.last.is_a?(Hash) ? names.pop : {}
         source = opts.delete(:source)
-        groups = Array(opts[:groups])
-        groups << opts
-        @errors = names.map do |name|
-          name, version, platform = name.split(/\s+/)
-          require_path = name == "bundler" ? "#{lib_dir}/bundler" : name.tr("-", "/")
+        groups = Array(opts.delete(:groups)).map(&:inspect).join(", ")
+        opts[:raise_on_error] = false
+        @errors = names.map do |full_name|
+          name, version, platform = full_name.split(/\s+/)
+          require_path = name.tr("-", "/")
           version_const = name == "bundler" ? "Bundler::VERSION" : Spec::Builders.constantize(name)
-          begin
-            run! "require '#{require_path}.rb'; puts #{version_const}", *groups
-          rescue StandardError => e
-            next "#{name} is not installed:\n#{indent(e)}"
-          end
-          actual_version, actual_platform = out.strip.split(/\s+/, 2)
-          unless Gem::Version.new(actual_version) == Gem::Version.new(version)
+          source_const = "#{Spec::Builders.constantize(name)}_SOURCE"
+          ruby <<~R, opts
+            require 'bundler'
+            Bundler.setup(#{groups})
+
+            require '#{require_path}'
+            actual_version, actual_platform = #{version_const}.split(/\s+/, 2)
+            unless Gem::Version.new(actual_version) == Gem::Version.new('#{version}')
+              puts actual_version
+              exit 64
+            end
+            unless actual_platform.to_s == '#{platform}'
+              puts actual_platform
+              exit 65
+            end
+            require '#{require_path}/source'
+            exit 0 if #{source.nil?}
+            actual_source = #{source_const}
+            unless actual_source == '#{source}'
+              puts actual_source
+              exit 66
+            end
+          R
+          next if exitstatus == 0
+          if exitstatus == 64
+            actual_version = out.split("\n").last
             next "#{name} was expected to be at version #{version} but was #{actual_version}"
           end
-          unless actual_platform == platform
+          if exitstatus == 65
+            actual_platform = out.split("\n").last
             next "#{name} was expected to be of platform #{platform} but was #{actual_platform}"
           end
-          next unless source
-          begin
-            source_const = "#{Spec::Builders.constantize(name)}_SOURCE"
-            run! "require '#{require_path}/source'; puts #{source_const}", *groups
-          rescue StandardError
-            next "#{name} does not have a source defined:\n#{indent(e)}"
+          if exitstatus == 66
+            actual_source = out.split("\n").last
+            next "Expected #{name} (#{version}) to be installed from `#{source}`, was actually from `#{actual_source}`"
           end
-          unless out.strip == source
-            next "Expected #{name} (#{version}) to be installed from `#{source}`, was actually from `#{out}`"
-          end
+          next "Command to check for inclusion of gem #{full_name} failed"
         end.compact
 
         @errors.empty?
@@ -159,26 +164,34 @@ module Spec
 
       match_when_negated do
         opts = names.last.is_a?(Hash) ? names.pop : {}
-        groups = Array(opts[:groups]) || []
+        groups = Array(opts.delete(:groups)).map(&:inspect).join(", ")
+        opts[:raise_on_error] = false
         @errors = names.map do |name|
           name, version = name.split(/\s+/, 2)
-          begin
-            run <<-R, *(groups + [opts])
-              begin
-                require '#{name}'
-                puts #{Spec::Builders.constantize(name)}
-              rescue LoadError, NameError
-                puts "WIN"
+          ruby <<-R, opts
+            begin
+              require 'bundler'
+              Bundler.setup(#{groups})
+            rescue Bundler::GemNotFound, Bundler::GitError
+              exit 0
+            end
+
+            begin
+              require '#{name}'
+              name_constant = '#{Spec::Builders.constantize(name)}'
+              if #{version.nil?} || name_constant == '#{version}'
+                exit 64
+              else
+                exit 0
               end
-            R
-          rescue StandardError => e
-            next "checking for #{name} failed:\n#{e}\n#{e.backtrace.join("\n")}"
-          end
-          next if out == "WIN"
+            rescue LoadError, NameError
+              exit 0
+            end
+          R
+          next if exitstatus == 0
+          next "command to check version of #{name} installed failed" unless exitstatus == 64
           next "expected #{name} to not be installed, but it was" if version.nil?
-          if Gem::Version.new(out) == Gem::Version.new(version)
-            next "expected #{name} (#{version}) not to be installed, but it was"
-          end
+          next "expected #{name} (#{version}) not to be installed, but it was"
         end.compact
 
         @errors.empty?
@@ -214,11 +227,11 @@ module Spec
     end
 
     def lockfile_should_be(expected)
-      expect(bundled_app("Gemfile.lock")).to have_lockfile(expected)
+      expect(bundled_app_lock).to have_lockfile(expected)
     end
 
     def gemfile_should_be(expected)
-      expect(bundled_app("Gemfile")).to read_as(strip_whitespace(expected))
+      expect(bundled_app_gemfile).to read_as(strip_whitespace(expected))
     end
   end
 end

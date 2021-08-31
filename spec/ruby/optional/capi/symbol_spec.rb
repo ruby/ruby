@@ -8,6 +8,16 @@ describe "C-API Symbol function" do
     @s = CApiSymbolSpecs.new
   end
 
+  describe "SYMBOL_P" do
+    it "returns true for a Symbol" do
+      @s.SYMBOL_P(:foo).should == true
+    end
+
+    it "returns false for non-Symbols" do
+      @s.SYMBOL_P('bar').should == false
+    end
+  end
+
   describe "rb_intern" do
     it "converts a string to a symbol, uniquely" do
       @s.rb_intern("test_symbol").should == :test_symbol
@@ -141,6 +151,22 @@ describe "C-API Symbol function" do
   describe "rb_sym2str" do
     it "converts a Symbol to a String" do
       @s.rb_sym2str(:bacon).should == "bacon"
+    end
+  end
+
+  describe "rb_to_symbol" do
+    it "returns a Symbol for a Symbol" do
+      @s.rb_to_symbol(:foo).should == :foo
+    end
+
+    it "returns a Symbol for a String" do
+      @s.rb_to_symbol("foo").should == :foo
+    end
+
+    it "coerces to Symbol using to_str" do
+      o = mock('o')
+      o.should_receive(:to_str).and_return("foo")
+      @s.rb_to_symbol(o).should == :foo
     end
   end
 end

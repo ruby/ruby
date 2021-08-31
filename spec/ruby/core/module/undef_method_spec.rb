@@ -18,15 +18,8 @@ describe "Module#undef_method" do
     @module = Module.new { def method_to_undef; end }
   end
 
-  ruby_version_is ''...'2.5' do
-    it "is a private method" do
-      Module.should have_private_instance_method(:undef_method, false)
-    end
-  end
-  ruby_version_is '2.5' do
-    it "is a public method" do
-      Module.should have_public_instance_method(:undef_method, false)
-    end
+  it "is a public method" do
+    Module.should have_public_instance_method(:undef_method, false)
   end
 
   it "requires multiple arguments" do
@@ -97,12 +90,12 @@ describe "Module#undef_method" do
       @frozen = @module.dup.freeze
     end
 
-    it "raises a #{frozen_error_class} when passed a name" do
-      -> { @frozen.send :undef_method, :method_to_undef }.should raise_error(frozen_error_class)
+    it "raises a FrozenError when passed a name" do
+      -> { @frozen.send :undef_method, :method_to_undef }.should raise_error(FrozenError)
     end
 
-    it "raises a #{frozen_error_class} when passed a missing name" do
-      -> { @frozen.send :undef_method, :not_exist }.should raise_error(frozen_error_class)
+    it "raises a FrozenError when passed a missing name" do
+      -> { @frozen.send :undef_method, :not_exist }.should raise_error(FrozenError)
     end
 
     it "raises a TypeError when passed a not name" do

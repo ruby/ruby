@@ -17,7 +17,7 @@ describe "Dir.home" do
     end
 
     it "returns a non-frozen string" do
-      Dir.home.frozen?.should == false
+      Dir.home.should_not.frozen?
     end
   end
 
@@ -35,7 +35,7 @@ describe "Dir.home" do
     end
 
     it "returns a non-frozen string" do
-      Dir.home(ENV['USER']).frozen?.should == false
+      Dir.home(ENV['USER']).should_not.frozen?
     end
   end
 

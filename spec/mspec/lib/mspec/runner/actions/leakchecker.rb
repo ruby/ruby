@@ -36,6 +36,7 @@ class LeakChecker
     @thread_info = find_threads
     @env_info = find_env
     @argv_info = find_argv
+    @globals_info = find_globals
     @encoding_info = find_encodings
   end
 
@@ -48,8 +49,10 @@ class LeakChecker
     check_process_leak
     check_env
     check_argv
+    check_globals
     check_encodings
-    GC.start if !@leaks.empty?
+    check_tracepoints
+    GC.start unless @leaks.empty?
     @leaks.empty?
   end
 
@@ -243,6 +246,19 @@ class LeakChecker
     end
   end
 
+  def find_globals
+    { verbose: $VERBOSE, debug: $DEBUG }
+  end
+
+  def check_globals
+    old_globals = @globals_info
+    new_globals = find_globals
+    if new_globals != old_globals
+      leak "Globals changed: #{old_globals.inspect} to #{new_globals.inspect}"
+      @globals_info = new_globals
+    end
+  end
+
   def find_encodings
     [Encoding.default_internal, Encoding.default_external]
   end
@@ -257,6 +273,14 @@ class LeakChecker
       leak "Encoding.default_external changed: #{old_external.inspect} to #{new_external.inspect}"
     end
     @encoding_info = [new_internal, new_external]
+  end
+
+  def check_tracepoints
+    ObjectSpace.each_object(TracePoint) do |tp|
+      if tp.enabled?
+        leak "TracePoint is still enabled: #{tp.inspect}"
+      end
+    end
   end
 
   def leak(message)

@@ -59,8 +59,8 @@ describe :kernel_dup_clone, shared: true do
       o.taint
       o3 = o.send(@method)
 
-      o2.tainted?.should == false
-      o3.tainted?.should == true
+      o2.should_not.tainted?
+      o3.should.tainted?
     end
   end
 
@@ -78,8 +78,8 @@ describe :kernel_dup_clone, shared: true do
       o.untrust
       o3 = o.send(@method)
 
-      o2.untrusted?.should == false
-      o3.untrusted?.should == true
+      o2.should_not.untrusted?
+      o3.should.untrusted?
     end
   end
 
@@ -103,27 +103,13 @@ describe :kernel_dup_clone, shared: true do
     :my_symbol.send(@method).should == :my_symbol
   end
 
-  ruby_version_is ''...'2.5' do
-    it "raises a TypeError for Complex" do
-      c = Complex(1.3, 3.1)
-      -> { c.send(@method) }.should raise_error(TypeError)
-    end
-
-    it "raises a TypeError for Rational" do
-      r = Rational(1, 3)
-      -> { r.send(@method) }.should raise_error(TypeError)
-    end
+  it "returns self for Complex" do
+    c = Complex(1.3, 3.1)
+    c.send(@method).should equal c
   end
 
-  ruby_version_is '2.5' do
-    it "returns self for Complex" do
-      c = Complex(1.3, 3.1)
-      c.send(@method).should equal c
-    end
-
-    it "returns self for Rational" do
-      r = Rational(1, 3)
-      r.send(@method).should equal r
-    end
+  it "returns self for Rational" do
+    r = Rational(1, 3)
+    r.send(@method).should equal r
   end
 end

@@ -12,7 +12,7 @@ describe "BigDecimal.mode" do
   end
 
   it "returns the appropriate value and continue the computation if the flag is false" do
-    BigDecimal("NaN").add(BigDecimal("1"),0).nan?.should == true
+    BigDecimal("NaN").add(BigDecimal("1"),0).should.nan?
     BigDecimal("0").add(BigDecimal("Infinity"),0).should == BigDecimal("Infinity")
     BigDecimal("1").quo(BigDecimal("0")).should == BigDecimal("Infinity")
   end

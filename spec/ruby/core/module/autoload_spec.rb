@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative '../../fixtures/code_loading'
 require_relative 'fixtures/classes'
 require 'thread'
 
@@ -33,14 +34,7 @@ end
 describe "Module#autoload" do
   before :all do
     @non_existent = fixture __FILE__, "no_autoload.rb"
-
-    # Require RubyGems eagerly, to ensure #require is already the RubyGems
-    # version, before starting #autoload specs which snapshot #require, and
-    # could end up redefining #require as the original core Kernel#require.
-    begin
-      require "rubygems"
-    rescue LoadError
-    end
+    CodeLoadingSpecs.preload_rubygems
   end
 
   before :each do
@@ -210,6 +204,13 @@ describe "Module#autoload" do
     ModuleSpecs::Autoload.use_ex1.should == :good
   end
 
+  it "considers an autoload constant as loaded when autoload is called for/from the current file" do
+    filename = fixture(__FILE__, "autoload_during_require_current_file.rb")
+    require filename
+
+    ScratchPad.recorded.should be_nil
+  end
+
   describe "interacting with defined?" do
     it "does not load the file when referring to the constant in defined?" do
       module ModuleSpecs::Autoload::Dog
@@ -293,6 +294,32 @@ describe "Module#autoload" do
       require @path
       ScratchPad.recorded.should == [nil, nil]
       @check.call.should == ["constant", nil]
+    end
+
+    it "does not raise an error if the autoload constant was not defined" do
+      module ModuleSpecs::Autoload
+        autoload :RequiredDirectlyNoConstant, fixture(__FILE__, "autoload_required_directly_no_constant.rb")
+      end
+      @path = fixture(__FILE__, "autoload_required_directly_no_constant.rb")
+      @remove << :RequiredDirectlyNoConstant
+      @check = -> {
+        [
+            defined?(ModuleSpecs::Autoload::RequiredDirectlyNoConstant),
+            ModuleSpecs::Autoload.constants(false).include?(:RequiredDirectlyNoConstant),
+            ModuleSpecs::Autoload.const_defined?(:RequiredDirectlyNoConstant),
+            ModuleSpecs::Autoload.autoload?(:RequiredDirectlyNoConstant)
+        ]
+      }
+      ScratchPad.record @check
+      @check.call.should == ["constant", true, true, @path]
+      $:.push File.dirname(@path)
+      begin
+        require "autoload_required_directly_no_constant.rb"
+      ensure
+        $:.pop
+      end
+      ScratchPad.recorded.should == [nil, true, false, nil]
+      @check.call.should == [nil, true, false, nil]
     end
   end
 
@@ -737,9 +764,9 @@ describe "Module#autoload" do
   end
 
   describe "on a frozen module" do
-    it "raises a #{frozen_error_class} before setting the name" do
+    it "raises a FrozenError before setting the name" do
       frozen_module = Module.new.freeze
-      -> { frozen_module.autoload :Foo, @non_existent }.should raise_error(frozen_error_class)
+      -> { frozen_module.autoload :Foo, @non_existent }.should raise_error(FrozenError)
       frozen_module.should_not have_constant(:Foo)
     end
   end

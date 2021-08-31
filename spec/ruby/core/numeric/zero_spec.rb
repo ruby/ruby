@@ -8,11 +8,11 @@ describe "Numeric#zero?" do
 
   it "returns true if self is 0" do
     @obj.should_receive(:==).with(0).and_return(true)
-    @obj.zero?.should == true
+    @obj.should.zero?
   end
 
   it "returns false if self is not 0" do
     @obj.should_receive(:==).with(0).and_return(false)
-    @obj.zero?.should == false
+    @obj.should_not.zero?
   end
 end

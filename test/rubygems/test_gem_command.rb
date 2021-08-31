@@ -1,15 +1,12 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/command'
 
 class Gem::Command
-
   public :parser
-
 end
 
 class TestGemCommand < Gem::TestCase
-
   def setup
     super
 
@@ -34,7 +31,7 @@ class TestGemCommand < Gem::TestCase
 
   def test_self_add_specific_extra_args
     added_args = %w[--all]
-    @cmd.add_option('--all') { |v,o| }
+    @cmd.add_option('--all') {|v,o| }
 
     Gem::Command.add_specific_extra_args @cmd_name, added_args
 
@@ -55,6 +52,27 @@ class TestGemCommand < Gem::TestCase
     h = @cmd.add_extra_args []
 
     assert_equal [], h
+  end
+
+  def test_self_extra_args
+    verbose, $VERBOSE, separator = $VERBOSE, nil, $;
+    extra_args = Gem::Command.extra_args
+
+    Gem::Command.extra_args = %w[--all]
+    assert_equal %w[--all], Gem::Command.extra_args
+
+    Gem::Command.extra_args = "--file --help"
+    assert_equal %w[--file --help], Gem::Command.extra_args
+
+    $; = "="
+
+    Gem::Command.extra_args = "--awesome=true --verbose"
+    assert_equal %w[--awesome=true --verbose], Gem::Command.extra_args
+
+  ensure
+    Gem::Command.extra_args = extra_args
+    $; = separator
+    $VERBOSE = verbose
   end
 
   def test_basic_accessors
@@ -82,7 +100,7 @@ class TestGemCommand < Gem::TestCase
       @cmd.invoke
     end
 
-    assert_match %r|Usage: gem doit|, @ui.output
+    assert_match %r{Usage: gem doit}, @ui.output
   end
 
   def test_invoke
@@ -100,7 +118,7 @@ class TestGemCommand < Gem::TestCase
     use_ui @ui do
       @cmd.when_invoked { true }
 
-      ex = assert_raises OptionParser::InvalidOption do
+      ex = assert_raise OptionParser::InvalidOption do
         @cmd.invoke('-zzz')
       end
 
@@ -168,7 +186,19 @@ class TestGemCommand < Gem::TestCase
       @cmd.invoke '-h'
     end
 
-    assert_match %r|Usage: gem doit|, @ui.output
+    assert_match %r{Usage: gem doit}, @ui.output
+  end
+
+  def test_add_option
+    assert_nothing_raised RuntimeError do
+      @cmd.add_option('--force', 'skip validation of the spec') {|v,o| }
+    end
+  end
+
+  def test_add_option_with_empty
+    assert_raise RuntimeError, "Do not pass an empty string in opts" do
+      @cmd.add_option('', 'skip validation of the spec') {|v,o| }
+    end
   end
 
   def test_option_recognition
@@ -367,5 +397,4 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     assert_equal expected, @ui.error
   end
-
 end

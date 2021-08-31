@@ -211,12 +211,14 @@ class PPFileStatTest < Test::Unit::TestCase
   end
 end
 
-class PPAbstractSyntaxTree < Test::Unit::TestCase
-  AST = RubyVM::AbstractSyntaxTree
-  def test_lasgn_literal
-    ast = AST.parse("_=1")
-    expected = "(SCOPE@1:0-1:3 tbl: [:_] args: nil body: (LASGN@1:0-1:3 :_ (LIT@1:2-1:3 1)))"
-    assert_equal(expected, PP.singleline_pp(ast, ''.dup), ast)
+if defined?(RubyVM)
+  class PPAbstractSyntaxTree < Test::Unit::TestCase
+    AST = RubyVM::AbstractSyntaxTree
+    def test_lasgn_literal
+      ast = AST.parse("_=1")
+      expected = "(SCOPE@1:0-1:3 tbl: [:_] args: nil body: (LASGN@1:0-1:3 :_ (LIT@1:2-1:3 1)))"
+      assert_equal(expected, PP.singleline_pp(ast, ''.dup), ast)
+    end
   end
 end
 

@@ -1,8 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 
 class TestGemResolverInstallerSet < Gem::TestCase
-
   def test_add_always_install
     spec_fetcher do |fetcher|
       fetcher.download 'a', 1
@@ -15,9 +14,9 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     set.add_always_install dep('a')
 
-    assert_equal %w[a-2], set.always_install.map { |s| s.full_name }
+    assert_equal %w[a-2], set.always_install.map {|s| s.full_name }
 
-    e = assert_raises Gem::UnsatisfiableDependencyError do
+    e = assert_raise Gem::UnsatisfiableDependencyError do
       set.add_always_install dep('b')
     end
 
@@ -30,7 +29,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     set = Gem::Resolver::InstallerSet.new :both
 
-    e = assert_raises Gem::UnsatisfiableDependencyError do
+    e = assert_raise Gem::UnsatisfiableDependencyError do
       set.add_always_install dep 'a'
     end
 
@@ -49,7 +48,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     set.add_always_install dep('a')
 
-    assert_equal %w[a-1], set.always_install.map { |s| s.full_name }
+    assert_equal %w[a-1], set.always_install.map {|s| s.full_name }
   end
 
   def test_add_always_install_prerelease
@@ -62,7 +61,25 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     set.add_always_install dep('a')
 
-    assert_equal %w[a-1], set.always_install.map { |s| s.full_name }
+    assert_equal %w[a-1], set.always_install.map {|s| s.full_name }
+  end
+
+  def test_add_always_install_prerelease_github_problem
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 1
+    end
+
+    # Github has an issue in which it will generate a misleading prerelease output in its RubyGems server API and
+    # returns a 0 version for the gem while it doesn't exist.
+    @fetcher.data["#{@gem_repo}prerelease_specs.#{Gem.marshal_version}.gz"] = util_gzip(Marshal.dump([
+      Gem::NameTuple.new('a', Gem::Version.new(0), 'ruby'),
+    ]))
+
+    set = Gem::Resolver::InstallerSet.new :both
+
+    set.add_always_install dep('a')
+
+    assert_equal %w[a-1], set.always_install.map {|s| s.full_name }
   end
 
   def test_add_always_install_prerelease_only
@@ -72,7 +89,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     set = Gem::Resolver::InstallerSet.new :both
 
-    assert_raises Gem::UnsatisfiableDependencyError do
+    assert_raise Gem::UnsatisfiableDependencyError do
       set.add_always_install dep('a')
     end
   end
@@ -93,7 +110,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     req = Gem::Resolver::DependencyRequest.new dep('a'), nil
 
-    assert_equal %w[a-1], set.find_all(req).map { |spec| spec.full_name }
+    assert_equal %w[a-1], set.find_all(req).map {|spec| spec.full_name }
   end
 
   def test_consider_local_eh
@@ -149,7 +166,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     req = Gem::Resolver::DependencyRequest.new dep('a'), nil
 
-    assert_equal %w[a-2], set.find_all(req).map { |spec| spec.full_name }
+    assert_equal %w[a-2], set.find_all(req).map {|spec| spec.full_name }
   end
 
   def test_find_all_prerelease
@@ -162,12 +179,12 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     req = Gem::Resolver::DependencyRequest.new dep('a'), nil
 
-    assert_equal %w[a-1], set.find_all(req).map { |spec| spec.full_name }
+    assert_equal %w[a-1], set.find_all(req).map {|spec| spec.full_name }
 
     req = Gem::Resolver::DependencyRequest.new dep('a', '>= 0.a'), nil
 
     assert_equal %w[a-1 a-1.a],
-                 set.find_all(req).map { |spec| spec.full_name }.sort
+                 set.find_all(req).map {|spec| spec.full_name }.sort
   end
 
   def test_load_spec
@@ -193,7 +210,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
     def (set.remote_set).prefetch(_)
       raise "called"
     end
-    assert_raises(RuntimeError){ set.prefetch(nil) }
+    assert_raise(RuntimeError){ set.prefetch(nil) }
 
     set = Gem::Resolver::InstallerSet.new :local
     def (set.remote_set).prefetch(_)
@@ -255,5 +272,4 @@ class TestGemResolverInstallerSet < Gem::TestCase
     refute set.consider_local?
     refute set.consider_remote?
   end
-
 end

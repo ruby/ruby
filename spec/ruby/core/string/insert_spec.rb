@@ -44,12 +44,12 @@ describe "String#insert with index, other" do
   ruby_version_is ''...'2.7' do
     it "taints self if string to insert is tainted" do
       str = "abcd"
-      str.insert(0, "T".taint).tainted?.should == true
+      str.insert(0, "T".taint).should.tainted?
 
       str = "abcd"
       other = mock('T')
       def other.to_str() "T".taint end
-      str.insert(0, other).tainted?.should == true
+      str.insert(0, other).should.tainted?
     end
   end
 
@@ -59,10 +59,10 @@ describe "String#insert with index, other" do
     -> { "abcd".insert(-6, mock('x')) }.should raise_error(TypeError)
   end
 
-  it "raises a #{frozen_error_class} if self is frozen" do
+  it "raises a FrozenError if self is frozen" do
     str = "abcd".freeze
-    -> { str.insert(4, '')  }.should raise_error(frozen_error_class)
-    -> { str.insert(4, 'X') }.should raise_error(frozen_error_class)
+    -> { str.insert(4, '')  }.should raise_error(FrozenError)
+    -> { str.insert(4, 'X') }.should raise_error(FrozenError)
   end
 
   it "inserts a character into a multibyte encoded string" do

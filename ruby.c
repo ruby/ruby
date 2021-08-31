@@ -11,7 +11,7 @@
 
 **********************************************************************/
 
-#include "ruby/config.h"
+#include "ruby/internal/config.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -56,12 +56,14 @@
 #include "internal/missing.h"
 #include "internal/object.h"
 #include "internal/parse.h"
+#include "internal/process.h"
 #include "internal/variable.h"
 #include "mjit.h"
 #include "ruby/encoding.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby/version.h"
+#include "ruby/internal/error.h"
 
 #ifndef MAXPATHLEN
 # define MAXPATHLEN 1024
@@ -91,6 +93,8 @@ void rb_warning_category_update(unsigned int mask, unsigned int bits);
 #define FEATURE_BIT(bit) (1U << feature_##bit)
 #define EACH_FEATURES(X, SEP) \
     X(gems) \
+    SEP \
+    X(error_highlight) \
     SEP \
     X(did_you_mean) \
     SEP \
@@ -239,20 +243,26 @@ static struct {
     char **argv;
 } origarg;
 
+static const char esc_standout[] = "\n\033[1;7m";
+static const char esc_bold[] = "\033[1m";
+static const char esc_reset[] = "\033[0m";
+static const char esc_none[] = "";
+
 static void
-show_usage_line(const char *str, unsigned int namelen, unsigned int secondlen, int help)
+show_usage_line(const char *str, unsigned int namelen, unsigned int secondlen, int help, int highlight, unsigned int w)
 {
-    const unsigned int w = 16;
+    const char *sb = highlight ? esc_bold : esc_none;
+    const char *se = highlight ? esc_reset : esc_none;
     const int wrap = help && namelen + secondlen - 1 > w;
-    printf("  %.*s%-*.*s%-*s%s\n", namelen-1, str,
+    printf("  %s%.*s%-*.*s%s%-*s%s\n", sb, namelen-1, str,
 	   (wrap ? 0 : w - namelen + 1),
-	   (help ? secondlen-1 : 0), str + namelen,
+	   (help ? secondlen-1 : 0), str + namelen, se,
 	   (wrap ? w + 3 : 0), (wrap ? "\n" : ""),
 	   str + namelen + secondlen);
 }
 
 static void
-usage(const char *name, int help)
+usage(const char *name, int help, int highlight, int columns)
 {
     /* This message really ought to be max 23 lines.
      * Removed -h because the user already knows that option. Others? */
@@ -295,10 +305,11 @@ usage(const char *name, int help)
 	M("--copyright",                            "", "print the copyright"),
 	M("--dump={insns|parsetree|...}[,...]",     "",
           "dump debug information. see below for available dump list"),
-	M("--enable={gems|rubyopt|...}[,...]", ", --disable={gems|rubyopt|...}[,...]",
+	M("--enable={jit|rubyopt|...}[,...]", ", --disable={jit|rubyopt|...}[,...]",
 	  "enable or disable features. see below for available features"),
 	M("--external-encoding=encoding",           ", --internal-encoding=encoding",
 	  "specify the default external or internal character encoding"),
+	M("--backtrace-limit=num",                  "", "limit the maximum length of backtrace"),
 	M("--verbose",                              "", "turn on verbose mode and disable script from stdin"),
 	M("--version",                              "", "print the version number, then exit"),
 	M("--help",			            "", "show this message, -h for short message"),
@@ -310,7 +321,8 @@ usage(const char *name, int help)
 	M("parsetree_with_comment", "", "AST with comments"),
     };
     static const struct message features[] = {
-	M("gems",    "",        "rubygems (default: "DEFAULT_RUBYGEMS_ENABLED")"),
+	M("gems",    "",        "rubygems (only for debugging, default: "DEFAULT_RUBYGEMS_ENABLED")"),
+	M("error_highlight", "", "error_highlight (default: "DEFAULT_RUBYGEMS_ENABLED")"),
 	M("did_you_mean", "",   "did_you_mean (default: "DEFAULT_RUBYGEMS_ENABLED")"),
 	M("rubyopt", "",        "RUBYOPT environment variable (default: enabled)"),
 	M("frozen-string-literal", "", "freeze all string literals (default: disabled)"),
@@ -330,27 +342,32 @@ usage(const char *name, int help)
         M("--jit-min-calls=num", "", "Number of calls to trigger JIT (for testing, default: 10000)"),
     };
     int i;
+    const char *sb = highlight ? esc_standout+1 : esc_none;
+    const char *se = highlight ? esc_reset : esc_none;
     const int num = numberof(usage_msg) - (help ? 1 : 0);
-#define SHOW(m) show_usage_line((m).str, (m).namelen, (m).secondlen, help)
+    unsigned int w = (columns > 80 ? (columns - 79) / 2 : 0) + 16;
+#define SHOW(m) show_usage_line((m).str, (m).namelen, (m).secondlen, help, highlight, w)
 
-    printf("Usage: %s [switches] [--] [programfile] [arguments]\n", name);
+    printf("%sUsage:%s %s [switches] [--] [programfile] [arguments]\n", sb, se, name);
     for (i = 0; i < num; ++i)
 	SHOW(usage_msg[i]);
 
     if (!help) return;
 
+    if (highlight) sb = esc_standout;
+
     for (i = 0; i < numberof(help_msg); ++i)
 	SHOW(help_msg[i]);
-    puts("Dump List:");
+    printf("%s""Dump List:%s\n", sb, se);
     for (i = 0; i < numberof(dumps); ++i)
 	SHOW(dumps[i]);
-    puts("Features:");
+    printf("%s""Features:%s\n", sb, se);
     for (i = 0; i < numberof(features); ++i)
 	SHOW(features[i]);
-    puts("Warning categories:");
+    printf("%s""Warning categories:%s\n", sb, se);
     for (i = 0; i < numberof(warn_categories); ++i)
 	SHOW(warn_categories[i]);
-    puts("JIT options (experimental):");
+    printf("%s""JIT options (experimental):%s\n", sb, se);
     for (i = 0; i < numberof(mjit_options); ++i)
 	SHOW(mjit_options[i]);
 }
@@ -657,8 +674,11 @@ ruby_init_loadpath(void)
 	    p = p2;
 	}
 #endif
+        baselen = p - libpath;
     }
-    baselen = p - libpath;
+    else {
+        baselen = 0;
+    }
     rb_str_resize(sopath, baselen);
     libpath = RSTRING_PTR(sopath);
 #define PREFIX_PATH() sopath
@@ -898,9 +918,7 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
     if (NAME_MATCH_P(#bit, str, len)) {set |= mask = FEATURE_BIT(bit); FEATURE_FOUND;}
     EACH_FEATURES(SET_FEATURE, ;);
     if (NAME_MATCH_P("all", str, len)) {
-      found:
-        FEATURE_SET_TO(*argp, mask, (mask & enable));
-	return;
+        goto found;
     }
 #if AMBIGUOUS_FEATURE_NAMES
     if (matched == 1) goto found;
@@ -916,10 +934,17 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
 	rb_exc_raise(rb_exc_new_str(rb_eRuntimeError, mesg));
 #undef ADD_FEATURE_NAME
     }
+#else
+    (void)set;
 #endif
     rb_warn("unknown argument for --%s: `%.*s'",
 	    enable ? "enable" : "disable", len, str);
     rb_warn("features are [%.*s].", (int)strlen(list), list);
+    return;
+
+  found:
+    FEATURE_SET_TO(*argp, mask, (mask & enable));
+    return;
 }
 
 static void
@@ -992,34 +1017,45 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen
 static void
 setup_mjit_options(const char *s, struct mjit_options *mjit_opt)
 {
+#define opt_match(s, l, name) \
+    ((((l) > rb_strlen_lit(name)) ? (s)[rb_strlen_lit(name)] == '=' : \
+      (l) == rb_strlen_lit(name)) && \
+     memcmp((s), name, rb_strlen_lit(name)) == 0 && \
+     (((s) += rb_strlen_lit(name)), 1))
+#define opt_match_noarg(s, l, name) \
+    opt_match(s, l, name) && (*(s) ? (rb_warn("argument to --jit-" name " is ignored"), 1) : 1)
+#define opt_match_arg(s, l, name) \
+    opt_match(s, l, name) && (*(s) ? 1 : (rb_raise(rb_eRuntimeError, "--jit-" name " needs an argument"), 0))
+    if (*s != '-') return;
+    const size_t l = strlen(++s);
     if (*s == 0) return;
-    else if (strcmp(s, "-warnings") == 0) {
+    else if (opt_match_noarg(s, l, "warnings")) {
         mjit_opt->warnings = 1;
     }
-    else if (strncmp(s, "-debug=", 7) == 0) {
-        mjit_opt->debug_flags = strdup(s + 7);
+    else if (opt_match(s, l, "debug")) {
+        if (*s)
+            mjit_opt->debug_flags = strdup(s + 1);
+        else
+            mjit_opt->debug = 1;
     }
-    else if (strcmp(s, "-debug") == 0) {
-        mjit_opt->debug = 1;
-    }
-    else if (strcmp(s, "-wait") == 0) {
+    else if (opt_match_noarg(s, l, "wait")) {
         mjit_opt->wait = 1;
     }
-    else if (strcmp(s, "-save-temps") == 0) {
+    else if (opt_match_noarg(s, l, "save-temps")) {
         mjit_opt->save_temps = 1;
     }
-    else if (strncmp(s, "-verbose=", 9) == 0) {
-        mjit_opt->verbose = atoi(s + 9);
+    else if (opt_match(s, l, "verbose")) {
+        mjit_opt->verbose = *s ? atoi(s + 1) : 1;
     }
-    else if (strncmp(s, "-max-cache=", 11) == 0) {
-        mjit_opt->max_cache_size = atoi(s + 11);
+    else if (opt_match_arg(s, l, "max-cache")) {
+        mjit_opt->max_cache_size = atoi(s + 1);
     }
-    else if (strncmp(s, "-min-calls=", 11) == 0) {
-        mjit_opt->min_calls = atoi(s + 11);
+    else if (opt_match_arg(s, l, "min-calls")) {
+        mjit_opt->min_calls = atoi(s + 1);
     }
     else {
         rb_raise(rb_eRuntimeError,
-                 "invalid MJIT option `%s' (--help will show valid MJIT options)", s + 1);
+                 "invalid MJIT option `%s' (--help will show valid MJIT options)", s);
     }
 }
 #endif
@@ -1082,6 +1118,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		warning = 1;
 		ruby_verbose = Qtrue;
 	    }
+	    FEATURE_SET(opt->warn, RB_WARN_CATEGORY_ALL_BITS);
 	    s++;
 	    goto reswitch;
 
@@ -1111,7 +1148,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		if (*++s) {
 		    v = scan_oct(s, 1, &numlen);
 		    if (numlen == 0)
-			v = 1;
+                        v = 2;
 		    s += numlen;
 		}
 		if (!opt->warning) {
@@ -1128,6 +1165,17 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		    }
 		}
 		warning = 1;
+		switch (v) {
+		  case 0:
+		    FEATURE_SET_TO(opt->warn, RB_WARN_CATEGORY_ALL_BITS, 0);
+		    break;
+		  case 1:
+		    FEATURE_SET_TO(opt->warn, 1U << RB_WARN_CATEGORY_DEPRECATED, 0);
+		    break;
+		  default:
+		    FEATURE_SET(opt->warn, RB_WARN_CATEGORY_ALL_BITS);
+		    break;
+		}
 	    }
 	    goto reswitch;
 
@@ -1260,18 +1308,6 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		}
 		s++;
 	    }
-	    goto reswitch;
-
-	  case 'T':
-            {
-                size_t numlen;
-
-                if (*++s) {
-                    scan_oct(s, 2, &numlen);
-                    s += numlen;
-                }
-            }
-            rb_warn("ruby -T will be removed in Ruby 3.0");
 	    goto reswitch;
 
 	  case 'I':
@@ -1411,6 +1447,12 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		opt->dump |= DUMP_BIT(help);
 		goto switch_end;
 	    }
+            else if (is_option_with_arg("backtrace-limit", Qfalse, Qfalse)) {
+                char *e;
+                long n = strtol(s, &e, 10);
+                if (errno == ERANGE || n < 0 || *e) rb_raise(rb_eRuntimeError, "wrong limit for backtrace length");
+                rb_backtrace_length_limit = n;
+            }
 	    else {
 		rb_raise(rb_eRuntimeError,
 			 "invalid option --%s  (-h will show valid options)", s);
@@ -1460,6 +1502,33 @@ ruby_init_prelude(void)
 {
     Init_builtin_features();
     rb_const_remove(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"));
+}
+
+void rb_call_builtin_inits(void);
+
+static void
+ruby_opt_init(ruby_cmdline_options_t *opt)
+{
+    if (opt->dump & dump_exit_bits) return;
+
+    if (opt->features.set & FEATURE_BIT(gems)) {
+        rb_define_module("Gem");
+        if (opt->features.set & FEATURE_BIT(error_highlight)) {
+            rb_define_module("ErrorHighlight");
+        }
+        if (opt->features.set & FEATURE_BIT(did_you_mean)) {
+            rb_define_module("DidYouMean");
+        }
+    }
+
+    rb_warning_category_update(opt->warn.mask, opt->warn.set);
+
+    Init_ext(); /* load statically linked extensions before rubygems */
+    rb_call_builtin_inits();
+    ruby_init_prelude();
+
+    ruby_set_script_name(opt->script_name);
+    require_libraries(&opt->req_list);
 }
 
 static int
@@ -1585,6 +1654,29 @@ rb_f_chomp(int argc, VALUE *argv, VALUE _)
     return str;
 }
 
+static void
+setup_pager_env(void)
+{
+    if (!getenv("LESS")) ruby_setenv("LESS", "-R"); // Output "raw" control characters.
+}
+
+#ifdef _WIN32
+static int
+tty_enabled(void)
+{
+    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD m;
+    if (!GetConsoleMode(h, &m)) return 0;
+# ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+#   define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x4
+# endif
+    if (!(m & ENABLE_VIRTUAL_TERMINAL_PROCESSING)) return 0;
+    return 1;
+}
+#elif !defined(HAVE_WORKING_FORK)
+# define tty_enabled() 0
+#endif
+
 static VALUE
 process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
@@ -1594,7 +1686,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     const rb_iseq_t *iseq;
     rb_encoding *enc, *lenc;
 #if UTF8_PATH
-    rb_encoding *uenc, *ienc = 0;
+    rb_encoding *ienc = 0;
+    rb_encoding *const uenc = rb_utf8_encoding();
 #endif
     const char *s;
     char fbuf[MAXPATHLEN];
@@ -1602,11 +1695,62 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     unsigned int dump = opt->dump & dump_exit_bits;
 
     if (opt->dump & (DUMP_BIT(usage)|DUMP_BIT(help))) {
+        int tty = isatty(1);
 	const char *const progname =
 	    (argc > 0 && argv && argv[0] ? argv[0] :
 	     origarg.argc > 0 && origarg.argv && origarg.argv[0] ? origarg.argv[0] :
 	     ruby_engine);
-	usage(progname, (opt->dump & DUMP_BIT(help)));
+        int columns = 0;
+        if ((opt->dump & DUMP_BIT(help)) && tty) {
+            const char *pager_env = getenv("RUBY_PAGER");
+            if (!pager_env) pager_env = getenv("PAGER");
+            if (pager_env && *pager_env && isatty(0)) {
+                const char *columns_env = getenv("COLUMNS");
+                if (columns_env) columns = atoi(columns_env);
+                VALUE pager = rb_str_new_cstr(pager_env);
+#ifdef HAVE_WORKING_FORK
+                int fds[2];
+                if (rb_pipe(fds) == 0) {
+                    rb_pid_t pid = rb_fork();
+                    if (pid > 0) {
+                        /* exec PAGER with reading from child */
+                        dup2(fds[0], 0);
+                    }
+                    else if (pid == 0) {
+                        /* send the help message to the parent PAGER */
+                        dup2(fds[1], 1);
+                        dup2(fds[1], 2);
+                    }
+                    close(fds[0]);
+                    close(fds[1]);
+                    if (pid > 0) {
+                        setup_pager_env();
+                        rb_f_exec(1, &pager);
+                        kill(SIGTERM, pid);
+                        rb_waitpid(pid, 0, 0);
+                    }
+                }
+#else
+                setup_pager_env();
+                VALUE port = rb_io_popen(pager, rb_str_new_lit("w"), Qnil, Qnil);
+                if (!NIL_P(port)) {
+                    int oldout = dup(1);
+                    int olderr = dup(2);
+                    int fd = RFILE(port)->fptr->fd;
+                    tty = tty_enabled();
+                    dup2(fd, 1);
+                    dup2(fd, 2);
+                    usage(progname, 1, tty, columns);
+                    fflush(stdout);
+                    dup2(oldout, 1);
+                    dup2(olderr, 2);
+                    rb_io_close(port);
+                    return Qtrue;
+                }
+#endif
+            }
+        }
+	usage(progname, (opt->dump & DUMP_BIT(help)), tty, columns);
 	return Qtrue;
     }
 
@@ -1633,7 +1777,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     }
 
     if (opt->src.enc.name)
-	rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
+        /* cannot set deprecated category, as enabling deprecation warnings based on flags
+         * has not happened yet.
+         */
+        rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
 #if USE_MJIT
     if (opt->features.set & FEATURE_BIT(jit)) {
@@ -1664,7 +1811,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 		opt->script = "-";
 	    }
 	    else if (opt->do_search) {
-		char *path = getenv("RUBYPATH");
+		const char *path = getenv("RUBYPATH");
 
 		opt->script = 0;
 		if (path) {
@@ -1687,7 +1834,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     opt->script_name = rb_str_new_cstr(opt->script);
     opt->script = RSTRING_PTR(opt->script_name);
 
-#if _WIN32
+#ifdef _WIN32
     translit_char_bin(RSTRING_PTR(opt->script_name), '\\', '/');
 #elif defined DOSISH
     translit_char(RSTRING_PTR(opt->script_name), '\\', '/');
@@ -1725,7 +1872,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	enc = rb_enc_from_index(opt->ext.enc.index);
     }
     else {
-	enc = lenc;
+	enc = IF_UTF8_PATH(uenc, lenc);
     }
     rb_enc_set_default_external(rb_enc_from_encoding(enc));
     if (opt->intern.enc.index >= 0) {
@@ -1737,8 +1884,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
     }
     script_name = opt->script_name;
-    rb_enc_associate(opt->script_name,
-		     IF_UTF8_PATH(uenc = rb_utf8_encoding(), lenc));
+    rb_enc_associate(opt->script_name, IF_UTF8_PATH(uenc, lenc));
 #if UTF8_PATH
     if (uenc != lenc) {
 	opt->script_name = str_conv_enc(opt->script_name, uenc, lenc);
@@ -1775,14 +1921,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
             rb_ary_replace(vm->load_path_snapshot, load_path);
         }
     }
-    Init_ext();		/* load statically linked extensions before rubygems */
-    if (opt->features.set & FEATURE_BIT(gems)) {
-	rb_define_module("Gem");
-        if (opt->features.set & FEATURE_BIT(did_you_mean)) {
-	    rb_define_module("DidYouMean");
-	}
-    }
-    ruby_init_prelude();
+
     if (opt->features.mask & COMPILATION_FEATURES) {
 	VALUE option = rb_hash_new();
 #define SET_COMPILE_OPTION(h, o, name) \
@@ -1816,14 +1955,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	}
 #endif
 	rb_enc_associate(opt->e_script, eenc);
-	if (!(opt->dump & ~DUMP_BIT(version_v))) {
-	    ruby_set_script_name(opt->script_name);
-	    require_libraries(&opt->req_list);
-	}
+        ruby_opt_init(opt);
         ruby_set_script_name(progname);
 	rb_parser_set_options(parser, opt->do_print, opt->do_loop,
 			      opt->do_line, opt->do_split);
-        rb_warning_category_update(opt->warn.mask, opt->warn.set);
 	ast = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
     }
     else {
@@ -1841,7 +1976,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	enc = rb_enc_from_index(opt->ext.enc.index);
     }
     else {
-	enc = lenc;
+	enc = IF_UTF8_PATH(uenc, lenc);
     }
     rb_enc_set_default_external(rb_enc_from_encoding(enc));
     if (opt->intern.enc.index >= 0) {
@@ -1919,7 +2054,12 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     rb_define_readonly_boolean("$-l", opt->do_line);
     rb_define_readonly_boolean("$-a", opt->do_split);
 
+    rb_gvar_ractor_local("$-p");
+    rb_gvar_ractor_local("$-l");
+    rb_gvar_ractor_local("$-a");
+
     if ((rb_e_script = opt->e_script) != 0) {
+        rb_str_freeze(rb_e_script);
         rb_gc_register_mark_object(opt->e_script);
     }
 
@@ -2046,10 +2186,7 @@ load_file_internal(VALUE argp_v)
         if (NIL_P(c)) {
 	    argp->f = f = Qnil;
 	}
-	if (!(opt->dump & ~DUMP_BIT(version_v))) {
-	    ruby_set_script_name(opt->script_name);
-	    require_libraries(&opt->req_list);	/* Why here? unnatural */
-	}
+        ruby_opt_init(opt);
     }
     if (opt->src.enc.index >= 0) {
 	enc = rb_enc_from_index(opt->src.enc.index);
@@ -2062,7 +2199,6 @@ load_file_internal(VALUE argp_v)
     }
     rb_parser_set_options(parser, opt->do_print, opt->do_loop,
 			  opt->do_line, opt->do_split);
-    rb_warning_category_update(opt->warn.mask, opt->warn.set);
     if (NIL_P(f)) {
 	f = rb_str_new(0, 0);
 	rb_enc_associate(f, enc);
@@ -2088,6 +2224,26 @@ load_file_internal(VALUE argp_v)
 	argp->f = Qnil;
     }
     return (VALUE)ast;
+}
+
+/* disabling O_NONBLOCK, and returns 0 on success, otherwise errno */
+static inline int
+disable_nonblock(int fd)
+{
+#if defined(HAVE_FCNTL) && defined(F_SETFL)
+    if (fcntl(fd, F_SETFL, 0) < 0) {
+        const int e = errno;
+        ASSUME(e != 0);
+# if defined ENOTSUP
+        if (e == ENOTSUP) return 0;
+# endif
+# if defined B_UNSUPPORTED
+        if (e == B_UNSUPPORTED) return 0;
+# endif
+        return e;
+    }
+#endif
+    return 0;
 }
 
 static VALUE
@@ -2139,14 +2295,10 @@ open_load_file(VALUE fname_v, int *xflag)
 	}
 	rb_update_max_fd(fd);
 
-#if defined HAVE_FCNTL && MODE_TO_LOAD != O_RDONLY
-	/* disabling O_NONBLOCK */
-	if (fcntl(fd, F_SETFL, 0) < 0) {
-	    e = errno;
+	if (MODE_TO_LOAD != O_RDONLY && (e = disable_nonblock(fd)) != 0) {
 	    (void)close(fd);
 	    rb_load_fail(fname_v, strerror(e));
 	}
-#endif
 
 	e = ruby_is_fd_loadable(fd);
 	if (!e) {
@@ -2161,7 +2313,7 @@ open_load_file(VALUE fname_v, int *xflag)
 	      We need to wait if FIFO is empty. It's FIFO's semantics.
 	      rb_thread_wait_fd() release GVL. So, it's safe.
 	    */
-	    rb_thread_wait_fd(fd);
+	    rb_io_wait(f, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
 	}
     }
     return f;
@@ -2331,16 +2483,24 @@ forbid_setid(const char *s, const ruby_cmdline_options_t *opt)
         rb_raise(rb_eSecurityError, "no %s allowed while running setgid", s);
 }
 
+static VALUE
+verbose_getter(ID id, VALUE *ptr)
+{
+    return *rb_ruby_verbose_ptr();
+}
+
 static void
 verbose_setter(VALUE val, ID id, VALUE *variable)
 {
-    *variable = RTEST(val) ? Qtrue : val;
+    *rb_ruby_verbose_ptr() = RTEST(val) ? Qtrue : val;
 }
 
 static VALUE
-opt_W_getter(ID id, VALUE *variable)
+opt_W_getter(ID id, VALUE *dmy)
 {
-    switch (*variable) {
+    VALUE v = *rb_ruby_verbose_ptr();
+
+    switch (v) {
       case Qnil:
 	return INT2FIX(0);
       case Qfalse:
@@ -2352,16 +2512,35 @@ opt_W_getter(ID id, VALUE *variable)
     }
 }
 
+static VALUE
+debug_getter(ID id, VALUE *dmy)
+{
+    return *rb_ruby_debug_ptr();
+}
+
+static void
+debug_setter(VALUE val, ID id, VALUE *dmy)
+{
+    *rb_ruby_debug_ptr() = val;
+}
+
 /*! Defines built-in variables */
 void
 ruby_prog_init(void)
 {
-    rb_define_hooked_variable("$VERBOSE", &ruby_verbose, 0, verbose_setter);
-    rb_define_hooked_variable("$-v", &ruby_verbose, 0, verbose_setter);
-    rb_define_hooked_variable("$-w", &ruby_verbose, 0, verbose_setter);
-    rb_define_hooked_variable("$-W", &ruby_verbose, opt_W_getter, rb_gvar_readonly_setter);
-    rb_define_variable("$DEBUG", &ruby_debug);
-    rb_define_variable("$-d", &ruby_debug);
+    rb_define_virtual_variable("$VERBOSE", verbose_getter, verbose_setter);
+    rb_define_virtual_variable("$-v",      verbose_getter, verbose_setter);
+    rb_define_virtual_variable("$-w",      verbose_getter, verbose_setter);
+    rb_define_virtual_variable("$-W",      opt_W_getter,   rb_gvar_readonly_setter);
+    rb_define_virtual_variable("$DEBUG",   debug_getter,   debug_setter);
+    rb_define_virtual_variable("$-d",      debug_getter,   debug_setter);
+
+    rb_gvar_ractor_local("$VERBOSE");
+    rb_gvar_ractor_local("$-v");
+    rb_gvar_ractor_local("$-w");
+    rb_gvar_ractor_local("$-W");
+    rb_gvar_ractor_local("$DEBUG");
+    rb_gvar_ractor_local("$-d");
 
     rb_define_hooked_variable("$0", &rb_progname, 0, set_arg0);
     rb_define_hooked_variable("$PROGRAM_NAME", &rb_progname, 0, set_arg0);
@@ -2384,12 +2563,6 @@ ruby_set_argv(int argc, char **argv)
     int i;
     VALUE av = rb_argv;
 
-#if defined(USE_DLN_A_OUT)
-    if (origarg.argc > 0 && origarg.argv)
-	dln_argv0 = origarg.argv[0];
-    else if (argc > 0 && argv)
-	dln_argv0 = argv[0];
-#endif
     rb_ary_clear(av);
     for (i = 0; i < argc; i++) {
 	VALUE arg = external_str_new_cstr(argv[i]);
@@ -2468,9 +2641,6 @@ ruby_sysinit(int *argc, char ***argv)
     if (*argc >= 0 && *argv) {
 	origarg.argc = *argc;
 	origarg.argv = *argv;
-#if defined(USE_DLN_A_OUT)
-	dln_argv0 = origarg.argv[0];
-#endif
     }
     fill_standard_fds();
 }

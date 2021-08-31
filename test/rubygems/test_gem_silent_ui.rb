@@ -1,10 +1,9 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/user_interaction'
 require 'timeout'
 
 class TestGemSilentUI < Gem::TestCase
-
   def setup
     super
     @sui = Gem::SilentUI.new
@@ -17,7 +16,7 @@ class TestGemSilentUI < Gem::TestCase
 
   def test_ask
     value = nil
-    out, err = capture_io do
+    out, err = capture_output do
       use_ui @sui do
         value = @sui.ask 'Problem?'
       end
@@ -31,7 +30,7 @@ class TestGemSilentUI < Gem::TestCase
 
   def test_ask_for_password
     value = nil
-    out, err = capture_io do
+    out, err = capture_output do
       use_ui @sui do
         value = @sui.ask_for_password 'Problem?'
       end
@@ -45,9 +44,9 @@ class TestGemSilentUI < Gem::TestCase
 
   def test_ask_yes_no
     value = nil
-    out, err = capture_io do
+    out, err = capture_output do
       use_ui @sui do
-        assert_raises(Gem::OperationNotSupportedError) do
+        assert_raise(Gem::OperationNotSupportedError) do
           @sui.ask_yes_no 'Problem?'
         end
       end
@@ -56,7 +55,7 @@ class TestGemSilentUI < Gem::TestCase
     assert_empty out, 'No output'
     assert_empty err, 'No output'
 
-    out, err = capture_io do
+    out, err = capture_output do
       use_ui @sui do
         value = @sui.ask_yes_no 'Problem?', true
       end
@@ -67,7 +66,7 @@ class TestGemSilentUI < Gem::TestCase
 
     assert value, 'Value is true'
 
-    out, err = capture_io do
+    out, err = capture_output do
       use_ui @sui do
         value = @sui.ask_yes_no 'Problem?', false
       end
@@ -81,7 +80,7 @@ class TestGemSilentUI < Gem::TestCase
 
   def test_choose_from_list
     value = nil
-    out, err = capture_io do
+    out, err = capture_output do
       use_ui @sui do
         value = @sui.choose_from_list 'Problem?', %w[yes no]
       end
@@ -94,7 +93,7 @@ class TestGemSilentUI < Gem::TestCase
   end
 
   def test_progress_reporter
-    out, err = capture_io do
+    out, err = capture_output do
       use_ui @sui do
         @sui.progress_reporter 10, 'hi'
       end
@@ -105,7 +104,7 @@ class TestGemSilentUI < Gem::TestCase
   end
 
   def test_download_reporter
-    out, err = capture_io do
+    out, err = capture_output do
       use_ui @sui do
         @sui.download_reporter.fetch 'a.gem', 1024
       end
@@ -114,5 +113,4 @@ class TestGemSilentUI < Gem::TestCase
     assert_empty out, 'No output'
     assert_empty err, 'No output'
   end
-
 end

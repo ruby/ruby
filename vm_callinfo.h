@@ -1,3 +1,14 @@
+#ifndef RUBY_VM_CALLINFO_H                               /*-*-C-*-vi:se ft=c:*/
+#define RUBY_VM_CALLINFO_H
+/**
+ * @file
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
+ * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
+ *             Permission  is hereby  granted,  to  either redistribute  and/or
+ *             modify this file, provided that  the conditions mentioned in the
+ *             file COPYING are met.  Consult the file for details.
+ */
+
 #include "debug_counter.h"
 
 enum vm_call_flag_bits {
@@ -13,6 +24,7 @@ enum vm_call_flag_bits {
     VM_CALL_SUPER_bit,          /* super */
     VM_CALL_ZSUPER_bit,         /* zsuper */
     VM_CALL_OPT_SEND_bit,       /* internal flag */
+    VM_CALL_KW_SPLAT_MUT_bit,   /* kw splat hash can be modified (to avoid allocating a new one) */
     VM_CALL__END
 };
 
@@ -28,17 +40,18 @@ enum vm_call_flag_bits {
 #define VM_CALL_SUPER           (0x01 << VM_CALL_SUPER_bit)
 #define VM_CALL_ZSUPER          (0x01 << VM_CALL_ZSUPER_bit)
 #define VM_CALL_OPT_SEND        (0x01 << VM_CALL_OPT_SEND_bit)
+#define VM_CALL_KW_SPLAT_MUT    (0x01 << VM_CALL_KW_SPLAT_MUT_bit)
 
 struct rb_callinfo_kwarg {
     int keyword_len;
-    VALUE keywords[1];
+    VALUE keywords[];
 };
 
 static inline size_t
 rb_callinfo_kwarg_bytes(int keyword_len)
 {
     return rb_size_mul_add_or_raise(
-        keyword_len - 1,
+        keyword_len,
         sizeof(VALUE),
         sizeof(struct rb_callinfo_kwarg),
         rb_eRuntimeError);
@@ -64,8 +77,8 @@ struct rb_callinfo {
 #define CI_EMBED_ID_bits   32
 #elif SIZEOF_VALUE == 4
 #define CI_EMBED_TAG_bits   1
-#define CI_EMBED_ARGC_bits  4
-#define CI_EMBED_FLAG_bits 12
+#define CI_EMBED_ARGC_bits  3
+#define CI_EMBED_FLAG_bits 13
 #define CI_EMBED_ID_bits   15
 #endif
 
@@ -167,20 +180,27 @@ vm_ci_dump(const struct rb_callinfo *ci)
 #define vm_ci_new(mid, flag, argc, kwarg) vm_ci_new_(mid, flag, argc, kwarg, __FILE__, __LINE__)
 #define vm_ci_new_runtime(mid, flag, argc, kwarg) vm_ci_new_runtime_(mid, flag, argc, kwarg, __FILE__, __LINE__)
 
+#/* This is passed to STATIC_ASSERT.  Cannot be an inline function. */
+#define VM_CI_EMBEDDABLE_P(mid, flag, argc, kwarg) \
+    (((mid ) & ~CI_EMBED_ID_MASK)   ? false :      \
+     ((flag) & ~CI_EMBED_FLAG_MASK) ? false :      \
+     ((argc) & ~CI_EMBED_ARGC_MASK) ? false :      \
+      (kwarg)                       ? false : true)
+
+#define vm_ci_new_id(mid, flag, argc, must_zero) \
+    ((const struct rb_callinfo *)                \
+     ((((VALUE)(mid )) << CI_EMBED_ID_SHFT)   |  \
+      (((VALUE)(flag)) << CI_EMBED_FLAG_SHFT) |  \
+      (((VALUE)(argc)) << CI_EMBED_ARGC_SHFT) |  \
+      RUBY_FIXNUM_FLAG))
+
 static inline const struct rb_callinfo *
 vm_ci_new_(ID mid, unsigned int flag, unsigned int argc, const struct rb_callinfo_kwarg *kwarg, const char *file, int line)
 {
 #if USE_EMBED_CI
-    if ((mid & ~CI_EMBED_ID_MASK) == 0 &&
-        (argc & ~CI_EMBED_ARGC_MASK) == 0 &&
-        kwarg == NULL) {
-        VALUE embed_ci =
-          1L                                  |
-          ((VALUE)argc << CI_EMBED_ARGC_SHFT) |
-          ((VALUE)flag << CI_EMBED_FLAG_SHFT) |
-          ((VALUE)mid  << CI_EMBED_ID_SHFT);
+    if (VM_CI_EMBEDDABLE_P(mid, flag, argc, kwarg)) {
         RB_DEBUG_COUNTER_INC(ci_packed);
-        return (const struct rb_callinfo *)embed_ci;
+        return vm_ci_new_id(mid, flag, argc, kwarg);
     }
 #endif
 
@@ -216,11 +236,38 @@ vm_ci_new_runtime_(ID mid, unsigned int flag, unsigned int argc, const struct rb
     return vm_ci_new_(mid, flag, argc, kwarg, file, line);
 }
 
+#define VM_CALLINFO_NOT_UNDER_GC IMEMO_FL_USER0
+
+static inline bool
+vm_ci_markable(const struct rb_callinfo *ci)
+{
+    if (! ci) {
+        return false; /* or true? This is Qfalse... */
+    }
+    else if (vm_ci_packed_p(ci)) {
+        return true;
+    }
+    else {
+        VM_ASSERT(IMEMO_TYPE_P(ci, imemo_callinfo));
+        return ! FL_ANY_RAW((VALUE)ci, VM_CALLINFO_NOT_UNDER_GC);
+    }
+}
+
+#define VM_CI_ON_STACK(mid_, flags_, argc_, kwarg_) \
+    (struct rb_callinfo) {                          \
+        .flags = T_IMEMO |                          \
+            (imemo_callinfo << FL_USHIFT) |         \
+            VM_CALLINFO_NOT_UNDER_GC,               \
+        .mid   = mid_,                              \
+        .flag  = flags_,                            \
+        .argc  = argc_,                             \
+        .kwarg = kwarg_,                            \
+    }
+
 typedef VALUE (*vm_call_handler)(
     struct rb_execution_context_struct *ec,
     struct rb_control_frame_struct *cfp,
-    struct rb_calling_info *calling,
-    struct rb_call_data *cd);
+    struct rb_calling_info *calling);
 
 // imemo_callcache
 
@@ -239,6 +286,7 @@ struct rb_callcache {
     union {
         const unsigned int attr_index;
         const enum method_missing_reason method_missing_reason; /* used by method_missing */
+        VALUE v;
     } aux_;
 };
 
@@ -254,21 +302,16 @@ vm_cc_new(VALUE klass,
     return cc;
 }
 
-static inline const struct rb_callcache *
-vm_cc_fill(struct rb_callcache *cc,
-           VALUE klass,
-           const struct rb_callable_method_entry_struct *cme,
-           vm_call_handler call)
-{
-    struct rb_callcache cc_body = {
-        .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
-        .klass = klass,
-        .cme_ = cme,
-        .call_ = call,
-    };
-    MEMCPY(cc, &cc_body, struct rb_callcache, 1);
-    return cc;
-}
+#define VM_CC_ON_STACK(clazz, call, aux, cme) \
+    (struct rb_callcache) {                   \
+        .flags = T_IMEMO |                    \
+            (imemo_callcache << FL_USHIFT) |  \
+            VM_CALLCACHE_UNMARKABLE,          \
+        .klass = clazz,                       \
+        .cme_  = cme,                         \
+        .call_ = call,                        \
+        .aux_  = aux,                         \
+    }
 
 static inline bool
 vm_cc_class_check(const struct rb_callcache *cc, VALUE klass)
@@ -311,14 +354,26 @@ static inline int
 vm_cc_markable(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    return FL_TEST_RAW(cc, VM_CALLCACHE_UNMARKABLE) == 0;
+    return FL_TEST_RAW((VALUE)cc, VM_CALLCACHE_UNMARKABLE) == 0;
 }
 
 static inline bool
-vm_cc_valid_p(const struct rb_callcache *cc, VALUE klass)
+vm_cc_invalidated_p(const struct rb_callcache *cc)
+{
+    if (cc->klass && !METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc))) {
+        return false;
+    }
+    else {
+        return true;
+    }
+}
+
+// For MJIT. cc_cme is supposed to have inlined `vm_cc_cme(cc)`.
+static inline bool
+vm_cc_valid_p(const struct rb_callcache *cc, const rb_callable_method_entry_t *cc_cme, VALUE klass)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    if (cc->klass == klass && !METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc))) {
+    if (cc->klass == klass && !METHOD_ENTRY_INVALIDATED(cc_cme)) {
         return 1;
     }
     else {
@@ -326,35 +381,10 @@ vm_cc_valid_p(const struct rb_callcache *cc, VALUE klass)
     }
 }
 
-#ifndef MJIT_HEADER
-extern const struct rb_callcache *vm_empty_cc;
-#else
 extern const struct rb_callcache *rb_vm_empty_cc(void);
-#endif
+#define vm_cc_empty() rb_vm_empty_cc()
 
-static inline const struct rb_callcache *
-vm_cc_empty(void)
-{
-#ifndef MJIT_HEADER
-    return vm_empty_cc;
-#else
-    return rb_vm_empty_cc();
-#endif
-}
-
-/* callcache: mutete */
-
-static inline void
-vm_cc_cme_set(const struct rb_callcache *cc, const struct rb_callable_method_entry_struct *cme)
-{
-    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    VM_ASSERT(cc != vm_cc_empty());
-    VM_ASSERT(vm_cc_cme(cc) != NULL);
-    VM_ASSERT(vm_cc_cme(cc)->called_id == cme->called_id);
-    VM_ASSERT(!vm_cc_markable(cc)); // only used for vm_eval.c
-
-    *((const struct rb_callable_method_entry_struct **)&cc->cme_) = cme;
-}
+/* callcache: mutate */
 
 static inline void
 vm_cc_call_set(const struct rb_callcache *cc, vm_call_handler call)
@@ -421,3 +451,5 @@ vm_ccs_p(const struct rb_class_cc_entries *ccs)
 
 // gc.c
 void rb_vm_ccs_free(struct rb_class_cc_entries *ccs);
+
+#endif /* RUBY_VM_CALLINFO_H */

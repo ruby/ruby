@@ -1,9 +1,72 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle install with install-time dependencies" do
+  before do
+    build_repo2 do
+      build_gem "with_implicit_rake_dep" do |s|
+        s.extensions << "Rakefile"
+        s.write "Rakefile", <<-RUBY
+          task :default do
+            path = File.expand_path("../lib", __FILE__)
+            FileUtils.mkdir_p(path)
+            File.open("\#{path}/implicit_rake_dep.rb", "w") do |f|
+              f.puts "IMPLICIT_RAKE_DEP = 'YES'"
+            end
+          end
+        RUBY
+      end
+
+      build_gem "another_implicit_rake_dep" do |s|
+        s.extensions << "Rakefile"
+        s.write "Rakefile", <<-RUBY
+          task :default do
+            path = File.expand_path("../lib", __FILE__)
+            FileUtils.mkdir_p(path)
+            File.open("\#{path}/another_implicit_rake_dep.rb", "w") do |f|
+              f.puts "ANOTHER_IMPLICIT_RAKE_DEP = 'YES'"
+            end
+          end
+        RUBY
+      end
+
+      # Test complicated gem dependencies for install
+      build_gem "net_a" do |s|
+        s.add_dependency "net_b"
+        s.add_dependency "net_build_extensions"
+      end
+
+      build_gem "net_b"
+
+      build_gem "net_build_extensions" do |s|
+        s.add_dependency "rake"
+        s.extensions << "Rakefile"
+        s.write "Rakefile", <<-RUBY
+          task :default do
+            path = File.expand_path("../lib", __FILE__)
+            FileUtils.mkdir_p(path)
+            File.open("\#{path}/net_build_extensions.rb", "w") do |f|
+              f.puts "NET_BUILD_EXTENSIONS = 'YES'"
+            end
+          end
+        RUBY
+      end
+
+      build_gem "net_c" do |s|
+        s.add_dependency "net_a"
+        s.add_dependency "net_d"
+      end
+
+      build_gem "net_d"
+
+      build_gem "net_e" do |s|
+        s.add_dependency "net_d"
+      end
+    end
+  end
+
   it "installs gems with implicit rake dependencies" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "with_implicit_rake_dep"
       gem "another_implicit_rake_dep"
       gem "rake"
@@ -18,7 +81,28 @@ RSpec.describe "bundle install with install-time dependencies" do
     expect(out).to eq("YES\nYES")
   end
 
+  it "installs gems with implicit rake dependencies without rake previously installed" do
+    with_path_as("") do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo2)}"
+        gem "with_implicit_rake_dep"
+        gem "another_implicit_rake_dep"
+        gem "rake"
+      G
+    end
+
+    run <<-R
+      require 'implicit_rake_dep'
+      require 'another_implicit_rake_dep'
+      puts IMPLICIT_RAKE_DEP
+      puts ANOTHER_IMPLICIT_RAKE_DEP
+    R
+    expect(out).to eq("YES\nYES")
+  end
+
   it "installs gems with a dependency with no type" do
+    skip "incorrect data check error" if Gem.win_platform?
+
     build_repo2
 
     path = "#{gem_repo2}/#{Gem::MARSHAL_SPEC_DIR}/actionpack-2.3.2.gemspec.rz"
@@ -41,7 +125,7 @@ RSpec.describe "bundle install with install-time dependencies" do
   describe "with crazy rubygem plugin stuff" do
     it "installs plugins" do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "net_b"
       G
 
@@ -49,8 +133,8 @@ RSpec.describe "bundle install with install-time dependencies" do
     end
 
     it "installs plugins depended on by other plugins" do
-      install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+      install_gemfile <<-G, :env => { "DEBUG" => "1" }
+        source "#{file_uri_for(gem_repo2)}"
         gem "net_a"
       G
 
@@ -58,8 +142,8 @@ RSpec.describe "bundle install with install-time dependencies" do
     end
 
     it "installs multiple levels of dependencies" do
-      install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+      install_gemfile <<-G, :env => { "DEBUG" => "1" }
+        source "#{file_uri_for(gem_repo2)}"
         gem "net_c"
         gem "net_e"
       G
@@ -67,34 +151,54 @@ RSpec.describe "bundle install with install-time dependencies" do
       expect(the_bundle).to include_gems "net_a 1.0", "net_b 1.0", "net_c 1.0", "net_d 1.0", "net_e 1.0"
     end
 
-    context "with ENV['DEBUG_RESOLVER'] set" do
+    context "with ENV['BUNDLER_DEBUG_RESOLVER'] set" do
       it "produces debug output" do
         gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "net_c"
           gem "net_e"
         G
 
-        bundle :install, :env => { "DEBUG_RESOLVER" => "1" }
+        bundle :install, :env => { "BUNDLER_DEBUG_RESOLVER" => "1", "DEBUG" => "1" }
 
-        expect(err).to include("Creating possibility state for net_c")
+        expect(out).to include("BUNDLER: Starting resolution")
+      end
+    end
+
+    context "with ENV['DEBUG_RESOLVER'] set" do
+      it "produces debug output" do
+        gemfile <<-G
+          source "#{file_uri_for(gem_repo2)}"
+          gem "net_c"
+          gem "net_e"
+        G
+
+        bundle :install, :env => { "DEBUG_RESOLVER" => "1", "DEBUG" => "1" }
+
+        expect(out).to include("BUNDLER: Starting resolution")
       end
     end
 
     context "with ENV['DEBUG_RESOLVER_TREE'] set" do
       it "produces debug output" do
         gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "net_c"
           gem "net_e"
         G
 
-        bundle :install, :env => { "DEBUG_RESOLVER_TREE" => "1" }
+        bundle :install, :env => { "DEBUG_RESOLVER_TREE" => "1", "DEBUG" => "1" }
 
-        expect(err).to include(" net_b").
-          and include("Starting resolution").
-          and include("Finished resolution").
-          and include("Attempting to activate")
+        activated_groups = if local_platforms.any?
+          "net_b (1.0) (ruby), net_b (1.0) (#{local_platforms.join(", ")})"
+        else
+          "net_b (1.0) (ruby)"
+        end
+
+        expect(out).to include(" net_b").
+          and include("BUNDLER: Starting resolution").
+          and include("BUNDLER: Finished resolution").
+          and include("Attempting to activate [#{activated_groups}]")
       end
     end
   end
@@ -103,6 +207,10 @@ RSpec.describe "bundle install with install-time dependencies" do
     context "allows only an older version" do
       it "installs the older version" do
         build_repo2 do
+          build_gem "rack", "1.2" do |s|
+            s.executables = "rackup"
+          end
+
           build_gem "rack", "9001.0.0" do |s|
             s.required_ruby_version = "> 9000"
           end
@@ -137,6 +245,31 @@ RSpec.describe "bundle install with install-time dependencies" do
         expect(out).to_not include("rack-9001.0.0 requires ruby version > 9000")
         expect(the_bundle).to include_gems("rack 1.2")
       end
+
+      it "installs the older not platform specific version" do
+        build_repo4 do
+          build_gem "rack", "9001.0.0" do |s|
+            s.required_ruby_version = "> 9000"
+          end
+          build_gem "rack", "1.2" do |s|
+            s.platform = mingw
+            s.required_ruby_version = "> 9000"
+          end
+          build_gem "rack", "1.2"
+        end
+
+        simulate_platform mingw do
+          install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+            ruby "#{RUBY_VERSION}"
+            source "http://localgemserver.test/"
+            gem 'rack'
+          G
+        end
+
+        expect(out).to_not include("rack-9001.0.0 requires ruby version > 9000")
+        expect(out).to_not include("rack-1.2-#{Bundler.local_platform} requires ruby version > 9000")
+        expect(the_bundle).to include_gems("rack 1.2")
+      end
     end
 
     context "allows no gems" do
@@ -153,7 +286,9 @@ RSpec.describe "bundle install with install-time dependencies" do
 
       shared_examples_for "ruby version conflicts" do
         it "raises an error during resolution" do
-          install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+          skip "ruby requirement includes platform and it shouldn't" if Gem.win_platform?
+
+          install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }, :raise_on_error => false
             source "http://localgemserver.test/"
             ruby #{ruby_requirement}
             gem 'require_ruby'
@@ -202,7 +337,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         end
       end
 
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         source "#{file_uri_for(gem_repo2)}"
         gem 'require_rubygems'
       G

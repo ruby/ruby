@@ -8,7 +8,7 @@ RSpec.describe "when using sudo", :sudo => true do
       end
 
       before do
-        bundle! "config set path.system true"
+        bundle "config set path.system true"
         subdir.mkpath
         sudo "chmod u-w #{subdir}"
       end
@@ -32,7 +32,7 @@ RSpec.describe "when using sudo", :sudo => true do
 
   describe "and GEM_HOME is owned by root" do
     before :each do
-      bundle! "config set path.system true"
+      bundle "config set path.system true"
       chown_system_gems_to_root
     end
 
@@ -49,8 +49,23 @@ RSpec.describe "when using sudo", :sudo => true do
     end
 
     it "installs rake and a gem dependent on rake in the same session" do
+      build_repo2 do
+        build_gem "another_implicit_rake_dep" do |s|
+          s.extensions << "Rakefile"
+          s.write "Rakefile", <<-RUBY
+            task :default do
+              path = File.expand_path("../lib", __FILE__)
+              FileUtils.mkdir_p(path)
+              File.open("\#{path}/another_implicit_rake_dep.rb", "w") do |f|
+                f.puts "ANOTHER_IMPLICIT_RAKE_DEP = 'YES'"
+              end
+            end
+          RUBY
+        end
+      end
+
       gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "rake"
           gem "another_implicit_rake_dep"
       G
@@ -105,11 +120,12 @@ RSpec.describe "when using sudo", :sudo => true do
 
   describe "and BUNDLE_PATH is not writable" do
     before do
-      sudo "chmod ugo-w #{default_bundle_path}"
+      bundle "config set --local path .bundle"
+      sudo "chmod ugo-w .bundle"
     end
 
     after do
-      sudo "chmod ugo+w #{default_bundle_path}"
+      sudo "chmod ugo+w .bundle"
     end
 
     it "installs" do
@@ -118,7 +134,7 @@ RSpec.describe "when using sudo", :sudo => true do
         gem "rack", '1.0'
       G
 
-      expect(default_bundle_path("gems/rack-1.0.0")).to exist
+      expect(local_gem_path("gems/rack-1.0.0")).to exist
       expect(the_bundle).to include_gems "rack 1.0"
     end
 
@@ -140,10 +156,12 @@ RSpec.describe "when using sudo", :sudo => true do
 
   describe "and GEM_HOME is not writable" do
     it "installs" do
-      bundle! "config set path.system true"
+      bundle "config set path.system true"
       gem_home = tmp("sudo_gem_home")
       sudo "mkdir -p #{gem_home}"
       sudo "chmod ugo-w #{gem_home}"
+
+      system_gems :bundler, :path => gem_home
 
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
@@ -166,7 +184,7 @@ RSpec.describe "when using sudo", :sudo => true do
     end
 
     it "warns against that" do
-      bundle :install, :sudo => true
+      bundle :install, :sudo => :preserve_env
       expect(err).to include(warning)
     end
 
@@ -179,7 +197,7 @@ RSpec.describe "when using sudo", :sudo => true do
 
     context "when silence_root_warning = false" do
       it "warns against that" do
-        bundle :install, :sudo => true, :env => { "BUNDLE_SILENCE_ROOT_WARNING" => "false" }
+        bundle :install, :sudo => :preserve_env, :env => { "BUNDLE_SILENCE_ROOT_WARNING" => "false" }
         expect(err).to include(warning)
       end
     end

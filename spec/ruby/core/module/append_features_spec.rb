@@ -67,8 +67,8 @@ describe "Module#append_features" do
       @other = Module.new.freeze
     end
 
-    it "raises a #{frozen_error_class} before appending self" do
-      -> { @receiver.send(:append_features, @other) }.should raise_error(frozen_error_class)
+    it "raises a FrozenError before appending self" do
+      -> { @receiver.send(:append_features, @other) }.should raise_error(FrozenError)
       @other.ancestors.should_not include(@receiver)
     end
   end

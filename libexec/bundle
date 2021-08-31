@@ -15,6 +15,9 @@ else
   require "bundler"
 end
 
+# Workaround for non-activated bundler spec due to missing https://github.com/rubygems/rubygems/commit/4e306d7bcdee924b8d80ca9db6125aa59ee4e5a3
+gem "bundler", Bundler::VERSION if Gem.rubygems_version < Gem::Version.new("2.6.2")
+
 # Check if an older version of bundler is installed
 $LOAD_PATH.each do |path|
   next unless path =~ %r{/bundler-0\.(\d+)} && $1.to_i < 9

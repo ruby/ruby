@@ -1,23 +1,38 @@
 name: Windows
-on:
-  push:
-    branches:
-      - '*'
-  pull_request:
-    branches:
-      - '*'
+on: [push, pull_request]
 jobs:
   make:
     strategy:
       matrix:
-        test_task: [test]
-        os: [windows-2019]
-        vs: [2019]
+        include:
+          - vs: 2019
+            os: windows-2019
+            vcvars: '"C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"'
+          # - vs: 2022
+          #   os: windows-2022
+          #   vcvars: '"C:\Program Files\Microsoft Visual Studio\2022\Preview\VC\Auxiliary\Build\vcvars64.bat"'
       fail-fast: false
     runs-on: ${{ matrix.os }}
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    name: VisualStudio ${{ matrix.vs }}
+    env:
+      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+      VCVARS: ${{ matrix.vcvars }}
+      PATCH: C:\msys64\usr\bin\patch.exe
     steps:
-      - uses: actions/cache@v1
+      - run: md build
+        working-directory:
+      - uses: msys2/setup-msys2@v2
+        id: setup-msys2
+        with:
+          update: true
+          install: >-
+            patch
+        if: ${{ matrix.os != 'windows-2019' }}
+      - name: patch path
+        shell: msys2 {0}
+        run: echo PATCH=$(cygpath -wa $(command -v patch)) >> $GITHUB_ENV
+        if: ${{ steps.setup-msys2.outcome == 'success' }}
+      - uses: actions/cache@v2
         with:
           path: C:\vcpkg\downloads
           key: ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-${{ github.sha }}
@@ -27,7 +42,7 @@ jobs:
       - name: Install libraries with vcpkg
         run: |
           vcpkg --triplet x64-windows install readline zlib
-      - uses: actions/cache@v1
+      - uses: actions/cache@v2
         with:
           path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
           key: ${{ runner.os }}-chocolatey-${{ matrix.os }}-${{ github.sha }}
@@ -36,56 +51,74 @@ jobs:
             ${{ runner.os }}-chocolatey-
       - name: Install libraries with chocolatey
         run: |
-          choco install --no-progress openssl winflexbison3
-      # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
-      - name: Checkout ruby
+          # Using Choco-Install for retries, but it doesn't detect failures properly
+          # if you pass multiple package names in a single command.
+          Choco-Install -PackageName openssl
+          Choco-Install -PackageName winflexbison3
+        shell: pwsh
+      - name: git config
         run: |
-          git clone --single-branch --shallow-since=yesterday --branch=${GITHUB_REF#refs/heads/} https://github.com/${{ github.repository }} src
-          git -C src reset --hard ${{ github.sha }}
-        if: github.event_name == 'push'
-        shell: bash
-      - name: Checkout a pull request
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+          git config --global advice.detachedHead 0
+          git config --global init.defaultBranch garbage
+      - uses: actions/checkout@v2
+        with:
+          path: src
+      - name: setup env
+        # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
+        # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
         run: |
-          git clone --single-branch --shallow-since=yesterday --branch=${{ github.event.pull_request.head.ref }} https://github.com/${{ github.event.pull_request.head.repo.full_name }} src
-          git -C src reset --hard ${{ github.event.pull_request.head.sha }}
-        if: github.event_name == 'pull_request'
-      - run: ./src/tool/actions-commit-info.sh
-        shell: bash
-        id: commit_info
+          set | C:\msys64\usr\bin\sort > old.env
+          call %VCVARS%
+          set TMP=%USERPROFILE%\AppData\Local\Temp
+          set TEMP=%USERPROFILE%\AppData\Local\Temp
+          set | C:\msys64\usr\bin\sort > new.env
+          C:\msys64\usr\bin\comm -13 old.env new.env >> %GITHUB_ENV%
+          del *.env
       - name: Configure
         run: |
-          md build
-          cd build
-          call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          ../src/win32/configure.bat --disable-install-doc --without-ext=+,dbm,gdbm --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
-        shell: cmd
+          ../src/win32/configure.bat --disable-install-doc --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
       - name: nmake
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          set YACC=win_bison
-          cd build
-          echo on
-          nmake up
-          nmake extract-gems
+          echo ^#^#[group]incs
+          nmake incs
+          echo ^#^#[endgroup]
+          echo ^#^#[group]extract-extlibs
+          nmake extract-extlibs
+          echo ^#^#[endgroup]
           nmake
-        shell: cmd
+        env:
+          YACC: win_bison
       - name: nmake test
+        timeout-minutes: 5
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          cd build
-          nmake ${{ matrix.test_task }}
-        shell: cmd
+          nmake test
+      - name: nmake test-all
+        timeout-minutes: 60
+        run: |
+          nmake test-all TESTOPTS="-j%NUMBER_OF_PROCESSORS% --job-status=normal"
+        continue-on-error: ${{ matrix.continue-on-error || false }}
+      - name: nmake test-spec
+        timeout-minutes: 10
+        run: |
+          nmake test-spec
+        continue-on-error: ${{ matrix.continue-on-error || false }}
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |
             {
-              "attachments": [{
-                "text": "${{ matrix.os }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ steps.commit_info.outputs.COMMIT_DATE }} #${{ steps.commit_info.outputs.COMMIT_NUMBER_OF_DAY }}> " +
-                        "(<https://github.com/${{ github.repository }}/commit/${{ github.sha }}|" + "${{ github.sha }}".substring(0, 10) + ">) " +
-                        "of ${{ github.repository }}@" + "${{ github.ref }}".split('/').reverse()[0] + " by ${{ github.event.head_commit.committer.name }} failed",
-                "color": "danger"
-              }]
+              "ci": "GitHub Actions",
+              "env": "VS${{ matrix.vs }} / ${{ matrix.test_task || 'check' }}",
+              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref }}".split('/').reverse()[0]
             }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        if: failure() && github.event_name == 'push'
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() && github.event_name == 'push' }}
+
+defaults:
+  run:
+    working-directory: build
+    shell: cmd

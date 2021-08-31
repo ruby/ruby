@@ -1,11 +1,10 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/local_remote_options'
-require 'rubygems/spec_fetcher'
-require 'rubygems/version_option'
+require_relative '../command'
+require_relative '../local_remote_options'
+require_relative '../spec_fetcher'
+require_relative '../version_option'
 
 class Gem::Commands::OutdatedCommand < Gem::Command
-
   include Gem::LocalRemoteOptions
   include Gem::VersionOption
 
@@ -30,5 +29,4 @@ update the gems with the update or install commands.
       say "#{spec.name} (#{spec.version} < #{remote_version})"
     end
   end
-
 end

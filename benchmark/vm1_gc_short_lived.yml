@@ -1,9 +1,0 @@
-benchmark:
-  vm1_gc_short_lived: |
-    a = '' # short-lived String
-    b = ''
-    c = ''
-    d = ''
-    e = ''
-    f = ''
-loop_count: 30000000

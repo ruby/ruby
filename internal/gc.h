@@ -1,15 +1,15 @@
-#ifndef INTERNAL_GC_H /* -*- C -*- */
+#ifndef INTERNAL_GC_H                                    /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_GC_H
 /**
  * @file
- * @brief      Internal header for GC.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for GC.
  */
-#include "ruby/config.h"
+#include "ruby/internal/config.h"
 
 #include <stddef.h>             /* for size_t */
 
@@ -18,6 +18,10 @@
 
 struct rb_execution_context_struct; /* in vm_core.h */
 struct rb_objspace; /* in vm_core.h */
+
+#ifndef USE_RVARGC
+#define USE_RVARGC 0
+#endif
 
 #ifdef NEWOBJ_OF
 # undef NEWOBJ_OF
@@ -28,9 +32,21 @@ struct rb_objspace; /* in vm_core.h */
 /* optimized version of NEWOBJ() */
 #define RB_NEWOBJ_OF(var, T, c, f) \
   T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
-                   rb_wb_protected_newobj_of((c), (f) & ~FL_WB_PROTECTED) : \
-                   rb_wb_unprotected_newobj_of((c), (f)))
+                   rb_wb_protected_newobj_of((c), (f) & ~FL_WB_PROTECTED, 0) : \
+                   rb_wb_unprotected_newobj_of((c), (f), 0))
+
+#define RB_EC_NEWOBJ_OF(ec, var, T, c, f) \
+  T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
+                   rb_ec_wb_protected_newobj_of((ec), (c), (f) & ~FL_WB_PROTECTED, 0) : \
+                   rb_wb_unprotected_newobj_of((c), (f), 0))
+
+#define RB_RVARGC_NEWOBJ_OF(var, T, c, f, s) \
+  T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
+                   rb_wb_protected_newobj_of((c), (f) & ~FL_WB_PROTECTED, s) : \
+                   rb_wb_unprotected_newobj_of((c), (f), s))
+
 #define NEWOBJ_OF(var, T, c, f) RB_NEWOBJ_OF((var), T, (c), (f))
+#define RVARGC_NEWOBJ_OF(var, T, c, f, s) RB_RVARGC_NEWOBJ_OF((var), T, (c), (f), (s))
 #define RB_OBJ_GC_FLAGS_MAX 6   /* used in ext/objspace */
 
 #ifndef USE_UNALIGNED_MEMBER_ACCESS
@@ -52,13 +68,18 @@ struct rb_objspace; /* in vm_core.h */
 
 #define UNALIGNED_MEMBER_PTR(ptr, mem) UNALIGNED_MEMBER_ACCESS(&(ptr)->mem)
 #define RB_OBJ_WRITE(a, slot, b) \
-    UNALIGNED_MEMBER_ACCESS(\
-        rb_obj_write((VALUE)(a), (VALUE *)(slot), (VALUE)(b), __FILE__, __LINE__))
+    rb_obj_write((VALUE)(a), UNALIGNED_MEMBER_ACCESS((VALUE *)(slot)), \
+                 (VALUE)(b), __FILE__, __LINE__)
+
+typedef struct ractor_newobj_cache {
+    struct RVALUE *freelist;
+    struct heap_page *using_page;
+} rb_ractor_newobj_cache_t;
 
 /* gc.c */
 extern VALUE *ruby_initial_gc_stress_ptr;
 extern int ruby_disable_gc;
-void *ruby_mimmalloc(size_t size) RUBY_ATTR_MALLOC;
+RUBY_ATTR_MALLOC void *ruby_mimmalloc(size_t size);
 void ruby_mimfree(void *ptr);
 void rb_objspace_set_event_hook(const rb_event_flag_t event);
 VALUE rb_objspace_gc_enable(struct rb_objspace *);
@@ -68,22 +89,26 @@ void rb_copy_wb_protected_attribute(VALUE dest, VALUE obj);
 #if __has_attribute(alloc_align)
 __attribute__((__alloc_align__(1)))
 #endif
-void *rb_aligned_malloc(size_t, size_t) RUBY_ATTR_MALLOC RUBY_ATTR_ALLOC_SIZE((2));
+RUBY_ATTR_MALLOC void *rb_aligned_malloc(size_t, size_t) RUBY_ATTR_ALLOC_SIZE((2));
 size_t rb_size_mul_or_raise(size_t, size_t, VALUE); /* used in compile.c */
 size_t rb_size_mul_add_or_raise(size_t, size_t, size_t, VALUE); /* used in iseq.h */
-void *rb_xmalloc_mul_add(size_t, size_t, size_t) RUBY_ATTR_MALLOC;
+RUBY_ATTR_MALLOC void *rb_xmalloc_mul_add(size_t, size_t, size_t);
 void *rb_xrealloc_mul_add(const void *, size_t, size_t, size_t);
-void *rb_xmalloc_mul_add_mul(size_t, size_t, size_t, size_t) RUBY_ATTR_MALLOC;
-void *rb_xcalloc_mul_add_mul(size_t, size_t, size_t, size_t) RUBY_ATTR_MALLOC;
+RUBY_ATTR_MALLOC void *rb_xmalloc_mul_add_mul(size_t, size_t, size_t, size_t);
+RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add_mul(size_t, size_t, size_t, size_t);
 static inline void *ruby_sized_xrealloc_inlined(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
 static inline void *ruby_sized_xrealloc2_inlined(void *ptr, size_t new_count, size_t elemsiz, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
 static inline void ruby_sized_xfree_inlined(void *ptr, size_t size);
+VALUE rb_class_allocate_instance(VALUE klass);
+void rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache);
+void *rb_gc_rvargc_object_data(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* gc.c (export) */
 const char *rb_objspace_data_type_name(VALUE obj);
-VALUE rb_wb_protected_newobj_of(VALUE, VALUE);
-VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE);
+VALUE rb_wb_protected_newobj_of(VALUE, VALUE, size_t);
+VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE, size_t);
+VALUE rb_ec_wb_protected_newobj_of(struct rb_execution_context_struct *ec, VALUE klass, VALUE flags, size_t);
 size_t rb_obj_memsize_of(VALUE);
 void rb_gc_verify_internal_consistency(void);
 size_t rb_obj_gc_flags(VALUE, ID[], size_t);

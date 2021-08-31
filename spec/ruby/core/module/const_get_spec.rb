@@ -88,6 +88,14 @@ describe "Module#const_get" do
     end.should raise_error(NameError)
   end
 
+  it "coerces the inherit flag to a boolean" do
+    ConstantSpecs::ContainerA::ChildA.const_get(:CS_CONST4, :true).should == :const4
+
+    -> do
+      ConstantSpecs::ContainerA::ChildA.const_get(:CS_CONST1, nil)
+    end.should raise_error(NameError)
+  end
+
   it "accepts a toplevel scope qualifier" do
     ConstantSpecs.const_get("::CS_CONST1").should == :const1
   end

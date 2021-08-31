@@ -54,6 +54,7 @@ module IRB
         @use_multiline = nil
       end
       @use_colorize = IRB.conf[:USE_COLORIZE]
+      @use_autocomplete = IRB.conf[:USE_AUTOCOMPLETE]
       @verbose = IRB.conf[:VERBOSE]
       @io = nil
 
@@ -131,7 +132,7 @@ module IRB
 
       @echo_on_assignment = IRB.conf[:ECHO_ON_ASSIGNMENT]
       if @echo_on_assignment.nil?
-        @echo_on_assignment = false
+        @echo_on_assignment = :truncate
       end
 
       @newline_before_multiline_output = IRB.conf[:NEWLINE_BEFORE_MULTILINE_OUTPUT]
@@ -185,6 +186,8 @@ module IRB
     #
     # A copy of the default <code>IRB.conf[:USE_COLORIZE]</code>
     attr_reader :use_colorize
+    # A copy of the default <code>IRB.conf[:USE_AUTOCOMPLETE]</code>
+    attr_reader :use_autocomplete
     # A copy of the default <code>IRB.conf[:INSPECT_MODE]</code>
     attr_reader :inspect_mode
 
@@ -240,7 +243,7 @@ module IRB
     attr_accessor :ignore_eof
     # Whether to echo the return value to output or not.
     #
-    # Uses IRB.conf[:ECHO] if available, or defaults to +true+.
+    # Uses <code>IRB.conf[:ECHO]</code> if available, or defaults to +true+.
     #
     #     puts "hello"
     #     # hello
@@ -251,16 +254,27 @@ module IRB
     attr_accessor :echo
     # Whether to echo for assignment expressions
     #
-    # Uses IRB.conf[:ECHO_ON_ASSIGNMENT] if available, or defaults to +false+.
+    # If set to +false+, the value of assignment will not be shown.
     #
+    # If set to +true+, the value of assignment will be shown.
+    #
+    # If set to +:truncate+, the value of assignment will be shown and truncated.
+    #
+    # It defaults to +:truncate+.
+    #
+    #     a = "omg"
+    #     #=> omg
+    #     a = "omg" * 10
+    #     #=> omgomgomgomgomgomgomg...
+    #     IRB.CurrentContext.echo_on_assignment = false
     #     a = "omg"
     #     IRB.CurrentContext.echo_on_assignment = true
     #     a = "omg"
-    #     #=> omg
+    #     #=> omgomgomgomgomgomgomgomgomgomg
     attr_accessor :echo_on_assignment
     # Whether a newline is put before multiline output.
     #
-    # Uses IRB.conf[:NEWLINE_BEFORE_MULTILINE_OUTPUT] if available,
+    # Uses <code>IRB.conf[:NEWLINE_BEFORE_MULTILINE_OUTPUT]</code> if available,
     # or defaults to +true+.
     #
     #     "abc\ndef"
@@ -300,6 +314,8 @@ module IRB
     alias use_readline? use_singleline
     # Alias for #use_colorize
     alias use_colorize? use_colorize
+    # Alias for #use_autocomplete
+    alias use_autocomplete? use_autocomplete
     # Alias for #rc
     alias rc? rc
     alias ignore_sigint? ignore_sigint

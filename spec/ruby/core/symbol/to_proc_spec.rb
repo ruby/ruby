@@ -12,10 +12,10 @@ describe "Symbol#to_proc" do
     :to_s.to_proc.call(obj).should == "Received #to_s"
   end
 
-  ruby_version_is ""..."2.8" do
+  ruby_version_is ""..."3.0" do
     it "returns a Proc with #lambda? false" do
       pr = :to_s.to_proc
-      pr.lambda?.should == false
+      pr.should_not.lambda?
     end
 
     it "produces a Proc with arity -1" do
@@ -29,10 +29,10 @@ describe "Symbol#to_proc" do
     end
   end
 
-  ruby_version_is "2.8" do
+  ruby_version_is "3.0" do
     it "returns a Proc with #lambda? true" do
       pr = :to_s.to_proc
-      pr.lambda?.should == true
+      pr.should.lambda?
     end
 
     it "produces a Proc with arity -2" do

@@ -29,16 +29,8 @@ describe "Process.exec" do
     end
   end
 
-  platform_is_not :openbsd do
-    it "raises Errno::EACCES when passed a directory" do
-      -> { Process.exec File.dirname(__FILE__) }.should raise_error(Errno::EACCES)
-    end
-  end
-
-  platform_is :openbsd do
-    it "raises Errno::EISDIR when passed a directory" do
-      -> { Process.exec File.dirname(__FILE__) }.should raise_error(Errno::EISDIR)
-    end
+  it "raises Errno::EACCES when passed a directory" do
+    -> { Process.exec File.dirname(__FILE__) }.should raise_error(Errno::EACCES)
   end
 
   it "runs the specified command, replacing current process" do
@@ -201,9 +193,11 @@ describe "Process.exec" do
           map_fd_fixture = fixture __FILE__, "map_fd.rb"
           cmd = <<-EOC
             f = File.open(#{@name.inspect}, "w+")
-            child_fd = f.fileno + 1
-            File.open(#{@child_fd_file.inspect}, "w") { |io| io.print child_fd }
-            Process.exec "#{ruby_cmd(map_fd_fixture)} \#{child_fd}", { child_fd => f }
+            File.open(#{__FILE__.inspect}, "r") do |io|
+              child_fd = io.fileno
+              File.open(#{@child_fd_file.inspect}, "w") { |io| io.print child_fd }
+              Process.exec "#{ruby_cmd(map_fd_fixture)} \#{child_fd}", { child_fd => f }
+            end
             EOC
 
           ruby_exe(cmd, escape: true)

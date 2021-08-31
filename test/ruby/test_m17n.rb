@@ -310,6 +310,7 @@ class TestM17N < Test::Unit::TestCase
     def o.inspect
       "abc".encode(Encoding.default_external)
     end
+
     assert_equal '[abc]', [o].inspect
 
     Encoding.default_external = Encoding::US_ASCII
@@ -1324,10 +1325,14 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_env
-    locale_encoding = Encoding.find("locale")
+    if RUBY_PLATFORM =~ /bccwin|mswin|mingw/
+      env_encoding = Encoding::UTF_8
+    else
+      env_encoding = Encoding.find("locale")
+    end
     ENV.each {|k, v|
-      assert_equal(locale_encoding, k.encoding, k)
-      assert_equal(locale_encoding, v.encoding, v)
+      assert_equal(env_encoding, k.encoding, k)
+      assert_equal(env_encoding, v.encoding, v)
     }
   end
 

@@ -1382,10 +1382,6 @@ module DRb
       @@idconv = idconv
     end
 
-    def self.default_safe_level(level) # :nodoc:
-      # Remove in Ruby 3.0
-    end
-
     # Set the default value of the :verbose option.
     #
     # See #new().  The initial default value is false.
@@ -1494,11 +1490,6 @@ module DRb
 
     # The configuration of this DRbServer
     attr_reader :config
-
-    def safe_level # :nodoc:
-      # Remove in Ruby 3.0
-      0
-    end
 
     # Set whether to operate in verbose mode.
     #

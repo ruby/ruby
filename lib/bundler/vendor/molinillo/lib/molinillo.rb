@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative 'molinillo/compatibility'
 require_relative 'molinillo/gem_metadata'
 require_relative 'molinillo/errors'
 require_relative 'molinillo/resolver'

@@ -17,7 +17,7 @@
 # structure.
 #
 # You can read more about the general principles on the Wikipedia page for
-# Monitors[http://en.wikipedia.org/wiki/Monitor_%28synchronization%29]
+# Monitors[https://en.wikipedia.org/wiki/Monitor_%28synchronization%29]
 #
 # == Examples
 #
@@ -220,7 +220,7 @@ module MonitorMixin
   # Use <tt>extend MonitorMixin</tt> or <tt>include MonitorMixin</tt> instead
   # of this constructor.  Have look at the examples above to understand how to
   # use this module.
-  def initialize(*args)
+  def initialize(...)
     super
     mon_initialize
   end
@@ -230,7 +230,7 @@ module MonitorMixin
   def mon_initialize
     if defined?(@mon_data)
       if defined?(@mon_initialized_by_new_cond)
-        return # already initalized.
+        return # already initialized.
       elsif @mon_data_owner_object_id == self.object_id
         raise ThreadError, "already initialized"
       end

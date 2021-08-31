@@ -26,12 +26,6 @@ class RDoc::AnyMethod < RDoc::MethodAttr
 
   attr_accessor :c_function
 
-  ##
-  # Different ways to call this method
-
-  attr_reader :call_seq
-
-  ##
   # Parameters for this method
 
   attr_accessor :params
@@ -91,6 +85,19 @@ class RDoc::AnyMethod < RDoc::MethodAttr
     elsif @params then
       "#{name}#{param_seq}"
     end
+  end
+
+  ##
+  # Different ways to call this method
+
+  def call_seq
+    unless call_seq = _call_seq
+      call_seq = is_alias_for._call_seq if is_alias_for
+    end
+
+    return unless call_seq
+
+    deduplicate_call_seq(call_seq)
   end
 
   ##
@@ -312,5 +319,43 @@ class RDoc::AnyMethod < RDoc::MethodAttr
     @superclass_method
   end
 
-end
+  protected
 
+  ##
+  # call_seq without deduplication and alias lookup.
+
+  def _call_seq
+    @call_seq if defined?(@call_seq) && @call_seq
+  end
+
+  private
+
+  ##
+  # call_seq with alias examples information removed, if this
+  # method is an alias method.
+
+  def deduplicate_call_seq(call_seq)
+    return call_seq unless is_alias_for || !aliases.empty?
+
+    method_name = self.name
+    method_name = method_name[0, 1] if method_name =~ /\A\[/
+
+    entries = call_seq.split "\n"
+
+    ignore = aliases.map(&:name)
+    if is_alias_for
+      ignore << is_alias_for.name
+      ignore.concat is_alias_for.aliases.map(&:name)
+    end
+    ignore.map! { |n| n =~ /\A\[/ ? n[0, 1] : n}
+    ignore.delete(method_name)
+    ignore = Regexp.union(ignore)
+
+    matching = entries.reject do |entry|
+      entry =~ /^\w*\.?#{ignore}/ or
+        entry =~ /\s#{ignore}\s/
+    end
+
+    matching.join "\n"
+  end
+end

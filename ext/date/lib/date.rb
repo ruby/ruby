@@ -11,8 +11,6 @@ class Date
 
   class Infinity < Numeric # :nodoc:
 
-    include Comparable
-
     def initialize(d=1) @d = d <=> 0 end
 
     def d() @d end
@@ -32,6 +30,8 @@ class Date
     def <=>(other)
       case other
       when Infinity; return d <=> other.d
+      when Float::INFINITY; return d <=> 1
+      when -Float::INFINITY; return d <=> -1
       when Numeric; return d
       else
         begin

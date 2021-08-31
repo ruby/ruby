@@ -1,15 +1,15 @@
-#ifndef INTERNAL_SANITIZERS_H /* -*- C -*- */
+#ifndef INTERNAL_SANITIZERS_H                            /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_SANITIZERS_H
 /**
  * @file
- * @brief      Internal header for ASAN / MSAN / etc.
- * @author     \@shyouhei
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
+ * @brief      Internal header for ASAN / MSAN / etc.
  */
-#include "ruby/config.h"
+#include "ruby/internal/config.h"
 #include "internal/compilers.h" /* for __has_feature */
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
@@ -26,7 +26,7 @@
 # endif
 #endif
 
-#include "internal/stdbool.h"   /* for bool */
+#include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for VALUE */
 
 #if 0
@@ -46,7 +46,7 @@
 # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) x
 #endif
 
-#if defined(NO_SANITIZE) && defined(__GNUC__) &&! defined(__clang__)
+#if defined(NO_SANITIZE) && RBIMPL_COMPILER_IS(GCC)
 /* GCC warns about unknown sanitizer, which is annoying. */
 # include "internal/warnings.h"
 # undef NO_SANITIZE

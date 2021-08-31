@@ -1,7 +1,7 @@
 inherit_from: .rubocop_todo.yml
 
 AllCops:
-  TargetRubyVersion: 2.4
+  TargetRubyVersion: 2.6
   DisplayCopNames: true
   Exclude:
     - command_line/fixtures/bad_syntax.rb
@@ -14,6 +14,10 @@ Layout/TrailingEmptyLines:
   Enabled: true
   Exclude:
     - library/coverage/fixtures/some_class.rb
+
+Layout/SpaceInLambdaLiteral:
+  Enabled: true
+  EnforcedStyle: require_space
 
 Lint:
   Enabled: true
@@ -88,8 +92,10 @@ Lint/UnreachableCode:
   Exclude:
     - 'core/enumerator/lazy/fixtures/classes.rb'
     - 'core/kernel/catch_spec.rb'
+    - 'core/kernel/raise_spec.rb'
     - 'core/kernel/throw_spec.rb'
     - 'language/break_spec.rb'
+    - 'language/optional_assignments_spec.rb'
     - 'language/fixtures/break.rb'
     - 'language/fixtures/break_lambda_toplevel.rb'
     - 'language/fixtures/break_lambda_toplevel_block.rb'
@@ -107,6 +113,9 @@ Lint/UriRegexp:
 Lint/Debugger:
   Exclude:
     - 'core/binding/fixtures/irb.rb'
+
+Lint/Loop:
+  Enabled: false
 
 Style/Lambda:
   Enabled: true

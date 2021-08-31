@@ -6,13 +6,13 @@ class MethodFormatter < BaseFormatter
   def initialize(out = nil)
     super(out)
     @methods = Hash.new do |h, k|
-      hash = {}
-      hash[:examples]     = 0
-      hash[:expectations] = 0
-      hash[:failures]     = 0
-      hash[:errors]       = 0
-      hash[:exceptions]   = []
-      h[k] = hash
+      h[k] = {
+        examples: 0,
+        expectations: 0,
+        failures: 0,
+        errors: 0,
+        exceptions: []
+      }
     end
   end
 

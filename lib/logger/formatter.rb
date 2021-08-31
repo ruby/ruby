@@ -12,7 +12,7 @@ class Logger
     end
 
     def call(severity, time, progname, msg)
-      Format % [severity[0..0], format_datetime(time), $$, severity, progname,
+      Format % [severity[0..0], format_datetime(time), Process.pid, severity, progname,
         msg2str(msg)]
     end
 

@@ -8,17 +8,20 @@ BEGIN {
   Dir.chdir(dir)
 }
 
-n, v, u = $F
+n, v, u, r = $F
+
+next if n =~ /^#/
 
 if File.directory?(n)
   puts "updating #{n} ..."
-  system("git", (v == "master" ? "pull" : "fetch"), chdir: n) or abort
+  system("git", "fetch", chdir: n) or abort
 else
   puts "retrieving #{n} ..."
   system(*%W"git clone #{u} #{n}") or abort
 end
-unless system(*%W"git checkout #{v.sub(/\A(?=\d)/, 'v')}", chdir: n)
-  unless /\A\d/ =~ v and system(*%W"git checkout #{v}", chdir: n)
-    abort
-  end
+c = r || "v#{v}"
+checkout = %w"git -c advice.detachedHead=false checkout"
+puts "checking out #{c} (v=#{v}, r=#{r}) ..."
+unless system(*checkout, c, "--", chdir: n)
+  abort
 end

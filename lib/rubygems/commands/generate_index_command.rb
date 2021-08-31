@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/indexer'
+require_relative '../command'
+require_relative '../indexer'
 
 ##
 # Generates a index files for use as a gem server.
@@ -8,7 +8,6 @@ require 'rubygems/indexer'
 # See `gem help generate_index`
 
 class Gem::Commands::GenerateIndexCommand < Gem::Command
-
   def initialize
     super 'generate_index',
           'Generates the index files for a gem server directory',
@@ -83,5 +82,4 @@ Marshal::MINOR_VERSION constants.  It is used to ensure compatibility.
       end
     end
   end
-
 end

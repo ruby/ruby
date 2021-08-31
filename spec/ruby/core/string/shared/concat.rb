@@ -17,12 +17,12 @@ describe :string_concat, shared: true do
     -> { 'hello '.send(@method, mock('x')) }.should raise_error(TypeError)
   end
 
-  it "raises a #{frozen_error_class} when self is frozen" do
+  it "raises a FrozenError when self is frozen" do
     a = "hello"
     a.freeze
 
-    -> { a.send(@method, "")     }.should raise_error(frozen_error_class)
-    -> { a.send(@method, "test") }.should raise_error(frozen_error_class)
+    -> { a.send(@method, "")     }.should raise_error(FrozenError)
+    -> { a.send(@method, "test") }.should raise_error(FrozenError)
   end
 
   it "returns a String when given a subclass instance" do
@@ -41,13 +41,13 @@ describe :string_concat, shared: true do
 
   ruby_version_is ''...'2.7' do
     it "taints self if other is tainted" do
-      "x".send(@method, "".taint).tainted?.should == true
-      "x".send(@method, "y".taint).tainted?.should == true
+      "x".send(@method, "".taint).should.tainted?
+      "x".send(@method, "y".taint).should.tainted?
     end
 
     it "untrusts self if other is untrusted" do
-      "x".send(@method, "".untrust).untrusted?.should == true
-      "x".send(@method, "y".untrust).untrusted?.should == true
+      "x".send(@method, "".untrust).should.untrusted?
+      "x".send(@method, "y".untrust).should.untrusted?
     end
   end
 
@@ -89,12 +89,12 @@ describe :string_concat, shared: true do
       -> { "".send(@method, x) }.should raise_error(TypeError)
     end
 
-    it "raises a #{frozen_error_class} when self is frozen" do
+    it "raises a FrozenError when self is frozen" do
       a = "hello"
       a.freeze
 
-      -> { a.send(@method, 0)  }.should raise_error(frozen_error_class)
-      -> { a.send(@method, 33) }.should raise_error(frozen_error_class)
+      -> { a.send(@method, 0)  }.should raise_error(FrozenError)
+      -> { a.send(@method, 33) }.should raise_error(FrozenError)
     end
   end
 end

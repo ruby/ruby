@@ -1,0 +1,14 @@
+prelude: |
+  class C
+    def m
+    end
+  end
+
+  o = C.new
+  m = :m
+benchmark:
+  vm_send: |
+    o.__send__ :m
+  vm_send_var: |
+    o.__send__ m
+loop_count: 6000000

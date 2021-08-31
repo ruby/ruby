@@ -42,3 +42,17 @@ describe "Errno::EAGAIN" do
     end
   end
 end
+
+describe "Errno::ENOTSUP" do
+  it "is defined" do
+    Errno.should have_constant(:ENOTSUP)
+  end
+
+  it "is the same class as Errno::EOPNOTSUPP if they represent the same errno value" do
+    if Errno::ENOTSUP::Errno == Errno::EOPNOTSUPP::Errno
+      Errno::ENOTSUP.should == Errno::EOPNOTSUPP
+    else
+      Errno::ENOTSUP.should_not == Errno::EOPNOTSUPP
+    end
+  end
+end

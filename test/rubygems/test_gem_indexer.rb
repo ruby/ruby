@@ -1,13 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/indexer'
 
-unless defined?(Builder::XChar)
-  warn "Gem::Indexer tests are being skipped.  Install builder gem."
-end
-
 class TestGemIndexer < Gem::TestCase
-
   def setup
     super
 
@@ -189,15 +184,15 @@ class TestGemIndexer < Gem::TestCase
       @indexer.generate_index
     end
 
-    assert_match %r%^\.\.\.\.\.\.\.\.\.\.\.\.$%, @ui.output
-    assert_match %r%^Generating Marshal quick index gemspecs for 12 gems$%,
+    assert_match %r{^\.\.\.\.\.\.\.\.\.\.\.\.$}, @ui.output
+    assert_match %r{^Generating Marshal quick index gemspecs for 12 gems$},
                  @ui.output
-    assert_match %r%^Complete$%, @ui.output
-    assert_match %r%^Generating specs index$%, @ui.output
-    assert_match %r%^Generating latest specs index$%, @ui.output
-    assert_match %r%^Generating prerelease specs index$%, @ui.output
-    assert_match %r%^Complete$%, @ui.output
-    assert_match %r%^Compressing indices$%, @ui.output
+    assert_match %r{^Complete$}, @ui.output
+    assert_match %r{^Generating specs index$}, @ui.output
+    assert_match %r{^Generating latest specs index$}, @ui.output
+    assert_match %r{^Generating prerelease specs index$}, @ui.output
+    assert_match %r{^Complete$}, @ui.output
+    assert_match %r{^Compressing indices$}, @ui.output
 
     assert_equal '', @ui.error
   end
@@ -359,5 +354,4 @@ class TestGemIndexer < Gem::TestCase
     file = File.join dir, name
     refute File.exist?(file), "#{file} exists"
   end
-
-end if defined?(Builder::XChar)
+end

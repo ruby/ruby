@@ -302,35 +302,35 @@ class Logger
   alias sev_threshold level
   alias sev_threshold= level=
 
-  # Returns +true+ iff the current severity level allows for the printing of
+  # Returns +true+ if and only if the current severity level allows for the printing of
   # +DEBUG+ messages.
   def debug?; level <= DEBUG; end
 
   # Sets the severity to DEBUG.
   def debug!; self.level = DEBUG; end
 
-  # Returns +true+ iff the current severity level allows for the printing of
+  # Returns +true+ if and only if the current severity level allows for the printing of
   # +INFO+ messages.
   def info?; level <= INFO; end
 
   # Sets the severity to INFO.
   def info!; self.level = INFO; end
 
-  # Returns +true+ iff the current severity level allows for the printing of
+  # Returns +true+ if and only if the current severity level allows for the printing of
   # +WARN+ messages.
   def warn?; level <= WARN; end
 
   # Sets the severity to WARN.
   def warn!; self.level = WARN; end
 
-  # Returns +true+ iff the current severity level allows for the printing of
+  # Returns +true+ if and only if the current severity level allows for the printing of
   # +ERROR+ messages.
   def error?; level <= ERROR; end
 
   # Sets the severity to ERROR.
   def error!; self.level = ERROR; end
 
-  # Returns +true+ iff the current severity level allows for the printing of
+  # Returns +true+ if and only if the current severity level allows for the printing of
   # +FATAL+ messages.
   def fatal?; level <= FATAL; end
 
@@ -349,8 +349,9 @@ class Logger
   # === Args
   #
   # +logdev+::
-  #   The log device.  This is a filename (String) or IO object (typically
-  #   +STDOUT+, +STDERR+, or an open file).
+  #   The log device.  This is a filename (String), IO object (typically
+  #   +STDOUT+, +STDERR+, or an open file), +nil+ (it writes nothing) or
+  #   +File::NULL+ (same as +nil+).
   # +shift_age+::
   #   Number of old log files to keep, *or* frequency of rotation (+daily+,
   #   +weekly+ or +monthly+). Default value is 0, which disables log file
@@ -385,7 +386,7 @@ class Logger
     self.datetime_format = datetime_format
     self.formatter = formatter
     @logdev = nil
-    if logdev
+    if logdev && logdev != File::NULL
       @logdev = LogDevice.new(logdev, shift_age: shift_age,
         shift_size: shift_size,
         shift_period_suffix: shift_period_suffix,
@@ -410,7 +411,7 @@ class Logger
   # Reopen a log device.
   #
   def reopen(logdev = nil)
-    @logdev.reopen(logdev)
+    @logdev&.reopen(logdev)
     self
   end
 

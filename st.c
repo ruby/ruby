@@ -313,9 +313,6 @@ static const struct st_features features[] = {
 #define RESERVED_HASH_VAL (~(st_hash_t) 0)
 #define RESERVED_HASH_SUBSTITUTION_VAL ((st_hash_t) 0)
 
-const st_hash_t st_reserved_hash_val = RESERVED_HASH_VAL;
-const st_hash_t st_reserved_hash_substitution_val = RESERVED_HASH_SUBSTITUTION_VAL;
-
 /* Return hash value of KEY for table TAB.  */
 static inline st_hash_t
 do_hash(st_data_t key, st_table *tab)
@@ -771,7 +768,7 @@ rebuild_table(st_table *tab)
    guarantees traversing all table bins in extreme case.
 
    According the Hull-Dobell theorem a generator
-   "Xnext = (a*Xprev + c) mod m" is a full cycle generator iff
+   "Xnext = (a*Xprev + c) mod m" is a full cycle generator if and only if
      o m and c are relatively prime
      o a-1 is divisible by all prime factors of m
      o a-1 is divisible by 4 if m is divisible by 4.
@@ -844,7 +841,8 @@ find_table_entry_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
 		return REBUILT_TABLE_ENTRY_IND;
 	    if (eq_p)
 		break;
-	} else if (EMPTY_BIN_P(bin))
+	}
+	else if (EMPTY_BIN_P(bin))
             return UNDEFINED_ENTRY_IND;
 #ifdef QUADRATIC_PROBE
 	ind = hash_bin(ind + d, tab);
@@ -889,7 +887,8 @@ find_table_bin_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
 		return REBUILT_TABLE_BIN_IND;
 	    if (eq_p)
 		break;
-	} else if (EMPTY_BIN_P(bin))
+	}
+	else if (EMPTY_BIN_P(bin))
             return UNDEFINED_BIN_IND;
 #ifdef QUADRATIC_PROBE
 	ind = hash_bin(ind + d, tab);
@@ -1073,7 +1072,7 @@ rebuild_table_if_necessary (st_table *tab)
 }
 
 /* Insert (KEY, VALUE) into table TAB and return zero.  If there is
-   already entry with KEY in the table, return nonzero and and update
+   already entry with KEY in the table, return nonzero and update
    the value of the found entry.  */
 int
 st_insert(st_table *tab, st_data_t key, st_data_t value)
@@ -1155,14 +1154,14 @@ st_add_direct(st_table *tab, st_data_t key, st_data_t value)
 
 /* Insert (FUNC(KEY), VALUE) into table TAB and return zero.  If
    there is already entry with KEY in the table, return nonzero and
-   and update the value of the found entry.  */
+   update the value of the found entry.  */
 int
 st_insert2(st_table *tab, st_data_t key, st_data_t value,
            st_data_t (*func)(st_data_t))
 {
     st_table_entry *entry;
     st_index_t bin;
-    st_index_t ind, check;
+    st_index_t ind;
     st_hash_t hash_value;
     st_index_t bin_ind;
     int new_p;
@@ -1188,7 +1187,6 @@ st_insert2(st_table *tab, st_data_t key, st_data_t value,
 	bin -= ENTRY_BASE;
     }
     if (new_p) {
-        check = tab->rebuilds_num;
         key = (*func)(key);
         ind = tab->entries_bound++;
         entry = &tab->entries[ind];
@@ -1248,8 +1246,13 @@ update_range_for_deleted(st_table *tab, st_index_t n)
 {
     /* Do not update entries_bound here.  Otherwise, we can fill all
        bins by deleted entry value before rebuilding the table.  */
-    if (tab->entries_start == n)
-        tab->entries_start = n + 1;
+    if (tab->entries_start == n) {
+        st_index_t start = n + 1;
+        st_index_t bound = tab->entries_bound;
+        st_table_entry *entries = tab->entries;
+        while (start < bound && DELETED_ENTRY_P(&entries[start])) start++;
+        tab->entries_start = start;
+    }
 }
 
 /* Delete entry with KEY from table TAB, set up *VALUE (unless
@@ -1372,14 +1375,15 @@ st_cleanup_safe(st_table *tab ATTRIBUTE_UNUSED,
 {
 }
 
-/* Find entry with KEY in table TAB, call FUNC with the key and the
-   value of the found entry, and non-zero as the 3rd argument.  If the
-   entry is not found, call FUNC with KEY, and 2 zero arguments.  If
-   the call returns ST_CONTINUE, the table will have an entry with key
-   and value returned by FUNC through the 1st and 2nd parameters.  If
-   the call of FUNC returns ST_DELETE, the table will not have entry
-   with KEY.  The function returns flag of that the entry with KEY was
-   in the table before the call.  */
+/* Find entry with KEY in table TAB, call FUNC with pointers to copies
+   of the key and the value of the found entry, and non-zero as the
+   3rd argument.  If the entry is not found, call FUNC with a pointer
+   to KEY, a pointer to zero, and a zero argument.  If the call
+   returns ST_CONTINUE, the table will have an entry with key and
+   value returned by FUNC through the 1st and 2nd parameters.  If the
+   call of FUNC returns ST_DELETE, the table will not have entry with
+   KEY.  The function returns flag of that the entry with KEY was in
+   the table before the call.  */
 int
 st_update(st_table *tab, st_data_t key,
 	  st_update_callback_func *func, st_data_t arg)
@@ -1389,7 +1393,6 @@ st_update(st_table *tab, st_data_t key,
     st_table_entry *entries;
     st_index_t bin_ind;
     st_data_t value = 0, old_key;
-    st_index_t check;
     int retval, existing;
     st_hash_t hash = do_hash(key, tab);
 
@@ -1418,7 +1421,6 @@ st_update(st_table *tab, st_data_t key,
         value = entry->record;
     }
     old_key = key;
-    check = tab->rebuilds_num;
     retval = (*func)(&key, &value, arg, existing);
     switch (retval) {
       case ST_CONTINUE:
@@ -1467,7 +1469,7 @@ st_general_foreach(st_table *tab, st_foreach_check_callback_func *func, st_updat
 
     entries = tab->entries;
     /* The bound can change inside the loop even without rebuilding
-       the table, e.g. by an entry inesrtion.  */
+       the table, e.g. by an entry insertion.  */
     for (i = tab->entries_start; i < tab->entries_bound; i++) {
         curr_entry_ptr = &entries[i];
 	if (EXPECT(DELETED_ENTRY_P(curr_entry_ptr), 0))
@@ -1510,40 +1512,40 @@ st_general_foreach(st_table *tab, st_foreach_check_callback_func *func, st_updat
 	    curr_entry_ptr = &entries[i];
 	}
 	switch (retval) {
-            case ST_REPLACE:
-                break;
+          case ST_REPLACE:
+            break;
 	  case ST_CONTINUE:
-	      break;
+            break;
 	  case ST_CHECK:
-	      if (check_p)
-		  break;
+            if (check_p)
+                break;
 	  case ST_STOP:
-	      return 0;
+            return 0;
 	  case ST_DELETE: {
-	      st_data_t key = curr_entry_ptr->key;
+            st_data_t key = curr_entry_ptr->key;
 
 	      again:
-	      if (packed_p) {
-		  bin = find_entry(tab, hash, key);
-		  if (EXPECT(bin == REBUILT_TABLE_ENTRY_IND, 0))
-		      goto again;
-		  if (bin == UNDEFINED_ENTRY_IND)
-		      break;
-	      }
-	      else {
-		  bin_ind = find_table_bin_ind(tab, hash, key);
-		  if (EXPECT(bin_ind == REBUILT_TABLE_BIN_IND, 0))
-		      goto again;
-		  if (bin_ind == UNDEFINED_BIN_IND)
-		      break;
-		  bin = get_bin(tab->bins, get_size_ind(tab), bin_ind) - ENTRY_BASE;
-		  MARK_BIN_DELETED(tab, bin_ind);
-	      }
-	      curr_entry_ptr = &entries[bin];
-	      MARK_ENTRY_DELETED(curr_entry_ptr);
-	      tab->num_entries--;
-	      update_range_for_deleted(tab, bin);
-	      break;
+            if (packed_p) {
+                bin = find_entry(tab, hash, key);
+                if (EXPECT(bin == REBUILT_TABLE_ENTRY_IND, 0))
+                    goto again;
+                if (bin == UNDEFINED_ENTRY_IND)
+                    break;
+            }
+            else {
+                bin_ind = find_table_bin_ind(tab, hash, key);
+                if (EXPECT(bin_ind == REBUILT_TABLE_BIN_IND, 0))
+                    goto again;
+                if (bin_ind == UNDEFINED_BIN_IND)
+                    break;
+                bin = get_bin(tab->bins, get_size_ind(tab), bin_ind) - ENTRY_BASE;
+                MARK_BIN_DELETED(tab, bin_ind);
+            }
+            curr_entry_ptr = &entries[bin];
+            MARK_ENTRY_DELETED(curr_entry_ptr);
+            tab->num_entries--;
+            update_range_for_deleted(tab, bin);
+            break;
 	  }
 	}
     }
@@ -1668,7 +1670,7 @@ st_values_check(st_table *tab, st_data_t *values, st_index_t size,
 #ifndef UNALIGNED_WORD_ACCESS
 # if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
      defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || \
-     defined(__powerpc64__) || \
+     defined(__powerpc64__) || defined(__aarch64__) || \
      defined(__mc68020__)
 #   define UNALIGNED_WORD_ACCESS 1
 # endif
@@ -2120,7 +2122,7 @@ st_rehash_indexed(st_table *tab)
             continue;
 
         ind = hash_bin(p->hash, tab);
-        for(;;) {
+        for (;;) {
             st_index_t bin = get_bin(bins, size_ind, ind);
             if (EMPTY_OR_DELETED_BIN_P(bin)) {
                 /* ok, new room */
@@ -2244,4 +2246,19 @@ rb_hash_bulk_insert_into_st_table(long argc, const VALUE *argv, VALUE hash)
     else
         st_insert_generic(tab, argc, argv, hash);
 }
+
+// to iterate iv_index_tbl
+st_data_t
+rb_st_nth_key(st_table *tab, st_index_t index)
+{
+    if (LIKELY(tab->entries_start == 0 &&
+               tab->num_entries == tab->entries_bound &&
+               index < tab->num_entries)) {
+        return tab->entries[index].key;
+    }
+    else {
+        rb_bug("unreachable");
+    }
+}
+
 #endif

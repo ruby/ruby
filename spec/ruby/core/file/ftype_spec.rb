@@ -35,6 +35,14 @@ describe "File.ftype" do
     end
   end
 
+  it "uses to_path to convert arguments" do
+    FileSpecs.normal_file do |file|
+      obj = mock('path')
+      obj.should_receive(:to_path).and_return(file)
+      File.ftype(obj).should == 'file'
+    end
+  end
+
   # Both FreeBSD and Windows does not have block devices
   platform_is_not :freebsd, :windows do
     with_block_device do

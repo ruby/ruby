@@ -2,7 +2,6 @@
 
 #include <time.h>
 
-int rsock_cmsg_cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
 static VALUE sym_wait_readable, sym_wait_writable;
 
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
@@ -89,9 +88,9 @@ ancillary_initialize(VALUE self, VALUE vfamily, VALUE vlevel, VALUE vtype, VALUE
 static VALUE
 ancdata_new(int family, int level, int type, VALUE data)
 {
-    NEWOBJ_OF(obj, struct RObject, rb_cAncillaryData, T_OBJECT);
+    VALUE obj = rb_obj_alloc(rb_cAncillaryData);
     StringValue(data);
-    ancillary_initialize((VALUE)obj, INT2NUM(family), INT2NUM(level), INT2NUM(type), data);
+    ancillary_initialize(obj, INT2NUM(family), INT2NUM(level), INT2NUM(type), data);
     return (VALUE)obj;
 }
 
@@ -1280,7 +1279,7 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
 
     if (ss == -1) {
 	int e;
-        if (!nonblock && rb_io_wait_writable(fptr->fd)) {
+        if (!nonblock && rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
             rb_io_check_closed(fptr);
             goto retry;
         }
@@ -1429,10 +1428,7 @@ make_io_for_unix_rights(VALUE ctl, struct cmsghdr *cmh, char *msg_end)
             if (fstat(fd, &stbuf) == -1)
                 rb_raise(rb_eSocket, "invalid fd in SCM_RIGHTS");
             rb_update_max_fd(fd);
-            if (rsock_cmsg_cloexec_state < 0)
-                rsock_cmsg_cloexec_state = rsock_detect_cloexec(fd);
-            if (rsock_cmsg_cloexec_state == 0 || fd <= 2)
-                rb_maygvl_fd_fix_cloexec(fd);
+            rb_maygvl_fd_fix_cloexec(fd);
             if (S_ISSOCK(stbuf.st_mode))
                 io = rsock_init_sock(rb_obj_alloc(rb_cSocket), fd);
             else
@@ -1555,7 +1551,7 @@ bsock_recvmsg_internal(VALUE sock,
 
     if (ss == -1) {
 	int e;
-        if (!nonblock && rb_io_wait_readable(fptr->fd)) {
+        if (!nonblock && rb_io_maybe_wait_readable(errno, fptr->self, Qnil)) {
             rb_io_check_closed(fptr);
             goto retry;
         }

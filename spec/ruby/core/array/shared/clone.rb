@@ -26,8 +26,8 @@ describe :array_clone, shared: true do
       aa = a.send @method
       bb = b.send @method
 
-      aa.tainted?.should == true
-      bb.tainted?.should == false
+      aa.should.tainted?
+      bb.should_not.tainted?
     end
 
     it "copies untrusted status from the original" do
@@ -37,8 +37,8 @@ describe :array_clone, shared: true do
       aa = a.send @method
       bb = b.send @method
 
-      aa.untrusted?.should == true
-      bb.untrusted?.should == false
+      aa.should.untrusted?
+      bb.should_not.untrusted?
     end
   end
 end

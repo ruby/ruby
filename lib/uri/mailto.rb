@@ -3,7 +3,6 @@
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
 # License:: You can redistribute it and/or modify it under the same term as Ruby.
-# Revision:: $Id$
 #
 # See URI for general documentation
 #
@@ -290,5 +289,5 @@ module URI
     alias to_rfc822text to_mailtext
   end
 
-  @@schemes['MAILTO'] = MailTo
+  register_scheme 'MAILTO', MailTo
 end

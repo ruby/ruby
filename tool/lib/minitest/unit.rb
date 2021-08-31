@@ -181,10 +181,12 @@ module MiniTest
     def _assertions= n # :nodoc:
       @_assertions = n
     end
+    alias assertions= _assertions=
 
     def _assertions # :nodoc:
       @_assertions ||= 0
     end
+    alias assertions _assertions
 
     ##
     # Fails unless +test+ is a true value.
@@ -445,6 +447,20 @@ module MiniTest
 
       assert caught, message(msg) { default }
     end
+
+    def assert_path_exists(path, msg = nil)
+      msg = message(msg) { "Expected path '#{path}' to exist" }
+      assert File.exist?(path), msg
+    end
+    alias assert_path_exist assert_path_exists
+    alias refute_path_not_exist assert_path_exists
+
+    def refute_path_exists(path, msg = nil)
+      msg = message(msg) { "Expected path '#{path}' to not exist" }
+      refute File.exist?(path), msg
+    end
+    alias refute_path_exist refute_path_exists
+    alias assert_path_not_exist refute_path_exists
 
     ##
     # Captures $stdout and $stderr into strings:
@@ -763,12 +779,13 @@ module MiniTest
     # Lazy accessor for options.
 
     def options
-      @options ||= {}
+      @options ||= {seed: 42}
     end
 
     @@installed_at_exit ||= false
     @@out = $stdout
     @@after_tests = []
+    @@current_repeat_count = 0
 
     ##
     # A simple hook allowing you to run a block of code after _all_ of
@@ -944,37 +961,37 @@ module MiniTest
       }
 
       leakchecker = LeakChecker.new
-
-      continuation = proc do
-        assertions = filtered_test_methods.map { |method|
-          inst = suite.new method
-          inst._assertions = 0
-
-          print "#{suite}##{method} = " if @verbose
-
-          start_time = Time.now if @verbose
-          result = inst.run self
-
-          print "%.2f s = " % (Time.now - start_time) if @verbose
-          print result
-          puts if @verbose
-          $stdout.flush
-
-          unless defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # compiler process is wrongly considered as leak
-            leakchecker.check("#{inst.class}\##{inst.__name__}")
-          end
-
-          inst._assertions
-        }
-        return assertions.size, assertions.inject(0) { |sum, n| sum + n }
-      end
-
       if ENV["LEAK_CHECKER_TRACE_OBJECT_ALLOCATION"]
         require "objspace"
-        ObjectSpace.trace_object_allocations(&continuation)
-      else
-        continuation.call
+        trace = true
       end
+
+      assertions = filtered_test_methods.map { |method|
+        inst = suite.new method
+        inst._assertions = 0
+
+        print "#{suite}##{method} = " if @verbose
+
+        start_time = Time.now if @verbose
+        result =
+          if trace
+            ObjectSpace.trace_object_allocations {inst.run self}
+          else
+            inst.run self
+          end
+
+        print "%.2f s = " % (Time.now - start_time) if @verbose
+        print result
+        puts if @verbose
+        $stdout.flush
+
+        unless defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # compiler process is wrongly considered as leak
+          leakchecker.check("#{inst.class}\##{inst.__name__}")
+        end
+
+        inst._assertions
+      }
+      return assertions.size, assertions.inject(0) { |sum, n| sum + n }
     end
 
     ##
@@ -1297,6 +1314,8 @@ module MiniTest
         start_time = Time.now
 
         result = ""
+        srand(runner.options[:seed])
+
         begin
           @passed = nil
           self.before_setup
@@ -1385,11 +1404,31 @@ module MiniTest
       end
 
       def self.test_order # :nodoc:
-        :random
+        :sorted
       end
 
       def self.test_suites # :nodoc:
-        @@test_suites.keys.sort_by { |ts| ts.name.to_s }
+        suites = @@test_suites.keys
+
+        case self.test_order
+        when :random
+          # shuffle test suites based on CRC32 of their names
+          salt = "\n" + rand(1 << 32).to_s
+          crc_tbl = (0..255).map do |i|
+            (0..7).inject(i) {|c,| (c & 1 == 1) ? (0xEDB88320 ^ (c >> 1)) : (c >> 1) }
+          end
+          suites = suites.sort_by do |suite|
+            crc32 = 0xffffffff
+            "#{suite.name}#{salt}".each_byte do |data|
+              crc32 = crc_tbl[(crc32 ^ data) & 0xff] ^ (crc32 >> 8)
+            end
+            crc32 ^ 0xffffffff
+          end
+        when :nosort
+          suites
+        else
+          suites.sort_by { |ts| ts.name.to_s }
+        end
       end
 
       def self.test_methods # :nodoc:
@@ -1404,6 +1443,8 @@ module MiniTest
           methods.sort.sort_by { rand max }
         when :alpha, :sorted then
           methods.sort
+        when :nosort
+          methods
         else
           raise "Unknown test_order: #{self.test_order.inspect}"
         end

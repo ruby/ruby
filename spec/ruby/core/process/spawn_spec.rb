@@ -48,10 +48,10 @@ describe "Process.spawn" do
     -> { Process.wait Process.spawn("echo spawn") }.should output_to_fd("spawn\n")
   end
 
-  it "returns the process ID of the new process as a Fixnum" do
+  it "returns the process ID of the new process as an Integer" do
     pid = Process.spawn(*ruby_exe, "-e", "exit")
     Process.wait pid
-    pid.should be_an_instance_of(Fixnum)
+    pid.should be_an_instance_of(Integer)
   end
 
   it "returns immediately" do
@@ -207,13 +207,9 @@ describe "Process.spawn" do
 
   it "unsets environment variables whose value is nil" do
     ENV["FOO"] = "BAR"
-    Process.wait Process.spawn({"FOO" => nil}, "echo #{@var}>#{@name}")
-    expected = "\n"
-    platform_is :windows do
-      # Windows does not expand the variable if it is unset
-      expected = "#{@var}\n"
-    end
-    File.read(@name).should == expected
+    -> do
+      Process.wait Process.spawn({"FOO" => nil}, ruby_cmd("p ENV['FOO']"))
+    end.should output_to_fd("nil\n")
   end
 
   it "calls #to_hash to convert the environment" do
@@ -461,7 +457,7 @@ describe "Process.spawn" do
 
   # redirection
 
-  it "redirects STDOUT to the given file descriptor if out: Fixnum" do
+  it "redirects STDOUT to the given file descriptor if out: Integer" do
     File.open(@name, 'w') do |file|
       -> do
         Process.wait Process.spawn("echo glark", out: file.fileno)
@@ -487,7 +483,7 @@ describe "Process.spawn" do
     File.read(@name).should == "glark\n"
   end
 
-  it "redirects STDERR to the given file descriptor if err: Fixnum" do
+  it "redirects STDERR to the given file descriptor if err: Integer" do
     File.open(@name, 'w') do |file|
       -> do
         Process.wait Process.spawn("echo glark>&2", err: file.fileno)
@@ -540,31 +536,29 @@ describe "Process.spawn" do
     File.read(@name).should == "glarkbang"
   end
 
+  platform_is_not :windows, :android do
+    it "closes STDERR in the child if :err => :close" do
+      File.open(@name, 'w') do |file|
+        -> do
+          code = "begin; STDOUT.puts 'out'; STDERR.puts 'hello'; rescue => e; puts 'rescued'; end"
+          Process.wait Process.spawn(ruby_cmd(code), :out => file, :err => :close)
+        end.should output_to_fd("out\nrescued\n", file)
+      end
+    end
+  end
+
   # :close_others
 
   platform_is_not :windows do
     context "defaults :close_others to" do
-      ruby_version_is ""..."2.6" do
-        it "true" do
-          IO.pipe do |r, w|
-            w.close_on_exec = false
-            code = "begin; IO.new(#{w.fileno}).close; rescue Errno::EBADF; puts 'not inherited'; end"
-            Process.wait Process.spawn(ruby_cmd(code), :out => @name)
-            File.read(@name).should == "not inherited\n"
-          end
-        end
-      end
-
-      ruby_version_is "2.6" do
-        it "false" do
-          IO.pipe do |r, w|
-            w.close_on_exec = false
-            code = "io = IO.new(#{w.fileno}); io.puts('inherited'); io.close"
-            pid = Process.spawn(ruby_cmd(code))
-            w.close
-            Process.wait(pid)
-            r.read.should == "inherited\n"
-          end
+      it "false" do
+        IO.pipe do |r, w|
+          w.close_on_exec = false
+          code = "io = IO.new(#{w.fileno}); io.puts('inherited'); io.close"
+          pid = Process.spawn(ruby_cmd(code))
+          w.close
+          Process.wait(pid)
+          r.read.should == "inherited\n"
         end
       end
     end
@@ -699,13 +693,15 @@ describe "Process.spawn" do
       end
 
       it "maps the key to a file descriptor in the child that inherits the file descriptor from the parent specified by the value" do
-        child_fd = find_unused_fd
-        args = ruby_cmd(fixture(__FILE__, "map_fd.rb"), args: [child_fd.to_s])
-        pid = Process.spawn(*args, { child_fd => @io })
-        Process.waitpid pid
-        @io.rewind
+        File.open(__FILE__, "r") do |f|
+          child_fd = f.fileno
+          args = ruby_cmd(fixture(__FILE__, "map_fd.rb"), args: [child_fd.to_s])
+          pid = Process.spawn(*args, { child_fd => @io })
+          Process.waitpid pid
+          @io.rewind
 
-        @io.read.should == "writing to fd: #{child_fd}"
+          @io.read.should == "writing to fd: #{child_fd}"
+        end
       end
     end
   end

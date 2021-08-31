@@ -7,13 +7,13 @@ require "cgi"
 RSpec.describe Bundler, "friendly errors" do
   context "with invalid YAML in .gemrc" do
     before do
-      File.open(Gem.configuration.config_file_name, "w") do |f|
+      File.open(home(".gemrc"), "w") do |f|
         f.write "invalid: yaml: hah"
       end
     end
 
     after do
-      FileUtils.rm(Gem.configuration.config_file_name)
+      FileUtils.rm(home(".gemrc"))
     end
 
     it "reports a relevant friendly error message" do
@@ -25,7 +25,6 @@ RSpec.describe Bundler, "friendly errors" do
       bundle :install, :env => { "DEBUG" => "true" }
 
       expect(err).to include("Failed to load #{home(".gemrc")}")
-      expect(exitstatus).to eq(0) if exitstatus
     end
   end
 
@@ -115,18 +114,12 @@ RSpec.describe Bundler, "friendly errors" do
     context "LoadError" do
       let(:error) { LoadError.new("cannot load such file -- openssl") }
 
+      before do
+        allow(error).to receive(:backtrace).and_return(["backtrace"])
+      end
+
       it "Bundler.ui receive error" do
-        expect(Bundler.ui).to receive(:error).with("\nCould not load OpenSSL.")
-        Bundler::FriendlyErrors.log_error(error)
-      end
-
-      it "Bundler.ui receive warn" do
-        expect(Bundler.ui).to receive(:warn).with(any_args, :wrap => true)
-        Bundler::FriendlyErrors.log_error(error)
-      end
-
-      it "Bundler.ui receive trace" do
-        expect(Bundler.ui).to receive(:trace).with(error)
+        expect(Bundler.ui).to receive(:error).with("\nCould not load OpenSSL. LoadError: cannot load such file -- openssl\nbacktrace")
         Bundler::FriendlyErrors.log_error(error)
       end
     end
@@ -200,9 +193,9 @@ RSpec.describe Bundler, "friendly errors" do
 
   describe "#request_issue_report_for" do
     it "calls relevant methods for Bundler.ui" do
-      expect(Bundler.ui).to receive(:info)
-      expect(Bundler.ui).to receive(:error)
-      expect(Bundler.ui).to receive(:warn)
+      expect(Bundler.ui).not_to receive(:info)
+      expect(Bundler.ui).to receive(:error).exactly(3).times
+      expect(Bundler.ui).not_to receive(:warn)
       Bundler::FriendlyErrors.request_issue_report_for(StandardError.new)
     end
 
@@ -221,7 +214,7 @@ RSpec.describe Bundler, "friendly errors" do
     it "generates a search URL for the exception message" do
       exception = Exception.new("Exception message")
 
-      expect(Bundler::FriendlyErrors.issues_url(exception)).to eq("https://github.com/bundler/bundler/search?q=Exception+message&type=Issues")
+      expect(Bundler::FriendlyErrors.issues_url(exception)).to eq("https://github.com/rubygems/rubygems/search?q=Exception+message&type=Issues")
     end
 
     it "generates a search URL for only the first line of a multi-line exception message" do
@@ -230,7 +223,7 @@ First line of the exception message
 Second line of the exception message
 END
 
-      expect(Bundler::FriendlyErrors.issues_url(exception)).to eq("https://github.com/bundler/bundler/search?q=First+line+of+the+exception+message&type=Issues")
+      expect(Bundler::FriendlyErrors.issues_url(exception)).to eq("https://github.com/rubygems/rubygems/search?q=First+line+of+the+exception+message&type=Issues")
     end
 
     it "generates the url without colons" do
@@ -239,7 +232,7 @@ Exception ::: with ::: colons :::
 END
       issues_url = Bundler::FriendlyErrors.issues_url(exception)
       expect(issues_url).not_to include("%3A")
-      expect(issues_url).to eq("https://github.com/bundler/bundler/search?q=#{CGI.escape("Exception     with     colons    ")}&type=Issues")
+      expect(issues_url).to eq("https://github.com/rubygems/rubygems/search?q=#{CGI.escape("Exception     with     colons    ")}&type=Issues")
     end
 
     it "removes information after - for Errono::EACCES" do
@@ -249,7 +242,7 @@ END
       allow(exception).to receive(:is_a?).with(Errno).and_return(true)
       issues_url = Bundler::FriendlyErrors.issues_url(exception)
       expect(issues_url).not_to include("/Users/foo/bar")
-      expect(issues_url).to eq("https://github.com/bundler/bundler/search?q=#{CGI.escape("Errno  EACCES  Permission denied @ dir_s_mkdir ")}&type=Issues")
+      expect(issues_url).to eq("https://github.com/rubygems/rubygems/search?q=#{CGI.escape("Errno  EACCES  Permission denied @ dir_s_mkdir ")}&type=Issues")
     end
   end
 end

@@ -31,7 +31,6 @@
 # See `gem help install` and `gem help gem_dependencies` for further details.
 
 class Gem::RequestSet::GemDependencyAPI
-
   ENGINE_MAP = { # :nodoc:
     :jruby        => %w[jruby],
     :jruby_18     => %w[jruby],
@@ -89,7 +88,7 @@ class Gem::RequestSet::GemDependencyAPI
     :truffleruby  => Gem::Platform::RUBY,
     :x64_mingw    => x64_mingw,
     :x64_mingw_20 => x64_mingw,
-    :x64_mingw_21 => x64_mingw
+    :x64_mingw_21 => x64_mingw,
   }.freeze
 
   gt_eq_0        = Gem::Requirement.new '>= 0'
@@ -206,7 +205,7 @@ class Gem::RequestSet::GemDependencyAPI
     @git_set            = @set.git_set
     @git_sources        = {}
     @installing         = false
-    @requires           = Hash.new { |h, name| h[name] = [] }
+    @requires           = Hash.new {|h, name| h[name] = [] }
     @vendor_set         = @set.vendor_set
     @source_set         = @set.source_set
     @gem_sources        = {}
@@ -380,7 +379,7 @@ class Gem::RequestSet::GemDependencyAPI
         Gem::Requirement.create requirements
       end
 
-    return unless gem_platforms options
+    return unless gem_platforms name, options
 
     groups = gem_group name, options
 
@@ -533,7 +532,7 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
   # Handles the platforms: option from +options+.  Returns true if the
   # platform matches the current platform.
 
-  def gem_platforms(options) # :nodoc:
+  def gem_platforms(name, options) # :nodoc:
     platform_names = Array(options.delete :platform)
     platform_names.concat Array(options.delete :platforms)
     platform_names.concat @current_platforms if @current_platforms
@@ -544,7 +543,7 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
       raise ArgumentError, "unknown platform #{platform_name.inspect}" unless
         platform = PLATFORM_MAP[platform_name]
 
-      next false unless Gem::Platform.match platform
+      next false unless Gem::Platform.match_gem? platform, name
 
       if engines = ENGINE_MAP[platform_name]
         next false unless engines.include? Gem.ruby_engine
@@ -842,5 +841,4 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
 
     Gem.sources << url
   end
-
 end

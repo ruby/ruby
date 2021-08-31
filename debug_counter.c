@@ -8,12 +8,14 @@
 
 **********************************************************************/
 
-#include "internal.h"
 #include "debug_counter.h"
+#include "internal.h"
 #include <stdio.h>
 #include <locale.h>
+#include "ruby/thread_native.h"
 
 #if USE_DEBUG_COUNTER
+
 static const char *const debug_counter_names[] = {
     ""
 #define RB_DEBUG_COUNTER(name) #name,
@@ -23,7 +25,27 @@ static const char *const debug_counter_names[] = {
 
 MJIT_SYMBOL_EXPORT_BEGIN
 size_t rb_debug_counter[numberof(debug_counter_names)];
+void rb_debug_counter_add_atomic(enum rb_debug_counter_type type, int add);
 MJIT_SYMBOL_EXPORT_END
+
+rb_nativethread_lock_t debug_counter_lock;
+
+__attribute__((constructor))
+static void
+debug_counter_setup(void)
+{
+    rb_nativethread_lock_initialize(&debug_counter_lock);
+}
+
+void
+rb_debug_counter_add_atomic(enum rb_debug_counter_type type, int add)
+{
+    rb_nativethread_lock_lock(&debug_counter_lock);
+    {
+        rb_debug_counter[(int)type] += add;
+    }
+    rb_nativethread_lock_unlock(&debug_counter_lock);
+}
 
 int debug_counter_disable_show_at_exit = 0;
 
@@ -92,7 +114,8 @@ rb_debug_counter_show_results(const char *msg)
 VALUE
 rb_debug_counter_show(RB_UNUSED_VAR(VALUE klass))
 {
-    rb_debug_counter_show_results("method call");
+    rb_debug_counter_show_results("show_debug_counters");
+    ruby_debug_counter_show_at_exit(FALSE);
     return Qnil;
 }
 
@@ -111,7 +134,9 @@ debug_counter_show_results_at_exit(void)
         rb_debug_counter_show_results("normal exit.");
     }
 }
+
 #else
+
 void
 rb_debug_counter_show_results(const char *msg)
 {

@@ -171,14 +171,14 @@ describe "String#gsub with pattern and replacement" do
 
       hello_t.taint; a_t.taint; empty_t.taint
 
-      hello_t.gsub(/./, a).tainted?.should == true
-      hello_t.gsub(/./, empty).tainted?.should == true
+      hello_t.gsub(/./, a).should.tainted?
+      hello_t.gsub(/./, empty).should.tainted?
 
-      hello.gsub(/./, a_t).tainted?.should == true
-      hello.gsub(/./, empty_t).tainted?.should == true
-      hello.gsub(//, empty_t).tainted?.should == true
+      hello.gsub(/./, a_t).should.tainted?
+      hello.gsub(/./, empty_t).should.tainted?
+      hello.gsub(//, empty_t).should.tainted?
 
-      hello.gsub(//.taint, "foo").tainted?.should == false
+      hello.gsub(//.taint, "foo").should_not.tainted?
     end
   end
 
@@ -199,14 +199,14 @@ describe "String#gsub with pattern and replacement" do
 
       hello_t.untrust; a_t.untrust; empty_t.untrust
 
-      hello_t.gsub(/./, a).untrusted?.should == true
-      hello_t.gsub(/./, empty).untrusted?.should == true
+      hello_t.gsub(/./, a).should.untrusted?
+      hello_t.gsub(/./, empty).should.untrusted?
 
-      hello.gsub(/./, a_t).untrusted?.should == true
-      hello.gsub(/./, empty_t).untrusted?.should == true
-      hello.gsub(//, empty_t).untrusted?.should == true
+      hello.gsub(/./, a_t).should.untrusted?
+      hello.gsub(/./, empty_t).should.untrusted?
+      hello.gsub(//, empty_t).should.untrusted?
 
-      hello.gsub(//.untrust, "foo").untrusted?.should == false
+      hello.gsub(//.untrust, "foo").should_not.untrusted?
     end
   end
 
@@ -236,11 +236,22 @@ describe "String#gsub with pattern and replacement" do
     -> { "hello".gsub(/[aeiou]/, nil)           }.should raise_error(TypeError)
   end
 
-  it "returns subclass instances when called on a subclass" do
-    StringSpecs::MyString.new("").gsub(//, "").should be_an_instance_of(StringSpecs::MyString)
-    StringSpecs::MyString.new("").gsub(/foo/, "").should be_an_instance_of(StringSpecs::MyString)
-    StringSpecs::MyString.new("foo").gsub(/foo/, "").should be_an_instance_of(StringSpecs::MyString)
-    StringSpecs::MyString.new("foo").gsub("foo", "").should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances when called on a subclass" do
+      StringSpecs::MyString.new("").gsub(//, "").should be_an_instance_of(StringSpecs::MyString)
+      StringSpecs::MyString.new("").gsub(/foo/, "").should be_an_instance_of(StringSpecs::MyString)
+      StringSpecs::MyString.new("foo").gsub(/foo/, "").should be_an_instance_of(StringSpecs::MyString)
+      StringSpecs::MyString.new("foo").gsub("foo", "").should be_an_instance_of(StringSpecs::MyString)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns String instances when called on a subclass" do
+      StringSpecs::MyString.new("").gsub(//, "").should be_an_instance_of(String)
+      StringSpecs::MyString.new("").gsub(/foo/, "").should be_an_instance_of(String)
+      StringSpecs::MyString.new("foo").gsub(/foo/, "").should be_an_instance_of(String)
+      StringSpecs::MyString.new("foo").gsub("foo", "").should be_an_instance_of(String)
+    end
   end
 
   # Note: $~ cannot be tested because mspec messes with it
@@ -464,6 +475,11 @@ describe "String#gsub with pattern and block" do
     offsets.should == [[1, 2], [4, 5]]
   end
 
+  it "does not set $~ for procs created from methods" do
+    str = "hello"
+    str.gsub("l", &StringSpecs::SpecialVarProcessor.new.method(:process)).should == "he<unset><unset>o"
+  end
+
   it "restores $~ after leaving the block" do
     [/./, "l"].each do |pattern|
       old_md = nil
@@ -521,14 +537,14 @@ describe "String#gsub with pattern and block" do
 
       hello_t.untrust; a_t.untrust; empty_t.untrust
 
-      hello_t.gsub(/./) { a }.untrusted?.should == true
-      hello_t.gsub(/./) { empty }.untrusted?.should == true
+      hello_t.gsub(/./) { a }.should.untrusted?
+      hello_t.gsub(/./) { empty }.should.untrusted?
 
-      hello.gsub(/./) { a_t }.untrusted?.should == true
-      hello.gsub(/./) { empty_t }.untrusted?.should == true
-      hello.gsub(//) { empty_t }.untrusted?.should == true
+      hello.gsub(/./) { a_t }.should.untrusted?
+      hello.gsub(/./) { empty_t }.should.untrusted?
+      hello.gsub(//) { empty_t }.should.untrusted?
 
-      hello.gsub(//.untrust) { "foo" }.untrusted?.should == false
+      hello.gsub(//.untrust) { "foo" }.should_not.untrusted?
     end
   end
 
@@ -578,6 +594,14 @@ describe "String#gsub with pattern and without replacement and block" do
   end
 end
 
+describe "String#gsub with a string pattern" do
+  it "handles multibyte characters" do
+    "é".gsub("é", "â").should == "â"
+    "aé".gsub("é", "â").should == "aâ"
+    "éa".gsub("é", "â").should == "âa"
+  end
+end
+
 describe "String#gsub! with pattern and replacement" do
   it "modifies self in place and returns self" do
     a = "hello"
@@ -594,14 +618,14 @@ describe "String#gsub! with pattern and replacement" do
   ruby_version_is ''...'2.7' do
     it "taints self if replacement is tainted" do
       a = "hello"
-      a.gsub!(/./.taint, "foo").tainted?.should == false
-      a.gsub!(/./, "foo".taint).tainted?.should == true
+      a.gsub!(/./.taint, "foo").should_not.tainted?
+      a.gsub!(/./, "foo".taint).should.tainted?
     end
 
     it "untrusts self if replacement is untrusted" do
       a = "hello"
-      a.gsub!(/./.untrust, "foo").untrusted?.should == false
-      a.gsub!(/./, "foo".untrust).untrusted?.should == true
+      a.gsub!(/./.untrust, "foo").should_not.untrusted?
+      a.gsub!(/./, "foo".untrust).should.untrusted?
     end
   end
 
@@ -613,13 +637,13 @@ describe "String#gsub! with pattern and replacement" do
   end
 
   # See [ruby-core:23666]
-  it "raises a #{frozen_error_class} when self is frozen" do
+  it "raises a FrozenError when self is frozen" do
     s = "hello"
     s.freeze
 
-    -> { s.gsub!(/ROAR/, "x")    }.should raise_error(frozen_error_class)
-    -> { s.gsub!(/e/, "e")       }.should raise_error(frozen_error_class)
-    -> { s.gsub!(/[aeiou]/, '*') }.should raise_error(frozen_error_class)
+    -> { s.gsub!(/ROAR/, "x")    }.should raise_error(FrozenError)
+    -> { s.gsub!(/e/, "e")       }.should raise_error(FrozenError)
+    -> { s.gsub!(/[aeiou]/, '*') }.should raise_error(FrozenError)
   end
 end
 
@@ -633,14 +657,14 @@ describe "String#gsub! with pattern and block" do
   ruby_version_is ''...'2.7' do
     it "taints self if block's result is tainted" do
       a = "hello"
-      a.gsub!(/./.taint) { "foo" }.tainted?.should == false
-      a.gsub!(/./) { "foo".taint }.tainted?.should == true
+      a.gsub!(/./.taint) { "foo" }.should_not.tainted?
+      a.gsub!(/./) { "foo".taint }.should.tainted?
     end
 
     it "untrusts self if block's result is untrusted" do
       a = "hello"
-      a.gsub!(/./.untrust) { "foo" }.untrusted?.should == false
-      a.gsub!(/./) { "foo".untrust }.untrusted?.should == true
+      a.gsub!(/./.untrust) { "foo" }.should_not.untrusted?
+      a.gsub!(/./) { "foo".untrust }.should.untrusted?
     end
   end
 
@@ -652,13 +676,13 @@ describe "String#gsub! with pattern and block" do
   end
 
   # See [ruby-core:23663]
-  it "raises a #{frozen_error_class} when self is frozen" do
+  it "raises a FrozenError when self is frozen" do
     s = "hello"
     s.freeze
 
-    -> { s.gsub!(/ROAR/)    { "x" } }.should raise_error(frozen_error_class)
-    -> { s.gsub!(/e/)       { "e" } }.should raise_error(frozen_error_class)
-    -> { s.gsub!(/[aeiou]/) { '*' } }.should raise_error(frozen_error_class)
+    -> { s.gsub!(/ROAR/)    { "x" } }.should raise_error(FrozenError)
+    -> { s.gsub!(/e/)       { "e" } }.should raise_error(FrozenError)
+    -> { s.gsub!(/[aeiou]/) { '*' } }.should raise_error(FrozenError)
   end
 
   it "uses the compatible encoding if they are compatible" do

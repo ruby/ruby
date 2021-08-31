@@ -4,7 +4,6 @@
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
 # License:: You can redistribute it and/or modify it under the same term as Ruby.
-# Revision:: $Id$
 #
 # See Bundler::URI for general documentation
 #
@@ -1098,7 +1097,7 @@ module Bundler::URI
     #   # => "http://my.example.com/main.rbx?page=1"
     #
     def merge(oth)
-      rel = parser.send(:convert_to_uri, oth)
+      rel = parser.__send__(:convert_to_uri, oth)
 
       if rel.absolute?
         #raise BadURIError, "both Bundler::URI are absolute" if absolute?
@@ -1183,7 +1182,7 @@ module Bundler::URI
 
     # :stopdoc:
     def route_from0(oth)
-      oth = parser.send(:convert_to_uri, oth)
+      oth = parser.__send__(:convert_to_uri, oth)
       if self.relative?
         raise BadURIError,
           "relative Bundler::URI: #{self}"
@@ -1291,7 +1290,7 @@ module Bundler::URI
     #   #=> #<Bundler::URI::Generic /main.rbx?page=1>
     #
     def route_to(oth)
-      parser.send(:convert_to_uri, oth).route_from(self)
+      parser.__send__(:convert_to_uri, oth).route_from(self)
     end
 
     #
@@ -1405,7 +1404,7 @@ module Bundler::URI
     # Returns an Array of the components defined from the COMPONENT Array.
     def component_ary
       component.collect do |x|
-        self.send(x)
+        self.__send__(x)
       end
     end
     protected :component_ary
@@ -1430,7 +1429,7 @@ module Bundler::URI
     def select(*components)
       components.collect do |c|
         if component.include?(c)
-          self.send(c)
+          self.__send__(c)
         else
           raise ArgumentError,
             "expected of components of #{self.class} (#{self.class.component.join(', ')})"

@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/installer_test_case'
+require_relative 'installer_test_case'
 require 'rubygems/commands/uninstall_command'
 
 class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
-
   def setup
     super
     @cmd = Gem::Commands::UninstallCommand.new
@@ -361,6 +360,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     end
 
     assert_equal %w[default-1], Gem::Specification.all_names.sort
+    assert_equal "INFO:  Uninstalled all gems in #{@gemhome}", @ui.output.split("\n").last
   end
 
   def test_execute_outside_gem_home
@@ -377,7 +377,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
 
     @cmd.options[:args] = ['a:4']
 
-    e = assert_raises Gem::InstallError do
+    e = assert_raise Gem::InstallError do
       use_ui ui do
         @cmd.execute
       end
@@ -420,7 +420,7 @@ WARNING:  Use your OS package manager to uninstall vendor gems
     @cmd.options[:version] = Gem::Requirement.new("> 1")
 
     use_ui @ui do
-      e = assert_raises Gem::MockGemUi::TermError do
+      e = assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
 
@@ -436,7 +436,7 @@ WARNING:  Use your OS package manager to uninstall vendor gems
 
   def test_handle_options_vendor_missing
     vendordir(nil) do
-      e = assert_raises OptionParser::InvalidOption do
+      e = assert_raise OptionParser::InvalidOption do
         @cmd.handle_options %w[--vendor]
       end
 
@@ -477,7 +477,7 @@ WARNING:  Use your OS package manager to uninstall vendor gems
     e = nil
     @cmd.stub :uninstall, uninstall_exception do
       use_ui @ui do
-        e = assert_raises Gem::MockGemUi::TermError do
+        e = assert_raise Gem::MockGemUi::TermError do
           @cmd.execute
         end
       end
@@ -486,7 +486,7 @@ WARNING:  Use your OS package manager to uninstall vendor gems
     end
 
     assert_empty @ui.output
-    assert_match %r!Error: unable to successfully uninstall '#{@spec.name}'!, @ui.error
+    assert_match %r{Error: unable to successfully uninstall '#{@spec.name}'}, @ui.error
   end
 
   private
@@ -501,5 +501,4 @@ WARNING:  Use your OS package manager to uninstall vendor gems
       end
     end
   end
-
 end

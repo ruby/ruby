@@ -12,7 +12,7 @@ class OpenSSL::OSSL < OpenSSL::SSLTestCase
 
     assert OpenSSL.fixed_length_secure_compare("aaa", "aaa")
     assert OpenSSL.fixed_length_secure_compare(
-      OpenSSL::Digest::SHA256.digest("aaa"), OpenSSL::Digest::SHA256.digest("aaa")
+      OpenSSL::Digest.digest('SHA256', "aaa"), OpenSSL::Digest::SHA256.digest("aaa")
     )
 
     assert_raise(ArgumentError) { OpenSSL.fixed_length_secure_compare("aaa", "aaaa") }

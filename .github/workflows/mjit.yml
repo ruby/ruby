@@ -1,11 +1,5 @@
 name: MJIT
-on:
-  push:
-    branches:
-      - '*'
-  pull_request:
-    branches:
-      - '*'
+on: [push, pull_request]
 jobs:
   make:
     strategy:
@@ -14,63 +8,70 @@ jobs:
         jit_opts: [ "--jit", "--jit-wait" ]
       fail-fast: false
     runs-on: ubuntu-latest
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    env:
+      TESTOPTS: '-q --tty=no'
+      RUN_OPTS: '--disable-gems ${{ matrix.jit_opts }} --jit-debug=-ggdb3'
+      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     steps:
+      - run: mkdir build
+        working-directory:
       - name: Install libraries
         run: |
           set -x
           sudo apt-get update -q || :
-          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev bison autoconf ruby
-      # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
-      - name: Checkout ruby
+          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison autoconf ruby
+      - name: git config
         run: |
-          git clone --single-branch --shallow-since=yesterday --branch=${GITHUB_REF#refs/heads/} https://github.com/${{ github.repository }} src
-          git -C src reset --hard "$GITHUB_SHA"
-        if: github.event_name == 'push'
-      - name: Checkout a pull request
-        run: |
-          git clone --single-branch --shallow-since=yesterday --branch=${{ github.event.pull_request.head.ref }} https://github.com/${{ github.event.pull_request.head.repo.full_name }} src
-          git -C src reset --hard ${{ github.event.pull_request.head.sha }}
-        if: github.event_name == 'pull_request'
-      - run: ./src/tool/actions-commit-info.sh
-        id: commit_info
+          git config --global advice.detachedHead 0
+          git config --global init.defaultBranch garbage
+      - uses: actions/checkout@v2
+        with:
+          path: src
       - name: Fixed world writable dirs
         run: |
-          chmod go-w $HOME
+          chmod -v go-w $HOME $HOME/.config
           sudo chmod -R go-w /usr/share
+          sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v go-w $d; done' || :
       - name: Set ENV
         run: |
-          echo '::set-env name=JOBS::'-j$((1 + $(nproc --all)))
-      - name: Autoconf
-        run: cd src && exec autoconf
-      - name: configure
+          echo "JOBS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
+      - run: ./autogen.sh
+        working-directory: src
+      - name: Run configure
+        run: ../src/configure -C --disable-install-doc cppflags=-DVM_CHECK_MODE
+      - run: make $JOBS incs
+      - run: make $JOBS
+      - run: sudo make $JOBS -s install
+      - run: sudo apt-get install gdb # used by test / test-all failure
+      - name: Run test
         run: |
-          mkdir build
-          cd build
-          ../src/configure -C --disable-install-doc
-      - name: make all
-        run: make -C build $JOBS
-      - name: make install
-        run: sudo make -C build $JOBS install
-      - name: make test
-        run: "make -C build $JOBS -s test TESTOPTS='-q --tty=no' RUN_OPTS='--disable-gems --jit-warnings ${{ matrix.jit_opts }}'"
-      - name: make test-all
-        run: "make -C build $JOBS -s test-all TESTOPTS='-q --tty=no' RUN_OPTS='--disable-gems --jit-warnings ${{ matrix.jit_opts }}'"
-      - name: make test-spec
-        run: "make -C build $JOBS -s test-spec RUN_OPTS='--disable-gems --jit-warnings ${{ matrix.jit_opts }}'"
-      - name: Leaked Globals
-        run: make -C build -s leaked-globals
+          ulimit -c unlimited
+          make $JOBS -s test RUN_OPTS="$RUN_OPTS"
+        timeout-minutes: 60
+      - name: Run test-all
+        run: |
+          ulimit -c unlimited
+          make $JOBS -s test-all RUN_OPTS="$RUN_OPTS"
+        timeout-minutes: 60
+      - name: Run test-spec
+        run: |
+          ulimit -c unlimited
+          make $JOBS -s test-spec RUN_OPTS="$RUN_OPTS"
+        timeout-minutes: 60
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |
             {
-              "attachments": [{
-                "text": "${{ github.workflow }} / ${{ matrix.test_task }} ${{ matrix.jit_opts }} <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ steps.commit_info.outputs.COMMIT_DATE }} #${{ steps.commit_info.outputs.COMMIT_NUMBER_OF_DAY }}> " +
-                        "(<https://github.com/${{ github.repository }}/commit/${{ github.sha }}|" + "${{ github.sha }}".substring(0, 10) + ">) " +
-                        "of ${{ github.repository }}@" + "${{ github.ref }}".split('/').reverse()[0] + " by ${{ github.event.head_commit.committer.name }} failed",
-                "color": "danger"
-              }]
+              "ci": "GitHub Actions",
+              "env": "${{ github.workflow }} / ${{ matrix.test_task }} ${{ matrix.jit_opts }}",
+              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref }}".split('/').reverse()[0]
             }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        if: failure() && github.event_name == 'push'
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() && github.event_name == 'push' }}
+
+defaults:
+  run:
+    working-directory: build

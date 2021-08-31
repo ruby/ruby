@@ -1,7 +1,7 @@
 #include "ruby/ruby.h"
 
 static VALUE
-ary_resize(VALUE ary, VALUE len)
+ary_resize(VALUE klass, VALUE ary, VALUE len)
 {
     rb_ary_resize(ary, NUM2LONG(len));
     return ary;
@@ -10,5 +10,7 @@ ary_resize(VALUE ary, VALUE len)
 void
 Init_resize(void)
 {
-    rb_define_method(rb_cArray, "__resize__", ary_resize, 1);
+    VALUE mBug = rb_define_module("Bug");
+    VALUE klass = rb_define_class_under(mBug, "Array", rb_cObject);
+    rb_define_singleton_method(klass, "__resize__", ary_resize, 2);
 }

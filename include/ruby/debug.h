@@ -1,25 +1,20 @@
-/**********************************************************************
-
-  ruby/debug.h -
-
-  $Author: ko1 $
-  created at: Tue Nov 20 20:35:08 2012
-
-  Copyright (C) 2012 Yukihiro Matsumoto
-
-**********************************************************************/
-
-#ifndef RB_DEBUG_H
+#ifndef RB_DEBUG_H                                   /*-*-C++-*-vi:se ft=cpp:*/
 #define RB_DEBUG_H 1
+/**
+ * @file
+ * @author     $Author: ko1 $
+ * @date       Tue Nov 20 20:35:08 2012
+ * @copyright  Copyright (C) 2012 Yukihiro Matsumoto
+ * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
+ *             Permission  is hereby  granted,  to  either redistribute  and/or
+ *             modify this file, provided that  the conditions mentioned in the
+ *             file COPYING are met.  Consult the file for details.
+ */
+#include "ruby/internal/dllexport.h"
+#include "ruby/internal/event.h"
+#include "ruby/internal/value.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /* Note: This file contains experimental APIs. */
 /* APIs can be replaced at Ruby 2.0.1 or later */
@@ -103,13 +98,6 @@ typedef enum {
 void rb_add_event_hook2(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data, rb_event_hook_flag_t hook_flag);
 void rb_thread_add_event_hook2(VALUE thval, rb_event_hook_func_t func, rb_event_flag_t events, VALUE data, rb_event_hook_flag_t hook_flag);
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_DEBUG_H */

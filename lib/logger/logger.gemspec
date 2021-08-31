@@ -13,7 +13,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Provides a simple logging utility for outputting messages.}
   spec.description   = %q{Provides a simple logging utility for outputting messages.}
   spec.homepage      = "https://github.com/ruby/logger"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.files         = Dir.glob("lib/**/*.rb") + ["logger.gemspec"]
   spec.bindir        = "exe"
@@ -23,7 +23,7 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = ">= 2.3.0"
 
   spec.add_development_dependency "bundler", ">= 0"
-  spec.add_development_dependency "rake", "~> 10.0"
+  spec.add_development_dependency "rake", ">= 12.3.3"
   spec.add_development_dependency "test-unit"
   spec.add_development_dependency "rdoc"
 end

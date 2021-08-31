@@ -89,8 +89,8 @@ describe "Array#shuffle!" do
     a.should equal(original)
   end
 
-  it "raises a #{frozen_error_class} on a frozen array" do
-    -> { ArraySpecs.frozen_array.shuffle! }.should raise_error(frozen_error_class)
-    -> { ArraySpecs.empty_frozen_array.shuffle! }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen array" do
+    -> { ArraySpecs.frozen_array.shuffle! }.should raise_error(FrozenError)
+    -> { ArraySpecs.empty_frozen_array.shuffle! }.should raise_error(FrozenError)
   end
 end

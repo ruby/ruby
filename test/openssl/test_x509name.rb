@@ -432,13 +432,13 @@ class OpenSSL::TestX509Name < OpenSSL::TestCase
   def test_hash
     dn = "/DC=org/DC=ruby-lang/CN=www.ruby-lang.org"
     name = OpenSSL::X509::Name.parse(dn)
-    d = OpenSSL::Digest::MD5.digest(name.to_der)
+    d = OpenSSL::Digest.digest('MD5', name.to_der)
     expected = (d[0].ord & 0xff) | (d[1].ord & 0xff) << 8 | (d[2].ord & 0xff) << 16 | (d[3].ord & 0xff) << 24
     assert_equal(expected, name_hash(name))
     #
     dn = "/DC=org/DC=ruby-lang/CN=baz.ruby-lang.org"
     name = OpenSSL::X509::Name.parse(dn)
-    d = OpenSSL::Digest::MD5.digest(name.to_der)
+    d = OpenSSL::Digest.digest('MD5', name.to_der)
     expected = (d[0].ord & 0xff) | (d[1].ord & 0xff) << 8 | (d[2].ord & 0xff) << 16 | (d[3].ord & 0xff) << 24
     assert_equal(expected, name_hash(name))
   end

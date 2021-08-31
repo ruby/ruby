@@ -33,24 +33,22 @@ describe "Float#<=>" do
     coercible.call_count.should == 3
   end
 
-  ruby_version_is "2.5" do
-    it "raises TypeError when #coerce misbehaves" do
-      klass = Class.new do
-        def coerce(other)
-          :incorrect
-        end
+  it "raises TypeError when #coerce misbehaves" do
+    klass = Class.new do
+      def coerce(other)
+        :incorrect
       end
-
-      bad_coercible = klass.new
-      -> {
-        4.2 <=> bad_coercible
-      }.should raise_error(TypeError, "coerce must return [x, y]")
     end
+
+    bad_coercible = klass.new
+    -> {
+      4.2 <=> bad_coercible
+    }.should raise_error(TypeError, "coerce must return [x, y]")
   end
 
   # The 4 tests below are taken from matz's revision 23730 for Ruby trunk
   #
-  it "returns 1 when self is Infinity and other is a Bignum" do
+  it "returns 1 when self is Infinity and other is an Integer" do
     (infinity_value <=> Float::MAX.to_i*2).should == 1
   end
 
@@ -64,5 +62,29 @@ describe "Float#<=>" do
 
   it "returns 1 when self is negative and other is -Infinity" do
     (-Float::MAX.to_i*2 <=> -infinity_value).should == 1
+  end
+
+  it "returns 0 when self is Infinity and other other is infinite?=1" do
+    obj = Object.new
+    def obj.infinite?
+      1
+    end
+    (infinity_value <=> obj).should == 0
+  end
+
+  it "returns 1 when self is Infinity and other is infinite?=-1" do
+    obj = Object.new
+    def obj.infinite?
+      -1
+    end
+    (infinity_value <=> obj).should == 1
+  end
+
+  it "returns 1 when self is Infinity and other is infinite?=nil (which means finite)" do
+    obj = Object.new
+    def obj.infinite?
+        nil
+    end
+    (infinity_value <=> obj).should == 1
   end
 end

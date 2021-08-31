@@ -4,7 +4,7 @@
 require 'erb'
 require 'fileutils'
 require 'pathname'
-require 'rdoc/generator/markup'
+require_relative 'markup'
 
 ##
 # Darkfish RDoc HTML Generator
@@ -779,9 +779,9 @@ class RDoc::Generator::Darkfish
     end
 
     if RUBY_VERSION >= '2.6'
-      template = klass.new template, trim_mode: '<>', eoutvar: erbout
+      template = klass.new template, trim_mode: '-', eoutvar: erbout
     else
-      template = klass.new template, nil, '<>', erbout
+      template = klass.new template, nil, '-', erbout
     end
     @template_cache[file] = template
     template

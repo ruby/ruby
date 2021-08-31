@@ -2,10 +2,9 @@
 ##
 # Basic OpenSSL-based package signing class.
 
-require "rubygems/user_interaction"
+require_relative "../user_interaction"
 
 class Gem::Security::Signer
-
   include Gem::UserInteraction
 
   ##
@@ -35,7 +34,7 @@ class Gem::Security::Signer
   attr_reader :options
 
   DEFAULT_OPTIONS = {
-    expiration_length_days: 365
+    expiration_length_days: 365,
   }.freeze
 
   ##
@@ -81,8 +80,8 @@ class Gem::Security::Signer
       @cert_chain = [default_cert] if File.exist? default_cert
     end
 
-    @digest_algorithm = Gem::Security::DIGEST_ALGORITHM
     @digest_name      = Gem::Security::DIGEST_NAME
+    @digest_algorithm = Gem::Security.create_digest(@digest_name)
 
     if @key && !@key.is_a?(OpenSSL::PKey::RSA)
       @key = OpenSSL::PKey::RSA.new(File.read(@key), @passphrase)
@@ -106,10 +105,10 @@ class Gem::Security::Signer
   # this value is preferred, otherwise the subject is used.
 
   def extract_name(cert) # :nodoc:
-    subject_alt_name = cert.extensions.find { |e| 'subjectAltName' == e.oid }
+    subject_alt_name = cert.extensions.find {|e| 'subjectAltName' == e.oid }
 
     if subject_alt_name
-      /\Aemail:/ =~ subject_alt_name.value
+      /\Aemail:/ =~ subject_alt_name.value # rubocop:disable Performance/StartWith
 
       $' || subject_alt_name.value
     else
@@ -202,5 +201,4 @@ class Gem::Security::Signer
       end
     end
   end
-
 end

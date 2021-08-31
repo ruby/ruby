@@ -70,7 +70,7 @@ static size_t
 digit_span(const char *s, const char *e)
 {
     size_t i = 0;
-    while (s + i < e && isdigit(s[i])) i++;
+    while (s + i < e && isdigit((unsigned char)s[i])) i++;
     return i;
 }
 
@@ -110,7 +110,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 
 	s = RSTRING_PTR(y);
 	ep = RSTRING_END(y);
-	while (s < ep && !issign(*s) && !isdigit(*s))
+	while (s < ep && !issign(*s) && !isdigit((unsigned char)*s))
 	    s++;
 	if (s >= ep) goto no_date;
 	bp = s;
@@ -162,7 +162,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 
 	s = RSTRING_PTR(y);
 	ep = RSTRING_END(y);
-	while (s < ep && !issign(*s) && !isdigit(*s))
+	while (s < ep && !issign(*s) && !isdigit((unsigned char)*s))
 	    s++;
 	if (s >= ep) goto no_year;
 	bp = s;
@@ -199,7 +199,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 
 	s = RSTRING_PTR(m);
 	ep = RSTRING_END(m);
-	while (s < ep && !isdigit(*s))
+	while (s < ep && !isdigit((unsigned char)*s))
 	    s++;
 	if (s >= ep) goto no_month;
 	bp = s;
@@ -225,7 +225,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 
 	s = RSTRING_PTR(d);
 	ep = RSTRING_END(d);
-	while (s < ep && !isdigit(*s))
+	while (s < ep && !isdigit((unsigned char)*s))
 	    s++;
 	if (s >= ep) goto no_mday;
 	bp = s;
@@ -276,6 +276,7 @@ regcomp(const char *source, long len, int opt)
     VALUE pat;
 
     pat = rb_reg_new(source, len, opt);
+    rb_obj_freeze(pat);
     rb_gc_register_mark_object(pat);
     return pat;
 }
@@ -364,9 +365,9 @@ static int
 str_end_with_word(const char *s, long l, const char *w)
 {
     int n = (int)strlen(w);
-    if (l <= n || !isspace(s[l - n - 1])) return 0;
+    if (l <= n || !isspace((unsigned char)s[l - n - 1])) return 0;
     if (strncasecmp(&s[l - n], w, n)) return 0;
-    do ++n; while (l > n && isspace(s[l - n - 1]));
+    do ++n; while (l > n && isspace((unsigned char)s[l - n - 1]));
     return n;
 }
 
@@ -376,7 +377,7 @@ shrunk_size(const char *s, long l)
     long i, ni;
     int sp = 0;
     for (i = ni = 0; i < l; ++i) {
-	if (!isspace(s[i])) {
+	if (!isspace((unsigned char)s[i])) {
 	    if (sp) ni++;
 	    sp = 0;
 	    ni++;
@@ -394,7 +395,7 @@ shrink_space(char *d, const char *s, long l)
     long i, ni;
     int sp = 0;
     for (i = ni = 0; i < l; ++i) {
-	if (!isspace(s[i])) {
+	if (!isspace((unsigned char)s[i])) {
 	    if (sp) d[ni++] = ' ';
 	    sp = 0;
 	    d[ni++] = s[i];
@@ -754,8 +755,8 @@ check_year_width(VALUE y)
     l = RSTRING_LEN(y);
     if (l < 2) return 0;
     s = RSTRING_PTR(y);
-    if (!isdigit(s[1])) return 0;
-    return (l == 2 || !isdigit(s[2]));
+    if (!isdigit((unsigned char)s[1])) return 0;
+    return (l == 2 || !isdigit((unsigned char)s[2]));
 }
 
 static int

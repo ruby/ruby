@@ -115,24 +115,27 @@ static VALUE
 ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
 {
     BIO *in;
-    X509 *x509, *x = DATA_PTR(self);
+    X509 *x509, *x509_orig = RTYPEDDATA_DATA(self);
     VALUE arg;
 
+    rb_check_frozen(self);
     if (rb_scan_args(argc, argv, "01", &arg) == 0) {
 	/* create just empty X509Cert */
 	return self;
     }
     arg = ossl_to_der_if_possible(arg);
     in = ossl_obj2bio(&arg);
-    x509 = PEM_read_bio_X509(in, &x, NULL, NULL);
-    DATA_PTR(self) = x;
+    x509 = d2i_X509_bio(in, NULL);
     if (!x509) {
-	OSSL_BIO_reset(in);
-	x509 = d2i_X509_bio(in, &x);
-	DATA_PTR(self) = x;
+        OSSL_BIO_reset(in);
+        x509 = PEM_read_bio_X509(in, NULL, NULL, NULL);
     }
     BIO_free(in);
-    if (!x509) ossl_raise(eX509CertError, NULL);
+    if (!x509)
+        ossl_raise(eX509CertError, "PEM_read_bio_X509");
+
+    RTYPEDDATA_DATA(self) = x509;
+    X509_free(x509_orig);
 
     return self;
 }
@@ -704,6 +707,157 @@ ossl_x509_eq(VALUE self, VALUE other)
     return !X509_cmp(a, b) ? Qtrue : Qfalse;
 }
 
+struct load_chained_certificates_arguments {
+    VALUE certificates;
+    X509 *certificate;
+};
+
+static VALUE
+load_chained_certificates_append_push(VALUE _arguments) {
+    struct load_chained_certificates_arguments *arguments = (struct load_chained_certificates_arguments*)_arguments;
+
+    if (arguments->certificates == Qnil) {
+        arguments->certificates = rb_ary_new();
+    }
+
+    rb_ary_push(arguments->certificates, ossl_x509_new(arguments->certificate));
+
+    return Qnil;
+}
+
+static VALUE
+load_chained_certificate_append_ensure(VALUE _arguments) {
+    struct load_chained_certificates_arguments *arguments = (struct load_chained_certificates_arguments*)_arguments;
+
+    X509_free(arguments->certificate);
+
+    return Qnil;
+}
+
+inline static VALUE
+load_chained_certificates_append(VALUE certificates, X509 *certificate) {
+    struct load_chained_certificates_arguments arguments;
+    arguments.certificates = certificates;
+    arguments.certificate = certificate;
+
+    rb_ensure(load_chained_certificates_append_push, (VALUE)&arguments, load_chained_certificate_append_ensure, (VALUE)&arguments);
+
+    return arguments.certificates;
+}
+
+static VALUE
+load_chained_certificates_PEM(BIO *in) {
+    VALUE certificates = Qnil;
+    X509 *certificate = PEM_read_bio_X509(in, NULL, NULL, NULL);
+
+    /* If we cannot read even one certificate: */
+    if (certificate == NULL) {
+        /* If we cannot read one certificate because we could not read the PEM encoding: */
+        if (ERR_GET_REASON(ERR_peek_last_error()) == PEM_R_NO_START_LINE) {
+            ossl_clear_error();
+        }
+
+        if (ERR_peek_last_error())
+            ossl_raise(eX509CertError, NULL);
+        else
+            return Qnil;
+    }
+
+    certificates = load_chained_certificates_append(Qnil, certificate);
+
+    while ((certificate = PEM_read_bio_X509(in, NULL, NULL, NULL))) {
+      load_chained_certificates_append(certificates, certificate);
+    }
+
+    /* We tried to read one more certificate but could not read start line: */
+    if (ERR_GET_REASON(ERR_peek_last_error()) == PEM_R_NO_START_LINE) {
+        /* This is not an error, it means we are finished: */
+        ossl_clear_error();
+
+        return certificates;
+    }
+
+    /* Alternatively, if we reached the end of the file and there was no error: */
+    if (BIO_eof(in) && !ERR_peek_last_error()) {
+        return certificates;
+    } else {
+        /* Otherwise, we tried to read a certificate but failed somewhere: */
+        ossl_raise(eX509CertError, NULL);
+    }
+}
+
+static VALUE
+load_chained_certificates_DER(BIO *in) {
+    X509 *certificate = d2i_X509_bio(in, NULL);
+
+    /* If we cannot read one certificate: */
+    if (certificate == NULL) {
+        /* Ignore error. We could not load. */
+        ossl_clear_error();
+
+        return Qnil;
+    }
+
+    return load_chained_certificates_append(Qnil, certificate);
+}
+
+static VALUE
+load_chained_certificates(VALUE _io) {
+    BIO *in = (BIO*)_io;
+    VALUE certificates = Qnil;
+
+    /*
+      DER is a binary format and it may contain octets within it that look like
+      PEM encoded certificates. So we need to check DER first.
+    */
+    certificates = load_chained_certificates_DER(in);
+
+    if (certificates != Qnil)
+        return certificates;
+
+    OSSL_BIO_reset(in);
+
+    certificates = load_chained_certificates_PEM(in);
+
+    if (certificates != Qnil)
+        return certificates;
+
+    /* Otherwise we couldn't read the output correctly so fail: */
+    ossl_raise(eX509CertError, "Could not detect format of certificate data!");
+}
+
+static VALUE
+load_chained_certificates_ensure(VALUE _io) {
+    BIO *in = (BIO*)_io;
+
+    BIO_free(in);
+
+    return Qnil;
+}
+
+/*
+ * call-seq:
+ *    OpenSSL::X509::Certificate.load(string) -> [certs...]
+ *    OpenSSL::X509::Certificate.load(file) -> [certs...]
+ *
+ * Read the chained certificates from the given input. Supports both PEM
+ * and DER encoded certificates.
+ *
+ * PEM is a text format and supports more than one certificate.
+ *
+ * DER is a binary format and only supports one certificate.
+ *
+ * If the file is empty, or contains only unrelated data, an
+ * +OpenSSL::X509::CertificateError+ exception will be raised.
+ */
+static VALUE
+ossl_x509_load(VALUE klass, VALUE buffer)
+{
+    BIO *in = ossl_obj2bio(&buffer);
+
+    return rb_ensure(load_chained_certificates, (VALUE)in, load_chained_certificates_ensure, (VALUE)in);
+}
+
 /*
  * INIT
  */
@@ -730,7 +884,7 @@ Init_ossl_x509cert(void)
      * Certificate is capable of handling DER-encoded certificates and
      * certificates encoded in OpenSSL's PEM format.
      *
-     *   raw = File.read "cert.cer" # DER- or PEM-encoded
+     *   raw = File.binread "cert.cer" # DER- or PEM-encoded
      *   certificate = OpenSSL::X509::Certificate.new raw
      *
      * === Saving a certificate to a file
@@ -788,7 +942,7 @@ Init_ossl_x509cert(void)
      *   root_ca.add_extension(ef.create_extension("keyUsage","keyCertSign, cRLSign", true))
      *   root_ca.add_extension(ef.create_extension("subjectKeyIdentifier","hash",false))
      *   root_ca.add_extension(ef.create_extension("authorityKeyIdentifier","keyid:always",false))
-     *   root_ca.sign(root_key, OpenSSL::Digest::SHA256.new)
+     *   root_ca.sign(root_key, OpenSSL::Digest.new('SHA256'))
      *
      * The next step is to create the end-entity certificate using the root CA
      * certificate.
@@ -807,10 +961,12 @@ Init_ossl_x509cert(void)
      *   ef.issuer_certificate = root_ca
      *   cert.add_extension(ef.create_extension("keyUsage","digitalSignature", true))
      *   cert.add_extension(ef.create_extension("subjectKeyIdentifier","hash",false))
-     *   cert.sign(root_key, OpenSSL::Digest::SHA256.new)
+     *   cert.sign(root_key, OpenSSL::Digest.new('SHA256'))
      *
      */
     cX509Cert = rb_define_class_under(mX509, "Certificate", rb_cObject);
+
+    rb_define_singleton_method(cX509Cert, "load", ossl_x509_load, 1);
 
     rb_define_alloc_func(cX509Cert, ossl_x509_alloc);
     rb_define_method(cX509Cert, "initialize", ossl_x509_initialize, -1);

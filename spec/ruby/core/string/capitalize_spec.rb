@@ -14,8 +14,8 @@ describe "String#capitalize" do
 
   ruby_version_is ''...'2.7' do
     it "taints resulting string when self is tainted" do
-      "".taint.capitalize.tainted?.should == true
-      "hello".taint.capitalize.tainted?.should == true
+      "".taint.capitalize.should.tainted?
+      "hello".taint.capitalize.should.tainted?
     end
   end
 
@@ -80,9 +80,18 @@ describe "String#capitalize" do
     -> { "abc".capitalize(:invalid_option) }.should raise_error(ArgumentError)
   end
 
-  it "returns subclass instances when called on a subclass" do
-    StringSpecs::MyString.new("hello").capitalize.should be_an_instance_of(StringSpecs::MyString)
-    StringSpecs::MyString.new("Hello").capitalize.should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances when called on a subclass" do
+      StringSpecs::MyString.new("hello").capitalize.should be_an_instance_of(StringSpecs::MyString)
+      StringSpecs::MyString.new("Hello").capitalize.should be_an_instance_of(StringSpecs::MyString)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns String instances when called on a subclass" do
+      StringSpecs::MyString.new("hello").capitalize.should be_an_instance_of(String)
+      StringSpecs::MyString.new("Hello").capitalize.should be_an_instance_of(String)
+    end
   end
 end
 
@@ -196,10 +205,10 @@ describe "String#capitalize!" do
     "H".capitalize!.should == nil
   end
 
-  it "raises a #{frozen_error_class} when self is frozen" do
+  it "raises a FrozenError when self is frozen" do
     ["", "Hello", "hello"].each do |a|
       a.freeze
-      -> { a.capitalize! }.should raise_error(frozen_error_class)
+      -> { a.capitalize! }.should raise_error(FrozenError)
     end
   end
 end

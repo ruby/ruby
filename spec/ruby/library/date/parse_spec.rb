@@ -69,6 +69,23 @@ describe "Date#parse" do
     -> { Date.parse(1) }.should raise_error(TypeError)
     -> { Date.parse(:invalid) }.should raise_error(TypeError)
   end
+
+  it "coerces using to_str" do
+    c = Class.new do
+      attr_accessor :string
+      def to_str
+        @string
+      end
+    end
+    o = c.new
+    o.string = "19101101"
+
+    d = Date.parse(o)
+    d.should == Date.civil(1910, 11, 1)
+
+    # parse should not modify string value
+    o.to_str.should == "19101101"
+  end
 end
 
 describe "Date#parse with '.' separator" do

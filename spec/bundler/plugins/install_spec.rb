@@ -9,7 +9,7 @@ RSpec.describe "bundler plugin install" do
   end
 
   it "shows proper message when gem in not found in the source" do
-    bundle "plugin install no-foo --source #{file_uri_for(gem_repo1)}"
+    bundle "plugin install no-foo --source #{file_uri_for(gem_repo1)}", :raise_on_error => false
 
     expect(err).to include("Could not find")
     plugin_should_not_be_installed("no-foo")
@@ -20,6 +20,19 @@ RSpec.describe "bundler plugin install" do
 
     expect(out).to include("Installed plugin foo")
     plugin_should_be_installed("foo")
+  end
+
+  it "installs from sources configured as Gem.sources without any flags" do
+    bundle "plugin install foo", :env => { "BUNDLER_SPEC_GEM_SOURCES" => file_uri_for(gem_repo2).to_s }
+
+    expect(out).to include("Installed plugin foo")
+    plugin_should_be_installed("foo")
+  end
+
+  it "shows help when --help flag is given" do
+    bundle "plugin install --help"
+
+    expect(out).to include("bundle plugin install PLUGINS    # Install the plugin from the source")
   end
 
   context "plugin is already installed" do
@@ -54,6 +67,21 @@ RSpec.describe "bundler plugin install" do
     expect(out).to include("Installing foo 1.0")
     expect(out).to include("Installing kung-foo 1.0")
     plugin_should_be_installed("foo", "kung-foo")
+  end
+
+  it "installs the latest version if not installed" do
+    update_repo2 do
+      build_plugin "foo", "1.1"
+    end
+
+    bundle "plugin install foo --version 1.0 --source #{file_uri_for(gem_repo2)} --verbose"
+    expect(out).to include("Installing foo 1.0")
+
+    bundle "plugin install foo --source #{file_uri_for(gem_repo2)} --verbose"
+    expect(out).to include("Installing foo 1.1")
+
+    bundle "plugin install foo --source #{file_uri_for(gem_repo2)} --verbose"
+    expect(out).to include("Using foo 1.1")
   end
 
   it "works with different load paths" do
@@ -96,9 +124,9 @@ RSpec.describe "bundler plugin install" do
         build_gem "charlie"
       end
 
-      bundle "plugin install charlie --source #{file_uri_for(gem_repo2)}"
+      bundle "plugin install charlie --source #{file_uri_for(gem_repo2)}", :raise_on_error => false
 
-      expect(err).to include("plugins.rb was not found")
+      expect(err).to include("Failed to install plugin `charlie`, due to Bundler::Plugin::MalformattedPlugin (plugins.rb was not found in the plugin.)")
 
       expect(global_plugin_gem("charlie-1.0")).not_to be_directory
 
@@ -115,7 +143,7 @@ RSpec.describe "bundler plugin install" do
         end
       end
 
-      bundle "plugin install chaplin --source #{file_uri_for(gem_repo2)}"
+      bundle "plugin install chaplin --source #{file_uri_for(gem_repo2)}", :raise_on_error => false
 
       expect(global_plugin_gem("chaplin-1.0")).not_to be_directory
 
@@ -147,14 +175,18 @@ RSpec.describe "bundler plugin install" do
     end
 
     it "raises an error when both git and local git sources are specified" do
-      bundle "plugin install foo --local_git /phony/path/project --git git@gitphony.com:/repo/project"
+      bundle "plugin install foo --local_git /phony/path/project --git git@gitphony.com:/repo/project", :raise_on_error => false
 
-      expect(exitstatus).not_to eq(0) if exitstatus
+      expect(exitstatus).not_to eq(0)
       expect(err).to eq("Remote and local plugin git sources can't be both specified")
     end
   end
 
   context "Gemfile eval" do
+    before do
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+    end
+
     it "installs plugins listed in gemfile" do
       gemfile <<-G
         source '#{file_uri_for(gem_repo2)}'
@@ -197,7 +229,22 @@ RSpec.describe "bundler plugin install" do
       end
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         plugin 'ga-plugin', :git => "#{lib_path("ga-plugin-1.0")}"
+      G
+
+      expect(out).to include("Installed plugin ga-plugin")
+      plugin_should_be_installed("ga-plugin")
+    end
+
+    it "accepts path sources" do
+      build_lib "ga-plugin" do |s|
+        s.write "plugins.rb"
+      end
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        plugin 'ga-plugin', :path => "#{lib_path("ga-plugin-1.0")}"
       G
 
       expect(out).to include("Installed plugin ga-plugin")
@@ -206,12 +253,13 @@ RSpec.describe "bundler plugin install" do
 
     context "in deployment mode" do
       it "installs plugins" do
-        install_gemfile! <<-G
+        install_gemfile <<-G
           source '#{file_uri_for(gem_repo2)}'
           gem 'rack', "1.0.0"
         G
 
-        install_gemfile! <<-G, forgotten_command_line_options(:deployment => true)
+        bundle "config set --local deployment true"
+        install_gemfile <<-G
           source '#{file_uri_for(gem_repo2)}'
           plugin 'foo'
           gem 'rack', "1.0.0"
@@ -238,13 +286,14 @@ RSpec.describe "bundler plugin install" do
         end
       RUBY
 
-      ruby code
+      ruby code, :env => { "BUNDLER_VERSION" => Bundler::VERSION }
       expect(local_plugin_gem("foo-1.0", "plugins.rb")).to exist
     end
   end
 
   describe "local plugin" do
     it "is installed when inside an app" do
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
       gemfile ""
       bundle "plugin install foo --source #{file_uri_for(gem_repo2)}"
 
@@ -287,21 +336,16 @@ RSpec.describe "bundler plugin install" do
         end
 
         # outside the app
-        Dir.chdir tmp
-        bundle "plugin install fubar --source #{file_uri_for(gem_repo2)}"
+        bundle "plugin install fubar --source #{file_uri_for(gem_repo2)}", :dir => tmp
       end
 
       it "inside the app takes precedence over global plugin" do
-        Dir.chdir bundled_app
-
         bundle "shout"
         expect(out).to eq("local_one")
       end
 
       it "outside the app global plugin is used" do
-        Dir.chdir tmp
-
-        bundle "shout"
+        bundle "shout", :dir => tmp
         expect(out).to eq("global_one")
       end
     end

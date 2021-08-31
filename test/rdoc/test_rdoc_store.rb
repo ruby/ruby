@@ -317,6 +317,9 @@ class TestRDocStore < XrefTestCase
   end
 
   def test_friendly_path
+    @orig_xdg_data_home = ENV['XDG_DATA_HOME']
+    ENV.delete('XDG_DATA_HOME')
+
     @s.path = @tmpdir
     @s.type = nil
     assert_equal @s.path, @s.friendly_path
@@ -331,11 +334,13 @@ class TestRDocStore < XrefTestCase
     assert_equal "ruby site", @s.friendly_path
 
     @s.type = :home
-    assert_equal "~/.rdoc", @s.friendly_path
+    assert_equal File.expand_path("~/.local/share/rdoc"), @s.friendly_path
 
     @s.type = :gem
     @s.path = "#{@tmpdir}/gem_repository/doc/gem_name-1.0/ri"
     assert_equal "gem gem_name-1.0", @s.friendly_path
+  ensure
+    ENV['XDG_DATA_HOME'] = @orig_xdg_data_home
   end
 
   def test_dry_run
@@ -604,6 +609,14 @@ class TestRDocStore < XrefTestCase
     assert_nil @store.page 'no such page'
 
     assert_equal page, @store.page('PAGE')
+  end
+
+  def test_page_with_extension
+    page = @store.add_file 'PAGE.txt', parser: RDoc::Parser::Simple
+
+    assert_nil @store.page 'no such page'
+
+    assert_equal page, @store.page('PAGE.txt')
   end
 
   def test_save

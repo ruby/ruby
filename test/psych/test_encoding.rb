@@ -63,7 +63,7 @@ module Psych
         # If the external encoding isn't utf8, utf16le, or utf16be, we cannot
         # process the file.
         File.open(t.path, 'r', :encoding => 'SHIFT_JIS') do |f|
-          assert_raises Psych::SyntaxError do
+          assert_raise Psych::SyntaxError do
             Psych.load(f)
           end
         end
@@ -121,7 +121,7 @@ module Psych
     def test_emit_alias
       @emitter.start_stream Psych::Parser::UTF8
       @emitter.start_document [], [], true
-      e = assert_raises(RuntimeError) do
+      e = assert_raise(RuntimeError) do
         @emitter.alias 'ドラえもん'.encode('EUC-JP')
       end
       assert_match(/alias value/, e.message)

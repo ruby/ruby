@@ -57,6 +57,19 @@ class TestNameError < Test::Unit::TestCase
     assert_equal(:X, e.name)
   end
 
+  def test_info_const_name
+    mod = Module.new do
+      def self.name
+        "ModuleName"
+      end
+
+      def self.inspect
+        raise "<unusable info>"
+      end
+    end
+    assert_raise_with_message(NameError, /ModuleName/) {mod::DOES_NOT_EXIST}
+  end
+
   def test_info_method
     obj = PrettyObject.new
 
@@ -126,5 +139,18 @@ class TestNameError < Test::Unit::TestCase
     assert_separately(['-', File.join(__dir__, 'bug-11928.rb')], <<-'end;')
       -> {require ARGV[0]}.call
     end;
+  end
+
+  def test_large_receiver_inspect
+    receiver = Class.new do
+      def self.inspect
+        'A' * 120
+      end
+    end
+
+    error = assert_raise(NameError) do
+      receiver::FOO
+    end
+    assert_match(/\Auninitialized constant #{'A' * 120}::FOO$/, error.message)
   end
 end

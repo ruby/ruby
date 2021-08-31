@@ -30,11 +30,11 @@ describe "Array#shift" do
     array[0..2].should == ['two', 3.0, array]
   end
 
-  it "raises a #{frozen_error_class} on a frozen array" do
-    -> { ArraySpecs.frozen_array.shift }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen array" do
+    -> { ArraySpecs.frozen_array.shift }.should raise_error(FrozenError)
   end
-  it "raises a #{frozen_error_class} on an empty frozen array" do
-    -> { ArraySpecs.empty_frozen_array.shift }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on an empty frozen array" do
+    -> { ArraySpecs.empty_frozen_array.shift }.should raise_error(FrozenError)
   end
 
   describe "passed a number n as an argument" do

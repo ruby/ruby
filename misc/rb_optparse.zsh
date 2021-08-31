@@ -1,4 +1,5 @@
-#!/bin/zsh
+# -*- zsh -*-
+#
 # Completion for zsh:
 # (based on <http://d.hatena.ne.jp/rubikitch/20071002/zshcomplete>)
 #
@@ -7,9 +8,9 @@
 #      cp rb_optparse.zsh ~/.zsh.d/rb_optparse.zsh
 #
 # (2) load the script, and add a directory to fpath before compinit.
-#      echo '. ~/.zsh.d/rb_optparse.zsh' >> ~/.zshrc
-#      echo 'fpath=(~/.zsh.d/Completion $fpath)' >> ~/.zshrc
-#      echo 'autoload -U compinit; compinit' >> ~/.zshrc
+#      echo '. ~/.zsh.d/rb_optparse.zsh' >> "${ZDOTDIR:-~}/.zshrc"
+#      echo 'fpath=(~/.zsh.d/Completion $fpath)' >> "${ZDOTDIR:-~}/.zshrc"
+#      echo 'autoload -U compinit; compinit' >> "${ZDOTDIR:-~}/.zshrc"
 #
 # (3) restart zsh.
 #
@@ -24,8 +25,8 @@ generate-complete-function/ruby/optparse ()
     mkdir -p "${ZSH_COMPLETION_DIR-$HOME/.zsh.d/Completion}"
     $1 "--*-completion-zsh=${1:t}" >! "${ZSH_COMPLETION_DIR-$HOME/.zsh.d/Completion}/$cmpl"
     if [[ $(type -w "$cmpl") == "${cmpl}: function" ]]; then
-	unfunction "$cmpl"
-	autoload -U "$cmpl"
+        unfunction "$cmpl"
+        autoload -U "$cmpl"
     else
         compinit "$cmpl"
     fi

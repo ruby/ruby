@@ -12,8 +12,8 @@ describe "String#reverse" do
 
   ruby_version_is ''...'2.7' do
     it "taints the result if self is tainted" do
-      "".taint.reverse.tainted?.should == true
-      "m".taint.reverse.tainted?.should == true
+      "".taint.reverse.should.tainted?
+      "m".taint.reverse.should.tainted?
     end
   end
 
@@ -32,14 +32,14 @@ describe "String#reverse!" do
     "".reverse!.should == ""
   end
 
-  it "raises a #{frozen_error_class} on a frozen instance that is modified" do
-    -> { "anna".freeze.reverse!  }.should raise_error(frozen_error_class)
-    -> { "hello".freeze.reverse! }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen instance that is modified" do
+    -> { "anna".freeze.reverse!  }.should raise_error(FrozenError)
+    -> { "hello".freeze.reverse! }.should raise_error(FrozenError)
   end
 
   # see [ruby-core:23666]
-  it "raises a #{frozen_error_class} on a frozen instance that would not be modified" do
-    -> { "".freeze.reverse! }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen instance that would not be modified" do
+    -> { "".freeze.reverse! }.should raise_error(FrozenError)
   end
 
   it "reverses a string with multi byte characters" do

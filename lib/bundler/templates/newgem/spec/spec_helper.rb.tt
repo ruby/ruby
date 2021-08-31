@@ -1,4 +1,5 @@
-require "bundler/setup"
+# frozen_string_literal: true
+
 require "<%= config[:namespaced_path] %>"
 
 RSpec.configure do |config|

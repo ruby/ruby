@@ -75,7 +75,7 @@ describe "Array#compact!" do
     end
   end
 
-  it "raises a #{frozen_error_class} on a frozen array" do
-    -> { ArraySpecs.frozen_array.compact! }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen array" do
+    -> { ArraySpecs.frozen_array.compact! }.should raise_error(FrozenError)
   end
 end

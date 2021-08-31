@@ -6,7 +6,7 @@ module TestParallel
   PARALLEL_RB = "#{File.dirname(__FILE__)}/../../lib/test/unit/parallel.rb"
   TESTS = "#{File.dirname(__FILE__)}/tests_for_parallel"
   # use large timeout for --jit-wait
-  TIMEOUT = EnvUtil.apply_timeout_scale(RubyVM::MJIT.enabled? ? 100 : 30)
+  TIMEOUT = EnvUtil.apply_timeout_scale(defined?(RubyVM::JIT) && RubyVM::JIT.enabled? ? 100 : 30)
 
   class TestParallelWorker < Test::Unit::TestCase
     def setup
@@ -113,7 +113,7 @@ module TestParallel
 
         result = Marshal.load($1.chomp.unpack("m")[0])
         assert_equal(5, result[0])
-        assert_equal(17, result[1])
+        assert_equal(12, result[1])
         assert_kind_of(Array,result[2])
         assert_kind_of(Array,result[3])
         assert_kind_of(Array,result[4])

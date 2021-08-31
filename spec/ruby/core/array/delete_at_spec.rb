@@ -35,8 +35,8 @@ describe "Array#delete_at" do
     a.delete_at(-2).should == 1
   end
 
-  it "raises a #{frozen_error_class} on a frozen array" do
-    -> { [1,2,3].freeze.delete_at(0) }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen array" do
+    -> { [1,2,3].freeze.delete_at(0) }.should raise_error(FrozenError)
   end
 
   ruby_version_is ''...'2.7' do

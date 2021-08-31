@@ -188,6 +188,23 @@ class TestNetHTTP < Test::Unit::TestCase
     end
   end
 
+  def test_proxy_eh_ENV_with_urlencoded_user
+    TestNetHTTPUtils.clean_http_proxy_env do
+      ENV['http_proxy'] = 'http://Y%5CX:R%25S%5D%20%3FX@proxy.example:8000'
+
+      http = Net::HTTP.new 'hostname.example'
+
+      assert_equal true, http.proxy?
+      if Net::HTTP::ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE
+        assert_equal "Y\\X", http.proxy_user
+        assert_equal "R%S] ?X", http.proxy_pass
+      else
+        assert_nil http.proxy_user
+        assert_nil http.proxy_pass
+      end
+    end
+  end
+
   def test_proxy_eh_ENV_none_set
     TestNetHTTPUtils.clean_http_proxy_env do
       assert_equal false, Net::HTTP.new('hostname.example').proxy?
@@ -283,6 +300,27 @@ module TestNetHTTP_version_1_1_methods
   def test_s_get
     assert_equal $test_net_http_data,
         Net::HTTP.get(config('host'), '/', config('port'))
+
+    assert_equal $test_net_http_data, Net::HTTP.get(
+      URI.parse("http://#{config('host')}:#{config('port')}")
+    )
+    assert_equal $test_net_http_data, Net::HTTP.get(
+      URI.parse("http://#{config('host')}:#{config('port')}"), "Accept" => "text/plain"
+    )
+  end
+
+  def test_s_get_response
+    res = Net::HTTP.get_response(
+      URI.parse("http://#{config('host')}:#{config('port')}")
+    )
+    assert_equal "application/octet-stream", res["Content-Type"]
+    assert_equal $test_net_http_data, res.body
+
+    res = Net::HTTP.get_response(
+      URI.parse("http://#{config('host')}:#{config('port')}"), "Accept" => "text/plain"
+    )
+    assert_equal "text/plain", res["Content-Type"]
+    assert_equal $test_net_http_data, res.body
   end
 
   def test_head
@@ -538,6 +576,33 @@ module TestNetHTTP_version_1_1_methods
     th&.join
   end
 
+  def test_timeout_during_non_chunked_streamed_HTTP_session_write
+    th = nil
+    # listen for connections... but deliberately do not read
+    TCPServer.open('localhost', 0) {|server|
+      port = server.addr[1]
+
+      conn = Net::HTTP.new('localhost', port)
+      conn.write_timeout = 0.01
+      conn.read_timeout = 0.01 if windows?
+      conn.open_timeout = 0.1
+
+      req = Net::HTTP::Post.new('/')
+      data = "a"*50_000_000
+      req.content_length = data.size
+      req['Content-Type'] = 'application/x-www-form-urlencoded'
+      req.body_stream = StringIO.new(data)
+
+      th = Thread.new do
+        assert_raise(Net::WriteTimeout) { conn.request(req) }
+      end
+      assert th.join(10)
+    }
+  ensure
+    th&.kill
+    th&.join
+  end
+
   def test_timeout_during_HTTP_session
     bug4246 = "expected the HTTP session to have timed out but have not. c.f. [ruby-core:34203]"
 
@@ -548,7 +613,7 @@ module TestNetHTTP_version_1_1_methods
 
       conn = Net::HTTP.new('localhost', port)
       conn.read_timeout = EnvUtil.apply_timeout_scale(0.01)
-      conn.open_timeout = EnvUtil.apply_timeout_scale(0.1)
+      conn.open_timeout = EnvUtil.apply_timeout_scale(1)
 
       th = Thread.new do
         assert_raise(Net::ReadTimeout) {

@@ -102,6 +102,37 @@ describe "The super keyword" do
     c2.new.m(:dump) { :value }.should == :value
   end
 
+  it "can pass an explicit block" do
+    c1 = Class.new do
+      def m(v)
+        yield(v)
+      end
+    end
+    c2 = Class.new(c1) do
+      def m(v)
+        block = -> w { yield(w + 'b') }
+        super(v, &block)
+      end
+    end
+
+    c2.new.m('a') { |x| x + 'c' }.should == 'abc'
+  end
+
+  it "can pass no block using &nil" do
+    c1 = Class.new do
+      def m(v)
+        block_given?
+      end
+    end
+    c2 = Class.new(c1) do
+      def m(v)
+        super(v, &nil)
+      end
+    end
+
+    c2.new.m('a') { raise }.should be_false
+  end
+
   it "uses block argument given to method when used in a block" do
     c1 = Class.new do
       def m
@@ -262,6 +293,21 @@ describe "The super keyword" do
 
   it "without explicit arguments passes arguments and rest arguments" do
     SuperSpecs::ZSuperWithRestAndOthers::B.new.m(1, 2, 3, 4, 5).should == [3, 4, 5]
+    SuperSpecs::ZSuperWithRestAndOthers::B.new.m(1, 2).should == []
+  end
+
+  it "without explicit arguments passes arguments, rest arguments, and post arguments" do
+    SuperSpecs::ZSuperWithRestAndPost::B.new.m(1, 2, 3, 4, 5).should == [1, 2, 3]
+    SuperSpecs::ZSuperWithRestOthersAndPost::B.new.m(1, 2, 3, 4, 5).should == [2, 3, 4]
+    SuperSpecs::ZSuperWithRestAndPost::B.new.m(1, 2).should == []
+    SuperSpecs::ZSuperWithRestOthersAndPost::B.new.m(1, 2).should == []
+  end
+
+  it "without explicit arguments passes arguments, rest arguments including modifications, and post arguments" do
+    SuperSpecs::ZSuperWithRestAndPost::B.new.m_modified(1, 2, 3, 4, 5).should == [1, 14, 3]
+    SuperSpecs::ZSuperWithRestOthersAndPost::B.new.m_modified(1, 2, 3, 4, 5).should == [2, 14, 4]
+    SuperSpecs::ZSuperWithRestAndPost::B.new.m_modified(1, 2).should == [nil, 14]
+    SuperSpecs::ZSuperWithRestOthersAndPost::B.new.m_modified(1, 2).should == [nil, 14]
   end
 
   it "without explicit arguments passes arguments and rest arguments including any modifications" do

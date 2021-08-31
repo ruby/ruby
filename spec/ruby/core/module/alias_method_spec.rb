@@ -42,6 +42,18 @@ describe "Module#alias_method" do
     @object.was_private_one.should == 1
   end
 
+  it "handles aliasing a method only present in a refinement" do
+    c = @class
+    Module.new do
+      refine c do
+        def uno_refined_method
+        end
+        alias_method :double_refined_method, :uno_refined_method
+        instance_method(:uno_refined_method).should == instance_method(:double_refined_method)
+      end
+    end
+  end
+
   it "fails if origin method not found" do
     -> { @class.make_alias :ni, :san }.should raise_error(NameError) { |e|
       # a NameError and not a NoMethodError
@@ -49,9 +61,9 @@ describe "Module#alias_method" do
     }
   end
 
-  it "raises #{frozen_error_class} if frozen" do
+  it "raises FrozenError if frozen" do
     @class.freeze
-    -> { @class.make_alias :uno, :public_one }.should raise_error(frozen_error_class)
+    -> { @class.make_alias :uno, :public_one }.should raise_error(FrozenError)
   end
 
   it "converts the names using #to_str" do
@@ -69,19 +81,23 @@ describe "Module#alias_method" do
     -> { @class.make_alias mock('x'), :public_one }.should raise_error(TypeError)
   end
 
-  ruby_version_is ''...'2.5' do
-    it "is a private method" do
-      -> { @class.alias_method :ichi, :public_one }.should raise_error(NoMethodError)
-    end
-  end
-  ruby_version_is '2.5' do
-    it "is a public method" do
-      Module.should have_public_instance_method(:alias_method, false)
-    end
+  it "is a public method" do
+    Module.should have_public_instance_method(:alias_method, false)
   end
 
-  it "returns self" do
-    @class.send(:alias_method, :checking_return_value, :public_one).should equal(@class)
+  describe "returned value" do
+    ruby_version_is ""..."3.0" do
+      it "returns self" do
+        @class.send(:alias_method, :checking_return_value, :public_one).should equal(@class)
+      end
+    end
+
+    ruby_version_is "3.0" do
+      it "returns symbol of the defined method name" do
+        @class.send(:alias_method, :checking_return_value, :public_one).should equal(:checking_return_value)
+        @class.send(:alias_method, 'checking_return_value', :public_one).should equal(:checking_return_value)
+      end
+    end
   end
 
   it "works in module" do

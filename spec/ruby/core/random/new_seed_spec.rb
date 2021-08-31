@@ -1,8 +1,8 @@
 require_relative '../../spec_helper'
 
 describe "Random.new_seed" do
-  it "returns a Bignum" do
-    Random.new_seed.should be_an_instance_of(Bignum)
+  it "returns an Integer" do
+    Random.new_seed.should be_an_instance_of(Integer)
   end
 
   it "returns an arbitrary seed value each time" do

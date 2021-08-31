@@ -12,6 +12,13 @@ describe :enum_for, shared: true do
     enum.map { |v| v }.should == [1,2].each { |v| v }
   end
 
+  it "sets regexp matches in the caller" do
+    "wawa".send(@method, :scan, /./).map {|o| $& }.should == ["w", "a", "w", "a"]
+    a = []
+    "wawa".send(@method, :scan, /./).each {|o| a << $& }
+    a.should == ["w", "a", "w", "a"]
+  end
+
   it "exposes multi-arg yields as an array" do
     o = Object.new
     def o.each

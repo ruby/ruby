@@ -33,10 +33,10 @@ describe "String#crypt" do
         tainted_salt.taint
         tainted_str.taint
 
-        "mypassword".crypt("$2a$04$0WVaz0pV3jzfZ5G5tpmHWu").tainted?.should == false
-        tainted_str.crypt("$2a$04$0WVaz0pV3jzfZ5G5tpmHWu").tainted?.should == true
-        "mypassword".crypt(tainted_salt).tainted?.should == true
-        tainted_str.crypt(tainted_salt).tainted?.should == true
+        "mypassword".crypt("$2a$04$0WVaz0pV3jzfZ5G5tpmHWu").should_not.tainted?
+        tainted_str.crypt("$2a$04$0WVaz0pV3jzfZ5G5tpmHWu").should.tainted?
+        "mypassword".crypt(tainted_salt).should.tainted?
+        tainted_str.crypt(tainted_salt).should.tainted?
       end
     end
 
@@ -93,10 +93,10 @@ describe "String#crypt" do
         tainted_salt.taint
         tainted_str.taint
 
-        "hello".crypt("aa").tainted?.should == false
-        tainted_str.crypt("aa").tainted?.should == true
-        "hello".crypt(tainted_salt).tainted?.should == true
-        tainted_str.crypt(tainted_salt).tainted?.should == true
+        "hello".crypt("aa").should_not.tainted?
+        tainted_str.crypt("aa").should.tainted?
+        "hello".crypt(tainted_salt).should.tainted?
+        tainted_str.crypt(tainted_salt).should.tainted?
       end
     end
 

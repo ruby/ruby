@@ -40,7 +40,7 @@ YAML = Psych # :nodoc:
 #
 # == History
 #
-# Syck was the original for YAML implementation in Ruby's standard library
+# Syck was the original YAML implementation in Ruby's standard library
 # developed by why the lucky stiff.
 #
 # You can still use Syck, if you prefer, for parsing and emitting YAML, but you

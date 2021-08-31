@@ -33,3 +33,50 @@ ruby_version_is "2.7" do
     end
   end
 end
+
+ruby_version_is "3.1" do
+  describe "Enumerable#tally with a hash" do
+    before :each do
+      ScratchPad.record []
+    end
+
+    it "returns a hash with counts according to the value" do
+      enum = EnumerableSpecs::Numerous.new('foo', 'bar', 'foo', 'baz')
+      enum.tally({ 'foo' => 1 }).should == { 'foo' => 3, 'bar' => 1, 'baz' => 1}
+    end
+
+    it "returns the given hash" do
+      enum = EnumerableSpecs::Numerous.new('foo', 'bar', 'foo', 'baz')
+      hash = { 'foo' => 1 }
+      enum.tally(hash).should equal(hash)
+    end
+
+    it "raises a FrozenError and does not udpate the given hash when the hash is frozen" do
+      enum = EnumerableSpecs::Numerous.new('foo', 'bar', 'foo', 'baz')
+      hash = { 'foo' => 1 }.freeze
+      -> { enum.tally(hash) }.should raise_error(FrozenError)
+      hash.should == { 'foo' => 1 }
+    end
+
+    it "does not call given block" do
+      enum = EnumerableSpecs::Numerous.new('foo', 'bar', 'foo', 'baz')
+      enum.tally({ 'foo' => 1 }) { |v| ScratchPad << v }
+      ScratchPad.recorded.should == []
+    end
+
+    it "ignores the default value" do
+      enum = EnumerableSpecs::Numerous.new('foo', 'bar', 'foo', 'baz')
+      enum.tally(Hash.new(100)).should == { 'foo' => 2, 'bar' => 1, 'baz' => 1}
+    end
+
+    it "ignores the default proc" do
+      enum = EnumerableSpecs::Numerous.new('foo', 'bar', 'foo', 'baz')
+      enum.tally(Hash.new {100}).should == { 'foo' => 2, 'bar' => 1, 'baz' => 1}
+    end
+
+    it "needs the values counting each elements to be an integer" do
+      enum = EnumerableSpecs::Numerous.new('foo')
+      -> { enum.tally({ 'foo' => 'bar' }) }.should raise_error(TypeError)
+    end
+  end
+end

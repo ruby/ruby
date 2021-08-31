@@ -1,6 +1,6 @@
 require_relative '../../../spec_helper'
 
-ruby_version_is ''...'2.8' do
+ruby_version_is ''...'3.0' do
   require 'rexml/document'
 
   describe "REXML::Element#cdatas" do
@@ -17,7 +17,7 @@ ruby_version_is ''...'2.8' do
     end
 
     it "freezes the returned array" do
-      @e.cdatas.frozen?.should == true
+      @e.cdatas.should.frozen?
     end
 
     it "returns an empty array if element has no cdata" do

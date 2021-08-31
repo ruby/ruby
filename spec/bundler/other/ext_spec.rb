@@ -55,7 +55,7 @@ RSpec.describe "Gem::SourceIndex#refresh!" do
   end
 
   it "does not explode when called" do
-    run "Gem.source_index.refresh!"
-    run "Gem::SourceIndex.new([]).refresh!"
+    run "Gem.source_index.refresh!", :raise_on_error => false
+    run "Gem::SourceIndex.new([]).refresh!", :raise_on_error => false
   end
 end

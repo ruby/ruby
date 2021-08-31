@@ -14,6 +14,20 @@ module Bundler
       Bundler.ui.info msg
     end
 
+    def self.output_fund_metadata_summary
+      definition = Bundler.definition
+      current_dependencies = definition.requested_dependencies
+      current_specs = definition.specs
+
+      count = current_dependencies.count {|dep| current_specs[dep.name].first.metadata.key?("funding_uri") }
+
+      return if count.zero?
+
+      intro = count > 1 ? "#{count} installed gems you directly depend on are" : "#{count} installed gem you directly depend on is"
+      message = "#{intro} looking for funding.\n  Run `bundle fund` for details"
+      Bundler.ui.info message
+    end
+
     def self.output_without_groups_message(command)
       return if Bundler.settings[:without].empty?
       Bundler.ui.confirm without_groups_message(command)
@@ -22,10 +36,15 @@ module Bundler
     def self.without_groups_message(command)
       command_in_past_tense = command == :install ? "installed" : "updated"
       groups = Bundler.settings[:without]
+      "Gems in the #{verbalize_groups(groups)} were not #{command_in_past_tense}."
+    end
+
+    def self.verbalize_groups(groups)
+      groups.map!{|g| "'#{g}'" }
       group_list = [groups[0...-1].join(", "), groups[-1..-1]].
         reject {|s| s.to_s.empty? }.join(" and ")
       group_str = groups.size == 1 ? "group" : "groups"
-      "Gems in the #{group_str} #{group_list} were not #{command_in_past_tense}."
+      "#{group_str} #{group_list}"
     end
 
     def self.select_spec(name, regex_match = nil)
@@ -39,7 +58,13 @@ module Bundler
 
       case specs.count
       when 0
-        raise GemNotFound, gem_not_found_message(name, Bundler.definition.dependencies)
+        dep_in_other_group = Bundler.definition.current_dependencies.find {|dep|dep.name == name }
+
+        if dep_in_other_group
+          raise GemNotFound, "Could not find gem '#{name}', because it's in the #{verbalize_groups(dep_in_other_group.groups)}, configured to be ignored."
+        else
+          raise GemNotFound, gem_not_found_message(name, Bundler.definition.dependencies)
+        end
       when 1
         specs.first
       else
@@ -69,6 +94,8 @@ module Bundler
     end
 
     def self.ensure_all_gems_in_lockfile!(names, locked_gems = Bundler.locked_gems)
+      return unless locked_gems
+
       locked_names = locked_gems.specs.map(&:name).uniq
       names.-(locked_names).each do |g|
         raise GemNotFound, gem_not_found_message(g, locked_names)

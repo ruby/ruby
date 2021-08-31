@@ -33,11 +33,11 @@ describe "String#rjust with length, padding" do
 
   ruby_version_is ''...'2.7' do
     it "taints result when self or padstr is tainted" do
-      "x".taint.rjust(4).tainted?.should == true
-      "x".taint.rjust(0).tainted?.should == true
-      "".taint.rjust(0).tainted?.should == true
-      "x".taint.rjust(4, "*").tainted?.should == true
-      "x".rjust(4, "*".taint).tainted?.should == true
+      "x".taint.rjust(4).should.tainted?
+      "x".taint.rjust(0).should.tainted?
+      "".taint.rjust(0).should.tainted?
+      "x".taint.rjust(4, "*").should.tainted?
+      "x".rjust(4, "*".taint).should.tainted?
     end
   end
 
@@ -74,13 +74,26 @@ describe "String#rjust with length, padding" do
     -> { "hello".rjust(10, '') }.should raise_error(ArgumentError)
   end
 
-  it "returns subclass instances when called on subclasses" do
-    StringSpecs::MyString.new("").rjust(10).should be_an_instance_of(StringSpecs::MyString)
-    StringSpecs::MyString.new("foo").rjust(10).should be_an_instance_of(StringSpecs::MyString)
-    StringSpecs::MyString.new("foo").rjust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances when called on subclasses" do
+      StringSpecs::MyString.new("").rjust(10).should be_an_instance_of(StringSpecs::MyString)
+      StringSpecs::MyString.new("foo").rjust(10).should be_an_instance_of(StringSpecs::MyString)
+      StringSpecs::MyString.new("foo").rjust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(StringSpecs::MyString)
 
-    "".rjust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
-    "foo".rjust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
+      "".rjust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
+      "foo".rjust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns String instances when called on subclasses" do
+      StringSpecs::MyString.new("").rjust(10).should be_an_instance_of(String)
+      StringSpecs::MyString.new("foo").rjust(10).should be_an_instance_of(String)
+      StringSpecs::MyString.new("foo").rjust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
+
+      "".rjust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
+      "foo".rjust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
+    end
   end
 
   ruby_version_is ''...'2.7' do

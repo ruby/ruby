@@ -4,7 +4,6 @@
 # used by both Specification and StubSpecification.
 
 class Gem::BasicSpecification
-
   ##
   # Allows installation of extensions for git: gems.
 
@@ -39,10 +38,8 @@ class Gem::BasicSpecification
   end
 
   class << self
-
     extend Gem::Deprecate
-    deprecate :default_specifications_dir, "Gem.default_specifications_dir", 2020, 02
-
+    rubygems_deprecate :default_specifications_dir, "Gem.default_specifications_dir"
   end
 
   ##
@@ -78,7 +75,7 @@ class Gem::BasicSpecification
     elsif missing_extensions?
       @ignored = true
 
-      if RUBY_ENGINE == platform || Gem::Platform.local === platform
+      if Gem::Platform::RUBY == platform || Gem::Platform.local === platform
         warn "Ignoring #{full_name} because its extensions are not built. " +
           "Try: gem pristine #{name} --version #{version}"
       end
@@ -276,7 +273,7 @@ class Gem::BasicSpecification
   def matches_for_glob(glob) # TODO: rename?
     glob = File.join(self.lib_dirs_glob, glob)
 
-    Dir[glob].map { |f| f.tap(&Gem::UNTAINT) } # FIX our tests are broken, run w/ SAFE=1
+    Dir[glob].map {|f| f.tap(&Gem::UNTAINT) } # FIX our tests are broken, run w/ SAFE=1
   end
 
   ##
@@ -335,15 +332,14 @@ class Gem::BasicSpecification
   def have_file?(file, suffixes)
     return true if raw_require_paths.any? do |path|
       base = File.join(gems_dir, full_name, path.tap(&Gem::UNTAINT), file).tap(&Gem::UNTAINT)
-      suffixes.any? { |suf| File.file? base + suf }
+      suffixes.any? {|suf| File.file? base + suf }
     end
 
     if have_extensions?
       base = File.join extension_dir, file
-      suffixes.any? { |suf| File.file? base + suf }
+      suffixes.any? {|suf| File.file? base + suf }
     else
       false
     end
   end
-
 end

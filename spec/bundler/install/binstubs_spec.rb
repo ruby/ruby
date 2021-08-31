@@ -35,7 +35,7 @@ RSpec.describe "bundle install" do
     end
 
     it "warns about the situation" do
-      bundle! "exec rackup"
+      bundle "exec rackup"
 
       expect(last_command.stderr).to include(
         "The `rackup` executable in the `fake` gem is being loaded, but it's also present in other gems (rack).\n" \

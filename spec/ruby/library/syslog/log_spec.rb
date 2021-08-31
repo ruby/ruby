@@ -20,7 +20,7 @@ platform_is_not :windows do
             s.log(Syslog::LOG_ALERT, "Hello")
             s.log(Syslog::LOG_CRIT, "World")
           end
-        }.should output_to_fd("rubyspec: Hello\nrubyspec: World\n", $stderr)
+        }.should output_to_fd(/\Arubyspec(?::| \d+ - -) Hello\nrubyspec(?::| \d+ - -) World\n\z/, $stderr)
       end
 
       it "accepts undefined priorities" do
@@ -29,7 +29,7 @@ platform_is_not :windows do
             s.log(1337, "Hello")
           end
           # use a regex since it'll output unknown facility/priority messages
-        }.should output_to_fd(/rubyspec: Hello/, $stderr)
+        }.should output_to_fd(/rubyspec(?::| \d+ - -) Hello\n\z/, $stderr)
       end
 
       it "fails with TypeError on nil log messages" do
@@ -49,7 +49,7 @@ platform_is_not :windows do
           Syslog.open("rubyspec", Syslog::LOG_PERROR) do |s|
             s.log(Syslog::LOG_ALERT, "%s x %d", "chunky bacon", 2)
           end
-        }.should output_to_fd("rubyspec: chunky bacon x 2\n", $stderr)
+        }.should output_to_fd(/rubyspec(?::| \d+ - -) chunky bacon x 2\n\z/, $stderr)
       end
     end
   end

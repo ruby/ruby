@@ -7,5 +7,5 @@ describe "StringIO#each_char" do
 end
 
 describe "StringIO#each_char when self is not readable" do
-  it_behaves_like :stringio_each_char_not_readable, :chars
+  it_behaves_like :stringio_each_char_not_readable, :each_char
 end

@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/commands/mirror_command'
 
 class TestGemCommandsMirrorCommand < Gem::TestCase
-
   def setup
     super
 
@@ -15,7 +14,6 @@ class TestGemCommandsMirrorCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r%Install the rubygems-mirror%i, @ui.error
+    assert_match %r{Install the rubygems-mirror}i, @ui.error
   end
-
 end

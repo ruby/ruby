@@ -9,7 +9,7 @@
 
 **********************************************************************/
 
-#include "ruby/config.h"
+#include "ruby/internal/config.h"
 
 #include <math.h>
 #ifdef HAVE_FLOAT_H
@@ -22,6 +22,7 @@
 #include "encindex.h"
 #include "id_table.h"
 #include "internal.h"
+#include "internal/array.h"
 #include "internal/bignum.h"
 #include "internal/class.h"
 #include "internal/encoding.h"
@@ -531,10 +532,13 @@ w_extended(VALUE klass, struct dump_arg *arg, int check)
 	klass = RCLASS_SUPER(klass);
     }
     while (BUILTIN_TYPE(klass) == T_ICLASS) {
-	VALUE path = rb_class_name(RBASIC(klass)->klass);
-	w_byte(TYPE_EXTENDED, arg);
-	w_unique(path, arg);
-	klass = RCLASS_SUPER(klass);
+        if (!FL_TEST(klass, RICLASS_IS_ORIGIN) ||
+                BUILTIN_TYPE(RBASIC(klass)->klass) != T_MODULE) {
+            VALUE path = rb_class_name(RBASIC(klass)->klass);
+            w_byte(TYPE_EXTENDED, arg);
+            w_unique(path, arg);
+        }
+        klass = RCLASS_SUPER(klass);
     }
 }
 
@@ -1182,10 +1186,8 @@ static const rb_data_type_t load_arg_data = {
 };
 
 #define r_entry(v, arg) r_entry0((v), (arg)->data->num_entries, (arg))
-static VALUE r_entry0(VALUE v, st_index_t num, struct load_arg *arg);
 static VALUE r_object(struct load_arg *arg);
 static VALUE r_symbol(struct load_arg *arg);
-static VALUE path2class(VALUE path);
 
 NORETURN(static void too_short(void));
 static void
@@ -1499,13 +1501,12 @@ r_string(struct load_arg *arg)
 static VALUE
 r_entry0(VALUE v, st_index_t num, struct load_arg *arg)
 {
-    st_data_t real_obj = (VALUE)Qundef;
-    if (arg->compat_tbl && st_lookup(arg->compat_tbl, v, &real_obj)) {
-        st_insert(arg->data, num, (st_data_t)real_obj);
+    st_data_t real_obj = (st_data_t)v;
+    if (arg->compat_tbl) {
+        /* real_obj is kept if not found */
+        st_lookup(arg->compat_tbl, v, &real_obj);
     }
-    else {
-        st_insert(arg->data, num, (st_data_t)v);
-    }
+    st_insert(arg->data, num, real_obj);
     return v;
 }
 
@@ -1736,8 +1737,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    }
 	    v = r_object0(arg, 0, extmod);
 	    if (rb_special_const_p(v) || RB_TYPE_P(v, T_OBJECT) || RB_TYPE_P(v, T_CLASS)) {
-	      format_error:
-		rb_raise(rb_eArgError, "dump format error (user class)");
+                goto format_error;
 	    }
 	    if (RB_TYPE_P(v, T_MODULE) || !RTEST(rb_class_inherited_p(c, RBASIC(v)->klass))) {
 		VALUE tmp = rb_obj_alloc(c);
@@ -1747,6 +1747,9 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    RBASIC_SET_CLASS(v, c);
 	}
 	break;
+
+      format_error:
+        rb_raise(rb_eArgError, "dump format error (user class)");
 
       case TYPE_NIL:
 	v = Qnil;
@@ -2318,9 +2321,6 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc)
 void
 Init_marshal(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
     VALUE rb_mMarshal = rb_define_module("Marshal");
 #define set_id(sym) sym = rb_intern_const(name_##sym)
     set_id(s_dump);

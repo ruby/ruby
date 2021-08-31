@@ -196,7 +196,7 @@ module DRb
         if comment = self[:SSLCertComment]
           cert.add_extension(ef.create_extension("nsComment", comment))
         end
-        cert.sign(rsa, OpenSSL::Digest::SHA256.new)
+        cert.sign(rsa, "SHA256")
 
         @cert = cert
         @pkey = rsa

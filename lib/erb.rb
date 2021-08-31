@@ -12,7 +12,8 @@
 #
 # You can redistribute it and/or modify it under the same terms as Ruby.
 
-require "cgi/util"
+require 'cgi/util'
+require 'erb/version'
 
 #
 # = ERB -- Ruby Templating
@@ -45,7 +46,7 @@ require "cgi/util"
 #
 #   <% Ruby code -- inline with output %>
 #   <%= Ruby expression -- replace with result %>
-#   <%# comment -- ignored -- useful in testing %>
+#   <%# comment -- ignored -- useful in testing %> (`<% #` doesn't work. Don't use Ruby comments.)
 #   % a line of Ruby code -- treated as <% line %> (optional -- see ERB.new)
 #   %% replaced with % if first thing on a line and % processing is used
 #   <%% or %%> -- replace with <% or %> respectively
@@ -257,10 +258,11 @@ require "cgi/util"
 #
 class ERB
   Revision = '$Date::                           $' # :nodoc: #'
+  deprecate_constant :Revision
 
   # Returns revision information for the erb.rb module.
   def self.version
-    "erb.rb [2.2.0 #{ERB::Revision.split[1]}]"
+    VERSION
   end
 end
 
@@ -809,14 +811,14 @@ class ERB
   def initialize(str, safe_level=NOT_GIVEN, legacy_trim_mode=NOT_GIVEN, legacy_eoutvar=NOT_GIVEN, trim_mode: nil, eoutvar: '_erbout')
     # Complex initializer for $SAFE deprecation at [Feature #14256]. Use keyword arguments to pass trim_mode or eoutvar.
     if safe_level != NOT_GIVEN
-      warn 'Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.', uplevel: 1 if $VERBOSE || !ZERO_SAFE_LEVELS.include?(safe_level)
+      warn 'Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.', uplevel: 1
     end
     if legacy_trim_mode != NOT_GIVEN
-      warn 'Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.', uplevel: 1 if $VERBOSE
+      warn 'Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.', uplevel: 1
       trim_mode = legacy_trim_mode
     end
     if legacy_eoutvar != NOT_GIVEN
-      warn 'Passing eoutvar with the 4th argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, eoutvar: ...) instead.', uplevel: 1 if $VERBOSE
+      warn 'Passing eoutvar with the 4th argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, eoutvar: ...) instead.', uplevel: 1
       eoutvar = legacy_eoutvar
     end
 
@@ -829,8 +831,6 @@ class ERB
   end
   NOT_GIVEN = Object.new
   private_constant :NOT_GIVEN
-  ZERO_SAFE_LEVELS = [0, nil]
-  private_constant :ZERO_SAFE_LEVELS
 
   ##
   # Creates a new compiler for ERB.  See ERB::Compiler.new for details

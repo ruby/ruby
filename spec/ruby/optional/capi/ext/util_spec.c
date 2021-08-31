@@ -1,4 +1,5 @@
 #include "ruby.h"
+#include "ruby/util.h"
 #include "rubyspec.h"
 
 #ifdef __cplusplus
@@ -60,8 +61,8 @@ static VALUE util_spec_rb_get_kwargs(VALUE self, VALUE keyword_hash, VALUE keys,
   int values_len = req + (opt < 0 ? -1 - opt : opt);
   int i = 0;
 
-  ID *ids = malloc(sizeof(VALUE) * len);
-  VALUE *results = malloc(sizeof(VALUE) * values_len);
+  ID *ids = (ID*) malloc(sizeof(VALUE) * len);
+  VALUE *results = (VALUE*) malloc(sizeof(VALUE) * values_len);
   int extracted = 0;
   VALUE ary = Qundef;
 
@@ -93,6 +94,18 @@ static VALUE util_spec_rb_sourceline(VALUE self) {
   return INT2NUM(rb_sourceline());
 }
 
+static VALUE util_spec_strtod(VALUE self, VALUE string) {
+  char *endptr = NULL;
+  double value = strtod(RSTRING_PTR(string), &endptr);
+  return rb_ary_new_from_args(2, rb_float_new(value), endptr ? rb_str_new2(endptr) : Qnil);
+}
+
+static VALUE util_spec_ruby_strtod(VALUE self, VALUE string) {
+  char *endptr = NULL;
+  double value = ruby_strtod(RSTRING_PTR(string), &endptr);
+  return rb_ary_new_from_args(2, rb_float_new(value), endptr ? rb_str_new2(endptr) : Qnil);
+}
+
 void Init_util_spec(void) {
   VALUE cls = rb_define_class("CApiUtilSpecs", rb_cObject);
   rb_define_method(cls, "rb_scan_args", util_spec_rb_scan_args, 4);
@@ -101,6 +114,8 @@ void Init_util_spec(void) {
   rb_define_method(cls, "rb_iter_break", util_spec_rb_iter_break, 0);
   rb_define_method(cls, "rb_sourcefile", util_spec_rb_sourcefile, 0);
   rb_define_method(cls, "rb_sourceline", util_spec_rb_sourceline, 0);
+  rb_define_method(cls, "strtod", util_spec_strtod, 1);
+  rb_define_method(cls, "ruby_strtod", util_spec_ruby_strtod, 1);
 }
 
 #ifdef __cplusplus

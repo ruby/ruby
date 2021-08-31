@@ -70,14 +70,22 @@ describe "String#downcase" do
 
   ruby_version_is ''...'2.7' do
     it "taints result when self is tainted" do
-      "".taint.downcase.tainted?.should == true
-      "x".taint.downcase.tainted?.should == true
-      "X".taint.downcase.tainted?.should == true
+      "".taint.downcase.should.tainted?
+      "x".taint.downcase.should.tainted?
+      "X".taint.downcase.should.tainted?
     end
   end
 
-  it "returns a subclass instance for subclasses" do
-    StringSpecs::MyString.new("FOObar").downcase.should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns a subclass instance for subclasses" do
+      StringSpecs::MyString.new("FOObar").downcase.should be_an_instance_of(StringSpecs::MyString)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns a String instance for subclasses" do
+      StringSpecs::MyString.new("FOObar").downcase.should be_an_instance_of(String)
+    end
   end
 end
 
@@ -183,9 +191,9 @@ describe "String#downcase!" do
     a.should == "hello"
   end
 
-  it "raises a #{frozen_error_class} when self is frozen" do
-    -> { "HeLlo".freeze.downcase! }.should raise_error(frozen_error_class)
-    -> { "hello".freeze.downcase! }.should raise_error(frozen_error_class)
+  it "raises a FrozenError when self is frozen" do
+    -> { "HeLlo".freeze.downcase! }.should raise_error(FrozenError)
+    -> { "hello".freeze.downcase! }.should raise_error(FrozenError)
   end
 
   it "sets the result String encoding to the source String encoding" do

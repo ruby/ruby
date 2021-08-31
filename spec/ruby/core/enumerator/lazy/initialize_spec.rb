@@ -43,7 +43,7 @@ describe "Enumerator::Lazy#initialize" do
     @uninitialized.send(:initialize, @receiver, Float::INFINITY) {}.size.should equal(Float::INFINITY)
   end
 
-  it "sets given size to own size if the given size is a Fixnum" do
+  it "sets given size to own size if the given size is an Integer" do
     @uninitialized.send(:initialize, @receiver, 100) {}.size.should == 100
   end
 

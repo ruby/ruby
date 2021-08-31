@@ -1,10 +1,9 @@
 # frozen_string_literal: true
 
-require 'rubygems/command'
-require 'rubygems/query_utils'
+require_relative '../command'
+require_relative '../query_utils'
 
 class Gem::Commands::InfoCommand < Gem::Command
-
   include Gem::QueryUtils
 
   def initialize
@@ -36,5 +35,4 @@ class Gem::Commands::InfoCommand < Gem::Command
   def defaults_str
     "--local"
   end
-
 end

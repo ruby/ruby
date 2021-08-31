@@ -1,9 +1,9 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/version_option'
-require 'rubygems/security_option'
-require 'rubygems/remote_fetcher'
-require 'rubygems/package'
+require_relative '../command'
+require_relative '../version_option'
+require_relative '../security_option'
+require_relative '../remote_fetcher'
+require_relative '../package'
 
 # forward-declare
 
@@ -13,7 +13,6 @@ module Gem::Security # :nodoc:
 end
 
 class Gem::Commands::UnpackCommand < Gem::Command
-
   include Gem::VersionOption
   include Gem::SecurityOption
 
@@ -157,7 +156,7 @@ command help for an example.
 
     specs = dependency.matching_specs
 
-    selected = specs.max_by { |s| s.version }
+    selected = specs.max_by {|s| s.version }
 
     return Gem::RemoteFetcher.fetcher.download_to_cache(dependency) unless
       selected
@@ -173,5 +172,4 @@ command help for an example.
 
     path
   end
-
 end

@@ -77,10 +77,10 @@ describe "IO.popen" do
     Process.kill "KILL", pid
     @io.close
     platform_is_not :windows do
-      $?.signaled?.should == true
+      $?.should.signaled?
     end
     platform_is :windows do
-      $?.exited?.should == true
+      $?.should.exited?
     end
   end
 

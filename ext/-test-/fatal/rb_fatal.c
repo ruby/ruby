@@ -15,5 +15,6 @@ ruby_fatal(VALUE obj, VALUE msg)
 void
 Init_rb_fatal(void)
 {
-    rb_define_method(rb_mKernel, "rb_fatal", ruby_fatal, 1);
+    VALUE mBug = rb_define_module("Bug");
+    rb_define_singleton_method(mBug, "rb_fatal", ruby_fatal, 1);
 }

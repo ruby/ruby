@@ -36,20 +36,7 @@ describe "IO#ungetbyte" do
     @io.getbyte.should == 97
   end
 
-  ruby_version_is ''...'2.6' do
-    it "puts back one byte for a Fixnum argument..." do
-      @io.ungetbyte(4095).should be_nil
-      @io.getbyte.should == 255
-    end
-
-    it "... but not for Bignum argument (eh?)" do
-      -> {
-        @io.ungetbyte(0x4f7574206f6620636861722072616e6765)
-      }.should raise_error(TypeError)
-    end
-  end
-
-  ruby_version_is '2.6'...'2.6.1' do
+  ruby_version_is ''...'2.6.1' do
     it "is an RangeError if the integer is not in 8bit" do
       for i in [4095, 0x4f7574206f6620636861722072616e6765] do
         -> { @io.ungetbyte(i) }.should raise_error(RangeError)
@@ -64,6 +51,10 @@ describe "IO#ungetbyte" do
         @io.getbyte.should == 255
       end
     end
+  end
+
+  it "raises IOError on stream not opened for reading" do
+    -> { STDOUT.ungetbyte(42) }.should raise_error(IOError, "not opened for reading")
   end
 
   it "raises an IOError if the IO is closed" do

@@ -1,5 +1,5 @@
 #include "internal.h"
-#include "internal/error.h"
+#include "internal/string.h"
 #include "ruby/encoding.h"
 
 static VALUE

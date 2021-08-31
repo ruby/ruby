@@ -50,9 +50,6 @@ $-p::  True if option <tt>-p</tt> is set. Read-only variable.
 
 == Pre-defined global constants
 
-TRUE::              The typical true value. Deprecated.
-FALSE::             The +false+ itself. Deprecated.
-NIL::               The +nil+ itself. Deprecated.
 STDIN::             The standard input. The default value for $stdin.
 STDOUT::            The standard output. The default value for $stdout.
 STDERR::            The standard error output. The default value for $stderr.

@@ -1,0 +1,8 @@
+prelude: |
+  # Disable GC to see raw throughput:
+  GC.disable
+benchmark:
+  vm_fiber_allocate: |
+    fiber = Fiber.new{Fiber.yield}
+    fiber.resume
+loop_count: 100000

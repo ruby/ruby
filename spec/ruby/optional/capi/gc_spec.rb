@@ -64,4 +64,24 @@ describe "CApiGCSpecs" do
       @f.rb_gc_register_mark_object(Object.new).should be_nil
     end
   end
+
+  describe "rb_gc_latest_gc_info" do
+    it "raises a TypeError when hash or symbol not given" do
+      -> { @f.rb_gc_latest_gc_info("foo") }.should raise_error(TypeError)
+    end
+
+    it "raises an ArgumentError when unknown symbol given" do
+      -> { @f.rb_gc_latest_gc_info(:unknown) }.should raise_error(ArgumentError)
+    end
+
+    it "returns the populated hash when a hash is given" do
+      h = {}
+      @f.rb_gc_latest_gc_info(h).should == h
+      h.size.should_not == 0
+    end
+
+    it "returns a value when symbol is given" do
+      @f.rb_gc_latest_gc_info(:state).should be_kind_of(Symbol)
+    end
+  end
 end

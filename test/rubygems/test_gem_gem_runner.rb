@@ -1,13 +1,14 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 
 class TestGemGemRunner < Gem::TestCase
-
   def setup
     super
 
     require 'rubygems/command'
     @orig_args = Gem::Command.build_args
+    @orig_specific_extra_args = Gem::Command.specific_extra_args_hash.dup
+    @orig_extra_args = Gem::Command.extra_args.dup
 
     require 'rubygems/gem_runner'
     @runner = Gem::GemRunner.new
@@ -17,6 +18,8 @@ class TestGemGemRunner < Gem::TestCase
     super
 
     Gem::Command.build_args = @orig_args
+    Gem::Command.specific_extra_args_hash = @orig_specific_extra_args
+    Gem::Command.extra_args = @orig_extra_args
   end
 
   def test_do_configuration
@@ -71,17 +74,18 @@ class TestGemGemRunner < Gem::TestCase
     args = %w[query]
 
     use_ui @ui do
-      assert_nil @runner.run(args)
+      @runner.run(args)
     end
 
-    assert_equal "WARNING:  query command is deprecated. It will be removed on or after 2020-12-01.\n", @ui.error
+    assert_match(/WARNING:  query command is deprecated. It will be removed in Rubygems [0-9]+/, @ui.error)
+    assert_match(/WARNING:  It is recommended that you use `gem search` or `gem list` instead/, @ui.error)
   end
 
   def test_info_succeeds
     args = %w[info]
 
     use_ui @ui do
-      assert_nil @runner.run(args)
+      @runner.run(args)
     end
 
     assert_empty @ui.error
@@ -91,7 +95,7 @@ class TestGemGemRunner < Gem::TestCase
     args = %w[list]
 
     use_ui @ui do
-      assert_nil @runner.run(args)
+      @runner.run(args)
     end
 
     assert_empty @ui.error
@@ -101,10 +105,9 @@ class TestGemGemRunner < Gem::TestCase
     args = %w[search]
 
     use_ui @ui do
-      assert_nil @runner.run(args)
+      @runner.run(args)
     end
 
     assert_empty @ui.error
   end
-
 end

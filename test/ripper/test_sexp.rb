@@ -412,6 +412,43 @@ eot
       [:@int, "0", [1, 5]],
       [:in, [:aryptn, nil, nil, nil, nil], [[:void_stmt]], nil]],
 
+    [__LINE__, %q{ 0 => [*, a, *] }] =>
+    [:case,
+      [:@int, "0", [1, 0]],
+      [:in,
+        [:fndptn,
+          nil,
+          [:var_field, nil],
+          [[:var_field, [:@ident, "a", [1, 9]]]],
+          [:var_field, nil]],
+        nil,
+        nil]],
+
+    [__LINE__, %q{ 0 => [*a, b, *c] }] =>
+    [:case,
+      [:@int, "0", [1, 0]],
+      [:in,
+        [:fndptn,
+          nil,
+          [:var_field, [:@ident, "a", [1, 7]]],
+          [[:var_field, [:@ident, "b", [1, 10]]]],
+          [:var_field, [:@ident, "c", [1, 14]]]],
+        nil,
+        nil]],
+
+    [__LINE__, %q{ 0 => A(*a, b, c, *d) }] =>
+    [:case,
+      [:@int, "0", [1, 0]],
+      [:in,
+        [:fndptn,
+          [:var_ref, [:@const, "A", [1, 5]]],
+          [:var_field, [:@ident, "a", [1, 8]]],
+          [[:var_field, [:@ident, "b", [1, 11]]],
+            [:var_field, [:@ident, "c", [1, 14]]]],
+          [:var_field, [:@ident, "d", [1, 18]]]],
+        nil,
+        nil]],
+
     [__LINE__, %q{ case 0; in {a: 0}; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
@@ -441,6 +478,14 @@ eot
 
     [__LINE__, %q{ case 0; in "a\x0":a1, "a\0":a2; end }] =>
     nil,                        # duplicated key name
+
+    [__LINE__, %q{ case 0; in ^(0+0); end } ] =>
+    [:case,
+      [:@int, "0", [1, 5]],
+      [:in,
+        [:begin, [:binary, [:@int, "0", [1, 13]], :+, [:@int, "0", [1, 15]]]],
+        [[:void_stmt]],
+        nil]],
   }
   pattern_matching_data.each do |(i, src), expected|
     define_method(:"test_pattern_matching_#{i}") do
@@ -469,5 +514,10 @@ eot
     hshptn = result.dig(1, 2, 2, 1)
     assert_equal(:hshptn, hshptn[0])
     assert_equal([:@label, "a:"], hshptn.dig(2, 0, 0))
+  end
+
+  def test_raise_errors_keyword
+    assert_raise(SyntaxError) { Ripper.sexp('def req(true) end', raise_errors: true) }
+    assert_raise(SyntaxError) { Ripper.sexp_raw('def req(true) end', raise_errors: true) }
   end
 end if ripper_test

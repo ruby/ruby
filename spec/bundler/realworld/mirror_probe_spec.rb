@@ -71,13 +71,13 @@ RSpec.describe "fetching dependencies with a not available mirror", :realworld =
         gem 'weakling'
       G
 
-      bundle :install, :artifice => nil
+      bundle :install, :artifice => nil, :raise_on_error => false
 
       expect(out).to include("Fetching source index from #{mirror}")
-      expect(err).to include("Retrying fetcher due to error (2/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
-      expect(err).to include("Retrying fetcher due to error (3/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
-      expect(err).to include("Retrying fetcher due to error (4/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
-      expect(err).to include("Could not fetch specs from #{mirror}")
+      expect(err).to include("Retrying fetcher due to error (2/4): Bundler::HTTPError Could not fetch specs from #{mirror}/ due to underlying error <Errno::ECONNREFUSED: Failed to open TCP connection to #{host}:#{@mirror_port} (Connection refused - connect(2) for \"#{host}\" port #{@mirror_port}) (#{mirror}/specs.4.8.gz)>")
+      expect(err).to include("Retrying fetcher due to error (3/4): Bundler::HTTPError Could not fetch specs from #{mirror}/ due to underlying error <Errno::ECONNREFUSED: Failed to open TCP connection to #{host}:#{@mirror_port} (Connection refused - connect(2) for \"#{host}\" port #{@mirror_port}) (#{mirror}/specs.4.8.gz)>")
+      expect(err).to include("Retrying fetcher due to error (4/4): Bundler::HTTPError Could not fetch specs from #{mirror}/ due to underlying error <Errno::ECONNREFUSED: Failed to open TCP connection to #{host}:#{@mirror_port} (Connection refused - connect(2) for \"#{host}\" port #{@mirror_port}) (#{mirror}/specs.4.8.gz)>")
+      expect(err).to include("Could not fetch specs from #{mirror}/ due to underlying error <Errno::ECONNREFUSED: Failed to open TCP connection to #{host}:#{@mirror_port} (Connection refused - connect(2) for \"#{host}\" port #{@mirror_port}) (#{mirror}/specs.4.8.gz)>")
     end
 
     it "prints each error and warning on a new line" do
@@ -86,14 +86,14 @@ RSpec.describe "fetching dependencies with a not available mirror", :realworld =
         gem 'weakling'
       G
 
-      bundle :install, :artifice => nil
+      bundle :install, :artifice => nil, :raise_on_error => false
 
       expect(out).to include "Fetching source index from #{mirror}/"
       expect(err).to include <<-EOS.strip
-Retrying fetcher due to error (2/4): Bundler::HTTPError Could not fetch specs from #{mirror}/
-Retrying fetcher due to error (3/4): Bundler::HTTPError Could not fetch specs from #{mirror}/
-Retrying fetcher due to error (4/4): Bundler::HTTPError Could not fetch specs from #{mirror}/
-Could not fetch specs from #{mirror}/
+Retrying fetcher due to error (2/4): Bundler::HTTPError Could not fetch specs from #{mirror}/ due to underlying error <Errno::ECONNREFUSED: Failed to open TCP connection to #{host}:#{@mirror_port} (Connection refused - connect(2) for \"#{host}\" port #{@mirror_port}) (#{mirror}/specs.4.8.gz)>
+Retrying fetcher due to error (3/4): Bundler::HTTPError Could not fetch specs from #{mirror}/ due to underlying error <Errno::ECONNREFUSED: Failed to open TCP connection to #{host}:#{@mirror_port} (Connection refused - connect(2) for \"#{host}\" port #{@mirror_port}) (#{mirror}/specs.4.8.gz)>
+Retrying fetcher due to error (4/4): Bundler::HTTPError Could not fetch specs from #{mirror}/ due to underlying error <Errno::ECONNREFUSED: Failed to open TCP connection to #{host}:#{@mirror_port} (Connection refused - connect(2) for \"#{host}\" port #{@mirror_port}) (#{mirror}/specs.4.8.gz)>
+Could not fetch specs from #{mirror}/ due to underlying error <Errno::ECONNREFUSED: Failed to open TCP connection to #{host}:#{@mirror_port} (Connection refused - connect(2) for \"#{host}\" port #{@mirror_port}) (#{mirror}/specs.4.8.gz)>
       EOS
     end
   end
@@ -109,13 +109,13 @@ Could not fetch specs from #{mirror}/
         gem 'weakling'
       G
 
-      bundle :install, :artifice => nil
+      bundle :install, :artifice => nil, :raise_on_error => false
 
       expect(out).to include("Fetching source index from #{mirror}")
-      expect(err).to include("Retrying fetcher due to error (2/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
-      expect(err).to include("Retrying fetcher due to error (3/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
-      expect(err).to include("Retrying fetcher due to error (4/4): Bundler::HTTPError Could not fetch specs from #{mirror}")
-      expect(err).to include("Could not fetch specs from #{mirror}")
+      expect(err).to include("Retrying fetcher due to error (2/4): Bundler::HTTPError Could not fetch specs from #{mirror}/ due to underlying error <Errno::ECONNREFUSED: Failed to open TCP connection to #{host}:#{@mirror_port} (Connection refused - connect(2) for \"#{host}\" port #{@mirror_port}) (#{mirror}/specs.4.8.gz)>")
+      expect(err).to include("Retrying fetcher due to error (3/4): Bundler::HTTPError Could not fetch specs from #{mirror}/ due to underlying error <Errno::ECONNREFUSED: Failed to open TCP connection to #{host}:#{@mirror_port} (Connection refused - connect(2) for \"#{host}\" port #{@mirror_port}) (#{mirror}/specs.4.8.gz)>")
+      expect(err).to include("Retrying fetcher due to error (4/4): Bundler::HTTPError Could not fetch specs from #{mirror}/ due to underlying error <Errno::ECONNREFUSED: Failed to open TCP connection to #{host}:#{@mirror_port} (Connection refused - connect(2) for \"#{host}\" port #{@mirror_port}) (#{mirror}/specs.4.8.gz)>")
+      expect(err).to include("Could not fetch specs from #{mirror}/ due to underlying error <Errno::ECONNREFUSED: Failed to open TCP connection to #{host}:#{@mirror_port} (Connection refused - connect(2) for \"#{host}\" port #{@mirror_port}) (#{mirror}/specs.4.8.gz)>")
     end
   end
 
@@ -138,7 +138,7 @@ Could not fetch specs from #{mirror}/
   end
 
   def setup_mirror
-    mirror_port = find_unused_port
-    @mirror_uri = "http://#{host}:#{mirror_port}"
+    @mirror_port = find_unused_port
+    @mirror_uri = "http://#{host}:#{@mirror_port}"
   end
 end

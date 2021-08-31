@@ -7,7 +7,7 @@ describe "NilClass#to_s" do
 
   ruby_version_is "2.7" do
     it "returns a frozen string" do
-      nil.to_s.frozen?.should == true
+      nil.to_s.should.frozen?
     end
 
     it "always returns the same string" do

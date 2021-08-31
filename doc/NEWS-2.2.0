@@ -90,7 +90,7 @@ with all sufficient information, see the ChangeLog file.
 
 * Method
   * New methods:
-    * Method#curry([arity]) returns a curried Proc.
+    * Method#curry([ arity ]) returns a curried Proc.
     * Method#super_method returns a Method of superclass, which would be called
       when super is used.
 
@@ -250,8 +250,7 @@ with all sufficient information, see the ChangeLog file.
   * Logger::Application is extracted to logger-application gem. It's unmaintain code.
 
 * ObjectSpace (after requiring "objspace")
-  * ObjectSpace.memsize_of(obj) returns a size includes sizeof(RVALUE).
-    [Bug #8984]
+  * ObjectSpace.memsize_of(obj) returns a size includes sizeof(RVALUE). [Bug #8984]
 
 * Prime
   * incompatible changes:
@@ -319,7 +318,7 @@ with all sufficient information, see the ChangeLog file.
 * rb_sym2str() added. This is almost same as `rb_id2str(SYM2ID(sym))`
   but not pinning a dynamic symbol.
 
-* rb_str_cat_cstr() added. This is same as `rb_str_cat2()`.
+* rb_str_cat_cstr() added. This is the same as `rb_str_cat2()`.
 
 * `rb_str_substr()` and `rb_str_subseq()` will share middle of a string,
   but not only the end of a string, in the future.  Therefore, result
@@ -353,8 +352,7 @@ with all sufficient information, see the ChangeLog file.
 * VM
     * Use frozen string literals for Hash#[] and Hash#[]=
     * Fast keyword arguments passing [Feature #10440]
-    * Allow to receive huge splatted array by a rest argument
-      [Feature #10440]
+    * Allow to receive huge splatted array by a rest argument [Feature #10440]
 
 * Process
     * Process creation methods, such as spawn(), uses vfork() system call.

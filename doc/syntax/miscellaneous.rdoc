@@ -83,6 +83,36 @@ Using the specific reflection methods such as instance_variable_defined? for
 instance variables or const_defined? for constants is less error prone than
 using +defined?+.
 
++defined?+ handles some regexp global variables specially based on whether
+there is an active regexp match and how many capture groups there are:
+
+  /b/ =~ 'a'
+  defined?($~) # => "global-variable"
+  defined?($&) # => nil
+  defined?($`) # => nil
+  defined?($') # => nil
+  defined?($+) # => nil
+  defined?($1) # => nil
+  defined?($2) # => nil
+
+  /./ =~ 'a'
+  defined?($~) # => "global-variable"
+  defined?($&) # => "global-variable"
+  defined?($`) # => "global-variable"
+  defined?($') # => "global-variable"
+  defined?($+) # => nil
+  defined?($1) # => nil
+  defined?($2) # => nil
+
+  /(.)/ =~ 'a'
+  defined?($~) # => "global-variable"
+  defined?($&) # => "global-variable"
+  defined?($`) # => "global-variable"
+  defined?($') # => "global-variable"
+  defined?($+) # => "global-variable"
+  defined?($1) # => "global-variable"
+  defined?($2) # => nil
+
 == +BEGIN+ and +END+
 
 +BEGIN+ defines a block that is run before any other code in the current file.

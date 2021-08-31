@@ -69,7 +69,7 @@ describe "Array#sample" do
       obj = mock("array_sample_random")
       obj.should_receive(:rand).and_return(0.5)
 
-      [1, 2].sample(random: obj).should be_an_instance_of(Fixnum)
+      [1, 2].sample(random: obj).should be_an_instance_of(Integer)
     end
 
     it "raises a NoMethodError if an object passed for the RNG does not define #rand" do
@@ -78,8 +78,8 @@ describe "Array#sample" do
       -> { [1, 2].sample(random: obj) }.should raise_error(NoMethodError)
     end
 
-    describe "when the object returned by #rand is a Fixnum" do
-      it "uses the fixnum as index" do
+    describe "when the object returned by #rand is an Integer" do
+      it "uses the integer as index" do
         random = mock("array_sample_random_ret")
         random.should_receive(:rand).and_return(0)
 
@@ -107,7 +107,7 @@ describe "Array#sample" do
     end
   end
 
-  describe "when the object returned by #rand is not a Fixnum but responds to #to_int" do
+  describe "when the object returned by #rand is not an Integer but responds to #to_int" do
     it "calls #to_int on the Object" do
       value = mock("array_sample_random_value")
       value.should_receive(:to_int).and_return(1)

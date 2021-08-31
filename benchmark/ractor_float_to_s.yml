@@ -1,0 +1,8 @@
+type: lib/benchmark_driver/runner/ractor
+prelude: |
+  FLOATS = [*0.0.step(1.0, 0.001)]
+benchmark:
+  ractor_float_to_s: |
+    FLOATS.each {|f| f.to_s}
+loop_count: 100
+ractor: 2

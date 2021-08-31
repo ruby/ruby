@@ -14,14 +14,14 @@ RSpec.describe Bundler::Source::Git do
 
   describe "#to_s" do
     it "returns a description" do
-      expect(subject.to_s).to eq "https://github.com/foo/bar.git (at master)"
+      expect(subject.to_s).to eq "https://github.com/foo/bar.git"
     end
 
     context "when the URI contains credentials" do
       let(:uri) { "https://my-secret-token:x-oauth-basic@github.com/foo/bar.git" }
 
       it "filters credentials" do
-        expect(subject.to_s).to eq "https://x-oauth-basic@github.com/foo/bar.git (at master)"
+        expect(subject.to_s).to eq "https://x-oauth-basic@github.com/foo/bar.git"
       end
     end
   end

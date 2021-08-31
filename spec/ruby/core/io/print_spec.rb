@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-describe IO, "#print" do
+describe "IO#print" do
   before :each do
     @old_separator = $\
     suppress_warning {$\ = '->'}

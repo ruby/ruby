@@ -394,6 +394,24 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_each_byte_closed
+    pipe(proc do |w|
+      w << "abc def"
+      w.close
+    end, proc do |r|
+      assert_raise(IOError) do
+        r.each_byte {|byte| r.close if byte == 32 }
+      end
+    end)
+    make_tempfile {|t|
+      File.open(t, 'rt') {|f|
+        assert_raise(IOError) do
+          f.each_byte {|c| f.close if c == 10}
+        end
+      }
+    }
+  end
+
   def test_each_codepoint
     make_tempfile {|t|
       bug2959 = '[ruby-core:28650]'
@@ -405,16 +423,21 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
-  def test_codepoints
+  def test_each_codepoint_closed
+    pipe(proc do |w|
+      w.print("abc def")
+      w.close
+    end, proc do |r|
+      assert_raise(IOError) do
+        r.each_codepoint {|c| r.close if c == 32}
+      end
+    end)
     make_tempfile {|t|
-      bug2959 = '[ruby-core:28650]'
-      a = ""
       File.open(t, 'rt') {|f|
-        assert_warn(/deprecated/) {
-          f.codepoints {|c| a << c}
-        }
+        assert_raise(IOError) do
+          f.each_codepoint {|c| f.close if c == 10}
+        end
       }
-      assert_equal("foo\nbar\nbaz\n", a, bug2959)
     }
   end
 
@@ -620,7 +643,7 @@ class TestIO < Test::Unit::TestCase
 
   if have_nonblock?
     def test_copy_stream_no_busy_wait
-      skip "MJIT has busy wait on GC. This sometimes fails with --jit." if RubyVM::MJIT.enabled?
+      skip "MJIT has busy wait on GC. This sometimes fails with --jit." if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
       skip "multiple threads already active" if Thread.list.size > 1
 
       msg = 'r58534 [ruby-core:80969] [Backport #13533]'
@@ -1575,7 +1598,7 @@ class TestIO < Test::Unit::TestCase
   end if have_nonblock?
 
   def test_read_nonblock_no_exceptions
-    skip '[ruby-core:90895] MJIT worker may leave fd open in a forked child' if RubyVM::MJIT.enabled? # TODO: consider acquiring GVL from MJIT worker.
+    skip '[ruby-core:90895] MJIT worker may leave fd open in a forked child' if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # TODO: consider acquiring GVL from MJIT worker.
     with_pipe {|r, w|
       assert_equal :wait_readable, r.read_nonblock(4096, exception: false)
       w.puts "HI!"
@@ -1822,8 +1845,7 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
-  def test_lines
-    verbose, $VERBOSE = $VERBOSE, nil
+  def test_each_line
     pipe(proc do |w|
       w.puts "foo"
       w.puts "bar"
@@ -1831,20 +1853,17 @@ class TestIO < Test::Unit::TestCase
       w.close
     end, proc do |r|
       e = nil
-      assert_warn(/deprecated/) {
-        e = r.lines
+      assert_warn('') {
+        e = r.each_line
       }
       assert_equal("foo\n", e.next)
       assert_equal("bar\n", e.next)
       assert_equal("baz\n", e.next)
       assert_raise(StopIteration) { e.next }
     end)
-  ensure
-    $VERBOSE = verbose
   end
 
-  def test_bytes
-    verbose, $VERBOSE = $VERBOSE, nil
+  def test_each_byte2
     pipe(proc do |w|
       w.binmode
       w.puts "foo"
@@ -1853,20 +1872,17 @@ class TestIO < Test::Unit::TestCase
       w.close
     end, proc do |r|
       e = nil
-      assert_warn(/deprecated/) {
-        e = r.bytes
+      assert_warn('') {
+        e = r.each_byte
       }
       (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
         assert_equal(c.ord, e.next)
       end
       assert_raise(StopIteration) { e.next }
     end)
-  ensure
-    $VERBOSE = verbose
   end
 
-  def test_chars
-    verbose, $VERBOSE = $VERBOSE, nil
+  def test_each_char2
     pipe(proc do |w|
       w.puts "foo"
       w.puts "bar"
@@ -1874,16 +1890,14 @@ class TestIO < Test::Unit::TestCase
       w.close
     end, proc do |r|
       e = nil
-      assert_warn(/deprecated/) {
-        e = r.chars
+      assert_warn('') {
+        e = r.each_char
       }
       (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
         assert_equal(c, e.next)
       end
       assert_raise(StopIteration) { e.next }
     end)
-  ensure
-    $VERBOSE = verbose
   end
 
   def test_readbyte
@@ -2232,7 +2246,7 @@ class TestIO < Test::Unit::TestCase
   def test_autoclose_true_closed_by_finalizer
     # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1465760
     # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1469765
-    skip 'this randomly fails with MJIT' if RubyVM::MJIT.enabled?
+    skip 'this randomly fails with MJIT' if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
 
     feature2250 = '[ruby-core:26222]'
     pre = 'ft2250'
@@ -2489,6 +2503,17 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_reopen_ivar
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      f = File.open(IO::NULL)
+      f.instance_variable_set(:@foo, 42)
+      f.reopen(STDIN)
+      f.instance_variable_defined?(:@foo)
+      f.instance_variable_get(:@foo)
+    end;
+  end
+
   def test_foreach
     a = []
     IO.foreach("|" + EnvUtil.rubybin + " -e 'puts :foo; puts :bar; puts :baz'") {|x| a << x }
@@ -2632,7 +2657,7 @@ class TestIO < Test::Unit::TestCase
     end
 
     capture.clear
-    assert_warning(/[.#]write is outdated/) do
+    assert_deprecated_warning(/[.#]write is outdated/) do
       stdout, $stdout = $stdout, capture
       puts "hey"
     ensure
@@ -2815,7 +2840,7 @@ __END__
 
   def test_flush_in_finalizer2
     bug3910 = '[ruby-dev:42341]'
-    Tempfile.open("bug3910") {|t|
+    Tempfile.create("bug3910") {|t|
       path = t.path
       t.close
       begin
@@ -2834,7 +2859,6 @@ __END__
           end
         }
       end
-      t.close!
     }
   end
 
@@ -3328,11 +3352,17 @@ __END__
     data = "a" * 100
     with_pipe do |r,w|
       th = Thread.new {r.sysread(100, buf)}
+
       Thread.pass until th.stop?
-      buf.replace("")
-      assert_empty(buf, bug6099)
+
+      assert_equal 100, buf.bytesize
+
+      msg = /can't modify string; temporarily locked/
+      assert_raise_with_message(RuntimeError, msg) do
+        buf.replace("")
+      end
+      assert_predicate(th, :alive?)
       w.write(data)
-      Thread.pass while th.alive?
       th.join
     end
     assert_equal(data, buf, bug6099)
@@ -3453,10 +3483,17 @@ __END__
 
       tempfiles = []
       (0..fd_setsize+1).map {|i|
-        tempfiles << Tempfile.open("test_io_select_with_many_files")
+        tempfiles << Tempfile.create("test_io_select_with_many_files")
       }
 
-      IO.select(tempfiles)
+      begin
+        IO.select(tempfiles)
+      ensure
+        tempfiles.each { |t|
+          t.close
+          File.unlink(t.path)
+        }
+      end
     }, bug8080, timeout: 100
   end if defined?(Process::RLIMIT_NOFILE)
 
@@ -3630,15 +3667,27 @@ __END__
   end
 
   def test_open_flag_binary
+    binary_enc = Encoding.find("BINARY")
     make_tempfile do |t|
       open(t.path, File::RDONLY, flags: File::BINARY) do |f|
         assert_equal true, f.binmode?
+        assert_equal binary_enc, f.external_encoding
       end
       open(t.path, 'r', flags: File::BINARY) do |f|
         assert_equal true, f.binmode?
+        assert_equal binary_enc, f.external_encoding
       end
       open(t.path, mode: 'r', flags: File::BINARY) do |f|
         assert_equal true, f.binmode?
+        assert_equal binary_enc, f.external_encoding
+      end
+      open(t.path, File::RDONLY|File::BINARY) do |f|
+        assert_equal true, f.binmode?
+        assert_equal binary_enc, f.external_encoding
+      end
+      open(t.path, File::RDONLY|File::BINARY, autoclose: true) do |f|
+        assert_equal true, f.binmode?
+        assert_equal binary_enc, f.external_encoding
       end
     end
   end if File::BINARY != 0
@@ -3687,7 +3736,7 @@ __END__
     begin;
       bug13158 = '[ruby-core:79262] [Bug #13158]'
       closed = nil
-      q = Queue.new
+      q = Thread::Queue.new
       IO.pipe do |r, w|
         thread = Thread.new do
           begin
@@ -3901,21 +3950,22 @@ __END__
     end
   end
 
-  def test_select_leak
+  def test_select_memory_leak
     # avoid malloc arena explosion from glibc and jemalloc:
     env = {
       'MALLOC_ARENA_MAX' => '1',
       'MALLOC_ARENA_TEST' => '1',
       'MALLOC_CONF' => 'narenas:1',
     }
-    assert_no_memory_leak([env], <<-"end;", <<-"end;", rss: true, timeout: 60)
+    assert_no_memory_leak([env], "#{<<~"begin;"}\n#{<<~'else;'}", "#{<<~'end;'}", rss: true, timeout: 60)
+    begin;
       r, w = IO.pipe
       rset = [r]
       wset = [w]
       exc = StandardError.new(-"select used to leak on exception")
       exc.set_backtrace([])
       Thread.new { IO.select(rset, wset, nil, 0) }.join
-    end;
+    else;
       th = Thread.new do
         Thread.handle_interrupt(StandardError => :on_blocking) do
           begin
@@ -3939,5 +3989,35 @@ __END__
       assert_raise(TypeError) {Marshal.dump(r)}
       assert_raise(TypeError) {Marshal.dump(w)}
     }
+  end
+
+  def test_marshal_closed_io
+    bug18077 = '[ruby-core:104927] [Bug #18077]'
+    r, w = IO.pipe
+    r.close; w.close
+    assert_raise(TypeError, bug18077) {Marshal.dump(r)}
+
+    class << r
+      undef_method :closed?
+    end
+    assert_raise(TypeError, bug18077) {Marshal.dump(r)}
+  end
+
+  def test_stdout_to_closed_pipe
+    EnvUtil.invoke_ruby(["-e", "loop {puts :ok}"], "", true, true) do
+      |in_p, out_p, err_p, pid|
+      out = out_p.gets
+      out_p.close
+      err = err_p.read
+    ensure
+      status = Process.wait2(pid)[1]
+      assert_equal("ok\n", out)
+      assert_empty(err)
+      assert_not_predicate(status, :success?)
+      if Signal.list["PIPE"]
+        assert_predicate(status, :signaled?)
+        assert_equal("PIPE", Signal.signame(status.termsig) || status.termsig)
+      end
+    end
   end
 end

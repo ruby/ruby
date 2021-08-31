@@ -47,7 +47,7 @@ class OpenSSL::TestEngine < OpenSSL::TestCase
       digest = engine.digest("SHA1")
       assert_not_nil(digest)
       data = "test"
-      assert_equal(OpenSSL::Digest::SHA1.digest(data), digest.digest(data))
+      assert_equal(OpenSSL::Digest.digest('SHA1', data), digest.digest(data))
     end;
   end
 

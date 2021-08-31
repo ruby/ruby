@@ -4,7 +4,6 @@ require 'test/unit'
 class TestProc < Test::Unit::TestCase
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -53,11 +52,9 @@ class TestProc < Test::Unit::TestCase
     assert_equal(5, x)
   end
 
-  def assert_arity(n)
+  def assert_arity(n, &block)
     meta = class << self; self; end
-    b = assert_warn(/Capturing the given block using Proc\.new is deprecated/) do
-      Proc.new
-    end
+    b = Proc.new(&block)
     meta.class_eval {
       remove_method(:foo_arity) if method_defined?(:foo_arity)
       define_method(:foo_arity, b)
@@ -139,6 +136,14 @@ class TestProc < Test::Unit::TestCase
     lambda { x }
   end
 
+  def m_nest0(&block)
+    block
+  end
+
+  def m_nest(&block)
+    [m_nest0(&block), m_nest0(&block)]
+  end
+
   def test_eq
     a = m(1)
     b = m(2)
@@ -150,6 +155,17 @@ class TestProc < Test::Unit::TestCase
     a = lambda {|x| lambda {} }.call(1)
     b = lambda {}
     assert_not_equal(a, b, "[ruby-dev:22601]")
+
+    assert_equal(*m_nest{}, "[ruby-core:84583] Feature #14627")
+  end
+
+  def test_hash
+    def self.capture(&block)
+      block
+    end
+
+   procs = Array.new(1000){capture{:foo }}
+   assert_operator(procs.map(&:hash).uniq.size, :>=, 500)
   end
 
   def test_block_par
@@ -263,7 +279,7 @@ class TestProc < Test::Unit::TestCase
 
   def test_curry_given_blocks
     b = lambda {|x, y, &blk| blk.call(x + y) }.curry
-    b = b.call(2) { raise }
+    b = assert_warning(/given block not used/) {b.call(2) { raise }}
     b = b.call(3) {|x| x + 4 }
     assert_equal(9, b)
   end
@@ -273,7 +289,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal(false, l.lambda?)
     assert_equal(false, l.curry.lambda?, '[ruby-core:24127]')
     assert_equal(false, proc(&l).lambda?)
-    assert_equal(false, lambda(&l).lambda?)
+    assert_equal(false, assert_deprecated_warning {lambda(&l)}.lambda?)
     assert_equal(false, Proc.new(&l).lambda?)
     l = lambda {}
     assert_equal(true, l.lambda?)
@@ -281,6 +297,49 @@ class TestProc < Test::Unit::TestCase
     assert_equal(true, proc(&l).lambda?)
     assert_equal(true, lambda(&l).lambda?)
     assert_equal(true, Proc.new(&l).lambda?)
+  end
+
+  def self.helper_test_warn_lamda_with_passed_block &b
+    lambda(&b)
+  end
+
+  def self.def_lambda_warning name, warn
+    define_method(name, proc do
+      prev = Warning[:deprecated]
+      assert_warn warn do
+        Warning[:deprecated] = true
+        yield
+      end
+    ensure
+      Warning[:deprecated] = prev
+    end)
+  end
+
+  def_lambda_warning 'test_lambda_warning_normal', '' do
+    lambda{}
+  end
+
+  def_lambda_warning 'test_lambda_warning_pass_lambda', '' do
+    b = lambda{}
+    lambda(&b)
+  end
+
+  def_lambda_warning 'test_lambda_warning_pass_symbol_proc', '' do
+    lambda(&:to_s)
+  end
+
+  def_lambda_warning 'test_lambda_warning_pass_proc', /deprecated/ do
+    b = proc{}
+    lambda(&b)
+  end
+
+  def_lambda_warning 'test_lambda_warning_pass_block', /deprecated/ do
+    helper_test_warn_lamda_with_passed_block{}
+  end
+
+  def_lambda_warning 'test_lambda_warning_pass_block_symbol_proc', '' do
+    # Symbol#to_proc returns lambda
+    helper_test_warn_lamda_with_passed_block(&:to_s)
   end
 
   def test_curry_ski_fib
@@ -383,7 +442,7 @@ class TestProc < Test::Unit::TestCase
 
   def test_proc_lambda
     assert_raise(ArgumentError) { proc }
-    assert_raise(ArgumentError) { lambda }
+    assert_raise(ArgumentError) { assert_warn(/deprecated/) {lambda} }
 
     o = Object.new
     def o.foo
@@ -391,14 +450,18 @@ class TestProc < Test::Unit::TestCase
       1.times { b = lambda }
       b
     end
-    assert_raise(ArgumentError) {o.foo { :foo }.call}
+    assert_raise(ArgumentError) do
+      assert_deprecated_warning {o.foo { :foo }}.call
+    end
 
-    def o.foo(&b)
+    def o.bar(&b)
       b = nil
       1.times { b = lambda }
       b
     end
-    assert_raise(ArgumentError) {o.foo { :foo }.call}
+    assert_raise(ArgumentError) do
+      assert_deprecated_warning {o.bar { :foo }}.call
+    end
   end
 
   def test_arity2
@@ -782,6 +845,33 @@ class TestProc < Test::Unit::TestCase
     assert_equal [[], Proc, :x], (pr.call(){|x| x})
     assert_equal [[1], Proc, :x], (pr.call(1){|x| x})
     assert_equal [[1, 2], Proc, :x], (pr.call(1, 2){|x| x})
+  end
+
+  def test_proc_args_only_rest
+    pr = proc {|*c| c }
+    assert_equal [], pr.call()
+    assert_equal [1], pr.call(1)
+    assert_equal [[1]], pr.call([1])
+    assert_equal [1, 2], pr.call(1,2)
+    assert_equal [[1, 2]], pr.call([1,2])
+  end
+
+  def test_proc_args_rest_kw
+    pr = proc {|*c, a: 1| [c, a] }
+    assert_equal [[], 1], pr.call()
+    assert_equal [[1], 1], pr.call(1)
+    assert_equal [[[1]], 1], pr.call([1])
+    assert_equal [[1, 2], 1], pr.call(1,2)
+    assert_equal [[[1, 2]], 1], pr.call([1,2])
+  end
+
+  def test_proc_args_rest_kwsplat
+    pr = proc {|*c, **kw| [c, kw] }
+    assert_equal [[], {}], pr.call()
+    assert_equal [[1], {}], pr.call(1)
+    assert_equal [[[1]], {}], pr.call([1])
+    assert_equal [[1, 2], {}], pr.call(1,2)
+    assert_equal [[[1, 2]], {}], pr.call([1,2])
   end
 
   def test_proc_args_pos_rest_post_block
@@ -1406,16 +1496,6 @@ class TestProc < Test::Unit::TestCase
     end;
   end
 
-  def method_for_test_proc_without_block_for_symbol
-    assert_warn(/Capturing the given block using Kernel#proc is deprecated/) do
-      binding.eval('proc')
-    end
-  end
-
-  def test_proc_without_block_for_symbol
-    assert_equal('1', method_for_test_proc_without_block_for_symbol(&:to_s).call(1), '[Bug #14782]')
-  end
-
   def test_compose
     f = proc {|x| x * 2}
     g = proc {|x| x + 1}
@@ -1513,6 +1593,57 @@ class TestProc < Test::Unit::TestCase
     assert_equal(42, Module.new { extend self
       def m1(&b) b end; def m2(); m1 { next 42 } end }.m2.call)
   end
+
+  def test_isolate
+    assert_raise_with_message ArgumentError, /\(a\)/ do
+      a = :a
+      Proc.new{p a}.isolate.call
+    end
+
+    assert_raise_with_message ArgumentError, /\(a\)/ do
+      a = :a
+      1.times{
+        Proc.new{p a}.isolate.call
+      }
+    end
+
+    assert_raise_with_message ArgumentError, /yield/ do
+      Proc.new{yield}.isolate.call
+    end
+
+    # binding
+
+    :a.tap{|a|
+      :b.tap{|b|
+        Proc.new{
+          :c.tap{|c|
+            assert_equal :c, eval('c')
+
+            assert_raise_with_message SyntaxError, /\`a\'/ do
+              eval('p a')
+            end
+
+            assert_raise_with_message SyntaxError, /\`b\'/ do
+              eval('p b')
+            end
+
+            assert_raise_with_message SyntaxError, /can not yield from isolated Proc/ do
+              eval('p yield')
+            end
+
+            assert_equal :c, binding.local_variable_get(:c)
+
+            assert_raise_with_message NameError, /local variable \`a\' is not defined/ do
+              binding.local_variable_get(:a)
+            end
+
+            assert_equal [:c], local_variables
+            assert_equal [:c], binding.local_variables
+          }
+        }.isolate.call
+      }
+    }
+  end if proc{}.respond_to? :isolate
 end
 
 class TestProcKeywords < Test::Unit::TestCase

@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require 'envutil'
 require 'drb/drb'
 require 'drb/extservm'
 require 'timeout'
@@ -215,6 +216,7 @@ module DRbCore
   def test_06_timeout
     skip if RUBY_PLATFORM.include?("armv7l-linux")
     skip if RUBY_PLATFORM.include?("sparc-solaris2.10")
+    skip if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # expecting a certain delay is difficult for --jit-wait CI
     Timeout.timeout(60) do
       ten = Onecky.new(10)
       assert_raise(Timeout::Error) do
