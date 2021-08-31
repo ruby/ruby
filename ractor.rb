@@ -768,7 +768,7 @@ class Ractor
   # See also the "Shareable and unshareable objects" section in the Ractor class docs.
   def self.shareable? obj
     __builtin_cexpr! %q{
-      rb_ractor_shareable_p(obj) ? Qtrue : Qfalse;
+      RBOOL(rb_ractor_shareable_p(obj));
     }
   end
 

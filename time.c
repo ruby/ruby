@@ -4460,7 +4460,7 @@ time_wday(VALUE time)
 }
 
 #define wday_p(n) {\
-    return (time_wday(time) == INT2FIX(n)) ? Qtrue : Qfalse; \
+    return RBOOL(time_wday(time) == INT2FIX(n)); \
 }
 
 /*

@@ -2079,7 +2079,7 @@ make_econv_exception(rb_econv_t *ec)
         exc = rb_exc_new3(rb_eInvalidByteSequenceError, mesg);
         rb_ivar_set(exc, id_error_bytes, bytes);
         rb_ivar_set(exc, id_readagain_bytes, bytes2);
-        rb_ivar_set(exc, id_incomplete_input, ec->last_error.result == econv_incomplete_input ? Qtrue : Qfalse);
+        rb_ivar_set(exc, id_incomplete_input, RBOOL(ec->last_error.result == econv_incomplete_input));
         goto set_encs;
     }
     if (ec->last_error.result == econv_undefined_conversion) {

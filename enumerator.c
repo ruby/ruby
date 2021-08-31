@@ -3369,7 +3369,7 @@ rb_arith_seq_new(VALUE obj, VALUE meth, int argc, VALUE const *argv,
     rb_ivar_set(aseq, id_begin, beg);
     rb_ivar_set(aseq, id_end, end);
     rb_ivar_set(aseq, id_step, step);
-    rb_ivar_set(aseq, id_exclude_end, excl ? Qtrue : Qfalse);
+    rb_ivar_set(aseq, id_exclude_end, RBOOL(excl));
     return aseq;
 }
 
