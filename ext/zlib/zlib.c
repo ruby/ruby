@@ -354,7 +354,9 @@ raise_zlib_error(int err, const char *msg)
 static void
 finalizer_warn(const char *msg)
 {
+#if 0
     fprintf(stderr, "zlib(finalizer): %s\n", msg);
+#endif
 }
 
 
