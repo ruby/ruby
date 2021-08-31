@@ -159,6 +159,7 @@ module YJIT
       $stderr.puts("Number of locals modified through binding: %d\n" % stats[:binding_set])
 
       print_counters(stats, prefix: 'send_', prompt: 'method call exit reasons: ')
+      print_counters(stats, prefix: 'invokesuper_', prompt: 'invokesuper exit reasons: ')
       print_counters(stats, prefix: 'leave_', prompt: 'leave exit reasons: ')
       print_counters(stats, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons:')
       print_counters(stats, prefix: 'setivar_', prompt: 'setinstancevariable exit reasons:')

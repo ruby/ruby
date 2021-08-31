@@ -162,6 +162,40 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_super_iseq
+    assert_compiles(<<~'RUBY', insns: %i[invokesuper opt_plus opt_mult], result: 15)
+      class A
+        def foo
+          1 + 2
+        end
+      end
+
+      class B < A
+        def foo
+          super * 5
+        end
+      end
+
+      B.new.foo
+    RUBY
+  end
+
+  def test_super_cfunc
+    assert_compiles(<<~'RUBY', insns: %i[invokesuper], result: "Hello")
+      class Gnirts < String
+        def initialize
+          super(-"olleH")
+        end
+
+        def to_s
+          super().reverse
+        end
+      end
+
+      Gnirts.new.to_s
+    RUBY
+  end
+
   def test_fib_recursion
     assert_compiles(<<~'RUBY', insns: %i[opt_le opt_minus opt_plus opt_send_without_block], result: 34)
       def fib(n)

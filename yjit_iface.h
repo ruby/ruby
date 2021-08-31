@@ -66,6 +66,9 @@ YJIT_DECLARE_COUNTERS(
 
     traced_cfunc_return,
 
+    invokesuper_me_changed,
+    invokesuper_block,
+
     leave_se_interrupt,
     leave_interp_return,
     leave_start_pc_non_zero,

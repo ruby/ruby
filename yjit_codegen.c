@@ -3458,8 +3458,6 @@ gen_send(jitstate_t *jit, ctx_t *ctx)
     return gen_send_general(jit, ctx, cd, block);
 }
 
-// Not in use as it's incorrect in some situations. See comments.
-RBIMPL_ATTR_MAYBE_UNUSED()
 static codegen_status_t
 gen_invokesuper(jitstate_t *jit, ctx_t *ctx)
 {
@@ -3475,16 +3473,18 @@ gen_invokesuper(jitstate_t *jit, ctx_t *ctx)
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(jit->ec->cfp);
     if (!me) {
         return YJIT_CANT_COMPILE;
-    } else if (me->def->type == VM_METHOD_TYPE_BMETHOD) {
-        // In the interpreter the method id can change which is tested for and
-        // invalidates the cache.
-        // By skipping super calls inside a BMETHOD definition, I believe we
-        // avoid this case
-        return YJIT_CANT_COMPILE;
     }
 
+    // FIXME: We should track and invalidate this block when this cme is invalidated
     VALUE current_defined_class = me->defined_class;
     ID mid = me->def->original_id;
+
+    if (me != rb_callable_method_entry(current_defined_class, me->called_id)) {
+        // Though we likely could generate this call, as we are only concerned
+        // with the method entry remaining valid, assume_method_lookup_stable
+        // below requires that the method lookup matches as well
+        return YJIT_CANT_COMPILE;
+    }
 
     // vm_search_normal_superclass
     if (BUILTIN_TYPE(current_defined_class) == T_ICLASS && FL_TEST_RAW(RBASIC(current_defined_class)->klass, RMODULE_IS_REFINEMENT)) {
@@ -3502,22 +3502,13 @@ gen_invokesuper(jitstate_t *jit, ctx_t *ctx)
         return YJIT_CANT_COMPILE;
     }
 
-    VALUE comptime_recv = jit_peek_at_stack(jit, ctx, argc);
-    VALUE comptime_recv_klass = CLASS_OF(comptime_recv);
-
     // Ensure we haven't rebound this method onto an incompatible class.
     // In the interpreter we try to avoid making this check by performing some
-    // cheaper calculations first, but since we specialize on the receiver
-    // class and so only have to do this once at compile time this is fine to
-    // always check and side exit.
+    // cheaper calculations first, but since we specialize on the method entry
+    // and so only have to do this once at compile time this is fine to always
+    // check and side exit.
+    VALUE comptime_recv = jit_peek_at_stack(jit, ctx, argc);
     if (!rb_obj_is_kind_of(comptime_recv, current_defined_class)) {
-        return YJIT_CANT_COMPILE;
-    }
-
-    // Because we're assuming only one current_defined_class for a given
-    // receiver class we need to check that the superclass doesn't also
-    // re-include the same module.
-    if (rb_class_search_ancestor(comptime_superclass, current_defined_class)) {
         return YJIT_CANT_COMPILE;
     }
 
@@ -3541,6 +3532,18 @@ gen_invokesuper(jitstate_t *jit, ctx_t *ctx)
     // Guard that the receiver has the same class as the one from compile time
     uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
+    if (jit->ec->cfp->ep[VM_ENV_DATA_INDEX_ME_CREF] != (VALUE)me) {
+        // This will be the case for super within a block
+        return YJIT_CANT_COMPILE;
+    }
+
+    ADD_COMMENT(cb, "guard known me");
+    mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, ep));
+    x86opnd_t ep_me_opnd = mem_opnd(64, REG0, SIZEOF_VALUE * VM_ENV_DATA_INDEX_ME_CREF);
+    jit_mov_gc_ptr(jit, cb, REG1, (VALUE)me);
+    cmp(cb, ep_me_opnd, REG1);
+    jne_ptr(cb, COUNTED_EXIT(side_exit, invokesuper_me_changed));
+
     if (!block) {
         // Guard no block passed
         // rb_vm_frame_block_handler(GET_EC()->cfp) == VM_BLOCK_HANDLER_NONE
@@ -3549,25 +3552,20 @@ gen_invokesuper(jitstate_t *jit, ctx_t *ctx)
         // TODO: this could properly forward the current block handler, but
         // would require changes to gen_send_*
         ADD_COMMENT(cb, "guard no block given");
-        mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, ep));
-        mov(cb, REG0, mem_opnd(64, REG0, SIZEOF_VALUE * VM_ENV_DATA_INDEX_SPECVAL));
-        cmp(cb, REG0, imm_opnd(VM_BLOCK_HANDLER_NONE));
-        jne_ptr(cb, side_exit);
+        // EP is in REG0 from above
+        x86opnd_t ep_specval_opnd = mem_opnd(64, REG0, SIZEOF_VALUE * VM_ENV_DATA_INDEX_SPECVAL);
+        cmp(cb, ep_specval_opnd, imm_opnd(VM_BLOCK_HANDLER_NONE));
+        jne_ptr(cb, COUNTED_EXIT(side_exit, invokesuper_block));
     }
 
     // Points to the receiver operand on the stack
     x86opnd_t recv = ctx_stack_opnd(ctx, argc);
-    insn_opnd_t recv_opnd = OPND_STACK(argc);
     mov(cb, REG0, recv);
 
-    // FIXME: This guard and the assume_method_lookup_stable() call below isn't
-    // always enough to correctly replicate the interpreter's behavior of
-    // searching at runtime for the callee through the method entry of the stack frame.
-    if (!jit_guard_known_klass(jit, ctx, comptime_recv_klass, recv_opnd, comptime_recv, SEND_MAX_DEPTH, side_exit)) {
-        return YJIT_CANT_COMPILE;
-    }
-
-    assume_method_lookup_stable(comptime_recv_klass, cme, jit->block);
+    // We need to assume that both our current method entry and the super
+    // method entry we invoke remain stable
+    assume_method_lookup_stable(current_defined_class, me, jit->block);
+    assume_method_lookup_stable(comptime_superclass, cme, jit->block);
 
     // Method calls may corrupt types
     ctx_clear_local_types(ctx);
@@ -4066,6 +4064,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(getblockparamproxy), gen_getblockparamproxy);
     yjit_reg_op(BIN(opt_send_without_block), gen_opt_send_without_block);
     yjit_reg_op(BIN(send), gen_send);
+    yjit_reg_op(BIN(invokesuper), gen_invokesuper);
     yjit_reg_op(BIN(leave), gen_leave);
     yjit_reg_op(BIN(getglobal), gen_getglobal);
     yjit_reg_op(BIN(setglobal), gen_setglobal);
