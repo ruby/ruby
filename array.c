@@ -4845,6 +4845,7 @@ ary_append(VALUE x, VALUE y)
     if (n > 0) {
         rb_ary_splice(x, RARRAY_LEN(x), 0, RARRAY_CONST_PTR_TRANSIENT(y), n);
     }
+    RB_GC_GUARD(y);
     return x;
 }
 
