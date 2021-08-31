@@ -380,7 +380,7 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
       range = "#{range}~1..#{range}"
     end
 
-    IO.popen(%W"git log --format=%H,%s #{range}") do |f|
+    IO.popen(%W"git log --format=%H,%s #{range} --") do |f|
       f.read.split("\n").reverse.map{|commit| commit.split(',', 2)}
     end
   end
@@ -393,7 +393,7 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
 
   if commits.empty?
     puts "No commits to pick"
-    return
+    return true
   end
 
   puts "Try to pick these commits:"
