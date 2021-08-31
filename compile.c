@@ -3936,6 +3936,20 @@ compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cons
 }
 
 static int
+compile_block(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped)
+{
+    while (node && nd_type(node) == NODE_BLOCK) {
+        CHECK(COMPILE_(ret, "BLOCK body", node->nd_head,
+                       (node->nd_next ? 1 : popped)));
+        node = node->nd_next;
+    }
+    if (node) {
+        CHECK(COMPILE_(ret, "BLOCK next", node->nd_next, popped));
+    }
+    return COMPILE_OK;
+}
+
+static int
 compile_dstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node)
 {
     int cnt;
@@ -8104,7 +8118,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
 }
 
 
-static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped);
+static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
   compile each node
 
@@ -8142,7 +8156,7 @@ check_yield_place(const rb_iseq_t *iseq)
 }
 
 static int
-iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped)
+iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
     const int line = (int)nd_line(node);
     const NODE *const line_node = node;
@@ -8168,17 +8182,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 #define BEFORE_RETURN debug_node_end()
 
     switch (type) {
-      case NODE_BLOCK:{
-	while (node && nd_type(node) == NODE_BLOCK) {
-	    CHECK(COMPILE_(ret, "BLOCK body", node->nd_head,
-			   (node->nd_next ? 1 : popped)));
-	    node = node->nd_next;
-	}
-	if (node) {
-	    CHECK(COMPILE_(ret, "BLOCK next", node->nd_next, popped));
-	}
+      case NODE_BLOCK:
+        CHECK(compile_block(iseq, ret, node, popped));
 	break;
-      }
       case NODE_IF:
       case NODE_UNLESS:
 	CHECK(compile_if(iseq, ret, node, popped, type));
