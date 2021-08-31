@@ -5471,10 +5471,10 @@ big_op(VALUE x, VALUE y, enum big_op_t op)
     n = FIX2INT(rel);
 
     switch (op) {
-	case big_op_gt: return n >  0 ? Qtrue : Qfalse;
-	case big_op_ge: return n >= 0 ? Qtrue : Qfalse;
-	case big_op_lt: return n <  0 ? Qtrue : Qfalse;
-	case big_op_le: return n <= 0 ? Qtrue : Qfalse;
+	case big_op_gt: return RBOOL(n >  0);
+	case big_op_ge: return RBOOL(n >= 0);
+	case big_op_lt: return RBOOL(n <  0);
+	case big_op_le: return RBOOL(n <= 0);
     }
     return Qundef;
 }
@@ -5518,7 +5518,7 @@ VALUE
 rb_big_eq(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-	return bignorm(x) == y ? Qtrue : Qfalse;
+	return RBOOL(bignorm(x) == y);
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
     }

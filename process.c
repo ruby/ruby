@@ -1025,7 +1025,7 @@ pst_success_p(VALUE st)
 
     if (!WIFEXITED(status))
 	return Qnil;
-    return WEXITSTATUS(status) == EXIT_SUCCESS ? Qtrue : Qfalse;
+    return RBOOL(WEXITSTATUS(status) == EXIT_SUCCESS);
 }
 
 

@@ -366,7 +366,7 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_WHILE:
       case NODE_UNTIL:
         return rb_ary_push(rb_ary_new_from_node_args(ast, 2, node->nd_cond, node->nd_body),
-                           (node->nd_state ? Qtrue : Qfalse));
+                           RBOOL(node->nd_state));
       case NODE_ITER:
       case NODE_FOR:
         return rb_ary_new_from_node_args(ast, 2, node->nd_iter, node->nd_body);
@@ -433,7 +433,7 @@ node_children(rb_ast_t *ast, const NODE *node)
                                     NEW_CHILD(ast, node->nd_args->nd_body));
       case NODE_OP_ASGN2:
         return rb_ary_new_from_args(5, NEW_CHILD(ast, node->nd_recv),
-                                    node->nd_next->nd_aid ? Qtrue : Qfalse,
+                                    RBOOL(node->nd_next->nd_aid),
                                     ID2SYM(node->nd_next->nd_vid),
                                     ID2SYM(node->nd_next->nd_mid),
                                     NEW_CHILD(ast, node->nd_value));

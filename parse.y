@@ -8108,7 +8108,7 @@ parser_set_compile_option_flag(struct parser_params *p, const char *name, const 
     if (!p->compile_option)
 	p->compile_option = rb_obj_hide(rb_ident_hash_new());
     rb_hash_aset(p->compile_option, ID2SYM(rb_intern(name)),
-		 (b ? Qtrue : Qfalse));
+		 RBOOL(b));
 }
 
 static void
@@ -13231,7 +13231,7 @@ ripper_error_p(VALUE vparser)
     struct parser_params *p;
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
-    return p->error_p ? Qtrue : Qfalse;
+    return RBOOL(p->error_p);
 }
 #endif
 
@@ -13247,7 +13247,7 @@ rb_parser_end_seen_p(VALUE vparser)
     struct parser_params *p;
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
-    return p->ruby__end__seen ? Qtrue : Qfalse;
+    return RBOOL(p->ruby__end__seen);
 }
 
 /*
@@ -13278,7 +13278,7 @@ rb_parser_get_yydebug(VALUE self)
     struct parser_params *p;
 
     TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
-    return p->debug ? Qtrue : Qfalse;
+    return RBOOL(p->debug);
 }
 #endif
 

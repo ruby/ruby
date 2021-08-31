@@ -282,7 +282,7 @@ class Float
   #
   def zero?
     Primitive.attr! 'inline'
-    Primitive.cexpr! 'FLOAT_ZERO_P(self) ? Qtrue : Qfalse'
+    Primitive.cexpr! 'RBOOL(FLOAT_ZERO_P(self))'
   end
 
   #
@@ -293,7 +293,7 @@ class Float
   #
   def positive?
     Primitive.attr! 'inline'
-    Primitive.cexpr! 'RFLOAT_VALUE(self) > 0.0 ? Qtrue : Qfalse'
+    Primitive.cexpr! 'RBOOL(RFLOAT_VALUE(self) > 0.0)'
   end
 
   #
@@ -304,6 +304,6 @@ class Float
   #
   def negative?
     Primitive.attr! 'inline'
-    Primitive.cexpr! 'RFLOAT_VALUE(self) < 0.0 ? Qtrue : Qfalse'
+    Primitive.cexpr! 'RBOOL(RFLOAT_VALUE(self) < 0.0)'
   end
 end

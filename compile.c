@@ -1654,7 +1654,7 @@ access_outer_variables(const rb_iseq_t *iseq, int level, ID id, bool write)
             }
         }
         else {
-            rb_id_table_insert(iseq->body->outer_variables, id, write ? Qtrue : Qfalse);
+            rb_id_table_insert(iseq->body->outer_variables, id, RBOOL(write));
         }
 
         iseq = iseq->body->parent_iseq;
@@ -5496,7 +5496,7 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
         switch (nd_type(argn)) {
           case NODE_SPLAT: {
             NO_CHECK(COMPILE(args, "args (splat)", argn->nd_head));
-            ADD_INSN1(args, argn, splatarray, dup_rest ? Qtrue : Qfalse);
+            ADD_INSN1(args, argn, splatarray, RBOOL(dup_rest));
             if (flag) *flag |= VM_CALL_ARGS_SPLAT;
             return INT2FIX(1);
           }
