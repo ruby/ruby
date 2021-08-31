@@ -232,7 +232,7 @@ assume_method_lookup_stable(VALUE receiver_klass, const rb_callable_method_entry
     RUBY_ASSERT(cme_validity_dependency);
     RUBY_ASSERT(method_lookup_dependency);
     RUBY_ASSERT(rb_callable_method_entry(receiver_klass, cme->called_id) == cme);
-    RUBY_ASSERT_ALWAYS(RB_TYPE_P(receiver_klass, T_CLASS));
+    RUBY_ASSERT_ALWAYS(RB_TYPE_P(receiver_klass, T_CLASS) || RB_TYPE_P(receiver_klass, T_ICLASS));
     RUBY_ASSERT_ALWAYS(!rb_objspace_garbage_object_p(receiver_klass));
 
     cme_dependency_t cme_dep = { receiver_klass, (VALUE)cme };
