@@ -374,7 +374,8 @@ module IRB
       contents = [message] + doc.accept(formatter).split("\n")
 
       x = cursor_pos_to_render.x + autocomplete_dialog.width
-      x = cursor_pos_to_render.x - width if x + width >= screen_width
+      #x = cursor_pos_to_render.x - width if x + width >= screen_width
+      x = autocomplete_dialog.column - width if x + width >= screen_width
       y = cursor_pos_to_render.y + pointer - autocomplete_dialog.scroll_top
       DialogRenderInfo.new(pos: Reline::CursorPos.new(x, y), contents: contents, width: width, bg_color: '49')
     }
