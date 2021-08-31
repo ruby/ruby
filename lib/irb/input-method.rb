@@ -355,13 +355,15 @@ module IRB
         end
       end
       return nil if doc.nil?
+      width = 40
       formatter = RDoc::Markup::ToAnsi.new
-      formatter.width = 40
-      str = doc.accept(formatter)
+      formatter.width = width
+      contents = doc.accept(formatter).split("\n")
 
-      x = cursor_pos_to_render.x + 40
+      x = cursor_pos_to_render.x + autocomplete_dialog.contents_width
+      x = cursor_pos_to_render.x - width if x + width >= screen_width
       y = cursor_pos_to_render.y + pointer - autocomplete_dialog.scroll_top
-      DialogRenderInfo.new(pos: Reline::CursorPos.new(x, y), contents: str.split("\n"), bg_color: '49')
+      DialogRenderInfo.new(pos: Reline::CursorPos.new(x, y), contents: contents, bg_color: '49')
     }
 
     # Reads the next line from this input method.
