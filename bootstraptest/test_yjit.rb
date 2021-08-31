@@ -441,6 +441,29 @@ assert_equal '7', %q{
     foo(4)[1]
 }
 
+# Method redefinition while the method is on the stack
+assert_equal '[777, 1]', %q{
+    def foo
+        redef()
+        777
+    end
+
+    def redef
+        # Redefine the global foo
+        eval("def foo; 1; end", TOPLEVEL_BINDING)
+
+        # Collect dead code
+        GC.stress = true
+        GC.start
+
+        # But we will return to the original foo,
+        # which remains alive because it's on the stack
+    end
+
+    # Must produce [777, 1]
+    [foo, foo]
+}
+
 # Test for GC safety. Don't invalidate dead iseqs.
 assert_normal_exit %q{
   Class.new do
