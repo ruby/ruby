@@ -354,14 +354,11 @@ VALUE rb_flo_is_infinite_p(VALUE num);
 inline static VALUE
 f_infinite_p(VALUE x)
 {
-    if (RB_INTEGER_TYPE_P(x)) {
+    if (RB_INTEGER_TYPE_P(x) || RB_TYPE_P(x, T_RATIONAL)) {
         return Qnil;
     }
     else if (RB_FLOAT_TYPE_P(x)) {
 	return rb_flo_is_infinite_p(x);
-    }
-    else if (RB_TYPE_P(x, T_RATIONAL)) {
-        return Qnil;
     }
     return rb_funcallv(x, id_infinite_p, 0, 0);
 }
