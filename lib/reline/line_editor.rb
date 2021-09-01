@@ -787,12 +787,13 @@ class Reline::LineEditor
     dialog_vertical_size.times do |i|
       if i < visual_lines_under_dialog.size
         Reline::IOGate.move_cursor_column(0)
-        @output.write "\e[39m\e[49m%-#{dialog.width}s\e[39m\e[49m" % visual_lines_under_dialog[i]
+        width = calculate_width(visual_lines_under_dialog[i], true)
+        str = visual_lines_under_dialog[i] + (' ' * (dialog.width - width))
+        @output.write "\e[39m\e[49m#{str}\e[39m\e[49m"
       else
         Reline::IOGate.move_cursor_column(dialog.column)
         @output.write "\e[39m\e[49m#{' ' * dialog.width}\e[39m\e[49m"
       end
-      Reline::IOGate.erase_after_cursor
       move_cursor_down(1) if i < (dialog_vertical_size - 1)
     end
     move_cursor_up(dialog_vertical_size - 1 + dialog.vertical_offset)
