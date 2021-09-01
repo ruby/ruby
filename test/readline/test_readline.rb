@@ -3,6 +3,7 @@ require_relative "helper"
 require "test/unit"
 require "tempfile"
 require "timeout"
+require "open3"
 
 module BasetestReadline
   INPUTRC = "INPUTRC"
@@ -807,6 +808,19 @@ module BasetestReadline
     assert_nil(Readline.completion_quote_character)
   ensure
     Readline.completer_quote_characters = saved_completer_quote_characters if saved_completer_quote_characters
+  end
+
+  def test_without_tty
+    loader = nil
+    if defined?(TestReadline) && self.class == TestReadline
+      loader = "use_ext_readline"
+    elsif defined?(TestRelineAsReadline) && self.class == TestRelineAsReadline
+      loader = "use_lib_reline"
+    end
+    if loader
+      res, exit_status = Open3.capture2e("ruby -I#{__dir__} -Ilib -rhelper -e '#{loader}; Readline.readline(%{y or n?})'", stdin_data: "y\n")
+      assert exit_status.success?, "It should work fine without tty, but it failed.\nError output:\n#{res}"
+    end
   end
 
   private
