@@ -1690,6 +1690,9 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
 	    v = r_object0(arg, &ivar, extmod);
 	    if (ivar) r_ivar(v, NULL, arg);
+	    if (RB_TYPE_P(v, T_STRING)) {
+	        v = r_leave(v, arg);
+	    }
 	}
 	break;
 
@@ -1819,7 +1822,9 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_STRING:
 	v = r_entry(r_string(arg), arg);
-        v = r_leave(v, arg);
+	if (!ivp) {
+	    v = r_leave(v, arg);
+	}
 	break;
 
       case TYPE_REGEXP:
