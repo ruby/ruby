@@ -233,14 +233,6 @@ module EnvUtil
   end
   module_function :suppress_warning
 
-  def under_gc_stress(stress = true)
-    stress, GC.stress = GC.stress, stress
-    yield
-  ensure
-    GC.stress = stress
-  end
-  module_function :under_gc_stress
-
   def with_default_external(enc)
     suppress_warning { Encoding.default_external = enc }
     yield

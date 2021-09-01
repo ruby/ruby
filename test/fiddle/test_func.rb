@@ -76,7 +76,16 @@ module Fiddle
 
       bug4929 = '[ruby-core:37395]'
       buff = "9341"
-      EnvUtil.under_gc_stress {qsort.call(buff, buff.size, 1, cb)}
+      if GC.respond_to?(:with_stress)
+        GC.with_stress(true) {qsort.call(buff, buff.size, 1, cb)}
+      else
+        stress, GC.stress = GC.stress, true
+        begin
+          qsort.call(buff, buff.size, 1, cb)
+        ensure
+          GC.stress = stress
+        end
+      end
       assert_equal("1349", buff, bug4929)
     end
 

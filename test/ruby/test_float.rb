@@ -808,7 +808,7 @@ class TestFloat < Test::Unit::TestCase
 
   def test_invalid_str
     bug4310 = '[ruby-core:34820]'
-    assert_raise(ArgumentError, bug4310) {under_gc_stress {Float('a'*10000)}}
+    assert_raise(ArgumentError, bug4310) {GC.with_stress(true) {Float('a'*10000)}}
   end
 
   def test_Float_with_invalid_exception

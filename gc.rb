@@ -112,6 +112,18 @@ module GC
   end
 
   #  call-seq:
+  #    GC.with_stress(flag) { ... }
+  #
+  #  Updates the GC stress mode only in the given block.
+  def self.with_stress(flag)
+    flag_old = stress
+    self.stress = flag
+    yield
+  ensure
+    self.stress = flag_old
+  end
+
+  #  call-seq:
   #     GC.count -> Integer
   #
   #  The number of times GC occurred.

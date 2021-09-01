@@ -245,7 +245,7 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_trace_object_allocations_gc_stress
-    EnvUtil.under_gc_stress do
+    GC.with_stress(true) do
       ObjectSpace.trace_object_allocations{
         proc{}
       }
