@@ -561,7 +561,7 @@ fiber_pool_allocation_free(struct fiber_pool_allocation * allocation)
 
     VM_ASSERT(allocation->used == 0);
 
-    if (DEBUG) fprintf(stderr, "fiber_pool_allocation_free: %p base=%p count=%"PRIuSIZE"\n", allocation, allocation->base, allocation->count);
+    if (DEBUG) fprintf(stderr, "fiber_pool_allocation_free: %p base=%p count=%"PRIuSIZE"\n", (void*)allocation, allocation->base, allocation->count);
 
     size_t i;
     for (i = 0; i < allocation->count; i += 1) {
@@ -1052,7 +1052,7 @@ fiber_free(void *ptr)
     rb_fiber_t *fiber = ptr;
     RUBY_FREE_ENTER("fiber");
 
-    if (DEBUG) fprintf(stderr, "fiber_free: %p[%p]\n", fiber, fiber->stack.base);
+    if (DEBUG) fprintf(stderr, "fiber_free: %p[%p]\n", (void *)fiber, fiber->stack.base);
 
     if (fiber->cont.saved_ec.local_storage) {
         rb_id_table_free(fiber->cont.saved_ec.local_storage);
@@ -1367,7 +1367,7 @@ fiber_setcontext(rb_fiber_t *new_fiber, rb_fiber_t *old_fiber)
     /* old_fiber->machine.stack_end should be NULL */
     old_fiber->cont.saved_ec.machine.stack_end = NULL;
 
-    // if (DEBUG) fprintf(stderr, "fiber_setcontext: %p[%p] -> %p[%p]\n", old_fiber, old_fiber->stack.base, new_fiber, new_fiber->stack.base);
+    // if (DEBUG) fprintf(stderr, "fiber_setcontext: %p[%p] -> %p[%p]\n", (void*)old_fiber, old_fiber->stack.base, (void*)new_fiber, new_fiber->stack.base);
 
     /* swap machine context */
     struct coroutine_context * from = coroutine_transfer(&old_fiber->context, &new_fiber->context);
@@ -1380,7 +1380,7 @@ fiber_setcontext(rb_fiber_t *new_fiber, rb_fiber_t *old_fiber)
     fiber_restore_thread(th, old_fiber);
 
     // It's possible to get here, and new_fiber is already freed.
-    // if (DEBUG) fprintf(stderr, "fiber_setcontext: %p[%p] <- %p[%p]\n", old_fiber, old_fiber->stack.base, new_fiber, new_fiber->stack.base);
+    // if (DEBUG) fprintf(stderr, "fiber_setcontext: %p[%p] <- %p[%p]\n", (void*)old_fiber, old_fiber->stack.base, (void*)new_fiber, new_fiber->stack.base);
 }
 
 NOINLINE(NORETURN(static void cont_restore_1(rb_context_t *)));
