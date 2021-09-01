@@ -582,6 +582,10 @@ class Reline::LineEditor
     end
   end
 
+  private def padding_space_with_escape_sequences(str, width)
+    str + (' ' * (width - calculate_width(str, true)))
+  end
+
   private def render_each_dialog(dialog, cursor_column)
     if @in_pasting
       dialog.contents = nil
@@ -651,8 +655,7 @@ class Reline::LineEditor
           bg_color = '46'
         end
       end
-      str = Reline::Unicode.take_range(item, 0, dialog.width)
-      str += ' ' * (dialog.width - calculate_width(str, true))
+      str = padding_space_with_escape_sequences(Reline::Unicode.take_range(item, 0, dialog.width), dialog.width)
       @output.write "\e[#{bg_color}m#{str}\e[49m"
       Reline::IOGate.move_cursor_column(dialog.column)
       move_cursor_down(1) if i < (dialog.contents.size - 1)
@@ -789,8 +792,7 @@ class Reline::LineEditor
     dialog_vertical_size.times do |i|
       if i < visual_lines_under_dialog.size
         Reline::IOGate.move_cursor_column(0)
-        width = calculate_width(visual_lines_under_dialog[i], true)
-        str = visual_lines_under_dialog[i] + (' ' * (dialog.width - width))
+        str = padding_space_with_escape_sequences(visual_lines_under_dialog[i], dialog.width)
         @output.write "\e[39m\e[49m#{str}\e[39m\e[49m"
       else
         Reline::IOGate.move_cursor_column(dialog.column)
