@@ -106,64 +106,6 @@ class TestRDocRDoc < RDoc::TestCase
     $stdin = STDIN
   end
 
-  def test_load_options
-    temp_dir do
-      options = RDoc::Options.new
-      options.markup = 'tomdoc'
-      options.write_options
-
-      options = @rdoc.load_options
-
-      assert_equal 'tomdoc', options.markup
-    end
-  end
-
-  def test_load_options_invalid
-    temp_dir do
-      File.open '.rdoc_options', 'w' do |io|
-        io.write "a: !ruby.yaml.org,2002:str |\nfoo"
-      end
-
-      e = assert_raise RDoc::Error do
-        @rdoc.load_options
-      end
-
-      options_file = File.expand_path '.rdoc_options'
-      assert_equal "#{options_file} is not a valid rdoc options file", e.message
-    end
-  end
-
-  def test_load_options_empty_file
-    temp_dir do
-      File.open '.rdoc_options', 'w' do |io|
-      end
-
-      options = @rdoc.load_options
-
-      assert_equal 'rdoc', options.markup
-    end
-  end
-
-  def test_load_options_partial_override
-    temp_dir do
-      File.open '.rdoc_options', 'w' do |io|
-        io.write "markup: Markdown"
-      end
-
-      options = @rdoc.load_options
-
-      assert_equal 'Markdown', options.markup
-    end
-  end
-
-  def load_options_no_file
-    temp_dir do
-      options = @rdoc.load_options
-
-      assert_kind_of RDoc::Options, options
-    end
-  end
-
   def test_normalized_file_list
     test_path = File.expand_path(__FILE__)
     files = temp_dir do |dir|
