@@ -24,6 +24,7 @@ class Reline::GeneralIO
   end
 
   @@buf = []
+  @@input = STDIN
 
   def self.input=(val)
     @@input = val
