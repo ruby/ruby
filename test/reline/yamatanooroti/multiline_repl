@@ -30,6 +30,11 @@ opt.on('--dynamic-prompt-returns-empty') {
 opt.on('--auto-indent') {
   AutoIndent.new
 }
+opt.on('--complete') {
+  Reline.completion_proc = lambda { |target, preposing = nil, postposing = nil|
+    %w{String ScriptError SyntaxError Signal}
+  }
+}
 opt.parse!(ARGV)
 
 begin

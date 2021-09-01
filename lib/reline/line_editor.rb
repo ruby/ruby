@@ -1295,8 +1295,8 @@ class Reline::LineEditor
       end
     end
     completed = @completion_journey_data.list[@completion_journey_data.pointer]
-    @line = @completion_journey_data.preposing + completed + @completion_journey_data.postposing
-    line_to_pointer = @completion_journey_data.preposing + completed
+    @line = (@completion_journey_data.preposing + completed + @completion_journey_data.postposing).split("\n")[@line_index]
+    line_to_pointer = (@completion_journey_data.preposing + completed).split("\n").last
     @cursor_max = calculate_width(@line)
     @cursor = calculate_width(line_to_pointer)
     @byte_pointer = line_to_pointer.bytesize
