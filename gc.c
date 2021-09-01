@@ -4246,21 +4246,10 @@ is_id_value(rb_objspace_t *objspace, VALUE ptr)
 }
 
 static inline int
-heap_is_swept_object(rb_objspace_t *objspace, VALUE ptr)
+is_swept_object(rb_objspace_t *objspace, VALUE ptr)
 {
     struct heap_page *page = GET_HEAP_PAGE(ptr);
     return page->flags.before_sweep ? FALSE : TRUE;
-}
-
-static inline int
-is_swept_object(rb_objspace_t *objspace, VALUE ptr)
-{
-    if (heap_is_swept_object(objspace, ptr)) {
-	return TRUE;
-    }
-    else {
-	return FALSE;
-    }
 }
 
 /* garbage objects will be collected soon. */
