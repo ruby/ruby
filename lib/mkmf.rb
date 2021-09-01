@@ -771,11 +771,20 @@ int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const
   #             files.
   def try_func(func, libs, headers = nil, opt = "", &b)
     headers = cpp_include(headers)
+    prepare = String.new
     case func
     when /^&/
       decltype = proc {|x|"const volatile void *#{x}"}
     when /\)$/
-      call = func
+      strvars = []
+      call = func.gsub(/""/) {
+        v = "s#{strvars.size + 1}"
+        strvars << v
+        v
+      }
+      unless strvars.empty?
+        prepare << "char " << strvars.map {|v| "#{v}[1024]"}.join(", ") << "; "
+      end
     when nil
       call = ""
     else
@@ -805,7 +814,7 @@ SRC
 extern int t(void);
 #{MAIN_DOES_NOTHING 't'}
 #{"extern void #{call};" if decltype}
-int t(void) { #{call}; return 0; }
+int t(void) { #{prepare}#{call}; return 0; }
 SRC
   end
 
