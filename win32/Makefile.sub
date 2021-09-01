@@ -91,6 +91,7 @@ PURIFY =
 AUTOCONF = autoconf
 IFCHANGE = $(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat
 RM = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat
+RM1 = del
 RMDIR = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
 RMDIRS = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
 RMALL = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat -f -r
@@ -104,6 +105,8 @@ BASERUBY = ruby
 !if !defined(TEST_RUNNABLE)
 TEST_RUNNABLE = yes
 !endif
+
+CAT_DEPEND = type
 
 !if !defined(MACHINE)
 MACHINE = x86
