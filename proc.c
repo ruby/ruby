@@ -1657,6 +1657,7 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
     }
     if (visi == METHOD_VISI_UNDEF) {
 	visi = METHOD_ENTRY_VISI(me);
+	RUBY_ASSERT(visi != METHOD_VISI_UNDEF); /* !UNDEFINED_METHOD_ENTRY_P(me) */
 	if (scope && (visi != METHOD_VISI_PUBLIC)) {
 	    if (!error) return Qnil;
 	    rb_print_inaccessible(klass, id, visi);
