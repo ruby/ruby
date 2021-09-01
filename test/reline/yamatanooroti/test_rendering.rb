@@ -823,6 +823,19 @@ begin
       EOC
     end
 
+    def test_completion_journey_with_empty_line
+      write_inputrc <<~LINES
+        set editing-mode vi
+      LINES
+      start_terminal(10, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --complete}, startup_message: 'Multiline REPL.')
+      write("\C-n\C-p")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt>
+      EOC
+    end
+
     def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
