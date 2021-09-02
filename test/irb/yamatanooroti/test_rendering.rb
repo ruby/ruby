@@ -28,6 +28,7 @@ begin
     def test_launch
       write_irbrc <<~'LINES'
         puts 'start IRB'
+        IRB.conf[:USE_AUTOCOMPLETE] = false
       LINES
       start_terminal(25, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
       write(<<~EOC)
@@ -45,6 +46,7 @@ begin
     def test_multiline_paste
       write_irbrc <<~'LINES'
         puts 'start IRB'
+        IRB.conf[:USE_AUTOCOMPLETE] = false
       LINES
       start_terminal(25, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
       write(<<~EOC)
@@ -84,6 +86,7 @@ begin
     def test_evaluate_each_toplevel_statement_by_multiline_paste
       write_irbrc <<~'LINES'
         puts 'start IRB'
+        IRB.conf[:USE_AUTOCOMPLETE] = false
       LINES
       start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
       write(<<~EOC)
