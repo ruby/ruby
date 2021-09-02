@@ -314,11 +314,14 @@ module IRB
     end
 
     SHOW_DOC_DIALOG = ->() {
+      dialog.trap_key = nil
+      alt_d = 0xE4
       begin
         require 'rdoc'
       rescue LoadError
         return nil
       end
+
       if just_cursor_moving and completion_journey_data.nil?
         return nil
       end
@@ -328,6 +331,14 @@ module IRB
       name = IRB::InputCompletor.retrieve_completion_data(name, doc_namespace: true)
 
       driver = RDoc::RI::Driver.new
+
+      if key.combined_char == alt_d
+        begin
+          driver.display_names([name])
+        rescue RDoc::RI::Driver::NotFoundError
+        end
+      end
+
       begin
         name = driver.expand_name(name)
       rescue RDoc::RI::Driver::NotFoundError
@@ -358,6 +369,7 @@ module IRB
       width = 40
       formatter = RDoc::Markup::ToAnsi.new
       formatter.width = width
+      dialog.trap_key = alt_d
       contents = doc.accept(formatter).split("\n")
 
       x = cursor_pos_to_render.x + autocomplete_dialog.width
