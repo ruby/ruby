@@ -194,7 +194,7 @@ module Reline
         # Auto complete starts only when edited
         return nil
       end
-      pre, target, post= retrieve_completion_block(true)
+      pre, target, post = retrieve_completion_block(true)
       if target.nil? or target.empty?# or target.size <= 3
         return nil
       end
