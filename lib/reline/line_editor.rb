@@ -632,7 +632,7 @@ class Reline::LineEditor
     if (lower_space + @rest_height - dialog_render_info.pos.y) >= height
       dialog.vertical_offset = dialog_render_info.pos.y + 1
     elsif upper_space >= height
-      dialog.vertical_offset = dialog_render_info.pos.y + -(height + 1)
+      dialog.vertical_offset = dialog_render_info.pos.y - height
     else
       if (lower_space + @rest_height - dialog_render_info.pos.y) < height
         scroll_down(height + dialog_render_info.pos.y)
