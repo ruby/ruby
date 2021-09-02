@@ -1480,7 +1480,9 @@ class Reline::LineEditor
     @last_key = key
     @dialogs.each do |dialog|
       # The dialog will intercept the key if trap_key is set.
-      return if dialog.trap_key and key.combined_char == dialog.trap_key
+      if dialog.trap_key and dialog.trap_key.match?(key)
+        return
+      end
     end
     @just_cursor_moving = nil
     if key.char.nil?

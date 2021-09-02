@@ -16,7 +16,13 @@ module Reline
 
   class ConfigEncodingConversionError < StandardError; end
 
-  Key = Struct.new('Key', :char, :combined_char, :with_meta)
+  Key = Struct.new('Key', :char, :combined_char, :with_meta) do
+    def match?(key)
+      (key.char.nil? or char.nil? or char == key.char) and
+      (key.combined_char.nil? or combined_char.nil? or combined_char == key.combined_char) and
+      (key.with_meta.nil? or with_meta.nil? or with_meta == key.with_meta)
+    end
+  end
   CursorPos = Struct.new(:x, :y)
   DialogRenderInfo = Struct.new(:pos, :contents, :pointer, :bg_color, :width, :height, keyword_init: true)
 
