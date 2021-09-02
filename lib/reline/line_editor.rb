@@ -575,7 +575,6 @@ class Reline::LineEditor
   end
 
   DIALOG_HEIGHT = 20
-  DIALOG_WIDTH = 40
   private def render_dialog(cursor_column)
     @dialogs.each do |dialog|
       render_each_dialog(dialog, cursor_column)
