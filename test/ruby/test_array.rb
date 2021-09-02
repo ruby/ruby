@@ -656,7 +656,10 @@ class TestArray < Test::Unit::TestCase
     assert_raise(FrozenError) { @cls[0].freeze.concat(:foo) }
 
     a = @cls[nil]
-    def (x = Object.new).to_ary; Array.new(10) {nil} << :ok; end
+    def (x = Object.new).to_ary
+      ary = Array.new(2)
+      ary << [] << [] << :ok
+    end
     EnvUtil.under_gc_stress {a.concat(x)}
     GC.start
     assert_equal(:ok, a.last)
