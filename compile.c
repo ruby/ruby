@@ -4103,7 +4103,7 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
             seen_nodes++;
 
 	    assert(nd_type(node) == NODE_LIST);
-            if (key_node && nd_type(key_node) == NODE_LIT && RB_TYPE_P(key_node->nd_lit, T_SYMBOL)) {
+            if (key_node && nd_type(key_node) == NODE_LIT && SYMBOL_P(key_node->nd_lit)) {
 		/* can be keywords */
 	    }
 	    else {
@@ -12406,7 +12406,7 @@ ibf_dump_object_object(struct ibf_dump *dump, VALUE obj)
     current_offset = ibf_dump_pos(dump);
 
     if (SPECIAL_CONST_P(obj) &&
-        ! (RB_TYPE_P(obj, T_SYMBOL) ||
+        ! (SYMBOL_P(obj) ||
            RB_TYPE_P(obj, T_FLOAT))) {
         obj_header.special_const = TRUE;
         obj_header.frozen = TRUE;
