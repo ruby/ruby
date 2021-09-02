@@ -226,6 +226,8 @@ class Reline::Windows
     # no char, only control keys
     return if key.char_code == 0 and key.control_keys.any?
 
+    @@output_buf.push("\e".ord) if key.control_keys.include?(:ALT)
+
     @@output_buf.concat(key.char.bytes)
   end
 
