@@ -605,7 +605,11 @@ class Reline::LineEditor
       return
     end
     old_dialog = dialog.clone
-    dialog.width = dialog_render_info.width if dialog_render_info.width
+    if dialog_render_info.width
+      dialog.width = dialog_render_info.width
+    else
+      dialog.width = dialog_render_info.contents.map { |l| calculate_width(l, true) }.max
+    end
     height = dialog_render_info.height || DIALOG_HEIGHT
     pointer = dialog_render_info.pointer
     dialog.contents = dialog_render_info.contents
