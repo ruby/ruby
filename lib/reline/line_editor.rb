@@ -795,8 +795,9 @@ class Reline::LineEditor
     dialog_vertical_size = dialog.contents.size
     dialog_vertical_size.times do |i|
       if i < visual_lines_under_dialog.size
-        Reline::IOGate.move_cursor_column(0)
-        str = padding_space_with_escape_sequences(visual_lines_under_dialog[i], dialog.width)
+        Reline::IOGate.move_cursor_column(dialog.column)
+        str = Reline::Unicode.take_range(visual_lines_under_dialog[i], dialog.column, dialog.width)
+        str = padding_space_with_escape_sequences(str, dialog.width)
         @output.write "\e[39m\e[49m#{str}\e[39m\e[49m"
       else
         Reline::IOGate.move_cursor_column(dialog.column)
