@@ -315,7 +315,7 @@ module IRB
 
     SHOW_DOC_DIALOG = ->() {
       dialog.trap_key = nil
-      alt_d = 0xE4
+      alt_d = Reline::Key.new(nil, 0xE4, true)
       begin
         require 'rdoc'
       rescue LoadError
@@ -332,7 +332,7 @@ module IRB
 
       driver = RDoc::RI::Driver.new
 
-      if key.combined_char == alt_d
+      if key.match?(alt_d)
         begin
           driver.display_names([name])
         rescue RDoc::RI::Driver::NotFoundError
