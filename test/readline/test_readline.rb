@@ -811,6 +811,7 @@ module BasetestReadline
   end
 
   def test_without_tty
+    omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
     loader = nil
     if defined?(TestReadline) && self.class == TestReadline
       loader = "use_ext_readline"
