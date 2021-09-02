@@ -128,7 +128,7 @@ f_abs(VALUE x)
 }
 
 
-inline static VALUE
+inline static int
 f_integer_p(VALUE x)
 {
     return RB_INTEGER_TYPE_P(x);

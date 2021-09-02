@@ -338,29 +338,26 @@ VALUE rb_flo_is_finite_p(VALUE num);
 inline static int
 f_finite_p(VALUE x)
 {
-    if (RB_INTEGER_TYPE_P(x)) {
+    if (RB_INTEGER_TYPE_P(x) || RB_TYPE_P(x, T_RATIONAL)) {
         return TRUE;
     }
     else if (RB_FLOAT_TYPE_P(x)) {
 	return (int)rb_flo_is_finite_p(x);
     }
-    else if (RB_TYPE_P(x, T_RATIONAL)) {
-	return TRUE;
-    }
     return RTEST(rb_funcallv(x, id_finite_p, 0, 0));
 }
 
 VALUE rb_flo_is_infinite_p(VALUE num);
-inline static VALUE
+inline static int
 f_infinite_p(VALUE x)
 {
     if (RB_INTEGER_TYPE_P(x) || RB_TYPE_P(x, T_RATIONAL)) {
-        return Qnil;
+        return FALSE;
     }
     else if (RB_FLOAT_TYPE_P(x)) {
-	return rb_flo_is_infinite_p(x);
+	return RTEST(rb_flo_is_infinite_p(x));
     }
-    return rb_funcallv(x, id_infinite_p, 0, 0);
+    return RTEST(rb_funcallv(x, id_infinite_p, 0, 0));
 }
 
 inline static int
@@ -1469,7 +1466,7 @@ rb_complex_infinite_p(VALUE self)
 {
     get_dat1(self);
 
-    if (NIL_P(f_infinite_p(dat->real)) && NIL_P(f_infinite_p(dat->imag))) {
+    if (!f_infinite_p(dat->real) && !f_infinite_p(dat->imag)) {
 	return Qnil;
     }
     return ONE;
