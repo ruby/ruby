@@ -370,7 +370,8 @@ module IRB
       formatter = RDoc::Markup::ToAnsi.new
       formatter.width = width
       dialog.trap_key = alt_d
-      contents = doc.accept(formatter).split("\n")
+      message = 'Press Alt+d to read the full document'
+      contents = [message] + doc.accept(formatter).split("\n")
 
       x = cursor_pos_to_render.x + autocomplete_dialog.width
       x = cursor_pos_to_render.x - width if x + width >= screen_width
