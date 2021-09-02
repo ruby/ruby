@@ -609,6 +609,7 @@ class Reline::LineEditor
     height = dialog_render_info.height || DIALOG_HEIGHT
     pointer = dialog_render_info.pointer
     dialog.contents = dialog_render_info.contents
+    height = dialog.contents.size if dialog.contents.size < height
     if dialog.contents.size > height
       if dialog_render_info.pointer
         if dialog_render_info.pointer < 0
