@@ -26,6 +26,7 @@ begin
     end
 
     def test_launch
+      # TODO Remove the disabling autocomplete after new versoin of reline gem is released.
       write_irbrc <<~'LINES'
         puts 'start IRB'
         IRB.conf[:USE_AUTOCOMPLETE] = false
