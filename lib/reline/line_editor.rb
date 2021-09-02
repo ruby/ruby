@@ -251,6 +251,7 @@ class Reline::LineEditor
     @in_pasting = false
     @auto_indent_proc = nil
     @dialogs = []
+    @last_key = nil
     reset_line
   end
 
@@ -512,6 +513,14 @@ class Reline::LineEditor
       @cursor_pos.y = row
     end
 
+    def set_key(key)
+      @key = key
+    end
+
+    def key
+      @key
+    end
+
     def cursor_pos
       @cursor_pos
     end
@@ -539,7 +548,7 @@ class Reline::LineEditor
 
   class Dialog
     attr_reader :name, :contents, :width
-    attr_accessor :scroll_top, :column, :vertical_offset, :lines_backup
+    attr_accessor :scroll_top, :column, :vertical_offset, :lines_backup, :trap_key
 
     def initialize(name, proc_scope)
       @name = name
@@ -563,8 +572,9 @@ class Reline::LineEditor
       end
     end
 
-    def call
+    def call(key)
       @proc_scope.set_dialog(self)
+      @proc_scope.set_key(key)
       @proc_scope.call
     end
   end
@@ -588,10 +598,11 @@ class Reline::LineEditor
   private def render_each_dialog(dialog, cursor_column)
     if @in_pasting
       dialog.contents = nil
+      dialog.trap_key = nil
       return
     end
     dialog.set_cursor_pos(cursor_column, @first_line_started_from + @started_from)
-    dialog_render_info = dialog.call
+    dialog_render_info = dialog.call(@last_key)
     if dialog_render_info.nil? or dialog_render_info.contents.nil? or dialog_render_info.contents.empty?
       dialog.lines_backup = {
         lines: modify_lines(whole_lines),
@@ -602,6 +613,7 @@ class Reline::LineEditor
       }
       clear_each_dialog(dialog)
       dialog.contents = nil
+      dialog.trap_key = nil
       return
     end
     old_dialog = dialog.clone
@@ -778,6 +790,7 @@ class Reline::LineEditor
   end
 
   private def clear_each_dialog(dialog)
+    dialog.trap_key = nil
     return unless dialog.contents
     prompt, prompt_width, prompt_list = check_multiline_prompt(dialog.lines_backup[:lines], prompt)
     visual_lines = []
@@ -1464,6 +1477,11 @@ class Reline::LineEditor
   end
 
   def input_key(key)
+    @last_key = key
+    @dialogs.each do |dialog|
+      # The dialog will intercept the key if trap_key is set.
+      return if dialog.trap_key and key.combined_char == dialog.trap_key
+    end
     @just_cursor_moving = nil
     if key.char.nil?
       if @first_char
