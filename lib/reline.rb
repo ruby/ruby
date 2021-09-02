@@ -195,7 +195,7 @@ module Reline
         return nil
       end
       pre, target, post = retrieve_completion_block(true)
-      if target.nil? or target.empty?# or target.size <= 3
+      if target.nil? or target.empty? or target.size <= 3
         return nil
       end
       if completion_journey_data and completion_journey_data.list
