@@ -1060,7 +1060,7 @@ rb_struct_pos(VALUE s, VALUE *name)
     long i;
     VALUE idx = *name;
 
-    if (RB_TYPE_P(idx, T_SYMBOL)) {
+    if (SYMBOL_P(idx)) {
 	return struct_member_pos(s, idx);
     }
     else if (RB_TYPE_P(idx, T_STRING)) {

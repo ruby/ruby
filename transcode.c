@@ -2464,7 +2464,7 @@ econv_opts(VALUE opt, int ecflags)
         else if (v==sym_attr) {
             ecflags |= ECONV_XML_ATTR_CONTENT_DECORATOR|ECONV_XML_ATTR_QUOTE_DECORATOR|ECONV_UNDEF_HEX_CHARREF;
         }
-        else if (RB_TYPE_P(v, T_SYMBOL)) {
+        else if (SYMBOL_P(v)) {
             rb_raise(rb_eArgError, "unexpected value for xml option: %"PRIsVALUE, rb_sym2str(v));
         }
         else {
