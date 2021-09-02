@@ -82,13 +82,7 @@ module Base64
   # You can remove the padding by setting +padding+ as false.
   def urlsafe_encode64(bin, padding: true)
     str = strict_encode64(bin)
-    unless padding
-      if str.end_with?("==")
-        str.delete_suffix!("==")
-      elsif str.end_with?("=")
-        str.chop!
-      end
-    end
+    str.chomp!("==") or str.chomp!("=") unless padding
     str.tr!("+/", "-_")
     str
   end
