@@ -334,15 +334,23 @@ f_zero_p(VALUE x)
 
 #define f_nonzero_p(x) (!f_zero_p(x))
 
+static inline bool
+always_finite_type_p(VALUE x)
+{
+    if (FIXNUM_P(x)) return true;
+    if (FLONUM_P(x)) return true; /* Infinity can't be a flonum */
+    return (RB_INTEGER_TYPE_P(x) || RB_TYPE_P(x, T_RATIONAL));
+}
+
 VALUE rb_flo_is_finite_p(VALUE num);
 inline static int
 f_finite_p(VALUE x)
 {
-    if (RB_INTEGER_TYPE_P(x) || RB_TYPE_P(x, T_RATIONAL)) {
+    if (always_finite_type_p(x)) {
         return TRUE;
     }
     else if (RB_FLOAT_TYPE_P(x)) {
-	return (int)rb_flo_is_finite_p(x);
+	return isfinite(RFLOAT_VALUE(x));
     }
     return RTEST(rb_funcallv(x, id_finite_p, 0, 0));
 }
@@ -351,11 +359,11 @@ VALUE rb_flo_is_infinite_p(VALUE num);
 inline static int
 f_infinite_p(VALUE x)
 {
-    if (RB_INTEGER_TYPE_P(x) || RB_TYPE_P(x, T_RATIONAL)) {
+    if (always_finite_type_p(x)) {
         return FALSE;
     }
     else if (RB_FLOAT_TYPE_P(x)) {
-	return RTEST(rb_flo_is_infinite_p(x));
+	return isinf(RFLOAT_VALUE(x));
     }
     return RTEST(rb_funcallv(x, id_infinite_p, 0, 0));
 }
