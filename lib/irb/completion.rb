@@ -315,12 +315,19 @@ module IRB
         end
 
       else
-        candidates = eval("methods | private_methods | local_variables | instance_variables | self.class.constants", bind).collect{|m| m.to_s}
-        candidates |= ReservedWords
-
         if doc_namespace
-          candidates.find{ |i| i == input }
+          vars = eval("local_variables | instance_variables", bind).collect{|m| m.to_s}
+          perfect_match_var = vars.find{|m| m.to_s == input}
+          if perfect_match_var
+            eval("#{perfect_match_var}.class.name", bind)
+          else
+            candidates = eval("methods | private_methods | local_variables | instance_variables | self.class.constants", bind).collect{|m| m.to_s}
+            candidates |= ReservedWords
+            candidates.find{ |i| i == input }
+          end
         else
+          candidates = eval("methods | private_methods | local_variables | instance_variables | self.class.constants", bind).collect{|m| m.to_s}
+          candidates |= ReservedWords
           candidates.grep(/^#{Regexp.quote(input)}/)
         end
       end
