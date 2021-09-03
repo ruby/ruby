@@ -89,5 +89,10 @@ module TestIRB
       assert_include(IRB::InputCompletor.retrieve_completion_data("str_examp", bind: binding), "str_example")
       assert_equal(IRB::InputCompletor.retrieve_completion_data("str_example", bind: binding, doc_namespace: true), "String")
     end
+
+    def test_complete_class_method
+      assert_include(IRB::InputCompletor.retrieve_completion_data("String.new", bind: binding), "String.new")
+      assert_equal(IRB::InputCompletor.retrieve_completion_data("String.new", bind: binding, doc_namespace: true), "String.new")
+    end
   end
 end
