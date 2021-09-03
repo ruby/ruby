@@ -2039,12 +2039,6 @@ opt_equality_specialized(VALUE recv, VALUE obj)
     return RBOOL(recv == obj);
 }
 
-VALUE
-rb_opt_equality_specialized(VALUE recv, VALUE obj)
-{
-    return opt_equality_specialized(recv, obj);
-}
-
 static VALUE
 opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
 {
