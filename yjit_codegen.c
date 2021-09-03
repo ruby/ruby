@@ -1424,6 +1424,12 @@ jit_chain_guard(enum jcc_kinds jcc, jitstate_t *jit, const ctx_t *ctx, uint8_t d
 
 bool rb_iv_index_tbl_lookup(struct st_table *iv_index_tbl, ID id, struct rb_iv_index_tbl_entry **ent); // vm_insnhelper.c
 
+static VALUE
+yjit_obj_written(VALUE a, VALUE b)
+{
+    return RB_OBJ_WRITTEN(a, Qundef, b);
+}
+
 enum {
     GETIVAR_MAX_DEPTH = 10,       // up to 5 different classes, and embedded or not for each
     OPT_AREF_MAX_CHAIN_DEPTH = 2, // hashes and arrays
@@ -1495,15 +1501,18 @@ gen_set_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
             mov(cb, REG1, ctx_stack_pop(ctx, 1));
             mov(cb, ivar_opnd, REG1);
 
+            mov(cb, C_ARG_REGS[0], REG0);
+            mov(cb, C_ARG_REGS[1], REG1);
+            call_ptr(cb, REG1, (void *)yjit_obj_written);
+
             // Pop receiver if it's on the temp stack
             // ie. this is an attribute method
             if (!reg0_opnd.is_self) {
               ctx_stack_pop(ctx, 1);
             }
 
-            // Push the ivar on the stack
-            x86opnd_t out_opnd = ctx_stack_push(ctx, TYPE_UNKNOWN);
-            mov(cb, out_opnd, REG1);
+            // Increment the stack
+            ctx_stack_push(ctx, TYPE_UNKNOWN);
         }
         else {
             // Compile time value is *not* embeded.
@@ -1523,6 +1532,9 @@ gen_set_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
                 jle_ptr(cb, COUNTED_EXIT(side_exit, getivar_idx_out_of_range));
             }
 
+            // Save recv for write barrier later
+            mov(cb, C_ARG_REGS[0], REG0);
+
             // Get a pointer to the extended table
             x86opnd_t tbl_opnd = mem_opnd(64, REG0, offsetof(struct RObject, as.heap.ivptr));
             mov(cb, REG0, tbl_opnd);
@@ -1532,15 +1544,17 @@ gen_set_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
             mov(cb, REG1, ctx_stack_pop(ctx, 1));
             mov(cb, ivar_opnd, REG1);
 
+            mov(cb, C_ARG_REGS[1], REG1);
+            call_ptr(cb, REG1, (void *)yjit_obj_written);
+
             // Pop receiver if it's on the temp stack
             // ie. this is an attribute method
             if (!reg0_opnd.is_self) {
               ctx_stack_pop(ctx, 1);
             }
 
-            // Push the ivar on the stack
-            x86opnd_t out_opnd = ctx_stack_push(ctx, TYPE_UNKNOWN);
-            mov(cb, out_opnd, REG1);
+            // Increment the stack
+            ctx_stack_push(ctx, TYPE_UNKNOWN);
         }
 
         // Jump to next instruction. This allows guard chains to share the same successor.
