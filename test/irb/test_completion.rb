@@ -86,6 +86,7 @@ module TestIRB
 
     def test_complete_variable
       str_example = ''
+      str_example.clear # suppress "assigned but unused variable" warning
       assert_include(IRB::InputCompletor.retrieve_completion_data("str_examp", bind: binding), "str_example")
       assert_equal(IRB::InputCompletor.retrieve_completion_data("str_example", bind: binding, doc_namespace: true), "String")
       assert_equal(IRB::InputCompletor.retrieve_completion_data("str_example.to_s", bind: binding, doc_namespace: true), "String.to_s")
