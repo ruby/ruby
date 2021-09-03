@@ -7,7 +7,6 @@ group :development do
   gem 'racc', '> 1.4.10'
   gem 'kpeg', github: 'evanphx/kpeg'
   gem 'test-unit'
-  gem 'minitest' # for test_rdoc_rubygems_hook.rb
   gem 'rubocop'
   gem 'gettext'
 end
