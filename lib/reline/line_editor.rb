@@ -661,6 +661,13 @@ class Reline::LineEditor
     reset_dialog(dialog, old_dialog)
     move_cursor_down(dialog.vertical_offset)
     Reline::IOGate.move_cursor_column(dialog.column)
+    if dialog_render_info.scrollbar and dialog_render_info.contents.size > height
+      bar_max_height = height * 2
+      moving_distance = (dialog_render_info.contents.size - height) * 2
+      position_ratio = dialog.scroll_top.zero? ? 0.0 : ((dialog.scroll_top * 2).to_f / moving_distance)
+      bar_height = (bar_max_height * ((dialog.contents.size * 2).to_f / (dialog_render_info.contents.size * 2))).floor.to_i
+      position = ((bar_max_height - bar_height) * position_ratio).floor.to_i
+    end
     dialog.contents.each_with_index do |item, i|
       if i == pointer
         bg_color = '45'
@@ -672,10 +679,22 @@ class Reline::LineEditor
         end
       end
       str = padding_space_with_escape_sequences(Reline::Unicode.take_range(item, 0, dialog.width), dialog.width)
+      if dialog_render_info.scrollbar and dialog_render_info.contents.size > height
+        if position <= (i * 2) and (i * 2) <= (position + bar_height)
+          str += '█'
+        elsif position <= (i * 2) and (i * 2 - 1) <= (position + bar_height)
+          str += '▀'
+        elsif position <= (i * 2 + 1) and (i * 2) <= (position + bar_height)
+          str += '▄'
+        else
+          str += ' '
+        end
+      end
       @output.write "\e[#{bg_color}m#{str}\e[49m"
       Reline::IOGate.move_cursor_column(dialog.column)
       move_cursor_down(1) if i < (dialog.contents.size - 1)
     end
+    dialog.width += 1 if dialog_render_info.scrollbar and dialog_render_info.contents.size > height
     Reline::IOGate.move_cursor_column(cursor_column)
     move_cursor_up(dialog.vertical_offset + dialog.contents.size - 1)
     Reline::IOGate.show_cursor
