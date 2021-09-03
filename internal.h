@@ -104,5 +104,6 @@ RUBY_SYMBOL_EXPORT_END
 #define bp() ruby_debug_breakpoint()
 
 #define RBOOL(v) ((v) ? Qtrue : Qfalse)
+#define RB_BIGNUM_TYPE_P(x) RB_TYPE_P((x), T_BIGNUM)
 
 #endif /* RUBY_INTERNAL_H */

@@ -3417,7 +3417,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 static int
 object_id_cmp(st_data_t x, st_data_t y)
 {
-    if (RB_TYPE_P(x, T_BIGNUM)) {
+    if (RB_BIGNUM_TYPE_P(x)) {
         return !rb_big_eql(x, y);
     }
     else {
@@ -3428,7 +3428,7 @@ object_id_cmp(st_data_t x, st_data_t y)
 static st_index_t
 object_id_hash(st_data_t n)
 {
-    if (RB_TYPE_P(n, T_BIGNUM)) {
+    if (RB_BIGNUM_TYPE_P(n)) {
         return FIX2LONG(rb_big_hash(n));
     }
     else {

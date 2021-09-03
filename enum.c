@@ -848,7 +848,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
                         n = 0;
                     }
                 }
-                else if (RB_TYPE_P(e, T_BIGNUM))
+                else if (RB_BIGNUM_TYPE_P(e))
                     v = rb_big_plus(e, v);
                 else
                     goto not_integer;
@@ -4173,8 +4173,8 @@ enum_sum(int argc, VALUE* argv, VALUE obj)
 
     if (RTEST(rb_range_values(obj, &beg, &end, &excl))) {
         if (!memo.block_given && !memo.float_value &&
-                (FIXNUM_P(beg) || RB_TYPE_P(beg, T_BIGNUM)) &&
-                (FIXNUM_P(end) || RB_TYPE_P(end, T_BIGNUM))) {
+                (FIXNUM_P(beg) || RB_BIGNUM_TYPE_P(beg)) &&
+                (FIXNUM_P(end) || RB_BIGNUM_TYPE_P(end))) {
             return int_range_sum(beg, end, excl, memo.v);
         }
     }

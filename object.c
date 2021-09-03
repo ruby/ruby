@@ -3425,7 +3425,7 @@ rb_str_to_dbl(VALUE str, int badcheck)
     (FIXNUM_P(x) ? fix2dbl_without_to_f(x) : big2dbl_without_to_f(x))
 #define num2dbl_without_to_f(x) \
     (FIXNUM_P(x) ? fix2dbl_without_to_f(x) : \
-     RB_TYPE_P(x, T_BIGNUM) ? big2dbl_without_to_f(x) : \
+     RB_BIGNUM_TYPE_P(x) ? big2dbl_without_to_f(x) : \
      (Check_Type(x, T_FLOAT), RFLOAT_VALUE(x)))
 static inline double
 rat2dbl_without_to_f(VALUE x)

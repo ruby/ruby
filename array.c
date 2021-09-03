@@ -7803,7 +7803,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
                 n = 0;
             }
         }
-        else if (RB_TYPE_P(e, T_BIGNUM))
+        else if (RB_BIGNUM_TYPE_P(e))
             v = rb_big_plus(e, v);
         else if (RB_TYPE_P(e, T_RATIONAL)) {
             if (r == Qundef)
@@ -7840,7 +7840,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
                 x = RFLOAT_VALUE(e);
             else if (FIXNUM_P(e))
                 x = FIX2LONG(e);
-            else if (RB_TYPE_P(e, T_BIGNUM))
+            else if (RB_BIGNUM_TYPE_P(e))
                 x = rb_big2dbl(e);
             else if (RB_TYPE_P(e, T_RATIONAL))
                 x = rb_num2dbl(e);
