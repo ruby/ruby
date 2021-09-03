@@ -17,8 +17,8 @@ require 'rdoc'
 
 ##
 # RDoc::TestCase is an abstract TestCase to provide common setup and teardown
-# across all RDoc tests.  The test case uses minitest, so all the assertions
-# of minitest may be used.
+# across all RDoc tests.  The test case uses test-unit, so all the assertions
+# of test-unit may be used.
 #
 # The testcase provides the following:
 #
