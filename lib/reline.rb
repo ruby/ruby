@@ -212,7 +212,7 @@ module Reline
         result = call_completion_proc_with_checking_args(pre, target, post)
         pointer = nil
       end
-      if result and result.size == 1 and result[0] == target
+      if result and result.size == 1 and result[0] == target and pointer != 0
         result = nil
       end
       target_width = Reline::Unicode.calculate_width(target)
