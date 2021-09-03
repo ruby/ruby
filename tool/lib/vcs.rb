@@ -625,6 +625,12 @@ class VCS
               end
               s = s.join('')
             end
+
+            if %r[^ +(https://github\.com/[^/]+/[^/]+/)commit/\h+\n(?=(?: +\n(?i: +Co-authored-by: .*\n)+)?(?:\n|\Z))] =~ s
+              issue = "#{$1}pull/"
+              s.gsub!(/\b[Ff]ix(?:e[sd])? \K#(?=\d+)/) {issue}
+            end
+
             s.gsub!(/ +\n/, "\n")
             s.sub!(/^Notes:/, '  \&')
             w.print h, s
