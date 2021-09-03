@@ -700,16 +700,19 @@ enum_flat_map(VALUE obj)
 
 /*
  *  call-seq:
- *     enum.to_a(*args)      -> array
- *     enum.entries(*args)   -> array
+ *    to_a -> array
  *
- *  Returns an array containing the items in <i>enum</i>.
+ *  Returns an array containing the items in +self+:
  *
- *     (1..7).to_a                       #=> [1, 2, 3, 4, 5, 6, 7]
- *     { 'a'=>1, 'b'=>2, 'c'=>3 }.to_a   #=> [["a", 1], ["b", 2], ["c", 3]]
+ *    (0..4).to_a # => [0, 1, 2, 3, 4]
  *
- *     require 'prime'
- *     Prime.entries 10                  #=> [2, 3, 5, 7]
+ *  Special case: if +self+ is a hash,
+ *  returns an array of 2-elememt arrays,
+ *  each of which is a key-value pair:
+ *
+ *    {foo: 0, bar: 1, baz: 2}.to_a # => [[:foo, 0], [:bar, 1], [:baz, 2]]
+ *
+ *  Enumerable#entries is an alias for Enumerable#to_a.
  */
 static VALUE
 enum_to_a(int argc, VALUE *argv, VALUE obj)
@@ -749,20 +752,21 @@ enum_to_h_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
 /*
  *  call-seq:
- *     enum.to_h(*args)        -> hash
- *     enum.to_h(*args) {...}  -> hash
+ *    to_h -> hash
+ *    to_h {|element| ... }  -> hash
  *
- *  Returns the result of interpreting <i>enum</i> as a list of
- *  <tt>[key, value]</tt> pairs.
+ *  When +self+ consists of 2-element arrays,
+ *  returns a hash each of whose entries is the key-value pair
+ *  formed from one of those arrays:
  *
- *     %i[hello world].each_with_index.to_h
- *       # => {:hello => 0, :world => 1}
+ *    [[:foo, 0], [:bar, 1], [:baz, 2]].to_h # => {:foo=>0, :bar=>1, :baz=>2}
  *
- *  If a block is given, the results of the block on each element of
- *  the enum will be used as pairs.
+ *  When a block is given, the block is called with each 2-element array,
+ *  and the block return value becomes an entry in the returned hash:
  *
- *     (1..5).to_h {|x| [x, x ** 2]}
- *       #=> {1=>1, 2=>4, 3=>9, 4=>16, 5=>25}
+ *    (0..3).to_h {|i| [i, i ** 2]} # => {0=>0, 1=>1, 2=>4, 3=>9}
+ *
+ *  Raises an exception if an element of +self+ is not a 2-element array.
  */
 
 static VALUE
@@ -871,21 +875,212 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
 
 /*
  *  call-seq:
- *     enum.inject(initial, sym) -> obj
- *     enum.inject(sym)          -> obj
- *     enum.inject(initial) { |memo, obj| block }  -> obj
- *     enum.inject          { |memo, obj| block }  -> obj
- *     enum.reduce(initial, sym) -> obj
- *     enum.reduce(sym)          -> obj
- *     enum.reduce(initial) { |memo, obj| block }  -> obj
- *     enum.reduce          { |memo, obj| block }  -> obj
+ *     inject(symbol) -> obj
+ *     inject(initial_operand, symbol) -> obj
+ *     inject {|memo, element| ... } -> obj
+ *     inject(initial_operand) {|memo, element| ... } -> obj
  *
- *  Combines all elements of <i>enum</i> by applying a binary
- *  operation, specified by a block or a symbol that names a
- *  method or operator.
+ *  Combines each successive element of +self+ with an accumulator.
  *
- *  The <i>inject</i> and <i>reduce</i> methods are aliases. There
- *  is no performance benefit to either.
+ *  Simple examples of each  of the above calling sequences:
+ *
+ *    # Sum of elements.
+ *    (1..4).inject(:+)                      # => 10
+ *    # Sum elements added to 2.
+ *    (1..4).inject(2, :+)                   # => 12
+ *    # Sum of squares of elements.
+ *    (1..4).inject {|sum, n| sum + n*n }    # => 30
+ *    # Sum of squares of elements added to 2.
+ *    (1..4).inject(2) {|sum, n| sum + n*n } # => 32
+ *
+ *  The calling sequence determines:
+ *
+ *  - Whether the accumulator is:
+ *
+ *    - Explicit (given by +initial_operand+).
+ *    - Implicit (the first element in +self+).
+ *
+ *  - Whether the "operator" is a method or a block.
+ *
+ *  <b>Explicit or Implicit Accumulator</b>
+ *
+ *  Given the explicit accumulator +initial_operand+,
+ *  and the pairs to be combined successively are:
+ *
+ *  - The +initial_operand+ and <tt>self[0]</tt>.
+ *  - That result and <tt>self[1]</tt>.
+ *  - That result and <tt>self[2]</tt>.
+ *  - And so on.
+ *
+ *  The return value is the result of the last combination,
+ *  which will be of the same type as the +initial_operand+.
+ *
+ *  Examples with explicit +initial_operand+ of various types:
+ *
+ *    # Integer
+ *    (1..4).inject(2, :+)               # => 12
+ *    # Float
+ *    (1..4).inject(2.0, :+)             # => 12.0
+ *    # String
+ *    ('a'..'d').inject('foo', :+)       # => "fooabcd"
+ *    # Array
+ *    %w[a b c].inject(['x'], :push)     # => ["x", "a", "b", "c"]
+ *    # Complex
+ *    (1..4).inject(Complex(2, 2), :+)   # => (12+2i)
+ *
+ *  Given no explicit accumulator, the implicit initial operand
+ *  is the first element of +self+,
+ *  and the pairs to be combined successively are:
+ *
+ *  - <tt>self[0]</tt> and <tt>self[1].
+ *  - That result and <tt>self[2]</tt>.
+ *  - And so on.
+ *
+ *  The return value is the result of the last combination,
+ *  which will be of the same type as the implicit initial operand (<tt>self[0]</tt>).
+ *
+ *  Examples with implicit initial operand of various types:
+ *
+ *    # Integer
+ *    (1..4).inject(:+)         # => 10
+ *    #Float
+ *    [1.0, 2, 3, 4].inject(:+) # => 10.0
+ *    # String
+ *    ('a'..'d').inject(:+)     # => "abcd"
+ *    # Complex
+ *    [Complex(1, 2), 3, 4].inject(:+) # => (8+2i)
+ *
+ *
+ *
+ *  <b>Method or Block</b>
+ *
+ *  Given method name +symbol+
+ *  (which may be an operator such as <tt>:+</tt> or <tt>:*</tt>,
+ *  operands are combined pairwise, left to right, using that method:
+ *
+ *    (1..4).inject(:+)                      # => 10
+ *    (1..4).inject(:*)                      # => 24
+ *    [{foo: 0, bar: 1}, {baz: 2}, {bat: 3}].inject(:update) # => {:foo=>0, :bar=>1, :baz=>2, :bat=>3}
+ *    # Range
+ *    ('a'..'d').inject('', :+)          # => "abcd"
+ *    # Array
+ *    %w[foo bar baz].inject('', :+)     # => "foobarbaz"
+ *    # Hash
+ *    {foo: 0, bar: 1}.inject([], :push) # => [[:foo, 0], [:bar, 1]]
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *  In the first two cases, the initial operand is not given;
+ *  instead, the first element of +self+ is used as the initial_operand.
+ *
+ *  - Case 1: only argument +symbol+ is given.
+ *  - Case 2: only a block is given.
+ *
+ *  In the other two cases, the caller makes the accumulator explicit:
+ *
+ *  - Case 3: arguments +initial_operand+ and +symbol+ are given.
+ *  - Case 4: argument +initial_operand+ and a block are given.
+ *
+ *  <b>Case 1: Given Arguments +accumulator+ and +symbol+</b>
+ *
+ *  Combines the given +accumulator+ with each successive element of +self+
+ *  using the given method +sym+.
+ *
+ *  With various accumulators:
+ *
+ *    # Integer
+ *    (1..4).inject(0, :+)            # => 10
+ *    (1..4).inject(10, :+)           # => 20
+ *    (1..4).inject(-10, :+)          # => 0
+ *    # Float
+ *    (1..4).inject(0.0, :+)          # => 10.0
+ *    # Complex
+ *    (1..4).inject(Complex(0,5), :+) # => (10+5i)
+ *
+ *  With various methods:
+ *
+ *    (1..4).inject(0, :+)  # => 10
+ *    (1..4).inject(0, :-)  # => -10
+ *    (1..4).inject(0, :*)  # => 0
+ *    (1..4).inject(0, :**) # => 0
+ *
+ *  With various enumerables (kinds of +self+):
+ *
+ *    # Range
+ *    ('a'..'d').inject('', :+)          # => "abcd"
+ *    # Array
+ *    %w[foo bar baz].inject('', :+)     # => "foobarbaz"
+ *    # Hash
+ *    {foo: 0, bar: 1}.inject([], :push) # => [[:foo, 0], [:bar, 1]]
+ *
+ *  <b>Case 2: Given Argument +accumulator+ and a Block</b>
+ *
+ *  Successively passes the accumulator and each element to the block;
+ *  the block may use the element to modify, or even replace, the accumulator.
+ *
+ *     (5..10).inject(1) {|product, n| product * n } #=> 151200
+ *
+ *  <b>Case 3: Given +symbol+</b>
+ *
+ *  - Establishes an implicit accumulator of a suitable type (see below).
+ *  - Using the given method, combines each element of +self+
+ *    into the accumulator.
+ *  - Returns the accumulation, which is of the same type as the accumulator.
+ *
+ *  The implicit accumulator is an object whose type is based on the first
+ *  element in +self+.
+ *
+ *  Each of these examples has an initial integer, so the implicit accumulator
+ *  is the integer zero and the return is an integer:
+ *
+ *    (1..4).inject(:+) # => 10
+ *    (1..4).inject(:*) # => 24
+ *
+ *  This example has an initial float, so the implicit accumulator
+ *  is the float 0.0 and the return is a float:
+ *
+ *    [0.1, 0.2, 0.3].inject(:+) # => 0.6000000000000001
+ *
+ *  Each of these examples has an initial string, so the implicit accumulator
+ *  is an empty string and the return is an integer:
+ *
+ *    ('a'..'d').inject(:+)   # => "abcd"
+ *    %w[x y zz y].inject(:+) # => "xyzzy"
+ *
+ *  This example has an initial array, so the implicit accumulator
+ *  is an empty array and the return is an array:
+ *
+ *    [%w[foo, bar], 'baz', 'bat].inject(:<<)
+ *
+ *  This example has an initial hash, so the implicit accumulator
+ *  is an empty hash and the return is a hash:
+ *
+ *    [{foo: 0, bar: 1}, {baz: 2}, {bat: 3}].inject(:update) # => {:foo=>0, :bar=>1, :baz=>2, :bat=>3}
+ *
+ *  <b>Case 4: Given Only a Block</b>
+ *
+ *  - Establishes an implicit accumulator of a suitable type (see below).
+ *  - Using the given method, combines each element of +self+
+ *    into the accumulator.
+ *  - Returns the accumulation, which is of the same type as the accumulator.
+ *
+ *     (5..10).inject {|sum, n| sum + n } #=> 45
+ *     # Find the longest word.
+ *     longest = %w[cat sheep bear].inject do |accumulator, word|
+ *        accumulator.length > word.length ? accumulator : word
+ *     end #=> "sheep"
+ *
+ *
+ *
+ *
+ *
  *
  *  If you specify a block, then for each element in <i>enum</i>
  *  the block is passed an accumulator value (<i>memo</i>) and the element.
@@ -914,6 +1109,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  *     end
  *     longest                                        #=> "sheep"
  *
+ *  Enumerator#reduce is an alias for Enumerator#inject.
  */
 static VALUE
 enum_inject(int argc, VALUE *argv, VALUE obj)
