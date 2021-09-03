@@ -75,6 +75,20 @@ class TestYJIT < Test::Unit::TestCase
     assert_no_exits('"i am a string #{true}"')
   end
 
+  def test_compile_attr_set
+    assert_no_exits(<<~EORB)
+    class Foo
+      attr_accessor :bar
+    end
+
+    foo = Foo.new
+    foo.bar = 3
+    foo.bar = 3
+    foo.bar = 3
+    foo.bar = 3
+    EORB
+  end
+
   def test_compile_regexp
     assert_no_exits('/#{true}/')
   end

@@ -1,3 +1,25 @@
+# Check that frozen objects are respected
+assert_equal 'great', %q{
+  class Foo
+    attr_accessor :bar
+    def initialize
+      @bar = 1
+      freeze
+    end
+  end
+
+  foo = Foo.new
+
+  5.times do
+    begin
+      foo.bar = 2
+    rescue FrozenError
+    end
+  end
+
+  foo.bar == 1 ? "great" : "NG"
+}
+
 # Check that global variable set works
 assert_equal 'string', %q{
   def foo
