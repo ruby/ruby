@@ -1447,6 +1447,11 @@ gen_set_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
     VALUE comptime_val_klass = CLASS_OF(comptime_receiver);
     const ctx_t starting_context = *ctx; // make a copy for use with jit_chain_guard
 
+    ADD_COMMENT(cb, "guard self is not frozen");
+    x86opnd_t flags_opnd = member_opnd(REG0, struct RBasic, flags);
+    test(cb, flags_opnd, imm_opnd(RUBY_FL_FREEZE));
+    jnz_ptr(cb, COUNTED_EXIT(side_exit, setivar_frozen));
+
     // If the class uses the default allocator, instances should all be T_OBJECT
     // NOTE: This assumes nobody changes the allocator of the class after allocation.
     //       Eventually, we can encode whether an object is T_OBJECT or not
