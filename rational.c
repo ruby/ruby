@@ -199,7 +199,7 @@ f_minus_one_p(VALUE x)
     if (RB_INTEGER_TYPE_P(x)) {
 	return x == LONG2FIX(-1);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return Qfalse;
     }
     else if (RB_TYPE_P(x, T_RATIONAL)) {
@@ -365,7 +365,7 @@ inline static VALUE
 f_gcd(VALUE x, VALUE y)
 {
 #ifdef USE_GMP
-    if (RB_TYPE_P(x, T_BIGNUM) && RB_TYPE_P(y, T_BIGNUM)) {
+    if (RB_BIGNUM_TYPE_P(x) && RB_BIGNUM_TYPE_P(y)) {
         size_t xn = BIGNUM_LEN(x);
         size_t yn = BIGNUM_LEN(y);
         if (GMP_GCD_DIGITS <= xn || GMP_GCD_DIGITS <= yn)
@@ -1034,7 +1034,7 @@ rb_rational_pow(VALUE self, VALUE other)
 	    return f_rational_new2(CLASS_OF(self), num, den);
 	}
     }
-    else if (RB_TYPE_P(other, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(other)) {
 	rb_warn("in a**b, b may be too big");
 	return rb_float_pow(nurat_to_f(self), other);
     }

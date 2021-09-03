@@ -26,8 +26,6 @@
 #include "internal/object.h"
 #include "internal/vm.h"
 
-#define RB_BIGNUM_TYPE_P(x) RB_TYPE_P((x), T_BIGNUM)
-
 VALUE rb_mMath;
 VALUE rb_eMathDomainError;
 

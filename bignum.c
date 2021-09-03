@@ -42,8 +42,6 @@
 #include "ruby/util.h"
 #include "ruby_assert.h"
 
-#define RB_BIGNUM_TYPE_P(x) RB_TYPE_P((x), T_BIGNUM)
-
 const char ruby_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 
 #ifndef SIZEOF_BDIGIT_DBL

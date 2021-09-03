@@ -1058,7 +1058,7 @@ rb_complex_pow(VALUE self, VALUE other)
     if (k_numeric_p(other) && f_real_p(other)) {
 	VALUE r, theta;
 
-	if (RB_TYPE_P(other, T_BIGNUM))
+	if (RB_BIGNUM_TYPE_P(other))
 	    rb_warn("in a**b, b may be too big");
 
 	r = f_abs(self);

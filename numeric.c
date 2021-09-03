@@ -262,7 +262,7 @@ rb_num_to_uint(VALUE val, unsigned int *ret)
 	return 0;
     }
 
-    if (RB_TYPE_P(val, T_BIGNUM)) {
+    if (RB_BIGNUM_TYPE_P(val)) {
 	if (BIGNUM_NEGATIVE_P(val)) return NUMERR_NEGATIVE;
 #if SIZEOF_INT < SIZEOF_LONG
 	/* long is 64bit */
@@ -285,7 +285,7 @@ int_pos_p(VALUE num)
     if (FIXNUM_P(num)) {
 	return FIXNUM_POSITIVE_P(num);
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
 	return BIGNUM_POSITIVE_P(num);
     }
     rb_raise(rb_eTypeError, "not an Integer");
@@ -297,7 +297,7 @@ int_neg_p(VALUE num)
     if (FIXNUM_P(num)) {
 	return FIXNUM_NEGATIVE_P(num);
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
 	return BIGNUM_NEGATIVE_P(num);
     }
     rb_raise(rb_eTypeError, "not an Integer");
@@ -760,7 +760,7 @@ int_zero_p(VALUE num)
 	}
     }
     else {
-        assert(RB_TYPE_P(num, T_BIGNUM));
+        assert(RB_BIGNUM_TYPE_P(num));
 	if (rb_bigzero_p(num)) {
 	    /* this should not happen usually */
 	    return Qtrue;
@@ -830,7 +830,7 @@ num_positive_p(VALUE num)
 	if (method_basic_p(rb_cInteger))
 	    return RBOOL((SIGNED_VALUE)num > (SIGNED_VALUE)INT2FIX(0));
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
 	if (method_basic_p(rb_cInteger))
 	    return RBOOL(BIGNUM_POSITIVE_P(num) && !rb_bigzero_p(num));
     }
@@ -997,7 +997,7 @@ rb_float_plus(VALUE x, VALUE y)
     if (RB_TYPE_P(y, T_FIXNUM)) {
 	return DBL2NUM(RFLOAT_VALUE(x) + (double)FIX2LONG(y));
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	return DBL2NUM(RFLOAT_VALUE(x) + rb_big2dbl(y));
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -1021,7 +1021,7 @@ rb_float_minus(VALUE x, VALUE y)
     if (RB_TYPE_P(y, T_FIXNUM)) {
 	return DBL2NUM(RFLOAT_VALUE(x) - (double)FIX2LONG(y));
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	return DBL2NUM(RFLOAT_VALUE(x) - rb_big2dbl(y));
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -1045,7 +1045,7 @@ rb_float_mul(VALUE x, VALUE y)
     if (RB_TYPE_P(y, T_FIXNUM)) {
 	return DBL2NUM(RFLOAT_VALUE(x) * (double)FIX2LONG(y));
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	return DBL2NUM(RFLOAT_VALUE(x) * rb_big2dbl(y));
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -1097,7 +1097,7 @@ rb_float_div(VALUE x, VALUE y)
     if (RB_TYPE_P(y, T_FIXNUM)) {
         den = FIX2LONG(y);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
         den = rb_big2dbl(y);
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -1195,7 +1195,7 @@ flo_mod(VALUE x, VALUE y)
     if (RB_TYPE_P(y, T_FIXNUM)) {
 	fy = (double)FIX2LONG(y);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	fy = rb_big2dbl(y);
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -1235,7 +1235,7 @@ flo_divmod(VALUE x, VALUE y)
     if (RB_TYPE_P(y, T_FIXNUM)) {
 	fy = (double)FIX2LONG(y);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	fy = rb_big2dbl(y);
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -1271,7 +1271,7 @@ rb_float_pow(VALUE x, VALUE y)
 	dx = RFLOAT_VALUE(x);
 	dy = (double)FIX2LONG(y);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	dx = RFLOAT_VALUE(x);
 	dy = rb_big2dbl(y);
     }
@@ -1304,7 +1304,7 @@ num_eql(VALUE x, VALUE y)
 {
     if (TYPE(x) != TYPE(y)) return Qfalse;
 
-    if (RB_TYPE_P(x, T_BIGNUM)) {
+    if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_eql(x, y);
     }
 
@@ -1352,7 +1352,7 @@ rb_float_equal(VALUE x, VALUE y)
 {
     volatile double a, b;
 
-    if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
+    if (RB_TYPE_P(y, T_FIXNUM) || RB_BIGNUM_TYPE_P(y)) {
         return rb_integer_float_eq(y, x);
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -1427,7 +1427,7 @@ flo_cmp(VALUE x, VALUE y)
 
     a = RFLOAT_VALUE(x);
     if (isnan(a)) return Qnil;
-    if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
+    if (RB_TYPE_P(y, T_FIXNUM) || RB_BIGNUM_TYPE_P(y)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
             return LONG2FIX(-FIX2LONG(rel));
@@ -1473,7 +1473,7 @@ rb_float_gt(VALUE x, VALUE y)
     double a, b;
 
     a = RFLOAT_VALUE(x);
-    if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
+    if (RB_TYPE_P(y, T_FIXNUM) || RB_BIGNUM_TYPE_P(y)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
             return RBOOL(-FIX2LONG(rel) > 0);
@@ -1510,7 +1510,7 @@ flo_ge(VALUE x, VALUE y)
     double a, b;
 
     a = RFLOAT_VALUE(x);
-    if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
+    if (RB_TYPE_P(y, T_FIXNUM) || RB_BIGNUM_TYPE_P(y)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
             return RBOOL(-FIX2LONG(rel) >= 0);
@@ -1547,7 +1547,7 @@ flo_lt(VALUE x, VALUE y)
     double a, b;
 
     a = RFLOAT_VALUE(x);
-    if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
+    if (RB_TYPE_P(y, T_FIXNUM) || RB_BIGNUM_TYPE_P(y)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
             return RBOOL(-FIX2LONG(rel) < 0);
@@ -1584,7 +1584,7 @@ flo_le(VALUE x, VALUE y)
     double a, b;
 
     a = RFLOAT_VALUE(x);
-    if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
+    if (RB_TYPE_P(y, T_FIXNUM) || RB_BIGNUM_TYPE_P(y)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
             return RBOOL(-FIX2LONG(rel) <= 0);
@@ -1980,7 +1980,7 @@ int_round_zero_p(VALUE num, int ndigits)
     if (FIXNUM_P(num)) {
 	bytes = sizeof(long);
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
 	bytes = rb_big_size(num);
     }
     else {
@@ -2532,7 +2532,7 @@ num_step_negative_p(VALUE num)
 	if (method_basic_p(rb_cInteger))
 	    return (SIGNED_VALUE)num < 0;
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
 	if (method_basic_p(rb_cInteger))
 	    return BIGNUM_NEGATIVE_P(num);
     }
@@ -2791,7 +2791,7 @@ rb_num2long(VALUE val)
 	    FLOAT_OUT_OF_RANGE(val, "integer");
 	}
     }
-    else if (RB_TYPE_P(val, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(val)) {
 	return rb_big2long(val);
     }
     else {
@@ -2827,7 +2827,7 @@ rb_num2ulong_internal(VALUE val, int *wrap_p)
 	    FLOAT_OUT_OF_RANGE(val, "integer");
 	}
     }
-    else if (RB_TYPE_P(val, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(val)) {
         {
             unsigned long ul = rb_big2ulong(val);
             if (wrap_p)
@@ -3062,7 +3062,7 @@ rb_num2ll(VALUE val)
 	    FLOAT_OUT_OF_RANGE(val, "long long");
 	}
     }
-    else if (RB_TYPE_P(val, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(val)) {
 	return rb_big2ll(val);
     }
     else if (RB_TYPE_P(val, T_STRING)) {
@@ -3096,7 +3096,7 @@ rb_num2ull(VALUE val)
 	    FLOAT_OUT_OF_RANGE(val, "unsigned long long");
 	}
     }
-    else if (RB_TYPE_P(val, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(val)) {
 	return rb_big2ull(val);
     }
     else if (RB_TYPE_P(val, T_STRING)) {
@@ -3128,7 +3128,7 @@ rb_int_odd_p(VALUE num)
         return RBOOL(num & 2);
     }
     else {
-        assert(RB_TYPE_P(num, T_BIGNUM));
+        assert(RB_BIGNUM_TYPE_P(num));
 	return rb_big_odd_p(num);
     }
 }
@@ -3140,7 +3140,7 @@ int_even_p(VALUE num)
         return RBOOL((num & 2) == 0);
     }
     else {
-        assert(RB_TYPE_P(num, T_BIGNUM));
+        assert(RB_BIGNUM_TYPE_P(num));
 	return rb_big_even_p(num);
     }
 }
@@ -3216,7 +3216,7 @@ rb_int_succ(VALUE num)
 	long i = FIX2LONG(num) + 1;
 	return LONG2NUM(i);
     }
-    if (RB_TYPE_P(num, T_BIGNUM)) {
+    if (RB_BIGNUM_TYPE_P(num)) {
 	return rb_big_plus(num, INT2FIX(1));
     }
     return num_funcall1(num, '+', INT2FIX(1));
@@ -3242,7 +3242,7 @@ rb_int_pred(VALUE num)
 	long i = FIX2LONG(num) - 1;
 	return LONG2NUM(i);
     }
-    if (RB_TYPE_P(num, T_BIGNUM)) {
+    if (RB_BIGNUM_TYPE_P(num)) {
 	return rb_big_minus(num, INT2FIX(1));
     }
     return num_funcall1(num, '-', INT2FIX(1));
@@ -3345,7 +3345,7 @@ rb_int_uminus(VALUE num)
 	return fix_uminus(num);
     }
     else {
-        assert(RB_TYPE_P(num, T_BIGNUM));
+        assert(RB_BIGNUM_TYPE_P(num));
 	return rb_big_uminus(num);
     }
 }
@@ -3427,7 +3427,7 @@ rb_int2str(VALUE x, int base)
     if (FIXNUM_P(x)) {
 	return rb_fix2str(x, base);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big2str(x, base);
     }
 
@@ -3449,7 +3449,7 @@ fix_plus(VALUE x, VALUE y)
     if (FIXNUM_P(y)) {
 	return rb_fix_plus_fix(x, y);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	return rb_big_plus(y, x);
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -3475,7 +3475,7 @@ rb_int_plus(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_plus(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_plus(x, y);
     }
     return rb_num_coerce_bin(x, y, '+');
@@ -3496,7 +3496,7 @@ fix_minus(VALUE x, VALUE y)
     if (FIXNUM_P(y)) {
 	return rb_fix_minus_fix(x, y);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_minus(x, y);
     }
@@ -3514,7 +3514,7 @@ rb_int_minus(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_minus(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_minus(x, y);
     }
     return rb_num_coerce_bin(x, y, '-');
@@ -3540,7 +3540,7 @@ fix_mul(VALUE x, VALUE y)
     if (FIXNUM_P(y)) {
 	return rb_fix_mul_fix(x, y);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	switch (x) {
 	  case INT2FIX(0): return x;
 	  case INT2FIX(1): return y;
@@ -3564,7 +3564,7 @@ rb_int_mul(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_mul(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_mul(x, y);
     }
     return rb_num_coerce_bin(x, y, '*');
@@ -3576,7 +3576,7 @@ fix_fdiv_double(VALUE x, VALUE y)
     if (FIXNUM_P(y)) {
         return double_div_double(FIX2LONG(x), FIX2LONG(y));
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
         return rb_big_fdiv_double(rb_int2big(FIX2LONG(x)), y);
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -3600,7 +3600,7 @@ rb_int_fdiv_double(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
         return fix_fdiv_double(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
         return rb_big_fdiv_double(x, y);
     }
     else {
@@ -3645,7 +3645,7 @@ fix_divide(VALUE x, VALUE y, ID op)
 	if (FIXNUM_ZERO_P(y)) rb_num_zerodiv();
 	return rb_fix_div_fix(x, y);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_div(x, y);
     }
@@ -3681,7 +3681,7 @@ rb_int_div(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_div(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_div(x, y);
     }
     return Qnil;
@@ -3708,7 +3708,7 @@ rb_int_idiv(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_idiv(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_idiv(x, y);
     }
     return num_div(x, y);
@@ -3733,7 +3733,7 @@ fix_mod(VALUE x, VALUE y)
 	if (FIXNUM_ZERO_P(y)) rb_num_zerodiv();
 	return rb_fix_mod_fix(x, y);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_modulo(x, y);
     }
@@ -3751,7 +3751,7 @@ rb_int_modulo(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_mod(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_modulo(x, y);
     }
     return num_modulo(x, y);
@@ -3780,7 +3780,7 @@ int_remainder(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return num_remainder(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_remainder(x, y);
     }
     return Qnil;
@@ -3802,7 +3802,7 @@ fix_divmod(VALUE x, VALUE y)
 	rb_fix_divmod_fix(x, y, &div, &mod);
 	return rb_assoc_new(div, mod);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_divmod(x, y);
     }
@@ -3828,7 +3828,7 @@ rb_int_divmod(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_divmod(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_divmod(x, y);
     }
     return Qnil;
@@ -3936,7 +3936,7 @@ fix_pow(VALUE x, VALUE y)
 	if (a == 0) return INT2FIX(0);
 	return int_pow(a, b);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	if (a == 1) return INT2FIX(1);
         if (a == -1) return INT2FIX(int_even_p(y) ? 1 : -1);
         if (BIGNUM_NEGATIVE_P(y)) return fix_pow_inverted(x, rb_big_uminus(y));
@@ -3966,7 +3966,7 @@ rb_int_pow(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_pow(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_pow(x, y);
     }
     return Qnil;
@@ -4008,7 +4008,7 @@ fix_equal(VALUE x, VALUE y)
 {
     if (x == y) return Qtrue;
     if (FIXNUM_P(y)) return Qfalse;
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	return rb_big_eq(y, x);
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -4025,7 +4025,7 @@ rb_int_equal(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_equal(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_eq(x, y);
     }
     return Qnil;
@@ -4052,7 +4052,7 @@ fix_cmp(VALUE x, VALUE y)
 	if (FIX2LONG(x) > FIX2LONG(y)) return INT2FIX(1);
 	return INT2FIX(-1);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	VALUE cmp = rb_big_cmp(y, x);
 	switch (cmp) {
 	  case INT2FIX(+1): return INT2FIX(-1);
@@ -4074,7 +4074,7 @@ rb_int_cmp(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_cmp(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_cmp(x, y);
     }
     else {
@@ -4097,7 +4097,7 @@ fix_gt(VALUE x, VALUE y)
 	if (FIX2LONG(x) > FIX2LONG(y)) return Qtrue;
 	return Qfalse;
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	return RBOOL(rb_big_cmp(y, x) == INT2FIX(-1));
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -4114,7 +4114,7 @@ rb_int_gt(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_gt(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_gt(x, y);
     }
     return Qnil;
@@ -4136,7 +4136,7 @@ fix_ge(VALUE x, VALUE y)
 	if (FIX2LONG(x) >= FIX2LONG(y)) return Qtrue;
 	return Qfalse;
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	return RBOOL(rb_big_cmp(y, x) != INT2FIX(+1));
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -4154,7 +4154,7 @@ rb_int_ge(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_ge(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_ge(x, y);
     }
     return Qnil;
@@ -4175,7 +4175,7 @@ fix_lt(VALUE x, VALUE y)
 	if (FIX2LONG(x) < FIX2LONG(y)) return Qtrue;
 	return Qfalse;
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	return RBOOL(rb_big_cmp(y, x) == INT2FIX(+1));
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -4192,7 +4192,7 @@ int_lt(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_lt(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_lt(x, y);
     }
     return Qnil;
@@ -4214,7 +4214,7 @@ fix_le(VALUE x, VALUE y)
 	if (FIX2LONG(x) <= FIX2LONG(y)) return Qtrue;
 	return Qfalse;
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	return RBOOL(rb_big_cmp(y, x) != INT2FIX(-1));
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -4232,7 +4232,7 @@ int_le(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_le(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_le(x, y);
     }
     return Qnil;
@@ -4250,7 +4250,7 @@ rb_int_comp(VALUE num)
     if (FIXNUM_P(num)) {
 	return fix_comp(num);
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
 	return rb_big_comp(num);
     }
     return Qnil;
@@ -4301,7 +4301,7 @@ fix_and(VALUE x, VALUE y)
 	return LONG2NUM(val);
     }
 
-    if (RB_TYPE_P(y, T_BIGNUM)) {
+    if (RB_BIGNUM_TYPE_P(y)) {
 	return rb_big_and(y, x);
     }
 
@@ -4314,7 +4314,7 @@ rb_int_and(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_and(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_and(x, y);
     }
     return Qnil;
@@ -4336,7 +4336,7 @@ fix_or(VALUE x, VALUE y)
 	return LONG2NUM(val);
     }
 
-    if (RB_TYPE_P(y, T_BIGNUM)) {
+    if (RB_BIGNUM_TYPE_P(y)) {
 	return rb_big_or(y, x);
     }
 
@@ -4349,7 +4349,7 @@ int_or(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_or(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_or(x, y);
     }
     return Qnil;
@@ -4371,7 +4371,7 @@ fix_xor(VALUE x, VALUE y)
 	return LONG2NUM(val);
     }
 
-    if (RB_TYPE_P(y, T_BIGNUM)) {
+    if (RB_BIGNUM_TYPE_P(y)) {
 	return rb_big_xor(y, x);
     }
 
@@ -4384,7 +4384,7 @@ int_xor(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_xor(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_xor(x, y);
     }
     return Qnil;
@@ -4430,7 +4430,7 @@ rb_int_lshift(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return rb_fix_lshift(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_lshift(x, y);
     }
     return Qnil;
@@ -4477,7 +4477,7 @@ rb_int_rshift(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return rb_fix_rshift(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_rshift(x, y);
     }
     return Qnil;
@@ -4578,7 +4578,7 @@ one_bit:
     if (FIXNUM_P(num)) {
         return rb_fix_aref(num, arg);
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
         return rb_big_aref(num, arg);
     }
     return Qnil;
@@ -4660,7 +4660,7 @@ int_to_f(VALUE num)
     if (FIXNUM_P(num)) {
 	val = (double)FIX2LONG(num);
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
 	val = rb_big2dbl(num);
     }
     else {
@@ -4686,7 +4686,7 @@ rb_int_abs(VALUE num)
     if (FIXNUM_P(num)) {
 	return fix_abs(num);
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
 	return rb_big_abs(num);
     }
     return Qnil;
@@ -4704,7 +4704,7 @@ rb_int_size(VALUE num)
     if (FIXNUM_P(num)) {
 	return fix_size(num);
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
 	return rb_big_size_m(num);
     }
     return Qnil;
@@ -4725,7 +4725,7 @@ rb_int_bit_length(VALUE num)
     if (FIXNUM_P(num)) {
 	return rb_fix_bit_length(num);
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
 	return rb_big_bit_length(num);
     }
     return Qnil;
@@ -4782,12 +4782,12 @@ rb_int_digits_bigbase(VALUE num, VALUE base)
 
     assert(!rb_num_negative_p(num));
 
-    if (RB_TYPE_P(base, T_BIGNUM))
+    if (RB_BIGNUM_TYPE_P(base))
         base = rb_big_norm(base);
 
     if (FIXNUM_P(base) && FIX2LONG(base) < 2)
         rb_raise(rb_eArgError, "invalid radix %ld", FIX2LONG(base));
-    else if (RB_TYPE_P(base, T_BIGNUM) && BIGNUM_NEGATIVE_P(base))
+    else if (RB_BIGNUM_TYPE_P(base) && BIGNUM_NEGATIVE_P(base))
         rb_raise(rb_eArgError, "negative radix");
 
     if (FIXNUM_P(base) && FIXNUM_P(num))
@@ -4841,7 +4841,7 @@ rb_int_digits(int argc, VALUE *argv, VALUE num)
         if (!RB_INTEGER_TYPE_P(base_value))
             rb_raise(rb_eTypeError, "wrong argument type %s (expected Integer)",
                      rb_obj_classname(argv[0]));
-        if (RB_TYPE_P(base_value, T_BIGNUM))
+        if (RB_BIGNUM_TYPE_P(base_value))
             return rb_int_digits_bigbase(num, base_value);
 
         base = FIX2LONG(base_value);
@@ -4855,7 +4855,7 @@ rb_int_digits(int argc, VALUE *argv, VALUE num)
 
     if (FIXNUM_P(num))
         return rb_fix_digits(num, base);
-    else if (RB_TYPE_P(num, T_BIGNUM))
+    else if (RB_BIGNUM_TYPE_P(num))
         return rb_int_digits_bigbase(num, LONG2FIX(base));
 
     return Qnil;
