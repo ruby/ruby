@@ -32,12 +32,21 @@ preserve_original_state(VALUE orig, VALUE dest)
     rb_enc_associate(dest, rb_enc_get(orig));
 }
 
+static inline long
+escaped_length(VALUE str)
+{
+    const long len = RSTRING_LEN(str);
+    if (len >= LONG_MAX / HTML_ESCAPE_MAX_LEN) {
+	ruby_malloc_size_overflow(len, HTML_ESCAPE_MAX_LEN);
+    }
+    return len * HTML_ESCAPE_MAX_LEN;
+}
+
 static VALUE
 optimized_escape_html(VALUE str)
 {
     VALUE vbuf;
-    typedef char escape_buf[HTML_ESCAPE_MAX_LEN];
-    char *buf = *ALLOCV_N(escape_buf, vbuf, RSTRING_LEN(str));
+    char *buf = ALLOCV_N(char, vbuf, escaped_length(str));
     const char *cstr = RSTRING_PTR(str);
     const char *end = cstr + RSTRING_LEN(str);
 
