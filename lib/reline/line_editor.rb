@@ -680,11 +680,11 @@ class Reline::LineEditor
       end
       str = padding_space_with_escape_sequences(Reline::Unicode.take_range(item, 0, dialog.width), dialog.width)
       if dialog_render_info.scrollbar and dialog_render_info.contents.size > height
-        if position <= (i * 2) and (i * 2) <= (position + bar_height)
+        if position <= (i * 2) and (i * 2 + 1) < (position + bar_height)
           str += '█'
-        elsif position <= (i * 2) and (i * 2 - 1) <= (position + bar_height)
+        elsif position <= (i * 2) and (i * 2) < (position + bar_height)
           str += '▀'
-        elsif position <= (i * 2 + 1) and (i * 2) <= (position + bar_height)
+        elsif position <= (i * 2 + 1) and (i * 2) < (position + bar_height)
           str += '▄'
         else
           str += ' '
