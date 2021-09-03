@@ -1524,8 +1524,6 @@ nucomp_marshal_load(VALUE self, VALUE a)
     return self;
 }
 
-/* --- */
-
 VALUE
 rb_complex_raw(VALUE x, VALUE y)
 {
@@ -2148,8 +2146,6 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
     return nucomp_convert(klass, a1, a2, TRUE);
 }
 
-/* --- */
-
 /*
  * call-seq:
  *    num.real  ->  self
@@ -2404,8 +2400,6 @@ Init_Complex(void)
     rb_define_private_method(compat, "marshal_load", nucomp_marshal_load, 1);
     rb_marshal_define_compat(rb_cComplex, compat, nucomp_dumper, nucomp_loader);
 
-    /* --- */
-
     rb_define_method(rb_cComplex, "to_i", nucomp_to_i, 0);
     rb_define_method(rb_cComplex, "to_f", nucomp_to_f, 0);
     rb_define_method(rb_cComplex, "to_r", nucomp_to_r, 0);
@@ -2417,8 +2411,6 @@ Init_Complex(void)
     rb_define_method(rb_cString, "to_c", string_to_c, 0);
 
     rb_define_private_method(CLASS_OF(rb_cComplex), "convert", nucomp_s_convert, -1);
-
-    /* --- */
 
     rb_define_method(rb_cNumeric, "real", numeric_real, 0);
     rb_define_method(rb_cNumeric, "imaginary", numeric_imag, 0);
