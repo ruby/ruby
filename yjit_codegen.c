@@ -2161,28 +2161,29 @@ gen_equality_specialized(jitstate_t* jit, ctx_t* ctx, uint8_t *side_exit)
             return YJIT_CANT_COMPILE;
         }
 
+        // Load a and b in preparation for call later
+        mov(cb, C_ARG_REGS[0], a_opnd);
+        mov(cb, C_ARG_REGS[1], b_opnd);
+
         // Guard that a is a String
-        mov(cb, REG0, a_opnd);
+        mov(cb, REG0, C_ARG_REGS[0]);
         jit_guard_known_klass(jit, ctx, rb_cString, OPND_STACK(1), comptime_a, SEND_MAX_DEPTH, side_exit);
 
         uint32_t ret = cb_new_label(cb, "ret");
 
         // If they are equal by identity, return true
-        mov(cb, REG0, b_opnd);
-        cmp(cb, REG0, a_opnd);
-        mov(cb, REG0, imm_opnd(Qtrue));
+        cmp(cb, C_ARG_REGS[0], C_ARG_REGS[1]);
+        mov(cb, RAX, imm_opnd(Qtrue));
         je_label(cb, ret);
 
         // Otherwise guard that b is a T_STRING (from type info) or String (from runtime guard)
         if (ctx_get_opnd_type(ctx, OPND_STACK(0)).type != ETYPE_STRING) {
-            mov(cb, REG0, b_opnd);
+            mov(cb, REG0, C_ARG_REGS[1]);
             // Note: any T_STRING is valid here, but we check for a ::String for simplicity
             jit_guard_known_klass(jit, ctx, rb_cString, OPND_STACK(0), comptime_b, SEND_MAX_DEPTH, side_exit);
         }
 
         // Call rb_str_eql_internal(a, b)
-        mov(cb, C_ARG_REGS[0], a_opnd);
-        mov(cb, C_ARG_REGS[1], b_opnd);
         call_ptr(cb, REG0, (void *)rb_str_eql_internal);
 
         // Push the output on the stack
