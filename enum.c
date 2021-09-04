@@ -882,7 +882,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  *
  *  Combines each successive element of +self+ with an accumulator.
  *
- *  Simple examples of each  of the above calling sequences:
+ *  A simple example of each of the above calling sequences:
  *
  *    # Sum of elements.
  *    (1..4).inject(:+)                      # => 10
@@ -893,223 +893,123 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  *    # Sum of squares of elements added to 2.
  *    (1..4).inject(2) {|sum, n| sum + n*n } # => 32
  *
- *  The calling sequence determines:
+ *  <b>Case 1: <tt>inject(symbol) -> obj</tt></b>
  *
- *  - Whether the accumulator is:
+ *  Given the single argument +symbol+ (which names a binary method) and no block:
  *
- *    - Explicit (given by +initial_operand+).
- *    - Implicit (the first element in +self+).
+ *  - Combines elements of +self+ using the binary method:
  *
- *  - Whether the "operator" is a method or a block.
+ *    - The first two operands are <tt>self[0]</tt> and <tt>self[1]</tt>.
+ *    - The next two operands are that result and <tt>self[2]</tt>.
+ *    - The next two operands are that result and <tt>self[3]</tt>.
+ *    - And so on.
  *
- *  <b>Explicit or Implicit Accumulator</b>
+ *  - Returns the last result.
  *
- *  Given the explicit accumulator +initial_operand+,
- *  and the pairs to be combined successively are:
+ *  The returned object may not be of the same class as the first element.
  *
- *  - The +initial_operand+ and <tt>self[0]</tt>.
- *  - That result and <tt>self[1]</tt>.
- *  - That result and <tt>self[2]</tt>.
- *  - And so on.
- *
- *  The return value is the result of the last combination,
- *  which will be of the same type as the +initial_operand+.
- *
- *  Examples with explicit +initial_operand+ of various types:
+ *  Examples:
  *
  *    # Integer
- *    (1..4).inject(2, :+)               # => 12
- *    # Float
- *    (1..4).inject(2.0, :+)             # => 12.0
- *    # String
- *    ('a'..'d').inject('foo', :+)       # => "fooabcd"
- *    # Array
- *    %w[a b c].inject(['x'], :push)     # => ["x", "a", "b", "c"]
- *    # Complex
- *    (1..4).inject(Complex(2, 2), :+)   # => (12+2i)
- *
- *  Given no explicit accumulator, the implicit initial operand
- *  is the first element of +self+,
- *  and the pairs to be combined successively are:
- *
- *  - <tt>self[0]</tt> and <tt>self[1].
- *  - That result and <tt>self[2]</tt>.
- *  - And so on.
- *
- *  The return value is the result of the last combination,
- *  which will be of the same type as the implicit initial operand (<tt>self[0]</tt>).
- *
- *  Examples with implicit initial operand of various types:
- *
+ *    (1..4).inject(:+)                # => 10
  *    # Integer
- *    (1..4).inject(:+)         # => 10
+ *    [1, 2, 3.0, 4].inject(:+)        # => 10.0
  *    #Float
- *    [1.0, 2, 3, 4].inject(:+) # => 10.0
+ *    [1.0, 2, 3, 4].inject(:+)        # => 10.0
  *    # String
- *    ('a'..'d').inject(:+)     # => "abcd"
+ *    ('a'..'d').inject(:+)            # => "abcd"
  *    # Complex
  *    [Complex(1, 2), 3, 4].inject(:+) # => (8+2i)
  *
+ *  Trivially, and regardless of the given method:
  *
+ *    - <tt>self.inject</tt> for a 1-element +self+ returns that element.
+ *    - <tt>self.inject</tt> for an empty +self+ returns +nil+.
  *
- *  <b>Method or Block</b>
+ *  <b>Case 2: <tt>inject(initial_operand, symbol) -> obj</tt></b>
  *
- *  Given method name +symbol+
- *  (which may be an operator such as <tt>:+</tt> or <tt>:*</tt>,
- *  operands are combined pairwise, left to right, using that method:
+ *  Given the two arguments +initial_operand+ and +symbol+ (which names a binary method)
+ *  and no block:
  *
- *    (1..4).inject(:+)                      # => 10
- *    (1..4).inject(:*)                      # => 24
- *    [{foo: 0, bar: 1}, {baz: 2}, {bat: 3}].inject(:update) # => {:foo=>0, :bar=>1, :baz=>2, :bat=>3}
- *    # Range
- *    ('a'..'d').inject('', :+)          # => "abcd"
- *    # Array
- *    %w[foo bar baz].inject('', :+)     # => "foobarbaz"
- *    # Hash
- *    {foo: 0, bar: 1}.inject([], :push) # => [[:foo, 0], [:bar, 1]]
+ *  - Combines +initial+operand+ and elements of +self+ using the binary method:
  *
+ *    - The first two operands +initial_operand+ and <tt>self[0]</tt> .
+ *    - The next two operands are that result and <tt>self[1]</tt>.
+ *    - The next two operands are that result and <tt>self[2]</tt>.
+ *    - And so on.
  *
+ *  - Returns the last result.
  *
+ *  The returned object may not be of the same class as the +initial_operand+.
  *
- *
- *
- *
- *
- *
- *
- *  In the first two cases, the initial operand is not given;
- *  instead, the first element of +self+ is used as the initial_operand.
- *
- *  - Case 1: only argument +symbol+ is given.
- *  - Case 2: only a block is given.
- *
- *  In the other two cases, the caller makes the accumulator explicit:
- *
- *  - Case 3: arguments +initial_operand+ and +symbol+ are given.
- *  - Case 4: argument +initial_operand+ and a block are given.
- *
- *  <b>Case 1: Given Arguments +accumulator+ and +symbol+</b>
- *
- *  Combines the given +accumulator+ with each successive element of +self+
- *  using the given method +sym+.
- *
- *  With various accumulators:
+ *  Examples:
  *
  *    # Integer
- *    (1..4).inject(0, :+)            # => 10
- *    (1..4).inject(10, :+)           # => 20
- *    (1..4).inject(-10, :+)          # => 0
- *    # Float
- *    (1..4).inject(0.0, :+)          # => 10.0
+ *    (1..4).inject(2, :+)             # => 12
+ *    # Integer
+ *    [1, 2, 3.0, 4].inject(2, :+)     # => 12.0
+ *    #Float
+ *    (1..4).inject(2.0, :+)           # => 12.0
+ *    # String
+ *    ('a'..'d').inject('z', :+)       # => "zabcd"
  *    # Complex
- *    (1..4).inject(Complex(0,5), :+) # => (10+5i)
+ *    (1..4).inject(Complex(2, 3), :+) # => (12+3i)
  *
- *  With various methods:
+ *  Trivially, and regardless of the given method:
  *
- *    (1..4).inject(0, :+)  # => 10
- *    (1..4).inject(0, :-)  # => -10
- *    (1..4).inject(0, :*)  # => 0
- *    (1..4).inject(0, :**) # => 0
+ *    - <tt>self.inject</tt> for an empty +self+ returns +initial_operand+.
  *
- *  With various enumerables (kinds of +self+):
+ *  <b>Case 3: <tt>inject {|memo, element| ... } -> obj</tt></b>
  *
- *    # Range
- *    ('a'..'d').inject('', :+)          # => "abcd"
- *    # Array
- *    %w[foo bar baz].inject('', :+)     # => "foobarbaz"
- *    # Hash
- *    {foo: 0, bar: 1}.inject([], :push) # => [[:foo, 0], [:bar, 1]]
+ *  Given no argument and a block:
  *
- *  <b>Case 2: Given Argument +accumulator+ and a Block</b>
+ *  - Calls the block repeatedly with two parameters:
  *
- *  Successively passes the accumulator and each element to the block;
- *  the block may use the element to modify, or even replace, the accumulator.
+ *    - The parameters for the first call are <tt>self[0]</tt> and <tt>self[1]</tt>.
+ *    - The parameters for the next call are the block's return and <tt>self[2]</tt>.
+ *    - The parameters for the next call are the block's return and <tt>self[3]</tt>.
+ *    - And so on.
  *
- *     (5..10).inject(1) {|product, n| product * n } #=> 151200
+ *  - Returns the last value returned by the block.
  *
- *  <b>Case 3: Given +symbol+</b>
+ *  Examples:
  *
- *  - Establishes an implicit accumulator of a suitable type (see below).
- *  - Using the given method, combines each element of +self+
- *    into the accumulator.
- *  - Returns the accumulation, which is of the same type as the accumulator.
+ *    # Return sum of squares.
+ *    (1..4).inject {|memo, n| memo + n*n } # => 30
+ *    # Find the longest word.
+ *    longest = %w[cat sheep bear].inject do |memo, word|
+ *       memo.length > word.length ? memo : word
+ *    end #=> "sheep"
  *
- *  The implicit accumulator is an object whose type is based on the first
- *  element in +self+.
+ *  Trivially, and regardless of the block:
  *
- *  Each of these examples has an initial integer, so the implicit accumulator
- *  is the integer zero and the return is an integer:
+ *  - Returns +nil+ for an empty +self+.
  *
- *    (1..4).inject(:+) # => 10
- *    (1..4).inject(:*) # => 24
+ *  <b>Case 4: <tt>inject(initial_operand) {|memo, element| ... } -> obj</tt></b>
  *
- *  This example has an initial float, so the implicit accumulator
- *  is the float 0.0 and the return is a float:
+ *  Given argument +initial_operand+ and a block:
  *
- *    [0.1, 0.2, 0.3].inject(:+) # => 0.6000000000000001
+ *  - Calls the block repeatedly with two parameters:
  *
- *  Each of these examples has an initial string, so the implicit accumulator
- *  is an empty string and the return is an integer:
+ *    - The parameters for the first call are +initial_operand+ and <tt>self[0]</tt>.
+ *    - The parameters for the next call are the block's return and <tt>self[1]</tt>.
+ *    - The parameters for the next call are the block's return and <tt>self[2]</tt>.
+ *    - And so on.
  *
- *    ('a'..'d').inject(:+)   # => "abcd"
- *    %w[x y zz y].inject(:+) # => "xyzzy"
+ *  - Returns the last value returned by the block.
  *
- *  This example has an initial array, so the implicit accumulator
- *  is an empty array and the return is an array:
+ *  Examples:
  *
- *    [%w[foo, bar], 'baz', 'bat].inject(:<<)
+ *    # Return ten plus sum of squares.
+ *    (1..4).inject(10) {|memo, n| memo + n*n } # => 40
+ *    # Find the longest word among 'ostrich' and elements of self.
+ *    longest = %w[cat sheep bear].inject('ostrich') do |memo, word|
+ *       memo.length > word.length ? memo : word
+ *    end #=> "ostrich"
  *
- *  This example has an initial hash, so the implicit accumulator
- *  is an empty hash and the return is a hash:
+ *  Trivially, and regardless of the block:
  *
- *    [{foo: 0, bar: 1}, {baz: 2}, {bat: 3}].inject(:update) # => {:foo=>0, :bar=>1, :baz=>2, :bat=>3}
- *
- *  <b>Case 4: Given Only a Block</b>
- *
- *  - Establishes an implicit accumulator of a suitable type (see below).
- *  - Using the given method, combines each element of +self+
- *    into the accumulator.
- *  - Returns the accumulation, which is of the same type as the accumulator.
- *
- *     (5..10).inject {|sum, n| sum + n } #=> 45
- *     # Find the longest word.
- *     longest = %w[cat sheep bear].inject do |accumulator, word|
- *        accumulator.length > word.length ? accumulator : word
- *     end #=> "sheep"
- *
- *
- *
- *
- *
- *
- *  If you specify a block, then for each element in <i>enum</i>
- *  the block is passed an accumulator value (<i>memo</i>) and the element.
- *  If you specify a symbol instead, then each element in the collection
- *  will be passed to the named method of <i>memo</i>.
- *  In either case, the result becomes the new value for <i>memo</i>.
- *  At the end of the iteration, the final value of <i>memo</i> is the
- *  return value for the method.
- *
- *  If you do not explicitly specify an <i>initial</i> value for <i>memo</i>,
- *  then the first element of collection is used as the initial value
- *  of <i>memo</i>.
- *
- *
- *     # Sum some numbers
- *     (5..10).reduce(:+)                             #=> 45
- *     # Same using a block and inject
- *     (5..10).inject { |sum, n| sum + n }            #=> 45
- *     # Multiply some numbers
- *     (5..10).reduce(1, :*)                          #=> 151200
- *     # Same using a block
- *     (5..10).inject(1) { |product, n| product * n } #=> 151200
- *     # find the longest word
- *     longest = %w{ cat sheep bear }.inject do |memo, word|
- *        memo.length > word.length ? memo : word
- *     end
- *     longest                                        #=> "sheep"
- *
- *  Enumerator#reduce is an alias for Enumerator#inject.
+ *  - Returns +initial_operand+ for an empty +self+.
  */
 static VALUE
 enum_inject(int argc, VALUE *argv, VALUE obj)
