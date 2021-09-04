@@ -286,6 +286,9 @@ class Time
   #   Time.new(2000)                                 # => 2000-01-01 00:00:00 -0600
   #   Time.new(2000, 12, 31, 23, 59, 59.5)           # => 2000-12-31 23:59:59.5 -0600
   #   Time.new(2000, 12, 31, 23, 59, 59.5, '+09:00') # => 2000-12-31 23:59:59.5 +0900
+  #   Time.new('2000-12-31 23:59:59.5')              # => 2000-12-31 23:59:59.5 -0600
+  #   Time.new('2000-12-31 23:59:59.5 +0900')        # => 2000-12-31 23:59:59.5 +0900
+  #   Time.new('2000-12-31 23:59:59.5', in: '+0900') # => 2000-12-31 23:59:59.5 +0900
   #
   # Parameters:
   #
@@ -294,7 +297,7 @@ class Time
   # :include: doc/time/sec.rdoc
   # :include: doc/time/zone_and_in.rdoc
   #
-  def initialize(year = (now = true), mon = nil, mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil)
+  def initialize(year = (now = true), mon = (str = year; nil), mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil)
     if zone
       if Primitive.arg!(:in)
         raise ArgumentError, "timezone argument given as positional and keyword arguments"
@@ -307,6 +310,10 @@ class Time
       return Primitive.time_init_now(zone)
     end
 
-    Primitive.time_init_args(year, mon, mday, hour, min, sec, zone)
+    if str and Primitive.time_init_parse(str, zone)
+      return self
+    end
+
+    Primitive.time_init_args(year, mon, mday, hour, min, sec, nil, zone)
   end
 end
