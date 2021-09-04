@@ -217,6 +217,20 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  # Tests calling a variadic cfunc with many args
+  def test_build_large_struct
+    assert_compiles(<<~RUBY, insns: %i[opt_send_without_block], min_calls: 2)
+      ::Foo = Struct.new(:a, :b, :c, :d, :e, :f, :g, :h)
+
+      def build_foo
+        ::Foo.new(:a, :b, :c, :d, :e, :f, :g, :h)
+      end
+
+      build_foo
+      build_foo
+    RUBY
+  end
+
   def test_fib_recursion
     assert_compiles(<<~'RUBY', insns: %i[opt_le opt_minus opt_plus opt_send_without_block], result: 34)
       def fib(n)
