@@ -209,7 +209,7 @@ IMPL_PKEY_GETTER(EC_KEY, ec)
 
 #if !defined(HAVE_TS_RESP_CTX_SET_TIME_CB)
 #   define TS_RESP_CTX_set_time_cb(ctx, callback, dta) do { \
-        (ctx)->time_cb = (callback); \
+        (ctx)->time_cb = (TS_time_cb)(callback); \
         (ctx)->time_cb_data = (dta); \
     } while (0)
 #endif
