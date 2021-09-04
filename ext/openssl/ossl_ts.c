@@ -1077,7 +1077,11 @@ ossl_tsfac_serial_cb(struct TS_resp_ctx *ctx, void *data)
 }
 
 static int
+#if !defined(LIBRESSL_VERSION_NUMBER)
 ossl_tsfac_time_cb(struct TS_resp_ctx *ctx, void *data, long *sec, long *usec)
+#else
+ossl_tsfac_time_cb(struct TS_resp_ctx *ctx, void *data, time_t *sec, long *usec)
+#endif
 {
     *sec = *((long *)data);
     *usec = 0;
