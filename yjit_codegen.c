@@ -2864,7 +2864,7 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
     }
 
     // Don't JIT functions that need C stack arguments for now
-    if (argc + 1 > NUM_C_ARG_REGS) {
+    if (cfunc->argc >= 0 && argc + 1 > NUM_C_ARG_REGS) {
         GEN_COUNTER_INC(cb, send_cfunc_toomany_args);
         return YJIT_CANT_COMPILE;
     }
