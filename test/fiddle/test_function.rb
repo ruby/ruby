@@ -164,7 +164,7 @@ module Fiddle
       begin
         poll = @libc['poll']
       rescue Fiddle::DLError
-        skip 'poll(2) not available'
+        omit 'poll(2) not available'
       end
       f = Function.new(poll, [TYPE_VOIDP, TYPE_INT, TYPE_INT], TYPE_INT)
 
@@ -180,9 +180,37 @@ module Fiddle
     end
 
     def test_no_memory_leak
-      prep = 'r = Fiddle::Function.new(Fiddle.dlopen(nil)["rb_obj_frozen_p"], [Fiddle::TYPE_UINTPTR_T], Fiddle::TYPE_UINTPTR_T); a = "a"'
-      code = 'begin r.call(a); rescue TypeError; end'
-      assert_no_memory_leak(%w[-W0 -rfiddle], "#{prep}\n1000.times{#{code}}", "10_000.times {#{code}}", limit: 1.2)
+      if respond_to?(:assert_nothing_leaked_memory)
+        rb_obj_frozen_p_symbol = Fiddle.dlopen(nil)["rb_obj_frozen_p"]
+        rb_obj_frozen_p = Fiddle::Function.new(rb_obj_frozen_p_symbol,
+                                               [Fiddle::TYPE_UINTPTR_T],
+                                               Fiddle::TYPE_UINTPTR_T)
+        a = "a"
+        n_tries = 100_000
+        n_tries.times do
+          begin
+            a + 1
+          rescue TypeError
+          end
+        end
+        n_arguments = 1
+        sizeof_fiddle_generic = Fiddle::SIZEOF_VOIDP # Rough
+        size_per_try =
+          (sizeof_fiddle_generic * n_arguments) +
+          (Fiddle::SIZEOF_VOIDP * (n_arguments + 1))
+        assert_nothing_leaked_memory(size_per_try * n_tries) do
+          n_tries.times do
+            begin
+              rb_obj_frozen_p.call(a)
+            rescue TypeError
+            end
+          end
+        end
+      else
+        prep = 'r = Fiddle::Function.new(Fiddle.dlopen(nil)["rb_obj_frozen_p"], [Fiddle::TYPE_UINTPTR_T], Fiddle::TYPE_UINTPTR_T); a = "a"'
+        code = 'begin r.call(a); rescue TypeError; end'
+        assert_no_memory_leak(%w[-W0 -rfiddle], "#{prep}\n1000.times{#{code}}", "10_000.times {#{code}}", limit: 1.2)
+      end
     end
 
     private

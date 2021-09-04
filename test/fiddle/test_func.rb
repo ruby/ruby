@@ -15,7 +15,7 @@ module Fiddle
       begin
         f = Function.new(@libm['sinf'], [TYPE_FLOAT], TYPE_FLOAT)
       rescue Fiddle::DLError
-        skip "libm may not have sinf()"
+        omit "libm may not have sinf()"
       end
       assert_in_delta 1.0, f.call(90 * Math::PI / 180), 0.0001
     end
@@ -26,14 +26,13 @@ module Fiddle
     end
 
     def test_string
-      stress, GC.stress = GC.stress, true
-      f = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
-      buff = +"000"
-      str = f.call(buff, "123")
-      assert_equal("123", buff)
-      assert_equal("123", str.to_s)
-    ensure
-      GC.stress = stress
+      under_gc_stress do
+        f = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
+        buff = +"000"
+        str = f.call(buff, "123")
+        assert_equal("123", buff)
+        assert_equal("123", str.to_s)
+      end
     end
 
     def test_isdigit
@@ -76,13 +75,15 @@ module Fiddle
 
       bug4929 = '[ruby-core:37395]'
       buff = "9341"
-      EnvUtil.under_gc_stress {qsort.call(buff, buff.size, 1, cb)}
+      under_gc_stress do
+        qsort.call(buff, buff.size, 1, cb)
+      end
       assert_equal("1349", buff, bug4929)
     end
 
     def test_snprintf
       unless Fiddle.const_defined?("TYPE_VARIADIC")
-        skip "libffi doesn't support variadic arguments"
+        omit "libffi doesn't support variadic arguments"
       end
       if Fiddle::WINDOWS
         snprintf_name = "_snprintf"
@@ -92,7 +93,7 @@ module Fiddle
       begin
         snprintf_pointer = @libc[snprintf_name]
       rescue Fiddle::DLError
-        skip "Can't find #{snprintf_name}: #{$!.message}"
+        omit "Can't find #{snprintf_name}: #{$!.message}"
       end
       snprintf = Function.new(snprintf_pointer,
                               [
