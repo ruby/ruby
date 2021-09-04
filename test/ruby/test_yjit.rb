@@ -63,6 +63,48 @@ class TestYJIT < Test::Unit::TestCase
     assert_compiles('-"foo" == -"bar"', insns: %i[opt_eq], result: false)
   end
 
+  def test_compile_eq_symbol
+    assert_compiles(':foo == :foo', insns: %i[opt_eq], result: true)
+    assert_compiles(':foo == :bar', insns: %i[opt_eq], result: false)
+    assert_compiles(':foo == "foo".to_sym', insns: %i[opt_eq], result: true)
+  end
+
+  def test_compile_eq_object
+    assert_compiles(<<~RUBY, insns: %i[opt_eq], result: false)
+      def eq(a, b)
+        a == b
+      end
+
+      eq(Object.new, Object.new)
+    RUBY
+
+    assert_compiles(<<~RUBY, insns: %i[opt_eq], result: true)
+      def eq(a, b)
+        a == b
+      end
+
+      obj = Object.new
+      eq(obj, obj)
+    RUBY
+  end
+
+  def test_compile_eq_arbitrary_class
+    assert_compiles(<<~RUBY, insns: %i[opt_eq], result: "yes")
+      def eq(a, b)
+        a == b
+      end
+
+      class Foo
+        def ==(other)
+          "yes"
+        end
+      end
+
+      eq(Foo.new, Foo.new)
+      eq(Foo.new, Foo.new)
+    RUBY
+  end
+
   def test_compile_set_and_get_global
     assert_compiles('$foo = 123; $foo', insns: %i[setglobal], result: 123)
   end
