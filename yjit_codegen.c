@@ -987,7 +987,18 @@ gen_expandarray(jitstate_t* jit, ctx_t* ctx)
     // num is the number of requested values. If there aren't enough in the
     // array then we're going to push on nils.
     rb_num_t num = (rb_num_t) jit_get_arg(jit, 0);
+    val_type_t array_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
     x86opnd_t array_opnd = ctx_stack_pop(ctx, 1);
+
+    if (array_type.type == ETYPE_NIL) {
+        // special case for a, b = nil pattern
+        // push N nils onto the stack
+        for (int i = 0; i < num; i++) {
+            x86opnd_t push = ctx_stack_push(ctx, TYPE_NIL);
+            mov(cb, push, imm_opnd(Qnil));
+        }
+        return YJIT_KEEP_COMPILING;
+    }
 
     // Move the array from the stack into REG0 and check that it's an array.
     mov(cb, REG0, array_opnd);
