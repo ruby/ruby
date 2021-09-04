@@ -136,6 +136,19 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_expandarray
+    assert_compiles(<<~'RUBY', insns: %i[expandarray], result: [1, 2])
+      a, b = [1, 2]
+    RUBY
+  end
+
+  def test_expandarray_nil
+    assert_compiles(<<~'RUBY', insns: %i[expandarray], result: [nil, nil])
+      a, b = nil
+      [a, b]
+    RUBY
+  end
+
   def test_compile_opt_getinlinecache
     assert_compiles(<<~RUBY, insns: %i[opt_getinlinecache], result: 123, min_calls: 2)
       def get_foo
