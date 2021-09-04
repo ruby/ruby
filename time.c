@@ -2350,7 +2350,8 @@ vtm_day_wraparound(struct vtm *vtm)
 }
 
 static VALUE
-time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VALUE mday, VALUE hour, VALUE min, VALUE sec, VALUE zone)
+time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VALUE mday,
+               VALUE hour, VALUE min, VALUE sec, VALUE subsec, VALUE zone)
 {
     struct vtm vtm;
     VALUE utc = Qnil;
@@ -2373,6 +2374,10 @@ time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VA
     if (NIL_P(sec)) {
         vtm.sec = 0;
         vtm.subsecx = INT2FIX(0);
+    }
+    else if (!NIL_P(subsec)) {
+        vtm.sec = obj2ubits(sec, 6);
+        vtm.subsecx = subsec;
     }
     else {
         VALUE subsecx;
@@ -2441,6 +2446,110 @@ time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VA
         tobj->timew = timelocalw(&vtm);
         return time_localtime(time);
     }
+}
+
+static int
+two_digits(const char *ptr, const char *end, const char **endp)
+{
+    ssize_t len = end - ptr;
+    if (len < 2) return -1;
+    if (!ISDIGIT(ptr[0]) || !ISDIGIT(ptr[1])) return -1;
+    if ((len > 2) && ISDIGIT(ptr[2])) return -1;
+    *endp = ptr + 2;
+    return (ptr[0] - '0') * 10 + (ptr[1] - '0');
+}
+
+static VALUE
+parse_int(const char *ptr, const char *end, const char **endp, size_t *ndigits, bool sign)
+{
+    ssize_t len = (end - ptr);
+    int flags = sign ? RB_INT_PARSE_SIGN : 0;
+    return rb_int_parse_cstr(ptr, len, (char **)endp, ndigits, 10, flags);
+}
+
+static VALUE
+time_init_parse(rb_execution_context_t *ec, VALUE time, VALUE str, VALUE zone)
+{
+    if (NIL_P(str = rb_check_string_type(str))) return Qnil;
+    if (!rb_enc_str_asciicompat_p(str)) {
+        rb_raise(rb_eArgError, "time string should have ASCII compatible encoding");
+    }
+
+    const char *const begin = RSTRING_PTR(str);
+    const char *const end = RSTRING_END(str);
+    const char *ptr = begin;
+    VALUE year = Qnil, subsec = Qnil;
+    int mon = -1, mday = -1, hour = -1, min = -1, sec = -1;
+    size_t ndigits;
+
+    while ((ptr < end) && ISSPACE(*ptr)) ptr++;
+    year = parse_int(ptr, end, &ptr, &ndigits, true);
+    if (NIL_P(year)) {
+        rb_raise(rb_eArgError, "can't parse: %+"PRIsVALUE, str);
+    }
+    do {
+#define peek_n(c, n) ((ptr + n < end) && ((unsigned char)ptr[n] == (c)))
+#define peek(c) peek_n(c, 0)
+#define peekc_n(n) ((ptr + n < end) ? (int)(unsigned char)ptr[n] : -1)
+#define peekc() peekc_n(0)
+        if (!peek('-')) break;
+        if ((mon = two_digits(ptr + 1, end, &ptr)) < 0) break;
+        if (!peek('-')) break;
+        if ((mday = two_digits(ptr + 1, end, &ptr)) < 0) break;
+        if (!peek(' ') && !peek('T')) break;
+        const char *const time_part = ptr + 1;
+        if ((hour = two_digits(ptr + 1, end, &ptr)) < 0) break;
+        if (!peek(':')) break;
+        if ((min = two_digits(ptr + 1, end, &ptr)) < 0) break;
+        if (!peek(':')) break;
+        if ((sec = two_digits(ptr + 1, end, &ptr)) < 0) break;
+        if (peek('.')) {
+            ptr++;
+            for (ndigits = 0; ndigits < 45 && ISDIGIT(peekc_n(ndigits)); ++ndigits);
+            if (!ndigits) {
+                int clen = rb_enc_precise_mbclen(ptr, end, rb_enc_get(str));
+                if (clen < 0) clen = 0;
+                rb_raise(rb_eArgError, "subsecond expected after dot: %.*s",
+                         (int)(ptr - time_part) + clen, time_part);
+            }
+            subsec = parse_int(ptr, ptr + ndigits, &ptr, &ndigits, false);
+            if (NIL_P(subsec)) break;
+            while (ptr < end && ISDIGIT(*ptr)) ptr++;
+        }
+    } while (0);
+    while (ptr < end && ISSPACE(*ptr)) ptr++;
+    const char *const zstr = ptr;
+    while (ptr < end && !ISSPACE(*ptr)) ptr++;
+    const char *const zend = ptr;
+    while (ptr < end && ISSPACE(*ptr)) ptr++;
+    if (ptr < end) {
+        VALUE mesg = rb_str_new_cstr("can't parse at: ");
+        rb_str_cat(mesg, ptr, end - ptr);
+        rb_exc_raise(rb_exc_new_str(rb_eArgError, mesg));
+    }
+    if (zend > zstr) {
+        zone = rb_str_subseq(str, zstr - begin, zend - zstr);
+    }
+    if (!NIL_P(subsec)) {
+        /* subseconds is the last using ndigits */
+        if (ndigits < 9) {
+            VALUE mul = rb_int_positive_pow(10, 9 - ndigits);
+            subsec = rb_int_mul(subsec, mul);
+        }
+        else if (ndigits > 9) {
+            VALUE num = rb_int_positive_pow(10, ndigits - 9);
+            subsec = rb_rational_new(subsec, num);
+        }
+    }
+
+#define non_negative(x) ((x) < 0 ? Qnil : INT2FIX(x))
+    return time_init_args(ec, time, year,
+                          non_negative(mon),
+                          non_negative(mday),
+                          non_negative(hour),
+                          non_negative(min),
+                          non_negative(sec),
+                          subsec, zone);
 }
 
 static void

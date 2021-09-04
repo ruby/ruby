@@ -57,6 +57,27 @@ class TestTime < Test::Unit::TestCase
     assert_equal([0, 0, 0, 2, 1, 2000], Time.new(2000, 1, 1, 24, 0, 0, "-00:00").to_a[0, 6])
   end
 
+  def test_new_from_string
+    assert_raise(ArgumentError) { Time.new(2021, 1, 1, "+09:99") }
+
+    t = Time.utc(2020, 12, 24, 15, 56, 17)
+    assert_equal(t, Time.new("2020-12-24T15:56:17Z"))
+    assert_equal(t, Time.new("2020-12-25 00:56:17 +09:00"))
+    assert_equal(t, Time.new("2020-12-25 00:57:47 +09:01:30"))
+    assert_equal(t, Time.new("2020-12-25 00:56:17 +0900"))
+    assert_equal(t, Time.new("2020-12-25 00:57:47 +090130"))
+    assert_equal(t, Time.new("2020-12-25T00:56:17+09:00"))
+    assert_equal(Time.utc(2020, 12, 24, 15, 56, 0), Time.new("2020-12-25 00:56 +09:00"))
+    assert_equal(Time.utc(2020, 12, 24, 15, 0, 0), Time.new("2020-12-25 00 +09:00"))
+
+    assert_equal(Time.new(2021, 12, 25, in: "+09:00"), Time.new("2021-12-25+09:00"))
+
+    assert_equal(0.123456r, Time.new("2021-12-25 00:00:00.123456 +09:00").subsec)
+    assert_raise_with_message(ArgumentError, "subsecond expected after dot: 00:56:17. ") {
+      Time.new("2020-12-25 00:56:17. +0900")
+    }
+  end
+
   def test_time_add()
     assert_equal(Time.utc(2000, 3, 21, 3, 30) + 3 * 3600,
                  Time.utc(2000, 3, 21, 6, 30))
