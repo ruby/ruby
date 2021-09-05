@@ -390,15 +390,23 @@ module Reline
               block.([Reline::Key.new(c, c, false)])
               break
             else
-              if key_stroke.match_status(buffer.dup.push(succ_c)) == :unmatched
+              case key_stroke.match_status(buffer.dup.push(succ_c))
+              when :unmatched
                 if c == "\e".ord
                   block.([Reline::Key.new(succ_c, succ_c | 0b10000000, true)])
                 else
                   block.([Reline::Key.new(c, c, false), Reline::Key.new(succ_c, succ_c, false)])
                 end
                 break
-              else
+              when :matching
                 Reline::IOGate.ungetc(succ_c)
+              when :matched
+                buffer << succ_c
+                expanded = key_stroke.expand(buffer).map{ |expanded_c|
+                  Reline::Key.new(expanded_c, expanded_c, false)
+                }
+                block.(expanded)
+                break
               end
             end
           end
