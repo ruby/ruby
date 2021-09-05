@@ -381,33 +381,9 @@ module Reline
           break
         when :matching
           if buffer.size == 1
-            begin
-              succ_c = nil
-              Timeout.timeout(keyseq_timeout / 1000.0) {
-                succ_c = Reline::IOGate.getc
-              }
-            rescue Timeout::Error # cancel matching only when first byte
-              block.([Reline::Key.new(c, c, false)])
-              break
-            else
-              case key_stroke.match_status(buffer.dup.push(succ_c))
-              when :unmatched
-                if c == "\e".ord
-                  block.([Reline::Key.new(succ_c, succ_c | 0b10000000, true)])
-                else
-                  block.([Reline::Key.new(c, c, false), Reline::Key.new(succ_c, succ_c, false)])
-                end
-                break
-              when :matching
-                Reline::IOGate.ungetc(succ_c)
-              when :matched
-                buffer << succ_c
-                expanded = key_stroke.expand(buffer).map{ |expanded_c|
-                  Reline::Key.new(expanded_c, expanded_c, false)
-                }
-                block.(expanded)
-                break
-              end
+            case read_2nd_character_of_key_sequence(keyseq_timeout, buffer, c, block)
+            when :break then break
+            when :next  then next
             end
           end
         when :unmatched
@@ -420,6 +396,38 @@ module Reline
             block.(expanded)
           end
           break
+        end
+      end
+    end
+
+    private def read_2nd_character_of_key_sequence(keyseq_timeout, buffer, c, block)
+      begin
+        succ_c = nil
+        Timeout.timeout(keyseq_timeout / 1000.0) {
+          succ_c = Reline::IOGate.getc
+        }
+      rescue Timeout::Error # cancel matching only when first byte
+        block.([Reline::Key.new(c, c, false)])
+        return :break
+      else
+        case key_stroke.match_status(buffer.dup.push(succ_c))
+        when :unmatched
+          if c == "\e".ord
+            block.([Reline::Key.new(succ_c, succ_c | 0b10000000, true)])
+          else
+            block.([Reline::Key.new(c, c, false), Reline::Key.new(succ_c, succ_c, false)])
+          end
+          return :break
+        when :matching
+          Reline::IOGate.ungetc(succ_c)
+          return :next
+        when :matched
+          buffer << succ_c
+          expanded = key_stroke.expand(buffer).map{ |expanded_c|
+            Reline::Key.new(expanded_c, expanded_c, false)
+          }
+          block.(expanded)
+          return :break
         end
       end
     end
