@@ -17,4 +17,9 @@ class Reline::Unicode::Test < Reline::TestCase
   def test_ambiguous_width
     assert_equal 2, Reline::Unicode.calculate_width('√', true)
   end
+
+  def test_take_range
+    assert_equal 'cdef', Reline::Unicode.take_range('abcdefghi', 2, 4)
+    assert_equal 'いう', Reline::Unicode.take_range('あいうえお', 2, 4)
+  end
 end
