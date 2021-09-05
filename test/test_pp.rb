@@ -245,4 +245,36 @@ if defined?(RubyVM)
   end
 end
 
+class PPInheritedTest < Test::Unit::TestCase
+  class PPSymbolHash < PP
+    def pp_hash(obj)
+      group(1, "{", "}") {
+        seplist(obj, nil, :each_pair) {|k, v|
+          case k
+          when Symbol
+            text k.inspect.delete_prefix(":")
+            text ":"
+            sep = " "
+          else
+            pp k
+            text "=>"
+            sep = ""
+          end
+          group(1) {
+            breakable sep
+            pp v
+          }
+        }
+      }
+    end
+  end
+
+  def test_hash_override
+    obj = {k: 1, "": :null, "0": :zero, 100 => :ten}
+    assert_equal <<~EXPECT, PPSymbolHash.pp(obj, "".dup)
+    {k: 1, "": :null, "0": :zero, 100=>:ten}
+    EXPECT
+  end
+end
+
 end

@@ -93,7 +93,7 @@ class PP < PrettyPrint
   #
   # PP.pp returns +out+.
   def PP.pp(obj, out=$>, width=width_for(out))
-    q = PP.new(out, width)
+    q = new(out, width)
     q.guard_inspect_key {q.pp obj}
     q.flush
     #$pp = q
