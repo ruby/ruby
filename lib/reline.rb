@@ -25,7 +25,7 @@ module Reline
       elsif key.is_a?(Integer) or key.is_a?(Symbol)
         if not combined_char.nil? and combined_char == key
           true
-        elsif not char.nil? and char == key
+        elsif combined_char.nil? and not char.nil? and char == key
           true
         else
           false
