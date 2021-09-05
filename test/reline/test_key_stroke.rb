@@ -36,7 +36,7 @@ class Reline::KeyStroke::Test < Reline::TestCase
     assert_equal(:matched, stroke.match_status("abzwabk".bytes))
   end
 
-  def test_aaa
+  def test_expand
     config = Reline::Config.new
     {
       'abc' => '123',
