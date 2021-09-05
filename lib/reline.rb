@@ -34,6 +34,7 @@ module Reline
         false
       end
     end
+    alias_method :==, :match?
   end
   CursorPos = Struct.new(:x, :y)
   DialogRenderInfo = Struct.new(:pos, :contents, :pointer, :bg_color, :width, :height, :scrollbar, keyword_init: true)
