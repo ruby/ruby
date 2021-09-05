@@ -315,7 +315,10 @@ module IRB
 
     SHOW_DOC_DIALOG = ->() {
       dialog.trap_key = nil
-      alt_d = [[Reline::Key.new(nil, 0xE4, true)], [195, 164]]
+      alt_d = [
+        [Reline::Key.new(nil, 0xE4, true)], # Normal Alt+d.
+        [195, 164] # The "ä" that appears when Alt+d is pressed on xterm.
+      ]
       begin
         require 'rdoc'
       rescue LoadError
