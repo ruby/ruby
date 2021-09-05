@@ -22,7 +22,7 @@ module Reline
         (key.char.nil? or char.nil? or char == key.char) and
         (key.combined_char.nil? or combined_char.nil? or combined_char == key.combined_char) and
         (key.with_meta.nil? or with_meta.nil? or with_meta == key.with_meta)
-      elsif key.is_a?(Integer)
+      elsif key.is_a?(Integer) or key.is_a?(Symbol)
         if not combined_char.nil? and combined_char == key
           true
         elsif not char.nil? and char == key
