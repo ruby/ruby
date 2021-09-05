@@ -18,9 +18,21 @@ module Reline
 
   Key = Struct.new('Key', :char, :combined_char, :with_meta) do
     def match?(key)
-      (key.char.nil? or char.nil? or char == key.char) and
-      (key.combined_char.nil? or combined_char.nil? or combined_char == key.combined_char) and
-      (key.with_meta.nil? or with_meta.nil? or with_meta == key.with_meta)
+      if key.instance_of?(Reline::Key)
+        (key.char.nil? or char.nil? or char == key.char) and
+        (key.combined_char.nil? or combined_char.nil? or combined_char == key.combined_char) and
+        (key.with_meta.nil? or with_meta.nil? or with_meta == key.with_meta)
+      elsif key.is_a?(Integer)
+        if not combined_char.nil? and combined_char == key
+          true
+        elsif not char.nil? and char == key
+          true
+        else
+          false
+        end
+      else
+        false
+      end
     end
   end
   CursorPos = Struct.new(:x, :y)
