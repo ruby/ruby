@@ -286,14 +286,19 @@ class PP < PrettyPrint
       group(1, '{', '}') {
         seplist(obj, nil, :each_pair) {|k, v|
           group {
-            pp k
-            text '=>'
-            group(1) {
-              breakable ''
-              pp v
-            }
+            pp_hash_pair k, v
           }
         }
+      }
+    end
+
+    # A pretty print for a pair of Hash
+    def pp_hash_pair(k, v)
+      pp k
+      text '=>'
+      group(1) {
+        breakable ''
+        pp v
       }
     end
   end

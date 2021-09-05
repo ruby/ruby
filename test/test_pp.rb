@@ -247,25 +247,18 @@ end
 
 class PPInheritedTest < Test::Unit::TestCase
   class PPSymbolHash < PP
-    def pp_hash(obj)
-      group(1, "{", "}") {
-        seplist(obj, nil, :each_pair) {|k, v|
-          case k
-          when Symbol
-            text k.inspect.delete_prefix(":")
-            text ":"
-            sep = " "
-          else
-            pp k
-            text "=>"
-            sep = ""
-          end
-          group(1) {
-            breakable sep
-            pp v
-          }
+    def pp_hash_pair(k, v)
+      case k
+      when Symbol
+        text k.inspect.delete_prefix(":")
+        text ":"
+        group(1) {
+          breakable
+          pp v
         }
-      }
+      else
+        super
+      end
     end
   end
 
