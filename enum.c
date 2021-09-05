@@ -923,8 +923,8 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  *
  *  Trivially, and regardless of the given method:
  *
- *    - <tt>self.inject</tt> for a 1-element +self+ returns that element.
- *    - <tt>self.inject</tt> for an empty +self+ returns +nil+.
+ *  - <tt>self.inject</tt> for a 1-element +self+ returns that element.
+ *  - <tt>self.inject</tt> for an empty +self+ returns +nil+.
  *
  *  <b>Case 2: <tt>inject(initial_operand, symbol) -> obj</tt></b>
  *
@@ -957,7 +957,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  *
  *  Trivially, and regardless of the given method:
  *
- *    - <tt>self.inject</tt> for an empty +self+ returns +initial_operand+.
+ *  - <tt>self.inject</tt> for an empty +self+ returns +initial_operand+.
  *
  *  <b>Case 3: <tt>inject {|memo, element| ... } -> obj</tt></b>
  *
