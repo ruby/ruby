@@ -1443,6 +1443,9 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
         }
         vm->ractor.cnt--;
 
+        /* Clear the cached freelist to prevent a memory leak. */
+        rb_gc_ractor_newobj_cache_clear(&cr->newobj_cache);
+
         ractor_status_set(cr, ractor_terminated);
     }
     RB_VM_UNLOCK();
@@ -1542,11 +1545,6 @@ rb_ractor_main_setup(rb_vm_t *vm, rb_ractor_t *r, rb_thread_t *th)
     rb_ractor_living_threads_insert(r, th);
 }
 
-// io.c
-VALUE rb_io_prep_stdin(void);
-VALUE rb_io_prep_stdout(void);
-VALUE rb_io_prep_stderr(void);
-
 static VALUE
 ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VALUE args, VALUE block)
 {
@@ -1557,10 +1555,6 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
     // can block here
     r->pub.id = ractor_next_id();
     RUBY_DEBUG_LOG("r:%u", r->pub.id);
-
-    r->r_stdin = rb_io_prep_stdin();
-    r->r_stdout = rb_io_prep_stdout();
-    r->r_stderr = rb_io_prep_stderr();
 
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
     r->verbose = cr->verbose;
@@ -2047,6 +2041,8 @@ void
 Init_Ractor(void)
 {
     rb_cRactor = rb_define_class("Ractor", rb_cObject);
+    rb_undef_alloc_func(rb_cRactor);
+
     rb_eRactorError          = rb_define_class_under(rb_cRactor, "Error", rb_eRuntimeError);
     rb_eRactorIsolationError = rb_define_class_under(rb_cRactor, "IsolationError", rb_eRactorError);
     rb_eRactorRemoteError    = rb_define_class_under(rb_cRactor, "RemoteError", rb_eRactorError);

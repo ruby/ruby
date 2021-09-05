@@ -25,5 +25,6 @@ struct RComplex {
 
 /* complex.c */
 VALUE rb_dbl_complex_new_polar_pi(double abs, double ang);
+st_index_t rb_complex_hash(VALUE comp);
 
 #endif /* INTERNAL_COMPLEX_H */

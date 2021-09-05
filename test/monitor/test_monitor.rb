@@ -10,6 +10,13 @@ class TestMonitor < Test::Unit::TestCase
     @monitor = Monitor.new
   end
 
+  def test_enter_in_different_fibers
+    @monitor.enter
+    Fiber.new {
+      assert_equal false, @monitor.try_enter
+    }.resume
+  end
+
   def test_enter
     ary = []
     queue = Queue.new

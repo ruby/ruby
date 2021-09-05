@@ -1744,8 +1744,8 @@ nurat_rationalize(int argc, VALUE *argv, VALUE self)
 }
 
 /* :nodoc: */
-static VALUE
-nurat_hash(VALUE self)
+st_index_t
+rb_rational_hash(VALUE self)
 {
     st_index_t v, h[2];
     VALUE n;
@@ -1756,8 +1756,15 @@ nurat_hash(VALUE self)
     n = rb_hash(dat->den);
     h[1] = NUM2LONG(n);
     v = rb_memhash(h, sizeof(h));
-    return ST2FIX(v);
+    return v;
 }
+
+static VALUE
+nurat_hash(VALUE self)
+{
+    return ST2FIX(rb_rational_hash(self));
+}
+
 
 static VALUE
 f_format(VALUE self, VALUE (*func)(VALUE))

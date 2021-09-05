@@ -10,7 +10,7 @@
 #
 #
 Usage:  irb.rb [options] [programfile] [arguments]
-  -f		    Suppress read of ~/.irbrc
+  -f                Suppress read of ~/.irbrc
   -d                Set $DEBUG to true (same as `ruby -d')
   -r load-module    Same as `ruby -r'
   -I path           Specify $LOAD_PATH directory
@@ -18,7 +18,7 @@ Usage:  irb.rb [options] [programfile] [arguments]
   -E enc            Same as `ruby -E`
   -w                Same as `ruby -w`
   -W[level=2]       Same as `ruby -W`
-  --context-mode n  Set n[0-3] to method to create Binding Object,
+  --context-mode n  Set n[0-4] to method to create Binding Object,
                     when new workspace was created
   --echo            Show result(default)
   --noecho          Don't show result
@@ -31,8 +31,8 @@ Usage:  irb.rb [options] [programfile] [arguments]
   --colorize        Use colorization
   --nocolorize      Don't use colorization
   --prompt prompt-mode/--prompt-mode prompt-mode
-		    Switch prompt mode. Pre-defined prompt modes are
-		    `default', `simple', `xmp' and `inf-ruby'
+                    Switch prompt mode. Pre-defined prompt modes are
+                    `default', `simple', `xmp' and `inf-ruby'
   --inf-ruby-mode   Use prompt appropriate for inf-ruby-mode on emacs.
                     Suppresses --multiline and --singleline.
   --sample-book-mode/--simple-prompt
@@ -41,8 +41,8 @@ Usage:  irb.rb [options] [programfile] [arguments]
   --single-irb      Share self with sub-irb.
   --tracer          Display trace for each execution of commands.
   --back-trace-limit n
-		    Display backtrace top n and tail n. The default
-		    value is 16.
+                    Display backtrace top n and tail n. The default
+                    value is 16.
   --verbose         Show details
   --noverbose       Don't show details
   -v, --version	    Print the version of irb

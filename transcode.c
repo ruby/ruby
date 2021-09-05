@@ -2719,6 +2719,12 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
         }
     }
     else {
+        if (senc && denc && !rb_enc_asciicompat(senc) && !rb_enc_asciicompat(denc)) {
+            rb_encoding *utf8 = rb_utf8_encoding();
+            str = rb_str_conv_enc(str, senc, utf8);
+            senc = utf8;
+            sname = "UTF-8";
+        }
         if (encoding_equal(sname, dname)) {
             sname = "";
             dname = "";

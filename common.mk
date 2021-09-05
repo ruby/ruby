@@ -2803,6 +2803,7 @@ compile.$(OBJEXT): $(top_srcdir)/internal/hash.h
 compile.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 compile.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 compile.$(OBJEXT): $(top_srcdir)/internal/object.h
+compile.$(OBJEXT): $(top_srcdir)/internal/rational.h
 compile.$(OBJEXT): $(top_srcdir)/internal/re.h
 compile.$(OBJEXT): $(top_srcdir)/internal/serial.h
 compile.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
@@ -8428,6 +8429,7 @@ mjit.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 mjit.$(OBJEXT): $(hdrdir)/ruby/version.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/array.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/class.h
+mjit.$(OBJEXT): $(top_srcdir)/internal/compile.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/cont.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/file.h
@@ -8449,6 +8451,7 @@ mjit.$(OBJEXT): {$(VPATH)}backward/2/limits.h
 mjit.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 mjit.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 mjit.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+mjit.$(OBJEXT): {$(VPATH)}builtin.h
 mjit.$(OBJEXT): {$(VPATH)}config.h
 mjit.$(OBJEXT): {$(VPATH)}constant.h
 mjit.$(OBJEXT): {$(VPATH)}debug.h
@@ -8459,6 +8462,9 @@ mjit.$(OBJEXT): {$(VPATH)}encoding.h
 mjit.$(OBJEXT): {$(VPATH)}gc.h
 mjit.$(OBJEXT): {$(VPATH)}id.h
 mjit.$(OBJEXT): {$(VPATH)}id_table.h
+mjit.$(OBJEXT): {$(VPATH)}insns.def
+mjit.$(OBJEXT): {$(VPATH)}insns.inc
+mjit.$(OBJEXT): {$(VPATH)}insns_info.inc
 mjit.$(OBJEXT): {$(VPATH)}intern.h
 mjit.$(OBJEXT): {$(VPATH)}internal.h
 mjit.$(OBJEXT): {$(VPATH)}internal/anyargs.h
@@ -8601,6 +8607,7 @@ mjit.$(OBJEXT): {$(VPATH)}internal/value_type.h
 mjit.$(OBJEXT): {$(VPATH)}internal/variable.h
 mjit.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 mjit.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
+mjit.$(OBJEXT): {$(VPATH)}iseq.h
 mjit.$(OBJEXT): {$(VPATH)}method.h
 mjit.$(OBJEXT): {$(VPATH)}missing.h
 mjit.$(OBJEXT): {$(VPATH)}mjit.c
@@ -14800,6 +14807,7 @@ util.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 util.$(OBJEXT): $(top_srcdir)/internal/util.h
 util.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 util.$(OBJEXT): {$(VPATH)}assert.h
+util.$(OBJEXT): {$(VPATH)}atomic.h
 util.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 util.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 util.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -14955,6 +14963,7 @@ util.$(OBJEXT): {$(VPATH)}internal/variable.h
 util.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 util.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 util.$(OBJEXT): {$(VPATH)}missing.h
+util.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 util.$(OBJEXT): {$(VPATH)}st.h
 util.$(OBJEXT): {$(VPATH)}subst.h
 util.$(OBJEXT): {$(VPATH)}util.c

@@ -8,6 +8,24 @@ assert_equal 'Ractor', %q{
   Ractor.new{}.class
 }
 
+# Ractor.allocate is not supported
+assert_equal "[:ok, :ok]", %q{
+  rs = []
+  begin
+    Ractor.allocate
+  rescue => e
+    rs << :ok if e.message == 'allocator undefined for Ractor'
+  end
+
+  begin
+    Ractor.new{}.dup
+  rescue
+    rs << :ok if e.message == 'allocator undefined for Ractor'
+  end
+
+  rs
+}
+
 # A Ractor can have a name
 assert_equal 'test-name', %q{
   r = Ractor.new name: 'test-name' do
@@ -156,6 +174,17 @@ assert_equal '[[:e1, 1], [:e2, 2]]', %q{
   end
 
   a #
+}
+
+# dtoa race condition
+assert_equal '[:ok, :ok, :ok]', %q{
+  n = 3
+  n.times.map{
+    Ractor.new{
+      10_000.times{ rand.to_s }
+      :ok
+    }
+  }.map(&:take)
 }
 
 ###
@@ -749,6 +778,18 @@ assert_equal 'ok', %q{
     raise "fd should be same" unless io.fileno == fno
   }
   'ok'
+}
+
+# $stdin,out,err belong to Ractor
+assert_equal 'ok', %q{
+  r = Ractor.new do
+    $stdin.itself
+    $stdout.itself
+    $stderr.itself
+    'ok'
+  end
+
+  r.take
 }
 
 # $DEBUG, $VERBOSE are Ractor local

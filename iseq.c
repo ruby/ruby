@@ -359,8 +359,12 @@ rb_iseq_mark(const rb_iseq_t *iseq)
                     rb_gc_mark_movable((VALUE)ci);
                 }
                 if (cc && vm_cc_markable(cc)) {
-                    rb_gc_mark_movable((VALUE)cc);
-                    // TODO: check enable
+                    if (!vm_cc_invalidated_p(cc)) {
+                        rb_gc_mark_movable((VALUE)cc);
+                    }
+                    else {
+                        cds[i].cc = rb_vm_empty_cc();
+                    }
                 }
             }
         }

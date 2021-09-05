@@ -79,6 +79,25 @@ pre {
   border-radius: 0.2em;
 }
 
+table {
+  margin: 0;
+  border-spacing: 0;
+  border-collapse: collapse;
+}
+
+table tr th, table tr td {
+  padding: 0.2em 0.4em;
+  border: 1px solid #ccc;
+}
+
+table tr th {
+  background-color: #eceaed;
+}
+
+table tr:nth-child(even) td {
+  background-color: #f5f4f6;
+}
+
 /* @group Generic Classes */
 
 .initially-hidden {
@@ -166,6 +185,7 @@ nav {
   width: 260px;
   font-family: Helvetica, sans-serif;
   font-size: 14px;
+  border-right: 1px solid #ccc;
 }
 
 main {

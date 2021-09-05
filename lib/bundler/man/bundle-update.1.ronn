@@ -80,7 +80,7 @@ gem.
   Do not allow any gem to be updated past latest `--patch` | `--minor` | `--major`.
 
 * `--conservative`:
-  Use bundle install conservative update behavior and do not allow shared dependencies to be updated.
+  Use bundle install conservative update behavior and do not allow indirect dependencies to be updated.
 
 ## UPDATING ALL GEMS
 
@@ -195,7 +195,7 @@ In short, by default, when you update a gem using `bundle update`, bundler will
 update all dependencies of that gem, including those that are also dependencies
 of another gem.
 
-To prevent updating shared dependencies, prior to version 1.14 the only option
+To prevent updating indirect dependencies, prior to version 1.14 the only option
 was the `CONSERVATIVE UPDATING` behavior in [bundle install(1)](bundle-install.1.html):
 
 In this scenario, updating the `thin` version manually in the Gemfile(5),
@@ -203,7 +203,7 @@ and then running [bundle install(1)](bundle-install.1.html) will only update `da
 but not `rack`. For more information, see the `CONSERVATIVE UPDATING` section
 of [bundle install(1)](bundle-install.1.html).
 
-Starting with 1.14, specifying the `--conservative` option will also prevent shared
+Starting with 1.14, specifying the `--conservative` option will also prevent indirect
 dependencies from being updated.
 
 ## PATCH LEVEL OPTIONS

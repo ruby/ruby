@@ -1730,6 +1730,21 @@ eom
     assert_equal [[4, 1, 5, 2, 3], {a: 1}], obj.foo(4, 5, 2, 3, a: 1){|args, kws| [args, kws]}
   end
 
+  def test_cdhash
+    assert_separately([], <<-RUBY)
+      n = case 1 when 2r then false else true end
+      assert_equal(n, true, '[ruby-core:103759] [Bug #17854]')
+    RUBY
+    assert_separately([], <<-RUBY)
+      n = case 3/2r when 1.5r then true else false end
+      assert_equal(n, true, '[ruby-core:103759] [Bug #17854]')
+    RUBY
+    assert_separately([], <<-RUBY)
+      n = case 1i when 1i then true else false end
+      assert_equal(n, true, '[ruby-core:103759] [Bug #17854]')
+    RUBY
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "shellwords"
-
 module Bundler
   class Source
     class Git
@@ -224,6 +222,7 @@ module Bundler
         end
 
         def check_allowed(command)
+          require "shellwords"
           command_with_no_credentials = URICredentialsFilter.credential_filtered_string("git #{command.shelljoin}", uri)
           raise GitNotAllowedError.new(command_with_no_credentials) unless allow?
           command_with_no_credentials

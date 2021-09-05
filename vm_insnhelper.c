@@ -237,7 +237,7 @@ static bool vm_stack_canary_was_born = false;
 
 #ifndef MJIT_HEADER
 MJIT_FUNC_EXPORTED void
-vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
+rb_vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
 {
     const struct rb_control_frame_struct *reg_cfp = ec->cfp;
     const struct rb_iseq_struct *iseq;
@@ -284,6 +284,7 @@ vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
     rb_bug("see above.");
 }
 #endif
+#define vm_check_canary(ec, sp) rb_vm_check_canary(ec, sp)
 
 #else
 #define vm_check_canary(ec, sp)
@@ -1856,6 +1857,7 @@ check_cfunc(const rb_callable_method_entry_t *me, VALUE (*func)())
 static inline int
 vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, VALUE (*func)())
 {
+    VM_ASSERT(iseq != NULL);
     const struct rb_callcache *cc = vm_search_method((VALUE)iseq, cd, recv);
     return check_cfunc(vm_cc_cme(cc), func);
 }
@@ -1892,7 +1894,7 @@ FLONUM_2_P(VALUE a, VALUE b)
 }
 
 static VALUE
-opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
+opt_equality_specialized(VALUE recv, VALUE obj)
 {
     if (FIXNUM_2_P(recv, obj) && EQ_UNREDEFINED_P(INTEGER)) {
         goto compare_by_identity;
@@ -1904,7 +1906,7 @@ opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
         goto compare_by_identity;
     }
     else if (SPECIAL_CONST_P(recv)) {
-        goto compare_by_funcall;
+        //
     }
     else if (RBASIC_CLASS(recv) == rb_cFloat && RB_FLOAT_TYPE_P(obj) && EQ_UNREDEFINED_P(FLOAT)) {
         double a = RFLOAT_VALUE(recv);
@@ -1934,11 +1936,7 @@ opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
             return rb_str_eql_internal(obj, recv);
         }
     }
-
-  compare_by_funcall:
-    if (! vm_method_cfunc_is(cd_owner, cd, recv, rb_obj_equal)) {
-        return Qundef;
-    }
+    return Qundef;
 
   compare_by_identity:
     if (recv == obj) {
@@ -1949,47 +1947,77 @@ opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
     }
 }
 
+static VALUE
+opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
+{
+    VM_ASSERT(cd_owner != NULL);
+
+    VALUE val = opt_equality_specialized(recv, obj);
+    if (val != Qundef) return val;
+
+    if (!vm_method_cfunc_is(cd_owner, cd, recv, rb_obj_equal)) {
+        return Qundef;
+    }
+    else {
+        if (recv == obj) {
+            return Qtrue;
+        }
+        else {
+            return Qfalse;
+        }
+    }
+}
+
 #undef EQ_UNREDEFINED_P
 
 #ifndef MJIT_HEADER
+
+static inline const struct rb_callcache *gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, int argc); // vm_eval.c
+NOINLINE(static VALUE opt_equality_by_mid_slowpath(VALUE recv, VALUE obj, ID mid));
+
+static VALUE
+opt_equality_by_mid_slowpath(VALUE recv, VALUE obj, ID mid)
+{
+    const struct rb_callcache *cc = gccct_method_search(GET_EC(), recv, mid, 1);
+
+    if (cc && check_cfunc(vm_cc_cme(cc), rb_obj_equal)) {
+        if (recv == obj) {
+            return Qtrue;
+        }
+        else {
+            return Qfalse;
+        }
+    }
+    else {
+        return Qundef;
+    }
+}
+
+static VALUE
+opt_equality_by_mid(VALUE recv, VALUE obj, ID mid)
+{
+    VALUE val = opt_equality_specialized(recv, obj);
+    if (val != Qundef) {
+        return val;
+    }
+    else {
+        return opt_equality_by_mid_slowpath(recv, obj, mid);
+    }
+}
+
 VALUE
 rb_equal_opt(VALUE obj1, VALUE obj2)
 {
-    STATIC_ASSERT(idEq_is_embeddable, VM_CI_EMBEDDABLE_P(idEq, 0, 1, 0));
-
-#if USE_EMBED_CI
-    static struct rb_call_data cd = {
-        .ci = vm_ci_new_id(idEq, 0, 1, 0),
-    };
-#else
-    struct rb_call_data cd = {
-        .ci = &VM_CI_ON_STACK(idEq, 0, 1, 0),
-    };
-#endif
-
-    cd.cc = &vm_empty_cc;
-    return opt_equality(NULL, obj1, obj2, &cd);
+    return opt_equality_by_mid(obj1, obj2, idEq);
 }
 
 VALUE
 rb_eql_opt(VALUE obj1, VALUE obj2)
 {
-    STATIC_ASSERT(idEqlP_is_embeddable, VM_CI_EMBEDDABLE_P(idEqlP, 0, 1, 0));
-
-#if USE_EMBED_CI
-    static struct rb_call_data cd = {
-        .ci = vm_ci_new_id(idEqlP, 0, 1, 0),
-    };
-#else
-    struct rb_call_data cd = {
-        .ci = &VM_CI_ON_STACK(idEqlP, 0, 1, 0),
-    };
-#endif
-
-    cd.cc = &vm_empty_cc;
-    return opt_equality(NULL, obj1, obj2, &cd);
+    return opt_equality_by_mid(obj1, obj2, idEqlP);
 }
-#endif
+
+#endif // MJIT_HEADER
 
 extern VALUE rb_vm_call0(rb_execution_context_t *ec, VALUE, ID, int, const VALUE*, const rb_callable_method_entry_t *, int kw_splat);
 
@@ -2362,6 +2390,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
 {
     const struct rb_callinfo *ci = calling->ci;
     const struct rb_callcache *cc = calling->cc;
+    bool cacheable_ci = vm_ci_markable(ci);
 
     if (LIKELY(!(vm_ci_flag(ci) & VM_CALL_KW_SPLAT))) {
         if (LIKELY(rb_simple_iseq_p(iseq))) {
@@ -2375,7 +2404,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
 
             VM_ASSERT(ci == calling->ci);
             VM_ASSERT(cc == calling->cc);
-            CC_SET_FASTPATH(cc, vm_call_iseq_setup_func(ci, param_size, local_size), vm_call_iseq_optimizable_p(ci, cc));
+            CC_SET_FASTPATH(cc, vm_call_iseq_setup_func(ci, param_size, local_size), cacheable_ci && vm_call_iseq_optimizable_p(ci, cc));
             return 0;
         }
         else if (rb_iseq_only_optparam_p(iseq)) {
@@ -2395,12 +2424,12 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
             if (LIKELY(!(vm_ci_flag(ci) & VM_CALL_TAILCALL))) {
                 CC_SET_FASTPATH(cc, vm_call_iseq_setup_normal_opt_start,
                                 !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
-                                METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
+                                cacheable_ci && METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
             }
             else {
                 CC_SET_FASTPATH(cc, vm_call_iseq_setup_tailcall_opt_start,
                                 !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
-                                METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
+                                cacheable_ci && METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
             }
 
             /* initialize opt vars for self-references */
@@ -2428,7 +2457,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                     args_setup_kw_parameters(ec, iseq, ci_kws, ci_kw_len, ci_keywords, klocals);
 
                     CC_SET_FASTPATH(cc, vm_call_iseq_setup_kwparm_kwarg,
-                                    METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
+                                    cacheable_ci && METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
 
                     return 0;
                 }
@@ -2441,7 +2470,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                 if (klocals[kw_param->num] == INT2FIX(0)) {
                     /* copy from default_values */
                     CC_SET_FASTPATH(cc, vm_call_iseq_setup_kwparm_nokwarg,
-                                    METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
+                                    cacheable_ci && METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
                 }
 
                 return 0;
@@ -4612,19 +4641,26 @@ vm_opt_newarray_min(rb_num_t num, const VALUE *ptr)
 
 #define IMEMO_CONST_CACHE_SHAREABLE IMEMO_FL_USER0
 
-static int
+// For MJIT inlining
+static inline bool
+vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, rb_serial_t ic_serial, const VALUE *reg_ep)
+{
+    if (ic_serial == GET_GLOBAL_CONSTANT_STATE() &&
+        ((flags & IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p())) {
+
+        VM_ASSERT((flags & IMEMO_CONST_CACHE_SHAREABLE) ? rb_ractor_shareable_p(value) : true);
+
+        return (ic_cref == NULL || // no need to check CREF
+                ic_cref == vm_get_cref(reg_ep));
+    }
+    return false;
+}
+
+static bool
 vm_ic_hit_p(const struct iseq_inline_constant_cache_entry *ice, const VALUE *reg_ep)
 {
     VM_ASSERT(IMEMO_TYPE_P(ice, imemo_constcache));
-    if (ice->ic_serial == GET_GLOBAL_CONSTANT_STATE() &&
-        (FL_TEST_RAW((VALUE)ice, IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p())) {
-
-        VM_ASSERT(FL_TEST_RAW((VALUE)ice, IMEMO_CONST_CACHE_SHAREABLE) ? rb_ractor_shareable_p(ice->value) : true);
-
-        return (ice->ic_cref == NULL || // no need to check CREF
-                ice->ic_cref == vm_get_cref(reg_ep));
-    }
-    return FALSE;
+    return vm_inlined_ic_hit_p(ice->flags, ice->value, ice->ic_cref, ice->ic_serial, reg_ep);
 }
 
 static void
@@ -5342,7 +5378,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
 
 #if VM_CHECK_MODE > 0
 NORETURN( NOINLINE( COLDFUNC
-void vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)));
+void rb_vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)));
 
 void
 Init_vm_stack_canary(void)
@@ -5357,7 +5393,7 @@ Init_vm_stack_canary(void)
 
 #ifndef MJIT_HEADER
 MJIT_FUNC_EXPORTED void
-vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)
+rb_vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)
 {
     /* Because a method has already been called, why not call
      * another one. */

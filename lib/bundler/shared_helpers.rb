@@ -152,13 +152,6 @@ module Bundler
       Bundler.ui.warn message
     end
 
-    def trap(signal, override = false, &block)
-      prior = Signal.trap(signal) do
-        block.call
-        prior.call unless override
-      end
-    end
-
     def ensure_same_dependencies(spec, old_deps, new_deps)
       new_deps = new_deps.reject {|d| d.type == :development }
       old_deps = old_deps.reject {|d| d.type == :development }

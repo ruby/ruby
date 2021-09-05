@@ -284,7 +284,7 @@ nlz_int64(uint64_t x)
     }
     else {
         /* :FIXME: Is there a way to make this branch a compile-time error? */
-        __builtin_unreachable();
+        UNREACHABLE_RETURN(~0);
     }
 
 #else
@@ -419,7 +419,7 @@ rb_popcount64(uint64_t x)
     }
     else {
         /* :FIXME: Is there a way to make this branch a compile-time error? */
-        __builtin_unreachable();
+        UNREACHABLE_RETURN(~0);
     }
 
 #else
@@ -492,7 +492,7 @@ ntz_int64(uint64_t x)
     }
     else {
         /* :FIXME: Is there a way to make this branch a compile-time error? */
-        __builtin_unreachable();
+        UNREACHABLE_RETURN(~0);
     }
 
 #else

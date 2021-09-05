@@ -28,6 +28,23 @@ RSpec.describe "Resolving platform craziness" do
     end
   end
 
+  it "resolves multiplatform gems with redundant platforms correctly" do
+    @index = build_index do
+      gem "zookeeper", "1.4.11"
+      gem "zookeeper", "1.4.11", "java" do
+        dep "slyphon-log4j", "= 1.2.15"
+        dep "slyphon-zookeeper_jar", "= 3.3.5"
+      end
+      gem "slyphon-log4j", "1.2.15"
+      gem "slyphon-zookeeper_jar", "3.3.5", "java"
+    end
+
+    dep "zookeeper"
+    platforms "java", "ruby", "universal-java-11"
+
+    should_resolve_as %w[zookeeper-1.4.11 zookeeper-1.4.11-java slyphon-log4j-1.2.15 slyphon-zookeeper_jar-3.3.5-java]
+  end
+
   it "takes the latest ruby gem, even if an older platform specific version is available" do
     @index = build_index do
       gem "foo", "1.0.0"

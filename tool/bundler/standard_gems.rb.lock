@@ -1,0 +1,65 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    ast (2.4.2)
+    diff-lcs (1.4.4)
+    minitest (5.14.4)
+    parallel (1.19.2)
+    parser (3.0.0.0)
+      ast (~> 2.4.1)
+    power_assert (2.0.0)
+    rainbow (3.0.0)
+    rake (13.0.3)
+    rake-compiler (1.1.1)
+      rake
+    regexp_parser (2.1.1)
+    rexml (3.2.5)
+    rspec (3.10.0)
+      rspec-core (~> 3.10.0)
+      rspec-expectations (~> 3.10.0)
+      rspec-mocks (~> 3.10.0)
+    rspec-core (3.10.1)
+      rspec-support (~> 3.10.0)
+    rspec-expectations (3.10.1)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.10.0)
+    rspec-mocks (3.10.2)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.10.0)
+    rspec-support (3.10.2)
+    rubocop (1.11.0)
+      parallel (~> 1.10)
+      parser (>= 3.0.0.0)
+      rainbow (>= 2.2.2, < 4.0)
+      regexp_parser (>= 1.8, < 3.0)
+      rexml
+      rubocop-ast (>= 1.2.0, < 2.0)
+      ruby-progressbar (~> 1.7)
+      unicode-display_width (>= 1.4.0, < 3.0)
+    rubocop-ast (1.4.1)
+      parser (>= 2.7.1.5)
+    rubocop-performance (1.10.1)
+      rubocop (>= 0.90.0, < 2.0)
+      rubocop-ast (>= 0.4.0)
+    ruby-progressbar (1.11.0)
+    standard (1.0.4)
+      rubocop (= 1.11.0)
+      rubocop-performance (= 1.10.1)
+    test-unit (3.4.0)
+      power_assert
+    unicode-display_width (2.0.0)
+
+PLATFORMS
+  universal-java-11
+  x86_64-linux
+
+DEPENDENCIES
+  minitest
+  rake
+  rake-compiler
+  rspec
+  standard (~> 1.0)
+  test-unit
+
+BUNDLED WITH
+   2.3.0.dev

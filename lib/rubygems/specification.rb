@@ -666,6 +666,9 @@ class Gem::Specification < Gem::BasicSpecification
   #
   #  # Only prereleases or final releases after 2.6.0.preview2
   #  spec.required_ruby_version = '> 2.6.0.preview2'
+  #
+  #  # This gem will work with 2.3.0 or greater, including major version 3, but lesser than 4.0.0
+  #  spec.required_ruby_version = '>= 2.3', '< 4'
 
   def required_ruby_version=(req)
     @required_ruby_version = Gem::Requirement.create req
@@ -1555,7 +1558,6 @@ class Gem::Specification < Gem::BasicSpecification
   def build_extensions # :nodoc:
     return if default_gem?
     return if extensions.empty?
-    return if installed_by_version < Gem::Version.new('2.2.0.preview.2')
     return if File.exist? gem_build_complete_path
     return if !File.writable?(base_dir)
     return if !File.exist?(File.join(base_dir, 'extensions'))
@@ -1687,12 +1689,6 @@ class Gem::Specification < Gem::BasicSpecification
     @date = case date
             when String then
               if DateTimeFormat =~ date
-                Time.utc($1.to_i, $2.to_i, $3.to_i)
-
-              # Workaround for where the date format output from psych isn't
-              # parsed as a Time object by syck and thus comes through as a
-              # string.
-              elsif /\A(\d{4})-(\d{2})-(\d{2}) \d{2}:\d{2}:\d{2}\.\d+?Z\z/ =~ date
                 Time.utc($1.to_i, $2.to_i, $3.to_i)
               else
                 raise(Gem::InvalidSpecificationException,
@@ -2126,7 +2122,6 @@ class Gem::Specification < Gem::BasicSpecification
   def missing_extensions?
     return false if default_gem?
     return false if extensions.empty?
-    return false if installed_by_version < Gem::Version.new('2.2.0.preview.2')
     return false if File.exist? gem_build_complete_path
 
     true
@@ -2420,7 +2415,6 @@ class Gem::Specification < Gem::BasicSpecification
   # still have their default values are omitted.
 
   def to_ruby
-    require_relative 'openssl'
     mark_version
     result = []
     result << "# -*- encoding: utf-8 -*-"
@@ -2454,14 +2448,19 @@ class Gem::Specification < Gem::BasicSpecification
       :has_rdoc,
       :default_executable,
       :metadata,
+      :signing_key,
     ]
 
     @@attributes.each do |attr_name|
       next if handled.include? attr_name
       current_value = self.send(attr_name)
       if current_value != default_value(attr_name) || self.class.required_attribute?(attr_name)
-        result << "  s.#{attr_name} = #{ruby_code current_value}" unless defined?(OpenSSL::PKey::RSA) && current_value.is_a?(OpenSSL::PKey::RSA)
+        result << "  s.#{attr_name} = #{ruby_code current_value}"
       end
+    end
+
+    if String === signing_key
+      result << "  s.signing_key = #{signing_key.dump}.freeze"
     end
 
     if @installed_by_version

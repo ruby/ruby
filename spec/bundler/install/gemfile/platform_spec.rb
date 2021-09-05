@@ -88,14 +88,15 @@ RSpec.describe "bundle install across platforms" do
     simulate_new_machine
 
     simulate_platform "ruby"
-    install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-
-      gem "nokogiri"
-    G
+    bundle "install"
 
     expect(the_bundle).to include_gems "nokogiri 1.4.2"
     expect(the_bundle).not_to include_gems "weakling"
+
+    simulate_platform "java"
+    bundle "install"
+
+    expect(the_bundle).to include_gems "nokogiri 1.4.2 JAVA", "weakling 0.0.3"
   end
 
   it "does not keep unneeded platforms for gems that are used" do
@@ -241,20 +242,6 @@ RSpec.describe "bundle install across platforms" do
     end
   end
 
-  it "works the other way with gems that have different dependencies" do
-    simulate_platform "ruby"
-    install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-
-      gem "nokogiri"
-    G
-
-    simulate_platform "java"
-    bundle "install"
-
-    expect(the_bundle).to include_gems "nokogiri 1.4.2 JAVA", "weakling 0.0.3"
-  end
-
   it "works with gems with platform-specific dependency having different requirements order" do
     simulate_platform x64_mac
 
@@ -291,7 +278,7 @@ RSpec.describe "bundle install across platforms" do
       gem "rack", "1.0.0"
     G
 
-    bundle "config --local path vendor/bundle"
+    bundle "config set --local path vendor/bundle"
     bundle :install
 
     FileUtils.mv(vendored_gems, bundled_app("vendor/bundle", Gem.ruby_engine, "1.8"))
@@ -413,6 +400,7 @@ RSpec.describe "bundle install with platform conditionals" do
     build_git "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       platform :#{not_local_tag} do
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       end

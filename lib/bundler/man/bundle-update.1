@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "BUNDLE\-UPDATE" "1" "January 2021" "" ""
+.TH "BUNDLE\-UPDATE" "1" "June 2021" "" ""
 .
 .SH "NAME"
 \fBbundle\-update\fR \- Update your gems to the latest available versions
@@ -79,7 +79,7 @@ Do not allow any gem to be updated past latest \fB\-\-patch\fR | \fB\-\-minor\fR
 .
 .TP
 \fB\-\-conservative\fR
-Use bundle install conservative update behavior and do not allow shared dependencies to be updated\.
+Use bundle install conservative update behavior and do not allow indirect dependencies to be updated\.
 .
 .SH "UPDATING ALL GEMS"
 If you run \fBbundle update \-\-all\fR, bundler will ignore any previously installed gems and resolve all dependencies again based on the latest versions of all gems available in the sources\.
@@ -208,13 +208,13 @@ In this case, the two gems have their own set of dependencies, but they share \f
 In short, by default, when you update a gem using \fBbundle update\fR, bundler will update all dependencies of that gem, including those that are also dependencies of another gem\.
 .
 .P
-To prevent updating shared dependencies, prior to version 1\.14 the only option was the \fBCONSERVATIVE UPDATING\fR behavior in bundle install(1) \fIbundle\-install\.1\.html\fR:
+To prevent updating indirect dependencies, prior to version 1\.14 the only option was the \fBCONSERVATIVE UPDATING\fR behavior in bundle install(1) \fIbundle\-install\.1\.html\fR:
 .
 .P
 In this scenario, updating the \fBthin\fR version manually in the Gemfile(5), and then running bundle install(1) \fIbundle\-install\.1\.html\fR will only update \fBdaemons\fR and \fBeventmachine\fR, but not \fBrack\fR\. For more information, see the \fBCONSERVATIVE UPDATING\fR section of bundle install(1) \fIbundle\-install\.1\.html\fR\.
 .
 .P
-Starting with 1\.14, specifying the \fB\-\-conservative\fR option will also prevent shared dependencies from being updated\.
+Starting with 1\.14, specifying the \fB\-\-conservative\fR option will also prevent indirect dependencies from being updated\.
 .
 .SH "PATCH LEVEL OPTIONS"
 Version 1\.14 introduced 4 patch\-level options that will influence how gem versions are resolved\. One of the following options can be used: \fB\-\-patch\fR, \fB\-\-minor\fR or \fB\-\-major\fR\. \fB\-\-strict\fR can be added to further influence resolution\.

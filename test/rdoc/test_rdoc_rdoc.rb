@@ -133,6 +133,29 @@ class TestRDocRDoc < RDoc::TestCase
     end
   end
 
+  def test_load_options_empty_file
+    temp_dir do
+      File.open '.rdoc_options', 'w' do |io|
+      end
+
+      options = @rdoc.load_options
+
+      assert_equal 'rdoc', options.markup
+    end
+  end
+
+  def test_load_options_partial_override
+    temp_dir do
+      File.open '.rdoc_options', 'w' do |io|
+        io.write "markup: Markdown"
+      end
+
+      options = @rdoc.load_options
+
+      assert_equal 'Markdown', options.markup
+    end
+  end
+
   def load_options_no_file
     temp_dir do
       options = @rdoc.load_options
@@ -430,6 +453,18 @@ class TestRDocRDoc < RDoc::TestCase
       ]
 
       assert_empty @rdoc.remove_unparseable file_list
+    end
+  end
+
+  def test_remove_unparseable_CVE_2021_31799
+    temp_dir do
+      file_list = ['| touch evil.txt && echo tags']
+      file_list.each do |f|
+        FileUtils.touch f rescue omit
+      end
+
+      assert_equal file_list, @rdoc.remove_unparseable(file_list)
+      assert_equal file_list, Dir.children('.')
     end
   end
 

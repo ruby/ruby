@@ -47,12 +47,26 @@ class RubyLex
     @io = io
     if @io.respond_to?(:check_termination)
       @io.check_termination do |code|
-        code.gsub!(/\s*\z/, '').concat("\n")
-        ltype, indent, continue, code_block_open = check_state(code)
-        if ltype or indent > 0 or continue or code_block_open
-          false
+        if Reline::IOGate.in_pasting?
+          lex = RubyLex.new
+          rest = lex.check_termination_in_prev_line(code)
+          if rest
+            Reline.delete_text
+            rest.bytes.reverse_each do |c|
+              Reline.ungetc(c)
+            end
+            true
+          else
+            false
+          end
         else
-          true
+          code.gsub!(/\s*\z/, '').concat("\n")
+          ltype, indent, continue, code_block_open = check_state(code)
+          if ltype or indent > 0 or continue or code_block_open
+            false
+          else
+            true
+          end
         end
       end
     end
@@ -60,7 +74,7 @@ class RubyLex
       @io.dynamic_prompt do |lines|
         lines << '' if lines.empty?
         result = []
-        tokens = ripper_lex_without_warning(lines.map{ |l| l + "\n" }.join)
+        tokens = self.class.ripper_lex_without_warning(lines.map{ |l| l + "\n" }.join)
         code = String.new
         partial_tokens = []
         unprocessed_tokens = []
@@ -115,10 +129,10 @@ class RubyLex
     :on_param_error
   ]
 
-  def ripper_lex_without_warning(code)
+  def self.ripper_lex_without_warning(code)
     verbose, $VERBOSE = $VERBOSE, nil
     tokens = nil
-    self.class.compile_with_errors_suppressed(code) do |inner_code, line_no|
+    compile_with_errors_suppressed(code) do |inner_code, line_no|
       lexer = Ripper::Lexer.new(inner_code, '-', line_no)
       if lexer.respond_to?(:scan) # Ruby 2.7+
         tokens = []
@@ -168,7 +182,7 @@ class RubyLex
     if @io.respond_to?(:auto_indent) and context.auto_indent_mode
       @io.auto_indent do |lines, line_index, byte_pointer, is_newline|
         if is_newline
-          @tokens = ripper_lex_without_warning(lines[0..line_index].join("\n"))
+          @tokens = self.class.ripper_lex_without_warning(lines[0..line_index].join("\n"))
           prev_spaces = find_prev_spaces(line_index)
           depth_difference = check_newline_depth_difference
           depth_difference = 0 if depth_difference < 0
@@ -177,7 +191,7 @@ class RubyLex
           code = line_index.zero? ? '' : lines[0..(line_index - 1)].map{ |l| l + "\n" }.join
           last_line = lines[line_index]&.byteslice(0, byte_pointer)
           code += last_line if last_line
-          @tokens = ripper_lex_without_warning(code)
+          @tokens = self.class.ripper_lex_without_warning(code)
           corresponding_token_depth = check_corresponding_token_depth
           if corresponding_token_depth
             corresponding_token_depth
@@ -190,7 +204,7 @@ class RubyLex
   end
 
   def check_state(code, tokens = nil)
-    tokens = ripper_lex_without_warning(code) unless tokens
+    tokens = self.class.ripper_lex_without_warning(code) unless tokens
     ltype = process_literal_type(tokens)
     indent = process_nesting_level(tokens)
     continue = process_continue(tokens)
@@ -256,7 +270,7 @@ class RubyLex
     end
     code = @line + (line.nil? ? '' : line)
     code.gsub!(/\s*\z/, '').concat("\n")
-    @tokens = ripper_lex_without_warning(code)
+    @tokens = self.class.ripper_lex_without_warning(code)
     @continue = process_continue
     @code_block_open = check_code_block(code)
     @indent = process_nesting_level
@@ -277,8 +291,9 @@ class RubyLex
       return true
     elsif tokens.size >= 1 and tokens[-1][1] == :on_heredoc_end # "EOH\n"
       return false
-    elsif tokens.size >= 2 and defined?(Ripper::EXPR_BEG) and tokens[-2][3].anybits?(Ripper::EXPR_BEG | Ripper::EXPR_FNAME)
+    elsif tokens.size >= 2 and defined?(Ripper::EXPR_BEG) and tokens[-2][3].anybits?(Ripper::EXPR_BEG | Ripper::EXPR_FNAME) and tokens[-2][2] !~ /\A\.\.\.?\z/
       # end of literal except for regexp
+      # endless range at end of line is not a continue
       return true
     end
     false
@@ -737,6 +752,51 @@ class RubyLex
     else
       nil
     end
+  end
+
+  def check_termination_in_prev_line(code)
+    tokens = self.class.ripper_lex_without_warning(code)
+    past_first_newline = false
+    index = tokens.rindex do |t|
+      # traverse first token before last line
+      if past_first_newline
+        if t.tok.include?("\n")
+          true
+        end
+      elsif t.tok.include?("\n")
+        past_first_newline = true
+        false
+      else
+        false
+      end
+    end
+    if index
+      first_token = nil
+      last_line_tokens = tokens[(index + 1)..(tokens.size - 1)]
+      last_line_tokens.each do |t|
+        unless [:on_sp, :on_ignored_sp, :on_comment].include?(t.event)
+          first_token = t
+          break
+        end
+      end
+      if first_token.nil?
+        return false
+      elsif first_token && first_token.state == Ripper::EXPR_DOT
+        return false
+      else
+        tokens_without_last_line = tokens[0..index]
+        ltype = process_literal_type(tokens_without_last_line)
+        indent = process_nesting_level(tokens_without_last_line)
+        continue = process_continue(tokens_without_last_line)
+        code_block_open = check_code_block(tokens_without_last_line.map(&:tok).join(''), tokens_without_last_line)
+        if ltype or indent > 0 or continue or code_block_open
+          return false
+        else
+          return last_line_tokens.map(&:tok).join('')
+        end
+      end
+    end
+    false
   end
 end
 # :startdoc:

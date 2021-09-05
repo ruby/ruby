@@ -86,7 +86,7 @@ RSpec.describe "bundle lock" do
   it "does not fetch remote specs when using the --local option" do
     bundle "lock --update --local", :raise_on_error => false
 
-    expect(err).to match(/sources listed in your Gemfile|installed locally/)
+    expect(err).to match(/locally installed gems/)
   end
 
   it "works with --gemfile flag" do
@@ -489,6 +489,51 @@ RSpec.describe "bundle lock" do
         expect(the_bundle).to include_gem("libv8 8.4.255.0 #{platform}")
       end
     end
+  end
+
+  it "does not conflict on ruby requirements when adding new platforms" do
+    next_minor = Gem.ruby_version.segments[0..1].map.with_index {|s, i| i == 1 ? s + 1 : s }.join(".")
+
+    build_repo4 do
+      build_gem "raygun-apm", "1.0.78" do |s|
+        s.platform = "x86_64-linux"
+        s.required_ruby_version = "< #{next_minor}.dev"
+      end
+
+      build_gem "raygun-apm", "1.0.78" do |s|
+        s.platform = "universal-darwin"
+        s.required_ruby_version = "< #{next_minor}.dev"
+      end
+
+      build_gem "raygun-apm", "1.0.78" do |s|
+        s.platform = "x64-mingw32"
+        s.required_ruby_version = "< #{next_minor}.dev"
+      end
+    end
+
+    gemfile <<-G
+      source "https://localgemserver.test"
+
+      gem "raygun-apm"
+    G
+
+    lockfile <<-L
+      GEM
+        remote: https://localgemserver.test/
+        specs:
+          raygun-apm (1.0.78-universal-darwin)
+
+      PLATFORMS
+        x86_64-darwin-19
+
+      DEPENDENCIES
+        raygun-apm
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "lock --add-platform x86_64-linux", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
   end
 
   context "when an update is available" do

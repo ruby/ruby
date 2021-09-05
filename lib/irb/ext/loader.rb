@@ -38,9 +38,9 @@ module IRB # :nodoc:
     else
       separator =
         if File::ALT_SEPARATOR
-          File::SEPARATOR
-        else
           "[#{Regexp.quote(File::SEPARATOR + File::ALT_SEPARATOR)}]"
+        else
+          File::SEPARATOR
         end
       ABSOLUTE_PATH_PATTERN = # :nodoc:
         case Dir.pwd

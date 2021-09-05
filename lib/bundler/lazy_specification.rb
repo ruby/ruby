@@ -73,7 +73,12 @@ module Bundler
         same_platform_candidates = candidates.select do |spec|
           MatchPlatform.platforms_match?(spec.platform, platform_object)
         end
-        search = same_platform_candidates.last || candidates.last
+        installable_candidates = same_platform_candidates.select do |spec|
+          !spec.is_a?(EndpointSpecification) ||
+            (spec.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
+              spec.required_rubygems_version.satisfied_by?(Gem.rubygems_version))
+        end
+        search = installable_candidates.last || same_platform_candidates.last
         search.dependencies = dependencies if search && (search.is_a?(RemoteSpecification) || search.is_a?(EndpointSpecification))
         search
       end

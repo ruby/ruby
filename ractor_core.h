@@ -138,10 +138,7 @@ struct rb_ractor_struct {
     VALUE verbose;
     VALUE debug;
 
-    struct {
-        struct RVALUE *freelist;
-        struct heap_page *using_page;
-    } newobj_cache;
+    rb_ractor_newobj_cache_t newobj_cache;
 
     // gc.c rb_objspace_reachable_objects_from
     struct gc_mark_func_data_struct {

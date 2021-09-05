@@ -76,7 +76,7 @@ class Gem::FakeFetcher
 
   def cache_update_path(uri, path = nil, update = true)
     if data = fetch_path(uri)
-      open(path, 'wb') {|io| io.write data } if path and update
+      File.open(path, 'wb') {|io| io.write data } if path and update
       data
     else
       Gem.read_binary(path) if path
@@ -348,8 +348,6 @@ end
 # A StringIO duck-typed class that uses Tempfile instead of String as the
 # backing store.
 #
-# This is available when rubygems/test_utilities is required.
-#--
 # This class was added to flush out problems in Rubinius' IO implementation.
 
 class TempIO < Tempfile

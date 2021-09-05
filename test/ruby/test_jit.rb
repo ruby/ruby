@@ -857,6 +857,18 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_inlined_getconstant
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '11', success_count: 1, min_calls: 2)
+    begin;
+      FOO = 1
+      def const
+        FOO
+      end
+      print const
+      print const
+    end;
+  end
+
   def test_attr_reader
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "4nil\nnil\n6", success_count: 2, min_calls: 2)
     begin;

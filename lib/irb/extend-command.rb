@@ -126,7 +126,23 @@ module IRB # :nodoc:
       ],
 
       [
-        :measure, :Measure, "irb/cmd/measure"
+        :irb_ls, :Ls, "irb/cmd/ls",
+        [:ls, NO_OVERRIDE],
+      ],
+
+      [
+        :irb_measure, :Measure, "irb/cmd/measure",
+        [:measure, NO_OVERRIDE],
+      ],
+
+      [
+        :irb_show_source, :ShowSource, "irb/cmd/show_source",
+        [:show_source, NO_OVERRIDE],
+      ],
+
+      [
+        :irb_whereami, :Whereami, "irb/cmd/whereami",
+        [:whereami, NO_OVERRIDE],
       ],
 
     ]
@@ -168,12 +184,13 @@ module IRB # :nodoc:
       end
 
       if load_file
+        kwargs = ", **kwargs" if RUBY_ENGINE == "ruby" && RUBY_VERSION >= "2.7.0"
         line = __LINE__; eval %[
-          def #{cmd_name}(*opts, &b)
+          def #{cmd_name}(*opts#{kwargs}, &b)
             require "#{load_file}"
             arity = ExtendCommand::#{cmd_class}.instance_method(:execute).arity
             args = (1..(arity < 0 ? ~arity : arity)).map {|i| "arg" + i.to_s }
-            args << "*opts" if arity < 0
+            args << "*opts#{kwargs}" if arity < 0
             args << "&block"
             args = args.join(", ")
             line = __LINE__; eval %[
@@ -184,7 +201,7 @@ module IRB # :nodoc:
                 end
               end
             ], nil, __FILE__, line
-            __send__ :#{cmd_name}_, *opts, &b
+            __send__ :#{cmd_name}_, *opts#{kwargs}, &b
           end
         ], nil, __FILE__, line
       else

@@ -60,8 +60,8 @@ RSpec.describe "gemcutter's dependency API" do
     G
     bundle :install, :artifice => "endpoint"
 
-    bundle "config --local deployment true"
-    bundle "config --local path vendor/bundle"
+    bundle "config set --local deployment true"
+    bundle "config set --local path vendor/bundle"
     bundle :install, :artifice => "endpoint"
     expect(out).to include("Fetching gem metadata from #{source_uri}")
     expect(the_bundle).to include_gems "rack 1.0.0"
@@ -98,7 +98,7 @@ RSpec.describe "gemcutter's dependency API" do
 
     bundle :install, :artifice => "endpoint"
 
-    bundle "config --local deployment true"
+    bundle "config set --local deployment true"
     bundle :install, :artifice => "endpoint"
 
     expect(the_bundle).to include_gems("rails 2.3.2")
@@ -112,7 +112,7 @@ RSpec.describe "gemcutter's dependency API" do
     G
 
     bundle "install", :artifice => "endpoint"
-    bundle "config --local deployment true"
+    bundle "config set --local deployment true"
     bundle :install, :artifice => "endpoint"
 
     expect(the_bundle).to include_gems("foo 1.0")
@@ -338,31 +338,6 @@ RSpec.describe "gemcutter's dependency API" do
     expect(the_bundle).to include_gems "activesupport 1.2.3"
   end
 
-  it "considers all possible versions of dependencies from all api gem sources using blocks" do
-    # In this scenario, the gem "somegem" only exists in repo4.  It depends on specific version of activesupport that
-    # exists only in repo1.  There happens also be a version of activesupport in repo4, but not the one that version 1.0.0
-    # of somegem wants. This test makes sure that bundler actually finds version 1.2.3 of active support in the other
-    # repo and installs it.
-    build_repo4 do
-      build_gem "activesupport", "1.2.0"
-      build_gem "somegem", "1.0.0" do |s|
-        s.add_dependency "activesupport", "1.2.3" # This version exists only in repo1
-      end
-    end
-
-    gemfile <<-G
-      source "#{source_uri}"
-      source "#{source_uri}/extra" do
-        gem 'somegem', '1.0.0'
-      end
-    G
-
-    bundle :install, :artifice => "endpoint_extra_api"
-
-    expect(the_bundle).to include_gems "somegem 1.0.0"
-    expect(the_bundle).to include_gems "activesupport 1.2.3"
-  end
-
   it "prints API output properly with back deps" do
     build_repo2 do
       build_gem "back_deps" do |s|
@@ -396,7 +371,7 @@ RSpec.describe "gemcutter's dependency API" do
 
     api_request_limit = low_api_request_limit_for(gem_repo2)
 
-    install_gemfile <<-G, :artifice => "endpoint_extra_missing", :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
+    install_gemfile <<-G, :artifice => "endpoint_extra_missing", :requires => [api_request_limit_hack_file], :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
       source "#{source_uri}"
       source "#{source_uri}/extra"
       gem "back_deps"
@@ -417,7 +392,7 @@ RSpec.describe "gemcutter's dependency API" do
 
     api_request_limit = low_api_request_limit_for(gem_repo2)
 
-    install_gemfile <<-G, :artifice => "endpoint_extra_missing", :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
+    install_gemfile <<-G, :artifice => "endpoint_extra_missing", :requires => [api_request_limit_hack_file], :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
       source "#{source_uri}"
       source "#{source_uri}/extra" do
         gem "back_deps"
@@ -438,7 +413,7 @@ RSpec.describe "gemcutter's dependency API" do
     expect(the_bundle).to include_gems "foo 1.0"
   end
 
-  it "fetches again when more dependencies are found in subsequent sources using --deployment", :bundler => "< 3" do
+  it "fetches again when more dependencies are found in subsequent sources using deployment mode", :bundler => "< 3" do
     build_repo2 do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
@@ -453,8 +428,8 @@ RSpec.describe "gemcutter's dependency API" do
     G
 
     bundle :install, :artifice => "endpoint_extra"
-
-    bundle "install --deployment", :artifice => "endpoint_extra"
+    bundle "config set --local deployment true"
+    bundle :install, :artifice => "endpoint_extra"
     expect(the_bundle).to include_gems "back_deps 1.0"
   end
 
@@ -474,8 +449,7 @@ RSpec.describe "gemcutter's dependency API" do
     G
 
     bundle :install, :artifice => "endpoint_extra"
-
-    bundle "config --local deployment true"
+    bundle "config set --local deployment true"
     bundle "install", :artifice => "endpoint_extra"
     expect(the_bundle).to include_gems "back_deps 1.0"
   end
@@ -586,6 +560,17 @@ RSpec.describe "gemcutter's dependency API" do
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
 
+    it "passes basic authentication details and strips out creds also in verbose mode" do
+      gemfile <<-G
+        source "#{basic_auth_source_uri}"
+        gem "rack"
+      G
+
+      bundle :install, :verbose => true, :artifice => "endpoint_basic_authentication"
+      expect(out).not_to include("#{user}:#{password}")
+      expect(the_bundle).to include_gems "rack 1.0.0"
+    end
+
     it "strips http basic authentication creds for modern index" do
       gemfile <<-G
         source "#{basic_auth_source_uri}"
@@ -628,6 +613,22 @@ RSpec.describe "gemcutter's dependency API" do
 
       bundle :install, :artifice => "endpoint_creds_diff_host"
       expect(the_bundle).to include_gems "rack 1.0.0"
+    end
+
+    describe "with host including dashes" do
+      before do
+        gemfile <<-G
+          source "http://local-gemserver.test"
+          gem "rack"
+        G
+      end
+
+      it "reads authentication details from a valid ENV variable" do
+        bundle :install, :artifice => "endpoint_strict_basic_authentication", :env => { "BUNDLE_LOCAL___GEMSERVER__TEST" => "#{user}:#{password}" }
+
+        expect(out).to include("Fetching gem metadata from http://local-gemserver.test")
+        expect(the_bundle).to include_gems "rack 1.0.0"
+      end
     end
 
     describe "with authentication details in bundle config" do

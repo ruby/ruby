@@ -222,6 +222,11 @@ _end_of_pem_
     assert_equal(token.to_der, resp.token.to_der)
   end
 
+  def test_response_failure_info
+    resp = OpenSSL::Timestamp::Response.new("0\"0 \x02\x01\x020\x17\f\x15Invalid TimeStampReq.\x03\x02\x06\x80")
+    assert_equal(:BAD_ALG, resp.failure_info)
+  end
+
   def test_response_mandatory_fields
     fac = OpenSSL::Timestamp::Factory.new
     req = OpenSSL::Timestamp::Request.new

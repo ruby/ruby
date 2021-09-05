@@ -93,6 +93,10 @@
 #include "ruby/debug.h"
 #include "ruby/thread.h"
 #include "ruby/version.h"
+#include "builtin.h"
+#include "insns.inc"
+#include "insns_info.inc"
+#include "internal/compile.h"
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -729,6 +733,51 @@ sprint_funcname(char *funcname, const struct rb_mjit_unit *unit)
     }
 }
 
+static const rb_iseq_t **compiling_iseqs = NULL;
+
+static bool
+set_compiling_iseqs(const rb_iseq_t *iseq)
+{
+    compiling_iseqs = calloc(iseq->body->iseq_size + 2, sizeof(rb_iseq_t *)); // 2: 1 (unit->iseq) + 1 (NULL end)
+    if (compiling_iseqs == NULL)
+        return false;
+
+    compiling_iseqs[0] = iseq;
+    int i = 1;
+
+    unsigned int pos = 0;
+    while (pos < iseq->body->iseq_size) {
+#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
+        int insn = rb_vm_insn_addr2insn((void *)iseq->body->iseq_encoded[pos]);
+#else
+        int insn = (int)iseq->body->iseq_encoded[pos];
+#endif
+        if (insn == BIN(opt_send_without_block)) {
+            CALL_DATA cd = (CALL_DATA)iseq->body->iseq_encoded[pos + 1];
+            extern const rb_iseq_t *rb_mjit_inlinable_iseq(const struct rb_callinfo *ci, const struct rb_callcache *cc);
+            const rb_iseq_t *iseq = rb_mjit_inlinable_iseq(cd->ci, cd->cc);
+            if (iseq != NULL) {
+                compiling_iseqs[i] = iseq;
+                i++;
+            }
+        }
+        pos += insn_len(insn);
+    }
+    return true;
+}
+
+bool
+rb_mjit_compiling_iseq_p(const rb_iseq_t *iseq)
+{
+    assert(compiling_iseqs != NULL);
+    int i = 0;
+    while (compiling_iseqs[i]) {
+        if (compiling_iseqs[i] == iseq) return true;
+        i++;
+    }
+    return false;
+}
+
 static const int c_file_access_mode =
 #ifdef O_BINARY
     O_BINARY|
@@ -951,6 +1000,11 @@ compile_compact_jit_code(char* c_file)
     // compacted functions (not done yet).
     bool success = true;
     list_for_each(&active_units.head, child_unit, unode) {
+        CRITICAL_SECTION_START(3, "before set_compiling_iseqs");
+        success &= set_compiling_iseqs(child_unit->iseq);
+        CRITICAL_SECTION_FINISH(3, "after set_compiling_iseqs");
+        if (!success) continue;
+
         char funcname[MAXPATHLEN];
         sprint_funcname(funcname, child_unit);
 
@@ -964,6 +1018,11 @@ compile_compact_jit_code(char* c_file)
         if (!iseq_label) iseq_label = sep = "";
         fprintf(f, "\n/* %s%s%s:%ld */\n", iseq_label, sep, iseq_path, iseq_lineno);
         success &= mjit_compile(f, child_unit->iseq, funcname, child_unit->id);
+
+        CRITICAL_SECTION_START(3, "before compiling_iseqs free");
+        free(compiling_iseqs);
+        compiling_iseqs = NULL;
+        CRITICAL_SECTION_FINISH(3, "after compiling_iseqs free");
     }
 
     // release blocking mjit_gc_start_hook
@@ -1103,8 +1162,6 @@ compile_prelude(FILE *f)
 #endif
 }
 
-static rb_iseq_t *compiling_iseq = NULL;
-
 // Compile ISeq in UNIT and return function pointer of JIT-ed code.
 // It may return NOT_COMPILED_JIT_ISEQ_FUNC if something went wrong.
 static mjit_func_t
@@ -1139,7 +1196,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     // We need to check again here because we could've waited on GC above
     in_jit = (unit->iseq != NULL);
     if (in_jit)
-        compiling_iseq = unit->iseq;
+        in_jit &= set_compiling_iseqs(unit->iseq);
     CRITICAL_SECTION_FINISH(3, "before mjit_compile to wait GC finish");
     if (!in_jit) {
         fclose(f);
@@ -1164,7 +1221,8 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 
     // release blocking mjit_gc_start_hook
     CRITICAL_SECTION_START(3, "after mjit_compile to wakeup client for GC");
-    compiling_iseq = NULL;
+    free(compiling_iseqs);
+    compiling_iseqs = NULL;
     in_jit = false;
     verbose(3, "Sending wakeup signal to client in a mjit-worker for GC");
     rb_native_cond_signal(&mjit_client_wakeup);
@@ -1344,6 +1402,8 @@ unload_units(void)
     }
 }
 
+static void mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info, bool worker_p);
+
 // The function implementing a worker. It is executed in a separate
 // thread by rb_thread_create_mjit_thread. It compiles precompiled header
 // and then compiles requested ISeqs.
@@ -1380,7 +1440,7 @@ mjit_worker(void)
 
         // Wait until a unit becomes available
         CRITICAL_SECTION_START(3, "in worker dequeue");
-        while ((pending_stale_p || list_empty(&unit_queue.head) || active_units.length >= mjit_opts.max_cache_size) && !stop_worker_p) {
+        while ((list_empty(&unit_queue.head) || active_units.length >= mjit_opts.max_cache_size) && !stop_worker_p) {
             rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
             verbose(3, "Getting wakeup from client");
 
@@ -1393,6 +1453,8 @@ mjit_worker(void)
                         unit->stale_p = false;
                         remove_from_list(unit, &active_units);
                         add_to_list(unit, &stale_units);
+                        // Lazily put it to unit_queue as well to avoid race conditions on jit_unit with mjit_compile.
+                        mjit_add_iseq_to_process(unit->iseq, &unit->iseq->body->jit_unit->compile_info, true);
                     }
                 }
             }

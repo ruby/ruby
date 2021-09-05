@@ -1852,6 +1852,7 @@ CODE
   def test_strip
     assert_equal(S("x"), S("      x        ").strip)
     assert_equal(S("x"), S(" \n\r\t     x  \t\r\n\n      ").strip)
+    assert_equal(S("x"), S("\x00x\x00").strip)
 
     assert_equal("0b0 ".force_encoding("UTF-16BE"),
                  "\x00 0b0 ".force_encoding("UTF-16BE").strip)
@@ -1867,6 +1868,10 @@ CODE
     assert_equal(S("      x        "), b)
 
     a = S(" \n\r\t     x  \t\r\n\n      ")
+    assert_equal(S("x"), a.strip!)
+    assert_equal(S("x"), a)
+
+    a = S("\x00x\x00")
     assert_equal(S("x"), a.strip!)
     assert_equal(S("x"), a)
 
@@ -2703,6 +2708,7 @@ CODE
   def test_rstrip
     assert_equal("  hello", "  hello  ".rstrip)
     assert_equal("\u3042", "\u3042   ".rstrip)
+    assert_equal("\u3042", "\u3042\u0000".rstrip)
     assert_raise(Encoding::CompatibilityError) { "\u3042".encode("ISO-2022-JP").rstrip }
   end
 
@@ -2723,12 +2729,17 @@ CODE
     assert_equal(nil, s4.rstrip!)
     assert_equal("\u3042", s4)
 
+    s5 = S("\u3042\u0000")
+    assert_equal("\u3042", s5.rstrip!)
+    assert_equal("\u3042", s5)
+
     assert_raise(Encoding::CompatibilityError) { "\u3042".encode("ISO-2022-JP").rstrip! }
   end
 
   def test_lstrip
     assert_equal("hello  ", "  hello  ".lstrip)
     assert_equal("\u3042", "   \u3042".lstrip)
+    assert_equal("hello  ", "\x00hello  ".lstrip)
   end
 
   def test_lstrip_bang
@@ -2747,6 +2758,11 @@ CODE
     s4 = S("\u3042")
     assert_equal(nil, s4.lstrip!)
     assert_equal("\u3042", s4)
+
+    s5 = S("\u0000\u3042")
+    assert_equal("\u3042", s5.lstrip!)
+    assert_equal("\u3042", s5)
+
   end
 
   def test_delete_prefix

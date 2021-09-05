@@ -70,4 +70,35 @@ RSpec.context "when using gem before installing" do
     expect(err).to_not include("If you haven't changed sources, that means the author of rack (0.9.1) has removed it.")
     expect(err).to_not include("You'll need to update your bundle to a different version of rack (0.9.1) that hasn't been removed in order to install.")
   end
+
+  it "does not suggest the author has yanked the gem when using more than one gem, but shows all gems that couldn't be found in the source" do
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "rack", "0.9.1"
+      gem "rack_middleware", "1.0"
+    G
+
+    lockfile <<-L
+      GEM
+        remote: #{file_uri_for(gem_repo1)}
+        specs:
+          rack (0.9.1)
+          rack_middleware (1.0)
+
+      PLATFORMS
+        ruby
+
+      DEPENDENCIES
+        rack (= 0.9.1)
+        rack_middleware (1.0)
+    L
+
+    bundle :list, :raise_on_error => false
+
+    expect(err).to include("Could not find rack-0.9.1, rack_middleware-1.0 in any of the sources")
+    expect(err).to include("Install missing gems with `bundle install`.")
+    expect(err).to_not include("Your bundle is locked to rack (0.9.1), but that version could not be found in any of the sources listed in your Gemfile.")
+    expect(err).to_not include("If you haven't changed sources, that means the author of rack (0.9.1) has removed it.")
+    expect(err).to_not include("You'll need to update your bundle to a different version of rack (0.9.1) that hasn't been removed in order to install.")
+  end
 end

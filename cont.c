@@ -1155,6 +1155,11 @@ VALUE rb_fiberptr_self(struct rb_fiber_struct *fiber)
     return fiber->cont.self;
 }
 
+unsigned int rb_fiberptr_blocking(struct rb_fiber_struct *fiber)
+{
+    return fiber->blocking;
+}
+
 // This is used for root_fiber because other fibers call cont_init_mjit_cont through cont_new.
 void
 rb_fiber_init_mjit_cont(struct rb_fiber_struct *fiber)

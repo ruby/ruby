@@ -21,5 +21,6 @@ void ruby_register_rollback_func_for_ensure(VALUE (*ensure_func)(VALUE), VALUE (
 void rb_fiber_init_mjit_cont(struct rb_fiber_struct *fiber);
 
 VALUE rb_fiberptr_self(struct rb_fiber_struct *fiber);
+unsigned int rb_fiberptr_blocking(struct rb_fiber_struct *fiber);
 
 #endif /* INTERNAL_CONT_H */

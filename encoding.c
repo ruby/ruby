@@ -101,8 +101,6 @@ static rb_encoding *global_enc_ascii,
 #define ENCODING_NAMELEN_MAX 63
 #define valid_encoding_name_p(name) ((name) && strlen(name) <= ENCODING_NAMELEN_MAX)
 
-#define enc_autoload_p(enc) (!rb_enc_mbmaxlen(enc))
-
 static const rb_data_type_t encoding_data_type = {
     "encoding",
     {0, 0, 0,},
@@ -207,16 +205,14 @@ rb_enc_dummy_p(rb_encoding *enc)
     return ENC_DUMMY_P(enc) != 0;
 }
 
-static int enc_autoload(rb_encoding *);
-
 static int
 check_encoding(rb_encoding *enc)
 {
     int index = rb_enc_to_index(enc);
     if (rb_enc_from_index(index) != enc)
 	return -1;
-    if (enc_autoload_p(enc)) {
-        index = enc_autoload(enc);
+    if (rb_enc_autoload_p(enc)) {
+        index = rb_enc_autoload(enc);
     }
     return index;
 }
@@ -260,7 +256,7 @@ must_encindex(int index)
 	rb_raise(rb_eEncodingError, "wrong encoding index %d for %s (expected %d)",
 		 index, rb_enc_name(enc), ENC_TO_ENCINDEX(enc));
     }
-    if (enc_autoload_p(enc) && enc_autoload(enc) == -1) {
+    if (rb_enc_autoload_p(enc) && rb_enc_autoload(enc) == -1) {
 	rb_loaderror("failed to load encoding (%s)",
 		     rb_enc_name(enc));
     }
@@ -444,7 +440,7 @@ rb_enc_register(const char *name, rb_encoding *encoding)
             if (STRCASECMP(name, rb_enc_name(oldenc))) {
                 index = enc_register(enc_table, name, encoding);
             }
-            else if (enc_autoload_p(oldenc) || !ENC_DUMMY_P(oldenc)) {
+            else if (rb_enc_autoload_p(oldenc) || !ENC_DUMMY_P(oldenc)) {
                 enc_register_at(enc_table, index, name, encoding);
             }
             else {
@@ -834,7 +830,7 @@ load_encoding(const char *name)
         else if ((idx = enc_registered(enc_table, name)) < 0) {
             idx = -1;
         }
-        else if (enc_autoload_p(enc_table->list[idx].enc)) {
+        else if (rb_enc_autoload_p(enc_table->list[idx].enc)) {
             idx = -1;
         }
     }
@@ -853,8 +849,8 @@ enc_autoload_body(struct enc_table *enc_table, rb_encoding *enc)
 	do {
 	    if (i >= enc_table->count) return -1;
 	} while (enc_table->list[i].enc != base && (++i, 1));
-	if (enc_autoload_p(base)) {
-	    if (enc_autoload(base) < 0) return -1;
+	if (rb_enc_autoload_p(base)) {
+	    if (rb_enc_autoload(base) < 0) return -1;
 	}
 	i = enc->ruby_encoding_index;
 	enc_register_at(enc_table, i & ENC_INDEX_MASK, rb_enc_name(enc), base);
@@ -867,8 +863,8 @@ enc_autoload_body(struct enc_table *enc_table, rb_encoding *enc)
     }
 }
 
-static int
-enc_autoload(rb_encoding *enc)
+int
+rb_enc_autoload(rb_encoding *enc)
 {
     int i;
     GLOBAL_ENC_TABLE_EVAL(enc_table, i = enc_autoload_body(enc_table, enc));
@@ -895,8 +891,8 @@ rb_enc_find_index(const char *name)
 	    rb_raise(rb_eArgError, "encoding %s is not registered", name);
 	}
     }
-    else if (enc_autoload_p(enc)) {
-	if (enc_autoload(enc) < 0) {
+    else if (rb_enc_autoload_p(enc)) {
+	if (rb_enc_autoload(enc) < 0) {
 	    rb_warn("failed to load encoding (%s); use ASCII-8BIT instead",
 		    name);
 	    return 0;
@@ -1340,7 +1336,7 @@ enc_inspect(VALUE self)
 			  "#<%"PRIsVALUE":%s%s%s>", rb_obj_class(self),
 			  rb_enc_name(enc),
 			  (ENC_DUMMY_P(enc) ? " (dummy)" : ""),
-			  enc_autoload_p(enc) ? " (autoload)" : "");
+			  rb_enc_autoload_p(enc) ? " (autoload)" : "");
 }
 
 /*

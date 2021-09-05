@@ -243,6 +243,19 @@ class TestObjSpace < Test::Unit::TestCase
     GC.enable
   end
 
+  def test_trace_object_allocations_gc_stress
+    prev = GC.stress
+    GC.stress = true
+
+    ObjectSpace.trace_object_allocations{
+      proc{}
+    }
+
+    assert true # success
+  ensure
+    GC.stress = prev
+  end
+
   def test_dump_flags
     info = ObjectSpace.dump("foo".freeze)
     assert_match(/"wb_protected":true, "old":true/, info)

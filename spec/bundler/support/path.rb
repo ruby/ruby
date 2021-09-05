@@ -6,7 +6,7 @@ require "rbconfig"
 module Spec
   module Path
     def source_root
-      @source_root ||= Pathname.new(ruby_core? ? "../../../.." : "../../..").expand_path(__FILE__)
+      @source_root ||= Pathname.new(ruby_core? ? "../../.." : "../..").expand_path(__dir__)
     end
 
     def root
@@ -30,7 +30,11 @@ module Spec
     end
 
     def test_gemfile
-      @test_gemfile ||= source_root.join(ruby_core? ? "tool/bundler/test_gems.rb" : "test_gems.rb")
+      @test_gemfile ||= source_root.join("tool/bundler/test_gems.rb")
+    end
+
+    def rubocop_gemfile
+      @rubocop_gemfile ||= source_root.join(rubocop_gemfile_basename)
     end
 
     def dev_gemfile
@@ -61,6 +65,10 @@ module Spec
 
     def spec_dir
       @spec_dir ||= source_root.join(ruby_core? ? "spec/bundler" : "spec")
+    end
+
+    def api_request_limit_hack_file
+      spec_dir.join("support/api_request_limit_hax.rb")
     end
 
     def man_dir
@@ -119,7 +127,7 @@ module Spec
     end
 
     def vendored_gems(path = nil)
-      bundled_app(*["vendor/bundle", Gem.ruby_engine, RbConfig::CONFIG["ruby_version"], path].compact)
+      scoped_gem_path(bundled_app("vendor/bundle")).join(*[path].compact)
     end
 
     def cached_gem(path)
@@ -136,6 +144,10 @@ module Spec
 
     def base_system_gems
       tmp.join("gems/base")
+    end
+
+    def rubocop_gems
+      tmp.join("gems/rubocop")
     end
 
     def file_uri_for(path)
@@ -178,7 +190,11 @@ module Spec
     end
 
     def local_gem_path(*path, base: bundled_app)
-      base.join(*[".bundle", Gem.ruby_engine, RbConfig::CONFIG["ruby_version"], *path].compact)
+      scoped_gem_path(base.join(".bundle")).join(*path)
+    end
+
+    def scoped_gem_path(base)
+      base.join(Gem.ruby_engine, RbConfig::CONFIG["ruby_version"])
     end
 
     def lib_path(*args)
@@ -191,6 +207,13 @@ module Spec
 
     def lib_dir
       root.join("lib")
+    end
+
+    # Sometimes rubygems version under test does not include
+    # https://github.com/rubygems/rubygems/pull/2728 and will not always end up
+    # activating the current bundler. In that case, require bundler absolutely.
+    def entrypoint
+      Gem.rubygems_version < Gem::Version.new("3.1.a") ? "#{lib_dir}/bundler" : "bundler"
     end
 
     def global_plugin_gem(*args)
@@ -249,6 +272,10 @@ module Spec
 
     def ruby_core_tarball?
       !git_root.join(".git").directory?
+    end
+
+    def rubocop_gemfile_basename
+      source_root.join("tool/bundler/#{RUBY_VERSION.start_with?("2.3") ? "rubocop23_gems.rb" : "rubocop_gems.rb"}")
     end
 
     extend self

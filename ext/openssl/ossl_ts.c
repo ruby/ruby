@@ -68,9 +68,9 @@ static VALUE cTimestampRequest;
 static VALUE cTimestampResponse;
 static VALUE cTimestampTokenInfo;
 static VALUE cTimestampFactory;
-static ID sBAD_ALG, sBAD_REQUEST, sBAD_DATA_FORMAT, sTIME_NOT_AVAILABLE;
-static ID sUNACCEPTED_POLICY, sUNACCEPTED_EXTENSION, sADD_INFO_NOT_AVAILABLE;
-static ID sSYSTEM_FAILURE;
+static VALUE sBAD_ALG, sBAD_REQUEST, sBAD_DATA_FORMAT, sTIME_NOT_AVAILABLE;
+static VALUE sUNACCEPTED_POLICY, sUNACCEPTED_EXTENSION, sADD_INFO_NOT_AVAILABLE;
+static VALUE sSYSTEM_FAILURE;
 
 static void
 ossl_ts_req_free(void *ptr)
@@ -1247,24 +1247,24 @@ Init_ossl_ts(void)
      * timestamp server rejects the message imprint algorithm used in the
      * +Request+
      */
-    sBAD_ALG = rb_intern_const("BAD_ALG");
+    sBAD_ALG = ID2SYM(rb_intern_const("BAD_ALG"));
 
     /*
      * Possible return value for +Response#failure_info+. Indicates that the
      * timestamp server was not able to process the +Request+ properly.
      */
-    sBAD_REQUEST = rb_intern_const("BAD_REQUEST");
+    sBAD_REQUEST = ID2SYM(rb_intern_const("BAD_REQUEST"));
     /*
      * Possible return value for +Response#failure_info+. Indicates that the
      * timestamp server was not able to parse certain data in the +Request+.
      */
-    sBAD_DATA_FORMAT = rb_intern_const("BAD_DATA_FORMAT");
+    sBAD_DATA_FORMAT = ID2SYM(rb_intern_const("BAD_DATA_FORMAT"));
 
-    sTIME_NOT_AVAILABLE = rb_intern_const("TIME_NOT_AVAILABLE");
-    sUNACCEPTED_POLICY = rb_intern_const("UNACCEPTED_POLICY");
-    sUNACCEPTED_EXTENSION = rb_intern_const("UNACCEPTED_EXTENSION");
-    sADD_INFO_NOT_AVAILABLE = rb_intern_const("ADD_INFO_NOT_AVAILABLE");
-    sSYSTEM_FAILURE = rb_intern_const("SYSTEM_FAILURE");
+    sTIME_NOT_AVAILABLE = ID2SYM(rb_intern_const("TIME_NOT_AVAILABLE"));
+    sUNACCEPTED_POLICY = ID2SYM(rb_intern_const("UNACCEPTED_POLICY"));
+    sUNACCEPTED_EXTENSION = ID2SYM(rb_intern_const("UNACCEPTED_EXTENSION"));
+    sADD_INFO_NOT_AVAILABLE = ID2SYM(rb_intern_const("ADD_INFO_NOT_AVAILABLE"));
+    sSYSTEM_FAILURE = ID2SYM(rb_intern_const("SYSTEM_FAILURE"));
 
     /* Document-class: OpenSSL::Timestamp
      * Provides classes and methods to request, create and validate

@@ -8,6 +8,7 @@
 
 static int vm_redefinition_check_flag(VALUE klass);
 static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass);
+static inline rb_method_entry_t *lookup_method_table(VALUE klass, ID id);
 
 #define object_id           idObject_id
 #define added               idMethod_added
@@ -173,9 +174,17 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                     // invalidate cc by invalidating cc->cme
                     VALUE owner = cme->owner;
                     VM_ASSERT(BUILTIN_TYPE(owner) == T_CLASS);
+                    VALUE klass_housing_cme;
+                    if (cme->def->type == VM_METHOD_TYPE_REFINED && !cme->def->body.refined.orig_me) {
+                        klass_housing_cme = owner;
+                    }
+                    else {
+                        klass_housing_cme = RCLASS_ORIGIN(owner);
+                    }
+                    // replace the cme that will be invalid
+                    VM_ASSERT(lookup_method_table(klass_housing_cme, mid) == (const rb_method_entry_t *)cme);
                     const rb_method_entry_t *new_cme = rb_method_entry_clone((const rb_method_entry_t *)cme);
-                    VALUE origin = RCLASS_ORIGIN(owner);
-                    rb_method_table_insert(origin, RCLASS_M_TBL(origin), mid, new_cme);
+                    rb_method_table_insert(klass_housing_cme, RCLASS_M_TBL(klass_housing_cme), mid, new_cme);
                 }
 
                 vm_me_invalidate_cache((rb_callable_method_entry_t *)cme);
@@ -960,7 +969,7 @@ rb_method_entry_at(VALUE klass, ID id)
 }
 
 static inline rb_method_entry_t*
-search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
+search_method0(VALUE klass, ID id, VALUE *defined_class_ptr, bool skip_refined)
 {
     rb_method_entry_t *me = NULL;
 
@@ -969,7 +978,10 @@ search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
     for (; klass; klass = RCLASS_SUPER(klass)) {
 	RB_DEBUG_COUNTER_INC(mc_search_super);
         if ((me = lookup_method_table(klass, id)) != 0) {
-            break;
+            if (!skip_refined || me->def->type != VM_METHOD_TYPE_REFINED ||
+                    me->def->body.refined.orig_me) {
+                break;
+            }
         }
     }
 
@@ -979,6 +991,12 @@ search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
 
     VM_ASSERT(me == NULL || !METHOD_ENTRY_INVALIDATED(me));
     return me;
+}
+
+static inline rb_method_entry_t*
+search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
+{
+    return search_method0(klass, id, defined_class_ptr, false);
 }
 
 static rb_method_entry_t *
@@ -1186,11 +1204,10 @@ rb_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 }
 
 static const rb_callable_method_entry_t *
-callable_method_entry_refeinements(VALUE klass, ID id, VALUE *defined_class_ptr, bool with_refinements)
+callable_method_entry_refeinements0(VALUE klass, ID id, VALUE *defined_class_ptr, bool with_refinements,
+                                    const rb_callable_method_entry_t *cme)
 {
-    const rb_callable_method_entry_t *cme = callable_method_entry(klass, id, defined_class_ptr);
-
-    if (cme == NULL || cme->def->type != VM_METHOD_TYPE_REFINED) {
+    if (cme == NULL || LIKELY(cme->def->type != VM_METHOD_TYPE_REFINED)) {
         return cme;
     }
     else {
@@ -1198,6 +1215,13 @@ callable_method_entry_refeinements(VALUE klass, ID id, VALUE *defined_class_ptr,
         const rb_method_entry_t *me = method_entry_resolve_refinement(klass, id, with_refinements, dcp);
         return prepare_callable_method_entry(*dcp, id, me, TRUE);
     }
+}
+
+static const rb_callable_method_entry_t *
+callable_method_entry_refeinements(VALUE klass, ID id, VALUE *defined_class_ptr, bool with_refinements)
+{
+    const rb_callable_method_entry_t *cme = callable_method_entry(klass, id, defined_class_ptr);
+    return callable_method_entry_refeinements0(klass, id, defined_class_ptr, with_refinements, cme);
 }
 
 MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
@@ -1362,7 +1386,7 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
     VALUE defined_class;
     VALUE origin_class = RCLASS_ORIGIN(klass);
 
-    me = search_method(origin_class, name, &defined_class);
+    me = search_method0(origin_class, name, &defined_class, true);
 
     if (!me && RB_TYPE_P(klass, T_MODULE)) {
 	me = search_method(rb_cObject, name, &defined_class);
@@ -1377,11 +1401,16 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
 	rb_vm_check_redefinition_opt_method(me, klass);
 
 	if (klass == defined_class || origin_class == defined_class) {
-	    METHOD_ENTRY_VISI_SET(me, visi);
-
-	    if (me->def->type == VM_METHOD_TYPE_REFINED && me->def->body.refined.orig_me) {
-		METHOD_ENTRY_VISI_SET((rb_method_entry_t *)me->def->body.refined.orig_me, visi);
-	    }
+            if (me->def->type == VM_METHOD_TYPE_REFINED) {
+                // Refinement method entries should always be public because the refinement
+                // search is always performed.
+                if (me->def->body.refined.orig_me) {
+                    METHOD_ENTRY_VISI_SET((rb_method_entry_t *)me->def->body.refined.orig_me, visi);
+                }
+            }
+            else {
+                METHOD_ENTRY_VISI_SET(me, visi);
+            }
             rb_clear_method_cache(klass, name);
 	}
 	else {

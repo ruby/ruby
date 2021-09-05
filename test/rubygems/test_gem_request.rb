@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/request'
 require 'ostruct'
 require 'base64'
@@ -327,7 +327,7 @@ class TestGemRequest < Gem::TestCase
   end
 
   def test_verify_certificate
-    skip if Gem.java_platform?
+    pend if Gem.java_platform?
     store = OpenSSL::X509::Store.new
     context = OpenSSL::X509::StoreContext.new store
     context.error = OpenSSL::X509::V_ERR_OUT_OF_MEM
@@ -341,7 +341,7 @@ class TestGemRequest < Gem::TestCase
   end
 
   def test_verify_certificate_extra_message
-    skip if Gem.java_platform?
+    pend if Gem.java_platform?
     store = OpenSSL::X509::Store.new
     context = OpenSSL::X509::StoreContext.new store
     context.error = OpenSSL::X509::V_ERR_INVALID_CA

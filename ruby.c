@@ -1657,7 +1657,7 @@ tty_enabled(void)
     DWORD m;
     if (!GetConsoleMode(h, &m)) return 0;
 # ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
-#   define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x200
+#   define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x4
 # endif
     if (!(m & ENABLE_VIRTUAL_TERMINAL_PROCESSING)) return 0;
     return 1;

@@ -441,6 +441,22 @@ inlinable_iseq_p(const struct rb_iseq_constant_body *body)
     return true;
 }
 
+// Return an iseq pointer if cc has inlinable iseq.
+const rb_iseq_t *
+rb_mjit_inlinable_iseq(const struct rb_callinfo *ci, const struct rb_callcache *cc)
+{
+    const rb_iseq_t *iseq;
+    if (has_valid_method_type(cc) &&
+        !(vm_ci_flag(ci) & VM_CALL_TAILCALL) && // inlining only non-tailcall path
+        vm_cc_cme(cc)->def->type == VM_METHOD_TYPE_ISEQ &&
+        fastpath_applied_iseq_p(ci, cc, iseq = def_iseq_ptr(vm_cc_cme(cc)->def)) &&
+        // CC_SET_FASTPATH in vm_callee_setup_arg
+        inlinable_iseq_p(iseq->body)) {
+        return iseq;
+    }
+    return NULL;
+}
+
 static void
 init_ivar_compile_status(const struct rb_iseq_constant_body *body, struct compile_status *status)
 {
@@ -521,13 +537,9 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
             const struct rb_callinfo *ci = cd->ci;
             const struct rb_callcache *cc = captured_cc_entries(status)[call_data_index(cd, body)]; // use copy to avoid race condition
 
+            extern bool rb_mjit_compiling_iseq_p(const rb_iseq_t *iseq);
             const rb_iseq_t *child_iseq;
-            if (has_valid_method_type(cc) &&
-                !(vm_ci_flag(ci) & VM_CALL_TAILCALL) && // inlining only non-tailcall path
-                vm_cc_cme(cc)->def->type == VM_METHOD_TYPE_ISEQ &&
-                fastpath_applied_iseq_p(ci, cc, child_iseq = def_iseq_ptr(vm_cc_cme(cc)->def)) &&
-                // CC_SET_FASTPATH in vm_callee_setup_arg
-                inlinable_iseq_p(child_iseq->body)) {
+            if ((child_iseq = rb_mjit_inlinable_iseq(ci, cc)) != NULL && rb_mjit_compiling_iseq_p(child_iseq)) {
                 status->inlined_iseqs[pos] = child_iseq->body;
 
                 if (mjit_opts.verbose >= 1) // print beforehand because ISeq may be GCed during copy job.

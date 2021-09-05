@@ -302,7 +302,16 @@ VALUE rb_ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, l
 
 #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
 # ifdef HAVE_MBLEN
-#  define CharNext(p) ((p) + mblen((p), RUBY_MBCHAR_MAXSIZE))
+#  define CharNext(p) rb_char_next(p)
+static inline const char *
+rb_char_next(const char *p)
+{
+    if (p) {
+        int len = mblen(p, RUBY_MBCHAR_MAXSIZE);
+        p += len > 0 ? len : 1;
+    }
+    return p;
+}
 # else
 #  define CharNext(p) ((p) + 1)
 # endif

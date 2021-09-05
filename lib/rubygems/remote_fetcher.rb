@@ -6,7 +6,6 @@ require 'rubygems/s3_uri_signer'
 require 'rubygems/uri_formatter'
 require 'rubygems/uri_parsing'
 require 'rubygems/user_interaction'
-require 'resolv'
 
 ##
 # RemoteFetcher handles the details of fetching gems and gem information from
@@ -51,6 +50,7 @@ class Gem::RemoteFetcher
 
   class UnknownHostError < FetchError
   end
+  deprecate_constant(:UnknownHostError)
 
   @fetcher = nil
 
@@ -78,6 +78,7 @@ class Gem::RemoteFetcher
   #            fetching the gem.
 
   def initialize(proxy=nil, dns=nil, headers={})
+    require 'rubygems/core_ext/tcpsocket_init' if Gem.configuration.ipv4_fallback_enabled
     require 'net/http'
     require 'stringio'
     require 'uri'
@@ -261,15 +262,9 @@ class Gem::RemoteFetcher
     end
 
     data
-  rescue Timeout::Error
-    raise UnknownHostError.new('timed out', uri)
-  rescue IOError, SocketError, SystemCallError,
+  rescue Timeout::Error, IOError, SocketError, SystemCallError,
          *(OpenSSL::SSL::SSLError if Gem::HAVE_OPENSSL) => e
-    if e.message =~ /getaddrinfo/
-      raise UnknownHostError.new('no such name', uri)
-    else
-      raise FetchError.new("#{e.class}: #{e}", uri)
-    end
+    raise FetchError.new("#{e.class}: #{e}", uri)
   end
 
   def fetch_s3(uri, mtime = nil, head = false)

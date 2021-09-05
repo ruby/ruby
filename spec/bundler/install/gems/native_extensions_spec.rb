@@ -78,6 +78,7 @@ RSpec.describe "installing a gem with native extensions", :ruby_repo do
     bundle "config set build.c_extension --with-c_extension=hello"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "c_extension", :git => #{lib_path("c_extension-1.0").to_s.dump}
     G
 
@@ -126,11 +127,13 @@ RSpec.describe "installing a gem with native extensions", :ruby_repo do
 
     # 1st time, require only one gem -- only one of the extensions gets built.
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "c_extension_one", :git => #{lib_path("gems").to_s.dump}
     G
 
     # 2nd time, require both gems -- we need both extensions to be built now.
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "c_extension_one", :git => #{lib_path("gems").to_s.dump}
       gem "c_extension_two", :git => #{lib_path("gems").to_s.dump}
     G
@@ -171,6 +174,7 @@ RSpec.describe "installing a gem with native extensions", :ruby_repo do
     bundle "config set build.c_extension --with-c_extension=hello --with-c_extension_bundle-dir=hola"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "c_extension", :git => #{lib_path("c_extension-1.0").to_s.dump}
     G
 

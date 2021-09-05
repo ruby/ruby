@@ -2324,4 +2324,19 @@ class TestSetTraceFunc < Test::Unit::TestCase
     EOS
     assert_equal [:return, :unpack], event
   end
+
+  def test_while_in_while
+    lines = []
+
+    TracePoint.new(:line){|tp|
+      next unless target_thread?
+      lines << tp.lineno
+    }.enable{
+      n = 3
+      while n > 0
+        n -= 1 while n > 0
+      end
+    }
+    assert_equal [__LINE__ - 5, __LINE__ - 4, __LINE__ - 3], lines, 'Bug #17868'
+  end
 end

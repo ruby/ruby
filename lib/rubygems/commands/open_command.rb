@@ -36,7 +36,7 @@ class Gem::Commands::OpenCommand < Gem::Command
   end
 
   def usage # :nodoc:
-    "#{program_name} GEMNAME [-e COMMAND]"
+    "#{program_name} [-e COMMAND] GEMNAME"
   end
 
   def get_env_editor

@@ -230,13 +230,13 @@ finish_conts(void)
     }
 }
 
-// Create unit for `iseq`.
+// Create unit for `iseq`. This function may be called from an MJIT worker.
 static void
 create_unit(const rb_iseq_t *iseq)
 {
     struct rb_mjit_unit *unit;
 
-    unit = ZALLOC(struct rb_mjit_unit);
+    unit = calloc(1, sizeof(struct rb_mjit_unit));
     if (unit == NULL)
         return;
 
@@ -245,8 +245,9 @@ create_unit(const rb_iseq_t *iseq)
     iseq->body->jit_unit = unit;
 }
 
+// This is called from an MJIT worker when worker_p is true.
 static void
-mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info)
+mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info, bool worker_p)
 {
     if (!mjit_enabled || pch_status == PCH_FAILED)
         return;
@@ -260,14 +261,18 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
     if (compile_info != NULL)
         iseq->body->jit_unit->compile_info = *compile_info;
 
-    CRITICAL_SECTION_START(3, "in add_iseq_to_process");
+    if (!worker_p) {
+        CRITICAL_SECTION_START(3, "in add_iseq_to_process");
+    }
     add_to_list(iseq->body->jit_unit, &unit_queue);
     if (active_units.length >= mjit_opts.max_cache_size) {
         unload_requests++;
     }
-    verbose(3, "Sending wakeup signal to workers in mjit_add_iseq_to_process");
-    rb_native_cond_broadcast(&mjit_worker_wakeup);
-    CRITICAL_SECTION_FINISH(3, "in add_iseq_to_process");
+    if (!worker_p) {
+        verbose(3, "Sending wakeup signal to workers in mjit_add_iseq_to_process");
+        rb_native_cond_broadcast(&mjit_worker_wakeup);
+        CRITICAL_SECTION_FINISH(3, "in add_iseq_to_process");
+    }
 }
 
 // Add ISEQ to be JITed in parallel with the current thread.
@@ -275,7 +280,7 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
 void
 rb_mjit_add_iseq_to_process(const rb_iseq_t *iseq)
 {
-    mjit_add_iseq_to_process(iseq, NULL);
+    mjit_add_iseq_to_process(iseq, NULL, false);
 }
 
 // For this timeout seconds, --jit-wait will wait for JIT compilation finish.
@@ -334,16 +339,21 @@ mjit_recompile(const rb_iseq_t *iseq)
             RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(iseq->body->location.first_lineno));
     assert(iseq->body->jit_unit != NULL);
 
-    // Lazily move active_units to stale_units to avoid race conditions around active_units with compaction
-    CRITICAL_SECTION_START(3, "in rb_mjit_recompile_iseq");
-    iseq->body->jit_unit->stale_p = true;
-    pending_stale_p = true;
-    CRITICAL_SECTION_FINISH(3, "in rb_mjit_recompile_iseq");
-
-    iseq->body->jit_func = (mjit_func_t)NOT_ADDED_JIT_ISEQ_FUNC;
-    mjit_add_iseq_to_process(iseq, &iseq->body->jit_unit->compile_info);
     if (UNLIKELY(mjit_opts.wait)) {
+        remove_from_list(iseq->body->jit_unit, &active_units);
+        add_to_list(iseq->body->jit_unit, &stale_units);
+        mjit_add_iseq_to_process(iseq, &iseq->body->jit_unit->compile_info, false);
         mjit_wait(iseq->body);
+    }
+    else {
+        // Lazily move active_units to stale_units to avoid race conditions around active_units with compaction.
+        // Also, it's lazily moved to unit_queue as well because otherwise it won't be added to stale_units properly.
+        // It's good to avoid a race condition between mjit_add_iseq_to_process and mjit_compile around jit_unit as well.
+        CRITICAL_SECTION_START(3, "in rb_mjit_recompile_iseq");
+        iseq->body->jit_unit->stale_p = true;
+        iseq->body->jit_func = (mjit_func_t)NOT_ADDED_JIT_ISEQ_FUNC;
+        pending_stale_p = true;
+        CRITICAL_SECTION_FINISH(3, "in rb_mjit_recompile_iseq");
     }
 }
 
@@ -931,24 +941,32 @@ mjit_mark(void)
         return;
     RUBY_MARK_ENTER("mjit");
 
-    if (compiling_iseq != NULL)
-        rb_gc_mark((VALUE)compiling_iseq);
-
     // We need to release a lock when calling rb_gc_mark to avoid doubly acquiring
     // a lock by by mjit_gc_start_hook inside rb_gc_mark.
     //
     // Because an MJIT worker may modify active_units anytime, we need to convert
     // the linked list to an array to safely loop its ISeqs without keeping a lock.
     CRITICAL_SECTION_START(4, "mjit_mark");
-    int length = active_units.length;
-    rb_iseq_t **iseqs = ALLOCA_N(rb_iseq_t *, length);
+    int length = 0;
+    if (compiling_iseqs != NULL) {
+        while (compiling_iseqs[length]) length++;
+    }
+    length += active_units.length;
+    const rb_iseq_t **iseqs = ALLOCA_N(const rb_iseq_t *, length);
 
     struct rb_mjit_unit *unit = NULL;
     int i = 0;
+    if (compiling_iseqs != NULL) {
+        while (compiling_iseqs[i]) {
+            iseqs[i] = compiling_iseqs[i];
+            i++;
+        }
+    }
     list_for_each(&active_units.head, unit, unode) {
         iseqs[i] = unit->iseq;
         i++;
     }
+    assert(i == length);
     CRITICAL_SECTION_FINISH(4, "mjit_mark");
 
     for (i = 0; i < length; i++) {

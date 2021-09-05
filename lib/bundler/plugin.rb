@@ -105,6 +105,7 @@ module Bundler
         else
           builder.eval_gemfile(gemfile)
         end
+        builder.check_primary_source_safety
         definition = builder.to_definition(nil, true)
 
         return if definition.dependencies.empty?
@@ -163,7 +164,7 @@ module Bundler
     end
 
     # To be called from Cli class to pass the command and argument to
-    # approriate plugin class
+    # appropriate plugin class
     def exec_command(command, args)
       raise UndefinedCommandError, "Command `#{command}` not found" unless command? command
 
@@ -182,7 +183,7 @@ module Bundler
       !index.source_plugin(name.to_s).nil?
     end
 
-    # @return [Class] that handles the source. The calss includes API::Source
+    # @return [Class] that handles the source. The class includes API::Source
     def source(name)
       raise UnknownSourceError, "Source #{name} not found" unless source? name
 
@@ -308,6 +309,8 @@ module Bundler
     #
     # @param [String] name of the plugin
     def load_plugin(name)
+      return unless name && !name.empty?
+
       # Need to ensure before this that plugin root where the rest of gems
       # are installed to be on load path to support plugin deps. Currently not
       # done to avoid conflicts

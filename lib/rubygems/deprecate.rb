@@ -60,12 +60,13 @@ module Gem::Deprecate
         target = klass ? "#{self}." : "#{self.class}#"
         msg = [ "NOTE: #{target}#{name} is deprecated",
                 repl == :none ? " with no replacement" : "; use #{repl} instead",
-                ". It will be removed on or after %4d-%02d-01." % [year, month],
+                ". It will be removed on or after %4d-%02d." % [year, month],
                 "\n#{target}#{name} called from #{Gem.location_of_caller.join(":")}",
         ]
         warn "#{msg.join}." unless Gem::Deprecate.skip
         send old, *args, &block
       end
+      ruby2_keywords name if respond_to?(:ruby2_keywords, true)
     end
   end
 
@@ -90,6 +91,7 @@ module Gem::Deprecate
         warn "#{msg.join}." unless Gem::Deprecate.skip
         send old, *args, &block
       end
+      ruby2_keywords name if respond_to?(:ruby2_keywords, true)
     end
   end
 

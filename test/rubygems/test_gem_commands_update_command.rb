@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/commands/update_command'
 
 class TestGemCommandsUpdateCommand < Gem::TestCase
@@ -95,7 +95,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     @cmd.options[:args]          = []
     @cmd.options[:system]        = true
 
-    assert_raises Gem::MockGemUi::SystemExitException do
+    assert_raise Gem::MockGemUi::SystemExitException do
       use_ui @ui do
         @cmd.execute
       end
@@ -168,14 +168,23 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     @cmd.options[:args]          = []
     @cmd.options[:system]        = "2.5.1"
 
-    assert_raises Gem::MockGemUi::TermError do
+    oldest_version_mod = Module.new do
+      def oldest_supported_version
+        Gem::Version.new("2.5.2")
+      end
+      private :oldest_supported_version
+    end
+
+    @cmd.extend(oldest_version_mod)
+
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
     end
 
     assert_empty @ui.output
-    assert_equal "ERROR:  rubygems 2.5.1 is not supported. The oldest supported version is 2.5.2\n", @ui.error
+    assert_equal "ERROR:  rubygems 2.5.1 is not supported on #{RUBY_VERSION}. The oldest version supported by this ruby is 2.5.2\n", @ui.error
   end
 
   def test_execute_system_specific_older_than_3_2_removes_plugins_dir
@@ -185,6 +194,15 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
       end
     end
 
+    oldest_version_mod = Module.new do
+      def oldest_supported_version
+        Gem::Version.new("2.5.2")
+      end
+      private :oldest_supported_version
+    end
+
+    @cmd.extend(oldest_version_mod)
+
     @cmd.options[:args]          = []
     @cmd.options[:system]        = "3.1"
 
@@ -193,7 +211,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     @cmd.execute
 
-    refute_path_exists Gem.plugindir, "Plugins folder not removed when updating rubygems to pre-3.2"
+    assert_path_not_exist Gem.plugindir, "Plugins folder not removed when updating rubygems to pre-3.2"
   end
 
   def test_execute_system_specific_newer_than_or_equal_to_3_2_leaves_plugins_dir_alone
@@ -202,6 +220,15 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
         s.files = %w[setup.rb]
       end
     end
+
+    oldest_version_mod = Module.new do
+      def oldest_supported_version
+        Gem::Version.new("2.5.2")
+      end
+      private :oldest_supported_version
+    end
+
+    @cmd.extend(oldest_version_mod)
 
     @cmd.options[:args]          = []
     @cmd.options[:system]        = "3.2.a"
@@ -212,8 +239,8 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     @cmd.execute
 
-    assert_path_exists Gem.plugindir, "Plugin folder removed when updating rubygems to post-3.2"
-    assert_path_exists plugin_file, "Plugin removed when updating rubygems to post-3.2"
+    assert_path_exist Gem.plugindir, "Plugin folder removed when updating rubygems to post-3.2"
+    assert_path_exist plugin_file, "Plugin removed when updating rubygems to post-3.2"
   end
 
   def test_execute_system_specifically_to_latest_version
@@ -246,7 +273,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     @cmd.options[:args]          = %w[gem]
     @cmd.options[:system]        = true
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -264,7 +291,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     @cmd.options[:args] = []
     @cmd.options[:system] = true
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -357,7 +384,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     a2 = @specs['a-2']
 
-    assert_path_exists File.join(a2.doc_dir, 'rdoc')
+    assert_path_exist File.join(a2.doc_dir, 'rdoc')
   end
 
   def test_execute_named
@@ -503,7 +530,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
   def test_fetch_remote_gems_error
     Gem.sources.replace %w[http://nonexistent.example]
 
-    assert_raises Gem::RemoteFetcher::FetchError do
+    assert_raise Gem::RemoteFetcher::FetchError do
       @cmd.fetch_remote_gems @specs['a-1']
     end
   end
@@ -561,7 +588,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
   end
 
   def test_handle_options_system_non_version
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       @cmd.handle_options %w[--system non-version]
     end
   end

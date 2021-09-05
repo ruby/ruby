@@ -80,12 +80,7 @@ VALUE rb_yield_force_blockarg(VALUE values);
 VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
                      rb_block_call_func_t bl_proc, int min_argc, int max_argc,
                      VALUE data2);
-
-MJIT_SYMBOL_EXPORT_BEGIN
-VALUE rb_vm_call0(struct rb_execution_context_struct *ec, VALUE recv, ID id, int argc, const VALUE *argv, const struct rb_callable_method_entry_struct *me, int kw_splat);
-VALUE rb_vm_call_kw(struct rb_execution_context_struct *ec, VALUE recv, VALUE id, int argc, const VALUE *argv, const struct rb_callable_method_entry_struct *me, int kw_splat);
-VALUE rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj, int argc, const VALUE *argv, int priv);
-MJIT_SYMBOL_EXPORT_END
+void rb_check_stack_overflow(void);
 
 /* vm_insnhelper.c */
 VALUE rb_equal_opt(VALUE obj1, VALUE obj2);

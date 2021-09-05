@@ -76,7 +76,7 @@ command to remove old versions.
 
   def check_oldest_rubygems(version) # :nodoc:
     if oldest_supported_version > version
-      alert_error "rubygems #{version} is not supported. The oldest supported version is #{oldest_supported_version}"
+      alert_error "rubygems #{version} is not supported on #{RUBY_VERSION}. The oldest version supported by this ruby is #{oldest_supported_version}"
       terminate_interaction 1
     end
   end
@@ -322,8 +322,26 @@ command to remove old versions.
 
   private
 
+  #
+  # Oldest version we support downgrading to. This is the version that
+  # originally ships with the first patch version of each ruby, because we never
+  # test each ruby against older rubygems, so we can't really guarantee it
+  # works. Version list can be checked here: https://stdgems.org/rubygems
+  #
   def oldest_supported_version
-    # for Ruby 2.3
-    @oldest_supported_version ||= Gem::Version.new("2.5.2")
+    @oldest_supported_version ||=
+      if Gem.ruby_version > Gem::Version.new("3.0.a")
+        Gem::Version.new("3.2.3")
+      elsif Gem.ruby_version > Gem::Version.new("2.7.a")
+        Gem::Version.new("3.1.2")
+      elsif Gem.ruby_version > Gem::Version.new("2.6.a")
+        Gem::Version.new("3.0.1")
+      elsif Gem.ruby_version > Gem::Version.new("2.5.a")
+        Gem::Version.new("2.7.3")
+      elsif Gem.ruby_version > Gem::Version.new("2.4.a")
+        Gem::Version.new("2.6.8")
+      else
+        Gem::Version.new("2.5.2")
+      end
   end
 end

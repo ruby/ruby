@@ -419,6 +419,15 @@ class TestHash < Test::Unit::TestCase
       true
     }
     assert_equal(base.size, n)
+
+    h = base.dup
+    assert_raise(FrozenError) do
+      h.delete_if do
+        h.freeze
+        true
+      end
+    end
+    assert_equal(base.dup, h)
   end
 
   def test_keep_if
@@ -426,6 +435,14 @@ class TestHash < Test::Unit::TestCase
     assert_equal({3=>4,5=>6}, h.keep_if {|k, v| k + v >= 7 })
     h = @cls[1=>2,3=>4,5=>6]
     assert_equal({1=>2,3=>4,5=>6}, h.keep_if{true})
+    h = @cls[1=>2,3=>4,5=>6]
+    assert_raise(FrozenError) do
+      h.keep_if do
+        h.freeze
+        false
+      end
+    end
+    assert_equal(@cls[1=>2,3=>4,5=>6], h)
   end
 
   def test_compact
@@ -722,6 +739,15 @@ class TestHash < Test::Unit::TestCase
     h = base.dup
     assert_equal(h3, h.reject! {|k,v| v })
     assert_equal(h3, h)
+
+    h = base.dup
+    assert_raise(FrozenError) do
+      h.reject! do
+        h.freeze
+        true
+      end
+    end
+    assert_equal(base.dup, h)
   end
 
   def test_replace
@@ -1025,6 +1051,14 @@ class TestHash < Test::Unit::TestCase
     assert_equal({3=>4,5=>6}, h)
     h = @cls[1=>2,3=>4,5=>6]
     assert_equal(nil, h.select!{true})
+    h = @cls[1=>2,3=>4,5=>6]
+    assert_raise(FrozenError) do
+      h.select! do
+        h.freeze
+        false
+      end
+    end
+    assert_equal(@cls[1=>2,3=>4,5=>6], h)
   end
 
   def test_slice
@@ -1077,6 +1111,14 @@ class TestHash < Test::Unit::TestCase
     assert_equal({3=>4,5=>6}, h)
     h = @cls[1=>2,3=>4,5=>6]
     assert_equal(nil, h.filter!{true})
+    h = @cls[1=>2,3=>4,5=>6]
+    assert_raise(FrozenError) do
+      h.filter! do
+        h.freeze
+        false
+      end
+    end
+    assert_equal(@cls[1=>2,3=>4,5=>6], h)
   end
 
   def test_clear2
@@ -1674,6 +1716,10 @@ class TestHash < Test::Unit::TestCase
     x.transform_keys! {|k| -k }
     assert_equal([-1, :a, 1, :b], x.flatten)
 
+    x = @cls[a: 1, b: 2, c: 3]
+    x.transform_keys! { |k| k == :b && break }
+    assert_equal({false => 1, b: 2, c: 3}, x)
+
     x = @cls[true => :a, false => :b]
     x.transform_keys! {|k| !k }
     assert_equal([false, :a, true, :b], x.flatten)
@@ -1710,8 +1756,21 @@ class TestHash < Test::Unit::TestCase
     assert_same(x, y)
 
     x = @cls[a: 1, b: 2, c: 3]
+    x.transform_values! { |v| v == 2 && break }
+    assert_equal({a: false, b: 2, c: 3}, x)
+
+    x = @cls[a: 1, b: 2, c: 3]
     y = x.transform_values!.with_index {|v, i| "#{v}.#{i}" }
     assert_equal(%w(1.0  2.1  3.2), y.values_at(:a, :b, :c))
+
+    x = @cls[a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10]
+    assert_raise(FrozenError) do
+      x.transform_values!() do |v|
+        x.freeze if v == 2
+        v.succ
+      end
+    end
+    assert_equal(@cls[a: 2, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10], x)
   end
 
   def test_broken_hash_value

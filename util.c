@@ -29,6 +29,7 @@
 #include "internal/sanitizers.h"
 #include "internal/util.h"
 #include "ruby/util.h"
+#include "ruby_atomic.h"
 
 const char ruby_hexdigits[] = "0123456789abcdef0123456789ABCDEF";
 #define hexdigit ruby_hexdigits

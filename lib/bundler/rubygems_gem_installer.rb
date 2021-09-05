@@ -8,13 +8,63 @@ module Bundler
       # Bundler needs to install gems regardless of binstub overwriting
     end
 
+    def install
+      pre_install_checks
+
+      run_pre_install_hooks
+
+      spec.loaded_from = spec_file
+
+      # Completely remove any previous gem files
+      FileUtils.rm_rf gem_dir
+      FileUtils.rm_rf spec.extension_dir
+
+      FileUtils.mkdir_p gem_dir, :mode => 0o755
+
+      extract_files
+
+      build_extensions
+      write_build_info_file
+      run_post_build_hooks
+
+      generate_bin
+      generate_plugins
+
+      write_spec
+      write_cache_file
+
+      say spec.post_install_message unless spec.post_install_message.nil?
+
+      run_post_install_hooks
+
+      spec
+    end
+
+    def generate_plugins
+      return unless Gem::Installer.instance_methods(false).include?(:generate_plugins)
+
+      latest = Gem::Specification.stubs_for(spec.name).first
+      return if latest && latest.version > spec.version
+
+      ensure_writable_dir @plugins_dir
+
+      if spec.plugins.empty?
+        remove_plugins_for(spec, @plugins_dir)
+      else
+        regenerate_plugins_for(spec, @plugins_dir)
+      end
+    end
+
     def pre_install_checks
       super && validate_bundler_checksum(options[:bundler_expected_checksum])
     end
 
     def build_extensions
       extension_cache_path = options[:bundler_extension_cache_path]
-      return super unless extension_cache_path && extension_dir = spec.extension_dir
+      unless extension_cache_path && extension_dir = spec.extension_dir
+        require "shellwords" # compensate missing require in rubygems before version 3.2.25
+        return super
+      end
 
       extension_dir = Pathname.new(extension_dir)
       build_complete = SharedHelpers.filesystem_access(extension_cache_path.join("gem.build_complete"), :read, &:file?)
@@ -24,6 +74,7 @@ module Bundler
           FileUtils.cp_r extension_cache_path, spec.extension_dir
         end
       else
+        require "shellwords" # compensate missing require in rubygems before version 3.2.25
         super
         if extension_dir.directory? # not made for gems without extensions
           SharedHelpers.filesystem_access(extension_cache_path.parent, &:mkpath)

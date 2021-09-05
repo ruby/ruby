@@ -53,7 +53,7 @@ monitor_ptr(VALUE monitor)
 static int
 mc_owner_p(struct rb_monitor *mc)
 {
-    return mc->owner == rb_thread_current();
+    return mc->owner == rb_fiber_current();
 }
 
 static VALUE
@@ -65,7 +65,7 @@ monitor_try_enter(VALUE monitor)
         if (!rb_mutex_trylock(mc->mutex)) {
             return Qfalse;
         }
-        RB_OBJ_WRITE(monitor, &mc->owner, rb_thread_current());
+        RB_OBJ_WRITE(monitor, &mc->owner, rb_fiber_current());
         mc->count = 0;
     }
     mc->count += 1;
@@ -78,7 +78,7 @@ monitor_enter(VALUE monitor)
     struct rb_monitor *mc = monitor_ptr(monitor);
     if (!mc_owner_p(mc)) {
         rb_mutex_lock(mc->mutex);
-        RB_OBJ_WRITE(monitor, &mc->owner, rb_thread_current());
+        RB_OBJ_WRITE(monitor, &mc->owner, rb_fiber_current());
         mc->count = 0;
     }
     mc->count++;
@@ -90,7 +90,7 @@ monitor_check_owner(VALUE monitor)
 {
     struct rb_monitor *mc = monitor_ptr(monitor);
     if (!mc_owner_p(mc)) {
-        rb_raise(rb_eThreadError, "current thread not owner");
+        rb_raise(rb_eThreadError, "current fiber not owner");
     }
     return Qnil;
 }
@@ -161,7 +161,7 @@ monitor_enter_for_cond(VALUE v)
 
     struct wait_for_cond_data *data = (struct wait_for_cond_data *)v;
     struct rb_monitor *mc = monitor_ptr(data->monitor);
-    RB_OBJ_WRITE(data->monitor, &mc->owner, rb_thread_current());
+    RB_OBJ_WRITE(data->monitor, &mc->owner, rb_fiber_current());
     mc->count = NUM2LONG(data->count);
     return Qnil;
 }

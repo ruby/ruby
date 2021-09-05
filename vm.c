@@ -2589,6 +2589,18 @@ rb_vm_mark(void *ptr)
 	rb_gc_mark_values(RUBY_NSIG, vm->trap_list.cmd);
 
         rb_id_table_foreach_values(vm->negative_cme_table, vm_mark_negative_cme, NULL);
+        for (i=0; i<VM_GLOBAL_CC_CACHE_TABLE_SIZE; i++) {
+            const struct rb_callcache *cc = vm->global_cc_cache_table[i];
+
+            if (cc != NULL) {
+                if (!vm_cc_invalidated_p(cc)) {
+                    rb_gc_mark((VALUE)cc);
+                }
+                else {
+                    vm->global_cc_cache_table[i] = NULL;
+                }
+            }
+        }
 
         mjit_mark();
     }
@@ -2653,6 +2665,8 @@ ruby_vm_destruct(rb_vm_t *vm)
 	if (objspace) {
 	    rb_objspace_free(objspace);
 	}
+        rb_native_mutex_destroy(&vm->waitpid_lock);
+        rb_native_mutex_destroy(&vm->workqueue_lock);
 	/* after freeing objspace, you *can't* use ruby_xfree() */
 	ruby_mimfree(vm);
 	ruby_current_vm_ptr = NULL;
@@ -2795,6 +2809,11 @@ rb_execution_context_update(const rb_execution_context_t *ec)
             cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
 
             if (!VM_ENV_LOCAL_P(ep)) {
+                const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
+                if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
+                    VM_FORCE_WRITE(&prev_ep[VM_ENV_DATA_INDEX_ENV], rb_gc_location(prev_ep[VM_ENV_DATA_INDEX_ENV]));
+                }
+
                 if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
                     VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ENV], rb_gc_location(ep[VM_ENV_DATA_INDEX_ENV]));
                     VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ME_CREF], rb_gc_location(ep[VM_ENV_DATA_INDEX_ME_CREF]));
@@ -2835,6 +2854,11 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
             rb_gc_mark_movable((VALUE)cfp->block_code);
 
             if (!VM_ENV_LOCAL_P(ep)) {
+                const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
+                if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
+                    rb_gc_mark_movable(prev_ep[VM_ENV_DATA_INDEX_ENV]);
+                }
+
 		if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
                     rb_gc_mark_movable(ep[VM_ENV_DATA_INDEX_ENV]);
                     rb_gc_mark(ep[VM_ENV_DATA_INDEX_ME_CREF]);

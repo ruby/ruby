@@ -704,6 +704,17 @@ EXPECTED
     assert_equal "\n<p><a href=\"irc://irc.freenode.net/#ruby-lang\">ruby-lang</a></p>\n", result
   end
 
+  def test_convert_with_exclude_tag
+    assert_equal "\n<p><code>aaa</code>[:symbol]</p>\n", @to.convert('+aaa+[:symbol]')
+    assert_equal "\n<p><code>aaa[:symbol]</code></p>\n", @to.convert('+aaa[:symbol]+')
+    assert_equal "\n<p><a href=\":symbol\">aaa</a></p>\n", @to.convert('aaa[:symbol]')
+  end
+
+  def test_convert_underscore_adjacent_to_code
+    assert_equal "\n<p><code>aaa</code>_</p>\n", @to.convert(%q{+aaa+_})
+    assert_equal "\n<p>`<code>i386-mswin32_</code><em>MSRTVERSION</em>&#39;</p>\n", @to.convert(%q{`+i386-mswin32_+_MSRTVERSION_'})
+  end
+
   def test_gen_url
     assert_equal '<a href="example">example</a>',
                  @to.gen_url('link:example', 'example')
@@ -725,6 +736,27 @@ EXPECTED
 
   def test_gen_url_ssl_image_url
     assert_equal '<img src="https://example.com/image.png" />', @to.gen_url('https://example.com/image.png', 'ignored')
+  end
+
+  def test_gen_url_rdoc_file
+    assert_equal '<a href="doc/example_rdoc.html">example</a>',
+                 @to.gen_url('doc/example.rdoc', 'example')
+    assert_equal '<a href="../ex_doc/example_rdoc.html">example</a>',
+                 @to.gen_url('../ex.doc/example.rdoc', 'example')
+  end
+
+  def test_gen_url_md_file
+    assert_equal '<a href="doc/example_md.html">example</a>',
+                 @to.gen_url('doc/example.md', 'example')
+    assert_equal '<a href="../ex_doc/example_md.html">example</a>',
+                 @to.gen_url('../ex.doc/example.md', 'example')
+  end
+
+  def test_gen_url_rb_file
+    assert_equal '<a href="doc/example_rb.html">example</a>',
+                 @to.gen_url('doc/example.rb', 'example')
+    assert_equal '<a href="../ex_doc/example_rb.html">example</a>',
+                 @to.gen_url('../ex.doc/example.rb', 'example')
   end
 
   def test_handle_regexp_HYPERLINK_link

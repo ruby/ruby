@@ -124,6 +124,7 @@ class Reline::LineEditor
         @prompt_cache_time = Time.now.to_f
       end
       prompt_list.map!{ prompt } if @vi_arg or @searching_prompt
+      prompt_list = [prompt] if prompt_list.empty?
       mode_string = check_mode_string
       prompt_list = prompt_list.map{ |pr| mode_string + pr } if mode_string
       prompt = prompt_list[@line_index]
@@ -343,8 +344,9 @@ class Reline::LineEditor
     else
     end_of_line_cursor = new_cursor_max
     end
-    line_to_calc.encode(Encoding::UTF_8).grapheme_clusters.each do |gc|
-      mbchar_width = Reline::Unicode.get_mbchar_width(gc)
+    line_to_calc.grapheme_clusters.each do |gc|
+      mbchar = gc.encode(Encoding::UTF_8)
+      mbchar_width = Reline::Unicode.get_mbchar_width(mbchar)
       now = new_cursor + mbchar_width
       if now > end_of_line_cursor or now > cursor
         break
@@ -724,13 +726,17 @@ class Reline::LineEditor
       Reline::IOGate.move_cursor_column(0)
       if line.nil?
         if calculate_width(visual_lines[index - 1], true) == Reline::IOGate.get_screen_size.last
-          # Reaches the end of line.
-          #
-          # When the cursor is at the end of the line and erases characters
-          # after the cursor, some terminals delete the character at the
-          # cursor position.
-          move_cursor_down(1)
-          Reline::IOGate.move_cursor_column(0)
+          # reaches the end of line
+          if Reline::IOGate.win? and Reline::IOGate.win_legacy_console?
+            # A newline is automatically inserted if a character is rendered at
+            # eol on command prompt.
+          else
+            # When the cursor is at the end of the line and erases characters
+            # after the cursor, some terminals delete the character at the
+            # cursor position.
+            move_cursor_down(1)
+            Reline::IOGate.move_cursor_column(0)
+          end
         else
           Reline::IOGate.erase_after_cursor
           move_cursor_down(1)
@@ -739,6 +745,10 @@ class Reline::LineEditor
         next
       end
       @output.write line
+      if Reline::IOGate.win? and Reline::IOGate.win_legacy_console? and calculate_width(line, true) == Reline::IOGate.get_screen_size.last
+        # A newline is automatically inserted if a character is rendered at eol on command prompt.
+        @rest_height -= 1 if @rest_height > 0
+      end
       @output.flush
       if @first_prompt
         @first_prompt = false
@@ -803,6 +813,7 @@ class Reline::LineEditor
     end
     move_cursor_up(back)
     move_cursor_down(@first_line_started_from + @started_from)
+    @rest_height = (Reline::IOGate.get_screen_size.first - 1) - Reline::IOGate.cursor_pos.y
     Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
   end
 
@@ -1148,8 +1159,25 @@ class Reline::LineEditor
 
   def call_completion_proc
     result = retrieve_completion_block(true)
-    slice = result[1]
-    result = @completion_proc.(slice) if @completion_proc and slice
+    preposing, target, postposing = result
+    if @completion_proc and target
+      argnum = @completion_proc.parameters.inject(0) { |result, item|
+        case item.first
+        when :req, :opt
+          result + 1
+        when :rest
+          break 3
+        end
+      }
+      case argnum
+      when 1
+        result = @completion_proc.(target)
+      when 2
+        result = @completion_proc.(target, preposing)
+      when 3..Float::INFINITY
+        result = @completion_proc.(target, preposing, postposing)
+      end
+    end
     Reline.core.instance_variable_set(:@completion_quote_character, nil)
     result
   end
@@ -1197,8 +1225,16 @@ class Reline::LineEditor
   end
 
   def retrieve_completion_block(set_completion_quote_character = false)
-    word_break_regexp = /\A[#{Regexp.escape(Reline.completer_word_break_characters)}]/
-    quote_characters_regexp = /\A[#{Regexp.escape(Reline.completer_quote_characters)}]/
+    if Reline.completer_word_break_characters.empty?
+      word_break_regexp = nil
+    else
+      word_break_regexp = /\A[#{Regexp.escape(Reline.completer_word_break_characters)}]/
+    end
+    if Reline.completer_quote_characters.empty?
+      quote_characters_regexp = nil
+    else
+      quote_characters_regexp = /\A[#{Regexp.escape(Reline.completer_quote_characters)}]/
+    end
     before = @line.byteslice(0, @byte_pointer)
     rest = nil
     break_pointer = nil
@@ -1219,14 +1255,14 @@ class Reline::LineEditor
       elsif quote and slice.start_with?(escaped_quote)
         # skip
         i += 2
-      elsif slice =~ quote_characters_regexp # find new "
+      elsif quote_characters_regexp and slice =~ quote_characters_regexp # find new "
         rest = $'
         quote = $&
         closing_quote = /(?!\\)#{Regexp.escape(quote)}/
         escaped_quote = /\\#{Regexp.escape(quote)}/
         i += 1
         break_pointer = i - 1
-      elsif not quote and slice =~ word_break_regexp
+      elsif word_break_regexp and not quote and slice =~ word_break_regexp
         rest = $'
         i += 1
         before = @line.byteslice(i, @byte_pointer - i)
@@ -1253,6 +1289,19 @@ class Reline::LineEditor
         preposing = ''
       end
       target = before
+    end
+    if @is_multiline
+      if @previous_line_index
+        lines = whole_lines(index: @previous_line_index, line: @line)
+      else
+        lines = whole_lines
+      end
+      if @line_index > 0
+        preposing = lines[0..(@line_index - 1)].join("\n") + "\n" + preposing
+      end
+      if (lines.size - 1) > @line_index
+        postposing = postposing + "\n" + lines[(@line_index + 1)..-1].join("\n")
+      end
     end
     [preposing.encode(@encoding), target.encode(@encoding), postposing.encode(@encoding)]
   end
@@ -1281,10 +1330,32 @@ class Reline::LineEditor
 
   def delete_text(start = nil, length = nil)
     if start.nil? and length.nil?
-      @line&.clear
-      @byte_pointer = 0
-      @cursor = 0
-      @cursor_max = 0
+      if @is_multiline
+        if @buffer_of_lines.size == 1
+          @line&.clear
+          @byte_pointer = 0
+          @cursor = 0
+          @cursor_max = 0
+        elsif @line_index == (@buffer_of_lines.size - 1) and @line_index > 0
+          @buffer_of_lines.pop
+          @line_index -= 1
+          @line = @buffer_of_lines[@line_index]
+          @byte_pointer = 0
+          @cursor = 0
+          @cursor_max = calculate_width(@line)
+        elsif @line_index < (@buffer_of_lines.size - 1)
+          @buffer_of_lines.delete_at(@line_index)
+          @line = @buffer_of_lines[@line_index]
+          @byte_pointer = 0
+          @cursor = 0
+          @cursor_max = calculate_width(@line)
+        end
+      else
+        @line&.clear
+        @byte_pointer = 0
+        @cursor = 0
+        @cursor_max = 0
+      end
     elsif not start.nil? and not length.nil?
       if @line
         before = @line.byteslice(0, start)

@@ -128,7 +128,7 @@ module Bundler
     # evaluates a gemfile to remove the specified gem
     # from it.
     def remove_deps(gemfile_path)
-      initial_gemfile = IO.readlines(gemfile_path)
+      initial_gemfile = File.readlines(gemfile_path)
 
       Bundler.ui.info "Removing gems from #{gemfile_path}"
 
@@ -181,7 +181,7 @@ module Bundler
       patterns = /gem\s+(['"])#{Regexp.union(gems)}\1|gem\s*\((['"])#{Regexp.union(gems)}\2\)/
       new_gemfile = []
       multiline_removal = false
-      IO.readlines(gemfile_path).each do |line|
+      File.readlines(gemfile_path).each do |line|
         match_data = line.match(patterns)
         if match_data && is_not_within_comment?(line, match_data)
           multiline_removal = line.rstrip.end_with?(",")

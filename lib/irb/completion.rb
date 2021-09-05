@@ -7,7 +7,7 @@
 #       From Original Idea of shugo@ruby-lang.org
 #
 
-autoload :RDoc, "rdoc"
+require_relative 'ruby-lex'
 
 module IRB
   module InputCompletor # :nodoc:
@@ -38,8 +38,69 @@ module IRB
 
     BASIC_WORD_BREAK_CHARACTERS = " \t\n`><=;|&{("
 
-    CompletionProc = proc { |input|
-      retrieve_completion_data(input).compact.map{ |i| i.encode(Encoding.default_external) }
+    def self.retrieve_files_to_require_from_load_path
+      @@files_from_load_path ||= $LOAD_PATH.flat_map { |path|
+        begin
+          Dir.glob("**/*.{rb,#{RbConfig::CONFIG['DLEXT']}}", base: path)
+        rescue Errno::ENOENT
+          []
+        end
+      }.uniq.map { |path|
+        path.sub(/\.(rb|#{RbConfig::CONFIG['DLEXT']})\z/, '')
+      }
+    end
+
+    def self.retrieve_files_to_require_relative_from_current_dir
+      @@files_from_current_dir ||= Dir.glob("**/*.{rb,#{RbConfig::CONFIG['DLEXT']}}", base: '.').map { |path|
+        path.sub(/\.(rb|#{RbConfig::CONFIG['DLEXT']})\z/, '')
+      }
+    end
+
+    CompletionRequireProc = lambda { |target, preposing = nil, postposing = nil|
+      if target =~ /\A(['"])([^'"]+)\Z/
+        quote = $1
+        actual_target = $2
+      else
+        return nil # It's not String literal
+      end
+      tokens = RubyLex.ripper_lex_without_warning(preposing.gsub(/\s*\z/, ''))
+      tok = nil
+      tokens.reverse_each do |t|
+        unless [:on_lparen, :on_sp, :on_ignored_sp, :on_nl, :on_ignored_nl, :on_comment].include?(t.event)
+          tok = t
+          break
+        end
+      end
+      result = []
+      if tok && tok.event == :on_ident && tok.state == Ripper::EXPR_CMDARG
+        case tok.tok
+        when 'require'
+          result = retrieve_files_to_require_from_load_path.select { |path|
+            path.start_with?(actual_target)
+          }.map { |path|
+            quote + path
+          }
+        when 'require_relative'
+          result = retrieve_files_to_require_relative_from_current_dir.select { |path|
+            path.start_with?(actual_target)
+          }.map { |path|
+            quote + path
+          }
+        end
+      end
+      result
+    }
+
+    CompletionProc = lambda { |target, preposing = nil, postposing = nil|
+      if preposing && postposing
+        result = CompletionRequireProc.(target, preposing, postposing)
+        unless result
+          result = retrieve_completion_data(target).compact.map{ |i| i.encode(Encoding.default_external) }
+        end
+        result
+      else
+        retrieve_completion_data(target).compact.map{ |i| i.encode(Encoding.default_external) }
+      end
     }
 
     def self.retrieve_completion_data(input, bind: IRB.conf[:MAIN_CONTEXT].workspace.binding, doc_namespace: false)
@@ -266,13 +327,22 @@ module IRB
     end
 
     PerfectMatchedProc = ->(matched, bind: IRB.conf[:MAIN_CONTEXT].workspace.binding) {
+      begin
+        require 'rdoc'
+      rescue LoadError
+        return
+      end
+
       RDocRIDriver ||= RDoc::RI::Driver.new
+
       if matched =~ /\A(?:::)?RubyVM/ and not ENV['RUBY_YES_I_AM_NOT_A_NORMAL_USER']
         IRB.__send__(:easter_egg)
         return
       end
+
       namespace = retrieve_completion_data(matched, bind: bind, doc_namespace: true)
       return unless namespace
+
       if namespace.is_a?(Array)
         out = RDoc::Markup::Document.new
         namespace.each do |m|

@@ -143,7 +143,7 @@ a block quote
   end
 
   def test_parse_code_github
-    doc = parse <<-MD
+    doc = <<-MD
 Example:
 
 ```
@@ -156,11 +156,25 @@ code goes here
         para("Example:"),
         verb("code goes here\n"))
 
-    assert_equal expected, doc
+    assert_equal expected, parse(doc)
+    assert_equal expected, parse(doc.sub(/^\n/, ''))
+
+    @parser.github = false
+
+    expected =
+      doc(para("Example:"),
+          para("<code>\n""code goes here\n</code>"))
+
+    assert_equal expected, parse(doc)
+
+    expected =
+      doc(para("Example:\n<code>\n""code goes here\n</code>"))
+
+    assert_equal expected, parse(doc.sub(/^\n/, ''))
   end
 
   def test_parse_code_github_format
-    doc = parse <<-MD
+    doc = <<-MD
 Example:
 
 ``` ruby
@@ -176,7 +190,21 @@ code goes here
         para("Example:"),
         code)
 
-    assert_equal expected, doc
+    assert_equal expected, parse(doc)
+    assert_equal expected, parse(doc.sub(/^\n/, ''))
+
+    @parser.github = false
+
+    expected =
+      doc(para("Example:"),
+          para("<code>ruby\n""code goes here\n</code>"))
+
+    assert_equal expected, parse(doc)
+
+    expected =
+      doc(para("Example:\n<code>ruby\n""code goes here\n</code>"))
+
+    assert_equal expected, parse(doc.sub(/^\n/, ''))
   end
 
   def test_parse_definition_list
@@ -1008,6 +1036,29 @@ and an extra note.[^2]
     doc = parse '```<ruby>```'
 
     expected = doc(verb('<ruby>'))
+
+    assert_equal expected, doc
+  end
+
+  def test_gfm_table
+    doc = parse <<~MD
+    |      |                 |compare-ruby|built-ruby|
+    |------|:----------------|-----------:|---------:|
+    |test  | 1               |     11.618M|   10.757M|
+    |      |                 |       1.08x|         -|
+    |test  | 10              |      1.849M|    1.723M|
+    |      |                 |       1.07x|         -|
+    MD
+
+    head = ["", "", "compare-ruby", "built-ruby"]
+    align = [nil, :left, :right, :right]
+    body = [
+      ["test", "1", "11.618M", "10.757M"],
+      ["", "", "1.08x", "-"],
+      ["test", "10", "1.849M", "1.723M"],
+      ["", "", "1.07x", "-"],
+    ]
+    expected = doc(@RM::Table.new(head, align, body))
 
     assert_equal expected, doc
   end

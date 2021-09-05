@@ -502,6 +502,9 @@ backtrace_size(const rb_execution_context_t *ec)
     return start_cfp - last_cfp + 1;
 }
 
+static bool is_internal_location(const rb_control_frame_t *cfp);
+static void bt_iter_skip_skip_internal(void *ptr, const rb_control_frame_t *cfp);
+
 static int
 backtrace_each(const rb_execution_context_t *ec,
                ptrdiff_t from_last,
@@ -515,7 +518,7 @@ backtrace_each(const rb_execution_context_t *ec,
     const rb_control_frame_t *last_cfp = ec->cfp;
     const rb_control_frame_t *start_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
     const rb_control_frame_t *cfp;
-    ptrdiff_t size, i, last, start = 0;
+    ptrdiff_t size, real_size, i, j, last, start = 0;
     int ret = 0;
 
     // In the case the thread vm_stack or cfp is not initialized, there is no backtrace.
@@ -539,10 +542,18 @@ backtrace_each(const rb_execution_context_t *ec,
 	  RUBY_VM_NEXT_CONTROL_FRAME(start_cfp)); /* skip top frames */
 
     if (start_cfp < last_cfp) {
-        size = last = 0;
+        real_size = size = last = 0;
     }
     else {
-	size = start_cfp - last_cfp + 1;
+        /* Ensure we don't look at frames beyond the ones requested */
+        for(; from_last > 0 && start_cfp >= last_cfp; from_last--) {
+            if (last_cfp->iseq && !last_cfp->pc) {
+                from_last++;
+            }
+            last_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(last_cfp);
+        }
+
+        real_size = size = start_cfp - last_cfp + 1;
 
         if (from_last > size) {
             size = last = 0;
@@ -567,9 +578,45 @@ backtrace_each(const rb_execution_context_t *ec,
 
     init(arg, size);
 
-    /* SDR(); */
-    for (i=0, cfp = start_cfp; i<last; i++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
-        if (i < start) {
+    /* If a limited number of frames is requested, scan the VM stack for
+     * from the current frame (after skipping the number of frames requested above)
+     * towards the earliest frame (start_cfp).  Track the total number of frames
+     * and the number of frames that will be part of the backtrace.  Start the
+     * scan at the oldest frame that should still be part of the backtrace.
+     *
+     * If the last frame in the backtrace is a cfunc frame, continue scanning
+     * till earliest frame to find the first iseq frame with pc, so that the
+     * location can be used for the trailing cfunc frames in the backtrace.
+     */
+    if (start > 0 && num_frames >= 0 && num_frames < real_size) {
+        int found_frames = 0, total_frames = 0;
+        bool last_frame_cfunc = FALSE;
+        const rb_control_frame_t *new_start_cfp;
+
+        for (cfp = last_cfp; found_frames < num_frames && start_cfp >= cfp; cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp), total_frames++) {
+            if ((cfp->iseq && cfp->pc) || RUBYVM_CFUNC_FRAME_P(cfp)) {
+                last_frame_cfunc = RUBYVM_CFUNC_FRAME_P(cfp);
+                found_frames++;
+            }
+         }
+         new_start_cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp);
+         if (iter_skip && (last_frame_cfunc || iter_skip == bt_iter_skip_skip_internal)) {
+             for (; start_cfp >= cfp; cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
+                if (cfp->iseq && cfp->pc && (iter_skip != bt_iter_skip_skip_internal || !is_internal_location(cfp))) {
+                    iter_skip(arg, cfp);
+                    break;
+                }
+             }
+         }
+
+         last = found_frames;
+         real_size = total_frames;
+         start = 0;
+         start_cfp = new_start_cfp;
+    }
+
+    for (i=0, j=0, cfp = start_cfp; i<last && j<real_size; i++, j++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
+        if (j < start) {
             if (iter_skip) {
                 iter_skip(arg, cfp);
             }
@@ -578,9 +625,11 @@ backtrace_each(const rb_execution_context_t *ec,
 
 	/* fprintf(stderr, "cfp: %d\n", (rb_control_frame_t *)(ec->vm_stack + ec->vm_stack_size) - cfp); */
 	if (cfp->iseq) {
-	    if (cfp->pc) {
-		iter_iseq(arg, cfp);
-	    }
+            if (cfp->pc) {
+                iter_iseq(arg, cfp);
+            } else {
+                i--;
+            }
 	}
 	else if (RUBYVM_CFUNC_FRAME_P(cfp)) {
 	    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);

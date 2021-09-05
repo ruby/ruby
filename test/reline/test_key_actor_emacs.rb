@@ -2280,6 +2280,14 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line('  12345')
   end
 
+  def test_input_unknown_char
+    input_keys('͸') # U+0378 (unassigned)
+    assert_line('͸')
+    assert_byte_pointer_size('͸')
+    assert_cursor(1)
+    assert_cursor_max(1)
+  end
+
 =begin # TODO: move KeyStroke instance from Reline to LineEditor
   def test_key_delete
     input_keys('ab')

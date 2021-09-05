@@ -3838,6 +3838,7 @@ select_bang_ensure(VALUE a)
 
     if (i2 < len && i2 < i1) {
 	long tail = 0;
+        rb_ary_modify(ary);
 	if (i1 < len) {
 	    tail = len - i1;
             RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
@@ -4071,7 +4072,7 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
     else if (orig_len < pos) {
         return Qnil;
     }
-    else if (orig_len < pos + len) {
+    if (orig_len < pos + len) {
         len = orig_len - pos;
     }
     if (len == 0) {

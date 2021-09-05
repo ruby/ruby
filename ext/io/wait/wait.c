@@ -275,6 +275,10 @@ io_wait(int argc, VALUE *argv, VALUE io)
 void
 Init_wait(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    RB_EXT_RACTOR_SAFE(true);
+#endif
+
     rb_define_method(rb_cIO, "nread", io_nread, 0);
     rb_define_method(rb_cIO, "ready?", io_ready_p, 0);
 

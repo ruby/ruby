@@ -484,8 +484,11 @@ class Gem::Installer
       bin_path = File.join gem_dir, spec.bindir, filename
 
       unless File.exist? bin_path
-        # TODO change this to a more useful warning
-        warn "`#{bin_path}` does not exist, maybe `gem pristine #{spec.name}` will fix it?"
+        if File.symlink? bin_path
+          alert_warning "`#{bin_path}` is dangling symlink pointing to `#{File.readlink bin_path}`"
+        else
+          alert_warning "`#{bin_path}` does not exist, maybe `gem pristine #{spec.name}` will fix it?"
+        end
         next
       end
 
@@ -725,6 +728,10 @@ class Gem::Installer
       raise Gem::InstallError, "#{spec} has an invalid extensions"
     end
 
+    if spec.platform.to_s =~ /\R/
+      raise Gem::InstallError, "#{spec.platform} is an invalid platform"
+    end
+
     unless spec.specification_version.to_s =~ /\A\d+\z/
       raise Gem::InstallError, "#{spec} has an invalid specification_version"
     end
@@ -754,7 +761,7 @@ class Gem::Installer
 #
 
 require 'rubygems'
-
+#{gemdeps_load(spec.name)}
 version = "#{Gem::Requirement.default_prerelease}"
 
 str = ARGV.first
@@ -772,6 +779,15 @@ else
 gem #{spec.name.dump}, version
 load Gem.bin_path(#{spec.name.dump}, #{bin_file_name.dump}, version)
 end
+TEXT
+  end
+
+  def gemdeps_load(name)
+    return '' if name == "bundler"
+
+    <<-TEXT
+
+Gem.use_gemdeps
 TEXT
   end
 

@@ -59,4 +59,17 @@ class Reline::WithinPipeTest < Reline::TestCase
     @writer.write("abcde\C-b\C-b\C-b\C-x\C-d\C-x\C-h\C-x\C-v\C-a\C-f\C-f EF\C-x\C-t gh\C-x\M-t\C-b\C-b\C-b\C-b\C-b\C-b\C-b\C-b\C-x\M-u\C-x\M-l\C-x\M-c\n")
     assert_equal "a\C-aDE gh Fe", Reline.readmultiline(&proc{ true })
   end
+
+  def test_delete_text_in_multiline
+    @writer.write("abc\ndef\nxyz\n")
+    result = Reline.readmultiline(&proc{ |str|
+      if str.include?('xyz')
+        Reline.delete_text
+        true
+      else
+        false
+      end
+    })
+    assert_equal "abc\ndef", result
+  end
 end

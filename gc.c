@@ -1239,99 +1239,102 @@ RVALUE_FLAGS_AGE(VALUE flags)
 static int
 check_rvalue_consistency_force(const VALUE obj, int terminate)
 {
-    rb_objspace_t *objspace = &rb_objspace;
     int err = 0;
+    rb_objspace_t *objspace = &rb_objspace;
 
-    if (SPECIAL_CONST_P(obj)) {
-        fprintf(stderr, "check_rvalue_consistency: %p is a special const.\n", (void *)obj);
-        err++;
+    RB_VM_LOCK_ENTER_NO_BARRIER();
+    {
+        if (SPECIAL_CONST_P(obj)) {
+            fprintf(stderr, "check_rvalue_consistency: %p is a special const.\n", (void *)obj);
+            err++;
+        }
+        else if (!is_pointer_to_heap(objspace, (void *)obj)) {
+            /* check if it is in tomb_pages */
+            struct heap_page *page = NULL;
+            list_for_each(&heap_tomb->pages, page, page_node) {
+                if (&page->start[0] <= (RVALUE *)obj &&
+                    (RVALUE *)obj < &page->start[page->total_slots]) {
+                    fprintf(stderr, "check_rvalue_consistency: %p is in a tomb_heap (%p).\n",
+                            (void *)obj, (void *)page);
+                    err++;
+                    goto skip;
+                }
+            }
+            bp();
+            fprintf(stderr, "check_rvalue_consistency: %p is not a Ruby object.\n", (void *)obj);
+            err++;
+          skip:
+            ;
+        }
+        else {
+            const int wb_unprotected_bit = RVALUE_WB_UNPROTECTED_BITMAP(obj) != 0;
+            const int uncollectible_bit = RVALUE_UNCOLLECTIBLE_BITMAP(obj) != 0;
+            const int mark_bit = RVALUE_MARK_BITMAP(obj) != 0;
+            const int marking_bit = RVALUE_MARKING_BITMAP(obj) != 0, remembered_bit = marking_bit;
+            const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
+
+            if (GET_HEAP_PAGE(obj)->flags.in_tomb) {
+                fprintf(stderr, "check_rvalue_consistency: %s is in tomb page.\n", obj_info(obj));
+                err++;
+            }
+            if (BUILTIN_TYPE(obj) == T_NONE) {
+                fprintf(stderr, "check_rvalue_consistency: %s is T_NONE.\n", obj_info(obj));
+                err++;
+            }
+            if (BUILTIN_TYPE(obj) == T_ZOMBIE) {
+                fprintf(stderr, "check_rvalue_consistency: %s is T_ZOMBIE.\n", obj_info(obj));
+                err++;
+            }
+
+            obj_memsize_of((VALUE)obj, FALSE);
+
+            /* check generation
+             *
+             * OLD == age == 3 && old-bitmap && mark-bit (except incremental marking)
+             */
+            if (age > 0 && wb_unprotected_bit) {
+                fprintf(stderr, "check_rvalue_consistency: %s is not WB protected, but age is %d > 0.\n", obj_info(obj), age);
+                err++;
+            }
+
+            if (!is_marking(objspace) && uncollectible_bit && !mark_bit) {
+                fprintf(stderr, "check_rvalue_consistency: %s is uncollectible, but is not marked while !gc.\n", obj_info(obj));
+                err++;
+            }
+
+            if (!is_full_marking(objspace)) {
+                if (uncollectible_bit && age != RVALUE_OLD_AGE && !wb_unprotected_bit) {
+                    fprintf(stderr, "check_rvalue_consistency: %s is uncollectible, but not old (age: %d) and not WB unprotected.\n",
+                            obj_info(obj), age);
+                    err++;
+                }
+                if (remembered_bit && age != RVALUE_OLD_AGE) {
+                    fprintf(stderr, "check_rvalue_consistency: %s is remembered, but not old (age: %d).\n",
+                            obj_info(obj), age);
+                    err++;
+                }
+            }
+
+            /*
+             * check coloring
+             *
+             *               marking:false marking:true
+             * marked:false  white         *invalid*
+             * marked:true   black         grey
+             */
+            if (is_incremental_marking(objspace) && marking_bit) {
+                if (!is_marking(objspace) && !mark_bit) {
+                    fprintf(stderr, "check_rvalue_consistency: %s is marking, but not marked.\n", obj_info(obj));
+                    err++;
+                }
+            }
+        }
     }
-    else if (!is_pointer_to_heap(objspace, (void *)obj)) {
-        /* check if it is in tomb_pages */
-        struct heap_page *page = NULL;
-        list_for_each(&heap_tomb->pages, page, page_node) {
-            if (&page->start[0] <= (RVALUE *)obj &&
-                (RVALUE *)obj < &page->start[page->total_slots]) {
-                fprintf(stderr, "check_rvalue_consistency: %p is in a tomb_heap (%p).\n",
-                        (void *)obj, (void *)page);
-                err++;
-                goto skip;
-            }
-        }
-        bp();
-        fprintf(stderr, "check_rvalue_consistency: %p is not a Ruby object.\n", (void *)obj);
-        err++;
-      skip:
-        ;
-    }
-    else {
-        const int wb_unprotected_bit = RVALUE_WB_UNPROTECTED_BITMAP(obj) != 0;
-        const int uncollectible_bit = RVALUE_UNCOLLECTIBLE_BITMAP(obj) != 0;
-        const int mark_bit = RVALUE_MARK_BITMAP(obj) != 0;
-        const int marking_bit = RVALUE_MARKING_BITMAP(obj) != 0, remembered_bit = marking_bit;
-        const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
-
-        if (GET_HEAP_PAGE(obj)->flags.in_tomb) {
-            fprintf(stderr, "check_rvalue_consistency: %s is in tomb page.\n", obj_info(obj));
-            err++;
-        }
-        if (BUILTIN_TYPE(obj) == T_NONE) {
-            fprintf(stderr, "check_rvalue_consistency: %s is T_NONE.\n", obj_info(obj));
-            err++;
-        }
-        if (BUILTIN_TYPE(obj) == T_ZOMBIE) {
-            fprintf(stderr, "check_rvalue_consistency: %s is T_ZOMBIE.\n", obj_info(obj));
-            err++;
-        }
-
-        obj_memsize_of((VALUE)obj, FALSE);
-
-        /* check generation
-         *
-         * OLD == age == 3 && old-bitmap && mark-bit (except incremental marking)
-         */
-        if (age > 0 && wb_unprotected_bit) {
-            fprintf(stderr, "check_rvalue_consistency: %s is not WB protected, but age is %d > 0.\n", obj_info(obj), age);
-            err++;
-        }
-
-        if (!is_marking(objspace) && uncollectible_bit && !mark_bit) {
-            fprintf(stderr, "check_rvalue_consistency: %s is uncollectible, but is not marked while !gc.\n", obj_info(obj));
-            err++;
-        }
-
-        if (!is_full_marking(objspace)) {
-            if (uncollectible_bit && age != RVALUE_OLD_AGE && !wb_unprotected_bit) {
-                fprintf(stderr, "check_rvalue_consistency: %s is uncollectible, but not old (age: %d) and not WB unprotected.\n",
-                        obj_info(obj), age);
-                err++;
-            }
-            if (remembered_bit && age != RVALUE_OLD_AGE) {
-                fprintf(stderr, "check_rvalue_consistency: %s is remembered, but not old (age: %d).\n",
-                        obj_info(obj), age);
-                err++;
-            }
-        }
-
-        /*
-         * check coloring
-         *
-         *               marking:false marking:true
-         * marked:false  white         *invalid*
-         * marked:true   black         grey
-         */
-        if (is_incremental_marking(objspace) && marking_bit) {
-            if (!is_marking(objspace) && !mark_bit) {
-                fprintf(stderr, "check_rvalue_consistency: %s is marking, but not marked.\n", obj_info(obj));
-                err++;
-            }
-        }
-    }
+    RB_VM_LOCK_LEAVE_NO_BARRIER();
 
     if (err > 0 && terminate) {
         rb_bug("check_rvalue_consistency_force: there is %d errors.", err);
     }
-
     return err;
 }
 
@@ -1710,45 +1713,34 @@ heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj
     gc_report(3, objspace, "heap_page_add_freeobj: add %p to freelist\n", (void *)obj);
 }
 
-static inline bool
+static inline void
 heap_add_freepage(rb_heap_t *heap, struct heap_page *page)
 {
     asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
     GC_ASSERT(page->free_slots != 0);
+    GC_ASSERT(page->freelist != NULL);
 
-    if (page->freelist) {
-        page->free_next = heap->free_pages;
-        heap->free_pages = page;
+    page->free_next = heap->free_pages;
+    heap->free_pages = page;
 
-        RUBY_DEBUG_LOG("page:%p freelist:%p", page, page->freelist);
+    RUBY_DEBUG_LOG("page:%p freelist:%p", page, page->freelist);
 
-        asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
-        return true;
-    }
-    else {
-        asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
-        return false;
-    }
+    asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
 }
 
 #if GC_ENABLE_INCREMENTAL_MARK
-static inline int
+static inline void
 heap_add_poolpage(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
 {
     asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
-    if (page->freelist) {
-	page->free_next = heap->pooled_pages;
-	heap->pooled_pages = page;
-	objspace->rincgc.pooled_slots += page->free_slots;
-        asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
+    GC_ASSERT(page->free_slots != 0);
+    GC_ASSERT(page->freelist != NULL);
 
-	return TRUE;
-    }
-    else {
-        asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
+    page->free_next = heap->pooled_pages;
+    heap->pooled_pages = page;
+    objspace->rincgc.pooled_slots += page->free_slots;
 
-	return FALSE;
-    }
+    asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
 }
 #endif
 
@@ -2071,11 +2063,14 @@ gc_event_hook_body(rb_execution_context_t *ec, rb_objspace_t *objspace, const rb
 #define gc_event_hook_available_p(objspace) ((objspace)->flags.has_hook)
 #define gc_event_hook_needed_p(objspace, event) ((objspace)->hook_events & (event))
 
-#define gc_event_hook(objspace, event, data) do { \
+#define gc_event_hook_prep(objspace, event, data, prep) do { \
     if (UNLIKELY(gc_event_hook_needed_p(objspace, event))) { \
+        prep; \
 	gc_event_hook_body(GET_EC(), (objspace), (event), (data)); \
     } \
 } while (0)
+
+#define gc_event_hook(objspace, event, data) gc_event_hook_prep(objspace, event, data, (void)0)
 
 static inline VALUE
 newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace, VALUE obj)
@@ -2220,6 +2215,16 @@ ractor_cache_slots(rb_objspace_t *objspace, rb_ractor_t *cr)
     GC_ASSERT(RB_TYPE_P((VALUE)cr->newobj_cache.freelist, T_NONE));
 }
 
+static inline VALUE
+newobj_fill(VALUE obj, VALUE v1, VALUE v2, VALUE v3)
+{
+    RVALUE *p = (RVALUE *)obj;
+    p->as.values.v1 = v1;
+    p->as.values.v2 = v2;
+    p->as.values.v3 = v3;
+    return obj;
+}
+
 ALWAYS_INLINE(static VALUE newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, int wb_protected));
 
 static inline VALUE
@@ -2250,7 +2255,7 @@ newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *
         }
         GC_ASSERT(obj != 0);
         newobj_init(klass, flags, wb_protected, objspace, obj);
-        gc_event_hook(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj);
+        gc_event_hook_prep(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj, newobj_fill(obj, 0, 0, 0));
     }
     RB_VM_LOCK_LEAVE_CR_LEV(cr, &lev);
 
@@ -2308,16 +2313,6 @@ newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr)
           newobj_slowpath_wb_unprotected(klass, flags, objspace, cr);
     }
 
-    return obj;
-}
-
-static inline VALUE
-newobj_fill(VALUE obj, VALUE v1, VALUE v2, VALUE v3)
-{
-    RVALUE *p = (RVALUE *)obj;
-    p->as.values.v1 = v1;
-    p->as.values.v2 = v2;
-    p->as.values.v3 = v3;
     return obj;
 }
 
@@ -4641,7 +4636,7 @@ static void read_barrier_handler(intptr_t address)
 }
 
 #if defined(_WIN32)
-LPTOP_LEVEL_EXCEPTION_FILTER old_handler;
+static LPTOP_LEVEL_EXCEPTION_FILTER old_handler;
 typedef void (*signal_handler)(int);
 static signal_handler old_sigsegv_handler;
 
@@ -4660,13 +4655,15 @@ static LONG WINAPI read_barrier_signal(EXCEPTION_POINTERS * info)
     }
 }
 
-static void uninstall_handlers(void)
+static void
+uninstall_handlers(void)
 {
     signal(SIGSEGV, old_sigsegv_handler);
     SetUnhandledExceptionFilter(old_handler);
 }
 
-static void install_handlers(void)
+static void
+install_handlers(void)
 {
     /* Remove SEGV handler so that the Unhandled Exception Filter handles it */
     old_sigsegv_handler = signal(SIGSEGV, NULL);
@@ -4702,13 +4699,15 @@ read_barrier_signal(int sig, siginfo_t * info, void * data)
     sigprocmask(SIG_SETMASK, &prev_set, NULL);
 }
 
-static void uninstall_handlers(void)
+static void
+uninstall_handlers(void)
 {
     sigaction(SIGBUS, &old_sigbus_handler, NULL);
     sigaction(SIGSEGV, &old_sigsegv_handler, NULL);
 }
 
-static void install_handlers(void)
+static void
+install_handlers(void)
 {
     struct sigaction action;
     memset(&action, 0, sizeof(struct sigaction));
@@ -5054,20 +5053,7 @@ gc_sweep_start_heap(rb_objspace_t *objspace, rb_heap_t *heap)
 
     rb_ractor_t *r = NULL;
     list_for_each(&GET_VM()->ractor.set, r, vmlr_node) {
-        struct heap_page *page = r->newobj_cache.using_page;
-        RVALUE *freelist = r->newobj_cache.freelist;
-        RUBY_DEBUG_LOG("ractor using_page:%p freelist:%p", page, freelist);
-
-        if (page && freelist) {
-            RVALUE **p = &page->freelist;
-            while (*p) {
-                p = &(*p)->as.free.next;
-            }
-            *p = freelist;
-        }
-
-        r->newobj_cache.using_page = NULL;
-        r->newobj_cache.freelist = NULL;
+        rb_gc_ractor_newobj_cache_clear(&r->newobj_cache);
     }
 }
 
@@ -5140,21 +5126,18 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
 	else if (free_slots > 0) {
 #if GC_ENABLE_INCREMENTAL_MARK
 	    if (need_pool) {
-		if (heap_add_poolpage(objspace, heap, sweep_page)) {
-		    need_pool = FALSE;
-		}
+                heap_add_poolpage(objspace, heap, sweep_page);
+                need_pool = FALSE;
 	    }
 	    else {
-                if (heap_add_freepage(heap, sweep_page)) {
-                    swept_slots += free_slots;
-                    if (swept_slots > 2048) {
-                        break;
-                    }
+                heap_add_freepage(heap, sweep_page);
+                swept_slots += free_slots;
+                if (swept_slots > 2048) {
+                    break;
                 }
 	    }
 #else
-	    heap_add_freepage(heap, sweep_page);
-	    break;
+            heap_add_freepage(heap, sweep_page);
 #endif
 	}
 	else {
@@ -6181,12 +6164,16 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
       case imemo_env:
 	{
 	    const rb_env_t *env = (const rb_env_t *)obj;
-            GC_ASSERT(env->ep[VM_ENV_DATA_INDEX_ENV] == obj);
-	    GC_ASSERT(VM_ENV_ESCAPED_P(env->ep));
-            gc_mark_values(objspace, (long)env->env_size, env->env);
-	    VM_ENV_FLAGS_SET(env->ep, VM_ENV_FLAG_WB_REQUIRED);
-            gc_mark(objspace, (VALUE)rb_vm_env_prev_env(env));
-	    gc_mark(objspace, (VALUE)env->iseq);
+
+            if (LIKELY(env->ep)) {
+                // just after newobj() can be NULL here.
+                GC_ASSERT(env->ep[VM_ENV_DATA_INDEX_ENV] == obj);
+                GC_ASSERT(VM_ENV_ESCAPED_P(env->ep));
+                gc_mark_values(objspace, (long)env->env_size, env->env);
+                VM_ENV_FLAGS_SET(env->ep, VM_ENV_FLAG_WB_REQUIRED);
+                gc_mark(objspace, (VALUE)rb_vm_env_prev_env(env));
+                gc_mark(objspace, (VALUE)env->iseq);
+            }
 	}
 	return;
       case imemo_cref:
@@ -7969,6 +7956,37 @@ rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
 /* GC */
 
 void
+rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache)
+{
+    struct heap_page *page = newobj_cache->using_page;
+    RVALUE *freelist = newobj_cache->freelist;
+    RUBY_DEBUG_LOG("ractor using_page:%p freelist:%p", page, freelist);
+
+    if (page && freelist) {
+        asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
+        if (page->freelist) {
+            RVALUE *p = page->freelist;
+            asan_unpoison_object((VALUE)p, false);
+            while (p->as.free.next) {
+                RVALUE *prev = p;
+                p = p->as.free.next;
+                asan_poison_object((VALUE)prev);
+                asan_unpoison_object((VALUE)p, false);
+            }
+            p->as.free.next = freelist;
+            asan_poison_object((VALUE)p);
+        }
+        else {
+            page->freelist = freelist;
+        }
+        asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
+    }
+
+    newobj_cache->using_page = NULL;
+    newobj_cache->freelist = NULL;
+}
+
+void
 rb_gc_force_recycle(VALUE obj)
 {
     rb_objspace_t *objspace = &rb_objspace;
@@ -7997,7 +8015,7 @@ rb_gc_force_recycle(VALUE obj)
         }
         else {
 #endif
-            if (is_old || !GET_HEAP_PAGE(obj)->flags.before_sweep) {
+            if (is_old || GET_HEAP_PAGE(obj)->flags.before_sweep) {
                 CLEAR_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj);
             }
             CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj);
@@ -8457,6 +8475,9 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
     RB_VM_LOCK_ENTER_LEV(lock_lev);
 
     switch (event) {
+      case gc_enter_event_rest:
+        if (!is_marking(objspace)) break;
+        // fall through
       case gc_enter_event_start:
       case gc_enter_event_mark_continue:
         // stop other ractors

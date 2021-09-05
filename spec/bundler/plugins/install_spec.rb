@@ -22,6 +22,19 @@ RSpec.describe "bundler plugin install" do
     plugin_should_be_installed("foo")
   end
 
+  it "installs from sources configured as Gem.sources without any flags" do
+    bundle "plugin install foo", :env => { "BUNDLER_SPEC_GEM_SOURCES" => file_uri_for(gem_repo2).to_s }
+
+    expect(out).to include("Installed plugin foo")
+    plugin_should_be_installed("foo")
+  end
+
+  it "shows help when --help flag is given" do
+    bundle "plugin install --help"
+
+    expect(out).to include("bundle plugin install PLUGINS    # Install the plugin from the source")
+  end
+
   context "plugin is already installed" do
     before do
       bundle "plugin install foo --source #{file_uri_for(gem_repo2)}"
@@ -201,6 +214,7 @@ RSpec.describe "bundler plugin install" do
       end
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         plugin 'ga-plugin', :git => "#{lib_path("ga-plugin-1.0")}"
       G
 
@@ -214,6 +228,7 @@ RSpec.describe "bundler plugin install" do
       end
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         plugin 'ga-plugin', :path => "#{lib_path("ga-plugin-1.0")}"
       G
 
@@ -228,7 +243,7 @@ RSpec.describe "bundler plugin install" do
           gem 'rack', "1.0.0"
         G
 
-        bundle "config --local deployment true"
+        bundle "config set --local deployment true"
         install_gemfile <<-G
           source '#{file_uri_for(gem_repo2)}'
           plugin 'foo'

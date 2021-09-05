@@ -136,6 +136,20 @@ module TestIRB
       end
     end
 
+    def test_endless_range_at_end_of_line
+      if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.6.0')
+        skip 'Endless range is available in 2.6.0 or later'
+      end
+      input_with_prompt = [
+        PromptRow.new('001:0: :> ', %q(a = 3..)),
+        PromptRow.new('002:0: :* ', %q()),
+      ]
+
+      lines = input_with_prompt.map(&:content)
+      expected_prompt_list = input_with_prompt.map(&:prompt)
+      assert_dynamic_prompt(lines, expected_prompt_list)
+    end
+
     def test_incomplete_coding_magic_comment
       input_with_correct_indents = [
         Row.new(%q(#coding:u), nil, 0),
@@ -544,8 +558,7 @@ module TestIRB
         skip 'This test needs Ripper::Lexer#scan to take broken tokens'
       end
 
-      ruby_lex = RubyLex.new
-      tokens = ruby_lex.ripper_lex_without_warning('%wwww')
+      tokens = RubyLex.ripper_lex_without_warning('%wwww')
       pos_to_index = {}
       tokens.each_with_index { |t, i|
         assert_nil(pos_to_index[t[0]], "There is already another token in the position of #{t.inspect}.")
@@ -558,8 +571,7 @@ module TestIRB
         skip 'This test needs Ripper::Lexer#scan to take broken tokens'
       end
 
-      ruby_lex = RubyLex.new
-      tokens = ruby_lex.ripper_lex_without_warning(<<~EOC.chomp)
+      tokens = RubyLex.ripper_lex_without_warning(<<~EOC.chomp)
         def foo
           %wwww
         end

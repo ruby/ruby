@@ -28,6 +28,7 @@
 #include "internal/hash.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
+#include "internal/rational.h"
 #include "internal/re.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
@@ -1985,6 +1986,16 @@ cdhash_cmp(VALUE val, VALUE lit)
     else if (tlit == T_FLOAT) {
         return rb_float_cmp(lit, val);
     }
+    else if (tlit == T_RATIONAL) {
+        const struct RRational *rat1 = RRATIONAL(val);
+        const struct RRational *rat2 = RRATIONAL(lit);
+        return cdhash_cmp(rat1->num, rat2->num) || cdhash_cmp(rat1->den, rat2->den);
+    }
+    else if (tlit == T_COMPLEX) {
+        const struct RComplex *comp1 = RCOMPLEX(val);
+        const struct RComplex *comp2 = RCOMPLEX(lit);
+        return cdhash_cmp(comp1->real, comp2->real) || cdhash_cmp(comp1->imag, comp2->imag);
+    }
     else {
         UNREACHABLE_RETURN(-1);
     }
@@ -2003,6 +2014,10 @@ cdhash_hash(VALUE a)
         return FIX2LONG(rb_big_hash(a));
       case T_FLOAT:
         return rb_dbl_long_hash(RFLOAT_VALUE(a));
+      case T_RATIONAL:
+        return rb_rational_hash(a);
+      case T_COMPLEX:
+        return rb_complex_hash(a);
       default:
         UNREACHABLE_RETURN(0);
     }
@@ -2884,7 +2899,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	}
         else if (iobj != diobj && IS_INSN(&diobj->link) &&
                  IS_INSN_ID(diobj, jump) &&
-		 OPERAND_AT(iobj, 0) != OPERAND_AT(diobj, 0)) {
+		 OPERAND_AT(iobj, 0) != OPERAND_AT(diobj, 0) &&
+                 diobj->insn_info.events == 0) {
 	    /*
 	     *  useless jump elimination:
 	     *     jump LABEL1

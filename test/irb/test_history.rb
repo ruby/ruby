@@ -127,11 +127,43 @@ module TestIRB
       INPUT
     end
 
+    def test_history_concurrent_use
+      omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
+      IRB.conf[:SAVE_HISTORY] = 1
+      assert_history(<<~EXPECTED_HISTORY, <<~INITIAL_HISTORY, <<~INPUT) do |history_file|
+        exit
+        5
+        exit
+      EXPECTED_HISTORY
+        1
+        2
+        3
+        4
+      INITIAL_HISTORY
+        5
+        exit
+      INPUT
+        assert_history(<<~EXPECTED_HISTORY2, <<~INITIAL_HISTORY2, <<~INPUT2)
+        exit
+      EXPECTED_HISTORY2
+        1
+        2
+        3
+        4
+      INITIAL_HISTORY2
+        5
+        exit
+      INPUT2
+        File.utime(File.atime(history_file), File.mtime(history_file) + 2, history_file)
+      end
+    end
+
     private
 
     def assert_history(expected_history, initial_irb_history, input)
       backup_verbose, $VERBOSE = $VERBOSE, nil
       backup_home = ENV["HOME"]
+      backup_xdg_config_home = ENV.delete("XDG_CONFIG_HOME")
       IRB.conf[:LC_MESSAGES] = IRB::Locale.new
       actual_history = nil
       Dir.mktmpdir("test_irb_history_#{$$}") do |tmpdir|
@@ -143,6 +175,11 @@ module TestIRB
         io = TestInputMethod.new
         io.class::HISTORY.clear
         io.load_history
+        if block_given?
+          history = io.class::HISTORY.dup
+          yield IRB.rc_file("_history")
+          io.class::HISTORY.replace(history)
+        end
         io.class::HISTORY.concat(input.split)
         io.save_history
 
@@ -160,6 +197,7 @@ module TestIRB
     ensure
       $VERBOSE = backup_verbose
       ENV["HOME"] = backup_home
+      ENV["XDG_CONFIG_HOME"] = backup_xdg_config_home
     end
 
     def with_temp_stdio
