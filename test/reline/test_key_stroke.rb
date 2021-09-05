@@ -46,4 +46,16 @@ class Reline::KeyStroke::Test < Reline::TestCase
     stroke = Reline::KeyStroke.new(config)
     assert_equal('123'.bytes, stroke.expand('abc'.bytes))
   end
+
+  def test_oneshot_key_bindings
+    config = Reline::Config.new
+    {
+      'abc' => '123',
+    }.each_pair do |key, func|
+      config.add_default_key_binding(key.bytes, func.bytes)
+    end
+    stroke = Reline::KeyStroke.new(config)
+    assert_equal(:unmatched, stroke.match_status('zzz'.bytes))
+    assert_equal(:matched, stroke.match_status('abc'.bytes))
+  end
 end
