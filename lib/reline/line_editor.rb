@@ -578,7 +578,11 @@ class Reline::LineEditor
       @proc_scope.set_key(key)
       dialog_render_info = @proc_scope.call
       if @trap_key
-        if @trap_key.is_a?(Array)
+        if @trap_key.any?{ |i| i.is_a?(Array) } # multiple trap
+          @trap_key.each do |t|
+            @config.add_oneshot_key_binding(t, @name)
+          end
+        elsif @trap_key.is_a?(Array)
           @config.add_oneshot_key_binding(@trap_key, @name)
         elsif @trap_key.is_a?(Integer) or @trap_key.is_a?(Reline::Key)
           @config.add_oneshot_key_binding([@trap_key], @name)
