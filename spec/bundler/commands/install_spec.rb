@@ -346,7 +346,7 @@ RSpec.describe "bundle install with gem sources" do
           myrack
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "install", raise_on_error: false
@@ -764,10 +764,10 @@ RSpec.describe "bundle install with gem sources" do
          DEPENDENCIES
          #{checksums}
          RUBY VERSION
-            #{Bundler::RubyVersion.system}
+           #{Bundler::RubyVersion.system}
 
          BUNDLED WITH
-            #{Bundler::VERSION}
+           #{Bundler::VERSION}
         L
       end
 
@@ -790,10 +790,10 @@ RSpec.describe "bundle install with gem sources" do
          DEPENDENCIES
          #{checksums}
          RUBY VERSION
-            #{Bundler::RubyVersion.system}
+           #{Bundler::RubyVersion.system}
 
          BUNDLED WITH
-            #{Bundler::VERSION}
+           #{Bundler::VERSION}
         L
       end
 
@@ -1330,7 +1330,7 @@ RSpec.describe "bundle install with gem sources" do
           libv8
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       simulate_platform("x86_64-linux", &example)
@@ -1357,7 +1357,7 @@ RSpec.describe "bundle install with gem sources" do
           libv8
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -1433,7 +1433,7 @@ RSpec.describe "bundle install with gem sources" do
            #{Bundler::RubyVersion.system}
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -1474,10 +1474,10 @@ RSpec.describe "bundle install with gem sources" do
           loofah (~> 2.12.0)
         #{checksums}
         RUBY VERSION
-           #{Bundler::RubyVersion.system}
+          #{Bundler::RubyVersion.system}
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -1507,7 +1507,7 @@ RSpec.describe "bundle install with gem sources" do
           myrack_middleware
 
         BUNDLED WITH
-          #{Bundler::VERSION}
+         #{Bundler::VERSION}
       L
     end
 
@@ -1754,7 +1754,7 @@ RSpec.describe "bundle install with gem sources" do
           zzz!
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -1845,7 +1845,7 @@ RSpec.describe "bundle install with gem sources" do
         mypsych (~> 4.0)
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     install_gemfile <<~G
@@ -1868,7 +1868,7 @@ RSpec.describe "bundle install with gem sources" do
         mypsych (~> 5.0)
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 end

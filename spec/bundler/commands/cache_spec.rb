@@ -293,7 +293,7 @@ RSpec.describe "bundle cache" do
           myrack-obama
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
       bundle :cache, raise_on_error: false
       expect(exitstatus).to eq(16)
@@ -322,7 +322,7 @@ RSpec.describe "bundle cache" do
           myrack
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
       FileUtils.mkdir_p app_cache
 
@@ -359,7 +359,7 @@ RSpec.describe "bundle cache" do
           bar
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "cache --no-install"
@@ -502,7 +502,7 @@ RSpec.describe "bundle install with gem sources" do
           foo
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       simulate_platform "x86_64-linux" do
@@ -589,7 +589,7 @@ RSpec.describe "bundle install with gem sources" do
           bcrypt_pbkdf
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       simulate_platform "arm64-darwin-23" do
