@@ -101,9 +101,9 @@ class Reline::Unicode
 
   def self.get_mbchar_width(mbchar)
     ord = mbchar.ord
-    if (0x00 <= ord and ord <= 0x1F)
+    if (0x00 <= ord and ord <= 0x1F) # in EscapedPairs
       return 2
-    elsif (0x20 <= ord and ord <= 0x7E)
+    elsif (0x20 <= ord and ord <= 0x7E) # printable ASCII chars
       return 1
     end
     m = mbchar.encode(Encoding::UTF_8).match(MBCharWidthRE)
