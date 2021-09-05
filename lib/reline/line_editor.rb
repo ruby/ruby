@@ -692,18 +692,22 @@ class Reline::LineEditor
         end
       end
       str = padding_space_with_escape_sequences(Reline::Unicode.take_range(item, 0, dialog.width), dialog.width)
+      @output.write "\e[#{bg_color}m#{str}"
       if dialog_render_info.scrollbar and dialog_render_info.contents.size > height
+        @output.write "\e[37m"
         if position <= (i * 2) and (i * 2 + 1) < (position + bar_height)
-          str += '█'
+          @output.write '█'
         elsif position <= (i * 2) and (i * 2) < (position + bar_height)
-          str += '▀'
+          @output.write '▀'
+          str += ''
         elsif position <= (i * 2 + 1) and (i * 2) < (position + bar_height)
-          str += '▄'
+          @output.write '▄'
         else
-          str += ' '
+          @output.write ' '
         end
+        @output.write "\e[39m"
       end
-      @output.write "\e[#{bg_color}m#{str}\e[49m"
+      @output.write "\e[49m"
       Reline::IOGate.move_cursor_column(dialog.column)
       move_cursor_down(1) if i < (dialog.contents.size - 1)
     end
