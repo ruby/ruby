@@ -70,8 +70,8 @@ class Reline::KeyStroke
     key_mapping.keys.select { |lhs|
       lhs.start_with? input
     }.tap { |it|
-      return :matched  if it.size == 1 && (it.max_by(&:size)&.== input)
-      return :matching if it.size == 1 && (it.max_by(&:size)&.!= input)
+      return :matched  if it.size == 1 && (it[0] == input)
+      return :matching if it.size == 1 && (it[0] != input)
       return :matched  if it.max_by(&:size)&.size&.< input.size
       return :matching if it.size > 1
     }
