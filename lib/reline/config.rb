@@ -50,6 +50,7 @@ class Reline::Config
     @additional_key_bindings[:emacs] = {}
     @additional_key_bindings[:vi_insert] = {}
     @additional_key_bindings[:vi_command] = {}
+    @oneshot_key_bindings = {}
     @skip_section = nil
     @if_stack = nil
     @editing_mode_label = :emacs
@@ -75,6 +76,7 @@ class Reline::Config
     @additional_key_bindings.keys.each do |key|
       @additional_key_bindings[key].clear
     end
+    @oneshot_key_bindings.clear
     reset_default_key_bindings
   end
 
@@ -149,7 +151,15 @@ class Reline::Config
 
   def key_bindings
     # override @key_actors[@editing_mode_label].default_key_bindings with @additional_key_bindings[@editing_mode_label]
-    @key_actors[@editing_mode_label].default_key_bindings.merge(@additional_key_bindings[@editing_mode_label])
+    @key_actors[@editing_mode_label].default_key_bindings.merge(@additional_key_bindings[@editing_mode_label]).merge(@oneshot_key_bindings)
+  end
+
+  def add_oneshot_key_binding(keystroke, target)
+    @oneshot_key_bindings[keystroke] = target
+  end
+
+  def reset_oneshot_key_bindings
+    @oneshot_key_bindings.clear
   end
 
   def add_default_key_binding_by_keymap(keymap, keystroke, target)

@@ -550,8 +550,9 @@ class Reline::LineEditor
     attr_reader :name, :contents, :width
     attr_accessor :scroll_top, :column, :vertical_offset, :lines_backup, :trap_key
 
-    def initialize(name, proc_scope)
+    def initialize(name, config, proc_scope)
       @name = name
+      @config = config
       @proc_scope = proc_scope
       @width = nil
       @scroll_top = 0
@@ -575,13 +576,21 @@ class Reline::LineEditor
     def call(key)
       @proc_scope.set_dialog(self)
       @proc_scope.set_key(key)
-      @proc_scope.call
+      dialog_render_info = @proc_scope.call
+      if @trap_key
+        if @trap_key.is_a?(Array)
+          @config.add_oneshot_key_binding(@trap_key, @name)
+        elsif @trap_key.is_a?(Integer) or @trap_key.is_a?(Reline::Key)
+          @config.add_oneshot_key_binding([@trap_key], @name)
+        end
+      end
+      dialog_render_info
     end
   end
 
   def add_dialog_proc(name, p, context = nil)
     return if @dialogs.any? { |d| d.name == name }
-    @dialogs << Dialog.new(name, DialogProcScope.new(self, @config, p, context))
+    @dialogs << Dialog.new(name, @config, DialogProcScope.new(self, @config, p, context))
   end
 
   DIALOG_HEIGHT = 20
@@ -1497,9 +1506,9 @@ class Reline::LineEditor
 
   def input_key(key)
     @last_key = key
+    @config.reset_oneshot_key_bindings
     @dialogs.each do |dialog|
-      # The dialog will intercept the key if trap_key is set.
-      if dialog.trap_key and dialog.trap_key.match?(key)
+      if key.char.instance_of?(Symbol) and key.char == dialog.name
         return
       end
     end
