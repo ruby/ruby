@@ -437,7 +437,8 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 	    addr += a;
 	    break;
 	case DW_LNS_fixed_advance_pc:
-	    a = *(unsigned char *)p++;
+	    a = *(uint16_t *)p;
+	    p += sizeof(uint16_t);
 	    addr += a;
 	    break;
 	case DW_LNS_set_prologue_end:
