@@ -1319,7 +1319,7 @@ if defined? Zlib
         assert_equal(0x02820145, Zlib.adler32_combine(one, two, 1))
       rescue NotImplementedError
         skip "adler32_combine is not implemented"
-      rescue Minitest::Assertion
+      rescue Test::Unit::AssertionFailedError
         if /aix/ =~ RUBY_PLATFORM
           skip "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
         end
@@ -1354,7 +1354,7 @@ if defined? Zlib
         assert_equal(0x8c736521, Zlib.crc32_combine(one, two, 1))
       rescue NotImplementedError
         skip "crc32_combine is not implemented"
-      rescue Minitest::Assertion
+      rescue Test::Unit::AssertionFailedError
         if /aix/ =~ RUBY_PLATFORM
           skip "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
         end

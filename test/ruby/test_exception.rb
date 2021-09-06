@@ -577,7 +577,7 @@ end.join
         end
       end;
     end
-  rescue Minitest::Assertion
+  rescue Test::Unit::AssertionFailedError
     # Possibly compiled with -DRUBY_DEBUG, in which
     # case rb_bug is used instead of NoMemoryError,
     # and we cannot test ensure after NoMemoryError.
