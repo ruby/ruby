@@ -143,10 +143,6 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
 
     assert_file dst
     assert_hard_link dst
-
-    @g.install_rdoc_static_file src, dst, options
-
-    assert_hard_link dst
   end
 
   def test_install_rdoc_static_file_missing
