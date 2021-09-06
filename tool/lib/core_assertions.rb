@@ -24,13 +24,11 @@ module Test
     end
 
     module CoreAssertions
+      require_relative 'envutil'
+
       if defined?(MiniTest)
-        require_relative 'envutil'
         # for ruby core testing
         include MiniTest::Assertions
-
-        # Compatibility hack for assert_raise
-        Test::Unit::AssertionFailedError = MiniTest::Assertion
       else
         module MiniTest
           class Assertion < Exception; end
@@ -38,7 +36,6 @@ module Test
         end
 
         require 'pp'
-        require_relative 'envutil'
         include Test::Unit::Assertions
       end
 
