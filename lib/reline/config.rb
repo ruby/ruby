@@ -154,7 +154,7 @@ class Reline::Config
   end
 
   def key_bindings
-    # override @key_actors[@editing_mode_label].default_key_bindings with @additional_key_bindings[@editing_mode_label]
+    # The key bindings for each editing mode will be overwritten by the user-defined ones.
     @key_actors[@editing_mode_label].default_key_bindings.merge(@additional_key_bindings[@editing_mode_label]).merge(@oneshot_key_bindings)
   end
 
