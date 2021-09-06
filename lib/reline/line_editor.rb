@@ -170,10 +170,13 @@ class Reline::LineEditor
         @old_trap.call
       end
     }
-    @old_tstp_trap = Signal.trap(:TSTP) {
-      Reline::IOGate.ungetc("\C-z".ord)
-      @old_tstp_trap.call if @old_tstp_trap.respond_to?(:call)
-    }
+    begin
+      @old_tstp_trap = Signal.trap(:TSTP) {
+        Reline::IOGate.ungetc("\C-z".ord)
+        @old_tstp_trap.call if @old_tstp_trap.respond_to?(:call)
+      }
+    rescue ArgumentError
+    end
     Reline::IOGate.set_winch_handler do
       @rest_height = (Reline::IOGate.get_screen_size.first - 1) - Reline::IOGate.cursor_pos.y
       old_screen_size = @screen_size
@@ -215,7 +218,10 @@ class Reline::LineEditor
 
   def finalize
     Signal.trap('SIGINT', @old_trap)
-    Signal.trap('SIGTSTP', @old_tstp_trap)
+    begin
+      Signal.trap('SIGTSTP', @old_tstp_trap)
+    rescue ArgumentError
+    end
   end
 
   def eof?
