@@ -210,7 +210,7 @@ rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data,
     view->shape = NULL;
     view->strides = NULL;
     view->sub_offsets = NULL;
-    *((void **)&view->private) = NULL;
+    view->private_data = NULL;
 
     return true;
 }
