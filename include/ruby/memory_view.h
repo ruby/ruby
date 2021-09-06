@@ -100,7 +100,7 @@ typedef struct {
     const ssize_t *sub_offsets;
 
     /* the private data for managing this exported memory */
-    void *const private;
+    void *private_data;
 } rb_memory_view_t;
 
 typedef bool (* rb_memory_view_get_func_t)(VALUE obj, rb_memory_view_t *view, int flags);
