@@ -790,5 +790,3 @@ module MiniTest
 
   Test = Unit::TestCase
 end # module MiniTest
-
-Minitest = MiniTest # :nodoc: because ugh... I typo this all the time
