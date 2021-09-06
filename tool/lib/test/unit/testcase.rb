@@ -7,7 +7,7 @@ module Test
     remove_const(:TestCase) if defined?(self::TestCase)
 
     class TestCase < MiniTest::Unit::TestCase # :nodoc: all
-      include Assertions
+      include CoreAssertions
 
       def on_parallel_worker?
         false

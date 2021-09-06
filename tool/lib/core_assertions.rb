@@ -26,18 +26,15 @@ module Test
     module CoreAssertions
       require_relative 'envutil'
 
-      if defined?(MiniTest)
-        # for ruby core testing
-        include MiniTest::Assertions
-      else
+      unless defined?(MiniTest)
         module MiniTest
           class Assertion < Exception; end
           class Skip < Assertion; end
         end
-
-        require 'pp'
-        include Test::Unit::Assertions
       end
+
+      require 'pp'
+      include Test::Unit::Assertions
 
       def mu_pp(obj) #:nodoc:
         obj.pretty_inspect.chomp
@@ -732,6 +729,14 @@ eom
         assert(all.pass?, message(msg) {all.message.chomp(".")})
       end
       alias all_assertions assert_all_assertions
+
+      def assert_all_assertions_foreach(msg = nil, *keys, &block)
+        all = AllFailures.new
+        all.foreach(*keys, &block)
+      ensure
+        assert(all.pass?, message(msg) {all.message.chomp(".")})
+      end
+      alias all_assertions_foreach assert_all_assertions_foreach
 
       def message(msg = nil, *args, &default) # :nodoc:
         if Proc === msg
