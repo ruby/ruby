@@ -692,6 +692,7 @@ class Reline::LineEditor
       bar_height = (bar_max_height * ((dialog.contents.size * 2).to_f / (dialog_render_info.contents.size * 2))).floor.to_i
       position = ((bar_max_height - bar_height) * position_ratio).floor.to_i
     end
+    block_elem_size = calculate_width('█')
     dialog.contents.each_with_index do |item, i|
       if i == pointer
         bg_color = '45'
@@ -706,15 +707,15 @@ class Reline::LineEditor
       @output.write "\e[#{bg_color}m#{str}"
       if dialog_render_info.scrollbar and dialog_render_info.contents.size > height
         @output.write "\e[37m"
-        if position <= (i * 2) and (i * 2 + 1) < (position + bar_height)
+        if position <= (i * 2) and (i * 2 + block_elem_size) < (position + bar_height)
           @output.write '█'
         elsif position <= (i * 2) and (i * 2) < (position + bar_height)
           @output.write '▀'
           str += ''
-        elsif position <= (i * 2 + 1) and (i * 2) < (position + bar_height)
+        elsif position <= (i * 2 + block_elem_size) and (i * 2) < (position + bar_height)
           @output.write '▄'
         else
-          @output.write ' '
+          @output.write ' ' * block_elem_size
         end
         @output.write "\e[39m"
       end
@@ -722,7 +723,7 @@ class Reline::LineEditor
       Reline::IOGate.move_cursor_column(dialog.column)
       move_cursor_down(1) if i < (dialog.contents.size - 1)
     end
-    dialog.width += 1 if dialog_render_info.scrollbar and dialog_render_info.contents.size > height
+    dialog.width += block_elem_size if dialog_render_info.scrollbar and dialog_render_info.contents.size > height
     Reline::IOGate.move_cursor_column(cursor_column)
     move_cursor_up(dialog.vertical_offset + dialog.contents.size - 1)
     Reline::IOGate.show_cursor
