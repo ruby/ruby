@@ -142,12 +142,7 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     @g.install_rdoc_static_file src, dst, options
 
     assert_file dst
-
-    begin
-      assert_hard_link dst
-    rescue MiniTest::Assertion
-      return # hard links are not supported, no further tests needed
-    end
+    assert_hard_link dst
 
     @g.install_rdoc_static_file src, dst, options
 
