@@ -787,6 +787,4 @@ module MiniTest
 
     end # class TestCase
   end # class Unit
-
-  Test = Unit::TestCase
 end # module MiniTest
