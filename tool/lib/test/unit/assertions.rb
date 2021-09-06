@@ -306,6 +306,7 @@ EOT
 
     # Compatibility hack for assert_raise
     AssertionFailedError = MiniTest::Assertion
+    PendedError = MiniTest::Skip
 
   end
 end

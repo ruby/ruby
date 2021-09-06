@@ -294,8 +294,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
             timeout = EnvUtil.apply_timeout_scale(30)
             th.join(timeout) or
               th.raise(RuntimeError, "[start_server] thread did not exit in #{timeout} secs")
-          rescue (defined?(MiniTest::Skip) ? MiniTest::Skip : Test::Unit::PendedError)
-            # MiniTest::Skip is for the Ruby tree
+          rescue Test::Unit::PendedError
             pend = $!
           rescue Exception
           end
