@@ -483,7 +483,7 @@ module Reline
   #--------------------------------------------------------
 
   (Core::ATTR_READER_NAMES).each { |name|
-    def_single_delegators :core, "#{name}", "#{name}="
+    def_single_delegators :core, :"#{name}", :"#{name}="
   }
   def_single_delegators :core, :input=, :output=
   def_single_delegators :core, :vi_editing_mode, :emacs_editing_mode
