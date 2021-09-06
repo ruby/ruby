@@ -557,10 +557,13 @@ static int rb_sigaltstack_size_value = 0;
 void *
 rb_allocate_sigaltstack(void)
 {
+    void *altstack;
     if (!rb_sigaltstack_size_value) {
 	rb_sigaltstack_size_value = rb_sigaltstack_size();
     }
-    return xmalloc(rb_sigaltstack_size_value);
+    altstack = malloc(rb_sigaltstack_size_value);
+    if (!altstack) rb_memerror();
+    return altstack;
 }
 
 /* alternate stack for SIGSEGV */

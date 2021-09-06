@@ -136,7 +136,7 @@
 void *rb_allocate_sigaltstack(void);
 void *rb_register_sigaltstack(void *);
 #  define RB_ALTSTACK_INIT(var, altstack) var = rb_register_sigaltstack(altstack)
-#  define RB_ALTSTACK_FREE(var) xfree(var)
+#  define RB_ALTSTACK_FREE(var) free(var)
 #  define RB_ALTSTACK(var)  var
 #else /* noop */
 #  define RB_ALTSTACK_INIT(var, altstack)
