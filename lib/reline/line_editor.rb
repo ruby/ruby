@@ -217,9 +217,9 @@ class Reline::LineEditor
   end
 
   def finalize
-    Signal.trap('SIGINT', @old_trap)
+    Signal.trap('INT', @old_trap)
     begin
-      Signal.trap('SIGTSTP', @old_tstp_trap)
+      Signal.trap('TSTP', @old_tstp_trap)
     rescue ArgumentError
     end
   end
