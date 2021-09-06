@@ -150,7 +150,7 @@ class Reline::LineEditor
     @screen_size = Reline::IOGate.get_screen_size
     @screen_height = @screen_size.first
     reset_variables(prompt, encoding: encoding)
-    @old_trap = Signal.trap(:INT) {
+    @old_trap = Signal.trap('INT') {
       clear_dialog
       if @scroll_partial_screen
         move_cursor_down(@screen_height - (@line_index - @scroll_partial_screen) - 1)
@@ -171,7 +171,7 @@ class Reline::LineEditor
       end
     }
     begin
-      @old_tstp_trap = Signal.trap(:TSTP) {
+      @old_tstp_trap = Signal.trap('TSTP') {
         Reline::IOGate.ungetc("\C-z".ord)
         @old_tstp_trap.call if @old_tstp_trap.respond_to?(:call)
       }
