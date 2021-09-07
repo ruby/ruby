@@ -45,7 +45,7 @@ module Test
         result = nil
 
         need_to_diff =
-          MiniTest::Assertions.diff &&
+          self.class.diff &&
           (expect.include?("\n")    ||
           butwas.include?("\n")    ||
           expect.size > 30         ||
@@ -68,7 +68,7 @@ module Test
             b.puts butwas
             b.flush
 
-            result = `#{MiniTest::Assertions.diff} #{a.path} #{b.path}`
+            result = `#{self.class.diff} #{a.path} #{b.path}`
             result.sub!(/^\-\-\- .+/, "--- expected")
             result.sub!(/^\+\+\+ .+/, "+++ actual")
 
