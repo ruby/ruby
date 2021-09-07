@@ -1834,13 +1834,18 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
          */
         rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
-    if (opt->features.set & FEATURE_BIT(yjit))
-        rb_yjit_init(&opt->yjit);
 #if USE_MJIT
     if (opt->features.set & FEATURE_BIT(jit)) {
         opt->mjit.on = TRUE; /* set mjit.on for ruby_show_version() API and check to call mjit_init() */
     }
 #endif
+    if (opt->features.set & FEATURE_BIT(yjit)) {
+        if (opt->mjit.on) {
+            rb_warn("MJIT and YJIT are both enabled at the same time. Exiting");
+            exit(1);
+        }
+        rb_yjit_init(&opt->yjit);
+    }
     if (opt->dump & (DUMP_BIT(version) | DUMP_BIT(version_v))) {
 #if USE_MJIT
         mjit_opts.on = opt->mjit.on; /* used by ruby_show_version(). mjit_init() still can't be called here. */
