@@ -559,7 +559,7 @@ class Reline::LineEditor
 
   class Dialog
     attr_reader :name, :contents, :width
-    attr_accessor :scroll_top, :column, :vertical_offset, :lines_backup, :trap_key
+    attr_accessor :scroll_top, :scrollbar_pos, :column, :vertical_offset, :lines_backup, :trap_key
 
     def initialize(name, config, proc_scope)
       @name = name
@@ -663,6 +663,15 @@ class Reline::LineEditor
       end
       dialog.contents = dialog.contents[dialog.scroll_top, height]
     end
+    if dialog_render_info.scrollbar and dialog_render_info.contents.size > height
+      bar_max_height = height * 2
+      moving_distance = (dialog_render_info.contents.size - height) * 2
+      position_ratio = dialog.scroll_top.zero? ? 0.0 : ((dialog.scroll_top * 2).to_f / moving_distance)
+      bar_height = (bar_max_height * ((dialog.contents.size * 2).to_f / (dialog_render_info.contents.size * 2))).floor.to_i
+      dialog.scrollbar_pos = ((bar_max_height - bar_height) * position_ratio).floor.to_i
+    else
+      dialog.scrollbar_pos = nil
+    end
     upper_space = @first_line_started_from - @started_from
     lower_space = @highest_in_all - @first_line_started_from - @started_from - 1
     dialog.column = dialog_render_info.pos.x
@@ -682,17 +691,11 @@ class Reline::LineEditor
       dialog.vertical_offset = dialog_render_info.pos.y + 1
     end
     Reline::IOGate.hide_cursor
+    block_elem_size = calculate_width('█')
+    dialog.width += block_elem_size if dialog.scrollbar_pos
     reset_dialog(dialog, old_dialog)
     move_cursor_down(dialog.vertical_offset)
     Reline::IOGate.move_cursor_column(dialog.column)
-    if dialog_render_info.scrollbar and dialog_render_info.contents.size > height
-      bar_max_height = height * 2
-      moving_distance = (dialog_render_info.contents.size - height) * 2
-      position_ratio = dialog.scroll_top.zero? ? 0.0 : ((dialog.scroll_top * 2).to_f / moving_distance)
-      bar_height = (bar_max_height * ((dialog.contents.size * 2).to_f / (dialog_render_info.contents.size * 2))).floor.to_i
-      position = ((bar_max_height - bar_height) * position_ratio).floor.to_i
-    end
-    block_elem_size = calculate_width('█')
     dialog.contents.each_with_index do |item, i|
       if i == pointer
         bg_color = '45'
@@ -703,16 +706,16 @@ class Reline::LineEditor
           bg_color = '46'
         end
       end
-      str = padding_space_with_escape_sequences(Reline::Unicode.take_range(item, 0, dialog.width), dialog.width)
+      str = padding_space_with_escape_sequences(Reline::Unicode.take_range(item, 0, dialog.width - block_elem_size), dialog.width - block_elem_size)
       @output.write "\e[#{bg_color}m#{str}"
-      if dialog_render_info.scrollbar and dialog_render_info.contents.size > height
+      if dialog.scrollbar_pos and dialog.scrollbar_pos != old_dialog.scrollbar_pos
         @output.write "\e[37m"
-        if position <= (i * 2) and (i * 2 + block_elem_size) < (position + bar_height)
+        if dialog.scrollbar_pos <= (i * 2) and (i * 2 + block_elem_size) < (dialog.scrollbar_pos + bar_height)
           @output.write '█'
-        elsif position <= (i * 2) and (i * 2) < (position + bar_height)
+        elsif dialog.scrollbar_pos <= (i * 2) and (i * 2) < (dialog.scrollbar_pos + bar_height)
           @output.write '▀'
           str += ''
-        elsif position <= (i * 2 + block_elem_size) and (i * 2) < (position + bar_height)
+        elsif dialog.scrollbar_pos <= (i * 2 + block_elem_size) and (i * 2) < (dialog.scrollbar_pos + bar_height)
           @output.write '▄'
         else
           @output.write ' ' * block_elem_size
@@ -723,7 +726,6 @@ class Reline::LineEditor
       Reline::IOGate.move_cursor_column(dialog.column)
       move_cursor_down(1) if i < (dialog.contents.size - 1)
     end
-    dialog.width += block_elem_size if dialog_render_info.scrollbar and dialog_render_info.contents.size > height
     Reline::IOGate.move_cursor_column(cursor_column)
     move_cursor_up(dialog.vertical_offset + dialog.contents.size - 1)
     Reline::IOGate.show_cursor
@@ -808,7 +810,10 @@ class Reline::LineEditor
       end
       move_cursor_up(old_dialog.vertical_offset + line_num - 1 - y_diff)
     end
-    if (old_dialog.column + old_dialog.width) > (dialog.column + dialog.width)
+    old_dialog_scrollbar = old_dialog.scrollbar_pos.nil? ? 0 : calculate_width('█')
+    dialog_scrollbar = dialog.scrollbar_pos.nil? ? 0 : calculate_width('█')
+    if (old_dialog.column + old_dialog.width - old_dialog_scrollbar) > (dialog.column + dialog.width - dialog_scrollbar)
+      $stderr.puts "RIGHT #{old_dialog.column} #{old_dialog.width} #{old_dialog_scrollbar} #{dialog.column} #{dialog.width} #{dialog_scrollbar}"
       # rerender right
       move_cursor_down(old_dialog.vertical_offset + y_diff)
       width = (old_dialog.column + old_dialog.width) - (dialog.column + dialog.width)
