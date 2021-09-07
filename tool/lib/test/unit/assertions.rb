@@ -596,7 +596,7 @@ module Test
       # Takes a block and wraps it with the runner's shared mutex.
 
       def synchronize
-        Minitest::Unit.runner.synchronize do
+        MiniTest::Unit.runner.synchronize do
           yield
         end
       end
