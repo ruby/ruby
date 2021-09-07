@@ -71,7 +71,7 @@ module Test
           srand(seed)
           orig_args.unshift "--seed=#{seed}"
         end
-        MiniTest::Unit::TestCase.test_order = order if order
+        Test::Unit::TestCase.test_order = order if order
 
         @help = "\n" + orig_args.map { |s|
           "  " + (s =~ /[\s|&<>$()]/ ? s.inspect : s)
@@ -517,7 +517,7 @@ module Test
         require 'timeout'
         @tasks = @files.dup # Array of filenames.
 
-        case MiniTest::Unit::TestCase.test_order
+        case Test::Unit::TestCase.test_order
         when :random
           @tasks.shuffle!
         else
@@ -1008,7 +1008,7 @@ module Test
 
       def non_options(files, options)
         if options.delete(:gc_stress)
-          MiniTest::Unit::TestCase.class_eval do
+          Test::Unit::TestCase.class_eval do
             oldrun = instance_method(:run)
             define_method(:run) do |runner|
               begin
@@ -1021,7 +1021,7 @@ module Test
           end
         end
         if options.delete(:gc_compact)
-          MiniTest::Unit::TestCase.class_eval do
+          Test::Unit::TestCase.class_eval do
             oldrun = instance_method(:run)
             define_method(:run) do |runner|
               begin
