@@ -214,6 +214,7 @@ class Reline::LineEditor
         @rerender_all = true
       end
     end
+    @block_elem_width = Reline::Unicode.calculate_width('█')
   end
 
   def finalize
@@ -691,8 +692,7 @@ class Reline::LineEditor
       dialog.vertical_offset = dialog_render_info.pos.y + 1
     end
     Reline::IOGate.hide_cursor
-    block_elem_size = calculate_width('█')
-    dialog.width += block_elem_size if dialog.scrollbar_pos
+    dialog.width += @block_elem_width if dialog.scrollbar_pos
     reset_dialog(dialog, old_dialog)
     move_cursor_down(dialog.vertical_offset)
     Reline::IOGate.move_cursor_column(dialog.column)
@@ -706,19 +706,19 @@ class Reline::LineEditor
           bg_color = '46'
         end
       end
-      str = padding_space_with_escape_sequences(Reline::Unicode.take_range(item, 0, dialog.width - block_elem_size), dialog.width - block_elem_size)
+      str = padding_space_with_escape_sequences(Reline::Unicode.take_range(item, 0, dialog.width - @block_elem_width), dialog.width - @block_elem_width)
       @output.write "\e[#{bg_color}m#{str}"
       if dialog.scrollbar_pos and dialog.scrollbar_pos != old_dialog.scrollbar_pos
         @output.write "\e[37m"
-        if dialog.scrollbar_pos <= (i * 2) and (i * 2 + block_elem_size) < (dialog.scrollbar_pos + bar_height)
+        if dialog.scrollbar_pos <= (i * 2) and (i * 2 + @block_elem_width) < (dialog.scrollbar_pos + bar_height)
           @output.write '█'
         elsif dialog.scrollbar_pos <= (i * 2) and (i * 2) < (dialog.scrollbar_pos + bar_height)
           @output.write '▀'
           str += ''
-        elsif dialog.scrollbar_pos <= (i * 2 + block_elem_size) and (i * 2) < (dialog.scrollbar_pos + bar_height)
+        elsif dialog.scrollbar_pos <= (i * 2 + @block_elem_width) and (i * 2) < (dialog.scrollbar_pos + bar_height)
           @output.write '▄'
         else
-          @output.write ' ' * block_elem_size
+          @output.write ' ' * @block_elem_width
         end
         @output.write "\e[39m"
       end
