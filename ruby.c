@@ -1841,7 +1841,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
     if (opt->features.set & FEATURE_BIT(yjit)) {
         if (opt->mjit.on) {
-            rb_warn("MJIT and YJIT are both enabled at the same time. Exiting");
+            rb_warn("MJIT and YJIT cannot both be enabled at the same time. Exiting");
             exit(1);
         }
         rb_yjit_init(&opt->yjit);
