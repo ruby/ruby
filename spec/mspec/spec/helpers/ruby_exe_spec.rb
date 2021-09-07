@@ -145,7 +145,7 @@ RSpec.describe Object, "#ruby_exe" do
     stub_const 'RUBY_EXE', 'ruby_spec_exe -w -Q'
 
     @script = RubyExeSpecs.new
-    allow(@script).to receive(:`)
+    allow(@script).to receive(:`).and_return('OUTPUT')
 
     status_successful = double(Process::Status,  exitstatus: 0)
     allow(Process).to receive(:last_status).and_return(status_successful)
