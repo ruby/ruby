@@ -1046,7 +1046,7 @@ class TestModule < Test::Unit::TestCase
 
   def test_attr_obsoleted_flag
     c = Class.new do
-      extend Test::Unit::Assertions
+      extend Test::Unit::CoreAssertions
       def initialize
         @foo = :foo
         @bar = :bar
