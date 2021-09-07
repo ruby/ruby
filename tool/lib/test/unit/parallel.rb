@@ -113,7 +113,7 @@ module Test
               _report "okay"
 
               @options = @opts.dup
-              suites = MiniTest::Unit::TestCase.test_suites
+              suites = Test::Unit::TestCase.test_suites
 
               begin
                 require File.realpath($1)
@@ -122,7 +122,7 @@ module Test
                 _report "ready"
                 next
               end
-              _run_suites MiniTest::Unit::TestCase.test_suites-suites, $2.to_sym
+              _run_suites Test::Unit::TestCase.test_suites-suites, $2.to_sym
 
               if @need_exit
                 _report "bye"
@@ -193,7 +193,7 @@ end
 if $0 == __FILE__
   module Test
     module Unit
-      class TestCase < MiniTest::Unit::TestCase # :nodoc: all
+      class TestCase # :nodoc: all
         undef on_parallel_worker?
         def on_parallel_worker?
           true

@@ -20,7 +20,7 @@
 
 require 'objspace'
 
-class MiniTest::Unit::TestCase
+class Test::Unit::TestCase
   alias orig_run run
 
   file = ENV['RUBY_TEST_ALL_PROFILE']
