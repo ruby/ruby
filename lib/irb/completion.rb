@@ -64,15 +64,18 @@ module IRB
     end
 
     def self.retrieve_files_to_require_from_load_path
-      @@files_from_load_path ||= retrieve_gem_and_system_load_path.flat_map { |path|
+      @@files_from_load_path ||= retrieve_gem_and_system_load_path.map { |path|
         begin
           Dir.glob("**/*.{rb,#{RbConfig::CONFIG['DLEXT']}}", base: path)
         rescue Errno::ENOENT
           []
         end
-      }.uniq.map { |path|
-        path.sub(/\.(rb|#{RbConfig::CONFIG['DLEXT']})\z/, '')
-      }
+      }.inject([]) { |result, names|
+        shortest, *rest = names.map{ |n| n.sub(/\.(rb|#{RbConfig::CONFIG['DLEXT']})\z/, '') }.sort
+        result.unshift(shortest) if shortest
+        result.concat(rest)
+        result
+      }.uniq
     end
 
     def self.retrieve_files_to_require_relative_from_current_dir

@@ -68,6 +68,11 @@ module TestIRB
       end
     end
 
+    def test_complete_require_library_name_first
+      candidates = IRB::InputCompletor::CompletionProc.("'cgi", "require ", "")
+      assert_equal candidates.first, "'cgi"
+    end
+
     def test_complete_require_relative
       candidates = Dir.chdir(__dir__ + "/../..") do
         IRB::InputCompletor::CompletionProc.("'lib/irb", "require_relative ", "")
