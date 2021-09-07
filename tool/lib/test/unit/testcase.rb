@@ -242,6 +242,7 @@ module Test
 
       def self.reset # :nodoc:
         @@test_suites = {}
+        @@test_suites[self] = true
       end
 
       reset
