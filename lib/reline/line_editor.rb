@@ -813,7 +813,6 @@ class Reline::LineEditor
     old_dialog_scrollbar = old_dialog.scrollbar_pos.nil? ? 0 : calculate_width('█')
     dialog_scrollbar = dialog.scrollbar_pos.nil? ? 0 : calculate_width('█')
     if (old_dialog.column + old_dialog.width - old_dialog_scrollbar) > (dialog.column + dialog.width - dialog_scrollbar)
-      $stderr.puts "RIGHT #{old_dialog.column} #{old_dialog.width} #{old_dialog_scrollbar} #{dialog.column} #{dialog.width} #{dialog_scrollbar}"
       # rerender right
       move_cursor_down(old_dialog.vertical_offset + y_diff)
       width = (old_dialog.column + old_dialog.width) - (dialog.column + dialog.width)
