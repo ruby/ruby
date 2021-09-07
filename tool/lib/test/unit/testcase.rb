@@ -3,8 +3,6 @@ require 'test/unit/assertions'
 
 module Test
   module Unit
-    # remove silly TestCase class
-    remove_const(:TestCase) if defined?(self::TestCase)
 
     ##
     # Provides a simple set of guards that you can use in your tests
@@ -163,6 +161,8 @@ module Test
       # Runs the tests reporting the status to +runner+
 
       def run runner
+        @options = runner.options
+
         trap "INFO" do
           runner.report.each_with_index do |msg, i|
             warn "\n%3d) %s" % [i + 1, msg]
@@ -191,7 +191,7 @@ module Test
         rescue *PASSTHROUGH_EXCEPTIONS
           raise
         rescue Exception => e
-          @passed = Skip === e
+          @passed = MiniTest::Skip === e
           time = Time.now - start_time
           runner.record self.class, self.__name__, self._assertions, time, e
           result = runner.puke self.class, self.__name__, e
@@ -335,11 +335,6 @@ module Test
 
       def on_parallel_worker?
         false
-      end
-
-      def run runner
-        @options = runner.options
-        super runner
       end
 
       def self.method_added(name)

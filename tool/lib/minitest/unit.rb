@@ -205,7 +205,7 @@ module MiniTest
     end
 
     def _run_anything type
-      suites = TestCase.send "#{type}_suites"
+      suites = Test::Unit::TestCase.send "#{type}_suites"
       return if suites.empty?
 
       puts
