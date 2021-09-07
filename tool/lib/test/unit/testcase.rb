@@ -351,6 +351,26 @@ module Test
         end
         @test_methods[name] = true
       end
+
+      test_order = self.test_order
+      class << self
+        attr_writer :test_order
+        undef test_order
+      end
+      def self.test_order
+        defined?(@test_order) ? @test_order : superclass.test_order
+      end
+      self.test_order = test_order
+      undef run_test
+      RUN_TEST_TRACE = "#{__FILE__}:#{__LINE__+3}:in `run_test'".freeze
+      def run_test(name)
+        progname, $0 = $0, "#{$0}: #{self.class}##{name}"
+        self.__send__(name)
+      ensure
+        $@.delete(RUN_TEST_TRACE) if $@
+        $0 = progname
+      end
+
     end
   end
 end
