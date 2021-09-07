@@ -811,12 +811,10 @@ class Reline::LineEditor
       end
       move_cursor_up(old_dialog.vertical_offset + line_num - 1 - y_diff)
     end
-    old_dialog_scrollbar = old_dialog.scrollbar_pos.nil? ? 0 : @block_elem_width
-    dialog_scrollbar = dialog.scrollbar_pos.nil? ? 0 : @block_elem_width
-    if (old_dialog.column + old_dialog.width - old_dialog_scrollbar) > (dialog.column + dialog.width - dialog_scrollbar)
+    if (old_dialog.column + old_dialog.width) > (dialog.column + dialog.width)
       # rerender right
       move_cursor_down(old_dialog.vertical_offset + y_diff)
-      width = (old_dialog.column + old_dialog.width - old_dialog_scrollbar) - (dialog.column + dialog.width - dialog_scrollbar)
+      width = (old_dialog.column + old_dialog.width) - (dialog.column + dialog.width)
       start = visual_start + old_dialog.vertical_offset
       line_num = old_dialog.contents.size
       line_num.times do |i|
@@ -827,7 +825,7 @@ class Reline::LineEditor
           s = Reline::Unicode.take_range(visual_lines[start + i], old_dialog.column + dialog.width, width)
           s = padding_space_with_escape_sequences(s, dialog.width)
         end
-        Reline::IOGate.move_cursor_column(dialog.column + dialog.width - dialog_scrollbar)
+        Reline::IOGate.move_cursor_column(dialog.column + dialog.width)
         @output.write "\e[39m\e[49m#{s}\e[39m\e[49m"
         move_cursor_down(1) if i < (line_num - 1)
       end
