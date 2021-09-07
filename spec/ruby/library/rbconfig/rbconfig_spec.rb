@@ -26,7 +26,7 @@ describe 'RbConfig::CONFIG' do
     it "['sitelibdir'] is set and is part of $LOAD_PATH" do
       sitelibdir = RbConfig::CONFIG['sitelibdir']
       sitelibdir.should be_kind_of String
-      $LOAD_PATH.should.include? sitelibdir
+      $LOAD_PATH.map{|path| File.realpath(path) rescue path }.should.include? sitelibdir
     end
   end
 

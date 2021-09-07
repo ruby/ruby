@@ -1154,4 +1154,14 @@ end
       str.should == "test fmt 42 7 number"
     end
   end
+
+  describe "rb_str_catf" do
+    it "appends the message to the string" do
+      @s.rb_str_catf("").should == "fmt 41 6 number"
+
+      str = "test "
+      @s.rb_str_catf(str)
+      str.should == "test fmt 41 6 number"
+    end
+  end
 end

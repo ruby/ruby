@@ -28,6 +28,7 @@ ruby/spec is known to be tested in these implementations for every commit:
 * [JRuby](https://github.com/jruby/jruby/tree/master/spec/ruby) for both 1.7 and 9.x
 * [TruffleRuby](https://github.com/oracle/truffleruby/tree/master/spec/ruby)
 * [Opal](https://github.com/opal/opal/tree/master/spec)
+* [Artichoke](https://github.com/artichoke/spec/tree/artichoke-vendor)
 
 ruby/spec describes the behavior of Ruby 2.6 and more recent Ruby versions.
 More precisely, every latest stable MRI release should [pass](https://github.com/ruby/spec/actions/workflows/ci.yml) all specs of ruby/spec (2.6.x, 2.7.x, 3.0.x, etc), and those are tested in CI.

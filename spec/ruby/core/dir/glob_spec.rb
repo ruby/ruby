@@ -80,6 +80,7 @@ describe "Dir.glob" do
       nested/.dotsubir/
       special/
       special/test{1}/
+      special/{}/
       subdir_one/
       subdir_two/
     ]
@@ -130,6 +131,7 @@ describe "Dir.glob" do
       ./nested/.dotsubir/
       ./special/
       ./special/test{1}/
+      ./special/{}/
       ./subdir_one/
       ./subdir_two/
     ]

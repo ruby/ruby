@@ -51,7 +51,7 @@ ruby_version_is "3.1" do
       enum.tally(hash).should equal(hash)
     end
 
-    it "raises a FrozenError and does not udpate the given hash when the hash is frozen" do
+    it "raises a FrozenError and does not update the given hash when the hash is frozen" do
       enum = EnumerableSpecs::Numerous.new('foo', 'bar', 'foo', 'baz')
       hash = { 'foo' => 1 }.freeze
       -> { enum.tally(hash) }.should raise_error(FrozenError)

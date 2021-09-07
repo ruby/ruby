@@ -64,6 +64,10 @@ describe :dir_glob, shared: true do
     Dir.send(@method, 'special/+').should == ['special/+']
   end
 
+  it "matches directories with special characters when escaped" do
+    Dir.send(@method, 'special/\{}/special').should == ["special/{}/special"]
+  end
+
   platform_is_not :windows do
     it "matches regexp special *" do
       Dir.send(@method, 'special/\*').should == ['special/*']
@@ -191,6 +195,7 @@ describe :dir_glob, shared: true do
       nested/
       special/
       special/test{1}/
+      special/{}/
       subdir_one/
       subdir_two/
     ]

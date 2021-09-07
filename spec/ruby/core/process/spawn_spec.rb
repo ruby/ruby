@@ -212,6 +212,26 @@ describe "Process.spawn" do
     end.should output_to_fd("nil\n")
   end
 
+  platform_is_not :windows do
+    it "uses the passed env['PATH'] to search the executable" do
+      dir = tmp("spawn_path_dir")
+      mkdir_p dir
+      begin
+        exe = 'process-spawn-executable-in-path'
+        path = "#{dir}/#{exe}"
+        File.write(path, "#!/bin/sh\necho $1")
+        File.chmod(0755, path)
+
+        env = { "PATH" => "#{dir}#{File::PATH_SEPARATOR}#{ENV['PATH']}" }
+        Process.wait Process.spawn(env, exe, 'OK', out: @name)
+        $?.should.success?
+        File.read(@name).should == "OK\n"
+      ensure
+        rm_r dir
+      end
+    end
+  end
+
   it "calls #to_hash to convert the environment" do
     o = mock("to_hash")
     o.should_receive(:to_hash).and_return({"FOO" => "BAR"})

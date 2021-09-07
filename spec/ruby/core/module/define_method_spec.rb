@@ -350,6 +350,14 @@ describe "Module#define_method" do
     object2.other_cool_method.should == "data is foo"
   end
 
+  it "accepts a proc from a Symbol" do
+    symbol_proc = :+.to_proc
+    klass = Class.new do
+      define_method :foo, &symbol_proc
+    end
+    klass.new.foo(1, 2).should == 3
+  end
+
   it "maintains the Proc's scope" do
     class DefineMethodByProcClass
       in_scope = true
@@ -712,6 +720,49 @@ describe "Method#define_method when passed a Proc object" do
       o.should_not have_method :nested_method_in_proc_for_define_method
 
       t.new.nested_method_in_proc_for_define_method.should == 42
+    end
+  end
+end
+
+describe "Method#define_method when passed a block" do
+  describe "behaves exactly like a lambda" do
+    it "for return" do
+      Class.new do
+        define_method(:foo) do
+          return 42
+        end
+      end.new.foo.should == 42
+    end
+
+    it "for break" do
+      Class.new do
+        define_method(:foo) do
+          break 42
+        end
+      end.new.foo.should == 42
+    end
+
+    it "for next" do
+      Class.new do
+        define_method(:foo) do
+          next 42
+        end
+      end.new.foo.should == 42
+    end
+
+    it "for redo" do
+      Class.new do
+        result = []
+        define_method(:foo) do
+          if result.empty?
+            result << :first
+            redo
+          else
+            result << :second
+            result
+          end
+        end
+      end.new.foo.should == [:first, :second]
     end
   end
 end
