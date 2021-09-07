@@ -290,7 +290,6 @@ begin
     end
 
     def test_clear_multiline_and_autowrap
-      omit # FIXME clear logic is buggy
       start_terminal(10, 15, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def aaaaaa\n  3\n\C-lend")
       close

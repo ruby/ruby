@@ -1220,7 +1220,7 @@ class Reline::LineEditor
         height = render_partial(prompt, prompt_width, line, back, with_control: false)
       end
       if index < (@buffer_of_lines.size - 1)
-        move_cursor_down(height)
+        move_cursor_down(1)
         back += height
       end
     end
