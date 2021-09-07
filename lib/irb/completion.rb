@@ -38,10 +38,22 @@ module IRB
 
     BASIC_WORD_BREAK_CHARACTERS = " \t\n`><=;|&{("
 
+    def self.absolute_path?(p) # TODO Remove this method after 2.6 EOL.
+      if File.respond_to?(:absolute_path?)
+        File.absolute_path?(p)
+      else
+        if File.absolute_path(p) == p
+          true
+        else
+          false
+        end
+      end
+    end
+
     def self.retrieve_gem_and_system_load_path
       gem_paths = Gem::Specification.latest_specs(true).map { |s|
         s.require_paths.map { |p|
-          if File.absolute_path?(p)
+          if absolute_path?(p)
             p
           else
             File.join(s.full_gem_path, p)
