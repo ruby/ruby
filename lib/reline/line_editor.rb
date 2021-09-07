@@ -706,7 +706,8 @@ class Reline::LineEditor
           bg_color = '46'
         end
       end
-      str = padding_space_with_escape_sequences(Reline::Unicode.take_range(item, 0, dialog.width - @block_elem_width), dialog.width - @block_elem_width)
+      str_width = dialog.width - (dialog.scrollbar_pos.nil? ? 0 : @block_elem_width)
+      str = padding_space_with_escape_sequences(Reline::Unicode.take_range(item, 0, str_width), str_width)
       @output.write "\e[#{bg_color}m#{str}"
       if dialog.scrollbar_pos and dialog.scrollbar_pos != old_dialog.scrollbar_pos
         @output.write "\e[37m"
@@ -815,7 +816,7 @@ class Reline::LineEditor
     if (old_dialog.column + old_dialog.width - old_dialog_scrollbar) > (dialog.column + dialog.width - dialog_scrollbar)
       # rerender right
       move_cursor_down(old_dialog.vertical_offset + y_diff)
-      width = (old_dialog.column + old_dialog.width) - (dialog.column + dialog.width)
+      width = (old_dialog.column + old_dialog.width - old_dialog_scrollbar) - (dialog.column + dialog.width - dialog_scrollbar)
       start = visual_start + old_dialog.vertical_offset
       line_num = old_dialog.contents.size
       line_num.times do |i|
@@ -826,7 +827,7 @@ class Reline::LineEditor
           s = Reline::Unicode.take_range(visual_lines[start + i], old_dialog.column + dialog.width, width)
           s = padding_space_with_escape_sequences(s, dialog.width)
         end
-        Reline::IOGate.move_cursor_column(dialog.column + dialog.width)
+        Reline::IOGate.move_cursor_column(dialog.column + dialog.width - dialog_scrollbar)
         @output.write "\e[39m\e[49m#{s}\e[39m\e[49m"
         move_cursor_down(1) if i < (line_num - 1)
       end
