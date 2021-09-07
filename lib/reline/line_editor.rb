@@ -709,7 +709,7 @@ class Reline::LineEditor
       str_width = dialog.width - (dialog.scrollbar_pos.nil? ? 0 : @block_elem_width)
       str = padding_space_with_escape_sequences(Reline::Unicode.take_range(item, 0, str_width), str_width)
       @output.write "\e[#{bg_color}m#{str}"
-      if dialog.scrollbar_pos and dialog.scrollbar_pos != old_dialog.scrollbar_pos
+      if dialog.scrollbar_pos and (dialog.scrollbar_pos != old_dialog.scrollbar_pos or dialog.column != old_dialog.column)
         @output.write "\e[37m"
         if dialog.scrollbar_pos <= (i * 2) and (i * 2 + @block_elem_width) < (dialog.scrollbar_pos + bar_height)
           @output.write '█'
