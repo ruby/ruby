@@ -1450,48 +1450,6 @@ module Test
         end
       end
 
-      def process_args args = [] # :nodoc:
-        options = {}
-        orig_args = args.dup
-
-        OptionParser.new do |opts|
-          opts.banner  = 'minitest options:'
-
-          opts.on '-h', '--help', 'Display this help.' do
-            puts opts
-            exit
-          end
-
-          opts.on '-s', '--seed SEED', Integer, "Sets random seed" do |m|
-            options[:seed] = m.to_i
-          end
-
-          opts.on '-v', '--verbose', "Verbose. Show progress processing files." do
-            options[:verbose] = true
-          end
-
-          opts.on '-n', '--name PATTERN', "Filter test names on pattern (e.g. /foo/)" do |a|
-            options[:filter] = a
-          end
-
-          opts.parse! args
-          orig_args -= args
-        end
-
-        unless options[:seed] then
-          srand
-          options[:seed] = srand % 0xFFFF
-          orig_args << "--seed" << options[:seed].to_s
-        end
-
-        srand options[:seed]
-
-        self.verbose = options[:verbose]
-        @help = orig_args.map { |s| s =~ /[\s|&<>$()]/ ? s.inspect : s }.join " "
-
-        options
-      end
-
       ##
       # Top level driver, controls all output and filtering.
 
