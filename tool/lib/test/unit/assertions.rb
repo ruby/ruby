@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'minitest/unit'
 require_relative '../../core_assertions'
 require 'pp'
 
@@ -119,7 +118,7 @@ module Test
         self._assertions += 1
         unless test then
           msg = msg.call if Proc === msg
-          raise MiniTest::Assertion, msg
+          raise Test::Assertion, msg
         end
         true
       end
@@ -410,7 +409,7 @@ module Test
         "Class: <#{e.class}>",
         "Message: <#{e.message.inspect}>",
         "---Backtrace---",
-        "#{MiniTest::filter_backtrace(e.backtrace).join("\n")}",
+        "#{Test::filter_backtrace(e.backtrace).join("\n")}",
         "---------------",
         ].join "\n"
       end
@@ -580,7 +579,7 @@ module Test
       def skip msg = nil, bt = caller
         msg ||= "Skipped, no message given"
         @skip = true
-        raise MiniTest::Skip, msg, bt
+        raise Test::Skip, msg, bt
       end
 
       alias omit skip
@@ -883,10 +882,5 @@ EOT
         template.gsub(/\G((?:[^\\]|\\.)*?)(\\)?\?/) { $1 + ($2 ? "?" : mu_pp(arguments.shift)) }
       end
     end
-
-    # Compatibility hack for assert_raise
-    AssertionFailedError = MiniTest::Assertion
-    PendedError = MiniTest::Skip
-
   end
 end

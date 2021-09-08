@@ -160,21 +160,21 @@ module Test
       end
 
       def puke(klass, meth, e) # :nodoc:
-        if e.is_a?(MiniTest::Skip)
-          new_e = MiniTest::Skip.new(e.message)
+        if e.is_a?(Test::Skip)
+          new_e = Test::Skip.new(e.message)
           new_e.set_backtrace(e.backtrace)
           e = new_e
         end
-        @partial_report << [klass.name, meth, e.is_a?(MiniTest::Assertion) ? e : ProxyError.new(e)]
+        @partial_report << [klass.name, meth, e.is_a?(Test::Assertion) ? e : ProxyError.new(e)]
         super
       end
 
       def record(suite, method, assertions, time, error) # :nodoc:
         case error
         when nil
-        when MiniTest::Assertion, MiniTest::Skip
+        when Test::Assertion, Test::Skip
           case error.cause
-          when nil, MiniTest::Assertion, MiniTest::Skip
+          when nil, Test::Assertion, Test::Skip
           else
             bt = error.backtrace
             error = error.class.new(error.message)

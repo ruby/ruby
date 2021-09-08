@@ -1,14 +1,60 @@
 # frozen_string_literal: true
 
-require_relative '../minitest/unit'
-require 'test/unit/assertions'
 require_relative '../envutil'
 require_relative '../colorize'
+require 'test/unit/assertions'
 require 'test/unit/testcase'
 require 'optparse'
+require "leakchecker"
 
 # See Test::Unit
 module Test
+
+  ##
+  # Assertion base class
+
+  class Assertion < Exception; end
+
+  ##
+  # Assertion raised when skipping a test
+
+  class Skip < Assertion; end
+
+  class << self
+    ##
+    # Filter object for backtraces.
+
+    attr_accessor :backtrace_filter
+  end
+
+  class BacktraceFilter # :nodoc:
+    def filter bt
+      return ["No backtrace"] unless bt
+
+      new_bt = []
+
+      unless $DEBUG then
+        bt.each do |line|
+          break if line =~ /lib\/minitest/
+          new_bt << line
+        end
+
+        new_bt = bt.reject { |line| line =~ /lib\/minitest/ } if new_bt.empty?
+        new_bt = bt.dup if new_bt.empty?
+      else
+        new_bt = bt.dup
+      end
+
+      new_bt
+    end
+  end
+
+  self.backtrace_filter = BacktraceFilter.new
+
+  def self.filter_backtrace bt # :nodoc:
+    backtrace_filter.filter bt
+  end
+
   ##
   # Test::Unit is an implementation of the xUnit testing framework for Ruby.
   #
@@ -17,6 +63,10 @@ module Test
   # Test::Unit has been left in the standard library to support legacy test
   # suites.
   module Unit
+    # Compatibility hack for assert_raise
+    AssertionFailedError = Test::Assertion
+    PendedError = Test::Skip
+
     TEST_UNIT_IMPLEMENTATION = 'test/unit compatibility layer using minitest' # :nodoc:
 
     module RunCount # :nodoc: all
@@ -583,7 +633,7 @@ module Test
           unless @interrupt || !@options[:retry] || @need_quit
             parallel = @options[:parallel]
             @options[:parallel] = false
-            suites, rep = rep.partition {|r| r[:testcase] && r[:file] && r[:report].any? {|e| !e[2].is_a?(MiniTest::Skip)}}
+            suites, rep = rep.partition {|r| r[:testcase] && r[:file] && r[:report].any? {|e| !e[2].is_a?(Test::Skip)}}
             suites.map {|r| File.realpath(r[:file])}.uniq.each {|file| require file}
             suites.map! {|r| eval("::"+r[:testcase])}
             del_status_line or puts
@@ -1488,21 +1538,21 @@ module Test
         #   hidden when not verbose (-v), note this is temporally.
         n = report.size
         e = case e
-            when MiniTest::Skip then
+            when Test::Skip then
               @skips += 1
               return "S" unless @verbose
               "Skipped:\n#{klass}##{meth} [#{location e}]:\n#{e.message}\n"
-            when MiniTest::Assertion then
+            when Test::Assertion then
               @failures += 1
               "Failure:\n#{klass}##{meth} [#{location e}]:\n#{e.message}\n"
             else
               @errors += 1
-              bt = MiniTest::filter_backtrace(e.backtrace).join "\n    "
+              bt = Test::filter_backtrace(e.backtrace).join "\n    "
               "Error:\n#{klass}##{meth}:\n#{e.class}: #{e.message.b}\n    #{bt}\n"
             end
         @report << e
         rep = e[0, 1]
-        if MiniTest::Skip === e and /no message given\z/ =~ e.message
+        if Test::Skip === e and /no message given\z/ =~ e.message
           report.slice!(n..-1)
           rep = "."
         end
