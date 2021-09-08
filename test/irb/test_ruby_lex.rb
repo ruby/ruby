@@ -136,6 +136,26 @@ module TestIRB
       end
     end
 
+    def test_symbols
+      input_with_correct_indents = [
+        Row.new(%q(:a), nil, 0),
+        Row.new(%q(:A), nil, 0),
+        Row.new(%q(:+), nil, 0),
+        Row.new(%q(:@@a), nil, 0),
+        Row.new(%q(:@a), nil, 0),
+        Row.new(%q(:$a), nil, 0),
+        Row.new(%q(:def), nil, 0),
+        Row.new(%q(:`), nil, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+      end
+    end
+
     def test_endless_range_at_end_of_line
       if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.6.0')
         pend 'Endless range is available in 2.6.0 or later'

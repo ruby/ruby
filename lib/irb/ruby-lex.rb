@@ -708,6 +708,9 @@ class RubyLex
     while i < tokens.size
       t = tokens[i]
       case t[1]
+      when *end_type.last
+        start_token.pop
+        end_type.pop
       when :on_tstring_beg
         start_token << t
         end_type << [:on_tstring_end, :on_label_end]
@@ -715,10 +718,14 @@ class RubyLex
         start_token << t
         end_type << :on_regexp_end
       when :on_symbeg
-        acceptable_single_tokens = %i{on_ident on_const on_op on_cvar on_ivar on_gvar on_kw on_int}
-        if (i + 1) < tokens.size and acceptable_single_tokens.all?{ |st| tokens[i + 1][1] != st }
-          start_token << t
-          end_type << :on_tstring_end
+        acceptable_single_tokens = %i{on_ident on_const on_op on_cvar on_ivar on_gvar on_kw on_int on_backtick}
+        if (i + 1) < tokens.size
+          if acceptable_single_tokens.all?{ |st| tokens[i + 1][1] != st }
+            start_token << t
+            end_type << :on_tstring_end
+          else
+            i += 1
+          end
         end
       when :on_backtick
         start_token << t
@@ -729,9 +736,6 @@ class RubyLex
       when :on_heredoc_beg
         start_token << t
         end_type << :on_heredoc_end
-      when *end_type.last
-        start_token.pop
-        end_type.pop
       end
       i += 1
     end
