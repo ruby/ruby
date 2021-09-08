@@ -111,7 +111,7 @@ module Test
       #     end
       #   end
       #
-      #   class MiniTest::Unit::TestCase
+      #   class Test::Unit::Runner::TestCase
       #     include MyMinitestPlugin
       #   end
 
@@ -230,7 +230,7 @@ module Test
 
       def io
         @__io__ = true
-        MiniTest::Unit.output
+        Test::Unit::Runner.output
       end
 
       ##

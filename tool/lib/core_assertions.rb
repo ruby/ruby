@@ -271,7 +271,7 @@ module Test
         capture_stdout = true
         unless /mswin|mingw/ =~ RUBY_PLATFORM
           capture_stdout = false
-          opt[:out] = MiniTest::Unit.output if defined?(MiniTest::Unit)
+          opt[:out] = Test::Unit::Runner.output if defined?(Test::Unit::Runner)
           res_p, res_c = IO.pipe
           opt[:ios] = [res_c]
         end
