@@ -5,6 +5,8 @@
 #ifndef YJIT_H
 #define YJIT_H 1
 
+#include "ruby/internal/config.h"
+#include "ruby_assert.h" // for RUBY_DEBUG
 #include "vm_core.h"
 #include "method.h"
 
@@ -25,6 +27,10 @@
 #ifndef YJIT_DUMP_MODE
 #define YJIT_DUMP_MODE 0
 #endif
+
+#ifndef YJIT_STATS
+# define YJIT_STATS RUBY_DEBUG
+#endif // ifndef YJIT_STATS
 
 #ifndef rb_iseq_t
 typedef struct rb_iseq_struct rb_iseq_t;
