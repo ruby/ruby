@@ -1511,13 +1511,6 @@ module Test
       end
 
       ##
-      # Begins the full test run. Delegates to +runner+'s #_run method.
-
-      def run args = []
-        self.class.runner._run(args)
-      end
-
-      ##
       # Top level driver, controls all output and filtering.
 
       def _run args = []
@@ -1564,8 +1557,11 @@ module Test
       include Test::Unit::TimeoutOption
       include Test::Unit::RunCount
 
-      def run(argv)
-        super
+      ##
+      # Begins the full test run. Delegates to +runner+'s #_run method.
+
+      def run(argv = [])
+        self.class.runner._run(argv)
       rescue NoMemoryError
         system("cat /proc/meminfo") if File.exist?("/proc/meminfo")
         system("ps x -opid,args,%cpu,%mem,nlwp,rss,vsz,wchan,stat,start,time,etime,blocked,caught,ignored,pending,f") if File.exist?("/bin/ps")
