@@ -12,4 +12,4 @@ net-smtp 0.2.1 https://github.com/ruby/net-smtp
 matrix 0.4.2 https://github.com/ruby/matrix
 prime 0.1.2 https://github.com/ruby/prime
 rbs 1.6.1 https://github.com/ruby/rbs
-typeprof 0.15.2 https://github.com/ruby/typeprof
+typeprof 0.15.3 https://github.com/ruby/typeprof
