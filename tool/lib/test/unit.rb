@@ -1340,14 +1340,6 @@ module Test
       end
 
       ##
-      # Runs all the +suites+ for a given +type+.
-      #
-
-      def _run_suites suites, type
-        suites.map { |suite| _run_suite suite, type }
-      end
-
-      ##
       # Run a single +suite+ for a given +type+.
 
       def _run_suite suite, type
