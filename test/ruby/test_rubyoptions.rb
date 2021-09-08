@@ -164,9 +164,9 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_enable
     if JITSupport.supported?
-      assert_in_out_err(%w(--enable all --disable-yjit -e) + [""], "", [], [])
-      assert_in_out_err(%w(--enable-all --disable-yjit -e) + [""], "", [], [])
-      assert_in_out_err(%w(--enable=all --disable-yjit -e) + [""], "", [], [])
+      assert_in_out_err(%w(--enable all -e) + [""], "", [], [])
+      assert_in_out_err(%w(--enable-all -e) + [""], "", [], [])
+      assert_in_out_err(%w(--enable=all -e) + [""], "", [], [])
     end
     assert_in_out_err(%w(--enable foobarbazqux -e) + [""], "", [],
                       /unknown argument for --enable: `foobarbazqux'/)
