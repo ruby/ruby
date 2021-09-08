@@ -1207,30 +1207,6 @@ module Test
       end
 
       ##
-      # Registers Test::Unit::Runner to run tests at process exit
-
-      def self.autorun
-        at_exit {
-          # don't run if there was a non-exit exception
-          next if $! and not $!.kind_of? SystemExit
-
-          # the order here is important. The at_exit handler must be
-          # installed before anyone else gets a chance to install their
-          # own, that way we can be assured that our exit will be last
-          # to run (at_exit stacks).
-          exit_code = nil
-
-          at_exit {
-            @@after_tests.reverse_each(&:call)
-            exit false if exit_code && exit_code != 0
-          }
-
-          exit_code = Test::Unit::Runner.new.run ARGV
-        } unless @@installed_at_exit
-        @@installed_at_exit = true
-      end
-
-      ##
       # Returns the stream to use for output.
 
       def self.output
@@ -1492,8 +1468,6 @@ module Test
         system("ps x -opid,args,%cpu,%mem,nlwp,rss,vsz,wchan,stat,start,time,etime,blocked,caught,ignored,pending,f") if File.exist?("/bin/ps")
         raise
       end
-
-      class << self; undef autorun; end
 
       @@stop_auto_run = false
       def self.autorun
