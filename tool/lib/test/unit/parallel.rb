@@ -34,10 +34,10 @@ module Test
 
       def _run_suite(suite, type) # :nodoc:
         @partial_report = []
-        orig_testout = MiniTest::Unit.output
+        orig_testout = Test::Unit::Runner.output
         i,o = IO.pipe
 
-        MiniTest::Unit.output = o
+        Test::Unit::Runner.output = o
         orig_stdin, orig_stdout = $stdin, $stdout
 
         th = Thread.new do
@@ -58,7 +58,7 @@ module Test
           result = [nil,nil]
         end
 
-        MiniTest::Unit.output = orig_testout
+        Test::Unit::Runner.output = orig_testout
         $stdin = orig_stdin
         $stdout = orig_stdout
 
@@ -79,7 +79,7 @@ module Test
         _report "done", Marshal.dump(result)
         return result
       ensure
-        MiniTest::Unit.output = orig_stdout
+        Test::Unit::Runner.output = orig_stdout
         $stdin = orig_stdin if orig_stdin
         $stdout = orig_stdout if orig_stdout
         o.close if o && !o.closed?

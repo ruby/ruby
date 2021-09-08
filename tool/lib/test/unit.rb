@@ -83,7 +83,7 @@ module Test
       private
       def setup_options(opts, options)
         opts.separator 'minitest options:'
-        opts.version = MiniTest::Unit::VERSION
+        opts.version = Test::Unit::Runner::VERSION
 
         opts.on '-h', '--help', 'Display this help.' do
           puts opts
@@ -1196,14 +1196,14 @@ module Test
       # A simple hook allowing you to run a block of code after _all_ of
       # the tests are done. Eg:
       #
-      #   MiniTest::Unit.after_tests { p $debugging_info }
+      #   Test::Unit::Runner.after_tests { p $debugging_info }
 
       def self.after_tests &block
         @@after_tests << block
       end
 
       ##
-      # Registers MiniTest::Unit to run tests at process exit
+      # Registers Test::Unit::Runner to run tests at process exit
 
       def self.autorun
         at_exit {
@@ -1221,7 +1221,7 @@ module Test
             exit false if exit_code && exit_code != 0
           }
 
-          exit_code = MiniTest::Unit.new.run ARGV
+          exit_code = Test::Unit::Runner.new.run ARGV
         } unless @@installed_at_exit
         @@installed_at_exit = true
       end
@@ -1234,7 +1234,7 @@ module Test
       end
 
       ##
-      # Sets MiniTest::Unit to write output to +stream+.  $stdout is the default
+      # Sets Test::Unit::Runner to write output to +stream+.  $stdout is the default
       # output
 
       def self.output= stream
@@ -1242,16 +1242,16 @@ module Test
       end
 
       ##
-      # Tells MiniTest::Unit to delegate to +runner+, an instance of a
-      # MiniTest::Unit subclass, when MiniTest::Unit#run is called.
+      # Tells Test::Unit::Runner to delegate to +runner+, an instance of a
+      # Test::Unit::Runner subclass, when Test::Unit::Runner#run is called.
 
       def self.runner= runner
         @@runner = runner
       end
 
       ##
-      # Returns the MiniTest::Unit subclass instance that will be used
-      # to run the tests. A MiniTest::Unit instance is the default
+      # Returns the Test::Unit::Runner subclass instance that will be used
+      # to run the tests. A Test::Unit::Runner instance is the default
       # runner.
 
       def self.runner
@@ -1403,13 +1403,13 @@ module Test
       # Record the result of a single test. Makes it very easy to gather
       # information. Eg:
       #
-      #   class StatisticsRecorder < MiniTest::Unit
+      #   class StatisticsRecorder < Test::Unit::Runner
       #     def record suite, method, assertions, time, error
       #       # ... record the results somewhere ...
       #     end
       #   end
       #
-      #   MiniTest::Unit.runner = StatisticsRecorder.new
+      #   Test::Unit::Runner.runner = StatisticsRecorder.new
       #
       # NOTE: record might be sent more than once per test.  It will be
       # sent once with the results from the test itself.  If there is a
@@ -1476,7 +1476,7 @@ module Test
 
         OptionParser.new do |opts|
           opts.banner  = 'minitest options:'
-          opts.version = MiniTest::Unit::VERSION
+          opts.version = Test::Unit::Runner::VERSION
 
           opts.on '-h', '--help', 'Display this help.' do
             puts opts
@@ -1589,7 +1589,7 @@ module Test
 
       alias mini_run_suite _run_suite
 
-      # Overriding of MiniTest::Unit#puke
+      # Overriding of Test::Unit::Runner#puke
       def puke klass, meth, e
         # TODO:
         #   this overriding is for minitest feature that skip messages are
