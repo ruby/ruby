@@ -17,7 +17,6 @@ module Test
   # Test::Unit has been left in the standard library to support legacy test
   # suites.
   module Unit
-    VERSION = "4.7.5" # :nodoc:
     TEST_UNIT_IMPLEMENTATION = 'test/unit compatibility layer using minitest' # :nodoc:
 
     module RunCount # :nodoc: all
@@ -83,7 +82,6 @@ module Test
       private
       def setup_options(opts, options)
         opts.separator 'minitest options:'
-        opts.version = Test::Unit::Runner::VERSION
 
         opts.on '-h', '--help', 'Display this help.' do
           puts opts
@@ -1476,7 +1474,6 @@ module Test
 
         OptionParser.new do |opts|
           opts.banner  = 'minitest options:'
-          opts.version = Test::Unit::Runner::VERSION
 
           opts.on '-h', '--help', 'Display this help.' do
             puts opts
