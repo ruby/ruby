@@ -1544,7 +1544,7 @@ gen_set_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
             x86opnd_t tbl_opnd = mem_opnd(64, REG0, offsetof(struct RObject, as.heap.ivptr));
             mov(cb, REG0, tbl_opnd);
 
-            // Read the ivar from the extended table
+            // Write ivar to the extended table
             x86opnd_t ivar_opnd = mem_opnd(64, REG0, sizeof(VALUE) * ivar_index);
             mov(cb, REG1, ctx_stack_pop(ctx, 1));
             mov(cb, ivar_opnd, REG1);
@@ -1555,7 +1555,7 @@ gen_set_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
             // Pop receiver if it's on the temp stack
             // ie. this is an attribute method
             if (!reg0_opnd.is_self) {
-              ctx_stack_pop(ctx, 1);
+                ctx_stack_pop(ctx, 1);
             }
 
             // Increment the stack
@@ -1570,112 +1570,6 @@ gen_set_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
     GEN_COUNTER_INC(cb, setivar_name_not_mapped);
     return YJIT_CANT_COMPILE;
 }
-
-/*
-{
-    VALUE comptime_val_klass = CLASS_OF(comptime_receiver);
-    const ctx_t starting_context = *ctx; // make a copy for use with jit_chain_guard
-
-    // If the class uses the default allocator, instances should all be T_OBJECT
-    // NOTE: This assumes nobody changes the allocator of the class after allocation.
-    //       Eventually, we can encode whether an object is T_OBJECT or not
-    //       inside object shapes.
-    if (rb_get_alloc_func(comptime_val_klass) != rb_class_allocate_instance) {
-        GEN_COUNTER_INC(cb, setivar_not_object);
-        return YJIT_CANT_COMPILE;
-    }
-    RUBY_ASSERT(BUILTIN_TYPE(comptime_receiver) == T_OBJECT); // because we checked the allocator
-
-    // ID for the name of the ivar
-    ID id = ivar_name;
-    struct rb_iv_index_tbl_entry *ent;
-    struct st_table *iv_index_tbl = ROBJECT_IV_INDEX_TBL(comptime_receiver);
-
-    // Lookup index for the ivar the instruction loads
-    if (iv_index_tbl && rb_iv_index_tbl_lookup(iv_index_tbl, id, &ent)) {
-        uint32_t ivar_index = ent->index;
-
-        val_type_t val_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
-        x86opnd_t val_to_write = ctx_stack_opnd(ctx, 0);
-        mov(cb, REG1, val_to_write);
-
-        // Bail if the value to write is a heap object, because this needs a write barrier
-        if (!val_type.is_imm) {
-            ADD_COMMENT(cb, "guard value is immediate");
-            test(cb, REG1, imm_opnd(RUBY_IMMEDIATE_MASK));
-            jz_ptr(cb, COUNTED_EXIT(side_exit, setivar_val_heapobject));
-            ctx_upgrade_opnd_type(ctx, OPND_STACK(0), TYPE_IMM);
-        }
-
-        // Pop the value to write
-        ctx_stack_pop(ctx, 1);
-
-        // Bail if this object is frozen
-        ADD_COMMENT(cb, "guard self is not frozen");
-        x86opnd_t flags_opnd = member_opnd(REG0, struct RBasic, flags);
-        test(cb, flags_opnd, imm_opnd(RUBY_FL_FREEZE));
-        jnz_ptr(cb, COUNTED_EXIT(side_exit, setivar_frozen));
-
-        // Pop receiver if it's on the temp stack
-        if (!reg0_opnd.is_self) {
-            (void)ctx_stack_pop(ctx, 1);
-        }
-
-        // Compile time self is embedded and the ivar index lands within the object
-        if (RB_FL_TEST_RAW(comptime_receiver, ROBJECT_EMBED) && ivar_index < ROBJECT_EMBED_LEN_MAX) {
-            // See ROBJECT_IVPTR() from include/ruby/internal/core/robject.h
-
-            // Guard that self is embedded
-            // TODO: BT and JC is shorter
-            ADD_COMMENT(cb, "guard embedded setivar");
-            test(cb, flags_opnd, imm_opnd(ROBJECT_EMBED));
-            jit_chain_guard(JCC_JZ, jit, &starting_context, max_chain_depth, side_exit);
-
-            // Store the ivar on the object
-            x86opnd_t ivar_opnd = mem_opnd(64, REG0, offsetof(struct RObject, as.ary) + ivar_index * SIZEOF_VALUE);
-            mov(cb, ivar_opnd, REG1);
-
-            // Push the ivar on the stack
-            // For attr_writer we'll need to push the value on the stack
-            //x86opnd_t out_opnd = ctx_stack_push(ctx, TYPE_UNKNOWN);
-        }
-        else {
-            // Compile time value is *not* embeded.
-
-            // Guard that value is *not* embedded
-            // See ROBJECT_IVPTR() from include/ruby/internal/core/robject.h
-            ADD_COMMENT(cb, "guard extended setivar");
-            x86opnd_t flags_opnd = member_opnd(REG0, struct RBasic, flags);
-            test(cb, flags_opnd, imm_opnd(ROBJECT_EMBED));
-            jit_chain_guard(JCC_JNZ, jit, &starting_context, max_chain_depth, side_exit);
-
-            // check that the extended table is big enough
-            if (ivar_index >= ROBJECT_EMBED_LEN_MAX + 1) {
-                // Check that the slot is inside the extended table (num_slots > index)
-                ADD_COMMENT(cb, "check index in extended table");
-                x86opnd_t num_slots = mem_opnd(32, REG0, offsetof(struct RObject, as.heap.numiv));
-                cmp(cb, num_slots, imm_opnd(ivar_index));
-                jle_ptr(cb, COUNTED_EXIT(side_exit, setivar_idx_out_of_range));
-            }
-
-            // Get a pointer to the extended table
-            x86opnd_t tbl_opnd = mem_opnd(64, REG0, offsetof(struct RObject, as.heap.ivptr));
-            mov(cb, REG0, tbl_opnd);
-
-            // Write the ivar to the extended table
-            x86opnd_t ivar_opnd = mem_opnd(64, REG0, sizeof(VALUE) * ivar_index);
-            mov(cb, ivar_opnd, REG1);
-        }
-
-        // Jump to next instruction. This allows guard chains to share the same successor.
-        jit_jump_to_next_insn(jit, ctx);
-        return YJIT_END_BLOCK;
-    }
-
-    GEN_COUNTER_INC(cb, setivar_name_not_mapped);
-    return YJIT_CANT_COMPILE;
-}
-*/
 
 // Codegen for getting an instance variable.
 // Preconditions:
