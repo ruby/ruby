@@ -112,7 +112,7 @@ module Test
         pend 'assert_no_memory_leak may consider MJIT memory usage as leak' if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
 
         require_relative 'memory_status'
-        raise MiniTest::Skip, "unsupported platform" unless defined?(Memory::Status)
+        raise Test::Skip, "unsupported platform" unless defined?(Memory::Status)
 
         token = "\e[7;1m#{$$.to_s}:#{Time.now.strftime('%s.%L')}:#{rand(0x10000).to_s(16)}:\e[m"
         token_dump = token.dump
@@ -177,11 +177,11 @@ module Test
         end
         begin
           line = __LINE__; yield
-        rescue MiniTest::Skip
+        rescue Test::Skip
           raise
         rescue Exception => e
           bt = e.backtrace
-          as = e.instance_of?(MiniTest::Assertion)
+          as = e.instance_of?(Test::Assertion)
           if as
             ans = /\A#{Regexp.quote(__FILE__)}:#{line}:in /o
             bt.reject! {|ln| ans =~ ln}
@@ -193,7 +193,7 @@ module Test
               "Backtrace:\n" +
               e.backtrace.map{|frame| "  #{frame}"}.join("\n")
             }
-            raise MiniTest::Assertion, msg.call, bt
+            raise Test::Assertion, msg.call, bt
           else
             raise
           end
@@ -396,8 +396,8 @@ eom
 
         begin
           yield
-        rescue MiniTest::Skip => e
-          return e if exp.include? MiniTest::Skip
+        rescue Test::Skip => e
+          return e if exp.include? Test::Skip
           raise e
         rescue Exception => e
           expected = exp.any? { |ex|
@@ -708,7 +708,7 @@ eom
           if message
             msg = "#{message}\n#{msg}"
           end
-          raise MiniTest::Assertion, msg
+          raise Test::Assertion, msg
         end
       end
 

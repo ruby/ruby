@@ -191,7 +191,7 @@ module Test
         rescue *PASSTHROUGH_EXCEPTIONS
           raise
         rescue Exception => e
-          @passed = MiniTest::Skip === e
+          @passed = Test::Skip === e
           time = Time.now - start_time
           runner.record self.class, self.__name__, self._assertions, time, e
           result = runner.puke self.class, self.__name__, e
