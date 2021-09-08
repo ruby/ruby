@@ -835,6 +835,22 @@ begin
       EOC
     end
 
+    def test_autocomplete
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("Stri")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> Stri
+                String
+                Struct
+                Symbol
+                ScriptError
+                SyntaxError
+                Signal
+      EOC
+    end
+
     def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
