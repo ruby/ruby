@@ -925,6 +925,7 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
     if (NAME_MATCH_P(#bit, str, len)) {set |= mask = FEATURE_BIT(bit); FEATURE_FOUND;}
     EACH_FEATURES(SET_FEATURE, ;);
     if (NAME_MATCH_P("all", str, len)) {
+        mask &= ~(FEATURE_BIT(jit));
         goto found;
     }
 #if AMBIGUOUS_FEATURE_NAMES
