@@ -1446,7 +1446,7 @@ module Test
       end
 
       include Test::Unit::Options
-      include Test::Unit::StatusLine
+      prepend Test::Unit::StatusLine
       include Test::Unit::Parallel
       include Test::Unit::Statistics
       include Test::Unit::Skipping
