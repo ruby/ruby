@@ -26,13 +26,6 @@ module Test
     module CoreAssertions
       require_relative 'envutil'
 
-      unless defined?(MiniTest)
-        module MiniTest
-          class Assertion < Exception; end
-          class Skip < Assertion; end
-        end
-      end
-
       require 'pp'
       include Test::Unit::Assertions
 
