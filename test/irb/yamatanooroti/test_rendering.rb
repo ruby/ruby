@@ -153,6 +153,23 @@ begin
       EOC
     end
 
+    def test_symbol_with_backtick
+      write_irbrc <<~'LINES'
+        puts 'start IRB'
+      LINES
+      start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+      write(<<~EOC)
+        :`
+      EOC
+      close
+      assert_screen(<<~EOC)
+        start IRB
+        irb(main):001:0> :`
+        => :`
+        irb(main):002:0>
+      EOC
+    end
+
     private def write_irbrc(content)
       File.open(@irbrc_file, 'w') do |f|
         f.write content
