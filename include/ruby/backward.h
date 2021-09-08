@@ -1,7 +1,6 @@
 #ifndef RUBY_RUBY_BACKWARD_H                         /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_RUBY_BACKWARD_H 1
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
