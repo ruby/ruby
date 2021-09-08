@@ -219,6 +219,7 @@ enum {
 #endif
 	& ~FEATURE_BIT(frozen_string_literal)
         & ~FEATURE_BIT(jit)
+        & ~FEATURE_BIT(yjit)
 	)
 };
 
