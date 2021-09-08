@@ -51,6 +51,7 @@ def parse_args(argv = ARGV)
   $dir_mode = nil
   $script_mode = nil
   $strip = false
+  $debug_symbols = nil
   $cmdtype = (if File::ALT_SEPARATOR == '\\'
                 File.exist?("rubystub.exe") ? 'exe' : 'cmd'
               end)
@@ -92,6 +93,7 @@ def parse_args(argv = ARGV)
   opt.on('--cmd-type=TYPE', %w[cmd plain]) {|cmd| $cmdtype = (cmd unless cmd == 'plain')}
   opt.on('--[no-]strip') {|strip| $strip = strip}
   opt.on('--gnumake') {gnumake = true}
+  opt.on('--debug-symbols=SUFFIX', /\w+/) {|name| $debug_symbols = ".#{name}"}
 
   opt.order!(argv) do |v|
     case v
@@ -678,6 +680,20 @@ install?(:dbg, :nodefault) do
   end
   install File.join(srcdir, "misc/lldb_cruby.py"), File.join(rubylibdir, "lldb_cruby.py")
   install File.join(srcdir, ".gdbinit"), File.join(rubylibdir, "gdbinit")
+  if $debug_symbols
+    {
+      ruby_install_name => bindir,
+      rubyw_install_name => bindir,
+      goruby_install_name => bindir,
+      dll => libdir,
+    }.each do |src, dest|
+      next if src.empty?
+      src += $debug_symbols
+      if File.directory?(src)
+        install_recursive src, File.join(dest, src)
+      end
+    end
+  end
 end
 
 module RbInstall
