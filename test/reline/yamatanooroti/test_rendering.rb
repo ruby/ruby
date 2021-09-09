@@ -961,6 +961,19 @@ begin
       EOC
     end
 
+    def test_autocomplete_after_2nd_line
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("def hoge\n  Str")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> def hoge
+        prompt>   Str
+                  String
+                  Struct
+      EOC
+    end
+
     def test_autocomplete_long_with_scrollbar
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-long}, startup_message: 'Multiline REPL.')
       write('S')
