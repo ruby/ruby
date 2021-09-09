@@ -74,19 +74,19 @@ opt.on('--dialog VAL') { |v|
 }
 opt.on('--complete') {
   Reline.completion_proc = lambda { |target, preposing = nil, postposing = nil|
-    %w{String ScriptError SyntaxError Signal}
+    %w{String ScriptError SyntaxError Signal}.select{ |c| c.start_with?(target) }
   }
 }
 opt.on('--autocomplete') {
   Reline.autocompletion = true
   Reline.completion_proc = lambda { |target, preposing = nil, postposing = nil|
-    %w{String Struct Symbol ScriptError SyntaxError Signal}
+    %w{String Struct Symbol ScriptError SyntaxError Signal}.select{ |c| c.start_with?(target) }
   }
 }
 opt.on('--autocomplete-long') {
   Reline.autocompletion = true
   Reline.completion_proc = lambda { |target, preposing = nil, postposing = nil|
-    %w{String Struct Symbol StopIteration SystemCallError SystemExit SystemStackError ScriptError SyntaxError Signal SizedQueue Set SecureRandom Socket StringIO StringScanner Shellwords Syslog Singleton SDBM}
+    %w{String Struct Symbol StopIteration SystemCallError SystemExit SystemStackError ScriptError SyntaxError Signal SizedQueue Set SecureRandom Socket StringIO StringScanner Shellwords Syslog Singleton SDBM}.select{ |c| c.start_with?(target) }
   }
 }
 opt.parse!(ARGV)

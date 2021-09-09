@@ -911,17 +911,13 @@ begin
 
     def test_autocomplete
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
-      write("Stri")
+      write("Str")
       close
       assert_screen(<<~'EOC')
         Multiline REPL.
-        prompt> Stri
+        prompt> Str
                 String
                 Struct
-                Symbol
-                ScriptError
-                SyntaxError
-                Signal
       EOC
     end
 
