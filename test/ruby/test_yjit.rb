@@ -205,6 +205,15 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_getspecial_backref
+    assert_compiles("'foo' =~ /(o)./; $&", insns: %i[getspecial], result: "oo")
+    assert_compiles("'foo' =~ /(o)./; $`", insns: %i[getspecial], result: "f")
+    assert_compiles("'foo' =~ /(o)./; $'", insns: %i[getspecial], result: "")
+    assert_compiles("'foo' =~ /(o)./; $+", insns: %i[getspecial], result: "o")
+    assert_compiles("'foo' =~ /(o)./; $1", insns: %i[getspecial], result: "o")
+    assert_compiles("'foo' =~ /(o)./; $2", insns: %i[getspecial], result: nil)
+  end
+
   def test_compile_opt_getinlinecache
     assert_compiles(<<~RUBY, insns: %i[opt_getinlinecache], result: 123, min_calls: 2)
       def get_foo
