@@ -3912,6 +3912,70 @@ gen_toregexp(jitstate_t* jit, ctx_t* ctx)
 }
 
 static codegen_status_t
+gen_getspecial(jitstate_t *jit, ctx_t *ctx)
+{
+    rb_num_t key = jit_get_arg(jit, 0);
+    rb_num_t type = jit_get_arg(jit, 1);
+
+    if (type == 0) {
+        // not yet implemented
+        return YJIT_CANT_COMPILE;
+    } else if (type & 0x01) {
+        // Can raise if matchdata uninitialized
+        jit_prepare_routine_call(jit, ctx, REG0);
+
+        // call rb_backref_get()
+        ADD_COMMENT(cb, "rb_backref_get");
+        call_ptr(cb, REG0, (void *)rb_backref_get);
+        mov(cb, C_ARG_REGS[0], RAX);
+
+        switch (type >> 1) {
+            case '&':
+                ADD_COMMENT(cb, "rb_reg_last_match");
+                call_ptr(cb, REG0, (void *)rb_reg_last_match);
+                break;
+            case '`':
+                ADD_COMMENT(cb, "rb_reg_match_pre");
+                call_ptr(cb, REG0, (void *)rb_reg_match_pre);
+                break;
+            case '\'':
+                ADD_COMMENT(cb, "rb_reg_match_post");
+                call_ptr(cb, REG0, (void *)rb_reg_match_post);
+                break;
+            case '+':
+                ADD_COMMENT(cb, "rb_reg_match_last");
+                call_ptr(cb, REG0, (void *)rb_reg_match_last);
+                break;
+            default:
+                rb_bug("invalid back-ref");
+        }
+
+        x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
+        mov(cb, stack_ret, RAX);
+
+        return YJIT_KEEP_COMPILING;
+    } else {
+        // Can raise if matchdata uninitialized
+        jit_prepare_routine_call(jit, ctx, REG0);
+
+        // call rb_backref_get()
+        ADD_COMMENT(cb, "rb_backref_get");
+        call_ptr(cb, REG0, (void *)rb_backref_get);
+
+        // rb_reg_nth_match((int)(type >> 1), backref);
+        ADD_COMMENT(cb, "rb_reg_nth_match");
+        mov(cb, C_ARG_REGS[0], imm_opnd(type >> 1));
+        mov(cb, C_ARG_REGS[1], RAX);
+        call_ptr(cb, REG0, (void *)rb_reg_nth_match);
+
+        x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
+        mov(cb, stack_ret, RAX);
+
+        return YJIT_KEEP_COMPILING;
+    }
+}
+
+static codegen_status_t
 gen_opt_getinlinecache(jitstate_t *jit, ctx_t *ctx)
 {
     VALUE jump_offset = jit_get_arg(jit, 0);
@@ -4261,6 +4325,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(setglobal), gen_setglobal);
     yjit_reg_op(BIN(tostring), gen_tostring);
     yjit_reg_op(BIN(toregexp), gen_toregexp);
+    yjit_reg_op(BIN(getspecial), gen_getspecial);
 
     yjit_method_codegen_table = st_init_numtable();
 
