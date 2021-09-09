@@ -1359,7 +1359,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   def test_class_asserts_match_refutes
     @assertion_count = 0
 
-    methods = Test::Assertions.public_instance_methods
+    methods = Test::Unit::Assertions.public_instance_methods
     methods.map! { |m| m.to_s } if Symbol === methods.first
 
     # These don't have corresponding refutes _on purpose_. They're
@@ -1438,7 +1438,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   end
 
   def test_prints
-    printer = Class.new { extend Test::Assertions }
+    printer = Class.new { extend Test::Unit::Assertions }
     @tc.assert_equal '"test"', printer.mu_pp(ImmutableString.new 'test')
   end
 
@@ -1679,12 +1679,12 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   end
 
   def without_diff
-    old_diff = Test::Assertions.diff
-    Test::Assertions.diff = nil
+    old_diff = Test::Unit::Assertions.diff
+    Test::Unit::Assertions.diff = nil
 
     yield
   ensure
-    Test::Assertions.diff = old_diff
+    Test::Unit::Assertions.diff = old_diff
   end
 end
 
