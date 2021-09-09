@@ -153,7 +153,7 @@ class TestMiniTestUnit < MetaMetaMetaTestCase
   end
 
   def test_default_runner_is_minitest_unit
-    assert_instance_of Test::Unit, Test::Unit.runner
+    assert_instance_of Test::Unit::Runner, Test::Unit::Runner.runner
   end
 
 
@@ -497,7 +497,7 @@ class TestMiniTestRunner < MetaMetaMetaTestCase
   end
 
   def test_run_with_other_runner
-    Test::Unit.runner = Class.new Test::Unit do
+    Test::Unit::Runner.runner = Class.new Test::Unit::Runner do
       def _run_suite suite, type
         suite.before_suite # Run once before each suite
         super suite, type
@@ -508,7 +508,7 @@ class TestMiniTestRunner < MetaMetaMetaTestCase
       def self.name; "wacky!" end
 
       def self.before_suite
-        Test::Unit.output.puts "Running #{self.name} tests"
+        Test::Unit::Runner.output.puts "Running #{self.name} tests"
         @@foo = 1
       end
 
@@ -1722,7 +1722,7 @@ class TestMiniTestUnitRecording < MetaMetaMetaTestCase
       @recording ||= Hash.new { |h,k| h[k] = [] }
     end
 
-    Test::Unit.runner = @tu
+    Test::Unit::Runner.runner = @tu
 
     Class.new Test::Unit::TestCase, &block
 

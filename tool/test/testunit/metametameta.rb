@@ -45,9 +45,9 @@ class MetaMetaMetaTestCase < Test::Unit::TestCase
     super
     srand 42
     Test::Unit::TestCase.reset
-    @tu = Test::Unit.new
+    @tu = Test::Unit::Runner.new
 
-    Test::Unit.runner = nil # protect the outer runner from the inner tests
+    Test::Unit::Runner.runner = nil # protect the outer runner from the inner tests
   end
 
   def teardown
@@ -57,13 +57,13 @@ class MetaMetaMetaTestCase < Test::Unit::TestCase
   def with_output
     synchronize do
       begin
-        save = Test::Unit.output
+        save = Test::Unit::Runner.output
         @output = StringIO.new("")
-        Test::Unit.output = @output
+        Test::Unit::Runner.output = @output
 
         yield
       ensure
-        Test::Unit.output = save
+        Test::Unit::Runner.output = save
       end
     end
   end
