@@ -135,7 +135,7 @@ module Psych
 
       assert_equal 1, ss.tokenize('1')
       assert_equal 1, ss.tokenize('+1')
-      assert_equal -1, ss.tokenize('-1')
+      assert_equal(-1, ss.tokenize('-1'))
 
       assert_equal 0b010101010, ss.tokenize('0b010101010')
       assert_equal 0b010101010, ss.tokenize('0b0,1_0,1_,0,1_01,0')
