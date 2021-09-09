@@ -84,6 +84,11 @@
 //
 #define rb_darray_make(ptr_to_ary, size) rb_darray_make_impl((ptr_to_ary), size, sizeof(**(ptr_to_ary)), sizeof((*(ptr_to_ary))->data[0]))
 
+// Set the size of the array to zero without freeing the backing memory.
+// Allows reusing the same array.
+//
+#define rb_darray_clear(ary) (ary->meta.size = 0)
+
 typedef struct rb_darray_meta {
     int32_t size;
     int32_t capa;

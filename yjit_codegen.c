@@ -142,6 +142,7 @@ jit_peek_at_self(jitstate_t *jit, ctx_t *ctx)
     return jit->ec->cfp->self;
 }
 
+RBIMPL_ATTR_MAYBE_UNUSED()
 static VALUE
 jit_peek_at_local(jitstate_t *jit, ctx_t *ctx, int n)
 {
@@ -986,7 +987,7 @@ gen_expandarray(jitstate_t* jit, ctx_t* ctx)
 
     // num is the number of requested values. If there aren't enough in the
     // array then we're going to push on nils.
-    rb_num_t num = (rb_num_t) jit_get_arg(jit, 0);
+    int num = (int)jit_get_arg(jit, 0);
     val_type_t array_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
     x86opnd_t array_opnd = ctx_stack_pop(ctx, 1);
 
