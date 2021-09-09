@@ -237,8 +237,8 @@ class TestMiniTestRunner < MetaMetaMetaTestCase
 
     tc = Class.new(Test::Unit::TestCase)
 
-    assert_equal 1, Test::Unit::TestCase.test_suites.size
-    assert_equal [tc], Test::Unit::TestCase.test_suites
+    assert_equal 2, Test::Unit::TestCase.test_suites.size
+    assert_equal [tc, Test::Unit::TestCase], Test::Unit::TestCase.test_suites
   end
 
   def assert_filtering name, expected, a = false
