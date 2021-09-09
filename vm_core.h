@@ -1661,6 +1661,7 @@ extern void rb_vmdebug_debug_print_post(const rb_execution_context_t *ec, const 
 #define SDR2(cfp) rb_vmdebug_stack_dump_raw(GET_EC(), (cfp))
 void rb_vm_bugreport(const void *);
 typedef void (*ruby_sighandler_t)(int);
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 4, 5)
 NORETURN(void rb_bug_for_fatal_signal(ruby_sighandler_t default_sighandler, int sig, const void *, const char *fmt, ...));
 
 /* functions about thread/vm execution */

@@ -353,9 +353,9 @@ static void iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NOD
 
 /* error */
 #if CPDEBUG > 0
-NORETURN(static void append_compile_error(const rb_iseq_t *iseq, int line, const char *fmt, ...));
+RBIMPL_ATTR_NORETURN()
 #endif
-
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 3, 4)
 static void
 append_compile_error(const rb_iseq_t *iseq, int line, const char *fmt, ...)
 {

@@ -87,6 +87,7 @@ extern enum ruby_debug_log_mode {
     ruby_debug_log_file     = 0x04,
 } ruby_debug_log_mode;
 
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 4, 5)
 void ruby_debug_log(const char *file, int line, const char *func_name, const char *fmt, ...);
 void ruby_debug_log_print(unsigned int n);
 bool ruby_debug_log_filter(const char *func_name);

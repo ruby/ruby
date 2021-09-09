@@ -108,6 +108,7 @@ err_position_0(char *buf, long len, const char *file, int line)
     }
 }
 
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 5, 0)
 static VALUE
 err_vcatf(VALUE str, const char *pre, const char *file, int line,
 	  const char *fmt, va_list args)
@@ -344,6 +345,7 @@ rb_write_warning_str(VALUE str)
     rb_warning_warn(rb_mWarning, str);
 }
 
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 4, 0)
 static VALUE
 warn_vsprintf(rb_encoding *enc, const char *file, int line, const char *fmt, va_list args)
 {
@@ -396,6 +398,7 @@ rb_category_compile_warn(rb_warning_category_t category, const char *file, int l
     rb_warn_category(str, rb_warning_category_to_name(category));
 }
 
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 0)
 static VALUE
 warning_string(rb_encoding *enc, const char *fmt, va_list args)
 {
@@ -716,6 +719,7 @@ postscript_dump(FILE *out)
     bug_important_message(out, msg, msglen);
 }
 
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 0)
 static void
 bug_report_begin_valist(FILE *out, const char *fmt, va_list args)
 {
@@ -779,6 +783,7 @@ die(void)
     abort();
 }
 
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 0)
 void
 rb_bug_without_die(const char *fmt, va_list args)
 {
