@@ -85,14 +85,13 @@ module TestIRB
       pend if RUBY_ENGINE == 'truffleruby'
       bug17623 = '[ruby-core:102468]'
       bundle_exec = ENV.key?('BUNDLE_GEMFILE') ? ['-rbundler/setup'] : []
-      if File.exist?('./exe/irb')
-        irb_path = './exe/irb'
-      elsif File.exist?('./libexec/irb')
-        irb_path = './libexec/irb'
-      else
-        omit 'irb command not found'
-      end
-      assert_in_out_err(bundle_exec + ['-W0', '-e', <<~RUBY , '--', '-f', '--'], 'binding.local_variables', /\[:_\]/, [], bug17623)
+      top_srcdir = "#{__dir__}/../.."
+      irb_path = nil
+      %w[exe libexec].find do |dir|
+        irb_path = "#{top_srcdir}/#{dir}/irb"
+        File.exist?(irb_path)
+      end or omit 'irb command not found'
+      assert_in_out_err(bundle_exec + ['-W0', "-C#{top_srcdir}", '-e', <<~RUBY , '--', '-f', '--'], 'binding.local_variables', /\[:_\]/, [], bug17623)
         version = 'xyz' # typical rubygems loading file
         load('#{irb_path}')
       RUBY
