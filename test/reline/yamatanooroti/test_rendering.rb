@@ -870,6 +870,56 @@ begin
       EOC
     end
 
+    def test_autocomplete_long_with_scrollbar
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-long}, startup_message: 'Multiline REPL.')
+      write("S")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> S
+                String          █
+                Struct          █
+                Symbol          █
+                StopIteration   █
+                SystemCallError █
+                SystemExit      █
+                SystemStackError█
+                ScriptError     █
+                SyntaxError     █
+                Signal          █
+                SizedQueue      █
+                Set
+                SecureRandom
+                Socket
+                StringIO
+      EOC
+    end
+
+    def test_autocomplete_long_with_scrollbar_scroll
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-long}, startup_message: 'Multiline REPL.')
+      write("S" + "\C-i" * 16)
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> StringScanner
+                Struct          ▄
+                Symbol          █
+                StopIteration   █
+                SystemCallError █
+                SystemExit      █
+                SystemStackError█
+                ScriptError     █
+                SyntaxError     █
+                Signal          █
+                SizedQueue      █
+                Set             █
+                SecureRandom    ▀
+                Socket
+                StringIO
+                StringScanner
+      EOC
+    end
+
     def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
