@@ -5456,6 +5456,7 @@ eval.$(OBJEXT): {$(VPATH)}vm_debug.h
 eval.$(OBJEXT): {$(VPATH)}vm_opts.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}config.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}explicit_bzero.c
+explicit_bzero.$(OBJEXT): {$(VPATH)}internal/attr/format.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}internal/compiler_is.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}internal/compiler_is/apple.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}internal/compiler_is/clang.h
@@ -5466,6 +5467,7 @@ explicit_bzero.$(OBJEXT): {$(VPATH)}internal/compiler_is/sunpro.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}internal/compiler_since.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}internal/config.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}internal/dllexport.h
+explicit_bzero.$(OBJEXT): {$(VPATH)}internal/has/attribute.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}missing.h
 file.$(OBJEXT): $(hdrdir)/ruby.h
 file.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -13464,6 +13466,7 @@ string.$(OBJEXT): {$(VPATH)}util.h
 string.$(OBJEXT): {$(VPATH)}vm_debug.h
 string.$(OBJEXT): {$(VPATH)}vm_sync.h
 strlcat.$(OBJEXT): {$(VPATH)}config.h
+strlcat.$(OBJEXT): {$(VPATH)}internal/attr/format.h
 strlcat.$(OBJEXT): {$(VPATH)}internal/compiler_is.h
 strlcat.$(OBJEXT): {$(VPATH)}internal/compiler_is/apple.h
 strlcat.$(OBJEXT): {$(VPATH)}internal/compiler_is/clang.h
@@ -13474,9 +13477,11 @@ strlcat.$(OBJEXT): {$(VPATH)}internal/compiler_is/sunpro.h
 strlcat.$(OBJEXT): {$(VPATH)}internal/compiler_since.h
 strlcat.$(OBJEXT): {$(VPATH)}internal/config.h
 strlcat.$(OBJEXT): {$(VPATH)}internal/dllexport.h
+strlcat.$(OBJEXT): {$(VPATH)}internal/has/attribute.h
 strlcat.$(OBJEXT): {$(VPATH)}missing.h
 strlcat.$(OBJEXT): {$(VPATH)}strlcat.c
 strlcpy.$(OBJEXT): {$(VPATH)}config.h
+strlcpy.$(OBJEXT): {$(VPATH)}internal/attr/format.h
 strlcpy.$(OBJEXT): {$(VPATH)}internal/compiler_is.h
 strlcpy.$(OBJEXT): {$(VPATH)}internal/compiler_is/apple.h
 strlcpy.$(OBJEXT): {$(VPATH)}internal/compiler_is/clang.h
@@ -13487,6 +13492,7 @@ strlcpy.$(OBJEXT): {$(VPATH)}internal/compiler_is/sunpro.h
 strlcpy.$(OBJEXT): {$(VPATH)}internal/compiler_since.h
 strlcpy.$(OBJEXT): {$(VPATH)}internal/config.h
 strlcpy.$(OBJEXT): {$(VPATH)}internal/dllexport.h
+strlcpy.$(OBJEXT): {$(VPATH)}internal/has/attribute.h
 strlcpy.$(OBJEXT): {$(VPATH)}missing.h
 strlcpy.$(OBJEXT): {$(VPATH)}strlcpy.c
 struct.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
