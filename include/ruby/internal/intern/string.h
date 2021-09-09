@@ -553,6 +553,7 @@ VALUE rb_str_buf_append(VALUE dst, VALUE src);
 /** @alias{rb_str_cat} */
 VALUE rb_str_buf_cat(VALUE, const char*, long);
 
+RBIMPL_ATTR_NONNULL(())
 /** @alias{rb_str_cat_cstr} */
 VALUE rb_str_buf_cat2(VALUE, const char*);
 
@@ -888,6 +889,7 @@ RBIMPL_ATTR_NONNULL(())
  */
 VALUE rb_str_cat_cstr(VALUE dst, const char *src);
 
+RBIMPL_ATTR_NONNULL(())
 /** @alias{rb_str_cat_cstr} */
 VALUE rb_str_cat2(VALUE, const char*);
 
