@@ -251,11 +251,14 @@ VALUE string_spec_rb_str_new5(VALUE self, VALUE str, VALUE ptr, VALUE len) {
   return rb_str_new5(str, RSTRING_PTR(ptr), FIX2INT(len));
 }
 
-RBIMPL_WARNING_PUSH()
-#if RBIMPL_HAS_WARNING("-Wdeprecated-declarations") || RBIMPL_COMPILER_SINCE(GCC, 4, 6, 0)
-/* GCC 4.5 introduced __attribute__((__deprecated__)) */
-/* GCC 4.6 introduced #pragma GCC diagnostic push */
-RBIMPL_WARNING_IGNORED(-Wdeprecated-declarations)
+#if defined(__GNUC__) && (__GNUC__ > 5 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(__clang__) && defined(__has_warning)
+# if __has_warning("-Wdeprecated-declarations")
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wdeprecated-declarations"
+# endif
 #endif
 
 VALUE string_spec_rb_tainted_str_new(VALUE self, VALUE str, VALUE len) {
@@ -266,7 +269,13 @@ VALUE string_spec_rb_tainted_str_new2(VALUE self, VALUE str) {
   return rb_tainted_str_new2(RSTRING_PTR(str));
 }
 
-RBIMPL_WARNING_POP()
+#if defined(__GNUC__) && (__GNUC__ > 5 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
+# pragma GCC diagnostic pop
+#elif defined(__clang__) && defined(__has_warning)
+# if __has_warning("-Wdeprecated-declarations")
+#  pragma clang diagnostic pop
+# endif
+#endif
 
 VALUE string_spec_rb_str_plus(VALUE self, VALUE str1, VALUE str2) {
   return rb_str_plus(str1, str2);
