@@ -4,13 +4,13 @@
 require 'tempfile'
 require 'stringio'
 
-class MiniTest::Unit::TestCase
+class Test::Unit::TestCase
   def clean s
     s.gsub(/^ {6}/, '')
   end
 end
 
-class MetaMetaMetaTestCase < MiniTest::Unit::TestCase
+class MetaMetaMetaTestCase < Test::Unit::TestCase
   def assert_report expected, flags = %w[--seed 42]
     header = clean <<-EOM
       Run options: #{flags.map { |s| s =~ /\|/ ? s.inspect : s }.join " "}
@@ -44,10 +44,10 @@ class MetaMetaMetaTestCase < MiniTest::Unit::TestCase
   def setup
     super
     srand 42
-    MiniTest::Unit::TestCase.reset
-    @tu = MiniTest::Unit.new
+    Test::Unit::TestCase.reset
+    @tu = Test::Unit.new
 
-    MiniTest::Unit.runner = nil # protect the outer runner from the inner tests
+    Test::Unit.runner = nil # protect the outer runner from the inner tests
   end
 
   def teardown
@@ -57,13 +57,13 @@ class MetaMetaMetaTestCase < MiniTest::Unit::TestCase
   def with_output
     synchronize do
       begin
-        save = MiniTest::Unit.output
+        save = Test::Unit.output
         @output = StringIO.new("")
-        MiniTest::Unit.output = @output
+        Test::Unit.output = @output
 
         yield
       ensure
-        MiniTest::Unit.output = save
+        Test::Unit.output = save
       end
     end
   end
