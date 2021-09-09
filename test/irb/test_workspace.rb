@@ -82,6 +82,7 @@ module TestIRB
 
 
     def test_toplevel_binding_local_variables
+      pend if RUBY_ENGINE == 'truffleruby'
       bug17623 = '[ruby-core:102468]'
       bundle_exec = ENV.key?('BUNDLE_GEMFILE') ? ['-rbundler/setup'] : []
       assert_in_out_err(bundle_exec + ['-W0', '-e', <<~RUBY , '--', '-f', '--'], 'binding.local_variables', /\[:_\]/, [], bug17623)
