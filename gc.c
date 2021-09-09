@@ -2767,6 +2767,11 @@ rb_data_object_zalloc(VALUE klass, size_t size, RUBY_DATA_FUNC dmark, RUBY_DATA_
     return obj;
 }
 
+COMPILER_WARNING_PUSH
+#if __has_warning("-Wnonnull-compare") || GCC_VERSION_SINCE(6, 1, 0)
+COMPILER_WARNING_IGNORED(-Wnonnull-compare)
+#endif
+
 VALUE
 rb_data_typed_object_wrap(VALUE klass, void *datap, const rb_data_type_t *type)
 {
@@ -2774,6 +2779,8 @@ rb_data_typed_object_wrap(VALUE klass, void *datap, const rb_data_type_t *type)
     if (klass) rb_data_object_check(klass);
     return newobj_of(klass, T_DATA, (VALUE)type, (VALUE)1, (VALUE)datap, type->flags & RUBY_FL_WB_PROTECTED, sizeof(RVALUE));
 }
+
+COMPILER_WARNING_POP
 
 VALUE
 rb_data_typed_object_zalloc(VALUE klass, size_t size, const rb_data_type_t *type)
