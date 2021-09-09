@@ -151,9 +151,19 @@ static VALUE object_specs_rb_obj_method(VALUE self, VALUE obj, VALUE method) {
   return rb_obj_method(obj, method);
 }
 
+
+RBIMPL_WARNING_PUSH()
+#if RBIMPL_HAS_WARNING("-Wdeprecated-declarations") || RBIMPL_COMPILER_SINCE(GCC, 4, 6, 0)
+/* GCC 4.5 introduced __attribute__((__deprecated__)) */
+/* GCC 4.6 introduced #pragma GCC diagnostic push */
+RBIMPL_WARNING_IGNORED(-Wdeprecated-declarations)
+#endif
+
 static VALUE object_spec_rb_obj_taint(VALUE self, VALUE obj) {
   return rb_obj_taint(obj);
 }
+
+RBIMPL_WARNING_POP()
 
 static VALUE so_require(VALUE self) {
   rb_require("fixtures/foo");
