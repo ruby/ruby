@@ -30,18 +30,47 @@ opt.on('--dynamic-prompt-returns-empty') {
 opt.on('--auto-indent') {
   AutoIndent.new
 }
-opt.on('--simple-dialog') {
+opt.on('--dialog VAL') { |v|
   Reline.add_dialog_proc(:simple_dialog, lambda {
-    contents = <<~RUBY.split("\n")
-      Ruby is...
-      A dynamic, open source programming
-      language with a focus on simplicity
-      and productivity. It has an elegant
-      syntax that is natural to read and
-      easy to write.
-    RUBY
-    Reline::DialogRenderInfo.new(pos: cursor_pos, contents: contents)
-  })
+    if v.include?('simple')
+      contents = <<~RUBY.split("\n")
+        Ruby is...
+        A dynamic, open source programming
+        language with a focus on simplicity
+        and productivity. It has an elegant
+        syntax that is natural to read and
+        easy to write.
+      RUBY
+    elsif v.include?('long')
+      contents = <<~RUBY.split("\n")
+        Ruby is...
+        A dynamic, open
+        source programming
+        language with a
+        focus on simplicity
+        and productivity.
+        It has an elegant
+        syntax that is
+        natural to read
+        and easy to write.
+      RUBY
+    end
+    if v.include?('scrollkey')
+      dialog.trap_key = nil
+      if key and key.match?(dialog.name)
+        if context.pointer.nil?
+          context.pointer = 0
+        elsif context.first > dialog.contents.size
+          context.pointer = 0
+        else
+          context.pointer += 1
+        end
+      end
+      dialog.trap_key = [?j.ord]
+      height = 4
+    end
+    Reline::DialogRenderInfo.new(pos: cursor_pos, contents: contents, height: height, pointer: context.pointer)
+  }, Struct.new(:pointer).new)
 }
 opt.on('--complete') {
   Reline.completion_proc = lambda { |target, preposing = nil, postposing = nil|

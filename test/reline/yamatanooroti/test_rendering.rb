@@ -836,7 +836,7 @@ begin
     end
 
     def test_simple_dialog
-      start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --simple-dialog}, startup_message: 'Multiline REPL.')
+      start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple}, startup_message: 'Multiline REPL.')
       write('a')
       write('b')
       write('c')
@@ -851,6 +851,21 @@ begin
                   and productivity. It has an elegant
                   syntax that is natural to read and
                   easy to write.
+      EOC
+    end
+
+    def test_simple_dialog_with_scroll_key
+      start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog long,scrollkey}, startup_message: 'Multiline REPL.')
+      write('a')
+      5.times{ write('j') }
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> a
+                 A dynamic, open
+                 source programming
+                 language with a
+                 focus on simplicity
       EOC
     end
 
