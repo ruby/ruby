@@ -168,11 +168,7 @@ int ruby_setup(void);
  * @retval     ex            Successful cleanup.
  * @note       This function does not raise any exception.
  */
-int ruby_cleanup(
-#if !defined(__cplusplus) || __cplusplus <= 201704L
-    volatile /* C++20 killed volatile. cf: http://wg21.link/P1152 */
-#endif
-    int ex);
+int ruby_cleanup(int ex);
 
 /**
  * Runs the VM finalization processes.
