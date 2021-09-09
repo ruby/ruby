@@ -894,6 +894,21 @@ begin
       EOC
     end
 
+    def test_autocomplete_target_is_wrapped
+      start_terminal(20, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write('          ')
+      write('S')
+      write('t')
+      write('r')
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt>           St
+        r            String
+                     Struct
+      EOC
+    end
+
     def test_simple_dialog_with_scroll_key
       start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog long,scrollkey}, startup_message: 'Multiline REPL.')
       write('a')
