@@ -23,12 +23,11 @@
 # include <sys/types.h>                    /* ssize_t */
 #endif
 
+#include "ruby/internal/attr/noalias.h"
 #include "ruby/internal/attr/nodiscard.h"
 #include "ruby/internal/attr/nonnull.h"
-#include "ruby/internal/attr/pure.h"
 #include "ruby/internal/attr/restrict.h"
 #include "ruby/internal/attr/returns_nonnull.h"
-#include "ruby/internal/config.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/defines.h"
 
@@ -74,7 +73,7 @@ unsigned long ruby_scan_digits(const char *str, ssize_t len, int base, size_t *r
 /** @old{ruby_scan_oct} */
 #define scan_oct(s,l,e) ((int)ruby_scan_oct((s),(l),(e)))
 
-RBIMPL_ATTR_PURE()
+RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL(())
 /**
  * Interprets  the passed  string as  an  octal unsigned  integer.  Stops  when
@@ -97,7 +96,6 @@ unsigned long ruby_scan_oct(const char *str, size_t len, size_t *consumed);
 /** @old{ruby_scan_hex} */
 #define scan_hex(s,l,e) ((int)ruby_scan_hex((s),(l),(e)))
 
-RBIMPL_ATTR_PURE()
 RBIMPL_ATTR_NONNULL(())
 /**
  * Interprets the  passed string  a hexadecimal  unsigned integer.   Stops when
