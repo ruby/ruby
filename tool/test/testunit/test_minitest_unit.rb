@@ -571,12 +571,8 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   end
 
   def test_assert_equal_different_long
-    msg = "--- expected
-           +++ actual
-           @@ -1 +1 @@
-           -\"hahahahahahahahahahahahahahahahahahahaha\"
-           +\"blahblahblahblahblahblahblahblahblahblah\"
-           ".gsub(/^ +/, "")
+    msg = "<\"hahahahahahahahahahahahahahahahahahahaha\"> expected but was
+           <\"blahblahblahblahblahblahblahblahblahblah\">.".gsub(/^ +/, "")
 
     util_assert_triggered msg do
       o1 = "haha" * 10
@@ -587,9 +583,8 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   end
 
   def test_assert_equal_different_long_invisible
-    msg = "No visible difference in the String#inspect output.
-           You should look at the implementation of #== on String or its members.
-           \"blahblahblahblahblahblahblahblahblahblah\"".gsub(/^ +/, "")
+    msg = "<\"blahblahblahblahblahblahblahblahblahblah\"> (UTF-8) expected but was
+           <\"blahblahblahblahblahblahblahblahblahblah\"> (UTF-8).".gsub(/^ +/, "")
 
     util_assert_triggered msg do
       o1 = "blah" * 10
@@ -603,12 +598,8 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
 
   def test_assert_equal_different_long_msg
     msg = "message.
-           --- expected
-           +++ actual
-           @@ -1 +1 @@
-           -\"hahahahahahahahahahahahahahahahahahahaha\"
-           +\"blahblahblahblahblahblahblahblahblahblah\"
-           ".gsub(/^ +/, "")
+           <\"hahahahahahahahahahahahahahahahahahahaha\"> expected but was
+           <\"blahblahblahblahblahblahblahblahblahblah\">.".gsub(/^ +/, "")
 
     util_assert_triggered msg do
       o1 = "haha" * 10
@@ -921,12 +912,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
     end
 
     expected = clean <<-EOM.chomp
-      [RuntimeError] exception expected, not
-      Class: <SyntaxError>
-      Message: <\"icky\">
-      ---Backtrace---
-      FILE:LINE:in \`test_assert_raise_triggered_different\'
-      ---------------
+      [RuntimeError] exception expected, not #<SyntaxError: icky>.
     EOM
 
     actual = e.message.gsub(/^.+:\d+/, 'FILE:LINE')
@@ -944,12 +930,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
 
     expected = clean <<-EOM
       XXX.
-      [RuntimeError] exception expected, not
-      Class: <SyntaxError>
-      Message: <\"icky\">
-      ---Backtrace---
-      FILE:LINE:in \`test_assert_raise_triggered_different_msg\'
-      ---------------
+      [RuntimeError] exception expected, not #<SyntaxError: icky>.
     EOM
 
     actual = e.message.gsub(/^.+:\d+/, 'FILE:LINE')
@@ -990,12 +971,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
     end
 
     expected = clean <<-EOM.chomp
-      [StandardError] exception expected, not
-      Class: <AnError>
-      Message: <\"AnError\">
-      ---Backtrace---
-      FILE:LINE:in \`test_assert_raise_triggered_subclass\'
-      ---------------
+      [StandardError] exception expected, not #<AnError: AnError>.
     EOM
 
     actual = e.message.gsub(/^.+:\d+/, 'FILE:LINE')
@@ -1043,7 +1019,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   end
 
   def test_assert_send_bad
-    util_assert_triggered "Expected 1.>(*[2]) to return true." do
+    util_assert_triggered "Expected 1.>(2) to return true." do
       @tc.assert_send [1, :>, 2]
     end
   end
@@ -1184,7 +1160,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   end
 
   def test_message_lambda
-    util_assert_triggered "whoops.\nExpected: 1\n  Actual: 2" do
+    util_assert_triggered "whoops.\n<1> expected but was\n<2>." do
       @tc.assert_equal 1, 2, lambda { "whoops" }
     end
   end
