@@ -1011,6 +1011,16 @@ begin
       EOC
     end
 
+    def test_dialog_callback_returns_nil
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog nil}, startup_message: 'Multiline REPL.')
+      write('a')
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> a
+      EOC
+    end
+
     def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content

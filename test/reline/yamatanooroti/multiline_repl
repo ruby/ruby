@@ -32,6 +32,7 @@ opt.on('--auto-indent') {
 }
 opt.on('--dialog VAL') { |v|
   Reline.add_dialog_proc(:simple_dialog, lambda {
+    return nil if v.include?('nil')
     if v.include?('simple')
       contents = <<~RUBY.split("\n")
         Ruby is...
