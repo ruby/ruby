@@ -2540,6 +2540,7 @@ class Reline::LineEditor
     end
   end
   alias_method :kill_line, :em_kill_line
+  alias_method :vi_kill_line_prev, :em_kill_line
 
   private def em_delete(key)
     if (not @is_multiline and @line.empty?) or (@is_multiline and @line.empty? and @buffer_of_lines.size == 1)
