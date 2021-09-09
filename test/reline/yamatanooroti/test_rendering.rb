@@ -873,6 +873,27 @@ begin
       EOC
     end
 
+    def test_autocomplete_at_bottom
+      start_terminal(15, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write('def hoge' + "\C-m" * 10 + "end\C-p  ")
+      write('S')
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> def hoge
+        prompt>
+        prompt>
+        prompt>   String
+        prompt>   Struct
+        prompt>   Symbol
+        prompt>   ScriptError
+        prompt>   SyntaxError
+        prompt>   Signal
+        prompt>   S
+        prompt> end
+      EOC
+    end
+
     def test_simple_dialog_with_scroll_key
       start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog long,scrollkey}, startup_message: 'Multiline REPL.')
       write('a')
