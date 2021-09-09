@@ -344,6 +344,7 @@ mentioned below.
     of the GNU General Public License, version 3 ("GPLv3").
 
 [tool/lib/test/*]
+[tool/lib/core_assertions.rb]
 
   Some of methods on these files are based on MiniTest 4. MiniTest 4 is
   distributed under the MIT License.
