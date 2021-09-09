@@ -8,5 +8,4 @@
 
 require "irb"
 
-IRB::TOPLEVEL_BINDING = binding
 IRB.start(__FILE__)
