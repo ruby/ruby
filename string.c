@@ -223,6 +223,16 @@ rb_str_make_independent(VALUE str)
     }
 }
 
+void
+rb_debug_rstring_null_ptr(const char *func)
+{
+    fprintf(stderr, "%s is returning NULL!! "
+            "SIGSEGV is highly expected to follow immediately. "
+            "If you could reproduce, attach your debugger here, "
+            "and look at the passed string.",
+	    func);
+}
+
 /* symbols for [up|down|swap]case/capitalize options */
 static VALUE sym_ascii, sym_turkic, sym_lithuanian, sym_fold;
 

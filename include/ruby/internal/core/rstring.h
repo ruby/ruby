@@ -371,6 +371,16 @@ void rb_check_safe_str(VALUE);
  *              only.  You can safely forget about it.
  */
 #define Check_SafeStr(v) rb_check_safe_str(RBIMPL_CAST((VALUE)(v)))
+
+/**
+ * @private
+ *
+ * Prints diagnostic message to stderr when RSTRING_PTR or RSTRING_END
+ * is NULL.
+ *
+ * @param[in]  func           The function name where encountered NULL pointer.
+ */
+void rb_debug_rstring_null_ptr(const char *func);
 RBIMPL_SYMBOL_EXPORT_END()
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -476,12 +486,7 @@ RSTRING_PTR(VALUE str)
          * Also,  this is  not rb_warn()  because RSTRING_PTR()  can be  called
          * during GC (see  what obj_info() does).  rb_warn()  needs to allocate
          * Ruby objects.  That is not possible at this moment. */
-        fprintf(stderr, "%s\n",
-            "RSTRING_PTR is returning NULL!! "
-            "SIGSEGV is highly expected to follow immediately. "
-            "If you could reproduce, attach your debugger here, "
-            "and look at the passed string."
-        );
+        rb_debug_rstring_null_ptr("RSTRING_PTR");
     }
 
     return ptr;
@@ -502,12 +507,7 @@ RSTRING_END(VALUE str)
 
     if (RB_UNLIKELY(! buf.as.heap.ptr)) {
         /* Ditto. */
-        fprintf(stderr, "%s\n",
-            "RSTRING_END is returning NULL!! "
-            "SIGSEGV is highly expected to follow immediately. "
-            "If you could reproduce, attach your debugger here, "
-            "and look at the passed string."
-        );
+        rb_debug_rstring_null_ptr("RSTRING_END");
     }
 
     return &buf.as.heap.ptr[buf.as.heap.len];
