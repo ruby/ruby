@@ -835,6 +835,25 @@ begin
       EOC
     end
 
+    def test_simple_dialog
+      start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --simple-dialog}, startup_message: 'Multiline REPL.')
+      write('a')
+      write('b')
+      write('c')
+      write("\C-h")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> ab
+                  Ruby is...
+                  A dynamic, open source programming
+                  language with a focus on simplicity
+                  and productivity. It has an elegant
+                  syntax that is natural to read and
+                  easy to write.
+      EOC
+    end
+
     def test_autocomplete
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write("Stri")

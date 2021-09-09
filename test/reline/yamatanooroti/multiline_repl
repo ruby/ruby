@@ -30,6 +30,19 @@ opt.on('--dynamic-prompt-returns-empty') {
 opt.on('--auto-indent') {
   AutoIndent.new
 }
+opt.on('--simple-dialog') {
+  Reline.add_dialog_proc(:simple_dialog, lambda {
+    contents = <<~RUBY.split("\n")
+      Ruby is...
+      A dynamic, open source programming
+      language with a focus on simplicity
+      and productivity. It has an elegant
+      syntax that is natural to read and
+      easy to write.
+    RUBY
+    Reline::DialogRenderInfo.new(pos: cursor_pos, contents: contents)
+  })
+}
 opt.on('--complete') {
   Reline.completion_proc = lambda { |target, preposing = nil, postposing = nil|
     %w{String ScriptError SyntaxError Signal}
