@@ -939,6 +939,37 @@ begin
       EOC
     end
 
+    def test_simple_dialog_scrollbar_with_moving_to_right
+      start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog long,scrollkey,scrollbar}, startup_message: 'Multiline REPL.')
+      6.times{ write('j') }
+      write('a')
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> a
+                 source programming ▄
+                 language with a    █
+                 focus on simplicity
+                 and productivity.
+      EOC
+    end
+
+    def test_simple_dialog_scrollbar_with_moving_to_left
+      start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog long,scrollkey,scrollbar}, startup_message: 'Multiline REPL.')
+      write('a')
+      6.times{ write('j') }
+      write("\C-h")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt>
+                source programming ▄
+                language with a    █
+                focus on simplicity
+                and productivity.
+      EOC
+    end
+
     def test_autocomplete_empty
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write('Street')

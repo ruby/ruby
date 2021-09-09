@@ -70,7 +70,11 @@ opt.on('--dialog VAL') { |v|
       dialog.trap_key = [?j.ord]
       height = 4
     end
-    Reline::DialogRenderInfo.new(pos: cursor_pos, contents: contents, height: height, pointer: context.pointer)
+    scrollbar = false
+    if v.include?('scrollbar')
+      scrollbar = true
+    end
+    Reline::DialogRenderInfo.new(pos: cursor_pos, contents: contents, height: height, pointer: context.pointer, scrollbar: scrollbar)
   }, Struct.new(:pointer).new)
 }
 opt.on('--complete') {
