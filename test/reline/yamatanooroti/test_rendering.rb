@@ -974,6 +974,21 @@ begin
       EOC
     end
 
+    def test_autocomplete_rerender_under_dialog
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("def hoge\n\n  123456\n  456789\nend\C-p\C-p\C-p  a = Str")
+      write('i')
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> def hoge
+        prompt>   a = Stri
+        prompt>   1234String
+        prompt>   456789
+        prompt> end
+      EOC
+    end
+
     def test_autocomplete_long_with_scrollbar
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-long}, startup_message: 'Multiline REPL.')
       write('S')
