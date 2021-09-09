@@ -1410,7 +1410,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   end
 
   def test_message_message
-    util_assert_triggered "whoops.\nExpected: 1\n  Actual: 2" do
+    util_assert_triggered "whoops.\n<1> expected but was\n<2>." do
       @tc.assert_equal 1, 2, message { "whoops" }
     end
   end
@@ -1673,7 +1673,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   alias util_assert_triggered assert_triggered
 
   def util_msg exp, act, msg = nil
-    s = "Expected: #{exp.inspect}\n  Actual: #{act.inspect}"
+    s = "<#{exp.inspect}> expected but was\n<#{act.inspect}>."
     s = "#{msg}.\n#{s}" if msg
     s
   end
