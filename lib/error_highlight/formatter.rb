@@ -15,7 +15,7 @@ module ErrorHighlight
     end
   end
 
-  DEFAULT_FORMATTER = DefaultFormatter.new
+  DEFAULT_FORMATTER = DefaultFormatter.new.freeze
   Ractor.make_shareable(DEFAULT_FORMATTER) if defined?(Ractor)
 
   def self.formatter
@@ -26,7 +26,7 @@ module ErrorHighlight
     provider = proc {
       formatter
     }
-    Ractor.make_shareable(provider) if defined?(Ractor)
+    Ractor.make_shareable(provider) if defined?(Ractor) && formatter.frozen?
     define_singleton_method(:formatter, &provider)
   end
 end
