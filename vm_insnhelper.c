@@ -275,7 +275,7 @@ rb_vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
     /* rb_bug() is not capable of outputting this large contents.  It
        is designed to run form a SIGSEGV handler, which tends to be
        very restricted. */
-    fprintf(stderr,
+    ruby_debug_printf(
         "We are killing the stack canary set by %s, "
         "at %s@pc=%"PRIdPTR"\n"
         "watch out the C stack trace.\n"
@@ -1690,7 +1690,7 @@ vm_ccs_push(VALUE klass, struct rb_class_cc_entries *ccs, const struct rb_callin
 void
 rb_vm_ccs_dump(struct rb_class_cc_entries *ccs)
 {
-    fprintf(stderr, "ccs:%p (%d,%d)\n", (void *)ccs, ccs->len, ccs->capa);
+    ruby_debug_printf("ccs:%p (%d,%d)\n", (void *)ccs, ccs->len, ccs->capa);
     for (int i=0; i<ccs->len; i++) {
         vm_ci_dump(ccs->entries[i].ci);
         rp(ccs->entries[i].cc);
@@ -2164,7 +2164,7 @@ vm_base_ptr(const rb_control_frame_t *cfp)
 	}
 #if VM_DEBUG_BP_CHECK
 	if (bp != cfp->bp_check) {
-	    fprintf(stderr, "bp_check: %ld, bp: %ld\n",
+	    ruby_debug_printf("bp_check: %ld, bp: %ld\n",
 		    (long)(cfp->bp_check - GET_EC()->vm_stack),
 		    (long)(bp - GET_EC()->vm_stack));
 	    rb_bug("vm_base_ptr: unreachable");
@@ -2328,7 +2328,7 @@ static void
 opt_hist_show_results_at_exit(void)
 {
     for (int i=0; i<OPT_HIST_MAX; i++) {
-        fprintf(stderr, "opt_hist\t%d\t%d\n", i, opt_hist[i]);
+        ruby_debug_printf("opt_hist\t%d\t%d\n", i, opt_hist[i]);
     }
 }
 #endif
@@ -5428,12 +5428,12 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             rb_hook_list_t *global_hooks = rb_ec_ractor_hooks(ec);
 
             if (0) {
-                fprintf(stderr, "vm_trace>>%4d (%4x) - %s:%d %s\n",
-                        (int)pos,
-                        (int)pc_events,
-                        RSTRING_PTR(rb_iseq_path(iseq)),
-                        (int)rb_iseq_line_no(iseq, pos),
-                        RSTRING_PTR(rb_iseq_label(iseq)));
+                ruby_debug_printf("vm_trace>>%4d (%4x) - %s:%d %s\n",
+                                  (int)pos,
+                                  (int)pc_events,
+                                  RSTRING_PTR(rb_iseq_path(iseq)),
+                                  (int)rb_iseq_line_no(iseq, pos),
+                                  RSTRING_PTR(rb_iseq_label(iseq)));
             }
             VM_ASSERT(reg_cfp->pc == pc);
             VM_ASSERT(pc_events != 0);
@@ -5666,12 +5666,11 @@ static VALUE
 vm_invoke_builtin_delegate(rb_execution_context_t *ec, rb_control_frame_t *cfp, const struct rb_builtin_function *bf, unsigned int start_index)
 {
     if (0) { // debug print
-        fprintf(stderr, "vm_invoke_builtin_delegate: passing -> ");
+        fputs("vm_invoke_builtin_delegate: passing -> ", stderr);
         for (int i=0; i<bf->argc; i++) {
-            fprintf(stderr, ":%s ", rb_id2name(cfp->iseq->body->local_table[i+start_index]));
+            ruby_debug_printf(":%s ", rb_id2name(cfp->iseq->body->local_table[i+start_index]));
         }
-        fprintf(stderr, "\n");
-        fprintf(stderr, "%s %s(%d):%p\n", RUBY_FUNCTION_NAME_STRING, bf->name, bf->argc, bf->func_ptr);
+        ruby_debug_printf("\n" "%s %s(%d):%p\n", RUBY_FUNCTION_NAME_STRING, bf->name, bf->argc, bf->func_ptr);
     }
 
     if (bf->argc == 0) {

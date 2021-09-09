@@ -35,7 +35,7 @@ extern int ruby_gc_debug_indent;
 static inline void
 rb_gc_debug_indent(void)
 {
-    printf("%*s", ruby_gc_debug_indent, "");
+    ruby_debug_printf("%*s", ruby_gc_debug_indent, "");
 }
 
 static inline void
@@ -45,7 +45,7 @@ rb_gc_debug_body(const char *mode, const char *msg, int st, void *ptr)
 	ruby_gc_debug_indent--;
     }
     rb_gc_debug_indent();
-    printf("%s: %s %s (%p)\n", mode, st ? "->" : "<-", msg, ptr);
+    ruby_debug_printf("%s: %s %s (%p)\n", mode, st ? "->" : "<-", msg, ptr);
 
     if (st) {
 	ruby_gc_debug_indent++;
@@ -58,7 +58,7 @@ rb_gc_debug_body(const char *mode, const char *msg, int st, void *ptr)
 #define RUBY_MARK_LEAVE(msg) rb_gc_debug_body("mark", (msg), 0, ptr)
 #define RUBY_FREE_ENTER(msg) rb_gc_debug_body("free", (msg), 1, ptr)
 #define RUBY_FREE_LEAVE(msg) rb_gc_debug_body("free", (msg), 0, ptr)
-#define RUBY_GC_INFO         rb_gc_debug_indent(); printf
+#define RUBY_GC_INFO         rb_gc_debug_indent(), ruby_debug_printf
 
 #else
 #define RUBY_MARK_ENTER(msg)

@@ -701,7 +701,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     {
 	int i;
 	for (i=0; i<iseq->body->param.size; i++) {
-	    fprintf(stderr, "local[%d] = %p\n", i, (void *)locals[i]);
+	    ruby_debug_printf("local[%d] = %p\n", i, (void *)locals[i]);
 	}
     }
 #endif
