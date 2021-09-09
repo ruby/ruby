@@ -20,6 +20,7 @@ env:
   debugflags: '-ggdb3'
 
   default_configure: >-
+    --enable-shared
     --enable-debug-env
     --disable-install-doc
     --with-ext=-test-/cxxanyargs,+
