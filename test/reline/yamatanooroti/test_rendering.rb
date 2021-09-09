@@ -924,6 +924,16 @@ begin
       EOC
     end
 
+    def test_autocomplete_empty
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write('Street')
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> Street
+      EOC
+    end
+
     def test_autocomplete
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write("Str")
