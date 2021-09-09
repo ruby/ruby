@@ -504,9 +504,8 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   def test_assert_equal_different_collection_array_hex_invisible
     object1 = Object.new
     object2 = Object.new
-    msg = "No visible difference in the Array#inspect output.
-           You should look at the implementation of #== on Array or its members.
-           [#<Object:0xXXXXXX>]".gsub(/^ +/, "")
+    msg = "<[#{object1.inspect}]> expected but was
+          <[#{object2.inspect}]>.".gsub(/^ +/, "")
     util_assert_triggered msg do
       @tc.assert_equal [object1], [object2]
     end
@@ -516,9 +515,8 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
     h1, h2 = {}, {}
     h1[1] = Object.new
     h2[1] = Object.new
-    msg = "No visible difference in the Hash#inspect output.
-           You should look at the implementation of #== on Hash or its members.
-           {1=>#<Object:0xXXXXXX>}".gsub(/^ +/, "")
+    msg = "<#{h1.inspect}> expected but was
+          <#{h2.inspect}>.".gsub(/^ +/, "")
 
     util_assert_triggered msg do
       @tc.assert_equal h1, h2
@@ -545,12 +543,8 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
 
     o1 = c.new "a"
     o2 = c.new "b"
-    msg = "--- expected
-           +++ actual
-           @@ -1 +1 @@
-           -#<#<Class:0xXXXXXX>:0xXXXXXX @name=\"a\">
-           +#<#<Class:0xXXXXXX>:0xXXXXXX @name=\"b\">
-           ".gsub(/^ +/, "")
+    msg = "<#{o1.inspect}> expected but was
+          <#{o2.inspect}>.".gsub(/^ +/, "")
 
     util_assert_triggered msg do
       @tc.assert_equal o1, o2
@@ -561,9 +555,8 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
     o1 = Object.new
     o2 = Object.new
 
-    msg = "No visible difference in the Object#inspect output.
-           You should look at the implementation of #== on Object or its members.
-           #<Object:0xXXXXXX>".gsub(/^ +/, "")
+    msg = "<#{o1.inspect}> expected but was
+          <#{o2.inspect}>.".gsub(/^ +/, "")
 
     util_assert_triggered msg do
       @tc.assert_equal o1, o2
@@ -621,14 +614,14 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   end
 
   def test_assert_equal_different_short_multiline
-    msg = "--- expected\n+++ actual\n@@ -1,2 +1,2 @@\n \"a\n-b\"\n+c\"\n"
+    msg = "<\"a\\n\" + \"b\"> expected but was\n<\"a\\n\" + \"c\">."
     util_assert_triggered msg do
       @tc.assert_equal "a\nb", "a\nc"
     end
   end
 
   def test_assert_equal_different_escaped_newline
-    msg = "--- expected\n+++ actual\n@@ -1,2 +1,2 @@\n \"xxx\n-a\\\\nb\"\n+a\\\\nc\"\n"
+    msg = "<\"xxx\\n\" + \"a\\\\nb\"> expected but was\n<\"xxx\\n\" + \"a\\\\nc\">."
     util_assert_triggered msg do
       @tc.assert_equal "xxx\na\\nb", "xxx\na\\nc"
     end
