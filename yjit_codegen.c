@@ -2969,6 +2969,26 @@ jit_rb_false(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb
     return true;
 }
 
+// Codegen for rb_obj_equal()
+// object identity comparison
+static bool
+jit_rb_obj_equal(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc)
+{
+    ADD_COMMENT(cb, "equal?");
+    x86opnd_t obj1 = ctx_stack_pop(ctx, 1);
+    x86opnd_t obj2 = ctx_stack_pop(ctx, 1);
+
+    mov(cb, REG0, obj1);
+    cmp(cb, REG0, obj2);
+    mov(cb, REG0, imm_opnd(Qtrue));
+    mov(cb, REG1, imm_opnd(Qfalse));
+    cmovne(cb, REG0, REG1);
+
+    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_IMM);
+    mov(cb, stack_ret, REG0);
+    return true;
+}
+
 // Check if we know how to codegen for a particular cfunc method
 static method_codegen_t
 lookup_cfunc_codegen(const rb_method_definition_t *def)
@@ -4270,4 +4290,11 @@ yjit_init_codegen(void)
 
     yjit_reg_method(rb_cNilClass, "nil?", jit_rb_true);
     yjit_reg_method(rb_mKernel, "nil?", jit_rb_false);
+
+    yjit_reg_method(rb_cBasicObject, "==", jit_rb_obj_equal);
+    yjit_reg_method(rb_cBasicObject, "equal?", jit_rb_obj_equal);
+    yjit_reg_method(rb_mKernel, "eql?", jit_rb_obj_equal);
+    yjit_reg_method(rb_cModule, "==", jit_rb_obj_equal);
+    yjit_reg_method(rb_cSymbol, "==", jit_rb_obj_equal);
+    yjit_reg_method(rb_cSymbol, "===", jit_rb_obj_equal);
 }
