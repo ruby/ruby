@@ -29,7 +29,7 @@ class TestMiniTestUnit < MetaMetaMetaTestCase
 
   def test_class_puke_with_assertion_failed_and_long_backtrace
     bt = (["test/test_some_class.rb:615:in `method_name'",
-           "#{MINITEST_BASE_DIR}/unit.rb:140:in `assert_raises'",
+           "#{MINITEST_BASE_DIR}/unit.rb:140:in `assert_raise'",
            "test/test_some_class.rb:615:in `each'",
            "test/test_some_class.rb:614:in `test_method_name'",
            "#{MINITEST_BASE_DIR}/test.rb:165:in `__send__'"] +
@@ -49,7 +49,7 @@ class TestMiniTestUnit < MetaMetaMetaTestCase
 
   def test_class_puke_with_assertion_failed_and_user_defined_assertions
     bt = (["lib/test/my/util.rb:16:in `another_method_name'",
-           "#{MINITEST_BASE_DIR}/unit.rb:140:in `assert_raises'",
+           "#{MINITEST_BASE_DIR}/unit.rb:140:in `assert_raise'",
            "lib/test/my/util.rb:15:in `block in assert_something'",
            "lib/test/my/util.rb:14:in `each'",
            "lib/test/my/util.rb:14:in `assert_something'",
@@ -82,7 +82,7 @@ class TestMiniTestUnit < MetaMetaMetaTestCase
 
   def test_class_puke_with_flunk_and_user_defined_assertions
     bt = (["lib/test/my/util.rb:16:in `flunk'",
-           "#{MINITEST_BASE_DIR}/unit.rb:140:in `assert_raises'",
+           "#{MINITEST_BASE_DIR}/unit.rb:140:in `assert_raise'",
            "lib/test/my/util.rb:15:in `block in assert_something'",
            "lib/test/my/util.rb:14:in `each'",
            "lib/test/my/util.rb:14:in `assert_something'",
@@ -943,7 +943,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   def test_assert_includes_triggered
     @assertion_count = 3
 
-    e = @tc.assert_raises Test::Assertion do
+    e = @tc.assert_raise Test::Assertion do
       @tc.assert_includes [true], false
     end
 
@@ -1113,14 +1113,14 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
     end
   end
 
-  def test_assert_raises
-    @tc.assert_raises RuntimeError do
+  def test_assert_raise
+    @tc.assert_raise RuntimeError do
       raise "blah"
     end
   end
 
-  def test_assert_raises_module
-    @tc.assert_raises MyModule do
+  def test_assert_raise_module
+    @tc.assert_raise MyModule do
       raise AnError
     end
   end
@@ -1131,11 +1131,11 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   #
   # https://github.com/ruby/ruby/commit/6bab4ea9917dc05cd2c94aead2e96eb7df7d4be1
 
-  def test_assert_raises_skip
+  def test_assert_raise_skip
     @assertion_count = 0
 
     util_assert_triggered "skipped", Test::Skip do
-      @tc.assert_raises ArgumentError do
+      @tc.assert_raise ArgumentError do
         begin
           raise "blah"
         rescue
@@ -1145,9 +1145,9 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
     end
   end
 
-  def test_assert_raises_triggered_different
-    e = assert_raises Test::Assertion do
-      @tc.assert_raises RuntimeError do
+  def test_assert_raise_triggered_different
+    e = assert_raise Test::Assertion do
+      @tc.assert_raise RuntimeError do
         raise SyntaxError, "icky"
       end
     end
@@ -1157,7 +1157,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
       Class: <SyntaxError>
       Message: <\"icky\">
       ---Backtrace---
-      FILE:LINE:in \`test_assert_raises_triggered_different\'
+      FILE:LINE:in \`test_assert_raise_triggered_different\'
       ---------------
     EOM
 
@@ -1167,9 +1167,9 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
     assert_equal expected, actual
   end
 
-  def test_assert_raises_triggered_different_msg
-    e = assert_raises Test::Assertion do
-      @tc.assert_raises RuntimeError, "XXX" do
+  def test_assert_raise_triggered_different_msg
+    e = assert_raise Test::Assertion do
+      @tc.assert_raise RuntimeError, "XXX" do
         raise SyntaxError, "icky"
       end
     end
@@ -1180,7 +1180,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
       Class: <SyntaxError>
       Message: <\"icky\">
       ---Backtrace---
-      FILE:LINE:in \`test_assert_raises_triggered_different_msg\'
+      FILE:LINE:in \`test_assert_raise_triggered_different_msg\'
       ---------------
     EOM
 
@@ -1190,9 +1190,9 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
     assert_equal expected.chomp, actual
   end
 
-  def test_assert_raises_triggered_none
-    e = assert_raises Test::Assertion do
-      @tc.assert_raises Test::Assertion do
+  def test_assert_raise_triggered_none
+    e = assert_raise Test::Assertion do
+      @tc.assert_raise Test::Assertion do
         # do nothing
       end
     end
@@ -1202,9 +1202,9 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
     assert_equal expected, e.message
   end
 
-  def test_assert_raises_triggered_none_msg
-    e = assert_raises Test::Assertion do
-      @tc.assert_raises Test::Assertion, "XXX" do
+  def test_assert_raise_triggered_none_msg
+    e = assert_raise Test::Assertion do
+      @tc.assert_raise Test::Assertion, "XXX" do
         # do nothing
       end
     end
@@ -1214,9 +1214,9 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
     assert_equal expected, e.message
   end
 
-  def test_assert_raises_triggered_subclass
-    e = assert_raises Test::Assertion do
-      @tc.assert_raises StandardError do
+  def test_assert_raise_triggered_subclass
+    e = assert_raise Test::Assertion do
+      @tc.assert_raise StandardError do
         raise AnError
       end
     end
@@ -1226,7 +1226,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
       Class: <AnError>
       Message: <\"AnError\">
       ---Backtrace---
-      FILE:LINE:in \`test_assert_raises_triggered_subclass\'
+      FILE:LINE:in \`test_assert_raise_triggered_subclass\'
       ---------------
     EOM
 
@@ -1364,7 +1364,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
 
     # These don't have corresponding refutes _on purpose_. They're
     # useless and will never be added, so don't bother.
-    ignores = %w[assert_output assert_raises assert_send
+    ignores = %w[assert_output assert_raise assert_send
                  assert_silent assert_throws]
 
     # These are test/unit methods. I'm not actually sure why they're still here
@@ -1503,7 +1503,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   def test_refute_includes_triggered
     @assertion_count = 3
 
-    e = @tc.assert_raises Test::Assertion do
+    e = @tc.assert_raise Test::Assertion do
       @tc.refute_includes [true], true
     end
 
@@ -1660,7 +1660,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   end
 
   def assert_triggered expected, klass = Test::Assertion
-    e = assert_raises klass do
+    e = assert_raise klass do
       yield
     end
 
