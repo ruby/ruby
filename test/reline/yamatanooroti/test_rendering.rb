@@ -894,6 +894,21 @@ begin
       EOC
     end
 
+    def test_autocomplete_return_to_original
+      start_terminal(20, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write('S')
+      write('t')
+      write('r')
+      3.times{ write("\C-i") }
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> Str
+                String
+                Struct
+      EOC
+    end
+
     def test_autocomplete_target_is_wrapped
       start_terminal(20, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write('          ')
