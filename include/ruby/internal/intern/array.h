@@ -97,7 +97,6 @@ VALUE rb_ary_new_capa(long capa);
  */
 VALUE rb_ary_new_from_args(long n, ...);
 
-RBIMPL_ATTR_NONNULL(())
 /**
  * Identical to rb_ary_new_from_args(), except how objects are passed.
  *
