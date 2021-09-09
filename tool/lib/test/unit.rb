@@ -67,8 +67,6 @@ module Test
     AssertionFailedError = Test::Assertion
     PendedError = Test::Skip
 
-    TEST_UNIT_IMPLEMENTATION = 'test/unit compatibility layer using minitest' # :nodoc:
-
     module RunCount # :nodoc: all
       @@run_count = 0
 
