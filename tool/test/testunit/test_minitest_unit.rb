@@ -1100,32 +1100,6 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
     end
   end
 
-  def test_class_asserts_match_refutes
-    @assertion_count = 0
-
-    methods = Test::Unit::Assertions.public_instance_methods
-    methods.map! { |m| m.to_s } if Symbol === methods.first
-
-    # These don't have corresponding refutes _on purpose_. They're
-    # useless and will never be added, so don't bother.
-    ignores = %w[assert_output assert_raise assert_send
-                 assert_silent assert_throws]
-
-    # These are test/unit methods. I'm not actually sure why they're still here
-    ignores += %w[assert_no_match assert_not_equal assert_not_nil
-                  assert_not_same assert_nothing_raised
-                  assert_nothing_thrown assert_raise]
-
-    # These are compatibility methods for Minitest 5
-    ignores += %w[assertions assertions=]
-
-    asserts = methods.grep(/^assert/).sort - ignores
-    refutes = methods.grep(/^refute/).sort - ignores
-
-    assert_empty refutes.map { |n| n.sub(/^refute/, 'assert') } - asserts
-    assert_empty asserts.map { |n| n.sub(/^assert/, 'refute') } - refutes
-  end
-
   def test_flunk
     util_assert_triggered 'Epic Fail!' do
       @tc.flunk
