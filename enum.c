@@ -908,7 +908,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  *     longest = %w{ cat sheep bear }.inject do |memo, word|
  *        memo.length > word.length ? memo : word
  *     end
- *     longest
+ *     longest                                        #=> "sheep"
  */
 static VALUE
 enum_inject(int argc, VALUE *argv, VALUE obj)
