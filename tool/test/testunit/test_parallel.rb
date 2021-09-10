@@ -120,9 +120,9 @@ module TestParallel
         assert_kind_of(Array,result[3])
         assert_kind_of(Array,result[4])
         assert_kind_of(Array,result[2][1])
-        assert_kind_of(Test::Assertion,result[2][0][2])
-        assert_kind_of(Test::Skip,result[2][1][2])
-        assert_kind_of(Test::Skip,result[2][2][2])
+        assert_kind_of(Test::Unit::AssertionFailedError,result[2][0][2])
+        assert_kind_of(Test::Unit::PendedError,result[2][1][2])
+        assert_kind_of(Test::Unit::PendedError,result[2][2][2])
         assert_kind_of(Exception, result[2][3][2])
         assert_equal(result[5], "TestE")
       end
