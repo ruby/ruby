@@ -3810,6 +3810,9 @@ gen_toregexp(jitstate_t* jit, ctx_t* ctx)
 static codegen_status_t
 gen_getspecial(jitstate_t *jit, ctx_t *ctx)
 {
+    // This takes two arguments, key and type
+    // key is only used when type == 0
+    // A non-zero type determines which type of backref to fetch
     rb_num_t key = jit_get_arg(jit, 0);
     rb_num_t type = jit_get_arg(jit, 1);
 
@@ -3817,6 +3820,8 @@ gen_getspecial(jitstate_t *jit, ctx_t *ctx)
         // not yet implemented
         return YJIT_CANT_COMPILE;
     } else if (type & 0x01) {
+        // Fetch a "special" backref based on a char encoded by shifting by 1
+
         // Can raise if matchdata uninitialized
         jit_prepare_routine_call(jit, ctx, REG0);
 
@@ -3851,6 +3856,8 @@ gen_getspecial(jitstate_t *jit, ctx_t *ctx)
 
         return YJIT_KEEP_COMPILING;
     } else {
+        // Fetch the N-th match from the last backref based on type shifted by 1
+
         // Can raise if matchdata uninitialized
         jit_prepare_routine_call(jit, ctx, REG0);
 
