@@ -2,7 +2,6 @@
 
 require_relative '../envutil'
 require_relative '../colorize'
-require 'test/unit/assertions'
 require 'test/unit/testcase'
 require 'optparse'
 require "leakchecker"
