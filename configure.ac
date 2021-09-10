@@ -1662,7 +1662,7 @@ AC_CACHE_CHECK(for function name string predefined identifier,
       RUBY_WERROR_FLAG([
         for func in __func__ __FUNCTION__; do
             AC_LINK_IFELSE([AC_LANG_PROGRAM([[@%:@include <stdio.h>]],
-			 		    [[puts($func);]])],
+					    [[puts($func);]])],
             [rb_cv_function_name_string=$func
             break])
         done
@@ -2862,7 +2862,6 @@ AC_SUBST(CCDLFLAGS)dnl
 AC_SUBST(LDSHARED)dnl
 AC_SUBST(LDSHAREDXX)dnl
 AC_SUBST(DLEXT)dnl
-AC_SUBST(DLEXT2)dnl
 AC_SUBST(LIBEXT)dnl
 AC_SUBST(ASMEXT, S)dnl
 
@@ -3182,10 +3181,8 @@ AS_IF([test x"$LOAD_RELATIVE" = x1], [
 
 len=2 # .rb
 n=`expr "$DLEXT"  : '.*'`; test "$n" -gt "$len" && len=$n
-n=`expr "$DLEXT2" : '.*'`; test "$n" -gt "$len" && len=$n
 AC_DEFINE_UNQUOTED(DLEXT_MAXLEN, `expr $len + 1`)
 test ".$DLEXT"  = "." || AC_DEFINE_UNQUOTED(DLEXT,  ".$DLEXT")
-test ".$DLEXT2" = "." || AC_DEFINE_UNQUOTED(DLEXT2, ".$DLEXT2")
 AC_SUBST(DLEXT)
 
 : "strip" && {

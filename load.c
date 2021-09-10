@@ -21,17 +21,10 @@ static VALUE ruby_dln_librefs;
 
 #define IS_RBEXT(e) (strcmp((e), ".rb") == 0)
 #define IS_SOEXT(e) (strcmp((e), ".so") == 0 || strcmp((e), ".o") == 0)
-#ifdef DLEXT2
-#define IS_DLEXT(e) (strcmp((e), DLEXT) == 0 || strcmp((e), DLEXT2) == 0)
-#else
 #define IS_DLEXT(e) (strcmp((e), DLEXT) == 0)
-#endif
 
 static const char *const loadable_ext[] = {
     ".rb", DLEXT,
-#ifdef DLEXT2
-    DLEXT2,
-#endif
     0
 };
 
@@ -931,15 +924,6 @@ search_required(VALUE fname, volatile VALUE *path, feature_func rb_feature_p)
 		return 's';
 	    }
 	    tmp = rb_str_subseq(fname, 0, ext - RSTRING_PTR(fname));
-#ifdef DLEXT2
-	    OBJ_FREEZE(tmp);
-            if (rb_find_file_ext(&tmp, loadable_ext + 1)) {
-		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-		if (!rb_feature_p(ftptr, ext, FALSE, TRUE, &loading) || loading)
-		    *path = tmp;
-		return 's';
-	    }
-#else
 	    rb_str_cat2(tmp, DLEXT);
 	    OBJ_FREEZE(tmp);
             if ((tmp = rb_find_file(tmp)) != 0) {
@@ -948,7 +932,6 @@ search_required(VALUE fname, volatile VALUE *path, feature_func rb_feature_p)
 		    *path = tmp;
 		return 's';
 	    }
-#endif
 	}
 	else if (IS_DLEXT(ext)) {
 	    if (rb_feature_p(ftptr, ext, FALSE, FALSE, &loading)) {
