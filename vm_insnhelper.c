@@ -1371,6 +1371,10 @@ rb_vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IV
     vm_setinstancevariable(iseq, obj, id, val, ic);
 }
 
+/* Set the instance variable +val+ on object +obj+ at the +index+.
+ * This function only works with T_OBJECT objects, so make sure
+ * +obj+ is of type T_OBJECT before using this function.
+ */
 VALUE
 rb_vm_set_ivar_idx(VALUE obj, uint32_t index, VALUE val)
 {
@@ -1385,8 +1389,8 @@ rb_vm_set_ivar_idx(VALUE obj, uint32_t index, VALUE val)
     }
     VALUE *ptr = ROBJECT_IVPTR(obj);
     RB_OBJ_WRITE(obj, &ptr[index], val);
-    RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
-    return val; /* inline cache hit */
+
+    return val;
 }
 
 static VALUE
