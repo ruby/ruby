@@ -162,10 +162,12 @@ module YJIT
       print_counters(stats, prefix: 'oaref_', prompt: 'opt_aref exit reasons: ')
       print_counters(stats, prefix: 'expandarray_', prompt: 'expandarray exit reasons: ')
 
-      total_exits = total_exit_count(stats)
+      side_exits = total_exit_count(stats)
+      total_exits = side_exits + stats[:leave_interp_return]
 
-      # Number of instructions that finish executing in YJIT
-      retired_in_yjit = stats[:exec_instruction] - total_exits
+      # Number of instructions that finish executing in YJIT.
+      # See :count-placement: about the subtraction.
+      retired_in_yjit = stats[:exec_instruction] - side_exits
 
       # Average length of instruction sequences executed by YJIT
       avg_len_in_yjit = retired_in_yjit.to_f / total_exits
