@@ -609,6 +609,7 @@ eom
       end
 
       class << (AssertFile = Struct.new(:failure_message).new)
+        include Assertions
         include CoreAssertions
         def assert_file_predicate(predicate, *args)
           if /\Anot_/ =~ predicate
