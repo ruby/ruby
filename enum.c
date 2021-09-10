@@ -706,12 +706,6 @@ enum_flat_map(VALUE obj)
  *
  *    (0..4).to_a # => [0, 1, 2, 3, 4]
  *
- *  Special case: if +self+ is a hash,
- *  returns an array of 2-elememt arrays,
- *  each of which is a key-value pair:
- *
- *    {foo: 0, bar: 1, baz: 2}.to_a # => [[:foo, 0], [:bar, 1], [:baz, 2]]
- *
  *  Enumerable#entries is an alias for Enumerable#to_a.
  */
 static VALUE
@@ -761,12 +755,14 @@ enum_to_h_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
  *
  *    [[:foo, 0], [:bar, 1], [:baz, 2]].to_h # => {:foo=>0, :bar=>1, :baz=>2}
  *
- *  When a block is given, the block is called with each 2-element array,
- *  and the block return value becomes an entry in the returned hash:
+ *  When a block is given, the block is called with each element of +self+;
+ *  the block should return a 2-element array which becomes a key-value pair
+ *  in the returned hash:
  *
  *    (0..3).to_h {|i| [i, i ** 2]} # => {0=>0, 1=>1, 2=>4, 3=>9}
  *
- *  Raises an exception if an element of +self+ is not a 2-element array.
+ *  Raises an exception if an element of +self+ is not a 2-element array,
+ *  and a block is not passed.
  */
 
 static VALUE
