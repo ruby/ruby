@@ -674,7 +674,7 @@ TABLE = Ractor.make_shareable( {a: 'ko1', b: 'ko2', c: 'ko3'} )
 To make it easy, Ruby 3.0 introduced new `shareable_constant_value` Directive.
 
 ```ruby
-shareable_constant_value: literal
+# shareable_constant_value: literal
 
 TABLE = {a: 'ko1', b: 'ko2', c: 'ko3'}
 #=> Same as: TABLE = Ractor.make_shareable( {a: 'ko1', b: 'ko2', c: 'ko3'} )
