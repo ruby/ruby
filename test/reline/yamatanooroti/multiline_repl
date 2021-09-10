@@ -59,12 +59,12 @@ opt.on('--dialog VAL') { |v|
     if v.include?('scrollkey')
       dialog.trap_key = nil
       if key and key.match?(dialog.name)
-        if context.pointer.nil?
-          context.pointer = 0
-        elsif context.pointer >= (contents.size - 1)
-          context.pointer = 0
+        if dialog.pointer.nil?
+          dialog.pointer = 0
+        elsif dialog.pointer >= (contents.size - 1)
+          dialog.pointer = 0
         else
-          context.pointer += 1
+          dialog.pointer += 1
         end
       end
       dialog.trap_key = [?j.ord]
@@ -74,8 +74,8 @@ opt.on('--dialog VAL') { |v|
     if v.include?('scrollbar')
       scrollbar = true
     end
-    Reline::DialogRenderInfo.new(pos: cursor_pos, contents: contents, height: height, pointer: context.pointer, scrollbar: scrollbar)
-  }, Struct.new(:pointer).new)
+    Reline::DialogRenderInfo.new(pos: cursor_pos, contents: contents, height: height, scrollbar: scrollbar)
+  })
 }
 opt.on('--complete') {
   Reline.completion_proc = lambda { |target, preposing = nil, postposing = nil|

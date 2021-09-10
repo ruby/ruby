@@ -37,7 +37,7 @@ module Reline
     alias_method :==, :match?
   end
   CursorPos = Struct.new(:x, :y)
-  DialogRenderInfo = Struct.new(:pos, :contents, :pointer, :bg_color, :width, :height, :scrollbar, keyword_init: true)
+  DialogRenderInfo = Struct.new(:pos, :contents, :bg_color, :width, :height, :scrollbar, keyword_init: true)
 
   class Core
     ATTR_READER_NAMES = %i(
@@ -241,7 +241,8 @@ module Reline
         context.clear
         context.push(cursor_pos_to_render, result, pointer, dialog)
       end
-      DialogRenderInfo.new(pos: cursor_pos_to_render, contents: result, pointer: pointer, scrollbar: true, height: 15)
+      dialog.pointer = pointer
+      DialogRenderInfo.new(pos: cursor_pos_to_render, contents: result, scrollbar: true, height: 15)
     }
     Reline::DEFAULT_DIALOG_CONTEXT = Array.new
 

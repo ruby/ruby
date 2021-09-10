@@ -560,7 +560,7 @@ class Reline::LineEditor
 
   class Dialog
     attr_reader :name, :contents, :width
-    attr_accessor :scroll_top, :scrollbar_pos, :column, :vertical_offset, :lines_backup, :trap_key
+    attr_accessor :scroll_top, :scrollbar_pos, :pointer, :column, :vertical_offset, :lines_backup, :trap_key
 
     def initialize(name, config, proc_scope)
       @name = name
@@ -643,7 +643,7 @@ class Reline::LineEditor
     end
     old_dialog = dialog.clone
     dialog.contents = dialog_render_info.contents
-    pointer = dialog_render_info.pointer
+    pointer = dialog.pointer
     if dialog_render_info.width
       dialog.width = dialog_render_info.width
     else
@@ -652,15 +652,15 @@ class Reline::LineEditor
     height = dialog_render_info.height || DIALOG_HEIGHT
     height = dialog.contents.size if dialog.contents.size < height
     if dialog.contents.size > height
-      if dialog_render_info.pointer
-        if dialog_render_info.pointer < 0
+      if dialog.pointer
+        if dialog.pointer < 0
           dialog.scroll_top = 0
-        elsif (dialog_render_info.pointer - dialog.scroll_top) >= (height - 1)
-          dialog.scroll_top = dialog_render_info.pointer - (height - 1)
-        elsif (dialog_render_info.pointer - dialog.scroll_top) < 0
-          dialog.scroll_top = dialog_render_info.pointer
+        elsif (dialog.pointer - dialog.scroll_top) >= (height - 1)
+          dialog.scroll_top = dialog.pointer - (height - 1)
+        elsif (dialog.pointer - dialog.scroll_top) < 0
+          dialog.scroll_top = dialog.pointer
         end
-        pointer = dialog_render_info.pointer - dialog.scroll_top
+        pointer = dialog.pointer - dialog.scroll_top
       end
       dialog.contents = dialog.contents[dialog.scroll_top, height]
     end
