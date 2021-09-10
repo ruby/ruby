@@ -237,7 +237,7 @@ module RDoc::Text
       when s.scan(/``/) then # backtick double quote
         html << encoded[:open_dquote]
         after_word = nil
-      when s.scan(/''/) then # tick double quote
+      when s.scan(/(?:&#39;|'){2}/) then # tick double quote
         html << encoded[:close_dquote]
         after_word = nil
       when s.scan(/`/) then # backtick

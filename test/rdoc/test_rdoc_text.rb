@@ -514,6 +514,7 @@ The comments associated with
   def test_to_html_double_backtick
     assert_equal '“a',  to_html('``a')
     assert_equal '“a“', to_html('``a``')
+    assert_equal '“a”', to_html("``a''")
   end
 
   def test_to_html_double_quote
