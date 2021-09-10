@@ -193,7 +193,7 @@ jit_prepare_routine_call(jitstate_t *jit, ctx_t *ctx, x86opnd_t scratch_reg)
 }
 
 // Record the current codeblock write position for rewriting into a jump into
-// the outline block later. Used to implement global code invalidation.
+// the outlined block later. Used to implement global code invalidation.
 static void
 record_global_inval_patch(const codeblock_t *cb, uint32_t outline_block_target_pos)
 {
@@ -355,7 +355,7 @@ yjit_gen_exit(VALUE *exit_pc, ctx_t *ctx, codeblock_t *cb)
     // Update the CFP on the EC
     mov(cb, member_opnd(REG_EC, rb_execution_context_t, cfp), REG_CFP);
 
-    // Put PC into the return register, which the post call bytes dispatches to
+    // Update CFP->PC
     mov(cb, RAX, const_ptr_opnd(exit_pc));
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, pc), RAX);
 
@@ -398,12 +398,27 @@ yjit_gen_leave_exit(codeblock_t *cb)
     return code_ptr;
 }
 
-// A shorthand for generating an exit in the outline block
+// :side-exit:
+// Get an exit for the current instruction in the outlined block. The code
+// for each instruction often begins with several guards before proceeding
+// to do work. When guards fail, an option we have is to exit to the
+// interpreter at an instruction boundary. The piece of code that takes
+// care of reconstructing interpreter state and exiting out of generated
+// code is called the side exit.
+//
+// No guards change the logic for reconstructing interpreter state at the
+// moment, so there is one unique side exit for each context. Note that
+// it's incorrect to jump to the side exit after any ctx stack push/pop operations
+// since they change the logic required for reconstructing interpreter state.
 static uint8_t *
 yjit_side_exit(jitstate_t *jit, ctx_t *ctx)
 {
-    uint32_t pos = yjit_gen_exit(jit->pc, ctx, ocb);
-    return cb_get_ptr(ocb, pos);
+    if (!jit->side_exit_for_pc) {
+        uint32_t pos = yjit_gen_exit(jit->pc, ctx, ocb);
+        jit->side_exit_for_pc = cb_get_ptr(ocb, pos);
+    }
+
+    return jit->side_exit_for_pc;
 }
 
 // Generate a runtime guard that ensures the PC is at the start of the iseq,
@@ -638,8 +653,9 @@ yjit_gen_block(block_t *block, rb_execution_context_t *ec)
 
         // Set the current instruction
         jit.insn_idx = insn_idx;
-        jit.pc = pc;
         jit.opcode = opcode;
+        jit.pc = pc;
+        jit.side_exit_for_pc = NULL;
 
         // If previous instruction requested to record the boundary
         if (jit.record_boundary_patch_point) {

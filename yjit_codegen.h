@@ -13,7 +13,7 @@ extern uint32_t yjit_codepage_frozen_bytes;
 typedef struct JITState
 {
     // Block version being compiled
-    block_t* block;
+    block_t *block;
 
     // Instruction sequence this is associated with
     const rb_iseq_t *iseq;
@@ -27,9 +27,12 @@ typedef struct JITState
     // PC of the instruction being compiled
     VALUE *pc;
 
+    // Side exit to the instruction being compiled. See :side-exit:.
+    uint8_t *side_exit_for_pc;
+
     // Execution context when compilation started
     // This allows us to peek at run-time values
-    rb_execution_context_t* ec;
+    rb_execution_context_t *ec;
 
     // Whether we need to record the code address at
     // the end of this bytecode instruction for global invalidation
