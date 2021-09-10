@@ -218,10 +218,10 @@ module RDoc::Text
       when s.scan(/\.\.\.(\.?)/) then
         html << s[1] << encoded[:ellipsis]
         after_word = nil
-      when s.scan(/\(c\)/) then
+      when s.scan(/\(c\)/i) then
         html << encoded[:copyright]
         after_word = nil
-      when s.scan(/\(r\)/) then
+      when s.scan(/\(r\)/i) then
         html << encoded[:trademark]
         after_word = nil
       when s.scan(/---/) then

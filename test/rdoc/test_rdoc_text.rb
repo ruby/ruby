@@ -502,6 +502,7 @@ The comments associated with
 
   def test_to_html_copyright
     assert_equal '©', to_html('(c)')
+    assert_equal '©', to_html('(C)')
   end
 
   def test_to_html_dash
@@ -557,6 +558,7 @@ The comments associated with
 
   def test_to_html_registered_trademark
     assert_equal '®', to_html('(r)')
+    assert_equal '®', to_html('(R)')
   end
 
   def test_to_html_tt_tag
