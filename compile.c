@@ -1633,7 +1633,7 @@ access_outer_variables(const rb_iseq_t *iseq, int level, ID id, bool write)
 
     if (isolated_depth && level >= isolated_depth) {
         if (id == rb_intern("yield")) {
-            COMPILE_ERROR(iseq, ISEQ_LAST_LINE(iseq), "can not yield from isolated Proc", rb_id2name(id));
+            COMPILE_ERROR(iseq, ISEQ_LAST_LINE(iseq), "can not yield from isolated Proc");
         }
         else {
             COMPILE_ERROR(iseq, ISEQ_LAST_LINE(iseq), "can not access variable `%s' from isolated Proc", rb_id2name(id));
