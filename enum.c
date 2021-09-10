@@ -700,16 +700,13 @@ enum_flat_map(VALUE obj)
 
 /*
  *  call-seq:
- *     enum.to_a(*args)      -> array
- *     enum.entries(*args)   -> array
+ *    to_a -> array
  *
- *  Returns an array containing the items in <i>enum</i>.
+ *  Returns an array containing the items in +self+:
  *
- *     (1..7).to_a                       #=> [1, 2, 3, 4, 5, 6, 7]
- *     { 'a'=>1, 'b'=>2, 'c'=>3 }.to_a   #=> [["a", 1], ["b", 2], ["c", 3]]
+ *    (0..4).to_a # => [0, 1, 2, 3, 4]
  *
- *     require 'prime'
- *     Prime.entries 10                  #=> [2, 3, 5, 7]
+ *  Enumerable#entries is an alias for Enumerable#to_a.
  */
 static VALUE
 enum_to_a(int argc, VALUE *argv, VALUE obj)
@@ -749,20 +746,23 @@ enum_to_h_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
 /*
  *  call-seq:
- *     enum.to_h(*args)        -> hash
- *     enum.to_h(*args) {...}  -> hash
+ *    to_h -> hash
+ *    to_h {|element| ... }  -> hash
  *
- *  Returns the result of interpreting <i>enum</i> as a list of
- *  <tt>[key, value]</tt> pairs.
+ *  When +self+ consists of 2-element arrays,
+ *  returns a hash each of whose entries is the key-value pair
+ *  formed from one of those arrays:
  *
- *     %i[hello world].each_with_index.to_h
- *       # => {:hello => 0, :world => 1}
+ *    [[:foo, 0], [:bar, 1], [:baz, 2]].to_h # => {:foo=>0, :bar=>1, :baz=>2}
  *
- *  If a block is given, the results of the block on each element of
- *  the enum will be used as pairs.
+ *  When a block is given, the block is called with each element of +self+;
+ *  the block should return a 2-element array which becomes a key-value pair
+ *  in the returned hash:
  *
- *     (1..5).to_h {|x| [x, x ** 2]}
- *       #=> {1=>1, 2=>4, 3=>9, 4=>16, 5=>25}
+ *    (0..3).to_h {|i| [i, i ** 2]} # => {0=>0, 1=>1, 2=>4, 3=>9}
+ *
+ *  Raises an exception if an element of +self+ is not a 2-element array,
+ *  and a block is not passed.
  */
 
 static VALUE
@@ -871,14 +871,10 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
 
 /*
  *  call-seq:
- *     enum.inject(initial, sym) -> obj
- *     enum.inject(sym)          -> obj
- *     enum.inject(initial) { |memo, obj| block }  -> obj
- *     enum.inject          { |memo, obj| block }  -> obj
- *     enum.reduce(initial, sym) -> obj
- *     enum.reduce(sym)          -> obj
- *     enum.reduce(initial) { |memo, obj| block }  -> obj
- *     enum.reduce          { |memo, obj| block }  -> obj
+ *     inject(symbol) -> obj
+ *     inject(initial_operand, symbol) -> obj
+ *     inject {|memo, element| ... } -> obj
+ *     inject(initial_operand) {|memo, element| ... } -> obj
  *
  *  Combines all elements of <i>enum</i> by applying a binary
  *  operation, specified by a block or a symbol that names a
@@ -913,7 +909,6 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  *        memo.length > word.length ? memo : word
  *     end
  *     longest                                        #=> "sheep"
- *
  */
 static VALUE
 enum_inject(int argc, VALUE *argv, VALUE obj)
