@@ -3490,7 +3490,7 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
         case VM_METHOD_TYPE_ATTRSET:
             GEN_COUNTER_INC(cb, send_ivar_set_method);
 
-            if (argc != 1) {
+            if (argc != 1 || !RB_TYPE_P(comptime_recv, T_OBJECT)) {
                 return YJIT_CANT_COMPILE;
             } else {
                 ID ivar_name = cme->def->body.attr.id;
