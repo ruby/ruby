@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require_relative '../../core_assertions'
 require 'pp'
 
 module Test
