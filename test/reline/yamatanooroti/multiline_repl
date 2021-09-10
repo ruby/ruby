@@ -61,7 +61,7 @@ opt.on('--dialog VAL') { |v|
       if key and key.match?(dialog.name)
         if context.pointer.nil?
           context.pointer = 0
-        elsif context.first > dialog.contents.size
+        elsif context.pointer >= (contents.size - 1)
           context.pointer = 0
         else
           context.pointer += 1
