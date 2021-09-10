@@ -36,6 +36,8 @@ module TestWEBrick
   RubyBinArray << "-I" << "#{File.dirname(EnvUtil.rubybin)}/.ext/#{RUBY_PLATFORM}"
 
   require "test/unit" unless defined?(Test::Unit)
+  include Test::Unit::Assertions
+  extend Test::Unit::Assertions
   include Test::Unit::CoreAssertions
   extend Test::Unit::CoreAssertions
 

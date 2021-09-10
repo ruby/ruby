@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require 'test/unit/assertions'
+require_relative '../../core_assertions'
 
 module Test
   module Unit
@@ -143,6 +144,9 @@ module Test
     # See MiniTest::Assertions
 
     class TestCase
+      include Assertions
+      include CoreAssertions
+
       include LifecycleHooks
       include Guard
       extend Guard
@@ -331,8 +335,6 @@ module Test
       # run.
 
       def teardown; end
-
-      include CoreAssertions
 
       def on_parallel_worker?
         false

@@ -25,9 +25,7 @@ module Test
 
     module CoreAssertions
       require_relative 'envutil'
-
       require 'pp'
-      include Test::Unit::Assertions
 
       def mu_pp(obj) #:nodoc:
         obj.pretty_inspect.chomp
