@@ -286,7 +286,7 @@ module IRB
           all_gvars.grep(Regexp.new(Regexp.quote(gvar)))
         end
 
-      when /^([^."].*)(\.|::)([^.]*)$/
+      when /^([^.:"].*)(\.|::)([^.]*)$/
         # variable.func or func.func
         receiver = $1
         sep = $2
