@@ -1631,10 +1631,18 @@ rb_thread_schedule(void)
 
 /* blocking region */
 
+VALUE
+rb_fiber_scheduler_current_for_threadptr(rb_thread_t *thread);
+
 static inline int
 blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
 		      rb_unblock_function_t *ubf, void *arg, int fail_if_interrupted)
 {
+    VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
+    if (scheduler != Qnil) {
+        rb_fiber_scheduler_blocking_region_begin(scheduler);
+    }
+
     region->prev_status = th->status;
     if (unblock_function_set(th, ubf, arg, fail_if_interrupted)) {
 	th->blocking_region_buffer = region;
@@ -1666,6 +1674,11 @@ blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region)
     rb_ractor_blocking_threads_dec(th->ractor, __FILE__, __LINE__);
     if (th->status == THREAD_STOPPED) {
 	th->status = region->prev_status;
+    }
+
+    VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
+    if (scheduler != Qnil) {
+        rb_fiber_scheduler_blocking_region_end(scheduler);
     }
 }
 
