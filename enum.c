@@ -876,136 +876,39 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  *     inject {|memo, element| ... } -> obj
  *     inject(initial_operand) {|memo, element| ... } -> obj
  *
- *  Combines each successive element of +self+ with an accumulator.
+ *  Combines all elements of <i>enum</i> by applying a binary
+ *  operation, specified by a block or a symbol that names a
+ *  method or operator.
  *
- *  A simple example of each of the above calling sequences:
+ *  The <i>inject</i> and <i>reduce</i> methods are aliases. There
+ *  is no performance benefit to either.
  *
- *    # Sum of elements.
- *    (1..4).inject(:+)                      # => 10
- *    # Sum elements added to 2.
- *    (1..4).inject(2, :+)                   # => 12
- *    # Sum of squares of elements.
- *    (1..4).inject {|sum, n| sum + n*n }    # => 30
- *    # Sum of squares of elements added to 2.
- *    (1..4).inject(2) {|sum, n| sum + n*n } # => 32
+ *  If you specify a block, then for each element in <i>enum</i>
+ *  the block is passed an accumulator value (<i>memo</i>) and the element.
+ *  If you specify a symbol instead, then each element in the collection
+ *  will be passed to the named method of <i>memo</i>.
+ *  In either case, the result becomes the new value for <i>memo</i>.
+ *  At the end of the iteration, the final value of <i>memo</i> is the
+ *  return value for the method.
  *
- *  <b>Case 1: <tt>inject(symbol) -> obj</tt></b>
+ *  If you do not explicitly specify an <i>initial</i> value for <i>memo</i>,
+ *  then the first element of collection is used as the initial value
+ *  of <i>memo</i>.
  *
- *  Given the single argument +symbol+ (which names a binary method) and no block:
  *
- *  - Combines elements of +self+ using the binary method:
- *
- *    - The first two operands are <tt>self[0]</tt> and <tt>self[1]</tt>.
- *    - The next two operands are that result and <tt>self[2]</tt>.
- *    - The next two operands are that result and <tt>self[3]</tt>.
- *    - And so on.
- *
- *  - Returns the last result.
- *
- *  The returned object may not be of the same class as the first element.
- *
- *  Examples:
- *
- *    # Integer
- *    (1..4).inject(:+)                # => 10
- *    # Integer
- *    [1, 2, 3.0, 4].inject(:+)        # => 10.0
- *    #Float
- *    [1.0, 2, 3, 4].inject(:+)        # => 10.0
- *    # String
- *    ('a'..'d').inject(:+)            # => "abcd"
- *    # Complex
- *    [Complex(1, 2), 3, 4].inject(:+) # => (8+2i)
- *
- *  Trivially, and regardless of the given method:
- *
- *  - <tt>self.inject</tt> for a 1-element +self+ returns that element.
- *  - <tt>self.inject</tt> for an empty +self+ returns +nil+.
- *
- *  <b>Case 2: <tt>inject(initial_operand, symbol) -> obj</tt></b>
- *
- *  Given the two arguments +initial_operand+ and +symbol+ (which names a binary method)
- *  and no block:
- *
- *  - Combines +initial+operand+ and elements of +self+ using the binary method:
- *
- *    - The first two operands +initial_operand+ and <tt>self[0]</tt> .
- *    - The next two operands are that result and <tt>self[1]</tt>.
- *    - The next two operands are that result and <tt>self[2]</tt>.
- *    - And so on.
- *
- *  - Returns the last result.
- *
- *  The returned object may not be of the same class as the +initial_operand+.
- *
- *  Examples:
- *
- *    # Integer
- *    (1..4).inject(2, :+)             # => 12
- *    # Integer
- *    [1, 2, 3.0, 4].inject(2, :+)     # => 12.0
- *    #Float
- *    (1..4).inject(2.0, :+)           # => 12.0
- *    # String
- *    ('a'..'d').inject('z', :+)       # => "zabcd"
- *    # Complex
- *    (1..4).inject(Complex(2, 3), :+) # => (12+3i)
- *
- *  Trivially, and regardless of the given method:
- *
- *  - <tt>self.inject</tt> for an empty +self+ returns +initial_operand+.
- *
- *  <b>Case 3: <tt>inject {|memo, element| ... } -> obj</tt></b>
- *
- *  Given no argument and a block:
- *
- *  - Calls the block repeatedly with two parameters:
- *
- *    - The parameters for the first call are <tt>self[0]</tt> and <tt>self[1]</tt>.
- *    - The parameters for the next call are the block's return and <tt>self[2]</tt>.
- *    - The parameters for the next call are the block's return and <tt>self[3]</tt>.
- *    - And so on.
- *
- *  - Returns the last value returned by the block.
- *
- *  Examples:
- *
- *    # Return sum of squares.
- *    (1..4).inject {|memo, n| memo + n*n } # => 30
- *    # Find the longest word.
- *    longest = %w[cat sheep bear].inject do |memo, word|
- *       memo.length > word.length ? memo : word
- *    end #=> "sheep"
- *
- *  Trivially, and regardless of the block:
- *
- *  - Returns +nil+ for an empty +self+.
- *
- *  <b>Case 4: <tt>inject(initial_operand) {|memo, element| ... } -> obj</tt></b>
- *
- *  Given argument +initial_operand+ and a block:
- *
- *  - Calls the block repeatedly with two parameters:
- *
- *    - The parameters for the first call are +initial_operand+ and <tt>self[0]</tt>.
- *    - The parameters for the next call are the block's return and <tt>self[1]</tt>.
- *    - The parameters for the next call are the block's return and <tt>self[2]</tt>.
- *    - And so on.
- *
- *  - Returns the last value returned by the block.
- *
- *  Examples:
- *
- *    # Return ten plus sum of squares.
- *    (1..4).inject(10) {|memo, n| memo + n*n } # => 40
- *    # Find the longest word among 'ostrich' and elements of self.
- *    longest = %w[cat sheep bear].inject('ostrich') do |memo, word|
- *       memo.length > word.length ? memo : word
- *    end #=> "ostrich"
- *
- *  Trivially, and regardless of the block:
- *
- *  - Returns +initial_operand+ for an empty +self+.
+ *     # Sum some numbers
+ *     (5..10).reduce(:+)                             #=> 45
+ *     # Same using a block and inject
+ *     (5..10).inject { |sum, n| sum + n }            #=> 45
+ *     # Multiply some numbers
+ *     (5..10).reduce(1, :*)                          #=> 151200
+ *     # Same using a block
+ *     (5..10).inject(1) { |product, n| product * n } #=> 151200
+ *     # find the longest word
+ *     longest = %w{ cat sheep bear }.inject do |memo, word|
+ *        memo.length > word.length ? memo : word
+ *     end
+ *     longest
  */
 static VALUE
 enum_inject(int argc, VALUE *argv, VALUE obj)
