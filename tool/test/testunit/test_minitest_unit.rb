@@ -328,6 +328,8 @@ class TestMiniTestUnitOrder < MetaMetaMetaTestCase
   # do not parallelize this suite... it just can't handle it.
 
   def test_before_setup
+    pend "Surpressing the raise message when running with tests"
+
     call_order = []
     Class.new Test::Unit::TestCase do
       define_method :setup do
@@ -351,6 +353,8 @@ class TestMiniTestUnitOrder < MetaMetaMetaTestCase
   end
 
   def test_after_teardown
+    pend "Surpressing the result message of this tests"
+
     call_order = []
     Class.new Test::Unit::TestCase do
       define_method :teardown do
@@ -374,6 +378,8 @@ class TestMiniTestUnitOrder < MetaMetaMetaTestCase
   end
 
   def test_all_teardowns_are_guaranteed_to_run
+    pend "Surpressing the raise message when running with tests"
+
     call_order = []
     Class.new Test::Unit::TestCase do
       define_method :after_teardown do
@@ -406,6 +412,8 @@ class TestMiniTestUnitOrder < MetaMetaMetaTestCase
   end
 
   def test_setup_and_teardown_survive_inheritance
+    pend "Surpressing the result message of this tests"
+
     call_order = []
 
     parent = Class.new Test::Unit::TestCase do
