@@ -141,7 +141,7 @@ module Test
     # Subclass TestCase to create your own tests. Typically you'll want a
     # TestCase subclass per implementation class.
     #
-    # See MiniTest::Assertions
+    # See MiniTest::Unit::AssertionFailedErrors
 
     class TestCase
       include Assertions
@@ -195,7 +195,7 @@ module Test
         rescue *PASSTHROUGH_EXCEPTIONS
           raise
         rescue Exception => e
-          @passed = Test::Skip === e
+          @passed = Test::Unit::PendedError === e
           time = Time.now - start_time
           runner.record self.class, self.__name__, self._assertions, time, e
           result = runner.puke self.class, self.__name__, e

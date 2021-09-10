@@ -19,7 +19,7 @@ class TestMiniTestUnit < MetaMetaMetaTestCase
                "#{MINITEST_BASE_DIR}/test.rb:106:in `run'"]
 
   def test_class_puke_with_assertion_failed
-    exception = Test::Assertion.new "Oh no!"
+    exception = Test::Unit::AssertionFailedError.new "Oh no!"
     exception.set_backtrace ["unhappy"]
     assert_equal 'F', @tu.puke('SomeClass', 'method_name', exception)
     assert_equal 1, @tu.failures
@@ -39,7 +39,7 @@ class TestMiniTestUnit < MetaMetaMetaTestCase
 
     ex_location = util_expand_bt(["test/test_some_class.rb:615"]).first
 
-    exception = Test::Assertion.new "Oh no!"
+    exception = Test::Unit::AssertionFailedError.new "Oh no!"
     exception.set_backtrace bt
     assert_equal 'F', @tu.puke('TestSomeClass', 'test_method_name', exception)
     assert_equal 1, @tu.failures
@@ -62,7 +62,7 @@ class TestMiniTestUnit < MetaMetaMetaTestCase
 
     ex_location = util_expand_bt(["test/test_some_class.rb:615"]).first
 
-    exception = Test::Assertion.new "Oh no!"
+    exception = Test::Unit::AssertionFailedError.new "Oh no!"
     exception.set_backtrace bt
     assert_equal 'F', @tu.puke('TestSomeClass', 'test_method_name', exception)
     assert_equal 1, @tu.failures
@@ -73,7 +73,7 @@ class TestMiniTestUnit < MetaMetaMetaTestCase
   def test_class_puke_with_failure_and_flunk_in_backtrace
     exception = begin
                   Test::Unit::TestCase.new('fake tc').flunk
-                rescue Test::Assertion => failure
+                rescue Test::Unit::AssertionFailedError => failure
                   failure
                 end
     assert_equal 'F', @tu.puke('SomeClass', 'method_name', exception)
@@ -95,7 +95,7 @@ class TestMiniTestUnit < MetaMetaMetaTestCase
 
     ex_location = util_expand_bt(["test/test_some_class.rb:615"]).first
 
-    exception = Test::Assertion.new "Oh no!"
+    exception = Test::Unit::AssertionFailedError.new "Oh no!"
     exception.set_backtrace bt
     assert_equal 'F', @tu.puke('TestSomeClass', 'test_method_name', exception)
     assert_equal 1, @tu.failures
@@ -704,7 +704,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   def test_assert_includes_triggered
     @assertion_count = 3
 
-    e = @tc.assert_raise Test::Assertion do
+    e = @tc.assert_raise Test::Unit::AssertionFailedError do
       @tc.assert_includes [true], false
     end
 
@@ -895,7 +895,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   def test_assert_raise_skip
     @assertion_count = 0
 
-    util_assert_triggered "skipped", Test::Skip do
+    util_assert_triggered "skipped", Test::Unit::PendedError do
       @tc.assert_raise ArgumentError do
         begin
           raise "blah"
@@ -907,7 +907,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   end
 
   def test_assert_raise_triggered_different
-    e = assert_raise Test::Assertion do
+    e = assert_raise Test::Unit::AssertionFailedError do
       @tc.assert_raise RuntimeError do
         raise SyntaxError, "icky"
       end
@@ -924,7 +924,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   end
 
   def test_assert_raise_triggered_different_msg
-    e = assert_raise Test::Assertion do
+    e = assert_raise Test::Unit::AssertionFailedError do
       @tc.assert_raise RuntimeError, "XXX" do
         raise SyntaxError, "icky"
       end
@@ -942,31 +942,31 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   end
 
   def test_assert_raise_triggered_none
-    e = assert_raise Test::Assertion do
-      @tc.assert_raise Test::Assertion do
+    e = assert_raise Test::Unit::AssertionFailedError do
+      @tc.assert_raise Test::Unit::AssertionFailedError do
         # do nothing
       end
     end
 
-    expected = "Test::Assertion expected but nothing was raised."
+    expected = "Test::Unit::AssertionFailedError expected but nothing was raised."
 
     assert_equal expected, e.message
   end
 
   def test_assert_raise_triggered_none_msg
-    e = assert_raise Test::Assertion do
-      @tc.assert_raise Test::Assertion, "XXX" do
+    e = assert_raise Test::Unit::AssertionFailedError do
+      @tc.assert_raise Test::Unit::AssertionFailedError, "XXX" do
         # do nothing
       end
     end
 
-    expected = "XXX.\nTest::Assertion expected but nothing was raised."
+    expected = "XXX.\nTest::Unit::AssertionFailedError expected but nothing was raised."
 
     assert_equal expected, e.message
   end
 
   def test_assert_raise_triggered_subclass
-    e = assert_raise Test::Assertion do
+    e = assert_raise Test::Unit::AssertionFailedError do
       @tc.assert_raise StandardError do
         raise AnError
       end
@@ -1223,7 +1223,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   def test_refute_includes_triggered
     @assertion_count = 3
 
-    e = @tc.assert_raise Test::Assertion do
+    e = @tc.assert_raise Test::Unit::AssertionFailedError do
       @tc.refute_includes [true], true
     end
 
@@ -1344,7 +1344,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   def test_skip
     @assertion_count = 0
 
-    util_assert_triggered "haha!", Test::Skip do
+    util_assert_triggered "haha!", Test::Unit::PendedError do
       @tc.skip "haha!"
     end
   end
@@ -1379,7 +1379,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
     assert_equal expected, sample_test_case.test_methods
   end
 
-  def assert_triggered expected, klass = Test::Assertion
+  def assert_triggered expected, klass = Test::Unit::AssertionFailedError
     e = assert_raise klass do
       yield
     end
@@ -1465,7 +1465,7 @@ class TestMiniTestUnitRecording < MetaMetaMetaTestCase
   end
 
   def test_record_failing
-    assert_run_record Test::Assertion do
+    assert_run_record Test::Unit::AssertionFailedError do
       def test_method
         assert false
       end
@@ -1505,7 +1505,7 @@ class TestMiniTestUnitRecording < MetaMetaMetaTestCase
   end
 
   def test_record_skip
-    assert_run_record Test::Skip do
+    assert_run_record Test::Unit::PendedError do
       def test_method
         skip "not yet"
       end

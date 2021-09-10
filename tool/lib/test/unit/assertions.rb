@@ -117,7 +117,7 @@ module Test
         self._assertions += 1
         unless test then
           msg = msg.call if Proc === msg
-          raise Test::Assertion, msg
+          raise Test::Unit::AssertionFailedError, msg
         end
         true
       end
@@ -578,7 +578,7 @@ module Test
       def skip msg = nil, bt = caller
         msg ||= "Skipped, no message given"
         @skip = true
-        raise Test::Skip, msg, bt
+        raise Test::Unit::PendedError, msg, bt
       end
 
       alias omit skip
