@@ -1441,17 +1441,32 @@ jit_chain_guard(enum jcc_kinds jcc, jitstate_t *jit, const ctx_t *ctx, uint8_t d
 
 bool rb_iv_index_tbl_lookup(struct st_table *iv_index_tbl, ID id, struct rb_iv_index_tbl_entry **ent); // vm_insnhelper.c
 
-static VALUE
-yjit_obj_written(VALUE a, VALUE b)
-{
-    return RB_OBJ_WRITTEN(a, Qundef, b);
-}
-
 enum {
     GETIVAR_MAX_DEPTH = 10,       // up to 5 different classes, and embedded or not for each
     OPT_AREF_MAX_CHAIN_DEPTH = 2, // hashes and arrays
     SEND_MAX_DEPTH = 5,           // up to 5 different classes
 };
+
+static uint32_t
+yjit_force_iv_index(VALUE comptime_receiver, VALUE klass, ID name)
+{
+    ID id = name;
+    struct rb_iv_index_tbl_entry *ent;
+    struct st_table *iv_index_tbl = ROBJECT_IV_INDEX_TBL(comptime_receiver);
+
+    // Make sure there is a mapping for this ivar in the index table
+    if (!iv_index_tbl || !rb_iv_index_tbl_lookup(iv_index_tbl, id, &ent)) {
+        rb_ivar_set(comptime_receiver, id, Qundef);
+        iv_index_tbl = ROBJECT_IV_INDEX_TBL(comptime_receiver);
+        RUBY_ASSERT(iv_index_tbl);
+        // Redo the lookup
+        RUBY_ASSERT_ALWAYS(rb_iv_index_tbl_lookup(iv_index_tbl, id, &ent));
+    }
+
+    return ent->index;
+}
+
+VALUE rb_vm_set_ivar_idx(VALUE obj, uint32_t idx, VALUE val);
 
 // Codegen for setting an instance variable.
 // Preconditions:
@@ -1459,133 +1474,28 @@ enum {
 //   - receiver has the same class as CLASS_OF(comptime_receiver)
 //   - no stack push or pops to ctx since the entry to the codegen of the instruction being compiled
 static codegen_status_t
-gen_set_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE comptime_receiver, ID ivar_name, insn_opnd_t reg0_opnd, uint8_t *side_exit)
+gen_set_ivar(jitstate_t *jit, ctx_t *ctx, VALUE recv, VALUE klass, ID ivar_name)
 {
-    VALUE comptime_val_klass = CLASS_OF(comptime_receiver);
-    const ctx_t starting_context = *ctx; // make a copy for use with jit_chain_guard
+    // Save the PC and SP because the callee may allocate
+    // Note that this modifies REG_SP, which is why we do it first
+    jit_prepare_routine_call(jit, ctx, REG0);
 
-    ADD_COMMENT(cb, "guard self is not frozen");
-    x86opnd_t flags_opnd = member_opnd(REG0, struct RBasic, flags);
-    test(cb, flags_opnd, imm_opnd(RUBY_FL_FREEZE));
-    jnz_ptr(cb, COUNTED_EXIT(side_exit, setivar_frozen));
+    // Get the operands from the stack
+    x86opnd_t val_opnd = ctx_stack_pop(ctx, 1);
+    x86opnd_t recv_opnd = ctx_stack_pop(ctx, 1);
 
-    // If the class uses the default allocator, instances should all be T_OBJECT
-    // NOTE: This assumes nobody changes the allocator of the class after allocation.
-    //       Eventually, we can encode whether an object is T_OBJECT or not
-    //       inside object shapes.
-    if (!RB_TYPE_P(comptime_receiver, T_OBJECT) ||
-            rb_get_alloc_func(comptime_val_klass) != rb_class_allocate_instance) {
-        // General case. Call rb_ivar_get(). No need to reconstruct interpreter
-        // state since the routine never raises exceptions or allocate objects
-        // visibile to Ruby.
-        // VALUE rb_ivar_set(VALUE obj, ID id, VALUE val)
-        ADD_COMMENT(cb, "call rb_ivar_set()");
-        mov(cb, C_ARG_REGS[0], REG0);
-        mov(cb, C_ARG_REGS[1], imm_opnd((int64_t)ivar_name));
-        mov(cb, C_ARG_REGS[2], ctx_stack_pop(ctx, 1));
-        call_ptr(cb, REG1, (void *)rb_ivar_set);
+    uint32_t ivar_index = yjit_force_iv_index(recv, klass, ivar_name);
 
-        if (!reg0_opnd.is_self) {
-            (void)ctx_stack_pop(ctx, 1);
-        }
-        // FIXME: setting an ivar pushes the same value back on the stack, so we shouldn't
-        // pop and push.
-        // Push the ivar on the stack
-        x86opnd_t out_opnd = ctx_stack_push(ctx, TYPE_UNKNOWN);
-        mov(cb, out_opnd, RAX);
+    // Call rb_vm_set_ivar_idx with the receiver, the index of the ivar, and the value
+    mov(cb, C_ARG_REGS[0], recv_opnd);
+    mov(cb, C_ARG_REGS[1], imm_opnd(ivar_index));
+    mov(cb, C_ARG_REGS[2], val_opnd);
+    call_ptr(cb, REG0, (void *)rb_vm_set_ivar_idx);
 
-        // Jump to next instruction. This allows guard chains to share the same successor.
-        jit_jump_to_next_insn(jit, ctx);
-        return YJIT_END_BLOCK;
-    }
+    x86opnd_t out_opnd = ctx_stack_push(ctx, TYPE_UNKNOWN);
+    mov(cb, out_opnd, RAX);
 
-    // ID for the name of the ivar
-    ID id = ivar_name;
-    struct rb_iv_index_tbl_entry *ent;
-    struct st_table *iv_index_tbl = ROBJECT_IV_INDEX_TBL(comptime_receiver);
-
-    // Lookup index for the ivar the instruction loads
-    if (iv_index_tbl && rb_iv_index_tbl_lookup(iv_index_tbl, id, &ent)) {
-        uint32_t ivar_index = ent->index;
-
-        if (RB_FL_TEST_RAW(comptime_receiver, ROBJECT_EMBED) && ivar_index < ROBJECT_EMBED_LEN_MAX) {
-            // See ROBJECT_IVPTR() from include/ruby/internal/core/robject.h
-
-            // Guard that self is embedded
-            // TODO: BT and JC is shorter
-            ADD_COMMENT(cb, "guard embedded setivar");
-            x86opnd_t flags_opnd = member_opnd(REG0, struct RBasic, flags);
-            test(cb, flags_opnd, imm_opnd(ROBJECT_EMBED));
-            jit_chain_guard(JCC_JZ, jit, &starting_context, max_chain_depth, side_exit);
-
-            // Write the variable
-            x86opnd_t ivar_opnd = mem_opnd(64, REG0, offsetof(struct RObject, as.ary) + ivar_index * SIZEOF_VALUE);
-            mov(cb, REG1, ctx_stack_pop(ctx, 1));
-            mov(cb, ivar_opnd, REG1);
-
-            mov(cb, C_ARG_REGS[0], REG0);
-            mov(cb, C_ARG_REGS[1], REG1);
-            call_ptr(cb, REG1, (void *)yjit_obj_written);
-
-            // Pop receiver if it's on the temp stack
-            // ie. this is an attribute method
-            if (!reg0_opnd.is_self) {
-              ctx_stack_pop(ctx, 1);
-            }
-
-            // Increment the stack
-            ctx_stack_push(ctx, TYPE_UNKNOWN);
-        }
-        else {
-            // Compile time value is *not* embeded.
-
-            // Guard that value is *not* embedded
-            // See ROBJECT_IVPTR() from include/ruby/internal/core/robject.h
-            ADD_COMMENT(cb, "guard extended setivar");
-            x86opnd_t flags_opnd = member_opnd(REG0, struct RBasic, flags);
-            test(cb, flags_opnd, imm_opnd(ROBJECT_EMBED));
-            jit_chain_guard(JCC_JNZ, jit, &starting_context, max_chain_depth, side_exit);
-
-            // check that the extended table is big enough
-            if (ivar_index >= ROBJECT_EMBED_LEN_MAX + 1) {
-                // Check that the slot is inside the extended table (num_slots > index)
-                x86opnd_t num_slots = mem_opnd(32, REG0, offsetof(struct RObject, as.heap.numiv));
-                cmp(cb, num_slots, imm_opnd(ivar_index));
-                jle_ptr(cb, COUNTED_EXIT(side_exit, getivar_idx_out_of_range));
-            }
-
-            // Save recv for write barrier later
-            mov(cb, C_ARG_REGS[0], REG0);
-
-            // Get a pointer to the extended table
-            x86opnd_t tbl_opnd = mem_opnd(64, REG0, offsetof(struct RObject, as.heap.ivptr));
-            mov(cb, REG0, tbl_opnd);
-
-            // Write ivar to the extended table
-            x86opnd_t ivar_opnd = mem_opnd(64, REG0, sizeof(VALUE) * ivar_index);
-            mov(cb, REG1, ctx_stack_pop(ctx, 1));
-            mov(cb, ivar_opnd, REG1);
-
-            mov(cb, C_ARG_REGS[1], REG1);
-            call_ptr(cb, REG1, (void *)yjit_obj_written);
-
-            // Pop receiver if it's on the temp stack
-            // ie. this is an attribute method
-            if (!reg0_opnd.is_self) {
-                ctx_stack_pop(ctx, 1);
-            }
-
-            // Increment the stack
-            ctx_stack_push(ctx, TYPE_UNKNOWN);
-        }
-
-        // Jump to next instruction. This allows guard chains to share the same successor.
-        jit_jump_to_next_insn(jit, ctx);
-        return YJIT_END_BLOCK;
-    }
-
-    GEN_COUNTER_INC(cb, setivar_name_not_mapped);
-    return YJIT_CANT_COMPILE;
+    return YJIT_KEEP_COMPILING;
 }
 
 // Codegen for getting an instance variable.
@@ -1645,21 +1555,7 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
     jit_chain_guard(JCC_JNE, jit, &starting_context, max_chain_depth, side_exit);
     */
 
-    // ID for the name of the ivar
-    ID id = ivar_name;
-    struct rb_iv_index_tbl_entry *ent;
-    struct st_table *iv_index_tbl = ROBJECT_IV_INDEX_TBL(comptime_receiver);
-
-    // Make sure there is a mapping for this ivar in the index table
-    if (!iv_index_tbl || !rb_iv_index_tbl_lookup(iv_index_tbl, id, &ent)) {
-        rb_ivar_set(comptime_receiver, id, Qundef);
-        iv_index_tbl = ROBJECT_IV_INDEX_TBL(comptime_receiver);
-        RUBY_ASSERT(iv_index_tbl);
-        // Redo the lookup
-        RUBY_ASSERT_ALWAYS(rb_iv_index_tbl_lookup(iv_index_tbl, id, &ent));
-    }
-
-    uint32_t ivar_index = ent->index;
+    uint32_t ivar_index = yjit_force_iv_index(comptime_receiver, CLASS_OF(comptime_receiver), ivar_name);
 
     // Pop receiver if it's on the temp stack
     if (!reg0_opnd.is_self) {
@@ -3597,10 +3493,8 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
             if (argc != 1) {
                 return YJIT_CANT_COMPILE;
             } else {
-                mov(cb, REG0, recv);
-
                 ID ivar_name = cme->def->body.attr.id;
-                return gen_set_ivar(jit, ctx, SEND_MAX_DEPTH, comptime_recv, ivar_name, recv_opnd, side_exit);
+                return gen_set_ivar(jit, ctx, comptime_recv, comptime_recv_klass, ivar_name);
             }
         case VM_METHOD_TYPE_BMETHOD:
             GEN_COUNTER_INC(cb, send_bmethod);
