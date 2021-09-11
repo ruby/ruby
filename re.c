@@ -1150,6 +1150,14 @@ match_size(VALUE match)
 }
 
 static int name_to_backref_number(struct re_registers *, VALUE, const char*, const char*);
+NORETURN(static void name_to_backref_error(VALUE name));
+
+static void
+name_to_backref_error(VALUE name)
+{
+    rb_raise(rb_eIndexError, "undefined group name reference: % "PRIsVALUE,
+	     name);
+}
 
 static int
 match_backref_number(VALUE match, VALUE backref)
@@ -1169,10 +1177,10 @@ match_backref_number(VALUE match, VALUE backref)
     }
     name = StringValueCStr(backref);
 
-    num = name_to_backref_number(regs, regexp, name, name + strlen(name));
+    num = name_to_backref_number(regs, regexp, name, name + RSTRING_LEN(backref));
 
     if (num < 1) {
-        rb_raise(rb_eIndexError, "undefined group name reference: %s", name);
+        name_to_backref_error(backref);
     }
 
     return num;
@@ -1922,14 +1930,6 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
     if (NIL_P(regexp)) return -1;
     return onig_name_to_backref_number(RREGEXP_PTR(regexp),
 	(const unsigned char *)name, (const unsigned char *)name_end, regs);
-}
-
-NORETURN(static void name_to_backref_error(VALUE name));
-static void
-name_to_backref_error(VALUE name)
-{
-    rb_raise(rb_eIndexError, "undefined group name reference: % "PRIsVALUE,
-	     name);
 }
 
 #define NAME_TO_NUMBER(regs, re, name, name_ptr, name_end)	\
