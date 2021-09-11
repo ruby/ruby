@@ -1159,6 +1159,13 @@ name_to_backref_error(VALUE name)
 	     name);
 }
 
+static void
+backref_number_check(struct re_registers *regs, int i)
+{
+    if (i < 0 || regs->num_regs <= i)
+	rb_raise(rb_eIndexError, "index %d out of matches", i);
+}
+
 static int
 match_backref_number(VALUE match, VALUE backref)
 {
@@ -1217,8 +1224,7 @@ match_offset(VALUE match, VALUE n)
     struct re_registers *regs = RMATCH_REGS(match);
 
     match_check(match);
-    if (i < 0 || regs->num_regs <= i)
-	rb_raise(rb_eIndexError, "index %d out of matches", i);
+    backref_number_check(regs, i);
 
     if (BEG(i) < 0)
 	return rb_assoc_new(Qnil, Qnil);
@@ -1253,8 +1259,7 @@ match_begin(VALUE match, VALUE n)
     struct re_registers *regs = RMATCH_REGS(match);
 
     match_check(match);
-    if (i < 0 || regs->num_regs <= i)
-	rb_raise(rb_eIndexError, "index %d out of matches", i);
+    backref_number_check(regs, i);
 
     if (BEG(i) < 0)
 	return Qnil;
@@ -1288,8 +1293,7 @@ match_end(VALUE match, VALUE n)
     struct re_registers *regs = RMATCH_REGS(match);
 
     match_check(match);
-    if (i < 0 || regs->num_regs <= i)
-	rb_raise(rb_eIndexError, "index %d out of matches", i);
+    backref_number_check(regs, i);
 
     if (BEG(i) < 0)
 	return Qnil;
