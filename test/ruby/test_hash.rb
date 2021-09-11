@@ -2184,6 +2184,7 @@ class TestHash < Test::Unit::TestCase
     y = 2
     assert_equal({x: 1, y: 2}, {x:, y:})
     assert_equal({one: 1, two: 2}, {one:, two:})
+    assert_syntax_error('{"#{x}":}', /'\}'/)
   end
 
   private
