@@ -265,7 +265,7 @@ Now let's build CRuby:
 * Generate the configuration files and build:
 
     cd ruby-master
-    autoconf
+    ./autogen.sh
     mkdir build && cd build # its good practice to build outside of source dir
     mkdir ~/.rubies # we will install to .rubies/ruby-master in our home dir
     ../configure --prefix="${HOME}/.rubies/ruby-master"
