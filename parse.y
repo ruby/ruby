@@ -5624,7 +5624,7 @@ assoc		: arg_value tASSOC arg_value
 			if (!val) val = NEW_BEGIN(0, &@$);
 			$$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@1), &@$), val);
 		    /*% %*/
-		    /*% ripper: assoc_new!($1, id_is_var(p, get_id($1)) ? var_ref!($1) : vcall!($1)) %*/
+		    /*% ripper: assoc_new!($1, Qnil) %*/
 		    }
 		| tSTRING_BEG string_contents tLABEL_END arg_value
 		    {
