@@ -37,13 +37,6 @@ module Test
       end
 
       ##
-      # Is this running on rubinius?
-
-      def rubinius? platform = defined?(RUBY_ENGINE) && RUBY_ENGINE
-        "rbx" == platform
-      end
-
-      ##
       # Is this running on windows?
 
       def windows? platform = RUBY_PLATFORM

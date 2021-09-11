@@ -1417,11 +1417,6 @@ class TestMiniTestGuard < Test::Unit::TestCase
     assert self.jruby? "java"
   end
 
-  def test_rubinius_eh
-    assert self.class.rubinius? "rbx"
-    assert self.rubinius? "rbx"
-  end
-
   def test_windows_eh
     assert self.class.windows? "mswin"
     assert self.windows? "mswin"
