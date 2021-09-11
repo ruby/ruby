@@ -208,7 +208,7 @@ features_index_add_single(const char* str, size_t len, VALUE offset, bool rb)
         NIL_P(this_feature_index = (VALUE)data)) {
 	st_insert(features_index, short_feature_key, (st_data_t)offset);
     }
-    else if (RB_TYPE_P(this_feature_index, T_FIXNUM)) {
+    else if (FIXNUM_P(this_feature_index)) {
 	VALUE loaded_features = get_loaded_features();
 	VALUE this_feature_path = RARRAY_AREF(loaded_features, FIX2LONG(this_feature_index));
 	VALUE feature_indexes[2];

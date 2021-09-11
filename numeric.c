@@ -994,7 +994,7 @@ rb_float_uminus(VALUE flt)
 VALUE
 rb_float_plus(VALUE x, VALUE y)
 {
-    if (RB_TYPE_P(y, T_FIXNUM)) {
+    if (FIXNUM_P(y)) {
 	return DBL2NUM(RFLOAT_VALUE(x) + (double)FIX2LONG(y));
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
@@ -1018,7 +1018,7 @@ rb_float_plus(VALUE x, VALUE y)
 VALUE
 rb_float_minus(VALUE x, VALUE y)
 {
-    if (RB_TYPE_P(y, T_FIXNUM)) {
+    if (FIXNUM_P(y)) {
 	return DBL2NUM(RFLOAT_VALUE(x) - (double)FIX2LONG(y));
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
@@ -1042,7 +1042,7 @@ rb_float_minus(VALUE x, VALUE y)
 VALUE
 rb_float_mul(VALUE x, VALUE y)
 {
-    if (RB_TYPE_P(y, T_FIXNUM)) {
+    if (FIXNUM_P(y)) {
 	return DBL2NUM(RFLOAT_VALUE(x) * (double)FIX2LONG(y));
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
@@ -1094,7 +1094,7 @@ rb_float_div(VALUE x, VALUE y)
     double den;
     double ret;
 
-    if (RB_TYPE_P(y, T_FIXNUM)) {
+    if (FIXNUM_P(y)) {
         den = FIX2LONG(y);
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
@@ -1192,7 +1192,7 @@ flo_mod(VALUE x, VALUE y)
 {
     double fy;
 
-    if (RB_TYPE_P(y, T_FIXNUM)) {
+    if (FIXNUM_P(y)) {
 	fy = (double)FIX2LONG(y);
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
@@ -1232,7 +1232,7 @@ flo_divmod(VALUE x, VALUE y)
     double fy, div, mod;
     volatile VALUE a, b;
 
-    if (RB_TYPE_P(y, T_FIXNUM)) {
+    if (FIXNUM_P(y)) {
 	fy = (double)FIX2LONG(y);
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
@@ -1267,7 +1267,7 @@ rb_float_pow(VALUE x, VALUE y)
 	dx = RFLOAT_VALUE(x);
         return DBL2NUM(dx * dx);
     }
-    else if (RB_TYPE_P(y, T_FIXNUM)) {
+    else if (FIXNUM_P(y)) {
 	dx = RFLOAT_VALUE(x);
 	dy = (double)FIX2LONG(y);
     }
@@ -1352,7 +1352,7 @@ rb_float_equal(VALUE x, VALUE y)
 {
     volatile double a, b;
 
-    if (RB_TYPE_P(y, T_FIXNUM) || RB_BIGNUM_TYPE_P(y)) {
+    if (RB_INTEGER_TYPE_P(y)) {
         return rb_integer_float_eq(y, x);
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -1427,7 +1427,7 @@ flo_cmp(VALUE x, VALUE y)
 
     a = RFLOAT_VALUE(x);
     if (isnan(a)) return Qnil;
-    if (RB_TYPE_P(y, T_FIXNUM) || RB_BIGNUM_TYPE_P(y)) {
+    if (RB_INTEGER_TYPE_P(y)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
             return LONG2FIX(-FIX2LONG(rel));
@@ -1473,7 +1473,7 @@ rb_float_gt(VALUE x, VALUE y)
     double a, b;
 
     a = RFLOAT_VALUE(x);
-    if (RB_TYPE_P(y, T_FIXNUM) || RB_BIGNUM_TYPE_P(y)) {
+    if (RB_INTEGER_TYPE_P(y)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
             return RBOOL(-FIX2LONG(rel) > 0);
@@ -1547,7 +1547,7 @@ flo_lt(VALUE x, VALUE y)
     double a, b;
 
     a = RFLOAT_VALUE(x);
-    if (RB_TYPE_P(y, T_FIXNUM) || RB_BIGNUM_TYPE_P(y)) {
+    if (RB_INTEGER_TYPE_P(y)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
             return RBOOL(-FIX2LONG(rel) < 0);
@@ -1584,7 +1584,7 @@ flo_le(VALUE x, VALUE y)
     double a, b;
 
     a = RFLOAT_VALUE(x);
-    if (RB_TYPE_P(y, T_FIXNUM) || RB_BIGNUM_TYPE_P(y)) {
+    if (RB_INTEGER_TYPE_P(y)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
             return RBOOL(-FIX2LONG(rel) <= 0);
@@ -3082,7 +3082,7 @@ rb_num2ull(VALUE val)
     if (NIL_P(val)) {
 	rb_raise(rb_eTypeError, "no implicit conversion from nil");
     }
-    else if (RB_TYPE_P(val, T_FIXNUM)) {
+    else if (FIXNUM_P(val)) {
 	return (LONG_LONG)FIX2LONG(val); /* this is FIX2LONG, intended */
     }
     else if (RB_TYPE_P(val, T_FLOAT)) {
