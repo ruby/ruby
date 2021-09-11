@@ -69,10 +69,10 @@ Note that each entry is kept to a minimum, see links for details.
 
     [[Bug #4443]]
 
-* Values in Hash literals can be omitted.  [[Feature #14579]]
+* Values in Hash literals and keyword arguments can be omitted.  [[Feature #14579]]
 
     `{x:, y:}` is a syntax sugar of `{x: x, y: y}`.
-
+    `foo(x:, y:)` is a syntax sugar of `foo(x: x, y: y)`.
 
 ## Command line options
 
