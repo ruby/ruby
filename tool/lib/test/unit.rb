@@ -172,13 +172,6 @@ module Test
             negative = Regexp.union(*negative.map! {|s| Regexp.new(s[neg_pat, 1])})
             filter = /\A(?=.*#{filter})(?!.*#{negative})/
           end
-          if Regexp === filter
-            filter = filter.dup
-            # bypass conversion in minitest
-            def filter.=~(other)    # :nodoc:
-              super unless Regexp === other
-            end
-          end
           options[:filter] = filter
         end
         true
@@ -1371,14 +1364,9 @@ module Test
         header = "#{type}_suite_header"
         puts send(header, suite) if respond_to? header
 
-        filter = options[:filter] || '/./'
-        filter = Regexp.new $1 if filter =~ /\/(.*)\//
+        filter = options[:filter]
 
         all_test_methods = suite.send "#{type}_methods"
-
-        filtered_test_methods = all_test_methods.find_all { |m|
-          filter === m || filter === "#{suite}##{m}"
-        }
 
         leakchecker = LeakChecker.new
         if ENV["LEAK_CHECKER_TRACE_OBJECT_ALLOCATION"]
@@ -1386,7 +1374,11 @@ module Test
           trace = true
         end
 
-        assertions = filtered_test_methods.map { |method|
+        assertions = all_test_methods.filter_map { |method|
+          if filter
+            next unless filter === method || filter === "#{suite}##{method}"
+          end
+
           inst = suite.new method
           inst._assertions = 0
 
