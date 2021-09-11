@@ -130,7 +130,7 @@ module Test
 
       private
       def setup_options(opts, options)
-        opts.separator 'minitest options:'
+        opts.separator 'test-unit options:'
 
         opts.on '-h', '--help', 'Display this help.' do
           puts opts
