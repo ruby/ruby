@@ -120,7 +120,7 @@ int ossl_pem_passwd_cb(char *, int, int, void *);
 /*
  * ERRor messages
  */
-NORETURN(void ossl_raise(VALUE, const char *, ...));
+PRINTF_ARGS(NORETURN(void ossl_raise(VALUE, const char *, ...)), 2, 3);
 /* Clear OpenSSL error queue. If dOSSL is set, rb_warn() them. */
 void ossl_clear_error(void);
 

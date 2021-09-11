@@ -265,6 +265,8 @@ ossl_to_der_if_possible(VALUE obj)
     return obj;
 }
 
+PRINTF_ARGS(static VALUE ossl_make_error(VALUE exc, const char *fmt, va_list args), 2, 0);
+
 /*
  * Errors
  */
