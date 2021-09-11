@@ -33,41 +33,41 @@ Note that each entry is kept to a minimum, see links for details.
     foo[0] = bar
     ```
 
-  The following evaluation order is used:
+    The following evaluation order is used:
 
-  1. `foo`
-  2. `bar`
-  3. `[]=` called on the result of `foo`
+    1. `foo`
+    2. `bar`
+    3. `[]=` called on the result of `foo`
 
-  In Ruby before 3.1.0, multiple assignment did not follow this
-  evaluation order.  With this code:
+    In Ruby before 3.1.0, multiple assignment did not follow this
+    evaluation order.  With this code:
 
-    ```ruby
-    foo[0], bar.baz = a, b
-    ```
+      ```ruby
+      foo[0], bar.baz = a, b
+      ```
 
-  Versions of Ruby before 3.1.0 would evaluate in the following
-  order
+    Versions of Ruby before 3.1.0 would evaluate in the following
+    order
 
-  1. `a`
-  2. `b`
-  3. `foo`
-  4. `[]=` called on the result of `foo`
-  5. `bar`
-  6. `baz=` called on the result of `bar`
+    1. `a`
+    2. `b`
+    3. `foo`
+    4. `[]=` called on the result of `foo`
+    5. `bar`
+    6. `baz=` called on the result of `bar`
 
-  Starting in Ruby 3.1.0, evaluation order is now consistent with
-  single assignment, with the left hand side being evaluated before
-  the right hand side:
+    Starting in Ruby 3.1.0, evaluation order is now consistent with
+    single assignment, with the left hand side being evaluated before
+    the right hand side:
 
-  1. `foo`
-  2. `bar`
-  3. `a`
-  4. `b`
-  5. `[]=` called on the result of `foo`
-  6. `baz=` called on the result of `bar`
+    1. `foo`
+    2. `bar`
+    3. `a`
+    4. `b`
+    5. `[]=` called on the result of `foo`
+    6. `baz=` called on the result of `bar`
 
-  [[Bug #4443]]
+    [[Bug #4443]]
 
 ## Command line options
 
