@@ -186,6 +186,10 @@ nav {
   font-family: Helvetica, sans-serif;
   font-size: 14px;
   border-right: 1px solid #ccc;
+  position: sticky;
+  top: 0;
+  overflow: auto;
+  height: calc(100vh - 100px); /* reduce the footer height */
 }
 
 main {
