@@ -1441,6 +1441,14 @@ module Test
         end
       end
 
+      def inspect
+        "#<#{self.class.name}: " <<
+        instance_variables.filter_map do |var|
+          next if var == :@option_parser # too big
+          "#{var}=#{instance_variable_get(var).inspect}"
+        end.join(", ") << ">"
+      end
+
       ##
       # Top level driver, controls all output and filtering.
 
