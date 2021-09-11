@@ -725,7 +725,7 @@ range_bsearch(VALUE range)
 	BSEARCH(INT2FIX);
     }
 #if SIZEOF_DOUBLE == 8 && defined(HAVE_INT64_T)
-    else if (RB_TYPE_P(beg, T_FLOAT) || RB_TYPE_P(end, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(beg) || RB_FLOAT_TYPE_P(end)) {
 	int64_t low  = double_as_int64(NIL_P(beg) ? -HUGE_VAL : RFLOAT_VALUE(rb_Float(beg)));
 	int64_t high = double_as_int64(NIL_P(end) ?  HUGE_VAL : RFLOAT_VALUE(rb_Float(end)));
 	int64_t mid, org_high;

@@ -3564,7 +3564,7 @@ rb_to_float(VALUE val)
 VALUE
 rb_check_to_float(VALUE val)
 {
-    if (RB_TYPE_P(val, T_FLOAT)) return val;
+    if (RB_FLOAT_TYPE_P(val)) return val;
     if (!rb_obj_is_kind_of(val, rb_cNumeric)) {
 	return Qnil;
     }
