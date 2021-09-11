@@ -69,6 +69,11 @@ Note that each entry is kept to a minimum, see links for details.
 
     [[Bug #4443]]
 
+* Values in Hash literals can be omitted.  [[Feature #14579]]
+
+    `{x:, y:}` is a syntax sugar of `{x: x, y: y}`.
+
+
 ## Command line options
 
 ## Core classes updates
@@ -210,6 +215,7 @@ Excluding feature bug fixes.
 [Bug #4443]:      https://bugs.ruby-lang.org/issues/4443
 [Feature #12194]: https://bugs.ruby-lang.org/issues/12194
 [Feature #14256]: https://bugs.ruby-lang.org/issues/14256
+[Feature #14579]: https://bugs.ruby-lang.org/issues/14579
 [Feature #15198]: https://bugs.ruby-lang.org/issues/15198
 [Feature #15211]: https://bugs.ruby-lang.org/issues/15211
 [Feature #16043]: https://bugs.ruby-lang.org/issues/16043
