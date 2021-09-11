@@ -3187,7 +3187,7 @@ enum_chain_total_size(VALUE enums)
     for (i = 0; i < RARRAY_LEN(enums); i++) {
         VALUE size = enum_size(RARRAY_AREF(enums, i));
 
-        if (NIL_P(size) || (RB_TYPE_P(size, T_FLOAT) && isinf(NUM2DBL(size)))) {
+        if (NIL_P(size) || (RB_FLOAT_TYPE_P(size) && isinf(NUM2DBL(size)))) {
             return size;
         }
         if (!RB_INTEGER_TYPE_P(size)) {

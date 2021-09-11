@@ -4551,7 +4551,7 @@ rb_node_case_when_optimizable_literal(const NODE *const node)
       case NODE_LIT: {
 	VALUE v = node->nd_lit;
 	double ival;
-	if (RB_TYPE_P(v, T_FLOAT) &&
+	if (RB_FLOAT_TYPE_P(v) &&
 	    modf(RFLOAT_VALUE(v), &ival) == 0.0) {
 	    return FIXABLE(ival) ? LONG2FIX((long)ival) : rb_dbl2big(ival);
 	}
@@ -12407,7 +12407,7 @@ ibf_dump_object_object(struct ibf_dump *dump, VALUE obj)
 
     if (SPECIAL_CONST_P(obj) &&
         ! (SYMBOL_P(obj) ||
-           RB_TYPE_P(obj, T_FLOAT))) {
+           RB_FLOAT_TYPE_P(obj))) {
         obj_header.special_const = TRUE;
         obj_header.frozen = TRUE;
         obj_header.internal = TRUE;

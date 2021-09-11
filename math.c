@@ -623,7 +623,7 @@ f_negative_p(VALUE x)
 inline static VALUE
 f_signbit(VALUE x)
 {
-    if (RB_TYPE_P(x, T_FLOAT)) {
+    if (RB_FLOAT_TYPE_P(x)) {
         double f = RFLOAT_VALUE(x);
         return RBOOL(!isnan(f) && signbit(f));
     }
