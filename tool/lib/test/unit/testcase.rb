@@ -156,11 +156,6 @@ module Test
       PASSTHROUGH_EXCEPTIONS = [NoMemoryError, SignalException,
                                 Interrupt, SystemExit] # :nodoc:
 
-      # kernel resolution can limit the minimum time we can measure
-      # [ruby-core:81540]
-      MIN_HZ = windows? ? 67 : 100
-      MIN_MEASURABLE = 1.0 / MIN_HZ
-
       ##
       # Runs the tests reporting the status to +runner+
 

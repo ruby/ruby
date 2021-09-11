@@ -842,6 +842,11 @@ EOT
         result
       end
 
+      # kernel resolution can limit the minimum time we can measure
+      # [ruby-core:81540]
+      MIN_HZ = /mswin|mingw/ =~ RUBY_PLATFORM ? 67 : 100
+      MIN_MEASURABLE = 1.0 / MIN_HZ
+
       def assert_cpu_usage_low(msg = nil, pct: 0.05, wait: 1.0, stop: nil)
         require 'benchmark'
 
