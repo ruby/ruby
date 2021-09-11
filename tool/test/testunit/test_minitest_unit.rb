@@ -448,8 +448,6 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   # which is not threadsafe. Nearly every method in here is an
   # assertion test so it isn't worth splitting it out further.
 
-  RUBY18 = ! defined? Encoding
-
   def setup
     super
 
@@ -686,7 +684,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   end
 
   def test_assert_in_epsilon_triggered_negative_case
-    x = RUBY18 ? "0.1" : "0.100000xxx"
+    x = "0.100000xxx"
     y = "0.1"
     util_assert_triggered "Expected |-1.1 - -1| (#{x}) to be <= #{y}." do
       @tc.assert_in_epsilon(-1.1, -1, 0.1)
