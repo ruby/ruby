@@ -265,7 +265,9 @@ int rb_block_given_p(void);
  */
 void rb_need_block(void);
 
+#ifndef __cplusplus
 RBIMPL_ATTR_DEPRECATED(("by: rb_block_call since 1.9"))
+#endif
 /**
  * Old way to iterate a block.
  *
@@ -300,6 +302,9 @@ rb_iterate_deprecated(VALUE (*iter)(VALUE), VALUE data1, rb_block_call_func_t bl
 {
     return ::rb_iterate(iter, data1, bl, data2);
 }}}
+
+RBIMPL_ATTR_DEPRECATED(("by: rb_block_call since 1.9"))
+VALUE rb_iterate(VALUE (*func1)(VALUE), VALUE data1, rb_block_call_func_t proc, VALUE data2);
 #endif
 
 /**
