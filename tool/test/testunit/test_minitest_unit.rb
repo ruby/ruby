@@ -10,7 +10,7 @@ class ImmutableString < String; def inspect; super.freeze; end; end
 
 class TestMiniTestUnit < MetaMetaMetaTestCase
   pwd = Pathname.new File.expand_path Dir.pwd
-  basedir = Pathname.new(File.expand_path "lib/minitest") + 'mini'
+  basedir = Pathname.new(File.expand_path "lib/test")
   basedir = basedir.relative_path_from(pwd).to_s
   MINITEST_BASE_DIR = basedir[/\A\./] ? basedir : "./#{basedir}"
   BT_MIDDLE = ["#{MINITEST_BASE_DIR}/test.rb:161:in `each'",
