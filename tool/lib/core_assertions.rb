@@ -463,7 +463,7 @@ eom
         ex
       end
 
-      MINI_DIR = File.join(File.dirname(File.expand_path(__FILE__)), "minitest") #:nodoc:
+      TEST_DIR = File.join(__dir__, "test/unit") #:nodoc:
 
       # :call-seq:
       #   assert(test, [failure_message])
@@ -483,7 +483,7 @@ eom
         when nil
           msgs.shift
         else
-          bt = caller.reject { |s| s.start_with?(MINI_DIR) }
+          bt = caller.reject { |s| s.start_with?(TEST_DIR) }
           raise ArgumentError, "assertion message must be String or Proc, but #{msg.class} was given.", bt
         end unless msgs.empty?
         super
@@ -506,7 +506,7 @@ eom
           return assert obj.respond_to?(meth, *priv), msg
         end
         #get rid of overcounting
-        if caller_locations(1, 1)[0].path.start_with?(MINI_DIR)
+        if caller_locations(1, 1)[0].path.start_with?(TEST_DIR)
           return if obj.respond_to?(meth)
         end
         super(obj, meth, msg)
@@ -529,7 +529,7 @@ eom
           return assert !obj.respond_to?(meth, *priv), msg
         end
         #get rid of overcounting
-        if caller_locations(1, 1)[0].path.start_with?(MINI_DIR)
+        if caller_locations(1, 1)[0].path.start_with?(TEST_DIR)
           return unless obj.respond_to?(meth)
         end
         refute_respond_to(obj, meth, msg)
