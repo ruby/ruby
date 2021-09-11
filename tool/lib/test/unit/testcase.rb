@@ -76,7 +76,7 @@ module Test
     module LifecycleHooks
       ##
       # Runs before every test, after setup. This hook is meant for
-      # libraries to extend minitest. It is not meant to be used by
+      # libraries to extend Test::Unit. It is not meant to be used by
       # test developers.
       #
       # See #before_setup for an example.
@@ -85,12 +85,12 @@ module Test
 
       ##
       # Runs before every test, before setup. This hook is meant for
-      # libraries to extend minitest. It is not meant to be used by
+      # libraries to extend Test::Unit. It is not meant to be used by
       # test developers.
       #
       # As a simplistic example:
       #
-      #   module MyMinitestPlugin
+      #   module MyTestUnitPlugin
       #     def before_setup
       #       super
       #       # ... stuff to do before setup is run
@@ -113,14 +113,14 @@ module Test
       #   end
       #
       #   class Test::Unit::Runner::TestCase
-      #     include MyMinitestPlugin
+      #     include MyTestUnitPlugin
       #   end
 
       def before_setup; end
 
       ##
       # Runs after every test, before teardown. This hook is meant for
-      # libraries to extend minitest. It is not meant to be used by
+      # libraries to extend Test::Unit. It is not meant to be used by
       # test developers.
       #
       # See #before_setup for an example.
@@ -129,7 +129,7 @@ module Test
 
       ##
       # Runs after every test, after teardown. This hook is meant for
-      # libraries to extend minitest. It is not meant to be used by
+      # libraries to extend Test::Unit. It is not meant to be used by
       # test developers.
       #
       # See #before_setup for an example.
@@ -141,7 +141,7 @@ module Test
     # Subclass TestCase to create your own tests. Typically you'll want a
     # TestCase subclass per implementation class.
     #
-    # See MiniTest::Unit::AssertionFailedErrors
+    # See <code>Test::Unit::AssertionFailedError</code>s
 
     class TestCase
       include Assertions

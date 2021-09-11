@@ -46,11 +46,6 @@ module Test
 
   ##
   # Test::Unit is an implementation of the xUnit testing framework for Ruby.
-  #
-  # If you are writing new test code, please use MiniTest instead of Test::Unit.
-  #
-  # Test::Unit has been left in the standard library to support legacy test
-  # suites.
   module Unit
     ##
     # Assertion base class
@@ -1518,9 +1513,6 @@ module Test
 
       # Overriding of Test::Unit::Runner#puke
       def puke klass, meth, e
-        # TODO:
-        #   this overriding is for minitest feature that skip messages are
-        #   hidden when not verbose (-v), note this is temporally.
         n = report.size
         e = case e
             when Test::Unit::PendedError then
