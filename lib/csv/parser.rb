@@ -3,6 +3,7 @@
 require "strscan"
 
 require_relative "delete_suffix"
+require_relative "input_record_separator"
 require_relative "match_p"
 require_relative "row"
 require_relative "table"
@@ -605,7 +606,7 @@ class CSV
             # do nothing:  ensure will set default
           end
         end
-        separator = $INPUT_RECORD_SEPARATOR if separator == :auto
+        separator = InputRecordSeparator.value if separator == :auto
       end
       separator.to_s.encode(@encoding)
     end
