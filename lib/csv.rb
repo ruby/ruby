@@ -90,11 +90,11 @@
 # with any questions.
 
 require "forwardable"
-require "English"
 require "date"
 require "stringio"
 
 require_relative "csv/fields_converter"
+require_relative "csv/input_record_separator"
 require_relative "csv/match_p"
 require_relative "csv/parser"
 require_relative "csv/row"
@@ -1051,7 +1051,7 @@ class CSV
     #   out_string # => "FOO,0000\nBAR,1111\nBAZ,2222\n"
     def filter(input=nil, output=nil, **options)
       # parse options for input, output, or both
-      in_options, out_options = Hash.new, {row_sep: $INPUT_RECORD_SEPARATOR}
+      in_options, out_options = Hash.new, {row_sep: InputRecordSeparator.value}
       options.each do |key, value|
         case key.to_s
         when /\Ain(?:put)?_(.+)\Z/
@@ -1292,8 +1292,8 @@ class CSV
     # Argument +ary+ must be an \Array.
     #
     # Special options:
-    # * Option <tt>:row_sep</tt> defaults to <tt>$INPUT_RECORD_SEPARATOR</tt>
-    #   (<tt>$/</tt>).:
+    # * Option <tt>:row_sep</tt> defaults to <tt>"\n"> on Ruby 3.0 or later
+    #   and <tt>$INPUT_RECORD_SEPARATOR</tt> (<tt>$/</tt>) otherwise.:
     #     $INPUT_RECORD_SEPARATOR # => "\n"
     # * This method accepts an additional option, <tt>:encoding</tt>, which sets the base
     #   Encoding for the output. This method will try to guess your Encoding from
@@ -1315,7 +1315,7 @@ class CSV
     #   CSV.generate_line(:foo)
     #
     def generate_line(row, **options)
-      options = {row_sep: $INPUT_RECORD_SEPARATOR}.merge(options)
+      options = {row_sep: InputRecordSeparator.value}.merge(options)
       str = +""
       if options[:encoding]
         str.force_encoding(options[:encoding])
