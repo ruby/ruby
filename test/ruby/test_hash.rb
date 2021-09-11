@@ -2178,4 +2178,21 @@ class TestHash < Test::Unit::TestCase
       end;
     end
   end
+
+  def test_value_omission
+    x = 1
+    y = 2
+    assert_equal({x: 1, y: 2}, {x:, y:})
+    assert_equal({one: 1, two: 2}, {one:, two:})
+  end
+
+  private
+
+  def one
+    1
+  end
+
+  def two
+    2
+  end
 end
