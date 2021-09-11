@@ -357,49 +357,6 @@ module Test
       alias capture_output capture_io
 
       ##
-      # Captures $stdout and $stderr into strings, using Tempfile to
-      # ensure that subprocess IO is captured as well.
-      #
-      #   out, err = capture_subprocess_io do
-      #     system "echo Some info"
-      #     system "echo You did a bad thing 1>&2"
-      #   end
-      #
-      #   assert_match %r%info%, out
-      #   assert_match %r%bad%, err
-      #
-      # NOTE: This method is approximately 10x slower than #capture_io so
-      # only use it when you need to test the output of a subprocess.
-
-      def capture_subprocess_io
-        require 'tempfile'
-
-        captured_stdout, captured_stderr = Tempfile.new("out"), Tempfile.new("err")
-
-        synchronize do
-          orig_stdout, orig_stderr = $stdout.dup, $stderr.dup
-          $stdout.reopen captured_stdout
-          $stderr.reopen captured_stderr
-
-          begin
-            yield
-
-            $stdout.rewind
-            $stderr.rewind
-
-            [captured_stdout.read, captured_stderr.read]
-          ensure
-            $stdout.reopen orig_stdout
-            $stderr.reopen orig_stderr
-            orig_stdout.close
-            orig_stderr.close
-            captured_stdout.close!
-            captured_stderr.close!
-          end
-        end
-      end
-
-      ##
       # Returns details for exception +e+
 
       def exception_details e, msg

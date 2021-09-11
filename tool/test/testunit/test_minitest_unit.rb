@@ -1084,20 +1084,6 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
     end
   end
 
-  def test_capture_subprocess_io
-    @assertion_count = 0
-
-    non_verbose do
-      out, err = capture_subprocess_io do
-        system("echo", "hi")
-        system("echo", "bye!", out: :err)
-      end
-
-      assert_equal "hi\n", out
-      assert_equal "bye!\n", err
-    end
-  end
-
   def test_flunk
     util_assert_triggered 'Epic Fail!' do
       @tc.flunk
