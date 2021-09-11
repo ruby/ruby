@@ -533,8 +533,6 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   end
 
   def test_assert_equal_different_diff_deactivated
-    skip "https://github.com/MagLev/maglev/issues/209" if maglev?
-
     without_diff do
       util_assert_triggered util_msg("haha" * 10, "blah" * 10) do
         o1 = "haha" * 10
@@ -649,7 +647,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   end
 
   def test_assert_in_delta_triggered
-    x = maglev? ? "9.999999xxxe-07" : "1.0e-06"
+    x = "1.0e-06"
     util_assert_triggered "Expected |0.0 - 0.001| (0.001) to be <= #{x}." do
       @tc.assert_in_delta 0.0, 1.0 / 1000, 0.000001
     end
@@ -688,8 +686,8 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   end
 
   def test_assert_in_epsilon_triggered_negative_case
-    x = (RUBY18 and not maglev?) ? "0.1" : "0.100000xxx"
-    y = maglev? ? "0.100000xxx" : "0.1"
+    x = RUBY18 ? "0.1" : "0.100000xxx"
+    y = "0.1"
     util_assert_triggered "Expected |-1.1 - -1| (#{x}) to be <= #{y}." do
       @tc.assert_in_epsilon(-1.1, -1, 0.1)
     end
@@ -1197,7 +1195,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   end
 
   def test_refute_in_delta_triggered
-    x = maglev? ? "0.100000xxx" : "0.1"
+    x = "0.1"
     util_assert_triggered "Expected |0.0 - 0.001| (0.001) to not be <= #{x}." do
       @tc.refute_in_delta 0.0, 1.0 / 1000, 0.1
     end
