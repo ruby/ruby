@@ -24,11 +24,11 @@ module Test
 
       unless $DEBUG then
         bt.each do |line|
-          break if line =~ /lib\/minitest/
+          break if line =~ /lib\/test/
           new_bt << line
         end
 
-        new_bt = bt.reject { |line| line =~ /lib\/minitest/ } if new_bt.empty?
+        new_bt = bt.reject { |line| line =~ /lib\/test/ } if new_bt.empty?
         new_bt = bt.dup if new_bt.empty?
       else
         new_bt = bt.dup
