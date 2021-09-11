@@ -195,7 +195,14 @@ module Test
         result
       end
 
-      alias :run_test :__send__
+      RUN_TEST_TRACE = "#{__FILE__}:#{__LINE__+3}:in `run_test'".freeze
+      def run_test(name)
+        progname, $0 = $0, "#{$0}: #{self.class}##{name}"
+        self.__send__(name)
+      ensure
+        $@.delete(RUN_TEST_TRACE) if $@
+        $0 = progname
+      end
 
       def initialize name # :nodoc:
         @__name__ = name
@@ -338,15 +345,6 @@ module Test
         defined?(@test_order) ? @test_order : superclass.test_order
       end
       self.test_order = test_order
-      undef run_test
-      RUN_TEST_TRACE = "#{__FILE__}:#{__LINE__+3}:in `run_test'".freeze
-      def run_test(name)
-        progname, $0 = $0, "#{$0}: #{self.class}##{name}"
-        self.__send__(name)
-      ensure
-        $@.delete(RUN_TEST_TRACE) if $@
-        $0 = progname
-      end
 
     end
   end
