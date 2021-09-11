@@ -1475,18 +1475,18 @@ module Test
         io.puts format % [test_count, assertion_count, failures, errors, skips]
       end
 
-      include Test::Unit::Options
+      prepend Test::Unit::Options
       prepend Test::Unit::StatusLine
-      include Test::Unit::Parallel
-      include Test::Unit::Statistics
-      include Test::Unit::Skipping
-      include Test::Unit::GlobOption
-      include Test::Unit::RepeatOption
-      include Test::Unit::LoadPathOption
-      include Test::Unit::GCOption
-      include Test::Unit::ExcludesOption
-      include Test::Unit::TimeoutOption
-      include Test::Unit::RunCount
+      prepend Test::Unit::Parallel
+      prepend Test::Unit::Statistics
+      prepend Test::Unit::Skipping
+      prepend Test::Unit::GlobOption
+      prepend Test::Unit::RepeatOption
+      prepend Test::Unit::LoadPathOption
+      prepend Test::Unit::GCOption
+      prepend Test::Unit::ExcludesOption
+      prepend Test::Unit::TimeoutOption
+      prepend Test::Unit::RunCount
 
       ##
       # Begins the full test run. Delegates to +runner+'s #_run method.
