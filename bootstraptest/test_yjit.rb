@@ -1965,7 +1965,7 @@ assert_equal '[true, false, false, false]', %q{
   ]
 }
 
-# Redefined eq
+# Redefined String eq
 assert_equal 'true', %q{
   class String
     def ==(other)
@@ -1973,6 +1973,26 @@ assert_equal 'true', %q{
     end
   end
 
-  "foo" == "bar"
-  "foo" == "bar"
+  def eq(a, b)
+    a == b
+  end
+
+  eq("foo", "bar")
+  eq("foo", "bar")
+}
+
+# Redefined Integer eq
+assert_equal 'true', %q{
+  class Integer
+    def ==(other)
+      true
+    end
+  end
+
+  def eq(a, b)
+    a == b
+  end
+
+  eq(1, 2)
+  eq(1, 2)
 }

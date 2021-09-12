@@ -2048,7 +2048,8 @@ gen_equality_specialized(jitstate_t* jit, ctx_t* ctx, uint8_t *side_exit)
 
     if (FIXNUM_P(comptime_a) && FIXNUM_P(comptime_b)) {
         if (!assume_bop_not_redefined(jit->block, INTEGER_REDEFINED_OP_FLAG, BOP_EQ)) {
-            return YJIT_CANT_COMPILE;
+            // if overridden, emit the generic version
+            return false;
         }
 
         guard_two_fixnums(ctx, side_exit);
@@ -2067,9 +2068,10 @@ gen_equality_specialized(jitstate_t* jit, ctx_t* ctx, uint8_t *side_exit)
 
         return true;
     } else if (CLASS_OF(comptime_a) == rb_cString &&
-		    CLASS_OF(comptime_b) == rb_cString) {
+            CLASS_OF(comptime_b) == rb_cString) {
         if (!assume_bop_not_redefined(jit->block, STRING_REDEFINED_OP_FLAG, BOP_EQ)) {
-            return YJIT_CANT_COMPILE;
+            // if overridden, emit the generic version
+            return false;
         }
 
         // Load a and b in preparation for call later
