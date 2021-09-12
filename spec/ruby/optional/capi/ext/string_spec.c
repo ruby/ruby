@@ -471,6 +471,7 @@ static VALUE string_spec_rb_sprintf4(VALUE self, VALUE str) {
   return rb_sprintf("Result: %+" PRIsVALUE ".", str);
 }
 
+PRINTF_ARGS(static VALUE string_spec_rb_vsprintf_worker(char* fmt, ...), 1, 2);
 static VALUE string_spec_rb_vsprintf_worker(char* fmt, ...) {
   va_list varargs;
   VALUE str;
@@ -533,6 +534,7 @@ static VALUE string_spec_rb_utf8_str_new_cstr(VALUE self) {
   return rb_utf8_str_new_cstr("nokogiri");
 }
 
+PRINTF_ARGS(static VALUE call_rb_str_vcatf(VALUE mesg, const char *fmt, ...), 2, 3);
 static VALUE call_rb_str_vcatf(VALUE mesg, const char *fmt, ...){
   va_list ap;
   va_start(ap, fmt);
