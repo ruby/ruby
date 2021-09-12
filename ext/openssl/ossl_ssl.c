@@ -1621,6 +1621,7 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
 			   err_msg, verify_msg);
 	    }
 #endif
+	    /* fallthrough */
 	default:
 	    ossl_raise(eSSLError, "%s returned=%d errno=%d peeraddr=%"PRIsVALUE" state=%s",
                 funcname, ret2, errno, peeraddr_ip_str(self), SSL_state_string_long(ssl));
@@ -1905,6 +1906,7 @@ ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
                     continue;
 #endif
 		if (errno) rb_sys_fail(0);
+		/* fallthrough */
 	    default:
 		ossl_raise(eSSLError, "SSL_write");
 	    }
