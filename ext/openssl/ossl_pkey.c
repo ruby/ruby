@@ -35,8 +35,9 @@ const rb_data_type_t ossl_evp_pkey_type = {
 };
 
 static VALUE
-pkey_new0(EVP_PKEY *pkey)
+pkey_new0(VALUE arg)
 {
+    EVP_PKEY *pkey = (EVP_PKEY *)arg;
     VALUE klass, obj;
     int type;
 
@@ -69,7 +70,7 @@ ossl_pkey_new(EVP_PKEY *pkey)
     VALUE obj;
     int status;
 
-    obj = rb_protect((VALUE (*)(VALUE))pkey_new0, (VALUE)pkey, &status);
+    obj = rb_protect(pkey_new0, (VALUE)pkey, &status);
     if (status) {
 	EVP_PKEY_free(pkey);
 	rb_jump_tag(status);

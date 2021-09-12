@@ -239,22 +239,23 @@ struct tmp_dh_callback_args {
     int keylength;
 };
 
-static EVP_PKEY *
-ossl_call_tmp_dh_callback(struct tmp_dh_callback_args *args)
+static VALUE
+ossl_call_tmp_dh_callback(VALUE arg)
 {
+    struct tmp_dh_callback_args *args = (struct tmp_dh_callback_args *)arg;
     VALUE cb, dh;
     EVP_PKEY *pkey;
 
     cb = rb_funcall(args->ssl_obj, args->id, 0);
     if (NIL_P(cb))
-	return NULL;
+	return (VALUE)NULL;
     dh = rb_funcall(cb, id_call, 3, args->ssl_obj, INT2NUM(args->is_export),
 		    INT2NUM(args->keylength));
     pkey = GetPKeyPtr(dh);
     if (EVP_PKEY_base_id(pkey) != args->type)
-	return NULL;
+	return (VALUE)NULL;
 
-    return pkey;
+    return (VALUE)pkey;
 }
 #endif
 
@@ -274,7 +275,7 @@ ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
     args.keylength = keylength;
     args.type = EVP_PKEY_DH;
 
-    pkey = (EVP_PKEY *)rb_protect((VALUE (*)(VALUE))ossl_call_tmp_dh_callback,
+    pkey = (EVP_PKEY *)rb_protect(ossl_call_tmp_dh_callback,
 				  (VALUE)&args, &state);
     if (state) {
 	rb_ivar_set(rb_ssl, ID_callback_state, INT2NUM(state));

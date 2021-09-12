@@ -146,6 +146,12 @@ obj_to_asn1obj(VALUE obj)
 }
 
 static VALUE
+obj_to_asn1obj_i(VALUE obj)
+{
+    return (VALUE)obj_to_asn1obj(obj);
+}
+
+static VALUE
 get_asn1obj(ASN1_OBJECT *obj)
 {
     BIO *out;
@@ -1078,6 +1084,18 @@ ossl_tsfac_time_cb(struct TS_resp_ctx *ctx, void *data, long *sec, long *usec)
     return 1;
 }
 
+static VALUE
+ossl_evp_get_digestbyname_i(VALUE arg)
+{
+    return (VALUE)ossl_evp_get_digestbyname(arg);
+}
+
+static VALUE
+ossl_obj2bio_i(VALUE arg)
+{
+    return (VALUE)ossl_obj2bio((VALUE *)arg);
+}
+
 /*
  * Creates a Response with the help of an OpenSSL::PKey, an
  * OpenSSL::X509::Certificate and a Request.
@@ -1146,7 +1164,7 @@ ossl_tsfac_create_ts(VALUE self, VALUE key, VALUE certificate, VALUE request)
         goto end;
     }
     if (!NIL_P(def_policy_id) && !TS_REQ_get_policy_id(req)) {
-        def_policy_id_obj = (ASN1_OBJECT*)rb_protect((VALUE (*)(VALUE))obj_to_asn1obj, (VALUE)def_policy_id, &status);
+        def_policy_id_obj = (ASN1_OBJECT*)rb_protect(obj_to_asn1obj_i, (VALUE)def_policy_id, &status);
         if (status)
             goto end;
     }
@@ -1188,7 +1206,7 @@ ossl_tsfac_create_ts(VALUE self, VALUE key, VALUE certificate, VALUE request)
 
         for (i = 0; i < RARRAY_LEN(allowed_digests); i++) {
             rbmd = rb_ary_entry(allowed_digests, i);
-            md = (const EVP_MD *)rb_protect((VALUE (*)(VALUE))ossl_evp_get_digestbyname, rbmd, &status);
+            md = (const EVP_MD *)rb_protect(ossl_evp_get_digestbyname_i, rbmd, &status);
             if (status)
                 goto end;
             TS_RESP_CTX_add_md(ctx, md);
@@ -1199,7 +1217,7 @@ ossl_tsfac_create_ts(VALUE self, VALUE key, VALUE certificate, VALUE request)
     if (status)
         goto end;
 
-    req_bio = (BIO*)rb_protect((VALUE (*)(VALUE))ossl_obj2bio, (VALUE)&str, &status);
+    req_bio = (BIO*)rb_protect(ossl_obj2bio_i, (VALUE)&str, &status);
     if (status)
         goto end;
 

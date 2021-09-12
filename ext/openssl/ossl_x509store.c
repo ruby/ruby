@@ -52,8 +52,15 @@ struct ossl_verify_cb_args {
 };
 
 static VALUE
-call_verify_cb_proc(struct ossl_verify_cb_args *args)
+ossl_x509stctx_new_i(VALUE arg)
 {
+    return ossl_x509stctx_new((X509_STORE_CTX *)arg);
+}
+
+static VALUE
+call_verify_cb_proc(VALUE arg)
+{
+    struct ossl_verify_cb_args *args = (struct ossl_verify_cb_args *)arg;
     return rb_funcall(args->proc, rb_intern("call"), 2,
 		      args->preverify_ok, args->store_ctx);
 }
@@ -69,7 +76,7 @@ ossl_verify_cb_call(VALUE proc, int ok, X509_STORE_CTX *ctx)
 	return ok;
 
     ret = Qfalse;
-    rctx = rb_protect((VALUE(*)(VALUE))ossl_x509stctx_new, (VALUE)ctx, &state);
+    rctx = rb_protect(ossl_x509stctx_new_i, (VALUE)ctx, &state);
     if (state) {
 	rb_set_errinfo(Qnil);
 	rb_warn("StoreContext initialization failure");
@@ -78,7 +85,7 @@ ossl_verify_cb_call(VALUE proc, int ok, X509_STORE_CTX *ctx)
 	args.proc = proc;
 	args.preverify_ok = ok ? Qtrue : Qfalse;
 	args.store_ctx = rctx;
-	ret = rb_protect((VALUE(*)(VALUE))call_verify_cb_proc, (VALUE)&args, &state);
+	ret = rb_protect(call_verify_cb_proc, (VALUE)&args, &state);
 	if (state) {
 	    rb_set_errinfo(Qnil);
 	    rb_warn("exception in verify_callback is ignored");

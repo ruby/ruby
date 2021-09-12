@@ -21,7 +21,7 @@
  * Data Conversion
  */
 #define OSSL_IMPL_ARY2SK(name, type, expected_class, dup)	\
-STACK_OF(type) *						\
+VALUE								\
 ossl_##name##_ary2sk0(VALUE ary)				\
 {								\
     STACK_OF(type) *sk;						\
@@ -43,7 +43,7 @@ ossl_##name##_ary2sk0(VALUE ary)				\
 	x = dup(val); /* NEED TO DUP */				\
 	sk_##type##_push(sk, x);				\
     }								\
-    return sk;							\
+    return (VALUE)sk;						\
 }								\
 								\
 STACK_OF(type) *						\
