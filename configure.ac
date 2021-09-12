@@ -2551,6 +2551,9 @@ AS_CASE([$coroutine_type], [yes|''], [
         [*-openbsd*], [
             coroutine_type=pthread
         ],
+        [x86_64-dragonfly*], [
+            coroutine_type=amd64
+        ],
         [*-haiku*], [
             coroutine_type=pthread
         ],
