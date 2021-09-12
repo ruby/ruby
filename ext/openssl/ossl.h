@@ -121,6 +121,8 @@ int ossl_pem_passwd_cb(char *, int, int, void *);
  * ERRor messages
  */
 PRINTF_ARGS(NORETURN(void ossl_raise(VALUE, const char *, ...)), 2, 3);
+/* Make exception instance from str and OpenSSL error reason string. */
+VALUE ossl_make_error(VALUE exc, VALUE str);
 /* Clear OpenSSL error queue. If dOSSL is set, rb_warn() them. */
 void ossl_clear_error(void);
 

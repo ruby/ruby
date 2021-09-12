@@ -265,20 +265,14 @@ ossl_to_der_if_possible(VALUE obj)
     return obj;
 }
 
-PRINTF_ARGS(static VALUE ossl_make_error(VALUE exc, const char *fmt, va_list args), 2, 0);
-
 /*
  * Errors
  */
-static VALUE
-ossl_make_error(VALUE exc, const char *fmt, va_list args)
+VALUE
+ossl_make_error(VALUE exc, VALUE str)
 {
-    VALUE str = Qnil;
     unsigned long e;
 
-    if (fmt) {
-	str = rb_vsprintf(fmt, args);
-    }
     e = ERR_peek_last_error();
     if (e) {
 	const char *msg = ERR_reason_error_string(e);
@@ -302,10 +296,17 @@ ossl_raise(VALUE exc, const char *fmt, ...)
 {
     va_list args;
     VALUE err;
-    va_start(args, fmt);
-    err = ossl_make_error(exc, fmt, args);
-    va_end(args);
-    rb_exc_raise(err);
+
+    if (fmt) {
+	va_start(args, fmt);
+	err = rb_vsprintf(fmt, args);
+	va_end(args);
+    }
+    else {
+	err = Qnil;
+    }
+
+    rb_exc_raise(ossl_make_error(exc, err));
 }
 
 void

@@ -1223,7 +1223,7 @@ end:
     ASN1_OBJECT_free(def_policy_id_obj);
     TS_RESP_CTX_free(ctx);
     if (err_msg)
-        ossl_raise(eTimestampError, err_msg);
+        rb_exc_raise(ossl_make_error(eTimestampError, rb_str_new_cstr(err_msg)));
     if (status)
         rb_jump_tag(status);
     return ret;
