@@ -47,8 +47,6 @@
 #endif
 #include "probes_helper.h"
 
-VALUE rb_str_concat_literals(size_t, const VALUE*);
-
 /* :FIXME: This #ifdef is because we build pch in case of mswin and
  * not in case of other situations.  That distinction might change in
  * a future.  We would better make it detectable in something better
