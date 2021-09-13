@@ -158,6 +158,13 @@ class TestYJIT < Test::Unit::TestCase
     assert_no_exits('"i am a string #{true}"')
   end
 
+  def test_compile_opt_aset
+    assert_compiles('[1,2,3][2] = 4', insns: %i[opt_aset])
+    assert_compiles('{}[:foo] = :bar', insns: %i[opt_aset])
+    assert_compiles('[1,2,3][0..-1] = []', insns: %i[opt_aset])
+    assert_compiles('"foo"[3] = "d"', insns: %i[opt_aset])
+  end
+
   def test_compile_attr_set
     assert_no_exits(<<~EORB)
     class Foo

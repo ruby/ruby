@@ -2181,32 +2181,81 @@ VALUE rb_vm_opt_aset(VALUE recv, VALUE obj, VALUE set);
 static codegen_status_t
 gen_opt_aset(jitstate_t *jit, ctx_t *ctx)
 {
-    // Save the PC and SP because the callee may allocate
-    // Note that this modifies REG_SP, which is why we do it first
-    jit_prepare_routine_call(jit, ctx, REG0);
+    // Defer compilation so we can specialize on a runtime `self`
+    if (!jit_at_current_insn(jit)) {
+        defer_compilation(jit->block, jit->insn_idx, ctx);
+        return YJIT_END_BLOCK;
+    }
 
-    uint8_t* side_exit = yjit_side_exit(jit, ctx);
+    VALUE comptime_recv = jit_peek_at_stack(jit, ctx, 2);
+    VALUE comptime_key  = jit_peek_at_stack(jit, ctx, 1);
+    VALUE comptime_val  = jit_peek_at_stack(jit, ctx, 0);
 
     // Get the operands from the stack
-    x86opnd_t arg2 = ctx_stack_pop(ctx, 1);
-    x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
-    x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
+    x86opnd_t recv = ctx_stack_opnd(ctx, 2);
+    x86opnd_t key = ctx_stack_opnd(ctx, 1);
+    x86opnd_t val = ctx_stack_opnd(ctx, 0);
 
-    // Call rb_vm_opt_aset(VALUE recv, VALUE obj)
-    mov(cb, C_ARG_REGS[0], arg0);
-    mov(cb, C_ARG_REGS[1], arg1);
-    mov(cb, C_ARG_REGS[2], arg2);
-    call_ptr(cb, REG0, (void *)rb_vm_opt_aset);
+    if (CLASS_OF(comptime_recv) == rb_cArray && FIXNUM_P(comptime_val)) {
+        uint8_t* side_exit = yjit_side_exit(jit, ctx);
 
-    // If val == Qundef, bail to do a method call
-    cmp(cb, RAX, imm_opnd(Qundef));
-    je_ptr(cb, side_exit);
+        // Guard receiver is an Array
+        mov(cb, REG0, recv);
+        jit_guard_known_klass(jit, ctx, rb_cArray, OPND_STACK(2), comptime_recv, SEND_MAX_DEPTH, side_exit);
 
-    // Push the return value onto the stack
-    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
-    mov(cb, stack_ret, RAX);
+        // Guard key is a fixnum
+        mov(cb, REG0, key);
+        jit_guard_known_klass(jit, ctx, rb_cInteger, OPND_STACK(1), comptime_key, SEND_MAX_DEPTH, side_exit);
 
-    return YJIT_KEEP_COMPILING;
+        // Call rb_ary_store
+        mov(cb, C_ARG_REGS[0], recv);
+        mov(cb, C_ARG_REGS[1], key);
+        sar(cb, C_ARG_REGS[1], imm_opnd(1)); // FIX2LONG(key)
+        mov(cb, C_ARG_REGS[2], val);
+
+        // We might allocate or raise
+        jit_prepare_routine_call(jit, ctx, REG0);
+
+        call_ptr(cb, REG0, (void *)rb_ary_store);
+
+        // rb_ary_store returns void
+	// stored value should still be on stack
+        mov(cb, REG0, ctx_stack_opnd(ctx, 0));
+
+        // Push the return value onto the stack
+        ctx_stack_pop(ctx, 3);
+        x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
+        mov(cb, stack_ret, REG0);
+
+        jit_jump_to_next_insn(jit, ctx);
+        return YJIT_END_BLOCK;
+    } else if (CLASS_OF(comptime_recv) == rb_cHash) {
+        uint8_t* side_exit = yjit_side_exit(jit, ctx);
+
+        // Guard receiver is a Hash
+        mov(cb, REG0, recv);
+        jit_guard_known_klass(jit, ctx, rb_cHash, OPND_STACK(2), comptime_recv, SEND_MAX_DEPTH, side_exit);
+
+        // Call rb_hash_aset
+        mov(cb, C_ARG_REGS[0], recv);
+        mov(cb, C_ARG_REGS[1], key);
+        mov(cb, C_ARG_REGS[2], val);
+
+        // We might allocate or raise
+        jit_prepare_routine_call(jit, ctx, REG0);
+
+        call_ptr(cb, REG0, (void *)rb_hash_aset);
+
+        // Push the return value onto the stack
+        ctx_stack_pop(ctx, 3);
+        x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
+        mov(cb, stack_ret, RAX);
+
+        jit_jump_to_next_insn(jit, ctx);
+        return YJIT_END_BLOCK;
+    } else {
+        return gen_opt_send_without_block(jit, ctx);
+    }
 }
 
 static codegen_status_t
