@@ -764,7 +764,7 @@ EXPECTED
 
     $VERBOSE = true
 
-    _, err = capture_io do
+    _, err = capture_output do
       assert_equal "\000", [0].pack("*U")
     end
 
@@ -783,7 +783,7 @@ EXPECTED
 
     $VERBOSE = true
 
-    _, err = capture_io do
+    _, err = capture_output do
       assert_equal [0], "\000".unpack("*U")
     end
 

@@ -1070,11 +1070,11 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
     end
   end
 
-  def test_capture_io
+  def test_capture_output
     @assertion_count = 0
 
     non_verbose do
-      out, err = capture_io do
+      out, err = capture_output do
         puts 'hi'
         $stderr.puts 'bye!'
       end

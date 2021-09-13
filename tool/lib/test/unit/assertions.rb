@@ -214,7 +214,7 @@ module Test
       # See also: #assert_silent
 
       def assert_output stdout = nil, stderr = nil
-        out, err = capture_io do
+        out, err = capture_output do
           yield
         end
 
