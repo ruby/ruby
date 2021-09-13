@@ -41,6 +41,8 @@
 # +:raise+:: raise an exception
 # +:b_call+:: event hook at block entry
 # +:b_return+:: event hook at block ending
+# +:a_call+:: event hook at all calls (+call+, +b_call+, and +c_call+)
+# +:a_return+:: event hook at all returns (+return+, +b_return+, and +c_return+)
 # +:thread_begin+:: event hook at thread beginning
 # +:thread_end+:: event hook at thread ending
 # +:fiber_switch+:: event hook at fiber switch
