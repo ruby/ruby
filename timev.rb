@@ -93,7 +93,12 @@
 #
 # == What's Here
 #
-# \Class \Time provides methods that are useful for:
+# First, what's elsewhere. \Class \Time:
+#
+# - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
+# - Includes {module Comparable}[Comparable.html#module-Comparable-label-What-27s+Here].
+#
+# Here, class \Time provides methods that are useful for:
 #
 # - {Creating \Time objects}[#class-Time-label-Methods+for+Creating].
 # - {Fetching \Time values}[#class-Time-label-Methods+for+Fetching].
