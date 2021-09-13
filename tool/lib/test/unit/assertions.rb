@@ -532,13 +532,18 @@ module Test
       # Skips the current test. Gets listed at the end of the run but
       # doesn't cause a failure exit code.
 
-      def skip msg = nil, bt = caller
+      def pend msg = nil, bt = caller
         msg ||= "Skipped, no message given"
         @skip = true
         raise Test::Unit::PendedError, msg, bt
       end
+      alias omit pend
 
-      alias omit skip
+      # TODO: Removed this and enabled to raise NoMethodError with skip
+      alias skip pend
+      # def skip(msg = nil, bt = caller)
+      #   raise NoMethodError, "use omit or pend", caller
+      # end
 
       ##
       # Was this testcase skipped? Meant for #teardown.
@@ -772,9 +777,6 @@ EOT
         end
         assert(failed.empty?, message(m) {failed.pretty_inspect})
       end
-
-      # compatibility with test-unit
-      alias pend skip
 
       def assert_syntax_error(code, error, *args, **opt)
         prepare_syntax_check(code, *args, **opt) do |src, fname, line, mesg|
