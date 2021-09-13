@@ -1140,7 +1140,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
   end
 
   def test_prints
-    printer = Class.new { extend Test::Unit::Assertions }
+    printer = Class.new { extend Test::Unit::CoreAssertions }
     @tc.assert_equal '"test"', printer.mu_pp(ImmutableString.new 'test')
   end
 
