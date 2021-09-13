@@ -170,6 +170,13 @@ recursive_equal(VALUE range, VALUE obj, int recur)
  *    r == (1...5)               # => false
  *    r == Range.new(1, 5, true) # => false
  *
+ *  Note that even with the same argument, the return values of #== and #eql? can differ:
+ *
+ *    (1..2) == (1..2.0)   # => true
+ *    (1..2).eql? (1..2.0) # => false
+ *
+ *  Related: Range#eql?.
+ *
  */
 
 static VALUE
@@ -232,7 +239,12 @@ recursive_eql(VALUE range, VALUE obj, int recur)
  *    r.eql?(1...5)                 # => false
  *    r.eql?(Range.new(1, 5, true)) # => false
  *
+ *  Note that even with the same argument, the return values of #== and #eql? can differ:
  *
+ *    (1..2) == (1..2.0)   # => true
+ *    (1..2).eql? (1..2.0) # => false
+ *
+ *  Related: Range#==.
  */
 
 static VALUE
@@ -253,7 +265,7 @@ range_eql(VALUE range, VALUE obj)
  * Two range objects +r0+ and +r1+ have the same hash value
  * if and only if <tt>r0.eql?(r1)</tt>.
  *
- * Related: Range.eql?, Object.hash.
+ * Related: Range#eql?, Object#hash.
  */
 
 static VALUE
@@ -396,32 +408,12 @@ range_step_size(VALUE range, VALUE args, VALUE eobj)
  *
  *  Iterates over the elements of +self+.
  *
- *  <b>For a \Numeric \Range</b>
- *
  *  With a block given and no argument,
  *  calls the block each element of the range; returns +self+:
  *
  *    a = []
  *    (1..5).step {|element| a.push(element) } # => 1..5
  *    a # => [1, 2, 3, 4, 5]
- *
- *  With a block given and a positive integer argument +n+ given,
- *  calls the block with element +0+, element +n+, element <tt>2n</tt>, and so on:
- *
- *    a = []
- *    (1..5).step(2) {|element| a.push(element) } # => 1..5
- *    a # => [1, 3, 5]
- *
- *  With no block given, returns a specialized enumerator:
- *
- *    e = (1..5).step(2) # => ((1..5).step(2))
- *    e.class            # => Enumerator::ArithmeticSequence
- *
- *  <b>For a Non-Numeric \Range</b>
- *
- *  With a block given and no argument,
- *  calls the block each element of the range; returns +self+:
- *
  *    a = []
  *    ('a'..'e').step {|element| a.push(element) } # => "a".."e"
  *    a # => ["a", "b", "c", "d", "e"]
@@ -430,11 +422,18 @@ range_step_size(VALUE range, VALUE args, VALUE eobj)
  *  calls the block with element +0+, element +n+, element <tt>2n</tt>, and so on:
  *
  *    a = []
+ *    (1..5).step(2) {|element| a.push(element) } # => 1..5
+ *    a # => [1, 3, 5]
+ *    a = []
  *    ('a'..'e').step(2) {|element| a.push(element) } # => "a".."e"
  *    a # => ["a", "c", "e"]
  *
- *  With no block given, returns an enumerator:
+ *  With no block given, returns an enumerator,
+ *  which will be of class Enumerator::ArithmeticSequence if +self+ is numeric;
+ *  otherwise of class Enumerator:
  *
+ *    e = (1..5).step(2) # => ((1..5).step(2))
+ *    e.class            # => Enumerator::ArithmeticSequence
  *    ('a'..'e').step # => #<Enumerator: ...>
  *
  */
@@ -765,7 +764,7 @@ range_bsearch(VALUE range)
 	BSEARCH(INT2FIX);
     }
 #if SIZEOF_DOUBLE == 8 && defined(HAVE_INT64_T)
-    else if (RB_TYPE_P(beg, T_FLOAT) || RB_TYPE_P(end, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(beg) || RB_FLOAT_TYPE_P(end)) {
 	int64_t low  = double_as_int64(NIL_P(beg) ? -HUGE_VAL : RFLOAT_VALUE(rb_Float(beg)));
 	int64_t high = double_as_int64(NIL_P(end) ?  HUGE_VAL : RFLOAT_VALUE(rb_Float(end)));
 	int64_t mid, org_high;
