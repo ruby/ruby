@@ -510,6 +510,7 @@ class TestRubyLiteral < Test::Unit::TestCase
     x = 1
     y = 2
     assert_equal({x: 1, y: 2}, {x:, y:})
+    assert_equal({x: 1, y: 2, z: 3}, {x:, y:, z: 3})
     assert_equal({one: 1, two: 2}, {one:, two:})
     assert_syntax_error('{"#{x}":}', /'\}'/)
   end

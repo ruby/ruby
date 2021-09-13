@@ -4357,6 +4357,7 @@ class TestKeywordArgumentsSymProcRefinements < Test::Unit::TestCase
     x = 1
     y = 2
     assert_equal({x: 1, y: 2}, f.call(x:, y:))
+    assert_equal({x: 1, y: 2, z: 3}, f.call(x:, y:, z: 3))
     assert_equal({one: 1, two: 2}, f.call(one:, two:))
   end
 
