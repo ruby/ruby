@@ -261,6 +261,18 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_overwrite_ENV
+    assert_separately([],"#{<<~"begin;"}\n#{<<~"end;"}")
+    BUG = "[ruby-core:105223] [Bug #18164]"
+    begin;
+      $VERBOSE = nil
+      ENV = {}
+      pid = spawn({}, *#{TRUECOMMAND.inspect})
+      ENV.replace({})
+      assert_kind_of(Integer, pid, BUG)
+    end;
+  end
+
   MANDATORY_ENVS = %w[RUBYLIB MJIT_SEARCH_BUILD_DIR]
   case RbConfig::CONFIG['target_os']
   when /linux/

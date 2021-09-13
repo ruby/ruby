@@ -6182,6 +6182,18 @@ env_to_hash(void)
     return hash;
 }
 
+VALUE
+rb_envtbl(void)
+{
+    return envtbl;
+}
+
+VALUE
+rb_env_to_hash(void)
+{
+    return env_to_hash();
+}
+
 /*
  * call-seq:
  *   ENV.to_hash -> hash of name/value pairs
