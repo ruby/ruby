@@ -312,19 +312,15 @@ module Test
       ##
       # Captures $stdout and $stderr into strings:
       #
-      #   out, err = capture_io do
+      #   out, err = capture_output do
       #     puts "Some info"
       #     warn "You did a bad thing"
       #   end
       #
       #   assert_match %r%info%, out
       #   assert_match %r%bad%, err
-      #
-      # NOTE: For efficiency, this method uses StringIO and does not
-      # capture IO for subprocesses. Use #capture_subprocess_io for
-      # that.
 
-      def capture_io
+      def capture_output
         require 'stringio'
 
         captured_stdout, captured_stderr = StringIO.new, StringIO.new
@@ -343,7 +339,10 @@ module Test
 
         return captured_stdout.string, captured_stderr.string
       end
-      alias capture_output capture_io
+
+      def capture_io
+        raise NoMethodError, "use capture_output"
+      end
 
       ##
       # Returns details for exception +e+
