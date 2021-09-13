@@ -5414,6 +5414,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
     }
 
     sweep_page->flags.before_sweep = FALSE;
+    sweep_page->free_slots = 0;
 
     p = sweep_page->start;
     bits = sweep_page->mark_bits;
@@ -5462,7 +5463,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
 		   sweep_page->total_slots,
 		   ctx->freed_slots, ctx->empty_slots, ctx->final_slots);
 
-    sweep_page->free_slots = ctx->freed_slots + ctx->empty_slots;
+    sweep_page->free_slots += ctx->freed_slots + ctx->empty_slots;
     objspace->profile.total_freed_objects += ctx->freed_slots;
 
     if (heap_pages_deferred_final && !finalizing) {
