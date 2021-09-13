@@ -105,9 +105,7 @@ module Test
         require_relative 'memory_status'
         raise Test::Unit::PendedError, "unsupported platform" unless defined?(Memory::Status)
 
-        token = "\e[7;1m#{$$.to_s}:#{Time.now.strftime('%s.%L')}:#{rand(0x10000).to_s(16)}:\e[m"
-        token_dump = token.dump
-        token_re = Regexp.quote(token)
+        token_dump, token_re = new_test_token
         envs = args.shift if Array === args and Hash === args.first
         args = [
           "--disable=gems",
@@ -244,11 +242,11 @@ module Test
 
       ABORT_SIGNALS = Signal.list.values_at(*%w"ILL ABRT BUS SEGV TERM")
 
-      def separated_runner(out = nil)
+      def separated_runner(token, out = nil)
         include(*Test::Unit::TestCase.ancestors.select {|c| !c.is_a?(Class) })
         out = out ? IO.new(out, 'w') : STDOUT
         at_exit {
-          out.puts [Marshal.dump($!)].pack('m'), "assertions=#{self._assertions}"
+          out.puts "#{token}<error>", [Marshal.dump($!)].pack('m'), "#{token}</error>", "#{token}assertions=#{self._assertions}"
         }
         Test::Unit::Runner.class_variable_set(:@@stop_auto_run, true) if defined?(Test::Unit::Runner)
       end
@@ -266,11 +264,12 @@ module Test
           res_p, res_c = IO.pipe
           opt[:ios] = [res_c]
         end
+        token_dump, token_re = new_test_token
         src = <<eom
 # -*- coding: #{line += __LINE__; src.encoding}; -*-
 BEGIN {
   require "test/unit";include Test::Unit::Assertions;include Test::Unit::CoreAssertions;require #{__FILE__.dump}
-  separated_runner #{res_c&.fileno}
+  separated_runner #{token_dump}, #{res_c&.fileno || 'nil'}
 }
 #{line -= __LINE__; src}
 eom
@@ -288,9 +287,9 @@ eom
         raise if $!
         abort = status.coredump? || (status.signaled? && ABORT_SIGNALS.include?(status.termsig))
         assert(!abort, FailDesc[status, nil, stderr])
-        self._assertions += res[/^assertions=(\d+)/, 1].to_i
+        self._assertions += res[/^#{token_re}assertions=(\d+)/, 1].to_i
         begin
-          res = Marshal.load(res.unpack1("m"))
+          res = Marshal.load(res[/^#{token_re}<error>\n\K.*\n(?=#{token_re}<\/error>$)/m].unpack1("m"))
         rescue => marshal_error
           ignore_stderr = nil
           res = nil
@@ -762,6 +761,11 @@ eom
           q.flush
         end
         q.output
+      end
+
+      def new_test_token
+        token = "\e[7;1m#{$$.to_s}:#{Time.now.strftime('%s.%L')}:#{rand(0x10000).to_s(16)}:\e[m"
+        return token.dump, Regexp.quote(token)
       end
     end
   end
