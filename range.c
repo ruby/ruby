@@ -84,11 +84,17 @@ range_modify(VALUE range)
 
 /*
  *  call-seq:
- *     Range.new(begin, end, exclude_end=false)    -> rng
+ *    Range.new(begin, end, exclude_end = false) -> new_range
  *
- *  Constructs a range using the given +begin+ and +end+. If the +exclude_end+
- *  parameter is omitted or is <code>false</code>, the range will include
- *  the end object; otherwise, it will be excluded.
+ *  Returns a new range based on the given objects +begin+ and +end+.
+ *  Optional argument +exclude_end+ determines whether object +end+
+ *  is included as the last object in the range:
+ *
+ *    Range.new(2, 5).to_a            # => [2, 3, 4, 5]
+ *    Range.new(2, 5, true).to_a      # => [2, 3, 4]
+ *    Range.new('a', 'd').to_a        # => ["a", "b", "c", "d"]
+ *    Range.new('a', 'd', true).to_a  # => ["a", "b", "c"]
+ *
  */
 
 static VALUE
@@ -113,12 +119,14 @@ range_initialize_copy(VALUE range, VALUE orig)
 
 /*
  *  call-seq:
- *     rng.exclude_end?    -> true or false
+ *     exclude_end? -> true or false
  *
- *  Returns <code>true</code> if the range excludes its end value.
+ *  Returns +true+ if +self+ excludes its end value; +false+ otherwise:
  *
- *     (1..5).exclude_end?     #=> false
- *     (1...5).exclude_end?    #=> true
+ *    Range.new(2, 5).exclude_end?       # => false
+ *    Range.new(2, 5, true).exclude_end? # => true
+ *    (2..5).exclude_end?                # => false
+ *    (2...5).exclude_end?               # => true
  */
 
 static VALUE
@@ -142,15 +150,25 @@ recursive_equal(VALUE range, VALUE obj, int recur)
 
 /*
  *  call-seq:
- *     rng == obj    -> true or false
+ *    self == other -> true or false
  *
- *  Returns <code>true</code> only if +obj+ is a Range, has equivalent
- *  begin and end items (by comparing them with <code>==</code>), and has
- *  the same #exclude_end? setting as the range.
+ *  Returns +true+ if and only if:
  *
- *    (0..2) == (0..2)            #=> true
- *    (0..2) == Range.new(0,2)    #=> true
- *    (0..2) == (0...2)           #=> false
+ *  - +other+ is a range.
+ *  - <tt>other.begin == self.begin</tt>.
+ *  - <tt>other.end == self.end</tt>.
+ *  - <tt>other.exclude_end? == self.include_end?</tt>.
+ *
+ *  Otherwise returns +false+.
+ *
+ *    r = (1..5)
+ *    r == (1..5)                # => true
+ *    r = Range.new(1, 5)
+ *    r == 'foo'                 # => false
+ *    r == (2..5)                # => false
+ *    r == (1..4)                # => false
+ *    r == (1...5)               # => false
+ *    r == Range.new(1, 5, true) # => false
  *
  */
 
@@ -194,15 +212,26 @@ recursive_eql(VALUE range, VALUE obj, int recur)
 
 /*
  *  call-seq:
- *     rng.eql?(obj)    -> true or false
+ *    eql?(other) -> true or false
  *
- *  Returns <code>true</code> only if +obj+ is a Range, has equivalent
- *  begin and end items (by comparing them with <code>eql?</code>),
- *  and has the same #exclude_end? setting as the range.
+ *  Returns +true+ if and only if:
  *
- *    (0..2).eql?(0..2)            #=> true
- *    (0..2).eql?(Range.new(0,2))  #=> true
- *    (0..2).eql?(0...2)           #=> false
+ *  - +other+ is a range.
+ *  - <tt>other.begin eql? self.begin</tt>.
+ *  - <tt>other.end eql? self.end</tt>.
+ *  - <tt>other.exclude_end? == self.include_end?</tt>.
+ *
+ *  Otherwise returns +false+.
+ *
+ *    r = (1..5)
+ *    r.eql?(1..5)                  # => true
+ *    r = Range.new(1, 5)
+ *    r.eql?('foo')                 # => false
+ *    r.eql?(2..5)                  # => false
+ *    r.eql?(1..4)                  # => false
+ *    r.eql?(1...5)                 # => false
+ *    r.eql?(Range.new(1, 5, true)) # => false
+ *
  *
  */
 
@@ -218,13 +247,13 @@ range_eql(VALUE range, VALUE obj)
 
 /*
  * call-seq:
- *   rng.hash    -> integer
+ *   hash -> integer
  *
- * Compute a hash-code for this range. Two ranges with equal
- * begin and end points (using <code>eql?</code>), and the same
- * #exclude_end? value will generate the same hash-code.
+ * Returns the integer hash value for +self+.
+ * Two range objects +r0+ and +r1+ have the same hash value
+ * if and only if <tt>r0.eql?(r1)</tt>.
  *
- * See also Object#hash.
+ * Related: Range.eql?, Object.hash.
  */
 
 static VALUE
@@ -361,42 +390,53 @@ range_step_size(VALUE range, VALUE args, VALUE eobj)
 }
 
 /*
- *  Document-method: Range#step
- *  Document-method: Range#%
  *  call-seq:
- *     rng.step(n=1) {| obj | block }    -> rng
- *     rng.step(n=1)                     -> an_enumerator
- *     rng.step(n=1)                     -> an_arithmetic_sequence
- *     rng % n                           -> an_enumerator
- *     rng % n                           -> an_arithmetic_sequence
+ *    step(n = 1) {|element| ... } -> self
+ *    step(n = 1)                  -> enumerator
  *
- *  Iterates over the range, passing each <code>n</code>th element to the block.
- *  If begin and end are numeric, +n+ is added for each iteration.
- *  Otherwise #step invokes #succ to iterate through range elements.
+ *  Iterates over the elements of +self+.
  *
- *  If no block is given, an enumerator is returned instead.
- *  Especially, the enumerator is an Enumerator::ArithmeticSequence
- *  if begin and end of the range are numeric.
+ *  <b>For a \Numeric \Range</b>
  *
- *    range = Xs.new(1)..Xs.new(10)
- *    range.step(2) {|x| puts x}
- *    puts
- *    range.step(3) {|x| puts x}
+ *  With a block given and no argument,
+ *  calls the block each element of the range; returns +self+:
  *
- *  <em>produces:</em>
+ *    a = []
+ *    (1..5).step {|element| a.push(element) } # => 1..5
+ *    a # => [1, 2, 3, 4, 5]
  *
- *     1 x
- *     3 xxx
- *     5 xxxxx
- *     7 xxxxxxx
- *     9 xxxxxxxxx
+ *  With a block given and a positive integer argument +n+ given,
+ *  calls the block with element +0+, element +n+, element <tt>2n</tt>, and so on:
  *
- *     1 x
- *     4 xxxx
- *     7 xxxxxxx
- *    10 xxxxxxxxxx
+ *    a = []
+ *    (1..5).step(2) {|element| a.push(element) } # => 1..5
+ *    a # => [1, 3, 5]
  *
- *  See Range for the definition of class Xs.
+ *  With no block given, returns a specialized enumerator:
+ *
+ *    e = (1..5).step(2) # => ((1..5).step(2))
+ *    e.class            # => Enumerator::ArithmeticSequence
+ *
+ *  <b>For a Non-Numeric \Range</b>
+ *
+ *  With a block given and no argument,
+ *  calls the block each element of the range; returns +self+:
+ *
+ *    a = []
+ *    ('a'..'e').step {|element| a.push(element) } # => "a".."e"
+ *    a # => ["a", "b", "c", "d", "e"]
+ *
+ *  With a block given and a positive integer argument +n+ given,
+ *  calls the block with element +0+, element +n+, element <tt>2n</tt>, and so on:
+ *
+ *    a = []
+ *    ('a'..'e').step(2) {|element| a.push(element) } # => "a".."e"
+ *    a # => ["a", "c", "e"]
+ *
+ *  With no block given, returns an enumerator:
+ *
+ *    ('a'..'e').step # => #<Enumerator: ...>
+ *
  */
 
 
@@ -725,7 +765,7 @@ range_bsearch(VALUE range)
 	BSEARCH(INT2FIX);
     }
 #if SIZEOF_DOUBLE == 8 && defined(HAVE_INT64_T)
-    else if (RB_FLOAT_TYPE_P(beg) || RB_FLOAT_TYPE_P(end)) {
+    else if (RB_TYPE_P(beg, T_FLOAT) || RB_TYPE_P(end, T_FLOAT)) {
 	int64_t low  = double_as_int64(NIL_P(beg) ? -HUGE_VAL : RFLOAT_VALUE(rb_Float(beg)));
 	int64_t high = double_as_int64(NIL_P(end) ?  HUGE_VAL : RFLOAT_VALUE(rb_Float(end)));
 	int64_t mid, org_high;
