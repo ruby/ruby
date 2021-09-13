@@ -89,17 +89,6 @@ module Test
       end
 
       ##
-      # This returns a human-readable version of +obj+. By default
-      # #inspect is called. You can override this to use #pretty_print
-      # if you want.
-
-      def mu_pp obj
-        s = obj.inspect
-        s = s.encode Encoding.default_external if defined? Encoding
-        s
-      end
-
-      ##
       # This returns a diff-able human-readable version of +obj+. This
       # differs from the regular mu_pp because it expands escaped
       # newlines and makes hex-values generic (like object_ids). This
