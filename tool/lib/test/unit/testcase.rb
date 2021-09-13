@@ -256,8 +256,14 @@ module Test
         super
       end
 
-      def self.test_order # :nodoc:
-        :sorted
+      @test_order = :sorted
+
+      class << self
+        attr_writer :test_order
+      end
+
+      def self.test_order
+        defined?(@test_order) ? @test_order : superclass.test_order
       end
 
       def self.test_suites # :nodoc:
@@ -335,17 +341,6 @@ module Test
         end
         @test_methods[name] = true
       end
-
-      test_order = self.test_order
-      class << self
-        attr_writer :test_order
-        undef test_order
-      end
-      def self.test_order
-        defined?(@test_order) ? @test_order : superclass.test_order
-      end
-      self.test_order = test_order
-
     end
   end
 end
