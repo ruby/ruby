@@ -214,6 +214,7 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
   def test_template_stylesheets
     css = Tempfile.create(%W'hoge .css', Dir.mktmpdir('tmp', '.'))
     File.write(css, '')
+    css.close
     base = File.basename(css)
     refute_file(base)
 
