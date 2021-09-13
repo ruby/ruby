@@ -774,19 +774,6 @@ begin
       EOC
     end
 
-    def test_brackets
-      omit unless Reline::IOGate.win?
-      start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
-      write("\x80\M-[\x80\M-{\x80\M-}\x80\M-]\n")
-      close
-      assert_screen(<<~EOC)
-        Multiline REPL.
-        prompt> [{}]
-        => [{}]
-        prompt>
-      EOC
-    end
-
     def test_with_newline
       omit if Reline::IOGate.win?
       cmd = %Q{ruby -e 'print(%Q{abc def \\e\\r})' | ruby -I#{@pwd}/lib -rreline -e 'p Reline.readline(%{> })'}
