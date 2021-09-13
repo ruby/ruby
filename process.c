@@ -177,6 +177,9 @@ static void check_uid_switch(void);
 static void check_gid_switch(void);
 static int exec_async_signal_safe(const struct rb_execarg *, char *, size_t);
 
+VALUE rb_envtbl(void);
+VALUE rb_env_to_hash(void);
+
 #if 1
 #define p_uid_from_name p_uid_from_name
 #define p_gid_from_name p_gid_from_name
@@ -315,7 +318,7 @@ static ID id_pgroup;
 #ifdef _WIN32
 static ID id_new_pgroup;
 #endif
-static ID id_unsetenv_others, id_chdir, id_umask, id_close_others, id_ENV;
+static ID id_unsetenv_others, id_chdir, id_umask, id_close_others;
 static ID id_nanosecond, id_microsecond, id_millisecond, id_second;
 static ID id_float_microsecond, id_float_millisecond, id_float_second;
 static ID id_GETTIMEOFDAY_BASED_CLOCK_REALTIME, id_TIME_BASED_CLOCK_REALTIME;
@@ -2978,8 +2981,7 @@ rb_execarg_parent_start1(VALUE execarg_obj)
             envtbl = rb_hash_new();
         }
         else {
-            envtbl = rb_const_get(rb_cObject, id_ENV);
-            envtbl = rb_to_hash_type(envtbl);
+            envtbl = rb_env_to_hash();
         }
         hide_obj(envtbl);
         if (envopts != Qfalse) {
@@ -3591,7 +3593,7 @@ save_env(struct rb_execarg *sargp)
     if (!sargp)
         return;
     if (sargp->env_modification == Qfalse) {
-        VALUE env = rb_const_get(rb_cObject, id_ENV);
+        VALUE env = rb_envtbl();
         if (RTEST(env)) {
             VALUE ary = hide_obj(rb_ary_new());
             rb_block_call(env, idEach, 0, 0, save_env_i,
@@ -9061,7 +9063,6 @@ Init_process(void)
     id_chdir = rb_intern_const("chdir");
     id_umask = rb_intern_const("umask");
     id_close_others = rb_intern_const("close_others");
-    id_ENV = rb_intern_const("ENV");
     id_nanosecond = rb_intern_const("nanosecond");
     id_microsecond = rb_intern_const("microsecond");
     id_millisecond = rb_intern_const("millisecond");
