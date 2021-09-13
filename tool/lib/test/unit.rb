@@ -80,12 +80,6 @@ module Test
     module Options # :nodoc: all
       def initialize(*, &block)
         @init_hook = block
-        @report = []
-        @errors = @failures = @skips = 0
-        @verbose = false
-        @mutex = Thread::Mutex.new
-        @info_signal = Signal.list['INFO']
-        @repeat_count = nil
         @options = nil
         super(&nil)
       end
@@ -1431,6 +1425,19 @@ module Test
           last_before_assertion = s
         end
         last_before_assertion.sub(/:in .*$/, '')
+      end
+
+      ##
+      # Writes status for failed test +meth+ in +klass+ which finished with
+      # exception +e+
+
+      def initialize # :nodoc:
+        @report = []
+        @errors = @failures = @skips = 0
+        @verbose = false
+        @mutex = Thread::Mutex.new
+        @info_signal = Signal.list['INFO']
+        @repeat_count = nil
       end
 
       def synchronize # :nodoc:
