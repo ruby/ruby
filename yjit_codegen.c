@@ -348,9 +348,6 @@ yjit_gen_exit(VALUE *exit_pc, ctx_t *ctx, codeblock_t *cb)
         mov(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), REG_SP);
     }
 
-    // Update the CFP on the EC
-    mov(cb, member_opnd(REG_EC, rb_execution_context_t, cfp), REG_CFP);
-
     // Update CFP->PC
     mov(cb, RAX, const_ptr_opnd(exit_pc));
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, pc), RAX);
