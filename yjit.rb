@@ -213,7 +213,7 @@ module YJIT
         padded_count = "%10d" % count
         percent = 100.0 * count / total_exits
         formatted_percent = "%.1f" % percent
-        $stderr.puts("#{padded_name}: #{padded_count} (#{formatted_percent})" )
+        $stderr.puts("#{padded_name}: #{padded_count} (#{formatted_percent}%)" )
       end
     end
 
