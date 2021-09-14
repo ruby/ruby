@@ -58,7 +58,7 @@ To support disassembly of the generated code, `libcapstone` is also required (`b
 ```
 # Configure with debugging/stats options for development, build and install
 ./autogen.sh
-./configure cppflags="-DRUBY_DEBUG -DYJIT_STATS" --prefix=$HOME/.rubies/ruby-yjit
+./configure cppflags="-DRUBY_DEBUG -DYJIT_STATS" --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc --disable--install-rdoc
 make -j16 install
 ```
 
