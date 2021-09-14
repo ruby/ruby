@@ -24,13 +24,8 @@ static VALUE cYjitDisasmInsn;
 static VALUE mYjit;
 static VALUE cYjitBlock;
 
-#if RUBY_DEBUG
-# define YJIT_STATS 1
+#if YJIT_STATS
 static VALUE cYjitCodeComment;
-#else
-# ifndef YJIT_STATS
-#  define YJIT_STATS 0
-# endif
 #endif
 
 #if YJIT_STATS
