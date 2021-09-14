@@ -740,6 +740,8 @@ yjit_gen_block(block_t *block, rb_execution_context_t *ec)
     }
 }
 
+static codegen_status_t gen_opt_send_without_block(jitstate_t *jit, ctx_t *ctx);
+
 static codegen_status_t
 gen_nop(jitstate_t* jit, ctx_t* ctx)
 {
@@ -2007,8 +2009,6 @@ gen_equality_specialized(jitstate_t* jit, ctx_t* ctx, uint8_t *side_exit)
         return false;
     }
 }
-
-static codegen_status_t gen_opt_send_without_block(jitstate_t *jit, ctx_t *ctx);
 
 static codegen_status_t
 gen_opt_eq(jitstate_t* jit, ctx_t* ctx)
