@@ -3504,9 +3504,8 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
                 return gen_get_ivar(jit, ctx, SEND_MAX_DEPTH, comptime_recv, ivar_name, recv_opnd, side_exit);
             }
         case VM_METHOD_TYPE_ATTRSET:
-            GEN_COUNTER_INC(cb, send_ivar_set_method);
-
             if (argc != 1 || !RB_TYPE_P(comptime_recv, T_OBJECT)) {
+                GEN_COUNTER_INC(cb, send_ivar_set_method);
                 return YJIT_CANT_COMPILE;
             } else {
                 ID ivar_name = cme->def->body.attr.id;
@@ -3829,7 +3828,7 @@ gen_getspecial(jitstate_t *jit, ctx_t *ctx)
     // This takes two arguments, key and type
     // key is only used when type == 0
     // A non-zero type determines which type of backref to fetch
-    rb_num_t key = jit_get_arg(jit, 0);
+    //rb_num_t key = jit_get_arg(jit, 0);
     rb_num_t type = jit_get_arg(jit, 1);
 
     if (type == 0) {
