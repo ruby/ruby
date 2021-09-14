@@ -1548,7 +1548,7 @@ exc_equal(VALUE exc, VALUE obj)
 
     if (!rb_equal(rb_attr_get(exc, id_mesg), mesg))
 	return Qfalse;
-    return RBOOL(rb_equal(exc_backtrace(exc), backtrace));
+    return rb_equal(exc_backtrace(exc), backtrace);
 }
 
 /*
