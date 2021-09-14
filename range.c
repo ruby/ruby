@@ -662,52 +662,10 @@ bsearch_integer_range(VALUE beg, VALUE end, int excl)
  *  call-seq:
  *     rng.bsearch {|obj| block }  -> value
  *
- *  By using binary search, finds a value in range which meets the given
- *  condition in O(log n) where n is the size of the range.
+ *  Returns an element from +self+ selected by a binary search.
  *
- *  You can use this method in two use cases: a find-minimum mode and
- *  a find-any mode.  In either case, the elements of the range must be
- *  monotone (or sorted) with respect to the block.
+ *  See {Binary Searching}[doc/bsearch_rdoc.html].
  *
- *  In find-minimum mode (this is a good choice for typical use case),
- *  the block must return true or false, and there must be a value x
- *  so that:
- *
- *  - the block returns false for any value which is less than x, and
- *  - the block returns true for any value which is greater than or
- *    equal to x.
- *
- *  If x is within the range, this method returns the value x.
- *  Otherwise, it returns nil.
- *
- *     ary = [0, 4, 7, 10, 12]
- *     (0...ary.size).bsearch {|i| ary[i] >= 4 } #=> 1
- *     (0...ary.size).bsearch {|i| ary[i] >= 6 } #=> 2
- *     (0...ary.size).bsearch {|i| ary[i] >= 8 } #=> 3
- *     (0...ary.size).bsearch {|i| ary[i] >= 100 } #=> nil
- *
- *     (0.0...Float::INFINITY).bsearch {|x| Math.log(x) >= 0 } #=> 1.0
- *
- *  In find-any mode (this behaves like libc's bsearch(3)), the block
- *  must return a number, and there must be two values x and y (x <= y)
- *  so that:
- *
- *  - the block returns a positive number for v if v < x,
- *  - the block returns zero for v if x <= v < y, and
- *  - the block returns a negative number for v if y <= v.
- *
- *  This method returns any value which is within the intersection of
- *  the given range and x...y (if any).  If there is no value that
- *  satisfies the condition, it returns nil.
- *
- *     ary = [0, 100, 100, 100, 200]
- *     (0..4).bsearch {|i| 100 - ary[i] } #=> 1, 2 or 3
- *     (0..4).bsearch {|i| 300 - ary[i] } #=> nil
- *     (0..4).bsearch {|i|  50 - ary[i] } #=> nil
- *
- *  You must not mix the two modes at a time; the block must always
- *  return either true/false, or always return a number.  It is
- *  undefined which value is actually picked up at each iteration.
  */
 
 static VALUE
