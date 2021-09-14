@@ -105,6 +105,47 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_compile_opt_lt
+    assert_compiles('1 < 2', insns: %i[opt_lt])
+    assert_compiles('"a" < "b"', insns: %i[opt_lt])
+  end
+
+  def test_compile_opt_le
+    assert_compiles('1 <= 2', insns: %i[opt_le])
+    assert_compiles('"a" <= "b"', insns: %i[opt_le])
+  end
+
+  def test_compile_opt_gt
+    assert_compiles('1 > 2', insns: %i[opt_gt])
+    assert_compiles('"a" > "b"', insns: %i[opt_gt])
+  end
+
+  def test_compile_opt_ge
+    assert_compiles('1 >= 2', insns: %i[opt_ge])
+    assert_compiles('"a" >= "b"', insns: %i[opt_ge])
+  end
+
+  def test_compile_opt_plus
+    assert_compiles('1 + 2', insns: %i[opt_plus])
+    assert_compiles('"a" + "b"', insns: %i[opt_plus])
+    assert_compiles('[:foo] + [:bar]', insns: %i[opt_plus])
+  end
+
+  def test_compile_opt_minus
+    assert_compiles('1 - 2', insns: %i[opt_minus])
+    assert_compiles('[:foo, :bar] - [:bar]', insns: %i[opt_minus])
+  end
+
+  def test_compile_opt_or
+    assert_compiles('1 | 2', insns: %i[opt_or])
+    assert_compiles('[:foo] | [:bar]', insns: %i[opt_or])
+  end
+
+  def test_compile_opt_and
+    assert_compiles('1 & 2', insns: %i[opt_and])
+    assert_compiles('[:foo, :bar] & [:bar]', insns: %i[opt_and])
+  end
+
   def test_compile_set_and_get_global
     assert_compiles('$foo = 123; $foo', insns: %i[setglobal], result: 123)
   end
