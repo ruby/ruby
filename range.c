@@ -660,7 +660,7 @@ bsearch_integer_range(VALUE beg, VALUE end, int excl)
 
 /*
  *  call-seq:
- *     rng.bsearch {|obj| block }  -> value
+ *     bsearch {|obj| block }  -> value
  *
  *  Returns an element from +self+ selected by a binary search.
  *
@@ -778,14 +778,16 @@ sym_each_i(VALUE v, VALUE arg)
 
 /*
  *  call-seq:
- *     rng.size                   -> num
+ *    size -> non_negative_integer or Infinity or nil
  *
- *  Returns the number of elements in the range. Both the begin and the end of
- *  the Range must be Numeric, otherwise nil is returned.
+ *  Returns the count of elements in +self+
+ *  if both begin and end values are numeric;
+ *  otherwise, returns +nil+:
  *
- *    (10..20).size    #=> 11
+ *    (1..4).size      # => 4
+ *    (1...4).size     # => 3
+ *    (1..).size       # => Infinity
  *    ('a'..'z').size  #=> nil
- *    (-Float::INFINITY..Float::INFINITY).size #=> Infinity
  */
 
 static VALUE
@@ -809,13 +811,16 @@ range_size(VALUE range)
 
 /*
  *  call-seq:
- *     rng.to_a                   -> array
- *     rng.entries                -> array
+ *    to_a -> array
  *
- *  Returns an array containing the items in the range.
+ *  Returns an array containing the elements in +self+, if a finite collection;
+ *  raises an exception otherwise.
  *
- *    (1..7).to_a  #=> [1, 2, 3, 4, 5, 6, 7]
- *    (1..).to_a   #=> RangeError: cannot convert endless range to an array
+ *    (1..4).to_a     # => [1, 2, 3, 4]
+ *    (1...4).to_a    # => [1, 2, 3]
+ *    ('a'..'d').to_a # => ["a", "b", "c", "d"]
+ *
+ *  Range#entries is an alias for Range#to_a.
  */
 
 static VALUE
@@ -867,23 +872,19 @@ range_each_fixnum_loop(VALUE beg, VALUE end, VALUE range)
 
 /*
  *  call-seq:
- *     rng.each {| i | block } -> rng
- *     rng.each                -> an_enumerator
+ *    each {|element| ... } -> self
+ *    each                  -> an_enumerator
  *
- *  Iterates over the elements of range, passing each in turn to the
- *  block.
+ *  With a block given, passes each element of +self+ to the block:
  *
- *  The +each+ method can only be used if the begin object of the range
- *  supports the +succ+ method.  A TypeError is raised if the object
- *  does not have +succ+ method defined (like Float).
+ *    a = []
+ *    (1..4).each {|element| a.push(element) } # => 1..4
+ *    a # => [1, 2, 3, 4]
  *
- *  If no block is given, an enumerator is returned instead.
+ *  Raises an exception unless <tt>self.first.respond_to?(:succ)</tt>.
  *
- *     (10..15).each {|n| print n, ' ' }
- *     # prints: 10 11 12 13 14 15
+ *  With no block given, returns an enumerator.
  *
- *     (2.5..5).each {|n| print n, ' ' }
- *     # raises: TypeError: can't iterate from Float
  */
 
 static VALUE
@@ -982,11 +983,14 @@ range_each(VALUE range)
 
 /*
  *  call-seq:
- *     rng.begin    -> obj
+ *    self.begin -> object
  *
- *  Returns the object that defines the beginning of the range.
+ *  Returns the object that defines the beginning of +self+.
  *
- *      (1..10).begin   #=> 1
+ *    (1..4).begin # => 1
+ *    (..2).begin  # => nil
+ *
+ *  Related: Range#first, Range#end.
  */
 
 static VALUE
@@ -998,12 +1002,15 @@ range_begin(VALUE range)
 
 /*
  *  call-seq:
- *     rng.end    -> obj
+ *    self.end -> object
  *
- *  Returns the object that defines the end of the range.
+ *  Returns the object that defines the end of +self+.
  *
- *     (1..10).end    #=> 10
- *     (1...10).end   #=> 10
+ *    (1..4).end  # => 4
+ *    (1...4).end # => 4
+ *    (1..).end   # => nil
+ *
+ *  Related: Range#begin, Range#last.
  */
 
 
@@ -1031,14 +1038,24 @@ first_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, cbarg))
 
 /*
  *  call-seq:
- *     rng.first    -> obj
- *     rng.first(n) -> an_array
+ *    first -> object
+ *    first(n) -> array
  *
- *  Returns the first object in the range, or an array of the first +n+
- *  elements.
+ *  With no argument, returns the first element of +self+, if it exists:
  *
- *    (10..20).first     #=> 10
- *    (10..20).first(3)  #=> [10, 11, 12]
+ *    (1..4).first     # => 1
+ *    ('a'..'d').first # => "a"
+ *
+ *  With non-negative integer argument +n+ given,
+ *  returns the first +n+ elements in an array:
+ *
+ *    (1..10).first(3) # => [1, 2, 3]
+ *    (1..10).first(0) # => []
+ *    (1..4).first(50) # => [1, 2, 3, 4]
+ *
+ *  Raises an exception if there is no first element:
+ *
+ *    (..4).first # Raises RangeError
  */
 
 static VALUE
@@ -1114,19 +1131,37 @@ rb_int_range_last(int argc, VALUE *argv, VALUE range)
 
 /*
  *  call-seq:
- *     rng.last    -> obj
- *     rng.last(n) -> an_array
+ *    last -> object
+ *    last(n) -> array
  *
- *  Returns the last object in the range,
- *  or an array of the last +n+ elements.
+ *  With no argument, returns the last element of +self+, if it exists:
  *
- *  Note that with no arguments +last+ will return the object that defines
- *  the end of the range even if #exclude_end? is +true+.
+ *    (1..4).last     # => 4
+ *    ('a'..'d').last # => "d"
  *
- *    (10..20).last      #=> 20
- *    (10...20).last     #=> 20
- *    (10..20).last(3)   #=> [18, 19, 20]
- *    (10...20).last(3)  #=> [17, 18, 19]
+ *  Note that +last+ with no argument returns the end element of +self+
+ *  even if #exclude_end? is +true+:
+ *
+ *    (1...4).last     # => 4
+ *    ('a'...'d').last # => "d"
+ *
+ *  With non-negative integer argument +n+ given,
+ *  returns the last +n+ elements in an array:
+ *
+ *    (1..10).last(3) # => [8, 9, 10]
+ *    (1..10).last(0) # => []
+ *    (1..4).last(50) # => [1, 2, 3, 4]
+ *
+ *  Note that +last+ with argument does not return the end element of +self+
+ *  if #exclude_end? it +true+:
+ *
+ *    (1...4).last(3)     # => [1, 2, 3]
+ *    ('a'...'d').last(3) # => ["a", "b", "c"]
+ *
+ *  Raises an exception if there is no last element:
+ *
+ *    (1..).last # Raises RangeError
+ *
  */
 
 static VALUE
