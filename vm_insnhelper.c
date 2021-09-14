@@ -5227,12 +5227,6 @@ vm_opt_aset(VALUE recv, VALUE obj, VALUE set)
     }
 }
 
-VALUE
-rb_vm_opt_aset(VALUE recv, VALUE obj, VALUE set)
-{
-    return vm_opt_aset(recv, obj, set);
-}
-
 static VALUE
 vm_opt_aref_with(VALUE recv, VALUE key)
 {
