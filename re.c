@@ -1724,8 +1724,7 @@ rb_reg_nth_defined(int nth, VALUE match)
 	nth += regs->num_regs;
 	if (nth <= 0) return Qnil;
     }
-    if (BEG(nth) == -1) return Qfalse;
-    return Qtrue;
+    return RBOOL(BEG(nth) != -1);
 }
 
 VALUE
@@ -3053,10 +3052,7 @@ rb_reg_equal(VALUE re1, VALUE re2)
     if (RREGEXP_PTR(re1)->options != RREGEXP_PTR(re2)->options) return Qfalse;
     if (RREGEXP_SRC_LEN(re1) != RREGEXP_SRC_LEN(re2)) return Qfalse;
     if (ENCODING_GET(re1) != ENCODING_GET(re2)) return Qfalse;
-    if (memcmp(RREGEXP_SRC_PTR(re1), RREGEXP_SRC_PTR(re2), RREGEXP_SRC_LEN(re1)) == 0) {
-	return Qtrue;
-    }
-    return Qfalse;
+    return RBOOL(memcmp(RREGEXP_SRC_PTR(re1), RREGEXP_SRC_PTR(re2), RREGEXP_SRC_LEN(re1)) == 0);
 }
 
 /*

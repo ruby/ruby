@@ -5387,18 +5387,14 @@ rb_integer_float_eq(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 #if SIZEOF_LONG * CHAR_BIT < DBL_MANT_DIG /* assume FLT_RADIX == 2 */
         double xd = (double)FIX2LONG(x);
-        if (xd != yd)
-            return Qfalse;
-        return Qtrue;
+        return RBOOL(xd == yd);
 #else
         long xn, yn;
         if (yi < LONG_MIN || LONG_MAX_as_double <= yi)
             return Qfalse;
         xn = FIX2LONG(x);
         yn = (long)yi;
-        if (xn != yn)
-            return Qfalse;
-        return Qtrue;
+        return RBOOL(xn == yn);
 #endif
     }
     y = rb_dbl2big(yi);
@@ -5527,8 +5523,7 @@ rb_big_eq(VALUE x, VALUE y)
     }
     if (BIGNUM_SIGN(x) != BIGNUM_SIGN(y)) return Qfalse;
     if (BIGNUM_LEN(x) != BIGNUM_LEN(y)) return Qfalse;
-    if (MEMCMP(BDIGITS(x),BDIGITS(y),BDIGIT,BIGNUM_LEN(y)) != 0) return Qfalse;
-    return Qtrue;
+    return RBOOL(MEMCMP(BDIGITS(x),BDIGITS(y),BDIGIT,BIGNUM_LEN(y)) == 0);
 }
 
 VALUE
@@ -5537,8 +5532,7 @@ rb_big_eql(VALUE x, VALUE y)
     if (!RB_BIGNUM_TYPE_P(y)) return Qfalse;
     if (BIGNUM_SIGN(x) != BIGNUM_SIGN(y)) return Qfalse;
     if (BIGNUM_LEN(x) != BIGNUM_LEN(y)) return Qfalse;
-    if (MEMCMP(BDIGITS(x),BDIGITS(y),BDIGIT,BIGNUM_LEN(y)) != 0) return Qfalse;
-    return Qtrue;
+    return RBOOL(MEMCMP(BDIGITS(x),BDIGITS(y),BDIGIT,BIGNUM_LEN(y)) == 0);
 }
 
 VALUE
@@ -6821,10 +6815,7 @@ rb_big_bit_length(VALUE big)
 VALUE
 rb_big_odd_p(VALUE num)
 {
-    if (BIGNUM_LEN(num) != 0 && BDIGITS(num)[0] & 1) {
-	return Qtrue;
-    }
-    return Qfalse;
+    return RBOOL(BIGNUM_LEN(num) != 0 && BDIGITS(num)[0] & 1);
 }
 
 VALUE

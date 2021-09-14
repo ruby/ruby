@@ -2019,8 +2019,7 @@ rb_file_file_p(VALUE obj, VALUE fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (S_ISREG(st.st_mode)) return Qtrue;
-    return Qfalse;
+    return RBOOL(S_ISREG(st.st_mode));
 }
 
 /*
@@ -2039,8 +2038,7 @@ rb_file_zero_p(VALUE obj, VALUE fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (st.st_size == 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(st.st_size == 0);
 }
 
 /*
@@ -2080,8 +2078,7 @@ rb_file_owned_p(VALUE obj, VALUE fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (st.st_uid == geteuid()) return Qtrue;
-    return Qfalse;
+    return RBOOL(st.st_uid == geteuid());
 }
 
 static VALUE
@@ -2090,8 +2087,7 @@ rb_file_rowned_p(VALUE obj, VALUE fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (st.st_uid == getuid()) return Qtrue;
-    return Qfalse;
+    return RBOOL(st.st_uid == getuid());
 }
 
 /*
@@ -2124,8 +2120,7 @@ check3rdbyte(VALUE fname, int mode)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (st.st_mode & mode) return Qtrue;
-    return Qfalse;
+    return RBOOL(st.st_mode & mode);
 }
 #endif
 

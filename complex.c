@@ -1451,10 +1451,7 @@ rb_complex_finite_p(VALUE self)
 {
     get_dat1(self);
 
-    if (f_finite_p(dat->real) && f_finite_p(dat->imag)) {
-	return Qtrue;
-    }
-    return Qfalse;
+    return RBOOL(f_finite_p(dat->real) && f_finite_p(dat->imag));
 }
 
 /*

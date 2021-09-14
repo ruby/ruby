@@ -3370,13 +3370,7 @@ rb_thread_stop_p(VALUE thread)
     if (rb_threadptr_dead(th)) {
 	return Qtrue;
     }
-    else if (th->status == THREAD_STOPPED ||
-	     th->status == THREAD_STOPPED_FOREVER) {
-	return Qtrue;
-    }
-    else {
-	return Qfalse;
-    }
+    return RBOOL(th->status == THREAD_STOPPED || th->status == THREAD_STOPPED_FOREVER);
 }
 
 /*
@@ -3770,12 +3764,7 @@ rb_thread_key_p(VALUE self, VALUE key)
     if (!id || local_storage == NULL) {
 	return Qfalse;
     }
-    else if (rb_id_table_lookup(local_storage, id, &val)) {
-	return Qtrue;
-    }
-    else {
-	return Qfalse;
-    }
+    return RBOOL(rb_id_table_lookup(local_storage, id, &val));
 }
 
 static enum rb_id_table_iterator_result
