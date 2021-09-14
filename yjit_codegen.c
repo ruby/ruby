@@ -203,8 +203,7 @@ record_global_inval_patch(const codeblock_t *cb, uint32_t outline_block_target_p
 
 static bool jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, insn_opnd_t insn_opnd, VALUE sample_instance, const int max_chain_depth, uint8_t *side_exit);
 
-#if RUBY_DEBUG
-# define YJIT_STATS 1
+#if YJIT_STATS
 
 // Add a comment at the current position in the code block
 static void
@@ -290,14 +289,11 @@ verify_ctx(jitstate_t *jit, ctx_t *ctx)
 }
 
 #else
-#ifndef YJIT_STATS
-#define YJIT_STATS 0
-#endif // ifndef YJIT_STATS
 
 #define ADD_COMMENT(cb, comment) ((void)0)
 #define verify_ctx(jit, ctx) ((void)0)
 
-#endif // if RUBY_DEBUG
+#endif // if YJIT_STATS
 
 #if YJIT_STATS
 

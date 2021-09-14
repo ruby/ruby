@@ -6,8 +6,9 @@
 #ifndef YJIT_IFACE_H
 #define YJIT_IFACE_H 1
 
-#include "ruby/ruby.h"
-#include "ruby/assert.h" // for RUBY_DEBUG
+#include "ruby/internal/config.h"
+#include "ruby_assert.h" // for RUBY_DEBUG
+#include "yjit.h" // for YJIT_STATS
 #include "vm_core.h"
 #include "yjit_core.h"
 
@@ -15,8 +16,7 @@
 # define YJIT_DEFAULT_CALL_THRESHOLD 10
 #endif
 
-#if RUBY_DEBUG
-# define YJIT_STATS 1
+#if YJIT_STATS
 struct yjit_comment {
     uint32_t offset;
     const char *comment;
@@ -25,11 +25,7 @@ struct yjit_comment {
 typedef rb_darray(struct yjit_comment) yjit_comment_array_t;
 
 extern yjit_comment_array_t yjit_code_comments;
-#else
-# ifndef YJIT_STATS
-#  define YJIT_STATS 0
-# endif // ifndef YJIT_STATS
-#endif // if RUBY_DEBUG
+#endif // if YJIT_STATS
 
 
 #if YJIT_STATS
