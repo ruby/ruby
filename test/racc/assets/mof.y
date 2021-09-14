@@ -565,7 +565,7 @@ require 'rubygems'
 require 'cim'
 require File.join(File.dirname(__FILE__), 'result')
 require File.join(File.dirname(__FILE__), 'scanner')
-require File.join(File.dirname(__FILE__), 'helper')
+require File.join(File.dirname(__FILE__), 'case')
 
 ---- inner ----
 
