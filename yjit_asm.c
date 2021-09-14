@@ -7,6 +7,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <assert.h>
+#include <errno.h>
 
 // For mmapp(), sysconf()
 #ifndef _WIN32
@@ -203,7 +204,7 @@ uint8_t* alloc_exec_mem(uint32_t mem_size)
 
     // Check that the memory mapping was successful
     if (mem_block == MAP_FAILED) {
-        fprintf(stderr, "mmap call failed\n");
+        perror("mmap call failed");
         exit(-1);
     }
 
