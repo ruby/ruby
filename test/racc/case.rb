@@ -10,7 +10,7 @@ require 'timeout'
 
 module Racc
   class TestCase < Test::Unit::TestCase
-    PROJECT_DIR = File.expand_path(File.join(File.dirname(__FILE__), '..'))
+    PROJECT_DIR = File.expand_path(File.join(__dir__, '..'))
 
     test_dir = File.join(PROJECT_DIR, 'test')
     test_dir = File.join(PROJECT_DIR, 'racc') unless File.exist?(test_dir)
