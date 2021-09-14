@@ -84,8 +84,7 @@ cmp_equal(VALUE x, VALUE y)
     c = rb_exec_recursive_paired_outer(cmp_eq_recursive, x, y, y);
 
     if (NIL_P(c)) return Qfalse;
-    if (rb_cmpint(c, x, y) == 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(rb_cmpint(c, x, y) == 0);
 }
 
 static int

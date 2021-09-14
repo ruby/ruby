@@ -783,8 +783,7 @@ MJIT_FUNC_EXPORTED VALUE
 rb_gvar_defined(ID id)
 {
     struct rb_global_entry *entry = rb_global_entry(id);
-    if (entry->var->getter == rb_gvar_undef_getter) return Qfalse;
-    return Qtrue;
+    return RBOOL(entry->var->getter != rb_gvar_undef_getter);
 }
 
 rb_gvar_getter_t *
@@ -1099,10 +1098,7 @@ generic_ivar_defined(VALUE obj, ID id)
     if (!iv_index_tbl_lookup(iv_index_tbl, id, &index)) return Qfalse;
     if (!gen_ivtbl_get(obj, id, &ivtbl)) return Qfalse;
 
-    if ((index < ivtbl->numiv) && (ivtbl->ivptr[index] != Qundef))
-	return Qtrue;
-
-    return Qfalse;
+    return RBOOL((index < ivtbl->numiv) && (ivtbl->ivptr[index] != Qundef));
 }
 
 static int
