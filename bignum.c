@@ -460,7 +460,6 @@ static int
 bary_2comp(BDIGIT *ds, size_t n)
 {
     size_t i;
-    i = 0;
     for (i = 0; i < n; i++) {
         if (ds[i] != 0) {
             goto non_zero;
