@@ -1396,9 +1396,7 @@ vm_yield_with_cref(rb_execution_context_t *ec, int argc, const VALUE *argv, int 
 static VALUE
 vm_yield(rb_execution_context_t *ec, int argc, const VALUE *argv, int kw_splat)
 {
-    return invoke_block_from_c_bh(ec, check_block_handler(ec),
-                                  argc, argv, kw_splat, VM_BLOCK_HANDLER_NONE,
-				  NULL, FALSE, FALSE);
+    return vm_yield_with_cref(ec, argc, argv, kw_splat, NULL, FALSE);
 }
 
 static VALUE
