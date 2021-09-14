@@ -1,0 +1,14 @@
+/.bundle/
+/.yardoc
+/_yardoc/
+/coverage/
+/doc/
+/pkg/
+/spec/reports/
+/tmp/
+scratch.rb
+
+# rspec failure tracking
+.rspec_status
+.DS_Store
+

@@ -1,0 +1,70 @@
+#!/usr/bin/env ruby
+
+require 'pathname'
+require "optparse"
+require_relative "../lib/dead_end.rb"
+
+options = {}
+options[:terminal] = true
+options[:record_dir] = ENV["DEAD_END_RECORD_DIR"]
+
+parser = OptionParser.new do |opts|
+  opts.banner = <<~EOM
+    Usage: dead_end <file> [options]
+
+    Parses a ruby source file and searches for syntax error(s) such as
+    unexpected `end', expecting end-of-input.
+
+    Example:
+
+      $ dead_end dog.rb
+
+      # ...
+
+        ❯ 10  defdog
+        ❯ 15  end
+        ❯ 16
+
+    Env options:
+
+      DEAD_END_RECORD_DIR=<dir>
+
+      When enabled, records the steps used to search for a syntax error to the
+      given directory
+
+    Options:
+  EOM
+
+  opts.on("--help", "Help - displays this message") do |v|
+    puts opts
+    exit
+  end
+
+  opts.on("--record <dir>", "When enabled, records the steps used to search for a syntax error to the given directory") do |v|
+    options[:record_dir] = v
+  end
+
+  opts.on("--no-terminal", "Disable terminal highlighting") do |v|
+    options[:terminal] = false
+  end
+end
+parser.parse!
+
+file = ARGV[0]
+
+if file.nil? || file.empty?
+  # Display help if raw command
+  parser.parse! %w[--help]
+end
+
+file = Pathname(file)
+options[:record_dir] = "tmp" if ENV["DEBUG"]
+
+$stderr.puts "Record dir: #{options[:record_dir]}"  if options[:record_dir]
+
+DeadEnd.call(
+  source: file.read,
+  filename: file.expand_path,
+  terminal: options[:terminal],
+  record_dir: options[:record_dir]
+)

@@ -1,0 +1,50 @@
+version: 2.1
+orbs:
+  ruby: circleci/ruby@1.1.2
+references:
+  unit: &unit
+    run:
+      name: Run test suite
+      command: bundle exec rspec spec/
+
+jobs:
+  "ruby-2-5":
+    docker:
+      - image: circleci/ruby:2.5
+    steps:
+      - checkout
+      - ruby/install-deps
+      - <<: *unit
+
+  "ruby-2-6":
+    docker:
+      - image: circleci/ruby:2.6
+    steps:
+      - checkout
+      - ruby/install-deps
+      - <<: *unit
+
+  "ruby-2-7":
+    docker:
+      - image: circleci/ruby:2.7
+    steps:
+      - checkout
+      - ruby/install-deps
+      - <<: *unit
+
+  "ruby-3-0":
+    docker:
+      - image: circleci/ruby:3.0
+    steps:
+      - checkout
+      - ruby/install-deps
+      - <<: *unit
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - "ruby-2-5"
+      - "ruby-2-6"
+      - "ruby-2-7"
+      - "ruby-3-0"

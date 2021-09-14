@@ -17,3 +17,10 @@ begin
 rescue LoadError
   warn "`did_you_mean' was not loaded."
 end if defined?(DidYouMean)
+
+begin
+  require 'dead_end'
+rescue LoadError
+  warn "`dead_end' was not loaded."
+end # I'm not sure why we're requiring a thing after it's defined already
+
