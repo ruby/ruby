@@ -1,0 +1,37 @@
+# By default, Cirrus mounts an empty volume to `/tmp`
+# which triggers all sorts of warnings like "system temporary path is world-writable: /tmp".
+# Lets workaround it by specifying a custom volume mount point.
+env:
+  CIRRUS_VOLUME: /cirrus
+
+task:
+  name: Test on Arm64 Graviton2 ($CC)
+  arm_container:
+    image: ghcr.io/ruby/ruby-ci-image:$CC
+    cpu: 8
+    memory: 32G
+  env:
+    CIRRUS_CLONE_DEPTH: 50 # do a shallow clone
+    RUBY_DEBUG: ci
+    JOBS: -j9
+    RUBY_TESTOPTS: "-q --tty=no"
+    matrix:
+      CC: clang-12
+      CC: gcc-11
+  setup_script:
+    - sudo apt-get update
+    - sudo apt-get install --no-install-recommends -q -y ruby
+    - sudo ln -snf /usr/share/zoneinfo/Japan /etc/localtime # set any timezone
+    - sudo dpkg-reconfigure --frontend noninteractive tzdata
+  disable_ipv6_script:
+    # Arm containers are executed in AWS's EKS, and it's not yet supporting IPv6
+    # See https://github.com/aws/containers-roadmap/issues/835
+    - sudo ./tool/disable_ipv6.sh
+  autogen_script: ./autogen.sh
+  configure_script: ./configure --disable-install-doc
+  incs_script: make $JOBS -s incs
+  make_all_script: make $JOBS -s all
+  test_script: make $JOBS -s test -o showflags TESTOPTS="$JOBS -q --tty=no"
+  test-all_script: make test-all -o exts TESTOPTS="$JOBS -q --tty=no" RUBYOPT="-w"
+  test-spec_script: make -s test-spec MSPECOPT=-ff
+  leaked-globals_script: make -s -o showflags leaked-globals
