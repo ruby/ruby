@@ -778,7 +778,7 @@ sym_each_i(VALUE v, VALUE arg)
 
 /*
  *  call-seq:
- *    size -> non_negative_integer
+ *    size -> non_negative_integer or Infinity or nil
  *
  *  Returns the count of elements in +self+
  *  if both begin and end values are numeric;
@@ -813,13 +813,14 @@ range_size(VALUE range)
  *  call-seq:
  *    to_a -> array
  *
- *  Returns an array containing the elements in +self+, if a finite colletion;
+ *  Returns an array containing the elements in +self+, if a finite collection;
  *  raises an exception otherwise.
  *
  *    (1..4).to_a     # => [1, 2, 3, 4]
  *    (1...4).to_a    # => [1, 2, 3]
  *    ('a'..'d').to_a # => ["a", "b", "c", "d"]
  *
+ *  Range#entries is an alias for Range#to_a.
  */
 
 static VALUE
@@ -982,10 +983,9 @@ range_each(VALUE range)
 
 /*
  *  call-seq:
- *    begin -> object
+ *    self.begin -> object
  *
- *  Returns the object that defined the beginning of +self+,
- *  if one was given; otherwise returns +nil+:
+ *  Returns the object that defines the beginning of +self+.
  *
  *    (1..4).begin # => 1
  *    (..2).begin  # => nil
@@ -1002,10 +1002,9 @@ range_begin(VALUE range)
 
 /*
  *  call-seq:
- *    end -> object
+ *    self.end -> object
  *
- *  Returns the object that defined the end of +self+,
- *  if one was given; otherwise returns +nil+:
+ *  Returns the object that defines the end of +self+.
  *
  *    (1..4).end  # => 4
  *    (1...4).end # => 4
