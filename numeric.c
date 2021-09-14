@@ -4085,7 +4085,7 @@ static VALUE
 fix_gt(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-    return RBOOL(FIX2LONG(x) > FIX2LONG(y));
+        return RBOOL(FIX2LONG(x) > FIX2LONG(y));
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
 	return RBOOL(rb_big_cmp(y, x) == INT2FIX(-1));
@@ -4123,7 +4123,7 @@ static VALUE
 fix_ge(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-    return RBOOL(FIX2LONG(x) >= FIX2LONG(y));
+        return RBOOL(FIX2LONG(x) >= FIX2LONG(y));
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
 	return RBOOL(rb_big_cmp(y, x) != INT2FIX(+1));
@@ -4161,7 +4161,7 @@ static VALUE
 fix_lt(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-    return RBOOL(FIX2LONG(x) < FIX2LONG(y));
+        return RBOOL(FIX2LONG(x) < FIX2LONG(y));
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
 	return RBOOL(rb_big_cmp(y, x) == INT2FIX(+1));
@@ -4199,7 +4199,7 @@ static VALUE
 fix_le(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-    return RBOOL(FIX2LONG(x) <= FIX2LONG(y));
+        return RBOOL(FIX2LONG(x) <= FIX2LONG(y));
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
 	return RBOOL(rb_big_cmp(y, x) != INT2FIX(-1));
