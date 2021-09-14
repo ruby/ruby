@@ -3,11 +3,6 @@ $VERBOSE = true
 begin
 
 require 'test/unit'
-begin
-  require_relative './lib/core_assertions'
-  Test::Unit::TestCase.include Test::Unit::CoreAssertions
-rescue LoadError
-end
 require 'racc/static'
 require 'fileutils'
 require 'tempfile'
