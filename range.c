@@ -1207,7 +1207,7 @@ range_last(int argc, VALUE *argv, VALUE range)
  *    (1..4).min(2)     # => [1, 2]
  *    ('a'..'d').min(2) # => ["a", "b"]
  *    (-4..-1).min(2)   # => [-4, -3]
- *    (1..4).min(50)    # => [4, 3, 2, 1]
+ *    (1..4).min(50)    # => [1, 2, 3, 4]
  *
  *  If a block is given, it is called:
  *
@@ -1295,39 +1295,83 @@ range_min(int argc, VALUE *argv, VALUE range)
 
 /*
  *  call-seq:
- *     rng.max                       -> obj
- *     rng.max {| a,b | block }      -> obj
- *     rng.max(n)                    -> obj
- *     rng.max(n) {| a,b | block }   -> obj
+ *    max -> object
+ *    max(n) -> array
+ *    max {|a, b| ... } -> object
+ *    max(n) {|a, b| ... } -> array
  *
- *  Returns the maximum value in the range, or an array of maximum
- *  values in the range if given an \Integer argument.
+ *  Returns the maximum value in +self+,
+ *  using method <tt><=></tt> or a given block for comparison.
  *
- *  For inclusive ranges with an end, the maximum value of the range
- *  is the same as the end of the range.
+ *  With no argument and no block given,
+ *  returns the maximum-valued element of +self+.
  *
- *  If an argument or block is given, or +self+ is an exclusive,
- *  non-numeric range, calls Enumerable#max (via +super+) with the
- *  argument and/or block to get the maximum values, unless +self+ is
- *  a beginless range, in which case it raises a RangeError.
+ *    (1..4).max     # => 4
+ *    ('a'..'d').max # => "d"
+ *    (-4..-1).max   # => -1
  *
- *  If +self+ is an exclusive, integer range (both start and end of the
- *  range are integers), and no arguments or block are provided, returns
- *  last value in the range (1 before the end).  Otherwise, if +self+ is
- *  an exclusive, numeric range, raises a TypeError.
+ *  With non-negative integer argument +n+ given, and no block given,
+ *  returns the +n+ maximum-valued elements of +self+ in an array:
  *
- *  Returns +nil+ if the begin value of the range larger than the
- *  end value. Returns +nil+ if the begin value of an exclusive
- *  range is equal to the end value.  Raises a RangeError if called on
- *  an endless range.
+ *    (1..4).max(2)     # => [4, 3]
+ *    ('a'..'d').max(2) # => ["d", "c"]
+ *    (-4..-1).max(2)   # => [-1, -2]
+ *    (1..4).max(50)    # => [4, 3, 2, 1]
  *
- *  Examples:
- *    (10..20).max                        #=> 20
- *    (10..20).max(2)                     #=> [20, 19]
- *    (10...20).max                       #=> 19
- *    (10...20).max(2)                    #=> [19, 18]
- *    (10...20).max{|x, y| -x <=> -y }    #=> 10
- *    (10...20).max(2){|x, y| -x <=> -y } #=> [10, 11]
+ *  If a block is given, it is called:
+ *
+ *  - First, with the first two element of +self+.
+ *  - Then, sequentially, with the so-far maximum value and the next element of +self+.
+ *
+ *  To illustrate:
+ *
+ *    (1..4).max {|a, b| p [a, b]; a <=> b } # => 4
+ *
+ *  Output:
+ *
+ *    [2, 1]
+ *    [3, 2]
+ *    [4, 3]
+ *
+ *  With no argument and a block given,
+ *  returns the return value of the last call to the block:
+ *
+ *    (1..4).max {|a, b| -(a <=> b) } # => 1
+ *
+ *  With non-negative integer argument +n+ given, and a block given,
+ *  returns the return values of the last +n+ calls to the block in an array:
+ *
+ *    (1..4).max(2) {|a, b| -(a <=> b) }  # => [1, 2]
+ *    (1..4).max(50) {|a, b| -(a <=> b) } # => [1, 2, 3, 4]
+ *
+ *  Returns an empty array if +n+ is zero:
+ *
+ *    (1..4).max(0)                      # => []
+ *    (1..4).max(0) {|a, b| -(a <=> b) } # => []
+ *
+ *  Returns +nil+ or an empty array if:
+ *
+ *  - The begin value of the range is larger than the end value:
+ *
+ *      (4..1).max                         # => nil
+ *      (4..1).max(2)                      # => []
+ *      (4..1).max {|a, b| -(a <=> b) }    # => nil
+ *      (4..1).max(2) {|a, b| -(a <=> b) } # => []
+ *
+ *  - The begin value of an exclusive range is equal to the end value:
+ *
+ *      (1...1).max                          # => nil
+ *      (1...1).max(2)                       # => []
+ *      (1...1).max  {|a, b| -(a <=> b) }    # => nil
+ *      (1...1).max(2)  {|a, b| -(a <=> b) } # => []
+ *
+ *  Raises an exception if either:
+ *
+ *  - +self+ is a endless range: <tt>(1..)</tt>.
+ *  - A block is given and +self+ is a beginless range.
+ *
+ *  Related: Range#min, Range#minmax.
+ *
  */
 
 static VALUE
