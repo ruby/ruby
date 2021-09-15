@@ -2575,7 +2575,7 @@ class CSV
 
   def build_parser_fields_converter
     specific_options = {
-      builtin_converters: Converters,
+      builtin_converters_name: :Converters,
     }
     options = @base_fields_converter_options.merge(specific_options)
     build_fields_converter(@initial_converters, options)
@@ -2587,7 +2587,7 @@ class CSV
 
   def build_header_fields_converter
     specific_options = {
-      builtin_converters: HeaderConverters,
+      builtin_converters_name: :HeaderConverters,
       accept_nil: true,
     }
     options = @base_fields_converter_options.merge(specific_options)
