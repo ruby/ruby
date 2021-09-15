@@ -99,10 +99,11 @@ YJIT_DECLARE_COUNTERS(
 
 #undef YJIT_DECLARE_COUNTERS
 
+RUBY_EXTERN struct rb_yjit_runtime_counters yjit_runtime_counters;
+
 #endif // YJIT_STATS
 
 RUBY_EXTERN struct rb_yjit_options rb_yjit_opts;
-RUBY_EXTERN struct rb_yjit_runtime_counters yjit_runtime_counters;
 
 void yjit_map_addr2insn(void *code_ptr, int insn);
 VALUE *yjit_iseq_pc_at_idx(const rb_iseq_t *iseq, uint32_t insn_idx);
