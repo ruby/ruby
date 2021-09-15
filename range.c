@@ -1417,14 +1417,48 @@ range_max(int argc, VALUE *argv, VALUE range)
 
 /*
  *  call-seq:
- *     rng.minmax                       -> [obj, obj]
- *     rng.minmax {| a,b | block }      -> [obj, obj]
+ *    minmax -> [object, object]
+ *    minmax {|a, b| ... } -> [object, object]
  *
- *  Returns a two element array which contains the minimum and the
- *  maximum value in the range.
+ *  Returns a 2-element array containing the minimum and maximum value in +self+,
+ *  either according to comparison method <tt><=></tt> or a given block.
  *
- *  Can be given an optional block to override the default comparison
- *  method <code>a <=> b</code>.
+ *  With no block given, returns the minimum and maximum values,
+ *  using <tt><=></tt> for comparison:
+ *
+ *    (1..4).minmax     # => [1, 4]
+ *    (1...4).minmax    # => [1, 3]
+ *    ('a'..'d').minmax # => ["a", "d"]
+ *    (-4..-1).minmax   # => [-4, -1]
+ *
+ *  With a block given, the block must return an integer:
+ *
+ *  - Negative if +a+ is smaller than +b+.
+ *  - Zero if +a+ and +b+ are equal.
+ *  - Positive if +a+ is larger than +b+.
+ *
+ *  The block is called <tt>self.size</tt> times to compare elements;
+ *  returns a 2-element Array containing the minimum and maximum values from +self+,
+ *  per the block:
+ *
+ *    (1..4).minmax {|a, b| -(a <=> b) } # => [4, 1]
+ *
+ *  Returns <tt>[nil, nil]</tt> if:
+ *
+ *  - The begin value of the range is larger than the end value:
+ *
+ *      (4..1).minmax                      # => [nil, nil]
+ *      (4..1).minmax {|a, b| -(a <=> b) } # => [nil, nil]
+ *
+ *  - The begin value of an exclusive range is equal to the end value:
+ *
+ *      (1...1).minmax                          # => [nil, nil]
+ *      (1...1).minmax  {|a, b| -(a <=> b) }    # => [nil, nil]
+ *
+ *  Raises an exception if +self+ is a beginless or an endless range.
+ *
+ *  Related: Range#min, Range#max.
+ *
  */
 
 static VALUE
