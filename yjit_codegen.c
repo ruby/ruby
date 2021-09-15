@@ -2217,7 +2217,7 @@ gen_opt_aset(jitstate_t *jit, ctx_t *ctx)
         call_ptr(cb, REG0, (void *)rb_ary_store);
 
         // rb_ary_store returns void
-	 // stored value should still be on stack
+        // stored value should still be on stack
         mov(cb, REG0, ctx_stack_opnd(ctx, 0));
 
         // Push the return value onto the stack
