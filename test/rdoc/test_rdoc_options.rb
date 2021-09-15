@@ -55,11 +55,8 @@ class TestRDocOptions < RDoc::TestCase
     refute @options.dry_run
   end
 
-  def test_encode_with
-    coder = {}
-    class << coder; alias add []=; end
-
-    @options.encode_with coder
+  def test_to_yaml
+    coder = YAML.load(@options.to_yaml)
 
     encoding = 'UTF-8'
 
@@ -89,10 +86,9 @@ class TestRDocOptions < RDoc::TestCase
     assert_equal expected, coder
   end
 
-  def test_encode_with_trim_paths
+  def test_to_yaml_trim_paths
     subdir = nil
-    coder = {}
-    class << coder; alias add []=; end
+    coder = nil
 
     temp_dir do |dir|
       FileUtils.mkdir 'project'
@@ -113,7 +109,7 @@ class TestRDocOptions < RDoc::TestCase
           --include /
         ]
 
-        @options.encode_with coder
+        coder = YAML.load(@options.to_yaml)
       end
     end
 
@@ -145,7 +141,9 @@ class TestRDocOptions < RDoc::TestCase
 
     @options.encoding = Encoding::IBM437
 
-    options = YAML.safe_load(YAML.dump(@options), permitted_classes: [RDoc::Options, Symbol])
+    options = @options.to_yaml
+    options = YAML.safe_load(options, permitted_classes: [Symbol])
+    options = RDoc::Options.new(options)
 
     assert_equal Encoding::IBM437, options.encoding
   end
@@ -154,14 +152,15 @@ class TestRDocOptions < RDoc::TestCase
     RDoc.load_yaml
 
     yaml = <<-YAML
---- !ruby/object:RDoc::Options
+---
 static_path:
 - /etc
 rdoc_include:
 - /etc
     YAML
 
-    options = YAML.safe_load(yaml, permitted_classes: [RDoc::Options, Symbol])
+    options = YAML.safe_load(yaml, permitted_classes: [Symbol])
+    options = RDoc::Options.new(options)
 
     assert_empty options.rdoc_include
     assert_empty options.static_path
@@ -243,6 +242,7 @@ rdoc_include:
 
   def test_parse_default
     @options.parse []
+    @options.finish
 
     assert_equal RDoc::Generator::Darkfish,             @options.generator
     assert_equal 'darkfish',                            @options.template
@@ -502,6 +502,7 @@ rdoc_include:
 
     out, err = capture_output do
       @options.parse %W[--page-dir #{Dir.tmpdir}]
+      @options.finish
     end
 
     assert_empty out
@@ -530,6 +531,7 @@ rdoc_include:
 
       out, err = capture_output do
         @options.parse %W[--page-dir #{abs_page_dir} --root #{abs_root}]
+        @options.finish
       end
 
       assert_empty out
@@ -558,6 +560,8 @@ rdoc_include:
     assert_empty err
 
     assert_equal Pathname(Dir.tmpdir), @options.root
+
+    @options.finish
     assert_includes @options.rdoc_include, @options.root.to_s
   end
 
@@ -602,6 +606,7 @@ rdoc_include:
     assert_empty out
     assert_equal "could not find template NONEXISTENT\n", err
 
+    @options.finish
     assert_equal 'darkfish', @options.template
     assert_match %r%rdoc/generator/template/darkfish$%, @options.template_dir
   end
@@ -668,6 +673,7 @@ rdoc_include:
     Dir.chdir tmpdir do
       e = assert_raise SystemExit do
         @options.parse %w[--write-options]
+        @options.finish
       end
 
       assert_equal 0, e.status
@@ -764,7 +770,9 @@ rdoc_include:
 
       assert File.exist? '.rdoc_options'
 
-      assert_equal @options, YAML.safe_load(File.read('.rdoc_options'), permitted_classes: [RDoc::Options, Symbol])
+      options = File.read('.rdoc_options')
+      options = YAML.safe_load(options, permitted_classes: [Symbol])
+      assert_equal @options, RDoc::Options.new(options)
     end
   end
 
@@ -834,12 +842,20 @@ rdoc_include:
   def test_load_options_partial_override
     temp_dir do
       File.open '.rdoc_options', 'w' do |io|
-        io.write "markup: Markdown"
+        io.puts "markup: Markdown"
+        io.puts "encoding: iso-8859-1"
+        io.puts "static_path: [static]"
+        io.puts "rdoc_include: [.]"
+        io.puts "page_dir: pages"
       end
 
       options = RDoc::Options.load_options
 
       assert_equal 'Markdown', options.markup
+      assert_equal Encoding::ISO_8859_1, options.encoding
+      assert_equal ["static"], options.static_path
+      assert_equal ["."], options.rdoc_include
+      assert_equal "pages", options.page_dir
     end
   end
 
@@ -848,6 +864,12 @@ rdoc_include:
       options = RDoc::Options.load_options
 
       assert_kind_of RDoc::Options, options
+    end
+  end
+
+  class DummyCoder < Hash
+    alias add :[]=
+    def tag=(tag)
     end
   end
 end
