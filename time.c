@@ -4200,7 +4200,7 @@ time_round(int argc, VALUE *argv, VALUE time)
     v = w2v(rb_time_unmagnify(tobj->timew));
 
     v = modv(v, den);
-    if (lt(v, quov(den, INT2FIX(2))))
+    if (lt(v, quov(den, FIXNUM_TWO)))
         return time_add(tobj, time, v, -1);
     else
         return time_add(tobj, time, subv(den, v), 1);

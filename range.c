@@ -667,7 +667,7 @@ bsearch_integer_range(VALUE beg, VALUE end, int excl)
     org_high = high;
 
     while (rb_cmpint(rb_funcall(low, id_cmp, 1, high), low, high) < 0) {
-	mid = rb_funcall(rb_funcall(high, '+', 1, low), id_div, 1, INT2FIX(2));
+	mid = rb_funcall(rb_funcall(high, '+', 1, low), id_div, 1, FIXNUM_TWO);
 	BSEARCH_CHECK(mid);
 	if (smaller) {
 	    high = mid;

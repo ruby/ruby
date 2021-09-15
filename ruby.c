@@ -2526,7 +2526,7 @@ opt_W_getter(ID id, VALUE *dmy)
       case Qfalse:
 	return FIXNUM_ONE;
       case Qtrue:
-	return INT2FIX(2);
+	return FIXNUM_TWO;
       default:
 	return Qnil;
     }

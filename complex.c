@@ -26,7 +26,6 @@
 #include "internal/rational.h"
 #include "ruby_assert.h"
 
-#define TWO INT2FIX(2)
 #if USE_FLONUM
 #define RFLOAT_0 DBL2NUM(0)
 #else
@@ -1044,7 +1043,7 @@ rb_complex_pow(VALUE self, VALUE other)
 
                     for (; q = n / 2, r = n % 2, r == 0; n = q) {
                         VALUE tmp = f_sub(f_mul(xr, xr), f_mul(xi, xi));
-                        xi = f_mul(f_mul(TWO, xr), xi);
+                        xi = f_mul(f_mul(FIXNUM_TWO, xr), xi);
                         xr = tmp;
                     }
                     comp_mul(zr, zi, xr, xi, &zr, &zi);

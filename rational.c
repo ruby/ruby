@@ -30,8 +30,6 @@
 #include "internal/rational.h"
 #include "ruby_assert.h"
 
-#define TWO INT2FIX(2)
-
 #define GMP_GCD_DIGITS 1
 
 #define INT_ZERO_P(x) (FIXNUM_P(x) ? FIXNUM_ZERO_P(x) : rb_bigzero_p(x))
@@ -1289,8 +1287,8 @@ nurat_round_half_up(VALUE self)
     if (neg)
 	num = rb_int_uminus(num);
 
-    num = rb_int_plus(rb_int_mul(num, TWO), den);
-    den = rb_int_mul(den, TWO);
+    num = rb_int_plus(rb_int_mul(num, FIXNUM_TWO), den);
+    den = rb_int_mul(den, FIXNUM_TWO);
     num = rb_int_idiv(num, den);
 
     if (neg)
@@ -1313,9 +1311,9 @@ nurat_round_half_down(VALUE self)
     if (neg)
 	num = rb_int_uminus(num);
 
-    num = rb_int_plus(rb_int_mul(num, TWO), den);
+    num = rb_int_plus(rb_int_mul(num, FIXNUM_TWO), den);
     num = rb_int_minus(num, FIXNUM_ONE);
-    den = rb_int_mul(den, TWO);
+    den = rb_int_mul(den, FIXNUM_TWO);
     num = rb_int_idiv(num, den);
 
     if (neg)
@@ -1338,8 +1336,8 @@ nurat_round_half_even(VALUE self)
     if (neg)
 	num = rb_int_uminus(num);
 
-    num = rb_int_plus(rb_int_mul(num, TWO), den);
-    den = rb_int_mul(den, TWO);
+    num = rb_int_plus(rb_int_mul(num, FIXNUM_TWO), den);
+    den = rb_int_mul(den, FIXNUM_TWO);
     qr = rb_int_divmod(num, den);
     num = RARRAY_AREF(qr, 0);
     if (INT_ZERO_P(RARRAY_AREF(qr, 1)))

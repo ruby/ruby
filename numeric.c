@@ -1255,7 +1255,7 @@ VALUE
 rb_float_pow(VALUE x, VALUE y)
 {
     double dx, dy;
-    if (y == INT2FIX(2)) {
+    if (y == FIXNUM_TWO) {
 	dx = RFLOAT_VALUE(x);
         return DBL2NUM(dx * dx);
     }
@@ -2045,7 +2045,7 @@ rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode)
 	/* then int_pow overflow */
 	return FIXNUM_ZERO;
     }
-    h = rb_int_idiv(f, INT2FIX(2));
+    h = rb_int_idiv(f, FIXNUM_TWO);
     r = rb_int_modulo(num, f);
     n = rb_int_minus(num, r);
     r = rb_int_cmp(r, h);

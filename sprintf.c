@@ -813,7 +813,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		}
 		if (den != FIXNUM_ONE) {
 		    num = rb_int_mul(num, rb_int_positive_pow(10, prec));
-		    num = rb_int_plus(num, rb_int_idiv(den, INT2FIX(2)));
+		    num = rb_int_plus(num, rb_int_idiv(den, FIXNUM_TWO));
 		    num = rb_int_idiv(num, den);
 		}
 		else if (prec >= 0) {

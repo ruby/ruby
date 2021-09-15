@@ -2119,7 +2119,7 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
             eargp->fd_dup2 = check_exec_redirect1(eargp->fd_dup2, key, param);
         }
         else if (id == id_err) {
-            param = INT2FIX(2);
+            param = FIXNUM_TWO;
             eargp->fd_dup2 = check_exec_redirect1(eargp->fd_dup2, key, param);
         }
         else {
@@ -2321,7 +2321,7 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
             goto redirect;
         }
         else if (id == id_err) {
-            key = INT2FIX(2);
+            key = FIXNUM_TWO;
             goto redirect;
         }
 	else if (id == id_uid) {
