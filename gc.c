@@ -5833,6 +5833,7 @@ invalidate_moved_plane(rb_objspace_t *objspace, struct heap_page *page, uintptr_
 
                     CLEAR_IN_BITMAP(GET_HEAP_PINNED_BITS(forwarding_object), forwarding_object);
 
+                    bool from_freelist = FL_TEST_RAW(forwarding_object, FL_FROM_FREELIST);
                     object = rb_gc_location(forwarding_object);
 
                     gc_move(objspace, object, forwarding_object, page->size_pool->slot_size);
@@ -5840,7 +5841,7 @@ invalidate_moved_plane(rb_objspace_t *objspace, struct heap_page *page, uintptr_
                      * is the free slot for the original page */
                     struct heap_page *orig_page = GET_HEAP_PAGE(object);
                     orig_page->free_slots++;
-                    if (!FL_TEST_RAW(object, FL_FROM_FREELIST)) {
+                    if (!from_freelist) {
                         objspace->profile.total_freed_objects++;
                     }
                     heap_page_add_freeobj(objspace, orig_page, object);
