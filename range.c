@@ -1187,8 +1187,8 @@ range_last(int argc, VALUE *argv, VALUE range)
 /*
  *  call-seq:
  *    min -> object
- *    min {|a, b| ... } -> object
  *    min(n) -> array
+ *    min {|a, b| ... } -> object
  *    min(n) {|a, b| ... } -> array
  *
  *  Returns the minimum value in +self+,
@@ -1215,6 +1215,7 @@ range_last(int argc, VALUE *argv, VALUE range)
  *    (1..4).min(2)     # => [1, 2]
  *    ('a'..'d').min(2) # => ["a", "b"]
  *    (-4..-1).min(2)   # => [-4, -3]
+ *    (1..4).min(50)    # => [4, 3, 2, 1]
  *    (1..4).min(0)     # => []
  *
  *  Returns an empty array if the begin value of the range is larger than the end value:
@@ -1257,7 +1258,8 @@ range_last(int argc, VALUE *argv, VALUE range)
  *  With non-negative integer argument +n+ given, and a block given,
  *  returns the return values of the last +n+ calls to the block in an array:
  *
- *    (1..4).min(2) {|a, b| -(a <=> b) } # => [4, 3]
+ *    (1..4).min(2) {|a, b| -(a <=> b) }  # => [4, 3]
+ *    (1..4).min(50) {|a, b| -(a <=> b) } # => [4, 3, 2, 1]
  *
  *  Returns an empty array if the begin value of the range is larger than the end value:
  *
