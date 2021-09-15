@@ -439,7 +439,7 @@ rb_f_kill(int argc, const VALUE *argv)
 	sig = signm2signo(&str, TRUE, FALSE, NULL);
     }
 
-    if (argc <= 1) return INT2FIX(0);
+    if (argc <= 1) return FIXNUM_ZERO;
 
     if (sig < 0) {
 	sig = -sig;

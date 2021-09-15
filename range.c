@@ -319,7 +319,7 @@ sym_step_i(VALUE i, VALUE arg)
     else {
 	iter[0] = rb_funcall(iter[0], '-', 1, INT2FIX(1));
     }
-    if (iter[0] == INT2FIX(0)) {
+    if (iter[0] == FIXNUM_ZERO) {
 	rb_yield(rb_str_intern(i));
 	iter[0] = iter[1];
     }
@@ -337,7 +337,7 @@ step_i(VALUE i, VALUE arg)
     else {
 	iter[0] = rb_funcall(iter[0], '-', 1, INT2FIX(1));
     }
-    if (iter[0] == INT2FIX(0)) {
+    if (iter[0] == FIXNUM_ZERO) {
 	rb_yield(i);
 	iter[0] = iter[1];
     }
@@ -370,7 +370,7 @@ linear_object_p(VALUE obj)
 static VALUE
 check_step_domain(VALUE step)
 {
-    VALUE zero = INT2FIX(0);
+    VALUE zero = FIXNUM_ZERO;
     int cmp;
     if (!rb_obj_is_kind_of(step, rb_cNumeric)) {
 	step = rb_to_int(step);
@@ -450,7 +450,7 @@ range_step(int argc, VALUE *argv, VALUE range)
         if (!rb_obj_is_kind_of(step, rb_cNumeric)) {
             step = rb_to_int(step);
         }
-        if (rb_equal(step, INT2FIX(0))) {
+        if (rb_equal(step, FIXNUM_ZERO)) {
             rb_raise(rb_eArgError, "step can't be 0");
         }
 
@@ -635,7 +635,7 @@ bsearch_integer_range(VALUE beg, VALUE end, int excl)
 	VALUE val = (expr); \
 	VALUE v = rb_yield(val); \
 	if (FIXNUM_P(v)) { \
-	    if (v == INT2FIX(0)) return val; \
+	    if (v == FIXNUM_ZERO) return val; \
 	    smaller = (SIGNED_VALUE)v < 0; \
 	} \
 	else if (v == Qtrue) { \
@@ -646,7 +646,7 @@ bsearch_integer_range(VALUE beg, VALUE end, int excl)
 	    smaller = 0; \
 	} \
 	else if (rb_obj_is_kind_of(v, rb_cNumeric)) { \
-	    int cmp = rb_cmpint(rb_funcall(v, id_cmp, 1, INT2FIX(0)), v, INT2FIX(0)); \
+	    int cmp = rb_cmpint(rb_funcall(v, id_cmp, 1, FIXNUM_ZERO), v, FIXNUM_ZERO); \
 	    if (!cmp) return val; \
 	    smaller = cmp < 0; \
 	} \
@@ -967,7 +967,7 @@ range_each(VALUE range)
 		VALUE c;
 		while ((c = rb_big_cmp(beg, end)) != INT2FIX(1)) {
 		    rb_yield(beg);
-		    if (c == INT2FIX(0)) break;
+		    if (c == FIXNUM_ZERO) break;
 		    beg = rb_big_plus(beg, INT2FIX(1));
 		}
 	    }

@@ -3824,7 +3824,7 @@ vm_analysis_insn(int insn)
 	HASH_ASET(uh, INT2FIX(insn), ihash);
     }
     if (NIL_P(cv = rb_hash_aref(ihash, INT2FIX(-1)))) {
-	cv = INT2FIX(0);
+	cv = FIXNUM_ZERO;
     }
     HASH_ASET(ihash, INT2FIX(-1), INT2FIX(FIX2INT(cv) + 1));
 
@@ -3840,7 +3840,7 @@ vm_analysis_insn(int insn)
 
 	uh = rb_const_get(rb_cRubyVM, bigram_hash);
 	if (NIL_P(cv = rb_hash_aref(uh, bi))) {
-	    cv = INT2FIX(0);
+	    cv = FIXNUM_ZERO;
 	}
 	HASH_ASET(uh, bi, INT2FIX(FIX2INT(cv) + 1));
     }
@@ -3874,7 +3874,7 @@ vm_analysis_operand(int insn, int n, VALUE op)
 
     /* set count */
     if (NIL_P(cv = rb_hash_aref(ophash, valstr))) {
-	cv = INT2FIX(0);
+	cv = FIXNUM_ZERO;
     }
     HASH_ASET(ophash, valstr, INT2FIX(FIX2INT(cv) + 1));
 }
@@ -3918,7 +3918,7 @@ vm_analysis_register(int reg, int isset)
 
     uh = rb_const_get(rb_cRubyVM, usage_hash);
     if (NIL_P(cv = rb_hash_aref(uh, valstr))) {
-	cv = INT2FIX(0);
+	cv = FIXNUM_ZERO;
     }
     HASH_ASET(uh, valstr, INT2FIX(FIX2INT(cv) + 1));
 }

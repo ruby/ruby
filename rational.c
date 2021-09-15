@@ -30,7 +30,6 @@
 #include "internal/rational.h"
 #include "ruby_assert.h"
 
-#define ZERO INT2FIX(0)
 #define ONE INT2FIX(1)
 #define TWO INT2FIX(2)
 
@@ -101,10 +100,10 @@ inline static VALUE
 f_mul(VALUE x, VALUE y)
 {
     if (FIXNUM_ZERO_P(y) && RB_INTEGER_TYPE_P(x))
-	return ZERO;
+	return FIXNUM_ZERO;
     if (y == ONE) return x;
     if (FIXNUM_ZERO_P(x) && RB_INTEGER_TYPE_P(y))
-	return ZERO;
+	return FIXNUM_ZERO;
     if (x == ONE) return y;
     else if (RB_INTEGER_TYPE_P(x))
 	return rb_int_mul(x, y);
@@ -173,7 +172,7 @@ f_zero_p(VALUE x)
 
 	return FIXNUM_ZERO_P(num);
     }
-    return (int)rb_equal(x, ZERO);
+    return (int)rb_equal(x, FIXNUM_ZERO);
 }
 
 #define f_nonzero_p(x) (!f_zero_p(x))
@@ -394,7 +393,7 @@ inline static VALUE
 f_lcm(VALUE x, VALUE y)
 {
     if (INT_ZERO_P(x) || INT_ZERO_P(y))
-	return ZERO;
+	return FIXNUM_ZERO;
     return f_abs(f_mul(f_div(x, f_gcd(x, y)), y));
 }
 
@@ -419,7 +418,7 @@ nurat_s_new_internal(VALUE klass, VALUE num, VALUE den)
 static VALUE
 nurat_s_alloc(VALUE klass)
 {
-    return nurat_s_new_internal(klass, ZERO, ONE);
+    return nurat_s_new_internal(klass, FIXNUM_ZERO, ONE);
 }
 
 inline static VALUE
@@ -619,7 +618,7 @@ f_imul(long a, long b)
     VALUE r;
 
     if (a == 0 || b == 0)
-	return ZERO;
+	return FIXNUM_ZERO;
     else if (a == 1)
 	return LONG2NUM(b);
     else if (b == 1)
@@ -997,7 +996,7 @@ rb_rational_pow(VALUE self, VALUE other)
                     rb_num_zerodiv();
 		}
 		else {
-		    return f_rational_new_bang1(CLASS_OF(self), ZERO);
+		    return f_rational_new_bang1(CLASS_OF(self), FIXNUM_ZERO);
 		}
 	    }
 	}
@@ -1028,7 +1027,7 @@ rb_rational_pow(VALUE self, VALUE other)
 		return num;
 	    }
 	    if (RB_FLOAT_TYPE_P(den)) { /* infinity due to overflow */
-		num = ZERO;
+		num = FIXNUM_ZERO;
 		den = ONE;
 	    }
 	    return f_rational_new2(CLASS_OF(self), num, den);
@@ -1094,7 +1093,7 @@ rb_rational_cmp(VALUE self, VALUE other)
 		num1 = rb_int_mul(adat->num, bdat->den);
 		num2 = rb_int_mul(bdat->num, adat->den);
 	    }
-	    return rb_int_cmp(rb_int_minus(num1, num2), ZERO);
+	    return rb_int_cmp(rb_int_minus(num1, num2), FIXNUM_ZERO);
 	}
 
       case T_FLOAT:
@@ -1173,7 +1172,7 @@ nurat_coerce(VALUE self, VALUE other)
     }
     else if (RB_TYPE_P(other, T_COMPLEX)) {
 	if (!k_exact_zero_p(RCOMPLEX(other)->imag))
-	    return rb_assoc_new(other, rb_Complex(self, INT2FIX(0)));
+	    return rb_assoc_new(other, rb_Complex(self, FIXNUM_ZERO));
         other = RCOMPLEX(other)->real;
         if (RB_FLOAT_TYPE_P(other)) {
             other = float_to_r(other);
@@ -1371,7 +1370,7 @@ f_round_common(int argc, VALUE *argv, VALUE self, VALUE (*func)(VALUE))
 
     if (k_float_p(s)) {
 	if (INT_NEGATIVE_P(n))
-	    return ZERO;
+	    return FIXNUM_ZERO;
 	return self;
     }
 
@@ -1677,10 +1676,10 @@ nurat_rationalize_internal(VALUE a, VALUE b, VALUE *p, VALUE *q)
 {
     VALUE c, k, t, p0, p1, p2, q0, q1, q2;
 
-    p0 = ZERO;
+    p0 = FIXNUM_ZERO;
     p1 = ONE;
     q0 = ONE;
-    q1 = ZERO;
+    q1 = FIXNUM_ZERO;
 
     while (1) {
 	c = f_ceil(a);
@@ -2129,7 +2128,7 @@ rb_float_denominator(VALUE self)
 static VALUE
 nilclass_to_r(VALUE self)
 {
-    return rb_rational_new1(INT2FIX(0));
+    return rb_rational_new1(FIXNUM_ZERO);
 }
 
 /*
@@ -2348,12 +2347,12 @@ negate_num(VALUE num)
 static int
 read_num(const char **s, const char *const end, VALUE *num, VALUE *nexp)
 {
-    VALUE fp = ONE, exp, fn = ZERO, n = ZERO;
+    VALUE fp = ONE, exp, fn = FIXNUM_ZERO, n = FIXNUM_ZERO;
     int expsign = 0, ok = 0;
     char *e;
 
-    *nexp = ZERO;
-    *num = ZERO;
+    *nexp = FIXNUM_ZERO;
+    *num = FIXNUM_ZERO;
     if (*s < end && **s != '.') {
 	n = rb_int_parse_cstr(*s, end-*s, &e, NULL,
 			      10, RB_INT_PARSE_UNDERSCORE);
@@ -2375,7 +2374,7 @@ read_num(const char **s, const char *const end, VALUE *num, VALUE *nexp)
 	*s = e;
 	{
             VALUE l = f_expt10(*nexp = SIZET2NUM(count));
-	    n = n == ZERO ? fp : rb_int_plus(rb_int_mul(*num, l), fp);
+	    n = n == FIXNUM_ZERO ? fp : rb_int_plus(rb_int_mul(*num, l), fp);
 	    *num = n;
 	    fn = SIZET2NUM(count);
 	}
@@ -2390,12 +2389,12 @@ read_num(const char **s, const char *const end, VALUE *num, VALUE *nexp)
 	if (NIL_P(exp))
 	    return 1;
 	*s = e;
-	if (exp != ZERO) {
+	if (exp != FIXNUM_ZERO) {
 	    if (expsign == '-') {
-		if (fn != ZERO) exp = rb_int_plus(exp, fn);
+		if (fn != FIXNUM_ZERO) exp = rb_int_plus(exp, fn);
 	    }
 	    else {
-		if (fn != ZERO) exp = rb_int_minus(exp, fn);
+		if (fn != FIXNUM_ZERO) exp = rb_int_minus(exp, fn);
                 exp = negate_num(exp);
 	    }
             *nexp = exp;
@@ -2433,7 +2432,7 @@ parse_rat(const char *s, const char *const e, int strict, int raise)
 	    if (strict) return Qnil;
             den = ONE;
 	}
-	else if (den == ZERO) {
+	else if (den == FIXNUM_ZERO) {
             if (!raise) return Qnil;
 	    rb_num_zerodiv();
 	}
@@ -2449,7 +2448,7 @@ parse_rat(const char *s, const char *const e, int strict, int raise)
 	return Qnil;
     }
 
-    if (nexp != ZERO) {
+    if (nexp != FIXNUM_ZERO) {
         if (INT_NEGATIVE_P(nexp)) {
             VALUE mul;
             if (FIXNUM_P(nexp)) {

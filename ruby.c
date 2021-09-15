@@ -999,7 +999,7 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen
     ename = rb_str_new(e, elen);
 
     if (*name &&
-	rb_funcall(ename, rb_intern("casecmp"), 1, *name) != INT2FIX(0)) {
+	rb_funcall(ename, rb_intern("casecmp"), 1, *name) != FIXNUM_ZERO) {
 	rb_raise(rb_eRuntimeError,
 		 "%s already set to %"PRIsVALUE, type, *name);
     }
@@ -2522,7 +2522,7 @@ opt_W_getter(ID id, VALUE *dmy)
 
     switch (v) {
       case Qnil:
-	return INT2FIX(0);
+	return FIXNUM_ZERO;
       case Qfalse:
 	return INT2FIX(1);
       case Qtrue:

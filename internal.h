@@ -105,5 +105,7 @@ RUBY_SYMBOL_EXPORT_END
 
 #define RBOOL(v) ((v) ? Qtrue : Qfalse)
 #define RB_BIGNUM_TYPE_P(x) RB_TYPE_P((x), T_BIGNUM)
+#define FIXNUM_ZERO INT2FIX(0)
+#define FIXNUM_ONE INT2FIX(1)
 
 #endif /* RUBY_INTERNAL_H */

@@ -809,7 +809,7 @@ rb_iseq_t *
 rb_iseq_new(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath,
 	    const rb_iseq_t *parent, enum iseq_type type)
 {
-    return rb_iseq_new_with_opt(ast, name, path, realpath, INT2FIX(0), parent,
+    return rb_iseq_new_with_opt(ast, name, path, realpath, FIXNUM_ZERO, parent,
                                 0, type, &COMPILE_OPTION_DEFAULT);
 }
 
@@ -839,7 +839,7 @@ rb_iseq_new_top(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath
         }
     }
 
-    return rb_iseq_new_with_opt(ast, name, path, realpath, INT2FIX(0), parent, 0,
+    return rb_iseq_new_with_opt(ast, name, path, realpath, FIXNUM_ZERO, parent, 0,
                                 ISEQ_TYPE_TOP, &COMPILE_OPTION_DEFAULT);
 }
 
@@ -847,7 +847,7 @@ rb_iseq_t *
 rb_iseq_new_main(const rb_ast_body_t *ast, VALUE path, VALUE realpath, const rb_iseq_t *parent)
 {
     return rb_iseq_new_with_opt(ast, rb_fstring_lit("<main>"),
-				path, realpath, INT2FIX(0),
+				path, realpath, FIXNUM_ZERO,
 				parent, 0, ISEQ_TYPE_MAIN, &COMPILE_OPTION_DEFAULT);
 }
 

@@ -145,7 +145,7 @@ static int consume_communication_pipe(int fd);
 static int check_signals_nogvl(rb_thread_t *, int sigwait_fd);
 void rb_sigwait_fd_migrate(rb_vm_t *); /* process.c */
 
-#define eKillSignal INT2FIX(0)
+#define eKillSignal FIXNUM_ZERO
 #define eTerminateSignal INT2FIX(1)
 static volatile int system_working = 1;
 
@@ -4688,14 +4688,14 @@ clear_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
             int i;
             for (i = 0; i < RARRAY_LEN(lines); i++) {
                 if (RARRAY_AREF(lines, i) != Qnil)
-                    RARRAY_ASET(lines, i, INT2FIX(0));
+                    RARRAY_ASET(lines, i, FIXNUM_ZERO);
             }
         }
     }
     if (branches) {
 	VALUE counters = RARRAY_AREF(branches, 1);
 	for (i = 0; i < RARRAY_LEN(counters); i++) {
-	    RARRAY_ASET(counters, i, INT2FIX(0));
+	    RARRAY_ASET(counters, i, FIXNUM_ZERO);
 	}
     }
 

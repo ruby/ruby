@@ -150,7 +150,7 @@ modv(VALUE x, VALUE y)
     return rb_funcall(x, '%', 1, y);
 }
 
-#define neg(x) (subv(INT2FIX(0), (x)))
+#define neg(x) (subv(FIXNUM_ZERO, (x)))
 
 static VALUE
 quor(VALUE x, VALUE y)
@@ -1026,7 +1026,7 @@ gmtimew_noleapsecond(wideval_t timew, struct vtm *vtm)
         vtm->mday = common_year_mday_of_yday[n];
     }
 
-    vtm->utc_offset = INT2FIX(0);
+    vtm->utc_offset = FIXNUM_ZERO;
     vtm->zone = str_utc;
 }
 
@@ -1188,8 +1188,8 @@ init_leap_second_info(void)
         vtm.hour = result.tm_hour;
         vtm.min = result.tm_min;
         vtm.sec = result.tm_sec;
-        vtm.subsecx = INT2FIX(0);
-        vtm.utc_offset = INT2FIX(0);
+        vtm.subsecx = FIXNUM_ZERO;
+        vtm.utc_offset = FIXNUM_ZERO;
 
         timew = timegmw_noleapsecond(&vtm);
 
@@ -1287,7 +1287,7 @@ gmtimew(wideval_t timew, struct vtm *result)
     result->min = tm.tm_min;
     result->sec = tm.tm_sec;
     result->subsecx = subsecx;
-    result->utc_offset = INT2FIX(0);
+    result->utc_offset = FIXNUM_ZERO;
     result->wday = tm.tm_wday;
     result->yday = tm.tm_yday+1;
     result->isdst = tm.tm_isdst;
@@ -1410,7 +1410,7 @@ guess_local_offset(struct vtm *vtm_utc, int *isdst_ret, VALUE *zone_ret)
     /* Daylight Saving Time was introduced in 1916.
      * So we don't need to care about DST before that. */
     if (lt(vtm_utc->year, INT2FIX(1916))) {
-        VALUE off = INT2FIX(0);
+        VALUE off = FIXNUM_ZERO;
         int isdst = 0;
         zone = rb_fstring_lit("UTC");
 
@@ -1949,7 +1949,7 @@ vtm_add_offset(struct vtm *vtm, VALUE off, int sign)
     int sec, min, hour;
     int day;
 
-    if (lt(off, INT2FIX(0))) {
+    if (lt(off, FIXNUM_ZERO)) {
         sign = -sign;
         off = neg(off);
     }
@@ -1970,9 +1970,9 @@ vtm_add_offset(struct vtm *vtm, VALUE off, int sign)
 
     day = 0;
 
-    if (!rb_equal(subsec, INT2FIX(0))) {
+    if (!rb_equal(subsec, FIXNUM_ZERO)) {
         vtm->subsecx = addv(vtm->subsecx, w2v(rb_time_magnify(v2w(subsec))));
-        if (lt(vtm->subsecx, INT2FIX(0))) {
+        if (lt(vtm->subsecx, FIXNUM_ZERO)) {
             vtm->subsecx = addv(vtm->subsecx, INT2FIX(TIME_SCALE));
             sec -= 1;
         }
@@ -2228,7 +2228,7 @@ extract_vtm(VALUE time, struct vtm *vtm, VALUE subsecx)
         time_get_tm(time, tobj);
         *vtm = tobj->vtm;
         t = rb_time_unmagnify(tobj->timew);
-        if (TZMODE_FIXOFF_P(tobj) && vtm->utc_offset != INT2FIX(0))
+        if (TZMODE_FIXOFF_P(tobj) && vtm->utc_offset != FIXNUM_ZERO)
             t = wadd(t, v2w(vtm->utc_offset));
     }
     else if (RB_TYPE_P(time, T_STRUCT)) {
@@ -2276,7 +2276,7 @@ zone_timelocal(VALUE zone, VALUE time)
     s = extract_time(utc);
     zone_set_offset(zone, tobj, t, s);
     s = rb_time_magnify(s);
-    if (tobj->vtm.subsecx != INT2FIX(0)) {
+    if (tobj->vtm.subsecx != FIXNUM_ZERO) {
         s = wadd(s, v2w(tobj->vtm.subsecx));
     }
     tobj->timew = s;
@@ -2335,7 +2335,7 @@ time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VA
 
     if (NIL_P(sec)) {
         vtm.sec = 0;
-        vtm.subsecx = INT2FIX(0);
+        vtm.subsecx = FIXNUM_ZERO;
     }
     else {
         VALUE subsecx;
@@ -2355,7 +2355,7 @@ time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VA
         else if (maybe_tzobj_p(arg))
             zone = arg;
         else if (!NIL_P(utc = utc_offset_arg(arg)))
-            vtm.utc_offset = utc == UTC_ZONE ? INT2FIX(0) : utc;
+            vtm.utc_offset = utc == UTC_ZONE ? FIXNUM_ZERO : utc;
         else if (NIL_P(zone = find_timezone(time, arg)))
             invalid_utc_offset(arg);
     }
@@ -2750,7 +2750,7 @@ obj2subsecx(VALUE obj, VALUE *subsecx)
 
     if (RB_TYPE_P(obj, T_STRING)) {
 	obj = rb_str_to_inum(obj, 10, TRUE);
-        *subsecx = INT2FIX(0);
+        *subsecx = FIXNUM_ZERO;
     }
     else {
         divmodv(num_exact(obj), INT2FIX(1), &obj, &subsec);
@@ -2828,7 +2828,7 @@ validate_vtm(struct vtm *vtm)
     validate_vtm_range(hour, 0, 24);
     validate_vtm_range(min, 0, (vtm->hour == 24 ? 0 : 59));
     validate_vtm_range(sec, 0, (vtm->hour == 24 ? 0 : 60));
-    if (lt(vtm->subsecx, INT2FIX(0)) || ge(vtm->subsecx, INT2FIX(TIME_SCALE)))
+    if (lt(vtm->subsecx, FIXNUM_ZERO) || ge(vtm->subsecx, INT2FIX(TIME_SCALE)))
 	rb_raise(rb_eArgError, "subsecx out of range");
     if (!NIL_P(vtm->utc_offset)) validate_utc_offset(vtm->utc_offset);
 #undef validate_vtm_range
@@ -2838,15 +2838,15 @@ static void
 time_arg(int argc, const VALUE *argv, struct vtm *vtm)
 {
     VALUE v[8];
-    VALUE subsecx = INT2FIX(0);
+    VALUE subsecx = FIXNUM_ZERO;
 
-    vtm->year = INT2FIX(0);
+    vtm->year = FIXNUM_ZERO;
     vtm->mon = 0;
     vtm->mday = 0;
     vtm->hour = 0;
     vtm->min = 0;
     vtm->sec = 0;
-    vtm->subsecx = INT2FIX(0);
+    vtm->subsecx = FIXNUM_ZERO;
     vtm->utc_offset = Qnil;
     vtm->wday = 0;
     vtm->yday = 0;
@@ -3621,7 +3621,7 @@ time_cmp(VALUE time1, VALUE time2)
     else {
 	return rb_invcmp(time1, time2);
     }
-    if (n == 0) return INT2FIX(0);
+    if (n == 0) return FIXNUM_ZERO;
     if (n > 0) return INT2FIX(1);
     return INT2FIX(-1);
 }
@@ -3861,7 +3861,7 @@ time_fixoff(VALUE time)
     if (TZMODE_FIXOFF_P(tobj))
         off = tobj->vtm.utc_offset;
     else
-        off = INT2FIX(0);
+        off = FIXNUM_ZERO;
 
     GMTIMEW(tobj->timew, &vtm);
 
@@ -4293,7 +4293,7 @@ time_ceil(int argc, VALUE *argv, VALUE time)
     v = w2v(rb_time_unmagnify(tobj->timew));
 
     v = modv(v, den);
-    if (!rb_equal(v, INT2FIX(0))) {
+    if (!rb_equal(v, FIXNUM_ZERO)) {
         v = subv(den, v);
     }
     return time_add(tobj, time, v, 1);
@@ -4686,7 +4686,7 @@ rb_time_utc_offset(VALUE time)
     GetTimeval(time, tobj);
 
     if (TZMODE_UTC_P(tobj)) {
-	return INT2FIX(0);
+	return FIXNUM_ZERO;
     }
     else {
 	MAKE_TM(time, tobj);
@@ -5083,7 +5083,7 @@ time_mdump(VALUE time)
         str = rb_str_new(buf, base_dump_size);
     }
     rb_copy_generic_ivar(str, time);
-    if (!rb_equal(nano, INT2FIX(0))) {
+    if (!rb_equal(nano, FIXNUM_ZERO)) {
         if (RB_TYPE_P(nano, T_RATIONAL)) {
             rb_ivar_set(str, id_nano_num, RRATIONAL(nano)->num);
             rb_ivar_set(str, id_nano_den, RRATIONAL(nano)->den);
@@ -5115,7 +5115,7 @@ time_mdump(VALUE time)
     if (!TZMODE_UTC_P(tobj)) {
 	VALUE off = rb_time_utc_offset(time), div, mod;
 	divmodv(off, INT2FIX(1), &div, &mod);
-	if (rb_equal(mod, INT2FIX(0)))
+	if (rb_equal(mod, FIXNUM_ZERO))
 	    off = rb_Integer(div);
 	rb_ivar_set(str, id_offset, off);
     }
@@ -5246,7 +5246,7 @@ time_mload(VALUE time, VALUE str)
 	vtm.hour = (int) p        & 0x1f;
 	vtm.min  = (int)(s >> 26) & 0x3f;
 	vtm.sec  = (int)(s >> 20) & 0x3f;
-        vtm.utc_offset = INT2FIX(0);
+        vtm.utc_offset = FIXNUM_ZERO;
 	vtm.yday = vtm.wday = 0;
 	vtm.isdst = 0;
 	vtm.zone = str_empty;
@@ -5346,7 +5346,7 @@ tm_from_time(VALUE klass, VALUE time)
     v = &vtm;
     GMTIMEW(ttm->timew = tobj->timew, v);
     ttm->timew = wsub(ttm->timew, v->subsecx);
-    v->subsecx = INT2FIX(0);
+    v->subsecx = FIXNUM_ZERO;
     v->zone = Qnil;
     ttm->vtm = *v;
     ttm->tm_got = 1;
@@ -5446,7 +5446,7 @@ tm_to_time(VALUE tm)
 static VALUE
 tm_zero(VALUE tm)
 {
-    return INT2FIX(0);
+    return FIXNUM_ZERO;
 }
 
 #define tm_subsec tm_zero

@@ -335,7 +335,7 @@ try_rand_if(VALUE obj, rb_random_t *rnd)
 void
 rb_random_base_init(rb_random_t *rnd)
 {
-    rnd->seed = INT2FIX(0);
+    rnd->seed = FIXNUM_ZERO;
 }
 
 /* :nodoc: */
@@ -840,7 +840,7 @@ rand_mt_load(VALUE obj, VALUE dump)
 {
     rb_random_mt_t *rnd = rb_check_typeddata(obj, &random_mt_type);
     struct MT *mt = &rnd->mt;
-    VALUE state, left = INT2FIX(1), seed = INT2FIX(0);
+    VALUE state, left = INT2FIX(1), seed = FIXNUM_ZERO;
     unsigned long x;
 
     rb_check_copyable(obj, dump);
@@ -1624,7 +1624,7 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
         VALUE v = rand_range(obj, rnd, vmax);
 	if (v != Qfalse) return v;
 	vmax = rb_to_int(vmax);
-	if (vmax != INT2FIX(0)) {
+	if (vmax != FIXNUM_ZERO) {
             v = rand_int(obj, rnd, vmax, 0);
 	    if (!NIL_P(v)) return v;
 	}
@@ -1729,7 +1729,7 @@ rb_reset_random_seed(void)
 {
     rb_random_mt_t *r = default_rand();
     uninit_genrand(&r->mt);
-    r->base.seed = INT2FIX(0);
+    r->base.seed = FIXNUM_ZERO;
 }
 
 /*

@@ -618,7 +618,7 @@ f_negative_p(VALUE x)
 {
     if (FIXNUM_P(x))
         return RBOOL(FIX2LONG(x) < 0);
-    return rb_funcall(x, '<', 1, INT2FIX(0));
+    return rb_funcall(x, '<', 1, FIXNUM_ZERO);
 }
 inline static VALUE
 f_signbit(VALUE x)

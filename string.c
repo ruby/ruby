@@ -2132,7 +2132,7 @@ rb_str_times(VALUE str, VALUE times)
     if (times == INT2FIX(1)) {
         return str_duplicate(rb_cString, str);
     }
-    if (times == INT2FIX(0)) {
+    if (times == FIXNUM_ZERO) {
         str2 = str_alloc(rb_cString);
 	rb_enc_copy(str2, str);
 	return str2;
@@ -3582,7 +3582,7 @@ str_casecmp(VALUE str1, VALUE str2)
 	    p2 += l2;
 	}
     }
-    if (RSTRING_LEN(str1) == RSTRING_LEN(str2)) return INT2FIX(0);
+    if (RSTRING_LEN(str1) == RSTRING_LEN(str2)) return FIXNUM_ZERO;
     if (RSTRING_LEN(str1) > RSTRING_LEN(str2)) return INT2FIX(1);
     return INT2FIX(-1);
 }
@@ -4674,7 +4674,7 @@ rb_str_aref(VALUE str, VALUE indx)
 	idx = FIX2LONG(indx);
     }
     else if (RB_TYPE_P(indx, T_REGEXP)) {
-	return rb_str_subpat(str, indx, INT2FIX(0));
+	return rb_str_subpat(str, indx, FIXNUM_ZERO);
     }
     else if (RB_TYPE_P(indx, T_STRING)) {
 	if (rb_str_index(str, indx, 0) != -1)
@@ -4941,7 +4941,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 
     switch (TYPE(indx)) {
       case T_REGEXP:
-	rb_str_subpat_set(str, indx, INT2FIX(0), val);
+	rb_str_subpat_set(str, indx, FIXNUM_ZERO, val);
 	return val;
 
       case T_STRING:
@@ -7996,7 +7996,7 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
 	    unsigned char c = rb_enc_codepoint_len(ptstr, ptstr+1, &clen, enc);
 
 	    s = RSTRING_PTR(str);
-	    if (!s || RSTRING_LEN(str) == 0) return INT2FIX(0);
+	    if (!s || RSTRING_LEN(str) == 0) return FIXNUM_ZERO;
 	    send = RSTRING_END(str);
 	    while (s < send) {
 		if (*(unsigned char*)s++ == c) n++;
@@ -8014,7 +8014,7 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
     }
 
     s = RSTRING_PTR(str);
-    if (!s || RSTRING_LEN(str) == 0) return INT2FIX(0);
+    if (!s || RSTRING_LEN(str) == 0) return FIXNUM_ZERO;
     send = RSTRING_END(str);
     ascompat = rb_enc_asciicompat(enc);
     while (s < send) {
@@ -9887,7 +9887,7 @@ rb_str_sum(int argc, VALUE *argv, VALUE str)
     int bits = 16;
     char *ptr, *p, *pend;
     long len;
-    VALUE sum = INT2FIX(0);
+    VALUE sum = FIXNUM_ZERO;
     unsigned long sum0 = 0;
 
     if (rb_check_arity(argc, 0, 1) && (bits = NUM2INT(argv[0])) < 0) {
@@ -9913,7 +9913,7 @@ rb_str_sum(int argc, VALUE *argv, VALUE str)
         }
     }
     else {
-        if (sum == INT2FIX(0)) {
+        if (sum == FIXNUM_ZERO) {
             if (bits < (int)sizeof(long)*CHAR_BIT) {
                 sum0 &= (((unsigned long)1)<<bits)-1;
             }

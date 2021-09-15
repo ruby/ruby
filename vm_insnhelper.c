@@ -2429,7 +2429,7 @@ vm_call_iseq_setup_kwparm_nokwarg(rb_execution_context_t *ec, rb_control_frame_t
     for (i=0; i<kw_param->num; i++) {
         klocals[i] = kw_param->default_values[i];
     }
-    klocals[i] = INT2FIX(0); // kw specify flag
+    klocals[i] = FIXNUM_ZERO; // kw specify flag
     // NOTE:
     //   nobody check this value, but it should be cleared because it can
     //   points invalid VALUE (T_NONE objects, raw pointer and so on).
@@ -2522,7 +2522,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                 VALUE *const klocals = argv + kw_param->bits_start - kw_param->num;
                 args_setup_kw_parameters(ec, iseq, NULL, 0, NULL, klocals);
 
-                if (klocals[kw_param->num] == INT2FIX(0)) {
+                if (klocals[kw_param->num] == FIXNUM_ZERO) {
                     /* copy from default_values */
                     CC_SET_FASTPATH(cc, vm_call_iseq_setup_kwparm_nokwarg,
                                     cacheable_ci && METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
@@ -5222,7 +5222,7 @@ vm_opt_empty_p(VALUE recv)
 {
     switch (vm_opt_length(recv, BOP_EMPTY_P)) {
       case Qundef: return Qundef;
-      case INT2FIX(0): return Qtrue;
+      case FIXNUM_ZERO: return Qtrue;
       default: return Qfalse;
     }
 }
@@ -5251,7 +5251,7 @@ fix_succ(VALUE x)
       case ~0UL:
         /* 0xFFFF_FFFF == INT2FIX(-1)
          * `-1.succ` is of course 0. */
-        return INT2FIX(0);
+        return FIXNUM_ZERO;
       case RSHIFT(~0UL, 1):
         /* 0x7FFF_FFFF == LONG2FIX(0x3FFF_FFFF)
          * 0x3FFF_FFFF + 1 == 0x4000_0000, which is a Bignum. */

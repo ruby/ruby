@@ -2111,7 +2111,7 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
             eargp->fd_close = check_exec_redirect1(eargp->fd_close, key, param);
         }
         else if (id == id_in) {
-            param = INT2FIX(0);
+            param = FIXNUM_ZERO;
             eargp->fd_dup2 = check_exec_redirect1(eargp->fd_dup2, key, param);
         }
         else if (id == id_out) {
@@ -2313,7 +2313,7 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
             eargp->close_others_do = TO_BOOL(val, "close_others");
         }
         else if (id == id_in) {
-            key = INT2FIX(0);
+            key = FIXNUM_ZERO;
             goto redirect;
         }
         else if (id == id_out) {
@@ -5215,7 +5215,7 @@ proc_setpgrp(VALUE _)
 #elif defined(HAVE_SETPGRP) && defined(SETPGRP_VOID)
     if (setpgrp() < 0) rb_sys_fail(0);
 #endif
-    return INT2FIX(0);
+    return FIXNUM_ZERO;
 }
 #else
 #define proc_setpgrp rb_f_notimplement
@@ -5265,7 +5265,7 @@ proc_setpgid(VALUE obj, VALUE pid, VALUE pgrp)
     ipgrp = NUM2PIDT(pgrp);
 
     if (setpgid(ipid, ipgrp) < 0) rb_sys_fail(0);
-    return INT2FIX(0);
+    return FIXNUM_ZERO;
 }
 #else
 #define proc_setpgid rb_f_notimplement
@@ -5421,7 +5421,7 @@ proc_setpriority(VALUE obj, VALUE which, VALUE who, VALUE prio)
 
     if (setpriority(iwhich, iwho, iprio) < 0)
 	rb_sys_fail(0);
-    return INT2FIX(0);
+    return FIXNUM_ZERO;
 }
 #else
 #define proc_setpriority rb_f_notimplement
@@ -8678,14 +8678,14 @@ InitVM_process(void)
     rb_define_const(rb_mProcess, "WNOHANG", INT2FIX(WNOHANG));
 #else
     /* see Process.wait */
-    rb_define_const(rb_mProcess, "WNOHANG", INT2FIX(0));
+    rb_define_const(rb_mProcess, "WNOHANG", FIXNUM_ZERO);
 #endif
 #ifdef WUNTRACED
     /* see Process.wait */
     rb_define_const(rb_mProcess, "WUNTRACED", INT2FIX(WUNTRACED));
 #else
     /* see Process.wait */
-    rb_define_const(rb_mProcess, "WUNTRACED", INT2FIX(0));
+    rb_define_const(rb_mProcess, "WUNTRACED", FIXNUM_ZERO);
 #endif
 
     rb_define_singleton_method(rb_mProcess, "exec", f_exec, -1);
