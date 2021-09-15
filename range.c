@@ -664,7 +664,7 @@ bsearch_integer_range(VALUE beg, VALUE end, int excl)
  *
  *  Returns an element from +self+ selected by a binary search.
  *
- *  See {Binary Searching}[doc/bsearch_rdoc.html].
+ *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
  *
  */
 

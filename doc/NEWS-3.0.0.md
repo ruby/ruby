@@ -86,7 +86,7 @@ Note that each entry is kept to a minimum, see links for details.
   `# frozen-string-literal: true` is used. [[Feature #17104]]
 
 * Magic comment `shareable_constant_value` added to freeze constants.
-  See {Magic Comments}[rdoc-ref:doc/syntax/comments.rdoc@Magic+Comments] for more details.
+  See {Magic Comments}[rdoc-ref:syntax/comments.rdoc@Magic+Comments] for more details.
   [[Feature #17273]]
 
 * A {static analysis}[rdoc-label:label-Static+analysis] foundation is

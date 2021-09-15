@@ -308,7 +308,7 @@ class OpenStruct
   # Finds and returns the object in nested objects
   # that is specified by +name+ and +identifiers+.
   # The nested objects may be instances of various classes.
-  # See {Dig Methods}[rdoc-ref:doc/dig_methods.rdoc].
+  # See {Dig Methods}[rdoc-ref:dig_methods.rdoc].
   #
   # Examples:
   #   require "ostruct"
