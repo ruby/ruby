@@ -1186,19 +1186,82 @@ range_last(int argc, VALUE *argv, VALUE range)
 
 /*
  *  call-seq:
- *     rng.min                       -> obj
- *     rng.min {| a,b | block }      -> obj
- *     rng.min(n)                    -> array
- *     rng.min(n) {| a,b | block }   -> array
+ *    min -> object
+ *    min(n) -> array
+ *    min {|a, b| ... } -> object
+ *    min(n) {|a, b| ... } -> array
  *
- *  Returns the minimum value in the range. Returns +nil+ if the begin
- *  value of the range is larger than the end value. Returns +nil+ if
- *  the begin value of an exclusive range is equal to the end value.
+ *  Returns the minimum value in +self+,
+ *  using method <tt><=></tt> or a given block for comparison.
  *
- *  Can be given an optional block to override the default comparison
- *  method <code>a <=> b</code>.
+ *  With no argument and no block given,
+ *  returns the minimum-valued element of +self+.
  *
- *    (10..20).min    #=> 10
+ *    (1..4).min     # => 1
+ *    ('a'..'d').min # => "a"
+ *    (-4..-1).min   # => -4
+ *
+ *  With non-negative integer argument +n+ given, and no block given,
+ *  returns the +n+ minimum-valued elements of +self+ in an array:
+ *
+ *    (1..4).min(2)     # => [1, 2]
+ *    ('a'..'d').min(2) # => ["a", "b"]
+ *    (-4..-1).min(2)   # => [-4, -3]
+ *    (1..4).min(50)    # => [4, 3, 2, 1]
+ *
+ *  If a block is given, it is called:
+ *
+ *  - First, with the first two element of +self+.
+ *  - Then, sequentially, with the so-far minimum value and the next element of +self+.
+ *
+ *  To illustrate:
+ *
+ *    (1..4).min {|a, b| p [a, b]; a <=> b } # => 1
+ *
+ *  Output:
+ *
+ *    [2, 1]
+ *    [3, 1]
+ *    [4, 1]
+ *
+ *  With no argument and a block given,
+ *  returns the return value of the last call to the block:
+ *
+ *    (1..4).min {|a, b| -(a <=> b) } # => 4
+ *
+ *  With non-negative integer argument +n+ given, and a block given,
+ *  returns the return values of the last +n+ calls to the block in an array:
+ *
+ *    (1..4).min(2) {|a, b| -(a <=> b) }  # => [4, 3]
+ *    (1..4).min(50) {|a, b| -(a <=> b) } # => [4, 3, 2, 1]
+ *
+ *  Returns an empty array if +n+ is zero:
+ *
+ *    (1..4).min(0)                      # => []
+ *    (1..4).min(0) {|a, b| -(a <=> b) } # => []
+ *
+ *  Returns +nil+ or an empty array if:
+ *
+ *  - The begin value of the range is larger than the end value:
+ *
+ *      (4..1).min                         # => nil
+ *      (4..1).min(2)                      # => []
+ *      (4..1).min {|a, b| -(a <=> b) }    # => nil
+ *      (4..1).min(2) {|a, b| -(a <=> b) } # => []
+ *
+ *  - The begin value of an exclusive range is equal to the end value:
+ *
+ *      (1...1).min                          # => nil
+ *      (1...1).min(2)                       # => []
+ *      (1...1).min  {|a, b| -(a <=> b) }    # => nil
+ *      (1...1).min(2)  {|a, b| -(a <=> b) } # => []
+ *
+ *  Raises an exception if either:
+ *
+ *  - +self+ is a beginless range: <tt>(..4)</tt>.
+ *  - A block is given and +self+ is an endless range.
+ *
+ *  Related: Range#max, Range#minmax.
  */
 
 
