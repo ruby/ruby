@@ -1201,14 +1201,6 @@ range_last(int argc, VALUE *argv, VALUE range)
  *    ('a'..'d').min # => "a"
  *    (-4..-1).min   # => -4
  *
- *  Returns +nil+ if the begin value of the range is larger than the end value:
- *
- *    (4..1).min # => nil
- *
- *  Returns +nil+ if the begin value of an exclusive range is equal to the end value:
- *
- *    (1...1).min # => nil
- *
  *  With non-negative integer argument +n+ given, and no block given,
  *  returns the +n+ minimum-valued elements of +self+ in an array:
  *
@@ -1216,16 +1208,6 @@ range_last(int argc, VALUE *argv, VALUE range)
  *    ('a'..'d').min(2) # => ["a", "b"]
  *    (-4..-1).min(2)   # => [-4, -3]
  *    (1..4).min(50)    # => [4, 3, 2, 1]
- *    (1..4).min(0)     # => []
- *
- *  Returns an empty array if the begin value of the range is larger than the end value:
- *
- *    (4..1).min(2) # => []
- *
- *  Returns an empty array if the begin value of an exclusive range
- *  is equal to the end value:
- *
- *    (1...1).min(2) # => []
  *
  *  If a block is given, it is called:
  *
@@ -1247,28 +1229,32 @@ range_last(int argc, VALUE *argv, VALUE range)
  *
  *    (1..4).min {|a, b| -(a <=> b) } # => 4
  *
- *  Returns +nil+ if the begin value of the range is larger than the end value:
- *
- *    (4..1).min {|a, b| -(a <=> b) } # => nil
- *
- *  Returns +nil+ if the begin value of an exclusive range is equal to the end value:
- *
- *    (1...1).min  {|a, b| -(a <=> b) } # => nil
- *
  *  With non-negative integer argument +n+ given, and a block given,
  *  returns the return values of the last +n+ calls to the block in an array:
  *
  *    (1..4).min(2) {|a, b| -(a <=> b) }  # => [4, 3]
  *    (1..4).min(50) {|a, b| -(a <=> b) } # => [4, 3, 2, 1]
  *
- *  Returns an empty array if the begin value of the range is larger than the end value:
+ *  Returns an empty array if +n+ is zero:
  *
- *    (4..1).min(2) {|a, b| -(a <=> b) } # => []
+ *    (1..4).min(0)                      # => []
+ *    (1..4).min(0) {|a, b| -(a <=> b) } # => []
  *
- *  Returns an empty array if the begin value of an exclusive range
- *  is equal to the end value:
+ *  Returns +nil+ or an empty array if:
  *
- *    (1...1).min(2)  {|a, b| -(a <=> b) } # => []
+ *  - The begin value of the range is larger than the end value:
+ *
+ *      (4..1).min                         # => nil
+ *      (4..1).min(2)                      # => []
+ *      (4..1).min {|a, b| -(a <=> b) }    # => nil
+ *      (4..1).min(2) {|a, b| -(a <=> b) } # => []
+ *
+ *  - The begin value of an exclusive range is equal to the end value:
+ *
+ *      (1...1).min                          # => nil
+ *      (1...1).min(2)                       # => []
+ *      (1...1).min  {|a, b| -(a <=> b) }    # => nil
+ *      (1...1).min(2)  {|a, b| -(a <=> b) } # => []
  *
  *  Raises an exception if either:
  *
