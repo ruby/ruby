@@ -3436,7 +3436,7 @@ rb_arithmetic_sequence_extract(VALUE obj, rb_arithmetic_sequence_components_t *c
         return 1;
     }
     else if (rb_range_values(obj, &component->begin, &component->end, &component->exclude_end)) {
-        component->step  = INT2FIX(1);
+        component->step  = FIXNUM_ONE;
         return 1;
     }
 
@@ -3753,7 +3753,7 @@ arith_seq_last(int argc, VALUE *argv, VALUE self)
         len = len_1;
     }
     else {
-        len = rb_int_plus(len_1, INT2FIX(1));
+        len = rb_int_plus(len_1, FIXNUM_ONE);
     }
 
     rb_scan_args(argc, argv, "1", &nv);
@@ -4034,7 +4034,7 @@ arith_seq_size(VALUE self)
         len = len_1;
     }
     else {
-        len = rb_int_plus(len_1, INT2FIX(1));
+        len = rb_int_plus(len_1, FIXNUM_ONE);
     }
 
     return len;

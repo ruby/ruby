@@ -6833,14 +6833,14 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
         }
         if (eargp) {
             rb_execarg_addopt(execarg_obj, FIXNUM_ZERO, INT2FIX(arg.write_pair[0]));
-            rb_execarg_addopt(execarg_obj, INT2FIX(1), INT2FIX(arg.pair[1]));
+            rb_execarg_addopt(execarg_obj, FIXNUM_ONE, INT2FIX(arg.pair[1]));
         }
 	break;
       case FMODE_READABLE:
         if (rb_pipe(arg.pair) < 0)
             rb_sys_fail_str(prog);
         if (eargp)
-            rb_execarg_addopt(execarg_obj, INT2FIX(1), INT2FIX(arg.pair[1]));
+            rb_execarg_addopt(execarg_obj, FIXNUM_ONE, INT2FIX(arg.pair[1]));
 	break;
       case FMODE_WRITABLE:
         if (rb_pipe(arg.pair) < 0)

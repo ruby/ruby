@@ -174,7 +174,7 @@ quov(VALUE x, VALUE y)
 {
     VALUE ret = quor(x, y);
     if (RB_TYPE_P(ret, T_RATIONAL) &&
-        RRATIONAL(ret)->den == INT2FIX(1)) {
+        RRATIONAL(ret)->den == FIXNUM_ONE) {
         ret = RRATIONAL(ret)->num;
     }
     return ret;
@@ -1671,7 +1671,7 @@ timew_out_of_timet_range(wideval_t timew)
 #endif
     timexv = w2v(timew);
     if (lt(timexv, mulv(INT2FIX(TIME_SCALE), TIMET2NUM(TIMET_MIN))) ||
-        le(mulv(INT2FIX(TIME_SCALE), addv(TIMET2NUM(TIMET_MAX), INT2FIX(1))), timexv))
+        le(mulv(INT2FIX(TIME_SCALE), addv(TIMET2NUM(TIMET_MAX), FIXNUM_ONE)), timexv))
         return 1;
     return 0;
 }
@@ -1953,7 +1953,7 @@ vtm_add_offset(struct vtm *vtm, VALUE off, int sign)
         sign = -sign;
         off = neg(off);
     }
-    divmodv(off, INT2FIX(1), &off, &subsec);
+    divmodv(off, FIXNUM_ONE, &off, &subsec);
     divmodv(off, INT2FIX(60), &off, &v);
     sec = NUM2INT(v);
     divmodv(off, INT2FIX(60), &off, &v);
@@ -2025,7 +2025,7 @@ vtm_add_offset(struct vtm *vtm, VALUE off, int sign)
             if (vtm->mon == 1 && vtm->mday == 1) {
                 vtm->mday = 31;
                 vtm->mon = 12; /* December */
-                vtm->year = subv(vtm->year, INT2FIX(1));
+                vtm->year = subv(vtm->year, FIXNUM_ONE);
                 vtm->yday = leap_year_v_p(vtm->year) ? 366 : 365;
             }
             else if (vtm->mday == 1) {
@@ -2043,7 +2043,7 @@ vtm_add_offset(struct vtm *vtm, VALUE off, int sign)
         else {
             int leap = leap_year_v_p(vtm->year);
             if (vtm->mon == 12 && vtm->mday == 31) {
-                vtm->year = addv(vtm->year, INT2FIX(1));
+                vtm->year = addv(vtm->year, FIXNUM_ONE);
                 vtm->mon = 1; /* January */
                 vtm->mday = 1;
                 vtm->yday = 1;
@@ -2580,7 +2580,7 @@ time_timespec(VALUE num, int interval)
 	t.tv_nsec = 0;
     }
     else {
-	i = INT2FIX(1);
+	i = FIXNUM_ONE;
 	ary = rb_check_funcall(num, id_divmod, 1, &i);
 	if (ary != Qundef && !NIL_P(ary = rb_check_array_type(ary))) {
             i = rb_ary_entry(ary, 0);
@@ -2753,7 +2753,7 @@ obj2subsecx(VALUE obj, VALUE *subsecx)
         *subsecx = FIXNUM_ZERO;
     }
     else {
-        divmodv(num_exact(obj), INT2FIX(1), &obj, &subsec);
+        divmodv(num_exact(obj), FIXNUM_ONE, &obj, &subsec);
         *subsecx = w2v(rb_time_magnify(v2w(subsec)));
     }
     return obj2ubits(obj, 6); /* vtm->sec */
@@ -3622,7 +3622,7 @@ time_cmp(VALUE time1, VALUE time2)
 	return rb_invcmp(time1, time2);
     }
     if (n == 0) return FIXNUM_ZERO;
-    if (n > 0) return INT2FIX(1);
+    if (n > 0) return FIXNUM_ONE;
     return INT2FIX(-1);
 }
 
@@ -4150,9 +4150,9 @@ ndigits_denominator(VALUE ndigits)
         rb_raise(rb_eArgError, "negative ndigits given");
     }
     if (nd == 0) {
-        return INT2FIX(1);
+        return FIXNUM_ONE;
     }
-    return rb_rational_new(INT2FIX(1),
+    return rb_rational_new(FIXNUM_ONE,
                            rb_int_positive_pow(10, (unsigned long)nd));
 }
 
@@ -4192,7 +4192,7 @@ time_round(int argc, VALUE *argv, VALUE time)
     struct time_object *tobj;
 
     if (!rb_check_arity(argc, 0, 1) || NIL_P(ndigits = argv[0]))
-        den = INT2FIX(1);
+        den = FIXNUM_ONE;
     else
         den = ndigits_denominator(ndigits);
 
@@ -4240,7 +4240,7 @@ time_floor(int argc, VALUE *argv, VALUE time)
     struct time_object *tobj;
 
     if (!rb_check_arity(argc, 0, 1) || NIL_P(ndigits = argv[0]))
-        den = INT2FIX(1);
+        den = FIXNUM_ONE;
     else
         den = ndigits_denominator(ndigits);
 
@@ -4285,7 +4285,7 @@ time_ceil(int argc, VALUE *argv, VALUE time)
     struct time_object *tobj;
 
     if (!rb_check_arity(argc, 0, 1) || NIL_P(ndigits = argv[0]))
-        den = INT2FIX(1);
+        den = FIXNUM_ONE;
     else
         den = ndigits_denominator(ndigits);
 
@@ -5032,7 +5032,7 @@ time_mdump(VALUE time)
     subsecx = vtm.subsecx;
 
     nano = mulquov(subsecx, INT2FIX(1000000000), INT2FIX(TIME_SCALE));
-    divmodv(nano, INT2FIX(1), &v, &subnano);
+    divmodv(nano, FIXNUM_ONE, &v, &subnano);
     nsec = FIX2LONG(v);
     usec = nsec / 1000;
     nsec = nsec % 1000;
@@ -5090,7 +5090,7 @@ time_mdump(VALUE time)
         }
         else {
             rb_ivar_set(str, id_nano_num, nano);
-            rb_ivar_set(str, id_nano_den, INT2FIX(1));
+            rb_ivar_set(str, id_nano_den, FIXNUM_ONE);
         }
     }
     if (nsec) { /* submicro is only for Ruby 1.9.1 compatibility */
@@ -5114,7 +5114,7 @@ time_mdump(VALUE time)
     }
     if (!TZMODE_UTC_P(tobj)) {
 	VALUE off = rb_time_utc_offset(time), div, mod;
-	divmodv(off, INT2FIX(1), &div, &mod);
+	divmodv(off, FIXNUM_ONE, &div, &mod);
 	if (rb_equal(mod, FIXNUM_ZERO))
 	    off = rb_Integer(div);
 	rb_ivar_set(str, id_offset, off);

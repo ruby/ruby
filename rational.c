@@ -30,7 +30,6 @@
 #include "internal/rational.h"
 #include "ruby_assert.h"
 
-#define ONE INT2FIX(1)
 #define TWO INT2FIX(2)
 
 #define GMP_GCD_DIGITS 1
@@ -66,7 +65,7 @@ f_add(VALUE x, VALUE y)
 inline static VALUE
 f_div(VALUE x, VALUE y)
 {
-    if (y == ONE)
+    if (y == FIXNUM_ONE)
 	return x;
     if (RB_INTEGER_TYPE_P(x))
 	return rb_int_div(x, y);
@@ -101,10 +100,10 @@ f_mul(VALUE x, VALUE y)
 {
     if (FIXNUM_ZERO_P(y) && RB_INTEGER_TYPE_P(x))
 	return FIXNUM_ZERO;
-    if (y == ONE) return x;
+    if (y == FIXNUM_ONE) return x;
     if (FIXNUM_ZERO_P(x) && RB_INTEGER_TYPE_P(y))
 	return FIXNUM_ZERO;
-    if (x == ONE) return y;
+    if (x == FIXNUM_ONE) return y;
     else if (RB_INTEGER_TYPE_P(x))
 	return rb_int_mul(x, y);
     return rb_funcall(x, '*', 1, y);
@@ -189,7 +188,7 @@ f_one_p(VALUE x)
 
 	return num == LONG2FIX(1) && den == LONG2FIX(1);
     }
-    return (int)rb_equal(x, ONE);
+    return (int)rb_equal(x, FIXNUM_ONE);
 }
 
 inline static int
@@ -418,13 +417,13 @@ nurat_s_new_internal(VALUE klass, VALUE num, VALUE den)
 static VALUE
 nurat_s_alloc(VALUE klass)
 {
-    return nurat_s_new_internal(klass, FIXNUM_ZERO, ONE);
+    return nurat_s_new_internal(klass, FIXNUM_ZERO, FIXNUM_ONE);
 }
 
 inline static VALUE
 f_rational_new_bang1(VALUE klass, VALUE x)
 {
-    return nurat_s_new_internal(klass, x, ONE);
+    return nurat_s_new_internal(klass, x, FIXNUM_ONE);
 }
 
 inline static void
@@ -463,7 +462,7 @@ static void
 nurat_reduce(VALUE *x, VALUE *y)
 {
     VALUE gcd;
-    if (*x == ONE || *y == ONE) return;
+    if (*x == FIXNUM_ONE || *y == FIXNUM_ONE) return;
     gcd = f_gcd(*x, *y);
     *x = f_idiv(*x, gcd);
     *y = f_idiv(*y, gcd);
@@ -858,7 +857,7 @@ rb_rational_mul(VALUE self, VALUE other)
 
 	    return f_muldiv(self,
 			    dat->num, dat->den,
-			    other, ONE, '*');
+			    other, FIXNUM_ONE, '*');
 	}
     }
     else if (RB_FLOAT_TYPE_P(other)) {
@@ -902,7 +901,7 @@ rb_rational_div(VALUE self, VALUE other)
 
 	    return f_muldiv(self,
 			    dat->num, dat->den,
-			    other, ONE, '/');
+			    other, FIXNUM_ONE, '/');
 	}
     }
     else if (RB_FLOAT_TYPE_P(other)) {
@@ -972,7 +971,7 @@ VALUE
 rb_rational_pow(VALUE self, VALUE other)
 {
     if (k_numeric_p(other) && k_exact_zero_p(other))
-	return f_rational_new_bang1(CLASS_OF(self), ONE);
+	return f_rational_new_bang1(CLASS_OF(self), FIXNUM_ONE);
 
     if (k_rational_p(other)) {
 	get_dat1(other);
@@ -986,7 +985,7 @@ rb_rational_pow(VALUE self, VALUE other)
 	get_dat1(self);
 	if (f_one_p(dat->den)) {
 	    if (f_one_p(dat->num)) {
-		return f_rational_new_bang1(CLASS_OF(self), ONE);
+		return f_rational_new_bang1(CLASS_OF(self), FIXNUM_ONE);
 	    }
 	    else if (f_minus_one_p(dat->num) && RB_INTEGER_TYPE_P(other)) {
 		return f_rational_new_bang1(CLASS_OF(self), INT2FIX(rb_int_odd_p(other) ? -1 : 1));
@@ -1018,8 +1017,8 @@ rb_rational_pow(VALUE self, VALUE other)
 		den = rb_int_pow(dat->num, rb_int_uminus(other));
             }
             else {
-		num = ONE;
-		den = ONE;
+		num = FIXNUM_ONE;
+		den = FIXNUM_ONE;
 	    }
 	    if (RB_FLOAT_TYPE_P(num)) { /* infinity due to overflow */
 		if (RB_FLOAT_TYPE_P(den))
@@ -1028,7 +1027,7 @@ rb_rational_pow(VALUE self, VALUE other)
 	    }
 	    if (RB_FLOAT_TYPE_P(den)) { /* infinity due to overflow */
 		num = FIXNUM_ZERO;
-		den = ONE;
+		den = FIXNUM_ONE;
 	    }
 	    return f_rational_new2(CLASS_OF(self), num, den);
 	}
@@ -1315,7 +1314,7 @@ nurat_round_half_down(VALUE self)
 	num = rb_int_uminus(num);
 
     num = rb_int_plus(rb_int_mul(num, TWO), den);
-    num = rb_int_minus(num, ONE);
+    num = rb_int_minus(num, FIXNUM_ONE);
     den = rb_int_mul(den, TWO);
     num = rb_int_idiv(num, den);
 
@@ -1382,7 +1381,7 @@ f_round_common(int argc, VALUE *argv, VALUE self, VALUE (*func)(VALUE))
 
     s = rb_rational_div(f_rational_new_bang1(CLASS_OF(self), s), b);
 
-    if (RB_TYPE_P(s, T_RATIONAL) && FIX2INT(rb_int_cmp(n, ONE)) < 0)
+    if (RB_TYPE_P(s, T_RATIONAL) && FIX2INT(rb_int_cmp(n, FIXNUM_ONE)) < 0)
 	s = nurat_truncate(s);
 
     return s;
@@ -1610,7 +1609,7 @@ f_quo(VALUE x, VALUE y)
     return rb_funcallv(x, id_quo, 1, &y);
 }
 
-#define f_reciprocal(x) f_quo(ONE, (x))
+#define f_reciprocal(x) f_quo(FIXNUM_ONE, (x))
 
 /*
   The algorithm here is the method described in CLISP.  Bruno Haible has
@@ -1677,15 +1676,15 @@ nurat_rationalize_internal(VALUE a, VALUE b, VALUE *p, VALUE *q)
     VALUE c, k, t, p0, p1, p2, q0, q1, q2;
 
     p0 = FIXNUM_ZERO;
-    p1 = ONE;
-    q0 = ONE;
+    p1 = FIXNUM_ONE;
+    q0 = FIXNUM_ONE;
     q1 = FIXNUM_ZERO;
 
     while (1) {
 	c = f_ceil(a);
 	if (f_lt_p(c, b))
 	    break;
-	k = f_sub(c, ONE);
+	k = f_sub(c, FIXNUM_ONE);
 	p2 = f_add(f_mul(k, p1), p0);
 	q2 = f_add(f_mul(k, q1), q0);
 	t = f_reciprocal(f_sub(b, k));
@@ -2073,7 +2072,7 @@ integer_numerator(VALUE self)
 static VALUE
 integer_denominator(VALUE self)
 {
-    return INT2FIX(1);
+    return FIXNUM_ONE;
 }
 
 /*
@@ -2114,7 +2113,7 @@ rb_float_denominator(VALUE self)
     double d = RFLOAT_VALUE(self);
     VALUE r;
     if (!isfinite(d))
-	return INT2FIX(1);
+	return FIXNUM_ONE;
     r = float_to_r(self);
     return nurat_denominator(r);
 }
@@ -2218,7 +2217,7 @@ float_to_r(VALUE self)
     if (n > 0)
         return rb_rational_new1(rb_int_lshift(f, INT2FIX(n)));
     n = -n;
-    return rb_rational_new2(f, rb_int_lshift(ONE, INT2FIX(n)));
+    return rb_rational_new2(f, rb_int_lshift(FIXNUM_ONE, INT2FIX(n)));
 #else
     f = rb_int_mul(f, rb_int_pow(INT2FIX(FLT_RADIX), n));
     if (RB_TYPE_P(f, T_RATIONAL))
@@ -2258,7 +2257,7 @@ rb_flt_rationalize(VALUE flt)
 
         radix_times_f = rb_int_mul(INT2FIX(FLT_RADIX), f);
 #if FLT_RADIX == 2 && 0
-        den = rb_int_lshift(ONE, INT2FIX(1-n));
+        den = rb_int_lshift(FIXNUM_ONE, INT2FIX(1-n));
 #else
         den = rb_int_positive_pow(FLT_RADIX, 1-n);
 #endif
@@ -2347,7 +2346,7 @@ negate_num(VALUE num)
 static int
 read_num(const char **s, const char *const end, VALUE *num, VALUE *nexp)
 {
-    VALUE fp = ONE, exp, fn = FIXNUM_ZERO, n = FIXNUM_ZERO;
+    VALUE fp = FIXNUM_ONE, exp, fn = FIXNUM_ZERO, n = FIXNUM_ZERO;
     int expsign = 0, ok = 0;
     char *e;
 
@@ -2425,12 +2424,12 @@ parse_rat(const char *s, const char *const e, int strict, int raise)
 	if (strict) return Qnil;
 	return nurat_s_alloc(rb_cRational);
     }
-    den = ONE;
+    den = FIXNUM_ONE;
     if (s < e && *s == '/') {
 	s++;
         if (!read_num(&s, e, &den, &dexp)) {
 	    if (strict) return Qnil;
-            den = ONE;
+            den = FIXNUM_ONE;
 	}
 	else if (den == FIXNUM_ZERO) {
             if (!raise) return Qnil;
@@ -2684,7 +2683,7 @@ nurat_convert(VALUE klass, VALUE numv, VALUE denv, int raise)
     a1 = nurat_int_value(a1);
 
     if (a2 == Qundef) {
-        a2 = ONE;
+        a2 = FIXNUM_ONE;
     }
     else if (!k_integer_p(a2) && !raise) {
         return Qnil;

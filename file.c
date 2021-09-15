@@ -544,10 +544,10 @@ rb_stat_cmp(VALUE self, VALUE other)
         if (ts1.tv_sec == ts2.tv_sec) {
             if (ts1.tv_nsec == ts2.tv_nsec) return FIXNUM_ZERO;
             if (ts1.tv_nsec < ts2.tv_nsec) return INT2FIX(-1);
-            return INT2FIX(1);
+            return FIXNUM_ONE;
         }
         if (ts1.tv_sec < ts2.tv_sec) return INT2FIX(-1);
-        return INT2FIX(1);
+        return FIXNUM_ONE;
     }
     return Qnil;
 }

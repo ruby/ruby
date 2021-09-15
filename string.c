@@ -2129,7 +2129,7 @@ rb_str_times(VALUE str, VALUE times)
     char *ptr2;
     int termlen;
 
-    if (times == INT2FIX(1)) {
+    if (times == FIXNUM_ONE) {
         return str_duplicate(rb_cString, str);
     }
     if (times == FIXNUM_ZERO) {
@@ -3583,7 +3583,7 @@ str_casecmp(VALUE str1, VALUE str2)
 	}
     }
     if (RSTRING_LEN(str1) == RSTRING_LEN(str2)) return FIXNUM_ZERO;
-    if (RSTRING_LEN(str1) > RSTRING_LEN(str2)) return INT2FIX(1);
+    if (RSTRING_LEN(str1) > RSTRING_LEN(str2)) return FIXNUM_ONE;
     return INT2FIX(-1);
 }
 
@@ -9926,8 +9926,8 @@ rb_str_sum(int argc, VALUE *argv, VALUE str)
                 sum = rb_funcall(sum, '+', 1, LONG2FIX(sum0));
             }
 
-            mod = rb_funcall(INT2FIX(1), idLTLT, 1, INT2FIX(bits));
-            mod = rb_funcall(mod, '-', 1, INT2FIX(1));
+            mod = rb_funcall(FIXNUM_ONE, idLTLT, 1, INT2FIX(bits));
+            mod = rb_funcall(mod, '-', 1, FIXNUM_ONE);
             sum = rb_funcall(sum, '&', 1, mod);
         }
     }

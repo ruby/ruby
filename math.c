@@ -906,7 +906,7 @@ math_lgamma(VALUE unused_obj, VALUE x)
     /* check for domain error */
     if (isinf(d)) {
 	if (signbit(d)) domain_error("lgamma");
-	return rb_assoc_new(DBL2NUM(HUGE_VAL), INT2FIX(1));
+	return rb_assoc_new(DBL2NUM(HUGE_VAL), FIXNUM_ONE);
     }
     if (d == 0.0) {
 	VALUE vsign = signbit(d) ? INT2FIX(-1) : INT2FIX(+1);

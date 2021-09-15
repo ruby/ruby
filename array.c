@@ -5142,7 +5142,7 @@ rb_ary_cmp(VALUE ary1, VALUE ary2)
     if (v != Qundef) return v;
     len = RARRAY_LEN(ary1) - RARRAY_LEN(ary2);
     if (len == 0) return FIXNUM_ZERO;
-    if (len > 0) return INT2FIX(1);
+    if (len > 0) return FIXNUM_ONE;
     return INT2FIX(-1);
 }
 

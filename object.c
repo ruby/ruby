@@ -1763,7 +1763,7 @@ rb_mod_cmp(VALUE mod, VALUE arg)
     if (cmp) {
 	return INT2FIX(-1);
     }
-    return INT2FIX(1);
+    return FIXNUM_ONE;
 }
 
 static VALUE rb_mod_initialize_exec(VALUE module);

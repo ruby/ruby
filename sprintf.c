@@ -788,7 +788,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		int sign = (flags&FPLUS) ? 1 : 0, zero = 0;
 		long len, fill;
 		if (RB_INTEGER_TYPE_P(val)) {
-		    den = INT2FIX(1);
+		    den = FIXNUM_ONE;
 		    num = val;
 		}
 		else if (RB_TYPE_P(val, T_RATIONAL)) {
@@ -811,7 +811,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    sign = -1;
 		    num = rb_big_uminus(num);
 		}
-		if (den != INT2FIX(1)) {
+		if (den != FIXNUM_ONE) {
 		    num = rb_int_mul(num, rb_int_positive_pow(10, prec));
 		    num = rb_int_plus(num, rb_int_idiv(den, INT2FIX(2)));
 		    num = rb_int_idiv(num, den);

@@ -26,7 +26,6 @@
 #include "internal/rational.h"
 #include "ruby_assert.h"
 
-#define ONE INT2FIX(1)
 #define TWO INT2FIX(2)
 #if USE_FLONUM
 #define RFLOAT_0 DBL2NUM(0)
@@ -126,22 +125,22 @@ f_mul(VALUE x, VALUE y)
             return FIXNUM_ZERO;
         if (FIXNUM_ZERO_P(x) && RB_INTEGER_TYPE_P(y))
             return FIXNUM_ZERO;
-        if (x == ONE) return y;
-        if (y == ONE) return x;
+        if (x == FIXNUM_ONE) return y;
+        if (y == FIXNUM_ONE) return x;
         return rb_int_mul(x, y);
     }
     else if (RB_FLOAT_TYPE_P(x) &&
              LIKELY(rb_method_basic_definition_p(rb_cFloat, idMULT))) {
-        if (y == ONE) return x;
+        if (y == FIXNUM_ONE) return x;
         return rb_float_mul(x, y);
     }
     else if (RB_TYPE_P(x, T_RATIONAL) &&
              LIKELY(rb_method_basic_definition_p(rb_cRational, idMULT))) {
-        if (y == ONE) return x;
+        if (y == FIXNUM_ONE) return x;
         return rb_rational_mul(x, y);
     }
     else if (LIKELY(rb_method_basic_definition_p(CLASS_OF(x), idMULT))) {
-        if (y == ONE) return x;
+        if (y == FIXNUM_ONE) return x;
     }
     return rb_funcall(x, '*', 1, y);
 }
@@ -216,7 +215,7 @@ f_denominator(VALUE x)
     if (RB_FLOAT_TYPE_P(x)) {
         return rb_float_denominator(x);
     }
-    return INT2FIX(1);
+    return FIXNUM_ONE;
 }
 
 inline static VALUE
@@ -905,13 +904,13 @@ f_divide(VALUE self, VALUE other,
 
 	if (f_gt_p(f_abs(bdat->real), f_abs(bdat->imag))) {
 	    r = (*func)(bdat->imag, bdat->real);
-	    n = f_mul(bdat->real, f_add(ONE, f_mul(r, r)));
+	    n = f_mul(bdat->real, f_add(FIXNUM_ONE, f_mul(r, r)));
             x = (*func)(f_add(adat->real, f_mul(adat->imag, r)), n);
             y = (*func)(f_sub(adat->imag, f_mul(adat->real, r)), n);
 	}
 	else {
 	    r = (*func)(bdat->real, bdat->imag);
-	    n = f_mul(bdat->imag, f_add(ONE, f_mul(r, r)));
+	    n = f_mul(bdat->imag, f_add(FIXNUM_ONE, f_mul(r, r)));
             x = (*func)(f_add(f_mul(adat->real, r), adat->imag), n);
             y = (*func)(f_sub(f_mul(adat->imag, r), adat->real), n);
 	}
@@ -971,7 +970,7 @@ nucomp_fdiv(VALUE self, VALUE other)
 inline static VALUE
 f_reciprocal(VALUE x)
 {
-    return f_quo(ONE, x);
+    return f_quo(FIXNUM_ONE, x);
 }
 
 /*
@@ -987,7 +986,7 @@ VALUE
 rb_complex_pow(VALUE self, VALUE other)
 {
     if (k_numeric_p(other) && k_exact_zero_p(other))
-	return f_complex_new_bang1(CLASS_OF(self), ONE);
+	return f_complex_new_bang1(CLASS_OF(self), FIXNUM_ONE);
 
     if (RB_TYPE_P(other, T_RATIONAL) && RRATIONAL(other)->den == LONG2FIX(1))
 	other = RRATIONAL(other)->num; /* c14n */
@@ -1016,7 +1015,7 @@ rb_complex_pow(VALUE self, VALUE other)
     if (FIXNUM_P(other)) {
         long n = FIX2LONG(other);
         if (n == 0) {
-            return nucomp_s_new_internal(CLASS_OF(self), ONE, FIXNUM_ZERO);
+            return nucomp_s_new_internal(CLASS_OF(self), FIXNUM_ONE, FIXNUM_ZERO);
         }
         if (n < 0) {
             self = f_reciprocal(self);
@@ -1473,7 +1472,7 @@ rb_complex_infinite_p(VALUE self)
     if (!f_infinite_p(dat->real) && !f_infinite_p(dat->imag)) {
 	return Qnil;
     }
-    return ONE;
+    return FIXNUM_ONE;
 }
 
 /* :nodoc: */
@@ -2102,7 +2101,7 @@ nucomp_convert(VALUE klass, VALUE a1, VALUE a2, int raise)
 	    (!f_real_p(a1) || !f_real_p(a2)))
 	    return f_add(a1,
 			 f_mul(a2,
-			       f_complex_new_bang2(rb_cComplex, FIXNUM_ZERO, ONE)));
+			       f_complex_new_bang2(rb_cComplex, FIXNUM_ZERO, FIXNUM_ONE)));
     }
 
     {
@@ -2422,7 +2421,7 @@ Init_Complex(void)
      * The imaginary unit.
      */
     rb_define_const(rb_cComplex, "I",
-		    f_complex_new_bang2(rb_cComplex, FIXNUM_ZERO, ONE));
+		    f_complex_new_bang2(rb_cComplex, FIXNUM_ZERO, FIXNUM_ONE));
 
 #if !USE_FLONUM
     rb_gc_register_mark_object(RFLOAT_0 = DBL2NUM(0.0));

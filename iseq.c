@@ -1275,7 +1275,7 @@ rb_iseqw_new(const rb_iseq_t *iseq)
 static VALUE
 iseqw_s_compile(int argc, VALUE *argv, VALUE self)
 {
-    VALUE src, file = Qnil, path = Qnil, line = INT2FIX(1), opt = Qnil;
+    VALUE src, file = Qnil, path = Qnil, line = FIXNUM_ONE, opt = Qnil;
     int i;
 
     i = rb_scan_args(argc, argv, "1*:", &src, NULL, &opt);
@@ -1289,7 +1289,7 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
 
     if (NIL_P(file)) file = rb_fstring_lit("<compiled>");
     if (NIL_P(path)) path = file;
-    if (NIL_P(line)) line = INT2FIX(1);
+    if (NIL_P(line)) line = FIXNUM_ONE;
 
     Check_Type(path, T_STRING);
     Check_Type(file, T_STRING);
@@ -1320,7 +1320,7 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
 static VALUE
 iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
 {
-    VALUE file, line = INT2FIX(1), opt = Qnil;
+    VALUE file, line = FIXNUM_ONE, opt = Qnil;
     VALUE parser, f, exc = Qnil, ret;
     rb_ast_t *ast;
     rb_compile_option_t option;
@@ -3019,7 +3019,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     rb_ary_push(val, rb_str_new2("YARVInstructionSequence/SimpleDataFormat"));
     rb_ary_push(val, INT2FIX(ISEQ_MAJOR_VERSION)); /* major */
     rb_ary_push(val, INT2FIX(ISEQ_MINOR_VERSION)); /* minor */
-    rb_ary_push(val, INT2FIX(1));
+    rb_ary_push(val, FIXNUM_ONE);
     rb_ary_push(val, misc);
     rb_ary_push(val, iseq_body->location.label);
     rb_ary_push(val, rb_iseq_path(iseq));

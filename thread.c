@@ -146,7 +146,7 @@ static int check_signals_nogvl(rb_thread_t *, int sigwait_fd);
 void rb_sigwait_fd_migrate(rb_vm_t *); /* process.c */
 
 #define eKillSignal FIXNUM_ZERO
-#define eTerminateSignal INT2FIX(1)
+#define eTerminateSignal FIXNUM_ONE
 static volatile int system_working = 1;
 
 struct waiting_fd {

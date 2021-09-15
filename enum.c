@@ -1161,14 +1161,14 @@ tally_up(st_data_t *group, st_data_t *value, st_data_t arg, int existing)
     VALUE tally = (VALUE)*value;
     VALUE hash = (VALUE)arg;
     if (!existing) {
-        tally = INT2FIX(1);
+        tally = FIXNUM_ONE;
     }
     else if (FIXNUM_P(tally) && tally < INT2FIX(FIXNUM_MAX)) {
-        tally += INT2FIX(1) & ~FIXNUM_FLAG;
+        tally += FIXNUM_ONE & ~FIXNUM_FLAG;
     }
     else {
         Check_Type(tally, T_BIGNUM);
-        tally = rb_big_plus(tally, INT2FIX(1));
+        tally = rb_big_plus(tally, FIXNUM_ONE);
         RB_OBJ_WRITTEN(hash, Qundef, tally);
     }
     *value = (st_data_t)tally;

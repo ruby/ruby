@@ -314,10 +314,10 @@ sym_step_i(VALUE i, VALUE arg)
     VALUE *iter = (VALUE *)arg;
 
     if (FIXNUM_P(iter[0])) {
-	iter[0] -= INT2FIX(1) & ~FIXNUM_FLAG;
+	iter[0] -= FIXNUM_ONE & ~FIXNUM_FLAG;
     }
     else {
-	iter[0] = rb_funcall(iter[0], '-', 1, INT2FIX(1));
+	iter[0] = rb_funcall(iter[0], '-', 1, FIXNUM_ONE);
     }
     if (iter[0] == FIXNUM_ZERO) {
 	rb_yield(rb_str_intern(i));
@@ -332,10 +332,10 @@ step_i(VALUE i, VALUE arg)
     VALUE *iter = (VALUE *)arg;
 
     if (FIXNUM_P(iter[0])) {
-	iter[0] -= INT2FIX(1) & ~FIXNUM_FLAG;
+	iter[0] -= FIXNUM_ONE & ~FIXNUM_FLAG;
     }
     else {
-	iter[0] = rb_funcall(iter[0], '-', 1, INT2FIX(1));
+	iter[0] = rb_funcall(iter[0], '-', 1, FIXNUM_ONE);
     }
     if (iter[0] == FIXNUM_ZERO) {
 	rb_yield(i);
@@ -389,7 +389,7 @@ static VALUE
 range_step_size(VALUE range, VALUE args, VALUE eobj)
 {
     VALUE b = RANGE_BEG(range), e = RANGE_END(range);
-    VALUE step = INT2FIX(1);
+    VALUE step = FIXNUM_ONE;
     if (args) {
 	step = check_step_domain(RARRAY_AREF(args, 0));
     }
@@ -444,7 +444,7 @@ range_step(int argc, VALUE *argv, VALUE range)
 
     b = RANGE_BEG(range);
     e = RANGE_END(range);
-    step = (!rb_check_arity(argc, 0, 1) ? INT2FIX(1) : argv[0]);
+    step = (!rb_check_arity(argc, 0, 1) ? FIXNUM_ONE : argv[0]);
 
     if (!rb_block_given_p()) {
         if (!rb_obj_is_kind_of(step, rb_cNumeric)) {
@@ -493,7 +493,7 @@ range_step(int argc, VALUE *argv, VALUE range)
     }
     else if (SYMBOL_P(b) && (NIL_P(e) || SYMBOL_P(e))) { /* symbols are special */
 	VALUE iter[2];
-	iter[0] = INT2FIX(1);
+	iter[0] = FIXNUM_ONE;
 	iter[1] = step;
 
 	b = rb_sym2str(b);
@@ -527,7 +527,7 @@ range_step(int argc, VALUE *argv, VALUE range)
 	    VALUE iter[2];
 
 	    b = tmp;
-	    iter[0] = INT2FIX(1);
+	    iter[0] = FIXNUM_ONE;
 	    iter[1] = step;
 
 	    if (NIL_P(e)) {
@@ -544,7 +544,7 @@ range_step(int argc, VALUE *argv, VALUE range)
 		rb_raise(rb_eTypeError, "can't iterate from %s",
 			 rb_obj_classname(b));
 	    }
-	    args[0] = INT2FIX(1);
+	    args[0] = FIXNUM_ONE;
 	    args[1] = step;
 	    range_each_func(range, step_i, (VALUE)args);
 	}
@@ -663,7 +663,7 @@ bsearch_integer_range(VALUE beg, VALUE end, int excl)
     ID id_div;
     CONST_ID(id_div, "div");
 
-    if (excl) high = rb_funcall(high, '-', 1, INT2FIX(1));
+    if (excl) high = rb_funcall(high, '-', 1, FIXNUM_ONE);
     org_high = high;
 
     while (rb_cmpint(rb_funcall(low, id_cmp, 1, high), low, high) < 0) {
@@ -673,7 +673,7 @@ bsearch_integer_range(VALUE beg, VALUE end, int excl)
 	    high = mid;
 	}
 	else {
-	    low = rb_funcall(mid, '+', 1, INT2FIX(1));
+	    low = rb_funcall(mid, '+', 1, FIXNUM_ONE);
 	}
     }
     if (rb_equal(low, org_high)) {
@@ -823,7 +823,7 @@ range_size(VALUE range)
     VALUE b = RANGE_BEG(range), e = RANGE_END(range);
     if (rb_obj_is_kind_of(b, rb_cNumeric)) {
         if (rb_obj_is_kind_of(e, rb_cNumeric)) {
-	    return ruby_num_interval_step_size(b, e, INT2FIX(1), EXCL(range));
+	    return ruby_num_interval_step_size(b, e, FIXNUM_ONE, EXCL(range));
         }
         if (NIL_P(e)) {
             return DBL2NUM(HUGE_VAL);
@@ -869,7 +869,7 @@ RBIMPL_ATTR_NORETURN()
 static void
 range_each_bignum_endless(VALUE beg)
 {
-    for (;; beg = rb_big_plus(beg, INT2FIX(1))) {
+    for (;; beg = rb_big_plus(beg, FIXNUM_ONE)) {
         rb_yield(beg);
     }
     UNREACHABLE;
@@ -937,7 +937,7 @@ range_each(VALUE range)
 		if (RBIGNUM_NEGATIVE_P(beg)) {
 		    do {
 			rb_yield(beg);
-		    } while (!FIXNUM_P(beg = rb_big_plus(beg, INT2FIX(1))));
+		    } while (!FIXNUM_P(beg = rb_big_plus(beg, FIXNUM_ONE)));
                     if (NIL_P(end)) range_each_fixnum_endless(beg);
                     if (FIXNUM_P(end)) return range_each_fixnum_loop(beg, end, range);
 		}
@@ -960,15 +960,15 @@ range_each(VALUE range)
 	    if (EXCL(range)) {
 		while (rb_big_cmp(beg, end) == INT2FIX(-1)) {
 		    rb_yield(beg);
-		    beg = rb_big_plus(beg, INT2FIX(1));
+		    beg = rb_big_plus(beg, FIXNUM_ONE);
 		}
 	    }
 	    else {
 		VALUE c;
-		while ((c = rb_big_cmp(beg, end)) != INT2FIX(1)) {
+		while ((c = rb_big_cmp(beg, end)) != FIXNUM_ONE) {
 		    rb_yield(beg);
 		    if (c == FIXNUM_ZERO) break;
-		    beg = rb_big_plus(beg, INT2FIX(1));
+		    beg = rb_big_plus(beg, FIXNUM_ONE);
 		}
 	    }
 	}
@@ -1106,7 +1106,7 @@ range_first(int argc, VALUE *argv, VALUE range)
 static VALUE
 rb_int_range_last(int argc, VALUE *argv, VALUE range)
 {
-    static const VALUE ONE = INT2FIX(1);
+    static const VALUE ONE = FIXNUM_ONE;
 
     VALUE b, e, len_1, len, nv, ary;
     int x;
@@ -1436,7 +1436,7 @@ range_max(int argc, VALUE *argv, VALUE range)
             if (FIXNUM_P(e)) {
                 return LONG2NUM(FIX2LONG(e) - 1);
             }
-            return rb_funcall(e, '-', 1, INT2FIX(1));
+            return rb_funcall(e, '-', 1, FIXNUM_ONE);
         }
         return e;
     }

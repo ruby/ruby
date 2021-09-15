@@ -840,7 +840,7 @@ rand_mt_load(VALUE obj, VALUE dump)
 {
     rb_random_mt_t *rnd = rb_check_typeddata(obj, &random_mt_type);
     struct MT *mt = &rnd->mt;
-    VALUE state, left = INT2FIX(1), seed = FIXNUM_ZERO;
+    VALUE state, left = FIXNUM_ONE, seed = FIXNUM_ZERO;
     unsigned long x;
 
     rb_check_copyable(obj, dump);
@@ -1132,7 +1132,7 @@ ulong_to_num_plus_1(unsigned long n)
     return ULL2NUM((LONG_LONG)n+1);
 #else
     if (n >= ULONG_MAX) {
-	return rb_big_plus(ULONG2NUM(n), INT2FIX(1));
+	return rb_big_plus(ULONG2NUM(n), FIXNUM_ONE);
     }
     return ULONG2NUM(n+1);
 #endif
@@ -1331,7 +1331,7 @@ rand_int(VALUE obj, rb_random_t *rnd, VALUE vmax, int restrictive)
 	    if (restrictive) return Qnil;
             vmax = rb_big_uminus(vmax);
 	}
-	vmax = rb_big_minus(vmax, INT2FIX(1));
+	vmax = rb_big_minus(vmax, FIXNUM_ONE);
 	if (FIXNUM_P(vmax)) {
 	    long max = FIX2LONG(vmax);
 	    if (max == -1) return Qnil;
@@ -1402,7 +1402,7 @@ rand_range(VALUE obj, rb_random_t* rnd, VALUE range)
 	    }
 	}
 	else if (BUILTIN_TYPE(vmax) == T_BIGNUM && BIGNUM_SIGN(vmax) && !rb_bigzero_p(vmax)) {
-	    vmax = excl ? rb_big_minus(vmax, INT2FIX(1)) : rb_big_norm(vmax);
+	    vmax = excl ? rb_big_minus(vmax, FIXNUM_ONE) : rb_big_norm(vmax);
 	    if (FIXNUM_P(vmax)) {
 		excl = 0;
 		goto fixnum;

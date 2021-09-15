@@ -493,7 +493,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
                                     FMT('0', 1, PRI_TIMET_PREFIX"u", sec);
                         }
                         else {
-                                VALUE sec = div(timev, INT2FIX(1));
+                                VALUE sec = div(timev, FIXNUM_ONE);
                                 FMTV('0', 1, "d", sec);
                         }
                         continue;
@@ -747,9 +747,9 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
                                 VALUE yv = vtm->year;
                                 w = iso8601wknum_v(vtm);
                                 if (vtm->mon == 12 && w == 1)
-                                        yv = add(yv, INT2FIX(1));
+                                        yv = add(yv, FIXNUM_ONE);
                                 else if (vtm->mon == 1 && w >= 52)
-                                        yv = sub(yv, INT2FIX(1));
+                                        yv = sub(yv, FIXNUM_ONE);
 
                                 if (*format == 'G') {
                                         if (FIXNUM_P(yv)) {
@@ -807,7 +807,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
                                 }
                         }
                         else {
-                                VALUE subsec = mod(timev, INT2FIX(1));
+                                VALUE subsec = mod(timev, FIXNUM_ONE);
                                 int ww;
                                 long n;
 
@@ -821,7 +821,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
                                         n *= 10;
                                 if (n != 1)
                                         subsec = mul(subsec, INT2FIX(n));
-                                subsec = div(subsec, INT2FIX(1));
+                                subsec = div(subsec, FIXNUM_ONE);
 
                                 if (FIXNUM_P(subsec)) {
                                         (void)snprintf(s, endp - s, "%0*ld", precision, FIX2LONG(subsec));

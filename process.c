@@ -2115,7 +2115,7 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
             eargp->fd_dup2 = check_exec_redirect1(eargp->fd_dup2, key, param);
         }
         else if (id == id_out) {
-            param = INT2FIX(1);
+            param = FIXNUM_ONE;
             eargp->fd_dup2 = check_exec_redirect1(eargp->fd_dup2, key, param);
         }
         else if (id == id_err) {
@@ -2317,7 +2317,7 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
             goto redirect;
         }
         else if (id == id_out) {
-            key = INT2FIX(1);
+            key = FIXNUM_ONE;
             goto redirect;
         }
         else if (id == id_err) {
@@ -3871,7 +3871,7 @@ handle_fork_error(int err, struct rb_process_status *status, int *ep, volatile i
             return 0;
         }
         else {
-            rb_protect(rb_thread_sleep_that_takes_VALUE_as_sole_argument, INT2FIX(1), &state);
+            rb_protect(rb_thread_sleep_that_takes_VALUE_as_sole_argument, FIXNUM_ONE, &state);
             if (status) status->status = state;
             if (!state) return 0;
         }
