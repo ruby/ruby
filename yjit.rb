@@ -177,6 +177,9 @@ module YJIT
       yjit_ratio_pct = 100.0 * retired_in_yjit.to_f / total_insns_count
 
       $stderr.puts "compiled_iseq_count:   " + ("%10d" % stats[:compiled_iseq_count])
+      $stderr.puts "compiled_block_count:  " + ("%10d" % stats[:compiled_block_count])
+      $stderr.puts "invalidation_count:    " + ("%10d" % stats[:invalidation_count])
+      $stderr.puts "constant_state_bumps:  " + ("%10d" % stats[:constant_state_bumps])
       $stderr.puts "inline_code_size:      " + ("%10d" % stats[:inline_code_size])
       $stderr.puts "outlined_code_size:    " + ("%10d" % stats[:outlined_code_size])
 

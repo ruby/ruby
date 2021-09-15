@@ -557,6 +557,10 @@ add_block_version(blockid_t blockid, block_t* block)
             RB_OBJ_WRITTEN(iseq, Qundef, object);
         }
     }
+
+#if YJIT_STATS
+    yjit_runtime_counters.compiled_block_count++;
+#endif
 }
 
 // Create a new outgoing branch entry for a block
@@ -1143,6 +1147,10 @@ invalidate_block_version(block_t *block)
     // Call continuation addresses on the stack can also be atomically replaced by jumps going to the stub.
 
     yjit_free_block(block);
+
+#if YJIT_STATS
+    yjit_runtime_counters.invalidation_count++;
+#endif
 
     // fprintf(stderr, "invalidation done\n");
 }

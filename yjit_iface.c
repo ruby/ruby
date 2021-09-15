@@ -591,6 +591,9 @@ rb_yjit_constant_state_changed(void)
 {
     if (blocks_assuming_stable_global_constant_state) {
         st_foreach(blocks_assuming_stable_global_constant_state, block_invalidation_iterator, 0);
+#if YJIT_STATS
+        yjit_runtime_counters.constant_state_bumps++;
+#endif
     }
 }
 
