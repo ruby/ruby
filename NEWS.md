@@ -69,10 +69,17 @@ Note that each entry is kept to a minimum, see links for details.
 
     [[Bug #4443]]
 
-* Values in Hash literals and keyword arguments can be omitted.  [[Feature #14579]]
+* Values in Hash literals and keyword arguments can be omitted.
+  [[Feature #14579]]
+  For example,
 
-    `{x:, y:}` is a syntax sugar of `{x: x, y: y}`.
-    `foo(x:, y:)` is a syntax sugar of `foo(x: x, y: y)`.
+    * `{x:, y:}` is a syntax sugar of `{x: x, y: y}`.
+    * `foo(x:, y:)` is a syntax sugar of `foo(x: x, y: y)`.
+
+  Constant names, local variable names, and method names are allowed as
+  key names.  Note that a reserved word is considered as a local
+  variable or method name even if it's a pseudo variable name such as
+  `self`.
 
 ## Command line options
 
