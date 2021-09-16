@@ -490,7 +490,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("oge\u3042", m.match(:bar))
   end
 
-  def test_match_matchsubstring
+  def test_match_match_length
     m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
     assert_equal(6, m.match_length(0))
     assert_equal(1, m.match_length(4))
