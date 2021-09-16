@@ -71,6 +71,7 @@ Note that each entry is kept to a minimum, see links for details.
 
 * Values in Hash literals and keyword arguments can be omitted.
   [[Feature #14579]]
+
   For example,
 
     * `{x:, y:}` is a syntax sugar of `{x: x, y: y}`.
