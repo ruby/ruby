@@ -151,8 +151,6 @@ module YJIT
       return unless stats
 
       $stderr.puts("***YJIT: Printing YJIT statistics on exit***")
-      $stderr.puts("Number of bindings allocated: %d\n" % stats[:binding_allocations])
-      $stderr.puts("Number of locals modified through binding: %d\n" % stats[:binding_set])
 
       print_counters(stats, prefix: 'send_', prompt: 'method call exit reasons: ')
       print_counters(stats, prefix: 'invokesuper_', prompt: 'invokesuper exit reasons: ')
@@ -176,6 +174,8 @@ module YJIT
       total_insns_count = retired_in_yjit + stats[:vm_insns_count]
       yjit_ratio_pct = 100.0 * retired_in_yjit.to_f / total_insns_count
 
+      $stderr.puts "bindings_allocations:  " + ("%10d" % stats[:binding_allocations])
+      $stderr.puts "bindings_set:          " + ("%10d" % stats[:binding_set])
       $stderr.puts "compiled_iseq_count:   " + ("%10d" % stats[:compiled_iseq_count])
       $stderr.puts "compiled_block_count:  " + ("%10d" % stats[:compiled_block_count])
       $stderr.puts "invalidation_count:    " + ("%10d" % stats[:invalidation_count])
