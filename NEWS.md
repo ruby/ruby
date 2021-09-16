@@ -111,6 +111,12 @@ Outstanding ones only.
 
     * Integer.try_convert is added. [[Feature #15211]]
 
+* MatchData
+
+    * MatchData#match is added [[Feature #18172]]
+
+    * MatchData#match_length is added [[Feature #18172]]
+
 * Module
 
     * Module#prepend now modifies the ancestor chain if the receiver
@@ -247,3 +253,4 @@ Excluding feature bug fixes.
 [Feature #18008]: https://bugs.ruby-lang.org/issues/18008
 [Feature #18015]: https://bugs.ruby-lang.org/issues/18015
 [Feature #18029]: https://bugs.ruby-lang.org/issues/18029
+[Feature #18172]: https://bugs.ruby-lang.org/issues/18172
