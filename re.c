@@ -1335,6 +1335,42 @@ match_nth(VALUE match, VALUE n)
     return rb_str_subseq(RMATCH(match)->str, start, end - start);
 }
 
+/*
+ *  call-seq:
+ *     mtch.match_length(n)   -> array
+ *
+ *  Returns the length of the captured substring corresponding to the argument.
+ *  <em>n</em> can be a string or symbol to reference a named capture.
+ *
+ *     m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
+ *     m.match_length(0)       #=> 6
+ *     m.match_length(4)       #=> 1
+ *     m.match_length(5)       #=> nil
+ *
+ *     m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
+ *     m.match_length(:foo)    #=> 1
+ *     m.match_length(:bar)    #=> 2
+ *
+ */
+
+static VALUE
+match_nth_length(VALUE match, VALUE n)
+{
+    int i = match_backref_number(match, n);
+    struct re_registers *regs = RMATCH_REGS(match);
+
+    match_check(match);
+    backref_number_check(regs, i);
+
+    if (BEG(i) < 0)
+	return Qnil;
+
+    update_char_offset(match);
+    const struct rmatch_offset *const ofs =
+	&RMATCH(match)->rmatch->char_offset[i];
+    return LONG2NUM(ofs->end - ofs->beg);
+}
+
 #define MATCH_BUSY FL_USER2
 
 void
@@ -4136,6 +4172,7 @@ Init_Regexp(void)
     rb_define_method(rb_cMatch, "begin", match_begin, 1);
     rb_define_method(rb_cMatch, "end", match_end, 1);
     rb_define_method(rb_cMatch, "match", match_nth, 1);
+    rb_define_method(rb_cMatch, "match_length", match_nth_length, 1);
     rb_define_method(rb_cMatch, "to_a", match_to_a, 0);
     rb_define_method(rb_cMatch, "[]", match_aref, -1);
     rb_define_method(rb_cMatch, "captures", match_captures, 0);
