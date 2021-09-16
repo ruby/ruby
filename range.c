@@ -1734,8 +1734,8 @@ range_eqq(VALUE range, VALUE val)
  *
  *  If begin and end are numeric, #include? behaves like #cover?
  *
- *     (1..3).include?(1.5) # => true
- *     (1..3).cover?(1.5) # => true
+ *    (1..3).include?(1.5) # => true
+ *    (1..3).cover?(1.5) # => true
  *
  *  But when not numeric, the two methods may differ:
  *
@@ -1801,31 +1801,83 @@ static int r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val);
  *    cover?(object) -> true or false
  *    cover?(range) -> true or false
  *
- *  Returns <code>true</code> if +obj+ is between the begin and end of
- *  the range.
+ *  Returns +true+ if the given argument is within +self+, +false+ otherwise.
  *
- *  This tests <code>begin <= obj <= end</code> when #exclude_end? is +false+
- *  and <code>begin <= obj < end</code> when #exclude_end? is +true+.
+ *  With non-range argument +object+, evaluates with <tt><=</tt> and <tt><</tt>.
  *
- *  If called with a Range argument, returns <code>true</code> when the
- *  given range is covered by the receiver,
- *  by comparing the begin and end values. If the argument can be treated as
- *  a sequence, this method treats it that way. In the specific case of
- *  <code>(a..b).cover?(c...d)</code> with <code>a <= c && b < d</code>,
- *  the end of the sequence must be calculated, which may exhibit poor
- *  performance if <code>c</code> is non-numeric.
- *  Returns <code>false</code> if the begin value of the
- *  range is larger than the end value. Also returns +false+ if one of the
- *  internal calls to <code><=></code> returns +nil+ (indicating the objects
- *  are not comparable).
+ *  For range +self+ with included end value (<tt>#exclude_end? == false</tt>),
+ *  evaluates thus:
  *
- *     ("a".."z").cover?("c")  #=> true
- *     ("a".."z").cover?("5")  #=> false
- *     ("a".."z").cover?("cc") #=> true
- *     ("a".."z").cover?(1)    #=> false
- *     (1..5).cover?(2..3)     #=> true
- *     (1..5).cover?(0..6)     #=> false
- *     (1..5).cover?(1...6)    #=> true
+ *    self.begin <= object <= self.end
+ *
+ *  Examples:
+ *
+ *    r = (1..4)
+ *    r.cover?(1)     # => true
+ *    r.cover?(4)     # => true
+ *    r.cover?(0)     # => false
+ *    r.cover?(5)     # => false
+ *    r.cover?('foo') # => false
+
+ *    r = ('a'..'d')
+ *    r.cover?('a')     # => true
+ *    r.cover?('d')     # => true
+ *    r.cover?(' ')     # => false
+ *    r.cover?('e')     # => false
+ *    r.cover?(0)       # => false
+ *
+ *  For range +r+ with excluded end value (<tt>#exclude_end? == true</tt>),
+ *  evaluates thus:
+ *
+ *    r.begin <= object < r.end
+ *
+ *  Examples:
+ *
+ *    r = (1...4)
+ *    r.cover?(1)     # => true
+ *    r.cover?(3)     # => true
+ *    r.cover?(0)     # => false
+ *    r.cover?(4)     # => false
+ *    r.cover?('foo') # => false
+
+ *    r = ('a'...'d')
+ *    r.cover?('a')     # => true
+ *    r.cover?('c')     # => true
+ *    r.cover?(' ')     # => false
+ *    r.cover?('d')     # => false
+ *    r.cover?(0)       # => false
+ *
+ *  With range argument +range+, compares the first and last
+ *  elements of +self+ and +range+:
+ *
+ *    r = (1..4)
+ *    r.cover?(1..4)     # => true
+ *    r.cover?(0..4)     # => false
+ *    r.cover?(1..5)     # => false
+ *    r.cover?('a'..'d') # => false
+
+ *    r = (1...4)
+ *    r.cover?(1..3)     # => true
+ *    r.cover?(1..4)     # => false
+ *
+ *  If begin and end are numeric, #cover? behaves like #include?
+ *
+ *    (1..3).cover?(1.5) # => true
+ *    (1..3).include?(1.5) # => true
+ *
+ *  But when not numeric, the two methods may differ:
+ *
+ *    ('a'..'d').cover?('cc')   # => true
+ *    ('a'..'d').include?('cc') # => false
+ *
+ *  Returns +false+ if either:
+ *
+ *  - The begin value of +self+ is larger than its end value.
+ *  - An internal call to <tt><=></tt> returns +nil+;
+ *    that is, the operands are not comparable.
+ *
+ *  Related: Range#include?.
+ *
  */
 
 static VALUE
