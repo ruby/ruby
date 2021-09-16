@@ -473,6 +473,23 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("foobarbaz", m.string)
   end
 
+  def test_match_matchsubstring
+    m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
+    assert_equal("HX1138", m.match(0))
+    assert_equal("8", m.match(4))
+    assert_nil(m.match(5))
+
+    m = /\A\u3042(.)(.)?(.)\z/.match("\u3042\u3043\u3044")
+    assert_equal("\u3043", m.match(1))
+    assert_nil(m.match(2))
+    assert_equal("\u3044", m.match(3))
+
+    m = /(?<foo>.)(?<n>[^aeiou])?(?<bar>.+)/.match("hoge\u3042")
+    assert_equal("h", m.match(:foo))
+    assert_nil(m.match(:n))
+    assert_equal("oge\u3042", m.match(:bar))
+  end
+
   def test_match_inspect
     m = /(...)(...)(...)(...)?/.match("foobarbaz")
     assert_equal('#<MatchData "foobarbaz" 1:"foo" 2:"bar" 3:"baz" 4:nil>', m.inspect)
