@@ -75,7 +75,7 @@ module TestIRB
 
     def test_complete_require_library_name_first
       candidates = IRB::InputCompletor::CompletionProc.("'csv", "require ", "")
-      assert_equal candidates.first, "'csv"
+      assert_equal "'csv", candidates.first
     end
 
     def test_complete_require_relative
