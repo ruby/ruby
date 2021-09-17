@@ -2534,6 +2534,49 @@ enum_max_with_value(int argc, VALUE *argv, VALUE obj)
     }
 }
 
+/*
+ *  call-seq:
+ *     enum.minmax_with_value { |obj| block } -> [[min_elem, min_value], [max_elem, max_value]]
+ *     enum.minmax_with_value                 -> an_enumerator
+ *
+ *  Returns a two element array. Each of the elements is a pair of the objects in
+ *  <i>enum</i> and the values from the given block. The objects correspond to the
+ *  minimum and maximum values respectively from the given block.
+ *
+ *  If no block is given, an enumerator is returned instead.
+ *
+ *     a = %w(albatross dog horse)
+ *     a.minmax_with_value { |x| x.length }   #=> [["dog", 3], ["albatross", 9]]
+ *     [].minmax_with_value { |x| x.length }   #=> [[nil, nil], [nil, nil]]
+ */
+
+static VALUE
+enum_minmax_with_value(VALUE obj)
+{
+    VALUE memo;
+    struct minmax_by_t *m = NEW_MEMO_FOR(struct minmax_by_t, memo);
+
+    RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
+
+    m->min_bv = Qundef;
+    m->max_bv = Qundef;
+    m->min = Qnil;
+    m->max = Qnil;
+    m->last_bv = Qundef;
+    m->last = Qundef;
+    rb_block_call(obj, id_each, 0, 0, minmax_by_i, memo);
+    if (m->last_bv != Qundef)
+        minmax_by_i_update(m->last_bv, m->last_bv, m->last, m->last, m);
+    m = MEMO_FOR(struct minmax_by_t, memo);
+
+    if (m->min_bv == Qundef) {
+        return rb_assoc_new(rb_assoc_new(Qnil, Qnil), rb_assoc_new(Qnil, Qnil));
+    }
+    else {
+        return rb_assoc_new(rb_assoc_new(m->min, m->min_bv), rb_assoc_new(m->max, m->max_bv));
+    }
+}
+
 static VALUE
 member_i(RB_BLOCK_CALL_FUNC_ARGLIST(iter, args))
 {
@@ -4447,6 +4490,7 @@ enum_compact(VALUE obj)
  * #minmax_by::      Returns the smallest and largest elements, as determined by the given block.
  * #min_with_value:: Returns the smallest value from the given block and the object that gives the value.
  * #max_with_value:: Returns the largest value from the given block and the object that gives the value.
+ * #minmax_with_value:: Returns the smallest and largest values from the given block and the objects that give the values.
  *
  * <i>Groups, slices, and partitions</i>:
  * #group_by::       Returns a \Hash that partitions the elements into groups.
@@ -4578,6 +4622,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "minmax_by", enum_minmax_by, 0);
     rb_define_method(rb_mEnumerable, "min_with_value", enum_min_with_value, -1);
     rb_define_method(rb_mEnumerable, "max_with_value", enum_max_with_value, -1);
+    rb_define_method(rb_mEnumerable, "minmax_with_value", enum_minmax_with_value, 0);
     rb_define_method(rb_mEnumerable, "member?", enum_member, 1);
     rb_define_method(rb_mEnumerable, "include?", enum_member, 1);
     rb_define_method(rb_mEnumerable, "each_with_index", enum_each_with_index, -1);

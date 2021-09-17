@@ -692,6 +692,16 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([], [].max_with_value(2) {|x| -x })
   end
 
+  def test_minmax_with_value
+    assert_equal([[3, -3], [1, -1]], @obj.minmax_with_value {|x| -x })
+    cond = ->(x, i) { -x }
+    assert_equal([[[3, 2], -3], [[1, 0], -1]], @obj.each_with_index.minmax_with_value(&cond))
+    a = %w(albatross dog horse)
+    assert_equal([["dog", 3], ["albatross", 9]], a.minmax_with_value {|x| x.length })
+    assert_equal([[3, -3], [1, -1]], [2, 3, 1].minmax_with_value {|x| -x })
+    assert_equal([[nil, nil], [nil, nil]], [].minmax_with_value {|x| -x })
+  end
+
   def test_member
     assert(@obj.member?(1))
     assert(!(@obj.member?(4)))
