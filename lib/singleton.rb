@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 
 # The Singleton module implements the Singleton pattern.
 #
@@ -93,7 +93,6 @@
 #
 module Singleton
   VERSION = "0.2.0"
-  VERSION.freeze
 
   module SingletonInstanceMethods
     # Raises a TypeError to prevent cloning.
