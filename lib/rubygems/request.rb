@@ -191,7 +191,7 @@ class Gem::Request
     begin
       @requests[connection.object_id] += 1
 
-      verbose "#{request.method} #{Gem::Uri.new(@uri).redacted}"
+      verbose "#{request.method} #{@uri.redacted}"
 
       file_name = File.basename(@uri.path)
       # perform download progress reporter only for gems
