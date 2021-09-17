@@ -128,18 +128,21 @@ module GC
   #
   #  Returns a Hash containing information about the GC.
   #
+  #  The contents of the hash are implementation specific and may be changed in
+  #  the future.
+  #
   #  The hash includes information about internal statistics about GC such as:
   #
   #  [count]
-  #    The total number of garbage collections run since process start,
-  #    including minor and major garbage collections
+  #    The total number of garbage collections ran since application start
+  #    (count includes both minor and major garbage collections)
   #  [heap_allocated_pages]
   #    The total number of `:heap_eden_pages` + `:heap_tomb_pages`
   #  [heap_sorted_length]
-  #    The number of pages that can fit into memory between the first and last
-  #    page
+  #    The number of pages that can fit into the buffer that holds references to
+  #    all pages
   #  [heap_allocatable_pages]
-  #    The total number of pages the process could allocate without additional GC
+  #    The total number of pages the applicaiton could allocate without additional GC
   #  [heap_available_slots]
   #    The total number of slots in all `:heap_allocated_pages`
   #  [heap_live_slots]
@@ -147,21 +150,21 @@ module GC
   #  [heap_free_slots]
   #    The total number of slots which do not contain live objects
   #  [heap_final_slots]
-  #    The total number of slots with finalizers
+  #    The total number of slots with pending finalizers to be run
   #  [heap_marked_slots]
-  #    The total number of old objects and write barrier unprotected objects
+  #    The total number of objects marked in the last GC
   #  [heap_eden_pages]
   #    The total number of pages which contain at least one live slot
   #  [heap_tomb_pages]
   #    The total number of pages which do not contain any live slots
   #  [total_allocated_pages]
-  #    The cumulative number of pages allocated since process start
+  #    The cumulative number of pages allocated since application start
   #  [total_freed_pages]
-  #    The cumulative number of pages freed since process start
+  #    The cumulative number of pages freed since application start
   #  [total_allocated_objects]
-  #    The cumulative number of objects allocated since process start
+  #    The cumulative number of objects allocated since application start
   #  [total_freed_objects]
-  #    The cumulative number of objects freed since process start
+  #    The cumulative number of objects freed since application start
   #  [malloc_increase_bytes]
   #    Amount of memory allocated on heap for live, young objects
   #  [malloc_increase_bytes_limit]
@@ -183,9 +186,6 @@ module GC
   #    Amount of memory allocated on heap for live, old objects
   #  [oldmalloc_increase_bytes_limit]
   #    When `:old_malloc_increase_bytes` crosses this limit, major GC is triggered
-  #
-  #  The contents of the hash are implementation specific and may be changed in
-  #  the future.
   #
   #  If the optional argument, hash, is given,
   #  it is overwritten and returned.
