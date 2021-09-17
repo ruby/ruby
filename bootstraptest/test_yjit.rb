@@ -1996,3 +1996,13 @@ assert_equal 'true', %q{
   eq(1, 2)
   eq(1, 2)
 }
+
+# aset on array with invalid key
+assert_normal_exit %q{
+  def foo(arr)
+    arr[:foo] = 123
+  end
+
+  foo([1]) rescue nil
+  foo([1]) rescue nil
+}
