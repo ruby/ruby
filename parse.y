@@ -11782,14 +11782,12 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
 static NODE*
 cond(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 {
-    if (node == 0) return 0;
     return cond0(p, node, COND_IN_COND, loc);
 }
 
 static NODE*
 method_cond(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 {
-    if (node == 0) return 0;
     return cond0(p, node, COND_IN_OP, loc);
 }
 
