@@ -18,11 +18,13 @@ is part of future plans.
 This project is open source and falls under the same license as CRuby.
 
 If you wish to learn more about the approach taken, here are some conference talks and publications:
-- [YJIT talk at RubyKaigi 2021](https://www.youtube.com/watch?v=PBVLf3yfMs8)
-- [YJIT talk at MoreVMs 2021](https://www.youtube.com/watch?v=vucLAqv7qpc)
+- RubyKaigi 2021 talk: [YJIT: Building a New JIT Compiler Inside CRuby](https://www.youtube.com/watch?v=PBVLf3yfMs8)
 - Blog post: [YJIT: Building a New JIT Compiler Inside CRuby](https://pointersgonewild.com/2021/06/02/yjit-building-a-new-jit-compiler-inside-cruby/)
-- ECOOP 2016 paper: [Interprocedural Type Specialization of JavaScript Programs Without Type Analysis](https://drops.dagstuhl.de/opus/volltexte/2016/6101/pdf/LIPIcs-ECOOP-2016-7.pdf) ([talk recording](https://www.youtube.com/watch?v=sRNBY7Ss97A))
-- ECOOP 2015 paper: [Simple and Effective Type Check Removal through Lazy Basic Block Versioning](https://arxiv.org/pdf/1411.0352.pdf) ([talk recording](https://www.youtube.com/watch?v=S-aHBuoiYE0))
+- MoreVMs 2021 talk: [YJIT: Building a New JIT Compiler Inside CRuby](https://www.youtube.com/watch?v=vucLAqv7qpc)
+- ECOOP 2016 talk: [Interprocedural Type Specialization of JavaScript Programs Without Type Analysis](https://www.youtube.com/watch?v=sRNBY7Ss97A)
+- ECOOP 2016 paper: [Interprocedural Type Specialization of JavaScript Programs Without Type Analysis](https://drops.dagstuhl.de/opus/volltexte/2016/6101/pdf/LIPIcs-ECOOP-2016-7.pdf)
+- ECOOP 2016 talk: [Simple and Effective Type Check Removal through Lazy Basic Block Versioning](https://www.youtube.com/watch?v=S-aHBuoiYE0)
+- ECOOP 2015 paper: [Simple and Effective Type Check Removal through Lazy Basic Block Versioning](https://arxiv.org/pdf/1411.0352.pdf)
 
 To cite this repository in your publications, please use this bibtex snippet:
 
