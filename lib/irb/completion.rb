@@ -59,8 +59,8 @@ module IRB
             File.join(s.full_gem_path, p)
           end
         }
-      }.flatten
-      (gem_paths + $LOAD_PATH).uniq.sort
+      }.flatten if defined?(Gem::Specification)
+      (gem_paths.to_a | $LOAD_PATH).sort
     end
 
     def self.retrieve_files_to_require_from_load_path
