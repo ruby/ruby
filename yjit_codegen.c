@@ -1194,6 +1194,22 @@ gen_putspecialobject(jitstate_t* jit, ctx_t* ctx)
     }
 }
 
+// Get EP at level from CFP
+static void
+gen_get_ep(codeblock_t *cb, x86opnd_t reg, uint32_t level)
+{
+    // Load environment pointer EP from CFP
+    mov(cb, reg, member_opnd(REG_CFP, rb_control_frame_t, ep));
+
+    while (level--) {
+        // Get the previous EP from the current EP
+        // See GET_PREV_EP(ep) macro
+        // VALUE* prev_ep = ((VALUE *)((ep)[VM_ENV_DATA_INDEX_SPECVAL] & ~0x03))
+        mov(cb, reg, mem_opnd(64, REG0, SIZEOF_VALUE * VM_ENV_DATA_INDEX_SPECVAL));
+        and(cb, reg, imm_opnd(~0x03));
+    }
+}
+
 // Compute the index of a local variable from its slot index
 static uint32_t
 slot_to_local_idx(const rb_iseq_t *iseq, int32_t slot_idx)
@@ -1214,8 +1230,8 @@ gen_getlocal_wc0(jitstate_t* jit, ctx_t* ctx)
     const int32_t offs = -(SIZEOF_VALUE * slot_idx);
     uint32_t local_idx = slot_to_local_idx(jit->iseq, slot_idx);
 
-    // Load environment pointer EP from CFP
-    mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, ep));
+    // Load environment pointer EP (level 0) from CFP
+    gen_get_ep(cb, REG0, 0);
 
     // Load the local from the EP
     mov(cb, REG0, mem_opnd(64, REG0, offs));
@@ -1230,16 +1246,7 @@ gen_getlocal_wc0(jitstate_t* jit, ctx_t* ctx)
 static codegen_status_t
 gen_getlocal_generic(ctx_t* ctx, uint32_t local_idx, uint32_t level)
 {
-    // Load environment pointer EP from CFP
-    mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, ep));
-
-    while (level--) {
-        // Get the previous EP from the current EP
-        // See GET_PREV_EP(ep) macro
-        // VALUE* prev_ep = ((VALUE *)((ep)[VM_ENV_DATA_INDEX_SPECVAL] & ~0x03))
-        mov(cb, REG0, mem_opnd(64, REG0, SIZEOF_VALUE * VM_ENV_DATA_INDEX_SPECVAL));
-        and(cb, REG0, imm_opnd(~0x03));
-    }
+    gen_get_ep(cb, REG0, level);
 
     // Load the local from the block
     // val = *(vm_get_ep(GET_EP(), level) - idx);
@@ -1287,8 +1294,8 @@ gen_setlocal_wc0(jitstate_t* jit, ctx_t* ctx)
     int32_t slot_idx = (int32_t)jit_get_arg(jit, 0);
     uint32_t local_idx = slot_to_local_idx(jit->iseq, slot_idx);
 
-    // Load environment pointer EP from CFP
-    mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, ep));
+    // Load environment pointer EP (level 0) from CFP
+    gen_get_ep(cb, REG0, 0);
 
     // flags & VM_ENV_FLAG_WB_REQUIRED
     x86opnd_t flags_opnd = mem_opnd(64, REG0, sizeof(VALUE) * VM_ENV_DATA_INDEX_FLAGS);
