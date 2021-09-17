@@ -8881,7 +8881,7 @@ ready_to_gc(rb_objspace_t *objspace)
 }
 
 static void
-gc_reset_malloc_info(rb_objspace_t *objspace)
+gc_reset_malloc_info(rb_objspace_t *objspace, bool full_mark)
 {
     gc_prof_set_malloc_info(objspace);
     {
@@ -8915,7 +8915,7 @@ gc_reset_malloc_info(rb_objspace_t *objspace)
 
     /* reset oldmalloc info */
 #if RGENGC_ESTIMATE_OLDMALLOC
-    if (!is_full_marking(objspace)) {
+    if (!full_mark) {
 	if (objspace->rgengc.oldmalloc_increase > objspace->rgengc.oldmalloc_increase_limit) {
 	    objspace->rgengc.need_major_gc |= GPR_FLAG_MAJOR_BY_OLDMALLOC;
 	    objspace->rgengc.oldmalloc_increase_limit =
@@ -9071,7 +9071,7 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
     objspace->profile.total_allocated_objects_at_gc_start = objspace->total_allocated_objects;
     objspace->profile.heap_used_at_gc_start = heap_allocated_pages;
     gc_prof_setup_new_record(objspace, reason);
-    gc_reset_malloc_info(objspace);
+    gc_reset_malloc_info(objspace, do_full_mark);
     rb_transient_heap_start_marking(do_full_mark);
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_START, 0 /* TODO: pass minor/immediate flag? */);
