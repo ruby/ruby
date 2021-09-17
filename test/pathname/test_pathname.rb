@@ -1355,6 +1355,18 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_each_entry_enumerator
+    with_tmpchdir('rubytest-pathname') {|dir|
+      open("a", "w") {}
+      open("b", "w") {}
+      a = []
+      e = Pathname(".").each_entry
+      assert_kind_of(Enumerator, e)
+      e.each {|v| a << v }
+      assert_equal([Pathname("."), Pathname(".."), Pathname("a"), Pathname("b")], a.sort)
+    }
+  end
+
   def test_mkdir
     with_tmpchdir('rubytest-pathname') {|dir|
       Pathname("d").mkdir

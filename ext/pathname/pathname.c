@@ -1274,6 +1274,7 @@ static VALUE
 path_each_entry(VALUE self)
 {
     VALUE args[1];
+    RETURN_ENUMERATOR(self, 0, 0);
 
     args[0] = get_strpath(self);
     return rb_block_call(rb_cDir, id_foreach, 1, args, each_entry_i, rb_obj_class(self));
