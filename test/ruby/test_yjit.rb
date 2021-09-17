@@ -197,6 +197,20 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_setlocal_with_level
+    assert_no_exits(<<~RUBY)
+      def sum(arr)
+        sum = 0
+        arr.each do |x|
+          sum += x
+        end
+        sum
+      end
+
+      sum([1,2,3])
+    RUBY
+  end
+
   def test_string_then_nil
     assert_compiles(<<~RUBY, insns: %i[opt_nil_p], result: true)
       def foo(val)
