@@ -1983,8 +1983,7 @@ range_alloc(VALUE klass)
 
 /*
  *  call-seq:
- *    count -> integer
- *    count(&method) -> integer
+ *    count -> integer0
  *    count(object) -> integer
  *    count {|element| ... } -> integer
  *
@@ -1999,13 +1998,8 @@ range_alloc(VALUE klass)
  *    (1..).count       # => Infinity
  *    (..4).count       # => Infinity
  *
- *  With argument +method+, returns the number of elements for which
- *  <tt>method(element)</tt> returns a truthy value:
- *
- *    (1..4).count(&:even?) # => 2
- *
  *  With argument +object+, returns the number of +object+ found in +self+,
- *  which will always be zero or one:
+ *  which will usually be zero or one:
  *
  *    (1..4).count(2)   # => 1
  *    (1..4).count(5)   # => 0
