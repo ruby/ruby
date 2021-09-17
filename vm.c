@@ -2516,6 +2516,7 @@ rb_vm_update_references(void *ptr)
 
         if (vm->coverages) {
             vm->coverages = rb_gc_location(vm->coverages);
+            vm->me2counter = rb_gc_location(vm->me2counter);
         }
     }
 }
@@ -2602,6 +2603,7 @@ rb_vm_mark(void *ptr)
         rb_gc_mark_movable(vm->top_self);
         rb_gc_mark_movable(vm->orig_progname);
         RUBY_MARK_MOVABLE_UNLESS_NULL(vm->coverages);
+        RUBY_MARK_MOVABLE_UNLESS_NULL(vm->me2counter);
         /* Prevent classes from moving */
         rb_mark_tbl(vm->defined_module_hash);
 

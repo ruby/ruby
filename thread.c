@@ -5746,13 +5746,33 @@ void
 rb_set_coverages(VALUE coverages, int mode, VALUE me2counter)
 {
     GET_VM()->coverages = coverages;
+    GET_VM()->me2counter = me2counter;
     GET_VM()->coverage_mode = mode;
+}
+
+void
+rb_resume_coverages()
+{
+    int mode = GET_VM()->coverage_mode;
+    VALUE me2counter = GET_VM()->me2counter;
     rb_add_event_hook2((rb_event_hook_func_t) update_line_coverage, RUBY_EVENT_COVERAGE_LINE, Qnil, RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
     if (mode & COVERAGE_TARGET_BRANCHES) {
 	rb_add_event_hook2((rb_event_hook_func_t) update_branch_coverage, RUBY_EVENT_COVERAGE_BRANCH, Qnil, RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
     }
     if (mode & COVERAGE_TARGET_METHODS) {
 	rb_add_event_hook2((rb_event_hook_func_t) update_method_coverage, RUBY_EVENT_CALL, me2counter, RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
+    }
+}
+
+void
+rb_suspend_coverages()
+{
+    rb_remove_event_hook((rb_event_hook_func_t) update_line_coverage);
+    if (GET_VM()->coverage_mode & COVERAGE_TARGET_BRANCHES) {
+	rb_remove_event_hook((rb_event_hook_func_t) update_branch_coverage);
+    }
+    if (GET_VM()->coverage_mode & COVERAGE_TARGET_METHODS) {
+	rb_remove_event_hook((rb_event_hook_func_t) update_method_coverage);
     }
 }
 
@@ -5763,13 +5783,6 @@ rb_reset_coverages(void)
     rb_clear_coverages();
     rb_iseq_remove_coverage_all();
     GET_VM()->coverages = Qfalse;
-    rb_remove_event_hook((rb_event_hook_func_t) update_line_coverage);
-    if (GET_VM()->coverage_mode & COVERAGE_TARGET_BRANCHES) {
-	rb_remove_event_hook((rb_event_hook_func_t) update_branch_coverage);
-    }
-    if (GET_VM()->coverage_mode & COVERAGE_TARGET_METHODS) {
-	rb_remove_event_hook((rb_event_hook_func_t) update_method_coverage);
-    }
 }
 
 VALUE
