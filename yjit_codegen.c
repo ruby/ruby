@@ -2187,14 +2187,13 @@ gen_opt_aset(jitstate_t *jit, ctx_t *ctx)
 
     VALUE comptime_recv = jit_peek_at_stack(jit, ctx, 2);
     VALUE comptime_key  = jit_peek_at_stack(jit, ctx, 1);
-    VALUE comptime_val  = jit_peek_at_stack(jit, ctx, 0);
 
     // Get the operands from the stack
     x86opnd_t recv = ctx_stack_opnd(ctx, 2);
     x86opnd_t key = ctx_stack_opnd(ctx, 1);
     x86opnd_t val = ctx_stack_opnd(ctx, 0);
 
-    if (CLASS_OF(comptime_recv) == rb_cArray && FIXNUM_P(comptime_val)) {
+    if (CLASS_OF(comptime_recv) == rb_cArray && FIXNUM_P(comptime_key)) {
         uint8_t* side_exit = yjit_side_exit(jit, ctx);
 
         // Guard receiver is an Array
