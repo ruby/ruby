@@ -231,6 +231,11 @@ class TestAst < Test::Unit::TestCase
     assert_raise(ArgumentError) { RubyVM::AbstractSyntaxTree.of(method) }
   end
 
+  def test_of_c_method
+    c = Class.new { attr_reader :foo }
+    assert_raise(ArgumentError) { RubyVM::AbstractSyntaxTree.of(c.instance_method(:foo)) }
+  end
+
   def test_scope_local_variables
     node = RubyVM::AbstractSyntaxTree.parse("_x = 0")
     lv, _, body = *node.children
