@@ -630,4 +630,28 @@ class TestResolvDNS < Test::Unit::TestCase
     end
     assert_raise(Resolv::ResolvError) { dns.each_name('example.com') }
   end
+
+  def test_unreachable_server
+    unreachable_ip = '127.0.0.1'
+    sock = UDPSocket.new
+    sock.connect(unreachable_ip, 53)
+    begin
+      sock.send('1', 0)
+    rescue Errno::ENETUNREACH, Errno::EHOSTUNREACH
+    else
+      omit('cannot test unreachable server, as IP used is reachable')
+    end
+
+    config = {
+      :nameserver => [unreachable_ip],
+      :search => ['lan'],
+      :ndots => 1
+    }
+    r = Resolv.new([Resolv::DNS.new(config)])
+    assert_equal([], r.getaddresses('www.google.com'))
+
+    config[:raise_timeout_errors] = true
+    r = Resolv.new([Resolv::DNS.new(config)])
+    assert_raise(Resolv::ResolvError) { r.getaddresses('www.google.com') }
+  end
 end
