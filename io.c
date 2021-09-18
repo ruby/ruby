@@ -3994,9 +3994,9 @@ rb_io_each_byte(VALUE io)
 	    char *p = fptr->rbuf.ptr + fptr->rbuf.off++;
 	    fptr->rbuf.len--;
 	    rb_yield(INT2FIX(*p & 0xff));
+	    rb_io_check_byte_readable(fptr);
 	    errno = 0;
 	}
-	rb_io_check_byte_readable(fptr);
 	READ_CHECK(fptr);
     } while (io_fillbuf(fptr) >= 0);
     return io;
@@ -4215,6 +4215,7 @@ rb_io_each_codepoint(VALUE io)
 	    fptr->cbuf.off += n;
 	    fptr->cbuf.len -= n;
 	    rb_yield(UINT2NUM(c));
+            rb_io_check_byte_readable(fptr);
 	}
     }
     NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
@@ -4252,6 +4253,7 @@ rb_io_each_codepoint(VALUE io)
 	else {
 	    continue;
 	}
+        rb_io_check_byte_readable(fptr);
     }
     return io;
 
