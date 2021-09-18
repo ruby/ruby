@@ -337,7 +337,7 @@ module Test
         return unless name.to_s.start_with?("test_")
         @test_methods ||= {}
         if @test_methods[name]
-          warn "test/unit warning: method #{ self }##{ name } is redefined"
+          raise AssertionFailedError, "test/unit: method #{ self }##{ name } is redefined"
         end
         @test_methods[name] = true
       end

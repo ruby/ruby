@@ -195,7 +195,7 @@
 #     # can not access instance variables of classes/modules from non-main Ractors (RuntimeError)
 #
 # See also the description of <tt># shareable_constant_value</tt> pragma in
-# {Comments syntax}[rdoc-ref:doc/syntax/comments.rdoc] explanation.
+# {Comments syntax}[rdoc-ref:syntax/comments.rdoc] explanation.
 #
 # == Ractors vs threads
 #
@@ -223,7 +223,7 @@
 #
 # == Reference
 #
-# See {Ractor design doc}[rdoc-ref:doc/ractor.md] for more details.
+# See {Ractor design doc}[rdoc-ref:ractor.md] for more details.
 #
 class Ractor
   #

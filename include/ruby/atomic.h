@@ -1,5 +1,28 @@
-#ifndef RUBY_ATOMIC_H
+#ifndef RUBY_ATOMIC_H                                /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_ATOMIC_H
+/**
+ * @file
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
+ * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
+ *             Permission  is hereby  granted,  to  either redistribute  and/or
+ *             modify this file, provided that  the conditions mentioned in the
+ *             file COPYING are met.  Consult the file for details.
+ * @warning    Symbols   prefixed  with   either  `RBIMPL`   or  `rbimpl`   are
+ *             implementation details.   Don't take  them as canon.  They could
+ *             rapidly appear then vanish.  The name (path) of this header file
+ *             is also an  implementation detail.  Do not expect  it to persist
+ *             at the place it is now.  Developers are free to move it anywhere
+ *             anytime at will.
+ * @note       To  ruby-core:  remember  that   this  header  can  be  possibly
+ *             recursively included  from extension  libraries written  in C++.
+ *             Do not  expect for  instance `__VA_ARGS__` is  always available.
+ *             We assume C99  for ruby itself but we don't  assume languages of
+ *             extension libraries.  They could be written in C++98.
+ * @brief      Atomic operations
+ *
+ * Basically, if  we could assume  either C11 or  C++11, these macros  are just
+ * redundant.  Sadly we cannot.  We have to do them ourselves.
+ */
 
 /*
  * - RUBY_ATOMIC_CAS, RUBY_ATOMIC_EXCHANGE, RUBY_ATOMIC_FETCH_*:
@@ -135,67 +158,300 @@ rb_atomic_fetch_sub(volatile rb_atomic_t *var, rb_atomic_t val)
 #  define RUBY_ATOMIC_SIZE_EXCHANGE(var, val) atomic_swap_uint(&(var), (val))
 # endif
 
+#elif defined(__DOXYGEN__)
+/**
+ * Asserts that  your environment supports  more than one atomic  types.  These
+ * days systems tend to have such property  (C11 was a standard of decades ago,
+ * right?) but we still support older ones.
+ */
+# define RUBY_ATOMIC_GENERIC_MACRO 1
+
+/**
+ * Type  that  is eligible  for  atomic  operations.   Depending on  your  host
+ * platform you might have  more than one such type, but we  choose one of them
+ * anyways.
+ */
+using rb_atomic_t = std::atomic<std::uintptr_t>;
+
+/**
+ * Atomically replaces the  value pointed by `var` with the  result of addition
+ * of `val` to  the old value of `var`.  In  case #RUBY_ATOMIC_GENERIC_MACRO is
+ * set, this  operation could  be applied  to a  signed integer  type.  However
+ * there is  no portabe way  to know what happens  on integer overflow  on such
+ * situations.  You might better stick to unsigned types.
+ *
+ * @param   var  A variable of ::rb_atomic_t.
+ * @param   val  Value to add.
+ * @return  What was stored in `var` before the addition.
+ * @post    `var` holds `var + val`.
+ */
+# define RUBY_ATOMIC_FETCH_ADD(var, val) std::atomic_fetch_add(&(var), val)
+
+/**
+ * Atomically replaces the  value pointed by `var` with the  result of addition
+ * of `val` to  the old value of `var`.  In  case #RUBY_ATOMIC_GENERIC_MACRO is
+ * set, this  operation could  be applied  to a  signed integer  type.  However
+ * there is  no portabe way  to know what happens  on integer overflow  on such
+ * situations.  You might better stick to unsigned types.
+ *
+ * @param   var  A variable of ::rb_atomic_t.
+ * @param   val  Value to subtract.
+ * @return  What was stored in `var` before the suntraction.
+ * @post    `var` holds `var - val`.
+ */
+# define RUBY_ATOMIC_FETCH_SUB(var, val) std::atomic_fetch_sub(&(var),  val)
+
+/**
+ * Atomically  replaces  the  value  pointed   by  `var`  with  the  result  of
+ * bitwise OR between `val` and the old value of `var`.
+ *
+ * @param   var   A variable of ::rb_atomic_t.
+ * @param   val   Value to mix.
+ * @return  void
+ * @post    `var` holds `var | val`.
+ * @note    For portability, this macro can return void.
+ */
+# define RUBY_ATOMIC_OR(var, val) (void)std::atomic_fetch_or(&(var),  val)
+
+/**
+ * Atomically replaces the value pointed by  `var` with `val`.  This is just an
+ * assignment, but you can additionally know the previous value.
+ *
+ * @param   var   A variable of ::rb_atomic_t.
+ * @param   val   Value to set.
+ * @return  What was stored in `var` before the assignment.
+ * @post    `var` holds `val`.
+ */
+# define RUBY_ATOMIC_EXCHANGE(var, val) std::atomic_exchange(&(var), (val))
+
+/**
+ * Atomic compare-and-swap.   This stores  `val` to  `var` if  and only  if the
+ * assignment changes  the value of `var`  from `oldval` to `newval`.   You can
+ * detect whether the assignment happened or not using the return value.
+ *
+ * @param   var     A variable of ::rb_atomic_t.
+ * @param   oldval  Expected value of `var` before the assignment.
+ * @param   newval  What you want to store at `var`.
+ * @retval  1       Successful assignment.
+ * @retval  0       Something different from `oldval` resides at `var`.
+ */
+# define RUBY_ATOMIC_CAS(var, oldval, newval) \
+    std::atomic_compare_exchange_strong(&(var), (newval), (oldval))
+
 #else
 # error No atomic operation found
 #endif
 
+/**
+ * Identical to #RUBY_ATOMIC_EXCHANGE, except for the return type.
+ *
+ * @param   var   A variable of ::rb_atomic_t.
+ * @param   val   Value to set.
+ * @return  void
+ * @post    `var` holds `val`.
+ */
 #ifndef RUBY_ATOMIC_SET
 # define RUBY_ATOMIC_SET(var, val) (void)RUBY_ATOMIC_EXCHANGE(var, val)
 #endif
 
+/**
+ * Identical to #RUBY_ATOMIC_FETCH_ADD, except for the return type.
+ *
+ * @param   var  A variable of ::rb_atomic_t.
+ * @param   val  Value to add.
+ * @return  void
+ * @post    `var` holds `var + val`.
+ */
 #ifndef RUBY_ATOMIC_ADD
 # define RUBY_ATOMIC_ADD(var, val) (void)RUBY_ATOMIC_FETCH_ADD(var, val)
 #endif
 
+/**
+ * Identical to #RUBY_ATOMIC_FETCH_ADD, except for the return type.
+ *
+ * @param   var  A variable of ::rb_atomic_t.
+ * @param   val  Value to subtract.
+ * @return  void
+ * @post    `var` holds `var - val`.
+ */
 #ifndef RUBY_ATOMIC_SUB
 # define RUBY_ATOMIC_SUB(var, val) (void)RUBY_ATOMIC_FETCH_SUB(var, val)
 #endif
 
+/**
+ * Atomically increments the value pointed by `var`.
+ *
+ * @param   var  A variable of ::rb_atomic_t.
+ * @return  void
+ * @post    `var` holds `var + 1`.
+ */
 #ifndef RUBY_ATOMIC_INC
 # define RUBY_ATOMIC_INC(var) RUBY_ATOMIC_ADD(var, 1)
 #endif
 
+/**
+ * Atomically decrements the value pointed by `var`.
+ *
+ * @param   var  A variable of ::rb_atomic_t.
+ * @return  void
+ * @post    `var` holds `var - 1`.
+ */
 #ifndef RUBY_ATOMIC_DEC
 # define RUBY_ATOMIC_DEC(var) RUBY_ATOMIC_SUB(var, 1)
 #endif
 
+/**
+ * Identical  to  #RUBY_ATOMIC_INC,  except  it  expects  its  argument  is  an
+ * (possibly  `_Atomic`  qualified)  unsigned  integer of  the  same  width  of
+ * `size_t`.  There  are cases where  ::rb_atomic_t is 32bit while  `size_t` is
+ * 64bit.  This  should be  used for  size related  operations to  support such
+ * platforms.
+ *
+ * @param   var  A variable of (possibly _Atomic qualified) `size_t`.
+ * @return  void
+ * @post    `var` holds `var + 1`.
+ */
 #ifndef RUBY_ATOMIC_SIZE_INC
 # define RUBY_ATOMIC_SIZE_INC(var) RUBY_ATOMIC_INC(var)
 #endif
 
+/**
+ * Identical  to  #RUBY_ATOMIC_DEC,  except  it  expects  its  argument  is  an
+ * (possibly  `_Atomic`  qualified)  unsigned  integer of  the  same  width  of
+ * `size_t`.  There  are cases where  ::rb_atomic_t is 32bit while  `size_t` is
+ * 64bit.  This  should be  used for  size related  operations to  support such
+ * platforms.
+ *
+ * @param   var  A variable of (possibly _Atomic qualified) `size_t`.
+ * @return  void
+ * @post    `var` holds `var - 1`.
+ */
 #ifndef RUBY_ATOMIC_SIZE_DEC
 # define RUBY_ATOMIC_SIZE_DEC(var) RUBY_ATOMIC_DEC(var)
 #endif
 
+/**
+ * Identical  to #RUBY_ATOMIC_EXCHANGE,  except  it expects  its arguments  are
+ * (possibly  `_Atomic`  qualified) unsigned  integers  of  the same  width  of
+ * `size_t`.  There  are cases where  ::rb_atomic_t is 32bit while  `size_t` is
+ * 64bit.  This  should be  used for  size related  operations to  support such
+ * platforms.
+ *
+ * @param   var  A variable of (possibly _Atomic qualified) `size_t`.
+ * @param   val   Value to set.
+ * @return  What was stored in `var` before the assignment.
+ * @post    `var` holds `val`.
+ */
 #ifndef RUBY_ATOMIC_SIZE_EXCHANGE
 # define RUBY_ATOMIC_SIZE_EXCHANGE(var, val) RUBY_ATOMIC_EXCHANGE(var, val)
 #endif
 
+/**
+ * Identical to #RUBY_ATOMIC_CAS, except it expects its arguments are (possibly
+ * `_Atomic` qualified) unsigned integers of the same width of `size_t`.  There
+ * are cases where ::rb_atomic_t is 32bit while `size_t` is 64bit.  This should
+ * be used for size related operations to support such platforms.
+ *
+ * @param   var     A variable of (possibly _Atomic qualified) `size_t`.
+ * @param   oldval  Expected value of `var` before the assignment.
+ * @param   val     What you want to store at `var`.
+ * @retval  1       Successful assignment.
+ * @retval  0       Something different from `oldval` resides at `var`.
+ */
 #ifndef RUBY_ATOMIC_SIZE_CAS
 # define RUBY_ATOMIC_SIZE_CAS(var, oldval, val) RUBY_ATOMIC_CAS(var, oldval, val)
 #endif
 
+/**
+ * Identical to #RUBY_ATOMIC_ADD, except it expects its arguments are (possibly
+ * `_Atomic` qualified) unsigned integers of the same width of `size_t`.  There
+ * are cases where ::rb_atomic_t is 32bit while `size_t` is 64bit.  This should
+ * be used for size related operations to support such platforms.
+ *
+ * @param   var  A variable of (possibly _Atomic qualified) `size_t`.
+ * @param   val  Value to add.
+ * @return  void
+ * @post    `var` holds `var + val`.
+ */
 #ifndef RUBY_ATOMIC_SIZE_ADD
 # define RUBY_ATOMIC_SIZE_ADD(var, val) RUBY_ATOMIC_ADD(var, val)
 #endif
 
+/**
+ * Identical to #RUBY_ATOMIC_SUB, except it expects its arguments are (possibly
+ * `_Atomic` qualified) unsigned integers of the same width of `size_t`.  There
+ * are cases where ::rb_atomic_t is 32bit while `size_t` is 64bit.  This should
+ * be used for size related operations to support such platforms.
+ *
+ * @param   var  A variable of (possibly _Atomic qualified) `size_t`.
+ * @param   val  Value to subtract.
+ * @return  void
+ * @post    `var` holds `var - val`.
+ */
 #ifndef RUBY_ATOMIC_SIZE_SUB
 # define RUBY_ATOMIC_SIZE_SUB(var, val) RUBY_ATOMIC_SUB(var, val)
 #endif
 
 #if RUBY_ATOMIC_GENERIC_MACRO
+/**
+ * Identical  to #RUBY_ATOMIC_EXCHANGE,  except  it expects  its arguments  are
+ * (possibly  `_Atomic`  qualified) unsigned  integers  of  the same  width  of
+ * `void*`.   There are  cases where  ::rb_atomic_t is  32bit while  `void*` is
+ * 64bit.  This should  be used for pointer related operations  to support such
+ * platforms.
+ *
+ * @param   var  A variable of (possibly _Atomic qualified) `void *`.
+ * @param   val   Value to set.
+ * @return  What was stored in `var` before the assignment.
+ * @post    `var` holds `val`.
+ */
 # ifndef RUBY_ATOMIC_PTR_EXCHANGE
 #   define RUBY_ATOMIC_PTR_EXCHANGE(var, val) RUBY_ATOMIC_EXCHANGE(var, val)
 # endif
 
+/**
+ * Identical to #RUBY_ATOMIC_CAS, except it expects its arguments are (possibly
+ * `_Atomic` qualified) unsigned integers of  the same width of `void*`.  There
+ * are cases where ::rb_atomic_t is 32bit  while `void*` is 64bit.  This should
+ * be used for size related operations to support such platforms.
+ *
+ * @param   var     A variable of (possibly _Atomic qualified) `void*`.
+ * @param   oldval  Expected value of `var` before the assignment.
+ * @param   newval  What you want to store at `var`.
+ * @retval  1       Successful assignment.
+ * @retval  0       Something different from `oldval` resides at `var`.
+ */
 # ifndef RUBY_ATOMIC_PTR_CAS
 #   define RUBY_ATOMIC_PTR_CAS(var, oldval, newval) RUBY_ATOMIC_CAS(var, oldval, newval)
 # endif
 
+/**
+ * Identical  to #RUBY_ATOMIC_EXCHANGE,  except  it expects  its arguments  are
+ * ::VALUE.   There are  cases where  ::rb_atomic_t is  32bit while  ::VALUE is
+ * 64bit.  This should  be used for pointer related operations  to support such
+ * platforms.
+ *
+ * @param   var  A variable of ::VALUE.
+ * @param   val   Value to set.
+ * @return  What was stored in `var` before the assignment.
+ * @post    `var` holds `val`.
+ */
 # ifndef RUBY_ATOMIC_VALUE_EXCHANGE
 #   define RUBY_ATOMIC_VALUE_EXCHANGE(var, val) RUBY_ATOMIC_EXCHANGE(var, val)
 # endif
 
+/**
+ * Identical to #RUBY_ATOMIC_CAS, except it expects its arguments are (possibly
+ * `_Atomic` qualified) unsigned integers of  the same width of `void*`.  There
+ * are cases where ::rb_atomic_t is 32bit  while `void*` is 64bit.  This should
+ * be used for size related operations to support such platforms.
+ *
+ * @param   var     A variable of (possibly _Atomic qualified) `void*`.
+ * @param   oldval  Expected value of `var` before the assignment.
+ * @param   val     What you want to store at `var`.
+ * @retval  1       Successful assignment.
+ * @retval  0       Something different from `oldval` resides at `var`.
+ */
 # ifndef RUBY_ATOMIC_VALUE_CAS
 #   define RUBY_ATOMIC_VALUE_CAS(var, oldval, val) RUBY_ATOMIC_CAS(var, oldval, val)
 # endif

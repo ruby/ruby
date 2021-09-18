@@ -1,7 +1,4 @@
 class Reline::KeyStroke
-  using Module.new {
-  }
-
   def initialize(config)
     @config = config
   end

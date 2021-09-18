@@ -5414,6 +5414,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
     }
 
     sweep_page->flags.before_sweep = FALSE;
+    sweep_page->free_slots = 0;
 
     p = sweep_page->start;
     bits = sweep_page->mark_bits;
@@ -5462,7 +5463,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
 		   sweep_page->total_slots,
 		   ctx->freed_slots, ctx->empty_slots, ctx->final_slots);
 
-    sweep_page->free_slots = ctx->freed_slots + ctx->empty_slots;
+    sweep_page->free_slots += ctx->freed_slots + ctx->empty_slots;
     objspace->profile.total_freed_objects += ctx->freed_slots;
 
     if (heap_pages_deferred_final && !finalizing) {
@@ -5818,7 +5819,7 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_size_pool_t *sweep_size_pool, rb_h
 }
 
 static void
-invalidate_moved_plane(rb_objspace_t *objspace, struct heap_page *page, uintptr_t p, bits_t bitset, struct gc_sweep_context *ctx)
+invalidate_moved_plane(rb_objspace_t *objspace, struct heap_page *page, uintptr_t p, bits_t bitset)
 {
     if (bitset) {
         do {
@@ -5832,19 +5833,18 @@ invalidate_moved_plane(rb_objspace_t *objspace, struct heap_page *page, uintptr_
 
                     CLEAR_IN_BITMAP(GET_HEAP_PINNED_BITS(forwarding_object), forwarding_object);
 
+                    bool from_freelist = FL_TEST_RAW(forwarding_object, FL_FROM_FREELIST);
                     object = rb_gc_location(forwarding_object);
-
-                    if (FL_TEST(forwarding_object, FL_FROM_FREELIST)) {
-                        ctx->empty_slots++; /* already freed */
-                    }
-                    else {
-                        ctx->freed_slots++;
-                    }
 
                     gc_move(objspace, object, forwarding_object, page->size_pool->slot_size);
                     /* forwarding_object is now our actual object, and "object"
                      * is the free slot for the original page */
-                    heap_page_add_freeobj(objspace, GET_HEAP_PAGE(object), object);
+                    struct heap_page *orig_page = GET_HEAP_PAGE(object);
+                    orig_page->free_slots++;
+                    if (!from_freelist) {
+                        objspace->profile.total_freed_objects++;
+                    }
+                    heap_page_add_freeobj(objspace, orig_page, object);
 
                     GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(forwarding_object), forwarding_object));
                     GC_ASSERT(BUILTIN_TYPE(forwarding_object) != T_MOVED);
@@ -5870,16 +5870,10 @@ invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page)
 
     p = page->start;
 
-    struct gc_sweep_context ctx;
-    ctx.page = page;
-    ctx.final_slots = 0;
-    ctx.freed_slots = 0;
-    ctx.empty_slots = 0;
-
     // Skip out of range slots at the head of the page
     bitset = pin_bits[0] & ~mark_bits[0];
     bitset >>= NUM_IN_PAGE(p);
-    invalidate_moved_plane(objspace, page, (uintptr_t)p, bitset, &ctx);
+    invalidate_moved_plane(objspace, page, (uintptr_t)p, bitset);
     p += (BITS_BITLENGTH - NUM_IN_PAGE(p));
 
     for (i=1; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
@@ -5887,12 +5881,9 @@ invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page)
          * to indicate there is a moved object in this slot. */
         bitset = pin_bits[i] & ~mark_bits[i];
 
-        invalidate_moved_plane(objspace, page, (uintptr_t)p, bitset, &ctx);
+        invalidate_moved_plane(objspace, page, (uintptr_t)p, bitset);
         p += BITS_BITLENGTH;
     }
-
-    page->free_slots += (ctx.empty_slots + ctx.freed_slots);
-    objspace->profile.total_freed_objects += ctx.freed_slots;
 }
 
 static void

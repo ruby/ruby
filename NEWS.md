@@ -69,10 +69,18 @@ Note that each entry is kept to a minimum, see links for details.
 
     [[Bug #4443]]
 
-* Values in Hash literals and keyword arguments can be omitted.  [[Feature #14579]]
+* Values in Hash literals and keyword arguments can be omitted.
+  [[Feature #14579]]
 
-    `{x:, y:}` is a syntax sugar of `{x: x, y: y}`.
-    `foo(x:, y:)` is a syntax sugar of `foo(x: x, y: y)`.
+  For example,
+
+    * `{x:, y:}` is a syntax sugar of `{x: x, y: y}`.
+    * `foo(x:, y:)` is a syntax sugar of `foo(x: x, y: y)`.
+
+  Constant names, local variable names, and method names are allowed as
+  key names.  Note that a reserved word is considered as a local
+  variable or method name even if it's a pseudo variable name such as
+  `self`.
 
 ## Command line options
 
@@ -102,6 +110,12 @@ Outstanding ones only.
 * Integer
 
     * Integer.try_convert is added. [[Feature #15211]]
+
+* MatchData
+
+    * MatchData#match is added [[Feature #18172]]
+
+    * MatchData#match_length is added [[Feature #18172]]
 
 * Module
 
@@ -239,3 +253,4 @@ Excluding feature bug fixes.
 [Feature #18008]: https://bugs.ruby-lang.org/issues/18008
 [Feature #18015]: https://bugs.ruby-lang.org/issues/18015
 [Feature #18029]: https://bugs.ruby-lang.org/issues/18029
+[Feature #18172]: https://bugs.ruby-lang.org/issues/18172

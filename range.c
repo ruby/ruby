@@ -660,54 +660,12 @@ bsearch_integer_range(VALUE beg, VALUE end, int excl)
 
 /*
  *  call-seq:
- *     rng.bsearch {|obj| block }  -> value
+ *     bsearch {|obj| block }  -> value
  *
- *  By using binary search, finds a value in range which meets the given
- *  condition in O(log n) where n is the size of the range.
+ *  Returns an element from +self+ selected by a binary search.
  *
- *  You can use this method in two use cases: a find-minimum mode and
- *  a find-any mode.  In either case, the elements of the range must be
- *  monotone (or sorted) with respect to the block.
+ *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
  *
- *  In find-minimum mode (this is a good choice for typical use case),
- *  the block must return true or false, and there must be a value x
- *  so that:
- *
- *  - the block returns false for any value which is less than x, and
- *  - the block returns true for any value which is greater than or
- *    equal to x.
- *
- *  If x is within the range, this method returns the value x.
- *  Otherwise, it returns nil.
- *
- *     ary = [0, 4, 7, 10, 12]
- *     (0...ary.size).bsearch {|i| ary[i] >= 4 } #=> 1
- *     (0...ary.size).bsearch {|i| ary[i] >= 6 } #=> 2
- *     (0...ary.size).bsearch {|i| ary[i] >= 8 } #=> 3
- *     (0...ary.size).bsearch {|i| ary[i] >= 100 } #=> nil
- *
- *     (0.0...Float::INFINITY).bsearch {|x| Math.log(x) >= 0 } #=> 1.0
- *
- *  In find-any mode (this behaves like libc's bsearch(3)), the block
- *  must return a number, and there must be two values x and y (x <= y)
- *  so that:
- *
- *  - the block returns a positive number for v if v < x,
- *  - the block returns zero for v if x <= v < y, and
- *  - the block returns a negative number for v if y <= v.
- *
- *  This method returns any value which is within the intersection of
- *  the given range and x...y (if any).  If there is no value that
- *  satisfies the condition, it returns nil.
- *
- *     ary = [0, 100, 100, 100, 200]
- *     (0..4).bsearch {|i| 100 - ary[i] } #=> 1, 2 or 3
- *     (0..4).bsearch {|i| 300 - ary[i] } #=> nil
- *     (0..4).bsearch {|i|  50 - ary[i] } #=> nil
- *
- *  You must not mix the two modes at a time; the block must always
- *  return either true/false, or always return a number.  It is
- *  undefined which value is actually picked up at each iteration.
  */
 
 static VALUE
@@ -820,14 +778,16 @@ sym_each_i(VALUE v, VALUE arg)
 
 /*
  *  call-seq:
- *     rng.size                   -> num
+ *    size -> non_negative_integer or Infinity or nil
  *
- *  Returns the number of elements in the range. Both the begin and the end of
- *  the Range must be Numeric, otherwise nil is returned.
+ *  Returns the count of elements in +self+
+ *  if both begin and end values are numeric;
+ *  otherwise, returns +nil+:
  *
- *    (10..20).size    #=> 11
+ *    (1..4).size      # => 4
+ *    (1...4).size     # => 3
+ *    (1..).size       # => Infinity
  *    ('a'..'z').size  #=> nil
- *    (-Float::INFINITY..Float::INFINITY).size #=> Infinity
  */
 
 static VALUE
@@ -851,13 +811,16 @@ range_size(VALUE range)
 
 /*
  *  call-seq:
- *     rng.to_a                   -> array
- *     rng.entries                -> array
+ *    to_a -> array
  *
- *  Returns an array containing the items in the range.
+ *  Returns an array containing the elements in +self+, if a finite collection;
+ *  raises an exception otherwise.
  *
- *    (1..7).to_a  #=> [1, 2, 3, 4, 5, 6, 7]
- *    (1..).to_a   #=> RangeError: cannot convert endless range to an array
+ *    (1..4).to_a     # => [1, 2, 3, 4]
+ *    (1...4).to_a    # => [1, 2, 3]
+ *    ('a'..'d').to_a # => ["a", "b", "c", "d"]
+ *
+ *  Range#entries is an alias for Range#to_a.
  */
 
 static VALUE
@@ -909,23 +872,19 @@ range_each_fixnum_loop(VALUE beg, VALUE end, VALUE range)
 
 /*
  *  call-seq:
- *     rng.each {| i | block } -> rng
- *     rng.each                -> an_enumerator
+ *    each {|element| ... } -> self
+ *    each                  -> an_enumerator
  *
- *  Iterates over the elements of range, passing each in turn to the
- *  block.
+ *  With a block given, passes each element of +self+ to the block:
  *
- *  The +each+ method can only be used if the begin object of the range
- *  supports the +succ+ method.  A TypeError is raised if the object
- *  does not have +succ+ method defined (like Float).
+ *    a = []
+ *    (1..4).each {|element| a.push(element) } # => 1..4
+ *    a # => [1, 2, 3, 4]
  *
- *  If no block is given, an enumerator is returned instead.
+ *  Raises an exception unless <tt>self.first.respond_to?(:succ)</tt>.
  *
- *     (10..15).each {|n| print n, ' ' }
- *     # prints: 10 11 12 13 14 15
+ *  With no block given, returns an enumerator.
  *
- *     (2.5..5).each {|n| print n, ' ' }
- *     # raises: TypeError: can't iterate from Float
  */
 
 static VALUE
@@ -1024,11 +983,14 @@ range_each(VALUE range)
 
 /*
  *  call-seq:
- *     rng.begin    -> obj
+ *    self.begin -> object
  *
- *  Returns the object that defines the beginning of the range.
+ *  Returns the object that defines the beginning of +self+.
  *
- *      (1..10).begin   #=> 1
+ *    (1..4).begin # => 1
+ *    (..2).begin  # => nil
+ *
+ *  Related: Range#first, Range#end.
  */
 
 static VALUE
@@ -1040,12 +1002,15 @@ range_begin(VALUE range)
 
 /*
  *  call-seq:
- *     rng.end    -> obj
+ *    self.end -> object
  *
- *  Returns the object that defines the end of the range.
+ *  Returns the object that defines the end of +self+.
  *
- *     (1..10).end    #=> 10
- *     (1...10).end   #=> 10
+ *    (1..4).end  # => 4
+ *    (1...4).end # => 4
+ *    (1..).end   # => nil
+ *
+ *  Related: Range#begin, Range#last.
  */
 
 
@@ -1073,14 +1038,24 @@ first_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, cbarg))
 
 /*
  *  call-seq:
- *     rng.first    -> obj
- *     rng.first(n) -> an_array
+ *    first -> object
+ *    first(n) -> array
  *
- *  Returns the first object in the range, or an array of the first +n+
- *  elements.
+ *  With no argument, returns the first element of +self+, if it exists:
  *
- *    (10..20).first     #=> 10
- *    (10..20).first(3)  #=> [10, 11, 12]
+ *    (1..4).first     # => 1
+ *    ('a'..'d').first # => "a"
+ *
+ *  With non-negative integer argument +n+ given,
+ *  returns the first +n+ elements in an array:
+ *
+ *    (1..10).first(3) # => [1, 2, 3]
+ *    (1..10).first(0) # => []
+ *    (1..4).first(50) # => [1, 2, 3, 4]
+ *
+ *  Raises an exception if there is no first element:
+ *
+ *    (..4).first # Raises RangeError
  */
 
 static VALUE
@@ -1156,19 +1131,37 @@ rb_int_range_last(int argc, VALUE *argv, VALUE range)
 
 /*
  *  call-seq:
- *     rng.last    -> obj
- *     rng.last(n) -> an_array
+ *    last -> object
+ *    last(n) -> array
  *
- *  Returns the last object in the range,
- *  or an array of the last +n+ elements.
+ *  With no argument, returns the last element of +self+, if it exists:
  *
- *  Note that with no arguments +last+ will return the object that defines
- *  the end of the range even if #exclude_end? is +true+.
+ *    (1..4).last     # => 4
+ *    ('a'..'d').last # => "d"
  *
- *    (10..20).last      #=> 20
- *    (10...20).last     #=> 20
- *    (10..20).last(3)   #=> [18, 19, 20]
- *    (10...20).last(3)  #=> [17, 18, 19]
+ *  Note that +last+ with no argument returns the end element of +self+
+ *  even if #exclude_end? is +true+:
+ *
+ *    (1...4).last     # => 4
+ *    ('a'...'d').last # => "d"
+ *
+ *  With non-negative integer argument +n+ given,
+ *  returns the last +n+ elements in an array:
+ *
+ *    (1..10).last(3) # => [8, 9, 10]
+ *    (1..10).last(0) # => []
+ *    (1..4).last(50) # => [1, 2, 3, 4]
+ *
+ *  Note that +last+ with argument does not return the end element of +self+
+ *  if #exclude_end? it +true+:
+ *
+ *    (1...4).last(3)     # => [1, 2, 3]
+ *    ('a'...'d').last(3) # => ["a", "b", "c"]
+ *
+ *  Raises an exception if there is no last element:
+ *
+ *    (1..).last # Raises RangeError
+ *
  */
 
 static VALUE
@@ -1193,19 +1186,82 @@ range_last(int argc, VALUE *argv, VALUE range)
 
 /*
  *  call-seq:
- *     rng.min                       -> obj
- *     rng.min {| a,b | block }      -> obj
- *     rng.min(n)                    -> array
- *     rng.min(n) {| a,b | block }   -> array
+ *    min -> object
+ *    min(n) -> array
+ *    min {|a, b| ... } -> object
+ *    min(n) {|a, b| ... } -> array
  *
- *  Returns the minimum value in the range. Returns +nil+ if the begin
- *  value of the range is larger than the end value. Returns +nil+ if
- *  the begin value of an exclusive range is equal to the end value.
+ *  Returns the minimum value in +self+,
+ *  using method <tt><=></tt> or a given block for comparison.
  *
- *  Can be given an optional block to override the default comparison
- *  method <code>a <=> b</code>.
+ *  With no argument and no block given,
+ *  returns the minimum-valued element of +self+.
  *
- *    (10..20).min    #=> 10
+ *    (1..4).min     # => 1
+ *    ('a'..'d').min # => "a"
+ *    (-4..-1).min   # => -4
+ *
+ *  With non-negative integer argument +n+ given, and no block given,
+ *  returns the +n+ minimum-valued elements of +self+ in an array:
+ *
+ *    (1..4).min(2)     # => [1, 2]
+ *    ('a'..'d').min(2) # => ["a", "b"]
+ *    (-4..-1).min(2)   # => [-4, -3]
+ *    (1..4).min(50)    # => [1, 2, 3, 4]
+ *
+ *  If a block is given, it is called:
+ *
+ *  - First, with the first two element of +self+.
+ *  - Then, sequentially, with the so-far minimum value and the next element of +self+.
+ *
+ *  To illustrate:
+ *
+ *    (1..4).min {|a, b| p [a, b]; a <=> b } # => 1
+ *
+ *  Output:
+ *
+ *    [2, 1]
+ *    [3, 1]
+ *    [4, 1]
+ *
+ *  With no argument and a block given,
+ *  returns the return value of the last call to the block:
+ *
+ *    (1..4).min {|a, b| -(a <=> b) } # => 4
+ *
+ *  With non-negative integer argument +n+ given, and a block given,
+ *  returns the return values of the last +n+ calls to the block in an array:
+ *
+ *    (1..4).min(2) {|a, b| -(a <=> b) }  # => [4, 3]
+ *    (1..4).min(50) {|a, b| -(a <=> b) } # => [4, 3, 2, 1]
+ *
+ *  Returns an empty array if +n+ is zero:
+ *
+ *    (1..4).min(0)                      # => []
+ *    (1..4).min(0) {|a, b| -(a <=> b) } # => []
+ *
+ *  Returns +nil+ or an empty array if:
+ *
+ *  - The begin value of the range is larger than the end value:
+ *
+ *      (4..1).min                         # => nil
+ *      (4..1).min(2)                      # => []
+ *      (4..1).min {|a, b| -(a <=> b) }    # => nil
+ *      (4..1).min(2) {|a, b| -(a <=> b) } # => []
+ *
+ *  - The begin value of an exclusive range is equal to the end value:
+ *
+ *      (1...1).min                          # => nil
+ *      (1...1).min(2)                       # => []
+ *      (1...1).min  {|a, b| -(a <=> b) }    # => nil
+ *      (1...1).min(2)  {|a, b| -(a <=> b) } # => []
+ *
+ *  Raises an exception if either:
+ *
+ *  - +self+ is a beginless range: <tt>(..4)</tt>.
+ *  - A block is given and +self+ is an endless range.
+ *
+ *  Related: Range#max, Range#minmax.
  */
 
 
@@ -1239,39 +1295,83 @@ range_min(int argc, VALUE *argv, VALUE range)
 
 /*
  *  call-seq:
- *     rng.max                       -> obj
- *     rng.max {| a,b | block }      -> obj
- *     rng.max(n)                    -> obj
- *     rng.max(n) {| a,b | block }   -> obj
+ *    max -> object
+ *    max(n) -> array
+ *    max {|a, b| ... } -> object
+ *    max(n) {|a, b| ... } -> array
  *
- *  Returns the maximum value in the range, or an array of maximum
- *  values in the range if given an \Integer argument.
+ *  Returns the maximum value in +self+,
+ *  using method <tt><=></tt> or a given block for comparison.
  *
- *  For inclusive ranges with an end, the maximum value of the range
- *  is the same as the end of the range.
+ *  With no argument and no block given,
+ *  returns the maximum-valued element of +self+.
  *
- *  If an argument or block is given, or +self+ is an exclusive,
- *  non-numeric range, calls Enumerable#max (via +super+) with the
- *  argument and/or block to get the maximum values, unless +self+ is
- *  a beginless range, in which case it raises a RangeError.
+ *    (1..4).max     # => 4
+ *    ('a'..'d').max # => "d"
+ *    (-4..-1).max   # => -1
  *
- *  If +self+ is an exclusive, integer range (both start and end of the
- *  range are integers), and no arguments or block are provided, returns
- *  last value in the range (1 before the end).  Otherwise, if +self+ is
- *  an exclusive, numeric range, raises a TypeError.
+ *  With non-negative integer argument +n+ given, and no block given,
+ *  returns the +n+ maximum-valued elements of +self+ in an array:
  *
- *  Returns +nil+ if the begin value of the range larger than the
- *  end value. Returns +nil+ if the begin value of an exclusive
- *  range is equal to the end value.  Raises a RangeError if called on
- *  an endless range.
+ *    (1..4).max(2)     # => [4, 3]
+ *    ('a'..'d').max(2) # => ["d", "c"]
+ *    (-4..-1).max(2)   # => [-1, -2]
+ *    (1..4).max(50)    # => [4, 3, 2, 1]
  *
- *  Examples:
- *    (10..20).max                        #=> 20
- *    (10..20).max(2)                     #=> [20, 19]
- *    (10...20).max                       #=> 19
- *    (10...20).max(2)                    #=> [19, 18]
- *    (10...20).max{|x, y| -x <=> -y }    #=> 10
- *    (10...20).max(2){|x, y| -x <=> -y } #=> [10, 11]
+ *  If a block is given, it is called:
+ *
+ *  - First, with the first two element of +self+.
+ *  - Then, sequentially, with the so-far maximum value and the next element of +self+.
+ *
+ *  To illustrate:
+ *
+ *    (1..4).max {|a, b| p [a, b]; a <=> b } # => 4
+ *
+ *  Output:
+ *
+ *    [2, 1]
+ *    [3, 2]
+ *    [4, 3]
+ *
+ *  With no argument and a block given,
+ *  returns the return value of the last call to the block:
+ *
+ *    (1..4).max {|a, b| -(a <=> b) } # => 1
+ *
+ *  With non-negative integer argument +n+ given, and a block given,
+ *  returns the return values of the last +n+ calls to the block in an array:
+ *
+ *    (1..4).max(2) {|a, b| -(a <=> b) }  # => [1, 2]
+ *    (1..4).max(50) {|a, b| -(a <=> b) } # => [1, 2, 3, 4]
+ *
+ *  Returns an empty array if +n+ is zero:
+ *
+ *    (1..4).max(0)                      # => []
+ *    (1..4).max(0) {|a, b| -(a <=> b) } # => []
+ *
+ *  Returns +nil+ or an empty array if:
+ *
+ *  - The begin value of the range is larger than the end value:
+ *
+ *      (4..1).max                         # => nil
+ *      (4..1).max(2)                      # => []
+ *      (4..1).max {|a, b| -(a <=> b) }    # => nil
+ *      (4..1).max(2) {|a, b| -(a <=> b) } # => []
+ *
+ *  - The begin value of an exclusive range is equal to the end value:
+ *
+ *      (1...1).max                          # => nil
+ *      (1...1).max(2)                       # => []
+ *      (1...1).max  {|a, b| -(a <=> b) }    # => nil
+ *      (1...1).max(2)  {|a, b| -(a <=> b) } # => []
+ *
+ *  Raises an exception if either:
+ *
+ *  - +self+ is a endless range: <tt>(1..)</tt>.
+ *  - A block is given and +self+ is a beginless range.
+ *
+ *  Related: Range#min, Range#minmax.
+ *
  */
 
 static VALUE
@@ -1317,14 +1417,48 @@ range_max(int argc, VALUE *argv, VALUE range)
 
 /*
  *  call-seq:
- *     rng.minmax                       -> [obj, obj]
- *     rng.minmax {| a,b | block }      -> [obj, obj]
+ *    minmax -> [object, object]
+ *    minmax {|a, b| ... } -> [object, object]
  *
- *  Returns a two element array which contains the minimum and the
- *  maximum value in the range.
+ *  Returns a 2-element array containing the minimum and maximum value in +self+,
+ *  either according to comparison method <tt><=></tt> or a given block.
  *
- *  Can be given an optional block to override the default comparison
- *  method <code>a <=> b</code>.
+ *  With no block given, returns the minimum and maximum values,
+ *  using <tt><=></tt> for comparison:
+ *
+ *    (1..4).minmax     # => [1, 4]
+ *    (1...4).minmax    # => [1, 3]
+ *    ('a'..'d').minmax # => ["a", "d"]
+ *    (-4..-1).minmax   # => [-4, -1]
+ *
+ *  With a block given, the block must return an integer:
+ *
+ *  - Negative if +a+ is smaller than +b+.
+ *  - Zero if +a+ and +b+ are equal.
+ *  - Positive if +a+ is larger than +b+.
+ *
+ *  The block is called <tt>self.size</tt> times to compare elements;
+ *  returns a 2-element Array containing the minimum and maximum values from +self+,
+ *  per the block:
+ *
+ *    (1..4).minmax {|a, b| -(a <=> b) } # => [4, 1]
+ *
+ *  Returns <tt>[nil, nil]</tt> if:
+ *
+ *  - The begin value of the range is larger than the end value:
+ *
+ *      (4..1).minmax                      # => [nil, nil]
+ *      (4..1).minmax {|a, b| -(a <=> b) } # => [nil, nil]
+ *
+ *  - The begin value of an exclusive range is equal to the end value:
+ *
+ *      (1...1).minmax                          # => [nil, nil]
+ *      (1...1).minmax  {|a, b| -(a <=> b) }    # => [nil, nil]
+ *
+ *  Raises an exception if +self+ is a beginless or an endless range.
+ *
+ *  Related: Range#min, Range#max.
+ *
  */
 
 static VALUE

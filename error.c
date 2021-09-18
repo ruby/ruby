@@ -1548,9 +1548,7 @@ exc_equal(VALUE exc, VALUE obj)
 
     if (!rb_equal(rb_attr_get(exc, id_mesg), mesg))
 	return Qfalse;
-    if (!rb_equal(exc_backtrace(exc), backtrace))
-	return Qfalse;
-    return Qtrue;
+    return rb_equal(exc_backtrace(exc), backtrace);
 }
 
 /*
@@ -1638,10 +1636,7 @@ exit_success_p(VALUE exc)
     if (NIL_P(status_val))
 	return Qtrue;
     status = NUM2INT(status_val);
-    if (WIFEXITED(status) && WEXITSTATUS(status) == EXIT_SUCCESS)
-	return Qtrue;
-
-    return Qfalse;
+    return RBOOL(WIFEXITED(status) && WEXITSTATUS(status) == EXIT_SUCCESS);
 }
 
 static VALUE
