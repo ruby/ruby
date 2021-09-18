@@ -190,16 +190,9 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
         }
 
 	rb_check_arity(calling->argc, 1, 1);
-        if (UNLIKELY(ruby_vm_event_flags & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN))) {
-            EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, calling->recv,
-                vm_cc_cme(cc)->def->original_id, vm_ci_mid(ci), vm_cc_cme(cc)->owner, Qundef);
-            ret = rb_ivar_set(calling->recv, vm_cc_cme(cc)->def->body.attr.id, argv[0]);
-            EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, calling->recv,
-                vm_cc_cme(cc)->def->original_id, vm_ci_mid(ci), vm_cc_cme(cc)->owner, ret);
-        }
-        else {
-            ret = rb_ivar_set(calling->recv, vm_cc_cme(cc)->def->body.attr.id, argv[0]);
-        }
+        VM_CALL_METHOD_ATTR(ret,
+                            rb_ivar_set(calling->recv, vm_cc_cme(cc)->def->body.attr.id, argv[0]),
+                            (void)0);
 	goto success;
       case VM_METHOD_TYPE_IVAR:
         if (calling->kw_splat &&
@@ -210,16 +203,9 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
         }
 
 	rb_check_arity(calling->argc, 0, 0);
-        if (UNLIKELY(ruby_vm_event_flags & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN))) {
-            EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, calling->recv,
-                vm_cc_cme(cc)->def->original_id, vm_ci_mid(ci), vm_cc_cme(cc)->owner, Qundef);
-            ret = rb_attr_get(calling->recv, vm_cc_cme(cc)->def->body.attr.id);
-            EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, calling->recv,
-                vm_cc_cme(cc)->def->original_id, vm_ci_mid(ci), vm_cc_cme(cc)->owner, ret);
-        }
-        else {
-            ret = rb_attr_get(calling->recv, vm_cc_cme(cc)->def->body.attr.id);
-        }
+        VM_CALL_METHOD_ATTR(ret,
+                            rb_attr_get(calling->recv, vm_cc_cme(cc)->def->body.attr.id),
+                            (void)0);
 	goto success;
       case VM_METHOD_TYPE_BMETHOD:
         ret = vm_call_bmethod_body(ec, calling, argv);
