@@ -37,6 +37,7 @@
 #include "ruby/ruby.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
+#include "builtin.h"
 
 #define BITSPERSHORT (2*CHAR_BIT)
 #define SHORTMASK ((1<<BITSPERSHORT)-1)
@@ -123,7 +124,7 @@ typedef struct {
 static st_table *compat_allocator_tbl;
 static VALUE compat_allocator_tbl_wrapper;
 static VALUE rb_marshal_dump_limited(VALUE obj, VALUE port, int limit);
-static VALUE rb_marshal_load_with_proc(VALUE port, VALUE proc);
+static VALUE rb_marshal_load_with_proc(VALUE port, VALUE proc, bool freeze);
 
 static int
 mark_marshal_compat_i(st_data_t key, st_data_t value, st_data_t _)
@@ -1164,6 +1165,7 @@ struct load_arg {
     st_table *partial_objects;
     VALUE proc;
     st_table *compat_tbl;
+    bool freeze;
 };
 
 static VALUE
@@ -1580,6 +1582,17 @@ r_leave(VALUE v, struct load_arg *arg, bool partial)
 	st_data_t data;
 	st_data_t key = (st_data_t)v;
 	st_delete(arg->partial_objects, &key, &data);
+	if (arg->freeze) {
+	    if (RB_TYPE_P(v, T_MODULE) || RB_TYPE_P(v, T_CLASS)) {
+		// noop
+	    }
+	    else if (RB_TYPE_P(v, T_STRING)) {
+		v = rb_str_to_interned_str(v);
+	    }
+	    else {
+		OBJ_FREEZE(v);
+	    }
+        }
 	v = r_post_proc(v, arg);
     }
     return v;
@@ -2191,33 +2204,8 @@ clear_load_arg(struct load_arg *arg)
     }
 }
 
-/*
- * call-seq:
- *     load( source [, proc] ) -> obj
- *     restore( source [, proc] ) -> obj
- *
- * Returns the result of converting the serialized data in source into a
- * Ruby object (possibly with associated subordinate objects). source
- * may be either an instance of IO or an object that responds to
- * to_str. If proc is specified, each object will be passed to the proc, as the object
- * is being deserialized.
- *
- * Never pass untrusted data (including user supplied input) to this method.
- * Please see the overview for further details.
- */
-static VALUE
-marshal_load(int argc, VALUE *argv, VALUE _)
-{
-    VALUE port, proc;
-
-    rb_check_arity(argc, 1, 2);
-    port = argv[0];
-    proc = argc > 1 ? argv[1] : Qnil;
-    return rb_marshal_load_with_proc(port, proc);
-}
-
 VALUE
-rb_marshal_load_with_proc(VALUE port, VALUE proc)
+rb_marshal_load_with_proc(VALUE port, VALUE proc, bool freeze)
 {
     int major, minor;
     VALUE v;
@@ -2243,6 +2231,7 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc)
     arg->compat_tbl = 0;
     arg->proc = 0;
     arg->readable = 0;
+    arg->freeze = freeze;
 
     if (NIL_P(v))
 	arg->buf = xmalloc(BUFSIZ);
@@ -2270,6 +2259,13 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc)
 
     return v;
 }
+
+static VALUE marshal_load(rb_execution_context_t *ec, VALUE mod, VALUE source, VALUE proc, VALUE freeze)
+{
+    return rb_marshal_load_with_proc(source, proc, RTEST(freeze));
+}
+
+#include "marshal.rbinc"
 
 /*
  * The marshaling library converts collections of Ruby objects into a
@@ -2403,8 +2399,6 @@ Init_marshal(void)
     set_id(s_ruby2_keywords_flag);
 
     rb_define_module_function(rb_mMarshal, "dump", marshal_dump, -1);
-    rb_define_module_function(rb_mMarshal, "load", marshal_load, -1);
-    rb_define_module_function(rb_mMarshal, "restore", marshal_load, -1);
 
     /* major version */
     rb_define_const(rb_mMarshal, "MAJOR_VERSION", INT2FIX(MARSHAL_MAJOR));
@@ -2434,5 +2428,5 @@ rb_marshal_dump(VALUE obj, VALUE port)
 VALUE
 rb_marshal_load(VALUE port)
 {
-    return rb_marshal_load_with_proc(port, Qnil);
+    return rb_marshal_load_with_proc(port, Qnil, false);
 }

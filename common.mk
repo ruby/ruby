@@ -1047,6 +1047,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/gc.rb \
 		$(srcdir)/numeric.rb \
 		$(srcdir)/io.rb \
+		$(srcdir)/marshal.rb \
 		$(srcdir)/pack.rb \
 		$(srcdir)/trace_point.rb \
 		$(srcdir)/warning.rb \
@@ -7732,6 +7733,7 @@ marshal.$(OBJEXT): {$(VPATH)}backward/2/limits.h
 marshal.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 marshal.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 marshal.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+marshal.$(OBJEXT): {$(VPATH)}builtin.h
 marshal.$(OBJEXT): {$(VPATH)}config.h
 marshal.$(OBJEXT): {$(VPATH)}defines.h
 marshal.$(OBJEXT): {$(VPATH)}encindex.h
@@ -7889,6 +7891,8 @@ marshal.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 marshal.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 marshal.$(OBJEXT): {$(VPATH)}io.h
 marshal.$(OBJEXT): {$(VPATH)}marshal.c
+marshal.$(OBJEXT): {$(VPATH)}marshal.rb
+marshal.$(OBJEXT): {$(VPATH)}marshal.rbinc
 marshal.$(OBJEXT): {$(VPATH)}missing.h
 marshal.$(OBJEXT): {$(VPATH)}onigmo.h
 marshal.$(OBJEXT): {$(VPATH)}oniguruma.h
@@ -8422,6 +8426,7 @@ miniinit.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 miniinit.$(OBJEXT): {$(VPATH)}io.rb
 miniinit.$(OBJEXT): {$(VPATH)}iseq.h
 miniinit.$(OBJEXT): {$(VPATH)}kernel.rb
+miniinit.$(OBJEXT): {$(VPATH)}marshal.rb
 miniinit.$(OBJEXT): {$(VPATH)}method.h
 miniinit.$(OBJEXT): {$(VPATH)}mini_builtin.c
 miniinit.$(OBJEXT): {$(VPATH)}miniinit.c
