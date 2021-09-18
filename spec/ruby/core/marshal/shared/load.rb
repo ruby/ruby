@@ -19,6 +19,100 @@ describe :marshal_load, shared: true do
     -> { Marshal.send(@method, kaboom) }.should raise_error(ArgumentError)
   end
 
+  ruby_version_is "3.1" do
+    describe "when called with freeze: true" do
+      it "returns frozen strings" do
+        string = Marshal.send(@method, Marshal.dump("foo"), freeze: true)
+        string.should == "foo"
+        string.should.frozen?
+
+        utf8_string = "foo".encode(Encoding::UTF_8)
+        string = Marshal.send(@method, Marshal.dump(utf8_string), freeze: true)
+        string.should == utf8_string
+        string.should.frozen?
+      end
+
+      it "returns frozen arrays" do
+        array = Marshal.send(@method, Marshal.dump([1, 2, 3]), freeze: true)
+        array.should == [1, 2, 3]
+        array.should.frozen?
+      end
+
+      it "returns frozen hashes" do
+        hash = Marshal.send(@method, Marshal.dump({foo: 42}), freeze: true)
+        hash.should == {foo: 42}
+        hash.should.frozen?
+      end
+
+      it "returns frozen regexps" do
+        regexp = Marshal.send(@method, Marshal.dump(/foo/), freeze: true)
+        regexp.should == /foo/
+        regexp.should.frozen?
+      end
+
+      it "returns frozen objects" do
+        source_object = Object.new
+        source_object.instance_variable_set(:@foo, "bar")
+
+        object = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
+        object.should.frozen?
+        object.instance_variable_get(:@foo).should.frozen?
+      end
+
+      it "does not freeze modules" do
+        Marshal.send(@method, Marshal.dump(Kernel), freeze: true)
+        Kernel.should_not.frozen?
+      end
+
+      it "does not freeze classes" do
+        Marshal.send(@method, Marshal.dump(Object), freeze: true)
+        Object.should_not.frozen?
+      end
+
+      describe "when called with a proc" do
+        it "call the proc with frozen objects" do
+          arr = []
+          s = 'hi'
+          s.instance_variable_set(:@foo, 5)
+          st = Struct.new("Brittle", :a).new
+          st.instance_variable_set(:@clue, 'none')
+          st.a = 0.0
+          h = Hash.new('def')
+          h['nine'] = 9
+          a = [:a, :b, :c]
+          a.instance_variable_set(:@two, 2)
+          obj = [s, 10, s, s, st, a]
+          obj.instance_variable_set(:@zoo, 'ant')
+          proc = Proc.new { |o| arr << o; o}
+
+          Marshal.send(
+            @method,
+            "\x04\bI[\vI\"\ahi\a:\x06EF:\t@fooi\ni\x0F@\x06@\x06IS:\x14Struct::Brittle\x06:\x06af\x060\x06:\n@clueI\"\tnone\x06;\x00FI[\b;\b:\x06b:\x06c\x06:\t@twoi\a\x06:\t@zooI\"\bant\x06;\x00F",
+            proc,
+            freeze: true,
+          )
+
+          arr.should == [
+            false, 5, "hi", 10, "hi", "hi", 0.0, false, "none", st,
+            :b, :c, 2, a, false, "ant", ["hi", 10, "hi", "hi", st, [:a, :b, :c]],
+          ]
+
+          arr.each do |obj|
+            obj.should.frozen?
+          end
+
+          Struct.send(:remove_const, :Brittle)
+        end
+
+        it "does not freeze the object returned by the proc" do
+          string = Marshal.send(@method, Marshal.dump("foo"), proc { |o| o.upcase }, freeze: true)
+          string.should == "FOO"
+          string.should_not.frozen?
+        end
+      end
+    end
+  end
+
   describe "when called with a proc" do
     ruby_bug "#18141", ""..."3.1" do
       it "call the proc with fully initialized strings" do
