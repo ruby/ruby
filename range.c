@@ -788,6 +788,8 @@ sym_each_i(VALUE v, VALUE arg)
  *    (1...4).size     # => 3
  *    (1..).size       # => Infinity
  *    ('a'..'z').size  #=> nil
+ *
+ *  Related: Range#count.
  */
 
 static VALUE
@@ -1580,10 +1582,23 @@ rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
 
 /*
  * call-seq:
- *   rng.to_s   -> string
+ *   to_s -> string
  *
- * Convert this range object to a printable form (using #to_s to convert the
- * begin and end objects).
+ * Returns a string representation of +self+,
+ * including <tt>begin.to_s</tt> and <tt>end.to_s</tt>:
+ *
+ *   (1..4).to_s  # => "1..4"
+ *   (1...4).to_s # => "1...4"
+ *   (1..).to_s   # => "1.."
+ *   (..4).to_s   # => "..4"
+ *
+ * Note that returns from #to_s and #inspect may differ:
+ *
+ *   ('a'..'d').to_s    # => "a..d"
+ *   ('a'..'d').inspect # => "\"a\"..\"d\""
+ *
+ * Related: Range#inspect.
+ *
  */
 
 static VALUE
@@ -1625,10 +1640,23 @@ inspect_range(VALUE range, VALUE dummy, int recur)
 
 /*
  * call-seq:
- *   rng.inspect  -> string
+ *   inspect -> string
  *
- * Convert this range object to a printable form (using #inspect to
- * convert the begin and end objects).
+ * Returns a string representation of +self+,
+ * including <tt>begin.inspect</tt> and <tt>end.inspect</tt>:
+ *
+ *   (1..4).inspect  # => "1..4"
+ *   (1...4).inspect # => "1...4"
+ *   (1..).inspect   # => "1.."
+ *   (..4).inspect   # => "..4"
+ *
+ * Note that returns from #to_s and #inspect may differ:
+ *
+ *   ('a'..'d').to_s    # => "a..d"
+ *   ('a'..'d').inspect # => "\"a\"..\"d\""
+ *
+ * Related: Range#to_s.
+ *
  */
 
 
@@ -1642,27 +1670,40 @@ static VALUE range_include_internal(VALUE range, VALUE val, int string_use_cover
 
 /*
  *  call-seq:
- *     rng === obj       ->  true or false
+ *     rng === object ->  true or false
  *
- *  Returns <code>true</code> if +obj+ is between begin and end of range,
- *  <code>false</code> otherwise (same as #cover?). Conveniently,
- *  <code>===</code> is the comparison operator used by <code>case</code>
- *  statements.
+ *  Returns +true+ if +object+ is between <tt>self.begin</tt> and <tt>self.end</tt>.
+ *  +false+ otherwise:
+ *
+ *    (1..4) === 2       # => true
+ *    (1..4) === 5       # => false
+ *    (1..4) === 'a'     # => false
+ *    (1..4) === 4       # => true
+ *    (1...4) === 4      # => false
+ *    ('a'..'d') === 'c' # => true
+ *    ('a'..'d') === 'e' # => false
+ *
+ *  A case statement uses method <tt>===</tt>, and so:
  *
  *     case 79
- *     when 1..50   then   puts "low"
- *     when 51..75  then   puts "medium"
- *     when 76..100 then   puts "high"
- *     end
- *     # Prints "high"
+ *     when (1..50)
+ *       "low"
+ *     when (51..75)
+ *       "medium"
+ *     when (76..100)
+ *       "high"
+ *     end # => "high"
  *
  *     case "2.6.5"
- *     when ..."2.4" then puts "EOL"
- *     when "2.4"..."2.5" then puts "maintenance"
- *     when "2.5"..."2.7" then puts "stable"
- *     when "2.7".. then puts "upcoming"
- *     end
- *     # Prints "stable"
+ *     when ..."2.4"
+ *       "EOL"
+ *     when "2.4"..."2.5"
+ *       "maintenance"
+ *     when "2.5"..."3.0"
+ *       "stable"
+ *     when "3.1"..
+ *       "upcoming"
+ *     end # => "stable"
  *
  */
 
@@ -1677,23 +1718,33 @@ range_eqq(VALUE range, VALUE val)
 
 /*
  *  call-seq:
- *     rng.member?(obj)  ->  true or false
- *     rng.include?(obj) ->  true or false
+ *    include?(object) -> true or false
  *
- *  Returns <code>true</code> if +obj+ is an element of
- *  the range, <code>false</code> otherwise.
+ *  Returns +true+ if +object+ is an element of +self+, +false+ otherwise:
  *
- *     ("a".."z").include?("g")   #=> true
- *     ("a".."z").include?("A")   #=> false
- *     ("a".."z").include?("cc")  #=> false
- *
- *  If you need to ensure +obj+ is between +begin+ and +end+, use #cover?
- *
- *     ("a".."z").cover?("cc")  #=> true
+ *    (1..4).include?(2)        # => true
+ *    (1..4).include?(5)        # => false
+ *    (1..4).include?(4)        # => true
+ *    (1...4).include?(4)       # => false
+ *    ('a'..'d').include?('b')  # => true
+ *    ('a'..'d').include?('e')  # => false
+ *    ('a'..'d').include?('B')  # => false
+ *    ('a'..'d').include?('d')  # => true
+ *    ('a'...'d').include?('d') # => false
  *
  *  If begin and end are numeric, #include? behaves like #cover?
  *
- *     (1..3).include?(1.5) # => true
+ *    (1..3).include?(1.5) # => true
+ *    (1..3).cover?(1.5) # => true
+ *
+ *  But when not numeric, the two methods may differ:
+ *
+ *    ('a'..'d').include?('cc') # => false
+ *    ('a'..'d').cover?('cc')   # => true
+ *
+ *  Related: Range#cover?.
+ *
+ *  Range#member? is an alias for Range#include?.
  */
 
 static VALUE
@@ -1747,34 +1798,86 @@ static int r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val);
 
 /*
  *  call-seq:
- *     rng.cover?(obj)   ->  true or false
- *     rng.cover?(range) ->  true or false
+ *    cover?(object) -> true or false
+ *    cover?(range) -> true or false
  *
- *  Returns <code>true</code> if +obj+ is between the begin and end of
- *  the range.
+ *  Returns +true+ if the given argument is within +self+, +false+ otherwise.
  *
- *  This tests <code>begin <= obj <= end</code> when #exclude_end? is +false+
- *  and <code>begin <= obj < end</code> when #exclude_end? is +true+.
+ *  With non-range argument +object+, evaluates with <tt><=</tt> and <tt><</tt>.
  *
- *  If called with a Range argument, returns <code>true</code> when the
- *  given range is covered by the receiver,
- *  by comparing the begin and end values. If the argument can be treated as
- *  a sequence, this method treats it that way. In the specific case of
- *  <code>(a..b).cover?(c...d)</code> with <code>a <= c && b < d</code>,
- *  the end of the sequence must be calculated, which may exhibit poor
- *  performance if <code>c</code> is non-numeric.
- *  Returns <code>false</code> if the begin value of the
- *  range is larger than the end value. Also returns +false+ if one of the
- *  internal calls to <code><=></code> returns +nil+ (indicating the objects
- *  are not comparable).
+ *  For range +self+ with included end value (<tt>#exclude_end? == false</tt>),
+ *  evaluates thus:
  *
- *     ("a".."z").cover?("c")  #=> true
- *     ("a".."z").cover?("5")  #=> false
- *     ("a".."z").cover?("cc") #=> true
- *     ("a".."z").cover?(1)    #=> false
- *     (1..5).cover?(2..3)     #=> true
- *     (1..5).cover?(0..6)     #=> false
- *     (1..5).cover?(1...6)    #=> true
+ *    self.begin <= object <= self.end
+ *
+ *  Examples:
+ *
+ *    r = (1..4)
+ *    r.cover?(1)     # => true
+ *    r.cover?(4)     # => true
+ *    r.cover?(0)     # => false
+ *    r.cover?(5)     # => false
+ *    r.cover?('foo') # => false
+
+ *    r = ('a'..'d')
+ *    r.cover?('a')     # => true
+ *    r.cover?('d')     # => true
+ *    r.cover?(' ')     # => false
+ *    r.cover?('e')     # => false
+ *    r.cover?(0)       # => false
+ *
+ *  For range +r+ with excluded end value (<tt>#exclude_end? == true</tt>),
+ *  evaluates thus:
+ *
+ *    r.begin <= object < r.end
+ *
+ *  Examples:
+ *
+ *    r = (1...4)
+ *    r.cover?(1)     # => true
+ *    r.cover?(3)     # => true
+ *    r.cover?(0)     # => false
+ *    r.cover?(4)     # => false
+ *    r.cover?('foo') # => false
+
+ *    r = ('a'...'d')
+ *    r.cover?('a')     # => true
+ *    r.cover?('c')     # => true
+ *    r.cover?(' ')     # => false
+ *    r.cover?('d')     # => false
+ *    r.cover?(0)       # => false
+ *
+ *  With range argument +range+, compares the first and last
+ *  elements of +self+ and +range+:
+ *
+ *    r = (1..4)
+ *    r.cover?(1..4)     # => true
+ *    r.cover?(0..4)     # => false
+ *    r.cover?(1..5)     # => false
+ *    r.cover?('a'..'d') # => false
+
+ *    r = (1...4)
+ *    r.cover?(1..3)     # => true
+ *    r.cover?(1..4)     # => false
+ *
+ *  If begin and end are numeric, #cover? behaves like #include?
+ *
+ *    (1..3).cover?(1.5) # => true
+ *    (1..3).include?(1.5) # => true
+ *
+ *  But when not numeric, the two methods may differ:
+ *
+ *    ('a'..'d').cover?('cc')   # => true
+ *    ('a'..'d').include?('cc') # => false
+ *
+ *  Returns +false+ if either:
+ *
+ *  - The begin value of +self+ is larger than its end value.
+ *  - An internal call to <tt><=></tt> returns +nil+;
+ *    that is, the operands are not comparable.
+ *
+ *  Related: Range#include?.
+ *
  */
 
 static VALUE
@@ -1880,13 +1983,34 @@ range_alloc(VALUE klass)
 
 /*
  *  call-seq:
- *     range.count                 -> int
- *     range.count(item)           -> int
- *     range.count { |obj| block } -> int
+ *    count -> integer0
+ *    count(object) -> integer
+ *    count {|element| ... } -> integer
  *
- *  Identical to Enumerable#count, except it returns Infinity for endless
- *  ranges.
+ *  Returns the count of elements, based on an argument or block criterion, if given.
  *
+ *  With no argument and no block given, returns the number of elements:
+ *
+ *    (1..4).count      # => 4
+ *    (1...4).count     # => 3
+ *    ('a'..'d').count  # => 4
+ *    ('a'...'d').count # => 3
+ *    (1..).count       # => Infinity
+ *    (..4).count       # => Infinity
+ *
+ *  With argument +object+, returns the number of +object+ found in +self+,
+ *  which will usually be zero or one:
+ *
+ *    (1..4).count(2)   # => 1
+ *    (1..4).count(5)   # => 0
+ *    (1..4).count('a')  # => 0
+ *
+ *  With a block given, calls the block with each element;
+ *  returns the number of elements for which the block returns a truthy value:
+ *
+ *    (1..4).count {|element| element < 3 } # => 2
+ *
+ *  Related: Range#size.
  */
 static VALUE
 range_count(int argc, VALUE *argv, VALUE range)
