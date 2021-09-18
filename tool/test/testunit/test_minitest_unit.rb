@@ -238,7 +238,7 @@ class TestMiniTestRunner < MetaMetaMetaTestCase
     tc = Class.new(Test::Unit::TestCase)
 
     assert_equal 2, Test::Unit::TestCase.test_suites.size
-    assert_equal [tc, Test::Unit::TestCase], Test::Unit::TestCase.test_suites
+    assert_equal [tc, Test::Unit::TestCase], Test::Unit::TestCase.test_suites.sort_by {|ts| ts.name.to_s}
   end
 
   def assert_filtering name, expected, a = false
@@ -1331,34 +1331,17 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
     end
   end
 
-  def test_test_methods_random
+  def test_test_methods
     @assertion_count = 0
 
     sample_test_case = Class.new Test::Unit::TestCase do
-      def self.test_order; :random; end
       def test_test1; assert "does not matter" end
       def test_test2; assert "does not matter" end
       def test_test3; assert "does not matter" end
-      @test_order = [1, 0, 2]
-      def self.rand(n) @test_order.shift; end
     end
 
-    expected = %w(test_test2 test_test1 test_test3)
-    assert_equal expected, sample_test_case.test_methods
-  end
-
-  def test_test_methods_sorted
-    @assertion_count = 0
-
-    sample_test_case = Class.new Test::Unit::TestCase do
-      def self.test_order; :sorted end
-      def test_test3; assert "does not matter" end
-      def test_test2; assert "does not matter" end
-      def test_test1; assert "does not matter" end
-    end
-
-    expected = %w(test_test1 test_test2 test_test3)
-    assert_equal expected, sample_test_case.test_methods
+    expected = %i(test_test1 test_test2 test_test3)
+    assert_equal expected, sample_test_case.test_methods.sort
   end
 
   def assert_triggered expected, klass = Test::Unit::AssertionFailedError

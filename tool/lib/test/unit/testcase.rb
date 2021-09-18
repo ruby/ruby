@@ -159,7 +159,6 @@ module Test
         start_time = Time.now
 
         result = ""
-        srand(runner.options[:seed])
 
         begin
           @passed = nil
@@ -267,46 +266,11 @@ module Test
       end
 
       def self.test_suites # :nodoc:
-        suites = @@test_suites.keys
-
-        case self.test_order
-        when :random
-          # shuffle test suites based on CRC32 of their names
-          salt = "\n" + rand(1 << 32).to_s
-          crc_tbl = (0..255).map do |i|
-            (0..7).inject(i) {|c,| (c & 1 == 1) ? (0xEDB88320 ^ (c >> 1)) : (c >> 1) }
-          end
-          suites = suites.sort_by do |suite|
-            crc32 = 0xffffffff
-            "#{suite.name}#{salt}".each_byte do |data|
-              crc32 = crc_tbl[(crc32 ^ data) & 0xff] ^ (crc32 >> 8)
-            end
-            crc32 ^ 0xffffffff
-          end
-        when :nosort
-          suites
-        else
-          suites.sort_by { |ts| ts.name.to_s }
-        end
+        @@test_suites.keys
       end
 
       def self.test_methods # :nodoc:
-        methods = public_instance_methods(true).grep(/^test/).map { |m| m.to_s }
-
-        case self.test_order
-        when :parallel
-          max = methods.size
-          ParallelEach.new methods.sort.sort_by { rand max }
-        when :random then
-          max = methods.size
-          methods.sort.sort_by { rand max }
-        when :alpha, :sorted then
-          methods.sort
-        when :nosort
-          methods
-        else
-          raise "Unknown test_order: #{self.test_order.inspect}"
-        end
+        public_instance_methods(true).grep(/^test/)
       end
 
       ##
