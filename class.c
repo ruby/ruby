@@ -358,7 +358,7 @@ RMODULE_UNINITIALIZED(VALUE module)
 }
 
 void
-rb_module_check_initialiable(VALUE mod)
+rb_module_check_initializable(VALUE mod)
 {
     if (!RMODULE_UNINITIALIZED(mod)) {
         rb_raise(rb_eTypeError, "already initialized module");
@@ -376,7 +376,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
         class_init_copy_check(clone, orig);
         break;
       case T_MODULE:
-        rb_module_check_initialiable(clone);
+        rb_module_check_initializable(clone);
         break;
       default:
         break;
