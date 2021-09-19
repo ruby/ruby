@@ -432,6 +432,18 @@ class TestModule < Test::Unit::TestCase
         initialize_copy(Module.new)
       end
     end
+
+    m = Class.new(Module) do
+      def initialize_copy(other)
+        # leave uninitialized
+      end
+    end.new.dup
+    c = Class.new
+    assert_operator(c.include(m), :<, m)
+    cp = Module.instance_method(:initialize_copy)
+    assert_raise(TypeError) do
+      cp.bind_call(m, Module.new)
+    end
   end
 
   def test_dup
