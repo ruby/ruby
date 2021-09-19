@@ -117,9 +117,6 @@ else
       ret
     end
   end
-  module Kernel
-    prepend(DebugSystem)
-  end
 end
 
 class VCS
