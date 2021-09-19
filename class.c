@@ -917,7 +917,8 @@ ensure_includable(VALUE klass, VALUE module)
     rb_class_modify_check(klass);
     Check_Type(module, T_MODULE);
     if (RMODULE_UNINITIALIZED(module)) {
-        rb_raise(rb_eArgError, "uninitialized module");
+        RB_OBJ_WRITE(module, &RCLASS(module)->super, 0);
+        /* no more re-initialization */
     }
     if (!NIL_P(rb_refinement_module_get_refined_class(module))) {
 	rb_raise(rb_eArgError, "refinement module is not allowed");
