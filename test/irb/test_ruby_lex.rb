@@ -109,8 +109,8 @@ module TestIRB
         Row.new(%q(    ]), 4, 4),
         Row.new(%q(  ]), 2, 2),
         Row.new(%q(]), 0, 0),
-        Row.new(%q([<<FOO]), nil, 0),
-        Row.new(%q(hello), nil, 0),
+        Row.new(%q([<<FOO]), 0, 0),
+        Row.new(%q(hello), 0, 0),
         Row.new(%q(FOO), nil, 0),
       ]
 
@@ -465,10 +465,10 @@ module TestIRB
 
     def test_heredoc_with_indent
       input_with_correct_indents = [
-        Row.new(%q(<<~Q), nil, 0, 0),
-        Row.new(%q({), nil, 0, 0),
-        Row.new(%q(  #), nil, 0, 0),
-        Row.new(%q(}), nil, 0, 0),
+        Row.new(%q(<<~Q), 0, 0, 0),
+        Row.new(%q({), 0, 0, 0),
+        Row.new(%q(  #), 2, 0, 0),
+        Row.new(%q(}), 0, 0, 0)
       ]
 
       lines = []
@@ -503,8 +503,8 @@ module TestIRB
       end
       input_with_correct_indents = [
         Row.new(%q(def foo), nil, 2, 1),
-        Row.new(%q(  <<~Q), nil, 2, 1),
-        Row.new(%q(  Qend), nil, 2, 1),
+        Row.new(%q(  <<~Q), 2, 2, 1),
+        Row.new(%q(  Qend), 2, 2, 1),
       ]
 
       lines = []

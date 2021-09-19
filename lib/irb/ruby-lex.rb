@@ -207,7 +207,7 @@ class RubyLex
           last_line = lines[line_index]&.byteslice(0, byte_pointer)
           code += last_line if last_line
           @tokens = self.class.ripper_lex_without_warning(code, context: context)
-          corresponding_token_depth = check_corresponding_token_depth
+          corresponding_token_depth = check_corresponding_token_depth(lines, line_index)
           if corresponding_token_depth
             corresponding_token_depth
           else
@@ -603,7 +603,7 @@ class RubyLex
     depth_difference
   end
 
-  def check_corresponding_token_depth
+  def check_corresponding_token_depth(lines, line_index)
     corresponding_token_depth = nil
     is_first_spaces_of_line = true
     is_first_printable_of_line = true
@@ -611,6 +611,11 @@ class RubyLex
     spaces_at_line_head = 0
     open_brace_on_line = 0
     in_oneliner_def = nil
+
+    if heredoc_scope?
+      return lines[line_index][/^ */].length
+    end
+
     @tokens.each_with_index do |t, index|
       # detecting one-liner method definition
       if in_oneliner_def.nil?
@@ -816,6 +821,13 @@ class RubyLex
       end
     end
     false
+  end
+
+  private
+
+  def heredoc_scope?
+    heredoc_tokens = @tokens.select { |t| [:on_heredoc_beg, :on_heredoc_end].include?(t.event) }
+    heredoc_tokens[-1]&.event == :on_heredoc_beg
   end
 end
 # :startdoc:
