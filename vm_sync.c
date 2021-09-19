@@ -136,7 +136,7 @@ rb_vm_lock_enter_body_check(unsigned int *lev APPEND_LOCATION_ARGS, bool no_barr
     }
     else {
         vm_lock_enter(GET_RACTOR(), vm, false, no_barrier, lev APPEND_LOCATION_PARAMS);
-    }  
+    }
 }
 
 MJIT_FUNC_EXPORTED void
