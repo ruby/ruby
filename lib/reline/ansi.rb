@@ -47,10 +47,15 @@ class Reline::ANSI
       config.add_default_key_binding_by_keymap(:vi_command, key, func)
     end
     {
+      [27, 91, 90] => :completion_journey_up, # S-Tab
+    }.each_pair do |key, func|
+      config.add_default_key_binding_by_keymap(:emacs, key, func)
+      config.add_default_key_binding_by_keymap(:vi_insert, key, func)
+    end
+    {
       # default bindings
       [27, 32] => :em_set_mark,             # M-<space>
       [24, 24] => :em_exchange_mark,        # C-x C-x
-      [27, 91, 90] => :completion_journey_up, # S-Tab
     }.each_pair do |key, func|
       config.add_default_key_binding_by_keymap(:emacs, key, func)
     end
