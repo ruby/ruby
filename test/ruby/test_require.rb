@@ -434,32 +434,6 @@ class TestRequire < Test::Unit::TestCase
     }
   end
 
-  def test_relative_symlink_realpath
-    Dir.mktmpdir {|tmp|
-      Dir.chdir(tmp) {
-        Dir.mkdir "a"
-        File.open("a/a.rb", "w") {|f| f.puts 'require_relative "b"' }
-        File.open("a/b.rb", "w") {|f| f.puts '$t += 1' }
-        Dir.mkdir "b"
-        File.binwrite("c.rb", <<~RUBY)
-          $t = 0
-          $:.unshift(File.expand_path('../b', __FILE__))
-          require "b"
-          require "a"
-          print $t
-        RUBY
-        begin
-          File.symlink("../a/a.rb", "b/a.rb")
-          File.symlink("../a/b.rb", "b/b.rb")
-          result = IO.popen([EnvUtil.rubybin, "c.rb"], &:read)
-          assert_equal("1", result, "bug17885 [ruby-core:104010]")
-        rescue NotImplementedError, Errno::EACCES
-          skip "File.symlink is not implemented"
-        end
-      }
-    }
-  end
-
   def test_frozen_loaded_features
     bug3756 = '[ruby-core:31913]'
     assert_in_out_err(['-e', '$LOADED_FEATURES.freeze; require "ostruct"'], "",
@@ -737,8 +711,8 @@ class TestRequire < Test::Unit::TestCase
       assert_in_out_err([{"RUBYOPT" => nil}, "-", script.path], "#{<<~"begin;"}\n#{<<~"end;"}", %w(:ok), [], bug7530, timeout: 60)
       begin;
         PATH = ARGV.shift
-        THREADS = 30
-        ITERATIONS_PER_THREAD = 300
+        THREADS = 4
+        ITERATIONS_PER_THREAD = 1000
 
         THREADS.times.map {
           Thread.new do
