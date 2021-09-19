@@ -76,6 +76,42 @@ class TestTime < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, "subsecond expected after dot: 00:56:17. ") {
       Time.new("2020-12-25 00:56:17. +0900")
     }
+    assert_raise_with_message(ArgumentError, /year must be 2 or 4\+/) {
+      Time.new("021-12-25 00:00:00.123456 +09:00")
+    }
+    assert_raise_with_message(ArgumentError, /fraction min is.*56\./) {
+      Time.new("2020-12-25 00:56. +0900")
+    }
+    assert_raise_with_message(ArgumentError, /fraction hour is.*00\./) {
+      Time.new("2020-12-25 00. +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits sec.*:017\b/) {
+      Time.new("2020-12-25 00:56:017 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits sec.*:9\b/) {
+      Time.new("2020-12-25 00:56:9 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits min.*:056\b/) {
+      Time.new("2020-12-25 00:056:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits min.*:5\b/) {
+      Time.new("2020-12-25 00:5:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits hour.*\b000\b/) {
+      Time.new("2020-12-25 000:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits hour.*\b0\b/) {
+      Time.new("2020-12-25 0:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits mday.*\b025\b/) {
+      Time.new("2020-12-025 00:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits mon.*\b012\b/) {
+      Time.new("2020-012-25 00:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits mon.*\b1\b/) {
+      Time.new("2020-1-25 00:56:17 +0900")
+    }
   end
 
   def test_time_add()
