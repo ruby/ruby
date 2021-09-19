@@ -2449,12 +2449,18 @@ time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VA
 }
 
 static int
-two_digits(const char *ptr, const char *end, const char **endp)
+two_digits(const char *ptr, const char *end, const char **endp, const char *name)
 {
     ssize_t len = end - ptr;
-    if (len < 2) return -1;
-    if (!ISDIGIT(ptr[0]) || !ISDIGIT(ptr[1])) return -1;
-    if ((len > 2) && ISDIGIT(ptr[2])) return -1;
+    if (len < 2 || (!ISDIGIT(ptr[0]) || !ISDIGIT(ptr[1])) ||
+        ((len > 2) && ISDIGIT(ptr[2]))) {
+        VALUE mesg = rb_sprintf("two digits %s is expected", name);
+        if (ptr[-1] == '-' || ptr[-1] == ':') {
+            rb_str_catf(mesg, " after `%c'", ptr[-1]);
+        }
+        rb_str_catf(mesg, ": %.*s", ((len > 10) ? 10 : (int)(end - ptr)) + 1, ptr - 1);
+        rb_exc_raise(rb_exc_new_str(rb_eArgError, mesg));
+    }
     *endp = ptr + 2;
     return (ptr[0] - '0') * 10 + (ptr[1] - '0');
 }
@@ -2487,22 +2493,34 @@ time_init_parse(rb_execution_context_t *ec, VALUE time, VALUE str, VALUE zone)
     if (NIL_P(year)) {
         rb_raise(rb_eArgError, "can't parse: %+"PRIsVALUE, str);
     }
+    else if (ndigits != 2 && ndigits < 4) {
+        rb_raise(rb_eArgError, "year must be 2 or 4+ digits: %.*s", (int)ndigits, ptr - ndigits);
+    }
     do {
 #define peek_n(c, n) ((ptr + n < end) && ((unsigned char)ptr[n] == (c)))
 #define peek(c) peek_n(c, 0)
 #define peekc_n(n) ((ptr + n < end) ? (int)(unsigned char)ptr[n] : -1)
 #define peekc() peekc_n(0)
+#define expect_two_digits(x) (x = two_digits(ptr + 1, end, &ptr, #x))
         if (!peek('-')) break;
-        if ((mon = two_digits(ptr + 1, end, &ptr)) < 0) break;
+        expect_two_digits(mon);
         if (!peek('-')) break;
-        if ((mday = two_digits(ptr + 1, end, &ptr)) < 0) break;
+        expect_two_digits(mday);
         if (!peek(' ') && !peek('T')) break;
         const char *const time_part = ptr + 1;
-        if ((hour = two_digits(ptr + 1, end, &ptr)) < 0) break;
+        if (!ISDIGIT(peekc_n(1))) break;
+#define nofraction(x) \
+        if (peek('.')) { \
+            rb_raise(rb_eArgError, "fraction %s is not supported: %.*s", #x, \
+                     (int)(ptr + 1 - time_part), time_part); \
+        }
+        expect_two_digits(hour);
+        nofraction(hour);
         if (!peek(':')) break;
-        if ((min = two_digits(ptr + 1, end, &ptr)) < 0) break;
+        expect_two_digits(min);
+        nofraction(min);
         if (!peek(':')) break;
-        if ((sec = two_digits(ptr + 1, end, &ptr)) < 0) break;
+        expect_two_digits(sec);
         if (peek('.')) {
             ptr++;
             for (ndigits = 0; ndigits < 45 && ISDIGIT(peekc_n(ndigits)); ++ndigits);
