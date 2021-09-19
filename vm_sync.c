@@ -127,28 +127,28 @@ vm_lock_leave(rb_vm_t *vm, unsigned int *lev APPEND_LOCATION_ARGS)
     }
 }
 
-MJIT_FUNC_EXPORTED void
-rb_vm_lock_enter_body(unsigned int *lev APPEND_LOCATION_ARGS)
+static void
+rb_vm_lock_enter_body_check(unsigned int *lev APPEND_LOCATION_ARGS, bool no_barrier)
 {
     rb_vm_t *vm = GET_VM();
     if (vm_locked(vm)) {
-        vm_lock_enter(NULL, vm, true, false, lev APPEND_LOCATION_PARAMS);
+        vm_lock_enter(NULL, vm, true, no_barrier, lev APPEND_LOCATION_PARAMS);
     }
     else {
-        vm_lock_enter(GET_RACTOR(), vm, false, false, lev APPEND_LOCATION_PARAMS);
-    }
+        vm_lock_enter(GET_RACTOR(), vm, false, no_barrier, lev APPEND_LOCATION_PARAMS);
+    }  
+}
+
+MJIT_FUNC_EXPORTED void
+rb_vm_lock_enter_body(unsigned int *lev APPEND_LOCATION_ARGS)
+{
+    rb_vm_lock_enter_body_check(lev, false);
 }
 
 MJIT_FUNC_EXPORTED void
 rb_vm_lock_enter_body_nb(unsigned int *lev APPEND_LOCATION_ARGS)
 {
-    rb_vm_t *vm = GET_VM();
-    if (vm_locked(vm)) {
-        vm_lock_enter(NULL, vm, true, true, lev APPEND_LOCATION_PARAMS);
-    }
-    else {
-        vm_lock_enter(GET_RACTOR(), vm, false, true, lev APPEND_LOCATION_PARAMS);
-    }
+    rb_vm_lock_enter_body_check(lev, true);
 }
 
 MJIT_FUNC_EXPORTED void
