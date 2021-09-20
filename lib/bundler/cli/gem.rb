@@ -68,7 +68,7 @@ module Bundler
         :bundler_version  => bundler_dependency_version,
         :git              => use_git,
         :github_username  => github_username.empty? ? "[USERNAME]" : github_username,
-        :required_ruby_version => Gem.ruby_version < Gem::Version.new("2.4.a") ? "2.3.0" : "2.4.0",
+        :required_ruby_version => required_ruby_version,
       }
       ensure_safe_gem_name(name, constant_array)
 
@@ -166,11 +166,11 @@ module Bundler
       config[:linter] = ask_and_set_linter
       case config[:linter]
       when "rubocop"
-        config[:linter_version] = Gem.ruby_version < Gem::Version.new("2.4.a") ? "0.81.0" : "1.7"
+        config[:linter_version] = rubocop_version
         Bundler.ui.info "RuboCop enabled in config"
         templates.merge!("rubocop.yml.tt" => ".rubocop.yml")
       when "standard"
-        config[:linter_version] = Gem.ruby_version < Gem::Version.new("2.4.a") ? "0.2.5" : "1.0"
+        config[:linter_version] = standard_version
         Bundler.ui.info "Standard enabled in config"
         templates.merge!("standard.yml.tt" => ".standard.yml")
       end
@@ -402,6 +402,31 @@ module Bundler
 
     def open_editor(editor, file)
       thor.run(%(#{editor} "#{file}"))
+    end
+
+    def required_ruby_version
+      if Gem.ruby_version < Gem::Version.new("2.4.a") then "2.3.0"
+      elsif Gem.ruby_version < Gem::Version.new("2.5.a") then "2.4.0"
+      elsif Gem.ruby_version < Gem::Version.new("2.6.a") then "2.5.0"
+      else
+        "2.6.0"
+      end
+    end
+
+    def rubocop_version
+      if Gem.ruby_version < Gem::Version.new("2.4.a") then "0.81.0"
+      elsif Gem.ruby_version < Gem::Version.new("2.5.a") then "1.12"
+      else
+        "1.21"
+      end
+    end
+
+    def standard_version
+      if Gem.ruby_version < Gem::Version.new("2.4.a") then "0.2.5"
+      elsif Gem.ruby_version < Gem::Version.new("2.5.a") then "1.0"
+      else
+        "1.3"
+      end
     end
   end
 end
