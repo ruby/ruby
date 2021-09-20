@@ -888,7 +888,6 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  *    (1..4).inject(:+)     # => 10
  *    # Sum, with initial_operand.
  *    (1..4).inject(10, :+) # => 20
-
  *
  *  With a block, passes each operand to the block:
  *
