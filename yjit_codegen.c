@@ -4068,7 +4068,7 @@ gen_opt_getinlinecache(jitstate_t *jit, ctx_t *ctx)
     VALUE const_cache_as_value = jit_get_arg(jit, 1);
     IC ic = (IC)const_cache_as_value;
 
-    // See vm_ic_hit_p().
+    // See vm_ic_hit_p(). The same conditions are checked in yjit_constant_ic_update().
     struct iseq_inline_constant_cache_entry *ice = ic->entry;
     if (!ice || // cache not filled
         ice->ic_serial != ruby_vm_global_constant_state || // cache out of date

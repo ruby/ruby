@@ -597,10 +597,18 @@ rb_yjit_constant_state_changed(void)
     }
 }
 
-// Callback from the opt_setinlinecache instruction in the interpreter
+// Callback from the opt_setinlinecache instruction in the interpreter.
+// Invalidate the block for the matching opt_getinlinecache so it could regenerate code
+// using the new value in the constant cache.
 void
 yjit_constant_ic_update(const rb_iseq_t *iseq, IC ic)
 {
+    // We can't generate code in these situations, so no need to invalidate.
+    // See gen_opt_getinlinecache.
+    if (ic->entry->ic_cref || rb_multi_ractor_p()) {
+        return;
+    }
+
     RB_VM_LOCK_ENTER();
     rb_vm_barrier(); // Stop other ractors since we are going to patch machine code.
     {

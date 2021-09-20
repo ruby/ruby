@@ -394,6 +394,31 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_no_excessive_opt_getinlinecache_invalidation
+    assert_compiles(<<~'RUBY', exits: :any, result: :ok)
+      objects = [Object.new, Object.new]
+
+      objects.each do |o|
+        class << o
+          def foo
+            Object
+          end
+        end
+      end
+
+      9000.times {
+        objects[0].foo
+        objects[1].foo
+      }
+
+      stats = YJIT.runtime_stats
+      return :ok unless stats[:all_stats]
+      return :ok if stats[:invalidation_count] < 10
+
+      :fail
+    RUBY
+  end
+
   def assert_no_exits(script)
     assert_compiles(script)
   end
@@ -437,7 +462,7 @@ class TestYJIT < Test::Unit::TestCase
 
     script = <<~RUBY
       #{"# frozen_string_literal: true" if frozen_string_literal}
-      _test_proc = proc {
+      _test_proc = -> {
         #{test_script}
       }
       #{reset_stats}
