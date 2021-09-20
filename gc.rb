@@ -142,7 +142,7 @@ module GC
   #    The number of pages that can fit into the buffer that holds references to
   #    all pages
   #  [heap_allocatable_pages]
-  #    The total number of pages the applicaiton could allocate without additional GC
+  #    The total number of pages the application could allocate without additional GC
   #  [heap_available_slots]
   #    The total number of slots in all `:heap_allocated_pages`
   #  [heap_live_slots]
