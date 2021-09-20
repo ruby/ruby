@@ -2038,96 +2038,159 @@ range_count(int argc, VALUE *argv, VALUE range)
     }
 }
 
-/*  A Range represents an interval---a set of values with a
- *  beginning and an end. Ranges may be constructed using the
- *  <em>s</em><code>..</code><em>e</em> and
- *  <em>s</em><code>...</code><em>e</em> literals, or with
- *  Range::new. Ranges constructed using <code>..</code>
- *  run from the beginning to the end inclusively. Those created using
- *  <code>...</code> exclude the end value. When used as an iterator,
- *  ranges return each value in the sequence.
+/* A \Range object represents a collection of values
+ * that are between given begin and end values.
  *
- *     (-1..-5).to_a      #=> []
- *     (-5..-1).to_a      #=> [-5, -4, -3, -2, -1]
- *     ('a'..'e').to_a    #=> ["a", "b", "c", "d", "e"]
- *     ('a'...'e').to_a   #=> ["a", "b", "c", "d"]
+ * A range may be created using a literal:
  *
- *  == Beginless/Endless Ranges
+ *   # Ranges that use '..' to include the given end value.
+ *   (1..4).to_a      # => [1, 2, 3, 4]
+ *   ('a'..'d').to_a  # => ["a", "b", "c", "d"]
+ *   # Ranges that use '...' to exclude the given end value.
+ *   (1...4).to_a     # => [1, 2, 3]
+ *   ('a'...'d').to_a # => ["a", "b", "c"]
  *
- *  A "beginless range" and "endless range" represents a semi-infinite
- *  range.  Literal notation for a beginless range is:
+ * A range may be created using method Range.new:
  *
- *     (..1)
- *     # or
- *     (...1)
+ *   # Ranges that by default include the given end value.
+ *   Range.new(1, 4).to_a     # => [1, 2, 3, 4]
+ *   Range.new('a', 'd').to_a # => ["a", "b", "c", "d"]
+ *   # Ranges that use third argument +exclude_end+ to exclude the given end value.
+ *   Range.new(1, 4, true).to_a     # => [1, 2, 3]
+ *   Range.new('a', 'd', true).to_a # => ["a", "b", "c"]
  *
- *  Literal notation for an endless range is:
+ * == Beginless Ranges
  *
- *     (1..)
- *     # or similarly
- *     (1...)
+ * A _beginless_ _range_ has a definite end value, but a +nil+ begin value.
+ * Such a range includes all values up to the end value.
  *
- *  Which is equivalent to
+ *   r = (..4)               # => nil..4
+ *   r.begin                 # => nil
+ *   r.include?(-50)         # => true
+ *   r.include?(4)           # => true
  *
- *     (1..nil)  # or similarly (1...nil)
- *     Range.new(1, nil) # or Range.new(1, nil, true)
+ *   r = (...4)              # => nil...4
+ *   r.include?(4)           # => false
  *
- *  Beginless/endless ranges are useful, for example, for idiomatic
- *  slicing of arrays:
+ *   Range.new(nil, 4)       # => nil..4
+ *   Range.new(nil, 4, true) # => nil...4
  *
- *    [1, 2, 3, 4, 5][...2]   # => [1, 2]
- *    [1, 2, 3, 4, 5][2...]   # => [3, 4, 5]
+ * A beginless range may be used to slice an array:
  *
- *  Some implementation details:
+ *  a = [1, 2, 3, 4]
+ *  r = (..2) # => nil...2
+ *  a[r]      # => [1, 2]
  *
- *  * +begin+ of beginless range and +end+ of endless range are +nil+;
- *  * +each+ of beginless range raises an exception;
- *  * +each+ of endless range enumerates infinite sequence (may be
- *    useful in combination with Enumerable#take_while or similar
- *    methods);
- *  * <code>(1..)</code> and <code>(1...)</code> are not equal,
- *    although technically representing the same sequence.
+ * \Method +each+ for a beginless range raises an exception.
  *
- *  == Custom Objects in Ranges
+ * == Endless Ranges
  *
- *  Ranges can be constructed using any objects that can be compared
- *  using the <code><=></code> operator.
- *  Methods that treat the range as a sequence (#each and methods inherited
- *  from Enumerable) expect the begin object to implement a
- *  <code>succ</code> method to return the next object in sequence.
- *  The #step and #include? methods require the begin
- *  object to implement <code>succ</code> or to be numeric.
+ * An _endless_ _range_ has a definite begin value, but a +nil+ end value.
+ * Such a range includes all values from the begin value.
  *
- *  In the <code>Xs</code> class below both <code><=></code> and
- *  <code>succ</code> are implemented so <code>Xs</code> can be used
- *  to construct ranges. Note that the Comparable module is included
- *  so the <code>==</code> method is defined in terms of <code><=></code>.
+ *   r = (1..)         # => 1..
+ *   r.end             # => nil
+ *   r.include?(50)    # => true
  *
- *     class Xs                # represent a string of 'x's
- *       include Comparable
- *       attr :length
- *       def initialize(n)
- *         @length = n
- *       end
- *       def succ
- *         Xs.new(@length + 1)
- *       end
- *       def <=>(other)
- *         @length <=> other.length
- *       end
- *       def to_s
- *         sprintf "%2d #{inspect}", @length
- *       end
- *       def inspect
- *         'x' * @length
- *       end
+ *   Range.new(1, nil) # => 1..
+ *
+ * The literal for  an endless range may be written with either two dots
+ * or three.
+ * The range has the same elements, either way.
+ * But note that the two are not equal:
+ *
+ *   r0 = (1..)           # => 1..
+ *   r1 = (1...)          # => 1...
+ *   r0.begin == r1.begin # => true
+ *   r0.end == r1.end     # => true
+ *   r0 == r1             # => false
+ *
+ * An endless range may be used to slice an array:
+ *
+ *   a = [1, 2, 3, 4]
+ *   r = (2..) # => 2..
+ *   a[r]      # => [3, 4]
+ *
+ * \Method +each+ for an endless range calls the given block indefinitely:
+ *
+ *   a = []
+ *   r = (1..)
+ *   r.each do |i|
+ *     a.push(i) if i.even?
+ *     break if i > 10
+ *   end
+ *   a # => [2, 4, 6, 8, 10]
+ *
+ * == Ranges and Other Classes
+ *
+ * An object may be put into a range if its class implements
+ * instance method <tt><=></tt>.
+ * Ruby core classes that do so include Array, Complex, File::Stat,
+ * Float, Integer, Kernel, Module, Numeric, Rational, String, Symbol, and Time.
+ *
+ * Example:
+ *
+ *   t0 = Time.now         # => 2021-09-19 09:22:48.4854986 -0500
+ *   t1 = Time.now         # => 2021-09-19 09:22:56.0365079 -0500
+ *   t2 = Time.now         # => 2021-09-19 09:23:08.5263283 -0500
+ *   (t0..t2).include?(t1) # => true
+ *   (t0..t1).include?(t2) # => false
+ *
+ * A range can be iterated over only if its elements
+ * implement instance method +succ+.
+ * Ruby core classes that do so include Integer, String, and Symbol
+ * (but not the other classes mentioned above).
+ *
+ * Iterator methods include:
+ *
+ * - In \Range itself: #each, #step, and #%
+ * - Included from module Enumerable: #each_entry, #each_with_index,
+ *   #each_with_object, #each_slice, #each_cons, and #reverse_each.
+ *
+ * Example:
+ *
+ *   a = []
+ *   (1..4).each {|i| a.push(i) }
+ *   a # => [1, 2, 3, 4]
+ *
+ * == Ranges and User-Defined Classes
+ *
+ * A user-defined class that is to be used in a range
+ * must implement instance <tt><=></tt>;
+ * see {Integer#<=>}[Integer.html#label-method-i-3C-3D-3E].
+ * To make iteration available, it must also implement
+ * instance method +succ+; see Integer#succ.
+ *
+ * The class below implements both <tt><=></tt> and +succ+,
+ * and so can be used both to construct ranges and to iterate over them.
+ * Note that the Comparable module is included
+ * so the <tt>==</tt> method is defined in terms of <tt><=></tt>.
+ *
+ *   # Represent a string of 'X' characters.
+ *   class Xs
+ *     include Comparable
+ *     attr_accessor :length
+ *     def initialize(n)
+ *       @length = n
  *     end
+ *     def succ
+ *       Xs.new(@length + 1)
+ *     end
+ *     def <=>(other)
+ *       @length <=> other.length
+ *     end
+ *     def to_s
+ *       sprintf "%2d #{inspect}", @length
+ *     end
+ *     def inspect
+ *       'X' * @length
+ *     end
+ *   end
  *
- *  An example of using <code>Xs</code> to construct a range:
- *
- *     r = Xs.new(3)..Xs.new(6)   #=> xxx..xxxxxx
- *     r.to_a                     #=> [xxx, xxxx, xxxxx, xxxxxx]
- *     r.member?(Xs.new(5))       #=> true
+ *   r = Xs.new(3)..Xs.new(6) #=> XXX..XXXXXX
+ *   r.to_a                   #=> [XXX, XXXX, XXXXX, XXXXXX]
+ *   r.include?(Xs.new(5))    #=> true
+ *   r.include?(Xs.new(7))    #=> false
  *
  */
 
