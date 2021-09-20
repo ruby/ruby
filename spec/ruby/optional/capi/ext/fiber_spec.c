@@ -44,6 +44,13 @@ VALUE fiber_spec_rb_fiber_new(VALUE self) {
   return rb_fiber_new(fiber_spec_rb_fiber_new_function, Qnil);
 }
 
+#ifdef RUBY_VERSION_IS_3_1
+VALUE fiber_spec_rb_fiber_raise(int argc, VALUE *argv, VALUE self) {
+  VALUE fiber = argv[0];
+  return rb_fiber_raise(fiber, argc-1, argv+1);
+}
+#endif
+
 void Init_fiber_spec(void) {
   VALUE cls = rb_define_class("CApiFiberSpecs", rb_cObject);
   rb_define_method(cls, "rb_fiber_current", fiber_spec_rb_fiber_current, 0);
@@ -51,6 +58,10 @@ void Init_fiber_spec(void) {
   rb_define_method(cls, "rb_fiber_resume", fiber_spec_rb_fiber_resume, 2);
   rb_define_method(cls, "rb_fiber_yield", fiber_spec_rb_fiber_yield, 1);
   rb_define_method(cls, "rb_fiber_new", fiber_spec_rb_fiber_new, 0);
+
+#ifdef RUBY_VERSION_IS_3_1
+  rb_define_method(cls, "rb_fiber_raise", fiber_spec_rb_fiber_raise, -1);
+#endif
 }
 
 #ifdef __cplusplus
