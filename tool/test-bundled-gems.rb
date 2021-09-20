@@ -11,6 +11,8 @@ gem_dir = File.realpath('../../gems', __FILE__)
 exit_code = 0
 ruby = ENV['RUBY'] || RbConfig.ruby
 failed = []
+gem_ruby_stub = File.realpath("../gem_ruby_stub.rb", __FILE__)
+
 File.foreach("#{gem_dir}/bundled_gems") do |line|
   next if /^\s*(?:#|$)/ =~ line
   gem = line.split.first
@@ -26,8 +28,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   end
 
   if gem == "rbs"
-    racc = File.realpath("../../libexec/racc", __FILE__)
-    pid = Process.spawn("#{ruby} -C #{gem_dir}/src/#{gem} -Ilib #{rake} compile")
+    pid = Process.spawn("#{ruby} -C #{gem_dir}/src/#{gem} -Ilib #{rake} --trace -r#{gem_ruby_stub} compile")
     Process.waitpid(pid)
     test_command << " stdlib_test validate"
 
