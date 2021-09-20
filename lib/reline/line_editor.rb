@@ -2409,6 +2409,7 @@ class Reline::LineEditor
     arg -= 1
     ed_prev_history(key, arg: arg) if arg > 0
   end
+  alias_method :previous_history, :ed_prev_history
 
   private def ed_next_history(key, arg: 1)
     if @is_multiline and @line_index < (@buffer_of_lines.size - 1)
@@ -2456,6 +2457,7 @@ class Reline::LineEditor
     arg -= 1
     ed_next_history(key, arg: arg) if arg > 0
   end
+  alias_method :next_history, :ed_next_history
 
   private def ed_newline(key)
     process_insert(force: true)
