@@ -2079,9 +2079,9 @@ range_count(int argc, VALUE *argv, VALUE range)
  *
  *  a = [1, 2, 3, 4]
  *  r = (..2) # => nil...2
- *  a[r]       # => [1, 2]
+ *  a[r]      # => [1, 2]
  *
- * Method +each+ for a beginless range raises an exception.
+ * \Method +each+ for a beginless range raises an exception.
  *
  * == Endless Ranges
  *
@@ -2126,7 +2126,7 @@ range_count(int argc, VALUE *argv, VALUE range)
  * An object may be put into a range if its class implements
  * instance method <tt><=></tt>.
  * Ruby core classes that do so include Array, Complex, File::Stat,
- * Float, Integer, Module, Numeric, Object, Rational, String, Symbol, and Time.
+ * Float, Integer, Kernel, Module, Numeric, Rational, String, Symbol, and Time.
  *
  * Example:
  *
@@ -2136,11 +2136,16 @@ range_count(int argc, VALUE *argv, VALUE range)
  *   (t0..t2).include?(t1) # => true
  *   (t0..t1).include?(t2) # => false
  *
- * A range can be iterated if its elements implement instance method +succ+.
- * Ruby core classes that do so include Integer, String, and Symbol.
- * Iterator methods include Range#step, Range#each, and several others
- * included from module Enumerable: #each_entry, #each_with_index,
- * #each_with_object, #each_slice, #each_cons, and #reverse_each.
+ * A range can be iterated over only if its elements
+ * implement instance method +succ+.
+ * Ruby core classes that do so include Integer, String, and Symbol
+ * (but not the other classes mentioned above).
+ *
+ * Iterator methods include:
+ *
+ * - In \Range itself: #each, #step, and #%
+ * - Included from module Enumerable: #each_entry, #each_with_index,
+ *   #each_with_object, #each_slice, #each_cons, and #reverse_each.
  *
  * Example:
  *
@@ -2157,7 +2162,7 @@ range_count(int argc, VALUE *argv, VALUE range)
  * instance method +succ+; see Integer#succ.
  *
  * The class below implements both <tt><=></tt> and +succ+,
- * and so can be used both to construct and to iterate over ranges.
+ * and so can be used both to construct ranges and to iterate over them.
  * Note that the Comparable module is included
  * so the <tt>==</tt> method is defined in terms of <tt><=></tt>.
  *
@@ -2184,8 +2189,8 @@ range_count(int argc, VALUE *argv, VALUE range)
  *
  *   r = Xs.new(3)..Xs.new(6) #=> XXX..XXXXXX
  *   r.to_a                   #=> [XXX, XXXX, XXXXX, XXXXXX]
- *   r.member?(Xs.new(5))     #=> true
- *   r.member?(Xs.new(7))     #=> false
+ *   r.include?(Xs.new(5))    #=> true
+ *   r.include?(Xs.new(7))    #=> false
  *
  */
 
