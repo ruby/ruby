@@ -49,8 +49,8 @@ describe "C-API Fiber function" do
     end
   end
 
-  describe "rb_fiber_raise" do
-    ruby_version_is '3.1' do
+  ruby_version_is '3.1' do
+    describe "rb_fiber_raise" do
       it "raises an exception on the resumed fiber" do
         fiber = Fiber.new do
           begin
