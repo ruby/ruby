@@ -166,9 +166,9 @@ module GC
   #  [total_freed_objects]
   #    The cumulative number of objects freed since application start
   #  [malloc_increase_bytes]
-  #    Amount of memory allocated on heap for live, young objects
+  #    Amount of memory allocated on the heap for objects. Decreased by any GC
   #  [malloc_increase_bytes_limit]
-  #    When `:malloc_increase_bytes` crosses this limit, minor GC is triggered
+  #    When `:malloc_increase_bytes` crosses this limit, GC is triggered
   #  [minor_gc_count]
   #    The total number of minor garbage collections run since process start
   #  [major_gc_count]
@@ -183,7 +183,7 @@ module GC
   #  [old_objects_limit]
   #    When `:old_objects` crosses this limit, major GC is triggered
   #  [oldmalloc_increase_bytes]
-  #    Amount of memory allocated on heap for live, old objects
+  #    Amount of memory allocated on the heap for objects. Decreased by major GC
   #  [oldmalloc_increase_bytes_limit]
   #    When `:old_malloc_increase_bytes` crosses this limit, major GC is triggered
   #
