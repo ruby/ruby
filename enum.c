@@ -969,7 +969,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  *    # Hash update.
  *    h = [{foo: 0, bar: 1}, {baz: 2}, {bat: 3}].inject(:update)
  *    h # => {:foo=>0, :bar=>1, :baz=>2, :bat=>3}
- *    # Hash appending.
+ *    # Hash conversion to nested arrays.
  *    h = {foo: 0, bar: 1}.inject([], :push)
  *    h # => [[:foo, 0], [:bar, 1]]
  *
