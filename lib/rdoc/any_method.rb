@@ -359,6 +359,6 @@ class RDoc::AnyMethod < RDoc::MethodAttr
         entry =~ /\s#{ignore}\s/
     end
 
-    matching.join "\n"
+    matching.empty? ? nil : matching.join("\n")
   end
 end

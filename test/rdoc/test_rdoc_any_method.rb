@@ -72,6 +72,54 @@ method(a, b) { |c, d| ... }
     assert_nil m1.is_alias_for, 'missing alias'
   end
 
+  def test_call_seq_handles_aliases
+    # see 0ead786
+    @store.path = Dir.tmpdir
+    top_level = @store.add_file 'file.rb'
+    cm = top_level.add_class RDoc::ClassModule, 'Klass'
+
+    method_with_call_seq = RDoc::AnyMethod.new(nil, "method_with_call_seq")
+    method_with_call_seq.call_seq = <<~SEQ
+      method_with_call_seq(a)
+      method_with_call_seq(a, b)
+      alias_to_method(a)
+      alias_to_method(a, b)
+    SEQ
+    cm.add_method(method_with_call_seq)
+
+    alias_to_method = method_with_call_seq.add_alias(
+      RDoc::Alias.new(nil, "method_with_call_seq", "alias_to_method", "comment"),
+      cm
+    )
+
+    assert_equal("method_with_call_seq(a)\nmethod_with_call_seq(a, b)",
+                 method_with_call_seq.call_seq)
+    assert_equal("alias_to_method(a)\nalias_to_method(a, b)",
+                 alias_to_method.call_seq)
+  end
+
+  def test_call_seq_returns_nil_if_alias_is_missing_from_call_seq
+    @store.path = Dir.tmpdir
+    top_level = @store.add_file 'file.rb'
+    cm = top_level.add_class RDoc::ClassModule, 'Klass'
+
+    method_with_call_seq = RDoc::AnyMethod.new(nil, "method_with_call_seq")
+    method_with_call_seq.call_seq = <<~SEQ
+      method_with_call_seq(a)
+      method_with_call_seq(a, b)
+    SEQ
+    cm.add_method(method_with_call_seq)
+
+    alias_to_method = method_with_call_seq.add_alias(
+      RDoc::Alias.new(nil, "method_with_call_seq", "alias_to_method", "comment"),
+      cm
+    )
+
+    assert_equal("method_with_call_seq(a)\nmethod_with_call_seq(a, b)",
+                 method_with_call_seq.call_seq)
+    assert_nil(alias_to_method.call_seq)
+  end
+
   def test_markup_code
     tokens = [
       { :line_no => 0, :char_no => 0, :kind => :on_const, :text => 'CONSTANT' },
