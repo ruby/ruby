@@ -2536,6 +2536,19 @@ label_get_sp(LABEL *lobj)
 }
 
 static int
+iseq_entry_catch_type_check(enum catch_type type)
+{
+    switch (type) {
+        case CATCH_TYPE_RESCUE:
+        case CATCH_TYPE_BREAK:
+        case CATCH_TYPE_NEXT:
+            return TRUE;
+        default:
+            return FALSE;
+    }
+}
+
+static int
 iseq_set_exception_table(rb_iseq_t *iseq)
 {
     const VALUE *tptr, *ptr;
@@ -2566,10 +2579,7 @@ iseq_set_exception_table(rb_iseq_t *iseq)
 		entry->cont = label_get_position(lobj);
 		entry->sp = label_get_sp(lobj);
 
-		/* TODO: Dirty Hack!  Fix me */
-		if (entry->type == CATCH_TYPE_RESCUE ||
-		    entry->type == CATCH_TYPE_BREAK ||
-		    entry->type == CATCH_TYPE_NEXT) {
+		if (iseq_entry_catch_type_check(entry->type)) {
 		    entry->sp--;
 		}
 	    }
@@ -9946,10 +9956,7 @@ iseq_build_from_ary_exception(rb_iseq_t *iseq, struct st_table *labels_table,
         lcont  = register_label(iseq, labels_table, RARRAY_AREF(v, 4));
         sp     = NUM2UINT(RARRAY_AREF(v, 5));
 
-	/* TODO: Dirty Hack!  Fix me */
-	if (type == CATCH_TYPE_RESCUE ||
-	    type == CATCH_TYPE_BREAK ||
-	    type == CATCH_TYPE_NEXT) {
+	if (iseq_entry_catch_type_check(type)) {
 	    ++sp;
 	}
 
