@@ -871,44 +871,137 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
 
 /*
  *  call-seq:
- *     inject(symbol) -> obj
- *     inject(initial_operand, symbol) -> obj
- *     inject {|memo, element| ... } -> obj
- *     inject(initial_operand) {|memo, element| ... } -> obj
+ *    inject(symbol) -> object
+ *    inject(initial_operand, symbol) -> object
+ *    inject {|memo, operand| ... } -> object
+ *    inject(initial_operand) {|memo, operand| ... } -> object
  *
- *  Combines all elements of <i>enum</i> by applying a binary
- *  operation, specified by a block or a symbol that names a
- *  method or operator.
+ *  Returns an object formed from operands via either:
  *
- *  The <i>inject</i> and <i>reduce</i> methods are aliases. There
- *  is no performance benefit to either.
+ *  - A method named by +symbol+.
+ *  - A block to which each operand is passed.
  *
- *  If you specify a block, then for each element in <i>enum</i>
- *  the block is passed an accumulator value (<i>memo</i>) and the element.
- *  If you specify a symbol instead, then each element in the collection
- *  will be passed to the named method of <i>memo</i>.
- *  In either case, the result becomes the new value for <i>memo</i>.
- *  At the end of the iteration, the final value of <i>memo</i> is the
- *  return value for the method.
+ *  With method-name argument +symbol+,
+ *  combines operands using the method:
  *
- *  If you do not explicitly specify an <i>initial</i> value for <i>memo</i>,
- *  then the first element of collection is used as the initial value
- *  of <i>memo</i>.
+ *    # Sum, without initial_operand.
+ *    (1..4).inject(:+)     # => 10
+ *    # Sum, with initial_operand.
+ *    (1..4).inject(10, :+) # => 20
  *
+ *  With a block, passes each operand to the block:
  *
- *     # Sum some numbers
- *     (5..10).reduce(:+)                             #=> 45
- *     # Same using a block and inject
- *     (5..10).inject { |sum, n| sum + n }            #=> 45
- *     # Multiply some numbers
- *     (5..10).reduce(1, :*)                          #=> 151200
- *     # Same using a block
- *     (5..10).inject(1) { |product, n| product * n } #=> 151200
- *     # find the longest word
- *     longest = %w{ cat sheep bear }.inject do |memo, word|
- *        memo.length > word.length ? memo : word
- *     end
- *     longest                                        #=> "sheep"
+ *    # Sum of squares, without initial_operand.
+ *    (1..4).inject {|sum, n| sum + n*n }    # => 30
+ *    # Sum of squares, with initial_operand.
+ *    (1..4).inject(2) {|sum, n| sum + n*n } # => 32
+ *
+ *  <b>Operands</b>
+ *
+ *  If argument +initial_operand+ is not given,
+ *  the operands for +inject+ are simply the elements of +self+.
+ *  Example calls and their operands:
+ *
+ *  - <tt>(1..4).inject(:+)</tt>:: <tt>[1, 2, 3, 4]</tt>.
+ *  - <tt>(1...4).inject(:+)</tt>:: <tt>[1, 2, 3]</tt>.
+ *  - <tt>('a'..'d').inject(:+)</tt>:: <tt>['a', 'b', 'c', 'd']</tt>.
+ *  - <tt>('a'...'d').inject(:+)</tt>:: <tt>['a', 'b', 'c']</tt>.
+ *
+ *  Examples with first operand (which is <tt>self.first</tt>) of various types:
+ *
+ *    # Integer.
+ *    (1..4).inject(:+)                # => 10
+ *    # Float.
+ *    [1.0, 2, 3, 4].inject(:+)        # => 10.0
+ *    # Character.
+ *    ('a'..'d').inject(:+)            # => "abcd"
+ *    # Complex.
+ *    [Complex(1, 2), 3, 4].inject(:+) # => (8+2i)
+ *
+ *  If argument +initial_operand+ is given,
+ *  the operands for +inject+ are that value plus the elements of +self+.
+ *  Example calls their operands:
+ *
+ *  - <tt>(1..4).inject(10, :+)</tt>:: <tt>[10, 1, 2, 3, 4]</tt>.
+ *  - <tt>(1...4).inject(10, :+)</tt>:: <tt>[10, 1, 2, 3]</tt>.
+ *  - <tt>('a'..'d').inject('e', :+)</tt>:: <tt>['e', 'a', 'b', 'c', 'd']</tt>.
+ *  - <tt>('a'...'d').inject('e', :+)</tt>:: <tt>['e', 'a', 'b', 'c']</tt>.
+ *
+ *  Examples with +initial_operand+ of various types:
+ *
+ *    # Integer.
+ *    (1..4).inject(2, :+)               # => 12
+ *    # Float.
+ *    (1..4).inject(2.0, :+)             # => 12.0
+ *    # String.
+ *    ('a'..'d').inject('foo', :+)       # => "fooabcd"
+ *    # Array.
+ *    %w[a b c].inject(['x'], :push)     # => ["x", "a", "b", "c"]
+ *    # Complex.
+ *    (1..4).inject(Complex(2, 2), :+)   # => (12+2i)
+ *
+ *  <b>Combination by Given \Method</b>
+ *
+ *  If the method-name argument +symbol+ is given,
+ *  the operands are combined by that method:
+ *
+ *  - The first and second operands are combined.
+ *  - That result is combined with the third operand.
+ *  - That result is combined with the fourth operand.
+ *  - And so on.
+ *
+ *  The return value from +inject+ is the result of the last combination.
+ *
+ *  This call to +inject+ computes the sum of the operands:
+ *
+ *    (1..4).inject(:+) # => 10
+ *
+ *  Examples with various methods:
+ *
+ *    # Integer addition.
+ *    (1..4).inject(:+)                # => 10
+ *    # Integer multiplication.
+ *    (1..4).inject(:*)                # => 24
+ *    # Character range concatenation.
+ *    ('a'..'d').inject('', :+)        # => "abcd"
+ *    # String array concatenation.
+ *    %w[foo bar baz].inject('', :+)   # => "foobarbaz"
+ *    # Hash update.
+ *    h = [{foo: 0, bar: 1}, {baz: 2}, {bat: 3}].inject(:update)
+ *    h # => {:foo=>0, :bar=>1, :baz=>2, :bat=>3}
+ *    # Hash conversion to nested arrays.
+ *    h = {foo: 0, bar: 1}.inject([], :push)
+ *    h # => [[:foo, 0], [:bar, 1]]
+ *
+ *  <b>Combination by Given Block</b>
+ *
+ *  If a block is given, the operands are passed to the block:
+ *
+ *  - The first call passes the first and second operands.
+ *  - The second call passes the result of the first call,
+ *    along with the third operand.
+ *  - The third call passes the result of the second call,
+ *    along with the fourth operand.
+ *  - And so on.
+ *
+ *  The return value from +inject+ is the return value from the last block call.
+ *
+ *  This call to +inject+ gives a block
+ *  that writes the memo and element, and also sums the elements:
+ *
+ *    (1..4).inject do |memo, element|
+ *      p "Memo: #{memo}; element: #{element}"
+ *      memo + element
+ *    end # => 10
+ *
+ *  Output:
+ *
+ *    "Memo: 1; element: 2"
+ *    "Memo: 3; element: 3"
+ *    "Memo: 6; element: 4"
+ *
+ *  Enumerable#reduce is an alias for Enumerable#inject.
+ *
  */
 static VALUE
 enum_inject(int argc, VALUE *argv, VALUE obj)
