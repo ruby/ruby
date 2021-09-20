@@ -3132,7 +3132,7 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
     // Stack overflow check
     // #define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin)
     // REG_CFP <= REG_SP + 4 * sizeof(VALUE) + sizeof(rb_control_frame_t)
-    lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * 4 + sizeof(rb_control_frame_t)));
+    lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * 4 + 2 * sizeof(rb_control_frame_t)));
     cmp(cb, REG_CFP, REG0);
     jle_ptr(cb, COUNTED_EXIT(side_exit, send_se_cf_overflow));
 
@@ -3428,9 +3428,10 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     }
 
     // Stack overflow check
+    // Note that vm_push_frame checks it against a decremented cfp, hence the multiply by 2.
     // #define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin)
     ADD_COMMENT(cb, "stack overflow check");
-    lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * (num_locals + iseq->body->stack_max) + sizeof(rb_control_frame_t)));
+    lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * (num_locals + iseq->body->stack_max) + 2 * sizeof(rb_control_frame_t)));
     cmp(cb, REG_CFP, REG0);
     jle_ptr(cb, COUNTED_EXIT(side_exit, send_se_cf_overflow));
 
