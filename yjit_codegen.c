@@ -70,6 +70,16 @@ jit_print_loc(jitstate_t* jit, const char* msg)
     fprintf(stderr, "%s %.*s:%u\n", msg, (int)len, ptr, rb_iseq_line_no(jit->iseq, jit->insn_idx));
 }
 
+// dump an object for debugging purposes
+RBIMPL_ATTR_MAYBE_UNUSED()
+static void
+jit_obj_info_dump(codeblock_t *cb, x86opnd_t opnd) {
+    push_regs(cb);
+    mov(cb, C_ARG_REGS[0], opnd);
+    call_ptr(cb, REG0, (void *)rb_obj_info_dump);
+    pop_regs(cb);
+}
+
 // Get the current instruction's opcode
 static int
 jit_get_opcode(jitstate_t* jit)
