@@ -5,6 +5,12 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+// Size of code pages to allocate
+#define CODE_PAGE_SIZE 16 * 1024
+
+// How many code pages to allocate at once
+#define PAGES_PER_ALLOC 512
+
 // Maximum number of labels to link
 #define MAX_LABELS 32
 
@@ -263,7 +269,9 @@ void free_code_page(code_page_t* code_page);
 void cb_init(codeblock_t* cb, uint8_t* mem_block, uint32_t mem_size);
 void cb_align_pos(codeblock_t* cb, uint32_t multiple);
 void cb_set_pos(codeblock_t* cb, uint32_t pos);
+void cb_set_write_ptr(codeblock_t* cb, uint8_t* code_ptr);
 uint8_t* cb_get_ptr(codeblock_t* cb, uint32_t index);
+uint8_t* cb_get_write_ptr(codeblock_t* cb);
 void cb_write_byte(codeblock_t* cb, uint8_t byte);
 void cb_write_bytes(codeblock_t* cb, uint32_t num_bytes, ...);
 void cb_write_int(codeblock_t* cb, uint64_t val, uint32_t num_bits);

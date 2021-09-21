@@ -971,6 +971,10 @@ VALUE rb_yjit_code_page_alloc(void)
 {
     code_page_t* code_page = alloc_code_page();
     VALUE cp_obj = TypedData_Wrap_Struct(0, &yjit_code_page_type, code_page);
+
+    // Write a pointer to the wrapper object at the beginning of the code page
+    *((VALUE*)code_page->mem_block) = cp_obj;
+
     return cp_obj;
 }
 
@@ -980,6 +984,44 @@ code_page_t *rb_yjit_code_page_unwrap(VALUE cp_obj)
     code_page_t * code_page;
     TypedData_Get_Struct(cp_obj, code_page_t, &yjit_code_page_type, code_page);
     return code_page;
+}
+
+// Get the code page wrapper object for a code pointer
+VALUE rb_yjit_code_page_from_ptr(uint8_t* code_ptr)
+{
+    VALUE* page_start = (VALUE*)((intptr_t)code_ptr & ~(CODE_PAGE_SIZE - 1));
+    VALUE wrapper = *page_start;
+    return wrapper;
+}
+
+// Get the inline code block corresponding to a code pointer
+void rb_yjit_get_cb(codeblock_t* cb, uint8_t* code_ptr)
+{
+    VALUE page_wrapper = rb_yjit_code_page_from_ptr(code_ptr);
+    code_page_t *code_page = rb_yjit_code_page_unwrap(page_wrapper);
+
+    // A pointer to the page wrapper object is written at the start of the code page
+    uint8_t* mem_block = code_page->mem_block + sizeof(VALUE);
+    uint32_t mem_size = (code_page->page_size/2) - sizeof(VALUE);
+    RUBY_ASSERT(mem_block);
+
+    // Map the code block to this memory region
+    cb_init(cb, mem_block, mem_size);
+}
+
+// Get the outlined code block corresponding to a code pointer
+void rb_yjit_get_ocb(codeblock_t* cb, uint8_t* code_ptr)
+{
+    VALUE page_wrapper = rb_yjit_code_page_from_ptr(code_ptr);
+    code_page_t *code_page = rb_yjit_code_page_unwrap(page_wrapper);
+
+    // A pointer to the page wrapper object is written at the start of the code page
+    uint8_t* mem_block = code_page->mem_block + (code_page->page_size/2);
+    uint32_t mem_size = code_page->page_size/2;
+    RUBY_ASSERT(mem_block);
+
+    // Map the code block to this memory region
+    cb_init(cb, mem_block, mem_size);
 }
 
 bool

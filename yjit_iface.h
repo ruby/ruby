@@ -126,4 +126,9 @@ const VALUE *rb_yjit_count_side_exit_op(const VALUE *exit_pc);
 void yjit_unlink_method_lookup_dependency(block_t *block);
 void yjit_block_assumptions_free(block_t *block);
 
+VALUE rb_yjit_code_page_alloc(void);
+code_page_t *rb_yjit_code_page_unwrap(VALUE cp_obj);
+void rb_yjit_get_cb(codeblock_t* cb, uint8_t* code_ptr);
+void rb_yjit_get_ocb(codeblock_t* cb, uint8_t* code_ptr);
+
 #endif // #ifndef YJIT_IFACE_H

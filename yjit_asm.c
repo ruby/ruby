@@ -219,20 +219,12 @@ uint8_t* alloc_exec_mem(uint32_t mem_size)
 #endif
 }
 
-// Size of code pages to allocate
-#define CODE_PAGE_SIZE 16 * 1024
-
-// How many code pages to allocate at once
-#define PAGES_PER_ALLOC 512
-
 // Head of the list of free code pages
 code_page_t *freelist = NULL;
 
 // Allocate a single code page from a pool of free pages
 code_page_t* alloc_code_page()
 {
-    fprintf(stderr, "allocating code page\n");
-
     // If the free list is empty
     if (!freelist) {
         // Allocate many pages at once
@@ -242,6 +234,7 @@ code_page_t* alloc_code_page()
         for (int i = PAGES_PER_ALLOC - 1; i >= 0; --i) {
             code_page_t* code_page = malloc(sizeof(code_page_t));
             code_page->mem_block = code_chunk + i * CODE_PAGE_SIZE;
+            assert ((intptr_t)code_page->mem_block % CODE_PAGE_SIZE == 0);
             code_page->page_size = CODE_PAGE_SIZE;
             code_page->_next = freelist;
             freelist = code_page;
@@ -264,6 +257,7 @@ void free_code_page(code_page_t* code_page)
 // Initialize a code block object
 void cb_init(codeblock_t* cb, uint8_t* mem_block, uint32_t mem_size)
 {
+    assert (mem_block);
     cb->mem_block = mem_block;
     cb->mem_size = mem_size;
     cb->write_pos = 0;
@@ -290,11 +284,25 @@ void cb_set_pos(codeblock_t* cb, uint32_t pos)
     cb->write_pos = pos;
 }
 
+// Set the current write position from a pointer
+void cb_set_write_ptr(codeblock_t* cb, uint8_t* code_ptr)
+{
+    intptr_t pos = code_ptr - cb->mem_block;
+    assert (pos < cb->mem_size);
+    cb->write_pos = (uint32_t)pos;
+}
+
 // Get a direct pointer into the executable memory block
 uint8_t* cb_get_ptr(codeblock_t* cb, uint32_t index)
 {
     assert (index < cb->mem_size);
     return &cb->mem_block[index];
+}
+
+// Get a direct pointer to the current write position
+uint8_t* cb_get_write_ptr(codeblock_t* cb)
+{
+    return cb_get_ptr(cb, cb->write_pos);
 }
 
 // Write a byte at the current position
