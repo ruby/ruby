@@ -263,6 +263,42 @@ typedef struct yjit_block_version
 
 } block_t;
 
+// Code generation state
+typedef struct JITState
+{
+    // Inline and outlined code blocks we are
+    // currently generating code into
+    codeblock_t* cb;
+    codeblock_t* ocb;
+
+    // Block version being compiled
+    block_t *block;
+
+    // Instruction sequence this is associated with
+    const rb_iseq_t *iseq;
+
+    // Index of the current instruction being compiled
+    uint32_t insn_idx;
+
+    // Opcode for the instruction being compiled
+    int opcode;
+
+    // PC of the instruction being compiled
+    VALUE *pc;
+
+    // Side exit to the instruction being compiled. See :side-exit:.
+    uint8_t *side_exit_for_pc;
+
+    // Execution context when compilation started
+    // This allows us to peek at run-time values
+    rb_execution_context_t *ec;
+
+    // Whether we need to record the code address at
+    // the end of this bytecode instruction for global invalidation
+    bool record_boundary_patch_point;
+
+} jitstate_t;
+
 // Context object methods
 x86opnd_t ctx_sp_opnd(ctx_t* ctx, int32_t offset_bytes);
 x86opnd_t ctx_stack_push_mapping(ctx_t* ctx, temp_type_mapping_t mapping);
@@ -290,7 +326,7 @@ void yjit_free_block(block_t *block);
 rb_yjit_block_array_t yjit_get_version_array(const rb_iseq_t *iseq, unsigned idx);
 
 void gen_branch(
-    block_t* block,
+    jitstate_t* jit,
     const ctx_t* src_ctx,
     blockid_t target0,
     const ctx_t* ctx0,
@@ -300,14 +336,13 @@ void gen_branch(
 );
 
 void gen_direct_jump(
-    block_t* block,
+    jitstate_t* jit,
     const ctx_t* ctx,
     blockid_t target0
 );
 
 void defer_compilation(
-    block_t* block,
-    uint32_t insn_idx,
+    jitstate_t* jit,
     ctx_t* cur_ctx
 );
 
