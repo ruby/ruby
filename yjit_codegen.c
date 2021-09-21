@@ -596,7 +596,7 @@ jit_jump_to_next_insn(jitstate_t *jit, const ctx_t *current_context)
 
     // Generate the jump instruction
     gen_direct_jump(
-        jit->block,
+        jit,
         &reset_depth,
         jump_block
     );
@@ -630,6 +630,8 @@ yjit_gen_block(block_t *block, rb_execution_context_t *ec)
 
     // Initialize a JIT state object
     jitstate_t jit = {
+        .cb = cb,
+        .ocb = ocb,
         .block = block,
         .iseq = iseq,
         .ec = ec
@@ -1477,7 +1479,7 @@ jit_chain_guard(enum jcc_kinds jcc, jitstate_t *jit, const ctx_t *ctx, uint8_t d
         deeper.chain_depth++;
 
         gen_branch(
-            jit->block,
+            jit,
             ctx,
             (blockid_t) { jit->iseq, jit->insn_idx },
             &deeper,
@@ -1684,7 +1686,7 @@ gen_getinstancevariable(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
 {
     // Defer compilation so we can specialize on a runtime `self`
     if (!jit_at_current_insn(jit)) {
-        defer_compilation(jit->block, jit->insn_idx, ctx);
+        defer_compilation(jit, ctx);
         return YJIT_END_BLOCK;
     }
 
@@ -1908,7 +1910,7 @@ gen_fixnum_cmp(jitstate_t* jit, ctx_t* ctx, cmov_fn cmov_op)
 {
     // Defer compilation so we can specialize base on a runtime receiver
     if (!jit_at_current_insn(jit)) {
-        defer_compilation(jit->block, jit->insn_idx, ctx);
+        defer_compilation(jit, ctx);
         return YJIT_END_BLOCK;
     }
 
@@ -2054,7 +2056,7 @@ gen_opt_eq(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
 {
     // Defer compilation so we can specialize base on a runtime receiver
     if (!jit_at_current_insn(jit)) {
-        defer_compilation(jit->block, jit->insn_idx, ctx);
+        defer_compilation(jit, ctx);
         return YJIT_END_BLOCK;
     }
 
@@ -2094,7 +2096,7 @@ gen_opt_aref(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
 
     // Defer compilation so we can specialize base on a runtime receiver
     if (!jit_at_current_insn(jit)) {
-        defer_compilation(jit->block, jit->insn_idx, ctx);
+        defer_compilation(jit, ctx);
         return YJIT_END_BLOCK;
     }
 
@@ -2214,7 +2216,7 @@ gen_opt_aset(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
 {
     // Defer compilation so we can specialize on a runtime `self`
     if (!jit_at_current_insn(jit)) {
-        defer_compilation(jit->block, jit->insn_idx, ctx);
+        defer_compilation(jit, ctx);
         return YJIT_END_BLOCK;
     }
 
@@ -2293,7 +2295,7 @@ gen_opt_and(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
 {
     // Defer compilation so we can specialize on a runtime `self`
     if (!jit_at_current_insn(jit)) {
-        defer_compilation(jit->block, jit->insn_idx, ctx);
+        defer_compilation(jit, ctx);
         return YJIT_END_BLOCK;
     }
 
@@ -2336,7 +2338,7 @@ gen_opt_or(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
 {
     // Defer compilation so we can specialize on a runtime `self`
     if (!jit_at_current_insn(jit)) {
-        defer_compilation(jit->block, jit->insn_idx, ctx);
+        defer_compilation(jit, ctx);
         return YJIT_END_BLOCK;
     }
 
@@ -2379,7 +2381,7 @@ gen_opt_minus(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
 {
     // Defer compilation so we can specialize on a runtime `self`
     if (!jit_at_current_insn(jit)) {
-        defer_compilation(jit->block, jit->insn_idx, ctx);
+        defer_compilation(jit, ctx);
         return YJIT_END_BLOCK;
     }
 
@@ -2424,7 +2426,7 @@ gen_opt_plus(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
 {
     // Defer compilation so we can specialize on a runtime `self`
     if (!jit_at_current_insn(jit)) {
-        defer_compilation(jit->block, jit->insn_idx, ctx);
+        defer_compilation(jit, ctx);
         return YJIT_END_BLOCK;
     }
 
@@ -2649,7 +2651,7 @@ gen_branchif(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
 
     // Generate the branch instructions
     gen_branch(
-        jit->block,
+        jit,
         ctx,
         jump_block,
         ctx,
@@ -2706,7 +2708,7 @@ gen_branchunless(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
 
     // Generate the branch instructions
     gen_branch(
-        jit->block,
+        jit,
         ctx,
         jump_block,
         ctx,
@@ -2762,7 +2764,7 @@ gen_branchnil(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
 
     // Generate the branch instructions
     gen_branch(
-        jit->block,
+        jit,
         ctx,
         jump_block,
         ctx,
@@ -2791,7 +2793,7 @@ gen_jump(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
 
     // Generate the jump instruction
     gen_direct_jump(
-        jit->block,
+        jit,
         ctx,
         jump_block
     );
@@ -3516,7 +3518,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
 
     // Write the JIT return address on the callee frame
     gen_branch(
-        jit->block,
+        jit,
         ctx,
         return_block,
         &return_ctx,
@@ -3533,7 +3535,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
 
     // Directly jump to the entry point of the callee
     gen_direct_jump(
-        jit->block,
+        jit,
         &callee_ctx,
         (blockid_t){ iseq, start_pc_offset }
     );
@@ -3577,7 +3579,7 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
 
     // Defer compilation so we can specialize on class of receiver
     if (!jit_at_current_insn(jit)) {
-        defer_compilation(jit->block, jit->insn_idx, ctx);
+        defer_compilation(jit, ctx);
         return YJIT_END_BLOCK;
     }
 
@@ -3710,7 +3712,7 @@ gen_invokesuper(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
 
     // Defer compilation so we can specialize on class of receiver
     if (!jit_at_current_insn(jit)) {
-        defer_compilation(jit->block, jit->insn_idx, ctx);
+        defer_compilation(jit, ctx);
         return YJIT_END_BLOCK;
     }
 
@@ -4068,7 +4070,7 @@ gen_opt_getinlinecache(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
     // Jump over the code for filling the cache
     uint32_t jump_idx = jit_next_insn_idx(jit) + (int32_t)jump_offset;
     gen_direct_jump(
-        jit->block,
+        jit,
         ctx,
         (blockid_t){ .iseq = jit->iseq, .idx = jump_idx }
     );
