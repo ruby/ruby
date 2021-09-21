@@ -47,7 +47,7 @@ typedef enum codegen_status {
 } codegen_status_t;
 
 // Code generation function signature
-typedef codegen_status_t (*codegen_fn)(jitstate_t* jit, ctx_t* ctx);
+typedef codegen_status_t (*codegen_fn)(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb);
 
 uint8_t* yjit_entry_prologue(const rb_iseq_t* iseq);
 
