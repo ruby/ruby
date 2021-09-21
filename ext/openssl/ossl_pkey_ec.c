@@ -248,6 +248,9 @@ ossl_ec_key_get_group(VALUE self)
 static VALUE
 ossl_ec_key_set_group(VALUE self, VALUE group_v)
 {
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+    rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
+#else
     EC_KEY *ec;
     EC_GROUP *group;
 
@@ -258,6 +261,7 @@ ossl_ec_key_set_group(VALUE self, VALUE group_v)
         ossl_raise(eECError, "EC_KEY_set_group");
 
     return group_v;
+#endif
 }
 
 /*
@@ -286,6 +290,9 @@ static VALUE ossl_ec_key_get_private_key(VALUE self)
  */
 static VALUE ossl_ec_key_set_private_key(VALUE self, VALUE private_key)
 {
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+    rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
+#else
     EC_KEY *ec;
     BIGNUM *bn = NULL;
 
@@ -305,6 +312,7 @@ static VALUE ossl_ec_key_set_private_key(VALUE self, VALUE private_key)
     }
 
     return private_key;
+#endif
 }
 
 /*
@@ -333,6 +341,9 @@ static VALUE ossl_ec_key_get_public_key(VALUE self)
  */
 static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
 {
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+    rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
+#else
     EC_KEY *ec;
     EC_POINT *point = NULL;
 
@@ -352,6 +363,7 @@ static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
     }
 
     return public_key;
+#endif
 }
 
 /*

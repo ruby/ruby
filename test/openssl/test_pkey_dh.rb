@@ -107,13 +107,32 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   end
 
   def test_dup
-    dh = Fixtures.pkey("dh1024")
-    dh2 = dh.dup
-    assert_equal dh.to_der, dh2.to_der # params
-    assert_equal_params dh, dh2 # keys
-    dh2.set_pqg(dh2.p + 1, nil, dh2.g)
-    assert_not_equal dh2.p, dh.p
-    assert_equal dh2.g, dh.g
+    # Parameters only
+    dh1 = Fixtures.pkey("dh1024")
+    dh2 = dh1.dup
+    assert_equal dh1.to_der, dh2.to_der
+    assert_not_equal nil, dh1.p
+    assert_not_equal nil, dh1.g
+    assert_equal [dh1.p, dh1.g], [dh2.p, dh2.g]
+    assert_equal nil, dh1.pub_key
+    assert_equal nil, dh1.priv_key
+    assert_equal [dh1.pub_key, dh1.priv_key], [dh2.pub_key, dh2.priv_key]
+
+    # PKey is immutable in OpenSSL >= 3.0
+    if !openssl?(3, 0, 0)
+      dh2.set_pqg(dh2.p + 1, nil, dh2.g)
+      assert_not_equal dh2.p, dh1.p
+    end
+
+    # With a key pair
+    dh3 = OpenSSL::PKey.generate_key(Fixtures.pkey("dh1024"))
+    dh4 = dh3.dup
+    assert_equal dh3.to_der, dh4.to_der
+    assert_equal dh1.to_der, dh4.to_der # encodes parameters only
+    assert_equal [dh1.p, dh1.g], [dh4.p, dh4.g]
+    assert_not_equal nil, dh3.pub_key
+    assert_not_equal nil, dh3.priv_key
+    assert_equal [dh3.pub_key, dh3.priv_key], [dh4.pub_key, dh4.priv_key]
   end
 
   def test_marshal
@@ -124,11 +143,6 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   end
 
   private
-
-  def assert_equal_params(dh1, dh2)
-    assert_equal(dh1.g, dh2.g)
-    assert_equal(dh1.p, dh2.p)
-  end
 
   def assert_no_key(dh)
     assert_equal(false, dh.public?)

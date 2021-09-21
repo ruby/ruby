@@ -116,6 +116,7 @@ static VALUE ossl_##_keytype##_get_##_name(VALUE self)			\
 	OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, a2,			\
 		_type##_get0_##_group(obj, NULL, &bn))
 
+#if !OSSL_OPENSSL_PREREQ(3, 0, 0)
 #define OSSL_PKEY_BN_DEF_SETTER3(_keytype, _type, _group, a1, a2, a3)	\
 /*									\
  *  call-seq:								\
@@ -173,6 +174,21 @@ static VALUE ossl_##_keytype##_set_##_group(VALUE self, VALUE v1, VALUE v2) \
 	}								\
 	return self;							\
 }
+#else
+#define OSSL_PKEY_BN_DEF_SETTER3(_keytype, _type, _group, a1, a2, a3)	\
+static VALUE ossl_##_keytype##_set_##_group(VALUE self, VALUE v1, VALUE v2, VALUE v3) \
+{									\
+        rb_raise(ePKeyError,						\
+                 #_keytype"#set_"#_group"= is incompatible with OpenSSL 3.0"); \
+}
+
+#define OSSL_PKEY_BN_DEF_SETTER2(_keytype, _type, _group, a1, a2)	\
+static VALUE ossl_##_keytype##_set_##_group(VALUE self, VALUE v1, VALUE v2) \
+{									\
+        rb_raise(ePKeyError,						\
+                 #_keytype"#set_"#_group"= is incompatible with OpenSSL 3.0"); \
+}
+#endif
 
 #define OSSL_PKEY_BN_DEF3(_keytype, _type, _group, a1, a2, a3)		\
 	OSSL_PKEY_BN_DEF_GETTER3(_keytype, _type, _group, a1, a2, a3)	\
