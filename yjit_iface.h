@@ -82,6 +82,8 @@ YJIT_DECLARE_COUNTERS(
     oaref_argc_not_one,
     oaref_arg_not_fixnum,
 
+    opt_getinlinecache_miss,
+
     binding_allocations,
     binding_set,
 

@@ -159,6 +159,7 @@ module YJIT
       print_counters(stats, prefix: 'setivar_', prompt: 'setinstancevariable exit reasons:')
       print_counters(stats, prefix: 'oaref_', prompt: 'opt_aref exit reasons: ')
       print_counters(stats, prefix: 'expandarray_', prompt: 'expandarray exit reasons: ')
+      print_counters(stats, prefix: 'opt_getinlinecache_', prompt: 'opt_getinlinecache exit reasons: ')
 
       side_exits = total_exit_count(stats)
       total_exits = side_exits + stats[:leave_interp_return]
