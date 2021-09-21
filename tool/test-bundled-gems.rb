@@ -73,7 +73,6 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   if gem == "rbs"
     run(ruby, "-C#{gem_dir}/src/#{gem}/ext/rbs_extension", "-Ilib", "extconf.rb")
     run("make", "-C#{gem_dir}/src/#{gem}/ext/rbs_extension", "extout=#{extout}")
-    run("ls", "#{gem_dir}/src/#{gem}/ext/rbs_extension")
 
     ENV["RUBYLIB"] = [
       "#{gem_dir}/src/rbs/lib",
