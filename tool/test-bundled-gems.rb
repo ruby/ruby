@@ -75,7 +75,13 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     run("make", "-C#{gem_dir}/src/#{gem}/ext/rbs_extension", "extout=#{extout}")
     run("ls", "#{gem_dir}/src/#{gem}/ext/rbs_extension")
 
-    test_command = "#{ruby} -C #{gem_dir}/src/#{gem} -Ilib -Iext/rbs_extension -I#{root}/tool #{rake} test stdlib_test validate"
+    ENV["RUBYLIB"] = [
+      "#{gem_dir}/src/rbs/lib",
+      "#{gem_dir}/src/rbs/ext/rbs_extension",
+      "#{root}/tool",
+      ENV.fetch("RUBYLIB", nil)
+    ].compact.join(":")
+    test_command = "#{ruby} -C #{gem_dir}/src/#{gem} #{rake} test stdlib_test validate"
 
     first_timeout *= 3
   end
