@@ -21,7 +21,7 @@
 #
 # * alphanumeric
 # * base64
-# * choose
+# * random_string
 # * gen_random
 # * hex
 # * rand
@@ -63,6 +63,11 @@
 #
 #   SecureRandom.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
 #   SecureRandom.uuid #=> "bad85eb9-0713-4da7-8d36-07a8e4b00eab"
+#
+# Generate random strings from a specified character set:
+#
+#   SecureRandom.random_string('abc'.chars, 10) #=> "accbbaacaa"
+#   SecureRandom.random_string([*'A'..'Z', *'0'..'9'], 10) #=> "FS82MPO3TG"
 #
 
 module SecureRandom
@@ -244,7 +249,7 @@ module Random::Formatter
     self.bytes(n)
   end
 
-  # SecureRandom.choose generates a string that randomly draws from a
+  # SecureRandom.random_string generates a string that randomly draws from a
   # source array of characters.
   #
   # The argument _source_ specifies the array of characters from which
@@ -256,12 +261,12 @@ module Random::Formatter
   #
   #   require 'securerandom'
   #
-  #   SecureRandom.choose([*'l'..'r'], 16) #=> "lmrqpoonmmlqlron"
-  #   SecureRandom.choose([*'0'..'9'], 5)  #=> "27309"
+  #   SecureRandom.random_string([*'l'..'r'], 16) #=> "lmrqpoonmmlqlron"
+  #   SecureRandom.random_string([*'0'..'9'], 5)  #=> "27309"
   #
   # If a secure random number generator is not available,
   # +NotImplementedError+ is raised.
-  private def choose(source, n)
+  def random_string(source, n)
     size = source.size
     m = 1
     limit = size
@@ -290,6 +295,8 @@ module Random::Formatter
     result
   end
 
+  alias random_string choose
+
   ALPHANUMERIC = [*'A'..'Z', *'a'..'z', *'0'..'9']
   # SecureRandom.alphanumeric generates a random alphanumeric string.
   #
@@ -310,7 +317,7 @@ module Random::Formatter
   # +NotImplementedError+ is raised.
   def alphanumeric(n=nil)
     n = 16 if n.nil?
-    choose(ALPHANUMERIC, n)
+    random_string(ALPHANUMERIC, n)
   end
 end
 
