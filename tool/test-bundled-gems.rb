@@ -73,6 +73,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   if gem == "rbs"
     run(ruby, "-C#{gem_dir}/src/#{gem}/ext/rbs_extension", "-Ilib", "extconf.rb")
     run("make", "-C#{gem_dir}/src/#{gem}/ext/rbs_extension", "extout=#{extout}")
+    run("ls", "#{gem_dir}/src/#{gem}/ext/rbs_extension")
 
     test_command = "#{ruby} -C #{gem_dir}/src/#{gem} -Ilib -Iext/rbs_extension -I#{root}/tool #{rake} test stdlib_test validate"
 
