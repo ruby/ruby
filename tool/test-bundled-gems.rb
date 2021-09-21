@@ -1,11 +1,39 @@
 require 'rbconfig'
 require 'timeout'
+require "fileutils"
+require "shellwords"
+
+def run(*command, wait: true, raise_on_error: true, new_pgroup: false)
+  if command.size == 1
+    command = command[0]
+  else
+    command = Shellwords.join(command)
+  end
+
+  puts(">> #{command}")
+  pid = Process.spawn(
+    command,
+    "#{/mingw|mswin/ =~ RUBY_PLATFORM ? 'new_' : ''}pgroup": new_pgroup
+  )
+
+  if wait
+    pid, status = Process.waitpid2(pid)
+    if raise_on_error
+      raise "Command failed: #{command}" unless status.success?
+    else
+      status
+    end
+  else
+    pid
+  end
+end
 
 github_actions = ENV["GITHUB_ACTIONS"] == "true"
 
 allowed_failures = ENV['TEST_BUNDLED_GEMS_ALLOW_FAILURES'] || ''
 allowed_failures = allowed_failures.split(',').reject(&:empty?)
 
+root = File.realpath("../../", __FILE__)
 rake = File.realpath("../../.bundle/bin/rake", __FILE__)
 gem_dir = File.realpath('../../gems', __FILE__)
 exit_code = 0
@@ -23,14 +51,21 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   first_timeout = 600 # 10min
 
   if gem == "typeprof"
-    raise "need to run rbs test suite before typeprof" unless File.readable?("#{gem_dir}/src/rbs/lib/rbs/parser.rb")
-    ENV["RUBYLIB"] = ["#{gem_dir}/src/rbs/lib", ENV.fetch("RUBYLIB", nil)].compact.join(":")
+    if Dir.glob("#{gem_dir}/src/rbs/ext/rbs_extension/rbs_extension.{bundle,so,dll}").empty?
+      raise "need to run rbs test suite before typeprof"
+    end
+    ENV["RUBYLIB"] = [
+      "#{gem_dir}/src/rbs/lib",
+      "#{gem_dir}/src/rbs/ext/rbs_extension",
+      ENV.fetch("RUBYLIB", nil)
+    ].compact.join(":")
   end
 
   if gem == "rbs"
-    pid = Process.spawn("#{ruby} -C #{gem_dir}/src/#{gem} -Ilib #{rake} --trace -r#{gem_ruby_stub} compile")
-    Process.waitpid(pid)
-    test_command << " stdlib_test validate"
+    run(ruby, "-C#{gem_dir}/src/#{gem}/ext/rbs_extension", "-Ilib", "extconf.rb")
+    run("make", "-C#{gem_dir}/src/#{gem}/ext/rbs_extension", "extout=#{root}/.ext")
+
+    test_command = "#{ruby} -C #{gem_dir}/src/#{gem} -Ilib -Iext/rbs_extension -I#{root}/tool #{rake} test stdlib_test validate"
 
     first_timeout *= 3
   end
@@ -42,8 +77,8 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   end
 
   print "[command]" if github_actions
-  puts test_command
-  pid = Process.spawn(test_command, "#{/mingw|mswin/ =~ RUBY_PLATFORM ? 'new_' : ''}pgroup": true)
+
+  pid = run(test_command, new_pgroup: true)
   {nil => first_timeout, INT: 30, TERM: 10, KILL: nil}.each do |sig, sec|
     if sig
       puts "Sending #{sig} signal"
