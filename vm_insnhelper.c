@@ -4778,6 +4778,12 @@ vm_ic_hit_p(const struct iseq_inline_constant_cache_entry *ice, const VALUE *reg
     return vm_inlined_ic_hit_p(ice->flags, ice->value, ice->ic_cref, ice->ic_serial, reg_ep);
 }
 
+bool
+rb_vm_ic_hit_p(IC ic, const VALUE *reg_ep)
+{
+    return ic->entry && vm_ic_hit_p(ic->entry, reg_ep);
+}
+
 static void
 vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep)
 {

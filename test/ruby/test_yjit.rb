@@ -289,6 +289,34 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_opt_getinlinecache_slowpath
+    assert_compiles(<<~RUBY, exits: { opt_getinlinecache: 1 }, result: [42, 42, 1, 1], min_calls: 2)
+      class A
+        FOO = 42
+        class << self
+          def foo
+            _foo = nil
+            FOO
+          end
+        end
+      end
+
+      result = []
+
+      result << A.foo
+      result << A.foo
+
+      class << A
+        FOO = 1
+      end
+
+      result << A.foo
+      result << A.foo
+
+      result
+    RUBY
+  end
+
   def test_string_interpolation
     assert_compiles(<<~'RUBY', insns: %i[checktype concatstrings], result: "foobar", min_calls: 2)
       def make_str(foo, bar)

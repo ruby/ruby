@@ -4047,25 +4047,47 @@ gen_opt_getinlinecache(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
     // See vm_ic_hit_p(). The same conditions are checked in yjit_constant_ic_update().
     struct iseq_inline_constant_cache_entry *ice = ic->entry;
     if (!ice || // cache not filled
-        ice->ic_serial != ruby_vm_global_constant_state || // cache out of date
-        ice->ic_cref /* cache only valid for certain lexical scopes */) {
+        ice->ic_serial != ruby_vm_global_constant_state /* cache out of date */) {
         // In these cases, leave a block that unconditionally side exits
         // for the interpreter to invalidate.
         return YJIT_CANT_COMPILE;
     }
 
-    // Optimize for single ractor mode.
-    // FIXME: This leaks when st_insert raises NoMemoryError
-    if (!assume_single_ractor_mode(jit->block)) return YJIT_CANT_COMPILE;
+    if (ice->ic_cref) {
+        // Cache is keyed on a certain lexical scope. Use the interpreter's cache.
+        uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
-    // Invalidate output code on any and all constant writes
-    // FIXME: This leaks when st_insert raises NoMemoryError
-    assume_stable_global_constant_state(jit->block);
+        // Call function to verify the cache
+        bool rb_vm_ic_hit_p(IC ic, const VALUE *reg_ep);
+        mov(cb, C_ARG_REGS[0], const_ptr_opnd((void *)ic));
+        mov(cb, C_ARG_REGS[1], member_opnd(REG_CFP, rb_control_frame_t, ep));
+        call_ptr(cb, REG0, (void *)rb_vm_ic_hit_p);
 
-    val_type_t type = yjit_type_of_value(ice->value);
-    x86opnd_t stack_top = ctx_stack_push(ctx, type);
-    jit_mov_gc_ptr(jit, cb, REG0, ice->value);
-    mov(cb, stack_top, REG0);
+        // Check the result. _Bool is one byte in SysV.
+        test(cb, AL, AL);
+        jz_ptr(cb, COUNTED_EXIT(side_exit, opt_getinlinecache_miss));
+
+        // Push ic->entry->value
+        mov(cb, REG0, const_ptr_opnd((void *)ic));
+        mov(cb, REG0, member_opnd(REG0, struct iseq_inline_constant_cache, entry));
+        x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_UNKNOWN);
+        mov(cb, REG0, member_opnd(REG0, struct iseq_inline_constant_cache_entry, value));
+        mov(cb, stack_top, REG0);
+    }
+    else {
+        // Optimize for single ractor mode.
+        // FIXME: This leaks when st_insert raises NoMemoryError
+        if (!assume_single_ractor_mode(jit->block)) return YJIT_CANT_COMPILE;
+
+        // Invalidate output code on any and all constant writes
+        // FIXME: This leaks when st_insert raises NoMemoryError
+        assume_stable_global_constant_state(jit->block);
+
+        val_type_t type = yjit_type_of_value(ice->value);
+        x86opnd_t stack_top = ctx_stack_push(ctx, type);
+        jit_mov_gc_ptr(jit, cb, REG0, ice->value);
+        mov(cb, stack_top, REG0);
+    }
 
     // Jump over the code for filling the cache
     uint32_t jump_idx = jit_next_insn_idx(jit) + (int32_t)jump_offset;
