@@ -4203,7 +4203,7 @@ retry_fork_async_signal_safe(struct rb_process_status *status, int *ep,
             _exit(127);
 #endif
         }
-	err = errno;
+        err = errno;
         waitpid_lock = waitpid_lock_init;
         if (waitpid_lock) {
             if (pid > 0 && w != WAITPID_LOCK_ONLY) {
@@ -4768,13 +4768,14 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
     VALUE execarg_obj = rb_execarg_new(argc, argv, TRUE, TRUE);
     struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
 
-    struct rb_process_status status;
+    struct rb_process_status status = {0};
     eargp->status = &status;
 
-    /* may be different from waitpid_state.pid on exec failure */
-    rb_pid_t pid = rb_execarg_spawn(execarg_obj, 0, 0);
-
     rb_last_status_clear();
+
+    // This function can set the thread's last status.
+    // May be different from waitpid_state.pid on exec failure.
+    rb_pid_t pid = rb_execarg_spawn(execarg_obj, 0, 0);
 
     if (pid > 0) {
         VALUE status = rb_process_status_wait(pid, 0);
@@ -4811,10 +4812,6 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
         }
 
         RB_GC_GUARD(status);
-    }
-
-    if (status.pid > 0) {
-        GET_THREAD()->last_status = rb_process_status_new(status.pid, status.status, status.error);
     }
 
     if (eargp->exception) {
