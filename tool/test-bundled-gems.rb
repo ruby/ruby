@@ -78,7 +78,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
 
   print "[command]" if github_actions
 
-  pid = run(test_command, new_pgroup: true)
+  pid = run(test_command, new_pgroup: true, wait: false)
   {nil => first_timeout, INT: 30, TERM: 10, KILL: nil}.each do |sig, sec|
     if sig
       puts "Sending #{sig} signal"
