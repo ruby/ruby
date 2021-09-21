@@ -316,9 +316,7 @@ rb_call_super_kw(int argc, const VALUE *argv, int kw_splat)
 VALUE
 rb_call_super(int argc, const VALUE *argv)
 {
-    rb_execution_context_t *ec = GET_EC();
-    PASS_PASSED_BLOCK_HANDLER_EC(ec);
-    return vm_call_super(ec, argc, argv, RB_NO_KEYWORDS);
+    return rb_call_super_kw(argc, argv, RB_NO_KEYWORDS);
 }
 
 VALUE
