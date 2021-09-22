@@ -632,7 +632,9 @@ static int
 obj_count_ivars(st_data_t key, st_data_t val, st_data_t a)
 {
     ID id = (ID)key;
-    if (!to_be_skipped_id(id)) ++*(st_index_t *)a;
+    if (!to_be_skipped_id(id) && UNLIKELY(!++*(st_index_t *)a)) {
+        rb_raise(rb_eRuntimeError, "too many instance variables");
+    }
     return ST_CONTINUE;
 }
 
@@ -691,9 +693,7 @@ w_encoding(VALUE encname, struct dump_call_arg *arg)
 static st_index_t
 has_ivars(VALUE obj, VALUE encname, VALUE *ivobj)
 {
-    st_index_t enc = !NIL_P(encname);
-    st_index_t num = 0;
-    st_index_t ruby2_keywords_flag = 0;
+    st_index_t num = !NIL_P(encname);
 
     if (SPECIAL_CONST_P(obj)) goto generic;
     switch (BUILTIN_TYPE(obj)) {
@@ -702,15 +702,15 @@ has_ivars(VALUE obj, VALUE encname, VALUE *ivobj)
       case T_MODULE:
 	break; /* counted elsewhere */
       case T_HASH:
-        ruby2_keywords_flag = rb_hash_ruby2_keywords_p(obj) ? 1 : 0;
+        if (rb_hash_ruby2_keywords_p(obj)) ++num;
         /* fall through */
       default:
       generic:
 	rb_ivar_foreach(obj, obj_count_ivars, (st_data_t)&num);
-	if (ruby2_keywords_flag || num) *ivobj = obj;
+	if (num) *ivobj = obj;
     }
 
-    return num + enc + ruby2_keywords_flag;
+    return num;
 }
 
 static void
