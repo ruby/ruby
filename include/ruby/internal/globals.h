@@ -100,6 +100,7 @@ RUBY_EXTERN VALUE rb_cTime;                   /**< `Time` class. */
 RUBY_EXTERN VALUE rb_cTrueClass;              /**< `TrueClass` class. */
 RUBY_EXTERN VALUE rb_cUnboundMethod;          /**< `UnboundMethod` class. */
 
+RUBY_EXTERN VALUE rb_mImmutable;              /**< `Immutable` module. */
 /**
  * @}
  * @addtogroup exception
