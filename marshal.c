@@ -1437,18 +1437,20 @@ sym2encidx(VALUE sym, VALUE val)
 }
 
 static int
-ruby2_keywords_flag_check(VALUE sym)
+symname_equal(VALUE sym, const char *name, size_t nlen)
 {
     const char *p;
     long l;
     if (rb_enc_get_index(sym) != ENCINDEX_US_ASCII) return 0;
     RSTRING_GETMEM(sym, p, l);
-    if (l <= 0) return 0;
-    if (name_equal(name_s_ruby2_keywords_flag, rb_strlen_lit(name_s_ruby2_keywords_flag), p, l)) {
-        return 1;
-    }
-    return 0;
+    return name_equal(name, nlen, p, l);
 }
+
+#define BUILD_ASSERT_POSITIVE(n) \
+    /* make 0 negative to workaround the "zero size array" GCC extention, */ \
+    ((sizeof(char [2*(ssize_t)(n)-1])+1)/2) /* assuming no overflow */
+#define symname_equal_lit(sym, sym_name) \
+    symname_equal(sym, sym_name, BUILD_ASSERT_POSITIVE(rb_strlen_lit(sym_name)))
 
 static VALUE
 r_symlink(struct load_arg *arg)
@@ -1608,7 +1610,7 @@ r_ivar(VALUE obj, int *has_encoding, struct load_arg *arg)
                 }
 		if (has_encoding) *has_encoding = TRUE;
 	    }
-	    else if (ruby2_keywords_flag_check(sym)) {
+	    else if (symname_equal_lit(sym, name_s_ruby2_keywords_flag)) {
                 if (RB_TYPE_P(obj, T_HASH)) {
                     rb_hash_ruby2_keywords(obj);
                 }
