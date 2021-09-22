@@ -170,6 +170,7 @@ jit_peek_at_local(jitstate_t *jit, ctx_t *ctx, int n)
 static void
 jit_save_pc(jitstate_t* jit, x86opnd_t scratch_reg)
 {
+    codeblock_t* cb = jit->cb;
     mov(cb, scratch_reg, const_ptr_opnd(jit->pc + insn_len(jit->opcode)));
     mov(cb, mem_opnd(64, REG_CFP, offsetof(rb_control_frame_t, pc)), scratch_reg);
 }
@@ -183,6 +184,7 @@ jit_save_sp(jitstate_t* jit, ctx_t* ctx)
 {
     if (ctx->sp_offset != 0) {
         x86opnd_t stack_pointer = ctx_sp_opnd(ctx, 0);
+        codeblock_t* cb = jit->cb;
         lea(cb, REG_SP, stack_pointer);
         mov(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), REG_SP);
         ctx->sp_offset = 0;
@@ -415,6 +417,7 @@ static uint8_t *
 yjit_side_exit(jitstate_t *jit, ctx_t *ctx)
 {
     if (!jit->side_exit_for_pc) {
+        codeblock_t* ocb = jit->ocb;
         uint32_t pos = yjit_gen_exit(jit->pc, ctx, ocb);
         jit->side_exit_for_pc = cb_get_ptr(ocb, pos);
     }
@@ -428,7 +431,7 @@ yjit_side_exit(jitstate_t *jit, ctx_t *ctx)
 // PC for the method isn't necessarily 0, but we always generated code that
 // assumes the entry point is 0.
 static void
-yjit_pc_guard(const rb_iseq_t *iseq)
+yjit_pc_guard(codeblock_t* cb, const rb_iseq_t *iseq)
 {
     RUBY_ASSERT(cb != NULL);
 
@@ -469,7 +472,6 @@ full_cfunc_return(rb_execution_context_t *ec, VALUE return_value)
     RUBY_ASSERT_ALWAYS(me->def->type == VM_METHOD_TYPE_CFUNC);
 
     // CHECK_CFP_CONSISTENCY("full_cfunc_return"); TODO revive this
-
 
     // Pop the C func's frame and fire the c_return TracePoint event
     // Note that this is the same order as vm_call_cfunc_with_frame().
@@ -518,7 +520,7 @@ Compile an interpreter entry block to be inserted into an iseq
 Returns `NULL` if compilation fails.
 */
 uint8_t *
-yjit_entry_prologue(const rb_iseq_t *iseq)
+yjit_entry_prologue(codeblock_t* cb, const rb_iseq_t *iseq)
 {
     RUBY_ASSERT(cb != NULL);
 
@@ -555,7 +557,7 @@ yjit_entry_prologue(const rb_iseq_t *iseq)
     // compiled for is the same PC that the interpreter wants us to run with.
     // If they don't match, then we'll take a side exit.
     if (iseq->body->param.flags.has_opt) {
-        yjit_pc_guard(iseq);
+        yjit_pc_guard(cb, iseq);
     }
 
     return code_ptr;

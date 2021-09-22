@@ -719,7 +719,7 @@ uint8_t* gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx, rb_execution_
     blockid_t blockid = { iseq, insn_idx };
 
     // Write the interpreter entry prologue
-    uint8_t* code_ptr = yjit_entry_prologue(iseq);
+    uint8_t* code_ptr = yjit_entry_prologue(cb, iseq);
 
     // Try to generate code for the entry block
     block_t* block = gen_block_version(blockid, &DEFAULT_CTX, ec);
