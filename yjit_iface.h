@@ -92,7 +92,14 @@ YJIT_DECLARE_COUNTERS(
     vm_insns_count,
     compiled_iseq_count,
     compiled_block_count,
+
     invalidation_count,
+    invalidate_method_lookup,
+    invalidate_bop_redefined,
+    invalidate_ractor_spawn,
+    invalidate_constant_state_bump,
+    invalidate_constant_ic_fill,
+
     constant_state_bumps,
 
     expandarray_splat,

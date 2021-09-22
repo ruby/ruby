@@ -4079,7 +4079,7 @@ gen_opt_getinlinecache(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
         // Cache is keyed on a certain lexical scope. Use the interpreter's cache.
         uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
-        // Call function to verify the cache
+        // Call function to verify the cache. It doesn't allocate or call methods.
         bool rb_vm_ic_hit_p(IC ic, const VALUE *reg_ep);
         mov(cb, C_ARG_REGS[0], const_ptr_opnd((void *)ic));
         mov(cb, C_ARG_REGS[1], member_opnd(REG_CFP, rb_control_frame_t, ep));

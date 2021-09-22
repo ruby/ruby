@@ -318,11 +318,13 @@ static const rb_data_type_t yjit_root_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
+// st_table iterator for invalidating blocks that are keys to the table.
 static int
 block_set_invalidate_i(st_data_t key, st_data_t v, st_data_t ignore)
 {
     block_t *version = (block_t *)key;
 
+    // Thankfully, st_table supports deleting while iterating.
     invalidate_block_version(version);
 
     return ST_CONTINUE;
@@ -348,6 +350,11 @@ rb_yjit_method_lookup_change(VALUE klass, ID mid)
             rb_id_table_delete(id2blocks, mid);
 
             st_table *block_set = (st_table *)blocks;
+
+#if YJIT_STATS
+            yjit_runtime_counters.invalidate_method_lookup += block_set->num_entries;
+#endif
+
             st_foreach(block_set, block_set_invalidate_i, 0);
 
             st_free_table(block_set);
@@ -373,6 +380,10 @@ rb_yjit_cme_invalidate(VALUE cme)
     st_data_t blocks;
     if (st_delete(cme_validity_dependency, &cme_as_st_data, &blocks)) {
         st_table *block_set = (st_table *)blocks;
+
+#if YJIT_STATS
+        yjit_runtime_counters.invalidate_method_lookup += block_set->num_entries;
+#endif
 
         // Invalidate each block
         st_foreach(block_set, block_set_invalidate_i, 0);
@@ -569,19 +580,16 @@ iseq_end_index(VALUE self)
     return INT2NUM(block->end_idx);
 }
 
-static int
-block_invalidation_iterator(st_data_t key, st_data_t value, st_data_t data) {
-    block_t *block = (block_t *)key;
-    invalidate_block_version(block); // Thankfully, st_table supports deleteing while iterating
-    return ST_CONTINUE;
-}
-
 /* Called when a basic operation is redefined */
 void
 rb_yjit_bop_redefined(VALUE klass, const rb_method_entry_t *me, enum ruby_basic_operators bop)
 {
     if (blocks_assuming_bops) {
-        st_foreach(blocks_assuming_bops, block_invalidation_iterator, 0);
+#if YJIT_STATS
+        yjit_runtime_counters.invalidate_bop_redefined += blocks_assuming_bops->num_entries;
+#endif
+
+        st_foreach(blocks_assuming_bops, block_set_invalidate_i, 0);
     }
 }
 
@@ -590,10 +598,12 @@ void
 rb_yjit_constant_state_changed(void)
 {
     if (blocks_assuming_stable_global_constant_state) {
-        st_foreach(blocks_assuming_stable_global_constant_state, block_invalidation_iterator, 0);
 #if YJIT_STATS
         yjit_runtime_counters.constant_state_bumps++;
+        yjit_runtime_counters.invalidate_constant_state_bump += blocks_assuming_stable_global_constant_state->num_entries;
 #endif
+
+        st_foreach(blocks_assuming_stable_global_constant_state, block_set_invalidate_i, 0);
     }
 }
 
@@ -629,6 +639,9 @@ yjit_constant_ic_update(const rb_iseq_t *iseq, IC ic)
             rb_darray_for(getinlinecache_blocks, i) {
                 block_t *block = rb_darray_get(getinlinecache_blocks, i);
                 invalidate_block_version(block);
+#if YJIT_STATS
+                yjit_runtime_counters.invalidate_constant_ic_fill++;
+#endif
             }
         }
         else {
@@ -642,7 +655,11 @@ void
 rb_yjit_before_ractor_spawn(void)
 {
     if (blocks_assuming_single_ractor_mode) {
-        st_foreach(blocks_assuming_single_ractor_mode, block_invalidation_iterator, 0);
+#if YJIT_STATS
+        yjit_runtime_counters.invalidate_ractor_spawn += blocks_assuming_single_ractor_mode->num_entries;
+#endif
+
+        st_foreach(blocks_assuming_single_ractor_mode, block_set_invalidate_i, 0);
     }
 }
 
