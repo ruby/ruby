@@ -184,7 +184,7 @@ class Reline::Windows
     #     DWORD FileNameLength;
     #     WCHAR FileName[1];
     #   } FILE_NAME_INFO
-    len = p_buffer[0, 4].unpack("L")[0]
+    len = p_buffer[0, 4].unpack1("L")
     name = p_buffer[4, len].encode(Encoding::UTF_8, Encoding::UTF_16LE, invalid: :replace)
 
     # Check if this could be a MSYS2 pty pipe ('\msys-XXXX-ptyN-XX')

@@ -71,7 +71,7 @@ module Reline::Terminfo
   def self.setupterm(term, fildes)
     errret_int = String.new("\x00" * 8, encoding: 'ASCII-8BIT')
     ret = @setupterm.(term, fildes, errret_int)
-    errret = errret_int.unpack('i')[0]
+    errret = errret_int.unpack1('i')
     case ret
     when 0 # OK
       0
