@@ -1424,7 +1424,7 @@ ruby2_keywords_flag_check(VALUE sym)
     long l;
     RSTRING_GETMEM(sym, p, l);
     if (l <= 0) return 0;
-    if (name_equal(name_s_ruby2_keywords_flag, rb_strlen_lit(name_s_ruby2_keywords_flag), p, 1)) {
+    if (name_equal(name_s_ruby2_keywords_flag, rb_strlen_lit(name_s_ruby2_keywords_flag), p, l)) {
         return 1;
     }
     return 0;
