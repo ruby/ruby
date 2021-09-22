@@ -30,6 +30,7 @@
 #include "internal/hash.h"
 #include "internal/object.h"
 #include "internal/struct.h"
+#include "internal/symbol.h"
 #include "internal/util.h"
 #include "internal/vm.h"
 #include "ruby/io.h"
@@ -966,6 +967,10 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 
 	  case T_HASH:
 	    w_uclass(obj, rb_cHash, arg);
+	    if (rb_hash_compare_by_id_p(obj)) {
+		w_byte(TYPE_UCLASS, arg);
+		w_symbol(rb_sym_intern_ascii_cstr("Hash"), arg);
+	    }
 	    if (NIL_P(RHASH_IFNONE(obj))) {
 		w_byte(TYPE_HASH, arg);
 	    }
@@ -1702,11 +1707,20 @@ append_extmod(VALUE obj, VALUE extmod)
 		 (str)); \
     } while (0)
 
+static VALUE r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int type);
+
 static VALUE
 r_object0(struct load_arg *arg, bool partial, int *ivp, VALUE extmod)
 {
-    VALUE v = Qnil;
     int type = r_byte(arg);
+    return r_object_for(arg, partial, ivp, extmod, type);
+}
+
+static VALUE
+r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int type)
+{
+    VALUE (*hash_new_with_size)(st_index_t) = rb_hash_new_with_size;
+    VALUE v = Qnil;
     long id;
     st_data_t link;
 
@@ -1774,7 +1788,14 @@ r_object0(struct load_arg *arg, bool partial, int *ivp, VALUE extmod)
 	    if (FL_TEST(c, FL_SINGLETON)) {
 		rb_raise(rb_eTypeError, "singleton can't be loaded");
 	    }
-	    v = r_object0(arg, partial, 0, extmod);
+	    type = r_byte(arg);
+	    if ((c == rb_cHash) &&
+		/* Hack for compare_by_identify */
+		(type == TYPE_HASH || type == TYPE_HASH_DEF)) {
+		hash_new_with_size = rb_ident_hash_new_with_size;
+		goto type_hash;
+	    }
+	    v = r_object_for(arg, partial, 0, extmod, type);
 	    if (rb_special_const_p(v) || RB_TYPE_P(v, T_OBJECT) || RB_TYPE_P(v, T_CLASS)) {
                 goto format_error;
 	    }
@@ -1915,10 +1936,11 @@ r_object0(struct load_arg *arg, bool partial, int *ivp, VALUE extmod)
 
       case TYPE_HASH:
       case TYPE_HASH_DEF:
+      type_hash:
 	{
 	    long len = r_long(arg);
 
-	    v = rb_hash_new_with_size(len);
+	    v = hash_new_with_size(len);
 	    v = r_entry(v, arg);
 	    arg->readable += (len - 1) * 2;
 	    while (len--) {
