@@ -118,6 +118,8 @@ st_table *rb_hash_tbl_raw(VALUE hash, const char *file, int line);
 #define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h, __FILE__, __LINE__)
 MJIT_SYMBOL_EXPORT_END
 
+VALUE rb_hash_compare_by_id(VALUE hash);
+
 #if 0 /* for debug */
 
 static inline bool

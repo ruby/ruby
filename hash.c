@@ -1548,8 +1548,6 @@ rb_hash_new(void)
     return hash_alloc(rb_cHash);
 }
 
-static VALUE rb_hash_compare_by_id(VALUE hash);
-
 static VALUE
 copy_compare_by_id(VALUE hash, VALUE basis)
 {
@@ -4380,7 +4378,7 @@ static st_table *rb_init_identtable_with_size(st_index_t size);
  *    h # => {"x"=>0, "x"=>1}
  */
 
-static VALUE
+VALUE
 rb_hash_compare_by_id(VALUE hash)
 {
     VALUE tmp;

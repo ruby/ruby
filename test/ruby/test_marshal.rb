@@ -870,4 +870,23 @@ class TestMarshal < Test::Unit::TestCase
       Marshal.load(s, :freeze.to_proc)
     end
   end
+
+  def _test_hash_compared_by_identity(h)
+    h.compare_by_identity
+    h["a" + "0"] = 1
+    h["a" + "0"] = 2
+    h = Marshal.load(Marshal.dump(h))
+    assert_predicate(h, :compare_by_identity?)
+    a = h.to_a
+    assert_equal([["a0", 1], ["a0", 2]], a.sort)
+    assert_not_same(a[1][0], a[0][0])
+  end
+
+  def test_hash_compared_by_identity
+    _test_hash_compared_by_identity(Hash.new)
+  end
+
+  def test_hash_default_compared_by_identity
+    _test_hash_compared_by_identity(Hash.new(true))
+  end
 end

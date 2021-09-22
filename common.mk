@@ -7547,6 +7547,7 @@ marshal.$(OBJEXT): $(top_srcdir)/internal/serial.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/string.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/struct.h
+marshal.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/util.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/vm.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/warnings.h
