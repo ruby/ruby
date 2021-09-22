@@ -707,7 +707,7 @@ yjit_gen_block(block_t *block, rb_execution_context_t *ec)
         // If we can't compile this instruction
         // exit to the interpreter and stop compiling
         if (status == YJIT_CANT_COMPILE) {
-            // TODO: if the codegen funcion makes changes to ctx and then return YJIT_CANT_COMPILE,
+            // TODO: if the codegen function makes changes to ctx and then return YJIT_CANT_COMPILE,
             // the exit this generates would be wrong. We could save a copy of the entry context
             // and assert that ctx is the same here.
             yjit_gen_exit(jit.pc, ctx, cb);
