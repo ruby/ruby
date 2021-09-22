@@ -573,6 +573,18 @@ w_uclass(VALUE obj, VALUE super, struct dump_arg *arg)
     }
 }
 
+static bool
+rb_hash_ruby2_keywords_p(VALUE obj)
+{
+    return (RHASH(obj)->basic.flags & RHASH_PASS_AS_KEYWORDS) != 0;
+}
+
+static void
+rb_hash_ruby2_keywords(VALUE obj)
+{
+    RHASH(obj)->basic.flags |= RHASH_PASS_AS_KEYWORDS;
+}
+
 static inline bool
 to_be_skipped_id(const ID id)
 {
@@ -690,7 +702,7 @@ has_ivars(VALUE obj, VALUE encname, VALUE *ivobj)
       case T_MODULE:
 	break; /* counted elsewhere */
       case T_HASH:
-        ruby2_keywords_flag = RHASH(obj)->basic.flags & RHASH_PASS_AS_KEYWORDS ? 1 : 0;
+        ruby2_keywords_flag = rb_hash_ruby2_keywords_p(obj) ? 1 : 0;
         /* fall through */
       default:
       generic:
@@ -718,7 +730,7 @@ w_ivar(st_index_t num, VALUE ivobj, VALUE encname, struct dump_call_arg *arg)
 {
     w_long(num, arg->arg);
     num -= w_encoding(encname, arg);
-    if (RB_TYPE_P(ivobj, T_HASH) && (RHASH(ivobj)->basic.flags & RHASH_PASS_AS_KEYWORDS)) {
+    if (RB_TYPE_P(ivobj, T_HASH) && rb_hash_ruby2_keywords_p(ivobj)) {
         int limit = arg->limit;
         if (limit >= 0) ++limit;
         w_symbol(ID2SYM(s_ruby2_keywords_flag), arg->arg);
@@ -1592,7 +1604,7 @@ r_ivar(VALUE obj, int *has_encoding, struct load_arg *arg)
 	    }
 	    else if (ruby2_keywords_flag_check(sym)) {
                 if (RB_TYPE_P(obj, T_HASH)) {
-                    RHASH(obj)->basic.flags |= RHASH_PASS_AS_KEYWORDS;
+                    rb_hash_ruby2_keywords(obj);
                 }
                 else {
                     rb_raise(rb_eArgError, "ruby2_keywords flag is given but %"PRIsVALUE" is not a Hash", obj);
