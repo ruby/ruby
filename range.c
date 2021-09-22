@@ -560,8 +560,8 @@ range_step(int argc, VALUE *argv, VALUE range)
  *
  *  Iterates over the elements of +self+.
  *
- *  With a block given and no argument,
- *  calls the block each element of the range; returns +self+:
+ *  With a block given, calls the block selected elements of the range;
+ *  returns +self+:
  *
  *    a = []
  *    (1..5).%(2) {|element| a.push(element) } # => 1..5
@@ -574,9 +574,9 @@ range_step(int argc, VALUE *argv, VALUE range)
  *  which will be of class Enumerator::ArithmeticSequence if +self+ is numeric;
  *  otherwise of class Enumerator:
  *
- *    e = (1..5).%(2) # => ((1..5).%(2))
- *    e.class         # => Enumerator::ArithmeticSequence
- *    ('a'..'e').%(2) # =>  #<Enumerator: ...>
+ *    e = (1..5) % 2 # => ((1..5).%(2))
+ *    e.class        # => Enumerator::ArithmeticSequence
+ *    ('a'..'e') % 2 # =>  #<Enumerator: ...>
  *
  *  Related: Range#step.
  */
@@ -2230,11 +2230,9 @@ range_count(int argc, VALUE *argv, VALUE range)
  *
  * - {Creating a Range}[#class-Range-label-Methods+for+Creating+a+Range]
  * - {Querying}[#class-Range-label-Methods+for+Querying]
- * - {Searching}[#class-Range-label-Methods+for+Searching]
  * - {Comparing}[#class-Range-label-Methods+for+Comparing]
  * - {Iterating}[#class-Range-label-Methods+for+Iterating]
  * - {Converting}[#class-Range-label-Methods+for+Converting]
- * - {Handling JSON}[#class-Range-label-Methods+for+Handling+JSON]
  *
  * === Methods for Creating a \Range
  *
@@ -2243,9 +2241,8 @@ range_count(int argc, VALUE *argv, VALUE range)
  * === Methods for Querying
  *
  * - #begin:: Returns the begin value given for +self+.
- * - #count:: Returns a count of elements in +self+: absolute,
- *            based on a given argument, or based on a given block.
- * - #cover?:: Returns whether a given object is within +self+.
+ * - #bsearch:: Returns an element from +self+ selected by a binary search.
+ * - #count:: Returns a count of elements in +self+.
  * - #end:: Returns the end value given for +self+.
  * - #exclude_end?:: Returns whether the end object is excluded.
  * - #first:: Returns the first elements of +self+.
@@ -2258,36 +2255,27 @@ range_count(int argc, VALUE *argv, VALUE range)
  * - #minmax:: Returns the minimum and maximum values in +self+.
  * - #size:: Returns the count of elements in +self+.
  *
- * === Methods for Searching
- *
- * - #bsearch:: Returns an element from +self+ selected by a binary search.
- *
  * === Methods for Comparing
  *
  * - {#==}[#method-i-3D-3D]:: Returns whether a given object is equal to +self+
  *                            (uses #==).
  * - #===:: Returns whether the given object is between the begin and end values.
+ * - #cover?:: Returns whether a given object is within +self+.
  * - #eql?:: Returns whether a given object is equal to +self+ (uses #eql?).
  *
  * === Methods for Iterating
  *
- * - #%:: Iterates over selected elements of +self+,
- *        passing each to the given block.
- * - #each:: Iterates over the elements of +self+, passing each to the given block.
- * - #step:: Iterates over selected elements of +self+,
- *           passing each to the given block.
+ * - #%:: Requires argument +n+; calls the block with each +n+th element of +self+.
+ * - #each:: Calls the block with each element of +self+.
+ * - #step:: Takes optional argument +n+ (defaults to 1);
+             calls the block with each +n+th element of +self+.
  *
  * === Methods for Converting
  *
- * - #inspect:: Returns a string representation of +self+.
+ * - #inspect:: Returns a string representation of +self+ (uses #inspect).
  * - #to_a (aliased as #entries):: Returns elements of +self+ in an array.
- * - #to_s:: Returns a string representation of +self+.
+ * - #to_s:: Returns a string representation of +self+ (uses #to_s).
  *
- * === Methods for Handling JSON
- *
- * - ::json_create:: Returns a range constructed from a given object.
- * - #as_json:: Returns a 2-element hash representing +self+.
- * - #to_json:: Returns a JSON string representing +self+.
  */
 
 void
