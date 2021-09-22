@@ -573,7 +573,14 @@ w_uclass(VALUE obj, VALUE super, struct dump_arg *arg)
     }
 }
 
-#define to_be_skipped_id(id) (id == rb_id_encoding() || id == s_encoding_short || id == s_ruby2_keywords_flag || !rb_id2str(id))
+static inline bool
+to_be_skipped_id(const ID id)
+{
+    if (id == s_encoding_short) return true;
+    if (id == s_ruby2_keywords_flag) return true;
+    if (id == rb_id_encoding()) return true;
+    return !rb_id2str(id);
+}
 
 struct w_ivar_arg {
     struct dump_call_arg *dump;
