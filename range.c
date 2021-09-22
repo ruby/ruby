@@ -560,7 +560,7 @@ range_step(int argc, VALUE *argv, VALUE range)
  *
  *  Iterates over the elements of +self+.
  *
- *  With a block given, calls the block selected elements of the range;
+ *  With a block given, calls the block with selected elements of the range;
  *  returns +self+:
  *
  *    a = []
@@ -2247,8 +2247,6 @@ range_count(int argc, VALUE *argv, VALUE range)
  * - #exclude_end?:: Returns whether the end object is excluded.
  * - #first:: Returns the first elements of +self+.
  * - #hash:: Returns the integer hash code.
- * - #include? (aliased as #member?):: Returns whether a given object
- *                                     is an element of +self+.
  * - #last:: Returns the last elements of +self+.
  * - #max:: Returns the maximum values in +self+.
  * - #min:: Returns the minimum values in +self+.
@@ -2262,6 +2260,8 @@ range_count(int argc, VALUE *argv, VALUE range)
  * - #===:: Returns whether the given object is between the begin and end values.
  * - #cover?:: Returns whether a given object is within +self+.
  * - #eql?:: Returns whether a given object is equal to +self+ (uses #eql?).
+ * - #include? (aliased as #member?):: Returns whether a given object
+ *                                     is an element of +self+.
  *
  * === Methods for Iterating
  *
