@@ -1422,6 +1422,7 @@ ruby2_keywords_flag_check(VALUE sym)
 {
     const char *p;
     long l;
+    if (rb_enc_get_index(sym) != ENCINDEX_US_ASCII) return 0;
     RSTRING_GETMEM(sym, p, l);
     if (l <= 0) return 0;
     if (name_equal(name_s_ruby2_keywords_flag, rb_strlen_lit(name_s_ruby2_keywords_flag), p, l)) {
