@@ -38,8 +38,10 @@ static char yjit_counter_names[] = #__VA_ARGS__;
 YJIT_DECLARE_COUNTERS(
     exec_instruction,
 
-    send_callsite_not_simple,
+    send_keywords,
     send_kw_splat,
+    send_args_splat,
+    send_block_arg,
     send_ivar_set_method,
     send_zsuper_method,
     send_undef_method,
