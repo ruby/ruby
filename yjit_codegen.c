@@ -3477,15 +3477,16 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     //    .block_code = 0,
     //    .__bp__     = sp,
     // };
-    mov(cb, member_opnd(REG_CFP, rb_control_frame_t, block_code), imm_opnd(0));
+    mov(cb, REG1, recv);
+    mov(cb, member_opnd(REG_CFP, rb_control_frame_t, self), REG1);
+    mov(cb, REG_SP, REG0); // Switch to the callee's REG_SP
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), REG0);
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, __bp__), REG0);
     sub(cb, REG0, imm_opnd(sizeof(VALUE)));
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, ep), REG0);
-    mov(cb, REG0, recv);
-    mov(cb, member_opnd(REG_CFP, rb_control_frame_t, self), REG0);
     jit_mov_gc_ptr(jit, cb, REG0, (VALUE)iseq);
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, iseq), REG0);
+    mov(cb, member_opnd(REG_CFP, rb_control_frame_t, block_code), imm_opnd(0));
 
     // No need to set cfp->pc since the callee sets it whenever calling into routines
     // that could look at it through jit_save_pc().
@@ -3531,9 +3532,6 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
 
     //print_str(cb, "calling Ruby func:");
     //print_str(cb, rb_id2name(vm_ci_mid(ci)));
-
-    // Load the updated SP from the CFP
-    mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
 
     // Directly jump to the entry point of the callee
     gen_direct_jump(
