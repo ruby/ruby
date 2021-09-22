@@ -436,9 +436,8 @@ range_step_size(VALUE range, VALUE args, VALUE eobj)
  *    e.class            # => Enumerator::ArithmeticSequence
  *    ('a'..'e').step # => #<Enumerator: ...>
  *
+ *  Related: Range#%.
  */
-
-
 static VALUE
 range_step(int argc, VALUE *argv, VALUE range)
 {
@@ -554,6 +553,33 @@ range_step(int argc, VALUE *argv, VALUE range)
     return range;
 }
 
+/*
+ *  call-seq:
+ *    %(n) {|element| ... } -> self
+ *    %(n)                  -> enumerator
+ *
+ *  Iterates over the elements of +self+.
+ *
+ *  With a block given and no argument,
+ *  calls the block each element of the range; returns +self+:
+ *
+ *    a = []
+ *    (1..5).%(2) {|element| a.push(element) } # => 1..5
+ *    a # => [1, 3, 5]
+ *    a = []
+ *    ('a'..'e').%(2) {|element| a.push(element) } # => "a".."e"
+ *    a # => ["a", "c", "e"]
+ *
+ *  With no block given, returns an enumerator,
+ *  which will be of class Enumerator::ArithmeticSequence if +self+ is numeric;
+ *  otherwise of class Enumerator:
+ *
+ *    e = (1..5).%(2) # => ((1..5).%(2))
+ *    e.class         # => Enumerator::ArithmeticSequence
+ *    ('a'..'e').%(2) # =>  #<Enumerator: ...>
+ *
+ *  Related: Range#step.
+ */
 static VALUE
 range_percent_step(VALUE range, VALUE step)
 {
@@ -1670,7 +1696,7 @@ static VALUE range_include_internal(VALUE range, VALUE val, int string_use_cover
 
 /*
  *  call-seq:
- *     rng === object ->  true or false
+ *     self === object ->  true or false
  *
  *  Returns +true+ if +object+ is between <tt>self.begin</tt> and <tt>self.end</tt>.
  *  +false+ otherwise:
@@ -1983,7 +2009,7 @@ range_alloc(VALUE klass)
 
 /*
  *  call-seq:
- *    count -> integer0
+ *    count -> integer
  *    count(object) -> integer
  *    count {|element| ... } -> integer
  *
@@ -2192,6 +2218,76 @@ range_count(int argc, VALUE *argv, VALUE range)
  *   r.include?(Xs.new(5))    #=> true
  *   r.include?(Xs.new(7))    #=> false
  *
+ * == What's Here
+ *
+ * First, what's elsewhere. \Class \Range:
+ *
+ * - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
+ * - Includes {module Enumerable}[Enumerable.html#module-Enumerable-label-What-27s+Here],
+ *   which provides dozens of additional methods.
+ *
+ * Here, class \Range provides methods that are useful for:
+ *
+ * - {Creating a Range}[#class-Range-label-Methods+for+Creating+a+Range]
+ * - {Querying}[#class-Range-label-Methods+for+Querying]
+ * - {Searching}[#class-Range-label-Methods+for+Searching]
+ * - {Comparing}[#class-Range-label-Methods+for+Comparing]
+ * - {Iterating}[#class-Range-label-Methods+for+Iterating]
+ * - {Converting}[#class-Range-label-Methods+for+Converting]
+ * - {Handling JSON}[#class-Range-label-Methods+for+Handling+JSON]
+ *
+ * === Methods for Creating a \Range
+ *
+ * - ::new:: Returns a new range.
+ *
+ * === Methods for Querying
+ *
+ * - #begin:: Returns the begin value given for +self+.
+ * - #count:: Returns a count of elements in +self+: absolute,
+ *            based on a given argument, or based on a given block.
+ * - #cover?:: Returns whether a given object is within +self+.
+ * - #end:: Returns the end value given for +self+.
+ * - #exclude_end?:: Returns whether the end object is excluded.
+ * - #first:: Returns the first elements of +self+.
+ * - #hash:: Returns the integer hash code.
+ * - #include? (aliased as #member?):: Returns whether a given object
+ *                                     is an element of +self+.
+ * - #last:: Returns the last elements of +self+.
+ * - #max:: Returns the maximum values in +self+.
+ * - #min:: Returns the minimum values in +self+.
+ * - #minmax:: Returns the minimum and maximum values in +self+.
+ * - #size:: Returns the count of elements in +self+.
+ *
+ * === Methods for Searching
+ *
+ * - #bsearch:: Returns an element from +self+ selected by a binary search.
+ *
+ * === Methods for Comparing
+ *
+ * - {#==}[#method-i-3D-3D]:: Returns whether a given object is equal to +self+
+ *                            (uses #==).
+ * - #===:: Returns whether the given object is between the begin and end values.
+ * - #eql?:: Returns whether a given object is equal to +self+ (uses #eql?).
+ *
+ * === Methods for Iterating
+ *
+ * - #%:: Iterates over selected elements of +self+,
+ *        passing each to the given block.
+ * - #each:: Iterates over the elements of +self+, passing each to the given block.
+ * - #step:: Iterates over selected elements of +self+,
+ *           passing each to the given block.
+ *
+ * === Methods for Converting
+ *
+ * - #inspect:: Returns a string representation of +self+.
+ * - #to_a (aliased as #entries):: Returns elements of +self+ in an array.
+ * - #to_s:: Returns a string representation of +self+.
+ *
+ * === Methods for Handling JSON
+ *
+ * - ::json_create:: Returns a range constructed from a given object.
+ * - #as_json:: Returns a 2-element hash representing +self+.
+ * - #to_json:: Returns a JSON string representing +self+.
  */
 
 void
