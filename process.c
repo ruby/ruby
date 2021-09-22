@@ -8727,6 +8727,7 @@ InitVM_process(void)
     rb_define_method(rb_cWaiter, "pid", detach_process_pid, 0);
 
     rb_cProcessStatus = rb_define_class_under(rb_mProcess, "Status", rb_cObject);
+    rb_include_module(rb_cProcessStatus, rb_mImmutable);
     rb_define_alloc_func(rb_cProcessStatus, rb_process_status_allocate);
     rb_define_method(rb_cProcessStatus, "initialize", rb_process_status_initialize, 3);
 

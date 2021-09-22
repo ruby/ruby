@@ -55,6 +55,8 @@ VALUE rb_cNilClass;
 VALUE rb_cTrueClass;
 VALUE rb_cFalseClass;
 
+VALUE rb_mImmutable;
+
 static VALUE rb_cNilClass_to_s;
 static VALUE rb_cTrueClass_to_s;
 static VALUE rb_cFalseClass_to_s;
@@ -4080,6 +4082,16 @@ f_sprintf(int c, const VALUE *v, VALUE _)
     return rb_f_sprintf(c, v);
 }
 
+static VALUE
+rb_immutable_new(int argc, VALUE *argv, VALUE self)
+{
+    VALUE result = rb_call_super(argc, argv);
+
+    rb_obj_freeze(result);
+
+    return result;
+}
+
 /*
  *  Document-class: Class
  *
@@ -4677,6 +4689,9 @@ InitVM_Object(void)
     rb_define_method(rb_cFalseClass, "===", case_equal, 1);
     rb_undef_alloc_func(rb_cFalseClass);
     rb_undef_method(CLASS_OF(rb_cFalseClass), "new");
+
+    rb_mImmutable = rb_define_module("Immutable");
+    rb_define_method(rb_mImmutable, "new", rb_immutable_new, -1);
 }
 
 #include "kernel.rbinc"
