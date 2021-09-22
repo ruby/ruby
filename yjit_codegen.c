@@ -3574,8 +3574,16 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
 
     // Don't JIT calls that aren't simple
     // Note, not using VM_CALL_ARGS_SIMPLE because sometimes we pass a block.
-    if ((vm_ci_flag(ci) & (VM_CALL_KW_SPLAT | VM_CALL_KWARG | VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_BLOCKARG)) != 0) {
-        GEN_COUNTER_INC(cb, send_callsite_not_simple);
+    if ((vm_ci_flag(ci) & VM_CALL_ARGS_SPLAT) != 0) {
+        GEN_COUNTER_INC(cb, send_callsite_args_splat);
+        return YJIT_CANT_COMPILE;
+    }
+    if ((vm_ci_flag(ci) & VM_CALL_KWARG) != 0) {
+        GEN_COUNTER_INC(cb, send_kw_block_arg);
+        return YJIT_CANT_COMPILE;
+    }
+    if ((vm_ci_flag(ci) & VM_CALL_ARGS_BLOCKARG) != 0) {
+        GEN_COUNTER_INC(cb, send_block_arg);
         return YJIT_CANT_COMPILE;
     }
 
@@ -3745,8 +3753,20 @@ gen_invokesuper(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
 
     // Don't JIT calls that aren't simple
     // Note, not using VM_CALL_ARGS_SIMPLE because sometimes we pass a block.
-    if ((vm_ci_flag(ci) & (VM_CALL_KW_SPLAT | VM_CALL_KWARG | VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_BLOCKARG)) != 0) {
-        GEN_COUNTER_INC(cb, send_callsite_not_simple);
+    if ((vm_ci_flag(ci) & VM_CALL_ARGS_SPLAT) != 0) {
+        GEN_COUNTER_INC(cb, send_callsite_args_splat);
+        return YJIT_CANT_COMPILE;
+    }
+    if ((vm_ci_flag(ci) & VM_CALL_KWARG) != 0) {
+        GEN_COUNTER_INC(cb, send_kw_block_arg);
+        return YJIT_CANT_COMPILE;
+    }
+    if ((vm_ci_flag(ci) & VM_CALL_KW_SPLAT) != 0) {
+        GEN_COUNTER_INC(cb, send_kw_splat);
+        return YJIT_CANT_COMPILE;
+    }
+    if ((vm_ci_flag(ci) & VM_CALL_ARGS_BLOCKARG) != 0) {
+        GEN_COUNTER_INC(cb, send_block_arg);
         return YJIT_CANT_COMPILE;
     }
 
