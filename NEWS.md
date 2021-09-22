@@ -191,6 +191,8 @@ Excluding feature bug fixes.
 
 ## C API updates
 
+* Documented. [[GH-4815]]
+
 ## Implementation improvements
 
 ### JIT
@@ -254,3 +256,4 @@ Excluding feature bug fixes.
 [Feature #18015]: https://bugs.ruby-lang.org/issues/18015
 [Feature #18029]: https://bugs.ruby-lang.org/issues/18029
 [Feature #18172]: https://bugs.ruby-lang.org/issues/18172
+[GH-4815]: https://github.com/ruby/ruby/pull/4815
