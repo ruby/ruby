@@ -76,7 +76,7 @@ module Bundler
         tag_version { git_push(args[:remote]) } unless already_tagged?
       end
 
-      task "release:rubygem_push" do
+      task "release:rubygem_push" => "build" do
         rubygem_push(built_gem_path) if gem_push?
       end
 
