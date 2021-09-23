@@ -1571,11 +1571,13 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
     //       inside object shapes.
     if (!RB_TYPE_P(comptime_receiver, T_OBJECT) ||
             rb_get_alloc_func(comptime_val_klass) != rb_class_allocate_instance) {
-        // General case. Call rb_ivar_get(). No need to reconstruct interpreter
-        // state since the routine never raises exceptions or allocate objects
-        // visibile to Ruby.
+        // General case. Call rb_ivar_get().
         // VALUE rb_ivar_get(VALUE obj, ID id)
         ADD_COMMENT(cb, "call rb_ivar_get()");
+
+        // The function could raise exceptions.
+        jit_prepare_routine_call(jit, ctx, REG1);
+
         mov(cb, C_ARG_REGS[0], REG0);
         mov(cb, C_ARG_REGS[1], imm_opnd((int64_t)ivar_name));
         call_ptr(cb, REG1, (void *)rb_ivar_get);
