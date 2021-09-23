@@ -194,6 +194,8 @@ module IRB
           ":" + s.id2name.encode(Encoding.default_external)
         rescue EncodingError
           # ignore
+        rescue Encoding::InvalidByteSequenceError => e
+          raise "Invalid byte sequence #{s.id2name.bytes.inspect} #{e.inspect}"
         end
         candidates.grep(/^#{Regexp.quote(sym)}/)
 
