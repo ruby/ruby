@@ -354,7 +354,24 @@ static bool ensure_origin(VALUE klass);
 static inline bool
 RMODULE_UNINITIALIZED(VALUE module)
 {
-    return RCLASS_SUPER(module) == rb_cBasicObject;
+    VALUE mod = module;
+    while ((mod = RCLASS_SUPER(mod))) {
+        if (mod == rb_cBasicObject) return true;
+    }
+    return false;
+}
+
+static inline void
+RMODULE_INITIALIZE(VALUE module)
+{
+    if (FL_TEST(module, RMODULE_IS_REFINEMENT)) return;
+
+    do {
+        if (RCLASS_SUPER(module) == rb_cBasicObject) {
+            RB_OBJ_WRITE(module, &RCLASS(module)->super, 0);
+            break;
+        }
+    } while ((module = RCLASS_SUPER(module)));
 }
 
 void
@@ -363,7 +380,7 @@ rb_module_check_initializable(VALUE mod)
     if (!RMODULE_UNINITIALIZED(mod)) {
         rb_raise(rb_eTypeError, "already initialized module");
     }
-    RB_OBJ_WRITE(mod, &RCLASS(mod)->super, 0);
+    RMODULE_INITIALIZE(mod);
 }
 
 /* :nodoc: */
@@ -917,7 +934,7 @@ ensure_includable(VALUE klass, VALUE module)
     rb_class_modify_check(klass);
     Check_Type(module, T_MODULE);
     if (RMODULE_UNINITIALIZED(module)) {
-        RB_OBJ_WRITE(module, &RCLASS(module)->super, 0);
+        RMODULE_INITIALIZE(module);
         /* no more re-initialization */
     }
     if (!NIL_P(rb_refinement_module_get_refined_class(module))) {

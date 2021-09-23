@@ -446,6 +446,29 @@ class TestModule < Test::Unit::TestCase
     end
   end
 
+  def test_initialize_subclass_with_included_module
+    mod = Class.new(Module) do
+      const_set(:InstanceMethods, Module.new)
+      define_method(:initialize) do |aaa:|
+        include mod::InstanceMethods
+      end
+    end
+    foo = Class.new do
+      def initialize(key:)
+      end
+    end
+
+    bar = Class.new(foo) do
+      include mod.new(aaa: 1)
+    end
+
+    ancestors = bar.ancestors
+    assert_equal(bar, ancestors.shift)
+    assert_instance_of(mod, ancestors.shift)
+    assert_equal([mod::InstanceMethods, foo, Object], ancestors[0..2])
+    assert_instance_of(bar, bar.new(key: 1))
+  end
+
   def test_dup
     OtherSetup.call
 
