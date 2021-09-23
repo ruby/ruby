@@ -202,8 +202,7 @@ build_const_pathname(VALUE head, VALUE tail)
     VALUE path = rb_str_dup(head);
     rb_str_cat2(path, "::");
     rb_str_append(path, tail);
-    OBJ_FREEZE(path);
-    return path;
+    return rb_fstring(path);
 }
 
 static VALUE
