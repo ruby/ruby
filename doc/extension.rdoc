@@ -830,6 +830,7 @@ the library.
 
 Here's the example of an initializing function.
 
+  #include <ruby.h>
   void
   Init_dbm(void)
   {
@@ -1051,7 +1052,24 @@ You can do anything you want with your library.  The author of Ruby
 will not claim any restrictions on your code depending on the Ruby API.
 Feel free to use, modify, distribute or sell your program.
 
-== Appendix A. Ruby Source Files Overview
+== Appendix A. Ruby Header and Source Files Overview
+
+=== Ruby Header Files
+
+Everything under <tt>$repo_root/include/ruby</tt> is installed with
+<tt>make install</tt>.
+It should be included per <tt>#include <ruby.h></tt> from C extensions.
+All symbols are public API with the exception of symbols prefixed with
++rbimpl_+ or +RBIMPL_+. They are implementation details and shouldn't
+be used by C extensions.
+
+Only <tt>$repo_root/include/ruby/*.h</tt> are allowed to be <tt>#include</tt>-d
+by C extensions. Files under <tt>$repo_root/include/ruby/internal</tt>
+should not be <tt>#include</tt>-d directly.
+
+Header files under <tt>$repo_root/internal/</tt> or directly under the
+root <tt>$repo_root/*.h</tt> are not make-installed.
+They are internal headers with only internal APIs.
 
 === Ruby Language Core
 
