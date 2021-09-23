@@ -200,13 +200,12 @@ rb_struct_s_members_m(VALUE klass)
 
 /*
  *  call-seq:
- *     struct.members    -> array
+ *    members -> array_of_symbols
  *
- *  Returns the struct members as an array of symbols:
+ *  Returns the member names from +self+ as an array:
  *
  *     Customer = Struct.new(:name, :address, :zip)
- *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     joe.members   #=> [:name, :address, :zip]
+ *     Customer.new.members # => [:name, :address, :zip]
  */
 
 static VALUE
@@ -510,65 +509,112 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
 
 /*
  *  call-seq:
- *    Struct.new([class_name] [, member_name]+)                        -> StructClass
- *    Struct.new([class_name] [, member_name]+, keyword_init: true)    -> StructClass
- *    Struct.new([class_name] [, member_name]+) {|StructClass| block } -> StructClass
- *    StructClass.new(value, ...)                                      -> object
- *    StructClass[value, ...]                                          -> object
+ *    Struct.new(*member_names, keyword_init: false){|Struct_subclass| ... } -> Struct_subclass
+ *    Struct.new(class_name, *member_names, keyword_init: false){|Struct_subclass| ... } -> Struct_subclass
+ *    Struct_subclass.new(*member_names) -> Struct_subclass_instance
+ *    Struct_subclass.new(**member_names) -> Struct_subclass_instance
  *
- *  The first two forms are used to create a new Struct subclass +class_name+
- *  that can contain a value for each +member_name+.  This subclass can be
- *  used to create instances of the structure like any other Class.
+ *  <tt>Struct.new</tt> returns a new subclass of +Struct+.  The new subclass:
  *
- *  If the +class_name+ is omitted an anonymous structure class will be
- *  created.  Otherwise, the name of this struct will appear as a constant in
- *  class Struct, so it must be unique for all Structs in the system and
- *  must start with a capital letter.  Assigning a structure class to a
- *  constant also gives the class the name of the constant.
+ *  - May be anonymous, or may have the name given by +class_name+.
+ *  - May have members as given by +member_names+.
+ *  - May have initialization via ordinary arguments (the default)
+ *    or via keyword arguments (if <tt>keyword_init: true</tt> is given).
  *
- *     # Create a structure with a name under Struct
- *     Struct.new("Customer", :name, :address)
- *     #=> Struct::Customer
- *     Struct::Customer.new("Dave", "123 Main")
- *     #=> #<struct Struct::Customer name="Dave", address="123 Main">
+ *  The new subclass has its own method <tt>::new</tt>; thus:
  *
- *     # Create a structure named by its constant
- *     Customer = Struct.new(:name, :address)
- *     #=> Customer
- *     Customer.new("Dave", "123 Main")
- *     #=> #<struct Customer name="Dave", address="123 Main">
+ *    Foo = Struct.new('Foo', :foo, :bar) # => Struct::Foo
+ *    f = Foo.new(0, 1)                   # => #<struct Struct::Foo foo=0, bar=1>
  *
- *  If the optional +keyword_init+ keyword argument is set to +true+,
- *  .new takes keyword arguments instead of normal arguments.
+ *  <b>\Class Name</b>
  *
- *     Customer = Struct.new(:name, :address, keyword_init: true)
- *     Customer.new(name: "Dave", address: "123 Main")
- *     #=> #<struct Customer name="Dave", address="123 Main">
+ *  With string argument +class_name+,
+ *  returns a new subclass of +Struct+ named <tt>Struct::<em>class_name</em></tt>:
  *
- *  If a block is given it will be evaluated in the context of
- *  +StructClass+, passing the created class as a parameter:
+ *    Foo = Struct.new('Foo', :foo, :bar) # => Struct::Foo
+ *    Foo.name                            # => "Struct::Foo"
+ *    Foo.superclass                      # => Struct
  *
- *     Customer = Struct.new(:name, :address) do
- *       def greeting
- *         "Hello #{name}!"
- *       end
- *     end
- *     Customer.new("Dave", "123 Main").greeting  #=> "Hello Dave!"
+ *  Without string argument +class_name+,
+ *  returns a new anonymous subclass of +Struct+:
  *
- *  This is the recommended way to customize a struct.  Subclassing an
- *  anonymous struct creates an extra anonymous class that will never be used.
+ *    Struct.new(:foo, :bar).name # => nil
  *
- *  The last two forms create a new instance of a struct subclass.  The number
- *  of +value+ parameters must be less than or equal to the number of
- *  attributes defined for the structure.  Unset parameters default to +nil+.
- *  Passing more parameters than number of attributes will raise
- *  an ArgumentError.
+ *  <b>Block</b>
  *
- *     Customer = Struct.new(:name, :address)
- *     Customer.new("Dave", "123 Main")
- *     #=> #<struct Customer name="Dave", address="123 Main">
- *     Customer["Dave"]
- *     #=> #<struct Customer name="Dave", address=nil>
+ *  With a block given, the created subclass is yielded to the block:
+ *
+ *    Customer = Struct.new('Customer', :name, :address) do |new_class|
+ *      p "The new subclass is #{new_class}"
+ *      def greeting
+ *        "Hello #{name} at #{address}"
+ *      end
+ *    end           # => Struct::Customer
+ *    dave = Customer.new('Dave', '123 Main')
+ *    dave # =>     #<struct Struct::Customer name="Dave", address="123 Main">
+ *    dave.greeting # => "Hello Dave at 123 Main"
+ *
+ *  Output, from <tt>Struct.new</tt>:
+ *
+ *    "The new subclass is Struct::Customer"
+ *
+ *  <b>Member Names</b>
+ *
+ *  \Symbol arguments +member_names+
+ *  determines the members of the new subclass:
+ *
+ *    Struct.new(:foo, :bar).members        # => [:foo, :bar]
+ *    Struct.new('Foo', :foo, :bar).members # => [:foo, :bar]
+ *
+ *  The new subclass has instance methods corresponding to +member_names+:
+ *
+ *    Foo = Struct.new('Foo', :foo, :bar)
+ *    Foo.instance_methods(false) # => [:foo, :bar, :foo=, :bar=]
+ *    f = Foo.new                 # => #<struct Struct::Foo foo=nil, bar=nil>
+ *    f.foo                       # => nil
+ *    f.foo = 0                   # => 0
+ *    f.bar                       # => nil
+ *    f.bar = 1                   # => 1
+ *    f                           # => #<struct Struct::Foo foo=0, bar=1>
+ *
+ *  <b>Singleton Methods</b>
+ *
+ *  A subclass returned by Struct.new has these singleton methods:
+ *
+ *  - \Method <tt>::new </tt> creates an instance of the subclass:
+ *
+ *      Foo.new          # => #<struct Struct::Foo foo=nil, bar=nil>
+ *      Foo.new(0)       # => #<struct Struct::Foo foo=0, bar=nil>
+ *      Foo.new(0, 1)    # => #<struct Struct::Foo foo=0, bar=1>
+ *      Foo.new(0, 1, 2) # Raises ArgumentError: struct size differs
+ *
+ *    \Method <tt>::[]</tt> is an alias for method <tt>::new</tt>.
+ *
+ *  - \Method <tt>:inspect</tt> returns a string representation of the subclass:
+ *
+ *      Foo.inspect
+ *      # => "Struct::Foo"
+ *
+ *  - \Method <tt>::members</tt> returns an array of the member names:
+ *
+ *      Foo.members # => [:foo, :bar]
+ *
+ *  <b>Keyword Argument</b>
+ *
+ *  By default, the arguments for initializing an instance of the new subclass
+ *  are ordinary arguments (not keyword arguments).
+ *  With optional keyword argument <tt>keyword_init: true</tt>,
+ *  the new subclass is initialized with keyword arguments:
+ *
+ *    # Without keyword_init: true.
+ *    Foo = Struct.new('Foo', :foo, :bar)
+ *    Foo                     # => Struct::Foo
+ *    Foo.new(0, 1)           # => #<struct Struct::Foo foo=0, bar=1>
+ *    # With keyword_init: true.
+ *    Bar = Struct.new(:foo, :bar, keyword_init: true)
+ *    Bar # =>                # => Bar(keyword_init: true)
+ *    Bar.new(bar: 1, foo: 0) # => #<struct Bar foo=0, bar=1>
+ *
  */
 
 static VALUE
