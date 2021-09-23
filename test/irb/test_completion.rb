@@ -27,6 +27,10 @@ module TestIRB
     end
 
     def test_complete_symbol
+      %w"UTF-16LE UTF-7".each do |enc|
+        "K".force_encoding(enc).to_sym
+      rescue
+      end
       _ = :aiueo
       assert_include(IRB::InputCompletor.retrieve_completion_data(":a", bind: binding), ":aiueo")
       assert_empty(IRB::InputCompletor.retrieve_completion_data(":irb_unknown_symbol_abcdefg", bind: binding))
