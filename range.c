@@ -157,7 +157,7 @@ recursive_equal(VALUE range, VALUE obj, int recur)
  *  - +other+ is a range.
  *  - <tt>other.begin == self.begin</tt>.
  *  - <tt>other.end == self.end</tt>.
- *  - <tt>other.exclude_end? == self.include_end?</tt>.
+ *  - <tt>other.exclude_end? == self.exclude_end?</tt>.
  *
  *  Otherwise returns +false+.
  *
@@ -226,7 +226,7 @@ recursive_eql(VALUE range, VALUE obj, int recur)
  *  - +other+ is a range.
  *  - <tt>other.begin eql? self.begin</tt>.
  *  - <tt>other.end eql? self.end</tt>.
- *  - <tt>other.exclude_end? == self.include_end?</tt>.
+ *  - <tt>other.exclude_end? == self.exclude_end?</tt>.
  *
  *  Otherwise returns +false+.
  *
