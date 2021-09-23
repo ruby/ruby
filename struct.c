@@ -595,7 +595,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *      Foo.inspect
  *      # => "Struct::Foo"
  *
- *  - \Method <tt>:members</tt> returns an array of the member names:
+ *  - \Method <tt>::members</tt> returns an array of the member names:
  *
  *      Foo.members # => [:foo, :bar]
  *
