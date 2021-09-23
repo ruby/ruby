@@ -3446,9 +3446,11 @@ rb_arithmetic_sequence_extract(VALUE obj, rb_arithmetic_sequence_components_t *c
 VALUE
 rb_arithmetic_sequence_beg_len_step(VALUE obj, long *begp, long *lenp, long *stepp, long len, int err)
 {
+#if !RBIMPL_HAS_ATTRIBUTE(nonnull)
     RUBY_ASSERT(begp != NULL);
     RUBY_ASSERT(lenp != NULL);
     RUBY_ASSERT(stepp != NULL);
+#endif
 
     rb_arithmetic_sequence_components_t aseq;
     if (!rb_arithmetic_sequence_extract(obj, &aseq)) {
