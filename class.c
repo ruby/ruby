@@ -351,19 +351,22 @@ copy_tables(VALUE clone, VALUE orig)
 
 static bool ensure_origin(VALUE klass);
 
+/**
+ * If this flag is set, that module is allocated but not initialized yet.
+ */
+enum {RMODULE_ALLOCATED_BUT_NOT_INITIALIZED = RUBY_FL_USER5};
+
 static inline bool
 RMODULE_UNINITIALIZED(VALUE module)
 {
-    return RCLASS_SUPER(module) == rb_cBasicObject;
+    return FL_TEST_RAW(module, RMODULE_ALLOCATED_BUT_NOT_INITIALIZED);
 }
 
 void
 rb_module_set_initialized(VALUE mod)
 {
-    if (RMODULE_UNINITIALIZED(mod)) {
-        RB_OBJ_WRITE(mod, &RCLASS(mod)->super, 0);
-        /* no more re-initialization */
-    }
+    FL_UNSET_RAW(mod, RMODULE_ALLOCATED_BUT_NOT_INITIALIZED);
+    /* no more re-initialization */
 }
 
 void
@@ -817,7 +820,7 @@ rb_module_s_alloc(VALUE klass)
 {
     VALUE mod = class_alloc(T_MODULE, klass);
     RCLASS_M_TBL_INIT(mod);
-    RB_OBJ_WRITE(mod, &RCLASS(mod)->super, rb_cBasicObject);
+    FL_SET(mod, RMODULE_ALLOCATED_BUT_NOT_INITIALIZED);
     return mod;
 }
 
