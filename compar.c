@@ -234,6 +234,8 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
 	rb_raise(rb_eArgError, "min argument must be smaller than max argument");
     }
 
+    if (RB_FLOAT_TYPE_P(x) && isnan(RFLOAT_VALUE(x))) return x;
+
     if (!NIL_P(min)) {
         c = cmpint(x, min);
         if (c == 0) return x;

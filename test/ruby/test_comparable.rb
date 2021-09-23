@@ -85,6 +85,8 @@ class TestComparable < Test::Unit::TestCase
     assert_equal(1, @o.clamp(1, 1))
     assert_equal(@o, @o.clamp(0, 0))
 
+    assert_same(Float::NAN, Float::NAN.clamp(1, 2))
+
     assert_raise_with_message(ArgumentError, 'min argument must be smaller than max argument') {
       @o.clamp(2, 1)
     }
@@ -114,6 +116,8 @@ class TestComparable < Test::Unit::TestCase
     assert_raise_with_message(*exc) {@o.clamp(0...2)}
     assert_raise_with_message(*exc) {@o.clamp(-1...0)}
     assert_raise_with_message(*exc) {@o.clamp(...2)}
+
+    assert_same(Float::NAN, Float::NAN.clamp(1..2))
 
     assert_raise_with_message(ArgumentError, 'min argument must be smaller than max argument') {
       @o.clamp(2..1)
