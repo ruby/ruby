@@ -509,30 +509,28 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
 
 /*
  *  call-seq:
- *    Struct.new(class_name) -> new_class
- *    Struct.new(*member_names, **kwargs) -> new_class
- *    Struct.new(class_name, *member_names, **kwargs) -> new_class
- *    Struct.new(class_name) {|new_class| ... } -> new_class
- *    Struct.new(*member_names, **kwargs) {|new_class| ... } -> new_class
- *    Struct.new(class_name, *member_names, **kwargs) {|new_class| ... } -> new_class
+ *    Struct.new(*member_names, keyword_init: false){|Struct_subclass| ... } -> Struct_subclass
+ *    Struct.new(class_name, *member_names, keyword_init: false){|Struct_subclass| ... } -> Struct_subclass
+ *    Struct_subclass.new(*member_names) -> Struct_subclass_instance
+ *    Struct_subclass.new(**member_names) -> Struct_subclass_instance
  *
- *  Returns a new subclass of +Struct+.  The new subclass:
+ *  <tt>Struct.new</tt> returns a new subclass of +Struct+.  The new subclass:
  *
  *  - May be anonymous, or may have the name given by +class_name+.
  *  - May have members as given by +member_names+.
  *  - May have initialization via ordinary arguments (the default)
  *    or via keyword arguments (if <tt>keyword_init: true</tt> is given).
  *
+ *  The new subclass has its own method <tt>::new</tt>; thus:
+ *
+ *    Foo = Struct.new('Foo', :foo, :bar) # => Struct::Foo
+      f = Foo.new(0, 1)                   # => #<struct Struct::Foo foo=0, bar=1>
+ *
  *  <b>\Class Name</b>
  *
  *  With string argument +class_name+,
  *  returns a new subclass of +Struct+ named <tt>Struct::<em>class_name</em></tt>:
  *
- *    # Class name given, but no member names.
- *    Foo = Struct.new('Foo')             # => Struct::Foo
- *    Foo.name                            # => "Struct::Foo"
- *    Foo.superclass                      # => Struct
- *    # Class name and member names given.
  *    Foo = Struct.new('Foo', :foo, :bar) # => Struct::Foo
  *    Foo.name                            # => "Struct::Foo"
  *    Foo.superclass                      # => Struct
@@ -542,10 +540,28 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *
  *    Struct.new(:foo, :bar).name # => nil
  *
+ *  <b>Block</b>
+ *
+ *  With a block given, the block is yielded the created subclass:
+ *
+ *    Customer = Struct.new('Customer', :name, :address) do |new_class|
+ *      p "The new subclass is #{new_class}"
+ *      def greeting
+ *        "Hello #{name} at #{address}"
+ *      end
+ *    end           # => Struct::Customer
+ *    dave = Customer.new('Dave', '123 Main')
+ *    dave # =>     #<struct Struct::Customer name="Dave", address="123 Main">
+ *    dave.greeting # => "Hello Dave at 123 Main"
+ *
+ *  Output, from <tt>Struct.new</tt>:
+ *
+ *    "The new subclass is Struct::Customer"
+ *
  *  <b>Member Names</b>
  *
- *  With symbol arguments +member_names+,
- *  returns a new subclass of +Struct+ with the given members:
+ *  \Symbol arguments +member_names+
+ *  determines the members of the new subclass:
  *
  *    Struct.new(:foo, :bar).members        # => [:foo, :bar]
  *    Struct.new('Foo', :foo, :bar).members # => [:foo, :bar]
@@ -561,26 +577,18 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *    f.bar = 1                   # => 1
  *    f                           # => #<struct Struct::Foo foo=0, bar=1>
  *
- *  <b><tt>Singleton Methods</tt></b>
+ *  <b>Singleton Methods</b>
  *
- *  The new subclass also has these singleton methods:
+ *  A subclass returned by Struct.new has these singleton methods:
  *
- *    Foo = Struct.new('Foo', :foo, :bar)
- *    Foo.singleton_methods # => [:[], :new, :inspect, :members]
- *
- *  - \Method <tt>:[]</tt> creates an instance of the subclass:
- *
- *      Foo[]        # => #<struct Struct::Foo foo=nil, bar=nil>
- *      Foo[0]       # => #<struct Struct::Foo foo=0, bar=nil>
- *      Foo[0, 1]    # => #<struct Struct::Foo foo=0, bar=1>
- *      Foo[0, 1, 2] # Raises ArgumentError: struct size differs
- *
- *  - \Method <tt>:new </tt> also creates an instance of the subclass:
+ *  - \Method <tt>::new </tt> creates an instance of the subclass:
  *
  *      Foo.new          # => #<struct Struct::Foo foo=nil, bar=nil>
  *      Foo.new(0)       # => #<struct Struct::Foo foo=0, bar=nil>
  *      Foo.new(0, 1)    # => #<struct Struct::Foo foo=0, bar=1>
  *      Foo.new(0, 1, 2) # Raises ArgumentError: struct size differs
+ *
+ *    \Method <tt>::[]</tt> is an alias for method <tt>::new</tt>.
  *
  *  - \Method <tt>:inspect</tt> returns a string representation of the subclass:
  *
@@ -606,25 +614,6 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *    Bar = Struct.new(:foo, :bar, keyword_init: true)
  *    Bar # =>                # => Bar(keyword_init: true)
  *    Bar.new(bar: 1, foo: 0) # => #<struct Bar foo=0, bar=1>
- *
- *  <b>Block</b>
- *
- *  With a block given, all is as above, except that the block
- *  is called with the new subclass (the subclass itself, not its name):
- *
- *    Customer = Struct.new('Customer', :name, :address) do |new_class|
- *      p "The new subclass is #{new_class}"
- *      def greeting
- *        "Hello #{name} at #{address}"
- *      end
- *    end           # => Struct::Customer
- *    dave = Customer.new('Dave', '123 Main')
- *    dave # =>     #<struct Struct::Customer name="Dave", address="123 Main">
- *    dave.greeting # => "Hello Dave at 123 Main"
- *
- *  Output, from <tt>Struct.new</tt>:
- *
- *    "The new subclass is Struct::Customer"
  *
  */
 
