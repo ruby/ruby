@@ -542,7 +542,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *
  *  <b>Block</b>
  *
- *  With a block given, the block is yielded the created subclass:
+ *  With a block given, the block is yielded to the created subclass:
  *
  *    Customer = Struct.new('Customer', :name, :address) do |new_class|
  *      p "The new subclass is #{new_class}"
