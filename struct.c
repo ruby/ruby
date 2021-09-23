@@ -524,7 +524,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *  The new subclass has its own method <tt>::new</tt>; thus:
  *
  *    Foo = Struct.new('Foo', :foo, :bar) # => Struct::Foo
-      f = Foo.new(0, 1)                   # => #<struct Struct::Foo foo=0, bar=1>
+ *    f = Foo.new(0, 1)                   # => #<struct Struct::Foo foo=0, bar=1>
  *
  *  <b>\Class Name</b>
  *
