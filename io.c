@@ -3324,7 +3324,7 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
  *     # each record is prefixed by its 32-bit length
  *     open("variable-record-file") do |f|
  *       while len = f.read(4)
- *         len = len.unpack("N")[0]   # 32-bit length
+ *         len = len.unpack1("N")     # 32-bit length
  *         record = f.read(len)       # This returns a string even if len is 0.
  *       end
  *     end
