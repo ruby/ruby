@@ -449,7 +449,9 @@ class TestModule < Test::Unit::TestCase
   class Bug18185 < Module
     module InstanceMethods
     end
+    attr_reader :ancestor_list
     def initialize
+      @ancestor_list = ancestors
       include InstanceMethods
     end
     class Foo
@@ -470,6 +472,7 @@ class TestModule < Test::Unit::TestCase
     assert_equal(1, anc.count(BasicObject), ->{anc.inspect})
     b = c.new(key: 1)
     assert_equal(1, b.key)
+    assert_not_include(mod.ancestor_list, BasicObject)
   end
 
   def test_dup
