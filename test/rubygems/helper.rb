@@ -595,7 +595,7 @@ class Gem::TestCase < Test::Unit::TestCase
   def have_git?
     return if in_path? @git
 
-    skip 'cannot find git executable, use GIT environment variable to set'
+    pend 'cannot find git executable, use GIT environment variable to set'
   end
 
   def in_path?(executable) # :nodoc:
