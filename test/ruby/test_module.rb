@@ -446,6 +446,32 @@ class TestModule < Test::Unit::TestCase
     end
   end
 
+  class Bug18185 < Module
+    module InstanceMethods
+    end
+    def initialize
+      include InstanceMethods
+    end
+    class Foo
+      attr_reader :key
+      def initialize(key:)
+        @key = key
+      end
+    end
+  end
+
+  def test_module_subclass_initialize
+    mod = Bug18185.new
+    c = Class.new(Bug18185::Foo) do
+      include mod
+    end
+    anc = c.ancestors
+    assert_include(anc, mod)
+    assert_equal(1, anc.count(BasicObject), ->{anc.inspect})
+    b = c.new(key: 1)
+    assert_equal(1, b.key)
+  end
+
   def test_dup
     OtherSetup.call
 
