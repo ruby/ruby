@@ -814,9 +814,13 @@ class TestMarshal < Test::Unit::TestCase
     assert_raise(ArgumentError, /\(given 1, expected 0\)/) {
       ruby2_keywords_test(*[hash2])
     }
-    hash2 = Marshal.load(data.sub(/:\x06K(?=T\z)/, "I\\&\x06:\x0dencoding\"\x0dUTF-16LE"))
-    assert_raise(ArgumentError, /\(given 1, expected 0\)/) {
-      ruby2_keywords_test(*[hash2])
+  end
+
+  def test_invalid_byte_sequence_symbol
+    data = Marshal.dump(:K)
+    data = data.sub(/:\x06K/, "I\\&\x06:\x0dencoding\"\x0dUTF-16LE")
+    assert_raise(ArgumentError, /UTF-16LE: "\\x4B"/) {
+      Marshal.load(data)
     }
   end
 
