@@ -767,7 +767,7 @@ rb_f_load(int argc, VALUE *argv, VALUE _)
 }
 
 static char *
-load_lock(const char *ftptr)
+load_lock(const char *ftptr, bool warn)
 {
     st_data_t data;
     st_table *loading_tbl = get_loading_table();
@@ -787,7 +787,7 @@ load_lock(const char *ftptr)
 	(*init)();
 	return (char *)"";
     }
-    if (RTEST(ruby_verbose)) {
+    if (warn) {
 	VALUE warning = rb_warning_string("loading in progress, circular require considered harmful - %s", ftptr);
 	rb_backtrace_each(rb_str_append, warning);
 	rb_warning("%"PRIsVALUE, warning);
@@ -1050,7 +1050,7 @@ rb_ext_ractor_safe(bool flag)
  * >1: exception
  */
 static int
-require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
+require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool warn)
 {
     volatile int result = -1;
     rb_thread_t *th = rb_ec_thread_ptr(ec);
@@ -1084,7 +1084,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
         path = saved_path;
 
 	if (found) {
-            if (!path || !(ftptr = load_lock(RSTRING_PTR(path)))) {
+            if (!path || !(ftptr = load_lock(RSTRING_PTR(path), warn))) {
 		result = 0;
 	    }
 	    else if (!*ftptr) {
@@ -1150,10 +1150,17 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
 }
 
 int
+rb_require_internal_silent(VALUE fname)
+{
+    rb_execution_context_t *ec = GET_EC();
+    return require_internal(ec, fname, 1, false);
+}
+
+int
 rb_require_internal(VALUE fname)
 {
     rb_execution_context_t *ec = GET_EC();
-    return require_internal(ec, fname, 1);
+    return require_internal(ec, fname, 1, RTEST(ruby_verbose));
 }
 
 int
@@ -1162,7 +1169,7 @@ ruby_require_internal(const char *fname, unsigned int len)
     struct RString fake;
     VALUE str = rb_setup_fake_str(&fake, fname, len, 0);
     rb_execution_context_t *ec = GET_EC();
-    int result = require_internal(ec, str, 0);
+    int result = require_internal(ec, str, 0, RTEST(ruby_verbose));
     rb_set_errinfo(Qnil);
     return result == TAG_RETURN ? 1 : result ? -1 : 0;
 }
@@ -1171,7 +1178,7 @@ VALUE
 rb_require_string(VALUE fname)
 {
     rb_execution_context_t *ec = GET_EC();
-    int result = require_internal(ec, fname, 1);
+    int result = require_internal(ec, fname, 1, RTEST(ruby_verbose));
 
     if (result > TAG_RETURN) {
         EC_JUMP_TAG(ec, result);
