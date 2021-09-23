@@ -358,6 +358,15 @@ RMODULE_UNINITIALIZED(VALUE module)
 }
 
 void
+rb_module_set_initialized(VALUE mod)
+{
+    if (RMODULE_UNINITIALIZED(mod)) {
+        RB_OBJ_WRITE(mod, &RCLASS(mod)->super, 0);
+        /* no more re-initialization */
+    }
+}
+
+void
 rb_module_check_initializable(VALUE mod)
 {
     if (!RMODULE_UNINITIALIZED(mod)) {
@@ -916,10 +925,7 @@ ensure_includable(VALUE klass, VALUE module)
 {
     rb_class_modify_check(klass);
     Check_Type(module, T_MODULE);
-    if (RMODULE_UNINITIALIZED(module)) {
-        RB_OBJ_WRITE(module, &RCLASS(module)->super, 0);
-        /* no more re-initialization */
-    }
+    rb_module_set_initialized(module);
     if (!NIL_P(rb_refinement_module_get_refined_class(module))) {
 	rb_raise(rb_eArgError, "refinement module is not allowed");
     }
