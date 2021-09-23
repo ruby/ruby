@@ -721,9 +721,8 @@ class Reline::LineEditor
         else
           @output.write ' ' * @block_elem_width
         end
-        @output.write "\e[39m"
       end
-      @output.write "\e[49m"
+      @output.write "\e[0m"
       Reline::IOGate.move_cursor_column(dialog.column)
       move_cursor_down(1) if i < (dialog.contents.size - 1)
     end
