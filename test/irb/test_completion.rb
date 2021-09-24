@@ -78,6 +78,7 @@ module TestIRB
     end
 
     def test_complete_require_library_name_first
+      pend 'Need to use virtual library paths'
       candidates = IRB::InputCompletor::CompletionProc.("'csv", "require ", "")
       assert_equal "'csv", candidates.first
     end
