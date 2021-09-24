@@ -904,14 +904,14 @@ rb_struct_each(VALUE s)
 
 /*
  *  call-seq:
- *    each_pair {|name, value| ... } -> self
+ *    each_pair {|(name, value)| ... } -> self
  *    each_pair -> enumerator
  *
  *  Calls the given block with each member name/value pair; returns +self+:
  *
  *    Customer = Struct.new(:name, :address, :zip) # => Customer
  *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *    joe.each_pair {|name, value| p "#{name} => #{value}" }
+ *    joe.each_pair {|(name, value)| p "#{name} => #{value}" }
  *
  *  Output:
  *
@@ -1183,7 +1183,7 @@ invalid_struct_pos(VALUE s, VALUE idx)
  *
  *  Returns a value from +self+.
  *
- *  With symbol argument +name+ given, returns the value for the named member:
+ *  With symbol or string argument +name+ given, returns the value for the named member:
  *
  *    Customer = Struct.new(:name, :address, :zip)
  *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
@@ -1217,7 +1217,7 @@ rb_struct_aref(VALUE s, VALUE idx)
  *
  *  Assigns a value to a member.
  *
- *  With symbol argument +name+ given, assigns the given +value+
+ *  With symbol or string argument +name+ given, assigns the given +value+
  *  to the named member; returns +value+:
  *
  *    Customer = Struct.new(:name, :address, :zip)
