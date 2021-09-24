@@ -1290,8 +1290,8 @@ struct_entry(VALUE s, long n)
  *    joe.values_at(2, 1, 0) # => [12345, "123 Maple, Anytown NC", "Joe Smith"]
  *    joe.values_at(0, -3)   # => ["Joe Smith", "Joe Smith"]
  *
- *  Raises IndexError if any of +integers+ is out of range.
- *  Raises TypeError if any of +integers+ is not an integer.
+ *  Raises IndexError if any of +integers+ is out of range;
+ *  see {Array Indexes}[Array.html#class-Array-label-Array+Indexes].
  *
  *  With integer range argument +integer_range+ given,
  *  returns an array containing each value given by the elements of the range;
@@ -1319,15 +1319,8 @@ rb_struct_values_at(int argc, VALUE *argv, VALUE s)
  *    select {|value| ... } -> array
  *    select -> enumerator
  *
- *  With a block given:
- *
- *  - Creates a new empty array.
- *  - Calls the block with each struct value;
- *  - Pushes the value onto the array if and only if the block
- *    returns a truthy value.
- *  - Returns the array.
- *
- *  Examples:
+ *  With a block given, returns an array of values from +self+
+ *  for which the block returns a truthy value:
  *
  *    Customer = Struct.new(:name, :address, :zip)
  *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
@@ -1459,8 +1452,10 @@ recursive_eql(VALUE s, VALUE s2, int recur)
  * call-seq:
  *   eql?(other) -> true or false
  *
- *  Two structs of the same class and with the same content (according to Object#==)
- *  will have the same hash code (and will compare using Struct#eql?):
+ *  Returns +true+ if and only if the following are true; otherwise returns +false+:
+ *
+ *  - <tt>other.class == self.class</tt>.
+ *  - For each member name +name+, <tt>other.name.eql?(self.name)</tt>.
  *
  *    Customer = Struct.new(:name, :address, :zip)
  *    joe    = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
@@ -1489,7 +1484,7 @@ rb_struct_eql(VALUE s, VALUE s2)
  *  call-seq:
  *    size -> integer
  *
- *  Returns the count of members.
+ *  Returns the number of members.
  *
  *    Customer = Struct.new(:name, :address, :zip)
  *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
