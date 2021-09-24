@@ -4133,15 +4133,10 @@ gen_getblockparamproxy(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
     uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
     // EP level
-    VALUE level = jit_get_arg(jit, 1);
-
-    if (level != 0) {
-        // Bail on non zero level to make getting the ep simple
-        return YJIT_CANT_COMPILE;
-    }
+    uint32_t level = (uint32_t)jit_get_arg(jit, 1);
 
     // Load environment pointer EP from CFP
-    mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, ep));
+    gen_get_ep(cb, REG0, level);
 
     // Bail when VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM) is non zero
     test(cb, mem_opnd(64, REG0, SIZEOF_VALUE * VM_ENV_DATA_INDEX_FLAGS), imm_opnd(VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM));
