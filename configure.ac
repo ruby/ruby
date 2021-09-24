@@ -1115,7 +1115,7 @@ main()
 		AC_CHECK_FUNCS(cygwin_conv_path)
 		AC_LIBOBJ([langinfo])
 		],
-[mingw*], [	LIBS="-lshell32 -lws2_32 -liphlpapi -limagehlp -lshlwapi $LIBS"
+[mingw*], [	LIBS="-lshell32 -lws2_32 -liphlpapi -limagehlp -lshlwapi -lbcrypt $LIBS"
 		ac_cv_header_pwd_h=no
 		ac_cv_header_utime_h=no
 		ac_cv_header_sys_ioctl_h=no

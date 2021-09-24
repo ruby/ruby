@@ -42,6 +42,7 @@
 # include <winsock2.h>
 # include <windows.h>
 # include <wincrypt.h>
+# include <bcrypt.h>
 #endif
 
 #if defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__)
@@ -544,6 +545,7 @@ fill_random_bytes_syscall(void *buf, size_t size, int unused)
 #endif
 }
 #elif defined(_WIN32)
+# if defined(CRYPT_VERIFYCONTEXT)
 STATIC_ASSERT(sizeof_HCRYPTPROV, sizeof(HCRYPTPROV) == sizeof(size_t));
 
 /* Although HCRYPTPROV is not a HANDLE, it looks like
@@ -561,7 +563,7 @@ release_crypt(void *p)
 }
 
 static int
-fill_random_bytes_syscall(void *seed, size_t size, int unused)
+fill_random_bytes_crypt(void *seed, size_t size)
 {
     static HCRYPTPROV perm_prov;
     HCRYPTPROV prov = perm_prov, old_prov;
@@ -587,6 +589,24 @@ fill_random_bytes_syscall(void *seed, size_t size, int unused)
     if (prov == INVALID_HCRYPTPROV) return -1;
     CryptGenRandom(prov, size, seed);
     return 0;
+}
+# else
+#   define fill_random_bytes_crypt(seed, size) -1
+# endif
+
+static int
+fill_random_bytes_bcrypt(void *seed, size_t size)
+{
+    if (!BCryptGenRandom(NULL, seed, size, BCRYPT_USE_SYSTEM_PREFERRED_RNG))
+	return 0;
+    return -1;
+}
+
+static int
+fill_random_bytes_syscall(void *seed, size_t size, int unused)
+{
+    if (fill_random_bytes_bcrypt(seed, size) == 0) return 0;
+    return fill_random_bytes_crypt(seed, size);
 }
 #elif defined HAVE_GETRANDOM
 static int
