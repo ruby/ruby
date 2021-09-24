@@ -1370,6 +1370,7 @@ recursive_equal(VALUE s, VALUE s2, int recur)
         if (!rb_equal(RSTRUCT_GET(s, i), RSTRUCT_GET(s2, i))) return Qfalse;
     }
     return Qtrue;
+}
 
 
 /*
