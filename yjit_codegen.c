@@ -4505,5 +4505,7 @@ yjit_init_codegen(void)
     yjit_reg_method(rb_cSymbol, "==", jit_rb_obj_equal);
     yjit_reg_method(rb_cSymbol, "===", jit_rb_obj_equal);
 
+    // rb_str_to_s() methods in string.c
     yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
+    yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
 }
