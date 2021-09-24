@@ -430,6 +430,9 @@ rbimpl_atomic_inc(volatile rb_atomic_t *ptr)
 {
 #if 0
 
+#elif defined(HAVE_GCC_ATOMIC_BUILTINS) || defined(HAVE_GCC_SYNC_BUILTINS)
+    rbimpl_atomic_add(ptr, 1);
+
 #elif defined(_WIN32)
     InterlockedIncrement(ptr);
 
@@ -449,6 +452,9 @@ static inline void
 rbimpl_atomic_size_inc(volatile size_t *ptr)
 {
 #if 0
+
+#elif defined(HAVE_GCC_ATOMIC_BUILTINS) || defined(HAVE_GCC_SYNC_BUILTINS)
+    rbimpl_atomic_size_add(ptr, 1);
 
 #elif defined(_WIN32) && defined(_M_AMD64)
     InterlockedIncrement64(ptr);
@@ -558,6 +564,9 @@ rbimpl_atomic_dec(volatile rb_atomic_t *ptr)
 {
 #if 0
 
+#elif defined(HAVE_GCC_ATOMIC_BUILTINS) || defined(HAVE_GCC_SYNC_BUILTINS)
+    rbimpl_atomic_sub(ptr, 1);
+
 #elif defined(_WIN32)
     InterlockedDecrement(ptr);
 
@@ -577,6 +586,9 @@ static inline void
 rbimpl_atomic_size_dec(volatile size_t *ptr)
 {
 #if 0
+
+#elif defined(HAVE_GCC_ATOMIC_BUILTINS) || defined(HAVE_GCC_SYNC_BUILTINS)
+    rbimpl_atomic_size_sub(ptr, 1);
 
 #elif defined(_WIN32) && defined(_M_AMD64)
     InterlockedDecrement64(ptr);
