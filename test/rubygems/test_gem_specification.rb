@@ -2795,6 +2795,20 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
       assert_nothing_raised do
         @a1.validate
       end
+
+      # Adding #{f} at the start of the second or later line should be fine.
+      @a1.description = "(some description)\n#{f}"
+
+      assert_nothing_raised do
+        @a1.validate
+      end
+
+      # Adding #{t} at the start of the second or later line should be fine.
+      @a1.description = "(some description)\n#{t}"
+
+      assert_nothing_raised do
+        @a1.validate
+      end
     end
   end
 
