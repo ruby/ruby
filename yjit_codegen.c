@@ -2954,13 +2954,15 @@ jit_protected_callee_ancestry_guard(jitstate_t *jit, codeblock_t *cb, const rb_c
 }
 
 // Return true when the codegen function generates code.
-typedef bool (*method_codegen_t)(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc);
+// known_recv_klass is non-NULL when the caller has used jit_guard_known_klass
+// See yjit_reg_method.
+typedef bool (*method_codegen_t)(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc, VALUE *known_recv_klass);
 
 // Codegen for rb_obj_not().
 // Note, caller is responsible for generating all the right guards, including
 // arity guards.
 static bool
-jit_rb_obj_not(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc)
+jit_rb_obj_not(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc, VALUE *known_recv_klass)
 {
     const val_type_t recv_opnd = ctx_get_opnd_type(ctx, OPND_STACK(0));
 
@@ -2988,7 +2990,7 @@ jit_rb_obj_not(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
 
 // Codegen for rb_true()
 static bool
-jit_rb_true(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc)
+jit_rb_true(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc, VALUE *known_recv_klass)
 {
     ADD_COMMENT(cb, "nil? == true");
     ctx_stack_pop(ctx, 1);
@@ -2999,7 +3001,7 @@ jit_rb_true(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_
 
 // Codegen for rb_false()
 static bool
-jit_rb_false(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc)
+jit_rb_false(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc, VALUE *known_recv_klass)
 {
     ADD_COMMENT(cb, "nil? == false");
     ctx_stack_pop(ctx, 1);
@@ -3011,7 +3013,7 @@ jit_rb_false(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb
 // Codegen for rb_obj_equal()
 // object identity comparison
 static bool
-jit_rb_obj_equal(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc)
+jit_rb_obj_equal(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc, VALUE *known_recv_klass)
 {
     ADD_COMMENT(cb, "equal?");
     x86opnd_t obj1 = ctx_stack_pop(ctx, 1);
@@ -3028,6 +3030,22 @@ jit_rb_obj_equal(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, cons
     return true;
 }
 
+// Codegen for rb_str_to_s()
+// When String#to_s is called on a String instance, the method returns self and most
+// of the overhead comes from setting up the method call. We observed that this situation
+// happens a lot in some workloads.
+static bool
+jit_rb_str_to_s(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc, VALUE *recv_known_klass)
+{
+    if (recv_known_klass && *recv_known_klass == rb_cString) {
+        ADD_COMMENT(cb, "to_s on plain string");
+        // The method returns the receiver, which is already on the stack.
+        // No stack movement.
+        return true;
+    }
+    return false;
+}
+
 // Check if we know how to codegen for a particular cfunc method
 static method_codegen_t
 lookup_cfunc_codegen(const rb_method_definition_t *def)
@@ -3040,7 +3058,7 @@ lookup_cfunc_codegen(const rb_method_definition_t *def)
 }
 
 static codegen_status_t
-gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc)
+gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc, VALUE *recv_known_klass)
 {
     const rb_method_cfunc_t *cfunc = UNALIGNED_MEMBER_PTR(cme->def, body.cfunc);
 
@@ -3085,7 +3103,7 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
     {
         method_codegen_t known_cfunc_codegen;
         if ((known_cfunc_codegen = lookup_cfunc_codegen(cme->def))) {
-            if (known_cfunc_codegen(jit, ctx, ci, cme, block, argc)) {
+            if (known_cfunc_codegen(jit, ctx, ci, cme, block, argc, recv_known_klass)) {
                 // cfunc codegen generated code. Terminate the block so
                 // there isn't multiple calls in the same block.
                 jit_jump_to_next_insn(jit, ctx);
@@ -3644,7 +3662,7 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
         case VM_METHOD_TYPE_ISEQ:
             return gen_send_iseq(jit, ctx, ci, cme, block, argc);
         case VM_METHOD_TYPE_CFUNC:
-            return gen_send_cfunc(jit, ctx, ci, cme, block, argc);
+            return gen_send_cfunc(jit, ctx, ci, cme, block, argc, &comptime_recv_klass);
         case VM_METHOD_TYPE_IVAR:
             if (argc != 0) {
                 // Argument count mismatch. Getters take no arguments.
@@ -3842,7 +3860,7 @@ gen_invokesuper(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
         case VM_METHOD_TYPE_ISEQ:
             return gen_send_iseq(jit, ctx, ci, cme, block, argc);
         case VM_METHOD_TYPE_CFUNC:
-            return gen_send_cfunc(jit, ctx, ci, cme, block, argc);
+            return gen_send_cfunc(jit, ctx, ci, cme, block, argc, NULL);
         default:
             break;
     }
@@ -4480,4 +4498,6 @@ yjit_init_codegen(void)
     yjit_reg_method(rb_cModule, "==", jit_rb_obj_equal);
     yjit_reg_method(rb_cSymbol, "==", jit_rb_obj_equal);
     yjit_reg_method(rb_cSymbol, "===", jit_rb_obj_equal);
+
+    yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
 }

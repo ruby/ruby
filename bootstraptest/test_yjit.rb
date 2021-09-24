@@ -2038,3 +2038,38 @@ assert_equal '42',  %q{
 
   Ractor.new { A.foo }.take
 }
+
+assert_equal '["plain", "special", "sub", "plain"]', %q{
+  def foo(arg)
+    arg.to_s
+  end
+
+  class Sub < String
+  end
+
+  special = String.new("special")
+  special.singleton_class
+
+  [
+    foo("plain"),
+    foo(special),
+    foo(Sub.new("sub")),
+    foo("plain")
+  ]
+}
+
+assert_equal '["sub", "sub"]', %q{
+  def foo(arg)
+    arg.to_s
+  end
+
+  class Sub < String
+    def to_s
+      super
+    end
+  end
+
+  sub = Sub.new("sub")
+
+  [foo(sub), foo(sub)]
+}
