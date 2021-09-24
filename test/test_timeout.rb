@@ -3,6 +3,13 @@ require 'test/unit'
 require 'timeout'
 
 class TestTimeout < Test::Unit::TestCase
+
+  def test_non_timing_out_code_is_successful
+    assert_nothing_raised do
+      assert_equal :ok, Timeout.timeout(1){ :ok }
+    end
+  end
+
   def test_queue
     q = Thread::Queue.new
     assert_raise(Timeout::Error, "[ruby-dev:32935]") {
