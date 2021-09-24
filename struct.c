@@ -206,6 +206,8 @@ rb_struct_s_members_m(VALUE klass)
  *
  *     Customer = Struct.new(:name, :address, :zip)
  *     Customer.new.members # => [:name, :address, :zip]
+ *
+ *  Related: #to_a.
  */
 
 static VALUE
@@ -868,21 +870,24 @@ struct_enum_size(VALUE s, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *     struct.each {|obj| block }  -> struct
- *     struct.each                 -> enumerator
+ *    each {|value| ... } -> self
+ *    each -> enumerator
  *
- *  Yields the value of each struct member in order.  If no block is given an
- *  enumerator is returned.
+ *  Calls the given block with the value of each member; returns +self+:
  *
- *     Customer = Struct.new(:name, :address, :zip)
- *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     joe.each {|x| puts(x) }
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe.each {|value| p value }
  *
- *  Produces:
+ *  Output:
  *
- *     Joe Smith
- *     123 Maple, Anytown NC
- *     12345
+ *    "Joe Smith"
+ *    "123 Maple, Anytown NC"
+ *    12345
+ *
+ *  Returns an Enumerator if no block is given.
+ *
+ *  Related: #each_pair.
  */
 
 static VALUE
@@ -899,21 +904,25 @@ rb_struct_each(VALUE s)
 
 /*
  *  call-seq:
- *     struct.each_pair {|sym, obj| block }     -> struct
- *     struct.each_pair                         -> enumerator
+ *    each_pair {|(name, value)| ... } -> self
+ *    each_pair -> enumerator
  *
- *  Yields the name and value of each struct member in order.  If no block is
- *  given an enumerator is returned.
+ *  Calls the given block with each member name/value pair; returns +self+:
  *
- *     Customer = Struct.new(:name, :address, :zip)
- *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     joe.each_pair {|name, value| puts("#{name} => #{value}") }
+ *    Customer = Struct.new(:name, :address, :zip) # => Customer
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe.each_pair {|(name, value)| p "#{name} => #{value}" }
  *
- *  Produces:
+ *  Output:
  *
- *     name => Joe Smith
- *     address => 123 Maple, Anytown NC
- *     zip => 12345
+ *    "name => Joe Smith"
+ *    "address => 123 Maple, Anytown NC"
+ *    "zip => 12345"
+ *
+ *  Returns an Enumerator if no block is given.
+ *
+ *  Related: #each.
+ *
  */
 
 static VALUE
@@ -986,11 +995,17 @@ inspect_struct(VALUE s, VALUE dummy, int recur)
 }
 
 /*
- * call-seq:
- *   struct.to_s      -> string
- *   struct.inspect   -> string
+ *  call-seq:
+ *    inspect -> string
  *
- * Returns a description of this struct as a string.
+ *  Returns a string representation of +self+:
+ *
+ *    Customer = Struct.new(:name, :address, :zip) # => Customer
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe.inspect # => "#<struct Customer name=\"Joe Smith\", address=\"123 Maple, Anytown NC\", zip=12345>"
+ *
+ *  Struct#to_s is an alias for Struct#inspect.
+ *
  */
 
 static VALUE
@@ -1001,14 +1016,17 @@ rb_struct_inspect(VALUE s)
 
 /*
  *  call-seq:
- *     struct.to_a     -> array
- *     struct.values   -> array
+ *    to_a     -> array
  *
- *  Returns the values for this struct as an Array.
+ *  Returns the values in +self+ as an array:
  *
- *     Customer = Struct.new(:name, :address, :zip)
- *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     joe.to_a[1]   #=> "123 Maple, Anytown NC"
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe.to_a # => ["Joe Smith", "123 Maple, Anytown NC", 12345]
+ *
+ *  Struct#values and Struct#deconstruct are aliases for Struct#to_a.
+ *
+ *  Related: #members.
  */
 
 static VALUE
@@ -1019,19 +1037,25 @@ rb_struct_to_a(VALUE s)
 
 /*
  *  call-seq:
- *     struct.to_h                        -> hash
- *     struct.to_h {|name, value| block } -> hash
+ *    to_h -> hash
+ *    to_h {|name, value| ... } -> hash
  *
- *  Returns a Hash containing the names and values for the struct's members.
+ *  Returns a hash containing the name and value for each member:
  *
- *  If a block is given, the results of the block on each pair of the receiver
- *  will be used as pairs.
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    h = joe.to_h
+ *    h # => {:name=>"Joe Smith", :address=>"123 Maple, Anytown NC", :zip=>12345}
  *
- *     Customer = Struct.new(:name, :address, :zip)
- *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     joe.to_h[:address]   #=> "123 Maple, Anytown NC"
- *     joe.to_h{|name, value| [name.upcase, value.to_s.upcase]}[:ADDRESS]
- *                          #=> "123 MAPLE, ANYTOWN NC"
+ *  If a block is given, it is called with each name/value pair;
+ *  the block should return a 2-element array whose elements will become
+ *  a key/value pair in the returned hash:
+ *
+ *    h = joe.to_h{|name, value| [name.upcase, value.to_s.upcase]}
+ *    h # => {:NAME=>"JOE SMITH", :ADDRESS=>"123 MAPLE, ANYTOWN NC", :ZIP=>"12345"}
+ *
+ *  Raises ArgumentError if the block returns an inappropriate value.
+ *
  */
 
 static VALUE
@@ -1154,19 +1178,28 @@ invalid_struct_pos(VALUE s, VALUE idx)
 
 /*
  *  call-seq:
- *     struct[member]   -> object
- *     struct[index]    -> object
+ *    struct[name] -> object
+ *    struct[n] -> object
  *
- *  Attribute Reference---Returns the value of the given struct +member+ or
- *  the member at the given +index+.   Raises NameError if the +member+ does
- *  not exist and IndexError if the +index+ is out of range.
+ *  Returns a value from +self+.
  *
- *     Customer = Struct.new(:name, :address, :zip)
- *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *  With symbol or string argument +name+ given, returns the value for the named member:
  *
- *     joe["name"]   #=> "Joe Smith"
- *     joe[:name]    #=> "Joe Smith"
- *     joe[0]        #=> "Joe Smith"
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe[:zip] # => 12345
+ *
+ *  Raises NameError if +name+ is not the name of a member.
+ *
+ *  With integer argument +n+ given, returns <tt>self.values[n]</tt>
+ *  if +n+ is in range;
+ *  see {Array Indexes}[Array.html#class-Array-label-Array+Indexes]:
+ *
+ *    joe[2]  # => 12345
+ *    joe[-2] # => "123 Maple, Anytown NC"
+ *
+ *  Raises IndexError if +n+ is out of range.
+ *
  */
 
 VALUE
@@ -1179,21 +1212,32 @@ rb_struct_aref(VALUE s, VALUE idx)
 
 /*
  *  call-seq:
- *     struct[member] = obj    -> obj
- *     struct[index]  = obj    -> obj
+ *    struct[name] = value -> value
+ *    struct[n] = value -> value
  *
- *  Attribute Assignment---Sets the value of the given struct +member+ or
- *  the member at the given +index+.  Raises NameError if the +member+ does not
- *  exist and IndexError if the +index+ is out of range.
+ *  Assigns a value to a member.
  *
- *     Customer = Struct.new(:name, :address, :zip)
- *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *  With symbol or string argument +name+ given, assigns the given +value+
+ *  to the named member; returns +value+:
  *
- *     joe["name"] = "Luke"
- *     joe[:zip]   = "90210"
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe[:zip] = 54321 # => 54321
+ *    joe # => #<struct Customer name="Joe Smith", address="123 Maple, Anytown NC", zip=54321>
  *
- *     joe.name   #=> "Luke"
- *     joe.zip    #=> "90210"
+ *  Raises NameError if +name+ is not the name of a member.
+ *
+ *  With integer argument +n+ given, assigns the given +value+
+ *  to the +n+th member if +n+ is in range;
+ *  see {Array Indexes}[Array.html#class-Array-label-Array+Indexes]:
+ *
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe[2] = 54321           # => 54321
+ *    joe[-3] = 'Joseph Smith' # => "Joseph Smith"
+ *    joe # => #<struct Customer name="Joseph Smith", address="123 Maple, Anytown NC", zip=54321>
+ *
+ *  Raises IndexError if +n+ is out of range.
+ *
  */
 
 VALUE
