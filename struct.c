@@ -1275,15 +1275,36 @@ struct_entry(VALUE s, long n)
 
 /*
  *  call-seq:
- *     struct.values_at(selector, ...)  -> array
+ *    values_at(*integers) -> array
+ *    values_at(integer_range) -> array
  *
- *  Returns the struct member values for each +selector+ as an Array.  A
- *  +selector+ may be either an Integer offset or a Range of offsets (as in
- *  Array#values_at).
+ *  Returns an array of values from +self+.
  *
- *     Customer = Struct.new(:name, :address, :zip)
- *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     joe.values_at(0, 2)   #=> ["Joe Smith", 12345]
+ *  With integer arguments +integers+ given,
+ *  returns an array containing each value given by one of +integers+:
+ *
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe.values_at(0, 2)    # => ["Joe Smith", 12345]
+ *    joe.values_at(2, 0)    # => [12345, "Joe Smith"]
+ *    joe.values_at(2, 1, 0) # => [12345, "123 Maple, Anytown NC", "Joe Smith"]
+ *    joe.values_at(0, -3)   # => ["Joe Smith", "Joe Smith"]
+ *
+ *  Raises IndexError if any of +integers+ is out of range;
+ *  see {Array Indexes}[Array.html#class-Array-label-Array+Indexes].
+ *
+ *  With integer range argument +integer_range+ given,
+ *  returns an array containing each value given by the elements of the range;
+ *  fills with +nil+ values for range elements larger than the structure:
+ *
+ *    joe.values_at(0..2)
+ *    # => ["Joe Smith", "123 Maple, Anytown NC", 12345]
+ *    joe.values_at(-3..-1)
+ *    # => ["Joe Smith", "123 Maple, Anytown NC", 12345]
+ *    joe.values_at(1..4) # => ["123 Maple, Anytown NC", 12345, nil, nil]
+ *
+ *  Raises RangeError if any element of the range is negative and out of range;
+ *  see {Array Indexes}[Array.html#class-Array-label-Array+Indexes].
  *
  */
 
@@ -1295,18 +1316,20 @@ rb_struct_values_at(int argc, VALUE *argv, VALUE s)
 
 /*
  *  call-seq:
- *     struct.select {|obj| block }  -> array
- *     struct.select                 -> enumerator
- *     struct.filter {|obj| block }  -> array
- *     struct.filter                 -> enumerator
+ *    select {|value| ... } -> array
+ *    select -> enumerator
  *
- *  Yields each member value from the struct to the block and returns an Array
- *  containing the member values from the +struct+ for which the given block
- *  returns a true value (equivalent to Enumerable#select).
+ *  With a block given, returns an array of values from +self+
+ *  for which the block returns a truthy value:
  *
- *     Lots = Struct.new(:a, :b, :c, :d, :e, :f)
- *     l = Lots.new(11, 22, 33, 44, 55, 66)
- *     l.select {|v| v.even? }   #=> [22, 44, 66]
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    a = joe.select {|value| value.is_a?(String) }
+ *    a # => ["Joe Smith", "123 Maple, Anytown NC"]
+ *    a = joe.select {|value| value.is_a?(Integer) }
+ *    a # => [12345]
+ *
+ *  With no block given, returns an Enumerator.
  *
  *  Struct#filter is an alias for Struct#select.
  */
@@ -1342,19 +1365,25 @@ recursive_equal(VALUE s, VALUE s2, int recur)
     return Qtrue;
 }
 
+
 /*
  *  call-seq:
- *     struct == other     -> true or false
+ *    self == other -> true or false
  *
- *  Equality---Returns +true+ if +other+ has the same struct subclass and has
- *  equal member values (according to Object#==).
+ *  Returns  +true+ if and only if the following are true; otherwise returns +false+:
  *
- *     Customer = Struct.new(:name, :address, :zip)
- *     joe   = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     joejr = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     jane  = Customer.new("Jane Doe", "456 Elm, Anytown NC", 12345)
- *     joe == joejr   #=> true
- *     joe == jane    #=> false
+ *  - <tt>other.class == self.class</tt>.
+ *  - For each member name +name+, <tt>other.name == self.name</tt>.
+ *
+ *  Examples:
+ *
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe    = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe_jr = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe_jr == joe # => true
+ *    joe_jr[:name] = 'Joe Smith, Jr.'
+ *    # => "Joe Smith, Jr."
+ *    joe_jr == joe # => false
  */
 
 static VALUE
@@ -1371,12 +1400,22 @@ rb_struct_equal(VALUE s, VALUE s2)
 }
 
 /*
- * call-seq:
- *   struct.hash   -> integer
+ *  call-seq:
+ *    hash -> integer
  *
- * Returns a hash value based on this struct's contents.
+ *  Returns the integer hash value for +self+.
  *
- * See also Object#hash.
+ *  Two structs of the same class and with the same content
+ *  will have the same hash code (and will compare using Struct#eql?):
+ *
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe    = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe_jr = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe.hash == joe_jr.hash # => true
+ *    joe_jr[:name] = 'Joe Smith, Jr.'
+ *    joe.hash == joe_jr.hash # => false
+ *
+ *  Related: Object#hash.
  */
 
 static VALUE
@@ -1411,11 +1450,21 @@ recursive_eql(VALUE s, VALUE s2, int recur)
 
 /*
  * call-seq:
- *   struct.eql?(other)   -> true or false
+ *   eql?(other) -> true or false
  *
- * Hash equality---+other+ and +struct+ refer to the same hash key if they
- * have the same struct subclass and have equal member values (according to
- * Object#eql?).
+ *  Returns +true+ if and only if the following are true; otherwise returns +false+:
+ *
+ *  - <tt>other.class == self.class</tt>.
+ *  - For each member name +name+, <tt>other.name.eql?(self.name)</tt>.
+ *
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe    = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe_jr = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe_jr.eql?(joe) # => true
+ *    joe_jr[:name] = 'Joe Smith, Jr.'
+ *    joe_jr.eql?(joe) # => false
+ *
+ *  Related: Object#==.
  */
 
 static VALUE
@@ -1433,14 +1482,15 @@ rb_struct_eql(VALUE s, VALUE s2)
 
 /*
  *  call-seq:
- *     struct.length    -> integer
- *     struct.size      -> integer
+ *    size -> integer
  *
- *  Returns the number of struct members.
+ *  Returns the number of members.
  *
- *     Customer = Struct.new(:name, :address, :zip)
- *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     joe.length   #=> 3
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe.size #=> 3
+ *
+ *  Struct#length is an alias for Struct#size.
  */
 
 VALUE
@@ -1451,14 +1501,17 @@ rb_struct_size(VALUE s)
 
 /*
  * call-seq:
- *   struct.dig(key, *identifiers) -> object
+ *   dig(name, *identifiers) -> object
+ *   dig(n, *identifiers) -> object
  *
- * Finds and returns the object in nested objects
- * that is specified by +key+ and +identifiers+.
- * The nested objects may be instances of various classes.
- * See {Dig Methods}[rdoc-ref:dig_methods.rdoc].
+ *  Finds and returns an object among nested objects.
+ *  The nested objects may be instances of various classes.
+ *  See {Dig Methods}[rdoc-ref:dig_methods.rdoc].
  *
- * Examples:
+ *
+ *  Given symbol or string argument +name+,
+ *  returns the object that is specified by +name+ and +identifiers+:
+ *
  *   Foo = Struct.new(:a)
  *   f = Foo.new(Foo.new({b: [1, 2, 3]}))
  *   f.dig(:a) # => #<struct Foo a={:b=>[1, 2, 3]}>
@@ -1466,6 +1519,16 @@ rb_struct_size(VALUE s)
  *   f.dig(:a, :a, :b) # => [1, 2, 3]
  *   f.dig(:a, :a, :b, 0) # => 1
  *   f.dig(:b, 0) # => nil
+ *
+ *  Given integer argument +n+,
+ *  returns the object that is specified by +n+ and +identifiers+:
+ *
+ *   f.dig(0) # => #<struct Foo a={:b=>[1, 2, 3]}>
+ *   f.dig(0, 0) # => {:b=>[1, 2, 3]}
+ *   f.dig(0, 0, :b) # => [1, 2, 3]
+ *   f.dig(0, 0, :b, 0) # => 1
+ *   f.dig(:b, 0) # => nil
+ *
  */
 
 static VALUE
