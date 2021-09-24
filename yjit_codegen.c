@@ -2954,9 +2954,31 @@ jit_protected_callee_ancestry_guard(jitstate_t *jit, codeblock_t *cb, const rb_c
 }
 
 // Return true when the codegen function generates code.
-// known_recv_klass is non-NULL when the caller has used jit_guard_known_klass
-// See yjit_reg_method.
+// known_recv_klass is non-NULL when the caller has used jit_guard_known_klass().
+// See yjit_reg_method().
 typedef bool (*method_codegen_t)(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc, VALUE *known_recv_klass);
+
+// Register a specialized codegen function for a particular method. Note that
+// the if the function returns true, the code it generates runs without a
+// control frame and without interrupt checks. To avoid creating observable
+// behavior changes, the codegen function should only target simple code paths
+// that do not allocate and do not make method calls.
+static void
+yjit_reg_method(VALUE klass, const char *mid_str, method_codegen_t gen_fn)
+{
+    ID mid = rb_intern(mid_str);
+    const rb_method_entry_t *me = rb_method_entry_at(klass, mid);
+
+    if (!me) {
+        rb_bug("undefined optimized method: %s", rb_id2name(mid));
+    }
+
+    // For now, only cfuncs are supported
+    RUBY_ASSERT(me && me->def);
+    RUBY_ASSERT(me->def->type == VM_METHOD_TYPE_CFUNC);
+
+    st_insert(yjit_method_codegen_table, (st_data_t)me->def->method_serial, (st_data_t)gen_fn);
+}
 
 // Codegen for rb_obj_not().
 // Note, caller is responsible for generating all the right guards, including
@@ -3031,9 +3053,9 @@ jit_rb_obj_equal(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, cons
 }
 
 // Codegen for rb_str_to_s()
-// When String#to_s is called on a String instance, the method returns self and most
-// of the overhead comes from setting up the method call. We observed that this situation
-// happens a lot in some workloads.
+// When String#to_s is called on a String instance, the method returns self and
+// most of the overhead comes from setting up the method call. We observed that
+// this situation happens a lot in some workloads.
 static bool
 jit_rb_str_to_s(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc, VALUE *recv_known_klass)
 {
@@ -4363,23 +4385,6 @@ invalidate_all_blocks_for_tracing(const rb_iseq_t *iseq)
 }
 
 static void
-yjit_reg_method(VALUE klass, const char *mid_str, method_codegen_t gen_fn)
-{
-    ID mid = rb_intern(mid_str);
-    const rb_method_entry_t *me = rb_method_entry_at(klass, mid);
-
-    if (!me) {
-        rb_bug("undefined optimized method: %s", rb_id2name(mid));
-    }
-
-    // For now, only cfuncs are supported
-    VM_ASSERT(me && me->def);
-    VM_ASSERT(me->def->type == VM_METHOD_TYPE_CFUNC);
-
-    st_insert(yjit_method_codegen_table, (st_data_t)me->def->method_serial, (st_data_t)gen_fn);
-}
-
-static void
 yjit_reg_op(int opcode, codegen_fn gen_fn)
 {
     RUBY_ASSERT(opcode >= 0 && opcode < VM_INSTRUCTION_SIZE);
@@ -4487,6 +4492,7 @@ yjit_init_codegen(void)
 
     yjit_method_codegen_table = st_init_numtable();
 
+    // Specialization for C methods. See yjit_reg_method() for details.
     yjit_reg_method(rb_cBasicObject, "!", jit_rb_obj_not);
 
     yjit_reg_method(rb_cNilClass, "nil?", jit_rb_true);
