@@ -2004,6 +2004,7 @@ get_final_path_fail(HANDLE f, WCHAR *buf, DWORD len, DWORD flag)
 static DWORD WINAPI
 get_final_path_unknown(HANDLE f, WCHAR *buf, DWORD len, DWORD flag)
 {
+    /* Since Windows Vista and Windows Server 2008 */
     get_final_path_func func = (get_final_path_func)
 	get_proc_address("kernel32", "GetFinalPathNameByHandleW", NULL);
     if (!func) func = get_final_path_fail;
@@ -5209,6 +5210,7 @@ w32_symlink(UINT cp, const char *src, const char *link)
     static DWORD create_flag = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
 
     if (create_symbolic_link == (create_symbolic_link_func)-1) {
+	/* Since Windows Vista and Windows Server 2008 */
 	create_symbolic_link = (create_symbolic_link_func)
 	    get_proc_address("kernel32", "CreateSymbolicLinkW", NULL);
     }
@@ -5540,6 +5542,7 @@ get_ino(HANDLE h, FILE_ID_INFO *id)
     static gfibhe_t pGetFileInformationByHandleEx = (gfibhe_t)-1;
 
     if (pGetFileInformationByHandleEx == (gfibhe_t)-1)
+	/* Since Windows Vista and Windows Server 2008 */
 	pGetFileInformationByHandleEx = (gfibhe_t)get_proc_address("kernel32", "GetFileInformationByHandleEx", NULL);
 
     if (pGetFileInformationByHandleEx) {
@@ -7753,6 +7756,7 @@ fchmod(int fd, int mode)
 	return -1;
     }
     if (set_file_info == (set_file_information_by_handle_func)-1) {
+	/* Since Windows Vista and Windows Server 2008 */
 	set_file_info = (set_file_information_by_handle_func)
 	    get_proc_address("kernel32", "SetFileInformationByHandle", NULL);
     }
@@ -8159,6 +8163,7 @@ rb_w32_set_thread_description(HANDLE th, const WCHAR *name)
     static set_thread_description_func set_thread_description =
 	(set_thread_description_func)-1;
     if (set_thread_description == (set_thread_description_func)-1) {
+	/* Since Windows 10, version 1607 and Windows Server 2016 */
 	set_thread_description = (set_thread_description_func)
 	    get_proc_address("kernel32", "SetThreadDescription", NULL);
     }
