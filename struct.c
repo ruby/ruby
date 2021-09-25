@@ -1544,29 +1544,44 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
 /*
  *  Document-class: Struct
  *
- *  A Struct is a convenient way to bundle a number of attributes together,
- *  using accessor methods, without having to write an explicit class.
+ *  \Class \Struct provides a convenient way to create a simple class
+ *  that can store and fetch values.
  *
- *  The Struct class generates new subclasses that hold a set of members and
- *  their values.  For each member a reader and writer method is created
- *  similar to Module#attr_accessor.
+ *  This example creates a subclass of +Struct+, <tt>Struct::Customer</tt>;
+ *  the first argument, a string, is the name of the subclass;
+ *  the other arguments, symbols, determine the _members_ of the new subclass.
  *
- *     Customer = Struct.new(:name, :address) do
- *       def greeting
- *         "Hello #{name}!"
- *       end
- *     end
+ *    Customer = Struct.new('Customer', :name, :address, :zip)
+ *    Customer.name       # => "Struct::Customer"
+ *    Customer.class      # => Class
+ *    Customer.superclass # => Struct
  *
- *     dave = Customer.new("Dave", "123 Main")
- *     dave.name     #=> "Dave"
- *     dave.greeting #=> "Hello Dave!"
+ *  Corresponding to each member are two methods, a writer and a reader,
+ *  that store and fetch values:
  *
- *  See Struct::new for further examples of creating struct subclasses and
- *  instances.
+ *    methods = Customer.instance_methods false
+ *    methods # => [:zip, :address=, :zip=, :address, :name, :name=]
  *
- *  In the method descriptions that follow, a "member" parameter refers to a
- *  struct member which is either a quoted string (<code>"name"</code>) or a
- *  Symbol (<code>:name</code>).
+ *  An instance of the subclass may be created,
+ *  and its members assigned values, via method <tt>::new</tt>:
+ *
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe # => #<struct Struct::Customer name="Joe Smith", address="123 Maple, Anytown NC", zip=12345>
+ *
+ *  The member values may be managed thus:
+ *
+ *    joe.name    # => "Joe Smith"
+ *    joe.name = 'Joseph Smith'
+ *    joe.name    # => "Joseph Smith"
+ *
+ *  And thus; note that member name may be expressed as either a string or a symbol:
+ *
+ *    joe[:name]  # => "Joseph Smith"
+ *    joe[:name] = 'Joseph Smith, Jr.'
+ *    joe['name'] # => "Joseph Smith, Jr."
+ *
+ *  See Struct::new.
+ *
  */
 void
 InitVM_Struct(void)
