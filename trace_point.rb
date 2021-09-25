@@ -118,13 +118,11 @@ class TracePoint
     Primitive.tracepoint_stat_s
   end
 
-  # Document-method: trace
-  #
   # call-seq:
-  #	TracePoint.trace(*events) { |obj| block }	-> obj
+  #	   TracePoint.trace(*events) { |obj| block }	-> obj
   #
-  #  A convenience method for TracePoint.new, that activates the trace
-  #  automatically.
+  # A convenience method for TracePoint.new, that activates the trace
+  # automatically.
   #
   #	    trace = TracePoint.trace(:call) { |tp| [tp.lineno, tp.event] }
   #	    #=> #<TracePoint:enabled>
