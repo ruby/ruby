@@ -1076,6 +1076,23 @@ rb_struct_to_h(VALUE s)
     return h;
 }
 
+/*
+ *  call-seq:
+ *    deconstruct_keys(array_of_names) -> hash
+ *
+ *  Returns a hash of the name/value pairs for the given member names.
+ *
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    h = joe.deconstruct_keys([:zip, :address])
+      h # => {:zip=>12345, :address=>"123 Maple, Anytown NC"}
+ *
+ *  Returns all names and values if +array_of_names+ is +nil+:
+ *
+ *    h = joe.deconstruct_keys(nil)
+ *    h # => {:name=>"Joseph Smith, Jr.", :address=>"123 Maple, Anytown NC", :zip=>12345}
+ *
+ */
 static VALUE
 rb_struct_deconstruct_keys(VALUE s, VALUE keys)
 {
@@ -1581,6 +1598,67 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
  *    joe['name'] # => "Joseph Smith, Jr."
  *
  *  See Struct::new.
+ *
+ *  == What's Here
+ *
+ *  First, what's elsewhere. \Class \Struct:
+ *
+ *  - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
+ *  - Includes {module Enumerable}[Enumerable.html#module-Enumerable-label-What-27s+Here],
+ *    which provides dozens of additional methods.
+ *
+ *  Here, class \Struct provides methods that are useful for:
+ *
+ *  - {Creating a Struct Subclass}[#class-Struct-label-Methods+for+Creating+a+Struct+Subclass]
+ *  - {Querying}[#class-Struct-label-Methods+for+Querying]
+ *  - {Comparing}[#class-Struct-label-Methods+for+Comparing]
+ *  - {Fetching}[#class-Struct-label-Methods+for+Fetching]
+ *  - {Assigning}[#class-Struct-label-Methods+for+Assigning]
+ *  - {Iterating}[#class-Struct-label-Methods+for+Iterating]
+ *  - {Converting}[#class-Struct-label-Methods+for+Converting]
+ *
+ *  === Methods for Creating a Struct Subclass
+ *
+ *  ::new:: Returns a new subclass of \Struct.
+ *
+ *  === Methods for Querying
+ *
+ *  #hash:: Returns the integer hash code.
+ *  #length, #size:: Returns the number of members.
+ *
+ *  === Methods for Comparing
+ *
+ *  {#==}[#method-i-3D-3D]:: Returns whether a given object is equal to +self+,
+ *                           using <tt>==</tt> to compare member values.
+ *  #eql?:: Returns whether a given object is equal to +self+,
+ *          using <tt>eql?</tt> to compare member values.
+ *
+ *  === Methods for Fetching
+ *
+ *  #[]:: Returns the value associated with a given member name.
+ *  #to_a, #values, #deconstruct:: Returns the member values in +self+ as an array.
+ *  #deconstruct_keys:: Returns a hash of the name/value pairs
+ *                      for given member names.
+ *  #dig:: Returns the object in nested objects that is specified
+ *         by a given member name and additional arguments.
+ *  #members:: Returns an array of the member names.
+ *  #select, #filter:: Returns an array of member values from +self+,
+ *                     as selected by the given block.
+ *  #values_at:: Returns an array containing values for given member names.
+ *
+ *  === Methods for Assigning
+ *
+ *  #[]=:: Assigns a given value to a given member name.
+ *
+ *  === Methods for Iterating
+ *
+ *  #each:: Calls a given block with each member name.
+ *  #each, #each_pair:: Calls a given block with each member name/value pair.
+ *
+ *  === Methods for Converting
+ *
+ *  #inspect, #to_s:: Returns a string representation of +self+.
+ *  #to_h:: Returns a hash of the member name/value pairs in +self+.
  *
  */
 void
