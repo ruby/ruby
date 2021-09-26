@@ -274,6 +274,18 @@ module IRB
     #     IRB.CurrentContext.echo_on_assignment = true
     #     a = "omg" * 10
     #     #=> omgomgomgomgomgomgomgomgomgomg
+    #
+    # To set the behaviour of showing on assignment in irb:
+    #
+    #     IRB.conf[:ECHO_ON_ASSIGNMENT] = :truncate or true or false
+    #
+    # or
+    #
+    #     irb_context.echo_on_assignment = :truncate or true or false
+    #
+    # or
+    #
+    #     IRB.CurrentContext.echo_on_assignment = :truncate or true or false
     attr_accessor :echo_on_assignment
     # Whether a newline is put before multiline output.
     #

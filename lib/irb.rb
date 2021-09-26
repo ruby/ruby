@@ -64,6 +64,12 @@ require_relative "irb/easter-egg"
 #                       when new workspace was created
 #     --echo            Show result (default)
 #     --noecho          Don't show result
+#     --echo-on-assignment
+#                       Show result on assignment
+#     --noecho-on-assignment
+#                       Don't show result on assignment
+#     --truncate-echo-on-assignment
+#                       Show truncated result on assignment (default)
 #     --inspect         Use `inspect' for output
 #     --noinspect       Don't use inspect for output
 #     --multiline       Use multiline editor module
