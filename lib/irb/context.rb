@@ -264,10 +264,13 @@ module IRB
     #
     #     a = "omg"
     #     #=> omg
+    #
     #     a = "omg" * 10
     #     #=> omgomgomgomgomgomgomg...
+    #
     #     IRB.CurrentContext.echo_on_assignment = false
     #     a = "omg"
+    #
     #     IRB.CurrentContext.echo_on_assignment = true
     #     a = "omg" * 10
     #     #=> omgomgomgomgomgomgomgomgomgomg
