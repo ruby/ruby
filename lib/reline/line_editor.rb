@@ -2632,6 +2632,17 @@ class Reline::LineEditor
   end
   alias_method :unix_line_discard, :vi_kill_line_prev
 
+  private def em_kill_line(key)
+    if @line.size > 0
+      @kill_ring.append(@line.dup, true)
+      @line.clear
+      @byte_pointer = 0
+      @cursor_max = 0
+      @cursor = 0
+    end
+  end
+  alias_method :kill_whole_line, :em_kill_line
+
   private def em_delete(key)
     if (not @is_multiline and @line.empty?) or (@is_multiline and @line.empty? and @buffer_of_lines.size == 1)
       @line = nil

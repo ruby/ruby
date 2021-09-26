@@ -254,6 +254,34 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line('ab')
   end
 
+  def test_em_kill_line
+    @line_editor.input_key(Reline::Key.new(:em_kill_line, :em_kill_line, false))
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    assert_line('')
+    input_keys('abc')
+    @line_editor.input_key(Reline::Key.new(:em_kill_line, :em_kill_line, false))
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    assert_line('')
+    input_keys('abc')
+    input_keys("\C-b", false)
+    @line_editor.input_key(Reline::Key.new(:em_kill_line, :em_kill_line, false))
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    assert_line('')
+    input_keys('abc')
+    input_keys("\C-a", false)
+    @line_editor.input_key(Reline::Key.new(:em_kill_line, :em_kill_line, false))
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    assert_line('')
+  end
+
   def test_ed_move_to_beg
     input_keys('abd')
     assert_byte_pointer_size('abd')
