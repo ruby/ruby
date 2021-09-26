@@ -2529,6 +2529,7 @@ class Reline::LineEditor
       @rest_height += 1
     end
   end
+  alias_method :kill_line, :ed_kill_line
 
   private def em_kill_line(key)
     if @byte_pointer > 0
@@ -2539,7 +2540,7 @@ class Reline::LineEditor
       @cursor = 0
     end
   end
-  alias_method :kill_line, :em_kill_line
+  alias_method :unix_line_discard, :em_kill_line
   alias_method :vi_kill_line_prev, :em_kill_line
 
   private def em_delete(key)
