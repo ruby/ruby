@@ -2632,6 +2632,10 @@ class Reline::LineEditor
   end
   alias_method :unix_line_discard, :vi_kill_line_prev
 
+  # Editline:: +em-kill-line+ (not bound) Delete the entire contents of the
+  #            edit buffer and save it to the cut buffer. +vi-kill-line-prev+
+  # GNU Readline:: +kill-whole-line+ (not bound) Kill all characters on the
+  #                current line, no matter where point is.
   private def em_kill_line(key)
     if @line.size > 0
       @kill_ring.append(@line.dup, true)
