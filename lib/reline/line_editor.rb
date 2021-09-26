@@ -178,43 +178,49 @@ class Reline::LineEditor
     rescue ArgumentError
     end
     Reline::IOGate.set_winch_handler do
-      @rest_height = (Reline::IOGate.get_screen_size.first - 1) - Reline::IOGate.cursor_pos.y
-      old_screen_size = @screen_size
-      @screen_size = Reline::IOGate.get_screen_size
-      @screen_height = @screen_size.first
-      if old_screen_size.last < @screen_size.last # columns increase
-        @rerender_all = true
-        rerender
-      else
-        back = 0
-        new_buffer = whole_lines
-        prompt, prompt_width, prompt_list = check_multiline_prompt(new_buffer, prompt)
-        new_buffer.each_with_index do |line, index|
-          prompt_width = calculate_width(prompt_list[index], true) if @prompt_proc
-          width = prompt_width + calculate_width(line)
-          height = calculate_height_by_width(width)
-          back += height
-        end
-        @highest_in_all = back
-        @highest_in_this = calculate_height_by_width(prompt_width + @cursor_max)
-        @first_line_started_from =
-          if @line_index.zero?
-            0
-          else
-            calculate_height_by_lines(@buffer_of_lines[0..(@line_index - 1)], prompt_list || prompt)
-          end
-        if @prompt_proc
-          prompt = prompt_list[@line_index]
-          prompt_width = calculate_width(prompt, true)
-        end
-        calculate_nearest_cursor
-        @started_from = calculate_height_by_width(prompt_width + @cursor) - 1
-        Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
-        @highest_in_this = calculate_height_by_width(prompt_width + @cursor_max)
-        @rerender_all = true
-      end
+      @resized = true
     end
     @block_elem_width = Reline::Unicode.calculate_width('█')
+  end
+
+  def resize
+    return unless @resized
+    @resized = false
+    @rest_height = (Reline::IOGate.get_screen_size.first - 1) - Reline::IOGate.cursor_pos.y
+    old_screen_size = @screen_size
+    @screen_size = Reline::IOGate.get_screen_size
+    @screen_height = @screen_size.first
+    if old_screen_size.last < @screen_size.last # columns increase
+      @rerender_all = true
+      rerender
+    else
+      back = 0
+      new_buffer = whole_lines
+      prompt, prompt_width, prompt_list = check_multiline_prompt(new_buffer, prompt)
+      new_buffer.each_with_index do |line, index|
+        prompt_width = calculate_width(prompt_list[index], true) if @prompt_proc
+        width = prompt_width + calculate_width(line)
+        height = calculate_height_by_width(width)
+        back += height
+      end
+      @highest_in_all = back
+      @highest_in_this = calculate_height_by_width(prompt_width + @cursor_max)
+      @first_line_started_from =
+        if @line_index.zero?
+          0
+        else
+          calculate_height_by_lines(@buffer_of_lines[0..(@line_index - 1)], prompt_list || prompt)
+        end
+      if @prompt_proc
+        prompt = prompt_list[@line_index]
+        prompt_width = calculate_width(prompt, true)
+      end
+      calculate_nearest_cursor
+      @started_from = calculate_height_by_width(prompt_width + @cursor) - 1
+      Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
+      @highest_in_this = calculate_height_by_width(prompt_width + @cursor_max)
+      @rerender_all = true
+    end
   end
 
   def finalize
@@ -264,6 +270,7 @@ class Reline::LineEditor
     @auto_indent_proc = nil
     @dialogs = []
     @last_key = nil
+    @resized = false
     reset_line
   end
 
