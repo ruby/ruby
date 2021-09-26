@@ -990,15 +990,7 @@ rb_proc_call_kw(VALUE self, VALUE args, int kw_splat)
 VALUE
 rb_proc_call(VALUE self, VALUE args)
 {
-    VALUE vret;
-    rb_proc_t *proc;
-    GetProcPtr(self, proc);
-    vret = rb_vm_invoke_proc(GET_EC(), proc,
-			     check_argc(RARRAY_LEN(args)), RARRAY_CONST_PTR(args),
-                             RB_NO_KEYWORDS, VM_BLOCK_HANDLER_NONE);
-    RB_GC_GUARD(self);
-    RB_GC_GUARD(args);
-    return vret;
+    return rb_proc_call_kw(self, args, RB_NO_KEYWORDS);
 }
 
 static VALUE
