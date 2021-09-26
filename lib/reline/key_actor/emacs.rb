@@ -43,7 +43,7 @@ class Reline::KeyActor::Emacs < Reline::KeyActor::Base
     #  20 ^T
     :ed_transpose_chars,
     #  21 ^U
-    :em_kill_line,
+    :ed_kill_line,
     #  22 ^V
     :ed_quoted_insert,
     #  23 ^W
