@@ -269,7 +269,7 @@ module IRB
     #     IRB.CurrentContext.echo_on_assignment = false
     #     a = "omg"
     #     IRB.CurrentContext.echo_on_assignment = true
-    #     a = "omg"
+    #     a = "omg" * 10
     #     #=> omgomgomgomgomgomgomgomgomgomg
     attr_accessor :echo_on_assignment
     # Whether a newline is put before multiline output.
