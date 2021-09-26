@@ -2593,6 +2593,11 @@ class Reline::LineEditor
   end
   alias_method :backward_delete_char, :em_delete_prev_char
 
+  # Editline:: +ed-kill-line+ (vi command: +D+, +Ctrl-K+; emacs: +Ctrl-K+,
+  #            +Ctrl-U+) + Kill from the cursor to the end of the line.
+  # GNU Readline:: +kill-line+ (+C-k+) Kill the text from point to the end of
+  #                the line. With a negative numeric argument, kill backward
+  #                from the cursor to the beginning of the current line.
   private def ed_kill_line(key)
     if @line.bytesize > @byte_pointer
       @line, deleted = byteslice!(@line, @byte_pointer, @line.bytesize - @byte_pointer)
@@ -2611,6 +2616,10 @@ class Reline::LineEditor
   end
   alias_method :kill_line, :ed_kill_line
 
+  # Editline:: +em-kill-line+ (not bound) Delete the entire contents of the
+  #            edit buffer and save it to the cut buffer. +vi-kill-line-prev+
+  # GNU Readline:: +unix-line-discard+ (+C-u+) Kill backward from the cursor
+  #                to the beginning of the current line.
   private def em_kill_line(key)
     if @byte_pointer > 0
       @line, deleted = byteslice!(@line, 0, @byte_pointer)
