@@ -2285,6 +2285,13 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line('  12345')
   end
 
+  def test_ignore_NUL_by_ed_quoted_insert
+    input_keys(%Q{"\C-v\C-@"}, false)
+    assert_byte_pointer_size('""')
+    assert_cursor(2)
+    assert_cursor_max(2)
+  end
+
   def test_input_unknown_char
     input_keys('͸') # U+0378 (unassigned)
     assert_line('͸')

@@ -1975,6 +1975,8 @@ class Reline::LineEditor
       arg.times do
         if key == "\C-j".ord or key == "\C-m".ord
           key_newline(key)
+        elsif key == 0
+          # Ignore NUL.
         else
           ed_insert(key)
         end
