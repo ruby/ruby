@@ -1653,7 +1653,7 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
  *  === Methods for Iterating
  *
  *  #each:: Calls a given block with each member name.
- *  #each, #each_pair:: Calls a given block with each member name/value pair.
+ *  #each_pair:: Calls a given block with each member name/value pair.
  *
  *  === Methods for Converting
  *
