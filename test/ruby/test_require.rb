@@ -531,6 +531,28 @@ class TestRequire < Test::Unit::TestCase
     $".replace(features)
   end
 
+  def test_default_loaded_features_encoding
+    Dir.mktmpdir {|tmp|
+      Dir.mkdir("#{tmp}/1")
+      Dir.mkdir("#{tmp}/2")
+      File.write("#{tmp}/1/bug18191-1.rb", "")
+      File.write("#{tmp}/2/bug18191-2.rb", "")
+      assert_separately(%W[-Eutf-8 -I#{tmp}/1 -], "#{<<~"begin;"}\n#{<<~'end;'}")
+      tmp = #{tmp.dump}"/2"
+      begin;
+        $:.unshift(tmp)
+        require "bug18191-1"
+        require "bug18191-2"
+        encs = [Encoding::US_ASCII, Encoding.find("filesystem")]
+        message = -> {
+          require "pp"
+          {filesystem: encs[1], **$".group_by(&:encoding)}.pretty_inspect
+        }
+        assert($".all? {|n| encs.include?(n.encoding)}, message)
+      end;
+    }
+  end
+
   def test_require_changed_current_dir
     bug7158 = '[ruby-core:47970]'
     Dir.mktmpdir {|tmp|

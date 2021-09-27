@@ -1693,6 +1693,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     char fbuf[MAXPATHLEN];
     int i = (int)proc_options(argc, argv, opt, 0);
     unsigned int dump = opt->dump & dump_exit_bits;
+    rb_vm_t *vm = GET_VM();
+    const long loaded_before_enc = RARRAY_LEN(vm->loaded_features);
 
     if (opt->dump & (DUMP_BIT(usage)|DUMP_BIT(help))) {
         int tty = isatty(1);
@@ -1894,7 +1896,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     rb_obj_freeze(opt->script_name);
     if (IF_UTF8_PATH(uenc != lenc, 1)) {
 	long i;
-        rb_vm_t *vm = GET_VM();
         VALUE load_path = vm->load_path;
 	const ID id_initial_load_path_mark = INITIAL_LOAD_PATH_MARK;
         int modifiable = FALSE;
@@ -1920,6 +1921,15 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         if (modifiable) {
             rb_ary_replace(vm->load_path_snapshot, load_path);
         }
+    }
+    {
+        VALUE loaded_features = vm->loaded_features;
+        for (long i = loaded_before_enc; i < RARRAY_LEN(loaded_features); ++i) {
+	    VALUE path = RARRAY_AREF(loaded_features, i);
+	    path = rb_enc_associate(rb_str_dup(path), IF_UTF8_PATH(uenc, lenc));
+	    RARRAY_ASET(loaded_features, i, path);
+        }
+        rb_get_expanded_load_path();
     }
 
     if (opt->features.mask & COMPILATION_FEATURES) {
