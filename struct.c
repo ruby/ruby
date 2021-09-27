@@ -1085,7 +1085,7 @@ rb_struct_to_h(VALUE s)
  *    Customer = Struct.new(:name, :address, :zip)
  *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
  *    h = joe.deconstruct_keys([:zip, :address])
-      h # => {:zip=>12345, :address=>"123 Maple, Anytown NC"}
+ *    h # => {:zip=>12345, :address=>"123 Maple, Anytown NC"}
  *
  *  Returns all names and values if +array_of_names+ is +nil+:
  *
