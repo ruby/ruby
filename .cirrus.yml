@@ -6,6 +6,7 @@
 # Lets workaround it by specifying a custom volume mount point.
 env:
   CIRRUS_VOLUME: /cirrus-ci-volume
+  LANG: C.UTF-8
 
 task:
   name: Arm64 Graviton2 / $CC
