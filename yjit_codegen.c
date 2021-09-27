@@ -2167,43 +2167,28 @@ gen_opt_aref(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
             return YJIT_CANT_COMPILE;
         }
 
-        // Pop the stack operands
-        x86opnd_t idx_opnd = ctx_stack_pop(ctx, 1);
-        x86opnd_t recv_opnd = ctx_stack_pop(ctx, 1);
+        x86opnd_t key_opnd = ctx_stack_opnd(ctx, 0);
+        x86opnd_t recv_opnd = ctx_stack_opnd(ctx, 1);
+
+        // Guard that the receiver is a hash
         mov(cb, REG0, recv_opnd);
+        jit_guard_known_klass(jit, ctx, rb_cHash, OPND_STACK(1), comptime_recv, OPT_AREF_MAX_CHAIN_DEPTH, side_exit);
 
-        // if (SPECIAL_CONST_P(recv)) {
-        // Bail if receiver is not a heap object
-        test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
-        jnz_ptr(cb, side_exit);
-        cmp(cb, REG0, imm_opnd(Qfalse));
-        je_ptr(cb, side_exit);
-        cmp(cb, REG0, imm_opnd(Qnil));
-        je_ptr(cb, side_exit);
+        // Setup arguments for rb_hash_aref().
+        mov(cb, C_ARG_REGS[0], REG0);
+        mov(cb, C_ARG_REGS[1], key_opnd);
 
-        // Bail if recv has a class other than ::Hash.
-        // BOP_AREF check above is only good for ::Hash.
-        mov(cb, REG1, mem_opnd(64, REG0, offsetof(struct RBasic, klass)));
-        mov(cb, REG0, const_ptr_opnd((void *)rb_cHash));
-        cmp(cb, REG0, REG1);
-        jit_chain_guard(JCC_JNE, jit, &starting_context, OPT_AREF_MAX_CHAIN_DEPTH, side_exit);
+        // Prepare to call rb_hash_aref(). It might call #hash on the key.
+        jit_prepare_routine_call(jit, ctx, REG0);
 
-        // Call VALUE rb_hash_aref(VALUE hash, VALUE key).
-        {
-            // About to change REG_SP which these operands depend on. Yikes.
-            mov(cb, C_ARG_REGS[0], recv_opnd);
-            mov(cb, C_ARG_REGS[1], idx_opnd);
+        call_ptr(cb, REG0, (void *)rb_hash_aref);
 
-            // Write incremented pc to cfp->pc as the routine can raise and allocate
-            // Write sp to cfp->sp since rb_hash_aref might need to call #hash on the key
-            jit_prepare_routine_call(jit, ctx, REG0);
+        // Pop the key and the reciever
+        (void)ctx_stack_pop(ctx, 2);
 
-            call_ptr(cb, REG0, (void *)rb_hash_aref);
-
-            // Push the return value onto the stack
-            x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
-            mov(cb, stack_ret, RAX);
-        }
+        // Push the return value onto the stack
+        x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
+        mov(cb, stack_ret, RAX);
 
         // Jump to next instruction. This allows guard chains to share the same successor.
         jit_jump_to_next_insn(jit, ctx);
