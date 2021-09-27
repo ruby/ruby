@@ -1,9 +1,6 @@
 # frozen_string_literal: false
-if RUBY_ENGINE == 'jruby'
-  JRuby::Util.load_ext("org.jruby.ext.digest.DigestLibrary")
-else
-  require 'digest.so'
-end
+
+require 'digest/loader'
 
 module Digest
   # A mutex for Digest().
