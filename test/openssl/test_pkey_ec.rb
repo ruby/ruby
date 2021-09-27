@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require_relative 'utils'
 
-if defined?(OpenSSL) && defined?(OpenSSL::PKey::EC)
+if defined?(OpenSSL)
 
 class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   def test_ec_key

@@ -124,8 +124,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_add_certificate_multiple_certs
-    pend "EC is not supported" unless defined?(OpenSSL::PKey::EC)
-
     ca2_key = Fixtures.pkey("rsa-3")
     ca2_exts = [
       ["basicConstraints", "CA:TRUE", true],
@@ -556,6 +554,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     ctx_proc = -> ctx {
       ctx.ssl_version = :TLSv1_2
       ctx.ciphers = "aNULL"
+      ctx.tmp_dh = Fixtures.pkey("dh-1")
       ctx.security_level = 0
     }
 
@@ -830,7 +829,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
   def test_tlsext_hostname
     fooctx = OpenSSL::SSL::SSLContext.new
-    fooctx.tmp_dh_callback = proc { Fixtures.pkey("dh-1") }
     fooctx.cert = @cli_cert
     fooctx.key = @cli_key
 
@@ -882,7 +880,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     ctx2 = OpenSSL::SSL::SSLContext.new
     ctx2.cert = @svr_cert
     ctx2.key = @svr_key
-    ctx2.tmp_dh_callback = proc { Fixtures.pkey("dh-1") }
     ctx2.servername_cb = lambda { |args| Object.new }
 
     sock1, sock2 = socketpair
@@ -1329,7 +1326,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     ctx1 = OpenSSL::SSL::SSLContext.new
     ctx1.cert = @svr_cert
     ctx1.key = @svr_key
-    ctx1.tmp_dh_callback = proc { Fixtures.pkey("dh-1") }
     ctx1.alpn_select_cb = -> (protocols) { nil }
     ssl1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
 
@@ -1484,6 +1480,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     ctx_proc2 = proc { |ctx|
       ctx.ssl_version = :TLSv1_2
       ctx.ciphers = "EDH"
+      ctx.tmp_dh = Fixtures.pkey("dh-1")
     }
     start_server(ctx_proc: ctx_proc2) do |port|
       ctx = OpenSSL::SSL::SSLContext.new
@@ -1494,20 +1491,18 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       }
     end
 
-    if defined?(OpenSSL::PKey::EC)
-      # ECDHE
-      ctx_proc3 = proc { |ctx|
-        ctx.ciphers = "DEFAULT:!kRSA:!kEDH"
-        ctx.ecdh_curves = "P-256"
+    # ECDHE
+    ctx_proc3 = proc { |ctx|
+      ctx.ciphers = "DEFAULT:!kRSA:!kEDH"
+      ctx.ecdh_curves = "P-256"
+    }
+    start_server(ctx_proc: ctx_proc3) do |port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ciphers = "DEFAULT:!kRSA:!kEDH"
+      server_connect(port, ctx) { |ssl|
+        assert_instance_of OpenSSL::PKey::EC, ssl.tmp_key
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       }
-      start_server(ctx_proc: ctx_proc3) do |port|
-        ctx = OpenSSL::SSL::SSLContext.new
-        ctx.ciphers = "DEFAULT:!kRSA:!kEDH"
-        server_connect(port, ctx) { |ssl|
-          assert_instance_of OpenSSL::PKey::EC, ssl.tmp_key
-          ssl.puts "abc"; assert_equal "abc\n", ssl.gets
-        }
-      end
     end
   end
 
@@ -1656,7 +1651,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_ecdh_curves_tls13
-    pend "EC is disabled" unless defined?(OpenSSL::PKey::EC)
     pend "TLS 1.3 not supported" unless tls13_supported?
 
     ctx_proc = -> ctx {

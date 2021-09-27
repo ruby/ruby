@@ -215,7 +215,6 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
       ctx.cert_store = store
       ctx.cert = @svr_cert
       ctx.key = @svr_key
-      ctx.tmp_dh_callback = proc { Fixtures.pkey("dh-1") }
       ctx.verify_mode = verify_mode
       ctx_proc.call(ctx) if ctx_proc
 
