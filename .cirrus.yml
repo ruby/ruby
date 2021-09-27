@@ -58,7 +58,5 @@ task:
   make_install_script: make install
   install_gems_for_test_script: $RUBY_PREFIX/bin/gem install --no-doc timezone tzinfo
   make_test-tool_script: make test-tool
-  make_test-all_script:
-    - export -n CIRRUS_COMMIT_MESSAGE
-    - make test-all
+  make_test-all_script: make test-all
   make_test-spec_script: make test-spec
