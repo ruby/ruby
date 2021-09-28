@@ -901,7 +901,7 @@ ractor_send_basket(rb_execution_context_t *ec, rb_ractor_t *r, struct rb_ractor_
         else {
             ractor_queue_enq(r, rq, b);
             if (ractor_wakeup(r, wait_receiving, wakeup_by_send)) {
-                RUBY_DEBUG_LOG("wakeup", 0);
+                RUBY_DEBUG_LOG("wakeup");
             }
         }
     }
@@ -1348,7 +1348,7 @@ ractor_close_incoming(rb_execution_context_t *ec, rb_ractor_t *r)
             r->sync.incoming_port_closed = true;
             if (ractor_wakeup(r, wait_receiving, wakeup_by_close)) {
                 VM_ASSERT(r->sync.incoming_queue.cnt == 0);
-                RUBY_DEBUG_LOG("cancel receiving", 0);
+                RUBY_DEBUG_LOG("cancel receiving");
             }
         }
         else {
@@ -1385,7 +1385,7 @@ ractor_close_outgoing(rb_execution_context_t *ec, rb_ractor_t *r)
         // raising yielding Ractor
         if (!r->yield_atexit &&
             ractor_wakeup(r, wait_yielding, wakeup_by_close)) {
-            RUBY_DEBUG_LOG("cancel yielding", 0);
+            RUBY_DEBUG_LOG("cancel yielding");
         }
     }
     RACTOR_UNLOCK(r);
@@ -1418,7 +1418,7 @@ static void
 cancel_single_ractor_mode(void)
 {
     // enable multi-ractor mode
-    RUBY_DEBUG_LOG("enable multi-ractor mode", 0);
+    RUBY_DEBUG_LOG("enable multi-ractor mode");
 
     VALUE was_disabled = rb_gc_enable();
 
