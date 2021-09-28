@@ -128,6 +128,7 @@ def sync_default_gems(gem)
       cp_r("#{upstream}/#{dst}", dst)
     end
     `git checkout lib/rdoc/.document`
+    rm_rf(%w[lib/rdoc/Gemfile lib/rdoc/Rakefile])
   when "reline"
     rm_rf(%w[lib/reline lib/reline.rb test/reline])
     cp_r(Dir.glob("#{upstream}/lib/reline*"), "lib")
