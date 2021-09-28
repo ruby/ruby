@@ -814,6 +814,31 @@ ossl_cipher_block_size(VALUE self)
 }
 
 /*
+ *  call-seq:
+ *     cipher.ccm_data_len = integer -> integer
+ *
+ *  Sets the length of the plaintext / ciphertext message that will be
+ *  processed in CCM mode. Make sure to call this method after #key= and
+ *  #iv= have been set, and before #auth_data=.
+ *
+ *  Only call this method after calling Cipher#encrypt or Cipher#decrypt.
+ */
+static VALUE
+ossl_cipher_set_ccm_data_len(VALUE self, VALUE data_len)
+{
+    int in_len, out_len;
+    EVP_CIPHER_CTX *ctx;
+
+    in_len = NUM2INT(data_len);
+
+    GetCipher(self, ctx);
+    if (EVP_CipherUpdate(ctx, NULL, &out_len, NULL, in_len) != 1)
+        ossl_raise(eCipherError, NULL);
+
+    return data_len;
+}
+
+/*
  * INIT
  */
 void
@@ -1043,6 +1068,7 @@ Init_ossl_cipher(void)
     rb_define_method(cCipher, "iv_len", ossl_cipher_iv_length, 0);
     rb_define_method(cCipher, "block_size", ossl_cipher_block_size, 0);
     rb_define_method(cCipher, "padding=", ossl_cipher_set_padding, 1);
+    rb_define_method(cCipher, "ccm_data_len=", ossl_cipher_set_ccm_data_len, 1);
 
     id_auth_tag_len = rb_intern_const("auth_tag_len");
     id_key_set = rb_intern_const("key_set");

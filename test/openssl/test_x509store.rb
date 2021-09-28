@@ -66,7 +66,7 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     ee1_cert = issue_cert(@ee1, @dsa256, 10, ee_exts, ca2_cert, @rsa1024)
     ee2_cert = issue_cert(@ee2, @dsa512, 20, ee_exts, ca2_cert, @rsa1024)
     ee3_cert = issue_cert(@ee2, @dsa512, 30,  ee_exts, ca2_cert, @rsa1024,
-                          not_before: now-100, not_after: now-50)
+                          not_before: now-100, not_after: now-1)
     ee4_cert = issue_cert(@ee2, @dsa512, 40, ee_exts, ca2_cert, @rsa1024,
                           not_before: now+1000, not_after: now+2000,)
 
@@ -128,7 +128,7 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     assert_equal(@ee2.to_der, chain[0].subject.to_der)
     assert_equal(@ca2.to_der, chain[1].subject.to_der)
     assert_equal(@ca1.to_der, chain[2].subject.to_der)
-    assert_equal(false, store.verify(ee3_cert), "now=#{now.inspect} Time.now=#{Time.now.inspect} store=#{store.inspect} ee3_cert=#{ee3_cert.inspect}")
+    assert_equal(false, store.verify(ee3_cert))
     assert_equal(OpenSSL::X509::V_ERR_CERT_HAS_EXPIRED, store.error)
     assert_match(/expire/i, store.error_string)
     assert_equal(false, store.verify(ee4_cert))
