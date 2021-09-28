@@ -3053,6 +3053,23 @@ jit_rb_str_to_s(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const
     return false;
 }
 
+static bool
+jit_thread_s_current(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc, VALUE *recv_known_klass)
+{
+    ADD_COMMENT(cb, "Thread.current");
+    ctx_stack_pop(ctx, 1);
+
+    // ec->thread_ptr
+    mov(cb, REG0, member_opnd(REG_EC, rb_execution_context_t, thread_ptr));
+
+    // thread->self
+    mov(cb, REG0, member_opnd(REG0, rb_thread_t, self));
+
+    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_HEAP);
+    mov(cb, stack_ret, REG0);
+    return true;
+}
+
 // Check if we know how to codegen for a particular cfunc method
 static method_codegen_t
 lookup_cfunc_codegen(const rb_method_definition_t *def)
@@ -4493,4 +4510,7 @@ yjit_init_codegen(void)
     // rb_str_to_s() methods in string.c
     yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
     yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
+
+    // Thread.current
+    yjit_reg_method(rb_singleton_class(rb_cThread), "current", jit_thread_s_current);
 }
