@@ -3391,48 +3391,104 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
         const int required_num = iseq->body->param.lead_num;
 
         if (vm_ci_flag(ci) & VM_CALL_KWARG) {
-            // Calling a method with keyword parameters and specifying keyword
-            // arguments
+            // Here we're calling a method with keyword arguments and specifying
+            // keyword arguments at this call site.
 
             const struct rb_callinfo_kwarg *kw_arg = vm_ci_kwarg(ci);
 
             if (argc - kw_arg->keyword_len != required_num) {
-                // There is a mix of required and optional keyword arguments and
-                // not every one is specified
-
+                // Here the method being called specifies optional and required
+                // keyword arguments and the callee is not specifying every one
+                // of them.
                 GEN_COUNTER_INC(cb, send_iseq_kwargs_req_and_opt_missing);
                 return YJIT_CANT_COMPILE;
             }
 
+            // Here we should be safe to assume that the caller is specifying
+            // every keyword argument that the callee has declared in its
+            // definition (whether or not they were required).
             const int req_key_num = iseq->body->param.keyword->required_num;
             RUBY_ASSERT(req_key_num == kw_arg->keyword_len);
 
-            // callee expects keyword arguments
-            // caller is sending the correct number of positional arguments
-            // caller is sending keyword arguments
+            // This is the list of keyword arguments that the callee specified
+            // in its initial declaration.
+            const ID *callee_kwargs = iseq->body->param.keyword->table;
 
-            const ID *acceptable_keywords = iseq->body->param.keyword->table;
-            const VALUE * const ci_keywords = kw_arg->keywords;
+            // Here we're going to build up a list of the IDs that correspond to
+            // the caller-specified keyword arguments. If they're not in the
+            // same order as the order specified in the callee declaration, then
+            // we're going to need to generate some code to swap values around
+            // on the stack.
+            ID *caller_kwargs = ALLOCA_N(VALUE, req_key_num);
+            for (int kwarg_idx = 0; kwarg_idx < req_key_num; kwarg_idx++)
+                caller_kwargs[kwarg_idx] = SYM2ID(kw_arg->keywords[kwarg_idx]);
 
-            // Check that the names of the given keyword arguments match up to
-            // the names of the keyword parameters and that they were passed in
-            // the exact same order
-            for (int i = 0; i < req_key_num; i++) {
-                if (ID2SYM(acceptable_keywords[i]) != ci_keywords[i]) {
-                    GEN_COUNTER_INC(cb, send_iseq_kwargs_need_shuffling);
+            // First, we're going to be sure that the names of every
+            // callee-specified keyword argument correspond to a name in the
+            // list of caller-specified keyword arguments.
+            for (int callee_idx = 0; callee_idx < req_key_num; callee_idx++) {
+                int caller_idx;
+
+                for (caller_idx = 0; caller_idx < req_key_num; caller_idx++) {
+                    if (callee_kwargs[callee_idx] == caller_kwargs[caller_idx]) {
+                        break;
+                    }
+                }
+
+                // If the keyword was never found, then we know we have a
+                // mismatch in the names of the keyword arguments, so we need to
+                // bail.
+                if (caller_idx == req_key_num) {
+                    GEN_COUNTER_INC(cb, send_iseq_kwargs_mismatch);
                     return YJIT_CANT_COMPILE;
                 }
             }
 
-            // caller and callee specified all the same keywords in the exact
-            // same order
+            // Next, we're going to loop through every keyword was that
+            // specified by the caller and make sure that it's in the correct
+            // place. If it's not we're going to swap it around with another one.
+            for (int kwarg_idx = 0; kwarg_idx < req_key_num; kwarg_idx++) {
+                ID callee_kwarg = callee_kwargs[kwarg_idx];
+
+                // If the argument is already in the right order, then we don't
+                // need to generate any code since the expected value is already
+                // in the right place on the stack.
+                if (callee_kwarg == caller_kwargs[kwarg_idx]) continue;
+
+                // In this case the argument is not in the right place, so we
+                // need to find its position where it _should_ be and swap with
+                // that location.
+                for (int swap_idx = kwarg_idx + 1; swap_idx < req_key_num; swap_idx++) {
+                    if (callee_kwarg == caller_kwargs[swap_idx]) {
+                        x86opnd_t swap = ctx_stack_opnd(ctx, argc - 1 - swap_idx);
+                        x86opnd_t kwarg = ctx_stack_opnd(ctx, argc - 1 - kwarg_idx);
+
+                        // First we're going to generate the code that is going
+                        // to perform the actual swapping at runtime.
+                        mov(cb, REG1, swap);
+                        mov(cb, R9, kwarg);
+                        mov(cb, swap, R9);
+                        mov(cb, kwarg, REG1);
+
+                        // Next we're going to do some bookkeeping on our end so
+                        // that we know the order that the arguments are
+                        // actually in now.
+                        ID tmp = caller_kwargs[kwarg_idx];
+                        caller_kwargs[kwarg_idx] = caller_kwargs[swap_idx];
+                        caller_kwargs[swap_idx] = tmp;
+
+                        break;
+                    }
+                }
+            }
 
             // Kwargs adds a special weird little local that specifies a bitmap
             // that corresponds to the keyword arguments that are not passed.
             num_params--;
         } else if (argc == required_num) {
-            // Calling a method that accepts keyword parameters but not
-            // specifying any keyword arguments
+            // Here we are calling a method that accepts keyword arguments
+            // (optional or required) but we're not passing any keyword
+            // arguments at this call site
 
             GEN_COUNTER_INC(cb, send_iseq_kwargs_none_passed);
             return YJIT_CANT_COMPILE;
