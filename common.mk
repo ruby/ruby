@@ -3457,6 +3457,7 @@ debug.$(OBJEXT): {$(VPATH)}config.h
 debug.$(OBJEXT): {$(VPATH)}debug.c
 debug.$(OBJEXT): {$(VPATH)}debug_counter.h
 debug.$(OBJEXT): {$(VPATH)}defines.h
+debug.$(OBJEXT): {$(VPATH)}encindex.h
 debug.$(OBJEXT): {$(VPATH)}encoding.h
 debug.$(OBJEXT): {$(VPATH)}eval_intern.h
 debug.$(OBJEXT): {$(VPATH)}gc.h
