@@ -13,6 +13,12 @@
 
 #define numberof(ary) (int)(sizeof(ary)/sizeof((ary)[0]))
 
+#if !defined(TLS1_3_VERSION) && \
+    defined(LIBRESSL_VERSION_NUMBER) && \
+    LIBRESSL_VERSION_NUMBER >= 0x3020000fL
+#  define TLS1_3_VERSION 0x0304
+#endif
+
 #ifdef _WIN32
 #  define TO_SOCKET(s) _get_osfhandle(s)
 #else
@@ -33,7 +39,7 @@ static VALUE eSSLErrorWaitReadable;
 static VALUE eSSLErrorWaitWritable;
 
 static ID id_call, ID_callback_state, id_tmp_dh_callback, id_tmp_ecdh_callback,
-	  id_npn_protocols_encoded;
+	  id_npn_protocols_encoded, id_each;
 static VALUE sym_exception, sym_wait_readable, sym_wait_writable;
 
 static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
@@ -54,6 +60,13 @@ static int ossl_sslctx_ex_store_p;
 #endif
 
 static void
+ossl_sslctx_mark(void *ptr)
+{
+    SSL_CTX *ctx = ptr;
+    rb_gc_mark((VALUE)SSL_CTX_get_ex_data(ctx, ossl_sslctx_ex_ptr_idx));
+}
+
+static void
 ossl_sslctx_free(void *ptr)
 {
     SSL_CTX *ctx = ptr;
@@ -67,7 +80,7 @@ ossl_sslctx_free(void *ptr)
 static const rb_data_type_t ossl_sslctx_type = {
     "OpenSSL/SSL/CTX",
     {
-	0, ossl_sslctx_free,
+        ossl_sslctx_mark, ossl_sslctx_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
 };
@@ -616,7 +629,7 @@ static VALUE
 ssl_encode_npn_protocols(VALUE protocols)
 {
     VALUE encoded = rb_str_new(NULL, 0);
-    rb_iterate(rb_each, protocols, ssl_npn_encode_protocol_i, encoded);
+    rb_block_call(protocols, id_each, 0, 0, ssl_npn_encode_protocol_i, encoded);
     return encoded;
 }
 
@@ -686,7 +699,7 @@ static int
 ssl_npn_advertise_cb(SSL *ssl, const unsigned char **out, unsigned int *outlen,
 		     void *arg)
 {
-    VALUE protocols = (VALUE)arg;
+    VALUE protocols = rb_attr_get((VALUE)arg, id_npn_protocols_encoded);
 
     *out = (const unsigned char *) RSTRING_PTR(protocols);
     *outlen = RSTRING_LENINT(protocols);
@@ -908,7 +921,7 @@ ossl_sslctx_setup(VALUE self)
     if (!NIL_P(val)) {
 	VALUE encoded = ssl_encode_npn_protocols(val);
 	rb_ivar_set(self, id_npn_protocols_encoded, encoded);
-	SSL_CTX_set_next_protos_advertised_cb(ctx, ssl_npn_advertise_cb, (void *)encoded);
+	SSL_CTX_set_next_protos_advertised_cb(ctx, ssl_npn_advertise_cb, (void *)self);
 	OSSL_Debug("SSL NPN advertise callback added");
     }
     if (RTEST(rb_attr_get(self, id_i_npn_select_cb))) {
@@ -1527,6 +1540,14 @@ ssl_started(SSL *ssl)
 }
 
 static void
+ossl_ssl_mark(void *ptr)
+{
+    SSL *ssl = ptr;
+    rb_gc_mark((VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx));
+    rb_gc_mark((VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_vcb_idx));
+}
+
+static void
 ossl_ssl_free(void *ssl)
 {
     SSL_free(ssl);
@@ -1535,7 +1556,7 @@ ossl_ssl_free(void *ssl)
 const rb_data_type_t ossl_ssl_type = {
     "OpenSSL/SSL",
     {
-	0, ossl_ssl_free,
+        ossl_ssl_mark, ossl_ssl_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
 };
@@ -1691,6 +1712,11 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
             rb_io_wait_readable(fptr->fd);
             continue;
 	case SSL_ERROR_SYSCALL:
+#ifdef __APPLE__
+            /* See ossl_ssl_write_internal() */
+            if (errno == EPROTOTYPE)
+                continue;
+#endif
 	    if (errno) rb_sys_fail(funcname);
 	    ossl_raise(eSSLError, "%s SYSCALL returned=%d errno=%d state=%s", funcname, ret2, errno, SSL_state_string_long(ssl));
 #if defined(SSL_R_CERTIFICATE_VERIFY_FAILED)
@@ -1847,26 +1873,36 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
     io = rb_attr_get(self, id_i_io);
     GetOpenFile(io, fptr);
     if (ssl_started(ssl)) {
-	for (;;){
+        rb_str_locktmp(str);
+        for (;;) {
 	    nread = SSL_read(ssl, RSTRING_PTR(str), ilen);
 	    switch(ssl_get_error(ssl, nread)){
 	    case SSL_ERROR_NONE:
+                rb_str_unlocktmp(str);
 		goto end;
 	    case SSL_ERROR_ZERO_RETURN:
+                rb_str_unlocktmp(str);
 		if (no_exception_p(opts)) { return Qnil; }
 		rb_eof_error();
 	    case SSL_ERROR_WANT_WRITE:
-		if (no_exception_p(opts)) { return sym_wait_writable; }
-                write_would_block(nonblock);
+                if (nonblock) {
+                    rb_str_unlocktmp(str);
+                    if (no_exception_p(opts)) { return sym_wait_writable; }
+                    write_would_block(nonblock);
+                }
                 rb_io_wait_writable(fptr->fd);
                 continue;
 	    case SSL_ERROR_WANT_READ:
-		if (no_exception_p(opts)) { return sym_wait_readable; }
-                read_would_block(nonblock);
+                if (nonblock) {
+                    rb_str_unlocktmp(str);
+                    if (no_exception_p(opts)) { return sym_wait_readable; }
+                    read_would_block(nonblock);
+                }
                 rb_io_wait_readable(fptr->fd);
 		continue;
 	    case SSL_ERROR_SYSCALL:
 		if (!ERR_peek_error()) {
+                    rb_str_unlocktmp(str);
 		    if (errno)
 			rb_sys_fail(0);
 		    else {
@@ -1883,6 +1919,7 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 		}
                 /* fall through */
 	    default:
+                rb_str_unlocktmp(str);
 		ossl_raise(eSSLError, "SSL_read");
 	    }
         }
@@ -1953,21 +1990,21 @@ ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
     int nwrite = 0;
     rb_io_t *fptr;
     int nonblock = opts != Qfalse;
-    VALUE io;
+    VALUE tmp, io;
 
-    StringValue(str);
+    tmp = rb_str_new_frozen(StringValue(str));
     GetSSL(self, ssl);
     io = rb_attr_get(self, id_i_io);
     GetOpenFile(io, fptr);
     if (ssl_started(ssl)) {
-	for (;;){
-	    int num = RSTRING_LENINT(str);
+	for (;;) {
+	    int num = RSTRING_LENINT(tmp);
 
 	    /* SSL_write(3ssl) manpage states num == 0 is undefined */
 	    if (num == 0)
 		goto end;
 
-	    nwrite = SSL_write(ssl, RSTRING_PTR(str), num);
+	    nwrite = SSL_write(ssl, RSTRING_PTR(tmp), num);
 	    switch(ssl_get_error(ssl, nwrite)){
 	    case SSL_ERROR_NONE:
 		goto end;
@@ -1982,6 +2019,16 @@ ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
                 rb_io_wait_readable(fptr->fd);
                 continue;
 	    case SSL_ERROR_SYSCALL:
+#ifdef __APPLE__
+                /*
+                 * It appears that send syscall can return EPROTOTYPE if the
+                 * socket is being torn down. Retry to get a proper errno to
+                 * make the error handling in line with the socket library.
+                 * [Bug #14713] https://bugs.ruby-lang.org/issues/14713
+                 */
+                if (errno == EPROTOTYPE)
+                    continue;
+#endif
 		if (errno) rb_sys_fail(0);
 	    default:
 		ossl_raise(eSSLError, "SSL_write");
@@ -2997,6 +3044,7 @@ Init_ossl_ssl(void)
     id_tmp_dh_callback = rb_intern_const("tmp_dh_callback");
     id_tmp_ecdh_callback = rb_intern_const("tmp_ecdh_callback");
     id_npn_protocols_encoded = rb_intern_const("npn_protocols_encoded");
+    id_each = rb_intern_const("each");
 
 #define DefIVarID(name) do \
     id_i_##name = rb_intern_const("@"#name); while (0)

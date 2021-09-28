@@ -653,15 +653,15 @@ static VALUE ossl_ec_key_dsa_verify_asn1(VALUE self, VALUE data, VALUE sig)
     StringValue(data);
     StringValue(sig);
 
-    switch (ECDSA_verify(0, (unsigned char *) RSTRING_PTR(data), RSTRING_LENINT(data), (unsigned char *) RSTRING_PTR(sig), (int)RSTRING_LEN(sig), ec)) {
-    case 1:	return Qtrue;
-    case 0:	return Qfalse;
-    default:	break;
+    switch (ECDSA_verify(0, (unsigned char *)RSTRING_PTR(data), RSTRING_LENINT(data),
+                         (unsigned char *)RSTRING_PTR(sig), RSTRING_LENINT(sig), ec)) {
+      case 1:
+        return Qtrue;
+      case 0:
+        return Qfalse;
+      default:
+        ossl_raise(eECError, "ECDSA_verify");
     }
-
-    ossl_raise(eECError, "ECDSA_verify");
-
-    UNREACHABLE;
 }
 
 /*
