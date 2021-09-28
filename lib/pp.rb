@@ -433,7 +433,7 @@ end
 class File < IO # :nodoc:
   class Stat # :nodoc:
     def pretty_print(q) # :nodoc:
-      require 'etc.so'
+      require 'etc'
       q.object_group(self) {
         q.breakable
         q.text sprintf("dev=0x%x", self.dev); q.comma_breakable
