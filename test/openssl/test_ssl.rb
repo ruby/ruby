@@ -526,6 +526,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }) { |port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      ctx.max_version = :TLS1_2 if libressl?(3, 2, 0) && !libressl?(3, 3, 0)
       server_connect(port, ctx) { |ssl|
         ssl.puts "abc"; ssl.gets
 
