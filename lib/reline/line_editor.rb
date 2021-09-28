@@ -2494,7 +2494,7 @@ class Reline::LineEditor
     end
   end
 
-  private def em_delete_prev_char(key)
+  private def em_delete_prev_char(key, arg: 1)
     if @is_multiline and @cursor == 0 and @line_index > 0
       @buffer_of_lines[@line_index] = @line
       @cursor = calculate_width(@buffer_of_lines[@line_index - 1])
@@ -2512,6 +2512,8 @@ class Reline::LineEditor
       @cursor -= width
       @cursor_max -= width
     end
+    arg -= 1
+    em_delete_prev_char(key, arg: arg) if arg > 0
   end
   alias_method :backward_delete_char, :em_delete_prev_char
 
@@ -3048,7 +3050,14 @@ class Reline::LineEditor
 
   private def ed_argument_digit(key)
     if @vi_arg.nil?
-      unless key.chr.to_i.zero?
+      if key.chr.to_i.zero?
+        if key.anybits?(0b10000000)
+          unescaped_key = key ^ 0b10000000
+          unless unescaped_key.chr.to_i.zero?
+            @vi_arg = unescaped_key.chr.to_i
+          end
+        end
+      else
         @vi_arg = key.chr.to_i
       end
     else

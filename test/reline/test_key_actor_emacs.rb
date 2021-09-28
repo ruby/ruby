@@ -2292,6 +2292,20 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_cursor_max(2)
   end
 
+  def test_ed_argument_digit_by_meta_num
+    input_keys('abcdef')
+    assert_byte_pointer_size('abcdef')
+    assert_cursor(6)
+    assert_cursor_max(6)
+    assert_line('abcdef')
+    input_keys("\M-2", false)
+    input_keys("\C-h", false)
+    assert_byte_pointer_size('abcd')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('abcd')
+  end
+
   def test_input_unknown_char
     input_keys('͸') # U+0378 (unassigned)
     assert_line('͸')
