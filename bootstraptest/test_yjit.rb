@@ -2073,3 +2073,38 @@ assert_equal '["sub", "sub"]', %q{
 
   [foo(sub), foo(sub)]
 }
+
+assert_equal '[[1, 2, 3, 4]]', %q{
+  def four(a:, b:, c:, d:)
+    [a, b, c, d]
+  end
+
+  5.times.flat_map do
+    [
+      four(a: 1, b: 2, c: 3, d: 4),
+      four(a: 1, b: 2, d: 4, c: 3),
+      four(a: 1, c: 3, b: 2, d: 4),
+      four(a: 1, c: 3, d: 4, b: 2),
+      four(a: 1, d: 4, b: 2, c: 3),
+      four(a: 1, d: 4, c: 3, b: 2),
+      four(b: 2, a: 1, c: 3, d: 4),
+      four(b: 2, a: 1, d: 4, c: 3),
+      four(b: 2, c: 3, a: 1, d: 4),
+      four(b: 2, c: 3, d: 4, a: 1),
+      four(b: 2, d: 4, a: 1, c: 3),
+      four(b: 2, d: 4, c: 3, a: 1),
+      four(c: 3, a: 1, b: 2, d: 4),
+      four(c: 3, a: 1, d: 4, b: 2),
+      four(c: 3, b: 2, a: 1, d: 4),
+      four(c: 3, b: 2, d: 4, a: 1),
+      four(c: 3, d: 4, a: 1, b: 2),
+      four(c: 3, d: 4, b: 2, a: 1),
+      four(d: 4, a: 1, b: 2, c: 3),
+      four(d: 4, a: 1, c: 3, b: 2),
+      four(d: 4, b: 2, a: 1, c: 3),
+      four(d: 4, b: 2, c: 3, a: 1),
+      four(d: 4, c: 3, a: 1, b: 2),
+      four(d: 4, c: 3, b: 2, a: 1)
+    ]
+  end.uniq
+}
