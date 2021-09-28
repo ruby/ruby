@@ -44,7 +44,13 @@ Init_ossl_x509(void)
     Init_ossl_x509revoked();
     Init_ossl_x509store();
 
+    /* Constants are up-to-date with 1.1.1. */
+
+    /* Certificate verification error code */
     DefX509Const(V_OK);
+#if defined(X509_V_ERR_UNSPECIFIED) /* 1.0.1r, 1.0.2f, 1.1.0 */
+    DefX509Const(V_ERR_UNSPECIFIED);
+#endif
     DefX509Const(V_ERR_UNABLE_TO_GET_ISSUER_CERT);
     DefX509Const(V_ERR_UNABLE_TO_GET_CRL);
     DefX509Const(V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE);
@@ -76,8 +82,73 @@ Init_ossl_x509(void)
     DefX509Const(V_ERR_AKID_SKID_MISMATCH);
     DefX509Const(V_ERR_AKID_ISSUER_SERIAL_MISMATCH);
     DefX509Const(V_ERR_KEYUSAGE_NO_CERTSIGN);
+    DefX509Const(V_ERR_UNABLE_TO_GET_CRL_ISSUER);
+    DefX509Const(V_ERR_UNHANDLED_CRITICAL_EXTENSION);
+    DefX509Const(V_ERR_KEYUSAGE_NO_CRL_SIGN);
+    DefX509Const(V_ERR_UNHANDLED_CRITICAL_CRL_EXTENSION);
+    DefX509Const(V_ERR_INVALID_NON_CA);
+    DefX509Const(V_ERR_PROXY_PATH_LENGTH_EXCEEDED);
+    DefX509Const(V_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE);
+    DefX509Const(V_ERR_PROXY_CERTIFICATES_NOT_ALLOWED);
+    DefX509Const(V_ERR_INVALID_EXTENSION);
+    DefX509Const(V_ERR_INVALID_POLICY_EXTENSION);
+    DefX509Const(V_ERR_NO_EXPLICIT_POLICY);
+    DefX509Const(V_ERR_DIFFERENT_CRL_SCOPE);
+    DefX509Const(V_ERR_UNSUPPORTED_EXTENSION_FEATURE);
+    DefX509Const(V_ERR_UNNESTED_RESOURCE);
+    DefX509Const(V_ERR_PERMITTED_VIOLATION);
+    DefX509Const(V_ERR_EXCLUDED_VIOLATION);
+    DefX509Const(V_ERR_SUBTREE_MINMAX);
     DefX509Const(V_ERR_APPLICATION_VERIFICATION);
+    DefX509Const(V_ERR_UNSUPPORTED_CONSTRAINT_TYPE);
+    DefX509Const(V_ERR_UNSUPPORTED_CONSTRAINT_SYNTAX);
+    DefX509Const(V_ERR_UNSUPPORTED_NAME_SYNTAX);
+    DefX509Const(V_ERR_CRL_PATH_VALIDATION_ERROR);
+#if defined(X509_V_ERR_PATH_LOOP)
+    DefX509Const(V_ERR_PATH_LOOP);
+#endif
+#if defined(X509_V_ERR_SUITE_B_INVALID_VERSION)
+    DefX509Const(V_ERR_SUITE_B_INVALID_VERSION);
+    DefX509Const(V_ERR_SUITE_B_INVALID_ALGORITHM);
+    DefX509Const(V_ERR_SUITE_B_INVALID_CURVE);
+    DefX509Const(V_ERR_SUITE_B_INVALID_SIGNATURE_ALGORITHM);
+    DefX509Const(V_ERR_SUITE_B_LOS_NOT_ALLOWED);
+    DefX509Const(V_ERR_SUITE_B_CANNOT_SIGN_P_384_WITH_P_256);
+#endif
+#if defined(X509_V_ERR_HOSTNAME_MISMATCH)
+    DefX509Const(V_ERR_HOSTNAME_MISMATCH);
+    DefX509Const(V_ERR_EMAIL_MISMATCH);
+    DefX509Const(V_ERR_IP_ADDRESS_MISMATCH);
+#endif
+#if defined(X509_V_ERR_DANE_NO_MATCH)
+    DefX509Const(V_ERR_DANE_NO_MATCH);
+#endif
+#if defined(X509_V_ERR_EE_KEY_TOO_SMALL)
+    DefX509Const(V_ERR_EE_KEY_TOO_SMALL);
+    DefX509Const(V_ERR_CA_KEY_TOO_SMALL);
+    DefX509Const(V_ERR_CA_MD_TOO_WEAK);
+#endif
+#if defined(X509_V_ERR_INVALID_CALL)
+    DefX509Const(V_ERR_INVALID_CALL);
+#endif
+#if defined(X509_V_ERR_STORE_LOOKUP)
+    DefX509Const(V_ERR_STORE_LOOKUP);
+#endif
+#if defined(X509_V_ERR_NO_VALID_SCTS)
+    DefX509Const(V_ERR_NO_VALID_SCTS);
+#endif
+#if defined(X509_V_ERR_PROXY_SUBJECT_NAME_VIOLATION)
+    DefX509Const(V_ERR_PROXY_SUBJECT_NAME_VIOLATION);
+#endif
+#if defined(X509_V_ERR_OCSP_VERIFY_NEEDED)
+    DefX509Const(V_ERR_OCSP_VERIFY_NEEDED);
+    DefX509Const(V_ERR_OCSP_VERIFY_FAILED);
+    DefX509Const(V_ERR_OCSP_CERT_UNKNOWN);
+#endif
 
+    /* Certificate verify flags */
+    /* Set by Store#flags= and StoreContext#flags=. */
+    DefX509Const(V_FLAG_USE_CHECK_TIME);
     /* Set by Store#flags= and StoreContext#flags=. Enables CRL checking for the
      * certificate chain leaf. */
     DefX509Const(V_FLAG_CRL_CHECK);
@@ -121,6 +192,26 @@ Init_ossl_x509(void)
      * certificate chain, search the Store first for the issuer certificate.
      * Enabled by default in OpenSSL >= 1.1.0. */
     DefX509Const(V_FLAG_TRUSTED_FIRST);
+#endif
+#if defined(X509_V_FLAG_SUITEB_128_LOS_ONLY)
+    /* Set by Store#flags= and StoreContext#flags=.
+     * Enables Suite B 128 bit only mode. */
+    DefX509Const(V_FLAG_SUITEB_128_LOS_ONLY);
+#endif
+#if defined(X509_V_FLAG_SUITEB_192_LOS)
+    /* Set by Store#flags= and StoreContext#flags=.
+     * Enables Suite B 192 bit only mode. */
+    DefX509Const(V_FLAG_SUITEB_192_LOS);
+#endif
+#if defined(X509_V_FLAG_SUITEB_128_LOS)
+    /* Set by Store#flags= and StoreContext#flags=.
+     * Enables Suite B 128 bit mode allowing 192 bit algorithms. */
+    DefX509Const(V_FLAG_SUITEB_128_LOS);
+#endif
+#if defined(X509_V_FLAG_PARTIAL_CHAIN)
+    /* Set by Store#flags= and StoreContext#flags=.
+     * Allows partial chains if at least one certificate is in trusted store. */
+    DefX509Const(V_FLAG_PARTIAL_CHAIN);
 #endif
 #if defined(X509_V_FLAG_NO_ALT_CHAINS)
     /* Set by Store#flags= and StoreContext#flags=. Suppresses searching for
