@@ -1678,6 +1678,13 @@ tty_enabled(void)
 #endif
 
 static VALUE
+copy_str(VALUE str, rb_encoding *enc, bool intern)
+{
+    if (!intern) return rb_enc_associate(rb_str_dup(str), enc);
+    return rb_enc_interned_str(RSTRING_PTR(str), RSTRING_LEN(str), enc);
+}
+
+static VALUE
 process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
     rb_ast_t *ast = 0;
@@ -1909,7 +1916,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	    if (newpath == path) continue;
 	    path = newpath;
 #else
-	    path = rb_enc_associate(rb_str_dup(path), lenc);
+	    path = copy_str(path, lenc, !mark);
 #endif
 	    if (mark) rb_ivar_set(path, id_initial_load_path_mark, path);
             if (!modifiable) {
@@ -1926,7 +1933,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         VALUE loaded_features = vm->loaded_features;
         for (long i = loaded_before_enc; i < RARRAY_LEN(loaded_features); ++i) {
 	    VALUE path = RARRAY_AREF(loaded_features, i);
-	    path = rb_enc_associate(rb_str_dup(path), IF_UTF8_PATH(uenc, lenc));
+            if (rb_enc_get(path) == IF_UTF8_PATH(uenc, lenc)) continue;
+            path = copy_str(path, IF_UTF8_PATH(uenc, lenc), true);
 	    RARRAY_ASET(loaded_features, i, path);
         }
         rb_get_expanded_load_path();
