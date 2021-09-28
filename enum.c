@@ -1298,7 +1298,7 @@ enum_first(int argc, VALUE *argv, VALUE obj)
  *  The ordering of equal elements is indeterminate and may be unstable.
  *
  *  With no block given, the sort compares
- *  using the items' own method <tt><=></tt>:
+ *  using the elements' own method <tt><=></tt>:
  *
  *    %w[b c a d].sort              # => ["a", "b", "c", "d"]
  *    {foo: 0, bar: 1, baz: 2}.sort # => [[:bar, 1], [:baz, 2], [:foo, 0]]
@@ -1593,7 +1593,7 @@ DEFINE_ENUMFUNCS(all)
  *    {foo: 0, bar: 1, baz: 2}.all? {|key, value| value < 3 } # => true
  *    {foo: 0, bar: 1, baz: 2}.all? {|key, value| value < 2 } # => false
  *
- *  Related: #any?.
+ *  Related: #any?, #none? #one?.
  *
  */
 
@@ -1654,7 +1654,7 @@ DEFINE_ENUMFUNCS(any)
  *    {foo: 0, bar: 1, baz: 2}.any? {|key, value| value < 0 } # => false
  *
  *
- *  Related: #all?
+ *  Related: #all?, #none?, #one?.
  */
 
 static VALUE
@@ -1904,26 +1904,45 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
 
 /*
  *  call-seq:
- *     enum.one? [{ |obj| block }]   -> true or false
- *     enum.one?(pattern)            -> true or false
+ *    one?                  -> true or false
+ *    one?(pattern)         -> true or false
+ *    one? {|element| ... } -> true or false
  *
- *  Passes each element of the collection to the given block. The method
- *  returns <code>true</code> if the block returns <code>true</code>
- *  exactly once. If the block is not given, <code>one?</code> will return
- *  <code>true</code> only if exactly one of the collection members is
- *  true.
+ *  Returns whether exactly one element meets a given criterion.
  *
- *  If instead a pattern is supplied, the method returns whether
- *  <code>pattern === element</code> for exactly one collection member.
+ *  With no argument and no block,
+ *  returns whether exactly one element is truthy:
  *
- *     %w{ant bear cat}.one? { |word| word.length == 4 }  #=> true
- *     %w{ant bear cat}.one? { |word| word.length > 4 }   #=> false
- *     %w{ant bear cat}.one? { |word| word.length < 4 }   #=> false
- *     %w{ant bear cat}.one?(/t/)                         #=> false
- *     [ nil, true, 99 ].one?                             #=> false
- *     [ nil, true, false ].one?                          #=> true
- *     [ nil, true, 99 ].one?(Integer)                    #=> true
- *     [].one?                                            #=> false
+ *    (1..1).one?           # => true
+ *    [1, nil, false].one?  # => true
+ *    (1..4).one?           # => false
+ *    {foo: 0}.one?         # => true
+ *    {foo: 0, bar: 1}.one? # => false
+ *    [].one?               # => false
+ *
+ *  With argument +pattern+ and no block,
+ *  returns whether for exactly one element +element+,
+ *  <tt>pattern === element</tt>:
+ *
+ *    [nil, false, 0].one?(Integer)        # => true
+ *    [nil, false, 0].one?(Numeric)        # => true
+ *    [nil, false, 0].one?(Float)          # => false
+ *    %w[bar baz bat bam].one?(/m/)        # => true
+ *    %w[bar baz bat bam].one?(/foo/)      # => false
+ *    %w[bar baz bat bam].one?('ba')       # => false
+ *    {foo: 0, bar: 1, baz: 2}.one?(Array) # => false
+ *    {foo: 0}.one?(Array)                 # => true
+ *    [].one?(Integer)                     # => false
+ *
+ *  With a block given, returns whether the block returns a truthy value
+ *  for exactly one element:
+ *
+ *    (1..4).one? {|element| element < 2 }                     # => true
+ *    (1..4).one? {|element| element < 1 }                     # => false
+ *    {foo: 0, bar: 1, baz: 2}.one? {|key, value| value < 1 }  # => true
+ *    {foo: 0, bar: 1, baz: 2}.one? {|key, value| value < 2  } # => false
+ *
+ *  Related: #none?, #all?, #any?.
  *
  */
 static VALUE
@@ -1950,25 +1969,43 @@ DEFINE_ENUMFUNCS(none)
 
 /*
  *  call-seq:
- *     enum.none? [{ |obj| block }]   -> true or false
- *     enum.none?(pattern)            -> true or false
+ *    none?                  -> true or false
+ *    none?(pattern)         -> true or false
+ *    none? {|element| ... } -> true or false
  *
- *  Passes each element of the collection to the given block. The method
- *  returns <code>true</code> if the block never returns <code>true</code>
- *  for all elements. If the block is not given, <code>none?</code> will return
- *  <code>true</code> only if none of the collection members is true.
+ *  Returns whether no element meets a given criterion.
  *
- *  If instead a pattern is supplied, the method returns whether
- *  <code>pattern === element</code> for none of the collection members.
+ *  With no argument and no block,
+ *  returns whether no element is truthy:
  *
- *     %w{ant bear cat}.none? { |word| word.length == 5 } #=> true
- *     %w{ant bear cat}.none? { |word| word.length >= 4 } #=> false
- *     %w{ant bear cat}.none?(/d/)                        #=> true
- *     [1, 3.14, 42].none?(Float)                         #=> false
- *     [].none?                                           #=> true
- *     [nil].none?                                        #=> true
- *     [nil, false].none?                                 #=> true
- *     [nil, false, true].none?                           #=> false
+ *    (1..4).none?           # => false
+ *    [nil, false].none?     # => true
+ *    {foo: 0}.none?         # => false
+ *    {foo: 0, bar: 1}.none? # => false
+ *    [].none?               # => true
+ *
+ *  With argument +pattern+ and no block,
+ *  returns whether for no element +element+,
+ *  <tt>pattern === element</tt>:
+ *
+ *    [nil, false, 1.1].none?(Integer)      # => true
+ *    %w[bar baz bat bam].none?(/m/)        # => false
+ *    %w[bar baz bat bam].none?(/foo/)      # => true
+ *    %w[bar baz bat bam].none?('ba')       # => true
+ *    {foo: 0, bar: 1, baz: 2}.none?(Hash)  # => true
+ *    {foo: 0}.none?(Array)                 # => false
+ *    [].none?(Integer)                     # => true
+ *
+ *  With a block given, returns whether the block returns a truthy value
+ *  for no element:
+ *
+ *    (1..4).none? {|element| element < 1 }                     # => true
+ *    (1..4).none? {|element| element < 2 }                     # => false
+ *    {foo: 0, bar: 1, baz: 2}.none? {|key, value| value < 0 }  # => true
+ *    {foo: 0, bar: 1, baz: 2}.none? {|key, value| value < 1  } # => false
+ *
+ *  Related: #.one?, #all?, #any.
+ *
  */
 static VALUE
 enum_none(int argc, VALUE *argv, VALUE obj)
@@ -2026,26 +2063,52 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 /*
  *  call-seq:
- *     enum.min                     -> obj
- *     enum.min { |a, b| block }    -> obj
- *     enum.min(n)                  -> array
- *     enum.min(n) { |a, b| block } -> array
+ *    min                    -> element
+ *    min(n)                 -> array
+ *    min {|a, b| block }    -> element
+ *    min(n) {|a, b| block } -> array
  *
- *  Returns the object in _enum_ with the minimum value. The
- *  first form assumes all objects implement <code><=></code>;
- *  the second uses the block to return <em>a <=> b</em>.
+ *  Returns the element with the minimum value according to a given criterion.
+ *  The ordering of equal elements is indeterminate and may be unstable.
  *
- *     a = %w(albatross dog horse)
- *     a.min                                   #=> "albatross"
- *     a.min { |a, b| a.length <=> b.length }  #=> "dog"
+ *  With no argument and no block, returns the minimum value,
+ *  using the elements' own method <tt><=></tt> for comparison:
  *
- *  If the +n+ argument is given, minimum +n+ elements are returned
- *  as a sorted array.
+ *    (1..4).min                   # => 1
+ *    (-4..-1).min                 # => -4
+ *    %w[d c b a].min              # => "a"
+ *    {foo: 0, bar: 1, baz: 2}.min # => [:bar, 1]
+ *    [].min                       # => nil
  *
- *     a = %w[albatross dog horse]
- *     a.min(2)                                  #=> ["albatross", "dog"]
- *     a.min(2) {|a, b| a.length <=> b.length }  #=> ["dog", "horse"]
- *     [5, 1, 3, 4, 2].min(3)                    #=> [1, 2, 3]
+ *  With positive integer argument +n+ given, and no block,
+ *  returns an array containing the first +n+ minimum values that exist:
+ *
+ *    (1..4).min(2)                   # => [1, 2]
+ *    (-4..-1).min(2)                 # => [-4, -3]
+ *    %w[d c b a].min(2)              # => ["a", "b"]
+ *    {foo: 0, bar: 1, baz: 2}.min(2) # => [[:bar, 1], [:baz, 2]]
+ *    [].min(2)                       # => []
+ *
+ *  With a block given, the block determines the minimum values.
+ *  The block is called with two elements +a+ and +b+, and must return:
+ *
+ *  - A negative integer if <tt>a < b</tt>.
+ *  - Zero if <tt>a == b</tt>.
+ *  - A positive integer if <tt>a > b</tt>.
+ *
+ *  With a block given and no argument,
+ *  returns the minimum value as determined by the block:
+ *
+ *    %w[xxx x xxxx xx].min {|a, b| a.size <=> b.size } # => "x"
+ *    [].min {|a, b| a <=> b }                          # => nil
+ *
+ *  With a block given and positive integer argument +n+ given,
+ *  returns an array containing the first +n+ minimum elements that exist,
+ *  as determined by the block.
+ *
+ *    %w[xxx x xxxx xx].min(2) {|a, b| a.size <=> b.size } # => ["x", "xx"]
+ *    [].min(2) {|a, b| a <=> b }                          # => []
+ *
  */
 
 static VALUE
