@@ -4130,7 +4130,7 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
             struct rb_callinfo_kwarg *kw_arg =
                 rb_xmalloc_mul_add(len, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
 	    VALUE *keywords = kw_arg->keywords;
-	    int i = 0;
+	    int i;
 	    kw_arg->keyword_len = len;
 
 	    *kw_arg_ptr = kw_arg;
