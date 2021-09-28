@@ -1931,13 +1931,17 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     }
     {
         VALUE loaded_features = vm->loaded_features;
+        bool modified = false;
         for (long i = loaded_before_enc; i < RARRAY_LEN(loaded_features); ++i) {
 	    VALUE path = RARRAY_AREF(loaded_features, i);
             if (rb_enc_get(path) == IF_UTF8_PATH(uenc, lenc)) continue;
             path = copy_str(path, IF_UTF8_PATH(uenc, lenc), true);
+            modified = true;
 	    RARRAY_ASET(loaded_features, i, path);
         }
-        rb_get_expanded_load_path();
+        if (modified) {
+            rb_ary_replace(vm->loaded_features_snapshot, loaded_features);
+        }
     }
 
     if (opt->features.mask & COMPILATION_FEATURES) {
