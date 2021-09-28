@@ -2072,7 +2072,7 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  The ordering of equal elements is indeterminate and may be unstable.
  *
  *  With no argument and no block, returns the minimum value,
- *  using the elements' own method <tt>=></tt> for comparison:
+ *  using the elements' own method <tt><=></tt> for comparison:
  *
  *    (1..4).min                   # => 1
  *    (-4..-1).min                 # => -4
