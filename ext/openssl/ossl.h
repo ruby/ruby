@@ -27,6 +27,7 @@
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
 #include <openssl/conf.h>
+#include <openssl/conf_api.h>
 #include <openssl/crypto.h>
 #if !defined(OPENSSL_NO_ENGINE)
 #  include <openssl/engine.h>

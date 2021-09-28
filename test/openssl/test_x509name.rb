@@ -242,16 +242,15 @@ class OpenSSL::TestX509Name < OpenSSL::TestCase
       assert_match(/^multi-valued RDN is not supported: #{dn_r}/, ex.message)
     }
 
-    bad_dc = "exa#{"pm"}le"     # <- typo of "example"
     [
-      ["DC=org,DC=#{bad_dc},CN", "CN"],
+      ["DC=org,DC=exapmle,CN", "CN"],
       ["DC=org,DC=example,", ""],
-      ["DC=org,DC=#{bad_dc},CN=www.example.org;", "CN=www.example.org;"],
-      ["DC=org,DC=#{bad_dc},CN=#www.example.org", "CN=#www.example.org"],
-      ["DC=org,DC=#{bad_dc},CN=#777777.example.org", "CN=#777777.example.org"],
-      ["DC=org,DC=#{bad_dc},CN=\"www.example\".org", "CN=\"www.example\".org"],
-      ["DC=org,DC=#{bad_dc},CN=www.\"example.org\"", "CN=www.\"example.org\""],
-      ["DC=org,DC=#{bad_dc},CN=www.\"example\".org", "CN=www.\"example\".org"],
+      ["DC=org,DC=exapmle,CN=www.example.org;", "CN=www.example.org;"],
+      ["DC=org,DC=exapmle,CN=#www.example.org", "CN=#www.example.org"],
+      ["DC=org,DC=exapmle,CN=#777777.example.org", "CN=#777777.example.org"],
+      ["DC=org,DC=exapmle,CN=\"www.example\".org", "CN=\"www.example\".org"],
+      ["DC=org,DC=exapmle,CN=www.\"example.org\"", "CN=www.\"example.org\""],
+      ["DC=org,DC=exapmle,CN=www.\"example\".org", "CN=www.\"example\".org"],
     ].each{|dn, msg|
       ex = scanner.call(dn) rescue $!
       assert_match(/^malformed RDN: .*=>#{Regexp.escape(msg)}/, ex.message)

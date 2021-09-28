@@ -155,21 +155,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
-  def test_sysread_nonblock_and_syswrite_nonblock_keywords
-    start_server(ignore_listener_error: true) do |port|
-      sock = TCPSocket.new("127.0.0.1", port)
-      ssl = OpenSSL::SSL::SSLSocket.new(sock)
-
-      assert_warn ("") do
-        ssl.send(:syswrite_nonblock, "1", exception: false)
-        ssl.send(:sysread_nonblock, 1, exception: false) rescue nil
-        ssl.send(:sysread_nonblock, 1, String.new, exception: false) rescue nil
-      end
-    ensure
-      sock&.close
-    end
-  end
-
   def test_sync_close
     start_server { |port|
       begin
@@ -222,7 +207,10 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
   def test_client_auth_success
     vflag = OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
-    start_server(verify_mode: vflag) { |port|
+    start_server(verify_mode: vflag,
+      ctx_proc: proc { |ctx|
+        ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION if libressl?(3, 2, 0)
+    }) { |port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.key = @cli_key
       ctx.cert = @cli_cert
@@ -268,6 +256,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_client_ca
+    pend "LibreSSL 3.2 has broken client CA support" if libressl?(3, 2, 0)
+
     ctx_proc = Proc.new do |ctx|
       ctx.client_ca = [@ca_cert]
     end
@@ -808,11 +798,13 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
   def test_verify_hostname_on_connect
     ctx_proc = proc { |ctx|
+      san = "DNS:a.example.com,DNS:*.b.example.com"
+      san += ",DNS:c*.example.com,DNS:d.*.example.com" unless libressl?(3, 2, 2)
       exts = [
         ["keyUsage", "keyEncipherment,digitalSignature", true],
-        ["subjectAltName", "DNS:a.example.com,DNS:*.b.example.com," \
-                           "DNS:c*.example.com,DNS:d.*.example.com"],
+        ["subjectAltName", san],
       ]
+
       ctx.cert = issue_cert(@svr, @svr_key, 4, exts, @ca_cert, @ca_key)
       ctx.key = @svr_key
     }
@@ -833,6 +825,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ["cx.example.com", true],
         ["d.x.example.com", false],
       ].each do |name, expected_ok|
+        next if name.start_with?('cx') if libressl?(3, 2, 2)
         begin
           sock = TCPSocket.new("127.0.0.1", port)
           ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
@@ -847,6 +840,46 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
           ssl.close if ssl
           sock.close if sock
         end
+      end
+    end
+  end
+
+  def test_verify_hostname_failure_error_code
+    ctx_proc = proc { |ctx|
+      exts = [
+        ["keyUsage", "keyEncipherment,digitalSignature", true],
+        ["subjectAltName", "DNS:a.example.com"],
+      ]
+      ctx.cert = issue_cert(@svr, @svr_key, 4, exts, @ca_cert, @ca_key)
+      ctx.key = @svr_key
+    }
+
+    start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
+      verify_callback_ok = verify_callback_err = nil
+
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.verify_hostname = true
+      ctx.cert_store = OpenSSL::X509::Store.new
+      ctx.cert_store.add_cert(@ca_cert)
+      ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
+      ctx.verify_callback = -> (preverify_ok, store_ctx) {
+        verify_callback_ok = preverify_ok
+        verify_callback_err = store_ctx.error
+        preverify_ok
+      }
+
+      begin
+        sock = TCPSocket.new("127.0.0.1", port)
+        ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+        ssl.hostname = "b.example.com"
+        assert_handshake_error { ssl.connect }
+        assert_equal false, verify_callback_ok
+        code_expected = openssl?(1, 0, 2) || defined?(OpenSSL::X509::V_ERR_HOSTNAME_MISMATCH) ?
+          OpenSSL::X509::V_ERR_HOSTNAME_MISMATCH :
+          OpenSSL::X509::V_ERR_CERT_REJECTED
+        assert_equal code_expected, verify_callback_err
+      ensure
+        sock&.close
       end
     end
   end
@@ -1476,12 +1509,13 @@ end
     end
   end
 
-  def test_ecdh_curves
+  def test_ecdh_curves_tls12
     pend "EC is disabled" unless defined?(OpenSSL::PKey::EC)
 
     ctx_proc = -> ctx {
       # Enable both ECDHE (~ TLS 1.2) cipher suites and TLS 1.3
-      ctx.ciphers = "DEFAULT:!kRSA:!kEDH"
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+      ctx.ciphers = "kEECDH"
       ctx.ecdh_curves = "P-384:P-521"
     }
     start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
@@ -1490,13 +1524,9 @@ end
 
       server_connect(port, ctx) { |ssl|
         cs = ssl.cipher[0]
-        if /\ATLS/ =~ cs # Is TLS 1.3 is used?
+        assert_match (/\AECDH/), cs
+        if ssl.respond_to?(:tmp_key)
           assert_equal "secp384r1", ssl.tmp_key.group.curve_name
-        else
-          assert_match (/\AECDH/), cs
-          if ssl.respond_to?(:tmp_key)
-            assert_equal "secp384r1", ssl.tmp_key.group.curve_name
-          end
         end
         ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       }
@@ -1517,6 +1547,26 @@ end
           ssl.puts "abc"; assert_equal "abc\n", ssl.gets
         }
       end
+    end
+  end
+
+  def test_ecdh_curves_tls13
+    pend "EC is disabled" unless defined?(OpenSSL::PKey::EC)
+    pend "TLS 1.3 not supported" unless tls13_supported?
+
+    ctx_proc = -> ctx {
+      # Assume TLS 1.3 is enabled and chosen by default
+      ctx.ecdh_curves = "P-384:P-521"
+    }
+    start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ecdh_curves = "P-256:P-384" # disable P-521
+
+      server_connect(port, ctx) { |ssl|
+        assert_equal "TLSv1.3", ssl.ssl_version
+        assert_equal "secp384r1", ssl.tmp_key.group.curve_name
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+      }
     end
   end
 
