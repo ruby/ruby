@@ -3358,6 +3358,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     // Arity handling and optional parameter setup
     int num_params = iseq->body->param.size;
     uint32_t start_pc_offset = 0;
+
     if (iseq_lead_only_arg_setup_p(iseq)) {
         num_params = iseq->body->param.lead_num;
 
@@ -3387,9 +3388,58 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
         start_pc_offset = (uint32_t)iseq->body->param.opt_table[opts_filled];
     }
     else if (rb_iseq_only_kwparam_p(iseq)) {
-        // vm_callee_setup_arg() has a fast path for this.
-        GEN_COUNTER_INC(cb, send_iseq_only_keywords);
-        return YJIT_CANT_COMPILE;
+        const int required_num = iseq->body->param.lead_num;
+
+        if (vm_ci_flag(ci) & VM_CALL_KWARG) {
+            // Calling a method with keyword parameters and specifying keyword
+            // arguments
+
+            const struct rb_callinfo_kwarg *kw_arg = vm_ci_kwarg(ci);
+
+            if (argc - kw_arg->keyword_len != required_num) {
+                // There is a mix of required and optional keyword arguments and
+                // not every one is specified
+
+                GEN_COUNTER_INC(cb, send_iseq_kwargs_req_and_opt_missing);
+                return YJIT_CANT_COMPILE;
+            }
+
+            const int req_key_num = iseq->body->param.keyword->required_num;
+            RUBY_ASSERT(req_key_num == kw_arg->keyword_len);
+
+            // callee expects keyword arguments
+            // caller is sending the correct number of positional arguments
+            // caller is sending keyword arguments
+
+            const ID *acceptable_keywords = iseq->body->param.keyword->table;
+            const VALUE * const ci_keywords = kw_arg->keywords;
+
+            // Check that the names of the given keyword arguments match up to
+            // the names of the keyword parameters and that they were passed in
+            // the exact same order
+            for (int i = 0; i < req_key_num; i++) {
+                if (ID2SYM(acceptable_keywords[i]) != ci_keywords[i]) {
+                    GEN_COUNTER_INC(cb, send_iseq_kwargs_need_shuffling);
+                    return YJIT_CANT_COMPILE;
+                }
+            }
+
+            // caller and callee specified all the same keywords in the exact
+            // same order
+
+            // Kwargs adds a special weird little local that specifies a bitmap
+            // that corresponds to the keyword arguments that are not passed.
+            num_params--;
+        } else if (argc == required_num) {
+            // Calling a method that accepts keyword parameters but not
+            // specifying any keyword arguments
+
+            GEN_COUNTER_INC(cb, send_iseq_kwargs_none_passed);
+            return YJIT_CANT_COMPILE;
+        } else {
+            GEN_COUNTER_INC(cb, send_iseq_complex_callee);
+            return YJIT_CANT_COMPILE;
+        }
     }
     else {
         // Only handle iseqs that have simple parameter setup.
@@ -3605,10 +3655,6 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
         GEN_COUNTER_INC(cb, send_args_splat);
         return YJIT_CANT_COMPILE;
     }
-    if ((vm_ci_flag(ci) & VM_CALL_KWARG) != 0) {
-        GEN_COUNTER_INC(cb, send_keywords);
-        return YJIT_CANT_COMPILE;
-    }
     if ((vm_ci_flag(ci) & VM_CALL_ARGS_BLOCKARG) != 0) {
         GEN_COUNTER_INC(cb, send_block_arg);
         return YJIT_CANT_COMPILE;
@@ -3671,6 +3717,10 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
           case VM_METHOD_TYPE_ISEQ:
             return gen_send_iseq(jit, ctx, ci, cme, block, argc);
           case VM_METHOD_TYPE_CFUNC:
+            if ((vm_ci_flag(ci) & VM_CALL_KWARG) != 0) {
+                GEN_COUNTER_INC(cb, send_cfunc_kwargs);
+                return YJIT_CANT_COMPILE;
+            }
             return gen_send_cfunc(jit, ctx, ci, cme, block, argc, &comptime_recv_klass);
           case VM_METHOD_TYPE_IVAR:
             if (argc != 0) {
@@ -3685,7 +3735,10 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
                 return gen_get_ivar(jit, ctx, SEND_MAX_DEPTH, comptime_recv, ivar_name, recv_opnd, side_exit);
             }
           case VM_METHOD_TYPE_ATTRSET:
-            if (argc != 1 || !RB_TYPE_P(comptime_recv, T_OBJECT)) {
+            if ((vm_ci_flag(ci) & VM_CALL_KWARG) != 0) {
+                GEN_COUNTER_INC(cb, send_attrset_keywords);
+                return YJIT_CANT_COMPILE;
+            } else if (argc != 1 || !RB_TYPE_P(comptime_recv, T_OBJECT)) {
                 GEN_COUNTER_INC(cb, send_ivar_set_method);
                 return YJIT_CANT_COMPILE;
             }
