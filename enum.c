@@ -1066,16 +1066,29 @@ partition_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arys))
 
 /*
  *  call-seq:
- *     enum.partition { |obj| block } -> [ true_array, false_array ]
- *     enum.partition                 -> an_enumerator
+ *    partition {|element| ... } -> [true_array, false_array]
+ *    partition -> enumerator
  *
- *  Returns two arrays, the first containing the elements of
- *  <i>enum</i> for which the block evaluates to true, the second
- *  containing the rest.
+ *  With a block given, returns an array of two arrays:
  *
- *  If no block is given, an enumerator is returned instead.
+ *  - The first having those elements for which the block returns a truthy value.
+ *  - The other having all other elements.
  *
- *     (1..6).partition { |v| v.even? }  #=> [[2, 4, 6], [1, 3, 5]]
+ *  Examples:
+ *
+ *    p = (1..4).partition {|i| i.even? }
+ *    p # => [[2, 4], [1, 3]]
+ *    p = ('a'..'d').partition {|c| c < 'c' }
+ *    p # => [["a", "b"], ["c", "d"]]
+ *    h = {foo: 0, bar: 1, baz: 2, bat: 3}
+ *    p = h.partition {|key, value| key.start_with?('b') }
+ *    p # => [[[:bar, 1], [:baz, 2], [:bat, 3]], [[:foo, 0]]]
+ *    p = h.partition {|key, value| value < 2 }
+ *    p # => [[[:foo, 0], [:bar, 1]], [[:baz, 2], [:bat, 3]]]
+ *
+ *  With no block given, returns an Enumerator.
+ *
+ *  Related: Enumerable#group_by.
  *
  */
 
@@ -1114,16 +1127,23 @@ group_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
 /*
  *  call-seq:
- *     enum.group_by { |obj| block } -> a_hash
- *     enum.group_by                 -> an_enumerator
+ *    group_by {|element| ... } -> hash
+ *    group_by                  -> enumerator
  *
- *  Groups the collection by result of the block.  Returns a hash where the
- *  keys are the evaluated result from the block and the values are
- *  arrays of elements in the collection that correspond to the key.
+ *  With a block given returns a hash:
  *
- *  If no block is given an enumerator is returned.
+ *  - Each key is a return value from the block.
+ *  - Each value is an array of those elements for which the block returned that key.
  *
- *     (1..6).group_by { |i| i%3 }   #=> {0=>[3, 6], 1=>[1, 4], 2=>[2, 5]}
+ *  Examples:
+ *
+ *    g = (1..6).group_by {|i| i%3 }
+ *    g # => {1=>[1, 4], 2=>[2, 5], 0=>[3, 6]}
+ *    h = {foo: 0, bar: 1, baz: 0, bat: 1}
+ *    g = h.group_by {|key, value| value }
+ *    g # => {0=>[[:foo, 0], [:baz, 0]], 1=>[[:bar, 1], [:bat, 1]]}
+ *
+ *  With no block given, returns an Enumerator.
  *
  */
 
@@ -1173,18 +1193,30 @@ tally_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
 /*
  *  call-seq:
- *     enum.tally         -> a_hash
- *     enum.tally(a_hash) -> a_hash
+ *    tally -> new_hash
+ *    tally(hash) -> hash
  *
- *  Tallies the collection, i.e., counts the occurrences of each element.
- *  Returns a hash with the elements of the collection as keys and the
- *  corresponding counts as values.
+ *  Returns a hash containing the counts of equal elements:
  *
- *     ["a", "b", "c", "b"].tally  #=> {"a"=>1, "b"=>2, "c"=>1}
+ *  - Each key is an element of +self+.
+ *  - Each value is the number elements equal to that key.
  *
- *  If a hash is given, the number of occurrences is added to each value
- *  in the hash, and the hash is returned. The value corresponding to
- *  each element must be an integer.
+ *  With no argument:
+ *
+ *    %w[a b c b c a c b].tally # => {"a"=>2, "b"=>3, "c"=>3}
+ *
+ *  With a hash argument, that hash is used for the tally (instead of a new hash),
+ *  and is returned;
+ *  this may be useful for accumulating tallies across multiple enumerables:
+ *
+ *    hash = {}
+ *    hash = %w[a c d b c a].tally(hash)
+ *    hash # => {"a"=>2, "c"=>2, "d"=>1, "b"=>1}
+ *    hash = %w[b a z].tally(hash)
+ *    hash # => {"a"=>3, "c"=>2, "d"=>1, "b"=>2, "z"=>1}
+ *    hash = %w[b a m].tally(hash)
+ *    hash # => {"a"=>4, "c"=>2, "d"=>1, "b"=>3, "z"=>1, "m"=> 1}
+ *
  */
 
 static VALUE
@@ -1219,18 +1251,26 @@ static VALUE enum_take(VALUE obj, VALUE n);
 
 /*
  *  call-seq:
- *     enum.first       ->  obj or nil
- *     enum.first(n)    ->  an_array
+ *    first    -> element or nil
+ *    first(n) -> array
  *
- *  Returns the first element, or the first +n+ elements, of the enumerable.
- *  If the enumerable is empty, the first form returns <code>nil</code>, and the
- *  second form returns an empty array.
+ *  Returns the first element or elements.
  *
- *    %w[foo bar baz].first     #=> "foo"
- *    %w[foo bar baz].first(2)  #=> ["foo", "bar"]
- *    %w[foo bar baz].first(10) #=> ["foo", "bar", "baz"]
- *    [].first                  #=> nil
- *    [].first(10)              #=> []
+ *  With no argument, returns the first element, or +nil+ if there is none:
+ *
+ *    (1..4).first                   # => 1
+ *    %w[a b c].first                # => "a"
+ *    {foo: 1, bar: 1, baz: 2}.first # => [:foo, 1]
+ *    [].first                       # => nil
+ *
+ *  With integer argument +n+, returns an array
+ *  containing the first +n+ elements that exist:
+ *
+ *    (1..4).first(2)                   # => [1, 2]
+ *    %w[a b c d].first(3)              # => ["a", "b", "c"]
+ *    %w[a b c d].first(50)             # => ["a", "b", "c", "d"]
+ *    {foo: 1, bar: 1, baz: 2}.first(2) # => [[:foo, 1], [:bar, 1]]
+ *    [].first(2)                       # => []
  *
  */
 
@@ -1249,28 +1289,35 @@ enum_first(int argc, VALUE *argv, VALUE obj)
     }
 }
 
-
 /*
  *  call-seq:
- *     enum.sort                  -> array
- *     enum.sort { |a, b| block } -> array
+ *    sort               -> array
+ *    sort {|a, b| ... } -> array
  *
- *  Returns an array containing the items in <i>enum</i> sorted.
+ *  Returns an array containing the sorted elements of +self+.
+ *  The ordering of equal elements is indeterminate and may be unstable.
  *
- *  Comparisons for the sort will be done using the items' own
- *  <code><=></code> operator or using an optional code block.
+ *  With no block given, the sort compares
+ *  using the items' own method <tt><=></tt>:
  *
- *  The block must implement a comparison between +a+ and +b+ and return
- *  an integer less than 0 when +b+ follows +a+, +0+ when +a+ and +b+
- *  are equivalent, or an integer greater than 0 when +a+ follows +b+.
+ *    %w[b c a d].sort              # => ["a", "b", "c", "d"]
+ *    {foo: 0, bar: 1, baz: 2}.sort # => [[:bar, 1], [:baz, 2], [:foo, 0]]
  *
- *  The result is not guaranteed to be stable.  When the comparison of two
- *  elements returns +0+, the order of the elements is unpredictable.
+ *  With a block given, comparisons in the block determine the ordering.
+ *  The block is called with two elements +a+ and +b+, and must return:
  *
- *     %w(rhea kea flea).sort           #=> ["flea", "kea", "rhea"]
- *     (1..10).sort { |a, b| b <=> a }  #=> [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+ *  - A negative integer if <tt>a < b</tt>.
+ *  - Zero if <tt>a == b</tt>.
+ *  - A positive integer if <tt>a > b</tt>.
  *
- *  See also Enumerable#sort_by. It implements a Schwartzian transform
+ *  Examples:
+ *
+ *     a = %w[b c a d]
+ *     a.sort {|a, b| b <=> a } # => ["d", "c", "b", "a"]
+ *     h = {foo: 0, bar: 1, baz: 2}
+ *     h.sort {|a, b| b <=> a } # => [[:foo, 0], [:baz, 2], [:bar, 1]]
+ *
+ *  See also #sort_by. It implements a Schwartzian transform
  *  which is useful when key computation or comparison is expensive.
  */
 
@@ -1335,19 +1382,23 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
 
 /*
  *  call-seq:
- *     enum.sort_by { |obj| block }   -> array
- *     enum.sort_by                   -> an_enumerator
+ *    sort_by {|element| ... } -> array
+ *    sort_by                  -> enumerator
  *
- *  Sorts <i>enum</i> using a set of keys generated by mapping the
- *  values in <i>enum</i> through the given block.
+ *  With a block given, returns an array of elements of +self+,
+ *  sorted according to the value returned by the block for each element.
+ *  The ordering of equal elements is indeterminate and may be unstable.
  *
- *  The result is not guaranteed to be stable.  When two keys are equal,
- *  the order of the corresponding elements is unpredictable.
+ *  Examples:
  *
- *  If no block is given, an enumerator is returned instead.
+ *    a = %w[xx xxx x xxxx]
+ *    a.sort_by {|s| s.size }        # => ["x", "xx", "xxx", "xxxx"]
+ *    a.sort_by {|s| -s.size }       # => ["xxxx", "xxx", "xx", "x"]
+ *    h = {foo: 2, bar: 1, baz: 0}
+ *    h.sort_by{|key, value| value } # => [[:baz, 0], [:bar, 1], [:foo, 2]]
+ *    h.sort_by{|key, value| key }   # => [[:bar, 1], [:baz, 0], [:foo, 2]]
  *
- *     %w{apple pear fig}.sort_by { |word| word.length }
- *                   #=> ["fig", "pear", "apple"]
+ *  With no block given, returns an Enumerator.
  *
  *  The current implementation of #sort_by generates an array of
  *  tuples containing the original collection element and the mapped
@@ -1505,25 +1556,44 @@ DEFINE_ENUMFUNCS(all)
 
 /*
  *  call-seq:
- *     enum.all? [{ |obj| block } ]   -> true or false
- *     enum.all?(pattern)             -> true or false
+ *    all?                  -> true or false
+ *    all?(pattern)         -> true or false
+ *    all? {|element| ... } -> true or false
  *
- *  Passes each element of the collection to the given block. The method
- *  returns <code>true</code> if the block never returns
- *  <code>false</code> or <code>nil</code>. If the block is not given,
- *  Ruby adds an implicit block of <code>{ |obj| obj }</code> which will
- *  cause #all? to return +true+ when none of the collection members are
- *  +false+ or +nil+.
+ *  Returns whether every element meets a given criterion.
  *
- *  If instead a pattern is supplied, the method returns whether
- *  <code>pattern === element</code> for every collection member.
+ *  With no argument and no block,
+ *  returns whether every element is truthy:
  *
- *     %w[ant bear cat].all? { |word| word.length >= 3 } #=> true
- *     %w[ant bear cat].all? { |word| word.length >= 4 } #=> false
- *     %w[ant bear cat].all?(/t/)                        #=> false
- *     [1, 2i, 3.14].all?(Numeric)                       #=> true
- *     [nil, true, 99].all?                              #=> false
- *     [].all?                                           #=> true
+ *    (1..4).all?           # => true
+ *    %w[a b c d].all?      # => true
+ *    [1, 2, nil].all?      # => false
+ *    ['a','b', false].all? # => false
+ *    [].all?               # => true
+ *
+ *  With argument +pattern+ and no block,
+ *  returns whether for each element +element+,
+ *  <tt>pattern === element</tt>:
+ *
+ *    (1..4).all?(Integer)                 # => true
+ *    (1..4).all?(Numeric)                 # => true
+ *    (1..4).all?(Float)                   # => false
+ *    %w[bar baz bat bam].all?(/ba/)       # => true
+ *    %w[bar baz bat bam].all?(/bar/)      # => false
+ *    %w[bar baz bat bam].all?('ba')       # => false
+ *    {foo: 0, bar: 1, baz: 2}.all?(Array) # => true
+ *    {foo: 0, bar: 1, baz: 2}.all?(Hash)  # => false
+ *    [].all?(Integer)                     # => true
+ *
+ *  With a block given, returns whether the block returns a truthy value
+ *  for every element:
+ *
+ *    (1..4).all? {|element| element < 5 }                    # => true
+ *    (1..4).all? {|element| element < 4 }                    # => false
+ *    {foo: 0, bar: 1, baz: 2}.all? {|key, value| value < 3 } # => true
+ *    {foo: 0, bar: 1, baz: 2}.all? {|key, value| value < 2 } # => false
+ *
+ *  Related: #any?.
  *
  */
 
@@ -1547,26 +1617,44 @@ DEFINE_ENUMFUNCS(any)
 
 /*
  *  call-seq:
- *     enum.any? [{ |obj| block }]   -> true or false
- *     enum.any?(pattern)            -> true or false
+ *    any?                  -> true or false
+ *    any?(pattern)         -> true or false
+ *    any? {|element| ... } -> true or false
  *
- *  Passes each element of the collection to the given block. The method
- *  returns <code>true</code> if the block ever returns a value other
- *  than <code>false</code> or <code>nil</code>. If the block is not
- *  given, Ruby adds an implicit block of <code>{ |obj| obj }</code> that
- *  will cause #any? to return +true+ if at least one of the collection
- *  members is not +false+ or +nil+.
+ *  Returns whether any element meets a given criterion.
  *
- *  If instead a pattern is supplied, the method returns whether
- *  <code>pattern === element</code> for any collection member.
+ *  With no argument and no block,
+ *  returns whether any element is truthy:
  *
- *     %w[ant bear cat].any? { |word| word.length >= 3 } #=> true
- *     %w[ant bear cat].any? { |word| word.length >= 4 } #=> true
- *     %w[ant bear cat].any?(/d/)                        #=> false
- *     [nil, true, 99].any?(Integer)                     #=> true
- *     [nil, true, 99].any?                              #=> true
- *     [].any?                                           #=> false
+ *    (1..4).any?          # => true
+ *    %w[a b c d].any?     # => true
+ *    [1, false, nil].any? # => true
+ *    [].any?              # => false
  *
+ *  With argument +pattern+ and no block,
+ *  returns whether for any element +element+,
+ *  <tt>pattern === element</tt>:
+ *
+ *    [nil, false, 0].any?(Integer)        # => true
+ *    [nil, false, 0].any?(Numeric)        # => true
+ *    [nil, false, 0].any?(Float)          # => false
+ *    %w[bar baz bat bam].any?(/m/)        # => true
+ *    %w[bar baz bat bam].any?(/foo/)      # => false
+ *    %w[bar baz bat bam].any?('ba')       # => false
+ *    {foo: 0, bar: 1, baz: 2}.any?(Array) # => true
+ *    {foo: 0, bar: 1, baz: 2}.any?(Hash)  # => false
+ *    [].any?(Integer)                     # => false
+ *
+ *  With a block given, returns whether the block returns a truthy value
+ *  for any element:
+ *
+ *    (1..4).any? {|element| element < 2 }                    # => true
+ *    (1..4).any? {|element| element < 1 }                    # => false
+ *    {foo: 0, bar: 1, baz: 2}.any? {|key, value| value < 1 } # => true
+ *    {foo: 0, bar: 1, baz: 2}.any? {|key, value| value < 0 } # => false
+ *
+ *
+ *  Related: #all?
  */
 
 static VALUE
