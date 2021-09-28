@@ -3,6 +3,16 @@
 require 'pp'
 require 'delegate'
 require 'test/unit'
+require 'ruby2_keywords'
+
+# Define bind_call for Ruby 2.6 and earlier
+class UnboundMethod
+  unless public_method_defined?(:bind_call)
+    def bind_call(obj, *args, &block)
+      bind(obj).call(*args, &block)
+    end
+  end
+end
 
 module PPTestModule
 
