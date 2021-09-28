@@ -227,7 +227,7 @@ class OpenStruct
         ::Ractor.make_shareable(getter_proc)
         ::Ractor.make_shareable(setter_proc)
       end
-      define_singleton_method!(name, &getter_proc) 
+      define_singleton_method!(name, &getter_proc)
       define_singleton_method!("#{name}=", &setter_proc)
     end
   end
