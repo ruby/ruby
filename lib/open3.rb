@@ -29,9 +29,14 @@
 # - Open3.pipeline : run a pipeline and wait for its completion
 #
 
-module Open3
-  VERSION = "0.1.1"
+require 'open3/version'
 
+if RUBY_ENGINE == 'jruby' && JRuby::Util::ON_WINDOWS
+  require_relative 'open3/jruby_windows'
+  return
+end
+
+module Open3
   # Open stdin, stdout, and stderr streams and start external executable.
   # In addition, a thread to wait for the started process is created.
   # The thread has a pid method and a thread variable :pid which is the pid of

@@ -1,10 +1,8 @@
 # frozen_string_literal: true
 
 name = File.basename(__FILE__, ".gemspec")
-version = ["lib", Array.new(name.count("-"), "..").join("/")].find do |dir|
-  break File.foreach(File.join(__dir__, dir, "#{name.tr('-', '/')}.rb")) do |line|
-    /^\s*VERSION\s*=\s*"(.*)"/ =~ line and break $1
-  end rescue nil
+version = File.foreach(File.join(__dir__, "lib/open3/version.rb")) do |line|
+  /^\s*VERSION\s*=\s*"(.*)"/ =~ line and break $1
 end
 
 Gem::Specification.new do |spec|
