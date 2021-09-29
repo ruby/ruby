@@ -2063,15 +2063,15 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 /*
  *  call-seq:
- *    min                    -> element
- *    min(n)                 -> array
- *    min {|a, b| block }    -> element
- *    min(n) {|a, b| block } -> array
+ *    min                  -> element
+ *    min(n)               -> array
+ *    min {|a, b| ... }    -> element
+ *    min(n) {|a, b| ... } -> array
  *
- *  Returns the element with the minimum value according to a given criterion.
+ *  Returns the element with the minimum element according to a given criterion.
  *  The ordering of equal elements is indeterminate and may be unstable.
  *
- *  With no argument and no block, returns the minimum value,
+ *  With no argument and no block, returns the minimum element,
  *  using the elements' own method <tt><=></tt> for comparison:
  *
  *    (1..4).min                   # => 1
@@ -2081,7 +2081,7 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *    [].min                       # => nil
  *
  *  With positive integer argument +n+ given, and no block,
- *  returns an array containing the first +n+ minimum values that exist:
+ *  returns an array containing the first +n+ minimum elements that exist:
  *
  *    (1..4).min(2)                   # => [1, 2]
  *    (-4..-1).min(2)                 # => [-4, -3]
@@ -2089,7 +2089,7 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *    {foo: 0, bar: 1, baz: 2}.min(2) # => [[:bar, 1], [:baz, 2]]
  *    [].min(2)                       # => []
  *
- *  With a block given, the block determines the minimum values.
+ *  With a block given, the block determines the minimum elements.
  *  The block is called with two elements +a+ and +b+, and must return:
  *
  *  - A negative integer if <tt>a < b</tt>.
@@ -2097,7 +2097,7 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  - A positive integer if <tt>a > b</tt>.
  *
  *  With a block given and no argument,
- *  returns the minimum value as determined by the block:
+ *  returns the minimum element as determined by the block:
  *
  *    %w[xxx x xxxx xx].min {|a, b| a.size <=> b.size } # => "x"
  *    [].min {|a, b| a <=> b }                          # => nil
@@ -2108,6 +2108,8 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *
  *    %w[xxx x xxxx xx].min(2) {|a, b| a.size <=> b.size } # => ["x", "xx"]
  *    [].min(2) {|a, b| a <=> b }                          # => []
+ *
+ *  Related: #min_by, #minmax, #max.
  *
  */
 
@@ -2181,26 +2183,54 @@ max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 /*
  *  call-seq:
- *     enum.max                     -> obj
- *     enum.max { |a, b| block }    -> obj
- *     enum.max(n)                  -> array
- *     enum.max(n) { |a, b| block } -> array
+ *    max                  -> element
+ *    max(n)               -> array
+ *    max {|a, b| ... }    -> element
+ *    max(n) {|a, b| ... } -> array
  *
- *  Returns the object in _enum_ with the maximum value. The
- *  first form assumes all objects implement <code><=></code>;
- *  the second uses the block to return <em>a <=> b</em>.
+ *  Returns the element with the maximum element according to a given criterion.
+ *  The ordering of equal elements is indeterminate and may be unstable.
  *
- *     a = %w(albatross dog horse)
- *     a.max                                   #=> "horse"
- *     a.max { |a, b| a.length <=> b.length }  #=> "albatross"
+ *  With no argument and no block, returns the maximum element,
+ *  using the elements' own method <tt><=></tt> for comparison:
  *
- *  If the +n+ argument is given, maximum +n+ elements are returned
- *  as an array, sorted in descending order.
+ *    (1..4).max                   # => 4
+ *    (-4..-1).max                 # => -1
+ *    %w[d c b a].max              # => "d"
+ *    {foo: 0, bar: 1, baz: 2}.max # => [:foo, 0]
+ *    [].max                       # => nil
  *
- *     a = %w[albatross dog horse]
- *     a.max(2)                                  #=> ["horse", "dog"]
- *     a.max(2) {|a, b| a.length <=> b.length }  #=> ["albatross", "horse"]
- *     [5, 1, 3, 4, 2].max(3)                    #=> [5, 4, 3]
+ *  With positive integer argument +n+ given, and no block,
+ *  returns an array containing the first +n+ maximum elements that exist:
+ *
+ *    (1..4).max(2)                   # => [4, 3]
+ *    (-4..-1).max(2)                # => [-1, -2]
+ *    %w[d c b a].max(2)              # => ["d", "c"]
+ *    {foo: 0, bar: 1, baz: 2}.max(2) # => [[:foo, 0], [:baz, 2]]
+ *    [].max(2)                       # => []
+ *
+ *  With a block given, the block determines the maximum elements.
+ *  The block is called with two elements +a+ and +b+, and must return:
+ *
+ *  - A negative integer if <tt>a < b</tt>.
+ *  - Zero if <tt>a == b</tt>.
+ *  - A positive integer if <tt>a > b</tt>.
+ *
+ *  With a block given and no argument,
+ *  returns the maximum element as determined by the block:
+ *
+ *    %w[xxx x xxxx xx].max {|a, b| a.size <=> b.size } # => "xxxx"
+ *    [].max {|a, b| a <=> b }                          # => nil
+ *
+ *  With a block given and positive integer argument +n+ given,
+ *  returns an array containing the first +n+ maximum elements that exist,
+ *  as determined by the block.
+ *
+ *    %w[xxx x xxxx xx].max(2) {|a, b| a.size <=> b.size } # => ["xxxx", "xxx"]
+ *    [].max(2) {|a, b| a <=> b }                          # => []
+ *
+ *  Related: #min, #minmax, #max_by.
+ *
  */
 
 static VALUE
@@ -2341,17 +2371,30 @@ minmax_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
 
 /*
  *  call-seq:
- *     enum.minmax                  -> [min, max]
- *     enum.minmax { |a, b| block } -> [min, max]
+ *    minmax               -> [minimum, maximum]
+ *    minmax {|a, b| ... } -> [minimum, maximum]
  *
- *  Returns a two element array which contains the minimum and the
- *  maximum value in the enumerable.  The first form assumes all
- *  objects implement <code><=></code>; the second uses the
- *  block to return <em>a <=> b</em>.
+ *  Returns a 2-element array containing the minimum and maximum elements
+ *  according to a given criterion.
+ *  The ordering of equal elements is indeterminate and may be unstable.
  *
- *     a = %w(albatross dog horse)
- *     a.minmax                                  #=> ["albatross", "horse"]
- *     a.minmax { |a, b| a.length <=> b.length } #=> ["dog", "albatross"]
+ *  With no argument and no block, returns the minimum and maximum elements,
+ *  using the elements' own method <tt><=></tt> for comparison:
+ *
+ *    (1..4).minmax                   # => [1, 4]
+ *    (-4..-1).minmax                 # => [-4, -1]
+ *    %w[d c b a].minmax              # => ["a", "d"]
+ *    {foo: 0, bar: 1, baz: 2}.minmax # => [[:bar, 1], [:foo, 0]]
+ *    [].minmax                       # => [nil, nil]
+ *
+ *  With a block given, returns the minimum and maximum elements
+ *  as determined by the block:
+ *
+ *    %w[xxx x xxxx xx].minmax {|a, b| a.size <=> b.size } # => ["x", "xxxx"]
+ *    [].minmax {|a, b| a <=> b }                          # => [nil, nil]
+ *
+ *  Related: #min, #max, #minmax_by.
+ *
  */
 
 static VALUE
@@ -2403,25 +2446,38 @@ min_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 /*
  *  call-seq:
- *     enum.min_by {|obj| block }      -> obj
- *     enum.min_by                     -> an_enumerator
- *     enum.min_by(n) {|obj| block }   -> array
- *     enum.min_by(n)                  -> an_enumerator
+ *    min_by {|element| ... }    -> element
+ *    min_by(n) {|element| ... } -> array
+ *    min_by                     -> enumerator
+ *    min_by(n)                  -> enumerator
  *
- *  Returns the object in <i>enum</i> that gives the minimum
- *  value from the given block.
+ *  Returns the elements for which the block returns the minimum values.
  *
- *  If no block is given, an enumerator is returned instead.
+ *  With a block given and no argument,
+ *  returns the element for which the block returns the minimum value:
  *
- *     a = %w(albatross dog horse)
- *     a.min_by { |x| x.length }   #=> "dog"
+ *    (1..4).min_by {|element| -element }                    # => 4
+ *    %w[a b c d].min_by {|element| -element.ord }           # => "d"
+ *    {foo: 0, bar: 1, baz: 2}.min_by {|key, value| -value } # => [:baz, 2]
+ *    [].min_by {|element| -element }                        # => nil
  *
- *  If the +n+ argument is given, minimum +n+ elements are returned
- *  as an array. These +n+ elements are sorted by the value from the
- *  given block.
+ *  With a block given and positive integer argument +n+ given,
+ *  returns an array containing the +n+ elements
+ *  for which the block returns minimum values:
  *
- *     a = %w[albatross dog horse]
- *     p a.min_by(2) {|x| x.length } #=> ["dog", "horse"]
+ *    (1..4).min_by(2) {|element| -element }
+ *    # => [4, 3]
+ *    %w[a b c d].min_by(2) {|element| -element.ord }
+ *    # => ["d", "c"]
+ *    {foo: 0, bar: 1, baz: 2}.min_by(2) {|key, value| -value }
+ *    # => [[:baz, 2], [:bar, 1]]
+ *    [].min_by(2) {|element| -element }
+ *    # => []
+ *
+ *  Returns an Enumerator if no block is given.
+ *
+ *  Related: #min, #minmax, #max_by.
+ *
  */
 
 static VALUE
@@ -2465,69 +2521,37 @@ max_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 /*
  *  call-seq:
- *     enum.max_by {|obj| block }      -> obj
- *     enum.max_by                     -> an_enumerator
- *     enum.max_by(n) {|obj| block }   -> obj
- *     enum.max_by(n)                  -> an_enumerator
+ *    max_by {|element| ... }    -> element
+ *    max_by(n) {|element| ... } -> array
+ *    max_by                     -> enumerator
+ *    max_by(n)                  -> enumerator
  *
- *  Returns the object in <i>enum</i> that gives the maximum
- *  value from the given block.
+ *  Returns the elements for which the block returns the maximum values.
  *
- *  If no block is given, an enumerator is returned instead.
+ *  With a block given and no argument,
+ *  returns the element for which the block returns the maximum value:
  *
- *     a = %w(albatross dog horse)
- *     a.max_by { |x| x.length }   #=> "albatross"
+ *    (1..4).max_by {|element| -element }                    # => 1
+ *    %w[a b c d].max_by {|element| -element.ord }           # => "a"
+ *    {foo: 0, bar: 1, baz: 2}.max_by {|key, value| -value } # => [:foo, 0]
+ *    [].max_by {|element| -element }                        # => nil
  *
- *  If the +n+ argument is given, maximum +n+ elements are returned
- *  as an array. These +n+ elements are sorted by the value from the
- *  given block, in descending order.
+ *  With a block given and positive integer argument +n+ given,
+ *  returns an array containing the +n+ elements
+ *  for which the block returns maximum values:
  *
- *     a = %w[albatross dog horse]
- *     a.max_by(2) {|x| x.length } #=> ["albatross", "horse"]
+ *    (1..4).max_by(2) {|element| -element }
+ *    # => [1, 2]
+ *    %w[a b c d].max_by(2) {|element| -element.ord }
+ *    # => ["a", "b"]
+ *    {foo: 0, bar: 1, baz: 2}.max_by(2) {|key, value| -value }
+ *    # => [[:foo, 0], [:bar, 1]]
+ *    [].max_by(2) {|element| -element }
+ *    # => []
  *
- *  enum.max_by(n) can be used to implement weighted random sampling.
- *  Following example implements and use Enumerable#wsample.
+ *  Returns an Enumerator if no block is given.
  *
- *     module Enumerable
- *       # weighted random sampling.
- *       #
- *       # Pavlos S. Efraimidis, Paul G. Spirakis
- *       # Weighted random sampling with a reservoir
- *       # Information Processing Letters
- *       # Volume 97, Issue 5 (16 March 2006)
- *       def wsample(n)
- *         self.max_by(n) {|v| rand ** (1.0/yield(v)) }
- *       end
- *     end
- *     e = (-20..20).to_a*10000
- *     a = e.wsample(20000) {|x|
- *       Math.exp(-(x/5.0)**2) # normal distribution
- *     }
- *     # a is 20000 samples from e.
- *     p a.length #=> 20000
- *     h = a.group_by {|x| x }
- *     -10.upto(10) {|x| puts "*" * (h[x].length/30.0).to_i if h[x] }
- *     #=> *
- *     #   ***
- *     #   ******
- *     #   ***********
- *     #   ******************
- *     #   *****************************
- *     #   *****************************************
- *     #   ****************************************************
- *     #   ***************************************************************
- *     #   ********************************************************************
- *     #   ***********************************************************************
- *     #   ***********************************************************************
- *     #   **************************************************************
- *     #   ****************************************************
- *     #   ***************************************
- *     #   ***************************
- *     #   ******************
- *     #   ***********
- *     #   *******
- *     #   ***
- *     #   *
+ *  Related: #max, #minmax, #min_by.
  *
  */
 
@@ -2624,17 +2648,25 @@ minmax_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
 
 /*
  *  call-seq:
- *     enum.minmax_by { |obj| block } -> [min, max]
- *     enum.minmax_by                 -> an_enumerator
+ *    minmax_by {|element| ... } -> [minimum, maximum]
+ *    minmax_by                  -> enumerator
  *
- *  Returns a two element array containing the objects in
- *  <i>enum</i> that correspond to the minimum and maximum values respectively
- *  from the given block.
+ *  Returns a 2-element array containing the elements
+ *  for which the block returns minimum and maximum values:
  *
- *  If no block is given, an enumerator is returned instead.
+ *    (1..4).minmax_by {|element| -element }
+ *    # => [4, 1]
+ *    %w[a b c d].minmax_by {|element| -element.ord }
+ *    # => ["d", "a"]
+ *    {foo: 0, bar: 1, baz: 2}.minmax_by {|key, value| -value }
+ *    # => [[:baz, 2], [:foo, 0]]
+ *    [].minmax_by {|element| -element }
+ *    # => [nil, nil]
  *
- *     a = %w(albatross dog horse)
- *     a.minmax_by { |x| x.length }   #=> ["dog", "albatross"]
+ *  Returns an Enumerator if no block is given.
+ *
+ *  Related: #max_by, #minmax, #min_by.
+ *
  */
 
 static VALUE
@@ -2672,16 +2704,20 @@ member_i(RB_BLOCK_CALL_FUNC_ARGLIST(iter, args))
 
 /*
  *  call-seq:
- *     enum.include?(obj)     -> true or false
- *     enum.member?(obj)      -> true or false
+ *    include?(object) -> true or false
  *
- *  Returns <code>true</code> if any member of <i>enum</i> equals
- *  <i>obj</i>. Equality is tested using <code>==</code>.
+ *  Returns whether for any element <tt>object == element</tt>:
  *
- *     (1..10).include? 5  #=> true
- *     (1..10).include? 15 #=> false
- *     (1..10).member? 5   #=> true
- *     (1..10).member? 15  #=> false
+ *    (1..4).include?(2)                       # => true
+ *    (1..4).include?(5)                       # => false
+ *    (1..4).include?('2')                     # => false
+ *    %w[a b c d].include?('b')                # => true
+ *    %w[a b c d].include?('2')                # => false
+ *    {foo: 0, bar: 1, baz: 2}.include?(:foo)  # => true
+ *    {foo: 0, bar: 1, baz: 2}.include?('foo') # => false
+ *    {foo: 0, bar: 1, baz: 2}.include?(0)     # => false
+ *
+ *  Enumerable#member? is an alias for Enumerable#include?.
  *
  */
 
