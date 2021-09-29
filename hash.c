@@ -122,33 +122,6 @@ hash_recursive(VALUE obj, VALUE arg, int recurse)
     return rb_funcallv(obj, id_hash, 0, 0);
 }
 
-VALUE
-rb_hash(VALUE obj)
-{
-    VALUE hval = rb_check_funcall_basic_kw(obj, id_hash, rb_mKernel, 0, 0, 0);
-
-    if (hval == Qundef) {
-	hval = rb_exec_recursive_outer(hash_recursive, obj, 0);
-    }
-
-    while (!FIXNUM_P(hval)) {
-        if (RB_BIGNUM_TYPE_P(hval)) {
-            int sign;
-            unsigned long ul;
-            sign = rb_integer_pack(hval, &ul, 1, sizeof(ul), 0,
-                    INTEGER_PACK_NATIVE_BYTE_ORDER);
-            if (sign < 0) {
-                hval = LONG2FIX(ul | FIXNUM_MIN);
-            }
-            else {
-                hval = LONG2FIX(ul & FIXNUM_MAX);
-            }
-        }
-	hval = rb_to_int(hval);
-    }
-    return hval;
-}
-
 static long rb_objid_hash(st_index_t index);
 
 static st_index_t
@@ -216,8 +189,29 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
 static st_index_t
 obj_any_hash(VALUE obj)
 {
-    obj = rb_hash(obj);
-    return FIX2LONG(obj);
+    VALUE hval = rb_check_funcall_basic_kw(obj, id_hash, rb_mKernel, 0, 0, 0);
+
+    if (hval == Qundef) {
+        hval = rb_exec_recursive_outer(hash_recursive, obj, 0);
+    }
+
+    while (!FIXNUM_P(hval)) {
+        if (RB_TYPE_P(hval, T_BIGNUM)) {
+            int sign;
+            unsigned long ul;
+            sign = rb_integer_pack(hval, &ul, 1, sizeof(ul), 0,
+                    INTEGER_PACK_NATIVE_BYTE_ORDER);
+            if (sign < 0) {
+                hval = LONG2FIX(ul | FIXNUM_MIN);
+            }
+            else {
+                hval = LONG2FIX(ul & FIXNUM_MAX);
+            }
+        }
+        hval = rb_to_int(hval);
+    }
+
+    return FIX2LONG(hval);
 }
 
 static st_index_t
@@ -225,6 +219,13 @@ rb_any_hash(VALUE a)
 {
     return any_hash(a, obj_any_hash);
 }
+
+VALUE
+rb_hash(VALUE obj)
+{
+    return LONG2FIX(any_hash(obj, obj_any_hash));
+}
+
 
 /* Here is a hash function for 64-bit key.  It is about 5 times faster
    (2 times faster when uint128 type is absent) on Haswell than
