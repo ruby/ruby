@@ -76,13 +76,15 @@ enum ruby_encoding_consts {
  * @param[in]   i    Encoding in encindex format.
  * @post        `obj`'s encoding is `i`.
  */
-#define RB_ENCODING_SET_INLINED(obj,i) do {\
-    RBASIC(obj)->flags &= ~RUBY_ENCODING_MASK;\
-    RBASIC(obj)->flags |= (VALUE)(i) << RUBY_ENCODING_SHIFT;\
-} while (0)
+static inline void
+RB_ENCODING_SET_INLINED(VALUE obj, int encindex)
+{
+    VALUE f = /* upcast */ encindex;
 
-/** @alias{rb_enc_set_index} */
-#define RB_ENCODING_SET(obj,i) rb_enc_set_index((obj), (i))
+    f <<= RUBY_ENCODING_SHIFT;
+    RB_FL_UNSET_RAW(obj, RUBY_ENCODING_MASK);
+    RB_FL_SET_RAW(obj, f);
+}
 
 /**
  * Queries the  encoding of the  passed object.   The encoding must  be smaller
@@ -92,32 +94,13 @@ enum ruby_encoding_consts {
  * @param[in]  obj  Target object.
  * @return     `obj`'s encoding index.
  */
-#define RB_ENCODING_GET_INLINED(obj) \
-    (int)((RBASIC(obj)->flags & RUBY_ENCODING_MASK)>>RUBY_ENCODING_SHIFT)
+static inline int
+RB_ENCODING_GET_INLINED(VALUE obj)
+{
+    VALUE ret = RB_FL_TEST_RAW(obj, RUBY_ENCODING_MASK) >> RUBY_ENCODING_SHIFT;
 
-/**
- * @alias{rb_enc_get_index}
- *
- * @internal
- *
- * Implementation wise this is not a verbatim alias of rb_enc_get_index().  But
- * the API is consistent.  Don't bother.
- */
-#define RB_ENCODING_GET(obj) \
-    (RB_ENCODING_GET_INLINED(obj) != RUBY_ENCODING_INLINE_MAX ? \
-     RB_ENCODING_GET_INLINED(obj) : \
-     rb_enc_get_index(obj))
-
-/**
- * Queries if  the passed  object is  in ascii 8bit  (== binary)  encoding. The
- * object must  be capable of having  inline encoding.  Using this  macro needs
- * deep understanding of bit level object binary layout.
- *
- * @param[in]  obj  An object to check.
- * @retval     1    It is.
- * @retval     0    It isn't.
- */
-#define RB_ENCODING_IS_ASCII8BIT(obj) (RB_ENCODING_GET_INLINED(obj) == 0)
+    return RBIMPL_CAST((int)ret);
+}
 
 #define ENCODING_SET_INLINED(obj,i) RB_ENCODING_SET_INLINED(obj,i) /**< @old{RB_ENCODING_SET_INLINED} */
 #define ENCODING_SET(obj,i) RB_ENCODING_SET(obj,i)                 /**< @old{RB_ENCODING_SET} */
@@ -125,7 +108,6 @@ enum ruby_encoding_consts {
 #define ENCODING_GET(obj) RB_ENCODING_GET(obj)                     /**< @old{RB_ENCODING_GET} */
 #define ENCODING_IS_ASCII8BIT(obj) RB_ENCODING_IS_ASCII8BIT(obj)   /**< @old{RB_ENCODING_IS_ASCII8BIT} */
 #define ENCODING_MAXNAMELEN RUBY_ENCODING_MAXNAMELEN               /**< @old{RUBY_ENCODING_MAXNAMELEN} */
-
 
 /**
  * The  type  of encoding.   Our  design  here  is we  take  Oniguruma/Onigmo's
@@ -218,6 +200,27 @@ int rb_enc_to_index(rb_encoding *enc);
 int rb_enc_get_index(VALUE obj);
 
 /**
+ * @alias{rb_enc_get_index}
+ *
+ * @internal
+ *
+ * Implementation wise this is not a verbatim alias of rb_enc_get_index().  But
+ * the API is consistent.  Don't bother.
+ */
+static inline int
+RB_ENCODING_GET(VALUE obj)
+{
+    int encindex = RB_ENCODING_GET_INLINED(obj);
+
+    if (encindex == RUBY_ENCODING_INLINE_MAX) {
+        return rb_enc_get_index(obj);
+    }
+    else {
+        return encindex;
+    }
+}
+
+/**
  * Destructively assigns an encoding (via its index) to an object.
  *
  * @param[out]  obj                Object in question.
@@ -228,6 +231,31 @@ int rb_enc_get_index(VALUE obj);
  * @exception   rb_eLoadError      Failed to load the encoding.
  */
 void rb_enc_set_index(VALUE obj, int encindex);
+
+/** @alias{rb_enc_set_index} */
+static inline void
+RB_ENCODING_SET(VALUE obj, int encindex)
+{
+    rb_enc_set_index(obj, encindex);
+}
+
+/**
+ * This is #RB_ENCODING_SET  + RB_ENC_CODERANGE_SET combo.  The  object must be
+ * capable  of   having  inline   encoding.   Using   this  macro   needs  deep
+ * understanding of bit level object binary layout.
+ *
+ * @param[out]  obj       Target object.
+ * @param[in]   encindex  Encoding in encindex format.
+ * @param[in]   cr        An enum ::ruby_coderange_type.
+ * @post        `obj`'s encoding is `encindex`.
+ * @post        `obj`'s code range is `cr`.
+ */
+static inline void
+RB_ENCODING_CODERANGE_SET(VALUE obj, int encindex, enum ruby_coderange_type cr)
+{
+    RB_ENCODING_SET(obj, encindex);
+    RB_ENC_CODERANGE_SET(obj, cr);
+}
 
 RBIMPL_ATTR_PURE()
 /**
@@ -401,7 +429,11 @@ rb_encoding *rb_enc_find(const char *name);
  * @param[in]  enc  An encoding.
  * @return     Its name.
  */
-#define rb_enc_name(enc) (enc)->name
+static inline const char *
+rb_enc_name(const rb_encoding *enc)
+{
+    return enc->name;
+}
 
 /**
  * Queries  the minimum  number  of bytes  that the  passed  encoding needs  to
@@ -412,7 +444,11 @@ rb_encoding *rb_enc_find(const char *name);
  * @param[in]  enc  An encoding.
  * @return     Its least possible number of bytes except 0.
  */
-#define rb_enc_mbminlen(enc) (enc)->min_enc_len
+static inline int
+rb_enc_mbminlen(const rb_encoding *enc)
+{
+    return enc->min_enc_len;
+}
 
 /**
  * Queries  the maximum  number  of bytes  that the  passed  encoding needs  to
@@ -423,7 +459,11 @@ rb_encoding *rb_enc_find(const char *name);
  * @param[in]  enc  An encoding.
  * @return     Its maximum possible number of bytes of a character.
  */
-#define rb_enc_mbmaxlen(enc) (enc)->max_enc_len
+static inline int
+rb_enc_mbmaxlen(const rb_encoding *enc)
+{
+    return enc->max_enc_len;
+}
 
 /**
  * Queries the number of bytes of the character at the passed pointer.
@@ -525,7 +565,6 @@ int rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc);
  */
 unsigned int rb_enc_codepoint_len(const char *p, const char *e, int *len, rb_encoding *enc);
 
-RBIMPL_ATTR_DEPRECATED(("use rb_enc_codepoint_len instead."))
 /**
  * Queries  the  code  point  of  character  pointed  by  the  passed  pointer.
  * Exceptions happen in case of broken input.
@@ -536,12 +575,24 @@ RBIMPL_ATTR_DEPRECATED(("use rb_enc_codepoint_len instead."))
  * @param[in]   enc           Encoding of the string.
  * @exception   rb_eArgError  `p` is broken.
  * @return      Code point of the character pointed by `p`.
+ *
+ * @internal
+ *
+ * @matz says in commit  91e5ba1cb865a2385d3e1cbfacd824496898e098 that the line
+ * below  is a  "prototype for  obsolete function".   However even  today there
+ * still are some use  cases of it throughout our repository.   It seems it has
+ * its own niche.
  */
-unsigned int rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc);
+static inline unsigned int
+rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc)
+{
+    return rb_enc_codepoint_len(p, e, 0, enc);
+    /*                               ^^^
+     * This can be `NULL` in C, `nullptr` in C++, and `0` for both.
+     * We choose the most portable one here.
+     */
+}
 
-/** @cond INTERNAL_MACRO */
-#define rb_enc_codepoint(p,e,enc) rb_enc_codepoint_len((p),(e),0,(enc))
-/** @endcond */
 
 /**
  * Identical to rb_enc_codepoint(),  except it assumes the  passed character is
@@ -552,7 +603,14 @@ unsigned int rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc);
  * @param[in]   enc  Encoding of the string.
  * @return      Code point of the character pointed by `p`.
  */
-#define rb_enc_mbc_to_codepoint(p, e, enc) ONIGENC_MBC_TO_CODE((enc),(UChar*)(p),(UChar*)(e))
+static inline OnigCodePoint
+rb_enc_mbc_to_codepoint(const char *p, const char *e, const rb_encoding *enc)
+{
+    const OnigUChar *up = RBIMPL_CAST((const OnigUChar *)p);
+    const OnigUChar *ue = RBIMPL_CAST((const OnigUChar *)e);
+
+    return ONIGENC_MBC_TO_CODE(enc, up, ue);
+}
 
 /**
  * Queries the  number of bytes  requested to  represent the passed  code point
@@ -573,11 +631,13 @@ int rb_enc_codelen(int code, rb_encoding *enc);
  * @retval     0          `code` is invalid.
  * @return     otherwise  Number of bytes used for `enc` to encode `code`.
  */
-int rb_enc_code_to_mbclen(int code, rb_encoding *enc);
+static inline int
+rb_enc_code_to_mbclen(int c, const rb_encoding *enc)
+{
+    OnigCodePoint uc = RBIMPL_CAST((OnigCodePoint)c);
 
-/** @cond INTERNAL_MACRO */
-#define rb_enc_code_to_mbclen(c, enc) ONIGENC_CODE_TO_MBCLEN((enc), (c));
-/** @endcond */
+    return ONIGENC_CODE_TO_MBCLEN(enc, uc);
+}
 
 /**
  * Identical to rb_enc_uint_chr(),  except it writes back to  the passed buffer
@@ -587,8 +647,20 @@ int rb_enc_code_to_mbclen(int code, rb_encoding *enc);
  * @param[out]  buf  Return buffer.
  * @param[in]   enc  Target encoding scheme.
  * @post        `c` is encoded according to `enc`, then written to `buf`.
+ *
+ * @internal
+ *
+ * The second argument  must be typed.  But its current  usages prevent us from
+ * being any stricter than this. :FIXME:
  */
-#define rb_enc_mbcput(c,buf,enc) ONIGENC_CODE_TO_MBC((enc),(c),(UChar*)(buf))
+static inline int
+rb_enc_mbcput(unsigned int c, void *buf, const rb_encoding *enc)
+{
+    OnigCodePoint uc = RBIMPL_CAST((OnigCodePoint)c);
+    OnigUChar *ubuf = RBIMPL_CAST((OnigUChar *)buf);
+
+    return ONIGENC_CODE_TO_MBC(enc, uc, ubuf);
+}
 
 /**
  * Queries the previous (left) character.
@@ -600,7 +672,16 @@ int rb_enc_code_to_mbclen(int code, rb_encoding *enc);
  * @retval     NULL       No previous character.
  * @retval     otherwise  Pointer to the head of the previous character.
  */
-#define rb_enc_prev_char(s,p,e,enc) ((char *)onigenc_get_prev_char_head((enc),(UChar*)(s),(UChar*)(p),(UChar*)(e)))
+static inline char *
+rb_enc_prev_char(const char *s, const char *p, const char *e, const rb_encoding *enc)
+{
+    const OnigUChar *us = RBIMPL_CAST((const OnigUChar *)s);
+    const OnigUChar *up = RBIMPL_CAST((const OnigUChar *)p);
+    const OnigUChar *ue = RBIMPL_CAST((const OnigUChar *)e);
+    OnigUChar *ur = onigenc_get_prev_char_head(enc, us, up, ue);
+
+    return RBIMPL_CAST((char *)ur);
+}
 
 /**
  * Queries the  left boundary of  a character.   This function takes  a pointer
@@ -612,7 +693,16 @@ int rb_enc_code_to_mbclen(int code, rb_encoding *enc);
  * @param[in]  enc        Encoding.
  * @return     Pointer to the head of the character that contains `p`.
  */
-#define rb_enc_left_char_head(s,p,e,enc) ((char *)onigenc_get_left_adjust_char_head((enc),(UChar*)(s),(UChar*)(p),(UChar*)(e)))
+static inline char *
+rb_enc_left_char_head(const char *s, const char *p, const char *e, const rb_encoding *enc)
+{
+    const OnigUChar *us = RBIMPL_CAST((const OnigUChar *)s);
+    const OnigUChar *up = RBIMPL_CAST((const OnigUChar *)p);
+    const OnigUChar *ue = RBIMPL_CAST((const OnigUChar *)e);
+    OnigUChar *ur = onigenc_get_left_adjust_char_head(enc, us, up, ue);
+
+    return RBIMPL_CAST((char *)ur);
+}
 
 /**
  * Queries the  right boundary of a  character.  This function takes  a pointer
@@ -624,7 +714,16 @@ int rb_enc_code_to_mbclen(int code, rb_encoding *enc);
  * @param[in]  enc  Encoding.
  * @return     Pointer to the end of the character that contains `p`.
  */
-#define rb_enc_right_char_head(s,p,e,enc) ((char *)onigenc_get_right_adjust_char_head((enc),(UChar*)(s),(UChar*)(p),(UChar*)(e)))
+static inline char *
+rb_enc_right_char_head(const char *s, const char *p, const char *e, rb_encoding *enc)
+{
+    const OnigUChar *us = RBIMPL_CAST((const OnigUChar *)s);
+    const OnigUChar *up = RBIMPL_CAST((const OnigUChar *)p);
+    const OnigUChar *ue = RBIMPL_CAST((const OnigUChar *)e);
+    OnigUChar *ur = onigenc_get_right_adjust_char_head(enc, us, up, ue);
+
+    return RBIMPL_CAST((char *)ur);
+}
 
 /**
  * Scans the string backwards for n characters.
@@ -637,7 +736,16 @@ int rb_enc_code_to_mbclen(int code, rb_encoding *enc);
  * @retval     NULL       There are no `n` characters left.
  * @retval     otherwise  Pointer to `n` character before `p`.
  */
-#define rb_enc_step_back(s,p,e,n,enc) ((char *)onigenc_step_back((enc),(UChar*)(s),(UChar*)(p),(UChar*)(e),(int)(n)))
+static inline char *
+rb_enc_step_back(const char *s, const char *p, const char *e, int n, const rb_encoding *enc)
+{
+    const OnigUChar *us = RBIMPL_CAST((const OnigUChar *)s);
+    const OnigUChar *up = RBIMPL_CAST((const OnigUChar *)p);
+    const OnigUChar *ue = RBIMPL_CAST((const OnigUChar *)e);
+    const OnigUChar *ur = onigenc_step_back(enc, us, up, ue, n);
+
+    return RBIMPL_CAST((char *)ur);
+}
 
 /**
  * @private
@@ -670,8 +778,19 @@ rb_enc_asciicompat_inline(rb_encoding *enc)
  * @retval     0    It is incompatible.
  * @retval     1    It is compatible.
  */
-#define rb_enc_asciicompat(enc) rb_enc_asciicompat_inline(enc)
-
+static inline bool
+rb_enc_asciicompat(rb_encoding *enc)
+{
+    if (rb_enc_mbminlen(enc) != 1) {
+        return false;
+    }
+    else if (rb_enc_dummy_p(enc)) {
+        return false;
+    }
+    else {
+        return true;
+    }
+}
 
 /**
  * Queries if the passed string is in an ASCII-compatible encoding.
@@ -680,7 +799,13 @@ rb_enc_asciicompat_inline(rb_encoding *enc)
  * @retval     0    `str` is not a String, or an ASCII-incompatible string.
  * @retval     1    Otherwise.
  */
-#define rb_enc_str_asciicompat_p(str) rb_enc_asciicompat(rb_enc_get(str))
+static inline bool
+rb_enc_str_asciicompat_p(VALUE str)
+{
+    rb_encoding *enc = rb_enc_get(str);
+
+    return rb_enc_asciicompat(enc);
+}
 
 /**
  * Queries  the   Ruby-level  counterpart   instance  of   ::rb_cEncoding  that
@@ -803,6 +928,21 @@ RBIMPL_ATTR_CONST()
 int rb_ascii8bit_encindex(void);
 #endif
 
+/**
+ * Queries if  the passed  object is  in ascii 8bit  (== binary)  encoding. The
+ * object must  be capable of having  inline encoding.  Using this  macro needs
+ * deep understanding of bit level object binary layout.
+ *
+ * @param[in]  obj  An object to check.
+ * @retval     1    It is.
+ * @retval     0    It isn't.
+ */
+static inline bool
+RB_ENCODING_IS_ASCII8BIT(VALUE obj)
+{
+    return RB_ENCODING_GET_INLINED(obj) == rb_ascii8bit_encindex();
+}
+
 #ifndef rb_utf8_encindex
 RBIMPL_ATTR_CONST()
 /**
@@ -893,5 +1033,26 @@ void rb_enc_set_default_internal(VALUE encoding);
 VALUE rb_locale_charmap(VALUE klass);
 
 RBIMPL_SYMBOL_EXPORT_END()
+
+/** @cond INTERNAL_MACRO */
+#define RB_ENCODING_GET          RB_ENCODING_GET
+#define RB_ENCODING_GET_INLINED  RB_ENCODING_GET_INLINED
+#define RB_ENCODING_IS_ASCII8BIT RB_ENCODING_IS_ASCII8BIT
+#define RB_ENCODING_SET          RB_ENCODING_SET
+#define RB_ENCODING_SET_INLINED  RB_ENCODING_SET_INLINED
+#define rb_enc_asciicompat       rb_enc_asciicompat
+#define rb_enc_code_to_mbclen    rb_enc_code_to_mbclen
+#define rb_enc_codepoint         rb_enc_codepoint
+#define rb_enc_left_char_head    rb_enc_left_char_head
+#define rb_enc_mbc_to_codepoint  rb_enc_mbc_to_codepoint
+#define rb_enc_mbcput            rb_enc_mbcput
+#define rb_enc_mbmaxlen          rb_enc_mbmaxlen
+#define rb_enc_mbminlen          rb_enc_mbminlen
+#define rb_enc_name              rb_enc_name
+#define rb_enc_prev_char         rb_enc_prev_char
+#define rb_enc_right_char_head   rb_enc_right_char_head
+#define rb_enc_step_back         rb_enc_step_back
+#define rb_enc_str_asciicompat_p rb_enc_str_asciicompat_p
+/** @endcond */
 
 #endif /* RUBY_INTERNAL_ENCODING_ENCODING_H */
