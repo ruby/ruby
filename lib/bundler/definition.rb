@@ -233,6 +233,10 @@ module Bundler
       end
     end
 
+    def locked_dependencies
+      @locked_deps.values
+    end
+
     def specs_for(groups)
       groups = requested_groups if groups.empty?
       deps = dependencies_for(groups)
@@ -374,8 +378,8 @@ module Bundler
       new_sources = gemfile_sources - @locked_sources
       deleted_sources = @locked_sources - gemfile_sources
 
-      new_deps = @dependencies - @locked_deps.values
-      deleted_deps = @locked_deps.values - @dependencies
+      new_deps = @dependencies - locked_dependencies
+      deleted_deps = locked_dependencies - @dependencies
 
       # Check if it is possible that the source is only changed thing
       if (new_deps.empty? && deleted_deps.empty?) && (!new_sources.empty? && !deleted_sources.empty?)
@@ -567,7 +571,7 @@ module Bundler
 
     def dependencies_for_source_changed?(source, locked_source = source)
       deps_for_source = @dependencies.select {|s| s.source == source }
-      locked_deps_for_source = @locked_deps.values.select {|dep| dep.source == locked_source }
+      locked_deps_for_source = locked_dependencies.select {|dep| dep.source == locked_source }
 
       deps_for_source.uniq.sort != locked_deps_for_source.sort
     end
@@ -651,7 +655,7 @@ module Bundler
 
     def converge_dependencies
       frozen = Bundler.frozen_bundle?
-      (@dependencies + @locked_deps.values).each do |dep|
+      (@dependencies + locked_dependencies).each do |dep|
         locked_source = @locked_deps[dep.name]
         # This is to make sure that if bundler is installing in deployment mode and
         # after locked_source and sources don't match, we still use locked_source.
