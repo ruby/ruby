@@ -144,15 +144,14 @@ ctx_get_opnd_type(const ctx_t *ctx, insn_opnd_t opnd)
 
     temp_mapping_t mapping = ctx->temp_mapping[stack_idx];
 
-    switch (mapping.kind)
-    {
-        case TEMP_SELF:
+    switch (mapping.kind) {
+      case TEMP_SELF:
         return ctx->self_type;
 
-        case TEMP_STACK:
+      case TEMP_STACK:
         return ctx->temp_types[ctx->stack_size - 1 - opnd.idx];
 
-        case TEMP_LOCAL:
+      case TEMP_LOCAL:
         RUBY_ASSERT(mapping.idx < MAX_LOCAL_TYPES);
         return ctx->local_types[mapping.idx];
     }
@@ -188,17 +187,16 @@ void ctx_upgrade_opnd_type(ctx_t *ctx, insn_opnd_t opnd, val_type_t type)
 
     temp_mapping_t mapping = ctx->temp_mapping[stack_idx];
 
-    switch (mapping.kind)
-    {
-        case TEMP_SELF:
+    switch (mapping.kind) {
+      case TEMP_SELF:
         UPGRADE_TYPE(ctx->self_type, type);
         break;
 
-        case TEMP_STACK:
+      case TEMP_STACK:
         UPGRADE_TYPE(ctx->temp_types[stack_idx], type);
         break;
 
-        case TEMP_LOCAL:
+      case TEMP_LOCAL:
         RUBY_ASSERT(mapping.idx < MAX_LOCAL_TYPES);
         UPGRADE_TYPE(ctx->local_types[mapping.idx], type);
         break;
@@ -320,15 +318,15 @@ yjit_type_of_value(VALUE val)
         }
     } else {
         switch (BUILTIN_TYPE(val)) {
-            case T_ARRAY:
-               return TYPE_ARRAY;
-            case T_HASH:
-               return TYPE_HASH;
-            case T_STRING:
-               return TYPE_STRING;
-            default:
-                // generic heap object
-                return TYPE_HEAP;
+          case T_ARRAY:
+            return TYPE_ARRAY;
+          case T_HASH:
+            return TYPE_HASH;
+          case T_STRING:
+            return TYPE_STRING;
+          default:
+            // generic heap object
+            return TYPE_HEAP;
         }
     }
 }
@@ -340,32 +338,32 @@ yjit_type_name(val_type_t type)
     RUBY_ASSERT(!(type.is_imm && type.is_heap));
 
     switch (type.type) {
-        case ETYPE_UNKNOWN:
-            if (type.is_imm) {
-                return "unknown immediate";
-            } else if (type.is_heap) {
-                return "unknown heap";
-            } else {
-                return "unknown";
-            }
-        case ETYPE_NIL:
-            return "nil";
-        case ETYPE_TRUE:
-            return "true";
-        case ETYPE_FALSE:
-            return "false";
-        case ETYPE_FIXNUM:
-            return "fixnum";
-        case ETYPE_FLONUM:
-            return "flonum";
-        case ETYPE_ARRAY:
-            return "array";
-        case ETYPE_HASH:
-            return "hash";
-        case ETYPE_SYMBOL:
-            return "symbol";
-        case ETYPE_STRING:
-            return "string";
+      case ETYPE_UNKNOWN:
+        if (type.is_imm) {
+            return "unknown immediate";
+        } else if (type.is_heap) {
+            return "unknown heap";
+        } else {
+            return "unknown";
+        }
+      case ETYPE_NIL:
+        return "nil";
+      case ETYPE_TRUE:
+        return "true";
+      case ETYPE_FALSE:
+        return "false";
+      case ETYPE_FIXNUM:
+        return "fixnum";
+      case ETYPE_FLONUM:
+        return "flonum";
+      case ETYPE_ARRAY:
+        return "array";
+      case ETYPE_HASH:
+        return "hash";
+      case ETYPE_SYMBOL:
+        return "symbol";
+      case ETYPE_STRING:
+        return "string";
     }
 
     UNREACHABLE_RETURN("");
@@ -901,16 +899,15 @@ void gen_branch(
 void
 gen_jump_branch(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t shape)
 {
-    switch (shape)
-    {
-        case SHAPE_NEXT0:
+    switch (shape) {
+      case SHAPE_NEXT0:
         break;
 
-        case SHAPE_NEXT1:
+      case SHAPE_NEXT1:
         RUBY_ASSERT(false);
         break;
 
-        case SHAPE_DEFAULT:
+      case SHAPE_DEFAULT:
         jmp_ptr(cb, target0);
         break;
     }
