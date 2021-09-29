@@ -725,6 +725,12 @@ enc_coderange_scan(VALUE str, rb_encoding *enc, int encidx)
 }
 
 int
+rb_enc_str_coderange_scan(VALUE str, rb_encoding *enc)
+{
+    return enc_coderange_scan(str, enc, rb_enc_to_index(enc));
+}
+
+int
 rb_enc_str_coderange(VALUE str)
 {
     int cr = ENC_CODERANGE(str);
