@@ -4132,6 +4132,7 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	    VALUE *keywords = kw_arg->keywords;
 	    int i = 0;
 	    kw_arg->keyword_len = len;
+
 	    *kw_arg_ptr = kw_arg;
 
 	    for (; node != NULL; i++, node = node->nd_next->nd_next) {
