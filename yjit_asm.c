@@ -1544,9 +1544,11 @@ void pop(codeblock_t *cb, x86opnd_t opnd)
         if (rex_needed(opnd))
             cb_write_rex(cb, false, 0, 0, opnd.as.reg.reg_no);
         cb_write_opcode(cb, 0x58, opnd);
-    } else if (opnd.type == OPND_MEM) {
+    }
+    else if (opnd.type == OPND_MEM) {
         cb_write_rm(cb, false, false, NO_OPND, opnd, 0, 1, 0x8F);
-    } else {
+    }
+    else {
         assert(false && "unexpected operand type");
     }
 }
@@ -1571,9 +1573,11 @@ void push(codeblock_t *cb, x86opnd_t opnd)
       if (rex_needed(opnd))
           cb_write_rex(cb, false, 0, 0, opnd.as.reg.reg_no);
       cb_write_opcode(cb, 0x50, opnd);
-    } else if (opnd.type == OPND_MEM) {
+    }
+    else if (opnd.type == OPND_MEM) {
       cb_write_rm(cb, false, false, NO_OPND, opnd, 6, 1, 0xFF);
-    } else {
+    }
+    else {
       assert(false && "unexpected operand type");
     }
 }
