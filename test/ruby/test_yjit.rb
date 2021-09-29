@@ -8,6 +8,11 @@ return unless YJIT.enabled?
 # Tests for YJIT with assertions on compilation and side exits
 # insipired by the MJIT tests in test/ruby/test_jit.rb
 class TestYJIT < Test::Unit::TestCase
+  def test_compile_getclassvariable
+    script = 'class Foo; @@foo = 1; def self.foo; @@foo; end; end; Foo.foo'
+    assert_compiles(script, insns: %i[getclassvariable], result: 1)
+  end
+
   def test_compile_putnil
     assert_compiles('nil', insns: %i[putnil], result: nil)
   end
