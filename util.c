@@ -58,9 +58,8 @@ ruby_scan_hex(const char *start, size_t len, size_t *retlen)
     register const char *s = start;
     register unsigned long retval = 0;
     signed char d;
-    size_t i;
 
-    for (i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++) {
         d = ruby_digit36_to_number_table[(unsigned char)*s];
         if (d < 0 || 15 < d) {
             break;
