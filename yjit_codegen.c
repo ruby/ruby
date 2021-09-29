@@ -4110,6 +4110,32 @@ gen_getspecial(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     }
 }
 
+VALUE
+rb_vm_getclassvariable(const rb_iseq_t *iseq, const rb_cref_t *cref, const rb_control_frame_t *cfp, ID id, ICVARC ic);
+
+rb_cref_t *
+rb_vm_get_cref(const VALUE *ep);
+
+static codegen_status_t
+gen_getclassvariable(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
+{
+    mov(cb, C_ARG_REGS[0], member_opnd(REG_CFP, rb_control_frame_t, ep));
+    call_ptr(cb, REG0, (void *)rb_vm_get_cref);
+
+    mov(cb, C_ARG_REGS[0], member_opnd(REG_CFP, rb_control_frame_t, iseq));
+    mov(cb, C_ARG_REGS[1], RAX);
+    mov(cb, C_ARG_REGS[2], REG_CFP);
+    mov(cb, C_ARG_REGS[3], imm_opnd(jit_get_arg(jit, 0)));
+    mov(cb, C_ARG_REGS[4], imm_opnd(jit_get_arg(jit, 1)));
+
+    call_ptr(cb, REG0, (void *)rb_vm_getclassvariable);
+
+    x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_UNKNOWN);
+    mov(cb, stack_top, RAX);
+
+    return YJIT_KEEP_COMPILING;
+}
+
 static codegen_status_t
 gen_opt_getinlinecache(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
@@ -4500,6 +4526,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(tostring), gen_tostring);
     yjit_reg_op(BIN(toregexp), gen_toregexp);
     yjit_reg_op(BIN(getspecial), gen_getspecial);
+    yjit_reg_op(BIN(getclassvariable), gen_getclassvariable);
 
     yjit_method_codegen_table = st_init_numtable();
 

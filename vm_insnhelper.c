@@ -835,6 +835,12 @@ vm_get_cref(const VALUE *ep)
     }
 }
 
+rb_cref_t *
+rb_vm_get_cref(const VALUE *ep)
+{
+    return vm_get_cref(ep);
+}
+
 static rb_cref_t *
 vm_ec_cref(const rb_execution_context_t *ec)
 {
@@ -1334,6 +1340,12 @@ vm_getclassvariable(const rb_iseq_t *iseq, const rb_cref_t *cref, const rb_contr
     VALUE klass = vm_get_cvar_base(cref, cfp, 1);
 
     return update_classvariable_cache(iseq, klass, id, ic);
+}
+
+VALUE
+rb_vm_getclassvariable(const rb_iseq_t *iseq, const rb_cref_t *cref, const rb_control_frame_t *cfp, ID id, ICVARC ic)
+{
+    return vm_getclassvariable(iseq, cref, cfp, id, ic);
 }
 
 static inline void
