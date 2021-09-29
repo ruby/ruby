@@ -78,7 +78,6 @@ module Bundler
       @lockfile_contents      = String.new
       @locked_bundler_version = nil
       @locked_ruby_version    = nil
-      @locked_specs_incomplete_for_platform = false
       @new_platform = nil
 
       if lockfile && File.exist?(lockfile)
@@ -143,6 +142,8 @@ module Bundler
 
       @dependency_changes = converge_dependencies
       @local_changes = converge_locals
+
+      @locked_specs_incomplete_for_platform = !@locked_specs.for(expand_dependencies(requested_dependencies & locked_dependencies), true, true)
 
       @requires = compute_requires
     end
@@ -762,7 +763,6 @@ module Bundler
       end
 
       resolve = SpecSet.new(converged)
-      @locked_specs_incomplete_for_platform = !@locked_specs.for(expand_dependencies(requested_dependencies & locked_dependencies), true, true)
       resolve = SpecSet.new(resolve.for(expand_dependencies(deps, true), false, false).reject{|s| @unlock[:gems].include?(s.name) })
       diff    = nil
 
