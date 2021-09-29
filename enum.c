@@ -2652,7 +2652,7 @@ minmax_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
  *    minmax_by                  -> enumerator
  *
  *  Returns a 2-element array containing the elements
- *  for which the block returns minimum an maximum values:
+ *  for which the block returns minimum and maximum values:
  *
  *    (1..4).minmax_by {|element| -element }
  *    # => [4, 1]
