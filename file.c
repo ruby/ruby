@@ -6369,6 +6369,10 @@ is_explicit_relative(const char *path)
 static VALUE
 copy_path_class(VALUE path, VALUE orig)
 {
+    int encidx = rb_enc_get_index(orig);
+    if (encidx == ENCINDEX_ASCII || encidx == ENCINDEX_US_ASCII)
+        encidx = rb_filesystem_encindex();
+    rb_enc_associate_index(path, encidx);
     str_shrink(path);
     RBASIC_SET_CLASS(path, rb_obj_class(orig));
     OBJ_FREEZE(path);
