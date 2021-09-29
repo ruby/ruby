@@ -1397,14 +1397,13 @@ guard_self_is_heap(codeblock_t *cb, x86opnd_t self_opnd, uint8_t *side_exit, ctx
 static void
 gen_jnz_to_target0(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t shape)
 {
-    switch (shape)
-    {
-        case SHAPE_NEXT0:
-        case SHAPE_NEXT1:
+    switch (shape) {
+      case SHAPE_NEXT0:
+      case SHAPE_NEXT1:
         RUBY_ASSERT(false);
         break;
 
-        case SHAPE_DEFAULT:
+      case SHAPE_DEFAULT:
         jnz_ptr(cb, target0);
         break;
     }
@@ -1413,14 +1412,13 @@ gen_jnz_to_target0(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t 
 static void
 gen_jz_to_target0(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t shape)
 {
-    switch (shape)
-    {
-        case SHAPE_NEXT0:
-        case SHAPE_NEXT1:
+    switch (shape) {
+      case SHAPE_NEXT0:
+      case SHAPE_NEXT1:
         RUBY_ASSERT(false);
         break;
 
-        case SHAPE_DEFAULT:
+      case SHAPE_DEFAULT:
         jz_ptr(cb, target0);
         break;
     }
@@ -1429,14 +1427,13 @@ gen_jz_to_target0(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t s
 static void
 gen_jbe_to_target0(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t shape)
 {
-    switch (shape)
-    {
-        case SHAPE_NEXT0:
-        case SHAPE_NEXT1:
+    switch (shape) {
+      case SHAPE_NEXT0:
+      case SHAPE_NEXT1:
         RUBY_ASSERT(false);
         break;
 
-        case SHAPE_DEFAULT:
+      case SHAPE_DEFAULT:
         jbe_ptr(cb, target0);
         break;
     }
@@ -1459,21 +1456,21 @@ jit_chain_guard(enum jcc_kinds jcc, jitstate_t *jit, const ctx_t *ctx, uint8_t d
     branchgen_fn target0_gen_fn;
 
     switch (jcc) {
-        case JCC_JNE:
-        case JCC_JNZ:
-            target0_gen_fn = gen_jnz_to_target0;
-            break;
-        case JCC_JZ:
-        case JCC_JE:
-            target0_gen_fn = gen_jz_to_target0;
-            break;
-        case JCC_JBE:
-        case JCC_JNA:
-            target0_gen_fn = gen_jbe_to_target0;
-            break;
-        default:
-            RUBY_ASSERT(false && "unimplemented jump kind");
-            break;
+      case JCC_JNE:
+      case JCC_JNZ:
+        target0_gen_fn = gen_jnz_to_target0;
+        break;
+      case JCC_JZ:
+      case JCC_JE:
+        target0_gen_fn = gen_jz_to_target0;
+        break;
+      case JCC_JBE:
+      case JCC_JNA:
+        target0_gen_fn = gen_jbe_to_target0;
+        break;
+      default:
+        RUBY_ASSERT(false && "unimplemented jump kind");
+        break;
     };
 
     if (ctx->chain_depth < depth_limit) {
@@ -2598,17 +2595,16 @@ gen_opt_case_dispatch(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 void
 gen_branchif_branch(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t shape)
 {
-    switch (shape)
-    {
-        case SHAPE_NEXT0:
+    switch (shape) {
+      case SHAPE_NEXT0:
         jz_ptr(cb, target1);
         break;
 
-        case SHAPE_NEXT1:
+      case SHAPE_NEXT1:
         jnz_ptr(cb, target0);
         break;
 
-        case SHAPE_DEFAULT:
+      case SHAPE_DEFAULT:
         jnz_ptr(cb, target0);
         jmp_ptr(cb, target1);
         break;
@@ -2655,17 +2651,16 @@ gen_branchif(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 void
 gen_branchunless_branch(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t shape)
 {
-    switch (shape)
-    {
-        case SHAPE_NEXT0:
+    switch (shape) {
+      case SHAPE_NEXT0:
         jnz_ptr(cb, target1);
         break;
 
-        case SHAPE_NEXT1:
+      case SHAPE_NEXT1:
         jz_ptr(cb, target0);
         break;
 
-        case SHAPE_DEFAULT:
+      case SHAPE_DEFAULT:
         jz_ptr(cb, target0);
         jmp_ptr(cb, target1);
         break;
@@ -2712,17 +2707,16 @@ gen_branchunless(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 void
 gen_branchnil_branch(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t shape)
 {
-    switch (shape)
-    {
-        case SHAPE_NEXT0:
+    switch (shape) {
+      case SHAPE_NEXT0:
         jne_ptr(cb, target1);
         break;
 
-        case SHAPE_NEXT1:
+      case SHAPE_NEXT1:
         je_ptr(cb, target0);
         break;
 
-        case SHAPE_DEFAULT:
+      case SHAPE_DEFAULT:
         je_ptr(cb, target0);
         jmp_ptr(cb, target1);
         break;
@@ -3303,14 +3297,13 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
 static void
 gen_return_branch(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t shape)
 {
-    switch (shape)
-    {
-        case SHAPE_NEXT0:
-        case SHAPE_NEXT1:
+    switch (shape) {
+      case SHAPE_NEXT0:
+      case SHAPE_NEXT1:
         RUBY_ASSERT(false);
         break;
 
-        case SHAPE_DEFAULT:
+      case SHAPE_DEFAULT:
         mov(cb, REG0, const_ptr_opnd(target0));
         mov(cb, member_opnd(REG_CFP, rb_control_frame_t, jit_return), REG0);
         break;
@@ -3657,20 +3650,20 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
     }
 
     switch (METHOD_ENTRY_VISI(cme)) {
-    case METHOD_VISI_PUBLIC:
+      case METHOD_VISI_PUBLIC:
         // Can always call public methods
         break;
-    case METHOD_VISI_PRIVATE:
+      case METHOD_VISI_PRIVATE:
         if (!(vm_ci_flag(ci) & VM_CALL_FCALL)) {
             // Can only call private methods with FCALL callsites.
             // (at the moment they are callsites without a receiver or an explicit `self` receiver)
             return YJIT_CANT_COMPILE;
         }
         break;
-    case METHOD_VISI_PROTECTED:
+      case METHOD_VISI_PROTECTED:
         jit_protected_callee_ancestry_guard(jit, cb, cme, side_exit);
         break;
-    case METHOD_VISI_UNDEF:
+      case METHOD_VISI_UNDEF:
         RUBY_ASSERT(false && "cmes should always have a visibility");
         break;
     }
@@ -3683,11 +3676,11 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
     while (true) {
         // switch on the method type
         switch (cme->def->type) {
-        case VM_METHOD_TYPE_ISEQ:
+          case VM_METHOD_TYPE_ISEQ:
             return gen_send_iseq(jit, ctx, ci, cme, block, argc);
-        case VM_METHOD_TYPE_CFUNC:
+          case VM_METHOD_TYPE_CFUNC:
             return gen_send_cfunc(jit, ctx, ci, cme, block, argc, &comptime_recv_klass);
-        case VM_METHOD_TYPE_IVAR:
+          case VM_METHOD_TYPE_IVAR:
             if (argc != 0) {
                 // Argument count mismatch. Getters take no arguments.
                 GEN_COUNTER_INC(cb, send_getter_arity);
@@ -3699,7 +3692,7 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
                 ID ivar_name = cme->def->body.attr.id;
                 return gen_get_ivar(jit, ctx, SEND_MAX_DEPTH, comptime_recv, ivar_name, recv_opnd, side_exit);
             }
-        case VM_METHOD_TYPE_ATTRSET:
+          case VM_METHOD_TYPE_ATTRSET:
             if (argc != 1 || !RB_TYPE_P(comptime_recv, T_OBJECT)) {
                 GEN_COUNTER_INC(cb, send_ivar_set_method);
                 return YJIT_CANT_COMPILE;
@@ -3707,33 +3700,33 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
                 ID ivar_name = cme->def->body.attr.id;
                 return gen_set_ivar(jit, ctx, comptime_recv, comptime_recv_klass, ivar_name);
             }
-        case VM_METHOD_TYPE_BMETHOD:
+          case VM_METHOD_TYPE_BMETHOD:
             GEN_COUNTER_INC(cb, send_bmethod);
             return YJIT_CANT_COMPILE;
-        case VM_METHOD_TYPE_ZSUPER:
+          case VM_METHOD_TYPE_ZSUPER:
             GEN_COUNTER_INC(cb, send_zsuper_method);
             return YJIT_CANT_COMPILE;
-        case VM_METHOD_TYPE_ALIAS: {
+          case VM_METHOD_TYPE_ALIAS: {
             // Retrieve the alised method and re-enter the switch
             cme = rb_aliased_callable_method_entry(cme);
             continue;
-        }
-        case VM_METHOD_TYPE_UNDEF:
+          }
+          case VM_METHOD_TYPE_UNDEF:
             GEN_COUNTER_INC(cb, send_undef_method);
             return YJIT_CANT_COMPILE;
-        case VM_METHOD_TYPE_NOTIMPLEMENTED:
+          case VM_METHOD_TYPE_NOTIMPLEMENTED:
             GEN_COUNTER_INC(cb, send_not_implemented_method);
             return YJIT_CANT_COMPILE;
-        case VM_METHOD_TYPE_OPTIMIZED:
+          case VM_METHOD_TYPE_OPTIMIZED:
             GEN_COUNTER_INC(cb, send_optimized_method);
             return YJIT_CANT_COMPILE;
-        case VM_METHOD_TYPE_MISSING:
+          case VM_METHOD_TYPE_MISSING:
             GEN_COUNTER_INC(cb, send_missing_method);
             return YJIT_CANT_COMPILE;
-        case VM_METHOD_TYPE_REFINED:
+          case VM_METHOD_TYPE_REFINED:
             GEN_COUNTER_INC(cb, send_refined_method);
             return YJIT_CANT_COMPILE;
-        // no default case so compiler issues a warning if this is not exhaustive
+            // no default case so compiler issues a warning if this is not exhaustive
         }
 
         // Unreachable
@@ -3831,12 +3824,12 @@ gen_invokesuper(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 
     // Check that we'll be able to write this method dispatch before generating checks
     switch (cme->def->type) {
-        case VM_METHOD_TYPE_ISEQ:
-        case VM_METHOD_TYPE_CFUNC:
-            break;
-        default:
-            // others unimplemented
-            return YJIT_CANT_COMPILE;
+      case VM_METHOD_TYPE_ISEQ:
+      case VM_METHOD_TYPE_CFUNC:
+        break;
+      default:
+        // others unimplemented
+        return YJIT_CANT_COMPILE;
     }
 
     // Guard that the receiver has the same class as the one from compile time
@@ -3881,12 +3874,12 @@ gen_invokesuper(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     ctx_clear_local_types(ctx);
 
     switch (cme->def->type) {
-        case VM_METHOD_TYPE_ISEQ:
-            return gen_send_iseq(jit, ctx, ci, cme, block, argc);
-        case VM_METHOD_TYPE_CFUNC:
-            return gen_send_cfunc(jit, ctx, ci, cme, block, argc, NULL);
-        default:
-            break;
+      case VM_METHOD_TYPE_ISEQ:
+        return gen_send_iseq(jit, ctx, ci, cme, block, argc);
+      case VM_METHOD_TYPE_CFUNC:
+        return gen_send_cfunc(jit, ctx, ci, cme, block, argc, NULL);
+      default:
+        break;
     }
 
     RUBY_ASSERT_ALWAYS(false);
@@ -4054,24 +4047,24 @@ gen_getspecial(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         mov(cb, C_ARG_REGS[0], RAX);
 
         switch (type >> 1) {
-            case '&':
-                ADD_COMMENT(cb, "rb_reg_last_match");
-                call_ptr(cb, REG0, (void *)rb_reg_last_match);
-                break;
-            case '`':
-                ADD_COMMENT(cb, "rb_reg_match_pre");
-                call_ptr(cb, REG0, (void *)rb_reg_match_pre);
-                break;
-            case '\'':
-                ADD_COMMENT(cb, "rb_reg_match_post");
-                call_ptr(cb, REG0, (void *)rb_reg_match_post);
-                break;
-            case '+':
-                ADD_COMMENT(cb, "rb_reg_match_last");
-                call_ptr(cb, REG0, (void *)rb_reg_match_last);
-                break;
-            default:
-                rb_bug("invalid back-ref");
+          case '&':
+            ADD_COMMENT(cb, "rb_reg_last_match");
+            call_ptr(cb, REG0, (void *)rb_reg_last_match);
+            break;
+          case '`':
+            ADD_COMMENT(cb, "rb_reg_match_pre");
+            call_ptr(cb, REG0, (void *)rb_reg_match_pre);
+            break;
+          case '\'':
+            ADD_COMMENT(cb, "rb_reg_match_post");
+            call_ptr(cb, REG0, (void *)rb_reg_match_post);
+            break;
+          case '+':
+            ADD_COMMENT(cb, "rb_reg_match_last");
+            call_ptr(cb, REG0, (void *)rb_reg_match_last);
+            break;
+          default:
+            rb_bug("invalid back-ref");
         }
 
         x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);

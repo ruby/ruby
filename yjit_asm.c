@@ -62,19 +62,19 @@ x86opnd_t mem_opnd_sib(uint32_t num_bits, x86opnd_t base_reg, x86opnd_t index_re
 {
     uint8_t scale_exp;
     switch (scale) {
-    case 8:
+      case 8:
         scale_exp = 3;
         break;
-    case 4:
+      case 4:
         scale_exp = 2;
         break;
-    case 2:
+      case 2:
         scale_exp = 1;
         break;
-    case 1:
+      case 1:
         scale_exp = 0;
         break;
-    default:
+      default:
         assert(false && "scale not one of 1,2,4,8");
         break;
     }
@@ -335,13 +335,12 @@ void cb_write_int(codeblock_t *cb, uint64_t val, uint32_t num_bits)
     assert (num_bits % 8 == 0);
 
     // Switch on the number of bits
-    switch (num_bits)
-    {
-        case 8:
+    switch (num_bits) {
+      case 8:
         cb_write_byte(cb, (uint8_t)val);
         break;
 
-        case 16:
+      case 16:
         cb_write_bytes(
             cb,
             2,
@@ -350,7 +349,7 @@ void cb_write_int(codeblock_t *cb, uint64_t val, uint32_t num_bits)
         );
         break;
 
-        case 32:
+      case 32:
         cb_write_bytes(
             cb,
             4,
@@ -361,7 +360,7 @@ void cb_write_int(codeblock_t *cb, uint64_t val, uint32_t num_bits)
         );
         break;
 
-        default:
+      default:
         {
             // Compute the size in bytes
             uint32_t num_bytes = num_bits / 8;
@@ -1439,57 +1438,56 @@ void neg(codeblock_t *cb, x86opnd_t opnd)
 // nop - Noop, one or multiple bytes long
 void nop(codeblock_t *cb, uint32_t length)
 {
-    switch (length)
-    {
-        case 0:
+    switch (length) {
+      case 0:
         break;
 
-        case 1:
+      case 1:
         //cb.writeASM("nop1");
         cb_write_byte(cb, 0x90);
         break;
 
-        case 2:
+      case 2:
         //cb.writeASM("nop2");
         cb_write_bytes(cb, 2, 0x66,0x90);
         break;
 
-        case 3:
+      case 3:
         //cb.writeASM("nop3");
         cb_write_bytes(cb, 3, 0x0F,0x1F,0x00);
         break;
 
-        case 4:
+      case 4:
         //cb.writeASM("nop4");
         cb_write_bytes(cb, 4, 0x0F,0x1F,0x40,0x00);
         break;
 
-        case 5:
+      case 5:
         //cb.writeASM("nop5");
         cb_write_bytes(cb, 5, 0x0F,0x1F,0x44,0x00,0x00);
         break;
 
-        case 6:
+      case 6:
         //cb.writeASM("nop6");
         cb_write_bytes(cb, 6, 0x66,0x0F,0x1F,0x44,0x00,0x00);
         break;
 
-        case 7:
+      case 7:
         //cb.writeASM("nop7");
         cb_write_bytes(cb, 7, 0x0F,0x1F,0x80,0x00,0x00,0x00,0x00);
         break;
 
-        case 8:
+      case 8:
         //cb.writeASM("nop8");
         cb_write_bytes(cb, 8, 0x0F,0x1F,0x84,0x00,0x00,0x00,0x00,0x00);
         break;
 
-        case 9:
+      case 9:
         //cb.writeASM("nop9");
         cb_write_bytes(cb, 9, 0x66,0x0F,0x1F,0x84,0x00,0x00,0x00,0x00,0x00);
         break;
 
-        default:
+      default:
         {
             uint32_t written = 0;
             while (written + 9 <= length)
