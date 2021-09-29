@@ -774,23 +774,29 @@ gen_dupn(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     return YJIT_KEEP_COMPILING;
 }
 
+static void
+stack_swap(ctx_t* ctx, codeblock_t* cb, int offset0, int offset1, x86opnd_t reg0, x86opnd_t reg1)
+{
+    x86opnd_t opnd0 = ctx_stack_opnd(ctx, offset0);
+    x86opnd_t opnd1 = ctx_stack_opnd(ctx, offset1);
+
+    temp_type_mapping_t mapping0 = ctx_get_opnd_mapping(ctx, OPND_STACK(offset0));
+    temp_type_mapping_t mapping1 = ctx_get_opnd_mapping(ctx, OPND_STACK(offset1));
+
+    mov(cb, reg0, opnd0);
+    mov(cb, reg1, opnd1);
+    mov(cb, opnd0, reg1);
+    mov(cb, opnd1, reg0);
+
+    ctx_set_opnd_mapping(ctx, OPND_STACK(offset0), mapping1);
+    ctx_set_opnd_mapping(ctx, OPND_STACK(offset1), mapping0);
+}
+
 // Swap top 2 stack entries
 static codegen_status_t
-gen_swap(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
+gen_swap(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
 {
-    x86opnd_t opnd0 = ctx_stack_opnd(ctx, 0);
-    x86opnd_t opnd1 = ctx_stack_opnd(ctx, 1);
-    temp_type_mapping_t mapping0 = ctx_get_opnd_mapping(ctx, OPND_STACK(0));
-    temp_type_mapping_t mapping1 = ctx_get_opnd_mapping(ctx, OPND_STACK(1));
-
-    mov(cb, REG0, opnd0);
-    mov(cb, REG1, opnd1);
-    mov(cb, opnd0, REG1);
-    mov(cb, opnd1, REG0);
-
-    ctx_set_opnd_mapping(ctx, OPND_STACK(0), mapping1);
-    ctx_set_opnd_mapping(ctx, OPND_STACK(1), mapping0);
-
+    stack_swap(ctx , cb, 0, 1, REG0, REG1);
     return YJIT_KEEP_COMPILING;
 }
 
@@ -3460,15 +3466,9 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
                 // that location.
                 for (int swap_idx = kwarg_idx + 1; swap_idx < req_key_num; swap_idx++) {
                     if (callee_kwarg == caller_kwargs[swap_idx]) {
-                        x86opnd_t swap = ctx_stack_opnd(ctx, argc - 1 - swap_idx);
-                        x86opnd_t kwarg = ctx_stack_opnd(ctx, argc - 1 - kwarg_idx);
-
                         // First we're going to generate the code that is going
                         // to perform the actual swapping at runtime.
-                        mov(cb, REG1, swap);
-                        mov(cb, R9, kwarg);
-                        mov(cb, swap, R9);
-                        mov(cb, kwarg, REG1);
+                        stack_swap(ctx, cb, argc - 1 - swap_idx, argc - 1 - kwarg_idx, REG1, R9);
 
                         // Next we're going to do some bookkeeping on our end so
                         // that we know the order that the arguments are
