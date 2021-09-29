@@ -4131,10 +4131,10 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
                 rb_xmalloc_mul_add(len, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
 	    VALUE *keywords = kw_arg->keywords;
 	    kw_arg->keyword_len = len;
-
+        int i = 0;
 	    *kw_arg_ptr = kw_arg;
 
-	    for (int i = 0; node != NULL; i++, node = node->nd_next->nd_next) {
+	    for (; node != NULL; i++, node = node->nd_next->nd_next) {
 		const NODE *key_node = node->nd_head;
 		const NODE *val_node = node->nd_next->nd_head;
 		keywords[i] = key_node->nd_lit;
