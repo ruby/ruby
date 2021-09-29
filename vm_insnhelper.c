@@ -4676,7 +4676,14 @@ vm_opt_newarray_max(rb_num_t num, const VALUE *ptr)
     }
     else {
 	VALUE ary = rb_ary_new4(num, ptr);
-	return rb_funcall(ary, idMax, 0);
+        const rb_callable_method_entry_t *me =
+            rb_callable_method_entry_with_refinements(rb_cArray, idMax, NULL);
+        if (me) {
+            return rb_vm_call0(GET_EC(), ary, idMax, 0, NULL, me, RB_NO_KEYWORDS);
+        }
+        else {
+            return rb_funcall(ary, idMax, 0);
+        }
     }
 }
 
@@ -4702,7 +4709,14 @@ vm_opt_newarray_min(rb_num_t num, const VALUE *ptr)
     }
     else {
 	VALUE ary = rb_ary_new4(num, ptr);
-	return rb_funcall(ary, idMin, 0);
+        const rb_callable_method_entry_t *me =
+            rb_callable_method_entry_with_refinements(rb_cArray, idMin, NULL);
+        if (me) {
+            return rb_vm_call0(GET_EC(), ary, idMin, 0, NULL, me, RB_NO_KEYWORDS);
+        }
+        else {
+            return rb_funcall(ary, idMin, 0);
+        }
     }
 }
 
