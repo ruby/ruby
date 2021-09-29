@@ -224,7 +224,8 @@ ctx_get_opnd_mapping(const ctx_t *ctx, insn_opnd_t opnd)
 
     if (stack_idx < MAX_TEMP_TYPES) {
         type_mapping.mapping = ctx->temp_mapping[stack_idx];
-    } else {
+    }
+    else {
         // We can't know the source of this stack operand, so we assume it is
         // a stack-only temporary. type will be UNKNOWN
         RUBY_ASSERT(type_mapping.type.type == ETYPE_UNKNOWN);
@@ -302,21 +303,28 @@ yjit_type_of_value(VALUE val)
     if (SPECIAL_CONST_P(val)) {
         if (FIXNUM_P(val)) {
             return TYPE_FIXNUM;
-        } else if (NIL_P(val)) {
+        }
+        else if (NIL_P(val)) {
             return TYPE_NIL;
-        } else if (val == Qtrue) {
+        }
+        else if (val == Qtrue) {
             return TYPE_TRUE;
-        } else if (val == Qfalse) {
+        }
+        else if (val == Qfalse) {
             return TYPE_FALSE;
-        } else if (STATIC_SYM_P(val)) {
+        }
+        else if (STATIC_SYM_P(val)) {
             return TYPE_STATIC_SYMBOL;
-        } else if (FLONUM_P(val)) {
+        }
+        else if (FLONUM_P(val)) {
             return TYPE_FLONUM;
-        } else {
+        }
+        else {
             RUBY_ASSERT(false);
             UNREACHABLE_RETURN(TYPE_IMM);
         }
-    } else {
+    }
+    else {
         switch (BUILTIN_TYPE(val)) {
           case T_ARRAY:
             return TYPE_ARRAY;
@@ -341,9 +349,11 @@ yjit_type_name(val_type_t type)
       case ETYPE_UNKNOWN:
         if (type.is_imm) {
             return "unknown immediate";
-        } else if (type.is_heap) {
+        }
+        else if (type.is_heap) {
             return "unknown heap";
-        } else {
+        }
+        else {
             return "unknown";
         }
       case ETYPE_NIL:
@@ -462,10 +472,12 @@ int ctx_diff(const ctx_t *src, const ctx_t *dst)
                 // We can safely drop information about the source of the temp
                 // stack operand.
                 diff += 1;
-            } else {
+            }
+            else {
                 return INT_MAX;
             }
-        } else if (m_dst.mapping.idx != m_src.mapping.idx) {
+        }
+        else if (m_dst.mapping.idx != m_src.mapping.idx) {
             return INT_MAX;
         }
 

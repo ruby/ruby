@@ -1087,7 +1087,8 @@ gen_newhash(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         mov(cb, stack_ret, RAX);
 
         return YJIT_KEEP_COMPILING;
-    } else {
+    }
+    else {
         return YJIT_CANT_COMPILE;
     }
 }
@@ -1199,7 +1200,8 @@ gen_putspecialobject(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         jit_mov_gc_ptr(jit, cb, REG0, rb_mRubyVMFrozenCore);
         mov(cb, stack_top, REG0);
         return YJIT_KEEP_COMPILING;
-    } else {
+    }
+    else {
         // TODO: implement for VM_SPECIAL_OBJECT_CBASE and
         // VM_SPECIAL_OBJECT_CONST_BASE
         return YJIT_CANT_COMPILE;
@@ -1793,7 +1795,8 @@ gen_checktype(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
             stack_ret = ctx_stack_push(ctx, TYPE_TRUE);
             mov(cb, stack_ret, imm_opnd(Qtrue));
             return YJIT_KEEP_COMPILING;
-        } else if (val_type.is_imm || val_type.type != ETYPE_UNKNOWN) {
+        }
+        else if (val_type.is_imm || val_type.type != ETYPE_UNKNOWN) {
             // guaranteed not to match T_STRING/T_ARRAY/T_HASH
             stack_ret = ctx_stack_push(ctx, TYPE_FALSE);
             mov(cb, stack_ret, imm_opnd(Qfalse));
@@ -1828,7 +1831,8 @@ gen_checktype(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         cb_link_labels(cb);
 
         return YJIT_KEEP_COMPILING;
-    } else {
+    }
+    else {
         return YJIT_CANT_COMPILE;
     }
 }
@@ -1946,7 +1950,8 @@ gen_fixnum_cmp(jitstate_t *jit, ctx_t *ctx, cmov_fn cmov_op)
         mov(cb, dst, REG0);
 
         return YJIT_KEEP_COMPILING;
-    } else {
+    }
+    else {
         return gen_opt_send_without_block(jit, ctx, cb);
     }
 }
@@ -2007,7 +2012,8 @@ gen_equality_specialized(jitstate_t *jit, ctx_t *ctx, uint8_t *side_exit)
         mov(cb, dst, REG0);
 
         return true;
-    } else if (CLASS_OF(comptime_a) == rb_cString &&
+    }
+    else if (CLASS_OF(comptime_a) == rb_cString &&
             CLASS_OF(comptime_b) == rb_cString) {
         if (!assume_bop_not_redefined(jit->block, STRING_REDEFINED_OP_FLAG, BOP_EQ)) {
             // if overridden, emit the generic version
@@ -2047,7 +2053,8 @@ gen_equality_specialized(jitstate_t *jit, ctx_t *ctx, uint8_t *side_exit)
         cb_link_labels(cb);
 
         return true;
-    } else {
+    }
+    else {
         return false;
     }
 }
@@ -2067,7 +2074,8 @@ gen_opt_eq(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     if (gen_equality_specialized(jit, ctx, side_exit)) {
         jit_jump_to_next_insn(jit, ctx);
         return YJIT_END_BLOCK;
-    } else {
+    }
+    else {
         return gen_opt_send_without_block(jit, ctx, cb);
     }
 }
@@ -2247,7 +2255,8 @@ gen_opt_aset(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 
         jit_jump_to_next_insn(jit, ctx);
         return YJIT_END_BLOCK;
-    } else if (CLASS_OF(comptime_recv) == rb_cHash) {
+    }
+    else if (CLASS_OF(comptime_recv) == rb_cHash) {
         uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
         // Guard receiver is a Hash
@@ -2271,7 +2280,8 @@ gen_opt_aset(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 
         jit_jump_to_next_insn(jit, ctx);
         return YJIT_END_BLOCK;
-    } else {
+    }
+    else {
         return gen_opt_send_without_block(jit, ctx, cb);
     }
 }
@@ -2313,7 +2323,8 @@ gen_opt_and(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         mov(cb, dst, REG0);
 
         return YJIT_KEEP_COMPILING;
-    } else {
+    }
+    else {
         // Delegate to send, call the method on the recv
         return gen_opt_send_without_block(jit, ctx, cb);
     }
@@ -2356,7 +2367,8 @@ gen_opt_or(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         mov(cb, dst, REG0);
 
         return YJIT_KEEP_COMPILING;
-    } else {
+    }
+    else {
         // Delegate to send, call the method on the recv
         return gen_opt_send_without_block(jit, ctx, cb);
     }
@@ -2401,7 +2413,8 @@ gen_opt_minus(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         mov(cb, dst, REG0);
 
         return YJIT_KEEP_COMPILING;
-    } else {
+    }
+    else {
         // Delegate to send, call the method on the recv
         return gen_opt_send_without_block(jit, ctx, cb);
     }
@@ -2446,7 +2459,8 @@ gen_opt_plus(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         mov(cb, dst, REG0);
 
         return YJIT_KEEP_COMPILING;
-    } else {
+    }
+    else {
         // Delegate to send, call the method on the recv
         return gen_opt_send_without_block(jit, ctx, cb);
     }
@@ -3696,7 +3710,8 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
             if (argc != 1 || !RB_TYPE_P(comptime_recv, T_OBJECT)) {
                 GEN_COUNTER_INC(cb, send_ivar_set_method);
                 return YJIT_CANT_COMPILE;
-            } else {
+            }
+            else {
                 ID ivar_name = cme->def->body.attr.id;
                 return gen_set_ivar(jit, ctx, comptime_recv, comptime_recv_klass, ivar_name);
             }
@@ -4035,7 +4050,8 @@ gen_getspecial(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     if (type == 0) {
         // not yet implemented
         return YJIT_CANT_COMPILE;
-    } else if (type & 0x01) {
+    }
+    else if (type & 0x01) {
         // Fetch a "special" backref based on a char encoded by shifting by 1
 
         // Can raise if matchdata uninitialized
@@ -4071,7 +4087,8 @@ gen_getspecial(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         mov(cb, stack_ret, RAX);
 
         return YJIT_KEEP_COMPILING;
-    } else {
+    }
+    else {
         // Fetch the N-th match from the last backref based on type shifted by 1
 
         // Can raise if matchdata uninitialized
