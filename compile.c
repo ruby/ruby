@@ -4134,7 +4134,7 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 
 	    *kw_arg_ptr = kw_arg;
 
-	    for (int i=0; node != NULL; i++, node = node->nd_next->nd_next) {
+	    for (int i = 0; node != NULL; i++, node = node->nd_next->nd_next) {
 		const NODE *key_node = node->nd_head;
 		const NODE *val_node = node->nd_next->nd_head;
 		keywords[i] = key_node->nd_lit;
