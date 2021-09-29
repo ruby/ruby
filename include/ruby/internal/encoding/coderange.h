@@ -22,7 +22,9 @@
  */
 
 #include "ruby/internal/attr/const.h"
+#include "ruby/internal/attr/pure.h"
 #include "ruby/internal/dllexport.h"
+#include "ruby/internal/fl_type.h"
 #include "ruby/internal/value.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
@@ -65,6 +67,7 @@ rb_enc_coderange_clean_p(int cr)
     return (cr ^ (cr >> 1)) & RUBY_ENC_CODERANGE_7BIT;
 }
 
+RBIMPL_ATTR_CONST()
 /**
  * Queries if  a code range  is "clean".  "Clean" in  this context means  it is
  * known and valid.
@@ -73,8 +76,13 @@ rb_enc_coderange_clean_p(int cr)
  * @retval     1   It is.
  * @retval     0   It isn't.
  */
-#define RB_ENC_CODERANGE_CLEAN_P(cr) rb_enc_coderange_clean_p(cr)
+static inline bool
+RB_ENC_CODERANGE_CLEAN_P(enum ruby_coderange_type cr)
+{
+    return rb_enc_coderange_clean_p(cr);
+}
 
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 /**
  * Queries the  (inline) code range of  the passed object.  The  object must be
  * capable  of   having  inline   encoding.   Using   this  macro   needs  deep
@@ -83,8 +91,15 @@ rb_enc_coderange_clean_p(int cr)
  * @param[in]  obj  Target object.
  * @return     An enum ::ruby_coderange_type.
  */
-#define RB_ENC_CODERANGE(obj) ((int)RBASIC(obj)->flags & RUBY_ENC_CODERANGE_MASK)
+static inline enum ruby_coderange_type
+RB_ENC_CODERANGE(VALUE obj)
+{
+    VALUE ret = RB_FL_TEST_RAW(obj, RUBY_ENC_CODERANGE_MASK);
 
+    return RBIMPL_CAST((enum ruby_coderange_type)ret);
+}
+
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 /**
  * Queries   the    (inline)   code   range    of   the   passed    object   is
  * ::RUBY_ENC_CODERANGE_7BIT.   The object  must  be capable  of having  inline
@@ -95,7 +110,11 @@ rb_enc_coderange_clean_p(int cr)
  * @retval     1    It is ascii only.
  * @retval     0    Otherwise (including cases when the range is not known).
  */
-#define RB_ENC_CODERANGE_ASCIIONLY(obj) (RB_ENC_CODERANGE(obj) == RUBY_ENC_CODERANGE_7BIT)
+static inline bool
+RB_ENC_CODERANGE_ASCIIONLY(VALUE obj)
+{
+    return RB_ENC_CODERANGE(obj) == RUBY_ENC_CODERANGE_7BIT;
+}
 
 /**
  * Destructively modifies the passed object so  that its (inline) code range is
@@ -106,9 +125,12 @@ rb_enc_coderange_clean_p(int cr)
  * @param[out]  cr   An enum ::ruby_coderange_type.
  * @post        `obj`'s code range is `cr`.
  */
-#define RB_ENC_CODERANGE_SET(obj,cr) (\
-        RBASIC(obj)->flags = \
-        (RBASIC(obj)->flags & ~RUBY_ENC_CODERANGE_MASK) | (cr))
+static inline void
+RB_ENC_CODERANGE_SET(VALUE obj, enum ruby_coderange_type cr)
+{
+    RB_FL_UNSET_RAW(obj, RUBY_ENC_CODERANGE_MASK);
+    RB_FL_SET_RAW(obj, cr);
+}
 
 /**
  * Destructively clears  the passed object's  (inline) code range.   The object
@@ -118,8 +140,13 @@ rb_enc_coderange_clean_p(int cr)
  * @param[out]  obj  Target object.
  * @post        `obj`'s code range is ::RUBY_ENC_CODERANGE_UNKNOWN.
  */
-#define RB_ENC_CODERANGE_CLEAR(obj) RB_ENC_CODERANGE_SET((obj),0)
+static inline void
+RB_ENC_CODERANGE_CLEAR(VALUE obj)
+{
+    RB_FL_UNSET_RAW(obj, RUBY_ENC_CODERANGE_MASK);
+}
 
+RBIMPL_ATTR_CONST()
 /* assumed ASCII compatibility */
 /**
  * "Mix"  two code  ranges  into one.   This  is handy  for  instance when  you
@@ -131,28 +158,22 @@ rb_enc_coderange_clean_p(int cr)
  * @param[in]  b  Another enum ::ruby_coderange_type.
  * @return     The `a` "and" `b`.
  */
-#define RB_ENC_CODERANGE_AND(a, b) \
-    ((a) == RUBY_ENC_CODERANGE_7BIT ? (b) : \
-     (a) != RUBY_ENC_CODERANGE_VALID ? RUBY_ENC_CODERANGE_UNKNOWN : \
-     (b) == RUBY_ENC_CODERANGE_7BIT ? RUBY_ENC_CODERANGE_VALID : (b))
-
-/**
- * This is #RB_ENCODING_SET  + RB_ENC_CODERANGE_SET combo.  The  object must be
- * capable  of   having  inline   encoding.   Using   this  macro   needs  deep
- * understanding of bit level object binary layout.
- *
- * @param[out]  obj       Target object.
- * @param[in]   encindex  Encoding in encindex format.
- * @param[in]   cr        An enum ::ruby_coderange_type.
- * @post        `obj`'s encoding is `encindex`.
- * @post        `obj`'s code range is `cr`.
- */
-#define RB_ENCODING_CODERANGE_SET(obj, encindex, cr) \
-    do { \
-        VALUE rb_encoding_coderange_obj = (obj); \
-        RB_ENCODING_SET(rb_encoding_coderange_obj, (encindex)); \
-        RB_ENC_CODERANGE_SET(rb_encoding_coderange_obj, (cr)); \
-    } while (0)
+static inline enum ruby_coderange_type
+RB_ENC_CODERANGE_AND(enum ruby_coderange_type a, enum ruby_coderange_type b)
+{
+    if (a == RUBY_ENC_CODERANGE_7BIT) {
+        return b;
+    }
+    else if (a != RUBY_ENC_CODERANGE_VALID) {
+        return RUBY_ENC_CODERANGE_UNKNOWN;
+    }
+    else if (b == RUBY_ENC_CODERANGE_7BIT) {
+        return RUBY_ENC_CODERANGE_VALID;
+    }
+    else {
+        return b;
+    }
+}
 
 #define ENC_CODERANGE_MASK                        RUBY_ENC_CODERANGE_MASK                      /**< @old{RUBY_ENC_CODERANGE_MASK} */
 #define ENC_CODERANGE_UNKNOWN                     RUBY_ENC_CODERANGE_UNKNOWN                   /**< @old{RUBY_ENC_CODERANGE_UNKNOWN} */
@@ -166,6 +187,15 @@ rb_enc_coderange_clean_p(int cr)
 #define ENC_CODERANGE_CLEAR(obj)                  RB_ENC_CODERANGE_CLEAR(obj)                  /**< @old{RB_ENC_CODERANGE_CLEAR} */
 #define ENC_CODERANGE_AND(a, b)                   RB_ENC_CODERANGE_AND(a, b)                   /**< @old{RB_ENC_CODERANGE_AND} */
 #define ENCODING_CODERANGE_SET(obj, encindex, cr) RB_ENCODING_CODERANGE_SET(obj, encindex, cr) /**< @old{RB_ENCODING_CODERANGE_SET} */
+
+/** @cond INTERNAL_MACRO */
+#define RB_ENC_CODERANGE           RB_ENC_CODERANGE
+#define RB_ENC_CODERANGE_AND       RB_ENC_CODERANGE_AND
+#define RB_ENC_CODERANGE_ASCIIONLY RB_ENC_CODERANGE_ASCIIONLY
+#define RB_ENC_CODERANGE_CLEAN_P   RB_ENC_CODERANGE_CLEAN_P
+#define RB_ENC_CODERANGE_CLEAR     RB_ENC_CODERANGE_CLEAR
+#define RB_ENC_CODERANGE_SET       RB_ENC_CODERANGE_SET
+/** @endcond */
 
 RBIMPL_SYMBOL_EXPORT_END()
 

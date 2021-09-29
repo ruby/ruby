@@ -25,6 +25,7 @@
 #include "ruby/internal/value.h"
 #include "ruby/internal/encoding/encoding.h"
 #include "ruby/internal/attr/nonnull.h"
+#include "ruby/internal/intern/string.h" /* rbimpl_strlen */
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
@@ -318,18 +319,26 @@ RBIMPL_ATTR_NONNULL(())
 long rb_memsearch(const void *x, long m, const void *y, long n, rb_encoding *enc);
 
 /** @cond INTERNAL_MACRO */
-#ifdef HAVE_BUILTIN___BUILTIN_CONSTANT_P
-#define rb_enc_str_new(str, len, enc) RB_GNUC_EXTENSION_BLOCK( \
-    (__builtin_constant_p(str) && __builtin_constant_p(len)) ? \
-        rb_enc_str_new_static((str), (len), (enc)) : \
-        rb_enc_str_new((str), (len), (enc)) \
-)
-#define rb_enc_str_new_cstr(str, enc) RB_GNUC_EXTENSION_BLOCK(  \
-    (__builtin_constant_p(str)) ?              \
-        rb_enc_str_new_static((str), (long)strlen(str), (enc)) : \
-        rb_enc_str_new_cstr((str), (enc)) \
-)
-#endif
+RBIMPL_ATTR_NONNULL(())
+static inline VALUE
+rbimpl_enc_str_new_cstr(const char *str, rb_encoding *enc)
+{
+    long len = rbimpl_strlen(str);
+
+    return rb_enc_str_new_static(str, len, enc);
+}
+
+#define rb_enc_str_new(str, len, enc)           \
+    ((RBIMPL_CONSTANT_P(str) &&                 \
+      RBIMPL_CONSTANT_P(len) ?                  \
+      rb_enc_str_new_static:                    \
+      rb_enc_str_new) ((str), (len), (enc)))
+
+#define rb_enc_str_new_cstr(str, enc)           \
+    ((RBIMPL_CONSTANT_P(str)  ?                 \
+      rbimpl_enc_str_new_cstr :                 \
+      rb_enc_str_new_cstr) ((str), (enc)))
+
 /** @endcond */
 
 RBIMPL_SYMBOL_EXPORT_END()
