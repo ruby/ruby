@@ -758,7 +758,7 @@ module Bundler
       end
 
       resolve = SpecSet.new(converged)
-      @locked_specs_incomplete_for_platform = !resolve.for(expand_dependencies(requested_dependencies & deps), true, true)
+      @locked_specs_incomplete_for_platform = !@locked_specs.for(expand_dependencies(requested_dependencies & deps), true, true)
       resolve = SpecSet.new(resolve.for(expand_dependencies(deps, true), false, false).reject{|s| @unlock[:gems].include?(s.name) })
       diff    = nil
 
