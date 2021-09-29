@@ -90,6 +90,15 @@ etc.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 etc.o: $(hdrdir)/ruby/internal/ctype.h
 etc.o: $(hdrdir)/ruby/internal/dllexport.h
 etc.o: $(hdrdir)/ruby/internal/dosish.h
+etc.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+etc.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+etc.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+etc.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+etc.o: $(hdrdir)/ruby/internal/encoding/re.h
+etc.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+etc.o: $(hdrdir)/ruby/internal/encoding/string.h
+etc.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+etc.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 etc.o: $(hdrdir)/ruby/internal/error.h
 etc.o: $(hdrdir)/ruby/internal/eval.h
 etc.o: $(hdrdir)/ruby/internal/event.h

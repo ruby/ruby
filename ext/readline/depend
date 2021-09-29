@@ -84,6 +84,15 @@ readline.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 readline.o: $(hdrdir)/ruby/internal/ctype.h
 readline.o: $(hdrdir)/ruby/internal/dllexport.h
 readline.o: $(hdrdir)/ruby/internal/dosish.h
+readline.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+readline.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+readline.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+readline.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+readline.o: $(hdrdir)/ruby/internal/encoding/re.h
+readline.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+readline.o: $(hdrdir)/ruby/internal/encoding/string.h
+readline.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+readline.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 readline.o: $(hdrdir)/ruby/internal/error.h
 readline.o: $(hdrdir)/ruby/internal/eval.h
 readline.o: $(hdrdir)/ruby/internal/event.h
