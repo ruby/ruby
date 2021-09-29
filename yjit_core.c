@@ -14,7 +14,7 @@
 Get an operand for the adjusted stack pointer address
 */
 x86opnd_t
-ctx_sp_opnd(ctx_t* ctx, int32_t offset_bytes)
+ctx_sp_opnd(ctx_t *ctx, int32_t offset_bytes)
 {
     int32_t offset = (ctx->sp_offset * sizeof(VALUE)) + offset_bytes;
     return mem_opnd(64, REG_SP, offset);
@@ -25,7 +25,7 @@ Push one new value on the temp stack with an explicit mapping
 Return a pointer to the new stack top
 */
 x86opnd_t
-ctx_stack_push_mapping(ctx_t* ctx, temp_type_mapping_t mapping)
+ctx_stack_push_mapping(ctx_t *ctx, temp_type_mapping_t mapping)
 {
     // Keep track of the type and mapping of the value
     if (ctx->stack_size < MAX_TEMP_TYPES) {
@@ -51,7 +51,7 @@ Push one new value on the temp stack
 Return a pointer to the new stack top
 */
 x86opnd_t
-ctx_stack_push(ctx_t* ctx, val_type_t type)
+ctx_stack_push(ctx_t *ctx, val_type_t type)
 {
     temp_type_mapping_t mapping = { MAP_STACK, type };
     return ctx_stack_push_mapping(ctx, mapping);
@@ -61,7 +61,7 @@ ctx_stack_push(ctx_t* ctx, val_type_t type)
 Push the self value on the stack
 */
 x86opnd_t
-ctx_stack_push_self(ctx_t* ctx)
+ctx_stack_push_self(ctx_t *ctx)
 {
     temp_type_mapping_t mapping = { MAP_SELF, TYPE_UNKNOWN };
     return ctx_stack_push_mapping(ctx, mapping);
@@ -71,7 +71,7 @@ ctx_stack_push_self(ctx_t* ctx)
 Push a local variable on the stack
 */
 x86opnd_t
-ctx_stack_push_local(ctx_t* ctx, size_t local_idx)
+ctx_stack_push_local(ctx_t *ctx, size_t local_idx)
 {
     if (local_idx >= MAX_LOCAL_TYPES) {
         return ctx_stack_push(ctx, TYPE_UNKNOWN);
@@ -89,7 +89,7 @@ Pop N values off the stack
 Return a pointer to the stack top before the pop operation
 */
 x86opnd_t
-ctx_stack_pop(ctx_t* ctx, size_t n)
+ctx_stack_pop(ctx_t *ctx, size_t n)
 {
     RUBY_ASSERT(n <= ctx->stack_size);
 
@@ -117,7 +117,7 @@ ctx_stack_pop(ctx_t* ctx, size_t n)
 Get an operand pointing to a slot on the temp stack
 */
 x86opnd_t
-ctx_stack_opnd(ctx_t* ctx, int32_t idx)
+ctx_stack_opnd(ctx_t *ctx, int32_t idx)
 {
     // SP points just above the topmost value
     int32_t offset = (ctx->sp_offset - 1 - idx) * sizeof(VALUE);
@@ -130,7 +130,7 @@ ctx_stack_opnd(ctx_t* ctx, int32_t idx)
 Get the type of an instruction operand
 */
 val_type_t
-ctx_get_opnd_type(const ctx_t* ctx, insn_opnd_t opnd)
+ctx_get_opnd_type(const ctx_t *ctx, insn_opnd_t opnd)
 {
     if (opnd.is_self)
         return ctx->self_type;
@@ -172,7 +172,7 @@ This value must be compatible and at least as specific as the previously known t
 If this value originated from self, or an lvar, the learned type will be
 propagated back to its source.
 */
-void ctx_upgrade_opnd_type(ctx_t* ctx, insn_opnd_t opnd, val_type_t type)
+void ctx_upgrade_opnd_type(ctx_t *ctx, insn_opnd_t opnd, val_type_t type)
 {
     if (opnd.is_self) {
         UPGRADE_TYPE(ctx->self_type, type);
@@ -211,7 +211,7 @@ This is can be used with ctx_stack_push_mapping or ctx_set_opnd_mapping to copy
 a stack value's type while maintaining the mapping.
 */
 temp_type_mapping_t
-ctx_get_opnd_mapping(const ctx_t* ctx, insn_opnd_t opnd)
+ctx_get_opnd_mapping(const ctx_t *ctx, insn_opnd_t opnd)
 {
     temp_type_mapping_t type_mapping;
     type_mapping.type = ctx_get_opnd_type(ctx, opnd);
@@ -240,7 +240,7 @@ ctx_get_opnd_mapping(const ctx_t* ctx, insn_opnd_t opnd)
 Overwrite both the type and mapping of a stack operand.
 */
 void
-ctx_set_opnd_mapping(ctx_t* ctx, insn_opnd_t opnd, temp_type_mapping_t type_mapping)
+ctx_set_opnd_mapping(ctx_t *ctx, insn_opnd_t opnd, temp_type_mapping_t type_mapping)
 {
     // self is always MAP_SELF
     RUBY_ASSERT(!opnd.is_self);
@@ -261,7 +261,7 @@ ctx_set_opnd_mapping(ctx_t* ctx, insn_opnd_t opnd, temp_type_mapping_t type_mapp
 /**
 Set the type of a local variable
 */
-void ctx_set_local_type(ctx_t* ctx, size_t idx, val_type_t type)
+void ctx_set_local_type(ctx_t *ctx, size_t idx, val_type_t type)
 {
     if (idx >= MAX_LOCAL_TYPES)
         return;
@@ -280,7 +280,7 @@ void ctx_set_local_type(ctx_t* ctx, size_t idx, val_type_t type)
 
 // Erase local variable type information
 // eg: because of a call we can't track
-void ctx_clear_local_types(ctx_t* ctx)
+void ctx_clear_local_types(ctx_t *ctx)
 {
     // When clearing local types we must detach any stack mappings to those
     // locals. Even if local values may have changed, stack values will not.
@@ -412,7 +412,7 @@ Returns 0 if the two contexts are the same
 Returns > 0 if different but compatible
 Returns INT_MAX if incompatible
 */
-int ctx_diff(const ctx_t* src, const ctx_t* dst)
+int ctx_diff(const ctx_t *src, const ctx_t *dst)
 {
     // Can only lookup the first version in the chain
     if (dst->chain_depth != 0)
@@ -504,7 +504,7 @@ static size_t get_num_versions(blockid_t blockid)
 
 // Keep track of a block version. Block should be fully constructed.
 static void
-add_block_version(blockid_t blockid, block_t* block)
+add_block_version(blockid_t blockid, block_t *block)
 {
     const rb_iseq_t *iseq = block->blockid.iseq;
     struct rb_iseq_constant_body *body = iseq->body;
@@ -565,12 +565,12 @@ add_block_version(blockid_t blockid, block_t* block)
 
 // Create a new outgoing branch entry for a block
 static branch_t*
-make_branch_entry(block_t* block, const ctx_t* src_ctx, branchgen_fn gen_fn)
+make_branch_entry(block_t *block, const ctx_t *src_ctx, branchgen_fn gen_fn)
 {
     RUBY_ASSERT(block != NULL);
 
     // Allocate and zero-initialize
-    branch_t* branch = calloc(1, sizeof(branch_t));
+    branch_t *branch = calloc(1, sizeof(branch_t));
 
     branch->block = block;
     branch->src_ctx = *src_ctx;
@@ -584,12 +584,12 @@ make_branch_entry(block_t* block, const ctx_t* src_ctx, branchgen_fn gen_fn)
 }
 
 // Retrieve a basic block version for an (iseq, idx) tuple
-block_t* find_block_version(blockid_t blockid, const ctx_t* ctx)
+block_t *find_block_version(blockid_t blockid, const ctx_t *ctx)
 {
     rb_yjit_block_array_t versions = yjit_get_version_array(blockid.iseq, blockid.idx);
 
     // Best match found
-    block_t* best_version = NULL;
+    block_t *best_version = NULL;
     int best_diff = INT_MAX;
 
     // For each version matching the blockid
@@ -619,7 +619,7 @@ block_t* find_block_version(blockid_t blockid, const ctx_t* ctx)
 
 // Produce a generic context when the block version limit is hit for a blockid
 // Note that this will mutate the ctx argument
-void limit_block_versions(blockid_t blockid, ctx_t* ctx)
+void limit_block_versions(blockid_t blockid, ctx_t *ctx)
 {
     // Guard chains implement limits separately, do nothing
     if (ctx->chain_depth > 0)
@@ -641,15 +641,15 @@ void limit_block_versions(blockid_t blockid, ctx_t* ctx)
 }
 
 // Compile a new block version immediately
-block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx, rb_execution_context_t* ec)
+block_t *gen_block_version(blockid_t blockid, const ctx_t *start_ctx, rb_execution_context_t *ec)
 {
     // Allocate a new block version object
-    block_t* block = calloc(1, sizeof(block_t));
+    block_t *block = calloc(1, sizeof(block_t));
     block->blockid = blockid;
     memcpy(&block->ctx, start_ctx, sizeof(ctx_t));
 
     // Store a pointer to the first block (returned by this function)
-    block_t* first_block = block;
+    block_t *first_block = block;
 
     // Limit the number of specialized versions for this block
     limit_block_versions(block->blockid, &block->ctx);
@@ -668,7 +668,7 @@ block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx, rb_executi
         }
 
         // Get the last outgoing branch from the previous block
-        branch_t* last_branch = rb_darray_back(block->outgoing);
+        branch_t *last_branch = rb_darray_back(block->outgoing);
 
         // If there is no next block to compile, stop
         if (last_branch->dst_addrs[0] || last_branch->dst_addrs[1]) {
@@ -707,7 +707,7 @@ block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx, rb_executi
 }
 
 // Generate a block version that is an entry point inserted into an iseq
-uint8_t* gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx, rb_execution_context_t *ec)
+uint8_t *gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx, rb_execution_context_t *ec)
 {
     // If we aren't at PC 0, don't generate code
     // See yjit_pc_guard
@@ -719,10 +719,10 @@ uint8_t* gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx, rb_execution_
     blockid_t blockid = { iseq, insn_idx };
 
     // Write the interpreter entry prologue
-    uint8_t* code_ptr = yjit_entry_prologue(cb, iseq);
+    uint8_t *code_ptr = yjit_entry_prologue(cb, iseq);
 
     // Try to generate code for the entry block
-    block_t* block = gen_block_version(blockid, &DEFAULT_CTX, ec);
+    block_t *block = gen_block_version(blockid, &DEFAULT_CTX, ec);
 
     // If we couldn't generate any code
     if (block->end_idx == insn_idx)
@@ -736,9 +736,9 @@ uint8_t* gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx, rb_execution_
 // Called by the generated code when a branch stub is executed
 // Triggers compilation of branches and code patching
 static uint8_t *
-branch_stub_hit(branch_t* branch, const uint32_t target_idx, rb_execution_context_t* ec)
+branch_stub_hit(branch_t *branch, const uint32_t target_idx, rb_execution_context_t *ec)
 {
-    uint8_t* dst_addr;
+    uint8_t *dst_addr;
 
     // Stop other ractors since we are going to patch machine code.
     // This is how the GC does it.
@@ -748,7 +748,7 @@ branch_stub_hit(branch_t* branch, const uint32_t target_idx, rb_execution_contex
     RUBY_ASSERT(branch != NULL);
     RUBY_ASSERT(target_idx < 2);
     blockid_t target = branch->targets[target_idx];
-    const ctx_t* target_ctx = &branch->target_ctxs[target_idx];
+    const ctx_t *target_ctx = &branch->target_ctxs[target_idx];
 
     // If this branch has already been patched, return the dst address
     // Note: ractors can cause the same stub to be hit multiple times
@@ -775,7 +775,7 @@ branch_stub_hit(branch_t* branch, const uint32_t target_idx, rb_execution_contex
         ec->cfp->pc = yjit_iseq_pc_at_idx(target.iseq, target.idx);
 
         // Try to find an existing compiled version of this block
-        block_t* p_block = find_block_version(target, target_ctx);
+        block_t *p_block = find_block_version(target, target_ctx);
 
         // If this block hasn't yet been compiled
         if (!p_block) {
@@ -832,16 +832,16 @@ branch_stub_hit(branch_t* branch, const uint32_t target_idx, rb_execution_contex
 }
 
 // Get a version or stub corresponding to a branch target
-uint8_t* get_branch_target(
+uint8_t *get_branch_target(
     blockid_t target,
-    const ctx_t* ctx,
-    branch_t* branch,
+    const ctx_t *ctx,
+    branch_t *branch,
     uint32_t target_idx
 )
 {
     //fprintf(stderr, "get_branch_target, block (%p, %d)\n", target.iseq, target.idx);
 
-    block_t* p_block = find_block_version(target, ctx);
+    block_t *p_block = find_block_version(target, ctx);
 
     // If the block already exists
     if (p_block)
@@ -855,7 +855,7 @@ uint8_t* get_branch_target(
     }
 
     // Generate an outlined stub that will call branch_stub_hit()
-    uint8_t* stub_addr = cb_get_ptr(ocb, ocb->write_pos);
+    uint8_t *stub_addr = cb_get_ptr(ocb, ocb->write_pos);
 
     // Call branch_stub_hit(branch_idx, target_idx, ec)
     mov(ocb, C_ARG_REGS[2], REG_EC);
@@ -871,18 +871,18 @@ uint8_t* get_branch_target(
 }
 
 void gen_branch(
-    jitstate_t* jit,
-    const ctx_t* src_ctx,
+    jitstate_t *jit,
+    const ctx_t *src_ctx,
     blockid_t target0,
-    const ctx_t* ctx0,
+    const ctx_t *ctx0,
     blockid_t target1,
-    const ctx_t* ctx1,
+    const ctx_t *ctx1,
     branchgen_fn gen_fn
 )
 {
     RUBY_ASSERT(target0.iseq != NULL);
 
-    branch_t* branch = make_branch_entry(jit->block, src_ctx, gen_fn);
+    branch_t *branch = make_branch_entry(jit->block, src_ctx, gen_fn);
     branch->targets[0] = target0;
     branch->targets[1] = target1;
     branch->target_ctxs[0] = *ctx0;
@@ -899,7 +899,7 @@ void gen_branch(
 }
 
 void
-gen_jump_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t shape)
+gen_jump_branch(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t shape)
 {
     switch (shape)
     {
@@ -917,18 +917,18 @@ gen_jump_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t sha
 }
 
 void gen_direct_jump(
-    jitstate_t* jit,
-    const ctx_t* ctx,
+    jitstate_t *jit,
+    const ctx_t *ctx,
     blockid_t target0
 )
 {
     RUBY_ASSERT(target0.iseq != NULL);
 
-    branch_t* branch = make_branch_entry(jit->block, ctx, gen_jump_branch);
+    branch_t *branch = make_branch_entry(jit->block, ctx, gen_jump_branch);
     branch->targets[0] = target0;
     branch->target_ctxs[0] = *ctx;
 
-    block_t* p_block = find_block_version(target0, ctx);
+    block_t *p_block = find_block_version(target0, ctx);
 
     // If the version already exists
     if (p_block) {
@@ -955,8 +955,8 @@ void gen_direct_jump(
 
 // Create a stub to force the code up to this point to be executed
 void defer_compilation(
-    jitstate_t* jit,
-    ctx_t* cur_ctx
+    jitstate_t *jit,
+    ctx_t *cur_ctx
 )
 {
     //fprintf(stderr, "defer compilation at (%p, %d) depth=%d\n", block->blockid.iseq, insn_idx, cur_ctx->chain_depth);
@@ -973,7 +973,7 @@ void defer_compilation(
 
     next_ctx.chain_depth += 1;
 
-    branch_t* branch = make_branch_entry(jit->block, cur_ctx, gen_jump_branch);
+    branch_t *branch = make_branch_entry(jit->block, cur_ctx, gen_jump_branch);
 
     // Get the branch targets or stubs
     branch->target_ctxs[0] = next_ctx;
@@ -981,7 +981,7 @@ void defer_compilation(
     branch->dst_addrs[0] = get_branch_target(branch->targets[0], &next_ctx, branch, 0);
 
     // Call the branch generation function
-    codeblock_t* cb = jit->cb;
+    codeblock_t *cb = jit->cb;
     branch->start_pos = cb->write_pos;
     gen_jump_branch(cb, branch->dst_addrs[0], NULL, SHAPE_DEFAULT);
     branch->end_pos = cb->write_pos;
@@ -997,7 +997,7 @@ yjit_free_block(block_t *block)
     // Remove this block from the predecessor's targets
     rb_darray_for(block->incoming, incoming_idx) {
         // Branch from the predecessor to us
-        branch_t* pred_branch = rb_darray_get(block->incoming, incoming_idx);
+        branch_t *pred_branch = rb_darray_get(block->incoming, incoming_idx);
 
         // If this is us, nullify the target block
         for (size_t succ_idx = 0; succ_idx < 2; succ_idx++) {
@@ -1009,18 +1009,18 @@ yjit_free_block(block_t *block)
 
     // For each outgoing branch
     rb_darray_for(block->outgoing, branch_idx) {
-        branch_t* out_branch = rb_darray_get(block->outgoing, branch_idx);
+        branch_t *out_branch = rb_darray_get(block->outgoing, branch_idx);
 
         // For each successor block
         for (size_t succ_idx = 0; succ_idx < 2; succ_idx++) {
-            block_t* succ = out_branch->blocks[succ_idx];
+            block_t *succ = out_branch->blocks[succ_idx];
 
             if (succ == NULL)
                 continue;
 
             // Remove this block from the successor's incoming list
             rb_darray_for(succ->incoming, incoming_idx) {
-                branch_t* pred_branch = rb_darray_get(succ->incoming, incoming_idx);
+                branch_t *pred_branch = rb_darray_get(succ->incoming, incoming_idx);
                 if (pred_branch == out_branch) {
                     rb_darray_remove_unordered(succ->incoming, incoming_idx);
                     break;
@@ -1072,11 +1072,11 @@ invalidate_block_version(block_t *block)
     block_array_remove(versions, block);
 
     // Get a pointer to the generated code for this block
-    uint8_t* code_ptr = cb_get_ptr(cb, block->start_pos);
+    uint8_t *code_ptr = cb_get_ptr(cb, block->start_pos);
 
     // For each incoming branch
     rb_darray_for(block->incoming, incoming_idx) {
-        branch_t* branch = rb_darray_get(block->incoming, incoming_idx);
+        branch_t *branch = rb_darray_get(block->incoming, incoming_idx);
         uint32_t target_idx = (branch->dst_addrs[0] == code_ptr)? 0:1;
         RUBY_ASSERT(branch->dst_addrs[target_idx] == code_ptr);
         RUBY_ASSERT(branch->blocks[target_idx] == block);

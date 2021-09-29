@@ -16,11 +16,11 @@ typedef enum codegen_status {
 } codegen_status_t;
 
 // Code generation function signature
-typedef codegen_status_t (*codegen_fn)(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb);
+typedef codegen_status_t (*codegen_fn)(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb);
 
-uint8_t* yjit_entry_prologue(codeblock_t* cb, const rb_iseq_t* iseq);
+uint8_t *yjit_entry_prologue(codeblock_t *cb, const rb_iseq_t *iseq);
 
-void yjit_gen_block(block_t* block, rb_execution_context_t* ec);
+void yjit_gen_block(block_t *block, rb_execution_context_t *ec);
 
 void yjit_init_codegen(void);
 

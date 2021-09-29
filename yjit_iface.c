@@ -486,7 +486,7 @@ rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec)
     // TODO: I think we need to stop all other ractors here
 
     // Compile a block version starting at the first instruction
-    uint8_t* code_ptr = gen_entry_point(iseq, 0, ec);
+    uint8_t *code_ptr = gen_entry_point(iseq, 0, ec);
 
     if (code_ptr)
     {
@@ -541,7 +541,7 @@ block_address(VALUE self)
 {
     block_t * block;
     TypedData_Get_Struct(self, block_t, &yjit_block_type, block);
-    uint8_t* code_addr = cb_get_ptr(cb, block->start_pos);
+    uint8_t *code_addr = cb_get_ptr(cb, block->start_pos);
     return LONG2NUM((intptr_t)code_addr);
 }
 
@@ -883,7 +883,7 @@ rb_yjit_iseq_mark(const struct rb_iseq_constant_body *body)
 
             // Mark outgoing branch entries
             rb_darray_for(block->outgoing, branch_idx) {
-                branch_t* branch = rb_darray_get(block->outgoing, branch_idx);
+                branch_t *branch = rb_darray_get(block->outgoing, branch_idx);
                 for (int i = 0; i < 2; ++i) {
                     rb_gc_mark_movable((VALUE)branch->targets[i].iseq);
                 }
@@ -925,7 +925,7 @@ rb_yjit_iseq_update_references(const struct rb_iseq_constant_body *body)
 
             // Update outgoing branch entries
             rb_darray_for(block->outgoing, branch_idx) {
-                branch_t* branch = rb_darray_get(block->outgoing, branch_idx);
+                branch_t *branch = rb_darray_get(block->outgoing, branch_idx);
                 for (int i = 0; i < 2; ++i) {
                     branch->targets[i].iseq = (const void *)rb_gc_location((VALUE)branch->targets[i].iseq);
                 }
@@ -986,7 +986,7 @@ static const rb_data_type_t yjit_code_page_type = {
 // Allocate a code page and wrap it into a Ruby object owned by the GC
 VALUE rb_yjit_code_page_alloc(void)
 {
-    code_page_t* code_page = alloc_code_page();
+    code_page_t *code_page = alloc_code_page();
     VALUE cp_obj = TypedData_Wrap_Struct(0, &yjit_code_page_type, code_page);
 
     // Write a pointer to the wrapper object at the beginning of the code page
@@ -1004,21 +1004,21 @@ code_page_t *rb_yjit_code_page_unwrap(VALUE cp_obj)
 }
 
 // Get the code page wrapper object for a code pointer
-VALUE rb_yjit_code_page_from_ptr(uint8_t* code_ptr)
+VALUE rb_yjit_code_page_from_ptr(uint8_t *code_ptr)
 {
-    VALUE* page_start = (VALUE*)((intptr_t)code_ptr & ~(CODE_PAGE_SIZE - 1));
+    VALUE *page_start = (VALUE*)((intptr_t)code_ptr & ~(CODE_PAGE_SIZE - 1));
     VALUE wrapper = *page_start;
     return wrapper;
 }
 
 // Get the inline code block corresponding to a code pointer
-void rb_yjit_get_cb(codeblock_t* cb, uint8_t* code_ptr)
+void rb_yjit_get_cb(codeblock_t *cb, uint8_t *code_ptr)
 {
     VALUE page_wrapper = rb_yjit_code_page_from_ptr(code_ptr);
     code_page_t *code_page = rb_yjit_code_page_unwrap(page_wrapper);
 
     // A pointer to the page wrapper object is written at the start of the code page
-    uint8_t* mem_block = code_page->mem_block + sizeof(VALUE);
+    uint8_t *mem_block = code_page->mem_block + sizeof(VALUE);
     uint32_t mem_size = (code_page->page_size/2) - sizeof(VALUE);
     RUBY_ASSERT(mem_block);
 
@@ -1027,13 +1027,13 @@ void rb_yjit_get_cb(codeblock_t* cb, uint8_t* code_ptr)
 }
 
 // Get the outlined code block corresponding to a code pointer
-void rb_yjit_get_ocb(codeblock_t* cb, uint8_t* code_ptr)
+void rb_yjit_get_ocb(codeblock_t *cb, uint8_t *code_ptr)
 {
     VALUE page_wrapper = rb_yjit_code_page_from_ptr(code_ptr);
     code_page_t *code_page = rb_yjit_code_page_unwrap(page_wrapper);
 
     // A pointer to the page wrapper object is written at the start of the code page
-    uint8_t* mem_block = code_page->mem_block + (code_page->page_size/2);
+    uint8_t *mem_block = code_page->mem_block + (code_page->page_size/2);
     uint32_t mem_size = code_page->page_size/2;
     RUBY_ASSERT(mem_block);
 
@@ -1086,10 +1086,10 @@ outgoing_ids(VALUE self)
     VALUE ids = rb_ary_new();
 
     rb_darray_for(block->outgoing, branch_idx) {
-        branch_t* out_branch = rb_darray_get(block->outgoing, branch_idx);
+        branch_t *out_branch = rb_darray_get(block->outgoing, branch_idx);
 
         for (size_t succ_idx = 0; succ_idx < 2; succ_idx++) {
-            block_t* succ = out_branch->blocks[succ_idx];
+            block_t *succ = out_branch->blocks[succ_idx];
 
             if (succ == NULL)
                 continue;
