@@ -711,12 +711,12 @@ class Reline::LineEditor
       @output.write "\e[#{bg_color}m#{str}"
       if dialog.scrollbar_pos and (dialog.scrollbar_pos != old_dialog.scrollbar_pos or dialog.column != old_dialog.column)
         @output.write "\e[37m"
-        if dialog.scrollbar_pos <= (i * 2) and (i * 2 + @block_elem_width) < (dialog.scrollbar_pos + bar_height)
+        if dialog.scrollbar_pos <= (i * 2) and (i * 2) < (dialog.scrollbar_pos + bar_height)
           @output.write '█'
         elsif dialog.scrollbar_pos <= (i * 2) and (i * 2) < (dialog.scrollbar_pos + bar_height)
           @output.write '▀'
           str += ''
-        elsif dialog.scrollbar_pos <= (i * 2 + @block_elem_width) and (i * 2) < (dialog.scrollbar_pos + bar_height)
+        elsif dialog.scrollbar_pos <= (i * 2) and (i * 2) < (dialog.scrollbar_pos + bar_height)
           @output.write '▄'
         else
           @output.write ' ' * @block_elem_width
