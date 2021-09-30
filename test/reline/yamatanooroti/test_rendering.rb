@@ -424,10 +424,10 @@ begin
     def test_binding_for_vi_movement_mode
       write_inputrc <<~LINES
         set editing-mode vi
-        "\\C-j": vi-movement-mode
+        "\\C-a": vi-movement-mode
       LINES
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
-      write(":1234\C-jhhhi0")
+      write(":1234\C-ahhhi0")
       close
       assert_screen(<<~EOC)
         Multiline REPL.
