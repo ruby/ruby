@@ -42,7 +42,7 @@ module Bundler
         %w[ref branch tag submodules].each do |opt|
           out << "  #{opt}: #{options[opt]}\n" if options[opt]
         end
-        out << "  glob: #{@glob}\n" unless @glob == DEFAULT_GLOB
+        out << "  glob: #{@glob}\n" unless default_glob?
         out << "  specs:\n"
       end
 
@@ -75,12 +75,20 @@ module Bundler
             git_proxy.branch
           end
 
-          rev = " (at #{at}@#{shortref_for_display(revision)})"
+          rev = "at #{at}@#{shortref_for_display(revision)}"
         rescue GitError
           ""
         end
 
-        "#{@safe_uri}#{rev}"
+        specifiers = [rev, glob_for_display].compact
+        suffix =
+          if specifiers.any?
+            " (#{specifiers.join(", ")})"
+          else
+            ""
+          end
+
+        "#{@safe_uri}#{suffix}"
       end
 
       def name
@@ -280,6 +288,14 @@ module Bundler
 
       def shortref_for_path(ref)
         ref[0..11]
+      end
+
+      def glob_for_display
+        default_glob? ? nil : "glob: #{@glob}"
+      end
+
+      def default_glob?
+        @glob == DEFAULT_GLOB
       end
 
       def uri_hash
