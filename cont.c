@@ -2702,7 +2702,7 @@ rb_fiber_s_yield(int argc, VALUE *argv, VALUE klass)
 }
 
 static VALUE
-fiber_raise(rb_fiber_t *fiber, int argc, VALUE *argv)
+fiber_raise(rb_fiber_t *fiber, int argc, const VALUE *argv)
 {
     VALUE exception = rb_make_exception(argc, argv);
 
@@ -2718,7 +2718,7 @@ fiber_raise(rb_fiber_t *fiber, int argc, VALUE *argv)
 }
 
 VALUE
-rb_fiber_raise(VALUE fiber, int argc, VALUE *argv)
+rb_fiber_raise(VALUE fiber, int argc, const VALUE *argv)
 {
     return fiber_raise(fiber_ptr(fiber), argc, argv);
 }

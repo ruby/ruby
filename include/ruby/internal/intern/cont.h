@@ -139,8 +139,7 @@ VALUE rb_fiber_resume_kw(VALUE fiber, int argc, const VALUE *argv, int kw_splat)
  * fiber then suspends its execution until next time it is resumed.
  *
  * This function can  also raise arbitrary exceptions injected  from outside of
- * the fiber, using `Fiber#raise`  Ruby level API.  There is no  way to do that
- * from C though.
+ * the fiber using rb_fiber_raise().
  *
  * ```ruby
  * exc = Class.new Exception
@@ -159,12 +158,6 @@ VALUE rb_fiber_resume_kw(VALUE fiber, int argc, const VALUE *argv, int kw_splat)
  * @param[in]  argv           Passed to rb_fiber_resume().
  * @exception  rb_eException  (See above)
  * @return     (See rb_fiber_resume() for details)
- *
- * @internal
- *
- * "There is no way  to do that from C" is a lie.   But @shyouhei doesn't think
- * this very intentionally obfuscated way  to raise arbitrary exceptions from C
- * is an official C API.  Extension libraries must not know this fact.
  */
 VALUE rb_fiber_yield(int argc, const VALUE *argv);
 
@@ -239,7 +232,28 @@ VALUE rb_fiber_transfer(VALUE fiber, int argc, const VALUE *argv);
  */
 VALUE rb_fiber_transfer_kw(VALUE fiber, int argc, const VALUE *argv, int kw_splat);
 
-VALUE rb_fiber_raise(VALUE fiber, int argc, VALUE *argv);
+/**
+ * Identical to rb_fiber_resume()  but instead of resuming  normal execution of
+ * the passed fiber, it  raises the given exception in it.   From inside of the
+ * fiber this would be seen as if rb_fiber_yield() raised.
+ *
+ * This function  does return in case  the passed fiber gracefully  handled the
+ * passed exception.  But  if it does not, the raised  exception propagates out
+ * of the passed fiber; this function then does not return.
+ *
+ * Parameters are passed to rb_make_exception()  to create an exception object.
+ * See its document for what are allowed here.
+ *
+ * It is  a failure to  call this function against  a fiber which  is resuming,
+ * have never run yet, or has already finished running.
+ *
+ * @param[out]  fiber           Where exception is raised.
+ * @param[in]   argc            Passed as-is to rb_make_exception().
+ * @param[in]   argv            Passed as-is to rb_make_exception().
+ * @exception   rb_eFiberError  `fiber` is terminated etc.
+ * @return      (See rb_fiber_resume() for details)
+ */
+VALUE rb_fiber_raise(VALUE fiber, int argc, const VALUE *argv);
 
 RBIMPL_SYMBOL_EXPORT_END()
 
