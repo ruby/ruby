@@ -2757,10 +2757,11 @@ each_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
  *    # => ["a", "b", "c", "d"]
  *    h # => {"a"=>0, "b"=>1, "c"=>2, "d"=>3}
  *
+ *    a = []
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h0.each_with_index {|element, i| h1[i] = element }
+ *    h.each_with_index {|element, i| a.push([i, element]) }
  *    # => {:foo=>0, :bar=>1, :baz=>2}
- *    h1 # => {0=>[:foo, 0], 1=>[:bar, 1], 2=>[:baz, 2]}
+ *    a # => [[0, [:foo, 0]], [1, [:bar, 1]], [2, [:baz, 2]]]
  *
  *  With no block given, returns an Enumerator.
  *
