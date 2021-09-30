@@ -235,21 +235,21 @@ class Reline::Windows
     num_of_events = 0.chr * 8
     while @@output_buf.empty? #or true
       next if @@WaitForSingleObject.(@@hConsoleInputHandle, 100) != 0 # max 0.1 sec
-      next if @@GetNumberOfConsoleInputEvents.(@@hConsoleInputHandle, num_of_events) == 0 or num_of_events.unpack('L').first == 0
+      next if @@GetNumberOfConsoleInputEvents.(@@hConsoleInputHandle, num_of_events) == 0 or num_of_events.unpack1('L') == 0
       input_record = 0.chr * 18
       read_event = 0.chr * 4
       if @@ReadConsoleInputW.(@@hConsoleInputHandle, input_record, 1, read_event) != 0
-        event = input_record[0, 2].unpack('s*').first
+        event = input_record[0, 2].unpack1('s*')
         case event
         when WINDOW_BUFFER_SIZE_EVENT
           @@winch_handler.()
         when KEY_EVENT
-          key_down = input_record[4, 4].unpack('l*').first
-          repeat_count = input_record[8, 2].unpack('s*').first
-          virtual_key_code = input_record[10, 2].unpack('s*').first
-          virtual_scan_code = input_record[12, 2].unpack('s*').first
-          char_code = input_record[14, 2].unpack('S*').first
-          control_key_state = input_record[16, 2].unpack('S*').first
+          key_down = input_record[4, 4].unpack1('l*')
+          repeat_count = input_record[8, 2].unpack1('s*')
+          virtual_key_code = input_record[10, 2].unpack1('s*')
+          virtual_scan_code = input_record[12, 2].unpack1('s*')
+          char_code = input_record[14, 2].unpack1('S*')
+          control_key_state = input_record[16, 2].unpack1('S*')
           is_key_down = key_down.zero? ? false : true
           if is_key_down
             process_key_event(repeat_count, virtual_key_code, virtual_scan_code, char_code, control_key_state)
@@ -291,8 +291,8 @@ class Reline::Windows
   def self.cursor_pos
     csbi = 0.chr * 22
     @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi)
-    x = csbi[4, 2].unpack('s*').first
-    y = csbi[6, 2].unpack('s*').first
+    x = csbi[4, 2].unpack1('s*')
+    y = csbi[6, 2].unpack1('s*')
     Reline::CursorPos.new(x, y)
   end
 
@@ -324,7 +324,7 @@ class Reline::Windows
   def self.erase_after_cursor
     csbi = 0.chr * 24
     @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi)
-    cursor = csbi[4, 4].unpack('L').first
+    cursor = csbi[4, 4].unpack1('L')
     written = 0.chr * 4
     @@FillConsoleOutputCharacter.call(@@hConsoleHandle, 0x20, get_screen_size.last - cursor_pos.x, cursor, written)
     @@FillConsoleOutputAttribute.call(@@hConsoleHandle, 0, get_screen_size.last - cursor_pos.x, cursor, written)
@@ -343,8 +343,8 @@ class Reline::Windows
   def self.clear_screen
     csbi = 0.chr * 22
     return if @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi) == 0
-    buffer_width = csbi[0, 2].unpack('S').first
-    attributes = csbi[8, 2].unpack('S').first
+    buffer_width = csbi[0, 2].unpack1('S')
+    attributes = csbi[8, 2].unpack1('S')
     _window_left, window_top, _window_right, window_bottom = *csbi[10,8].unpack('S*')
     fill_length = buffer_width * (window_bottom - window_top + 1)
     screen_topleft = window_top * 65536
