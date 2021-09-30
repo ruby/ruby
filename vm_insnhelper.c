@@ -2087,6 +2087,7 @@ rb_eql_opt(VALUE obj1, VALUE obj2)
 #endif // MJIT_HEADER
 
 extern VALUE rb_vm_call0(rb_execution_context_t *ec, VALUE, ID, int, const VALUE*, const rb_callable_method_entry_t *, int kw_splat);
+extern VALUE rb_vm_call_with_refinements(rb_execution_context_t *, VALUE, ID, int, const VALUE *, int);
 
 static VALUE
 check_match(rb_execution_context_t *ec, VALUE pattern, VALUE target, enum vm_check_match_type type)
@@ -2100,15 +2101,7 @@ check_match(rb_execution_context_t *ec, VALUE pattern, VALUE target, enum vm_che
 	}
 	/* fall through */
       case VM_CHECKMATCH_TYPE_CASE: {
-	const rb_callable_method_entry_t *me =
-	    rb_callable_method_entry_with_refinements(CLASS_OF(pattern), idEqq, NULL);
-	if (me) {
-            return rb_vm_call0(ec, pattern, idEqq, 1, &target, me, RB_NO_KEYWORDS);
-	}
-	else {
-	    /* fallback to funcall (e.g. method_missing) */
-	    return rb_funcallv(pattern, idEqq, 1, &target);
-	}
+        return rb_vm_call_with_refinements(ec, pattern, idEqq, 1, &target, RB_NO_KEYWORDS);
       }
       default:
 	rb_bug("check_match: unreachable");
@@ -4675,15 +4668,7 @@ vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
 	}
     }
     else {
-	VALUE ary = rb_ary_new4(num, ptr);
-        const rb_callable_method_entry_t *me =
-            rb_callable_method_entry_with_refinements(rb_cArray, idMax, NULL);
-        if (me) {
-            return rb_vm_call0(ec, ary, idMax, 0, NULL, me, RB_NO_KEYWORDS);
-        }
-        else {
-            return rb_funcall(ary, idMax, 0);
-        }
+        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idMax, 0, NULL, RB_NO_KEYWORDS);
     }
 }
 
@@ -4708,15 +4693,7 @@ vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
 	}
     }
     else {
-	VALUE ary = rb_ary_new4(num, ptr);
-        const rb_callable_method_entry_t *me =
-            rb_callable_method_entry_with_refinements(rb_cArray, idMin, NULL);
-        if (me) {
-            return rb_vm_call0(ec, ary, idMin, 0, NULL, me, RB_NO_KEYWORDS);
-        }
-        else {
-            return rb_funcall(ary, idMin, 0);
-        }
+        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idMin, 0, NULL, RB_NO_KEYWORDS);
     }
 }
 

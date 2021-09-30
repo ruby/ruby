@@ -57,6 +57,20 @@ rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE
     return vm_call0_body(ec, &calling, argv);
 }
 
+MJIT_FUNC_EXPORTED VALUE
+rb_vm_call_with_refinements(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, int kw_splat)
+{
+    const rb_callable_method_entry_t *me =
+        rb_callable_method_entry_with_refinements(CLASS_OF(recv), id, NULL);
+    if (me) {
+        return rb_vm_call0(ec, recv, id, argc, argv, me, kw_splat);
+    }
+    else {
+        /* fallback to funcall (e.g. method_missing) */
+        return rb_funcallv(recv, id, argc, argv);
+    }
+}
+
 static inline VALUE
 vm_call0_cc(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const struct rb_callcache *cc, int kw_splat)
 {
