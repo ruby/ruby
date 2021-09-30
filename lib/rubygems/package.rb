@@ -400,7 +400,7 @@ EOM
   # extracted.
 
   def extract_tar_gz(io, destination_dir, pattern = "*") # :nodoc:
-    directories = [] if dir_mode
+    directories = []
     open_tar_gz io do |tar|
       tar.each do |entry|
         next unless File.fnmatch pattern, entry.full_name, File::FNM_DOTMATCH
@@ -417,9 +417,11 @@ EOM
           else
             File.dirname destination
           end
-        directories << mkdir if directories
 
-        mkdir_p_safe mkdir, mkdir_options, destination_dir, entry.full_name
+        unless directories.include?(mkdir)
+          mkdir_p_safe mkdir, mkdir_options, destination_dir, entry.full_name
+          directories << mkdir
+        end
 
         File.open destination, 'wb' do |out|
           out.write entry.read
@@ -432,8 +434,7 @@ EOM
       end
     end
 
-    if directories
-      directories.uniq!
+    if dir_mode
       File.chmod(dir_mode, *directories)
     end
   end
