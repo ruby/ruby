@@ -2537,6 +2537,25 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal(:second, klass.new.foo)
   end
 
+  class Bug18180
+    module M
+      refine Array do
+        def min; :min; end
+        def max; :max; end
+      end
+    end
+
+    using M
+
+    def t
+      [[1+0, 2, 4].min, [1, 2, 4].min, [1+0, 2, 4].max, [1, 2, 4].max]
+    end
+  end
+
+  def test_refine_array_min_max
+    assert_equal([:min, :min, :max, :max], Bug18180.new.t)
+  end
+
   class Bug17822
     module Ext
       refine(Bug17822) do

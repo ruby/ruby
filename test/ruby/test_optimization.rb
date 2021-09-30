@@ -150,6 +150,18 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_redefine_method('String', '-@', 'assert_nil(-"foo")')
   end
 
+  def test_array_min
+    assert_equal 1, [1, 2, 4].min
+    assert_redefine_method('Array', 'min', 'assert_nil([1, 2, 4].min)')
+    assert_redefine_method('Array', 'min', 'assert_nil([1 + 0, 2, 4].min)')
+  end
+
+  def test_array_max
+    assert_equal 4, [1, 2, 4].max
+    assert_redefine_method('Array', 'max', 'assert_nil([1, 2, 4].max)')
+    assert_redefine_method('Array', 'max', 'assert_nil([1 + 0, 2, 4].max)')
+  end
+
   def test_trace_optimized_methods
     bug14870 = "[ruby-core:87638]"
     expected = [:-@, :max, :min, :+, :-, :*, :/, :%, :==, :<, :<=, :>, :>=, :<<,

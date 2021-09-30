@@ -834,7 +834,7 @@ opt_newarray_max
 // attr bool leaf = false; /* has rb_funcall() */
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
-    val = vm_opt_newarray_max(num, STACK_ADDR_FROM_TOP(num));
+    val = vm_opt_newarray_max(ec, num, STACK_ADDR_FROM_TOP(num));
 }
 
 DEFINE_INSN
@@ -846,7 +846,7 @@ opt_newarray_min
 // attr bool leaf = false; /* has rb_funcall() */
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
-    val = vm_opt_newarray_min(num, STACK_ADDR_FROM_TOP(num));
+    val = vm_opt_newarray_min(ec, num, STACK_ADDR_FROM_TOP(num));
 }
 
 /* super(args) # args.size => num */
