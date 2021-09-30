@@ -1236,7 +1236,7 @@ callable_method_entry_refeinements0(VALUE klass, ID id, VALUE *defined_class_ptr
 }
 
 static const rb_callable_method_entry_t *
-callable_method_entry_refeinements(VALUE klass, ID id, VALUE *defined_class_ptr, bool with_refinements)
+callable_method_entry_refinements(VALUE klass, ID id, VALUE *defined_class_ptr, bool with_refinements)
 {
     const rb_callable_method_entry_t *cme = callable_method_entry(klass, id, defined_class_ptr);
     return callable_method_entry_refeinements0(klass, id, defined_class_ptr, with_refinements, cme);
@@ -1245,13 +1245,13 @@ callable_method_entry_refeinements(VALUE klass, ID id, VALUE *defined_class_ptr,
 MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
 rb_callable_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
-    return callable_method_entry_refeinements(klass, id, defined_class_ptr, true);
+    return callable_method_entry_refinements(klass, id, defined_class_ptr, true);
 }
 
 static const rb_callable_method_entry_t *
 callable_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
-    return callable_method_entry_refeinements(klass, id, defined_class_ptr, false);
+    return callable_method_entry_refinements(klass, id, defined_class_ptr, false);
 }
 
 const rb_method_entry_t *
