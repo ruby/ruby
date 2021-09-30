@@ -91,7 +91,28 @@ opt.on('--autocomplete') {
 opt.on('--autocomplete-long') {
   Reline.autocompletion = true
   Reline.completion_proc = lambda { |target, preposing = nil, postposing = nil|
-    %w{String Struct Symbol StopIteration SystemCallError SystemExit SystemStackError ScriptError SyntaxError Signal SizedQueue Set SecureRandom Socket StringIO StringScanner Shellwords Syslog Singleton SDBM}.select{ |c| c.start_with?(target) }
+    %w{
+      String
+      Struct
+      Symbol
+      StopIteration
+      SystemCallError
+      SystemExit
+      SystemStackError
+      ScriptError
+      SyntaxError
+      Signal
+      SizedQueue
+      Set
+      SecureRandom
+      Socket
+      StringIO
+      StringScanner
+      Shellwords
+      Syslog
+      Singleton
+      SDBM
+    }.select{ |c| c.start_with?(target) }
   }
 }
 opt.parse!(ARGV)
