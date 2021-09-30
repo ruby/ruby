@@ -49,6 +49,7 @@ class TestRubyVM < Test::Unit::TestCase
     iseq.each_child{|child|
       assert_equal lines, child.script_lines
     }
+    assert lines.frozen?
 
     # don't keep
     RubyVM.keep_script_lines = false
