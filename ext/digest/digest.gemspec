@@ -26,7 +26,7 @@ Gem::Specification.new do |spec|
   if Gem::Platform === spec.platform and spec.platform =~ 'java' or RUBY_ENGINE == 'jruby'
     spec.platform = 'java'
 
-    spec.files += Dir["ext/java/**/*.{rb,java}"]
+    spec.files += Dir["ext/java/**/*.{rb,java}", "lib/digest.jar"]
     spec.require_paths = %w[lib ext/java/org/jruby/ext/digest/lib]
   else
     spec.extensions = Dir["ext/digest/**/extconf.rb"]
