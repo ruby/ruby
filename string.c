@@ -6897,9 +6897,8 @@ upcase_single(VALUE str)
 
     while (s < send) {
         unsigned int c = *(unsigned char*)s;
-        const rb_encoding *const enc = 0;
 
-        if (rb_enc_isascii(c, enc) && 'a' <= c && c <= 'z') {
+        if ('a' <= c && c <= 'z') {
             *s = 'A' + (c - 'a');
             modified = true;
         }
@@ -6988,9 +6987,8 @@ downcase_single(VALUE str)
 
     while (s < send) {
         unsigned int c = *(unsigned char*)s;
-        const rb_encoding *const enc = 0;
 
-        if (rb_enc_isascii(c, enc) && 'A' <= c && c <= 'Z') {
+        if ('A' <= c && c <= 'Z') {
             *s = 'a' + (c - 'A');
             modified = true;
         }
