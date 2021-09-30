@@ -1408,7 +1408,10 @@ class Reline::LineEditor
       end
       @waiting_operator_proc = nil
       @waiting_operator_vi_arg = nil
-      @vi_arg = nil
+      if @vi_arg
+        @rerender_all = true
+        @vi_arg = nil
+      end
     else
       block.(false)
     end
@@ -1459,7 +1462,10 @@ class Reline::LineEditor
         wrap_method_call(method_symbol, method_obj, key) if method_obj
       end
       @kill_ring.process
-      @vi_arg = nil
+      if @vi_arg
+        @rerender_al = true
+        @vi_arg = nil
+      end
     elsif @vi_arg
       if key.chr =~ /[0-9]/
         ed_argument_digit(key)
@@ -1476,7 +1482,10 @@ class Reline::LineEditor
           ed_insert(key) unless @config.editing_mode_is?(:vi_command)
         end
         @kill_ring.process
-        @vi_arg = nil
+        if @vi_arg
+          @rerender_all = true
+          @vi_arg = nil
+        end
       end
     elsif @waiting_proc
       @waiting_proc.(key)
