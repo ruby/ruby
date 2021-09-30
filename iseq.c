@@ -39,7 +39,7 @@
 #include "vm_core.h"
 #include "vm_callinfo.h"
 #include "yjit.h"
-
+#include "ruby/ractor.h"
 #include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
@@ -617,7 +617,12 @@ prepare_iseq_build(rb_iseq_t *iseq,
     ISEQ_ORIGINAL_ISEQ_CLEAR(iseq);
     body->variable.flip_count = 0;
 
-    RB_OBJ_WRITE(iseq, &body->variable.script_lines, script_lines);
+    if (NIL_P(script_lines)) {
+        RB_OBJ_WRITE(iseq, &body->variable.script_lines, Qnil);
+    }
+    else {
+        RB_OBJ_WRITE(iseq, &body->variable.script_lines, rb_ractor_make_shareable(script_lines));
+    }
 
     ISEQ_COMPILE_DATA_ALLOC(iseq);
     RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->err_info, err_info);
