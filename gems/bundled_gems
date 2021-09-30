@@ -13,3 +13,4 @@ matrix 0.4.2 https://github.com/ruby/matrix
 prime 0.1.2 https://github.com/ruby/prime
 rbs 1.6.2 https://github.com/ruby/rbs
 typeprof 0.15.3 https://github.com/ruby/typeprof
+debug 1.2.2 https://github.com/ruby/debug
