@@ -3168,8 +3168,8 @@ zip_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, memoval))
 
 /*
  *  call-seq:
- *    zip(*other_enums) → new_array
- *    zip(*other_enums) {|other_enum| ... } → nil
+ *    zip(*other_enums) → array
+ *    zip(*other_enums) {|array| ... } → nil
  *
  *  With no block given, returns a new array +new_array+ of size self.size
  *  whose elements are arrays.
