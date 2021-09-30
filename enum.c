@@ -2742,8 +2742,8 @@ each_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
 
 /*
  *  call-seq:
- *    each_with_index {|element, i| ..... } -> self
- *    each_with_index                       -> enumerator
+ *    each_with_index(*args) {|element, i| ..... } -> self
+ *    each_with_index(*args)                       -> enumerator
  *
  *  With a block given, calls the block with each element and its index;
  *  returns +self+:
@@ -2757,7 +2757,6 @@ each_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
  *    # => ["a", "b", "c", "d"]
  *    h # => {"a"=>0, "b"=>1, "c"=>2, "d"=>3}
  *
- *    a = ()
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h0.each_with_index {|element, i| h1[i] = element }
  *    # => {:foo=>0, :bar=>1, :baz=>2}
@@ -2782,8 +2781,8 @@ enum_each_with_index(int argc, VALUE *argv, VALUE obj)
 
 /*
  *  call-seq:
- *    reverse_each {|element| ... } ->  self
- *    reverse_each                  ->  enumerator
+ *    reverse_each(*args) {|element| ... } ->  self
+ *    reverse_each(*args)                  ->  enumerator
  *
  *  With a block given, calls the block with each element,
  *  but in reverse order; returns +self+:
@@ -2840,10 +2839,11 @@ each_val_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
 
 /*
  *  call-seq:
- *    each_entry {|element| ... } -> self
- *    each_entry                  -> enumerator
+ *    each_entry(*args) {|element| ... } -> self
+ *    each_entry(*args)                  -> enumerator
  *
- *  Calls the given block with each element; returns +self+:
+ *  Calls the given block with each element,
+ *  converting multiple values from yield to an array; returns +self+:
  *
  *    a = []
  *    (1..4).each_entry {|element| a.push(element) } # => 1..4
