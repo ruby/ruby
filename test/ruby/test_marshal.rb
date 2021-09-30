@@ -858,4 +858,16 @@ class TestMarshal < Test::Unit::TestCase
       assert_nil(e2.backtrace_locations) # temporal
     end
   end
+
+  class TestMarshalFreezeProc < Test::Unit::TestCase
+    include MarshalTestLib
+
+    def encode(o)
+      Marshal.dump(o)
+    end
+
+    def decode(s)
+      Marshal.load(s, :freeze.to_proc)
+    end
+  end
 end

@@ -1156,6 +1156,7 @@ struct load_arg {
     long offset;
     st_table *symbols;
     st_table *data;
+    st_table *partial_objects;
     VALUE proc;
     st_table *compat_tbl;
 };
@@ -1182,6 +1183,7 @@ mark_load_arg(void *ptr)
         return;
     rb_mark_tbl(p->symbols);
     rb_mark_tbl(p->data);
+    rb_mark_tbl(p->partial_objects);
     rb_mark_hash(p->compat_tbl);
 }
 
@@ -1535,6 +1537,7 @@ r_entry0(VALUE v, st_index_t num, struct load_arg *arg)
         st_lookup(arg->compat_tbl, v, &real_obj);
     }
     st_insert(arg->data, num, real_obj);
+    st_insert(arg->partial_objects, (st_data_t)real_obj, Qtrue);
     return v;
 }
 
@@ -1565,10 +1568,15 @@ r_post_proc(VALUE v, struct load_arg *arg)
 }
 
 static VALUE
-r_leave(VALUE v, struct load_arg *arg)
+r_leave(VALUE v, struct load_arg *arg, bool partial)
 {
     v = r_fixup_compat(v, arg);
-    v = r_post_proc(v, arg);
+    if (!partial) {
+	st_data_t data;
+	st_data_t key = (st_data_t)v;
+	st_delete(arg->partial_objects, &key, &data);
+	v = r_post_proc(v, arg);
+    }
     return v;
 }
 
@@ -1695,7 +1703,7 @@ append_extmod(VALUE obj, VALUE extmod)
     } while (0)
 
 static VALUE
-r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
+r_object0(struct load_arg *arg, bool partial, int *ivp, VALUE extmod)
 {
     VALUE v = Qnil;
     int type = r_byte(arg);
@@ -1709,18 +1717,18 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    rb_raise(rb_eArgError, "dump format error (unlinked)");
 	}
 	v = (VALUE)link;
-	v = r_post_proc(v, arg);
+	if (!st_lookup(arg->partial_objects, (st_data_t)v, &link)) {
+	    v = r_post_proc(v, arg);
+	}
 	break;
 
       case TYPE_IVAR:
         {
 	    int ivar = TRUE;
 
-	    v = r_object0(arg, &ivar, extmod);
+	    v = r_object0(arg, true, &ivar, extmod);
 	    if (ivar) r_ivar(v, NULL, arg);
-	    if (RB_TYPE_P(v, T_STRING)) {
-	        v = r_leave(v, arg);
-	    }
+	    v = r_leave(v, arg, partial);
 	}
 	break;
 
@@ -1733,7 +1741,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    if (RB_TYPE_P(m, T_CLASS)) { /* prepended */
 		VALUE c;
 
-		v = r_object0(arg, 0, Qnil);
+		v = r_object0(arg, true, 0, Qnil);
 		c = CLASS_OF(v);
 		if (c != m || FL_TEST(c, FL_SINGLETON)) {
 		    rb_raise(rb_eArgError,
@@ -1750,7 +1758,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		must_be_module(m, path);
 		rb_ary_push(extmod, m);
 
-		v = r_object0(arg, 0, extmod);
+		v = r_object0(arg, true, 0, extmod);
 		while (RARRAY_LEN(extmod) > 0) {
 		    m = rb_ary_pop(extmod);
 		    rb_extend_object(v, m);
@@ -1766,7 +1774,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    if (FL_TEST(c, FL_SINGLETON)) {
 		rb_raise(rb_eTypeError, "singleton can't be loaded");
 	    }
-	    v = r_object0(arg, 0, extmod);
+	    v = r_object0(arg, partial, 0, extmod);
 	    if (rb_special_const_p(v) || RB_TYPE_P(v, T_OBJECT) || RB_TYPE_P(v, T_CLASS)) {
                 goto format_error;
 	    }
@@ -1784,17 +1792,17 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_NIL:
 	v = Qnil;
-	v = r_leave(v, arg);
+	v = r_leave(v, arg, false);
 	break;
 
       case TYPE_TRUE:
 	v = Qtrue;
-	v = r_leave(v, arg);
+	v = r_leave(v, arg, false);
 	break;
 
       case TYPE_FALSE:
 	v = Qfalse;
-	v = r_leave(v, arg);
+	v = r_leave(v, arg, false);
 	break;
 
       case TYPE_FIXNUM:
@@ -1802,7 +1810,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    long i = r_long(arg);
 	    v = LONG2FIX(i);
 	}
-	v = r_leave(v, arg);
+	v = r_leave(v, arg, false);
 	break;
 
       case TYPE_FLOAT:
@@ -1827,7 +1835,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    }
 	    v = DBL2NUM(d);
 	    v = r_entry(v, arg);
-            v = r_leave(v, arg);
+            v = r_leave(v, arg, false);
 	}
 	break;
 
@@ -1844,15 +1852,13 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
                 INTEGER_PACK_LITTLE_ENDIAN | (sign == '-' ? INTEGER_PACK_NEGATIVE : 0));
 	    rb_str_resize(data, 0L);
 	    v = r_entry(v, arg);
-            v = r_leave(v, arg);
+            v = r_leave(v, arg, false);
 	}
 	break;
 
       case TYPE_STRING:
 	v = r_entry(r_string(arg), arg);
-	if (!ivp) {
-	    v = r_leave(v, arg);
-	}
+	v = r_leave(v, arg, partial);
 	break;
 
       case TYPE_REGEXP:
@@ -1887,7 +1893,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		rb_str_set_len(str, dst - ptr);
 	    }
 	    v = r_entry0(rb_reg_new_str(str, options), idx, arg);
-	    v = r_leave(v, arg);
+	    v = r_leave(v, arg, partial);
 	}
 	break;
 
@@ -1902,7 +1908,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		rb_ary_push(v, r_object(arg));
 		arg->readable--;
 	    }
-            v = r_leave(v, arg);
+            v = r_leave(v, arg, partial);
 	    arg->readable++;
 	}
 	break;
@@ -1925,7 +1931,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    if (type == TYPE_HASH_DEF) {
 		RHASH_SET_IFNONE(v, r_object(arg));
 	    }
-            v = r_leave(v, arg);
+            v = r_leave(v, arg, partial);
 	}
 	break;
 
@@ -1977,7 +1983,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		}
 	    }
             rb_struct_initialize(v, values);
-            v = r_leave(v, arg);
+            v = r_leave(v, arg, partial);
 	    arg->readable += 2;
 	}
 	break;
@@ -2004,7 +2010,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		marshal_compat_t *compat = (marshal_compat_t*)d;
 		v = compat->loader(klass, v);
 	    }
-	    v = r_post_proc(v, arg);
+	    if (!partial) v = r_post_proc(v, arg);
 	}
         break;
 
@@ -2046,7 +2052,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    }
 	    v = r_entry0(v, idx, arg);
 	    r_ivar(v, NULL, arg);
-	    v = r_leave(v, arg);
+	    v = r_leave(v, arg, partial);
 	}
 	break;
 
@@ -2067,9 +2073,9 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 			 "class %"PRIsVALUE" needs to have instance method `_load_data'",
 			 name);
 	    }
-	    r = r_object0(arg, 0, extmod);
+	    r = r_object0(arg, partial, 0, extmod);
 	    load_funcall(arg, v, s_load_data, 1, &r);
-	    v = r_leave(v, arg);
+	    v = r_leave(v, arg, partial);
 	}
 	break;
 
@@ -2080,7 +2086,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    v = rb_path_to_class(str);
 	    prohibit_ivar("class/module", str);
 	    v = r_entry(v, arg);
-            v = r_leave(v, arg);
+            v = r_leave(v, arg, partial);
 	}
 	break;
 
@@ -2091,7 +2097,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    v = path2class(str);
 	    prohibit_ivar("class", str);
 	    v = r_entry(v, arg);
-            v = r_leave(v, arg);
+            v = r_leave(v, arg, partial);
 	}
 	break;
 
@@ -2102,7 +2108,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    v = path2module(str);
 	    prohibit_ivar("module", str);
 	    v = r_entry(v, arg);
-            v = r_leave(v, arg);
+            v = r_leave(v, arg, partial);
 	}
 	break;
 
@@ -2115,7 +2121,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    v = r_symreal(arg, 0);
 	}
 	v = rb_str_intern(v);
-	v = r_leave(v, arg);
+	v = r_leave(v, arg, partial);
 	break;
 
       case TYPE_SYMLINK:
@@ -2137,7 +2143,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 static VALUE
 r_object(struct load_arg *arg)
 {
-    return r_object0(arg, 0, Qnil);
+    return r_object0(arg, false, 0, Qnil);
 }
 
 static void
@@ -2155,6 +2161,8 @@ clear_load_arg(struct load_arg *arg)
     arg->symbols = 0;
     st_free_table(arg->data);
     arg->data = 0;
+    st_free_table(arg->partial_objects);
+    arg->partial_objects = 0;
     if (arg->compat_tbl) {
 	st_free_table(arg->compat_tbl);
 	arg->compat_tbl = 0;
@@ -2209,6 +2217,7 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc)
     arg->offset = 0;
     arg->symbols = st_init_numtable();
     arg->data    = rb_init_identtable();
+    arg->partial_objects = rb_init_identtable();
     arg->compat_tbl = 0;
     arg->proc = 0;
     arg->readable = 0;
