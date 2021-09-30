@@ -57,6 +57,15 @@ module Open3
   module_function :popen2e
 
   def processbuilder_run(cmd, opts, build: nil, io:)
+    opts.each do |k, v|
+      if Integer === k
+        if IO == v || !(String === v || v.respond_to?(:to_path))
+          # target is an open IO or a non-pathable object, bail out
+          raise NotImplementedError.new("redirect to an open IO is not implemented on this platform")
+        end
+      end
+    end
+
     if Hash === cmd[0]
       env = cmd.shift;
     else

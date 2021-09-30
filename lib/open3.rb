@@ -31,12 +31,8 @@
 
 require 'open3/version'
 
-if RUBY_ENGINE == 'jruby' && JRuby::Util::ON_WINDOWS
-  require_relative 'open3/jruby_windows'
-  return
-end
-
 module Open3
+
   # Open stdin, stdout, and stderr streams and start external executable.
   # In addition, a thread to wait for the started process is created.
   # The thread has a pid method and a thread variable :pid which is the pid of
@@ -763,3 +759,6 @@ module Open3
   end
 
 end
+
+# JRuby uses different popen logic on Windows, require it here to reuse wrapper methods above.
+require 'open3/jruby_windows' if RUBY_ENGINE == 'jruby' && JRuby::Util::ON_WINDOWS
