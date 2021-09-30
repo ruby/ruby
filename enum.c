@@ -2742,20 +2742,28 @@ each_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
 
 /*
  *  call-seq:
- *     enum.each_with_index(*args) { |obj, i| block } ->  enum
- *     enum.each_with_index(*args)                    ->  an_enumerator
+ *    each_with_index(*args) {|element, i| ..... } -> self
+ *    each_with_index(*args)                       -> enumerator
  *
- *  Calls <em>block</em> with two arguments, the item and its index,
- *  for each item in <i>enum</i>.  Given arguments are passed through
- *  to #each().
+ *  With a block given, calls the block with each element and its index;
+ *  returns +self+:
  *
- *  If no block is given, an enumerator is returned instead.
+ *    h = {}
+ *    (1..4).each_with_index {|element, i| h[element] = i } # => 1..4
+ *    h # => {1=>0, 2=>1, 3=>2, 4=>3}
  *
- *     hash = Hash.new
- *     %w(cat dog wombat).each_with_index { |item, index|
- *       hash[item] = index
- *     }
- *     hash   #=> {"cat"=>0, "dog"=>1, "wombat"=>2}
+ *    h = {}
+ *    %w[a b c d].each_with_index {|element, i| h[element] = i }
+ *    # => ["a", "b", "c", "d"]
+ *    h # => {"a"=>0, "b"=>1, "c"=>2, "d"=>3}
+ *
+ *    a = []
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.each_with_index {|element, i| a.push([i, element]) }
+ *    # => {:foo=>0, :bar=>1, :baz=>2}
+ *    a # => [[0, [:foo, 0]], [1, [:bar, 1]], [2, [:baz, 2]]]
+ *
+ *  With no block given, returns an Enumerator.
  *
  */
 
@@ -2774,20 +2782,28 @@ enum_each_with_index(int argc, VALUE *argv, VALUE obj)
 
 /*
  *  call-seq:
- *     enum.reverse_each(*args) { |item| block } ->  enum
- *     enum.reverse_each(*args)                  ->  an_enumerator
+ *    reverse_each(*args) {|element| ... } ->  self
+ *    reverse_each(*args)                  ->  enumerator
  *
- *  Builds a temporary array and traverses that array in reverse order.
+ *  With a block given, calls the block with each element,
+ *  but in reverse order; returns +self+:
  *
- *  If no block is given, an enumerator is returned instead.
+ *    a = []
+ *    (1..4).reverse_each {|element| a.push(-element) } # => 1..4
+ *    a # => [-4, -3, -2, -1]
  *
- *     (1..3).reverse_each { |v| p v }
+ *    a = []
+ *    %w[a b c d].reverse_each {|element| a.push(element) }
+ *    # => ["a", "b", "c", "d"]
+ *    a # => ["d", "c", "b", "a"]
  *
- *  produces:
+ *    a = []
+ *    h.reverse_each {|element| a.push(element) }
+ *    # => {:foo=>0, :bar=>1, :baz=>2}
+ *    a # => [[:baz, 2], [:bar, 1], [:foo, 0]]
  *
- *     3
- *     2
- *     1
+ *  With no block given, returns an Enumerator.
+ *
  */
 
 static VALUE
@@ -2824,30 +2840,23 @@ each_val_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
 
 /*
  *  call-seq:
- *     enum.each_entry { |obj| block }  -> enum
- *     enum.each_entry                  -> an_enumerator
+ *    each_entry(*args) {|element| ... } -> self
+ *    each_entry(*args)                  -> enumerator
  *
- *  Calls <i>block</i> once for each element in +self+, passing that
- *  element as a parameter, converting multiple values from yield to an
- *  array.
+ *  Calls the given block with each element,
+ *  converting multiple values from yield to an array; returns +self+:
  *
- *  If no block is given, an enumerator is returned instead.
+ *    a = []
+ *    (1..4).each_entry {|element| a.push(element) } # => 1..4
+ *    a # => [1, 2, 3, 4]
  *
- *     class Foo
- *       include Enumerable
- *       def each
- *         yield 1
- *         yield 1, 2
- *         yield
- *       end
- *     end
- *     Foo.new.each_entry{ |o| p o }
+ *    a = []
+ *    h = {foo: 0, bar: 1, baz:2}
+ *    h.each_entry {|element| a.push(element) }
+ *    # => {:foo=>0, :bar=>1, :baz=>2}
+ *    a # => [[:foo, 0], [:bar, 1], [:baz, 2]]
  *
- *  produces:
- *
- *     1
- *     [1, 2]
- *     nil
+ *  With no block given, returns an Enumerator.
  *
  */
 
@@ -2923,18 +2932,22 @@ enum_each_slice_size(VALUE obj, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *    enum.each_slice(n) { ... }  ->  nil
- *    enum.each_slice(n)          ->  an_enumerator
+ *    each_slice(n) { ... }  ->  nil
+ *    each_slice(n)          ->  enumerator
  *
- *  Iterates the given block for each slice of <n> elements.  If no
- *  block is given, returns an enumerator.
+ *  Calls the block with each successive disjoint +n+-tuple of elements;
+ *  returns +nil+:
  *
- *      (1..10).each_slice(3) { |a| p a }
- *      # outputs below
- *      [1, 2, 3]
- *      [4, 5, 6]
- *      [7, 8, 9]
- *      [10]
+ *    a = []
+ *    (1..10).each_slice(3) {|tuple| a.push(tuple) } # => nil
+ *    a # => [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10]]
+ *
+ *    a = []
+ *    h = {foo: 0, bar: 1, baz: 2, bat: 3, bam: 4}
+ *    h.each_slice(2) {|tuple| a.push(tuple) } # => nil
+ *    a # => [[[:foo, 0], [:bar, 1]], [[:baz, 2], [:bat, 3]], [[:bam, 4]]]
+ *
+ *  With no block given, returns an Enumerator.
  *
  */
 static VALUE
@@ -2998,23 +3011,22 @@ enum_each_cons_size(VALUE obj, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *    enum.each_cons(n) { ... } ->  nil
- *    enum.each_cons(n)         ->  an_enumerator
+ *    each_cons(n) { ... } ->  nil
+ *    each_cons(n)         ->  enumerator
  *
- *  Iterates the given block for each array of consecutive <n>
- *  elements.  If no block is given, returns an enumerator.
+ *  Calls the block with each successive overlapped +n+-tuple of elements;
+ *  returns +nil+:
  *
- *  e.g.:
- *      (1..10).each_cons(3) { |a| p a }
- *      # outputs below
- *      [1, 2, 3]
- *      [2, 3, 4]
- *      [3, 4, 5]
- *      [4, 5, 6]
- *      [5, 6, 7]
- *      [6, 7, 8]
- *      [7, 8, 9]
- *      [8, 9, 10]
+ *    a = []
+ *    (1..5).each_cons(3) {|element| a.push(element) } # => nil
+ *    a # => [[1, 2, 3], [2, 3, 4], [3, 4, 5]]
+ *
+ *    a = []
+ *    h = {foo: 0,  bar: 1, baz: 2, bam: 3}
+ *    h.each_cons(2) {|element| a.push(element) } # => nil
+ *    a # => [[[:foo, 0], [:bar, 1]], [[:bar, 1], [:baz, 2]], [[:baz, 2], [:bam, 3]]]
+ *
+ *  With no block given, returns an Enumerator.
  *
  */
 static VALUE
@@ -3043,16 +3055,18 @@ each_with_object_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
 
 /*
  *  call-seq:
- *    enum.each_with_object(obj) { |(*args), memo_obj| ... }  ->  obj
- *    enum.each_with_object(obj)                              ->  an_enumerator
+ *    each_with_object(object) { |(*args), memo_object| ... }  ->  object
+ *    each_with_object(object)                                 ->  enumerator
  *
- *  Iterates the given block for each element with an arbitrary
- *  object given, and returns the initially given object.
+ *  Calls the block once for each element, passing both the element
+ *  and the given object:
  *
- *  If no block is given, returns an enumerator.
+ *    (1..4).each_with_object([]) {|i, a| a.push(i**2) } # => [1, 4, 9, 16]
+ *    # => {}
+ *    h.each_with_object({}) {|element, h| k, v = *element; h[v] = k }
+ *    # => {0=>:foo, 1=>:bar, 2=>:baz}
  *
- *      evens = (1..10).each_with_object([]) { |i, a| a << i*2 }
- *      #=> [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+ *  With no block given, returns an Enumerator.
  *
  */
 static VALUE
@@ -4664,11 +4678,32 @@ enum_compact(VALUE obj)
  * == Usage
  *
  * To use module \Enumerable in a collection class:
+ *
  * - Include it:
+ *
  *     include Enumerable
+ *
  * - Implement method <tt>#each</tt>
  *   which must yield successive elements of the collection.
- *   This method will be called by almost any \Enumerable method.
+ *   The method will be called by almost any \Enumerable method.
+ *
+ * Example:
+ *
+ *   class Foo
+ *     include Enumerable
+ *     def each
+ *       yield 1
+ *       yield 1, 2
+ *       yield
+ *     end
+ *   end
+ *   Foo.new.each_entry{ |element| p element }
+ *
+ * Output:
+ *
+ *   1
+ *   [1, 2]
+ *   nil
  *
  * == \Enumerable in Ruby Core Classes
  * Some Ruby classes include \Enumerable:
