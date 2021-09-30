@@ -25,6 +25,7 @@ st_index_t rb_iseq_cdhash_hash(VALUE a);
 /* iseq.c */
 int rb_vm_insn_addr2insn(const void *);
 int rb_vm_insn_decode(const VALUE encoded);
+extern bool ruby_vm_keep_script_lines;
 
 MJIT_SYMBOL_EXPORT_BEGIN
 /* iseq.c (export) */

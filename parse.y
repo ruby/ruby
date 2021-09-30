@@ -6306,7 +6306,8 @@ yycompile0(VALUE arg)
 	    cov = Qtrue;
 	}
     }
-    if (p->keep_script_lines) {
+
+    if (p->keep_script_lines || ruby_vm_keep_script_lines) {
         if (!p->debug_lines) {
             p->debug_lines = rb_ary_new();
         }
