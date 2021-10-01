@@ -3372,17 +3372,20 @@ drop_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  call-seq:
  *    drop(n) -> array
  *
- *  For positive integer +n+, returns the last +n+ elements:
+ *  For positive integer +n+, returns an array containing
+ *  all but the first +n+ elements:
  *
  *    r = (1..4)
- *    r.drop(2) # => [3, 4]
+ *    r.drop(3)  # => [4]
+ *    r.drop(2)  # => [3, 4]
+ *    r.drop(1)  # => [2, 3, 4]
+ *    r.drop(0)  # => [1, 2, 3, 4]
+ *    r.drop(50) # => []
  *
  *    h = {foo:0, bar: 1, baz: 2, bat: 3}
  *    h.drop(2) # => [[:baz, 2], [:bat, 3]]
  *
  *  For <tt>n == 0</tt>, returns all elements:
- *
- *    r.drop(0) # => [1, 2, 3, 4]
  *
  */
 
@@ -3487,7 +3490,7 @@ enum_cycle_size(VALUE self, VALUE args, VALUE eobj)
  *    cycle(n = nil) {|element| ...} ->  nil
  *    cycle(n = nil)                 ->  enumerator
  *
- *  When called with positive integer argument +n and a block,
+ *  When called with positive integer argument +n+ and a block,
  *  calls the block with each element, then does so again,
  *  until it has done so +n+ times; returns +nil+:
  *
@@ -3501,17 +3504,9 @@ enum_cycle_size(VALUE self, VALUE args, VALUE eobj)
  *    {foo: 0, bar: 1, baz: 2}.cycle(2) {|element| a.push(element) }
  *    a # => [[:foo, 0], [:bar, 1], [:baz, 2], [:foo, 0], [:bar, 1], [:baz, 2]]
  *
- *  If count is zero or negative, does not call the block:
+ *  If count is zero or negative, does not call the block.
  *
- *    (1..4).cycle(0) {|element| fail 'Cannot happen' }
- *    (1..4).cycle(-1) {|element| fail 'Cannot happen' }
- *
- *  When called with a block and no argument (or <tt>n == +nil</tt>),
- *  cycles forever:
- *
- *    # Prints 0 and 1 forever.
- *    [0, 1].cycle {|element| puts element }
- *    [0, 1].cycle(nil) {|element| puts element }
+ *  When called with a block and <tt>n == +nil</tt>, cycles forever.
  *
  *  When no block is given, returns an Enumerator:
  *
