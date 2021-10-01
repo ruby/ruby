@@ -3290,11 +3290,11 @@ take_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  For non-negative integer +n+, returns the first +n+ elements:
  *
  *    r = (1..4)
- *    r.take(2)   # => [1, 2]
- *    r.take(0)   # => []
+ *    r.take(2) # => [1, 2]
+ *    r.take(0) # => []
  *
  *    h = {foo:0, bar: 1, baz: 2, bat: 3}
- *    h.take(2)   # => [[:foo, 0], [:bar, 1]]
+ *    h.take(2) # => [[:foo, 0], [:bar, 1]]
  *
  */
 
@@ -3338,9 +3338,10 @@ take_while_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
  *    (1..4).take_while{|i| i < 3 } # => [1, 2]
  *    h = {foo: 0, bar: 1, baz: 2}
  *    a = h.take_while{|element| key, value = *element; value < 2 }
- *    a                             # => [[:foo, 0], [:bar, 1]]
+ *    a # => [[:foo, 0], [:bar, 1]]
  *
  *  With no block given, returns an Enumerator.
+ *
  */
 
 static VALUE
@@ -3369,13 +3370,20 @@ drop_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 /*
  *  call-seq:
- *     enum.drop(n)               -> array
+ *    drop(n) -> array
  *
- *  Drops first n elements from <i>enum</i>, and returns rest elements
- *  in an array.
+ *  For positive integer +n+, returns an array containing
+ *  all but the first +n+ elements:
  *
- *     a = [1, 2, 3, 4, 5, 0]
- *     a.drop(3)             #=> [4, 5, 0]
+ *    r = (1..4)
+ *    r.drop(3)  # => [4]
+ *    r.drop(2)  # => [3, 4]
+ *    r.drop(1)  # => [2, 3, 4]
+ *    r.drop(0)  # => [1, 2, 3, 4]
+ *    r.drop(50) # => []
+ *
+ *    h = {foo:0, bar: 1, baz: 2, bat: 3}
+ *    h.drop(2) # => [[:baz, 2], [:bat, 3]]
  *
  */
 
@@ -3414,17 +3422,20 @@ drop_while_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 /*
  *  call-seq:
- *     enum.drop_while { |obj| block }  -> array
- *     enum.drop_while                  -> an_enumerator
+ *    drop_while {|element| ... } -> array
+ *    drop_while                  -> enumerator
  *
- *  Drops elements up to, but not including, the first element for
- *  which the block returns +nil+ or +false+ and returns an array
- *  containing the remaining elements.
+ *  Calls the block with successive elements as long as the block
+ *  returns a truthy value;
+ *  returns an array of all elements after that point:
  *
- *  If no block is given, an enumerator is returned instead.
  *
- *     a = [1, 2, 3, 4, 5, 0]
- *     a.drop_while { |i| i < 3 }   #=> [3, 4, 5, 0]
+ *    (1..4).drop_while{|i| i < 3 } # => [3, 4]
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    a = h.drop_while{|element| key, value = *element; value < 2 }
+ *    a # => [[:baz, 2]]
+ *
+ *  With no block given, returns an Enumerator.
  *
  */
 
@@ -3474,22 +3485,28 @@ enum_cycle_size(VALUE self, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *     enum.cycle(n=nil) { |obj| block }  ->  nil
- *     enum.cycle(n=nil)                  ->  an_enumerator
+ *    cycle(n = nil) {|element| ...} ->  nil
+ *    cycle(n = nil)                 ->  enumerator
  *
- *  Calls <i>block</i> for each element of <i>enum</i> repeatedly _n_
- *  times or forever if none or +nil+ is given.  If a non-positive
- *  number is given or the collection is empty, does nothing.  Returns
- *  +nil+ if the loop has finished without getting interrupted.
+ *  When called with positive integer argument +n+ and a block,
+ *  calls the block with each element, then does so again,
+ *  until it has done so +n+ times; returns +nil+:
  *
- *  Enumerable#cycle saves elements in an internal array so changes
- *  to <i>enum</i> after the first pass have no effect.
+ *    a = []
+ *    (1..4).cycle(3) {|element| a.push(element) } # => nil
+ *    a # => [1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4]
+ *    a = []
+ *    ('a'..'d').cycle(2) {|element| a.push(element) }
+ *    a # => ["a", "b", "c", "d", "a", "b", "c", "d"]
+ *    a = []
+ *    {foo: 0, bar: 1, baz: 2}.cycle(2) {|element| a.push(element) }
+ *    a # => [[:foo, 0], [:bar, 1], [:baz, 2], [:foo, 0], [:bar, 1], [:baz, 2]]
  *
- *  If no block is given, an enumerator is returned instead.
+ *  If count is zero or negative, does not call the block.
  *
- *     a = ["a", "b", "c"]
- *     a.cycle { |x| puts x }  # print, a, b, c, a, b, c,.. forever.
- *     a.cycle(2) { |x| puts x }  # print, a, b, c, a, b, c.
+ *  When called with a block and +n+ is +nil+, cycles forever.
+ *
+ *  When no block is given, returns an Enumerator.
  *
  */
 
