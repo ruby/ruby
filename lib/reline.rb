@@ -17,19 +17,15 @@ module Reline
   class ConfigEncodingConversionError < StandardError; end
 
   Key = Struct.new('Key', :char, :combined_char, :with_meta) do
-    def match?(key)
-      if key.instance_of?(Reline::Key)
-        (key.char.nil? or char.nil? or char == key.char) and
-        (key.combined_char.nil? or combined_char.nil? or combined_char == key.combined_char) and
-        (key.with_meta.nil? or with_meta.nil? or with_meta == key.with_meta)
-      elsif key.is_a?(Integer) or key.is_a?(Symbol)
-        if not combined_char.nil? and combined_char == key
-          true
-        elsif combined_char.nil? and not char.nil? and char == key
-          true
-        else
-          false
-        end
+    def match?(other)
+      case other
+      when Reline::Key
+        (other.char.nil? or char.nil? or char == other.char) and
+        (other.combined_char.nil? or combined_char.nil? or combined_char == other.combined_char) and
+        (other.with_meta.nil? or with_meta.nil? or with_meta == other.with_meta)
+      when Integer, Symbol
+        (combined_char and combined_char == other) or
+        (combined_char.nil? and char and char == other)
       else
         false
       end
