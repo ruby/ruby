@@ -3454,6 +3454,7 @@ insn_set_specialized_instruction(rb_iseq_t *iseq, INSN *iobj, int insn_id)
 {
     iobj->insn_id = insn_id;
     iobj->operand_size = insn_len(insn_id) - 1;
+    iobj->insn_info.events |= RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN;
 
     if (insn_id == BIN(opt_neq)) {
         VALUE original_ci = iobj->operands[0];
@@ -11142,7 +11143,6 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
         for (op_index=0; types[op_index]; op_index++, code_index++) {
             char type = types[op_index];
             switch (type) {
-              case TS_CDHASH:
               case TS_VALUE:
                 {
                     VALUE op = ibf_load_small_value(load, &reading_pos);

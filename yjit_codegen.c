@@ -714,8 +714,7 @@ yjit_gen_block(block_t *block, rb_execution_context_t *ec)
             break;
         }
 
-        // Move to the next instruction
-        p_last_op = p_desc;
+        // Move to the next instruction to compile
         insn_idx += insn_len(opcode);
 
         // If the instruction terminates this block
@@ -3591,7 +3590,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
         (blockid_t){ iseq, start_pc_offset }
     );
 
-    return true;
+    return YJIT_END_BLOCK;
 }
 
 const rb_callable_method_entry_t *

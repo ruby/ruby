@@ -57,6 +57,9 @@ struct rb_yjit_options {
 
     // Capture and print out stats
     bool gen_stats;
+
+    // Run backend tests
+    bool test_backend;
 };
 
 RUBY_SYMBOL_EXPORT_BEGIN

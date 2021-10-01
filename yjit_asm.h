@@ -233,6 +233,10 @@ static const x86opnd_t R15B = { OPND_REG, 8, .as.reg = { REG_GP, 15 }};
 #define NUM_C_ARG_REGS 6
 #define C_ARG_REGS ( (x86opnd_t[]){ RDI, RSI, RDX, RCX, R8, R9 } )
 
+// Compute the number of bits needed to store a signed or unsigned value
+uint32_t sig_imm_size(int64_t imm);
+uint32_t unsig_imm_size(uint64_t imm);
+
 // Memory operand with base register and displacement/offset
 x86opnd_t mem_opnd(uint32_t num_bits, x86opnd_t base_reg, int32_t disp);
 
