@@ -1067,6 +1067,17 @@ begin
       EOC
     end
 
+    def test_rerender_argument_prompt_after_pasting
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write('abcdef')
+      write("\M-3\C-h")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> abc
+      EOC
+    end
+
     def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
