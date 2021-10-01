@@ -3385,8 +3385,6 @@ drop_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *    h = {foo:0, bar: 1, baz: 2, bat: 3}
  *    h.drop(2) # => [[:baz, 2], [:bat, 3]]
  *
- *  For <tt>n == 0</tt>, returns all elements:
- *
  */
 
 static VALUE
@@ -3506,9 +3504,9 @@ enum_cycle_size(VALUE self, VALUE args, VALUE eobj)
  *
  *  If count is zero or negative, does not call the block.
  *
- *  When called with a block and <tt>n == +nil</tt>, cycles forever.
+ *  When called with a block and +n+ is +nil+, cycles forever.
  *
- *  When no block is given, returns an Enumerator:
+ *  When no block is given, returns an Enumerator.
  *
  */
 
