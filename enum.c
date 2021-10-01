@@ -3168,29 +3168,68 @@ zip_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, memoval))
 
 /*
  *  call-seq:
- *     enum.zip(arg, ...)                  -> an_array_of_array
- *     enum.zip(arg, ...) { |arr| block }  -> nil
+ *    zip(*other_enums) -> array
+ *    zip(*other_enums) {|array| ... } -> nil
  *
- *  Takes one element from <i>enum</i> and merges corresponding
- *  elements from each <i>args</i>.  This generates a sequence of
- *  <em>n</em>-element arrays, where <em>n</em> is one more than the
- *  count of arguments.  The length of the resulting sequence will be
- *  <code>enum#size</code>.  If the size of any argument is less than
- *  <code>enum#size</code>, <code>nil</code> values are supplied. If
- *  a block is given, it is invoked for each output array, otherwise
- *  an array of arrays is returned.
+ *  With no block given, returns a new array +new_array+ of size self.size
+ *  whose elements are arrays.
+ *  Each nested array <tt>new_array[n]</tt>
+ *  is of size <tt>other_enums.size+1</tt>, and contains:
  *
- *     a = [ 4, 5, 6 ]
- *     b = [ 7, 8, 9 ]
+ *  - The +n+th element of self.
+ *  - The +n+th element of each of the +other_enums+.
  *
- *     a.zip(b)                 #=> [[4, 7], [5, 8], [6, 9]]
- *     [1, 2, 3].zip(a, b)      #=> [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
- *     [1, 2].zip(a, b)         #=> [[1, 4, 7], [2, 5, 8]]
- *     a.zip([1, 2], [8])       #=> [[4, 1, 8], [5, 2, nil], [6, nil, nil]]
+ *  If all +other_enums+ and self are the same size,
+ *  all elements are included in the result, and there is no +nil+-filling:
  *
- *     c = []
- *     a.zip(b) { |x, y| c << x + y }  #=> nil
- *     c                               #=> [11, 13, 15]
+ *    a = [:a0, :a1, :a2, :a3]
+ *    b = [:b0, :b1, :b2, :b3]
+ *    c = [:c0, :c1, :c2, :c3]
+ *    d = a.zip(b, c)
+ *    d # => [[:a0, :b0, :c0], [:a1, :b1, :c1], [:a2, :b2, :c2], [:a3, :b3, :c3]]
+ *
+ *    f = {foo: 0, bar: 1, baz: 2}
+ *    g = {goo: 3, gar: 4, gaz: 5}
+ *    h = {hoo: 6, har: 7, haz: 8}
+ *    d = f.zip(g, h)
+ *    d # => [
+ *      #      [[:foo, 0], [:goo, 3], [:hoo, 6]],
+ *      #      [[:bar, 1], [:gar, 4], [:har, 7]],
+ *      #      [[:baz, 2], [:gaz, 5], [:haz, 8]]
+ *      #    ]
+ *
+ *  If any enumerable in other_enums is smaller than self,
+ *  fills to <tt>self.size</tt> with +nil+:
+ *
+ *    a = [:a0, :a1, :a2, :a3]
+ *    b = [:b0, :b1, :b2]
+ *    c = [:c0, :c1]
+ *    d = a.zip(b, c)
+ *    d # => [[:a0, :b0, :c0], [:a1, :b1, :c1], [:a2, :b2, nil], [:a3, nil, nil]]
+ *
+ *  If any enumerable in other_enums is larger than self,
+ *  its trailing elements are ignored:
+ *
+ *    a = [:a0, :a1, :a2, :a3]
+ *    b = [:b0, :b1, :b2, :b3, :b4]
+ *    c = [:c0, :c1, :c2, :c3, :c4, :c5]
+ *    d = a.zip(b, c)
+ *    d # => [[:a0, :b0, :c0], [:a1, :b1, :c1], [:a2, :b2, :c2], [:a3, :b3, :c3]]
+ *
+ *  When a block is given, calls the block with each of the sub-arrays
+ *  (formed as above); returns nil:
+ *
+ *    a = [:a0, :a1, :a2, :a3]
+ *    b = [:b0, :b1, :b2, :b3]
+ *    c = [:c0, :c1, :c2, :c3]
+ *    a.zip(b, c) {|sub_array| p sub_array} # => nil
+ *
+ *  Output:
+ *
+ *    [:a0, :b0, :c0]
+ *    [:a1, :b1, :c1]
+ *    [:a2, :b2, :c2]
+ *    [:a3, :b3, :c3]
  *
  */
 
@@ -3246,13 +3285,16 @@ take_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 /*
  *  call-seq:
- *     enum.take(n)               -> array
+ *    take(n) -> array
  *
- *  Returns first n elements from <i>enum</i>.
+ *  For non-negative integer +n+, returns the first +n+ elements:
  *
- *     a = [1, 2, 3, 4, 5, 0]
- *     a.take(3)             #=> [1, 2, 3]
- *     a.take(30)            #=> [1, 2, 3, 4, 5, 0]
+ *    r = (1..4)
+ *    r.take(2)   # => [1, 2]
+ *    r.take(0)   # => []
+ *
+ *    h = {foo:0, bar: 1, baz: 2, bat: 3}
+ *    h.take(2)   # => [[:foo, 0], [:bar, 1]]
  *
  */
 
@@ -3285,17 +3327,20 @@ take_while_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 
 /*
  *  call-seq:
- *     enum.take_while { |obj| block } -> array
- *     enum.take_while                 -> an_enumerator
+ *    take_while {|element| ... } -> array
+ *    take_while                  -> enumerator
  *
- *  Passes elements to the block until the block returns +nil+ or +false+,
- *  then stops iterating and returns an array of all prior elements.
+ *  Calls the block with successive elements as long as the block
+ *  returns a truthy value;
+ *  returns an array of all elements up to that point:
  *
- *  If no block is given, an enumerator is returned instead.
  *
- *     a = [1, 2, 3, 4, 5, 0]
- *     a.take_while { |i| i < 3 }   #=> [1, 2]
+ *    (1..4).take_while{|i| i < 3 } # => [1, 2]
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    a = h.take_while{|element| key, value = *element; value < 2 }
+ *    a                             # => [[:foo, 0], [:bar, 1]]
  *
+ *  With no block given, returns an Enumerator.
  */
 
 static VALUE
