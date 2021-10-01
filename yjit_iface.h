@@ -122,7 +122,6 @@ RUBY_EXTERN struct rb_yjit_runtime_counters yjit_runtime_counters;
 
 RUBY_EXTERN struct rb_yjit_options rb_yjit_opts;
 
-void yjit_map_addr2insn(void *code_ptr, int insn);
 VALUE *yjit_iseq_pc_at_idx(const rb_iseq_t *iseq, uint32_t insn_idx);
 int yjit_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc);
 void yjit_print_iseq(const rb_iseq_t *iseq);
