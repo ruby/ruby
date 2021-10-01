@@ -1,6 +1,9 @@
-// For MAP_ANONYMOUS on GNU/Linux
-#define _GNU_SOURCE
-
+// This file is a fragment of the yjit.o compilation unit. See yjit.c.
+//
+// Note that the definition for some of these functions don't specify
+// static inline, but their declaration in yjit_asm.h do. The resulting
+// linkage is the same as if they both specify. The relevant sections in
+// N1256 is 6.2.2p4, 6.2.2p5, and 6.7.4p5.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -97,7 +100,7 @@ x86opnd_t mem_opnd_sib(uint32_t num_bits, x86opnd_t base_reg, x86opnd_t index_re
     return opnd;
 }
 
-x86opnd_t resize_opnd(x86opnd_t opnd, uint32_t num_bits)
+static x86opnd_t resize_opnd(x86opnd_t opnd, uint32_t num_bits)
 {
     assert (num_bits % 8 == 0);
     x86opnd_t sub = opnd;
@@ -220,10 +223,10 @@ uint8_t *alloc_exec_mem(uint32_t mem_size)
 }
 
 // Head of the list of free code pages
-code_page_t *freelist = NULL;
+static code_page_t *freelist = NULL;
 
 // Allocate a single code page from a pool of free pages
-code_page_t *alloc_code_page()
+code_page_t *alloc_code_page(void)
 {
     // If the free list is empty
     if (!freelist) {
@@ -443,7 +446,7 @@ void cb_link_labels(codeblock_t *cb)
 }
 
 // Check if an operand needs a REX byte to be encoded
-bool rex_needed(x86opnd_t opnd)
+static bool rex_needed(x86opnd_t opnd)
 {
     if (opnd.type == OPND_NONE || opnd.type == OPND_IMM)
     {
@@ -467,7 +470,7 @@ bool rex_needed(x86opnd_t opnd)
 }
 
 // Check if an SIB byte is needed to encode this operand
-bool sib_needed(x86opnd_t opnd)
+static bool sib_needed(x86opnd_t opnd)
 {
     if (opnd.type != OPND_MEM)
         return false;
@@ -480,7 +483,7 @@ bool sib_needed(x86opnd_t opnd)
 }
 
 // Compute the size of the displacement field needed for a memory operand
-uint32_t disp_size(x86opnd_t opnd)
+static uint32_t disp_size(x86opnd_t opnd)
 {
     assert (opnd.type == OPND_MEM);
 
@@ -546,7 +549,7 @@ static void cb_write_opcode(codeblock_t *cb, uint8_t opcode, x86opnd_t reg)
 }
 
 // Encode an RM instruction
-void cb_write_rm(
+static void cb_write_rm(
     codeblock_t *cb,
     bool szPref,
     bool rexW,
@@ -707,7 +710,7 @@ void cb_write_rm(
 }
 
 // Encode a mul-like single-operand RM instruction
-void write_rm_unary(
+static void write_rm_unary(
     codeblock_t *cb,
     const char *mnem,
     uint8_t opMemReg8,
@@ -736,7 +739,7 @@ void write_rm_unary(
 }
 
 // Encode an add-like RM instruction with multiple possible encodings
-void cb_write_rm_multi(
+static void cb_write_rm_multi(
     codeblock_t *cb,
     const char *mnem,
     uint8_t opMemReg8,
@@ -835,7 +838,7 @@ void cb_write_rm_multi(
 }
 
 // Encode a single-operand shift instruction
-void cb_write_shift(
+static void cb_write_shift(
     codeblock_t *cb,
     const char *mnem,
     uint8_t opMemOnePref,
@@ -886,7 +889,7 @@ void cb_write_shift(
 
 // Encode a relative jump to a label (direct or conditional)
 // Note: this always encodes a 32-bit offset
-void cb_write_jcc(codeblock_t *cb, const char *mnem, uint8_t op0, uint8_t op1, uint32_t label_idx)
+static void cb_write_jcc(codeblock_t *cb, const char *mnem, uint8_t op0, uint8_t op1, uint32_t label_idx)
 {
     //cb.writeASM(mnem, label);
 
@@ -903,7 +906,7 @@ void cb_write_jcc(codeblock_t *cb, const char *mnem, uint8_t op0, uint8_t op1, u
 }
 
 // Encode a relative jump to a pointer at a 32-bit offset (direct or conditional)
-void cb_write_jcc_ptr(codeblock_t *cb, const char *mnem, uint8_t op0, uint8_t op1, uint8_t *dst_ptr)
+static void cb_write_jcc_ptr(codeblock_t *cb, const char *mnem, uint8_t op0, uint8_t op1, uint8_t *dst_ptr)
 {
     //cb.writeASM(mnem, label);
 
@@ -924,7 +927,7 @@ void cb_write_jcc_ptr(codeblock_t *cb, const char *mnem, uint8_t op0, uint8_t op
 }
 
 // Encode a conditional move instruction
-void cb_write_cmov(codeblock_t *cb, const char *mnem, uint8_t opcode1, x86opnd_t dst, x86opnd_t src)
+static void cb_write_cmov(codeblock_t *cb, const char *mnem, uint8_t opcode1, x86opnd_t dst, x86opnd_t src)
 {
     //cb.writeASM(mnem, dst, src);
 
@@ -977,7 +980,7 @@ void and(codeblock_t *cb, x86opnd_t opnd0, x86opnd_t opnd1)
 }
 
 // call - Call to a pointer with a 32-bit displacement offset
-void call_rel32(codeblock_t *cb, int32_t rel32)
+static void call_rel32(codeblock_t *cb, int32_t rel32)
 {
     //cb.writeASM("call", rel32);
 

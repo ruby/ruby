@@ -1,8 +1,12 @@
+// For MAP_ANONYMOUS on GNU/Linux
+#define _GNU_SOURCE 1
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "yjit_asm.h"
+
+#include "yjit_asm.c"
 
 // Print the bytes in a code block
 void print_bytes(codeblock_t* cb)

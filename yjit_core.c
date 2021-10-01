@@ -1,11 +1,10 @@
-#include "ruby/ruby.h"
+// This file is a fragment of the yjit.o compilation unit. See yjit.c.
 #include "internal.h"
 #include "vm_sync.h"
 #include "builtin.h"
 
 #include "yjit.h"
 #include "yjit_asm.h"
-#include "yjit_utils.h"
 #include "yjit_iface.h"
 #include "yjit_core.h"
 #include "yjit_codegen.h"
@@ -13,7 +12,7 @@
 /*
 Get an operand for the adjusted stack pointer address
 */
-x86opnd_t
+static x86opnd_t
 ctx_sp_opnd(ctx_t *ctx, int32_t offset_bytes)
 {
     int32_t offset = (ctx->sp_offset * sizeof(VALUE)) + offset_bytes;
@@ -24,7 +23,7 @@ ctx_sp_opnd(ctx_t *ctx, int32_t offset_bytes)
 Push one new value on the temp stack with an explicit mapping
 Return a pointer to the new stack top
 */
-x86opnd_t
+static x86opnd_t
 ctx_stack_push_mapping(ctx_t *ctx, temp_type_mapping_t mapping)
 {
     // Keep track of the type and mapping of the value
@@ -50,7 +49,7 @@ ctx_stack_push_mapping(ctx_t *ctx, temp_type_mapping_t mapping)
 Push one new value on the temp stack
 Return a pointer to the new stack top
 */
-x86opnd_t
+static x86opnd_t
 ctx_stack_push(ctx_t *ctx, val_type_t type)
 {
     temp_type_mapping_t mapping = { MAP_STACK, type };
@@ -60,7 +59,7 @@ ctx_stack_push(ctx_t *ctx, val_type_t type)
 /*
 Push the self value on the stack
 */
-x86opnd_t
+static x86opnd_t
 ctx_stack_push_self(ctx_t *ctx)
 {
     temp_type_mapping_t mapping = { MAP_SELF, TYPE_UNKNOWN };
@@ -70,7 +69,7 @@ ctx_stack_push_self(ctx_t *ctx)
 /*
 Push a local variable on the stack
 */
-x86opnd_t
+static x86opnd_t
 ctx_stack_push_local(ctx_t *ctx, size_t local_idx)
 {
     if (local_idx >= MAX_LOCAL_TYPES) {
@@ -88,7 +87,7 @@ ctx_stack_push_local(ctx_t *ctx, size_t local_idx)
 Pop N values off the stack
 Return a pointer to the stack top before the pop operation
 */
-x86opnd_t
+static x86opnd_t
 ctx_stack_pop(ctx_t *ctx, size_t n)
 {
     RUBY_ASSERT(n <= ctx->stack_size);
@@ -116,7 +115,7 @@ ctx_stack_pop(ctx_t *ctx, size_t n)
 /**
 Get an operand pointing to a slot on the temp stack
 */
-x86opnd_t
+static x86opnd_t
 ctx_stack_opnd(ctx_t *ctx, int32_t idx)
 {
     // SP points just above the topmost value
@@ -129,7 +128,7 @@ ctx_stack_opnd(ctx_t *ctx, int32_t idx)
 /**
 Get the type of an instruction operand
 */
-val_type_t
+static val_type_t
 ctx_get_opnd_type(const ctx_t *ctx, insn_opnd_t opnd)
 {
     if (opnd.is_self)
@@ -159,6 +158,8 @@ ctx_get_opnd_type(const ctx_t *ctx, insn_opnd_t opnd)
     rb_bug("unreachable");
 }
 
+static int type_diff(val_type_t src, val_type_t dst);
+
 #define UPGRADE_TYPE(dest, src) do { \
     RUBY_ASSERT(type_diff((src), (dest)) != INT_MAX); \
     (dest) = (src); \
@@ -171,7 +172,8 @@ This value must be compatible and at least as specific as the previously known t
 If this value originated from self, or an lvar, the learned type will be
 propagated back to its source.
 */
-void ctx_upgrade_opnd_type(ctx_t *ctx, insn_opnd_t opnd, val_type_t type)
+static void
+ctx_upgrade_opnd_type(ctx_t *ctx, insn_opnd_t opnd, val_type_t type)
 {
     if (opnd.is_self) {
         UPGRADE_TYPE(ctx->self_type, type);
@@ -208,7 +210,7 @@ Get both the type and mapping (where the value originates) of an operand.
 This is can be used with ctx_stack_push_mapping or ctx_set_opnd_mapping to copy
 a stack value's type while maintaining the mapping.
 */
-temp_type_mapping_t
+static temp_type_mapping_t
 ctx_get_opnd_mapping(const ctx_t *ctx, insn_opnd_t opnd)
 {
     temp_type_mapping_t type_mapping;
@@ -238,7 +240,7 @@ ctx_get_opnd_mapping(const ctx_t *ctx, insn_opnd_t opnd)
 /*
 Overwrite both the type and mapping of a stack operand.
 */
-void
+static void
 ctx_set_opnd_mapping(ctx_t *ctx, insn_opnd_t opnd, temp_type_mapping_t type_mapping)
 {
     // self is always MAP_SELF
@@ -260,7 +262,8 @@ ctx_set_opnd_mapping(ctx_t *ctx, insn_opnd_t opnd, temp_type_mapping_t type_mapp
 /**
 Set the type of a local variable
 */
-void ctx_set_local_type(ctx_t *ctx, size_t idx, val_type_t type)
+static void
+ctx_set_local_type(ctx_t *ctx, size_t idx, val_type_t type)
 {
     if (idx >= MAX_LOCAL_TYPES)
         return;
@@ -279,7 +282,8 @@ void ctx_set_local_type(ctx_t *ctx, size_t idx, val_type_t type)
 
 // Erase local variable type information
 // eg: because of a call we can't track
-void ctx_clear_local_types(ctx_t *ctx)
+static void
+ctx_clear_local_types(ctx_t *ctx)
 {
     // When clearing local types we must detach any stack mappings to those
     // locals. Even if local values may have changed, stack values will not.
@@ -297,7 +301,7 @@ void ctx_clear_local_types(ctx_t *ctx)
 
 
 /* This returns an appropriate val_type_t based on a known value */
-val_type_t
+static val_type_t
 yjit_type_of_value(VALUE val)
 {
     if (SPECIAL_CONST_P(val)) {
@@ -340,7 +344,8 @@ yjit_type_of_value(VALUE val)
 }
 
 /* The name of a type, for debugging */
-const char *
+RBIMPL_ATTR_MAYBE_UNUSED()
+static const char *
 yjit_type_name(val_type_t type)
 {
     RUBY_ASSERT(!(type.is_imm && type.is_heap));
@@ -385,7 +390,8 @@ Returns 0 if the two are the same
 Returns > 0 if different but compatible
 Returns INT_MAX if incompatible
 */
-int type_diff(val_type_t src, val_type_t dst)
+static int
+type_diff(val_type_t src, val_type_t dst)
 {
     RUBY_ASSERT(!src.is_heap || !src.is_imm);
     RUBY_ASSERT(!dst.is_heap || !dst.is_imm);
@@ -420,7 +426,8 @@ Returns 0 if the two contexts are the same
 Returns > 0 if different but compatible
 Returns INT_MAX if incompatible
 */
-int ctx_diff(const ctx_t *src, const ctx_t *dst)
+static int
+ctx_diff(const ctx_t *src, const ctx_t *dst)
 {
     // Can only lookup the first version in the chain
     if (dst->chain_depth != 0)
@@ -493,7 +500,7 @@ int ctx_diff(const ctx_t *src, const ctx_t *dst)
 }
 
 // Get all blocks for a particular place in an iseq.
-rb_yjit_block_array_t
+static rb_yjit_block_array_t
 yjit_get_version_array(const rb_iseq_t *iseq, unsigned idx)
 {
     struct rb_iseq_constant_body *body = iseq->body;
@@ -594,7 +601,8 @@ make_branch_entry(block_t *block, const ctx_t *src_ctx, branchgen_fn gen_fn)
 }
 
 // Retrieve a basic block version for an (iseq, idx) tuple
-block_t *find_block_version(blockid_t blockid, const ctx_t *ctx)
+static block_t *
+find_block_version(blockid_t blockid, const ctx_t *ctx)
 {
     rb_yjit_block_array_t versions = yjit_get_version_array(blockid.iseq, blockid.idx);
 
@@ -629,7 +637,8 @@ block_t *find_block_version(blockid_t blockid, const ctx_t *ctx)
 
 // Produce a generic context when the block version limit is hit for a blockid
 // Note that this will mutate the ctx argument
-void limit_block_versions(blockid_t blockid, ctx_t *ctx)
+static void
+limit_block_versions(blockid_t blockid, ctx_t *ctx)
 {
     // Guard chains implement limits separately, do nothing
     if (ctx->chain_depth > 0)
@@ -651,7 +660,8 @@ void limit_block_versions(blockid_t blockid, ctx_t *ctx)
 }
 
 // Compile a new block version immediately
-block_t *gen_block_version(blockid_t blockid, const ctx_t *start_ctx, rb_execution_context_t *ec)
+static block_t *
+gen_block_version(blockid_t blockid, const ctx_t *start_ctx, rb_execution_context_t *ec)
 {
     // Allocate a new block version object
     block_t *block = calloc(1, sizeof(block_t));
@@ -717,7 +727,8 @@ block_t *gen_block_version(blockid_t blockid, const ctx_t *start_ctx, rb_executi
 }
 
 // Generate a block version that is an entry point inserted into an iseq
-uint8_t *gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx, rb_execution_context_t *ec)
+static uint8_t *
+gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx, rb_execution_context_t *ec)
 {
     // If we aren't at PC 0, don't generate code
     // See yjit_pc_guard
@@ -842,7 +853,8 @@ branch_stub_hit(branch_t *branch, const uint32_t target_idx, rb_execution_contex
 }
 
 // Get a version or stub corresponding to a branch target
-uint8_t *get_branch_target(
+static uint8_t *
+get_branch_target(
     blockid_t target,
     const ctx_t *ctx,
     branch_t *branch,
@@ -880,7 +892,8 @@ uint8_t *get_branch_target(
     return stub_addr;
 }
 
-void gen_branch(
+static void
+gen_branch(
     jitstate_t *jit,
     const ctx_t *src_ctx,
     blockid_t target0,
@@ -908,7 +921,7 @@ void gen_branch(
     branch->end_pos = cb->write_pos;
 }
 
-void
+static void
 gen_jump_branch(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t shape)
 {
     switch (shape) {
@@ -925,7 +938,8 @@ gen_jump_branch(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t sha
     }
 }
 
-void gen_direct_jump(
+static void
+gen_direct_jump(
     jitstate_t *jit,
     const ctx_t *ctx,
     blockid_t target0
@@ -963,7 +977,8 @@ void gen_direct_jump(
 }
 
 // Create a stub to force the code up to this point to be executed
-void defer_compilation(
+static void
+defer_compilation(
     jitstate_t *jit,
     ctx_t *cur_ctx
 )
@@ -997,7 +1012,7 @@ void defer_compilation(
 }
 
 // Remove all references to a block then free it.
-void
+static void
 yjit_free_block(block_t *block)
 {
     yjit_unlink_method_lookup_dependency(block);
@@ -1064,7 +1079,7 @@ block_array_remove(rb_yjit_block_array_t block_array, block_t *block)
 }
 
 // Invalidate one specific block version
-void
+static void
 invalidate_block_version(block_t *block)
 {
     ASSERT_vm_locking();
@@ -1164,7 +1179,7 @@ invalidate_block_version(block_t *block)
     // fprintf(stderr, "invalidation done\n");
 }
 
-void
+static void
 yjit_init_core(void)
 {
     // Nothing yet
