@@ -2,13 +2,14 @@ name: macOS
 on: [push, pull_request]
 jobs:
   make:
-    runs-on: macos-latest
     strategy:
       matrix:
+        os: [macos-10.15, macos-11]
         test_task: [ "check", "test-bundler-parallel" ] #, "test-bundled-gems" ] matrix tests has unknown issues
       fail-fast: false
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+    runs-on: ${{ matrix.os }}
     steps:
       - run: mkdir build
         working-directory:
