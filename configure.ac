@@ -1283,6 +1283,7 @@ AC_CHECK_HEADERS(utime.h)
 AS_CASE("$target_cpu", [x64|x86_64|i[3-6]86*], [
   AC_CHECK_HEADERS(x86intrin.h)
 ])
+RUBY_UNIVERSAL_CHECK_HEADER([x86_64, i386], x86intrin.h)
 
 AC_ARG_WITH([gmp],
   [AS_HELP_STRING([--without-gmp],
