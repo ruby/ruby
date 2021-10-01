@@ -1,10 +1,24 @@
 # frozen_string_literal: false
 
+# The gem and bundle commands (except for bundle exec) first load
+# digest via openssl and then load gems, so if this is installed via
+# gem, we are overwriting the default version of digest.  Beware not
+# to break it or cause redefinition warnings.
+#
+# When we introduce incompatible changes and overwriting is not an
+# option, and given that the default version does not have security
+# defects, we may just give up and let those commands just use the
+# default version of digest.
+#
+# return if defined?(Digest) && caller_locations.any? { |l|
+#   %r{/(rubygems/gem_runner|bundler/cli)\.rb}.match?(l.path)
+# }
+
 require 'digest/loader'
 
 module Digest
   # A mutex for Digest().
-  REQUIRE_MUTEX = Thread::Mutex.new
+  REQUIRE_MUTEX ||= Thread::Mutex.new
 
   def self.const_missing(name) # :nodoc:
     case name
