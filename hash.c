@@ -4425,6 +4425,14 @@ rb_ident_hash_new(void)
     return hash;
 }
 
+VALUE
+rb_ident_hash_new_with_size(st_index_t size)
+{
+    VALUE hash = rb_hash_new();
+    RHASH_ST_TABLE_SET(hash, st_init_table_with_size(&identhash, size));
+    return hash;
+}
+
 st_table *
 rb_init_identtable(void)
 {
