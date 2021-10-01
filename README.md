@@ -8,11 +8,11 @@
 YJIT - Yet Another Ruby JIT
 ===========================
 
-**DISCLAIMER: Please note that this project is in early stages of development. It is very much a work in progress, it may cause your software to crash, and current performance results are likely to leave you feeling underwhelmed.**
+**DISCLAIMER: Please note that this project is experimental. It is very much a work in progress, it may cause your software to crash, and current performance results will vary widely, especially on larger applications.**
 
-YJIT is a lightweight, minimalistic Ruby JIT built inside the CRuby/MRI binary.
+YJIT is a lightweight, minimalistic Ruby JIT built inside CRuby.
 It lazily compiles code using a Basic Block Versioning (BBV) architecture. The target use case is that of servers running
-Ruby on Rails, an area where CRuby's MJIT has not yet managed to deliver speedups.
+Ruby on Rails, an area where MJIT has not yet managed to deliver speedups.
 To simplify development, we currently support only macOS and Linux on x86-64, but an ARM64 backend
 is part of future plans.
 This project is open source and falls under the same license as CRuby.
@@ -49,6 +49,16 @@ Because there is no GC for generated code yet, your software could run out of ex
 
 ## Installation
 
+Current YJIT versions are installed by default with CRuby. Make sure to specify the "--yjit" command line option to enable it at runtime.
+
+Experimental YJIT patches that have not yet been merged with CRuby can be found in ruby-build:
+
+```
+ruby-build yjit-dev ~/.rubies/ruby-yjit-dev
+```
+
+They can also be found in the Shopify/yjit repository, which is cloned and build like CRuby.
+
 Start by cloning the `Shopify/yjit` repository:
 
 ```
@@ -71,7 +81,7 @@ Typically configure will choose default C compiler. To specify the C compiler, u
 # Choosing a specific c compiler
 export CC=/path/to/my/choosen/c/compiler
 ```
-before runing `./configure`.
+before running `./configure`.
 
 You can test that YJIT works correctly by running:
 
