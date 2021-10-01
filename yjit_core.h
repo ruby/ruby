@@ -1,7 +1,8 @@
 #ifndef YJIT_CORE_H
 #define YJIT_CORE_H 1
 
-#include "stddef.h"
+#include <stddef.h>
+#include <stdint.h>
 #include "yjit_asm.h"
 
 // Callee-saved regs

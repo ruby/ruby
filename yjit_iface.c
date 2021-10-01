@@ -15,7 +15,7 @@
 #include "yjit_core.h"
 #include "darray.h"
 
-#if HAVE_LIBCAPSTONE
+#ifdef HAVE_LIBCAPSTONE
 #include <capstone/capstone.h>
 static VALUE cYjitDisasm;
 static VALUE cYjitDisasmInsn;
@@ -663,7 +663,7 @@ rb_yjit_before_ractor_spawn(void)
     }
 }
 
-#if HAVE_LIBCAPSTONE
+#ifdef HAVE_LIBCAPSTONE
 static const rb_data_type_t yjit_disasm_type = {
     "YJIT/Disasm",
     {0, (void(*)(void *))cs_close, 0, },
@@ -1153,7 +1153,7 @@ rb_yjit_init(struct rb_yjit_options *options)
     rb_define_method(cYjitBlock, "outgoing_ids", outgoing_ids, 0);
 
     // YJIT disassembler interface
-#if HAVE_LIBCAPSTONE
+#ifdef HAVE_LIBCAPSTONE
     cYjitDisasm = rb_define_class_under(mYjit, "Disasm", rb_cObject);
     rb_define_alloc_func(cYjitDisasm, yjit_disasm_init);
     rb_define_method(cYjitDisasm, "disasm", yjit_disasm, 2);
