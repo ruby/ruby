@@ -106,7 +106,7 @@ update_global_event_hook(rb_event_flag_t vm_events)
         // Invalidate all code if listening for any TracePoint event.
         // Internal events fire inside C routines so don't need special handling.
         // Do this last so other ractors see updated vm events when they wake up.
-        yjit_tracing_invalidate_all();
+        rb_yjit_tracing_invalidate_all();
     }
 }
 
@@ -1220,7 +1220,7 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
         rb_raise(rb_eArgError, "can not enable any hooks");
     }
 
-    yjit_tracing_invalidate_all();
+    rb_yjit_tracing_invalidate_all();
 
     ruby_vm_event_local_num++;
 

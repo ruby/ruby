@@ -4808,7 +4808,7 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep)
     ruby_vm_const_missing_count = 0;
     RB_OBJ_WRITE(iseq, &ic->entry, ice);
 #ifndef MJIT_HEADER
-    yjit_constant_ic_update(iseq, ic);
+    rb_yjit_constant_ic_update(iseq, ic);
 #endif
 }
 

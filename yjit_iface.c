@@ -1,14 +1,12 @@
-#include "ruby/ruby.h"
-#include "vm_core.h"
-#include "insns.inc"
+// This file is a fragment of the yjit.o compilation unit. See yjit.c.
 #include "internal.h"
 #include "vm_sync.h"
 #include "vm_callinfo.h"
 #include "builtin.h"
 #include "gc.h"
+#include "iseq.h"
 #include "internal/compile.h"
 #include "internal/class.h"
-#include "insns_info.inc"
 #include "yjit.h"
 #include "yjit_iface.h"
 #include "yjit_codegen.h"
@@ -31,12 +29,7 @@ static VALUE cYjitCodeComment;
 #if YJIT_STATS
 extern const int rb_vm_max_insn_name_size;
 static int64_t exit_op_count[VM_INSTRUCTION_SIZE] = { 0 };
-struct rb_yjit_runtime_counters yjit_runtime_counters = { 0 };
 #endif
-
-// Machine code blocks (executable memory)
-extern codeblock_t *cb;
-extern codeblock_t *ocb;
 
 // Hash table of encoded instructions
 extern st_table *rb_encoded_insn_data;
@@ -50,7 +43,7 @@ static const rb_data_type_t yjit_block_type = {
 };
 
 // Get the PC for a given index in an iseq
-VALUE *
+static VALUE *
 yjit_iseq_pc_at_idx(const rb_iseq_t *iseq, uint32_t insn_idx)
 {
     RUBY_ASSERT(iseq != NULL);
@@ -61,7 +54,7 @@ yjit_iseq_pc_at_idx(const rb_iseq_t *iseq, uint32_t insn_idx)
 }
 
 // For debugging. Print the disassembly of an iseq.
-void
+static void
 yjit_print_iseq(const rb_iseq_t *iseq)
 {
     char *ptr;
@@ -71,7 +64,7 @@ yjit_print_iseq(const rb_iseq_t *iseq)
     fprintf(stderr, "%.*s\n", (int)len, ptr);
 }
 
-int
+static int
 yjit_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
 {
     const VALUE at_pc = *pc;
@@ -84,7 +77,7 @@ yjit_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
 }
 
 // Verify that calling with cd on receiver goes to callee
-void
+static void
 check_cfunc_dispatch(VALUE receiver, struct rb_callinfo *ci, void *callee, rb_callable_method_entry_t *compile_time_cme)
 {
     if (METHOD_ENTRY_INVALIDATED(compile_time_cme)) {
@@ -114,7 +107,7 @@ struct yjit_root_struct {
 // Hash table of BOP blocks
 static st_table *blocks_assuming_bops;
 
-bool
+static bool
 assume_bop_not_redefined(block_t *block, int redefined_flag, enum ruby_basic_operators bop)
 {
     if (BASIC_OP_UNREDEFINED_P(bop, redefined_flag)) {
@@ -205,7 +198,7 @@ add_lookup_dependency_i(st_data_t *key, st_data_t *value, st_data_t data, int ex
 // rb_yjit_cme_invalidate() invalidates the block.
 //
 // @raise NoMemoryError
-void
+static void
 assume_method_lookup_stable(VALUE receiver_klass, const rb_callable_method_entry_t *cme, block_t *block)
 {
     RUBY_ASSERT(cme_validity_dependency);
@@ -227,7 +220,7 @@ static st_table *blocks_assuming_single_ractor_mode;
 
 // Can raise NoMemoryError.
 RBIMPL_ATTR_NODISCARD()
-bool
+static bool
 assume_single_ractor_mode(block_t *block) {
     if (rb_multi_ractor_p()) return false;
 
@@ -239,8 +232,9 @@ static st_table *blocks_assuming_stable_global_constant_state;
 
 // Assume that the global constant state has not changed since call to this function.
 // Can raise NoMemoryError.
-void
-assume_stable_global_constant_state(block_t *block) {
+static void
+assume_stable_global_constant_state(block_t *block)
+{
     st_insert(blocks_assuming_stable_global_constant_state, (st_data_t)block, 1);
 }
 
@@ -382,7 +376,8 @@ rb_yjit_cme_invalidate(VALUE cme)
 void
 rb_yjit_invalidate_all_method_lookup_assumptions(void)
 {
-    // TODO: implement
+    // It looks like Module#using actually doesn't need to invalidate all the
+    // method caches, so we do nothing here for now.
 }
 
 // Remove a block from the method lookup dependency table
@@ -431,7 +426,7 @@ remove_cme_validity_dependency(block_t *block, const rb_callable_method_entry_t 
     }
 }
 
-void
+static void
 yjit_unlink_method_lookup_dependency(block_t *block)
 {
     cme_dependency_t *cme_dep;
@@ -442,7 +437,7 @@ yjit_unlink_method_lookup_dependency(block_t *block)
     rb_darray_free(block->cme_dependencies);
 }
 
-void
+static void
 yjit_block_assumptions_free(block_t *block)
 {
     st_data_t as_st_data = (st_data_t)block;
@@ -595,7 +590,7 @@ rb_yjit_constant_state_changed(void)
 // Invalidate the block for the matching opt_getinlinecache so it could regenerate code
 // using the new value in the constant cache.
 void
-yjit_constant_ic_update(const rb_iseq_t *iseq, IC ic)
+rb_yjit_constant_ic_update(const rb_iseq_t *iseq, IC ic)
 {
     // We can't generate code in these situations, so no need to invalidate.
     // See gen_opt_getinlinecache.
@@ -839,8 +834,8 @@ rb_yjit_collect_binding_set(void)
     yjit_runtime_counters.binding_set++;
 }
 
-const VALUE *
-rb_yjit_count_side_exit_op(const VALUE *exit_pc)
+static const VALUE *
+yjit_count_side_exit_op(const VALUE *exit_pc)
 {
     int insn = rb_vm_insn_addr2opcode((const void *)*exit_pc);
     exit_op_count[insn]++;

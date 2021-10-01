@@ -1,9 +1,5 @@
+// This file is a fragment of the yjit.o compilation unit. See yjit.c.
 #include "internal.h"
-#include "insns.inc"
-#include "vm_core.h"
-#include "vm_sync.h"
-#include "vm_callinfo.h"
-#include "builtin.h"
 #include "gc.h"
 #include "internal/compile.h"
 #include "internal/class.h"
@@ -12,7 +8,6 @@
 #include "internal/string.h"
 #include "internal/variable.h"
 #include "internal/re.h"
-#include "insns_info.inc"
 #include "probes.h"
 #include "probes_helper.h"
 #include "yjit.h"
@@ -20,21 +15,12 @@
 #include "yjit_core.h"
 #include "yjit_codegen.h"
 #include "yjit_asm.h"
-#include "yjit_utils.h"
 
 // Map from YARV opcodes to code generation functions
 static codegen_fn gen_fns[VM_INSTRUCTION_SIZE] = { NULL };
 
 // Map from method entries to code generation functions
 static st_table *yjit_method_codegen_table = NULL;
-
-// Code block into which we write machine code
-static codeblock_t block;
-codeblock_t *cb = NULL;
-
-// Code block into which we write out-of-line machine code
-static codeblock_t outline_block;
-codeblock_t *ocb = NULL;
 
 // Code for exiting back to the interpreter from the leave insn
 static void *leave_exit_code;
@@ -51,12 +37,6 @@ struct codepage_patch {
 typedef rb_darray(struct codepage_patch) patch_array_t;
 
 static patch_array_t global_inval_patches = NULL;
-
-// The number of bytes counting from the beginning of the inline code block
-// that should not be changed. After patching for global invalidation, no one
-// should make changes to the invalidated code region anymore. This is used to
-// break out of invalidation race when there are multiple ractors.
-uint32_t yjit_codepage_frozen_bytes = 0;
 
 // Print the current source location for debugging purposes
 RBIMPL_ATTR_MAYBE_UNUSED()
@@ -240,7 +220,6 @@ _add_comment(codeblock_t *cb, const char *comment_str)
 
 // Comments for generated machine code
 #define ADD_COMMENT(cb, comment) _add_comment((cb), (comment))
-yjit_comment_array_t yjit_code_comments;
 
 // Verify the ctx's types and mappings against the compile-time stack, self,
 // and locals.
@@ -366,7 +345,7 @@ yjit_gen_exit(VALUE *exit_pc, ctx_t *ctx, codeblock_t *cb)
 #if YJIT_STATS
     if (rb_yjit_opts.gen_stats) {
         mov(cb, RDI, const_ptr_opnd(exit_pc));
-        call_ptr(cb, RSI, (void *)&rb_yjit_count_side_exit_op);
+        call_ptr(cb, RSI, (void *)&yjit_count_side_exit_op);
     }
 #endif
 
@@ -519,7 +498,7 @@ gen_full_cfunc_return(void)
 Compile an interpreter entry block to be inserted into an iseq
 Returns `NULL` if compilation fails.
 */
-uint8_t *
+static uint8_t *
 yjit_entry_prologue(codeblock_t *cb, const rb_iseq_t *iseq)
 {
     RUBY_ASSERT(cb != NULL);
@@ -605,7 +584,7 @@ jit_jump_to_next_insn(jitstate_t *jit, const ctx_t *current_context)
 }
 
 // Compile a sequence of bytecode instructions for a given basic block version
-void
+static void
 yjit_gen_block(block_t *block, rb_execution_context_t *ec)
 {
     RUBY_ASSERT(cb != NULL);
@@ -1981,7 +1960,7 @@ gen_opt_gt(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 
 // Implements specialized equality for either two fixnum or two strings
 // Returns true if code was generated, otherwise false
-bool
+static bool
 gen_equality_specialized(jitstate_t *jit, ctx_t *ctx, uint8_t *side_exit)
 {
     VALUE comptime_a = jit_peek_at_stack(jit, ctx, 1);
@@ -2605,7 +2584,7 @@ gen_opt_case_dispatch(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     return YJIT_KEEP_COMPILING; // continue with the next instruction
 }
 
-void
+static void
 gen_branchif_branch(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t shape)
 {
     switch (shape) {
@@ -2661,7 +2640,7 @@ gen_branchif(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     return YJIT_END_BLOCK;
 }
 
-void
+static void
 gen_branchunless_branch(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t shape)
 {
     switch (shape) {
@@ -2717,7 +2696,7 @@ gen_branchunless(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     return YJIT_END_BLOCK;
 }
 
-void
+static void
 gen_branchnil_branch(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t shape)
 {
     switch (shape) {
@@ -4342,7 +4321,7 @@ static void invalidate_all_blocks_for_tracing(const rb_iseq_t *iseq);
 // In addition to patching, we prevent future entries into invalidated code by
 // removing all live blocks from their iseq.
 void
-yjit_tracing_invalidate_all(void)
+rb_yjit_tracing_invalidate_all(void)
 {
     if (!rb_yjit_enabled_p()) return;
 

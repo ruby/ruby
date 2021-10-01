@@ -62,10 +62,10 @@ struct rb_yjit_options {
     bool test_backend;
 };
 
-RUBY_SYMBOL_EXPORT_BEGIN
+MJIT_SYMBOL_EXPORT_BEGIN
 bool rb_yjit_enabled_p(void);
 unsigned rb_yjit_call_threshold(void);
-RUBY_SYMBOL_EXPORT_END
+MJIT_SYMBOL_EXPORT_END
 
 void rb_yjit_invalidate_all_method_lookup_assumptions(void);
 void rb_yjit_method_lookup_change(VALUE klass, ID mid);
@@ -81,7 +81,7 @@ void rb_yjit_iseq_mark(const struct rb_iseq_constant_body *body);
 void rb_yjit_iseq_update_references(const struct rb_iseq_constant_body *body);
 void rb_yjit_iseq_free(const struct rb_iseq_constant_body *body);
 void rb_yjit_before_ractor_spawn(void);
-void yjit_constant_ic_update(const rb_iseq_t *iseq, IC ic);
-void yjit_tracing_invalidate_all(void);
+void rb_yjit_constant_ic_update(const rb_iseq_t *iseq, IC ic);
+void rb_yjit_tracing_invalidate_all(void);
 
 #endif // #ifndef YJIT_H

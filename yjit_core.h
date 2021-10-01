@@ -97,7 +97,10 @@ typedef struct yjit_temp_mapping
 } temp_mapping_t;
 STATIC_ASSERT(temp_mapping_size, sizeof(temp_mapping_t) == 1);
 
-// By default, temps are just temps on the stack
+// By default, temps are just temps on the stack.
+// Name conflict with an mmap flag. This is a struct instance,
+// so the compiler will check for wrong usage.
+#undef MAP_STACK
 #define MAP_STACK ( (temp_mapping_t) { 0 } )
 
 // Temp value is actually self
@@ -299,56 +302,5 @@ typedef struct JITState
     bool record_boundary_patch_point;
 
 } jitstate_t;
-
-// Context object methods
-x86opnd_t ctx_sp_opnd(ctx_t* ctx, int32_t offset_bytes);
-x86opnd_t ctx_stack_push_mapping(ctx_t* ctx, temp_type_mapping_t mapping);
-x86opnd_t ctx_stack_push(ctx_t* ctx, val_type_t type);
-x86opnd_t ctx_stack_push_self(ctx_t* ctx);
-x86opnd_t ctx_stack_push_local(ctx_t* ctx, size_t local_idx);
-x86opnd_t ctx_stack_pop(ctx_t* ctx, size_t n);
-x86opnd_t ctx_stack_opnd(ctx_t* ctx, int32_t idx);
-val_type_t ctx_get_opnd_type(const ctx_t* ctx, insn_opnd_t opnd);
-void ctx_upgrade_opnd_type(ctx_t* ctx, insn_opnd_t opnd, val_type_t type);
-void ctx_set_local_type(ctx_t* ctx, size_t idx, val_type_t type);
-void ctx_clear_local_types(ctx_t* ctx);
-int ctx_diff(const ctx_t* src, const ctx_t* dst);
-int type_diff(val_type_t src, val_type_t dst);
-val_type_t yjit_type_of_value(VALUE val);
-const char *yjit_type_name(val_type_t type);
-
-temp_type_mapping_t ctx_get_opnd_mapping(const ctx_t* ctx, insn_opnd_t opnd);
-void ctx_set_opnd_mapping(ctx_t* ctx, insn_opnd_t opnd, temp_type_mapping_t type_mapping);
-
-block_t* find_block_version(blockid_t blockid, const ctx_t* ctx);
-block_t* gen_block_version(blockid_t blockid, const ctx_t* ctx, rb_execution_context_t *ec);
-uint8_t*  gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx, rb_execution_context_t *ec);
-void yjit_free_block(block_t *block);
-rb_yjit_block_array_t yjit_get_version_array(const rb_iseq_t *iseq, unsigned idx);
-
-void gen_branch(
-    jitstate_t* jit,
-    const ctx_t* src_ctx,
-    blockid_t target0,
-    const ctx_t* ctx0,
-    blockid_t target1,
-    const ctx_t* ctx1,
-    branchgen_fn gen_fn
-);
-
-void gen_direct_jump(
-    jitstate_t* jit,
-    const ctx_t* ctx,
-    blockid_t target0
-);
-
-void defer_compilation(
-    jitstate_t* jit,
-    ctx_t* cur_ctx
-);
-
-void invalidate_block_version(block_t* block);
-
-void yjit_init_core(void);
 
 #endif // #ifndef YJIT_CORE_H

@@ -1,11 +1,8 @@
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
-#include "yjit_utils.h"
-#include "yjit_asm.h"
+// This file is a fragment of the yjit.o compilation unit. See yjit.c.
 
 // Save caller-save registers on the stack before a C call
-void push_regs(codeblock_t *cb)
+static void
+push_regs(codeblock_t *cb)
 {
     push(cb, RAX);
     push(cb, RCX);
@@ -20,7 +17,8 @@ void push_regs(codeblock_t *cb)
 }
 
 // Restore caller-save registers from the after a C call
-void pop_regs(codeblock_t *cb)
+static void
+pop_regs(codeblock_t *cb)
 {
     popfq(cb);
     pop(cb, R11);
@@ -34,12 +32,15 @@ void pop_regs(codeblock_t *cb)
     pop(cb, RAX);
 }
 
-static void print_int_cfun(int64_t val)
+static void
+print_int_cfun(int64_t val)
 {
     fprintf(stderr, "%lld\n", (long long int)val);
 }
 
-void print_int(codeblock_t *cb, x86opnd_t opnd)
+RBIMPL_ATTR_MAYBE_UNUSED()
+static void
+print_int(codeblock_t *cb, x86opnd_t opnd)
 {
     push_regs(cb);
 
@@ -55,12 +56,15 @@ void print_int(codeblock_t *cb, x86opnd_t opnd)
     pop_regs(cb);
 }
 
-static void print_ptr_cfun(void *val)
+static void
+print_ptr_cfun(void *val)
 {
     fprintf(stderr, "%p\n", val);
 }
 
-void print_ptr(codeblock_t *cb, x86opnd_t opnd)
+RBIMPL_ATTR_MAYBE_UNUSED()
+static void
+print_ptr(codeblock_t *cb, x86opnd_t opnd)
 {
     assert (opnd.num_bits == 64);
 
@@ -73,13 +77,15 @@ void print_ptr(codeblock_t *cb, x86opnd_t opnd)
     pop_regs(cb);
 }
 
-static void print_str_cfun(const char *str)
+static void
+print_str_cfun(const char *str)
 {
     fprintf(stderr, "%s\n", str);
 }
 
 // Print a constant string to stdout
-void print_str(codeblock_t *cb, const char *str)
+static void
+print_str(codeblock_t *cb, const char *str)
 {
     //as.comment("printStr(\"" ~ str ~ "\")");
     size_t len = strlen(str);
