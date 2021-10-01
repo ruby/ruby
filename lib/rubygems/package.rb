@@ -467,7 +467,7 @@ EOM
     raise Gem::Package::PathError.new(filename, destination_dir) if
       filename.start_with? '/'
 
-    destination_dir = File.expand_path(File.realpath(destination_dir))
+    destination_dir = File.realpath(destination_dir)
     destination = File.expand_path(filename, destination_dir)
 
     raise Gem::Package::PathError.new(destination, destination_dir) unless
