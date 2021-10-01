@@ -167,6 +167,7 @@ jobs:
 #         - { key: cppflags, name: VM_DEBUG_VERIFY_METHOD_CACHE,   value: '-DVM_DEBUG_VERIFY_METHOD_CACHE' }
 
           - { key: cppflags, name: MJIT_FORCE_ENABLE,              value: '-DMJIT_FORCE_ENABLE' }
+          - { key: cppflags, name: YJIT_FORCE_ENABLE,              value: '-DYJIT_FORCE_ENABLE' }
 
     name: ${{ matrix.entry.name }}
     runs-on: ubuntu-latest

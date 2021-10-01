@@ -1092,7 +1092,7 @@ rb_yjit_init(struct rb_yjit_options *options)
     rb_yjit_opts = *options;
     rb_yjit_opts.yjit_enabled = true;
 
-    rb_yjit_opts.gen_stats |= !!getenv("YJIT_STATS");
+    rb_yjit_opts.gen_stats = rb_yjit_opts.gen_stats || getenv("RUBY_YJIT_STATS");
 
 #if !YJIT_STATS
     if(rb_yjit_opts.gen_stats) {
