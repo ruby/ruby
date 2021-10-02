@@ -643,7 +643,7 @@ bsearch_integer_range(VALUE beg, VALUE end, int excl)
 	    satisfied = val; \
 	    smaller = 1; \
 	} \
-	else if (v == Qfalse || v == Qnil) { \
+	else if (v == Qfalse || NIL_P(v)) { \
 	    smaller = 0; \
 	} \
 	else if (rb_obj_is_kind_of(v, rb_cNumeric)) { \
@@ -1953,7 +1953,7 @@ r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val)
     }
 
     val_max = rb_rescue2(r_call_max, val, 0, Qnil, rb_eTypeError, (VALUE)0);
-    if (val_max == Qnil) return FALSE;
+    if (NIL_P(val_max)) return FALSE;
 
     return r_less(end, val_max) >= 0;
 }

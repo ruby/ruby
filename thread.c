@@ -1180,7 +1180,7 @@ thread_join_sleep(VALUE arg)
      * This supports INFINITY and negative values, so we can't use
      * rb_time_interval right now...
      */
-    if (p->timeout == Qnil) {
+    if (NIL_P(p->timeout)) {
         /* unlimited */
     }
     else if (FIXNUM_P(p->timeout)) {
@@ -1338,7 +1338,7 @@ thread_join_m(int argc, VALUE *argv, VALUE self)
     }
 
     // Convert the timeout eagerly, so it's always converted and deterministic
-    if (timeout == Qnil) {
+    if (NIL_P(timeout)) {
         /* unlimited */
     }
     else if (FIXNUM_P(timeout)) {

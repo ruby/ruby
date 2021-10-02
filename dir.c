@@ -989,7 +989,7 @@ chdir_yield(VALUE v)
     dir_chdir(args->new_path);
     args->done = TRUE;
     chdir_blocking++;
-    if (chdir_thread == Qnil)
+    if (NIL_P(chdir_thread))
 	chdir_thread = rb_thread_current();
     return rb_yield(args->new_path);
 }
