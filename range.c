@@ -308,16 +308,8 @@ range_each_func(VALUE range, int (*func)(VALUE, VALUE), VALUE arg)
     }
 }
 
-static int step_i(VALUE i, VALUE arg);
-
-static int
-sym_step_i(VALUE i, VALUE arg)
-{
-    return step_i(rb_str_intern(i), arg);
-}
-
-static int
-step_i(VALUE i, VALUE arg)
+static VALUE*
+step_i_iter(VALUE arg)
 {
     VALUE *iter = (VALUE *)arg;
 
@@ -327,6 +319,26 @@ step_i(VALUE i, VALUE arg)
     else {
 	iter[0] = rb_funcall(iter[0], '-', 1, INT2FIX(1));
     }
+    return iter;
+}
+
+static int
+sym_step_i(VALUE i, VALUE arg)
+{
+    VALUE *iter = step_i_iter(arg);
+
+    if (iter[0] == INT2FIX(0)) {
+	rb_yield(rb_str_intern(i));
+	iter[0] = iter[1];
+    }
+    return 0;
+}
+
+static int
+step_i(VALUE i, VALUE arg)
+{
+    VALUE *iter = step_i_iter(arg);
+
     if (iter[0] == INT2FIX(0)) {
 	rb_yield(i);
 	iter[0] = iter[1];
