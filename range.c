@@ -643,7 +643,7 @@ bsearch_integer_range(VALUE beg, VALUE end, int excl)
 	    satisfied = val; \
 	    smaller = 1; \
 	} \
-	else if (!NIL_P(v)) { \
+	else if (!RTEST(v)) { \
 	    smaller = 0; \
 	} \
 	else if (rb_obj_is_kind_of(v, rb_cNumeric)) { \
