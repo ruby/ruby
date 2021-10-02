@@ -1556,8 +1556,8 @@ class Gem::Specification < Gem::BasicSpecification
   # the gem.build_complete file is missing.
 
   def build_extensions # :nodoc:
-    return if default_gem?
     return if extensions.empty?
+    return if default_gem?
     return if File.exist? gem_build_complete_path
     return if !File.writable?(base_dir)
     return if !File.exist?(File.join(base_dir, 'extensions'))
@@ -2120,8 +2120,8 @@ class Gem::Specification < Gem::BasicSpecification
   # probably want to build_extensions
 
   def missing_extensions?
-    return false if default_gem?
     return false if extensions.empty?
+    return false if default_gem?
     return false if File.exist? gem_build_complete_path
 
     true
