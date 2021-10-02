@@ -3466,7 +3466,7 @@ rb_ary_bsearch_index(VALUE ary)
 	    satisfied = 1;
 	    smaller = 1;
 	}
-	else if (v == Qfalse || NIL_P(v)) {
+	else if (!RTEST(v)) {
 	    smaller = 0;
 	}
 	else if (rb_obj_is_kind_of(v, rb_cNumeric)) {
