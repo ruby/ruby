@@ -5,6 +5,7 @@ require 'tempfile'
 
 class Reline::LineEditor
   # TODO: undo
+  # TODO: Use "private alias_method" idiom after drop Ruby 2.5.
   attr_reader :line
   attr_reader :byte_pointer
   attr_accessor :confirm_multiline_termination_proc
