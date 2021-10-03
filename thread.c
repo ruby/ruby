@@ -1137,6 +1137,7 @@ struct join_arg {
     struct rb_waiting_list *waiter;
     rb_thread_t *target;
     VALUE timeout;
+    rb_hrtime_t *limit;
 };
 
 static VALUE
@@ -1174,22 +1175,7 @@ thread_join_sleep(VALUE arg)
 {
     struct join_arg *p = (struct join_arg *)arg;
     rb_thread_t *target_th = p->target, *th = p->waiter->thread;
-    rb_hrtime_t end = 0, rel = 0, *limit = 0;
-
-    /*
-     * This supports INFINITY and negative values, so we can't use
-     * rb_time_interval right now...
-     */
-    if (p->timeout == Qnil) {
-        /* unlimited */
-    }
-    else if (FIXNUM_P(p->timeout)) {
-        rel = rb_sec2hrtime(NUM2TIMET(p->timeout));
-        limit = &rel;
-    }
-    else {
-        limit = double2hrtime(&rel, rb_num2dbl(p->timeout));
-    }
+    rb_hrtime_t end = 0, *limit = p->limit;
 
     if (limit) {
         end = rb_hrtime_add(*limit, rb_hrtime_now());
@@ -1226,7 +1212,7 @@ thread_join_sleep(VALUE arg)
 }
 
 static VALUE
-thread_join(rb_thread_t *target_th, VALUE timeout)
+thread_join(rb_thread_t *target_th, VALUE timeout, rb_hrtime_t *limit)
 {
     rb_execution_context_t *ec = GET_EC();
     rb_thread_t *th = ec->thread_ptr;
@@ -1254,6 +1240,7 @@ thread_join(rb_thread_t *target_th, VALUE timeout)
         arg.waiter = &waiter;
         arg.target = target_th;
         arg.timeout = timeout;
+        arg.limit = limit;
 
         if (!rb_ensure(thread_join_sleep, (VALUE)&arg, remove_from_join_list, (VALUE)&arg)) {
             return Qnil;
@@ -1332,23 +1319,29 @@ static VALUE
 thread_join_m(int argc, VALUE *argv, VALUE self)
 {
     VALUE timeout = Qnil;
+    rb_hrtime_t rel = 0, *limit = 0;
 
     if (rb_check_arity(argc, 0, 1)) {
         timeout = argv[0];
     }
 
     // Convert the timeout eagerly, so it's always converted and deterministic
+    /*
+     * This supports INFINITY and negative values, so we can't use
+     * rb_time_interval right now...
+     */
     if (timeout == Qnil) {
         /* unlimited */
     }
     else if (FIXNUM_P(timeout)) {
-        /* handled directly in thread_join_sleep() */
+        rel = rb_sec2hrtime(NUM2TIMET(timeout));
+        limit = &rel;
     }
     else {
-        timeout = rb_to_float(timeout);
+        limit = double2hrtime(&rel, rb_num2dbl(timeout));
     }
 
-    return thread_join(rb_thread_ptr(self), timeout);
+    return thread_join(rb_thread_ptr(self), timeout, limit);
 }
 
 /*
@@ -1369,7 +1362,7 @@ static VALUE
 thread_value(VALUE self)
 {
     rb_thread_t *th = rb_thread_ptr(self);
-    thread_join(th, Qnil);
+    thread_join(th, Qnil, 0);
     return th->value;
 }
 
