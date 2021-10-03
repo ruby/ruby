@@ -1876,13 +1876,19 @@ rb_float_floor(VALUE num, int ndigits)
  *     (0.3 / 0.1).floor  #=> 2 (!)
  */
 
+static int
+flo_ndigits(int argc, VALUE *argv)
+{
+    if (rb_check_arity(argc, 0, 1)) {
+	return NUM2INT(argv[0]);
+    }
+    return 0;
+}
+
 static VALUE
 flo_floor(int argc, VALUE *argv, VALUE num)
 {
-    int ndigits = 0;
-    if (rb_check_arity(argc, 0, 1)) {
-	ndigits = NUM2INT(argv[0]);
-    }
+    int ndigits = flo_ndigits(argc, argv);
     return rb_float_floor(num, ndigits);
 }
 
@@ -1928,11 +1934,7 @@ flo_floor(int argc, VALUE *argv, VALUE num)
 static VALUE
 flo_ceil(int argc, VALUE *argv, VALUE num)
 {
-    int ndigits = 0;
-
-    if (rb_check_arity(argc, 0, 1)) {
-	ndigits = NUM2INT(argv[0]);
-    }
+    int ndigits = flo_ndigits(argc, argv);
     return rb_float_ceil(num, ndigits);
 }
 
