@@ -1057,6 +1057,33 @@ begin
       EOC
     end
 
+    def test_autocomplete_super_long_and_backspace
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-super-long}, startup_message: 'Multiline REPL.')
+      shift_tab = [27, 91, 90]
+      write('S' + shift_tab.map(&:chr).join)
+      write("\C-h")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> Str_BX
+                Str_BX
+                Str_BXA
+                Str_BXB
+                Str_BXC
+                Str_BXD
+                Str_BXE
+                Str_BXF
+                Str_BXG
+                Str_BXH
+                Str_BXI
+                Str_BXJ
+                Str_BXK
+                Str_BXL
+                Str_BXM
+                Str_BXN
+      EOC
+    end
+
     def test_dialog_callback_returns_nil
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog nil}, startup_message: 'Multiline REPL.')
       write('a')
