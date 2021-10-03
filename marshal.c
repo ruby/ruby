@@ -1424,9 +1424,10 @@ ruby2_keywords_flag_check(VALUE sym)
 {
     const char *p;
     long l;
+    if (rb_enc_get_index(sym) != ENCINDEX_US_ASCII) return 0;
     RSTRING_GETMEM(sym, p, l);
     if (l <= 0) return 0;
-    if (name_equal(name_s_ruby2_keywords_flag, rb_strlen_lit(name_s_ruby2_keywords_flag), p, 1)) {
+    if (name_equal(name_s_ruby2_keywords_flag, rb_strlen_lit(name_s_ruby2_keywords_flag), p, l)) {
         return 1;
     }
     return 0;
@@ -1461,7 +1462,13 @@ r_symreal(struct load_arg *arg, int ivar)
 	    idx = sym2encidx(sym, r_object(arg));
 	}
     }
-    if (idx > 0) rb_enc_associate_index(s, idx);
+    if (idx > 0) {
+        rb_enc_associate_index(s, idx);
+        if (rb_enc_str_coderange(s) == ENC_CODERANGE_BROKEN) {
+            rb_raise(rb_eArgError, "invalid byte sequence in %s: %+"PRIsVALUE,
+                     rb_enc_name(rb_enc_from_index(idx)), s);
+        }
+    }
 
     return s;
 }

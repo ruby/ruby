@@ -785,8 +785,22 @@ class TestMarshal < Test::Unit::TestCase
 
   def test_marshal_with_ruby2_keywords_hash
     flagged_hash = ruby2_keywords_hash(key: 42)
-    hash = Marshal.load(Marshal.dump(flagged_hash))
+    data = Marshal.dump(flagged_hash)
+    hash = Marshal.load(data)
     assert_equal(42, ruby2_keywords_test(*[hash]))
+
+    hash2 = Marshal.load(data.sub(/\x06K(?=T\z)/, "\x08KEY"))
+    assert_raise(ArgumentError, /\(given 1, expected 0\)/) {
+      ruby2_keywords_test(*[hash2])
+    }
+  end
+
+  def test_invalid_byte_sequence_symbol
+    data = Marshal.dump(:K)
+    data = data.sub(/:\x06K/, "I\\&\x06:\x0dencoding\"\x0dUTF-16LE")
+    assert_raise(ArgumentError, /UTF-16LE: "\\x4B"/) {
+      Marshal.load(data)
+    }
   end
 
   def exception_test
