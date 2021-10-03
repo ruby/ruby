@@ -7797,7 +7797,7 @@ datetime_s_now(int argc, VALUE *argv, VALUE klass)
 #ifdef HAVE_STRUCT_TM_TM_GMTOFF
     of = tm.tm_gmtoff;
 #elif defined(HAVE_TIMEZONE)
-#ifdef HAVE_ALTZONE
+#if defined(HAVE_ALTZONE) && !defined(_AIX)
     of = (long)-((tm.tm_isdst > 0) ? altzone : timezone);
 #else
     of = (long)-timezone;
