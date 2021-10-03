@@ -413,7 +413,7 @@ ractor_queue_enq(rb_ractor_t *r, struct rb_ractor_queue *rq, struct rb_ractor_ba
         rq->size *= 2;
     }
     rq->baskets[(rq->start + rq->cnt++) % rq->size] = *basket;
-    // fprintf(stderr, "%s %p->cnt:%d\n", __func__, (void *)rq, rq->cnt);
+    // fprintf(stderr, "%s %p->cnt:%d\n", RUBY_FUNCTION_NAME_STRING, (void *)rq, rq->cnt);
 }
 
 static void
@@ -502,7 +502,7 @@ ractor_wakeup(rb_ractor_t *r, enum ractor_wait_status wait_status, enum ractor_w
 {
     ASSERT_ractor_locking(r);
 
-    // fprintf(stderr, "%s r:%p status:%s/%s wakeup_status:%s/%s\n", __func__, (void *)r,
+    // fprintf(stderr, "%s r:%p status:%s/%s wakeup_status:%s/%s\n", RUBY_FUNCTION_NAME_STRING, (void *)r,
     //         wait_status_str(r->sync.wait.status), wait_status_str(wait_status),
     //         wakeup_status_str(r->sync.wait.wakeup_status), wakeup_status_str(wakeup_status));
 
@@ -582,7 +582,7 @@ ractor_sleep(rb_execution_context_t *ec, rb_ractor_t *cr)
 {
     VM_ASSERT(GET_RACTOR() == cr);
     VM_ASSERT(cr->sync.wait.status != wait_none);
-    // fprintf(stderr, "%s  r:%p status:%s, wakeup_status:%s\n", __func__, (void *)cr,
+    // fprintf(stderr, "%s  r:%p status:%s, wakeup_status:%s\n", RUBY_FUNCTION_NAME_STRING, (void *)cr,
     //                 wait_status_str(cr->sync.wait.status), wakeup_status_str(cr->sync.wait.wakeup_status));
 
     RACTOR_UNLOCK(cr);

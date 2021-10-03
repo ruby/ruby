@@ -94,18 +94,20 @@ bool ruby_debug_log_filter(const char *func_name);
 
 // convenient macro to log even if the USE_RUBY_DEBUG_LOG macro is not specified.
 // You can use this macro for temporary usage (you should not commit it).
-#define _RUBY_DEBUG_LOG(...) ruby_debug_log(__FILE__, __LINE__, __func__, "" __VA_ARGS__)
+#define _RUBY_DEBUG_LOG(...) ruby_debug_log(__FILE__, __LINE__, RUBY_FUNCTION_NAME_STRING, "" __VA_ARGS__)
 
 #if USE_RUBY_DEBUG_LOG
+# define RUBY_DEBUG_LOG_ENABLED(func_name) \
+    (ruby_debug_log_mode && ruby_debug_log_filter(func_name))
 
 #define RUBY_DEBUG_LOG(...) do { \
-  if (ruby_debug_log_mode && ruby_debug_log_filter(__func__)) \
-    ruby_debug_log(__FILE__, __LINE__, __func__, "" __VA_ARGS__); \
+    if (RUBY_DEBUG_LOG_ENABLED(RUBY_FUNCTION_NAME_STRING)) \
+        ruby_debug_log(__FILE__, __LINE__, RUBY_FUNCTION_NAME_STRING, "" __VA_ARGS__); \
 } while (0)
 
 #define RUBY_DEBUG_LOG2(file, line, ...) do { \
-  if (ruby_debug_log_mode && ruby_debug_log_filter(__func__)) \
-    ruby_debug_log(file, line, __func__, "" __VA_ARGS__); \
+    if (RUBY_DEBUG_LOG_ENABLED(RUBY_FUNCTION_NAME_STRING)) \
+        ruby_debug_log(file, line, RUBY_FUNCTION_NAME_STRING, "" __VA_ARGS__); \
 } while (0)
 
 #else
