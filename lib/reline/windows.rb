@@ -323,7 +323,7 @@ class Reline::Windows
   end
 
   def self.erase_after_cursor
-    csbi = 0.chr * 24
+    csbi = 0.chr * 22
     @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi)
     attributes = csbi[8, 2].unpack1('S')
     cursor = csbi[4, 4].unpack1('L')
