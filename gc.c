@@ -1868,7 +1868,7 @@ heap_add_freepage(rb_heap_t *heap, struct heap_page *page)
     page->free_next = heap->free_pages;
     heap->free_pages = page;
 
-    RUBY_DEBUG_LOG("page:%p freelist:%p", page, page->freelist);
+    RUBY_DEBUG_LOG("page:%p freelist:%p", (void *)page, (void *)page->freelist);
 
     asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
 }
@@ -2366,7 +2366,7 @@ heap_next_freepage(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t
     heap->free_pages = page->free_next;
 
     GC_ASSERT(page->free_slots != 0);
-    RUBY_DEBUG_LOG("page:%p freelist:%p cnt:%d", page, page->freelist, page->free_slots);
+    RUBY_DEBUG_LOG("page:%p freelist:%p cnt:%d", (void *)page, (void *)page->freelist, page->free_slots);
 
     asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
 
@@ -5701,7 +5701,7 @@ gc_sweep_step(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
     do {
         GC_ASSERT(sweep_page->size_pool == size_pool);
 
-        RUBY_DEBUG_LOG("sweep_page:%p", sweep_page);
+        RUBY_DEBUG_LOG("sweep_page:%p", (void *)sweep_page);
 
         struct gc_sweep_context ctx = {
             .page = sweep_page,
@@ -8713,7 +8713,7 @@ rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache)
 {
     struct heap_page *page = newobj_cache->using_page;
     RVALUE *freelist = newobj_cache->freelist;
-    RUBY_DEBUG_LOG("ractor using_page:%p freelist:%p", page, freelist);
+    RUBY_DEBUG_LOG("ractor using_page:%p freelist:%p", (void *)page, (void *)freelist);
 
     heap_page_freelist_append(page, freelist);
 

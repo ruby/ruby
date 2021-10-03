@@ -992,7 +992,7 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
 
     rb_native_mutex_initialize(&th->interrupt_lock);
 
-    RUBY_DEBUG_LOG("r:%u th:%p", rb_ractor_id(th->ractor), th);
+    RUBY_DEBUG_LOG("r:%u th:%p", rb_ractor_id(th->ractor), (void *)th);
 
     rb_ractor_living_threads_insert(th->ractor, th);
 

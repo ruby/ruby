@@ -1922,7 +1922,7 @@ rb_ractor_terminate_interrupt_main_thread(rb_ractor_t *r)
             rb_threadptr_interrupt(main_th);
         }
         else {
-            RUBY_DEBUG_LOG("killed (%p)", main_th);
+            RUBY_DEBUG_LOG("killed (%p)", (void *)main_th);
         }
     }
 }
