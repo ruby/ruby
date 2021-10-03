@@ -1924,6 +1924,8 @@ class Reline::LineEditor
     end
   end
 
+  # Editline:: +ed-unassigned+ This  editor command always results in an error.
+  # GNU Readline:: There is no corresponding macro.
   private def ed_unassigned(key) end # do nothing
 
   private def process_insert(force: false)
@@ -1941,6 +1943,19 @@ class Reline::LineEditor
     @continuous_insertion_buffer.clear
   end
 
+  # Editline:: +ed-insert+ (vi input: almost all; emacs: printable characters)
+  #            In insert mode, insert the input character left of the cursor
+  #            position. In replace mode, overwrite the character at the
+  #            cursor and move the cursor to the right by one character
+  #            position. Accept an argument to do this repeatedly. It is an
+  #            error if the input character is the NUL character (Ctrl-@).
+  #            Failure to enlarge the edit buffer also results in an error.
+  # Editline:: +ed-digit+ (emacs: 0 to 9) If in argument input mode, append
+  #            the input digit to the argument being read. Otherwise, call
+  #            +ed-insert+. It is an error if the input character is not a
+  #            digit or if the existing argument is already greater than a
+  #            million.
+  # GNU Readline:: +self-insert+ (a, b, A, 1, !, …) Insert yourself.
   private def ed_insert(key)
     str = nil
     width = nil
