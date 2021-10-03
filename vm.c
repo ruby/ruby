@@ -3819,11 +3819,11 @@ vm_analysis_insn(int insn)
     CONST_ID(usage_hash, "USAGE_ANALYSIS_INSN");
     CONST_ID(bigram_hash, "USAGE_ANALYSIS_INSN_BIGRAM");
     uh = rb_const_get(rb_cRubyVM, usage_hash);
-    if ((ihash = rb_hash_aref(uh, INT2FIX(insn))) == Qnil) {
+    if (NIL_P(ihash = rb_hash_aref(uh, INT2FIX(insn)))) {
 	ihash = rb_hash_new();
 	HASH_ASET(uh, INT2FIX(insn), ihash);
     }
-    if ((cv = rb_hash_aref(ihash, INT2FIX(-1))) == Qnil) {
+    if (NIL_P(cv = rb_hash_aref(ihash, INT2FIX(-1)))) {
 	cv = INT2FIX(0);
     }
     HASH_ASET(ihash, INT2FIX(-1), INT2FIX(FIX2INT(cv) + 1));
@@ -3839,7 +3839,7 @@ vm_analysis_insn(int insn)
 	bi = rb_ary_new4(2, &ary[0]);
 
 	uh = rb_const_get(rb_cRubyVM, bigram_hash);
-	if ((cv = rb_hash_aref(uh, bi)) == Qnil) {
+	if (NIL_P(cv = rb_hash_aref(uh, bi))) {
 	    cv = INT2FIX(0);
 	}
 	HASH_ASET(uh, bi, INT2FIX(FIX2INT(cv) + 1));
@@ -3861,11 +3861,11 @@ vm_analysis_operand(int insn, int n, VALUE op)
     CONST_ID(usage_hash, "USAGE_ANALYSIS_INSN");
 
     uh = rb_const_get(rb_cRubyVM, usage_hash);
-    if ((ihash = rb_hash_aref(uh, INT2FIX(insn))) == Qnil) {
+    if (NIL_P(ihash = rb_hash_aref(uh, INT2FIX(insn)))) {
 	ihash = rb_hash_new();
 	HASH_ASET(uh, INT2FIX(insn), ihash);
     }
-    if ((ophash = rb_hash_aref(ihash, INT2FIX(n))) == Qnil) {
+    if (NIL_P(ophash = rb_hash_aref(ihash, INT2FIX(n)))) {
 	ophash = rb_hash_new();
 	HASH_ASET(ihash, INT2FIX(n), ophash);
     }
@@ -3873,7 +3873,7 @@ vm_analysis_operand(int insn, int n, VALUE op)
     valstr = rb_insn_operand_intern(GET_EC()->cfp->iseq, insn, n, op, 0, 0, 0, 0);
 
     /* set count */
-    if ((cv = rb_hash_aref(ophash, valstr)) == Qnil) {
+    if (NIL_P(cv = rb_hash_aref(ophash, valstr))) {
 	cv = INT2FIX(0);
     }
     HASH_ASET(ophash, valstr, INT2FIX(FIX2INT(cv) + 1));
@@ -3917,7 +3917,7 @@ vm_analysis_register(int reg, int isset)
     valstr = syms[reg][isset];
 
     uh = rb_const_get(rb_cRubyVM, usage_hash);
-    if ((cv = rb_hash_aref(uh, valstr)) == Qnil) {
+    if (NIL_P(cv = rb_hash_aref(uh, valstr))) {
 	cv = INT2FIX(0);
     }
     HASH_ASET(uh, valstr, INT2FIX(FIX2INT(cv) + 1));

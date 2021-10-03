@@ -4354,7 +4354,7 @@ id2ref(VALUE objid)
         ptr = NUM2PTR(objid);
         if (ptr == Qtrue) return Qtrue;
         if (ptr == Qfalse) return Qfalse;
-        if (ptr == Qnil) return Qnil;
+        if (NIL_P(ptr)) return Qnil;
         if (FIXNUM_P(ptr)) return (VALUE)ptr;
         if (FLONUM_P(ptr)) return (VALUE)ptr;
 
@@ -4802,7 +4802,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
 	total += page->total_slots;
     }
 
-    if (hash == Qnil) {
+    if (NIL_P(hash)) {
         hash = rb_hash_new();
     }
     else if (!RHASH_EMPTY_P(hash)) {
@@ -8784,7 +8784,7 @@ rb_gc_register_mark_object(VALUE obj)
         VALUE ary_ary = GET_VM()->mark_object_ary;
         VALUE ary = rb_ary_last(0, 0, ary_ary);
 
-        if (ary == Qnil || RARRAY_LEN(ary) >= MARK_OBJECT_ARY_BUCKET_SIZE) {
+        if (NIL_P(ary) || RARRAY_LEN(ary) >= MARK_OBJECT_ARY_BUCKET_SIZE) {
             ary = rb_ary_tmp_new(MARK_OBJECT_ARY_BUCKET_SIZE);
             rb_ary_push(ary_ary, ary);
         }
@@ -10383,7 +10383,7 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const unsigned 
         rb_raise(rb_eTypeError, "non-hash or symbol given");
     }
 
-    if (sym_major_by == Qnil) {
+    if (NIL_P(sym_major_by)) {
 #define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
         S(major_by);
         S(gc_by);

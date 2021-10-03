@@ -2921,7 +2921,7 @@ enum_each_slice_size(VALUE obj, VALUE args, VALUE eobj)
     if (slice_size <= 0) rb_raise(rb_eArgError, "invalid slice size");
 
     size = enum_size(obj, 0, 0);
-    if (size == Qnil) return Qnil;
+    if (NIL_P(size)) return Qnil;
     if (RB_FLOAT_TYPE_P(size) && RTEST(rb_funcall(size, infinite_p, 0))) {
         return size;
     }
@@ -3003,7 +3003,7 @@ enum_each_cons_size(VALUE obj, VALUE args, VALUE eobj)
     if (cons_size <= 0) rb_raise(rb_eArgError, "invalid size");
 
     size = enum_size(obj, 0, 0);
-    if (size == Qnil) return Qnil;
+    if (NIL_P(size)) return Qnil;
 
     n = add_int(size, 1 - cons_size);
     return (OPTIMIZED_CMP(n, zero, cmp_opt) == -1) ? zero : n;

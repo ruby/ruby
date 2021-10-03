@@ -9934,7 +9934,7 @@ iseq_build_from_ary_exception(rb_iseq_t *iseq, struct st_table *labels_table,
 	    rb_raise(rb_eSyntaxError, "wrong exception entry");
 	}
         type = get_exception_sym2type(RARRAY_AREF(v, 0));
-        if (RARRAY_AREF(v, 1) == Qnil) {
+        if (NIL_P(RARRAY_AREF(v, 1))) {
 	    eiseq = NULL;
 	}
 	else {

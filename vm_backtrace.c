@@ -1495,7 +1495,7 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
 static const rb_iseq_t *
 frame2iseq(VALUE frame)
 {
-    if (frame == Qnil) return NULL;
+    if (NIL_P(frame)) return NULL;
 
     if (RB_TYPE_P(frame, T_IMEMO)) {
 	switch (imemo_type(frame)) {
@@ -1528,7 +1528,7 @@ rb_profile_frame_path(VALUE frame)
 static const rb_callable_method_entry_t *
 cframe(VALUE frame)
 {
-    if (frame == Qnil) return NULL;
+    if (NIL_P(frame)) return NULL;
 
     if (RB_TYPE_P(frame, T_IMEMO)) {
 	switch (imemo_type(frame)) {
@@ -1589,7 +1589,7 @@ rb_profile_frame_first_lineno(VALUE frame)
 static VALUE
 frame2klass(VALUE frame)
 {
-    if (frame == Qnil) return Qnil;
+    if (NIL_P(frame)) return Qnil;
 
     if (RB_TYPE_P(frame, T_IMEMO)) {
 	const rb_callable_method_entry_t *cme = (rb_callable_method_entry_t *)frame;

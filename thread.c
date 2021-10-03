@@ -1330,7 +1330,7 @@ thread_join_m(int argc, VALUE *argv, VALUE self)
      * This supports INFINITY and negative values, so we can't use
      * rb_time_interval right now...
      */
-    if (timeout == Qnil) {
+    if (NIL_P(timeout)) {
         /* unlimited */
     }
     else if (FIXNUM_P(timeout)) {

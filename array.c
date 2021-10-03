@@ -3466,7 +3466,7 @@ rb_ary_bsearch_index(VALUE ary)
 	    satisfied = 1;
 	    smaller = 1;
 	}
-	else if (v == Qfalse || v == Qnil) {
+	else if (!RTEST(v)) {
 	    smaller = 0;
 	}
 	else if (rb_obj_is_kind_of(v, rb_cNumeric)) {
@@ -6479,7 +6479,7 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
 	n = RARRAY_AREF(args, 0);
     }
     if (RARRAY_LEN(self) == 0) return INT2FIX(0);
-    if (n == Qnil) return DBL2NUM(HUGE_VAL);
+    if (NIL_P(n)) return DBL2NUM(HUGE_VAL);
     mul = NUM2LONG(n);
     if (mul <= 0) return INT2FIX(0);
     n = LONG2FIX(mul);
@@ -7344,7 +7344,7 @@ rb_ary_drop(VALUE ary, VALUE n)
     }
 
     result = rb_ary_subseq(ary, pos, RARRAY_LEN(ary));
-    if (result == Qnil) result = rb_ary_new();
+    if (NIL_P(result)) result = rb_ary_new();
     return result;
 }
 

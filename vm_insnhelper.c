@@ -962,7 +962,7 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
     void rb_const_warn_if_deprecated(const rb_const_entry_t *ce, VALUE klass, ID id);
     VALUE val;
 
-    if (orig_klass == Qnil && allow_nil) {
+    if (NIL_P(orig_klass) && allow_nil) {
 	/* in current lexical scope */
         const rb_cref_t *root_cref = vm_get_cref(ec->cfp->ep);
 	const rb_cref_t *cref;
@@ -5232,7 +5232,7 @@ VALUE rb_false(VALUE obj);
 static VALUE
 vm_opt_nil_p(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv)
 {
-    if (recv == Qnil &&
+    if (NIL_P(recv) &&
         BASIC_OP_UNREDEFINED_P(BOP_NIL_P, NIL_REDEFINED_OP_FLAG)) {
         return Qtrue;
     }

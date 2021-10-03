@@ -604,7 +604,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
       case arg_setup_method:
 	break; /* do nothing special */
       case arg_setup_block:
-        if (given_argc == (keyword_hash == Qnil ? 1 : 2) &&
+        if (given_argc == (NIL_P(keyword_hash) ? 1 : 2) &&
             allow_autosplat &&
             (min_argc > 0 || iseq->body->param.opt_num > 1) &&
 	    !iseq->body->param.flags.ambiguous_param0 &&

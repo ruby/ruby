@@ -2102,7 +2102,7 @@ make_econv_exception(rb_econv_t *ec)
                 dumped = rb_sprintf("U+%04X", cc);
             }
         }
-        if (dumped == Qnil)
+        if (NIL_P(dumped))
             dumped = rb_str_dump(bytes);
         if (strcmp(ec->last_error.source_encoding,
                    ec->source_encoding_name) == 0 &&
@@ -3121,7 +3121,7 @@ search_convpath_i(const char *sname, const char *dname, int depth, void *arg)
     VALUE *ary_p = arg;
     VALUE v;
 
-    if (*ary_p == Qnil) {
+    if (NIL_P(*ary_p)) {
         *ary_p = rb_ary_new();
     }
 

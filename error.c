@@ -1986,7 +1986,7 @@ name_err_mesg_to_str(VALUE obj)
 	    break;
 	  default:
 	    d = rb_protect(name_err_mesg_receiver_name, obj, &state);
-	    if (state || d == Qundef || d == Qnil)
+	    if (state || d == Qundef || NIL_P(d))
 		d = rb_protect(rb_inspect, obj, &state);
 	    if (state) {
 		rb_set_errinfo(Qnil);

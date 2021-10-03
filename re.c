@@ -1557,7 +1557,7 @@ rb_reg_prepare_re0(VALUE re, VALUE str, onig_errmsg_buffer err)
 	pattern, pattern + RREGEXP_SRC_LEN(re), enc,
 	&fixed_enc, err);
 
-    if (unescaped == Qnil) {
+    if (NIL_P(unescaped)) {
 	rb_raise(rb_eArgError, "regexp preprocess failed: %s", err);
     }
 
@@ -2357,7 +2357,7 @@ match_inspect(VALUE match)
             rb_str_buf_cat2(str, ":");
         }
         v = rb_reg_nth_match(i, match);
-        if (v == Qnil)
+        if (NIL_P(v))
             rb_str_buf_cat2(str, "nil");
         else
             rb_str_buf_append(str, rb_str_inspect(v));
@@ -2800,7 +2800,7 @@ rb_reg_check_preprocess(VALUE str)
     buf = rb_reg_preprocess(p, end, enc, &fixed_enc, err);
     RB_GC_GUARD(str);
 
-    if (buf == Qnil) {
+    if (NIL_P(buf)) {
 	return rb_reg_error_desc(str, 0, err);
     }
     return Qnil;
@@ -2841,7 +2841,7 @@ rb_reg_preprocess_dregexp(VALUE ary, int options)
 
         buf = rb_reg_preprocess(p, end, src_enc, &fixed_enc, err);
 
-        if (buf == Qnil)
+        if (NIL_P(buf))
             rb_raise(rb_eArgError, "%s", err);
 
         if (fixed_enc != 0) {
@@ -2887,7 +2887,7 @@ rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
     }
 
     unescaped = rb_reg_preprocess(s, s+len, enc, &fixed_enc, err);
-    if (unescaped == Qnil)
+    if (NIL_P(unescaped))
         return -1;
 
     if (fixed_enc) {

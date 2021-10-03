@@ -777,7 +777,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	return;
     }
 
-    if (obj == Qnil) {
+    if (NIL_P(obj)) {
 	w_byte(TYPE_NIL, arg);
     }
     else if (obj == Qtrue) {

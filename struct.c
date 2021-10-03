@@ -712,7 +712,7 @@ struct_hash_set_i(VALUE key, VALUE val, VALUE arg)
     struct struct_hash_set_arg *args = (struct struct_hash_set_arg *)arg;
     int i = rb_struct_pos(args->self, &key);
     if (i < 0) {
-	if (args->unknown_keywords == Qnil) {
+	if (NIL_P(args->unknown_keywords)) {
 	    args->unknown_keywords = rb_ary_new();
 	}
 	rb_ary_push(args->unknown_keywords, key);
@@ -754,7 +754,7 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 	if (n < argc) {
 	    rb_raise(rb_eArgError, "struct size differs");
 	}
-        if (keyword_init == Qnil && argc == 1 && RB_TYPE_P(argv[0], T_HASH) && rb_keyword_given_p()) {
+        if (NIL_P(keyword_init) && argc == 1 && RB_TYPE_P(argv[0], T_HASH) && rb_keyword_given_p()) {
             rb_warn("Passing only keyword arguments to Struct#initialize will behave differently from Ruby 3.2. "\
                     "Please use a Hash literal like .new({k: v}) instead of .new(k: v).");
         }

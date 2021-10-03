@@ -503,7 +503,7 @@ rb_iseq_pathobj_new(VALUE path, VALUE realpath)
 {
     VALUE pathobj;
     VM_ASSERT(RB_TYPE_P(path, T_STRING));
-    VM_ASSERT(realpath == Qnil || RB_TYPE_P(realpath, T_STRING));
+    VM_ASSERT(NIL_P(realpath) || RB_TYPE_P(realpath, T_STRING));
 
     if (path == realpath ||
 	(!NIL_P(realpath) && rb_str_cmp(path, realpath) == 0)) {
@@ -759,7 +759,7 @@ rb_iseq_make_compile_option(rb_compile_option_t *option, VALUE opt)
 static void
 make_compile_option(rb_compile_option_t *option, VALUE opt)
 {
-    if (opt == Qnil) {
+    if (NIL_P(opt)) {
 	*option = COMPILE_OPTION_DEFAULT;
     }
     else if (opt == Qfalse) {
@@ -2413,7 +2413,7 @@ iseq_iterate_children(const rb_iseq_t *iseq, void (*iter_func)(const rb_iseq_t *
                 UNALIGNED_MEMBER_PTR(body->catch_table, entries[i]);
             child = entry->iseq;
             if (child) {
-                if (rb_hash_aref(all_children, (VALUE)child) == Qnil) {
+                if (NIL_P(rb_hash_aref(all_children, (VALUE)child))) {
                     rb_hash_aset(all_children, (VALUE)child, Qtrue);
                     (*iter_func)(child, data);
                 }
@@ -2432,7 +2432,7 @@ iseq_iterate_children(const rb_iseq_t *iseq, void (*iter_func)(const rb_iseq_t *
               case TS_ISEQ:
                 child = (const rb_iseq_t *)code[i+j+1];
                 if (child) {
-                    if (rb_hash_aref(all_children, (VALUE)child) == Qnil) {
+                    if (NIL_P(rb_hash_aref(all_children, (VALUE)child))) {
                         rb_hash_aset(all_children, (VALUE)child, Qtrue);
                         (*iter_func)(child, data);
                     }
