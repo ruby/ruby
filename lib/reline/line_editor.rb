@@ -1948,7 +1948,7 @@ class Reline::LineEditor
   #            position. In replace mode, overwrite the character at the
   #            cursor and move the cursor to the right by one character
   #            position. Accept an argument to do this repeatedly. It is an
-  #            error if the input character is the NUL character (Ctrl-@).
+  #            error if the input character is the NUL character (+Ctrl-@+).
   #            Failure to enlarge the edit buffer also results in an error.
   # Editline:: +ed-digit+ (emacs: 0 to 9) If in argument input mode, append
   #            the input digit to the argument being read. Otherwise, call
