@@ -212,6 +212,26 @@ describe "Process.spawn" do
     end.should output_to_fd("nil\n")
   end
 
+  platform_is_not :windows do
+    it "uses the passed env['PATH'] to search the executable" do
+      dir = tmp("spawn_path_dir")
+      mkdir_p dir
+      begin
+        exe = 'process-spawn-executable-in-path'
+        path = "#{dir}/#{exe}"
+        File.write(path, "#!/bin/sh\necho $1")
+        File.chmod(0755, path)
+
+        env = { "PATH" => "#{dir}#{File::PATH_SEPARATOR}#{ENV['PATH']}" }
+        Process.wait Process.spawn(env, exe, 'OK', out: @name)
+        $?.should.success?
+        File.read(@name).should == "OK\n"
+      ensure
+        rm_r dir
+      end
+    end
+  end
+
   it "calls #to_hash to convert the environment" do
     o = mock("to_hash")
     o.should_receive(:to_hash).and_return({"FOO" => "BAR"})
@@ -551,27 +571,14 @@ describe "Process.spawn" do
 
   platform_is_not :windows do
     context "defaults :close_others to" do
-      ruby_version_is ""..."2.6" do
-        it "true" do
-          IO.pipe do |r, w|
-            w.close_on_exec = false
-            code = "begin; IO.new(#{w.fileno}).close; rescue Errno::EBADF; puts 'not inherited'; end"
-            Process.wait Process.spawn(ruby_cmd(code), :out => @name)
-            File.read(@name).should == "not inherited\n"
-          end
-        end
-      end
-
-      ruby_version_is "2.6" do
-        it "false" do
-          IO.pipe do |r, w|
-            w.close_on_exec = false
-            code = "io = IO.new(#{w.fileno}); io.puts('inherited'); io.close"
-            pid = Process.spawn(ruby_cmd(code))
-            w.close
-            Process.wait(pid)
-            r.read.should == "inherited\n"
-          end
+      it "false" do
+        IO.pipe do |r, w|
+          w.close_on_exec = false
+          code = "io = IO.new(#{w.fileno}); io.puts('inherited'); io.close"
+          pid = Process.spawn(ruby_cmd(code))
+          w.close
+          Process.wait(pid)
+          r.read.should == "inherited\n"
         end
       end
     end

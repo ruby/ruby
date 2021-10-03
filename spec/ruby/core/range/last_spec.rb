@@ -47,9 +47,7 @@ describe "Range#last" do
     -> { (2..3).last("1") }.should raise_error(TypeError)
   end
 
-  ruby_version_is "2.6" do
-    it "raises a RangeError when called on an endless range" do
-      -> { eval("(1..)").last }.should raise_error(RangeError)
-    end
+  it "raises a RangeError when called on an endless range" do
+    -> { eval("(1..)").last }.should raise_error(RangeError)
   end
 end

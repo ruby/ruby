@@ -14,7 +14,7 @@ require 'time'
 # is:
 #
 #   rdoc = RDoc::RDoc.new
-#   options = rdoc.load_options # returns an RDoc::Options instance
+#   options = RDoc::Options.load_options # returns an RDoc::Options instance
 #   # set extra options
 #   rdoc.document options
 #
@@ -149,34 +149,6 @@ class RDoc::RDoc
     @old_siginfo = trap 'INFO' do
       puts @current if @current
     end
-  end
-
-  ##
-  # Loads options from .rdoc_options if the file exists, otherwise creates a
-  # new RDoc::Options instance.
-
-  def load_options
-    options_file = File.expand_path '.rdoc_options'
-    return RDoc::Options.new unless File.exist? options_file
-
-    RDoc.load_yaml
-
-    begin
-      options = YAML.load_file '.rdoc_options'
-    rescue Psych::SyntaxError
-    end
-
-    return RDoc::Options.new if options == false # Allow empty file.
-
-    raise RDoc::Error, "#{options_file} is not a valid rdoc options file" unless
-      RDoc::Options === options or Hash === options
-
-    if Hash === options
-      # Override the default values with the contents of YAML file.
-      options = RDoc::Options.new options
-    end
-
-    options
   end
 
   ##
@@ -443,7 +415,7 @@ The internal error was:
     files.reject do |file, *|
       file =~ /\.(?:class|eps|erb|scpt\.txt|svg|ttf|yml)$/i or
         (file =~ /tags$/i and
-         open(file, 'rb') { |io|
+         File.open(file, 'rb') { |io|
            io.read(100) =~ /\A(\f\n[^,]+,\d+$|!_TAG_)/
          })
     end
@@ -470,7 +442,7 @@ The internal error was:
       @options = options
       @options.finish
     else
-      @options = load_options
+      @options = RDoc::Options.load_options
       @options.parse options
     end
 

@@ -108,8 +108,8 @@ RSpec.describe "Bundler.setup" do
   context "load order" do
     def clean_load_path(lp)
       without_bundler_load_path = ruby("puts $LOAD_PATH").split("\n")
-      lp -= without_bundler_load_path
-      lp.map! {|p| p.sub(/^#{Regexp.union system_gem_path.to_s, default_bundle_path.to_s, lib_dir.to_s}/i, "") }
+      lp -= [*without_bundler_load_path, lib_dir.to_s]
+      lp.map! {|p| p.sub(system_gem_path.to_s, "") }
     end
 
     it "puts loaded gems after -I and RUBYLIB", :ruby_repo do
@@ -143,12 +143,8 @@ RSpec.describe "Bundler.setup" do
         gem "rails"
       G
 
-      # We require an absolute path because relying on the $LOAD_PATH behaves
-      # inconsistently depending on whether we're in a ruby-core setup (and
-      # bundler's lib is in RUBYLIB) or not.
-
       ruby <<-RUBY
-        require '#{lib_dir}/bundler'
+        require 'bundler'
         Bundler.setup
         puts $LOAD_PATH
       RUBY
@@ -157,7 +153,6 @@ RSpec.describe "Bundler.setup" do
 
       expect(load_path).to start_with(
         "/gems/rails-2.3.2/lib",
-        "/gems/bundler-#{Bundler::VERSION}/lib",
         "/gems/activeresource-2.3.2/lib",
         "/gems/activerecord-2.3.2/lib",
         "/gems/actionpack-2.3.2/lib",
@@ -168,6 +163,8 @@ RSpec.describe "Bundler.setup" do
     end
 
     it "falls back to order the load path alphabetically for backwards compatibility" do
+      bundle "config set path.system true"
+
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "weakling"
@@ -175,12 +172,8 @@ RSpec.describe "Bundler.setup" do
         gem "terranova"
       G
 
-      # We require an absolute path because relying on the $LOAD_PATH behaves
-      # inconsistently depending on whether we're in a ruby-core setup (and
-      # bundler's lib is in RUBYLIB) or not.
-
       ruby <<-RUBY
-        require '#{lib_dir}/bundler/setup'
+        require 'bundler/setup'
         puts $LOAD_PATH
       RUBY
 
@@ -199,8 +192,6 @@ RSpec.describe "Bundler.setup" do
       source "#{file_uri_for(gem_repo1)}"
       gem "rack"
     G
-
-    entrypoint = mis_activates_prerelease_default_bundler? ? "#{lib_dir}/bundler" : "bundler"
 
     ruby <<-R
       require '#{entrypoint}'
@@ -439,6 +430,7 @@ RSpec.describe "Bundler.setup" do
       build_git "rack", "1.0.0"
 
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", :git => "#{lib_path("rack-1.0.0")}"
       G
     end
@@ -473,8 +465,6 @@ RSpec.describe "Bundler.setup" do
       FileUtils.rm(bundled_app_lock)
 
       break_git!
-
-      entrypoint = mis_activates_prerelease_default_bundler? ? "#{lib_dir}/bundler" : "bundler"
 
       ruby <<-R
         require "#{entrypoint}"
@@ -651,6 +641,25 @@ RSpec.describe "Bundler.setup" do
 
       ruby "require 'bundler'; Bundler.setup", :env => { "DEBUG" => "1" }
       expect(out).to include("Assuming that source at `vendor/foo` has not changed since fetching its specs errored")
+      expect(out).to include("Found no changes, using resolution from the lockfile")
+      expect(err).to be_empty
+    end
+
+    it "doesn't re-resolve when a pre-release bundler is used and a dependency includes a dependency on bundler" do
+      system_gems "bundler-9.99.9.beta1"
+
+      build_repo4 do
+        build_gem "depends_on_bundler", "1.0" do |s|
+          s.add_dependency "bundler", ">= 1.5.0"
+        end
+      end
+
+      install_gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "depends_on_bundler"
+      G
+
+      ruby "require '#{system_gem_path("gems/bundler-9.99.9.beta1/lib/bundler.rb")}'; Bundler.setup", :env => { "DEBUG" => "1" }
       expect(out).to include("Found no changes, using resolution from the lockfile")
       expect(err).to be_empty
     end
@@ -849,7 +858,7 @@ end
     end
 
     it "should not remove itself from the LOAD_PATH and require a different copy of 'bundler/setup'" do
-      install_gemfile ""
+      install_gemfile "source \"#{file_uri_for(gem_repo1)}\""
 
       ruby <<-R, :env => { "GEM_PATH" => symlinked_gem_home }
         TracePoint.trace(:class) do |tp|
@@ -898,6 +907,7 @@ end
       FileUtils.rm(File.join(path, "foo.gemspec"))
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'foo', '1.2.3', :path => 'vendor/foo'
       G
 
@@ -918,6 +928,7 @@ end
       FileUtils.rm(File.join(absolute_path, "foo.gemspec"))
 
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'foo', '1.2.3', :path => '#{relative_path}'
       G
 
@@ -936,6 +947,7 @@ end
       build_git "no_gemspec", :gemspec => false
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "no_gemspec", "1.0", :git => "#{lib_path("no_gemspec-1.0")}"
       G
     end
@@ -1038,6 +1050,7 @@ end
       end
 
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "bar", :git => "#{lib_path("bar-1.0")}"
       G
     end
@@ -1058,7 +1071,6 @@ end
 
       expect(err.lines.map(&:chomp)).to include(
         a_string_starting_with("[!] There was an error while loading `bar.gemspec`:"),
-        a_string_starting_with("Does it try to require a relative path? That's been removed in Ruby 1.9."),
         " #  from #{default_bundle_path "bundler", "gems", "bar-1.0-#{ref[0, 12]}", "bar.gemspec"}:1",
         " >  require 'foobarbaz'"
       )
@@ -1085,6 +1097,7 @@ end
   describe "when Bundler is bundled" do
     it "doesn't blow up" do
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "bundler", :path => "#{root}"
       G
 
@@ -1126,9 +1139,8 @@ end
 
     context "is not present" do
       it "does not change the lock" do
-        entrypoint = mis_activates_prerelease_default_bundler? ? "#{lib_dir}/bundler/setup" : "bundler/setup"
         lockfile lock_with(nil)
-        ruby "require '#{entrypoint}'"
+        ruby "require '#{entrypoint}/setup'"
         lockfile_should_be lock_with(nil)
       end
     end
@@ -1145,10 +1157,9 @@ end
 
     context "is older" do
       it "does not change the lock" do
-        entrypoint = mis_activates_prerelease_default_bundler? ? "#{lib_dir}/bundler/setup" : "bundler/setup"
         system_gems "bundler-1.10.1"
         lockfile lock_with("1.10.1")
-        ruby "require '#{entrypoint}'"
+        ruby "require '#{entrypoint}/setup'"
         lockfile_should_be lock_with("1.10.1")
       end
     end
@@ -1218,10 +1229,9 @@ end
 
   describe "with gemified standard libraries" do
     it "does not load Psych" do
-      gemfile ""
-      entrypoint = mis_activates_prerelease_default_bundler? ? "#{lib_dir}/bundler/setup" : "bundler/setup"
+      gemfile "source \"#{file_uri_for(gem_repo1)}\""
       ruby <<-RUBY
-        require '#{entrypoint}'
+        require '#{entrypoint}/setup'
         puts defined?(Psych::VERSION) ? Psych::VERSION : "undefined"
         require 'psych'
         puts Psych::VERSION
@@ -1232,7 +1242,7 @@ end
     end
 
     it "does not load openssl" do
-      install_gemfile ""
+      install_gemfile "source \"#{file_uri_for(gem_repo1)}\""
       ruby <<-RUBY
         require "bundler/setup"
         puts defined?(OpenSSL) || "undefined"
@@ -1291,13 +1301,13 @@ end
       RUBY
 
       it "activates no gems with -rbundler/setup" do
-        install_gemfile ""
+        install_gemfile "source \"#{file_uri_for(gem_repo1)}\""
         ruby code, :env => { "RUBYOPT" => activation_warning_hack_rubyopt + " -rbundler/setup" }
         expect(out).to eq("{}")
       end
 
       it "activates no gems with bundle exec" do
-        install_gemfile ""
+        install_gemfile "source \"#{file_uri_for(gem_repo1)}\""
         create_file("script.rb", code)
         bundle "exec ruby ./script.rb", :env => { "RUBYOPT" => activation_warning_hack_rubyopt }
         expect(out).to eq("{}")
@@ -1306,7 +1316,7 @@ end
       it "activates no gems with bundle exec that is loaded" do
         skip "not executable" if Gem.win_platform?
 
-        install_gemfile ""
+        install_gemfile "source \"#{file_uri_for(gem_repo1)}\""
         create_file("script.rb", "#!/usr/bin/env ruby\n\n#{code}")
         FileUtils.chmod(0o777, bundled_app("script.rb"))
         bundle "exec ./script.rb", :artifice => nil, :env => { "RUBYOPT" => activation_warning_hack_rubyopt }
@@ -1421,10 +1431,5 @@ end
 
       expect(last_command.stdboth).to eq("true")
     end
-  end
-
-  # Tested rubygems does not include https://github.com/rubygems/rubygems/pull/2728 and will not always end up activating the current bundler
-  def mis_activates_prerelease_default_bundler?
-    Gem.rubygems_version < Gem::Version.new("3.1.a")
   end
 end

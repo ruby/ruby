@@ -272,6 +272,8 @@ module Psych
           tag   = 'tag:yaml.org,2002:str'
           plain = false
           quote = false
+        elsif o == 'y' || o == 'n'
+          style = Nodes::Scalar::DOUBLE_QUOTED
         elsif @line_width && o.length > @line_width
           style = Nodes::Scalar::FOLDED
         elsif o =~ /^[^[:word:]][^"]*$/
@@ -509,9 +511,9 @@ module Psych
       def emit_coder c, o
         case c.type
         when :scalar
-          @emitter.scalar c.scalar, nil, c.tag, c.tag.nil?, false, Nodes::Scalar::ANY
+          @emitter.scalar c.scalar, nil, c.tag, c.tag.nil?, false, c.style
         when :seq
-          @emitter.start_sequence nil, c.tag, c.tag.nil?, Nodes::Sequence::BLOCK
+          @emitter.start_sequence nil, c.tag, c.tag.nil?, c.style
           c.seq.each do |thing|
             accept thing
           end
@@ -533,6 +535,52 @@ module Psych
           @emitter.scalar("#{iv.to_s.sub(/^@/, '')}", nil, nil, true, false, Nodes::Scalar::ANY)
           accept target.instance_variable_get(iv)
         end
+      end
+    end
+
+    class RestrictedYAMLTree < YAMLTree
+      DEFAULT_PERMITTED_CLASSES = {
+        TrueClass => true,
+        FalseClass => true,
+        NilClass => true,
+        Integer => true,
+        Float => true,
+        String => true,
+        Array => true,
+        Hash => true,
+      }.compare_by_identity.freeze
+
+      def initialize emitter, ss, options
+        super
+        @permitted_classes = DEFAULT_PERMITTED_CLASSES.dup
+        Array(options[:permitted_classes]).each do |klass|
+          @permitted_classes[klass] = true
+        end
+        @permitted_symbols = {}.compare_by_identity
+        Array(options[:permitted_symbols]).each do |symbol|
+          @permitted_symbols[symbol] = true
+        end
+        @aliases = options.fetch(:aliases, false)
+      end
+
+      def accept target
+        if !@aliases && @st.key?(target)
+          raise BadAlias, "Tried to dump an aliased object"
+        end
+
+        unless @permitted_classes[target.class]
+          raise DisallowedClass.new('dump', target.class.name || target.class.inspect)
+        end
+
+        super
+      end
+
+      def visit_Symbol sym
+        unless @permitted_symbols[sym]
+          raise DisallowedClass.new('dump', "Symbol(#{sym.inspect})")
+        end
+
+        super
       end
     end
   end

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "shellwords"
-
 module Bundler
   class GemInstaller
     attr_reader :spec, :standalone, :worker, :force, :installer
@@ -31,34 +29,23 @@ module Bundler
 
     def specific_failure_message(e)
       message = "#{e.class}: #{e.message}\n"
-      message += "  " + e.backtrace.join("\n  ") + "\n\n" if Bundler.ui.debug?
+      message += "  " + e.backtrace.join("\n  ") + "\n\n"
       message = message.lines.first + Bundler.ui.add_color(message.lines.drop(1).join, :clear)
       message + Bundler.ui.add_color(failure_message, :red)
     end
 
     def failure_message
-      return install_error_message if spec.source.options["git"]
-      "#{install_error_message}\n#{gem_install_message}"
+      install_error_message
     end
 
     def install_error_message
       "An error occurred while installing #{spec.name} (#{spec.version}), and Bundler cannot continue."
     end
 
-    def gem_install_message
-      source = spec.source
-      return unless source.respond_to?(:remotes)
-
-      if source.remotes.size == 1
-        "Make sure that `gem install #{spec.name} -v '#{spec.version}' --source '#{source.remotes.first}'` succeeds before bundling."
-      else
-        "Make sure that `gem install #{spec.name} -v '#{spec.version}'` succeeds before bundling."
-      end
-    end
-
     def spec_settings
       # Fetch the build settings, if there are any
       if settings = Bundler.settings["build.#{spec.name}"]
+        require "shellwords"
         Shellwords.shellsplit(settings)
       end
     end

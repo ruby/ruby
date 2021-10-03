@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Public APIs to provide ::rb_fd_select().
  *
  * Several Unix  platforms support file  descriptors bigger than  FD_SETSIZE in
@@ -66,26 +66,134 @@
 
 struct timeval;
 
+/**
+ * The data  structure which wraps the  fd_set bitmap used by  select(2).  This
+ * allows Ruby to use FD sets  larger than that allowed by historic limitations
+ * on modern platforms.
+ */
 typedef struct {
-    int maxfd;
-    fd_set *fdset;
+    int maxfd;                  /**< Maximum allowed number of FDs. */
+    fd_set *fdset;              /**< File descriptors buffer */
 } rb_fdset_t;
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
-void rb_fd_init(rb_fdset_t *);
-void rb_fd_term(rb_fdset_t *);
-void rb_fd_zero(rb_fdset_t *);
-void rb_fd_set(int, rb_fdset_t *);
-void rb_fd_clr(int, rb_fdset_t *);
-int rb_fd_isset(int, const rb_fdset_t *);
-void rb_fd_copy(rb_fdset_t *, const fd_set *, int);
+RBIMPL_ATTR_NONNULL(())
+/**
+ * (Re-)initialises a  fdset.  One must  be initialised before  other `rb_fd_*`
+ * operations.  Analogous to calling `malloc(3)` to allocate an `fd_set`.
+ *
+ * @param[out]  f  An fdset to squash.
+ * @post        `f` holds no file descriptors.
+ */
+void rb_fd_init(rb_fdset_t *f);
+
+RBIMPL_ATTR_NONNULL(())
+/**
+ * Destroys the ::rb_fdset_t,  releasing any memory and resources  it used.  It
+ * must be  reinitialised using rb_fd_init()  before future use.   Analogous to
+ * calling `free(3)` to release memory for an `fd_set`.
+ *
+ * @param[out]  f  An fdset to squash.
+ * @post        `f` holds no file descriptors.
+ */
+void rb_fd_term(rb_fdset_t *f);
+
+RBIMPL_ATTR_NONNULL(())
+/**
+ * Wipes out the current set of FDs.
+ *
+ * @param[out]  f  The fdset to clear.
+ * @post        `f` has no FDs.
+ */
+void rb_fd_zero(rb_fdset_t *f);
+
+RBIMPL_ATTR_NONNULL(())
+/**
+ * Sets an fd to a fdset.
+ *
+ * @param[in]   fd  A file descriptor.
+ * @param[out]  f   Target fdset.
+ * @post        `f` holds `fd`.
+ */
+void rb_fd_set(int fd, rb_fdset_t *f);
+
+RBIMPL_ATTR_NONNULL(())
+/**
+ * Releases a specific FD from the given fdset.
+ *
+ * @param[in]   fd  Target FD.
+ * @param[out]  f   The fdset that holds `fd`.
+ * @post        `f` doesn't hold n.
+ */
+void rb_fd_clr(int fd, rb_fdset_t *f);
+
+RBIMPL_ATTR_NONNULL(())
+RBIMPL_ATTR_PURE()
+/**
+ * Queries if the given FD is in the given set.
+ *
+ * @param[in]  fd  Target FD.
+ * @param[in]  f   The fdset to scan.
+ * @retval     1   Yes there is.
+ * @retval     0   No there isn't.
+ * @see        http://www.freebsd.org/cgi/query-pr.cgi?pr=91421
+ */
+int rb_fd_isset(int fd, const rb_fdset_t *f);
+
+/**
+ * Destructively overwrites an fdset with another.
+ *
+ * @param[out]  dst   Target fdset.
+ * @param[in]   src   Source fdset.
+ * @param[in]   max   Maximum number of file descriptors to copy.
+ * @post        `dst` is a copy of `src`.
+ */
+void rb_fd_copy(rb_fdset_t *dst, const fd_set *src, int max);
+
+/**
+ * Identical  to  rb_fd_copy(),  except  it copies  unlimited  number  of  file
+ * descriptors.
+ *
+ * @param[out]  dst   Target fdset.
+ * @param[in]   src   Source fdset.
+ * @post        `dst` is a copy of `src`.
+ */
 void rb_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src);
-int rb_fd_select(int, rb_fdset_t *, rb_fdset_t *, rb_fdset_t *, struct timeval *);
+
+/**
+ * Waits for multiple file descriptors at once.
+ *
+ * @param[in]      nfds       Max FD in everything passed, plus one.
+ * @param[in,out]  rfds       Set of FDs to wait for reads.
+ * @param[in,out]  wfds       Set of FDs to wait for writes.
+ * @param[in,out]  efds       Set of FDs to wait for OOBs.
+ * @param[in,out]  timeout    Max blocking duration.
+ * @retval         -1         Failed, errno set.
+ * @retval          0         Timeout exceeded.
+ * @retval         otherwise  Total number of file descriptors returned.
+ * @post           `rfds` contains readable FDs.
+ * @post           `wfds` contains writable FDs.
+ * @post           `efds` contains exceptional FDs.
+ * @post           `timeout` is the time left.
+ * @note           All pointers are allowed to be null pointers.
+ */
+int rb_fd_select(int nfds, rb_fdset_t *rfds, rb_fdset_t *wfds, rb_fdset_t *efds, struct timeval *timeout);
 RBIMPL_SYMBOL_EXPORT_END()
 
 RBIMPL_ATTR_NONNULL(())
 RBIMPL_ATTR_PURE()
-/* :TODO: can this function be __attribute__((returns_nonnull)) or not? */
+/**
+ * Raw pointer to `fd_set`.
+ *
+ * @param[in]  f         Target fdset.
+ * @retval     NULL      `f` is already terminated by rb_fd_term().
+ * @retval     otherwise  Underlying fd_set.
+ *
+ * @internal
+ *
+ * Extension library  must not touch  raw pointers.  It was  a bad idea  to let
+ * them use it.
+ */
 static inline fd_set *
 rb_fd_ptr(const rb_fdset_t *f)
 {
@@ -94,6 +202,12 @@ rb_fd_ptr(const rb_fdset_t *f)
 
 RBIMPL_ATTR_NONNULL(())
 RBIMPL_ATTR_PURE()
+/**
+ * It seems this function has no use.  Maybe just remove?
+ *
+ * @param[in]  f  A set.
+ * @return     Number of file descriptors stored.
+ */
 static inline int
 rb_fd_max(const rb_fdset_t *f)
 {

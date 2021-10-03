@@ -118,14 +118,14 @@ module Spec
         opts[:raise_on_error] = false
         @errors = names.map do |full_name|
           name, version, platform = full_name.split(/\s+/)
-          require_path = name == "bundler" ? "#{lib_dir}/bundler" : name.tr("-", "/")
+          require_path = name.tr("-", "/")
           version_const = name == "bundler" ? "Bundler::VERSION" : Spec::Builders.constantize(name)
           source_const = "#{Spec::Builders.constantize(name)}_SOURCE"
           ruby <<~R, opts
-            require '#{lib_dir}/bundler'
+            require 'bundler'
             Bundler.setup(#{groups})
 
-            require '#{require_path}.rb'
+            require '#{require_path}'
             actual_version, actual_platform = #{version_const}.split(/\s+/, 2)
             unless Gem::Version.new(actual_version) == Gem::Version.new('#{version}')
               puts actual_version
@@ -156,7 +156,7 @@ module Spec
             actual_source = out.split("\n").last
             next "Expected #{name} (#{version}) to be installed from `#{source}`, was actually from `#{actual_source}`"
           end
-          next "Command to check forgem inclusion of gem #{full_name} failed"
+          next "Command to check for inclusion of gem #{full_name} failed"
         end.compact
 
         @errors.empty?
@@ -170,7 +170,7 @@ module Spec
           name, version = name.split(/\s+/, 2)
           ruby <<-R, opts
             begin
-              require '#{lib_dir}/bundler'
+              require 'bundler'
               Bundler.setup(#{groups})
             rescue Bundler::GemNotFound, Bundler::GitError
               exit 0

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/package'
-require 'rubygems/version_option'
+require_relative '../command'
+require_relative '../package'
+require_relative '../version_option'
 
 class Gem::Commands::BuildCommand < Gem::Command
   include Gem::VersionOption
@@ -23,7 +23,7 @@ class Gem::Commands::BuildCommand < Gem::Command
       options[:output] = value
     end
 
-    add_option '-C PATH', '', 'Run as if gem build was started in <PATH> instead of the current working directory.' do |value, options|
+    add_option '-C PATH', 'Run as if gem build was started in <PATH> instead of the current working directory.' do |value, options|
       options[:build_path] = value
     end
   end

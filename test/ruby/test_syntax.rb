@@ -1462,6 +1462,31 @@ eom
     assert_syntax_error('def obj.foo=() = 42 rescue nil', error)
   end
 
+  def test_methoddef_endless_command
+    assert_valid_syntax('def foo = puts "Hello"')
+    assert_valid_syntax('def foo() = puts "Hello"')
+    assert_valid_syntax('def foo(x) = puts x')
+    assert_valid_syntax('def obj.foo = puts "Hello"')
+    assert_valid_syntax('def obj.foo() = puts "Hello"')
+    assert_valid_syntax('def obj.foo(x) = puts x')
+    k = Class.new do
+      class_eval('def rescued(x) = raise "to be caught" rescue "instance #{x}"')
+      class_eval('def self.rescued(x) = raise "to be caught" rescue "class #{x}"')
+    end
+    assert_equal("class ok", k.rescued("ok"))
+    assert_equal("instance ok", k.new.rescued("ok"))
+
+    # Current technical limitation: cannot prepend "private" or something for command endless def
+    error = /syntax error, unexpected string literal/
+    error2 = /syntax error, unexpected local variable or method/
+    assert_syntax_error('private def foo = puts "Hello"', error)
+    assert_syntax_error('private def foo() = puts "Hello"', error)
+    assert_syntax_error('private def foo(x) = puts x', error2)
+    assert_syntax_error('private def obj.foo = puts "Hello"', error)
+    assert_syntax_error('private def obj.foo() = puts "Hello"', error)
+    assert_syntax_error('private def obj.foo(x) = puts x', error2)
+  end
+
   def test_methoddef_in_cond
     assert_valid_syntax('while def foo; tap do end; end; break; end')
     assert_valid_syntax('while def foo a = tap do end; end; break; end')
@@ -1613,7 +1638,8 @@ eom
       assert_equal(-1, obj.method(:foo).arity)
       parameters = obj.method(:foo).parameters
       assert_equal(:rest, parameters.dig(0, 0))
-      assert_equal(:block, parameters.dig(1, 0))
+      assert_equal(:keyrest, parameters.dig(1, 0))
+      assert_equal(:block, parameters.dig(2, 0))
     end
   end
 
@@ -1728,6 +1754,21 @@ eom
     assert_equal [[4, 1, 5, 2], {a: 1}], obj.foo(4, 5, 2, a: 1)
     assert_equal [[4, 1, 5, 2, 3], {a: 1}], obj.foo(4, 5, 2, 3, a: 1)
     assert_equal [[4, 1, 5, 2, 3], {a: 1}], obj.foo(4, 5, 2, 3, a: 1){|args, kws| [args, kws]}
+  end
+
+  def test_cdhash
+    assert_separately([], <<-RUBY)
+      n = case 1 when 2r then false else true end
+      assert_equal(n, true, '[ruby-core:103759] [Bug #17854]')
+    RUBY
+    assert_separately([], <<-RUBY)
+      n = case 3/2r when 1.5r then true else false end
+      assert_equal(n, true, '[ruby-core:103759] [Bug #17854]')
+    RUBY
+    assert_separately([], <<-RUBY)
+      n = case 1i when 1i then true else false end
+      assert_equal(n, true, '[ruby-core:103759] [Bug #17854]')
+    RUBY
   end
 
   private

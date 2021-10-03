@@ -74,6 +74,8 @@ rb_hook_list_free(rb_hook_list_t *hooks)
 
 /* ruby_vm_event_flags management */
 
+void rb_clear_attr_ccs(void);
+
 static void
 update_global_event_hook(rb_event_flag_t vm_events)
 {
@@ -81,13 +83,18 @@ update_global_event_hook(rb_event_flag_t vm_events)
     rb_event_flag_t enabled_iseq_events = ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS;
 
     if (new_iseq_events & ~enabled_iseq_events) {
-        /* Stop calling all JIT-ed code. Compiling trace insns is not supported for now. */
-#if USE_MJIT
-        mjit_call_p = FALSE;
-#endif
+        // :class events are triggered only in ISEQ_TYPE_CLASS, but mjit_target_iseq_p ignores such iseqs.
+        // Thus we don't need to cancel JIT-ed code for :class events.
+        if (new_iseq_events != RUBY_EVENT_CLASS) {
+            // Stop calling all JIT-ed code. We can't rewrite existing JIT-ed code to trace_ insns for now.
+            mjit_cancel_all("TracePoint is enabled");
+        }
 
 	/* write all ISeqs if and only if new events are added */
 	rb_iseq_trace_set_all(new_iseq_events | enabled_iseq_events);
+    }
+    else {
+        rb_clear_attr_ccs();
     }
 
     ruby_vm_event_flags = vm_events;
@@ -160,8 +167,7 @@ rb_thread_add_event_hook(VALUE thval, rb_event_hook_func_t func, rb_event_flag_t
 void
 rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
 {
-    rb_event_hook_t *hook = alloc_event_hook(func, events, data, RUBY_EVENT_HOOK_FLAG_SAFE);
-    connect_event_hook(GET_EC(), hook);
+    rb_add_event_hook2(func, events, data, RUBY_EVENT_HOOK_FLAG_SAFE);
 }
 
 void
@@ -859,7 +865,7 @@ fill_id_and_klass(rb_trace_arg_t *trace_arg)
 VALUE
 rb_tracearg_parameters(rb_trace_arg_t *trace_arg)
 {
-    switch(trace_arg->event) {
+    switch (trace_arg->event) {
       case RUBY_EVENT_CALL:
       case RUBY_EVENT_RETURN:
       case RUBY_EVENT_B_CALL:
@@ -1321,7 +1327,7 @@ tracepoint_enable_m(rb_execution_context_t *ec, VALUE tpval, VALUE target, VALUE
 			 tpval);
     }
     else {
-	return previous_tracing ? Qtrue : Qfalse;
+	return RBOOL(previous_tracing);
     }
 }
 
@@ -1343,7 +1349,7 @@ tracepoint_disable_m(rb_execution_context_t *ec, VALUE tpval)
     }
     else {
         rb_tracepoint_disable(tpval);
-	return previous_tracing ? Qtrue : Qfalse;
+	return RBOOL(previous_tracing);
     }
 }
 
@@ -1351,7 +1357,7 @@ VALUE
 rb_tracepoint_enabled_p(VALUE tpval)
 {
     rb_tp_t *tp = tpptr(tpval);
-    return tp->tracing ? Qtrue : Qfalse;
+    return RBOOL(tp->tracing);
 }
 
 static VALUE
@@ -1377,36 +1383,6 @@ tracepoint_new(VALUE klass, rb_thread_t *target_th, rb_event_flag_t events, void
     return tpval;
 }
 
-/*
- * Creates a tracepoint by registering a callback function for one or more
- * tracepoint events. Once the tracepoint is created, you can use
- * rb_tracepoint_enable to enable the tracepoint.
- *
- * Parameters:
- *   1. VALUE target_thval - Meant for picking the thread in which the tracepoint
- *      is to be created. However, current implementation ignore this parameter,
- *      tracepoint is created for all threads. Simply specify Qnil.
- *   2. rb_event_flag_t events - Event(s) to listen to.
- *   3. void (*func)(VALUE, void *) - A callback function.
- *   4. void *data - Void pointer that will be passed to the callback function.
- *
- * When the callback function is called, it will be passed 2 parameters:
- *   1)VALUE tpval - the TracePoint object from which trace args can be extracted.
- *   2)void *data - A void pointer which helps to share scope with the callback function.
- *
- * It is important to note that you cannot register callbacks for normal events and internal events
- * simultaneously because they are different purpose.
- * You can use any Ruby APIs (calling methods and so on) on normal event hooks.
- * However, in internal events, you can not use any Ruby APIs (even object creations).
- * This is why we can't specify internal events by TracePoint directly.
- * Limitations are MRI version specific.
- *
- * Example:
- *   rb_tracepoint_new(Qnil, RUBY_INTERNAL_EVENT_NEWOBJ | RUBY_INTERNAL_EVENT_FREEOBJ, obj_event_i, data);
- *
- *   In this example, a callback function obj_event_i will be registered for
- *   internal events RUBY_INTERNAL_EVENT_NEWOBJ and RUBY_INTERNAL_EVENT_FREEOBJ.
- */
 VALUE
 rb_tracepoint_new(VALUE target_thval, rb_event_flag_t events, void (*func)(VALUE, void *), void *data)
 {

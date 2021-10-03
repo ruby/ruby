@@ -34,7 +34,7 @@ ASSERT_ractor_unlocking(rb_ractor_t *r)
 {
 #if RACTOR_CHECK_MODE > 0
     // GET_EC is NULL in an MJIT worker
-    if (GET_EC() != NULL && r->sync.locked_by == rb_ractor_self(GET_RACTOR())) {
+    if (rb_current_execution_context(false) != NULL && r->sync.locked_by == rb_ractor_self(GET_RACTOR())) {
         rb_bug("recursive ractor locking");
     }
 #endif
@@ -45,7 +45,7 @@ ASSERT_ractor_locking(rb_ractor_t *r)
 {
 #if RACTOR_CHECK_MODE > 0
     // GET_EC is NULL in an MJIT worker
-    if (GET_EC() != NULL && r->sync.locked_by != rb_ractor_self(GET_RACTOR())) {
+    if (rb_current_execution_context(false) != NULL && r->sync.locked_by != rb_ractor_self(GET_RACTOR())) {
         rp(r->sync.locked_by);
         rb_bug("ractor lock is not acquired.");
     }
@@ -61,7 +61,7 @@ ractor_lock(rb_ractor_t *r, const char *file, int line)
     rb_native_mutex_lock(&r->sync.lock);
 
 #if RACTOR_CHECK_MODE > 0
-    if (GET_EC() != NULL) { // GET_EC is NULL in an MJIT worker
+    if (rb_current_execution_context(false) != NULL) { // GET_EC is NULL in an MJIT worker
         r->sync.locked_by = rb_ractor_self(GET_RACTOR());
     }
 #endif
@@ -1420,8 +1420,14 @@ cancel_single_ractor_mode(void)
     // enable multi-ractor mode
     RUBY_DEBUG_LOG("enable multi-ractor mode", 0);
 
+    VALUE was_disabled = rb_gc_enable();
+
     rb_gc_start();
     rb_transient_heap_evacuate();
+
+    if (was_disabled) {
+        rb_gc_disable();
+    }
 
     ruby_single_main_ractor = NULL;
 
@@ -1479,6 +1485,9 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
             rb_native_cond_signal(&vm->ractor.sync.terminate_cond);
         }
         vm->ractor.cnt--;
+
+        /* Clear the cached freelist to prevent a memory leak. */
+        rb_gc_ractor_newobj_cache_clear(&cr->newobj_cache);
 
         ractor_status_set(cr, ractor_terminated);
     }
@@ -1913,7 +1922,7 @@ rb_ractor_terminate_interrupt_main_thread(rb_ractor_t *r)
             rb_threadptr_interrupt(main_th);
         }
         else {
-            RUBY_DEBUG_LOG("killed (%p)", main_th);
+            RUBY_DEBUG_LOG("killed (%p)", (void *)main_th);
         }
     }
 }
@@ -2359,7 +2368,11 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
                 .stop = false,
                 .data = data,
             };
-            rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
+            RB_VM_LOCK_ENTER_NO_BARRIER();
+            {
+                rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
+            }
+            RB_VM_LOCK_LEAVE_NO_BARRIER();
             if (d.stop) return 1;
         }
         break;
@@ -2669,7 +2682,11 @@ static int
 obj_refer_only_shareables_p(VALUE obj)
 {
     int cnt = 0;
-    rb_objspace_reachable_objects_from(obj, obj_refer_only_shareables_p_i, &cnt);
+    RB_VM_LOCK_ENTER_NO_BARRIER();
+    {
+        rb_objspace_reachable_objects_from(obj, obj_refer_only_shareables_p_i, &cnt);
+    }
+    RB_VM_LOCK_LEAVE_NO_BARRIER();
     return cnt == 0;
 }
 

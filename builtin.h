@@ -65,7 +65,7 @@ PUREFUNC(static inline VALUE rb_vm_lvar(rb_execution_context_t *ec, int index));
 static inline VALUE
 rb_vm_lvar(rb_execution_context_t *ec, int index)
 {
-#if VM_CORE_H_EC_DEFINED
+#if defined(VM_CORE_H_EC_DEFINED) && VM_CORE_H_EC_DEFINED
     return ec->cfp->ep[index];
 #else
     return rb_vm_lvar_exposed(ec, index);

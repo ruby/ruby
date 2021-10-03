@@ -19,11 +19,9 @@ describe :range_cover_and_include, shared: true do
     (0.5...2.4).send(@method, 2.4).should == false
   end
 
-  ruby_version_is "2.6" do
-    it "returns true if other is an element of self for endless ranges" do
-      eval("(1..)").send(@method, 2.4).should == true
-      eval("(0.5...)").send(@method, 2.4).should == true
-    end
+  it "returns true if other is an element of self for endless ranges" do
+    eval("(1..)").send(@method, 2.4).should == true
+    eval("(0.5...)").send(@method, 2.4).should == true
   end
 
   ruby_version_is "2.7" do

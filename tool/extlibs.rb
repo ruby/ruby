@@ -243,7 +243,7 @@ class ExtLibs
           begin
             extracted = do_command(mode, dest, url, cache_dir, chksums)
           rescue => e
-            warn e.inspect
+            warn e.full_message
             success = false
           end
           url = chksums = nil

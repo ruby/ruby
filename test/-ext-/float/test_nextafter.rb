@@ -50,7 +50,7 @@ class TestFloatExt < Test::Unit::TestCase
               assert_equal(s1, s2,
               "Bug::Float.missing_nextafter(#{'%a' % n1}, #{'%a' % n2}) = #{'%a' % v1} != " +
               "#{'%a' % v2} = Bug::Float.system_nextafter(#{'%a' % n1}, #{'%a' % n2})")
-            rescue Minitest::Assertion
+            rescue Test::Unit::AssertionFailedError
               if /aix/ =~ RUBY_PLATFORM
                 skip "Known bug in nextafter(3) on AIX"
               end

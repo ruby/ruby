@@ -13,7 +13,7 @@ RSpec.describe "bundle remove" do
     end
   end
 
-  context "when --install flag is specified" do
+  context "when --install flag is specified", :bundler => "< 3" do
     it "removes gems from .bundle" do
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
@@ -40,6 +40,7 @@ RSpec.describe "bundle remove" do
         bundle "remove rack"
 
         expect(out).to include("rack was removed.")
+        expect(the_bundle).to_not include_gems "rack"
         gemfile_should_be <<-G
           source "#{file_uri_for(gem_repo1)}"
         G
@@ -229,7 +230,7 @@ RSpec.describe "bundle remove" do
       end
     end
 
-    context "when the gem is present in mutiple groups" do
+    context "when the gem is present in multiple groups" do
       it "removes all empty blocks" do
         gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
@@ -333,7 +334,7 @@ RSpec.describe "bundle remove" do
   end
 
   describe "arbitrary gemfile" do
-    context "when mutiple gems are present in same line" do
+    context "when multiple gems are present in same line" do
       it "shows warning for gems not removed" do
         install_gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"

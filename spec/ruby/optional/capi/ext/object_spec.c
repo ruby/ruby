@@ -151,9 +151,27 @@ static VALUE object_specs_rb_obj_method(VALUE self, VALUE obj, VALUE method) {
   return rb_obj_method(obj, method);
 }
 
+#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(__clang__) && defined(__has_warning)
+# if __has_warning("-Wdeprecated-declarations")
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wdeprecated-declarations"
+# endif
+#endif
+
 static VALUE object_spec_rb_obj_taint(VALUE self, VALUE obj) {
   return rb_obj_taint(obj);
 }
+
+#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
+# pragma GCC diagnostic pop
+#elif defined(__clang__) && defined(__has_warning)
+# if __has_warning("-Wdeprecated-declarations")
+#  pragma clang diagnostic pop
+# endif
+#endif
 
 static VALUE so_require(VALUE self) {
   rb_require("fixtures/foo");
@@ -187,6 +205,11 @@ static VALUE so_to_id(VALUE self, VALUE obj) {
 
 static VALUE object_spec_RTEST(VALUE self, VALUE value) {
   return RTEST(value) ? Qtrue : Qfalse;
+}
+
+static VALUE so_check_type(VALUE self, VALUE obj, VALUE other) {
+  rb_check_type(obj, TYPE(other));
+  return Qtrue;
 }
 
 static VALUE so_is_type_nil(VALUE self, VALUE obj) {
@@ -434,6 +457,7 @@ void Init_object_spec(void) {
 
   rb_define_method(cls, "rb_to_id", so_to_id, 1);
   rb_define_method(cls, "RTEST", object_spec_RTEST, 1);
+  rb_define_method(cls, "rb_check_type", so_check_type, 2);
   rb_define_method(cls, "rb_is_type_nil", so_is_type_nil, 1);
   rb_define_method(cls, "rb_is_type_object", so_is_type_object, 1);
   rb_define_method(cls, "rb_is_type_array", so_is_type_array, 1);

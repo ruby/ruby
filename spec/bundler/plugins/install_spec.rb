@@ -22,6 +22,19 @@ RSpec.describe "bundler plugin install" do
     plugin_should_be_installed("foo")
   end
 
+  it "installs from sources configured as Gem.sources without any flags" do
+    bundle "plugin install foo", :env => { "BUNDLER_SPEC_GEM_SOURCES" => file_uri_for(gem_repo2).to_s }
+
+    expect(out).to include("Installed plugin foo")
+    plugin_should_be_installed("foo")
+  end
+
+  it "shows help when --help flag is given" do
+    bundle "plugin install --help"
+
+    expect(out).to include("bundle plugin install PLUGINS    # Install the plugin from the source")
+  end
+
   context "plugin is already installed" do
     before do
       bundle "plugin install foo --source #{file_uri_for(gem_repo2)}"
@@ -54,6 +67,21 @@ RSpec.describe "bundler plugin install" do
     expect(out).to include("Installing foo 1.0")
     expect(out).to include("Installing kung-foo 1.0")
     plugin_should_be_installed("foo", "kung-foo")
+  end
+
+  it "installs the latest version if not installed" do
+    update_repo2 do
+      build_plugin "foo", "1.1"
+    end
+
+    bundle "plugin install foo --version 1.0 --source #{file_uri_for(gem_repo2)} --verbose"
+    expect(out).to include("Installing foo 1.0")
+
+    bundle "plugin install foo --source #{file_uri_for(gem_repo2)} --verbose"
+    expect(out).to include("Installing foo 1.1")
+
+    bundle "plugin install foo --source #{file_uri_for(gem_repo2)} --verbose"
+    expect(out).to include("Using foo 1.1")
   end
 
   it "works with different load paths" do
@@ -96,9 +124,9 @@ RSpec.describe "bundler plugin install" do
         build_gem "charlie"
       end
 
-      bundle "plugin install charlie --source #{file_uri_for(gem_repo2)}"
+      bundle "plugin install charlie --source #{file_uri_for(gem_repo2)}", :raise_on_error => false
 
-      expect(err).to include("Failed to install the following plugins: `charlie`. The underlying error was: plugins.rb was not found")
+      expect(err).to include("Failed to install plugin `charlie`, due to Bundler::Plugin::MalformattedPlugin (plugins.rb was not found in the plugin.)")
 
       expect(global_plugin_gem("charlie-1.0")).not_to be_directory
 
@@ -115,7 +143,7 @@ RSpec.describe "bundler plugin install" do
         end
       end
 
-      bundle "plugin install chaplin --source #{file_uri_for(gem_repo2)}"
+      bundle "plugin install chaplin --source #{file_uri_for(gem_repo2)}", :raise_on_error => false
 
       expect(global_plugin_gem("chaplin-1.0")).not_to be_directory
 
@@ -201,6 +229,7 @@ RSpec.describe "bundler plugin install" do
       end
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         plugin 'ga-plugin', :git => "#{lib_path("ga-plugin-1.0")}"
       G
 
@@ -214,6 +243,7 @@ RSpec.describe "bundler plugin install" do
       end
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         plugin 'ga-plugin', :path => "#{lib_path("ga-plugin-1.0")}"
       G
 

@@ -1,26 +1,61 @@
 # frozen_string_literal: true
-begin
-  gem 'minitest', '< 5.0.0' if defined? Gem
-rescue Gem::LoadError
-end
-require 'minitest/unit'
-require 'test/unit/assertions'
+
 require_relative '../envutil'
 require_relative '../colorize'
 require 'test/unit/testcase'
 require 'optparse'
+require "leakchecker"
 
 # See Test::Unit
 module Test
+
+  class << self
+    ##
+    # Filter object for backtraces.
+
+    attr_accessor :backtrace_filter
+  end
+
+  class BacktraceFilter # :nodoc:
+    def filter bt
+      return ["No backtrace"] unless bt
+
+      new_bt = []
+
+      unless $DEBUG then
+        bt.each do |line|
+          break if line =~ /lib\/test/
+          new_bt << line
+        end
+
+        new_bt = bt.reject { |line| line =~ /lib\/test/ } if new_bt.empty?
+        new_bt = bt.dup if new_bt.empty?
+      else
+        new_bt = bt.dup
+      end
+
+      new_bt
+    end
+  end
+
+  self.backtrace_filter = BacktraceFilter.new
+
+  def self.filter_backtrace bt # :nodoc:
+    backtrace_filter.filter bt
+  end
+
   ##
   # Test::Unit is an implementation of the xUnit testing framework for Ruby.
-  #
-  # If you are writing new test code, please use MiniTest instead of Test::Unit.
-  #
-  # Test::Unit has been left in the standard library to support legacy test
-  # suites.
   module Unit
-    TEST_UNIT_IMPLEMENTATION = 'test/unit compatibility layer using minitest' # :nodoc:
+    ##
+    # Assertion base class
+
+    class AssertionFailedError < Exception; end
+
+    ##
+    # Assertion raised when skipping a test
+
+    class PendedError < AssertionFailedError; end
 
     module RunCount # :nodoc: all
       @@run_count = 0
@@ -65,13 +100,16 @@ module Test
         non_options(args, options)
         @run_options = orig_args
 
+        order = options[:test_order]
         if seed = options[:seed]
+          order ||= :random
           srand(seed)
         else
           seed = options[:seed] = srand % 100_000
           srand(seed)
           orig_args.unshift "--seed=#{seed}"
         end
+        Test::Unit::TestCase.test_order = order if order
 
         @help = "\n" + orig_args.map { |s|
           "  " + (s =~ /[\s|&<>$()]/ ? s.inspect : s)
@@ -81,8 +119,7 @@ module Test
 
       private
       def setup_options(opts, options)
-        opts.separator 'minitest options:'
-        opts.version = MiniTest::Unit::VERSION
+        opts.separator 'test-unit options:'
 
         opts.on '-h', '--help', 'Display this help.' do
           puts opts
@@ -103,7 +140,7 @@ module Test
         end
 
         opts.on '--test-order=random|alpha|sorted|nosort', [:random, :alpha, :sorted, :nosort] do |a|
-          MiniTest::Unit::TestCase.test_order = a
+          options[:test_order] = a
         end
       end
 
@@ -123,13 +160,6 @@ module Test
           unless negative.empty?
             negative = Regexp.union(*negative.map! {|s| Regexp.new(s[neg_pat, 1])})
             filter = /\A(?=.*#{filter})(?!.*#{negative})/
-          end
-          if Regexp === filter
-            filter = filter.dup
-            # bypass conversion in minitest
-            def filter.=~(other)    # :nodoc:
-              super unless Regexp === other
-            end
           end
           options[:filter] = filter
         end
@@ -517,7 +547,7 @@ module Test
         require 'timeout'
         @tasks = @files.dup # Array of filenames.
 
-        case MiniTest::Unit::TestCase.test_order
+        case Test::Unit::TestCase.test_order
         when :random
           @tasks.shuffle!
         else
@@ -578,7 +608,7 @@ module Test
           unless @interrupt || !@options[:retry] || @need_quit
             parallel = @options[:parallel]
             @options[:parallel] = false
-            suites, rep = rep.partition {|r| r[:testcase] && r[:file] && r[:report].any? {|e| !e[2].is_a?(MiniTest::Skip)}}
+            suites, rep = rep.partition {|r| r[:testcase] && r[:file] && r[:report].any? {|e| !e[2].is_a?(Test::Unit::PendedError)}}
             suites.map {|r| File.realpath(r[:file])}.uniq.each {|file| require file}
             suites.map! {|r| eval("::"+r[:testcase])}
             del_status_line or puts
@@ -889,7 +919,7 @@ module Test
             runner.add_status(" = #$1")
           when /\A\.+\z/
             runner.succeed
-          when /\A[EFS]\z/
+          when /\A\.*[EFS][EFS.]*\z/
             runner.failed(s)
           else
             $stdout.print(s)
@@ -1008,7 +1038,7 @@ module Test
 
       def non_options(files, options)
         if options.delete(:gc_stress)
-          MiniTest::Unit::TestCase.class_eval do
+          Test::Unit::TestCase.class_eval do
             oldrun = instance_method(:run)
             define_method(:run) do |runner|
               begin
@@ -1021,7 +1051,7 @@ module Test
           end
         end
         if options.delete(:gc_compact)
-          MiniTest::Unit::TestCase.class_eval do
+          Test::Unit::TestCase.class_eval do
             oldrun = instance_method(:run)
             define_method(:run) do |runner|
               begin
@@ -1158,29 +1188,331 @@ module Test
       end
     end
 
-    class Runner < MiniTest::Unit # :nodoc: all
-      include Test::Unit::Options
-      include Test::Unit::StatusLine
-      include Test::Unit::Parallel
-      include Test::Unit::Statistics
-      include Test::Unit::Skipping
-      include Test::Unit::GlobOption
-      include Test::Unit::RepeatOption
-      include Test::Unit::LoadPathOption
-      include Test::Unit::GCOption
-      include Test::Unit::ExcludesOption
-      include Test::Unit::TimeoutOption
-      include Test::Unit::RunCount
+    class Runner # :nodoc: all
 
-      def run(argv)
-        super
+      attr_accessor :report, :failures, :errors, :skips # :nodoc:
+      attr_accessor :assertion_count                    # :nodoc:
+      attr_writer   :test_count                         # :nodoc:
+      attr_accessor :start_time                         # :nodoc:
+      attr_accessor :help                               # :nodoc:
+      attr_accessor :verbose                            # :nodoc:
+      attr_writer   :options                            # :nodoc:
+
+      ##
+      # :attr:
+      #
+      # if true, installs an "INFO" signal handler (only available to BSD and
+      # OS X users) which prints diagnostic information about the test run.
+      #
+      # This is auto-detected by default but may be overridden by custom
+      # runners.
+
+      attr_accessor :info_signal
+
+      ##
+      # Lazy accessor for options.
+
+      def options
+        @options ||= {seed: 42}
+      end
+
+      @@installed_at_exit ||= false
+      @@out = $stdout
+      @@after_tests = []
+      @@current_repeat_count = 0
+
+      ##
+      # A simple hook allowing you to run a block of code after _all_ of
+      # the tests are done. Eg:
+      #
+      #   Test::Unit::Runner.after_tests { p $debugging_info }
+
+      def self.after_tests &block
+        @@after_tests << block
+      end
+
+      ##
+      # Returns the stream to use for output.
+
+      def self.output
+        @@out
+      end
+
+      ##
+      # Sets Test::Unit::Runner to write output to +stream+.  $stdout is the default
+      # output
+
+      def self.output= stream
+        @@out = stream
+      end
+
+      ##
+      # Tells Test::Unit::Runner to delegate to +runner+, an instance of a
+      # Test::Unit::Runner subclass, when Test::Unit::Runner#run is called.
+
+      def self.runner= runner
+        @@runner = runner
+      end
+
+      ##
+      # Returns the Test::Unit::Runner subclass instance that will be used
+      # to run the tests. A Test::Unit::Runner instance is the default
+      # runner.
+
+      def self.runner
+        @@runner ||= self.new
+      end
+
+      ##
+      # Return all plugins' run methods (methods that start with "run_").
+
+      def self.plugins
+        @@plugins ||= (["run_tests"] +
+                      public_instance_methods(false).
+                      grep(/^run_/).map { |s| s.to_s }).uniq
+      end
+
+      ##
+      # Return the IO for output.
+
+      def output
+        self.class.output
+      end
+
+      def puts *a  # :nodoc:
+        output.puts(*a)
+      end
+
+      def print *a # :nodoc:
+        output.print(*a)
+      end
+
+      def test_count # :nodoc:
+        @test_count ||= 0
+      end
+
+      ##
+      # Runner for a given +type+ (eg, test vs bench).
+
+      def self.current_repeat_count
+        @@current_repeat_count
+      end
+
+      def _run_anything type
+        suites = Test::Unit::TestCase.send "#{type}_suites"
+        return if suites.empty?
+
+        puts
+        puts "# Running #{type}s:"
+        puts
+
+        @test_count, @assertion_count = 0, 0
+        test_count = assertion_count = 0
+        sync = output.respond_to? :"sync=" # stupid emacs
+        old_sync, output.sync = output.sync, true if sync
+
+        @@current_repeat_count = 0
+        begin
+          start = Time.now
+
+          results = _run_suites suites, type
+
+          @test_count      = results.inject(0) { |sum, (tc, _)| sum + tc }
+          @assertion_count = results.inject(0) { |sum, (_, ac)| sum + ac }
+          test_count      += @test_count
+          assertion_count += @assertion_count
+          t = Time.now - start
+          @@current_repeat_count += 1
+          unless @repeat_count
+            puts
+            puts
+          end
+          puts "Finished%s %ss in %.6fs, %.4f tests/s, %.4f assertions/s.\n" %
+              [(@repeat_count ? "(#{@@current_repeat_count}/#{@repeat_count}) " : ""), type,
+                t, @test_count.fdiv(t), @assertion_count.fdiv(t)]
+        end while @repeat_count && @@current_repeat_count < @repeat_count &&
+                  report.empty? && failures.zero? && errors.zero?
+
+        output.sync = old_sync if sync
+
+        report.each_with_index do |msg, i|
+          puts "\n%3d) %s" % [i + 1, msg]
+        end
+
+        puts
+        @test_count      = test_count
+        @assertion_count = assertion_count
+
+        status
+      end
+
+      ##
+      # Run a single +suite+ for a given +type+.
+
+      def _run_suite suite, type
+        header = "#{type}_suite_header"
+        puts send(header, suite) if respond_to? header
+
+        filter = options[:filter]
+
+        all_test_methods = suite.send "#{type}_methods"
+
+        leakchecker = LeakChecker.new
+        if ENV["LEAK_CHECKER_TRACE_OBJECT_ALLOCATION"]
+          require "objspace"
+          trace = true
+        end
+
+        assertions = all_test_methods.filter_map { |method|
+          if filter
+            next unless filter === method || filter === "#{suite}##{method}"
+          end
+
+          inst = suite.new method
+          inst._assertions = 0
+
+          print "#{suite}##{method} = " if @verbose
+
+          start_time = Time.now if @verbose
+          result =
+            if trace
+              ObjectSpace.trace_object_allocations {inst.run self}
+            else
+              inst.run self
+            end
+
+          print "%.2f s = " % (Time.now - start_time) if @verbose
+          print result
+          puts if @verbose
+          $stdout.flush
+
+          unless defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # compiler process is wrongly considered as leak
+            leakchecker.check("#{inst.class}\##{inst.__name__}")
+          end
+
+          inst._assertions
+        }
+        return assertions.size, assertions.inject(0) { |sum, n| sum + n }
+      end
+
+      ##
+      # Record the result of a single test. Makes it very easy to gather
+      # information. Eg:
+      #
+      #   class StatisticsRecorder < Test::Unit::Runner
+      #     def record suite, method, assertions, time, error
+      #       # ... record the results somewhere ...
+      #     end
+      #   end
+      #
+      #   Test::Unit::Runner.runner = StatisticsRecorder.new
+      #
+      # NOTE: record might be sent more than once per test.  It will be
+      # sent once with the results from the test itself.  If there is a
+      # failure or error in teardown, it will be sent again with the
+      # error or failure.
+
+      def record suite, method, assertions, time, error
+      end
+
+      def location e # :nodoc:
+        last_before_assertion = ""
+
+        return '<empty>' unless e.backtrace # SystemStackError can return nil.
+
+        e.backtrace.reverse_each do |s|
+          break if s =~ /in .(assert|refute|flunk|pass|fail|raise|must|wont)/
+          last_before_assertion = s
+        end
+        last_before_assertion.sub(/:in .*$/, '')
+      end
+
+      ##
+      # Writes status for failed test +meth+ in +klass+ which finished with
+      # exception +e+
+
+      def initialize # :nodoc:
+        @report = []
+        @errors = @failures = @skips = 0
+        @verbose = false
+        @mutex = Thread::Mutex.new
+        @info_signal = Signal.list['INFO']
+        @repeat_count = nil
+      end
+
+      def synchronize # :nodoc:
+        if @mutex then
+          @mutex.synchronize { yield }
+        else
+          yield
+        end
+      end
+
+      def inspect
+        "#<#{self.class.name}: " <<
+        instance_variables.filter_map do |var|
+          next if var == :@option_parser # too big
+          "#{var}=#{instance_variable_get(var).inspect}"
+        end.join(", ") << ">"
+      end
+
+      ##
+      # Top level driver, controls all output and filtering.
+
+      def _run args = []
+        args = process_args args # ARGH!! blame test/unit process_args
+        self.options.merge! args
+
+        puts "Run options: #{help}"
+
+        self.class.plugins.each do |plugin|
+          send plugin
+          break unless report.empty?
+        end
+
+        return failures + errors if self.test_count > 0 # or return nil...
+      rescue Interrupt
+        abort 'Interrupted'
+      end
+
+      ##
+      # Runs test suites matching +filter+.
+
+      def run_tests
+        _run_anything :test
+      end
+
+      ##
+      # Writes status to +io+
+
+      def status io = self.output
+        format = "%d tests, %d assertions, %d failures, %d errors, %d skips"
+        io.puts format % [test_count, assertion_count, failures, errors, skips]
+      end
+
+      prepend Test::Unit::Options
+      prepend Test::Unit::StatusLine
+      prepend Test::Unit::Parallel
+      prepend Test::Unit::Statistics
+      prepend Test::Unit::Skipping
+      prepend Test::Unit::GlobOption
+      prepend Test::Unit::RepeatOption
+      prepend Test::Unit::LoadPathOption
+      prepend Test::Unit::GCOption
+      prepend Test::Unit::ExcludesOption
+      prepend Test::Unit::TimeoutOption
+      prepend Test::Unit::RunCount
+
+      ##
+      # Begins the full test run. Delegates to +runner+'s #_run method.
+
+      def run(argv = [])
+        self.class.runner._run(argv)
       rescue NoMemoryError
         system("cat /proc/meminfo") if File.exist?("/proc/meminfo")
         system("ps x -opid,args,%cpu,%mem,nlwp,rss,vsz,wchan,stat,start,time,etime,blocked,caught,ignored,pending,f") if File.exist?("/bin/ps")
         raise
       end
-
-      class << self; undef autorun; end
 
       @@stop_auto_run = false
       def self.autorun
@@ -1192,16 +1524,27 @@ module Test
         @@installed_at_exit = true
       end
 
-      alias mini_run_suite _run_suite
+      alias orig_run_suite _run_suite
 
-      # Overriding of MiniTest::Unit#puke
+      # Overriding of Test::Unit::Runner#puke
       def puke klass, meth, e
-        # TODO:
-        #   this overriding is for minitest feature that skip messages are
-        #   hidden when not verbose (-v), note this is temporally.
         n = report.size
-        rep = super
-        if MiniTest::Skip === e and /no message given\z/ =~ e.message
+        e = case e
+            when Test::Unit::PendedError then
+              @skips += 1
+              return "S" unless @verbose
+              "Skipped:\n#{klass}##{meth} [#{location e}]:\n#{e.message}\n"
+            when Test::Unit::AssertionFailedError then
+              @failures += 1
+              "Failure:\n#{klass}##{meth} [#{location e}]:\n#{e.message}\n"
+            else
+              @errors += 1
+              bt = Test::filter_backtrace(e.backtrace).join "\n    "
+              "Error:\n#{klass}##{meth}:\n#{e.class}: #{e.message.b}\n    #{bt}\n"
+            end
+        @report << e
+        rep = e[0, 1]
+        if Test::Unit::PendedError === e and /no message given\z/ =~ e.message
           report.slice!(n..-1)
           rep = "."
         end
@@ -1259,32 +1602,6 @@ module Test
 
       attr_accessor :message, :backtrace
     end
-  end
-end
-
-module MiniTest # :nodoc: all
-  class Unit
-  end
-end
-
-class MiniTest::Unit::TestCase # :nodoc: all
-  test_order = self.test_order
-  class << self
-    attr_writer :test_order
-    undef test_order
-  end
-  def self.test_order
-    defined?(@test_order) ? @test_order : superclass.test_order
-  end
-  self.test_order = test_order
-  undef run_test
-  RUN_TEST_TRACE = "#{__FILE__}:#{__LINE__+3}:in `run_test'".freeze
-  def run_test(name)
-    progname, $0 = $0, "#{$0}: #{self.class}##{name}"
-    self.__send__(name)
-  ensure
-    $@.delete(RUN_TEST_TRACE) if $@
-    $0 = progname
   end
 end
 

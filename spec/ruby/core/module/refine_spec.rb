@@ -453,44 +453,22 @@ describe "Module#refine" do
       result.should == ["(1)", "(2)", "(3)"]
     end
 
-    ruby_version_is "" ... "2.6" do
-      it "is not honored by Kernel#public_send" do
-        refined_class = ModuleSpecs.build_refined_class
+    it "is honored by Kernel#public_send" do
+      refined_class = ModuleSpecs.build_refined_class
 
-        refinement = Module.new do
-          refine refined_class do
-            def foo; "foo from refinement"; end
-          end
+      refinement = Module.new do
+        refine refined_class do
+          def foo; "foo from refinement"; end
         end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = refined_class.new.public_send :foo
-        end
-
-        result.should == "foo"
       end
-    end
 
-    ruby_version_is "2.6" do
-      it "is honored by Kernel#public_send" do
-        refined_class = ModuleSpecs.build_refined_class
-
-        refinement = Module.new do
-          refine refined_class do
-            def foo; "foo from refinement"; end
-          end
-        end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = refined_class.new.public_send :foo
-        end
-
-        result.should == "foo from refinement"
+      result = nil
+      Module.new do
+        using refinement
+        result = refined_class.new.public_send :foo
       end
+
+      result.should == "foo from refinement"
     end
 
     it "is honored by string interpolation" do
@@ -647,81 +625,39 @@ describe "Module#refine" do
       end
     end
 
-    ruby_version_is "" ... "2.6" do
-      it "is not honored by Kernel#respond_to?" do
-        klass = Class.new
-        refinement = Module.new do
-          refine klass do
-            def foo; end
-          end
+    it "is honored by Kernel#respond_to?" do
+      klass = Class.new
+      refinement = Module.new do
+        refine klass do
+          def foo; end
         end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = klass.new.respond_to?(:foo)
-        end
-
-        result.should == false
       end
+
+      result = nil
+      Module.new do
+        using refinement
+        result = klass.new.respond_to?(:foo)
+      end
+
+      result.should == true
     end
 
-    ruby_version_is "2.6" do
-      it "is honored by Kernel#respond_to?" do
-        klass = Class.new
-        refinement = Module.new do
-          refine klass do
-            def foo; end
+    it "is honored by &" do
+      refinement = Module.new do
+        refine String do
+          def to_proc(*args)
+            -> * { 'foo' }
           end
         end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = klass.new.respond_to?(:foo)
-        end
-
-        result.should == true
       end
-    end
 
-    ruby_version_is ""..."2.6" do
-      it "is not honored by &" do
-        refinement = Module.new do
-          refine String do
-            def to_proc(*args)
-              -> * { 'foo' }
-            end
-          end
-        end
-
-        -> do
-          Module.new do
-            using refinement
-            ["hola"].map(&"upcase")
-          end
-        end.should raise_error(TypeError, /wrong argument type String \(expected Proc\)/)
+      result = nil
+      Module.new do
+        using refinement
+        result = ["hola"].map(&"upcase")
       end
-    end
 
-    ruby_version_is "2.6" do
-      it "is honored by &" do
-        refinement = Module.new do
-          refine String do
-            def to_proc(*args)
-              -> * { 'foo' }
-            end
-          end
-        end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = ["hola"].map(&"upcase")
-        end
-
-        result.should == ['foo']
-      end
+      result.should == ['foo']
     end
   end
 

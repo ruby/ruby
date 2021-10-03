@@ -1,7 +1,6 @@
 #ifndef RUBY_VM_CALLINFO_H                               /*-*-C-*-vi:se ft=c:*/
 #define RUBY_VM_CALLINFO_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -169,8 +168,8 @@ static inline void
 vm_ci_dump(const struct rb_callinfo *ci)
 {
     if (vm_ci_packed_p(ci)) {
-        fprintf(stderr, "packed_ci ID:%s flag:%x argc:%u\n",
-                rb_id2name(vm_ci_mid(ci)), vm_ci_flag(ci), vm_ci_argc(ci));
+        ruby_debug_printf("packed_ci ID:%s flag:%x argc:%u\n",
+                          rb_id2name(vm_ci_mid(ci)), vm_ci_flag(ci), vm_ci_argc(ci));
     }
     else {
         rp(ci);
@@ -205,7 +204,7 @@ vm_ci_new_(ID mid, unsigned int flag, unsigned int argc, const struct rb_callinf
 #endif
 
     const bool debug = 0;
-    if (debug) fprintf(stderr, "%s:%d ", file, line);
+    if (debug) ruby_debug_printf("%s:%d ", file, line);
 
     // TODO: dedup
     const struct rb_callinfo *ci = (const struct rb_callinfo *)

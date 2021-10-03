@@ -29,7 +29,7 @@ begin
       write_irbrc <<~'LINES'
         puts 'start IRB'
       LINES
-      start_terminal(25, 80, %W{ruby -I#{@pwd}/lib -I#{@pwd}/../reline/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+      start_terminal(25, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
       write(<<~EOC)
         'Hello, World!'
       EOC
@@ -46,7 +46,7 @@ begin
       write_irbrc <<~'LINES'
         puts 'start IRB'
       LINES
-      start_terminal(25, 80, %W{ruby -I#{@pwd}/lib -I#{@pwd}/../reline/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+      start_terminal(25, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
       write(<<~EOC)
         class A
           def inspect; '#<A>'; end
@@ -85,7 +85,7 @@ begin
       write_irbrc <<~'LINES'
         puts 'start IRB'
       LINES
-      start_terminal(40, 80, %W{ruby -I#{@pwd}/lib -I#{@pwd}/../reline/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+      start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
       write(<<~EOC)
         class A
           def inspect; '#<A>'; end
@@ -150,6 +150,23 @@ begin
         irb(main):025:0>   &.b()
         => #<A>
         irb(main):026:0>
+      EOC
+    end
+
+    def test_symbol_with_backtick
+      write_irbrc <<~'LINES'
+        puts 'start IRB'
+      LINES
+      start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+      write(<<~EOC)
+        :`
+      EOC
+      close
+      assert_screen(<<~EOC)
+        start IRB
+        irb(main):001:0> :`
+        => :`
+        irb(main):002:0>
       EOC
     end
 

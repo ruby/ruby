@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/platform'
 require 'rbconfig'
 
@@ -122,6 +122,7 @@ class TestGemPlatform < Gem::TestCase
       'i586-linux-gnu'         => ['x86',       'linux',     nil],
       'i386-linux-gnu'         => ['x86',       'linux',     nil],
       'i386-mingw32'           => ['x86',       'mingw32',   nil],
+      'x64-mingw-ucrt'         => ['x64',       'mingw',     'ucrt'],
       'i386-mswin32'           => ['x86',       'mswin32',   nil],
       'i386-mswin32_80'        => ['x86',       'mswin32',   '80'],
       'i386-mswin32-80'        => ['x86',       'mswin32',   '80'],

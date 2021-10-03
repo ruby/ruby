@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require "rubygems/deprecate"
+require_relative "deprecate"
 
 ##
 # Available list of platforms for targeting Gem installations.
@@ -38,6 +38,10 @@ class Gem::Platform
     # Note: this method might be redefined by Ruby implementations to
     # customize behavior per RUBY_ENGINE, gem_name or other criteria.
     match_platforms?(platform, Gem.platforms)
+  end
+
+  def self.sort_priority(platform)
+    platform == Gem::Platform::RUBY ? -1 : 1
   end
 
   def self.installable?(spec)
@@ -100,6 +104,7 @@ class Gem::Platform
                       when /^dotnet([\d.]*)/ then       [ 'dotnet',    $1  ]
                       when /linux-?((?!gnu)\w+)?/ then  [ 'linux',     $1  ]
                       when /mingw32/ then               [ 'mingw32',   nil ]
+                      when /mingw-?(\w+)?/ then         [ 'mingw',     $1  ]
                       when /(mswin\d+)(\_(\d+))?/ then
                         os, version = $1, $3
                         @cpu = 'x86' if @cpu.nil? and os =~ /32$/

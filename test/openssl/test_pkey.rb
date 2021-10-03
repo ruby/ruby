@@ -169,4 +169,9 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
       key1.compare?(key4)
     end
   end
+
+  def test_to_text
+    rsa = Fixtures.pkey("rsa1024")
+    assert_include rsa.to_text, "publicExponent"
+  end
 end

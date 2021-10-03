@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require 'rubygems/remote_fetcher'
-require 'rubygems/text'
+require_relative 'remote_fetcher'
+require_relative 'text'
 
 ##
 # Utility methods for using the RubyGems API.
@@ -31,7 +31,8 @@ module Gem::GemcutterUtilities
 
   def add_otp_option
     add_option('--otp CODE',
-               'Digit code for multifactor authentication') do |value, options|
+               'Digit code for multifactor authentication',
+               'You can also use the environment variable GEM_HOST_OTP_CODE') do |value, options|
       options[:otp] = value
     end
   end
@@ -49,6 +50,13 @@ module Gem::GemcutterUtilities
     else
       Gem.configuration.rubygems_api_key
     end
+  end
+
+  ##
+  # The OTP code from the command options or from the user's configuration.
+
+  def otp
+    options[:otp] || ENV["GEM_HOST_OTP_CODE"]
   end
 
   ##
@@ -126,7 +134,7 @@ module Gem::GemcutterUtilities
     response = rubygems_api_request(:put, "api/v1/api_key",
                                     sign_in_host, scope: scope) do |request|
       request.basic_auth email, password
-      request["OTP"] = options[:otp] if options[:otp]
+      request["OTP"] = otp if otp
       request.body = URI.encode_www_form({:api_key => api_key }.merge(update_scope_params))
     end
 
@@ -159,7 +167,7 @@ module Gem::GemcutterUtilities
     response = rubygems_api_request(:post, "api/v1/api_key",
                                     sign_in_host, scope: scope) do |request|
       request.basic_auth email, password
-      request["OTP"] = options[:otp] if options[:otp]
+      request["OTP"] = otp if otp
       request.body = URI.encode_www_form({ name: key_name }.merge(scope_params))
     end
 
@@ -224,7 +232,7 @@ module Gem::GemcutterUtilities
     request_method = Net::HTTP.const_get method.to_s.capitalize
 
     Gem::RemoteFetcher.fetcher.request(uri, request_method) do |req|
-      req["OTP"] = options[:otp] if options[:otp]
+      req["OTP"] = otp if otp
       block.call(req)
     end
   end

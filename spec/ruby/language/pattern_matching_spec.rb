@@ -41,24 +41,26 @@ ruby_version_is "2.7" do
     end
 
     describe "warning" do
-      before :each do
-        ruby_version_is ""..."3.0" do
-          @src = 'case [0, 1]; in [a, b]; end'
+      ruby_version_is ""..."3.1" do
+        before :each do
+          ruby_version_is ""..."3.0" do
+            @src = 'case [0, 1]; in [a, b]; end'
+          end
+
+          ruby_version_is "3.0" do
+            @src = '[0, 1] => [a, b]'
+          end
+
+          @experimental, Warning[:experimental] = Warning[:experimental], true
         end
 
-        ruby_version_is "3.0" do
-          @src = '[0, 1] => [a, b]'
+        after :each do
+          Warning[:experimental] = @experimental
         end
 
-        @experimental, Warning[:experimental] = Warning[:experimental], true
-      end
-
-      after :each do
-        Warning[:experimental] = @experimental
-      end
-
-      it "warns about pattern matching is experimental feature" do
-        -> { eval @src }.should complain(/pattern matching is experimental, and the behavior may change in future versions of Ruby!/i)
+        it "warns about pattern matching is experimental feature" do
+          -> { eval @src }.should complain(/pattern matching is experimental, and the behavior may change in future versions of Ruby!/i)
+        end
       end
     end
 
@@ -1131,6 +1133,20 @@ ruby_version_is "2.7" do
         end
 
         result.should == true
+      end
+    end
+
+    ruby_version_is "3.1" do
+      it "can omit parentheses in one line pattern matching" do
+        eval(<<~RUBY).should == [1, 2]
+          [1, 2] => a, b
+          [a, b]
+        RUBY
+
+        eval(<<~RUBY).should == 1
+          {a: 1} => a:
+          a
+        RUBY
       end
     end
   end

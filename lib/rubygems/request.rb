@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 require 'net/http'
-require 'rubygems/user_interaction'
+require_relative 'user_interaction'
 
 class Gem::Request
   extend Gem::UserInteraction
@@ -44,7 +44,7 @@ class Gem::Request
   end
 
   def self.configure_connection_for_https(connection, cert_files)
-    raise Gem::Exception.new('OpenSSl is not available. Install OpenSSL and rebuild Ruby (preferred) or use non-HTTPS sources') unless Gem::HAVE_OPENSSL
+    raise Gem::Exception.new('OpenSSL is not available. Install OpenSSL and rebuild Ruby (preferred) or use non-HTTPS sources') unless Gem::HAVE_OPENSSL
 
     connection.use_ssl = true
     connection.verify_mode =
@@ -191,7 +191,7 @@ class Gem::Request
     begin
       @requests[connection.object_id] += 1
 
-      verbose "#{request.method} #{@uri}"
+      verbose "#{request.method} #{Gem::Uri.new(@uri).redacted}"
 
       file_name = File.basename(@uri.path)
       # perform download progress reporter only for gems
@@ -287,6 +287,6 @@ class Gem::Request
   end
 end
 
-require 'rubygems/request/http_pool'
-require 'rubygems/request/https_pool'
-require 'rubygems/request/connection_pools'
+require_relative 'request/http_pool'
+require_relative 'request/https_pool'
+require_relative 'request/connection_pools'

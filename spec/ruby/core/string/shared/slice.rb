@@ -327,13 +327,11 @@ describe :string_slice_range, shared: true do
     -> { "hello".send(@method, 0..bignum_value) }.should raise_error(RangeError)
   end
 
-  ruby_version_is "2.6" do
-    it "works with endless ranges" do
-      "hello there".send(@method, eval("(2..)")).should == "llo there"
-      "hello there".send(@method, eval("(2...)")).should == "llo there"
-      "hello there".send(@method, eval("(-4..)")).should == "here"
-      "hello there".send(@method, eval("(-4...)")).should == "here"
-    end
+  it "works with endless ranges" do
+    "hello there".send(@method, eval("(2..)")).should == "llo there"
+    "hello there".send(@method, eval("(2...)")).should == "llo there"
+    "hello there".send(@method, eval("(-4..)")).should == "here"
+    "hello there".send(@method, eval("(-4...)")).should == "here"
   end
 
   ruby_version_is "2.7" do

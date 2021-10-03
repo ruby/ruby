@@ -159,6 +159,13 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal(nil, url.userinfo)
   end
 
+  def test_parse_scheme_with_symbols
+    # Valid schemes from https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml
+    assert_equal 'ms-search', URI.parse('ms-search://localhost').scheme
+    assert_equal 'microsoft.windows.camera', URI.parse('microsoft.windows.camera://localhost').scheme
+    assert_equal 'coaps+ws', URI.parse('coaps+ws:localhost').scheme
+  end
+
   def test_merge
     u1 = URI.parse('http://foo')
     u2 = URI.parse('http://foo/')

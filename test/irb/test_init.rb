@@ -67,6 +67,25 @@ module TestIRB
       Process.kill("SIGKILL", status.pid) if !status.exited? && !status.stopped? && !status.signaled?
     end
 
+    def test_no_color_environment_variable
+      orig_no_color = ENV['NO_COLOR']
+      orig_use_colorize = IRB.conf[:USE_COLORIZE]
+      IRB.conf[:USE_COLORIZE] = true
+
+      assert IRB.conf[:USE_COLORIZE]
+
+      ENV['NO_COLOR'] = 'true'
+      IRB.setup(__FILE__)
+      refute IRB.conf[:USE_COLORIZE]
+
+      ENV['NO_COLOR'] = nil
+      IRB.setup(__FILE__)
+      assert IRB.conf[:USE_COLORIZE]
+    ensure
+      ENV['NO_COLOR'] = orig_no_color
+      IRB.conf[:USE_COLORIZE] = orig_use_colorize
+    end
+
     private
 
     def with_argv(argv)

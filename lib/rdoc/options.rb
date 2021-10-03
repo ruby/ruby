@@ -971,7 +971,7 @@ Usage: #{opt.program_name} [options] [names...]
       opt.on("--template-stylesheets=FILES", PathArray,
              "Set (or add to) the list of files to",
              "include with the html template.") do |value|
-        @template_stylesheets << value
+        @template_stylesheets.concat value
       end
 
       opt.separator nil
@@ -1280,6 +1280,35 @@ Usage: #{opt.program_name} [options] [names...]
 
       YAML.dump self, io
     end
+  end
+
+  ##
+  # Loads options from .rdoc_options if the file exists, otherwise creates a
+  # new RDoc::Options instance.
+
+  def self.load_options
+    options_file = File.expand_path '.rdoc_options'
+    return RDoc::Options.new unless File.exist? options_file
+
+    RDoc.load_yaml
+
+    begin
+      options = YAML.safe_load File.read('.rdoc_options'), permitted_classes: [RDoc::Options, Symbol]
+    rescue Psych::SyntaxError
+      raise RDoc::Error, "#{options_file} is not a valid rdoc options file"
+    end
+
+    return RDoc::Options.new unless options # Allow empty file.
+
+    raise RDoc::Error, "#{options_file} is not a valid rdoc options file" unless
+      RDoc::Options === options or Hash === options
+
+    if Hash === options
+      # Override the default values with the contents of YAML file.
+      options = RDoc::Options.new options
+    end
+
+    options
   end
 
 end

@@ -1,6 +1,6 @@
 require_relative '../../spec_helper'
 
-# These specs use Range.new instead of the literal notation so they parse fine on Ruby < 2.6
+# These specs use Range.new instead of the literal notation for beginless Ranges so they parse fine on Ruby < 2.7
 describe 'Range#minmax' do
   before(:each) do
     @x = mock('x')
@@ -13,10 +13,10 @@ describe 'Range#minmax' do
   end
 
   describe 'on an inclusive range' do
-    ruby_version_is '2.6'...'2.7' do
+    ruby_version_is ''...'2.7' do
       it 'should try to iterate endlessly on an endless range' do
         @x.should_receive(:succ).once.and_return(@y)
-        range = Range.new(@x, nil)
+        range = (@x..)
 
         -> { range.minmax }.should raise_error(NoMethodError, /^undefined method `succ' for/)
       end
@@ -26,7 +26,7 @@ describe 'Range#minmax' do
       it 'should raise RangeError on an endless range without iterating the range' do
         @x.should_not_receive(:succ)
 
-        range = Range.new(@x, nil)
+        range = (@x..)
 
         -> { range.minmax }.should raise_error(RangeError, 'cannot get the maximum of endless range')
       end
@@ -96,11 +96,11 @@ describe 'Range#minmax' do
   end
 
   describe 'on an exclusive range' do
-    ruby_version_is '2.6'...'2.7' do
+    ruby_version_is ''...'2.7' do
       # Endless ranges introduced in 2.6
       it 'should try to iterate endlessly on an endless range' do
         @x.should_receive(:succ).once.and_return(@y)
-        range = Range.new(@x, nil, true)
+        range = (@x...)
 
         -> { range.minmax }.should raise_error(NoMethodError, /^undefined method `succ' for/)
       end
@@ -109,7 +109,7 @@ describe 'Range#minmax' do
     ruby_version_is '2.7' do
       it 'should raise RangeError on an endless range' do
         @x.should_not_receive(:succ)
-        range = Range.new(@x, nil, true)
+        range = (@x...)
 
         -> { range.minmax }.should raise_error(RangeError, 'cannot get the maximum of endless range')
       end

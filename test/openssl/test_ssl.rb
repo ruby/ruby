@@ -127,21 +127,13 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     pend "EC is not supported" unless defined?(OpenSSL::PKey::EC)
     pend "TLS 1.2 is not supported" unless tls12_supported?
 
-    # SSL_CTX_set0_chain() is needed for setting multiple certificate chains
-    add0_chain_supported = openssl?(1, 0, 2)
-
-    if add0_chain_supported
-      ca2_key = Fixtures.pkey("rsa-3")
-      ca2_exts = [
-        ["basicConstraints", "CA:TRUE", true],
-        ["keyUsage", "cRLSign, keyCertSign", true],
-      ]
-      ca2_dn = OpenSSL::X509::Name.parse_rfc2253("CN=CA2")
-      ca2_cert = issue_cert(ca2_dn, ca2_key, 123, ca2_exts, nil, nil)
-    else
-      # Use the same CA as @svr_cert
-      ca2_key = @ca_key; ca2_cert = @ca_cert
-    end
+    ca2_key = Fixtures.pkey("rsa-3")
+    ca2_exts = [
+      ["basicConstraints", "CA:TRUE", true],
+      ["keyUsage", "cRLSign, keyCertSign", true],
+    ]
+    ca2_dn = OpenSSL::X509::Name.parse_rfc2253("CN=CA2")
+    ca2_cert = issue_cert(ca2_dn, ca2_key, 123, ca2_exts, nil, nil)
 
     ecdsa_key = Fixtures.pkey("p256")
     exts = [
@@ -150,23 +142,11 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     ecdsa_dn = OpenSSL::X509::Name.parse_rfc2253("CN=localhost2")
     ecdsa_cert = issue_cert(ecdsa_dn, ecdsa_key, 456, exts, ca2_cert, ca2_key)
 
-    if !add0_chain_supported
-      # Testing the warning emitted when 'extra' chain is replaced
-      tctx = OpenSSL::SSL::SSLContext.new
-      tctx.add_certificate(@svr_cert, @svr_key, [@ca_cert])
-      assert_warning(/set0_chain/) {
-        tctx.add_certificate(ecdsa_cert, ecdsa_key, [ca2_cert])
-      }
-    end
-
     ctx_proc = -> ctx {
       # Unset values set by start_server
       ctx.cert = ctx.key = ctx.extra_chain_cert = nil
-      ctx.ecdh_curves = "P-256" unless openssl?(1, 0, 2)
       ctx.add_certificate(@svr_cert, @svr_key, [@ca_cert]) # RSA
-      EnvUtil.suppress_warning do # !add0_chain_supported
-        ctx.add_certificate(ecdsa_cert, ecdsa_key, [ca2_cert])
-      end
+      ctx.add_certificate(ecdsa_cert, ecdsa_key, [ca2_cert])
     }
     start_server(ctx_proc: ctx_proc) do |port|
       ctx = OpenSSL::SSL::SSLContext.new
@@ -201,6 +181,19 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ssl.syswrite(str)
         assert_same buf, ssl.sysread(str.size, buf)
         assert_equal(str, buf)
+      }
+    }
+  end
+
+  def test_getbyte
+    start_server { |port|
+      server_connect(port) { |ssl|
+        str = +("x" * 100 + "\n")
+        ssl.syswrite(str)
+        newstr = str.bytesize.times.map { |i|
+          ssl.getbyte
+        }.pack("C*")
+        assert_equal(str, newstr)
       }
     }
   end
@@ -918,6 +911,33 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     sock2.close if sock2
   end
 
+  def test_accept_errors_include_peeraddr
+    context = OpenSSL::SSL::SSLContext.new
+    context.cert = @svr_cert
+    context.key = @svr_key
+
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.connect_address.ip_port
+
+    ssl_server = OpenSSL::SSL::SSLServer.new(server, context)
+
+    t = Thread.new do
+      assert_raise_with_message(OpenSSL::SSL::SSLError, /peeraddr=127\.0\.0\.1/) do
+        ssl_server.accept
+      end
+    end
+
+    begin
+      sock = TCPSocket.new("127.0.0.1", port)
+      sock.puts "abc"
+    ensure
+      sock&.close
+    end
+
+    assert t.join
+    server.close
+  end
+
   def test_verify_hostname_on_connect
     ctx_proc = proc { |ctx|
       san = "DNS:a.example.com,DNS:*.b.example.com"
@@ -997,10 +1017,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ssl.hostname = "b.example.com"
         assert_handshake_error { ssl.connect }
         assert_equal false, verify_callback_ok
-        code_expected = openssl?(1, 0, 2) || defined?(OpenSSL::X509::V_ERR_HOSTNAME_MISMATCH) ?
-          OpenSSL::X509::V_ERR_HOSTNAME_MISMATCH :
-          OpenSSL::X509::V_ERR_CERT_REJECTED
-        assert_equal code_expected, verify_callback_err
+        assert_equal OpenSSL::X509::V_ERR_HOSTNAME_MISMATCH, verify_callback_err
       ensure
         sock&.close
       end
@@ -1290,7 +1307,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
-if openssl?(1, 0, 2) || libressl?
   def test_alpn_protocol_selection_ary
     advertised = ["http/1.1", "spdy/2"]
     ctx_proc = Proc.new { |ctx|
@@ -1336,7 +1352,6 @@ if openssl?(1, 0, 2) || libressl?
     t&.kill
     t&.join
   end
-end
 
   def test_npn_protocol_selection_ary
     pend "TLS 1.2 is not supported" unless tls12_supported?
@@ -1454,11 +1469,6 @@ end
   end
 
   def test_get_ephemeral_key
-    # OpenSSL >= 1.0.2
-    unless OpenSSL::SSL::SSLSocket.method_defined?(:tmp_key)
-      pend "SSL_get_server_tmp_key() is not supported"
-    end
-
     if tls12_supported?
       # kRSA
       ctx_proc1 = proc { |ctx|
@@ -1589,9 +1599,7 @@ end
     start_server(ctx_proc: ctx_proc) do |port|
       server_connect(port) { |ssl|
         assert called, "dh callback should be called"
-        if ssl.respond_to?(:tmp_key)
-          assert_equal dh.to_der, ssl.tmp_key.to_der
-        end
+        assert_equal dh.to_der, ssl.tmp_key.to_der
       }
     end
   end
@@ -1623,34 +1631,30 @@ end
       ctx.ecdh_curves = "P-384:P-521"
     }
     start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
+      # Test 1: Client=P-256:P-384, Server=P-384:P-521 --> P-384
       ctx = OpenSSL::SSL::SSLContext.new
-      ctx.ecdh_curves = "P-256:P-384" # disable P-521 for OpenSSL >= 1.0.2
-
+      ctx.ecdh_curves = "P-256:P-384"
       server_connect(port, ctx) { |ssl|
         cs = ssl.cipher[0]
         assert_match (/\AECDH/), cs
-        if ssl.respond_to?(:tmp_key)
-          assert_equal "secp384r1", ssl.tmp_key.group.curve_name
-        end
+        assert_equal "secp384r1", ssl.tmp_key.group.curve_name
         ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       }
 
-      if openssl?(1, 0, 2) || libressl?(2, 5, 1)
-        ctx = OpenSSL::SSL::SSLContext.new
-        ctx.ecdh_curves = "P-256"
+      # Test 2: Client=P-256, Server=P-521:P-384 --> Fail
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ecdh_curves = "P-256"
+      assert_raise(OpenSSL::SSL::SSLError) {
+        server_connect(port, ctx) { }
+      }
 
-        assert_raise(OpenSSL::SSL::SSLError) {
-          server_connect(port, ctx) { }
-        }
-
-        ctx = OpenSSL::SSL::SSLContext.new
-        ctx.ecdh_curves = "P-521:P-384"
-
-        server_connect(port, ctx) { |ssl|
-          assert_equal "secp521r1", ssl.tmp_key.group.curve_name
-          ssl.puts "abc"; assert_equal "abc\n", ssl.gets
-        }
-      end
+      # Test 3: Client=P-521:P-384, Server=P-521:P-384 --> P-521
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ecdh_curves = "P-521:P-384"
+      server_connect(port, ctx) { |ssl|
+        assert_equal "secp521r1", ssl.tmp_key.group.curve_name
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+      }
     end
   end
 

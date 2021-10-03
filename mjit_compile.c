@@ -222,18 +222,13 @@ static void
 compile_insns(FILE *f, const struct rb_iseq_constant_body *body, unsigned int stack_size,
               unsigned int pos, struct compile_status *status)
 {
-    int insn;
     struct compile_branch branch;
 
     branch.stack_size = stack_size;
     branch.finish_p = false;
 
     while (pos < body->iseq_size && !ALREADY_COMPILED_P(status, pos) && !branch.finish_p) {
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-        insn = rb_vm_insn_addr2insn((void *)body->iseq_encoded[pos]);
-#else
-        insn = (int)body->iseq_encoded[pos];
-#endif
+        int insn = rb_vm_insn_decode(body->iseq_encoded[pos]);
         status->stack_size_for_pos[pos] = (int)branch.stack_size;
 
         fprintf(f, "\nlabel_%d: /* %s */\n", pos, insn_name(insn));
@@ -353,6 +348,7 @@ mjit_compile_body(FILE *f, const rb_iseq_t *iseq, struct compile_status *status)
     fprintf(f, "    static const VALUE *const original_body_iseq = (VALUE *)0x%"PRIxVALUE";\n",
             (VALUE)body->iseq_encoded);
     fprintf(f, "    VALUE cfp_self = reg_cfp->self;\n"); // cache self across the method
+    fprintf(f, "#undef GET_SELF\n");
     fprintf(f, "#define GET_SELF() cfp_self\n");
 
     // Generate merged ivar guards first if needed
@@ -406,11 +402,7 @@ inlinable_iseq_p(const struct rb_iseq_constant_body *body)
 
     unsigned int pos = 0;
     while (pos < body->iseq_size) {
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-        int insn = rb_vm_insn_addr2insn((void *)body->iseq_encoded[pos]);
-#else
-        int insn = (int)body->iseq_encoded[pos];
-#endif
+        int insn = rb_vm_insn_decode(body->iseq_encoded[pos]);
         // All insns in the ISeq except `leave` (to be overridden in the inlined code)
         // should meet following strong assumptions:
         //   * Do not require `cfp->sp` motion
@@ -441,6 +433,22 @@ inlinable_iseq_p(const struct rb_iseq_constant_body *body)
     return true;
 }
 
+// Return an iseq pointer if cc has inlinable iseq.
+const rb_iseq_t *
+rb_mjit_inlinable_iseq(const struct rb_callinfo *ci, const struct rb_callcache *cc)
+{
+    const rb_iseq_t *iseq;
+    if (has_valid_method_type(cc) &&
+        !(vm_ci_flag(ci) & VM_CALL_TAILCALL) && // inlining only non-tailcall path
+        vm_cc_cme(cc)->def->type == VM_METHOD_TYPE_ISEQ &&
+        fastpath_applied_iseq_p(ci, cc, iseq = def_iseq_ptr(vm_cc_cme(cc)->def)) &&
+        // CC_SET_FASTPATH in vm_callee_setup_arg
+        inlinable_iseq_p(iseq->body)) {
+        return iseq;
+    }
+    return NULL;
+}
+
 static void
 init_ivar_compile_status(const struct rb_iseq_constant_body *body, struct compile_status *status)
 {
@@ -452,11 +460,7 @@ init_ivar_compile_status(const struct rb_iseq_constant_body *body, struct compil
     status->ivar_serial = 0;
 
     while (pos < body->iseq_size) {
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-        int insn = rb_vm_insn_addr2insn((void *)body->iseq_encoded[pos]);
-#else
-        int insn = (int)body->iseq_encoded[pos];
-#endif
+        int insn = rb_vm_insn_decode(body->iseq_encoded[pos]);
         if (insn == BIN(getinstancevariable) || insn == BIN(setinstancevariable)) {
             IVC ic = (IVC)body->iseq_encoded[pos+2];
             IVC ic_copy = &(status->is_entries + ((union iseq_inline_storage_entry *)ic - body->is_entries))->iv_cache;
@@ -511,23 +515,15 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
     const struct rb_iseq_constant_body *body = iseq->body;
     unsigned int pos = 0;
     while (pos < body->iseq_size) {
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-        int insn = rb_vm_insn_addr2insn((void *)body->iseq_encoded[pos]);
-#else
-        int insn = (int)body->iseq_encoded[pos];
-#endif
-        if (insn == BIN(opt_send_without_block)) { // `compile_inlined_cancel_handler` supports only `opt_send_without_block`
+        int insn = rb_vm_insn_decode(body->iseq_encoded[pos]);
+        if (insn == BIN(opt_send_without_block) || insn == BIN(opt_size)) { // `compile_inlined_cancel_handler` supports only `opt_send_without_block`
             CALL_DATA cd = (CALL_DATA)body->iseq_encoded[pos + 1];
             const struct rb_callinfo *ci = cd->ci;
             const struct rb_callcache *cc = captured_cc_entries(status)[call_data_index(cd, body)]; // use copy to avoid race condition
 
+            extern bool rb_mjit_compiling_iseq_p(const rb_iseq_t *iseq);
             const rb_iseq_t *child_iseq;
-            if (has_valid_method_type(cc) &&
-                !(vm_ci_flag(ci) & VM_CALL_TAILCALL) && // inlining only non-tailcall path
-                vm_cc_cme(cc)->def->type == VM_METHOD_TYPE_ISEQ &&
-                fastpath_applied_iseq_p(ci, cc, child_iseq = def_iseq_ptr(vm_cc_cme(cc)->def)) &&
-                // CC_SET_FASTPATH in vm_callee_setup_arg
-                inlinable_iseq_p(child_iseq->body)) {
+            if ((child_iseq = rb_mjit_inlinable_iseq(ci, cc)) != NULL && rb_mjit_compiling_iseq_p(child_iseq)) {
                 status->inlined_iseqs[pos] = child_iseq->body;
 
                 if (mjit_opts.verbose >= 1) // print beforehand because ISeq may be GCed during copy job.

@@ -8,6 +8,7 @@
 
 static int vm_redefinition_check_flag(VALUE klass);
 static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass);
+static inline rb_method_entry_t *lookup_method_table(VALUE klass, ID id);
 
 #define object_id           idObject_id
 #define added               idMethod_added
@@ -41,11 +42,11 @@ vm_ccs_dump(VALUE klass, ID target_mid)
 {
     struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
     if (cc_tbl) {
-        const struct rb_class_cc_entries *ccs;
+        VALUE ccs;
         if (target_mid) {
-            if (rb_id_table_lookup(cc_tbl, target_mid, (VALUE *)&ccs)) {
+            if (rb_id_table_lookup(cc_tbl, target_mid, &ccs)) {
                 fprintf(stderr, "  [CCTB] %p\n", (void *)cc_tbl);
-                vm_ccs_dump_i(target_mid, (VALUE)ccs, NULL);
+                vm_ccs_dump_i(target_mid, ccs, NULL);
             }
         }
         else {
@@ -71,11 +72,11 @@ vm_mtbl_dump(VALUE klass, ID target_mid)
     fprintf(stderr, "# vm_mtbl\n");
     while (klass) {
         rp_m("  -> ", klass);
-        rb_method_entry_t *me;
+        VALUE me;
 
         if (RCLASS_M_TBL(klass)) {
             if (target_mid != 0) {
-                if (rb_id_table_lookup(RCLASS_M_TBL(klass), target_mid, (VALUE *)&me)) {
+                if (rb_id_table_lookup(RCLASS_M_TBL(klass), target_mid, &me)) {
                     rp_m("  [MTBL] ", me);
                 }
             }
@@ -89,7 +90,7 @@ vm_mtbl_dump(VALUE klass, ID target_mid)
         }
         if (RCLASS_CALLABLE_M_TBL(klass)) {
             if (target_mid != 0) {
-                if (rb_id_table_lookup(RCLASS_CALLABLE_M_TBL(klass), target_mid, (VALUE *)&me)) {
+                if (rb_id_table_lookup(RCLASS_CALLABLE_M_TBL(klass), target_mid, &me)) {
                     rp_m("  [CM**] ", me);
                 }
             }
@@ -131,10 +132,10 @@ rb_clear_constant_cache(void)
 static void
 invalidate_negative_cache(ID mid)
 {
-    const rb_callable_method_entry_t *cme;
+    VALUE cme;
     rb_vm_t *vm = GET_VM();
 
-    if (rb_id_table_lookup(vm->negative_cme_table, mid, (VALUE *)&cme)) {
+    if (rb_id_table_lookup(vm->negative_cme_table, mid, &cme)) {
         rb_id_table_delete(vm->negative_cme_table, mid);
         vm_cme_invalidate((rb_callable_method_entry_t *)cme);
         RB_DEBUG_COUNTER_INC(cc_invalidate_negative);
@@ -156,10 +157,11 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
         // check only current class
 
         struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
-        struct rb_class_cc_entries *ccs;
+        VALUE ccs_data;
 
         // invalidate CCs
-        if (cc_tbl && rb_id_table_lookup(cc_tbl, mid, (VALUE *)&ccs)) {
+        if (cc_tbl && rb_id_table_lookup(cc_tbl, mid, &ccs_data)) {
+            struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_data;
             if (NIL_P(ccs->cme->owner)) invalidate_negative_cache(mid);
             rb_vm_ccs_free(ccs);
             rb_id_table_delete(cc_tbl, mid);
@@ -187,9 +189,17 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                     // invalidate cc by invalidating cc->cme
                     VALUE owner = cme->owner;
                     VM_ASSERT(BUILTIN_TYPE(owner) == T_CLASS);
+                    VALUE klass_housing_cme;
+                    if (cme->def->type == VM_METHOD_TYPE_REFINED && !cme->def->body.refined.orig_me) {
+                        klass_housing_cme = owner;
+                    }
+                    else {
+                        klass_housing_cme = RCLASS_ORIGIN(owner);
+                    }
+                    // replace the cme that will be invalid
+                    VM_ASSERT(lookup_method_table(klass_housing_cme, mid) == (const rb_method_entry_t *)cme);
                     const rb_method_entry_t *new_cme = rb_method_entry_clone((const rb_method_entry_t *)cme);
-                    VALUE origin = RCLASS_ORIGIN(owner);
-                    rb_method_table_insert(origin, RCLASS_M_TBL(origin), mid, new_cme);
+                    rb_method_table_insert(klass_housing_cme, RCLASS_M_TBL(klass_housing_cme), mid, new_cme);
                 }
 
                 vm_cme_invalidate((rb_callable_method_entry_t *)cme);
@@ -416,7 +426,7 @@ static VALUE
 }
 
 static void
-setup_method_cfunc_struct(rb_method_cfunc_t *cfunc, VALUE (*func)(), int argc)
+setup_method_cfunc_struct(rb_method_cfunc_t *cfunc, VALUE (*func)(ANYARGS), int argc)
 {
     cfunc->func = func;
     cfunc->argc = argc;
@@ -509,7 +519,7 @@ method_definition_reset(const rb_method_entry_t *me)
 {
     rb_method_definition_t *def = me->def;
 
-    switch(def->type) {
+    switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
 	RB_OBJ_WRITTEN(me, Qundef, def->body.iseq.iseqptr);
 	RB_OBJ_WRITTEN(me, Qundef, def->body.iseq.cref);
@@ -1022,6 +1032,7 @@ prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_
 {
     struct rb_id_table *mtbl;
     const rb_callable_method_entry_t *cme;
+    VALUE cme_data;
 
     if (me) {
         if (me->defined_class == 0) {
@@ -1031,7 +1042,8 @@ prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_
 
             mtbl = RCLASS_CALLABLE_M_TBL(defined_class);
 
-            if (mtbl && rb_id_table_lookup(mtbl, id, (VALUE *)&cme)) {
+            if (mtbl && rb_id_table_lookup(mtbl, id, &cme_data)) {
+                cme = (rb_callable_method_entry_t *)cme_data;
                 RB_DEBUG_COUNTER_INC(mc_cme_complement_hit);
                 VM_ASSERT(callable_method_entry_p(cme));
                 VM_ASSERT(!METHOD_ENTRY_INVALIDATED(cme));
@@ -1075,9 +1087,10 @@ cached_callable_method_entry(VALUE klass, ID mid)
     ASSERT_vm_locking();
 
     struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
-    struct rb_class_cc_entries *ccs;
+    VALUE ccs_data;
 
-    if (cc_tbl && rb_id_table_lookup(cc_tbl, mid, (VALUE *)&ccs)) {
+    if (cc_tbl && rb_id_table_lookup(cc_tbl, mid, &ccs_data)) {
+        struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_data;
         VM_ASSERT(vm_ccs_p(ccs));
 
         if (LIKELY(!METHOD_ENTRY_INVALIDATED(ccs->cme))) {
@@ -1103,12 +1116,14 @@ cache_callable_method_entry(VALUE klass, ID mid, const rb_callable_method_entry_
 
     struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
     struct rb_class_cc_entries *ccs;
+    VALUE ccs_data;
 
     if (!cc_tbl) {
         cc_tbl = RCLASS_CC_TBL(klass) = rb_id_table_create(2);
     }
 
-    if (rb_id_table_lookup(cc_tbl, mid, (VALUE *)&ccs)) {
+    if (rb_id_table_lookup(cc_tbl, mid, &ccs_data)) {
+        ccs = (struct rb_class_cc_entries *)ccs_data;
         VM_ASSERT(ccs->cme == cme);
     }
     else {
@@ -1122,8 +1137,12 @@ negative_cme(ID mid)
 {
     rb_vm_t *vm = GET_VM();
     const rb_callable_method_entry_t *cme;
+    VALUE cme_data;
 
-    if (!rb_id_table_lookup(vm->negative_cme_table, mid, (VALUE *)&cme)) {
+    if (rb_id_table_lookup(vm->negative_cme_table, mid, &cme_data)) {
+        cme = (rb_callable_method_entry_t *)cme_data;
+    }
+    else {
         cme = (rb_callable_method_entry_t *)rb_method_entry_alloc(mid, Qnil, Qnil, NULL);
         rb_id_table_insert(vm->negative_cme_table, mid, (VALUE)cme);
     }
@@ -1217,7 +1236,7 @@ callable_method_entry_refeinements0(VALUE klass, ID id, VALUE *defined_class_ptr
 }
 
 static const rb_callable_method_entry_t *
-callable_method_entry_refeinements(VALUE klass, ID id, VALUE *defined_class_ptr, bool with_refinements)
+callable_method_entry_refinements(VALUE klass, ID id, VALUE *defined_class_ptr, bool with_refinements)
 {
     const rb_callable_method_entry_t *cme = callable_method_entry(klass, id, defined_class_ptr);
     return callable_method_entry_refeinements0(klass, id, defined_class_ptr, with_refinements, cme);
@@ -1226,13 +1245,13 @@ callable_method_entry_refeinements(VALUE klass, ID id, VALUE *defined_class_ptr,
 MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
 rb_callable_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
-    return callable_method_entry_refeinements(klass, id, defined_class_ptr, true);
+    return callable_method_entry_refinements(klass, id, defined_class_ptr, true);
 }
 
 static const rb_callable_method_entry_t *
 callable_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
-    return callable_method_entry_refeinements(klass, id, defined_class_ptr, false);
+    return callable_method_entry_refinements(klass, id, defined_class_ptr, false);
 }
 
 const rb_method_entry_t *
@@ -1400,11 +1419,16 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
 	rb_vm_check_redefinition_opt_method(me, klass);
 
 	if (klass == defined_class || origin_class == defined_class) {
-	    METHOD_ENTRY_VISI_SET(me, visi);
-
-	    if (me->def->type == VM_METHOD_TYPE_REFINED && me->def->body.refined.orig_me) {
-		METHOD_ENTRY_VISI_SET((rb_method_entry_t *)me->def->body.refined.orig_me, visi);
-	    }
+            if (me->def->type == VM_METHOD_TYPE_REFINED) {
+                // Refinement method entries should always be public because the refinement
+                // search is always performed.
+                if (me->def->body.refined.orig_me) {
+                    METHOD_ENTRY_VISI_SET((rb_method_entry_t *)me->def->body.refined.orig_me, visi);
+                }
+            }
+            else {
+                METHOD_ENTRY_VISI_SET(me, visi);
+            }
             rb_clear_method_cache(klass, name);
 	}
 	else {
@@ -1476,7 +1500,7 @@ static void
 scope_visibility_check(void)
 {
     /* Check for public/protected/private/module_function called inside a method */
-    rb_control_frame_t *cfp = rb_current_execution_context()->cfp+1;
+    rb_control_frame_t *cfp = GET_EC()->cfp+1;
     if (cfp && cfp->iseq && cfp->iseq->body->type == ISEQ_TYPE_METHOD) {
         rb_warn("calling %s without arguments inside a method may not have the intended effect",
             rb_id2name(rb_frame_this_func()));
@@ -1687,13 +1711,13 @@ static VALUE
 rb_mod_method_defined(int argc, VALUE *argv, VALUE mod)
 {
     rb_method_visibility_t visi = check_definition_visibility(mod, argc, argv);
-    return (visi == METHOD_VISI_PUBLIC || visi == METHOD_VISI_PROTECTED) ? Qtrue : Qfalse;
+    return RBOOL(visi == METHOD_VISI_PUBLIC || visi == METHOD_VISI_PROTECTED);
 }
 
 static VALUE
 check_definition(VALUE mod, int argc, VALUE *argv, rb_method_visibility_t visi)
 {
-    return (check_definition_visibility(mod, argc, argv) == visi) ? Qtrue : Qfalse;
+    return RBOOL(check_definition_visibility(mod, argc, argv) == visi);
 }
 
 /*
@@ -2034,7 +2058,8 @@ set_method_visibility(VALUE self, int argc, const VALUE *argv, rb_method_visibil
 	for (j = 0; j < RARRAY_LEN(v); j++) {
 	    check_and_export_method(self, RARRAY_AREF(v, j), visi);
 	}
-    } else {
+    }
+    else {
         for (i = 0; i < argc; i++) {
             check_and_export_method(self, argv[i], visi);
         }
@@ -2150,14 +2175,13 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
  *  methods.
  *
  *  This should only be used for methods that delegate keywords to another
- *  method, and only for backwards compatibility with Ruby versions before
- *  2.7.
+ *  method, and only for backwards compatibility with Ruby versions before 3.0.
+ *  See https://www.ruby-lang.org/en/news/2019/12/12/separation-of-positional-and-keyword-arguments-in-ruby-3-0/
+ *  for details on why +ruby2_keywords+ exists and when and how to use it.
  *
  *  This method will probably be removed at some point, as it exists only
- *  for backwards compatibility. As it does not exist in Ruby versions
- *  before 2.7, check that the module responds to this method before calling
- *  it. Also, be aware that if this method is removed, the behavior of the
- *  method will change so that it does not pass through keywords.
+ *  for backwards compatibility. As it does not exist in Ruby versions before
+ *  2.7, check that the module responds to this method before calling it:
  *
  *    module Mod
  *      def foo(meth, *args, &block)
@@ -2165,6 +2189,10 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
  *      end
  *      ruby2_keywords(:foo) if respond_to?(:ruby2_keywords, true)
  *    end
+ *
+ *  However, be aware that if the +ruby2_keywords+ method is removed, the
+ *  behavior of the +foo+ method using the above approach will change so that
+ *  the method does not pass through keywords.
  */
 
 static VALUE
@@ -2591,9 +2619,7 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
 	if (ret == Qundef) ret = Qfalse;
 	return ret;
     }
-    if (basic_obj_respond_to(ec, obj, id, !RTEST(priv)))
-	return Qtrue;
-    return Qfalse;
+    return  RBOOL(basic_obj_respond_to(ec, obj, id, !RTEST(priv)));
 }
 
 /*

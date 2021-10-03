@@ -94,6 +94,8 @@ void rb_warning_category_update(unsigned int mask, unsigned int bits);
 #define EACH_FEATURES(X, SEP) \
     X(gems) \
     SEP \
+    X(error_highlight) \
+    SEP \
     X(did_you_mean) \
     SEP \
     X(rubyopt) \
@@ -320,6 +322,7 @@ usage(const char *name, int help, int highlight, int columns)
     };
     static const struct message features[] = {
 	M("gems",    "",        "rubygems (only for debugging, default: "DEFAULT_RUBYGEMS_ENABLED")"),
+	M("error_highlight", "", "error_highlight (default: "DEFAULT_RUBYGEMS_ENABLED")"),
 	M("did_you_mean", "",   "did_you_mean (default: "DEFAULT_RUBYGEMS_ENABLED")"),
 	M("rubyopt", "",        "RUBYOPT environment variable (default: enabled)"),
 	M("frozen-string-literal", "", "freeze all string literals (default: disabled)"),
@@ -931,6 +934,8 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
 	rb_exc_raise(rb_exc_new_str(rb_eRuntimeError, mesg));
 #undef ADD_FEATURE_NAME
     }
+#else
+    (void)set;
 #endif
     rb_warn("unknown argument for --%s: `%.*s'",
 	    enable ? "enable" : "disable", len, str);
@@ -1508,6 +1513,9 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     if (opt->features.set & FEATURE_BIT(gems)) {
         rb_define_module("Gem");
+        if (opt->features.set & FEATURE_BIT(error_highlight)) {
+            rb_define_module("ErrorHighlight");
+        }
         if (opt->features.set & FEATURE_BIT(did_you_mean)) {
             rb_define_module("DidYouMean");
         }
@@ -1670,6 +1678,17 @@ tty_enabled(void)
 #endif
 
 static VALUE
+copy_str(VALUE str, rb_encoding *enc, bool intern)
+{
+    if (!intern) {
+        if (rb_enc_str_coderange_scan(str, enc) == ENC_CODERANGE_BROKEN)
+            return 0;
+        return rb_enc_associate(rb_str_dup(str), enc);
+    }
+    return rb_enc_interned_str(RSTRING_PTR(str), RSTRING_LEN(str), enc);
+}
+
+static VALUE
 process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
     rb_ast_t *ast = 0;
@@ -1685,6 +1704,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     char fbuf[MAXPATHLEN];
     int i = (int)proc_options(argc, argv, opt, 0);
     unsigned int dump = opt->dump & dump_exit_bits;
+    rb_vm_t *vm = GET_VM();
+    const long loaded_before_enc = RARRAY_LEN(vm->loaded_features);
 
     if (opt->dump & (DUMP_BIT(usage)|DUMP_BIT(help))) {
         int tty = isatty(1);
@@ -1826,7 +1847,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     opt->script_name = rb_str_new_cstr(opt->script);
     opt->script = RSTRING_PTR(opt->script_name);
 
-#if _WIN32
+#ifdef _WIN32
     translit_char_bin(RSTRING_PTR(opt->script_name), '\\', '/');
 #elif defined DOSISH
     translit_char(RSTRING_PTR(opt->script_name), '\\', '/');
@@ -1886,7 +1907,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     rb_obj_freeze(opt->script_name);
     if (IF_UTF8_PATH(uenc != lenc, 1)) {
 	long i;
-        rb_vm_t *vm = GET_VM();
         VALUE load_path = vm->load_path;
 	const ID id_initial_load_path_mark = INITIAL_LOAD_PATH_MARK;
         int modifiable = FALSE;
@@ -1900,7 +1920,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	    if (newpath == path) continue;
 	    path = newpath;
 #else
-	    path = rb_enc_associate(rb_str_dup(path), lenc);
+	    if (!(path = copy_str(path, lenc, !mark))) continue;
 #endif
 	    if (mark) rb_ivar_set(path, id_initial_load_path_mark, path);
             if (!modifiable) {
@@ -1913,12 +1933,25 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
             rb_ary_replace(vm->load_path_snapshot, load_path);
         }
     }
+    {
+        VALUE loaded_features = vm->loaded_features;
+        bool modified = false;
+        for (long i = loaded_before_enc; i < RARRAY_LEN(loaded_features); ++i) {
+	    VALUE path = RARRAY_AREF(loaded_features, i);
+            if (!(path = copy_str(path, IF_UTF8_PATH(uenc, lenc), true))) continue;
+            modified = true;
+	    RARRAY_ASET(loaded_features, i, path);
+        }
+        if (modified) {
+            rb_ary_replace(vm->loaded_features_snapshot, loaded_features);
+        }
+    }
 
     if (opt->features.mask & COMPILATION_FEATURES) {
 	VALUE option = rb_hash_new();
 #define SET_COMPILE_OPTION(h, o, name) \
 	rb_hash_aset((h), ID2SYM(rb_intern_const(#name)),		\
-                     (FEATURE_SET_P(o->features, FEATURE_BIT(name)) ? Qtrue : Qfalse));
+                     RBOOL(FEATURE_SET_P(o->features, FEATURE_BIT(name))));
 	SET_COMPILE_OPTION(option, opt, frozen_string_literal);
 	SET_COMPILE_OPTION(option, opt, debug_frozen_string_literal);
 	rb_funcallv(rb_cISeq, rb_intern_const("compile_option="), 1, &option);
@@ -2051,6 +2084,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     rb_gvar_ractor_local("$-a");
 
     if ((rb_e_script = opt->e_script) != 0) {
+        rb_str_freeze(rb_e_script);
         rb_gc_register_mark_object(opt->e_script);
     }
 
@@ -2304,7 +2338,7 @@ open_load_file(VALUE fname_v, int *xflag)
 	      We need to wait if FIFO is empty. It's FIFO's semantics.
 	      rb_thread_wait_fd() release GVL. So, it's safe.
 	    */
-	    rb_thread_wait_fd(fd);
+	    rb_io_wait(f, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
 	}
     }
     return f;
@@ -2427,11 +2461,6 @@ external_str_new_cstr(const char *p)
 #endif
 }
 
-/*! Sets the current script name to this value.
- *
- * This is similar to <code>$0 = name</code> in Ruby level but also affects
- * <code>Method#location</code> and others.
- */
 void
 ruby_script(const char *name)
 {
@@ -2515,7 +2544,6 @@ debug_setter(VALUE val, ID id, VALUE *dmy)
     *rb_ruby_debug_ptr() = val;
 }
 
-/*! Defines built-in variables */
 void
 ruby_prog_init(void)
 {
@@ -2616,13 +2644,6 @@ fill_standard_fds(void)
     }
 }
 
-/*! Initializes the process for libruby.
- *
- * This function assumes this process is ruby(1) and it has just started.
- * Usually programs that embed CRuby interpreter may not call this function,
- * and may do their own initialization.
- * argc and argv cannot be NULL.
- */
 void
 ruby_sysinit(int *argc, char ***argv)
 {

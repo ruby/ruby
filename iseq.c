@@ -503,7 +503,7 @@ rb_iseq_pathobj_new(VALUE path, VALUE realpath)
 {
     VALUE pathobj;
     VM_ASSERT(RB_TYPE_P(path, T_STRING));
-    VM_ASSERT(realpath == Qnil || RB_TYPE_P(realpath, T_STRING));
+    VM_ASSERT(NIL_P(realpath) || RB_TYPE_P(realpath, T_STRING));
 
     if (path == realpath ||
 	(!NIL_P(realpath) && rb_str_cmp(path, realpath) == 0)) {
@@ -759,7 +759,7 @@ rb_iseq_make_compile_option(rb_compile_option_t *option, VALUE opt)
 static void
 make_compile_option(rb_compile_option_t *option, VALUE opt)
 {
-    if (opt == Qnil) {
+    if (NIL_P(opt)) {
 	*option = COMPILE_OPTION_DEFAULT;
     }
     else if (opt == Qfalse) {
@@ -784,7 +784,7 @@ make_compile_option_value(rb_compile_option_t *option)
 {
     VALUE opt = rb_hash_new_with_size(11);
 #define SET_COMPILE_OPTION(o, h, mem) \
-  rb_hash_aset((h), ID2SYM(rb_intern(#mem)), (o)->mem ? Qtrue : Qfalse)
+  rb_hash_aset((h), ID2SYM(rb_intern(#mem)), RBOOL((o)->mem))
 #define SET_COMPILE_OPTION_NUM(o, h, mem) \
   rb_hash_aset((h), ID2SYM(rb_intern(#mem)), INT2NUM((o)->mem))
     {
@@ -813,13 +813,27 @@ rb_iseq_new(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath,
                                 0, type, &COMPILE_OPTION_DEFAULT);
 }
 
+static int
+ast_line_count(const rb_ast_body_t *ast)
+{
+    if (ast->script_lines == Qfalse) {
+        // this occurs when failed to parse the source code with a syntax error
+        return 0;
+    }
+    if (RB_TYPE_P(ast->script_lines, T_ARRAY)){
+        return (int)RARRAY_LEN(ast->script_lines);
+    }
+    return FIX2INT(ast->script_lines);
+}
+
 rb_iseq_t *
 rb_iseq_new_top(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent)
 {
     VALUE coverages = rb_get_coverages();
     if (RTEST(coverages)) {
-        if (ast->line_count >= 0) {
-            int len = (rb_get_coverage_mode() & COVERAGE_TARGET_ONESHOT_LINES) ? 0 : ast->line_count;
+        int line_count = ast_line_count(ast);
+        if (line_count >= 0) {
+            int len = (rb_get_coverage_mode() & COVERAGE_TARGET_ONESHOT_LINES) ? 0 : line_count;
             VALUE coverage = rb_default_coverage(len);
             rb_hash_aset(coverages, path, coverage);
         }
@@ -1099,6 +1113,12 @@ VALUE
 rb_iseq_absolute_path(const rb_iseq_t *iseq)
 {
     return rb_iseq_realpath(iseq);
+}
+
+int
+rb_iseq_from_eval_p(const rb_iseq_t *iseq)
+{
+    return NIL_P(rb_iseq_realpath(iseq));
 }
 
 VALUE
@@ -1830,6 +1850,21 @@ rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos)
     }
 }
 
+#ifdef USE_ISEQ_NODE_ID
+int
+rb_iseq_node_id(const rb_iseq_t *iseq, size_t pos)
+{
+    const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pos);
+
+    if (entry) {
+	return entry->node_id;
+    }
+    else {
+	return 0;
+    }
+}
+#endif
+
 MJIT_FUNC_EXPORTED rb_event_flag_t
 rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos)
 {
@@ -2378,7 +2413,7 @@ iseq_iterate_children(const rb_iseq_t *iseq, void (*iter_func)(const rb_iseq_t *
                 UNALIGNED_MEMBER_PTR(body->catch_table, entries[i]);
             child = entry->iseq;
             if (child) {
-                if (rb_hash_aref(all_children, (VALUE)child) == Qnil) {
+                if (NIL_P(rb_hash_aref(all_children, (VALUE)child))) {
                     rb_hash_aset(all_children, (VALUE)child, Qtrue);
                     (*iter_func)(child, data);
                 }
@@ -2397,7 +2432,7 @@ iseq_iterate_children(const rb_iseq_t *iseq, void (*iter_func)(const rb_iseq_t *
               case TS_ISEQ:
                 child = (const rb_iseq_t *)code[i+j+1];
                 if (child) {
-                    if (rb_hash_aref(all_children, (VALUE)child) == Qnil) {
+                    if (NIL_P(rb_hash_aref(all_children, (VALUE)child))) {
                         rb_hash_aset(all_children, (VALUE)child, Qtrue);
                         (*iter_func)(child, data);
                     }
@@ -2918,6 +2953,9 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     /* make body with labels and insert line number */
     body = rb_ary_new();
     prev_insn_info = NULL;
+#ifdef USE_ISEQ_NODE_ID
+    VALUE node_ids = rb_ary_new();
+#endif
 
     for (l=0, pos=0; l<RARRAY_LEN(nbody); l++) {
 	const struct iseq_insn_info_entry *info;
@@ -2929,6 +2967,9 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 	}
 
 	info = get_insn_info(iseq, pos);
+#ifdef USE_ISEQ_NODE_ID
+        rb_ary_push(node_ids, INT2FIX(info->node_id));
+#endif
 
 	if (prev_insn_info != info) {
 	    int line = info->line_no;
@@ -2966,6 +3007,9 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 		INT2FIX(iseq_body->location.code_location.beg_pos.column),
 		INT2FIX(iseq_body->location.code_location.end_pos.lineno),
 		INT2FIX(iseq_body->location.code_location.end_pos.column)));
+#ifdef USE_ISEQ_NODE_ID
+    rb_hash_aset(misc, ID2SYM(rb_intern("node_ids")), node_ids);
+#endif
 
     /*
      * [:magic, :major_version, :minor_version, :format_type, :misc,
@@ -3072,9 +3116,18 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
 	    rb_ary_push(args, a);
 	}
     }
-    if (body->param.flags.has_kwrest) {
+    if (body->param.flags.has_kwrest || body->param.flags.ruby2_keywords) {
+        ID param;
 	CONST_ID(keyrest, "keyrest");
-	rb_ary_push(args, PARAM(keyword->rest_start, keyrest));
+        PARAM_TYPE(keyrest);
+        if (body->param.flags.has_kwrest &&
+            rb_id2str(param = PARAM_ID(keyword->rest_start))) {
+            rb_ary_push(a, ID2SYM(param));
+        }
+        else if (body->param.flags.ruby2_keywords) {
+            rb_ary_push(a, ID2SYM(idPow));
+        }
+	rb_ary_push(args, a);
     }
     if (body->param.flags.has_block) {
 	CONST_ID(block, "block");
@@ -3166,6 +3219,18 @@ rb_vm_insn_addr2insn(const void *addr)
     }
 
     rb_bug("rb_vm_insn_addr2insn: invalid insn address: %p", addr);
+}
+
+// Decode `iseq->body->iseq_encoded[i]` to an insn.
+int
+rb_vm_insn_decode(const VALUE encoded)
+{
+#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
+    int insn = rb_vm_insn_addr2insn((void *)encoded);
+#else
+    int insn = (int)encoded;
+#endif
+    return insn;
 }
 
 static inline int
@@ -3342,6 +3407,32 @@ rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
     }
 }
 
+bool rb_vm_call_ivar_attrset_p(const vm_call_handler ch);
+void rb_vm_cc_general(const struct rb_callcache *cc);
+
+static int
+clear_attr_ccs_i(void *vstart, void *vend, size_t stride, void *data)
+{
+    VALUE v = (VALUE)vstart;
+    for (; v != (VALUE)vend; v += stride) {
+        void *ptr = asan_poisoned_object_p(v);
+        asan_unpoison_object(v, false);
+
+        if (imemo_type_p(v, imemo_callcache) && rb_vm_call_ivar_attrset_p(((const struct rb_callcache *)v)->call_)) {
+            rb_vm_cc_general((struct rb_callcache *)v);
+        }
+
+        asan_poison_object_if(ptr, v);
+    }
+    return 0;
+}
+
+void
+rb_clear_attr_ccs(void)
+{
+    rb_objspace_each_objects(clear_attr_ccs_i, NULL);
+}
+
 static int
 trace_set_i(void *vstart, void *vend, size_t stride, void *data)
 {
@@ -3355,6 +3446,9 @@ trace_set_i(void *vstart, void *vend, size_t stride, void *data)
 	if (rb_obj_is_iseq(v)) {
 	    rb_iseq_trace_set(rb_iseq_check((rb_iseq_t *)v), turnon_events);
 	}
+        else if (imemo_type_p(v, imemo_callcache) && rb_vm_call_ivar_attrset_p(((const struct rb_callcache *)v)->call_)) {
+            rb_vm_cc_general((struct rb_callcache *)v);
+        }
 
         asan_poison_object_if(ptr, v);
     }

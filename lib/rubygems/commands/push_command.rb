@@ -1,8 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/local_remote_options'
-require 'rubygems/gemcutter_utilities'
-require 'rubygems/package'
+require_relative '../command'
+require_relative '../local_remote_options'
+require_relative '../gemcutter_utilities'
+require_relative '../package'
 
 class Gem::Commands::PushCommand < Gem::Command
   include Gem::LocalRemoteOptions

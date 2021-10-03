@@ -11,8 +11,10 @@
 #include "vm_core.h"
 #include "ruby/fiber/scheduler.h"
 #include "ruby/io.h"
+#include "internal/thread.h"
 
 static ID id_close;
+static ID id_scheduler_close;
 
 static ID id_block;
 static ID id_unblock;
@@ -25,10 +27,13 @@ static ID id_io_read;
 static ID id_io_write;
 static ID id_io_wait;
 
+static ID id_address_resolve;
+
 void
 Init_Fiber_Scheduler(void)
 {
     id_close = rb_intern_const("close");
+    id_scheduler_close = rb_intern_const("scheduler_close");
 
     id_block = rb_intern_const("block");
     id_unblock = rb_intern_const("unblock");
@@ -40,22 +45,52 @@ Init_Fiber_Scheduler(void)
     id_io_read = rb_intern_const("io_read");
     id_io_write = rb_intern_const("io_write");
     id_io_wait = rb_intern_const("io_wait");
+
+    id_address_resolve = rb_intern_const("address_resolve");
 }
 
 VALUE
 rb_fiber_scheduler_get(void)
 {
+    VM_ASSERT(ruby_thread_has_gvl_p());
+
     rb_thread_t *thread = GET_THREAD();
     VM_ASSERT(thread);
 
     return thread->scheduler;
 }
 
+static void
+verify_interface(VALUE scheduler)
+{
+    if (!rb_respond_to(scheduler, id_block)) {
+        rb_raise(rb_eArgError, "Scheduler must implement #block");
+    }
+
+    if (!rb_respond_to(scheduler, id_unblock)) {
+        rb_raise(rb_eArgError, "Scheduler must implement #unblock");
+    }
+
+    if (!rb_respond_to(scheduler, id_kernel_sleep)) {
+        rb_raise(rb_eArgError, "Scheduler must implement #kernel_sleep");
+    }
+
+    if (!rb_respond_to(scheduler, id_io_wait)) {
+        rb_raise(rb_eArgError, "Scheduler must implement #io_wait");
+    }
+}
+
 VALUE
 rb_fiber_scheduler_set(VALUE scheduler)
 {
+    VM_ASSERT(ruby_thread_has_gvl_p());
+
     rb_thread_t *thread = GET_THREAD();
     VM_ASSERT(thread);
+
+    if (scheduler != Qnil) {
+        verify_interface(scheduler);
+    }
 
     // We invoke Scheduler#close when setting it to something else, to ensure the previous scheduler runs to completion before changing the scheduler. That way, we do not need to consider interactions, e.g., of a Fiber from the previous scheduler with the new scheduler.
     if (thread->scheduler != Qnil) {
@@ -74,7 +109,8 @@ rb_fiber_scheduler_current_for_threadptr(rb_thread_t *thread)
 
     if (thread->blocking == 0) {
         return thread->scheduler;
-    } else {
+    }
+    else {
         return Qnil;
     }
 }
@@ -93,9 +129,15 @@ VALUE rb_fiber_scheduler_current_for_thread(VALUE thread)
 VALUE
 rb_fiber_scheduler_close(VALUE scheduler)
 {
-    if (rb_respond_to(scheduler, id_close)) {
-        return rb_funcall(scheduler, id_close, 0);
-    }
+    VM_ASSERT(ruby_thread_has_gvl_p());
+
+    VALUE result;
+
+    result = rb_check_funcall(scheduler, id_scheduler_close, 0, NULL);
+    if (result != Qundef) return result;
+
+    result = rb_check_funcall(scheduler, id_close, 0, NULL);
+    if (result != Qundef) return result;
 
     return Qnil;
 }
@@ -159,6 +201,8 @@ rb_fiber_scheduler_block(VALUE scheduler, VALUE blocker, VALUE timeout)
 VALUE
 rb_fiber_scheduler_unblock(VALUE scheduler, VALUE blocker, VALUE fiber)
 {
+    VM_ASSERT(rb_obj_is_fiber(fiber));
+
     return rb_funcall(scheduler, id_unblock, 2, blocker, fiber);
 }
 
@@ -199,4 +243,14 @@ rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t offs
 
     // We should ensure string has capacity to receive data, and then resize it afterwards.
     return rb_check_funcall(scheduler, id_io_write, 4, arguments);
+}
+
+VALUE
+rb_fiber_scheduler_address_resolve(VALUE scheduler, VALUE hostname)
+{
+    VALUE arguments[] = {
+        hostname
+    };
+
+    return rb_check_funcall(scheduler, id_address_resolve, 1, arguments);
 }

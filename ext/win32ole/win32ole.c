@@ -995,7 +995,7 @@ ole_val2variant_ex(VALUE val, VARIANT *var, VARTYPE vt)
         }
         return;
     }
-#if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
+#if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
     switch(vt & ~VT_BYREF) {
     case VT_I8:
         V_VT(var) = VT_I8;
@@ -1009,7 +1009,7 @@ ole_val2variant_ex(VALUE val, VARIANT *var, VARTYPE vt)
         ole_val2variant2(val, var);
         break;
     }
-#else  /* (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__) */
+#else  /* (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__) */
     ole_val2variant2(val, var);
 #endif
 }
@@ -1063,7 +1063,7 @@ get_ptr_of_variant(VARIANT *pvar)
     case VT_R8:
         return &V_R8(pvar);
         break;
-#if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
+#if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
     case VT_I8:
         return &V_I8(pvar);
         break;
@@ -1550,10 +1550,10 @@ ole_variant2val(VARIANT *pvar)
             obj = RB_INT2NUM((long)V_UINT(pvar));
         break;
 
-#if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
+#if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
     case VT_I8:
         if(V_ISBYREF(pvar))
-#if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
+#if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
 #ifdef V_I8REF
             obj = I8_2_NUM(*V_I8REF(pvar));
 #endif
@@ -1565,7 +1565,7 @@ ole_variant2val(VARIANT *pvar)
         break;
     case VT_UI8:
         if(V_ISBYREF(pvar))
-#if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
+#if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
 #ifdef V_UI8REF
             obj = UI8_2_NUM(*V_UI8REF(pvar));
 #endif
@@ -1575,7 +1575,7 @@ ole_variant2val(VARIANT *pvar)
         else
             obj = UI8_2_NUM(V_UI8(pvar));
         break;
-#endif  /* (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__) */
+#endif  /* (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__) */
 
     case VT_R4:
         if(V_ISBYREF(pvar))
@@ -3753,7 +3753,7 @@ ole_typedesc2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails)
     case VT_UI4:
         typestr = rb_str_new2("UI4");
         break;
-#if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
+#if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
     case VT_I8:
         typestr = rb_str_new2("I8");
         break;

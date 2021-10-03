@@ -114,7 +114,6 @@ Init_ruby_description(void)
     rb_define_global_const("RUBY_DESCRIPTION", /* MKSTR(description) */ description);
 }
 
-/*! Prints the version information of the CRuby interpreter to stdout. */
 void
 ruby_show_version(void)
 {
@@ -133,7 +132,6 @@ ruby_show_version(void)
     fflush(stdout);
 }
 
-/*! Prints the copyright notice of the CRuby interpreter to stdout. */
 void
 ruby_show_copyright(void)
 {

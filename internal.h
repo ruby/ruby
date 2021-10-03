@@ -1,7 +1,6 @@
 #ifndef RUBY_INTERNAL_H                                  /*-*-C-*-vi:se ft=c:*/
 #define RUBY_INTERNAL_H 1
 /**
- * @file
  * @author     $Author$
  * @date       Tue May 17 11:42:20 JST 2011
  * @copyright  Copyright (C) 2011 Yukihiro Matsumoto
@@ -96,12 +95,15 @@ RUBY_SYMBOL_EXPORT_END
 
 // same as rp, but add message header
 #define rp_m(msg, obj) do { \
-    fprintf(stderr, "%s", (msg)); \
-    rb_obj_info_dump((VALUE)obj); \
+    fputs((msg), stderr); \
+    rb_obj_info_dump((VALUE)(obj)); \
 } while (0)
 
 // `ruby_debug_breakpoint()` does nothing,
 // but breakpoint is set in run.gdb, so `make gdb` can stop here.
 #define bp() ruby_debug_breakpoint()
+
+#define RBOOL(v) ((v) ? Qtrue : Qfalse)
+#define RB_BIGNUM_TYPE_P(x) RB_TYPE_P((x), T_BIGNUM)
 
 #endif /* RUBY_INTERNAL_H */

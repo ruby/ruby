@@ -109,13 +109,30 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal a.derive(b), a.dh_compute_key(b.public_key)
   end
 
-  def test_dsa_sign_verify
+  def test_sign_verify_raw
+    key = Fixtures.pkey("p256")
     data1 = "foo"
     data2 = "bar"
-    key = OpenSSL::PKey::EC.new("prime256v1").generate_key!
+
+    malformed_sig = "*" * 30
+
+    # Sign by #dsa_sign_asn1
     sig = key.dsa_sign_asn1(data1)
     assert_equal true, key.dsa_verify_asn1(data1, sig)
     assert_equal false, key.dsa_verify_asn1(data2, sig)
+    assert_raise(OpenSSL::PKey::ECError) { key.dsa_verify_asn1(data1, malformed_sig) }
+    assert_equal true, key.verify_raw(nil, sig, data1)
+    assert_equal false, key.verify_raw(nil, sig, data2)
+    assert_raise(OpenSSL::PKey::PKeyError) { key.verify_raw(nil, malformed_sig, data1) }
+
+    # Sign by #sign_raw
+    sig = key.sign_raw(nil, data1)
+    assert_equal true, key.dsa_verify_asn1(data1, sig)
+    assert_equal false, key.dsa_verify_asn1(data2, sig)
+    assert_raise(OpenSSL::PKey::ECError) { key.dsa_verify_asn1(data1, malformed_sig) }
+    assert_equal true, key.verify_raw(nil, sig, data1)
+    assert_equal false, key.verify_raw(nil, sig, data2)
+    assert_raise(OpenSSL::PKey::PKeyError) { key.verify_raw(nil, malformed_sig, data1) }
   end
 
   def test_dsa_sign_asn1_FIPS186_3

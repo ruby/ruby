@@ -32,9 +32,8 @@ def compile_extension(name)
   ruby_header = "#{RbConfig::CONFIG['rubyhdrdir']}/ruby.h"
 
   if RbConfig::CONFIG["ENABLE_SHARED"] == "yes"
-    libdirname = RbConfig::CONFIG['LIBPATHENV'] == 'PATH' ? 'bindir' :
-                   RbConfig::CONFIG['libdirname'] # defined since 2.1
-    libruby_so = "#{RbConfig::CONFIG[libdirname]}/#{RbConfig::CONFIG['LIBRUBY_SO']}"
+    libdirname = RbConfig::CONFIG['libdirname'] # defined since 2.1
+    libruby = "#{RbConfig::CONFIG[libdirname]}/#{RbConfig::CONFIG['LIBRUBY']}"
   end
 
   begin
@@ -46,7 +45,7 @@ def compile_extension(name)
     when mtime <= File.mtime("#{core_ext_dir}/rubyspec.h")
     when mtime <= File.mtime("#{spec_ext_dir}/#{ext}.c")
     when mtime <= File.mtime(ruby_header)
-    when libruby_so && mtime <= File.mtime(libruby_so)
+    when libruby && mtime <= File.mtime(libruby)
     else
       return lib # up-to-date
     end

@@ -15,6 +15,7 @@ jobs:
 #         - ruby-2.5
 #         - ruby-2.6
           - ruby-2.7
+          - ruby-3.0
 
     steps:
       - uses: actions/checkout@v2
@@ -26,7 +27,6 @@ jobs:
       - run: sudo apt-get install build-essential autoconf bison
       - run: ./autogen.sh
       - run: ./configure --disable-install-doc
-      - run: $make update-unicode
       - run: $make common-srcs
       - run: $make incs
       - run: $make all
@@ -43,4 +43,4 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: failure() && github.event_name == 'push'
+        if: ${{ failure() && github.event_name == 'push' }}

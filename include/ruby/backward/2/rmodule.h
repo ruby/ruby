@@ -1,7 +1,6 @@
 #ifndef RUBY_BACKWARD2_RMODULE_H                     /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_BACKWARD2_RMODULE_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -17,7 +16,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Orphan macros.
  *
  * These macros  seems broken since at  least 2011. Nobody (except  ruby itself

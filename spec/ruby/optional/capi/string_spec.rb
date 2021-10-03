@@ -598,6 +598,14 @@ describe "C-API String function" do
       str = "        "
       @s.RSTRING_PTR_short_memcpy(str).should == "Infinity"
     end
+
+    it "allows read() to update the string contents" do
+      filename = fixture(__FILE__, "read.txt")
+      str = ""
+      capacities = @s.RSTRING_PTR_read(str, filename)
+      capacities.should == [30, 53]
+      str.should == "fixture file contents to test read() with RSTRING_PTR"
+    end
   end
 
   describe "RSTRING_LEN" do
@@ -665,6 +673,12 @@ describe "C-API String function" do
     end
   end
 
+  describe "rb_str_modify" do
+    it "raises an error if the string is frozen" do
+      -> { @s.rb_str_modify("frozen".freeze) }.should raise_error(FrozenError)
+    end
+  end
+
   describe "rb_str_modify_expand" do
     it "grows the capacity to bytesize + expand, not changing the bytesize" do
       str = @s.rb_str_buf_new(256, "abcd")
@@ -684,6 +698,15 @@ describe "C-API String function" do
       str.bytesize.should == 3
       @s.RSTRING_LEN(str).should == 3
       @s.rb_str_capacity(str).should == 1027
+
+      @s.rb_str_modify_expand(str, 1)
+      str.bytesize.should == 3
+      @s.RSTRING_LEN(str).should == 3
+      @s.rb_str_capacity(str).should == 4
+    end
+
+    it "raises an error if the string is frozen" do
+      -> { @s.rb_str_modify_expand("frozen".freeze, 10) }.should raise_error(FrozenError)
     end
   end
 
@@ -698,6 +721,11 @@ describe "C-API String function" do
 
     it "updates the string's attributes visible in C code" do
       @s.rb_str_resize_RSTRING_LEN("test", 2).should == 2
+    end
+
+    it "copies the existing bytes" do
+      str = "t"
+      @s.rb_str_resize_copy(str).should == "test"
     end
 
     it "increases the size of the string" do
@@ -1114,6 +1142,26 @@ end
       str = @s.rb_utf8_str_new_cstr
       str.should == "nokogiri"
       str.encoding.should == Encoding::UTF_8
+    end
+  end
+
+  describe "rb_str_vcatf" do
+    it "appends the message to the string" do
+      @s.rb_str_vcatf("").should == "fmt 42 7 number"
+
+      str = "test "
+      @s.rb_str_vcatf(str)
+      str.should == "test fmt 42 7 number"
+    end
+  end
+
+  describe "rb_str_catf" do
+    it "appends the message to the string" do
+      @s.rb_str_catf("").should == "fmt 41 6 number"
+
+      str = "test "
+      @s.rb_str_catf(str)
+      str.should == "test fmt 41 6 number"
     end
   end
 end

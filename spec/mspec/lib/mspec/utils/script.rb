@@ -280,8 +280,8 @@ class MSpecScript
   end
 
   private def check_version!
-    ruby_version_is ""..."2.5" do
-      warn "MSpec is supported for Ruby 2.5 and above only"
+    ruby_version_is ""..."2.6" do
+      warn "MSpec is supported for Ruby 2.6 and above only"
     end
   end
 end

@@ -10,16 +10,7 @@
 **********************************************************************/
 
 /*!
- * \defgroup class Classes and their hierarchy.
- * \par Terminology
- * - class: same as in Ruby.
- * - singleton class: class for a particular object
- * - eigenclass: = singleton class
- * - metaclass: class of a class. metaclass is a kind of singleton class.
- * - metametaclass: class of a metaclass.
- * - meta^(n)-class: class of a meta^(n-1)-class.
- * - attached object: A singleton class knows its unique instance.
- *   The instance is called the attached object for the singleton class.
+ * \addtogroup class
  * \{
  */
 
@@ -27,6 +18,7 @@
 #include <ctype.h>
 
 #include "constant.h"
+#include "debug_counter.h"
 #include "id_table.h"
 #include "internal.h"
 #include "internal/class.h"
@@ -42,6 +34,8 @@
 
 #define METACLASS_OF(k) RBASIC(k)->klass
 #define SET_METACLASS_OF(k, cls) RBASIC_SET_CLASS(k, cls)
+
+RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 
 void
 rb_class_subclass_add(VALUE super, VALUE klass)
@@ -86,14 +80,14 @@ rb_module_add_to_subclasses_list(VALUE module, VALUE iclass)
 void
 rb_class_remove_from_super_subclasses(VALUE klass)
 {
-    rb_subclass_entry_t *entry;
+    rb_subclass_entry_t **prev = RCLASS_PARENT_SUBCLASSES(klass);
 
-    if (RCLASS_PARENT_SUBCLASSES(klass)) {
-	entry = *RCLASS_PARENT_SUBCLASSES(klass);
+    if (prev) {
+	rb_subclass_entry_t *entry = *prev, *next = entry->next;
 
-	*RCLASS_PARENT_SUBCLASSES(klass) = entry->next;
-	if (entry->next) {
-	    RCLASS_PARENT_SUBCLASSES(entry->next->klass) = RCLASS_PARENT_SUBCLASSES(klass);
+	*prev = next;
+	if (next) {
+	    RCLASS_PARENT_SUBCLASSES(next->klass) = prev;
 	}
 	xfree(entry);
     }
@@ -104,14 +98,14 @@ rb_class_remove_from_super_subclasses(VALUE klass)
 void
 rb_class_remove_from_module_subclasses(VALUE klass)
 {
-    rb_subclass_entry_t *entry;
+    rb_subclass_entry_t **prev = RCLASS_MODULE_SUBCLASSES(klass);
 
-    if (RCLASS_MODULE_SUBCLASSES(klass)) {
-	entry = *RCLASS_MODULE_SUBCLASSES(klass);
-	*RCLASS_MODULE_SUBCLASSES(klass) = entry->next;
+    if (prev) {
+        rb_subclass_entry_t *entry = *prev, *next = entry->next;
 
-	if (entry->next) {
-	    RCLASS_MODULE_SUBCLASSES(entry->next->klass) = RCLASS_MODULE_SUBCLASSES(klass);
+	*prev = next;
+	if (next) {
+	    RCLASS_MODULE_SUBCLASSES(next->klass) = prev;
 	}
 
 	xfree(entry);
@@ -173,8 +167,20 @@ rb_class_detach_module_subclasses(VALUE klass)
 static VALUE
 class_alloc(VALUE flags, VALUE klass)
 {
-    NEWOBJ_OF(obj, struct RClass, klass, (flags & T_MASK) | FL_PROMOTED1 /* start from age == 2 */ | (RGENGC_WB_PROTECTED_CLASS ? FL_WB_PROTECTED : 0));
+    size_t payload_size = 0;
+
+#if USE_RVARGC
+    payload_size = sizeof(rb_classext_t);
+#endif
+
+    RVARGC_NEWOBJ_OF(obj, struct RClass, klass, (flags & T_MASK) | FL_PROMOTED1 /* start from age == 2 */ | (RGENGC_WB_PROTECTED_CLASS ? FL_WB_PROTECTED : 0), payload_size);
+
+#if USE_RVARGC
+    obj->ptr = (rb_classext_t *)rb_gc_rvargc_object_data((VALUE)obj);
+#else
     obj->ptr = ZALLOC(rb_classext_t);
+#endif
+
     /* ZALLOC
       RCLASS_IV_TBL(obj) = 0;
       RCLASS_CONST_TBL(obj) = 0;
@@ -219,13 +225,6 @@ rb_class_boot(VALUE super)
     return (VALUE)klass;
 }
 
-
-/*!
- * Ensures a class can be derived from super.
- *
- * \param super a reference to an object.
- * \exception TypeError if \a super is not a Class or \a super is a singleton class.
- */
 void
 rb_check_inheritable(VALUE super)
 {
@@ -241,19 +240,18 @@ rb_check_inheritable(VALUE super)
     }
 }
 
-
-/*!
- * Creates a new class.
- * \param super     a class from which the new class derives.
- * \exception TypeError \a super is not inheritable.
- * \exception TypeError \a super is the Class class.
- */
 VALUE
 rb_class_new(VALUE super)
 {
     Check_Type(super, T_CLASS);
     rb_check_inheritable(super);
     return rb_class_boot(super);
+}
+
+VALUE
+rb_class_s_alloc(VALUE klass)
+{
+    return rb_class_boot(0);
 }
 
 static void
@@ -353,12 +351,47 @@ copy_tables(VALUE clone, VALUE orig)
 
 static bool ensure_origin(VALUE klass);
 
+/**
+ * If this flag is set, that module is allocated but not initialized yet.
+ */
+enum {RMODULE_ALLOCATED_BUT_NOT_INITIALIZED = RUBY_FL_USER5};
+
+static inline bool
+RMODULE_UNINITIALIZED(VALUE module)
+{
+    return FL_TEST_RAW(module, RMODULE_ALLOCATED_BUT_NOT_INITIALIZED);
+}
+
+void
+rb_module_set_initialized(VALUE mod)
+{
+    FL_UNSET_RAW(mod, RMODULE_ALLOCATED_BUT_NOT_INITIALIZED);
+    /* no more re-initialization */
+}
+
+void
+rb_module_check_initializable(VALUE mod)
+{
+    if (!RMODULE_UNINITIALIZED(mod)) {
+        rb_raise(rb_eTypeError, "already initialized module");
+    }
+    RB_OBJ_WRITE(mod, &RCLASS(mod)->super, 0);
+}
+
 /* :nodoc: */
 VALUE
 rb_mod_init_copy(VALUE clone, VALUE orig)
 {
-    if (RB_TYPE_P(clone, T_CLASS)) {
+    switch (BUILTIN_TYPE(clone)) {
+      case T_CLASS:
+      case T_ICLASS:
         class_init_copy_check(clone, orig);
+        break;
+      case T_MODULE:
+        rb_module_check_initializable(clone);
+        break;
+      default:
+        break;
     }
     if (!OBJ_INIT_COPY(clone, orig)) return clone;
 
@@ -521,10 +554,6 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
     }
 }
 
-/*!
- * Attach a object to a singleton class.
- * @pre \a klass is the singleton class of \a obj.
- */
 void
 rb_singleton_class_attached(VALUE klass, VALUE obj)
 {
@@ -682,17 +711,6 @@ rb_make_metaclass(VALUE obj, VALUE unused)
     }
 }
 
-
-/*!
- * Defines a new class.
- * \param id     ignored
- * \param super  A class from which the new class will derive. NULL means \c Object class.
- * \return       the created class
- * \throw TypeError if super is not a \c Class object.
- *
- * \note the returned class will not be associated with \a id.
- *       You must explicitly set a class name if necessary.
- */
 VALUE
 rb_define_class_id(ID id, VALUE super)
 {
@@ -723,23 +741,6 @@ rb_class_inherited(VALUE super, VALUE klass)
     return rb_funcall(super, inherited, 1, klass);
 }
 
-
-
-/*!
- * Defines a top-level class.
- * \param name   name of the class
- * \param super  a class from which the new class will derive.
- * \return the created class
- * \throw TypeError if the constant name \a name is already taken but
- *                  the constant is not a \c Class.
- * \throw TypeError if the class is already defined but the class can not
- *                  be reopened because its superclass is not \a super.
- * \throw ArgumentError if the \a super is NULL.
- * \post top-level constant named \a name refers the returned class.
- *
- * \note if a class named \a name is already defined and its superclass is
- *       \a super, the function just returns the defined class.
- */
 VALUE
 rb_define_class(const char *name, VALUE super)
 {
@@ -772,48 +773,12 @@ rb_define_class(const char *name, VALUE super)
     return klass;
 }
 
-
-/*!
- * Defines a class under the namespace of \a outer.
- * \param outer  a class which contains the new class.
- * \param name   name of the new class
- * \param super  a class from which the new class will derive.
- *               NULL means \c Object class.
- * \return the created class
- * \throw TypeError if the constant name \a name is already taken but
- *                  the constant is not a \c Class.
- * \throw TypeError if the class is already defined but the class can not
- *                  be reopened because its superclass is not \a super.
- * \post top-level constant named \a name refers the returned class.
- *
- * \note if a class named \a name is already defined and its superclass is
- *       \a super, the function just returns the defined class.
- * \note the compaction GC does not move classes returned by this function.
- */
 VALUE
 rb_define_class_under(VALUE outer, const char *name, VALUE super)
 {
     return rb_define_class_id_under(outer, rb_intern(name), super);
 }
 
-
-/*!
- * Defines a class under the namespace of \a outer.
- * \param outer  a class which contains the new class.
- * \param id     name of the new class
- * \param super  a class from which the new class will derive.
- *               NULL means \c Object class.
- * \return the created class
- * \throw TypeError if the constant name \a name is already taken but
- *                  the constant is not a \c Class.
- * \throw TypeError if the class is already defined but the class can not
- *                  be reopened because its superclass is not \a super.
- * \post top-level constant named \a name refers the returned class.
- *
- * \note if a class named \a name is already defined and its superclass is
- *       \a super, the function just returns the defined class.
- * \note the compaction GC does not move classes returned by this function.
- */
 VALUE
 rb_define_class_id_under(VALUE outer, ID id, VALUE super)
 {
@@ -851,6 +816,15 @@ rb_define_class_id_under(VALUE outer, ID id, VALUE super)
 }
 
 VALUE
+rb_module_s_alloc(VALUE klass)
+{
+    VALUE mod = class_alloc(T_MODULE, klass);
+    RCLASS_M_TBL_INIT(mod);
+    FL_SET(mod, RMODULE_ALLOCATED_BUT_NOT_INITIALIZED);
+    return mod;
+}
+
+VALUE
 rb_module_new(void)
 {
     VALUE mdl = class_alloc(T_MODULE, rb_cModule);
@@ -865,9 +839,6 @@ rb_define_module_id(ID id)
     return rb_module_new();
 }
 
-/*!
- * \note the compaction GC does not move modules returned by this function.
- */
 VALUE
 rb_define_module(const char *name)
 {
@@ -892,9 +863,6 @@ rb_define_module(const char *name)
     return module;
 }
 
-/*!
- * \note the compaction GC does not move modules returned by this function.
- */
 VALUE
 rb_define_module_under(VALUE outer, const char *name)
 {
@@ -944,6 +912,7 @@ rb_include_class_new(VALUE module, VALUE super)
 	RCLASS_CONST_TBL(module) = rb_id_table_create(0);
     }
     RCLASS_IV_TBL(klass) = RCLASS_IV_TBL(module);
+    RCLASS_CVC_TBL(klass) = RCLASS_CVC_TBL(module);
     RCLASS_CONST_TBL(klass) = RCLASS_CONST_TBL(module);
 
     RCLASS_SET_SUPER(klass, super);
@@ -959,6 +928,7 @@ ensure_includable(VALUE klass, VALUE module)
 {
     rb_class_modify_check(klass);
     Check_Type(module, T_MODULE);
+    rb_module_set_initialized(module);
     if (!NIL_P(rb_refinement_module_get_refined_class(module))) {
 	rb_raise(rb_eArgError, "refinement module is not allowed");
     }
@@ -1072,6 +1042,8 @@ do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super
         VALUE super_class = RCLASS_SUPER(c);
 
         // invalidate inline method cache
+        RB_DEBUG_COUNTER_INC(cvar_include_invalidate);
+        ruby_vm_global_cvar_state++;
         tbl = RCLASS_M_TBL(module);
         if (tbl && rb_id_table_size(tbl)) {
             if (search_super) { // include
@@ -1105,10 +1077,10 @@ do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super
             add_subclass = FALSE;
         }
 
-	{
+	if (add_subclass) {
 	    VALUE m = module;
             if (BUILTIN_TYPE(m) == T_ICLASS) m = RBASIC(m)->klass;
-            if (add_subclass) rb_module_add_to_subclasses_list(m, iclass);
+            rb_module_add_to_subclasses_list(m, iclass);
 	}
 
 	if (FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
@@ -1168,10 +1140,12 @@ cache_clear_refined_method(ID key, VALUE value, void *data)
 {
     rb_method_entry_t *me = (rb_method_entry_t *) value;
 
-    if (me->def->type == VM_METHOD_TYPE_REFINED) {
+    if (me->def->type == VM_METHOD_TYPE_REFINED && me->def->body.refined.orig_me) {
         VALUE klass = (VALUE)data;
         rb_clear_method_cache(klass, me->called_id);
     }
+    // Refined method entries without an orig_me is going to stay in the method
+    // table of klass, like before the move, so no need to clear the cache.
 
     return ID_TABLE_CONTINUE;
 }
@@ -1326,8 +1300,13 @@ VALUE
 rb_mod_ancestors(VALUE mod)
 {
     VALUE p, ary = rb_ary_new();
+    VALUE refined_class = Qnil;
+    if (FL_TEST(mod, RMODULE_IS_REFINEMENT)) {
+        refined_class = rb_refinement_module_get_refined_class(mod);
+    }
 
     for (p = mod; p; p = RCLASS_SUPER(p)) {
+        if (p == refined_class) break;
         if (p != RCLASS_ORIGIN(p)) continue;
 	if (BUILTIN_TYPE(p) == T_ICLASS) {
 	    rb_ary_push(ary, RBASIC(p)->klass);
@@ -1410,6 +1389,7 @@ method_entry_i(ID key, VALUE value, void *data)
 	}
 	else {
 	    type = METHOD_ENTRY_VISI(me);
+	    RUBY_ASSERT(type != METHOD_VISI_UNDEF);
 	}
 	st_add_direct(arg->list, key, (st_data_t)type);
     }
@@ -1709,56 +1689,7 @@ rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
  * \}
  */
 /*!
- * \defgroup defmethod Defining methods
- * There are some APIs to define a method from C.
- * These API takes a C function as a method body.
- *
- * \par Method body functions
- * Method body functions must return a VALUE and
- * can be one of the following form:
- * <dl>
- * <dt>Fixed number of parameters</dt>
- * <dd>
- *     This form is a normal C function, excepting it takes
- *     a receiver object as the first argument.
- *
- *     \code
- *     static VALUE my_method(VALUE self, VALUE x, VALUE y);
- *     \endcode
- * </dd>
- * <dt>argc and argv style</dt>
- * <dd>
- *     This form takes three parameters: \a argc, \a argv and \a self.
- *     \a self is the receiver. \a argc is the number of arguments.
- *     \a argv is a pointer to an array of the arguments.
- *
- *     \code
- *     static VALUE my_method(int argc, VALUE *argv, VALUE self);
- *     \endcode
- * </dd>
- * <dt>Ruby array style</dt>
- * <dd>
- *     This form takes two parameters: self and args.
- *     \a self is the receiver. \a args is an Array object which
- *     contains the arguments.
- *
- *     \code
- *     static VALUE my_method(VALUE self, VALUE args);
- *     \endcode
- * </dd>
- *
- * \par Number of parameters
- * Method defining APIs takes the number of parameters which the
- * method will takes. This number is called \a argc.
- * \a argc can be:
- * <dl>
- * <dt>zero or positive number</dt>
- * <dd>This means the method body function takes a fixed number of parameters</dd>
- * <dt>-1</dt>
- * <dd>This means the method body function is "argc and argv" style.</dd>
- * <dt>-2</dt>
- * <dd>This means the method body function is "self and args" style.</dd>
- * </dl>
+ * \addtogroup defmethod
  * \{
  */
 
@@ -1928,23 +1859,6 @@ rb_singleton_class_get(VALUE obj)
     return klass;
 }
 
-/*!
- * Returns the singleton class of \a obj. Creates it if necessary.
- *
- * \param obj an arbitrary object.
- * \throw TypeError if \a obj is an Integer or a Symbol.
- * \return the singleton class.
- *
- * \post \a obj has its own singleton class.
- * \post if \a obj is a class,
- *       the returned singleton class also has its own
- *       singleton class in order to keep consistency of the
- *       inheritance structure of metaclasses.
- * \note a new singleton class will be created
- *       if \a obj does not have it.
- * \note the singleton classes for nil, true and false are:
- *       NilClass, TrueClass and FalseClass.
- */
 VALUE
 rb_singleton_class(VALUE obj)
 {
@@ -1968,13 +1882,6 @@ rb_singleton_class(VALUE obj)
 #ifdef rb_define_singleton_method
 #undef rb_define_singleton_method
 #endif
-/*!
- * Defines a singleton method for \a obj.
- * \param obj    an arbitrary object
- * \param name   name of the singleton method
- * \param func   the method body
- * \param argc   the number of parameters, or -1 or -2. see \ref defmethod.
- */
 void
 rb_define_singleton_method(VALUE obj, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
@@ -1984,13 +1891,6 @@ rb_define_singleton_method(VALUE obj, const char *name, VALUE (*func)(ANYARGS), 
 #ifdef rb_define_module_function
 #undef rb_define_module_function
 #endif
-/*!
- * Defines a module function for \a module.
- * \param module  an module or a class.
- * \param name    name of the function
- * \param func    the method body
- * \param argc    the number of parameters, or -1 or -2. see \ref defmethod.
- */
 void
 rb_define_module_function(VALUE module, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
@@ -2001,38 +1901,18 @@ rb_define_module_function(VALUE module, const char *name, VALUE (*func)(ANYARGS)
 #ifdef rb_define_global_function
 #undef rb_define_global_function
 #endif
-/*!
- * Defines a global function
- * \param name    name of the function
- * \param func    the method body
- * \param argc    the number of parameters, or -1 or -2. see \ref defmethod.
- */
 void
 rb_define_global_function(const char *name, VALUE (*func)(ANYARGS), int argc)
 {
     rb_define_module_function(rb_mKernel, name, func, argc);
 }
 
-
-/*!
- * Defines an alias of a method.
- * \param klass  the class which the original method belongs to
- * \param name1  a new name for the method
- * \param name2  the original name of the method
- */
 void
 rb_define_alias(VALUE klass, const char *name1, const char *name2)
 {
     rb_alias(klass, rb_intern(name1), rb_intern(name2));
 }
 
-/*!
- * Defines (a) public accessor method(s) for an attribute.
- * \param klass  the class which the attribute will belongs to
- * \param name   name of the attribute
- * \param read   a getter method for the attribute will be defined if \a read is non-zero.
- * \param write  a setter method for the attribute will be defined if \a write is non-zero.
- */
 void
 rb_define_attr(VALUE klass, const char *name, int read, int write)
 {
@@ -2340,12 +2220,6 @@ rb_scan_args_kw(int kw_flag, int argc, const VALUE *argv, const char *fmt, ...)
     argc = rb_scan_args_assign(&arg, argc, argv, vargs);
     va_end(vargs);
     return rb_scan_args_result(&arg, argc);
-}
-
-int
-rb_class_has_methods(VALUE c)
-{
-    return rb_id_table_size(RCLASS_M_TBL(c)) == 0 ? FALSE : TRUE;
 }
 
 /*!

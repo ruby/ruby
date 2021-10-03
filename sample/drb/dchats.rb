@@ -28,7 +28,7 @@ end
 
 class ChatServer
   def initialize
-    @mutex = Mutex.new
+    @mutex = Thread::Mutex.new
     @members = {}
   end
 

@@ -145,7 +145,7 @@ class TestRDocOptions < RDoc::TestCase
 
     @options.encoding = Encoding::IBM437
 
-    options = YAML.load YAML.dump @options
+    options = YAML.safe_load(YAML.dump(@options), permitted_classes: [RDoc::Options, Symbol])
 
     assert_equal Encoding::IBM437, options.encoding
   end
@@ -161,7 +161,7 @@ rdoc_include:
 - /etc
     YAML
 
-    options = YAML.load yaml
+    options = YAML.safe_load(yaml, permitted_classes: [RDoc::Options, Symbol])
 
     assert_empty options.rdoc_include
     assert_empty options.static_path
@@ -632,6 +632,21 @@ rdoc_include:
     $LOAD_PATH.replace orig_LOAD_PATH
   end
 
+  def test_parse_template_stylesheets
+    css = nil
+    Dir.mktmpdir do |dir|
+      css = File.join(dir, "hoge.css")
+      File.write(css, "")
+      out, err = capture_output do
+        @options.parse %W[--template-stylesheets #{css}]
+      end
+
+      assert_empty out
+      assert_empty err
+    end
+    assert_include @options.template_stylesheets, css
+  end
+
   def test_parse_visibility
     @options.parse %w[--visibility=public]
     assert_equal :public, @options.visibility
@@ -749,7 +764,7 @@ rdoc_include:
 
       assert File.exist? '.rdoc_options'
 
-      assert_equal @options, YAML.load(File.read('.rdoc_options'))
+      assert_equal @options, YAML.safe_load(File.read('.rdoc_options'), permitted_classes: [RDoc::Options, Symbol])
     end
   end
 
@@ -776,5 +791,63 @@ rdoc_include:
   def test_visibility
     @options.visibility = :all
     assert_equal :private, @options.visibility
+  end
+
+  def test_load_options
+    temp_dir do
+      options = RDoc::Options.new
+      options.markup = 'tomdoc'
+      options.write_options
+
+      options = RDoc::Options.load_options
+
+      assert_equal 'tomdoc', options.markup
+    end
+  end
+
+  def test_load_options_invalid
+    temp_dir do
+      File.open '.rdoc_options', 'w' do |io|
+        io.write "a: !ruby.yaml.org,2002:str |\nfoo"
+      end
+
+      e = assert_raise RDoc::Error do
+        RDoc::Options.load_options
+      end
+
+      options_file = File.expand_path '.rdoc_options'
+      assert_equal "#{options_file} is not a valid rdoc options file", e.message
+    end
+  end
+
+  def test_load_options_empty_file
+    temp_dir do
+      File.open '.rdoc_options', 'w' do |io|
+      end
+
+      options = RDoc::Options.load_options
+
+      assert_equal 'rdoc', options.markup
+    end
+  end
+
+  def test_load_options_partial_override
+    temp_dir do
+      File.open '.rdoc_options', 'w' do |io|
+        io.write "markup: Markdown"
+      end
+
+      options = RDoc::Options.load_options
+
+      assert_equal 'Markdown', options.markup
+    end
+  end
+
+  def load_options_no_file
+    temp_dir do
+      options = RDoc::Options.load_options
+
+      assert_kind_of RDoc::Options, options
+    end
   end
 end

@@ -33,7 +33,7 @@ require 'psych/class_loader'
 #
 # Psych is a YAML parser and emitter.
 # Psych leverages libyaml [Home page: https://pyyaml.org/wiki/LibYAML]
-# or [HG repo: https://bitbucket.org/xi/libyaml] for its YAML parsing
+# or [git repo: https://github.com/yaml/libyaml] for its YAML parsing
 # and emitting capabilities. In addition to wrapping libyaml, Psych also
 # knows how to serialize and de-serialize most Ruby objects to and from
 # the YAML format.
@@ -234,9 +234,6 @@ require 'psych/class_loader'
 module Psych
   # The version of libyaml Psych is using
   LIBYAML_VERSION = Psych.libyaml_version.join('.').freeze
-  # Deprecation guard
-  NOT_GIVEN = Object.new.freeze
-  private_constant :NOT_GIVEN
 
   ###
   # Load +yaml+ in to a Ruby data structure.  If multiple documents are
@@ -249,11 +246,11 @@ module Psych
   #
   # Example:
   #
-  #   Psych.load("--- a")             # => 'a'
-  #   Psych.load("---\n - a\n - b")   # => ['a', 'b']
+  #   Psych.unsafe_load("--- a")             # => 'a'
+  #   Psych.unsafe_load("---\n - a\n - b")   # => ['a', 'b']
   #
   #   begin
-  #     Psych.load("--- `", filename: "file.txt")
+  #     Psych.unsafe_load("--- `", filename: "file.txt")
   #   rescue Psych::SyntaxError => ex
   #     ex.file    # => 'file.txt'
   #     ex.message # => "(file.txt): found character that cannot start any token"
@@ -262,25 +259,21 @@ module Psych
   # When the optional +symbolize_names+ keyword argument is set to a
   # true value, returns symbols for keys in Hash objects (default: strings).
   #
-  #   Psych.load("---\n foo: bar")                         # => {"foo"=>"bar"}
-  #   Psych.load("---\n foo: bar", symbolize_names: true)  # => {:foo=>"bar"}
+  #   Psych.unsafe_load("---\n foo: bar")                         # => {"foo"=>"bar"}
+  #   Psych.unsafe_load("---\n foo: bar", symbolize_names: true)  # => {:foo=>"bar"}
   #
   # Raises a TypeError when `yaml` parameter is NilClass
   #
   # NOTE: This method *should not* be used to parse untrusted documents, such as
   # YAML documents that are supplied via user input.  Instead, please use the
-  # safe_load method.
+  # load method or the safe_load method.
   #
-  def self.load yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: false, symbolize_names: false, freeze: false
-    if legacy_filename != NOT_GIVEN
-      warn_with_uplevel 'Passing filename with the 2nd argument of Psych.load is deprecated. Use keyword argument like Psych.load(yaml, filename: ...) instead.', uplevel: 1 if $VERBOSE
-      filename = legacy_filename
-    end
-
+  def self.unsafe_load yaml, filename: nil, fallback: false, symbolize_names: false, freeze: false
     result = parse(yaml, filename: filename)
     return fallback unless result
     result.to_ruby(symbolize_names: symbolize_names, freeze: freeze)
   end
+  class << self; alias :load :unsafe_load; end
 
   ###
   # Safely load the yaml string in +yaml+.  By default, only the following
@@ -289,7 +282,8 @@ module Psych
   # * TrueClass
   # * FalseClass
   # * NilClass
-  # * Numeric
+  # * Integer
+  # * Float
   # * String
   # * Array
   # * Hash
@@ -326,27 +320,7 @@ module Psych
   #   Psych.safe_load("---\n foo: bar")                         # => {"foo"=>"bar"}
   #   Psych.safe_load("---\n foo: bar", symbolize_names: true)  # => {:foo=>"bar"}
   #
-  def self.safe_load yaml, legacy_permitted_classes = NOT_GIVEN, legacy_permitted_symbols = NOT_GIVEN, legacy_aliases = NOT_GIVEN, legacy_filename = NOT_GIVEN, permitted_classes: [], permitted_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false, freeze: false
-    if legacy_permitted_classes != NOT_GIVEN
-      warn_with_uplevel 'Passing permitted_classes with the 2nd argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, permitted_classes: ...) instead.', uplevel: 1 if $VERBOSE
-      permitted_classes = legacy_permitted_classes
-    end
-
-    if legacy_permitted_symbols != NOT_GIVEN
-      warn_with_uplevel 'Passing permitted_symbols with the 3rd argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, permitted_symbols: ...) instead.', uplevel: 1 if $VERBOSE
-      permitted_symbols = legacy_permitted_symbols
-    end
-
-    if legacy_aliases != NOT_GIVEN
-      warn_with_uplevel 'Passing aliases with the 4th argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, aliases: ...) instead.', uplevel: 1 if $VERBOSE
-      aliases = legacy_aliases
-    end
-
-    if legacy_filename != NOT_GIVEN
-      warn_with_uplevel 'Passing filename with the 5th argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, filename: ...) instead.', uplevel: 1 if $VERBOSE
-      filename = legacy_filename
-    end
-
+  def self.safe_load yaml, permitted_classes: [], permitted_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false, freeze: false
     result = parse(yaml, filename: filename)
     return fallback unless result
 
@@ -360,6 +334,46 @@ module Psych
               end
     result = visitor.accept result
     result
+  end
+
+  ###
+  # Load +yaml+ in to a Ruby data structure.  If multiple documents are
+  # provided, the object contained in the first document will be returned.
+  # +filename+ will be used in the exception message if any exception
+  # is raised while parsing.  If +yaml+ is empty, it returns
+  # the specified +fallback+ return value, which defaults to +false+.
+  #
+  # Raises a Psych::SyntaxError when a YAML syntax error is detected.
+  #
+  # Example:
+  #
+  #   Psych.load("--- a")             # => 'a'
+  #   Psych.load("---\n - a\n - b")   # => ['a', 'b']
+  #
+  #   begin
+  #     Psych.load("--- `", filename: "file.txt")
+  #   rescue Psych::SyntaxError => ex
+  #     ex.file    # => 'file.txt'
+  #     ex.message # => "(file.txt): found character that cannot start any token"
+  #   end
+  #
+  # When the optional +symbolize_names+ keyword argument is set to a
+  # true value, returns symbols for keys in Hash objects (default: strings).
+  #
+  #   Psych.load("---\n foo: bar")                         # => {"foo"=>"bar"}
+  #   Psych.load("---\n foo: bar", symbolize_names: true)  # => {:foo=>"bar"}
+  #
+  # Raises a TypeError when `yaml` parameter is NilClass.  This method is
+  # similar to `safe_load` except that `Symbol` objects are allowed by default.
+  #
+  def self.load yaml, permitted_classes: [Symbol], permitted_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false, freeze: false
+    safe_load yaml, permitted_classes: permitted_classes,
+                    permitted_symbols: permitted_symbols,
+                    aliases: aliases,
+                    filename: filename,
+                    fallback: fallback,
+                    symbolize_names: symbolize_names,
+                    freeze: freeze
   end
 
   ###
@@ -381,22 +395,12 @@ module Psych
   #   end
   #
   # See Psych::Nodes for more information about YAML AST.
-  def self.parse yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: NOT_GIVEN
-    if legacy_filename != NOT_GIVEN
-      warn_with_uplevel 'Passing filename with the 2nd argument of Psych.parse is deprecated. Use keyword argument like Psych.parse(yaml, filename: ...) instead.', uplevel: 1 if $VERBOSE
-      filename = legacy_filename
-    end
-
+  def self.parse yaml, filename: nil
     parse_stream(yaml, filename: filename) do |node|
       return node
     end
 
-    if fallback != NOT_GIVEN
-      warn_with_uplevel 'Passing the `fallback` keyword argument of Psych.parse is deprecated.', uplevel: 1 if $VERBOSE
-      fallback
-    else
-      false
-    end
+    false
   end
 
   ###
@@ -445,12 +449,7 @@ module Psych
   # Raises a TypeError when NilClass is passed.
   #
   # See Psych::Nodes for more information about YAML AST.
-  def self.parse_stream yaml, legacy_filename = NOT_GIVEN, filename: nil, &block
-    if legacy_filename != NOT_GIVEN
-      warn_with_uplevel 'Passing filename with the 2nd argument of Psych.parse_stream is deprecated. Use keyword argument like Psych.parse_stream(yaml, filename: ...) instead.', uplevel: 1 if $VERBOSE
-      filename = legacy_filename
-    end
-
+  def self.parse_stream yaml, filename: nil, &block
     if block_given?
       parser = Psych::Parser.new(Handlers::DocumentStream.new(&block))
       parser.parse yaml, filename
@@ -515,6 +514,79 @@ module Psych
   end
 
   ###
+  # call-seq:
+  #   Psych.safe_dump(o)               -> string of yaml
+  #   Psych.safe_dump(o, options)      -> string of yaml
+  #   Psych.safe_dump(o, io)           -> io object passed in
+  #   Psych.safe_dump(o, io, options)  -> io object passed in
+  #
+  # Safely dump Ruby object +o+ to a YAML string. Optional +options+ may be passed in
+  # to control the output format.  If an IO object is passed in, the YAML will
+  # be dumped to that IO object. By default, only the following
+  # classes are allowed to be serialized:
+  #
+  # * TrueClass
+  # * FalseClass
+  # * NilClass
+  # * Integer
+  # * Float
+  # * String
+  # * Array
+  # * Hash
+  #
+  # Arbitrary classes can be allowed by adding those classes to the +permitted_classes+
+  # keyword argument.  They are additive.  For example, to allow Date serialization:
+  #
+  #   Psych.safe_dump(yaml, permitted_classes: [Date])
+  #
+  # Now the Date class can be dumped in addition to the classes listed above.
+  #
+  # A Psych::DisallowedClass exception will be raised if the object contains a
+  # class that isn't in the +permitted_classes+ list.
+  #
+  # Currently supported options are:
+  #
+  # [<tt>:indentation</tt>]   Number of space characters used to indent.
+  #                           Acceptable value should be in <tt>0..9</tt> range,
+  #                           otherwise option is ignored.
+  #
+  #                           Default: <tt>2</tt>.
+  # [<tt>:line_width</tt>]    Max character to wrap line at.
+  #
+  #                           Default: <tt>0</tt> (meaning "wrap at 81").
+  # [<tt>:canonical</tt>]     Write "canonical" YAML form (very verbose, yet
+  #                           strictly formal).
+  #
+  #                           Default: <tt>false</tt>.
+  # [<tt>:header</tt>]        Write <tt>%YAML [version]</tt> at the beginning of document.
+  #
+  #                           Default: <tt>false</tt>.
+  #
+  # Example:
+  #
+  #   # Dump an array, get back a YAML string
+  #   Psych.safe_dump(['a', 'b'])  # => "---\n- a\n- b\n"
+  #
+  #   # Dump an array to an IO object
+  #   Psych.safe_dump(['a', 'b'], StringIO.new)  # => #<StringIO:0x000001009d0890>
+  #
+  #   # Dump an array with indentation set
+  #   Psych.safe_dump(['a', ['b']], indentation: 3) # => "---\n- a\n-  - b\n"
+  #
+  #   # Dump an array to an IO with indentation set
+  #   Psych.safe_dump(['a', ['b']], StringIO.new, indentation: 3)
+  def self.safe_dump o, io = nil, options = {}
+    if Hash === io
+      options = io
+      io      = nil
+    end
+
+    visitor = Psych::Visitors::RestrictedYAMLTree.create options
+    visitor << o
+    visitor.tree.yaml io, options
+  end
+
+  ###
   # Dump a list of objects as separate documents to a document stream.
   #
   # Example:
@@ -551,12 +623,7 @@ module Psych
   #   end
   #   list # => ['foo', 'bar']
   #
-  def self.load_stream yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: [], **kwargs
-    if legacy_filename != NOT_GIVEN
-      warn_with_uplevel 'Passing filename with the 2nd argument of Psych.load_stream is deprecated. Use keyword argument like Psych.load_stream(yaml, filename: ...) instead.', uplevel: 1 if $VERBOSE
-      filename = legacy_filename
-    end
-
+  def self.load_stream yaml, filename: nil, fallback: [], **kwargs
     result = if block_given?
                parse_stream(yaml, filename: filename) do |node|
                  yield node.to_ruby(**kwargs)
@@ -577,9 +644,9 @@ module Psych
   # NOTE: This method *should not* be used to parse untrusted documents, such as
   # YAML documents that are supplied via user input.  Instead, please use the
   # safe_load_file method.
-  def self.load_file filename, **kwargs
+  def self.unsafe_load_file filename, **kwargs
     File.open(filename, 'r:bom|utf-8') { |f|
-      self.load f, filename: filename, **kwargs
+      self.unsafe_load f, filename: filename, **kwargs
     }
   end
 
@@ -591,6 +658,17 @@ module Psych
   def self.safe_load_file filename, **kwargs
     File.open(filename, 'r:bom|utf-8') { |f|
       self.safe_load f, filename: filename, **kwargs
+    }
+  end
+
+  ###
+  # Loads the document contained in +filename+.  Returns the yaml contained in
+  # +filename+ as a Ruby object, or if the file is empty, it returns
+  # the specified +fallback+ return value, which defaults to +false+.
+  # See load for options.
+  def self.load_file filename, **kwargs
+    File.open(filename, 'r:bom|utf-8') { |f|
+      self.load f, filename: filename, **kwargs
     }
   end
 

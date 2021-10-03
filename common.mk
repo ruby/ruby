@@ -18,8 +18,8 @@ mflags = $(MFLAGS)
 gnumake_recursive =
 enable_shared = $(ENABLE_SHARED:no=)
 
-UNICODE_VERSION = 12.1.0
-UNICODE_EMOJI_VERSION = 12.1
+UNICODE_VERSION = 13.0.0
+UNICODE_EMOJI_VERSION = 13.1
 UNICODE_BETA = NO
 
 ### set the following environment variable or uncomment the line if
@@ -164,7 +164,7 @@ EXPORTOBJS    = $(DLNOBJ) \
 OBJS          = $(EXPORTOBJS) builtin.$(OBJEXT)
 ALLOBJS       = $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(INITOBJS)
 
-GOLFOBJS      = goruby.$(OBJEXT) golf_prelude.$(OBJEXT)
+GOLFOBJS      = goruby.$(OBJEXT)
 
 DEFAULT_PRELUDES = $(GEM_PRELUDE)
 PRELUDE_SCRIPTS = $(DEFAULT_PRELUDES)
@@ -213,7 +213,7 @@ MAKE_LINK = $(MINIRUBY) -rfileutils -e "include FileUtils::Verbose" \
 
 all: $(SHOWFLAGS) main docs
 
-main: $(SHOWFLAGS) exts $(ENCSTATIC:static=lib)encs programs
+main: $(SHOWFLAGS) exts $(ENCSTATIC:static=lib)encs
 	@$(NULLCMD)
 
 mjit-headers: $(MJIT_SUPPORT)-mjit-headers
@@ -306,6 +306,7 @@ exts-note: $(EXTS_MK)
 	$(Q)$(MAKE) $(EXTS_NOTE)
 
 ext/extinit.c: $(srcdir)/template/extinit.c.tmpl $(PREP)
+	$(MAKEDIRS) $(@D)
 	$(Q)$(MINIRUBY) $(tooldir)/generic_erb.rb -o $@ -c \
 	    $(srcdir)/template/extinit.c.tmpl $(EXTINITS)
 
@@ -325,7 +326,6 @@ $(GOLF): $(LIBRUBY) $(GOLFOBJS) PHONY
 	$(Q) $(MAKE) $(mflags) \
 		GOLF=_dummy_golf_target_to_avoid_conflict_just_in_case_ \
 		MAINOBJ=goruby.$(OBJEXT) \
-		EXTOBJS="golf_prelude.$(OBJEXT) $(EXTOBJS)" \
 		PROGRAM=$(GORUBY)$(EXEEXT) \
 		V=$(V) \
 	program
@@ -376,7 +376,7 @@ $(ruby_pc): $(srcdir)/template/ruby.pc.in config.status
 install-all: docs pre-install-all do-install-all post-install-all
 pre-install-all:: all pre-install-local pre-install-ext pre-install-gem pre-install-doc
 do-install-all: pre-install-all
-	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) $(INSTALL_DOC_OPTS)
+	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=all $(INSTALL_DOC_OPTS)
 post-install-all:: post-install-local post-install-ext post-install-gem post-install-doc
 	@$(NULLCMD)
 
@@ -471,7 +471,7 @@ what-where-nodoc: no-install-nodoc
 no-install-nodoc: pre-no-install-nodoc dont-install-nodoc post-no-install-nodoc
 pre-no-install-nodoc:: pre-no-install-local pre-no-install-ext
 dont-install-nodoc:  $(PREP)
-	$(INSTRUBY) -n --make="$(MAKE)" $(INSTRUBY_ARGS)
+	$(INSTRUBY) -n --make="$(MAKE)" $(INSTRUBY_ARGS) --exclude=doc
 post-no-install-nodoc:: post-no-install-local post-no-install-ext
 
 what-where-local: no-install-local
@@ -741,7 +741,7 @@ check: main test test-tool test-all test-spec
 	if [ x"$(GIT)" != x ] && $(CHDIR) "$(srcdir)" && \
 	    b=`$(GIT) symbolic-ref --short HEAD 2>&1` && \
 	    u=`$(GIT) branch --list --format='%(upstream:short)' $$b`; then \
-	  set -x; $(GIT) --no-pager log --format=oneline -G "^ *# *include" $$u..HEAD --; \
+	  set -x; $(GIT) --no-pager log --format=oneline -G '^ *# *include *("|<ruby)' $$u..HEAD --; \
 	fi
 check-ruby: test test-ruby
 
@@ -760,35 +760,49 @@ $(arch)-fake.rb: $(srcdir)/template/fake.rb.in $(tooldir)/generic_erb.rb version
 btest: $(TEST_RUNNABLE)-btest
 no-btest: PHONY
 yes-btest: fake miniruby$(EXEEXT) PHONY
+	$(ACTIONS_GROUP)
 	$(Q)$(exec) $(BOOTSTRAPRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(BTESTRUBY) $(RUN_OPTS)" $(OPTS) $(TESTOPTS) $(BTESTS)
+	$(ACTIONS_ENDGROUP)
 
 btest-ruby: $(TEST_RUNNABLE)-btest-ruby
 no-btest-ruby: PHONY
 yes-btest-ruby: prog PHONY
+	$(ACTIONS_GROUP)
 	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) -I$(srcdir)/lib $(RUN_OPTS)" -q $(OPTS) $(TESTOPTS) $(BTESTS)
+	$(ACTIONS_ENDGROUP)
 
 rtest: fake miniruby$(EXEEXT) PHONY
+	$(ACTIONS_GROUP)
 	$(Q)$(exec) $(BOOTSTRAPRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(BTESTRUBY) $(RUN_OPTS)" --sets=ractor -v
+	$(ACTIONS_ENDGROUP)
 
 test-basic: $(TEST_RUNNABLE)-test-basic
 no-test-basic: PHONY
 yes-test-basic: prog PHONY
+	$(ACTIONS_GROUP)
 	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/basictest/runner.rb" --run-opt=$(RUN_OPTS) $(OPTS) $(TESTOPTS)
+	$(ACTIONS_ENDGROUP)
 
 test-knownbugs: test-knownbug
 test-knownbug: $(TEST_RUNNABLE)-test-knownbug
 no-test-knownbug: PHONY
 yes-test-knownbug: prog PHONY
+	$(ACTIONS_GROUP)
 	-$(exec) $(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) $(RUN_OPTS)" $(OPTS) $(TESTOPTS) $(srcdir)/KNOWNBUGS.rb
+	$(ACTIONS_ENDGROUP)
 
 test-testframework: $(TEST_RUNNABLE)-test-testframework
 yes-test-testframework: prog PHONY
-	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TOOL_TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TESTOPTS) testunit minitest
+	$(ACTIONS_GROUP)
+	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TOOL_TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TESTOPTS) testunit
+	$(ACTIONS_ENDGROUP)
 no-test-testframework: PHONY
 
 test-tool: $(TEST_RUNNABLE)-test-tool
 yes-test-tool: prog PHONY
+	$(ACTIONS_GROUP)
 	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TOOL_TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TESTOPTS)
+	$(ACTIONS_ENDGROUP)
 no-test-tool: PHONY
 
 test-sample: test-basic # backward compatibility for mswin-build
@@ -799,7 +813,9 @@ test: test-short
 # for example, make test-all TESTOPTS="-j2 -v -n test-name -- test-file-name"
 test-all: $(TEST_RUNNABLE)-test-all
 yes-test-all: programs PHONY
+	$(ACTIONS_GROUP)
 	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(TESTS)
+	$(ACTIONS_ENDGROUP)
 TESTS_BUILD = mkmf
 no-test-all: PHONY
 	$(gnumake_recursive)$(MINIRUBY) -I"$(srcdir)/lib" "$(TESTSDIR)/runner.rb" $(TESTOPTS) $(TESTS_BUILD)
@@ -839,8 +855,10 @@ test-spec-precheck: programs
 
 test-spec: $(TEST_RUNNABLE)-test-spec
 yes-test-spec: test-spec-precheck
+	$(ACTIONS_GROUP)
 	$(gnumake_recursive)$(Q) \
-	$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/default.mspec -I$(srcdir)/tool/lib $(MSPECOPT) $(SPECOPTS)
+	$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/default.mspec $(MSPECOPT) $(SPECOPTS)
+	$(ACTIONS_ENDGROUP)
 no-test-spec:
 
 RUNNABLE = $(LIBRUBY_RELATIVE:no=un)-runnable
@@ -941,23 +959,28 @@ RUBY_H_INCLUDES    = {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}defines.h \
 
 acosh.$(OBJEXT): {$(VPATH)}acosh.c
 alloca.$(OBJEXT): {$(VPATH)}alloca.c {$(VPATH)}config.h
+cbrt.$(OBJEXT): {$(VPATH)}cbrt.c
+close.$(OBJEXT): {$(VPATH)}close.c
 crypt.$(OBJEXT): {$(VPATH)}crypt.c {$(VPATH)}crypt.h {$(VPATH)}missing/des_tables.c
-dup2.$(OBJEXT): {$(VPATH)}dup2.c
 erf.$(OBJEXT): {$(VPATH)}erf.c
 explicit_bzero.$(OBJEXT): {$(VPATH)}explicit_bzero.c
-finite.$(OBJEXT): {$(VPATH)}finite.c
+ffs.$(OBJEXT): {$(VPATH)}ffs.c
 flock.$(OBJEXT): {$(VPATH)}flock.c
+hypot.$(OBJEXT): {$(VPATH)}hypot.c
+langinfo.$(OBJEXT): {$(VPATH)}langinfo.c
+lgamma_r.$(OBJEXT): {$(VPATH)}lgamma_r.c
 memcmp.$(OBJEXT): {$(VPATH)}memcmp.c
 memmove.$(OBJEXT): {$(VPATH)}memmove.c
-mkdir.$(OBJEXT): {$(VPATH)}mkdir.c
+nan.$(OBJEXT): {$(VPATH)}nan.c
+nextafter.$(OBJEXT): {$(VPATH)}nextafter.c
+procstat_vm.$(OBJEXT): {$(VPATH)}procstat_vm.c
 setproctitle.$(OBJEXT): {$(VPATH)}setproctitle.c
 strchr.$(OBJEXT): {$(VPATH)}strchr.c
-strdup.$(OBJEXT): {$(VPATH)}strdup.c
 strerror.$(OBJEXT): {$(VPATH)}strerror.c
 strlcat.$(OBJEXT): {$(VPATH)}strlcat.c
 strlcpy.$(OBJEXT): {$(VPATH)}strlcpy.c
 strstr.$(OBJEXT): {$(VPATH)}strstr.c
-nt.$(OBJEXT): {$(VPATH)}nt.c
+tgamma.$(OBJEXT): {$(VPATH)}tgamma.c
 
 .coroutine_obj $(COROUTINE_OBJ): \
 	{$(VPATH)}$(COROUTINE_SRC) \
@@ -987,7 +1010,7 @@ $(NEWLINE_C): $(srcdir)/enc/trans/newline.trans $(tooldir)/transcode-tblgen.rb
 	$(Q) $(BASERUBY) "$(tooldir)/transcode-tblgen.rb" -vo $@ $(srcdir)/enc/trans/newline.trans
 enc/trans/newline.$(OBJEXT): $(NEWLINE_C)
 
-verconf.h: $(srcdir)/template/verconf.h.tmpl $(tooldir)/generic_erb.rb
+verconf.h: $(srcdir)/template/verconf.h.tmpl $(tooldir)/generic_erb.rb $(RBCONFIG)
 	$(ECHO) creating $@
 	$(Q) $(BOOTSTRAPRUBY) "$(tooldir)/generic_erb.rb" -o $@ $(srcdir)/template/verconf.h.tmpl
 
@@ -1031,6 +1054,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/kernel.rb \
 		$(srcdir)/ractor.rb \
 		$(srcdir)/timev.rb \
+		$(srcdir)/nilclass.rb \
 		$(srcdir)/prelude.rb \
 		$(srcdir)/gem_prelude.rb \
 		$(empty)
@@ -1165,10 +1189,10 @@ $(REVISION_H): revision.tmp
 
 $(srcdir)/ext/ripper/ripper.c: $(srcdir)/ext/ripper/tools/preproc.rb $(srcdir)/parse.y id.h $(srcdir)/ext/ripper/depend
 	$(ECHO) generating $@
-	$(Q) VPATH=$${PWD-`pwd`} && $(CHDIR) $(@D) && \
+	$(Q) $(CHDIR) $(@D) && \
 	sed -e 's/{\$$([^(){}]*)[^{}]*}//g' -e /AUTOGENERATED/q depend | \
 	$(exec) $(MAKE) -f - $(mflags) \
-		Q=$(Q) ECHO=$(ECHO) RM="$(RM)" BISON=$(YACC) top_srcdir=../.. srcdir=. VPATH="$${VPATH}" \
+		Q=$(Q) ECHO=$(ECHO) RM="$(RM1)" BISON=$(YACC) top_srcdir=../.. srcdir=. VPATH=../.. \
 		RUBY="$(BASERUBY)" PATH_SEPARATOR="$(PATH_SEPARATOR)" LANG=C
 
 $(srcdir)/ext/json/parser/parser.c: $(srcdir)/ext/json/parser/parser.rl $(srcdir)/ext/json/parser/prereq.mk
@@ -1336,7 +1360,7 @@ update-bundled_gems: PHONY
 	$(Q) $(RUNRUBY) -rrubygems \
 	     $(tooldir)/update-bundled_gems.rb \
 	     "$(srcdir)/gems/bundled_gems" | \
-	"$(IFCHANGE)" "$(srcdir)/gems/bundled_gems" -
+	$(IFCHANGE) "$(srcdir)/gems/bundled_gems" -
 	git -C "$(srcdir)" diff --no-ext-diff --ignore-submodules --exit-code || \
 	git -C "$(srcdir)" commit -m "Update bundled_gems" gems/bundled_gems
 
@@ -1351,8 +1375,10 @@ test-bundled-gems-prepare: test-bundled-gems-precheck test-bundled-gems-fetch
 test-bundled-gems-prepare: $(TEST_RUNNABLE)-test-bundled-gems-prepare
 no-test-bundled-gems-prepare: no-test-bundled-gems-precheck
 yes-test-bundled-gems-prepare: yes-test-bundled-gems-precheck
+	$(ACTIONS_GROUP)
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
-		--install-dir .bundle --conservative "bundler" "minitest:~> 5" "test-unit" "rake" "hoe" "yard" "pry" "packnga" "rexml" "json-schema" "rbs"
+		--install-dir .bundle --conservative "bundler" "minitest:~> 5" "test-unit" "rake" "hoe" "yard" "pry" "packnga" "rexml" "json-schema"
+	$(ACTIONS_ENDGROUP)
 
 PREPARE_BUNDLED_GEMS = test-bundled-gems-prepare
 test-bundled-gems: $(TEST_RUNNABLE)-test-bundled-gems
@@ -1372,8 +1398,10 @@ yes-test-bundler-precheck: main
 
 no-test-bundler-prepare: no-test-bundler-precheck
 yes-test-bundler-prepare: yes-test-bundler-precheck
+	$(ACTIONS_GROUP)
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
 		--install-dir .bundle --conservative "rspec:~> 3.8" "rake:~> 13.0" "parallel_tests:~> 2.29"
+	$(ACTIONS_ENDGROUP)
 
 RSPECOPTS =
 BUNDLER_SPECS =
@@ -1424,16 +1452,19 @@ UNICODE_AUXILIARY_FILES =  \
 		$(UNICODE_SRC_DATA_DIR)/auxiliary/GraphemeBreakTest.txt \
 		$(empty)
 
+UNICODE_UCD_EMOJI_FILES = \
+		$(UNICODE_SRC_DATA_DIR)/emoji/emoji-data.txt \
+		$(UNICODE_SRC_DATA_DIR)/emoji/emoji-variation-sequences.txt \
+		$(empty)
+
 UNICODE_EMOJI_FILES = \
-		$(UNICODE_SRC_EMOJI_DATA_DIR)/emoji-data.txt \
 		$(UNICODE_SRC_EMOJI_DATA_DIR)/emoji-sequences.txt \
 		$(UNICODE_SRC_EMOJI_DATA_DIR)/emoji-test.txt \
-		$(UNICODE_SRC_EMOJI_DATA_DIR)/emoji-variation-sequences.txt \
 		$(UNICODE_SRC_EMOJI_DATA_DIR)/emoji-zwj-sequences.txt \
 		$(empty)
 
 update-unicode: $(UNICODE_FILES) $(UNICODE_PROPERTY_FILES) \
-		$(UNICODE_AUXILIARY_FILES) $(UNICODE_EMOJI_FILES)
+		$(UNICODE_AUXILIARY_FILES) $(UNICODE_UCD_EMOJI_FILES) $(UNICODE_EMOJI_FILES)
 
 CACHE_DIR = $(srcdir)/.downloaded-cache
 UNICODE_DOWNLOAD = \
@@ -1449,6 +1480,13 @@ UNICODE_AUXILIARY_DOWNLOAD = \
 	    --unicode-beta $(UNICODE_BETA) \
 	    -d $(UNICODE_SRC_DATA_DIR)/auxiliary \
 	    -p $(UNICODE_VERSION)/ucd/auxiliary \
+	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode
+UNICODE_UCD_EMOJI_DOWNLOAD = \
+	$(BASERUBY) $(tooldir)/downloader.rb \
+	    --cache-dir=$(CACHE_DIR) \
+	    --unicode-beta $(UNICODE_BETA) \
+	    -d $(UNICODE_SRC_DATA_DIR)/emoji \
+	    -p $(UNICODE_VERSION)/ucd/emoji \
 	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode
 UNICODE_EMOJI_DOWNLOAD = \
 	$(BASERUBY) $(tooldir)/downloader.rb \
@@ -1470,6 +1508,12 @@ update-unicode-auxiliary-files:
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)/auxiliary"
 	$(Q) $(UNICODE_AUXILIARY_DOWNLOAD) $(UNICODE_AUXILIARY_FILES)
 
+$(UNICODE_UCD_EMOJI_FILES): update-unicode-ucd-emoji-files
+update-unicode-ucd-emoji-files:
+	$(ECHO) Downloading Unicode UCD emoji $(UNICODE_EMOJI_VERSION) files...
+	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)/emoji"
+	$(Q) $(UNICODE_UCD_EMOJI_DOWNLOAD) $(UNICODE_UCD_EMOJI_FILES)
+
 $(UNICODE_EMOJI_FILES): update-unicode-emoji-files
 update-unicode-emoji-files:
 	$(ECHO) Downloading Unicode emoji $(UNICODE_EMOJI_VERSION) files...
@@ -1481,7 +1525,7 @@ $(srcdir)/lib/unicode_normalize/$(ALWAYS_UPDATE_UNICODE:yes=tables.rb): \
 
 $(UNICODE_SRC_DATA_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=.unicode-tables.time): \
 	$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES) \
-	$(UNICODE_AUXILIARY_FILES) $(UNICODE_EMOJI_FILES)
+	$(UNICODE_AUXILIARY_FILES) $(UNICODE_UCD_EMOJI_FILES) $(UNICODE_EMOJI_FILES)
 
 touch-unicode-files:
 	$(MAKEDIRS) $(UNICODE_SRC_DATA_DIR)
@@ -2072,7 +2116,6 @@ bignum.$(OBJEXT): $(top_srcdir)/internal/object.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/serial.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
-bignum.$(OBJEXT): $(top_srcdir)/internal/util.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/variable.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/vm.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -2458,6 +2501,7 @@ class.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 class.$(OBJEXT): {$(VPATH)}class.c
 class.$(OBJEXT): {$(VPATH)}config.h
 class.$(OBJEXT): {$(VPATH)}constant.h
+class.$(OBJEXT): {$(VPATH)}debug_counter.h
 class.$(OBJEXT): {$(VPATH)}defines.h
 class.$(OBJEXT): {$(VPATH)}encoding.h
 class.$(OBJEXT): {$(VPATH)}id.h
@@ -2807,6 +2851,7 @@ compile.$(OBJEXT): $(top_srcdir)/internal/hash.h
 compile.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 compile.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 compile.$(OBJEXT): $(top_srcdir)/internal/object.h
+compile.$(OBJEXT): $(top_srcdir)/internal/rational.h
 compile.$(OBJEXT): $(top_srcdir)/internal/re.h
 compile.$(OBJEXT): $(top_srcdir)/internal/serial.h
 compile.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
@@ -3395,7 +3440,6 @@ debug.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 debug.$(OBJEXT): $(top_srcdir)/internal/serial.h
 debug.$(OBJEXT): $(top_srcdir)/internal/signal.h
 debug.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
-debug.$(OBJEXT): $(top_srcdir)/internal/util.h
 debug.$(OBJEXT): $(top_srcdir)/internal/vm.h
 debug.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 debug.$(OBJEXT): {$(VPATH)}assert.h
@@ -3413,6 +3457,7 @@ debug.$(OBJEXT): {$(VPATH)}config.h
 debug.$(OBJEXT): {$(VPATH)}debug.c
 debug.$(OBJEXT): {$(VPATH)}debug_counter.h
 debug.$(OBJEXT): {$(VPATH)}defines.h
+debug.$(OBJEXT): {$(VPATH)}encindex.h
 debug.$(OBJEXT): {$(VPATH)}encoding.h
 debug.$(OBJEXT): {$(VPATH)}eval_intern.h
 debug.$(OBJEXT): {$(VPATH)}gc.h
@@ -5412,6 +5457,7 @@ eval.$(OBJEXT): {$(VPATH)}vm_debug.h
 eval.$(OBJEXT): {$(VPATH)}vm_opts.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}config.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}explicit_bzero.c
+explicit_bzero.$(OBJEXT): {$(VPATH)}internal/attr/format.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}internal/compiler_is.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}internal/compiler_is/apple.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}internal/compiler_is/clang.h
@@ -5422,6 +5468,7 @@ explicit_bzero.$(OBJEXT): {$(VPATH)}internal/compiler_is/sunpro.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}internal/compiler_since.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}internal/config.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}internal/dllexport.h
+explicit_bzero.$(OBJEXT): {$(VPATH)}internal/has/attribute.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}missing.h
 file.$(OBJEXT): $(hdrdir)/ruby.h
 file.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -5840,192 +5887,22 @@ gc.$(OBJEXT): {$(VPATH)}vm_core.h
 gc.$(OBJEXT): {$(VPATH)}vm_debug.h
 gc.$(OBJEXT): {$(VPATH)}vm_opts.h
 gc.$(OBJEXT): {$(VPATH)}vm_sync.h
-golf_prelude.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
-golf_prelude.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
-golf_prelude.$(OBJEXT): $(CCAN_DIR)/list/list.h
-golf_prelude.$(OBJEXT): $(CCAN_DIR)/str/str.h
-golf_prelude.$(OBJEXT): $(hdrdir)/ruby.h
-golf_prelude.$(OBJEXT): $(hdrdir)/ruby/ruby.h
-golf_prelude.$(OBJEXT): $(top_srcdir)/internal/array.h
-golf_prelude.$(OBJEXT): $(top_srcdir)/internal/compilers.h
-golf_prelude.$(OBJEXT): $(top_srcdir)/internal/gc.h
-golf_prelude.$(OBJEXT): $(top_srcdir)/internal/imemo.h
-golf_prelude.$(OBJEXT): $(top_srcdir)/internal/serial.h
-golf_prelude.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
-golf_prelude.$(OBJEXT): $(top_srcdir)/internal/vm.h
-golf_prelude.$(OBJEXT): $(top_srcdir)/internal/warnings.h
-golf_prelude.$(OBJEXT): {$(VPATH)}assert.h
-golf_prelude.$(OBJEXT): {$(VPATH)}atomic.h
-golf_prelude.$(OBJEXT): {$(VPATH)}backward/2/assume.h
-golf_prelude.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
-golf_prelude.$(OBJEXT): {$(VPATH)}backward/2/bool.h
-golf_prelude.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
-golf_prelude.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
-golf_prelude.$(OBJEXT): {$(VPATH)}backward/2/limits.h
-golf_prelude.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
-golf_prelude.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
-golf_prelude.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
-golf_prelude.$(OBJEXT): {$(VPATH)}config.h
-golf_prelude.$(OBJEXT): {$(VPATH)}defines.h
-golf_prelude.$(OBJEXT): {$(VPATH)}golf_prelude.c
-golf_prelude.$(OBJEXT): {$(VPATH)}golf_prelude.rb
-golf_prelude.$(OBJEXT): {$(VPATH)}id.h
-golf_prelude.$(OBJEXT): {$(VPATH)}intern.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/anyargs.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/arithmetic/double.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/arithmetic/fixnum.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/arithmetic/gid_t.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/arithmetic/int.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/arithmetic/intptr_t.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/arithmetic/long.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/arithmetic/long_long.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/arithmetic/mode_t.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/arithmetic/off_t.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/assume.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/artificial.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/cold.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/const.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/constexpr.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/deprecated.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/diagnose_if.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/enum_extensibility.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/error.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/flag_enum.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/forceinline.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/format.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/maybe_unused.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/noalias.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/warning.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/attr/weakref.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/cast.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/compiler_is.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/compiler_is/apple.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/compiler_is/clang.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/compiler_is/gcc.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/compiler_is/intel.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/compiler_is/msvc.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/compiler_is/sunpro.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/compiler_since.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/config.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/constant_p.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/core.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/core/rarray.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/core/rbasic.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/core/rbignum.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/core/rclass.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/core/rdata.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/core/rfile.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/core/rhash.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/core/robject.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/core/rregexp.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/core/rstring.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/core/rstruct.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/core/rtypeddata.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/ctype.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/dllexport.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/dosish.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/error.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/eval.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/event.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/fl_type.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/gc.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/glob.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/globals.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/has/attribute.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/has/builtin.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/has/c_attribute.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/has/cpp_attribute.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/has/declspec_attribute.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/has/extension.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/has/feature.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/has/warning.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/array.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/bignum.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/class.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/error.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/io.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/load.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/marshal.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/numeric.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/object.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/parse.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/proc.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/process.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/random.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/range.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/rational.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/re.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/select.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/string.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/struct.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/thread.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/time.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/variable.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/intern/vm.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/interpreter.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/iterator.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/memory.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/method.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/module.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/newobj.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/rgengc.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/scan_args.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/special_consts.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/static_assert.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/stdalign.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/stdbool.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/symbol.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/value.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/value_type.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/variable.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/warning_push.h
-golf_prelude.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
-golf_prelude.$(OBJEXT): {$(VPATH)}iseq.h
-golf_prelude.$(OBJEXT): {$(VPATH)}method.h
-golf_prelude.$(OBJEXT): {$(VPATH)}missing.h
-golf_prelude.$(OBJEXT): {$(VPATH)}node.h
-golf_prelude.$(OBJEXT): {$(VPATH)}ruby_assert.h
-golf_prelude.$(OBJEXT): {$(VPATH)}ruby_atomic.h
-golf_prelude.$(OBJEXT): {$(VPATH)}st.h
-golf_prelude.$(OBJEXT): {$(VPATH)}subst.h
-golf_prelude.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
-golf_prelude.$(OBJEXT): {$(VPATH)}thread_native.h
-golf_prelude.$(OBJEXT): {$(VPATH)}vm_core.h
-golf_prelude.$(OBJEXT): {$(VPATH)}vm_opts.h
+goruby.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
+goruby.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
+goruby.$(OBJEXT): $(CCAN_DIR)/list/list.h
+goruby.$(OBJEXT): $(CCAN_DIR)/str/str.h
 goruby.$(OBJEXT): $(hdrdir)/ruby.h
 goruby.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+goruby.$(OBJEXT): $(top_srcdir)/internal/array.h
+goruby.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+goruby.$(OBJEXT): $(top_srcdir)/internal/gc.h
+goruby.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+goruby.$(OBJEXT): $(top_srcdir)/internal/serial.h
+goruby.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+goruby.$(OBJEXT): $(top_srcdir)/internal/vm.h
+goruby.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 goruby.$(OBJEXT): {$(VPATH)}assert.h
+goruby.$(OBJEXT): {$(VPATH)}atomic.h
 goruby.$(OBJEXT): {$(VPATH)}backward.h
 goruby.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 goruby.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
@@ -6038,8 +5915,12 @@ goruby.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 goruby.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 goruby.$(OBJEXT): {$(VPATH)}config.h
 goruby.$(OBJEXT): {$(VPATH)}defines.h
+goruby.$(OBJEXT): {$(VPATH)}golf_prelude.c
+goruby.$(OBJEXT): {$(VPATH)}golf_prelude.rb
 goruby.$(OBJEXT): {$(VPATH)}goruby.c
+goruby.$(OBJEXT): {$(VPATH)}id.h
 goruby.$(OBJEXT): {$(VPATH)}intern.h
+goruby.$(OBJEXT): {$(VPATH)}internal.h
 goruby.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 goruby.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 goruby.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -6179,12 +6060,20 @@ goruby.$(OBJEXT): {$(VPATH)}internal/value_type.h
 goruby.$(OBJEXT): {$(VPATH)}internal/variable.h
 goruby.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 goruby.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
+goruby.$(OBJEXT): {$(VPATH)}iseq.h
 goruby.$(OBJEXT): {$(VPATH)}main.c
+goruby.$(OBJEXT): {$(VPATH)}method.h
 goruby.$(OBJEXT): {$(VPATH)}missing.h
 goruby.$(OBJEXT): {$(VPATH)}node.h
+goruby.$(OBJEXT): {$(VPATH)}ruby_assert.h
+goruby.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 goruby.$(OBJEXT): {$(VPATH)}st.h
 goruby.$(OBJEXT): {$(VPATH)}subst.h
+goruby.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+goruby.$(OBJEXT): {$(VPATH)}thread_native.h
+goruby.$(OBJEXT): {$(VPATH)}vm_core.h
 goruby.$(OBJEXT): {$(VPATH)}vm_debug.h
+goruby.$(OBJEXT): {$(VPATH)}vm_opts.h
 hash.$(OBJEXT): $(hdrdir)/ruby.h
 hash.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 hash.$(OBJEXT): $(top_srcdir)/internal/array.h
@@ -7658,6 +7547,7 @@ marshal.$(OBJEXT): $(top_srcdir)/internal/serial.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/string.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/struct.h
+marshal.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/util.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/vm.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -7998,7 +7888,6 @@ math.$(OBJEXT): {$(VPATH)}st.h
 math.$(OBJEXT): {$(VPATH)}subst.h
 memory_view.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 memory_view.$(OBJEXT): $(top_srcdir)/internal/hash.h
-memory_view.$(OBJEXT): $(top_srcdir)/internal/util.h
 memory_view.$(OBJEXT): $(top_srcdir)/internal/variable.h
 memory_view.$(OBJEXT): {$(VPATH)}assert.h
 memory_view.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -8162,6 +8051,7 @@ memory_view.$(OBJEXT): {$(VPATH)}missing.h
 memory_view.$(OBJEXT): {$(VPATH)}node.h
 memory_view.$(OBJEXT): {$(VPATH)}st.h
 memory_view.$(OBJEXT): {$(VPATH)}subst.h
+memory_view.$(OBJEXT): {$(VPATH)}util.h
 memory_view.$(OBJEXT): {$(VPATH)}vm_debug.h
 memory_view.$(OBJEXT): {$(VPATH)}vm_sync.h
 miniinit.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
@@ -8348,6 +8238,7 @@ miniinit.$(OBJEXT): {$(VPATH)}mini_builtin.c
 miniinit.$(OBJEXT): {$(VPATH)}miniinit.c
 miniinit.$(OBJEXT): {$(VPATH)}miniprelude.c
 miniinit.$(OBJEXT): {$(VPATH)}missing.h
+miniinit.$(OBJEXT): {$(VPATH)}nilclass.rb
 miniinit.$(OBJEXT): {$(VPATH)}node.h
 miniinit.$(OBJEXT): {$(VPATH)}numeric.rb
 miniinit.$(OBJEXT): {$(VPATH)}onigmo.h
@@ -8407,6 +8298,7 @@ mjit.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 mjit.$(OBJEXT): $(hdrdir)/ruby/version.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/array.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/class.h
+mjit.$(OBJEXT): $(top_srcdir)/internal/compile.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/cont.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/file.h
@@ -8428,6 +8320,7 @@ mjit.$(OBJEXT): {$(VPATH)}backward/2/limits.h
 mjit.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 mjit.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 mjit.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+mjit.$(OBJEXT): {$(VPATH)}builtin.h
 mjit.$(OBJEXT): {$(VPATH)}config.h
 mjit.$(OBJEXT): {$(VPATH)}constant.h
 mjit.$(OBJEXT): {$(VPATH)}debug.h
@@ -8438,6 +8331,9 @@ mjit.$(OBJEXT): {$(VPATH)}encoding.h
 mjit.$(OBJEXT): {$(VPATH)}gc.h
 mjit.$(OBJEXT): {$(VPATH)}id.h
 mjit.$(OBJEXT): {$(VPATH)}id_table.h
+mjit.$(OBJEXT): {$(VPATH)}insns.def
+mjit.$(OBJEXT): {$(VPATH)}insns.inc
+mjit.$(OBJEXT): {$(VPATH)}insns_info.inc
 mjit.$(OBJEXT): {$(VPATH)}intern.h
 mjit.$(OBJEXT): {$(VPATH)}internal.h
 mjit.$(OBJEXT): {$(VPATH)}internal/anyargs.h
@@ -8579,6 +8475,7 @@ mjit.$(OBJEXT): {$(VPATH)}internal/value_type.h
 mjit.$(OBJEXT): {$(VPATH)}internal/variable.h
 mjit.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 mjit.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
+mjit.$(OBJEXT): {$(VPATH)}iseq.h
 mjit.$(OBJEXT): {$(VPATH)}method.h
 mjit.$(OBJEXT): {$(VPATH)}missing.h
 mjit.$(OBJEXT): {$(VPATH)}mjit.c
@@ -8598,7 +8495,9 @@ mjit.$(OBJEXT): {$(VPATH)}thread_native.h
 mjit.$(OBJEXT): {$(VPATH)}util.h
 mjit.$(OBJEXT): {$(VPATH)}vm_callinfo.h
 mjit.$(OBJEXT): {$(VPATH)}vm_core.h
+mjit.$(OBJEXT): {$(VPATH)}vm_debug.h
 mjit.$(OBJEXT): {$(VPATH)}vm_opts.h
+mjit.$(OBJEXT): {$(VPATH)}vm_sync.h
 mjit_build_dir.$(OBJEXT): {$(VPATH)}config.h
 mjit_build_dir.$(OBJEXT): {$(VPATH)}internal/compiler_is.h
 mjit_build_dir.$(OBJEXT): {$(VPATH)}internal/compiler_is/apple.h
@@ -9367,6 +9266,8 @@ object.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 object.$(OBJEXT): {$(VPATH)}kernel.rb
 object.$(OBJEXT): {$(VPATH)}kernel.rbinc
 object.$(OBJEXT): {$(VPATH)}missing.h
+object.$(OBJEXT): {$(VPATH)}nilclass.rb
+object.$(OBJEXT): {$(VPATH)}nilclass.rbinc
 object.$(OBJEXT): {$(VPATH)}object.c
 object.$(OBJEXT): {$(VPATH)}onigmo.h
 object.$(OBJEXT): {$(VPATH)}oniguruma.h
@@ -9383,7 +9284,6 @@ pack.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 pack.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 pack.$(OBJEXT): $(top_srcdir)/internal/string.h
 pack.$(OBJEXT): $(top_srcdir)/internal/symbol.h
-pack.$(OBJEXT): $(top_srcdir)/internal/util.h
 pack.$(OBJEXT): $(top_srcdir)/internal/variable.h
 pack.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 pack.$(OBJEXT): {$(VPATH)}assert.h
@@ -9550,6 +9450,7 @@ pack.$(OBJEXT): {$(VPATH)}pack.c
 pack.$(OBJEXT): {$(VPATH)}pack.rbinc
 pack.$(OBJEXT): {$(VPATH)}st.h
 pack.$(OBJEXT): {$(VPATH)}subst.h
+pack.$(OBJEXT): {$(VPATH)}util.h
 parse.$(OBJEXT): $(hdrdir)/ruby.h
 parse.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 parse.$(OBJEXT): $(top_srcdir)/internal/array.h
@@ -9573,7 +9474,6 @@ parse.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 parse.$(OBJEXT): $(top_srcdir)/internal/string.h
 parse.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 parse.$(OBJEXT): $(top_srcdir)/internal/thread.h
-parse.$(OBJEXT): $(top_srcdir)/internal/util.h
 parse.$(OBJEXT): $(top_srcdir)/internal/variable.h
 parse.$(OBJEXT): $(top_srcdir)/internal/vm.h
 parse.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -12317,6 +12217,7 @@ scheduler.$(OBJEXT): $(top_srcdir)/internal/gc.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/serial.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+scheduler.$(OBJEXT): $(top_srcdir)/internal/thread.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/vm.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 scheduler.$(OBJEXT): {$(VPATH)}assert.h
@@ -12863,7 +12764,6 @@ sprintf.$(OBJEXT): $(top_srcdir)/internal/serial.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/string.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/symbol.h
-sprintf.$(OBJEXT): $(top_srcdir)/internal/util.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/vm.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 sprintf.$(OBJEXT): {$(VPATH)}assert.h
@@ -13031,6 +12931,7 @@ sprintf.$(OBJEXT): {$(VPATH)}regex.h
 sprintf.$(OBJEXT): {$(VPATH)}sprintf.c
 sprintf.$(OBJEXT): {$(VPATH)}st.h
 sprintf.$(OBJEXT): {$(VPATH)}subst.h
+sprintf.$(OBJEXT): {$(VPATH)}util.h
 sprintf.$(OBJEXT): {$(VPATH)}vsnprintf.c
 st.$(OBJEXT): $(hdrdir)/ruby.h
 st.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -13203,7 +13104,6 @@ strftime.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 strftime.$(OBJEXT): $(top_srcdir)/internal/serial.h
 strftime.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 strftime.$(OBJEXT): $(top_srcdir)/internal/string.h
-strftime.$(OBJEXT): $(top_srcdir)/internal/util.h
 strftime.$(OBJEXT): $(top_srcdir)/internal/vm.h
 strftime.$(OBJEXT): {$(VPATH)}assert.h
 strftime.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -13366,6 +13266,7 @@ strftime.$(OBJEXT): {$(VPATH)}st.h
 strftime.$(OBJEXT): {$(VPATH)}strftime.c
 strftime.$(OBJEXT): {$(VPATH)}subst.h
 strftime.$(OBJEXT): {$(VPATH)}timev.h
+strftime.$(OBJEXT): {$(VPATH)}util.h
 string.$(OBJEXT): $(hdrdir)/ruby.h
 string.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 string.$(OBJEXT): $(top_srcdir)/internal/array.h
@@ -13568,6 +13469,7 @@ string.$(OBJEXT): {$(VPATH)}util.h
 string.$(OBJEXT): {$(VPATH)}vm_debug.h
 string.$(OBJEXT): {$(VPATH)}vm_sync.h
 strlcat.$(OBJEXT): {$(VPATH)}config.h
+strlcat.$(OBJEXT): {$(VPATH)}internal/attr/format.h
 strlcat.$(OBJEXT): {$(VPATH)}internal/compiler_is.h
 strlcat.$(OBJEXT): {$(VPATH)}internal/compiler_is/apple.h
 strlcat.$(OBJEXT): {$(VPATH)}internal/compiler_is/clang.h
@@ -13578,9 +13480,11 @@ strlcat.$(OBJEXT): {$(VPATH)}internal/compiler_is/sunpro.h
 strlcat.$(OBJEXT): {$(VPATH)}internal/compiler_since.h
 strlcat.$(OBJEXT): {$(VPATH)}internal/config.h
 strlcat.$(OBJEXT): {$(VPATH)}internal/dllexport.h
+strlcat.$(OBJEXT): {$(VPATH)}internal/has/attribute.h
 strlcat.$(OBJEXT): {$(VPATH)}missing.h
 strlcat.$(OBJEXT): {$(VPATH)}strlcat.c
 strlcpy.$(OBJEXT): {$(VPATH)}config.h
+strlcpy.$(OBJEXT): {$(VPATH)}internal/attr/format.h
 strlcpy.$(OBJEXT): {$(VPATH)}internal/compiler_is.h
 strlcpy.$(OBJEXT): {$(VPATH)}internal/compiler_is/apple.h
 strlcpy.$(OBJEXT): {$(VPATH)}internal/compiler_is/clang.h
@@ -13591,6 +13495,7 @@ strlcpy.$(OBJEXT): {$(VPATH)}internal/compiler_is/sunpro.h
 strlcpy.$(OBJEXT): {$(VPATH)}internal/compiler_since.h
 strlcpy.$(OBJEXT): {$(VPATH)}internal/config.h
 strlcpy.$(OBJEXT): {$(VPATH)}internal/dllexport.h
+strlcpy.$(OBJEXT): {$(VPATH)}internal/has/attribute.h
 strlcpy.$(OBJEXT): {$(VPATH)}missing.h
 strlcpy.$(OBJEXT): {$(VPATH)}strlcpy.c
 struct.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
@@ -15334,6 +15239,7 @@ vm.$(OBJEXT): $(top_srcdir)/internal/serial.h
 vm.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 vm.$(OBJEXT): $(top_srcdir)/internal/string.h
 vm.$(OBJEXT): $(top_srcdir)/internal/symbol.h
+vm.$(OBJEXT): $(top_srcdir)/internal/thread.h
 vm.$(OBJEXT): $(top_srcdir)/internal/variable.h
 vm.$(OBJEXT): $(top_srcdir)/internal/vm.h
 vm.$(OBJEXT): $(top_srcdir)/internal/warnings.h

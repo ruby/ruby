@@ -1,7 +1,6 @@
 #ifndef INTERNAL_VM_H                                    /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_VM_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -111,6 +110,8 @@ int rb_backtrace_p(VALUE obj);
 VALUE rb_backtrace_to_str_ary(VALUE obj);
 VALUE rb_backtrace_to_location_ary(VALUE obj);
 void rb_backtrace_each(VALUE (*iter)(VALUE recv, VALUE str), VALUE output);
+int rb_frame_info_p(VALUE obj);
+void rb_frame_info_get(VALUE obj, VALUE *path, int *node_id);
 
 MJIT_SYMBOL_EXPORT_BEGIN
 VALUE rb_ec_backtrace_object(const struct rb_execution_context_struct *ec);

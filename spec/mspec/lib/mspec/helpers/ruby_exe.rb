@@ -15,8 +15,10 @@ require 'mspec/helpers/tmp'
 #
 #   `#{RUBY_EXE} 'path/to/some/file.rb'`
 #
-# The ruby_exe helper also accepts an options hash with three
-# keys: :options, :args and :env. For example:
+# The ruby_exe helper also accepts an options hash with four
+# keys: :options, :args :env and :exception.
+#
+# For example:
 #
 #   ruby_exe('file.rb', :options => "-w",
 #                       :args => "arg1 arg2",
@@ -27,6 +29,9 @@ require 'mspec/helpers/tmp'
 #   `#{RUBY_EXE} -w file.rb arg1 arg2`
 #
 # with access to ENV["FOO"] with value "bar".
+#
+# When `exception: false` and Ruby command fails then exception will not be
+# raised.
 #
 # If +nil+ is passed for the first argument, the command line
 # will be built only from the options hash.
@@ -52,6 +57,8 @@ require 'mspec/helpers/tmp'
 # (with -T on the command line or in the config with set :flags)
 # will be appended to RUBY_EXE so that the interpreter
 # is always called with those flags.
+#
+# Failure of a Ruby command leads to raising exception by default.
 
 def ruby_exe_options(option)
   case option
@@ -128,9 +135,21 @@ def ruby_exe(code = :not_given, opts = {})
     code = tmpfile
   end
 
+  expected_status = opts.fetch(:exit_status, 0)
+
   begin
     platform_is_not :opal do
-      `#{ruby_cmd(code, opts)}`
+      command = ruby_cmd(code, opts)
+      output = `#{command}`
+
+      exit_status = Process.last_status.exitstatus
+      if exit_status != expected_status
+        formatted_output = output.lines.map { |line| "  #{line}" }.join
+        raise SpecExpectationNotMetError,
+          "Expected exit status is #{expected_status.inspect} but actual is #{exit_status.inspect} for command ruby_exe(#{command.inspect})\nOutput:\n#{formatted_output}"
+      end
+
+      output
     end
   ensure
     saved_env.each { |key, value| ENV[key] = value }

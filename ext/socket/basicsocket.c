@@ -10,6 +10,28 @@
 
 #include "rubysocket.h"
 
+#ifdef _WIN32
+#define is_socket(fd) rb_w32_is_socket(fd)
+#else
+static int
+is_socket(int fd)
+{
+    struct stat sbuf;
+
+    if (fstat(fd, &sbuf) < 0)
+        rb_sys_fail("fstat(2)");
+    return S_ISSOCK(sbuf.st_mode);
+}
+#endif
+
+static void
+rsock_validate_descriptor(int descriptor)
+{
+    if (!is_socket(descriptor) || rb_reserved_fd_p(descriptor)) {
+        rb_syserr_fail(EBADF, "not a socket file descriptor");
+    }
+}
+
 /*
  * call-seq:
  *   BasicSocket.for_fd(fd) => basicsocket
@@ -22,10 +44,14 @@
  *
  */
 static VALUE
-bsock_s_for_fd(VALUE klass, VALUE fd)
+bsock_s_for_fd(VALUE klass, VALUE _descriptor)
 {
     rb_io_t *fptr;
-    VALUE sock = rsock_init_sock(rb_obj_alloc(klass), NUM2INT(fd));
+
+    int descriptor = RB_NUM2INT(_descriptor);
+    rsock_validate_descriptor(descriptor);
+
+    VALUE sock = rsock_init_sock(rb_obj_alloc(klass), descriptor);
 
     GetOpenFile(sock, fptr);
 
@@ -280,7 +306,7 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
  *   ipttl = sock.getsockopt(:IP, :TTL).int
  *
  *   optval = sock.getsockopt(Socket::IPPROTO_IP, Socket::IP_TTL)
- *   ipttl = optval.unpack("i")[0]
+ *   ipttl = optval.unpack1("i")
  *
  * Option values may be structs. Decoding them can be complex as it involves
  * examining your system headers to determine the correct definition. An
@@ -537,12 +563,11 @@ bsock_remote_address(VALUE sock)
  *   }
  */
 VALUE
-rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
+rsock_bsock_send(int argc, VALUE *argv, VALUE socket)
 {
     struct rsock_send_arg arg;
     VALUE flags, to;
     rb_io_t *fptr;
-    ssize_t n;
     rb_blocking_function_t *func;
     const char *funcname;
 
@@ -550,28 +575,38 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
 
     StringValue(arg.mesg);
     if (!NIL_P(to)) {
-	SockAddrStringValue(to);
-	to = rb_str_new4(to);
-	arg.to = (struct sockaddr *)RSTRING_PTR(to);
-	arg.tolen = RSTRING_SOCKLEN(to);
-	func = rsock_sendto_blocking;
-	funcname = "sendto(2)";
+        SockAddrStringValue(to);
+        to = rb_str_new4(to);
+        arg.to = (struct sockaddr *)RSTRING_PTR(to);
+        arg.tolen = RSTRING_SOCKLEN(to);
+        func = rsock_sendto_blocking;
+        funcname = "sendto(2)";
     }
     else {
-	func = rsock_send_blocking;
-	funcname = "send(2)";
+        func = rsock_send_blocking;
+        funcname = "send(2)";
     }
-    GetOpenFile(sock, fptr);
+
+    RB_IO_POINTER(socket, fptr);
+
     arg.fd = fptr->fd;
     arg.flags = NUM2INT(flags);
-    while (rsock_maybe_fd_writable(arg.fd),
-	   (n = (ssize_t)BLOCKING_REGION_FD(func, &arg)) < 0) {
-	if (rb_io_wait_writable(arg.fd)) {
-	    continue;
-	}
-	rb_sys_fail(funcname);
+
+    while (true) {
+#ifdef RSOCK_WAIT_BEFORE_BLOCKING
+        rb_io_wait(socket, RB_INT2NUM(RUBY_IO_WRITABLE), Qnil);
+#endif
+
+        ssize_t n = (ssize_t)BLOCKING_REGION_FD(func, &arg);
+
+        if (n >= 0) return SSIZET2NUM(n);
+
+        if (rb_io_maybe_wait_writable(errno, socket, Qnil)) {
+            continue;
+        }
+
+        rb_sys_fail(funcname);
     }
-    return SSIZET2NUM(n);
 }
 
 /*

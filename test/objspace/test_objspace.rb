@@ -107,7 +107,8 @@ class TestObjSpace < Test::Unit::TestCase
 
   def test_memsize_of_iseq
     iseqw = RubyVM::InstructionSequence.compile('def a; a = :b; a; end')
-    base_obj_size = ObjectSpace.memsize_of(Object.new)
+    # Use anonymous class as a basic object size because size of Object.new can be increased
+    base_obj_size = ObjectSpace.memsize_of(Class.new.new)
     assert_operator(ObjectSpace.memsize_of(iseqw), :>, base_obj_size)
   end
 
@@ -614,5 +615,21 @@ class TestObjSpace < Test::Unit::TestCase
   def test_anonymous_class_name
     assert_not_include ObjectSpace.dump(Class.new), '"name"'
     assert_not_include ObjectSpace.dump(Module.new), '"name"'
+  end
+
+  def test_objspace_trace
+    assert_in_out_err(%w[-robjspace/trace], "#{<<-"begin;"}\n#{<<-'end;'}") do |out, err|
+      begin;
+        a = "foo"
+        b = "b" + "a" + "r"
+        c = 42
+        p a, b, c
+      end;
+      assert_equal ["objspace/trace is enabled"], err
+      assert_equal 3, out.size
+      assert_equal '"foo" @ -:2', out[0]
+      assert_equal '"bar" @ -:3', out[1]
+      assert_equal '42', out[2]
+    end
   end
 end

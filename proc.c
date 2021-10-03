@@ -169,12 +169,7 @@ rb_proc_alloc(VALUE klass)
 VALUE
 rb_obj_is_proc(VALUE proc)
 {
-    if (rb_typeddata_is_kind_of(proc, &proc_data_type)) {
-	return Qtrue;
-    }
-    else {
-	return Qfalse;
-    }
+    return RBOOL(rb_typeddata_is_kind_of(proc, &proc_data_type));
 }
 
 /* :nodoc: */
@@ -295,7 +290,7 @@ rb_proc_lambda_p(VALUE procval)
     rb_proc_t *proc;
     GetProcPtr(procval, proc);
 
-    return proc->is_lambda ? Qtrue : Qfalse;
+    return RBOOL(proc->is_lambda);
 }
 
 /* Binding */
@@ -648,7 +643,7 @@ bind_local_variable_defined_p(VALUE bindval, VALUE sym)
 
     GetBindingPtr(bindval, bind);
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
-    return get_local_variable_ptr(&env, lid) ? Qtrue : Qfalse;
+    return RBOOL(get_local_variable_ptr(&env, lid));
 }
 
 /*
@@ -1027,13 +1022,7 @@ rb_proc_call_with_block_kw(VALUE self, int argc, const VALUE *argv, VALUE passed
 VALUE
 rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE passed_procval)
 {
-    rb_execution_context_t *ec = GET_EC();
-    VALUE vret;
-    rb_proc_t *proc;
-    GetProcPtr(self, proc);
-    vret = rb_vm_invoke_proc(ec, proc, argc, argv, RB_NO_KEYWORDS, proc_to_block_handler(passed_procval));
-    RB_GC_GUARD(self);
-    return vret;
+    return rb_proc_call_with_block_kw(self, argc, argv, passed_procval, RB_NO_KEYWORDS);
 }
 
 
@@ -1451,7 +1440,7 @@ rb_hash_proc(st_index_t hash, VALUE prc)
     GetProcPtr(prc, proc);
     hash = rb_hash_uint(hash, (st_index_t)proc->block.as.captured.code.val);
     hash = rb_hash_uint(hash, (st_index_t)proc->block.as.captured.self);
-    return rb_hash_uint(hash, (st_index_t)proc->block.as.captured.ep >> 16);
+    return rb_hash_uint(hash, (st_index_t)proc->block.as.captured.ep);
 }
 
 MJIT_FUNC_EXPORTED VALUE
@@ -1604,12 +1593,7 @@ static const rb_data_type_t method_data_type = {
 VALUE
 rb_obj_is_method(VALUE m)
 {
-    if (rb_typeddata_is_kind_of(m, &method_data_type)) {
-	return Qtrue;
-    }
-    else {
-	return Qfalse;
-    }
+    return RBOOL(rb_typeddata_is_kind_of(m, &method_data_type));
 }
 
 static int
@@ -1673,6 +1657,7 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
     }
     if (visi == METHOD_VISI_UNDEF) {
 	visi = METHOD_ENTRY_VISI(me);
+	RUBY_ASSERT(visi != METHOD_VISI_UNDEF); /* !UNDEFINED_METHOD_ENTRY_P(me) */
 	if (scope && (visi != METHOD_VISI_PUBLIC)) {
 	    if (!error) return Qnil;
 	    rb_print_inaccessible(klass, id, visi);
@@ -2635,7 +2620,8 @@ umethod_bind_call(int argc, VALUE *argv, VALUE method)
     if (data->me == (const rb_method_entry_t *)cme) {
         vm_passed_block_handler_set(ec, proc_to_block_handler(passed_procval));
         return rb_vm_call_kw(ec, recv, cme->called_id, argc, argv, cme, RB_PASS_CALLED_KEYWORDS);
-    } else {
+    }
+    else {
         VALUE methclass, klass, iclass;
         const rb_method_entry_t *me;
         convert_umethod_to_method_components(data, recv, &methclass, &klass, &iclass, &me);
@@ -3112,7 +3098,12 @@ method_inspect(VALUE method)
                 }
             }
             else if (kind == keyrest) {
-                rb_str_catf(str, "**%"PRIsVALUE, name);
+                if (name != ID2SYM(idPow)) {
+                    rb_str_catf(str, "**%"PRIsVALUE, name);
+                }
+                else if (i > 0) {
+                    rb_str_set_len(str, RSTRING_LEN(str) - 2);
+                }
             }
             else if (kind == block) {
                 if (name == ID2SYM('&')) {
@@ -3152,18 +3143,6 @@ method_inspect(VALUE method)
 }
 
 static VALUE
-mproc(VALUE method)
-{
-    return rb_funcallv(rb_mRubyVMFrozenCore, idProc, 0, 0);
-}
-
-static VALUE
-mlambda(VALUE method)
-{
-    return rb_funcallv(rb_mRubyVMFrozenCore, idLambda, 0, 0);
-}
-
-static VALUE
 bmcall(RB_BLOCK_CALL_FUNC_ARGLIST(args, method))
 {
     return rb_method_call_with_block_kw(argc, argv, method, blockarg, RB_PASS_CALLED_KEYWORDS);
@@ -3174,7 +3153,7 @@ rb_proc_new(
     rb_block_call_func_t func,
     VALUE val)
 {
-    VALUE procval = rb_iterate(mproc, 0, func, val);
+    VALUE procval = rb_block_call(rb_mRubyVMFrozenCore, idProc, 0, 0, func, val);
     return procval;
 }
 
@@ -3200,7 +3179,7 @@ method_to_proc(VALUE method)
      *   end
      * end
      */
-    procval = rb_iterate(mlambda, 0, bmcall, method);
+    procval = rb_block_call(rb_mRubyVMFrozenCore, idLambda, 0, 0, bmcall, method);
     GetProcPtr(procval, proc);
     proc->is_from_method = 1;
     return procval;

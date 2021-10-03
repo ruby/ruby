@@ -52,9 +52,6 @@ module DebugSystem
     ret
   end
 end
-module Kernel
-  prepend(DebugSystem)
-end
 
 class VCS
   prepend(DebugSystem) if defined?(DebugSystem)
@@ -578,6 +575,8 @@ class VCS
       end
     end
 
+    LOG_FIX_REGEXP_SEPARATORS = '/!:;|,#%&'
+
     def format_changelog(path, arg, base_url = nil)
       env = {'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'}
       cmd = %W"#{COMMAND} log --format=fuller --notes=commits --notes=log-fix --topo-order --no-merges"
@@ -599,13 +598,16 @@ class VCS
               s = s.lines
               fix.each_line do |x|
                 case x
-                when %r[^ +(\d+)s/(.+)/(.*)/]
+                when %r[^ +(\d+)s([#{LOG_FIX_REGEXP_SEPARATORS}])(.+)\2(.*)\2]o
+                  n = $1.to_i
+                  wrong = $3
+                  correct = $4
                   begin
-                    s[$1.to_i][$2] = $3
+                    s[n][wrong] = correct
                   rescue IndexError
-                    message = ["format_changelog failed to replace #{$2.dump} with #{$3.dump} at #$1\n"]
-                    from = [1, $1.to_i-2].max
-                    to = [s.size-1, $1.to_i+2].min
+                    message = ["format_changelog failed to replace #{wrong.dump} with #{correct.dump} at #$1\n"]
+                    from = [1, n-2].max
+                    to = [s.size-1, n+2].min
                     s.each_with_index do |e, i|
                       next if i < from
                       break if to < i
@@ -613,8 +615,8 @@ class VCS
                     end
                     raise message.join('')
                   end
-                when %r[^( +)(\d+)i/(.*)/]
-                  s[$2.to_i, 0] = "#{$1}#{$3}\n"
+                when %r[^( +)(\d+)i([#{LOG_FIX_REGEXP_SEPARATORS}])(.*)\3]o
+                  s[$2.to_i, 0] = "#{$1}#{$4}\n"
                 when %r[^ +(\d+)(?:,(\d+))?d]
                   n = $1.to_i
                   e = $2
@@ -623,6 +625,12 @@ class VCS
               end
               s = s.join('')
             end
+
+            if %r[^ +(https://github\.com/[^/]+/[^/]+/)commit/\h+\n(?=(?: +\n(?i: +Co-authored-by: .*\n)+)?(?:\n|\Z))] =~ s
+              issue = "#{$1}pull/"
+              s.gsub!(/\b[Ff]ix(?:e[sd])? \K#(?=\d+)/) {issue}
+            end
+
             s.gsub!(/ +\n/, "\n")
             s.sub!(/^Notes:/, '  \&')
             w.print h, s

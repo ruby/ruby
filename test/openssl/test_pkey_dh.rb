@@ -4,12 +4,19 @@ require_relative 'utils'
 if defined?(OpenSSL) && defined?(OpenSSL::PKey::DH)
 
 class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
-  NEW_KEYLEN = 256
+  NEW_KEYLEN = 2048
 
-  def test_new
+  def test_new_empty
+    dh = OpenSSL::PKey::DH.new
+    assert_equal nil, dh.p
+    assert_equal nil, dh.priv_key
+  end
+
+  def test_new_generate
+    # This test is slow
     dh = OpenSSL::PKey::DH.new(NEW_KEYLEN)
     assert_key(dh)
-  end
+  end if ENV["OSSL_TEST_ALL"]
 
   def test_new_break
     assert_nil(OpenSSL::PKey::DH.new(NEW_KEYLEN) { break })
@@ -79,8 +86,24 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     assert_equal(dh.compute_key(dh2.pub_key), dh2.compute_key(dh.pub_key))
   end
 
+  def test_params_ok?
+    dh0 = Fixtures.pkey("dh1024")
+
+    dh1 = OpenSSL::PKey::DH.new(OpenSSL::ASN1::Sequence([
+      OpenSSL::ASN1::Integer(dh0.p),
+      OpenSSL::ASN1::Integer(dh0.g)
+    ]))
+    assert_equal(true, dh1.params_ok?)
+
+    dh2 = OpenSSL::PKey::DH.new(OpenSSL::ASN1::Sequence([
+      OpenSSL::ASN1::Integer(dh0.p + 1),
+      OpenSSL::ASN1::Integer(dh0.g)
+    ]))
+    assert_equal(false, dh2.params_ok?)
+  end
+
   def test_dup
-    dh = OpenSSL::PKey::DH.new(NEW_KEYLEN)
+    dh = Fixtures.pkey("dh1024")
     dh2 = dh.dup
     assert_equal dh.to_der, dh2.to_der # params
     assert_equal_params dh, dh2 # keys

@@ -343,14 +343,6 @@ rb_infinity_float(void)
 #endif
 
 #if !defined __MINGW32__ || defined __NO_ISOCEXT
-#ifndef isnan
-#define isnan(x) _isnan(x)
-#endif
-static inline int
-finite(double x)
-{
-    return _finite(x);
-}
 #ifndef copysign
 #define copysign(a, b) _copysign(a, b)
 #endif
@@ -359,8 +351,6 @@ scalb(double a, long b)
 {
     return _scalb(a, b);
 }
-#else
-__declspec(dllimport) extern int finite(double);
 #endif
 
 #if !defined S_IFIFO && defined _S_IFIFO

@@ -23,7 +23,7 @@
 # Copyright:: (C) 2000  Information-technology Promotion Agency, Japan
 
 module Timeout
-  VERSION = "0.1.1"
+  VERSION = "0.1.1".freeze
 
   # Raised by Timeout.timeout when the block times out.
   class Error < RuntimeError
@@ -32,6 +32,7 @@ module Timeout
     def self.catch(*args)
       exc = new(*args)
       exc.instance_variable_set(:@thread, Thread.current)
+      exc.instance_variable_set(:@catch_value, exc)
       ::Kernel.catch(exc) {yield exc}
     end
 
@@ -40,11 +41,11 @@ module Timeout
       if self.thread == Thread.current
         bt = caller
         begin
-          throw(self, bt)
+          throw(@catch_value, bt)
         rescue UncaughtThrowError
         end
       end
-      self
+      super
     end
   end
 
@@ -84,7 +85,7 @@ module Timeout
 
     message ||= "execution expired".freeze
 
-    if (scheduler = Fiber.current_scheduler)&.respond_to?(:timeout_after)
+    if Fiber.respond_to?(:current_scheduler) && (scheduler = Fiber.current_scheduler)&.respond_to?(:timeout_after)
       return scheduler.timeout_after(sec, klass || Error, message, &block)
     end
 
@@ -115,6 +116,7 @@ module Timeout
       begin
         bl.call(klass)
       rescue klass => e
+        message = e.message
         bt = e.backtrace
       end
     else

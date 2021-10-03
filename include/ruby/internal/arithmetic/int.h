@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Arithmetic conversion between C's `int` and Ruby's.
  */
 #include "ruby/internal/config.h"
@@ -34,16 +34,16 @@
 #include "ruby/internal/warning_push.h"
 #include "ruby/assert.h"
 
-#define RB_INT2NUM  rb_int2num_inline
-#define RB_NUM2INT  rb_num2int_inline
-#define RB_UINT2NUM rb_uint2num_inline
+#define RB_INT2NUM  rb_int2num_inline  /**< @alias{rb_int2num_inline} */
+#define RB_NUM2INT  rb_num2int_inline  /**< @alias{rb_num2int_inline} */
+#define RB_UINT2NUM rb_uint2num_inline /**< @alias{rb_uint2num_inline} */
 
-#define FIX2INT    RB_FIX2INT
-#define FIX2UINT   RB_FIX2UINT
-#define INT2NUM    RB_INT2NUM
-#define NUM2INT    RB_NUM2INT
-#define NUM2UINT   RB_NUM2UINT
-#define UINT2NUM   RB_UINT2NUM
+#define FIX2INT    RB_FIX2INT          /**< @old{RB_FIX2INT} */
+#define FIX2UINT   RB_FIX2UINT         /**< @old{RB_FIX2UINT} */
+#define INT2NUM    RB_INT2NUM          /**< @old{RB_INT2NUM} */
+#define NUM2INT    RB_NUM2INT          /**< @old{RB_NUM2INT} */
+#define NUM2UINT   RB_NUM2UINT         /**< @old{RB_NUM2UINT} */
+#define UINT2NUM   RB_UINT2NUM         /**< @old{RB_UINT2NUM} */
 
 /** @cond INTERNAL_MACRO */
 #define RB_FIX2INT  RB_FIX2INT
@@ -52,13 +52,79 @@
 /** @endcond */
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
-long rb_num2int(VALUE);
-long rb_fix2int(VALUE);
-unsigned long rb_num2uint(VALUE);
-unsigned long rb_fix2uint(VALUE);
+
+/**
+ * Converts an instance of ::rb_cNumeric into C's `long`.
+ *
+ * @param[in]  num             Something numeric.
+ * @exception  rb_eTypeError   `num` is not a numeric.
+ * @exception  rb_eRangeError  `num` is out of range of `int`.
+ * @return     The passed value converted into C's `long`.
+ *
+ * @internal
+ *
+ * Yes, the  API is  really strange.   It returns `long`,  but raises  when the
+ * value is out of `int`.  This seems to  be due to the fact that Matz favoured
+ * K&R before, and his machine at that moment was an ILP32 architecture.
+ */
+long rb_num2int(VALUE num);
+
+/**
+ * Identical to rb_num2int().
+ *
+ * @param[in]  num             Something numeric.
+ * @exception  rb_eTypeError   `num` is not a numeric.
+ * @exception  rb_eRangeError  `num` is out of range of `int`.
+ * @return     The passed value converted into C's `long`.
+ *
+ * @internal
+ *
+ * This function seems to be a complete  waste of disk space.  @shyouhei has no
+ * idea why this is a different thing from rb_num2short().
+ */
+long rb_fix2int(VALUE num);
+
+/**
+ * Converts an instance of ::rb_cNumeric into C's `unsigned long`.
+ *
+ * @param[in]  num             Something numeric.
+ * @exception  rb_eTypeError   `num` is not a numeric.
+ * @exception  rb_eRangeError  `num` is out of range of `unsigned int`.
+ * @return     The passed value converted into C's `unsigned long`.
+ *
+ * @internal
+ *
+ * Yes, the API is really strange.  It returns `unsigned long`, but raises when
+ * the value is out  of `unsigned int`.  This seems to be due  to the fact that
+ * Matz  favoured K&R  before, and  his  machine at  that moment  was an  ILP32
+ * architecture.
+ */
+unsigned long rb_num2uint(VALUE num);
+
+/**
+ * Identical to rb_num2uint().
+ *
+ * @param[in]  num             Something numeric.
+ * @exception  rb_eTypeError   `num` is not a numeric.
+ * @exception  rb_eRangeError  `num` is out of range of `unsigned int`.
+ * @return     The passed value converted into C's `unsigned long`.
+ *
+ * @internal
+ *
+ * This function seems to be a complete  waste of disk space.  @shyouhei has no
+ * idea why this is a different thing from rb_num2short().
+ */
+unsigned long rb_fix2uint(VALUE num);
 RBIMPL_SYMBOL_EXPORT_END()
 
 RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Converts a Fixnum into C's `int`.
+ *
+ * @param[in]  x  Some Fixnum.
+ * @pre        Must not pass anything other than a Fixnum.
+ * @return     The passed value converted into C's `int`.
+ */
 static inline int
 RB_FIX2INT(VALUE x)
 {
@@ -80,6 +146,14 @@ RB_FIX2INT(VALUE x)
     return RBIMPL_CAST((int)ret);
 }
 
+/**
+ * Converts an instance of ::rb_cNumeric into C's `int`.
+ *
+ * @param[in]  x               Something numeric.
+ * @exception  rb_eTypeError   `x` is not a numeric.
+ * @exception  rb_eRangeError  `x` is out of range of `int`.
+ * @return     The passed value converted into C's `int`.
+ */
 static inline int
 rb_num2int_inline(VALUE x)
 {
@@ -98,6 +172,14 @@ rb_num2int_inline(VALUE x)
     return RBIMPL_CAST((int)ret);
 }
 
+/**
+ * Converts an instance of ::rb_cNumeric into C's `unsigned int`.
+ *
+ * @param[in]  x               Something numeric.
+ * @exception  rb_eTypeError   `x` is not a numeric.
+ * @exception  rb_eRangeError  `x` is out of range of `unsigned int`.
+ * @return     The passed value converted into C's `unsigned int`.
+ */
 RBIMPL_ATTR_ARTIFICIAL()
 static inline unsigned int
 RB_NUM2UINT(VALUE x)
@@ -115,6 +197,13 @@ RB_NUM2UINT(VALUE x)
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Converts a Fixnum into C's `int`.
+ *
+ * @param[in]  x  Some Fixnum.
+ * @pre        Must not pass anything other than a Fixnum.
+ * @return     The passed value converted into C's `int`.
+ */
 static inline unsigned int
 RB_FIX2UINT(VALUE x)
 {
@@ -140,6 +229,12 @@ RBIMPL_WARNING_IGNORED(-Wtype-limits) /* We can ignore them here. */
 RBIMPL_WARNING_IGNORED(-Wtautological-constant-out-of-range-compare)
 #endif
 
+/**
+ * Converts a C's `int` into an instance of ::rb_cInteger.
+ *
+ * @param[in]  v  Arbitrary `int` value.
+ * @return     An instance of ::rb_cInteger.
+ */
 static inline VALUE
 rb_int2num_inline(int v)
 {
@@ -149,6 +244,12 @@ rb_int2num_inline(int v)
         return rb_int2big(v);
 }
 
+/**
+ * Converts a C's `unsigned int` into an instance of ::rb_cInteger.
+ *
+ * @param[in]  v  Arbitrary `unsigned int` value.
+ * @return     An instance of ::rb_cInteger.
+ */
 static inline VALUE
 rb_uint2num_inline(unsigned int v)
 {

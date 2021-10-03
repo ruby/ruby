@@ -5,9 +5,9 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/command'
-require 'rubygems/user_interaction'
-require 'rubygems/text'
+require_relative 'command'
+require_relative 'user_interaction'
+require_relative 'text'
 
 ##
 # The command manager registers and installs all the individual sub-commands

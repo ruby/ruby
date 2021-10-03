@@ -16,7 +16,7 @@ describe "ObjectSpace.memsize_of" do
     ObjectSpace.memsize_of(:abc).should == 0
   end
 
-  it "returns an Integer for an Object" do
+  it "returns a positive Integer for an Object" do
     obj = Object.new
     ObjectSpace.memsize_of(obj).should be_kind_of(Integer)
     ObjectSpace.memsize_of(obj).should > 0

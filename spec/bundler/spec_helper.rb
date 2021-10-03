@@ -4,7 +4,6 @@ require "bundler/psyched_yaml"
 require "bundler/vendored_fileutils"
 require "bundler/vendored_uri"
 require "digest"
-require "tmpdir"
 
 if File.expand_path(__FILE__) =~ %r{([^\w/\.:\-])}
   abort "The bundler specs cannot be run from a path that contains special characters (particularly #{$1.inspect})"
@@ -14,7 +13,7 @@ require "bundler"
 require "rspec/core"
 require "rspec/expectations"
 require "rspec/mocks"
-require "diff/lcs"
+require "rspec/support/differ"
 
 require_relative "support/builders"
 require_relative "support/build_metadata"
@@ -74,6 +73,8 @@ RSpec.configure do |config|
     Spec::Rubygems.test_setup
     ENV["BUNDLE_SPEC_RUN"] = "true"
     ENV["BUNDLE_USER_CONFIG"] = ENV["BUNDLE_USER_CACHE"] = ENV["BUNDLE_USER_PLUGIN"] = nil
+    ENV["RUBYGEMS_GEMDEPS"] = nil
+    ENV["XDG_CONFIG_HOME"] = nil
     ENV["GEMRC"] = nil
 
     # Don't wrap output in tests
@@ -108,16 +109,6 @@ RSpec.configure do |config|
       end
     ensure
       reset!
-    end
-  end
-
-  config.around :each do |example|
-    Dir.mktmpdir("bundler_commands_console") do |dir|
-      xdg_config_home_backup = ENV.delete("XDG_CONFIG_HOME")
-      ENV["XDG_CONFIG_HOME"] = dir
-      example.run
-    ensure
-      ENV["XDG_CONFIG_HOME"] = xdg_config_home_backup
     end
   end
 

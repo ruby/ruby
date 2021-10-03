@@ -777,7 +777,7 @@ class TestObject < Test::Unit::TestCase
     e = assert_raise(NoMethodError) {
       o.never_defined_test_no_superclass_method
     }
-    assert_equal(m1, e.message, bug2312)
+    assert_equal(m1.lines.first, e.message.lines.first, bug2312)
   end
 
   def test_superclass_method

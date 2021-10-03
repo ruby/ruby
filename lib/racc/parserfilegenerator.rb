@@ -320,50 +320,6 @@ module Racc
     end
 
     def integer_list(name, table)
-      if table.size > 2000
-        serialize_integer_list_compressed name, table
-      else
-        serialize_integer_list_std name, table
-      end
-    end
-
-    def serialize_integer_list_compressed(name, table)
-      # TODO: this can be made a LOT more clean with a simple split/map
-      sep  = "\n"
-      nsep = ",\n"
-      buf  = String.new
-      com  = ''
-      ncom = ','
-      co   = com
-      @f.print 'clist = ['
-      table.each do |i|
-        buf << co << i.to_s; co = ncom
-        if buf.size > 66
-          @f.print sep; sep = nsep
-          @f.print "'", buf, "'"
-          buf = String.new
-          co = com
-        end
-      end
-      unless buf.empty?
-        @f.print sep
-        @f.print "'", buf, "'"
-      end
-      line ' ]'
-
-      @f.print(<<-End)
-        #{name} = arr = ::Array.new(#{table.size}, nil)
-        idx = 0
-        clist.each do |str|
-          str.split(',', -1).each do |i|
-            arr[idx] = i.to_i unless i.empty?
-            idx += 1
-          end
-        end
-      End
-    end
-
-    def serialize_integer_list_std(name, table)
       sep = ''
       line "#{name} = ["
       table.each_slice(10) do |ns|

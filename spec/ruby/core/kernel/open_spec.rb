@@ -2,7 +2,6 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "Kernel#open" do
-
   before :each do
     @name = tmp("kernel_open.txt")
     @content = "This is a test"
@@ -136,6 +135,18 @@ describe "Kernel#open" do
 
   it "accepts nil for mode and permission" do
     open(@name, nil, nil) { |f| f.gets }.should == @content
+  end
+
+  ruby_version_is ""..."3.0" do
+    it "works correctly when redefined by open-uri" do
+      code = <<~RUBY
+      require 'open-uri'
+      obj = Object.new
+      def obj.to_open; self; end
+      p open(obj) == obj
+      RUBY
+      ruby_exe(code, args: "2>&1").should == "true\n"
+    end
   end
 end
 

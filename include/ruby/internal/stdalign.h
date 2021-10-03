@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines #RBIMPL_ALIGNAS / #RBIMPL_ALIGNOF
  */
 #include "ruby/internal/config.h"
@@ -83,7 +83,9 @@
  * @see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=69560
  * @see https://bugs.llvm.org/show_bug.cgi?id=26547
  */
-#if defined(__cplusplus)
+#if defined(__DOXYGEN__)
+# define RBIMPL_ALIGNOF alignof
+#elif defined(__cplusplus)
 # /* C++11 `alignof()` can be buggy. */
 # /* see: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=69560 */
 # /* But don't worry, we can use templates. */
@@ -117,7 +119,7 @@ struct rbimpl_alignof {
 #  * There are 2 known pitfalls for this fallback implementation:
 #  *
 #  * First, it is either an undefined  behaviour (C) or an explicit error (C++)
-#  * to define a  struct inside of `offsetof`. C compilers  tend to accept such
+#  * to define a  struct inside of `offsetof`.  C compilers  tend to accept such
 #  * things, but AFAIK C++ has no room to allow.
 #  *
 #  * Second, there exist T  such that `struct { char _; T t;  }` is invalid.  A

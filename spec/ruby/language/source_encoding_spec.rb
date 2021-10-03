@@ -29,7 +29,7 @@ describe "Source files" do
 
       touch(path, "wb") { |f| f.write source }
       begin
-        ruby_exe(path, args: "2>&1").should =~ /invalid multibyte char/
+        ruby_exe(path, args: "2>&1", exit_status: 1).should =~ /invalid multibyte char/
       ensure
         rm_r path
       end
@@ -51,7 +51,7 @@ describe "Source files" do
 
       touch(path, "wb") { |f| f.write source }
       begin
-        ruby_exe(path, args: "2>&1").should =~ /invalid multibyte char/
+        ruby_exe(path, args: "2>&1", exit_status: 1).should =~ /invalid multibyte char/
       ensure
         rm_r path
       end

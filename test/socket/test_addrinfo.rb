@@ -363,7 +363,12 @@ class TestSocketAddrinfo < Test::Unit::TestCase
   def random_port
     # IANA suggests dynamic port for 49152 to 65535
     # http://www.iana.org/assignments/port-numbers
-    49152 + rand(65535-49152+1)
+    case RUBY_PLATFORM
+    when /mingw|mswin/
+      rand(50000..65535)
+    else
+      rand(49152..65535)
+    end
   end
 
   def errors_addrinuse
@@ -581,7 +586,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
 	    ai = ipv6(addr)
             begin
 	      assert(ai.ipv4? || ai.send(meth), "ai=#{addr_exp}; ai.ipv4? || .#{meth}")
-            rescue Minitest::Assertion
+            rescue Test::Unit::AssertionFailedError
               if /aix/ =~ RUBY_PLATFORM
                 skip "Known bug in IN6_IS_ADDR_V4COMPAT and IN6_IS_ADDR_V4MAPPED on AIX"
               end

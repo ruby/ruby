@@ -5,7 +5,7 @@ require "set"
 
 module Bundler
   class CompactIndexClient
-    DEBUG_MUTEX = Mutex.new
+    DEBUG_MUTEX = Thread::Mutex.new
     def self.debug
       return unless ENV["DEBUG_COMPACT_INDEX"]
       DEBUG_MUTEX.synchronize { warn("[#{self}] #{yield}") }
@@ -25,7 +25,7 @@ module Bundler
       @endpoints = Set.new
       @info_checksums_by_name = {}
       @parsed_checksums = false
-      @mutex = Mutex.new
+      @mutex = Thread::Mutex.new
     end
 
     def execution_mode=(block)

@@ -15,7 +15,6 @@ Gem::Specification.new do |s|
   s.rdoc_options = ["--title", "JSON implementation for Ruby", "--main", "README.md"]
   s.files = [
     "CHANGES.md",
-    "Gemfile",
     "LICENSE",
     "README.md",
     "VERSION",
@@ -48,13 +47,12 @@ Gem::Specification.new do |s|
     "lib/json/add/time.rb",
     "lib/json/common.rb",
     "lib/json/ext.rb",
-    "lib/json/ext/.keep",
     "lib/json/generic_object.rb",
     "lib/json/pure.rb",
     "lib/json/pure/generator.rb",
     "lib/json/pure/parser.rb",
     "lib/json/version.rb",
-  ] + Dir["tests/**/*"]
+  ]
   s.homepage = "http://flori.github.com/json"
   s.metadata = {
     'bug_tracker_uri'   => 'https://github.com/flori/json/issues',
@@ -65,9 +63,5 @@ Gem::Specification.new do |s|
     'wiki_uri'          => 'https://github.com/flori/json/wiki'
   }
 
-  s.required_ruby_version = Gem::Requirement.new(">= 2.0")
-  s.test_files = ["tests/test_helper.rb"]
-
-  s.add_development_dependency "rake"
-  s.add_development_dependency "test-unit"
+  s.required_ruby_version = Gem::Requirement.new(">= 2.3")
 end

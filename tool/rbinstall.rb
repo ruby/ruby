@@ -22,7 +22,6 @@ require 'fileutils'
 require 'shellwords'
 require 'optparse'
 require 'optparse/shellwords'
-require 'pathname'
 require 'rubygems'
 begin
   require "zlib"
@@ -52,10 +51,12 @@ def parse_args(argv = ARGV)
   $dir_mode = nil
   $script_mode = nil
   $strip = false
+  $debug_symbols = nil
   $cmdtype = (if File::ALT_SEPARATOR == '\\'
                 File.exist?("rubystub.exe") ? 'exe' : 'cmd'
               end)
   mflags = []
+  gnumake = false
   opt = OptionParser.new
   opt.on('-n', '--dry-run') {$dryrun = true}
   opt.on('--dest-dir=DIR') {|dir| $destdir = dir}
@@ -91,6 +92,8 @@ def parse_args(argv = ARGV)
   opt.on('--html-output [DIR]') {|dir| $htmldir = dir}
   opt.on('--cmd-type=TYPE', %w[cmd plain]) {|cmd| $cmdtype = (cmd unless cmd == 'plain')}
   opt.on('--[no-]strip') {|strip| $strip = strip}
+  opt.on('--gnumake') {gnumake = true}
+  opt.on('--debug-symbols=SUFFIX', /\w+/) {|name| $debug_symbols = ".#{name}"}
 
   opt.order!(argv) do |v|
     case v
@@ -113,6 +116,7 @@ def parse_args(argv = ARGV)
   $make, *rest = Shellwords.shellwords($make)
   $mflags.unshift(*rest) unless rest.empty?
   $mflags.unshift(*mflags)
+  $mflags.reject! {|v| /\A-[OW]/ =~ v} if gnumake
 
   def $mflags.set?(flag)
     grep(/\A-(?!-).*#{flag.chr}/i) { return true }
@@ -676,9 +680,45 @@ install?(:dbg, :nodefault) do
   end
   install File.join(srcdir, "misc/lldb_cruby.py"), File.join(rubylibdir, "lldb_cruby.py")
   install File.join(srcdir, ".gdbinit"), File.join(rubylibdir, "gdbinit")
+  if $debug_symbols
+    {
+      ruby_install_name => bindir,
+      rubyw_install_name => bindir,
+      goruby_install_name => bindir,
+      dll => libdir,
+    }.each do |src, dest|
+      next if src.empty?
+      src += $debug_symbols
+      if File.directory?(src)
+        install_recursive src, File.join(dest, src)
+      end
+    end
+  end
 end
 
 module RbInstall
+  def self.no_write(options = nil)
+    u = File.umask(0022)
+    if $dryrun
+      fu = ::Object.class_eval do
+        fu = remove_const(:FileUtils)
+        const_set(:FileUtils, fu::NoWrite)
+        fu
+      end
+      dir_mode = options.delete(:dir_mode) if options
+    end
+    yield
+  ensure
+    options[:dir_mode] = dir_mode if dir_mode
+    if fu
+      ::Object.class_eval do
+        remove_const(:FileUtils)
+        const_set(:FileUtils, fu)
+      end
+    end
+    File.umask(u)
+  end
+
   module Specs
     class FileCollector
       def initialize(gemspec)
@@ -705,7 +745,7 @@ module RbInstall
           base = @base_dir
           prefix = base.sub(/lib\/.*?\z/, "")
           # for lib/net/net-smtp.gemspec
-          if m = Pathname.new(@gemspec).basename(".gemspec").to_s.match(/.*\-(.*)\z/)
+          if m = File.basename(@gemspec, ".gemspec").match(/.*\-(.*)\z/)
             base = "#{@base_dir}/#{m[1]}" unless remove_prefix(prefix, @base_dir).include?(m[1])
           end
         end
@@ -718,7 +758,7 @@ module RbInstall
                   [File.basename(@gemspec, '.gemspec') + '.rb']
                 end
 
-        case Pathname.new(@gemspec).basename(".gemspec").to_s
+        case File.basename(@gemspec, ".gemspec")
         when "net-http"
           files << "lib/net/https.rb"
         when "optparse"
@@ -846,25 +886,7 @@ module RbInstall
   class GemInstaller
     def install
       spec.post_install_message = nil
-      u = File.umask(0022)
-      if $dryrun
-        fu = ::Object.class_eval do
-          fu = remove_const(:FileUtils)
-          const_set(:FileUtils, fu::NoWrite)
-          fu
-        end
-        dir_mode = options.delete(:dir_mode)
-      end
-      super
-    ensure
-      options[:dir_mode] = dir_mode if dir_mode
-      if fu
-        ::Object.class_eval do
-          remove_const(:FileUtils)
-          const_set(:FileUtils, fu)
-        end
-      end
-      File.umask(u)
+      RbInstall.no_write(options) {super}
     end
 
     def generate_bin_script(filename, bindir)
@@ -927,7 +949,9 @@ def install_default_gem(dir, srcdir, bindir)
   gem_dir = Gem.default_dir
   install_dir = with_destdir(gem_dir)
   prepare "default gems from #{dir}", gem_dir
-  makedirs(Gem.ensure_default_gem_subdirectories(install_dir, $dir_mode).map {|d| File.join(gem_dir, d)})
+  RbInstall.no_write do
+    makedirs(Gem.ensure_default_gem_subdirectories(install_dir, $dir_mode).map {|d| File.join(gem_dir, d)})
+  end
 
   options = {
     :install_dir => with_destdir(gem_dir),
@@ -971,7 +995,10 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
   gem_dir = Gem.default_dir
   install_dir = with_destdir(gem_dir)
   prepare "bundled gems", gem_dir
-  makedirs(Gem.ensure_gem_subdirectories(install_dir, $dir_mode).map {|d| File.join(gem_dir, d)})
+  RbInstall.no_write do
+    makedirs(Gem.ensure_gem_subdirectories(install_dir, $dir_mode).map {|d| File.join(gem_dir, d)})
+  end
+
   installed_gems = {}
   options = {
     :install_dir => install_dir,

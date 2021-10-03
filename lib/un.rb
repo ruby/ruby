@@ -23,6 +23,7 @@
 #   ruby -run -e wait_writable -- [OPTION] FILE
 #   ruby -run -e mkmf -- [OPTION] EXTNAME [OPTION]
 #   ruby -run -e httpd -- [OPTION] [DocumentRoot]
+#   ruby -run -e colorize -- [FILE]
 #   ruby -run -e help [COMMAND]
 
 require "fileutils"
@@ -346,6 +347,21 @@ def httpd
     end
     options[:Port] ||= 8080     # HTTP Alternate
     options[:DocumentRoot] = argv.shift || '.'
+    s = nil
+    options[:StartCallback] = proc {
+      logger = s.logger
+      logger.info("To access this server, open this URL in a browser:")
+      s.listeners.each do |listener|
+        if options[:SSLEnable]
+          addr = listener.addr
+          addr[3] = "127.0.0.1" if addr[3] == "0.0.0.0"
+          addr[3] = "::1" if addr[3] == "::"
+          logger.info("    https://#{Addrinfo.new(addr).inspect_sockaddr}")
+        else
+          logger.info("    http://#{listener.connect_address.inspect_sockaddr}")
+        end
+      end
+    }
     s = WEBrick::HTTPServer.new(options)
     shut = proc {s.shutdown}
     siglist = %w"TERM QUIT"
@@ -355,6 +371,29 @@ def httpd
       Signal.trap(sig, shut)
     end
     s.start
+  end
+end
+
+##
+# Colorize ruby code.
+#
+#   ruby -run -e colorize -- [FILE]
+#
+
+def colorize
+  begin
+    require "irb/color"
+  rescue LoadError
+    raise "colorize requires irb 1.1.0 or later"
+  end
+  setup do |argv, |
+    if argv.empty?
+      puts IRB::Color.colorize_code STDIN.read
+      return
+    end
+    argv.each do |file|
+      puts IRB::Color.colorize_code File.read(file)
+    end
   end
 end
 

@@ -16,6 +16,9 @@ else
   DLL_BASE_NAME := $(RUBY_SO_NAME)
   DLLWRAP += -mno-cygwin
   VPATH := $(VPATH):$(srcdir)/win32
+  ifneq ($(filter -flto%,$(LDFLAGS)),)
+    miniruby$(EXEEXT): XLDFLAGS += -Wno-maybe-uninitialized
+  endif
 endif
 
 ifneq ($(ENABLE_SHARED),yes)

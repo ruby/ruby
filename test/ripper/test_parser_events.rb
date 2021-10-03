@@ -660,6 +660,8 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     }
     assert_equal true, thru_def
     assert_equal '[def(foo,[],bodystmt([void()]))]', parse('def foo ;end')
+    assert_equal '[def(foo,[],bodystmt([void()],rescue(,,[void()])))]', parse('def foo ;rescue; end')
+    assert_equal '[def(foo,[],bodystmt([void()],,,ensure([void()])))]', parse('def foo ;ensure; end')
   end
 
   def test_endless_def
@@ -670,12 +672,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru = {}
     tree = parse('def foo() = 42', events, &hook)
     assert_equal({on_def: true}, thru)
-    assert_equal '[def(foo,[],42)]', tree
+    assert_equal '[def(foo,[],bodystmt(42))]', tree
 
     thru = {}
     tree = parse('def foo() = 42 rescue 0', events, &hook)
     assert_equal({on_def: true}, thru)
-    assert_equal '[def(foo,[],rescue_mod(42,0))]', tree
+    assert_equal '[def(foo,[],bodystmt(rescue_mod(42,0)))]', tree
 
     thru = {}
     tree = parse('def foo=() = 42', events, &hook)
@@ -684,6 +686,16 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru = {}
     tree = parse('def foo=() = 42 rescue 0', events, &hook)
     assert_equal({on_def: true, on_parse_error: true}, thru)
+
+    thru = {}
+    tree = parse('def foo() = p 42', events, &hook)
+    assert_equal({on_def: true}, thru)
+    assert_equal '[def(foo,[],bodystmt(command(p,[42])))]', tree
+
+    thru = {}
+    tree = parse('def foo() = p 42 rescue 0', events, &hook)
+    assert_equal({on_def: true}, thru)
+    assert_equal '[def(foo,[],bodystmt(rescue_mod(command(p,[42]),0)))]', tree
   end
 
   def test_defined
@@ -711,12 +723,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru = {}
     tree = parse('def foo.bar() = 42', events, &hook)
     assert_equal({on_defs: true}, thru)
-    assert_equal '[defs(vcall(foo),.,bar,[],42)]', tree
+    assert_equal '[defs(vcall(foo),.,bar,[],bodystmt(42))]', tree
 
     thru = {}
     tree = parse('def foo.bar() = 42 rescue 0', events, &hook)
     assert_equal({on_defs: true}, thru)
-    assert_equal '[defs(vcall(foo),.,bar,[],rescue_mod(42,0))]', tree
+    assert_equal '[defs(vcall(foo),.,bar,[],bodystmt(rescue_mod(42,0)))]', tree
 
     thru = {}
     tree = parse('def foo.bar=() = 42', events, &hook)
@@ -725,6 +737,16 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru = {}
     tree = parse('def foo.bar=() = 42 rescue 0', events, &hook)
     assert_equal({on_defs: true, on_parse_error: true}, thru)
+
+    thru = {}
+    tree = parse('def foo.bar() = p 42', events, &hook)
+    assert_equal({on_defs: true}, thru)
+    assert_equal '[defs(vcall(foo),.,bar,[],bodystmt(command(p,[42])))]', tree
+
+    thru = {}
+    tree = parse('def foo.bar() = p 42 rescue 0', events, &hook)
+    assert_equal({on_defs: true}, thru)
+    assert_equal '[defs(vcall(foo),.,bar,[],bodystmt(rescue_mod(command(p,[42]),0)))]', tree
   end
 
   def test_do_block

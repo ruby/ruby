@@ -5,8 +5,8 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/deprecate'
-require 'rubygems/text'
+require_relative 'deprecate'
+require_relative 'text'
 
 ##
 # Module that defines the default UserInteraction.  Any class including this
@@ -543,7 +543,7 @@ class Gem::StreamUI
   # A progress reporter that behaves nicely with threaded downloading.
 
   class ThreadedDownloadReporter
-    MUTEX = Mutex.new
+    MUTEX = Thread::Mutex.new
 
     ##
     # The current file name being displayed

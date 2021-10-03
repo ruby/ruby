@@ -284,40 +284,6 @@ numeric_getaddrinfo(const char *node, const char *service,
     return EAI_FAIL;
 }
 
-int
-rb_getaddrinfo(const char *node, const char *service,
-               const struct addrinfo *hints,
-               struct rb_addrinfo **res)
-{
-    struct addrinfo *ai;
-    int ret;
-    int allocated_by_malloc = 0;
-
-    ret = numeric_getaddrinfo(node, service, hints, &ai);
-    if (ret == 0)
-        allocated_by_malloc = 1;
-    else {
-#ifdef GETADDRINFO_EMU
-        ret = getaddrinfo(node, service, hints, &ai);
-#else
-        struct getaddrinfo_arg arg;
-        MEMZERO(&arg, struct getaddrinfo_arg, 1);
-        arg.node = node;
-        arg.service = service;
-        arg.hints = hints;
-        arg.res = &ai;
-        ret = (int)(VALUE)rb_thread_call_without_gvl(nogvl_getaddrinfo, &arg, RUBY_UBF_IO, 0);
-#endif
-    }
-
-    if (ret == 0) {
-        *res = (struct rb_addrinfo *)xmalloc(sizeof(struct rb_addrinfo));
-        (*res)->allocated_by_malloc = allocated_by_malloc;
-        (*res)->ai = ai;
-    }
-    return ret;
-}
-
 void
 rb_freeaddrinfo(struct rb_addrinfo *ai)
 {
@@ -498,12 +464,63 @@ port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr)
     }
 }
 
+static int
+rb_scheduler_getaddrinfo(VALUE scheduler, VALUE host, const char *service,
+    const struct addrinfo *hints, struct rb_addrinfo **res)
+{
+    int error, res_allocated = 0, _additional_flags = 0;
+    long i, len;
+    struct addrinfo *ai, *ai_tail = NULL;
+    char *hostp;
+    char _hbuf[NI_MAXHOST];
+    VALUE ip_addresses_array, ip_address;
+
+    ip_addresses_array = rb_fiber_scheduler_address_resolve(scheduler, host);
+
+    if (ip_addresses_array == Qundef) {
+        // Returns EAI_FAIL if the scheduler hook is not implemented:
+        return EAI_FAIL;
+    } else if (ip_addresses_array == Qnil) {
+        len = 0;
+    } else {
+        len = RARRAY_LEN(ip_addresses_array);
+    }
+
+    for(i=0; i<len; i++) {
+        ip_address = rb_ary_entry(ip_addresses_array, i);
+        hostp = host_str(ip_address, _hbuf, sizeof(_hbuf), &_additional_flags);
+        error = numeric_getaddrinfo(hostp, service, hints, &ai);
+        if (error == 0) {
+            if (!res_allocated) {
+                res_allocated = 1;
+                *res = (struct rb_addrinfo *)xmalloc(sizeof(struct rb_addrinfo));
+                (*res)->allocated_by_malloc = 1;
+                (*res)->ai = ai;
+                ai_tail = ai;
+            } else {
+                while (ai_tail->ai_next) {
+                    ai_tail = ai_tail->ai_next;
+                }
+                ai_tail->ai_next = ai;
+                ai_tail = ai;
+            }
+        }
+    }
+
+    if (res_allocated) { // At least one valid result.
+        return 0;
+    } else {
+        return EAI_NONAME;
+    }
+}
+
 struct rb_addrinfo*
 rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack)
 {
     struct rb_addrinfo* res = NULL;
+    struct addrinfo *ai;
     char *hostp, *portp;
-    int error;
+    int error = 0;
     char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
     int additional_flags = 0;
 
@@ -515,7 +532,43 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
     }
     hints->ai_flags |= additional_flags;
 
-    error = rb_getaddrinfo(hostp, portp, hints, &res);
+    error = numeric_getaddrinfo(hostp, portp, hints, &ai);
+    if (error == 0) {
+        res = (struct rb_addrinfo *)xmalloc(sizeof(struct rb_addrinfo));
+        res->allocated_by_malloc = 1;
+        res->ai = ai;
+    } else {
+        VALUE scheduler = rb_fiber_scheduler_current();
+        int resolved = 0;
+
+        if (scheduler != Qnil && hostp && !(hints->ai_flags & AI_NUMERICHOST)) {
+            error = rb_scheduler_getaddrinfo(scheduler, host, portp, hints, &res);
+
+            if (error != EAI_FAIL) {
+                resolved = 1;
+            }
+        }
+
+        if (!resolved) {
+#ifdef GETADDRINFO_EMU
+            error = getaddrinfo(hostp, portp, hints, &ai);
+#else
+            struct getaddrinfo_arg arg;
+            MEMZERO(&arg, struct getaddrinfo_arg, 1);
+            arg.node = hostp;
+            arg.service = portp;
+            arg.hints = hints;
+            arg.res = &ai;
+            error = (int)(VALUE)rb_thread_call_without_gvl(nogvl_getaddrinfo, &arg, RUBY_UBF_IO, 0);
+#endif
+            if (error == 0) {
+                res = (struct rb_addrinfo *)xmalloc(sizeof(struct rb_addrinfo));
+                res->allocated_by_malloc = 0;
+                res->ai = ai;
+            }
+        }
+    }
+
     if (error) {
         if (hostp && hostp[strlen(hostp)-1] == '\n') {
             rb_raise(rb_eSocket, "newline at the end of hostname");

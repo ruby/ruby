@@ -82,6 +82,5 @@ module URI
     end
   end
 
-  @@schemes['HTTP'] = HTTP
-
+  register_scheme 'HTTP', HTTP
 end

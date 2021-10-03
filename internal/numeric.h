@@ -1,7 +1,6 @@
 #ifndef INTERNAL_NUMERIC_H                               /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_NUMERIC_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -77,6 +76,7 @@ VALUE rb_int_lshift(VALUE x, VALUE y);
 VALUE rb_int_div(VALUE x, VALUE y);
 int rb_int_positive_p(VALUE num);
 int rb_int_negative_p(VALUE num);
+VALUE rb_check_integer_type(VALUE);
 VALUE rb_num_pow(VALUE x, VALUE y);
 VALUE rb_float_ceil(VALUE num, int ndigits);
 VALUE rb_float_floor(VALUE x, int ndigits);
@@ -96,7 +96,6 @@ static inline bool FLOAT_ZERO_P(VALUE num);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* numeric.c (export) */
-VALUE rb_int_positive_pow(long x, unsigned long y);
 RUBY_SYMBOL_EXPORT_END
 
 MJIT_SYMBOL_EXPORT_BEGIN

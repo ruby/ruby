@@ -139,10 +139,7 @@ struct rb_ractor_struct {
     VALUE verbose;
     VALUE debug;
 
-    struct {
-        struct RVALUE *freelist;
-        struct heap_page *using_page;
-    } newobj_cache;
+    rb_ractor_newobj_cache_t newobj_cache;
 
     // gc.c rb_objspace_reachable_objects_from
     struct gc_mark_func_data_struct {
@@ -171,6 +168,7 @@ VALUE rb_thread_create_ractor(rb_ractor_t *g, VALUE args, VALUE proc); // define
 rb_global_vm_lock_t *rb_ractor_gvl(rb_ractor_t *);
 int rb_ractor_living_thread_num(const rb_ractor_t *);
 VALUE rb_ractor_thread_list(rb_ractor_t *r);
+bool rb_ractor_p(VALUE rv);
 
 void rb_ractor_living_threads_init(rb_ractor_t *r);
 void rb_ractor_living_threads_insert(rb_ractor_t *r, rb_thread_t *th);
@@ -240,9 +238,11 @@ rb_ractor_sleeper_thread_num(rb_ractor_t *r)
 static inline void
 rb_ractor_thread_switch(rb_ractor_t *cr, rb_thread_t *th)
 {
-  if (cr->threads.running_ec != th->ec) {
-        if (0) fprintf(stderr, "rb_ractor_thread_switch ec:%p->%p\n",
-                       (void *)cr->threads.running_ec, (void *)th->ec);
+    if (cr->threads.running_ec != th->ec) {
+        if (0) {
+            ruby_debug_printf("rb_ractor_thread_switch ec:%p->%p\n",
+                              (void *)cr->threads.running_ec, (void *)th->ec);
+        }
     }
     else {
         return;
@@ -261,7 +261,7 @@ static inline void
 rb_ractor_set_current_ec(rb_ractor_t *cr, rb_execution_context_t *ec)
 {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-  #if __APPLE__
+  #ifdef __APPLE__
     rb_current_ec_set(ec);
   #else
     ruby_current_ec = ec;
@@ -271,8 +271,10 @@ rb_ractor_set_current_ec(rb_ractor_t *cr, rb_execution_context_t *ec)
 #endif
 
     if (cr->threads.running_ec != ec) {
-        if (0) fprintf(stderr, "rb_ractor_set_current_ec ec:%p->%p\n",
-                       (void *)cr->threads.running_ec, (void *)ec);
+        if (0) {
+            ruby_debug_printf("rb_ractor_set_current_ec ec:%p->%p\n",
+                              (void *)cr->threads.running_ec, (void *)ec);
+        }
     }
     else {
         VM_ASSERT(0); // should be different

@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines #ASSUME / #RB_LIKELY / #UNREACHABLE
  */
 #include "ruby/internal/config.h"
@@ -26,15 +26,30 @@
 
 #undef  ASSUME             /* Kill config.h definition */
 #undef  UNREACHABLE        /* Kill config.h definition */
-#define ASSUME             RBIMPL_ASSUME
-#define UNREACHABLE        RBIMPL_UNREACHABLE()
-#define UNREACHABLE_RETURN RBIMPL_UNREACHABLE_RETURN
+#define ASSUME             RBIMPL_ASSUME             /**< @old{RBIMPL_ASSUME} */
+#define UNREACHABLE        RBIMPL_UNREACHABLE()      /**< @old{RBIMPL_UNREACHABLE} */
+#define UNREACHABLE_RETURN RBIMPL_UNREACHABLE_RETURN /**< @old{RBIMPL_UNREACHABLE_RETURN} */
 
 /* likely */
 #if RBIMPL_HAS_BUILTIN(__builtin_expect)
+/**
+ * Asserts that the given Boolean expression likely holds.
+ *
+ * @param  x  An expression that likely holds.
+ *
+ * @note  Consider this macro carefully.  It has been here since when CPUs were
+ *        like  babies,  but  contemporary  processors are  beasts.   They  are
+ *        smarter than  mare mortals like  us today.  Their  branch predictions
+ *        highly expectedly outperform your use of this macro.
+ */
 # define RB_LIKELY(x)   (__builtin_expect(!!(x), 1))
-# define RB_UNLIKELY(x) (__builtin_expect(!!(x), 0))
 
+/**
+ * Asserts that the given Boolean expression likely doesn't hold.
+ *
+ * @param  x  An expression that likely doesn't hold.
+ */
+# define RB_UNLIKELY(x) (__builtin_expect(!!(x), 0))
 #else
 # define RB_LIKELY(x)   (x)
 # define RB_UNLIKELY(x) (x)

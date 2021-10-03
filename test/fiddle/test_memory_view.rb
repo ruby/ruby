@@ -2,17 +2,19 @@
 begin
   require_relative 'helper'
 rescue LoadError
+  return
 end
 
 begin
   require '-test-/memory_view'
 rescue LoadError
+  return
 end
 
 module Fiddle
   class TestMemoryView < TestCase
     def setup
-      skip "MemoryView is unavailable" unless defined? Fiddle::MemoryView
+      omit "MemoryView is unavailable" unless defined? Fiddle::MemoryView
     end
 
     def test_null_ptr
@@ -47,7 +49,7 @@ module Fiddle
     end
 
     def test_memory_view_multi_dimensional
-      skip "MemoryViewTestUtils is unavailable" unless defined? MemoryViewTestUtils
+      omit "MemoryViewTestUtils is unavailable" unless defined? MemoryViewTestUtils
 
       buf = [ 1, 2, 3, 4,
               5, 6, 7, 8,
@@ -69,7 +71,7 @@ module Fiddle
     end
 
     def test_memory_view_multi_dimensional_with_strides
-      skip "MemoryViewTestUtils is unavailable" unless defined? MemoryViewTestUtils
+      omit "MemoryViewTestUtils is unavailable" unless defined? MemoryViewTestUtils
 
       buf = [ 1, 2,  3,  4,  5,  6,  7,  8,
               9, 10, 11, 12, 13, 14, 15, 16 ].pack("l!*")
@@ -91,7 +93,7 @@ module Fiddle
     end
 
     def test_memory_view_multi_dimensional_with_multiple_members
-      skip "MemoryViewTestUtils is unavailable" unless defined? MemoryViewTestUtils
+      omit "MemoryViewTestUtils is unavailable" unless defined? MemoryViewTestUtils
 
       buf = [ 1, 2,  3,  4,  5,  6,  7,  8,
              -1, -2, -3, -4, -5, -6, -7, -8].pack("s*")
@@ -110,6 +112,32 @@ module Fiddle
       assert_equal([5, 6], mview[0, 2])
       assert_equal([-1, -2], mview[1, 0])
       assert_equal([-7, -8], mview[1, 3])
+    end
+
+    def test_export
+      str = "hello world"
+      mview_str = MemoryView.export(Pointer[str]) do |mview|
+        mview.to_s
+      end
+      assert_equal(str, mview_str)
+    end
+
+    def test_release
+      ptr = Pointer["hello world"]
+      mview = MemoryView.new(ptr)
+      assert_same(ptr, mview.obj)
+      mview.release
+      assert_nil(mview.obj)
+    end
+
+    def test_to_s
+      # U+3042 HIRAGANA LETTER A
+      data = "\u{3042}"
+      ptr = Pointer[data]
+      mview = MemoryView.new(ptr)
+      string = mview.to_s
+      assert_equal([data.b, true],
+                   [string, string.frozen?])
     end
   end
 end

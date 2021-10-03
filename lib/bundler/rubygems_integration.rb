@@ -34,10 +34,12 @@ module Bundler
     end
 
     def build_args
+      require "rubygems/command"
       Gem::Command.build_args
     end
 
     def build_args=(args)
+      require "rubygems/command"
       Gem::Command.build_args = args
     end
 
@@ -117,7 +119,7 @@ module Bundler
       Bundler.ui.error "#{e.class}: #{e.message}"
       Bundler.ui.trace e
       raise
-    rescue YamlLibrarySyntaxError => e
+    rescue ::Psych::SyntaxError => e
       raise YamlSyntaxError.new(e, "Your RubyGems configuration, which is " \
         "usually located in ~/.gemrc, contains invalid YAML syntax.")
     end
@@ -526,13 +528,14 @@ module Bundler
       Bundler::Retry.new("download gem from #{uri}").attempts do
         fetcher.download(spec, uri, path)
       end
+    rescue Gem::RemoteFetcher::FetchError => e
+      raise Bundler::HTTPError, "Could not download gem from #{uri} due to underlying error <#{e.message}>"
     end
 
     def gem_remote_fetcher
-      require "resolv"
+      require "rubygems/remote_fetcher"
       proxy = configuration[:http_proxy]
-      dns = Resolv::DNS.new
-      Gem::RemoteFetcher.new(proxy, dns)
+      Gem::RemoteFetcher.new(proxy)
     end
 
     def gem_from_path(path, policy = nil)
@@ -596,14 +599,6 @@ module Bundler
       def default_stubs
         Gem::Specification.send(:default_stubs, "*.gemspec")
       end
-    end
-
-    def use_gemdeps(gemfile)
-      ENV["BUNDLE_GEMFILE"] ||= File.expand_path(gemfile)
-      require_relative "gemdeps"
-      runtime = Bundler.setup
-      activated_spec_names = runtime.requested_specs.map(&:to_spec).sort_by(&:name)
-      [Gemdeps.new(runtime), activated_spec_names]
     end
   end
 

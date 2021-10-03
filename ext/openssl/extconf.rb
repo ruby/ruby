@@ -26,15 +26,14 @@ if with_config("debug") or enable_config("debug")
   $defs.push("-DOSSL_DEBUG")
 end
 
+have_func("rb_io_maybe_wait") # Ruby 3.1
+
 Logging::message "=== Checking for system dependent stuff... ===\n"
 have_library("nsl", "t_open")
 have_library("socket", "socket")
 if $mswin || $mingw
   have_library("ws2_32")
 end
-
-Logging::message "=== Checking for required stuff... ===\n"
-result = pkg_config("openssl") && have_header("openssl/ssl.h")
 
 if $mingw
   append_cflags '-D_FORTIFY_SOURCE=2'
@@ -92,19 +91,32 @@ def find_openssl_library
   return false
 end
 
-unless result
-  unless find_openssl_library
-    Logging::message "=== Checking for required stuff failed. ===\n"
-    Logging::message "Makefile wasn't created. Fix the errors above.\n"
-    raise "OpenSSL library could not be found. You might want to use " \
-      "--with-openssl-dir=<dir> option to specify the prefix where OpenSSL " \
-      "is installed."
-  end
+Logging::message "=== Checking for required stuff... ===\n"
+pkg_config_found = pkg_config("openssl") && have_header("openssl/ssl.h")
+
+if !pkg_config_found && !find_openssl_library
+  Logging::message "=== Checking for required stuff failed. ===\n"
+  Logging::message "Makefile wasn't created. Fix the errors above.\n"
+  raise "OpenSSL library could not be found. You might want to use " \
+    "--with-openssl-dir=<dir> option to specify the prefix where OpenSSL " \
+    "is installed."
 end
 
-unless checking_for("OpenSSL version is 1.0.1 or later") {
-    try_static_assert("OPENSSL_VERSION_NUMBER >= 0x10001000L", "openssl/opensslv.h") }
-  raise "OpenSSL >= 1.0.1 or LibreSSL is required"
+version_ok = if have_macro("LIBRESSL_VERSION_NUMBER", "openssl/opensslv.h")
+  is_libressl = true
+  checking_for("LibreSSL version >= 3.1.0") {
+    try_static_assert("LIBRESSL_VERSION_NUMBER >= 0x30100000L", "openssl/opensslv.h") }
+else
+  checking_for("OpenSSL version >= 1.0.2") {
+    try_static_assert("OPENSSL_VERSION_NUMBER >= 0x10002000L", "openssl/opensslv.h") }
+end
+unless version_ok
+  raise "OpenSSL >= 1.0.2 or LibreSSL >= 3.1.0 is required"
+end
+
+# Prevent wincrypt.h from being included, which defines conflicting macro with openssl/x509.h
+if is_libressl && ($mswin || $mingw)
+  $defs.push("-DNOCRYPT")
 end
 
 Logging::message "=== Checking for OpenSSL features... ===\n"
@@ -116,29 +128,10 @@ engines.each { |name|
   have_func("ENGINE_load_#{name}()", "openssl/engine.h")
 }
 
-if ($mswin || $mingw) && have_macro("LIBRESSL_VERSION_NUMBER", "openssl/opensslv.h")
-  $defs.push("-DNOCRYPT")
-end
-
-# added in 1.0.2
-have_func("EC_curve_nist2nid")
-have_func("X509_REVOKED_dup")
-have_func("X509_STORE_CTX_get0_store")
-have_func("SSL_CTX_set_alpn_select_cb")
-have_func("SSL_CTX_set1_curves_list(NULL, NULL)", "openssl/ssl.h")
-have_func("SSL_CTX_set_ecdh_auto(NULL, 0)", "openssl/ssl.h")
-have_func("SSL_get_server_tmp_key(NULL, NULL)", "openssl/ssl.h")
-have_func("SSL_is_server")
-
 # added in 1.1.0
-if !have_struct_member("SSL", "ctx", "openssl/ssl.h") ||
-    try_static_assert("LIBRESSL_VERSION_NUMBER >= 0x2070000fL", "openssl/opensslv.h")
+if !have_struct_member("SSL", "ctx", "openssl/ssl.h") || is_libressl
   $defs.push("-DHAVE_OPAQUE_OPENSSL")
 end
-have_func("CRYPTO_lock") || $defs.push("-DHAVE_OPENSSL_110_THREADING_API")
-have_func("BN_GENCB_new")
-have_func("BN_GENCB_free")
-have_func("BN_GENCB_get_arg")
 have_func("EVP_MD_CTX_new")
 have_func("EVP_MD_CTX_free")
 have_func("EVP_MD_CTX_pkey_ctx")
@@ -173,6 +166,9 @@ have_func("TS_VERIFY_CTX_add_flags")
 have_func("TS_RESP_CTX_set_time_cb")
 have_func("EVP_PBE_scrypt")
 have_func("SSL_CTX_set_post_handshake_auth")
+
+# added in 1.1.1
+have_func("EVP_PKEY_check")
 
 Logging::message "=== Checking done. ===\n"
 

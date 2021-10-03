@@ -154,24 +154,22 @@ describe "Array#slice!" do
     -> { ArraySpecs.frozen_array.slice!(0, 0) }.should raise_error(FrozenError)
   end
 
-  ruby_version_is "2.6" do
-    it "works with endless ranges" do
-      a = [1, 2, 3]
-      a.slice!(eval("(1..)")).should == [2, 3]
-      a.should == [1]
+  it "works with endless ranges" do
+    a = [1, 2, 3]
+    a.slice!(eval("(1..)")).should == [2, 3]
+    a.should == [1]
 
-      a = [1, 2, 3]
-      a.slice!(eval("(2...)")).should == [3]
-      a.should == [1, 2]
+    a = [1, 2, 3]
+    a.slice!(eval("(2...)")).should == [3]
+    a.should == [1, 2]
 
-      a = [1, 2, 3]
-      a.slice!(eval("(-2..)")).should == [2, 3]
-      a.should == [1]
+    a = [1, 2, 3]
+    a.slice!(eval("(-2..)")).should == [2, 3]
+    a.should == [1]
 
-      a = [1, 2, 3]
-      a.slice!(eval("(-1...)")).should == [3]
-      a.should == [1, 2]
-    end
+    a = [1, 2, 3]
+    a.slice!(eval("(-1...)")).should == [3]
+    a.should == [1, 2]
   end
 
   ruby_version_is "2.7" do

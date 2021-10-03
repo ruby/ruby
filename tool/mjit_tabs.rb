@@ -20,6 +20,8 @@ SKIPPED_FILES = %w[
   vm_debug.h
   vm_exec.h
   vm_opts.h
+  vm_sync.h
+  vm_sync.c
 ]
 
 srcdir = File.expand_path('..', __dir__)
@@ -32,14 +34,14 @@ mjit_tabs, *command = ARGV
 targets.each do |target|
   next if mjit_tabs != 'false'
   unless File.writable?(target)
-    puts "tool/mjit_without_tabs.rb: Skipping #{target.dump} as it's not writable."
+    puts "tool/mjit_tabs.rb: Skipping #{target.dump} as it's not writable."
     next
   end
   source = File.read(target)
   begin
     expanded = source.gsub(/^\t+/) { |tab| ' ' * 8 * tab.length }
   rescue ArgumentError # invalid byte sequence in UTF-8 (Travis, RubyCI)
-    puts "tool/mjit_without_tabs.rb: Skipping #{target.dump} as the encoding is #{source.encoding}."
+    puts "tool/mjit_tabs.rb: Skipping #{target.dump} as the encoding is #{source.encoding}."
     next
   end
 
@@ -47,7 +49,7 @@ targets.each do |target|
   mtimes[target] = File.mtime(target)
 
   if sources[target] == expanded
-    puts "#{target.dump} has no hard tab indentation. This should be ignored in tool/mjit_without_tabs.rb."
+    puts "#{target.dump} has no hard tab indentation. This should be ignored in tool/mjit_tabs.rb."
   end
   File.write(target, expanded)
   FileUtils.touch(target, mtime: mtimes[target])

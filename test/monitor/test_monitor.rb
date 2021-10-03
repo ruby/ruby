@@ -19,7 +19,7 @@ class TestMonitor < Test::Unit::TestCase
 
   def test_enter
     ary = []
-    queue = Queue.new
+    queue = Thread::Queue.new
     th = Thread.start {
       queue.pop
       @monitor.enter
@@ -83,7 +83,7 @@ class TestMonitor < Test::Unit::TestCase
 
   def test_synchronize
     ary = []
-    queue = Queue.new
+    queue = Thread::Queue.new
     th = Thread.start {
       queue.pop
       @monitor.synchronize do
@@ -108,7 +108,7 @@ class TestMonitor < Test::Unit::TestCase
 
   def test_killed_thread_in_synchronize
     ary = []
-    queue = Queue.new
+    queue = Thread::Queue.new
     t1 = Thread.start {
       queue.pop
       @monitor.synchronize {
@@ -136,8 +136,8 @@ class TestMonitor < Test::Unit::TestCase
   end
 
   def test_try_enter
-    queue1 = Queue.new
-    queue2 = Queue.new
+    queue1 = Thread::Queue.new
+    queue2 = Thread::Queue.new
     th = Thread.start {
       queue1.deq
       @monitor.enter
@@ -176,8 +176,8 @@ class TestMonitor < Test::Unit::TestCase
   end
 
   def test_mon_locked_and_owned
-    queue1 = Queue.new
-    queue2 = Queue.new
+    queue1 = Thread::Queue.new
+    queue2 = Thread::Queue.new
     th = Thread.start {
       @monitor.enter
       queue1.enq(nil)
@@ -210,7 +210,7 @@ class TestMonitor < Test::Unit::TestCase
     cond = @monitor.new_cond
 
     a = "foo"
-    queue1 = Queue.new
+    queue1 = Thread::Queue.new
     th = Thread.start do
       queue1.deq
       @monitor.synchronize do
@@ -262,7 +262,7 @@ class TestMonitor < Test::Unit::TestCase
   def test_timedwait
     cond = @monitor.new_cond
     b = "foo"
-    queue2 = Queue.new
+    queue2 = Thread::Queue.new
     th = Thread.start do
       queue2.deq
       @monitor.synchronize do
@@ -282,7 +282,7 @@ class TestMonitor < Test::Unit::TestCase
     assert_join_threads([th, th2])
 
     c = "foo"
-    queue3 = Queue.new
+    queue3 = Thread::Queue.new
     th = Thread.start do
       queue3.deq
       @monitor.synchronize do
@@ -294,7 +294,7 @@ class TestMonitor < Test::Unit::TestCase
       @monitor.synchronize do
         assert_equal("foo", c)
         result3 = cond.wait(0.1)
-        assert_equal(true, result3) # wait always returns true in Ruby 1.9
+        assert_equal(false, result3)
         assert_equal("foo", c)
         queue3.enq(nil)
         result4 = cond.wait
@@ -312,7 +312,7 @@ class TestMonitor < Test::Unit::TestCase
 #         end
 #       end
 #     }
-#     queue3 = Queue.new
+#     queue3 = Thread::Queue.new
 #     Thread.start do
 #       queue3.pop
 #       @monitor.synchronize do

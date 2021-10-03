@@ -149,11 +149,11 @@ ossl_cipher_copy(VALUE self, VALUE other)
     return self;
 }
 
-static void*
-add_cipher_name_to_ary(const OBJ_NAME *name, VALUE ary)
+static void
+add_cipher_name_to_ary(const OBJ_NAME *name, void *arg)
 {
+    VALUE ary = (VALUE)arg;
     rb_ary_push(ary, rb_str_new2(name->name));
-    return NULL;
 }
 
 /*
@@ -169,7 +169,7 @@ ossl_s_ciphers(VALUE self)
 
     ary = rb_ary_new();
     OBJ_NAME_do_all_sorted(OBJ_NAME_TYPE_CIPHER_METH,
-                    (void(*)(const OBJ_NAME*,void*))add_cipher_name_to_ary,
+                    add_cipher_name_to_ary,
                     (void*)ary);
 
     return ary;

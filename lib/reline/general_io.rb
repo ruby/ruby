@@ -1,12 +1,19 @@
 require 'timeout'
 
 class Reline::GeneralIO
-  def self.reset
+  def self.reset(encoding: nil)
     @@pasting = false
+    @@encoding = encoding
   end
 
   def self.encoding
-    RUBY_PLATFORM =~ /mswin|mingw/ ? Encoding::UTF_8 : Encoding::default_external
+    if defined?(@@encoding)
+      @@encoding
+    elsif RUBY_PLATFORM =~ /mswin|mingw/
+      Encoding::UTF_8
+    else
+      Encoding::default_external
+    end
   end
 
   def self.win?
@@ -17,6 +24,7 @@ class Reline::GeneralIO
   end
 
   @@buf = []
+  @@input = STDIN
 
   def self.input=(val)
     @@input = val

@@ -202,9 +202,7 @@ class Net::HTTPGenericRequest
       IO.copy_stream(f, chunker)
       chunker.finish
     else
-      # copy_stream can sendfile() to sock.io unless we use SSL.
-      # If sock.io is an SSLSocket, copy_stream will hit SSL_write()
-      IO.copy_stream(f, sock.io)
+      IO.copy_stream(f, sock)
     end
   end
 

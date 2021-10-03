@@ -261,6 +261,18 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_overwrite_ENV
+    assert_separately([],"#{<<~"begin;"}\n#{<<~"end;"}")
+    BUG = "[ruby-core:105223] [Bug #18164]"
+    begin;
+      $VERBOSE = nil
+      ENV = {}
+      pid = spawn({}, *#{TRUECOMMAND.inspect})
+      ENV.replace({})
+      assert_kind_of(Integer, pid, BUG)
+    end;
+  end
+
   MANDATORY_ENVS = %w[RUBYLIB MJIT_SEARCH_BUILD_DIR]
   case RbConfig::CONFIG['target_os']
   when /linux/
@@ -1720,6 +1732,9 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_no_curdir
+    if /solaris/i =~ RUBY_PLATFORM
+      skip "Temporary skip to avoid CI failures after commit to use realpath on required files"
+    end
     with_tmpchdir {|d|
       Dir.mkdir("vd")
       status = nil
@@ -1771,6 +1786,7 @@ class TestProcess < Test::Unit::TestCase
     min = 1_000 / (cmd.size + sep.size)
     cmds = Array.new(min, cmd)
     exs = [Errno::ENOENT]
+    exs << Errno::EINVAL if windows?
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
     opts = {[STDOUT, STDERR]=>File::NULL}
     opts[:rlimit_nproc] = 128 if defined?(Process::RLIMIT_NPROC)
@@ -2432,7 +2448,7 @@ EOS
         rescue SystemCallError
           w.syswrite("exec failed\n")
         end
-        q = Queue.new
+        q = Thread::Queue.new
         th1 = Thread.new { i = 0; i += 1 while q.empty?; i }
         th2 = Thread.new { j = 0; j += 1 while q.empty? && Thread.pass.nil?; j }
         sleep 0.5

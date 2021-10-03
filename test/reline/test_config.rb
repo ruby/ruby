@@ -286,6 +286,37 @@ class Reline::Config::Test < Reline::TestCase
     ENV['INPUTRC'] = inputrc_backup
   end
 
+  def test_inputrc_with_utf8
+    # This file is encoded by UTF-8 so this heredoc string is also UTF-8.
+    @config.read_lines(<<~'LINES'.lines)
+      set editing-mode vi
+      set vi-cmd-mode-string 🍸
+      set vi-ins-mode-string 🍶
+    LINES
+    assert_equal '🍸', @config.vi_cmd_mode_string
+    assert_equal '🍶', @config.vi_ins_mode_string
+  rescue Reline::ConfigEncodingConversionError
+    # do nothing
+  end
+
+  def test_inputrc_with_eucjp
+    @config.read_lines(<<~"LINES".encode(Encoding::EUC_JP).lines)
+      set editing-mode vi
+      set vi-cmd-mode-string ｫｬｯ
+      set vi-ins-mode-string 能
+    LINES
+    assert_equal 'ｫｬｯ'.encode(Reline.encoding_system_needs), @config.vi_cmd_mode_string
+    assert_equal '能'.encode(Reline.encoding_system_needs), @config.vi_ins_mode_string
+  rescue Reline::ConfigEncodingConversionError
+    # do nothing
+  end
+
+  def test_empty_inputrc
+    assert_nothing_raised do
+      @config.read_lines([])
+    end
+  end
+
   def test_xdg_config_home
     home_backup = ENV['HOME']
     xdg_config_home_backup = ENV['XDG_CONFIG_HOME']

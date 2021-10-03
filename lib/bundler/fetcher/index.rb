@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require_relative "base"
-require "rubygems/remote_fetcher"
 
 module Bundler
   class Fetcher

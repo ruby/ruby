@@ -59,32 +59,6 @@ You can report downstream issues for the following distributions via their bug t
 * {macports}[https://trac.macports.org/query?status=assigned&status=new&status=reopened&port=~ruby]
 * etc (add your distribution bug tracker here)
 
-=== Platform Maintainers
-
-For platform specific bugs in Ruby, you can assign your ticket to the current
-maintainer for a specific platform.
-
-The current active platform maintainers are as follows:
-
-[mswin64 (Microsoft Windows)]
-  NAKAMURA Usaku (usa)
-[mingw32 (Minimalist GNU for Windows)]
-  Nobuyoshi Nakada (nobu)
-[AIX]
-  Yutaka Kanemoto (kanemoto)
-[FreeBSD]
-  Akinori MUSHA (knu)
-[Solaris]
-  Naohisa Goto (ngoto)
-[RHEL, CentOS]
-  KOSAKI Motohiro (kosaki)
-[macOS]
-  Kenta Murata (mrkn)
-[OpenBSD]
-  Jeremy Evans (jeremyevans0)
-[cygwin, ...]
-  none. (Maintainer WANTED)
-
 == Reporting Security Issues
 
 Security vulnerabilities receive special treatment since they may negatively
@@ -265,7 +239,7 @@ Now let's build CRuby:
 * Generate the configuration files and build:
 
     cd ruby-master
-    autoconf
+    ./autogen.sh
     mkdir build && cd build # its good practice to build outside of source dir
     mkdir ~/.rubies # we will install to .rubies/ruby-master in our home dir
     ../configure --prefix="${HOME}/.rubies/ruby-master"

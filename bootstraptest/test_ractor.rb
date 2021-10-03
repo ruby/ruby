@@ -248,7 +248,8 @@ assert_equal 30.times.map { 'ok' }.to_s, %q{
   30.times.map{|i|
     test i
   }
-} unless ENV['RUN_OPTS'] =~ /--jit-min-calls=5/ # This always fails with --jit-wait --jit-min-calls=5
+} unless ENV['RUN_OPTS'] =~ /--jit-min-calls=5/ || # This always fails with --jit-wait --jit-min-calls=5
+  (ENV.key?('TRAVIS') && ENV['TRAVIS_CPU_ARCH'] == 'arm64') # https://bugs.ruby-lang.org/issues/17878
 
 # Exception for empty select
 assert_match /specify at least one ractor/, %q{
@@ -532,7 +533,7 @@ assert_equal '[RuntimeError, "ok", true]', %q{
 # threads in a ractor will killed
 assert_equal '{:ok=>3}', %q{
   Ractor.new Ractor.current do |main|
-    q = Queue.new
+    q = Thread::Queue.new
     Thread.new do
       q << true
       loop{}
@@ -1402,6 +1403,34 @@ assert_equal "ok", %q{
   rescue TypeError
     'ok'
   end
+}
+
+assert_equal "ok", %q{
+  GC.disable
+  Ractor.new {}
+  raise "not ok" unless GC.disable
+
+  foo = []
+  10.times { foo << 1 }
+
+  GC.start
+
+  'ok'
+}
+
+# Can yield back values while GC is sweeping [Bug #18117]
+assert_equal "ok", %q{
+  workers = (0...8).map do
+    Ractor.new do
+      loop do
+        10_000.times.map { Object.new }
+        Ractor.yield Time.now
+      end
+    end
+  end
+
+  1_000.times { idle_worker, tmp_reporter = Ractor.select(*workers) }
+  "ok"
 }
 
 end # if !ENV['GITHUB_WORKFLOW']

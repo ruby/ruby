@@ -652,8 +652,17 @@ class TestArray < Test::Unit::TestCase
     b.concat(b, b)
     assert_equal([4, 5, 4, 5, 4, 5], b)
 
-    assert_raise(TypeError) { [0].concat(:foo) }
-    assert_raise(FrozenError) { [0].freeze.concat(:foo) }
+    assert_raise(TypeError) { @cls[0].concat(:foo) }
+    assert_raise(FrozenError) { @cls[0].freeze.concat(:foo) }
+
+    a = @cls[nil]
+    def (x = Object.new).to_ary
+      ary = Array.new(2)
+      ary << [] << [] << :ok
+    end
+    EnvUtil.under_gc_stress {a.concat(x)}
+    GC.start
+    assert_equal(:ok, a.last)
   end
 
   def test_count
@@ -1576,6 +1585,8 @@ class TestArray < Test::Unit::TestCase
 
     assert_nil(a.slice(10, -3))
     assert_equal @cls[], a.slice(10..7)
+
+    assert_equal([100], a.slice(-1, 1_000_000_000))
   end
 
   def test_slice!
@@ -1624,6 +1635,21 @@ class TestArray < Test::Unit::TestCase
     assert_raise(ArgumentError) { @cls[1].slice!(0, 0, 0) }
   end
 
+  def test_slice_out_of_range!
+    a = @cls[*(1..100).to_a]
+
+    assert_nil(a.clone.slice!(-101..-1))
+    assert_nil(a.clone.slice!(-101..))
+
+    # assert_raise_with_message(RangeError, "((-101..-1).%(2)) out of range") { a.clone.slice!((-101..-1)%2) }
+    # assert_raise_with_message(RangeError, "((-101..).%(2)) out of range") { a.clone.slice!((-101..)%2) }
+
+    assert_nil(a.clone.slice!(10, -3))
+    assert_equal @cls[], a.clone.slice!(10..7)
+
+    assert_equal([100], a.clone.slice!(-1, 1_000_000_000))
+  end
+
   def test_sort
     a = @cls[ 4, 1, 2, 3 ]
     assert_equal(@cls[1, 2, 3, 4], a.sort)
@@ -1661,6 +1687,37 @@ class TestArray < Test::Unit::TestCase
     a = @cls[4, 3, 2, 1]
     a.sort! {|m, n| a.replace([9, 8, 7]); m <=> n }
     assert_equal([1, 2, 3, 4], a)
+  end
+
+  def test_freeze_inside_sort!
+    array = [1, 2, 3, 4, 5]
+    frozen_array = nil
+    assert_raise(FrozenError) do
+      count = 0
+      array.sort! do |a, b|
+        array.freeze if (count += 1) == 6
+        frozen_array ||= array.map.to_a if array.frozen?
+        b <=> a
+      end
+    end
+    assert_equal(frozen_array, array)
+
+    object = Object.new
+    array = [1, 2, 3, 4, 5]
+    object.define_singleton_method(:>){|_| array.freeze; true}
+    assert_raise(FrozenError) do
+      array.sort! do |a, b|
+        object
+      end
+    end
+
+    object = Object.new
+    array = [object, object]
+    object.define_singleton_method(:>){|_| array.freeze; true}
+    object.define_singleton_method(:<=>){|o| object}
+    assert_raise(FrozenError) do
+      array.sort!
+    end
   end
 
   def test_sort_with_callcc

@@ -20,7 +20,7 @@
 // Special address values of a function generated from the
 // corresponding iseq by MJIT:
 enum rb_mjit_iseq_func {
-    // ISEQ was not queued yet for the machine code generation
+    // ISEQ has never been enqueued to unit_queue yet
     NOT_ADDED_JIT_ISEQ_FUNC = 0,
     // ISEQ is already queued for the machine code generation but the
     // code is not ready yet for the execution
@@ -90,6 +90,7 @@ extern void rb_mjit_recompile_inlining(const rb_iseq_t *iseq);
 extern void rb_mjit_recompile_const(const rb_iseq_t *iseq);
 RUBY_SYMBOL_EXPORT_END
 
+extern void mjit_cancel_all(const char *reason);
 extern bool mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id);
 extern void mjit_init(const struct mjit_options *opts);
 extern void mjit_gc_start_hook(void);
@@ -100,10 +101,6 @@ extern void mjit_mark(void);
 extern struct mjit_cont *mjit_cont_new(rb_execution_context_t *ec);
 extern void mjit_cont_free(struct mjit_cont *cont);
 extern void mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body);
-
-// A threshold used to reject long iseqs from JITting as such iseqs
-// takes too much time to be compiled.
-#define JIT_ISEQ_SIZE_THRESHOLD 1000
 
 #  ifdef MJIT_HEADER
 NOINLINE(static COLDFUNC VALUE mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body));
@@ -185,6 +182,7 @@ void mjit_finish(bool close_handle_p);
 
 # else // USE_MJIT
 
+static inline void mjit_cancel_all(const char *reason){}
 static inline struct mjit_cont *mjit_cont_new(rb_execution_context_t *ec){return NULL;}
 static inline void mjit_cont_free(struct mjit_cont *cont){}
 static inline void mjit_gc_start_hook(void){}

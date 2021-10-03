@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/package/tar_test_case'
+require_relative 'package/tar_test_case'
 require 'rubygems/package'
 
 class TestGemPackageTarHeader < Gem::Package::TarTestCase
@@ -57,19 +57,19 @@ class TestGemPackageTarHeader < Gem::Package::TarTestCase
   end
 
   def test_initialize_bad
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       Gem::Package::TarHeader.new :name => '', :size => '', :mode => ''
     end
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       Gem::Package::TarHeader.new :name => '', :size => '', :prefix => ''
     end
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       Gem::Package::TarHeader.new :name => '', :prefix => '', :mode => ''
     end
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       Gem::Package::TarHeader.new :prefix => '', :size => '', :mode => ''
     end
   end
@@ -156,7 +156,7 @@ group\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000
       # overwrite the size field
       header_s[124, 12] = val
       io = TempIO.new header_s
-      assert_raises ArgumentError do
+      assert_raise ArgumentError do
         Gem::Package::TarHeader.from io
       end
       io.close!

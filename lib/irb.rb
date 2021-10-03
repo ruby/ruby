@@ -62,8 +62,14 @@ require_relative "irb/easter-egg"
 #     -W[level=2]       Same as `ruby -W`
 #     --context-mode n  Set n[0-4] to method to create Binding Object,
 #                       when new workspace was created
-#     --echo            Show result(default)
+#     --echo            Show result (default)
 #     --noecho          Don't show result
+#     --echo-on-assignment
+#                       Show result on assignment
+#     --noecho-on-assignment
+#                       Don't show result on assignment
+#     --truncate-echo-on-assignment
+#                       Show truncated result on assignment (default)
 #     --inspect         Use `inspect' for output
 #     --noinspect       Don't use inspect for output
 #     --multiline       Use multiline editor module
@@ -72,6 +78,8 @@ require_relative "irb/easter-egg"
 #     --nosingleline    Don't use singleline editor module
 #     --colorize        Use colorization
 #     --nocolorize      Don't use colorization
+#     --autocomplete    Use autocompletion
+#     --noautocomplete  Don't use autocompletion
 #     --prompt prompt-mode/--prompt-mode prompt-mode
 #                       Switch prompt mode. Pre-defined prompt modes are
 #                       `default', `simple', `xmp' and `inf-ruby'
@@ -114,6 +122,7 @@ require_relative "irb/easter-egg"
 #     IRB.conf[:USE_SINGLELINE] = nil
 #     IRB.conf[:USE_COLORIZE] = true
 #     IRB.conf[:USE_TRACER] = false
+#     IRB.conf[:USE_AUTOCOMPLETE] = true
 #     IRB.conf[:IGNORE_SIGINT] = true
 #     IRB.conf[:IGNORE_EOF] = false
 #     IRB.conf[:PROMPT_MODE] = :DEFAULT
@@ -524,7 +533,7 @@ module IRB
         @context.io.prompt
       end
 
-      @scanner.set_input(@context.io) do
+      @scanner.set_input(@context.io, context: @context) do
         signal_status(:IN_INPUT) do
           if l = @context.io.gets
             print l if @context.verbose?
@@ -590,9 +599,15 @@ module IRB
       end
     end
 
-    def convert_invalid_byte_sequence(str)
-      str = str.force_encoding(Encoding::ASCII_8BIT)
-      conv = Encoding::Converter.new(Encoding::ASCII_8BIT, Encoding::UTF_8)
+    def convert_invalid_byte_sequence(str, enc)
+      str.force_encoding(enc)
+      str.scrub { |c|
+        c.bytes.map{ |b| "\\x#{b.to_s(16).upcase}" }.join
+      }
+    end
+
+    def encode_with_invalid_byte_sequence(str, enc)
+      conv = Encoding::Converter.new(str.encoding, enc)
       dst = String.new
       begin
         ret = conv.primitive_convert(str, dst)
@@ -640,7 +655,8 @@ module IRB
           message = exc.full_message(order: :top)
           order = :top
         end
-        message = convert_invalid_byte_sequence(message)
+        message = convert_invalid_byte_sequence(message, exc.message.encoding)
+        message = encode_with_invalid_byte_sequence(message, IRB.conf[:LC_MESSAGES].encoding) unless message.encoding.to_s.casecmp?(IRB.conf[:LC_MESSAGES].encoding.to_s)
         message = message.gsub(/((?:^\t.+$\n)+)/)  { |m|
           case order
           when :top
@@ -659,6 +675,8 @@ module IRB
           lines = lines.reverse if order == :bottom
           lines.map{ |l| l + "\n" }.join
         }
+        # The "<top (required)>" in "(irb)" may be the top level of IRB so imitate the main object.
+        message = message.gsub(/\(irb\):(?<num>\d+):in `<(?<frame>top \(required\))>'/)  { "(irb):#{$~[:num]}:in `<main>'" }
         puts message
       end
       print "Maybe IRB bug!\n" if irb_bug

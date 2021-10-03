@@ -562,6 +562,21 @@ class TestParse < Test::Unit::TestCase
     assert_syntax_error("\"\\M-\x01\"", 'Invalid escape character syntax')
     assert_syntax_error("\"\\M-\\C-\x01\"", 'Invalid escape character syntax')
     assert_syntax_error("\"\\C-\\M-\x01\"", 'Invalid escape character syntax')
+
+    e = assert_syntax_error('"\c\u0000"', 'Invalid escape character syntax')
+    assert_equal(' ^~~~'"\n", e.message.lines.last)
+    e = assert_syntax_error('"\c\U0000"', 'Invalid escape character syntax')
+    assert_equal(' ^~~~'"\n", e.message.lines.last)
+
+    e = assert_syntax_error('"\C-\u0000"', 'Invalid escape character syntax')
+    assert_equal(' ^~~~~'"\n", e.message.lines.last)
+    e = assert_syntax_error('"\C-\U0000"', 'Invalid escape character syntax')
+    assert_equal(' ^~~~~'"\n", e.message.lines.last)
+
+    e = assert_syntax_error('"\M-\u0000"', 'Invalid escape character syntax')
+    assert_equal(' ^~~~~'"\n", e.message.lines.last)
+    e = assert_syntax_error('"\M-\U0000"', 'Invalid escape character syntax')
+    assert_equal(' ^~~~~'"\n", e.message.lines.last)
   end
 
   def test_question
@@ -1064,6 +1079,32 @@ x = __ENCODING__
       HEREDOC
     end;
   end
+
+    def test_heredoc_interpolation
+      var = 1
+
+      v1 = <<~HEREDOC
+        something
+        #{"/#{var}"}
+      HEREDOC
+
+      v2 = <<~HEREDOC
+        something
+        #{_other = "/#{var}"}
+      HEREDOC
+
+      v3 = <<~HEREDOC
+        something
+        #{("/#{var}")}
+      HEREDOC
+
+      assert_equal "something\n/1\n", v1
+      assert_equal "something\n/1\n", v2
+      assert_equal "something\n/1\n", v3
+      assert_equal v1, v2
+      assert_equal v2, v3
+      assert_equal v1, v3
+    end
 
   def test_unexpected_token_error
     assert_syntax_error('"x"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', /unexpected/)

@@ -5,7 +5,6 @@ include FileUtils
 
 REPOSITORIES = {
   rubygems: 'rubygems/rubygems',
-  bundler: 'rubygems/rubygems',
   rdoc: 'ruby/rdoc',
   reline: 'ruby/reline',
   json: 'flori/json',
@@ -17,8 +16,6 @@ REPOSITORIES = {
   "io-nonblock": 'ruby/io-nonblock',
   "io-wait": 'ruby/io-wait',
   csv: 'ruby/csv',
-  dbm: 'ruby/dbm',
-  gdbm: 'ruby/gdbm',
   etc: 'ruby/etc',
   date: 'ruby/date',
   zlib: 'ruby/zlib',
@@ -26,11 +23,8 @@ REPOSITORIES = {
   strscan: 'ruby/strscan',
   ipaddr: 'ruby/ipaddr',
   logger: 'ruby/logger',
-  prime: 'ruby/prime',
-  matrix: 'ruby/matrix',
   ostruct: 'ruby/ostruct',
   irb: 'ruby/irb',
-  tracer: 'ruby/tracer',
   forwardable: "ruby/forwardable",
   mutex_m: "ruby/mutex_m",
   racc: "ruby/racc",
@@ -40,8 +34,6 @@ REPOSITORIES = {
   pstore: "ruby/pstore",
   delegate: "ruby/delegate",
   benchmark: "ruby/benchmark",
-  "net-pop": "ruby/net-pop",
-  "net-smtp": "ruby/net-smtp",
   cgi: "ruby/cgi",
   readline: "ruby/readline",
   "readline-ext": "ruby/readline-ext",
@@ -56,8 +48,6 @@ REPOSITORIES = {
   tmpdir: "ruby/tmpdir",
   English: "ruby/English",
   "net-protocol": "ruby/net-protocol",
-  "net-imap": "ruby/net-imap",
-  "net-ftp": "ruby/net-ftp",
   "net-http": "ruby/net-http",
   bigdecimal: "ruby/bigdecimal",
   optparse: "ruby/optparse",
@@ -81,6 +71,8 @@ REPOSITORIES = {
   drb: "ruby/drb",
   pathname: "ruby/pathname",
   digest: "ruby/digest",
+  error_highlight: "ruby/error_highlight",
+  un: "ruby/un",
 }
 
 def sync_default_gems(gem)
@@ -94,23 +86,29 @@ def sync_default_gems(gem)
     rm_rf(%w[lib/rubygems lib/rubygems.rb test/rubygems])
     cp_r(Dir.glob("#{upstream}/lib/rubygems*"), "lib")
     cp_r("#{upstream}/test/rubygems", "test")
-  when "bundler"
-    rm_rf(%w[lib/bundler lib/bundler.rb libexec/bundler libexec/bundle spec/bundler tool/bundler/*] + Dir.glob("man/{bundle*,gemfile*}"))
+    rm_rf(%w[lib/bundler lib/bundler.rb libexec/bundler libexec/bundle spec/bundler tool/bundler/*])
     cp_r(Dir.glob("#{upstream}/bundler/lib/bundler*"), "lib")
     cp_r(Dir.glob("#{upstream}/bundler/exe/bundle*"), "libexec")
-    cp_r("#{upstream}/bundler/bundler.gemspec", "lib/bundler")
+
+    gemspec_content = File.readlines("#{upstream}/bundler/bundler.gemspec").map do |line|
+      next if line =~ /LICENSE\.md/
+
+      line.gsub("bundler.gemspec", "lib/bundler/bundler.gemspec").gsub('"exe"', '"libexec"')
+    end.compact.join
+    File.write("lib/bundler/bundler.gemspec", gemspec_content)
+
     cp_r("#{upstream}/bundler/spec", "spec/bundler")
     cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/test_gems*"), "tool/bundler")
     cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/rubocop_gems*"), "tool/bundler")
     cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/standard_gems*"), "tool/bundler")
-    cp_r(Dir.glob("#{upstream}/bundler/man/*.{1,5,1\.txt,5\.txt,ronn}"), "man")
-    `git checkout lib/bundler/bundler.gemspec`
     rm_rf(%w[spec/bundler/support/artifice/vcr_cassettes])
   when "rdoc"
     rm_rf(%w[lib/rdoc lib/rdoc.rb test/rdoc libexec/rdoc libexec/ri])
     cp_r(Dir.glob("#{upstream}/lib/rdoc*"), "lib")
     cp_r("#{upstream}/test/rdoc", "test")
     cp_r("#{upstream}/rdoc.gemspec", "lib/rdoc")
+    cp_r("#{upstream}/Gemfile", "lib/rdoc")
+    cp_r("#{upstream}/Rakefile", "lib/rdoc")
     cp_r("#{upstream}/exe/rdoc", "libexec")
     cp_r("#{upstream}/exe/ri", "libexec")
     parser_files = {
@@ -120,6 +118,7 @@ def sync_default_gems(gem)
       'lib/rdoc/rd/inline_parser.ry' => 'lib/rdoc/rd/inline_parser.rb'
     }
     Dir.chdir(upstream) do
+      `bundle install`
       parser_files.each_value do |dst|
         `bundle exec rake #{dst}`
       end
@@ -129,11 +128,19 @@ def sync_default_gems(gem)
       cp_r("#{upstream}/#{dst}", dst)
     end
     `git checkout lib/rdoc/.document`
+    rm_rf(%w[lib/rdoc/Gemfile lib/rdoc/Rakefile])
   when "reline"
     rm_rf(%w[lib/reline lib/reline.rb test/reline])
     cp_r(Dir.glob("#{upstream}/lib/reline*"), "lib")
     cp_r("#{upstream}/test/reline", "test")
     cp_r("#{upstream}/reline.gemspec", "lib/reline")
+  when "irb"
+    rm_rf(%w[lib/irb lib/irb.rb test/irb])
+    cp_r(Dir.glob("#{upstream}/lib/irb*"), "lib")
+    cp_r("#{upstream}/test/irb", "test")
+    cp_r("#{upstream}/irb.gemspec", "lib/irb")
+    cp_r("#{upstream}/man/irb.1", "man/irb.1")
+    cp_r("#{upstream}/doc/irb", "doc")
   when "json"
     rm_rf(%w[ext/json test/json])
     cp_r("#{upstream}/ext/json/ext", "ext/json")
@@ -189,18 +196,6 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/test/io/wait", "test/io")
     cp_r("#{upstream}/io-wait.gemspec", "ext/io/wait")
     `git checkout ext/io/wait/depend`
-  when "dbm"
-    rm_rf(%w[ext/dbm test/dbm])
-    cp_r("#{upstream}/ext/dbm", "ext")
-    cp_r("#{upstream}/test/dbm", "test")
-    cp_r("#{upstream}/dbm.gemspec", "ext/dbm")
-    `git checkout ext/dbm/depend`
-  when "gdbm"
-    rm_rf(%w[ext/gdbm test/gdbm])
-    cp_r("#{upstream}/ext/gdbm", "ext")
-    cp_r("#{upstream}/test/gdbm", "test")
-    cp_r("#{upstream}/gdbm.gemspec", "ext/gdbm")
-    `git checkout ext/gdbm/depend ext/gdbm/README`
   when "etc"
     rm_rf(%w[ext/etc test/etc])
     cp_r("#{upstream}/ext/etc", "ext")
@@ -259,31 +254,11 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/openssl.gemspec", "ext/openssl")
     cp_r("#{upstream}/History.md", "ext/openssl")
     `git checkout ext/openssl/depend`
-  when "net-pop"
-    rm_rf(%w[lib/net/pop.rb lib/net/net-pop.gemspec test/net/pop])
-    cp_r("#{upstream}/lib/net/pop.rb", "lib/net")
-    cp_r("#{upstream}/test/net/pop", "test/net")
-    cp_r("#{upstream}/net-pop.gemspec", "lib/net")
-  when "net-smtp"
-    rm_rf(%w[lib/net/smtp.rb lib/net/net-smtp.gemspec test/net/smtp])
-    cp_r("#{upstream}/lib/net/smtp.rb", "lib/net")
-    cp_r("#{upstream}/test/net/smtp", "test/net")
-    cp_r("#{upstream}/net-smtp.gemspec", "lib/net")
   when "net-protocol"
     rm_rf(%w[lib/net/protocol.rb lib/net/net-protocol.gemspec test/net/protocol])
     cp_r("#{upstream}/lib/net/protocol.rb", "lib/net")
     cp_r("#{upstream}/test/net/protocol", "test/net")
     cp_r("#{upstream}/net-protocol.gemspec", "lib/net")
-  when "net-imap"
-    rm_rf(%w[lib/net/imap.rb lib/net/net-imap.gemspec test/net/imap])
-    cp_r("#{upstream}/lib/net/imap.rb", "lib/net")
-    cp_r("#{upstream}/test/net/imap", "test/net")
-    cp_r("#{upstream}/net-imap.gemspec", "lib/net")
-  when "net-ftp"
-    rm_rf(%w[lib/net/ftp.rb lib/net/net-ftp.gemspec test/net/ftp])
-    cp_r("#{upstream}/lib/net/ftp.rb", "lib/net")
-    cp_r("#{upstream}/test/net/ftp", "test/net")
-    cp_r("#{upstream}/net-ftp.gemspec", "lib/net")
   when "net-http"
     rm_rf(%w[lib/net/http.rb lib/net/http test/net/http])
     cp_r("#{upstream}/lib/net/http.rb", "lib/net")
@@ -341,7 +316,7 @@ def sync_default_gems(gem)
   when "digest"
     rm_rf(%w[ext/digest test/digest])
     cp_r("#{upstream}/ext/digest", "ext")
-    mkdir_p("#{upstream}/ext/digest/lib")
+    mkdir_p("ext/digest/lib")
     cp_r("#{upstream}/lib/digest.rb", "ext/digest/lib/")
     cp_r("#{upstream}/test/digest", "test")
     cp_r("#{upstream}/digest.gemspec", "ext/digest")
@@ -349,6 +324,16 @@ def sync_default_gems(gem)
   when "set"
     sync_lib gem, upstream
     cp_r("#{upstream}/test", ".")
+  when "optparse"
+    sync_lib gem, upstream
+    rm_rf(%w[doc/optparse])
+    mkdir_p("doc/optparse")
+    cp_r("#{upstream}/doc/optparse", "doc")
+  when "error_highlight"
+    rm_rf(%w[lib/error_highlight lib/error_highlight.rb test/error_highlight])
+    cp_r(Dir.glob("#{upstream}/lib/error_highlight*"), "lib")
+    cp_r("#{upstream}/error_highlight.gemspec", "lib/error_highlight")
+    cp_r("#{upstream}/test", "test/error_highlight")
   else
     sync_lib gem, upstream
   end
@@ -365,8 +350,12 @@ IGNORE_FILE_PATTERN =
 
 def message_filter(repo, sha)
   log = STDIN.read
-  print "[#{repo}] ", log.sub(/\s*(?=(?i:\nCo-authored-by:.*)*\Z)/) {
-    "\n\n" "https://github.com/#{repo}/commit/#{sha[0,10]}\n"
+  log.delete!("\r")
+  url = "https://github.com/#{repo}"
+  print "[#{repo}] ", log.gsub(/fix +#\d+|\(#\d+\)/i) {
+    $&.sub(/#/) {"#{url}/pull/"}
+  }.sub(/\s*(?=(?i:\nCo-authored-by:.*)*\Z)/) {
+    "\n\n" "#{url}/commit/#{sha[0,10]}\n"
   }
 end
 
@@ -392,7 +381,7 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
       range = "#{range}~1..#{range}"
     end
 
-    IO.popen(%W"git log --format=%H,%s #{range}") do |f|
+    IO.popen(%W"git log --format=%H,%s #{range} --") do |f|
       f.read.split("\n").reverse.map{|commit| commit.split(',', 2)}
     end
   end
@@ -405,7 +394,7 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
 
   if commits.empty?
     puts "No commits to pick"
-    return
+    return true
   end
 
   puts "Try to pick these commits:"
@@ -480,7 +469,9 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
   unless failed_commits.empty?
     puts "---- failed commits ----"
     puts failed_commits
+    return false
   end
+  return true
 end
 
 def sync_lib(repo, upstream = nil)
@@ -589,9 +580,9 @@ else
   end
   gem = ARGV.shift
   if ARGV[0]
-    sync_default_gems_with_commits(gem, ARGV, edit: edit)
+    exit sync_default_gems_with_commits(gem, ARGV, edit: edit)
   elsif auto
-    sync_default_gems_with_commits(gem, true, edit: edit)
+    exit sync_default_gems_with_commits(gem, true, edit: edit)
   else
     sync_default_gems(gem)
   end

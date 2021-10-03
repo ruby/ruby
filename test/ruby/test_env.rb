@@ -62,6 +62,46 @@ class TestEnv < Test::Unit::TestCase
     }
   end
 
+  def test_dup
+    assert_raise(TypeError) {
+      ENV.dup
+    }
+  end
+
+  def test_clone
+    warning = /ENV\.clone is deprecated; use ENV\.to_h instead/
+    clone = assert_deprecated_warning(warning) {
+      ENV.clone
+    }
+    assert_same(ENV, clone)
+
+    clone = assert_deprecated_warning(warning) {
+      ENV.clone(freeze: false)
+    }
+    assert_same(ENV, clone)
+
+    clone = assert_deprecated_warning(warning) {
+      ENV.clone(freeze: nil)
+    }
+    assert_same(ENV, clone)
+
+    assert_raise(TypeError) {
+      ENV.clone(freeze: true)
+    }
+    assert_raise(ArgumentError) {
+      ENV.clone(freeze: 1)
+    }
+    assert_raise(ArgumentError) {
+      ENV.clone(foo: false)
+    }
+    assert_raise(ArgumentError) {
+      ENV.clone(1)
+    }
+    assert_raise(ArgumentError) {
+      ENV.clone(1, foo: false)
+    }
+  end
+
   def test_has_value
     val = 'a'
     val.succ! while ENV.has_value?(val) || ENV.has_value?(val.upcase)
@@ -463,15 +503,15 @@ class TestEnv < Test::Unit::TestCase
   end
 
   def test_huge_value
-    huge_value = "bar" * 40960
-    ENV["foo"] = "bar"
-    if /mswin/ =~ RUBY_PLATFORM
-      assert_raise(Errno::EINVAL) { ENV["foo"] = huge_value }
-      assert_equal("bar", ENV["foo"])
+    if /mswin/ =~ RUBY_PLATFORM || /ucrt/ =~ RbConfig::CONFIG['sitearch']
+      # On Windows >= Vista each environment variable can be max 32768 characters
+      huge_value = "bar" * 10900
     else
-      assert_nothing_raised { ENV["foo"] = huge_value }
-      assert_equal(huge_value, ENV["foo"])
+      huge_value = "bar" * 40960
     end
+    ENV["foo"] = "overwritten"
+    assert_nothing_raised { ENV["foo"] = huge_value }
+    assert_equal(huge_value, ENV["foo"])
   end
 
   if /mswin|mingw/ =~ RUBY_PLATFORM

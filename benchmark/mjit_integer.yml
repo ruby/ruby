@@ -8,6 +8,7 @@ prelude: |
   def mjit_magnitude(int)  int.magnitude  end
   def mjit_odd?(int)       int.odd?       end
   def mjit_ord(int)        int.ord        end
+  def mjit_size(int)       int.size       end
   def mjit_to_i(int)       int.to_i       end
   def mjit_to_int(int)     int.to_int     end
   def mjit_uminus(int)     -int           end
@@ -22,6 +23,7 @@ benchmark:
   - mjit_magnitude(-1)
   - mjit_odd?(1)
   - mjit_ord(1)
+  - mjit_size(1)
   - mjit_to_i(1)
   - mjit_to_int(1)
   - mjit_uminus(1)

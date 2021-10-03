@@ -23,6 +23,7 @@ static void dln_loaderror(const char *format, ...);
 #endif
 #include "dln.h"
 #include "internal.h"
+#include "internal/compilers.h"
 
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
@@ -312,7 +313,7 @@ dln_load(const char *file)
     HINSTANCE handle;
     WCHAR *winfile;
     char message[1024];
-    void (*init_fct)();
+    void (*init_fct)(void);
     char *buf;
 
     /* Load the file as an object one */
@@ -341,7 +342,7 @@ dln_load(const char *file)
     }
 #endif
 
-    if ((init_fct = (void(*)())GetProcAddress(handle, buf)) == NULL) {
+    if ((init_fct = (void(*)(void))GetProcAddress(handle, buf)) == NULL) {
 	dln_loaderror("%s - %s\n%s", dln_strerror(), buf, file);
     }
 
@@ -358,7 +359,7 @@ dln_load(const char *file)
 #define DLN_DEFINED
     {
 	void *handle;
-	void (*init_fct)();
+	void (*init_fct)(void);
 
 #ifndef RTLD_LAZY
 # define RTLD_LAZY 1
@@ -393,7 +394,7 @@ dln_load(const char *file)
 	}
 # endif
 
-	init_fct = (void(*)())(VALUE)dlsym(handle, buf);
+	init_fct = (void(*)(void))(VALUE)dlsym(handle, buf);
 	if (init_fct == NULL) {
 	    const size_t errlen = strlen(error = dln_strerror()) + 1;
 	    error = memcpy(ALLOCA_N(char, errlen), error, errlen);
@@ -412,7 +413,7 @@ dln_load(const char *file)
     {
 	shl_t lib = NULL;
 	int flags;
-	void (*init_fct)();
+	void (*init_fct)(void);
 
 	flags = BIND_DEFERRED;
 	lib = shl_load(file, flags, 0);
@@ -436,9 +437,9 @@ dln_load(const char *file)
 #if defined(_AIX)
 #define DLN_DEFINED
     {
-	void (*init_fct)();
+	void (*init_fct)(void);
 
-	init_fct = (void(*)())load((char*)file, 1, 0);
+	init_fct = (void(*)(void))load((char*)file, 1, 0);
 	if (init_fct == NULL) {
 	    aix_loaderror(file);
 	}
@@ -467,7 +468,7 @@ dln_load(const char *file)
 	/* "file" is module file name .
 	   "buf" is pointer to initial function name with "_" . */
 
-	void (*init_fct)();
+	void (*init_fct)(void);
 
 
 	dyld_result = NSCreateObjectFileImageFromFile(file, &obj_file);

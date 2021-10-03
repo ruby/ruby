@@ -5,13 +5,13 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/command'
-require 'rubygems/installer_uninstaller_utils'
-require 'rubygems/exceptions'
-require 'rubygems/deprecate'
-require 'rubygems/package'
-require 'rubygems/ext'
-require 'rubygems/user_interaction'
+require_relative 'command'
+require_relative 'installer_uninstaller_utils'
+require_relative 'exceptions'
+require_relative 'deprecate'
+require_relative 'package'
+require_relative 'ext'
+require_relative 'user_interaction'
 
 ##
 # The installer installs the files contained in the .gem into the Gem.home.
@@ -68,7 +68,7 @@ class Gem::Installer
 
   @path_warning = false
 
-  @install_lock = Mutex.new
+  @install_lock = Thread::Mutex.new
 
   class << self
     ##
@@ -728,6 +728,10 @@ class Gem::Installer
       raise Gem::InstallError, "#{spec} has an invalid extensions"
     end
 
+    if spec.platform.to_s =~ /\R/
+      raise Gem::InstallError, "#{spec.platform} is an invalid platform"
+    end
+
     unless spec.specification_version.to_s =~ /\A\d+\z/
       raise Gem::InstallError, "#{spec} has an invalid specification_version"
     end
@@ -757,7 +761,7 @@ class Gem::Installer
 #
 
 require 'rubygems'
-
+#{gemdeps_load(spec.name)}
 version = "#{Gem::Requirement.default_prerelease}"
 
 str = ARGV.first
@@ -775,6 +779,15 @@ else
 gem #{spec.name.dump}, version
 load Gem.bin_path(#{spec.name.dump}, #{bin_file_name.dump}, version)
 end
+TEXT
+  end
+
+  def gemdeps_load(name)
+    return '' if name == "bundler"
+
+    <<-TEXT
+
+Gem.use_gemdeps
 TEXT
   end
 
