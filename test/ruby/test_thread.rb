@@ -235,6 +235,14 @@ class TestThread < Test::Unit::TestCase
     t3&.kill&.join
   end
 
+  def test_join_argument_conversion
+    t = Thread.new {}
+    assert_raise(TypeError) {t.join(:foo)}
+
+    limit = Struct.new(:to_f, :count).new(0.05)
+    assert_same(t, t.join(limit))
+  end
+
   { 'FIXNUM_MAX' => RbConfig::LIMITS['FIXNUM_MAX'],
     'UINT64_MAX' => RbConfig::LIMITS['UINT64_MAX'],
     'INFINITY'   => Float::INFINITY

@@ -277,7 +277,7 @@ LIBS = user32.lib advapi32.lib shell32.lib ws2_32.lib
 !if $(MSC_VER) >= 1400
 LIBS = $(LIBS) iphlpapi.lib
 !endif
-LIBS = $(LIBS) imagehlp.lib shlwapi.lib $(EXTLIBS)
+LIBS = $(LIBS) imagehlp.lib shlwapi.lib bcrypt.lib $(EXTLIBS)
 !endif
 !if !defined(MISSING)
 MISSING = crypt.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj

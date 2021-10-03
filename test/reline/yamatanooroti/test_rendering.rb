@@ -424,10 +424,10 @@ begin
     def test_binding_for_vi_movement_mode
       write_inputrc <<~LINES
         set editing-mode vi
-        "\\C-j": vi-movement-mode
+        "\\C-a": vi-movement-mode
       LINES
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
-      write(":1234\C-jhhhi0")
+      write(":1234\C-ahhhi0")
       close
       assert_screen(<<~EOC)
         Multiline REPL.
@@ -1057,6 +1057,33 @@ begin
       EOC
     end
 
+    def test_autocomplete_super_long_and_backspace
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-super-long}, startup_message: 'Multiline REPL.')
+      shift_tab = [27, 91, 90]
+      write('S' + shift_tab.map(&:chr).join)
+      write("\C-h")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> Str_BX
+                Str_BX
+                Str_BXA
+                Str_BXB
+                Str_BXC
+                Str_BXD
+                Str_BXE
+                Str_BXF
+                Str_BXG
+                Str_BXH
+                Str_BXI
+                Str_BXJ
+                Str_BXK
+                Str_BXL
+                Str_BXM
+                Str_BXN
+      EOC
+    end
+
     def test_dialog_callback_returns_nil
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog nil}, startup_message: 'Multiline REPL.')
       write('a')
@@ -1064,6 +1091,17 @@ begin
       assert_screen(<<~'EOC')
         Multiline REPL.
         prompt> a
+      EOC
+    end
+
+    def test_rerender_argument_prompt_after_pasting
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write('abcdef')
+      write("\M-3\C-h")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> abc
       EOC
     end
 

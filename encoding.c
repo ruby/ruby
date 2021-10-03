@@ -797,11 +797,12 @@ rb_enc_get_from_index(int index)
     return must_encindex(index);
 }
 
+int rb_require_internal_silent(VALUE fname);
+
 static int
 load_encoding(const char *name)
 {
     VALUE enclib = rb_sprintf("enc/%s.so", name);
-    VALUE verbose = ruby_verbose;
     VALUE debug = ruby_debug;
     VALUE errinfo;
     char *s = RSTRING_PTR(enclib) + 4, *e = RSTRING_END(enclib) - 3;
@@ -814,11 +815,9 @@ load_encoding(const char *name)
 	++s;
     }
     enclib = rb_fstring(enclib);
-    ruby_verbose = Qfalse;
     ruby_debug = Qfalse;
     errinfo = rb_errinfo();
-    loaded = rb_require_internal(enclib);
-    ruby_verbose = verbose;
+    loaded = rb_require_internal_silent(enclib);
     ruby_debug = debug;
     rb_set_errinfo(errinfo);
 

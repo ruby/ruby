@@ -376,6 +376,8 @@ transcode_search_path(const char *sname, const char *dname,
     return pathlen; /* is -1 if not found */
 }
 
+int rb_require_internal_silent(VALUE fname);
+
 static const rb_transcoder *
 load_transcoder_entry(transcoder_entry_t *entry)
 {
@@ -393,7 +395,7 @@ load_transcoder_entry(transcoder_entry_t *entry)
         memcpy(path + sizeof(transcoder_lib_prefix) - 1, lib, len);
         rb_str_set_len(fn, total_len);
         OBJ_FREEZE(fn);
-        rb_require_string(fn);
+        rb_require_internal_silent(fn);
     }
 
     if (entry->transcoder)
