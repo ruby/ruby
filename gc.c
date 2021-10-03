@@ -13068,8 +13068,6 @@ rb_raw_iseq_info(char *buff, const int buff_size, const rb_iseq_t *iseq)
     }
 }
 
-bool rb_ractor_p(VALUE rv);
-
 static int
 str_len_no_raise(VALUE str)
 {

@@ -168,6 +168,7 @@ VALUE rb_thread_create_ractor(rb_ractor_t *g, VALUE args, VALUE proc); // define
 rb_global_vm_lock_t *rb_ractor_gvl(rb_ractor_t *);
 int rb_ractor_living_thread_num(const rb_ractor_t *);
 VALUE rb_ractor_thread_list(rb_ractor_t *r);
+bool rb_ractor_p(VALUE rv);
 
 void rb_ractor_living_threads_init(rb_ractor_t *r);
 void rb_ractor_living_threads_insert(rb_ractor_t *r, rb_thread_t *th);
