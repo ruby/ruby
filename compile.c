@@ -1181,11 +1181,11 @@ debug_list(ISEQ_ARG_DECLARE LINK_ANCHOR *const anchor, LINK_ELEMENT *cur)
 {
     LINK_ELEMENT *list = FIRST_ELEMENT(anchor);
     printf("----\n");
-    printf("anch: %p, frst: %p, last: %p\n", &anchor->anchor,
-	   anchor->anchor.next, anchor->last);
+    printf("anch: %p, frst: %p, last: %p\n", (void *)&anchor->anchor,
+	   (void *)anchor->anchor.next, (void *)anchor->last);
     while (list) {
-	printf("curr: %p, next: %p, prev: %p, type: %d\n", list, list->next,
-	       list->prev, (int)list->type);
+	printf("curr: %p, next: %p, prev: %p, type: %d\n", (void *)list, (void *)list->next,
+	       (void *)list->prev, (int)list->type);
 	list = list->next;
     }
     printf("----\n");

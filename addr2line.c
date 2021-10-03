@@ -2138,7 +2138,7 @@ found_mach_header:
                 char *strtab = file + cmd->stroff, *sname = 0;
                 uint32_t j;
                 uintptr_t saddr = 0;
-                /* kprintf("[%2d]: %x/symtab %p\n", i, cmd->cmd, p); */
+                /* kprintf("[%2d]: %x/symtab %p\n", i, cmd->cmd, (void *)p); */
                 for (j = 0; j < cmd->nsyms; j++) {
                     uintptr_t symsize, d;
                     struct LP(nlist) *e = &nl[j];

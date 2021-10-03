@@ -413,7 +413,7 @@ ractor_queue_enq(rb_ractor_t *r, struct rb_ractor_queue *rq, struct rb_ractor_ba
         rq->size *= 2;
     }
     rq->baskets[(rq->start + rq->cnt++) % rq->size] = *basket;
-    // fprintf(stderr, "%s %p->cnt:%d\n", __func__, rq, rq->cnt);
+    // fprintf(stderr, "%s %p->cnt:%d\n", __func__, (void *)rq, rq->cnt);
 }
 
 static void
@@ -502,7 +502,7 @@ ractor_wakeup(rb_ractor_t *r, enum ractor_wait_status wait_status, enum ractor_w
 {
     ASSERT_ractor_locking(r);
 
-    // fprintf(stderr, "%s r:%p status:%s/%s wakeup_status:%s/%s\n", __func__, r,
+    // fprintf(stderr, "%s r:%p status:%s/%s wakeup_status:%s/%s\n", __func__, (void *)r,
     //         wait_status_str(r->sync.wait.status), wait_status_str(wait_status),
     //         wakeup_status_str(r->sync.wait.wakeup_status), wakeup_status_str(wakeup_status));
 
@@ -582,7 +582,7 @@ ractor_sleep(rb_execution_context_t *ec, rb_ractor_t *cr)
 {
     VM_ASSERT(GET_RACTOR() == cr);
     VM_ASSERT(cr->sync.wait.status != wait_none);
-    // fprintf(stderr, "%s  r:%p status:%s, wakeup_status:%s\n", __func__, cr,
+    // fprintf(stderr, "%s  r:%p status:%s, wakeup_status:%s\n", __func__, (void *)cr,
     //                 wait_status_str(cr->sync.wait.status), wakeup_status_str(cr->sync.wait.wakeup_status));
 
     RACTOR_UNLOCK(cr);
@@ -754,7 +754,8 @@ rq_dump(struct rb_ractor_queue *rq)
     bool bug = false;
     for (int i=0; i<rq->cnt; i++) {
         struct rb_ractor_basket *b = ractor_queue_at(rq, i);
-        fprintf(stderr, "%d (start:%d) type:%s %p %s\n", i, rq->start, basket_type_name(b->type), b, RSTRING_PTR(RARRAY_AREF(b->v, 1)));
+        fprintf(stderr, "%d (start:%d) type:%s %p %s\n", i, rq->start, basket_type_name(b->type),
+                (void *)b, RSTRING_PTR(RARRAY_AREF(b->v, 1)));
         if (b->type == basket_type_reserved) bug = true;
     }
     if (bug) rb_bug("!!");
