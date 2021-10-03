@@ -576,6 +576,7 @@ class Reline::LineEditor
       @proc_scope = proc_scope
       @width = nil
       @scroll_top = 0
+      @trap_key = nil
     end
 
     def set_cursor_pos(col, row)
