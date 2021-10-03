@@ -526,7 +526,7 @@ class CSV
 
       @cr = "\r".encode(@encoding)
       @lf = "\n".encode(@encoding)
-      @cr_or_lf = Regexp.new("[\r\n]".encode(@encoding))
+      @line_end = Regexp.new("\r\n|\n|\r".encode(@encoding))
       @not_line_end = Regexp.new("[^\r\n]+".encode(@encoding))
     end
 
@@ -914,7 +914,7 @@ class CSV
             message = "Any value after quoted field isn't allowed"
             raise MalformedCSVError.new(message, @lineno)
           elsif @unquoted_column_value and
-                (new_line = @scanner.scan(@cr_or_lf))
+                (new_line = @scanner.scan(@line_end))
             ignore_broken_line
             message = "Unquoted fields do not allow new line " +
                       "<#{new_line.inspect}>"
@@ -923,7 +923,7 @@ class CSV
             ignore_broken_line
             message = "Illegal quoting"
             raise MalformedCSVError.new(message, @lineno)
-          elsif (new_line = @scanner.scan(@cr_or_lf))
+          elsif (new_line = @scanner.scan(@line_end))
             ignore_broken_line
             message = "New line must be <#{@row_separator.inspect}> " +
                       "not <#{new_line.inspect}>"
@@ -1089,7 +1089,7 @@ class CSV
 
     def ignore_broken_line
       @scanner.scan_all(@not_line_end)
-      @scanner.scan_all(@cr_or_lf)
+      @scanner.scan_all(@line_end)
       @lineno += 1
     end
 
