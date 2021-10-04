@@ -24,6 +24,7 @@ posthook = proc do
   untrace_var(:$ruby, posthook)
 end
 prehook = proc do |extmk|
+=begin
   pat = %r[(?:\A(?:\w:|//[^/]+)|\G)/[^/]*]
   dir = builddir.scan(pat)
   pwd = Dir.pwd.scan(pat)
@@ -35,6 +36,7 @@ prehook = proc do |extmk|
     builddir = File.join((pwd.empty? ? ["."] : [".."]*pwd.size) + dir)
     builddir = "." if builddir.empty?
   end
+=end
   join = proc {|*args| File.join(*args).sub!(/\A(?:\.\/)*/, '')}
   $topdir ||= builddir
   $top_srcdir ||= (File.identical?(top_srcdir, dir = join[$topdir, srcdir]) ?
