@@ -6,11 +6,7 @@ YJIT’s basic purpose is to take ISEQs and generate machine code.
 
 Documentation on each Ruby bytecode can be found in insns.def.
 
-YJIT uses those bytecodes as the “Basic Blocks” in Lazy Basic Block Versioning (LBBV.) For more deep details of LBBV:
-
-* Basic Block Versioning (whitepaper) - https://arxiv.org/abs/1411.0352
-* An Extension of BBV using Object Shapes (whitepaper) - https://arxiv.org/abs/1507.02437
-* Basic Block Versioning talk at ECOOP 2015 - https://www.youtube.com/watch?v=S-aHBuoiYE0
+YJIT uses those bytecodes as the “Basic Blocks” in Lazy Basic Block Versioning (LBBV.) For more deep details of LBBV, see yjit.md in this directory.
 
 Current YJIT has a simple assembler as a backend. Each method that generates code does it by emitting machine code:
 
@@ -53,7 +49,7 @@ When YJIT is generating code, it needs a code pointer. In many cases it needs tw
 
 cb is for “inlined” normal code and ocb is for “outline” code such as exits. Inlined code is normal generated code for Ruby operations, while outlined code is for unusual and error conditions, such as encountering an unexpected parameter type and exiting to the interpreter.
 
-Simple inline code for a method body runs faster, so it's useful to remove unexpected exits from the control flow. An exception or unsupported operation will cause YJIT to generate out-of-line code to handle it.
+The purpose of the outlined code block is to keep things we believe are going to be infrequent somewhere else. That way we can keep the code in the inline block more linear and compact. Linear code, with as few branches as possible, is more easily predicted by the CPU. An exception or unsupported operation will cause YJIT to generate outlined code to handle it.
 
 If you search for ocb in yjit_codegen.c, you can see some places where out-of-line code is generated.
 
