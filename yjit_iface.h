@@ -107,8 +107,8 @@ YJIT_DECLARE_COUNTERS(
     expandarray_not_array,
     expandarray_rhs_too_small,
 
-    block_param_is_modified,
-    block_handler_is_not_iseq,
+    gbpp_block_param_modified,
+    gbpp_block_handler_not_iseq,
 
     // Member with known name for iterating over counters
     last_member
