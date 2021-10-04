@@ -1732,9 +1732,6 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_no_curdir
-    if /solaris/i =~ RUBY_PLATFORM
-      skip "Temporary skip to avoid CI failures after commit to use realpath on required files"
-    end
     with_tmpchdir {|d|
       Dir.mkdir("vd")
       status = nil

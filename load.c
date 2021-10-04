@@ -1060,7 +1060,7 @@ rb_ext_ractor_safe(bool flag)
     GET_THREAD()->ext_config.ractor_safe = flag;
 }
 
-#if 1
+#ifdef __sun
 static VALUE
 required_feature__realpath(VALUE path)
 {
