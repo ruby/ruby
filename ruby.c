@@ -350,6 +350,15 @@ usage(const char *name, int help, int highlight, int columns)
         M("--jit-max-cache=num", "", "Max number of methods to be JIT-ed in a cache (default: 100)"),
         M("--jit-min-calls=num", "", "Number of calls to trigger JIT (for testing, default: 10000)"),
     };
+    static const struct message yjit_options[] = {
+#if RUBY_DEBUG
+        M("--yjit-stats",             "", "Enable collecting YJIT statistics"),
+#endif
+        M("--yjit-exec-mem-size=num", "", "Size of executable memory block in MiB (default: 256)"),
+        M("--yjit-call-threshold",    "", "Number of calls to trigger JIT (default: 10)"),
+        M("--yjit-max-versions",      "", "Maximum number of versions to generate per basic block (default: 4)"),
+        M("--yjit-greedy-versioning", "", "Greedy versioning mode, may increase code size (default: disabled)"),
+    };
     int i;
     const char *sb = highlight ? esc_standout+1 : esc_none;
     const char *se = highlight ? esc_reset : esc_none;
@@ -376,9 +385,12 @@ usage(const char *name, int help, int highlight, int columns)
     printf("%s""Warning categories:%s\n", sb, se);
     for (i = 0; i < numberof(warn_categories); ++i)
 	SHOW(warn_categories[i]);
-    printf("%s""JIT options (experimental):%s\n", sb, se);
+    printf("%s""MJIT options (experimental):%s\n", sb, se);
     for (i = 0; i < numberof(mjit_options); ++i)
-	SHOW(mjit_options[i]);
+    SHOW(mjit_options[i]);
+    printf("%s""YJIT options (experimental):%s\n", sb, se);
+    for (i = 0; i < numberof(yjit_options); ++i)
+    SHOW(yjit_options[i]);
 }
 
 #define rubylib_path_new rb_str_new
