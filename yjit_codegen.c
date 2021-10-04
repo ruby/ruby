@@ -3400,7 +3400,13 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
             // Here we're calling a method with keyword arguments and specifying
             // keyword arguments at this call site.
 
+            // This struct represents the metadata about the caller-specified
+            // keyword arguments.
             const struct rb_callinfo_kwarg *kw_arg = vm_ci_kwarg(ci);
+
+            // This struct represents the metadata about the callee-specified
+            // keyword parameters.
+            const struct rb_iseq_param_keyword *keyword = iseq->body->param.keyword;
 
             if (argc - kw_arg->keyword_len != required_num) {
                 // Here the method being called specifies optional and required
@@ -3413,30 +3419,29 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
             // Here we should be safe to assume that the caller is specifying
             // every keyword argument that the callee has declared in its
             // definition (whether or not they were required).
-            const int req_key_num = iseq->body->param.keyword->required_num;
-            RUBY_ASSERT(req_key_num == kw_arg->keyword_len);
+            RUBY_ASSERT(kw_arg->keyword_len == keyword->num);
 
             // This is the list of keyword arguments that the callee specified
             // in its initial declaration.
-            const ID *callee_kwargs = iseq->body->param.keyword->table;
+            const ID *callee_kwargs = keyword->table;
 
             // Here we're going to build up a list of the IDs that correspond to
             // the caller-specified keyword arguments. If they're not in the
             // same order as the order specified in the callee declaration, then
             // we're going to need to generate some code to swap values around
             // on the stack.
-            ID *caller_kwargs = ALLOCA_N(VALUE, req_key_num);
-            for (int kwarg_idx = 0; kwarg_idx < req_key_num; kwarg_idx++)
+            ID *caller_kwargs = ALLOCA_N(VALUE, kw_arg->keyword_len);
+            for (int kwarg_idx = 0; kwarg_idx < kw_arg->keyword_len; kwarg_idx++)
                 caller_kwargs[kwarg_idx] = SYM2ID(kw_arg->keywords[kwarg_idx]);
 
             // First, we're going to be sure that the names of every
-            // callee-specified keyword argument correspond to a name in the
-            // list of caller-specified keyword arguments.
-            for (int callee_idx = 0; callee_idx < req_key_num; callee_idx++) {
-                int caller_idx;
+            // caller-specified keyword argument correspond to a name in the
+            // list of callee-specified keyword parameters.
+            for (int caller_idx = 0; caller_idx < kw_arg->keyword_len; caller_idx++) {
+                int callee_idx;
 
-                for (caller_idx = 0; caller_idx < req_key_num; caller_idx++) {
-                    if (callee_kwargs[callee_idx] == caller_kwargs[caller_idx]) {
+                for (callee_idx = 0; callee_idx < keyword->num; callee_idx++) {
+                    if (caller_kwargs[caller_idx] == callee_kwargs[callee_idx]) {
                         break;
                     }
                 }
@@ -3444,16 +3449,16 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
                 // If the keyword was never found, then we know we have a
                 // mismatch in the names of the keyword arguments, so we need to
                 // bail.
-                if (caller_idx == req_key_num) {
+                if (callee_idx == keyword->num) {
                     GEN_COUNTER_INC(cb, send_iseq_kwargs_mismatch);
                     return YJIT_CANT_COMPILE;
                 }
             }
 
-            // Next, we're going to loop through every keyword was that
+            // Next, we're going to loop through every keyword that was
             // specified by the caller and make sure that it's in the correct
             // place. If it's not we're going to swap it around with another one.
-            for (int kwarg_idx = 0; kwarg_idx < req_key_num; kwarg_idx++) {
+            for (int kwarg_idx = 0; kwarg_idx < kw_arg->keyword_len; kwarg_idx++) {
                 ID callee_kwarg = callee_kwargs[kwarg_idx];
 
                 // If the argument is already in the right order, then we don't
@@ -3464,7 +3469,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
                 // In this case the argument is not in the right place, so we
                 // need to find its position where it _should_ be and swap with
                 // that location.
-                for (int swap_idx = kwarg_idx + 1; swap_idx < req_key_num; swap_idx++) {
+                for (int swap_idx = kwarg_idx + 1; swap_idx < kw_arg->keyword_len; swap_idx++) {
                     if (callee_kwarg == caller_kwargs[swap_idx]) {
                         // First we're going to generate the code that is going
                         // to perform the actual swapping at runtime.
@@ -3482,9 +3487,13 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
                 }
             }
 
-            // Kwargs adds a special weird little local that specifies a bitmap
-            // that corresponds to the keyword arguments that are not passed.
+            // Keyword arguments cause a special extra local variable to be
+            // pushed onto the stack that represents the parameters that weren't
+            // explicitly given a value. Its value is a bitmap that corresponds
+            // to the indices of the missing parameters. In this case since we
+            // know every value was specified, we can just write the value 0.
             num_params--;
+            mov(cb, ctx_stack_opnd(ctx, argc - 1 - kw_arg->keyword_len), imm_opnd(INT2FIX(0)));
         } else if (argc == required_num) {
             // Here we are calling a method that accepts keyword arguments
             // (optional or required) but we're not passing any keyword
