@@ -1073,7 +1073,7 @@ eom
     assert_warning(/literal in condition/) do
       eval('1 if :foo')
     end
-    assert_warning(/literal in condition/) do
+    assert_warning(/symbol literal in condition/) do
       eval('1 if :"#{"foo".upcase}"')
     end
 

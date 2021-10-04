@@ -11758,7 +11758,7 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
 	break;
 
       case NODE_DSYM:
-	SWITCH_BY_COND_TYPE(type, warning, "string ")
+	SWITCH_BY_COND_TYPE(type, warning, "symbol ")
 	break;
 
       case NODE_LIT:
