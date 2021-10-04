@@ -155,6 +155,7 @@ module YJIT
       print_counters(stats, prefix: 'send_', prompt: 'method call exit reasons: ')
       print_counters(stats, prefix: 'invokesuper_', prompt: 'invokesuper exit reasons: ')
       print_counters(stats, prefix: 'leave_', prompt: 'leave exit reasons: ')
+      print_counters(stats, prefix: 'gbpp_', prompt: 'getblockparamproxy exit reasons: ')
       print_counters(stats, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons:')
       print_counters(stats, prefix: 'setivar_', prompt: 'setinstancevariable exit reasons:')
       print_counters(stats, prefix: 'oaref_', prompt: 'opt_aref exit reasons: ')
