@@ -87,7 +87,7 @@ jobs:
           make -j $jobs update-gems
 
       - name: make all
-        timeout-minutes: 40
+        timeout-minutes: 20
         run: |
           $jobs = [int](2 * $env:NUMBER_OF_PROCESSORS)
           make -j $jobs
@@ -108,7 +108,7 @@ jobs:
           make test
 
       - name: test-all
-        timeout-minutes: 60
+        timeout-minutes: 30
         run: |
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           $PSDefaultParameterValues['*:Encoding'] = 'utf8'
