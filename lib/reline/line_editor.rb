@@ -181,7 +181,11 @@ class Reline::LineEditor
     Reline::IOGate.set_winch_handler do
       @resized = true
     end
-    @block_elem_width = Reline::Unicode.calculate_width('█')
+    if Reline::IOGate.win?
+      @block_elem_width = 1
+    else
+      @block_elem_width = Reline::Unicode.calculate_width('█')
+    end
   end
 
   def resize
