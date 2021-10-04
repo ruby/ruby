@@ -368,7 +368,7 @@ RBIMPL_ATTR_ARTIFICIAL()
  *
  * @internal
  *
- * This  function is  a super-duper  hot  path.  Optimised  targeting modern  C
+ * This function is a super-duper hot path. Optimised targeting modern C
  * compilers and x86_64 architecture.
  */
 static inline bool
