@@ -1061,16 +1061,16 @@ eom
   end
 
   def test_warning_literal_in_condition
-    assert_warn(/literal in condition/) do
+    assert_warn(/string literal in condition/) do
       eval('1 if ""')
     end
-    assert_warn(/literal in condition/) do
+    assert_warn(/regex literal in condition/) do
       eval('1 if //')
     end
     assert_warning(/literal in condition/) do
       eval('1 if 1')
     end
-    assert_warning(/literal in condition/) do
+    assert_warning(/symbol literal in condition/) do
       eval('1 if :foo')
     end
     assert_warning(/symbol literal in condition/) do
