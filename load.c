@@ -1060,6 +1060,33 @@ rb_ext_ractor_safe(bool flag)
     GET_THREAD()->ext_config.ractor_safe = flag;
 }
 
+#if 1
+static VALUE
+required_feature__realpath(VALUE path)
+{
+    return rb_realpath_internal(Qnil, path, 1);
+}
+
+static VALUE
+required_feature_realpath_rescue(VALUE path, VALUE exc)
+{
+    return path;
+}
+
+static VALUE
+required_feature_realpath(VALUE path)
+{
+    return rb_rescue(required_feature__realpath, path,
+        required_feature_realpath_rescue, path);
+}
+#else
+static VALUE
+required_feature_realpath(VALUE path)
+{
+    return rb_realpath_internal(Qnil, path, 1);
+}
+#endif
+
 /*
  * returns
  *  0: if already loaded (false)
@@ -1111,7 +1138,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
 		result = TAG_RETURN;
 	    }
             else if (RTEST(rb_hash_aref(realpaths,
-                                        realpath = rb_realpath_internal(Qnil, path, 1)))) {
+                                        realpath = required_feature_realpath(path)))) {
                 result = 0;
             }
 	    else {
