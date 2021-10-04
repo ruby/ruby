@@ -3622,50 +3622,79 @@ chunk_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
 
 /*
  *  call-seq:
- *     enum.chunk { |elt| ... }                       -> an_enumerator
+ *    chunk {|array| ... } -> enumerator
  *
- *  Enumerates over the items, chunking them together based on the return
- *  value of the block.
+ *  Returns an Enumerator;
+ *  each element in the enumerator is a 2-element array consisting of:
  *
- *  Consecutive elements which return the same block value are chunked together.
+ *  - A value returned by the block.
+ *  - An array ("chunk") containing the element for which that value was returned,
+ *    and all following elements for which the block returned the same value:
  *
- *  For example, consecutive even numbers and odd numbers can be
- *  chunked as follows.
+ *  So that:
  *
- *    [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5].chunk { |n|
- *      n.even?
- *    }.each { |even, ary|
- *      p [even, ary]
+ *  - Each block return value that is different from its predecessor
+ *    begins a new chunk.
+ *  - Each block return value that is the same as its predecessor
+ *    continues the same chunk.
+ *
+ *  Example:
+ *
+ *    e = (0..10).chunk {|i| (i / 3).floor } # => #<Enumerator: ...>
+ *    # The enumerator elements.
+ *    e.next # => [0, [0, 1, 2]]
+ *    e.next # => [1, [3, 4, 5]]
+ *    e.next # => [2, [6, 7, 8]]
+ *    e.next # => [3, [9, 10]]
+ *
+ *  \Method +chunk+ is especially useful for an enumerable that is already sorted.
+ *  This example counts words for each initial letter in a large array of words:
+ *
+ *    # Get sorted words from a web page.
+ *    url = 'https://raw.githubusercontent.com/eneko/data-repository/master/data/words.txt'
+ *    words = URI::open(url).readlines
+ *    # Make chunks, one for each letter.
+ *    e = words.chunk {|word| word.upcase[0] } # => #<Enumerator: ...>
+ *    # Display 'A' through 'F'.
+ *    e.each {|c, words| p [c, words.length]; break if c == 'F' }
+ *
+ *  Output:
+ *
+ *    ["A", 17096]
+ *    ["B", 11070]
+ *    ["C", 19901]
+ *    ["D", 10896]
+ *    ["E", 8736]
+ *    ["F", 6860]
+ *
+ *  You can use the special symbol <tt>:_alone</tt> to force an element
+ *  into its own separate chuck:
+ *
+ *    a = [0, 0, 1, 1]
+ *    e = a.chunk{|i| i.even? ? :_alone : true }
+ *    e.to_a # => [[:_alone, [0]], [:_alone, [0]], [true, [1, 1]]]
+ *
+ *  For example, you can put each line that contains a URL into its own chunk:
+ *
+ *    pattern = /http/
+ *    open(filename) { |f|
+ *      f.chunk { |line| line =~ pattern ? :_alone : true }.each { |key, lines|
+ *        pp lines
+ *      }
  *    }
- *    #=> [false, [3, 1]]
- *    #   [true, [4]]
- *    #   [false, [1, 5, 9]]
- *    #   [true, [2, 6]]
- *    #   [false, [5, 3, 5]]
  *
- *  This method is especially useful for sorted series of elements.
- *  The following example counts words for each initial letter.
+ *  You can use the special symbol <tt>:_separator</tt> or +nil+
+ *  to force an element to be ignored (not included in any chunk):
  *
- *    open("/usr/share/dict/words", "r:iso-8859-1") { |f|
- *      f.chunk { |line| line.upcase.ord }.each { |ch, lines| p [ch.chr, lines.length] }
- *    }
- *    #=> ["\n", 1]
- *    #   ["A", 1327]
- *    #   ["B", 1372]
- *    #   ["C", 1507]
- *    #   ["D", 791]
- *    #   ...
+ *    a = [0, 0, -1, 1, 1]
+ *    e = a.chunk{|i| i < 0 ? :_separator : true }
+ *    e.to_a # => [[true, [0, 0]], [true, [1, 1]]]
  *
- *  The following key values have special meaning:
- *  - +nil+ and +:_separator+ specifies that the elements should be dropped.
- *  - +:_alone+ specifies that the element should be chunked by itself.
+ *  Note that the separator does end the chunk:
  *
- *  Any other symbols that begin with an underscore will raise an error:
- *
- *    items.chunk { |item| :_underscore }
- *    #=> RuntimeError: symbols beginning with an underscore are reserved
- *
- *  +nil+ and +:_separator+ can be used to ignore some elements.
+ *    a = [0, 0, -1, 1, -1, 1]
+ *    e = a.chunk{|i| i < 0 ? :_separator : true }
+ *    e.to_a # => [[true, [0, 0]], [true, [1]], [true, [1]]]
  *
  *  For example, the sequence of hyphens in svn log can be eliminated as follows:
  *
@@ -3695,18 +3724,6 @@ chunk_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *      pp lines
  *    }
  *
- *  +:_alone+ can be used to force items into their own chunk.
- *  For example, you can put lines that contain a URL by themselves,
- *  and chunk the rest of the lines together, like this:
- *
- *    pattern = /http/
- *    open(filename) { |f|
- *      f.chunk { |line| line =~ pattern ? :_alone : true }.each { |key, lines|
- *        pp lines
- *      }
- *    }
- *
- *  If no block is given, an enumerator to `chunk` is returned instead.
  */
 static VALUE
 enum_chunk(VALUE enumerable)
