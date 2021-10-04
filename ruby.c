@@ -356,8 +356,8 @@ usage(const char *name, int help, int highlight, int columns)
 #endif
         M("--yjit-exec-mem-size=num", "", "Size of executable memory block in MiB (default: 256)"),
         M("--yjit-call-threshold",    "", "Number of calls to trigger JIT (default: 10)"),
-        M("--yjit-max-versions",      "", "Maximum number of versions to generate per basic block (default: 4)"),
-        M("--yjit-greedy-versioning", "", "Greedy versioning mode, may increase code size (default: disabled)"),
+        M("--yjit-max-versions",      "", "Maximum number of versions per basic block (default: 4)"),
+        M("--yjit-greedy-versioning", "", "Greedy versioning mode (default: disabled)"),
     };
     int i;
     const char *sb = highlight ? esc_standout+1 : esc_none;
