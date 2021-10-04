@@ -2936,8 +2936,8 @@ rb_cmpint(VALUE val, VALUE a, VALUE b)
 	if (BIGNUM_SIGN(val)) return 1;
 	return -1;
     }
-    if (RTEST(rb_funcall(val, '>', 1, FIXNUM_ZERO))) return 1;
-    if (RTEST(rb_funcall(val, '<', 1, FIXNUM_ZERO))) return -1;
+    if (RTEST(rb_funcall(val, '>', 1, RB_FIXNUM_ZERO))) return 1;
+    if (RTEST(rb_funcall(val, '<', 1, RB_FIXNUM_ZERO))) return -1;
     return 0;
 }
 
@@ -3107,7 +3107,7 @@ bigfixize(VALUE x)
 
     BARY_TRUNC(ds, n);
 
-    if (n == 0) return FIXNUM_ZERO;
+    if (n == 0) return RB_FIXNUM_ZERO;
 
 #if SIZEOF_BDIGIT < SIZEOF_LONG
     if (sizeof(long)/SIZEOF_BDIGIT < n)
@@ -4013,7 +4013,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
     VALUE ret = rb_cstr_parse_inum(str, -1, (badcheck ? NULL : &end), base);
     if (NIL_P(ret)) {
 	if (badcheck) rb_invalid_str(str, "Integer()");
-	ret = FIXNUM_ZERO;
+	ret = RB_FIXNUM_ZERO;
     }
     return ret;
 }
@@ -4159,7 +4159,7 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
     c = *str;
     c = conv_digit(c);
     if (c < 0 || c >= base) {
-	if (!badcheck && num_digits) z = FIXNUM_ZERO;
+	if (!badcheck && num_digits) z = RB_FIXNUM_ZERO;
 	goto bad;
     }
 
@@ -4259,7 +4259,7 @@ rb_str_convert_to_inum(VALUE str, int base, int badcheck, int raise_exception)
             if (!raise_exception) return Qnil;
             invalid_integer(str);
         }
-        ret = FIXNUM_ZERO;
+        ret = RB_FIXNUM_ZERO;
     }
     return ret;
 }
@@ -4574,7 +4574,7 @@ big_shift3(VALUE x, int lshift_p, size_t shift_numdigits, int shift_numbits)
         if (LONG_MAX < shift_numdigits || (size_t)BIGNUM_LEN(x) <= shift_numdigits) {
             if (BIGNUM_POSITIVE_P(x) ||
                 bary_zero_p(BDIGITS(x), BIGNUM_LEN(x)))
-                return FIXNUM_ZERO;
+                return RB_FIXNUM_ZERO;
             else
                 return INT2FIX(-1);
         }
@@ -4583,7 +4583,7 @@ big_shift3(VALUE x, int lshift_p, size_t shift_numdigits, int shift_numbits)
         hibitsx = abs2twocomp(&x, &xn);
         xds = BDIGITS(x);
         if (xn <= s1) {
-            return hibitsx ? INT2FIX(-1) : FIXNUM_ZERO;
+            return hibitsx ? INT2FIX(-1) : RB_FIXNUM_ZERO;
         }
         zn = xn - s1;
         z = bignew(zn, 0);
@@ -4607,7 +4607,7 @@ big_shift2(VALUE x, int lshift_p, VALUE y)
     assert(POW2_P(BITSPERDIG));
 
     if (BIGZEROP(x))
-        return FIXNUM_ZERO;
+        return RB_FIXNUM_ZERO;
     sign = rb_integer_pack(y, lens, numberof(lens), sizeof(size_t), 0,
         INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
     if (sign < 0) {
@@ -4620,7 +4620,7 @@ big_shift2(VALUE x, int lshift_p, VALUE y)
     }
     else {
         if (1 < sign || CHAR_BIT <= lens[1])
-            return BIGNUM_POSITIVE_P(x) ? FIXNUM_ZERO : INT2FIX(-1);
+            return BIGNUM_POSITIVE_P(x) ? RB_FIXNUM_ZERO : INT2FIX(-1);
     }
     shift_numbits = (int)(lens[0] & (BITSPERDIG-1));
     shift_numdigits = (lens[0] >> bit_length(BITSPERDIG-1)) |
@@ -5325,7 +5325,7 @@ rb_integer_float_cmp(VALUE x, VALUE y)
         return Qnil;
     if (isinf(yd)) {
         if (yd > 0.0) return INT2FIX(-1);
-        else return FIXNUM_ONE;
+        else return RB_FIXNUM_ONE;
     }
     yf = modf(yd, &yi);
     if (FIXNUM_P(x)) {
@@ -5334,12 +5334,12 @@ rb_integer_float_cmp(VALUE x, VALUE y)
         if (xd < yd)
             return INT2FIX(-1);
         if (xd > yd)
-            return FIXNUM_ONE;
-        return FIXNUM_ZERO;
+            return RB_FIXNUM_ONE;
+        return RB_FIXNUM_ZERO;
 #else
         long xn, yn;
         if (yi < FIXNUM_MIN)
-            return FIXNUM_ONE;
+            return RB_FIXNUM_ONE;
         if (FIXNUM_MAX+1 <= yi)
             return INT2FIX(-1);
         xn = FIX2LONG(x);
@@ -5347,20 +5347,20 @@ rb_integer_float_cmp(VALUE x, VALUE y)
         if (xn < yn)
             return INT2FIX(-1);
         if (xn > yn)
-            return FIXNUM_ONE;
+            return RB_FIXNUM_ONE;
         if (yf < 0.0)
-            return FIXNUM_ONE;
+            return RB_FIXNUM_ONE;
         if (0.0 < yf)
             return INT2FIX(-1);
-        return FIXNUM_ZERO;
+        return RB_FIXNUM_ZERO;
 #endif
     }
     y = rb_dbl2big(yi);
     rel = rb_big_cmp(x, y);
-    if (yf == 0.0 || rel != FIXNUM_ZERO)
+    if (yf == 0.0 || rel != RB_FIXNUM_ZERO)
         return rel;
     if (yf < 0.0)
-        return FIXNUM_ONE;
+        return RB_FIXNUM_ONE;
     return INT2FIX(-1);
 }
 
@@ -6232,8 +6232,8 @@ rb_big_pow(VALUE x, VALUE y)
     SIGNED_VALUE yy;
 
   again:
-    if (y == FIXNUM_ZERO) return FIXNUM_ONE;
-    if (y == FIXNUM_ONE) return x;
+    if (y == RB_FIXNUM_ZERO) return RB_FIXNUM_ONE;
+    if (y == RB_FIXNUM_ONE) return x;
     if (RB_FLOAT_TYPE_P(y)) {
 	d = RFLOAT_VALUE(y);
 	if ((BIGNUM_NEGATIVE_P(x) && !BIGZEROP(x))) {
@@ -6253,7 +6253,7 @@ rb_big_pow(VALUE x, VALUE y)
         if (yy < 0) {
             x = rb_big_pow(x, LONG2NUM(-yy));
             if (RB_INTEGER_TYPE_P(x))
-                return rb_rational_raw(FIXNUM_ONE, x);
+                return rb_rational_raw(RB_FIXNUM_ONE, x);
             else
                 return DBL2NUM(1.0 / NUM2DBL(x));
         }
@@ -6295,7 +6295,7 @@ bigand_int(VALUE x, long xn, BDIGIT hibitsx, long y)
     long i;
     BDIGIT hibitsy;
 
-    if (y == 0) return FIXNUM_ZERO;
+    if (y == 0) return RB_FIXNUM_ZERO;
     if (xn == 0) return hibitsx ? LONG2NUM(y) : 0;
     hibitsy = 0 <= y ? 0 : BDIGMAX;
     xds = BDIGITS(x);
@@ -6673,10 +6673,10 @@ rb_big_aref(VALUE x, VALUE y)
 
     if (RB_BIGNUM_TYPE_P(y)) {
 	if (BIGNUM_NEGATIVE_P(y))
-	    return FIXNUM_ZERO;
+	    return RB_FIXNUM_ZERO;
 	bigtrunc(y);
 	if (BIGSIZE(y) > sizeof(size_t)) {
-	    return BIGNUM_SIGN(x) ? FIXNUM_ZERO : FIXNUM_ONE;
+	    return BIGNUM_SIGN(x) ? RB_FIXNUM_ZERO : RB_FIXNUM_ONE;
 	}
 #if SIZEOF_SIZE_T <= SIZEOF_LONG
 	shift = big2ulong(y, "long");
@@ -6686,7 +6686,7 @@ rb_big_aref(VALUE x, VALUE y)
     }
     else {
 	l = NUM2LONG(y);
-	if (l < 0) return FIXNUM_ZERO;
+	if (l < 0) return RB_FIXNUM_ZERO;
 	shift = (size_t)l;
     }
     s1 = shift/BITSPERDIG;
@@ -6694,17 +6694,17 @@ rb_big_aref(VALUE x, VALUE y)
     bit = (BDIGIT)1 << s2;
 
     if (s1 >= BIGNUM_LEN(x))
-        return BIGNUM_SIGN(x) ? FIXNUM_ZERO : FIXNUM_ONE;
+        return BIGNUM_SIGN(x) ? RB_FIXNUM_ZERO : RB_FIXNUM_ONE;
 
     xds = BDIGITS(x);
     if (BIGNUM_POSITIVE_P(x))
-        return (xds[s1] & bit) ? FIXNUM_ONE : FIXNUM_ZERO;
+        return (xds[s1] & bit) ? RB_FIXNUM_ONE : RB_FIXNUM_ZERO;
     if (xds[s1] & (bit-1))
-        return (xds[s1] & bit) ? FIXNUM_ZERO : FIXNUM_ONE;
+        return (xds[s1] & bit) ? RB_FIXNUM_ZERO : RB_FIXNUM_ONE;
     for (i = 0; i < s1; i++)
         if (xds[i])
-            return (xds[s1] & bit) ? FIXNUM_ZERO : FIXNUM_ONE;
-    return (xds[s1] & bit) ? FIXNUM_ONE : FIXNUM_ZERO;
+            return (xds[s1] & bit) ? RB_FIXNUM_ZERO : RB_FIXNUM_ONE;
+    return (xds[s1] & bit) ? RB_FIXNUM_ONE : RB_FIXNUM_ZERO;
 }
 
 VALUE
@@ -7121,7 +7121,7 @@ rb_int_powm(int const argc, VALUE * const argv, VALUE const num)
             long const half_val = (long)HALF_LONG_MSB;
             long const mm = FIX2LONG(m);
             if (!mm) rb_num_zerodiv();
-            if (mm == 1) return FIXNUM_ZERO;
+            if (mm == 1) return RB_FIXNUM_ZERO;
             if (mm <= half_val) {
                 return int_pow_tmp1(rb_int_modulo(a, m), b, mm, nega_flg);
             }
@@ -7131,7 +7131,7 @@ rb_int_powm(int const argc, VALUE * const argv, VALUE const num)
         }
         else {
             if (rb_bigzero_p(m)) rb_num_zerodiv();
-	    if (bignorm(m) == FIXNUM_ONE) return FIXNUM_ZERO;
+	    if (bignorm(m) == RB_FIXNUM_ONE) return RB_FIXNUM_ZERO;
             return int_pow_tmp3(rb_int_modulo(a, m), b, m, nega_flg);
         }
     }

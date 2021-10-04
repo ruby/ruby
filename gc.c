@@ -3952,7 +3952,7 @@ define_final0(VALUE obj, VALUE block)
 	st_add_direct(finalizer_table, obj, table);
     }
   end:
-    block = rb_ary_new3(2, FIXNUM_ZERO, block);
+    block = rb_ary_new3(2, RB_FIXNUM_ZERO, block);
     OBJ_FREEZE(block);
     return block;
 }
@@ -4680,7 +4680,7 @@ set_zero(st_data_t key, st_data_t val, st_data_t arg)
 {
     VALUE k = (VALUE)key;
     VALUE hash = (VALUE)arg;
-    rb_hash_aset(hash, k, FIXNUM_ZERO);
+    rb_hash_aset(hash, k, RB_FIXNUM_ZERO);
     return ST_CONTINUE;
 }
 

@@ -1541,7 +1541,7 @@ static VALUE
 rb_obj_cmp(VALUE obj1, VALUE obj2)
 {
     if (rb_equal(obj1, obj2))
-	return FIXNUM_ZERO;
+	return RB_FIXNUM_ZERO;
     return Qnil;
 }
 
@@ -1753,7 +1753,7 @@ rb_mod_cmp(VALUE mod, VALUE arg)
 {
     VALUE cmp;
 
-    if (mod == arg) return FIXNUM_ZERO;
+    if (mod == arg) return RB_FIXNUM_ZERO;
     if (!CLASS_OR_MODULE_P(arg)) {
 	return Qnil;
     }
@@ -1763,7 +1763,7 @@ rb_mod_cmp(VALUE mod, VALUE arg)
     if (cmp) {
 	return INT2FIX(-1);
     }
-    return FIXNUM_ONE;
+    return RB_FIXNUM_ONE;
 }
 
 static VALUE rb_mod_initialize_exec(VALUE module);

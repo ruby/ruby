@@ -655,7 +655,7 @@ enumerator_with_index(int argc, VALUE *argv, VALUE obj)
 
     rb_check_arity(argc, 0, 1);
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enumerator_enum_size);
-    memo = (!argc || NIL_P(memo = argv[0])) ? FIXNUM_ZERO : rb_to_int(memo);
+    memo = (!argc || NIL_P(memo = argv[0])) ? RB_FIXNUM_ZERO : rb_to_int(memo);
     return enumerator_block_call(obj, enumerator_with_index_i, (VALUE)MEMO_NEW(memo, 0, 0));
 }
 
@@ -3181,7 +3181,7 @@ enum_chain_init_copy(VALUE obj, VALUE orig)
 static VALUE
 enum_chain_total_size(VALUE enums)
 {
-    VALUE total = FIXNUM_ZERO;
+    VALUE total = RB_FIXNUM_ZERO;
     long i;
 
     for (i = 0; i < RARRAY_LEN(enums); i++) {
@@ -3436,7 +3436,7 @@ rb_arithmetic_sequence_extract(VALUE obj, rb_arithmetic_sequence_components_t *c
         return 1;
     }
     else if (rb_range_values(obj, &component->begin, &component->end, &component->exclude_end)) {
-        component->step  = FIXNUM_ONE;
+        component->step  = RB_FIXNUM_ONE;
         return 1;
     }
 
@@ -3507,7 +3507,7 @@ arith_seq_first(int argc, VALUE *argv, VALUE self)
             return Qnil;
         }
         if (!NIL_P(e)) {
-            VALUE zero = FIXNUM_ZERO;
+            VALUE zero = RB_FIXNUM_ZERO;
             int r = rb_cmpint(rb_num_coerce_cmp(s, zero, idCmp), s, zero);
             if (r > 0 && RTEST(rb_funcall(b, '>', 1, e))) {
                 return Qnil;
@@ -3753,7 +3753,7 @@ arith_seq_last(int argc, VALUE *argv, VALUE self)
         len = len_1;
     }
     else {
-        len = rb_int_plus(len_1, FIXNUM_ONE);
+        len = rb_int_plus(len_1, RB_FIXNUM_ONE);
     }
 
     rb_scan_args(argc, argv, "1", &nv);
@@ -3943,7 +3943,7 @@ arith_seq_each(VALUE self)
         return self;
     }
 
-    if (rb_equal(s, FIXNUM_ZERO)) {
+    if (rb_equal(s, RB_FIXNUM_ZERO)) {
         while (1) {
             rb_yield(c);
         }
@@ -4020,13 +4020,13 @@ arith_seq_size(VALUE self)
         s = rb_to_int(s);
     }
 
-    if (rb_equal(s, FIXNUM_ZERO)) {
+    if (rb_equal(s, RB_FIXNUM_ZERO)) {
         return DBL2NUM(HUGE_VAL);
     }
 
     len_1 = rb_int_idiv(rb_int_minus(e, b), s);
     if (rb_num_negative_int_p(len_1)) {
-        return FIXNUM_ZERO;
+        return RB_FIXNUM_ZERO;
     }
 
     last = rb_int_plus(b, rb_int_mul(s, len_1));
@@ -4034,7 +4034,7 @@ arith_seq_size(VALUE self)
         len = len_1;
     }
     else {
-        len = rb_int_plus(len_1, FIXNUM_ONE);
+        len = rb_int_plus(len_1, RB_FIXNUM_ONE);
     }
 
     return len;

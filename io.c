@@ -542,9 +542,9 @@ raise_on_write(rb_io_t *fptr, int e, VALUE errinfo)
     if (fptr_signal_on_epipe(fptr) && (e == EPIPE)) {
         const VALUE sig =
 # if defined SIGPIPE
-            INT2FIX(SIGPIPE) - FIXNUM_ZERO +
+            INT2FIX(SIGPIPE) - RB_FIXNUM_ZERO +
 # endif
-            FIXNUM_ZERO;
+            RB_FIXNUM_ZERO;
         rb_ivar_set(errinfo, ruby_static_id_signo, sig);
     }
 #endif
@@ -1794,7 +1794,7 @@ io_write(VALUE io, VALUE str, int nosync)
 	return rb_funcall(io, id_write, 1, str);
     }
     io = tmp;
-    if (RSTRING_LEN(str) == 0) return FIXNUM_ZERO;
+    if (RSTRING_LEN(str) == 0) return RB_FIXNUM_ZERO;
 
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
@@ -1961,7 +1961,7 @@ io_writev(int argc, const VALUE *argv, VALUE io)
 {
     rb_io_t *fptr;
     long n;
-    VALUE tmp, total = FIXNUM_ZERO;
+    VALUE tmp, total = RB_FIXNUM_ZERO;
     int i, cnt = 1;
 
     io = GetWriteIO(io);
@@ -2166,7 +2166,7 @@ rb_io_seek(VALUE io, VALUE offset, int whence)
     pos = io_seek(fptr, pos, whence);
     if (pos < 0 && errno) rb_sys_fail_path(fptr->pathv);
 
-    return FIXNUM_ZERO;
+    return RB_FIXNUM_ZERO;
 }
 
 static int
@@ -2283,7 +2283,7 @@ rb_io_rewind(VALUE io)
 	clear_readconv(fptr);
     }
 
-    return FIXNUM_ZERO;
+    return RB_FIXNUM_ZERO;
 }
 
 static int
@@ -2467,7 +2467,7 @@ rb_io_fsync(VALUE io)
         rb_sys_fail_on_write(fptr);
     if ((int)rb_thread_io_blocking_region(nogvl_fsync, fptr, fptr->fd) < 0)
 	rb_sys_fail_path(fptr->pathv);
-    return FIXNUM_ZERO;
+    return RB_FIXNUM_ZERO;
 }
 #else
 # define rb_io_fsync rb_f_notimplement
@@ -2516,7 +2516,7 @@ rb_io_fdatasync(VALUE io)
         rb_sys_fail_on_write(fptr);
 
     if ((int)rb_thread_io_blocking_region(nogvl_fdatasync, fptr, fptr->fd) == 0)
-	return FIXNUM_ZERO;
+	return RB_FIXNUM_ZERO;
 
     /* fall back */
     return rb_io_fsync(io);
@@ -6360,8 +6360,8 @@ io_strip_bom(VALUE io)
 	if (NIL_P(b2 = rb_io_getbyte(io))) break;
 	if (b2 == INT2FIX(0xFE)) {
 	    b3 = rb_io_getbyte(io);
-	    if (b3 == FIXNUM_ZERO && !NIL_P(b4 = rb_io_getbyte(io))) {
-		if (b4 == FIXNUM_ZERO) {
+	    if (b3 == RB_FIXNUM_ZERO && !NIL_P(b4 = rb_io_getbyte(io))) {
+		if (b4 == RB_FIXNUM_ZERO) {
 		    return ENCINDEX_UTF_32LE;
 		}
 		rb_io_ungetbyte(io, b4);
@@ -6372,9 +6372,9 @@ io_strip_bom(VALUE io)
 	rb_io_ungetbyte(io, b2);
 	break;
 
-      case FIXNUM_ZERO:
+      case RB_FIXNUM_ZERO:
 	if (NIL_P(b2 = rb_io_getbyte(io))) break;
-	if (b2 == FIXNUM_ZERO && !NIL_P(b3 = rb_io_getbyte(io))) {
+	if (b2 == RB_FIXNUM_ZERO && !NIL_P(b3 = rb_io_getbyte(io))) {
 	    if (b3 == INT2FIX(0xFE) && !NIL_P(b4 = rb_io_getbyte(io))) {
 		if (b4 == INT2FIX(0xFF)) {
 		    return ENCINDEX_UTF_32BE;
@@ -6832,21 +6832,21 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
             rb_syserr_fail_str(e, prog);
         }
         if (eargp) {
-            rb_execarg_addopt(execarg_obj, FIXNUM_ZERO, INT2FIX(arg.write_pair[0]));
-            rb_execarg_addopt(execarg_obj, FIXNUM_ONE, INT2FIX(arg.pair[1]));
+            rb_execarg_addopt(execarg_obj, RB_FIXNUM_ZERO, INT2FIX(arg.write_pair[0]));
+            rb_execarg_addopt(execarg_obj, RB_FIXNUM_ONE, INT2FIX(arg.pair[1]));
         }
 	break;
       case FMODE_READABLE:
         if (rb_pipe(arg.pair) < 0)
             rb_sys_fail_str(prog);
         if (eargp)
-            rb_execarg_addopt(execarg_obj, FIXNUM_ONE, INT2FIX(arg.pair[1]));
+            rb_execarg_addopt(execarg_obj, RB_FIXNUM_ONE, INT2FIX(arg.pair[1]));
 	break;
       case FMODE_WRITABLE:
         if (rb_pipe(arg.pair) < 0)
             rb_sys_fail_str(prog);
         if (eargp)
-            rb_execarg_addopt(execarg_obj, FIXNUM_ZERO, INT2FIX(arg.pair[0]));
+            rb_execarg_addopt(execarg_obj, RB_FIXNUM_ZERO, INT2FIX(arg.pair[0]));
 	break;
       default:
         rb_sys_fail_str(prog);

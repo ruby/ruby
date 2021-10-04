@@ -118,7 +118,7 @@ rb_any_cmp(VALUE a, VALUE b)
 static VALUE
 hash_recursive(VALUE obj, VALUE arg, int recurse)
 {
-    if (recurse) return FIXNUM_ZERO;
+    if (recurse) return RB_FIXNUM_ZERO;
     return rb_funcallv(obj, id_hash, 0, 0);
 }
 

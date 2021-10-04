@@ -121,25 +121,25 @@ f_mul(VALUE x, VALUE y)
     if (RB_INTEGER_TYPE_P(x) &&
         LIKELY(rb_method_basic_definition_p(rb_cInteger, idMULT))) {
         if (FIXNUM_ZERO_P(y))
-            return FIXNUM_ZERO;
+            return RB_FIXNUM_ZERO;
         if (FIXNUM_ZERO_P(x) && RB_INTEGER_TYPE_P(y))
-            return FIXNUM_ZERO;
-        if (x == FIXNUM_ONE) return y;
-        if (y == FIXNUM_ONE) return x;
+            return RB_FIXNUM_ZERO;
+        if (x == RB_FIXNUM_ONE) return y;
+        if (y == RB_FIXNUM_ONE) return x;
         return rb_int_mul(x, y);
     }
     else if (RB_FLOAT_TYPE_P(x) &&
              LIKELY(rb_method_basic_definition_p(rb_cFloat, idMULT))) {
-        if (y == FIXNUM_ONE) return x;
+        if (y == RB_FIXNUM_ONE) return x;
         return rb_float_mul(x, y);
     }
     else if (RB_TYPE_P(x, T_RATIONAL) &&
              LIKELY(rb_method_basic_definition_p(rb_cRational, idMULT))) {
-        if (y == FIXNUM_ONE) return x;
+        if (y == RB_FIXNUM_ONE) return x;
         return rb_rational_mul(x, y);
     }
     else if (LIKELY(rb_method_basic_definition_p(CLASS_OF(x), idMULT))) {
-        if (y == FIXNUM_ONE) return x;
+        if (y == RB_FIXNUM_ONE) return x;
     }
     return rb_funcall(x, '*', 1, y);
 }
@@ -214,7 +214,7 @@ f_denominator(VALUE x)
     if (RB_FLOAT_TYPE_P(x)) {
         return rb_float_denominator(x);
     }
-    return FIXNUM_ONE;
+    return RB_FIXNUM_ONE;
 }
 
 inline static VALUE
@@ -326,7 +326,7 @@ f_zero_p(VALUE x)
         const VALUE num = RRATIONAL(x)->num;
         return FIXNUM_ZERO_P(num);
     }
-    return (int)rb_equal(x, FIXNUM_ZERO);
+    return (int)rb_equal(x, RB_FIXNUM_ZERO);
 }
 
 #define f_nonzero_p(x) (!f_zero_p(x))
@@ -402,14 +402,14 @@ nucomp_s_new_internal(VALUE klass, VALUE real, VALUE imag)
 static VALUE
 nucomp_s_alloc(VALUE klass)
 {
-    return nucomp_s_new_internal(klass, FIXNUM_ZERO, FIXNUM_ZERO);
+    return nucomp_s_new_internal(klass, RB_FIXNUM_ZERO, RB_FIXNUM_ZERO);
 }
 
 inline static VALUE
 f_complex_new_bang1(VALUE klass, VALUE x)
 {
     assert(!RB_TYPE_P(x, T_COMPLEX));
-    return nucomp_s_new_internal(klass, x, FIXNUM_ZERO);
+    return nucomp_s_new_internal(klass, x, RB_FIXNUM_ZERO);
 }
 
 inline static VALUE
@@ -445,7 +445,7 @@ nucomp_s_canonicalize_internal(VALUE klass, VALUE real, VALUE imag)
 
 	return nucomp_s_new_internal(klass,
 				     f_sub(real, dat->imag),
-				     f_add(FIXNUM_ZERO, dat->real));
+				     f_add(RB_FIXNUM_ZERO, dat->real));
     }
     else if (!complex_i) {
 	get_dat1(real);
@@ -480,7 +480,7 @@ nucomp_s_new(int argc, VALUE *argv, VALUE klass)
     switch (rb_scan_args(argc, argv, "11", &real, &imag)) {
       case 1:
 	nucomp_real_check(real);
-	imag = FIXNUM_ZERO;
+	imag = RB_FIXNUM_ZERO;
 	break;
       default:
 	nucomp_real_check(real);
@@ -696,7 +696,7 @@ nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
     switch (rb_scan_args(argc, argv, "11", &abs, &arg)) {
       case 1:
 	nucomp_real_check(abs);
-	return nucomp_s_new_internal(klass, abs, FIXNUM_ZERO);
+	return nucomp_s_new_internal(klass, abs, RB_FIXNUM_ZERO);
       default:
 	nucomp_real_check(abs);
 	nucomp_real_check(arg);
@@ -903,13 +903,13 @@ f_divide(VALUE self, VALUE other,
 
 	if (f_gt_p(f_abs(bdat->real), f_abs(bdat->imag))) {
 	    r = (*func)(bdat->imag, bdat->real);
-	    n = f_mul(bdat->real, f_add(FIXNUM_ONE, f_mul(r, r)));
+	    n = f_mul(bdat->real, f_add(RB_FIXNUM_ONE, f_mul(r, r)));
             x = (*func)(f_add(adat->real, f_mul(adat->imag, r)), n);
             y = (*func)(f_sub(adat->imag, f_mul(adat->real, r)), n);
 	}
 	else {
 	    r = (*func)(bdat->real, bdat->imag);
-	    n = f_mul(bdat->imag, f_add(FIXNUM_ONE, f_mul(r, r)));
+	    n = f_mul(bdat->imag, f_add(RB_FIXNUM_ONE, f_mul(r, r)));
             x = (*func)(f_add(f_mul(adat->real, r), adat->imag), n);
             y = (*func)(f_sub(f_mul(adat->imag, r), adat->real), n);
 	}
@@ -969,7 +969,7 @@ nucomp_fdiv(VALUE self, VALUE other)
 inline static VALUE
 f_reciprocal(VALUE x)
 {
-    return f_quo(FIXNUM_ONE, x);
+    return f_quo(RB_FIXNUM_ONE, x);
 }
 
 /*
@@ -985,7 +985,7 @@ VALUE
 rb_complex_pow(VALUE self, VALUE other)
 {
     if (k_numeric_p(other) && k_exact_zero_p(other))
-	return f_complex_new_bang1(CLASS_OF(self), FIXNUM_ONE);
+	return f_complex_new_bang1(CLASS_OF(self), RB_FIXNUM_ONE);
 
     if (RB_TYPE_P(other, T_RATIONAL) && RRATIONAL(other)->den == LONG2FIX(1))
 	other = RRATIONAL(other)->num; /* c14n */
@@ -1014,7 +1014,7 @@ rb_complex_pow(VALUE self, VALUE other)
     if (FIXNUM_P(other)) {
         long n = FIX2LONG(other);
         if (n == 0) {
-            return nucomp_s_new_internal(CLASS_OF(self), FIXNUM_ONE, FIXNUM_ZERO);
+            return nucomp_s_new_internal(CLASS_OF(self), RB_FIXNUM_ONE, RB_FIXNUM_ZERO);
         }
         if (n < 0) {
             self = f_reciprocal(self);
@@ -1043,7 +1043,7 @@ rb_complex_pow(VALUE self, VALUE other)
 
                     for (; q = n / 2, r = n % 2, r == 0; n = q) {
                         VALUE tmp = f_sub(f_mul(xr, xr), f_mul(xi, xi));
-                        xi = f_mul(f_mul(FIXNUM_TWO, xr), xi);
+                        xi = f_mul(f_mul(RB_FIXNUM_TWO, xr), xi);
                         xr = tmp;
                     }
                     comp_mul(zr, zi, xr, xi, &zr, &zi);
@@ -1471,7 +1471,7 @@ rb_complex_infinite_p(VALUE self)
     if (!f_infinite_p(dat->real) && !f_infinite_p(dat->imag)) {
 	return Qnil;
     }
-    return FIXNUM_ONE;
+    return RB_FIXNUM_ONE;
 }
 
 /* :nodoc: */
@@ -1679,7 +1679,7 @@ nucomp_to_c(VALUE self)
 static VALUE
 nilclass_to_c(VALUE self)
 {
-    return rb_complex_new1(FIXNUM_ZERO);
+    return rb_complex_new1(RB_FIXNUM_ZERO);
 }
 
 /*
@@ -1858,14 +1858,14 @@ read_comp(const char **s, int strict,
     if (isimagunit(**s)) {
 	(*s)++;
 	num = INT2FIX((sign == '-') ? -1 : + 1);
-	*ret = rb_complex_new2(FIXNUM_ZERO, num);
+	*ret = rb_complex_new2(RB_FIXNUM_ZERO, num);
 	return 1; /* e.g. "i" */
     }
 
     if (!read_rat_nos(s, strict, b)) {
 	**b = '\0';
 	num = str2num(bb);
-	*ret = rb_complex_new2(num, FIXNUM_ZERO);
+	*ret = rb_complex_new2(num, RB_FIXNUM_ZERO);
 	return 0; /* e.g. "-" */
     }
     **b = '\0';
@@ -1873,7 +1873,7 @@ read_comp(const char **s, int strict,
 
     if (isimagunit(**s)) {
 	(*s)++;
-	*ret = rb_complex_new2(FIXNUM_ZERO, num);
+	*ret = rb_complex_new2(RB_FIXNUM_ZERO, num);
 	return 1; /* e.g. "3i" */
     }
 
@@ -1886,7 +1886,7 @@ read_comp(const char **s, int strict,
 	**b = '\0';
 	if (strlen(bb) < 1 ||
 	    !isdecimal(*(bb + strlen(bb) - 1))) {
-	    *ret = rb_complex_new2(num, FIXNUM_ZERO);
+	    *ret = rb_complex_new2(num, RB_FIXNUM_ZERO);
 	    return 0; /* e.g. "1@-" */
 	}
 	num2 = str2num(bb);
@@ -1904,14 +1904,14 @@ read_comp(const char **s, int strict,
 	    num2 = INT2FIX((sign == '-') ? -1 : + 1);
 	else {
 	    if (!read_rat_nos(s, strict, b)) {
-		*ret = rb_complex_new2(num, FIXNUM_ZERO);
+		*ret = rb_complex_new2(num, RB_FIXNUM_ZERO);
 		return 0; /* e.g. "1+xi" */
 	    }
 	    **b = '\0';
 	    num2 = str2num(bb);
 	}
 	if (!isimagunit(**s)) {
-	    *ret = rb_complex_new2(num, FIXNUM_ZERO);
+	    *ret = rb_complex_new2(num, RB_FIXNUM_ZERO);
 	    return 0; /* e.g. "1+3x" */
 	}
 	(*s)++;
@@ -1920,7 +1920,7 @@ read_comp(const char **s, int strict,
     }
     /* !(@, - or +) */
     {
-	*ret = rb_complex_new2(num, FIXNUM_ZERO);
+	*ret = rb_complex_new2(num, RB_FIXNUM_ZERO);
 	return 1; /* e.g. "3" */
     }
 }
@@ -2100,7 +2100,7 @@ nucomp_convert(VALUE klass, VALUE a1, VALUE a2, int raise)
 	    (!f_real_p(a1) || !f_real_p(a2)))
 	    return f_add(a1,
 			 f_mul(a2,
-			       f_complex_new_bang2(rb_cComplex, FIXNUM_ZERO, FIXNUM_ONE)));
+			       f_complex_new_bang2(rb_cComplex, RB_FIXNUM_ZERO, RB_FIXNUM_ONE)));
     }
 
     {
@@ -2155,7 +2155,7 @@ numeric_real(VALUE self)
 static VALUE
 numeric_imag(VALUE self)
 {
-    return FIXNUM_ZERO;
+    return RB_FIXNUM_ZERO;
 }
 
 /*
@@ -2182,7 +2182,7 @@ static VALUE
 numeric_arg(VALUE self)
 {
     if (f_positive_p(self))
-        return FIXNUM_ZERO;
+        return RB_FIXNUM_ZERO;
     return DBL2NUM(M_PI);
 }
 
@@ -2196,7 +2196,7 @@ numeric_arg(VALUE self)
 static VALUE
 numeric_rect(VALUE self)
 {
-    return rb_assoc_new(self, FIXNUM_ZERO);
+    return rb_assoc_new(self, RB_FIXNUM_ZERO);
 }
 
 /*
@@ -2256,7 +2256,7 @@ float_arg(VALUE self)
     if (isnan(RFLOAT_VALUE(self)))
 	return self;
     if (f_tpositive_p(self))
-	return FIXNUM_ZERO;
+	return RB_FIXNUM_ZERO;
     return rb_const_get(rb_mMath, id_PI);
 }
 
@@ -2420,7 +2420,7 @@ Init_Complex(void)
      * The imaginary unit.
      */
     rb_define_const(rb_cComplex, "I",
-		    f_complex_new_bang2(rb_cComplex, FIXNUM_ZERO, FIXNUM_ONE));
+		    f_complex_new_bang2(rb_cComplex, RB_FIXNUM_ZERO, RB_FIXNUM_ONE));
 
 #if !USE_FLONUM
     rb_gc_register_mark_object(RFLOAT_0 = DBL2NUM(0.0));

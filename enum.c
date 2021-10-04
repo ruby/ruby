@@ -1161,14 +1161,14 @@ tally_up(st_data_t *group, st_data_t *value, st_data_t arg, int existing)
     VALUE tally = (VALUE)*value;
     VALUE hash = (VALUE)arg;
     if (!existing) {
-        tally = FIXNUM_ONE;
+        tally = RB_FIXNUM_ONE;
     }
     else if (FIXNUM_P(tally) && tally < INT2FIX(FIXNUM_MAX)) {
-        tally += FIXNUM_ONE & ~FIXNUM_FLAG;
+        tally += RB_FIXNUM_ONE & ~FIXNUM_FLAG;
     }
     else {
         Check_Type(tally, T_BIGNUM);
-        tally = rb_big_plus(tally, FIXNUM_ONE);
+        tally = rb_big_plus(tally, RB_FIXNUM_ONE);
         RB_OBJ_WRITTEN(hash, Qundef, tally);
     }
     *value = (st_data_t)tally;
@@ -3478,7 +3478,7 @@ enum_cycle_size(VALUE self, VALUE args, VALUE eobj)
     if (NIL_P(size) || FIXNUM_ZERO_P(size)) return size;
 
     if (NIL_P(n)) return DBL2NUM(HUGE_VAL);
-    if (mul <= 0) return FIXNUM_ZERO;
+    if (mul <= 0) return RB_FIXNUM_ZERO;
     n = LONG2FIX(mul);
     return rb_funcallv(size, '*', 1, &n);
 }

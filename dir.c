@@ -1087,7 +1087,7 @@ dir_s_chdir(int argc, VALUE *argv, VALUE obj)
 	    rb_sys_fail_path(path);
     }
 
-    return FIXNUM_ZERO;
+    return RB_FIXNUM_ZERO;
 }
 
 #ifndef _WIN32
@@ -1190,7 +1190,7 @@ dir_s_chroot(VALUE dir, VALUE path)
     if (chroot(RSTRING_PTR(path)) == -1)
 	rb_sys_fail_path(path);
 
-    return FIXNUM_ZERO;
+    return RB_FIXNUM_ZERO;
 }
 #else
 #define dir_s_chroot rb_f_notimplement
@@ -1243,7 +1243,7 @@ dir_s_mkdir(int argc, VALUE *argv, VALUE obj)
     if (r < 0)
 	rb_sys_fail_path(path);
 
-    return FIXNUM_ZERO;
+    return RB_FIXNUM_ZERO;
 }
 
 static void *
@@ -1275,7 +1275,7 @@ dir_s_rmdir(VALUE obj, VALUE dir)
     if (r < 0)
 	rb_sys_fail_path(dir);
 
-    return FIXNUM_ZERO;
+    return RB_FIXNUM_ZERO;
 }
 
 struct warning_args {

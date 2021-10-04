@@ -809,7 +809,7 @@ rb_iseq_t *
 rb_iseq_new(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath,
 	    const rb_iseq_t *parent, enum iseq_type type)
 {
-    return rb_iseq_new_with_opt(ast, name, path, realpath, FIXNUM_ZERO, parent,
+    return rb_iseq_new_with_opt(ast, name, path, realpath, RB_FIXNUM_ZERO, parent,
                                 0, type, &COMPILE_OPTION_DEFAULT);
 }
 
@@ -839,7 +839,7 @@ rb_iseq_new_top(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath
         }
     }
 
-    return rb_iseq_new_with_opt(ast, name, path, realpath, FIXNUM_ZERO, parent, 0,
+    return rb_iseq_new_with_opt(ast, name, path, realpath, RB_FIXNUM_ZERO, parent, 0,
                                 ISEQ_TYPE_TOP, &COMPILE_OPTION_DEFAULT);
 }
 
@@ -847,7 +847,7 @@ rb_iseq_t *
 rb_iseq_new_main(const rb_ast_body_t *ast, VALUE path, VALUE realpath, const rb_iseq_t *parent)
 {
     return rb_iseq_new_with_opt(ast, rb_fstring_lit("<main>"),
-				path, realpath, FIXNUM_ZERO,
+				path, realpath, RB_FIXNUM_ZERO,
 				parent, 0, ISEQ_TYPE_MAIN, &COMPILE_OPTION_DEFAULT);
 }
 
@@ -1275,7 +1275,7 @@ rb_iseqw_new(const rb_iseq_t *iseq)
 static VALUE
 iseqw_s_compile(int argc, VALUE *argv, VALUE self)
 {
-    VALUE src, file = Qnil, path = Qnil, line = FIXNUM_ONE, opt = Qnil;
+    VALUE src, file = Qnil, path = Qnil, line = RB_FIXNUM_ONE, opt = Qnil;
     int i;
 
     i = rb_scan_args(argc, argv, "1*:", &src, NULL, &opt);
@@ -1289,7 +1289,7 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
 
     if (NIL_P(file)) file = rb_fstring_lit("<compiled>");
     if (NIL_P(path)) path = file;
-    if (NIL_P(line)) line = FIXNUM_ONE;
+    if (NIL_P(line)) line = RB_FIXNUM_ONE;
 
     Check_Type(path, T_STRING);
     Check_Type(file, T_STRING);
@@ -1320,7 +1320,7 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
 static VALUE
 iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
 {
-    VALUE file, line = FIXNUM_ONE, opt = Qnil;
+    VALUE file, line = RB_FIXNUM_ONE, opt = Qnil;
     VALUE parser, f, exc = Qnil, ret;
     rb_ast_t *ast;
     rb_compile_option_t option;
@@ -3019,7 +3019,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     rb_ary_push(val, rb_str_new2("YARVInstructionSequence/SimpleDataFormat"));
     rb_ary_push(val, INT2FIX(ISEQ_MAJOR_VERSION)); /* major */
     rb_ary_push(val, INT2FIX(ISEQ_MINOR_VERSION)); /* minor */
-    rb_ary_push(val, FIXNUM_ONE);
+    rb_ary_push(val, RB_FIXNUM_ONE);
     rb_ary_push(val, misc);
     rb_ary_push(val, iseq_body->location.label);
     rb_ary_push(val, rb_iseq_path(iseq));

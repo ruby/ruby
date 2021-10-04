@@ -1588,7 +1588,7 @@ exit_initialize(int argc, VALUE *argv, VALUE exc)
 	    }
 	    else {
 #if EXIT_SUCCESS != 0
-		if (status == FIXNUM_ZERO)
+		if (status == RB_FIXNUM_ZERO)
 		    status = INT2FIX(EXIT_SUCCESS);
 #endif
 		++argv;

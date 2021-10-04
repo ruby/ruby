@@ -3459,7 +3459,7 @@ rb_ary_bsearch_index(VALUE ary)
 	val = rb_ary_entry(ary, mid);
 	v = rb_yield(val);
 	if (FIXNUM_P(v)) {
-	    if (v == FIXNUM_ZERO) return INT2FIX(mid);
+	    if (v == RB_FIXNUM_ZERO) return INT2FIX(mid);
 	    smaller = (SIGNED_VALUE)v < 0; /* Fixnum preserves its sign-bit */
 	}
 	else if (v == Qtrue) {
@@ -3470,7 +3470,7 @@ rb_ary_bsearch_index(VALUE ary)
 	    smaller = 0;
 	}
 	else if (rb_obj_is_kind_of(v, rb_cNumeric)) {
-	    const VALUE zero = FIXNUM_ZERO;
+	    const VALUE zero = RB_FIXNUM_ZERO;
 	    switch (rb_cmpint(rb_funcallv(v, id_cmp, 1, &zero), v, zero)) {
 	      case 0: return INT2FIX(mid);
 	      case 1: smaller = 1; break;
@@ -5100,7 +5100,7 @@ recursive_cmp(VALUE ary1, VALUE ary2, int recur)
     for (i=0; i<len; i++) {
 	VALUE e1 = rb_ary_elt(ary1, i), e2 = rb_ary_elt(ary2, i);
 	VALUE v = rb_funcallv(e1, id_cmp, 1, &e2);
-	if (v != FIXNUM_ZERO) {
+	if (v != RB_FIXNUM_ZERO) {
 	    return v;
 	}
     }
@@ -5137,12 +5137,12 @@ rb_ary_cmp(VALUE ary1, VALUE ary2)
 
     ary2 = rb_check_array_type(ary2);
     if (NIL_P(ary2)) return Qnil;
-    if (ary1 == ary2) return FIXNUM_ZERO;
+    if (ary1 == ary2) return RB_FIXNUM_ZERO;
     v = rb_exec_recursive_paired(recursive_cmp, ary1, ary2, ary2);
     if (v != Qundef) return v;
     len = RARRAY_LEN(ary1) - RARRAY_LEN(ary2);
-    if (len == 0) return FIXNUM_ZERO;
-    if (len > 0) return FIXNUM_ONE;
+    if (len == 0) return RB_FIXNUM_ZERO;
+    if (len > 0) return RB_FIXNUM_ONE;
     return INT2FIX(-1);
 }
 
@@ -6478,10 +6478,10 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
     if (args && (RARRAY_LEN(args) > 0)) {
 	n = RARRAY_AREF(args, 0);
     }
-    if (RARRAY_LEN(self) == 0) return FIXNUM_ZERO;
+    if (RARRAY_LEN(self) == 0) return RB_FIXNUM_ZERO;
     if (NIL_P(n)) return DBL2NUM(HUGE_VAL);
     mul = NUM2LONG(n);
-    if (mul <= 0) return FIXNUM_ZERO;
+    if (mul <= 0) return RB_FIXNUM_ZERO;
     n = LONG2FIX(mul);
     return rb_fix_mul_fix(rb_ary_length(self), n);
 }

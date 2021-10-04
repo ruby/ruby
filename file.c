@@ -542,12 +542,12 @@ rb_stat_cmp(VALUE self, VALUE other)
         struct timespec ts1 = stat_mtimespec(get_stat(self));
         struct timespec ts2 = stat_mtimespec(get_stat(other));
         if (ts1.tv_sec == ts2.tv_sec) {
-            if (ts1.tv_nsec == ts2.tv_nsec) return FIXNUM_ZERO;
+            if (ts1.tv_nsec == ts2.tv_nsec) return RB_FIXNUM_ZERO;
             if (ts1.tv_nsec < ts2.tv_nsec) return INT2FIX(-1);
-            return FIXNUM_ONE;
+            return RB_FIXNUM_ONE;
         }
         if (ts1.tv_sec < ts2.tv_sec) return INT2FIX(-1);
-        return FIXNUM_ONE;
+        return RB_FIXNUM_ONE;
     }
     return Qnil;
 }
@@ -2608,7 +2608,7 @@ rb_file_chmod(VALUE obj, VALUE vmode)
 	    rb_sys_fail_path(fptr->pathv);
     }
     else {
-	if (!HAVE_FCHMOD) return FIXNUM_ZERO;
+	if (!HAVE_FCHMOD) return RB_FIXNUM_ZERO;
     }
 #endif
 #if !defined HAVE_FCHMOD || !HAVE_FCHMOD
@@ -2618,7 +2618,7 @@ rb_file_chmod(VALUE obj, VALUE vmode)
 	rb_sys_fail_path(fptr->pathv);
 #endif
 
-    return FIXNUM_ZERO;
+    return RB_FIXNUM_ZERO;
 }
 
 #if defined(HAVE_LCHMOD)
@@ -2747,7 +2747,7 @@ rb_file_chown(VALUE obj, VALUE owner, VALUE group)
 	rb_sys_fail_path(fptr->pathv);
 #endif
 
-    return FIXNUM_ZERO;
+    return RB_FIXNUM_ZERO;
 }
 
 #if defined(HAVE_LCHOWN)
@@ -3031,7 +3031,7 @@ rb_file_s_link(VALUE klass, VALUE from, VALUE to)
     if (link(StringValueCStr(from), StringValueCStr(to)) < 0) {
 	sys_fail2(from, to);
     }
-    return FIXNUM_ZERO;
+    return RB_FIXNUM_ZERO;
 }
 #else
 #define rb_file_s_link rb_f_notimplement
@@ -3061,7 +3061,7 @@ rb_file_s_symlink(VALUE klass, VALUE from, VALUE to)
     if (symlink(StringValueCStr(from), StringValueCStr(to)) < 0) {
 	sys_fail2(from, to);
     }
-    return FIXNUM_ZERO;
+    return RB_FIXNUM_ZERO;
 }
 #else
 #define rb_file_s_symlink rb_f_notimplement
@@ -3221,13 +3221,13 @@ rb_file_s_rename(VALUE klass, VALUE from, VALUE to)
 	    if (chmod(ra.dst, 0666) == 0 &&
 		unlink(ra.dst) == 0 &&
 		rename(ra.src, ra.dst) == 0)
-		return FIXNUM_ZERO;
+		return RB_FIXNUM_ZERO;
 	}
 #endif
 	syserr_fail2(e, from, to);
     }
 
-    return FIXNUM_ZERO;
+    return RB_FIXNUM_ZERO;
 }
 
 /*
@@ -5098,7 +5098,7 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
 						RUBY_UBF_IO, NULL);
     if (r < 0)
 	rb_sys_fail_path(path);
-    return FIXNUM_ZERO;
+    return RB_FIXNUM_ZERO;
 #undef NUM2POS
 }
 #else
@@ -5159,7 +5159,7 @@ rb_file_truncate(VALUE obj, VALUE len)
     if ((int)rb_thread_io_blocking_region(nogvl_ftruncate, &fa, fa.fd) < 0) {
 	rb_sys_fail_path(fptr->pathv);
     }
-    return FIXNUM_ZERO;
+    return RB_FIXNUM_ZERO;
 #undef NUM2POS
 }
 #else
@@ -5284,7 +5284,7 @@ rb_file_flock(VALUE obj, VALUE operation)
 	    rb_syserr_fail_path(e, fptr->pathv);
 	}
     }
-    return FIXNUM_ZERO;
+    return RB_FIXNUM_ZERO;
 }
 
 static void
@@ -6189,7 +6189,7 @@ rb_file_s_mkfifo(int argc, VALUE *argv, VALUE _)
     if (rb_thread_call_without_gvl(nogvl_mkfifo, &ma, RUBY_UBF_IO, 0)) {
 	rb_sys_fail_path(path);
     }
-    return FIXNUM_ZERO;
+    return RB_FIXNUM_ZERO;
 }
 #else
 #define rb_file_s_mkfifo rb_f_notimplement
