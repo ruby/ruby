@@ -471,7 +471,7 @@ EOM
     destination = File.expand_path(filename, destination_dir)
 
     raise Gem::Package::PathError.new(destination, destination_dir) unless
-      destination.start_with? destination_dir + '/'
+      normalize_path(destination).start_with? normalize_path(destination_dir + '/')
 
     begin
       real_destination = File.expand_path(File.realpath(destination))
