@@ -105,6 +105,9 @@ struct lex_context {
           (Current).end_pos = YYRHSLOC(Rhs, 0).end_pos;                 \
         }                                                               \
     while (0)
+#define YY_(Msgid) \
+    (((Msgid)[0] == 'm') && (strcmp((Msgid), "memory exhausted") == 0) ? \
+     "nesting too deep" : (Msgid))
 
 #define RUBY_SET_YYLLOC_FROM_STRTERM_HEREDOC(Current)			\
     rb_parser_set_location_from_strterm_heredoc(p, &p->lex.strterm->u.heredoc, &(Current))
