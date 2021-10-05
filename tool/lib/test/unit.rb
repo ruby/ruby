@@ -281,6 +281,7 @@ module Test
             options[:parallel] ||= 1
           end
         end
+        @worker_timeout = EnvUtil.apply_timeout_scale(options[:worker_timeout] || 180)
         super
       end
 
@@ -301,6 +302,10 @@ module Test
         opts.on '-j N', '--jobs N', /\A(t)?(\d+)\z/, "Allow run tests with N jobs at once" do |_, t, a|
           options[:testing] = true & t # For testing
           options[:parallel] = a.to_i
+        end
+
+        opts.on '--worker-timeout=N', Integer, "Timeout workers not responding in N seconds" do |a|
+          options[:worker_timeout] = a
         end
 
         opts.on '--separate', "Restart job process after one testcase has done" do
@@ -337,6 +342,7 @@ module Test
 
         attr_reader :quit_called
         attr_accessor :start_time
+        attr_accessor :response_at
 
         @@worker_number = 0
 
@@ -350,6 +356,7 @@ module Test
           @loadpath = []
           @hooks = {}
           @quit_called = false
+          @response_at = nil
         end
 
         def name
@@ -369,6 +376,7 @@ module Test
             puts "run #{task} #{type}"
             @status = :prepare
             @start_time = Time.now
+            @response_at = @start_time
           rescue Errno::EPIPE
             died
           rescue IOError
@@ -385,6 +393,7 @@ module Test
 
         def read
           res = (@status == :quit) ? @io.read : @io.gets
+          @response_at = Time.now
           res && res.chomp
         end
 
@@ -515,9 +524,11 @@ module Test
         @ios.delete worker.io
       end
 
-      def quit_workers
+      def quit_workers(&cond)
         return if @workers.empty?
+        closed = []
         @workers.reject! do |worker|
+          next unless cond&.call(worker)
           begin
             Timeout.timeout(1) do
               worker.quit
@@ -525,9 +536,11 @@ module Test
           rescue Errno::EPIPE
           rescue Timeout::Error
           end
+          closed << worker
           worker.close
         end
 
+        return closed if cond
         return if @workers.empty?
         begin
           Timeout.timeout(0.2 * @workers.size) do
@@ -646,14 +659,23 @@ module Test
         begin
           [@tasks.size, @options[:parallel]].min.times {launch_worker}
 
-          while _io = IO.select(@ios)[0]
-            break if _io.any? do |io|
+          while true
+            timeout = [(@workers.filter_map {|w| w.response_at}.min&.-(Time.now) || 0) + @worker_timeout, 1].max
+
+            if !(_io = IO.select(@ios, nil, nil, timeout))
+              timeout = Time.now - @worker_timeout
+              @tasks.unshift(*quit_workers {|w| w.response_at < timeout}&.map(&:real_file))
+            elsif _io.first.any? {|io|
               @need_quit or
                 (deal(io, type, result, rep).nil? and
                  !@workers.any? {|x| [:running, :prepare].include? x.status})
+            }
+              break
             end
-            if @jobserver and @job_tokens and !@tasks.empty? and !@workers.any? {|x| x.status == :ready}
-              t = @jobserver[0].read_nonblock([@tasks.size, @options[:parallel]].min, exception: false)
+            if @jobserver and @job_tokens and !@tasks.empty? and
+               ((newjobs = [@tasks.size, @options[:parallel]].min) > @workers.size or
+                !@workers.any? {|x| x.status == :ready})
+              t = @jobserver[0].read_nonblock(newjobs, exception: false)
               if String === t
                 @job_tokens << t
                 t.size.times {launch_worker}
