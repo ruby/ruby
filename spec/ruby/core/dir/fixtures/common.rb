@@ -92,6 +92,7 @@ module DirSpecs
           special/|
 
           special/こんにちは.txt
+          special/\a
         ]
       end
     end

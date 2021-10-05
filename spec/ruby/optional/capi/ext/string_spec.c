@@ -471,6 +471,32 @@ static VALUE string_spec_rb_sprintf4(VALUE self, VALUE str) {
   return rb_sprintf("Result: %+" PRIsVALUE ".", str);
 }
 
+static VALUE string_spec_rb_sprintf5(VALUE self, VALUE width, VALUE precision, VALUE str) {
+  return rb_sprintf("Result: %*.*s.", FIX2INT(width), FIX2INT(precision), RSTRING_PTR(str));
+}
+
+static VALUE string_spec_rb_sprintf6(VALUE self, VALUE width, VALUE precision, VALUE str) {
+  return rb_sprintf("Result: %*.*" PRIsVALUE ".", FIX2INT(width), FIX2INT(precision), str);
+}
+
+static VALUE string_spec_rb_sprintf7(VALUE self, VALUE str, VALUE obj) {
+  VALUE results = rb_ary_new();
+  rb_ary_push(results, rb_sprintf(RSTRING_PTR(str), obj));
+  char cstr[256];
+  int len = snprintf(cstr, 256, RSTRING_PTR(str), obj);
+  rb_ary_push(results, rb_str_new(cstr, len));
+  return results;
+}
+
+static VALUE string_spec_rb_sprintf8(VALUE self, VALUE str, VALUE num) {
+  VALUE results = rb_ary_new();
+  rb_ary_push(results, rb_sprintf(RSTRING_PTR(str), FIX2LONG(num)));
+  char cstr[256];
+  int len = snprintf(cstr, 256, RSTRING_PTR(str), FIX2LONG(num));
+  rb_ary_push(results, rb_str_new(cstr, len));
+  return results;
+}
+
 PRINTF_ARGS(static VALUE string_spec_rb_vsprintf_worker(char* fmt, ...), 1, 2);
 static VALUE string_spec_rb_vsprintf_worker(char* fmt, ...) {
   va_list varargs;
@@ -628,6 +654,10 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_sprintf2", string_spec_rb_sprintf2, 3);
   rb_define_method(cls, "rb_sprintf3", string_spec_rb_sprintf3, 1);
   rb_define_method(cls, "rb_sprintf4", string_spec_rb_sprintf4, 1);
+  rb_define_method(cls, "rb_sprintf5", string_spec_rb_sprintf5, 3);
+  rb_define_method(cls, "rb_sprintf6", string_spec_rb_sprintf6, 3);
+  rb_define_method(cls, "rb_sprintf7", string_spec_rb_sprintf7, 2);
+  rb_define_method(cls, "rb_sprintf8", string_spec_rb_sprintf8, 2);
   rb_define_method(cls, "rb_vsprintf", string_spec_rb_vsprintf, 4);
   rb_define_method(cls, "rb_str_equal", string_spec_rb_str_equal, 2);
   rb_define_method(cls, "rb_usascii_str_new", string_spec_rb_usascii_str_new, 2);

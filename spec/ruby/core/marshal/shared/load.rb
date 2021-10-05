@@ -97,8 +97,8 @@ describe :marshal_load, shared: true do
             :b, :c, 2, a, false, "ant", ["hi", 10, "hi", "hi", st, [:a, :b, :c]],
           ]
 
-          arr.each do |obj|
-            obj.should.frozen?
+          arr.each do |v|
+            v.should.frozen?
           end
 
           Struct.send(:remove_const, :Brittle)

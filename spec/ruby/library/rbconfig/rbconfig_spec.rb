@@ -42,6 +42,17 @@ describe 'RbConfig::CONFIG' do
     RUBY
   end
 
+  platform_is_not :windows do
+    it "['LIBRUBY'] is the same as LIBRUBY_SO if and only if ENABLE_SHARED" do
+      case RbConfig::CONFIG['ENABLE_SHARED']
+      when 'yes'
+        RbConfig::CONFIG['LIBRUBY'].should == RbConfig::CONFIG['LIBRUBY_SO']
+      when 'no'
+        RbConfig::CONFIG['LIBRUBY'].should_not == RbConfig::CONFIG['LIBRUBY_SO']
+      end
+    end
+  end
+
   guard -> { RbConfig::TOPDIR } do
     it "libdir/LIBRUBY_SO is the path to libruby and it exists if and only if ENABLE_SHARED" do
       libdirname = RbConfig::CONFIG['LIBPATHENV'] == 'PATH' ? 'bindir' :

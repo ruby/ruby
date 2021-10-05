@@ -70,6 +70,15 @@ describe "File.utime" do
     end
   end
 
+  platform_is_not :windows do
+    it "sets nanosecond precision" do
+      t = Time.utc(2007, 11, 1, 15, 25, 0, 123456.789r)
+      File.utime(t, t, @file1)
+      File.atime(@file1).nsec.should == 123456789
+      File.mtime(@file1).nsec.should == 123456789
+    end
+  end
+
   platform_is :linux do
     platform_is wordsize: 64 do
       it "allows Time instances in the far future to set mtime and atime (but some filesystems limit it up to 2446-05-10 or 2038-01-19)" do
