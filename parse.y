@@ -5995,9 +5995,7 @@ parser_yyerror(struct parser_params *p, const YYLTYPE *yylloc, const char *msg)
 	yylloc = RUBY_SET_YYLLOC(current);
     }
     else if ((p->ruby_sourceline != yylloc->beg_pos.lineno &&
-	      p->ruby_sourceline != yylloc->end_pos.lineno) ||
-	     (yylloc->beg_pos.lineno == yylloc->end_pos.lineno &&
-	      yylloc->beg_pos.column == yylloc->end_pos.column)) {
+	      p->ruby_sourceline != yylloc->end_pos.lineno)) {
 	yylloc = 0;
     }
     compile_error(p, "%s", msg);

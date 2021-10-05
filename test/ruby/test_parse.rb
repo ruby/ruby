@@ -1162,6 +1162,10 @@ x = __ENCODING__
     assert_syntax_error("def m\n\C-z""end", /unexpected/)
   end
 
+  def test_unexpected_eof
+    assert_syntax_error('unless', /^      \^\Z/)
+  end
+
   def test_location_of_invalid_token
     assert_syntax_error('class xxx end', /^      \^~~\Z/)
   end
