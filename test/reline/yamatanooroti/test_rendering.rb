@@ -1073,6 +1073,22 @@ begin
     end
 
     def test_dialog_narrower_than_screen
+      start_terminal(20, 11, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple}, startup_message: 'Multiline REPL.')
+      close
+      assert_screen(<<~'EOC')
+        Multiline R
+        EPL.
+        prompt>
+        Ruby is...
+        A dynamic,
+        language wi
+        and product
+        syntax that
+        easy to wri
+      EOC
+    end
+
+    def test_dialog_narrower_than_screen_with_scrollbar
       start_terminal(20, 11, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-long}, startup_message: 'Multiline REPL.')
       write('S' + "\C-i" * 3)
       close
