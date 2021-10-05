@@ -3355,6 +3355,13 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
 {
     const rb_iseq_t *iseq = def_iseq_ptr(cme->def);
 
+    // When you have keyword arguments, there is an extra object that gets
+    // placed on the stack the represents a bitmap of the keywords that were not
+    // specified at the call site. We need to keep track of the fact that this
+    // value is present on the stack in order to properly set up the callee's
+    // stack pointer.
+    int kw_bits_shift = 0;
+
     if (vm_ci_flag(ci) & VM_CALL_TAILCALL) {
         // We can't handle tailcalls
         GEN_COUNTER_INC(cb, send_iseq_tailcall);
@@ -3408,18 +3415,13 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
             // keyword parameters.
             const struct rb_iseq_param_keyword *keyword = iseq->body->param.keyword;
 
-            if (argc - kw_arg->keyword_len != lead_num) {
+            if ((kw_arg->keyword_len != keyword->num) || (lead_num != argc - kw_arg->keyword_len)) {
                 // Here the method being called specifies optional and required
                 // keyword arguments and the callee is not specifying every one
                 // of them.
                 GEN_COUNTER_INC(cb, send_iseq_kwargs_req_and_opt_missing);
                 return YJIT_CANT_COMPILE;
             }
-
-            // Here we should be safe to assume that the caller is specifying
-            // every keyword argument that the callee has declared in its
-            // definition (whether or not they were required).
-            RUBY_ASSERT(kw_arg->keyword_len == keyword->num);
 
             // This is the list of keyword arguments that the callee specified
             // in its initial declaration.
@@ -3492,8 +3494,8 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
             // explicitly given a value. Its value is a bitmap that corresponds
             // to the indices of the missing parameters. In this case since we
             // know every value was specified, we can just write the value 0.
-            num_params--;
-            mov(cb, ctx_stack_opnd(ctx, argc - 1 - kw_arg->keyword_len - lead_num), imm_opnd(INT2FIX(0)));
+            kw_bits_shift = 1;
+            mov(cb, ctx_stack_opnd(ctx, -1), imm_opnd(INT2FIX(0)));
         } else if (argc == lead_num) {
             // Here we are calling a method that accepts keyword arguments
             // (optional or required) but we're not passing any keyword
@@ -3576,7 +3578,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     }
 
     // Adjust the callee's stack pointer
-    lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * (3 + num_locals)));
+    lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * (3 + num_locals + kw_bits_shift)));
 
     // Initialize local variables to Qnil
     for (int i = 0; i < num_locals; i++) {
