@@ -4192,7 +4192,7 @@ slicewhen_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *  The returned enumerator uses the block
  *  to partition elements into arrays ("slices");
  *  it calls the block with each element and its successor;
- *  begins a new slice is begun if and only if the block returns a truthy value:
+ *  begins a new slice if and only if the block returns a truthy value:
  *
  *    a = [0, 1, 2, 4, 5, 6, 8, 9]
  *    e = a.slice_when {|i, j| j != i + 1 }
@@ -4269,18 +4269,10 @@ enum_slice_when(VALUE enumerable)
  *  call-seq:
  *    chunk_while {|element, next_element| ... } -> enumerator
  *
- *  Each element in the returned enumerator is a 2-element array consisting of:
- *
- *  - A value returned by the block.
- *  - An array ("chunk") containing the element for which that value was returned,
- *    and all following elements for which the block returned the same value:
- *
- *  So that:
- *
- *  - Each block return value that is different from its predecessor
- *    begins a new chunk.
- *  - Each block return value that is the same as its predecessor
- *    continues the same chunk.
+ *  The returned Enumerator uses the block to partition elements
+ *  into arrays ("chunks");
+ *  it calls the block with each element and its successor;
+ *  begins a new chunk if and only if the block returns a truthy value:
  *
  *  Example:
  *
