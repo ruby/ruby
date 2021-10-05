@@ -3394,7 +3394,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
         start_pc_offset = (uint32_t)iseq->body->param.opt_table[opts_filled];
     }
     else if (rb_iseq_only_kwparam_p(iseq)) {
-        const int required_num = iseq->body->param.lead_num;
+        const int lead_num = iseq->body->param.lead_num;
 
         if (vm_ci_flag(ci) & VM_CALL_KWARG) {
             // Here we're calling a method with keyword arguments and specifying
@@ -3408,7 +3408,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
             // keyword parameters.
             const struct rb_iseq_param_keyword *keyword = iseq->body->param.keyword;
 
-            if (argc - kw_arg->keyword_len != required_num) {
+            if (argc - kw_arg->keyword_len != lead_num) {
                 // Here the method being called specifies optional and required
                 // keyword arguments and the callee is not specifying every one
                 // of them.
@@ -3473,7 +3473,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
                     if (callee_kwarg == caller_kwargs[swap_idx]) {
                         // First we're going to generate the code that is going
                         // to perform the actual swapping at runtime.
-                        stack_swap(ctx, cb, argc - 1 - swap_idx, argc - 1 - kwarg_idx, REG1, R9);
+                        stack_swap(ctx, cb, argc - 1 - swap_idx - lead_num, argc - 1 - kwarg_idx - lead_num, REG1, R9);
 
                         // Next we're going to do some bookkeeping on our end so
                         // that we know the order that the arguments are
@@ -3493,8 +3493,8 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
             // to the indices of the missing parameters. In this case since we
             // know every value was specified, we can just write the value 0.
             num_params--;
-            mov(cb, ctx_stack_opnd(ctx, argc - 1 - kw_arg->keyword_len), imm_opnd(INT2FIX(0)));
-        } else if (argc == required_num) {
+            mov(cb, ctx_stack_opnd(ctx, argc - 1 - kw_arg->keyword_len - lead_num), imm_opnd(INT2FIX(0)));
+        } else if (argc == lead_num) {
             // Here we are calling a method that accepts keyword arguments
             // (optional or required) but we're not passing any keyword
             // arguments at this call site
