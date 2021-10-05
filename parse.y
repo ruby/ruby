@@ -398,8 +398,11 @@ pop_pktbl(struct parser_params *p, st_table *tbl)
     p->pktbl = tbl;
 }
 
+RBIMPL_ATTR_NONNULL((1, 2, 3))
 static int parser_yyerror(struct parser_params*, const YYLTYPE *yylloc, const char*);
-#define yyerror0(msg) parser_yyerror(p, NULL, (msg))
+RBIMPL_ATTR_NONNULL((1, 2))
+static int parser_yyerror0(struct parser_params*, const char*);
+#define yyerror0(msg) parser_yyerror0(p, (msg))
 #define yyerror1(loc, msg) parser_yyerror(p, (loc), (msg))
 #define yyerror(yylloc, p, msg) parser_yyerror(p, yylloc, msg)
 #define token_flush(ptr) ((ptr)->lex.ptok = (ptr)->lex.pcur)
@@ -5989,6 +5992,7 @@ parser_show_error_line(struct parser_params *p, const YYLTYPE *yylloc)
 static int
 parser_yyerror(struct parser_params *p, const YYLTYPE *yylloc, const char *msg)
 {
+#if 0
     YYLTYPE current;
 
     if (!yylloc) {
@@ -5998,9 +6002,17 @@ parser_yyerror(struct parser_params *p, const YYLTYPE *yylloc, const char *msg)
 	      p->ruby_sourceline != yylloc->end_pos.lineno)) {
 	yylloc = 0;
     }
+#endif
     compile_error(p, "%s", msg);
     parser_show_error_line(p, yylloc);
     return 0;
+}
+
+static int
+parser_yyerror0(struct parser_params *p, const char *msg)
+{
+    YYLTYPE current;
+    return parser_yyerror(p, RUBY_SET_YYLLOC(current), msg);
 }
 
 static void
@@ -6112,20 +6124,26 @@ static int
 parser_yyerror(struct parser_params *p, const YYLTYPE *yylloc, const char *msg)
 {
     const char *pcur = 0, *ptok = 0;
-    if (yylloc &&
-	p->ruby_sourceline == yylloc->beg_pos.lineno &&
+    if (p->ruby_sourceline == yylloc->beg_pos.lineno &&
 	p->ruby_sourceline == yylloc->end_pos.lineno) {
 	pcur = p->lex.pcur;
 	ptok = p->lex.ptok;
 	p->lex.ptok = p->lex.pbeg + yylloc->beg_pos.column;
 	p->lex.pcur = p->lex.pbeg + yylloc->end_pos.column;
     }
-    dispatch1(parse_error, STR_NEW2(msg));
-    ripper_error(p);
+    parser_yyerror0(p, msg);
     if (pcur) {
 	p->lex.ptok = ptok;
 	p->lex.pcur = pcur;
     }
+    return 0;
+}
+
+static int
+parser_yyerror0(struct parser_params *p, const char *msg)
+{
+    dispatch1(parse_error, STR_NEW2(msg));
+    ripper_error(p);
     return 0;
 }
 
@@ -7505,7 +7523,7 @@ heredoc_identifier(struct parser_params *p)
 	len = 0;
 	while ((c = nextc(p)) != term) {
 	    if (c == -1 || c == '\r' || c == '\n') {
-		yyerror(NULL, p, "unterminated here document identifier");
+		yyerror0("unterminated here document identifier");
 		return -1;
 	    }
 	}
@@ -7531,7 +7549,7 @@ heredoc_identifier(struct parser_params *p)
 
     len = p->lex.pcur - (p->lex.pbeg + offset) - quote;
     if ((unsigned long)len >= HERETERM_LENGTH_MAX)
-	yyerror(NULL, p, "too long here document identifier");
+	yyerror0("too long here document identifier");
     dispatch_scan_event(p, tHEREDOC_BEG);
     lex_goto_eol(p);
 
@@ -10754,7 +10772,7 @@ rb_parser_fatal(struct parser_params *p, const char *fmt, ...)
     va_start(ap, fmt);
     rb_str_vcatf(mesg, fmt, ap);
     va_end(ap);
-    parser_yyerror(p, NULL, RSTRING_PTR(mesg));
+    yyerror0(RSTRING_PTR(mesg));
     RB_GC_GUARD(mesg);
 
     mesg = rb_str_new(0, 0);
