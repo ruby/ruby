@@ -5738,7 +5738,7 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
 		ENC_CODERANGE_SET(str, ENC_CODERANGE_VALID);
 	    goto end;
 	  case ENC_CODERANGE_VALID:
-            left = rb_enc_left_char_head(head, (char *)ptr, head+len, enc);
+	    left = rb_enc_left_char_head(head, ptr, head+len, enc);
 	    width = rb_enc_precise_mbclen(left, head+len, enc);
 	    *ptr = byte;
 	    nlen = rb_enc_precise_mbclen(left, head+len, enc);
