@@ -622,7 +622,7 @@ class Reline::LineEditor
     @dialogs << Dialog.new(name, @config, DialogProcScope.new(self, @config, p, context))
   end
 
-  DIALOG_HEIGHT = 20
+  DIALOG_DEFAULT_HEIGHT = 20
   private def render_dialog(cursor_column)
     @dialogs.each do |dialog|
       render_each_dialog(dialog, cursor_column)
@@ -662,7 +662,7 @@ class Reline::LineEditor
     else
       dialog.width = dialog.contents.map { |l| calculate_width(l, true) }.max
     end
-    height = dialog_render_info.height || DIALOG_HEIGHT
+    height = dialog_render_info.height || DIALOG_DEFAULT_HEIGHT
     height = dialog.contents.size if dialog.contents.size < height
     if dialog.contents.size > height
       if dialog.pointer
