@@ -4204,49 +4204,6 @@ slicewhen_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *    [4, 5, 6]
  *    [8, 9]
  *
- *  Calls the block with each element and its successor;
- *
- *  Other methods of the Enumerator class and Enumerable module,
- *  such as +to_a+, +map+, etc., are also usable.
- *
- *  For example, one-by-one increasing subsequence can be chunked as follows:
- *
- *    a = [1,2,4,9,10,11,12,15,16,19,20,21]
- *    b = a.slice_when {|i, j| j != i + 1 }
- *    p b.to_a #=> [[1, 2], [4], [9, 10, 11, 12], [15, 16], [19, 20, 21]]
- *    c = b.map {|a| a.length < 3 ? a : "#{a.first}-#{a.last}" }
- *    p c #=> [[1, 2], [4], "9-12", [15, 16], "19-21"]
- *    d = c.join(",")
- *    p d #=> "1,2,4,9-12,15,16,19-21"
- *
- *  Near elements (threshold: 6) in sorted array can be chunked as follows:
- *
- *    a = [3, 11, 14, 25, 28, 29, 29, 41, 55, 57]
- *    p a.slice_when {|i, j| 6 < j - i }.to_a
- *    #=> [[3], [11, 14], [25, 28, 29, 29], [41], [55, 57]]
- *
- *  Increasing (non-decreasing) subsequence can be chunked as follows:
- *
- *    a = [0, 9, 2, 2, 3, 2, 7, 5, 9, 5]
- *    p a.slice_when {|i, j| i > j }.to_a
- *    #=> [[0, 9], [2, 2, 3], [2, 7], [5, 9], [5]]
- *
- *  Adjacent evens and odds can be chunked as follows:
- *  (Enumerable#chunk is another way to do it.)
- *
- *    a = [7, 5, 9, 2, 0, 7, 9, 4, 2, 0]
- *    p a.slice_when {|i, j| i.even? != j.even? }.to_a
- *    #=> [[7, 5, 9], [2, 0], [7, 9], [4, 2, 0]]
- *
- *  Paragraphs (non-empty lines with trailing empty lines) can be chunked as follows:
- *  (See Enumerable#chunk to ignore empty lines.)
- *
- *    lines = ["foo\n", "bar\n", "\n", "baz\n", "qux\n"]
- *    p lines.slice_when {|l1, l2| /\A\s*\z/ =~ l1 && /\S/ =~ l2 }.to_a
- *    #=> [["foo\n", "bar\n", "\n"], ["baz\n", "qux\n"]]
- *
- *  Enumerable#chunk_while does the same, except splitting when the block
- *  returns <code>false</code> instead of <code>true</code>.
  */
 static VALUE
 enum_slice_when(VALUE enumerable)
