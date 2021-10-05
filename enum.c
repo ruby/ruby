@@ -3796,24 +3796,41 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
 
 /*
  *  call-seq:
- *     enum.slice_before(pattern)                             -> an_enumerator
- *     enum.slice_before { |elt| bool }                       -> an_enumerator
+ *    slice_before(pattern)       -> enumerator
+ *    slice_before {|array| ... } -> enumerator
  *
- *  Creates an enumerator for each chunked elements.
- *  The beginnings of chunks are defined by _pattern_ and the block.
-
- *  If <code>_pattern_ === _elt_</code> returns <code>true</code> or the block
- *  returns <code>true</code> for the element, the element is beginning of a
- *  chunk.
-
- *  The <code>===</code> and _block_ is called from the first element to the last
- *  element of _enum_.  The result for the first element is ignored.
-
- *  The result enumerator yields the chunked elements as an array.
- *  So +each+ method can be called as follows:
+ *  With argument +pattern+, returns an enumerator that uses the pattern
+ *  to partition elements into arrays.
+ *  An element begins a new slice if <tt>element === pattern</tt>
+ *  (or if it is the first element).
  *
- *    enum.slice_before(pattern).each { |ary| ... }
- *    enum.slice_before { |elt| bool }.each { |ary| ... }
+ *    a = %w[foo bar fop for baz fob fog bam foy]
+ *    e = a.slice_before(/ba/) # => #<Enumerator: ...>
+ *    e.each {|array| p array }
+ *
+ *  Output:
+ *
+ *    ["foo"]
+ *    ["bar", "fop", "for"]
+ *    ["baz", "fob", "fog"]
+ *    ["bam", "foy"]
+ *
+ *  With a block, returns an enumerator that uses the block
+ *  to partition elements into arrays.
+ *  An element begins a new slice if its block return is a truthy value
+ *  (or if it is the first element):
+ *
+ *    e = (1..20).slice_before {|i| i % 4 == 2 } # => #<Enumerator: ...>
+ *    e.each {|array| p array }
+ *
+ *  Output:
+ *
+ *    [1]
+ *    [2, 3, 4, 5]
+ *    [6, 7, 8, 9]
+ *    [10, 11, 12, 13]
+ *    [14, 15, 16, 17]
+ *    [18, 19, 20]
  *
  *  Other methods of the Enumerator class and Enumerable module,
  *  such as +to_a+, +map+, etc., are also usable.
@@ -3830,7 +3847,6 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *    open("ChangeLog") { |f|
  *      f.slice_before { |line| /\A\S/ === line }.each { |e| pp e }
  *    }
- *
  *
  *  "svn proplist -R" produces multiline output for each file.
  *  They can be chunked as follows:
