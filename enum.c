@@ -3624,8 +3624,7 @@ chunk_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *  call-seq:
  *    chunk {|array| ... } -> enumerator
  *
- *  Returns an Enumerator;
- *  each element in the enumerator is a 2-element array consisting of:
+ *  Each element in the returned enumerator is a 2-element array consisting of:
  *
  *  - A value returned by the block.
  *  - An array ("chunk") containing the element for which that value was returned,
@@ -3800,7 +3799,7 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *    slice_before {|array| ... } -> enumerator
  *
  *  With argument +pattern+, returns an enumerator that uses the pattern
- *  to partition elements into arrays.
+ *  to partition elements into arrays ("slices").
  *  An element begins a new slice if <tt>element === pattern</tt>
  *  (or if it is the first element).
  *
@@ -4042,24 +4041,39 @@ sliceafter_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
 
 /*
  *  call-seq:
- *     enum.slice_after(pattern)       -> an_enumerator
- *     enum.slice_after { |elt| bool } -> an_enumerator
+ *    slice_after(pattern)       -> enumerator
+ *    slice_after {|array| ... } -> enumerator
  *
- *  Creates an enumerator for each chunked elements.
- *  The ends of chunks are defined by _pattern_ and the block.
+ *  With argument +pattern+, returns an enumerator that uses the pattern
+ *  to partition elements into arrays ("slices").
+ *  An element ends the current slice if <tt>element === pattern</tt>:
  *
- *  If <code>_pattern_ === _elt_</code> returns <code>true</code> or the block
- *  returns <code>true</code> for the element, the element is end of a
- *  chunk.
+ *    a = %w[foo bar fop for baz fob fog bam foy]
+ *    e = a.slice_after(/ba/) # => #<Enumerator: ...>
+ *    e.each {|array| p array }
  *
- *  The <code>===</code> and _block_ is called from the first element to the last
- *  element of _enum_.
+ *  Output:
  *
- *  The result enumerator yields the chunked elements as an array.
- *  So +each+ method can be called as follows:
+ *    ["foo", "bar"]
+ *    ["fop", "for", "baz"]
+ *    ["fob", "fog", "bam"]
+ *    ["foy"]
  *
- *    enum.slice_after(pattern).each { |ary| ... }
- *    enum.slice_after { |elt| bool }.each { |ary| ... }
+ *  With a block, returns an enumerator that uses the block
+ *  to partition elements into arrays.
+ *  An element ends the current slice if its block return is a truthy value:
+ *
+ *    e = (1..20).slice_after {|i| i % 4 == 2 } # => #<Enumerator: ...>
+ *    e.each {|array| p array }
+ *
+ *  Output:
+ *
+ *    [1, 2]
+ *    [3, 4, 5, 6]
+ *    [7, 8, 9, 10]
+ *    [11, 12, 13, 14]
+ *    [15, 16, 17, 18]
+ *    [19, 20]
  *
  *  Other methods of the Enumerator class and Enumerable module,
  *  such as +map+, etc., are also usable.
@@ -4173,65 +4187,23 @@ slicewhen_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
 
 /*
  *  call-seq:
- *     enum.slice_when {|elt_before, elt_after| bool } -> an_enumerator
+ *    slice_when {|element, next_element| ... } -> enumerator
  *
- *  Creates an enumerator for each chunked elements.
- *  The beginnings of chunks are defined by the block.
+ *  The returned enumerator uses the block
+ *  to partition elements into arrays ("slices");
+ *  it calls the block with each element and its successor;
+ *  begins a new slice if and only if the block returns a truthy value:
  *
- *  This method splits each chunk using adjacent elements,
- *  _elt_before_ and _elt_after_,
- *  in the receiver enumerator.
- *  This method split chunks between _elt_before_ and _elt_after_ where
- *  the block returns <code>true</code>.
+ *    a = [0, 1, 2, 4, 5, 6, 8, 9]
+ *    e = a.slice_when {|i, j| j != i + 1 }
+ *    e.each {|array| p array }
  *
- *  The block is called the length of the receiver enumerator minus one.
+ *  Output:
  *
- *  The result enumerator yields the chunked elements as an array.
- *  So +each+ method can be called as follows:
+ *    [0, 1, 2]
+ *    [4, 5, 6]
+ *    [8, 9]
  *
- *    enum.slice_when { |elt_before, elt_after| bool }.each { |ary| ... }
- *
- *  Other methods of the Enumerator class and Enumerable module,
- *  such as +to_a+, +map+, etc., are also usable.
- *
- *  For example, one-by-one increasing subsequence can be chunked as follows:
- *
- *    a = [1,2,4,9,10,11,12,15,16,19,20,21]
- *    b = a.slice_when {|i, j| i+1 != j }
- *    p b.to_a #=> [[1, 2], [4], [9, 10, 11, 12], [15, 16], [19, 20, 21]]
- *    c = b.map {|a| a.length < 3 ? a : "#{a.first}-#{a.last}" }
- *    p c #=> [[1, 2], [4], "9-12", [15, 16], "19-21"]
- *    d = c.join(",")
- *    p d #=> "1,2,4,9-12,15,16,19-21"
- *
- *  Near elements (threshold: 6) in sorted array can be chunked as follows:
- *
- *    a = [3, 11, 14, 25, 28, 29, 29, 41, 55, 57]
- *    p a.slice_when {|i, j| 6 < j - i }.to_a
- *    #=> [[3], [11, 14], [25, 28, 29, 29], [41], [55, 57]]
- *
- *  Increasing (non-decreasing) subsequence can be chunked as follows:
- *
- *    a = [0, 9, 2, 2, 3, 2, 7, 5, 9, 5]
- *    p a.slice_when {|i, j| i > j }.to_a
- *    #=> [[0, 9], [2, 2, 3], [2, 7], [5, 9], [5]]
- *
- *  Adjacent evens and odds can be chunked as follows:
- *  (Enumerable#chunk is another way to do it.)
- *
- *    a = [7, 5, 9, 2, 0, 7, 9, 4, 2, 0]
- *    p a.slice_when {|i, j| i.even? != j.even? }.to_a
- *    #=> [[7, 5, 9], [2, 0], [7, 9], [4, 2, 0]]
- *
- *  Paragraphs (non-empty lines with trailing empty lines) can be chunked as follows:
- *  (See Enumerable#chunk to ignore empty lines.)
- *
- *    lines = ["foo\n", "bar\n", "\n", "baz\n", "qux\n"]
- *    p lines.slice_when {|l1, l2| /\A\s*\z/ =~ l1 && /\S/ =~ l2 }.to_a
- *    #=> [["foo\n", "bar\n", "\n"], ["baz\n", "qux\n"]]
- *
- *  Enumerable#chunk_while does the same, except splitting when the block
- *  returns <code>false</code> instead of <code>true</code>.
  */
 static VALUE
 enum_slice_when(VALUE enumerable)
@@ -4252,52 +4224,27 @@ enum_slice_when(VALUE enumerable)
 
 /*
  *  call-seq:
- *     enum.chunk_while {|elt_before, elt_after| bool } -> an_enumerator
+ *    chunk_while {|element, next_element| ... } -> enumerator
  *
- *  Creates an enumerator for each chunked elements.
- *  The beginnings of chunks are defined by the block.
+ *  The returned Enumerator uses the block to partition elements
+ *  into arrays ("chunks");
+ *  it calls the block with each element and its successor;
+ *  begins a new chunk if and only if the block returns a truthy value:
  *
- *  This method splits each chunk using adjacent elements,
- *  _elt_before_ and _elt_after_,
- *  in the receiver enumerator.
- *  This method split chunks between _elt_before_ and _elt_after_ where
- *  the block returns <code>false</code>.
+ *  Example:
  *
- *  The block is called the length of the receiver enumerator minus one.
+ *    a = [1, 2, 4, 9, 10, 11, 12, 15, 16, 19, 20, 21]
+ *    e = a.chunk_while {|i, j| j == i + 1 }
+ *    e.each {|array| p array }
  *
- *  The result enumerator yields the chunked elements as an array.
- *  So +each+ method can be called as follows:
+ *  Output:
  *
- *    enum.chunk_while { |elt_before, elt_after| bool }.each { |ary| ... }
+ *    [1, 2]
+ *    [4]
+ *    [9, 10, 11, 12]
+ *    [15, 16]
+ *    [19, 20, 21]
  *
- *  Other methods of the Enumerator class and Enumerable module,
- *  such as +to_a+, +map+, etc., are also usable.
- *
- *  For example, one-by-one increasing subsequence can be chunked as follows:
- *
- *    a = [1,2,4,9,10,11,12,15,16,19,20,21]
- *    b = a.chunk_while {|i, j| i+1 == j }
- *    p b.to_a #=> [[1, 2], [4], [9, 10, 11, 12], [15, 16], [19, 20, 21]]
- *    c = b.map {|a| a.length < 3 ? a : "#{a.first}-#{a.last}" }
- *    p c #=> [[1, 2], [4], "9-12", [15, 16], "19-21"]
- *    d = c.join(",")
- *    p d #=> "1,2,4,9-12,15,16,19-21"
- *
- *  Increasing (non-decreasing) subsequence can be chunked as follows:
- *
- *    a = [0, 9, 2, 2, 3, 2, 7, 5, 9, 5]
- *    p a.chunk_while {|i, j| i <= j }.to_a
- *    #=> [[0, 9], [2, 2, 3], [2, 7], [5, 9], [5]]
- *
- *  Adjacent evens and odds can be chunked as follows:
- *  (Enumerable#chunk is another way to do it.)
- *
- *    a = [7, 5, 9, 2, 0, 7, 9, 4, 2, 0]
- *    p a.chunk_while {|i, j| i.even? == j.even? }.to_a
- *    #=> [[7, 5, 9], [2, 0], [7, 9], [4, 2, 0]]
- *
- *  Enumerable#slice_when does the same, except splitting when the block
- *  returns <code>true</code> instead of <code>false</code>.
  */
 static VALUE
 enum_chunk_while(VALUE enumerable)
