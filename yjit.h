@@ -62,10 +62,8 @@ struct rb_yjit_options {
     bool test_backend;
 };
 
-MJIT_SYMBOL_EXPORT_BEGIN
 bool rb_yjit_enabled_p(void);
 unsigned rb_yjit_call_threshold(void);
-MJIT_SYMBOL_EXPORT_END
 
 void rb_yjit_invalidate_all_method_lookup_assumptions(void);
 void rb_yjit_method_lookup_change(VALUE klass, ID mid);
