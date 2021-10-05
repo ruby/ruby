@@ -694,7 +694,7 @@ rb_enc_prev_char(const char *s, const char *p, const char *e, const rb_encoding 
  * @return     Pointer to the head of the character that contains `p`.
  */
 static inline char *
-rb_enc_left_char_head(const char *s, const void *p, const char *e, const rb_encoding *enc)
+rb_enc_left_char_head(const char *s, const char *p, const char *e, const rb_encoding *enc)
 {
     const OnigUChar *us = RBIMPL_CAST((const OnigUChar *)s);
     const OnigUChar *up = RBIMPL_CAST((const OnigUChar *)p);
