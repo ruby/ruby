@@ -709,6 +709,10 @@ class Reline::LineEditor
     end
     Reline::IOGate.hide_cursor
     dialog.width += @block_elem_width if dialog.scrollbar_pos
+    if dialog.column < 0
+      dialog.column = 0
+      dialog.width = @screen_size.last
+    end
     reset_dialog(dialog, old_dialog)
     move_cursor_down(dialog.vertical_offset)
     Reline::IOGate.move_cursor_column(dialog.column)

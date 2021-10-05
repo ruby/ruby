@@ -1072,6 +1072,32 @@ begin
       EOC
     end
 
+    def test_dialog_narrower_than_screen
+      start_terminal(20, 11, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-long}, startup_message: 'Multiline REPL.')
+      write('S' + "\C-i" * 3)
+      close
+      assert_screen(<<~'EOC')
+        Multiline R
+        EPL.
+        prompt> Sym
+        String
+        Struct    █
+        Symbol    █
+        StopIterat█
+        SystemCall█
+        SystemExit█
+        SystemStac█
+        ScriptErro█
+        SyntaxErro█
+        Signal    █
+        SizedQueue█
+        Set
+        SecureRand
+        Socket
+        StringIO
+      EOC
+    end
+
     def test_rerender_argument_prompt_after_pasting
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write('abcdef')
