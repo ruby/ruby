@@ -530,7 +530,7 @@ module Test
           @workers.each do |worker|
             worker.kill
           end
-          @worker.clear
+          @workers.clear
         end
       end
 
