@@ -6809,7 +6809,7 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 	current_buffer->next = NULL;
 	current_buffer->capa = capa;
 	buffer_length_or_invalid = enc->case_map(flags,
-				   (const OnigUChar**)&source_current, source_end,
+				   &source_current, source_end,
 				   current_buffer->space,
 				   current_buffer->space+current_buffer->capa,
 				   enc);
