@@ -265,7 +265,8 @@ module IRB
 
   class ReidlineInputMethod < InputMethod
     include Reline
-    # Creates a new input method object using Readline
+
+    # Creates a new input method object using Reline
     def initialize
       IRB.__send__(:set_encoding, Reline.encoding_system_needs.name, override: false)
       super
