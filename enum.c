@@ -3799,36 +3799,10 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *    slice_before(pattern)       -> enumerator
  *    slice_before {|array| ... } -> enumerator
  *
- *  Returns an Enumerator.
- *
  *  With argument +pattern+, returns an enumerator that uses the pattern
  *  to partition elements into arrays.
  *  An element begins a new slice if <tt>element === pattern</tt>
  *  (or if it is the first element).
- *
- *  Example with a range and integer pattern:
- *
- *   e = (1..15).slice_before(6) # => #<Enumerator: ...>
- *   e.each {|array| p array }
- *
- *  Output:
- *
- *    [1, 2, 3, 4, 5]
- *    [6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
- *
- *  Example with an array and string pattern:
- *
- *    e = %w[a b c d b e f b g].slice_before('b') # => #<Enumerator: ...>
- *    e.each {|array| p array }
- *
- *  Output:
- *
- *    ["a"]
- *    ["b", "c", "d"]
- *    ["b", "e", "f"]
- *    ["b", "g"]
- *
- *  Example with an array and a regexp pattern:
  *
  *    a = %w[foo bar fop for baz fob fog bam foy]
  *    e = a.slice_before(/ba/) # => #<Enumerator: ...>
@@ -3840,17 +3814,6 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *    ["bar", "fop", "for"]
  *    ["baz", "fob", "fog"]
  *    ["bam", "foy"]
- *
- *  Example with an array and a class pattern:
- *
- *    e = [0, 1, 2.0, 3, 4, 5.0, 6, 7].slice_before(Float) # => #<Enumerator: ...>
- *    e.each {|array| p array }
- *
- *  Output:
- *
- *    [0, 1]
- *    [2.0, 3, 4]
- *    [5.0, 6, 7]
  *
  *  With a block, returns an enumerator that uses the block
  *  to partition elements into arrays.
