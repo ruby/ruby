@@ -3209,7 +3209,7 @@ rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    string << object -> string 
+ *    string << object -> string
  *
  *  Concatenates +object+ to +self+ and returns +self+:
  *
