@@ -4119,6 +4119,9 @@ rb_vm_get_cref(const VALUE *ep);
 static codegen_status_t
 gen_getclassvariable(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
 {
+    // rb_vm_getclassvariable can raise exceptions.
+    jit_prepare_routine_call(jit, ctx, REG0);
+
     mov(cb, C_ARG_REGS[0], member_opnd(REG_CFP, rb_control_frame_t, ep));
     call_ptr(cb, REG0, (void *)rb_vm_get_cref);
 
