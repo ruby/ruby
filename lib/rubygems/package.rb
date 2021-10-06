@@ -488,16 +488,6 @@ EOM
     raise Gem::Package::PathError.new(destination, destination_dir) unless
       normalize_path(destination).start_with? normalize_path(destination_dir + '/')
 
-    begin
-      real_destination = File.expand_path(File.realpath(destination))
-    rescue
-      # it's fine if the destination doesn't exist, because rm -rf'ing it can't cause any damage
-      nil
-    else
-      raise Gem::Package::PathError.new(real_destination, destination_dir) unless
-        real_destination.start_with? destination_dir + '/'
-    end
-
     destination.tap(&Gem::UNTAINT)
     destination
   end
