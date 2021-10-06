@@ -71,6 +71,13 @@ class Gem::Package
     end
   end
 
+  class SymlinkError < Error
+    def initialize(name, destination, destination_dir)
+      super "installing symlink '%s' pointing to parent path %s of %s is not allowed" %
+              [name, destination, destination_dir]
+    end
+  end
+
   class NonSeekableIO < Error; end
 
   class TooLongFileName < Error; end
@@ -407,6 +414,14 @@ EOM
 
         destination = install_location entry.full_name, destination_dir
 
+        if entry.symlink?
+          link_target = entry.header.linkname
+          real_destination = link_target.start_with?("/") ? link_target : File.expand_path(link_target, File.dirname(destination))
+
+          raise Gem::Package::SymlinkError.new(entry.full_name, real_destination, destination_dir) unless
+            normalize_path(real_destination).start_with? normalize_path(destination_dir + '/')
+        end
+
         FileUtils.rm_rf destination
 
         mkdir_options = {}
@@ -419,7 +434,7 @@ EOM
           end
 
         unless directories.include?(mkdir)
-          mkdir_p_safe mkdir, mkdir_options, destination_dir, entry.full_name
+          FileUtils.mkdir_p mkdir, **mkdir_options
           directories << mkdir
         end
 
@@ -492,22 +507,6 @@ EOM
       pathname.downcase
     else
       pathname
-    end
-  end
-
-  def mkdir_p_safe(mkdir, mkdir_options, destination_dir, file_name)
-    destination_dir = File.realpath(File.expand_path(destination_dir))
-    parts = mkdir.split(File::SEPARATOR)
-    parts.reduce do |path, basename|
-      path = File.realpath(path) unless path == ""
-      path = File.expand_path(path + File::SEPARATOR + basename)
-      lstat = File.lstat path rescue nil
-      if !lstat || !lstat.directory?
-        unless normalize_path(path).start_with? normalize_path(destination_dir) and (FileUtils.mkdir path, **mkdir_options rescue false)
-          raise Gem::Package::PathError.new(file_name, destination_dir)
-        end
-      end
-      path
     end
   end
 

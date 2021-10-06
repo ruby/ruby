@@ -574,7 +574,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     destination_subdir = File.join @destination, 'subdir'
     FileUtils.mkdir_p destination_subdir
 
-    expected_exceptions = win_platform? ? [Gem::Package::PathError, Errno::EACCES] : [Gem::Package::PathError]
+    expected_exceptions = win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]
 
     e = assert_raise(*expected_exceptions) do
       package.extract_tar_gz tgz_io, destination_subdir
@@ -582,10 +582,11 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     pend "symlink - must be admin with no UAC on Windows" if Errno::EACCES === e
 
-    assert_equal("installing into parent path lib/link/outside.txt of " +
+    assert_equal("installing symlink 'lib/link' pointing to parent path #{@destination} of " +
                 "#{destination_subdir} is not allowed", e.message)
 
     assert_path_not_exist File.join(@destination, "outside.txt")
+    assert_path_not_exist File.join(destination_subdir, "lib/link")
   end
 
   def test_extract_symlink_parent_doesnt_delete_user_dir
@@ -608,7 +609,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       tar.add_symlink 'link/dir', '.', 16877
     end
 
-    expected_exceptions = win_platform? ? [Gem::Package::PathError, Errno::EACCES] : [Gem::Package::PathError]
+    expected_exceptions = win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]
 
     e = assert_raise(*expected_exceptions) do
       package.extract_tar_gz tgz_io, destination_subdir
@@ -616,10 +617,12 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     pend "symlink - must be admin with no UAC on Windows" if Errno::EACCES === e
 
-    assert_equal("installing into parent path #{destination_user_subdir} of " +
+    assert_equal("installing symlink 'link' pointing to parent path #{destination_user_dir} of " +
                 "#{destination_subdir} is not allowed", e.message)
 
     assert_path_exist destination_user_subdir
+    assert_path_not_exist File.join(destination_subdir, "link/dir")
+    assert_path_not_exist File.join(destination_subdir, "link")
   end
 
   def test_extract_tar_gz_directory
