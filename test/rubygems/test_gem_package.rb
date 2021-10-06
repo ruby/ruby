@@ -584,6 +584,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal("installing into parent path lib/link/outside.txt of " +
                 "#{destination_subdir} is not allowed", e.message)
+
+    assert_path_not_exist File.join(@destination, "outside.txt")
   end
 
   def test_extract_symlink_parent_doesnt_delete_user_dir
