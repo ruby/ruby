@@ -2973,10 +2973,7 @@ set_namespace_path_i(ID id, VALUE v, void *payload)
     VALUE value = ce->value;
     int has_permanent_classpath;
     VALUE parental_path = *((VALUE *) payload);
-    if (!rb_is_const_id(id)) {
-        return ID_TABLE_CONTINUE;
-    }
-    if (!rb_namespace_p(value)) {
+    if (!rb_is_const_id(id) || !rb_namespace_p(value)) {
         return ID_TABLE_CONTINUE;
     }
     classname(value, &has_permanent_classpath);
