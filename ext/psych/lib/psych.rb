@@ -1,8 +1,8 @@
 # frozen_string_literal: true
-require 'psych/versions'
+require_relative 'psych/versions'
 case RUBY_ENGINE
 when 'jruby'
-  require 'psych_jars'
+  require_relative 'psych_jars'
   if JRuby::Util.respond_to?(:load_ext)
     JRuby::Util.load_ext('org.jruby.ext.psych.PsychLibrary')
   else
@@ -12,21 +12,21 @@ when 'jruby'
 else
   require 'psych.so'
 end
-require 'psych/nodes'
-require 'psych/streaming'
-require 'psych/visitors'
-require 'psych/handler'
-require 'psych/tree_builder'
-require 'psych/parser'
-require 'psych/omap'
-require 'psych/set'
-require 'psych/coder'
-require 'psych/core_ext'
-require 'psych/stream'
-require 'psych/json/tree_builder'
-require 'psych/json/stream'
-require 'psych/handlers/document_stream'
-require 'psych/class_loader'
+require_relative 'psych/nodes'
+require_relative 'psych/streaming'
+require_relative 'psych/visitors'
+require_relative 'psych/handler'
+require_relative 'psych/tree_builder'
+require_relative 'psych/parser'
+require_relative 'psych/omap'
+require_relative 'psych/set'
+require_relative 'psych/coder'
+require_relative 'psych/core_ext'
+require_relative 'psych/stream'
+require_relative 'psych/json/tree_builder'
+require_relative 'psych/json/stream'
+require_relative 'psych/handlers/document_stream'
+require_relative 'psych/class_loader'
 
 ###
 # = Overview

@@ -15,5 +15,5 @@ class Object
 end
 
 if defined?(::IRB)
-  require 'psych/y'
+  require_relative 'y'
 end

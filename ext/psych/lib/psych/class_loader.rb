@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require 'psych/omap'
-require 'psych/set'
+require_relative 'omap'
+require_relative 'set'
 
 module Psych
   class ClassLoader # :nodoc:

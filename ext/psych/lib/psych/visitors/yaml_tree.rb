@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'psych/tree_builder'
-require 'psych/scalar_scanner'
-require 'psych/class_loader'
+require_relative '../tree_builder'
+require_relative '../scalar_scanner'
+require_relative '../class_loader'
 
 module Psych
   module Visitors
