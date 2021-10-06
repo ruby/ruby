@@ -31,6 +31,10 @@ module Test
         end
       end
 
+      def _start_method(inst)
+        _report "start", Marshal.dump([inst.class.name, inst.__name__])
+      end
+
       def _run_suite(suite, type) # :nodoc:
         @partial_report = []
         orig_testout = Test::Unit::Runner.output
