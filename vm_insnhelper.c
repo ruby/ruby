@@ -4808,6 +4808,8 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep)
     ruby_vm_const_missing_count = 0;
     RB_OBJ_WRITE(iseq, &ic->entry, ice);
 #ifndef MJIT_HEADER
+    // MJIT and YJIT can't be on at the same time, so there is no need to
+    // notify YJIT about changes to the IC when running inside MJIT code.
     rb_yjit_constant_ic_update(iseq, ic);
 #endif
 }
