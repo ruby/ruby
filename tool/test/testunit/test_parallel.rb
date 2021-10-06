@@ -49,6 +49,7 @@ module TestParallel
         assert_match(/^ready/,@worker_out.gets)
         @worker_in.puts "run #{TESTS}/ptest_first.rb test"
         assert_match(/^okay/,@worker_out.gets)
+        assert_match(/^start/,@worker_out.gets)
         assert_match(/^record/,@worker_out.gets)
         assert_match(/^p/,@worker_out.gets)
         assert_match(/^done/,@worker_out.gets)
@@ -61,9 +62,11 @@ module TestParallel
         assert_match(/^ready/,@worker_out.gets)
         @worker_in.puts "run #{TESTS}/ptest_second.rb test"
         assert_match(/^okay/,@worker_out.gets)
+        assert_match(/^start/,@worker_out.gets)
         assert_match(/^record/,@worker_out.gets)
         assert_match(/^p/,@worker_out.gets)
         assert_match(/^done/,@worker_out.gets)
+        assert_match(/^start/,@worker_out.gets)
         assert_match(/^record/,@worker_out.gets)
         assert_match(/^p/,@worker_out.gets)
         assert_match(/^done/,@worker_out.gets)
@@ -76,15 +79,18 @@ module TestParallel
         assert_match(/^ready/,@worker_out.gets)
         @worker_in.puts "run #{TESTS}/ptest_first.rb test"
         assert_match(/^okay/,@worker_out.gets)
+        assert_match(/^start/,@worker_out.gets)
         assert_match(/^record/,@worker_out.gets)
         assert_match(/^p/,@worker_out.gets)
         assert_match(/^done/,@worker_out.gets)
         assert_match(/^ready/,@worker_out.gets)
         @worker_in.puts "run #{TESTS}/ptest_second.rb test"
         assert_match(/^okay/,@worker_out.gets)
+        assert_match(/^start/,@worker_out.gets)
         assert_match(/^record/,@worker_out.gets)
         assert_match(/^p/,@worker_out.gets)
         assert_match(/^done/,@worker_out.gets)
+        assert_match(/^start/,@worker_out.gets)
         assert_match(/^record/,@worker_out.gets)
         assert_match(/^p/,@worker_out.gets)
         assert_match(/^done/,@worker_out.gets)
@@ -201,6 +207,13 @@ module TestParallel
       buf = Timeout.timeout(TIMEOUT) {@test_out.read}
       assert(buf.scan(/^\[\s*\d+\/\d+\]\s*(\d+?)=/).flatten.uniq.size > 1,
              message("retried tests should run in different processes") {buf})
+    end
+
+    def test_hungup
+      spawn_runner "--worker-timeout=1", "test4test_hungup.rb"
+      buf = Timeout.timeout(TIMEOUT) {@test_out.read}
+      assert_match(/^Retrying\.+$/, buf)
+      assert_match(/^2 tests,.* 0 failures,/, buf)
     end
   end
 end

@@ -343,6 +343,7 @@ module Test
         attr_reader :quit_called
         attr_accessor :start_time
         attr_accessor :response_at
+        attr_accessor :current
 
         @@worker_number = 0
 
@@ -526,7 +527,7 @@ module Test
 
       def quit_workers(&cond)
         return if @workers.empty?
-        closed = []
+        closed = [] if cond
         @workers.reject! do |worker|
           next unless cond&.call(worker)
           begin
@@ -536,22 +537,33 @@ module Test
           rescue Errno::EPIPE
           rescue Timeout::Error
           end
-          closed << worker
-          worker.close
+          closed&.push worker
+          begin
+            Timeout.timeout(0.2) do
+              worker.close
+            end
+          rescue Timeout::Error
+            worker.kill
+            retry
+          end
+          @ios.delete worker.io
         end
 
-        return closed if cond
-        return if @workers.empty?
+        return if (closed ||= @workers).empty?
+        pids = closed.map(&:pid)
         begin
-          Timeout.timeout(0.2 * @workers.size) do
+          Timeout.timeout(0.2 * closed.size) do
             Process.waitall
           end
         rescue Timeout::Error
-          @workers.each do |worker|
-            worker.kill
+          if pids
+            Process.kill(:KILL, *pids) rescue nil
+            pids = nil
+            retry
           end
-          @workers.clear
         end
+        @workers.clear unless cond
+        closed
       end
 
       FakeClass = Struct.new(:name)
@@ -585,6 +597,8 @@ module Test
           @test_count += 1
 
           jobs_status(worker)
+        when /^start (.+?)$/
+          worker.current = Marshal.load($1.unpack1("m"))
         when /^done (.+?)$/
           begin
             r = Marshal.load($1.unpack1("m"))
@@ -664,7 +678,9 @@ module Test
 
             if !(_io = IO.select(@ios, nil, nil, timeout))
               timeout = Time.now - @worker_timeout
-              @tasks.unshift(*quit_workers {|w| w.response_at < timeout}&.map(&:real_file))
+              quit_workers {|w| w.response_at < timeout}&.map {|w|
+                rep << {file: w.real_file, result: nil, testcase: w.current[0], error: w.current}
+              }
             elsif _io.first.any? {|io|
               @need_quit or
                 (deal(io, type, result, rep).nil? and
@@ -672,6 +688,7 @@ module Test
             }
               break
             end
+            break if @tasks.empty? and @workers.empty?
             if @jobserver and @job_tokens and !@tasks.empty? and
                ((newjobs = [@tasks.size, @options[:parallel]].min) > @workers.size or
                 !@workers.any? {|x| x.status == :ready})
@@ -707,14 +724,20 @@ module Test
           unless @interrupt || !@options[:retry] || @need_quit
             parallel = @options[:parallel]
             @options[:parallel] = false
-            suites, rep = rep.partition {|r| r[:testcase] && r[:file] && r[:report].any? {|e| !e[2].is_a?(Test::Unit::PendedError)}}
+            suites, rep = rep.partition {|r|
+              r[:testcase] && r[:file] &&
+                (!r.key?(:report) || r[:report].any? {|e| !e[2].is_a?(Test::Unit::PendedError)})
+            }
             suites.map {|r| File.realpath(r[:file])}.uniq.each {|file| require file}
-            suites.map! {|r| eval("::"+r[:testcase])}
             del_status_line or puts
             unless suites.empty?
               puts "\n""Retrying..."
               @verbose = options[:verbose]
+              error, suites = suites.partition {|r| r[:error]}
+              suites.map! {|r| ::Object.const_get(r[:testcase])}
+              error.map! {|r| ::Object.const_get(r[:testcase])}
               _run_suites(suites, type)
+              result.concat _run_suites(error, type)
             end
             @options[:parallel] = parallel
           end
@@ -723,14 +746,21 @@ module Test
           end
           unless rep.empty?
             rep.each do |r|
-              r[:report].each do |f|
+              if r[:error]
+                puke(*r[:error], Timeout::Error)
+                next
+              end
+              r[:report]&.each do |f|
                 puke(*f) if f
               end
             end
             if @options[:retry]
-              @errors   += rep.map{|x| x[:result][0] }.inject(:+)
-              @failures += rep.map{|x| x[:result][1] }.inject(:+)
-              @skips    += rep.map{|x| x[:result][2] }.inject(:+)
+              rep.each do |x|
+                (e, f, s = x[:result]) or next
+                @errors   += e
+                @failures += f
+                @skips    += s
+              end
             end
           end
           unless @warnings.empty?
@@ -1473,6 +1503,7 @@ module Test
         assertions = all_test_methods.map { |method|
 
           inst = suite.new method
+          _start_method(inst)
           inst._assertions = 0
 
           print "#{suite}##{method} = " if @verbose
@@ -1494,9 +1525,16 @@ module Test
             leakchecker.check("#{inst.class}\##{inst.__name__}")
           end
 
+          _end_method(inst)
+
           inst._assertions
         }
         return assertions.size, assertions.inject(0) { |sum, n| sum + n }
+      end
+
+      def _start_method(inst)
+      end
+      def _end_method(inst)
       end
 
       ##
