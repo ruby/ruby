@@ -347,7 +347,7 @@ rb_binding_alloc(VALUE klass)
     VALUE obj;
     rb_binding_t *bind;
     obj = TypedData_Make_Struct(klass, rb_binding_t, &ruby_binding_data_type, bind);
-#if RUBY_DEBUG
+#if YJIT_STATS
     rb_yjit_collect_binding_alloc();
 #endif
     return obj;
@@ -614,7 +614,7 @@ bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
 	env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
     }
 
-#if RUBY_DEBUG
+#if YJIT_STATS
     rb_yjit_collect_binding_set();
 #endif
 

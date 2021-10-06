@@ -193,6 +193,7 @@ mjit_exec(rb_execution_context_t *ec)
     RB_DEBUG_COUNTER_INC(mjit_frame_VM2JT);
 #  endif
     RB_DEBUG_COUNTER_INC(mjit_exec_call_func);
+    // Under SystemV x64 calling convention
     // ec -> RDI
     // cfp -> RSI
     return func(ec, ec->cfp);
