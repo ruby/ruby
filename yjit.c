@@ -12,6 +12,25 @@
 
 #include "yjit_asm.c"
 
+#ifndef YJIT_CHECK_MODE
+# define YJIT_CHECK_MODE 0
+#endif
+
+// >= 1: print when output code invalidation happens
+// >= 2: dump list of instructions when regions compile
+#ifndef YJIT_DUMP_MODE
+# define YJIT_DUMP_MODE 0
+#endif
+
+#ifdef _WIN32
+# define PLATFORM_SUPPORTED_P 0
+#else
+# define PLATFORM_SUPPORTED_P 1
+#endif
+
+// USE_MJIT comes from configure options
+#define JIT_ENABLED USE_MJIT
+
 // Code block into which we write machine code
 static codeblock_t block;
 static codeblock_t *cb = NULL;
