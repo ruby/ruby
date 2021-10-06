@@ -1519,14 +1519,14 @@ Also, a list:
   end
 
   ##
-  # Loads an RSA private key named +key_name+ with +passphrase+ in <tt>test/rubygems/</tt>
+  # Loads a private key named +key_name+ with +passphrase+ in <tt>test/rubygems/</tt>
 
   def self.load_key(key_name, passphrase = nil)
     key_file = key_path key_name
 
     key = File.read key_file
 
-    OpenSSL::PKey::RSA.new key, passphrase
+    OpenSSL::PKey.read key, passphrase
   end
 
   ##
