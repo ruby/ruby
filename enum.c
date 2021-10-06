@@ -4464,7 +4464,6 @@ int_range_sum(VALUE beg, VALUE end, int excl, VALUE init)
  *
  *    (1..100).sum          # => 5050
  *    (1..100).sum(1)       # => 5051
- *    ('a'..'d').sum        # => "fooabcd"
  *    ('a'..'d').sum('foo') # => "fooabcd"
  *
  *  Generally, the sum is computed using methods <tt>+</tt> and +each+;
@@ -4484,13 +4483,6 @@ int_range_sum(VALUE beg, VALUE end, int excl, VALUE init)
  *    h = {a: 0, b: 1, c: 2, d: 3, e: 4, f: 5}
  *    h.sum {|key, value| value.odd? ? value : 0 } # => 9
  *    ('a'..'f').sum('x') {|c| c < 'd' ? c : '' }  # => "xabc"
- *
- *  If +self+ is empty, returns +initial_value+ without
- *  performing any calculations and without calling the block:
- *
- *    [].sum # => 0
- *    [].sum {|element| fail 'Cannot happen' }             # => 0
- *    [].sum(Object.new) {|element| fail 'Cannot happen' } # => #<Object>
  *
  */
 static VALUE
@@ -4563,7 +4555,7 @@ uniq_iter(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
  *    uniq {|element| ... } -> array
  *
  *  With no block, returns a new array containing only unique elements;
- *  the array has no two elements +e0+ and +e1+ such that <tt>e0 == e1</tt>:
+ *  the array has no two elements +e0+ and +e1+ such that <tt>e0.eql?(e1)</tt>:
  *
  *    %w[a b c c b a a b c].uniq       # => ["a", "b", "c"]
  *    [0, 1, 2, 2, 1, 0, 0, 1, 2].uniq # => [0, 1, 2]
@@ -4575,8 +4567,6 @@ uniq_iter(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
  *    a.uniq {|i| i.even? ? i : 0 } # => [0, 2, 4]
  *    a = %w[a b c d e e d c b a a b c d e]
       a.uniq {|c| c < 'c' }         # => ["a", "c"]
- *
- *  Among equal elements, the elements retained is indeterminate.
  *
  */
 
