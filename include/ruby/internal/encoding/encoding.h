@@ -430,7 +430,7 @@ rb_encoding *rb_enc_find(const char *name);
  * @return     Its name.
  */
 static inline const char *
-rb_enc_name(const rb_encoding *enc)
+rb_enc_name(rb_encoding *enc)
 {
     return enc->name;
 }
@@ -445,7 +445,7 @@ rb_enc_name(const rb_encoding *enc)
  * @return     Its least possible number of bytes except 0.
  */
 static inline int
-rb_enc_mbminlen(const rb_encoding *enc)
+rb_enc_mbminlen(rb_encoding *enc)
 {
     return enc->min_enc_len;
 }
@@ -460,7 +460,7 @@ rb_enc_mbminlen(const rb_encoding *enc)
  * @return     Its maximum possible number of bytes of a character.
  */
 static inline int
-rb_enc_mbmaxlen(const rb_encoding *enc)
+rb_enc_mbmaxlen(rb_encoding *enc)
 {
     return enc->max_enc_len;
 }
@@ -604,7 +604,7 @@ rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc)
  * @return      Code point of the character pointed by `p`.
  */
 static inline OnigCodePoint
-rb_enc_mbc_to_codepoint(const char *p, const char *e, const rb_encoding *enc)
+rb_enc_mbc_to_codepoint(const char *p, const char *e, rb_encoding *enc)
 {
     const OnigUChar *up = RBIMPL_CAST((const OnigUChar *)p);
     const OnigUChar *ue = RBIMPL_CAST((const OnigUChar *)e);
@@ -632,7 +632,7 @@ int rb_enc_codelen(int code, rb_encoding *enc);
  * @return     otherwise  Number of bytes used for `enc` to encode `code`.
  */
 static inline int
-rb_enc_code_to_mbclen(int c, const rb_encoding *enc)
+rb_enc_code_to_mbclen(int c, rb_encoding *enc)
 {
     OnigCodePoint uc = RBIMPL_CAST((OnigCodePoint)c);
 
@@ -654,7 +654,7 @@ rb_enc_code_to_mbclen(int c, const rb_encoding *enc)
  * being any stricter than this. :FIXME:
  */
 static inline int
-rb_enc_mbcput(unsigned int c, void *buf, const rb_encoding *enc)
+rb_enc_mbcput(unsigned int c, void *buf, rb_encoding *enc)
 {
     OnigCodePoint uc = RBIMPL_CAST((OnigCodePoint)c);
     OnigUChar *ubuf = RBIMPL_CAST((OnigUChar *)buf);
@@ -673,7 +673,7 @@ rb_enc_mbcput(unsigned int c, void *buf, const rb_encoding *enc)
  * @retval     otherwise  Pointer to the head of the previous character.
  */
 static inline char *
-rb_enc_prev_char(const char *s, const char *p, const char *e, const rb_encoding *enc)
+rb_enc_prev_char(const char *s, const char *p, const char *e, rb_encoding *enc)
 {
     const OnigUChar *us = RBIMPL_CAST((const OnigUChar *)s);
     const OnigUChar *up = RBIMPL_CAST((const OnigUChar *)p);
@@ -694,7 +694,7 @@ rb_enc_prev_char(const char *s, const char *p, const char *e, const rb_encoding 
  * @return     Pointer to the head of the character that contains `p`.
  */
 static inline char *
-rb_enc_left_char_head(const char *s, const char *p, const char *e, const rb_encoding *enc)
+rb_enc_left_char_head(const char *s, const char *p, const char *e, rb_encoding *enc)
 {
     const OnigUChar *us = RBIMPL_CAST((const OnigUChar *)s);
     const OnigUChar *up = RBIMPL_CAST((const OnigUChar *)p);
@@ -737,7 +737,7 @@ rb_enc_right_char_head(const char *s, const char *p, const char *e, rb_encoding 
  * @retval     otherwise  Pointer to `n` character before `p`.
  */
 static inline char *
-rb_enc_step_back(const char *s, const char *p, const char *e, int n, const rb_encoding *enc)
+rb_enc_step_back(const char *s, const char *p, const char *e, int n, rb_encoding *enc)
 {
     const OnigUChar *us = RBIMPL_CAST((const OnigUChar *)s);
     const OnigUChar *up = RBIMPL_CAST((const OnigUChar *)p);

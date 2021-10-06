@@ -40,7 +40,7 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
  * @retval     otherwise  It is.
  */
 static inline bool
-rb_enc_is_newline(const char *p,  const char *e, const rb_encoding *enc)
+rb_enc_is_newline(const char *p,  const char *e, rb_encoding *enc)
 {
     OnigUChar *up = RBIMPL_CAST((OnigUChar *)p);
     OnigUChar *ue = RBIMPL_CAST((OnigUChar *)e);
@@ -60,7 +60,7 @@ rb_enc_is_newline(const char *p,  const char *e, const rb_encoding *enc)
  * @retval     0    Otherwise.
  */
 static inline bool
-rb_enc_isctype(OnigCodePoint c, OnigCtype t, const rb_encoding *enc)
+rb_enc_isctype(OnigCodePoint c, OnigCtype t, rb_encoding *enc)
 {
     return ONIGENC_IS_CODE_CTYPE(enc, c, t);
 }
@@ -79,7 +79,7 @@ rb_enc_isctype(OnigCodePoint c, OnigCtype t, const rb_encoding *enc)
  * (not a bug).  But there could be rooms for future extensions.
  */
 static inline bool
-rb_enc_isascii(OnigCodePoint c, const rb_encoding *enc)
+rb_enc_isascii(OnigCodePoint c, rb_encoding *enc)
 {
     return ONIGENC_IS_CODE_ASCII(c);
 }
@@ -93,7 +93,7 @@ rb_enc_isascii(OnigCodePoint c, const rb_encoding *enc)
  * @retval     0    Otherwise.
  */
 static inline bool
-rb_enc_isalpha(OnigCodePoint c, const rb_encoding *enc)
+rb_enc_isalpha(OnigCodePoint c, rb_encoding *enc)
 {
     return ONIGENC_IS_CODE_ALPHA(enc, c);
 }
@@ -107,7 +107,7 @@ rb_enc_isalpha(OnigCodePoint c, const rb_encoding *enc)
  * @retval     0    Otherwise.
  */
 static inline bool
-rb_enc_islower(OnigCodePoint c, const rb_encoding *enc)
+rb_enc_islower(OnigCodePoint c, rb_encoding *enc)
 {
     return ONIGENC_IS_CODE_LOWER(enc, c);
 }
@@ -121,7 +121,7 @@ rb_enc_islower(OnigCodePoint c, const rb_encoding *enc)
  * @retval     0    Otherwise.
  */
 static inline bool
-rb_enc_isupper(OnigCodePoint c, const rb_encoding *enc)
+rb_enc_isupper(OnigCodePoint c, rb_encoding *enc)
 {
     return ONIGENC_IS_CODE_UPPER(enc, c);
 }
@@ -135,7 +135,7 @@ rb_enc_isupper(OnigCodePoint c, const rb_encoding *enc)
  * @retval     0    Otherwise.
  */
 static inline bool
-rb_enc_ispunct(OnigCodePoint c, const rb_encoding *enc)
+rb_enc_ispunct(OnigCodePoint c, rb_encoding *enc)
 {
     return ONIGENC_IS_CODE_PUNCT(enc, c);
 }
@@ -149,7 +149,7 @@ rb_enc_ispunct(OnigCodePoint c, const rb_encoding *enc)
  * @retval     0    Otherwise.
  */
 static inline bool
-rb_enc_isalnum(OnigCodePoint c, const rb_encoding *enc)
+rb_enc_isalnum(OnigCodePoint c, rb_encoding *enc)
 {
     return ONIGENC_IS_CODE_ALNUM(enc, c);
 }
@@ -163,7 +163,7 @@ rb_enc_isalnum(OnigCodePoint c, const rb_encoding *enc)
  * @retval     0    Otherwise.
  */
 static inline bool
-rb_enc_isprint(OnigCodePoint c, const rb_encoding *enc)
+rb_enc_isprint(OnigCodePoint c, rb_encoding *enc)
 {
     return ONIGENC_IS_CODE_PRINT(enc, c);
 }
@@ -177,7 +177,7 @@ rb_enc_isprint(OnigCodePoint c, const rb_encoding *enc)
  * @retval     0    Otherwise.
  */
 static inline bool
-rb_enc_isspace(OnigCodePoint c, const rb_encoding *enc)
+rb_enc_isspace(OnigCodePoint c, rb_encoding *enc)
 {
     return ONIGENC_IS_CODE_SPACE(enc, c);
 }
@@ -191,7 +191,7 @@ rb_enc_isspace(OnigCodePoint c, const rb_encoding *enc)
  * @retval     0    Otherwise.
  */
 static inline bool
-rb_enc_isdigit(OnigCodePoint c, const rb_encoding *enc)
+rb_enc_isdigit(OnigCodePoint c, rb_encoding *enc)
 {
     return ONIGENC_IS_CODE_DIGIT(enc, c);
 }
