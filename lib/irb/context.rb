@@ -478,6 +478,8 @@ module IRB
     # Exits the current session, see IRB.irb_exit
     def exit(ret = 0)
       IRB.irb_exit(@irb, ret)
+    rescue UncaughtThrowError
+      super
     end
 
     NOPRINTING_IVARS = ["@last_value"] # :nodoc:
