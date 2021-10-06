@@ -1,40 +1,18 @@
+#ifndef YJIT_H
+#define YJIT_H 1
 //
 // This file contains definitions YJIT exposes to the CRuby codebase
 //
-
-#ifndef YJIT_H
-#define YJIT_H 1
 
 #include "ruby/internal/config.h"
 #include "ruby_assert.h" // for RUBY_DEBUG
 #include "vm_core.h"
 #include "method.h"
 
-#ifdef _WIN32
-#define PLATFORM_SUPPORTED_P 0
-#else
-#define PLATFORM_SUPPORTED_P 1
-#endif
-
-#define JIT_ENABLED USE_MJIT
-
-#ifndef YJIT_CHECK_MODE
-#define YJIT_CHECK_MODE 0
-#endif
-
-// >= 1: print when output code invalidation happens
-// >= 2: dump list of instructions when regions compile
-#ifndef YJIT_DUMP_MODE
-#define YJIT_DUMP_MODE 0
-#endif
-
+// YJIT_STATS controls whether to support runtime counters in generated code
+// and in the interpreter.
 #ifndef YJIT_STATS
 # define YJIT_STATS RUBY_DEBUG
-#endif // ifndef YJIT_STATS
-
-#ifndef rb_iseq_t
-typedef struct rb_iseq_struct rb_iseq_t;
-#define rb_iseq_t rb_iseq_t
 #endif
 
 struct rb_yjit_options {
