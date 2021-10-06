@@ -3373,6 +3373,14 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     uint32_t start_pc_offset = 0;
 
     if (iseq_lead_only_arg_setup_p(iseq)) {
+        // If we have keyword arguments being passed to a callee that only takes
+        // positionals, then we need to allocate a hash. For now we're going to
+        // call that too complex and bail.
+        if (vm_ci_flag(ci) & VM_CALL_KWARG) {
+            GEN_COUNTER_INC(cb, send_iseq_complex_callee);
+            return YJIT_CANT_COMPILE;
+        }
+
         num_params = iseq->body->param.lead_num;
 
         if (num_params != argc) {
@@ -3381,6 +3389,14 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
         }
     }
     else if (rb_iseq_only_optparam_p(iseq)) {
+        // If we have keyword arguments being passed to a callee that only takes
+        // positionals and optionals, then we need to allocate a hash. For now
+        // we're going to call that too complex and bail.
+        if (vm_ci_flag(ci) & VM_CALL_KWARG) {
+            GEN_COUNTER_INC(cb, send_iseq_complex_callee);
+            return YJIT_CANT_COMPILE;
+        }
+
         // These are iseqs with 0 or more required parameters followed by 1
         // or more optional parameters.
         // We follow the logic of vm_call_iseq_setup_normal_opt_start()
