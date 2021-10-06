@@ -624,6 +624,7 @@ class Reline::LineEditor
 
   DIALOG_DEFAULT_HEIGHT = 20
   private def render_dialog(cursor_column)
+    return unless Encoding.default_external == Encoding::UTF_8
     @dialogs.each do |dialog|
       render_each_dialog(dialog, cursor_column)
     end
