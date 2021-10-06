@@ -1006,7 +1006,7 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
     volatile VALUE prev_env = Qnil;
 
     if (read_only_variables) {
-        for (int i=0; i<RARRAY_LENINT(read_only_variables); i++) {
+        for (int i=RARRAY_LENINT(read_only_variables)-1; i>=0; i--) {
             ID id = SYM2ID(rb_str_intern(RARRAY_AREF(read_only_variables, i)));
 
             for (unsigned int j=0; j<src_env->iseq->body->local_table_size; j++) {
