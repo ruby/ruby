@@ -4455,36 +4455,35 @@ int_range_sum(VALUE beg, VALUE end, int excl, VALUE init)
 }
 
 /*
- * call-seq:
- *   enum.sum(init=0)                   -> number
- *   enum.sum(init=0) {|e| expr }       -> number
+ *  call-seq:
+ *    sum(initial_value = 0)                  -> number
+ *    sum(initial_value = 0) {|element| ... } -> object
  *
- * Returns the sum of elements in an Enumerable.
+ *  With no block given,
+ *  returns the sum of +initial_value+ and the elements:
  *
- * If a block is given, the block is applied to each element
- * before addition.
+ *    (1..100).sum          # => 5050
+ *    (1..100).sum(1)       # => 5051
+ *    ('a'..'d').sum('foo') # => "fooabcd"
  *
- * If <i>enum</i> is empty, it returns <i>init</i>.
+ *  Generally, the sum is computed using methods <tt>+</tt> and +each+;
+ *  for performance optimizations, those methods may not be used,
+ *  and so any redefinition of those methods may not have effect here.
  *
- * For example:
+ *  One such optimization: When possible, computes using Gauss's summation
+ *  formula <em>n(n+1)/2</em>:
  *
- *   { 1 => 10, 2 => 20 }.sum {|k, v| k * v }  #=> 50
- *   (1..10).sum                               #=> 55
- *   (1..10).sum {|v| v * 2 }                  #=> 110
- *   ('a'..'z').sum                            #=> TypeError
+ *    100 * (100 + 1) / 2 # => 5050
  *
- * This method can be used for non-numeric objects by
- * explicit <i>init</i> argument.
+ *  With a block given, calls the block with each element;
+ *  returns the sum of +initial_value+ and the block return values:
  *
- *   { 1 => 10, 2 => 20 }.sum([])                   #=> [1, 10, 2, 20]
- *   "a\nb\nc".each_line.lazy.map(&:chomp).sum("")  #=> "abc"
+ *    (1..4).sum {|i| i*i }                        # => 30
+ *    (1..4).sum(100) {|i| i*i }                   # => 130
+ *    h = {a: 0, b: 1, c: 2, d: 3, e: 4, f: 5}
+ *    h.sum {|key, value| value.odd? ? value : 0 } # => 9
+ *    ('a'..'f').sum('x') {|c| c < 'd' ? c : '' }  # => "xabc"
  *
- * If the method is applied to an Integer range without a block,
- * the sum is not done by iteration, but instead using Gauss's summation
- * formula.
- *
- * Enumerable#sum method may not respect method redefinition of "+"
- * methods such as Integer#+, or "each" methods such as Range#each.
  */
 static VALUE
 enum_sum(int argc, VALUE* argv, VALUE obj)
@@ -4552,12 +4551,23 @@ uniq_iter(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
 /*
  *  call-seq:
- *     enum.uniq                -> new_ary
- *     enum.uniq { |item| ... } -> new_ary
+ *    uniq                  -> array
+ *    uniq {|element| ... } -> array
  *
- *  Returns a new array by removing duplicate values in +self+.
+ *  With no block, returns a new array containing only unique elements;
+ *  the array has no two elements +e0+ and +e1+ such that <tt>e0.eql?(e1)</tt>:
  *
- *  See also Array#uniq.
+ *    %w[a b c c b a a b c].uniq       # => ["a", "b", "c"]
+ *    [0, 1, 2, 2, 1, 0, 0, 1, 2].uniq # => [0, 1, 2]
+ *
+ *  With a block, returns a new array containing only for which the block
+ *  returns a unique value:
+ *
+ *    a = [0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1]
+ *    a.uniq {|i| i.even? ? i : 0 } # => [0, 2, 4]
+ *    a = %w[a b c d e e d c b a a b c d e]
+      a.uniq {|c| c < 'c' }         # => ["a", "c"]
+ *
  */
 
 static VALUE
@@ -4587,21 +4597,13 @@ compact_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 
 /*
  *  call-seq:
- *     enum.compact -> array
+ *    compact -> array
  *
- *  Returns an array of all non-+nil+ elements from enumeration.
+ *  Returns an array of all non-+nil+ elements:
  *
- *      def with_nils
- *        yield 1
- *        yield 2
- *        yield nil
- *        yield 3
- *      end
+ *    a = [nil, 0, nil, 'a', false, nil, false, nil, 'a', nil, 0, nil]
+ *    a.compact # => [0, "a", false, false, "a", 0]
  *
- *      to_enum(:with_nils).compact
- *      # => [1, 2, 3]
- *
- *  See also Array#compact.
  */
 
 static VALUE
