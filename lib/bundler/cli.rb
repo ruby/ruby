@@ -552,7 +552,7 @@ module Bundler
       method_option :version, :type => :boolean, :default => false, :aliases => "-v", :desc => "Set to show each gem version."
       method_option :without, :type => :array, :default => [], :aliases => "-W", :banner => "GROUP[ GROUP...]", :desc => "Exclude gems that are part of the specified named group."
       def viz
-        SharedHelpers.major_deprecation 2, "The `viz` command has been moved to the `bundle-viz` gem, see https://github.com/bundler/bundler-viz"
+        SharedHelpers.major_deprecation 2, "The `viz` command has been moved to the `bundle-viz` gem, see https://github.com/rubygems/bundler-viz"
         require_relative "cli/viz"
         Viz.new(options.dup).run
       end
