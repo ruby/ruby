@@ -2074,37 +2074,60 @@ assert_equal '["sub", "sub"]', %q{
   [foo(sub), foo(sub)]
 }
 
-assert_equal '[[1, 2, 3, 4]]', %q{
-  def four(a:, b:, c:, d:)
-    [a, b, c, d]
+# leading and keyword arguments are swapped into the right order
+assert_equal '[[1, 2, 3, 4, 5, 6]]', %q{
+  def kwargs(five, six, a:, b:, c:, d:)
+    [a, b, c, d, five, six]
   end
 
   5.times.flat_map do
     [
-      four(a: 1, b: 2, c: 3, d: 4),
-      four(a: 1, b: 2, d: 4, c: 3),
-      four(a: 1, c: 3, b: 2, d: 4),
-      four(a: 1, c: 3, d: 4, b: 2),
-      four(a: 1, d: 4, b: 2, c: 3),
-      four(a: 1, d: 4, c: 3, b: 2),
-      four(b: 2, a: 1, c: 3, d: 4),
-      four(b: 2, a: 1, d: 4, c: 3),
-      four(b: 2, c: 3, a: 1, d: 4),
-      four(b: 2, c: 3, d: 4, a: 1),
-      four(b: 2, d: 4, a: 1, c: 3),
-      four(b: 2, d: 4, c: 3, a: 1),
-      four(c: 3, a: 1, b: 2, d: 4),
-      four(c: 3, a: 1, d: 4, b: 2),
-      four(c: 3, b: 2, a: 1, d: 4),
-      four(c: 3, b: 2, d: 4, a: 1),
-      four(c: 3, d: 4, a: 1, b: 2),
-      four(c: 3, d: 4, b: 2, a: 1),
-      four(d: 4, a: 1, b: 2, c: 3),
-      four(d: 4, a: 1, c: 3, b: 2),
-      four(d: 4, b: 2, a: 1, c: 3),
-      four(d: 4, b: 2, c: 3, a: 1),
-      four(d: 4, c: 3, a: 1, b: 2),
-      four(d: 4, c: 3, b: 2, a: 1)
+      kwargs(5, 6, a: 1, b: 2, c: 3, d: 4),
+      kwargs(5, 6, a: 1, b: 2, d: 4, c: 3),
+      kwargs(5, 6, a: 1, c: 3, b: 2, d: 4),
+      kwargs(5, 6, a: 1, c: 3, d: 4, b: 2),
+      kwargs(5, 6, a: 1, d: 4, b: 2, c: 3),
+      kwargs(5, 6, a: 1, d: 4, c: 3, b: 2),
+      kwargs(5, 6, b: 2, a: 1, c: 3, d: 4),
+      kwargs(5, 6, b: 2, a: 1, d: 4, c: 3),
+      kwargs(5, 6, b: 2, c: 3, a: 1, d: 4),
+      kwargs(5, 6, b: 2, c: 3, d: 4, a: 1),
+      kwargs(5, 6, b: 2, d: 4, a: 1, c: 3),
+      kwargs(5, 6, b: 2, d: 4, c: 3, a: 1),
+      kwargs(5, 6, c: 3, a: 1, b: 2, d: 4),
+      kwargs(5, 6, c: 3, a: 1, d: 4, b: 2),
+      kwargs(5, 6, c: 3, b: 2, a: 1, d: 4),
+      kwargs(5, 6, c: 3, b: 2, d: 4, a: 1),
+      kwargs(5, 6, c: 3, d: 4, a: 1, b: 2),
+      kwargs(5, 6, c: 3, d: 4, b: 2, a: 1),
+      kwargs(5, 6, d: 4, a: 1, b: 2, c: 3),
+      kwargs(5, 6, d: 4, a: 1, c: 3, b: 2),
+      kwargs(5, 6, d: 4, b: 2, a: 1, c: 3),
+      kwargs(5, 6, d: 4, b: 2, c: 3, a: 1),
+      kwargs(5, 6, d: 4, c: 3, a: 1, b: 2),
+      kwargs(5, 6, d: 4, c: 3, b: 2, a: 1)
     ]
   end.uniq
+}
+
+# implicit hashes get skipped and don't break compilation
+assert_equal '[[:key]]', %q{
+  def implicit(hash)
+    hash.keys
+  end
+
+  5.times.map { implicit(key: :value) }.uniq
+}
+
+# default values on keywords don't mess up argument order
+assert_equal '[2]', %q{
+  def default_value
+    1
+  end
+
+  def default_expression(value: default_value)
+    value
+  end
+
+  5.times.map { default_expression(value: 2) }.uniq
 }

@@ -775,7 +775,7 @@ gen_dupn(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 }
 
 static void
-stack_swap(ctx_t* ctx, codeblock_t* cb, int offset0, int offset1, x86opnd_t reg0, x86opnd_t reg1)
+stack_swap(ctx_t *ctx, codeblock_t *cb, int offset0, int offset1, x86opnd_t reg0, x86opnd_t reg1)
 {
     x86opnd_t opnd0 = ctx_stack_opnd(ctx, offset0);
     x86opnd_t opnd1 = ctx_stack_opnd(ctx, offset1);
@@ -794,7 +794,7 @@ stack_swap(ctx_t* ctx, codeblock_t* cb, int offset0, int offset1, x86opnd_t reg0
 
 // Swap top 2 stack entries
 static codegen_status_t
-gen_swap(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
+gen_swap(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
     stack_swap(ctx , cb, 0, 1, REG0, REG1);
     return YJIT_KEEP_COMPILING;
@@ -3819,7 +3819,7 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
             }
           case VM_METHOD_TYPE_ATTRSET:
             if ((vm_ci_flag(ci) & VM_CALL_KWARG) != 0) {
-                GEN_COUNTER_INC(cb, send_attrset_keywords);
+                GEN_COUNTER_INC(cb, send_attrset_kwargs);
                 return YJIT_CANT_COMPILE;
             } else if (argc != 1 || !RB_TYPE_P(comptime_recv, T_OBJECT)) {
                 GEN_COUNTER_INC(cb, send_ivar_set_method);
