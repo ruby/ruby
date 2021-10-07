@@ -54,8 +54,8 @@ jobs:
         run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
       - run: make $JOBS incs
       - run: make $JOBS
-#      - run: make leaked-globals
-#        if: matrix.test_task == 'check'
+      - run: make leaked-globals
+        if: matrix.test_task == 'check'
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'check' }}
       - name: Create dummy files in build dir
