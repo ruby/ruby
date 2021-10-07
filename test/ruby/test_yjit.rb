@@ -8,6 +8,34 @@ return unless YJIT.enabled?
 # Tests for YJIT with assertions on compilation and side exits
 # insipired by the MJIT tests in test/ruby/test_jit.rb
 class TestYJIT < Test::Unit::TestCase
+  def test_yjit_in_ruby_description
+    assert_includes(RUBY_DESCRIPTION, '+YJIT')
+  end
+
+  def test_yjit_in_version
+    [
+      %w(--version --yjit),
+      %w(--version --disable-yjit --yjit),
+      %w(--version --disable-yjit --enable-yjit),
+      %w(--version --disable-yjit --enable=yjit),
+      %w(--version --disable=yjit --yjit),
+      %w(--version --disable=yjit --enable-yjit),
+      %w(--version --disable=yjit --enable=yjit),
+    ].each do |version_args|
+      assert_in_out_err(version_args) do |stdout, stderr|
+        assert_equal([RUBY_DESCRIPTION], stdout)
+        assert_equal([], stderr)
+      end
+    end
+  end
+
+  def test_enable_from_env_var
+    yjit_child_env = {'RUBY_YJIT_ENABLE' => '1'}
+    assert_in_out_err([yjit_child_env, '--version'], '', [RUBY_DESCRIPTION])
+    assert_in_out_err([yjit_child_env, '-e puts RUBY_DESCRIPTION'], '', [RUBY_DESCRIPTION])
+    assert_in_out_err([yjit_child_env, '-e p YJIT.enabled?'], '', ['true'])
+  end
+
   def test_compile_getclassvariable
     script = 'class Foo; @@foo = 1; def self.foo; @@foo; end; end; Foo.foo'
     assert_compiles(script, insns: %i[getclassvariable], result: 1)
