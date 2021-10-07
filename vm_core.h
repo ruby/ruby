@@ -225,14 +225,15 @@ struct iseq_inline_constant_cache_entry {
 
     VALUE value;              // v0
     rb_serial_t ic_serial;    // v1
-#if (SIZEOF_SERIAL_T < 2 * SIZEOF_VOIDP)
-    VALUE ic_padding;         // v2
+#if (SIZEOF_SERIAL_T < SIZEOF_VOIDP)
+    VALUE ic_padding;         // v1.5
 #endif
-    const rb_cref_t *ic_cref; // v3
+    const rb_cref_t *ic_cref; // v2
+    rb_serial_t *constant_serial; // v3
 };
 STATIC_ASSERT(sizeof_iseq_inline_constant_cache_entry,
-              (offsetof(struct iseq_inline_constant_cache_entry, ic_cref) +
-	       sizeof(const rb_cref_t *)) <= sizeof(struct RObject));
+              (offsetof(struct iseq_inline_constant_cache_entry, constant_serial) +
+	       sizeof(rb_serial_t *)) <= sizeof(struct RObject));
 
 struct iseq_inline_constant_cache {
     struct iseq_inline_constant_cache_entry *entry;
@@ -682,6 +683,7 @@ typedef struct rb_vm_struct {
     int builtin_inline_index;
 
     struct rb_id_table *negative_cme_table;
+    struct rb_id_table *constant_cache;
 
 #ifndef VM_GLOBAL_CC_CACHE_TABLE_SIZE
 #define VM_GLOBAL_CC_CACHE_TABLE_SIZE 1023
@@ -1713,7 +1715,6 @@ VALUE rb_vm_make_binding(const rb_execution_context_t *ec, const rb_control_fram
 VALUE rb_vm_env_local_variables(const rb_env_t *env);
 const rb_env_t *rb_vm_env_prev_env(const rb_env_t *env);
 const VALUE *rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const ID *dynvars);
-void rb_vm_inc_const_missing_count(void);
 VALUE rb_vm_call_kw(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc,
                  const VALUE *argv, const rb_callable_method_entry_t *me, int kw_splat);
 MJIT_STATIC void rb_vm_pop_frame(rb_execution_context_t *ec);

@@ -396,7 +396,6 @@ VALUE rb_mRubyVMFrozenCore;
 VALUE rb_block_param_proxy;
 
 #define ruby_vm_redefined_flag GET_VM()->redefined_flag
-VALUE ruby_vm_const_missing_count = 0;
 rb_vm_t *ruby_current_vm_ptr = NULL;
 rb_ractor_t *ruby_single_main_ractor;
 bool ruby_vm_keep_script_lines;
@@ -425,7 +424,6 @@ rb_event_flag_t ruby_vm_event_flags;
 rb_event_flag_t ruby_vm_event_enabled_global_flags;
 unsigned int    ruby_vm_event_local_num;
 
-rb_serial_t ruby_vm_global_constant_state = 1;
 rb_serial_t ruby_vm_class_serial = 1;
 rb_serial_t ruby_vm_global_cvar_state = 1;
 
@@ -440,12 +438,6 @@ static const struct rb_callcache vm_empty_cc = {
 };
 
 static void thread_free(void *ptr);
-
-void
-rb_vm_inc_const_missing_count(void)
-{
-    ruby_vm_const_missing_count +=1;
-}
 
 MJIT_FUNC_EXPORTED int
 rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
@@ -483,6 +475,13 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
     return FALSE;
 }
 
+static enum rb_id_table_iterator_result
+vm_stat_constant_cache_i(ID id, VALUE value, void *data)
+{
+    rb_hash_aset((VALUE) data, ID2SYM(id), SERIALT2NUM(*((rb_serial_t *) value)));
+    return ID_TABLE_CONTINUE;
+}
+
 /*
  *  call-seq:
  *    RubyVM.stat -> Hash
@@ -493,10 +492,21 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
  *
  *  This hash includes information about method/constant cache serials:
  *
- *    {
- *      :global_constant_state=>481,
- *      :class_serial=>9029
- *    }
+ *      {
+ *        :constant_cache=>{
+ *          :BINARY=>3,
+ *          :BasicObject=>3,
+ *          :OPTS=>3,
+ *          :Mutex=>3,
+ *          :SizedQueue=>3,
+ *          :Queue=>3,
+ *          :Errno=>108,
+ *          :ConditionVariable=>3,
+ *          :compatible=>2,
+ *          :TMP_RUBY_PREFIX=>2
+ *        },
+ *        :class_serial=>9029
+ *      }
  *
  *  The contents of the hash are implementation specific and may be changed in
  *  the future.
@@ -507,7 +517,7 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
 static VALUE
 vm_stat(int argc, VALUE *argv, VALUE self)
 {
-    static VALUE sym_global_constant_state, sym_class_serial, sym_global_cvar_state;
+    static VALUE sym_constant_cache, sym_class_serial, sym_global_cvar_state;
     VALUE arg = Qnil;
     VALUE hash = Qnil, key = Qnil;
 
@@ -524,13 +534,11 @@ vm_stat(int argc, VALUE *argv, VALUE self)
 	hash = rb_hash_new();
     }
 
-    if (sym_global_constant_state == 0) {
 #define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
-	S(global_constant_state);
+    S(constant_cache);
 	S(class_serial);
 	S(global_cvar_state);
 #undef S
-    }
 
 #define SET(name, attr) \
     if (key == sym_##name) \
@@ -538,10 +546,24 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     else if (hash != Qnil) \
 	rb_hash_aset(hash, sym_##name, SERIALT2NUM(attr));
 
-    SET(global_constant_state, ruby_vm_global_constant_state);
     SET(class_serial, ruby_vm_class_serial);
     SET(global_cvar_state, ruby_vm_global_cvar_state);
 #undef SET
+
+    // Here we're going to set up the constant cache hash that has key-value
+    // pairs of { name => version }, where name is a Symbol that represents the
+    // ID in the cache and version is an Integer representing the rb_serial_t in
+    // the cache.
+    if (key == sym_constant_cache || hash != Qnil) {
+        VALUE constant_cache = rb_hash_new();
+        rb_id_table_foreach(GET_VM()->constant_cache, vm_stat_constant_cache_i, (void *) constant_cache);
+
+        if (key == sym_constant_cache) {
+            return constant_cache;
+        } else {
+            rb_hash_aset(hash, sym_constant_cache, constant_cache);
+        }
+    }
 
     if (!NIL_P(key)) { /* matched key should return above */
 	rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(key));
@@ -3776,6 +3798,7 @@ Init_BareVM(void)
     vm->objspace = rb_objspace_alloc();
     ruby_current_vm_ptr = vm;
     vm->negative_cme_table = rb_id_table_create(16);
+    vm->constant_cache = rb_id_table_create(0);
 
     Init_native_thread(th);
     th->vm = vm;

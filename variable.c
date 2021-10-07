@@ -1944,7 +1944,7 @@ VALUE
 rb_const_missing(VALUE klass, VALUE name)
 {
     VALUE value = rb_funcallv(klass, idConst_missing, 1, &name);
-    rb_vm_inc_const_missing_count();
+    rb_clear_constant_cache(SYM2ID(name));
     return value;
 }
 
@@ -2788,7 +2788,7 @@ rb_const_remove(VALUE mod, ID id)
         undefined_constant(mod, ID2SYM(id));
     }
 
-    rb_clear_constant_cache();
+    rb_clear_constant_cache(id);
 
     val = ce->value;
     if (val == Qundef) {
@@ -3063,7 +3063,6 @@ rb_const_set(VALUE klass, ID id, VALUE val)
         struct rb_id_table *tbl = RCLASS_CONST_TBL(klass);
         if (!tbl) {
             RCLASS_CONST_TBL(klass) = tbl = rb_id_table_create(0);
-            rb_clear_constant_cache();
             ce = ZALLOC(rb_const_entry_t);
             rb_id_table_insert(tbl, id, (VALUE)ce);
             setup_const_entry(ce, klass, val, CONST_PUBLIC);
@@ -3076,6 +3075,23 @@ rb_const_set(VALUE klass, ID id, VALUE val)
             };
             const_tbl_update(&ac);
         }
+
+        // Get the VM and a pointer to a serial that will correspond to the ID
+        // for this constant.
+        const rb_vm_t *vm = GET_VM();
+        rb_serial_t *constant_serial;
+
+        // Get the current value of the serial associated with the given ID.
+        // Increment it if it exists, otherwise allocate it and set it to 1.
+        if (rb_id_table_lookup(vm->constant_cache, id, (VALUE *) &constant_serial)) {
+            (*constant_serial)++;
+        } else {
+            constant_serial = (rb_serial_t *) malloc(sizeof(rb_serial_t));
+            *constant_serial = 1;
+        }
+
+        // Insert the new serial into the vm constant cache for the given ID.
+        rb_id_table_insert(vm->constant_cache, id, (VALUE) constant_serial);
     }
     RB_VM_LOCK_LEAVE();
 
@@ -3140,7 +3156,7 @@ const_tbl_update(struct autoload_const *ac)
 	    struct autoload_data_i *ele = current_autoload_data(klass, id, &ac);
 
 	    if (ele) {
-		rb_clear_constant_cache();
+		rb_clear_constant_cache(id);
 
 		ac->value = val; /* autoload_i is non-WB-protected */
                 ac->file = rb_source_location(&ac->line);
@@ -3168,11 +3184,11 @@ const_tbl_update(struct autoload_const *ac)
 				"previous definition of %"PRIsVALUE" was here", name);
 	    }
 	}
-	rb_clear_constant_cache();
+	rb_clear_constant_cache(id);
 	setup_const_entry(ce, klass, val, visibility);
     }
     else {
-	rb_clear_constant_cache();
+	rb_clear_constant_cache(id);
 
 	ce = ZALLOC(rb_const_entry_t);
 	rb_id_table_insert(tbl, id, (VALUE)ce);
@@ -3227,10 +3243,6 @@ set_const_visibility(VALUE mod, int argc, const VALUE *argv,
 	VALUE val = argv[i];
 	id = rb_check_id(&val);
 	if (!id) {
-	    if (i > 0) {
-		rb_clear_constant_cache();
-	    }
-
             undefined_constant(mod, val);
 	}
 	if ((ce = rb_const_lookup(mod, id))) {
@@ -3245,15 +3257,12 @@ set_const_visibility(VALUE mod, int argc, const VALUE *argv,
 		    ac->flag |= flag;
 		}
 	    }
+        rb_clear_constant_cache(id);
 	}
 	else {
-	    if (i > 0) {
-		rb_clear_constant_cache();
-	    }
             undefined_constant(mod, ID2SYM(id));
 	}
     }
-    rb_clear_constant_cache();
 }
 
 void

@@ -1024,12 +1024,12 @@ opt_getinlinecache
 /* set inline cache */
 DEFINE_INSN
 opt_setinlinecache
-(IC ic)
+(ID id, IC ic)
 (VALUE val)
 (VALUE val)
 // attr bool leaf = false;
 {
-    vm_ic_update(GET_ISEQ(), ic, val, GET_EP());
+    vm_ic_update(GET_ISEQ(), id, ic, val, GET_EP());
 }
 
 /* run iseq only once */

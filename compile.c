@@ -8731,7 +8731,7 @@ compile_colon2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
 	    ADD_SEQ(ret, body);
 
 	    if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
-		ADD_INSN1(ret, node, opt_setinlinecache, INT2FIX(ic_index));
+		ADD_INSN2(ret, node, opt_setinlinecache, ID2SYM(node->nd_mid), INT2FIX(ic_index));
 		ADD_LABEL(ret, lend);
 	    }
 	}
@@ -8772,7 +8772,7 @@ compile_colon3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     ADD_INSN1(ret, node, getconstant, ID2SYM(node->nd_mid));
 
     if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
-	ADD_INSN1(ret, node, opt_setinlinecache, INT2FIX(ic_index));
+	ADD_INSN2(ret, node, opt_setinlinecache, ID2SYM(node->nd_mid), INT2FIX(ic_index));
 	ADD_LABEL(ret, lend);
     }
 
@@ -9274,7 +9274,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
             ADD_INSN2(ret, node, opt_getinlinecache, lend, INT2FIX(ic_index));
             ADD_INSN1(ret, node, putobject, Qtrue);
             ADD_INSN1(ret, node, getconstant, ID2SYM(node->nd_vid));
-            ADD_INSN1(ret, node, opt_setinlinecache, INT2FIX(ic_index));
+            ADD_INSN2(ret, node, opt_setinlinecache, ID2SYM(node->nd_vid), INT2FIX(ic_index));
 	    ADD_LABEL(ret, lend);
 	}
 	else {

@@ -253,15 +253,11 @@ void rb_undef_alloc_func(VALUE klass);
 rb_alloc_func_t rb_get_alloc_func(VALUE klass);
 
 /**
- * Clears  the constant  cache.   Extension libraries  should  not bother  such
- * things.   Just forget  about this  API (or  even, the  presence of  constant
- * cache).
- *
- * @internal
- *
- * Completely no idea why this function is defined in vm_method.c.
+ * Increments the serial on the VM's constant cache for the given ID. This will
+ * make it so that any inline caches that correspond to the given ID will be
+ * refetched the next time the constant is accessed.
  */
-void rb_clear_constant_cache(void);
+void rb_clear_constant_cache(ID name);
 
 /**
  * Resembles `alias`.

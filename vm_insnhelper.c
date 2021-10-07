@@ -4764,9 +4764,9 @@ vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
 
 // For MJIT inlining
 static inline bool
-vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, rb_serial_t ic_serial, const VALUE *reg_ep)
+vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, rb_serial_t ic_serial, rb_serial_t *constant_serial, const VALUE *reg_ep)
 {
-    if (ic_serial == GET_GLOBAL_CONSTANT_STATE() &&
+    if (constant_serial && ic_serial == *constant_serial &&
         ((flags & IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p())) {
 
         VM_ASSERT((flags & IMEMO_CONST_CACHE_SHAREABLE) ? rb_ractor_shareable_p(value) : true);
@@ -4781,7 +4781,7 @@ static bool
 vm_ic_hit_p(const struct iseq_inline_constant_cache_entry *ice, const VALUE *reg_ep)
 {
     VM_ASSERT(IMEMO_TYPE_P(ice, imemo_constcache));
-    return vm_inlined_ic_hit_p(ice->flags, ice->value, ice->ic_cref, ice->ic_serial, reg_ep);
+    return vm_inlined_ic_hit_p(ice->flags, ice->value, ice->ic_cref, ice->ic_serial, ice->constant_serial, reg_ep);
 }
 
 // YJIT needs this function to never allocate and never raise
@@ -4792,15 +4792,22 @@ rb_vm_ic_hit_p(IC ic, const VALUE *reg_ep)
 }
 
 static void
-vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep)
+vm_ic_update(const rb_iseq_t *iseq, ID id, IC ic, VALUE val, const VALUE *reg_ep)
 {
-
     struct iseq_inline_constant_cache_entry *ice = (struct iseq_inline_constant_cache_entry *)rb_imemo_new(imemo_constcache, 0, 0, 0, 0);
     RB_OBJ_WRITE(ice, &ice->value, val);
+
+    const rb_vm_t *vm = GET_VM();
+    rb_serial_t *constant_serial;
+
+    if (rb_id_table_lookup(vm->constant_cache, id, (VALUE *) &constant_serial)) {
+        ice->ic_serial = *constant_serial;
+        ice->constant_serial = constant_serial;
+    }
+
     ice->ic_cref = vm_get_const_key_cref(reg_ep);
-    ice->ic_serial = GET_GLOBAL_CONSTANT_STATE() - ruby_vm_const_missing_count;
     if (rb_ractor_shareable_p(val)) ice->flags |= IMEMO_CONST_CACHE_SHAREABLE;
-    ruby_vm_const_missing_count = 0;
+
     RB_OBJ_WRITE(iseq, &ic->entry, ice);
 #ifndef MJIT_HEADER
     // MJIT and YJIT can't be on at the same time, so there is no need to

@@ -127,10 +127,16 @@ vm_cme_invalidate(rb_callable_method_entry_t *cme)
 }
 
 void
-rb_clear_constant_cache(void)
+rb_clear_constant_cache(ID name)
 {
+    rb_vm_t *vm = GET_VM();
+    rb_serial_t *constant_serial;
+
+    if (rb_id_table_lookup(vm->constant_cache, name, (VALUE *) &constant_serial)) {
+        (*constant_serial)++;
+    }
+
     rb_yjit_constant_state_changed();
-    INC_GLOBAL_CONSTANT_STATE();
 }
 
 static void
