@@ -8168,15 +8168,16 @@ rb_obj_display(int argc, VALUE *argv, VALUE self)
 }
 
 static int
-rb_stderr_to_original_p(void)
+rb_stderr_to_original_p(VALUE err)
 {
-    return (rb_ractor_stderr() == orig_stderr || RFILE(orig_stderr)->fptr->fd < 0);
+    return (err == orig_stderr || RFILE(orig_stderr)->fptr->fd < 0);
 }
 
 void
 rb_write_error2(const char *mesg, long len)
 {
-    if (rb_stderr_to_original_p()) {
+    VALUE out = rb_ractor_stderr();
+    if (rb_stderr_to_original_p(out)) {
 #ifdef _WIN32
 	if (isatty(fileno(stderr))) {
 	    if (rb_w32_write_console(rb_str_new(mesg, len), fileno(stderr)) > 0) return;
@@ -8188,7 +8189,7 @@ rb_write_error2(const char *mesg, long len)
 	}
     }
     else {
-	rb_io_write(rb_ractor_stderr(), rb_str_new(mesg, len));
+	rb_io_write(out, rb_str_new(mesg, len));
     }
 }
 
@@ -8201,8 +8202,9 @@ rb_write_error(const char *mesg)
 void
 rb_write_error_str(VALUE mesg)
 {
+    VALUE out = rb_ractor_stderr();
     /* a stopgap measure for the time being */
-    if (rb_stderr_to_original_p()) {
+    if (rb_stderr_to_original_p(out)) {
 	size_t len = (size_t)RSTRING_LEN(mesg);
 #ifdef _WIN32
 	if (isatty(fileno(stderr))) {
@@ -8216,14 +8218,14 @@ rb_write_error_str(VALUE mesg)
     }
     else {
 	/* may unlock GVL, and  */
-	rb_io_write(rb_ractor_stderr(), mesg);
+	rb_io_write(out, mesg);
     }
 }
 
 int
 rb_stderr_tty_p(void)
 {
-    if (rb_stderr_to_original_p())
+    if (rb_stderr_to_original_p(rb_ractor_stderr()))
 	return isatty(fileno(stderr));
     return 0;
 }
