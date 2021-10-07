@@ -8173,11 +8173,28 @@ rb_stderr_to_original_p(VALUE err)
     return (err == orig_stderr || RFILE(orig_stderr)->fptr->fd < 0);
 }
 
+static int
+rb_stderr_flush(VALUE io)
+{
+    if (!RB_TYPE_P(io, T_FILE)) return 0;
+    io = GetWriteIO(io);
+    rb_io_t *fptr = RFILE(io)->fptr;
+    while (fptr && fptr->fd >= 0 && fptr->fd == fileno(stderr)) {
+        if (!(fptr->mode & FMODE_WRITABLE)) break;
+        if (!fptr->wbuf.len) break;
+        if (!io_flush_buffer(fptr)) break;
+        if (!rb_io_maybe_wait_writable(errno, fptr->self, Qnil))
+            return -1;
+    }
+    return 0;
+}
+
 void
 rb_write_error2(const char *mesg, long len)
 {
     VALUE out = rb_ractor_stderr();
     if (rb_stderr_to_original_p(out)) {
+        rb_stderr_flush(out);
 #ifdef _WIN32
 	if (isatty(fileno(stderr))) {
 	    if (rb_w32_write_console(rb_str_new(mesg, len), fileno(stderr)) > 0) return;
@@ -8206,6 +8223,7 @@ rb_write_error_str(VALUE mesg)
     /* a stopgap measure for the time being */
     if (rb_stderr_to_original_p(out)) {
 	size_t len = (size_t)RSTRING_LEN(mesg);
+        rb_stderr_flush(out);
 #ifdef _WIN32
 	if (isatty(fileno(stderr))) {
 	    if (rb_w32_write_console(mesg, fileno(stderr)) > 0) return;

@@ -1399,4 +1399,15 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       end
     end;
   end
+
+  def test_buffered_stderr
+    err = ["warn\n", "err\n", /.*: raise \(RuntimeError\)/, :*]
+    assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", [], err)
+    begin;
+      $stderr.sync = false
+      warn 'warn'
+      $stderr.puts 'err'
+      raise 'raise'
+    end;
+  end
 end
