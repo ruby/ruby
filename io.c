@@ -1311,8 +1311,8 @@ io_from_fd(int fd)
     return prep_io(fd, FMODE_PREP, rb_cIO, NULL);
 }
 
-static
-int io_wait_for_single_fd(int fd, int events, struct timeval *timeout)
+static int
+io_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 {
     VALUE scheduler = rb_fiber_scheduler_current();
 
@@ -1420,7 +1420,8 @@ rb_thread_fd_writable(int fd)
     return rb_wait_for_single_fd(fd, RUBY_IO_WRITABLE, NULL);
 }
 
-VALUE rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout)
+VALUE
+rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout)
 {
     // fptr->fd can be set to -1 at any time by another thread when the GVL is
     // released. Many code, e.g. `io_bufread` didn't check this correctly and
@@ -1460,12 +1461,14 @@ VALUE rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout)
     }
 }
 
-int rb_io_maybe_wait_readable(int error, VALUE io, VALUE timeout)
+int
+rb_io_maybe_wait_readable(int error, VALUE io, VALUE timeout)
 {
     return RB_NUM2INT(rb_io_maybe_wait(error, io, RB_INT2NUM(RUBY_IO_READABLE), timeout));
 }
 
-int rb_io_maybe_wait_writable(int error, VALUE io, VALUE timeout)
+int
+rb_io_maybe_wait_writable(int error, VALUE io, VALUE timeout)
 {
     return RB_NUM2INT(rb_io_maybe_wait(error, io, RB_INT2NUM(RUBY_IO_WRITABLE), timeout));
 }
