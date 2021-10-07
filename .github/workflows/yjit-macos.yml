@@ -5,7 +5,7 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        test_task: [ "check", "test-bundler-parallel" ] #, "test-bundled-gems" ]
+        test_task: [ "check" ] #, "test-bundler-parallel" ] #, "test-bundled-gems" ]
         yjit_opts: [
           "--yjit",
           "--yjit --yjit-call-threshold=1 --yjit-max-versions=1",
