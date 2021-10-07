@@ -3512,7 +3512,8 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
             // know every value was specified, we can just write the value 0.
             kw_bits_shift = 1;
             mov(cb, ctx_stack_opnd(ctx, -1), imm_opnd(INT2FIX(0)));
-        } else if (argc == lead_num) {
+        }
+        else if (argc == lead_num) {
             // Here we are calling a method that accepts keyword arguments
             // (optional or required) but we're not passing any keyword
             // arguments at this call site
