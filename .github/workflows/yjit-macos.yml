@@ -41,8 +41,8 @@ jobs:
         run: ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
       - run: make $JOBS incs
       - run: make $JOBS
-#      - run: make leaked-globals
-#      if: matrix.test_task == 'check'
+      - run: make leaked-globals
+        if: matrix.test_task == 'check'
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'check' }}
       - run: make $JOBS -s ${{ matrix.test_task }}
