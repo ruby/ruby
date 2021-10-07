@@ -141,6 +141,39 @@ eot
                  bug15670)
   end
 
+  def test_massign_logical_expr
+    all_assertions do |all|
+      [['a', true], 'a, b', '(a, b)'].product(['1, 2', ['[1, 2]', true]]) do |(lhs, ls), (rhs, rs)|
+        next if ls and rs
+        assign = ls ? :assign : :massign
+
+        all.for("true and #{lhs} = #{rhs}") do |code|
+          _, (_, _, s) = Ripper.sexp_raw(code)
+          t, _, op, (r,) = s
+          assert_equal([:binary, :and, assign], [t, op, r])
+        end
+
+        all.for("false or #{lhs} = #{rhs}") do |code|
+          _, (_, _, s) = Ripper.sexp_raw(code)
+          t, _, op, (r,) = s
+          assert_equal([:binary, :or, assign], [t, op, r])
+        end
+
+        all.for("#{lhs} = #{rhs} and true") do |code|
+          _, (_, _, s) = Ripper.sexp_raw(code)
+          t, (l,), op = s
+          assert_equal([:binary, assign, :and], [t, l, op])
+        end
+
+        all.for("#{lhs} = #{rhs} or false") do |code|
+          _, (_, _, s) = Ripper.sexp_raw(code)
+          t, (l,), op = s
+          assert_equal([:binary, assign, :or], [t, l, op])
+        end
+      end
+    end
+  end
+
   pattern_matching_data = {
     [__LINE__, %q{ case 0; in 0; end }] =>
     [:case,
