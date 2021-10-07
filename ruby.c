@@ -356,7 +356,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("--jit-min-calls=num", "", "Number of calls to trigger JIT (for testing, default: 10000)"),
     };
     static const struct message yjit_options[] = {
-#if RUBY_DEBUG
+#if YJIT_STATS
         M("--yjit-stats",             "", "Enable collecting YJIT statistics"),
 #endif
         M("--yjit-exec-mem-size=num", "", "Size of executable memory block in MiB (default: 256)"),
