@@ -1940,7 +1940,7 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
  *    (1..4).one? {|element| element < 2 }                     # => true
  *    (1..4).one? {|element| element < 1 }                     # => false
  *    {foo: 0, bar: 1, baz: 2}.one? {|key, value| value < 1 }  # => true
- *    {foo: 0, bar: 1, baz: 2}.one? {|key, value| value < 2  } # => false
+ *    {foo: 0, bar: 1, baz: 2}.one? {|key, value| value < 2 } # => false
  *
  *  Related: #none?, #all?, #any?.
  *
@@ -2002,9 +2002,9 @@ DEFINE_ENUMFUNCS(none)
  *    (1..4).none? {|element| element < 1 }                     # => true
  *    (1..4).none? {|element| element < 2 }                     # => false
  *    {foo: 0, bar: 1, baz: 2}.none? {|key, value| value < 0 }  # => true
- *    {foo: 0, bar: 1, baz: 2}.none? {|key, value| value < 1  } # => false
+ *    {foo: 0, bar: 1, baz: 2}.none? {|key, value| value < 1 } # => false
  *
- *  Related: #.one?, #all?, #any.
+ *  Related: #one?, #all?, #any?.
  *
  */
 static VALUE
@@ -2100,6 +2100,8 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  returns the minimum element as determined by the block:
  *
  *    %w[xxx x xxxx xx].min {|a, b| a.size <=> b.size } # => "x"
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.min {|pair1, pair2| pair1[1] <=> pair2[1] } # => [:foo, 0]
  *    [].min {|a, b| a <=> b }                          # => nil
  *
  *  With a block given and positive integer argument +n+ given,
@@ -2107,6 +2109,9 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  as determined by the block.
  *
  *    %w[xxx x xxxx xx].min(2) {|a, b| a.size <=> b.size } # => ["x", "xx"]
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.min(2) {|pair1, pair2| pair1[1] <=> pair2[1] }
+ *    # => [[:foo, 0], [:bar, 1]]
  *    [].min(2) {|a, b| a <=> b }                          # => []
  *
  *  Related: #min_by, #minmax, #max.
@@ -2220,6 +2225,8 @@ max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  returns the maximum element as determined by the block:
  *
  *    %w[xxx x xxxx xx].max {|a, b| a.size <=> b.size } # => "xxxx"
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.max {|pair1, pair2| pair1[1] <=> pair2[1] }     # => [:baz, 2]
  *    [].max {|a, b| a <=> b }                          # => nil
  *
  *  With a block given and positive integer argument +n+ given,
@@ -2227,6 +2234,9 @@ max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  as determined by the block.
  *
  *    %w[xxx x xxxx xx].max(2) {|a, b| a.size <=> b.size } # => ["xxxx", "xxx"]
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.max(2) {|pair1, pair2| pair1[1] <=> pair2[1] }
+ *    # => [[:baz, 2], [:bar, 1]]
  *    [].max(2) {|a, b| a <=> b }                          # => []
  *
  *  Related: #min, #minmax, #max_by.
@@ -2391,6 +2401,9 @@ minmax_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
  *  as determined by the block:
  *
  *    %w[xxx x xxxx xx].minmax {|a, b| a.size <=> b.size } # => ["x", "xxxx"]
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.minmax {|pair1, pair2| pair1[1] <=> pair2[1] }
+ *    # => [[:foo, 0], [:baz, 2]]
  *    [].minmax {|a, b| a <=> b }                          # => [nil, nil]
  *
  *  Related: #min, #max, #minmax_by.
@@ -2856,6 +2869,22 @@ each_val_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
  *    # => {:foo=>0, :bar=>1, :baz=>2}
  *    a # => [[:foo, 0], [:bar, 1], [:baz, 2]]
  *
+ *    class Foo
+ *      include Enumerable
+ *      def each
+ *        yield 1
+ *        yield 1, 2
+ *        yield
+ *      end
+ *    end
+ *    Foo.new.each_entry {|yielded| p yielded }
+ *
+ *  Output:
+ *
+ *    1
+ *    [1, 2]
+ *    nil
+ *
  *  With no block given, returns an Enumerator.
  *
  */
@@ -3062,7 +3091,6 @@ each_with_object_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
  *  and the given object:
  *
  *    (1..4).each_with_object([]) {|i, a| a.push(i**2) } # => [1, 4, 9, 16]
- *    # => {}
  *    h.each_with_object({}) {|element, h| k, v = *element; h[v] = k }
  *    # => {0=>:foo, 1=>:bar, 2=>:baz}
  *
@@ -3293,7 +3321,7 @@ take_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *    r.take(2) # => [1, 2]
  *    r.take(0) # => []
  *
- *    h = {foo:0, bar: 1, baz: 2, bat: 3}
+ *    h = {foo: 0, bar: 1, baz: 2, bat: 3}
  *    h.take(2) # => [[:foo, 0], [:bar, 1]]
  *
  */
@@ -3337,8 +3365,8 @@ take_while_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
  *
  *    (1..4).take_while{|i| i < 3 } # => [1, 2]
  *    h = {foo: 0, bar: 1, baz: 2}
- *    a = h.take_while{|element| key, value = *element; value < 2 }
- *    a # => [[:foo, 0], [:bar, 1]]
+ *    h.take_while{|element| key, value = *element; value < 2 }
+ *    # => [[:foo, 0], [:bar, 1]]
  *
  *  With no block given, returns an Enumerator.
  *
@@ -3382,7 +3410,7 @@ drop_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *    r.drop(0)  # => [1, 2, 3, 4]
  *    r.drop(50) # => []
  *
- *    h = {foo:0, bar: 1, baz: 2, bat: 3}
+ *    h = {foo: 0, bar: 1, baz: 2, bat: 3}
  *    h.drop(2) # => [[:baz, 2], [:bat, 3]]
  *
  */
