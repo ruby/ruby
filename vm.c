@@ -985,11 +985,11 @@ collect_outer_variable_names(ID id, VALUE val, void *ptr)
         if (data->isolate ||
             val == Qtrue /* write */) {
             if (data->ary == Qfalse) data->ary = rb_ary_new();
-            rb_ary_push(data->ary, rb_id2str(id));
+            rb_ary_push(data->ary, ID2SYM(id));
         }
         else {
             if (data->read_only == Qfalse) data->read_only = rb_ary_new();
-            rb_ary_push(data->read_only, rb_id2str(id));
+            rb_ary_push(data->read_only, ID2SYM(id));
         }
     }
     return ID_TABLE_CONTINUE;
@@ -1007,7 +1007,7 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
 
     if (read_only_variables) {
         for (int i=RARRAY_LENINT(read_only_variables)-1; i>=0; i--) {
-            ID id = SYM2ID(rb_str_intern(RARRAY_AREF(read_only_variables, i)));
+            ID id = SYM2ID(RARRAY_AREF(read_only_variables, i));
 
             for (unsigned int j=0; j<src_env->iseq->body->local_table_size; j++) {
                 if (id ==  src_env->iseq->body->local_table[j]) {
