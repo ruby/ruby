@@ -3519,7 +3519,8 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
 
             GEN_COUNTER_INC(cb, send_iseq_kwargs_none_passed);
             return YJIT_CANT_COMPILE;
-        } else {
+        }
+        else {
             GEN_COUNTER_INC(cb, send_iseq_complex_callee);
             return YJIT_CANT_COMPILE;
         }
