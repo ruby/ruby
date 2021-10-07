@@ -1586,7 +1586,6 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		| lhs '=' lex_ctxt mrhs
 		    {
 		    /*%%%*/
-			value_expr($4);
 			$$ = node_assign(p, $1, $4, $3, &@$);
 		    /*% %*/
 		    /*% ripper: assign!($1, $4) %*/
@@ -1595,7 +1594,6 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                     {
                     /*%%%*/
                         YYLTYPE loc = code_loc_gen(&@5, &@6);
-                        value_expr($4);
 			$$ = node_assign(p, $1, NEW_RESCUE($4, NEW_RESBODY(0, remove_begin($6), 0, &loc), 0, &@$), $3, &@$);
                     /*% %*/
                     /*% ripper: massign!($1, rescue_mod!($4, $6)) %*/
@@ -2861,6 +2859,7 @@ opt_block_arg	: ',' block_arg
 		    }
 		;
 
+/* value */
 args		: arg_value
 		    {
 		    /*%%%*/
@@ -2891,10 +2890,12 @@ args		: arg_value
 		    }
 		;
 
+/* value */
 mrhs_arg	: mrhs
 		| arg_value
 		;
 
+/* value */
 mrhs		: args ',' arg_value
 		    {
 		    /*%%%*/

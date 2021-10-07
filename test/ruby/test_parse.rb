@@ -1231,10 +1231,12 @@ x = __ENCODING__
     assert_valid_syntax('let () { m(a) do; end }')
   end
 
-  def test_void_value_in_command_rhs
+  def test_void_value_in_rhs
     w = "void value expression"
-    ex = assert_syntax_error("x = return 1", w)
-    assert_equal(1, ex.message.scan(w).size, "same #{w.inspect} warning should be just once")
+    ["x = return 1", "x = return, 1", "x = 1, return", "x, y = return"].each do |code|
+      ex = assert_syntax_error(code, w)
+      assert_equal(1, ex.message.scan(w).size, ->{"same #{w.inspect} warning should be just once\n#{w.message}"})
+    end
   end
 
   def eval_separately(code)
