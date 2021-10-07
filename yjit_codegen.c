@@ -3822,7 +3822,8 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
             if ((vm_ci_flag(ci) & VM_CALL_KWARG) != 0) {
                 GEN_COUNTER_INC(cb, send_attrset_kwargs);
                 return YJIT_CANT_COMPILE;
-            } else if (argc != 1 || !RB_TYPE_P(comptime_recv, T_OBJECT)) {
+            }
+            else if (argc != 1 || !RB_TYPE_P(comptime_recv, T_OBJECT)) {
                 GEN_COUNTER_INC(cb, send_ivar_set_method);
                 return YJIT_CANT_COMPILE;
             }
