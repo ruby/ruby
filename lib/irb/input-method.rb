@@ -366,14 +366,35 @@ module IRB
       end
       return nil if doc.nil?
       width = 40
+
+      x = cursor_pos_to_render.x + autocomplete_dialog.width
+      if x + width > screen_width
+        old_width = screen_width - (x + 0)
+        new_x = autocomplete_dialog.column - width
+        new_x = 0 if new_x < 0
+        new_width = width > autocomplete_dialog.column ? autocomplete_dialog.column : width
+        if old_width.positive? and new_width.positive?
+          if old_width >= new_width
+            width = old_width
+          else
+            width = new_width
+            x = new_x
+          end
+        elsif old_width.positive? and new_width.negative?
+          width = old_width
+        elsif old_width.negative? and new_width.positive?
+          width = new_width
+          x = new_x
+        else # Both are negative width.
+          return nil
+        end
+      end
       formatter = RDoc::Markup::ToAnsi.new
       formatter.width = width
       dialog.trap_key = alt_d
       message = 'Press Alt+d to read the full document'
       contents = [message] + doc.accept(formatter).split("\n")
 
-      x = cursor_pos_to_render.x + autocomplete_dialog.width
-      x = autocomplete_dialog.column - width if x + width >= screen_width
       y = cursor_pos_to_render.y
       DialogRenderInfo.new(pos: Reline::CursorPos.new(x, y), contents: contents, width: width, bg_color: '49')
     }
