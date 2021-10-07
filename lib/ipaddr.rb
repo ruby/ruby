@@ -173,8 +173,10 @@ class IPAddr
   #   p net1.include?(net4)     #=> false
   #   p net4.include?(net1)     #=> true
   def include?(other)
+    other = coerce_other(other)
+    return false unless other.family == family
     range = to_range
-    other = coerce_other(other).to_range
+    other = other.to_range
     range.begin <= other.begin && range.end >= other.end
   end
   alias === include?
@@ -316,7 +318,9 @@ class IPAddr
     if !ipv4?
       raise InvalidAddressError, "not an IPv4 address: #{@addr}"
     end
-    return self.clone.set(@addr | 0xffff00000000, Socket::AF_INET6)
+    clone = self.clone.set(@addr | 0xffff00000000, Socket::AF_INET6)
+    clone.instance_variable_set(:@mask_addr, @mask_addr | 0xffffffffffffffffffffffff00000000)
+    clone
   end
 
   # Returns a new ipaddr built by converting the native IPv4 address
