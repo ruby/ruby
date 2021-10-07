@@ -211,14 +211,6 @@ module FileUtils
     list.each do |item|
       path = remove_trailing_slash(item)
 
-      # optimize for the most common case
-      begin
-        fu_mkdir path, mode
-        next
-      rescue SystemCallError
-        next if File.directory?(path)
-      end
-
       stack = []
       until File.directory?(path)
         stack.push path
