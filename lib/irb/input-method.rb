@@ -381,10 +381,10 @@ module IRB
             width = left_width
             x = left_x
           end
-        elsif right_width.positive? and left_width.negative?
+        elsif right_width.positive? and left_width <= 0
           width = right_width
           x = right_x
-        elsif right_width.negative? and left_width.positive?
+        elsif right_width <= 0 and left_width.positive?
           width = left_width
           x = left_x
         else # Both are negative width.
