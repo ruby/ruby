@@ -553,17 +553,9 @@ module Spec
         update_gemspec = options[:gemspec] || false
         source = options[:source] || "git@#{libpath}"
 
-        @context.git "checkout master", libpath
-
         if branch = options[:branch]
           raise "You can't specify `master` as the branch" if branch == "master"
-          escaped_branch = Shellwords.shellescape(branch)
-
-          if @context.git("branch --list #{escaped_branch}", libpath).empty?
-            @context.git("branch #{escaped_branch}", libpath)
-          end
-
-          @context.git("checkout #{escaped_branch}", libpath)
+          @context.git("checkout -b #{Shellwords.shellescape(branch)}", libpath)
         elsif tag = options[:tag]
           @context.git("tag #{Shellwords.shellescape(tag)}", libpath)
         elsif options[:remote]

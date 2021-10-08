@@ -13,7 +13,7 @@ RSpec.describe "bundle update" do
         end
       G
 
-      update_git "foo", :branch => "omg" do |s|
+      update_git "foo" do |s|
         s.write "lib/foo.rb", "FOO = '1.1'"
       end
 
@@ -48,7 +48,7 @@ RSpec.describe "bundle update" do
         end
       G
 
-      update_git "foo", :branch => "omg", :path => lib_path("foo") do |s|
+      update_git "foo", :path => lib_path("foo") do |s|
         s.write "lib/foo.rb", "FOO = '1.1'"
       end
 
