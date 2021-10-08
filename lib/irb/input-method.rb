@@ -367,27 +367,31 @@ module IRB
       return nil if doc.nil?
       width = 40
 
-      x = cursor_pos_to_render.x + autocomplete_dialog.width
-      if x + width > screen_width
-        old_width = screen_width - (x + 0)
-        new_x = autocomplete_dialog.column - width
-        new_x = 0 if new_x < 0
-        new_width = width > autocomplete_dialog.column ? autocomplete_dialog.column : width
-        if old_width.positive? and new_width.positive?
-          if old_width >= new_width
-            width = old_width
+      right_x = cursor_pos_to_render.x + autocomplete_dialog.width
+      if right_x + width > screen_width
+        right_width = screen_width - (right_x + 0)
+        left_x = autocomplete_dialog.column - width
+        left_x = 0 if left_x < 0
+        left_width = width > autocomplete_dialog.column ? autocomplete_dialog.column : width
+        if right_width.positive? and left_width.positive?
+          if right_width >= left_width
+            width = right_width
+            x = right_x
           else
-            width = new_width
-            x = new_x
+            width = left_width
+            x = left_x
           end
-        elsif old_width.positive? and new_width.negative?
-          width = old_width
-        elsif old_width.negative? and new_width.positive?
-          width = new_width
-          x = new_x
+        elsif right_width.positive? and left_width.negative?
+          width = right_width
+          x = right_x
+        elsif right_width.negative? and left_width.positive?
+          width = left_width
+          x = left_x
         else # Both are negative width.
           return nil
         end
+      else
+        x = right_x
       end
       formatter = RDoc::Markup::ToAnsi.new
       formatter.width = width
