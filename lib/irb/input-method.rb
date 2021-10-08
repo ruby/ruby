@@ -369,7 +369,7 @@ module IRB
 
       right_x = cursor_pos_to_render.x + autocomplete_dialog.width
       if right_x + width > screen_width
-        right_width = screen_width - (right_x + 0)
+        right_width = screen_width - (right_x + 1)
         left_x = autocomplete_dialog.column - width
         left_x = 0 if left_x < 0
         left_width = width > autocomplete_dialog.column ? autocomplete_dialog.column : width
