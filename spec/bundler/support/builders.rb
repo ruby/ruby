@@ -569,7 +569,7 @@ module Spec
           _default_files[path] += "\n#{Builders.constantize(name)}_PREV_REF = '#{current_ref}'"
         end
         super(options.merge(:path => libpath, :gemspec => update_gemspec, :source => source))
-        @context.git("commit -am BUMP", libpath, :raise_on_error => false)
+        @context.git("commit -am BUMP", libpath)
       end
     end
 
