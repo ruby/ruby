@@ -1081,7 +1081,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     char *volatile ftptr = 0;
     VALUE path;
     volatile VALUE saved_path;
-    VALUE realpath = 0;
+    volatile VALUE realpath = 0;
     VALUE realpaths = get_loaded_features_realpaths();
     volatile bool reset_ext_config = false;
     struct rb_ext_config prev_ext_config;
@@ -1167,8 +1167,9 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
 
     if (result == TAG_RETURN) {
         rb_provide_feature(path);
-        if (realpath) {
-            rb_hash_aset(realpaths, rb_fstring(realpath), Qtrue);
+        VALUE real = realpath;
+        if (real) {
+            rb_hash_aset(realpaths, rb_fstring(real), Qtrue);
         }
     }
     ec->errinfo = saved.errinfo;
