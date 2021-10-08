@@ -4,7 +4,7 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: ["check", "test-bundled-gems"] # "test-bundler-parallel",
+        test_task: ["check"] # "test-bundler-parallel",
         os:
           - ubuntu-20.04
 #         - ubuntu-18.04
@@ -19,6 +19,10 @@ jobs:
           - test_task: "test-all TESTS=--repeat-count=2"
             os: ubuntu-20.04
             configure: ""
+            yjit_enable_env: RUBY_YJIT_ENABLE
+          - test_task: "test-bundled-gems"
+            os: ubuntu-20.04
+            configure: "cppflags=-DRUBY_DEBUG"
             yjit_enable_env: RUBY_YJIT_ENABLE
       fail-fast: false
     env:
