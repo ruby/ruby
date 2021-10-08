@@ -101,7 +101,7 @@ describe "Module#const_set" do
       mod.const_get(:Foo).should == 1
     end
 
-    it "does not warn if the previous value was undefined" do
+    it "does not warn after a failed autoload" do
       path = fixture(__FILE__, "autoload_o.rb")
       ScratchPad.record []
       mod = Module.new
@@ -109,7 +109,6 @@ describe "Module#const_set" do
       mod.autoload :Foo, path
       -> { mod::Foo }.should raise_error(NameError)
 
-      mod.should have_constant(:Foo)
       mod.const_defined?(:Foo).should == false
       mod.autoload?(:Foo).should == nil
 

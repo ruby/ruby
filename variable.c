@@ -2237,23 +2237,26 @@ autoload_delete(VALUE mod, ID id)
 	struct autoload_const *ac;
 
 	st_delete(tbl, &n, &load);
-	ele = get_autoload_data((VALUE)load, &ac);
-	VM_ASSERT(ele);
-	if (ele) {
-	    VM_ASSERT(!list_empty(&ele->constants));
-	}
+        /* Qfalse can indicate already deleted */
+        if (load != Qfalse) {
+            ele = get_autoload_data((VALUE)load, &ac);
+            VM_ASSERT(ele);
+            if (ele) {
+                VM_ASSERT(!list_empty(&ele->constants));
+            }
 
-	/*
-	 * we must delete here to avoid "already initialized" warnings
-	 * with parallel autoload.  Using list_del_init here so list_del
-	 * works in autoload_c_free
-	 */
-	list_del_init(&ac->cnode);
+            /*
+             * we must delete here to avoid "already initialized" warnings
+             * with parallel autoload.  Using list_del_init here so list_del
+             * works in autoload_c_free
+             */
+            list_del_init(&ac->cnode);
 
-	if (tbl->num_entries == 0) {
-	    n = autoload;
-	    st_delete(RCLASS_IV_TBL(mod), &n, &val);
-	}
+            if (tbl->num_entries == 0) {
+                n = autoload;
+                st_delete(RCLASS_IV_TBL(mod), &n, &val);
+            }
+        }
     }
 }
 
@@ -2502,7 +2505,10 @@ rb_autoload_load(VALUE mod, ID id)
     result = rb_ensure(autoload_require, (VALUE)&state,
 		       autoload_reset, (VALUE)&state);
 
-    if (flag > 0 && (ce = rb_const_lookup(mod, id))) {
+    if (!(ce = rb_const_lookup(mod, id)) || ce->value == Qundef) {
+        rb_const_remove(mod, id);
+    }
+    else if (flag > 0) {
         ce->flag |= flag;
     }
     RB_GC_GUARD(load);
