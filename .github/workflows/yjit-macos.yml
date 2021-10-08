@@ -1,4 +1,4 @@
-name: YJIT MacOS
+name: YJIT macOS
 on: [push, pull_request]
 jobs:
   make:
@@ -45,7 +45,7 @@ jobs:
         if: matrix.test_task == 'check'
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'check' }}
-      - run: make $JOBS -s ${{ matrix.test_task }}
+      - run: make $JOBS -s ${{ matrix.test_task }} RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: "-q --tty=no"
