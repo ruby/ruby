@@ -554,7 +554,6 @@ module Spec
         source = options[:source] || "git@#{libpath}"
 
         if branch = options[:branch]
-          raise "You can't specify `master` as the branch" if branch == "master"
           @context.git("checkout -b #{Shellwords.shellescape(branch)}", libpath)
         elsif tag = options[:tag]
           @context.git("tag #{Shellwords.shellescape(tag)}", libpath)
