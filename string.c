@@ -10237,12 +10237,14 @@ rb_str_end_with(int argc, VALUE *argv, VALUE str)
 
     for (i=0; i<argc; i++) {
 	VALUE tmp = argv[i];
+	long slen, tlen;
 	StringValue(tmp);
 	enc = rb_enc_check(str, tmp);
-	if (RSTRING_LEN(str) < RSTRING_LEN(tmp)) continue;
+	if ((tlen = RSTRING_LEN(tmp)) == 0) return Qtrue;
+	if ((slen = RSTRING_LEN(str)) < tlen) continue;
 	p = RSTRING_PTR(str);
-        e = p + RSTRING_LEN(str);
-	s = e - RSTRING_LEN(tmp);
+        e = p + slen;
+	s = e - tlen;
 	if (rb_enc_left_char_head(p, s, e, enc) != s)
 	    continue;
 	if (memcmp(s, RSTRING_PTR(tmp), RSTRING_LEN(tmp)) == 0)

@@ -1180,6 +1180,8 @@ CODE
     assert_send([S("hello"), :end_with?, S("llo")])
     assert_not_send([S("hello"), :end_with?, S("ll")])
     assert_send([S("hello"), :end_with?, S("el"), S("lo")])
+    assert_send([S("hello"), :end_with?, S("")])
+    assert_not_send([S("hello"), :end_with?])
 
     bug5536 = '[ruby-core:40623]'
     assert_raise(TypeError, bug5536) {S("str").end_with? :not_convertible_to_string}
