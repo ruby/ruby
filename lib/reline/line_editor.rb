@@ -182,9 +182,20 @@ class Reline::LineEditor
       @resized = true
     end
     if Reline::IOGate.win?
+      @full_block = '█'
+      @upper_half_block = '▀'
+      @lower_half_block = '▄'
       @block_elem_width = 1
-    else
+    elsif @encoding == Encoding::UTF_8
+      @full_block = '█'
+      @upper_half_block = '▀'
+      @lower_half_block = '▄'
       @block_elem_width = Reline::Unicode.calculate_width('█')
+    else
+      @full_block = '::'
+      @upper_half_block = "''"
+      @lower_half_block = '..'
+      @block_elem_width = 2
     end
   end
 
@@ -716,13 +727,6 @@ class Reline::LineEditor
     reset_dialog(dialog, old_dialog)
     move_cursor_down(dialog.vertical_offset)
     Reline::IOGate.move_cursor_column(dialog.column)
-    if Encoding.default_external == Encoding::UTF_8
-      full_block = '█'
-      upper_half_block = '▀'
-      lower_half_block = '▄'
-    else
-      full_block = upper_half_block = lower_half_block = ''
-    end
     dialog.contents.each_with_index do |item, i|
       if i == pointer
         bg_color = '45'
@@ -739,12 +743,12 @@ class Reline::LineEditor
       if dialog.scrollbar_pos and (dialog.scrollbar_pos != old_dialog.scrollbar_pos or dialog.column != old_dialog.column)
         @output.write "\e[37m"
         if dialog.scrollbar_pos <= (i * 2) and (i * 2 + 1) < (dialog.scrollbar_pos + bar_height)
-          @output.write full_block
+          @output.write @full_block
         elsif dialog.scrollbar_pos <= (i * 2) and (i * 2) < (dialog.scrollbar_pos + bar_height)
-          @output.write upper_half_block
+          @output.write @upper_half_block
           str += ''
         elsif dialog.scrollbar_pos <= (i * 2 + 1) and (i * 2) < (dialog.scrollbar_pos + bar_height)
-          @output.write lower_half_block
+          @output.write @lower_half_block
         else
           @output.write ' ' * @block_elem_width
         end
