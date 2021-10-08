@@ -1,0 +1,71 @@
+= Feature Triaging Guide
+
+This guide discusses recommendations for triaging requested features in Ruby's
+feature tracker.
+
+== Purpose
+
+The goal of Ruby's feature tracker is to ensure that all open requested
+features are features that have not yet been implemented but that the Ruby core
+team would consider adding to Ruby.  One aspect of triaging requested features
+is to make sure that requested features that have already implemented are
+closed, and that requested features that the Ruby core team would probably not
+consider adding to Ruby are also closed.  By closing requested features that
+are implemented or not desired, Ruby core better supports potential
+contributors to Ruby. Potential contributors can review the feature tracker for
+ideas on which features the Ruby core team would like to be implemented, with
+greater assurance that the features are actually desired.
+
+== Already Implemented Feature Requests
+
+If a feature request has already been implemented in the master branch, the
+feature request should be closed.  This change can be made with or without
+adding a note on the issue.
+
+== Feature Requests That Would Probably Not Be Considered
+
+In many cases, it will not be obvious from the feature request whether the Ruby
+core team would consider accepting it.  However, if a Ruby core team member has
+responded to the feature request that the feature would probably not be
+accepted, and at least three months have passed since then without further
+discussion, it is safe to close the feature with or without a note on the issue
+if the committer who is triaging agrees that the feature is unlikely to be
+considered.
+
+== Newly Requested Features
+
+This document defines a newly requested feature as a feature request that has
+been added in the last three months.  The most helpful triaging for newly
+requested features is to provide your feedback on whether you think the feature
+should be accepted and why.  For features that you think should be considered
+by the core team, consider adding them as agenda items for the next Ruby
+developer meeting (https://bugs.ruby-lang.org/issues/14770).  In general, newly
+requested features should not be closed unless they have already been
+implemented or if matz or the maintainer of the related library/subsystem has
+indicated they are unlikely to be accepted.  This is to allow adequate time for
+Ruby committers and developers to discuss the feature request and provide
+feedback.
+
+== Stale Feature Requests
+
+This document defines a stale feature request as a feature request where there
+has been more than one year since the last response (or initial post if there
+has not been any responses).  Stale feature requests can be closed with or
+without a note if the previous discussion of the feature request does not
+indicate that the feature is desired, and the committer who is triaging
+believes that feature does not seem worthwhile to add to Ruby.
+
+== Reopening Triaged Feature Requests
+
+Any feature request that has been closed due to feature triaging can be
+reopened by a Ruby developer, if the developer believes the requested feature
+would be helpful to add to Ruby.  When reopening the feature, the developer
+should explain why the feature is helpful, preferably providing a justification
+or additional information not considered before the feature request was closed.
+Before reopening a feature, the Ruby developer should consider if the feature
+they desire is exactly the same as the feature originally requested.  If not,
+it is better for the developer to open a new feature request, and in the new
+feature request, reference the original feature request and explain what the
+difference is between the two feature requests and why the new feature request
+should be considered, preferably discussing both the costs and benefits of
+accepting the feature.
