@@ -829,12 +829,12 @@ begin
       assert_screen(<<~'EOC')
         Multiline REPL.
         prompt> ab
-            Ruby is...
-            A dynamic, open source programming
-            language with a focus on simplicity
-            and productivity. It has an elegant
-            syntax that is natural to read and
-            easy to write.
+             Ruby is...
+             A dynamic, open source programming
+             language with a focus on simplicity
+             and productivity. It has an elegant
+             syntax that is natural to read and
+             easy to write.
       EOC
     end
 
@@ -884,8 +884,8 @@ begin
       assert_screen(<<~'EOC')
         Multiline REPL.
         prompt>           St
-        r            String
-                     Struct
+        r             String
+                      Struct
       EOC
     end
 
