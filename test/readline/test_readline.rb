@@ -494,18 +494,17 @@ module BasetestReadline
     # Maybe the same issue: https://github.com/facebookresearch/nle/issues/120
     omit if /i[3-6]86-linux/ =~ RUBY_PLATFORM
 
+    if defined?(TestReadline) && self.class == TestReadline
+      use = "use_ext_readline"
+    elsif defined?(TestRelineAsReadline) && self.class == TestRelineAsReadline
+      use = "use_lib_reline"
+    end
     code = <<-"end;"
       $stdout.sync = true
       require 'readline'
       require 'helper'
       puts "Readline::VERSION is \#{Readline::VERSION}."
-      #{
-        if defined?(TestReadline) && self.class == TestReadline
-          "use_ext_readline"
-        elsif defined?(TestRelineAsReadline) && self.class == TestRelineAsReadline
-          "use_lib_reline"
-        end
-      }
+      #{use}
       Readline.input = STDIN
       # 0. Send SIGINT to this script.
       begin
