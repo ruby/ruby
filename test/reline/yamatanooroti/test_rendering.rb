@@ -1114,6 +1114,19 @@ begin
       EOC
     end
 
+    def test_dialog_with_fullwidth_scrollbar
+      start_terminal(20, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple,scrollkey,alt-scrollbar}, startup_message: 'Multiline REPL.')
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt>
+           Ruby is...                         ::
+           A dynamic, open source programming ::
+           language with a focus on simplicity''
+           and productivity. It has an elegant
+      EOC
+    end
+
     def test_rerender_argument_prompt_after_pasting
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write('abcdef')

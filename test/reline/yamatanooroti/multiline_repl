@@ -74,8 +74,14 @@ opt.on('--dialog VAL') { |v|
     if v.include?('scrollbar')
       scrollbar = true
     end
+    if v.include?('alt-scrollbar')
+      scrollbar = true
+    end
     Reline::DialogRenderInfo.new(pos: cursor_pos, contents: contents, height: height, scrollbar: scrollbar)
   })
+  if v.include?('alt-scrollbar')
+    ENV['RELINE_ALT_SCROLLBAR'] = '1'
+  end
 }
 opt.on('--complete') {
   Reline.completion_proc = lambda { |target, preposing = nil, postposing = nil|
