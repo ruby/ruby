@@ -480,7 +480,7 @@ module Bundler
       end
 
       def installed?(spec)
-        installed_specs[spec].any?
+        installed_specs[spec].any? && !spec.deleted_gem?
       end
 
       def requires_sudo?

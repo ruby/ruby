@@ -45,7 +45,7 @@ module Bundler
         path = File.expand_path("../../../..", __FILE__)
       else
         path = spec.full_gem_path
-        unless File.directory?(path)
+        if spec.deleted_gem?
           return Bundler.ui.warn "The gem #{name} has been deleted. It was installed at: #{path}"
         end
       end
@@ -56,7 +56,6 @@ module Bundler
     def print_gem_info(spec)
       metadata = spec.metadata
       name = spec.name
-      path = spec.full_gem_path
       gem_info = String.new
       gem_info << "  * #{name} (#{spec.version}#{spec.git_version})\n"
       gem_info << "\tSummary: #{spec.summary}\n" if spec.summary
@@ -68,10 +67,10 @@ module Bundler
       gem_info << "\tChangelog: #{metadata["changelog_uri"]}\n" if metadata.key?("changelog_uri")
       gem_info << "\tBug Tracker: #{metadata["bug_tracker_uri"]}\n" if metadata.key?("bug_tracker_uri")
       gem_info << "\tMailing List: #{metadata["mailing_list_uri"]}\n" if metadata.key?("mailing_list_uri")
-      gem_info << "\tPath: #{path}\n"
+      gem_info << "\tPath: #{spec.full_gem_path}\n"
       gem_info << "\tDefault Gem: yes" if spec.respond_to?(:default_gem?) && spec.default_gem?
 
-      unless File.directory?(path)
+      if spec.deleted_gem?
         return Bundler.ui.warn "The gem #{name} has been deleted. Gemspec information is still available though:\n#{gem_info}"
       end
 

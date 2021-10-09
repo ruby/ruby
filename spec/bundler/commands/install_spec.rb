@@ -94,6 +94,21 @@ RSpec.describe "bundle install with gem sources" do
       expect(the_bundle).to include_gems("rack 1.0.0")
     end
 
+    it "auto-heals missing gems" do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem 'rack'
+      G
+
+      FileUtils.rm_rf(default_bundle_path("gems/rack-1.0.0"))
+
+      bundle "install --verbose"
+
+      expect(out).to include("Installing rack 1.0.0")
+      expect(default_bundle_path("gems/rack-1.0.0")).to exist
+      expect(the_bundle).to include_gems("rack 1.0.0")
+    end
+
     it "fetches gems when multiple versions are specified" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
