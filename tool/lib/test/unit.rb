@@ -21,14 +21,15 @@ module Test
       return ["No backtrace"] unless bt
 
       new_bt = []
+      pattern = %r[/(?:lib\/test/|core_assertions\.rb:)]
 
       unless $DEBUG then
         bt.each do |line|
-          break if line =~ /lib\/test/
+          break if pattern.match?(line)
           new_bt << line
         end
 
-        new_bt = bt.reject { |line| line =~ /lib\/test/ } if new_bt.empty?
+        new_bt = bt.reject { |line| pattern.match?(line) } if new_bt.empty?
         new_bt = bt.dup if new_bt.empty?
       else
         new_bt = bt.dup
