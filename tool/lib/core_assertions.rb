@@ -640,7 +640,7 @@ eom
 
         def for(key)
           @count += 1
-          yield
+          yield key
         rescue Exception => e
           @failures[key] = [@count, e]
         end
