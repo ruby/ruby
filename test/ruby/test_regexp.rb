@@ -265,6 +265,27 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(re, re.match("foo").regexp)
   end
 
+  def test_match_lambda_multithread
+    bug17507 = "[ruby-core:101901]"
+    str = "a-x-foo-bar-baz-z-b"
+
+    worker = lambda do
+      m = /foo-([A-Za-z0-9_\.]+)-baz/.match(str)
+      assert_equal("bar", m[1], bug17507)
+
+      # These two lines are needed to trigger the bug
+      File.exist? "/tmp"
+      str.gsub(/foo-bar-baz/, "foo-abc-baz")
+    end
+
+    def self. threaded_test(worker)
+      6.times.map {Thread.new {10_000.times {worker.call}}}.each(&:join)
+    end
+
+    # The bug only occurs in a method calling a block/proc/lambda
+    threaded_test(worker)
+  end
+
   def test_source
     bug5484 = '[ruby-core:40364]'
     assert_equal('', //.source)
