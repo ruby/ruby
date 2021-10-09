@@ -181,7 +181,12 @@ class Reline::LineEditor
     Reline::IOGate.set_winch_handler do
       @resized = true
     end
-    if Reline::IOGate.win?
+    if ENV.key?('RELINE_ALT_SCROLLBAR')
+      @full_block = '::'
+      @upper_half_block = "''"
+      @lower_half_block = '..'
+      @block_elem_width = 2
+    elsif Reline::IOGate.win?
       @full_block = '█'
       @upper_half_block = '▀'
       @lower_half_block = '▄'
