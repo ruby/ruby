@@ -13,9 +13,10 @@ describe "ObjectSpace.memsize_of_all" do
   end
 
   it "increases when a new object is allocated" do
-    before = ObjectSpace.memsize_of_all(Class)
-    o = Class.new
-    after = ObjectSpace.memsize_of_all(Class)
+    c = Class.new
+    before = ObjectSpace.memsize_of_all(c)
+    o = c.new
+    after = ObjectSpace.memsize_of_all(c)
     after.should > before
   end
 end
