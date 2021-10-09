@@ -20,42 +20,62 @@ describe :marshal_load, shared: true do
   end
 
   describe "when called with a proc" do
+    ruby_bug "#18141", ""..."3.1" do
+      it "call the proc with fully initialized strings" do
+        utf8_string = "foo".encode(Encoding::UTF_8)
+        Marshal.send(@method, Marshal.dump(utf8_string), proc { |arg|
+          if arg.is_a?(String)
+            arg.should == utf8_string
+            arg.encoding.should == Encoding::UTF_8
+          end
+          arg
+        })
+      end
+
+      it "no longer mutate the object after it was passed to the proc" do
+        string = Marshal.load(Marshal.dump("foo"), :freeze.to_proc)
+        string.should.frozen?
+      end
+    end
+
     it "returns the value of the proc" do
       Marshal.send(@method, Marshal.dump([1,2]), proc { [3,4] }).should ==  [3,4]
     end
 
-    it "calls the proc for recursively visited data" do
-      a = [1]
-      a << a
-      ret = []
-      Marshal.send(@method, Marshal.dump(a), proc { |arg| ret << arg; arg })
-      ret.first.should == 1
-      ret[1].should == [1,a]
-      ret[2].should == a
-      ret.size.should == 3
-    end
+    ruby_bug "#18141", ""..."3.1" do
+      it "calls the proc for recursively visited data" do
+        a = [1]
+        a << a
+        ret = []
+        Marshal.send(@method, Marshal.dump(a), proc { |arg| ret << arg.inspect; arg })
+        ret[0].should == 1.inspect
+        ret[1].should == a.inspect
+        ret.size.should == 2
+      end
 
-    it "loads an Array with proc" do
-      arr = []
-      s = 'hi'
-      s.instance_variable_set(:@foo, 5)
-      st = Struct.new("Brittle", :a).new
-      st.instance_variable_set(:@clue, 'none')
-      st.a = 0.0
-      h = Hash.new('def')
-      h['nine'] = 9
-      a = [:a, :b, :c]
-      a.instance_variable_set(:@two, 2)
-      obj = [s, 10, s, s, st, a]
-      obj.instance_variable_set(:@zoo, 'ant')
-      proc = Proc.new { |o| arr << o; o}
+      it "loads an Array with proc" do
+        arr = []
+        s = 'hi'
+        s.instance_variable_set(:@foo, 5)
+        st = Struct.new("Brittle", :a).new
+        st.instance_variable_set(:@clue, 'none')
+        st.a = 0.0
+        h = Hash.new('def')
+        h['nine'] = 9
+        a = [:a, :b, :c]
+        a.instance_variable_set(:@two, 2)
+        obj = [s, 10, s, s, st, a]
+        obj.instance_variable_set(:@zoo, 'ant')
+        proc = Proc.new { |o| arr << o.dup; o}
 
-      Marshal.send(@method, "\x04\bI[\vI\"\ahi\a:\x06EF:\t@fooi\ni\x0F@\x06@\x06IS:\x14Struct::Brittle\x06:\x06af\x060\x06:\n@clueI\"\tnone\x06;\x00FI[\b;\b:\x06b:\x06c\x06:\t@twoi\a\x06:\t@zooI\"\bant\x06;\x00F", proc)
+        Marshal.send(@method, "\x04\bI[\vI\"\ahi\a:\x06EF:\t@fooi\ni\x0F@\x06@\x06IS:\x14Struct::Brittle\x06:\x06af\x060\x06:\n@clueI\"\tnone\x06;\x00FI[\b;\b:\x06b:\x06c\x06:\t@twoi\a\x06:\t@zooI\"\bant\x06;\x00F", proc)
 
-      arr.should == ["hi", false, 5, 10, "hi", "hi", 0.0, st, "none", false,
-                     :b, :c, a, 2, ["hi", 10, "hi", "hi", st, [:a, :b, :c]], "ant", false]
-
-      Struct.send(:remove_const, :Brittle)
+        arr.should == [
+          false, 5, "hi", 10, "hi", "hi", 0.0, false, "none", st,
+          :b, :c, 2, a, false, "ant", ["hi", 10, "hi", "hi", st, [:a, :b, :c]],
+        ]
+        Struct.send(:remove_const, :Brittle)
+      end
     end
   end
 
@@ -119,28 +139,39 @@ describe :marshal_load, shared: true do
     end
   end
 
-  it "loads an array containing objects having _dump method, and with proc" do
-    arr = []
-    myproc = Proc.new { |o| arr << o; o }
-    o1 = UserDefined.new;
-    o2 = UserDefinedWithIvar.new
-    obj = [o1, o2, o1, o2]
+  ruby_bug "#18141", ""..."3.1" do
+    it "loads an array containing objects having _dump method, and with proc" do
+      arr = []
+      myproc = Proc.new { |o| arr << o.dup; o }
+      o1 = UserDefined.new;
+      o2 = UserDefinedWithIvar.new
+      obj = [o1, o2, o1, o2]
 
-    Marshal.send(@method, "\x04\b[\tu:\x10UserDefined\x18\x04\b[\aI\"\nstuff\x06:\x06EF@\x06u:\x18UserDefinedWithIvar>\x04\b[\bI\"\nstuff\a:\x06EF:\t@foo:\x18UserDefinedWithIvarI\"\tmore\x06;\x00F@\a@\x06@\a", myproc)
+      Marshal.send(@method, "\x04\b[\tu:\x10UserDefined\x18\x04\b[\aI\"\nstuff\x06:\x06EF@\x06u:\x18UserDefinedWithIvar>\x04\b[\bI\"\nstuff\a:\x06EF:\t@foo:\x18UserDefinedWithIvarI\"\tmore\x06;\x00F@\a@\x06@\a", myproc)
 
-    arr.should == [o1, o2, o1, o2, obj]
-  end
+      arr[0].should == o1
+      arr[1].should == o2
+      arr[2].should == obj
+      arr.size.should == 3
+    end
 
-  it "loads an array containing objects having marshal_dump method, and with proc" do
-    arr = []
-    proc = Proc.new { |o| arr << o; o }
-    o1 = UserMarshal.new
-    o2 = UserMarshalWithIvar.new
-    obj = [o1, o2, o1, o2]
+    it "loads an array containing objects having marshal_dump method, and with proc" do
+      arr = []
+      proc = Proc.new { |o| arr << o.dup; o }
+      o1 = UserMarshal.new
+      o2 = UserMarshalWithIvar.new
 
-    Marshal.send(@method, "\004\b[\tU:\020UserMarshal\"\nstuffU:\030UserMarshalWithIvar[\006\"\fmy data@\006@\b", proc)
+      Marshal.send(@method, "\004\b[\tU:\020UserMarshal\"\nstuffU:\030UserMarshalWithIvar[\006\"\fmy data@\006@\b", proc)
 
-    arr.should == ['stuff', o1, 'my data', ['my data'], o2, o1, o2, obj]
+      arr[0].should == 'stuff'
+      arr[1].should == o1
+      arr[2].should == 'my data'
+      arr[3].should == ['my data']
+      arr[4].should == o2
+      arr[5].should == [o1, o2, o1, o2]
+
+      arr.size.should == 6
+    end
   end
 
   it "assigns classes to nested subclasses of Array correctly" do
