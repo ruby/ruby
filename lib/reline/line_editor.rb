@@ -703,7 +703,8 @@ class Reline::LineEditor
     upper_space = @first_line_started_from - @started_from
     lower_space = @highest_in_all - @first_line_started_from - @started_from - 1
     dialog.column = dialog_render_info.pos.x
-    diff = (dialog.column + dialog.width) - (@screen_size.last - 1)
+    dialog.width += @block_elem_width if dialog.scrollbar_pos
+    diff = (dialog.column + dialog.width) - (@screen_size.last)
     if diff > 0
       dialog.column -= diff
     end
@@ -719,7 +720,6 @@ class Reline::LineEditor
       dialog.vertical_offset = dialog_render_info.pos.y + 1
     end
     Reline::IOGate.hide_cursor
-    dialog.width += @block_elem_width if dialog.scrollbar_pos
     if dialog.column < 0
       dialog.column = 0
       dialog.width = @screen_size.last
