@@ -172,27 +172,15 @@ module Test
           msg = args.pop
         end
         begin
-          line = __LINE__; yield
-        rescue Test::Unit::PendedError
+          yield
+        rescue Test::Unit::PendedError, *(Test::Unit::AssertionFailedError if args.empty?)
           raise
-        rescue Exception => e
-          bt = e.backtrace
-          as = e.instance_of?(Test::Unit::AssertionFailedError)
-          if as
-            ans = /\A#{Regexp.quote(__FILE__)}:#{line}:in /o
-            bt.reject! {|ln| ans =~ ln}
-          end
-          if ((args.empty? && !as) ||
-              args.any? {|a| a.instance_of?(Module) ? e.is_a?(a) : e.class == a })
-            msg = message(msg) {
-              "Exception raised:\n<#{mu_pp(e)}>\n" +
-              "Backtrace:\n" +
-              e.backtrace.map{|frame| "  #{frame}"}.join("\n")
-            }
-            raise Test::Unit::AssertionFailedError, msg.call, bt
-          else
-            raise
-          end
+        rescue *(args.empty? ? Exception : args) => e
+          msg = message(msg) {
+            "Exception raised:\n<#{mu_pp(e)}>\n""Backtrace:\n" <<
+            Test.filter_backtrace(e.backtrace).map{|frame| "  #{frame}"}.join("\n")
+          }
+          raise Test::Unit::AssertionFailedError, msg.call, e.backtrace
         end
       end
 
