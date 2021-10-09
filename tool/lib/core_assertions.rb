@@ -16,9 +16,16 @@ module Test
 
       def message msg = nil, ending = nil, &default
         proc {
-          msg = msg.call.chomp(".") if Proc === msg
-          custom_message = "#{msg}.\n" unless msg.nil? or msg.to_s.empty?
-          "#{custom_message}#{default.call}#{ending || "."}"
+          ending ||= (ending_pattern = /(?<!\.)\z/; ".")
+          ending_pattern ||= /(?<!#{Regexp.quote(ending)})\z/
+          msg = msg.call if Proc === msg
+          ary = [msg, (default.call if default)].compact.reject(&:empty?)
+          ary.map! {|str| str.to_s.sub(ending_pattern, ending) }
+          begin
+            ary.join("\n")
+          rescue Encoding::CompatibilityError
+            ary.map(&:b).join("\n")
+          end
         }
       end
     end
@@ -728,24 +735,6 @@ eom
         assert(all.pass?, message(msg) {all.message.chomp(".")})
       end
       alias all_assertions_foreach assert_all_assertions_foreach
-
-      def message(msg = nil, *args, &default) # :nodoc:
-        if Proc === msg
-          super(nil, *args) do
-            ary = [msg.call, (default.call if default)].compact.reject(&:empty?)
-            if 1 < ary.length
-              ary[0...-1] = ary[0...-1].map {|str| str.sub(/(?<!\.)\z/, '.') }
-            end
-            begin
-              ary.join("\n")
-            rescue Encoding::CompatibilityError
-              ary.map(&:b).join("\n")
-            end
-          end
-        else
-          super
-        end
-      end
 
       def diff(exp, act)
         require 'pp'
