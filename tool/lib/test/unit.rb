@@ -182,7 +182,7 @@ module Test
         order = options[:test_order]
         if seed = options[:seed]
           order ||= :random
-        elsif order == :random
+        elsif (order ||= :random) == :random
           seed = options[:seed] = rand(0x10000)
           orig_args.unshift "--seed=#{seed}"
         end
