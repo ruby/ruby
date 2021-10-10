@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'package/tar_test_case'
-require 'digest'
+require 'rubygems/openssl'
 
 class TestGemPackage < Gem::Package::TarTestCase
   def setup
@@ -84,17 +84,17 @@ class TestGemPackage < Gem::Package::TarTestCase
       io.write spec.to_yaml
     end
 
-    metadata_sha256 = Digest::SHA256.hexdigest s.string
-    metadata_sha512 = Digest::SHA512.hexdigest s.string
+    metadata_sha256 = OpenSSL::Digest::SHA256.hexdigest s.string
+    metadata_sha512 = OpenSSL::Digest::SHA512.hexdigest s.string
 
     expected = {
       'SHA512' => {
         'metadata.gz' => metadata_sha512,
-        'data.tar.gz' => Digest::SHA512.hexdigest(tar),
+        'data.tar.gz' => OpenSSL::Digest::SHA512.hexdigest(tar),
       },
       'SHA256' => {
         'metadata.gz' => metadata_sha256,
-        'data.tar.gz' => Digest::SHA256.hexdigest(tar),
+        'data.tar.gz' => OpenSSL::Digest::SHA256.hexdigest(tar),
       },
     }
 
@@ -857,7 +857,7 @@ class TestGemPackage < Gem::Package::TarTestCase
         io.write metadata_gz
       end
 
-      digest = Digest::SHA1.new
+      digest = OpenSSL::Digest::SHA1.new
       digest << metadata_gz
 
       checksums = {
@@ -1016,7 +1016,7 @@ class TestGemPackage < Gem::Package::TarTestCase
         bogus_data = Gem::Util.gzip 'hello'
         fake_signer = Class.new do
           def digest_name; 'SHA512'; end
-          def digest_algorithm; Digest(:SHA512).new; end
+          def digest_algorithm; OpenSSL::Digest(:SHA512).new; end
           def key; 'key'; end
           def sign(*); 'fake_sig'; end
         end
