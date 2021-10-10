@@ -84,6 +84,8 @@ int rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_fu
 int rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *func, st_data_t arg);
 extern st_table *rb_hash_st_table(VALUE hash);
 VALUE rb_ident_hash_new_with_size(st_index_t size);
+VALUE rb_envtbl(void);
+VALUE rb_env_to_hash(void);
 
 static inline unsigned RHASH_AR_TABLE_SIZE_RAW(VALUE h);
 static inline VALUE RHASH_IFNONE(VALUE h);

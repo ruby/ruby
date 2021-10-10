@@ -178,9 +178,6 @@ static void check_uid_switch(void);
 static void check_gid_switch(void);
 static int exec_async_signal_safe(const struct rb_execarg *, char *, size_t);
 
-VALUE rb_envtbl(void);
-VALUE rb_env_to_hash(void);
-
 #if 1
 #define p_uid_from_name p_uid_from_name
 #define p_gid_from_name p_gid_from_name
