@@ -26,6 +26,10 @@ cache:
 
 env:
   global:
+    # The tests skipped in `make test-all`.
+    - TEST_ALL_SKIPPED_TESTS=
+    # The tests executed separately by `make test-all`.
+    - TEST_ALL_SEPARATED_TESTS=
     # Reset timestamps early
     - _=$(touch NEWS && find . -type f -exec touch -r NEWS {} +)
     - CONFIGURE_TTY=no
@@ -38,12 +42,8 @@ env:
     - SETARCH=
     - RUBY_PREFIX=/tmp/ruby-prefix
     - GEMS_FOR_TEST='timezone tzinfo'
-    # The tests skipped in `make test-all`.
-    - TEST_ALL_SKIPPED_TESTS=
     # Run the separated tests with allowing failures.
     - RUN_SEPARATED_TESTS=true
-    # The tests executed separately by `make test-all`.
-    - TEST_ALL_SEPARATED_TESTS=
     # https://github.com/travis-ci/travis-build/blob/e411371dda21430a60f61b8f3f57943d2fe4d344/lib/travis/build/bash/travis_apt_get_options.bash#L7
     - travis_apt_get_options='--allow-downgrades --allow-remove-essential --allow-change-held-packages'
     - travis_apt_get_options="-yq --no-install-suggests --no-install-recommends $travis_apt_get_options"
