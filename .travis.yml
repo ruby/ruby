@@ -95,6 +95,9 @@ env:
     compiler: arm-linux-gnueabihf-gcc
     env:
       - SETARCH='setarch linux32 --verbose --32bit'
+      # The "TestReadline#test_interrupt_in_other_thread" started failing on arm32
+      # from https://www.travis-ci.com/github/ruby/ruby/jobs/529005145
+      - TEST_ALL_SKIPPED_TESTS=test_interrupt_in_other_thread
     before_install:
       - sudo dpkg --add-architecture armhf
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
@@ -121,9 +124,7 @@ matrix:
     - <<: *ppc64le-linux
     - <<: *s390x-linux
   allow_failures:
-    # The "TestReadline#test_interrupt_in_other_thread" started failing on arm32
-    # from https://www.travis-ci.com/github/ruby/ruby/jobs/529005145
-    - name: arm32-linux
+    # - name: arm32-linux
     # - name: arm64-linux
     # We see "Some worker was crashed." in about 40% of recent ppc64le-linux jobs
     # e.g. https://app.travis-ci.com/github/ruby/ruby/jobs/530959548
