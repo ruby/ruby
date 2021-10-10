@@ -70,6 +70,12 @@ module Test
         alias sort_by_string sort_by_name
 
         def group(list)
+          list
+        end
+      end
+
+      module JITFirst
+        def group(list)
           # JIT first
           jit, others = list.partition {|e| /test_jit/ =~ e}
           jit + others
@@ -77,6 +83,8 @@ module Test
       end
 
       class Alpha < NoSort
+        include JITFirst
+
         def sort_by_name(list)
           list.sort_by(&:name)
         end
@@ -89,6 +97,8 @@ module Test
 
       # shuffle test suites based on CRC32 of their names
       Shuffle = Struct.new(:seed, :salt) do
+        include JITFirst
+
         def initialize(seed)
           self.class::CRC_TBL ||= (0..255).map {|i|
             (0..7).inject(i) {|c,| (c & 1 == 1) ? (0xEDB88320 ^ (c >> 1)) : (c >> 1) }
@@ -104,10 +114,6 @@ module Test
 
         def sort_by_string(list)
           list.sort_by {|e| randomize_key(e)}
-        end
-
-        def group(list)
-          list
         end
 
         private
