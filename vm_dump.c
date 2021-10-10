@@ -815,7 +815,11 @@ print_machine_register(size_t reg, const char *reg_name, int col_count, int max_
 #       define dump_machine_register(reg, regstr) (col_count = print_machine_register(reg, regstr, col_count, 80))
 #   endif
 # elif defined __APPLE__
-#   define dump_machine_register(reg) (col_count = print_machine_register(mctx->MCTX_SS_REG(reg), #reg, col_count, 80))
+#   if defined(__aarch64__)
+#     define dump_machine_register(reg, regstr) (col_count = print_machine_register(mctx->MCTX_SS_REG(reg), regstr, col_count, 80))
+#   else
+#     define dump_machine_register(reg) (col_count = print_machine_register(mctx->MCTX_SS_REG(reg), #reg, col_count, 80))
+#   endif
 # endif
 
 static void
@@ -970,28 +974,28 @@ rb_dump_machine_register(const ucontext_t *ctx)
 	dump_machine_register(fs);
 	dump_machine_register(gs);
 #   elif defined __aarch64__
-	dump_machine_register(x[0]);
-	dump_machine_register(x[1]);
-	dump_machine_register(x[2]);
-	dump_machine_register(x[3]);
-	dump_machine_register(x[4]);
-	dump_machine_register(x[5]);
-	dump_machine_register(x[6]);
-	dump_machine_register(x[7]);
-	dump_machine_register(x[18]);
-	dump_machine_register(x[19]);
-	dump_machine_register(x[20]);
-	dump_machine_register(x[21]);
-	dump_machine_register(x[22]);
-	dump_machine_register(x[23]);
-	dump_machine_register(x[24]);
-	dump_machine_register(x[25]);
-	dump_machine_register(x[26]);
-	dump_machine_register(x[27]);
-	dump_machine_register(x[28]);
-	dump_machine_register(lr);
-	dump_machine_register(fp);
-	dump_machine_register(sp);
+	dump_machine_register(x[0], "x0");
+	dump_machine_register(x[1], "x1");
+	dump_machine_register(x[2], "x2");
+	dump_machine_register(x[3], "x3");
+	dump_machine_register(x[4], "x4");
+	dump_machine_register(x[5], "x5");
+	dump_machine_register(x[6], "x6");
+	dump_machine_register(x[7], "x7");
+	dump_machine_register(x[18], "x18");
+	dump_machine_register(x[19], "x19");
+	dump_machine_register(x[20], "x20");
+	dump_machine_register(x[21], "x21");
+	dump_machine_register(x[22], "x22");
+	dump_machine_register(x[23], "x23");
+	dump_machine_register(x[24], "x24");
+	dump_machine_register(x[25], "x25");
+	dump_machine_register(x[26], "x26");
+	dump_machine_register(x[27], "x27");
+	dump_machine_register(x[28], "x28");
+	dump_machine_register(lr, "lr");
+	dump_machine_register(fp, "fp");
+	dump_machine_register(sp, "sp");
 #   endif
     }
 # endif
