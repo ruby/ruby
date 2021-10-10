@@ -935,6 +935,40 @@ begin
       EOC
     end
 
+    def test_dialog_with_fullwidth_chars
+      ENV['RELINE_TEST_PROMPT'] = '> '
+      start_terminal(30, 5, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog fullwidth,scrollkey,scrollbar}, startup_message: 'Multiline REPL.')
+      6.times{ write('j') }
+      close
+      assert_screen(<<~'EOC')
+        Multi
+        line
+        REPL.
+        >
+        オー
+        グ言▄
+        備え█
+        ち、█
+      EOC
+    end
+
+    def test_dialog_with_fullwidth_chars_split
+      ENV['RELINE_TEST_PROMPT'] = '> '
+      start_terminal(30, 6, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog fullwidth,scrollkey,scrollbar}, startup_message: 'Multiline REPL.')
+      6.times{ write('j') }
+      close
+      assert_screen(<<~'EOC')
+        Multil
+        ine RE
+        PL.
+        >
+        オー
+        グ言 ▄
+        備え █
+        ち、 █
+      EOC
+    end
+
     def test_autocomplete_empty
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write('Street')

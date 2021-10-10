@@ -55,6 +55,15 @@ opt.on('--dialog VAL') { |v|
         natural to read
         and easy to write.
       RUBY
+    elsif v.include?('fullwidth')
+      contents = <<~RUBY.split("\n")
+        Rubyとは...
+
+        オープンソースの動的なプログラミン
+        グ言語で、シンプルさと高い生産性を
+        備えています。エレガントな文法を持
+        ち、自然に読み書きができます。
+      RUBY
     end
     if v.include?('scrollkey')
       dialog.trap_key = nil
