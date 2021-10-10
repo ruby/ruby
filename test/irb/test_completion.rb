@@ -41,6 +41,13 @@ module TestIRB
       assert_empty(IRB::InputCompletor.retrieve_completion_data(":::", bind: binding))
     end
 
+    def test_complete_absolute_constants_with_special_characters
+      assert_empty(IRB::InputCompletor.retrieve_completion_data("::A:", bind: binding))
+      assert_empty(IRB::InputCompletor.retrieve_completion_data("::A.", bind: binding))
+      assert_empty(IRB::InputCompletor.retrieve_completion_data("::A(", bind: binding))
+      assert_empty(IRB::InputCompletor.retrieve_completion_data("::A)", bind: binding))
+    end
+
     def test_complete_symbol_failure
       assert_nil(IRB::InputCompletor::PerfectMatchedProc.(":aiueo", bind: binding))
     end

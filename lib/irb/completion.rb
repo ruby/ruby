@@ -197,7 +197,7 @@ module IRB
         end
         candidates.grep(/^#{Regexp.quote(sym)}/)
 
-      when /^::([A-Z][^:\.\(]*)$/
+      when /^::([A-Z][^:\.\(\)]*)$/
         # Absolute Constant or class methods
         receiver = $1
         candidates = Object.constants.collect{|m| m.to_s}
