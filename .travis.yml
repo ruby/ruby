@@ -42,8 +42,6 @@ env:
     - SETARCH=
     - RUBY_PREFIX=/tmp/ruby-prefix
     - GEMS_FOR_TEST='timezone tzinfo'
-    # Run the separated tests with allowing failures.
-    - RUN_SEPARATED_TESTS=true
     # https://github.com/travis-ci/travis-build/blob/e411371dda21430a60f61b8f3f57943d2fe4d344/lib/travis/build/bash/travis_apt_get_options.bash#L7
     - travis_apt_get_options='--allow-downgrades --allow-remove-essential --allow-change-held-packages'
     - travis_apt_get_options="-yq --no-install-suggests --no-install-recommends $travis_apt_get_options"
@@ -199,7 +197,7 @@ script:
   # Run the failing tests separately returning ok status to check if it works,
   # visualize them.
   - |
-    if [ "${RUN_SEPARATED_TESTS}" = true -a -n "${TEST_ALL_OPTS_SEPARATED}" ]; then
+    if [ -n "${TEST_ALL_OPTS_SEPARATED}" ]; then
       $SETARCH make -s test-all -o exts TESTOPTS="$JOBS -v --tty=no ${TEST_ALL_OPTS_SEPARATED}" RUBYOPT="-w" || :
     fi
   - $SETARCH make -s test-spec MSPECOPT=-ff # not using `-j` because sometimes `mspec -j` silently dies
