@@ -536,6 +536,14 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #
 # There is no such storage structure for write headers.
 #
+# In order for the parsing methods to access stored converters in non-main-Ractors, the
+# storage structure must be made shareable first.
+# Therefore, <tt>Ractor.make_shareable(CSV::Converters)</tt> and
+# <tt>Ractor.make_shareable(CSV::HeaderConverters)</tt> must be called before the creation
+# of Ractors that use the converters stored in these structures. (Since making the storage
+# structures shareable involves freezing them, any custom converters that are to be used
+# must be added first.)
+#
 # ===== Converter Lists
 #
 # A _converter_ _list_ is an \Array that may include any assortment of:
@@ -908,6 +916,7 @@ class CSV
                                            gsub(/\s+/, "_").to_sym
     }
   }
+
   # Default values for method options.
   DEFAULT_OPTIONS = {
     # For both parsing and generating.
@@ -945,6 +954,8 @@ class CSV
     #
     # Creates or retrieves cached \CSV objects.
     # For arguments and options, see CSV.new.
+    #
+    # This API is not Ractor-safe.
     #
     # ---
     #
@@ -1873,6 +1884,10 @@ class CSV
   #   csv.converters # => [:integer]
   #   csv.convert(proc {|x| x.to_s })
   #   csv.converters
+  #
+  # Notes that you need to call
+  # +Ractor.make_shareable(CSV::Converters)+ on the main Ractor to use
+  # this method.
   def converters
     parser_fields_converter.map do |converter|
       name = Converters.rassoc(converter)
@@ -1935,6 +1950,10 @@ class CSV
   # Returns an \Array containing header converters; used for parsing;
   # see {Header Converters}[#class-CSV-label-Header+Converters]:
   #   CSV.new('').header_converters # => []
+  #
+  # Notes that you need to call
+  # +Ractor.make_shareable(CSV::HeaderConverters)+ on the main Ractor
+  # to use this method.
   def header_converters
     header_fields_converter.map do |converter|
       name = HeaderConverters.rassoc(converter)
@@ -2654,6 +2673,8 @@ end
 #
 #   io = StringIO.new
 #   CSV(io, col_sep: ";") { |csv| csv << ["a", "b", "c"] }
+#
+# This API is not Ractor-safe.
 #
 def CSV(*args, **options, &block)
   CSV.instance(*args, **options, &block)
