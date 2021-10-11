@@ -86,14 +86,10 @@ module Bundler
     def spec_missing_extensions?(spec, default = true)
       return spec.missing_extensions? if spec.respond_to?(:missing_extensions?)
 
-      return false if spec_default_gem?(spec)
+      return false if spec.default_gem?
       return false if spec.extensions.empty?
 
       default
-    end
-
-    def spec_default_gem?(spec)
-      spec.respond_to?(:default_gem?) && spec.default_gem?
     end
 
     def spec_matches_for_glob(spec, glob)
