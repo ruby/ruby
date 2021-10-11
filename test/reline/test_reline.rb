@@ -300,10 +300,6 @@ class Reline::Test < Reline::TestCase
     assert_equal(Reline::KeyActor::Emacs, Reline.send(:core).config.editing_mode.class)
   end
 
-  def test_editing_mode
-    # TODO
-  end
-
   def test_readmultiline
     # readmultiline is module function
     assert_include(Reline.methods, :readmultiline)
