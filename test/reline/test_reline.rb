@@ -1,5 +1,6 @@
 require_relative 'helper'
 require 'reline'
+require 'stringio'
 
 class Reline::Test < Reline::TestCase
   class DummyCallbackObject
@@ -272,18 +273,21 @@ class Reline::Test < Reline::TestCase
     assert_equal(5, Reline.point)
   end
 
-  def test_input=
-    # TODO
+  def test_set_input_and_output
     assert_raise(TypeError) do
       Reline.input = "This is not a file."
     end
-  end
-
-  def test_output=
-    # TODO
     assert_raise(TypeError) do
       Reline.output = "This is not a file."
     end
+    Reline.input, to_write = IO.pipe
+    to_read, Reline.output = IO.pipe
+    to_write.write "a\n"
+    result = Reline.readline
+    to_write.close
+    read_text = to_read.read_nonblock(100)
+    assert_equal('a', result)
+    refute(read_text.empty?)
   end
 
   def test_vi_editing_mode
