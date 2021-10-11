@@ -76,6 +76,7 @@ REPOSITORIES = {
   un: "ruby/un",
 }
 
+# We usually don't use this. Please consider using #sync_default_gems_with_commits instead.
 def sync_default_gems(gem)
   repo = REPOSITORIES[gem.to_sym]
   puts "Sync #{repo}"
@@ -360,6 +361,10 @@ def message_filter(repo, sha)
   }
 end
 
+# NOTE: This method is also used by ruby-commit-hook/bin/update-default-gem.sh
+# @param gem [String] A gem name, also used as a git remote name. REPOSITORIES converts it to the appropriate GitHub repository.
+# @param ranges [Array<String>] "before..after". Note that it will NOT sync "before" (but commits after that).
+# @param edit [TrueClass] Set true if you want to resolve conflicts. Obviously, update-default-gem.sh doesn't use this.
 def sync_default_gems_with_commits(gem, ranges, edit: nil)
   repo = REPOSITORIES[gem.to_sym]
   puts "Sync #{repo} with commit history."
