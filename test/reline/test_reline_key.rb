@@ -1,7 +1,7 @@
 require_relative 'helper'
 require "reline"
 
-class Reline::Test < Reline::TestCase
+class Reline::TestKey < Reline::TestCase
   def setup
   end
 
