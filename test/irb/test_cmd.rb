@@ -510,6 +510,7 @@ module TestIRB
     end
 
     def test_show_source_end_finder
+      pend if RUBY_ENGINE == 'truffleruby'
       code = <<~EOS.gsub(/^/, ' ' * 4); eval(code, binding, __FILE__, __LINE__ + 1) unless respond_to?(:show_source_test_method)
         def show_source_test_method
           unless true
