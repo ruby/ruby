@@ -253,6 +253,25 @@ class Reline::Test < Reline::TestCase
     assert_equal(3, Reline.point)
   end
 
+  def test_delete_text
+    assert_equal('', Reline.line_buffer)
+    assert_equal(0, Reline.point)
+    Reline.insert_text('abc')
+    assert_equal('abc', Reline.line_buffer)
+    assert_equal(3, Reline.point)
+    Reline.delete_text()
+    assert_equal('', Reline.line_buffer)
+    assert_equal(0, Reline.point)
+    Reline.insert_text('abc')
+    Reline.delete_text(1)
+    assert_equal('a', Reline.line_buffer)
+    assert_equal(1, Reline.point)
+    Reline.insert_text('defghi')
+    Reline.delete_text(2, 2)
+    assert_equal('adghi', Reline.line_buffer)
+    assert_equal(5, Reline.point)
+  end
+
   def test_input=
     # TODO
     assert_raise(TypeError) do
