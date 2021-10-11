@@ -247,12 +247,10 @@ class Reline::Test < Reline::TestCase
 
   def test_insert_text
     assert_equal('', Reline.line_buffer)
+    assert_equal(0, Reline.point)
     Reline.insert_text('abc')
     assert_equal('abc', Reline.line_buffer)
-  end
-
-  def test_point
-    # TODO
+    assert_equal(3, Reline.point)
   end
 
   def test_input=
