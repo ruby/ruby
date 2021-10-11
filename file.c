@@ -1451,7 +1451,7 @@ rb_group_member(GETGROUPS_T gid)
     return FALSE;
 #else
     int rv = FALSE;
-    int groups = 16;
+    int groups;
     VALUE v = 0;
     GETGROUPS_T *gary;
     int anum = -1;
@@ -1459,25 +1459,9 @@ rb_group_member(GETGROUPS_T gid)
     if (getgid() == gid || getegid() == gid)
 	return TRUE;
 
-    /*
-     * On Mac OS X (Mountain Lion), NGROUPS is 16. But libc and kernel
-     * accept more larger value.
-     * So we don't trunk NGROUPS anymore.
-     */
-    while (groups <= RB_MAX_GROUPS) {
-	gary = ALLOCV_N(GETGROUPS_T, v, groups);
-	anum = getgroups(groups, gary);
-	if (anum != -1 && anum != groups)
-	    break;
-	groups *= 2;
-	if (v) {
-	    ALLOCV_END(v);
-	    v = 0;
-	}
-    }
-    if (anum == -1)
-	return FALSE;
-
+    groups = getgroups(0, NULL);
+    gary = ALLOCV_N(GETGROUPS_T, v, groups);
+    anum = getgroups(groups, gary);
     while (--anum >= 0) {
 	if (gary[anum] == gid) {
 	    rv = TRUE;
