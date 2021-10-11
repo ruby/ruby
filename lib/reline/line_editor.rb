@@ -340,7 +340,8 @@ class Reline::LineEditor
   end
 
   private def calculate_height_by_width(width)
-    width.div(@screen_size.last) + 1
+    max_width = @screen_size.last
+    max_width > 0 ? (width.div(max_width) + 1) : 1
   end
 
   private def split_by_width(str, max_width)
