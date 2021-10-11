@@ -622,15 +622,12 @@ num_div(VALUE x, VALUE y)
  *  call-seq:
  *    self % other -> real_numeric
  *
- *  Returns +self+ modulo +other+ as a real \Numeric
- *  (that is, not a \Complex).
+ *  Returns +self+ modulo +other+ as a real number.
  *
- *  This method is overridden by Integer#%, Float#%, and BigDecimal#%,
- *  and is specifically undefined by class \Complex;
- *  but is not overridden in class \Rational.
+ *  Of the Core and Standard Library classes,
+ *  only Rational uses this implementation.
  *
- *  For \Rational +r+ and real numeric +n+
- *  (again, not a \Complex), these expressions are equivalent:
+ *  For \Rational +r+ and real number +n+, these expressions are equivalent:
  *
  *    c % n
  *    c-n*(c/n).floor
@@ -652,20 +649,6 @@ num_div(VALUE x, VALUE y)
  *    r % -r2               # => (-119/100)
  *    (-r) % r2             # => (119/100)
  *    (-r) %-r2             # => (-21/100)
- *
- *    r = Rational(301,100) # => (301/100)
- *    r2 = Rational(2)      # => (2/1)
- *    r % r2                # => (101/100)
- *    r % -r2               # => (-99/100)
- *    (-r) % r2             # => (99/100)
- *    (-r) % -r2            # => (-101/100)
- *
- *    r = Rational(11)      # => (11/1)
- *    r2 = Rational(3)      # => (3/1)
- *    r % r2                # => (2/1)
- *    r % -r2               # => (-1/1)
- *    (-r) % r2             # => (1/1)
- *    (-r) % -r2            # => (-2/1)
  *
  *  Numeric#modulo is an alias for Numeric#%.
  *
