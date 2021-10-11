@@ -1,5 +1,5 @@
 require_relative 'helper'
-require "reline"
+require 'reline'
 
 class Reline::Test < Reline::TestCase
   class DummyCallbackObject
