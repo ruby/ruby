@@ -1641,11 +1641,13 @@ rb_big_sq_fast(VALUE x)
 
 /* balancing multiplication by slicing larger argument */
 static void
-bary_mul_balance_with_mulfunc(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn, BDIGIT *wds, size_t wn, mulfunc_t *mulfunc)
+bary_mul_balance_with_mulfunc(BDIGIT *const zds, const size_t zn,
+                              const BDIGIT *const xds, const size_t xn,
+                              const BDIGIT *const yds, const size_t yn,
+                              BDIGIT *wds, size_t wn, mulfunc_t *const mulfunc)
 {
     VALUE work = 0;
-    size_t yn0 = yn;
-    size_t r, n;
+    size_t n;
 
     assert(xn + yn <= zn);
     assert(xn <= yn);
@@ -1654,13 +1656,11 @@ bary_mul_balance_with_mulfunc(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t 
     BDIGITS_ZERO(zds, xn);
 
     n = 0;
-    while (yn > 0) {
-        BDIGIT *tds;
-        size_t tn;
-	r = xn > yn ? yn : xn;
-        tn = xn + r;
+    while (yn > n) {
+        const size_t r = (xn > (yn - n) ? (yn - n) : xn);
+        const size_t tn = (xn + r);
         if (2 * (xn + r) <= zn - n) {
-            tds = zds + n + xn + r;
+            BDIGIT *const tds = zds + n + xn + r;
             mulfunc(tds, tn, xds, xn, yds + n, r, wds, wn);
             BDIGITS_ZERO(zds + n + xn, r);
             bary_add(zds + n, tn,
@@ -1668,21 +1668,20 @@ bary_mul_balance_with_mulfunc(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t 
                      tds, tn);
         }
         else {
+            BDIGIT *const tds = zds + n;
             if (wn < xn) {
                 wn = xn;
                 wds = ALLOCV_N(BDIGIT, work, wn);
             }
-            tds = zds + n;
             MEMCPY(wds, zds + n, BDIGIT, xn);
             mulfunc(tds, tn, xds, xn, yds + n, r, wds+xn, wn-xn);
             bary_add(zds + n, tn,
                      zds + n, tn,
                      wds, xn);
         }
-	yn -= r;
 	n += r;
     }
-    BDIGITS_ZERO(zds+xn+yn0, zn - (xn+yn0));
+    BDIGITS_ZERO(zds+xn+yn, zn - (xn+yn));
 
     if (work)
         ALLOCV_END(work);
