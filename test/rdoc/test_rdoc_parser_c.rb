@@ -1930,6 +1930,22 @@ void d(void) {
                  @store.all_classes_and_modules.map { |m| m.full_name }.sort
   end
 
+  def test_markup_format_default
+    content = <<-EOF
+void Init_Blah(void) {
+  cBlah = rb_define_class("Blah", rb_cObject);
+
+  /*
+   * This should be interpreted in the default format.
+   */
+  rb_attr(cBlah, rb_intern("default_format"), 1, 1, Qfalse);
+}
+    EOF
+
+    klass = util_get_class content, 'cBlah'
+    assert_equal("rdoc", klass.attributes.find {|a| a.name == "default_format"}.comment.format)
+  end
+
   def util_get_class content, name = nil
     @parser = util_parser content
     @parser.scan
