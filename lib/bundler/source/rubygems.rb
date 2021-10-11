@@ -135,7 +135,7 @@ module Bundler
         force = opts[:force]
         ensure_builtin_gems_cached = opts[:ensure_builtin_gems_cached]
 
-        if ensure_builtin_gems_cached && builtin_gem?(spec)
+        if ensure_builtin_gems_cached && spec.default_gem?
           if !cached_path(spec)
             cached_built_in_gem(spec) unless spec.remote
             force = true
@@ -233,7 +233,7 @@ module Bundler
       end
 
       def cache(spec, custom_path = nil)
-        if builtin_gem?(spec)
+        if spec.default_gem?
           cached_path = cached_built_in_gem(spec)
         else
           cached_path = cached_gem(spec)
@@ -477,14 +477,6 @@ module Bundler
         gem_path
       ensure
         Bundler.rm_rf(download_path) if requires_sudo?
-      end
-
-      def builtin_gem?(spec)
-        # Ruby 2.1, where all included gems have this summary
-        return true if spec.summary =~ /is bundled with Ruby/
-
-        # Ruby 2.0, where gemspecs are stored in specifications/default/
-        spec.loaded_from && spec.loaded_from.include?("specifications/default/")
       end
 
       def installed?(spec)
