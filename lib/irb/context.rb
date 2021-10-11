@@ -125,6 +125,8 @@ module IRB
       end
       self.save_history = IRB.conf[:SAVE_HISTORY] if IRB.conf[:SAVE_HISTORY]
 
+      @extra_doc_dirs = IRB.conf[:EXTRA_DOC_DIRS]
+
       @echo = IRB.conf[:ECHO]
       if @echo.nil?
         @echo = true
@@ -241,6 +243,9 @@ module IRB
     #
     # If set to +false+, <code>^D</code> will quit irb.
     attr_accessor :ignore_eof
+    # Specify the installation locations of the ri file to be displayed in the
+    # document dialog.
+    attr_accessor :extra_doc_dirs
     # Whether to echo the return value to output or not.
     #
     # Uses <code>IRB.conf[:ECHO]</code> if available, or defaults to +true+.

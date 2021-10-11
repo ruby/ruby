@@ -51,6 +51,7 @@ module IRB # :nodoc:
     @CONF[:USE_LOADER] = false
     @CONF[:IGNORE_SIGINT] = true
     @CONF[:IGNORE_EOF] = false
+    @CONF[:EXTRA_DOC_DIRS] = []
     @CONF[:ECHO] = nil
     @CONF[:ECHO_ON_ASSIGNMENT] = nil
     @CONF[:VERBOSE] = nil
@@ -257,6 +258,9 @@ module IRB # :nodoc:
         @CONF[:USE_MULTILINE] = true
       when "--nomultiline", "--noreidline"
         @CONF[:USE_MULTILINE] = false
+      when /^--extra-doc-dir(?:=(.+))?/
+        opt = $1 || argv.shift
+        @CONF[:EXTRA_DOC_DIRS] << opt
       when "--echo"
         @CONF[:ECHO] = true
       when "--noecho"

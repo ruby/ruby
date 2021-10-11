@@ -329,7 +329,9 @@ module IRB
       name = result[pointer]
       name = IRB::InputCompletor.retrieve_completion_data(name, doc_namespace: true)
 
-      driver = RDoc::RI::Driver.new
+      options = {}
+      options[:extra_doc_dirs] = IRB.conf[:EXTRA_DOC_DIRS] unless IRB.conf[:EXTRA_DOC_DIRS].empty?
+      driver = RDoc::RI::Driver.new(options)
 
       if key.match?(dialog.name)
         begin
