@@ -78,6 +78,19 @@ class TestFileExhaustive < Test::Unit::TestCase
     @notownedfile
   end
 
+  def grpownedfile
+    return nil unless POSIX
+    return @grpownedfile if defined? @grpownedfile
+    if group = (Process.groups - [Process.egid]).last
+      grpownedfile = make_tmp_filename("grpownedfile")
+      make_file("grpowned", grpownedfile)
+      File.chown(nil, group, grpownedfile)
+      return @grpownedfile = grpownedfile
+    end
+  rescue
+    @grpownedfile = nil
+  end
+
   def suidfile
     return @suidfile if defined? @suidfile
     if POSIX
@@ -493,6 +506,9 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_grpowned_p ## xxx
     assert_file.grpowned?(regular_file)
     assert_file.grpowned?(utf8_file)
+    if file = grpownedfile
+      assert_file.grpowned?(file)
+    end
   end if POSIX
 
   def io_open(file_name)
@@ -1454,6 +1470,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       fn1,
       zerofile,
       notownedfile,
+      grpownedfile,
       suidfile,
       sgidfile,
       stickyfile,
@@ -1689,6 +1706,9 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_stat_grpowned_p ## xxx
     assert_predicate(File::Stat.new(regular_file), :grpowned?)
+    if file = grpownedfile
+      assert_predicate(File::Stat.new(file), :grpowned?)
+    end
   end if POSIX
 
   def test_stat_suid
