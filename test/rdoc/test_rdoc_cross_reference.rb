@@ -20,7 +20,7 @@ class TestRDocCrossReference < XrefTestCase
   def test_METHOD_REGEXP_STR
     re = /#{RDoc::CrossReference::METHOD_REGEXP_STR}/
 
-    %w'=== [] []= << >>'.each do |x|
+    %w'== === [] []= << >>'.each do |x|
       re =~ x
       assert_equal x, $&
     end
