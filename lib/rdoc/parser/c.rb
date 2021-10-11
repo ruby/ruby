@@ -173,6 +173,8 @@ class RDoc::Parser::C < RDoc::Parser
     @classes           = load_variable_map :c_class_variables
     @singleton_classes = load_variable_map :c_singleton_class_variables
 
+    @markup = @options.markup
+
     # class_variable => { function => [method, ...] }
     @methods = Hash.new { |h, f| h[f] = Hash.new { |i, m| i[m] = [] } }
 
@@ -1223,6 +1225,8 @@ class RDoc::Parser::C < RDoc::Parser
   end
 
   def new_comment text = nil, location = nil, language = nil
-    RDoc::Comment.new(text, location, language)
+    RDoc::Comment.new(text, location, language).tap do |comment|
+      comment.format = @markup
+    end
   end
 end
