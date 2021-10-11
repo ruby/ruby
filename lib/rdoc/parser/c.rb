@@ -1030,7 +1030,12 @@ class RDoc::Parser::C < RDoc::Parser
 
 
         meth_obj.record_location @top_level
+
+        if meth_obj.section_title
+          class_obj.temporary_section = class_obj.add_section(meth_obj.section_title)
+        end
         class_obj.add_method meth_obj
+
         @stats.add_method meth_obj
         meth_obj.visibility = :private if 'private_method' == type
       end

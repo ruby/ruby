@@ -26,6 +26,9 @@ class RDoc::AnyMethod < RDoc::MethodAttr
 
   attr_accessor :c_function
 
+  # The section title of the method (if defined in a C file via +:category:+)
+  attr_accessor :section_title
+
   # Parameters for this method
 
   attr_accessor :params
