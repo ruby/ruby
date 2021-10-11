@@ -1421,7 +1421,7 @@ rand_range(VALUE obj, rb_random_t* rnd, VALUE range)
 		v = ULONG2NUM(r);
 	    }
 	}
-	else if (BUILTIN_TYPE(vmax) == T_BIGNUM && BIGNUM_SIGN(vmax) && !rb_bigzero_p(vmax)) {
+	else if (RB_BIGNUM_TYPE_P(vmax) && BIGNUM_SIGN(vmax) && !rb_bigzero_p(vmax)) {
 	    vmax = excl ? rb_big_minus(vmax, INT2FIX(1)) : rb_big_norm(vmax);
 	    if (FIXNUM_P(vmax)) {
 		excl = 0;
