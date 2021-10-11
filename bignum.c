@@ -1655,6 +1655,14 @@ bary_mul_balance_with_mulfunc(BDIGIT *const zds, const size_t zn,
 
     BDIGITS_ZERO(zds, xn);
 
+    if (wn < xn) {
+        const size_t r = (yn % xn) ? (yn % xn) : xn;
+        if ((2 * xn + yn + r) > zn) {
+            wn = xn;
+            wds = ALLOCV_N(BDIGIT, work, wn);
+        }
+    }
+
     n = 0;
     while (yn > n) {
         const size_t r = (xn > (yn - n) ? (yn - n) : xn);
@@ -1670,8 +1678,13 @@ bary_mul_balance_with_mulfunc(BDIGIT *const zds, const size_t zn,
         else {
             BDIGIT *const tds = zds + n;
             if (wn < xn) {
+                /* xn is invariant, only once here */
+#if 0
                 wn = xn;
                 wds = ALLOCV_N(BDIGIT, work, wn);
+#else
+                rb_bug("wds is not enough: %" PRIdSIZE " for %" PRIdSIZE, wn, xn);
+#endif
             }
             MEMCPY(wds, zds + n, BDIGIT, xn);
             mulfunc(tds, tn, xds, xn, yds + n, r, wds+xn, wn-xn);
