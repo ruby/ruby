@@ -1,3 +1,4 @@
+#!/usr/bin/env ruby
 # sync upstream github repositories to ruby repository
 
 require 'fileutils'
