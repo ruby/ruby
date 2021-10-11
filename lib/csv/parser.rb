@@ -480,9 +480,9 @@ class CSV
     begin
       StringScanner.new("x").scan("x")
     rescue TypeError
-      @@string_scanner_scan_accept_string = false
+      STRING_SCANNER_SCAN_ACCEPT_STRING = false
     else
-      @@string_scanner_scan_accept_string = true
+      STRING_SCANNER_SCAN_ACCEPT_STRING = true
     end
 
     def prepare_separators
@@ -506,7 +506,7 @@ class CSV
         @first_column_separators = Regexp.new(@escaped_first_column_separator +
                                               "+".encode(@encoding))
       else
-        if @@string_scanner_scan_accept_string
+        if STRING_SCANNER_SCAN_ACCEPT_STRING
           @column_end = @column_separator
         else
           @column_end = Regexp.new(@escaped_column_separator)
@@ -725,6 +725,8 @@ class CSV
         end
       end
 
+      SCANNER_TEST_CHUNK_SIZE =
+        Integer((ENV["CSV_PARSER_SCANNER_TEST_CHUNK_SIZE"] || "1"), 10)
       def build_scanner
         inputs = @samples.collect do |sample|
           UnoptimizedStringIO.new(sample)
@@ -734,10 +736,9 @@ class CSV
         else
           inputs << @input
         end
-        chunk_size = ENV["CSV_PARSER_SCANNER_TEST_CHUNK_SIZE"] || "1"
         InputsScanner.new(inputs,
                           @encoding,
-                          chunk_size: Integer(chunk_size, 10))
+                          chunk_size: SCANNER_TEST_CHUNK_SIZE)
       end
     else
       def build_scanner
