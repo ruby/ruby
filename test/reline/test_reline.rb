@@ -280,14 +280,19 @@ class Reline::Test < Reline::TestCase
     assert_raise(TypeError) do
       Reline.output = "This is not a file."
     end
-    Reline.input, to_write = IO.pipe
-    to_read, Reline.output = IO.pipe
+    input, to_write = IO.pipe
+    to_read, output = IO.pipe
+    Reline.input, Reline.output = input, output
     to_write.write "a\n"
     result = Reline.readline
     to_write.close
     read_text = to_read.read_nonblock(100)
     assert_equal('a', result)
     refute(read_text.empty?)
+  ensure
+    input&.close
+    output&.close
+    to_read&.close
   end
 
   def test_vi_editing_mode
