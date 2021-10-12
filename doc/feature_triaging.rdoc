@@ -8,7 +8,7 @@ feature tracker.
 The goal of Ruby's feature tracker is to ensure that all open requested
 features are features that have not yet been implemented but that the Ruby core
 team would consider adding to Ruby.  One aspect of triaging requested features
-is to make sure that requested features that have already implemented are
+is to make sure that requested features that have already been implemented are
 closed, and that requested features that the Ruby core team would probably not
 consider adding to Ruby are also closed.  By closing requested features that
 are implemented or not desired, Ruby core better supports potential
