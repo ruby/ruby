@@ -168,7 +168,7 @@ class Reline::Windows
   @@input_buf = []
   @@output_buf = []
 
-  def self.msys_tty?(io=@@hConsoleInputHandle)
+  def self.msys_tty?(io = @@hConsoleInputHandle)
     # check if fd is a pipe
     if @@GetFileType.call(io) != FILE_TYPE_PIPE
       return false
