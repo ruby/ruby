@@ -101,7 +101,7 @@ void *alloca();
 #  define SUPPORT_COMPRESSED_DEBUG_LINE
 # endif
 #else /* compatibility with glibc < 2.22 */
-# define SHF_COMPRESSED 0
+# define SHF_COMPRESSED (1 << 11)
 #endif
 
 #ifndef PATH_MAX
