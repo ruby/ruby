@@ -232,7 +232,7 @@ mjit_config.h: Makefile
 $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time: probes.h vm.$(OBJEXT) \
 		$(TIMESTAMPDIR)/$(arch)/.time $(tooldir)/mjit_tabs.rb $(PREP) $(RBCONFIG)
 	$(ECHO) building $(@F:.time=.h)
-	$(MINIRUBY) $(tooldir)/mjit_tabs.rb "$(MJIT_TABS)" \
+	$(Q)$(MINIRUBY) $(tooldir)/mjit_tabs.rb "$(MJIT_TABS)" \
 		$(CPP) -DMJIT_HEADER $(MJIT_HEADER_FLAGS) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/vm.c $(CPPOUTFLAG)$(@F:.time=.h).new
 	$(Q) $(IFCHANGE) "--timestamp=$@" $(@F:.time=.h) $(@F:.time=.h).new
 
@@ -243,7 +243,7 @@ $(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h: \
 		$(tooldir)/transform_mjit_header.rb $(PREP) \
 		$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h
 	$(ECHO) building $@
-	$(MINIRUBY) $(tooldir)/transform_mjit_header.rb "$(CC) $(CFLAGS) -w" $(MJIT_HEADER:.h=)$(MJIT_HEADER_ARCH).h $@
+	$(Q)$(MINIRUBY) $(tooldir)/transform_mjit_header.rb "$(CC) $(CFLAGS) -w" $(MJIT_HEADER:.h=)$(MJIT_HEADER_ARCH).h $@
 	$(Q) $(MAKEDIRS) $(MJIT_HEADER_INSTALL_DIR)
 	$(Q) $(MAKE_LINK) $@ $(MJIT_HEADER_INSTALL_DIR)/$(@F)
 
