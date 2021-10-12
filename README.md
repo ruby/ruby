@@ -92,7 +92,7 @@ is required.
 ## How to compile and install
 
 1.  If you want to use Microsoft Visual C++ to compile Ruby, read
-    [win32/README.win32](win32/README.win32) instead of this document.
+    [win32/README.win32](rdoc-ref:win32/README.win32) instead of this document.
 
 2.  Run `./autogen.sh` to generate configure, when you build the source checked
     out from the Git repository.
@@ -164,7 +164,7 @@ to remove old configuration after installing them in such case.
 
 ## Copying
 
-See the file [COPYING](COPYING).
+See the file [COPYING](rdoc-ref:COPYING).
 
 ## Feedback
 
@@ -178,7 +178,7 @@ Bugs should be reported at https://bugs.ruby-lang.org. Read [HowToReport] for mo
 
 ## Contributing
 
-See the file [CONTRIBUTING.md](CONTRIBUTING.md)
+See the file [CONTRIBUTING.md](rdoc-ref:CONTRIBUTING)
 
 ## The Author
 
