@@ -620,13 +620,38 @@ num_div(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.modulo(numeric)  ->  real
+ *    self % other -> real_numeric
  *
- *  <code>x.modulo(y)</code> means <code>x-y*(x/y).floor</code>.
+ *  Returns +self+ modulo +other+ as a real number.
  *
- *  Equivalent to <code>num.divmod(numeric)[1]</code>.
+ *  Of the Core and Standard Library classes,
+ *  only Rational uses this implementation.
+ *
+ *  For \Rational +r+ and real number +n+, these expressions are equivalent:
+ *
+ *    c % n
+ *    c-n*(c/n).floor
+ *    c.divmod(n)[1]
  *
  *  See Numeric#divmod.
+ *
+ *  Examples:
+ *
+ *    r = Rational(1, 2)    # => (1/2)
+ *    r2 = Rational(2, 3)   # => (2/3)
+ *    r % r2                # => (1/2)
+ *    r % 2                 # => (1/2)
+ *    r % 2.0               # => 0.5
+ *
+ *    r = Rational(301,100) # => (301/100)
+ *    r2 = Rational(7,5)    # => (7/5)
+ *    r % r2                # => (21/100)
+ *    r % -r2               # => (-119/100)
+ *    (-r) % r2             # => (119/100)
+ *    (-r) %-r2             # => (-21/100)
+ *
+ *  Numeric#modulo is an alias for Numeric#%.
+ *
  */
 
 static VALUE
@@ -3718,7 +3743,6 @@ rb_int_idiv(VALUE x, VALUE y)
  *
  *  See Numeric#divmod for more information.
  */
-
 static VALUE
 fix_mod(VALUE x, VALUE y)
 {
