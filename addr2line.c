@@ -869,8 +869,11 @@ typedef struct {
     int type;
 } DebugInfoValue;
 
-/* TODO: Big Endian */
+#ifdef WORDS_BIGENDIAN
+#define MERGE_2INTS(a,b,sz) (((uint64_t)(a)<<sz)|(b))
+#else
 #define MERGE_2INTS(a,b,sz) (((uint64_t)(b)<<sz)|(a))
+#endif
 
 static uint16_t
 get_uint16(const uint8_t *p)
@@ -911,7 +914,11 @@ read_uint24(const char **ptr)
 {
     const char *p = *ptr;
     *ptr = (p + 3);
+#ifdef WORDS_BIGENDIAN
     return ((uint8_t)*p << 16) | get_uint16((const uint8_t *)p+1);
+#else
+    return (*(uint8_t *)(p+2) << 16) | get_uint16((const uint8_t *)p);
+#endif
 }
 
 static uint32_t
