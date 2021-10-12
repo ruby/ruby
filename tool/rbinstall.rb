@@ -99,7 +99,7 @@ def parse_args(argv = ARGV)
     case v
     when /\AINSTALL[-_]([-\w]+)=(.*)/
       argv.unshift("--#{$1.tr('_', '-')}=#{$2}")
-    when /\A\w[-\w+]*=\z/
+    when /\A\w[-\w]*=/
       mflags << v
     when /\A\w[-\w+]*\z/
       $install << v.intern
@@ -835,9 +835,6 @@ module RbInstall
     def write_cache_file
     end
 
-    def build_extensions
-    end
-
     def shebang(bin_file_name)
       path = File.join(gem_dir, spec.bindir, bin_file_name)
       first_line = File.open(path, "rb") {|file| file.gets}
@@ -992,6 +989,20 @@ def install_default_gem(dir, srcdir, bindir)
 end
 
 install?(:ext, :comm, :gem, :'bundled-gems') do
+  if CONFIG['CROSS_COMPILING'] == 'yes'
+    # The following hacky steps set "$ruby = BASERUBY" in tool/fake.rb
+    $hdrdir = ''
+    $extmk = nil
+    $ruby = nil  # ...
+    ruby_path = $ruby + " -I#{Dir.pwd}" # $baseruby + " -I#{Dir.pwd}"
+  else
+    # ruby_path = File.expand_path(with_destdir(File.join(bindir, ruby_install_name)))
+    ENV['RUBYLIB'] = nil
+    ENV['RUBYOPT'] = nil
+    ruby_path = File.expand_path(with_destdir(File.join(bindir, ruby_install_name))) + " --disable=gems -I#{with_destdir(archlibdir)}"
+  end
+  Gem.instance_variable_set(:@ruby, ruby_path) if Gem.ruby != ruby_path
+
   gem_dir = Gem.default_dir
   install_dir = with_destdir(gem_dir)
   prepare "bundled gems", gem_dir
@@ -1012,7 +1023,8 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     :format_executable => true,
   }
   gem_ext_dir = "#$extout/gems/#{CONFIG['arch']}"
-  extensions_dir = Gem::StubSpecification.gemspec_stub("", gem_dir, gem_dir).extensions_dir
+  extensions_dir = with_destdir(Gem::StubSpecification.gemspec_stub("", gem_dir, gem_dir).extensions_dir)
+
   File.foreach("#{srcdir}/gems/bundled_gems") do |name|
     next if /^\s*(?:#|$)/ =~ name
     next unless /^(\S+)\s+(\S+).*/ =~ name

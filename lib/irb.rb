@@ -867,7 +867,7 @@ module IRB
 
       # If the expression is invalid, Ripper.sexp should return nil which will
       # result in false being returned. Any valid expression should return an
-      # s-expression where the second selement of the top level array is an
+      # s-expression where the second element of the top level array is an
       # array of parsed expressions. The first element of each expression is the
       # expression's type.
       verbose, $VERBOSE = $VERBOSE, nil

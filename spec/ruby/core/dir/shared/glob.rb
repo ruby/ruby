@@ -80,6 +80,10 @@ describe :dir_glob, shared: true do
     it "matches regexp special |" do
       Dir.send(@method, 'special/|').should == ['special/|']
     end
+
+    it "matches files with backslashes in their name" do
+      Dir.glob('special/\\\\{a,b}').should == ['special/\a']
+    end
   end
 
   it "matches regexp special ^" do

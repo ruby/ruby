@@ -236,7 +236,7 @@ RSpec.describe "bundle clean" do
     bundle "config set path vendor/bundle"
     bundle "install"
 
-    update_git "foo", :path => lib_path("foo-bar")
+    update_git "foo-bar", :path => lib_path("foo-bar")
     revision2 = revision_for(lib_path("foo-bar"))
 
     bundle "update", :all => true

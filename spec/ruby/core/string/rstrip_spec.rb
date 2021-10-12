@@ -1,7 +1,10 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'shared/strip'
 
 describe "String#rstrip" do
+  it_behaves_like :string_strip, :rstrip
+
   it "returns a copy of self with trailing whitespace removed" do
     "  hello  ".rstrip.should == "  hello"
     "  hello world  ".rstrip.should == "  hello world"

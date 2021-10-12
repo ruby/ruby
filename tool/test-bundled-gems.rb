@@ -1,5 +1,6 @@
 require 'rbconfig'
 require 'timeout'
+require 'fileutils'
 
 github_actions = ENV["GITHUB_ACTIONS"] == "true"
 
@@ -38,6 +39,15 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     # Tentatively exclude some tests that conflict with error_highlight
     # https://github.com/seattlerb/minitest/pull/880
     test_command << " 'TESTOPTS=-e /test_stub_value_block_args_5__break_if_not_passed|test_no_method_error_on_unexpected_methods/'"
+  end
+
+  if gem == "debug"
+    build_dir = 'ext/-test-/gems/debug'
+    FileUtils.mkdir_p(build_dir)
+    extconf_path = File.expand_path('../../gems/src/debug/ext/debug/extconf.rb', __FILE__)
+    system("#{ruby} -C #{build_dir} #{extconf_path}") or raise
+    system("cd #{build_dir} && make extout=../../../../.ext libdir=../../../..") or raise
+    ENV["RUBYLIB"] = [File.expand_path(build_dir + "/.."), ENV.fetch("RUBYLIB", nil)].compact.join(":")
   end
 
   print "[command]" if github_actions

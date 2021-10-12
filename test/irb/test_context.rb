@@ -448,6 +448,28 @@ module TestIRB
                    out)
     end
 
+    def test_default_return_format
+      IRB.conf[:PROMPT][:MY_PROMPT] = {
+        :PROMPT_I => "%03n> ",
+        :PROMPT_N => "%03n> ",
+        :PROMPT_S => "%03n> ",
+        :PROMPT_C => "%03n> "
+        # without :RETURN
+        # :RETURN => "%s\n"
+      }
+      IRB.conf[:PROMPT_MODE] = :MY_PROMPT
+      input = TestInputMethod.new([
+        "3"
+      ])
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_equal("3\n",
+                   out)
+    end
+
     def test_eval_input_with_exception
       pend if RUBY_ENGINE == 'truffleruby'
       verbose, $VERBOSE = $VERBOSE, nil

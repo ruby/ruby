@@ -1,7 +1,10 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'shared/strip'
 
 describe "String#strip" do
+  it_behaves_like :string_strip, :strip
+
   it "returns a new string with leading and trailing whitespace removed" do
     "   hello   ".strip.should == "hello"
     "   hello world   ".strip.should == "hello world"

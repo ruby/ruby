@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "String#scrub with a default replacement" do
   it "returns self for valid strings" do
@@ -19,11 +20,24 @@ describe "String#scrub with a default replacement" do
     input.scrub.should == "foo"
   end
 
-
   it "replaces invalid byte sequences when using ASCII as the input encoding" do
     xE3x80 = [0xE3, 0x80].pack('CC').force_encoding 'utf-8'
     input = "abc\u3042#{xE3x80}".force_encoding('ASCII')
     input.scrub.should == "abc?????"
+  end
+
+  ruby_version_is '3.0' do
+    it "returns String instances when called on a subclass" do
+      StringSpecs::MyString.new("foo").scrub.should be_an_instance_of(String)
+      input = [0x81].pack('C').force_encoding('utf-8')
+      StringSpecs::MyString.new(input).scrub.should be_an_instance_of(String)
+    end
+  end
+
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances when called on a subclass" do
+      StringSpecs::MyString.new("foo").scrub.should be_an_instance_of(StringSpecs::MyString)
+    end
   end
 end
 
@@ -65,6 +79,14 @@ describe "String#scrub with a custom replacement" do
 
     block.should raise_error(TypeError)
   end
+
+  ruby_version_is '3.0' do
+    it "returns String instances when called on a subclass" do
+      StringSpecs::MyString.new("foo").scrub("*").should be_an_instance_of(String)
+      input = [0x81].pack('C').force_encoding('utf-8')
+      StringSpecs::MyString.new(input).scrub("*").should be_an_instance_of(String)
+    end
+  end
 end
 
 describe "String#scrub with a block" do
@@ -88,6 +110,14 @@ describe "String#scrub with a block" do
     end
 
     replaced.should == "€€"
+  end
+
+  ruby_version_is '3.0' do
+    it "returns String instances when called on a subclass" do
+      StringSpecs::MyString.new("foo").scrub { |b| "*" }.should be_an_instance_of(String)
+      input = [0x81].pack('C').force_encoding('utf-8')
+      StringSpecs::MyString.new(input).scrub { |b| "<#{b.unpack("H*")[0]}>" }.should be_an_instance_of(String)
+    end
   end
 end
 

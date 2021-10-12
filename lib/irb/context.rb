@@ -125,6 +125,8 @@ module IRB
       end
       self.save_history = IRB.conf[:SAVE_HISTORY] if IRB.conf[:SAVE_HISTORY]
 
+      @extra_doc_dirs = IRB.conf[:EXTRA_DOC_DIRS]
+
       @echo = IRB.conf[:ECHO]
       if @echo.nil?
         @echo = true
@@ -148,18 +150,18 @@ module IRB
 
     # The toplevel workspace, see #home_workspace
     attr_reader :workspace_home
-    # WorkSpace in the current context
+    # WorkSpace in the current context.
     attr_accessor :workspace
-    # The current thread in this context
+    # The current thread in this context.
     attr_reader :thread
-    # The current input method
+    # The current input method.
     #
     # Can be either StdioInputMethod, ReadlineInputMethod,
     # ReidlineInputMethod, FileInputMethod or other specified when the
     # context is created. See ::new for more # information on +input_method+.
     attr_accessor :io
 
-    # Current irb session
+    # Current irb session.
     attr_accessor :irb
     # A copy of the default <code>IRB.conf[:AP_NAME]</code>
     attr_accessor :ap_name
@@ -193,15 +195,15 @@ module IRB
 
     # A copy of the default <code>IRB.conf[:PROMPT_MODE]</code>
     attr_reader :prompt_mode
-    # Standard IRB prompt
+    # Standard IRB prompt.
     #
     # See IRB@Customizing+the+IRB+Prompt for more information.
     attr_accessor :prompt_i
-    # IRB prompt for continuated strings
+    # IRB prompt for continuated strings.
     #
     # See IRB@Customizing+the+IRB+Prompt for more information.
     attr_accessor :prompt_s
-    # IRB prompt for continuated statement (e.g. immediately after an +if+)
+    # IRB prompt for continuated statement. (e.g. immediately after an +if+)
     #
     # See IRB@Customizing+the+IRB+Prompt for more information.
     attr_accessor :prompt_c
@@ -241,6 +243,9 @@ module IRB
     #
     # If set to +false+, <code>^D</code> will quit irb.
     attr_accessor :ignore_eof
+    # Specify the installation locations of the ri file to be displayed in the
+    # document dialog.
+    attr_accessor :extra_doc_dirs
     # Whether to echo the return value to output or not.
     #
     # Uses <code>IRB.conf[:ECHO]</code> if available, or defaults to +true+.
@@ -252,7 +257,7 @@ module IRB
     #     puts "omg"
     #     # omg
     attr_accessor :echo
-    # Whether to echo for assignment expressions
+    # Whether to echo for assignment expressions.
     #
     # If set to +false+, the value of assignment will not be shown.
     #
@@ -386,6 +391,7 @@ module IRB
       @prompt_c = pconf[:PROMPT_C]
       @prompt_n = pconf[:PROMPT_N]
       @return_format = pconf[:RETURN]
+      @return_format = "%s\n" if @return_format == nil
       if ai = pconf.include?(:AUTO_INDENT)
         @auto_indent_mode = ai
       else
@@ -478,6 +484,8 @@ module IRB
     # Exits the current session, see IRB.irb_exit
     def exit(ret = 0)
       IRB.irb_exit(@irb, ret)
+    rescue UncaughtThrowError
+      super
     end
 
     NOPRINTING_IVARS = ["@last_value"] # :nodoc:

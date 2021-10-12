@@ -14,24 +14,31 @@
 CONSTFUNC(MAYBE_UNUSED(static const char *insn_op_types(VALUE insn)));
 CONSTFUNC(MAYBE_UNUSED(static int insn_op_type(VALUE insn, long pos)));
 
+RUBY_SYMBOL_EXPORT_BEGIN /* for debuggers */
+extern const char rb_vm_insn_op_base[];
+extern const unsigned short rb_vm_insn_op_offset[VM_INSTRUCTION_SIZE];
+RUBY_SYMBOL_EXPORT_END
+
+#ifdef RUBY_VM_INSNS_INFO
+const char rb_vm_insn_op_base[] =
+% a.each_slice 5 do |d|
+    <%= d.map {|i| sprintf("%-6s", cstr(i)) }.join(' "\0" ') %> "\0"
+% end
+    ;
+
+const unsigned short rb_vm_insn_op_offset[] = {
+% c.each_slice 12 do |d|
+    <%= d.map {|i| sprintf("%3d", i) }.join(', ') %>,
+% end
+};
+
+ASSERT_VM_INSTRUCTION_SIZE(rb_vm_insn_op_offset);
+#endif
+
 const char *
 insn_op_types(VALUE i)
 {
-    static const char x[] =
-% a.each_slice 5 do |d|
-        <%= d.map {|i| sprintf("%-6s", cstr(i)) }.join(' "\0" ') %> "\0"
-% end
-        ;
-
-    static const unsigned short y[] = {
-% c.each_slice 12 do |d|
-        <%= d.map {|i| sprintf("%3d", i) }.join(', ') %>,
-% end
-    };
-
-    ASSERT_VM_INSTRUCTION_SIZE(y);
-
-    return &x[y[i]];
+    return &rb_vm_insn_op_base[rb_vm_insn_op_offset[i]];
 }
 
 int

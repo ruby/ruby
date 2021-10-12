@@ -241,8 +241,9 @@ RBIMPL_SYMBOL_EXPORT_END()
  * extremely  carefully implemented  to be  Ractor-safe; for  instance integers
  * have such property.  This function can classify that.
  *
- * @param[in]   obj              Arbitrary ruby object.
- * @
+ * @param[in]   obj    Arbitrary ruby object.
+ * @retval      true   `obj` is capable of shared across ractors.
+ * @retval      false  `obj` cannot travel across ractor boundaries.
  */
 static inline bool
 rb_ractor_shareable_p(VALUE obj)

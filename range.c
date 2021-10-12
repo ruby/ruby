@@ -308,8 +308,8 @@ range_each_func(VALUE range, int (*func)(VALUE, VALUE), VALUE arg)
     }
 }
 
-static int
-sym_step_i(VALUE i, VALUE arg)
+static bool
+step_i_iter(VALUE arg)
 {
     VALUE *iter = (VALUE *)arg;
 
@@ -319,9 +319,16 @@ sym_step_i(VALUE i, VALUE arg)
     else {
 	iter[0] = rb_funcall(iter[0], '-', 1, RB_FIXNUM_ONE);
     }
-    if (iter[0] == RB_FIXNUM_ZERO) {
+    if (iter[0] != RB_FIXNUM_ZERO) return false;
+    iter[0] = iter[1];
+    return true;
+}
+
+static int
+sym_step_i(VALUE i, VALUE arg)
+{
+    if (step_i_iter(arg)) {
 	rb_yield(rb_str_intern(i));
-	iter[0] = iter[1];
     }
     return 0;
 }
@@ -329,17 +336,8 @@ sym_step_i(VALUE i, VALUE arg)
 static int
 step_i(VALUE i, VALUE arg)
 {
-    VALUE *iter = (VALUE *)arg;
-
-    if (FIXNUM_P(iter[0])) {
-	iter[0] -= RB_FIXNUM_ONE & ~FIXNUM_FLAG;
-    }
-    else {
-	iter[0] = rb_funcall(iter[0], '-', 1, RB_FIXNUM_ONE);
-    }
-    if (iter[0] == RB_FIXNUM_ZERO) {
+    if (step_i_iter(arg)) {
 	rb_yield(i);
-	iter[0] = iter[1];
     }
     return 0;
 }
@@ -465,6 +463,7 @@ range_step(int argc, VALUE *argv, VALUE range)
     }
 
     step = check_step_domain(step);
+    VALUE iter[2] = {INT2FIX(1), step};
 
     if (FIXNUM_P(b) && NIL_P(e) && FIXNUM_P(step)) {
 	long i = FIX2LONG(b), unit = FIX2LONG(step);
@@ -492,10 +491,6 @@ range_step(int argc, VALUE *argv, VALUE range)
 
     }
     else if (SYMBOL_P(b) && (NIL_P(e) || SYMBOL_P(e))) { /* symbols are special */
-	VALUE iter[2];
-	iter[0] = RB_FIXNUM_ONE;
-	iter[1] = step;
-
 	b = rb_sym2str(b);
 	if (NIL_P(e)) {
 	    rb_str_upto_endless_each(b, sym_step_i, (VALUE)iter);
@@ -524,12 +519,7 @@ range_step(int argc, VALUE *argv, VALUE range)
 	tmp = rb_check_string_type(b);
 
 	if (!NIL_P(tmp)) {
-	    VALUE iter[2];
-
 	    b = tmp;
-	    iter[0] = RB_FIXNUM_ONE;
-	    iter[1] = step;
-
 	    if (NIL_P(e)) {
 		rb_str_upto_endless_each(b, step_i, (VALUE)iter);
 	    }
@@ -538,15 +528,11 @@ range_step(int argc, VALUE *argv, VALUE range)
 	    }
 	}
 	else {
-	    VALUE args[2];
-
 	    if (!discrete_object_p(b)) {
 		rb_raise(rb_eTypeError, "can't iterate from %s",
 			 rb_obj_classname(b));
 	    }
-	    args[0] = RB_FIXNUM_ONE;
-	    args[1] = step;
-	    range_each_func(range, step_i, (VALUE)args);
+	    range_each_func(range, step_i, (VALUE)iter);
 	}
     }
     return range;

@@ -232,7 +232,7 @@ RSpec.describe "bundle install with git sources" do
 
       # want to ensure we don't fallback to HEAD
       update_git "foo", :path => lib_path("foo-1.0"), :branch => "rando" do |s|
-        s.write("lib/foo.rb", "raise 'FAIL'")
+        s.write("lib/foo.rb", "raise 'FAIL_FROM_RANDO'")
       end
 
       install_gemfile <<-G
@@ -268,7 +268,7 @@ RSpec.describe "bundle install with git sources" do
 
       # want to ensure we don't fallback to HEAD
       update_git "foo", :path => lib_path("foo-1.0"), :branch => "rando" do |s|
-        s.write("lib/foo.rb", "raise 'FAIL'")
+        s.write("lib/foo.rb", "raise 'FAIL_FROM_RANDO'")
       end
 
       install_gemfile <<-G

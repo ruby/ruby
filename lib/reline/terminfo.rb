@@ -1,5 +1,13 @@
-require 'fiddle'
-require 'fiddle/import'
+begin
+  require 'fiddle'
+  require 'fiddle/import'
+rescue LoadError
+  module Reline::Terminfo
+    def self.curses_dl
+      false
+    end
+  end
+end
 
 module Reline::Terminfo
   extend Fiddle::Importer
@@ -50,7 +58,7 @@ module Reline::Terminfo
     @curses_dl = nil if @curses_dl == false
     @curses_dl
   end
-end
+end if not Reline.const_defined?(:Terminfo) or not Reline::Terminfo.respond_to?(:curses_dl)
 
 module Reline::Terminfo
   dlload curses_dl

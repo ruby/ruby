@@ -477,7 +477,7 @@ class RubyLex
 
   def take_corresponding_syntax_to_kw_do(tokens, index)
     syntax_of_do = nil
-    # Finding a syntax correnponding to "do".
+    # Finding a syntax corresponding to "do".
     index.downto(0) do |i|
       tk = tokens[i]
       # In "continue", the token isn't the corresponding syntax to "do".
@@ -508,7 +508,7 @@ class RubyLex
 
   def is_the_in_correspond_to_a_for(tokens, index)
     syntax_of_in = nil
-    # Finding a syntax correnponding to "do".
+    # Finding a syntax corresponding to "do".
     index.downto(0) do |i|
       tk = tokens[i]
       # In "continue", the token isn't the corresponding syntax to "do".

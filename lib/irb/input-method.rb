@@ -265,7 +265,8 @@ module IRB
 
   class ReidlineInputMethod < InputMethod
     include Reline
-    # Creates a new input method object using Readline
+
+    # Creates a new input method object using Reline
     def initialize
       IRB.__send__(:set_encoding, Reline.encoding_system_needs.name, override: false)
       super
@@ -328,7 +329,9 @@ module IRB
       name = result[pointer]
       name = IRB::InputCompletor.retrieve_completion_data(name, doc_namespace: true)
 
-      driver = RDoc::RI::Driver.new
+      options = {}
+      options[:extra_doc_dirs] = IRB.conf[:EXTRA_DOC_DIRS] unless IRB.conf[:EXTRA_DOC_DIRS].empty?
+      driver = RDoc::RI::Driver.new(options)
 
       if key.match?(dialog.name)
         begin
@@ -365,14 +368,39 @@ module IRB
       end
       return nil if doc.nil?
       width = 40
+
+      right_x = cursor_pos_to_render.x + autocomplete_dialog.width
+      if right_x + width > screen_width
+        right_width = screen_width - (right_x + 1)
+        left_x = autocomplete_dialog.column - width
+        left_x = 0 if left_x < 0
+        left_width = width > autocomplete_dialog.column ? autocomplete_dialog.column : width
+        if right_width.positive? and left_width.positive?
+          if right_width >= left_width
+            width = right_width
+            x = right_x
+          else
+            width = left_width
+            x = left_x
+          end
+        elsif right_width.positive? and left_width <= 0
+          width = right_width
+          x = right_x
+        elsif right_width <= 0 and left_width.positive?
+          width = left_width
+          x = left_x
+        else # Both are negative width.
+          return nil
+        end
+      else
+        x = right_x
+      end
       formatter = RDoc::Markup::ToAnsi.new
       formatter.width = width
       dialog.trap_key = alt_d
       message = 'Press Alt+d to read the full document'
       contents = [message] + doc.accept(formatter).split("\n")
 
-      x = cursor_pos_to_render.x + autocomplete_dialog.width
-      x = autocomplete_dialog.column - width if x + width >= screen_width
       y = cursor_pos_to_render.y
       DialogRenderInfo.new(pos: Reline::CursorPos.new(x, y), contents: contents, width: width, bg_color: '49')
     }

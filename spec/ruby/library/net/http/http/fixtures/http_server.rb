@@ -11,11 +11,14 @@ module NetHTTPSpecs
   class SmallHTTPServer
     def initialize(bind_address)
       @server = TCPServer.new(bind_address, 0)
-      @running = Mutex.new
       @thread = Thread.new {
         Thread.current.abort_on_exception = true
         listen
       }
+    end
+
+    def ip
+      @server.addr[3]
     end
 
     def port
@@ -23,17 +26,8 @@ module NetHTTPSpecs
     end
 
     def listen
-      loop do
-        begin
-          client = @server.accept
-        rescue IOError => e
-          if @running.locked? # close
-            break
-          else
-            raise e
-          end
-        end
-
+      until @server.closed?
+        client = @server.accept
         handle_client(client)
       end
     end
@@ -43,6 +37,10 @@ module NetHTTPSpecs
         until client.closed?
           request = client.gets("\r\n\r\n")
           break unless request
+          if request == "CLOSE"
+            @server.close
+            break
+          end
           handle_request(client, request)
         end
       ensure
@@ -95,8 +93,9 @@ module NetHTTPSpecs
     end
 
     def close
-      @running.lock
-      @server.close
+      TCPSocket.open(ip, port) do |socket|
+        socket.write "CLOSE"
+      end
       @thread.join
     end
   end

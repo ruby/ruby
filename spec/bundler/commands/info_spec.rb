@@ -60,7 +60,15 @@ RSpec.describe "bundle info" do
 
       bundle "info rails --path"
 
-      expect(err).to match(/has been deleted/i)
+      expect(err).to match(/The gem rails has been deleted/i)
+      expect(err).to match(default_bundle_path("gems", "rails-2.3.2").to_s)
+
+      bundle "info rail --path"
+      expect(err).to match(/The gem rails has been deleted/i)
+      expect(err).to match(default_bundle_path("gems", "rails-2.3.2").to_s)
+
+      bundle "info rails"
+      expect(err).to match(/The gem rails has been deleted/i)
       expect(err).to match(default_bundle_path("gems", "rails-2.3.2").to_s)
     end
 

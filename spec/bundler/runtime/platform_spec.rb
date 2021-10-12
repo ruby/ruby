@@ -86,8 +86,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
           racc (1.5.2)
 
       PLATFORMS
-        ruby
-        #{Bundler.local_platform}
+        #{lockfile_platforms_for(["ruby"] + local_platforms)}
 
       DEPENDENCIES
         nokogiri (~> 1.11)

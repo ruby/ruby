@@ -1940,7 +1940,7 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
  *    (1..4).one? {|element| element < 2 }                     # => true
  *    (1..4).one? {|element| element < 1 }                     # => false
  *    {foo: 0, bar: 1, baz: 2}.one? {|key, value| value < 1 }  # => true
- *    {foo: 0, bar: 1, baz: 2}.one? {|key, value| value < 2  } # => false
+ *    {foo: 0, bar: 1, baz: 2}.one? {|key, value| value < 2 } # => false
  *
  *  Related: #none?, #all?, #any?.
  *
@@ -2002,9 +2002,9 @@ DEFINE_ENUMFUNCS(none)
  *    (1..4).none? {|element| element < 1 }                     # => true
  *    (1..4).none? {|element| element < 2 }                     # => false
  *    {foo: 0, bar: 1, baz: 2}.none? {|key, value| value < 0 }  # => true
- *    {foo: 0, bar: 1, baz: 2}.none? {|key, value| value < 1  } # => false
+ *    {foo: 0, bar: 1, baz: 2}.none? {|key, value| value < 1 } # => false
  *
- *  Related: #.one?, #all?, #any.
+ *  Related: #one?, #all?, #any?.
  *
  */
 static VALUE
@@ -2100,6 +2100,8 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  returns the minimum element as determined by the block:
  *
  *    %w[xxx x xxxx xx].min {|a, b| a.size <=> b.size } # => "x"
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.min {|pair1, pair2| pair1[1] <=> pair2[1] } # => [:foo, 0]
  *    [].min {|a, b| a <=> b }                          # => nil
  *
  *  With a block given and positive integer argument +n+ given,
@@ -2107,6 +2109,9 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  as determined by the block.
  *
  *    %w[xxx x xxxx xx].min(2) {|a, b| a.size <=> b.size } # => ["x", "xx"]
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.min(2) {|pair1, pair2| pair1[1] <=> pair2[1] }
+ *    # => [[:foo, 0], [:bar, 1]]
  *    [].min(2) {|a, b| a <=> b }                          # => []
  *
  *  Related: #min_by, #minmax, #max.
@@ -2220,6 +2225,8 @@ max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  returns the maximum element as determined by the block:
  *
  *    %w[xxx x xxxx xx].max {|a, b| a.size <=> b.size } # => "xxxx"
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.max {|pair1, pair2| pair1[1] <=> pair2[1] }     # => [:baz, 2]
  *    [].max {|a, b| a <=> b }                          # => nil
  *
  *  With a block given and positive integer argument +n+ given,
@@ -2227,6 +2234,9 @@ max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  as determined by the block.
  *
  *    %w[xxx x xxxx xx].max(2) {|a, b| a.size <=> b.size } # => ["xxxx", "xxx"]
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.max(2) {|pair1, pair2| pair1[1] <=> pair2[1] }
+ *    # => [[:baz, 2], [:bar, 1]]
  *    [].max(2) {|a, b| a <=> b }                          # => []
  *
  *  Related: #min, #minmax, #max_by.
@@ -2391,6 +2401,9 @@ minmax_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
  *  as determined by the block:
  *
  *    %w[xxx x xxxx xx].minmax {|a, b| a.size <=> b.size } # => ["x", "xxxx"]
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.minmax {|pair1, pair2| pair1[1] <=> pair2[1] }
+ *    # => [[:foo, 0], [:baz, 2]]
  *    [].minmax {|a, b| a <=> b }                          # => [nil, nil]
  *
  *  Related: #min, #max, #minmax_by.
@@ -2856,6 +2869,22 @@ each_val_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
  *    # => {:foo=>0, :bar=>1, :baz=>2}
  *    a # => [[:foo, 0], [:bar, 1], [:baz, 2]]
  *
+ *    class Foo
+ *      include Enumerable
+ *      def each
+ *        yield 1
+ *        yield 1, 2
+ *        yield
+ *      end
+ *    end
+ *    Foo.new.each_entry {|yielded| p yielded }
+ *
+ *  Output:
+ *
+ *    1
+ *    [1, 2]
+ *    nil
+ *
  *  With no block given, returns an Enumerator.
  *
  */
@@ -3062,7 +3091,6 @@ each_with_object_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
  *  and the given object:
  *
  *    (1..4).each_with_object([]) {|i, a| a.push(i**2) } # => [1, 4, 9, 16]
- *    # => {}
  *    h.each_with_object({}) {|element, h| k, v = *element; h[v] = k }
  *    # => {0=>:foo, 1=>:bar, 2=>:baz}
  *
@@ -3293,7 +3321,7 @@ take_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *    r.take(2) # => [1, 2]
  *    r.take(0) # => []
  *
- *    h = {foo:0, bar: 1, baz: 2, bat: 3}
+ *    h = {foo: 0, bar: 1, baz: 2, bat: 3}
  *    h.take(2) # => [[:foo, 0], [:bar, 1]]
  *
  */
@@ -3337,8 +3365,8 @@ take_while_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
  *
  *    (1..4).take_while{|i| i < 3 } # => [1, 2]
  *    h = {foo: 0, bar: 1, baz: 2}
- *    a = h.take_while{|element| key, value = *element; value < 2 }
- *    a # => [[:foo, 0], [:bar, 1]]
+ *    h.take_while{|element| key, value = *element; value < 2 }
+ *    # => [[:foo, 0], [:bar, 1]]
  *
  *  With no block given, returns an Enumerator.
  *
@@ -3382,7 +3410,7 @@ drop_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *    r.drop(0)  # => [1, 2, 3, 4]
  *    r.drop(50) # => []
  *
- *    h = {foo:0, bar: 1, baz: 2, bat: 3}
+ *    h = {foo: 0, bar: 1, baz: 2, bat: 3}
  *    h.drop(2) # => [[:baz, 2], [:bat, 3]]
  *
  */
@@ -3622,50 +3650,78 @@ chunk_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
 
 /*
  *  call-seq:
- *     enum.chunk { |elt| ... }                       -> an_enumerator
+ *    chunk {|array| ... } -> enumerator
  *
- *  Enumerates over the items, chunking them together based on the return
- *  value of the block.
+ *  Each element in the returned enumerator is a 2-element array consisting of:
  *
- *  Consecutive elements which return the same block value are chunked together.
+ *  - A value returned by the block.
+ *  - An array ("chunk") containing the element for which that value was returned,
+ *    and all following elements for which the block returned the same value:
  *
- *  For example, consecutive even numbers and odd numbers can be
- *  chunked as follows.
+ *  So that:
  *
- *    [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5].chunk { |n|
- *      n.even?
- *    }.each { |even, ary|
- *      p [even, ary]
+ *  - Each block return value that is different from its predecessor
+ *    begins a new chunk.
+ *  - Each block return value that is the same as its predecessor
+ *    continues the same chunk.
+ *
+ *  Example:
+ *
+ *    e = (0..10).chunk {|i| (i / 3).floor } # => #<Enumerator: ...>
+ *    # The enumerator elements.
+ *    e.next # => [0, [0, 1, 2]]
+ *    e.next # => [1, [3, 4, 5]]
+ *    e.next # => [2, [6, 7, 8]]
+ *    e.next # => [3, [9, 10]]
+ *
+ *  \Method +chunk+ is especially useful for an enumerable that is already sorted.
+ *  This example counts words for each initial letter in a large array of words:
+ *
+ *    # Get sorted words from a web page.
+ *    url = 'https://raw.githubusercontent.com/eneko/data-repository/master/data/words.txt'
+ *    words = URI::open(url).readlines
+ *    # Make chunks, one for each letter.
+ *    e = words.chunk {|word| word.upcase[0] } # => #<Enumerator: ...>
+ *    # Display 'A' through 'F'.
+ *    e.each {|c, words| p [c, words.length]; break if c == 'F' }
+ *
+ *  Output:
+ *
+ *    ["A", 17096]
+ *    ["B", 11070]
+ *    ["C", 19901]
+ *    ["D", 10896]
+ *    ["E", 8736]
+ *    ["F", 6860]
+ *
+ *  You can use the special symbol <tt>:_alone</tt> to force an element
+ *  into its own separate chuck:
+ *
+ *    a = [0, 0, 1, 1]
+ *    e = a.chunk{|i| i.even? ? :_alone : true }
+ *    e.to_a # => [[:_alone, [0]], [:_alone, [0]], [true, [1, 1]]]
+ *
+ *  For example, you can put each line that contains a URL into its own chunk:
+ *
+ *    pattern = /http/
+ *    open(filename) { |f|
+ *      f.chunk { |line| line =~ pattern ? :_alone : true }.each { |key, lines|
+ *        pp lines
+ *      }
  *    }
- *    #=> [false, [3, 1]]
- *    #   [true, [4]]
- *    #   [false, [1, 5, 9]]
- *    #   [true, [2, 6]]
- *    #   [false, [5, 3, 5]]
  *
- *  This method is especially useful for sorted series of elements.
- *  The following example counts words for each initial letter.
+ *  You can use the special symbol <tt>:_separator</tt> or +nil+
+ *  to force an element to be ignored (not included in any chunk):
  *
- *    open("/usr/share/dict/words", "r:iso-8859-1") { |f|
- *      f.chunk { |line| line.upcase.ord }.each { |ch, lines| p [ch.chr, lines.length] }
- *    }
- *    #=> ["\n", 1]
- *    #   ["A", 1327]
- *    #   ["B", 1372]
- *    #   ["C", 1507]
- *    #   ["D", 791]
- *    #   ...
+ *    a = [0, 0, -1, 1, 1]
+ *    e = a.chunk{|i| i < 0 ? :_separator : true }
+ *    e.to_a # => [[true, [0, 0]], [true, [1, 1]]]
  *
- *  The following key values have special meaning:
- *  - +nil+ and +:_separator+ specifies that the elements should be dropped.
- *  - +:_alone+ specifies that the element should be chunked by itself.
+ *  Note that the separator does end the chunk:
  *
- *  Any other symbols that begin with an underscore will raise an error:
- *
- *    items.chunk { |item| :_underscore }
- *    #=> RuntimeError: symbols beginning with an underscore are reserved
- *
- *  +nil+ and +:_separator+ can be used to ignore some elements.
+ *    a = [0, 0, -1, 1, -1, 1]
+ *    e = a.chunk{|i| i < 0 ? :_separator : true }
+ *    e.to_a # => [[true, [0, 0]], [true, [1]], [true, [1]]]
  *
  *  For example, the sequence of hyphens in svn log can be eliminated as follows:
  *
@@ -3695,18 +3751,6 @@ chunk_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *      pp lines
  *    }
  *
- *  +:_alone+ can be used to force items into their own chunk.
- *  For example, you can put lines that contain a URL by themselves,
- *  and chunk the rest of the lines together, like this:
- *
- *    pattern = /http/
- *    open(filename) { |f|
- *      f.chunk { |line| line =~ pattern ? :_alone : true }.each { |key, lines|
- *        pp lines
- *      }
- *    }
- *
- *  If no block is given, an enumerator to `chunk` is returned instead.
  */
 static VALUE
 enum_chunk(VALUE enumerable)
@@ -3779,24 +3823,41 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
 
 /*
  *  call-seq:
- *     enum.slice_before(pattern)                             -> an_enumerator
- *     enum.slice_before { |elt| bool }                       -> an_enumerator
+ *    slice_before(pattern)       -> enumerator
+ *    slice_before {|array| ... } -> enumerator
  *
- *  Creates an enumerator for each chunked elements.
- *  The beginnings of chunks are defined by _pattern_ and the block.
-
- *  If <code>_pattern_ === _elt_</code> returns <code>true</code> or the block
- *  returns <code>true</code> for the element, the element is beginning of a
- *  chunk.
-
- *  The <code>===</code> and _block_ is called from the first element to the last
- *  element of _enum_.  The result for the first element is ignored.
-
- *  The result enumerator yields the chunked elements as an array.
- *  So +each+ method can be called as follows:
+ *  With argument +pattern+, returns an enumerator that uses the pattern
+ *  to partition elements into arrays ("slices").
+ *  An element begins a new slice if <tt>element === pattern</tt>
+ *  (or if it is the first element).
  *
- *    enum.slice_before(pattern).each { |ary| ... }
- *    enum.slice_before { |elt| bool }.each { |ary| ... }
+ *    a = %w[foo bar fop for baz fob fog bam foy]
+ *    e = a.slice_before(/ba/) # => #<Enumerator: ...>
+ *    e.each {|array| p array }
+ *
+ *  Output:
+ *
+ *    ["foo"]
+ *    ["bar", "fop", "for"]
+ *    ["baz", "fob", "fog"]
+ *    ["bam", "foy"]
+ *
+ *  With a block, returns an enumerator that uses the block
+ *  to partition elements into arrays.
+ *  An element begins a new slice if its block return is a truthy value
+ *  (or if it is the first element):
+ *
+ *    e = (1..20).slice_before {|i| i % 4 == 2 } # => #<Enumerator: ...>
+ *    e.each {|array| p array }
+ *
+ *  Output:
+ *
+ *    [1]
+ *    [2, 3, 4, 5]
+ *    [6, 7, 8, 9]
+ *    [10, 11, 12, 13]
+ *    [14, 15, 16, 17]
+ *    [18, 19, 20]
  *
  *  Other methods of the Enumerator class and Enumerable module,
  *  such as +to_a+, +map+, etc., are also usable.
@@ -3813,7 +3874,6 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *    open("ChangeLog") { |f|
  *      f.slice_before { |line| /\A\S/ === line }.each { |e| pp e }
  *    }
- *
  *
  *  "svn proplist -R" produces multiline output for each file.
  *  They can be chunked as follows:
@@ -4009,24 +4069,39 @@ sliceafter_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
 
 /*
  *  call-seq:
- *     enum.slice_after(pattern)       -> an_enumerator
- *     enum.slice_after { |elt| bool } -> an_enumerator
+ *    slice_after(pattern)       -> enumerator
+ *    slice_after {|array| ... } -> enumerator
  *
- *  Creates an enumerator for each chunked elements.
- *  The ends of chunks are defined by _pattern_ and the block.
+ *  With argument +pattern+, returns an enumerator that uses the pattern
+ *  to partition elements into arrays ("slices").
+ *  An element ends the current slice if <tt>element === pattern</tt>:
  *
- *  If <code>_pattern_ === _elt_</code> returns <code>true</code> or the block
- *  returns <code>true</code> for the element, the element is end of a
- *  chunk.
+ *    a = %w[foo bar fop for baz fob fog bam foy]
+ *    e = a.slice_after(/ba/) # => #<Enumerator: ...>
+ *    e.each {|array| p array }
  *
- *  The <code>===</code> and _block_ is called from the first element to the last
- *  element of _enum_.
+ *  Output:
  *
- *  The result enumerator yields the chunked elements as an array.
- *  So +each+ method can be called as follows:
+ *    ["foo", "bar"]
+ *    ["fop", "for", "baz"]
+ *    ["fob", "fog", "bam"]
+ *    ["foy"]
  *
- *    enum.slice_after(pattern).each { |ary| ... }
- *    enum.slice_after { |elt| bool }.each { |ary| ... }
+ *  With a block, returns an enumerator that uses the block
+ *  to partition elements into arrays.
+ *  An element ends the current slice if its block return is a truthy value:
+ *
+ *    e = (1..20).slice_after {|i| i % 4 == 2 } # => #<Enumerator: ...>
+ *    e.each {|array| p array }
+ *
+ *  Output:
+ *
+ *    [1, 2]
+ *    [3, 4, 5, 6]
+ *    [7, 8, 9, 10]
+ *    [11, 12, 13, 14]
+ *    [15, 16, 17, 18]
+ *    [19, 20]
  *
  *  Other methods of the Enumerator class and Enumerable module,
  *  such as +map+, etc., are also usable.
@@ -4140,65 +4215,23 @@ slicewhen_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
 
 /*
  *  call-seq:
- *     enum.slice_when {|elt_before, elt_after| bool } -> an_enumerator
+ *    slice_when {|element, next_element| ... } -> enumerator
  *
- *  Creates an enumerator for each chunked elements.
- *  The beginnings of chunks are defined by the block.
+ *  The returned enumerator uses the block
+ *  to partition elements into arrays ("slices");
+ *  it calls the block with each element and its successor;
+ *  begins a new slice if and only if the block returns a truthy value:
  *
- *  This method splits each chunk using adjacent elements,
- *  _elt_before_ and _elt_after_,
- *  in the receiver enumerator.
- *  This method split chunks between _elt_before_ and _elt_after_ where
- *  the block returns <code>true</code>.
+ *    a = [0, 1, 2, 4, 5, 6, 8, 9]
+ *    e = a.slice_when {|i, j| j != i + 1 }
+ *    e.each {|array| p array }
  *
- *  The block is called the length of the receiver enumerator minus one.
+ *  Output:
  *
- *  The result enumerator yields the chunked elements as an array.
- *  So +each+ method can be called as follows:
+ *    [0, 1, 2]
+ *    [4, 5, 6]
+ *    [8, 9]
  *
- *    enum.slice_when { |elt_before, elt_after| bool }.each { |ary| ... }
- *
- *  Other methods of the Enumerator class and Enumerable module,
- *  such as +to_a+, +map+, etc., are also usable.
- *
- *  For example, one-by-one increasing subsequence can be chunked as follows:
- *
- *    a = [1,2,4,9,10,11,12,15,16,19,20,21]
- *    b = a.slice_when {|i, j| i+1 != j }
- *    p b.to_a #=> [[1, 2], [4], [9, 10, 11, 12], [15, 16], [19, 20, 21]]
- *    c = b.map {|a| a.length < 3 ? a : "#{a.first}-#{a.last}" }
- *    p c #=> [[1, 2], [4], "9-12", [15, 16], "19-21"]
- *    d = c.join(",")
- *    p d #=> "1,2,4,9-12,15,16,19-21"
- *
- *  Near elements (threshold: 6) in sorted array can be chunked as follows:
- *
- *    a = [3, 11, 14, 25, 28, 29, 29, 41, 55, 57]
- *    p a.slice_when {|i, j| 6 < j - i }.to_a
- *    #=> [[3], [11, 14], [25, 28, 29, 29], [41], [55, 57]]
- *
- *  Increasing (non-decreasing) subsequence can be chunked as follows:
- *
- *    a = [0, 9, 2, 2, 3, 2, 7, 5, 9, 5]
- *    p a.slice_when {|i, j| i > j }.to_a
- *    #=> [[0, 9], [2, 2, 3], [2, 7], [5, 9], [5]]
- *
- *  Adjacent evens and odds can be chunked as follows:
- *  (Enumerable#chunk is another way to do it.)
- *
- *    a = [7, 5, 9, 2, 0, 7, 9, 4, 2, 0]
- *    p a.slice_when {|i, j| i.even? != j.even? }.to_a
- *    #=> [[7, 5, 9], [2, 0], [7, 9], [4, 2, 0]]
- *
- *  Paragraphs (non-empty lines with trailing empty lines) can be chunked as follows:
- *  (See Enumerable#chunk to ignore empty lines.)
- *
- *    lines = ["foo\n", "bar\n", "\n", "baz\n", "qux\n"]
- *    p lines.slice_when {|l1, l2| /\A\s*\z/ =~ l1 && /\S/ =~ l2 }.to_a
- *    #=> [["foo\n", "bar\n", "\n"], ["baz\n", "qux\n"]]
- *
- *  Enumerable#chunk_while does the same, except splitting when the block
- *  returns <code>false</code> instead of <code>true</code>.
  */
 static VALUE
 enum_slice_when(VALUE enumerable)
@@ -4219,52 +4252,27 @@ enum_slice_when(VALUE enumerable)
 
 /*
  *  call-seq:
- *     enum.chunk_while {|elt_before, elt_after| bool } -> an_enumerator
+ *    chunk_while {|element, next_element| ... } -> enumerator
  *
- *  Creates an enumerator for each chunked elements.
- *  The beginnings of chunks are defined by the block.
+ *  The returned Enumerator uses the block to partition elements
+ *  into arrays ("chunks");
+ *  it calls the block with each element and its successor;
+ *  begins a new chunk if and only if the block returns a truthy value:
  *
- *  This method splits each chunk using adjacent elements,
- *  _elt_before_ and _elt_after_,
- *  in the receiver enumerator.
- *  This method split chunks between _elt_before_ and _elt_after_ where
- *  the block returns <code>false</code>.
+ *  Example:
  *
- *  The block is called the length of the receiver enumerator minus one.
+ *    a = [1, 2, 4, 9, 10, 11, 12, 15, 16, 19, 20, 21]
+ *    e = a.chunk_while {|i, j| j == i + 1 }
+ *    e.each {|array| p array }
  *
- *  The result enumerator yields the chunked elements as an array.
- *  So +each+ method can be called as follows:
+ *  Output:
  *
- *    enum.chunk_while { |elt_before, elt_after| bool }.each { |ary| ... }
+ *    [1, 2]
+ *    [4]
+ *    [9, 10, 11, 12]
+ *    [15, 16]
+ *    [19, 20, 21]
  *
- *  Other methods of the Enumerator class and Enumerable module,
- *  such as +to_a+, +map+, etc., are also usable.
- *
- *  For example, one-by-one increasing subsequence can be chunked as follows:
- *
- *    a = [1,2,4,9,10,11,12,15,16,19,20,21]
- *    b = a.chunk_while {|i, j| i+1 == j }
- *    p b.to_a #=> [[1, 2], [4], [9, 10, 11, 12], [15, 16], [19, 20, 21]]
- *    c = b.map {|a| a.length < 3 ? a : "#{a.first}-#{a.last}" }
- *    p c #=> [[1, 2], [4], "9-12", [15, 16], "19-21"]
- *    d = c.join(",")
- *    p d #=> "1,2,4,9-12,15,16,19-21"
- *
- *  Increasing (non-decreasing) subsequence can be chunked as follows:
- *
- *    a = [0, 9, 2, 2, 3, 2, 7, 5, 9, 5]
- *    p a.chunk_while {|i, j| i <= j }.to_a
- *    #=> [[0, 9], [2, 2, 3], [2, 7], [5, 9], [5]]
- *
- *  Adjacent evens and odds can be chunked as follows:
- *  (Enumerable#chunk is another way to do it.)
- *
- *    a = [7, 5, 9, 2, 0, 7, 9, 4, 2, 0]
- *    p a.chunk_while {|i, j| i.even? == j.even? }.to_a
- *    #=> [[7, 5, 9], [2, 0], [7, 9], [4, 2, 0]]
- *
- *  Enumerable#slice_when does the same, except splitting when the block
- *  returns <code>true</code> instead of <code>false</code>.
  */
 static VALUE
 enum_chunk_while(VALUE enumerable)
@@ -4475,36 +4483,35 @@ int_range_sum(VALUE beg, VALUE end, int excl, VALUE init)
 }
 
 /*
- * call-seq:
- *   enum.sum(init=0)                   -> number
- *   enum.sum(init=0) {|e| expr }       -> number
+ *  call-seq:
+ *    sum(initial_value = 0)                  -> number
+ *    sum(initial_value = 0) {|element| ... } -> object
  *
- * Returns the sum of elements in an Enumerable.
+ *  With no block given,
+ *  returns the sum of +initial_value+ and the elements:
  *
- * If a block is given, the block is applied to each element
- * before addition.
+ *    (1..100).sum          # => 5050
+ *    (1..100).sum(1)       # => 5051
+ *    ('a'..'d').sum('foo') # => "fooabcd"
  *
- * If <i>enum</i> is empty, it returns <i>init</i>.
+ *  Generally, the sum is computed using methods <tt>+</tt> and +each+;
+ *  for performance optimizations, those methods may not be used,
+ *  and so any redefinition of those methods may not have effect here.
  *
- * For example:
+ *  One such optimization: When possible, computes using Gauss's summation
+ *  formula <em>n(n+1)/2</em>:
  *
- *   { 1 => 10, 2 => 20 }.sum {|k, v| k * v }  #=> 50
- *   (1..10).sum                               #=> 55
- *   (1..10).sum {|v| v * 2 }                  #=> 110
- *   ('a'..'z').sum                            #=> TypeError
+ *    100 * (100 + 1) / 2 # => 5050
  *
- * This method can be used for non-numeric objects by
- * explicit <i>init</i> argument.
+ *  With a block given, calls the block with each element;
+ *  returns the sum of +initial_value+ and the block return values:
  *
- *   { 1 => 10, 2 => 20 }.sum([])                   #=> [1, 10, 2, 20]
- *   "a\nb\nc".each_line.lazy.map(&:chomp).sum("")  #=> "abc"
+ *    (1..4).sum {|i| i*i }                        # => 30
+ *    (1..4).sum(100) {|i| i*i }                   # => 130
+ *    h = {a: 0, b: 1, c: 2, d: 3, e: 4, f: 5}
+ *    h.sum {|key, value| value.odd? ? value : 0 } # => 9
+ *    ('a'..'f').sum('x') {|c| c < 'd' ? c : '' }  # => "xabc"
  *
- * If the method is applied to an Integer range without a block,
- * the sum is not done by iteration, but instead using Gauss's summation
- * formula.
- *
- * Enumerable#sum method may not respect method redefinition of "+"
- * methods such as Integer#+, or "each" methods such as Range#each.
  */
 static VALUE
 enum_sum(int argc, VALUE* argv, VALUE obj)
@@ -4572,12 +4579,23 @@ uniq_iter(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
 /*
  *  call-seq:
- *     enum.uniq                -> new_ary
- *     enum.uniq { |item| ... } -> new_ary
+ *    uniq                  -> array
+ *    uniq {|element| ... } -> array
  *
- *  Returns a new array by removing duplicate values in +self+.
+ *  With no block, returns a new array containing only unique elements;
+ *  the array has no two elements +e0+ and +e1+ such that <tt>e0.eql?(e1)</tt>:
  *
- *  See also Array#uniq.
+ *    %w[a b c c b a a b c].uniq       # => ["a", "b", "c"]
+ *    [0, 1, 2, 2, 1, 0, 0, 1, 2].uniq # => [0, 1, 2]
+ *
+ *  With a block, returns a new array containing only for which the block
+ *  returns a unique value:
+ *
+ *    a = [0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1]
+ *    a.uniq {|i| i.even? ? i : 0 } # => [0, 2, 4]
+ *    a = %w[a b c d e e d c b a a b c d e]
+      a.uniq {|c| c < 'c' }         # => ["a", "c"]
+ *
  */
 
 static VALUE
@@ -4607,21 +4625,13 @@ compact_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 
 /*
  *  call-seq:
- *     enum.compact -> array
+ *    compact -> array
  *
- *  Returns an array of all non-+nil+ elements from enumeration.
+ *  Returns an array of all non-+nil+ elements:
  *
- *      def with_nils
- *        yield 1
- *        yield 2
- *        yield nil
- *        yield 3
- *      end
+ *    a = [nil, 0, nil, 'a', false, nil, false, nil, 'a', nil, 0, nil]
+ *    a.compact # => [0, "a", false, false, "a", 0]
  *
- *      to_enum(:with_nils).compact
- *      # => [1, 2, 3]
- *
- *  See also Array#compact.
  */
 
 static VALUE

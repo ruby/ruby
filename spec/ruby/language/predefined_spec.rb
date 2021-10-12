@@ -1099,6 +1099,8 @@ The following constants are defined by the Ruby interpreter.
 DATA                 IO          If the main program file contains the directive __END__, then
                                  the constant DATA will be initialized so that reading from it will
                                  return lines following __END__ from the source file.
+FALSE                FalseClass  Synonym for false (deprecated, removed in Ruby 3).
+NIL                  NilClass    Synonym for nil (deprecated, removed in Ruby 3).
 RUBY_PLATFORM        String      The identifier of the platform running this program. This string
                                  is in the same form as the platform identifier used by the GNU
                                  configure utility (which is not a coincidence).
@@ -1116,9 +1118,55 @@ SCRIPT_LINES__       Hash        If a constant SCRIPT_LINES__ is defined and ref
                                  the value.
 TOPLEVEL_BINDING     Binding     A Binding object representing the binding at Ruby’s top level—
                                  the level where programs are initially executed.
+TRUE                 TrueClass   Synonym for true (deprecated, removed in Ruby 3).
 =end
 
 describe "The predefined global constants" do
+  describe "TRUE" do
+    ruby_version_is "3.0" do
+      it "is no longer defined" do
+        Object.const_defined?(:TRUE).should == false
+      end
+    end
+
+    ruby_version_is ""..."3.0" do
+      it "includes TRUE" do
+        Object.const_defined?(:TRUE).should == true
+        -> { TRUE }.should complain(/constant ::TRUE is deprecated/)
+      end
+    end
+  end
+
+  describe "FALSE" do
+    ruby_version_is "3.0" do
+      it "is no longer defined" do
+        Object.const_defined?(:FALSE).should == false
+      end
+    end
+
+    ruby_version_is ""..."3.0" do
+      it "includes FALSE" do
+        Object.const_defined?(:FALSE).should == true
+        -> { FALSE }.should complain(/constant ::FALSE is deprecated/)
+      end
+    end
+  end
+
+  describe "NIL" do
+    ruby_version_is "3.0" do
+      it "is no longer defined" do
+        Object.const_defined?(:NIL).should == false
+      end
+    end
+
+    ruby_version_is ""..."3.0" do
+      it "includes NIL" do
+        Object.const_defined?(:NIL).should == true
+        -> { NIL }.should complain(/constant ::NIL is deprecated/)
+      end
+    end
+  end
+
   it "includes STDIN" do
     Object.const_defined?(:STDIN).should == true
   end
@@ -1146,7 +1194,6 @@ describe "The predefined global constants" do
   it "includes TOPLEVEL_BINDING" do
     Object.const_defined?(:TOPLEVEL_BINDING).should == true
   end
-
 end
 
 describe "The predefined global constant" do

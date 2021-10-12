@@ -730,7 +730,7 @@ begin
     end
 
     def test_meta_key
-      start_terminal(50, 200, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      start_terminal(30, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def ge\M-bho")
       close
       assert_screen(<<~EOC)
@@ -740,7 +740,7 @@ begin
     end
 
     def test_force_enter
-      start_terminal(50, 200, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      start_terminal(30, 120, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def hoge\nend\C-p\C-e")
       write("\M-\x0D")
       close
@@ -752,32 +752,10 @@ begin
       EOC
     end
 
-    def test_cyrillic_chars
-      omit unless Reline::IOGate.win?
-      start_terminal(50, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
-      write("`chcp 850`\n")
-      write("`chcp`\n")
-      write("def гопота; 3; end\n")
-      write("гопота\n")
-      close
-      assert_screen(<<~'EOC')
-        Multiline REPL.
-        prompt> `chcp 850`
-        => "Active code page: 850\n"
-        prompt> `chcp`
-        => "Active code page: 850\n"
-        prompt> def гопота; 3; end
-        => :гопота
-        prompt> гопота
-        => 3
-        prompt>
-      EOC
-    end
-
     def test_with_newline
       omit if Reline::IOGate.win?
       cmd = %Q{ruby -e 'print(%Q{abc def \\e\\r})' | ruby -I#{@pwd}/lib -rreline -e 'p Reline.readline(%{> })'}
-      start_terminal(50, 50, ['bash', '-c', cmd])
+      start_terminal(40, 50, ['bash', '-c', cmd])
       close
       assert_screen(<<~'EOC')
         > abc def
@@ -851,12 +829,12 @@ begin
       assert_screen(<<~'EOC')
         Multiline REPL.
         prompt> ab
-            Ruby is...
-            A dynamic, open source programming
-            language with a focus on simplicity
-            and productivity. It has an elegant
-            syntax that is natural to read and
-            easy to write.
+             Ruby is...
+             A dynamic, open source programming
+             language with a focus on simplicity
+             and productivity. It has an elegant
+             syntax that is natural to read and
+             easy to write.
       EOC
     end
 
@@ -906,8 +884,8 @@ begin
       assert_screen(<<~'EOC')
         Multiline REPL.
         prompt>           St
-        r            String
-                     Struct
+        r             String
+                      Struct
       EOC
     end
 
@@ -954,6 +932,40 @@ begin
                 language with a    █
                 focus on simplicity
                 and productivity.
+      EOC
+    end
+
+    def test_dialog_with_fullwidth_chars
+      ENV['RELINE_TEST_PROMPT'] = '> '
+      start_terminal(30, 5, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog fullwidth,scrollkey,scrollbar}, startup_message: 'Multiline REPL.')
+      6.times{ write('j') }
+      close
+      assert_screen(<<~'EOC')
+        Multi
+        line
+        REPL.
+        >
+        オー
+        グ言▄
+        備え█
+        ち、█
+      EOC
+    end
+
+    def test_dialog_with_fullwidth_chars_split
+      ENV['RELINE_TEST_PROMPT'] = '> '
+      start_terminal(30, 6, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog fullwidth,scrollkey,scrollbar}, startup_message: 'Multiline REPL.')
+      6.times{ write('j') }
+      close
+      assert_screen(<<~'EOC')
+        Multil
+        ine RE
+        PL.
+        >
+        オー
+        グ言 ▄
+        備え █
+        ち、 █
       EOC
     end
 
@@ -1091,6 +1103,61 @@ begin
       assert_screen(<<~'EOC')
         Multiline REPL.
         prompt> a
+      EOC
+    end
+
+    def test_dialog_narrower_than_screen
+      start_terminal(20, 11, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple}, startup_message: 'Multiline REPL.')
+      close
+      assert_screen(<<~'EOC')
+        Multiline R
+        EPL.
+        prompt>
+        Ruby is...
+        A dynamic,
+        language wi
+        and product
+        syntax that
+        easy to wri
+      EOC
+    end
+
+    def test_dialog_narrower_than_screen_with_scrollbar
+      start_terminal(20, 11, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-long}, startup_message: 'Multiline REPL.')
+      write('S' + "\C-i" * 3)
+      close
+      assert_screen(<<~'EOC')
+        Multiline R
+        EPL.
+        prompt> Sym
+        String
+        Struct    █
+        Symbol    █
+        StopIterat█
+        SystemCall█
+        SystemExit█
+        SystemStac█
+        ScriptErro█
+        SyntaxErro█
+        Signal    █
+        SizedQueue█
+        Set
+        SecureRand
+        Socket
+        StringIO
+      EOC
+    end
+
+    def test_dialog_with_fullwidth_scrollbar
+      start_terminal(20, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple,scrollkey,alt-scrollbar}, startup_message: 'Multiline REPL.')
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt>
+           Ruby is...                         ::
+           A dynamic, open source programming ::
+           language with a focus on simplicity''
+           and productivity. It has an elegant
       EOC
     end
 

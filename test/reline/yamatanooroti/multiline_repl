@@ -55,6 +55,15 @@ opt.on('--dialog VAL') { |v|
         natural to read
         and easy to write.
       RUBY
+    elsif v.include?('fullwidth')
+      contents = <<~RUBY.split("\n")
+        Rubyとは...
+
+        オープンソースの動的なプログラミン
+        グ言語で、シンプルさと高い生産性を
+        備えています。エレガントな文法を持
+        ち、自然に読み書きができます。
+      RUBY
     end
     if v.include?('scrollkey')
       dialog.trap_key = nil
@@ -74,8 +83,14 @@ opt.on('--dialog VAL') { |v|
     if v.include?('scrollbar')
       scrollbar = true
     end
+    if v.include?('alt-scrollbar')
+      scrollbar = true
+    end
     Reline::DialogRenderInfo.new(pos: cursor_pos, contents: contents, height: height, scrollbar: scrollbar)
   })
+  if v.include?('alt-scrollbar')
+    ENV['RELINE_ALT_SCROLLBAR'] = '1'
+  end
 }
 opt.on('--complete') {
   Reline.completion_proc = lambda { |target, preposing = nil, postposing = nil|

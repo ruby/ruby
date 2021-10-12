@@ -574,18 +574,19 @@ class TestGemPackage < Gem::Package::TarTestCase
     destination_subdir = File.join @destination, 'subdir'
     FileUtils.mkdir_p destination_subdir
 
-    e = assert_raise(Gem::Package::PathError, Errno::EACCES) do
+    expected_exceptions = win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]
+
+    e = assert_raise(*expected_exceptions) do
       package.extract_tar_gz tgz_io, destination_subdir
     end
 
-    if Gem::Package::PathError === e
-      assert_equal("installing into parent path lib/link/outside.txt of " +
-                  "#{destination_subdir} is not allowed", e.message)
-    elsif win_platform?
-      pend "symlink - must be admin with no UAC on Windows"
-    else
-      raise e
-    end
+    pend "symlink - must be admin with no UAC on Windows" if Errno::EACCES === e
+
+    assert_equal("installing symlink 'lib/link' pointing to parent path #{@destination} of " +
+                "#{destination_subdir} is not allowed", e.message)
+
+    assert_path_not_exist File.join(@destination, "outside.txt")
+    assert_path_not_exist File.join(destination_subdir, "lib/link")
   end
 
   def test_extract_symlink_parent_doesnt_delete_user_dir
@@ -608,20 +609,20 @@ class TestGemPackage < Gem::Package::TarTestCase
       tar.add_symlink 'link/dir', '.', 16877
     end
 
-    e = assert_raise(Gem::Package::PathError, Errno::EACCES) do
+    expected_exceptions = win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]
+
+    e = assert_raise(*expected_exceptions) do
       package.extract_tar_gz tgz_io, destination_subdir
     end
 
-    assert_path_exist destination_user_subdir
+    pend "symlink - must be admin with no UAC on Windows" if Errno::EACCES === e
 
-    if Gem::Package::PathError === e
-      assert_equal("installing into parent path #{destination_user_subdir} of " +
-                  "#{destination_subdir} is not allowed", e.message)
-    elsif win_platform?
-      pend "symlink - must be admin with no UAC on Windows"
-    else
-      raise e
-    end
+    assert_equal("installing symlink 'link' pointing to parent path #{destination_user_dir} of " +
+                "#{destination_subdir} is not allowed", e.message)
+
+    assert_path_exist destination_user_subdir
+    assert_path_not_exist File.join(destination_subdir, "link/dir")
+    assert_path_not_exist File.join(destination_subdir, "link")
   end
 
   def test_extract_tar_gz_directory

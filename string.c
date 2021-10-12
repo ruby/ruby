@@ -3171,13 +3171,13 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
 
 /*
  *  call-seq:
- *     string.concat(*objects) -> new_string
+ *     string.concat(*objects) -> string
  *
- *  Returns a new \String containing the concatenation
- *  of +self+ and all objects in +objects+:
+ *  Concatenates each object in +objects+ to +self+ and returns +self+:
  *
  *    s = 'foo'
  *    s.concat('bar', 'baz') # => "foobarbaz"
+ *    s                      # => "foobarbaz"
  *
  *  For each given object +object+ that is an \Integer,
  *  the value is considered a codepoint and converted to a character before concatenation:
@@ -3209,12 +3209,13 @@ rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    string << object -> str
+ *    string << object -> string
  *
- *  Returns a new \String containing the concatenation
- *  of +self+ and +object+:
+ *  Concatenates +object+ to +self+ and returns +self+:
+ *
  *    s = 'foo'
  *    s << 'bar' # => "foobar"
+ *    s          # => "foobar"
  *
  *  If +object+ is an \Integer,
  *  the value is considered a codepoint and converted to a character before concatenation:
@@ -3289,12 +3290,12 @@ rb_str_concat(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *    string.prepend(*other_strings)  -> str
+ *    string.prepend(*other_strings)  -> string
  *
- *  Returns a new \String containing the concatenation
- *  of all given +other_strings+ and +self+:
+ *  Prepends each string in +other_strings+ to +self+ and returns +self+:
  *    s = 'foo'
  *    s.prepend('bar', 'baz') # => "barbazfoo"
+ *    s                       # => "barbazfoo"
  *
  *  Related: String#concat.
  */
@@ -5705,8 +5706,7 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
 {
     long pos = NUM2LONG(index);
     long len = RSTRING_LEN(str);
-    char *head, *left = 0;
-    unsigned char *ptr;
+    char *ptr, *head, *left = 0;
     rb_encoding *enc;
     int cr = ENC_CODERANGE_UNKNOWN, width, nlen;
 
@@ -5717,18 +5717,18 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
 
     VALUE v = rb_to_int(value);
     VALUE w = rb_int_and(v, INT2FIX(0xff));
-    unsigned char byte = NUM2INT(w) & 0xFF;
+    char byte = (char)(NUM2INT(w) & 0xFF);
 
     if (!str_independent(str))
 	str_make_independent(str);
     enc = STR_ENC_GET(str);
     head = RSTRING_PTR(str);
-    ptr = (unsigned char *)&head[pos];
+    ptr = &head[pos];
     if (!STR_EMBED_P(str)) {
 	cr = ENC_CODERANGE(str);
 	switch (cr) {
 	  case ENC_CODERANGE_7BIT:
-            left = (char *)ptr;
+            left = ptr;
 	    *ptr = byte;
 	    if (ISASCII(byte)) goto end;
 	    nlen = rb_enc_precise_mbclen(left, head+len, enc);
@@ -6809,7 +6809,7 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 	current_buffer->next = NULL;
 	current_buffer->capa = capa;
 	buffer_length_or_invalid = enc->case_map(flags,
-				   (const OnigUChar**)&source_current, source_end,
+				   &source_current, source_end,
 				   current_buffer->space,
 				   current_buffer->space+current_buffer->capa,
 				   enc);
@@ -6898,7 +6898,7 @@ upcase_single(VALUE str)
     while (s < send) {
         unsigned int c = *(unsigned char*)s;
 
-        if (rb_enc_isascii(c, enc) && 'a' <= c && c <= 'z') {
+        if ('a' <= c && c <= 'z') {
             *s = 'A' + (c - 'a');
             modified = true;
         }
@@ -6988,7 +6988,7 @@ downcase_single(VALUE str)
     while (s < send) {
         unsigned int c = *(unsigned char*)s;
 
-        if (rb_enc_isascii(c, enc) && 'A' <= c && c <= 'Z') {
+        if ('A' <= c && c <= 'Z') {
             *s = 'a' + (c - 'A');
             modified = true;
         }
@@ -10237,12 +10237,14 @@ rb_str_end_with(int argc, VALUE *argv, VALUE str)
 
     for (i=0; i<argc; i++) {
 	VALUE tmp = argv[i];
+	long slen, tlen;
 	StringValue(tmp);
 	enc = rb_enc_check(str, tmp);
-	if (RSTRING_LEN(str) < RSTRING_LEN(tmp)) continue;
+	if ((tlen = RSTRING_LEN(tmp)) == 0) return Qtrue;
+	if ((slen = RSTRING_LEN(str)) < tlen) continue;
 	p = RSTRING_PTR(str);
-        e = p + RSTRING_LEN(str);
-	s = e - RSTRING_LEN(tmp);
+        e = p + slen;
+	s = e - tlen;
 	if (rb_enc_left_char_head(p, s, e, enc) != s)
 	    continue;
 	if (memcmp(s, RSTRING_PTR(tmp), RSTRING_LEN(tmp)) == 0)

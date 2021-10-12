@@ -21,14 +21,15 @@ module Test
       return ["No backtrace"] unless bt
 
       new_bt = []
+      pattern = %r[/(?:lib\/test/|core_assertions\.rb:)]
 
       unless $DEBUG then
         bt.each do |line|
-          break if line =~ /lib\/test/
+          break if pattern.match?(line)
           new_bt << line
         end
 
-        new_bt = bt.reject { |line| line =~ /lib\/test/ } if new_bt.empty?
+        new_bt = bt.reject { |line| pattern.match?(line) } if new_bt.empty?
         new_bt = bt.dup if new_bt.empty?
       else
         new_bt = bt.dup
@@ -56,6 +57,90 @@ module Test
     # Assertion raised when skipping a test
 
     class PendedError < AssertionFailedError; end
+
+    module Order
+      class NoSort
+        def initialize(seed)
+        end
+
+        def sort_by_name(list)
+          list
+        end
+
+        alias sort_by_string sort_by_name
+
+        def group(list)
+          list
+        end
+      end
+
+      module JITFirst
+        def group(list)
+          # JIT first
+          jit, others = list.partition {|e| /test_jit/ =~ e}
+          jit + others
+        end
+      end
+
+      class Alpha < NoSort
+        include JITFirst
+
+        def sort_by_name(list)
+          list.sort_by(&:name)
+        end
+
+        def sort_by_string(list)
+          list.sort
+        end
+
+      end
+
+      # shuffle test suites based on CRC32 of their names
+      Shuffle = Struct.new(:seed, :salt) do
+        include JITFirst
+
+        def initialize(seed)
+          self.class::CRC_TBL ||= (0..255).map {|i|
+            (0..7).inject(i) {|c,| (c & 1 == 1) ? (0xEDB88320 ^ (c >> 1)) : (c >> 1) }
+          }.freeze
+
+          salt = [seed].pack("V").unpack1("H*")
+          super(seed, "\n#{salt}".freeze).freeze
+        end
+
+        def sort_by_name(list)
+          list.sort_by {|e| randomize_key(e.name)}
+        end
+
+        def sort_by_string(list)
+          list.sort_by {|e| randomize_key(e)}
+        end
+
+        private
+
+        def crc32(str, crc32 = 0xffffffff)
+          crc_tbl = self.class::CRC_TBL
+          str.each_byte do |data|
+            crc32 = crc_tbl[(crc32 ^ data) & 0xff] ^ (crc32 >> 8)
+          end
+          crc32
+        end
+
+        def randomize_key(name)
+          crc32(salt, crc32(name)) ^ 0xffffffff
+        end
+      end
+
+      Types = {
+        random: Shuffle,
+        alpha: Alpha,
+        sorted: Alpha,
+        nosort: NoSort,
+      }
+      Types.default_proc = proc {|_, order|
+        raise "Unknown test_order: #{order.inspect}"
+      }
+    end
 
     module RunCount # :nodoc: all
       @@run_count = 0
@@ -103,13 +188,13 @@ module Test
         order = options[:test_order]
         if seed = options[:seed]
           order ||= :random
-          srand(seed)
-        else
-          seed = options[:seed] = srand % 100_000
-          srand(seed)
+        elsif (order ||= :random) == :random
+          seed = options[:seed] = rand(0x10000)
           orig_args.unshift "--seed=#{seed}"
         end
         Test::Unit::TestCase.test_order = order if order
+        order = Test::Unit::TestCase.test_order
+        @order = Test::Unit::Order::Types[order].new(seed)
 
         @help = "\n" + orig_args.map { |s|
           "  " + (s =~ /[\s|&<>$()]/ ? s.inspect : s)
@@ -139,7 +224,8 @@ module Test
           (options[:filter] ||= []) << a
         end
 
-        opts.on '--test-order=random|alpha|sorted|nosort', [:random, :alpha, :sorted, :nosort] do |a|
+        orders = Test::Unit::Order::Types.keys
+        opts.on "--test-order=#{orders.join('|')}", orders do |a|
           options[:test_order] = a
         end
       end
@@ -451,7 +537,7 @@ module Test
           @workers.each do |worker|
             worker.kill
           end
-          @worker.clear
+          @workers.clear
         end
       end
 
@@ -545,16 +631,7 @@ module Test
 
         # Require needed thing for parallel running
         require 'timeout'
-        @tasks = @files.dup # Array of filenames.
-
-        case Test::Unit::TestCase.test_order
-        when :random
-          @tasks.shuffle!
-        else
-          # JIT first
-          ts = @tasks.group_by{|e| /test_jit/ =~ e ? 0 : 1}
-          @tasks = ts[0] + ts[1] if ts.size == 2
-        end
+        @tasks = @order.group(@order.sort_by_string(@files)) # Array of filenames.
 
         @need_quit = false
         @dead_workers = []  # Array of dead workers.
@@ -1302,6 +1379,8 @@ module Test
         suites = Test::Unit::TestCase.send "#{type}_suites"
         return if suites.empty?
 
+        suites = @order.sort_by_name(suites)
+
         puts
         puts "# Running #{type}s:"
         puts
@@ -1356,6 +1435,12 @@ module Test
         filter = options[:filter]
 
         all_test_methods = suite.send "#{type}_methods"
+        if filter
+          all_test_methods.select! {|method|
+            filter === method || filter === "#{suite}##{method}"
+          }
+        end
+        all_test_methods = @order.sort_by_name(all_test_methods)
 
         leakchecker = LeakChecker.new
         if ENV["LEAK_CHECKER_TRACE_OBJECT_ALLOCATION"]
@@ -1363,10 +1448,7 @@ module Test
           trace = true
         end
 
-        assertions = all_test_methods.filter_map { |method|
-          if filter
-            next unless filter === method || filter === "#{suite}##{method}"
-          end
+        assertions = all_test_methods.map { |method|
 
           inst = suite.new method
           inst._assertions = 0

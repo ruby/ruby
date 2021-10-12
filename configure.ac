@@ -3678,7 +3678,10 @@ AC_SUBST(MJIT_SUPPORT)
 
 AC_ARG_ENABLE(install-static-library,
 	AS_HELP_STRING([--disable-install-static-library], [do not install static ruby library]),
-	[INSTALL_STATIC_LIBRARY=$enableval],
+	[INSTALL_STATIC_LIBRARY=$enableval
+         AS_IF([test x"$enable_shared" = xno -a x"$INSTALL_STATIC_LIBRARY" = xno],
+                 [AC_MSG_ERROR([must install either static or shared library])],
+                 [])],
 	AS_IF([test x"$enable_shared" = xyes],
 	    [INSTALL_STATIC_LIBRARY=no],
 	    [INSTALL_STATIC_LIBRARY=yes]))

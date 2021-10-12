@@ -16,9 +16,16 @@ module Test
 
       def message msg = nil, ending = nil, &default
         proc {
-          msg = msg.call.chomp(".") if Proc === msg
-          custom_message = "#{msg}.\n" unless msg.nil? or msg.to_s.empty?
-          "#{custom_message}#{default.call}#{ending || "."}"
+          ending ||= (ending_pattern = /(?<!\.)\z/; ".")
+          ending_pattern ||= /(?<!#{Regexp.quote(ending)})\z/
+          msg = msg.call if Proc === msg
+          ary = [msg, (default.call if default)].compact.reject(&:empty?)
+          ary.map! {|str| str.to_s.sub(ending_pattern, ending) }
+          begin
+            ary.join("\n")
+          rescue Encoding::CompatibilityError
+            ary.map(&:b).join("\n")
+          end
         }
       end
     end
@@ -165,27 +172,15 @@ module Test
           msg = args.pop
         end
         begin
-          line = __LINE__; yield
-        rescue Test::Unit::PendedError
+          yield
+        rescue Test::Unit::PendedError, *(Test::Unit::AssertionFailedError if args.empty?)
           raise
-        rescue Exception => e
-          bt = e.backtrace
-          as = e.instance_of?(Test::Unit::AssertionFailedError)
-          if as
-            ans = /\A#{Regexp.quote(__FILE__)}:#{line}:in /o
-            bt.reject! {|ln| ans =~ ln}
-          end
-          if ((args.empty? && !as) ||
-              args.any? {|a| a.instance_of?(Module) ? e.is_a?(a) : e.class == a })
-            msg = message(msg) {
-              "Exception raised:\n<#{mu_pp(e)}>\n" +
-              "Backtrace:\n" +
-              e.backtrace.map{|frame| "  #{frame}"}.join("\n")
-            }
-            raise Test::Unit::AssertionFailedError, msg.call, bt
-          else
-            raise
-          end
+        rescue *(args.empty? ? Exception : args) => e
+          msg = message(msg) {
+            "Exception raised:\n<#{mu_pp(e)}>\n""Backtrace:\n" <<
+            Test.filter_backtrace(e.backtrace).map{|frame| "  #{frame}"}.join("\n")
+          }
+          raise Test::Unit::AssertionFailedError, msg.call, e.backtrace
         end
       end
 
@@ -640,7 +635,7 @@ eom
 
         def for(key)
           @count += 1
-          yield
+          yield key
         rescue Exception => e
           @failures[key] = [@count, e]
         end
@@ -728,24 +723,6 @@ eom
         assert(all.pass?, message(msg) {all.message.chomp(".")})
       end
       alias all_assertions_foreach assert_all_assertions_foreach
-
-      def message(msg = nil, *args, &default) # :nodoc:
-        if Proc === msg
-          super(nil, *args) do
-            ary = [msg.call, (default.call if default)].compact.reject(&:empty?)
-            if 1 < ary.length
-              ary[0...-1] = ary[0...-1].map {|str| str.sub(/(?<!\.)\z/, '.') }
-            end
-            begin
-              ary.join("\n")
-            rescue Encoding::CompatibilityError
-              ary.map(&:b).join("\n")
-            end
-          end
-        else
-          super
-        end
-      end
 
       def diff(exp, act)
         require 'pp'
