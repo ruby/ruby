@@ -120,7 +120,8 @@ matrix:
   include:
     # Build every commit (Allowed Failures):
     - <<: *arm32-linux
-    - <<: *arm64-linux
+    # Comment out as the 2nd arm64 pipeline is unstable.
+    # - <<: *arm64-linux
     - <<: *ppc64le-linux
     - <<: *s390x-linux
   allow_failures:
