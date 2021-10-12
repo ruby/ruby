@@ -225,7 +225,7 @@ md5_process(MD5_CTX *pms, const uint8_t *data /*[64]*/)
     uint32_t xbuf[16];
     const uint32_t *X;
 
-    if (!((data - (const uint8_t *)0) & 3)) {
+    if (!(((uintptr_t)data) & 3)) {
 	/* data are properly aligned */
 	X = (const uint32_t *)data;
     } else {
