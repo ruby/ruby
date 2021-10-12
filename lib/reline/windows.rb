@@ -283,15 +283,23 @@ class Reline::Windows
     end
   end
 
-  def self.get_screen_size
+  def self.get_console_screen_buffer_info
     csbi = 0.chr * 22
-    @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi)
+    return if @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi) == 0
+    csbi
+  end
+
+  def self.get_screen_size
+    unless csbi = get_console_screen_buffer_info
+      return [1, 1]
+    end
     csbi[0, 4].unpack('SS').reverse
   end
 
   def self.cursor_pos
-    csbi = 0.chr * 22
-    @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi)
+    unless csbi = get_console_screen_buffer_info
+      return Reline::CursorPos.new(0, 0)
+    end
     x = csbi[4, 2].unpack1('s*')
     y = csbi[6, 2].unpack1('s*')
     Reline::CursorPos.new(x, y)
@@ -313,6 +321,7 @@ class Reline::Windows
 
   def self.move_cursor_down(val)
     if val > 0
+      return unless csbi = get_console_screen_buffer_info
       screen_height = get_screen_size.first
       y = cursor_pos.y + val
       y = screen_height - 1 if y > (screen_height - 1)
@@ -323,8 +332,7 @@ class Reline::Windows
   end
 
   def self.erase_after_cursor
-    csbi = 0.chr * 22
-    @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi)
+    return unless csbi = get_console_screen_buffer_info
     attributes = csbi[8, 2].unpack1('S')
     cursor = csbi[4, 4].unpack1('L')
     written = 0.chr * 4
@@ -343,8 +351,7 @@ class Reline::Windows
   end
 
   def self.clear_screen
-    csbi = 0.chr * 22
-    return if @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi) == 0
+    return unless csbi = get_console_screen_buffer_info
     buffer_width = csbi[0, 2].unpack1('S')
     attributes = csbi[8, 2].unpack1('S')
     _window_left, window_top, _window_right, window_bottom = *csbi[10,8].unpack('S*')
