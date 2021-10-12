@@ -3055,6 +3055,19 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     return val;
 }
 
+#define idREST '?'
+
+static VALUE
+param_name(ID name)
+{
+    if (name == idREST) {
+        return Qfalse;
+    }
+    else {
+        return rb_id2str(name);
+    }
+}
+
 VALUE
 rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
 {
@@ -3067,7 +3080,7 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
 #define PARAM_ID(i) body->local_table[(i)]
 #define PARAM(i, type) (		      \
 	PARAM_TYPE(type),		      \
-	rb_id2str(PARAM_ID(i)) ?	      \
+	param_name(PARAM_ID(i)) ?	      \
 	rb_ary_push(a, ID2SYM(PARAM_ID(i))) : \
 	a)
 

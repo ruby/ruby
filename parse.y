@@ -699,6 +699,7 @@ static void numparam_pop(struct parser_params *p, NODE *prev_inner);
 # define METHOD_NOT '!'
 #endif
 
+#define idREST   '?'
 #define idFWD_REST   '*'
 #ifdef RUBY3_KEYWORDS
 #define idFWD_KWREST idPow /* Use simple "**", as tDSTAR is "**arg" */
@@ -5538,8 +5539,7 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 		| restarg_mark
 		    {
 		    /*%%%*/
-			$$ = internal_id(p);
-			arg_var(p, $$);
+			arg_var(p, idREST);
 		    /*% %*/
 		    /*% ripper: rest_param!(Qnil) %*/
 		    }
