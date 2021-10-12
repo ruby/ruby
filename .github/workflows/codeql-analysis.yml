@@ -30,6 +30,9 @@ jobs:
       with:
         config-file: ./.github/codeql/codeql-config.yml
 
+    - name: Set ENV
+      run: echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
+
     - name: Autobuild
       uses: github/codeql-action/autobuild@v1
 
