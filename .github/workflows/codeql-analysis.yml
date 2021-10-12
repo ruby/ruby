@@ -12,6 +12,9 @@ jobs:
     # CodeQL runs on ubuntu-latest and windows-latest
     runs-on: ubuntu-latest
 
+    env:
+      enable_install_doc: no
+
     steps:
     - name: Install libraries
       run: |
