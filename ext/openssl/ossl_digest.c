@@ -313,8 +313,6 @@ ossl_digest_block_length(VALUE self)
 void
 Init_ossl_digest(void)
 {
-    rb_require("digest");
-
 #if 0
     mOSSL = rb_define_module("OpenSSL");
     eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
@@ -398,6 +396,12 @@ Init_ossl_digest(void)
      *   digest2 = sha256.digest(data2)
      *
      */
+
+    /*
+     * Digest::Class is defined by the digest library. rb_require() cannot be
+     * used here because it bypasses RubyGems.
+     */
+    rb_funcall(Qnil, rb_intern_const("require"), 1, rb_str_new_cstr("digest"));
     cDigest = rb_define_class_under(mOSSL, "Digest", rb_path2class("Digest::Class"));
     /* Document-class: OpenSSL::Digest::DigestError
      *
