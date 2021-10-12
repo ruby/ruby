@@ -280,9 +280,14 @@ class Reline::Test < Reline::TestCase
     assert_raise(TypeError) do
       Reline.output = "This is not a file."
     end
+
     input, to_write = IO.pipe
     to_read, output = IO.pipe
-    Reline.input, Reline.output = input, output
+    unless Reline.__send__(:input=, input)
+      omit "Setting to input is not effective on #{Reline::IOGate}"
+    end
+    Reline.output = output
+
     to_write.write "a\n"
     result = Reline.readline
     to_write.close
