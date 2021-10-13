@@ -25,72 +25,66 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_finish_resolve
-    save_loaded_features do
-      a1 = util_spec "a", "1", "b" => "> 0"
-      b1 = util_spec "b", "1", "c" => ">= 1"
-      b2 = util_spec "b", "2", "c" => ">= 2"
-      c1 = util_spec "c", "1"
-      c2 = util_spec "c", "2"
+    a1 = util_spec "a", "1", "b" => "> 0"
+    b1 = util_spec "b", "1", "c" => ">= 1"
+    b2 = util_spec "b", "2", "c" => ">= 2"
+    c1 = util_spec "c", "1"
+    c2 = util_spec "c", "2"
 
-      install_specs c1, c2, b1, b2, a1
+    install_specs c1, c2, b1, b2, a1
 
-      a1.activate
+    a1.activate
 
-      assert_equal %w[a-1], loaded_spec_names
-      assert_equal ["b (> 0)"], unresolved_names
+    assert_equal %w[a-1], loaded_spec_names
+    assert_equal ["b (> 0)"], unresolved_names
 
-      Gem.finish_resolve
+    Gem.finish_resolve
 
-      assert_equal %w[a-1 b-2 c-2], loaded_spec_names
-      assert_equal [], unresolved_names
-    end
+    assert_equal %w[a-1 b-2 c-2], loaded_spec_names
+    assert_equal [], unresolved_names
   end
 
   def test_self_finish_resolve_wtf
-    save_loaded_features do
-      a1 = util_spec "a", "1", "b" => "> 0", "d" => "> 0"    # this
-      b1 = util_spec "b", "1", { "c" => ">= 1" }, "lib/b.rb" # this
-      b2 = util_spec "b", "2", { "c" => ">= 2" }, "lib/b.rb"
-      c1 = util_spec "c", "1"                                # this
-      c2 = util_spec "c", "2"
-      d1 = util_spec "d", "1", { "c" => "< 2" },  "lib/d.rb"
-      d2 = util_spec "d", "2", { "c" => "< 2" },  "lib/d.rb" # this
+    a1 = util_spec "a", "1", "b" => "> 0", "d" => "> 0"    # this
+    b1 = util_spec "b", "1", { "c" => ">= 1" }, "lib/b.rb" # this
+    b2 = util_spec "b", "2", { "c" => ">= 2" }, "lib/b.rb"
+    c1 = util_spec "c", "1"                                # this
+    c2 = util_spec "c", "2"
+    d1 = util_spec "d", "1", { "c" => "< 2" },  "lib/d.rb"
+    d2 = util_spec "d", "2", { "c" => "< 2" },  "lib/d.rb" # this
 
-      install_specs c1, c2, b1, b2, d1, d2, a1
+    install_specs c1, c2, b1, b2, d1, d2, a1
 
-      a1.activate
+    a1.activate
 
-      assert_equal %w[a-1], loaded_spec_names
-      assert_equal ["b (> 0)", "d (> 0)"], unresolved_names
+    assert_equal %w[a-1], loaded_spec_names
+    assert_equal ["b (> 0)", "d (> 0)"], unresolved_names
 
-      Gem.finish_resolve
+    Gem.finish_resolve
 
-      assert_equal %w[a-1 b-1 c-1 d-2], loaded_spec_names
-      assert_equal [], unresolved_names
-    end
+    assert_equal %w[a-1 b-1 c-1 d-2], loaded_spec_names
+    assert_equal [], unresolved_names
   end
 
   def test_self_finish_resolve_respects_loaded_specs
-    save_loaded_features do
-      a1 = util_spec "a", "1", "b" => "> 0"
-      b1 = util_spec "b", "1", "c" => ">= 1"
-      b2 = util_spec "b", "2", "c" => ">= 2"
-      c1 = util_spec "c", "1"
-      c2 = util_spec "c", "2"
+    a1 = util_spec "a", "1", "b" => "> 0"
+    b1 = util_spec "b", "1", "c" => ">= 1"
+    b2 = util_spec "b", "2", "c" => ">= 2"
+    c1 = util_spec "c", "1"
+    c2 = util_spec "c", "2"
 
-      install_specs c1, c2, b1, b2, a1
+    install_specs c1, c2, b1, b2, a1
 
-      a1.activate
-      c1.activate
+    a1.activate
+    c1.activate
 
-      assert_equal %w[a-1 c-1], loaded_spec_names
-      assert_equal ["b (> 0)"], unresolved_names
+    assert_equal %w[a-1 c-1], loaded_spec_names
+    assert_equal ["b (> 0)"], unresolved_names
 
-      Gem.finish_resolve
+    Gem.finish_resolve
 
-      assert_equal %w[a-1 b-1 c-1], loaded_spec_names
-      assert_equal [], unresolved_names
-    end
+    assert_equal %w[a-1 b-1 c-1], loaded_spec_names
+    assert_equal [], unresolved_names
   end
 
   def test_self_install
@@ -210,25 +204,21 @@ class TestGem < Gem::TestCase
   end
 
   def test_require_missing
-    save_loaded_features do
-      assert_raise ::LoadError do
-        require "test_require_missing"
-      end
+    assert_raise ::LoadError do
+      require "test_require_missing"
     end
   end
 
   def test_require_does_not_glob
-    save_loaded_features do
-      a1 = util_spec "a", "1", nil, "lib/a1.rb"
+    a1 = util_spec "a", "1", nil, "lib/a1.rb"
 
-      install_specs a1
+    install_specs a1
 
-      assert_raise ::LoadError do
-        require "a*"
-      end
-
-      assert_equal [], loaded_spec_names
+    assert_raise ::LoadError do
+      require "a*"
     end
+
+    assert_equal [], loaded_spec_names
   end
 
   def test_self_bin_path_active
@@ -1444,24 +1434,22 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_needs_picks_up_unresolved_deps
-    save_loaded_features do
-      a = util_spec "a", "1"
-      b = util_spec "b", "1", "c" => nil
-      c = util_spec "c", "2"
-      d = util_spec "d", "1", {'e' => '= 1'}, "lib/d#{$$}.rb"
-      e = util_spec "e", "1"
+    a = util_spec "a", "1"
+    b = util_spec "b", "1", "c" => nil
+    c = util_spec "c", "2"
+    d = util_spec "d", "1", {'e' => '= 1'}, "lib/d#{$$}.rb"
+    e = util_spec "e", "1"
 
-      install_specs a, c, b, e, d
+    install_specs a, c, b, e, d
 
-      Gem.needs do |r|
-        r.gem "a"
-        r.gem "b", "= 1"
+    Gem.needs do |r|
+      r.gem "a"
+      r.gem "b", "= 1"
 
-        require "d#{$$}"
-      end
-
-      assert_equal %w[a-1 b-1 c-2 d-1 e-1], loaded_spec_names
+      require "d#{$$}"
     end
+
+    assert_equal %w[a-1 b-1 c-2 d-1 e-1], loaded_spec_names
   end
 
   def test_self_gunzip

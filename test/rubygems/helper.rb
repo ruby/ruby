@@ -825,10 +825,6 @@ class Gem::TestCase < Test::Unit::TestCase
     Gem::Specification.unresolved_deps.values.map(&:to_s).sort
   end
 
-  def save_loaded_features
-    yield
-  end
-
   def new_default_spec(name, version, deps = nil, *files)
     spec = util_spec name, version, deps
 
