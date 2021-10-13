@@ -16,6 +16,7 @@ os: linux
 dist: focal
 
 git:
+  depth: 1
   quiet: true
 
 cache:
