@@ -135,6 +135,11 @@ class TestISeq < Test::Unit::TestCase
     assert_raise_with_message(Ractor::IsolationError, /`#{name}'/) do
       Ractor.make_shareable(y)
     end
+    obj = Object.new
+    def obj.foo(*) ->{super} end
+    assert_raise_with_message(Ractor::IsolationError, /hidden variable/) do
+      Ractor.make_shareable(obj.foo)
+    end
   end
 
   def test_disasm_encoding
