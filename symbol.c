@@ -486,7 +486,8 @@ rb_id_serial_to_id(rb_id_serial_t num)
 {
     if (is_notop_id((ID)num)) {
         VALUE sym = get_id_serial_entry(num, 0, ID_ENTRY_SYM);
-	return SYM2ID(sym);
+	if (sym) return SYM2ID(sym);
+	return ((ID)num << ID_SCOPE_SHIFT) | ID_INTERNAL | ID_STATIC_SYM;
     }
     else {
 	return (ID)num;
