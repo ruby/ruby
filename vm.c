@@ -982,15 +982,16 @@ collect_outer_variable_names(ID id, VALUE val, void *ptr)
         data->yield = true;
     }
     else {
+        VALUE *store;
         if (data->isolate ||
             val == Qtrue /* write */) {
-            if (data->ary == Qfalse) data->ary = rb_ary_new();
-            rb_ary_push(data->ary, ID2SYM(id));
+            store = &data->ary;
         }
         else {
-            if (data->read_only == Qfalse) data->read_only = rb_ary_new();
-            rb_ary_push(data->read_only, ID2SYM(id));
+            store = &data->read_only;
         }
+        if (*store == Qfalse) *store = rb_ary_new();
+        rb_ary_push(*store, ID2SYM(id));
     }
     return ID_TABLE_CONTINUE;
 }
