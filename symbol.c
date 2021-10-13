@@ -482,9 +482,6 @@ get_id_entry(ID id, const enum id_entry_type t)
 }
 
 static inline ID
-#ifdef __GNUC__
-__attribute__((unused))
-#endif
 rb_id_serial_to_id(rb_id_serial_t num)
 {
     if (is_notop_id((ID)num)) {
