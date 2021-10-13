@@ -45,6 +45,8 @@ jobs:
         working-directory: src
       - name: Run configure
         run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
+      - name: Update
+        run: make -C build $JOBS -s RUBY='$(BASERUBY)' MINIRUBY='$(RUBY)' RUNRUBY='$(RUBY)' up
       - run: make $JOBS incs
       - run: make $JOBS
       - run: make leaked-globals

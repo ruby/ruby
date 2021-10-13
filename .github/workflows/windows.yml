@@ -79,6 +79,12 @@ jobs:
       - name: Configure
         run: |
           ../src/win32/configure.bat --disable-install-doc --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
+      - name: Update
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          cd build
+          nmake RUBY="$(BASERUBY)" MINIRUBY="$(RUBY)" RUNRUBY="$(RUBY)" up
+        shell: cmd
       - name: nmake
         run: |
           echo ^#^#[group]incs

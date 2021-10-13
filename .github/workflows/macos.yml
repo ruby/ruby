@@ -32,6 +32,8 @@ jobs:
         working-directory: src
       - name: Run configure
         run: ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
+      - name: Update
+        run: make -C build $JOBS -s RUBY='$(BASERUBY)' MINIRUBY='$(RUBY)' RUNRUBY='$(RUBY)' up
       - run: make $JOBS incs
       - run: make $JOBS
       - run: make leaked-globals
