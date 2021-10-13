@@ -4806,10 +4806,13 @@ rb_str_drop_bytes(VALUE str, long len)
 	memmove(ptr, oldptr + len, nlen);
 	if (fl == STR_NOEMBED) xfree(oldptr);
     }
-    else {
-	if (!STR_SHARED_P(str)) rb_str_new_frozen(str);
+    else if(STR_SHARED_P(str)){
 	ptr = RSTRING(str)->as.heap.ptr += len;
 	RSTRING(str)->as.heap.len = nlen;
+    }
+    else {
+        memmove(ptr, ptr + len, nlen);
+        STR_SET_LEN(str, nlen);
     }
     ptr[nlen] = 0;
     ENC_CODERANGE_CLEAR(str);
