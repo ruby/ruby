@@ -1529,4 +1529,13 @@ assert_equal "ok", %q{
   end
 }
 
+assert_equal "ok", %q{
+  def foo((x), (y)); ->{ super }; end
+  begin
+    Ractor.make_shareable(foo([], []))
+  rescue Ractor::IsolationError
+    "ok"
+  end
+}
+
 end # if !ENV['GITHUB_WORKFLOW']
