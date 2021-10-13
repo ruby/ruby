@@ -99,16 +99,6 @@ module OpenSSL::Buffering
     end
   end
 
-  if "".respond_to?(:unpack1)
-    def unpack_byte(str)
-      str.unpack1("C")
-    end
-  else
-    def unpack_byte(str)
-      str.unpack("C").first
-    end
-  end
-
   public
 
   # call-seq:
@@ -117,7 +107,7 @@ module OpenSSL::Buffering
   # Get the next 8bit byte from `ssl`.  Returns `nil` on EOF
   def getbyte
     byte = read(1)
-    byte && unpack_byte(byte)
+    byte && byte.unpack1("C")
   end
 
   ##

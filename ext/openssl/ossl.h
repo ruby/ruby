@@ -155,7 +155,6 @@ void ossl_debug(const char *, ...);
  * Include all parts
  */
 #include "openssl_missing.h"
-#include "ruby_missing.h"
 #include "ossl_asn1.h"
 #include "ossl_bio.h"
 #include "ossl_bn.h"

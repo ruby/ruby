@@ -236,9 +236,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
       threads = []
       begin
         server_thread = Thread.new do
-          if Thread.method_defined?(:report_on_exception=) # Ruby >= 2.4
-            Thread.current.report_on_exception = false
-          end
+          Thread.current.report_on_exception = false
 
           begin
             loop do
@@ -254,9 +252,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
               end
 
               th = Thread.new do
-                if Thread.method_defined?(:report_on_exception=)
-                  Thread.current.report_on_exception = false
-                end
+                Thread.current.report_on_exception = false
 
                 begin
                   server_proc.call(ctx, ssl)
@@ -273,9 +269,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
         end
 
         client_thread = Thread.new do
-          if Thread.method_defined?(:report_on_exception=)
-            Thread.current.report_on_exception = false
-          end
+          Thread.current.report_on_exception = false
 
           begin
             block.call(port)

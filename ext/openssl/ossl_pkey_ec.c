@@ -598,9 +598,6 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
         ossl_raise(rb_eArgError, "wrong number of arguments");
     }
 
-#if !defined(LIKELY) && !defined(RB_LIKELY)
-#define LIKELY(x) (x)
-#endif
     ASSUME(group);
     RTYPEDDATA_DATA(self) = group;
 
