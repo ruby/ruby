@@ -4,6 +4,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef void* MMTk_Mutator;
 typedef void* MMTk_TraceLocal;
@@ -11,67 +14,81 @@ typedef void* MMTk_TraceLocal;
 /**
  * Allocation
  */
-extern MMTk_Mutator bind_mutator(void *tls);
-extern void destroy_mutator(MMTk_Mutator mutator);
+extern MMTk_Mutator mmtk_bind_mutator(void *tls);
+extern void mmtk_destroy_mutator(MMTk_Mutator mutator);
 
-extern void* alloc(MMTk_Mutator mutator, size_t size,
-    size_t align, size_t offset, int allocator);
+extern void* mmtk_alloc(MMTk_Mutator mutator, size_t size,
+    size_t align, ssize_t offset, int allocator);
 
-extern void post_alloc(MMTk_Mutator mutator, void* refer, void* type_refer,
+extern void* mmtk_alloc_slow(MMTk_Mutator mutator, size_t size,
+    size_t align, ssize_t offset, int allocator);
+
+extern void mmtk_post_alloc(MMTk_Mutator mutator, void* refer, void* type_refer,
     int bytes, int allocator);
 
-// extern bool is_live_object(void* ref);
-extern bool is_mapped_object(void* ref);
-extern bool is_mapped_address(void* addr);
-extern void modify_check(void* ref);
+extern bool mmtk_is_live_object(void* ref);
+extern bool mmtk_is_mapped_object(void* ref);
+extern bool mmtk_is_mapped_address(void* addr);
+extern void mmtk_modify_check(void* ref);
 
 /**
  * Tracing
  */
-extern void report_delayed_root_edge(MMTk_TraceLocal trace_local,
-                                     void* addr);
+extern void mmtk_report_delayed_root_edge(MMTk_TraceLocal trace_local,
+                                          void* addr);
 
-extern bool will_not_move_in_current_collection(MMTk_TraceLocal trace_local,
-                                                void* obj);
+extern bool mmtk_will_not_move_in_current_collection(MMTk_TraceLocal trace_local,
+                                                     void* obj);
 
-extern void process_interior_edge(MMTk_TraceLocal trace_local, void* target,
-                                  void* slot, bool root);
+extern void mmtk_process_interior_edge(MMTk_TraceLocal trace_local, void* target,
+                                      void* slot, bool root);
 
-extern void* trace_get_forwarded_referent(MMTk_TraceLocal trace_local, void* obj);
+extern void* mmtk_trace_get_forwarded_referent(MMTk_TraceLocal trace_local, void* obj);
 
-extern void* trace_get_forwarded_reference(MMTk_TraceLocal trace_local, void* obj);
+extern void* mmtk_trace_get_forwarded_reference(MMTk_TraceLocal trace_local, void* obj);
 
-extern void* trace_retain_referent(MMTk_TraceLocal trace_local, void* obj);
+extern void* mmtk_trace_retain_referent(MMTk_TraceLocal trace_local, void* obj);
 
 /**
  * Misc
  */
-extern void gc_init(size_t heap_size);
-extern bool will_never_move(void* object);
-extern bool process(char* name, char* value);
-extern void scan_region();
-extern void handle_user_collection_request(void *tls);
+extern void mmtk_gc_init(size_t heap_size);
+extern bool mmtk_will_never_move(void* object);
+extern bool mmtk_process(char* name, char* value);
+extern void mmtk_scan_region();
+extern void mmtk_handle_user_collection_request(void *tls);
 
-extern void start_control_collector(void *tls);
-extern void start_worker(void *tls, void* worker, void* mmtk);
+extern void mmtk_start_control_collector(void *tls);
+extern void mmtk_start_worker(void *tls, void* worker);
 
 /**
  * VM Accounting
  */
-extern size_t free_bytes();
-extern size_t total_bytes();
-extern size_t used_bytes();
-extern void* starting_heap_address();
-extern void* last_heap_address();
+extern size_t mmtk_free_bytes();
+extern size_t mmtk_total_bytes();
+extern size_t mmtk_used_bytes();
+extern void* mmtk_starting_heap_address();
+extern void* mmtk_last_heap_address();
 
 /**
  * Reference Processing
  */
-extern void add_weak_candidate(void* ref, void* referent);
-extern void add_soft_candidate(void* ref, void* referent);
-extern void add_phantom_candidate(void* ref, void* referent);
+extern void mmtk_add_weak_candidate(void* ref, void* referent);
+extern void mmtk_add_soft_candidate(void* ref, void* referent);
+extern void mmtk_add_phantom_candidate(void* ref, void* referent);
 
-extern void harness_begin(void *tls);
-extern void harness_end();
+extern void mmtk_harness_begin(void *tls);
+extern void mmtk_harness_end();
+
+/**
+ * VM introspection callbacks (defined in C)
+ */
+extern void rb_mmtk_referent_objects(void *object, void *closure, void *callback);
+extern void rb_mmtk_roots(void (*callback)(void **root));
+extern void rb_mmtk_stacks(void (*callback)(void *stack, size_t size));
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // MMTK_H

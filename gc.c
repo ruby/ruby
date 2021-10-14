@@ -1636,8 +1636,8 @@ rb_objspace_alloc(void)
     // Note: this limit is currently broken for NoGC, but we still attempt to
     // initialise it properly regardless.
     // See https://github.com/mmtk/mmtk-core/issues/214
-    gc_init(heap_size);
-    objspace->mutator = bind_mutator(10); // TODO replace with pointer to start of TLS
+    mmtk_gc_init(heap_size);
+    objspace->mutator = mmtk_bind_mutator(10); // TODO replace with pointer to start of TLS
 #endif
 
     return objspace;
@@ -2297,8 +2297,8 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protect
     rb_objspace_t *objspace = &rb_objspace;
     VALUE obj;
 #ifdef USE_THIRD_PARTY_HEAP
-    obj = (VALUE) alloc(objspace->mutator, sizeof(RVALUE), 8, 0, 0); // Default allocation semantics
-    return newobj_init(klass, flags, v1, v2, v3, wb_protected, objspace, obj);
+    obj = (VALUE) mmtk_alloc(objspace->mutator, sizeof(RVALUE), 8, 0, 0); // Default allocation semantics
+    return newobj_init(klass, flags, wb_protected, objspace, obj);
 #endif
 
     RB_DEBUG_COUNTER_INC(obj_newobj);
@@ -2501,7 +2501,7 @@ static inline int
 is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
 {
 #ifdef USE_THIRD_PARTY_HEAP
-    return is_mapped_address(ptr);
+    return mmtk_is_mapped_address(ptr);
 #endif
     register RVALUE *p = RANY(ptr);
     register struct heap_page *page;
@@ -4192,7 +4192,7 @@ static size_t
 objspace_available_slots(rb_objspace_t *objspace)
 {
 #ifdef USE_THIRD_PARTY_HEAP
-    return total_bytes();
+    return mmtk_total_bytes();
 #else
     return heap_eden->total_slots + heap_tomb->total_slots;
 #endif
@@ -4208,7 +4208,7 @@ static size_t
 objspace_free_slots(rb_objspace_t *objspace)
 {
 #ifdef USE_THIRD_PARTY_HEAP
-    return free_bytes();
+    return mmtk_free_bytes();
 #else
     return objspace_available_slots(objspace) - objspace_live_slots(objspace) - heap_pages_final_slots;
 #endif
@@ -9975,7 +9975,7 @@ objspace_xmalloc0(rb_objspace_t *objspace, size_t size)
 
     size = objspace_malloc_prepare(objspace, size);
 #ifdef USE_THIRD_PARTY_HEAP
-    mem = alloc(objspace->mutator, size, 8, 0, 0); // Default allocation semantics
+    mem = mmtk_alloc(objspace->mutator, size, 8, 0, 0); // Default allocation semantics
 #else
     TRY_WITH_GC(mem = malloc(size));
 #endif
@@ -10074,7 +10074,7 @@ objspace_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t ol
     // How on earth did this work?
     // For now, we just changed the old size, however this hack may be vulnerable if we need to
     // reallocate something to a smaller chunk of memory. FIXME!
-    mem = alloc(objspace->mutator, new_size, 8, 0, 0);
+    mem = mmtk_alloc(objspace->mutator, new_size, 8, 0, 0);
     memcpy(mem, ptr, (old_size < new_size ? old_size : new_size));
 #else
     TRY_WITH_GC(mem = realloc(ptr, new_size));
@@ -10154,7 +10154,7 @@ static void
 objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
 {
 #ifdef USE_THIRD_PARTY_HEAP
-    if (is_mapped_address(ptr)) {
+    if (mmtk_is_mapped_address(ptr)) {
         return; // Don't try and free() MMTk managed memory
     } // Otherwise continue (the memory was allocated before MMTk was initialised)
 #endif
@@ -10266,7 +10266,7 @@ objspace_xcalloc(rb_objspace_t *objspace, size_t size)
 
     size = objspace_malloc_prepare(objspace, size);
 #ifdef USE_THIRD_PARTY_HEAP
-    mem = alloc(objspace->mutator, size, 8, 0, 0);
+    mem = mmtk_alloc(objspace->mutator, size, 8, 0, 0);
     memset(mem, 0, size);
 #else
     TRY_WITH_GC(mem = calloc1(size));
@@ -12175,3 +12175,18 @@ ruby_xrealloc2(void *ptr, size_t n, size_t new_size)
 #endif
     return ruby_xrealloc2_body(ptr, n, new_size);
 }
+
+#ifdef USE_THIRD_PARTY_HEAP
+void __attribute__((visibility("default")))
+rb_mmtk_referent_objects(void *object, void *closure, void *callback) {
+    // Not implemented.
+}
+void __attribute__((visibility("default")))
+rb_mmtk_roots(void (*callback)(void **root)) {
+    // Not implemented.
+}
+void __attribute__((visibility("default")))
+rb_mmtk_stacks(void (*callback)(void *stack, size_t size)) {
+    // Not implemented.
+}
+#endif USE_THIRD_PARTY_HEAP
