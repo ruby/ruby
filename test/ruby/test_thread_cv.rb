@@ -89,6 +89,9 @@ class TestThreadConditionVariable < Test::Unit::TestCase
     end
 
     assert_equal ["C1", "C1", "C1", "P1", "P2", "C2", "C2", "C2"], result
+  ensure
+    threads.each(&:kill)
+    threads.each(&:join)
   end
 
   def test_condvar_wait_deadlock
