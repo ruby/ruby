@@ -275,11 +275,13 @@ GetVpValue(VALUE v, int must)
 }
 
 /* call-seq:
- * BigDecimal.double_fig
+ *   BigDecimal.double_fig
  *
- * The BigDecimal.double_fig class method returns the number of digits a
- * Float number is allowed to have. The result depends upon the CPU and OS
- * in use.
+ *  Returns the number of digits a Float object is allowed to have;
+ *  the result is system-dependent:
+ *
+ *    BigDecimal.double_fig # => 16
+ *
  */
 static VALUE
 BigDecimal_double_fig(VALUE self)
@@ -288,9 +290,9 @@ BigDecimal_double_fig(VALUE self)
 }
 
 /*  call-seq:
- *     big_decimal.precs  ->  array
+ *    precs -> array
  *
- *  Returns an Array of two Integer values that represent platform-dependent
+ *  Returns an array of two integer values that represent platform-dependent
  *  internal storage properties.
  *
  *  This method is deprecated and will be removed in the future.
@@ -298,7 +300,6 @@ BigDecimal_double_fig(VALUE self)
  *  significant digits in scientific notation, and BigDecimal#precision for
  *  obtaining the number of digits in decimal notation.
  *
- *     BigDecimal('5').precs #=> [9, 18]
  */
 
 static VALUE
@@ -319,20 +320,26 @@ BigDecimal_prec(VALUE self)
 }
 
 /*
- * call-seq:
- *   big_decimal.precision  ->  intreger
+ *  call-seq:
+ *    precision -> integer
  *
- * Returns the number of decimal digits in this number.
+ *  Returns the number of decimal digits in +self+:
  *
- * Example:
+ *    %w[0 1 -1e20 1e-20 Infinity -Infinity NaN].each do |s|
+ *      precision = BigDecimal(s).precision
+ *      puts format("%9s has precision %2d", s, precision)
+ *    end
  *
- *   BigDecimal("0").precision  # => 0
- *   BigDecimal("1").precision  # => 1
- *   BigDecimal("-1e20").precision  # => 21
- *   BigDecimal("1e-20").precision  # => 20
- *   BigDecimal("Infinity").precision  # => 0
- *   BigDecimal("-Infinity").precision  # => 0
- *   BigDecimal("NaN").precision  # => 0
+ *  Output:
+ *
+ *            0 has precision  0
+ *            1 has precision  1
+ *        -1e20 has precision 21
+ *        1e-20 has precision 20
+ *     Infinity has precision  0
+ *    -Infinity has precision  0
+ *          NaN has precision  0
+ *
  */
 static VALUE
 BigDecimal_precision(VALUE self)
@@ -412,12 +419,18 @@ BigDecimal_n_significant_digits(VALUE self)
 }
 
 /*
- * call-seq: hash
+ *  call-seq:
+ *    hash  -> integer
  *
- * Creates a hash for this BigDecimal.
+ *  Returns the integer hash value for +self+.
  *
- * Two BigDecimals with equal sign,
- * fractional part and exponent have the same hash.
+ *  Two instances of \BigDecimal have the same hash value if and only if
+ *  they have equal:
+ *
+ *  - Sign.
+ *  - Fractional part.
+ *  - Exponent.
+ *
  */
 static VALUE
 BigDecimal_hash(VALUE self)
@@ -437,16 +450,16 @@ BigDecimal_hash(VALUE self)
 }
 
 /*
- * call-seq: _dump
+ *  call-seq:
+ *    _dump
  *
- * Method used to provide marshalling support.
+ *  Returns a string representing the marshalling of +self+.
+ *  See module Marshal.
  *
- *      inf = BigDecimal('Infinity')
- *        #=> Infinity
- *      BigDecimal._load(inf._dump)
- *        #=> Infinity
+ *    inf = BigDecimal('Infinity') # => Infinity
+ *    dumped = inf._dump           # => "9:Infinity"
+ *    BigDecimal._load(dumped)     # => Infinity
  *
- * See the Marshal module.
  */
 static VALUE
 BigDecimal_dump(int argc, VALUE *argv, VALUE self)
@@ -580,42 +593,165 @@ check_rounding_mode(VALUE const v)
     return sw;
 }
 
-/* call-seq:
- * BigDecimal.mode(mode, value)
+/*  call-seq:
+ *    BigDecimal.mode(mode, setting = nil) -> integer
  *
- * Controls handling of arithmetic exceptions and rounding. If no value
- * is supplied, the current value is returned.
+ *  Returns an integer representing the mode settings
+ *  for exception handling and rounding.
  *
- * Six values of the mode parameter control the handling of arithmetic
- * exceptions:
+ *  These modes control exception handling:
  *
- * BigDecimal::EXCEPTION_NaN
- * BigDecimal::EXCEPTION_INFINITY
- * BigDecimal::EXCEPTION_UNDERFLOW
- * BigDecimal::EXCEPTION_OVERFLOW
- * BigDecimal::EXCEPTION_ZERODIVIDE
- * BigDecimal::EXCEPTION_ALL
+ *  - \BigDecimal::EXCEPTION_NaN.
+ *  - \BigDecimal::EXCEPTION_INFINITY.
+ *  - \BigDecimal::EXCEPTION_UNDERFLOW.
+ *  - \BigDecimal::EXCEPTION_OVERFLOW.
+ *  - \BigDecimal::EXCEPTION_ZERODIVIDE.
+ *  - \BigDecimal::EXCEPTION_ALL.
  *
- * For each mode parameter above, if the value set is false, computation
- * continues after an arithmetic exception of the appropriate type.
- * When computation continues, results are as follows:
+ *  Values for +setting+ for exception handling:
  *
- * EXCEPTION_NaN:: NaN
- * EXCEPTION_INFINITY:: +Infinity or -Infinity
- * EXCEPTION_UNDERFLOW:: 0
- * EXCEPTION_OVERFLOW:: +Infinity or -Infinity
- * EXCEPTION_ZERODIVIDE:: +Infinity or -Infinity
+ *  - +true+: sets the given +mode+ to +true+.
+ *  - +false+: sets the given +mode+ to +false+.
+ *  - +nil+: does not modify the mode settings.
  *
- * One value of the mode parameter controls the rounding of numeric values:
- * BigDecimal::ROUND_MODE. The values it can take are:
+ *  You can use method BigDecimal.save_exception_mode
+ *  to temporarily change, and then automatically restore, exception modes.
  *
- * ROUND_UP, :up:: round away from zero
- * ROUND_DOWN, :down, :truncate:: round towards zero (truncate)
- * ROUND_HALF_UP, :half_up, :default:: round towards the nearest neighbor, unless both neighbors are equidistant, in which case round away from zero. (default)
- * ROUND_HALF_DOWN, :half_down:: round towards the nearest neighbor, unless both neighbors are equidistant, in which case round towards zero.
- * ROUND_HALF_EVEN, :half_even, :banker:: round towards the nearest neighbor, unless both neighbors are equidistant, in which case round towards the even neighbor (Banker's rounding)
- * ROUND_CEILING, :ceiling, :ceil:: round towards positive infinity (ceil)
- * ROUND_FLOOR, :floor:: round towards negative infinity (floor)
+ *  For clarity, some examples below begins by setting all
+ *  exception modes to +false+.
+ *
+ *  This mode controls the way rounding is to be performed:
+ *
+ *  - \BigDecimal::ROUND_MODE
+ *
+ *  You can use method BigDecimal.save_rounding_mode
+ *  to temporarily change, and then automatically restore, the rounding mode.
+ *
+ *  <b>NaNs</b>
+ *
+ *  Mode \BigDecimal::EXCEPTION_NaN controls behavior
+ *  when a \BigDecimal NaN is created.
+ *  Settings"
+ *
+ *  - +false+ (default): Returns <tt>BigDecimal('NaN')</tt>.
+ *  - +true+: Raises FloatDomainError.
+ *
+ *  Examples:
+ *
+ *    BigDecimal.mode(BigDecimal::EXCEPTION_ALL, false) # => 0
+ *    BigDecimal('NaN')                                 # => NaN
+ *    BigDecimal.mode(BigDecimal::EXCEPTION_NaN, true)  # => 2
+ *    BigDecimal('NaN') # Raises FloatDomainError
+ *
+ *  <b>Infinities</b>
+ *
+ *  Mode \BigDecimal::EXCEPTION_INFINITY controls behavior
+ *  when a \BigDecimal Infinity or -Infinity is created.
+ *  Settings:
+ *
+ *  - +false+ (default): Returns <tt>BigDecimal('Infinity')</tt>
+ *    or <tt>BigDecimal('-Infinity')</tt>.
+ *  - +true+: Raises FloatDomainError.
+ *
+ *  Examples:
+ *
+ *    BigDecimal.mode(BigDecimal::EXCEPTION_ALL, false)     # => 0
+ *    BigDecimal('Infinity')                                # => Infinity
+ *    BigDecimal('-Infinity')                               # => -Infinity
+ *    BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, true) # => 1
+ *    BigDecimal('Infinity')  # Raises FloatDomainError
+ *    BigDecimal('-Infinity') # Raises FloatDomainError
+ *
+ *  <b>Underflow</b>
+ *
+ *  Mode \BigDecimal::EXCEPTION_UNDERFLOW controls behavior
+ *  when a \BigDecimal underflow occurs.
+ *  Settings:
+ *
+ *  - +false+ (default): Returns <tt>BigDecimal('0')</tt>
+ *    or <tt>BigDecimal('-Infinity')</tt>.
+ *  - +true+: Raises FloatDomainError.
+ *
+ *  Examples:
+ *
+ *    BigDecimal.mode(BigDecimal::EXCEPTION_ALL, false)      # => 0
+ *    def flow_under
+ *      x = BigDecimal('0.1')
+ *      100.times { x *= x }
+ *    end
+ *    flow_under                                             # => 100
+ *    BigDecimal.mode(BigDecimal::EXCEPTION_UNDERFLOW, true) # => 4
+ *    flow_under # Raises FloatDomainError
+ *
+ *  <b>Overflow</b>
+ *
+ *  Mode \BigDecimal::EXCEPTION_OVERFLOW controls behavior
+ *  when a \BigDecimal overflow occurs.
+ *  Settings:
+ *
+ *  - +false+ (default): Returns <tt>BigDecimal('Infinity')</tt>
+ *    or <tt>BigDecimal('-Infinity')</tt>.
+ *  - +true+: Raises FloatDomainError.
+ *
+ *  Examples:
+ *
+ *    BigDecimal.mode(BigDecimal::EXCEPTION_ALL, false)     # => 0
+ *    def flow_over
+ *      x = BigDecimal('10')
+ *      100.times { x *= x }
+ *    end
+ *    flow_over                                             # => 100
+ *    BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, true) # => 1
+ *    flow_over # Raises FloatDomainError
+ *
+ *  <b>Zero Division</b>
+ *
+ *  Mode \BigDecimal::EXCEPTION_ZERODIVIDE controls behavior
+ *  when a zero-division occurs.
+ *  Settings:
+ *
+ *  - +false+ (default): Returns <tt>BigDecimal('Infinity')</tt>
+ *    or <tt>BigDecimal('-Infinity')</tt>.
+ *  - +true+: Raises FloatDomainError.
+ *
+ *  Examples:
+ *
+ *    BigDecimal.mode(BigDecimal::EXCEPTION_ALL, false)       # => 0
+ *    one = BigDecimal('1')
+ *    zero = BigDecimal('0')
+ *    one / zero                                              # => Infinity
+ *    BigDecimal.mode(BigDecimal::EXCEPTION_ZERODIVIDE, true) # => 16
+ *    one / zero # Raises FloatDomainError
+ *
+ *  <b>All Exceptions</b>
+ *
+ *  Mode \BigDecimal::EXCEPTION_ALL controls all of the above:
+ *
+ *    BigDecimal.mode(BigDecimal::EXCEPTION_ALL, false) # => 0
+ *    BigDecimal.mode(BigDecimal::EXCEPTION_ALL, true)  # => 23
+ *
+ *  <b>Rounding</b>
+ *
+ *  Mode \BigDecimal::ROUND_MODE controls the way rounding is to be performed;
+ *  its +setting+ values are:
+ *
+ *  - +ROUND_UP+: Round away from zero.
+ *    Aliased as +:up+.
+ *  - +ROUND_DOWN+: Round toward zero.
+ *    Aliased as +:down+ and +:truncate+.
+ *  - +ROUND_HALF_UP+: Round toward the nearer neighbor;
+ *    if the neighbors are equidistant, round away from zero.
+ *    Aliased as +:half_up+ and +:default+.
+ *  - +ROUND_HALF_DOWN+: Round toward the nearer neighbor;
+ *    if the neighbors are equidistant, round toward from zero.
+ *    Aliased as +:half_down+.
+ *  - +ROUND_HALF_EVEN+ (Banker's rounding): Round toward the nearest neighbor;
+ *    if the neighbors are equidistant, round toward the even neighbor.
+ *    Aliased as +:half_even+ and +:banker+.
+ *  - +ROUND_CEILING+: Round toward positive infinity.
+ *    Aliased as +:ceiling+ and +:ceil+.
+ *  - +ROUND_FLOOR+: Round toward negative infinity.
+ *    Aliased as +:floor:+.
  *
  */
 static VALUE
