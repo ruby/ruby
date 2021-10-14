@@ -329,7 +329,7 @@ module Test
         def self.launch(ruby,args=[])
           scale = EnvUtil.timeout_scale
           io = IO.popen([*ruby, "-W1",
-                        "#{File.dirname(__FILE__)}/unit/parallel.rb",
+                        "#{__dir__}/unit/parallel.rb",
                         *("--timeout-scale=#{scale}" if scale),
                         *args], "rb+")
           new(io, io.pid, :waiting)
