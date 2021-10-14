@@ -8244,7 +8244,7 @@ rb_ary_deconstruct(VALUE ary)
  *       - With string argument +field_separator+, a new string that is equivalent to
  *         <tt>join(field_separator)</tt>.
  *  #abbrev:: Returns a hash of unambiguous abbreviations for elements.
- *  #pack:: Packs the the elements into a binary sequence.
+ *  #pack:: Packs the elements into a binary sequence.
  *  #sum:: Returns a sum of elements according to either <tt>+</tt> or a given block.
  */
 
