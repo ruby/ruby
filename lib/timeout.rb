@@ -23,7 +23,7 @@
 # Copyright:: (C) 2000  Information-technology Promotion Agency, Japan
 
 module Timeout
-  VERSION = "0.1.1".freeze
+  VERSION = "0.2.0".freeze
 
   # Raised by Timeout.timeout when the block times out.
   class Error < RuntimeError
