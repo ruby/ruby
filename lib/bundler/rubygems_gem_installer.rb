@@ -19,7 +19,9 @@ module Bundler
       FileUtils.rm_rf gem_dir
       FileUtils.rm_rf spec.extension_dir
 
-      FileUtils.mkdir_p gem_dir, :mode => 0o755
+      SharedHelpers.filesystem_access(gem_dir, :create) do
+        FileUtils.mkdir_p gem_dir, :mode => 0o755
+      end
 
       extract_files
 

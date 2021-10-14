@@ -678,6 +678,36 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
+  describe "when bundle gems path does not have write access", :permissions do
+    let(:gems_path) { bundled_app("vendor/#{Bundler.ruby_scope}/gems") }
+
+    before do
+      FileUtils.mkdir_p(gems_path)
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem 'rack'
+      G
+    end
+
+    it "should display a proper message to explain the problem" do
+      FileUtils.chmod("-x", gems_path)
+      bundle "config set --local path vendor"
+
+      begin
+        bundle :install, :raise_on_error => false
+      ensure
+        FileUtils.chmod("+x", gems_path)
+      end
+
+      expect(err).not_to include("ERROR REPORT TEMPLATE")
+
+      expect(err).to include(
+        "There was an error while trying to create `#{gems_path.join("rack-1.0.0")}`. " \
+        "It is likely that you need to grant executable permissions for all parent directories and write permissions for `#{gems_path}`."
+      )
+    end
+  end
+
   describe "when bundle cache path does not have write access", :permissions do
     let(:cache_path) { bundled_app("vendor/#{Bundler.ruby_scope}/cache") }
 
