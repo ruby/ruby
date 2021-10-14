@@ -957,10 +957,12 @@ io_pathconf(VALUE io, VALUE arg)
 static int
 etc_nprocessors_affin(void)
 {
-    cpu_set_t *cpuset;
+    cpu_set_t *cpuset, cpuset_buff[1024 / sizeof(cpu_set_t)];
     size_t size;
     int ret;
     int n;
+
+    CPU_ZERO_S(sizeof(cpuset_buff), cpuset_buff);
 
     /*
      * XXX:
@@ -980,13 +982,12 @@ etc_nprocessors_affin(void)
      */
     for (n=64; n <= 16384; n *= 2) {
 	size = CPU_ALLOC_SIZE(n);
-	if (size >= 1024) {
+	if (size >= sizeof(cpuset_buff)) {
 	    cpuset = xcalloc(1, size);
 	    if (!cpuset)
 		return -1;
 	} else {
-	    cpuset = alloca(size);
-	    CPU_ZERO_S(size, cpuset);
+	    cpuset = cpuset_buff;
 	}
 
 	ret = sched_getaffinity(0, size, cpuset);
@@ -995,10 +996,10 @@ etc_nprocessors_affin(void)
 	    ret = CPU_COUNT_S(size, cpuset);
 	}
 
-	if (size >= 1024) {
+	if (size >= sizeof(cpuset_buff)) {
 	    xfree(cpuset);
 	}
-	if (ret > 0) {
+	if (ret > 0 || errno != EINVAL) {
 	    return ret;
 	}
     }
