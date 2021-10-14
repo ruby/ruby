@@ -708,6 +708,47 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
+  describe "when the path of a specific gem is not writable", :permissions do
+    let(:gems_path) { bundled_app("vendor/#{Bundler.ruby_scope}/gems") }
+    let(:foo_path) { gems_path.join("foo-1.0.0") }
+
+    before do
+      build_repo4 do
+        build_gem "foo", "1.0.0" do |s|
+          s.write "CHANGELOG.md", "foo"
+        end
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem 'foo'
+      G
+    end
+
+    it "should display a proper message to explain the problem" do
+      bundle "config set --local path vendor"
+      bundle :install
+      expect(out).to include("Bundle complete!")
+      expect(err).to be_empty
+
+      FileUtils.chmod("-x", foo_path)
+
+      begin
+        bundle "install --redownload", :raise_on_error => false
+      ensure
+        FileUtils.chmod("+x", foo_path)
+      end
+
+      expect(err).not_to include("ERROR REPORT TEMPLATE")
+
+      expect(err).to include(
+        "There was an error while trying to delete `#{foo_path}`. " \
+        "It is likely that you need to grant executable permissions for all parent directories " \
+        "and write permissions for `#{gems_path}`, and the same thing for all subdirectories inside #{foo_path}."
+      )
+    end
+  end
+
   describe "when bundle cache path does not have write access", :permissions do
     let(:cache_path) { bundled_app("vendor/#{Bundler.ruby_scope}/cache") }
 

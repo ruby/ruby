@@ -79,6 +79,10 @@ module Bundler
       case @permission_type
       when :create
         "executable permissions for all parent directories and write permissions for `#{parent_folder}`"
+      when :delete
+        permissions = "executable permissions for all parent directories and write permissions for `#{parent_folder}`"
+        permissions += ", and the same thing for all subdirectories inside #{@path}" if File.directory?(@path)
+        permissions
       else
         "#{@permission_type} permissions for that path"
       end
