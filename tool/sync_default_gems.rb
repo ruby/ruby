@@ -318,8 +318,9 @@ def sync_default_gems(gem)
   when "digest"
     rm_rf(%w[ext/digest test/digest])
     cp_r("#{upstream}/ext/digest", "ext")
-    mkdir_p("ext/digest/lib")
+    mkdir_p("ext/digest/lib/digest")
     cp_r("#{upstream}/lib/digest.rb", "ext/digest/lib/")
+    cp_r("#{upstream}/lib/digest/sha2.rb", "ext/digest/lib/digest")
     cp_r("#{upstream}/test/digest", "test")
     cp_r("#{upstream}/digest.gemspec", "ext/digest")
     `git checkout ext/digest/depend ext/digest/*/depend`
