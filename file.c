@@ -4389,7 +4389,7 @@ static VALUE
 rb_check_realpath_emulate_try(VALUE arg)
 {
     VALUE *args = (VALUE *)arg;
-    return rb_check_realpath_emulate(args[0], args[1], (const rb_encoding *)args[2], RB_REALPATH_CHECK);
+    return rb_check_realpath_emulate(args[0], args[1], (rb_encoding *)args[2], RB_REALPATH_CHECK);
 }
 
 static VALUE
