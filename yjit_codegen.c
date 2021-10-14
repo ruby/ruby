@@ -3029,6 +3029,27 @@ jit_rb_obj_equal(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, cons
     return true;
 }
 
+static VALUE
+yjit_str_bytesize(VALUE str)
+{
+    return LONG2NUM(RSTRING_LEN(str));
+}
+
+static bool
+jit_rb_str_bytesize(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc, VALUE *known_recv_klass)
+{
+    ADD_COMMENT(cb, "String#bytesize");
+
+    x86opnd_t recv = ctx_stack_pop(ctx, 1);
+    mov(cb, C_ARG_REGS[0], recv);
+    call_ptr(cb, REG0, (void *)&yjit_str_bytesize);
+
+    x86opnd_t out_opnd = ctx_stack_push(ctx, TYPE_FIXNUM);
+    mov(cb, out_opnd, RAX);
+
+    return true;
+}
+
 // Codegen for rb_str_to_s()
 // When String#to_s is called on a String instance, the method returns self and
 // most of the overhead comes from setting up the method call. We observed that
@@ -4667,6 +4688,7 @@ yjit_init_codegen(void)
     // rb_str_to_s() methods in string.c
     yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
     yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
+    yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
 
     // Thread.current
     yjit_reg_method(rb_singleton_class(rb_cThread), "current", jit_thread_s_current);
