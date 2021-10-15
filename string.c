@@ -10958,7 +10958,7 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
 /**********************************************************************
  * Document-class: Symbol
  *
- *  Symbol objects represent names inside the Ruby interpreter. They
+ *  Symbol objects represent named identifiers inside the Ruby interpreter. They
  *  are generated using the <code>:name</code> and
  *  <code>:"string"</code> literals syntax, and by the various
  *  <code>to_sym</code> methods. The same Symbol object will be
@@ -10983,6 +10983,34 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
  *     $f1.object_id   #=> 2514190
  *     $f2.object_id   #=> 2514190
  *     $f3.object_id   #=> 2514190
+ *
+ * Constant, method, and variable names are returned as symbols:
+ *
+ *     module One
+ *       Two = 2
+ *       def three; 3 end
+ *       @four = 4
+ *       @@five = 5
+ *       $six = 6
+ *     end
+ *     seven = 7
+ *
+ *     One.constants
+ *     # => [:Two]
+ *     One.instance_methods(true)
+ *     # => [:three]
+ *     One.instance_variables
+ *     # => [:@four]
+ *     One.class_variables
+ *     # => [:@@five]
+ *     global_variables.grep(/six/)
+ *     # => [:$six]
+ *     local_variables
+ *     # => [:seven]
+ *
+ * Symbol objects are different from String objects in that
+ * Symbol objects represent identifiers, while String objects
+ * represent text or data.
  *
  */
 
@@ -11567,8 +11595,11 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
 
 /*
  *  A String object holds and manipulates an arbitrary sequence of
- *  bytes, typically representing characters. String objects may be created
- *  using String::new or as literals.
+ *  bytes, typically representing text or binary data. String objects may be
+ *  created using String::new or as literals.
+ *
+ *  String objects differ from Symbol objects in that Symbol objects are
+ *  designed to be used as identifiers, instead of text or data.
  *
  *  Because of aliasing issues, users of strings should be aware of the methods
  *  that modify the contents of a String object.  Typically,
