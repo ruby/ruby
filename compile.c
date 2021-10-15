@@ -2259,7 +2259,6 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     VALUE *generated_iseq;
     rb_event_flag_t events = 0;
     long data = 0;
-    long getinlinecache_idx = -1;
 
     int insn_num, code_index, insns_info_index, sp = 0;
     int stack_max = fix_sp_depth(iseq, anchor);
@@ -2363,11 +2362,6 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		types = insn_op_types(insn);
 		len = insn_len(insn);
 
-                if (insn == BIN(opt_getinlinecache)) {
-                    assert(getinlinecache_idx < 0 && "one get per set, no nesting");
-                    getinlinecache_idx = code_index;
-                }
-
 		for (j = 0; types[j]; j++) {
 		    char type = types[j];
 		    /* printf("--> [%c - (%d-%d)]\n", type, k, j); */
@@ -2426,11 +2420,10 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			    generated_iseq[code_index + 1 + j] = (VALUE)ic;
                             FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
 
-                            if (insn == BIN(opt_setinlinecache) && type == TS_IC) {
-                                assert(getinlinecache_idx >= 0);
-                                // Store index to the matching opt_getinlinecache on the IC for YJIT
-                                ic->get_insn_idx = (unsigned)getinlinecache_idx;
-                                getinlinecache_idx = -1;
+                            if (insn == BIN(opt_getinlinecache) && type == TS_IC) {
+                                // Store the instruction index for opt_getinlinecache on the IC for
+                                // YJIT to invalidate code when opt_setinlinecache runs.
+                                ic->get_insn_idx = (unsigned int)code_index;
                             }
 			    break;
 			}
@@ -11120,7 +11113,6 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
     unsigned int code_index;
     ibf_offset_t reading_pos = bytecode_offset;
     VALUE *code = ALLOC_N(VALUE, iseq_size);
-    long getinlinecache_idx = -1;
 
     struct rb_iseq_constant_body *load_body = iseq->body;
     struct rb_call_data *cd_entries = load_body->call_data;
@@ -11129,20 +11121,16 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
     for (code_index=0; code_index<iseq_size;) {
         /* opcode */
         const VALUE insn = code[code_index] = ibf_load_small_value(load, &reading_pos);
+        const unsigned int insn_index = code_index;
         const char *types = insn_op_types(insn);
         int op_index;
-
-        if (insn == BIN(opt_getinlinecache)) {
-            assert(getinlinecache_idx < 0 && "one get per set, no nesting");
-            getinlinecache_idx = code_index;
-        }
 
         code_index++;
 
         /* operands */
         for (op_index=0; types[op_index]; op_index++, code_index++) {
-            char type = types[op_index];
-            switch (type) {
+            const char operand_type = types[op_index];
+            switch (operand_type) {
               case TS_VALUE:
                 {
                     VALUE op = ibf_load_small_value(load, &reading_pos);
@@ -11191,11 +11179,10 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                     VALUE op = ibf_load_small_value(load, &reading_pos);
                     code[code_index] = (VALUE)&is_entries[op];
 
-                    if (insn == BIN(opt_setinlinecache) && type == TS_IC) {
-                        assert(getinlinecache_idx >= 0);
-                        // Store index to the matching opt_getinlinecache on the IC for YJIT
-                        is_entries[op].ic_cache.get_insn_idx = (unsigned)getinlinecache_idx;
-                        getinlinecache_idx = -1;
+                    if (insn == BIN(opt_getinlinecache) && operand_type == TS_IC) {
+                        // Store the instruction index for opt_getinlinecache on the IC for
+                        // YJIT to invalidate code when opt_setinlinecache runs.
+                        is_entries[op].ic_cache.get_insn_idx = insn_index;
                     }
                 }
                 FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
