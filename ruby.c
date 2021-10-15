@@ -312,6 +312,7 @@ usage(const char *name, int help, int highlight, int columns)
 	M("-x[directory]", "",			   "strip off text before #!ruby line and perhaps cd to directory"),
         M("--jit",         "",                     "enable JIT with default options (experimental)"),
         M("--jit-[option]","",                     "enable JIT with an option (experimental)"),
+        M("--yjit",        "",                     "enable in-process JIT compiler (experimental)"),
 	M("-h",		   "",			   "show this message, --help for more info"),
     };
     static const struct message help_msg[] = {
