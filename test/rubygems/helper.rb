@@ -246,7 +246,7 @@ class Gem::TestCase < Test::Unit::TestCase
   end
 
   def parse_make_command_line(line)
-    command, *args = line.shellsplit
+    args = line.sub(/^#{Regexp.escape make_command}/, "").shellsplit
 
     targets = []
     macros = {}
@@ -263,7 +263,7 @@ class Gem::TestCase < Test::Unit::TestCase
     targets << '' if targets.empty?
 
     {
-      :command => command,
+      :command => make_command,
       :targets => targets,
       :macros => macros,
     }
