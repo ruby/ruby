@@ -1050,31 +1050,44 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen
 #define opt_match_arg(s, l, name) \
     opt_match(s, l, name) && (*(s) ? 1 : (rb_raise(rb_eRuntimeError, "--jit-" name " needs an argument"), 0))
 
-static void
+#define yjit_opt_match_noarg(s, l, name) \
+    opt_match(s, l, name) && (*(s) ? (rb_warn("argument to --yjit-" name " is ignored"), 1) : 1)
+#define yjit_opt_match_arg(s, l, name) \
+    opt_match(s, l, name) && (*(s) && *(s+1) ? 1 : (rb_raise(rb_eRuntimeError, "--yjit-" name " needs an argument"), 0))
+
+static bool
 setup_yjit_options(const char *s, struct rb_yjit_options *yjit_opt)
 {
-    if (*s != '-') return;
-    const size_t l = strlen(++s);
+    const char prefix[] = "yjit-";
+    if (strncmp(prefix, s, sizeof(prefix)-1) != 0) {
+        return false;
+    }
+    s += sizeof(prefix)-1;
+    const size_t l = strlen(s);
+    if (l == 0) {
+        return false;
+    }
 
-    if (opt_match_arg(s, l, "exec-mem-size")) {
+    if (yjit_opt_match_arg(s, l, "exec-mem-size")) {
         yjit_opt->exec_mem_size = atoi(s + 1);
     }
-    else if (opt_match_arg(s, l, "call-threshold")) {
+    else if (yjit_opt_match_arg(s, l, "call-threshold")) {
         yjit_opt->call_threshold = atoi(s + 1);
     }
-    else if (opt_match_arg(s, l, "max-versions")) {
+    else if (yjit_opt_match_arg(s, l, "max-versions")) {
         yjit_opt->max_versions = atoi(s + 1);
     }
-    else if (opt_match_noarg(s, l, "greedy-versioning")) {
+    else if (yjit_opt_match_noarg(s, l, "greedy-versioning")) {
         yjit_opt->greedy_versioning = true;
     }
-    else if (opt_match_noarg(s, l, "stats")) {
+    else if (yjit_opt_match_noarg(s, l, "stats")) {
         yjit_opt->gen_stats = true;
     }
     else {
         rb_raise(rb_eRuntimeError,
                  "invalid yjit option `%s' (--help will show valid yjit options)", s);
     }
+    return true;
 }
 
 #if USE_MJIT
@@ -1490,9 +1503,8 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
                 rb_warn("MJIT support is disabled.");
 #endif
             }
-            else if (strncmp("yjit", s, 4) == 0) {
+            else if (strcmp("yjit", s) == 0 || setup_yjit_options(s, &opt->yjit)) {
                 FEATURE_SET(opt->features, FEATURE_BIT(yjit));
-                setup_yjit_options(s + 4, &opt->yjit);
             }
 	    else if (strcmp("yydebug", s) == 0) {
 		if (envopt) goto noenvopt_long;
