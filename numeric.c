@@ -664,11 +664,33 @@ num_modulo(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.remainder(numeric)  ->  real
+ *    remainder(other) -> real_number
  *
- *  <code>x.remainder(y)</code> means <code>x-y*(x/y).truncate</code>.
+ *  Returns the remainder after dividing +self+ by +other+.
  *
- *  See Numeric#divmod.
+ *  Of the Core and Standard Library classes,
+ *  only Float and Rational use this implementation.
+ *
+ *  Examples:
+ *
+ *    11.0.remainder(4)              # => 3.0
+ *    11.0.remainder(-4)             # => 3.0
+ *    -11.0.remainder(4)             # => -3.0
+ *    -11.0.remainder(-4)            # => -3.0
+ *
+ *    12.0.remainder(4)              # => 0.0
+ *    12.0.remainder(-4)             # => 0.0
+ *    -12.0.remainder(4)             # => -0.0
+ *    -12.0.remainder(-4)            # => -0.0
+ *
+ *    13.0.remainder(4.0)            # => 1.0
+ *    13.0.remainder(Rational(4, 1)) # => 1.0
+ *
+ *    Rational(13, 1).remainder(4)   # => (1/1)
+ *    Rational(13, 1).remainder(-4)  # => (1/1)
+ *    Rational(-13, 1).remainder(4)  # => (-1/1)
+ *    Rational(-13, 1).remainder(-4) # => (-1/1)
+ *
  */
 
 static VALUE
@@ -3816,19 +3838,25 @@ rb_int_modulo(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     int.remainder(numeric)  ->  real
+ *    remainder(other) -> real_number
  *
- *  Returns the remainder after dividing +int+ by +numeric+.
+ *  Returns the remainder after dividing +self+ by +other+.
  *
- *  <code>x.remainder(y)</code> means <code>x-y*(x/y).truncate</code>.
+ *  Examples:
  *
- *     5.remainder(3)     #=> 2
- *     -5.remainder(3)    #=> -2
- *     5.remainder(-3)    #=> 2
- *     -5.remainder(-3)   #=> -2
- *     5.remainder(1.5)   #=> 0.5
+ *    11.remainder(4)              # => 3
+ *    11.remainder(-4)             # => 3
+ *    -11.remainder(4)             # => -3
+ *    -11.remainder(-4)            # => -3
  *
- *  See Numeric#divmod.
+ *    12.remainder(4)              # => 0
+ *    12.remainder(-4)             # => 0
+ *    -12.remainder(4)             # => 0
+ *    -12.remainder(-4)            # => 0
+ *
+ *    13.remainder(4.0)            # => 1.0
+ *    13.remainder(Rational(4, 1)) # => (1/1)
+ *
  */
 
 static VALUE
