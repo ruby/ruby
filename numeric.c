@@ -1195,9 +1195,9 @@ ruby_float_mod(double x, double y)
 
 /*
  *  call-seq:
- *    self % other -> real_number
+ *    self % other -> float
  *
- *  Returns +self+ modulo +other+ as a real number.
+ *  Returns +self+ modulo +other+ as a float.
  *
  *  For float +f+ and real number +r+, these expressions are equivalent:
  *
