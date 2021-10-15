@@ -617,7 +617,7 @@ check_rounding_mode(VALUE const v)
  *  You can use method BigDecimal.save_exception_mode
  *  to temporarily change, and then automatically restore, exception modes.
  *
- *  For clarity, some examples below begins by setting all
+ *  For clarity, some examples below begin by setting all
  *  exception modes to +false+.
  *
  *  This mode controls the way rounding is to be performed:
