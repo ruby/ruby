@@ -1236,7 +1236,7 @@ if pkg-config --exists capstone; then
    CFLAGS="$CFLAGS $CAPSTONE_CFLAGS"
 fi
 
-AC_CHECK_LIB(capstone, cs_open) # Capstone
+AC_CHECK_LIB(capstone, cs_open) # Capstone disassembler for debugging YJIT
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
