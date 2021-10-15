@@ -3322,11 +3322,12 @@ f_sprintf(int c, const VALUE *v, VALUE _)
     return rb_f_sprintf(c, v);
 }
 
+static VALUE vm_mtbl2(VALUE self, VALUE obj, VALUE sym);
+
 static VALUE
 vm_mtbl(VALUE self, VALUE obj, VALUE sym)
 {
-    vm_mtbl_dump(CLASS_OF(obj), RTEST(sym) ? SYM2ID(sym) : 0);
-    return Qnil;
+    return vm_mtbl2(self, CLASS_OF(obj), sym);
 }
 
 static VALUE
