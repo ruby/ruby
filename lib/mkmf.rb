@@ -447,7 +447,7 @@ EOM
     src.sub!(/[^\n]\z/, "\\&\n")
     count = 0
     begin
-      open(conftest_source, "wb") do |cfile|
+      File.open(conftest_source, "wb") do |cfile|
         cfile.print src
       end
     rescue Errno::EACCES
@@ -1738,7 +1738,7 @@ SRC
     hdr = hdr.join("")
     log_src(hdr, "#{header} is")
     unless (IO.read(header) == hdr rescue false)
-      open(header, "wb") do |hfile|
+      File.open(header, "wb") do |hfile|
         hfile.write(hdr)
       end
     end
@@ -2350,7 +2350,7 @@ CLEANOBJS     = *.#{$OBJEXT} #{config_string('cleanobjs') {|t| t.gsub(/\$\*/, "$
 " #"
 
     conf = yield(conf) if block_given?
-    mfile = open("Makefile", "wb")
+    mfile = File.open("Makefile", "wb")
     mfile.puts(conf)
     mfile.print "
 all:    #{$extout ? "install" : target ? "$(DLLIB)" : "Makefile"}
