@@ -1505,7 +1505,11 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 #endif
             }
             else if (strcmp("yjit", s) == 0 || setup_yjit_options(s, &opt->yjit)) {
+#if USE_MJIT
                 FEATURE_SET(opt->features, FEATURE_BIT(yjit));
+#else
+                rb_warn("Ruby was built without JIT support");
+#endif
             }
 	    else if (strcmp("yydebug", s) == 0) {
 		if (envopt) goto noenvopt_long;
