@@ -1195,13 +1195,33 @@ ruby_float_mod(double x, double y)
 
 /*
  *  call-seq:
- *     float % other        ->  float
- *     float.modulo(other)  ->  float
+ *    self % other -> float
  *
- *  Returns the modulo after division of +float+ by +other+.
+ *  Returns +self+ modulo +other+ as a float.
  *
- *     6543.21.modulo(137)      #=> 104.21000000000004
- *     6543.21.modulo(137.24)   #=> 92.92999999999961
+ *  For float +f+ and real number +r+, these expressions are equivalent:
+ *
+ *    f % r
+ *    f-r*(f/r).floor
+ *    f.divmod(r)[1]
+ *
+ *  See Numeric#divmod.
+ *
+ *  Examples:
+ *
+ *    10.0 % 2              # => 0.0
+ *    10.0 % 3              # => 1.0
+ *    10.0 % 4              # => 2.0
+ *
+ *    10.0 % -2             # => 0.0
+ *    10.0 % -3             # => -2.0
+ *    10.0 % -4             # => -2.0
+ *
+ *    10.0 % 4.0            # => 2.0
+ *    10.0 % Rational(4, 1) # => 2.0
+ *
+ *  Float#modulo is an alias for Float#%.
+ *
  */
 
 static VALUE
@@ -3732,17 +3752,6 @@ rb_int_idiv(VALUE x, VALUE y)
     return num_div(x, y);
 }
 
-/*
- *  Document-method: Integer#%
- *  Document-method: Integer#modulo
- *  call-seq:
- *     int % other        ->  real
- *     int.modulo(other)  ->  real
- *
- *  Returns +int+ modulo +other+.
- *
- *  See Numeric#divmod for more information.
- */
 static VALUE
 fix_mod(VALUE x, VALUE y)
 {
@@ -3762,6 +3771,36 @@ fix_mod(VALUE x, VALUE y)
     }
 }
 
+/*
+ *  call-seq:
+ *    self % other -> real_number
+ *
+ *  Returns +self+ modulo +other+ as a real number.
+ *
+ *  For integer +n+ and real number +r+, these expressions are equivalent:
+ *
+ *    n % r
+ *    n-r*(n/r).floor
+ *    n.divmod(r)[1]
+ *
+ *  See Numeric#divmod.
+ *
+ *  Examples:
+ *
+ *    10 % 2              # => 0
+ *    10 % 3              # => 1
+ *    10 % 4              # => 2
+ *
+ *    10 % -2             # => 0
+ *    10 % -3             # => -2
+ *    10 % -4             # => -2
+ *
+ *    10 % 3.0            # => 1.0
+ *    10 % Rational(3, 1) # => (1/1)
+ *
+ *  Integer#modulo is an alias for Integer#%.
+ *
+ */
 VALUE
 rb_int_modulo(VALUE x, VALUE y)
 {
