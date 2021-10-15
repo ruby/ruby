@@ -327,6 +327,8 @@ module Net   #:nodoc:
   # HTTPInformation::                    1xx
   #   HTTPContinue::                        100
   #   HTTPSwitchProtocol::                  101
+  #   HTTPProcessing::                      102
+  #   HTTPEarlyHints::                      103
   # HTTPSuccess::                        2xx
   #   HTTPOK::                              200
   #   HTTPCreated::                         201
@@ -336,6 +338,7 @@ module Net   #:nodoc:
   #   HTTPResetContent::                    205
   #   HTTPPartialContent::                  206
   #   HTTPMultiStatus::                     207
+  #   HTTPAlreadyReported::                 208
   #   HTTPIMUsed::                          226
   # HTTPRedirection::                    3xx
   #   HTTPMultipleChoices::                 300
@@ -345,6 +348,7 @@ module Net   #:nodoc:
   #   HTTPNotModified::                     304
   #   HTTPUseProxy::                        305
   #   HTTPTemporaryRedirect::               307
+  #   HTTPPermanentRedirect::               308
   # HTTPClientError::                    4xx
   #   HTTPBadRequest::                      400
   #   HTTPUnauthorized::                    401
@@ -364,6 +368,7 @@ module Net   #:nodoc:
   #   HTTPUnsupportedMediaType::            415
   #   HTTPRequestedRangeNotSatisfiable::    416
   #   HTTPExpectationFailed::               417
+  #   HTTPMisdirectedRequest::              421
   #   HTTPUnprocessableEntity::             422
   #   HTTPLocked::                          423
   #   HTTPFailedDependency::                424
@@ -379,7 +384,10 @@ module Net   #:nodoc:
   #   HTTPServiceUnavailable::              503
   #   HTTPGatewayTimeOut::                  504
   #   HTTPVersionNotSupported::             505
+  #   HTTPVariantAlsoNegotiates::           506
   #   HTTPInsufficientStorage::             507
+  #   HTTPLoopDetected::                    508
+  #   HTTPNotExtended::                     510
   #   HTTPNetworkAuthenticationRequired::   511
   #
   # There is also the Net::HTTPBadResponse exception which is raised when
