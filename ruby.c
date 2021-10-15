@@ -393,10 +393,10 @@ usage(const char *name, int help, int highlight, int columns)
 	SHOW(warn_categories[i]);
     printf("%s""MJIT options (experimental):%s\n", sb, se);
     for (i = 0; i < numberof(mjit_options); ++i)
-    SHOW(mjit_options[i]);
+	SHOW(mjit_options[i]);
     printf("%s""YJIT options (experimental):%s\n", sb, se);
     for (i = 0; i < numberof(yjit_options); ++i)
-    SHOW(yjit_options[i]);
+        SHOW(yjit_options[i]);
 }
 
 #define rubylib_path_new rb_str_new
