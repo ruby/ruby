@@ -2,9 +2,9 @@
 
 require_relative '../envutil'
 require_relative '../colorize'
-require 'test/unit/testcase'
+require_relative '../leakchecker'
+require_relative '../test/unit/testcase'
 require 'optparse'
-require "leakchecker"
 
 # See Test::Unit
 module Test

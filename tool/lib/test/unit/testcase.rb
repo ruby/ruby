@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'test/unit/assertions'
+require_relative 'assertions'
 require_relative '../../core_assertions'
 
 module Test
