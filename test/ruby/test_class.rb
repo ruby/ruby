@@ -737,4 +737,22 @@ class TestClass < Test::Unit::TestCase
     c = Class.new.freeze
     assert_same(c, Module.new.const_set(:Foo, c))
   end
+
+  def test_descendants
+    c = Class.new
+    sc = Class.new(c)
+    ssc = Class.new(sc)
+    [c, sc, ssc].each do |k|
+      k.include Module.new
+      k.new.define_singleton_method(:force_singleton_class){}
+    end
+    assert_equal([sc, ssc], c.descendants)
+    assert_equal([ssc], sc.descendants)
+    assert_equal([], ssc.descendants)
+
+    object_descendants = Object.descendants
+    assert_include(object_descendants, c)
+    assert_include(object_descendants, sc)
+    assert_include(object_descendants, ssc)
+  end
 end
