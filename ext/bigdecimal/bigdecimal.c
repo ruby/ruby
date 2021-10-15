@@ -169,13 +169,13 @@ static void
 VpCheckException(Real *p, bool always)
 {
     if (VpIsNaN(p)) {
-        VpException(VP_EXCEPTION_NaN, "Computation results to 'NaN'(Not a Number)", always);
+        VpException(VP_EXCEPTION_NaN, "Computation results in 'NaN' (Not a Number)", always);
     }
     else if (VpIsPosInf(p)) {
-        VpException(VP_EXCEPTION_INFINITY, "Computation results to 'Infinity'", always);
+        VpException(VP_EXCEPTION_INFINITY, "Computation results in 'Infinity'", always);
     }
     else if (VpIsNegInf(p)) {
-        VpException(VP_EXCEPTION_INFINITY, "Computation results to '-Infinity'", always);
+        VpException(VP_EXCEPTION_INFINITY, "Computation results in '-Infinity'", always);
     }
 }
 
