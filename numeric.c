@@ -693,45 +693,30 @@ num_remainder(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.divmod(numeric)  ->  array
+ *    divmod(other) -> array
  *
- *  Returns an array containing the quotient and modulus obtained by dividing
- *  +num+ by +numeric+.
+ *  Returns a 2-element array <tt>[q, r]</tt>, where
  *
- *  If <code>q, r = x.divmod(y)</code>, then
+ *    q = (self/other).floor                  # Quotient
+ *    r = self % other                        # Remainder
  *
- *      q = floor(x/y)
- *      x = q*y + r
+ *  Of the Core and Standard Library classes,
+ *  only Rational uses this implementation.
  *
- *  The quotient is rounded toward negative infinity, as shown in the
- *  following table:
+ *  Examples:
  *
- *     a    |  b  |  a.divmod(b)  |   a/b   | a.modulo(b) | a.remainder(b)
- *    ------+-----+---------------+---------+-------------+---------------
- *     13   |  4  |   3,    1     |   3     |    1        |     1
- *    ------+-----+---------------+---------+-------------+---------------
- *     13   | -4  |  -4,   -3     |  -4     |   -3        |     1
- *    ------+-----+---------------+---------+-------------+---------------
- *    -13   |  4  |  -4,    3     |  -4     |    3        |    -1
- *    ------+-----+---------------+---------+-------------+---------------
- *    -13   | -4  |   3,   -1     |   3     |   -1        |    -1
- *    ------+-----+---------------+---------+-------------+---------------
- *     11.5 |  4  |   2,    3.5   |   2.875 |    3.5      |     3.5
- *    ------+-----+---------------+---------+-------------+---------------
- *     11.5 | -4  |  -3,   -0.5   |  -2.875 |   -0.5      |     3.5
- *    ------+-----+---------------+---------+-------------+---------------
- *    -11.5 |  4  |  -3,    0.5   |  -2.875 |    0.5      |    -3.5
- *    ------+-----+---------------+---------+-------------+---------------
- *    -11.5 | -4  |   2,   -3.5   |   2.875 |   -3.5      |    -3.5
+ *    Rational(11, 1).divmod(4)               # => [2, (3/1)]
+ *    Rational(11, 1).divmod(-4)              # => [-3, (-1/1)]
+ *    Rational(-11, 1).divmod(4)              # => [-3, (1/1)]
+ *    Rational(-11, 1).divmod(-4)             # => [2, (-3/1)]
  *
+ *    Rational(12, 1).divmod(4)               # => [3, (0/1)]
+ *    Rational(12, 1).divmod(-4)              # => [-3, (0/1)]
+ *    Rational(-12, 1).divmod(4)              # => [-3, (0/1)]
+ *    Rational(-12, 1).divmod(-4)             # => [3, (0/1)]
  *
- *  Examples
- *
- *     11.divmod(3)        #=> [3, 2]
- *     11.divmod(-3)       #=> [-4, -1]
- *     11.divmod(3.5)      #=> [3, 0.5]
- *     (-11).divmod(3.5)   #=> [-4, 3.0]
- *     11.5.divmod(3.5)    #=> [3, 1.0]
+ *    Rational(13, 1).divmod(4.0)             # => [3, 1.0]
+ *    Rational(13, 1).divmod(Rational(4, 11)) # => [35, (3/11)]
  */
 
 static VALUE
@@ -1255,12 +1240,28 @@ dbl2ival(double d)
 
 /*
  *  call-seq:
- *     float.divmod(numeric)  ->  array
+ *    divmod(other) -> array
  *
- *  See Numeric#divmod.
+ *  Returns a 2-element array <tt>[q, r]</tt>, where
  *
- *     42.0.divmod(6)   #=> [7, 0.0]
- *     42.0.divmod(5)   #=> [8, 2.0]
+ *    q = (self/other).floor      # Quotient
+ *    r = self % other            # Remainder
+ *
+ *  Examples:
+ *
+ *    11.0.divmod(4)              # => [2, 3.0]
+ *    11.0.divmod(-4)             # => [-3, -1.0]
+ *    -11.0.divmod(4)             # => [-3, 1.0]
+ *    -11.0.divmod(-4)            # => [2, -3.0]
+ *
+ *    12.0.divmod(4)              # => [3, 0.0]
+ *    12.0.divmod(-4)             # => [-3, 0.0]
+ *    -12.0.divmod(4)             # => [-3, -0.0]
+ *    -12.0.divmod(-4)            # => [3, -0.0]
+ *
+ *    13.0.divmod(4.0)            # => [3, 1.0]
+ *    13.0.divmod(Rational(4, 1)) # => [3, 1.0]
+ *
  */
 
 static VALUE
@@ -3842,13 +3843,6 @@ int_remainder(VALUE x, VALUE y)
     return Qnil;
 }
 
-/*
- *  Document-method: Integer#divmod
- *  call-seq:
- *     int.divmod(numeric)  ->  array
- *
- *  See Numeric#divmod.
- */
 static VALUE
 fix_divmod(VALUE x, VALUE y)
 {
@@ -3878,6 +3872,31 @@ fix_divmod(VALUE x, VALUE y)
     }
 }
 
+/*
+ *  call-seq:
+ *    divmod(other) -> array
+ *
+ *  Returns a 2-element array <tt>[q, r]</tt>, where
+ *
+ *    q = (self/other).floor    # Quotient
+ *    r = self % other          # Remainder
+ *
+ *  Examples:
+ *
+ *    11.divmod(4)              # => [2, 3]
+ *    11.divmod(-4)             # => [-3, -1]
+ *    -11.divmod(4)             # => [-3, 1]
+ *    -11.divmod(-4)            # => [2, -3]
+ *
+ *    12.divmod(4)              # => [3, 0]
+ *    12.divmod(-4)             # => [-3, 0]
+ *    -12.divmod(4)             # => [-3, 0]
+ *    -12.divmod(-4)            # => [3, 0]
+ *
+ *    13.divmod(4.0)            # => [3, 1.0]
+ *    13.divmod(Rational(4, 1)) # => [3, (1/1)]
+ *
+ */
 VALUE
 rb_int_divmod(VALUE x, VALUE y)
 {
