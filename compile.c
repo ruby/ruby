@@ -9917,7 +9917,7 @@ typedef unsigned int ibf_offset_t;
 
 #define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
 #if RUBY_DEVEL
-#define IBF_DEVEL_VERSION 2
+#define IBF_DEVEL_VERSION 3
 #define IBF_MINOR_VERSION (ISEQ_MINOR_VERSION * 10000 + IBF_DEVEL_VERSION)
 #else
 #define IBF_MINOR_VERSION ISEQ_MINOR_VERSION
@@ -10751,6 +10751,33 @@ ibf_dump_ci_entries(struct ibf_dump *dump, const rb_iseq_t *iseq)
     return offset;
 }
 
+static enum rb_id_table_iterator_result
+dump_outer_variable(ID id, VALUE val, void *dump)
+{
+    ibf_dump_write_small_value(dump, ibf_dump_id(dump, id));
+    ibf_dump_write_small_value(dump, val);
+
+    return ID_TABLE_CONTINUE;
+}
+
+static ibf_offset_t
+ibf_dump_outer_variables(struct ibf_dump *dump, const rb_iseq_t *iseq)
+{
+    struct rb_id_table * ovs = iseq->body->outer_variables;
+
+    ibf_offset_t offset = ibf_dump_pos(dump);
+
+    if (ovs) {
+        ibf_dump_write_small_value(dump, (VALUE)rb_id_table_size(ovs));
+        rb_id_table_foreach(ovs, dump_outer_variable, (void *)dump);
+    }
+    else {
+        ibf_dump_write_small_value(dump, (VALUE)0);
+    }
+
+    return offset;
+}
+
 /* note that we dump out rb_call_info but load back rb_call_data */
 static void
 ibf_load_ci_entries(const struct ibf_load *load,
@@ -10795,6 +10822,28 @@ ibf_load_ci_entries(const struct ibf_load *load,
     }
 }
 
+static struct rb_id_table *
+ibf_load_outer_variables(const struct ibf_load * load, ibf_offset_t outer_variables_offset)
+{
+    ibf_offset_t reading_pos = outer_variables_offset;
+
+    struct rb_id_table *tbl = NULL;
+
+    size_t table_size = (size_t)ibf_load_small_value(load, &reading_pos);
+
+    if (table_size > 0) {
+        tbl = rb_id_table_create(table_size);
+    }
+
+    for (size_t i = 0; i < table_size; i++) {
+        ID key = ibf_load_id(load, (ID)ibf_load_small_value(load, &reading_pos));
+        VALUE value = ibf_load_small_value(load, &reading_pos);
+        rb_id_table_insert(tbl, key, value);
+    }
+
+    return tbl;
+}
+
 static ibf_offset_t
 ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
@@ -10834,6 +10883,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     const int parent_iseq_index =           ibf_dump_iseq(dump, iseq->body->parent_iseq);
     const int local_iseq_index =            ibf_dump_iseq(dump, iseq->body->local_iseq);
     const ibf_offset_t ci_entries_offset =  ibf_dump_ci_entries(dump, iseq);
+    const ibf_offset_t outer_variables_offset = ibf_dump_outer_variables(dump, iseq);
 
 #if IBF_ISEQ_ENABLE_LOCAL_BUFFER
     ibf_offset_t local_obj_list_offset;
@@ -10895,6 +10945,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, parent_iseq_index);
     ibf_dump_write_small_value(dump, local_iseq_index);
     ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(ci_entries_offset));
+    ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(outer_variables_offset));
     ibf_dump_write_small_value(dump, body->variable.flip_count);
     ibf_dump_write_small_value(dump, body->local_table_size);
     ibf_dump_write_small_value(dump, body->is_size);
@@ -11001,6 +11052,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     const int parent_iseq_index = (int)ibf_load_small_value(load, &reading_pos);
     const int local_iseq_index = (int)ibf_load_small_value(load, &reading_pos);
     const ibf_offset_t ci_entries_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
+    const ibf_offset_t outer_variables_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
     const rb_snum_t variable_flip_count = (rb_snum_t)ibf_load_small_value(load, &reading_pos);
     const unsigned int local_table_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
     const unsigned int is_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
@@ -11050,6 +11102,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
 
     load_body->is_entries           = ZALLOC_N(union iseq_inline_storage_entry, is_size);
                                       ibf_load_ci_entries(load, ci_entries_offset, ci_size, &load_body->call_data);
+    load_body->outer_variables      = ibf_load_outer_variables(load, outer_variables_offset);
     load_body->param.opt_table      = ibf_load_param_opt_table(load, param_opt_table_offset, param_opt_num);
     load_body->param.keyword        = ibf_load_param_keyword(load, param_keyword_offset);
     load_body->param.flags.has_kw   = (param_flags >> 4) & 1;

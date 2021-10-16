@@ -82,6 +82,16 @@ class TestISeq < Test::Unit::TestCase
     end;
   end if defined?(RubyVM::InstructionSequence.load)
 
+  def test_lambda_with_ractor_roundtrip
+    iseq = compile(<<~EOF)
+      x = 42
+      y = lambda { x }
+      Ractor.make_shareable(y)
+      y.call
+    EOF
+    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
+  end
+
   def test_disasm_encoding
     src = "\u{3042} = 1; \u{3042}; \u{3043}"
     asm = compile(src).disasm
