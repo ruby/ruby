@@ -99,7 +99,7 @@ module TestParallel
           break if /^p (.+?)$/ =~ buf
         end
         assert_not_nil($1, "'p' was not found")
-        assert_match(/TestA#test_nothing_test = \d+\.\d+ s = \.\n/, $1.chomp.unpack("m")[0])
+        assert_match(/TestA#test_nothing_test = \d+\.\d+ s = \.\n/, $1.chomp.unpack1("m"))
       end
     end
 
@@ -111,7 +111,7 @@ module TestParallel
         end
         assert_not_nil($1, "'done' was not found")
 
-        result = Marshal.load($1.chomp.unpack("m")[0])
+        result = Marshal.load($1.chomp.unpack1("m"))
         assert_equal(5, result[0])
         pend "TODO: result[1] returns 17. We should investigate it" do
           assert_equal(12, result[1])

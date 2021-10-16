@@ -107,7 +107,7 @@ module Test
             case buf.chomp
             when /^loadpath (.+?)$/
               @old_loadpath = $:.dup
-              $:.push(*Marshal.load($1.unpack("m")[0].force_encoding("ASCII-8BIT"))).uniq!
+              $:.push(*Marshal.load($1.unpack1("m").force_encoding("ASCII-8BIT"))).uniq!
             when /^run (.+?) (.+?)$/
               _report "okay"
 

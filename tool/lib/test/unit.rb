@@ -574,9 +574,9 @@ module Test
           jobs_status(worker)
         when /^done (.+?)$/
           begin
-            r = Marshal.load($1.unpack("m")[0])
+            r = Marshal.load($1.unpack1("m"))
           rescue
-            print "unknown object: #{$1.unpack("m")[0].dump}"
+            print "unknown object: #{$1.unpack1("m").dump}"
             return true
           end
           result << r[0..1] unless r[0..1] == [nil,nil]
@@ -587,7 +587,7 @@ module Test
           return true
         when /^record (.+?)$/
           begin
-            r = Marshal.load($1.unpack("m")[0])
+            r = Marshal.load($1.unpack1("m"))
 
             suite = r.first
             key = [worker.name, suite]
@@ -597,18 +597,18 @@ module Test
               @records[key] = [worker.start_time, Time.now]
             end
           rescue => e
-            print "unknown record: #{e.message} #{$1.unpack("m")[0].dump}"
+            print "unknown record: #{e.message} #{$1.unpack1("m").dump}"
             return true
           end
           record(fake_class(r[0]), *r[1..-1])
         when /^p (.+?)$/
           del_jobs_status
-          print $1.unpack("m")[0]
+          print $1.unpack1("m")
           jobs_status(worker) if @options[:job_status] == :replace
         when /^after (.+?)$/
-          @warnings << Marshal.load($1.unpack("m")[0])
+          @warnings << Marshal.load($1.unpack1("m"))
         when /^bye (.+?)$/
-          after_worker_down worker, Marshal.load($1.unpack("m")[0])
+          after_worker_down worker, Marshal.load($1.unpack1("m"))
         when /^bye$/, nil
           if shutting_down || worker.quit_called
             after_worker_quit worker
