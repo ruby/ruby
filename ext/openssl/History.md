@@ -1,3 +1,20 @@
+Version 2.2.1
+=============
+
+Merged changes in 2.1.3. Additionally, the following issues are fixed by this
+release.
+
+Bug fixes
+---------
+
+* Fix crash in `OpenSSL::Timestamp::{Request,Response,TokenInfo}.new` when
+  invalid arguments are given.
+  [[GitHub #407]](https://github.com/ruby/openssl/pull/407)
+* Fix `OpenSSL::Timestamp::Factory#create_timestamp` with LibreSSL on platforms
+  where `time_t` has a different size from `long`.
+  [[GitHub #454]](https://github.com/ruby/openssl/pull/454)
+
+
 Version 2.2.0
 =============
 
