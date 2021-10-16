@@ -254,7 +254,7 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/test", "test/openssl")
     rm_rf("test/openssl/envutil.rb")
     cp_r("#{upstream}/openssl.gemspec", "ext/openssl")
-    cp_r("#{upstream}/HISTORY.md", "ext/openssl")
+    cp_r("#{upstream}/History.md", "ext/openssl")
     `git checkout ext/openssl/depend`
   when "netpop"
     sync_lib "net-pop"
