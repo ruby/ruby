@@ -52,7 +52,9 @@ describe "ENV.shift" do
     Encoding.default_internal = Encoding::IBM437
 
     pair = ENV.shift
+    pair.first.encode(Encoding::IBM437) rescue next
     pair.first.encoding.should equal(Encoding::IBM437)
+    pair.last.encode(Encoding::IBM437) rescue next
     pair.last.encoding.should equal(Encoding::IBM437)
   end
 end
