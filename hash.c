@@ -223,7 +223,7 @@ rb_any_hash(VALUE a)
 VALUE
 rb_hash(VALUE obj)
 {
-    return LONG2FIX(any_hash(obj, obj_any_hash));
+    return LONG2FIX(rb_any_hash(obj));
 }
 
 
