@@ -3247,8 +3247,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	IS_INSN_ID(iobj, duparray) ||
 	IS_INSN_ID(iobj, expandarray) ||
 	IS_INSN_ID(iobj, concatarray) ||
-	IS_INSN_ID(iobj, splatarray) ||
-	0) {
+	IS_INSN_ID(iobj, splatarray)
+	) {
 	/*
 	 *  newarray N
 	 *  splatarray
