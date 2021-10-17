@@ -212,7 +212,7 @@ module TestParallel
     def test_hungup
       spawn_runner "--worker-timeout=1", "test4test_hungup.rb"
       buf = Timeout.timeout(TIMEOUT) {@test_out.read}
-      assert_match(/^Retrying\.+$/, buf)
+      assert_match(/^Retrying hung up testcases\.+$/, buf)
       assert_match(/^2 tests,.* 0 failures,/, buf)
     end
   end

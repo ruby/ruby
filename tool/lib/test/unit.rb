@@ -730,14 +730,23 @@ module Test
             }
             suites.map {|r| File.realpath(r[:file])}.uniq.each {|file| require file}
             del_status_line or puts
+            error, suites = suites.partition {|r| r[:error]}
             unless suites.empty?
               puts "\n""Retrying..."
               @verbose = options[:verbose]
-              error, suites = suites.partition {|r| r[:error]}
               suites.map! {|r| ::Object.const_get(r[:testcase])}
-              error.map! {|r| ::Object.const_get(r[:testcase])}
               _run_suites(suites, type)
+            end
+            unless error.empty?
+              puts "\n""Retrying hung up testcases..."
+              error.map! {|r| ::Object.const_get(r[:testcase])}
+              verbose = @verbose
+              job_status = options[:job_status]
+              options[:verbose] = @verbose = true
+              options[:job_status] = :normal
               result.concat _run_suites(error, type)
+              options[:verbose] = @verbose = verbose
+              options[:job_status] = job_status
             end
             @options[:parallel] = parallel
           end
@@ -915,7 +924,7 @@ module Test
       end
 
       def jobs_status(worker)
-        return if !@options[:job_status] or @options[:verbose]
+        return if !@options[:job_status] or @verbose
         if @options[:job_status] == :replace
           status_line = @workers.map(&:to_s).join(" ")
         else
