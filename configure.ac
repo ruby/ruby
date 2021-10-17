@@ -1106,6 +1106,9 @@ main()
 		  ])
 		])
 		],
+[haiku*], [
+		LIBS="$LIBS" # m lib is include in root
+		],
 [cygwin*|msys*], [
 		ac_cv_header_langinfo_h=yes
 		RUBY_APPEND_OPTIONS(CPPFLAGS, -D_XOPEN_SOURCE -D_GNU_SOURCE)
