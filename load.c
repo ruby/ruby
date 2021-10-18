@@ -657,7 +657,7 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
 }
 
 static inline enum ruby_tag_type
-load_wrapping(rb_execution_context_t *ec, VALUE fname)
+load_wrapping(rb_execution_context_t *ec, VALUE fname, VALUE load_wrapper)
 {
     enum ruby_tag_type state;
     rb_thread_t *th = rb_ec_thread_ptr(ec);
@@ -669,9 +669,9 @@ load_wrapping(rb_execution_context_t *ec, VALUE fname)
 
     ec->errinfo = Qnil; /* ensure */
 
-    /* load in anonymous module as toplevel */
+    /* load in module as toplevel */
     th->top_self = rb_obj_clone(rb_vm_top_self());
-    th->top_wrapper = rb_module_new();
+    th->top_wrapper = load_wrapper;
     rb_extend_object(th->top_self, th->top_wrapper);
 
     EC_PUSH_TAG(ec);
@@ -703,12 +703,15 @@ raise_load_if_failed(rb_execution_context_t *ec, enum ruby_tag_type state)
 }
 
 static void
-rb_load_internal(VALUE fname, int wrap)
+rb_load_internal(VALUE fname, VALUE wrap)
 {
     rb_execution_context_t *ec = GET_EC();
     enum ruby_tag_type state = TAG_NONE;
-    if (wrap) {
-        state = load_wrapping(ec, fname);
+    if (RTEST(wrap)) {
+        if (!RB_TYPE_P(wrap, T_MODULE)) {
+            wrap = rb_module_new();
+        }
+        state = load_wrapping(ec, fname, wrap);
     }
     else {
         load_iseq_eval(ec, fname);
@@ -721,7 +724,7 @@ rb_load(VALUE fname, int wrap)
 {
     VALUE tmp = rb_find_file(FilePathValue(fname));
     if (!tmp) load_failed(fname);
-    rb_load_internal(tmp, wrap);
+    rb_load_internal(tmp, RBOOL(wrap));
 }
 
 void
@@ -763,9 +766,10 @@ rb_load_protect(VALUE fname, int wrap, int *pstate)
  *
  *  If the optional _wrap_ parameter is +true+, the loaded script will
  *  be executed under an anonymous module, protecting the calling
- *  program's global namespace. In no circumstance will any local
- *  variables in the loaded file be propagated to the loading
- *  environment.
+ *  program's global namespace.  If the optional _wrap_ parameter is a
+ *  module, the loaded script will be executed under the given module.
+ *  In no circumstance will any local variables in the loaded file be
+ *  propagated to the loading environment.
  */
 
 static VALUE
@@ -785,7 +789,7 @@ rb_f_load(int argc, VALUE *argv, VALUE _)
 	    load_failed(orig_fname);
 	path = fname;
     }
-    rb_load_internal(path, RTEST(wrap));
+    rb_load_internal(path, wrap);
 
     RUBY_DTRACE_HOOK(LOAD_RETURN, RSTRING_PTR(orig_fname));
 
