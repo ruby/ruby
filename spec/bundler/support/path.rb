@@ -270,7 +270,7 @@ module Spec
     def git_ls_files(glob)
       skip "Not running on a git context, since running tests from a tarball" if ruby_core_tarball?
 
-      sys_exec("git ls-files -z -- #{glob}", dir: source_root).split("\x0")
+      git("ls-files -z -- #{glob}", source_root).split("\x0")
     end
 
     def tracked_files_glob
