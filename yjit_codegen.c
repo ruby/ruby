@@ -1478,32 +1478,11 @@ jit_chain_guard(enum jcc_kinds jcc, jitstate_t *jit, const ctx_t *ctx, uint8_t d
     }
 }
 
-bool rb_iv_index_tbl_lookup(struct st_table *iv_index_tbl, ID id, struct rb_iv_index_tbl_entry **ent); // vm_insnhelper.c
-
 enum {
     GETIVAR_MAX_DEPTH = 10,       // up to 5 different classes, and embedded or not for each
     OPT_AREF_MAX_CHAIN_DEPTH = 2, // hashes and arrays
     SEND_MAX_DEPTH = 5,           // up to 5 different classes
 };
-
-static uint32_t
-yjit_force_iv_index(VALUE comptime_receiver, VALUE klass, ID name)
-{
-    ID id = name;
-    struct rb_iv_index_tbl_entry *ent;
-    struct st_table *iv_index_tbl = ROBJECT_IV_INDEX_TBL(comptime_receiver);
-
-    // Make sure there is a mapping for this ivar in the index table
-    if (!iv_index_tbl || !rb_iv_index_tbl_lookup(iv_index_tbl, id, &ent)) {
-        rb_ivar_set(comptime_receiver, id, Qundef);
-        iv_index_tbl = ROBJECT_IV_INDEX_TBL(comptime_receiver);
-        RUBY_ASSERT(iv_index_tbl);
-        // Redo the lookup
-        RUBY_ASSERT_ALWAYS(rb_iv_index_tbl_lookup(iv_index_tbl, id, &ent));
-    }
-
-    return ent->index;
-}
 
 VALUE rb_vm_set_ivar_idx(VALUE obj, uint32_t idx, VALUE val);
 
@@ -1523,7 +1502,7 @@ gen_set_ivar(jitstate_t *jit, ctx_t *ctx, VALUE recv, VALUE klass, ID ivar_name)
     x86opnd_t val_opnd = ctx_stack_pop(ctx, 1);
     x86opnd_t recv_opnd = ctx_stack_pop(ctx, 1);
 
-    uint32_t ivar_index = yjit_force_iv_index(recv, klass, ivar_name);
+    uint32_t ivar_index = rb_obj_ensure_iv_index_mapping(recv, ivar_name);
 
     // Call rb_vm_set_ivar_idx with the receiver, the index of the ivar, and the value
     mov(cb, C_ARG_REGS[0], recv_opnd);
@@ -1596,7 +1575,10 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
     jit_chain_guard(JCC_JNE, jit, &starting_context, max_chain_depth, side_exit);
     */
 
-    uint32_t ivar_index = yjit_force_iv_index(comptime_receiver, CLASS_OF(comptime_receiver), ivar_name);
+    // FIXME: Mapping the index could fail when there is too many ivar names. If we're
+    // compiling for a branch stub that can cause the exception to be thrown from the
+    // wrong PC.
+    uint32_t ivar_index = rb_obj_ensure_iv_index_mapping(comptime_receiver, ivar_name);
 
     // Pop receiver if it's on the temp stack
     if (!reg0_opnd.is_self) {

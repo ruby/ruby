@@ -35,6 +35,7 @@ void rb_gvar_ractor_local(const char *name);
 static inline bool ROBJ_TRANSIENT_P(VALUE obj);
 static inline void ROBJ_TRANSIENT_SET(VALUE obj);
 static inline void ROBJ_TRANSIENT_UNSET(VALUE obj);
+uint32_t rb_obj_ensure_iv_index_mapping(VALUE obj, ID id);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* variable.c (export) */
