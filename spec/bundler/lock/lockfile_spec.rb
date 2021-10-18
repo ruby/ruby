@@ -1117,7 +1117,7 @@ RSpec.describe "the lockfile format" do
   end
 
   it "stores relative paths when the path is provided for gemspec" do
-    build_lib("foo", path: tmp.join("foo"))
+    build_lib("foo", path: tmp("foo"))
 
     checksums = checksums_section_when_existing do |c|
       c.no_checksum "foo", "1.0"

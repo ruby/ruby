@@ -634,14 +634,14 @@ RSpec.describe "bundle remove" do
 
   context "with gemspec" do
     it "should not remove the gem" do
-      build_lib("foo", path: tmp.join("foo")) do |s|
+      build_lib("foo", path: tmp("foo")) do |s|
         s.write("foo.gemspec", "")
         s.add_dependency "rack"
       end
 
       install_gemfile(<<-G)
         source "#{file_uri_for(gem_repo1)}"
-        gemspec :path => '#{tmp.join("foo")}', :name => 'foo'
+        gemspec :path => '#{tmp("foo")}', :name => 'foo'
       G
 
       bundle "remove foo"

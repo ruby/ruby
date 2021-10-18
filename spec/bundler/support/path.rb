@@ -109,7 +109,7 @@ module Spec
     end
 
     def home(*path)
-      tmp.join("home", *path)
+      tmp("home", *path)
     end
 
     def default_bundle_path(*path)
@@ -129,13 +129,13 @@ module Spec
     end
 
     def bundled_app(*path)
-      root = tmp.join("bundled_app")
+      root = tmp("bundled_app")
       FileUtils.mkdir_p(root)
       root.join(*path)
     end
 
     def bundled_app2(*path)
-      root = tmp.join("bundled_app2")
+      root = tmp("bundled_app2")
       FileUtils.mkdir_p(root)
       root.join(*path)
     end
@@ -161,15 +161,15 @@ module Spec
     end
 
     def base_system_gems
-      tmp.join("gems/base")
+      tmp("gems/base")
     end
 
     def rubocop_gems
-      tmp.join("gems/rubocop")
+      tmp("gems/rubocop")
     end
 
     def standard_gems
-      tmp.join("gems/standard")
+      tmp("gems/standard")
     end
 
     def file_uri_for(path)
