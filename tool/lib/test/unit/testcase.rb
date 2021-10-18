@@ -236,20 +236,6 @@ module Test
 
       reset
 
-      ##
-      # Make diffs for this TestCase use #pretty_inspect so that diff
-      # in assert_equal can be more details. NOTE: this is much slower
-      # than the regular inspect but much more usable for complex
-      # objects.
-
-      def self.make_my_diffs_pretty!
-        require 'pp'
-
-        define_method :mu_pp do |o|
-          o.pretty_inspect
-        end
-      end
-
       def self.inherited klass # :nodoc:
         @@test_suites[klass] = true
         super
