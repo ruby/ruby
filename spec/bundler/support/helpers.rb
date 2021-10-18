@@ -124,7 +124,7 @@ module Spec
     end
 
     def bundler(cmd, options = {})
-      options[:bundle_bin] = system_gem_path.join("bin/bundler")
+      options[:bundle_bin] = system_gem_path("bin/bundler")
       bundle(cmd, options)
     end
 
