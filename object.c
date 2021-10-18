@@ -790,6 +790,8 @@ rb_obj_is_kind_of(VALUE obj, VALUE c)
 {
     VALUE cl = CLASS_OF(obj);
 
+    // Note: YJIT needs this function to never allocate and never raise when
+    // `c` is a class or a module.
     c = class_or_module_required(c);
     return RBOOL(class_search_ancestor(cl, RCLASS_ORIGIN(c)));
 }

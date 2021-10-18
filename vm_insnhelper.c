@@ -4790,6 +4790,7 @@ vm_ic_hit_p(const struct iseq_inline_constant_cache_entry *ice, const VALUE *reg
     return vm_inlined_ic_hit_p(ice->flags, ice->value, ice->ic_cref, ice->ic_serial, reg_ep);
 }
 
+// YJIT needs this function to never allocate and never raise
 bool
 rb_vm_ic_hit_p(IC ic, const VALUE *reg_ep)
 {
