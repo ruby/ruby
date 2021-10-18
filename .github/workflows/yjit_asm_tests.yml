@@ -1,4 +1,4 @@
-name: x86 assembler tests
+name: YJIT x86 assembler tests
 
 on: [push, pull_request]
 
@@ -19,5 +19,5 @@ jobs:
         with:
           path: src
       - name: Run ASM tests
-        run: ./test_asm.sh
+        run: ./misc/test_yjit_asm.sh
         working-directory: src

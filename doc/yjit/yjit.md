@@ -172,7 +172,7 @@ The YJIT source code is divided between:
 - `yjit_iface.c`: code YJIT uses to interface with the rest of CRuby
 - `yjit.h`: C definitions YJIT exposes to the rest of the CRuby
 - `yjit.rb`: `YJIT` Ruby module that is exposed to Ruby
-- `test_asm.sh`: script to compile and run the in-memory assembler tests
+- `misc/test_yjit_asm.sh`: script to compile and run the in-memory assembler tests
 - `tool/ruby_vm/views/vm.inc.erb`: template instruction handler used to hook into the interpreter
 
 The core of CRuby's interpreter logic is found in:
