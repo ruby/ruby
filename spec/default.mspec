@@ -9,11 +9,7 @@ OBJDIR = File.expand_path("spec/ruby/optional/capi/ext")
 class MSpecScript
   builddir = Dir.pwd
   srcdir = ENV['SRCDIR']
-  if !srcdir and File.exist?("#{builddir}/Makefile") then
-    File.open("#{builddir}/Makefile", "r:US-ASCII") {|f|
-      f.read[/^\s*srcdir\s*=\s*(.+)/i] and srcdir = $1
-    }
-  end
+  srcdir ||= File.read("Makefile", encoding: "US-ASCII")[/^\s*srcdir\s*=\s*(.+)/i, 1] rescue nil
   srcdir = File.expand_path(srcdir)
   config = RbConfig::CONFIG
 
