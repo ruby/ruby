@@ -944,7 +944,7 @@ hex2num(char c)
 #define UNPACK_1 2
 
 static VALUE
-pack_unpack_internal(VALUE str, VALUE fmt, int mode)
+pack_unpack_internal(VALUE str, VALUE fmt, int mode, long offset)
 {
 #define hexdigits ruby_hexdigits
     char *s, *send;
@@ -973,8 +973,15 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 
     StringValue(str);
     StringValue(fmt);
+
+    if (offset < 0) rb_raise(rb_eArgError, "offset can't be negative");
+    len = RSTRING_LEN(str);
+    if (offset > len) rb_raise(rb_eArgError, "offset outside of string");
+
     s = RSTRING_PTR(str);
-    send = s + RSTRING_LEN(str);
+    send = s + len;
+    s += offset;
+
     p = RSTRING_PTR(fmt);
     pend = p + RSTRING_LEN(fmt);
 
@@ -1614,16 +1621,16 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 }
 
 static VALUE
-pack_unpack(rb_execution_context_t *ec, VALUE str, VALUE fmt)
+pack_unpack(rb_execution_context_t *ec, VALUE str, VALUE fmt, VALUE offset)
 {
     int mode = rb_block_given_p() ? UNPACK_BLOCK : UNPACK_ARRAY;
-    return pack_unpack_internal(str, fmt, mode);
+    return pack_unpack_internal(str, fmt, mode, RB_NUM2LONG(offset));
 }
 
 static VALUE
-pack_unpack1(rb_execution_context_t *ec, VALUE str, VALUE fmt)
+pack_unpack1(rb_execution_context_t *ec, VALUE str, VALUE fmt, VALUE offset)
 {
-    return pack_unpack_internal(str, fmt, UNPACK_1);
+    return pack_unpack_internal(str, fmt, UNPACK_1, RB_NUM2LONG(offset));
 }
 
 int
