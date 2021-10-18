@@ -1446,12 +1446,13 @@ rb_init_iv_list(VALUE obj)
     init_iv_list(obj, len, newsize, index_tbl);
 }
 
-static VALUE
-obj_ivar_set(VALUE obj, ID id, VALUE val)
+// Retreive or create the id-to-index mapping for a given object and an
+// instance variable name.
+static struct ivar_update
+obj_ensure_iv_index_mapping(VALUE obj, ID id)
 {
     VALUE klass = rb_obj_class(obj);
     struct ivar_update ivup;
-    uint32_t len;
     ivup.iv_extended = 0;
     ivup.u.iv_index_tbl = iv_index_tbl_make(obj, klass);
 
@@ -1460,6 +1461,32 @@ obj_ivar_set(VALUE obj, ID id, VALUE val)
         iv_index_tbl_extend(&ivup, id, klass);
     }
     RB_VM_LOCK_LEAVE();
+
+    return ivup;
+}
+
+// Return the instance variable index for a given name and T_OBJECT object. The
+// mapping between name and index lives on `rb_obj_class(obj)` and is created
+// if not already present.
+//
+// @note May raise when there are too many instance variables.
+// @note YJIT uses this function at compile time to simplify the work needed to
+//       access the variable at runtime.
+uint32_t
+rb_obj_ensure_iv_index_mapping(VALUE obj, ID id)
+{
+    RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
+    // This uint32_t cast shouldn't lose information as it's checked in
+    // iv_index_tbl_extend(). The index is stored as an uint32_t in
+    // struct rb_iv_index_tbl_entry.
+    return (uint32_t)obj_ensure_iv_index_mapping(obj, id).index;
+}
+
+static VALUE
+obj_ivar_set(VALUE obj, ID id, VALUE val)
+{
+    uint32_t len;
+    struct ivar_update ivup = obj_ensure_iv_index_mapping(obj, id);
 
     len = ROBJECT_NUMIV(obj);
     if (len <= ivup.index) {

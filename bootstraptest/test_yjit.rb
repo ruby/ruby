@@ -2160,3 +2160,18 @@ assert_equal '[2]', %q{
 
   5.times.map { default_expression(value: 2) }.uniq
 }
+
+# attr_reader on frozen object
+assert_equal 'false', %q{
+  class Foo
+    attr_reader :exception
+
+    def failed?
+      !exception.nil?
+    end
+  end
+
+  foo = Foo.new.freeze
+  foo.failed?
+  foo.failed?
+}
