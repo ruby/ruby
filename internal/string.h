@@ -116,6 +116,7 @@ is_broken_string(VALUE str)
 }
 
 /* expect tail call optimization */
+// YJIT needs this function to never allocate and never raise
 static inline VALUE
 rb_str_eql_internal(const VALUE str1, const VALUE str2)
 {

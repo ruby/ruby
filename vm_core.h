@@ -446,6 +446,8 @@ struct rb_iseq_constant_body {
     char catch_except_p; /* If a frame of this ISeq may catch exception, set TRUE */
     // If true, this ISeq is leaf *and* backtraces are not used, for example,
     // by rb_profile_frames. We verify only leafness on VM_CHECK_MODE though.
+    // Note that GC allocations might use backtraces due to
+    // ObjectSpace#trace_object_allocations.
     // For more details, see: https://bugs.ruby-lang.org/issues/16956
     bool builtin_inline_p;
     struct rb_id_table *outer_variables;

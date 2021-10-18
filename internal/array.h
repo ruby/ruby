@@ -46,6 +46,7 @@ struct rb_execution_context_struct;
 VALUE rb_ec_ary_new_from_values(struct rb_execution_context_struct *ec, long n, const VALUE *elts);
 MJIT_SYMBOL_EXPORT_END
 
+// YJIT needs this function to never allocate and never raise
 static inline VALUE
 rb_ary_entry_internal(VALUE ary, long offset)
 {
