@@ -13,7 +13,7 @@ ruby_version_is '3.1' do
       mod = Module.new
       parent.include(mod)
 
-      parent.descendants.should_not include(mod)
+      assert_descendants(parent, [child])
     end
 
     it "does not return singleton classes" do
