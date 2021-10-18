@@ -10,17 +10,19 @@ class MSpecScript
   builddir = Dir.pwd
   srcdir = ENV['SRCDIR']
   srcdir ||= File.read("Makefile", encoding: "US-ASCII")[/^\s*srcdir\s*=\s*(.+)/i, 1] rescue nil
-  srcdir = File.expand_path(srcdir)
   config = RbConfig::CONFIG
 
   # The default implementation to run the specs.
   set :target, File.join(builddir, "miniruby#{config['exeext']}")
   set :prefix, File.expand_path('ruby', File.dirname(__FILE__))
-  set :flags, %W[
-    -I#{srcdir}/lib
-    #{srcdir}/tool/runruby.rb --archdir=#{Dir.pwd} --extout=#{config['EXTOUT']}
-    --
-  ]
+  if srcdir
+    srcdir = File.expand_path(srcdir)
+    set :flags, %W[
+      -I#{srcdir}/lib
+      #{srcdir}/tool/runruby.rb --archdir=#{builddir} --extout=#{config['EXTOUT']}
+      --
+    ]
+  end
 end
 
 module MSpecScript::JobServer
