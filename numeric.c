@@ -389,7 +389,9 @@ num_funcall1(VALUE x, ID func, VALUE y)
  *  call-seq:
  *    coerce(other) -> array
  *
- *  Returns a 2-element array:
+ *  Returns a 2-element array containing two numeric elements,
+ *  formed from the two operands +self+ and +other+,
+ *  of a common compatible type.
  *
  *  Of the Core and Standard Library classes,
  *  Integer, Rational, and Complex use this implementation.
@@ -527,12 +529,7 @@ num_sadded(VALUE x, VALUE name)
  *  call-seq:
  *    clone(freeze: true) -> self
  *
- *  Returns +self+:
- *
- *    2.clone              # => 2
- *    2.0.clone            # => 2.0
- *    Rational(1, 2).clone # => (1/2)
- *    Complex(2, 3).clone  # => (2+3i)
+ *  Returns +self+.
  *
  *  Raises an exception if the value for +freeze+ is neither +true+ nor +nil+.
  *
@@ -553,12 +550,7 @@ num_clone(int argc, VALUE *argv, VALUE x)
  *  call-seq:
  *    dup -> self
  *
- *  Returns +self+:
- *
- *    2.dup              # => 2
-      2.0.dup            # => 2.0
-      Rational(1, 2).dup # => (1/2)
-      Complex(2, 3).dup  # => (2+3i)
+ *  Returns +self+.
  *
  *  Related: Numeric#clone.
  *
@@ -576,16 +568,8 @@ num_dup(VALUE x)
  *  call-seq:
  *    +num -> self
  *
- *  Returns +self+:
+ *  Returns +self+.
  *
- *    +(2)              # => 2
- *    +(-2)              # => -2
- *    +(2.0)             # => 2.0
- *    +(-2.0)            # => -2.0
- *    +(Rational(1, 2))  # => (1/2)
- *    +(Rational(-1, 2)) # => (-1/2)
- *    +(Complex(3, 4))   # => (3+4i)
- *    +(Complex(-3, 4))  # => (-3+4i)
  */
 
 static VALUE
@@ -1041,6 +1025,8 @@ flo_to_s(VALUE flt)
  *    f.coerce(2.0)            # => [2.0, 3.14]
  *    f.coerce(Rational(1, 2)) # => [0.5, 3.14]
  *    f.coerce(Complex(3, 4))  # Raises RangeError.
+ *
+ *  Related: Numeric#coerce (for other numeric types).
  *
  *  Raises an exception if a type conversion fails.
  *
