@@ -482,11 +482,7 @@ class TestRubyLiteral < Test::Unit::TestCase
         {"a" => a.push(100).last, "b" => a.push(200).last, "a" => a.push(300).last, "a" => a.push(400).last}
       end
     end
-    assert_equal(2, h.size)
-    assert_equal(400, h['a'])
-    assert_equal(200, h['b'])
-    assert_nil(h['c'])
-    assert_equal(nil, h.key('300'))
+    assert_equal({'a' => 400, 'b' => 200}, h)
     assert_equal([100, 200, 300, 400], a)
 
     assert_all_assertions_foreach(
