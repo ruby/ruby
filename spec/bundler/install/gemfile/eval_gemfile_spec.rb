@@ -2,7 +2,7 @@
 
 RSpec.describe "bundle install with gemfile that uses eval_gemfile" do
   before do
-    build_lib("gunks", path: bundled_app.join("gems/gunks")) do |s|
+    build_lib("gunks", path: bundled_app("gems/gunks")) do |s|
       s.name    = "gunks"
       s.version = "0.0.1"
     end
