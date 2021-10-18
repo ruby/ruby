@@ -258,14 +258,7 @@ module Spec
     end
 
     def ruby_core?
-      # avoid to warnings
-      @ruby_core ||= nil
-
-      if @ruby_core.nil?
-        @ruby_core = true & ENV["GEM_COMMAND"]
-      else
-        @ruby_core
-      end
+      !ENV["GEM_COMMAND"].nil?
     end
 
     def git_root
