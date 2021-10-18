@@ -387,19 +387,37 @@ num_funcall1(VALUE x, ID func, VALUE y)
 
 /*
  *  call-seq:
- *     num.coerce(numeric)  ->  array
+ *    coerce(other) -> array
  *
- *  If +numeric+ is the same type as +num+, returns an array
- *  <code>[numeric, num]</code>. Otherwise, returns an array with both
- *  +numeric+ and +num+ represented as Float objects.
+ *  Returns a 2-element array containing two numeric elements,
+ *  formed from the two operands +self+ and +other+,
+ *  of a common compatible type.
  *
- *  This coercion mechanism is used by Ruby to handle mixed-type numeric
- *  operations: it is intended to find a compatible common type between the two
- *  operands of the operator.
+ *  Of the Core and Standard Library classes,
+ *  Integer, Rational, and Complex use this implementation.
  *
- *     1.coerce(2.5)   #=> [2.5, 1.0]
- *     1.2.coerce(3)   #=> [3.0, 1.2]
- *     1.coerce(2)     #=> [2, 1]
+ *  Examples:
+ *
+ *    i = 2                    # => 2
+ *    i.coerce(3)              # => [3, 2]
+ *    i.coerce(3.0)            # => [3.0, 2.0]
+ *    i.coerce(Rational(1, 2)) # => [0.5, 2.0]
+ *    i.coerce(Complex(3, 4))  # Raises RangeError.
+ *
+ *    r = Rational(5, 2)       # => (5/2)
+ *    r.coerce(2)              # => [(2/1), (5/2)]
+ *    r.coerce(2.0)            # => [2.0, 2.5]
+ *    r.coerce(Rational(2, 3)) # => [(2/3), (5/2)]
+ *    r.coerce(Complex(3, 4))  # => [(3+4i), ((5/2)+0i)]
+ *
+ *    c = Complex(2, 3)        # => (2+3i)
+ *    c.coerce(2)              # => [(2+0i), (2+3i)]
+ *    c.coerce(2.0)            # => [(2.0+0i), (2+3i)]
+ *    c.coerce(Rational(1, 2)) # => [((1/2)+0i), (2+3i)]
+ *    c.coerce(Complex(3, 4))  # => [(3+4i), (2+3i)]
+ *
+ *  Raises an exception if any type conversion fails.
+ *
  */
 
 static VALUE
@@ -509,9 +527,14 @@ num_sadded(VALUE x, VALUE name)
 #if 0
 /*
  *  call-seq:
- *     num.clone(freeze: true)  ->  num
+ *    clone(freeze: true) -> self
  *
- *  Returns the receiver.  +freeze+ cannot be +false+.
+ *  Returns +self+.
+ *
+ *  Raises an exception if the value for +freeze+ is neither +true+ nor +nil+.
+ *
+ *  Related: Numeric#dup.
+ *
  */
 static VALUE
 num_clone(int argc, VALUE *argv, VALUE x)
@@ -525,9 +548,12 @@ num_clone(int argc, VALUE *argv, VALUE x)
 #if 0
 /*
  *  call-seq:
- *     num.dup  ->  num
+ *    dup -> self
  *
- *  Returns the receiver.
+ *  Returns +self+.
+ *
+ *  Related: Numeric#clone.
+ *
  */
 static VALUE
 num_dup(VALUE x)
@@ -540,9 +566,10 @@ num_dup(VALUE x)
 
 /*
  *  call-seq:
- *     +num  ->  num
+ *    +num -> self
  *
- *  Unary Plus---Returns the receiver.
+ *  Returns +self+.
+ *
  */
 
 static VALUE
@@ -553,13 +580,16 @@ num_uplus(VALUE num)
 
 /*
  *  call-seq:
- *     num.i  ->  Complex(0, num)
+ *    i -> complex
  *
- *  Returns the corresponding imaginary number.
- *  Not available for complex numbers.
+ *  Returns <tt>Complex(0, self)</tt>:
  *
- *     -42.i  #=> (0-42i)
- *     2.0.i  #=> (0+2.0i)
+ *    2.i              # => (0+2i)
+ *    -2.i             # => (0-2i)
+ *    2.0.i            # => (0+2.0i)
+ *    Rational(1, 2).i # => (0+(1/2)*i)
+ *    Complex(3, 4).i # Raises NoMethodError.
+ *
  */
 
 static VALUE
@@ -985,15 +1015,21 @@ flo_to_s(VALUE flt)
 
 /*
  *  call-seq:
- *     float.coerce(numeric)  ->  array
+ *    coerce(other) -> array
  *
- *  Returns an array with both +numeric+ and +float+ represented as Float
- *  objects.
+ *  Returns a 2-element array containing +other+ converted to a \Float
+ *  and +self+:
  *
- *  This is achieved by converting +numeric+ to a Float.
+ *    f = 3.14                 # => 3.14
+ *    f.coerce(2)              # => [2.0, 3.14]
+ *    f.coerce(2.0)            # => [2.0, 3.14]
+ *    f.coerce(Rational(1, 2)) # => [0.5, 3.14]
+ *    f.coerce(Complex(3, 4))  # Raises RangeError.
  *
- *     1.2.coerce(3)       #=> [3.0, 1.2]
- *     2.5.coerce(1.1)     #=> [1.1, 2.5]
+ *  Related: Numeric#coerce (for other numeric types).
+ *
+ *  Raises an exception if a type conversion fails.
+ *
  */
 
 static VALUE
