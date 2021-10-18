@@ -342,7 +342,6 @@ always_finite_type_p(VALUE x)
     return (RB_INTEGER_TYPE_P(x) || RB_TYPE_P(x, T_RATIONAL));
 }
 
-VALUE rb_flo_is_finite_p(VALUE num);
 inline static int
 f_finite_p(VALUE x)
 {
@@ -355,7 +354,6 @@ f_finite_p(VALUE x)
     return RTEST(rb_funcallv(x, id_finite_p, 0, 0));
 }
 
-VALUE rb_flo_is_infinite_p(VALUE num);
 inline static int
 f_infinite_p(VALUE x)
 {
