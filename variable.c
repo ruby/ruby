@@ -1321,7 +1321,7 @@ iv_index_tbl_extend(struct ivar_update *ivup, ID id, VALUE klass)
         ivup->index = ent->index;
 	return;
     }
-    if (ivup->u.iv_index_tbl->num_entries >= INT_MAX) {
+    if (ivup->u.iv_index_tbl->num_entries >= UINT32_MAX) {
 	rb_raise(rb_eArgError, "too many instance variables");
     }
     ent = ALLOC(struct rb_iv_index_tbl_entry);
