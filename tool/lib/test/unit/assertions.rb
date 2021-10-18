@@ -345,20 +345,6 @@ module Test
       end
 
       ##
-      # Returns details for exception +e+
-
-      def exception_details e, msg
-        [
-        "#{msg}",
-        "Class: <#{e.class}>",
-        "Message: <#{e.message.inspect}>",
-        "---Backtrace---",
-        "#{Test::filter_backtrace(e.backtrace).join("\n")}",
-        "---------------",
-        ].join "\n"
-      end
-
-      ##
       # Fails with +msg+
 
       def flunk msg = nil
