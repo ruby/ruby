@@ -367,6 +367,38 @@ class TestRequire < Test::Unit::TestCase
     }
   end
 
+  def test_load_into_module
+    Tempfile.create(["test_ruby_test_require", ".rb"]) {|t|
+      t.puts "def b; 1 end"
+      t.puts "class Foo"
+      t.puts "  def c; 2 end"
+      t.puts "end"
+      t.close
+
+      m = Module.new
+      load(t.path, m)
+      assert_equal([:b], m.private_instance_methods(false))
+      c = Class.new do
+        include m
+        public :b
+      end
+      assert_equal(1, c.new.b)
+      assert_equal(2, m::Foo.new.c)
+    }
+  end
+
+  def test_load_wrap_nil
+    Dir.mktmpdir do |tmp|
+      File.write("#{tmp}/1.rb", "class LoadWrapNil; end\n")
+      assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+      path = ""#{tmp.dump}"/1.rb"
+      begin;
+        load path, nil
+        assert_instance_of(Class, LoadWrapNil)
+      end;
+    end
+  end
+
   def test_load_ospath
     bug = '[ruby-list:49994] path in ospath'
     base = "test_load\u{3042 3044 3046 3048 304a}".encode(Encoding::Windows_31J)
