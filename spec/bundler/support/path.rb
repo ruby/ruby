@@ -58,7 +58,7 @@ module Spec
     end
 
     def gem_bin
-      @gem_bin ||= ruby_core? ? ENV["GEM_COMMAND"] : "gem"
+      @gem_bin ||= ENV["GEM_COMMAND"] || "gem"
     end
 
     def path
