@@ -17002,6 +17002,15 @@ yjit.$(OBJEXT): {$(VPATH)}internal/core/rtypeddata.h
 yjit.$(OBJEXT): {$(VPATH)}internal/ctype.h
 yjit.$(OBJEXT): {$(VPATH)}internal/dllexport.h
 yjit.$(OBJEXT): {$(VPATH)}internal/dosish.h
+yjit.$(OBJEXT): {$(VPATH)}internal/encoding/coderange.h
+yjit.$(OBJEXT): {$(VPATH)}internal/encoding/ctype.h
+yjit.$(OBJEXT): {$(VPATH)}internal/encoding/encoding.h
+yjit.$(OBJEXT): {$(VPATH)}internal/encoding/pathname.h
+yjit.$(OBJEXT): {$(VPATH)}internal/encoding/re.h
+yjit.$(OBJEXT): {$(VPATH)}internal/encoding/sprintf.h
+yjit.$(OBJEXT): {$(VPATH)}internal/encoding/string.h
+yjit.$(OBJEXT): {$(VPATH)}internal/encoding/symbol.h
+yjit.$(OBJEXT): {$(VPATH)}internal/encoding/transcode.h
 yjit.$(OBJEXT): {$(VPATH)}internal/error.h
 yjit.$(OBJEXT): {$(VPATH)}internal/eval.h
 yjit.$(OBJEXT): {$(VPATH)}internal/event.h
