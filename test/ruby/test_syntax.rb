@@ -200,17 +200,29 @@ class TestSyntax < Test::Unit::TestCase
     bug10315 = '[ruby-core:65625] [Bug #10315]'
     a = []
     def a.add(x) push(x); x; end
-    def a.f(k:) k; end
+    b = a.clone
+    def a.f(k:, **) k; end
+    def b.f(k:) k; end
     a.clear
     r = nil
-    assert_warn(/duplicated/) {r = eval("a.f(k: a.add(1), k: a.add(2))")}
+    assert_warn(/duplicated/) {r = eval("b.f(k: b.add(1), k: b.add(2))")}
     assert_equal(2, r)
-    assert_equal([1, 2], a, bug10315)
+    assert_equal([1, 2], b, bug10315)
+    b.clear
+    r = nil
+    assert_warn(/duplicated/) {r = eval("a.f(k: a.add(1), j: a.add(2), k: a.add(3), k: a.add(4))")}
+    assert_equal(4, r)
+    assert_equal([1, 2, 3, 4], a)
     a.clear
     r = nil
-    assert_warn(/duplicated/) {r = eval("a.f(**{k: a.add(1), k: a.add(2)})")}
+    assert_warn(/duplicated/) {r = eval("b.f(**{k: b.add(1), k: b.add(2)})")}
     assert_equal(2, r)
-    assert_equal([1, 2], a, bug10315)
+    assert_equal([1, 2], b, bug10315)
+    b.clear
+    r = nil
+    assert_warn(/duplicated/) {r = eval("a.f(**{k: a.add(1), j: a.add(2), k: a.add(3), k: a.add(4)})")}
+    assert_equal(4, r)
+    assert_equal([1, 2, 3, 4], a)
   end
 
   def test_keyword_empty_splat
