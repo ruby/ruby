@@ -32,7 +32,7 @@ ruby_version_is '3.1' do
     end
 
     def assert_descendants(mod, descendants)
-      mod.descendants.map(&:inspect).sort.should == descendants.map(&:inspect).sort
+      mod.descendants.sort_by(&:inspect).should == descendants.sort_by(&:inspect)
     end
   end
 end
