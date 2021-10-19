@@ -790,6 +790,10 @@ num_divmod(VALUE x, VALUE y)
  *
  *  Returns the absolute value of +self+.
  *
+ *    12.abs        #=> 12
+ *    (-34.56).abs  #=> 34.56
+ *    -34.56.abs    #=> 34.56
+ *
  *  Numeric#magnitude is an alias for Numeric#abs.
  *
  */
