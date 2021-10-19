@@ -22,10 +22,10 @@
 # define YJIT_DUMP_MODE 0
 #endif
 
-#ifdef _WIN32
-# define PLATFORM_SUPPORTED_P 0
-#else
+#if defined(__x86_64__) && !defined(_WIN32)
 # define PLATFORM_SUPPORTED_P 1
+#else
+# define PLATFORM_SUPPORTED_P 0
 #endif
 
 // USE_MJIT comes from configure options
