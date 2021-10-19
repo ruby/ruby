@@ -4296,8 +4296,9 @@ rb_fork_async_signal_safe(int *status,
     return result;
 }
 
-rb_pid_t
-rb_fork_ruby2(struct rb_process_status *status) {
+static rb_pid_t
+rb_fork_ruby2(struct rb_process_status *status)
+{
     rb_pid_t pid;
     int try_gc = 1, err;
     struct child_handler_disabler_state old;
@@ -4311,6 +4312,10 @@ rb_fork_ruby2(struct rb_process_status *status) {
         before_fork_ruby();
         pid = rb_fork();
         err = errno;
+        if (status) {
+            status->pid = pid;
+            status->error = err;
+        }
         after_fork_ruby();
         disable_child_handler_fork_parent(&old); /* yes, bad name */
 
