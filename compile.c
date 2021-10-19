@@ -10139,7 +10139,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			break;
 		      case TS_ISEQ:
 			{
-			    if (op != Qnil) {
+			    if (!NIL_P(op)) {
 				VALUE v = (VALUE)iseq_build_load_iseq(iseq, op);
 				argv[j] = v;
 				RB_OBJ_WRITTEN(iseq, Qundef, v);
@@ -11711,7 +11711,7 @@ static VALUE
 ibf_load_location_str(const struct ibf_load *load, VALUE str_index)
 {
     VALUE str = ibf_load_object(load, str_index);
-    if (str != Qnil) {
+    if (!NIL_P(str)) {
         str = rb_fstring(str);
     }
     return str;

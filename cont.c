@@ -1923,7 +1923,7 @@ rb_fiber_s_schedule_kw(int argc, VALUE* argv, int kw_splat)
     VALUE scheduler = th->scheduler;
     VALUE fiber = Qnil;
 
-    if (scheduler != Qnil) {
+    if (!NIL_P(scheduler)) {
         fiber = rb_funcall_passing_block_kw(scheduler, rb_intern("fiber"), argc, argv, kw_splat);
     }
     else {

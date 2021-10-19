@@ -363,7 +363,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		}
 #endif
 		len = (int)(p - start + 1); /* including parenthesis */
-		if (sym != Qnil) {
+		if (!NIL_P(sym)) {
 		    rb_enc_raise(enc, rb_eArgError, "named%.*s after <%"PRIsVALUE">",
 				 len, start, rb_sym2str(sym));
 		}

@@ -10413,7 +10413,7 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const unsigned 
 #define SET(name, attr) \
     if (key == sym_##name) \
         return (attr); \
-    else if (hash != Qnil) \
+    else if (!NIL_P(hash)) \
         rb_hash_aset(hash, sym_##name, (attr));
 
     major_by =
@@ -10586,7 +10586,7 @@ gc_stat_internal(VALUE hash_or_sym)
 #define SET(name, attr) \
     if (key == gc_stat_symbols[gc_stat_sym_##name]) \
 	return attr; \
-    else if (hash != Qnil) \
+    else if (!NIL_P(hash)) \
 	rb_hash_aset(hash, gc_stat_symbols[gc_stat_sym_##name], SIZET2NUM(attr));
 
     SET(count, objspace->profile.count);
@@ -10637,7 +10637,7 @@ gc_stat_internal(VALUE hash_or_sym)
     }
 
 #if defined(RGENGC_PROFILE) && RGENGC_PROFILE >= 2
-    if (hash != Qnil) {
+    if (!NIL_P(hash)) {
 	gc_count_add_each_types(hash, "generated_normal_object_count_types", objspace->profile.generated_normal_object_count_types);
 	gc_count_add_each_types(hash, "generated_shady_object_count_types", objspace->profile.generated_shady_object_count_types);
 	gc_count_add_each_types(hash, "shade_operation_count_types", objspace->profile.shade_operation_count_types);

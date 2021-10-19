@@ -77,7 +77,7 @@ range_modify(VALUE range)
 {
     rb_check_frozen(range);
     /* Ranges are immutable, so that they should be initialized only once. */
-    if (RANGE_EXCL(range) != Qnil) {
+    if (!NIL_P(RANGE_EXCL(range))) {
 	rb_name_err_raise("`initialize' called twice", range, ID2SYM(idInitialize));
     }
 }

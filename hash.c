@@ -5812,7 +5812,7 @@ env_slice(int argc, VALUE *argv, VALUE _)
     for (i = 0; i < argc; i++) {
         key = argv[i];
         value = rb_f_getenv(Qnil, key);
-        if (value != Qnil)
+        if (!NIL_P(value))
             rb_hash_aset(result, key, value);
     }
 

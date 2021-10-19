@@ -1645,11 +1645,11 @@ rb_profile_frame_method_name(VALUE frame)
 static VALUE
 qualified_method_name(VALUE frame, VALUE method_name)
 {
-    if (method_name != Qnil) {
+    if (!NIL_P(method_name)) {
 	VALUE classpath = rb_profile_frame_classpath(frame);
 	VALUE singleton_p = rb_profile_frame_singleton_method_p(frame);
 
-	if (classpath != Qnil) {
+	if (!NIL_P(classpath)) {
 	    return rb_sprintf("%"PRIsVALUE"%s%"PRIsVALUE,
 			      classpath, singleton_p == Qtrue ? "." : "#", method_name);
 	}

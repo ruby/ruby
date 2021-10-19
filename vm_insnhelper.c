@@ -4150,7 +4150,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
 	}
 	break;
       case DEFINED_REF:{
-	return vm_getspecial(ec, GET_LEP(), Qfalse, FIX2INT(obj)) != Qnil;
+	return !NIL_P(vm_getspecial(ec, GET_LEP(), Qfalse, FIX2INT(obj)));
 	break;
       }
       default:

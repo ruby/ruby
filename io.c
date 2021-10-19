@@ -1273,7 +1273,7 @@ rb_io_wait(VALUE io, VALUE events, VALUE timeout)
 {
     VALUE scheduler = rb_fiber_scheduler_current();
 
-    if (scheduler != Qnil) {
+    if (!NIL_P(scheduler)) {
         return rb_fiber_scheduler_io_wait(scheduler, io, events, timeout);
     }
 
@@ -1283,7 +1283,7 @@ rb_io_wait(VALUE io, VALUE events, VALUE timeout)
     struct timeval tv_storage;
     struct timeval *tv = NULL;
 
-    if (timeout != Qnil) {
+    if (!NIL_P(timeout)) {
         tv_storage = rb_time_interval(timeout);
         tv = &tv_storage;
     }
@@ -1316,7 +1316,7 @@ io_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 {
     VALUE scheduler = rb_fiber_scheduler_current();
 
-    if (scheduler != Qnil) {
+    if (!NIL_P(scheduler)) {
         return RTEST(
             rb_fiber_scheduler_io_wait(scheduler, io_from_fd(fd), RB_INT2NUM(events), rb_fiber_scheduler_make_timeout(timeout))
         );
@@ -1344,7 +1344,7 @@ rb_io_wait_readable(int f)
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
       case EWOULDBLOCK:
 #endif
-        if (scheduler != Qnil) {
+        if (!NIL_P(scheduler)) {
             return RTEST(
                 rb_fiber_scheduler_io_wait_readable(scheduler, io_from_fd(f))
             );
@@ -1387,7 +1387,7 @@ rb_io_wait_writable(int f)
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
       case EWOULDBLOCK:
 #endif
-        if (scheduler != Qnil) {
+        if (!NIL_P(scheduler)) {
             return RTEST(
                 rb_fiber_scheduler_io_wait_writable(scheduler, io_from_fd(f))
             );
@@ -1621,7 +1621,7 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
     if ((n = len) <= 0) return n;
 
     VALUE scheduler = rb_fiber_scheduler_current();
-    if (scheduler != Qnil) {
+    if (!NIL_P(scheduler)) {
         VALUE result = rb_fiber_scheduler_io_write(scheduler, fptr->self, str, offset, len);
 
         if (result != Qundef) {
@@ -2706,7 +2706,7 @@ static long
 io_fread(VALUE str, long offset, long size, rb_io_t *fptr)
 {
     VALUE scheduler = rb_fiber_scheduler_current();
-    if (scheduler != Qnil) {
+    if (!NIL_P(scheduler)) {
         VALUE result = rb_fiber_scheduler_io_read(scheduler, fptr->self, str, offset, size);
 
         if (result != Qundef) {
@@ -5968,9 +5968,9 @@ rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2
     if (!NIL_P(opt)) {
 	VALUE v;
 	v = rb_hash_lookup2(opt, sym_encoding, Qnil);
-	if (v != Qnil) encoding = v;
+	if (!NIL_P(v)) encoding = v;
 	v = rb_hash_lookup2(opt, sym_extenc, Qundef);
-	if (v != Qnil) extenc = v;
+	if (!NIL_P(v)) extenc = v;
 	v = rb_hash_lookup2(opt, sym_intenc, Qundef);
 	if (v != Qundef) intenc = v;
     }
@@ -11210,7 +11210,7 @@ static int
 nogvl_wait_for_single_fd(VALUE th, int fd, short events)
 {
     VALUE scheduler = rb_fiber_scheduler_current_for_thread(th);
-    if (scheduler != Qnil) {
+    if (!NIL_P(scheduler)) {
         struct wait_for_single_fd args = {.scheduler = scheduler, .fd = fd, .events = events};
         rb_thread_call_with_gvl(rb_thread_fiber_scheduler_wait_for_single_fd, &args);
         return RTEST(args.result);
@@ -11229,7 +11229,7 @@ static int
 nogvl_wait_for_single_fd(VALUE th, int fd, short events)
 {
     VALUE scheduler = rb_fiber_scheduler_current_for_thread(th);
-    if (scheduler != Qnil) {
+    if (!NIL_P(scheduler)) {
         struct wait_for_single_fd args = {.scheduler = scheduler, .fd = fd, .events = events};
         rb_thread_call_with_gvl(rb_thread_fiber_scheduler_wait_for_single_fd, &args);
         return RTEST(args.result);

@@ -2052,7 +2052,7 @@ set_method_visibility(VALUE self, int argc, const VALUE *argv, rb_method_visibil
 
     VALUE v;
 
-    if (argc == 1 && (v = rb_check_array_type(argv[0])) != Qnil) {
+    if (argc == 1 && !NIL_P(v = rb_check_array_type(argv[0]))) {
         long j;
 
 	for (j = 0; j < RARRAY_LEN(v); j++) {

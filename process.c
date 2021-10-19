@@ -5143,7 +5143,7 @@ rb_f_sleep(int argc, VALUE *argv, VALUE _)
     time_t beg = time(0);
     VALUE scheduler = rb_fiber_scheduler_current();
 
-    if (scheduler != Qnil) {
+    if (!NIL_P(scheduler)) {
         rb_fiber_scheduler_kernel_sleepv(scheduler, argc, argv);
     }
     else {

@@ -547,7 +547,7 @@ rb_threadptr_join_list_wakeup(rb_thread_t *thread)
 
         rb_thread_t *target_thread = join_list->thread;
 
-        if (target_thread->scheduler != Qnil && rb_fiberptr_blocking(join_list->fiber) == 0) {
+        if (!NIL_P(target_thread->scheduler) && rb_fiberptr_blocking(join_list->fiber) == 0) {
             rb_fiber_scheduler_unblock(target_thread->scheduler, target_thread->self, rb_fiberptr_self(join_list->fiber));
         }
         else {
@@ -1184,7 +1184,7 @@ thread_join_sleep(VALUE arg)
     while (!thread_finished(target_th)) {
         VALUE scheduler = rb_fiber_scheduler_current();
 
-        if (scheduler != Qnil) {
+        if (!NIL_P(scheduler)) {
             rb_fiber_scheduler_block(scheduler, target_th->self, p->timeout);
         }
         else if (!limit) {
@@ -1250,7 +1250,7 @@ thread_join(rb_thread_t *target_th, VALUE timeout, rb_hrtime_t *limit)
     thread_debug("thread_join: success (thid: %"PRI_THREAD_ID", status: %s)\n",
                  thread_id_str(target_th), thread_status_name(target_th, TRUE));
 
-    if (target_th->ec->errinfo != Qnil) {
+    if (!NIL_P(target_th->ec->errinfo)) {
         VALUE err = target_th->ec->errinfo;
 
         if (FIXNUM_P(err)) {
@@ -1540,7 +1540,7 @@ static void
 rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker)
 {
     VALUE scheduler = rb_fiber_scheduler_current();
-    if (scheduler != Qnil) {
+    if (!NIL_P(scheduler)) {
         rb_fiber_scheduler_block(scheduler, blocker, Qnil);
     }
     else {
@@ -2019,7 +2019,7 @@ rb_threadptr_pending_interrupt_check_mask(rb_thread_t *th, VALUE err)
 		continue;
 	    }
 
-	    if ((sym = rb_hash_aref(mask, klass)) != Qnil) {
+	    if (!NIL_P(sym = rb_hash_aref(mask, klass))) {
 		if (sym == sym_immediate) {
 		    return INTERRUPT_IMMEDIATE;
 		}
@@ -3458,7 +3458,7 @@ rb_thread_to_s(VALUE thread)
     if (!NIL_P(target_th->name)) {
         rb_str_catf(str, "@%"PRIsVALUE, target_th->name);
     }
-    if ((loc = threadptr_invoke_proc_location(target_th)) != Qnil) {
+    if (!NIL_P(loc = threadptr_invoke_proc_location(target_th))) {
         rb_str_catf(str, " %"PRIsVALUE":%"PRIsVALUE,
                     RARRAY_AREF(loc, 0), RARRAY_AREF(loc, 1));
         rb_gc_force_recycle(loc);
@@ -3861,7 +3861,7 @@ rb_thread_variable_p(VALUE thread, VALUE key)
     }
     locals = rb_thread_local_storage(thread);
 
-    return RBOOL(rb_hash_lookup(locals, rb_to_symbol(key)) != Qnil);
+    return RBOOL(!NIL_P(rb_hash_lookup(locals, rb_to_symbol(key))));
 }
 
 /*
@@ -4687,7 +4687,7 @@ clear_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
         else {
             int i;
             for (i = 0; i < RARRAY_LEN(lines); i++) {
-                if (RARRAY_AREF(lines, i) != Qnil)
+                if (!NIL_P(RARRAY_AREF(lines, i)))
                     RARRAY_ASET(lines, i, INT2FIX(0));
             }
         }

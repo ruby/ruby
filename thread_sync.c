@@ -31,7 +31,7 @@ sync_wakeup(struct list_head *head, long max)
 
         if (cur->th->status != THREAD_KILLED) {
 
-            if (cur->th->scheduler != Qnil && rb_fiberptr_blocking(cur->fiber) == 0) {
+            if (!NIL_P(cur->th->scheduler) && rb_fiberptr_blocking(cur->fiber) == 0) {
                 rb_fiber_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
             }
             else {
@@ -295,7 +295,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
 
         while (mutex->fiber != fiber) {
             VALUE scheduler = rb_fiber_scheduler_current();
-            if (scheduler != Qnil) {
+            if (!NIL_P(scheduler)) {
                 struct sync_waiter sync_waiter = {
                     .self = self,
                     .th = th,
@@ -430,7 +430,7 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
         list_for_each_safe(&mutex->waitq, cur, next, node) {
             list_del_init(&cur->node);
 
-            if (cur->th->scheduler != Qnil && rb_fiberptr_blocking(cur->fiber) == 0) {
+            if (!NIL_P(cur->th->scheduler) && rb_fiberptr_blocking(cur->fiber) == 0) {
                 rb_fiber_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
                 goto found;
             }
@@ -540,7 +540,7 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
     time_t beg = time(0);
 
     VALUE scheduler = rb_fiber_scheduler_current();
-    if (scheduler != Qnil) {
+    if (!NIL_P(scheduler)) {
         rb_fiber_scheduler_kernel_sleep(scheduler, timeout);
         mutex_lock_uninterruptible(self);
     }

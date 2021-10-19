@@ -1672,7 +1672,7 @@ native_set_thread_name(rb_thread_t *th)
     if (!NIL_P(loc = th->name)) {
         SET_CURRENT_THREAD_NAME(RSTRING_PTR(loc));
     }
-    else if ((loc = threadptr_invoke_proc_location(th)) != Qnil) {
+    else if (!NIL_P(loc = threadptr_invoke_proc_location(th))) {
         char *name, *p;
         char buf[THREAD_NAME_MAX];
         size_t len;

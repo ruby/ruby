@@ -5260,11 +5260,11 @@ time_mload(VALUE time, VALUE str)
 
 
         vtm.subsecx = mulquov(LONG2FIX(nsec), INT2FIX(TIME_SCALE), LONG2FIX(1000000000));
-        if (nano_num != Qnil) {
+        if (!NIL_P(nano_num)) {
             VALUE nano = quov(num_exact(nano_num), num_exact(nano_den));
             vtm.subsecx = addv(vtm.subsecx, mulquov(nano, INT2FIX(TIME_SCALE), LONG2FIX(1000000000)));
         }
-        else if (submicro != Qnil) { /* for Ruby 1.9.1 compatibility */
+        else if (!NIL_P(submicro)) { /* for Ruby 1.9.1 compatibility */
             unsigned char *ptr;
             long len;
             int digit;

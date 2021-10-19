@@ -745,7 +745,7 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 	arg.self = self;
 	arg.unknown_keywords = Qnil;
 	rb_hash_foreach(argv[0], struct_hash_set_i, (VALUE)&arg);
-	if (arg.unknown_keywords != Qnil) {
+	if (!NIL_P(arg.unknown_keywords)) {
 	    rb_raise(rb_eArgError, "unknown keywords: %s",
 		     RSTRING_PTR(rb_ary_join(arg.unknown_keywords, rb_str_new2(", "))));
 	}

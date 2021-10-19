@@ -720,7 +720,7 @@ transient_heap_block_evacuate(struct transient_heap* theap, struct transient_hea
 
         if (TRANSIENT_HEAP_DEBUG >= 3) fprintf(stderr, " * transient_heap_block_evacuate %p %s\n", (void *)header, rb_obj_info(obj));
 
-        if (obj != Qnil) {
+        if (!NIL_P(obj)) {
             RB_DEBUG_COUNTER_INC(theap_evacuate);
 
             switch (BUILTIN_TYPE(obj)) {

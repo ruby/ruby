@@ -88,12 +88,12 @@ rb_fiber_scheduler_set(VALUE scheduler)
     rb_thread_t *thread = GET_THREAD();
     VM_ASSERT(thread);
 
-    if (scheduler != Qnil) {
+    if (!NIL_P(scheduler)) {
         verify_interface(scheduler);
     }
 
     // We invoke Scheduler#close when setting it to something else, to ensure the previous scheduler runs to completion before changing the scheduler. That way, we do not need to consider interactions, e.g., of a Fiber from the previous scheduler with the new scheduler.
-    if (thread->scheduler != Qnil) {
+    if (!NIL_P(thread->scheduler)) {
         rb_fiber_scheduler_close(thread->scheduler);
     }
 

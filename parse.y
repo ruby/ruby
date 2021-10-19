@@ -12903,7 +12903,7 @@ reg_fragment_check(struct parser_params* p, VALUE str, int options)
     VALUE err;
     reg_fragment_setenc(p, str, options);
     err = rb_reg_check_preprocess(str);
-    if (err != Qnil) {
+    if (!NIL_P(err)) {
         err = rb_obj_as_string(err);
         compile_error(p, "%"PRIsVALUE, err);
 	return 0;

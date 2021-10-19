@@ -514,7 +514,7 @@ vm_stat(int argc, VALUE *argv, VALUE self)
 #define SET(name, attr) \
     if (key == sym_##name) \
 	return SERIALT2NUM(attr); \
-    else if (hash != Qnil) \
+    else if (!NIL_P(hash)) \
 	rb_hash_aset(hash, sym_##name, SERIALT2NUM(attr));
 
     SET(global_constant_state, ruby_vm_global_constant_state);
