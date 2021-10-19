@@ -1084,14 +1084,16 @@ static bool
 iv_index_tbl_lookup(struct st_table *iv_index_tbl, ID id, struct rb_iv_index_tbl_entry **ent)
 {
     int found;
+    st_data_t ent_data;
 
     if (iv_index_tbl == NULL) return false;
 
     RB_VM_LOCK_ENTER();
     {
-        found = st_lookup(iv_index_tbl, (st_data_t)id, (st_data_t *)ent);
+        found = st_lookup(iv_index_tbl, (st_data_t)id, &ent_data);
     }
     RB_VM_LOCK_LEAVE();
+    if (found) *ent = (struct rb_iv_index_tbl_entry *)ent_data;
 
     return found ? true : false;
 }
