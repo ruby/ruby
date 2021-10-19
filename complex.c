@@ -217,7 +217,7 @@ f_denominator(VALUE x)
     if (RB_FLOAT_TYPE_P(x)) {
         return rb_float_denominator(x);
     }
-    return INT2FIX(1);
+    return ONE;
 }
 
 inline static VALUE
@@ -1680,7 +1680,7 @@ nucomp_to_c(VALUE self)
 static VALUE
 nilclass_to_c(VALUE self)
 {
-    return rb_complex_new1(INT2FIX(0));
+    return rb_complex_new1(ZERO);
 }
 
 /*
@@ -2156,7 +2156,7 @@ numeric_real(VALUE self)
 static VALUE
 numeric_imag(VALUE self)
 {
-    return INT2FIX(0);
+    return ZERO;
 }
 
 /*
@@ -2183,7 +2183,7 @@ static VALUE
 numeric_arg(VALUE self)
 {
     if (f_positive_p(self))
-        return INT2FIX(0);
+        return ZERO;
     return DBL2NUM(M_PI);
 }
 
@@ -2197,7 +2197,7 @@ numeric_arg(VALUE self)
 static VALUE
 numeric_rect(VALUE self)
 {
-    return rb_assoc_new(self, INT2FIX(0));
+    return rb_assoc_new(self, ZERO);
 }
 
 /*
@@ -2257,7 +2257,7 @@ float_arg(VALUE self)
     if (isnan(RFLOAT_VALUE(self)))
 	return self;
     if (f_tpositive_p(self))
-	return INT2FIX(0);
+	return ZERO;
     return rb_const_get(rb_mMath, id_PI);
 }
 
