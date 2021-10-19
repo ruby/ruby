@@ -78,7 +78,7 @@ x86opnd_t mem_opnd_sib(uint32_t num_bits, x86opnd_t base_reg, x86opnd_t index_re
         scale_exp = 0;
         break;
       default:
-        assert(false && "scale not one of 1,2,4,8");
+        rb_bug("yjit: scale not one of 1,2,4,8");
         break;
     }
 
@@ -466,7 +466,7 @@ static bool rex_needed(x86opnd_t opnd)
         return (opnd.as.mem.base_reg_no > 7) || (opnd.as.mem.has_idx && opnd.as.mem.idx_reg_no > 7);
     }
 
-    assert (false);
+    rb_bug("unreachable");
 }
 
 // Check if an SIB byte is needed to encode this operand
@@ -643,7 +643,7 @@ static void cb_write_rm(
         else if (dsize == 32)
             mod = 2;
         else
-            assert (false);
+            rb_bug("unreachable");
     }
 
     // Encode the reg field
@@ -726,7 +726,7 @@ static void write_rm_unary(
     if (opnd.type == OPND_REG || opnd.type == OPND_MEM)
         opndSize = opnd.num_bits;
     else
-        assert (false && "invalid operand");
+        rb_bug("yjit: invalid operand");
 
     assert (opndSize == 8 || opndSize == 16 || opndSize == 32 || opndSize == 64);
     bool szPref = opndSize == 16;
@@ -856,7 +856,7 @@ static void cb_write_shift(
     if (opnd0.type == OPND_REG || opnd0.type == OPND_MEM)
         opndSize = opnd0.num_bits;
     else
-        assert (false && "shift: invalid first operand");
+        rb_bug("yjit: shift: invalid first operand");
 
     assert (opndSize == 16 || opndSize == 32 || opndSize == 64);
     bool szPref = opndSize == 16;
