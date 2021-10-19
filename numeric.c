@@ -566,7 +566,7 @@ num_dup(VALUE x)
 
 /*
  *  call-seq:
- *    +num -> self
+ *    +self -> self
  *
  *  Returns +self+.
  *
@@ -588,7 +588,7 @@ num_uplus(VALUE num)
  *    -2.i             # => (0-2i)
  *    2.0.i            # => (0+2.0i)
  *    Rational(1, 2).i # => (0+(1/2)*i)
- *    Complex(3, 4).i # Raises NoMethodError.
+ *    Complex(3, 4).i  # Raises NoMethodError.
  *
  */
 
@@ -600,7 +600,7 @@ num_imaginary(VALUE num)
 
 /*
  *  call-seq:
- *     -num  ->  numeric
+ *    -self -> numeric
  *
  *  Unary Minus---Returns the receiver, negated.
  */
@@ -618,9 +618,15 @@ num_uminus(VALUE num)
 
 /*
  *  call-seq:
- *     num.fdiv(numeric)  ->  float
+ *    fdiv(other) -> float
  *
- *  Returns float division.
+ *  Returns the quotient <tt>self/other</tt> as a float,
+ *  using method +/+ in the derived class of +self+.
+ *  (\Numeric itself does not define method +/+.)
+ *
+ *  Of the Core and Standard Library classes,
+ *  only BigDecimal uses this implementation.
+ *
  */
 
 static VALUE
@@ -631,14 +637,15 @@ num_fdiv(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.div(numeric)  ->  integer
+ *    div(other) -> integer
  *
- *  Uses +/+ to perform division, then converts the result to an integer.
- *  Numeric does not define the +/+ operator; this is left to subclasses.
+ *  Returns the quotient <tt>self/other</tt> as an integer (via +floor+),
+ *  using method +/+ in the derived class of +self+.
+ *  (\Numeric itself does not define method +/+.)
  *
- *  Equivalent to <code>num.divmod(numeric)[0]</code>.
+ *  Of the Core and Standard Library classes,
+ *  Float, Rational, and Complex use this implementation.
  *
- *  See Numeric#divmod.
  */
 
 static VALUE
@@ -779,16 +786,16 @@ num_divmod(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.abs        ->  numeric
- *     num.magnitude  ->  numeric
+ *    abs -> numeric
  *
- *  Returns the absolute value of +num+.
+ *  Returns the absolute value of +self+.
  *
- *     12.abs         #=> 12
- *     (-34.56).abs   #=> 34.56
- *     -34.56.abs     #=> 34.56
+ *    12.abs        #=> 12
+ *    (-34.56).abs  #=> 34.56
+ *    -34.56.abs    #=> 34.56
  *
  *  Numeric#magnitude is an alias for Numeric#abs.
+ *
  */
 
 static VALUE
@@ -802,9 +809,13 @@ num_abs(VALUE num)
 
 /*
  *  call-seq:
- *     num.zero?  ->  true or false
+ *    zero? -> true or false
  *
- *  Returns +true+ if +num+ has a zero value.
+ *  Returns +true+ if +zero+ has a zero value, +false+ otherwise.
+ *
+ *  Of the Core and Standard Library classes,
+ *  only Rational and Complex use this implementation.
+ *
  */
 
 static VALUE
@@ -831,15 +842,20 @@ rb_int_zero_p(VALUE num)
 
 /*
  *  call-seq:
- *     num.nonzero?  ->  self or nil
+ *    nonzero?  ->  self or nil
  *
- *  Returns +self+ if +num+ is not zero, +nil+ otherwise.
+ *  Returns +self+ if +self+ is not a zero value, +nil+ otherwise;
+ *  uses method <tt>zero?</tt> for the evaluation.
  *
- *  This behavior is useful when chaining comparisons:
+ *  The returned +self+ allows the method to be chained:
  *
- *     a = %w( z Bb bB bb BB a aA Aa AA A )
- *     b = a.sort {|a,b| (a.downcase <=> b.downcase).nonzero? || a <=> b }
- *     b   #=> ["A", "a", "AA", "Aa", "aA", "BB", "Bb", "bB", "bb", "z"]
+ *    a = %w[z Bb bB bb BB a aA Aa AA A]
+ *    a.sort {|a, b| (a.downcase <=> b.downcase).nonzero? || a <=> b }
+ *    # => ["A", "a", "AA", "Aa", "aA", "BB", "Bb", "bB", "bb", "z"]
+ *
+ *  Of the Core and Standard Library classes,
+ *  Integer, Float, Rational, and Complex use this implementation.
+ *
  */
 
 static VALUE
@@ -853,13 +869,21 @@ num_nonzero_p(VALUE num)
 
 /*
  *  call-seq:
- *     num.to_int  ->  integer
+ *    to_int -> integer
  *
- *  Invokes the child class's +to_i+ method to convert +num+ to an integer.
+ *  Returns +self+ as an integer;
+ *  converts using method +to_i+ in the derived class.
  *
- *      1.0.class          #=> Float
- *      1.0.to_int.class   #=> Integer
- *      1.0.to_i.class     #=> Integer
+ *  Of the Core and Standard Library classes,
+ *  only Rational and Complex use this implementation.
+ *
+ *  Examples:
+ *
+ *    Rational(1, 2).to_int # => 0
+ *    Rational(2, 1).to_int # => 2
+ *    Complex(2, 0).to_int  # => 2
+ *    Complex(2, 1)         # Raises RangeError (non-zero imaginary part)
+ *
  */
 
 static VALUE
@@ -870,9 +894,10 @@ num_to_int(VALUE num)
 
 /*
  *  call-seq:
- *     num.positive?  ->  true or false
+ *    positive? -> true or false
  *
- *  Returns +true+ if +num+ is greater than 0.
+ *  Returns +true+ if +self+ is greater than 0, +false+ otherwise.
+ *
  */
 
 static VALUE
@@ -893,9 +918,10 @@ num_positive_p(VALUE num)
 
 /*
  *  call-seq:
- *     num.negative?  ->  true or false
+ *    negative? -> true or false
  *
- *  Returns +true+ if +num+ is less than 0.
+ *  Returns +true+ if +self+ is less than 0, +false+ otherwise.
+ *
  */
 
 static VALUE
