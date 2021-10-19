@@ -1455,7 +1455,7 @@ jit_chain_guard(enum jcc_kinds jcc, jitstate_t *jit, const ctx_t *ctx, uint8_t d
         target0_gen_fn = gen_jbe_to_target0;
         break;
       default:
-        RUBY_ASSERT(false && "unimplemented jump kind");
+        rb_bug("yjit: unimplemented jump kind");
         break;
     };
 

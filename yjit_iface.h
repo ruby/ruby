@@ -22,8 +22,10 @@ static VALUE *yjit_iseq_pc_at_idx(const rb_iseq_t *iseq, uint32_t insn_idx);
 static int yjit_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc);
 static void yjit_print_iseq(const rb_iseq_t *iseq);
 
+#if YJIT_STATS
 // this function *must* return passed exit_pc
 static const VALUE *yjit_count_side_exit_op(const VALUE *exit_pc);
+#endif
 
 static void yjit_unlink_method_lookup_dependency(block_t *block);
 static void yjit_block_assumptions_free(block_t *block);

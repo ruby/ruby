@@ -6,6 +6,15 @@
 #include <string.h>
 #include <assert.h>
 
+// This test executable doesn't compile with the rest of Ruby
+// so we need to define a rb_bug().
+_Noreturn
+static void rb_bug(char *message)
+{
+    fprintf(stderr, "%s\n", message);
+    abort();
+}
+
 #include "yjit_asm.c"
 
 // Print the bytes in a code block
