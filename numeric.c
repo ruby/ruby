@@ -2773,6 +2773,12 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
  *  Of the Core and Standard Library classes,
  *  Integer, Float, and Rational use this implementation.
  *
+ *  A quick example:
+ *
+ *    squares = []
+ *    1.step(by: 2, to: 10) {|i| squares.push(i*i) }
+ *    squares # => [1, 9, 25, 49, 81]
+ *
  *  The generated sequence:
  *
  *  - Begins with +self+.
