@@ -154,6 +154,7 @@ jobs:
 
           - { name: NDEBUG,                         env: { cppflags: '-DNDEBUG' } }
           - { name: RUBY_DEBUG,                     env: { cppflags: '-DRUBY_DEBUG' } }
+          - { name: RUBY_DEVEL,                     env: { cppflags: '-DRUBY_DEVEL' } }
 #         - { name: ARRAY_DEBUG,                    env: { cppflags: '-DARRAY_DEBUG' } }
 #         - { name: BIGNUM_DEBUG,                   env: { cppflags: '-DBIGNUM_DEBUG' } }
 #         - { name: CCAN_LIST_DEBUG,                env: { cppflags: '-DCCAN_LIST_DEBUG' } }

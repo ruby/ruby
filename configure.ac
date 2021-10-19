@@ -622,8 +622,7 @@ AS_IF([test "$fdeclspec" = yes], [
     RUBY_APPEND_OPTIONS(CXXFLAGS, -fdeclspec)
 ])
 
-AS_CASE([$RUBY_PATCHLEVEL], [-*],
-	[RUBY_DEVEL=yes], [RUBY_DEVEL=no])
+AS_IF([test "x$RUBY_DEVEL" != xyes], [RUBY_DEVEL=no])
 particular_werror_flags=$RUBY_DEVEL
 AC_ARG_ENABLE(werror,
 	AS_HELP_STRING([--disable-werror],
