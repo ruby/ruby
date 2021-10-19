@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'tsort'
+require_relative '../../../../vendored_tsort'
 
 require_relative 'dependency_graph/log'
 require_relative 'dependency_graph/vertex'
@@ -17,7 +17,7 @@ module Bundler::Molinillo
       vertices.values.each { |v| yield v }
     end
 
-    include TSort
+    include Bundler::TSort
 
     # @!visibility private
     alias tsort_each_node each
