@@ -43,7 +43,6 @@ RSpec.describe Bundler::RubygemsIntegration do
 
   describe "#download_gem" do
     let(:bundler_retry) { double(Bundler::Retry) }
-    let(:retry) { double("Bundler::Retry") }
     let(:uri) {  Bundler::URI.parse("https://foo.bar") }
     let(:path) { Gem.path.first }
     let(:spec) do
