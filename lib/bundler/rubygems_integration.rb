@@ -488,6 +488,7 @@ module Bundler
     end
 
     def fetch_specs(remote, name)
+      require "rubygems/remote_fetcher"
       path = remote.uri.to_s + "#{name}.#{Gem.marshal_version}.gz"
       fetcher = gem_remote_fetcher
       fetcher.headers = { "X-Gemfile-Source" => remote.original_uri.to_s } if remote.original_uri
@@ -506,6 +507,7 @@ module Bundler
     end
 
     def download_gem(spec, uri, path)
+      require "rubygems/remote_fetcher"
       uri = Bundler.settings.mirror_for(uri)
       fetcher = gem_remote_fetcher
       fetcher.headers = { "X-Gemfile-Source" => spec.remote.original_uri.to_s } if spec.remote.original_uri
