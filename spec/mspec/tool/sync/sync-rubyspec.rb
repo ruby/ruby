@@ -57,6 +57,10 @@ class RubyImplementation
     File.basename(git_url, ".git")
   end
 
+  def repo_path
+    "#{__dir__}/#{repo_name}"
+  end
+
   def repo_org
     File.basename(File.dirname(git_url))
   end
@@ -151,6 +155,11 @@ def rebase_commits(impl)
       if CHECK_LAST_MERGE and days_since_last_merge > 60
         raise "#{days_since_last_merge.floor} days since last merge, probably wrong commit"
       end
+
+      puts "Checking if the last merge is consistent with upstream files"
+      rubyspec_commit = `git log -n 1 --format='%s' #{last_merge}`.chomp.split('@', 2)[-1]
+      sh "git", "checkout", last_merge
+      sh "git", "diff", "--exit-code", rubyspec_commit, "--", ":!.github"
 
       puts "Rebasing..."
       sh "git", "branch", "-D", rebased if branch?(rebased)
