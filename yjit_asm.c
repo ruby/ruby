@@ -158,8 +158,7 @@ uint8_t *alloc_exec_mem(uint32_t mem_size)
         uint32_t page_size = (uint32_t)sysconf(_SC_PAGESIZE);
         uint8_t *req_addr = align_ptr((uint8_t*)&alloc_exec_mem, page_size);
 
-        while (req_addr < (uint8_t*)&alloc_exec_mem + INT32_MAX)
-        {
+        do {
             // Try to map a chunk of memory as executable
             mem_block = (uint8_t*)mmap(
                 (void*)req_addr,
@@ -177,7 +176,7 @@ uint8_t *alloc_exec_mem(uint32_t mem_size)
 
             // +4MB
             req_addr += 4 * 1024 * 1024;
-        }
+        } while (req_addr < (uint8_t*)&alloc_exec_mem + INT32_MAX);
 
     // On MacOS and other platforms
     #else
