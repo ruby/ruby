@@ -4870,7 +4870,7 @@ lock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 #else
     if (mprotect(body, HEAP_PAGE_SIZE, PROT_NONE)) {
 #endif
-        rb_bug("Couldn't protect page %p", (void *)body);
+        rb_bug("Couldn't protect page %p, errno: %s", (void *)body, strerror(errno));
     }
     else {
         gc_report(5, objspace, "Protecting page in move %p\n", (void *)body);
@@ -4887,7 +4887,7 @@ unlock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 #else
     if (mprotect(body, HEAP_PAGE_SIZE, PROT_READ | PROT_WRITE)) {
 #endif
-        rb_bug("Couldn't unprotect page %p", (void *)body);
+        rb_bug("Couldn't unprotect page %p, errno: %s", (void *)body, strerror(errno));
     }
     else {
         gc_report(5, objspace, "Unprotecting page in move %p\n", (void *)body);
