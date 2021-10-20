@@ -238,7 +238,7 @@ module Bundler
         else
           cached_path = cached_gem(spec)
         end
-        raise GemNotFound, "Missing gem file '#{spec.full_name}.gem'." unless cached_path
+        raise GemNotFound, "Missing gem file '#{spec.file_name}'." unless cached_path
         return if File.dirname(cached_path) == Bundler.app_cache.to_s
         Bundler.ui.info "  * #{File.basename(cached_path)}"
         FileUtils.cp(cached_path, Bundler.app_cache(custom_path))
@@ -461,7 +461,7 @@ module Bundler
 
         download_path = requires_sudo? ? Bundler.tmp(spec.full_name) : rubygems_dir
         download_cache_path = "#{download_path}/cache"
-        gem_path = "#{default_cache_path}/#{spec.full_name}.gem"
+        gem_path = "#{default_cache_path}/#{spec.file_name}"
 
         SharedHelpers.filesystem_access(download_cache_path) do |p|
           FileUtils.mkdir_p(p)
@@ -472,7 +472,7 @@ module Bundler
           SharedHelpers.filesystem_access(default_cache_path) do |p|
             Bundler.mkdir_p(p)
           end
-          Bundler.sudo "mv #{download_cache_path}/#{spec.full_name}.gem #{gem_path}"
+          Bundler.sudo "mv #{download_cache_path}/#{spec.file_name} #{gem_path}"
         end
 
         gem_path
@@ -512,7 +512,7 @@ module Bundler
       #         the local directory the .gem will end up in.
       #
       def download_gem(spec, download_cache_path)
-        local_path = File.join(download_cache_path, "#{spec.full_name}.gem")
+        local_path = File.join(download_cache_path, spec.file_name)
 
         if (cache_path = download_cache_path(spec)) && cache_path.file?
           SharedHelpers.filesystem_access(local_path) do
