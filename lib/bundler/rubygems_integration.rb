@@ -494,9 +494,9 @@ module Bundler
       fetcher.headers = { "X-Gemfile-Source" => remote.original_uri.to_s } if remote.original_uri
       string = fetcher.fetch_path(path)
       Bundler.load_marshal(string)
-    rescue Gem::RemoteFetcher::FetchError => e
+    rescue Gem::RemoteFetcher::FetchError
       # it's okay for prerelease to fail
-      raise e unless name == "prerelease_specs"
+      raise unless name == "prerelease_specs"
     end
 
     def fetch_all_remote_specs(remote)
