@@ -2175,3 +2175,42 @@ assert_equal 'false', %q{
   foo.failed?
   foo.failed?
 }
+
+# regression test for doing kwarg shuffle before checking for interrupts
+assert_equal 'ok', %q{
+  def new_media_drop(attributes:, product_drop:, context:, sources:)
+    nil.nomethod rescue nil # force YJIT to bail to side exit
+
+    [attributes, product_drop, context, sources]
+  end
+
+  def load_medias(product_drop: nil, raw_medias:, context:)
+    raw_medias.map do |raw_media|
+      case new_media_drop(context: context, attributes: raw_media, product_drop: product_drop, sources: [])
+      in [Hash, ProductDrop, Context, Array]
+      else
+        raise "bad shuffle"
+      end
+    end
+  end
+
+  class Context; end
+
+  class ProductDrop
+    attr_reader :title
+    def initialize(title)
+      @title = title
+    end
+  end
+
+  # Make a thread so we have thread switching interrupts
+  th = Thread.new do
+    while true; end
+  end
+  1_000.times do |i|
+    load_medias(product_drop: ProductDrop.new("foo"), raw_medias: [{}, {}], context: Context.new)
+  end
+  th.kill.join
+
+  :ok
+}
