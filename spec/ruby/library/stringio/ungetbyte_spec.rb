@@ -30,7 +30,7 @@ describe "StringIO#ungetbyte" do
     io.string.should == 'Shis is a simple string.'
   end
 
-  it "ungets the bytes of a string if given a string as an arugment" do
+  it "ungets the bytes of a string if given a string as an argument" do
     str = "\u01a9"
     io = StringIO.new(str)
     b = io.getbyte
