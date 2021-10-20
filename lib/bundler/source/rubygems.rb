@@ -460,18 +460,19 @@ module Bundler
         spec.fetch_platform
 
         download_path = requires_sudo? ? Bundler.tmp(spec.full_name) : rubygems_dir
+        download_cache_path = "#{download_path}/cache"
         gem_path = "#{rubygems_dir}/cache/#{spec.full_name}.gem"
 
-        SharedHelpers.filesystem_access("#{download_path}/cache") do |p|
+        SharedHelpers.filesystem_access(download_cache_path) do |p|
           FileUtils.mkdir_p(p)
         end
-        download_gem(spec, download_path)
+        download_gem(spec, download_cache_path)
 
         if requires_sudo?
           SharedHelpers.filesystem_access("#{rubygems_dir}/cache") do |p|
             Bundler.mkdir_p(p)
           end
-          Bundler.sudo "mv #{download_path}/cache/#{spec.full_name}.gem #{gem_path}"
+          Bundler.sudo "mv #{download_cache_path}/#{spec.full_name}.gem #{gem_path}"
         end
 
         gem_path
@@ -503,11 +504,11 @@ module Bundler
       # @param  [Specification] spec
       #         the spec we want to download or retrieve from the cache.
       #
-      # @param  [String] download_path
+      # @param  [String] download_cache_path
       #         the local directory the .gem will end up in.
       #
-      def download_gem(spec, download_path)
-        local_path = File.join(download_path, "cache/#{spec.full_name}.gem")
+      def download_gem(spec, download_cache_path)
+        local_path = File.join(download_cache_path, "#{spec.full_name}.gem")
 
         if (cache_path = download_cache_path(spec)) && cache_path.file?
           SharedHelpers.filesystem_access(local_path) do
@@ -516,7 +517,7 @@ module Bundler
         else
           uri = spec.remote.uri
           Bundler.ui.confirm("Fetching #{version_message(spec)}")
-          rubygems_local_path = Bundler.rubygems.download_gem(spec, uri, download_path)
+          rubygems_local_path = Bundler.rubygems.download_gem(spec, uri, File.dirname(download_cache_path))
 
           # older rubygems return varying file:// variants depending on version
           rubygems_local_path = rubygems_local_path.gsub(/\Afile:/, "") unless Bundler.rubygems.provides?(">= 3.2.0.rc.2")
