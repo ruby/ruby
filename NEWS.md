@@ -173,7 +173,77 @@ Outstanding ones only.
 
 ## Stdlib updates
 
-Outstanding ones only.
+* The following default gem are updated.
+  * RubyGems
+  * Bundler
+  * RDoc 6.4.0
+  * ReLine
+  * JSON 2.6.0
+  * Psych
+  * FileUtils
+  * Fiddle
+  * StringIO
+  * IO::Console 0.5.9
+  * IO::Wait
+  * CSV
+  * Etc 1.3.0
+  * Date 3.2.0
+  * Zlib 2.1.1
+  * StringScanner
+  * IpAddr
+  * Logger 1.4.4
+  * OStruct
+  * Irb
+  * Racc 1.6.0
+  * Delegate 0.2.0
+  * Benchmark 0.2.0
+  * CGI 0.3.0
+  * Readline
+  * Readline(C-ext)
+  * Timeout 0.2.0
+  * YAML 0.2.0
+  * URI
+  * OpenSSL
+  * DidYouMean
+  * Weakref 0.1.1
+  * Tempfile 0.1.2
+  * TmpDir 0.1.2
+  * English 0.7.1
+  * Net::Protocol
+  * Net::Http
+  * BigDecimal
+  * OptionParser
+  * Set
+  * Find 0.1.1
+  * Rinda
+  * Erb
+  * NKF 0.1.1
+  * Base64 0.1.1
+  * OpenUri 0.2.0
+  * SecureRandom
+  * Resolv 0.2.1
+  * Resolv::Replace 0.1.0
+  * Time 0.2.0
+  * PP
+  * Prettyprint
+  * Drb 2.1.0
+  * Pathname 0.2.0
+  * Digest 3.1.0.pre2
+  * Un 0.2.0
+* The following bundled gems are updated.
+  * minitest 5.14.4
+  * power_assert 2.0.1
+  * rake 13.0.6
+  * test-unit 3.5.0
+  * rbs 1.6.2
+  * typeprof 0.20.0
+* The following default gems are now bundled gems.
+  * net-ftp
+  * net-imap
+  * net-pop
+  * net-smtp
+  * matrix
+  * prime
 
 ## Compatibility issues
 
