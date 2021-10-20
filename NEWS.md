@@ -282,6 +282,16 @@ Excluding feature bug fixes.
 
 * `RubyVM::MJIT` is renamed to `RubyVM::JIT`. [[Feature #17490]]
 
+### YJIT: New experimental in-process JIT compiler
+
+* Disabled by default, use `--yjit` command-line option to enable YJIT.
+
+* Performance improvements on most real-world software, up to 22% on railsbench, 39% on liquid-render.
+
+* Fast warm-up times.
+
+* Limited to macOS & Linux on x86-64 platforms for now.
+
 ## Static analysis
 
 ### RBS
