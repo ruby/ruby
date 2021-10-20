@@ -90,4 +90,19 @@ describe "Float#<=>" do
     end
     (infinity_value <=> obj).should == 1
   end
+
+  it "returns 0 for -0.0 and 0.0" do
+    (-0.0 <=> 0.0).should == 0
+    (0.0 <=> -0.0).should == 0
+  end
+
+  it "returns 0 for -0.0 and 0" do
+    (-0.0 <=> 0).should == 0
+    (0 <=> -0.0).should == 0
+  end
+
+  it "returns 0 for 0.0 and 0" do
+    (0.0 <=> 0).should == 0
+    (0 <=> 0.0).should == 0
+  end
 end

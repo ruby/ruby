@@ -288,7 +288,13 @@ module KernelSpecs
 
   class Clone
     def initialize_clone(other)
-      ScratchPad.record other.object_id
+      ScratchPad.record other
+    end
+  end
+
+  class CloneFreeze
+    def initialize_clone(other, **kwargs)
+      ScratchPad.record([other, kwargs])
     end
   end
 

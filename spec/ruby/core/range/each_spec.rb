@@ -84,9 +84,27 @@ describe "Range#each" do
     enum.to_a.should == [1, 2, 3]
   end
 
-  it "raises a TypeError if the first element is a Time object" do
-    t = Time.now
-    -> { (t..t+1).each { |i| i } }.should raise_error(TypeError)
+  ruby_version_is "3.1" do
+    it "supports Time objects that respond to #succ" do
+      t = Time.utc(1970)
+      def t.succ; self + 1 end
+      t_succ = t.succ
+      def t_succ.succ; self + 1; end
+
+      (t..t_succ).to_a.should == [Time.utc(1970), Time.utc(1970, nil, nil, nil, nil, 1)]
+      (t...t_succ).to_a.should == [Time.utc(1970)]
+    end
+  end
+
+  ruby_version_is ""..."3.1" do
+    it "raises a TypeError if the first element is a Time object even if it responds to #succ" do
+      t = Time.utc(1970)
+      def t.succ; self + 1 end
+      t_succ = t.succ
+      def t_succ.succ; self + 1; end
+
+      -> { (t..t_succ).each { |i| i } }.should raise_error(TypeError)
+    end
   end
 
   it "passes each Symbol element by using #succ" do

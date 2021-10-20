@@ -70,11 +70,13 @@ describe "File.utime" do
     end
   end
 
-  it "may set nanosecond precision" do
-    t = Time.utc(2007, 11, 1, 15, 25, 0, 123456.789r)
-    File.utime(t, t, @file1)
-    File.atime(@file1).nsec.should.between?(0, 123500000)
-    File.mtime(@file1).nsec.should.between?(0, 123500000)
+  platform_is_not :windows do
+    it "sets nanosecond precision" do
+      t = Time.utc(2007, 11, 1, 15, 25, 0, 123456.789r)
+      File.utime(t, t, @file1)
+      File.atime(@file1).nsec.should == 123456789
+      File.mtime(@file1).nsec.should == 123456789
+    end
   end
 
   platform_is :linux do

@@ -38,6 +38,23 @@ describe :dir_glob, shared: true do
     end
   end
 
+  ruby_version_is "3.0" do
+    it "result is sorted by default" do
+      result = Dir.send(@method, '*')
+      result.should == result.sort
+    end
+
+    it "result is sorted with sort: true" do
+      result = Dir.send(@method, '*', sort: true)
+      result.should == result.sort
+    end
+
+    it "sort: false returns same files" do
+      result = Dir.send(@method,'*', sort: false)
+      result.sort.should == Dir.send(@method, '*').sort
+    end
+  end
+
   it "matches non-dotfiles with '*'" do
     expected = %w[
       brace
