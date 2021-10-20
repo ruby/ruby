@@ -385,11 +385,12 @@ concatstrings
 /* push the result of to_s. */
 DEFINE_INSN
 tostring
-()
-(VALUE val, VALUE str)
+(CALL_DATA cd)
 (VALUE val)
+(VALUE val)
+// attr bool leaf = false; /* calls to_s */
 {
-    val = rb_obj_as_string_result(str, val);
+    val = vm_tostring(GET_ISEQ(), ec, val, cd);
 }
 
 /* compile str to Regexp and push it.

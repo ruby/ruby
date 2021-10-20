@@ -903,4 +903,25 @@ class TestRubyOptimization < Test::Unit::TestCase
       raise  "END"
     end;
   end
+
+  def test_tostring
+    assert_raise(NoMethodError){"#{BasicObject.new}"}
+    assert_redefine_method('Symbol', 'to_s', <<-'end')
+      assert_match %r{\A#<Symbol:0x[0-9a-f]+>\z}, "#{:foo}"
+    end
+    assert_redefine_method('NilClass', 'to_s', <<-'end')
+      assert_match %r{\A#<NilClass:0x[0-9a-f]+>\z}, "#{nil}"
+    end
+    assert_redefine_method('TrueClass', 'to_s', <<-'end')
+      assert_match %r{\A#<TrueClass:0x[0-9a-f]+>\z}, "#{true}"
+    end
+    assert_redefine_method('FalseClass', 'to_s', <<-'end')
+      assert_match %r{\A#<FalseClass:0x[0-9a-f]+>\z}, "#{false}"
+    end
+    assert_redefine_method('Integer', 'to_s', <<-'end')
+      (-1..10).each { |i|
+        assert_match %r{\A#<Integer:0x[0-9a-f]+>\z}, "#{i}"
+      }
+    end
+  end
 end

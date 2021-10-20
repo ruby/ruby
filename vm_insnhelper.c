@@ -4723,6 +4723,86 @@ vm_sendish(
 #endif
 }
 
+/* vm_eval.c */
+VALUE rb_vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const VALUE *argv);
+/* object.c */
+VALUE rb_nil_to_s(VALUE);
+VALUE rb_true_to_s(VALUE);
+VALUE rb_false_to_s(VALUE);
+/* numeric.c */
+VALUE rb_int_to_s(int argc, VALUE *argv, VALUE x);
+VALUE rb_vm_tostring_int_to_s(long i);
+
+static VALUE
+vm_tostring(const rb_iseq_t *iseq, rb_execution_context_t *ec, VALUE recv, CALL_DATA cd)
+{
+    struct rb_calling_info calling;
+    VALUE val;
+
+    switch(TYPE(recv)) {
+      case T_STRING:
+        return recv;
+      case T_SYMBOL:
+        calling.cc = vm_search_method((VALUE)iseq, cd, recv);
+        if (check_cfunc(vm_cc_cme(calling.cc), rb_sym_to_s)) {
+            return rb_sym2str(recv);
+        }
+        break;
+      case T_NIL:
+        calling.cc = vm_search_method((VALUE)iseq, cd, recv);
+        if (check_cfunc(vm_cc_cme(calling.cc), rb_nil_to_s)) {
+            return rb_nil_to_s(recv);
+        }
+        break;
+      case T_TRUE:
+        calling.cc = vm_search_method((VALUE)iseq, cd, recv);
+        if (check_cfunc(vm_cc_cme(calling.cc), rb_true_to_s)) {
+            return rb_true_to_s(recv);
+        }
+        break;
+      case T_FALSE:
+        calling.cc = vm_search_method((VALUE)iseq, cd, recv);
+        if (check_cfunc(vm_cc_cme(calling.cc), rb_false_to_s)) {
+            return rb_false_to_s(recv);
+        }
+        break;
+      case T_FIXNUM:
+        {
+        long i = FIX2LONG(recv);
+        calling.cc = vm_search_method((VALUE)iseq, cd, recv);
+        if (i >= 0 && i < 10 && check_cfunc(vm_cc_cme(calling.cc), rb_int_to_s)) {
+            return rb_vm_tostring_int_to_s(i);
+        }
+        break;
+        }
+      default:
+        calling.cc = vm_search_method((VALUE)iseq, cd, recv);
+    }
+
+    calling.ci = cd->ci;
+    calling.block_handler = VM_BLOCK_HANDLER_NONE;
+    calling.argc = 0;
+    calling.recv = recv;
+    calling.kw_splat = RB_NO_KEYWORDS;
+
+    if (UNLIKELY(vm_cc_cme(calling.cc) == NULL)) {
+        val = rb_funcall(recv, idTo_s, 0);
+    }
+    else if (UNLIKELY(vm_cc_cme(calling.cc)->def->type == VM_METHOD_TYPE_REFINED)) {
+        const rb_callable_method_entry_t *cme = rb_callable_method_entry_with_refinements(CLASS_OF(recv), idTo_s, NULL);
+        if (cme) {
+            val = rb_vm_call0(ec, recv, idTo_s, 0, NULL, cme, RB_NO_KEYWORDS);
+        }
+        else {
+            val = rb_funcall(recv, idTo_s, 0);
+        }
+    }
+    else {
+        val = rb_vm_call0_body(ec, &calling, NULL);
+    }
+    return RB_TYPE_P(val, T_STRING) ? val : rb_any_to_s(recv);
+}
+
 static VALUE
 vm_opt_str_freeze(VALUE str, int bop, ID id)
 {

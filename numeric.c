@@ -3631,6 +3631,14 @@ rb_fix2str(VALUE x, int base)
     return rb_usascii_str_new(b, e - b);
 }
 
+static VALUE rb_vm_tostring_static_fixnum[10];
+
+MJIT_FUNC_EXPORTED VALUE
+rb_vm_tostring_int_to_s(long i)
+{
+    return rb_vm_tostring_static_fixnum[i];
+}
+
 /*
  *  call-seq:
  *    to_s(base = 10)  ->  string
@@ -3652,8 +3660,8 @@ rb_fix2str(VALUE x, int base)
  *
  */
 
-static VALUE
-int_to_s(int argc, VALUE *argv, VALUE x)
+MJIT_FUNC_EXPORTED VALUE
+rb_int_to_s(int argc, VALUE *argv, VALUE x)
 {
     int base;
 
@@ -5949,7 +5957,7 @@ Init_Numeric(void)
     rb_define_singleton_method(rb_cInteger, "sqrt", rb_int_s_isqrt, 1);
     rb_define_singleton_method(rb_cInteger, "try_convert", int_s_try_convert, 1);
 
-    rb_define_method(rb_cInteger, "to_s", int_to_s, -1);
+    rb_define_method(rb_cInteger, "to_s", rb_int_to_s, -1);
     rb_define_alias(rb_cInteger, "inspect", "to_s");
     rb_define_method(rb_cInteger, "allbits?", int_allbits_p, 1);
     rb_define_method(rb_cInteger, "anybits?", int_anybits_p, 1);
@@ -5998,6 +6006,20 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, ">>", rb_int_rshift, 1);
 
     rb_define_method(rb_cInteger, "digits", rb_int_digits, -1);
+
+    rb_vm_tostring_static_fixnum[0] = rb_str_freeze(rb_str_new_cstr("0"));
+    rb_vm_tostring_static_fixnum[1] = rb_str_freeze(rb_str_new_cstr("1"));
+    rb_vm_tostring_static_fixnum[2] = rb_str_freeze(rb_str_new_cstr("2"));
+    rb_vm_tostring_static_fixnum[3] = rb_str_freeze(rb_str_new_cstr("3"));
+    rb_vm_tostring_static_fixnum[4] = rb_str_freeze(rb_str_new_cstr("4"));
+    rb_vm_tostring_static_fixnum[5] = rb_str_freeze(rb_str_new_cstr("5"));
+    rb_vm_tostring_static_fixnum[6] = rb_str_freeze(rb_str_new_cstr("6"));
+    rb_vm_tostring_static_fixnum[7] = rb_str_freeze(rb_str_new_cstr("7"));
+    rb_vm_tostring_static_fixnum[8] = rb_str_freeze(rb_str_new_cstr("8"));
+    rb_vm_tostring_static_fixnum[9] = rb_str_freeze(rb_str_new_cstr("9"));
+    for(int i = 0; i < 10; i++) {
+        rb_gc_register_mark_object(rb_vm_tostring_static_fixnum[i]);
+    }
 
     /* An obsolete class, use Integer */
     rb_define_const(rb_cObject, "Fixnum", rb_cInteger);
