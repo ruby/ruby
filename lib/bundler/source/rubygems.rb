@@ -461,7 +461,7 @@ module Bundler
 
         download_path = requires_sudo? ? Bundler.tmp(spec.full_name) : rubygems_dir
         download_cache_path = "#{download_path}/cache"
-        gem_path = "#{rubygems_dir}/cache/#{spec.full_name}.gem"
+        gem_path = "#{default_cache_path}/#{spec.full_name}.gem"
 
         SharedHelpers.filesystem_access(download_cache_path) do |p|
           FileUtils.mkdir_p(p)
@@ -469,7 +469,7 @@ module Bundler
         download_gem(spec, download_cache_path)
 
         if requires_sudo?
-          SharedHelpers.filesystem_access("#{rubygems_dir}/cache") do |p|
+          SharedHelpers.filesystem_access(default_cache_path) do |p|
             Bundler.mkdir_p(p)
           end
           Bundler.sudo "mv #{download_cache_path}/#{spec.full_name}.gem #{gem_path}"
@@ -490,6 +490,10 @@ module Bundler
 
       def rubygems_dir
         Bundler.rubygems.gem_dir
+      end
+
+      def default_cache_path
+        "#{rubygems_dir}/cache"
       end
 
       def cache_path
