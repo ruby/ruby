@@ -189,6 +189,8 @@ Excluding feature bug fixes.
 * `ERB#initialize` warns `safe_level` and later arguments even without -w.
   [[Feature #14256]]
 
+* `lib/debug.rb` is replaced with `debug.gem`
+
 ## C API updates
 
 * Documented. [[GH-4815]]
@@ -215,6 +217,16 @@ Excluding feature bug fixes.
 ### RBS
 
 ### TypeProf
+
+## Debugger
+
+* A new debugger [debug.gem](https://github.com/ruby/debug) is bundled.
+  debug.gem is fast debugger implementation and it provides many features
+  like remote debugging, colorful REPL, IDE (VSCode) integration and more.
+  It replaces `lib/debug.rb` standard library.
+
+* `rdbg` command is also installed into `bin/` directory to start and control
+  debugging execution.
 
 ## Miscellaneous changes
 
