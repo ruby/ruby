@@ -3363,7 +3363,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     // specified at the call site. We need to keep track of the fact that this
     // value is present on the stack in order to properly set up the callee's
     // stack pointer.
-    int kw_bits_shift = 0;
+    bool doing_kw_call = false;
 
     if (vm_ci_flag(ci) & VM_CALL_TAILCALL) {
         // We can't handle tailcalls
@@ -3476,45 +3476,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
                 }
             }
 
-            // Next, we're going to loop through every keyword that was
-            // specified by the caller and make sure that it's in the correct
-            // place. If it's not we're going to swap it around with another one.
-            for (int kwarg_idx = 0; kwarg_idx < kw_arg->keyword_len; kwarg_idx++) {
-                ID callee_kwarg = callee_kwargs[kwarg_idx];
-
-                // If the argument is already in the right order, then we don't
-                // need to generate any code since the expected value is already
-                // in the right place on the stack.
-                if (callee_kwarg == caller_kwargs[kwarg_idx]) continue;
-
-                // In this case the argument is not in the right place, so we
-                // need to find its position where it _should_ be and swap with
-                // that location.
-                for (int swap_idx = kwarg_idx + 1; swap_idx < kw_arg->keyword_len; swap_idx++) {
-                    if (callee_kwarg == caller_kwargs[swap_idx]) {
-                        // First we're going to generate the code that is going
-                        // to perform the actual swapping at runtime.
-                        stack_swap(ctx, cb, argc - 1 - swap_idx - lead_num, argc - 1 - kwarg_idx - lead_num, REG1, R9);
-
-                        // Next we're going to do some bookkeeping on our end so
-                        // that we know the order that the arguments are
-                        // actually in now.
-                        ID tmp = caller_kwargs[kwarg_idx];
-                        caller_kwargs[kwarg_idx] = caller_kwargs[swap_idx];
-                        caller_kwargs[swap_idx] = tmp;
-
-                        break;
-                    }
-                }
-            }
-
-            // Keyword arguments cause a special extra local variable to be
-            // pushed onto the stack that represents the parameters that weren't
-            // explicitly given a value. Its value is a bitmap that corresponds
-            // to the indices of the missing parameters. In this case since we
-            // know every value was specified, we can just write the value 0.
-            kw_bits_shift = 1;
-            mov(cb, ctx_stack_opnd(ctx, -1), imm_opnd(INT2FIX(0)));
+            doing_kw_call = true;
         }
         else if (argc == lead_num) {
             // Here we are calling a method that accepts keyword arguments
@@ -3580,6 +3542,76 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     cmp(cb, REG_CFP, REG0);
     jle_ptr(cb, COUNTED_EXIT(side_exit, send_se_cf_overflow));
 
+    if (doing_kw_call) {
+        // Here we're calling a method with keyword arguments and specifying
+        // keyword arguments at this call site.
+        const int lead_num = iseq->body->param.lead_num;
+
+        // This struct represents the metadata about the caller-specified
+        // keyword arguments.
+        const struct rb_callinfo_kwarg *kw_arg = vm_ci_kwarg(ci);
+
+        // This struct represents the metadata about the callee-specified
+        // keyword parameters.
+        const struct rb_iseq_param_keyword *keyword = iseq->body->param.keyword;
+
+        // Note: we are about to do argument shuffling for a keyword argument
+        // call. The various checks for whether we can do it happened earlier
+        // in this function.
+        RUBY_ASSERT((kw_arg->keyword_len == keyword->num) && (lead_num == argc - kw_arg->keyword_len));
+
+        // This is the list of keyword arguments that the callee specified
+        // in its initial declaration.
+        const ID *callee_kwargs = keyword->table;
+
+        // Here we're going to build up a list of the IDs that correspond to
+        // the caller-specified keyword arguments. If they're not in the
+        // same order as the order specified in the callee declaration, then
+        // we're going to need to generate some code to swap values around
+        // on the stack.
+        ID *caller_kwargs = ALLOCA_N(VALUE, kw_arg->keyword_len);
+        for (int kwarg_idx = 0; kwarg_idx < kw_arg->keyword_len; kwarg_idx++)
+            caller_kwargs[kwarg_idx] = SYM2ID(kw_arg->keywords[kwarg_idx]);
+
+        // Next, we're going to loop through every keyword that was
+        // specified by the caller and make sure that it's in the correct
+        // place. If it's not we're going to swap it around with another one.
+        for (int kwarg_idx = 0; kwarg_idx < kw_arg->keyword_len; kwarg_idx++) {
+            ID callee_kwarg = callee_kwargs[kwarg_idx];
+
+            // If the argument is already in the right order, then we don't
+            // need to generate any code since the expected value is already
+            // in the right place on the stack.
+            if (callee_kwarg == caller_kwargs[kwarg_idx]) continue;
+
+            // In this case the argument is not in the right place, so we
+            // need to find its position where it _should_ be and swap with
+            // that location.
+            for (int swap_idx = kwarg_idx + 1; swap_idx < kw_arg->keyword_len; swap_idx++) {
+                if (callee_kwarg == caller_kwargs[swap_idx]) {
+                    // First we're going to generate the code that is going
+                    // to perform the actual swapping at runtime.
+                    stack_swap(ctx, cb, argc - 1 - swap_idx - lead_num, argc - 1 - kwarg_idx - lead_num, REG1, REG0);
+
+                    // Next we're going to do some bookkeeping on our end so
+                    // that we know the order that the arguments are
+                    // actually in now.
+                    ID tmp = caller_kwargs[kwarg_idx];
+                    caller_kwargs[kwarg_idx] = caller_kwargs[swap_idx];
+                    caller_kwargs[swap_idx] = tmp;
+
+                    break;
+                }
+            }
+        }
+
+        // Keyword arguments cause a special extra local variable to be
+        // pushed onto the stack that represents the parameters that weren't
+        // explicitly given a value. Its value is a bitmap that corresponds
+        // to the indices of the missing parameters. In this case since we
+        // know every value was specified, we can just write the value 0.
+        mov(cb, ctx_stack_opnd(ctx, -1), imm_opnd(INT2FIX(0)));
+    }
     // Points to the receiver operand on the stack
     x86opnd_t recv = ctx_stack_opnd(ctx, argc);
 
@@ -3599,7 +3631,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     }
 
     // Adjust the callee's stack pointer
-    lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * (3 + num_locals + kw_bits_shift)));
+    lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * (3 + num_locals + doing_kw_call)));
 
     // Initialize local variables to Qnil
     for (int i = 0; i < num_locals; i++) {
