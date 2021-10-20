@@ -1425,21 +1425,8 @@ rb_float_pow(VALUE x, VALUE y)
  *    1.eql?(Rational(1, 1)) # => false
  *    1.eql?(Complex(1, 0))  # => false
  *
- *    r = Rational(1, 1)     # => (1/1)
- *    r.eql?(1)              # => false
- *    r.eql?(1.0)            # => false
- *    r.eql?(Complex(1, 0))  # => false
- *    c = Complex(1, 0)      # => (1+0i)
- *    c.eql?(1)              # => false
- *    c.eql?(1.0)            # => false
- *    c.eql?(Rational(1, 1))  # => false
- *
- *  Contrast this method with Numeric#== (inherited from Object#==),
- *  which performs type conversions:
- *
- *    1 == 1.0               # => true
- *    1 == Rational(1, 1)    # => true
- *    1 == Complex(1, 0)     # => true
+ *  \Method +eql?+ is different from +==+ in that +eql?+ requires matching types,
+ *  while +==+ does not.
  *
  */
 
@@ -2763,10 +2750,14 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *    step(by: step = 1, to: limit = nil) {|n| ... } ->  self
- *    step(by: step = 1, to: limit = nil)            ->  enumerator
- *    step(limit = nil, step = 1) {|n| ... }         ->  self
- *    step(limit = nil, step = 1)                    ->  enumerator
+ *    step(to = nil, by = 1) {|n| ... } ->  self
+ *    step(to = nil, by = 1)            ->  enumerator
+ *    step(to = nil, by: 1) {|n| ... }  ->  self
+ *    step(to = nil, by: 1)             ->  enumerator
+ *    step(by: 1, to: ) {|n| ... }      ->  self
+ *    step(by: 1, to: )                 ->  enumerator
+ *    step(by: , to: nil) {|n| ... }    ->  self
+ *    step(by: , to: nil)               ->  enumerator
  *
  *  Generates a sequence of numbers; with a block given, traverses the sequence.
  *
@@ -2789,7 +2780,7 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
  *    If +limit+ is not given, the sequence is of infinite length.
  *
  *  If a block is given, calls the block with each number in the sequence;
- *  returns +self+.  If no block is given, returns a specialized enumerator.
+ *  returns +self+.  If no block is given, returns an Enumerator::ArithmeticSequence.
  *
  *  <b>Keyword Arguments</b>
  *
@@ -2822,23 +2813,24 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
  *    4.step(by:2) {|i| squares.push(i*i); break if i > 10 }
  *    squares # => [16, 36, 64, 100, 144]
  *
- *    # Neither keyword given
- *    squares = []
- *    4.step {|i| squares.push(i*i); break if i > 10 }  # => nil
- *    squares # => [16, 25, 36, 49, 64, 81, 100, 121]
- *
  *    # No block given.
  *    e = 3.step(by: -1.5, to: -3) # => (3.step(by: -1.5, to: -3))
  *    e.class                      # => Enumerator::ArithmeticSequence
  *
  *  <b>Positional Arguments</b>
  *
- *  With positional arguments +limit+ and +step+,
+ *  With positional arguments +limit+ and optionally +step+,
  *  their values (or defaults) determine the step and limit:
  *
  *    squares = []
  *    4.step(10, 2) {|i| squares.push(i*i) }    # => 4
  *    squares # => [16, 36, 64, 100]
+ *    squares = []
+ *    4.step(10) {|i| squares.push(i*i) }
+ *    squares # => [16, 25, 36, 49, 64, 81, 100]
+ *    squares = []
+ *    4.step {|i| squares.push(i*i); break if i > 10 }  # => nil
+ *    squares # => [16, 25, 36, 49, 64, 81, 100, 121]
  *
  * <b>Implementation Notes</b>
  *
