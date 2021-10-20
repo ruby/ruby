@@ -218,6 +218,9 @@ Excluding feature bug fixes.
 
 ### TypeProf
 
+* [Experimental IDE support](https://github.com/ruby/typeprof/blob/master/doc/ide.md) has been implemented.
+* Many bug fixes and performance improvements since Ruby 3.0.0.
+
 ## Debugger
 
 * A new debugger [debug.gem](https://github.com/ruby/debug) is bundled.
@@ -227,6 +230,24 @@ Excluding feature bug fixes.
 
 * `rdbg` command is also installed into `bin/` directory to start and control
   debugging execution.
+
+## error_highlight
+
+A built-in gem, error_highlight, has been introduced.
+It includes fine-grained error location in backtrace:
+
+```
+$ ruby test.rb
+test.rb:1:in `<main>': undefined method `time' for 1:Integer (NoMethodError)
+
+1.time {}
+ ^^^^^
+Did you mean?  times
+```
+
+This gem is enabled by default.
+You can disable it by using a command-line option `--disable-error_highlight`.
+See [the repository](https://github.com/ruby/error_highlight) in detail.
 
 ## Miscellaneous changes
 
