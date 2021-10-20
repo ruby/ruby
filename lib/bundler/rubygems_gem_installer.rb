@@ -31,7 +31,10 @@ module Bundler
       generate_plugins
 
       write_spec
-      write_cache_file
+
+      SharedHelpers.filesystem_access("#{gem_home}/cache", :write) do
+        write_cache_file
+      end
 
       say spec.post_install_message unless spec.post_install_message.nil?
 

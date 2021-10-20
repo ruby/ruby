@@ -37,6 +37,18 @@ RSpec.describe "global gem caching" do
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
 
+    it "shows a proper error message if a cached gem is corrupted" do
+      source_global_cache.mkpath
+      FileUtils.touch(source_global_cache("rack-1.0.0.gem"))
+
+      install_gemfile <<-G, :artifice => "compact_index_no_gem", :raise_on_error => false
+        source "#{source}"
+        gem "rack"
+      G
+
+      expect(err).to include("Gem::Package::FormatError: package metadata is missing in #{source_global_cache("rack-1.0.0.gem")}")
+    end
+
     describe "when the same gem from different sources is installed" do
       it "should use the appropriate one from the global cache" do
         install_gemfile <<-G, :artifice => "compact_index"

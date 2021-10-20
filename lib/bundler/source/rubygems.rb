@@ -357,7 +357,7 @@ module Bundler
       end
 
       def cached_path(spec)
-        possibilities = @caches.map {|p| "#{p}/#{spec.file_name}" }
+        possibilities = (@caches << download_cache_path(spec)).compact.map {|p| "#{p}/#{spec.file_name}" }
         possibilities.find {|p| File.exist?(p) }
       end
 
@@ -456,9 +456,15 @@ module Bundler
 
         spec.fetch_platform
 
-        download_path = requires_sudo? ? Bundler.tmp(spec.full_name) : rubygems_dir
-        download_cache_path = "#{download_path}/cache"
-        gem_path = "#{default_cache_path}/#{spec.file_name}"
+        cache_path = download_cache_path(spec) || default_cache_path_for(rubygems_dir)
+        gem_path = "#{cache_path}/#{spec.file_name}"
+
+        if requires_sudo?
+          download_path = Bundler.tmp(spec.full_name)
+          download_cache_path = default_cache_path_for(download_path)
+        else
+          download_cache_path = cache_path
+        end
 
         SharedHelpers.filesystem_access(download_cache_path) do |p|
           FileUtils.mkdir_p(p)
@@ -466,7 +472,7 @@ module Bundler
         download_gem(spec, download_cache_path)
 
         if requires_sudo?
-          SharedHelpers.filesystem_access(default_cache_path) do |p|
+          SharedHelpers.filesystem_access(cache_path) do |p|
             Bundler.mkdir_p(p)
           end
           Bundler.sudo "mv #{download_cache_path}/#{spec.file_name} #{gem_path}"
@@ -489,8 +495,8 @@ module Bundler
         Bundler.rubygems.gem_dir
       end
 
-      def default_cache_path
-        "#{rubygems_dir}/cache"
+      def default_cache_path_for(dir)
+        "#{dir}/cache"
       end
 
       def cache_path
@@ -509,38 +515,9 @@ module Bundler
       #         the local directory the .gem will end up in.
       #
       def download_gem(spec, download_cache_path)
-        local_path = File.join(download_cache_path, spec.file_name)
-
-        if (cache_path = download_cache_path(spec)) && cache_path.file?
-          SharedHelpers.filesystem_access(local_path) do
-            FileUtils.cp(cache_path, local_path)
-          end
-        else
-          uri = spec.remote.uri
-          Bundler.ui.confirm("Fetching #{version_message(spec)}")
-          Bundler.rubygems.download_gem(spec, uri, download_cache_path)
-          cache_globally(spec, local_path)
-        end
-      end
-
-      # Checks if the requested spec exists in the global cache. If it does
-      # not, we create the relevant global cache subdirectory if it does not
-      # exist and copy the spec from the local cache to the global cache.
-      #
-      # @param  [Specification] spec
-      #         the spec we want to copy to the global cache.
-      #
-      # @param  [String] local_cache_path
-      #         the local directory from which we want to copy the .gem.
-      #
-      def cache_globally(spec, local_cache_path)
-        return unless cache_path = download_cache_path(spec)
-        return if cache_path.exist?
-
-        SharedHelpers.filesystem_access(cache_path.dirname, &:mkpath)
-        SharedHelpers.filesystem_access(cache_path) do
-          FileUtils.cp(local_cache_path, cache_path)
-        end
+        uri = spec.remote.uri
+        Bundler.ui.confirm("Fetching #{version_message(spec)}")
+        Bundler.rubygems.download_gem(spec, uri, download_cache_path)
       end
 
       # Returns the global cache path of the calling Rubygems::Source object.
@@ -559,7 +536,7 @@ module Bundler
         return unless remote = spec.remote
         return unless cache_slug = remote.cache_slug
 
-        Bundler.user_cache.join("gems", cache_slug, spec.file_name)
+        Bundler.user_cache.join("gems", cache_slug)
       end
 
       def extension_cache_slug(spec)
