@@ -506,13 +506,32 @@ module Bundler
       specs.concat(pres)
     end
 
-    def download_gem(spec, uri, path)
+    def download_gem(spec, uri, cache_dir)
       require "rubygems/remote_fetcher"
       uri = Bundler.settings.mirror_for(uri)
       fetcher = gem_remote_fetcher
       fetcher.headers = { "X-Gemfile-Source" => spec.remote.original_uri.to_s } if spec.remote.original_uri
       Bundler::Retry.new("download gem from #{uri}").attempts do
-        fetcher.download(spec, uri, path)
+        gem_file_name = spec.file_name
+        local_gem_path = File.join cache_dir, gem_file_name
+        return if File.exist? local_gem_path
+
+        begin
+          remote_gem_path = uri + "gems/#{gem_file_name}"
+          remote_gem_path = remote_gem_path.to_s if provides?("< 3.2.0.rc.1")
+
+          SharedHelpers.filesystem_access(local_gem_path) do
+            fetcher.cache_update_path remote_gem_path, local_gem_path
+          end
+        rescue Gem::RemoteFetcher::FetchError
+          raise if spec.original_platform == spec.platform
+
+          original_gem_file_name = "#{spec.original_name}.gem"
+          raise if gem_file_name == original_gem_file_name
+
+          gem_file_name = original_gem_file_name
+          retry
+        end
       end
     rescue Gem::RemoteFetcher::FetchError => e
       raise Bundler::HTTPError, "Could not download gem from #{uri} due to underlying error <#{e.message}>"
