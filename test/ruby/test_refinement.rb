@@ -2590,6 +2590,71 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal([refinement], as, "[ruby-core:86949] [Bug #14744]")
   end
 
+  module TestImport
+    class A
+      def foo
+        "original"
+      end
+    end
+
+    module B
+      BAR = "bar"
+
+      def bar
+        "#{foo}:#{BAR}"
+      end
+    end
+
+    module C
+      refine A do
+        import_methods B
+
+        def foo
+          "refined"
+        end
+      end
+    end
+
+    module D
+      refine A do
+        include B
+
+        def foo
+          "refined"
+        end
+      end
+    end
+
+    module UsingC
+      using C
+
+      def self.call_bar
+        A.new.bar
+      end
+    end
+
+    module UsingD
+      using D
+
+      def self.call_bar
+        A.new.bar
+      end
+    end
+  end
+
+  def test_import_methods
+    assert_equal("refined:bar", TestImport::UsingC.call_bar)
+    assert_equal("original:bar", TestImport::UsingD.call_bar)
+
+    assert_raise(ArgumentError) do
+      Module.new do
+        refine Integer do
+          import_methods Enumerable
+        end
+      end
+    end
+  end
+
   private
 
   def eval_using(mod, s)

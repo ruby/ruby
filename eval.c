@@ -1128,6 +1128,10 @@ rb_mod_include(int argc, VALUE *argv, VALUE module)
     CONST_ID(id_append_features, "append_features");
     CONST_ID(id_included, "included");
 
+    if (FL_TEST(module, RMODULE_IS_REFINEMENT)) {
+        rb_warn_deprecated_to_remove_at(3.2, "Refinement#include", NULL);
+    }
+
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     for (i = 0; i < argc; i++)
 	Check_Type(argv[i], T_MODULE);
@@ -1173,6 +1177,10 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
 {
     int i;
     ID id_prepend_features, id_prepended;
+
+    if (FL_TEST(module, RMODULE_IS_REFINEMENT)) {
+        rb_warn_deprecated_to_remove_at(3.2, "Refinement#prepend", NULL);
+    }
 
     CONST_ID(id_prepend_features, "prepend_features");
     CONST_ID(id_prepended, "prepended");
@@ -1397,7 +1405,7 @@ rb_mod_refine(VALUE module, VALUE klass)
     refinement = rb_hash_lookup(refinements, klass);
     if (NIL_P(refinement)) {
 	VALUE superclass = refinement_superclass(klass);
-	refinement = rb_module_new();
+	refinement = rb_refinement_new();
 	RCLASS_SET_SUPER(refinement, superclass);
 	FL_SET(refinement, RMODULE_IS_REFINEMENT);
 	CONST_ID(id_refined_class, "__refined_class__");
@@ -1500,6 +1508,63 @@ rb_mod_s_used_modules(VALUE _)
     }
 
     return rb_funcall(ary, rb_intern("uniq"), 0);
+}
+
+struct refinement_import_methods_arg {
+    rb_cref_t *cref;
+    VALUE refinement;
+    VALUE module;
+};
+
+/* vm.c */
+rb_cref_t *rb_vm_cref_dup_without_refinements(const rb_cref_t *cref);
+
+static enum rb_id_table_iterator_result
+refinement_import_methods_i(ID key, VALUE value, void *data)
+{
+    const rb_method_entry_t *me = (const rb_method_entry_t *)value;
+    struct refinement_import_methods_arg *arg = (struct refinement_import_methods_arg *)data;
+
+    if (me->def->type != VM_METHOD_TYPE_ISEQ) {
+        rb_raise(rb_eArgError, "Can't import method: %"PRIsVALUE"#%"PRIsVALUE, rb_class_path(arg->module), rb_id2str(key));
+    }
+    rb_cref_t *new_cref = rb_vm_cref_dup_without_refinements(me->def->body.iseq.cref);
+    CREF_REFINEMENTS_SET(new_cref, CREF_REFINEMENTS(arg->cref));
+    rb_add_method_iseq(arg->refinement, key, me->def->body.iseq.iseqptr, new_cref, METHOD_ENTRY_VISI(me));
+    return ID_TABLE_CONTINUE;
+}
+
+/*
+ *  call-seq:
+ *     import_methods(module, ...)    -> self
+ *
+ *  Imports methods from modules. Unlike Module#include,
+ *  Refinement#import_methods copies methods and adds them into the refinement,
+ *  so the refinement is activated in the imported methods.
+ */
+
+static VALUE
+refinement_import_methods(int argc, VALUE *argv, VALUE refinement)
+{
+    int i;
+    struct refinement_import_methods_arg arg;
+
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+    for (i = 0; i < argc; i++) {
+        Check_Type(argv[i], T_MODULE);
+        if (RCLASS_SUPER(argv[i])) {
+            rb_warn("%"PRIsVALUE" has ancestors, but Refinement#import_methods doesn't import their methods", rb_class_path(argv[i]));
+        }
+    }
+    arg.cref = rb_vm_cref_replace_with_duplicated_cref();
+    arg.refinement = refinement;
+    for (i = 0; i < argc; i++) {
+        arg.module = argv[i];
+        struct rb_id_table *m_tbl = RCLASS_M_TBL(argv[i]);
+        if (!m_tbl) continue;
+        rb_id_table_foreach(m_tbl, refinement_import_methods_i, &arg);
+    }
+    return refinement;
 }
 
 void
@@ -1885,6 +1950,7 @@ Init_eval(void)
     rb_define_singleton_method(rb_cModule, "used_modules",
 			       rb_mod_s_used_modules, 0);
     rb_undef_method(rb_cClass, "refine");
+    rb_define_private_method(rb_cRefinement, "import_methods", refinement_import_methods, -1);
 
     rb_undef_method(rb_cClass, "module_function");
 

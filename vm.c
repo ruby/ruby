@@ -294,6 +294,25 @@ vm_cref_dup(const rb_cref_t *cref)
     return new_cref;
 }
 
+
+rb_cref_t *
+rb_vm_cref_dup_without_refinements(const rb_cref_t *cref)
+{
+    VALUE klass = CREF_CLASS(cref);
+    const rb_scope_visibility_t *visi = CREF_SCOPE_VISI(cref);
+    rb_cref_t *next_cref = CREF_NEXT(cref), *new_cref;
+    int pushed_by_eval = CREF_PUSHED_BY_EVAL(cref);
+
+    new_cref = vm_cref_new(klass, visi->method_visi, visi->module_func, next_cref, pushed_by_eval);
+
+    if (!NIL_P(CREF_REFINEMENTS(cref))) {
+        CREF_REFINEMENTS_SET(new_cref, Qnil);
+        CREF_OMOD_SHARED_UNSET(new_cref);
+    }
+
+    return new_cref;
+}
+
 static rb_cref_t *
 vm_cref_new_toplevel(rb_execution_context_t *ec)
 {

@@ -681,11 +681,13 @@ Init_class_hierarchy(void)
 
     rb_cModule = boot_defclass("Module", rb_cObject);
     rb_cClass =  boot_defclass("Class",  rb_cModule);
+    rb_cRefinement =  boot_defclass("Refinement",  rb_cModule);
 
     rb_const_set(rb_cObject, rb_intern_const("BasicObject"), rb_cBasicObject);
     RBASIC_SET_CLASS(rb_cClass, rb_cClass);
     RBASIC_SET_CLASS(rb_cModule, rb_cClass);
     RBASIC_SET_CLASS(rb_cObject, rb_cClass);
+    RBASIC_SET_CLASS(rb_cRefinement, rb_cClass);
     RBASIC_SET_CLASS(rb_cBasicObject, rb_cClass);
 }
 
@@ -824,12 +826,24 @@ rb_module_s_alloc(VALUE klass)
     return mod;
 }
 
+static inline VALUE
+module_new(VALUE klass)
+{
+    VALUE mdl = class_alloc(T_MODULE, klass);
+    RCLASS_M_TBL_INIT(mdl);
+    return (VALUE)mdl;
+}
+
 VALUE
 rb_module_new(void)
 {
-    VALUE mdl = class_alloc(T_MODULE, rb_cModule);
-    RCLASS_M_TBL_INIT(mdl);
-    return (VALUE)mdl;
+    return module_new(rb_cModule);
+}
+
+VALUE
+rb_refinement_new(void)
+{
+    return module_new(rb_cRefinement);
 }
 
 // Kept for compatibility. Use rb_module_new() instead.

@@ -100,6 +100,14 @@ VALUE rb_define_class_id_under(VALUE outer, ID id, VALUE super);
  */
 VALUE rb_module_new(void);
 
+
+/**
+ * Creates a new, anonymous refinement.
+ *
+ * @return An anonymous refinement.
+ */
+VALUE rb_refinement_new(void);
+
 /**
  * This is a very badly designed API that creates an anonymous module.
  *

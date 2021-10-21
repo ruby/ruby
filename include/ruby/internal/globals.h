@@ -82,6 +82,7 @@ RUBY_EXTERN VALUE rb_cInteger;                /**< `Module` class. */
 RUBY_EXTERN VALUE rb_cMatch;                  /**< `MatchData` class. */
 RUBY_EXTERN VALUE rb_cMethod;                 /**< `Method` class. */
 RUBY_EXTERN VALUE rb_cModule;                 /**< `Module` class. */
+RUBY_EXTERN VALUE rb_cRefinement;             /**< `Refinement` class. */
 RUBY_EXTERN VALUE rb_cNameErrorMesg;          /**< `NameError::Message` class. */
 RUBY_EXTERN VALUE rb_cNilClass;               /**< `NilClass` class. */
 RUBY_EXTERN VALUE rb_cNumeric;                /**< `Numeric` class. */

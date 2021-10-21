@@ -50,6 +50,7 @@ VALUE rb_mKernel;
 VALUE rb_cObject;
 VALUE rb_cModule;
 VALUE rb_cClass;
+VALUE rb_cRefinement;
 
 VALUE rb_cNilClass;
 VALUE rb_cTrueClass;
@@ -4357,6 +4358,7 @@ InitVM_Object(void)
     rb_cObject = rb_define_class("Object", rb_cBasicObject);
     rb_cModule = rb_define_class("Module", rb_cObject);
     rb_cClass =  rb_define_class("Class",  rb_cModule);
+    rb_cRefinement = rb_define_class("Refinement", rb_cModule);
 #endif
 
     rb_define_private_method(rb_cBasicObject, "initialize", rb_obj_initialize, 0);

@@ -171,6 +171,12 @@ Outstanding ones only.
 
     * Replace copy coroutine with pthread implementation. [[Feature #18015]]
 
+* Refinement
+
+    * New class which represents a module created by Module#refine.
+      `include` and `prepend` are deprecated, and `import_methods` is added
+      instead. [[Bug #17429]]
+
 ## Stdlib updates
 
 * The following default gem are updated.
