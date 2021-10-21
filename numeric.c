@@ -1446,7 +1446,7 @@ num_eql(VALUE x, VALUE y)
  *  call-seq:
  *    self <=> other -> zero or nil
  *
- *  Returns zero if <tt>self == other</tt>, +nil+ otherwise.
+ *  Returns zero if +self+ is the same as +other+, +nil+ otherwise.
  *
  */
 
