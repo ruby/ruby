@@ -2821,7 +2821,7 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
  *
  *  <b>Positional Arguments</b>
  *
- *  With positional arguments +limit+ and +step+,
+ *  With optional positional arguments +limit+ and +step+,
  *  their values (or defaults) determine the step and limit:
  *
  *    squares = []
