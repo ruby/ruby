@@ -185,12 +185,12 @@ Outstanding ones only.
   * RDoc 6.4.0
   * ReLine
   * JSON 2.6.0
-  * Psych
-  * FileUtils
+  * Psych 4.0.2
+  * FileUtils 1.6.0
   * Fiddle
-  * StringIO
+  * StringIO 3.0.1
   * IO::Console 0.5.9
-  * IO::Wait
+  * IO::Wait 0.2.0
   * CSV
   * Etc 1.3.0
   * Date 3.2.0
@@ -198,7 +198,7 @@ Outstanding ones only.
   * StringScanner
   * IpAddr
   * Logger 1.4.4
-  * OStruct
+  * OStruct 0.5.0
   * Irb
   * Racc 1.6.0
   * Delegate 0.2.0
@@ -208,30 +208,30 @@ Outstanding ones only.
   * Readline(C-ext)
   * Timeout 0.2.0
   * YAML 0.2.0
-  * URI
+  * URI 0.11.0
   * OpenSSL
   * DidYouMean
   * Weakref 0.1.1
   * Tempfile 0.1.2
   * TmpDir 0.1.2
   * English 0.7.1
-  * Net::Protocol
-  * Net::Http
+  * Net::Protocol 0.1.2
+  * Net::Http 0.2.0
   * BigDecimal
-  * OptionParser
+  * OptionParser 0.2.0
   * Set
   * Find 0.1.1
-  * Rinda
+  * Rinda 0.1.1
   * Erb
   * NKF 0.1.1
   * Base64 0.1.1
   * OpenUri 0.2.0
-  * SecureRandom
+  * SecureRandom 0.1.1
   * Resolv 0.2.1
   * Resolv::Replace 0.1.0
   * Time 0.2.0
-  * PP
-  * Prettyprint
+  * PP 0.2.1
+  * Prettyprint 0.1.1
   * Drb 2.1.0
   * Pathname 0.2.0
   * Digest 3.1.0.pre2
