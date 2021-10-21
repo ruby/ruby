@@ -166,13 +166,13 @@ you can contribute things we will want to merge into YJIT.
 
 The YJIT source code is divided between:
 - `yjit_asm.c`: x86 in-memory assembler we use to generate machine code
-- `yjit_asm_tests.c`: tests for the in-memory assembler
 - `yjit_codegen.c`: logic for translating Ruby bytecode to machine code
 - `yjit_core.c`: basic block versioning logic, core structure of YJIT
 - `yjit_iface.c`: code YJIT uses to interface with the rest of CRuby
 - `yjit.h`: C definitions YJIT exposes to the rest of the CRuby
 - `yjit.rb`: `YJIT` Ruby module that is exposed to Ruby
 - `misc/test_yjit_asm.sh`: script to compile and run the in-memory assembler tests
+- `misc/yjit_asm_tests.c`: tests for the in-memory assembler
 
 The core of CRuby's interpreter logic is found in:
 - `insns.def`: defines Ruby's bytecode instructions (gets compiled into `vm.inc`)
