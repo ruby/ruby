@@ -125,7 +125,11 @@ matrix:
     - <<: *ppc64le-linux
     - <<: *s390x-linux
   allow_failures:
-    # - name: arm32-linux
+    # We see multiple errors indicating errors on the Travis environment itself in a short while:
+    # https://app.travis-ci.com/github/ruby/ruby/jobs/544382885
+    # https://app.travis-ci.com/github/ruby/ruby/jobs/544361370
+    # It's not a fault of Ruby's arm32 support but just Travis arm32 seems unsable.
+    - name: arm32-linux
     # - name: arm64-linux
     # We see "Some worker was crashed." in about 40% of recent ppc64le-linux jobs
     # e.g. https://app.travis-ci.com/github/ruby/ruby/jobs/530959548
