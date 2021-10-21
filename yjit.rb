@@ -1,3 +1,10 @@
+# This module allows for introspection on YJIT, CRuby's experimental in-process
+# just-in-time compiler. This module is for development purposes only;
+# everything in this module is highly implementation specific and comes with no
+# API stability guarantee whatsoever.
+#
+# This module is only defined when YJIT has support for the particular platform
+# on which CRuby is built.
 module YJIT
   if defined?(Disasm)
     def self.disasm(iseq, tty: $stdout && $stdout.tty?)

@@ -3,7 +3,7 @@ require 'test/unit'
 require 'envutil'
 require 'tmpdir'
 
-return unless YJIT.enabled?
+return unless defined?(YJIT) && YJIT.enabled?
 
 # Tests for YJIT with assertions on compilation and side exits
 # insipired by the MJIT tests in test/ruby/test_jit.rb
