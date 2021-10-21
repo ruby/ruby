@@ -204,8 +204,7 @@ Outstanding ones only.
   * Delegate 0.2.0
   * Benchmark 0.2.0
   * CGI 0.3.0
-  * Readline
-  * Readline(C-ext)
+  * Readline(C-ext) 0.1.3
   * Timeout 0.2.0
   * YAML 0.2.0
   * URI 0.11.0
