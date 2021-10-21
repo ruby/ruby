@@ -357,7 +357,10 @@ module Bundler
       end
 
       def cached_path(spec)
-        possibilities = (@caches << download_cache_path(spec)).compact.map {|p| "#{p}/#{spec.file_name}" }
+        global_cache_path = download_cache_path(spec)
+        @caches << global_cache_path if global_cache_path
+
+        possibilities = @caches.map {|p| "#{p}/#{spec.file_name}" }
         possibilities.find {|p| File.exist?(p) }
       end
 
