@@ -5,7 +5,7 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'tsort'
+require_relative 'tsort'
 require_relative 'deprecate'
 
 ##
@@ -20,7 +20,7 @@ class Gem::DependencyList
   attr_reader :specs
 
   include Enumerable
-  include TSort
+  include Gem::TSort
 
   ##
   # Allows enabling/disabling use of development dependencies
