@@ -1497,9 +1497,15 @@ module Test
 
         all_test_methods = suite.send "#{type}_methods"
         if filter
-          all_test_methods.select! {|method|
-            filter === method || filter === "#{suite}##{method}"
-          }
+          if Regexp === filter
+            all_test_methods.select! {|method|
+              filter === "#{suite}##{method}"
+            }
+          else
+            all_test_methods.select! {|method|
+              filter === method || filter === "#{suite}##{method}"
+            }
+          end
         end
         all_test_methods = @order.sort_by_name(all_test_methods)
 
