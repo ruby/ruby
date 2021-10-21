@@ -10,7 +10,7 @@ class TestRubyOptions < Test::Unit::TestCase
   NO_JIT_DESCRIPTION =
     if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # checking -DMJIT_FORCE_ENABLE
       RUBY_DESCRIPTION.sub(/\+JIT /, '')
-    elsif defined?(YJIT.enabled?) && YJIT.enabled?
+    elsif defined?(YJIT.enabled?) && YJIT.enabled? # checking -DYJIT_FORCE_ENABLE
       RUBY_DESCRIPTION.sub(/\+YJIT /, '')
     else
       RUBY_DESCRIPTION
@@ -146,7 +146,7 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_match(VERSION_PATTERN, r[0])
       if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? && !mjit_force_enabled? # checking -DMJIT_FORCE_ENABLE
         assert_equal(NO_JIT_DESCRIPTION, r[0])
-      elsif defined?(YJIT.enabled?) && YJIT.enabled?
+      elsif defined?(YJIT.enabled?) && YJIT.enabled? && !yjit_force_enabled? # checking -DYJIT_FORCE_ENABLE
         assert_equal(NO_JIT_DESCRIPTION, r[0])
       else
         assert_equal(RUBY_DESCRIPTION, r[0])
@@ -210,10 +210,8 @@ class TestRubyOptions < Test::Unit::TestCase
     env = {'RUBY_YJIT_ENABLE' => nil} # unset in children
     assert_in_out_err([env, '--version']) do |r, e|
       assert_match(VERSION_PATTERN, r[0])
-      if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # checking -DMJIT_FORCE_ENABLE
+      if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? || defined?(YJIT.enabled?) && YJIT.enabled? # checking -D*JIT_FORCE_ENABLE
         assert_equal(EnvUtil.invoke_ruby(['-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
-      elsif defined?(YJIT.enabled?) && YJIT.enabled?
-        assert_equal(NO_JIT_DESCRIPTION, r[0])
       else
         assert_equal(RUBY_DESCRIPTION, r[0])
       end
@@ -221,6 +219,7 @@ class TestRubyOptions < Test::Unit::TestCase
     end
 
     return if RbConfig::CONFIG["MJIT_SUPPORT"] == 'no'
+    return if yjit_force_enabled?
 
     [
       %w(--version --jit --disable=jit),
@@ -1118,5 +1117,9 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def mjit_force_enabled?
     "#{RbConfig::CONFIG['CFLAGS']} #{RbConfig::CONFIG['CPPFLAGS']}".match?(/(\A|\s)-D ?MJIT_FORCE_ENABLE\b/)
+  end
+
+  def yjit_force_enabled?
+    "#{RbConfig::CONFIG['CFLAGS']} #{RbConfig::CONFIG['CPPFLAGS']}".match?(/(\A|\s)-D ?YJIT_FORCE_ENABLE\b/)
   end
 end
