@@ -210,7 +210,9 @@ class TestRubyOptions < Test::Unit::TestCase
     env = {'RUBY_YJIT_ENABLE' => nil} # unset in children
     assert_in_out_err([env, '--version']) do |r, e|
       assert_match(VERSION_PATTERN, r[0])
-      if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? || defined?(YJIT.enabled?) && YJIT.enabled? # checking -D*JIT_FORCE_ENABLE
+      if ENV['RUBY_YJIT_ENABLE'] == '1'
+        assert_equal(NO_JIT_DESCRIPTION, r[0])
+      elsif defined?(RubyVM::JIT) && RubyVM::JIT.enabled? || defined?(YJIT.enabled?) && YJIT.enabled? # checking -D(M|Y)JIT_FORCE_ENABLE
         assert_equal(EnvUtil.invoke_ruby(['-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
       else
         assert_equal(RUBY_DESCRIPTION, r[0])
