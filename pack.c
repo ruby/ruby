@@ -962,6 +962,8 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
     p = RSTRING_PTR(fmt);
     pend = p + RSTRING_LEN(fmt);
 
+#define UNPACK_FETCH(var, type) (memcpy((var), s, sizeof(type)), s += sizeof(type))
+
     ary = mode == UNPACK_ARRAY ? rb_ary_new() : Qnil;
     while (p < pend) {
 	int explicit_endian = 0;
@@ -1271,8 +1273,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 	    PACK_LENGTH_ADJUST_SIZE(sizeof(float));
 	    while (len-- > 0) {
 		float tmp;
-		memcpy(&tmp, s, sizeof(float));
-		s += sizeof(float);
+		UNPACK_FETCH(&tmp, float);
 		UNPACK_PUSH(DBL2NUM((double)tmp));
 	    }
 	    PACK_ITEM_ADJUST();
@@ -1282,8 +1283,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 	    PACK_LENGTH_ADJUST_SIZE(sizeof(float));
 	    while (len-- > 0) {
 		FLOAT_CONVWITH(tmp);
-		memcpy(tmp.buf, s, sizeof(float));
-		s += sizeof(float);
+		UNPACK_FETCH(tmp.buf, float);
 		VTOHF(tmp);
 		UNPACK_PUSH(DBL2NUM(tmp.f));
 	    }
@@ -1294,8 +1294,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 	    PACK_LENGTH_ADJUST_SIZE(sizeof(double));
 	    while (len-- > 0) {
 		DOUBLE_CONVWITH(tmp);
-		memcpy(tmp.buf, s, sizeof(double));
-		s += sizeof(double);
+		UNPACK_FETCH(tmp.buf, double);
 		VTOHD(tmp);
 		UNPACK_PUSH(DBL2NUM(tmp.d));
 	    }
@@ -1307,8 +1306,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 	    PACK_LENGTH_ADJUST_SIZE(sizeof(double));
 	    while (len-- > 0) {
 		double tmp;
-		memcpy(&tmp, s, sizeof(double));
-		s += sizeof(double);
+		UNPACK_FETCH(&tmp, double);
 		UNPACK_PUSH(DBL2NUM(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
@@ -1318,8 +1316,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 	    PACK_LENGTH_ADJUST_SIZE(sizeof(float));
 	    while (len-- > 0) {
 		FLOAT_CONVWITH(tmp);
-		memcpy(tmp.buf, s, sizeof(float));
-		s += sizeof(float);
+		UNPACK_FETCH(tmp.buf, float);
 		NTOHF(tmp);
 		UNPACK_PUSH(DBL2NUM(tmp.f));
 	    }
@@ -1330,8 +1327,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 	    PACK_LENGTH_ADJUST_SIZE(sizeof(double));
 	    while (len-- > 0) {
 		DOUBLE_CONVWITH(tmp);
-		memcpy(tmp.buf, s, sizeof(double));
-		s += sizeof(double);
+		UNPACK_FETCH(tmp.buf, double);
 		NTOHD(tmp);
 		UNPACK_PUSH(DBL2NUM(tmp.d));
 	    }
@@ -1542,9 +1538,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 		VALUE tmp = Qnil;
 		char *t;
 
-		memcpy(&t, s, sizeof(char *));
-		s += sizeof(char *);
-
+		UNPACK_FETCH(&t, char *);
 		if (t) {
 		    VALUE a;
 		    const VALUE *p, *pend;
@@ -1585,9 +1579,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 		    VALUE tmp = Qnil;
 		    char *t;
 
-		    memcpy(&t, s, sizeof(char *));
-		    s += sizeof(char *);
-
+		    UNPACK_FETCH(&t, char *);
 		    if (t) {
 			VALUE a;
 			const VALUE *p, *pend;
