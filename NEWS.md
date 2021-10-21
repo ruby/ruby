@@ -289,6 +289,11 @@ Excluding feature bug fixes.
 
 ### YJIT: New experimental in-process JIT compiler
 
+New JIT compiler available as an experimental feature. [[Feature #18229]]
+
+See [this blog post](https://shopify.engineering/yjit-just-in-time-compiler-cruby
+) introducing the project.
+
 * Disabled by default, use `--yjit` command-line option to enable YJIT.
 
 * Performance improvements on most real-world software, up to 22% on railsbench, 39% on liquid-render.
