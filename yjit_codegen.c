@@ -3076,6 +3076,24 @@ lookup_cfunc_codegen(const rb_method_definition_t *def)
     return NULL;
 }
 
+// Is anyone listening for :c_call and :c_return event currently?
+static bool
+c_method_tracing_currently_enabled(const jitstate_t *jit)
+{
+    rb_event_flag_t tracing_events;
+    if (rb_multi_ractor_p()) {
+        tracing_events = ruby_vm_event_enabled_global_flags;
+    }
+    else {
+        // At the time of writing, events are never removed from
+        // ruby_vm_event_enabled_global_flags so always checking using it would
+        // mean we don't compile even after tracing is disabled.
+        tracing_events = rb_ec_ractor_hooks(jit->ec)->events;
+    }
+
+    return tracing_events & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN);
+}
+
 static codegen_status_t
 gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc, VALUE *recv_known_klass)
 {
@@ -3099,23 +3117,10 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
         return YJIT_CANT_COMPILE;
     }
 
-    // Don't JIT if tracing c_call or c_return
-    {
-        rb_event_flag_t tracing_events;
-        if (rb_multi_ractor_p()) {
-            tracing_events = ruby_vm_event_enabled_global_flags;
-        }
-        else {
-            // We could always use ruby_vm_event_enabled_global_flags,
-            // but since events are never removed from it, doing so would mean
-            // we don't compile even after tracing is disabled.
-            tracing_events = rb_ec_ractor_hooks(jit->ec)->events;
-        }
-
-        if (tracing_events & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN)) {
-            GEN_COUNTER_INC(cb, send_cfunc_tracing);
-            return YJIT_CANT_COMPILE;
-        }
+    if (c_method_tracing_currently_enabled(jit)) {
+        // Don't JIT if tracing c_call or c_return
+        GEN_COUNTER_INC(cb, send_cfunc_tracing);
+        return YJIT_CANT_COMPILE;
     }
 
     // Delegate to codegen for C methods if we have it.
@@ -3848,12 +3853,24 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
                 GEN_COUNTER_INC(cb, send_getter_arity);
                 return YJIT_CANT_COMPILE;
             }
-            else {
-                mov(cb, REG0, recv);
-
-                ID ivar_name = cme->def->body.attr.id;
-                return gen_get_ivar(jit, ctx, SEND_MAX_DEPTH, comptime_recv, ivar_name, recv_opnd, side_exit);
+            if (c_method_tracing_currently_enabled(jit)) {
+                // Can't generate code for firing c_call and c_return events
+                // :attr-tracing:
+                // Handling the C method tracing events for attr_accessor
+                // methods is easier than regular C methods as we know the
+                // "method" we are calling into never enables those tracing
+                // events. Once global invalidation runs, the code for the
+                // attr_accessor is invalidated and we exit at the closest
+                // instruction boundary which is always outside of the body of
+                // the attr_accessor code.
+                GEN_COUNTER_INC(cb, send_cfunc_tracing);
+                return YJIT_CANT_COMPILE;
             }
+
+            mov(cb, REG0, recv);
+
+            ID ivar_name = cme->def->body.attr.id;
+            return gen_get_ivar(jit, ctx, SEND_MAX_DEPTH, comptime_recv, ivar_name, recv_opnd, side_exit);
           case VM_METHOD_TYPE_ATTRSET:
             if ((vm_ci_flag(ci) & VM_CALL_KWARG) != 0) {
                 GEN_COUNTER_INC(cb, send_attrset_kwargs);
@@ -3861,6 +3878,12 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
             }
             else if (argc != 1 || !RB_TYPE_P(comptime_recv, T_OBJECT)) {
                 GEN_COUNTER_INC(cb, send_ivar_set_method);
+                return YJIT_CANT_COMPILE;
+            }
+            else if (c_method_tracing_currently_enabled(jit)) {
+                // Can't generate code for firing c_call and c_return events
+                // See :attr-tracing:
+                GEN_COUNTER_INC(cb, send_cfunc_tracing);
                 return YJIT_CANT_COMPILE;
             }
             else {
