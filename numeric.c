@@ -1448,6 +1448,8 @@ num_eql(VALUE x, VALUE y)
  *
  *  Returns zero if +self+ is the same as +other+, +nil+ otherwise.
  *
+ *  No subclass in the Ruby Core or Standard Library uses this implementation.
+ *
  */
 
 static VALUE
@@ -2819,7 +2821,7 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
  *
  *  <b>Positional Arguments</b>
  *
- *  With positional arguments +limit+ and optionally +step+,
+ *  With positional arguments +limit+ and +step+,
  *  their values (or defaults) determine the step and limit:
  *
  *    squares = []
