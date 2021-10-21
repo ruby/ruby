@@ -174,6 +174,7 @@ module Bundler
           Bundler.ui.confirm message
 
           path = cached_gem(spec)
+          raise GemNotFound, "Could not find #{spec.file_name} for installation" unless path
           if requires_sudo?
             install_path = Bundler.tmp(spec.full_name)
             bin_path     = install_path.join("bin")
@@ -233,11 +234,7 @@ module Bundler
       end
 
       def cache(spec, custom_path = nil)
-        if spec.default_gem?
-          cached_path = cached_built_in_gem(spec)
-        else
-          cached_path = cached_gem(spec)
-        end
+        cached_path = cached_gem(spec)
         raise GemNotFound, "Missing gem file '#{spec.file_name}'." unless cached_path
         return if File.dirname(cached_path) == Bundler.app_cache.to_s
         Bundler.ui.info "  * #{File.basename(cached_path)}"
@@ -352,11 +349,11 @@ module Bundler
       end
 
       def cached_gem(spec)
-        cached_gem = cached_path(spec)
-        unless cached_gem
-          raise Bundler::GemNotFound, "Could not find #{spec.file_name} for installation"
+        if spec.default_gem?
+          cached_built_in_gem(spec)
+        else
+          cached_path(spec)
         end
-        cached_gem
       end
 
       def cached_path(spec)
