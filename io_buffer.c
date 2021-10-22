@@ -417,7 +417,6 @@ rb_io_buffer_to_s(VALUE self)
     }
 
     return rb_str_cat2(result, ">");
-
 }
 
 static VALUE
@@ -701,15 +700,19 @@ size_t rb_io_buffer_copy(VALUE self, VALUE source, size_t offset)
     const void *source_base = NULL;
     size_t source_size = 0;
 
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    if (data->flags & RB_IO_BUFFER_IMMUTABLE) {
+        rb_raise(rb_eRuntimeError, "Buffer is immutable!");
+    }
+
     if (RB_TYPE_P(source, T_STRING)) {
         RSTRING_GETMEM(source, source_base, source_size);
     }
     else {
         rb_io_buffer_get_immutable(source, &source_base, &source_size);
     }
-
-    struct rb_io_buffer *data = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
     rb_io_buffer_validate(data, offset, source_size);
 
