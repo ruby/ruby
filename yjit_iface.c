@@ -592,6 +592,8 @@ rb_yjit_constant_state_changed(void)
 void
 rb_yjit_constant_ic_update(const rb_iseq_t *iseq, IC ic)
 {
+    if (!rb_yjit_enabled_p()) return;
+
     // We can't generate code in these situations, so no need to invalidate.
     // See gen_opt_getinlinecache.
     if (ic->entry->ic_cref || rb_multi_ractor_p()) {
