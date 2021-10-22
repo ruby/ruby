@@ -195,7 +195,7 @@ Outstanding ones only.
   * StringIO 3.0.1
   * IO::Console 0.5.9
   * IO::Wait 0.2.0
-  * CSV
+  * CSV 3.2.1
   * Etc 1.3.0
   * Date 3.2.0
   * Zlib 2.1.1
