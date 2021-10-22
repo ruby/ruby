@@ -4,10 +4,6 @@ require 'rbconfig'
 require 'io/wait'
 
 class TestIOWaitInRactor < Test::Unit::TestCase
-  def setup
-    omit unless defined? Ractor
-  end
-
   def test_ractor
     ext = "/io/wait.#{RbConfig::CONFIG['DLEXT']}"
     path = $".find {|path| path.end_with?(ext)}
@@ -19,4 +15,4 @@ class TestIOWaitInRactor < Test::Unit::TestCase
       puts r.take
     end;
   end
-end
+end if defined? Ractor
