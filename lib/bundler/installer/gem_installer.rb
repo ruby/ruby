@@ -13,7 +13,7 @@ module Bundler
     end
 
     def install_from_spec
-      post_install_message = spec_settings ? install_with_settings : install
+      post_install_message = install
       Bundler.ui.debug "#{worker}:  #{spec.name} (#{spec.version}) from #{spec.loaded_from}"
       generate_executable_stubs
       return true, post_install_message
@@ -52,11 +52,6 @@ module Bundler
 
     def install
       spec.source.install(spec, :force => force, :ensure_builtin_gems_cached => standalone, :build_args => Array(spec_settings))
-    end
-
-    def install_with_settings
-      # Build arguments are global, so this is mutexed
-      Bundler.rubygems.install_with_build_args([spec_settings]) { install }
     end
 
     def out_of_space_message

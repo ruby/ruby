@@ -232,18 +232,6 @@ module Bundler
       EXT_LOCK
     end
 
-    def with_build_args(args)
-      ext_lock.synchronize do
-        old_args = build_args
-        begin
-          self.build_args = args
-          yield
-        ensure
-          self.build_args = old_args
-        end
-      end
-    end
-
     def spec_from_gem(path, policy = nil)
       require "rubygems/security"
       require_relative "psyched_yaml"
@@ -548,10 +536,6 @@ module Bundler
 
     def repository_subdirectories
       Gem::REPOSITORY_SUBDIRECTORIES
-    end
-
-    def install_with_build_args(args)
-      yield
     end
 
     def path_separator
