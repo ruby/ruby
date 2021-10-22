@@ -7642,8 +7642,16 @@ compile_evstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     CHECK(COMPILE_(ret, "nd_body", node, popped));
 
     if (!popped && !all_string_result_p(node)) {
-        ADD_INSN1(ret, node, tostring,
-                  new_callinfo(iseq, idTo_s, 0, 0, NULL, FALSE));
+        const NODE *line_node = node;
+	const unsigned int flag = VM_CALL_FCALL;
+
+        // Note, this dup could be removed if we are willing to change tostring. It pops
+        // two VALUEs off the stack whne it could work by replacing the top most VALUE.
+        ADD_INSN(ret, line_node, dup);
+        // TODO: normally, opt_* instructions are generated from optimizations passes. This
+        // generates it unconditionally.
+        ADD_INSN1(ret, line_node, opt_concat_tostring, new_callinfo(iseq, idTo_s, 0, flag, NULL, FALSE));
+	ADD_INSN(ret, line_node, tostring);
     }
     return COMPILE_OK;
 }

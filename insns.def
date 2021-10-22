@@ -385,12 +385,11 @@ concatstrings
 /* push the result of to_s. */
 DEFINE_INSN
 tostring
-(CALL_DATA cd)
+()
+(VALUE val, VALUE str)
 (VALUE val)
-(VALUE val)
-// attr bool leaf = false; /* calls to_s */
 {
-    val = vm_tostring(GET_ISEQ(), ec, val, cd);
+    val = rb_obj_as_string_result(str, val);
 }
 
 /* compile str to Regexp and push it.
@@ -780,6 +779,24 @@ opt_send_without_block
     if (val == Qundef) {
         RESTORE_REGS();
         NEXT_INSN();
+    }
+}
+
+/*
+ * Try to convert obj to a T_STRING object for the purposes of string
+ * interpolation. Some shortcuts are possible because we can accept
+ * frozen strings.
+ */
+DEFINE_INSN
+opt_concat_tostring
+(CALL_DATA cd)
+(VALUE recv)
+(VALUE val)
+{
+    val = vm_concat_tostring(GET_ISEQ(), recv, cd);
+
+    if (val == Qundef) {
+        CALL_SIMPLE_METHOD();
     }
 }
 
