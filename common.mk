@@ -9522,6 +9522,7 @@ numeric.$(OBJEXT): $(top_srcdir)/internal/hash.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/object.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/rational.h
+numeric.$(OBJEXT): $(top_srcdir)/internal/string.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/serial.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/util.h
@@ -9598,6 +9599,7 @@ numeric.$(OBJEXT): {$(VPATH)}internal/compiler_is/intel.h
 numeric.$(OBJEXT): {$(VPATH)}internal/compiler_is/msvc.h
 numeric.$(OBJEXT): {$(VPATH)}internal/compiler_is/sunpro.h
 numeric.$(OBJEXT): {$(VPATH)}internal/compiler_since.h
+numeric.$(OBJEXT): {$(VPATH)}internal/compilers.h
 numeric.$(OBJEXT): {$(VPATH)}internal/config.h
 numeric.$(OBJEXT): {$(VPATH)}internal/constant_p.h
 numeric.$(OBJEXT): {$(VPATH)}internal/core.h

@@ -35,6 +35,7 @@
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/rational.h"
+#include "internal/string.h"
 #include "internal/util.h"
 #include "internal/variable.h"
 #include "ruby/encoding.h"
@@ -6007,16 +6008,16 @@ Init_Numeric(void)
 
     rb_define_method(rb_cInteger, "digits", rb_int_digits, -1);
 
-    rb_vm_tostring_static_fixnum[0] = rb_str_freeze(rb_str_new_cstr("0"));
-    rb_vm_tostring_static_fixnum[1] = rb_str_freeze(rb_str_new_cstr("1"));
-    rb_vm_tostring_static_fixnum[2] = rb_str_freeze(rb_str_new_cstr("2"));
-    rb_vm_tostring_static_fixnum[3] = rb_str_freeze(rb_str_new_cstr("3"));
-    rb_vm_tostring_static_fixnum[4] = rb_str_freeze(rb_str_new_cstr("4"));
-    rb_vm_tostring_static_fixnum[5] = rb_str_freeze(rb_str_new_cstr("5"));
-    rb_vm_tostring_static_fixnum[6] = rb_str_freeze(rb_str_new_cstr("6"));
-    rb_vm_tostring_static_fixnum[7] = rb_str_freeze(rb_str_new_cstr("7"));
-    rb_vm_tostring_static_fixnum[8] = rb_str_freeze(rb_str_new_cstr("8"));
-    rb_vm_tostring_static_fixnum[9] = rb_str_freeze(rb_str_new_cstr("9"));
+    rb_vm_tostring_static_fixnum[0] = rb_fstring_literal("0");
+    rb_vm_tostring_static_fixnum[1] = rb_fstring_literal("1");
+    rb_vm_tostring_static_fixnum[2] = rb_fstring_literal("2");
+    rb_vm_tostring_static_fixnum[3] = rb_fstring_literal("3");
+    rb_vm_tostring_static_fixnum[4] = rb_fstring_literal("4");
+    rb_vm_tostring_static_fixnum[5] = rb_fstring_literal("5");
+    rb_vm_tostring_static_fixnum[6] = rb_fstring_literal("6");
+    rb_vm_tostring_static_fixnum[7] = rb_fstring_literal("7");
+    rb_vm_tostring_static_fixnum[8] = rb_fstring_literal("8");
+    rb_vm_tostring_static_fixnum[9] = rb_fstring_literal("9");
     for(int i = 0; i < 10; i++) {
         rb_gc_register_mark_object(rb_vm_tostring_static_fixnum[i]);
     }
