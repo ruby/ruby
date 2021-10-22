@@ -45,7 +45,7 @@ class TestIOWaitUncommon < Test::Unit::TestCase
     rescue Errno::ENOENT
       return # Ignore silently
     rescue SystemCallError => e
-      skip "#{dev} could not be opened #{e.message} (#{e.class})"
+      omit "#{dev} could not be opened #{e.message} (#{e.class})"
     end
     if block
       yield fp
