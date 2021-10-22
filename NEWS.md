@@ -191,7 +191,7 @@ Outstanding ones only.
   * JSON 2.6.0
   * Psych 4.0.2
   * FileUtils 1.6.0
-  * Fiddle
+  * Fiddle 1.1.0
   * StringIO 3.0.1
   * IO::Console 0.5.9
   * IO::Wait 0.2.0
