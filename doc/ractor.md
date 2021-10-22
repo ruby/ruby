@@ -565,26 +565,47 @@ Note that some special global variables are ractor-local, like `$stdin`, `$stdou
 
 ### Instance variables of shareable objects
 
-Only the main Ractor can access instance variables of shareable objects.
+Instance variables of classes/modules can be get from non-main Ractors if the referring values are shareable objects.
 
 ```ruby
 class C
-  @iv = 'str'
+  @iv = 1
 end
 
-r = Ractor.new do
+p Ractor.new do
   class C
-    p @iv
+     @iv
   end
-end
-
-
-begin
-  r.take
-rescue => e
-  e.class #=> Ractor::IsolationError
-end
+end.take #=> 1
 ```
+
+Otherwise, only the main Ractor can access instance variables of shareable objects.
+
+```ruby
+class C
+  @iv = [] # unshareable object
+end
+
+Ractor.new do
+  class C
+    begin
+      p @iv
+    rescue Ractor::IsolationError
+      p $!.message
+      #=> "can not get unshareable values from instance variables of classes/modules from non-main Ractors"
+    end
+
+    begin
+      @iv = 42
+    rescue Ractor::IsolationError
+      p $!.message
+      #=> "can not set instance variables of classes/modules by non-main Ractors"
+    end
+  end
+end.take
+```
+
+
 
 ```ruby
 shared = Ractor.new{}
