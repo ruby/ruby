@@ -908,7 +908,7 @@ IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(ID id)
 {
     if (UNLIKELY(!rb_ractor_main_p())) {
         if (rb_is_instance_id(id)) { // check only normal ivars
-            rb_raise(rb_eRactorIsolationError, "can not access instance variables of classes/modules from non-main Ractors");
+            rb_raise(rb_eRactorIsolationError, "can not set instance variables of classes/modules by non-main Ractors");
         }
     }
 }
@@ -1185,6 +1185,54 @@ gen_ivtbl_count(const struct gen_ivtbl *ivtbl)
     return n;
 }
 
+static int
+lock_st_lookup(st_table *tab, st_data_t key, st_data_t *value)
+{
+    int r;
+    RB_VM_LOCK_ENTER();
+    {
+        r = st_lookup(tab, key, value);
+    }
+    RB_VM_LOCK_LEAVE();
+    return r;
+}
+
+static int
+lock_st_delete(st_table *tab, st_data_t *key, st_data_t *value)
+{
+    int r;
+    RB_VM_LOCK_ENTER();
+    {
+        r = st_delete(tab, key, value);
+    }
+    RB_VM_LOCK_LEAVE();
+    return r;
+}
+
+static int
+lock_st_is_member(st_table *tab, st_data_t key)
+{
+    int r;
+    RB_VM_LOCK_ENTER();
+    {
+        r = st_is_member(tab, key);
+    }
+    RB_VM_LOCK_LEAVE();
+    return r;
+}
+
+static int
+lock_st_insert(st_table *tab, st_data_t key, st_data_t value)
+{
+    int r;
+    RB_VM_LOCK_ENTER();
+    {
+        r = st_insert(tab, key, value);
+    }
+    RB_VM_LOCK_LEAVE();
+    return r;
+}
+
 VALUE
 rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
 {
@@ -1211,10 +1259,15 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
         {
             st_data_t val;
 
-            IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
             if (RCLASS_IV_TBL(obj) &&
-                st_lookup(RCLASS_IV_TBL(obj), (st_data_t)id, &val)) {
-                return (VALUE)val;
+                lock_st_lookup(RCLASS_IV_TBL(obj), (st_data_t)id, &val)) {
+                if (rb_is_instance_id(id) &&
+                    UNLIKELY(!rb_ractor_main_p()) &&
+                    !rb_ractor_shareable_p(val)) {
+                    rb_raise(rb_eRactorIsolationError,
+                             "can not get unshareable values from instance variables of classes/modules from non-main Ractors");
+                }
+                return val;
             }
             else {
                 break;
@@ -1270,7 +1323,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
         IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
 	if (RCLASS_IV_TBL(obj)) {
             st_data_t id_data = (st_data_t)id, val;
-            if (st_delete(RCLASS_IV_TBL(obj), &id_data, &val)) {
+            if (lock_st_delete(RCLASS_IV_TBL(obj), &id_data, &val)) {
                 return (VALUE)val;
             }
         }
@@ -1554,8 +1607,7 @@ rb_ivar_defined(VALUE obj, ID id)
 	break;
       case T_CLASS:
       case T_MODULE:
-        IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
-	if (RCLASS_IV_TBL(obj) && st_is_member(RCLASS_IV_TBL(obj), (st_data_t)id))
+        if (RCLASS_IV_TBL(obj) && lock_st_is_member(RCLASS_IV_TBL(obj), (st_data_t)id))
 	    return Qtrue;
 	break;
       default:
@@ -1747,7 +1799,11 @@ rb_ivar_foreach(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
       case T_MODULE:
         IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(0);
 	if (RCLASS_IV_TBL(obj)) {
-	    st_foreach_safe(RCLASS_IV_TBL(obj), func, arg);
+            RB_VM_LOCK_ENTER();
+            {
+                st_foreach_safe(RCLASS_IV_TBL(obj), func, arg);
+            }
+            RB_VM_LOCK_LEAVE();
 	}
 	break;
       default:
@@ -1909,7 +1965,7 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
       case T_MODULE:
         IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
 	n = id;
-	if (RCLASS_IV_TBL(obj) && st_delete(RCLASS_IV_TBL(obj), &n, &v)) {
+	if (RCLASS_IV_TBL(obj) && lock_st_delete(RCLASS_IV_TBL(obj), &n, &v)) {
 	    return (VALUE)v;
 	}
 	break;
@@ -3708,7 +3764,7 @@ rb_class_ivar_set(VALUE obj, ID key, VALUE value)
     }
 
     st_table *tbl = RCLASS_IV_TBL(obj);
-    int result = st_insert(tbl, (st_data_t)key, (st_data_t)value);
+    int result = lock_st_insert(tbl, (st_data_t)key, (st_data_t)value);
     RB_OBJ_WRITTEN(obj, Qundef, value);
     return result;
 }

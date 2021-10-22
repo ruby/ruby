@@ -2023,14 +2023,14 @@ assert_normal_exit %q{
   foo([1]) rescue nil
 }
 
-# test ractor exception on when getting ivar
+# test ractor exception on when setting ivar
 assert_equal '42',  %q{
   class A
     def self.foo
       _foo = 1
       _bar = 2
       begin
-        @bar
+        @bar = _foo + _bar
       rescue Ractor::IsolationError
         42
       end

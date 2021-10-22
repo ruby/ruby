@@ -928,7 +928,7 @@ assert_equal 'ArgumentError', %q{
 }
 
 # ivar in shareable-objects are not allowed to access from non-main Ractor
-assert_equal 'can not access instance variables of classes/modules from non-main Ractors', %q{
+assert_equal "can not get unshareable values from instance variables of classes/modules from non-main Ractors", %q{
   class C
     @iv = 'str'
   end
@@ -1020,6 +1020,53 @@ assert_equal '11', %q{
       obj.instance_variable_get('@a')
     end.take.to_s
   }.join
+}
+
+# and instance variables of classes/modules are accessible if they refer shareable objects
+assert_equal '333', %q{
+  class C
+    @int = 1
+    @str = '-1000'.dup
+    @fstr = '100'.freeze
+
+    def self.int = @int
+    def self.str = @str
+    def self.fstr = @fstr
+  end
+
+  module M
+    @int = 2
+    @str = '-2000'.dup
+    @fstr = '200'.freeze
+
+    def self.int = @int
+    def self.str = @str
+    def self.fstr = @fstr
+  end
+
+  a = Ractor.new{ C.int }.take
+  b = Ractor.new do
+    C.str.to_i
+  rescue Ractor::IsolationError
+    10
+  end.take
+  c = Ractor.new do
+    C.fstr.to_i
+  end.take
+
+  d = Ractor.new{ M.int }.take
+  e = Ractor.new do
+    M.str.to_i
+  rescue Ractor::IsolationError
+    20
+  end.take
+  f = Ractor.new do
+    M.fstr.to_i
+  end.take
+
+
+  # 1 + 10 + 100 + 2 + 20 + 200
+  a + b + c + d + e + f
 }
 
 # cvar in shareable-objects are not allowed to access from non-main Ractor
