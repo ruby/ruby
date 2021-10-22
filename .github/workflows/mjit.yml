@@ -34,29 +34,29 @@ jobs:
           sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v go-w $d; done' || :
       - name: Set ENV
         run: |
-          echo "JOBS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
+          echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
       - run: ./autogen.sh
         working-directory: src
       - name: Run configure
         run: ../src/configure -C --disable-install-doc cppflags=-DVM_CHECK_MODE
-      - run: make $JOBS incs
-      - run: make $JOBS
-      - run: sudo make $JOBS -s install
+      - run: make incs
+      - run: make
+      - run: sudo make -s install
       - run: sudo apt-get install gdb # used by test / test-all failure
       - name: Run test
         run: |
           ulimit -c unlimited
-          make $JOBS -s test RUN_OPTS="$RUN_OPTS"
+          make -s test RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
       - name: Run test-all
         run: |
           ulimit -c unlimited
-          make $JOBS -s test-all RUN_OPTS="$RUN_OPTS"
+          make -s test-all RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
       - name: Run test-spec
         run: |
           ulimit -c unlimited
-          make $JOBS -s test-spec RUN_OPTS="$RUN_OPTS"
+          make -s test-spec RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
       - uses: k0kubun/action-slack@v2.0.0
         with:
