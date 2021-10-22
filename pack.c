@@ -135,7 +135,23 @@ str_associate(VALUE str, VALUE add)
 static VALUE
 str_associated(VALUE str)
 {
-    return rb_ivar_lookup(str, id_associated, Qfalse);
+    VALUE associates = rb_ivar_lookup(str, id_associated, Qfalse);
+    if (!associates)
+        rb_raise(rb_eArgError, "no associated pointer");
+    return associates;
+}
+
+static VALUE
+associated_pointer(VALUE associates, const char *t)
+{
+    const VALUE *p = RARRAY_CONST_PTR(associates);
+    const VALUE *pend = p + RARRAY_LEN(associates);
+    for (; p < pend; p++) {
+	VALUE tmp = *p;
+	if (RB_TYPE_P(tmp, T_STRING) && RSTRING_PTR(tmp) == t) return tmp;
+    }
+    rb_raise(rb_eArgError, "non associated pointer");
+    UNREACHABLE_RETURN(Qnil);
 }
 
 static void
@@ -933,7 +949,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 #define hexdigits ruby_hexdigits
     char *s, *send;
     char *p, *pend;
-    VALUE ary;
+    VALUE ary, associates = Qfalse;
     char type;
     long len;
     AVOID_CC_BUG long tmp_len;
@@ -1540,29 +1556,11 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 
 		UNPACK_FETCH(&t, char *);
 		if (t) {
-		    VALUE a;
-		    const VALUE *p, *pend;
-
-		    if (!(a = str_associated(str))) {
-			rb_raise(rb_eArgError, "no associated pointer");
-		    }
-		    p = RARRAY_CONST_PTR(a);
-		    pend = p + RARRAY_LEN(a);
-		    while (p < pend) {
-			if (RB_TYPE_P(*p, T_STRING) && RSTRING_PTR(*p) == t) {
-			    if (len < RSTRING_LEN(*p)) {
-                                tmp = rb_str_new(t, len);
-				str_associate(tmp, a);
-			    }
-			    else {
-				tmp = *p;
-			    }
-			    break;
-			}
-			p++;
-		    }
-		    if (p == pend) {
-			rb_raise(rb_eArgError, "non associated pointer");
+		    if (!associates) associates = str_associated(str);
+		    tmp = associated_pointer(associates, t);
+		    if (len < RSTRING_LEN(tmp)) {
+			tmp = rb_str_new(t, len);
+			str_associate(tmp, associates);
 		    }
 		}
 		UNPACK_PUSH(tmp);
@@ -1581,24 +1579,8 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 
 		    UNPACK_FETCH(&t, char *);
 		    if (t) {
-			VALUE a;
-			const VALUE *p, *pend;
-
-			if (!(a = str_associated(str))) {
-			    rb_raise(rb_eArgError, "no associated pointer");
-			}
-			p = RARRAY_CONST_PTR(a);
-			pend = p + RARRAY_LEN(a);
-			while (p < pend) {
-			    if (RB_TYPE_P(*p, T_STRING) && RSTRING_PTR(*p) == t) {
-				tmp = *p;
-				break;
-			    }
-			    p++;
-			}
-			if (p == pend) {
-			    rb_raise(rb_eArgError, "non associated pointer");
-			}
+			if (!associates) associates = str_associated(str);
+			tmp = associated_pointer(associates, t);
 		    }
 		    UNPACK_PUSH(tmp);
 		}
