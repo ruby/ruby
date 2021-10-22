@@ -199,7 +199,7 @@ Outstanding ones only.
   * Etc 1.3.0
   * Date 3.2.0
   * Zlib 2.1.1
-  * StringScanner
+  * StringScanner 3.0.1
   * IpAddr
   * Logger 1.4.4
   * OStruct 0.5.0
