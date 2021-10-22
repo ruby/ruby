@@ -12,6 +12,7 @@
 #include "ruby/memory_view.h"
 #include "ruby/util.h"
 #include "vm_sync.h"
+#include "gc.h"
 
 #if SIZEOF_INTPTR_T == SIZEOF_LONG_LONG
 #   define INTPTR2NUM LL2NUM
@@ -781,8 +782,16 @@ rb_memory_view_get_item(rb_memory_view_t *view, const ssize_t *indices)
 static const rb_memory_view_entry_t *
 lookup_memory_view_entry(VALUE klass)
 {
+    RUBY_ASSERT(rb_objspace_markable_object_p(klass));
     VALUE entry_obj = rb_ivar_lookup(klass, id_memory_view, Qnil);
+
     while (NIL_P(entry_obj)) {
+        if (!rb_objspace_markable_object_p(klass)) {
+            // This can happen when this function runs in a finalizer, and
+            // when the super class of klass is finalized before class.
+            return NULL;
+        }
+
         klass = rb_class_get_superclass(klass);
 
         if (klass == rb_cBasicObject || klass == rb_cObject)
