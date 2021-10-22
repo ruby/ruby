@@ -664,26 +664,28 @@ describe "Module#refine" do
   end
 
   context "when super is called in a refinement" do
-    it "looks in the included to refinery module" do
-      refined_class = ModuleSpecs.build_refined_class
+    ruby_version_is ""..."3.1" do
+      it "looks in the included to refinery module" do
+        refined_class = ModuleSpecs.build_refined_class
 
-      refinement = Module.new do
-        refine refined_class do
-          include ModuleSpecs::IncludedModule
+        refinement = Module.new do
+          refine refined_class do
+            include ModuleSpecs::IncludedModule
 
-          def foo
-            super
+            def foo
+              super
+            end
           end
         end
-      end
 
-      result = nil
-      Module.new do
-        using refinement
-        result = refined_class.new.foo
-      end
+        result = nil
+        Module.new do
+          using refinement
+          result = refined_class.new.foo
+        end
 
-      result.should == "foo from included module"
+        result.should == "foo from included module"
+      end
     end
 
     it "looks in the refined class" do
