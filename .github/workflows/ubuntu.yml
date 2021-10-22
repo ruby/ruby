@@ -40,13 +40,13 @@ jobs:
           sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v go-w $d; done' || :
       - name: Set ENV
         run: |
-          echo "JOBS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
+          echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
       - run: ./autogen.sh
         working-directory: src
       - name: Run configure
         run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
-      - run: make $JOBS incs
-      - run: make $JOBS
+      - run: make incs
+      - run: make
       - run: make leaked-globals
         if: ${{ matrix.test_task == 'check' }}
       - run: make prepare-gems
@@ -55,7 +55,7 @@ jobs:
         run: |
           ./miniruby -e '(("a".."z").to_a+("A".."Z").to_a+("0".."9").to_a+%w[foo bar test zzz]).each{|basename|File.write("#{basename}.rb", "raise %(do not load #{basename}.rb)")}'
         if: ${{ matrix.test_task == 'check' }}
-      - run: make $JOBS -s ${{ matrix.test_task }}
+      - run: make -s ${{ matrix.test_task }}
         timeout-minutes: 30
         env:
           RUBY_TESTOPTS: "-q --tty=no"

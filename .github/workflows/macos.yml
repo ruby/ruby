@@ -27,18 +27,18 @@ jobs:
         working-directory: src
       - name: Set ENV
         run: |
-          echo "JOBS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
+          echo "GNUMAKEFLAGS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
       - run: ./autogen.sh
         working-directory: src
       - name: Run configure
         run: ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
-      - run: make $JOBS incs
-      - run: make $JOBS
+      - run: make incs
+      - run: make
       - run: make leaked-globals
         if: ${{ matrix.test_task == 'check' }}
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'check' }}
-      - run: make $JOBS -s ${{ matrix.test_task }}
+      - run: make -s ${{ matrix.test_task }}
         timeout-minutes: ${{ matrix.test_task == 'check' && 15 || 40 }}
         env:
           RUBY_TESTOPTS: "-q --tty=no"

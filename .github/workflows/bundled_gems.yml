@@ -17,7 +17,7 @@ jobs:
 
       - name: Set ENV
         run: |
-          echo "JOBS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
+          echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
 
       - uses: actions/checkout@v2
 
@@ -42,12 +42,12 @@ jobs:
         run: |
           ./autogen.sh
           ./configure -C --disable-install-doc
-          make $JOBS
+          make
         if: ${{ steps.diff.outcome == 'failure' }}
 
       - name: Test bundled gems
         run: |
-          make $JOBS -s test-bundled-gems
+          make -s test-bundled-gems
         timeout-minutes: 30
         env:
           RUBY_TESTOPTS: "-q --tty=no"

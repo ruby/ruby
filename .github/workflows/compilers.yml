@@ -200,7 +200,7 @@ jobs:
       - run: make test
       - run: make install
         if: ${{ matrix.entry.check }}
-      - run: /usr/local/bin/gem install --no-doc timezone tzinfo
+      - run: make prepare-gems
         if: ${{ matrix.entry.check }}
       - run: make test-tool
         if: ${{ matrix.entry.check }}
