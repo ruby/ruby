@@ -1527,6 +1527,7 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
 
     if (rb_respond_to(io, rb_intern("nonblock=")))
 	rb_funcall(io, rb_intern("nonblock="), 1, Qtrue);
+    Check_Type(io, T_FILE);
     rb_ivar_set(self, id_i_io, io);
 
     ssl = SSL_new(ctx);

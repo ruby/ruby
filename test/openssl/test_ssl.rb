@@ -4,6 +4,17 @@ require_relative "utils"
 if defined?(OpenSSL)
 
 class OpenSSL::TestSSL < OpenSSL::SSLTestCase
+  def test_bad_socket
+    bad_socket = Struct.new(:sync).new
+    assert_raises TypeError do
+      socket = OpenSSL::SSL::SSLSocket.new bad_socket
+      # if the socket is not a T_FILE, `connect` will segv because it tries
+      # to get the underlying file descriptor but the API it calls assumes
+      # the object type is T_FILE
+      socket.connect
+    end
+  end
+
   def test_ctx_options
     ctx = OpenSSL::SSL::SSLContext.new
 
