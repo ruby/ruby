@@ -85,6 +85,12 @@ class TestYJIT < Test::Unit::TestCase
     assert_compiles('e = 5; (..e)', insns: %i[newrange], result: ..5)
   end
 
+  def test_compile_newhash
+    assert_compiles('{}', insns: %i[newhash], result: {})
+    assert_compiles('{ two: 1 + 1 }', insns: %i[newhash], result: { two: 2 })
+    assert_compiles('{ 1 + 1 => :two }', insns: %i[newhash], result: { 2 => :two })
+  end
+
   def test_compile_opt_nil_p
     assert_compiles('nil.nil?', insns: %i[opt_nil_p], result: true)
     assert_compiles('false.nil?', insns: %i[opt_nil_p], result: false)

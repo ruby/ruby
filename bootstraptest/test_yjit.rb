@@ -2278,3 +2278,13 @@ assert_equal '{:foo=>123}', %q{
   foo
   foo
 }
+
+# newhash
+assert_equal '{:foo=>2}', %q{
+  def foo
+    {foo: 1+1}
+  end
+
+  foo
+  foo
+}
