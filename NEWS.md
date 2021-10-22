@@ -82,6 +82,10 @@ Note that each entry is kept to a minimum, see links for details.
   variable or method name even if it's a pseudo variable name such as
   `self`.
 
+* non main-Ractors can get instance variables (ivars) of classes/modules
+  if ivars refer to shareable objects.
+  [[Feature #17592]]
+
 ## Command line options
 
 ## Core classes updates
@@ -365,6 +369,7 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Bug #17423]:     https://bugs.ruby-lang.org/issues/17423
 [Feature #17479]: https://bugs.ruby-lang.org/issues/17479
 [Feature #17490]: https://bugs.ruby-lang.org/issues/17490
+[Feature #17592]: https://bugs.ruby-lang.org/issues/17592
 [Feature #17724]: https://bugs.ruby-lang.org/issues/17724
 [Feature #17744]: https://bugs.ruby-lang.org/issues/17744
 [Feature #17762]: https://bugs.ruby-lang.org/issues/17762
