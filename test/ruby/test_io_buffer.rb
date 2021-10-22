@@ -62,6 +62,25 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_include buffer.to_str, "Hello World"
   end
 
+  def test_string_mapped
+    string = "Hello World"
+    buffer = IO::Buffer.for(string)
+
+    # Cannot modify string as it's locked by the buffer:
+    assert_raise RuntimeError do
+      string[0] = "h"
+    end
+
+    buffer.set(:U8, 0, "h".ord)
+
+    # Buffer releases it's ownership of the string:
+    buffer.free
+
+    assert_equal "hello World", string
+    string[0] = "H"
+    assert_equal "Hello World", string
+  end
+
   def test_resize
     buffer = IO::Buffer.new(1024, IO::Buffer::MAPPED)
     buffer.resize(2048, 0)
