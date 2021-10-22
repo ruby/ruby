@@ -58,15 +58,16 @@ VALUE eDHError;
  *
  * Examples:
  *   # Creating an instance from scratch
- *   dh = DH.new
+ *   # Note that this is deprecated and will not work on OpenSSL 3.0 or later.
+ *   dh = OpenSSL::PKey::DH.new
  *   dh.set_pqg(bn_p, nil, bn_g)
  *
  *   # Generating a parameters and a key pair
- *   dh = DH.new(2048) # An alias of DH.generate(2048)
+ *   dh = OpenSSL::PKey::DH.new(2048) # An alias of OpenSSL::PKey::DH.generate(2048)
  *
  *   # Reading DH parameters
- *   dh = DH.new(File.read('parameters.pem')) # -> dh, but no public/private key yet
- *   dh.generate_key! # -> dh with public and private key
+ *   dh_params = OpenSSL::PKey::DH.new(File.read('parameters.pem')) # loads parameters only
+ *   dh = OpenSSL::PKey.generate_key(dh_params) # generates a key pair
  */
 static VALUE
 ossl_dh_initialize(int argc, VALUE *argv, VALUE self)

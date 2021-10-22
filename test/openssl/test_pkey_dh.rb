@@ -26,13 +26,18 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   end
 
   def test_derive_key
-    dh1 = Fixtures.pkey("dh1024").generate_key!
-    dh2 = Fixtures.pkey("dh1024").generate_key!
+    params = Fixtures.pkey("dh1024")
+    dh1 = OpenSSL::PKey.generate_key(params)
+    dh2 = OpenSSL::PKey.generate_key(params)
     dh1_pub = OpenSSL::PKey.read(dh1.public_to_der)
     dh2_pub = OpenSSL::PKey.read(dh2.public_to_der)
+
     z = dh1.g.mod_exp(dh1.priv_key, dh1.p).mod_exp(dh2.priv_key, dh1.p).to_s(2)
     assert_equal z, dh1.derive(dh2_pub)
     assert_equal z, dh2.derive(dh1_pub)
+
+    assert_raise(OpenSSL::PKey::PKeyError) { params.derive(dh1_pub) }
+    assert_raise(OpenSSL::PKey::PKeyError) { dh1_pub.derive(params) }
 
     assert_equal z, dh1.compute_key(dh2.pub_key)
     assert_equal z, dh2.compute_key(dh1.pub_key)
@@ -74,19 +79,16 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   end
 
   def test_generate_key
-    dh = Fixtures.pkey("dh1024").public_key # creates a copy
+    # Deprecated in v3.0.0; incompatible with OpenSSL 3.0
+    dh = Fixtures.pkey("dh1024").public_key # creates a copy with params only
     assert_no_key(dh)
     dh.generate_key!
     assert_key(dh)
-  end
 
-  def test_key_exchange
-    dh = Fixtures.pkey("dh1024")
     dh2 = dh.public_key
-    dh.generate_key!
     dh2.generate_key!
     assert_equal(dh.compute_key(dh2.pub_key), dh2.compute_key(dh.pub_key))
-  end
+  end if !openssl?(3, 0, 0)
 
   def test_params_ok?
     dh0 = Fixtures.pkey("dh1024")
