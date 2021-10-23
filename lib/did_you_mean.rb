@@ -106,7 +106,7 @@ module DidYouMean
   end
 
   # Updates the primary formatter used to format the suggestions.
-  def self.formatter=(*)
+  def self.formatter=(formatter)
     @formatter = formatter
   end
 
