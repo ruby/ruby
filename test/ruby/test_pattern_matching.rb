@@ -4,6 +4,25 @@ require 'test/unit'
 experimental, Warning[:experimental] = Warning[:experimental], false # suppress "warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!"
 eval "\n#{<<~'END_of_GUARD'}", binding, __FILE__, __LINE__
 class TestPatternMatching < Test::Unit::TestCase
+  class NullFormatter
+    def message_for(corrections)
+      ""
+    end
+  end
+
+  def setup
+    if defined?(DidYouMean)
+      @original_formatter = DidYouMean.formatter
+      DidYouMean.formatter = NullFormatter.new
+    end
+  end
+
+  def teardown
+    if defined?(DidYouMean)
+      DidYouMean.formatter = @original_formatter
+    end
+  end
+
   class C
     class << self
       attr_accessor :keys
