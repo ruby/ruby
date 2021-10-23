@@ -12044,8 +12044,8 @@ static const rb_data_type_t weakmap_type = {
 
 static VALUE wmap_finalize(RB_BLOCK_CALL_FUNC_ARGLIST(objid, self));
 
-static VALUE
-wmap_allocate(VALUE klass)
+VALUE
+rb_wmap_allocate(VALUE klass)
 {
     struct weakmap *w;
     VALUE obj = TypedData_Make_Struct(klass, struct weakmap, &weakmap_type, w);
@@ -12310,8 +12310,8 @@ wmap_aset_update(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
 }
 
 /* Creates a weak reference from the given key to the given value */
-static VALUE
-wmap_aset(VALUE self, VALUE key, VALUE value)
+VALUE
+rb_wmap_set(VALUE self, VALUE key, VALUE value)
 {
     struct weakmap *w;
 
@@ -12329,8 +12329,8 @@ wmap_aset(VALUE self, VALUE key, VALUE value)
 }
 
 /* Retrieves a weakly referenced object with the given key */
-static VALUE
-wmap_lookup(VALUE self, VALUE key)
+VALUE
+rb_wmap_lookup(VALUE self, VALUE key)
 {
     st_data_t data;
     VALUE obj;
@@ -12348,7 +12348,7 @@ wmap_lookup(VALUE self, VALUE key)
 static VALUE
 wmap_aref(VALUE self, VALUE key)
 {
-    VALUE obj = wmap_lookup(self, key);
+    VALUE obj = rb_wmap_lookup(self, key);
     return obj != Qundef ? obj : Qnil;
 }
 
@@ -12356,7 +12356,7 @@ wmap_aref(VALUE self, VALUE key)
 static VALUE
 wmap_has_key(VALUE self, VALUE key)
 {
-    return wmap_lookup(self, key) == Qundef ? Qfalse : Qtrue;
+    return rb_wmap_lookup(self, key) == Qundef ? Qfalse : Qtrue;
 }
 
 /* Returns the number of referenced objects */
@@ -13580,8 +13580,8 @@ Init_GC(void)
 
     {
 	VALUE rb_cWeakMap = rb_define_class_under(rb_mObjSpace, "WeakMap", rb_cObject);
-	rb_define_alloc_func(rb_cWeakMap, wmap_allocate);
-	rb_define_method(rb_cWeakMap, "[]=", wmap_aset, 2);
+	rb_define_alloc_func(rb_cWeakMap, rb_wmap_allocate);
+	rb_define_method(rb_cWeakMap, "[]=", rb_wmap_set, 2);
 	rb_define_method(rb_cWeakMap, "[]", wmap_aref, 1);
 	rb_define_method(rb_cWeakMap, "include?", wmap_has_key, 1);
 	rb_define_method(rb_cWeakMap, "member?", wmap_has_key, 1);

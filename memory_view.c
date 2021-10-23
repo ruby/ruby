@@ -8,6 +8,7 @@
 
 #include "internal.h"
 #include "internal/hash.h"
+#include "internal/gc.h"
 #include "internal/variable.h"
 #include "ruby/memory_view.h"
 #include "ruby/util.h"
@@ -113,7 +114,7 @@ unregister_exported_object(VALUE obj)
 }
 
 // MemoryView
-
+static VALUE memory_view_map;
 static ID id_memory_view;
 
 static const rb_data_type_t memory_view_entry_data_type = {
@@ -131,13 +132,14 @@ bool
 rb_memory_view_register(VALUE klass, const rb_memory_view_entry_t *entry)
 {
     Check_Type(klass, T_CLASS);
-    VALUE entry_obj = rb_ivar_lookup(klass, id_memory_view, Qnil);
-    if (! NIL_P(entry_obj)) {
+    VALUE entry_obj = rb_wmap_lookup(memory_view_map, klass);
+    if (entry_obj != Qundef) {
         rb_warning("Duplicated registration of memory view to %"PRIsVALUE, klass);
         return false;
     }
     else {
         entry_obj = TypedData_Wrap_Struct(0, &memory_view_entry_data_type, (void *)entry);
+        rb_wmap_set(memory_view_map, klass, entry_obj);
         rb_ivar_set(klass, id_memory_view, entry_obj);
         return true;
     }
@@ -781,14 +783,12 @@ rb_memory_view_get_item(rb_memory_view_t *view, const ssize_t *indices)
 static const rb_memory_view_entry_t *
 lookup_memory_view_entry(VALUE klass)
 {
-    VALUE entry_obj = rb_ivar_lookup(klass, id_memory_view, Qnil);
-    while (NIL_P(entry_obj)) {
+    VALUE entry_obj;
+    while ((entry_obj = rb_wmap_lookup(memory_view_map, klass)) == Qundef) {
         klass = rb_class_get_superclass(klass);
 
         if (klass == rb_cBasicObject || klass == rb_cObject)
             return NULL;
-
-        entry_obj = rb_ivar_lookup(klass, id_memory_view, Qnil);
     }
 
     if (! rb_typeddata_is_kind_of(entry_obj, &memory_view_entry_data_type))
@@ -868,4 +868,5 @@ Init_MemoryView(void)
     rb_memory_view_exported_object_registry = obj;
 
     id_memory_view = rb_intern_const("__memory_view__");
+    rb_gc_register_mark_object(memory_view_map = rb_wmap_allocate(0));
 }

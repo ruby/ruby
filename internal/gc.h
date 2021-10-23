@@ -102,6 +102,10 @@ VALUE rb_class_allocate_instance(VALUE klass);
 void rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache);
 void *rb_gc_rvargc_object_data(VALUE obj);
 
+VALUE rb_wmap_allocate(VALUE klass);
+VALUE rb_wmap_set(VALUE wmap, VALUE key, VALUE value);
+VALUE rb_wmap_lookup(VALUE wmap, VALUE key);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 /* gc.c (export) */
 const char *rb_objspace_data_type_name(VALUE obj);
