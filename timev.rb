@@ -300,6 +300,8 @@ class Time
   #   Time.new('2000-12-31 23:59:59.5')              # => 2000-12-31 23:59:59.5 -0600
   #   Time.new('2000-12-31 23:59:59.5 +0900')        # => 2000-12-31 23:59:59.5 +0900
   #   Time.new('2000-12-31 23:59:59.5', in: '+0900') # => 2000-12-31 23:59:59.5 +0900
+  #   Time.new('2000-12-31 23:59:59.5')              # => 2000-12-31 23:59:59.5 -0600
+  #   Time.new('2000-12-31 23:59:59.56789', precision: 3) # => 2000-12-31 23:59:59.567 -0600
   #
   # With one to six arguments, returns a new \Time object
   # based on the given arguments, in the local timezone.
@@ -375,7 +377,12 @@ class Time
   #   Time.new(in: '-12:00')
   #   # => 2022-08-23 08:49:26.1941467 -1200
   #
-  def initialize(year = (now = true), mon = (str = year; nil), mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil)
+  # - +precision+: maximum effective digits in sub-second part, default is 9.
+  #   More digits will be truncated, as other operations of \Time.
+  #   Ignored unless the first argument is a string.
+  #
+  def initialize(year = (now = true), mon = (str = year; nil), mday = nil, hour = nil, min = nil, sec = nil, zone = nil,
+                 in: nil, precision: 9)
     if zone
       if Primitive.arg!(:in)
         raise ArgumentError, "timezone argument given as positional and keyword arguments"
@@ -388,10 +395,10 @@ class Time
       return Primitive.time_init_now(zone)
     end
 
-    if str and Primitive.time_init_parse(str, zone)
+    if str and Primitive.time_init_parse(str, zone, precision)
       return self
     end
 
-    Primitive.time_init_args(year, mon, mday, hour, min, sec, nil, zone)
+    Primitive.time_init_args(year, mon, mday, hour, min, sec, zone)
   end
 end

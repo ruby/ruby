@@ -73,6 +73,9 @@ class TestTime < Test::Unit::TestCase
     assert_equal(Time.new(2021, 12, 25, in: "+09:00"), Time.new("2021-12-25+09:00"))
 
     assert_equal(0.123456r, Time.new("2021-12-25 00:00:00.123456 +09:00").subsec)
+    assert_equal(0.123456789r, Time.new("2021-12-25 00:00:00.123456789876 +09:00").subsec)
+    assert_equal(0.123r, Time.new("2021-12-25 00:00:00.123456789876 +09:00", precision: 3).subsec)
+    assert_equal(0.123456789876r, Time.new("2021-12-25 00:00:00.123456789876 +09:00", precision: nil).subsec)
     assert_raise_with_message(ArgumentError, "subsecond expected after dot: 00:56:17. ") {
       Time.new("2020-12-25 00:56:17. +0900")
     }
