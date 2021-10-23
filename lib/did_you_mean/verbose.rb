@@ -1,2 +1,4 @@
-warn "The verbose formatter has been removed and now `require 'did_you_mean/verbose'` has no effect. Please " \
-     "remove this call."
+require_relative '../did_you_mean'
+require_relative 'formatters/verbose_formatter'
+
+DidYouMean.formatter = DidYouMean::VerboseFormatter.new

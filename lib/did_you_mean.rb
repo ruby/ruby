@@ -7,8 +7,7 @@ require_relative 'did_you_mean/spell_checkers/method_name_checker'
 require_relative 'did_you_mean/spell_checkers/key_error_checker'
 require_relative 'did_you_mean/spell_checkers/null_checker'
 require_relative 'did_you_mean/spell_checkers/require_path_checker'
-require_relative 'did_you_mean/spell_checkers/pattern_key_name_checker'
-require_relative 'did_you_mean/formatter'
+require_relative 'did_you_mean/formatters/plain_formatter'
 require_relative 'did_you_mean/tree_spell_checker'
 
 # The +DidYouMean+ gem adds functionality to suggest possible method/class
@@ -98,18 +97,16 @@ module DidYouMean
   correct_error KeyError, KeyErrorChecker
   correct_error NoMethodError, MethodNameChecker
   correct_error LoadError, RequirePathChecker if RUBY_VERSION >= '2.8.0'
-  correct_error NoMatchingPatternKeyError, PatternKeyNameChecker if defined?(::NoMatchingPatternKeyError)
 
   # Returns the currently set formatter. By default, it is set to +DidYouMean::Formatter+.
   def self.formatter
-    @formatter
+    @@formatter
   end
 
   # Updates the primary formatter used to format the suggestions.
-  def self.formatter=(*)
-    warn "The custom formatter feature has been deprecated and has no effect. Please remove the usages of the " \
-         "`#formatter=` method."
+  def self.formatter=(formatter)
+    @@formatter = formatter
   end
 
-  @formatter = Formatter.new
+  self.formatter = PlainFormatter.new
 end
