@@ -10092,7 +10092,7 @@ typedef int fcntl_arg_t;
 #endif
 
 static long
-fcntl_narg_len(int cmd)
+fcntl_narg_len(ioctl_req_t cmd)
 {
     long len;
 
@@ -10212,19 +10212,21 @@ fcntl_narg_len(int cmd)
 }
 #else /* HAVE_FCNTL */
 static long
-fcntl_narg_len(int cmd)
+fcntl_narg_len(ioctl_req_t cmd)
 {
     return 0;
 }
 #endif /* HAVE_FCNTL */
 
+#define NARG_SENTINEL 17
+
 static long
-setup_narg(ioctl_req_t cmd, VALUE *argp, int io_p)
+setup_narg(ioctl_req_t cmd, VALUE *argp, long (*narg_len)(ioctl_req_t))
 {
     long narg = 0;
     VALUE arg = *argp;
 
-    if (NIL_P(arg) || arg == Qfalse) {
+    if (!RTEST(arg)) {
 	narg = 0;
     }
     else if (FIXNUM_P(arg)) {
@@ -10244,10 +10246,7 @@ setup_narg(ioctl_req_t cmd, VALUE *argp, int io_p)
 	    long len, slen;
 
 	    *argp = arg = tmp;
-	    if (io_p)
-		len = ioctl_narg_len(cmd);
-	    else
-		len = fcntl_narg_len((int)cmd);
+	    len = narg_len(cmd);
 	    rb_str_modify(arg);
 
 	    slen = RSTRING_LEN(arg);
@@ -10259,12 +10258,28 @@ setup_narg(ioctl_req_t cmd, VALUE *argp, int io_p)
 	    }
 	    /* a little sanity check here */
 	    ptr = RSTRING_PTR(arg);
-	    ptr[slen - 1] = 17;
+	    ptr[slen - 1] = NARG_SENTINEL;
 	    narg = (long)(SIGNED_VALUE)ptr;
 	}
     }
 
     return narg;
+}
+
+static VALUE
+finish_narg(int retval, VALUE arg, const rb_io_t *fptr)
+{
+    if (retval < 0) rb_sys_fail_path(fptr->pathv);
+    if (RB_TYPE_P(arg, T_STRING)) {
+	char *ptr;
+	long slen;
+	RSTRING_GETMEM(arg, ptr, slen);
+	if (ptr[slen-1] != NARG_SENTINEL)
+	    rb_raise(rb_eArgError, "return value overflowed string");
+	ptr[slen-1] = '\0';
+    }
+
+    return INT2NUM(retval);
 }
 
 #ifdef HAVE_IOCTL
@@ -10276,20 +10291,10 @@ rb_ioctl(VALUE io, VALUE req, VALUE arg)
     long narg;
     int retval;
 
-    narg = setup_narg(cmd, &arg, 1);
+    narg = setup_narg(cmd, &arg, ioctl_narg_len);
     GetOpenFile(io, fptr);
     retval = do_ioctl(fptr->fd, cmd, narg);
-    if (retval < 0) rb_sys_fail_path(fptr->pathv);
-    if (RB_TYPE_P(arg, T_STRING)) {
-	char *ptr;
-	long slen;
-	RSTRING_GETMEM(arg, ptr, slen);
-	if (ptr[slen-1] != 17)
-	    rb_raise(rb_eArgError, "return value overflowed string");
-	ptr[slen-1] = '\0';
-    }
-
-    return INT2NUM(retval);
+    return finish_narg(retval, arg, fptr);
 }
 
 /*
@@ -10369,20 +10374,10 @@ rb_fcntl(VALUE io, VALUE req, VALUE arg)
     long narg;
     int retval;
 
-    narg = setup_narg(cmd, &arg, 0);
+    narg = setup_narg(cmd, &arg, fcntl_narg_len);
     GetOpenFile(io, fptr);
     retval = do_fcntl(fptr->fd, cmd, narg);
-    if (retval < 0) rb_sys_fail_path(fptr->pathv);
-    if (RB_TYPE_P(arg, T_STRING)) {
-	char *ptr;
-	long slen;
-	RSTRING_GETMEM(arg, ptr, slen);
-	if (ptr[slen-1] != 17)
-	    rb_raise(rb_eArgError, "return value overflowed string");
-	ptr[slen-1] = '\0';
-    }
-
-    return INT2NUM(retval);
+    return finish_narg(retval, arg, fptr);
 }
 
 /*
