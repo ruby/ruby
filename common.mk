@@ -186,7 +186,8 @@ INSTRUBY_ARGS =	$(SCRIPT_ARGS) \
 		--data-mode=$(INSTALL_DATA_MODE) \
 		--prog-mode=$(INSTALL_PROG_MODE) \
 		--installed-list $(INSTALLED_LIST) \
-		--mantype="$(MANTYPE)"
+		--mantype="$(MANTYPE)" \
+		$(INSTRUBY_OPTS)
 INSTALL_PROG_MODE = 0755
 INSTALL_DATA_MODE = 0644
 
@@ -384,7 +385,7 @@ post-install-all:: post-install-local post-install-ext post-install-gem post-ins
 install-nodoc: pre-install-nodoc do-install-nodoc post-install-nodoc
 pre-install-nodoc:: pre-install-local pre-install-ext pre-install-gem
 do-install-nodoc: main pre-install-nodoc
-	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --exclude=doc
+	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=all --exclude=doc
 post-install-nodoc:: post-install-local post-install-ext post-install-gem
 
 install-local: pre-install-local do-install-local post-install-local
