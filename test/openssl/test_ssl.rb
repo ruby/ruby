@@ -6,7 +6,7 @@ if defined?(OpenSSL)
 class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   def test_bad_socket
     bad_socket = Struct.new(:sync).new
-    assert_raises TypeError do
+    assert_raise TypeError do
       socket = OpenSSL::SSL::SSLSocket.new bad_socket
       # if the socket is not a T_FILE, `connect` will segv because it tries
       # to get the underlying file descriptor but the API it calls assumes
