@@ -792,64 +792,64 @@ BIGNUM_SELF_SHIFT(lshift)
  */
 BIGNUM_SELF_SHIFT(rshift)
 
-#define BIGNUM_RAND(func)					\
-    static VALUE						\
-    ossl_bn_s_##func(int argc, VALUE *argv, VALUE klass)	\
-    {								\
-	BIGNUM *result;						\
-	int bottom = 0, top = 0, b;				\
-	VALUE bits, fill, odd, obj;				\
-								\
-	switch (rb_scan_args(argc, argv, "12", &bits, &fill, &odd)) {	\
-	case 3:							\
-	    bottom = (odd == Qtrue) ? 1 : 0;			\
-	    /* FALLTHROUGH */					\
-	case 2:							\
-	    top = NUM2INT(fill);				\
-	}							\
-	b = NUM2INT(bits);					\
-	obj = NewBN(klass);					\
-	if (!(result = BN_new())) {				\
-	    ossl_raise(eBNError, NULL);				\
-	}							\
-	if (BN_##func(result, b, top, bottom) <= 0) {		\
-	    BN_free(result);					\
-	    ossl_raise(eBNError, NULL);				\
-	}							\
-	SetBN(obj, result);					\
-	return obj;						\
-    }
-
 /*
- * Document-method: OpenSSL::BN.rand
- *   BN.rand(bits [, fill [, odd]]) -> aBN
- */
-BIGNUM_RAND(rand)
-
-#define BIGNUM_RAND_RANGE(func)					\
-    static VALUE						\
-    ossl_bn_s_##func##_range(VALUE klass, VALUE range)		\
-    {								\
-	BIGNUM *bn = GetBNPtr(range), *result;			\
-	VALUE obj = NewBN(klass);				\
-	if (!(result = BN_new())) {				\
-	    ossl_raise(eBNError, NULL);				\
-	}							\
-	if (BN_##func##_range(result, bn) <= 0) {		\
-	    BN_free(result);					\
-	    ossl_raise(eBNError, NULL);				\
-	}							\
-	SetBN(obj, result);					\
-	return obj;						\
-    }
-
-/*
- * Document-method: OpenSSL::BN.rand_range
  * call-seq:
- *   BN.rand_range(range) -> aBN
+ *    BN.rand(bits [, fill [, odd]]) -> aBN
  *
+ * Generates a cryptographically strong pseudo-random number of +bits+.
+ *
+ * See also the man page BN_rand(3).
  */
-BIGNUM_RAND_RANGE(rand)
+static VALUE
+ossl_bn_s_rand(int argc, VALUE *argv, VALUE klass)
+{
+    BIGNUM *result;
+    int bottom = 0, top = 0, b;
+    VALUE bits, fill, odd, obj;
+
+    switch (rb_scan_args(argc, argv, "12", &bits, &fill, &odd)) {
+      case 3:
+        bottom = (odd == Qtrue) ? 1 : 0;
+        /* FALLTHROUGH */
+      case 2:
+        top = NUM2INT(fill);
+    }
+    b = NUM2INT(bits);
+    obj = NewBN(klass);
+    if (!(result = BN_new())) {
+        ossl_raise(eBNError, "BN_new");
+    }
+    if (BN_rand(result, b, top, bottom) <= 0) {
+        BN_free(result);
+        ossl_raise(eBNError, "BN_rand");
+    }
+    SetBN(obj, result);
+    return obj;
+}
+
+/*
+ * call-seq:
+ *    BN.rand_range(range) -> aBN
+ *
+ * Generates a cryptographically strong pseudo-random number in the range
+ * 0...+range+.
+ *
+ * See also the man page BN_rand_range(3).
+ */
+static VALUE
+ossl_bn_s_rand_range(VALUE klass, VALUE range)
+{
+    BIGNUM *bn = GetBNPtr(range), *result;
+    VALUE obj = NewBN(klass);
+    if (!(result = BN_new()))
+        ossl_raise(eBNError, "BN_new");
+    if (BN_rand_range(result, bn) <= 0) {
+        BN_free(result);
+        ossl_raise(eBNError, "BN_rand_range");
+    }
+    SetBN(obj, result);
+    return obj;
+}
 
 /*
  * call-seq:
