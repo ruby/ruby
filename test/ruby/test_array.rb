@@ -2956,6 +2956,17 @@ class TestArray < Test::Unit::TestCase
     end
   end
 
+  def test_sample_replacement
+    100.times do
+      assert_include([0, 1, 2], [2, 1, 0].sample(replace: true))
+      samples = [2, 1, 0].sample(6, replace: true)
+      assert_equal(6, samples.size)
+      samples.each {|sample|
+        assert_include([0, 1, 2], sample)
+      }
+    end
+  end
+
   def test_sample_random
     ary = (0...10000).to_a
     assert_raise(ArgumentError) {ary.sample(1, 2, random: nil)}
@@ -2990,6 +3001,10 @@ class TestArray < Test::Unit::TestCase
     ary = (0...10000).to_a
     assert_equal([5000, 4999, 5001, 4998], ary.sample(4, random: gen0))
     assert_equal([], ary.sample(4, random: gen1))
+    assert_equal([], ary)
+    ary = (0...10000).to_a
+    assert_equal([5000, 5000, 5000, 5000], ary.sample(4, random: gen0, replace: true))
+    assert_equal([], ary.sample(4, random: gen1, replace: true))
     assert_equal([], ary)
     ary = (0...10000).to_a
     assert_equal([5000, 4999, 5001, 4998, 5002, 4997, 5003, 4996, 5004, 4995], ary.sample(10, random: gen0))

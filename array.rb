@@ -28,8 +28,8 @@ class Array
   end
 
   # call-seq:
-  #    array.sample(random: Random) -> object
-  #    array.sample(n, random: Random) -> new_ary
+  #    array.sample(random: Random, replace: false) -> object
+  #    array.sample(n, random: Random, replace: false) -> new_ary
   #
   # Returns random elements from +self+.
   #
@@ -43,7 +43,7 @@ class Array
   # elements from +self+:
   #    a.sample(3) # => [8, 9, 2]
   #    a.sample(6) # => [9, 6, 10, 3, 1, 4]
-  # Returns no more than <tt>a.size</tt> elements
+  # Returns no more than <tt>a.size</tt> elements if +replace+ is +false+
   # (because no new duplicates are introduced):
   #    a.sample(a.size * 2) # => [6, 4, 1, 8, 5, 9, 10, 2, 3, 7]
   # But +self+ may contain duplicates:
@@ -57,7 +57,16 @@ class Array
   #    a = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
   #    a.sample(random: Random.new(1))     #=> 6
   #    a.sample(4, random: Random.new(1))  #=> [6, 10, 9, 2]
-  def sample(n = (ary = false), random: Random)
-    Primitive.rb_ary_sample(random, n, ary)
+  #
+  # The optional +replace+ argument is +true+ and +n+ is given, samples with
+  # replacement.  The elements in the result array may be duplicated.
+  #
+  #    a = [ 1, 2, 3 ]
+  #    a.sample(6, replace: true) #=> [2, 1, 3, 1, 1, 3]
+  #
+  # In this case, the size of the result array will equal +n+ even if it is
+  # greater than the size of +self+, unless +self+ is empty.
+  def sample(n = (ary = false), random: Random, replace: false)
+    Primitive.rb_ary_sample(random, n, ary, replace)
   end
 end
