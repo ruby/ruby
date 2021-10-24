@@ -1,7 +1,7 @@
 class SpecTag
   attr_accessor :tag, :comment, :description
 
-  def initialize(string=nil)
+  def initialize(string = nil)
     parse(string) if string
   end
 

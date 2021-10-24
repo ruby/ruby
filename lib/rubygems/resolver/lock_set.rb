@@ -3,7 +3,6 @@
 # A set of gems from a gem dependencies lockfile.
 
 class Gem::Resolver::LockSet < Gem::Resolver::Set
-
   attr_reader :specs # :nodoc:
 
   ##
@@ -29,7 +28,7 @@ class Gem::Resolver::LockSet < Gem::Resolver::Set
   def add(name, version, platform) # :nodoc:
     version = Gem::Version.new version
     specs = [
-      Gem::Resolver::LockSpecification.new(self, name, version, @sources, platform)
+      Gem::Resolver::LockSpecification.new(self, name, version, @sources, platform),
     ]
 
     @specs.concat specs
@@ -75,8 +74,7 @@ class Gem::Resolver::LockSet < Gem::Resolver::Set
       q.text 'specs:'
 
       q.breakable
-      q.pp @specs.map { |spec| spec.full_name }
+      q.pp @specs.map {|spec| spec.full_name }
     end
   end
-
 end

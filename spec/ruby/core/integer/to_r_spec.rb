@@ -15,7 +15,7 @@ describe "Integer#to_r" do
 
   it "works even if self is a Bignum" do
     bignum = 99999**999
-    bignum.should be_an_instance_of(Bignum)
+    bignum.should be_an_instance_of(Integer)
     bignum.to_r.should == Rational(bignum, 1)
   end
 

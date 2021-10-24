@@ -7,6 +7,11 @@ class URI::TestParser < Test::Unit::TestCase
     uri.class.component.collect {|c| uri.send(c)}
   end
 
+  def test_inspect
+    assert_match(/URI::RFC2396_Parser/, URI::Parser.new.inspect)
+    assert_match(/URI::RFC3986_Parser/, URI::RFC3986_Parser.new.inspect)
+  end
+
   def test_compare
     url = 'http://a/b/c/d;p?q'
     u0 = URI.parse(url)
@@ -38,6 +43,11 @@ class URI::TestParser < Test::Unit::TestCase
     u1.path = '/%uDCBA'
     assert_equal(['http', nil, 'a', URI::HTTP.default_port, '/%uDCBA', nil, nil],
 		 uri_to_ary(u1))
+  end
+
+  def test_parse_query_pct_encoded
+    assert_equal('q=%32!$&-/?.09;=:@AZ_az~', URI.parse('https://www.example.com/search?q=%32!$&-/?.09;=:@AZ_az~').query)
+    assert_raise(URI::InvalidURIError) { URI.parse('https://www.example.com/search?q=%XX') }
   end
 
   def test_raise_bad_uri_for_integer

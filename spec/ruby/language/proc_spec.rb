@@ -217,4 +217,30 @@ describe "A Proc" do
       lambda { @l.call(obj) }.should raise_error(TypeError)
     end
   end
+
+  describe "taking |*a, **kw| arguments" do
+    before :each do
+      @p = proc { |*a, **kw| [a, kw] }
+    end
+
+    ruby_version_is ""..."2.7" do
+      it 'autosplats keyword arguments' do
+        @p.call([1, {a: 1}]).should == [[1], {a: 1}]
+      end
+    end
+
+    ruby_version_is "2.7"..."3.0" do
+      it 'autosplats keyword arguments and warns' do
+        -> {
+          @p.call([1, {a: 1}]).should == [[1], {a: 1}]
+        }.should complain(/warning: Using the last argument as keyword parameters is deprecated; maybe \*\* should be added to the call/)
+      end
+    end
+
+    ruby_version_is "3.0" do
+      it 'does not autosplat keyword arguments' do
+        @p.call([1, {a: 1}]).should == [[[1, {a: 1}]], {}]
+      end
+    end
+  end
 end

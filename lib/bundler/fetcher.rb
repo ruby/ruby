@@ -28,7 +28,8 @@ module Bundler
           " is a chance you are experiencing a man-in-the-middle attack, but" \
           " most likely your system doesn't have the CA certificates needed" \
           " for verification. For information about OpenSSL certificates, see" \
-          " http://bit.ly/ruby-ssl. To connect without using SSL, edit your Gemfile" \
+          " https://railsapps.github.io/openssl-certificate-verify-failed.html." \
+          " To connect without using SSL, edit your Gemfile" \
           " sources and change 'https' to 'http'."
       end
     end
@@ -47,7 +48,8 @@ module Bundler
         remote_uri = filter_uri(remote_uri)
         super "Authentication is required for #{remote_uri}.\n" \
           "Please supply credentials for this source. You can do this by running:\n" \
-          " bundle config set #{remote_uri} username:password"
+          "`bundle config set --global #{remote_uri} username:password`\n" \
+          "or by storing the credentials in the `#{Settings.key_for(remote_uri)}` environment variable"
       end
     end
     # This error is raised if HTTP authentication is provided, but incorrect.
@@ -69,8 +71,8 @@ module Bundler
                   :HTTPUnsupportedMediaType, :HTTPVersionNotSupported].freeze
     FAIL_ERRORS = begin
       fail_errors = [AuthenticationRequiredError, BadAuthenticationError, FallbackError]
-      fail_errors << Gem::Requirement::BadRequirementError if defined?(Gem::Requirement::BadRequirementError)
-      fail_errors.concat(NET_ERRORS.map {|e| SharedHelpers.const_get_safely(e, Net) }.compact)
+      fail_errors << Gem::Requirement::BadRequirementError
+      fail_errors.concat(NET_ERRORS.map {|e| Net.const_get(e) })
     end.freeze
 
     class << self
@@ -97,7 +99,7 @@ module Bundler
       spec -= [nil, "ruby", ""]
       spec_file_name = "#{spec.join "-"}.gemspec"
 
-      uri = URI.parse("#{remote_uri}#{Gem::MARSHAL_SPEC_DIR}#{spec_file_name}.rz")
+      uri = Bundler::URI.parse("#{remote_uri}#{Gem::MARSHAL_SPEC_DIR}#{spec_file_name}.rz")
       if uri.scheme == "file"
         path = Bundler.rubygems.correct_for_windows_path(uri.path)
         Bundler.load_marshal Bundler.rubygems.inflate(Gem.read_binary(path))
@@ -137,7 +139,6 @@ module Bundler
       end
 
       specs.each do |name, version, platform, dependencies, metadata|
-        next if name == "bundler"
         spec = if dependencies
           EndpointSpecification.new(name, version, platform, dependencies, metadata)
         else
@@ -216,7 +217,7 @@ module Bundler
       "#<#{self.class}:0x#{object_id} uri=#{uri}>"
     end
 
-  private
+    private
 
     FETCHERS = [CompactIndex, Dependency, Index].freeze
 
@@ -229,6 +230,7 @@ module Bundler
         "BUILDBOX" => "buildbox",
         "GO_SERVER_URL" => "go",
         "SNAP_CI" => "snap",
+        "GITLAB_CI" => "gitlab",
         "CI_NAME" => ENV["CI_NAME"],
         "CI" => "ci",
       }
@@ -244,7 +246,7 @@ module Bundler
 
         con = PersistentHTTP.new :name => "bundler", :proxy => :ENV
         if gem_proxy = Bundler.rubygems.configuration[:http_proxy]
-          con.proxy = URI.parse(gem_proxy) if gem_proxy != :no_proxy
+          con.proxy = Bundler::URI.parse(gem_proxy) if gem_proxy != :no_proxy
         end
 
         if remote_uri.scheme == "https"
@@ -302,7 +304,7 @@ module Bundler
       store
     end
 
-  private
+    private
 
     def remote_uri
       @remote.uri

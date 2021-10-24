@@ -29,6 +29,11 @@ module Bundler
 
           FileUtils.rm_rf spec.full_gem_path
         when Source::Git
+          if source.local?
+            Bundler.ui.warn("Cannot pristine #{gem_name}. Gem is locally overridden.")
+            next
+          end
+
           source.remote!
           if extension_cache_path = source.extension_cache_path(spec)
             FileUtils.rm_rf extension_cache_path

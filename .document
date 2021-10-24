@@ -9,8 +9,22 @@
 
 # prelude
 prelude.rb
-
 rbconfig.rb
+
+array.rb
+ast.rb
+dir.rb
+gc.rb
+io.rb
+kernel.rb
+marshal.rb
+numeric.rb
+nilclass.rb
+pack.rb
+ractor.rb
+timev.rb
+trace_point.rb
+warning.rb
 
 # the lib/ directory (which has its own .document file)
 lib
@@ -19,7 +33,7 @@ lib
 ext
 
 # rdoc files
-NEWS
+NEWS.md
 
 README.md
 README.ja.md

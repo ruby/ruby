@@ -28,7 +28,7 @@ RSpec.describe Bundler::GemVersionPromoter do
 
     def build_spec_groups(name, versions)
       versions.map do |v|
-        Bundler::Resolver::SpecGroup.new(build_spec(name, v))
+        Bundler::Resolver::SpecGroup.create_for({ Gem::Platform::RUBY => build_spec(name, v) }, [Gem::Platform::RUBY], Gem::Platform::RUBY)
       end
     end
 
@@ -170,7 +170,7 @@ RSpec.describe Bundler::GemVersionPromoter do
     context "debug output" do
       it "should not kerblooie on its own debug output" do
         gvp = unlocking(:level => :patch)
-        dep = Bundler::DepProxy.new(dep("foo", "1.2.0").first, "ruby")
+        dep = Bundler::DepProxy.get_proxy(dep("foo", "1.2.0").first, "ruby")
         result = gvp.send(:debug_format_result, dep, build_spec_groups("foo", %w[1.2.0 1.3.0]))
         expect(result.class).to eq Array
       end

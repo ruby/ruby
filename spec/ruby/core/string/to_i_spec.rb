@@ -131,29 +131,29 @@ describe "String#to_i" do
     -> { "".to_i(37) }.should raise_error(ArgumentError)
   end
 
-  it "returns a Fixnum for long strings with trailing spaces" do
+  it "returns an Integer for long strings with trailing spaces" do
     "0                             ".to_i.should == 0
-    "0                             ".to_i.should be_an_instance_of(Fixnum)
+    "0                             ".to_i.should be_an_instance_of(Integer)
 
     "10                             ".to_i.should == 10
-    "10                             ".to_i.should be_an_instance_of(Fixnum)
+    "10                             ".to_i.should be_an_instance_of(Integer)
 
     "-10                            ".to_i.should == -10
-    "-10                            ".to_i.should be_an_instance_of(Fixnum)
+    "-10                            ".to_i.should be_an_instance_of(Integer)
   end
 
-  it "returns a Fixnum for long strings with leading spaces" do
+  it "returns an Integer for long strings with leading spaces" do
     "                             0".to_i.should == 0
-    "                             0".to_i.should be_an_instance_of(Fixnum)
+    "                             0".to_i.should be_an_instance_of(Integer)
 
     "                             10".to_i.should == 10
-    "                             10".to_i.should be_an_instance_of(Fixnum)
+    "                             10".to_i.should be_an_instance_of(Integer)
 
     "                            -10".to_i.should == -10
-    "                            -10".to_i.should be_an_instance_of(Fixnum)
+    "                            -10".to_i.should be_an_instance_of(Integer)
   end
 
-  it "returns the correct Bignum for long strings" do
+  it "returns the correct Integer for long strings" do
     "245789127594125924165923648312749312749327482".to_i.should == 245789127594125924165923648312749312749327482
     "-245789127594125924165923648312749312749327482".to_i.should == -245789127594125924165923648312749312749327482
   end

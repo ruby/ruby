@@ -1,18 +1,18 @@
-require 'mspec/runner/formatters/dotted'
+require 'mspec/runner/formatters/base'
 
-class MethodFormatter < DottedFormatter
+class MethodFormatter < BaseFormatter
   attr_accessor :methods
 
-  def initialize(out=nil)
-    super
+  def initialize(out = nil)
+    super(out)
     @methods = Hash.new do |h, k|
-      hash = {}
-      hash[:examples]     = 0
-      hash[:expectations] = 0
-      hash[:failures]     = 0
-      hash[:errors]       = 0
-      hash[:exceptions]   = []
-      h[k] = hash
+      h[k] = {
+        examples: 0,
+        expectations: 0,
+        failures: 0,
+        errors: 0,
+        exceptions: []
+      }
     end
   end
 
@@ -34,7 +34,7 @@ class MethodFormatter < DottedFormatter
   # Resets the tallies so the counts are only for this
   # example.
   def before(state)
-    super
+    super(state)
 
     # The pattern for a method name is not correctly
     # restrictive but it is simplistic and useful
@@ -60,7 +60,9 @@ class MethodFormatter < DottedFormatter
 
   # Callback for the MSpec :after event. Sets or adds to
   # tallies for the example block.
-  def after(state)
+  def after(state = nil)
+    super(state)
+
     h = methods[@key]
     h[:examples]     += tally.counter.examples
     h[:expectations] += tally.counter.expectations

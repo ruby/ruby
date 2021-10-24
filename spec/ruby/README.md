@@ -1,10 +1,11 @@
 # The Ruby Spec Suite
 
-[![Build Status](https://travis-ci.org/ruby/spec.svg)](https://travis-ci.org/ruby/spec)
-[![Build Status](https://ci.appveyor.com/api/projects/status/1gs6f399320o44b1?svg=true)](https://ci.appveyor.com/project/eregon/spec-x948i)
+[![Actions Build Status](https://github.com/ruby/spec/workflows/CI/badge.svg)](https://github.com/ruby/spec/actions)
 [![Gitter](https://badges.gitter.im/ruby/spec.svg)](https://gitter.im/ruby/spec)
 
 The Ruby Spec Suite, abbreviated `ruby/spec`, is a test suite for the behavior of the Ruby programming language.
+
+### Description and Motivation
 
 It is not a standardized specification like the ISO one, and does not aim to become one.
 Instead, it is a practical tool to describe and test the behavior of Ruby with code.
@@ -27,17 +28,21 @@ ruby/spec is known to be tested in these implementations for every commit:
 * [JRuby](https://github.com/jruby/jruby/tree/master/spec/ruby) for both 1.7 and 9.x
 * [TruffleRuby](https://github.com/oracle/truffleruby/tree/master/spec/ruby)
 * [Opal](https://github.com/opal/opal/tree/master/spec)
+* [Artichoke](https://github.com/artichoke/spec/tree/artichoke-vendor)
 
-ruby/spec describes the behavior of Ruby 2.4 and more recent Ruby versions.
-More precisely, every latest stable MRI release should [pass](https://travis-ci.org/ruby/spec) all specs of ruby/spec (2.4.x, 2.5.x, 2.6.x, etc), and those are tested in TravisCI.
+ruby/spec describes the behavior of Ruby 2.6 and more recent Ruby versions.
+More precisely, every latest stable MRI release should [pass](https://github.com/ruby/spec/actions/workflows/ci.yml) all specs of ruby/spec (2.6.x, 2.7.x, 3.0.x, etc), and those are tested in CI.
 
-The specs are synchronized both ways around once a month by @eregon between ruby/spec, MRI, JRuby and TruffleRuby.
+### Synchronization with Ruby Implementations
+
+The specs are synchronized both ways around once a month by @eregon between ruby/spec, MRI, JRuby and TruffleRuby,
+using [this script](https://github.com/ruby/mspec/blob/master/tool/sync/sync-rubyspec.rb).
 Each of these repositories has a full copy of the specs under `spec/ruby` to ease editing specs.
 Any of these repositories can be used to add or edit specs, use what is most convenient for you.
 
-For *testing* a Ruby implementation, one should always test against the implementation's copy of the specs under `spec/ruby`, as that's what the Ruby implementation tests against in their CI.
+For *testing* the development version of a Ruby implementation, one should always test against that implementation's copy of the specs under `spec/ruby`, as that's what the Ruby implementation tests against in their CI.
 Also, this repository doesn't always contain the latest spec changes from MRI (it's synchronized monthly), and does not contain tags (specs marked as failing on that Ruby implementation).
-Running specs in a Ruby implementation can be done with:
+Running specs on a Ruby implementation can be done with:
 
 ```
 $ cd ruby_implementation/spec/ruby
@@ -45,11 +50,15 @@ $ cd ruby_implementation/spec/ruby
 $ ../mspec/bin/mspec
 ```
 
+### Specs for old Ruby versions
+
 For older specs try these commits:
 * Ruby 2.0.0-p647 - [Suite](https://github.com/ruby/spec/commit/245862558761d5abc676843ef74f86c9bcc8ea8d) using [MSpec](https://github.com/ruby/mspec/commit/f90efa068791064f955de7a843e96e2d7d3041c2) (may encounter 2 failures)
 * Ruby 2.1.9 - [Suite](https://github.com/ruby/spec/commit/f029e65241374386077ac500add557ae65069b55) using [MSpec](https://github.com/ruby/mspec/commit/55568ea3918c6380e64db8c567d732fa5781efed)
 * Ruby 2.2.10 - [Suite](https://github.com/ruby/spec/commit/cbaa0e412270c944df0c2532fc500c920dba0e92) using [MSpec](https://github.com/ruby/mspec/commit/d84d7668449e96856c5f6bac8cb1526b6d357ce3)
 * Ruby 2.3.8 - [Suite](https://github.com/ruby/spec/commit/dc733114d8ae66a3368ba3a98422c50147a76ba5) using [MSpec](https://github.com/ruby/mspec/commit/4599bc195fb109f2a482a01c32a7d659518369ea)
+* Ruby 2.4.10 - [Suite](https://github.com/ruby/spec/commit/bce4f2b81d6c31db67cf4d023a0625ceadde59bd) using [MSpec](https://github.com/ruby/mspec/commit/e7eb8aa4c26495b7b461e687d950b96eb08b3ff2)
+* Ruby 2.5.9 - [Suite](https://github.com/ruby/spec/commit/c503335d3d9f6ec6ef24de60a0716c34af69b64f) using [MSpec](https://github.com/ruby/mspec/commit/0091e8a62e954717cd54641f935eaf1403692041)
 
 ### Running the specs
 
@@ -119,6 +128,16 @@ MSpec can automatically add new top-level constants in this file with:
 ### Contributing and Writing Specs
 
 See [CONTRIBUTING.md](https://github.com/ruby/spec/blob/master/CONTRIBUTING.md) for documentation about contributing and writing specs (guards, matchers, etc).
+
+### Dependencies
+
+These command-line executables are needed to run the specs.
+
+* `echo`
+* `stat` for `core/file/*time_spec.rb`
+* `find` for `core/file/fixtures/file_types.rb` (package `findutils`, not needed on Windows)
+
+The file `/etc/services` is required for socket specs (package `netbase` on Debian, not needed on Windows).
 
 ### Socket specs from rubysl-socket
 

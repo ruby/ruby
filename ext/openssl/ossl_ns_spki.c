@@ -350,7 +350,7 @@ ossl_spki_verify(VALUE self, VALUE key)
  *   spki = OpenSSL::Netscape::SPKI.new
  *   spki.challenge = "RandomChallenge"
  *   spki.public_key = key.public_key
- *   spki.sign(key, OpenSSL::Digest::SHA256.new)
+ *   spki.sign(key, OpenSSL::Digest.new('SHA256'))
  *   #send a request containing this to a server generating a certificate
  * === Verifying an SPKI request
  *   request = #...

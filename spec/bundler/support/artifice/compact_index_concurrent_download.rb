@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require File.expand_path("../compact_index", __FILE__)
+require_relative "compact_index"
 
 Artifice.deactivate
 
@@ -10,7 +10,7 @@ class CompactIndexConcurrentDownload < CompactIndexAPI
       "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "versions")
 
     # Verify the original (empty) content hasn't been deleted, e.g. on a retry
-    File.read(versions) == "" || raise("Original file should be present and empty")
+    File.binread(versions) == "" || raise("Original file should be present and empty")
 
     # Verify this is only requested once for a partial download
     env["HTTP_RANGE"] || raise("Missing Range header for expected partial download")
@@ -21,7 +21,7 @@ class CompactIndexConcurrentDownload < CompactIndexAPI
 
     etag_response do
       file = tmp("versions.list")
-      file.delete if file.file?
+      FileUtils.rm_f(file)
       file = CompactIndex::VersionsFile.new(file.to_s)
       file.create(gems)
       file.contents

@@ -2,10 +2,10 @@
 
 RSpec.describe "bundler/inline#gemfile" do
   def script(code, options = {})
-    requires = ["bundler/inline"]
-    requires.unshift File.expand_path("../../support/artifice/" + options.delete(:artifice) + ".rb", __FILE__) if options.key?(:artifice)
+    requires = ["#{entrypoint}/inline"]
+    requires.unshift "#{spec_dir}/support/artifice/" + options.delete(:artifice) if options.key?(:artifice)
     requires = requires.map {|r| "require '#{r}'" }.join("\n")
-    @out = ruby("#{requires}\n\n" + code, options)
+    ruby("#{requires}\n\n" + code, options)
   end
 
   before :each do
@@ -48,6 +48,7 @@ RSpec.describe "bundler/inline#gemfile" do
   it "requires the gems" do
     script <<-RUBY
       gemfile do
+        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem "two"
         end
@@ -55,10 +56,10 @@ RSpec.describe "bundler/inline#gemfile" do
     RUBY
 
     expect(out).to eq("two")
-    expect(exitstatus).to be_zero if exitstatus
 
-    script <<-RUBY
+    script <<-RUBY, :raise_on_error => false
       gemfile do
+        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem "eleven"
         end
@@ -78,7 +79,6 @@ RSpec.describe "bundler/inline#gemfile" do
     RUBY
 
     expect(out).to include("Rack's post install message")
-    expect(exitstatus).to be_zero if exitstatus
 
     script <<-RUBY, :artifice => "endpoint"
       gemfile(true) do
@@ -88,15 +88,14 @@ RSpec.describe "bundler/inline#gemfile" do
     RUBY
 
     expect(out).to include("Installing activesupport")
-    err.gsub! %r{.*lib/sinatra/base\.rb:\d+: warning: constant ::Fixnum is deprecated$}, ""
-    err.strip!
-    expect(err).to be_empty
-    expect(exitstatus).to be_zero if exitstatus
+    err_lines = err.split("\n")
+    err_lines.reject!{|line| line =~ /\.rb:\d+: warning: / } unless RUBY_VERSION < "2.7"
+    expect(err_lines).to be_empty
   end
 
   it "lets me use my own ui object" do
     script <<-RUBY, :artifice => "endpoint"
-      require 'bundler'
+      require '#{entrypoint}'
       class MyBundlerUI < Bundler::UI::Silent
         def confirm(msg, newline = nil)
           puts "CONFIRMED!"
@@ -109,12 +108,11 @@ RSpec.describe "bundler/inline#gemfile" do
     RUBY
 
     expect(out).to eq("CONFIRMED!\nCONFIRMED!")
-    expect(exitstatus).to be_zero if exitstatus
   end
 
   it "has an option for quiet installation" do
     script <<-RUBY, :artifice => "endpoint"
-      require 'bundler'
+      require '#{entrypoint}/inline'
 
       gemfile(true, :quiet => true) do
         source "https://notaserver.com"
@@ -126,7 +124,7 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "raises an exception if passed unknown arguments" do
-    script <<-RUBY
+    script <<-RUBY, :raise_on_error => false
       gemfile(true, :arglebargle => true) do
         path "#{lib_path}"
         gem "two"
@@ -140,9 +138,10 @@ RSpec.describe "bundler/inline#gemfile" do
 
   it "does not mutate the option argument" do
     script <<-RUBY
-      require 'bundler'
+      require '#{entrypoint}'
       options = { :ui => Bundler::UI::Shell.new }
       gemfile(false, options) do
+        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem "two"
         end
@@ -151,7 +150,6 @@ RSpec.describe "bundler/inline#gemfile" do
     RUBY
 
     expect(out).to match("OKAY")
-    expect(exitstatus).to be_zero if exitstatus
   end
 
   it "installs quietly if necessary when the install option is not set" do
@@ -166,7 +164,6 @@ RSpec.describe "bundler/inline#gemfile" do
 
     expect(out).to eq("1.0.0")
     expect(err).to be_empty
-    expect(exitstatus).to be_zero if exitstatus
   end
 
   it "installs quietly from git if necessary when the install option is not set" do
@@ -174,6 +171,7 @@ RSpec.describe "bundler/inline#gemfile" do
     baz_ref = build_git("baz", "2.0.0").ref_for("HEAD")
     script <<-RUBY
       gemfile do
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => #{lib_path("foo-1.0.0").to_s.dump}
         gem "baz", :git => #{lib_path("baz-2.0.0").to_s.dump}, :ref => #{baz_ref.dump}
       end
@@ -184,19 +182,20 @@ RSpec.describe "bundler/inline#gemfile" do
 
     expect(out).to eq("1.0.0\n2.0.0")
     expect(err).to be_empty
-    expect(exitstatus).to be_zero if exitstatus
   end
 
   it "allows calling gemfile twice" do
     script <<-RUBY
       gemfile do
         path "#{lib_path}" do
+          source "#{file_uri_for(gem_repo1)}"
           gem "two"
         end
       end
 
       gemfile do
         path "#{lib_path}" do
+          source "#{file_uri_for(gem_repo1)}"
           gem "four"
         end
       end
@@ -204,7 +203,6 @@ RSpec.describe "bundler/inline#gemfile" do
 
     expect(out).to eq("two\nfour")
     expect(err).to be_empty
-    expect(exitstatus).to be_zero if exitstatus
   end
 
   it "installs inline gems when a Gemfile.lock is present" do
@@ -226,22 +224,19 @@ RSpec.describe "bundler/inline#gemfile" do
         rake
 
       BUNDLED WITH
-         1.13.6
+         #{Bundler::VERSION}
     G
 
-    in_app_root do
-      script <<-RUBY
-        gemfile do
-          source "#{file_uri_for(gem_repo1)}"
-          gem "rack"
-        end
+    script <<-RUBY
+      gemfile do
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      end
 
-        puts RACK
-      RUBY
-    end
+      puts RACK
+    RUBY
 
     expect(err).to be_empty
-    expect(exitstatus).to be_zero if exitstatus
   end
 
   it "installs inline gems when frozen is set" do
@@ -255,25 +250,34 @@ RSpec.describe "bundler/inline#gemfile" do
     RUBY
 
     expect(last_command.stderr).to be_empty
-    expect(exitstatus).to be_zero if exitstatus
+  end
+
+  it "installs inline gems when deployment is set" do
+    script <<-RUBY, :env => { "BUNDLE_DEPLOYMENT" => "true" }
+      gemfile do
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      end
+
+      puts RACK
+    RUBY
+
+    expect(last_command.stderr).to be_empty
   end
 
   it "installs inline gems when BUNDLE_GEMFILE is set to an empty string" do
     ENV["BUNDLE_GEMFILE"] = ""
 
-    in_app_root do
-      script <<-RUBY
-        gemfile do
-          source "#{file_uri_for(gem_repo1)}"
-          gem "rack"
-        end
+    script <<-RUBY
+      gemfile do
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      end
 
-        puts RACK
-      RUBY
-    end
+      puts RACK
+    RUBY
 
     expect(err).to be_empty
-    expect(exitstatus).to be_zero if exitstatus
   end
 
   it "installs inline gems when BUNDLE_BIN is set" do
@@ -295,7 +299,7 @@ RSpec.describe "bundler/inline#gemfile" do
     it "installs inline gems to the system path regardless" do
       script <<-RUBY, :env => { "BUNDLE_PATH" => "./vendor/inline" }
         gemfile(true) do
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
         end
       RUBY
@@ -315,5 +319,100 @@ RSpec.describe "bundler/inline#gemfile" do
     RUBY
 
     expect(err).to be_empty
+  end
+
+  it "preserves previous BUNDLE_GEMFILE value" do
+    ENV["BUNDLE_GEMFILE"] = ""
+    script <<-RUBY
+      gemfile do
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      end
+
+      puts "BUNDLE_GEMFILE is empty" if ENV["BUNDLE_GEMFILE"].empty?
+      system("#{Gem.ruby} -w -e '42'") # this should see original value of BUNDLE_GEMFILE
+      exit $?.exitstatus
+    RUBY
+
+    expect(last_command).to be_success
+    expect(out).to include("BUNDLE_GEMFILE is empty")
+  end
+
+  it "resets BUNDLE_GEMFILE to the empty string if it wasn't set previously" do
+    ENV["BUNDLE_GEMFILE"] = nil
+    script <<-RUBY
+      gemfile do
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      end
+
+      puts "BUNDLE_GEMFILE is empty" if ENV["BUNDLE_GEMFILE"].empty?
+      system("#{Gem.ruby} -w -e '42'") # this should see original value of BUNDLE_GEMFILE
+      exit $?.exitstatus
+    RUBY
+
+    expect(last_command).to be_success
+    expect(out).to include("BUNDLE_GEMFILE is empty")
+  end
+
+  it "does not error out if library requires optional dependencies" do
+    Dir.mkdir tmp("path_without_gemfile")
+
+    foo_code = <<~RUBY
+      begin
+        gem "bar"
+      rescue LoadError
+      end
+
+      puts "WIN"
+    RUBY
+
+    build_lib "foo", "1.0.0" do |s|
+      s.write "lib/foo.rb", foo_code
+    end
+
+    script <<-RUBY, :dir => tmp("path_without_gemfile")
+      gemfile do
+        source "#{file_uri_for(gem_repo2)}"
+        path "#{lib_path}" do
+          gem "foo", require: false
+        end
+      end
+
+      require "foo"
+    RUBY
+
+    expect(out).to eq("WIN")
+    expect(err).to be_empty
+  end
+
+  it "when requiring fileutils after does not show redefinition warnings" do
+    dependency_installer_loads_fileutils = ruby "require 'rubygems/dependency_installer'; puts $LOADED_FEATURES.grep(/fileutils/)", :raise_on_error => false
+    skip "does not work if rubygems/dependency_installer loads fileutils, which happens until rubygems 3.2.0" unless dependency_installer_loads_fileutils.empty?
+
+    skip "does not work on ruby 3.0 because it changes the path to look for default gems, tsort is a default gem there, and we can't install it either like we do with fiddle because it doesn't yet exist" unless RUBY_VERSION < "3.0.0"
+
+    Dir.mkdir tmp("path_without_gemfile")
+
+    default_fileutils_version = ruby "gem 'fileutils', '< 999999'; require 'fileutils'; puts FileUtils::VERSION", :raise_on_error => false
+    skip "fileutils isn't a default gem" if default_fileutils_version.empty?
+
+    realworld_system_gems "fileutils --version 1.4.1"
+
+    realworld_system_gems "fiddle" # not sure why, but this is needed on Windows to boot rubygems successfully
+
+    realworld_system_gems "timeout uri" # this spec uses net/http which requires these default gems
+
+    script <<-RUBY, :dir => tmp("path_without_gemfile"), :env => { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }
+      require "bundler/inline"
+
+      gemfile(true) do
+        source "#{file_uri_for(gem_repo2)}"
+      end
+
+      require "fileutils"
+    RUBY
+
+    expect(err).to eq("The Gemfile specifies no dependencies")
   end
 end

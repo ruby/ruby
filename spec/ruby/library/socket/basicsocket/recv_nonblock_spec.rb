@@ -67,4 +67,25 @@ describe "Socket::BasicSocket#recv_nonblock" do
       }.should raise_error(IO::WaitReadable)
     end
   end
+
+  SocketSpecs.each_ip_protocol do |family, ip_address|
+    describe 'using a connected but not bound socket' do
+      before do
+        @server = Socket.new(family, :STREAM)
+      end
+
+      after do
+        @server.close
+      end
+
+      it "raises Errno::ENOTCONN" do
+        -> { @server.recv_nonblock(1) }.should raise_error { |e|
+          [Errno::ENOTCONN, Errno::EINVAL].should.include?(e.class)
+        }
+        -> { @server.recv_nonblock(1, exception: false) }.should raise_error { |e|
+          [Errno::ENOTCONN, Errno::EINVAL].should.include?(e.class)
+        }
+      end
+    end
+  end
 end

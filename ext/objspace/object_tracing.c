@@ -138,19 +138,93 @@ freeobj_i(VALUE tpval, void *data)
 }
 
 static int
-free_keys_i(st_data_t key, st_data_t value, void *data)
+free_keys_i(st_data_t key, st_data_t value, st_data_t data)
 {
     ruby_xfree((void *)key);
     return ST_CONTINUE;
 }
 
 static int
-free_values_i(st_data_t key, st_data_t value, void *data)
+free_values_i(st_data_t key, st_data_t value, st_data_t data)
 {
     ruby_xfree((void *)value);
     return ST_CONTINUE;
 }
 
+static void
+allocation_info_tracer_mark(void *ptr)
+{
+    struct traceobj_arg *trace_arg = (struct traceobj_arg *)ptr;
+    rb_gc_mark(trace_arg->newobj_trace);
+    rb_gc_mark(trace_arg->freeobj_trace);
+}
+
+static void
+allocation_info_tracer_free(void *ptr)
+{
+    struct traceobj_arg *arg = (struct traceobj_arg *)ptr;
+    /* clear tables */
+    st_foreach(arg->object_table, free_values_i, 0);
+    st_free_table(arg->object_table);
+    st_foreach(arg->str_table, free_keys_i, 0);
+    st_free_table(arg->str_table);
+    xfree(arg);
+}
+
+static size_t
+allocation_info_tracer_memsize(const void *ptr)
+{
+    size_t size;
+    struct traceobj_arg *trace_arg = (struct traceobj_arg *)ptr;
+    size = sizeof(*trace_arg);
+    size += st_memsize(trace_arg->object_table);
+    size += st_memsize(trace_arg->str_table);
+    return size;
+}
+
+static int
+hash_foreach_should_replace_key(st_data_t key, st_data_t value, st_data_t argp, int error)
+{
+    VALUE allocated_object;
+
+    allocated_object = (VALUE)value;
+    if (allocated_object != rb_gc_location(allocated_object)) {
+        return ST_REPLACE;
+    }
+
+    return ST_CONTINUE;
+}
+
+static int
+hash_replace_key(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
+{
+    *key = rb_gc_location((VALUE)*key);
+
+    return ST_CONTINUE;
+}
+
+static void
+allocation_info_tracer_compact(void *ptr)
+{
+    struct traceobj_arg *trace_arg = (struct traceobj_arg *)ptr;
+
+    if (st_foreach_with_replace(trace_arg->object_table, hash_foreach_should_replace_key, hash_replace_key, 0)) {
+        rb_raise(rb_eRuntimeError, "hash modified during iteration");
+    }
+}
+
+static const rb_data_type_t allocation_info_tracer_type = {
+    "ObjectTracing/allocation_info_tracer",
+    {
+        allocation_info_tracer_mark,
+        allocation_info_tracer_free, /* Never called because global */
+        allocation_info_tracer_memsize,
+        allocation_info_tracer_compact,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+static VALUE traceobj_arg;
 static struct traceobj_arg *tmp_trace_arg; /* TODO: Do not use global variables */
 static int tmp_keep_remains;               /* TODO: Do not use global variables */
 
@@ -158,7 +232,9 @@ static struct traceobj_arg *
 get_traceobj_arg(void)
 {
     if (tmp_trace_arg == 0) {
-	tmp_trace_arg = ALLOC_N(struct traceobj_arg, 1);
+        VALUE obj = TypedData_Make_Struct(rb_cObject, struct traceobj_arg, &allocation_info_tracer_type, tmp_trace_arg);
+        traceobj_arg = obj;
+        rb_gc_register_mark_object(traceobj_arg);
 	tmp_trace_arg->running = 0;
 	tmp_trace_arg->keep_remains = tmp_keep_remains;
 	tmp_trace_arg->newobj_trace = 0;
@@ -186,9 +262,7 @@ trace_object_allocations_start(VALUE self)
     else {
 	if (arg->newobj_trace == 0) {
 	    arg->newobj_trace = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_NEWOBJ, newobj_i, arg);
-	    rb_gc_register_mark_object(arg->newobj_trace);
 	    arg->freeobj_trace = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_FREEOBJ, freeobj_i, arg);
-	    rb_gc_register_mark_object(arg->freeobj_trace);
 	}
 	rb_tracepoint_enable(arg->newobj_trace);
 	rb_tracepoint_enable(arg->freeobj_trace);
@@ -216,8 +290,12 @@ trace_object_allocations_stop(VALUE self)
     }
 
     if (arg->running == 0) {
-	rb_tracepoint_disable(arg->newobj_trace);
-	rb_tracepoint_disable(arg->freeobj_trace);
+        if (arg->newobj_trace != 0) {
+            rb_tracepoint_disable(arg->newobj_trace);
+        }
+        if (arg->freeobj_trace != 0) {
+            rb_tracepoint_disable(arg->freeobj_trace);
+        }
     }
 
     return Qnil;

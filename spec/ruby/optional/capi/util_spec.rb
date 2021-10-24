@@ -11,6 +11,7 @@ describe "C-API Util function" do
     before :each do
       @prc = -> { 1 }
       @acc = []
+      @keyword_prefix = 'k' if RUBY_VERSION >= '2.7'
       ScratchPad.record @acc
     end
 
@@ -99,13 +100,13 @@ describe "C-API Util function" do
 
     it "assigns Hash arguments" do
       h = {a: 1, b: 2}
-      @o.rb_scan_args([h], "0:", 1, @acc).should == 0
+      @o.rb_scan_args([h], "#{@keyword_prefix}0:", 1, @acc).should == 0
       ScratchPad.recorded.should == [h]
     end
 
     it "assigns required and Hash arguments" do
       h = {a: 1, b: 2}
-      @o.rb_scan_args([1, h], "1:", 2, @acc).should == 1
+      @o.rb_scan_args([1, h], "#{@keyword_prefix}1:", 2, @acc).should == 1
       ScratchPad.recorded.should == [1, h]
     end
 
@@ -114,9 +115,22 @@ describe "C-API Util function" do
       ScratchPad.recorded.should == [1, nil]
     end
 
-    it "assigns required and Hash arguments with nil Hash" do
-      @o.rb_scan_args([1, nil], "1:", 2, @acc).should == 1
-      ScratchPad.recorded.should == [1, nil]
+    ruby_version_is ''...'3.0' do
+      it "assigns required and Hash arguments with nil Hash" do
+        suppress_warning do
+          @o.rb_scan_args([1, nil], "1:", 2, @acc).should == 1
+        end
+        ScratchPad.recorded.should == [1, nil]
+      end
+    end
+
+    ruby_version_is '3.0' do
+      it "rejects the use of nil as a hash" do
+        -> {
+          @o.rb_scan_args([1, nil], "1:", 2, @acc).should == 1
+        }.should raise_error(ArgumentError)
+        ScratchPad.recorded.should == []
+      end
     end
 
     it "assigns required and optional arguments with no hash argument given" do
@@ -126,31 +140,59 @@ describe "C-API Util function" do
 
     it "assigns required, optional, splat, post-splat, Hash and block arguments" do
       h = {a: 1, b: 2}
-      @o.rb_scan_args([1, 2, 3, 4, 5, h], "11*1:&", 6, @acc, &@prc).should == 5
+      @o.rb_scan_args([1, 2, 3, 4, 5, h], "#{@keyword_prefix}11*1:&", 6, @acc, &@prc).should == 5
       ScratchPad.recorded.should == [1, 2, [3, 4], 5, h, @prc]
     end
 
-    # r43934
-    it "rejects non-keyword arguments" do
-      h = {1 => 2, 3 => 4}
-      -> {
-        @o.rb_scan_args([h], "0:", 1, @acc)
-      }.should raise_error(ArgumentError)
-      ScratchPad.recorded.should == []
+    ruby_version_is ''...'3.0' do
+      # r43934
+      it "rejects non-keyword arguments" do
+        h = {1 => 2, 3 => 4}
+        -> {
+          suppress_warning do
+            @o.rb_scan_args([h], "#{@keyword_prefix}0:", 1, @acc)
+          end
+        }.should raise_error(ArgumentError)
+        ScratchPad.recorded.should == []
+      end
+
+      it "rejects required and non-keyword arguments" do
+        h = {1 => 2, 3 => 4}
+        -> {
+          suppress_warning do
+            @o.rb_scan_args([1, h], "#{@keyword_prefix}1:", 2, @acc)
+          end
+        }.should raise_error(ArgumentError)
+        ScratchPad.recorded.should == []
+      end
+
+      it "considers the hash as a post argument when there is a splat" do
+        h = {1 => 2, 3 => 4}
+        suppress_warning do
+          @o.rb_scan_args([1, 2, 3, 4, 5, h], "#{@keyword_prefix}11*1:&", 6, @acc, &@prc).should == 6
+        end
+        ScratchPad.recorded.should == [1, 2, [3, 4, 5], h, nil, @prc]
+      end
     end
 
-    it "rejects required and non-keyword arguments" do
-      h = {1 => 2, 3 => 4}
-      -> {
-        @o.rb_scan_args([1, h], "1:", 2, @acc)
-      }.should raise_error(ArgumentError)
-      ScratchPad.recorded.should == []
-    end
+    ruby_version_is '3.0' do
+      it "does not reject non-symbol keys in keyword arguments" do
+        h = {1 => 2, 3 => 4}
+        @o.rb_scan_args([h], "#{@keyword_prefix}0:", 1, @acc).should == 0
+        ScratchPad.recorded.should == [h]
+      end
 
-    it "considers the hash as a post argument when there is a splat" do
-      h = {1 => 2, 3 => 4}
-      @o.rb_scan_args([1, 2, 3, 4, 5, h], "11*1:&", 6, @acc, &@prc).should == 6
-      ScratchPad.recorded.should == [1, 2, [3, 4, 5], h, nil, @prc]
+      it "does not reject non-symbol keys in keyword arguments with required argument" do
+        h = {1 => 2, 3 => 4}
+        @o.rb_scan_args([1, h], "#{@keyword_prefix}1:", 2, @acc).should == 1
+        ScratchPad.recorded.should == [1, h]
+      end
+
+      it "considers keyword arguments with non-symbol keys as keywords when using splat and post arguments" do
+        h = {1 => 2, 3 => 4}
+        @o.rb_scan_args([1, 2, 3, 4, 5, h], "#{@keyword_prefix}11*1:&", 6, @acc, &@prc).should == 5
+        ScratchPad.recorded.should == [1, 2, [3, 4], 5, h, @prc]
+      end
     end
   end
 
@@ -175,7 +217,7 @@ describe "C-API Util function" do
 
     it "raises an error if a required argument is not in the hash" do
       h = { :a => 7, :c => 12, :b => 5 }
-      -> { @o.rb_get_kwargs(h, [:b, :d], 2, 0) }.should raise_error(ArgumentError, /missing keyword: d/)
+      -> { @o.rb_get_kwargs(h, [:b, :d], 2, 0) }.should raise_error(ArgumentError, /missing keyword: :?d/)
       h.should == {:a => 7, :c => 12}
     end
 
@@ -187,7 +229,7 @@ describe "C-API Util function" do
 
     it "raises an error if there are additional arguments  and optional is positive" do
       h = { :a => 7, :c => 12, :b => 5 }
-      -> { @o.rb_get_kwargs(h, [:b, :a], 2, 0) }.should raise_error(ArgumentError, /unknown keyword: c/)
+      -> { @o.rb_get_kwargs(h, [:b, :a], 2, 0) }.should raise_error(ArgumentError, /unknown keyword: :?c/)
       h.should == {:c => 12}
     end
 
@@ -247,7 +289,37 @@ describe "C-API Util function" do
 
   describe "rb_sourceline" do
     it "returns the current ruby file" do
-      @o.rb_sourceline.should be_kind_of(Fixnum)
+      @o.rb_sourceline.should be_kind_of(Integer)
+    end
+  end
+
+  # ruby/util.h redefines strtod as a macro calling ruby_strtod
+
+  describe "strtod" do
+    it "converts a string to a double and returns the remaining string" do
+      d, s = @o.strtod("14.25test")
+      d.should == 14.25
+      s.should == "test"
+    end
+
+    it "returns 0 and the full string if there's no numerical value" do
+      d, s = @o.strtod("test")
+      d.should == 0
+      s.should == "test"
+    end
+  end
+
+  describe "ruby_strtod" do
+    it "converts a string to a double and returns the remaining string" do
+      d, s = @o.ruby_strtod("14.25test")
+      d.should == 14.25
+      s.should == "test"
+    end
+
+    it "returns 0 and the full string if there's no numerical value" do
+      d, s = @o.ruby_strtod("test")
+      d.should == 0
+      s.should == "test"
     end
   end
 

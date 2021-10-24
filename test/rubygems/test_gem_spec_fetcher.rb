@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/spec_fetcher'
 
 class TestGemSpecFetcher < Gem::TestCase
-
   def tuple(*args)
     Gem::NameTuple.new(*args)
   end
@@ -39,7 +38,7 @@ class TestGemSpecFetcher < Gem::TestCase
   end
 
   def test_initialize_unwritable_home_dir
-    skip 'chmod not supported' if Gem.win_platform?
+    pend 'chmod not supported' if Gem.win_platform?
 
     FileUtils.chmod 0000, Gem.user_home
 
@@ -173,10 +172,19 @@ class TestGemSpecFetcher < Gem::TestCase
     spec_fetcher do|fetcher|
       fetcher.spec 'example', 1
       fetcher.spec 'other-example', 1
+      fetcher.spec 'examp', 1
     end
 
-    suggestions = @sf.suggest_gems_from_name('examplw')
+    suggestions = @sf.suggest_gems_from_name('examplw', :latest, 1)
     assert_equal ['example'], suggestions
+
+    suggestions = @sf.suggest_gems_from_name('other')
+    assert_equal ['other-example'], suggestions
+
+    suggestions = @sf.suggest_gems_from_name('exam')
+    assert suggestions.any? { ['examp'] }
+    assert suggestions.any? { ['example'] }
+    assert suggestions.any? { ['other-example'] }
   end
 
   def test_suggest_gems_from_name_prerelease
@@ -313,7 +321,7 @@ class TestGemSpecFetcher < Gem::TestCase
     specs, _ = @sf.available_specs(:prerelease)
 
     expected = Gem::NameTuple.from_list \
-      [['a',  v('2.a'), Gem::Platform::RUBY]]
+      [['a', v('2.a'), Gem::Platform::RUBY]]
 
     assert_equal expected, specs[@source]
   end
@@ -326,5 +334,4 @@ class TestGemSpecFetcher < Gem::TestCase
     assert_equal({}, specs)
     assert_kind_of Gem::SourceFetchProblem, errors.first
   end
-
 end

@@ -19,7 +19,7 @@ void sample_wrapped_struct_mark(void* st) {
 }
 
 VALUE sdaf_alloc_func(VALUE klass) {
-  struct sample_wrapped_struct* bar = malloc(sizeof(struct sample_wrapped_struct));
+  struct sample_wrapped_struct* bar = (struct sample_wrapped_struct*) malloc(sizeof(struct sample_wrapped_struct));
   bar->foo = 42;
   return Data_Wrap_Struct(klass, &sample_wrapped_struct_mark, &sample_wrapped_struct_free, bar);
 }
@@ -32,7 +32,7 @@ VALUE sdaf_get_struct(VALUE self) {
 }
 
 VALUE sws_wrap_struct(VALUE self, VALUE val) {
-  struct sample_wrapped_struct* bar = malloc(sizeof(struct sample_wrapped_struct));
+  struct sample_wrapped_struct* bar = (struct sample_wrapped_struct*) malloc(sizeof(struct sample_wrapped_struct));
   bar->foo = FIX2INT(val);
   return Data_Wrap_Struct(rb_cObject, &sample_wrapped_struct_mark, &sample_wrapped_struct_free, bar);
 }
@@ -58,12 +58,17 @@ VALUE sws_get_struct_data_ptr(VALUE self, VALUE obj) {
 
 VALUE sws_change_struct(VALUE self, VALUE obj, VALUE new_val) {
   struct sample_wrapped_struct *old_struct, *new_struct;
-  new_struct = malloc(sizeof(struct sample_wrapped_struct));
+  new_struct = (struct sample_wrapped_struct*) malloc(sizeof(struct sample_wrapped_struct));
   new_struct->foo = FIX2INT(new_val);
-  old_struct = RDATA(obj)->data;
+  old_struct = (struct sample_wrapped_struct*) RDATA(obj)->data;
   free(old_struct);
   RDATA(obj)->data = new_struct;
   return Qnil;
+}
+
+VALUE sws_rb_check_type(VALUE self, VALUE obj, VALUE other) {
+  rb_check_type(obj, TYPE(other));
+  return Qtrue;
 }
 
 void Init_data_spec(void) {
@@ -76,6 +81,7 @@ void Init_data_spec(void) {
   rb_define_method(cls, "get_struct_rdata", sws_get_struct_rdata, 1);
   rb_define_method(cls, "get_struct_data_ptr", sws_get_struct_data_ptr, 1);
   rb_define_method(cls, "change_struct", sws_change_struct, 2);
+  rb_define_method(cls, "rb_check_type", sws_rb_check_type, 2);
 }
 
 #ifdef __cplusplus

@@ -4,7 +4,6 @@ require 'test/unit'
 class TestProc < Test::Unit::TestCase
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -53,10 +52,14 @@ class TestProc < Test::Unit::TestCase
     assert_equal(5, x)
   end
 
-  def assert_arity(n)
+  def assert_arity(n, &block)
     meta = class << self; self; end
-    meta.class_eval {define_method(:foo, Proc.new)}
-    assert_equal(n, method(:foo).arity)
+    b = Proc.new(&block)
+    meta.class_eval {
+      remove_method(:foo_arity) if method_defined?(:foo_arity)
+      define_method(:foo_arity, b)
+    }
+    assert_equal(n, method(:foo_arity).arity)
   end
 
   def test_arity
@@ -133,6 +136,14 @@ class TestProc < Test::Unit::TestCase
     lambda { x }
   end
 
+  def m_nest0(&block)
+    block
+  end
+
+  def m_nest(&block)
+    [m_nest0(&block), m_nest0(&block)]
+  end
+
   def test_eq
     a = m(1)
     b = m(2)
@@ -144,50 +155,22 @@ class TestProc < Test::Unit::TestCase
     a = lambda {|x| lambda {} }.call(1)
     b = lambda {}
     assert_not_equal(a, b, "[ruby-dev:22601]")
+
+    assert_equal(*m_nest{}, "[ruby-core:84583] Feature #14627")
+  end
+
+  def test_hash
+    def self.capture(&block)
+      block
+    end
+
+   procs = Array.new(1000){capture{:foo }}
+   assert_operator(procs.map(&:hash).uniq.size, :>=, 500)
   end
 
   def test_block_par
     assert_equal(10, Proc.new{|&b| b.call(10)}.call {|x| x})
     assert_equal(12, Proc.new{|a,&b| b.call(a)}.call(12) {|x| x})
-  end
-
-  def test_safe
-    safe = $SAFE
-    c = Class.new
-    x = c.new
-
-    p = proc {
-      $SAFE += 1
-      proc {$SAFE}
-    }.call
-
-    assert_equal(safe + 1, $SAFE)
-    assert_equal(safe + 1, p.call)
-    assert_equal(safe + 1, $SAFE)
-
-    $SAFE = 0
-    c.class_eval {define_method(:safe, p)}
-    assert_equal(safe, x.safe)
-
-    $SAFE = 0
-    p = proc {$SAFE += 1}
-    assert_equal(safe + 1, p.call)
-    assert_equal(safe + 1, $SAFE)
-
-    $SAFE = 0
-    c.class_eval {define_method(:inc, p)}
-    assert_equal(safe + 1, proc {x.inc; $SAFE}.call)
-    assert_equal(safe + 1, $SAFE)
-
-    $SAFE = 0
-    assert_equal(safe + 1, proc {x.method(:inc).call; $SAFE}.call)
-    assert_equal(safe + 1, $SAFE)
-
-    $SAFE = 0
-    assert_equal(safe + 1, proc {x.method(:inc).to_proc.call; $SAFE}.call)
-    assert_equal(safe + 1, $SAFE)
-  ensure
-    $SAFE = 0
   end
 
   def m2
@@ -296,7 +279,7 @@ class TestProc < Test::Unit::TestCase
 
   def test_curry_given_blocks
     b = lambda {|x, y, &blk| blk.call(x + y) }.curry
-    b = b.call(2) { raise }
+    b = assert_warning(/given block not used/) {b.call(2) { raise }}
     b = b.call(3) {|x| x + 4 }
     assert_equal(9, b)
   end
@@ -306,7 +289,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal(false, l.lambda?)
     assert_equal(false, l.curry.lambda?, '[ruby-core:24127]')
     assert_equal(false, proc(&l).lambda?)
-    assert_equal(false, lambda(&l).lambda?)
+    assert_equal(false, assert_deprecated_warning {lambda(&l)}.lambda?)
     assert_equal(false, Proc.new(&l).lambda?)
     l = lambda {}
     assert_equal(true, l.lambda?)
@@ -314,6 +297,49 @@ class TestProc < Test::Unit::TestCase
     assert_equal(true, proc(&l).lambda?)
     assert_equal(true, lambda(&l).lambda?)
     assert_equal(true, Proc.new(&l).lambda?)
+  end
+
+  def self.helper_test_warn_lamda_with_passed_block &b
+    lambda(&b)
+  end
+
+  def self.def_lambda_warning name, warn
+    define_method(name, proc do
+      prev = Warning[:deprecated]
+      assert_warn warn do
+        Warning[:deprecated] = true
+        yield
+      end
+    ensure
+      Warning[:deprecated] = prev
+    end)
+  end
+
+  def_lambda_warning 'test_lambda_warning_normal', '' do
+    lambda{}
+  end
+
+  def_lambda_warning 'test_lambda_warning_pass_lambda', '' do
+    b = lambda{}
+    lambda(&b)
+  end
+
+  def_lambda_warning 'test_lambda_warning_pass_symbol_proc', '' do
+    lambda(&:to_s)
+  end
+
+  def_lambda_warning 'test_lambda_warning_pass_proc', /deprecated/ do
+    b = proc{}
+    lambda(&b)
+  end
+
+  def_lambda_warning 'test_lambda_warning_pass_block', /deprecated/ do
+    helper_test_warn_lamda_with_passed_block{}
+  end
+
+  def_lambda_warning 'test_lambda_warning_pass_block_symbol_proc', '' do
+    # Symbol#to_proc returns lambda
+    helper_test_warn_lamda_with_passed_block(&:to_s)
   end
 
   def test_curry_ski_fib
@@ -416,7 +442,7 @@ class TestProc < Test::Unit::TestCase
 
   def test_proc_lambda
     assert_raise(ArgumentError) { proc }
-    assert_raise(ArgumentError) { lambda }
+    assert_raise(ArgumentError) { assert_warn(/deprecated/) {lambda} }
 
     o = Object.new
     def o.foo
@@ -424,14 +450,18 @@ class TestProc < Test::Unit::TestCase
       1.times { b = lambda }
       b
     end
-    assert_raise(ArgumentError) {o.foo { :foo }.call}
+    assert_raise(ArgumentError) do
+      assert_deprecated_warning {o.foo { :foo }}.call
+    end
 
-    def o.foo(&b)
+    def o.bar(&b)
       b = nil
       1.times { b = lambda }
       b
     end
-    assert_raise(ArgumentError) {o.foo { :foo }.call}
+    assert_raise(ArgumentError) do
+      assert_deprecated_warning {o.bar { :foo }}.call
+    end
   end
 
   def test_arity2
@@ -817,6 +847,33 @@ class TestProc < Test::Unit::TestCase
     assert_equal [[1, 2], Proc, :x], (pr.call(1, 2){|x| x})
   end
 
+  def test_proc_args_only_rest
+    pr = proc {|*c| c }
+    assert_equal [], pr.call()
+    assert_equal [1], pr.call(1)
+    assert_equal [[1]], pr.call([1])
+    assert_equal [1, 2], pr.call(1,2)
+    assert_equal [[1, 2]], pr.call([1,2])
+  end
+
+  def test_proc_args_rest_kw
+    pr = proc {|*c, a: 1| [c, a] }
+    assert_equal [[], 1], pr.call()
+    assert_equal [[1], 1], pr.call(1)
+    assert_equal [[[1]], 1], pr.call([1])
+    assert_equal [[1, 2], 1], pr.call(1,2)
+    assert_equal [[[1, 2]], 1], pr.call([1,2])
+  end
+
+  def test_proc_args_rest_kwsplat
+    pr = proc {|*c, **kw| [c, kw] }
+    assert_equal [[], {}], pr.call()
+    assert_equal [[1], {}], pr.call(1)
+    assert_equal [[[1]], {}], pr.call([1])
+    assert_equal [[1, 2], {}], pr.call(1,2)
+    assert_equal [[[1, 2]], {}], pr.call([1,2])
+  end
+
   def test_proc_args_pos_rest_post_block
     pr = proc {|a,b,*c,d,e,&f|
       [a, b, c, d, e, f.class, f&&f.call(:x)]
@@ -1120,6 +1177,36 @@ class TestProc < Test::Unit::TestCase
     assert_equal([1,2,[3],4,5], r, "[ruby-core:19485]")
   end
 
+  def test_proc_autosplat
+    def self.a(arg, kw)
+      yield arg
+      yield arg, **kw
+      yield arg, kw
+    end
+
+    arr = []
+    a([1,2,3], {}) do |arg1, arg2=0|
+      arr << [arg1, arg2]
+    end
+    assert_equal([[1, 2], [[1, 2, 3], 0], [[1, 2, 3], {}]], arr)
+
+    arr = []
+    a([1,2,3], a: 1) do |arg1, arg2=0|
+      arr << [arg1, arg2]
+    end
+    assert_equal([[1, 2], [[1, 2, 3], {a: 1}], [[1, 2, 3], {a: 1}]], arr)
+  end
+
+  def test_proc_single_arg_with_keywords_accepted_and_yielded
+    def self.a
+      yield [], **{a: 1}
+    end
+    res = a do |arg, **opts|
+      [arg, opts]
+    end
+    assert_equal([[], {a: 1}], res)
+  end
+
   def test_parameters
     assert_equal([], proc {}.parameters)
     assert_equal([], proc {||}.parameters)
@@ -1191,9 +1278,6 @@ class TestProc < Test::Unit::TestCase
     assert_match(/^#<Proc:0x\h+ #{ Regexp.quote(__FILE__) }:\d+>$/, proc {}.to_s)
     assert_match(/^#<Proc:0x\h+ #{ Regexp.quote(__FILE__) }:\d+ \(lambda\)>$/, lambda {}.to_s)
     assert_match(/^#<Proc:0x\h+ \(lambda\)>$/, method(:p).to_proc.to_s)
-    x = proc {}
-    x.taint
-    assert_predicate(x.to_s, :tainted?)
     name = "Proc\u{1f37b}"
     assert_include(EnvUtil.labeled_class(name, Proc).new {}.to_s, name)
   end
@@ -1412,14 +1496,6 @@ class TestProc < Test::Unit::TestCase
     end;
   end
 
-  def method_for_test_proc_without_block_for_symbol
-    binding.eval('proc')
-  end
-
-  def test_proc_without_block_for_symbol
-    assert_equal('1', method_for_test_proc_without_block_for_symbol(&:to_s).call(1), '[Bug #14782]')
-  end
-
   def test_compose
     f = proc {|x| x * 2}
     g = proc {|x| x + 1}
@@ -1447,9 +1523,13 @@ class TestProc < Test::Unit::TestCase
   def test_compose_with_lambda
     f = lambda {|x| x * 2}
     g = lambda {|x| x}
+    not_lambda = proc {|x| x}
 
     assert_predicate((f << g), :lambda?)
     assert_predicate((g >> f), :lambda?)
+    assert_predicate((not_lambda << f), :lambda?)
+    assert_not_predicate((f << not_lambda), :lambda?)
+    assert_not_predicate((not_lambda >> f), :lambda?)
   end
 
   def test_compose_with_method
@@ -1461,6 +1541,7 @@ class TestProc < Test::Unit::TestCase
 
     assert_equal(6, (f << g).call(2))
     assert_equal(5, (f >> g).call(2))
+    assert_predicate((f << g), :lambda?)
   end
 
   def test_compose_with_callable
@@ -1472,6 +1553,7 @@ class TestProc < Test::Unit::TestCase
 
     assert_equal(6, (f << g).call(2))
     assert_equal(5, (f >> g).call(2))
+    assert_predicate((f << g), :lambda?)
   end
 
   def test_compose_with_noncallable
@@ -1511,4 +1593,129 @@ class TestProc < Test::Unit::TestCase
     assert_equal(42, Module.new { extend self
       def m1(&b) b end; def m2(); m1 { next 42 } end }.m2.call)
   end
+
+  def test_isolate
+    assert_raise_with_message ArgumentError, /\(a\)/ do
+      a = :a
+      Proc.new{p a}.isolate.call
+    end
+
+    assert_raise_with_message ArgumentError, /\(a\)/ do
+      a = :a
+      1.times{
+        Proc.new{p a}.isolate.call
+      }
+    end
+
+    assert_raise_with_message ArgumentError, /yield/ do
+      Proc.new{yield}.isolate.call
+    end
+
+    # binding
+
+    :a.tap{|a|
+      :b.tap{|b|
+        Proc.new{
+          :c.tap{|c|
+            assert_equal :c, eval('c')
+
+            assert_raise_with_message SyntaxError, /\`a\'/ do
+              eval('p a')
+            end
+
+            assert_raise_with_message SyntaxError, /\`b\'/ do
+              eval('p b')
+            end
+
+            assert_raise_with_message SyntaxError, /can not yield from isolated Proc/ do
+              eval('p yield')
+            end
+
+            assert_equal :c, binding.local_variable_get(:c)
+
+            assert_raise_with_message NameError, /local variable \`a\' is not defined/ do
+              binding.local_variable_get(:a)
+            end
+
+            assert_equal [:c], local_variables
+            assert_equal [:c], binding.local_variables
+          }
+        }.isolate.call
+      }
+    }
+  end if proc{}.respond_to? :isolate
 end
+
+class TestProcKeywords < Test::Unit::TestCase
+  def test_compose_keywords
+    f = ->(**kw) { kw.merge(:a=>1) }
+    g = ->(kw) { kw.merge(:a=>2) }
+
+    assert_equal(2, (f >> g).call(a: 3)[:a])
+    assert_raise(ArgumentError) { (f << g).call(a: 3)[:a] }
+    assert_equal(2, (f >> g).call(a: 3)[:a])
+    assert_raise(ArgumentError) { (f << g).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (f >> g).call({a: 3})[:a] }
+    assert_equal(2, (g << f).call(a: 3)[:a])
+    assert_raise(ArgumentError) { (g >> f).call(a: 3)[:a] }
+    assert_raise(ArgumentError) { (g << f).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (g >> f).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (f << g).call(**{})[:a] }
+    assert_equal(2, (f >> g).call(**{})[:a])
+  end
+
+  def test_compose_keywords_method
+    f = ->(**kw) { kw.merge(:a=>1) }.method(:call)
+    g = ->(kw) { kw.merge(:a=>2) }.method(:call)
+
+    assert_raise(ArgumentError) { (f << g).call(a: 3)[:a] }
+    assert_equal(2, (f >> g).call(a: 3)[:a])
+    assert_raise(ArgumentError) { (f << g).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (f >> g).call({a: 3})[:a] }
+    assert_equal(2, (g << f).call(a: 3)[:a])
+    assert_raise(ArgumentError) { (g >> f).call(a: 3)[:a] }
+    assert_raise(ArgumentError) { (g << f).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (g >> f).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (f << g).call(**{})[:a] }
+    assert_equal(2, (f >> g).call(**{})[:a])
+  end
+
+  def test_compose_keywords_non_proc
+    f = ->(**kw) { kw.merge(:a=>1) }
+    g = Object.new
+    def g.call(kw) kw.merge(:a=>2) end
+    def g.to_proc; method(:call).to_proc; end
+    def g.<<(f) to_proc << f end
+    def g.>>(f) to_proc >> f end
+
+    assert_raise(ArgumentError) { (f << g).call(a: 3)[:a] }
+    assert_equal(2, (f >> g).call(a: 3)[:a])
+    assert_raise(ArgumentError) { (f << g).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (f >> g).call({a: 3})[:a] }
+    assert_equal(2, (g << f).call(a: 3)[:a])
+    assert_raise(ArgumentError) { (g >> f).call(a: 3)[:a] }
+    assert_raise(ArgumentError) { (g << f).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (g >> f).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (f << g).call(**{})[:a] }
+    assert_equal(2, (f >> g).call(**{})[:a])
+
+    f = ->(kw) { kw.merge(:a=>1) }
+    g = Object.new
+    def g.call(**kw) kw.merge(:a=>2) end
+    def g.to_proc; method(:call).to_proc; end
+    def g.<<(f) to_proc << f end
+    def g.>>(f) to_proc >> f end
+
+    assert_equal(1, (f << g).call(a: 3)[:a])
+    assert_raise(ArgumentError) { (f >> g).call(a: 3)[:a] }
+    assert_raise(ArgumentError) { (f << g).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (f >> g).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (g << f).call(a: 3)[:a] }
+    assert_equal(1, (g >> f).call(a: 3)[:a])
+    assert_raise(ArgumentError) { (g << f).call({a: 3})[:a] }
+    assert_raise(ArgumentError) { (g >> f).call({a: 3})[:a] }
+    assert_equal(1, (f << g).call(**{})[:a])
+    assert_raise(ArgumentError) { (f >> g).call(**{})[:a] }
+  end
+end
+

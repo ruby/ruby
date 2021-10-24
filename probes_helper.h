@@ -12,7 +12,9 @@ struct ruby_dtrace_method_hook_args {
     volatile VALUE name;
 };
 
+MJIT_SYMBOL_EXPORT_BEGIN
 NOINLINE(int rb_dtrace_setup(rb_execution_context_t *, VALUE, ID, struct ruby_dtrace_method_hook_args *));
+MJIT_SYMBOL_EXPORT_END
 
 #define RUBY_DTRACE_METHOD_HOOK(name, ec, klazz, id) \
 do { \

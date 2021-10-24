@@ -4,14 +4,14 @@ describe :integer_equal, shared: true do
       1.send(@method, 1).should == true
       9.send(@method, 5).should == false
 
-      # Actually, these call Float#==, Bignum#== etc.
+      # Actually, these call Float#==, Integer#== etc.
       9.send(@method, 9.0).should == true
       9.send(@method, 9.01).should == false
 
       10.send(@method, bignum_value).should == false
     end
 
-    it "calls 'other == self' if the given argument is not a Integer" do
+    it "calls 'other == self' if the given argument is not an Integer" do
       1.send(@method, '*').should == false
 
       obj = mock('one other')

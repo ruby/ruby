@@ -26,7 +26,7 @@ describe "File.readlink" do
 
       it "raises an Errno::ENOENT if there is no such file" do
         # TODO: missing_file
-        -> { File.readlink("/this/surely/doesnt/exist") }.should raise_error(Errno::ENOENT)
+        -> { File.readlink("/this/surely/does/not/exist") }.should raise_error(Errno::ENOENT)
       end
 
       it "raises an Errno::EINVAL if called with a normal file" do

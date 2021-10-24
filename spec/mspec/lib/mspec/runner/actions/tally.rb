@@ -5,31 +5,31 @@ class Tally
     @files = @examples = @expectations = @failures = @errors = @guards = @tagged = 0
   end
 
-  def files!(add=1)
+  def files!(add = 1)
     @files += add
   end
 
-  def examples!(add=1)
+  def examples!(add = 1)
     @examples += add
   end
 
-  def expectations!(add=1)
+  def expectations!(add = 1)
     @expectations += add
   end
 
-  def failures!(add=1)
+  def failures!(add = 1)
     @failures += add
   end
 
-  def errors!(add=1)
+  def errors!(add = 1)
     @errors += add
   end
 
-  def guards!(add=1)
+  def guards!(add = 1)
     @guards += add
   end
 
-  def tagged!(add=1)
+  def tagged!(add = 1)
     @tagged += add
   end
 

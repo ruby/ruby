@@ -24,7 +24,7 @@ thread_runnable_sleep(VALUE thread, VALUE timeout)
 
     rb_thread_call_without_gvl(native_sleep_callback, &timeval, RUBY_UBF_IO, NULL);
 
-    return thread;
+    return Qnil;
 }
 
 struct loop_ctl {
@@ -65,12 +65,14 @@ thread_ubf_async_safe(VALUE thread, VALUE notify_fd)
     ctl.stop = 0;
 
     rb_nogvl(do_loop, &ctl, stop_set, &ctl, RB_NOGVL_UBF_ASYNC_SAFE);
-    return thread;
+    return Qnil;
 }
 
 void
 Init_call_without_gvl(void)
 {
-    rb_define_method(rb_cThread, "__runnable_sleep__", thread_runnable_sleep, 1);
-    rb_define_method(rb_cThread, "__ubf_async_safe__", thread_ubf_async_safe, 1);
+    VALUE mBug = rb_define_module("Bug");
+    VALUE klass = rb_define_module_under(mBug, "Thread");
+    rb_define_singleton_method(klass, "runnable_sleep", thread_runnable_sleep, 1);
+    rb_define_singleton_method(klass, "ubf_async_safe", thread_ubf_async_safe, 1);
 }

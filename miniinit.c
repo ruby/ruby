@@ -47,3 +47,5 @@ Init_enc(void)
     rb_encdb_alias("BINARY", "ASCII-8BIT");
     rb_encdb_alias("ASCII", "US-ASCII");
 }
+
+#include "mini_builtin.c"

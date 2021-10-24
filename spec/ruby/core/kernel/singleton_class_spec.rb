@@ -17,7 +17,7 @@ describe "Kernel#singleton_class" do
     false.singleton_class.should == FalseClass
   end
 
-  it "raises TypeError for Fixnum" do
+  it "raises TypeError for Integer" do
     -> { 123.singleton_class }.should raise_error(TypeError)
   end
 

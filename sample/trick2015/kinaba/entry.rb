@@ -62,7 +62,7 @@ while 0x00012345 >= $counter
   TrueClass
   Dir
   Encoding
-  Data
+  Proc
   Hash
   Method
   Enumerator

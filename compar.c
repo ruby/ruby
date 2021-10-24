@@ -9,8 +9,12 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
 #include "id.h"
+#include "internal.h"
+#include "internal/compar.h"
+#include "internal/error.h"
+#include "internal/vm.h"
+#include "ruby/ruby.h"
 
 VALUE rb_mComparable;
 
@@ -80,8 +84,7 @@ cmp_equal(VALUE x, VALUE y)
     c = rb_exec_recursive_paired_outer(cmp_eq_recursive, x, y, y);
 
     if (NIL_P(c)) return Qfalse;
-    if (rb_cmpint(c, x, y) == 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(rb_cmpint(c, x, y) == 0);
 }
 
 static int
@@ -101,8 +104,7 @@ cmpint(VALUE x, VALUE y)
 static VALUE
 cmp_gt(VALUE x, VALUE y)
 {
-    if (cmpint(x, y) > 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(cmpint(x, y) > 0);
 }
 
 /*
@@ -116,8 +118,7 @@ cmp_gt(VALUE x, VALUE y)
 static VALUE
 cmp_ge(VALUE x, VALUE y)
 {
-    if (cmpint(x, y) >= 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(cmpint(x, y) >= 0);
 }
 
 /*
@@ -131,8 +132,7 @@ cmp_ge(VALUE x, VALUE y)
 static VALUE
 cmp_lt(VALUE x, VALUE y)
 {
-    if (cmpint(x, y) < 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(cmpint(x, y) < 0);
 }
 
 /*
@@ -146,17 +146,16 @@ cmp_lt(VALUE x, VALUE y)
 static VALUE
 cmp_le(VALUE x, VALUE y)
 {
-    if (cmpint(x, y) <= 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(cmpint(x, y) <= 0);
 }
 
 /*
  *  call-seq:
  *     obj.between?(min, max)    -> true or false
  *
- *  Returns <code>false</code> if <i>obj</i> <code><=></code>
- *  <i>min</i> is less than zero or if <i>anObject</i> <code><=></code>
- *  <i>max</i> is greater than zero, <code>true</code> otherwise.
+ *  Returns <code>false</code> if _obj_ <code><=></code> _min_ is less
+ *  than zero or if _obj_ <code><=></code> _max_ is greater than zero,
+ *  <code>true</code> otherwise.
  *
  *     3.between?(1, 5)               #=> true
  *     6.between?(1, 5)               #=> false
@@ -176,10 +175,12 @@ cmp_between(VALUE x, VALUE min, VALUE max)
 /*
  *  call-seq:
  *     obj.clamp(min, max) ->  obj
+ *     obj.clamp(range)    ->  obj
  *
- * Returns <i>min</i> if <i>obj</i> <code><=></code> <i>min</i> is less
- * than zero, <i>max</i> if <i>obj</i> <code><=></code> <i>max</i> is
- * greater than zero and <i>obj</i> otherwise.
+ * In <code>(min, max)</code> form, returns _min_ if _obj_
+ * <code><=></code> _min_ is less than zero, _max_ if _obj_
+ * <code><=></code> _max_ is greater than zero, and _obj_
+ * otherwise.
  *
  *     12.clamp(0, 100)         #=> 12
  *     523.clamp(0, 100)        #=> 100
@@ -187,31 +188,70 @@ cmp_between(VALUE x, VALUE min, VALUE max)
  *
  *     'd'.clamp('a', 'f')      #=> 'd'
  *     'z'.clamp('a', 'f')      #=> 'f'
+ *
+ * In <code>(range)</code> form, returns _range.begin_ if _obj_
+ * <code><=></code> _range.begin_ is less than zero, _range.end_
+ * if _obj_ <code><=></code> _range.end_ is greater than zero, and
+ * _obj_ otherwise.
+ *
+ *     12.clamp(0..100)         #=> 12
+ *     523.clamp(0..100)        #=> 100
+ *     -3.123.clamp(0..100)     #=> 0
+ *
+ *     'd'.clamp('a'..'f')      #=> 'd'
+ *     'z'.clamp('a'..'f')      #=> 'f'
+ *
+ * If _range.begin_ is +nil+, it is considered smaller than _obj_,
+ * and if _range.end_ is +nil+, it is considered greater than
+ * _obj_.
+ *
+ *     -20.clamp(0..)           #=> 0
+ *     523.clamp(..100)         #=> 100
+ *
+ * When _range.end_ is excluded and not +nil+, an exception is
+ * raised.
+ *
+ *     100.clamp(0...100)       # ArgumentError
  */
 
 static VALUE
-cmp_clamp(VALUE x, VALUE min, VALUE max)
+cmp_clamp(int argc, VALUE *argv, VALUE x)
 {
-    int c;
+    VALUE min, max;
+    int c, excl = 0;
 
-    if (cmpint(min, max) > 0) {
+    if (rb_scan_args(argc, argv, "11", &min, &max) == 1) {
+        VALUE range = min;
+        if (!rb_range_values(range, &min, &max, &excl)) {
+            rb_raise(rb_eTypeError, "wrong argument type %s (expected Range)",
+                     rb_builtin_class_name(range));
+        }
+        if (!NIL_P(max)) {
+            if (excl) rb_raise(rb_eArgError, "cannot clamp with an exclusive range");
+        }
+    }
+    if (!NIL_P(min) && !NIL_P(max) && cmpint(min, max) > 0) {
 	rb_raise(rb_eArgError, "min argument must be smaller than max argument");
     }
 
-    c = cmpint(x, min);
-    if (c == 0) return x;
-    if (c < 0) return min;
-    c = cmpint(x, max);
-    if (c > 0) return max;
+    if (!NIL_P(min)) {
+        c = cmpint(x, min);
+        if (c == 0) return x;
+        if (c < 0) return min;
+    }
+    if (!NIL_P(max)) {
+        c = cmpint(x, max);
+        if (c > 0) return max;
+    }
     return x;
 }
 
 /*
  *  The Comparable mixin is used by classes whose objects may be
  *  ordered. The class must define the <code><=></code> operator,
- *  which compares the receiver against another object, returning
- *  a value less than 0, 0, or a value greater than 0, depending on
- *  whether the receiver is less than, equal to,
+ *  which compares the receiver against another object, returning a
+ *  value less than 0, returning 0, or returning a value greater than 0,
+ *  depending on whether the receiver is less than, equal to,
  *  or greater than the other object. If the other object is not
  *  comparable then the <code><=></code> operator should return +nil+.
  *  Comparable uses <code><=></code> to implement the conventional
@@ -244,14 +284,27 @@ cmp_clamp(VALUE x, VALUE min, VALUE max)
  *     s4.between?(s3, s5)           #=> true
  *     [ s3, s2, s5, s4, s1 ].sort   #=> [Z, YY, XXX, WWWW, VVVVV]
  *
+ *  == What's Here
+ *
+ *  \Module \Comparable provides these methods, all of which use method <tt><=></tt>:
+ *
+ *  - {<}[#method-i-3C]:: Returns whether +self+ is less than the given object.
+ *  - {<=}[#method-i-3C-3D]:: Returns whether +self+ is less than or equal to
+ *                            the given object.
+ *  - {==}[#method-i-3D-3D]:: Returns whether +self+ is equal to the given object.
+ *  - {>}[#method-i-3E]:: Returns whether +self+ is greater than or equal to
+ *                        the given object.
+ *  - {>=}[#method-i-3E-3D]:: Returns whether +self+ is greater than the given object.
+ *  - #between? Returns +true+ if +self+ is between two given objects.
+ *  - #clamp:: For given objects +min+ and +max+, or range <tt>(min..max)</tt>, returns:
+ *    - +min+ if <tt>(self <=> min) < 0</tt>.
+ *    - +max+ if <tt>(self <=> max) > 0</tt>.
+ *    - +self+ otherwise.
  */
 
 void
 Init_Comparable(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
     rb_mComparable = rb_define_module("Comparable");
     rb_define_method(rb_mComparable, "==", cmp_equal, 1);
     rb_define_method(rb_mComparable, ">", cmp_gt, 1);
@@ -259,5 +312,5 @@ Init_Comparable(void)
     rb_define_method(rb_mComparable, "<", cmp_lt, 1);
     rb_define_method(rb_mComparable, "<=", cmp_le, 1);
     rb_define_method(rb_mComparable, "between?", cmp_between, 2);
-    rb_define_method(rb_mComparable, "clamp", cmp_clamp, 2);
+    rb_define_method(rb_mComparable, "clamp", cmp_clamp, -1);
 }

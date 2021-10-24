@@ -50,13 +50,13 @@ describe "BigDecimal#sub" do
   end
 
   it "returns NaN if NaN is involved" do
-    @one.sub(@nan, 1).nan?.should == true
-    @nan.sub(@one, 1).nan?.should == true
+    @one.sub(@nan, 1).should.nan?
+    @nan.sub(@one, 1).should.nan?
   end
 
   it "returns NaN if both values are infinite with the same signs" do
-    @infinity.sub(@infinity, 1).nan?.should == true
-    @infinity_minus.sub(@infinity_minus, 1).nan?.should == true
+    @infinity.sub(@infinity, 1).should.nan?
+    @infinity_minus.sub(@infinity_minus, 1).should.nan?
   end
 
   it "returns Infinity or -Infinity if these are involved" do

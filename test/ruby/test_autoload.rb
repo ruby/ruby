@@ -66,6 +66,8 @@ p Foo::Bar
   end
 
   def test_autoload_with_unqualified_file_name # [ruby-core:69206]
+    Object.send(:remove_const, :A) if Object.const_defined?(:A)
+
     lp = $LOAD_PATH.dup
     lf = $LOADED_FEATURES.dup
 
@@ -76,12 +78,12 @@ p Foo::Bar
         eval <<-END
           class ::Object
             module A
-              autoload :C, 'b'
+              autoload :C, 'test-ruby-core-69206'
             end
           end
         END
 
-        File.open('b.rb', 'w') {|file| file.puts 'module A; class C; end; end'}
+        File.write("test-ruby-core-69206.rb", 'module A; class C; end; end')
         assert_kind_of Class, ::A::C
       end
     }
@@ -257,7 +259,7 @@ p Foo::Bar
 
   def test_autoload_private_constant
     Dir.mktmpdir('autoload') do |tmpdir|
-      File.write(tmpdir+"/zzz.rb", "#{<<~"begin;"}\n#{<<~'end;'}")
+      File.write(tmpdir+"/test-bug-14469.rb", "#{<<~"begin;"}\n#{<<~'end;'}")
       begin;
         class AutoloadTest
           ZZZ = :ZZZ
@@ -268,7 +270,7 @@ p Foo::Bar
       bug = '[ruby-core:85516] [Bug #14469]'
       begin;
         class AutoloadTest
-          autoload :ZZZ, "zzz.rb"
+          autoload :ZZZ, "test-bug-14469.rb"
         end
         assert_raise(NameError, bug) {AutoloadTest::ZZZ}
       end;
@@ -277,7 +279,7 @@ p Foo::Bar
 
   def test_autoload_deprecate_constant
     Dir.mktmpdir('autoload') do |tmpdir|
-      File.write(tmpdir+"/zzz.rb", "#{<<~"begin;"}\n#{<<~'end;'}")
+      File.write(tmpdir+"/test-bug-14469.rb", "#{<<~"begin;"}\n#{<<~'end;'}")
       begin;
         class AutoloadTest
           ZZZ = :ZZZ
@@ -288,7 +290,67 @@ p Foo::Bar
       bug = '[ruby-core:85516] [Bug #14469]'
       begin;
         class AutoloadTest
-          autoload :ZZZ, "zzz.rb"
+          autoload :ZZZ, "test-bug-14469.rb"
+        end
+        assert_warning(/ZZZ is deprecated/, bug) {AutoloadTest::ZZZ}
+      end;
+    end
+  end
+
+  def test_autoload_private_constant_before_autoload
+    Dir.mktmpdir('autoload') do |tmpdir|
+      File.write(tmpdir+"/test-bug-11055.rb", "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        class AutoloadTest
+          ZZZ = :ZZZ
+        end
+      end;
+      assert_separately(%W[-I #{tmpdir}], "#{<<-"begin;"}\n#{<<-'end;'}")
+      bug = '[Bug #11055]'
+      begin;
+        class AutoloadTest
+          autoload :ZZZ, "test-bug-11055.rb"
+          private_constant :ZZZ
+          ZZZ
+        end
+        assert_raise(NameError, bug) {AutoloadTest::ZZZ}
+      end;
+      assert_separately(%W[-I #{tmpdir}], "#{<<-"begin;"}\n#{<<-'end;'}")
+      bug = '[Bug #11055]'
+      begin;
+        class AutoloadTest
+          autoload :ZZZ, "test-bug-11055.rb"
+          private_constant :ZZZ
+        end
+        assert_raise(NameError, bug) {AutoloadTest::ZZZ}
+      end;
+    end
+  end
+
+  def test_autoload_deprecate_constant_before_autoload
+    Dir.mktmpdir('autoload') do |tmpdir|
+      File.write(tmpdir+"/test-bug-11055.rb", "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        class AutoloadTest
+          ZZZ = :ZZZ
+        end
+      end;
+      assert_separately(%W[-I #{tmpdir}], "#{<<-"begin;"}\n#{<<-'end;'}")
+      bug = '[Bug #11055]'
+      begin;
+        class AutoloadTest
+          autoload :ZZZ, "test-bug-11055.rb"
+          deprecate_constant :ZZZ
+        end
+        assert_warning(/ZZZ is deprecated/, bug) {class AutoloadTest; ZZZ; end}
+        assert_warning(/ZZZ is deprecated/, bug) {AutoloadTest::ZZZ}
+      end;
+      assert_separately(%W[-I #{tmpdir}], "#{<<-"begin;"}\n#{<<-'end;'}")
+      bug = '[Bug #11055]'
+      begin;
+        class AutoloadTest
+          autoload :ZZZ, "test-bug-11055.rb"
+          deprecate_constant :ZZZ
         end
         assert_warning(/ZZZ is deprecated/, bug) {AutoloadTest::ZZZ}
       end;
@@ -323,7 +385,7 @@ p Foo::Bar
 
   def test_autoload_same_file
     Dir.mktmpdir('autoload') do |tmpdir|
-      File.write("#{tmpdir}/b.rb", "#{<<~'begin;'}\n#{<<~'end;'}")
+      File.write("#{tmpdir}/test-bug-14742.rb", "#{<<~'begin;'}\n#{<<~'end;'}")
       begin;
         module Foo; end
         module Bar; end
@@ -331,8 +393,8 @@ p Foo::Bar
       3.times do # timing-dependent, needs a few times to hit [Bug #14742]
         assert_separately(%W[-I #{tmpdir}], "#{<<-'begin;'}\n#{<<-'end;'}")
         begin;
-          autoload :Foo, 'b'
-          autoload :Bar, 'b'
+          autoload :Foo, 'test-bug-14742'
+          autoload :Bar, 'test-bug-14742'
           t1 = Thread.new do Foo end
           t2 = Thread.new do Bar end
           t1.join
@@ -345,8 +407,45 @@ p Foo::Bar
     end
   end
 
-  def test_no_leak
-    assert_no_memory_leak([], '', <<~'end;', 'many autoloads', timeout: 60)
+  def test_autoload_same_file_with_raise
+    Dir.mktmpdir('autoload') do |tmpdir|
+      File.write("#{tmpdir}/test-bug-16177.rb", "#{<<~'begin;'}\n#{<<~'end;'}")
+      begin;
+        raise '[ruby-core:95055] [Bug #16177]'
+      end;
+      assert_raise(RuntimeError, '[ruby-core:95055] [Bug #16177]') do
+        assert_separately(%W[-I #{tmpdir}], "#{<<-'begin;'}\n#{<<-'end;'}")
+        begin;
+          autoload :Foo, 'test-bug-16177'
+          autoload :Bar, 'test-bug-16177'
+          t1 = Thread.new do Foo end
+          t2 = Thread.new do Bar end
+          t1.join
+          t2.join
+        end;
+      end
+    end
+  end
+
+  def test_source_location
+    bug = "Bug16764"
+    Dir.mktmpdir('autoload') do |tmpdir|
+      path = "#{tmpdir}/test-#{bug}.rb"
+      File.write(path, "C::#{bug} = __FILE__\n")
+      assert_separately(%W[-I #{tmpdir}], "#{<<-"begin;"}\n#{<<-"end;"}")
+      begin;
+        class C; end
+        C.autoload(:Bug16764, #{path.dump})
+        assert_equal [__FILE__, __LINE__-1], C.const_source_location(#{bug.dump})
+        assert_equal #{path.dump}, C.const_get(#{bug.dump})
+        assert_equal [#{path.dump}, 1], C.const_source_location(#{bug.dump})
+      end;
+    end
+  end
+
+  def test_no_memory_leak
+    assert_no_memory_leak([], '', "#{<<~"begin;"}\n#{<<~'end;'}", 'many autoloads', timeout: 60)
+    begin;
       200000.times do |i|
         m = Module.new
         m.instance_eval do
@@ -357,6 +456,31 @@ p Foo::Bar
     end;
   end
 
+  def test_autoload_after_failed_and_removed_from_loaded_features
+    Dir.mktmpdir('autoload') do |tmpdir|
+      autoload_path = File.join(tmpdir, "test-bug-15790.rb")
+      File.write(autoload_path, '')
+
+      assert_separately(%W[-I #{tmpdir}], <<-RUBY)
+        path = #{File.realpath(autoload_path).inspect}
+        autoload :X, path
+        assert_equal(path, Object.autoload?(:X))
+
+        assert_raise(NameError){X}
+        assert_nil(Object.autoload?(:X))
+        assert_equal(false, Object.const_defined?(:X))
+
+        $LOADED_FEATURES.delete(path)
+        assert_equal(false, Object.const_defined?(:X))
+        assert_nil(Object.autoload?(:X))
+
+        assert_raise(NameError){X}
+        assert_equal(false, Object.const_defined?(:X))
+        assert_nil(Object.autoload?(:X))
+      RUBY
+    end
+  end
+
   def add_autoload(path)
     (@autoload_paths ||= []) << path
     ::Object.class_eval {autoload(:AutoloadTest, path)}
@@ -364,6 +488,7 @@ p Foo::Bar
 
   def remove_autoload_constant
     $".replace($" - @autoload_paths)
-    ::Object.class_eval {remove_const(:AutoloadTest)}
+    ::Object.class_eval {remove_const(:AutoloadTest)} if defined? Object::AutoloadTest
+    TestAutoload.class_eval {remove_const(:AutoloadTest)} if defined? TestAutoload::AutoloadTest
   end
 end

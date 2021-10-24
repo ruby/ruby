@@ -10,16 +10,8 @@ describe 'UDPSocket#inspect' do
     @socket.close
   end
 
-  ruby_version_is ""..."2.5" do
-    it 'returns a String with the fd' do
-      @socket.inspect.should == "#<UDPSocket:fd #{@socket.fileno}>"
-    end
-  end
-
-  ruby_version_is "2.5" do
-    it 'returns a String with the fd, family, address and port' do
-      port = @socket.addr[1]
-      @socket.inspect.should == "#<UDPSocket:fd #{@socket.fileno}, AF_INET, 127.0.0.1, #{port}>"
-    end
+  it 'returns a String with the fd, family, address and port' do
+    port = @socket.addr[1]
+    @socket.inspect.should == "#<UDPSocket:fd #{@socket.fileno}, AF_INET, 127.0.0.1, #{port}>"
   end
 end

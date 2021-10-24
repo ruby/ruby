@@ -17,7 +17,7 @@ describe "BigDecimal#<" do
       def coerce(other)
         return [other, BigDecimal('123')]
       end
-      def < (other)
+      def <(other)
         BigDecimal('123') < other
       end
     end

@@ -9,20 +9,22 @@
 
 **********************************************************************/
 
+#include "ruby/internal/config.h"
+
 #ifdef _MSC_VER
 # define _USE_MATH_DEFINES 1
 #endif
-#include "internal.h"
+
+#include <errno.h>
 #include <float.h>
 #include <math.h>
-#include <errno.h>
 
-#if defined(HAVE_SIGNBIT) && defined(__GNUC__) && defined(__sun) && \
-    !defined(signbit)
-    extern int signbit(double);
-#endif
-
-#define RB_BIGNUM_TYPE_P(x) RB_TYPE_P((x), T_BIGNUM)
+#include "internal.h"
+#include "internal/bignum.h"
+#include "internal/complex.h"
+#include "internal/math.h"
+#include "internal/object.h"
+#include "internal/vm.h"
 
 VALUE rb_mMath;
 VALUE rb_eMathDomainError;
@@ -30,7 +32,11 @@ VALUE rb_eMathDomainError;
 #define Get_Double(x) rb_num_to_dbl(x)
 
 #define domain_error(msg) \
-    rb_raise(rb_eMathDomainError, "Numerical argument is out of domain - " #msg)
+    rb_raise(rb_eMathDomainError, "Numerical argument is out of domain - " msg)
+#define domain_check_min(val, min, msg) \
+    ((val) < (min) ? domain_error(msg) : (void)0)
+#define domain_check_range(val, min, max, msg) \
+    ((val) < (min) || (max) < (val) ? domain_error(msg) : (void)0)
 
 /*
  *  call-seq:
@@ -175,8 +181,7 @@ math_acos(VALUE unused_obj, VALUE x)
     double d;
 
     d = Get_Double(x);
-    /* check for domain error */
-    if (d < -1.0 || 1.0 < d) domain_error("acos");
+    domain_check_range(d, -1.0, 1.0, "acos");
     return DBL2NUM(acos(d));
 }
 
@@ -199,8 +204,7 @@ math_asin(VALUE unused_obj, VALUE x)
     double d;
 
     d = Get_Double(x);
-    /* check for domain error */
-    if (d < -1.0 || 1.0 < d) domain_error("asin");
+    domain_check_range(d, -1.0, 1.0, "asin");
     return DBL2NUM(asin(d));
 }
 
@@ -334,8 +338,7 @@ math_acosh(VALUE unused_obj, VALUE x)
     double d;
 
     d = Get_Double(x);
-    /* check for domain error */
-    if (d < 1.0) domain_error("acosh");
+    domain_check_min(d, 1.0, "acosh");
     return DBL2NUM(acosh(d));
 }
 
@@ -379,8 +382,7 @@ math_atanh(VALUE unused_obj, VALUE x)
     double d;
 
     d = Get_Double(x);
-    /* check for domain error */
-    if (d <  -1.0 || +1.0 <  d) domain_error("atanh");
+    domain_check_range(d, -1.0, +1.0, "atanh");
     /* check for pole error */
     if (d == -1.0) return DBL2NUM(-HUGE_VAL);
     if (d == +1.0) return DBL2NUM(+HUGE_VAL);
@@ -492,8 +494,7 @@ math_log1(VALUE x)
     size_t numbits;
     double d = get_double_rshift(x, &numbits);
 
-    /* check for domain error */
-    if (d < 0.0) domain_error("log");
+    domain_check_min(d, 0.0, "log");
     /* check for pole error */
     if (d == 0.0) return -HUGE_VAL;
 
@@ -535,8 +536,7 @@ math_log2(VALUE unused_obj, VALUE x)
     size_t numbits;
     double d = get_double_rshift(x, &numbits);
 
-    /* check for domain error */
-    if (d < 0.0) domain_error("log2");
+    domain_check_min(d, 0.0, "log2");
     /* check for pole error */
     if (d == 0.0) return DBL2NUM(-HUGE_VAL);
 
@@ -565,13 +565,14 @@ math_log10(VALUE unused_obj, VALUE x)
     size_t numbits;
     double d = get_double_rshift(x, &numbits);
 
-    /* check for domain error */
-    if (d < 0.0) domain_error("log10");
+    domain_check_min(d, 0.0, "log10");
     /* check for pole error */
     if (d == 0.0) return DBL2NUM(-HUGE_VAL);
 
     return DBL2NUM(log10(d) + numbits * log10(2)); /* log10(d * 2 ** numbits) */
 }
+
+static VALUE rb_math_sqrt(VALUE x);
 
 /*
  *  call-seq:
@@ -612,25 +613,24 @@ math_sqrt(VALUE unused_obj, VALUE x)
     return rb_math_sqrt(x);
 }
 
-#define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 inline static VALUE
 f_negative_p(VALUE x)
 {
     if (FIXNUM_P(x))
-        return f_boolcast(FIX2LONG(x) < 0);
+        return RBOOL(FIX2LONG(x) < 0);
     return rb_funcall(x, '<', 1, INT2FIX(0));
 }
 inline static VALUE
 f_signbit(VALUE x)
 {
-    if (RB_TYPE_P(x, T_FLOAT)) {
+    if (RB_FLOAT_TYPE_P(x)) {
         double f = RFLOAT_VALUE(x);
-        return f_boolcast(!isnan(f) && signbit(f));
+        return RBOOL(!isnan(f) && signbit(f));
     }
     return f_negative_p(x);
 }
 
-VALUE
+static VALUE
 rb_math_sqrt(VALUE x)
 {
     double d;
@@ -645,8 +645,7 @@ rb_math_sqrt(VALUE x)
 	return rb_complex_new(DBL2NUM(re), DBL2NUM(im));
     }
     d = Get_Double(x);
-    /* check for domain error */
-    if (d < 0.0) domain_error("sqrt");
+    domain_check_min(d, 0.0, "sqrt");
     if (d == 0.0) return DBL2NUM(0.0);
     return DBL2NUM(sqrt(d));
 }
@@ -692,7 +691,7 @@ math_cbrt(VALUE unused_obj, VALUE x)
     double f = Get_Double(x);
     double r = cbrt(f);
 #if defined __GLIBC__
-    if (isfinite(r)) {
+    if (isfinite(r) && !(f == 0.0 && r == 0.0)) {
 	r = (2.0 * r + (f / r / r)) / 3.0;
     }
 #endif
@@ -798,7 +797,7 @@ math_erfc(VALUE unused_obj, VALUE x)
  *
  *  Calculates the gamma function of x.
  *
- *  Note that gamma(n) is same as fact(n-1) for integer n > 0.
+ *  Note that gamma(n) is the same as fact(n-1) for integer n > 0.
  *  However gamma(n) returns float and can be an approximation.
  *
  *   def fact(n) (1..n).inject(1) {|r,i| r*i } end
@@ -875,7 +874,7 @@ math_gamma(VALUE unused_obj, VALUE x)
 	return signbit(d) ? DBL2NUM(-HUGE_VAL) : DBL2NUM(HUGE_VAL);
     }
     if (d == floor(d)) {
-	if (d < 0.0) domain_error("gamma");
+	domain_check_min(d, 0.0, "gamma");
 	if (1.0 <= d && d <= (double)NFACT_TABLE) {
 	    return DBL2NUM(fact_table[(int)d - 1]);
 	}
@@ -889,9 +888,9 @@ math_gamma(VALUE unused_obj, VALUE x)
  *
  *  Calculates the logarithmic gamma of +x+ and the sign of gamma of +x+.
  *
- *  Math.lgamma(x) is same as
+ *  Math.lgamma(x) is the same as
  *   [Math.log(Math.gamma(x).abs), Math.gamma(x) < 0 ? -1 : 1]
- *  but avoid overflow by Math.gamma(x) for large x.
+ *  but avoids overflow by Math.gamma(x) for large x.
  *
  *    Math.lgamma(0) #=> [Infinity, 1]
  *
@@ -982,7 +981,7 @@ InitVM_Math(void)
     rb_define_const(rb_mMath, "PI", DBL2NUM(M_PI));
 
 #ifdef M_E
-    /*  Definition of the mathematical constant E (e) as a Float number. */
+    /*  Definition of the mathematical constant E for Euler's number (e) as a Float number. */
     rb_define_const(rb_mMath, "E", DBL2NUM(M_E));
 #else
     rb_define_const(rb_mMath, "E", DBL2NUM(exp(1.0)));

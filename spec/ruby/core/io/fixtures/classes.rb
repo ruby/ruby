@@ -1,6 +1,9 @@
 # -*- encoding: utf-8 -*-
 
 module IOSpecs
+  THREAD_CLOSE_RETRIES = 10
+  THREAD_CLOSE_ERROR_MESSAGE = 'stream closed in another thread'
+
   class SubIO < IO
   end
 
@@ -164,7 +167,7 @@ module IOSpecs
       @io = io
     end
 
-    def read(size, buf=nil)
+    def read(size, buf)
       @io.read size, buf
     end
 
@@ -178,7 +181,7 @@ module IOSpecs
       @io = io
     end
 
-    def readpartial(size, buf=nil)
+    def readpartial(size, buf)
       @io.readpartial size, buf
     end
 

@@ -1,14 +1,13 @@
 # frozen_string_literal: true
 
 require_relative "../vendored_fileutils"
-require "uri"
 
 module Bundler
   class Source
     class Git < Path
       autoload :GitProxy, File.expand_path("git/git_proxy", __dir__)
 
-      attr_reader :uri, :ref, :branch, :options, :submodules
+      attr_reader :uri, :ref, :branch, :options, :glob, :submodules
 
       def initialize(options)
         @options = options
@@ -23,7 +22,7 @@ module Bundler
         @uri        = options["uri"] || ""
         @safe_uri   = URICredentialsFilter.credential_filtered_uri(@uri)
         @branch     = options["branch"]
-        @ref        = options["ref"] || options["branch"] || options["tag"] || "master"
+        @ref        = options["ref"] || options["branch"] || options["tag"]
         @submodules = options["submodules"]
         @name       = options["name"]
         @version    = options["version"].to_s.strip.gsub("-", ".pre.")
@@ -43,42 +42,53 @@ module Bundler
         %w[ref branch tag submodules].each do |opt|
           out << "  #{opt}: #{options[opt]}\n" if options[opt]
         end
-        out << "  glob: #{@glob}\n" unless @glob == DEFAULT_GLOB
+        out << "  glob: #{@glob}\n" unless default_glob?
         out << "  specs:\n"
       end
 
       def hash
-        [self.class, uri, ref, branch, name, version, submodules].hash
+        [self.class, uri, ref, branch, name, version, glob, submodules].hash
       end
 
       def eql?(other)
         other.is_a?(Git) && uri == other.uri && ref == other.ref &&
           branch == other.branch && name == other.name &&
-          version == other.version && submodules == other.submodules
+          version == other.version && glob == other.glob &&
+          submodules == other.submodules
       end
 
       alias_method :==, :eql?
 
       def to_s
-        at = if local?
-          path
-        elsif user_ref = options["ref"]
-          if ref =~ /\A[a-z0-9]{4,}\z/i
-            shortref_for_display(user_ref)
+        begin
+          at = if local?
+            path
+          elsif user_ref = options["ref"]
+            if ref =~ /\A[a-z0-9]{4,}\z/i
+              shortref_for_display(user_ref)
+            else
+              user_ref
+            end
+          elsif ref
+            ref
           else
-            user_ref
+            git_proxy.branch
           end
-        else
-          ref
+
+          rev = "at #{at}@#{shortref_for_display(revision)}"
+        rescue GitError
+          ""
         end
 
-        rev = begin
-                "@#{shortref_for_display(revision)}"
-              rescue GitError
-                nil
-              end
+        specifiers = [rev, glob_for_display].compact
+        suffix =
+          if specifiers.any?
+            " (#{specifiers.join(", ")})"
+          else
+            ""
+          end
 
-        "#{@safe_uri} (at #{at}#{rev})"
+        "#{@safe_uri}#{suffix}"
       end
 
       def name
@@ -146,7 +156,7 @@ module Bundler
 
         changed = cached_revision && cached_revision != git_proxy.revision
 
-        if changed && !@unlocked && !git_proxy.contains?(cached_revision)
+        if !Bundler.settings[:disable_local_revision_check] && changed && !@unlocked && !git_proxy.contains?(cached_revision)
           raise GitError, "The Gemfile lock is pointing to revision #{shortref_for_display(cached_revision)} " \
             "but the current branch in your local override for #{name} does not contain such commit. " \
             "Please make sure your branch is up to date."
@@ -230,7 +240,11 @@ module Bundler
         @allow_remote || @allow_cached
       end
 
-    private
+      def local?
+        @local
+      end
+
+      private
 
       def serialize_gemspecs_in(destination)
         destination = destination.expand_path(Bundler.root) if destination.relative?
@@ -256,10 +270,6 @@ module Bundler
         cached_revision && super
       end
 
-      def local?
-        @local
-      end
-
       def requires_checkout?
         allow_git_ops? && !local? && !cached_revision_checked_out?
       end
@@ -280,11 +290,19 @@ module Bundler
         ref[0..11]
       end
 
+      def glob_for_display
+        default_glob? ? nil : "glob: #{@glob}"
+      end
+
+      def default_glob?
+        @glob == DEFAULT_GLOB
+      end
+
       def uri_hash
         if uri =~ %r{^\w+://(\w+@)?}
           # Downcase the domain component of the URI
           # and strip off a trailing slash, if one is present
-          input = URI.parse(uri).normalize.to_s.sub(%r{/$}, "")
+          input = Bundler::URI.parse(uri).normalize.to_s.sub(%r{/$}, "")
         else
           # If there is no URI scheme, assume it is an ssh/git URI
           input = uri
@@ -316,7 +334,7 @@ module Bundler
 
       def load_gemspec(file)
         stub = Gem::StubSpecification.gemspec_stub(file, install_path.parent, install_path.parent)
-        stub.full_gem_path = Pathname.new(file).dirname.expand_path(root).to_s.untaint
+        stub.full_gem_path = Pathname.new(file).dirname.expand_path(root).to_s.tap{|x| x.untaint if RUBY_VERSION < "2.7" }
         StubSpecification.from_stub(stub)
       end
 

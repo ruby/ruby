@@ -1,4 +1,4 @@
-#include "ruby/config.h"
+#include "ruby/internal/config.h"
 #include "ruby/ruby.h"
 
 #if defined _WIN32

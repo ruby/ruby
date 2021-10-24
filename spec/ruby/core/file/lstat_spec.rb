@@ -22,8 +22,8 @@ describe "File.lstat" do
     it "returns a File::Stat object with symlink properties for a symlink" do
       st = File.lstat(@link)
 
-      st.symlink?.should == true
-      st.file?.should == false
+      st.should.symlink?
+      st.should_not.file?
     end
   end
 end

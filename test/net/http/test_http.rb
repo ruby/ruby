@@ -34,7 +34,7 @@ class TestNetHTTP < Test::Unit::TestCase
   end
 
   def test_class_Proxy_from_ENV
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       ENV['http_proxy']      = 'http://proxy.example:8000'
 
       # These are ignored on purpose.  See Bug 4388 and Feature 6546
@@ -115,7 +115,7 @@ class TestNetHTTP < Test::Unit::TestCase
   end
 
   def test_proxy_address
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       http = Net::HTTP.new 'hostname.example', nil, 'proxy.example'
       assert_equal 'proxy.example', http.proxy_address
 
@@ -125,7 +125,7 @@ class TestNetHTTP < Test::Unit::TestCase
   end
 
   def test_proxy_address_no_proxy
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       http = Net::HTTP.new 'hostname.example', nil, 'proxy.example', nil, nil, nil, 'example'
       assert_nil http.proxy_address
 
@@ -135,7 +135,7 @@ class TestNetHTTP < Test::Unit::TestCase
   end
 
   def test_proxy_from_env_ENV
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       ENV['http_proxy'] = 'http://proxy.example:8000'
 
       assert_equal false, Net::HTTP.proxy_class?
@@ -146,7 +146,7 @@ class TestNetHTTP < Test::Unit::TestCase
   end
 
   def test_proxy_address_ENV
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       ENV['http_proxy'] = 'http://proxy.example:8000'
 
       http = Net::HTTP.new 'hostname.example'
@@ -156,13 +156,13 @@ class TestNetHTTP < Test::Unit::TestCase
   end
 
   def test_proxy_eh_no_proxy
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       assert_equal false, Net::HTTP.new('hostname.example', nil, nil).proxy?
     end
   end
 
   def test_proxy_eh_ENV
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       ENV['http_proxy'] = 'http://proxy.example:8000'
 
       http = Net::HTTP.new 'hostname.example'
@@ -172,7 +172,7 @@ class TestNetHTTP < Test::Unit::TestCase
   end
 
   def test_proxy_eh_ENV_with_user
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       ENV['http_proxy'] = 'http://foo:bar@proxy.example:8000'
 
       http = Net::HTTP.new 'hostname.example'
@@ -188,14 +188,31 @@ class TestNetHTTP < Test::Unit::TestCase
     end
   end
 
+  def test_proxy_eh_ENV_with_urlencoded_user
+    TestNetHTTPUtils.clean_http_proxy_env do
+      ENV['http_proxy'] = 'http://Y%5CX:R%25S%5D%20%3FX@proxy.example:8000'
+
+      http = Net::HTTP.new 'hostname.example'
+
+      assert_equal true, http.proxy?
+      if Net::HTTP::ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE
+        assert_equal "Y\\X", http.proxy_user
+        assert_equal "R%S] ?X", http.proxy_pass
+      else
+        assert_nil http.proxy_user
+        assert_nil http.proxy_pass
+      end
+    end
+  end
+
   def test_proxy_eh_ENV_none_set
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       assert_equal false, Net::HTTP.new('hostname.example').proxy?
     end
   end
 
   def test_proxy_eh_ENV_no_proxy
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       ENV['http_proxy'] = 'http://proxy.example:8000'
       ENV['no_proxy']   = 'hostname.example'
 
@@ -204,7 +221,7 @@ class TestNetHTTP < Test::Unit::TestCase
   end
 
   def test_proxy_port
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       http = Net::HTTP.new 'example', nil, 'proxy.example'
       assert_equal 'proxy.example', http.proxy_address
       assert_equal 80, http.proxy_port
@@ -216,7 +233,7 @@ class TestNetHTTP < Test::Unit::TestCase
   end
 
   def test_proxy_port_ENV
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       ENV['http_proxy'] = 'http://proxy.example:8000'
 
       http = Net::HTTP.new 'hostname.example'
@@ -226,31 +243,12 @@ class TestNetHTTP < Test::Unit::TestCase
   end
 
   def test_newobj
-    clean_http_proxy_env do
+    TestNetHTTPUtils.clean_http_proxy_env do
       ENV['http_proxy'] = 'http://proxy.example:8000'
 
       http = Net::HTTP.newobj 'hostname.example'
 
       assert_equal false, http.proxy?
-    end
-  end
-
-  def clean_http_proxy_env
-    orig = {
-      'http_proxy'      => ENV['http_proxy'],
-      'http_proxy_user' => ENV['http_proxy_user'],
-      'http_proxy_pass' => ENV['http_proxy_pass'],
-      'no_proxy'        => ENV['no_proxy'],
-    }
-
-    orig.each_key do |key|
-      ENV.delete key
-    end
-
-    yield
-  ensure
-    orig.each do |key, value|
-      ENV[key] = value
     end
   end
 
@@ -262,7 +260,7 @@ class TestNetHTTP < Test::Unit::TestCase
     def host.to_str; raise SocketError, "open failure"; end
     uri = Struct.new(:scheme, :hostname, :port).new("http", host, port)
     assert_raise_with_message(SocketError, /#{host}:#{port}/) do
-      clean_http_proxy_env{ Net::HTTP.get(uri) }
+      TestNetHTTPUtils.clean_http_proxy_env{ Net::HTTP.get(uri) }
     end
   end
 
@@ -302,6 +300,27 @@ module TestNetHTTP_version_1_1_methods
   def test_s_get
     assert_equal $test_net_http_data,
         Net::HTTP.get(config('host'), '/', config('port'))
+
+    assert_equal $test_net_http_data, Net::HTTP.get(
+      URI.parse("http://#{config('host')}:#{config('port')}")
+    )
+    assert_equal $test_net_http_data, Net::HTTP.get(
+      URI.parse("http://#{config('host')}:#{config('port')}"), "Accept" => "text/plain"
+    )
+  end
+
+  def test_s_get_response
+    res = Net::HTTP.get_response(
+      URI.parse("http://#{config('host')}:#{config('port')}")
+    )
+    assert_equal "application/octet-stream", res["Content-Type"]
+    assert_equal $test_net_http_data, res.body
+
+    res = Net::HTTP.get_response(
+      URI.parse("http://#{config('host')}:#{config('port')}"), "Accept" => "text/plain"
+    )
+    assert_equal "text/plain", res["Content-Type"]
+    assert_equal $test_net_http_data, res.body
   end
 
   def test_head
@@ -557,6 +576,33 @@ module TestNetHTTP_version_1_1_methods
     th&.join
   end
 
+  def test_timeout_during_non_chunked_streamed_HTTP_session_write
+    th = nil
+    # listen for connections... but deliberately do not read
+    TCPServer.open('localhost', 0) {|server|
+      port = server.addr[1]
+
+      conn = Net::HTTP.new('localhost', port)
+      conn.write_timeout = 0.01
+      conn.read_timeout = 0.01 if windows?
+      conn.open_timeout = 0.1
+
+      req = Net::HTTP::Post.new('/')
+      data = "a"*50_000_000
+      req.content_length = data.size
+      req['Content-Type'] = 'application/x-www-form-urlencoded'
+      req.body_stream = StringIO.new(data)
+
+      th = Thread.new do
+        assert_raise(Net::WriteTimeout) { conn.request(req) }
+      end
+      assert th.join(10)
+    }
+  ensure
+    th&.kill
+    th&.join
+  end
+
   def test_timeout_during_HTTP_session
     bug4246 = "expected the HTTP session to have timed out but have not. c.f. [ruby-core:34203]"
 
@@ -567,7 +613,7 @@ module TestNetHTTP_version_1_1_methods
 
       conn = Net::HTTP.new('localhost', port)
       conn.read_timeout = EnvUtil.apply_timeout_scale(0.01)
-      conn.open_timeout = EnvUtil.apply_timeout_scale(0.1)
+      conn.open_timeout = EnvUtil.apply_timeout_scale(1)
 
       th = Thread.new do
         assert_raise(Net::ReadTimeout) {
@@ -889,6 +935,17 @@ class TestNetHTTP_v1_2 < Test::Unit::TestCase
   def new
     Net::HTTP.version_1_2
     super
+  end
+
+  def test_send_large_POST_request
+    start {|http|
+      data = ' '*6000000
+      res = http.send_request('POST', '/', data, 'content-type' => 'application/x-www-form-urlencoded')
+      assert_kind_of Net::HTTPResponse, res
+      assert_kind_of String, res.body
+      assert_equal data.size, res.body.size
+      assert_equal data, res.body
+    }
   end
 end
 

@@ -5,21 +5,25 @@ describe "The defined? keyword for literals" do
   it "returns 'self' for self" do
     ret = defined?(self)
     ret.should == "self"
+    ret.frozen?.should == true
   end
 
   it "returns 'nil' for nil" do
     ret = defined?(nil)
     ret.should == "nil"
+    ret.frozen?.should == true
   end
 
   it "returns 'true' for true" do
     ret = defined?(true)
     ret.should == "true"
+    ret.frozen?.should == true
   end
 
   it "returns 'false' for false" do
     ret = defined?(false)
     ret.should == "false"
+    ret.frozen?.should == true
   end
 
   describe "for a literal Array" do
@@ -27,6 +31,7 @@ describe "The defined? keyword for literals" do
     it "returns 'expression' if each element is defined" do
       ret = defined?([Object, Array])
       ret.should == "expression"
+      ret.frozen?.should == true
     end
 
     it "returns nil if one element is not defined" do
@@ -45,7 +50,9 @@ end
 describe "The defined? keyword when called with a method name" do
   describe "without a receiver" do
     it "returns 'method' if the method is defined" do
-      defined?(puts).should == "method"
+      ret = defined?(puts)
+      ret.should == "method"
+      ret.frozen?.should == true
     end
 
     it "returns nil if the method is not defined" do
@@ -167,7 +174,9 @@ describe "The defined? keyword for an expression" do
   end
 
   it "returns 'assignment' for assigning a local variable" do
-    defined?(x = 2).should == "assignment"
+    ret = defined?(x = 2)
+    ret.should == "assignment"
+    ret.frozen?.should == true
   end
 
   it "returns 'assignment' for assigning an instance variable" do
@@ -275,9 +284,7 @@ describe "The defined? keyword for an expression" do
     end
 
     it "returns nil for an expression with '!' and an unset class variable" do
-      -> {
-        @result = defined?(!@@defined_specs_undefined_class_variable)
-      }.should complain(/class variable access from toplevel/)
+      @result = eval("class singleton_class::A; defined?(!@@doesnt_exist) end", binding, __FILE__, __LINE__)
       @result.should be_nil
     end
 
@@ -286,9 +293,7 @@ describe "The defined? keyword for an expression" do
     end
 
     it "returns nil for an expression with 'not' and an unset class variable" do
-      -> {
-        @result = defined?(not @@defined_specs_undefined_class_variable)
-      }.should complain(/class variable access from toplevel/)
+      @result = eval("class singleton_class::A; defined?(not @@doesnt_exist) end", binding, __FILE__, __LINE__)
       @result.should be_nil
     end
 
@@ -474,7 +479,9 @@ end
 
 describe "The defined? keyword for variables" do
   it "returns 'local-variable' when called with the name of a local variable" do
-    DefinedSpecs::Basic.new.local_variable_defined.should == "local-variable"
+    ret = DefinedSpecs::Basic.new.local_variable_defined
+    ret.should == "local-variable"
+    ret.frozen?.should == true
   end
 
   it "returns 'local-variable' when called with the name of a local variable assigned to nil" do
@@ -490,7 +497,9 @@ describe "The defined? keyword for variables" do
   end
 
   it "returns 'instance-variable' for an instance variable that has been assigned" do
-    DefinedSpecs::Basic.new.instance_variable_defined.should == "instance-variable"
+    ret = DefinedSpecs::Basic.new.instance_variable_defined
+    ret.should == "instance-variable"
+    ret.frozen?.should == true
   end
 
   it "returns 'instance-variable' for an instance variable that has been assigned to nil" do
@@ -506,7 +515,9 @@ describe "The defined? keyword for variables" do
   end
 
   it "returns 'global-variable' for a global variable that has been assigned nil" do
-    DefinedSpecs::Basic.new.global_variable_defined_as_nil.should == "global-variable"
+    ret = DefinedSpecs::Basic.new.global_variable_defined_as_nil
+    ret.should == "global-variable"
+    ret.frozen?.should == true
   end
 
   # MRI appears to special case defined? for $! and $~ in that it returns
@@ -678,7 +689,9 @@ describe "The defined? keyword for variables" do
   # get to the defined? call so it really has nothing to do with 'defined?'.
 
   it "returns 'class variable' when called with the name of a class variable" do
-    DefinedSpecs::Basic.new.class_variable_defined.should == "class variable"
+    ret = DefinedSpecs::Basic.new.class_variable_defined
+    ret.should == "class variable"
+    ret.frozen?.should == true
   end
 
   it "returns 'local-variable' when called with the name of a block local" do
@@ -689,7 +702,9 @@ end
 
 describe "The defined? keyword for a simple constant" do
   it "returns 'constant' when the constant is defined" do
-    defined?(DefinedSpecs).should == "constant"
+    ret = defined?(DefinedSpecs)
+    ret.should == "constant"
+    ret.frozen?.should == true
   end
 
   it "returns nil when the constant is not defined" do
@@ -756,16 +771,8 @@ describe "The defined? keyword for a scoped constant" do
     defined?(DefinedSpecs::String).should be_nil
   end
 
-  ruby_version_is ""..."2.5" do
-    it "returns 'constant' when a constant is defined on top-level but not on the class" do
-      defined?(DefinedSpecs::Basic::String).should == 'constant'
-    end
-  end
-
-  ruby_version_is "2.5" do
-    it "returns nil when a constant is defined on top-level but not on the class" do
-      defined?(DefinedSpecs::Basic::String).should be_nil
-    end
+  it "returns nil when a constant is defined on top-level but not on the class" do
+    defined?(DefinedSpecs::Basic::String).should be_nil
   end
 
   it "returns 'constant' if the scoped-scoped constant is defined" do
@@ -905,17 +912,21 @@ describe "The defined? keyword for a variable scoped constant" do
   end
 
   it "returns nil if the class scoped constant is not defined" do
-    -> {
-      @@defined_specs_obj = DefinedSpecs::Basic
-      defined?(@@defined_specs_obj::Undefined).should be_nil
-    }.should complain(/class variable access from toplevel/)
+    eval(<<-END, binding, __FILE__, __LINE__)
+      class singleton_class::A
+        @@defined_specs_obj = DefinedSpecs::Basic
+        defined?(@@defined_specs_obj::Undefined).should be_nil
+      end
+    END
   end
 
   it "returns 'constant' if the constant is defined in the scope of the class variable" do
-    -> {
-      @@defined_specs_obj = DefinedSpecs::Basic
-      defined?(@@defined_specs_obj::A).should == "constant"
-    }.should complain(/class variable access from toplevel/)
+    eval(<<-END, binding, __FILE__, __LINE__)
+      class singleton_class::A
+        @@defined_specs_obj = DefinedSpecs::Basic
+        defined?(@@defined_specs_obj::A).should == "constant"
+      end
+    END
   end
 
   it "returns nil if the local scoped constant is not defined" do
@@ -949,11 +960,25 @@ describe "The defined? keyword for yield" do
   end
 
   it "returns 'yield' if a block is passed to a method not taking a block parameter" do
-    DefinedSpecs::Basic.new.yield_block.should == "yield"
+    ret = DefinedSpecs::Basic.new.yield_block
+    ret.should == "yield"
+    ret.frozen?.should == true
   end
 
   it "returns 'yield' if a block is passed to a method taking a block parameter" do
     DefinedSpecs::Basic.new.yield_block_parameter.should == "yield"
+  end
+
+  it "returns 'yield' when called within a block" do
+    def yielder
+      yield
+    end
+
+    def call_defined
+      yielder { defined?(yield) }
+    end
+
+    call_defined() { }.should == "yield"
   end
 end
 
@@ -980,7 +1005,9 @@ describe "The defined? keyword for super" do
     end
 
     it "returns 'super' when a superclass method exists" do
-      DefinedSpecs::Super.new.method_no_args.should == "super"
+      ret = DefinedSpecs::Super.new.method_no_args
+      ret.should == "super"
+      ret.frozen?.should == true
     end
 
     it "returns 'super' from a block when a superclass method exists" do

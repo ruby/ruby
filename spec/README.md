@@ -66,7 +66,7 @@ See `spec/ruby/CONTRIBUTING.md` for more documentation about guards.
 To verify specs are compatible with older Ruby versions:
 ```
 cd spec/ruby
-$RUBY_MANAGER use 2.4.6
+$RUBY_MANAGER use 2.4.9
 ../mspec/bin/mspec -j
 ```
 

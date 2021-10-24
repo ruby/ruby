@@ -10,6 +10,10 @@
 /* modified by Michal Rokos <m.rokos@sh.cvut.cz> */
 #include "ossl.h"
 
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+#include <ruby/ractor.h>
+#endif
+
 #define NewBN(klass) \
   TypedData_Wrap_Struct((klass), &ossl_bn_type, 0)
 #define SetBN(obj, bn) do { \
@@ -150,12 +154,58 @@ ossl_bn_value_ptr(volatile VALUE *ptr)
 /*
  * Private
  */
-/*
- * BN_CTX - is used in more difficult math. ops
- * (Why just 1? Because Ruby itself isn't thread safe,
- *  we don't need to care about threads)
- */
-BN_CTX *ossl_bn_ctx;
+
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+void
+ossl_bn_ctx_free(void *ptr)
+{
+    BN_CTX *ctx = (BN_CTX *)ptr;
+    BN_CTX_free(ctx);
+}
+
+struct rb_ractor_local_storage_type ossl_bn_ctx_key_type = {
+    NULL, // mark
+    ossl_bn_ctx_free,
+};
+
+rb_ractor_local_key_t ossl_bn_ctx_key;
+
+BN_CTX *
+ossl_bn_ctx_get(void)
+{
+    // stored in ractor local storage
+
+    BN_CTX *ctx = rb_ractor_local_storage_ptr(ossl_bn_ctx_key);
+    if (!ctx) {
+        if (!(ctx = BN_CTX_new())) {
+            ossl_raise(rb_eRuntimeError, "Cannot init BN_CTX");
+        }
+        rb_ractor_local_storage_ptr_set(ossl_bn_ctx_key, ctx);
+    }
+    return ctx;
+}
+#else
+// for ruby 2.x
+static BN_CTX *gv_ossl_bn_ctx;
+
+BN_CTX *
+ossl_bn_ctx_get(void)
+{
+    if (gv_ossl_bn_ctx == NULL) {
+        if (!(gv_ossl_bn_ctx = BN_CTX_new())) {
+            ossl_raise(rb_eRuntimeError, "Cannot init BN_CTX");
+        }
+    }
+    return gv_ossl_bn_ctx;
+}
+
+void
+ossl_bn_ctx_free(void)
+{
+    BN_CTX_free(gv_ossl_bn_ctx);
+    gv_ossl_bn_ctx = NULL;
+}
+#endif
 
 static VALUE
 ossl_bn_alloc(VALUE klass)
@@ -173,13 +223,29 @@ ossl_bn_alloc(VALUE klass)
 
 /*
  * call-seq:
- *    OpenSSL::BN.new => aBN
- *    OpenSSL::BN.new(bn) => aBN
- *    OpenSSL::BN.new(integer) => aBN
- *    OpenSSL::BN.new(string) => aBN
- *    OpenSSL::BN.new(string, 0 | 2 | 10 | 16) => aBN
+ *    OpenSSL::BN.new(bn) -> aBN
+ *    OpenSSL::BN.new(integer) -> aBN
+ *    OpenSSL::BN.new(string, base = 10) -> aBN
  *
- * Construct a new OpenSSL BIGNUM object.
+ * Construct a new \OpenSSL BIGNUM object.
+ *
+ * If +bn+ is an Integer or OpenSSL::BN, a new instance of OpenSSL::BN
+ * representing the same value is returned. See also Integer#to_bn for the
+ * short-hand.
+ *
+ * If a String is given, the content will be parsed according to +base+.
+ *
+ * +string+::
+ *   The string to be parsed.
+ * +base+::
+ *   The format. Must be one of the following:
+ *   - +0+  - MPI format. See the man page BN_mpi2bn(3) for details.
+ *   - +2+  - Variable-length and big-endian binary encoding of a positive
+ *     number.
+ *   - +10+ - Decimal number representation, with a leading '-' for a negative
+ *     number.
+ *   - +16+ - Hexadeciaml number representation, with a leading '-' for a
+ *     negative number.
  */
 static VALUE
 ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
@@ -191,6 +257,10 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 
     if (rb_scan_args(argc, argv, "11", &str, &bs) == 2) {
 	base = NUM2INT(bs);
+    }
+
+    if (NIL_P(str)) {
+        ossl_raise(rb_eArgError, "invalid argument");
     }
 
     if (RB_INTEGER_TYPE_P(str)) {
@@ -243,16 +313,21 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    bn.to_s => string
- *    bn.to_s(base) => string
+ *    bn.to_s(base = 10) -> string
  *
- * === Parameters
- * * _base_ - Integer
- *   Valid values:
- *   * 0 - MPI
- *   * 2 - binary
- *   * 10 - the default
- *   * 16 - hex
+ * Returns the string representation of the bignum.
+ *
+ * BN.new can parse the encoded string to convert back into an OpenSSL::BN.
+ *
+ * +base+::
+ *   The format. Must be one of the following:
+ *   - +0+  - MPI format. See the man page BN_bn2mpi(3) for details.
+ *   - +2+  - Variable-length and big-endian binary encoding. The sign of
+ *     the bignum is ignored.
+ *   - +10+ - Decimal number representation, with a leading '-' for a negative
+ *     bignum.
+ *   - +16+ - Hexadeciaml number representation, with a leading '-' for a
+ *     negative bignum.
  */
 static VALUE
 ossl_bn_to_s(int argc, VALUE *argv, VALUE self)
@@ -400,7 +475,7 @@ ossl_bn_is_negative(VALUE self)
 	if (!(result = BN_new())) {			\
 	    ossl_raise(eBNError, NULL);			\
 	}						\
-	if (!BN_##func(result, bn, ossl_bn_ctx)) {	\
+	if (BN_##func(result, bn, ossl_bn_ctx) <= 0) {	\
 	    BN_free(result);				\
 	    ossl_raise(eBNError, NULL);			\
 	}						\
@@ -426,7 +501,7 @@ BIGNUM_1c(sqr)
 	if (!(result = BN_new())) {			\
 	    ossl_raise(eBNError, NULL);			\
 	}						\
-	if (!BN_##func(result, bn1, bn2)) {		\
+	if (BN_##func(result, bn1, bn2) <= 0) {		\
 	    BN_free(result);				\
 	    ossl_raise(eBNError, NULL);			\
 	}						\
@@ -459,7 +534,7 @@ BIGNUM_2(sub)
 	if (!(result = BN_new())) {				\
 	    ossl_raise(eBNError, NULL);				\
 	}							\
-	if (!BN_##func(result, bn1, bn2, ossl_bn_ctx)) {	\
+	if (BN_##func(result, bn1, bn2, ossl_bn_ctx) <= 0) {	\
 	    BN_free(result);					\
 	    ossl_raise(eBNError, NULL);				\
 	}							\
@@ -503,11 +578,21 @@ BIGNUM_2c(gcd)
 BIGNUM_2c(mod_sqr)
 
 /*
- * Document-method: OpenSSL::BN#mod_inverse
  * call-seq:
- *   bn.mod_inverse(bn2) => aBN
+ *    bn.mod_inverse(bn2) => aBN
  */
-BIGNUM_2c(mod_inverse)
+static VALUE
+ossl_bn_mod_inverse(VALUE self, VALUE other)
+{
+    BIGNUM *bn1, *bn2 = GetBNPtr(other), *result;
+    VALUE obj;
+    GetBN(self, bn1);
+    obj = NewBN(rb_obj_class(self));
+    if (!(result = BN_mod_inverse(NULL, bn1, bn2, ossl_bn_ctx)))
+        ossl_raise(eBNError, "BN_mod_inverse");
+    SetBN(obj, result);
+    return obj;
+}
 
 /*
  * call-seq:
@@ -556,7 +641,7 @@ ossl_bn_div(VALUE self, VALUE other)
 	if (!(result = BN_new())) {				\
 	    ossl_raise(eBNError, NULL);				\
 	}							\
-	if (!BN_##func(result, bn1, bn2, bn3, ossl_bn_ctx)) {	\
+	if (BN_##func(result, bn1, bn2, bn3, ossl_bn_ctx) <= 0) { \
 	    BN_free(result);					\
 	    ossl_raise(eBNError, NULL);				\
 	}							\
@@ -598,7 +683,7 @@ BIGNUM_3c(mod_exp)
     {							\
 	BIGNUM *bn;					\
 	GetBN(self, bn);				\
-	if (!BN_##func(bn, NUM2INT(bit))) {		\
+	if (BN_##func(bn, NUM2INT(bit)) <= 0) {		\
 	    ossl_raise(eBNError, NULL);			\
 	}						\
 	return self;					\
@@ -658,7 +743,7 @@ ossl_bn_is_bit_set(VALUE self, VALUE bit)
 	if (!(result = BN_new())) {			\
 		ossl_raise(eBNError, NULL);		\
 	}						\
-	if (!BN_##func(result, bn, b)) {		\
+	if (BN_##func(result, bn, b) <= 0) {		\
 		BN_free(result);			\
 		ossl_raise(eBNError, NULL);		\
 	}						\
@@ -688,7 +773,7 @@ BIGNUM_SHIFT(rshift)
 	int b;						\
 	b = NUM2INT(bits);				\
 	GetBN(self, bn);				\
-	if (!BN_##func(bn, bn, b))			\
+	if (BN_##func(bn, bn, b) <= 0)			\
 		ossl_raise(eBNError, NULL);		\
 	return self;					\
     }
@@ -707,78 +792,64 @@ BIGNUM_SELF_SHIFT(lshift)
  */
 BIGNUM_SELF_SHIFT(rshift)
 
-#define BIGNUM_RAND(func)					\
-    static VALUE						\
-    ossl_bn_s_##func(int argc, VALUE *argv, VALUE klass)	\
-    {								\
-	BIGNUM *result;						\
-	int bottom = 0, top = 0, b;				\
-	VALUE bits, fill, odd, obj;				\
-								\
-	switch (rb_scan_args(argc, argv, "12", &bits, &fill, &odd)) {	\
-	case 3:							\
-	    bottom = (odd == Qtrue) ? 1 : 0;			\
-	    /* FALLTHROUGH */					\
-	case 2:							\
-	    top = NUM2INT(fill);				\
-	}							\
-	b = NUM2INT(bits);					\
-	obj = NewBN(klass);					\
-	if (!(result = BN_new())) {				\
-	    ossl_raise(eBNError, NULL);				\
-	}							\
-	if (!BN_##func(result, b, top, bottom)) {		\
-	    BN_free(result);					\
-	    ossl_raise(eBNError, NULL);				\
-	}							\
-	SetBN(obj, result);					\
-	return obj;						\
-    }
-
 /*
- * Document-method: OpenSSL::BN.rand
- *   BN.rand(bits [, fill [, odd]]) -> aBN
- */
-BIGNUM_RAND(rand)
-
-/*
- * Document-method: OpenSSL::BN.pseudo_rand
- *   BN.pseudo_rand(bits [, fill [, odd]]) -> aBN
- */
-BIGNUM_RAND(pseudo_rand)
-
-#define BIGNUM_RAND_RANGE(func)					\
-    static VALUE						\
-    ossl_bn_s_##func##_range(VALUE klass, VALUE range)		\
-    {								\
-	BIGNUM *bn = GetBNPtr(range), *result;			\
-	VALUE obj = NewBN(klass);				\
-	if (!(result = BN_new())) {				\
-	    ossl_raise(eBNError, NULL);				\
-	}							\
-	if (!BN_##func##_range(result, bn)) {			\
-	    BN_free(result);					\
-	    ossl_raise(eBNError, NULL);				\
-	}							\
-	SetBN(obj, result);					\
-	return obj;						\
-    }
-
-/*
- * Document-method: OpenSSL::BN.rand_range
  * call-seq:
- *   BN.rand_range(range) -> aBN
+ *    BN.rand(bits [, fill [, odd]]) -> aBN
  *
+ * Generates a cryptographically strong pseudo-random number of +bits+.
+ *
+ * See also the man page BN_rand(3).
  */
-BIGNUM_RAND_RANGE(rand)
+static VALUE
+ossl_bn_s_rand(int argc, VALUE *argv, VALUE klass)
+{
+    BIGNUM *result;
+    int bottom = 0, top = 0, b;
+    VALUE bits, fill, odd, obj;
+
+    switch (rb_scan_args(argc, argv, "12", &bits, &fill, &odd)) {
+      case 3:
+        bottom = (odd == Qtrue) ? 1 : 0;
+        /* FALLTHROUGH */
+      case 2:
+        top = NUM2INT(fill);
+    }
+    b = NUM2INT(bits);
+    obj = NewBN(klass);
+    if (!(result = BN_new())) {
+        ossl_raise(eBNError, "BN_new");
+    }
+    if (BN_rand(result, b, top, bottom) <= 0) {
+        BN_free(result);
+        ossl_raise(eBNError, "BN_rand");
+    }
+    SetBN(obj, result);
+    return obj;
+}
 
 /*
- * Document-method: OpenSSL::BN.pseudo_rand_range
  * call-seq:
- *   BN.pseudo_rand_range(range) -> aBN
+ *    BN.rand_range(range) -> aBN
  *
+ * Generates a cryptographically strong pseudo-random number in the range
+ * 0...+range+.
+ *
+ * See also the man page BN_rand_range(3).
  */
-BIGNUM_RAND_RANGE(pseudo_rand)
+static VALUE
+ossl_bn_s_rand_range(VALUE klass, VALUE range)
+{
+    BIGNUM *bn = GetBNPtr(range), *result;
+    VALUE obj = NewBN(klass);
+    if (!(result = BN_new()))
+        ossl_raise(eBNError, "BN_new");
+    if (BN_rand_range(result, bn) <= 0) {
+        BN_free(result);
+        ossl_raise(eBNError, "BN_rand_range");
+    }
+    SetBN(obj, result);
+    return obj;
+}
 
 /*
  * call-seq:
@@ -873,7 +944,17 @@ ossl_bn_copy(VALUE self, VALUE other)
 static VALUE
 ossl_bn_uplus(VALUE self)
 {
-    return self;
+    VALUE obj;
+    BIGNUM *bn1, *bn2;
+
+    GetBN(self, bn1);
+    obj = NewBN(cBN);
+    bn2 = BN_dup(bn1);
+    if (!bn2)
+	ossl_raise(eBNError, "BN_dup");
+    SetBN(obj, bn2);
+
+    return obj;
 }
 
 /*
@@ -895,6 +976,24 @@ ossl_bn_uminus(VALUE self)
     BN_set_negative(bn2, !BN_is_negative(bn2));
 
     return obj;
+}
+
+/*
+ * call-seq:
+ *   bn.abs -> aBN
+ */
+static VALUE
+ossl_bn_abs(VALUE self)
+{
+    BIGNUM *bn1;
+
+    GetBN(self, bn1);
+    if (BN_is_negative(bn1)) {
+        return ossl_bn_uminus(self);
+    }
+    else {
+        return ossl_bn_uplus(self);
+    }
 }
 
 #define BIGNUM_CMP(func)				\
@@ -1005,34 +1104,29 @@ ossl_bn_hash(VALUE self)
  *    bn.prime? => true | false
  *    bn.prime?(checks) => true | false
  *
- * Performs a Miller-Rabin probabilistic primality test with _checks_
- * iterations. If _checks_ is not specified, a number of iterations is used
- * that yields a false positive rate of at most 2^-80 for random input.
+ * Performs a Miller-Rabin probabilistic primality test for +bn+.
  *
- * === Parameters
- * * _checks_ - integer
+ * <b>+checks+ parameter is deprecated in version 3.0.</b> It has no effect.
  */
 static VALUE
 ossl_bn_is_prime(int argc, VALUE *argv, VALUE self)
 {
     BIGNUM *bn;
-    VALUE vchecks;
-    int checks = BN_prime_checks;
+    int ret;
 
-    if (rb_scan_args(argc, argv, "01", &vchecks) == 1) {
-	checks = NUM2INT(vchecks);
-    }
+    rb_check_arity(argc, 0, 1);
     GetBN(self, bn);
-    switch (BN_is_prime_ex(bn, checks, ossl_bn_ctx, NULL)) {
-    case 1:
-	return Qtrue;
-    case 0:
-	return Qfalse;
-    default:
-	ossl_raise(eBNError, NULL);
-    }
-    /* not reachable */
-    return Qnil;
+
+#ifdef HAVE_BN_CHECK_PRIME
+    ret = BN_check_prime(bn, ossl_bn_ctx, NULL);
+    if (ret < 0)
+        ossl_raise(eBNError, "BN_check_prime");
+#else
+    ret = BN_is_prime_fasttest_ex(bn, BN_prime_checks, ossl_bn_ctx, 1, NULL);
+    if (ret < 0)
+        ossl_raise(eBNError, "BN_is_prime_fasttest_ex");
+#endif
+    return ret ? Qtrue : Qfalse;
 }
 
 /*
@@ -1041,39 +1135,52 @@ ossl_bn_is_prime(int argc, VALUE *argv, VALUE self)
  *    bn.prime_fasttest?(checks) => true | false
  *    bn.prime_fasttest?(checks, trial_div) => true | false
  *
- * Performs a Miller-Rabin primality test. This is same as #prime? except this
- * first attempts trial divisions with some small primes.
+ * Performs a Miller-Rabin probabilistic primality test for +bn+.
  *
- * === Parameters
- * * _checks_ - integer
- * * _trial_div_ - boolean
+ * <b>Deprecated in version 3.0.</b> Use #prime? instead.
+ *
+ * +checks+ and +trial_div+ parameters no longer have any effect.
  */
 static VALUE
 ossl_bn_is_prime_fasttest(int argc, VALUE *argv, VALUE self)
 {
+    rb_check_arity(argc, 0, 2);
+    return ossl_bn_is_prime(0, argv, self);
+}
+
+/*
+ * call-seq:
+ *    bn.get_flags(flags) => flags
+ *
+ * Returns the flags on the BN object.
+ * The argument is used as a bit mask.
+ *
+ * === Parameters
+ * * _flags_ - integer
+ */
+static VALUE
+ossl_bn_get_flags(VALUE self, VALUE arg)
+{
     BIGNUM *bn;
-    VALUE vchecks, vtrivdiv;
-    int checks = BN_prime_checks, do_trial_division = 1;
-
-    rb_scan_args(argc, argv, "02", &vchecks, &vtrivdiv);
-
-    if (!NIL_P(vchecks)) {
-	checks = NUM2INT(vchecks);
-    }
     GetBN(self, bn);
-    /* handle true/false */
-    if (vtrivdiv == Qfalse) {
-	do_trial_division = 0;
-    }
-    switch (BN_is_prime_fasttest_ex(bn, checks, ossl_bn_ctx, do_trial_division, NULL)) {
-    case 1:
-	return Qtrue;
-    case 0:
-	return Qfalse;
-    default:
-	ossl_raise(eBNError, NULL);
-    }
-    /* not reachable */
+
+    return INT2NUM(BN_get_flags(bn, NUM2INT(arg)));
+}
+
+/*
+ * call-seq:
+ *    bn.set_flags(flags) => nil
+ *
+ * Enables the flags on the BN object.
+ * Currently, the flags argument can contain zero of OpenSSL::BN::CONSTTIME.
+ */
+static VALUE
+ossl_bn_set_flags(VALUE self, VALUE arg)
+{
+    BIGNUM *bn;
+    GetBN(self, bn);
+
+    BN_set_flags(bn, NUM2INT(arg));
     return Qnil;
 }
 
@@ -1089,9 +1196,11 @@ Init_ossl_bn(void)
     eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
 #endif
 
-    if (!(ossl_bn_ctx = BN_CTX_new())) {
-	ossl_raise(rb_eRuntimeError, "Cannot init BN_CTX");
-    }
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    ossl_bn_ctx_key = rb_ractor_local_storage_ptr_newkey(&ossl_bn_ctx_key_type);
+#else
+    ossl_bn_ctx_get();
+#endif
 
     eBNError = rb_define_class_under(mOSSL, "BNError", eOSSLError);
 
@@ -1111,6 +1220,7 @@ Init_ossl_bn(void)
 
     rb_define_method(cBN, "+@", ossl_bn_uplus, 0);
     rb_define_method(cBN, "-@", ossl_bn_uminus, 0);
+    rb_define_method(cBN, "abs", ossl_bn_abs, 0);
 
     rb_define_method(cBN, "+", ossl_bn_add, 1);
     rb_define_method(cBN, "-", ossl_bn_sub, 1);
@@ -1154,9 +1264,9 @@ Init_ossl_bn(void)
      * get_word */
 
     rb_define_singleton_method(cBN, "rand", ossl_bn_s_rand, -1);
-    rb_define_singleton_method(cBN, "pseudo_rand", ossl_bn_s_pseudo_rand, -1);
     rb_define_singleton_method(cBN, "rand_range", ossl_bn_s_rand_range, 1);
-    rb_define_singleton_method(cBN, "pseudo_rand_range", ossl_bn_s_pseudo_rand_range, 1);
+    rb_define_alias(rb_singleton_class(cBN), "pseudo_rand", "rand");
+    rb_define_alias(rb_singleton_class(cBN), "pseudo_rand_range", "rand_range");
 
     rb_define_singleton_method(cBN, "generate_prime", ossl_bn_s_generate_prime, -1);
     rb_define_method(cBN, "prime?", ossl_bn_is_prime, -1);
@@ -1172,6 +1282,23 @@ Init_ossl_bn(void)
     rb_define_method(cBN, "rshift!", ossl_bn_self_rshift, 1);
     /* lshift1 - DON'T IMPL. */
     /* rshift1 - DON'T IMPL. */
+
+    rb_define_method(cBN, "get_flags", ossl_bn_get_flags, 1);
+    rb_define_method(cBN, "set_flags", ossl_bn_set_flags, 1);
+
+#ifdef BN_FLG_CONSTTIME
+    rb_define_const(cBN, "CONSTTIME", INT2NUM(BN_FLG_CONSTTIME));
+#endif
+    /* BN_FLG_MALLOCED and BN_FLG_STATIC_DATA seems for C programming.
+     * Allowing them leads to memory leak.
+     * So, for now, they are not exported
+#ifdef BN_FLG_MALLOCED
+    rb_define_const(cBN, "MALLOCED", INT2NUM(BN_FLG_MALLOCED));
+#endif
+#ifdef BN_FLG_STATIC_DATA
+    rb_define_const(cBN, "STATIC_DATA", INT2NUM(BN_FLG_STATIC_DATA));
+#endif
+    */
 
     /*
      * bn2bin

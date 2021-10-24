@@ -14,11 +14,11 @@ module Bundler::Molinillo
       end
 
       # (see Action#up)
-      def up(_graph)
+      def up(graph)
       end
 
       # (see Action#down)
-      def down(_graph)
+      def down(graph)
       end
 
       # @!group Tag

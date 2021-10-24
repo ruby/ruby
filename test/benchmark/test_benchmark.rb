@@ -71,7 +71,7 @@ third  --time--   --time--   --time-- (  --time--)
 BENCH
   end
 
-  def test_benchmark_makes_extra_calcultations_with_an_Array_at_the_end_of_the_benchmark_and_show_the_result
+  def test_benchmark_makes_extra_calculations_with_an_Array_at_the_end_of_the_benchmark_and_show_the_result
     assert_equal(BENCHMARK_OUTPUT_WITH_TOTAL_AVG,
       capture_bench_output(:benchmark,
         Benchmark::CAPTION, 7,
@@ -154,5 +154,14 @@ BENCH
     sleeptime = 1.0
     realtime = Benchmark.realtime { sleep sleeptime }
     assert_operator sleeptime, :<, realtime
+  end
+
+  # Test that `to_h` returns a hash with the expected data.
+  def test_tms_to_h
+    tms = Benchmark::Tms.new(1.1, 2.2, 3.3, 4.4, 5.5, 'my label')
+    expected_hash = {
+      utime: 1.1, stime: 2.2, cutime: 3.3, cstime: 4.4, real: 5.5, label: 'my label'
+    }
+    assert_equal(expected_hash, tms.to_h)
   end
 end

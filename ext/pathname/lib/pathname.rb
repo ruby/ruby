@@ -35,6 +35,13 @@ class Pathname
     SEPARATOR_PAT = /#{Regexp.quote File::SEPARATOR}/
   end
 
+  if File.dirname('A:') == 'A:.' # DOSish drive letter
+    ABSOLUTE_PATH = /\A(?:[A-Za-z]:|#{SEPARATOR_PAT})/o
+  else
+    ABSOLUTE_PATH = /\A#{SEPARATOR_PAT}/o
+  end
+  private_constant :ABSOLUTE_PATH
+
   # :startdoc:
 
   # chop_basename(path) -> [pre-basename, basename] or nil
@@ -207,7 +214,7 @@ class Pathname
   # pathnames which points to roots such as <tt>/usr/..</tt>.
   #
   def root?
-    !!(chop_basename(@path) == nil && /#{SEPARATOR_PAT}/o.match?(@path))
+    chop_basename(@path) == nil && /#{SEPARATOR_PAT}/o.match?(@path)
   end
 
   # Predicate method for testing whether a path is absolute.
@@ -222,7 +229,7 @@ class Pathname
   #   p.absolute?
   #       #=> false
   def absolute?
-    !relative?
+    ABSOLUTE_PATH.match? @path
   end
 
   # The opposite of Pathname#absolute?
@@ -237,11 +244,7 @@ class Pathname
   #   p.relative?
   #       #=> true
   def relative?
-    path = @path
-    while r = chop_basename(path)
-      path, = r
-    end
-    path == ''
+    !absolute?
   end
 
   #
@@ -502,6 +505,9 @@ class Pathname
   #
   # ArgumentError is raised when it cannot find a relative path.
   #
+  # Note that this method does not handle situations where the case sensitivity
+  # of the filesystem in use differs from the operating system default.
+  #
   def relative_path_from(base_directory)
     base_directory = Pathname.new(base_directory) unless base_directory.is_a? Pathname
     dest_directory = self.cleanpath.to_s
@@ -569,13 +575,14 @@ end
 
 
 class Pathname    # * FileUtils *
+  autoload(:FileUtils, 'fileutils')
+
   # Creates a full path, including any intermediate directories that don't yet
   # exist.
   #
   # See FileUtils.mkpath and FileUtils.mkdir_p
-  def mkpath
-    require 'fileutils'
-    FileUtils.mkpath(@path)
+  def mkpath(mode: nil)
+    FileUtils.mkpath(@path, mode: mode)
     nil
   end
 
@@ -585,7 +592,6 @@ class Pathname    # * FileUtils *
   def rmtree
     # The name "rmtree" is borrowed from File::Path of Perl.
     # File::Path provides "mkpath" and "rmtree".
-    require 'fileutils'
     FileUtils.rm_r(@path)
     nil
   end

@@ -50,6 +50,21 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_equal(SimpleDelegator,simple.clone.class)
   end
 
+  def test_simpledelegator_clone
+    simple=SimpleDelegator.new([])
+    simple.freeze
+
+    clone = simple.clone
+    assert_predicate clone, :frozen?
+    assert_predicate clone.__getobj__, :frozen?
+    assert_equal true, Kernel.instance_method(:frozen?).bind(clone).call
+
+    clone = simple.clone(freeze: false)
+    assert_not_predicate clone, :frozen?
+    assert_not_predicate clone.__getobj__, :frozen?
+    assert_equal false, Kernel.instance_method(:frozen?).bind(clone).call
+  end
+
   class Object
     def m
       :o
@@ -91,6 +106,10 @@ class TestDelegateClass < Test::Unit::TestCase
     protected
 
     def parent_protected; end
+
+    private
+
+    def parent_private; end
   end
 
   class Child < DelegateClass(Parent)
@@ -102,6 +121,10 @@ class TestDelegateClass < Test::Unit::TestCase
     protected
 
     def parent_protected_added; end
+
+    private
+
+    def parent_private_added; end
   end
 
   def test_public_instance_methods
@@ -114,6 +137,32 @@ class TestDelegateClass < Test::Unit::TestCase
     ignores = Object.protected_instance_methods | Delegator.protected_instance_methods
     assert_equal([:parent_protected, :parent_protected_added], (Child.protected_instance_methods - ignores).sort)
     assert_equal([:parent_protected, :parent_protected_added], (Child.new(Parent.new).protected_methods - ignores).sort)
+  end
+
+  def test_instance_methods
+    ignores = Object.instance_methods | Delegator.instance_methods
+    assert_equal([:parent_protected, :parent_protected_added, :parent_public, :parent_public_added], (Child.instance_methods - ignores).sort)
+    assert_equal([:parent_protected, :parent_protected_added, :parent_public, :parent_public_added], (Child.new(Parent.new).methods - ignores).sort)
+  end
+
+  def test_DelegateClass_instance_method
+    assert_instance_of UnboundMethod, Child.instance_method(:parent_public)
+    assert_instance_of UnboundMethod, Child.instance_method(:parent_public_added)
+    assert_instance_of UnboundMethod, Child.instance_method(:parent_protected)
+    assert_instance_of UnboundMethod, Child.instance_method(:parent_protected_added)
+    assert_raise(NameError) { Child.instance_method(:parent_private) }
+    assert_raise(NameError) { Child.instance_method(:parent_private_added) }
+    assert_instance_of UnboundMethod, Child.instance_method(:to_s)
+  end
+
+  def test_DelegateClass_public_instance_method
+    assert_instance_of UnboundMethod, Child.public_instance_method(:parent_public)
+    assert_instance_of UnboundMethod, Child.public_instance_method(:parent_public_added)
+    assert_raise(NameError) { Child.public_instance_method(:parent_protected) }
+    assert_raise(NameError) { Child.public_instance_method(:parent_protected_added) }
+    assert_raise(NameError) { Child.instance_method(:parent_private) }
+    assert_raise(NameError) { Child.instance_method(:parent_private_added) }
+    assert_instance_of UnboundMethod, Child.public_instance_method(:to_s)
   end
 
   class IV < DelegateClass(Integer)
@@ -175,6 +224,23 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_operator(s0, :eql?, s2)
     assert_not_operator(s0, :eql?, s1)
     assert_not_operator(s0, :eql?, "bar")
+  end
+
+  def test_keyword_and_hash
+    foo = Object.new
+    def foo.bar(*args)
+      args
+    end
+    def foo.foo(*args, **kw)
+      [args, kw]
+    end
+    d = SimpleDelegator.new(foo)
+    assert_equal([[], {}], d.foo)
+    assert_equal([], d.bar)
+    assert_equal([[], {:a=>1}], d.foo(:a=>1))
+    assert_equal([{:a=>1}], d.bar(:a=>1))
+    assert_equal([[{:a=>1}], {}], d.foo({:a=>1}))
+    assert_equal([{:a=>1}], d.bar({:a=>1}))
   end
 
   class Foo
@@ -302,5 +368,35 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_raise(NoMethodError) do
       delegate.constants
     end
+  end
+
+  def test_basicobject
+    o = BasicObject.new
+    def o.bar; 1; end
+    delegate = SimpleDelegator.new(o)
+    assert_equal(1, delegate.bar)
+    assert_raise(NoMethodError, /undefined method `foo' for/) { delegate.foo }
+  end
+
+  def test_basicobject_respond_to
+    o = BasicObject.new
+    def o.bar
+      nil
+    end
+
+    def o.respond_to?(method, include_private=false)
+      return false if method == :bar
+      ::Kernel.instance_method(:respond_to?).bind_call(self, method, include_private)
+    end
+    delegate = SimpleDelegator.new(o)
+    refute delegate.respond_to?(:bar)
+  end
+
+  def test_keyword_argument
+    k = EnvUtil.labeled_class("Target") do
+      def test(a, k:) [a, k]; end
+    end
+    a = DelegateClass(k).new(k.new)
+    assert_equal([1, 0], a.test(1, k: 0))
   end
 end

@@ -19,7 +19,7 @@ class MkSpec
     @map = NameMap.new true
   end
 
-  def options(argv=ARGV)
+  def options(argv = ARGV)
     options = MSpecOptions.new "mkspec [options]", 32
 
     options.on("-c", "--constant", "CONSTANT",

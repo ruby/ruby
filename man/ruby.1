@@ -257,7 +257,7 @@ Verbose mode is "verbose". It sets the
 .Li "$VERBOSE"
 to true.
 .Fl W Ns
-2 is same as
+2 is the same as
 .Fl w
 .
 .El
@@ -313,7 +313,7 @@ Enables automatic line-ending processing, which means to firstly set
 to the value of
 .Li "$/" ,
 and secondly chops every line read using
-.Li chop! .
+.Li chomp! .
 .Pp
 .It Fl n
 Causes Ruby to assume the following loop around your script, which
@@ -419,7 +419,7 @@ Disables (or enables) all features.
 .El
 .Pp
 .It Fl -dump Ns = Ns Ar target
-Dump some informations.
+Dump some information.
 .Pp
 Prints the specified target.
 .Ar target
@@ -618,7 +618,7 @@ All values are specified in bytes.
 .Bl -hang -compact -width "RUBY_THREAD_MACHINE_STACK_SIZE"
 .It Ev RUBY_THREAD_VM_STACK_SIZE
 VM stack size used at thread creation.
-default: 131072 (32-bit CPU) or 262144 (64-bit)
+default: 524288 (32-bit CPU) or 1048575 (64-bit)
 .Pp
 .It Ev RUBY_THREAD_MACHINE_STACK_SIZE
 Machine stack size used at thread creation.

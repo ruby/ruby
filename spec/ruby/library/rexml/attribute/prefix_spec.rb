@@ -1,18 +1,21 @@
 require_relative '../../../spec_helper'
-require 'rexml/document'
 
-describe "REXML::Attribute#prefix" do
-  it "returns the namespace of the Attribute" do
-    ans = REXML::Attribute.new("ns:someattr", "some_value")
-    out = REXML::Attribute.new("out:something", "some_other_value")
+ruby_version_is ''...'3.0' do
+  require 'rexml/document'
 
-    ans.prefix.should == "ns"
-    out.prefix.should == "out"
-  end
+  describe "REXML::Attribute#prefix" do
+    it "returns the namespace of the Attribute" do
+      ans = REXML::Attribute.new("ns:someattr", "some_value")
+      out = REXML::Attribute.new("out:something", "some_other_value")
 
-  it "returns an empty string for Attributes with no prefixes" do
-    attr = REXML::Attribute.new("foo", "bar")
+      ans.prefix.should == "ns"
+      out.prefix.should == "out"
+    end
 
-    attr.prefix.should == ""
+    it "returns an empty string for Attributes with no prefixes" do
+      attr = REXML::Attribute.new("foo", "bar")
+
+      attr.prefix.should == ""
+    end
   end
 end

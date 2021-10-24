@@ -260,6 +260,7 @@ class TestInteger < Test::Unit::TestCase
     assert_equal("a", "a".ord.chr)
     assert_raise(RangeError) { (-1).chr }
     assert_raise(RangeError) { 0x100.chr }
+    assert_raise_with_message(RangeError, "3000000000 out of char range") { 3_000_000_000.chr }
   end
 
   def test_upto
@@ -575,6 +576,8 @@ class TestInteger < Test::Unit::TestCase
     assert_equal([0, 9, 8, 7, 6, 5, 4, 3, 2, 1], 1234567890.digits)
     assert_equal([90, 78, 56, 34, 12], 1234567890.digits(100))
     assert_equal([10, 5, 6, 8, 0, 10, 8, 6, 1], 1234567890.digits(13))
+    assert_equal((2 ** 1024).to_s(7).chars.map(&:to_i).reverse, (2 ** 1024).digits(7))
+    assert_equal([0] * 100 + [1], (2 ** (128 * 100)).digits(2 ** 128))
   end
 
   def test_digits_for_negative_numbers
@@ -640,6 +643,9 @@ class TestInteger < Test::Unit::TestCase
       failures << n  unless root*root <= n && (root+1)*(root+1) > n
     end
     assert_empty(failures, bug13440)
+
+    x = 0xffff_ffff_ffff_ffff
+    assert_equal(x, Integer.sqrt(x ** 2), "[ruby-core:95453]")
   end
 
   def test_fdiv
@@ -655,5 +661,22 @@ class TestInteger < Test::Unit::TestCase
     def o.coerce(x); [self, x]; end
     def o.fdiv(x); 1; end
     assert_equal(1.0, 1.fdiv(o))
+  end
+
+  def test_try_convert
+    assert_equal(1, Integer.try_convert(1))
+    assert_equal(1, Integer.try_convert(1.0))
+    assert_nil Integer.try_convert("1")
+    o = Object.new
+    assert_nil Integer.try_convert(o)
+    def o.to_i; 1; end
+    assert_nil Integer.try_convert(o)
+    o = Object.new
+    def o.to_int; 1; end
+    assert_equal(1, Integer.try_convert(o))
+
+    o = Object.new
+    def o.to_int; Object.new; end
+    assert_raise_with_message(TypeError, /can't convert Object to Integer/) {Integer.try_convert(o)}
   end
 end

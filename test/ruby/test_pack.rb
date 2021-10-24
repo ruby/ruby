@@ -764,7 +764,7 @@ EXPECTED
 
     $VERBOSE = true
 
-    _, err = capture_io do
+    _, err = capture_output do
       assert_equal "\000", [0].pack("*U")
     end
 
@@ -783,7 +783,7 @@ EXPECTED
 
     $VERBOSE = true
 
-    _, err = capture_io do
+    _, err = capture_output do
       assert_equal [0], "\000".unpack("*U")
     end
 
@@ -868,21 +868,5 @@ EXPECTED
     assert_equal 0x3042, "\u{3042 3044 3046}".unpack1("U*")
     assert_equal "hogefuga", "aG9nZWZ1Z2E=".unpack1("m")
     assert_equal "01000001", "A".unpack1("B*")
-  end
-
-  def test_pack_infection
-    tainted_array_string = ["123456"]
-    tainted_array_string.first.taint
-    ['a', 'A', 'Z', 'B', 'b', 'H', 'h', 'u', 'M', 'm', 'P', 'p'].each do |f|
-      assert_predicate(tainted_array_string.pack(f), :tainted?)
-    end
-  end
-
-  def test_unpack_infection
-    tainted_string = "123456"
-    tainted_string.taint
-    ['a', 'A', 'Z', 'B', 'b', 'H', 'h', 'u', 'M', 'm'].each do |f|
-      assert_predicate(tainted_string.unpack(f).first, :tainted?)
-    end
   end
 end

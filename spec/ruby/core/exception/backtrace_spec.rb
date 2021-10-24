@@ -43,11 +43,11 @@ describe "Exception#backtrace" do
       # This regexp is deliberately imprecise to account for the need to abstract out
       # the paths of the included mspec files and the desire to avoid specifying in any
       # detail what the in `...' portion looks like.
-      line.should =~ /^[^ ]+\:\d+(:in `[^`]+')?$/
+      line.should =~ /^.+:\d+:in `[^`]+'$/
     end
   end
 
-  it "produces a backtrace for an exception captured using $!" do
+  it "captures the backtrace for an exception into $!" do
     exception = begin
       raise
     rescue RuntimeError
@@ -55,6 +55,16 @@ describe "Exception#backtrace" do
     end
 
     exception.backtrace.first.should =~ /backtrace_spec/
+  end
+
+  it "captures the backtrace for an exception into $@" do
+    backtrace = begin
+      raise
+    rescue RuntimeError
+      $@
+    end
+
+    backtrace.first.should =~ /backtrace_spec/
   end
 
   it "returns an Array that can be updated" do

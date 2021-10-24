@@ -80,7 +80,7 @@ module TracePointChecker
       call_stack.push method
       STATE[:count] += 1
 
-      verbose_out :psuh, method if verbose
+      verbose_out :push, method if verbose
     }
 
     TRACES << TracePoint.new(*return_events){|tp|

@@ -49,9 +49,13 @@ Unary <code>+</code> and unary <code>-</code> are for <code>+1</code>,
 <code>-1</code> or <code>-(a + b)</code>.
 
 Modifier-if, modifier-unless, etc. are for the modifier versions of those
-keywords.  For example, this is a modifier-unless expression:
+keywords.  For example, this is a modifier-unless statement:
 
   a += 1 unless a.zero?
+
+Note that <code>(a if b rescue c)</code> is parsed as <code>((a if b) rescue
+c)</code> due to reasons not related to precedence. See {modifier
+statements}[control_expressions_rdoc.html#label-Modifier+Statements].
 
 <code>{ ... }</code> blocks have priority below all listed operations, but
 <code>do ... end</code> blocks have lower priority.

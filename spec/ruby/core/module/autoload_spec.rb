@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative '../../fixtures/code_loading'
 require_relative 'fixtures/classes'
 require 'thread'
 
@@ -23,7 +24,7 @@ describe "Module#autoload?" do
       ModuleSpecs::Autoload::Child.autoload?(:InheritedAutoload, false).should be_nil
     end
 
-    it "returns the name of the file that will be loaded if recursion is disabled but the autoload is defined on the classs itself" do
+    it "returns the name of the file that will be loaded if recursion is disabled but the autoload is defined on the class itself" do
       ModuleSpecs::Autoload::Child.autoload :ChildAutoload, "child_autoload.rb"
       ModuleSpecs::Autoload::Child.autoload?(:ChildAutoload, false).should == "child_autoload.rb"
     end
@@ -33,14 +34,7 @@ end
 describe "Module#autoload" do
   before :all do
     @non_existent = fixture __FILE__, "no_autoload.rb"
-
-    # Require RubyGems eagerly, to ensure #require is already the RubyGems
-    # version, before starting #autoload specs which snapshot #require, and
-    # could end up redefining #require as the original core Kernel#require.
-    begin
-      require "rubygems"
-    rescue LoadError
-    end
+    CodeLoadingSpecs.preload_rubygems
   end
 
   before :each do
@@ -210,6 +204,13 @@ describe "Module#autoload" do
     ModuleSpecs::Autoload.use_ex1.should == :good
   end
 
+  it "considers an autoload constant as loaded when autoload is called for/from the current file" do
+    filename = fixture(__FILE__, "autoload_during_require_current_file.rb")
+    require filename
+
+    ScratchPad.recorded.should be_nil
+  end
+
   describe "interacting with defined?" do
     it "does not load the file when referring to the constant in defined?" do
       module ModuleSpecs::Autoload::Dog
@@ -293,6 +294,32 @@ describe "Module#autoload" do
       require @path
       ScratchPad.recorded.should == [nil, nil]
       @check.call.should == ["constant", nil]
+    end
+
+    it "does not raise an error if the autoload constant was not defined" do
+      module ModuleSpecs::Autoload
+        autoload :RequiredDirectlyNoConstant, fixture(__FILE__, "autoload_required_directly_no_constant.rb")
+      end
+      @path = fixture(__FILE__, "autoload_required_directly_no_constant.rb")
+      @remove << :RequiredDirectlyNoConstant
+      @check = -> {
+        [
+            defined?(ModuleSpecs::Autoload::RequiredDirectlyNoConstant),
+            ModuleSpecs::Autoload.constants(false).include?(:RequiredDirectlyNoConstant),
+            ModuleSpecs::Autoload.const_defined?(:RequiredDirectlyNoConstant),
+            ModuleSpecs::Autoload.autoload?(:RequiredDirectlyNoConstant)
+        ]
+      }
+      ScratchPad.record @check
+      @check.call.should == ["constant", true, true, @path]
+      $:.push File.dirname(@path)
+      begin
+        require "autoload_required_directly_no_constant.rb"
+      ensure
+        $:.pop
+      end
+      ScratchPad.recorded.should == [nil, true, false, nil]
+      @check.call.should == [nil, true, false, nil]
     end
   end
 
@@ -414,21 +441,42 @@ describe "Module#autoload" do
     ScratchPad.recorded.should == [:raise, :raise]
   end
 
-  it "does not remove the constant from Module#constants if the loaded file does not define it, but leaves it as 'undefined'" do
-    path = fixture(__FILE__, "autoload_o.rb")
-    ScratchPad.record []
-    ModuleSpecs::Autoload.autoload :O, path
+  ruby_version_is "3.1" do
+    it "removes the constant from Module#constants if the loaded file does not define it" do
+      path = fixture(__FILE__, "autoload_o.rb")
+      ScratchPad.record []
+      ModuleSpecs::Autoload.autoload :O, path
 
-    ModuleSpecs::Autoload.const_defined?(:O).should == true
-    ModuleSpecs::Autoload.should have_constant(:O)
-    ModuleSpecs::Autoload.autoload?(:O).should == path
+      ModuleSpecs::Autoload.const_defined?(:O).should == true
+      ModuleSpecs::Autoload.should have_constant(:O)
+      ModuleSpecs::Autoload.autoload?(:O).should == path
 
-    -> { ModuleSpecs::Autoload::O }.should raise_error(NameError)
+      -> { ModuleSpecs::Autoload::O }.should raise_error(NameError)
 
-    ModuleSpecs::Autoload.should have_constant(:O)
-    ModuleSpecs::Autoload.const_defined?(:O).should == false
-    ModuleSpecs::Autoload.autoload?(:O).should == nil
-    -> { ModuleSpecs::Autoload.const_get(:O) }.should raise_error(NameError)
+      ModuleSpecs::Autoload.const_defined?(:O).should == false
+      ModuleSpecs::Autoload.should_not have_constant(:O)
+      ModuleSpecs::Autoload.autoload?(:O).should == nil
+      -> { ModuleSpecs::Autoload.const_get(:O) }.should raise_error(NameError)
+    end
+  end
+
+  ruby_version_is ""..."3.1" do
+    it "does not remove the constant from Module#constants if the loaded file does not define it, but leaves it as 'undefined'" do
+      path = fixture(__FILE__, "autoload_o.rb")
+      ScratchPad.record []
+      ModuleSpecs::Autoload.autoload :O, path
+
+      ModuleSpecs::Autoload.const_defined?(:O).should == true
+      ModuleSpecs::Autoload.should have_constant(:O)
+      ModuleSpecs::Autoload.autoload?(:O).should == path
+
+      -> { ModuleSpecs::Autoload::O }.should raise_error(NameError)
+
+      ModuleSpecs::Autoload.const_defined?(:O).should == false
+      ModuleSpecs::Autoload.should have_constant(:O)
+      ModuleSpecs::Autoload.autoload?(:O).should == nil
+      -> { ModuleSpecs::Autoload.const_get(:O) }.should raise_error(NameError)
+    end
   end
 
   it "does not try to load the file again if the loaded file did not define the constant" do
@@ -527,31 +575,54 @@ describe "Module#autoload" do
         # Basically, the parent autoload constant remains in a "undefined" state
         self.autoload?(:DeclaredInParentDefinedInCurrent).should == nil
         const_defined?(:DeclaredInParentDefinedInCurrent).should == false
-        self.should have_constant(:DeclaredInParentDefinedInCurrent)
         -> { DeclaredInParentDefinedInCurrent }.should raise_error(NameError)
 
         ModuleSpecs::Autoload::LexicalScope.send(:remove_const, :DeclaredInParentDefinedInCurrent)
       end
     end
 
-    it "and fails when finding the undefined autoload constant in the current scope when declared in current and defined in parent" do
-      @remove << :DeclaredInCurrentDefinedInParent
-      module ModuleSpecs::Autoload
-        ScratchPad.record -> {
-          DeclaredInCurrentDefinedInParent = :declared_in_current_defined_in_parent
-        }
+    ruby_version_is "3.1" do
+      it "looks up in parent scope after failed autoload" do
+        @remove << :DeclaredInCurrentDefinedInParent
+        module ModuleSpecs::Autoload
+          ScratchPad.record -> {
+            DeclaredInCurrentDefinedInParent = :declared_in_current_defined_in_parent
+          }
 
-        class LexicalScope
-          autoload :DeclaredInCurrentDefinedInParent, fixture(__FILE__, "autoload_callback.rb")
-          -> { DeclaredInCurrentDefinedInParent }.should raise_error(NameError)
-          # Basically, the autoload constant remains in a "undefined" state
-          self.autoload?(:DeclaredInCurrentDefinedInParent).should == nil
-          const_defined?(:DeclaredInCurrentDefinedInParent).should == false
-          self.should have_constant(:DeclaredInCurrentDefinedInParent)
-          -> { const_get(:DeclaredInCurrentDefinedInParent) }.should raise_error(NameError)
+          class LexicalScope
+            autoload :DeclaredInCurrentDefinedInParent, fixture(__FILE__, "autoload_callback.rb")
+            -> { DeclaredInCurrentDefinedInParent }.should_not raise_error(NameError)
+            # Basically, the autoload constant remains in a "undefined" state
+            self.autoload?(:DeclaredInCurrentDefinedInParent).should == nil
+            const_defined?(:DeclaredInCurrentDefinedInParent).should == false
+            -> { const_get(:DeclaredInCurrentDefinedInParent) }.should raise_error(NameError)
+          end
+
+          DeclaredInCurrentDefinedInParent.should == :declared_in_current_defined_in_parent
         end
+      end
+    end
 
-        DeclaredInCurrentDefinedInParent.should == :declared_in_current_defined_in_parent
+    ruby_version_is ""..."3.1" do
+      it "and fails when finding the undefined autoload constant in the current scope when declared in current and defined in parent" do
+        @remove << :DeclaredInCurrentDefinedInParent
+        module ModuleSpecs::Autoload
+          ScratchPad.record -> {
+            DeclaredInCurrentDefinedInParent = :declared_in_current_defined_in_parent
+          }
+
+          class LexicalScope
+            autoload :DeclaredInCurrentDefinedInParent, fixture(__FILE__, "autoload_callback.rb")
+            -> { DeclaredInCurrentDefinedInParent }.should raise_error(NameError)
+            # Basically, the autoload constant remains in a "undefined" state
+            self.autoload?(:DeclaredInCurrentDefinedInParent).should == nil
+            const_defined?(:DeclaredInCurrentDefinedInParent).should == false
+            self.should have_constant(:DeclaredInCurrentDefinedInParent)
+            -> { const_get(:DeclaredInCurrentDefinedInParent) }.should raise_error(NameError)
+          end
+
+          DeclaredInCurrentDefinedInParent.should == :declared_in_current_defined_in_parent
+        end
       end
     end
 
@@ -652,6 +723,27 @@ describe "Module#autoload" do
     ModuleSpecs::Autoload::AutoloadDuringRequire.should be_kind_of(Class)
   end
 
+  it "does not call #require a second time and does not warn if feature sets and trigger autoload on itself" do
+    main = TOPLEVEL_BINDING.eval("self")
+    main.should_not_receive(:require)
+
+    -> {
+      Kernel.require fixture(__FILE__, "autoload_self_during_require.rb")
+    }.should_not complain(verbose: true)
+    ModuleSpecs::Autoload::AutoloadSelfDuringRequire.should be_kind_of(Class)
+  end
+
+  it "handles multiple autoloads in the same file" do
+    $LOAD_PATH.unshift(File.expand_path('../fixtures/multi', __FILE__))
+    begin
+      require 'foo/bar_baz'
+      ModuleSpecs::Autoload::Foo::Bar.should be_kind_of(Class)
+      ModuleSpecs::Autoload::Foo::Baz.should be_kind_of(Class)
+    ensure
+      $LOAD_PATH.shift
+    end
+  end
+
   it "calls #to_path on non-string filenames" do
     p = mock('path')
     p.should_receive(:to_path).and_return @non_existent
@@ -716,9 +808,9 @@ describe "Module#autoload" do
   end
 
   describe "on a frozen module" do
-    it "raises a #{frozen_error_class} before setting the name" do
+    it "raises a FrozenError before setting the name" do
       frozen_module = Module.new.freeze
-      -> { frozen_module.autoload :Foo, @non_existent }.should raise_error(frozen_error_class)
+      -> { frozen_module.autoload :Foo, @non_existent }.should raise_error(FrozenError)
       frozen_module.should_not have_constant(:Foo)
     end
   end

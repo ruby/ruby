@@ -7,16 +7,22 @@ class RDoc::Markup::AttrSpan
   ##
   # Creates a new AttrSpan for +length+ characters
 
-  def initialize(length)
+  def initialize(length, exclusive)
     @attrs = Array.new(length, 0)
+    @exclusive = exclusive
   end
 
   ##
   # Toggles +bits+ from +start+ to +length+
   def set_attrs(start, length, bits)
+    updated = false
     for i in start ... (start+length)
-      @attrs[i] |= bits
+      if (@exclusive & @attrs[i]) == 0 || (@exclusive & bits) != 0
+        @attrs[i] |= bits
+        updated = true
+      end
     end
+    updated
   end
 
   ##

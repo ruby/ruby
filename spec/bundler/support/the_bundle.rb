@@ -1,11 +1,9 @@
 # frozen_string_literal: true
 
-require "support/helpers"
-require "support/path"
+require_relative "path"
 
 module Spec
   class TheBundle
-    include Spec::Helpers
     include Spec::Path
 
     attr_accessor :bundle_dir

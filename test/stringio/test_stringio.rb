@@ -180,17 +180,6 @@ class TestStringIO < Test::Unit::TestCase
     f.close unless f.closed?
   end
 
-  def test_write_infection
-    bug9769 = '[ruby-dev:48118] [Bug #9769]'
-    s = "".untaint
-    f = StringIO.new(s, "w")
-    f.print("bar".taint)
-    f.close
-    assert_predicate(s, :tainted?, bug9769)
-  ensure
-    f.close unless f.closed?
-  end
-
   def test_write_encoding
     s = "".force_encoding(Encoding::UTF_8)
     f = StringIO.new(s)
@@ -198,10 +187,43 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(Encoding::UTF_8, s.encoding, "honor the original encoding over ASCII-8BIT")
   end
 
+  def test_write_encoding_conversion
+    convertible = "\u{3042}"
+    inconvertible = "\u{1f363}"
+    conversion_encoding = Encoding::Windows_31J
+
+    s = StringIO.new.set_encoding(conversion_encoding)
+    s.write(convertible)
+    assert_equal(conversion_encoding, s.string.encoding)
+
+    s = StringIO.new.set_encoding(Encoding::UTF_8)
+    s.write("foo".force_encoding("ISO-8859-1"), convertible)
+    assert_equal(Encoding::UTF_8, s.string.encoding)
+
+    s = StringIO.new.set_encoding(Encoding::US_ASCII)
+    s.write("foo".force_encoding("US-ASCII"), convertible)
+    assert_equal(Encoding::UTF_8, s.string.encoding)
+
+    all_assertions do |a|
+      [
+        inconvertible,
+        convertible + inconvertible,
+        [convertible, inconvertible],
+        ["a", inconvertible],
+      ].each do |data|
+        a.for(data.inspect) do
+          s = StringIO.new.set_encoding(conversion_encoding)
+          assert_raise(Encoding::CompatibilityError) do
+            s.write(*data)
+          end
+        end
+      end
+    end
+  end
+
   def test_write_integer_overflow
-    long_max = (1 << (RbConfig::SIZEOF["long"] * 8 - 1)) - 1
     f = StringIO.new
-    f.pos = long_max
+    f.pos = RbConfig::LIMITS["LONG_MAX"]
     assert_raise(ArgumentError) {
       f.write("pos + len overflows")
     }
@@ -424,6 +446,15 @@ class TestStringIO < Test::Unit::TestCase
     f.close unless f.closed?
   end
 
+  def test_each_byte_closed
+    f = StringIO.new("1234")
+    assert_equal("1".ord, f.each_byte {|c| f.close; break c })
+    f = StringIO.new("1234")
+    assert_raise(IOError) do
+      f.each_byte { f.close }
+    end
+  end
+
   def test_getbyte
     f = StringIO.new("1234")
     assert_equal("1".ord, f.getbyte)
@@ -498,9 +529,37 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(%w(1 2 3 4), f.each_char.to_a)
   end
 
+  def test_each_char_closed
+    f = StringIO.new("1234")
+    assert_equal("1", f.each_char {|c| f.close; break c })
+    f = StringIO.new("1234")
+    assert_raise(IOError) do
+      f.each_char { f.close }
+    end
+  end
+
   def test_each_codepoint
     f = StringIO.new("1234")
     assert_equal([49, 50, 51, 52], f.each_codepoint.to_a)
+  end
+
+  def test_each_codepoint_closed
+    f = StringIO.new("1234")
+    assert_equal("1".ord, f.each_codepoint {|c| f.close; break c })
+    f = StringIO.new("1234")
+    assert_raise(IOError) do
+      f.each_codepoint { f.close }
+    end
+  end
+
+  def test_each_codepoint_enumerator
+    io = StringIO.new('你好построить')
+
+    chinese_part = io.each_codepoint.take(2).pack('U*')
+    russian_part = io.read(40).force_encoding('UTF-8')
+
+    assert_equal("你好", chinese_part)
+    assert_equal("построить", russian_part)
   end
 
   def test_gets2
@@ -766,8 +825,8 @@ class TestStringIO < Test::Unit::TestCase
   end
 
   def test_overflow
-    skip if RbConfig::SIZEOF["void*"] > RbConfig::SIZEOF["long"]
-    limit = (1 << (RbConfig::SIZEOF["void*"]*8-1)) - 0x10
+    omit if RbConfig::SIZEOF["void*"] > RbConfig::SIZEOF["long"]
+    limit = RbConfig::LIMITS["INTPTR_MAX"] - 0x10
     assert_separately(%w[-rstringio], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
       limit = #{limit}
@@ -776,7 +835,7 @@ class TestStringIO < Test::Unit::TestCase
         x = "a"*0x100000
         break if [x].pack("p").unpack("i!")[0] < 0
         ary << x
-        skip if ary.size > 100
+        omit if ary.size > 100
       end
       s = StringIO.new(x)
       s.gets("xxx", limit)
@@ -807,6 +866,18 @@ class TestStringIO < Test::Unit::TestCase
         assert_equal(Encoding.find(name), f.set_encoding_by_bom)
       }
     end
+  end
+
+  def test_binary_encoding_read_and_default_internal
+    verbose, $VERBOSE = $VERBOSE, nil
+    default_internal = Encoding.default_internal
+    Encoding.default_internal = Encoding::UTF_8
+    $VERBOSE = verbose
+    assert_equal Encoding::BINARY, StringIO.new("Hello".b).read.encoding
+  ensure
+    $VERBOSE = nil
+    Encoding.default_internal = default_internal
+    $VERBOSE = verbose
   end
 
   def assert_string(content, encoding, str, mesg = nil)

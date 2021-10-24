@@ -3,6 +3,17 @@ require 'test/unit'
 require 'timeout'
 
 class TestTimeout < Test::Unit::TestCase
+
+  def test_non_timing_out_code_is_successful
+    assert_nothing_raised do
+      assert_equal :ok, Timeout.timeout(1){ :ok }
+    end
+  end
+
+  def test_yield_param
+    assert_equal [5, :ok], Timeout.timeout(5){|s| [s, :ok] }
+  end
+
   def test_queue
     q = Thread::Queue.new
     assert_raise(Timeout::Error, "[ruby-dev:32935]") {
@@ -77,6 +88,14 @@ class TestTimeout < Test::Unit::TestCase
       Timeout.timeout(10, Timeout::Error) do
         raise Timeout::Error, "boon"
       end
+    end
+  end
+
+  def test_raise_with_message
+    bug17812 = '[ruby-core:103502] [Bug #17812]: Timeout::Error doesn\'t let two-argument raise() set a new message'
+    exc = Timeout::Error.new('foo')
+    assert_raise_with_message(Timeout::Error, 'bar', bug17812) do
+      raise exc, 'bar'
     end
   end
 

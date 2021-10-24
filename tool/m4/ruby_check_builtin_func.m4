@@ -1,4 +1,4 @@
-# -*- Autoconf -*-
+dnl -*- Autoconf -*-
 AC_DEFUN([RUBY_CHECK_BUILTIN_FUNC], [dnl
 AC_CACHE_CHECK([for $1], AS_TR_SH(rb_cv_builtin_$1),
   [AC_LINK_IFELSE(

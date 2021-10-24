@@ -1,6 +1,6 @@
 # coding: utf-8
 
-bigdecimal_version = '1.4.2'
+bigdecimal_version = '3.1.0.dev'
 
 Gem::Specification.new do |s|
   s.name          = "bigdecimal"
@@ -11,19 +11,20 @@ Gem::Specification.new do |s|
   s.summary       = "Arbitrary-precision decimal floating-point number library."
   s.description   = "This library provides arbitrary-precision decimal floating-point number class."
   s.homepage      = "https://github.com/ruby/bigdecimal"
-  s.license       = "ruby"
+  s.license       = "Ruby"
 
   s.require_paths = %w[lib]
-  s.extensions    = %w[ext/bigdecimal/extconf.rb ext/bigdecimal/util/extconf.rb]
+  s.extensions    = %w[ext/bigdecimal/extconf.rb]
   s.files         = %w[
     bigdecimal.gemspec
     ext/bigdecimal/bigdecimal.c
-    ext/bigdecimal/bigdecimal.def
     ext/bigdecimal/bigdecimal.h
-    ext/bigdecimal/depend
-    ext/bigdecimal/extconf.rb
-    ext/bigdecimal/util/extconf.rb
-    ext/bigdecimal/util/util.c
+    ext/bigdecimal/bits.h
+    ext/bigdecimal/feature.h
+    ext/bigdecimal/missing.c
+    ext/bigdecimal/missing.h
+    ext/bigdecimal/missing/dtoa.c
+    ext/bigdecimal/static_assert.h
     lib/bigdecimal.rb
     lib/bigdecimal/jacobian.rb
     lib/bigdecimal/ludcmp.rb
@@ -35,11 +36,5 @@ Gem::Specification.new do |s|
     sample/pi.rb
   ]
 
-  s.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
-
-  s.add_development_dependency "rake", "~> 10.0"
-  s.add_development_dependency "rake-compiler", ">= 0.9"
-  s.add_development_dependency "rake-compiler-dock", ">= 0.6.1"
-  s.add_development_dependency "minitest", "< 5.0.0"
-  s.add_development_dependency "pry"
+  s.required_ruby_version = Gem::Requirement.new(">= 2.5.0")
 end

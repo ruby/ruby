@@ -1,29 +1,32 @@
-require 'rexml/document'
 require_relative '../../../spec_helper'
 
-describe "REXML::Element#clone" do
-  before :each do
-    @e = REXML::Element.new "a"
-  end
-  it "creates a copy of element" do
-    @e.clone.to_s.should == @e.to_s
-  end
+ruby_version_is ''...'3.0' do
+  require 'rexml/document'
 
-  it "copies the attributes" do
-    @e.add_attribute("foo", "bar")
-    @e.clone.to_s.should == @e.to_s
-  end
+  describe "REXML::Element#clone" do
+    before :each do
+      @e = REXML::Element.new "a"
+    end
+    it "creates a copy of element" do
+      @e.clone.to_s.should == @e.to_s
+    end
 
-  it "does not copy the text" do
-    @e.add_text "some text..."
-    @e.clone.to_s.should_not == @e
-    @e.clone.to_s.should == "<a/>"
-  end
+    it "copies the attributes" do
+      @e.add_attribute("foo", "bar")
+      @e.clone.to_s.should == @e.to_s
+    end
 
-  it "does not copy the child elements" do
-    b = REXML::Element.new "b"
-    @e << b
-    @e.clone.should_not == @e
-    @e.clone.to_s.should == "<a/>"
+    it "does not copy the text" do
+      @e.add_text "some text..."
+      @e.clone.to_s.should_not == @e
+      @e.clone.to_s.should == "<a/>"
+    end
+
+    it "does not copy the child elements" do
+      b = REXML::Element.new "b"
+      @e << b
+      @e.clone.should_not == @e
+      @e.clone.to_s.should == "<a/>"
+    end
   end
 end

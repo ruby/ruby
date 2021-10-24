@@ -46,13 +46,6 @@ platform_is_not :windows do
         gr.name.should == @name
       end
 
-      it "returns the Group for a given gid if it exists" do
-        grp = Etc.getgrgid(@gid)
-        grp.should be_kind_of(Struct::Group)
-        grp.gid.should == @gid
-        grp.name.should == @name
-      end
-
       it "raises if the group does not exist" do
         -> { Etc.getgrgid(9876)}.should raise_error(ArgumentError)
       end

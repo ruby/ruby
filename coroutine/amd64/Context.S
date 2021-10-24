@@ -2,7 +2,7 @@
 ##  This file is part of the "Coroutine" project and released under the MIT License.
 ##
 ##  Created by Samuel Williams on 10/5/2018.
-##  Copyright, 2018, by Samuel Williams. All rights reserved.
+##  Copyright, 2018, by Samuel Williams.
 ##
 
 #define TOKEN_PASTE(x,y) x##y
@@ -41,6 +41,6 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 	# We pop the return address and jump to it
 	ret
 
-#if defined(__linux__) && defined(__ELF__)
+#if (defined(__linux__) || defined(__FreeBSD__)) && defined(__ELF__)
 .section .note.GNU-stack,"",%progbits
 #endif

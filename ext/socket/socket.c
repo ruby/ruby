@@ -168,93 +168,47 @@ pair_yield(VALUE pair)
 #endif
 
 #if defined HAVE_SOCKETPAIR
-
+static int
+rsock_socketpair0(int domain, int type, int protocol, int descriptors[2])
+{
 #ifdef SOCK_CLOEXEC
-static int
-rsock_socketpair0(int domain, int type, int protocol, int sv[2])
-{
-    int ret;
-    static int cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
-    static const int default_flags = SOCK_CLOEXEC|RSOCK_NONBLOCK_DEFAULT;
+    type |= SOCK_CLOEXEC;
+#endif
 
-    if (cloexec_state > 0) { /* common path, if SOCK_CLOEXEC is defined */
-        ret = socketpair(domain, type|default_flags, protocol, sv);
-        if (ret == 0 && (sv[0] <= 2 || sv[1] <= 2)) {
-            goto fix_cloexec; /* highly unlikely */
-        }
-        goto update_max_fd;
-    }
-    else if (cloexec_state < 0) { /* usually runs once only for detection */
-        ret = socketpair(domain, type|default_flags, protocol, sv);
-        if (ret == 0) {
-            cloexec_state = rsock_detect_cloexec(sv[0]);
-            if ((cloexec_state == 0) || (sv[0] <= 2 || sv[1] <= 2))
-                goto fix_cloexec;
-            goto update_max_fd;
-        }
-        else if (ret == -1 && errno == EINVAL) {
-            /* SOCK_CLOEXEC is available since Linux 2.6.27.  Linux 2.6.18 fails with EINVAL */
-            ret = socketpair(domain, type, protocol, sv);
-            if (ret != -1) {
-                /* The reason of EINVAL may be other than SOCK_CLOEXEC.
-                 * So disable SOCK_CLOEXEC only if socketpair() succeeds without SOCK_CLOEXEC.
-                 * Ex. Socket.pair(:UNIX, 0xff) fails with EINVAL.
-                 */
-                cloexec_state = 0;
-            }
-        }
-    }
-    else { /* cloexec_state == 0 */
-        ret = socketpair(domain, type, protocol, sv);
-    }
-    if (ret == -1) {
+#ifdef SOCK_NONBLOCK
+    type |= SOCK_NONBLOCK;
+#endif
+
+    int result = socketpair(domain, type, protocol, descriptors);
+
+    if (result == -1)
         return -1;
-    }
 
-fix_cloexec:
-    rb_maygvl_fd_fix_cloexec(sv[0]);
-    rb_maygvl_fd_fix_cloexec(sv[1]);
-    if (RSOCK_NONBLOCK_DEFAULT) {
-        rsock_make_fd_nonblock(sv[0]);
-        rsock_make_fd_nonblock(sv[1]);
-    }
+#ifndef SOCK_CLOEXEC
+    rb_fd_fix_cloexec(descriptors[0]);
+    rb_fd_fix_cloexec(descriptors[1]);
+#endif
 
-update_max_fd:
-    rb_update_max_fd(sv[0]);
-    rb_update_max_fd(sv[1]);
+#ifndef SOCK_NONBLOCK
+    rsock_make_fd_nonblock(descriptors[0]);
+    rsock_make_fd_nonblock(descriptors[1]);
+#endif
 
-    return ret;
+    return result;
 }
-#else /* !SOCK_CLOEXEC */
-static int
-rsock_socketpair0(int domain, int type, int protocol, int sv[2])
-{
-    int ret = socketpair(domain, type, protocol, sv);
-
-    if (ret == -1)
-	return -1;
-
-    rb_fd_fix_cloexec(sv[0]);
-    rb_fd_fix_cloexec(sv[1]);
-    if (RSOCK_NONBLOCK_DEFAULT) {
-        rsock_make_fd_nonblock(sv[0]);
-        rsock_make_fd_nonblock(sv[1]);
-    }
-    return ret;
-}
-#endif /* !SOCK_CLOEXEC */
 
 static int
-rsock_socketpair(int domain, int type, int protocol, int sv[2])
+rsock_socketpair(int domain, int type, int protocol, int descriptors[2])
 {
-    int ret;
+    int result;
 
-    ret = rsock_socketpair0(domain, type, protocol, sv);
-    if (ret < 0 && rb_gc_for_fd(errno)) {
-        ret = rsock_socketpair0(domain, type, protocol, sv);
+    result = rsock_socketpair0(domain, type, protocol, descriptors);
+
+    if (result < 0 && rb_gc_for_fd(errno)) {
+        result = rsock_socketpair0(domain, type, protocol, descriptors);
     }
 
-    return ret;
+    return result;
 }
 
 /*
@@ -376,7 +330,7 @@ rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
  * * Errno::EOPNOTSUPP - the calling +socket+ is listening and cannot be connected
  * * Errno::EPROTOTYPE - the _sockaddr_ has a different type than the socket
  *   bound to the specified peer address
- * * Errno::ETIMEDOUT - the attempt to connect time out before a connection
+ * * Errno::ETIMEDOUT - the attempt to connect timed out before a connection
  *   was made.
  *
  * On unix-based systems if the address family of the calling +socket+ is
@@ -417,7 +371,7 @@ rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
  * * Errno::EHOSTUNREACH - no route to the network is present
  * * Errno::ENOBUFS - no buffer space is available
  * * Errno::ENOTSOCK - the +socket+ argument does not refer to a socket
- * * Errno::ETIMEDOUT - the attempt to connect time out before a connection
+ * * Errno::ETIMEDOUT - the attempt to connect timed out before a connection
  *   was made.
  * * Errno::EWOULDBLOCK - the socket is marked as nonblocking and the
  *   connection cannot be completed immediately
@@ -439,7 +393,7 @@ sock_connect(VALUE sock, VALUE addr)
     addr = rb_str_new4(addr);
     GetOpenFile(sock, fptr);
     fd = fptr->fd;
-    n = rsock_connect(fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr), 0);
+    n = rsock_connect(fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr), 0, NULL);
     if (n < 0) {
 	rsock_sys_fail_raddrinfo_or_sockaddr("connect(2)", addr, rai);
     }
@@ -796,17 +750,14 @@ sock_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str, VALUE ex)
  *
  */
 static VALUE
-sock_accept(VALUE sock)
+sock_accept(VALUE server)
 {
-    rb_io_t *fptr;
-    VALUE sock2;
-    union_sockaddr buf;
-    socklen_t len = (socklen_t)sizeof buf;
+    union_sockaddr buffer;
+    socklen_t length = (socklen_t)sizeof(buffer);
 
-    GetOpenFile(sock, fptr);
-    sock2 = rsock_s_accept(rb_cSocket,fptr->fd,&buf.addr,&len);
+    VALUE peer = rsock_s_accept(rb_cSocket, server, &buffer.addr, &length);
 
-    return rb_assoc_new(sock2, rsock_io_socket_addrinfo(sock2, &buf.addr, len));
+    return rb_assoc_new(peer, rsock_io_socket_addrinfo(peer, &buffer.addr, length));
 }
 
 /* :nodoc: */
@@ -866,17 +817,14 @@ sock_accept_nonblock(VALUE sock, VALUE ex)
  * * Socket#accept
  */
 static VALUE
-sock_sysaccept(VALUE sock)
+sock_sysaccept(VALUE server)
 {
-    rb_io_t *fptr;
-    VALUE sock2;
-    union_sockaddr buf;
-    socklen_t len = (socklen_t)sizeof buf;
+    union_sockaddr buffer;
+    socklen_t length = (socklen_t)sizeof(buffer);
 
-    GetOpenFile(sock, fptr);
-    sock2 = rsock_s_accept(0,fptr->fd,&buf.addr,&len);
+    VALUE peer = rsock_s_accept(0, server, &buffer.addr, &length);
 
-    return rb_assoc_new(sock2, rsock_io_socket_addrinfo(sock2, &buf.addr, len));
+    return rb_assoc_new(peer, rsock_io_socket_addrinfo(peer, &buffer.addr, length));
 }
 
 #ifdef HAVE_GETHOSTNAME
@@ -1011,6 +959,7 @@ sock_sockaddr(struct sockaddr *addr, socklen_t len)
 static VALUE
 sock_s_gethostbyname(VALUE obj, VALUE host)
 {
+    rb_warn("Socket.gethostbyname is deprecated; use Addrinfo.getaddrinfo instead.");
     struct rb_addrinfo *res =
 	rsock_addrinfo(host, Qnil, AF_UNSPEC, SOCK_STREAM, AI_CANONNAME);
     return rsock_make_hostent(host, res, sock_sockaddr);
@@ -1042,13 +991,15 @@ sock_s_gethostbyname(VALUE obj, VALUE host)
  *
  */
 static VALUE
-sock_s_gethostbyaddr(int argc, VALUE *argv)
+sock_s_gethostbyaddr(int argc, VALUE *argv, VALUE _)
 {
     VALUE addr, family;
     struct hostent *h;
     char **pch;
     VALUE ary, names;
     int t = AF_INET;
+
+    rb_warn("Socket.gethostbyaddr is deprecated; use Addrinfo#getnameinfo instead.");
 
     rb_scan_args(argc, argv, "11", &addr, &family);
     StringValue(addr);
@@ -1104,7 +1055,7 @@ sock_s_gethostbyaddr(int argc, VALUE *argv)
  *   Socket.getservbyname("syslog", "udp") #=> 514
  */
 static VALUE
-sock_s_getservbyname(int argc, VALUE *argv)
+sock_s_getservbyname(int argc, VALUE *argv, VALUE _)
 {
     VALUE service, proto;
     struct servent *sp;
@@ -1145,7 +1096,7 @@ sock_s_getservbyname(int argc, VALUE *argv)
  *
  */
 static VALUE
-sock_s_getservbyport(int argc, VALUE *argv)
+sock_s_getservbyport(int argc, VALUE *argv, VALUE _)
 {
     VALUE port, proto;
     struct servent *sp;
@@ -1164,7 +1115,7 @@ sock_s_getservbyport(int argc, VALUE *argv)
     if (!sp) {
 	rb_raise(rb_eSocket, "no such service for port %d/%s", (int)portnum, protoname);
     }
-    return rb_tainted_str_new2(sp->s_name);
+    return rb_str_new2(sp->s_name);
 }
 
 /*
@@ -1197,13 +1148,13 @@ sock_s_getservbyport(int argc, VALUE *argv)
  * be one of below.  If _reverse_lookup_ is omitted, the default value is +nil+.
  *
  *   +true+, +:hostname+:  hostname is obtained from numeric address using reverse lookup, which may take a time.
- *   +false+, +:numeric+:  hostname is same as numeric address.
+ *   +false+, +:numeric+:  hostname is the same as numeric address.
  *   +nil+:              obey to the current +do_not_reverse_lookup+ flag.
  *
  * If Addrinfo object is preferred, use Addrinfo.getaddrinfo.
  */
 static VALUE
-sock_s_getaddrinfo(int argc, VALUE *argv)
+sock_s_getaddrinfo(int argc, VALUE *argv, VALUE _)
 {
     VALUE host, port, family, socktype, protocol, flags, ret, revlookup;
     struct addrinfo hints;
@@ -1227,6 +1178,7 @@ sock_s_getaddrinfo(int argc, VALUE *argv)
     if (NIL_P(revlookup) || !rsock_revlookup_flag(revlookup, &norevlookup)) {
 	norevlookup = rsock_do_not_reverse_lookup;
     }
+
     res = rsock_getaddrinfo(host, port, &hints, 0);
 
     ret = make_addrinfo(res, norevlookup);
@@ -1257,10 +1209,9 @@ sock_s_getaddrinfo(int argc, VALUE *argv)
  * If Addrinfo object is preferred, use Addrinfo#getnameinfo.
  */
 static VALUE
-sock_s_getnameinfo(int argc, VALUE *argv)
+sock_s_getnameinfo(int argc, VALUE *argv, VALUE _)
 {
     VALUE sa, af = Qnil, host = Qnil, port = Qnil, flags, tmp;
-    char *hptr, *pptr;
     char hbuf[1024], pbuf[1024];
     int fl;
     struct rb_addrinfo *res = NULL;
@@ -1321,34 +1272,10 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 	    rb_raise(rb_eArgError, "array size should be 3 or 4, %ld given",
 		     RARRAY_LEN(sa));
 	}
-	/* host */
-	if (NIL_P(host)) {
-	    hptr = NULL;
-	}
-	else {
-	    strncpy(hbuf, StringValueCStr(host), sizeof(hbuf));
-	    hbuf[sizeof(hbuf) - 1] = '\0';
-	    hptr = hbuf;
-	}
-	/* port */
-	if (NIL_P(port)) {
-	    strcpy(pbuf, "0");
-	    pptr = NULL;
-	}
-	else if (FIXNUM_P(port)) {
-	    snprintf(pbuf, sizeof(pbuf), "%ld", NUM2LONG(port));
-	    pptr = pbuf;
-	}
-	else {
-	    strncpy(pbuf, StringValueCStr(port), sizeof(pbuf));
-	    pbuf[sizeof(pbuf) - 1] = '\0';
-	    pptr = pbuf;
-	}
 	hints.ai_socktype = (fl & NI_DGRAM) ? SOCK_DGRAM : SOCK_STREAM;
 	/* af */
         hints.ai_family = NIL_P(af) ? PF_UNSPEC : rsock_family_arg(af);
-	error = rb_getaddrinfo(hptr, pptr, &hints, &res);
-	if (error) goto error_exit_addr;
+	res = rsock_getaddrinfo(host, port, &hints, 0);
 	sap = res->ai->ai_addr;
         salen = res->ai->ai_addrlen;
     }
@@ -1377,12 +1304,6 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 	rb_freeaddrinfo(res);
     }
     return rb_assoc_new(rb_str_new2(hbuf), rb_str_new2(pbuf));
-
-  error_exit_addr:
-    saved_errno = errno;
-    if (res) rb_freeaddrinfo(res);
-    errno = saved_errno;
-    rsock_raise_socket_error("getaddrinfo", error);
 
   error_exit_name:
     saved_errno = errno;
@@ -1414,8 +1335,6 @@ sock_s_pack_sockaddr_in(VALUE self, VALUE port, VALUE host)
     VALUE addr = rb_str_new((char*)res->ai->ai_addr, res->ai->ai_addrlen);
 
     rb_freeaddrinfo(res);
-    OBJ_INFECT(addr, port);
-    OBJ_INFECT(addr, host);
 
     return addr;
 }
@@ -1457,7 +1376,6 @@ sock_s_unpack_sockaddr_in(VALUE self, VALUE addr)
 #endif
     }
     host = rsock_make_ipaddr((struct sockaddr*)sockaddr, RSTRING_SOCKLEN(addr));
-    OBJ_INFECT(host, addr);
     return rb_assoc_new(INT2NUM(ntohs(sockaddr->sin_port)), host);
 }
 
@@ -1487,7 +1405,6 @@ sock_s_pack_sockaddr_un(VALUE self, VALUE path)
     }
     memcpy(sockaddr.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));
     addr = rb_str_new((char*)&sockaddr, rsock_unix_sockaddr_len(path));
-    OBJ_INFECT(addr, path);
 
     return addr;
 }
@@ -1524,7 +1441,6 @@ sock_s_unpack_sockaddr_un(VALUE self, VALUE addr)
 		 RSTRING_LEN(addr), (int)sizeof(struct sockaddr_un));
     }
     path = rsock_unixpath_str(sockaddr, RSTRING_SOCKLEN(addr));
-    OBJ_INFECT(path, addr);
     return path;
 }
 #endif
@@ -1941,6 +1857,8 @@ socket_s_ip_address_list(VALUE self)
 void
 Init_socket(void)
 {
+    rb_ext_ractor_safe(true);
+
     rsock_init_basicsocket();
 
     /*

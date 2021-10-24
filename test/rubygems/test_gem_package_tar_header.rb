@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/package/tar_test_case'
+require_relative 'package/tar_test_case'
 require 'rubygems/package'
 
 class TestGemPackageTarHeader < Gem::Package::TarTestCase
-
   def setup
     super
 
@@ -58,19 +57,19 @@ class TestGemPackageTarHeader < Gem::Package::TarTestCase
   end
 
   def test_initialize_bad
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       Gem::Package::TarHeader.new :name => '', :size => '', :mode => ''
     end
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       Gem::Package::TarHeader.new :name => '', :size => '', :prefix => ''
     end
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       Gem::Package::TarHeader.new :name => '', :prefix => '', :mode => ''
     end
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       Gem::Package::TarHeader.new :prefix => '', :size => '', :mode => ''
     end
   end
@@ -157,7 +156,7 @@ group\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000
       # overwrite the size field
       header_s[124, 12] = val
       io = TempIO.new header_s
-      assert_raises ArgumentError do
+      assert_raise ArgumentError do
         Gem::Package::TarHeader.from io
       end
       io.close!
@@ -205,4 +204,22 @@ tjmather\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
     assert_equal 6932, tar_header.checksum
   end
 
+  def test_spaces_in_headers
+    stream = StringIO.new(
+      <<-EOF.dup.force_encoding('binary').split("\n").join
+Access_Points_09202018.csv
+\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
+\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
+\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
+\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
+\x00\x00100777 \x00     0 \x00     0 \x00       4357 13545040367  104501
+\x000
+      EOF
+    )
+
+    tar_header = Gem::Package::TarHeader.from stream
+
+    assert_equal 0, tar_header.uid
+    assert_equal 0, tar_header.gid
+  end
 end

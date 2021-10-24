@@ -69,8 +69,8 @@ class TestRDocTask < RDoc::TestCase
       rd.options << "--all"
     end
 
-    assert rdoc_task.title, "Test Tasks Option Parser"
-    assert rdoc_task.main, "README.md"
+    assert_equal "Test Tasks Option Parser", rdoc_task.title
+    assert_equal "README.md", rdoc_task.main
     assert rdoc_task.rdoc_files.include?("README.md")
     assert rdoc_task.options.include?("--all")
 

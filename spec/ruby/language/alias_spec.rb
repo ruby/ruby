@@ -218,7 +218,7 @@ describe "The alias keyword" do
     subclass.new.test("testing").should == 4
   end
 
-  it "is not allowed against Fixnum or String instances" do
+  it "is not allowed against Integer or String instances" do
     -> do
       1.instance_eval do
         alias :foo :to_s
@@ -254,5 +254,10 @@ describe "The alias keyword" do
   it "can override an existing global variable and make them synonyms" do
     code = '$a = 1; $b = 2; alias $b $a; p [$a, $b]; $b = 3; p [$a, $b]'
     ruby_exe(code).should == "[1, 1]\n[3, 3]\n"
+  end
+
+  it "supports aliasing twice the same global variables" do
+    code = '$a = 1; alias $b $a; alias $b $a; p [$a, $b]'
+    ruby_exe(code).should == "[1, 1]\n"
   end
 end

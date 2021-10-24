@@ -1,8 +1,14 @@
 # frozen_string_literal: true
 
 class CSV
+  # Note: Don't use this class directly. This is an internal class.
   class FieldsConverter
     include Enumerable
+    #
+    # A CSV::FieldsConverter is a data structure for storing the
+    # fields converter properties to be passed as a parameter
+    # when parsing a new file (e.g. CSV::Parser.new(@io, parser_options))
+    #
 
     def initialize(options={})
       @converters = []
@@ -10,7 +16,7 @@ class CSV
       @empty_value = options[:empty_value]
       @empty_value_is_empty_string = (@empty_value == "")
       @accept_nil = options[:accept_nil]
-      @builtin_converters = options[:builtin_converters]
+      @builtin_converters_name = options[:builtin_converters_name]
       @need_static_convert = need_static_convert?
     end
 
@@ -18,7 +24,7 @@ class CSV
       if name.nil?  # custom converter
         @converters << converter
       else          # named converter
-        combo = @builtin_converters[name]
+        combo = builtin_converters[name]
         case combo
         when Array  # combo converter
           combo.each do |sub_name|
@@ -44,7 +50,7 @@ class CSV
       fields.collect.with_index do |field, index|
         if field.nil?
           field = @nil_value
-        elsif field.empty?
+        elsif field.is_a?(String) and field.empty?
           field = @empty_value unless @empty_value_is_empty_string
         end
         @converters.each do |converter|
@@ -73,6 +79,10 @@ class CSV
     def need_convert?
       @need_static_convert or
         (not @converters.empty?)
+    end
+
+    def builtin_converters
+      @builtin_converters ||= ::CSV.const_get(@builtin_converters_name)
     end
   end
 end

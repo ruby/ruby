@@ -1,7 +1,22 @@
 prelude: |
-  str0 = [*0..9].join("")
+  str1 = [*0..5].join(" ") + " "
+  str10 = str1 * 10
+  str100 = str10 * 10
+  str1000 = str100 * 10
 benchmark:
-  to_chars-1: str0.split('')
-  to_chars-10: (str0 * 10).split('')
-  to_chars-100: (str0 * 100).split('')
-  to_chars-1000: (str0 * 1000).split('')
+  to_chars-1: str1.split('')
+  to_chars-10: str10.split('')
+  to_chars-100: str100.split('')
+  to_chars-1000: str1000.split('')
+  to_words-1: str1.split(' ')
+  to_words-10: str10.split(' ')
+  to_words-100: str100.split(' ')
+  to_words-1000: str1000.split(' ')
+  re_chars-1: str1.split(//)
+  re_chars-10: str10.split(//)
+  re_chars-100: str100.split(//)
+  re_chars-1000: str1000.split(//)
+  re_space-1: str1.split(/ /)
+  re_space-10: str10.split(/ /)
+  re_space-100: str100.split(/ /)
+  re_space-1000: str1000.split(/ /)

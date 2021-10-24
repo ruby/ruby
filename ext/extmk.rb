@@ -463,7 +463,11 @@ end unless $extstatic
 if ARGV[0]
   ext_prefix, exts = ARGV.shift.split('/', 2)
   $extension = [exts] if exts
-  @gemname = exts if ext_prefix == 'gems'
+  if ext_prefix == 'gems'
+    @gemname = exts
+  elsif exts
+    $static_ext.delete_if {|t, *| !File.fnmatch(t, exts)}
+  end
 end
 ext_prefix = "#{$top_srcdir}/#{ext_prefix || 'ext'}"
 exts = $static_ext.sort_by {|t, i| i}.collect {|t, i| t}
@@ -643,6 +647,7 @@ FileUtils.makedirs(File.dirname($command_output))
 begin
   atomic_write_open($command_output) do |mf|
     mf.puts "V = 0"
+    mf.puts "V0 = $(V:0=)"
     mf.puts "Q1 = $(V:1=)"
     mf.puts "Q = $(Q1:0=@)"
     mf.puts "ECHO1 = $(V:1=@:)"

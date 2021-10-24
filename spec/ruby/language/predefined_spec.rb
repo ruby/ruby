@@ -53,10 +53,10 @@ describe "Predefined global $~" do
 
   it "is set to nil if the last match was unsuccessful" do
     /foo/ =~ 'foo'
-    $~.nil?.should == false
+    $~.should_not.nil?
 
     /foo/ =~ 'bar'
-    $~.nil?.should == true
+    $~.should.nil?
   end
 
   it "is set at the method-scoped level rather than block-scoped" do
@@ -398,6 +398,22 @@ describe "Predefined global $!" do
       $!.should == nil
     end
 
+    it "should be cleared when an exception is rescued even when a non-local return from block" do
+      def foo
+        [ 1 ].each do
+          begin
+            raise StandardError.new('err')
+          rescue => e
+            $!.should == e
+            return
+          end
+        end
+      end
+
+      foo
+      $!.should == nil
+    end
+
     it "should not be cleared when an exception is not rescued" do
       e = StandardError.new
       begin
@@ -502,7 +518,7 @@ $\               String          The string appended to the output of every call
                                  Kernel#print and IO#write. The default value is nil.
 $,               String          The separator string output between the parameters to methods such as
                                  Kernel#print and Array#join. Defaults to nil, which adds no text.
-$.               Fixnum          The number of the last line read from the current input file.
+$.               Integer          The number of the last line read from the current input file.
 $;               String          The default separator pattern used by String#split. May be set from the
                                  command line using the -F flag.
 $<               Object          An object that provides access to the concatenation of the contents of all
@@ -528,6 +544,7 @@ $stdout          IO              The current standard output. Assignment to $std
 
 describe "Predefined global $/" do
   before :each do
+    @verbose, $VERBOSE = $VERBOSE, nil
     @dollar_slash = $/
     @dollar_dash_zero = $-0
   end
@@ -535,6 +552,7 @@ describe "Predefined global $/" do
   after :each do
     $/ = @dollar_slash
     $-0 = @dollar_dash_zero
+    $VERBOSE = @verbose
   end
 
   it "can be assigned a String" do
@@ -565,7 +583,7 @@ describe "Predefined global $/" do
     -> { $/ = obj }.should raise_error(TypeError)
   end
 
-  it "raises a TypeError if assigned a Fixnum" do
+  it "raises a TypeError if assigned an Integer" do
     -> { $/ = 1 }.should raise_error(TypeError)
   end
 
@@ -576,6 +594,7 @@ end
 
 describe "Predefined global $-0" do
   before :each do
+    @verbose, $VERBOSE = $VERBOSE, nil
     @dollar_slash = $/
     @dollar_dash_zero = $-0
   end
@@ -583,6 +602,7 @@ describe "Predefined global $-0" do
   after :each do
     $/ = @dollar_slash
     $-0 = @dollar_dash_zero
+    $VERBOSE = @verbose
   end
 
   it "can be assigned a String" do
@@ -612,7 +632,7 @@ describe "Predefined global $-0" do
     -> { $-0 = obj }.should raise_error(TypeError)
   end
 
-  it "raises a TypeError if assigned a Fixnum" do
+  it "raises a TypeError if assigned an Integer" do
     -> { $-0 = 1 }.should raise_error(TypeError)
   end
 
@@ -632,6 +652,12 @@ describe "Predefined global $," do
 
   it "raises TypeError if assigned a non-String" do
     -> { $, = Object.new }.should raise_error(TypeError)
+  end
+
+  ruby_version_is "2.7" do
+    it "warns if assigned non-nil" do
+      -> { $, = "_" }.should complain(/warning: `\$,' is deprecated/)
+    end
   end
 end
 
@@ -659,6 +685,18 @@ describe "Predefined global $." do
     obj.should_receive(:to_int).and_return('abc')
 
     -> { $. = obj }.should raise_error(TypeError)
+  end
+end
+
+describe "Predefined global $;" do
+  after :each do
+    $; = nil
+  end
+
+  ruby_version_is "2.7" do
+    it "warns if assigned non-nil" do
+      -> { $; = "_" }.should complain(/warning: `\$;' is deprecated/)
+    end
   end
 end
 
@@ -743,7 +781,7 @@ $*               Array           An array of strings containing the command-line
                                  tion of the program. Options used by the Ruby interpreter will have been
                                  removed. [r/o]
 $"               Array           An array containing the filenames of modules loaded by require. [r/o]
-$$               Fixnum          The process number of the program being executed. [r/o]
+$$               Integer          The process number of the program being executed. [r/o]
 $?               Process::Status The exit status of the last child process to terminate. [r/o, thread]
 $:               Array           An array of strings, where each string specifies a directory to be searched for
                                  Ruby scripts and binary extensions used by the load and require methods.
@@ -771,8 +809,6 @@ __LINE__         String          The current line number in the source file. [r/
 $LOAD_PATH       Array           A synonym for $:. [r/o]
 $-p              Object          Set to true if the -p option (which puts an implicit while gets . . . end
                                  loop around your program) is present on the command line. [r/o]
-$SAFE            Fixnum          The current safe level. This variable’s value may never be
-                                 reduced by assignment. [thread] (Not implemented in Rubinius)
 $VERBOSE         Object          Set to true if the -v, --version, -W, or -w option is specified on the com-
                                  mand line. Set to false if no option, or -W1 is given. Set to nil if -W0
                                  was specified. Setting this option to true causes the interpreter and some
@@ -897,6 +933,14 @@ describe "Global variable $-d" do
 end
 
 describe "Global variable $VERBOSE" do
+  before :each do
+    @verbose = $VERBOSE
+  end
+
+  after :each do
+    $VERBOSE = @verbose
+  end
+
   it "converts truthy values to true" do
     [true, 1, 0, [], ""].each do |true_value|
       $VERBOSE = true_value
@@ -1055,8 +1099,8 @@ The following constants are defined by the Ruby interpreter.
 DATA                 IO          If the main program file contains the directive __END__, then
                                  the constant DATA will be initialized so that reading from it will
                                  return lines following __END__ from the source file.
-FALSE                FalseClass  Synonym for false.
-NIL                  NilClass    Synonym for nil.
+FALSE                FalseClass  Synonym for false (deprecated, removed in Ruby 3).
+NIL                  NilClass    Synonym for nil (deprecated, removed in Ruby 3).
 RUBY_PLATFORM        String      The identifier of the platform running this program. This string
                                  is in the same form as the platform identifier used by the GNU
                                  configure utility (which is not a coincidence).
@@ -1074,29 +1118,53 @@ SCRIPT_LINES__       Hash        If a constant SCRIPT_LINES__ is defined and ref
                                  the value.
 TOPLEVEL_BINDING     Binding     A Binding object representing the binding at Ruby’s top level—
                                  the level where programs are initially executed.
-TRUE                 TrueClass   Synonym for true.
+TRUE                 TrueClass   Synonym for true (deprecated, removed in Ruby 3).
 =end
 
 describe "The predefined global constants" do
-  it "includes TRUE" do
-    Object.const_defined?(:TRUE).should == true
-    -> {
-      TRUE.should equal(true)
-    }.should complain(/constant ::TRUE is deprecated/)
+  describe "TRUE" do
+    ruby_version_is "3.0" do
+      it "is no longer defined" do
+        Object.const_defined?(:TRUE).should == false
+      end
+    end
+
+    ruby_version_is ""..."3.0" do
+      it "includes TRUE" do
+        Object.const_defined?(:TRUE).should == true
+        -> { TRUE }.should complain(/constant ::TRUE is deprecated/)
+      end
+    end
   end
 
-  it "includes FALSE" do
-    Object.const_defined?(:FALSE).should == true
-    -> {
-      FALSE.should equal(false)
-    }.should complain(/constant ::FALSE is deprecated/)
+  describe "FALSE" do
+    ruby_version_is "3.0" do
+      it "is no longer defined" do
+        Object.const_defined?(:FALSE).should == false
+      end
+    end
+
+    ruby_version_is ""..."3.0" do
+      it "includes FALSE" do
+        Object.const_defined?(:FALSE).should == true
+        -> { FALSE }.should complain(/constant ::FALSE is deprecated/)
+      end
+    end
   end
 
-  it "includes NIL" do
-    Object.const_defined?(:NIL).should == true
-    -> {
-      NIL.should equal(nil)
-    }.should complain(/constant ::NIL is deprecated/)
+  describe "NIL" do
+    ruby_version_is "3.0" do
+      it "is no longer defined" do
+        Object.const_defined?(:NIL).should == false
+      end
+    end
+
+    ruby_version_is ""..."3.0" do
+      it "includes NIL" do
+        Object.const_defined?(:NIL).should == true
+        -> { NIL }.should complain(/constant ::NIL is deprecated/)
+      end
+    end
   end
 
   it "includes STDIN" do
@@ -1126,7 +1194,6 @@ describe "The predefined global constants" do
   it "includes TOPLEVEL_BINDING" do
     Object.const_defined?(:TOPLEVEL_BINDING).should == true
   end
-
 end
 
 describe "The predefined global constant" do
@@ -1231,6 +1298,36 @@ describe "The predefined global constant" do
       result = ruby_exe(code, args: "a b")
       encoding = Encoding.default_external
       result.chomp.should == %{["#{encoding}", "#{encoding}"]}
+    end
+  end
+end
+
+ruby_version_is "2.7" do
+  describe "$LOAD_PATH.resolve_feature_path" do
+    it "returns what will be loaded without actual loading, .rb file" do
+      extension, path = $LOAD_PATH.resolve_feature_path('set')
+      extension.should == :rb
+      path.should.end_with?('/set.rb')
+    end
+
+    it "returns what will be loaded without actual loading, .so file" do
+      require 'rbconfig'
+
+      extension, path = $LOAD_PATH.resolve_feature_path('etc')
+      extension.should == :so
+      path.should.end_with?("/etc.#{RbConfig::CONFIG['DLEXT']}")
+    end
+
+    ruby_version_is "2.7"..."3.1" do
+      it "raises LoadError if feature cannot be found" do
+        -> { $LOAD_PATH.resolve_feature_path('noop') }.should raise_error(LoadError)
+      end
+    end
+
+    ruby_version_is "3.1" do
+      it "return nil if feature cannot be found" do
+        $LOAD_PATH.resolve_feature_path('noop').should be_nil
+      end
     end
   end
 end

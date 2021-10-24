@@ -10,15 +10,32 @@ describe "String#reverse" do
     "".reverse.should == ""
   end
 
-  it "taints the result if self is tainted" do
-    "".taint.reverse.tainted?.should == true
-    "m".taint.reverse.tainted?.should == true
+  ruby_version_is '3.0' do
+    it "returns String instances when called on a subclass" do
+      StringSpecs::MyString.new("stressed").reverse.should be_an_instance_of(String)
+      StringSpecs::MyString.new("m").reverse.should be_an_instance_of(String)
+      StringSpecs::MyString.new("").reverse.should be_an_instance_of(String)
+    end
+  end
+
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances when called on a subclass" do
+      StringSpecs::MyString.new("stressed").reverse.should be_an_instance_of(StringSpecs::MyString)
+      StringSpecs::MyString.new("m").reverse.should be_an_instance_of(StringSpecs::MyString)
+      StringSpecs::MyString.new("").reverse.should be_an_instance_of(StringSpecs::MyString)
+    end
+  end
+
+  ruby_version_is ''...'2.7' do
+    it "taints the result if self is tainted" do
+      "".taint.reverse.should.tainted?
+      "m".taint.reverse.should.tainted?
+    end
   end
 
   it "reverses a string with multi byte characters" do
     "微軟正黑體".reverse.should == "體黑正軟微"
   end
-
 end
 
 describe "String#reverse!" do
@@ -30,14 +47,14 @@ describe "String#reverse!" do
     "".reverse!.should == ""
   end
 
-  it "raises a #{frozen_error_class} on a frozen instance that is modified" do
-    -> { "anna".freeze.reverse!  }.should raise_error(frozen_error_class)
-    -> { "hello".freeze.reverse! }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen instance that is modified" do
+    -> { "anna".freeze.reverse!  }.should raise_error(FrozenError)
+    -> { "hello".freeze.reverse! }.should raise_error(FrozenError)
   end
 
   # see [ruby-core:23666]
-  it "raises a #{frozen_error_class} on a frozen instance that would not be modified" do
-    -> { "".freeze.reverse! }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen instance that would not be modified" do
+    -> { "".freeze.reverse! }.should raise_error(FrozenError)
   end
 
   it "reverses a string with multi byte characters" do

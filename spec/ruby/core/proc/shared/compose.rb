@@ -1,5 +1,5 @@
 describe :proc_compose, shared: true do
-  ruby_version_is "2.6"..."2.7" do
+  ruby_version_is ""..."2.7" do
     it "raises NoMethodError when called if passed not callable object" do
       not_callable = Object.new
       composed = @object.call.send(@method, not_callable)

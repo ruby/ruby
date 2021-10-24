@@ -15,12 +15,8 @@ describe "URI#select" do
   end
 
   it "raises an ArgumentError if a component is requested that isn't valid under the given scheme" do
-    [
-      -> {URI("mailto:spam@mailinator.com").select(:path)},
-      -> {URI("http://blog.blag.web").select(:typecode)},
-    ].each do |select_lambda|
-      select_lambda.should raise_error(ArgumentError)
-    end
+    -> { URI("mailto:spam@mailinator.com").select(:path) }.should raise_error(ArgumentError)
+    -> { URI("http://blog.blag.web").select(:typecode) }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if given strings rather than symbols" do

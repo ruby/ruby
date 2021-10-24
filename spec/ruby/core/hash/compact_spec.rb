@@ -51,8 +51,8 @@ describe "Hash#compact!" do
       @hash.freeze
     end
 
-    it "keeps pairs and raises a #{frozen_error_class}" do
-      ->{ @hash.compact! }.should raise_error(frozen_error_class)
+    it "keeps pairs and raises a FrozenError" do
+      ->{ @hash.compact! }.should raise_error(FrozenError)
       @hash.should == @initial_pairs
     end
   end

@@ -5,9 +5,11 @@ require 'date_core'
 
 class Date
 
-  class Infinity < Numeric # :nodoc:
+  def infinite?
+    false
+  end
 
-    include Comparable
+  class Infinity < Numeric # :nodoc:
 
     def initialize(d=1) @d = d <=> 0 end
 
@@ -28,6 +30,8 @@ class Date
     def <=>(other)
       case other
       when Infinity; return d <=> other.d
+      when Float::INFINITY; return d <=> 1
+      when -Float::INFINITY; return d <=> -1
       when Numeric; return d
       else
         begin

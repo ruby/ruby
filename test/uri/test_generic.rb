@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require 'envutil'
 require 'uri'
 
 class URI::TestGeneric < Test::Unit::TestCase
@@ -156,6 +157,13 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal(nil, url.user)
     assert_equal(nil, url.password)
     assert_equal(nil, url.userinfo)
+  end
+
+  def test_parse_scheme_with_symbols
+    # Valid schemes from https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml
+    assert_equal 'ms-search', URI.parse('ms-search://localhost').scheme
+    assert_equal 'microsoft.windows.camera', URI.parse('microsoft.windows.camera://localhost').scheme
+    assert_equal 'coaps+ws', URI.parse('coaps+ws:localhost').scheme
   end
 
   def test_merge
@@ -765,7 +773,7 @@ class URI::TestGeneric < Test::Unit::TestCase
     e = assert_raise(URI::InvalidComponentError) do
       uri.password = password
     end
-    refute_match password, e.message
+    refute_match Regexp.new(password), e.message
   end
 
   def test_set_scheme
@@ -798,8 +806,12 @@ class URI::TestGeneric < Test::Unit::TestCase
 
     u = URI("http://foo/bar")
     assert_equal("http://foo/bar", u.to_s)
+    u.hostname = "[::1]"
+    assert_equal("http://[::1]/bar", u.to_s)
     u.hostname = "::1"
     assert_equal("http://[::1]/bar", u.to_s)
+    u.hostname = ""
+    assert_equal("http:///bar", u.to_s)
   end
 
   def test_build
@@ -864,34 +876,30 @@ class URI::TestGeneric < Test::Unit::TestCase
   end
 
   def test_find_proxy_no_proxy
+    getaddress = IPSocket.method(:getaddress)
+    example_address = nil
+    IPSocket.singleton_class.class_eval do
+      undef getaddress
+      define_method(:getaddress) do |host|
+        case host
+        when "example.org", "www.example.org"
+          example_address
+        when /\A\d+(?:\.\d+){3}\z/
+          host
+        else
+          raise host
+        end
+      end
+    end
+
     with_proxy_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'192.0.2.2') {|env|
       assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy(env))
       assert_nil(URI("http://192.0.2.2/").find_proxy(env))
 
-      getaddress = IPSocket.method(:getaddress)
-      begin
-        class << IPSocket
-          undef getaddress
-          def getaddress(host)
-            host == "example.org" or raise
-            "192.0.2.1"
-          end
-        end
-        assert_equal(URI('http://127.0.0.1:8080'), URI.parse("http://example.org").find_proxy(env))
-        class << IPSocket
-          undef getaddress
-          def getaddress(host)
-            host == "example.org" or raise
-            "192.0.2.2"
-          end
-        end
-        assert_nil(URI.parse("http://example.org").find_proxy(env))
-      ensure
-        IPSocket.singleton_class.class_eval do
-          undef getaddress
-          define_method(:getaddress, getaddress)
-        end
-      end
+      example_address = "192.0.2.1"
+      assert_equal(URI('http://127.0.0.1:8080'), URI.parse("http://example.org").find_proxy(env))
+      example_address = "192.0.2.2"
+      assert_nil(URI.parse("http://example.org").find_proxy(env))
     }
     with_proxy_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'example.org') {|env|
       assert_nil(URI("http://example.org/").find_proxy(env))
@@ -901,6 +909,11 @@ class URI::TestGeneric < Test::Unit::TestCase
       assert_equal(URI('http://127.0.0.1:8080'), URI("http://example.org/").find_proxy(env))
       assert_nil(URI("http://www.example.org/").find_proxy(env))
     }
+  ensure
+    IPSocket.singleton_class.class_eval do
+      undef getaddress
+      define_method(:getaddress, getaddress)
+    end
   end
 
   def test_find_proxy_no_proxy_cidr

@@ -7,6 +7,10 @@ require 'optparse'
 
 ENV.delete('PWD')
 
+class VCS
+  DEBUG_OUT = STDERR.dup
+end
+
 unless File.respond_to? :realpath
   require 'pathname'
   def File.realpath(arg)
@@ -15,106 +19,37 @@ unless File.respond_to? :realpath
 end
 
 def IO.pread(*args)
-  STDERR.puts(args.inspect) if $DEBUG
+  VCS::DEBUG_OUT.puts(args.inspect) if $DEBUG
   popen(*args) {|f|f.read}
 end
 
-if RUBY_VERSION < "2.0"
-  class IO
-    @orig_popen = method(:popen)
-
-    if defined?(fork)
-      def self.popen(command, *rest, &block)
-        if command.kind_of?(Hash)
-          env = command
-          command = rest.shift
-        end
-        opts = rest.last
-        if opts.kind_of?(Hash)
-          dir = opts.delete(:chdir)
-          rest.pop if opts.empty?
-          opts.delete(:external_encoding)
-        end
-
-        if block
-          @orig_popen.call("-", *rest) do |f|
-            if f
-              yield(f)
-            else
-              Dir.chdir(dir) if dir
-              ENV.replace(env) if env
-              exec(*command)
-            end
-          end
-        else
-          f = @orig_popen.call("-", *rest)
-          unless f
-            Dir.chdir(dir) if dir
-            ENV.replace(env) if env
-            exec(*command)
-          end
-          f
-        end
-      end
-    else
-      require 'shellwords'
-      def self.popen(command, *rest, &block)
-        if command.kind_of?(Hash)
-          env = command
-          oldenv = ENV.to_hash
-          command = rest.shift
-        end
-        opts = rest.last
-        if opts.kind_of?(Hash)
-          dir = opts.delete(:chdir)
-          rest.pop if opts.empty?
-          opts.delete(:external_encoding)
-        end
-
-        command = command.shelljoin if Array === command
-        Dir.chdir(dir || ".") do
-          ENV.replace(env) if env
-          @orig_popen.call(command, *rest, &block)
-          ENV.replace(oldenv) if oldenv
-        end
-      end
+module DebugPOpen
+  refine IO.singleton_class do
+    def popen(*args)
+      VCS::DEBUG_OUT.puts args.inspect if $DEBUG
+      super
     end
   end
-else
-  module DebugPOpen
-    verbose, $VERBOSE = $VERBOSE, nil if RUBY_VERSION < "2.1"
-    refine IO.singleton_class do
-      def popen(*args)
-        STDERR.puts args.inspect if $DEBUG
-        super
+end
+using DebugPOpen
+module DebugSystem
+  def system(*args)
+    VCS::DEBUG_OUT.puts args.inspect if $DEBUG
+    exception = false
+    opts = Hash.try_convert(args[-1])
+    if RUBY_VERSION >= "2.6"
+      unless opts
+        opts = {}
+        args << opts
       end
+      exception = opts.fetch(:exception) {opts[:exception] = true}
+    elsif opts
+      exception = opts.delete(:exception) {true}
+      args.pop if opts.empty?
     end
-  ensure
-    $VERBOSE = verbose unless verbose.nil?
-  end
-  using DebugPOpen
-  module DebugSystem
-    def system(*args)
-      STDERR.puts args.inspect if $DEBUG
-      exception = false
-      opts = Hash.try_convert(args[-1])
-      if RUBY_VERSION >= "2.6"
-        unless opts
-          opts = {}
-          args << opts
-        end
-        exception = opts.fetch(:exception) {opts[:exception] = true}
-      elsif opts
-        exception = opts.delete(:exception) {true}
-        args.pop if opts.empty?
-      end
-      ret = super(*args)
-      raise "Command failed with status (#$?): #{args[0]}" if exception and !ret
-      ret
-    end
-  end
-  module Kernel
-    prepend(DebugSystem)
+    ret = super(*args)
+    raise "Command failed with status (#$?): #{args[0]}" if exception and !ret
+    ret
   end
 end
 
@@ -127,14 +62,16 @@ class VCS
     @@dirs << [dir, self, pred]
   end
 
-  def self.detect(path = '.', options = {}, argv = ::ARGV)
+  def self.detect(path = '.', options = {}, parser = nil, **opts)
+    options.update(opts)
     uplevel_limit = options.fetch(:uplevel_limit, 0)
     curr = path
     begin
       @@dirs.each do |dir, klass, pred|
         if pred ? pred[curr, dir] : File.directory?(File.join(curr, dir))
           vcs = klass.new(curr)
-          vcs.parse_options(argv)
+          vcs.define_options(parser) if parser
+          vcs.set_options(options)
           return vcs
         end
       end
@@ -151,6 +88,13 @@ class VCS
     String === path or path.respond_to?(:to_path)
   end
 
+  def self.define_options(parser, opts = {})
+    parser.separator("  VCS common options:")
+    parser.define("--[no-]dryrun") {|v| opts[:dryrun] = v}
+    parser.define("--[no-]debug") {|v| opts[:debug] = v}
+    opts
+  end
+
   attr_reader :srcdir
 
   def initialize(path)
@@ -158,21 +102,16 @@ class VCS
     super()
   end
 
-  def parse_options(opts, parser = OptionParser.new)
-    case opts
-    when Array
-      parser.on("--[no-]dryrun") {|v| @dryrun = v}
-      parser.on("--[no-]debug") {|v| @debug = v}
-      parser.parse(opts)
-      @debug = $DEBUG unless defined?(@debug)
-      @dryrun = @debug unless defined?(@dryrun)
-    when Hash
-      unless (keys = opts.keys - [:debug, :dryrun]).empty?
-        raise "Unknown options: #{keys.join(', ')}"
-      end
-      @debug = opts.fetch(:debug) {$DEBUG}
-      @dryrun = opts.fetch(:dryrun) {@debug}
-    end
+  def chdir(path)
+    @srcdir = path
+  end
+
+  def define_options(parser)
+  end
+
+  def set_options(opts)
+    @debug = opts.fetch(:debug) {$DEBUG}
+    @dryrun = opts.fetch(:dryrun) {@debug}
   end
 
   attr_reader :dryrun, :debug
@@ -182,8 +121,11 @@ class VCS
   NullDevice = defined?(IO::NULL) ? IO::NULL :
     %w[/dev/null NUL NIL: NL:].find {|dev| File.exist?(dev)}
 
-  # return a pair of strings, the last revision and the last revision in which
-  # +path+ was modified.
+  # returns
+  # * the last revision of the current branch
+  # * the last revision in which +path+ was modified
+  # * the last modified time of +path+
+  # * the last commit title since the latest upstream
   def get_revisions(path)
     if self.class.local_path?(path)
       path = relative_to(path)
@@ -247,14 +189,19 @@ class VCS
   end
 
   def after_export(dir)
+    FileUtils.rm_rf(Dir.glob("#{dir}/.git*"))
+  end
+
+  def revision_handler(rev)
+    self.class
   end
 
   def revision_name(rev)
-    self.class.revision_name(rev)
+    revision_handler(rev).revision_name(rev)
   end
 
   def short_revision(rev)
-    self.class.short_revision(rev)
+    revision_handler(rev).short_revision(rev)
   end
 
   class SVN < self
@@ -270,7 +217,7 @@ class VCS
     end
 
     def _get_revisions(path, srcdir = nil)
-      if srcdir and local_path?(path)
+      if srcdir and self.class.local_path?(path)
         path = File.join(srcdir, path)
       end
       if srcdir
@@ -281,7 +228,7 @@ class VCS
       _, last, _, changed, _ = info_xml.split(/revision="(\d+)"/)
       modified = info_xml[/<date>([^<>]*)/, 1]
       branch = info_xml[%r'<relative-url>\^/(?:branches/|tags/)?([^<>]+)', 1]
-      [last, changed, modified, branch]
+      [Integer(last), Integer(changed), modified, branch]
     end
 
     def self.search_root(path)
@@ -298,20 +245,18 @@ class VCS
     end
 
     def url
-      unless @url
+      @url ||= begin
         url = get_info[/<root>(.*)<\/root>/, 1]
         @url = URI.parse(url+"/") if url
       end
-      @url
     end
 
     def wcroot
-      unless @wcroot
+      @wcroot ||= begin
         info = get_info
         @wcroot = info[/<wcroot-abspath>(.*)<\/wcroot-abspath>/, 1]
         @wcroot ||= self.class.search_root(@srcdir)
       end
-      @wcroot
     end
 
     def branch(name)
@@ -371,16 +316,17 @@ class VCS
             FileUtils.mv(Dir.glob("#{tmpdir}/#{subdir}/{.[^.]*,..?*,*}"), dir)
             Dir.rmdir(tmpdir)
           end
-          return true
+          return self
         end
       end
       IO.popen(%W"#{COMMAND} export -r #{revision} #{url} #{dir}") do |pipe|
         pipe.each {|line| /^A/ =~ line or yield line}
       end
-      $?.success?
+      self if $?.success?
     end
 
     def after_export(dir)
+      super
       FileUtils.rm_rf(dir+"/.svn")
     end
 
@@ -393,20 +339,18 @@ class VCS
       rev.to_i if rev
     end
 
-    def export_changelog(url, from, to, path)
+    def export_changelog(url = '.', from = nil, to = nil, _path = nil, path: _path)
       range = [to || 'HEAD', (from ? from+1 : branch_beginning(url))].compact.join(':')
       IO.popen({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
                %W"#{COMMAND} log -r#{range} #{url}") do |r|
-        open(path, 'w') do |w|
-          IO.copy_stream(r, w)
-        end
+        IO.copy_stream(r, path)
       end
     end
 
     def commit
       args = %W"#{COMMAND} commit"
       if dryrun?
-        STDERR.puts(args.inspect)
+        VCS::DEBUG_OUT.puts(args.inspect)
         return true
       end
       system(*args)
@@ -420,10 +364,10 @@ class VCS
     def cmd_args(cmds, srcdir = nil)
       (opts = cmds.last).kind_of?(Hash) or cmds << (opts = {})
       opts[:external_encoding] ||= "UTF-8"
-      if srcdir and self.class.local_path?(srcdir)
+      if srcdir
         opts[:chdir] ||= srcdir
       end
-      STDERR.puts cmds.inspect if debug?
+      VCS::DEBUG_OUT.puts cmds.inspect if debug?
       cmds
     end
 
@@ -432,7 +376,9 @@ class VCS
     end
 
     def cmd_read_at(srcdir, cmds)
-      without_gitconfig { IO.pread(*cmd_args(cmds, srcdir)) }
+      result = without_gitconfig { IO.pread(*cmd_args(cmds, srcdir)) }
+      VCS::DEBUG_OUT.puts result.inspect if debug?
+      result
     end
 
     def cmd_pipe(*cmds, &block)
@@ -443,15 +389,34 @@ class VCS
       cmd_read_at(@srcdir, cmds)
     end
 
+    def svn_revision(log)
+      if /^ *git-svn-id: .*@(\d+) .*\n+\z/ =~ log
+        $1.to_i
+      end
+    end
+
     def _get_revisions(path, srcdir = nil)
+      ref = Branch === path ? path.to_str : 'HEAD'
       gitcmd = [COMMAND]
-      last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', 'HEAD']]).rstrip
+      last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', ref]]).rstrip
       log = cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--date=iso', '--pretty=fuller', *path]])
       changed = log[/\Acommit (\h+)/, 1]
       modified = log[/^CommitDate:\s+(.*)/, 1]
-      branch = cmd_read_at(srcdir, [gitcmd + %W[symbolic-ref --short HEAD]])
+      if rev = svn_revision(log)
+        if changed == last
+          last = rev
+        else
+          svn_rev = svn_revision(cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--format=%B', last]]))
+          last = svn_rev if svn_rev
+        end
+        changed = rev
+      end
+      branch = cmd_read_at(srcdir, [gitcmd + %W[symbolic-ref --short #{ref}]])
       if branch.empty?
-        branch_list = cmd_read_at(srcdir, [gitcmd + %W[branch --list --contains HEAD]]).lines.to_a
+        branch = cmd_read_at(srcdir, [gitcmd + %W[describe --contains #{ref}]]).strip
+      end
+      if branch.empty?
+        branch_list = cmd_read_at(srcdir, [gitcmd + %W[branch --list --contains #{ref}]]).lines.to_a
         branch, = branch_list.grep(/\A\*/)
         case branch
         when /\A\* *\(\S+ detached at (.*)\)\Z/
@@ -472,7 +437,7 @@ class VCS
       branch = ":detached:" if branch.empty?
       upstream = cmd_read_at(srcdir, [gitcmd + %W[branch --list --format=%(upstream:short) #{branch}]])
       upstream.chomp!
-      title = cmd_read_at(srcdir, [gitcmd + %W[log --format=%s -n1 #{upstream}..HEAD]])
+      title = cmd_read_at(srcdir, [gitcmd + %W[log --format=%s -n1 #{upstream}..#{ref}]])
       title = nil if title.empty?
       [last, changed, modified, branch, title]
     end
@@ -485,6 +450,15 @@ class VCS
       rev[0, 10]
     end
 
+    def revision_handler(rev)
+      case rev
+      when Integer
+        SVN
+      else
+        super
+      end
+    end
+
     def without_gitconfig
       home = ENV.delete('HOME')
       yield
@@ -494,9 +468,8 @@ class VCS
 
     def initialize(*)
       super
-      if srcdir = @srcdir and self.class.local_path?(srcdir)
-        @srcdir = File.realpath(srcdir)
-      end
+      @srcdir = File.realpath(@srcdir)
+      VCS::DEBUG_OUT.puts @srcdir.inspect if debug?
       self
     end
 
@@ -540,42 +513,151 @@ class VCS
     end
 
     def export(revision, url, dir, keep_temp = false)
-      ret = system(COMMAND, "clone", "-s", (@srcdir || '.').to_s, "-b", url, dir)
-      ret
-    end
-
-    def after_export(dir)
-      FileUtils.rm_rf(Dir.glob("#{dir}/.git*"))
+      system(COMMAND, "clone", "-c", "advice.detachedHead=false", "-s", (@srcdir || '.').to_s, "-b", url, dir) or return
+      (Integer === revision ? GITSVN : GIT).new(File.expand_path(dir))
     end
 
     def branch_beginning(url)
       cmd_read(%W[ #{COMMAND} log -n1 --format=format:%H
-                   --author=matz --committer=matz --grep=has\ started
-                   -- version.h include/ruby/version.h])
+                   --author=matz --committer=matz --grep=started\\.$
+                   #{url.to_str} -- version.h include/ruby/version.h])
     end
 
-    def export_changelog(url, from, to, path)
+    def export_changelog(url = '@', from = nil, to = nil, _path = nil, path: _path, base_url: nil)
+      svn = nil
       from, to = [from, to].map do |rev|
         rev or next
         if Integer === rev
+          svn = true
           rev = cmd_read({'LANG' => 'C', 'LC_ALL' => 'C'},
                          %W"#{COMMAND} log -n1 --format=format:%H" <<
                          "--grep=^ *git-svn-id: .*@#{rev} ")
         end
         rev unless rev.empty?
       end
-      unless /./.match(from ||= branch_beginning(url))
-        raise "cannot find the beginning revision of the branch"
+      unless (from && /./.match(from)) or ((from = branch_beginning(url)) && /./.match(from))
+        warn "no starting commit found", uplevel: 1
+        from = nil
       end
-      range = [from, (to || 'HEAD')].join('^..')
-      cmd_pipe({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
-               %W"#{COMMAND} log --format=medium --notes=commits --date=iso-local --topo-order #{range}", "rb") do |r|
-        format_changelog(r, path)
+      if svn or system(*%W"#{COMMAND} fetch origin refs/notes/commits:refs/notes/commits",
+                           chdir: @srcdir, exception: false)
+        system(*%W"#{COMMAND} fetch origin refs/notes/log-fix:refs/notes/log-fix",
+               chdir: @srcdir, exception: false)
+      else
+        warn "Could not fetch notes/commits tree", uplevel: 1
+      end
+      to ||= url.to_str
+      if from
+        arg = ["#{from}^..#{to}"]
+      else
+        arg = ["--since=25 Dec 00:00:00", to]
+      end
+      writer =
+        if svn
+          format_changelog_as_svn(path, arg)
+        else
+          if base_url == true
+            remote, = upstream
+            if remote &&= cmd_read(env, %W[#{COMMAND} remote get-url --no-push #{remote}])
+              remote.chomp!
+              # hack to redirect git.r-l.o to github
+              remote.sub!(/\Agit@git\.ruby-lang\.org:/, 'git@github.com:ruby/')
+              remote.sub!(/\Agit@(.*?):(.*?)(?:\.git)?\z/, 'https://\1/\2/commit/')
+            end
+            base_url = remote
+          end
+          format_changelog(path, arg, base_url)
+        end
+      if !path or path == '-'
+        writer[$stdout]
+      else
+        File.open(path, 'wb', &writer)
       end
     end
 
-    def format_changelog(r, path)
-      IO.copy_stream(r, path)
+    LOG_FIX_REGEXP_SEPARATORS = '/!:;|,#%&'
+
+    def format_changelog(path, arg, base_url = nil)
+      env = {'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'}
+      cmd = %W"#{COMMAND} log --format=fuller --notes=commits --notes=log-fix --topo-order --no-merges"
+      date = "--date=iso-local"
+      unless system(env, *cmd, date, chdir: @srcdir, out: NullDevice, exception: false)
+        date = "--date=iso"
+      end
+      cmd << date
+      cmd.concat(arg)
+      proc do |w|
+        w.print "-*- coding: utf-8 -*-\n\n"
+        w.print "base-url = #{base_url}\n\n" if base_url
+        cmd_pipe(env, cmd, chdir: @srcdir) do |r|
+          while s = r.gets("\ncommit ")
+            h, s = s.split(/^$/, 2)
+            h.gsub!(/^(?:(?:Author|Commit)(?:Date)?|Date): /, '  \&')
+            if s.sub!(/\nNotes \(log-fix\):\n((?: +.*\n)+)/, '')
+              fix = $1
+              s = s.lines
+              fix.each_line do |x|
+                case x
+                when %r[^ +(\d+)s([#{LOG_FIX_REGEXP_SEPARATORS}])(.+)\2(.*)\2]o
+                  n = $1.to_i
+                  wrong = $3
+                  correct = $4
+                  begin
+                    s[n][wrong] = correct
+                  rescue IndexError
+                    message = ["format_changelog failed to replace #{wrong.dump} with #{correct.dump} at #$1\n"]
+                    from = [1, n-2].max
+                    to = [s.size-1, n+2].min
+                    s.each_with_index do |e, i|
+                      next if i < from
+                      break if to < i
+                      message << "#{i}:#{e}"
+                    end
+                    raise message.join('')
+                  end
+                when %r[^( +)(\d+)i([#{LOG_FIX_REGEXP_SEPARATORS}])(.*)\3]o
+                  s[$2.to_i, 0] = "#{$1}#{$4}\n"
+                when %r[^ +(\d+)(?:,(\d+))?d]
+                  n = $1.to_i
+                  e = $2
+                  s[n..(e ? e.to_i : n)] = []
+                end
+              end
+              s = s.join('')
+            end
+
+            if %r[^ +(https://github\.com/[^/]+/[^/]+/)commit/\h+\n(?=(?: +\n(?i: +Co-authored-by: .*\n)+)?(?:\n|\Z))] =~ s
+              issue = "#{$1}pull/"
+              s.gsub!(/\b[Ff]ix(?:e[sd])? \K#(?=\d+)/) {issue}
+            end
+
+            s.gsub!(/ +\n/, "\n")
+            s.sub!(/^Notes:/, '  \&')
+            w.print h, s
+          end
+        end
+      end
+    end
+
+    def format_changelog_as_svn(path, arg)
+      cmd = %W"#{COMMAND} log --topo-order --no-notes -z --format=%an%n%at%n%B"
+      cmd.concat(arg)
+      proc do |w|
+        sep = "-"*72 + "\n"
+        w.print sep
+        cmd_pipe(cmd) do |r|
+          while s = r.gets("\0")
+            s.chomp!("\0")
+            author, time, s = s.split("\n", 3)
+            s.sub!(/\n\ngit-svn-id: .*@(\d+) .*\n\Z/, '')
+            rev = $1
+            time = Time.at(time.to_i).getlocal("+09:00").strftime("%F %T %z (%a, %d %b %Y)")
+            lines = s.count("\n") + 1
+            lines = "#{lines} line#{lines == 1 ? '' : 's'}"
+            w.print "r#{rev} | #{author} | #{time} | #{lines}\n\n", s, "\n", sep
+          end
+        end
+      end
     end
 
     def upstream
@@ -598,7 +680,7 @@ class VCS
       branches = %W[refs/notes/commits:refs/notes/commits HEAD:#{branch}]
       if dryrun?
         branches.each do |b|
-          STDERR.puts((args + [b]).inspect)
+          VCS::DEBUG_OUT.puts((args + [b]).inspect)
         end
         return true
       end
@@ -614,34 +696,6 @@ class VCS
       SVN.revision_name(rev)
     end
 
-    def self.short_revision(rev)
-      SVN.short_revision(rev)
-    end
-
-    def format_changelog(r, path)
-      open(path, 'w') do |w|
-        sep = "-"*72
-        w.puts sep
-        while s = r.gets('')
-          author = s[/^Author:\s*(\S+)/, 1]
-          time = s[/^Date:\s*(.+)/, 1]
-          s = r.gets('')
-          s.gsub!(/^ {4}/, '')
-          s.sub!(/^git-svn-id: .*@(\d+) .*\n+\z/, '')
-          rev = $1
-          s.gsub!(/^ {8}/, '') if /^(?! {8}|$)/ !~ s
-          s.sub!(/\n\n\z/, "\n")
-          if /\A(\d+)-(\d+)-(\d+)/ =~ time
-            date = Time.new($1.to_i, $2.to_i, $3.to_i).strftime("%a, %d %b %Y")
-          end
-          lines = s.count("\n")
-          lines = "#{lines} line#{lines == 1 ? '' : 's'}"
-          w.puts "r#{rev} | #{author} | #{time} (#{date}) | #{lines}\n\n"
-          w.puts s, sep
-        end
-      end
-    end
-
     def last_changed_revision
       rev = cmd_read(%W"#{COMMAND} svn info"+[STDERR=>[:child, :out]])[/^Last Changed Rev: (\d+)/, 1]
       com = cmd_read(%W"#{COMMAND} svn find-rev r#{rev}").chomp
@@ -654,7 +708,7 @@ class VCS
 
       commits = cmd_read([COMMAND, "log", "--reverse", "--format=%H %ae %ce", "#{com}..@"], "rb").split("\n")
       commits.each_with_index do |l, i|
-        r, a, c = l.split
+        r, a, c = l.split(' ')
         dcommit = [COMMAND, "svn", "dcommit"]
         dcommit.insert(-2, "-n") if dryrun
         dcommit << "--add-author-from" unless a == c

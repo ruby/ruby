@@ -137,7 +137,7 @@ describe "String#match" do
   end
 
   it "calls match on the regular expression" do
-    regexp = /./
+    regexp = /./.dup
     regexp.should_receive(:match).and_return(:foo)
     'hello'.match(regexp).should == :foo
   end

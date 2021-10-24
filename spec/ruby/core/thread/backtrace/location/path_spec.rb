@@ -86,4 +86,39 @@ describe 'Thread::Backtrace::Location#path' do
       end
     end
   end
+
+  it 'should be the same path as in #to_s, including for core methods' do
+    # Get the caller_locations from a call made into a core library method
+    locations = [:non_empty].map { caller_locations }[0]
+
+    locations.each do |location|
+      filename = location.to_s[/^(.+):\d+:/, 1]
+      path = location.path
+
+      path.should == filename
+    end
+  end
+
+  context "canonicalization" do
+    platform_is_not :windows do
+      before :each do
+        @file = fixture(__FILE__, "path.rb")
+        @symlink = tmp("symlink.rb")
+        File.symlink(@file, @symlink)
+        ScratchPad.record []
+      end
+
+      after :each do
+        rm_r @symlink
+      end
+
+      it "returns a non-canonical path with symlinks, the same as __FILE__" do
+        realpath = File.realpath(@symlink)
+        realpath.should_not == @symlink
+
+        load @symlink
+        ScratchPad.recorded.should == [@symlink, @symlink]
+      end
+    end
+  end
 end

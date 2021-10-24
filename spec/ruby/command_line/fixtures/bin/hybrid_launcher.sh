@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
-exec somehow this file
+echo 'error' && exit 1
 #!ruby
 puts 'success'

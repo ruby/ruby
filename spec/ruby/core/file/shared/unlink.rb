@@ -21,13 +21,13 @@ describe :file_unlink, shared: true do
 
   it "deletes a single file" do
     File.send(@method, @file1).should == 1
-    File.exist?(@file1).should == false
+    File.should_not.exist?(@file1)
   end
 
   it "deletes multiple files" do
     File.send(@method, @file1, @file2).should == 2
-    File.exist?(@file1).should == false
-    File.exist?(@file2).should == false
+    File.should_not.exist?(@file1)
+    File.should_not.exist?(@file2)
   end
 
   it "raises a TypeError if not passed a String type" do
@@ -52,10 +52,10 @@ describe :file_unlink, shared: true do
     it "allows deleting an open file with File::SHARE_DELETE" do
       path = tmp("share_delete.txt")
       File.open(path, mode: File::CREAT | File::WRONLY | File::BINARY | File::SHARE_DELETE) do |f|
-        File.exist?(path).should be_true
+        File.should.exist?(path)
         File.send(@method, path)
       end
-      File.exist?(path).should be_false
+      File.should_not.exist?(path)
     end
   end
 end

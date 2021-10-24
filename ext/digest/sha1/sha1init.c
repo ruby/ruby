@@ -3,9 +3,7 @@
 
 #include <ruby/ruby.h>
 #include "../digest.h"
-#if defined(SHA1_USE_OPENSSL)
-#include "sha1ossl.h"
-#elif defined(SHA1_USE_COMMONDIGEST)
+#if defined(SHA1_USE_COMMONDIGEST)
 #include "sha1cc.h"
 #else
 #include "sha1.h"
@@ -53,18 +51,13 @@ Init_sha1(void)
 {
     VALUE mDigest, cDigest_Base, cDigest_SHA1;
 
-    rb_require("digest");
-
 #if 0
     mDigest = rb_define_module("Digest"); /* let rdoc know */
 #endif
-    mDigest = rb_path2class("Digest");
+    mDigest = rb_digest_namespace();
     cDigest_Base = rb_path2class("Digest::Base");
 
     cDigest_SHA1 = rb_define_class_under(mDigest, "SHA1", cDigest_Base);
 
-#undef RUBY_UNTYPED_DATA_WARNING
-#define RUBY_UNTYPED_DATA_WARNING 0
-    rb_iv_set(cDigest_SHA1, "metadata",
-	      Data_Wrap_Struct(0, 0, 0, (void *)&sha1));
+    rb_iv_set(cDigest_SHA1, "metadata", rb_digest_make_metadata(&sha1));
 }

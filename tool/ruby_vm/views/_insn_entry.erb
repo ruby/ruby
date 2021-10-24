@@ -39,7 +39,7 @@ INSN_ENTRY(<%= insn.name %>)
 % if insn.handles_sp?
     POPN(INSN_ATTR(popn));
 % end
-<%= insn.handle_canary "SETUP_CANARY()" -%>
+<%= insn.handle_canary "SETUP_CANARY(leaf)" -%>
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
 % insn.opes.each_with_index do |ope, i|
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), <%= i %>, <%= ope[:name] %>);
@@ -55,7 +55,7 @@ INSN_ENTRY(<%= insn.name %>)
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-<%= insn.handle_canary "CHECK_CANARY()" -%>
+<%= insn.handle_canary "CHECK_CANARY(leaf, INSN_ATTR(bin))" -%>
 % if insn.handles_sp?
 %   insn.rets.reverse_each do |ret|
     PUSH(<%= insn.cast_to_VALUE ret %>);
@@ -64,6 +64,8 @@ INSN_ENTRY(<%= insn.name %>)
     INC_SP(INSN_ATTR(sp_inc));
 %   insn.rets.reverse_each.with_index do |ret, i|
     TOPN(<%= i %>) = <%= insn.cast_to_VALUE ret %>;
+    VM_ASSERT(!RB_TYPE_P(TOPN(<%= i %>), T_NONE));
+    VM_ASSERT(!RB_TYPE_P(TOPN(<%= i %>), T_MOVED));
 %   end
 % end
     if (leaf) ADD_PC(INSN_ATTR(width));

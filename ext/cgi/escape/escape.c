@@ -30,8 +30,6 @@ static inline void
 preserve_original_state(VALUE orig, VALUE dest)
 {
     rb_enc_associate(dest, rb_enc_get(orig));
-
-    RB_OBJ_INFECT_RAW(dest, orig);
 }
 
 static VALUE
@@ -390,6 +388,10 @@ cgiesc_unescape(int argc, VALUE *argv, VALUE self)
 void
 Init_escape(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
     id_accept_charset = rb_intern_const("@@accept_charset");
     InitVM(escape);
 }

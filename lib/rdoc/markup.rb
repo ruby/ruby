@@ -843,14 +843,13 @@ https://github.com/ruby/rdoc/issues
   autoload :List,                  'rdoc/markup/list'
   autoload :ListItem,              'rdoc/markup/list_item'
   autoload :Paragraph,             'rdoc/markup/paragraph'
+  autoload :Table,                 'rdoc/markup/table'
   autoload :Raw,                   'rdoc/markup/raw'
   autoload :Rule,                  'rdoc/markup/rule'
   autoload :Verbatim,              'rdoc/markup/verbatim'
 
   # Formatters
   autoload :Formatter,             'rdoc/markup/formatter'
-  autoload :FormatterTestCase,     'rdoc/markup/formatter_test_case'
-  autoload :TextFormatterTestCase, 'rdoc/markup/text_formatter_test_case'
 
   autoload :ToAnsi,                'rdoc/markup/to_ansi'
   autoload :ToBs,                  'rdoc/markup/to_bs'

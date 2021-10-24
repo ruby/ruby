@@ -1,90 +1,158 @@
 # frozen_string_literal: true
 
-require "rubygems/user_interaction"
 require_relative "path"
-require "fileutils"
+
+$LOAD_PATH.unshift(Spec::Path.source_lib_dir.to_s)
 
 module Spec
   module Rubygems
-    DEV_DEPS = {
-      "automatiek" => "~> 0.2.0",
-      "rake" => "~> 12.0",
-      "ronn" => "~> 0.7.3",
-      "rspec" => "~> 3.8",
-      "rubocop" => "= 0.74.0",
-      "rubocop-performance" => "= 1.4.0",
-    }.freeze
+    extend self
 
-    DEPS = {
-      "rack" => "~> 2.0",
-      "rack-test" => "~> 1.1",
-      "artifice" => "~> 0.6.0",
-      "compact_index" => "~> 0.11.0",
-      "sinatra" => "~> 2.0",
-      # Rake version has to be consistent for tests to pass
-      "rake" => "12.3.2",
-      "builder" => "~> 3.2",
-      # ruby-graphviz is used by the viz tests
-      "ruby-graphviz" => ">= 0.a",
-    }.freeze
-
-    def self.dev_setup
-      deps = DEV_DEPS
-
-      # JRuby can't build ronn, so we skip that
-      deps.delete("ronn") if RUBY_ENGINE == "jruby"
-
-      install_gems(deps)
+    def dev_setup
+      install_gems(dev_gemfile)
     end
 
-    def self.gem_load(gem_name, bin_container)
-      gem_activate(gem_name)
-      load Gem.bin_path(gem_name, bin_container)
+    def gem_load(gem_name, bin_container)
+      require_relative "switch_rubygems"
+
+      gem_load_and_activate(gem_name, bin_container)
     end
 
-    def self.gem_activate(gem_name)
-      gem_requirement = DEV_DEPS[gem_name]
-      gem gem_name, gem_requirement
-    end
-
-    def self.gem_require(gem_name)
+    def gem_require(gem_name)
       gem_activate(gem_name)
       require gem_name
     end
 
-    def self.setup
-      Gem.clear_paths
+    def test_setup
+      setup_test_paths
 
-      ENV["BUNDLE_PATH"] = nil
-      ENV["GEM_HOME"] = ENV["GEM_PATH"] = Path.base_system_gems.to_s
-      ENV["PATH"] = [Path.bindir, Path.system_gem_path.join("bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
+      require "fileutils"
 
-      manifest = DEPS.to_a.sort_by(&:first).map {|k, v| "#{k} => #{v}\n" }
-      manifest_path = Path.base_system_gems.join("manifest.txt")
-      # it's OK if there are extra gems
-      if !manifest_path.file? || !(manifest - manifest_path.readlines).empty?
-        FileUtils.rm_rf(Path.base_system_gems)
-        FileUtils.mkdir_p(Path.base_system_gems)
-        puts "installing gems for the tests to use..."
-        install_gems(DEPS)
-        manifest_path.open("w") {|f| f << manifest.join }
-      end
+      FileUtils.mkdir_p(Path.home)
+      FileUtils.mkdir_p(Path.tmpdir)
 
       ENV["HOME"] = Path.home.to_s
       ENV["TMPDIR"] = Path.tmpdir.to_s
 
+      require "rubygems/user_interaction"
       Gem::DefaultUserInteraction.ui = Gem::SilentUI.new
     end
 
-    def self.install_gems(gems)
-      reqs, no_reqs = gems.partition {|_, req| !req.nil? && !req.split(" ").empty? }
-      no_reqs.map!(&:first)
-      reqs.map! {|name, req| "'#{name}:#{req}'" }
-      deps = reqs.concat(no_reqs).join(" ")
-      gem = Spec::Path.ruby_core? ? ENV["BUNDLE_GEM"] : "#{Gem.ruby} -S gem"
-      cmd = "#{gem} install #{deps} --no-document --conservative"
-      puts cmd
-      system(cmd) || raise("Installing gems #{deps} for the tests to use failed!")
+    def install_parallel_test_deps
+      Gem.clear_paths
+
+      require "parallel"
+      require "fileutils"
+
+      install_test_deps
+
+      (2..Parallel.processor_count).each do |n|
+        source = Path.source_root.join("tmp", "1")
+        destination = Path.source_root.join("tmp", n.to_s)
+
+        FileUtils.rm_rf destination
+        FileUtils.cp_r source, destination
+      end
+    end
+
+    def setup_test_paths
+      Gem.clear_paths
+
+      ENV["BUNDLE_PATH"] = nil
+      ENV["GEM_HOME"] = ENV["GEM_PATH"] = Path.base_system_gems.to_s
+      ENV["PATH"] = [Path.system_gem_path.join("bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
+      ENV["PATH"] = [Path.bindir, ENV["PATH"]].join(File::PATH_SEPARATOR) if Path.ruby_core?
+    end
+
+    def install_test_deps
+      setup_test_paths
+
+      install_gems(test_gemfile)
+      install_gems(rubocop_gemfile, Path.rubocop_gems.to_s)
+      install_gems(standard_gemfile, Path.standard_gems.to_s)
+    end
+
+    def check_source_control_changes(success_message:, error_message:)
+      require "open3"
+
+      output, status = Open3.capture2e("git status --porcelain")
+
+      if status.success? && output.empty?
+        puts
+        puts success_message
+        puts
+      else
+        system("git status --porcelain")
+
+        puts
+        puts error_message
+        puts
+
+        exit(1)
+      end
+    end
+
+    private
+
+    def gem_load_and_activate(gem_name, bin_container)
+      gem_activate(gem_name)
+      load Gem.bin_path(gem_name, bin_container)
+    rescue Gem::LoadError => e
+      abort "We couldn't activate #{gem_name} (#{e.requirement}). Run `gem install #{gem_name}:'#{e.requirement}'`"
+    end
+
+    def gem_activate(gem_name)
+      require "bundler"
+      gem_requirement = Bundler::LockfileParser.new(File.read(dev_lockfile)).dependencies[gem_name]&.requirement
+      gem gem_name, gem_requirement
+    end
+
+    def install_gems(gemfile, path = nil)
+      old_gemfile = ENV["BUNDLE_GEMFILE"]
+      ENV["BUNDLE_GEMFILE"] = gemfile.to_s
+
+      if path
+        old_path = ENV["BUNDLE_PATH"]
+        ENV["BUNDLE_PATH"] = path
+      else
+        old_path__system = ENV["BUNDLE_PATH__SYSTEM"]
+        ENV["BUNDLE_PATH__SYSTEM"] = "true"
+      end
+
+      output = `#{Gem.ruby} #{File.expand_path("support/bundle.rb", Path.spec_dir)} install`
+      raise "Error when installing gems in #{gemfile}: #{output}" unless $?.success?
+    ensure
+      if path
+        ENV["BUNDLE_PATH"] = old_path
+      else
+        ENV["BUNDLE_PATH__SYSTEM"] = old_path__system
+      end
+
+      ENV["BUNDLE_GEMFILE"] = old_gemfile
+    end
+
+    def test_gemfile
+      Path.test_gemfile
+    end
+
+    def rubocop_gemfile
+      Path.rubocop_gemfile
+    end
+
+    def standard_gemfile
+      Path.standard_gemfile
+    end
+
+    def dev_gemfile
+      Path.dev_gemfile
+    end
+
+    def dev_lockfile
+      lockfile_for(dev_gemfile)
+    end
+
+    def lockfile_for(gemfile)
+      Pathname.new("#{gemfile.expand_path}.lock")
     end
   end
 end

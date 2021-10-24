@@ -225,6 +225,8 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
   def test_method_should_use_refinements
+    skip if Test::Unit::Runner.current_repeat_count > 0
+
     foo = Foo.new
     assert_raise(NameError) { foo.method(:z) }
     assert_equal("FooExt#z", FooExtClient.method_z(foo).call)
@@ -235,7 +237,7 @@ class TestRefinement < Test::Unit::TestCase
       meth.call(3)
     EOS
     assert_equal(:refine_pow, eval_using(MethodIntegerPowEx, "2.pow(3)"))
-    assert_equal(:refine_pow, eval_using(MethodIntegerPowEx, "2.:pow.(3)"))
+    assert_equal(:refine_pow, eval_using(MethodIntegerPowEx, "2.method(:pow).(3)"))
   end
 
   module InstanceMethodIntegerPowEx
@@ -246,6 +248,8 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
   def test_instance_method_should_use_refinements
+    skip if Test::Unit::Runner.current_repeat_count > 0
+
     foo = Foo.new
     assert_raise(NameError) { Foo.instance_method(:z) }
     assert_equal("FooExt#z", FooExtClient.instance_method_z(foo).bind(foo).call)
@@ -538,7 +542,7 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_main_using_is_private
     assert_raise(NoMethodError) do
-      eval("self.using Module.new", Sandbox::BINDING)
+      eval("recv = self; recv.using Module.new", Sandbox::BINDING)
     end
   end
 
@@ -916,7 +920,7 @@ class TestRefinement < Test::Unit::TestCase
         #{PrependAfterRefine_CODE}
         undef PrependAfterRefine
       }
-    }, timeout: 30
+    }, timeout: 60
   end
 
   def test_prepend_after_refine
@@ -1648,7 +1652,6 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_reopen_refinement_module
     assert_separately([], <<-"end;")
-      $VERBOSE = nil
       class C
       end
 
@@ -1665,6 +1668,7 @@ class TestRefinement < Test::Unit::TestCase
 
       module R
         refine C do
+          alias m m
           def m
             :bar
           end
@@ -2064,7 +2068,6 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_tostring
     assert_equal("ok", ToString.new.string)
-    assert_predicate(ToString.new.taint.string, :tainted?)
   end
 
   class ToSymbol
@@ -2321,6 +2324,335 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_refine_in_using
     assert_equal(:ok, RefineInUsing.test)
+  end
+
+  class Bug16242
+    module OtherM
+    end
+
+    module M
+      prepend OtherM
+
+      refine M do
+        def refine_method
+          "refine_method"
+        end
+      end
+      using M
+
+      def hoge
+        refine_method
+      end
+    end
+
+    class X
+      include M
+    end
+  end
+
+  def test_refine_prepended_module
+    assert_equal("refine_method", Bug16242::X.new.hoge)
+  end
+
+  module Bug13446
+    module Enumerable
+      def sum(*args)
+        i = 0
+        args.each { |arg| i += a }
+        i
+      end
+    end
+
+    using Module.new {
+      refine Enumerable do
+        alias :orig_sum :sum
+      end
+    }
+
+    module Enumerable
+      def sum(*args)
+        orig_sum(*args)
+      end
+    end
+
+    class GenericEnumerable
+      include Enumerable
+    end
+
+    Enumerable.prepend(Module.new)
+  end
+
+  def test_prepend_refined_module
+    assert_equal(0, Bug13446::GenericEnumerable.new.sum)
+  end
+
+  def test_unbound_refine_method
+    a = EnvUtil.labeled_class("A") do
+      def foo
+        self.class
+      end
+    end
+    b = EnvUtil.labeled_class("B")
+    bar = EnvUtil.labeled_module("R") do
+      break refine a do
+        def foo
+          super
+        end
+      end
+    end
+    assert_raise(TypeError) do
+      bar.instance_method(:foo).bind(b.new)
+    end
+  end
+
+  def test_refine_frozen_class
+    verbose_bak, $VERBOSE = $VERBOSE, nil
+    singleton_class.instance_variable_set(:@x, self)
+    class << self
+      c = Class.new do
+        def foo
+          :cfoo
+        end
+      end
+      foo = Module.new do
+        refine c do
+          def foo
+            :rfoo
+          end
+        end
+      end
+      using foo
+      @x.assert_equal(:rfoo, c.new.foo)
+      c.freeze
+      foo.module_eval do
+        refine c do
+          def foo
+            :rfoo2
+          end
+          def bar
+            :rbar
+          end
+        end
+      end
+      @x.assert_equal(:rfoo2, c.new.foo)
+      @x.assert_equal(:rbar, c.new.bar, '[ruby-core:71391] [Bug #11669]')
+    end
+  ensure
+    $VERBOSE = verbose_bak
+  end
+
+  # [Bug #17386]
+  def test_prepended_with_method_cache
+    foo = Class.new do
+      def foo
+        :Foo
+      end
+    end
+
+    code = Module.new do
+      def foo
+        :Code
+      end
+    end
+
+    _ext = Module.new do
+      refine foo do
+        def foo; end
+      end
+    end
+
+    obj = foo.new
+
+    assert_equal :Foo, obj.foo
+    foo.prepend code
+    assert_equal :Code, obj.foo
+  end
+
+  # [Bug #17417]
+  def test_prepended_with_method_cache_17417
+    assert_normal_exit %q{
+      module M
+        def hoge; end
+      end
+
+      module R
+        refine Hash do
+          def except *args; end
+        end
+      end
+
+      h = {}
+      h.method(:except) # put it on pCMC
+      Hash.prepend(M)
+      h.method(:except)
+    }
+  end
+
+  def test_defining_after_cached
+    klass = Class.new
+    _refinement = Module.new { refine(klass) { def foo; end } }
+    klass.new.foo rescue nil # cache the refinement method entry
+    klass.define_method(:foo) { 42 }
+    assert_equal(42, klass.new.foo)
+  end
+
+  # [Bug #17806]
+  def test_two_refinements_for_prepended_class
+    assert_normal_exit %q{
+      module R1
+        refine Hash do
+          def foo; :r1; end
+        end
+      end
+
+      class Hash
+        prepend(Module.new)
+      end
+
+      class Hash
+        def foo; end
+      end
+
+      {}.method(:foo) # put it on pCMC
+
+      module R2
+        refine Hash do
+          def foo; :r2; end
+        end
+      end
+
+      {}.foo
+    }
+  end
+
+  # [Bug #17806]
+  def test_redefining_refined_for_prepended_class
+    klass = Class.new { def foo; end }
+    _refinement = Module.new do
+      refine(klass) { def foo; :refined; end }
+    end
+    klass.prepend(Module.new)
+    klass.new.foo # cache foo
+    klass.define_method(:foo) { :second }
+    assert_equal(:second, klass.new.foo)
+  end
+
+  class Bug18180
+    module M
+      refine Array do
+        def min; :min; end
+        def max; :max; end
+      end
+    end
+
+    using M
+
+    def t
+      [[1+0, 2, 4].min, [1, 2, 4].min, [1+0, 2, 4].max, [1, 2, 4].max]
+    end
+  end
+
+  def test_refine_array_min_max
+    assert_equal([:min, :min, :max, :max], Bug18180.new.t)
+  end
+
+  class Bug17822
+    module Ext
+      refine(Bug17822) do
+        def foo = :refined
+      end
+    end
+
+    private(def foo = :not_refined)
+
+    module Client
+      using Ext
+      def self.call_foo
+        Bug17822.new.foo
+      end
+    end
+  end
+
+  # [Bug #17822]
+  def test_privatizing_refined_method
+    assert_equal(:refined, Bug17822::Client.call_foo)
+  end
+
+  def test_ancestors
+    refinement = nil
+    as = nil
+    Module.new do
+      refine Array do
+        refinement = self
+        as = ancestors
+      end
+    end
+    assert_equal([refinement], as, "[ruby-core:86949] [Bug #14744]")
+  end
+
+  module TestImport
+    class A
+      def foo
+        "original"
+      end
+    end
+
+    module B
+      BAR = "bar"
+
+      def bar
+        "#{foo}:#{BAR}"
+      end
+    end
+
+    module C
+      refine A do
+        import_methods B
+
+        def foo
+          "refined"
+        end
+      end
+    end
+
+    module D
+      refine A do
+        include B
+
+        def foo
+          "refined"
+        end
+      end
+    end
+
+    module UsingC
+      using C
+
+      def self.call_bar
+        A.new.bar
+      end
+    end
+
+    module UsingD
+      using D
+
+      def self.call_bar
+        A.new.bar
+      end
+    end
+  end
+
+  def test_import_methods
+    assert_equal("refined:bar", TestImport::UsingC.call_bar)
+    assert_equal("original:bar", TestImport::UsingD.call_bar)
+
+    assert_raise(ArgumentError) do
+      Module.new do
+        refine Integer do
+          import_methods Enumerable
+        end
+      end
+    end
   end
 
   private

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'utils'
 
 if defined?(OpenSSL)
@@ -61,14 +61,14 @@ foo\\bar::foo\\bar = baz
 [default1  default2]\t\t  # space is allowed in section name
           fo =b  ar       # space allowed in value
 [emptysection]
- [doller ]
+ [dollar ]
 foo=bar
 bar = $(foo)
 baz = 123$(default::bar)456${foo}798
 qux = ${baz}
 quxx = $qux.$qux
 __EOC__
-    assert_equal(['default', 'default1  default2', 'doller', 'emptysection', 'foo', 'foo\\bar'], c.sections.sort)
+    assert_equal(['default', 'default1  default2', 'dollar', 'emptysection', 'foo', 'foo\\bar'], c.sections.sort)
     assert_equal(['', 'a', 'bar', 'baz', 'd', 'dq', 'dq2', 'esc', 'foo\\bar', 'sq'], c['default'].keys.sort)
     assert_equal('c', c['default'][''])
     assert_equal('', c['default']['a'])
@@ -84,12 +84,12 @@ __EOC__
     assert_equal('baz', c['foo\\bar']['foo\\bar'])
     assert_equal('b  ar', c['default1  default2']['fo'])
 
-    # dolloer
-    assert_equal('bar', c['doller']['foo'])
-    assert_equal('bar', c['doller']['bar'])
-    assert_equal('123baz456bar798', c['doller']['baz'])
-    assert_equal('123baz456bar798', c['doller']['qux'])
-    assert_equal('123baz456bar798.123baz456bar798', c['doller']['quxx'])
+    # dollar
+    assert_equal('bar', c['dollar']['foo'])
+    assert_equal('bar', c['dollar']['bar'])
+    assert_equal('123baz456bar798', c['dollar']['baz'])
+    assert_equal('123baz456bar798', c['dollar']['qux'])
+    assert_equal('123baz456bar798.123baz456bar798', c['dollar']['quxx'])
 
     excn = assert_raise(OpenSSL::ConfigError) do
       OpenSSL::Config.parse("foo = $bar")
@@ -120,6 +120,54 @@ __EOC__
     assert_equal("error in line 7: missing close square bracket", excn.message)
   end
 
+  def test_s_parse_include
+    if !openssl?(1, 1, 1, 2)
+      # OpenSSL < 1.1.1 parses .include directive as a normal assignment
+      pend ".include directive is not supported"
+    end
+
+    in_tmpdir("ossl-config-include-test") do |dir|
+      Dir.mkdir("child")
+      File.write("child/a.conf", <<~__EOC__)
+        [default]
+        file-a = a.conf
+        [sec-a]
+        a = 123
+      __EOC__
+      File.write("child/b.cnf", <<~__EOC__)
+        [default]
+        file-b = b.cnf
+        [sec-b]
+        b = 123
+      __EOC__
+      File.write("include-child.conf", <<~__EOC__)
+        key_outside_section = value_a
+        .include child
+      __EOC__
+
+      include_file = <<~__EOC__
+        [default]
+        file-main = unnamed
+        [sec-main]
+        main = 123
+        .include = include-child.conf
+      __EOC__
+
+      # Include a file by relative path
+      c1 = OpenSSL::Config.parse(include_file)
+      assert_equal(["default", "sec-a", "sec-b", "sec-main"], c1.sections.sort)
+      assert_equal(["file-a", "file-b", "file-main"], c1["default"].keys.sort)
+      assert_equal({"a" => "123"}, c1["sec-a"])
+      assert_equal({"b" => "123"}, c1["sec-b"])
+      assert_equal({"main" => "123", "key_outside_section" => "value_a"}, c1["sec-main"])
+
+      # Relative paths are from the working directory
+      # Inclusion fails, but the error is ignored silently
+      c2 = Dir.chdir("child") { OpenSSL::Config.parse(include_file) }
+      assert_equal(["default", "sec-main"], c2.sections.sort)
+    end
+  end
+
   def test_s_load
     # alias of new
     c = OpenSSL::Config.load
@@ -132,6 +180,12 @@ __EOC__
       assert_equal("[ default ]\n\n", c.to_s)
       assert_equal(['default'], c.sections)
     }
+  end
+
+  def test_s_parse_config
+    ret = OpenSSL::Config.parse_config(@it.to_s)
+    assert_equal(@it.sections.sort, ret.keys.sort)
+    assert_equal(@it["default"], ret["default"])
   end
 
   def test_initialize
@@ -166,31 +220,12 @@ __EOC__
   end
 
   def test_get_value_ENV
+    # LibreSSL removed support for NCONF_get_string(conf, "ENV", str)
+    return if libressl?
+
     key = ENV.keys.first
     assert_not_nil(key) # make sure we have at least one ENV var.
     assert_equal(ENV[key], @it.get_value('ENV', key))
-  end
-
-  def test_value
-    # suppress deprecation warnings
-    EnvUtil.suppress_warning do
-      assert_equal('CA_default', @it.value('ca', 'default_ca'))
-      assert_equal(nil, @it.value('ca', 'no such key'))
-      assert_equal(nil, @it.value('no such section', 'no such key'))
-      assert_equal('.', @it.value('', 'HOME'))
-      assert_equal('.', @it.value(nil, 'HOME'))
-      assert_equal('.', @it.value('HOME'))
-      # fallback to 'default' ugly...
-      assert_equal('.', @it.value('unknown', 'HOME'))
-    end
-  end
-
-  def test_value_ENV
-    EnvUtil.suppress_warning do
-      key = ENV.keys.first
-      assert_not_nil(key) # make sure we have at least one ENV var.
-      assert_equal(ENV[key], @it.value('ENV', key))
-    end
   end
 
   def test_aref
@@ -200,56 +235,19 @@ __EOC__
     assert_equal({}, @it[''])
   end
 
-  def test_section
-    EnvUtil.suppress_warning do
-      assert_equal({'HOME' => '.'}, @it.section('default'))
-      assert_equal({'dir' => './demoCA', 'certs' => './certs'}, @it.section('CA_default'))
-      assert_equal({}, @it.section('no_such_section'))
-      assert_equal({}, @it.section(''))
-    end
-  end
-
   def test_sections
     assert_equal(['CA_default', 'ca', 'default'], @it.sections.sort)
-    @it['new_section'] = {'foo' => 'bar'}
-    assert_equal(['CA_default', 'ca', 'default', 'new_section'], @it.sections.sort)
-    @it['new_section'] = {}
-    assert_equal(['CA_default', 'ca', 'default', 'new_section'], @it.sections.sort)
-  end
+    Tempfile.create("openssl.cnf") { |f|
+      f.write File.read(@tmpfile.path)
+      f.puts "[ new_section ]"
+      f.puts "foo = bar"
+      f.puts "[ empty_section ]"
+      f.close
 
-  def test_add_value
-    c = OpenSSL::Config.new
-    assert_equal("", c.to_s)
-    # add key
-    c.add_value('default', 'foo', 'bar')
-    assert_equal("[ default ]\nfoo=bar\n\n", c.to_s)
-    # add another key
-    c.add_value('default', 'baz', 'qux')
-    assert_equal('bar', c['default']['foo'])
-    assert_equal('qux', c['default']['baz'])
-    # update the value
-    c.add_value('default', 'baz', 'quxxx')
-    assert_equal('bar', c['default']['foo'])
-    assert_equal('quxxx', c['default']['baz'])
-    # add section and key
-    c.add_value('section', 'foo', 'bar')
-    assert_equal('bar', c['default']['foo'])
-    assert_equal('quxxx', c['default']['baz'])
-    assert_equal('bar', c['section']['foo'])
-  end
-
-  def test_aset
-    @it['foo'] = {'bar' => 'baz'}
-    assert_equal({'bar' => 'baz'}, @it['foo'])
-    @it['foo'] = {'bar' => 'qux', 'baz' => 'quxx'}
-    assert_equal({'bar' => 'qux', 'baz' => 'quxx'}, @it['foo'])
-
-    # OpenSSL::Config is add only for now.
-    @it['foo'] = {'foo' => 'foo'}
-    assert_equal({'foo' => 'foo', 'bar' => 'qux', 'baz' => 'quxx'}, @it['foo'])
-    # you cannot override or remove any section and key.
-    @it['foo'] = {}
-    assert_equal({'foo' => 'foo', 'bar' => 'qux', 'baz' => 'quxx'}, @it['foo'])
+      c = OpenSSL::Config.new(f.path)
+      assert_equal(['CA_default', 'ca', 'default', 'empty_section', 'new_section'],
+                   c.sections.sort)
+    }
   end
 
   def test_each
@@ -271,33 +269,23 @@ __EOC__
     assert_match(/#<OpenSSL::Config sections=\[.*\]>/, @it.inspect)
   end
 
-  def test_freeze
-    c = OpenSSL::Config.new
-    c['foo'] = [['key', 'value']]
-    c.freeze
-
-    bug = '[ruby-core:18377]'
-    # RuntimeError for 1.9, TypeError for 1.8
-    e = assert_raise(TypeError, bug) do
-      c['foo'] = [['key', 'wrong']]
-    end
-    assert_match(/can't modify/, e.message, bug)
-  end
-
   def test_dup
-    assert(!@it.sections.empty?)
-    c = @it.dup
-    assert_equal(@it.sections.sort, c.sections.sort)
-    @it['newsection'] = {'a' => 'b'}
-    assert_not_equal(@it.sections.sort, c.sections.sort)
+    assert_equal(['CA_default', 'ca', 'default'], @it.sections.sort)
+    c1 = @it.dup
+    assert_equal(@it.sections.sort, c1.sections.sort)
+    c2 = @it.clone
+    assert_equal(@it.sections.sort, c2.sections.sort)
   end
 
-  def test_clone
-    assert(!@it.sections.empty?)
-    c = @it.clone
-    assert_equal(@it.sections.sort, c.sections.sort)
-    @it['newsection'] = {'a' => 'b'}
-    assert_not_equal(@it.sections.sort, c.sections.sort)
+  private
+
+  def in_tmpdir(*args)
+    Dir.mktmpdir(*args) do |dir|
+      dir = File.realpath(dir)
+      Dir.chdir(dir) do
+        yield dir
+      end
+    end
   end
 end
 

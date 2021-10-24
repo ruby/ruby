@@ -1,20 +1,17 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 
 class TestGemBundlerVersionFinder < Gem::TestCase
-
   def setup
     super
 
     @argv = ARGV.dup
-    @env = ENV.to_hash.clone
-    ENV.delete("BUNDLER_VERSION")
     @dollar_0 = $0
+    without_any_upwards_gemfiles
   end
 
   def teardown
     ARGV.replace @argv
-    ENV.replace @env
     $0 = @dollar_0
 
     super
@@ -78,6 +75,24 @@ class TestGemBundlerVersionFinder < Gem::TestCase
     end
   end
 
+  def test_deleted_directory
+    pend "Cannot perform this test on windows" if win_platform?
+    pend "Cannot perform this test on Solaris" if /solaris/ =~ RUBY_PLATFORM
+    require "tmpdir"
+
+    orig_dir = Dir.pwd
+
+    begin
+      Dir.mktmpdir("some_dir") do |dir|
+        Dir.chdir(dir)
+      end
+    ensure
+      Dir.chdir(orig_dir)
+    end
+
+    assert_nil bvf.bundler_version_with_reason
+  end
+
   def test_compatible
     assert bvf.compatible?(util_spec("foo"))
     assert bvf.compatible?(util_spec("bundler", 1.1))
@@ -102,7 +117,7 @@ class TestGemBundlerVersionFinder < Gem::TestCase
 
   def test_filter
     versions = %w[1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3 3.a 3.0 3.1.1]
-    specs = versions.map { |v| util_spec("bundler", v) }
+    specs = versions.map {|v| util_spec("bundler", v) }
 
     assert_equal %w[1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3 3.a 3.0 3.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
 
@@ -128,5 +143,4 @@ class TestGemBundlerVersionFinder < Gem::TestCase
     bvf.filter!(specs)
     specs
   end
-
 end

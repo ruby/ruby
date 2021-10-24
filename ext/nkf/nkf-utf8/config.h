@@ -30,7 +30,7 @@
 /* --exec-in, --exec-out option
  * require pipe, fork, execvp and so on.
  * please undef this on MS-DOS, MinGW
- * this is still buggy arround child process
+ * this is still buggy around child process
  */
 /* #define EXEC_IO */
 

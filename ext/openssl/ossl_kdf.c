@@ -163,6 +163,14 @@ kdf_scrypt(int argc, VALUE *argv, VALUE self)
  *   HashLen is the length of the hash function output in octets.
  * _hash_::
  *   The hash function.
+ *
+ * === Example
+ *   # The values from https://datatracker.ietf.org/doc/html/rfc5869#appendix-A.1
+ *   ikm = ["0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"].pack("H*")
+ *   salt = ["000102030405060708090a0b0c"].pack("H*")
+ *   info = ["f0f1f2f3f4f5f6f7f8f9"].pack("H*")
+ *   p OpenSSL::KDF.hkdf(ikm, salt: salt, info: info, length: 42, hash: "SHA256").unpack1("H*")
+ *   # => "3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007208d5b887185865"
  */
 static VALUE
 kdf_hkdf(int argc, VALUE *argv, VALUE self)
@@ -272,7 +280,7 @@ Init_ossl_kdf(void)
      *   # store this with the generated value
      *   salt = OpenSSL::Random.random_bytes(16)
      *   iter = 20_000
-     *   hash = OpenSSL::Digest::SHA256.new
+     *   hash = OpenSSL::Digest.new('SHA256')
      *   len = hash.digest_length
      *   # the final value to be stored
      *   value = OpenSSL::KDF.pbkdf2_hmac(pass, salt: salt, iterations: iter,
@@ -284,24 +292,8 @@ Init_ossl_kdf(void)
      * Typically, "==" short-circuits on evaluation, and is therefore
      * vulnerable to timing attacks. The proper way is to use a method that
      * always takes the same amount of time when comparing two values, thus
-     * not leaking any information to potential attackers. To compare two
-     * values, the following could be used:
-     *
-     *   def eql_time_cmp(a, b)
-     *     unless a.length == b.length
-     *       return false
-     *     end
-     *     cmp = b.bytes
-     *     result = 0
-     *     a.bytes.each_with_index {|c,i|
-     *       result |= c ^ cmp[i]
-     *     }
-     *     result == 0
-     *   end
-     *
-     * Please note that the premature return in case of differing lengths
-     * typically does not leak valuable information - when using PBKDF2, the
-     * length of the values to be compared is of fixed size.
+     * not leaking any information to potential attackers. To do this, use
+     * +OpenSSL.fixed_length_secure_compare+.
      */
     mKDF = rb_define_module_under(mOSSL, "KDF");
     /*

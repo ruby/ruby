@@ -32,22 +32,6 @@ RSpec.describe Bundler::EndpointSpecification do
         )
       end
     end
-
-    context "when there is an ill formed requirement" do
-      before do
-        allow(Gem::Dependency).to receive(:new).with(name, [requirement1, requirement2]) {
-          raise ArgumentError.new("Ill-formed requirement [\"#<YAML::Syck::DefaultKey")
-        }
-        # Eliminate extra line break in rspec output due to `puts` in `#build_dependency`
-        allow(subject).to receive(:puts) {}
-      end
-
-      it "should raise a Bundler::GemspecError with invalid gemspec message" do
-        expect { subject.send(:build_dependency, name, [requirement1, requirement2]) }.to raise_error(
-          Bundler::GemspecError, /Unfortunately, the gem foo \(1\.0\.0\) has an invalid gemspec/
-        )
-      end
-    end
   end
 
   describe "#parse_metadata" do

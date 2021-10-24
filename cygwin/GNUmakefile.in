@@ -1,8 +1,13 @@
+gnumake = yes
+
 include Makefile
 
 ENABLE_SHARED=@ENABLE_SHARED@
 DLLWRAP = @DLLWRAP@ --target=@target_os@ --driver-name="$(CC)"
-WINDRES = @WINDRES@ --preprocessor="$(CPP) -xc" -DRC_INVOKED
+windres-cpp := $(CPP) -xc
+windres-cpp := --preprocessor=$(firstword $(windres-cpp)) \
+	$(addprefix --preprocessor-arg=,$(wordlist 2,$(words $(windres-cpp)),$(windres-cpp)))
+WINDRES = @WINDRES@ $(windres-cpp) -DRC_INVOKED
 STRIP = @STRIP@
 
 ifeq (@target_os@,cygwin)
@@ -11,6 +16,9 @@ else
   DLL_BASE_NAME := $(RUBY_SO_NAME)
   DLLWRAP += -mno-cygwin
   VPATH := $(VPATH):$(srcdir)/win32
+  ifneq ($(filter -flto%,$(LDFLAGS)),)
+    miniruby$(EXEEXT): XLDFLAGS += -Wno-maybe-uninitialized
+  endif
 endif
 
 ifneq ($(ENABLE_SHARED),yes)
@@ -28,9 +36,7 @@ endif
 
 WPROGRAM = $(RUBYW_INSTALL_NAME)$(EXEEXT)
 
--include uncommon.mk
-
-include $(srcdir)/defs/gmake.mk
+include $(srcdir)/template/GNUmakefile.in
 
 SOLIBS := $(DLL_BASE_NAME).res.@OBJEXT@ $(SOLIBS)
 override EXTOBJS += $(if $(filter-out $(RUBYW_INSTALL_NAME),$(@:$(EXEEXT)=)),$(RUBY_INSTALL_NAME),$(@:$(EXEEXT)=)).res.$(OBJEXT)
@@ -94,13 +100,5 @@ $(RUBYDEF): $(LIBRUBY_A) $(PREP) $(RBCONFIG)
 
 clean-local::
 	@$(RM) $(RUBYDEF)
-
-ifeq (@target_os@,cygwin)
-cygwin-$(RUBY_INSTALL_NAME)$(MAJOR)$(MINOR)0.dll: $(LIBRUBY_A) $(RUBYDEF)
-	$(ECHO) generating $@
-	$(Q) @DLLWRAP@ -s --def=$(RUBYDEF) -o $@
-endif
-
-clean-local::
 	@$(RM) $(RUBY_EXP) $(RCFILES:.rc=.res.@OBJEXT@)
 	@$(RM) $(RCFILES)

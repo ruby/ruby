@@ -6,7 +6,7 @@ describe "File.world_writable?" do
 
   it "returns nil if the file does not exist" do
     file = rand.to_s + $$.to_s
-    File.exist?(file).should be_false
+    File.should_not.exist?(file)
     File.world_writable?(file).should be_nil
   end
 end

@@ -28,7 +28,7 @@ describe "File.open" do
   describe "with a block" do
     it "does not raise error when file is closed inside the block" do
       @fh = File.open(@file) { |fh| fh.close; fh }
-      @fh.closed?.should == true
+      @fh.should.closed?
     end
 
     it "invokes close on an opened file when exiting the block" do
@@ -63,40 +63,40 @@ describe "File.open" do
   it "opens the file (basic case)" do
     @fh = File.open(@file)
     @fh.should be_kind_of(File)
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "opens the file with unicode characters" do
     @fh = File.open(@unicode_path, "w")
     @fh.should be_kind_of(File)
-    File.exist?(@unicode_path).should == true
+    File.should.exist?(@unicode_path)
   end
 
   it "opens a file when called with a block" do
     File.open(@file) { |fh| }
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "opens with mode string" do
     @fh = File.open(@file, 'w')
     @fh.should be_kind_of(File)
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "opens a file with mode string and block" do
     File.open(@file, 'w') { |fh| }
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "opens a file with mode num" do
     @fh = File.open(@file, @flags)
     @fh.should be_kind_of(File)
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "opens a file with mode num and block" do
     File.open(@file, 'w') { |fh| }
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "opens a file with mode and permission as nil" do
@@ -113,7 +113,7 @@ describe "File.open" do
     platform_is_not :windows do
       @fh.lstat.mode.to_s(8).should == "100744"
     end
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   # For this test we delete the file first to reset the perms
@@ -124,7 +124,7 @@ describe "File.open" do
     platform_is_not :windows do
       File.stat(@file).mode.to_s(8).should == "100755"
     end
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "creates the file and returns writable descriptor when called with 'w' mode and r-o permissions" do
@@ -162,7 +162,7 @@ describe "File.open" do
     fh_copy = File.open(@fh.fileno)
     fh_copy.autoclose = false
     fh_copy.should be_kind_of(File)
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "opens a file that no exists when use File::WRONLY mode" do
@@ -206,19 +206,19 @@ describe "File.open" do
   it "opens a file that no exists when use File::CREAT mode" do
     @fh = File.open(@nonexistent, File::CREAT) { |f| f }
     @fh.should be_kind_of(File)
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "opens a file that no exists when use 'a' mode" do
     @fh = File.open(@nonexistent, 'a') { |f| f }
     @fh.should be_kind_of(File)
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "opens a file that no exists when use 'w' mode" do
     @fh = File.open(@nonexistent, 'w') { |f| f }
     @fh.should be_kind_of(File)
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   # Check the grants associated to the different open modes combinations.
@@ -365,7 +365,7 @@ describe "File.open" do
   it "creates a new file when use File::WRONLY|File::APPEND mode" do
     @fh = File.open(@file, File::WRONLY|File::APPEND)
     @fh.should be_kind_of(File)
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "opens a file when use File::WRONLY|File::APPEND mode" do
@@ -408,7 +408,7 @@ describe "File.open" do
     begin
       @fh = File.open(@file, File::WRONLY|File::TRUNC)
       @fh.should be_kind_of(File)
-      File.exist?(@file).should == true
+      File.should.exist?(@file)
     ensure
       fh1.close
     end
@@ -471,13 +471,13 @@ describe "File.open" do
   it "opens a file for binary read" do
     @fh = File.open(@file, "rb")
     @fh.should be_kind_of(File)
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "opens a file for binary write" do
     @fh = File.open(@file, "wb")
     @fh.should be_kind_of(File)
-    File.exist?(@file).should == true
+    File.should.exist?(@file)
   end
 
   it "opens a file for read-write and truncate the file" do
@@ -485,7 +485,7 @@ describe "File.open" do
     File.size(@file).should > 0
     File.open(@file, "w+") do |f|
       f.pos.should == 0
-      f.eof?.should == true
+      f.should.eof?
     end
     File.size(@file).should == 0
   end
@@ -495,7 +495,7 @@ describe "File.open" do
     File.size(@file).should > 0
     File.open(@file, "rb+") do |f|
       f.pos.should == 0
-      f.eof?.should == false
+      f.should_not.eof?
     end
   end
 
@@ -504,7 +504,7 @@ describe "File.open" do
     File.size(@file).should > 0
     File.open(@file, "wb+") do |f|
       f.pos.should == 0
-      f.eof?.should == true
+      f.should.eof?
     end
     File.size(@file).should == 0
   end
@@ -523,10 +523,10 @@ describe "File.open" do
             io.read.should == "ruby"
             Dir["#{dir}/*"].should == []
           end
-        rescue Errno::EOPNOTSUPP, Errno::EINVAL, Errno::EISDIR
-          # EOPNOTSUPP: no support from the filesystem
-          # EINVAL: presumably bug in glibc
-          1.should == 1
+        rescue Errno::EOPNOTSUPP
+          skip "no support from the filesystem"
+        rescue Errno::EINVAL, Errno::EISDIR
+          skip "presumably bug in glibc"
         ensure
           rm_r dir
         end
@@ -566,7 +566,7 @@ describe "File.open" do
     options = mock("file open options")
     options.should_receive(:to_hash).and_return({ mode: "r" })
 
-    @fh = File.open(@file, options)
+    @fh = File.open(@file, **options)
   end
 
   it "accepts extra flags as a keyword argument and combine with a string mode" do
@@ -623,31 +623,35 @@ describe "File.open" do
     end
   end
 
-  ruby_version_is "2.6" do
-    context "'x' flag" do
-      before :each do
-        @xfile = tmp("x-flag")
-        rm_r @xfile
-      end
+  it "raises ArgumentError if mixing :newline and binary mode" do
+    -> {
+      File.open(@file, "rb", newline: :universal) {}
+    }.should raise_error(ArgumentError, "newline decorator with binary mode")
+  end
 
-      after :each do
-        rm_r @xfile
-      end
+  context "'x' flag" do
+    before :each do
+      @xfile = tmp("x-flag")
+      rm_r @xfile
+    end
 
-      it "does nothing if the file doesn't exist" do
-        File.open(@xfile, "wx") { |f| f.write("content") }
-        File.read(@xfile).should == "content"
-      end
+    after :each do
+      rm_r @xfile
+    end
 
-      it "throws a Errno::EEXIST error if the file exists" do
-        touch @xfile
-        -> { File.open(@xfile, "wx") }.should raise_error(Errno::EEXIST)
-      end
+    it "does nothing if the file doesn't exist" do
+      File.open(@xfile, "wx") { |f| f.write("content") }
+      File.read(@xfile).should == "content"
+    end
 
-      it "can't be used with 'r' and 'a' flags" do
-        -> { File.open(@xfile, "rx") }.should raise_error(ArgumentError, 'invalid access mode rx')
-        -> { File.open(@xfile, "ax") }.should raise_error(ArgumentError, 'invalid access mode ax')
-      end
+    it "throws a Errno::EEXIST error if the file exists" do
+      touch @xfile
+      -> { File.open(@xfile, "wx") }.should raise_error(Errno::EEXIST)
+    end
+
+    it "can't be used with 'r' and 'a' flags" do
+      -> { File.open(@xfile, "rx") }.should raise_error(ArgumentError, 'invalid access mode rx')
+      -> { File.open(@xfile, "ax") }.should raise_error(ArgumentError, 'invalid access mode ax')
     end
   end
 end

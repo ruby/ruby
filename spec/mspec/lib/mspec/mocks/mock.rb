@@ -48,7 +48,7 @@ module Mock
     end
   end
 
-  def self.install_method(obj, sym, type=nil)
+  def self.install_method(obj, sym, type = nil)
     meta = obj.singleton_class
 
     key = replaced_key obj, sym
@@ -180,7 +180,7 @@ module Mock
       mock_respond_to? obj, *args
     else
       SpecExpectation.fail_with("Mock '#{name_or_inspect obj}': method #{sym}\n",
-                            "called with unexpected arguments #{inspect_args compare}")
+                            "called with unexpected arguments #{inspect_args args}")
     end
   end
 

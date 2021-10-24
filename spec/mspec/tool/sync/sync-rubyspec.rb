@@ -1,3 +1,6 @@
+# This script is based on commands from the wiki:
+# https://github.com/ruby/spec/wiki/Merging-specs-from-JRuby-and-other-sources
+
 IMPLS = {
   truffleruby: {
     git: "https://github.com/oracle/truffleruby.git",
@@ -12,14 +15,13 @@ IMPLS = {
   },
   mri: {
     git: "https://github.com/ruby/ruby.git",
-    master: "trunk",
   },
 }
 
 MSPEC = ARGV.delete('--mspec')
 
 CHECK_LAST_MERGE = ENV['CHECK_LAST_MERGE'] != 'false'
-TEST_TRUNK = ENV['TEST_TRUNK'] != 'false'
+TEST_MASTER = ENV['TEST_MASTER'] != 'false'
 
 MSPEC_REPO = File.expand_path("../../..", __FILE__)
 raise MSPEC_REPO if !Dir.exist?(MSPEC_REPO) or !Dir.exist?("#{MSPEC_REPO}/.git")
@@ -36,6 +38,9 @@ BRIGHT_RED = "\e[31;1m"
 BRIGHT_YELLOW = "\e[33;1m"
 RESET = "\e[0m"
 
+# git filter-branch --subdirectory-filter works fine for our use case
+ENV['FILTER_BRANCH_SQUELCH_WARNING'] = '1'
+
 class RubyImplementation
   attr_reader :name
 
@@ -48,12 +53,12 @@ class RubyImplementation
     @data[:git]
   end
 
-  def default_branch
-    @data[:master] || "master"
-  end
-
   def repo_name
     File.basename(git_url, ".git")
+  end
+
+  def repo_path
+    "#{__dir__}/#{repo_name}"
   end
 
   def repo_org
@@ -99,7 +104,7 @@ def update_repo(impl)
   Dir.chdir(impl.repo_name) do
     puts Dir.pwd
 
-    sh "git", "checkout", impl.default_branch
+    sh "git", "checkout", "master"
     sh "git", "pull"
   end
 end
@@ -140,7 +145,7 @@ def rebase_commits(impl)
       else
         last_merge = `git log --grep='^#{impl.last_merge_message}' -n 1 --format='%H %ct'`
       end
-      last_merge, commit_timestamp = last_merge.chomp.split(' ')
+      last_merge, commit_timestamp = last_merge.split(' ')
 
       raise "Could not find last merge" unless last_merge
       puts "Last merge is #{last_merge}"
@@ -151,6 +156,11 @@ def rebase_commits(impl)
         raise "#{days_since_last_merge.floor} days since last merge, probably wrong commit"
       end
 
+      puts "Checking if the last merge is consistent with upstream files"
+      rubyspec_commit = `git log -n 1 --format='%s' #{last_merge}`.chomp.split('@', 2)[-1]
+      sh "git", "checkout", last_merge
+      sh "git", "diff", "--exit-code", rubyspec_commit, "--", ":!.github"
+
       puts "Rebasing..."
       sh "git", "branch", "-D", rebased if branch?(rebased)
       sh "git", "checkout", "-b", rebased, impl.name
@@ -159,19 +169,23 @@ def rebase_commits(impl)
   end
 end
 
+def new_commits?(impl)
+  Dir.chdir(SOURCE_REPO) do
+    diff = `git diff master #{impl.rebased_branch}`
+    !diff.empty?
+  end
+end
+
 def test_new_specs
   require "yaml"
   Dir.chdir(SOURCE_REPO) do
-    versions = YAML.load_file(".travis.yml")
-    versions = if versions.include? "matrix"
-      versions["matrix"]["include"].map { |job| job["rvm"] }
-    else
-      versions["rvm"]
-    end
+    workflow = YAML.load_file(".github/workflows/ci.yml")
+    job_name = MSPEC ? "test" : "specs"
+    versions = workflow.dig("jobs", job_name, "strategy", "matrix", "ruby")
     versions = versions.grep(/^\d+\./) # Test on MRI
     min_version, max_version = versions.minmax
 
-    test_command = MSPEC ? "bundle exec rspec" : "../mspec/bin/mspec -j"
+    test_command = MSPEC ? "bundle install && bundle exec rspec" : "../mspec/bin/mspec -j"
 
     run_test = -> version {
       command = "chruby #{version} && #{test_command}"
@@ -180,7 +194,7 @@ def test_new_specs
 
     run_test[min_version]
     run_test[max_version]
-    run_test["trunk"] if TEST_TRUNK
+    run_test["ruby-master"] if TEST_MASTER
   end
 end
 
@@ -197,8 +211,8 @@ end
 def fast_forward_master(impl)
   Dir.chdir(SOURCE_REPO) do
     sh "git", "checkout", "master"
-    sh "git", "merge", "--ff-only", "#{impl.name}-rebased"
-    sh "git", "branch", "--delete", "#{impl.name}-rebased"
+    sh "git", "merge", "--ff-only", impl.rebased_branch
+    sh "git", "branch", "--delete", impl.rebased_branch
   end
 end
 
@@ -217,10 +231,15 @@ def main(impls)
     update_repo(impl)
     filter_commits(impl)
     rebase_commits(impl)
-    test_new_specs
-    verify_commits(impl)
-    fast_forward_master(impl)
-    check_ci
+    if new_commits?(impl)
+      test_new_specs
+      verify_commits(impl)
+      fast_forward_master(impl)
+      check_ci
+    else
+      STDERR.puts "#{BRIGHT_YELLOW}No new commits#{RESET}"
+      fast_forward_master(impl)
+    end
   end
 end
 

@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'rubygems/util'
 
 ##
 # A git gem for use in a gem dependencies file.
@@ -12,7 +11,6 @@ require 'rubygems/util'
 #   source.specs
 
 class Gem::Source::Git < Gem::Source
-
   ##
   # The name of the gem created by this git gem.
 
@@ -103,9 +101,11 @@ class Gem::Source::Git < Gem::Source
 
       success = system @git, 'reset', '--quiet', '--hard', rev_parse
 
-      success &&=
-        Gem::Util.silent_system @git, 'submodule', 'update',
-               '--quiet', '--init', '--recursive' if @need_submodules
+      if @need_submodules
+        _, status = Open3.capture2e(@git, 'submodule', 'update', '--quiet', '--init', '--recursive')
+
+        success &&= status.success?
+      end
 
       success
     end
@@ -228,8 +228,8 @@ class Gem::Source::Git < Gem::Source
     require 'digest' # required here to avoid deadlocking in Gem.activate_bin_path (because digest is a gem on 2.5+)
 
     normalized =
-      if @repository =~ %r%^\w+://(\w+@)?%
-        uri = URI(@repository).normalize.to_s.sub %r%/$%,''
+      if @repository =~ %r{^\w+://(\w+@)?}
+        uri = URI(@repository).normalize.to_s.sub %r{/$},''
         uri.sub(/\A(\w+)/) { $1.downcase }
       else
         @repository
@@ -237,5 +237,4 @@ class Gem::Source::Git < Gem::Source
 
     Digest::SHA1.hexdigest normalized
   end
-
 end

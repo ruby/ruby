@@ -261,7 +261,7 @@ class CGI
   private :_header_for_hash
 
   def nph?  #:nodoc:
-    return /IIS\/(\d+)/.match($CGI_ENV['SERVER_SOFTWARE']) && $1.to_i < 5
+    return /IIS\/(\d+)/ =~ $CGI_ENV['SERVER_SOFTWARE'] && $1.to_i < 5
   end
 
   def _header_for_modruby(buf)  #:nodoc:
@@ -544,11 +544,11 @@ class CGI
         /Content-Disposition:.* filename=(?:"(.*?)"|([^;\r\n]*))/i.match(head)
         filename = $1 || $2 || ''.dup
         filename = CGI.unescape(filename) if unescape_filename?()
-        body.instance_variable_set(:@original_filename, filename.taint)
+        body.instance_variable_set(:@original_filename, filename)
         ## content type
         /Content-Type: (.*)/i.match(head)
         (content_type = $1 || ''.dup).chomp!
-        body.instance_variable_set(:@content_type, content_type.taint)
+        body.instance_variable_set(:@content_type, content_type)
         ## query parameter name
         /Content-Disposition:.* name=(?:"(.*?)"|([^;\r\n]*))/i.match(head)
         name = $1 || $2 || ''
@@ -607,6 +607,7 @@ class CGI
     end
     def unescape_filename?  #:nodoc:
       user_agent = $CGI_ENV['HTTP_USER_AGENT']
+      return false unless user_agent
       return /Mac/i.match(user_agent) && /Mozilla/i.match(user_agent) && !/MSIE/i.match(user_agent)
     end
 
@@ -648,7 +649,7 @@ class CGI
     # Reads query parameters in the @params field, and cookies into @cookies.
     def initialize_query()
       if ("POST" == env_table['REQUEST_METHOD']) and
-        %r|\Amultipart/form-data.*boundary=\"?([^\";,]+)\"?|.match(env_table['CONTENT_TYPE'])
+        %r|\Amultipart/form-data.*boundary=\"?([^\";,]+)\"?| =~ env_table['CONTENT_TYPE']
         current_max_multipart_length = @max_multipart_length.respond_to?(:call) ? @max_multipart_length.call : @max_multipart_length
         raise StandardError.new("too large multipart data.") if env_table['CONTENT_LENGTH'].to_i > current_max_multipart_length
         boundary = $1.dup

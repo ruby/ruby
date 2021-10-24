@@ -64,8 +64,8 @@ tests = [
   [ 'setinstancevariable', %q{ @x = true }, ],
   [ 'getinstancevariable', %q{ @x = true; @x }, ],
 
-  [ 'setclassvariable', %q{ @@x = true }, ],
-  [ 'getclassvariable', %q{ @@x = true; @@x }, ],
+  [ 'setclassvariable', %q{ class A; @@x = true; end }, ],
+  [ 'getclassvariable', %q{ class A; @@x = true; @@x end }, ],
 
   [ 'setconstant', %q{ X = true }, ],
   [ 'setconstant', %q{ Object::X = true }, ],
@@ -86,15 +86,13 @@ tests = [
   [ 'putobject',            %q{ /(?<x>x)/ =~ "x"; x == "x" }, ],
 
   [ 'putspecialobject',         %q{ {//=>true}[//] }, ],
-  [ 'putiseq',                  %q{ -> { true }.() }, ],
   [ 'putstring',                %q{ "true" }, ],
   [ 'tostring / concatstrings', %q{ "#{true}" }, ],
-  [ 'freezestring',             %q{ "#{true}" }, fsl, ],
-  [ 'freezestring',             %q{ "#{true}" }, '-d', fsl, ],
   [ 'toregexp',                 %q{ /#{true}/ =~ "true" && $~ }, ],
   [ 'intern',                   %q{ :"#{true}" }, ],
 
   [ 'newarray',    %q{ ["true"][0] }, ],
+  [ 'newarraykwsplat', %q{ [**{x:'true'}][0][:x] }, ],
   [ 'duparray',    %q{ [ true ][0] }, ],
   [ 'expandarray', %q{ y = [ true, false, nil ]; x, = y; x }, ],
   [ 'expandarray', %q{ y = [ true, false, nil ]; x, *z = y; x }, ],
@@ -203,6 +201,8 @@ tests = [
 
   [ 'opt_str_freeze', %q{ 'true'.freeze }, ],
   [ 'opt_nil_p',      %q{ nil.nil? }, ],
+  [ 'opt_nil_p',      %q{ !Object.nil? }, ],
+  [ 'opt_nil_p',      %q{ Class.new{def nil?; true end}.new.nil? }, ],
   [ 'opt_str_uminus', %q{ -'true' }, ],
   [ 'opt_str_freeze', <<-'},', ], # {
     class String
@@ -384,14 +384,13 @@ tests = [
   [ 'opt_empty_p', %q{ ''.empty? }, ],
   [ 'opt_empty_p', %q{ [].empty? }, ],
   [ 'opt_empty_p', %q{ {}.empty? }, ],
-  [ 'opt_empty_p', %q{ Queue.new.empty? }, ],
+  [ 'opt_empty_p', %q{ Thread::Queue.new.empty? }, ],
 
   [ 'opt_succ',  %q{ 1.succ == 2 }, ],
   if defined? $FIXNUM_MAX then
     [ 'opt_succ',%Q{ #{ $FIXNUM_MAX }.succ == #{ $FIXNUM_MAX + 1 } }, ]
   end,
   [ 'opt_succ',  %q{ '1'.succ == '2' }, ],
-  [ 'opt_succ',  %q{ x = Time.at(0); x.succ == Time.at(1) }, ],
 
   [ 'opt_not',  %q{ ! false }, ],
   [ 'opt_neq', <<-'},', ],       # {
@@ -399,8 +398,8 @@ tests = [
     ! X.new
   },
 
-  [ 'opt_regexpmatch1',  %q{ /true/ =~ 'true' && $~ }, ],
-  [ 'opt_regexpmatch1', <<-'},', ],       # {
+  [ 'opt_regexpmatch2',  %q{ /true/ =~ 'true' && $~ }, ],
+  [ 'opt_regexpmatch2', <<-'},', ],       # {
     class Regexp; def =~ other; true; end; end
     /true/ =~ 'true'
   },
@@ -409,15 +408,32 @@ tests = [
     class String; def =~ other; true; end; end
     'true' =~ /true/
   },
-
-  [ 'opt_call_c_function', 'Struct.new(:x).new.x = true', ],
 ]
 
 # normal path
-tests.compact.each {|(insn, expr, *a)| assert_equal 'true', expr, insn, *a }
+tests.compact.each do |(insn, expr, *a)|
+  if a.last.is_a?(Hash)
+    a = a.dup
+    kw = a.pop
+    assert_equal 'true', expr, insn, *a, **kw
+  else
+    assert_equal 'true', expr, insn, *a
+  end
+end
 
 # with trace
 tests.compact.each {|(insn, expr, *a)|
   progn = "set_trace_func(proc{})\n" + expr
-  assert_equal 'true', progn, 'trace_' + insn, *a
+  if a.last.is_a?(Hash)
+    a = a.dup
+    kw = a.pop
+    assert_equal 'true', progn, 'trace_' + insn, *a, **kw
+  else
+    assert_equal 'true', progn, 'trace_' + insn, *a
+  end
 }
+
+assert_normal_exit("#{<<-"begin;"}\n#{<<-'end;'}")
+begin;
+  RubyVM::InstructionSequence.compile("", debug_level: 5)
+end;

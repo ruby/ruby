@@ -1,4 +1,5 @@
 V = 0
+V0 = $(V:0=)
 Q1 = $(V:1=)
 Q = $(Q1:0=@)
 ECHO1 = $(V:1=@:)
@@ -16,22 +17,23 @@ srcdir ||= File.dirname(File.dirname(__FILE__))
 exts = {}
 [
   ["exts", "ext", "--extstatic $(EXTSTATIC)"],
-  ["gems", "gems", "--no-extstatic"],
+  ["gems", ".bundle/gems", "--no-extstatic"],
 ].each do |t, d, o|
   exts[t] = [o, Dir.glob("#{srcdir}/#{d}/*/").map {|n| n[(srcdir.size+1)..-2]}]
 end
 %>
 MINIRUBY = <%=miniruby%>
-SCRIPT_ARGS = <%=script_args%>
+SCRIPT_ARGS = <%=script_args.gsub("#", "\\#")%>
 EXTMK_ARGS = $(SCRIPT_ARGS) --gnumake=$(gnumake) --extflags="$(EXTLDFLAGS)" \
 	   --make-flags="MINIRUBY='$(MINIRUBY)'"
 
-all: exts gems
+all: exts # gems
 exts:
 gems:
 
 % exts.each do |t, (o, dirs)|
 %   dirs.each do |d|
+%     next if Dir.glob("#{srcdir}/#{d}/**/extconf.rb").empty?
 <%=t%>: <%=d%>/exts.mk
 <%=d%>/exts.mk: FORCE
 	$(Q)$(MINIRUBY) $(srcdir)/ext/extmk.rb --make='$(MAKE)' \

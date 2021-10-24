@@ -27,10 +27,10 @@ on your ticket.
   stable release. See
   {Downloading Ruby}[https://www.ruby-lang.org/en/downloads/].
 * Look to see if anyone already reported your issue, try
-  {searching on redmine}[https://bugs.ruby-lang.org/projects/ruby-trunk/issues]
+  {searching on redmine}[https://bugs.ruby-lang.org/projects/ruby-master/issues]
   for your problem.
 * If you can't find a ticket addressing your issue,
-  {create a new one}[https://bugs.ruby-lang.org/projects/ruby-trunk/issues/new].
+  {create a new one}[https://bugs.ruby-lang.org/projects/ruby-master/issues/new].
 * Choose the target version, usually current. Bugs will be first fixed in the
   current release and then {backported}[rdoc-label:label-Backport+Requests].
 * Fill in the Ruby version you're using when experiencing this issue
@@ -58,32 +58,6 @@ You can report downstream issues for the following distributions via their bug t
 * {redhat}[https://bugzilla.redhat.com/buglist.cgi?bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&bug_status=MODIFIED]
 * {macports}[https://trac.macports.org/query?status=assigned&status=new&status=reopened&port=~ruby]
 * etc (add your distribution bug tracker here)
-
-=== Platform Maintainers
-
-For platform specific bugs in Ruby, you can assign your ticket to the current
-maintainer for a specific platform.
-
-The current active platform maintainers are as follows:
-
-[mswin64 (Microsoft Windows)]
-  NAKAMURA Usaku (usa)
-[mingw32 (Minimalist GNU for Windows)]
-  Nobuyoshi Nakada (nobu)
-[AIX]
-  Yutaka Kanemoto (kanemoto)
-[FreeBSD]
-  Akinori MUSHA (knu)
-[Solaris]
-  Naohisa Goto (ngoto)
-[RHEL, CentOS]
-  KOSAKI Motohiro (kosaki)
-[macOS]
-  Kenta Murata (mrkn)
-[OpenBSD]
-  Jeremy Evans (jeremyevans0)
-[cygwin, bcc32, djgpp, wince, ...]
-  none. (Maintainer WANTED)
 
 == Reporting Security Issues
 
@@ -116,7 +90,7 @@ these? Quite a bit, actually:
 
 When a bug report goes for a while without any feedback, it goes to the bug
 graveyard which is unfortunate. If you check the {issues
-list}[https://bugs.ruby-lang.org/projects/ruby-trunk/issues] you will find lots
+list}[https://bugs.ruby-lang.org/projects/ruby-master/issues] you will find lots
 of delinquent bugs that require attention.
 
 You can help by verifying the existing tickets, try to reproduce the reported
@@ -156,7 +130,7 @@ If there's a new feature that you want to see added to Ruby, you will need to
 write a convincing proposal and patch to implement the feature.
 
 For new features in CRuby, use the {'Feature'
-tracker}[https://bugs.ruby-lang.org/projects/ruby-trunk/issues?set_filter=1&tracker_id=2]
+tracker}[https://bugs.ruby-lang.org/projects/ruby-master/issues?set_filter=1&tracker_id=2]
 on ruby-master. For non-CRuby dependent features, features that would apply to
 alternate Ruby implementations such as JRuby and Rubinius, use the {CommonRuby
 tracker}[https://bugs.ruby-lang.org/projects/common-ruby].
@@ -195,25 +169,6 @@ A good template for a feature proposal should look something like this:
 [See also]
   Links to the other related resources
 
-=== Slideshow
-
-At the Ruby Developer Meeting in Japan, committers discuss Feature Proposals together in Tokyo. We will judge proposals and then accept, reject, or give feedback for them.
-If you have a stalled proposal, making a slide to submit is good way to get feedback.
-
-Slides should be:
-
-* One-page slide
-* Include a corresponding ticket number
-* MUST include a figure and/or short example code
-* SHOULD have less sentence in natural language (try to write less than 140 characters)
-* It is RECOMMENDED to itemize: motivation/use case, proposal, pros/cons, corner case
-* PDF or Image (Web browsers can show it)
-
-Please note:
-
-* Even if the proposal is generally acceptable, it won't be accepted without writing corner cases in the ticket
-* Slide's example: DevelopersMeeting20130727Japan
-
 == Backport Requests
 
 When a new version of Ruby is released, it starts at patch level 0 (p0), and
@@ -250,7 +205,7 @@ need to be able to run the test suite.
 CRuby uses git for source control, the {git homepage}[https://git-scm.com/]
 has installation instructions with links to documentation for learning more
 about git. There is a mirror of the repository on {github}[https://github.com/ruby/ruby].
-. For other resources see the {ruby-core documentation on
+For other resources see the {ruby-core documentation on
 ruby-lang.org}[https://www.ruby-lang.org/en/community/ruby-core/].
 
 Install the prerequisite dependencies for building the CRuby interpreter to
@@ -260,8 +215,8 @@ run tests.
 * autoconf - 2.67 or later, preferably 2.69.
 * bison - 2.0 or later, preferably 3.4.
 * gperf - 3.0.3 or later, preferably 3.1.
-* ruby - Ruby itself is prerequisite in order to build Ruby from source. It
-  can be 1.8.
+* ruby - Ruby itself is prerequisite in order to build Ruby from source.
+  You should use [a maintained version of Ruby](https://www.ruby-lang.org/en/downloads/).
 
 You should also have access to development headers for the following
 libraries, but these are not required:
@@ -284,7 +239,7 @@ Now let's build CRuby:
 * Generate the configuration files and build:
 
     cd ruby-master
-    autoconf
+    ./autogen.sh
     mkdir build && cd build # its good practice to build outside of source dir
     mkdir ~/.rubies # we will install to .rubies/ruby-master in our home dir
     ../configure --prefix="${HOME}/.rubies/ruby-master"
@@ -389,7 +344,7 @@ When you're ready to commit:
 This will open your editor in which you write your commit message.
 Use the following style for commit messages:
 
-* Use a succint subject line.
+* Use a succinct subject line.
 * Include reasoning behind the change in the commit message, focusing on why
   the change is being made.
 * Refer to redmine issue (such as Fixes [Bug #1234] or Implements

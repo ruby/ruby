@@ -2,7 +2,7 @@
 # usage: ruby occur.rb file..
 freq = Hash.new(0)
 while line = gets()
-  for word in line.split(/\W+/)
+  line.scan(/\w+/) do |word|
     freq[word] += 1
   end
 end

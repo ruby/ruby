@@ -50,8 +50,9 @@ struct udp_arg
 };
 
 static VALUE
-udp_connect_internal(struct udp_arg *arg)
+udp_connect_internal(VALUE v)
 {
+    struct udp_arg *arg = (void *)v;
     rb_io_t *fptr;
     int fd;
     struct addrinfo *res;
@@ -59,7 +60,7 @@ udp_connect_internal(struct udp_arg *arg)
     rb_io_check_closed(fptr = arg->fptr);
     fd = fptr->fd;
     for (res = arg->res->ai; res; res = res->ai_next) {
-	if (rsock_connect(fd, res->ai_addr, res->ai_addrlen, 0) >= 0) {
+	if (rsock_connect(fd, res->ai_addr, res->ai_addrlen, 0, NULL) >= 0) {
 	    return Qtrue;
 	}
     }
@@ -97,8 +98,9 @@ udp_connect(VALUE sock, VALUE host, VALUE port)
 }
 
 static VALUE
-udp_bind_internal(struct udp_arg *arg)
+udp_bind_internal(VALUE v)
 {
+    struct udp_arg *arg = (void *)v;
     rb_io_t *fptr;
     int fd;
     struct addrinfo *res;
@@ -147,26 +149,30 @@ struct udp_send_arg {
 };
 
 static VALUE
-udp_send_internal(struct udp_send_arg *arg)
+udp_send_internal(VALUE v)
 {
+    struct udp_send_arg *arg = (void *)v;
     rb_io_t *fptr;
-    int n;
     struct addrinfo *res;
 
     rb_io_check_closed(fptr = arg->fptr);
     for (res = arg->res->ai; res; res = res->ai_next) {
       retry:
-	arg->sarg.fd = fptr->fd;
-	arg->sarg.to = res->ai_addr;
-	arg->sarg.tolen = res->ai_addrlen;
-	rsock_maybe_fd_writable(arg->sarg.fd);
-	n = (int)BLOCKING_REGION_FD(rsock_sendto_blocking, &arg->sarg);
-	if (n >= 0) {
-	    return INT2FIX(n);
-	}
-	if (rb_io_wait_writable(fptr->fd)) {
-	    goto retry;
-	}
+        arg->sarg.fd = fptr->fd;
+        arg->sarg.to = res->ai_addr;
+        arg->sarg.tolen = res->ai_addrlen;
+
+#ifdef RSOCK_WAIT_BEFORE_BLOCKING
+        rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_WRITABLE), Qnil);
+#endif
+
+        ssize_t n = (ssize_t)BLOCKING_REGION_FD(rsock_sendto_blocking, &arg->sarg);
+
+        if (n >= 0) return RB_SSIZE2NUM(n);
+
+        if (rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
+            goto retry;
+        }
     }
     return Qfalse;
 }

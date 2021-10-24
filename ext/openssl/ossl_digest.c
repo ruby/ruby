@@ -63,7 +63,7 @@ ossl_evp_get_digestbyname(VALUE obj)
 
         GetDigest(obj, ctx);
 
-        md = EVP_MD_CTX_md(ctx);
+        md = EVP_MD_CTX_get0_md(ctx);
     }
 
     return md;
@@ -176,7 +176,7 @@ ossl_digest_reset(VALUE self)
     EVP_MD_CTX *ctx;
 
     GetDigest(self, ctx);
-    if (EVP_DigestInit_ex(ctx, EVP_MD_CTX_md(ctx), NULL) != 1) {
+    if (EVP_DigestInit_ex(ctx, EVP_MD_CTX_get0_md(ctx), NULL) != 1) {
 	ossl_raise(eDigestError, "Digest initialization failed.");
     }
 
@@ -192,7 +192,7 @@ ossl_digest_reset(VALUE self)
  * be passed individually to the Digest instance.
  *
  * === Example
- *   digest = OpenSSL::Digest::SHA256.new
+ *   digest = OpenSSL::Digest.new('SHA256')
  *   digest.update('First input')
  *   digest << 'Second input' # equivalent to digest.update('Second input')
  *   result = digest.digest
@@ -248,7 +248,7 @@ ossl_digest_finish(int argc, VALUE *argv, VALUE self)
  * Returns the sn of this Digest algorithm.
  *
  * === Example
- *   digest = OpenSSL::Digest::SHA512.new
+ *   digest = OpenSSL::Digest.new('SHA512')
  *   puts digest.name # => SHA512
  *
  */
@@ -259,7 +259,7 @@ ossl_digest_name(VALUE self)
 
     GetDigest(self, ctx);
 
-    return rb_str_new2(EVP_MD_name(EVP_MD_CTX_md(ctx)));
+    return rb_str_new_cstr(EVP_MD_name(EVP_MD_CTX_get0_md(ctx)));
 }
 
 /*
@@ -270,7 +270,7 @@ ossl_digest_name(VALUE self)
  * final message digest result.
  *
  * === Example
- *   digest = OpenSSL::Digest::SHA1.new
+ *   digest = OpenSSL::Digest.new('SHA1')
  *   puts digest.digest_length # => 20
  *
  */
@@ -294,7 +294,7 @@ ossl_digest_size(VALUE self)
  * consecutively.
  *
  * === Example
- *   digest = OpenSSL::Digest::SHA1.new
+ *   digest = OpenSSL::Digest.new('SHA1')
  *   puts digest.block_length # => 64
  */
 static VALUE
@@ -313,8 +313,6 @@ ossl_digest_block_length(VALUE self)
 void
 Init_ossl_digest(void)
 {
-    rb_require("digest");
-
 #if 0
     mOSSL = rb_define_module("OpenSSL");
     eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
@@ -348,54 +346,19 @@ Init_ossl_digest(void)
      * the integrity of a signed document, it suffices to re-compute the hash
      * and verify that it is equal to that in the signature.
      *
-     * Among the supported message digest algorithms are:
-     * * SHA, SHA1, SHA224, SHA256, SHA384 and SHA512
-     * * MD2, MD4, MDC2 and MD5
-     * * RIPEMD160
-     * * DSS, DSS1 (Pseudo algorithms to be used for DSA signatures. DSS is
-     *   equal to SHA and DSS1 is equal to SHA1)
+     * You can get a list of all digest algorithms supported on your system by
+     * running this command in your terminal:
      *
-     * For each of these algorithms, there is a sub-class of Digest that
-     * can be instantiated as simply as e.g.
+     *   openssl list -digest-algorithms
      *
-     *   digest = OpenSSL::Digest::SHA1.new
+     * Among the OpenSSL 1.1.1 supported message digest algorithms are:
+     * * SHA224, SHA256, SHA384, SHA512, SHA512-224 and SHA512-256
+     * * SHA3-224, SHA3-256, SHA3-384 and SHA3-512
+     * * BLAKE2s256 and BLAKE2b512
      *
-     * === Mapping between Digest class and sn/ln
+     * Each of these algorithms can be instantiated using the name:
      *
-     * The sn (short names) and ln (long names) are defined in
-     * <openssl/object.h> and <openssl/obj_mac.h>. They are textual
-     * representations of ASN.1 OBJECT IDENTIFIERs. Each supported digest
-     * algorithm has an OBJECT IDENTIFIER associated to it and those again
-     * have short/long names assigned to them.
-     * E.g. the OBJECT IDENTIFIER for SHA-1 is 1.3.14.3.2.26 and its
-     * sn is "SHA1" and its ln is "sha1".
-     * ==== MD2
-     * * sn: MD2
-     * * ln: md2
-     * ==== MD4
-     * * sn: MD4
-     * * ln: md4
-     * ==== MD5
-     * * sn: MD5
-     * * ln: md5
-     * ==== SHA
-     * * sn: SHA
-     * * ln: SHA
-     * ==== SHA-1
-     * * sn: SHA1
-     * * ln: sha1
-     * ==== SHA-224
-     * * sn: SHA224
-     * * ln: sha224
-     * ==== SHA-256
-     * * sn: SHA256
-     * * ln: sha256
-     * ==== SHA-384
-     * * sn: SHA384
-     * * ln: sha384
-     * ==== SHA-512
-     * * sn: SHA512
-     * * ln: sha512
+     *   digest = OpenSSL::Digest.new('SHA256')
      *
      * "Breaking" a message digest algorithm means defying its one-way
      * function characteristics, i.e. producing a collision or finding a way
@@ -407,16 +370,16 @@ Init_ossl_digest(void)
      *
      * === Hashing a file
      *
-     *   data = File.read('document')
-     *   sha256 = OpenSSL::Digest::SHA256.new
+     *   data = File.binread('document')
+     *   sha256 = OpenSSL::Digest.new('SHA256')
      *   digest = sha256.digest(data)
      *
      * === Hashing several pieces of data at once
      *
-     *   data1 = File.read('file1')
-     *   data2 = File.read('file2')
-     *   data3 = File.read('file3')
-     *   sha256 = OpenSSL::Digest::SHA256.new
+     *   data1 = File.binread('file1')
+     *   data2 = File.binread('file2')
+     *   data3 = File.binread('file3')
+     *   sha256 = OpenSSL::Digest.new('SHA256')
      *   sha256 << data1
      *   sha256 << data2
      *   sha256 << data3
@@ -424,15 +387,21 @@ Init_ossl_digest(void)
      *
      * === Reuse a Digest instance
      *
-     *   data1 = File.read('file1')
-     *   sha256 = OpenSSL::Digest::SHA256.new
+     *   data1 = File.binread('file1')
+     *   sha256 = OpenSSL::Digest.new('SHA256')
      *   digest1 = sha256.digest(data1)
      *
-     *   data2 = File.read('file2')
+     *   data2 = File.binread('file2')
      *   sha256.reset
      *   digest2 = sha256.digest(data2)
      *
      */
+
+    /*
+     * Digest::Class is defined by the digest library. rb_require() cannot be
+     * used here because it bypasses RubyGems.
+     */
+    rb_funcall(Qnil, rb_intern_const("require"), 1, rb_str_new_cstr("digest"));
     cDigest = rb_define_class_under(mOSSL, "Digest", rb_path2class("Digest::Class"));
     /* Document-class: OpenSSL::Digest::DigestError
      *

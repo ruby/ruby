@@ -8,8 +8,13 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     @config.read_lines(<<~LINES.split(/(?<=\n)/))
       set editing-mode vi
     LINES
-    @line_editor = Reline::LineEditor.new(@config)
-    @line_editor.reset(@prompt, (RELINE_TEST_ENCODING rescue Encoding.default_external))
+    @encoding = Reline::IOGate.encoding
+    @line_editor = Reline::LineEditor.new(@config, @encoding)
+    @line_editor.reset(@prompt, encoding: @encoding)
+  end
+
+  def teardown
+    Reline.test_reset
   end
 
   def test_vi_command_mode
@@ -21,6 +26,74 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     input_keys("abc\C-[")
     assert_instance_of(Reline::KeyActor::ViCommand, @config.editing_mode)
     assert_line('abc')
+  end
+
+  def test_vi_insert
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
+    input_keys('i')
+    assert_line('i')
+    assert_cursor(1)
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
+    input_keys("\C-[")
+    assert_line('i')
+    assert_cursor(0)
+    assert_instance_of(Reline::KeyActor::ViCommand, @config.editing_mode)
+    input_keys('i')
+    assert_line('i')
+    assert_cursor(0)
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
+  end
+
+  def test_vi_add
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
+    input_keys('a')
+    assert_line('a')
+    assert_cursor(1)
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
+    input_keys("\C-[")
+    assert_line('a')
+    assert_cursor(0)
+    assert_instance_of(Reline::KeyActor::ViCommand, @config.editing_mode)
+    input_keys('a')
+    assert_line('a')
+    assert_cursor(1)
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
+  end
+
+  def test_vi_insert_at_bol
+    input_keys('I')
+    assert_line('I')
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
+    input_keys("12345\C-[hh")
+    assert_line('I12345')
+    assert_byte_pointer_size('I12')
+    assert_cursor(3)
+    assert_cursor_max(6)
+    assert_instance_of(Reline::KeyActor::ViCommand, @config.editing_mode)
+    input_keys('I')
+    assert_line('I12345')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(6)
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
+  end
+
+  def test_vi_add_at_eol
+    input_keys('A')
+    assert_line('A')
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
+    input_keys("12345\C-[hh")
+    assert_line('A12345')
+    assert_byte_pointer_size('A12')
+    assert_cursor(3)
+    assert_cursor_max(6)
+    assert_instance_of(Reline::KeyActor::ViCommand, @config.editing_mode)
+    input_keys('A')
+    assert_line('A12345')
+    assert_byte_pointer_size('A12345')
+    assert_cursor(6)
+    assert_cursor_max(6)
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
   end
 
   def test_ed_insert_one
@@ -546,6 +619,24 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_cursor_max(6)
   end
 
+  def test_vi_replace_char_with_mbchar
+    input_keys("あいうえお\C-[0l")
+    assert_line('あいうえお')
+    assert_byte_pointer_size('あ')
+    assert_cursor(2)
+    assert_cursor_max(10)
+    input_keys('rx')
+    assert_line('あxうえお')
+    assert_byte_pointer_size('あ')
+    assert_cursor(2)
+    assert_cursor_max(9)
+    input_keys('l2ry')
+    assert_line('あxyyお')
+    assert_byte_pointer_size('あxyy')
+    assert_cursor(5)
+    assert_cursor_max(7)
+  end
+
   def test_vi_next_char
     input_keys("abcdef\C-[0")
     assert_line('abcdef')
@@ -561,6 +652,60 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_line('abcdef')
     assert_byte_pointer_size('abcd')
     assert_cursor(4)
+    assert_cursor_max(6)
+  end
+
+  def test_vi_to_next_char
+    input_keys("abcdef\C-[0")
+    assert_line('abcdef')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(6)
+    input_keys('tz')
+    assert_line('abcdef')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(6)
+    input_keys('te')
+    assert_line('abcdef')
+    assert_byte_pointer_size('abc')
+    assert_cursor(3)
+    assert_cursor_max(6)
+  end
+
+  def test_vi_prev_char
+    input_keys("abcdef\C-[")
+    assert_line('abcdef')
+    assert_byte_pointer_size('abcde')
+    assert_cursor(5)
+    assert_cursor_max(6)
+    input_keys('Fz')
+    assert_line('abcdef')
+    assert_byte_pointer_size('abcde')
+    assert_cursor(5)
+    assert_cursor_max(6)
+    input_keys('Fa')
+    assert_line('abcdef')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(6)
+  end
+
+  def test_vi_to_prev_char
+    input_keys("abcdef\C-[")
+    assert_line('abcdef')
+    assert_byte_pointer_size('abcde')
+    assert_cursor(5)
+    assert_cursor_max(6)
+    input_keys('Tz')
+    assert_line('abcdef')
+    assert_byte_pointer_size('abcde')
+    assert_cursor(5)
+    assert_cursor_max(6)
+    input_keys('Ta')
+    assert_line('abcdef')
+    assert_byte_pointer_size('a')
+    assert_cursor(1)
     assert_cursor_max(6)
   end
 
@@ -811,16 +956,19 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
   end
 
   def test_vi_list_or_eof
-    input_keys('a')
-    assert_byte_pointer_size('a')
-    assert_cursor(1)
-    assert_cursor_max(1)
+    input_keys("\C-d") # quit from inputing
+    assert_line(nil)
+    assert(@line_editor.finished?)
+  end
+
+  def test_vi_list_or_eof_with_non_empty_line
+    input_keys('ab')
+    assert_byte_pointer_size('ab')
+    assert_cursor(2)
+    assert_cursor_max(2)
     refute(@line_editor.finished?)
     input_keys("\C-d")
-    assert_line('a')
-    refute(@line_editor.finished?)
-    input_keys("\C-h\C-d")
-    assert_line(nil)
+    assert_line('ab')
     assert(@line_editor.finished?)
   end
 
@@ -829,14 +977,11 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
       %w{
         foo_bar
         foo_bar_baz
+      }.map { |i|
+        i.encode(@encoding)
       }
     }
     input_keys('foo')
-    assert_byte_pointer_size('foo')
-    assert_cursor(3)
-    assert_cursor_max(3)
-    assert_line('foo')
-    input_keys("\C-n")
     assert_byte_pointer_size('foo')
     assert_cursor(3)
     assert_cursor_max(3)
@@ -862,11 +1007,6 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_cursor_max(7)
     assert_line('foo_bar')
     input_keys("_\C-n")
-    assert_byte_pointer_size('foo_bar_')
-    assert_cursor(8)
-    assert_cursor_max(8)
-    assert_line('foo_bar_')
-    input_keys("\C-n")
     assert_byte_pointer_size('foo_bar_baz')
     assert_cursor(11)
     assert_cursor_max(11)
@@ -883,14 +1023,11 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
       %w{
         foo_bar
         foo_bar_baz
+      }.map { |i|
+        i.encode(@encoding)
       }
     }
     input_keys('foo')
-    assert_byte_pointer_size('foo')
-    assert_cursor(3)
-    assert_cursor_max(3)
-    assert_line('foo')
-    input_keys("\C-p")
     assert_byte_pointer_size('foo')
     assert_cursor(3)
     assert_cursor_max(3)
@@ -916,11 +1053,6 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_cursor_max(11)
     assert_line('foo_bar_baz')
     input_keys("\C-h\C-p")
-    assert_byte_pointer_size('foo_bar_ba')
-    assert_cursor(10)
-    assert_cursor_max(10)
-    assert_line('foo_bar_ba')
-    input_keys("\C-p")
     assert_byte_pointer_size('foo_bar_baz')
     assert_cursor(11)
     assert_cursor_max(11)
@@ -937,16 +1069,13 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
       %w{
         foo_bar
         foo_bar_baz
+      }.map { |i|
+        i.encode(@encoding)
       }
     }
     input_keys('abcde fo ABCDE')
     assert_line('abcde fo ABCDE')
     input_keys("\C-[" + 'h' * 5 + "i\C-n")
-    assert_byte_pointer_size('abcde fo')
-    assert_cursor(8)
-    assert_cursor_max(14)
-    assert_line('abcde fo ABCDE')
-    input_keys("\C-n")
     assert_byte_pointer_size('abcde foo_bar')
     assert_cursor(13)
     assert_cursor_max(19)
@@ -967,11 +1096,6 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_cursor_max(19)
     assert_line('abcde foo_bar ABCDE')
     input_keys("_\C-n")
-    assert_byte_pointer_size('abcde foo_bar_')
-    assert_cursor(14)
-    assert_cursor_max(20)
-    assert_line('abcde foo_bar_ ABCDE')
-    input_keys("\C-n")
     assert_byte_pointer_size('abcde foo_bar_baz')
     assert_cursor(17)
     assert_cursor_max(23)
@@ -986,6 +1110,49 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_cursor(17)
     assert_cursor_max(23)
     assert_line('abcde foo_bar_baz ABCDE')
+  end
+
+  def test_completion
+    @line_editor.completion_proc = proc { |word|
+      %w{
+        foo_bar
+        foo_bar_baz
+      }.map { |i|
+        i.encode(@encoding)
+      }
+    }
+    input_keys('foo')
+    assert_byte_pointer_size('foo')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    assert_line('foo')
+    input_keys("\C-i")
+    assert_byte_pointer_size('foo_bar')
+    assert_cursor(7)
+    assert_cursor_max(7)
+    assert_line('foo_bar')
+  end
+
+  def test_completion_with_disable_completion
+    @config.disable_completion = true
+    @line_editor.completion_proc = proc { |word|
+      %w{
+        foo_bar
+        foo_bar_baz
+      }.map { |i|
+        i.encode(@encoding)
+      }
+    }
+    input_keys('foo')
+    assert_byte_pointer_size('foo')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    assert_line('foo')
+    input_keys("\C-i")
+    assert_byte_pointer_size('foo')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    assert_line('foo')
   end
 
   def test_vi_first_print
@@ -1038,5 +1205,225 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_cursor(4)
     assert_cursor_max(11)
     assert_line('aaa ddd eee')
+  end
+
+  def test_vi_delete_meta_with_vi_next_word_at_eol
+    input_keys("foo bar\C-[0w")
+    assert_byte_pointer_size('foo ')
+    assert_cursor(4)
+    assert_cursor_max(7)
+    assert_line('foo bar')
+    input_keys('w')
+    assert_byte_pointer_size('foo ba')
+    assert_cursor(6)
+    assert_cursor_max(7)
+    assert_line('foo bar')
+    input_keys('0dw')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(3)
+    assert_line('bar')
+    input_keys('dw')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    assert_line('')
+  end
+
+  def test_vi_delete_meta_with_vi_next_char
+    input_keys("aaa bbb ccc ___ ddd\C-[02w")
+    assert_byte_pointer_size('aaa bbb ')
+    assert_cursor(8)
+    assert_cursor_max(19)
+    assert_line('aaa bbb ccc ___ ddd')
+    input_keys('df_')
+    assert_byte_pointer_size('aaa bbb ')
+    assert_cursor(8)
+    assert_cursor_max(14)
+    assert_line('aaa bbb __ ddd')
+  end
+
+  def test_vi_delete_meta_with_arg
+    input_keys("aaa bbb ccc\C-[02w")
+    assert_byte_pointer_size('aaa bbb ')
+    assert_cursor(8)
+    assert_cursor_max(11)
+    assert_line('aaa bbb ccc')
+    input_keys('2dl')
+    assert_byte_pointer_size('aaa bbb ')
+    assert_cursor(8)
+    assert_cursor_max(9)
+    assert_line('aaa bbb c')
+  end
+
+  def test_vi_change_meta
+    input_keys("aaa bbb ccc ddd eee\C-[02w")
+    assert_byte_pointer_size('aaa bbb ')
+    assert_cursor(8)
+    assert_cursor_max(19)
+    assert_line('aaa bbb ccc ddd eee')
+    input_keys('cwaiueo')
+    assert_byte_pointer_size('aaa bbb aiueo')
+    assert_cursor(13)
+    assert_cursor_max(21)
+    assert_line('aaa bbb aiueo ddd eee')
+    input_keys("\C-[")
+    assert_byte_pointer_size('aaa bbb aiue')
+    assert_cursor(12)
+    assert_cursor_max(21)
+    assert_line('aaa bbb aiueo ddd eee')
+    input_keys('cb')
+    assert_byte_pointer_size('aaa bbb ')
+    assert_cursor(8)
+    assert_cursor_max(17)
+    assert_line('aaa bbb o ddd eee')
+  end
+
+  def test_vi_change_meta_with_vi_next_word
+    input_keys("foo  bar  baz\C-[0w")
+    assert_byte_pointer_size('foo  ')
+    assert_cursor(5)
+    assert_cursor_max(13)
+    assert_line('foo  bar  baz')
+    input_keys('cwhoge')
+    assert_byte_pointer_size('foo  hoge')
+    assert_cursor(9)
+    assert_cursor_max(14)
+    assert_line('foo  hoge  baz')
+    input_keys("\C-[")
+    assert_byte_pointer_size('foo  hog')
+    assert_cursor(8)
+    assert_cursor_max(14)
+    assert_line('foo  hoge  baz')
+  end
+
+  def test_unimplemented_vi_command_should_be_no_op
+    input_keys("abc\C-[h")
+    assert_byte_pointer_size('a')
+    assert_cursor(1)
+    assert_cursor_max(3)
+    assert_line('abc')
+    input_keys('@')
+    assert_byte_pointer_size('a')
+    assert_cursor(1)
+    assert_cursor_max(3)
+    assert_line('abc')
+  end
+
+  def test_vi_yank
+    input_keys("foo bar\C-[0")
+    assert_line('foo bar')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(7)
+    input_keys('y3l')
+    assert_line('foo bar')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(7)
+    input_keys('P')
+    assert_line('foofoo bar')
+    assert_byte_pointer_size('fo')
+    assert_cursor(2)
+    assert_cursor_max(10)
+  end
+
+  def test_vi_end_word_with_operator
+    input_keys("foo bar\C-[0")
+    assert_line('foo bar')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(7)
+    input_keys('de')
+    assert_line(' bar')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(4)
+    input_keys('de')
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys('de')
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+  end
+
+  def test_vi_end_big_word_with_operator
+    input_keys("aaa   b{b}}}b\C-[0")
+    assert_line('aaa   b{b}}}b')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(13)
+    input_keys('dE')
+    assert_line('   b{b}}}b')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(10)
+    input_keys('dE')
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys('dE')
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+  end
+
+  def test_vi_next_char_with_operator
+    input_keys("foo bar\C-[0")
+    assert_line('foo bar')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(7)
+    input_keys('df ')
+    assert_line('bar')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(3)
+  end
+
+  def test_pasting
+    start_pasting
+    input_keys('ab')
+    finish_pasting
+    input_keys('c')
+    assert_line('abc')
+    assert_byte_pointer_size('abc')
+    assert_cursor(3)
+    assert_cursor_max(3)
+  end
+
+  def test_pasting_fullwidth
+    start_pasting
+    input_keys('あ')
+    finish_pasting
+    input_keys('い')
+    assert_line('あい')
+    assert_byte_pointer_size('あい')
+    assert_cursor(4)
+    assert_cursor_max(4)
+  end
+
+  def test_ed_delete_next_char_at_eol
+    input_keys('"あ"')
+    assert_line('"あ"')
+    assert_byte_pointer_size('"あ"')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    input_keys("\C-[")
+    assert_line('"あ"')
+    assert_byte_pointer_size('"あ')
+    assert_cursor(3)
+    assert_cursor_max(4)
+    input_keys('xa"')
+    assert_line('"あ"')
+    assert_byte_pointer_size('"あ"')
+    assert_cursor(4)
+    assert_cursor_max(4)
   end
 end

@@ -173,6 +173,8 @@ class RDoc::Parser::C < RDoc::Parser
     @classes           = load_variable_map :c_class_variables
     @singleton_classes = load_variable_map :c_singleton_class_variables
 
+    @markup = @options.markup
+
     # class_variable => { function => [method, ...] }
     @methods = Hash.new { |h, f| h[f] = Hash.new { |i, m| i[m] = [] } }
 
@@ -210,48 +212,6 @@ class RDoc::Parser::C < RDoc::Parser
   end
 
   ##
-  # Removes duplicate call-seq entries for methods using the same
-  # implementation.
-
-  def deduplicate_call_seq
-    @methods.each do |var_name, functions|
-      class_name = @known_classes[var_name]
-      next unless class_name
-      class_obj  = find_class var_name, class_name
-
-      functions.each_value do |method_names|
-        next if method_names.length == 1
-
-        method_names.each do |method_name|
-          deduplicate_method_name class_obj, method_name
-        end
-      end
-    end
-  end
-
-  ##
-  # If two ruby methods share a C implementation (and comment) this
-  # deduplicates the examples in the call_seq for the method to reduce
-  # confusion in the output.
-
-  def deduplicate_method_name class_obj, method_name # :nodoc:
-    return unless
-      method = class_obj.method_list.find { |m| m.name == method_name }
-    return unless call_seq = method.call_seq
-
-    method_name = method_name[0, 1] if method_name =~ /\A\[/
-
-    entries = call_seq.split "\n"
-
-    matching = entries.select do |entry|
-      entry =~ /^\w*\.?#{Regexp.escape method_name}/ or
-        entry =~ /\s#{Regexp.escape method_name}\s/
-    end
-
-    method.call_seq = matching.join "\n"
-  end
-
-  ##
   # Scans #content for rb_define_alias
 
   def do_aliases
@@ -269,21 +229,27 @@ class RDoc::Parser::C < RDoc::Parser
       end
 
       class_obj = find_class var_name, class_name
-
-      al = RDoc::Alias.new '', old_name, new_name, ''
-      al.singleton = @singleton_classes.key? var_name
-
       comment = find_alias_comment var_name, new_name, old_name
-
       comment.normalize
-
-      al.comment = comment
-
-      al.record_location @top_level
-
-      class_obj.add_alias al
-      @stats.add_alias al
+      if comment.to_s.empty? and existing_method = class_obj.method_list.find { |m| m.name == old_name}
+        comment = existing_method.comment
+      end
+      add_alias(var_name, class_obj, old_name, new_name, comment)
     end
+  end
+
+  ##
+  # Add alias, either from a direct alias definition, or from two
+  # method that reference the same function.
+
+  def add_alias(var_name, class_obj, old_name, new_name, comment)
+    al = RDoc::Alias.new '', old_name, new_name, ''
+    al.singleton = @singleton_classes.key? var_name
+    al.comment = comment
+    al.record_location @top_level
+    class_obj.add_alias al
+    @stats.add_alias al
+    al
   end
 
   ##
@@ -354,7 +320,7 @@ class RDoc::Parser::C < RDoc::Parser
                 \s*"(?<module_name_1>\w+)"\s*
               \)
             |
-              _under\s*\( # rb_define_module_under(module_under, module_name_1)
+              _under\s*\( # rb_define_module_under(module_under, module_name_2)
                 \s*(?<module_under>\w+),
                 \s*"(?<module_name_2>\w+)"
               \s*\)
@@ -475,7 +441,7 @@ class RDoc::Parser::C < RDoc::Parser
       next unless cls = @classes[c]
       m = @known_classes[m] || m
 
-      comment = RDoc::Comment.new '', @top_level, :c
+      comment = new_comment '', @top_level, :c
       incl = cls.add_include RDoc::Include.new(m, comment)
       incl.record_location @top_level
     end
@@ -557,7 +523,7 @@ class RDoc::Parser::C < RDoc::Parser
                                    \s*"#{Regexp.escape new_name}"\s*,
                                    \s*"#{Regexp.escape old_name}"\s*\);%xm
 
-    RDoc::Comment.new($1 || '', @top_level, :c)
+    new_comment($1 || '', @top_level, :c)
   end
 
   ##
@@ -596,7 +562,7 @@ class RDoc::Parser::C < RDoc::Parser
                 ''
               end
 
-    RDoc::Comment.new comment, @top_level, :c
+    new_comment comment, @top_level, :c
   end
 
   ##
@@ -608,7 +574,7 @@ class RDoc::Parser::C < RDoc::Parser
       ((?>/\*.*?\*/\s*)?)
       ((?:(?:\w+)\s+)?
         (?:intern\s+)?VALUE\s+(\w+)
-        \s*(?:\([^)]*\))(?:[^;]|$))
+        \s*(?:\([^)]*\))(?:[^\);]|$))
     | ((?>/\*.*?\*/\s*))^\s*(\#\s*define\s+(\w+)\s+(\w+))
     | ^\s*\#\s*define\s+(\w+)\s+(\w+)
     }xm) do
@@ -636,7 +602,7 @@ class RDoc::Parser::C < RDoc::Parser
 
     case type
     when :func_def
-      comment = RDoc::Comment.new args[0], @top_level, :c
+      comment = new_comment args[0], @top_level, :c
       body = args[1]
       offset, = args[2]
 
@@ -666,7 +632,7 @@ class RDoc::Parser::C < RDoc::Parser
 
       body
     when :macro_def
-      comment = RDoc::Comment.new args[0], @top_level, :c
+      comment = new_comment args[0], @top_level, :c
       body = args[1]
       offset, = args[2]
 
@@ -773,7 +739,7 @@ class RDoc::Parser::C < RDoc::Parser
       comment = ''
     end
 
-    comment = RDoc::Comment.new comment, @top_level, :c
+    comment = new_comment comment, @top_level, :c
     comment.normalize
 
     look_for_directives_in class_mod, comment
@@ -818,7 +784,7 @@ class RDoc::Parser::C < RDoc::Parser
       table[const_name] ||
       ''
 
-    RDoc::Comment.new comment, @top_level, :c
+    new_comment comment, @top_level, :c
   end
 
   ##
@@ -849,7 +815,7 @@ class RDoc::Parser::C < RDoc::Parser
 
     return unless comment
 
-    RDoc::Comment.new comment, @top_level, :c
+    new_comment comment, @top_level, :c
   end
 
   ##
@@ -983,7 +949,7 @@ class RDoc::Parser::C < RDoc::Parser
 
         new_comment = "#{$1}#{new_comment.lstrip}"
 
-        new_comment = RDoc::Comment.new new_comment, @top_level, :c
+        new_comment = self.new_comment(new_comment, @top_level, :c)
 
         con = RDoc::Constant.new const_name, new_definition, new_comment
       else
@@ -1020,6 +986,10 @@ class RDoc::Parser::C < RDoc::Parser
     return unless class_name
 
     class_obj = find_class var_name, class_name
+
+    if existing_method = class_obj.method_list.find { |m| m.c_function == function }
+      add_alias(var_name, class_obj, existing_method.name, meth_name, existing_method.comment)
+    end
 
     if class_obj then
       if meth_name == 'initialize' then
@@ -1060,7 +1030,12 @@ class RDoc::Parser::C < RDoc::Parser
 
 
         meth_obj.record_location @top_level
+
+        if meth_obj.section_title
+          class_obj.temporary_section = class_obj.add_section(meth_obj.section_title)
+        end
         class_obj.add_method meth_obj
+
         @stats.add_method meth_obj
         meth_obj.visibility = :private if 'private_method' == type
       end
@@ -1249,11 +1224,14 @@ class RDoc::Parser::C < RDoc::Parser
     do_aliases
     do_attrs
 
-    deduplicate_call_seq
-
     @store.add_c_variables self
 
     @top_level
   end
 
+  def new_comment text = nil, location = nil, language = nil
+    RDoc::Comment.new(text, location, language).tap do |comment|
+      comment.format = @markup
+    end
+  end
 end

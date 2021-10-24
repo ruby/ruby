@@ -78,4 +78,20 @@ describe "Regexps with escape characters" do
     # \M-x         meta  (x|0x80)        (character code point value)
     # \M-\C-x      meta control char     (character code point value)
   end
+
+  it "handles three digit octal escapes starting with 0" do
+    /[\000-\b]/.match("\x00")[0].should == "\x00"
+  end
+
+  it "handles control escapes with \\C-x syntax" do
+    /\C-*\C-J\C-j/.match("\n\n\n")[0].should == "\n\n\n"
+  end
+
+  it "supports the \\K keep operator" do
+    /a\Kb/.match("ab")[0].should == "b"
+  end
+
+  it "supports the \\R line break escape" do
+    /\R/.match("\n")[0].should == "\n"
+  end
 end

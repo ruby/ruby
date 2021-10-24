@@ -2,7 +2,6 @@
 unless defined?(::JSON::JSON_LOADED) and ::JSON::JSON_LOADED
   require 'json'
 end
-defined?(::Complex) or require 'complex'
 
 class Complex
 
@@ -23,7 +22,7 @@ class Complex
   end
 
   # Stores class name (Complex) along with real value <tt>r</tt> and imaginary value <tt>i</tt> as JSON string
-  def to_json(*)
-    as_json.to_json
+  def to_json(*args)
+    as_json.to_json(*args)
   end
 end

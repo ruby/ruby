@@ -8,8 +8,10 @@ require_relative '../lib/jit_support'
 
 class TestRubyOptions < Test::Unit::TestCase
   NO_JIT_DESCRIPTION =
-    if RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE
+    if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # checking -DMJIT_FORCE_ENABLE
       RUBY_DESCRIPTION.sub(/\+JIT /, '')
+    elsif defined?(YJIT.enabled?) && YJIT.enabled? # checking -DYJIT_FORCE_ENABLE
+      RUBY_DESCRIPTION.sub(/\+YJIT /, '')
     else
       RUBY_DESCRIPTION
     end
@@ -66,25 +68,50 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   end
 
+  def test_backtrace_limit
+    assert_in_out_err(%w(--backtrace-limit), "", [], /missing argument for --backtrace-limit/)
+    assert_in_out_err(%w(--backtrace-limit= 1), "", [], /missing argument for --backtrace-limit/)
+    assert_in_out_err(%w(--backtrace-limit=-1), "", [], /wrong limit for backtrace length/)
+    code = 'def f(n);n > 0 ? f(n-1) : raise;end;f(5)'
+    assert_in_out_err(%w(--backtrace-limit=1), code, [],
+                      [/.*unhandled exception\n/, /^\tfrom .*\n/,
+                       /^\t \.{3} \d+ levels\.{3}\n/])
+    assert_in_out_err(%w(--backtrace-limit=3), code, [],
+                      [/.*unhandled exception\n/, *[/^\tfrom .*\n/]*3,
+                       /^\t \.{3} \d+ levels\.{3}\n/])
+    assert_kind_of(Integer, Thread::Backtrace.limit)
+    assert_in_out_err(%w(--backtrace-limit=1), "p Thread::Backtrace.limit", ['1'], [])
+  end
 
   def test_warning
     save_rubyopt = ENV['RUBYOPT']
     ENV['RUBYOPT'] = nil
     assert_in_out_err(%w(-W0 -e) + ['p $-W'], "", %w(0), [])
     assert_in_out_err(%w(-W1 -e) + ['p $-W'], "", %w(1), [])
-    assert_in_out_err(%w(-Wx -e) + ['p $-W'], "", %w(1), [])
+    assert_in_out_err(%w(-Wx -e) + ['p $-W'], "", %w(2), [])
     assert_in_out_err(%w(-W -e) + ['p $-W'], "", %w(2), [])
+    assert_in_out_err(%w(-We) + ['p $-W'], "", %w(2), [])
     assert_in_out_err(%w(-w -W0 -e) + ['p $-W'], "", %w(0), [])
+    assert_in_out_err(%w(-W:deprecated -e) + ['p Warning[:deprecated]'], "", %w(true), [])
+    assert_in_out_err(%w(-W:no-deprecated -e) + ['p Warning[:deprecated]'], "", %w(false), [])
+    assert_in_out_err(%w(-W:experimental -e) + ['p Warning[:experimental]'], "", %w(true), [])
+    assert_in_out_err(%w(-W:no-experimental -e) + ['p Warning[:experimental]'], "", %w(false), [])
+    assert_in_out_err(%w(-W:qux), "", [], /unknown warning category: `qux'/)
+    assert_in_out_err(%w(-w -e) + ['p Warning[:deprecated]'], "", %w(true), [])
+    assert_in_out_err(%w(-W -e) + ['p Warning[:deprecated]'], "", %w(true), [])
+    assert_in_out_err(%w(-We) + ['p Warning[:deprecated]'], "", %w(true), [])
+    assert_in_out_err(%w(-e) + ['p Warning[:deprecated]'], "", %w(false), [])
+    code = 'puts "#{$VERBOSE}:#{Warning[:deprecated]}:#{Warning[:experimental]}"'
+    Tempfile.create(["test_ruby_test_rubyoption", ".rb"]) do |t|
+      t.puts code
+      t.close
+      assert_in_out_err(["-r#{t.path}", '-e', code], "", %w(false:false:true false:false:true), [])
+      assert_in_out_err(["-r#{t.path}", '-w', '-e', code], "", %w(true:true:true true:true:true), [])
+      assert_in_out_err(["-r#{t.path}", '-W:deprecated', '-e', code], "", %w(false:true:true false:true:true), [])
+      assert_in_out_err(["-r#{t.path}", '-W:no-experimental', '-e', code], "", %w(false:false:false false:false:false), [])
+    end
   ensure
     ENV['RUBYOPT'] = save_rubyopt
-  end
-
-  def test_safe_level
-    assert_in_out_err(%w(-T -e) + [""], "", [],
-                      /no -e allowed in tainted mode \(SecurityError\)/)
-
-    assert_in_out_err(%w(-T4 -S foo.rb), "", [],
-                      /no -S allowed in tainted mode \(SecurityError\)/)
   end
 
   def test_debug
@@ -115,9 +142,11 @@ class TestRubyOptions < Test::Unit::TestCase
   private_constant :VERSION_PATTERN_WITH_JIT
 
   def test_verbose
-    assert_in_out_err(["-vve", ""]) do |r, e|
+    assert_in_out_err([{'RUBY_YJIT_ENABLE' => nil}, "-vve", ""]) do |r, e|
       assert_match(VERSION_PATTERN, r[0])
-      if RubyVM::MJIT.enabled? && !mjit_force_enabled? # checking -DMJIT_FORCE_ENABLE
+      if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? && !mjit_force_enabled? # checking -DMJIT_FORCE_ENABLE
+        assert_equal(NO_JIT_DESCRIPTION, r[0])
+      elsif defined?(YJIT.enabled?) && YJIT.enabled? && !yjit_force_enabled? # checking -DYJIT_FORCE_ENABLE
         assert_equal(NO_JIT_DESCRIPTION, r[0])
       else
         assert_equal(RUBY_DESCRIPTION, r[0])
@@ -178,9 +207,12 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_version
-    assert_in_out_err(%w(--version)) do |r, e|
+    env = {'RUBY_YJIT_ENABLE' => nil} # unset in children
+    assert_in_out_err([env, '--version']) do |r, e|
       assert_match(VERSION_PATTERN, r[0])
-      if RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE
+      if ENV['RUBY_YJIT_ENABLE'] == '1'
+        assert_equal(NO_JIT_DESCRIPTION, r[0])
+      elsif defined?(RubyVM::JIT) && RubyVM::JIT.enabled? || defined?(YJIT.enabled?) && YJIT.enabled? # checking -D(M|Y)JIT_FORCE_ENABLE
         assert_equal(EnvUtil.invoke_ruby(['-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
       else
         assert_equal(RUBY_DESCRIPTION, r[0])
@@ -189,13 +221,14 @@ class TestRubyOptions < Test::Unit::TestCase
     end
 
     return if RbConfig::CONFIG["MJIT_SUPPORT"] == 'no'
+    return if yjit_force_enabled?
 
     [
       %w(--version --jit --disable=jit),
       %w(--version --enable=jit --disable=jit),
       %w(--version --enable-jit --disable-jit),
     ].each do |args|
-      assert_in_out_err(args) do |r, e|
+      assert_in_out_err([env] + args) do |r, e|
         assert_match(VERSION_PATTERN, r[0])
         assert_match(NO_JIT_DESCRIPTION, r[0])
         assert_equal([], e)
@@ -208,12 +241,12 @@ class TestRubyOptions < Test::Unit::TestCase
         %w(--version --enable=jit),
         %w(--version --enable-jit),
       ].each do |args|
-        assert_in_out_err(args) do |r, e|
+        assert_in_out_err([env] + args) do |r, e|
           assert_match(VERSION_PATTERN_WITH_JIT, r[0])
-          if RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE
+          if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # checking -DMJIT_FORCE_ENABLE
             assert_equal(RUBY_DESCRIPTION, r[0])
           else
-            assert_equal(EnvUtil.invoke_ruby(['--jit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
+            assert_equal(EnvUtil.invoke_ruby([env, '--jit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
           end
           assert_equal([], e)
         end
@@ -287,8 +320,8 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(--encoding test_ruby_test_rubyoptions_foobarbazqux), "", [],
                       /unknown encoding name - test_ruby_test_rubyoptions_foobarbazqux \(RuntimeError\)/)
 
-    if /mswin|mingw|aix/ =~ RUBY_PLATFORM &&
-      (str = "\u3042".force_encoding(Encoding.find("locale"))).valid_encoding?
+    if /mswin|mingw|aix|android/ =~ RUBY_PLATFORM &&
+      (str = "\u3042".force_encoding(Encoding.find("external"))).valid_encoding?
       # This result depends on locale because LANG=C doesn't affect locale
       # on Windows.
       # On AIX, the source encoding of stdin with LANG=C is ISO-8859-1,
@@ -326,12 +359,6 @@ class TestRubyOptions < Test::Unit::TestCase
     ENV['RUBYOPT'] = '-e "p 1"'
     assert_in_out_err([], "", [], /invalid switch in RUBYOPT: -e \(RuntimeError\)/)
 
-    ENV['RUBYOPT'] = '-T1'
-    assert_in_out_err(["--disable-gems"], "", [], /no program input from stdin allowed in tainted mode \(SecurityError\)/)
-
-    ENV['RUBYOPT'] = '-T4'
-    assert_in_out_err(["--disable-gems"], "", [], /no program input from stdin allowed in tainted mode \(SecurityError\)/)
-
     ENV['RUBYOPT'] = '-Eus-ascii -KN'
     assert_in_out_err(%w(-Eutf-8 -KU), "p '\u3042'") do |r, e|
       assert_equal("\"\u3042\"", r.join.force_encoding(Encoding::UTF_8))
@@ -342,6 +369,20 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(), "p $VERBOSE", ["true"])
     assert_in_out_err(%w(-W1), "p $VERBOSE", ["false"])
     assert_in_out_err(%w(-W0), "p $VERBOSE", ["nil"])
+    assert_in_out_err(%w(), "p Warning[:deprecated]", ["true"])
+    assert_in_out_err(%w(-W0), "p Warning[:deprecated]", ["false"])
+    assert_in_out_err(%w(-W1), "p Warning[:deprecated]", ["false"])
+    assert_in_out_err(%w(-W2), "p Warning[:deprecated]", ["true"])
+    ENV['RUBYOPT'] = '-W:deprecated'
+    assert_in_out_err(%w(), "p Warning[:deprecated]", ["true"])
+    ENV['RUBYOPT'] = '-W:no-deprecated'
+    assert_in_out_err(%w(), "p Warning[:deprecated]", ["false"])
+    ENV['RUBYOPT'] = '-W:experimental'
+    assert_in_out_err(%w(), "p Warning[:experimental]", ["true"])
+    ENV['RUBYOPT'] = '-W:no-experimental'
+    assert_in_out_err(%w(), "p Warning[:experimental]", ["false"])
+    ENV['RUBYOPT'] = '-W:qux'
+    assert_in_out_err(%w(), "", [], /unknown warning category: `qux'/)
   ensure
     if rubyopt_orig
       ENV['RUBYOPT'] = rubyopt_orig
@@ -493,16 +534,18 @@ class TestRubyOptions < Test::Unit::TestCase
           ["case nil; when true", "end"],
           ["if false;", "end", "if true\nelse ", "end"],
           ["else", " end", "_ = if true\n"],
+          ["begin\n    def f() = nil", "end"],
+          ["begin\n    def self.f() = nil", "end"],
         ].each do
           |b, e = 'end', pre = nil, post = nil|
           src = ["#{pre}#{b}\n", " #{e}\n#{post}"]
           k = b[/\A\s*(\S+)/, 1]
           e = e[/\A\s*(\S+)/, 1]
-          n = 2
-          n += pre.count("\n") if pre
+          n = 1 + src[0].count("\n")
+          n1 = 1 + (pre ? pre.count("\n") : 0)
 
           a.for("no directives with #{src}") do
-            err = ["#{t.path}:#{n}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n-1}"]
+            err = ["#{t.path}:#{n}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n1}"]
             t.rewind
             t.truncate(0)
             t.puts src
@@ -521,7 +564,7 @@ class TestRubyOptions < Test::Unit::TestCase
           end
 
           a.for("false and true directives with #{src}") do
-            err = ["#{t.path}:#{n+2}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n+1}"]
+            err = ["#{t.path}:#{n+2}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n1+2}"]
             t.rewind
             t.truncate(0)
             t.puts "# -*- warn-indent: false -*-"
@@ -543,7 +586,7 @@ class TestRubyOptions < Test::Unit::TestCase
           end
 
           a.for("BOM with #{src}") do
-            err = ["#{t.path}:#{n}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n-1}"]
+            err = ["#{t.path}:#{n}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n1}"]
             t.rewind
             t.truncate(0)
             t.print "\u{feff}"
@@ -688,7 +731,7 @@ class TestRubyOptions < Test::Unit::TestCase
       %r(
         (?:--\s(?:.+\n)*\n)?
         --\sControl\sframe\sinformation\s-+\n
-        (?:c:.*\n)*
+        (?:(?:c:.*\n)|(?:^\s+.+\n))*
         \n
       )x,
       %r(
@@ -717,6 +760,8 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def assert_segv(args, message=nil)
+    skip if ENV['RUBY_ON_BUG']
+
     test_stdin = ""
     opt = SEGVTest::ExecOptions.dup
     list = SEGVTest::ExpectedStderrList
@@ -835,11 +880,11 @@ class TestRubyOptions < Test::Unit::TestCase
     def test_command_line_glob_nonascii
       bug10555 = '[ruby-dev:48752] [Bug #10555]'
       name = "\u{3042}.txt"
-      expected = name.encode("locale") rescue "?.txt"
+      expected = name.encode("external") rescue "?.txt"
       with_tmpchdir do |dir|
         open(name, "w") {}
         assert_in_out_err(["-e", "puts ARGV", "?.txt"], "", [expected], [],
-                          bug10555, encoding: "locale")
+                          bug10555, encoding: "external")
       end
     end
 
@@ -874,7 +919,7 @@ class TestRubyOptions < Test::Unit::TestCase
       with_tmpchdir do |dir|
         Ougai.each {|f| open(f, "w") {}}
         assert_in_out_err(["-Eutf-8", "-e", "puts ARGV", "*"], "", Ougai, encoding: "utf-8")
-        ougai = Ougai.map {|f| f.encode("locale", replace: "?")}
+        ougai = Ougai.map {|f| f.encode("external", replace: "?")}
         assert_in_out_err(["-e", "puts ARGV", "*.txt"], "", ougai)
       end
     end
@@ -1010,11 +1055,11 @@ class TestRubyOptions < Test::Unit::TestCase
       err = !freeze ? [] : debug ? with_debug_pat : wo_debug_pat
       [
         ['"foo" << "bar"', err],
-        ['"foo#{123}bar" << "bar"', err],
+        ['"foo#{123}bar" << "bar"', []],
         ['+"foo#{123}bar" << "bar"', []],
-        ['-"foo#{123}bar" << "bar"', freeze && debug ? with_debug_pat : wo_debug_pat],
+        ['-"foo#{123}bar" << "bar"', wo_debug_pat],
       ].each do |code, expected|
-        assert_in_out_err(opt, code, [], expected, [opt, code])
+        assert_in_out_err(opt, code, [], expected, "#{opt} #{code}")
       end
     end
   end
@@ -1052,21 +1097,31 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   end
 
+  def test_rubylib_invalid_encoding
+    env = {"RUBYLIB"=>"\xFF", "LOCALE"=>"en_US.UTF-8", "LC_ALL"=>"en_US.UTF-8"}
+    assert_ruby_status([env, "-e;"])
+  end
+
   def test_null_script
     skip "#{IO::NULL} is not a character device" unless File.chardev?(IO::NULL)
     assert_in_out_err([IO::NULL], success: true)
   end
 
-  def test_argv_tainted
-    assert_separately(%w[- arg], "#{<<~"begin;"}\n#{<<~'end;'}")
-    begin;
-      assert_predicate(ARGV[0], :tainted?, '[ruby-dev:50596] [Bug #14941]')
-    end;
+  def test_jit_debug
+    # mswin uses prebuilt precompiled header. Thus it does not show a pch compilation log to check "-O0 -O1".
+    if JITSupport.supported? && !RUBY_PLATFORM.match?(/mswin/)
+      env = { 'MJIT_SEARCH_BUILD_DIR' => 'true' }
+      assert_in_out_err([env, "--disable-yjit", "--jit-debug=-O0 -O1", "--jit-verbose=2", "" ], "", [], /-O0 -O1/)
+    end
   end
 
   private
 
   def mjit_force_enabled?
     "#{RbConfig::CONFIG['CFLAGS']} #{RbConfig::CONFIG['CPPFLAGS']}".match?(/(\A|\s)-D ?MJIT_FORCE_ENABLE\b/)
+  end
+
+  def yjit_force_enabled?
+    "#{RbConfig::CONFIG['CFLAGS']} #{RbConfig::CONFIG['CPPFLAGS']}".match?(/(\A|\s)-D ?YJIT_FORCE_ENABLE\b/)
   end
 end

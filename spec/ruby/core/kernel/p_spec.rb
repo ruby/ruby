@@ -57,10 +57,14 @@ describe "Kernel#p" do
     }
     -> { p(o) }.should output_to_fd("Next time, Gadget, NEXT TIME!\n")
 
-    $\ = " *helicopter sound*\n"
+    suppress_warning {
+      $\ = " *helicopter sound*\n"
+    }
     -> { p(o) }.should output_to_fd("Next time, Gadget, NEXT TIME!\n")
 
-    $/ = " *helicopter sound*\n"
+    suppress_warning {
+      $/ = " *helicopter sound*\n"
+    }
     -> { p(o) }.should output_to_fd("Next time, Gadget, NEXT TIME!\n")
   end
 

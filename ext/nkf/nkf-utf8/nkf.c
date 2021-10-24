@@ -581,7 +581,7 @@ static const unsigned char cv[]= {
     0x00,0x00};
 
 
-/* X0201 kana conversion table for daguten */
+/* X0201 kana conversion table for dakuten */
 /* 90-9F A0-DF */
 static const unsigned char dv[]= {
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -602,7 +602,7 @@ static const unsigned char dv[]= {
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
     0x00,0x00};
 
-/* X0201 kana conversion table for han-daguten */
+/* X0201 kana conversion table for han-dakuten */
 /* 90-9F A0-DF */
 static const unsigned char ev[]= {
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -623,7 +623,7 @@ static const unsigned char ev[]= {
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
     0x00,0x00};
 
-/* X0201 kana to X0213 conversion table for han-daguten */
+/* X0201 kana to X0213 conversion table for han-dakuten */
 /* 90-9F A0-DF */
 static const unsigned char ev_x0213[]= {
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -3817,7 +3817,7 @@ oconv_newline(void (*func)(nkf_char, nkf_char))
    LF    new line
    SP    space
 
-   This fold algorthm does not preserve heading space in a line.
+   This fold algorithm does not preserve heading space in a line.
    This is the main difference from fmt.
  */
 
@@ -6787,7 +6787,7 @@ options(unsigned char *cp)
 	case 'S':   /* Shift_JIS input */
 	    input_encoding = nkf_enc_from_index(SHIFT_JIS);
 	    continue;
-	case 'Z':   /* Convert X0208 alphabet to asii */
+	case 'Z':   /* Convert X0208 alphabet to ascii */
 	    /* alpha_f
 	       bit:0   Convert JIS X 0208 Alphabet to ASCII
 	       bit:1   Convert Kankaku to one space

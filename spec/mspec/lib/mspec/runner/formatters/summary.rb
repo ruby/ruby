@@ -1,11 +1,4 @@
-require 'mspec/expectations/expectations'
-require 'mspec/runner/formatters/dotted'
+require 'mspec/runner/formatters/base'
 
-class SummaryFormatter < DottedFormatter
-  # Callback for the MSpec :after event. Overrides the
-  # callback provided by +DottedFormatter+ and does not
-  # print any output for each example evaluated.
-  def after(state)
-    # do nothing
-  end
+class SummaryFormatter < BaseFormatter
 end

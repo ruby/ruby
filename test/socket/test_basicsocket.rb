@@ -32,7 +32,7 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
 
         n = s.getsockopt(Socket::SOL_SOCKET, Socket::SO_ERROR)
         assert_equal([0].pack("i"), n.data)
-      rescue Minitest::Assertion
+      rescue Test::Unit::AssertionFailedError
         s.close
         if /aix/ =~ RUBY_PLATFORM
           skip "Known bug in getsockopt(2) on AIX"
@@ -159,8 +159,6 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
       set_nb = true
       buf = String.new
       if ssock.respond_to?(:nonblock?)
-        assert_not_predicate(ssock, :nonblock?)
-        assert_not_predicate(csock, :nonblock?)
         csock.nonblock = ssock.nonblock = false
 
         # Linux may use MSG_DONTWAIT to avoid setting O_NONBLOCK

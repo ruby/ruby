@@ -10,12 +10,12 @@ describe 'Socket.gethostbyaddr' do
 
     describe 'without an explicit address family' do
       it 'returns an Array' do
-        Socket.gethostbyaddr(@addr).should be_an_instance_of(Array)
+        suppress_warning { Socket.gethostbyaddr(@addr) }.should be_an_instance_of(Array)
       end
 
       describe 'the returned Array' do
         before do
-          @array = Socket.gethostbyaddr(@addr)
+          @array = suppress_warning { Socket.gethostbyaddr(@addr) }
         end
 
         # RubyCI Solaris 11x defines 127.0.0.1 as unstable11x
@@ -49,15 +49,15 @@ describe 'Socket.gethostbyaddr' do
 
     describe 'with an explicit address family' do
       it 'returns an Array when using an Integer as the address family' do
-        Socket.gethostbyaddr(@addr, Socket::AF_INET).should be_an_instance_of(Array)
+        suppress_warning { Socket.gethostbyaddr(@addr, Socket::AF_INET) }.should be_an_instance_of(Array)
       end
 
       it 'returns an Array when using a Symbol as the address family' do
-        Socket.gethostbyaddr(@addr, :INET).should be_an_instance_of(Array)
+        suppress_warning { Socket.gethostbyaddr(@addr, :INET) }.should be_an_instance_of(Array)
       end
 
       it 'raises SocketError when the address is not supported by the family' do
-        -> { Socket.gethostbyaddr(@addr, :INET6) }.should raise_error(SocketError)
+        -> { suppress_warning { Socket.gethostbyaddr(@addr, :INET6) } }.should raise_error(SocketError)
       end
     end
   end
@@ -70,12 +70,12 @@ describe 'Socket.gethostbyaddr' do
 
       describe 'without an explicit address family' do
         it 'returns an Array' do
-          Socket.gethostbyaddr(@addr).should be_an_instance_of(Array)
+          suppress_warning { Socket.gethostbyaddr(@addr) }.should be_an_instance_of(Array)
         end
 
         describe 'the returned Array' do
           before do
-            @array = Socket.gethostbyaddr(@addr)
+            @array = suppress_warning { Socket.gethostbyaddr(@addr) }
           end
 
           it 'includes the hostname as the first value' do
@@ -106,16 +106,16 @@ describe 'Socket.gethostbyaddr' do
 
       describe 'with an explicit address family' do
         it 'returns an Array when using an Integer as the address family' do
-          Socket.gethostbyaddr(@addr, Socket::AF_INET6).should be_an_instance_of(Array)
+          suppress_warning { Socket.gethostbyaddr(@addr, Socket::AF_INET6) }.should be_an_instance_of(Array)
         end
 
         it 'returns an Array when using a Symbol as the address family' do
-          Socket.gethostbyaddr(@addr, :INET6).should be_an_instance_of(Array)
+          suppress_warning { Socket.gethostbyaddr(@addr, :INET6) }.should be_an_instance_of(Array)
         end
 
-        platform_is_not :windows do
+        platform_is_not :windows, :wsl do
           it 'raises SocketError when the address is not supported by the family' do
-            -> { Socket.gethostbyaddr(@addr, :INET) }.should raise_error(SocketError)
+            -> { suppress_warning { Socket.gethostbyaddr(@addr, :INET) } }.should raise_error(SocketError)
           end
         end
       end

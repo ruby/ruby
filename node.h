@@ -1,3 +1,5 @@
+#ifndef RUBY_NODE_H
+#define RUBY_NODE_H 1
 /**********************************************************************
 
   node.h -
@@ -8,9 +10,6 @@
   Copyright (C) 1993-2007 Yukihiro Matsumoto
 
 **********************************************************************/
-
-#ifndef RUBY_NODE_H
-#define RUBY_NODE_H 1
 
 #if defined(__cplusplus)
 extern "C" {
@@ -64,8 +63,8 @@ enum node_type {
     NODE_QCALL,
     NODE_SUPER,
     NODE_ZSUPER,
-    NODE_ARRAY,
-    NODE_ZARRAY,
+    NODE_LIST,
+    NODE_ZLIST,
     NODE_VALUES,
     NODE_HASH,
     NODE_RETURN,
@@ -122,9 +121,9 @@ enum node_type {
     NODE_DSYM,
     NODE_ATTRASGN,
     NODE_LAMBDA,
-    NODE_METHREF,
     NODE_ARYPTN,
     NODE_HSHPTN,
+    NODE_FNDPTN,
     NODE_LAST
 };
 
@@ -139,7 +138,7 @@ typedef struct rb_code_location_struct {
 } rb_code_location_t;
 
 static inline rb_code_location_t
-code_loc_gen(rb_code_location_t *loc1, rb_code_location_t *loc2)
+code_loc_gen(const rb_code_location_t *loc1, const rb_code_location_t *loc2)
 {
     rb_code_location_t loc;
     loc.beg_pos = loc1->beg_pos;
@@ -165,18 +164,18 @@ typedef struct RNode {
 	struct RNode *node;
 	ID id;
 	long state;
-	struct rb_global_entry *entry;
 	struct rb_args_info *args;
-        struct rb_ary_pattern_info *apinfo;
+	struct rb_ary_pattern_info *apinfo;
+	struct rb_fnd_pattern_info *fpinfo;
 	VALUE value;
     } u3;
     rb_code_location_t nd_loc;
     int node_id;
 } NODE;
 
-#define RNODE(obj)  (R_CAST(RNode)(obj))
+#define RNODE(obj)  ((struct RNode *)(obj))
 
-/* FL     : 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: FINALIZE, 8: TAINT, 9: UNTRUSTED, 10: EXIVAR, 11: FREEZE */
+/* FL     : 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: FINALIZE, 8: UNUSED, 9: UNUSED, 10: EXIVAR, 11: FREEZE */
 /* NODE_FL: 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: NODE_FL_NEWLINE,
  *          8..14: nd_type,
  *          15..: nd_line
@@ -188,6 +187,8 @@ typedef struct RNode {
 
 #define nd_type(n) ((int) (((n)->flags & NODE_TYPEMASK)>>NODE_TYPESHIFT))
 #define nd_set_type(n,t) \
+    rb_node_set_type(n, t)
+#define nd_init_type(n,t) \
     (n)->flags=(((n)->flags&~NODE_TYPEMASK)|((((unsigned long)(t))<<NODE_TYPESHIFT)&NODE_TYPEMASK))
 
 #define NODE_LSHIFT (NODE_TYPESHIFT+7)
@@ -228,7 +229,7 @@ typedef struct RNode {
 
 #define nd_stts  u1.node
 
-#define nd_entry u3.entry
+#define nd_entry u3.id
 #define nd_vid   u1.id
 #define nd_cflag u2.id
 #define nd_cval  u3.value
@@ -280,11 +281,14 @@ typedef struct RNode {
 
 #define nd_apinfo u3.apinfo
 
+#define nd_fpinfo u3.fpinfo
+
 #define NEW_NODE(t,a0,a1,a2,loc) rb_node_newnode((t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2),loc)
+#define NEW_NODE_WITH_LOCALS(t,a1,a2,loc) node_newnode_with_locals(p, (t),(VALUE)(a1),(VALUE)(a2),loc)
 
 #define NEW_DEFN(i,a,d,loc) NEW_NODE(NODE_DEFN,0,i,NEW_SCOPE(a,d,loc),loc)
 #define NEW_DEFS(r,i,a,d,loc) NEW_NODE(NODE_DEFS,r,i,NEW_SCOPE(a,d,loc),loc)
-#define NEW_SCOPE(a,b,loc) NEW_NODE(NODE_SCOPE,local_tbl(p),b,a,loc)
+#define NEW_SCOPE(a,b,loc) NEW_NODE_WITH_LOCALS(NODE_SCOPE,b,a,loc)
 #define NEW_BLOCK(a,loc) NEW_NODE(NODE_BLOCK,a,0,0,loc)
 #define NEW_IF(c,t,e,loc) NEW_NODE(NODE_IF,c,t,e,loc)
 #define NEW_UNLESS(c,t,e,loc) NEW_NODE(NODE_UNLESS,c,t,e,loc)
@@ -309,12 +313,11 @@ typedef struct RNode {
 #define NEW_ENSURE(b,en,loc) NEW_NODE(NODE_ENSURE,b,0,en,loc)
 #define NEW_RETURN(s,loc) NEW_NODE(NODE_RETURN,s,0,0,loc)
 #define NEW_YIELD(a,loc) NEW_NODE(NODE_YIELD,a,0,0,loc)
-#define NEW_LIST(a,loc)  NEW_ARRAY(a,loc)
-#define NEW_ARRAY(a,loc) NEW_NODE(NODE_ARRAY,a,1,0,loc)
-#define NEW_ZARRAY(loc) NEW_NODE(NODE_ZARRAY,0,0,0,loc)
+#define NEW_LIST(a,loc) NEW_NODE(NODE_LIST,a,1,0,loc)
+#define NEW_ZLIST(loc) NEW_NODE(NODE_ZLIST,0,0,0,loc)
 #define NEW_HASH(a,loc)  NEW_NODE(NODE_HASH,a,0,0,loc)
 #define NEW_MASGN(l,r,loc)   NEW_NODE(NODE_MASGN,l,0,r,loc)
-#define NEW_GASGN(v,val,loc) NEW_NODE(NODE_GASGN,v,val,rb_global_entry(v),loc)
+#define NEW_GASGN(v,val,loc) NEW_NODE(NODE_GASGN,v,val,v,loc)
 #define NEW_LASGN(v,val,loc) NEW_NODE(NODE_LASGN,v,val,0,loc)
 #define NEW_DASGN(v,val,loc) NEW_NODE(NODE_DASGN,v,val,0,loc)
 #define NEW_DASGN_CURR(v,val,loc) NEW_NODE(NODE_DASGN_CURR,v,val,0,loc)
@@ -327,7 +330,7 @@ typedef struct RNode {
 #define NEW_OP_ASGN_OR(i,val,loc) NEW_NODE(NODE_OP_ASGN_OR,i,val,0,loc)
 #define NEW_OP_ASGN_AND(i,val,loc) NEW_NODE(NODE_OP_ASGN_AND,i,val,0,loc)
 #define NEW_OP_CDECL(v,op,val,loc) NEW_NODE(NODE_OP_CDECL,v,val,op,loc)
-#define NEW_GVAR(v,loc) NEW_NODE(NODE_GVAR,v,0,rb_global_entry(v),loc)
+#define NEW_GVAR(v,loc) NEW_NODE(NODE_GVAR,v,0,v,loc)
 #define NEW_LVAR(v,loc) NEW_NODE(NODE_LVAR,v,0,0,loc)
 #define NEW_DVAR(v,loc) NEW_NODE(NODE_DVAR,v,0,0,loc)
 #define NEW_IVAR(v,loc) NEW_NODE(NODE_IVAR,v,0,0,loc)
@@ -369,7 +372,7 @@ typedef struct RNode {
 #define NEW_COLON3(i,loc) NEW_NODE(NODE_COLON3,0,i,0,loc)
 #define NEW_DOT2(b,e,loc) NEW_NODE(NODE_DOT2,b,e,0,loc)
 #define NEW_DOT3(b,e,loc) NEW_NODE(NODE_DOT3,b,e,0,loc)
-#define NEW_SELF(loc) NEW_NODE(NODE_SELF,0,0,0,loc)
+#define NEW_SELF(loc) NEW_NODE(NODE_SELF,0,0,1,loc)
 #define NEW_NIL(loc) NEW_NODE(NODE_NIL,0,0,0,loc)
 #define NEW_TRUE(loc) NEW_NODE(NODE_TRUE,0,0,0,loc)
 #define NEW_FALSE(loc) NEW_NODE(NODE_FALSE,0,0,0,loc)
@@ -378,13 +381,13 @@ typedef struct RNode {
 #define NEW_PREEXE(b,loc) NEW_SCOPE(b,loc)
 #define NEW_POSTEXE(b,loc) NEW_NODE(NODE_POSTEXE,0,b,0,loc)
 #define NEW_ATTRASGN(r,m,a,loc) NEW_NODE(NODE_ATTRASGN,r,m,a,loc)
-#define NEW_METHREF(r,m,loc) NEW_NODE(NODE_METHREF,r,m,0,loc)
 
 #define NODE_SPECIAL_REQUIRED_KEYWORD ((NODE *)-1)
 #define NODE_REQUIRED_KEYWORD_P(node) ((node)->nd_value == NODE_SPECIAL_REQUIRED_KEYWORD)
 #define NODE_SPECIAL_NO_NAME_REST     ((NODE *)-1)
 #define NODE_NAMED_REST_P(node) ((node) != NODE_SPECIAL_NO_NAME_REST)
 #define NODE_SPECIAL_EXCESSIVE_COMMA   ((ID)1)
+#define NODE_SPECIAL_NO_REST_KEYWORD   ((NODE *)-1)
 
 VALUE rb_node_case_when_optimizable_literal(const NODE *const node);
 
@@ -395,7 +398,10 @@ typedef struct node_buffer_struct node_buffer_t;
 typedef struct rb_ast_body_struct {
     const NODE *root;
     VALUE compile_option;
-    int line_count;
+    VALUE script_lines;
+    // script_lines is either:
+    // - a Fixnum that represents the line count of the original source, or
+    // - an Array that contains the lines of the original source
 } rb_ast_body_t;
 typedef struct rb_ast_struct {
     VALUE flags;
@@ -404,33 +410,29 @@ typedef struct rb_ast_struct {
 } rb_ast_t;
 rb_ast_t *rb_ast_new(void);
 void rb_ast_mark(rb_ast_t*);
+void rb_ast_update_references(rb_ast_t*);
+void rb_ast_add_local_table(rb_ast_t*, ID *buf);
 void rb_ast_dispose(rb_ast_t*);
 void rb_ast_free(rb_ast_t*);
 size_t rb_ast_memsize(const rb_ast_t*);
 void rb_ast_add_mark_object(rb_ast_t*, VALUE);
-NODE *rb_ast_newnode(rb_ast_t*);
+NODE *rb_ast_newnode(rb_ast_t*, enum node_type type);
 void rb_ast_delete_node(rb_ast_t*, NODE *n);
 
 VALUE rb_parser_new(void);
 VALUE rb_parser_end_seen_p(VALUE);
 VALUE rb_parser_encoding(VALUE);
-VALUE rb_parser_get_yydebug(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
 VALUE rb_parser_dump_tree(const NODE *node, int comment);
 void rb_parser_set_options(VALUE, int, int, int, int);
 
-rb_ast_t *rb_parser_compile_cstr(VALUE, const char*, const char*, int, int);
 rb_ast_t *rb_parser_compile_string(VALUE, const char*, VALUE, int);
-rb_ast_t *rb_parser_compile_file(VALUE, const char*, VALUE, int);
 rb_ast_t *rb_parser_compile_string_path(VALUE vparser, VALUE fname, VALUE src, int line);
 rb_ast_t *rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE input, int line);
 rb_ast_t *rb_parser_compile_generic(VALUE vparser, VALUE (*lex_gets)(VALUE, int), VALUE fname, VALUE input, int line);
 
-rb_ast_t *rb_compile_cstr(const char*, const char*, int, int);
-rb_ast_t *rb_compile_string(const char*, VALUE, int);
-rb_ast_t *rb_compile_file(const char*, VALUE, int);
-
 void rb_node_init(NODE *n, enum node_type type, VALUE a0, VALUE a1, VALUE a2);
+const char *ruby_node_name(int node);
 
 const struct kwtable *rb_reserved_word(const char *, unsigned int);
 
@@ -450,6 +452,10 @@ struct rb_args_info {
     NODE *kw_rest_arg;
 
     NODE *opt_args;
+    unsigned int no_kwarg: 1;
+    unsigned int ruby2_keywords: 1;
+
+    VALUE imemo;
 };
 
 struct rb_ary_pattern_info {
@@ -458,14 +464,30 @@ struct rb_ary_pattern_info {
     NODE *post_args;
 };
 
+struct rb_fnd_pattern_info {
+    NODE *pre_rest_arg;
+    NODE *args;
+    NODE *post_rest_arg;
+};
+
 struct parser_params;
 void *rb_parser_malloc(struct parser_params *, size_t);
 void *rb_parser_realloc(struct parser_params *, void *, size_t);
 void *rb_parser_calloc(struct parser_params *, size_t, size_t);
 void rb_parser_free(struct parser_params *, void *);
 PRINTF_ARGS(void rb_parser_printf(struct parser_params *parser, const char *fmt, ...), 2, 3);
+void rb_ast_node_type_change(NODE *n, enum node_type type);
 
 RUBY_SYMBOL_EXPORT_END
+
+static inline VALUE
+rb_node_set_type(NODE *n, enum node_type t)
+{
+#if RUBY_DEBUG
+    rb_ast_node_type_change(n, t);
+#endif
+    return nd_init_type(n, t);
+}
 
 #if defined(__cplusplus)
 #if 0

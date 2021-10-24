@@ -7,7 +7,7 @@ class Point
     self
   end
 
-  def to_s
+  def inspect
     sprintf("%d@%d", @x, @y)
   end
 end

@@ -15,14 +15,16 @@ describe "Array#pack with format 'P'" do
     ["hello"].pack("P").unpack("P5").should == ["hello"]
   end
 
-  it "taints the input string" do
-    input_string = "hello"
-    [input_string].pack("P")
-    input_string.tainted?.should be_true
-  end
+  ruby_version_is ''...'2.7' do
+    it "taints the input string" do
+      input_string = "hello"
+      [input_string].pack("P")
+      input_string.tainted?.should be_true
+    end
 
-  it "does not taint the output string in normal cases" do
-    ["hello"].pack("P").tainted?.should be_false
+    it "does not taint the output string in normal cases" do
+      ["hello"].pack("P").tainted?.should be_false
+    end
   end
 
   it "with nil gives a null pointer" do
@@ -42,14 +44,16 @@ describe "Array#pack with format 'p'" do
     ["hello"].pack("p").unpack("p").should == ["hello"]
   end
 
-  it "taints the input string" do
-    input_string = "hello"
-    [input_string].pack("p")
-    input_string.tainted?.should be_true
-  end
+  ruby_version_is ''...'2.7' do
+    it "taints the input string" do
+      input_string = "hello"
+      [input_string].pack("p")
+      input_string.tainted?.should be_true
+    end
 
-  it "does not taint the output string in normal cases" do
-    ["hello"].pack("p").tainted?.should be_false
+    it "does not taint the output string in normal cases" do
+      ["hello"].pack("p").tainted?.should be_false
+    end
   end
 
   it "with nil gives a null pointer" do

@@ -1,19 +1,18 @@
-require 'mspec/expectations/expectations'
 require 'mspec/runner/formatters/yaml'
 
 class JUnitFormatter < YamlFormatter
-  def initialize(out=nil)
-    super
+  def initialize(out = nil)
+    super(out)
     @tests = []
   end
 
   def after(state = nil)
-    super
+    super(state)
     @tests << {:test => state, :exception => false} unless exception?
   end
 
   def exception(exception)
-    super
+    super(exception)
     @tests << {:test => exception, :exception => true}
   end
 
@@ -25,7 +24,7 @@ class JUnitFormatter < YamlFormatter
     errors = @tally.counter.errors
     failures = @tally.counter.failures
 
-    printf <<-XML
+    print <<-XML
 
 <?xml version="1.0" encoding="UTF-8" ?>
     <testsuites
@@ -43,8 +42,8 @@ class JUnitFormatter < YamlFormatter
     @tests.each do |h|
       description = encode_for_xml h[:test].description
 
-      printf <<-XML, "Spec", description, 0.0
-        <testcase classname="%s" name="%s" time="%f">
+      print <<-XML
+        <testcase classname="Spec" name="#{description}" time="0.0">
       XML
       if h[:exception]
         outcome = h[:test].failure? ? "failure" : "error"

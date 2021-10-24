@@ -4,7 +4,6 @@
 # verification.
 
 class Gem::Security::TrustDir
-
   ##
   # Default permissions for the trust directory and its contents
 
@@ -26,7 +25,7 @@ class Gem::Security::TrustDir
     @dir = dir
     @permissions = permissions
 
-    @digester = Gem::Security::DIGEST_ALGORITHM
+    @digester = Gem::Security.create_digest
   end
 
   ##
@@ -105,6 +104,7 @@ class Gem::Security::TrustDir
   # permissions.
 
   def verify
+    require 'fileutils'
     if File.exist? @dir
       raise Gem::Security::Exception,
         "trust directory #{@dir} is not a directory" unless
@@ -115,5 +115,4 @@ class Gem::Security::TrustDir
       FileUtils.mkdir_p @dir, :mode => @permissions[:trust_dir]
     end
   end
-
 end

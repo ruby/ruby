@@ -2,10 +2,12 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe 'Comparable#clamp' do
-  it 'raises an Argument error unless given 2 parameters' do
-    c = ComparableSpecs::Weird.new(0)
-    -> { c.clamp(c) }.should raise_error(ArgumentError)
-    -> { c.clamp(c, c, c) }.should raise_error(ArgumentError)
+  ruby_version_is ""..."2.7" do
+    it 'raises an Argument error unless given 2 parameters' do
+      c = ComparableSpecs::Weird.new(0)
+      -> { c.clamp(c) }.should raise_error(ArgumentError)
+      -> { c.clamp(c, c, c) }.should raise_error(ArgumentError)
+    end
   end
 
   it 'raises an Argument error unless the 2 parameters are correctly ordered' do
@@ -44,5 +46,43 @@ describe 'Comparable#clamp' do
     c = ComparableSpecs::Weird.new(3)
 
     c.clamp(one, two).should equal(two)
+  end
+
+  ruby_version_is "2.7" do
+    it 'returns self if within the given range parameters' do
+      one = ComparableSpecs::WithOnlyCompareDefined.new(1)
+      two = ComparableSpecs::WithOnlyCompareDefined.new(2)
+      three = ComparableSpecs::WithOnlyCompareDefined.new(3)
+      c = ComparableSpecs::Weird.new(2)
+
+      c.clamp(one..two).should equal(c)
+      c.clamp(two..two).should equal(c)
+      c.clamp(one..three).should equal(c)
+      c.clamp(two..three).should equal(c)
+    end
+
+    it 'returns the minimum value of the range parameters if smaller than it' do
+      one = ComparableSpecs::WithOnlyCompareDefined.new(1)
+      two = ComparableSpecs::WithOnlyCompareDefined.new(2)
+      c = ComparableSpecs::Weird.new(0)
+
+      c.clamp(one..two).should equal(one)
+    end
+
+    it 'returns the maximum value of the range parameters if greater than it' do
+      one = ComparableSpecs::WithOnlyCompareDefined.new(1)
+      two = ComparableSpecs::WithOnlyCompareDefined.new(2)
+      c = ComparableSpecs::Weird.new(3)
+
+      c.clamp(one..two).should equal(two)
+    end
+
+    it 'raises an Argument error if the range parameter is exclusive' do
+      one = ComparableSpecs::WithOnlyCompareDefined.new(1)
+      two = ComparableSpecs::WithOnlyCompareDefined.new(2)
+      c = ComparableSpecs::Weird.new(3)
+
+      -> { c.clamp(one...two) }.should raise_error(ArgumentError)
+    end
   end
 end

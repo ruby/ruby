@@ -13,7 +13,7 @@ describe :file_executable, shared: true do
     rm_r @file1, @file2
   end
 
-  platform_is_not :windows do
+  platform_is_not :windows, :android do
     it "returns true if named file is executable by the effective user id of the process, otherwise false" do
       @object.send(@method, '/etc/passwd').should == false
       @object.send(@method, @file1).should == true

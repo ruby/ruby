@@ -1,9 +1,20 @@
 # -*- mode: makefile-gmake; indent-tabs-mode: t -*-
 
-gnumake = yes
+reconfig config.status: export MAKE:=$(MAKE)
 override gnumake_recursive := $(if $(findstring n,$(firstword $(MFLAGS))),,+)
 override mflags := $(filter-out -j%,$(MFLAGS))
 MSPECOPT += $(if $(filter -j%,$(MFLAGS)),-j)
+nproc = $(subst -j,,$(filter -j%,$(MFLAGS)))
+
+ifeq ($(GITHUB_ACTIONS),true)
+override ACTIONS_GROUP = @echo "\#\#[group]$(@:yes-=)"
+override ACTIONS_ENDGROUP = @echo "\#\#[endgroup]"
+endif
+
+ifneq ($(filter %darwin%,$(arch)),)
+INSTRUBY_ENV += SDKROOT=/
+endif
+INSTRUBY_ARGS += --gnumake
 
 CHECK_TARGETS := great exam love check test check% test% btest%
 # expand test targets, and those dependents
@@ -24,6 +35,8 @@ TEST_DEPENDS := $(filter-out test $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst test-short,btest-ruby test-knownbug test-basic,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out test-short $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_DEPENDS += $(if $(filter great exam love check,$(MAKECMDGOALS)),all exts)
+
+in-srcdir := $(if $(filter-out .,$(srcdir)),$(CHDIR) $(srcdir) &&)
 
 ifneq ($(filter -O0 -Od,$(optflags)),)
 override XCFLAGS := $(filter-out -D_FORTIFY_SOURCE=%,$(XCFLAGS))
@@ -65,7 +78,7 @@ endif
 ORDERED_TEST_TARGETS := $(filter $(TEST_TARGETS), \
 	btest-ruby test-knownbug test-basic \
 	test-testframework test-tool test-ruby test-all \
-	test-spec test-bundler-prepare test-bundler \
+	test-spec test-bundler-prepare test-bundler test-bundler-parallel \
 	)
 prev_test := $(if $(filter test-spec,$(ORDERED_TEST_TARGETS)),test-spec-precheck)
 $(foreach test,$(ORDERED_TEST_TARGETS), \
@@ -88,12 +101,13 @@ sudo-precheck: test yes-test-testframework no-test-testframework
 install-prereq: sudo-precheck
 yes-test-all no-test-all: install
 endif
-ifneq ($(filter love install reinstall,$(MAKECMDGOALS)),)
-# Cross referece needs to parse all files at once
-RDOCFLAGS = --force-update
-endif
-ifneq ($(filter great,$(MAKECMDGOALS)),)
-love: test-rubyspec
+yes-test-bundler-parallel: PARALLELRSPECOPTS += $(if $(nproc),-n$(shell expr $(nproc) + $(nproc) / 2))
+
+# Cross reference needs to parse all files at once
+love install reinstall: RDOCFLAGS = --force-update
+
+ifneq ($(if $(filter -flto%,$(CFLAGS)),$(subst darwin,,$(arch)),$(arch)),$(arch))
+override EXE_LDFLAGS = $(filter-out -g%,$(LDFLAGS))
 endif
 
 $(srcdir)/missing/des_tables.c: $(srcdir)/missing/crypt.c
@@ -101,7 +115,7 @@ ifeq ($(if $(filter yes,$(CROSS_COMPILING)),,$(CC)),)
 	touch $@
 else
 	@$(ECHO) building make_des_table
-	$(CC) $(CPPFLAGS) -DDUMP $(LDFLAGS) $(XLDFLAGS) $(LIBS) -omake_des_table $(srcdir)/missing/crypt.c
+	$(CC) $(INCFLAGS) $(CPPFLAGS) -DDUMP $(EXE_LDFLAGS) $(XLDFLAGS) $(LIBS) -omake_des_table $(srcdir)/missing/crypt.c
 	@[ -x ./make_des_table ]
 	@$(ECHO) generating $@
 	$(Q) $(MAKEDIRS) $(@D)
@@ -109,6 +123,8 @@ else
 	$(Q) mv $@.new $@
 	$(Q) $(RMALL) make_des_table*
 endif
+
+config.status: $(wildcard config.cache)
 
 STUBPROGRAM = rubystub$(EXEEXT)
 IGNOREDPATTERNS = %~ .% %.orig %.rej \#%\#
@@ -128,7 +144,7 @@ $(STUBPROGRAM): rubystub.$(OBJEXT) $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SE
 rubystub$(EXEEXT):
 	@rm -f $@
 	$(ECHO) linking $@
-	$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) rubystub.$(OBJEXT) $(EXTOBJS) $(LIBRUBYARG) $(MAINLIBS) $(LIBS) $(EXTLIBS) $(OUTFLAG)$@
+	$(Q) $(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) rubystub.$(OBJEXT) $(EXTOBJS) $(LIBRUBYARG) $(MAINLIBS) $(LIBS) $(EXTLIBS) $(OUTFLAG)$@
 	$(Q) $(POSTLINK)
 	$(if $(STRIP),$(Q) $(STRIP) $@)
 
@@ -148,7 +164,7 @@ commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS
 	@$(BASERUBY) -C "$(srcdir)" -I./tool/lib -rvcs -e 'VCS.detect(".").commit'
 	+$(Q) \
 	{ \
-	  $(CHDIR) "$(srcdir)"; \
+	  $(in-srcdir) \
 	  exec sed -f tool/prereq.status defs/gmake.mk template/Makefile.in common.mk; \
 	} | \
 	$(MAKE) $(mflags) Q=$(Q) ECHO=$(ECHO) srcdir="$(srcdir)" srcs_vpath="" CHDIR="$(CHDIR)" \
@@ -232,7 +248,7 @@ fetch-github-%:
 
 .PHONY: checkout-github-%
 checkout-github-%: fetch-github-%
-	git -C "$(srcdir)" checkout "gh-$(1)"
+	git -C "$(srcdir)" checkout "gh-$*"
 
 .PHONY: pr-% pull-github-%
 pr-% pull-github-%: fetch-github-%
@@ -244,8 +260,42 @@ HELP_EXTRA_TASKS = \
 	"  update-github:       merge master branch and push it to Pull Request [PR=1234]" \
 	""
 
-ifeq ($(words $(filter update-gems extract-gems,$(MAKECMDGOALS))),2)
-extract-gems: update-gems
+extract-gems: $(HAVE_BASERUBY:yes=update-gems)
+
+bundled-gems := $(shell sed '/^[ 	]*\#/d;/^[ 	]*$$/d;s/[ 	][ 	]*/-/;s/[ 	].*//' $(srcdir)/gems/bundled_gems)
+
+update-gems: | $(patsubst %,gems/%.gem,$(bundled-gems))
+
+test-bundler-precheck: | $(srcdir)/.bundle/cache
+
+$(srcdir)/.bundle/cache:
+	$(MAKEDIRS) $(@D) $(CACHE_DIR)
+	$(LN_S) ../.downloaded-cache $@
+
+gems/%.gem:
+	$(ECHO) Downloading bundled gem $*...
+	$(Q) $(BASERUBY) -C "$(srcdir)" \
+	    -I./tool -rdownloader \
+	    -e 'gem = "$(@F)"' \
+	    -e 'old = Dir.glob("gems/"+gem.sub(/-[^-]*$$/, "-*.gem"))' \
+	    -e 'Downloader::RubyGems.download(gem, "gems", nil) and' \
+	    -e '(old.delete("gems/#{gem}"); !old.empty?) and' \
+	    -e 'File.unlink(*old) and' \
+	    -e 'FileUtils.rm_rf(old.map{'"|n|"'n.chomp(".gem")})'
+
+extract-gems: | $(patsubst %,.bundle/gems/%,$(bundled-gems))
+
+.bundle/gems/%: gems/%.gem | .bundle/gems
+	$(ECHO) Extracting bundle gem $*...
+	$(Q) $(BASERUBY) -C "$(srcdir)" \
+	    -Itool -rgem-unpack \
+	    -e 'Gem.unpack("gems/$(@F).gem", ".bundle/gems")'
+
+$(srcdir)/.bundle/gems:
+	$(MAKEDIRS) $@
+
+ifneq ($(filter update-bundled_gems refresh-gems,$(MAKECMDGOALS)),)
+update-gems: update-bundled_gems
 endif
 
 ifeq ($(filter 0 1,$(words $(arch_flags))),)
@@ -287,9 +337,13 @@ $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: \
 	$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
 endif
 
+REVISION_IN_HEADER := $(shell sed -n 's/^\#define RUBY_FULL_REVISION "\(.*\)"/\1/p' $(srcdir)/revision.h 2>/dev/null)
+REVISION_LATEST := $(shell $(CHDIR) $(srcdir) && git log -1 --format=%H 2>/dev/null)
+ifneq ($(REVISION_IN_HEADER),$(REVISION_LATEST))
 # GNU make treat the target as unmodified when its dependents get
 # updated but it is not updated, while others may not.
 $(srcdir)/revision.h: $(REVISION_H)
+endif
 
 # Query on the generated rdoc
 #
@@ -298,13 +352,26 @@ rdoc\:%: PHONY
 	$(Q)$(RUNRUBY) $(srcdir)/libexec/ri --no-standard-docs --doc-dir=$(RDOCOUT) $(patsubst rdoc:%,%,$@)
 
 test_%.rb test/%: programs PHONY
-	+$(Q)$(exec) $(RUNRUBY) "$(TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) -- $(patsubst test/%,%,$@)
+	$(Q)$(exec) $(RUNRUBY) "$(TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) -- $(patsubst test/%,%,$@)
 
 spec/bundler/%: PHONY
-	+$(Q)$(exec) $(XRUBY) -C $(srcdir) -Ispec/bundler .bundle/bin/rspec --require spec_helper $(RSPECOPTS) $@
+	$(Q)$(exec) $(XRUBY) -C $(srcdir) -Ispec/bundler .bundle/bin/rspec --require spec_helper $(RSPECOPTS) $@
 
-spec/%: programs exts PHONY
+spec/bundler: test-bundler-parallel
+	$(Q)$(NULLCMD)
+
+# workaround to avoid matching non ruby files with "spec/%/" under GNU make 3.81
+spec/%_spec.c spec/%_spec.$(DLEXT):
+	$(empty)
+
+spec/%/ spec/%_spec.rb: programs exts PHONY
 	+$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec-run -B $(srcdir)/spec/default.mspec $(SPECOPTS) $(patsubst %,$(srcdir)/%,$@)
+
+benchmark/%: miniruby$(EXEEXT) update-benchmark-driver PHONY
+	$(Q)$(BASERUBY) -rrubygems -I$(srcdir)/benchmark/lib $(srcdir)/benchmark/benchmark-driver/exe/benchmark-driver \
+	            --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common --disable-gem" \
+	            --executables="built-ruby::$(BENCH_RUBY) --disable-gem" \
+	            $(srcdir)/$@ $(BENCH_OPTS) $(OPTS)
 
 clean-srcs-ext::
 	$(Q)$(RM) $(patsubst $(srcdir)/%,%,$(EXT_SRCS))
@@ -314,7 +381,7 @@ clean-srcs-extra::
 
 ifneq ($(filter $(VCS),git),)
 update-src::
-	@$(BASERUBY) $(srcdir)/tool/lib/colorize.rb pass "Latest commit hash = $(shell $(filter-out svn,$(VCS)) -C $(srcdir) rev-parse --short=10 HEAD)"
+	@$(BASERUBY) $(tooldir)/lib/colorize.rb pass "Latest commit hash = $(shell $(filter-out svn,$(VCS)) -C $(srcdir) rev-parse --short=10 HEAD)"
 endif
 
 # Update dependencies and commit the updates to the current branch.
@@ -323,7 +390,7 @@ update-deps:
 	$(eval deps_dir := $(shell mktemp -d)/$(update_deps))
 	$(eval GIT_DIR := $(shell git -C $(srcdir) rev-parse --absolute-git-dir))
 	git --git-dir=$(GIT_DIR) worktree add $(deps_dir)
-	cp $(srcdir)/tool/config.guess $(srcdir)/tool/config.sub $(deps_dir)/tool
+	cp $(tooldir)/config.guess $(tooldir)/config.sub $(deps_dir)/tool
 	[ -f config.status ] && cp config.status $(deps_dir)
 	cd $(deps_dir) && autoconf && \
 	exec ./configure -q -C --enable-load-relative --disable-install-doc --disable-rubygems 'optflags=-O0' 'debugflags=-save-temps=obj -g'
@@ -334,3 +401,18 @@ update-deps:
 	$(RMDIR) $(dir $(deps_dir))
 	git --git-dir=$(GIT_DIR) merge --no-edit --ff-only $(update_deps)
 	git --git-dir=$(GIT_DIR) branch --delete $(update_deps)
+
+# order-only-prerequisites doesn't work for $(RUBYSPEC_CAPIEXT)
+# because the same named directory exists in the source tree.
+$(RUBYSPEC_CAPIEXT)/%.$(DLEXT): $(srcdir)/$(RUBYSPEC_CAPIEXT)/%.c $(srcdir)/$(RUBYSPEC_CAPIEXT)/rubyspec.h $(RUBY_H_INCLUDES) $(LIBRUBY)
+	$(ECHO) building $@
+	$(Q) $(MAKEDIRS) $(@D)
+	$(Q) $(DLDSHARED) $(XDLDFLAGS) $(XLDFLAGS) $(LDFLAGS) $(INCFLAGS) $(CPPFLAGS) $(OUTFLAG)$@ $< $(LIBRUBYARG)
+	$(Q) $(RMALL) $@.*
+
+rubyspec-capiext: $(patsubst %.c,$(RUBYSPEC_CAPIEXT)/%.$(DLEXT),$(notdir $(wildcard $(srcdir)/$(RUBYSPEC_CAPIEXT)/*.c)))
+	@ $(NULLCMD)
+
+ifeq ($(ENABLE_SHARED),yes)
+exts: rubyspec-capiext
+endif

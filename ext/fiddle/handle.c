@@ -1,8 +1,6 @@
 #include <ruby.h>
 #include <fiddle.h>
 
-#define SafeStringValueCStr(v) (rb_check_safe_obj(rb_string_value(&v)), StringValueCStr(v))
-
 VALUE rb_cHandle;
 
 struct dl_handle {
@@ -76,14 +74,14 @@ rb_fiddle_handle_close(VALUE self)
 	/* Check dlclose for successful return value */
 	if(ret) {
 #if defined(HAVE_DLERROR)
-	    rb_raise(rb_eFiddleError, "%s", dlerror());
+	    rb_raise(rb_eFiddleDLError, "%s", dlerror());
 #else
-	    rb_raise(rb_eFiddleError, "could not close handle");
+	    rb_raise(rb_eFiddleDLError, "could not close handle");
 #endif
 	}
 	return INT2NUM(ret);
     }
-    rb_raise(rb_eFiddleError, "dlclose() called too many times");
+    rb_raise(rb_eFiddleDLError, "dlclose() called too many times");
 
     UNREACHABLE;
 }
@@ -145,11 +143,11 @@ rb_fiddle_handle_initialize(int argc, VALUE argv[], VALUE self)
 	cflag = RTLD_LAZY | RTLD_GLOBAL;
 	break;
       case 1:
-	clib = NIL_P(lib) ? NULL : SafeStringValueCStr(lib);
+	clib = NIL_P(lib) ? NULL : StringValueCStr(lib);
 	cflag = RTLD_LAZY | RTLD_GLOBAL;
 	break;
       case 2:
-	clib = NIL_P(lib) ? NULL : SafeStringValueCStr(lib);
+	clib = NIL_P(lib) ? NULL : StringValueCStr(lib);
 	cflag = NUM2INT(flag);
 	break;
       default:
@@ -179,12 +177,12 @@ rb_fiddle_handle_initialize(int argc, VALUE argv[], VALUE self)
 	ptr = dlopen(clib, cflag);
 #if defined(HAVE_DLERROR)
     if( !ptr && (err = dlerror()) ){
-	rb_raise(rb_eFiddleError, "%s", err);
+	rb_raise(rb_eFiddleDLError, "%s", err);
     }
 #else
     if( !ptr ){
 	err = dlerror();
-	rb_raise(rb_eFiddleError, "%s", err);
+	rb_raise(rb_eFiddleDLError, "%s", err);
     }
 #endif
     TypedData_Get_Struct(self, struct dl_handle, &fiddle_handle_data_type, fiddle_handle);
@@ -261,7 +259,21 @@ rb_fiddle_handle_to_i(VALUE self)
     struct dl_handle *fiddle_handle;
 
     TypedData_Get_Struct(self, struct dl_handle, &fiddle_handle_data_type, fiddle_handle);
-    return PTR2NUM(fiddle_handle);
+    return PTR2NUM(fiddle_handle->ptr);
+}
+
+/*
+ * call-seq: to_ptr
+ *
+ * Returns the Fiddle::Pointer of this handle.
+ */
+static VALUE
+rb_fiddle_handle_to_ptr(VALUE self)
+{
+    struct dl_handle *fiddle_handle;
+
+    TypedData_Get_Struct(self, struct dl_handle, &fiddle_handle_data_type, fiddle_handle);
+    return rb_fiddle_ptr_new_wrap(fiddle_handle->ptr, 0, 0, self, 0);
 }
 
 static VALUE fiddle_handle_sym(void *handle, VALUE symbol);
@@ -280,7 +292,7 @@ rb_fiddle_handle_sym(VALUE self, VALUE sym)
 
     TypedData_Get_Struct(self, struct dl_handle, &fiddle_handle_data_type, fiddle_handle);
     if( ! fiddle_handle->open ){
-	rb_raise(rb_eFiddleError, "closed handle");
+	rb_raise(rb_eFiddleDLError, "closed handle");
     }
 
     return fiddle_handle_sym(fiddle_handle->ptr, sym);
@@ -319,7 +331,7 @@ fiddle_handle_sym(void *handle, VALUE symbol)
 # define CHECK_DLERROR
 #endif
     void (*func)();
-    const char *name = SafeStringValueCStr(symbol);
+    const char *name = StringValueCStr(symbol);
 
 #ifdef HAVE_DLERROR
     dlerror();
@@ -368,10 +380,52 @@ fiddle_handle_sym(void *handle, VALUE symbol)
     }
 #endif
     if( !func ){
-	rb_raise(rb_eFiddleError, "unknown symbol \"%"PRIsVALUE"\"", symbol);
+	rb_raise(rb_eFiddleDLError, "unknown symbol \"%"PRIsVALUE"\"", symbol);
     }
 
     return PTR2NUM(func);
+}
+
+/*
+ * call-seq: file_name
+ *
+ * Returns the file name of this handle.
+ */
+static VALUE
+rb_fiddle_handle_file_name(VALUE self)
+{
+    struct dl_handle *fiddle_handle;
+
+    TypedData_Get_Struct(self, struct dl_handle, &fiddle_handle_data_type, fiddle_handle);
+
+#if defined(HAVE_DLINFO) && defined(HAVE_CONST_RTLD_DI_LINKMAP)
+    {
+	struct link_map *lm = NULL;
+	int res = dlinfo(fiddle_handle->ptr, RTLD_DI_LINKMAP, &lm);
+	if (res == 0 && lm != NULL) {
+	    return rb_str_new_cstr(lm->l_name);
+	}
+	else {
+#if defined(HAVE_DLERROR)
+	    rb_raise(rb_eFiddleDLError, "could not get handle file name: %s", dlerror());
+#else
+	    rb_raise(rb_eFiddleDLError, "could not get handle file name");
+#endif
+	}
+    }
+#elif defined(HAVE_GETMODULEFILENAME)
+    {
+	char filename[MAX_PATH];
+	DWORD res = GetModuleFileName(fiddle_handle->ptr, filename, MAX_PATH);
+	if (res == 0) {
+	    rb_raise(rb_eFiddleDLError, "could not get handle file name: %s", dlerror());
+	}
+	return rb_str_new_cstr(filename);
+    }
+#else
+    (void)fiddle_handle;
+    return Qnil;
+#endif
 }
 
 void
@@ -468,9 +522,11 @@ Init_fiddle_handle(void)
 
     rb_define_method(rb_cHandle, "initialize", rb_fiddle_handle_initialize, -1);
     rb_define_method(rb_cHandle, "to_i", rb_fiddle_handle_to_i, 0);
+    rb_define_method(rb_cHandle, "to_ptr", rb_fiddle_handle_to_ptr, 0);
     rb_define_method(rb_cHandle, "close", rb_fiddle_handle_close, 0);
     rb_define_method(rb_cHandle, "sym",  rb_fiddle_handle_sym, 1);
     rb_define_method(rb_cHandle, "[]",  rb_fiddle_handle_sym,  1);
+    rb_define_method(rb_cHandle, "file_name", rb_fiddle_handle_file_name, 0);
     rb_define_method(rb_cHandle, "disable_close", rb_fiddle_handle_disable_close, 0);
     rb_define_method(rb_cHandle, "enable_close", rb_fiddle_handle_enable_close, 0);
     rb_define_method(rb_cHandle, "close_enabled?", rb_fiddle_handle_close_enabled_p, 0);

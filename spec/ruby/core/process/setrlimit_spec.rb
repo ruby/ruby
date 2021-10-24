@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 
-platform_is_not :windows do
-  describe "Process.setrlimit" do
+describe "Process.setrlimit" do
+  platform_is_not :windows do
     context "when passed an Object" do
       before do
         @resource = Process::RLIMIT_CORE
@@ -227,6 +227,15 @@ platform_is_not :windows do
 
         Process.setrlimit(obj, @limit, @max).should be_nil
       end
+    end
+  end
+
+  platform_is :windows do
+    it "is not implemented" do
+      Process.respond_to?(:setrlimit).should be_false
+      -> do
+        Process.setrlimit(nil, nil)
+      end.should raise_error NotImplementedError
     end
   end
 end

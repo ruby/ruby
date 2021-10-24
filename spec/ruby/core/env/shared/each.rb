@@ -8,7 +8,7 @@ describe :env_each, shared: true do
       ENV.clear
       ENV["foo"] = "bar"
       ENV["baz"] = "boo"
-      ENV.send(@method) { |k, v| e << [k, v] }
+      ENV.send(@method) { |k, v| e << [k, v] }.should equal(ENV)
       e.should include(["foo", "bar"])
       e.should include(["baz", "boo"])
     ensure
@@ -17,7 +17,11 @@ describe :env_each, shared: true do
   end
 
   it "returns an Enumerator if called without a block" do
-    ENV.send(@method).should be_an_instance_of(Enumerator)
+    enum = ENV.send(@method)
+    enum.should be_an_instance_of(Enumerator)
+    enum.each do |name, value|
+      ENV[name].should == value
+    end
   end
 
   before :all do
@@ -31,8 +35,6 @@ describe :env_each, shared: true do
       @internal = Encoding.default_internal
 
       Encoding.default_external = Encoding::BINARY
-
-      @locale_encoding = Encoding.find "locale"
     end
 
     after :each do
@@ -44,8 +46,8 @@ describe :env_each, shared: true do
       Encoding.default_internal = nil
 
       ENV.send(@method) do |key, value|
-        key.encoding.should equal(@locale_encoding)
-        value.encoding.should equal(@locale_encoding)
+        key.should.be_locale_env
+        value.should.be_locale_env
       end
     end
 

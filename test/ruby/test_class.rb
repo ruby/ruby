@@ -131,6 +131,48 @@ class TestClass < Test::Unit::TestCase
       [:module_function, :extend_object, :append_features, :prepend_features])
   end
 
+  def test_visibility_inside_method
+    assert_warn(/calling private without arguments inside a method may not have the intended effect/, '[ruby-core:79751]') do
+      Class.new do
+        def self.foo
+          private
+        end
+        foo
+      end
+    end
+
+    assert_warn(/calling protected without arguments inside a method may not have the intended effect/, '[ruby-core:79751]') do
+      Class.new do
+        def self.foo
+          protected
+        end
+        foo
+      end
+    end
+
+    assert_warn(/calling public without arguments inside a method may not have the intended effect/, '[ruby-core:79751]') do
+      Class.new do
+        def self.foo
+          public
+        end
+        foo
+      end
+    end
+
+    assert_warn(/calling private without arguments inside a method may not have the intended effect/, '[ruby-core:79751]') do
+      Class.new do
+        class << self
+          alias priv private
+        end
+
+        def self.foo
+          priv
+        end
+        foo
+      end
+    end
+  end
+
   def test_method_redefinition
     feature2155 = '[ruby-dev:39400]'
 
@@ -232,6 +274,14 @@ class TestClass < Test::Unit::TestCase
     assert_raise(TypeError) { Class.allocate.superclass }
     bug6863 = '[ruby-core:47148]'
     assert_raise(TypeError, bug6863) { Class.new(Class.allocate) }
+
+    allocator = Class.instance_method(:allocate)
+    assert_raise_with_message(TypeError, /prohibited/) {
+      allocator.bind(Rational).call
+    }
+    assert_raise_with_message(TypeError, /prohibited/) {
+      allocator.bind_call(Rational)
+    }
   end
 
   def test_nonascii_name
@@ -262,7 +312,7 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_invalid_yield_from_class_definition
-    assert_raise(LocalJumpError) {
+    assert_raise(SyntaxError) {
       EnvUtil.suppress_warning {eval("class C; yield; end")}
     }
   end
@@ -433,6 +483,53 @@ class TestClass < Test::Unit::TestCase
     assert_equal(:foo, d.foo)
   end
 
+  def test_clone_singleton_class_exists
+    klass = Class.new do
+      def self.bar; :bar; end
+    end
+
+    o = klass.new
+    o.singleton_class
+    clone = o.clone
+
+    assert_empty(o.singleton_class.instance_methods(false))
+    assert_empty(clone.singleton_class.instance_methods(false))
+    assert_empty(o.singleton_class.singleton_class.instance_methods(false))
+    assert_empty(clone.singleton_class.singleton_class.instance_methods(false))
+  end
+
+  def test_clone_when_singleton_class_of_singleton_class_exists
+    klass = Class.new do
+      def self.bar; :bar; end
+    end
+
+    o = klass.new
+    o.singleton_class.singleton_class
+    clone = o.clone
+
+    assert_empty(o.singleton_class.instance_methods(false))
+    assert_empty(clone.singleton_class.instance_methods(false))
+    assert_empty(o.singleton_class.singleton_class.instance_methods(false))
+    assert_empty(clone.singleton_class.singleton_class.instance_methods(false))
+  end
+
+  def test_clone_when_method_exists_on_singleton_class_of_singleton_class
+    klass = Class.new do
+      def self.bar; :bar; end
+    end
+
+    o = klass.new
+    o.singleton_class.singleton_class.define_method(:s2_method) { :s2 }
+    clone = o.clone
+
+    assert_empty(o.singleton_class.instance_methods(false))
+    assert_empty(clone.singleton_class.instance_methods(false))
+    assert_equal(:s2, o.singleton_class.s2_method)
+    assert_equal(:s2, clone.singleton_class.s2_method)
+    assert_equal([:s2_method], o.singleton_class.singleton_class.instance_methods(false))
+    assert_equal([:s2_method], clone.singleton_class.singleton_class.instance_methods(false))
+  end
+
   def test_singleton_class_p
     feature7609 = '[ruby-core:51087] [Feature #7609]'
     assert_predicate(self.singleton_class, :singleton_class?, feature7609)
@@ -591,15 +688,17 @@ class TestClass < Test::Unit::TestCase
 
   def test_redefinition_mismatch
     m = Module.new
-    m.module_eval "A = 1"
-    assert_raise_with_message(TypeError, /is not a class/) {
+    m.module_eval "A = 1", __FILE__, line = __LINE__
+    e = assert_raise_with_message(TypeError, /is not a class/) {
       m.module_eval "class A; end"
     }
+    assert_include(e.message, "#{__FILE__}:#{line}: previous definition")
     n = "M\u{1f5ff}"
-    m.module_eval "#{n} = 42"
-    assert_raise_with_message(TypeError, "#{n} is not a class") {
+    m.module_eval "#{n} = 42", __FILE__, line = __LINE__
+    e = assert_raise_with_message(TypeError, /#{n} is not a class/) {
       m.module_eval "class #{n}; end"
     }
+    assert_include(e.message, "#{__FILE__}:#{line}: previous definition")
 
     assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
     begin;
@@ -630,5 +729,12 @@ class TestClass < Test::Unit::TestCase
       raise if hidden.nil?
     end;
 
+  end
+
+  def test_assign_frozen_class_to_const
+    c = Class.new.freeze
+    assert_same(c, Module.new.module_eval("self::Foo = c"))
+    c = Class.new.freeze
+    assert_same(c, Module.new.const_set(:Foo, c))
   end
 end

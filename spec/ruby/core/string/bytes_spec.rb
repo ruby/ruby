@@ -22,9 +22,9 @@ describe "String#bytes" do
     @utf8_ascii.bytes.to_a.size.should == @utf8_ascii.bytesize
   end
 
-  it "returns bytes as Fixnums" do
-    @ascii.bytes.to_a.each {|b| b.should be_an_instance_of(Fixnum)}
-    @utf8_ascii.bytes { |b| b.should be_an_instance_of(Fixnum) }
+  it "returns bytes as Integers" do
+    @ascii.bytes.to_a.each {|b| b.should be_an_instance_of(Integer)}
+    @utf8_ascii.bytes { |b| b.should be_an_instance_of(Integer) }
   end
 
   it "agrees with #unpack('C*')" do

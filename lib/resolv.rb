@@ -194,15 +194,12 @@ class Resolv
               line.sub!(/#.*/, '')
               addr, hostname, *aliases = line.split(/\s+/)
               next unless addr
-              addr.untaint
-              hostname.untaint
               @addr2name[addr] = [] unless @addr2name.include? addr
               @addr2name[addr] << hostname
               @addr2name[addr] += aliases
               @name2addr[hostname] = [] unless @name2addr.include? hostname
               @name2addr[hostname] << addr
               aliases.each {|n|
-                n.untaint
                 @name2addr[n] = [] unless @name2addr.include? n
                 @name2addr[n] << addr
               }
@@ -514,10 +511,15 @@ class Resolv
 
     def fetch_resource(name, typeclass)
       lazy_initialize
-      requester = make_udp_requester
+      begin
+        requester = make_udp_requester
+      rescue Errno::EACCES
+        # fall back to TCP
+      end
       senders = {}
       begin
         @config.resolv(name) {|candidate, tout, nameserver, port|
+          requester ||= make_tcp_requester(nameserver, port)
           msg = Message.new
           msg.rd = 1
           msg.add_question(candidate, typeclass)
@@ -550,7 +552,7 @@ class Resolv
           end
         }
       ensure
-        requester.close
+        requester&.close
       end
     end
 
@@ -694,13 +696,13 @@ class Resolv
           rescue DecodeError
             next # broken DNS message ignored
           end
-          if s = sender_for(from, msg)
+          if sender == sender_for(from, msg)
             break
           else
             # unexpected DNS message ignored
           end
         end
-        return msg, s.data
+        return msg, sender.data
       end
 
       def sender_for(addr, msg)
@@ -765,6 +767,7 @@ class Resolv
         end
 
         def sender(msg, data, host, port=Port)
+          host = Addrinfo.ip(host).ip_address
           lazy_initialize
           sock = @socks_hash[host.index(':') ? "::" : "0.0.0.0"]
           return nil if !sock
@@ -959,7 +962,6 @@ class Resolv
           f.each {|line|
             line.sub!(/[#;].*/, '')
             keyword, *args = line.split(/\s+/)
-            args.each(&:untaint)
             next unless keyword
             case keyword
             when 'nameserver'
@@ -2458,13 +2460,38 @@ class Resolv
       \z/x
 
     ##
+    # IPv6 link local address format fe80:b:c:d:e:f:g:h%em1
+    Regex_8HexLinkLocal = /\A
+      [Ff][Ee]80
+      (?::[0-9A-Fa-f]{1,4}){7}
+      %[0-9A-Za-z]+
+      \z/x
+
+    ##
+    # Compressed IPv6 link local address format fe80::b%em1
+
+    Regex_CompressedHexLinkLocal = /\A
+      [Ff][Ee]80:
+      (?:
+        ((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?) ::
+        ((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)
+        |
+        :((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)
+      )?
+      :[0-9A-Fa-f]{1,4}%[0-9A-Za-z.]+
+      \z/x
+
+    ##
     # A composite IPv6 address Regexp.
 
     Regex = /
       (?:#{Regex_8Hex}) |
       (?:#{Regex_CompressedHex}) |
       (?:#{Regex_6Hex4Dec}) |
-      (?:#{Regex_CompressedHex4Dec})/x
+      (?:#{Regex_CompressedHex4Dec}) |
+      (?:#{Regex_8HexLinkLocal}) |
+      (?:#{Regex_CompressedHexLinkLocal})
+      /x
 
     ##
     # Creates a new IPv6 address from +arg+ which may be:

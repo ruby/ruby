@@ -52,7 +52,7 @@ describe :kernel_singleton_methods_modules, shared: true do
 end
 
 describe :kernel_singleton_methods_supers, shared: true do
-  it "returns the names of singleton methods for an object extented with a module" do
+  it "returns the names of singleton methods for an object extended with a module" do
     ReflectSpecs.oe.singleton_methods(*@object).should include(:m_pro, :m_pub)
   end
 
@@ -62,11 +62,11 @@ describe :kernel_singleton_methods_supers, shared: true do
     r.should == [:pro, :pub]
   end
 
-  it "returns the names of singleton methods for an object extented with two modules" do
+  it "returns the names of singleton methods for an object extended with two modules" do
     ReflectSpecs.oee.singleton_methods(*@object).should include(:m_pro, :m_pub, :n_pro, :n_pub)
   end
 
-  it "returns the names of singleton methods for an object extented with a module including a module" do
+  it "returns the names of singleton methods for an object extended with a module including a module" do
     ReflectSpecs.oei.singleton_methods(*@object).should include(:n_pro, :n_pub, :m_pro, :m_pub)
   end
 
@@ -112,7 +112,7 @@ describe :kernel_singleton_methods_private_supers, shared: true do
     ReflectSpecs.oee.singleton_methods(*@object).should_not include(:m_pri)
   end
 
-  it "does not return private singleton methods for an object extented with a module including a module" do
+  it "does not return private singleton methods for an object extended with a module including a module" do
     ReflectSpecs.oei.singleton_methods(*@object).should_not include(:n_pri, :m_pri)
   end
 
@@ -165,11 +165,11 @@ describe "Kernel#singleton_methods" do
     it_behaves_like :kernel_singleton_methods_modules, nil, false
     it_behaves_like :kernel_singleton_methods_private_supers, nil, false
 
-    it "returns an empty Array for an object extented with a module" do
+    it "returns an empty Array for an object extended with a module" do
       ReflectSpecs.oe.singleton_methods(false).should == []
     end
 
-    it "returns an empty Array for an object extented with two modules" do
+    it "returns an empty Array for an object extended with two modules" do
       ReflectSpecs.oee.singleton_methods(false).should == []
     end
 

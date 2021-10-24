@@ -35,6 +35,36 @@ End
   deftest_id2ref(false)
   deftest_id2ref(nil)
 
+  def test_id2ref_liveness
+    assert_normal_exit <<-EOS
+      ids = []
+      10.times{
+        1_000.times{
+          ids << 'hello'.object_id
+        }
+        objs = ids.map{|id|
+          begin
+            ObjectSpace._id2ref(id)
+          rescue RangeError
+            nil
+          end
+        }
+        GC.start
+        objs.each{|e| e.inspect}
+      }
+    EOS
+  end
+
+  def test_id2ref_invalid_argument
+    msg = /no implicit conversion/
+    assert_raise_with_message(TypeError, msg) {ObjectSpace._id2ref(nil)}
+    assert_raise_with_message(TypeError, msg) {ObjectSpace._id2ref(false)}
+    assert_raise_with_message(TypeError, msg) {ObjectSpace._id2ref(true)}
+    assert_raise_with_message(TypeError, msg) {ObjectSpace._id2ref(:a)}
+    assert_raise_with_message(TypeError, msg) {ObjectSpace._id2ref("0")}
+    assert_raise_with_message(TypeError, msg) {ObjectSpace._id2ref(Object.new)}
+  end
+
   def test_count_objects
     h = {}
     ObjectSpace.count_objects(h)
@@ -131,6 +161,40 @@ End
     END
   end
 
+  def test_exception_in_finalizer
+    assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", [], /finalizing \(RuntimeError\)/)
+    begin;
+      ObjectSpace.define_finalizer(Object.new) {raise "finalizing"}
+    end;
+  end
+
+  def test_finalizer_thread_raise
+    GC.disable
+    fzer = proc do |id|
+      sleep 0.2
+    end
+    2.times do
+      o = Object.new
+      ObjectSpace.define_finalizer(o, fzer)
+    end
+
+    my_error = Class.new(RuntimeError)
+    begin
+      main_th = Thread.current
+      Thread.new do
+        sleep 0.1
+        main_th.raise(my_error)
+      end
+      GC.start
+      puts "After GC"
+      sleep(10)
+      assert(false)
+    rescue my_error
+    end
+  ensure
+    GC.enable
+  end
+
   def test_each_object
     klass = Class.new
     new_obj = klass.new
@@ -202,5 +266,12 @@ End
     meta = klass.singleton_class
     assert_kind_of(meta, sclass)
     assert_include(ObjectSpace.each_object(meta).to_a, sclass)
+  end
+
+  def test_each_object_with_allocation
+    assert_normal_exit(<<-End)
+      list = []
+      ObjectSpace.each_object { |o| list << Object.new }
+    End
   end
 end

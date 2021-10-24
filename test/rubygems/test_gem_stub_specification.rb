@@ -1,18 +1,16 @@
 # frozen_string_literal: true
-require "rubygems/test_case"
+require_relative "helper"
 require "rubygems/stub_specification"
 
 class TestStubSpecification < Gem::TestCase
-
-  SPECIFICATIONS = File.expand_path(File.join("..", "specifications"), __FILE__)
-  FOO = File.join SPECIFICATIONS, "foo-0.0.1-x86-mswin32.gemspec"
-  BAR = File.join SPECIFICATIONS, "bar-0.0.2.gemspec"
+  FOO = File.expand_path File.join("specifications", "foo-0.0.1-x86-mswin32.gemspec"), __dir__
+  BAR = File.expand_path File.join("specifications", "bar-0.0.2.gemspec"), __dir__
 
   def setup
     super
 
-    @base_dir = File.dirname(SPECIFICATIONS)
-    @gems_dir = File.join File.dirname(SPECIFICATIONS), 'gem'
+    @base_dir = __dir__
+    @gems_dir = File.join __dir__, 'gem'
     @foo = Gem::StubSpecification.gemspec_stub FOO, @base_dir, @gems_dir
   end
 
@@ -67,9 +65,9 @@ class TestStubSpecification < Gem::TestCase
   end
 
   def test_contains_requirable_file_eh_extension
-    skip "I guess making the stub match the running platform should work" if Gem.java_platform?
+    pend "I guess making the stub match the running platform should work" if Gem.java_platform?
     stub_with_extension do |stub|
-      _, err = capture_io do
+      _, err = capture_output do
         refute stub.contains_requirable_file? 'nonexistent'
       end
 
@@ -124,7 +122,7 @@ class TestStubSpecification < Gem::TestCase
   end
 
   def test_missing_extensions_eh
-    skip "I guess making the stub match the running platform should work" if Gem.java_platform?
+    pend "I guess making the stub match the running platform should work" if Gem.java_platform?
     stub = stub_with_extension do |s|
       extconf_rb = File.join s.gem_dir, s.extensions.first
       FileUtils.mkdir_p File.dirname extconf_rb
@@ -191,7 +189,7 @@ class TestStubSpecification < Gem::TestCase
   def test_to_spec_missing_extensions
     stub = stub_with_extension
 
-    capture_io do
+    capture_output do
       stub.contains_requirable_file? 'nonexistent'
     end
 
@@ -292,5 +290,4 @@ end
       return stub
     end
   end
-
 end

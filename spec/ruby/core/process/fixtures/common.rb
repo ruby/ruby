@@ -3,11 +3,15 @@ module ProcessSpecs
     if defined?(MSpecScript::SYSTEM_RUBY)
       context.send(:before, :all) do
         @ruby = ::RUBY_EXE
-        Object.const_set(:RUBY_EXE, MSpecScript::SYSTEM_RUBY)
+        suppress_warning {
+          Object.const_set(:RUBY_EXE, MSpecScript::SYSTEM_RUBY)
+        }
       end
 
       context.send(:after, :all) do
-        Object.const_set(:RUBY_EXE, @ruby)
+        suppress_warning {
+          Object.const_set(:RUBY_EXE, @ruby)
+        }
       end
     end
   end

@@ -168,7 +168,6 @@ rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
     /* use _result_ end */
 
     rb_str_set_len(tmp, output_ctr);
-    OBJ_INFECT(tmp, src);
 
     if (mimeout_f)
 	rb_enc_associate(tmp, rb_usascii_encoding());
@@ -459,7 +458,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
  *  with this and -x option, nkf can be used as UTF converter.
  *  (In other words, without this and -x option, nkf doesn't save some characters)
  *
- *  When nkf convert string which related to path, you should use this opion.
+ *  When nkf convert string which related to path, you should use this option.
  *
  *  === --cap-input
  *

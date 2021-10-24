@@ -39,10 +39,18 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
     @hyperlink_all = @options.hyperlink_all
     @show_hash     = @options.show_hash
 
-    crossref_re = @hyperlink_all ? ALL_CROSSREF_REGEXP : CROSSREF_REGEXP
+    @cross_reference = RDoc::CrossReference.new @context
+  end
+
+  def init_link_notation_regexp_handlings
+    add_regexp_handling_RDOCLINK
+
+    # The crossref must be linked before tidylink because Klass.method[:sym]
+    # will be processed as a tidylink first and will be broken.
+    crossref_re = @options.hyperlink_all ? ALL_CROSSREF_REGEXP : CROSSREF_REGEXP
     @markup.add_regexp_handling crossref_re, :CROSSREF
 
-    @cross_reference = RDoc::CrossReference.new @context
+    add_regexp_handling_TIDYLINK
   end
 
   ##
@@ -54,7 +62,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
 
     name = name[1..-1] unless @show_hash if name[0, 1] == '#'
 
-    if name =~ /(.*[^#:])@/
+    if !(name.end_with?('+@', '-@')) and name =~ /(.*[^#:])@/
       text ||= "#{CGI.unescape $'} at <code>#{$1}</code>"
       code = false
     else
@@ -130,7 +138,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   # Creates an HTML link to +name+ with the given +text+.
 
   def link name, text, code = true
-    if name =~ /(.*[^#:])@/ then
+    if !(name.end_with?('+@', '-@')) and name =~ /(.*[^#:])@/
       name = $1
       label = $'
     end
@@ -144,7 +152,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
       path = ref.as_href @from_path
 
       if code and RDoc::CodeObject === ref and !(RDoc::TopLevel === ref)
-        text = "<code>#{text}</code>"
+        text = "<code>#{CGI.escapeHTML text}</code>"
       end
 
       if path =~ /#/ then

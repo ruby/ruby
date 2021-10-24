@@ -29,9 +29,9 @@ describe "String#clear" do
     s.should == ""
   end
 
-  it "raises a #{frozen_error_class} if self is frozen" do
+  it "raises a FrozenError if self is frozen" do
     @s.freeze
-    -> { @s.clear        }.should raise_error(frozen_error_class)
-    -> { "".freeze.clear }.should raise_error(frozen_error_class)
+    -> { @s.clear        }.should raise_error(FrozenError)
+    -> { "".freeze.clear }.should raise_error(FrozenError)
   end
 end

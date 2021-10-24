@@ -43,35 +43,123 @@ module Fiddle
     end
 
     def test_set_ctypes
-      union = CStructEntity.malloc [TYPE_INT, TYPE_LONG]
-      union.assign_names %w[int long]
+      CStructEntity.malloc([TYPE_INT, TYPE_LONG], Fiddle::RUBY_FREE) do |struct|
+        struct.assign_names %w[int long]
 
-      # this test is roundabout because the stored ctypes are not accessible
-      union['long'] = 1
-      union['int'] = 2
+        # this test is roundabout because the stored ctypes are not accessible
+        struct['long'] = 1
+        struct['int'] = 2
 
-      assert_equal 1, union['long']
-      assert_equal 2, union['int']
+        assert_equal 1, struct['long']
+        assert_equal 2, struct['int']
+      end
     end
 
     def test_aref_pointer_array
-      team = CStructEntity.malloc([[TYPE_VOIDP, 2]])
-      team.assign_names(["names"])
-      alice = Fiddle::Pointer.malloc(6)
-      alice[0, 6] = "Alice\0"
-      bob = Fiddle::Pointer.malloc(4)
-      bob[0, 4] = "Bob\0"
-      team["names"] = [alice, bob]
-      assert_equal(["Alice", "Bob"], team["names"].map(&:to_s))
+      CStructEntity.malloc([[TYPE_VOIDP, 2]], Fiddle::RUBY_FREE) do |team|
+        team.assign_names(["names"])
+        Fiddle::Pointer.malloc(6, Fiddle::RUBY_FREE) do |alice|
+          alice[0, 6] = "Alice\0"
+          Fiddle::Pointer.malloc(4, Fiddle::RUBY_FREE) do |bob|
+            bob[0, 4] = "Bob\0"
+            team["names"] = [alice, bob]
+            assert_equal(["Alice", "Bob"], team["names"].map(&:to_s))
+          end
+        end
+      end
     end
 
     def test_aref_pointer
-      user = CStructEntity.malloc([TYPE_VOIDP])
-      user.assign_names(["name"])
-      alice = Fiddle::Pointer.malloc(6)
-      alice[0, 6] = "Alice\0"
-      user["name"] = alice
-      assert_equal("Alice", user["name"].to_s)
+      CStructEntity.malloc([TYPE_VOIDP], Fiddle::RUBY_FREE) do |user|
+        user.assign_names(["name"])
+        Fiddle::Pointer.malloc(6, Fiddle::RUBY_FREE) do |alice|
+          alice[0, 6] = "Alice\0"
+          user["name"] = alice
+          assert_equal("Alice", user["name"].to_s)
+        end
+      end
+    end
+
+    def test_new_double_free
+      types = [TYPE_INT]
+      Pointer.malloc(CStructEntity.size(types), Fiddle::RUBY_FREE) do |pointer|
+        assert_raise ArgumentError do
+          CStructEntity.new(pointer, types, Fiddle::RUBY_FREE)
+        end
+      end
+    end
+
+    def test_malloc_block
+      escaped_struct = nil
+      returned = CStructEntity.malloc([TYPE_INT], Fiddle::RUBY_FREE) do |struct|
+        assert_equal Fiddle::SIZEOF_INT, struct.size
+        assert_equal Fiddle::RUBY_FREE, struct.free.to_i
+        escaped_struct = struct
+        :returned
+      end
+      assert_equal :returned, returned
+      assert escaped_struct.freed?
+    end
+
+    def test_malloc_block_no_free
+      assert_raise ArgumentError do
+        CStructEntity.malloc([TYPE_INT]) { |struct| }
+      end
+    end
+
+    def test_free
+      struct = CStructEntity.malloc([TYPE_INT])
+      begin
+        assert_nil struct.free
+      ensure
+        Fiddle.free struct
+      end
+    end
+
+    def test_free_with_func
+      struct = CStructEntity.malloc([TYPE_INT], Fiddle::RUBY_FREE)
+      refute struct.freed?
+      struct.call_free
+      assert struct.freed?
+      struct.call_free                 # you can safely run it again
+      assert struct.freed?
+      GC.start                         # you can safely run the GC routine
+      assert struct.freed?
+    end
+
+    def test_free_with_no_func
+      struct = CStructEntity.malloc([TYPE_INT])
+      refute struct.freed?
+      struct.call_free
+      refute struct.freed?
+      struct.call_free                 # you can safely run it again
+      refute struct.freed?
+    end
+
+    def test_freed?
+      struct = CStructEntity.malloc([TYPE_INT], Fiddle::RUBY_FREE)
+      refute struct.freed?
+      struct.call_free
+      assert struct.freed?
+    end
+
+    def test_null?
+      struct = CStructEntity.malloc([TYPE_INT], Fiddle::RUBY_FREE)
+      refute struct.null?
+    end
+
+    def test_size
+      CStructEntity.malloc([TYPE_INT], Fiddle::RUBY_FREE) do |struct|
+        assert_equal Fiddle::SIZEOF_INT, struct.size
+      end
+    end
+
+    def test_size=
+      CStructEntity.malloc([TYPE_INT], Fiddle::RUBY_FREE) do |struct|
+        assert_raise NoMethodError do
+          struct.size = 1
+        end
+      end
     end
   end
 end if defined?(Fiddle)

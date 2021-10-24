@@ -2,7 +2,6 @@
 
 #include <time.h>
 
-int rsock_cmsg_cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
 static VALUE sym_wait_readable, sym_wait_writable;
 
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
@@ -89,9 +88,9 @@ ancillary_initialize(VALUE self, VALUE vfamily, VALUE vlevel, VALUE vtype, VALUE
 static VALUE
 ancdata_new(int family, int level, int type, VALUE data)
 {
-    NEWOBJ_OF(obj, struct RObject, rb_cAncillaryData, T_OBJECT);
+    VALUE obj = rb_obj_alloc(rb_cAncillaryData);
     StringValue(data);
-    ancillary_initialize((VALUE)obj, INT2NUM(family), INT2NUM(level), INT2NUM(type), data);
+    ancillary_initialize(obj, INT2NUM(family), INT2NUM(level), INT2NUM(type), data);
     return (VALUE)obj;
 }
 
@@ -852,6 +851,12 @@ anc_inspect_ipv6_pktinfo(int level, int type, VALUE data, VALUE ret)
 }
 #endif
 
+#ifdef HAVE_GMTIME_R
+# define LOCALTIME(time, tm) localtime_r(&(time), &(tm))
+#else
+# define LOCALTIME(time, tm) ((tm) = *localtime(&(time)))
+#endif
+
 #if defined(SCM_TIMESTAMP) /* GNU/Linux, FreeBSD, NetBSD, OpenBSD, MacOS X, Solaris */
 static int
 inspect_timeval_as_abstime(int level, int optname, VALUE data, VALUE ret)
@@ -863,7 +868,7 @@ inspect_timeval_as_abstime(int level, int optname, VALUE data, VALUE ret)
         char buf[32];
         memcpy((char*)&tv, RSTRING_PTR(data), sizeof(tv));
         time = tv.tv_sec;
-        tm = *localtime(&time);
+        LOCALTIME(time, tm);
         strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm);
         rb_str_catf(ret, " %s.%06ld", buf, (long)tv.tv_usec);
         return 1;
@@ -883,7 +888,7 @@ inspect_timespec_as_abstime(int level, int optname, VALUE data, VALUE ret)
         struct tm tm;
         char buf[32];
         memcpy((char*)&ts, RSTRING_PTR(data), sizeof(ts));
-        tm = *localtime(&ts.tv_sec);
+        LOCALTIME(ts.tv_sec, tm);
         strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm);
         rb_str_catf(ret, " %s.%09ld", buf, (long)ts.tv_nsec);
         return 1;
@@ -907,7 +912,7 @@ inspect_bintime_as_abstime(int level, int optname, VALUE data, VALUE ret)
 	uint64_t res_h, res_l;
         char buf[32];
         memcpy((char*)&bt, RSTRING_PTR(data), sizeof(bt));
-        tm = *localtime(&bt.sec);
+        LOCALTIME(bt.sec, tm);
         strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm);
 
 	/* res_h = frac * 10**19 / 2**64 */
@@ -1280,7 +1285,7 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
 
     if (ss == -1) {
 	int e;
-        if (!nonblock && rb_io_wait_writable(fptr->fd)) {
+        if (!nonblock && rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
             rb_io_check_closed(fptr);
             goto retry;
         }
@@ -1429,10 +1434,7 @@ make_io_for_unix_rights(VALUE ctl, struct cmsghdr *cmh, char *msg_end)
             if (fstat(fd, &stbuf) == -1)
                 rb_raise(rb_eSocket, "invalid fd in SCM_RIGHTS");
             rb_update_max_fd(fd);
-            if (rsock_cmsg_cloexec_state < 0)
-                rsock_cmsg_cloexec_state = rsock_detect_cloexec(fd);
-            if (rsock_cmsg_cloexec_state == 0 || fd <= 2)
-                rb_maygvl_fd_fix_cloexec(fd);
+            rb_maygvl_fd_fix_cloexec(fd);
             if (S_ISSOCK(stbuf.st_mode))
                 io = rsock_init_sock(rb_obj_alloc(rb_cSocket), fd);
             else
@@ -1555,7 +1557,7 @@ bsock_recvmsg_internal(VALUE sock,
 
     if (ss == -1) {
 	int e;
-        if (!nonblock && rb_io_wait_readable(fptr->fd)) {
+        if (!nonblock && rb_io_maybe_wait_readable(errno, fptr->self, Qnil)) {
             rb_io_check_closed(fptr);
             goto retry;
         }
@@ -1631,10 +1633,9 @@ bsock_recvmsg_internal(VALUE sock,
     }
 
     if (NIL_P(dat_str))
-        dat_str = rb_tainted_str_new(datbuf, ss);
+        dat_str = rb_str_new(datbuf, ss);
     else {
         rb_str_resize(dat_str, ss);
-        OBJ_TAINT(dat_str);
 	rb_obj_reveal(dat_str, rb_cString);
     }
 
@@ -1660,7 +1661,7 @@ bsock_recvmsg_internal(VALUE sock,
             }
             ctl_end = (char*)cmh + cmh->cmsg_len;
 	    clen = (ctl_end <= msg_end ? ctl_end : msg_end) - (char*)CMSG_DATA(cmh);
-            ctl = ancdata_new(family, cmh->cmsg_level, cmh->cmsg_type, rb_tainted_str_new((char*)CMSG_DATA(cmh), clen));
+            ctl = ancdata_new(family, cmh->cmsg_level, cmh->cmsg_type, rb_str_new((char*)CMSG_DATA(cmh), clen));
             if (request_scm_rights)
                 make_io_for_unix_rights(ctl, cmh, msg_end);
             else

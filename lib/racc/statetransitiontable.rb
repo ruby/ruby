@@ -1,21 +1,16 @@
+#--
 #
-# $Id: 4c5f4311663b6d03050953d64d6a0e7905ff2216 $
+#
 #
 # Copyright (c) 1999-2006 Minero Aoki
 #
 # This program is free software.
-# You can distribute/modify this program under the terms of
-# the GNU LGPL, Lesser General Public License version 2.1.
-# For details of LGPL, see the file "COPYING".
+# You can distribute/modify this program under the same terms of ruby.
+# see the file "COPYING".
 #
+#++
 
 require 'racc/parser'
-
-unless Object.method_defined?(:funcall)
-  class Object
-    alias funcall __send__
-  end
-end
 
 module Racc
 
@@ -196,7 +191,7 @@ module Racc
     def mkmapexp(arr)
       i = ii = 0
       as = arr.size
-      map = ''
+      map = String.new
       maxdup = RE_DUP_MAX
       curr = nil
       while i < as
@@ -229,7 +224,7 @@ module Racc
       map = '-' * 10240
 
       # sort long to short
-      entries.sort! {|a,b| b[0].size <=> a[0].size }
+      entries.sort_by!.with_index {|a,i| [-a[0].size, i] }
 
       entries.each do |arr, chkval, expr, min, ptri|
         if upper + arr.size > map.size
@@ -299,9 +294,9 @@ module Racc
       c.module_eval "def _reduce_none(vals, vstack) vals[0] end"
       @grammar.each do |rule|
         if rule.action.empty?
-          c.funcall(:alias_method, "_reduce_#{rule.ident}", :_reduce_none)
+          c.alias_method("_reduce_#{rule.ident}", :_reduce_none)
         else
-          c.funcall(:define_method, "_racc_action_#{rule.ident}", &rule.action.proc)
+          c.define_method("_racc_action_#{rule.ident}", &rule.action.proc)
           c.module_eval(<<-End, __FILE__, __LINE__ + 1)
             def _reduce_#{rule.ident}(vals, vstack)
               _racc_action_#{rule.ident}(*vals)

@@ -8,25 +8,43 @@
 
 **********************************************************************/
 
+#include "ruby/internal/config.h"
 
-#include "internal.h"
-#include "addr2line.h"
-#include "vm_core.h"
-#include "iseq.h"
 #ifdef HAVE_UCONTEXT_H
-#include <ucontext.h>
+# include <ucontext.h>
 #endif
 
-/* see vm_insnhelper.h for the values */
-#ifndef VMDEBUG
-#define VMDEBUG 0
+#ifdef __APPLE__
+# ifdef HAVE_LIBPROC_H
+#  include <libproc.h>
+# endif
+# include <mach/vm_map.h>
+# include <mach/mach_init.h>
+# ifdef __LP64__
+#  define vm_region_recurse vm_region_recurse_64
+# endif
+/* that is defined in sys/queue.h, and conflicts with
+ * ccan/list/list.h */
+# undef LIST_HEAD
 #endif
+
+#include "addr2line.h"
+#include "gc.h"
+#include "internal.h"
+#include "internal/variable.h"
+#include "internal/vm.h"
+#include "iseq.h"
+#include "vm_core.h"
+#include "ractor_core.h"
 
 #define MAX_POSBUF 128
 
 #define VM_CFP_CNT(ec, cfp) \
   ((rb_control_frame_t *)((ec)->vm_stack + (ec)->vm_stack_size) - \
    (rb_control_frame_t *)(cfp))
+
+const char *rb_method_type_name(rb_method_type_t type);
+int ruby_on_ci;
 
 static void
 control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
@@ -36,11 +54,10 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     char ep_in_heap = ' ';
     char posbuf[MAX_POSBUF+1];
     int line = 0;
-
     const char *magic, *iseq_name = "-", *selfstr = "-", *biseq_name = "-";
     VALUE tmp;
-
-    const rb_callable_method_entry_t *me;
+    const rb_iseq_t *iseq = NULL;
+    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 
     if (ep < 0 || (size_t)ep > ec->vm_stack_size) {
 	ep = (ptrdiff_t)cfp->ep;
@@ -89,26 +106,27 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     }
 
     if (cfp->iseq != 0) {
-#define RUBY_VM_IFUNC_P(ptr) imemo_type_p((VALUE)ptr, imemo_ifunc)
+#define RUBY_VM_IFUNC_P(ptr) IMEMO_TYPE_P(ptr, imemo_ifunc)
 	if (RUBY_VM_IFUNC_P(cfp->iseq)) {
 	    iseq_name = "<ifunc>";
 	}
-	else if (SYMBOL_P(cfp->iseq)) {
+        else if (SYMBOL_P((VALUE)cfp->iseq)) {
 	    tmp = rb_sym2str((VALUE)cfp->iseq);
 	    iseq_name = RSTRING_PTR(tmp);
 	    snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
 	    line = -1;
 	}
 	else {
-	    pc = cfp->pc - cfp->iseq->body->iseq_encoded;
-	    iseq_name = RSTRING_PTR(cfp->iseq->body->location.label);
+            iseq = cfp->iseq;
+	    pc = cfp->pc - iseq->body->iseq_encoded;
+	    iseq_name = RSTRING_PTR(iseq->body->location.label);
 	    line = rb_vm_get_sourceline(cfp);
 	    if (line) {
-		snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(rb_iseq_path(cfp->iseq)), line);
+		snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(rb_iseq_path(iseq)), line);
 	    }
 	}
     }
-    else if ((me = rb_vm_frame_method_entry(cfp)) != NULL) {
+    else if (me != NULL) {
 	iseq_name = rb_id2name(me->def->original_id);
 	snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
 	line = -1;
@@ -138,6 +156,39 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
 	fprintf(stderr, "%-1s ", biseq_name);
     }
     fprintf(stderr, "\n");
+
+    // additional information for CI machines
+    if (ruby_on_ci) {
+        char buff[0x100];
+
+        if (me) {
+            if (IMEMO_TYPE_P(me, imemo_ment)) {
+                fprintf(stderr, "  me:\n");
+                fprintf(stderr, "    called_id: %s, type: %s\n", rb_id2name(me->called_id), rb_method_type_name(me->def->type));
+                fprintf(stderr, "    owner class: %s\n", rb_raw_obj_info(buff, 0x100, me->owner));
+                if (me->owner != me->defined_class) {
+                    fprintf(stderr, "    defined_class: %s\n", rb_raw_obj_info(buff, 0x100, me->defined_class));
+                }
+            }
+            else {
+                fprintf(stderr, " me is corrupted (%s)\n", rb_raw_obj_info(buff, 0x100, (VALUE)me));
+            }
+        }
+
+        fprintf(stderr, "  self: %s\n", rb_raw_obj_info(buff, 0x100, cfp->self));
+
+        if (iseq) {
+            if (iseq->body->local_table_size > 0) {
+                fprintf(stderr, "  lvars:\n");
+                for (unsigned int i=0; i<iseq->body->local_table_size; i++) {
+                    const VALUE *argv = cfp->ep - cfp->iseq->body->local_table_size - VM_ENV_DATA_SIZE + 1;
+                    fprintf(stderr, "    %s: %s\n",
+                            rb_id2name(iseq->body->local_table[i]),
+                            rb_raw_obj_info(buff, 0x100, argv[i]));
+                }
+            }
+        }
+    }
 }
 
 void
@@ -301,7 +352,7 @@ vm_stack_dump_each(const rb_execution_context_t *ec, const rb_control_frame_t *c
 	}
     }
     else {
-	rb_bug("unsupport frame type: %08lx", VM_FRAME_TYPE(cfp));
+	rb_bug("unsupported frame type: %08lx", VM_FRAME_TYPE(cfp));
     }
 }
 #endif
@@ -419,6 +470,7 @@ rb_vmdebug_thread_dump_state(VALUE self)
 #endif
 
 #if defined(HAVE_BACKTRACE)
+# define USE_BACKTRACE 1
 # ifdef HAVE_LIBUNWIND
 #  undef backtrace
 #  define backtrace unw_backtrace
@@ -521,14 +573,14 @@ darwin_sigtramp:
     return n;
 }
 # elif defined(BROKEN_BACKTRACE)
-#  undef HAVE_BACKTRACE
-#  define HAVE_BACKTRACE 0
+#  undef USE_BACKTRACE
+#  define USE_BACKTRACE 0
 # endif
 #else
-# define HAVE_BACKTRACE 0
+# define USE_BACKTRACE 0
 #endif
 
-#if HAVE_BACKTRACE
+#if USE_BACKTRACE
 # include <execinfo.h>
 #elif defined(_WIN32)
 # include <imagehlp.h>
@@ -676,7 +728,7 @@ dump_thread(void *arg)
 			if (pSymFromAddr(ph, addr, &displacement, info)) {
 			    if (GetModuleFileName((HANDLE)(uintptr_t)pSymGetModuleBase64(ph, addr), libpath, sizeof(libpath)))
 				fprintf(stderr, "%s", libpath);
-			    fprintf(stderr, "(%s+0x%I64x)",
+			    fprintf(stderr, "(%s+0x%"PRI_64_PREFIX"x)",
 				    info->Name, displacement);
 			}
 			fprintf(stderr, " [0x%p]", (void *)(VALUE)addr);
@@ -701,7 +753,7 @@ dump_thread(void *arg)
 void
 rb_print_backtrace(void)
 {
-#if HAVE_BACKTRACE
+#if USE_BACKTRACE
 #define MAX_NATIVE_TRACE 1024
     static void *trace[MAX_NATIVE_TRACE];
     int n = (int)backtrace(trace, MAX_NATIVE_TRACE);
@@ -730,11 +782,11 @@ rb_print_backtrace(void)
 #endif
 
 #if defined __linux__
-# if defined __x86_64__ || defined __i386__
+# if defined __x86_64__ || defined __i386__ || defined __aarch64__ || defined __arm__ || defined __riscv
 #  define HAVE_PRINT_MACHINE_REGISTERS 1
 # endif
 #elif defined __APPLE__
-# if defined __x86_64__ || defined __i386__
+# if defined __x86_64__ || defined __i386__ || defined __aarch64__
 #  define HAVE_PRINT_MACHINE_REGISTERS 1
 # endif
 #endif
@@ -745,12 +797,9 @@ print_machine_register(size_t reg, const char *reg_name, int col_count, int max_
 {
     int ret;
     char buf[64];
+    static const int size_width = sizeof(size_t) * CHAR_BIT / 4;
 
-#ifdef __LP64__
-    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%016" PRIxSIZE, reg_name, reg);
-#else
-    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%08" PRIxSIZE, reg_name, reg);
-#endif
+    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%.*" PRIxSIZE, reg_name, size_width, reg);
     if (col_count + ret > max_col) {
 	fputs("\n", stderr);
 	col_count = 0;
@@ -760,9 +809,17 @@ print_machine_register(size_t reg, const char *reg_name, int col_count, int max_
     return col_count;
 }
 # ifdef __linux__
-#   define dump_machine_register(reg) (col_count = print_machine_register(mctx->gregs[REG_##reg], #reg, col_count, 80))
+#   if defined(__x86_64__) || defined(__i386__)
+#       define dump_machine_register(reg) (col_count = print_machine_register(mctx->gregs[REG_##reg], #reg, col_count, 80))
+#   elif defined(__aarch64__) || defined(__arm__) || defined(__riscv)
+#       define dump_machine_register(reg, regstr) (col_count = print_machine_register(reg, regstr, col_count, 80))
+#   endif
 # elif defined __APPLE__
-#   define dump_machine_register(reg) (col_count = print_machine_register(mctx->MCTX_SS_REG(reg), #reg, col_count, 80))
+#   if defined(__aarch64__)
+#     define dump_machine_register(reg, regstr) (col_count = print_machine_register(mctx->MCTX_SS_REG(reg), regstr, col_count, 80))
+#   else
+#     define dump_machine_register(reg) (col_count = print_machine_register(mctx->MCTX_SS_REG(reg), #reg, col_count, 80))
+#   endif
 # endif
 
 static void
@@ -816,6 +873,65 @@ rb_dump_machine_register(const ucontext_t *ctx)
 	dump_machine_register(EFL);
 	dump_machine_register(UESP);
 	dump_machine_register(SS);
+#   elif defined __aarch64__
+	dump_machine_register(mctx->regs[0], "x0");
+	dump_machine_register(mctx->regs[1], "x1");
+	dump_machine_register(mctx->regs[2], "x2");
+	dump_machine_register(mctx->regs[3], "x3");
+	dump_machine_register(mctx->regs[4], "x4");
+	dump_machine_register(mctx->regs[5], "x5");
+	dump_machine_register(mctx->regs[6], "x6");
+	dump_machine_register(mctx->regs[7], "x7");
+	dump_machine_register(mctx->regs[18], "x18");
+	dump_machine_register(mctx->regs[19], "x19");
+	dump_machine_register(mctx->regs[20], "x20");
+	dump_machine_register(mctx->regs[21], "x21");
+	dump_machine_register(mctx->regs[22], "x22");
+	dump_machine_register(mctx->regs[23], "x23");
+	dump_machine_register(mctx->regs[24], "x24");
+	dump_machine_register(mctx->regs[25], "x25");
+	dump_machine_register(mctx->regs[26], "x26");
+	dump_machine_register(mctx->regs[27], "x27");
+	dump_machine_register(mctx->regs[28], "x28");
+	dump_machine_register(mctx->regs[29], "x29");
+	dump_machine_register(mctx->sp, "sp");
+	dump_machine_register(mctx->fault_address, "fault_address");
+#   elif defined __arm__
+	dump_machine_register(mctx->arm_r0, "r0");
+	dump_machine_register(mctx->arm_r1, "r1");
+	dump_machine_register(mctx->arm_r2, "r2");
+	dump_machine_register(mctx->arm_r3, "r3");
+	dump_machine_register(mctx->arm_r4, "r4");
+	dump_machine_register(mctx->arm_r5, "r5");
+	dump_machine_register(mctx->arm_r6, "r6");
+	dump_machine_register(mctx->arm_r7, "r7");
+	dump_machine_register(mctx->arm_r8, "r8");
+	dump_machine_register(mctx->arm_r9, "r9");
+	dump_machine_register(mctx->arm_r10, "r10");
+	dump_machine_register(mctx->arm_sp, "sp");
+	dump_machine_register(mctx->fault_address, "fault_address");
+#   elif defined __riscv
+	dump_machine_register(mctx->__gregs[REG_SP], "sp");
+	dump_machine_register(mctx->__gregs[REG_S0], "s0");
+	dump_machine_register(mctx->__gregs[REG_S1], "s1");
+	dump_machine_register(mctx->__gregs[REG_A0], "a0");
+	dump_machine_register(mctx->__gregs[REG_A0+1], "a1");
+	dump_machine_register(mctx->__gregs[REG_A0+2], "a2");
+	dump_machine_register(mctx->__gregs[REG_A0+3], "a3");
+	dump_machine_register(mctx->__gregs[REG_A0+4], "a4");
+	dump_machine_register(mctx->__gregs[REG_A0+5], "a5");
+	dump_machine_register(mctx->__gregs[REG_A0+6], "a6");
+	dump_machine_register(mctx->__gregs[REG_A0+7], "a7");
+	dump_machine_register(mctx->__gregs[REG_S2], "s2");
+	dump_machine_register(mctx->__gregs[REG_S2+1], "s3");
+	dump_machine_register(mctx->__gregs[REG_S2+2], "s4");
+	dump_machine_register(mctx->__gregs[REG_S2+3], "s5");
+	dump_machine_register(mctx->__gregs[REG_S2+4], "s6");
+	dump_machine_register(mctx->__gregs[REG_S2+5], "s7");
+	dump_machine_register(mctx->__gregs[REG_S2+6], "s8");
+	dump_machine_register(mctx->__gregs[REG_S2+7], "s9");
+	dump_machine_register(mctx->__gregs[REG_S2+8], "s10");
+	dump_machine_register(mctx->__gregs[REG_S2+9], "s11");
 #   endif
     }
 # elif defined __APPLE__
@@ -857,6 +973,29 @@ rb_dump_machine_register(const ucontext_t *ctx)
 	dump_machine_register(es);
 	dump_machine_register(fs);
 	dump_machine_register(gs);
+#   elif defined __aarch64__
+	dump_machine_register(x[0], "x0");
+	dump_machine_register(x[1], "x1");
+	dump_machine_register(x[2], "x2");
+	dump_machine_register(x[3], "x3");
+	dump_machine_register(x[4], "x4");
+	dump_machine_register(x[5], "x5");
+	dump_machine_register(x[6], "x6");
+	dump_machine_register(x[7], "x7");
+	dump_machine_register(x[18], "x18");
+	dump_machine_register(x[19], "x19");
+	dump_machine_register(x[20], "x20");
+	dump_machine_register(x[21], "x21");
+	dump_machine_register(x[22], "x22");
+	dump_machine_register(x[23], "x23");
+	dump_machine_register(x[24], "x24");
+	dump_machine_register(x[25], "x25");
+	dump_machine_register(x[26], "x26");
+	dump_machine_register(x[27], "x27");
+	dump_machine_register(x[28], "x28");
+	dump_machine_register(lr, "lr");
+	dump_machine_register(fp, "fp");
+	dump_machine_register(sp, "sp");
 #   endif
     }
 # endif
@@ -869,6 +1008,18 @@ rb_dump_machine_register(const ucontext_t *ctx)
 void
 rb_vm_bugreport(const void *ctx)
 {
+#if RUBY_DEVEL
+    const char *cmd = getenv("RUBY_ON_BUG");
+    if (cmd) {
+        char buf[0x100];
+        snprintf(buf, sizeof(buf), "%s %"PRI_PIDT_PREFIX"d", cmd, getpid());
+        int r = system(buf);
+        if (r == -1) {
+            snprintf(buf, sizeof(buf), "Launching RUBY_ON_BUG command failed.");
+        }
+    }
+#endif
+
 #ifdef __linux__
 # define PROC_MAPS_NAME "/proc/self/maps"
 #endif
@@ -878,8 +1029,9 @@ rb_vm_bugreport(const void *ctx)
     enum {other_runtime_info = 0};
 #endif
     const rb_vm_t *const vm = GET_VM();
+    const rb_execution_context_t *ec = rb_current_execution_context(false);
 
-    if (vm) {
+    if (vm && ec) {
 	SDR();
 	rb_backtrace_print_as_bugreport();
 	fputs("\n", stderr);
@@ -887,20 +1039,20 @@ rb_vm_bugreport(const void *ctx)
 
     rb_dump_machine_register(ctx);
 
-#if HAVE_BACKTRACE || defined(_WIN32)
+#if USE_BACKTRACE || defined(_WIN32)
     fprintf(stderr, "-- C level backtrace information "
 	    "-------------------------------------------\n");
     rb_print_backtrace();
 
 
     fprintf(stderr, "\n");
-#endif /* HAVE_BACKTRACE */
+#endif /* USE_BACKTRACE */
 
     if (other_runtime_info || vm) {
 	fprintf(stderr, "-- Other runtime information "
 		"-----------------------------------------------\n\n");
     }
-    if (vm) {
+    if (vm && !rb_during_gc()) {
 	int i;
 	VALUE name;
 	long len;
@@ -909,39 +1061,43 @@ rb_vm_bugreport(const void *ctx)
 	(((len = RSTRING_LEN(s)) > max_name_length) ? max_name_length : (int)len)
 
 	name = vm->progname;
-	fprintf(stderr, "* Loaded script: %.*s\n",
-		LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
-	fprintf(stderr, "\n");
-	fprintf(stderr, "* Loaded features:\n\n");
-	for (i=0; i<RARRAY_LEN(vm->loaded_features); i++) {
-	    name = RARRAY_AREF(vm->loaded_features, i);
-	    if (RB_TYPE_P(name, T_STRING)) {
-		fprintf(stderr, " %4d %.*s\n", i,
-			LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
-	    }
-	    else if (RB_TYPE_P(name, T_CLASS) || RB_TYPE_P(name, T_MODULE)) {
-		const char *const type = RB_TYPE_P(name, T_CLASS) ?
-		    "class" : "module";
-		name = rb_search_class_path(rb_class_real(name));
-		if (!RB_TYPE_P(name, T_STRING)) {
-		    fprintf(stderr, " %4d %s:<unnamed>\n", i, type);
-		    continue;
-		}
-		fprintf(stderr, " %4d %s:%.*s\n", i, type,
-			LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
-	    }
-	    else {
-		VALUE klass = rb_search_class_path(rb_obj_class(name));
-		if (!RB_TYPE_P(klass, T_STRING)) {
-		    fprintf(stderr, " %4d #<%p:%p>\n", i,
-			    (void *)CLASS_OF(name), (void *)name);
-		    continue;
-		}
-		fprintf(stderr, " %4d #<%.*s:%p>\n", i,
-			LIMITED_NAME_LENGTH(klass), RSTRING_PTR(klass),
-			(void *)name);
-	    }
-	}
+        if (name) {
+	    fprintf(stderr, "* Loaded script: %.*s\n",
+		    LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
+	    fprintf(stderr, "\n");
+        }
+        if (vm->loaded_features) {
+            fprintf(stderr, "* Loaded features:\n\n");
+            for (i=0; i<RARRAY_LEN(vm->loaded_features); i++) {
+                name = RARRAY_AREF(vm->loaded_features, i);
+                if (RB_TYPE_P(name, T_STRING)) {
+                    fprintf(stderr, " %4d %.*s\n", i,
+                            LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
+                }
+                else if (RB_TYPE_P(name, T_CLASS) || RB_TYPE_P(name, T_MODULE)) {
+                    const char *const type = RB_TYPE_P(name, T_CLASS) ?
+                        "class" : "module";
+                    name = rb_search_class_path(rb_class_real(name));
+                    if (!RB_TYPE_P(name, T_STRING)) {
+                        fprintf(stderr, " %4d %s:<unnamed>\n", i, type);
+                        continue;
+                    }
+                    fprintf(stderr, " %4d %s:%.*s\n", i, type,
+                            LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
+                }
+                else {
+                    VALUE klass = rb_search_class_path(rb_obj_class(name));
+                    if (!RB_TYPE_P(klass, T_STRING)) {
+                        fprintf(stderr, " %4d #<%p:%p>\n", i,
+                                (void *)CLASS_OF(name), (void *)name);
+                        continue;
+                    }
+                    fprintf(stderr, " %4d #<%.*s:%p>\n", i,
+                            LIMITED_NAME_LENGTH(klass), RSTRING_PTR(klass),
+                            (void *)name);
+                }
+            }
+        }
 	fprintf(stderr, "\n");
     }
 
@@ -984,6 +1140,42 @@ rb_vm_bugreport(const void *ctx)
 	    fprintf(stderr, "\n");
 	}
 #endif /* __FreeBSD__ */
+#ifdef __APPLE__
+        vm_address_t addr = 0;
+        vm_size_t size = 0;
+        struct vm_region_submap_info map;
+        mach_msg_type_number_t count = VM_REGION_SUBMAP_INFO_COUNT;
+        natural_t depth = 0;
+
+        fprintf(stderr, "* Process memory map:\n\n");
+        while (1) {
+            if (vm_region_recurse(mach_task_self(), &addr, &size, &depth,
+                        (vm_region_recurse_info_t)&map, &count) != KERN_SUCCESS) {
+                break;
+            }
+
+            if (map.is_submap) {
+                // We only look at main addresses
+                depth++;
+            }
+            else {
+                fprintf(stderr, "%lx-%lx %s%s%s", addr, (addr+size),
+                        ((map.protection & VM_PROT_READ) != 0 ? "r" : "-"),
+                        ((map.protection & VM_PROT_WRITE) != 0 ? "w" : "-"),
+                    ((map.protection & VM_PROT_EXECUTE) != 0 ? "x" : "-"));
+#ifdef HAVE_LIBPROC_H
+                char buff[PATH_MAX];
+                if (proc_regionfilename(getpid(), addr, buff, sizeof(buff)) > 0) {
+                    fprintf(stderr, " %s", buff);
+                }
+#endif
+                fprintf(stderr, "\n");
+            }
+
+            addr += size;
+            size = 0;
+        }
+#endif
     }
 }
 
@@ -994,12 +1186,13 @@ const char *ruby_fill_thread_id_string(rb_nativethread_id_t thid, rb_thread_id_s
 void
 rb_vmdebug_stack_dump_all_threads(void)
 {
-    rb_vm_t *vm = GET_VM();
     rb_thread_t *th = NULL;
+    rb_ractor_t *r = GET_RACTOR();
 
-    list_for_each(&vm->living_threads, th, vmlt_node) {
+    // TODO: now it only shows current ractor
+    list_for_each(&r->threads.set, th, lt_node) {
 #ifdef NON_SCALAR_THREAD_ID
-	rb_thread_id_string_t buf;
+        rb_thread_id_string_t buf;
 	ruby_fill_thread_id_string(th->thread_id, buf);
 	fprintf(stderr, "th: %p, native_id: %s\n", th, buf);
 #else

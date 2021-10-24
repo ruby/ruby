@@ -5,14 +5,13 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/package'
-require 'rubygems/installer'
+require_relative 'package'
+require_relative 'installer'
 
 ##
 # Validator performs various gem file and gem database validation
 
 class Gem::Validator
-
   include Gem::UserInteraction
 
   def initialize # :nodoc:
@@ -60,7 +59,7 @@ class Gem::Validator
   # TODO needs further cleanup
 
   def alien(gems=[])
-    errors = Hash.new { |h,k| h[k] = {} }
+    errors = Hash.new {|h,k| h[k] = {} }
 
     Gem::Specification.each do |spec|
       next unless gems.include? spec.name unless gems.empty?
@@ -141,5 +140,4 @@ class Gem::Validator
 
     errors
   end
-
 end

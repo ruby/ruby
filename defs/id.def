@@ -25,6 +25,7 @@ firstline, predefined = __LINE__+1, %[\
   send
   __send__
   __attached__
+  __recursive_key__
   initialize
   initialize_copy
   initialize_clone
@@ -46,6 +47,7 @@ firstline, predefined = __LINE__+1, %[\
   call
   mesg
   exception
+  locals
   not                                                   NOT
   and                                                   AND
   or                                                    OR
@@ -54,8 +56,21 @@ firstline, predefined = __LINE__+1, %[\
   fdiv
   quo
   name
+  nil
 
   _                                                     UScore
+
+  # MUST be successive
+  _1  NUMPARAM_1
+  _2  NUMPARAM_2
+  _3  NUMPARAM_3
+  _4  NUMPARAM_4
+  _5  NUMPARAM_5
+  _6  NUMPARAM_6
+  _7  NUMPARAM_7
+  _8  NUMPARAM_8
+  _9  NUMPARAM_9
+
   "/*NULL*/"                                            NULL
   empty?
   eql?
@@ -72,6 +87,7 @@ firstline, predefined = __LINE__+1, %[\
   core#hash_merge_ptr
   core#hash_merge_kwd
   core#raise
+  core#sprintf
 
   -                                                     debug#created_info
 
@@ -116,14 +132,27 @@ token_ops = %[\
   ANDOP         &&
   OROP          ||
   ANDDOT        &.
-  METHREF       .:
-  PIPE          |>
 ]
 
 class KeywordError < RuntimeError
   def self.raise(mesg, line)
     super(self, mesg, ["#{__FILE__}:#{line}", *caller])
   end
+end
+
+def id2varname(token, prefix = nil)
+  if /#/ =~ token
+    token = "_#{token.gsub(/\W+/, '_')}"
+  else
+    token = token.sub(/\?/, 'P')
+    token = prefix + token if prefix
+    token.sub!(/\A[a-z]/) {$&.upcase}
+    token.sub!(/\A\$/, "_G_")
+    token.sub!(/\A@@/, "_C_")
+    token.sub!(/\A@/, "_I_")
+    token.gsub!(/\W+/, "")
+  end
+  token
 end
 
 predefined_ids = {}
@@ -141,16 +170,7 @@ predefined.split(/^/).each_with_index do |line, num|
   line.sub!(/\s+#.*/, '')
   name, token = line.split
   next unless name
-  token ||= name
-  if /#/ =~ token
-    token = "_#{token.gsub(/\W+/, '_')}"
-  else
-    token = token.sub(/\?/, 'P').sub(/\A[a-z]/) {$&.upcase}
-    token.sub!(/\A\$/, "_G_")
-    token.sub!(/\A@@/, "_C_")
-    token.sub!(/\A@/, "_I_")
-    token.gsub!(/\W+/, "")
-  end
+  token = id2varname(token || name)
   if name == '-'
     preserved_ids << token
     next

@@ -312,12 +312,12 @@ A
   end
 
   def test_parse_empty
-    assert_equal(CSV::Table.new([], {}),
+    assert_equal(CSV::Table.new([]),
                  CSV.parse("", headers: true))
   end
 
   def test_parse_empty_line
-    assert_equal(CSV::Table.new([], {}),
+    assert_equal(CSV::Table.new([]),
                  CSV.parse("\n", headers: true))
   end
 

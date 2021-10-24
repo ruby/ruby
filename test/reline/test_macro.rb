@@ -2,14 +2,17 @@ require_relative 'helper'
 
 class Reline::MacroTest < Reline::TestCase
   def setup
+    Reline.send(:test_mode)
     @config = Reline::Config.new
-    @line_editor = Reline::LineEditor.new(@config)
+    @encoding = Reline::IOGate.encoding
+    @line_editor = Reline::LineEditor.new(@config, @encoding)
     @line_editor.instance_variable_set(:@screen_size, [24, 80])
     @output = @line_editor.output = File.open(IO::NULL, "w")
   end
 
   def teardown
     @output.close
+    Reline.test_reset
   end
 
   def input_key(char, combined_char = char, with_meta = false)

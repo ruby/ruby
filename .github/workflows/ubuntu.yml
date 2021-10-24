@@ -1,53 +1,79 @@
-name: ubuntu
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - '*'
+name: Ubuntu
+on: [push, pull_request]
 jobs:
-  latest:
-    runs-on: ubuntu-latest
+  make:
     strategy:
       matrix:
-        test_task: [ "test-bundler", "test-bundled-gems" ]
+        test_task: ["check", "test-bundler-parallel", "test-bundled-gems"]
+        os:
+          - ubuntu-20.04
+#         - ubuntu-18.04
+        configure: ["", "cppflags=-DRUBY_DEBUG"]
+        include:
+          - test_task: "test-all TESTS=--repeat-count=2"
+            os: ubuntu-20.04
+            configure: ""
       fail-fast: false
+    env:
+      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+      RUBY_DEBUG: ci
+    runs-on: ${{ matrix.os }}
     steps:
+      - run: mkdir build
+        working-directory:
       - name: Install libraries
         run: |
           set -x
-          sudo sed /etc/apt/sources.list -e "s/^# deb-src/deb-src/g" -i
-          sudo apt-get update
-          sudo apt-get install ruby2.5
-          sudo apt-get build-dep ruby2.5
-      # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
-      - name: Checkout ruby/ruby
-        run: git clone --depth=50 https://github.com/ruby/ruby . && git reset --hard "$GITHUB_SHA"
-        env:
-          GITHUB_SHA: ${{ github.sha }}
-        if: github.event_name == 'push'
-      - name: Checkout a pull request
-        run: git clone --depth=50 "--branch=$GITHUB_BRANCH" "https://github.com/${GITHUB_REPO}" . && git reset --hard "$GITHUB_REV"
-        env:
-          GITHUB_REV: ${{ github.event.pull_request.head.sha }}
-          GITHUB_BRANCH: ${{ github.event.pull_request.head.ref }}
-          GITHUB_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-        if: github.event_name == 'pull_request'
-      - name: Set ENV
+          sudo apt-get update -q || :
+          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison autoconf ruby
+      - name: git config
         run: |
-          export JOBS=-j$((1 + $(nproc --all)))
+          git config --global advice.detachedHead 0
+          git config --global init.defaultBranch garbage
+      - uses: actions/checkout@v2
+        with:
+          path: src
       - name: Fixed world writable dirs
         run: |
-          chmod go-w $HOME
+          chmod -v go-w $HOME $HOME/.config
           sudo chmod -R go-w /usr/share
-      - run: autoconf
-      - name: configure
-        run: ./configure -C --disable-install-doc
+          sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v go-w $d; done' || :
+      - name: Set ENV
+        run: |
+          echo "JOBS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
+      - run: ./autogen.sh
+        working-directory: src
+      - name: Run configure
+        run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
+      - run: make $JOBS incs
       - run: make $JOBS
-      # TODO: Remove `continue-on-error` once they become stable and also we have a notification for their failure.
-      - name: make test-bundler/test-bundled-gems
-        run: make -s ${{ matrix.test_task }}
-        continue-on-error: true
-      - name: Leaked Globals
-        run: make -s leaked-globals
+      - run: make leaked-globals
+        if: ${{ matrix.test_task == 'check' }}
+      - run: make prepare-gems
+        if: ${{ matrix.test_task == 'check' }}
+      - name: Create dummy files in build dir
+        run: |
+          ./miniruby -e '(("a".."z").to_a+("A".."Z").to_a+("0".."9").to_a+%w[foo bar test zzz]).each{|basename|File.write("#{basename}.rb", "raise %(do not load #{basename}.rb)")}'
+        if: ${{ matrix.test_task == 'check' }}
+      - run: make $JOBS -s ${{ matrix.test_task }}
+        timeout-minutes: 30
+        env:
+          RUBY_TESTOPTS: "-q --tty=no"
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ""
+      - uses: k0kubun/action-slack@v2.0.0
+        with:
+          payload: |
+            {
+              "ci": "GitHub Actions",
+              "env": "${{ matrix.os }} / ${{ matrix.test_task }}${{ matrix.configure }}",
+              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref }}".split('/').reverse()[0]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() && github.event_name == 'push' }}
+
+defaults:
+  run:
+    working-directory: build

@@ -1,19 +1,28 @@
 #include "ruby.h"
 #include "ruby/debug.h"
 
+static int counter;
+
 static void
 pjob_callback(void *data)
 {
     VALUE ary = (VALUE)data;
     Check_Type(ary, T_ARRAY);
 
-    rb_ary_replace(ary, rb_funcall(Qnil, rb_intern("caller"), 0));
+    rb_ary_push(ary, INT2FIX(counter));
 }
 
 static VALUE
 pjob_register(VALUE self, VALUE obj)
 {
+    counter = 0;
     rb_postponed_job_register(0, pjob_callback, (void *)obj);
+    rb_gc_start();
+    counter++;
+    rb_gc_start();
+    counter++;
+    rb_gc_start();
+    counter++;
     return self;
 }
 
@@ -38,7 +47,14 @@ pjob_register_one(VALUE self, VALUE obj)
 static VALUE
 pjob_call_direct(VALUE self, VALUE obj)
 {
+    counter = 0;
     pjob_callback((void *)obj);
+    rb_gc_start();
+    counter++;
+    rb_gc_start();
+    counter++;
+    rb_gc_start();
+    counter++;
     return self;
 }
 

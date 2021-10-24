@@ -4,23 +4,23 @@ require 'pathname'
 describe "Pathname#root?" do
 
   it "returns true for root directories" do
-    Pathname.new('/').root?.should == true
+    Pathname.new('/').should.root?
   end
 
   it "returns false for empty string" do
-    Pathname.new('').root?.should == false
+    Pathname.new('').should_not.root?
   end
 
   it "returns false for a top level directory" do
-    Pathname.new('/usr').root?.should == false
+    Pathname.new('/usr').should_not.root?
   end
 
   it "returns false for a top level with .. appended directory" do
-    Pathname.new('/usr/..').root?.should == false
+    Pathname.new('/usr/..').should_not.root?
   end
 
   it "returns false for a directory below top level" do
-    Pathname.new('/usr/local/bin/').root?.should == false
+    Pathname.new('/usr/local/bin/').should_not.root?
   end
 
 end

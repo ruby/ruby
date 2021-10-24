@@ -2,8 +2,8 @@
 
 /*
  * Name: UTF8-DoCoMo, SJIS-DoCoMo
- * Link: https://www.nttdocomo.co.jp/english/service/developer/make/content/pictograph/basic/index.html
- * Link: https://www.nttdocomo.co.jp/english/service/developer/make/content/pictograph/extention/index.html
+ * Link: https://www.nttdocomo.co.jp/service/developer/make/content/pictograph/basic/index.html
+ * Link: https://www.nttdocomo.co.jp/service/developer/make/content/pictograph/extent%69on/index.html
  */
 ENC_REPLICATE("UTF8-DoCoMo", "UTF-8")
 ENC_REPLICATE("SJIS-DoCoMo", "Windows-31J")

@@ -1,0 +1,9 @@
+image: ruby:<%= RUBY_VERSION %>
+
+before_script:
+  - gem install bundler -v <%= Bundler::VERSION %>
+  - bundle install
+
+example_job:
+  script:
+    - bundle exec rake

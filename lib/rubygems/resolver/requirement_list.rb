@@ -7,7 +7,6 @@
 # first.
 
 class Gem::Resolver::RequirementList
-
   include Enumerable
 
   ##
@@ -79,5 +78,4 @@ class Gem::Resolver::RequirementList
     x = @exact[0,5]
     x + @list[0,5 - x.size]
   end
-
 end

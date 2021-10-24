@@ -49,9 +49,12 @@ module CGI::Util
       table = Hash[TABLE_FOR_ESCAPE_HTML__.map {|pair|pair.map {|s|s.encode(enc)}}]
       string = string.gsub(/#{"['&\"<>]".encode(enc)}/, table)
       string.encode!(origenc) if origenc
-      return string
+      string
+    else
+      string = string.b
+      string.gsub!(/['&\"<>]/, TABLE_FOR_ESCAPE_HTML__)
+      string.force_encoding(enc)
     end
-    string.gsub(/['&\"<>]/, TABLE_FOR_ESCAPE_HTML__)
   end
 
   begin
@@ -90,7 +93,8 @@ module CGI::Util
                 when Encoding::ISO_8859_1; 256
                 else 128
                 end
-    string.gsub(/&(apos|amp|quot|gt|lt|\#[0-9]+|\#[xX][0-9A-Fa-f]+);/) do
+    string = string.b
+    string.gsub!(/&(apos|amp|quot|gt|lt|\#[0-9]+|\#[xX][0-9A-Fa-f]+);/) do
       match = $1.dup
       case match
       when 'apos'                then "'"
@@ -116,6 +120,7 @@ module CGI::Util
         "&#{match};"
       end
     end
+    string.force_encoding enc
   end
 
   # Synonym for CGI.escapeHTML(str)
@@ -174,21 +179,12 @@ module CGI::Util
   # Synonym for CGI.unescapeElement(str)
   alias unescape_element unescapeElement
 
-  # Abbreviated day-of-week names specified by RFC 822
-  RFC822_DAYS = %w[ Sun Mon Tue Wed Thu Fri Sat ]
-
-  # Abbreviated month names specified by RFC 822
-  RFC822_MONTHS = %w[ Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec ]
-
   # Format a +Time+ object as a String using the format specified by RFC 1123.
   #
   #   CGI.rfc1123_date(Time.now)
   #     # Sat, 01 Jan 2000 00:00:00 GMT
   def rfc1123_date(time)
-    t = time.clone.gmtime
-    return format("%s, %.2d %s %.4d %.2d:%.2d:%.2d GMT",
-                  RFC822_DAYS[t.wday], t.day, RFC822_MONTHS[t.month-1], t.year,
-                  t.hour, t.min, t.sec)
+    time.getgm.strftime("%a, %d %b %Y %T GMT")
   end
 
   # Prettify (indent) an HTML string.

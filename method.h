@@ -1,3 +1,5 @@
+#ifndef RUBY_METHOD_H
+#define RUBY_METHOD_H 1
 /**********************************************************************
 
   method.h -
@@ -8,10 +10,11 @@
   Copyright (C) 2009 Koichi Sasada
 
 **********************************************************************/
-#ifndef RUBY_METHOD_H
-#define RUBY_METHOD_H 1
 
 #include "internal.h"
+#include "internal/imemo.h"
+#include "internal/compilers.h"
+#include "internal/static_assert.h"
 
 #ifndef END_OF_ENUMERATION
 # if defined(__GNUC__) &&! defined(__STRICT_ANSI__)
@@ -66,8 +69,13 @@ typedef struct rb_callable_method_entry_struct { /* same fields with rb_method_e
 
 #define METHOD_ENTRY_VISI(me)  (rb_method_visibility_t)(((me)->flags & (IMEMO_FL_USER0 | IMEMO_FL_USER1)) >> (IMEMO_FL_USHIFT+0))
 #define METHOD_ENTRY_BASIC(me) (int)                   (((me)->flags & (IMEMO_FL_USER2                 )) >> (IMEMO_FL_USHIFT+2))
-#define METHOD_ENTRY_COMPLEMENTED(me)     ((me)->flags & IMEMO_FL_USER3)
-#define METHOD_ENTRY_COMPLEMENTED_SET(me) ((me)->flags = (me)->flags | IMEMO_FL_USER3)
+#define METHOD_ENTRY_COMPLEMENTED(me)        ((me)->flags & IMEMO_FL_USER3)
+#define METHOD_ENTRY_COMPLEMENTED_SET(me)    ((me)->flags |= IMEMO_FL_USER3)
+#define METHOD_ENTRY_CACHED(me)              ((me)->flags & IMEMO_FL_USER4)
+#define METHOD_ENTRY_CACHED_SET(me)          ((me)->flags |= IMEMO_FL_USER4)
+#define METHOD_ENTRY_INVALIDATED(me)         ((me)->flags & IMEMO_FL_USER5)
+#define METHOD_ENTRY_INVALIDATED_SET(me)     ((me)->flags |= IMEMO_FL_USER5)
+#define METHOD_ENTRY_CACHEABLE(me)           !(METHOD_ENTRY_VISI(me) == METHOD_VISI_PROTECTED)
 
 static inline void
 METHOD_ENTRY_VISI_SET(rb_method_entry_t *me, rb_method_visibility_t visi)
@@ -88,14 +96,14 @@ METHOD_ENTRY_FLAGS_SET(rb_method_entry_t *me, rb_method_visibility_t visi, unsig
     VM_ASSERT(basic <= 1);
     me->flags =
       (me->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2)) |
-	((visi << (IMEMO_FL_USHIFT+0)) | (basic << (IMEMO_FL_USHIFT+2)));
+        ((visi << (IMEMO_FL_USHIFT+0)) | (basic << (IMEMO_FL_USHIFT+2)));
 }
 static inline void
 METHOD_ENTRY_FLAGS_COPY(rb_method_entry_t *dst, const rb_method_entry_t *src)
 {
     dst->flags =
       (dst->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2)) |
-	(src->flags & (IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2));
+        (src->flags & (IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2));
 }
 
 typedef enum {
@@ -151,6 +159,7 @@ typedef struct rb_method_refined_struct {
 typedef struct rb_method_bmethod_struct {
     VALUE proc; /* should be marked */
     struct rb_hook_list_struct *hooks;
+    VALUE defined_ractor;
 } rb_method_bmethod_t;
 
 enum method_optimized_type {
@@ -166,18 +175,21 @@ struct rb_method_definition_struct {
     int complemented_count : 28;
 
     union {
-	rb_method_iseq_t iseq;
-	rb_method_cfunc_t cfunc;
-	rb_method_attr_t attr;
-	rb_method_alias_t alias;
-	rb_method_refined_t refined;
+        rb_method_iseq_t iseq;
+        rb_method_cfunc_t cfunc;
+        rb_method_attr_t attr;
+        rb_method_alias_t alias;
+        rb_method_refined_t refined;
         rb_method_bmethod_t bmethod;
 
         enum method_optimized_type optimize_type;
     } body;
 
     ID original_id;
+    uintptr_t method_serial;
 };
+
+struct rb_id_table;
 
 typedef struct rb_method_definition_struct rb_method_definition_t;
 STATIC_ASSERT(sizeof_method_def, offsetof(rb_method_definition_t, body)==8);
@@ -202,7 +214,6 @@ const rb_method_entry_t *rb_method_entry_with_refinements(VALUE klass, ID id, VA
 const rb_method_entry_t *rb_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_class);
 const rb_method_entry_t *rb_resolve_refined_method(VALUE refinements, const rb_method_entry_t *me);
 RUBY_SYMBOL_EXPORT_BEGIN
-const rb_callable_method_entry_t *rb_resolve_refined_method_callable(VALUE refinements, const rb_callable_method_entry_t *me);
 const rb_method_entry_t *rb_resolve_me_location(const rb_method_entry_t *, VALUE[5]);
 RUBY_SYMBOL_EXPORT_END
 
@@ -215,18 +226,20 @@ int rb_method_entry_eq(const rb_method_entry_t *m1, const rb_method_entry_t *m2)
 st_index_t rb_hash_method_entry(st_index_t hash, const rb_method_entry_t *me);
 
 VALUE rb_method_entry_location(const rb_method_entry_t *me);
-VALUE rb_mod_method_location(VALUE mod, ID id);
-VALUE rb_obj_method_location(VALUE obj, ID id);
 
 void rb_free_method_entry(const rb_method_entry_t *me);
-void rb_sweep_method_entry(void *vm);
 
 const rb_method_entry_t *rb_method_entry_clone(const rb_method_entry_t *me);
 const rb_callable_method_entry_t *rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID called_id, VALUE defined_class);
 void rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src);
 
+void rb_method_table_insert(VALUE klass, struct rb_id_table *table, ID method_id, const rb_method_entry_t *me);
+
 void rb_scope_visibility_set(rb_method_visibility_t);
 
 VALUE rb_unnamed_parameters(int arity);
+
+void rb_clear_method_cache(VALUE klass_or_module, ID mid);
+void rb_clear_method_cache_all(void);
 
 #endif /* RUBY_METHOD_H */

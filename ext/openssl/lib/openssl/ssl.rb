@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 =begin
 = Info
   'OpenSSL for Ruby 2' project
@@ -13,6 +13,7 @@
 require "openssl/buffering"
 require "io/nonblock"
 require "ipaddr"
+require "socket"
 
 module OpenSSL
   module SSL
@@ -90,15 +91,17 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
       DEFAULT_CERT_STORE.set_default_paths
       DEFAULT_CERT_STORE.flags = OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
 
-      # A callback invoked when DH parameters are required.
+      # A callback invoked when DH parameters are required for ephemeral DH key
+      # exchange.
       #
-      # The callback is invoked with the Session for the key exchange, an
+      # The callback is invoked with the SSLSocket, a
       # flag indicating the use of an export cipher and the keylength
       # required.
       #
       # The callback must return an OpenSSL::PKey::DH instance of the correct
       # key length.
-
+      #
+      # <b>Deprecated in version 3.0.</b> Use #tmp_dh= instead.
       attr_accessor :tmp_dh_callback
 
       # A callback invoked at connect time to distinguish between multiple
@@ -121,6 +124,8 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
       def initialize(version = nil)
         self.options |= OpenSSL::SSL::OP_ALL
         self.ssl_version = version if version
+        self.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        self.verify_hostname = false
       end
 
       ##
@@ -231,6 +236,11 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
     end
 
     module SocketForwarder
+      # The file descriptor for the socket.
+      def fileno
+        to_io.fileno
+      end
+
       def addr
         to_io.addr
       end
@@ -424,16 +434,44 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
         @context.tmp_dh_callback || OpenSSL::SSL::SSLContext::DEFAULT_TMP_DH_CALLBACK
       end
 
-      def tmp_ecdh_callback
-        @context.tmp_ecdh_callback
-      end
-
       def session_new_cb
         @context.session_new_cb
       end
 
       def session_get_cb
         @context.session_get_cb
+      end
+
+      class << self
+
+        # call-seq:
+        #   open(remote_host, remote_port, local_host=nil, local_port=nil, context: nil)
+        #
+        # Creates a new instance of SSLSocket.
+        # _remote\_host_ and _remote\_port_ are used to open TCPSocket.
+        # If _local\_host_ and _local\_port_ are specified,
+        # then those parameters are used on the local end to establish the connection.
+        # If _context_ is provided,
+        # the SSL Sockets initial params will be taken from the context.
+        #
+        # === Examples
+        #
+        #   sock = OpenSSL::SSL::SSLSocket.open('localhost', 443)
+        #   sock.connect # Initiates a connection to localhost:443
+        #
+        # with SSLContext:
+        #
+        #   ctx = OpenSSL::SSL::SSLContext.new
+        #   sock = OpenSSL::SSL::SSLSocket.open('localhost', 443, context: ctx)
+        #   sock.connect # Initiates a connection to localhost:443 with SSLContext
+        def open(remote_host, remote_port, local_host=nil, local_port=nil, context: nil)
+          sock = ::TCPSocket.open(remote_host, remote_port, local_host, local_port)
+          if context.nil?
+            return OpenSSL::SSL::SSLSocket.new(sock)
+          else
+            return OpenSSL::SSL::SSLSocket.new(sock, context)
+          end
+        end
       end
     end
 
@@ -465,7 +503,7 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
       end
 
       # See TCPServer#listen for details.
-      def listen(backlog=5)
+      def listen(backlog=Socket::SOMAXCONN)
         @svr.listen(backlog)
       end
 

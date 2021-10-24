@@ -1,5 +1,5 @@
 # coding: binary
-# frozen_string_literal: false
+# frozen_string_literal: true
 #--
 #= Info
 #  'OpenSSL for Ruby 2' project
@@ -22,6 +22,29 @@
 module OpenSSL::Buffering
   include Enumerable
 
+  # A buffer which will retain binary encoding.
+  class Buffer < String
+    BINARY = Encoding::BINARY
+
+    def initialize
+      super
+
+      force_encoding(BINARY)
+    end
+
+    def << string
+      if string.encoding == BINARY
+        super(string)
+      else
+        super(string.b)
+      end
+
+      return self
+    end
+
+    alias concat <<
+  end
+
   ##
   # The "sync mode" of the SSLSocket.
   #
@@ -40,7 +63,7 @@ module OpenSSL::Buffering
   def initialize(*)
     super
     @eof = false
-    @rbuffer = ""
+    @rbuffer = Buffer.new
     @sync = @io.sync
   end
 
@@ -77,6 +100,15 @@ module OpenSSL::Buffering
   end
 
   public
+
+  # call-seq:
+  #   ssl.getbyte => 81
+  #
+  # Get the next 8bit byte from `ssl`.  Returns `nil` on EOF
+  def getbyte
+    byte = read(1)
+    byte && byte.unpack1("C")
+  end
 
   ##
   # Reads _size_ bytes from the stream.  If _buf_ is provided it must
@@ -312,7 +344,7 @@ module OpenSSL::Buffering
   # buffer is flushed to the underlying socket.
 
   def do_write(s)
-    @wbuffer = "" unless defined? @wbuffer
+    @wbuffer = Buffer.new unless defined? @wbuffer
     @wbuffer << s
     @wbuffer.force_encoding(Encoding::BINARY)
     @sync ||= false
@@ -398,7 +430,7 @@ module OpenSSL::Buffering
   # See IO#puts for full details.
 
   def puts(*args)
-    s = ""
+    s = Buffer.new
     if args.empty?
       s << "\n"
     end
@@ -416,7 +448,7 @@ module OpenSSL::Buffering
   # See IO#print for full details.
 
   def print(*args)
-    s = ""
+    s = Buffer.new
     args.each{ |arg| s << arg.to_s }
     do_write(s)
     nil

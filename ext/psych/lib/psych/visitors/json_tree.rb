@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'psych/json/ruby_events'
+require_relative '../json/ruby_events'
 
 module Psych
   module Visitors

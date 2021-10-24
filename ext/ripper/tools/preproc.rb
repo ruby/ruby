@@ -45,7 +45,7 @@ def prelude(f, out)
   while line = f.gets
     case line
     when /\A%%/
-      out << '%%' << $/
+      out << "%%\n"
       return
     when /\A%token/
       out << line.sub(/<\w+>/, '<val>')
@@ -79,15 +79,15 @@ def grammar(f, out)
   while line = f.gets
     case line
     when %r</\*% *ripper(?:\[(.*?)\])?: *(.*?) *%\*/>
-      out << DSL.new($2, ($1 || "").split(",")).generate << $/
+      out << DSL.new($2, ($1 || "").split(",")).generate << "\n"
     when %r</\*%%%\*/>
-      out << '#if 0' << $/
+      out << "#if 0\n"
     when %r</\*%>
-      out << '#endif' << $/
+      out << "#endif\n"
     when %r<%\*/>
-      out << $/
+      out << "\n"
     when /\A%%/
-      out << '%%' << $/
+      out << "%%\n"
       return
     else
       out << line

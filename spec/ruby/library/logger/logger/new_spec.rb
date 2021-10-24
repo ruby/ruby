@@ -46,8 +46,8 @@ describe "Logger#new" do
     l.add Logger::WARN, "foo"
     l.add Logger::WARN, "bar"
 
-    File.exist?(path).should be_true
-    File.exist?(path + ".0").should be_true
+    File.should.exist?(path)
+    File.should.exist?(path + ".0")
 
     # first line will be a comment so we'll have to skip it.
     f = File.open(path)
@@ -108,7 +108,7 @@ describe "Logger#new" do
 
     shifted_path = "#{path}.#{now.strftime(shift_period_suffix)}"
 
-    File.exist?(shifted_path).should == true
+    File.should.exist?(shifted_path)
 
     logger.close
 

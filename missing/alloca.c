@@ -29,7 +29,7 @@
 static char	SCCSid[] = "@(#)alloca.c	1.1";	/* for the "what" utility */
 #endif
 
-#include "ruby/config.h"
+#include "ruby/internal/config.h"
 #define X3J11 1		   /* config.h should contain void if needed */
 
 #ifdef C_ALLOCA

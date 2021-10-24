@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 describe "IO#initialize" do
   before :each do
     @name = tmp("io_initialize.txt")
-    @io = new_io @name
+    @io = IO.new(new_fd(@name))
     @fd = @io.fileno
   end
 
@@ -13,7 +13,7 @@ describe "IO#initialize" do
     rm_r @name
   end
 
-  it "reassociates the IO instance with the new descriptor when passed a Fixnum" do
+  it "reassociates the IO instance with the new descriptor when passed an Integer" do
     fd = new_fd @name, "r:utf-8"
     @io.send :initialize, fd, 'r'
     @io.fileno.should == fd

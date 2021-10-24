@@ -4,6 +4,7 @@ require 'rubygems'
 class TestDefaultGems < Test::Unit::TestCase
 
   def test_validate_gemspec
+    skip "git not found" unless system("git", "rev-parse", %i[out err]=>IO::NULL)
     srcdir = File.expand_path('../../..', __FILE__)
     Dir.glob("#{srcdir}/{lib,ext}/**/*.gemspec").map do |src|
       assert_nothing_raised do

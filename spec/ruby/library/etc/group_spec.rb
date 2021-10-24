@@ -5,7 +5,7 @@ require 'etc'
 describe "Etc.group" do
   it_behaves_like :etc_on_windows, :group
 
-  platform_is_not :windows do
+  platform_is_not :windows, :android do
     it "returns a Etc::Group struct" do
       group = Etc.group
       begin

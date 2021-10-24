@@ -12,5 +12,6 @@ module MD5Constants
   Digest         = "\2473\267qw\276\364\343\345\320\304\350\313\314\217n"
   BlankHexdigest = "d41d8cd98f00b204e9800998ecf8427e"
   Hexdigest      = "a733b77177bef4e3e5d0c4e8cbcc8f6e"
+  Base64digest   = "pzO3cXe+9OPl0MToy8yPbg=="
 
 end

@@ -10,9 +10,16 @@ class TestMonitor < Test::Unit::TestCase
     @monitor = Monitor.new
   end
 
+  def test_enter_in_different_fibers
+    @monitor.enter
+    Fiber.new {
+      assert_equal false, @monitor.try_enter
+    }.resume
+  end
+
   def test_enter
     ary = []
-    queue = Queue.new
+    queue = Thread::Queue.new
     th = Thread.start {
       queue.pop
       @monitor.enter
@@ -35,6 +42,29 @@ class TestMonitor < Test::Unit::TestCase
     assert_equal((1..10).to_a, ary)
   end
 
+  def test_exit
+    m = Monitor.new
+    m.enter
+    assert_equal true, m.mon_owned?
+    m.exit
+    assert_equal false, m.mon_owned?
+
+    assert_raise ThreadError do
+      m.exit
+    end
+
+    assert_equal false, m.mon_owned?
+
+    m.enter
+    Thread.new{
+      assert_raise(ThreadError) do
+        m.exit
+      end
+    }.join
+    assert_equal true, m.mon_owned?
+    m.exit
+  end
+
   def test_enter_second_after_killed_thread
     th = Thread.start {
       @monitor.enter
@@ -53,7 +83,7 @@ class TestMonitor < Test::Unit::TestCase
 
   def test_synchronize
     ary = []
-    queue = Queue.new
+    queue = Thread::Queue.new
     th = Thread.start {
       queue.pop
       @monitor.synchronize do
@@ -78,7 +108,7 @@ class TestMonitor < Test::Unit::TestCase
 
   def test_killed_thread_in_synchronize
     ary = []
-    queue = Queue.new
+    queue = Thread::Queue.new
     t1 = Thread.start {
       queue.pop
       @monitor.synchronize {
@@ -106,8 +136,8 @@ class TestMonitor < Test::Unit::TestCase
   end
 
   def test_try_enter
-    queue1 = Queue.new
-    queue2 = Queue.new
+    queue1 = Thread::Queue.new
+    queue2 = Thread::Queue.new
     th = Thread.start {
       queue1.deq
       @monitor.enter
@@ -146,8 +176,8 @@ class TestMonitor < Test::Unit::TestCase
   end
 
   def test_mon_locked_and_owned
-    queue1 = Queue.new
-    queue2 = Queue.new
+    queue1 = Thread::Queue.new
+    queue2 = Thread::Queue.new
     th = Thread.start {
       @monitor.enter
       queue1.enq(nil)
@@ -180,7 +210,7 @@ class TestMonitor < Test::Unit::TestCase
     cond = @monitor.new_cond
 
     a = "foo"
-    queue1 = Queue.new
+    queue1 = Thread::Queue.new
     th = Thread.start do
       queue1.deq
       @monitor.synchronize do
@@ -200,10 +230,39 @@ class TestMonitor < Test::Unit::TestCase
     assert_join_threads([th, th2])
   end
 
+  class NewCondTest
+    include MonitorMixin
+    attr_reader :cond
+    def initialize
+      @cond = new_cond
+      super # mon_initialize
+    end
+  end
+
+  def test_new_cond_before_initialize
+    assert NewCondTest.new.cond.instance_variable_get(:@monitor) != nil
+  end
+
+  class KeywordInitializeParent
+    def initialize(x:)
+    end
+  end
+
+  class KeywordInitializeChild < KeywordInitializeParent
+    include MonitorMixin
+    def initialize
+      super(x: 1)
+    end
+  end
+
+  def test_initialize_with_keyword_arg
+    assert KeywordInitializeChild.new
+  end
+
   def test_timedwait
     cond = @monitor.new_cond
     b = "foo"
-    queue2 = Queue.new
+    queue2 = Thread::Queue.new
     th = Thread.start do
       queue2.deq
       @monitor.synchronize do
@@ -223,7 +282,7 @@ class TestMonitor < Test::Unit::TestCase
     assert_join_threads([th, th2])
 
     c = "foo"
-    queue3 = Queue.new
+    queue3 = Thread::Queue.new
     th = Thread.start do
       queue3.deq
       @monitor.synchronize do
@@ -235,7 +294,7 @@ class TestMonitor < Test::Unit::TestCase
       @monitor.synchronize do
         assert_equal("foo", c)
         result3 = cond.wait(0.1)
-        assert_equal(true, result3) # wait always returns true in Ruby 1.9
+        assert_equal(false, result3)
         assert_equal("foo", c)
         queue3.enq(nil)
         result4 = cond.wait
@@ -253,7 +312,7 @@ class TestMonitor < Test::Unit::TestCase
 #         end
 #       end
 #     }
-#     queue3 = Queue.new
+#     queue3 = Thread::Queue.new
 #     Thread.start do
 #       queue3.pop
 #       @monitor.synchronize do
@@ -273,24 +332,24 @@ class TestMonitor < Test::Unit::TestCase
   end
 
   def test_wait_interruption
-    queue = Queue.new
     cond = @monitor.new_cond
-    @monitor.define_singleton_method(:mon_enter_for_cond) do |*args|
-      queue.deq
-      super(*args)
-    end
+
     th = Thread.start {
       @monitor.synchronize do
         begin
           cond.wait(0.1)
+          @monitor.mon_owned?
         rescue Interrupt
-          @monitor.instance_variable_get(:@mon_owner)
+          @monitor.mon_owned?
         end
       end
     }
     sleep(0.1)
     th.raise(Interrupt)
-    queue.enq(nil)
-    assert_equal th, th.value
+
+    begin
+      assert_equal true, th.value
+    rescue Interrupt
+    end
   end
 end

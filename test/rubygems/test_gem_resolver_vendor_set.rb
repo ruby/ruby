@@ -1,8 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 
 class TestGemResolverVendorSet < Gem::TestCase
-
   def setup
     super
 
@@ -28,7 +27,7 @@ class TestGemResolverVendorSet < Gem::TestCase
 
     FileUtils.rm_r directory
 
-    e = assert_raises Gem::GemNotFoundException do
+    e = assert_raise Gem::GemNotFoundException do
       @set.add_vendor_gem name, directory
     end
 
@@ -52,7 +51,7 @@ class TestGemResolverVendorSet < Gem::TestCase
     source = Gem::Source::Vendor.new directory
 
     expected = [
-      Gem::Resolver::VendorSpecification.new(@set, spec, source)
+      Gem::Resolver::VendorSpecification.new(@set, spec, source),
     ]
 
     assert_equal expected, found
@@ -75,9 +74,8 @@ class TestGemResolverVendorSet < Gem::TestCase
   def test_load_spec
     error = Object.const_defined?(:KeyError) ? KeyError : IndexError
 
-    assert_raises error do
+    assert_raise error do
       @set.load_spec 'b', v(1), Gem::Platform::RUBY, nil
     end
   end
-
 end

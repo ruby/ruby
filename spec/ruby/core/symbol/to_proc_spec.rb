@@ -12,18 +12,42 @@ describe "Symbol#to_proc" do
     :to_s.to_proc.call(obj).should == "Received #to_s"
   end
 
-  it "produces a proc with arity -1" do
-    pr = :to_s.to_proc
-    pr.arity.should == -1
+  ruby_version_is ""..."3.0" do
+    it "returns a Proc with #lambda? false" do
+      pr = :to_s.to_proc
+      pr.should_not.lambda?
+    end
+
+    it "produces a Proc with arity -1" do
+      pr = :to_s.to_proc
+      pr.arity.should == -1
+    end
+
+    it "produces a Proc that always returns [[:rest]] for #parameters" do
+      pr = :to_s.to_proc
+      pr.parameters.should == [[:rest]]
+    end
+  end
+
+  ruby_version_is "3.0" do
+    it "returns a Proc with #lambda? true" do
+      pr = :to_s.to_proc
+      pr.should.lambda?
+    end
+
+    it "produces a Proc with arity -2" do
+      pr = :to_s.to_proc
+      pr.arity.should == -2
+    end
+
+    it "produces a Proc that always returns [[:req], [:rest]] for #parameters" do
+      pr = :to_s.to_proc
+      pr.parameters.should == [[:req], [:rest]]
+    end
   end
 
   it "raises an ArgumentError when calling #call on the Proc without receiver" do
     -> { :object_id.to_proc.call }.should raise_error(ArgumentError, "no receiver given")
-  end
-
-  it "produces a proc that always returns [[:rest]] for #parameters" do
-    pr = :to_s.to_proc
-    pr.parameters.should == [[:rest]]
   end
 
   it "passes along the block passed to Proc#call" do
@@ -37,5 +61,10 @@ describe "Symbol#to_proc" do
       end
     end
     klass.new.to_proc.should == :value
+  end
+
+  it "produces a proc with source location nil" do
+    pr = :to_s.to_proc
+    pr.source_location.should == nil
   end
 end

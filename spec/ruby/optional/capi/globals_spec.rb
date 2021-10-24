@@ -53,13 +53,32 @@ describe "CApiGlobalSpecs" do
     $hooked_gvar.should == 4
   end
 
+  describe "rb_fs" do
+    before :each do
+      @field_separator = $;
+    end
+
+    after :each do
+      suppress_warning { $; = @field_separator }
+    end
+
+    it "returns nil by default" do
+      @f.rb_fs.should == nil
+    end
+
+    it "returns the value of $;" do
+      suppress_warning { $; = "foo" }
+      @f.rb_fs.should == "foo"
+    end
+  end
+
   describe "rb_rs" do
     before :each do
       @dollar_slash = $/
     end
 
     after :each do
-      $/ = @dollar_slash
+      suppress_warning { $/ = @dollar_slash }
     end
 
     it "returns \\n by default" do
@@ -67,7 +86,7 @@ describe "CApiGlobalSpecs" do
     end
 
     it "returns the value of $/" do
-      $/ = "foo"
+      suppress_warning { $/ = "foo" }
       @f.rb_rs.should == "foo"
     end
   end
@@ -121,7 +140,7 @@ describe "CApiGlobalSpecs" do
         $stdout = STDOUT
       end
 
-      it "returns $stdout" do
+      it "is an alias of rb_stdout" do
         $stdout = @stream
         @f.rb_defout.should equal($stdout)
       end
@@ -140,7 +159,7 @@ describe "CApiGlobalSpecs" do
     end
 
     after :each do
-      $\ = @dollar_backslash
+      suppress_warning {$\ = @dollar_backslash}
     end
 
     it "returns nil by default" do
@@ -148,7 +167,7 @@ describe "CApiGlobalSpecs" do
     end
 
     it "returns the value of $\\" do
-      $\ = "foo"
+      suppress_warning {$\ = "foo"}
       @f.rb_output_rs.should == "foo"
     end
   end

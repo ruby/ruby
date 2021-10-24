@@ -9,10 +9,18 @@
 
 **********************************************************************/
 
-#include "internal.h"
-#include "vm_core.h"
 #include "id.h"
+#include "internal.h"
+#include "internal/class.h"
+#include "internal/error.h"
+#include "internal/hash.h"
+#include "internal/object.h"
+#include "internal/proc.h"
+#include "internal/struct.h"
+#include "internal/symbol.h"
 #include "transient_heap.h"
+#include "vm_core.h"
+#include "builtin.h"
 
 /* only for struct[:field] access */
 enum {
@@ -20,8 +28,8 @@ enum {
     AREF_HASH_THRESHOLD = 10
 };
 
-const rb_iseq_t *rb_method_for_self_aref(VALUE name, VALUE arg, rb_insn_func_t func);
-const rb_iseq_t *rb_method_for_self_aset(VALUE name, VALUE arg, rb_insn_func_t func);
+const rb_iseq_t *rb_method_for_self_aref(VALUE name, VALUE arg, const struct rb_builtin_function *func);
+const rb_iseq_t *rb_method_for_self_aset(VALUE name, VALUE arg, const struct rb_builtin_function *func);
 
 VALUE rb_cStruct;
 static ID id_members, id_back_members, id_keyword_init;
@@ -192,13 +200,14 @@ rb_struct_s_members_m(VALUE klass)
 
 /*
  *  call-seq:
- *     struct.members    -> array
+ *    members -> array_of_symbols
  *
- *  Returns the struct members as an array of symbols:
+ *  Returns the member names from +self+ as an array:
  *
  *     Customer = Struct.new(:name, :address, :zip)
- *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     joe.members   #=> [:name, :address, :zip]
+ *     Customer.new.members # => [:name, :address, :zip]
+ *
+ *  Related: #to_a.
  */
 
 static VALUE
@@ -250,7 +259,6 @@ static void
 rb_struct_modify(VALUE s)
 {
     rb_check_frozen(s);
-    rb_check_trusted(s);
 }
 
 static VALUE
@@ -282,11 +290,42 @@ new_struct(VALUE name, VALUE super)
     return rb_define_class_id_under(super, id, super);
 }
 
+NORETURN(static void invalid_struct_pos(VALUE s, VALUE idx));
+
+static inline long
+struct_pos_num(VALUE s, VALUE idx)
+{
+    long i = NUM2INT(idx);
+    if (i < 0 || i >= RSTRUCT_LEN(s)) invalid_struct_pos(s, idx);
+    return i;
+}
+
+static VALUE
+opt_struct_aref(rb_execution_context_t *ec, VALUE self, VALUE idx)
+{
+    long i = struct_pos_num(self, idx);
+    return RSTRUCT_GET(self, i);
+}
+
+static VALUE
+opt_struct_aset(rb_execution_context_t *ec, VALUE self, VALUE val, VALUE idx)
+{
+    long i = struct_pos_num(self, idx);
+    rb_struct_modify(self);
+    RSTRUCT_SET(self, i, val);
+    return val;
+}
+
+static const struct rb_builtin_function struct_aref_builtin =
+    RB_BUILTIN_FUNCTION(0, struct_aref, opt_struct_aref, 1, 0);
+static const struct rb_builtin_function struct_aset_builtin =
+    RB_BUILTIN_FUNCTION(1, struct_aref, opt_struct_aset, 2, 0);
+
 static void
 define_aref_method(VALUE nstr, VALUE name, VALUE off)
 {
-    rb_control_frame_t *FUNC_FASTCALL(rb_vm_opt_struct_aref)(rb_execution_context_t *, rb_control_frame_t *);
-    const rb_iseq_t *iseq = rb_method_for_self_aref(name, off, rb_vm_opt_struct_aref);
+    const rb_iseq_t *iseq = rb_method_for_self_aref(name, off, &struct_aref_builtin);
+    iseq->body->builtin_inline_p = true;
 
     rb_add_method_iseq(nstr, SYM2ID(name), iseq, NULL, METHOD_VISI_PUBLIC);
 }
@@ -294,8 +333,7 @@ define_aref_method(VALUE nstr, VALUE name, VALUE off)
 static void
 define_aset_method(VALUE nstr, VALUE name, VALUE off)
 {
-    rb_control_frame_t *FUNC_FASTCALL(rb_vm_opt_struct_aset)(rb_execution_context_t *, rb_control_frame_t *);
-    const rb_iseq_t *iseq = rb_method_for_self_aset(name, off, rb_vm_opt_struct_aset);
+    const rb_iseq_t *iseq = rb_method_for_self_aset(name, off, &struct_aset_builtin);
 
     rb_add_method_iseq(nstr, SYM2ID(name), iseq, NULL, METHOD_VISI_PUBLIC);
 }
@@ -310,6 +348,24 @@ rb_struct_s_inspect(VALUE klass)
     return inspect;
 }
 
+/*
+ * call-seq:
+ *   StructClass.keyword_init? -> true or false
+ *
+ * Returns true if the class was initialized with +keyword_init: true+.
+ * Otherwise returns false.
+ *
+ * Examples:
+ *   Foo = Struct.new(:a)
+ *   Foo.keyword_init? # => nil
+ *   Bar = Struct.new(:a, keyword_init: true)
+ *   Bar.keyword_init? # => true
+ *   Baz = Struct.new(:a, keyword_init: false)
+ *   Baz.keyword_init? # => false
+ */
+
+#define rb_struct_s_keyword_init_p rb_struct_s_keyword_init
+
 static VALUE
 setup_struct(VALUE nstr, VALUE members)
 {
@@ -318,10 +374,12 @@ setup_struct(VALUE nstr, VALUE members)
     members = struct_set_members(nstr, members);
 
     rb_define_alloc_func(nstr, struct_alloc);
-    rb_define_singleton_method(nstr, "new", rb_class_new_instance, -1);
-    rb_define_singleton_method(nstr, "[]", rb_class_new_instance, -1);
+    rb_define_singleton_method(nstr, "new", rb_class_new_instance_pass_kw, -1);
+    rb_define_singleton_method(nstr, "[]", rb_class_new_instance_pass_kw, -1);
     rb_define_singleton_method(nstr, "members", rb_struct_s_members_m, 0);
     rb_define_singleton_method(nstr, "inspect", rb_struct_s_inspect, 0);
+    rb_define_singleton_method(nstr, "keyword_init?", rb_struct_s_keyword_init_p, 0);
+
     len = RARRAY_LEN(members);
     for (i=0; i< len; i++) {
         VALUE sym = RARRAY_AREF(members, i);
@@ -351,9 +409,10 @@ struct_make_members_list(va_list ar)
 {
     char *mem;
     VALUE ary, list = rb_ident_hash_new();
-    st_table *tbl = RHASH_TBL(list);
+    st_table *tbl = RHASH_TBL_RAW(list);
 
     RBASIC_CLEAR_CLASS(list);
+    OBJ_WB_UNPROTECT(list);
     while ((mem = va_arg(ar, char*)) != 0) {
 	VALUE sym = rb_sym_intern_ascii_cstr(mem);
 	if (st_insert(tbl, sym, Qtrue)) {
@@ -452,71 +511,118 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
 
 /*
  *  call-seq:
- *    Struct.new([class_name] [, member_name]+)                        -> StructClass
- *    Struct.new([class_name] [, member_name]+, keyword_init: true)    -> StructClass
- *    Struct.new([class_name] [, member_name]+) {|StructClass| block } -> StructClass
- *    StructClass.new(value, ...)                                      -> object
- *    StructClass[value, ...]                                          -> object
+ *    Struct.new(*member_names, keyword_init: false){|Struct_subclass| ... } -> Struct_subclass
+ *    Struct.new(class_name, *member_names, keyword_init: false){|Struct_subclass| ... } -> Struct_subclass
+ *    Struct_subclass.new(*member_names) -> Struct_subclass_instance
+ *    Struct_subclass.new(**member_names) -> Struct_subclass_instance
  *
- *  The first two forms are used to create a new Struct subclass +class_name+
- *  that can contain a value for each +member_name+.  This subclass can be
- *  used to create instances of the structure like any other Class.
+ *  <tt>Struct.new</tt> returns a new subclass of +Struct+.  The new subclass:
  *
- *  If the +class_name+ is omitted an anonymous structure class will be
- *  created.  Otherwise, the name of this struct will appear as a constant in
- *  class Struct, so it must be unique for all Structs in the system and
- *  must start with a capital letter.  Assigning a structure class to a
- *  constant also gives the class the name of the constant.
+ *  - May be anonymous, or may have the name given by +class_name+.
+ *  - May have members as given by +member_names+.
+ *  - May have initialization via ordinary arguments (the default)
+ *    or via keyword arguments (if <tt>keyword_init: true</tt> is given).
  *
- *     # Create a structure with a name under Struct
- *     Struct.new("Customer", :name, :address)
- *     #=> Struct::Customer
- *     Struct::Customer.new("Dave", "123 Main")
- *     #=> #<struct Struct::Customer name="Dave", address="123 Main">
+ *  The new subclass has its own method <tt>::new</tt>; thus:
  *
- *     # Create a structure named by its constant
- *     Customer = Struct.new(:name, :address)
- *     #=> Customer
- *     Customer.new("Dave", "123 Main")
- *     #=> #<struct Customer name="Dave", address="123 Main">
+ *    Foo = Struct.new('Foo', :foo, :bar) # => Struct::Foo
+ *    f = Foo.new(0, 1)                   # => #<struct Struct::Foo foo=0, bar=1>
  *
- *  If the optional +keyword_init+ keyword argument is set to +true+,
- *  .new takes keyword arguments instead of normal arguments.
+ *  <b>\Class Name</b>
  *
- *     Customer = Struct.new(:name, :address, keyword_init: true)
- *     Customer.new(name: "Dave", address: "123 Main")
- *     #=> #<struct Customer name="Dave", address="123 Main">
+ *  With string argument +class_name+,
+ *  returns a new subclass of +Struct+ named <tt>Struct::<em>class_name</em></tt>:
  *
- *  If a block is given it will be evaluated in the context of
- *  +StructClass+, passing the created class as a parameter:
+ *    Foo = Struct.new('Foo', :foo, :bar) # => Struct::Foo
+ *    Foo.name                            # => "Struct::Foo"
+ *    Foo.superclass                      # => Struct
  *
- *     Customer = Struct.new(:name, :address) do
- *       def greeting
- *         "Hello #{name}!"
- *       end
- *     end
- *     Customer.new("Dave", "123 Main").greeting  #=> "Hello Dave!"
+ *  Without string argument +class_name+,
+ *  returns a new anonymous subclass of +Struct+:
  *
- *  This is the recommended way to customize a struct.  Subclassing an
- *  anonymous struct creates an extra anonymous class that will never be used.
+ *    Struct.new(:foo, :bar).name # => nil
  *
- *  The last two forms create a new instance of a struct subclass.  The number
- *  of +value+ parameters must be less than or equal to the number of
- *  attributes defined for the structure.  Unset parameters default to +nil+.
- *  Passing more parameters than number of attributes will raise
- *  an ArgumentError.
+ *  <b>Block</b>
  *
- *     Customer = Struct.new(:name, :address)
- *     Customer.new("Dave", "123 Main")
- *     #=> #<struct Customer name="Dave", address="123 Main">
- *     Customer["Dave"]
- *     #=> #<struct Customer name="Dave", address=nil>
+ *  With a block given, the created subclass is yielded to the block:
+ *
+ *    Customer = Struct.new('Customer', :name, :address) do |new_class|
+ *      p "The new subclass is #{new_class}"
+ *      def greeting
+ *        "Hello #{name} at #{address}"
+ *      end
+ *    end           # => Struct::Customer
+ *    dave = Customer.new('Dave', '123 Main')
+ *    dave # =>     #<struct Struct::Customer name="Dave", address="123 Main">
+ *    dave.greeting # => "Hello Dave at 123 Main"
+ *
+ *  Output, from <tt>Struct.new</tt>:
+ *
+ *    "The new subclass is Struct::Customer"
+ *
+ *  <b>Member Names</b>
+ *
+ *  \Symbol arguments +member_names+
+ *  determines the members of the new subclass:
+ *
+ *    Struct.new(:foo, :bar).members        # => [:foo, :bar]
+ *    Struct.new('Foo', :foo, :bar).members # => [:foo, :bar]
+ *
+ *  The new subclass has instance methods corresponding to +member_names+:
+ *
+ *    Foo = Struct.new('Foo', :foo, :bar)
+ *    Foo.instance_methods(false) # => [:foo, :bar, :foo=, :bar=]
+ *    f = Foo.new                 # => #<struct Struct::Foo foo=nil, bar=nil>
+ *    f.foo                       # => nil
+ *    f.foo = 0                   # => 0
+ *    f.bar                       # => nil
+ *    f.bar = 1                   # => 1
+ *    f                           # => #<struct Struct::Foo foo=0, bar=1>
+ *
+ *  <b>Singleton Methods</b>
+ *
+ *  A subclass returned by Struct.new has these singleton methods:
+ *
+ *  - \Method <tt>::new </tt> creates an instance of the subclass:
+ *
+ *      Foo.new          # => #<struct Struct::Foo foo=nil, bar=nil>
+ *      Foo.new(0)       # => #<struct Struct::Foo foo=0, bar=nil>
+ *      Foo.new(0, 1)    # => #<struct Struct::Foo foo=0, bar=1>
+ *      Foo.new(0, 1, 2) # Raises ArgumentError: struct size differs
+ *
+ *    \Method <tt>::[]</tt> is an alias for method <tt>::new</tt>.
+ *
+ *  - \Method <tt>:inspect</tt> returns a string representation of the subclass:
+ *
+ *      Foo.inspect
+ *      # => "Struct::Foo"
+ *
+ *  - \Method <tt>::members</tt> returns an array of the member names:
+ *
+ *      Foo.members # => [:foo, :bar]
+ *
+ *  <b>Keyword Argument</b>
+ *
+ *  By default, the arguments for initializing an instance of the new subclass
+ *  are ordinary arguments (not keyword arguments).
+ *  With optional keyword argument <tt>keyword_init: true</tt>,
+ *  the new subclass is initialized with keyword arguments:
+ *
+ *    # Without keyword_init: true.
+ *    Foo = Struct.new('Foo', :foo, :bar)
+ *    Foo                     # => Struct::Foo
+ *    Foo.new(0, 1)           # => #<struct Struct::Foo foo=0, bar=1>
+ *    # With keyword_init: true.
+ *    Bar = Struct.new(:foo, :bar, keyword_init: true)
+ *    Bar # =>                # => Bar(keyword_init: true)
+ *    Bar.new(bar: 1, foo: 0) # => #<struct Bar foo=0, bar=1>
+ *
  */
 
 static VALUE
 rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE name, rest, keyword_init;
+    VALUE name, rest, keyword_init = Qnil;
     long i;
     VALUE st;
     st_table *tbl;
@@ -532,25 +638,30 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     }
 
     if (RB_TYPE_P(argv[argc-1], T_HASH)) {
-	VALUE kwargs[1];
 	static ID keyword_ids[1];
 
 	if (!keyword_ids[0]) {
 	    keyword_ids[0] = rb_intern("keyword_init");
 	}
-	rb_get_kwargs(argv[argc-1], keyword_ids, 0, 1, kwargs);
+        rb_get_kwargs(argv[argc-1], keyword_ids, 0, 1, &keyword_init);
+        if (keyword_init == Qundef) {
+            keyword_init = Qnil;
+        }
+        else if (RTEST(keyword_init)) {
+            keyword_init = Qtrue;
+        }
 	--argc;
-	keyword_init = kwargs[0];
-    }
-    else {
-	keyword_init = Qfalse;
     }
 
     rest = rb_ident_hash_new();
     RBASIC_CLEAR_CLASS(rest);
-    tbl = RHASH_TBL(rest);
+    OBJ_WB_UNPROTECT(rest);
+    tbl = RHASH_TBL_RAW(rest);
     for (i=0; i<argc; i++) {
 	VALUE mem = rb_to_symbol(argv[i]);
+        if (rb_is_attrset_sym(mem)) {
+            rb_raise(rb_eArgError, "invalid struct member: %"PRIsVALUE, mem);
+        }
 	if (st_insert(tbl, mem, Qtrue)) {
 	    rb_raise(rb_eArgError, "duplicate member: %"PRIsVALUE, mem);
 	}
@@ -568,7 +679,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     setup_struct(st, rest);
     rb_ivar_set(st, id_keyword_init, keyword_init);
     if (rb_block_given_p()) {
-	rb_mod_module_eval(0, 0, st);
+        rb_mod_module_eval(0, 0, st);
     }
 
     return st;
@@ -601,7 +712,7 @@ struct_hash_set_i(VALUE key, VALUE val, VALUE arg)
     struct struct_hash_set_arg *args = (struct struct_hash_set_arg *)arg;
     int i = rb_struct_pos(args->self, &key);
     if (i < 0) {
-	if (args->unknown_keywords == Qnil) {
+	if (NIL_P(args->unknown_keywords)) {
 	    args->unknown_keywords = rb_ary_new();
 	}
 	rb_ary_push(args->unknown_keywords, key);
@@ -617,13 +728,17 @@ static VALUE
 rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 {
     VALUE klass = rb_obj_class(self);
-    long i, n;
-
     rb_struct_modify(self);
-    n = num_members(klass);
-    if (argc > 0 && RTEST(rb_struct_s_keyword_init(klass))) {
+    long n = num_members(klass);
+    if (argc == 0) {
+        rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), n);
+        return Qnil;
+    }
+
+    VALUE keyword_init = rb_struct_s_keyword_init(klass);
+    if (RTEST(keyword_init)) {
 	struct struct_hash_set_arg arg;
-	if (argc > 2 || !RB_TYPE_P(argv[0], T_HASH)) {
+	if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
 	    rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected 0)", argc);
 	}
 	rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), n);
@@ -639,7 +754,11 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 	if (n < argc) {
 	    rb_raise(rb_eArgError, "struct size differs");
 	}
-	for (i=0; i<argc; i++) {
+        if (NIL_P(keyword_init) && argc == 1 && RB_TYPE_P(argv[0], T_HASH) && rb_keyword_given_p()) {
+            rb_warn("Passing only keyword arguments to Struct#initialize will behave differently from Ruby 3.2. "\
+                    "Please use a Hash literal like .new({k: v}) instead of .new(k: v).");
+        }
+        for (long i=0; i<argc; i++) {
 	    RSTRUCT_SET(self, i, argv[i]);
 	}
 	if (n > argc) {
@@ -652,7 +771,9 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 VALUE
 rb_struct_initialize(VALUE self, VALUE values)
 {
-    return rb_struct_initialize_m(RARRAY_LENINT(values), RARRAY_CONST_PTR(values), self);
+    rb_struct_initialize_m(RARRAY_LENINT(values), RARRAY_CONST_PTR(values), self);
+    RB_GC_GUARD(values);
+    return Qnil;
 }
 
 static VALUE *
@@ -749,21 +870,24 @@ struct_enum_size(VALUE s, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *     struct.each {|obj| block }  -> struct
- *     struct.each                 -> enumerator
+ *    each {|value| ... } -> self
+ *    each -> enumerator
  *
- *  Yields the value of each struct member in order.  If no block is given an
- *  enumerator is returned.
+ *  Calls the given block with the value of each member; returns +self+:
  *
- *     Customer = Struct.new(:name, :address, :zip)
- *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     joe.each {|x| puts(x) }
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe.each {|value| p value }
  *
- *  Produces:
+ *  Output:
  *
- *     Joe Smith
- *     123 Maple, Anytown NC
- *     12345
+ *    "Joe Smith"
+ *    "123 Maple, Anytown NC"
+ *    12345
+ *
+ *  Returns an Enumerator if no block is given.
+ *
+ *  Related: #each_pair.
  */
 
 static VALUE
@@ -780,21 +904,25 @@ rb_struct_each(VALUE s)
 
 /*
  *  call-seq:
- *     struct.each_pair {|sym, obj| block }     -> struct
- *     struct.each_pair                         -> enumerator
+ *    each_pair {|(name, value)| ... } -> self
+ *    each_pair -> enumerator
  *
- *  Yields the name and value of each struct member in order.  If no block is
- *  given an enumerator is returned.
+ *  Calls the given block with each member name/value pair; returns +self+:
  *
- *     Customer = Struct.new(:name, :address, :zip)
- *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     joe.each_pair {|name, value| puts("#{name} => #{value}") }
+ *    Customer = Struct.new(:name, :address, :zip) # => Customer
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe.each_pair {|(name, value)| p "#{name} => #{value}" }
  *
- *  Produces:
+ *  Output:
  *
- *     name => Joe Smith
- *     address => 123 Maple, Anytown NC
- *     zip => 12345
+ *    "name => Joe Smith"
+ *    "address => 123 Maple, Anytown NC"
+ *    "zip => 12345"
+ *
+ *  Returns an Enumerator if no block is given.
+ *
+ *  Related: #each.
+ *
  */
 
 static VALUE
@@ -805,7 +933,7 @@ rb_struct_each_pair(VALUE s)
 
     RETURN_SIZED_ENUMERATOR(s, 0, 0, struct_enum_size);
     members = rb_struct_members(s);
-    if (rb_block_arity() > 1) {
+    if (rb_block_pair_yield_optimizable()) {
 	for (i=0; i<RSTRUCT_LEN(s); i++) {
 	    VALUE key = rb_ary_entry(members, i);
 	    VALUE value = RSTRUCT_GET(s, i);
@@ -862,17 +990,22 @@ inspect_struct(VALUE s, VALUE dummy, int recur)
 	rb_str_append(str, rb_inspect(RSTRUCT_GET(s, i)));
     }
     rb_str_cat2(str, ">");
-    OBJ_INFECT(str, s);
 
     return str;
 }
 
 /*
- * call-seq:
- *   struct.to_s      -> string
- *   struct.inspect   -> string
+ *  call-seq:
+ *    inspect -> string
  *
- * Returns a description of this struct as a string.
+ *  Returns a string representation of +self+:
+ *
+ *    Customer = Struct.new(:name, :address, :zip) # => Customer
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe.inspect # => "#<struct Customer name=\"Joe Smith\", address=\"123 Maple, Anytown NC\", zip=12345>"
+ *
+ *  Struct#to_s is an alias for Struct#inspect.
+ *
  */
 
 static VALUE
@@ -883,14 +1016,17 @@ rb_struct_inspect(VALUE s)
 
 /*
  *  call-seq:
- *     struct.to_a     -> array
- *     struct.values   -> array
+ *    to_a     -> array
  *
- *  Returns the values for this struct as an Array.
+ *  Returns the values in +self+ as an array:
  *
- *     Customer = Struct.new(:name, :address, :zip)
- *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     joe.to_a[1]   #=> "123 Maple, Anytown NC"
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe.to_a # => ["Joe Smith", "123 Maple, Anytown NC", 12345]
+ *
+ *  Struct#values and Struct#deconstruct are aliases for Struct#to_a.
+ *
+ *  Related: #members.
  */
 
 static VALUE
@@ -901,19 +1037,25 @@ rb_struct_to_a(VALUE s)
 
 /*
  *  call-seq:
- *     struct.to_h                        -> hash
- *     struct.to_h {|name, value| block } -> hash
+ *    to_h -> hash
+ *    to_h {|name, value| ... } -> hash
  *
- *  Returns a Hash containing the names and values for the struct's members.
+ *  Returns a hash containing the name and value for each member:
  *
- *  If a block is given, the results of the block on each pair of the receiver
- *  will be used as pairs.
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    h = joe.to_h
+ *    h # => {:name=>"Joe Smith", :address=>"123 Maple, Anytown NC", :zip=>12345}
  *
- *     Customer = Struct.new(:name, :address, :zip)
- *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     joe.to_h[:address]   #=> "123 Maple, Anytown NC"
- *     joe.to_h{|name, value| [name.upcase, value.to_s.upcase]}[:ADDRESS]
- *                          #=> "123 MAPLE, ANYTOWN NC"
+ *  If a block is given, it is called with each name/value pair;
+ *  the block should return a 2-element array whose elements will become
+ *  a key/value pair in the returned hash:
+ *
+ *    h = joe.to_h{|name, value| [name.upcase, value.to_s.upcase]}
+ *    h # => {:NAME=>"JOE SMITH", :ADDRESS=>"123 MAPLE, ANYTOWN NC", :ZIP=>"12345"}
+ *
+ *  Raises ArgumentError if the block returns an inappropriate value.
+ *
  */
 
 static VALUE
@@ -930,6 +1072,53 @@ rb_struct_to_h(VALUE s)
             rb_hash_set_pair(h, rb_yield_values(2, k, v));
         else
             rb_hash_aset(h, k, v);
+    }
+    return h;
+}
+
+/*
+ *  call-seq:
+ *    deconstruct_keys(array_of_names) -> hash
+ *
+ *  Returns a hash of the name/value pairs for the given member names.
+ *
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    h = joe.deconstruct_keys([:zip, :address])
+ *    h # => {:zip=>12345, :address=>"123 Maple, Anytown NC"}
+ *
+ *  Returns all names and values if +array_of_names+ is +nil+:
+ *
+ *    h = joe.deconstruct_keys(nil)
+ *    h # => {:name=>"Joseph Smith, Jr.", :address=>"123 Maple, Anytown NC", :zip=>12345}
+ *
+ */
+static VALUE
+rb_struct_deconstruct_keys(VALUE s, VALUE keys)
+{
+    VALUE h;
+    long i;
+
+    if (NIL_P(keys)) {
+        return rb_struct_to_h(s);
+    }
+    if (UNLIKELY(!RB_TYPE_P(keys, T_ARRAY))) {
+	rb_raise(rb_eTypeError,
+                 "wrong argument type %"PRIsVALUE" (expected Array or nil)",
+                 rb_obj_class(keys));
+
+    }
+    if (RSTRUCT_LEN(s) < RARRAY_LEN(keys)) {
+        return rb_hash_new_with_size(0);
+    }
+    h = rb_hash_new_with_size(RARRAY_LEN(keys));
+    for (i=0; i<RARRAY_LEN(keys); i++) {
+        VALUE key = RARRAY_AREF(keys, i);
+        int i = rb_struct_pos(s, &key);
+        if (i < 0) {
+            return h;
+        }
+        rb_hash_aset(h, key, RSTRUCT_GET(s, i));
     }
     return h;
 }
@@ -958,7 +1147,7 @@ rb_struct_pos(VALUE s, VALUE *name)
     long i;
     VALUE idx = *name;
 
-    if (RB_TYPE_P(idx, T_SYMBOL)) {
+    if (SYMBOL_P(idx)) {
 	return struct_member_pos(s, idx);
     }
     else if (RB_TYPE_P(idx, T_STRING)) {
@@ -985,7 +1174,6 @@ rb_struct_pos(VALUE s, VALUE *name)
     }
 }
 
-NORETURN(static void invalid_struct_pos(VALUE s, VALUE idx));
 static void
 invalid_struct_pos(VALUE s, VALUE idx)
 {
@@ -1007,19 +1195,28 @@ invalid_struct_pos(VALUE s, VALUE idx)
 
 /*
  *  call-seq:
- *     struct[member]   -> object
- *     struct[index]    -> object
+ *    struct[name] -> object
+ *    struct[n] -> object
  *
- *  Attribute Reference---Returns the value of the given struct +member+ or
- *  the member at the given +index+.   Raises NameError if the +member+ does
- *  not exist and IndexError if the +index+ is out of range.
+ *  Returns a value from +self+.
  *
- *     Customer = Struct.new(:name, :address, :zip)
- *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *  With symbol or string argument +name+ given, returns the value for the named member:
  *
- *     joe["name"]   #=> "Joe Smith"
- *     joe[:name]    #=> "Joe Smith"
- *     joe[0]        #=> "Joe Smith"
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe[:zip] # => 12345
+ *
+ *  Raises NameError if +name+ is not the name of a member.
+ *
+ *  With integer argument +n+ given, returns <tt>self.values[n]</tt>
+ *  if +n+ is in range;
+ *  see {Array Indexes}[Array.html#class-Array-label-Array+Indexes]:
+ *
+ *    joe[2]  # => 12345
+ *    joe[-2] # => "123 Maple, Anytown NC"
+ *
+ *  Raises IndexError if +n+ is out of range.
+ *
  */
 
 VALUE
@@ -1032,21 +1229,32 @@ rb_struct_aref(VALUE s, VALUE idx)
 
 /*
  *  call-seq:
- *     struct[member] = obj    -> obj
- *     struct[index]  = obj    -> obj
+ *    struct[name] = value -> value
+ *    struct[n] = value -> value
  *
- *  Attribute Assignment---Sets the value of the given struct +member+ or
- *  the member at the given +index+.  Raises NameError if the +member+ does not
- *  exist and IndexError if the +index+ is out of range.
+ *  Assigns a value to a member.
  *
- *     Customer = Struct.new(:name, :address, :zip)
- *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *  With symbol or string argument +name+ given, assigns the given +value+
+ *  to the named member; returns +value+:
  *
- *     joe["name"] = "Luke"
- *     joe[:zip]   = "90210"
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe[:zip] = 54321 # => 54321
+ *    joe # => #<struct Customer name="Joe Smith", address="123 Maple, Anytown NC", zip=54321>
  *
- *     joe.name   #=> "Luke"
- *     joe.zip    #=> "90210"
+ *  Raises NameError if +name+ is not the name of a member.
+ *
+ *  With integer argument +n+ given, assigns the given +value+
+ *  to the +n+-th member if +n+ is in range;
+ *  see {Array Indexes}[Array.html#class-Array-label-Array+Indexes]:
+ *
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe[2] = 54321           # => 54321
+ *    joe[-3] = 'Joseph Smith' # => "Joseph Smith"
+ *    joe # => #<struct Customer name="Joseph Smith", address="123 Maple, Anytown NC", zip=54321>
+ *
+ *  Raises IndexError if +n+ is out of range.
+ *
  */
 
 VALUE
@@ -1084,15 +1292,36 @@ struct_entry(VALUE s, long n)
 
 /*
  *  call-seq:
- *     struct.values_at(selector, ...)  -> array
+ *    values_at(*integers) -> array
+ *    values_at(integer_range) -> array
  *
- *  Returns the struct member values for each +selector+ as an Array.  A
- *  +selector+ may be either an Integer offset or a Range of offsets (as in
- *  Array#values_at).
+ *  Returns an array of values from +self+.
  *
- *     Customer = Struct.new(:name, :address, :zip)
- *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     joe.values_at(0, 2)   #=> ["Joe Smith", 12345]
+ *  With integer arguments +integers+ given,
+ *  returns an array containing each value given by one of +integers+:
+ *
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe.values_at(0, 2)    # => ["Joe Smith", 12345]
+ *    joe.values_at(2, 0)    # => [12345, "Joe Smith"]
+ *    joe.values_at(2, 1, 0) # => [12345, "123 Maple, Anytown NC", "Joe Smith"]
+ *    joe.values_at(0, -3)   # => ["Joe Smith", "Joe Smith"]
+ *
+ *  Raises IndexError if any of +integers+ is out of range;
+ *  see {Array Indexes}[Array.html#class-Array-label-Array+Indexes].
+ *
+ *  With integer range argument +integer_range+ given,
+ *  returns an array containing each value given by the elements of the range;
+ *  fills with +nil+ values for range elements larger than the structure:
+ *
+ *    joe.values_at(0..2)
+ *    # => ["Joe Smith", "123 Maple, Anytown NC", 12345]
+ *    joe.values_at(-3..-1)
+ *    # => ["Joe Smith", "123 Maple, Anytown NC", 12345]
+ *    joe.values_at(1..4) # => ["123 Maple, Anytown NC", 12345, nil, nil]
+ *
+ *  Raises RangeError if any element of the range is negative and out of range;
+ *  see {Array Indexes}[Array.html#class-Array-label-Array+Indexes].
  *
  */
 
@@ -1104,18 +1333,20 @@ rb_struct_values_at(int argc, VALUE *argv, VALUE s)
 
 /*
  *  call-seq:
- *     struct.select {|obj| block }  -> array
- *     struct.select                 -> enumerator
- *     struct.filter {|obj| block }  -> array
- *     struct.filter                 -> enumerator
+ *    select {|value| ... } -> array
+ *    select -> enumerator
  *
- *  Yields each member value from the struct to the block and returns an Array
- *  containing the member values from the +struct+ for which the given block
- *  returns a true value (equivalent to Enumerable#select).
+ *  With a block given, returns an array of values from +self+
+ *  for which the block returns a truthy value:
  *
- *     Lots = Struct.new(:a, :b, :c, :d, :e, :f)
- *     l = Lots.new(11, 22, 33, 44, 55, 66)
- *     l.select {|v| v.even? }   #=> [22, 44, 66]
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    a = joe.select {|value| value.is_a?(String) }
+ *    a # => ["Joe Smith", "123 Maple, Anytown NC"]
+ *    a = joe.select {|value| value.is_a?(Integer) }
+ *    a # => [12345]
+ *
+ *  With no block given, returns an Enumerator.
  *
  *  Struct#filter is an alias for Struct#select.
  */
@@ -1151,19 +1382,25 @@ recursive_equal(VALUE s, VALUE s2, int recur)
     return Qtrue;
 }
 
+
 /*
  *  call-seq:
- *     struct == other     -> true or false
+ *    self == other -> true or false
  *
- *  Equality---Returns +true+ if +other+ has the same struct subclass and has
- *  equal member values (according to Object#==).
+ *  Returns  +true+ if and only if the following are true; otherwise returns +false+:
  *
- *     Customer = Struct.new(:name, :address, :zip)
- *     joe   = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     joejr = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     jane  = Customer.new("Jane Doe", "456 Elm, Anytown NC", 12345)
- *     joe == joejr   #=> true
- *     joe == jane    #=> false
+ *  - <tt>other.class == self.class</tt>.
+ *  - For each member name +name+, <tt>other.name == self.name</tt>.
+ *
+ *  Examples:
+ *
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe    = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe_jr = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe_jr == joe # => true
+ *    joe_jr[:name] = 'Joe Smith, Jr.'
+ *    # => "Joe Smith, Jr."
+ *    joe_jr == joe # => false
  */
 
 static VALUE
@@ -1180,12 +1417,22 @@ rb_struct_equal(VALUE s, VALUE s2)
 }
 
 /*
- * call-seq:
- *   struct.hash   -> integer
+ *  call-seq:
+ *    hash -> integer
  *
- * Returns a hash value based on this struct's contents.
+ *  Returns the integer hash value for +self+.
  *
- * See also Object#hash.
+ *  Two structs of the same class and with the same content
+ *  will have the same hash code (and will compare using Struct#eql?):
+ *
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe    = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe_jr = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe.hash == joe_jr.hash # => true
+ *    joe_jr[:name] = 'Joe Smith, Jr.'
+ *    joe.hash == joe_jr.hash # => false
+ *
+ *  Related: Object#hash.
  */
 
 static VALUE
@@ -1220,11 +1467,21 @@ recursive_eql(VALUE s, VALUE s2, int recur)
 
 /*
  * call-seq:
- *   struct.eql?(other)   -> true or false
+ *   eql?(other) -> true or false
  *
- * Hash equality---+other+ and +struct+ refer to the same hash key if they
- * have the same struct subclass and have equal member values (according to
- * Object#eql?).
+ *  Returns +true+ if and only if the following are true; otherwise returns +false+:
+ *
+ *  - <tt>other.class == self.class</tt>.
+ *  - For each member name +name+, <tt>other.name.eql?(self.name)</tt>.
+ *
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe    = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe_jr = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe_jr.eql?(joe) # => true
+ *    joe_jr[:name] = 'Joe Smith, Jr.'
+ *    joe_jr.eql?(joe) # => false
+ *
+ *  Related: Object#==.
  */
 
 static VALUE
@@ -1242,14 +1499,15 @@ rb_struct_eql(VALUE s, VALUE s2)
 
 /*
  *  call-seq:
- *     struct.length    -> integer
- *     struct.size      -> integer
+ *    size -> integer
  *
- *  Returns the number of struct members.
+ *  Returns the number of members.
  *
- *     Customer = Struct.new(:name, :address, :zip)
- *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     joe.length   #=> 3
+ *    Customer = Struct.new(:name, :address, :zip)
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe.size #=> 3
+ *
+ *  Struct#length is an alias for Struct#size.
  */
 
 VALUE
@@ -1260,18 +1518,34 @@ rb_struct_size(VALUE s)
 
 /*
  * call-seq:
- *   struct.dig(key, ...)              -> object
+ *   dig(name, *identifiers) -> object
+ *   dig(n, *identifiers) -> object
  *
- * Extracts the nested value specified by the sequence of +key+
- * objects by calling +dig+ at each step, returning +nil+ if any
- * intermediate step is +nil+.
+ *  Finds and returns an object among nested objects.
+ *  The nested objects may be instances of various classes.
+ *  See {Dig Methods}[rdoc-ref:dig_methods.rdoc].
+ *
+ *
+ *  Given symbol or string argument +name+,
+ *  returns the object that is specified by +name+ and +identifiers+:
  *
  *   Foo = Struct.new(:a)
  *   f = Foo.new(Foo.new({b: [1, 2, 3]}))
+ *   f.dig(:a) # => #<struct Foo a={:b=>[1, 2, 3]}>
+ *   f.dig(:a, :a) # => {:b=>[1, 2, 3]}
+ *   f.dig(:a, :a, :b) # => [1, 2, 3]
+ *   f.dig(:a, :a, :b, 0) # => 1
+ *   f.dig(:b, 0) # => nil
  *
- *   f.dig(:a, :a, :b, 0)    # => 1
- *   f.dig(:b, 0)            # => nil
- *   f.dig(:a, :a, :b, :c)   # TypeError: no implicit conversion of Symbol into Integer
+ *  Given integer argument +n+,
+ *  returns the object that is specified by +n+ and +identifiers+:
+ *
+ *   f.dig(0) # => #<struct Foo a={:b=>[1, 2, 3]}>
+ *   f.dig(0, 0) # => {:b=>[1, 2, 3]}
+ *   f.dig(0, 0, :b) # => [1, 2, 3]
+ *   f.dig(0, 0, :b, 0) # => 1
+ *   f.dig(:b, 0) # => nil
+ *
  */
 
 static VALUE
@@ -1287,29 +1561,105 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
 /*
  *  Document-class: Struct
  *
- *  A Struct is a convenient way to bundle a number of attributes together,
- *  using accessor methods, without having to write an explicit class.
+ *  \Class \Struct provides a convenient way to create a simple class
+ *  that can store and fetch values.
  *
- *  The Struct class generates new subclasses that hold a set of members and
- *  their values.  For each member a reader and writer method is created
- *  similar to Module#attr_accessor.
+ *  This example creates a subclass of +Struct+, <tt>Struct::Customer</tt>;
+ *  the first argument, a string, is the name of the subclass;
+ *  the other arguments, symbols, determine the _members_ of the new subclass.
  *
- *     Customer = Struct.new(:name, :address) do
- *       def greeting
- *         "Hello #{name}!"
- *       end
- *     end
+ *    Customer = Struct.new('Customer', :name, :address, :zip)
+ *    Customer.name       # => "Struct::Customer"
+ *    Customer.class      # => Class
+ *    Customer.superclass # => Struct
  *
- *     dave = Customer.new("Dave", "123 Main")
- *     dave.name     #=> "Dave"
- *     dave.greeting #=> "Hello Dave!"
+ *  Corresponding to each member are two methods, a writer and a reader,
+ *  that store and fetch values:
  *
- *  See Struct::new for further examples of creating struct subclasses and
- *  instances.
+ *    methods = Customer.instance_methods false
+ *    methods # => [:zip, :address=, :zip=, :address, :name, :name=]
  *
- *  In the method descriptions that follow, a "member" parameter refers to a
- *  struct member which is either a quoted string (<code>"name"</code>) or a
- *  Symbol (<code>:name</code>).
+ *  An instance of the subclass may be created,
+ *  and its members assigned values, via method <tt>::new</tt>:
+ *
+ *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *    joe # => #<struct Struct::Customer name="Joe Smith", address="123 Maple, Anytown NC", zip=12345>
+ *
+ *  The member values may be managed thus:
+ *
+ *    joe.name    # => "Joe Smith"
+ *    joe.name = 'Joseph Smith'
+ *    joe.name    # => "Joseph Smith"
+ *
+ *  And thus; note that member name may be expressed as either a string or a symbol:
+ *
+ *    joe[:name]  # => "Joseph Smith"
+ *    joe[:name] = 'Joseph Smith, Jr.'
+ *    joe['name'] # => "Joseph Smith, Jr."
+ *
+ *  See Struct::new.
+ *
+ *  == What's Here
+ *
+ *  First, what's elsewhere. \Class \Struct:
+ *
+ *  - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
+ *  - Includes {module Enumerable}[Enumerable.html#module-Enumerable-label-What-27s+Here],
+ *    which provides dozens of additional methods.
+ *
+ *  Here, class \Struct provides methods that are useful for:
+ *
+ *  - {Creating a Struct Subclass}[#class-Struct-label-Methods+for+Creating+a+Struct+Subclass]
+ *  - {Querying}[#class-Struct-label-Methods+for+Querying]
+ *  - {Comparing}[#class-Struct-label-Methods+for+Comparing]
+ *  - {Fetching}[#class-Struct-label-Methods+for+Fetching]
+ *  - {Assigning}[#class-Struct-label-Methods+for+Assigning]
+ *  - {Iterating}[#class-Struct-label-Methods+for+Iterating]
+ *  - {Converting}[#class-Struct-label-Methods+for+Converting]
+ *
+ *  === Methods for Creating a Struct Subclass
+ *
+ *  ::new:: Returns a new subclass of \Struct.
+ *
+ *  === Methods for Querying
+ *
+ *  #hash:: Returns the integer hash code.
+ *  #length, #size:: Returns the number of members.
+ *
+ *  === Methods for Comparing
+ *
+ *  {#==}[#method-i-3D-3D]:: Returns whether a given object is equal to +self+,
+ *                           using <tt>==</tt> to compare member values.
+ *  #eql?:: Returns whether a given object is equal to +self+,
+ *          using <tt>eql?</tt> to compare member values.
+ *
+ *  === Methods for Fetching
+ *
+ *  #[]:: Returns the value associated with a given member name.
+ *  #to_a, #values, #deconstruct:: Returns the member values in +self+ as an array.
+ *  #deconstruct_keys:: Returns a hash of the name/value pairs
+ *                      for given member names.
+ *  #dig:: Returns the object in nested objects that is specified
+ *         by a given member name and additional arguments.
+ *  #members:: Returns an array of the member names.
+ *  #select, #filter:: Returns an array of member values from +self+,
+ *                     as selected by the given block.
+ *  #values_at:: Returns an array containing values for given member names.
+ *
+ *  === Methods for Assigning
+ *
+ *  #[]=:: Assigns a given value to a given member name.
+ *
+ *  === Methods for Iterating
+ *
+ *  #each:: Calls a given block with each member name.
+ *  #each_pair:: Calls a given block with each member name/value pair.
+ *
+ *  === Methods for Converting
+ *
+ *  #inspect, #to_s:: Returns a string representation of +self+.
+ *  #to_h:: Returns a hash of the member name/value pairs in +self+.
+ *
  */
 void
 InitVM_Struct(void)
@@ -1347,6 +1697,7 @@ InitVM_Struct(void)
     rb_define_method(rb_cStruct, "dig", rb_struct_dig, -1);
 
     rb_define_method(rb_cStruct, "deconstruct", rb_struct_to_a, 0);
+    rb_define_method(rb_cStruct, "deconstruct_keys", rb_struct_deconstruct_keys, 1);
 }
 
 #undef rb_intern

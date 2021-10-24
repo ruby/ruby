@@ -1,8 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 
 class TestGemResolverGitSet < Gem::TestCase
-
   def setup
     super
 
@@ -52,7 +51,7 @@ class TestGemResolverGitSet < Gem::TestCase
 
     assert @set.need_submodules[repository]
 
-    refute_path_exists spec.source.repo_cache_dir
+    assert_path_not_exist spec.source.repo_cache_dir
   end
 
   def test_find_all
@@ -185,5 +184,4 @@ class TestGemResolverGitSet < Gem::TestCase
 
     assert_equal "#{@gemhome}2", spec.source.root_dir
   end
-
 end

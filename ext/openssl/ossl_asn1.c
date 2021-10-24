@@ -69,6 +69,12 @@ asn1time_to_time(const ASN1_TIME *time)
     return rb_funcall2(rb_cTime, rb_intern("utc"), 6, argv);
 }
 
+static VALUE
+asn1time_to_time_i(VALUE arg)
+{
+    return asn1time_to_time((ASN1_TIME *)arg);
+}
+
 void
 ossl_time_split(VALUE time, time_t *sec, int *days)
 {
@@ -134,6 +140,12 @@ num_to_asn1integer(VALUE obj, ASN1_INTEGER *ai)
 	ossl_raise(eOSSLError, NULL);
 
     return ai;
+}
+
+static VALUE
+asn1integer_to_num_i(VALUE arg)
+{
+    return asn1integer_to_num((ASN1_INTEGER *)arg);
 }
 
 /********/
@@ -325,7 +337,7 @@ decode_int(unsigned char* der, long length)
     p = der;
     if(!(ai = d2i_ASN1_INTEGER(NULL, &p, length)))
 	ossl_raise(eASN1Error, NULL);
-    ret = rb_protect((VALUE (*)(VALUE))asn1integer_to_num,
+    ret = rb_protect(asn1integer_to_num_i,
 		     (VALUE)ai, &status);
     ASN1_INTEGER_free(ai);
     if(status) rb_jump_tag(status);
@@ -365,7 +377,7 @@ decode_enum(unsigned char* der, long length)
     p = der;
     if(!(ai = d2i_ASN1_ENUMERATED(NULL, &p, length)))
 	ossl_raise(eASN1Error, NULL);
-    ret = rb_protect((VALUE (*)(VALUE))asn1integer_to_num,
+    ret = rb_protect(asn1integer_to_num_i,
 		     (VALUE)ai, &status);
     ASN1_ENUMERATED_free(ai);
     if(status) rb_jump_tag(status);
@@ -427,7 +439,7 @@ decode_time(unsigned char* der, long length)
     p = der;
     if(!(time = d2i_ASN1_TIME(NULL, &p, length)))
 	ossl_raise(eASN1Error, NULL);
-    ret = rb_protect((VALUE (*)(VALUE))asn1time_to_time,
+    ret = rb_protect(asn1time_to_time_i,
 		     (VALUE)time, &status);
     ASN1_TIME_free(time);
     if(status) rb_jump_tag(status);
@@ -1285,6 +1297,30 @@ ossl_asn1obj_get_ln(VALUE self)
     return ret;
 }
 
+/*
+ *  call-seq:
+ *     oid == other_oid => true or false
+ *
+ *  Returns +true+ if _other_oid_ is the same as _oid_
+ */
+static VALUE
+ossl_asn1obj_eq(VALUE self, VALUE other)
+{
+    VALUE valSelf, valOther;
+    int nidSelf, nidOther;
+
+    valSelf = ossl_asn1_get_value(self);
+    valOther = ossl_asn1_get_value(other);
+
+    if ((nidSelf = OBJ_txt2nid(StringValueCStr(valSelf))) == NID_undef)
+	ossl_raise(eASN1Error, "OBJ_txt2nid");
+
+    if ((nidOther = OBJ_txt2nid(StringValueCStr(valOther))) == NID_undef)
+	ossl_raise(eASN1Error, "OBJ_txt2nid");
+
+    return nidSelf == nidOther ? Qtrue : Qfalse;
+}
+
 static VALUE
 asn1obj_get_oid_i(VALUE vobj)
 {
@@ -1486,7 +1522,7 @@ Init_ossl_asn1(void)
      *
      * An Array that stores the name of a given tag number. These names are
      * the same as the name of the tag constant that is additionally defined,
-     * e.g. UNIVERSAL_TAG_NAME[2] = "INTEGER" and OpenSSL::ASN1::INTEGER = 2.
+     * e.g. +UNIVERSAL_TAG_NAME[2] = "INTEGER"+ and +OpenSSL::ASN1::INTEGER = 2+.
      *
      * == Example usage
      *
@@ -1818,13 +1854,14 @@ do{\
     rb_define_method(cASN1ObjectId, "oid", ossl_asn1obj_get_oid, 0);
     rb_define_alias(cASN1ObjectId, "short_name", "sn");
     rb_define_alias(cASN1ObjectId, "long_name", "ln");
+    rb_define_method(cASN1ObjectId, "==", ossl_asn1obj_eq, 1);
     rb_attr(cASN1BitString, rb_intern("unused_bits"), 1, 1, 0);
 
     rb_define_method(cASN1EndOfContent, "initialize", ossl_asn1eoc_initialize, 0);
     rb_define_method(cASN1EndOfContent, "to_der", ossl_asn1eoc_to_der, 0);
 
     class_tag_map = rb_hash_new();
-    rb_global_variable(&class_tag_map);
+    rb_gc_register_mark_object(class_tag_map);
     rb_hash_aset(class_tag_map, cASN1EndOfContent, INT2NUM(V_ASN1_EOC));
     rb_hash_aset(class_tag_map, cASN1Boolean, INT2NUM(V_ASN1_BOOLEAN));
     rb_hash_aset(class_tag_map, cASN1Integer, INT2NUM(V_ASN1_INTEGER));

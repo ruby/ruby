@@ -24,6 +24,7 @@ class TestDateParse < Test::Unit::TestCase
      [['Sat Aug 28 02:29:34 JST 02',true],[2002,8,28,2,29,34,'JST',9*3600,6], __LINE__],
      [['Sat Aug 28 02:29:34 JST 0002',false],[2,8,28,2,29,34,'JST',9*3600,6], __LINE__],
      [['Sat Aug 28 02:29:34 JST 0002',true],[2,8,28,2,29,34,'JST',9*3600,6], __LINE__],
+     [['Sat Aug 28 02:29:34 AEST 0002',true],[2,8,28,2,29,34,'AEST',10*3600,6], __LINE__],
 
      [['Sat Aug 28 02:29:34 GMT+09 0002',false],[2,8,28,2,29,34,'GMT+09',9*3600,6], __LINE__],
      [['Sat Aug 28 02:29:34 GMT+0900 0002',false],[2,8,28,2,29,34,'GMT+0900',9*3600,6], __LINE__],
@@ -207,7 +208,7 @@ class TestDateParse < Test::Unit::TestCase
      [['08-DEC-0088',false],[88,12,8,nil,nil,nil,nil,nil,nil], __LINE__],
      [['08-DEC-0088',true],[88,12,8,nil,nil,nil,nil,nil,nil], __LINE__],
 
-     # swaped vms
+     # swapped vms
      [['DEC-08-1988',false],[1988,12,8,nil,nil,nil,nil,nil,nil], __LINE__],
      [['JAN-31-1999',false],[1999,1,31,nil,nil,nil,nil,nil,nil], __LINE__],
      [['JAN-31--1999',false],[-1999,1,31,nil,nil,nil,nil,nil,nil], __LINE__],
@@ -421,10 +422,9 @@ class TestDateParse < Test::Unit::TestCase
       l = format('<failed at line %d>', l)
       assert_equal(y, a, l)
       if y[6]
-        h = Date._parse(x[0].dup.taint, *x[1..-1])
+        h = Date._parse(x[0].dup, *x[1..-1])
         assert_equal(y[6], h[:zone], l)
         assert_equal(y[6].encoding, h[:zone].encoding, l)
-        assert_predicate(h[:zone], :tainted?, l)
       end
     end
   end
@@ -660,26 +660,38 @@ class TestDateParse < Test::Unit::TestCase
   end
 
   def test_parse__ex
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       Date.parse('')
     end
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       DateTime.parse('')
     end
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       Date.parse('2001-02-29')
     end
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       DateTime.parse('2001-02-29T23:59:60')
     end
-    assert_nothing_raised(ArgumentError) do
+    assert_nothing_raised(Date::Error) do
       DateTime.parse('2001-03-01T23:59:60')
     end
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       DateTime.parse('2001-03-01T23:59:61')
     end
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       Date.parse('23:55')
+    end
+
+    begin
+      Date.parse('')
+    rescue ArgumentError => e
+      assert e.is_a? Date::Error
+    end
+
+    begin
+      DateTime.parse('')
+    rescue ArgumentError => e
+      assert e.is_a? Date::Error
     end
   end
 

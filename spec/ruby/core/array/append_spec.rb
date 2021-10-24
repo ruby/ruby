@@ -30,13 +30,11 @@ describe "Array#<<" do
     a.should == [:foo]
   end
 
-  it "raises a #{frozen_error_class} on a frozen array" do
-    -> { ArraySpecs.frozen_array << 5 }.should raise_error(frozen_error_class)
+  it "raises a FrozenError on a frozen array" do
+    -> { ArraySpecs.frozen_array << 5 }.should raise_error(FrozenError)
   end
 end
 
-ruby_version_is "2.5" do
-  describe "Array#append" do
-    it_behaves_like :array_push, :append
-  end
+describe "Array#append" do
+  it_behaves_like :array_push, :append
 end

@@ -21,7 +21,7 @@ describe "C-API Hash function" do
 
       # The actual conversion is an implementation detail.
       # We only care that ultimately we get a Fixnum instance.
-      @s.rb_hash(obj).should be_an_instance_of(Fixnum)
+      @s.rb_hash(obj).should.between?(fixnum_min, fixnum_max)
     end
 
     it "calls #to_int to converts a value returned by #hash to a Fixnum" do
@@ -47,6 +47,14 @@ describe "C-API Hash function" do
 
     it "creates a hash with no default proc" do
       @s.rb_hash_new {}.default_proc.should be_nil
+    end
+  end
+
+  describe "rb_ident_hash_new" do
+    it "returns a new compare by identity hash" do
+      result = @s.rb_ident_hash_new
+      result.should == {}
+      result.compare_by_identity?.should == true
     end
   end
 
@@ -252,6 +260,15 @@ describe "C-API Hash function" do
       h = BasicObject.new
       def h.to_hash; 42; end
       -> { @s.rb_Hash(h) }.should raise_error(TypeError)
+    end
+  end
+
+  describe "hash code functions" do
+    it "computes a deterministic number" do
+      hash_code = @s.compute_a_hash_code(53)
+      hash_code.should be_an_instance_of(Integer)
+      hash_code.should == @s.compute_a_hash_code(53)
+      @s.compute_a_hash_code(90).should == @s.compute_a_hash_code(90)
     end
   end
 end

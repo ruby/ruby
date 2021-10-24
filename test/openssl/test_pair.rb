@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'utils'
 require_relative 'ut_eof'
 
@@ -23,7 +23,6 @@ module OpenSSL::SSLPairM
       sctx = OpenSSL::SSL::SSLContext.new
       sctx.cert = @svr_cert
       sctx.key = @svr_key
-      sctx.tmp_dh_callback = proc { OpenSSL::TestUtils::Fixtures.pkey("dh-1") }
       sctx.options |= OpenSSL::SSL::OP_NO_COMPRESSION
       ssls = OpenSSL::SSL::SSLServer.new(tcps, sctx)
       ns = ssls.accept
@@ -128,11 +127,11 @@ module OpenSSL::TestPairM
     ssl_pair {|s1, s2|
       s2.write "a\nbcd"
       assert_equal("a\n", s1.gets)
-      result = ""
+      result = String.new
       result << s1.readpartial(10) until result.length == 3
       assert_equal("bcd", result)
       s2.write "efg"
-      result = ""
+      result = String.new
       result << s1.readpartial(10) until result.length == 3
       assert_equal("efg", result)
       s2.close
@@ -153,20 +152,6 @@ module OpenSSL::TestPairM
     ssl_pair {|s1, s2|
       s2.close
       assert_raise(EOFError) { s1.readline }
-    }
-  end
-
-  def test_puts_meta
-    ssl_pair {|s1, s2|
-      begin
-        old = $/
-        $/ = '*'
-        s1.puts 'a'
-      ensure
-        $/ = old
-      end
-      s1.close
-      assert_equal("a\n", s2.read)
     }
   end
 
@@ -242,22 +227,22 @@ module OpenSSL::TestPairM
   def test_read_with_outbuf
     ssl_pair { |s1, s2|
       s1.write("abc\n")
-      buf = ""
+      buf = String.new
       ret = s2.read(2, buf)
       assert_same ret, buf
       assert_equal "ab", ret
 
-      buf = "garbage"
+      buf = +"garbage"
       ret = s2.read(2, buf)
       assert_same ret, buf
       assert_equal "c\n", ret
 
-      buf = "garbage"
+      buf = +"garbage"
       assert_equal :wait_readable, s2.read_nonblock(100, buf, exception: false)
       assert_equal "", buf
 
       s1.close
-      buf = "garbage"
+      buf = +"garbage"
       assert_equal nil, s2.read(100, buf)
       assert_equal "", buf
     }
@@ -397,7 +382,6 @@ module OpenSSL::TestPairM
     ctx2 = OpenSSL::SSL::SSLContext.new
     ctx2.cert = @svr_cert
     ctx2.key = @svr_key
-    ctx2.tmp_dh_callback = proc { OpenSSL::TestUtils::Fixtures.pkey("dh-1") }
 
     sock1, sock2 = tcp_pair
 
@@ -445,7 +429,6 @@ module OpenSSL::TestPairM
     ctx = OpenSSL::SSL::SSLContext.new
     ctx.cert = @svr_cert
     ctx.key = @svr_key
-    ctx.tmp_dh_callback = proc { OpenSSL::TestUtils::Fixtures.pkey("dh-1") }
 
     sock1, sock2 = tcp_pair
 

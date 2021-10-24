@@ -5,7 +5,6 @@ require 'test/unit'
 class TestObject < Test::Unit::TestCase
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -47,15 +46,27 @@ class TestObject < Test::Unit::TestCase
     a = Object.new
     def a.b; 2 end
 
+    c = a.clone
+    assert_equal(false, c.frozen?)
+    assert_equal(false, a.frozen?)
+    assert_equal(2, c.b)
+
+    c = a.clone(freeze: true)
+    assert_equal(true, c.frozen?)
+    assert_equal(false, a.frozen?)
+    assert_equal(2, c.b)
+
     a.freeze
     c = a.clone
     assert_equal(true, c.frozen?)
+    assert_equal(true, a.frozen?)
     assert_equal(2, c.b)
 
     assert_raise(ArgumentError) {a.clone(freeze: [])}
     d = a.clone(freeze: false)
     def d.e; 3; end
     assert_equal(false, d.frozen?)
+    assert_equal(true, a.frozen?)
     assert_equal(2, d.b)
     assert_equal(3, d.e)
 
@@ -75,6 +86,30 @@ class TestObject < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /\u{1f4a9}/) do
       Object.new.clone(freeze: x)
     end
+
+    c = Class.new do
+      attr_reader :f
+    end
+    o = c.new
+    def o.initialize_clone(_, freeze: true)
+      @f = freeze
+      super
+    end
+    clone = o.clone
+    assert_kind_of c, clone
+    assert_equal true, clone.f
+    clone = o.clone(freeze: false)
+    assert_kind_of c, clone
+    assert_equal false, clone.f
+
+    class << o
+      remove_method(:initialize_clone)
+    end
+    def o.initialize_clone(_)
+      super
+    end
+    assert_kind_of c, o.clone
+    assert_raise(ArgumentError) { o.clone(freeze: false) }
   end
 
   def test_init_dupclone
@@ -94,17 +129,6 @@ class TestObject < Test::Unit::TestCase
 
   def test_kind_of
     assert_raise(TypeError) { 1.kind_of?(1) }
-  end
-
-  def test_taint_frozen_obj
-    o = Object.new
-    o.freeze
-    assert_raise(FrozenError) { o.taint }
-
-    o = Object.new
-    o.taint
-    o.freeze
-    assert_raise(FrozenError) { o.untaint }
   end
 
   def test_freeze_immediate
@@ -130,6 +154,27 @@ class TestObject < Test::Unit::TestCase
 
   def test_nil_to_f
     assert_equal(0.0, nil.to_f)
+  end
+
+  def test_nil_to_s
+    str = nil.to_s
+    assert_equal("", str)
+    assert_predicate(str, :frozen?)
+    assert_same(str, nil.to_s)
+  end
+
+  def test_true_to_s
+    str = true.to_s
+    assert_equal("true", str)
+    assert_predicate(str, :frozen?)
+    assert_same(str, true.to_s)
+  end
+
+  def test_false_to_s
+    str = false.to_s
+    assert_equal("false", str)
+    assert_predicate(str, :frozen?)
+    assert_same(str, false.to_s)
   end
 
   def test_not
@@ -314,6 +359,7 @@ class TestObject < Test::Unit::TestCase
     o = Object.new
     def o.to_s; 1; end
     assert_raise(TypeError) { String(o) }
+    o.singleton_class.remove_method(:to_s)
     def o.to_s; "o"; end
     assert_equal("o", String(o))
     def o.to_str; "O"; end
@@ -326,6 +372,7 @@ class TestObject < Test::Unit::TestCase
     o = Object.new
     def o.to_a; 1; end
     assert_raise(TypeError) { Array(o) }
+    o.singleton_class.remove_method(:to_a)
     def o.to_a; [1]; end
     assert_equal([1], Array(o))
     def o.to_ary; [2]; end
@@ -343,6 +390,7 @@ class TestObject < Test::Unit::TestCase
     o = Object.new
     def o.to_hash; {a: 1, b: 2}; end
     assert_equal({a: 1, b: 2}, Hash(o))
+    o.singleton_class.remove_method(:to_hash)
     def o.to_hash; 9; end
     assert_raise(TypeError) { Hash(o) }
   end
@@ -351,6 +399,7 @@ class TestObject < Test::Unit::TestCase
     o = Object.new
     def o.to_i; nil; end
     assert_raise(TypeError) { Integer(o) }
+    o.singleton_class.remove_method(:to_i)
     def o.to_i; 42; end
     assert_equal(42, Integer(o))
     def o.respond_to?(*) false; end
@@ -585,7 +634,7 @@ class TestObject < Test::Unit::TestCase
 
     called = []
     p.singleton_class.class_eval do
-      define_method(:respond_to?) do |a|
+      define_method(:respond_to?) do |a, priv = false|
         called << [:respond_to?, a]
         false
       end
@@ -728,7 +777,7 @@ class TestObject < Test::Unit::TestCase
     e = assert_raise(NoMethodError) {
       o.never_defined_test_no_superclass_method
     }
-    assert_equal(m1, e.message, bug2312)
+    assert_equal(m1.lines.first, e.message.lines.first, bug2312)
   end
 
   def test_superclass_method
@@ -773,36 +822,7 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
-  def test_untrusted
-    verbose = $VERBOSE
-    $VERBOSE = false
-    begin
-      obj = Object.new
-      assert_equal(false, obj.untrusted?)
-      assert_equal(false, obj.tainted?)
-      obj.untrust
-      assert_equal(true, obj.untrusted?)
-      assert_equal(true, obj.tainted?)
-      obj.trust
-      assert_equal(false, obj.untrusted?)
-      assert_equal(false, obj.tainted?)
-      obj.taint
-      assert_equal(true, obj.untrusted?)
-      assert_equal(true, obj.tainted?)
-      obj.untaint
-      assert_equal(false, obj.untrusted?)
-      assert_equal(false, obj.tainted?)
-    ensure
-      $VERBOSE = verbose
-    end
-  end
-
   def test_to_s
-    x = Object.new
-    x.taint
-    s = x.to_s
-    assert_equal(true, s.tainted?)
-
     x = eval(<<-EOS)
       class ToS\u{3042}
         new.to_s
@@ -811,14 +831,10 @@ class TestObject < Test::Unit::TestCase
     assert_match(/\bToS\u{3042}:/, x)
 
     name = "X".freeze
-    x = Object.new.taint
+    x = Object.new
     class<<x;self;end.class_eval {define_method(:to_s) {name}}
     assert_same(name, x.to_s)
-    assert_not_predicate(name, :tainted?)
-    assert_raise(FrozenError) {name.taint}
     assert_equal("X", [x].join(""))
-    assert_not_predicate(name, :tainted?)
-    assert_not_predicate(eval('"X".freeze'), :tainted?)
   end
 
   def test_inspect
@@ -932,7 +948,7 @@ class TestObject < Test::Unit::TestCase
     assert_nothing_raised("copy") {a.instance_eval {initialize_copy(b)}}
     c = a.dup.freeze
     assert_raise(FrozenError, "frozen") {c.instance_eval {initialize_copy(b)}}
-    d = a.dup.trust
+    d = a.dup
     [a, b, c, d]
   end
 
@@ -976,14 +992,5 @@ class TestObject < Test::Unit::TestCase
         GC.start
       end
     EOS
-  end
-
-  def test_matcher
-    assert_warning(/deprecated Object#=~ is called on Object/) do
-      assert_equal(Object.new =~ 42, nil)
-    end
-    assert_warning(/deprecated Object#=~ is called on Array/) do
-      assert_equal([] =~ 42, nil)
-    end
   end
 end

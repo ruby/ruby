@@ -111,7 +111,32 @@
 #   Current price: 112
 #   Current price: 79
 #   --- Sun Jun 09 00:10:25 CDT 2002: Price below 80: 79
+#
+# === Usage with procs
+#
+# The +#notify_observers+ method can also be used with +proc+s by using
+# the +:call+ as +func+ parameter.
+#
+# The following example illustrates the use of a lambda:
+#
+#   require 'observer'
+#
+#   class Ticker
+#     include Observable
+#
+#     def run
+#       # logic to retrieve the price (here 77.0)
+#       changed
+#       notify_observers(77.0)
+#     end
+#   end
+#
+#   ticker = Ticker.new
+#   warner = ->(price) { puts "New price received: #{price}" }
+#   ticker.add_observer(warner, :call)
+#   ticker.run
 module Observable
+  VERSION = "0.1.1"
 
   #
   # Add +observer+ as an observer on this object. So that it will receive
@@ -194,7 +219,7 @@ module Observable
     if defined? @observer_state and @observer_state
       if defined? @observer_peers
         @observer_peers.each do |k, v|
-          k.send v, *arg
+          k.__send__(v, *arg)
         end
       end
       @observer_state = false

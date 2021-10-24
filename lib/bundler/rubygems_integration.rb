@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "rubygems" unless defined?(Gem)
+
 module Bundler
   class RubygemsIntegration
     if defined?(Gem::Ext::Builder::CHDIR_MONITOR)
@@ -32,10 +34,12 @@ module Bundler
     end
 
     def build_args
+      require "rubygems/command"
       Gem::Command.build_args
     end
 
     def build_args=(args)
+      require "rubygems/command"
       Gem::Command.build_args = args
     end
 
@@ -82,14 +86,10 @@ module Bundler
     def spec_missing_extensions?(spec, default = true)
       return spec.missing_extensions? if spec.respond_to?(:missing_extensions?)
 
-      return false if spec_default_gem?(spec)
+      return false if spec.default_gem?
       return false if spec.extensions.empty?
 
       default
-    end
-
-    def spec_default_gem?(spec)
-      spec.respond_to?(:default_gem?) && spec.default_gem?
     end
 
     def spec_matches_for_glob(spec, glob)
@@ -100,22 +100,12 @@ module Bundler
       end.flatten(1)
     end
 
-    def spec_extension_dir(spec)
-      return unless spec.respond_to?(:extension_dir)
-      spec.extension_dir
-    end
-
     def stub_set_spec(stub, spec)
       stub.instance_variable_set(:@spec, spec)
     end
 
     def path(obj)
       obj.to_s
-    end
-
-    def platforms
-      return [Gem::Platform::RUBY] if Bundler.settings[:force_ruby_platform]
-      Gem.platforms
     end
 
     def configuration
@@ -125,7 +115,7 @@ module Bundler
       Bundler.ui.error "#{e.class}: #{e.message}"
       Bundler.ui.trace e
       raise
-    rescue YamlLibrarySyntaxError => e
+    rescue ::Psych::SyntaxError => e
       raise YamlSyntaxError.new(e, "Your RubyGems configuration, which is " \
         "usually located in ~/.gemrc, contains invalid YAML syntax.")
     end
@@ -139,14 +129,10 @@ module Bundler
     end
 
     def inflate(obj)
-      require "rubygems/util"
-
       Gem::Util.inflate(obj)
     end
 
     def correct_for_windows_path(path)
-      require "rubygems/util"
-
       if Gem::Util.respond_to?(:correct_for_windows_path)
         Gem::Util.correct_for_windows_path(path)
       elsif path[0].chr == "/" && path[1].chr =~ /[a-z]/i && path[2].chr == ":"
@@ -221,11 +207,6 @@ module Bundler
       Gem.bin_path(gem, bin, ver)
     end
 
-    def preserve_paths
-      # this is a no-op outside of RubyGems 1.8
-      yield
-    end
-
     def loaded_gem_paths
       loaded_gem_paths = Gem.loaded_specs.map {|_, s| s.full_require_paths }
       loaded_gem_paths.flatten
@@ -239,18 +220,16 @@ module Bundler
       Gem.load_plugin_files(files) if Gem.respond_to?(:load_plugin_files)
     end
 
+    def load_env_plugins
+      Gem.load_env_plugins if Gem.respond_to?(:load_env_plugins)
+    end
+
     def ui=(obj)
       Gem::DefaultUserInteraction.ui = obj
     end
 
     def ext_lock
       EXT_LOCK
-    end
-
-    def fetch_prerelease_specs
-      fetch_specs(false, true)
-    rescue Gem::RemoteFetcher::FetchError
-      {} # if we can't download them, there aren't any
     end
 
     def with_build_args(args)
@@ -269,8 +248,6 @@ module Bundler
       require "rubygems/security"
       require_relative "psyched_yaml"
       gem_from_path(path, security_policies[policy]).spec
-    rescue Gem::Package::FormatError
-      raise GemspecError, "Could not read gem at #{path}. It may be corrupted."
     rescue Exception, Gem::Exception, Gem::Security::Exception => e # rubocop:disable Lint/RescueException
       if e.is_a?(Gem::Security::Exception) ||
           e.message =~ /unknown trust policy|unsigned gem/i ||
@@ -333,8 +310,13 @@ module Bundler
           end
 
           message = if spec.nil?
+            target_file = begin
+                            Bundler.default_gemfile.basename
+                          rescue GemfileNotFound
+                            "inline Gemfile"
+                          end
             "#{dep.name} is not part of the bundle." \
-            " Add it to your #{Bundler.default_gemfile.basename}."
+            " Add it to your #{target_file}."
           else
             "can't activate #{dep}, already activated #{spec.full_name}. " \
             "Make sure all dependencies are added to Gemfile."
@@ -350,7 +332,7 @@ module Bundler
           raise e
         end
 
-        # backwards compatibility shim, see https://github.com/bundler/bundler/issues/5102
+        # backwards compatibility shim, see https://github.com/rubygems/bundler/issues/5102
         kernel_class.send(:public, :gem) if Bundler.feature_flag.setup_makes_kernel_gem_public?
       end
     end
@@ -426,6 +408,17 @@ module Bundler
     # Replace or hook into RubyGems to provide a bundlerized view
     # of the world.
     def replace_entrypoints(specs)
+      specs_by_name = add_default_gems_to(specs)
+
+      replace_gem(specs, specs_by_name)
+      stub_rubygems(specs)
+      replace_bin_path(specs_by_name)
+
+      Gem.clear_paths
+    end
+
+    # Add default gems not already present in specs, and return them as a hash.
+    def add_default_gems_to(specs)
       specs_by_name = specs.reduce({}) do |h, s|
         h[s.name] = s
         h
@@ -440,40 +433,7 @@ module Bundler
         specs_by_name[default_spec_name] = default_spec
       end
 
-      replace_gem(specs, specs_by_name)
-      stub_rubygems(specs)
-      replace_bin_path(specs_by_name)
-
-      Gem.clear_paths
-    end
-
-    # This backports base_dir which replaces installation path
-    # RubyGems 1.8+
-    def backport_base_dir
-      redefine_method(Gem::Specification, :base_dir) do
-        return Gem.dir unless loaded_from
-        File.dirname File.dirname loaded_from
-      end
-    end
-
-    def backport_cache_file
-      redefine_method(Gem::Specification, :cache_dir) do
-        @cache_dir ||= File.join base_dir, "cache"
-      end
-
-      redefine_method(Gem::Specification, :cache_file) do
-        @cache_file ||= File.join cache_dir, "#{full_name}.gem"
-      end
-    end
-
-    def backport_spec_file
-      redefine_method(Gem::Specification, :spec_dir) do
-        @spec_dir ||= File.join base_dir, "specifications"
-      end
-
-      redefine_method(Gem::Specification, :spec_file) do
-        @spec_file ||= File.join spec_dir, "#{full_name}.gemspec"
-      end
+      specs_by_name
     end
 
     def undo_replacements
@@ -531,8 +491,16 @@ module Bundler
       end
     end
 
-    def fetch_specs(source, remote, name)
-      path = source + "#{name}.#{Gem.marshal_version}.gz"
+    def plain_specs
+      Gem::Specification._all
+    end
+
+    def plain_specs=(specs)
+      Gem::Specification.all = specs
+    end
+
+    def fetch_specs(remote, name)
+      path = remote.uri.to_s + "#{name}.#{Gem.marshal_version}.gz"
       fetcher = gem_remote_fetcher
       fetcher.headers = { "X-Gemfile-Source" => remote.original_uri.to_s } if remote.original_uri
       string = fetcher.fetch_path(path)
@@ -543,10 +511,8 @@ module Bundler
     end
 
     def fetch_all_remote_specs(remote)
-      source = remote.uri.is_a?(URI) ? remote.uri : URI.parse(source.to_s)
-
-      specs = fetch_specs(source, remote, "specs")
-      pres = fetch_specs(source, remote, "prerelease_specs") || []
+      specs = fetch_specs(remote, "specs")
+      pres = fetch_specs(remote, "prerelease_specs") || []
 
       specs.concat(pres)
     end
@@ -558,13 +524,14 @@ module Bundler
       Bundler::Retry.new("download gem from #{uri}").attempts do
         fetcher.download(spec, uri, path)
       end
+    rescue Gem::RemoteFetcher::FetchError => e
+      raise Bundler::HTTPError, "Could not download gem from #{uri} due to underlying error <#{e.message}>"
     end
 
     def gem_remote_fetcher
-      require "resolv"
+      require "rubygems/remote_fetcher"
       proxy = configuration[:http_proxy]
-      dns = Resolv::DNS.new
-      Bundler::GemRemoteFetcher.new(proxy, dns)
+      Gem::RemoteFetcher.new(proxy)
     end
 
     def gem_from_path(path, policy = nil)
@@ -592,7 +559,6 @@ module Bundler
     end
 
     def all_specs
-      require_relative "remote_specification"
       Gem::Specification.stubs.map do |stub|
         StubSpecification.from_stub(stub)
       end
@@ -600,10 +566,10 @@ module Bundler
 
     def backport_ext_builder_monitor
       # So we can avoid requiring "rubygems/ext" in its entirety
-      Gem.module_eval <<-RB, __FILE__, __LINE__ + 1
+      Gem.module_eval <<-RUBY, __FILE__, __LINE__ + 1
         module Ext
         end
-      RB
+      RUBY
 
       require "rubygems/ext/builder"
 
@@ -629,15 +595,6 @@ module Bundler
       def default_stubs
         Gem::Specification.send(:default_stubs, "*.gemspec")
       end
-    end
-
-    def use_gemdeps(gemfile)
-      ENV["BUNDLE_GEMFILE"] ||= File.expand_path(gemfile)
-      require_relative "gemdeps"
-      runtime = Bundler.setup
-      Bundler.ui = nil
-      activated_spec_names = runtime.requested_specs.map(&:to_spec).sort_by(&:name)
-      [Gemdeps.new(runtime), activated_spec_names]
     end
   end
 

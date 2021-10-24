@@ -159,6 +159,20 @@ Init_fcntl(void)
      */
     rb_define_const(mFcntl, "F_WRLCK", INT2NUM(F_WRLCK));
 #endif
+#ifdef F_SETPIPE_SZ
+    /* Document-const: F_SETPIPE_SZ
+     *
+     * Change the capacity of the pipe referred to by fd to be at least arg bytes.
+     */
+    rb_define_const(mFcntl, "F_SETPIPE_SZ", INT2NUM(F_SETPIPE_SZ));
+#endif
+#ifdef F_GETPIPE_SZ
+    /* Document-const: F_GETPIPE_SZ
+     *
+     * Return (as the function result) the capacity of the pipe referred to by fd.
+     */
+    rb_define_const(mFcntl, "F_GETPIPE_SZ", INT2NUM(F_GETPIPE_SZ));
+#endif
 #ifdef O_CREAT
     /* Document-const: O_CREAT
      *

@@ -14,7 +14,7 @@ class MSpecRun < MSpecScript
     config[:files] = []
   end
 
-  def options(argv=ARGV)
+  def options(argv = ARGV)
     options = MSpecOptions.new "mspec run [options] (FILE|DIRECTORY|GLOB)+", 30, config
 
     options.doc " Ask yourself:"
@@ -36,6 +36,7 @@ class MSpecRun < MSpecScript
     options.repeat
     options.pretend
     options.interrupt
+    options.timeout
 
     options.doc "\n How to modify the guard behavior"
     options.unguarded

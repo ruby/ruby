@@ -1,5 +1,18 @@
+# frozen_string_literal: true
+
 require "bundler/gem_tasks"
-<% if config[:test] == "minitest" -%>
+<% default_task_names = [config[:test_task]].compact -%>
+<% case config[:test] -%>
+<% when "minitest" -%>
+require "rake/testtask"
+
+Rake::TestTask.new(:test) do |t|
+  t.libs << "test"
+  t.libs << "lib"
+  t.test_files = FileList["test/**/test_*.rb"]
+end
+
+<% when "test-unit" -%>
 require "rake/testtask"
 
 Rake::TestTask.new(:test) do |t|
@@ -8,22 +21,36 @@ Rake::TestTask.new(:test) do |t|
   t.test_files = FileList["test/**/*_test.rb"]
 end
 
-<% elsif config[:test] == "rspec" -%>
+<% when "rspec" -%>
 require "rspec/core/rake_task"
 
 RSpec::Core::RakeTask.new(:spec)
 
 <% end -%>
+<% if config[:linter] == "rubocop" -%>
+<% default_task_names << :rubocop -%>
+require "rubocop/rake_task"
+
+RuboCop::RakeTask.new
+
+<% elsif config[:linter] == "standard" -%>
+<% default_task_names << :standard -%>
+require "standard/rake"
+
+<% end -%>
 <% if config[:ext] -%>
+<% default_task_names.unshift(:clobber, :compile) -%>
 require "rake/extensiontask"
 
-task :build => :compile
+task build: :compile
 
 Rake::ExtensionTask.new("<%= config[:underscored_name] %>") do |ext|
   ext.lib_dir = "lib/<%= config[:namespaced_path] %>"
 end
 
-task :default => [:clobber, :compile, :<%= config[:test_task] %>]
+<% end -%>
+<% if default_task_names.size == 1 -%>
+task default: <%= default_task_names.first.inspect %>
 <% else -%>
-task :default => :<%= config[:test_task] %>
+task default: %i[<%= default_task_names.join(" ") %>]
 <% end -%>

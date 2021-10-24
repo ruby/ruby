@@ -40,10 +40,12 @@ describe :string_each_line, shared: true do
     b.should == ["foo\n", "🤡🤡🤡🤡🤡🤡🤡\n", "bar\n", "baz\n"]
   end
 
-  it "taints substrings that are passed to the block if self is tainted" do
-    "one\ntwo\r\nthree".taint.send(@method) { |s| s.tainted?.should == true }
+  ruby_version_is ''...'2.7' do
+    it "taints substrings that are passed to the block if self is tainted" do
+      "one\ntwo\r\nthree".taint.send(@method) { |s| s.should.tainted? }
 
-    "x.y.".send(@method, ".".taint) { |s| s.tainted?.should == false }
+      "x.y.".send(@method, ".".taint) { |s| s.should_not.tainted? }
+    end
   end
 
   it "passes self as a whole to the block if the separator is nil" do
@@ -52,28 +54,14 @@ describe :string_each_line, shared: true do
     a.should == ["one\ntwo\r\nthree"]
   end
 
-  ruby_version_is ''...'2.5' do
-    it "yields paragraphs (broken by 2 or more successive newlines) when passed ''" do
-      a = []
-      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\n".send(@method, '') { |s| a << s }
-      a.should == ["hello\nworld\n\n\n", "and\nuniverse\n\n\n\n\n"]
+  it "yields paragraphs (broken by 2 or more successive newlines) when passed '' and replaces multiple newlines with only two ones" do
+    a = []
+    "hello\nworld\n\n\nand\nuniverse\n\n\n\n\n".send(@method, '') { |s| a << s }
+    a.should == ["hello\nworld\n\n", "and\nuniverse\n\n"]
 
-      a = []
-      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\ndog".send(@method, '') { |s| a << s }
-      a.should == ["hello\nworld\n\n\n", "and\nuniverse\n\n\n\n\n", "dog"]
-    end
-  end
-
-  ruby_version_is '2.5' do
-    it "yields paragraphs (broken by 2 or more successive newlines) when passed '' and replaces multiple newlines with only two ones" do
-      a = []
-      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\n".send(@method, '') { |s| a << s }
-      a.should == ["hello\nworld\n\n", "and\nuniverse\n\n"]
-
-      a = []
-      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\ndog".send(@method, '') { |s| a << s }
-      a.should == ["hello\nworld\n\n", "and\nuniverse\n\n", "dog"]
-    end
+    a = []
+    "hello\nworld\n\n\nand\nuniverse\n\n\n\n\ndog".send(@method, '') { |s| a << s }
+    a.should == ["hello\nworld\n\n", "and\nuniverse\n\n", "dog"]
   end
 
   describe "uses $/" do
@@ -82,7 +70,7 @@ describe :string_each_line, shared: true do
     end
 
     after :each do
-      $/ = @before_separator
+      suppress_warning {$/ = @before_separator}
     end
 
     it "as the separator when none is given" do
@@ -94,10 +82,10 @@ describe :string_each_line, shared: true do
           expected = []
           str.send(@method, sep) { |x| expected << x }
 
-          $/ = sep
+          suppress_warning {$/ = sep}
 
           actual = []
-          str.send(@method) { |x| actual << x }
+          suppress_warning {str.send(@method) { |x| actual << x }}
 
           actual.should == expected
         end
@@ -105,10 +93,20 @@ describe :string_each_line, shared: true do
     end
   end
 
-  it "yields subclass instances for subclasses" do
-    a = []
-    StringSpecs::MyString.new("hello\nworld").send(@method) { |s| a << s.class }
-    a.should == [StringSpecs::MyString, StringSpecs::MyString]
+  ruby_version_is ''...'3.0' do
+    it "yields subclass instances for subclasses" do
+      a = []
+      StringSpecs::MyString.new("hello\nworld").send(@method) { |s| a << s.class }
+      a.should == [StringSpecs::MyString, StringSpecs::MyString]
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "yields String instances for subclasses" do
+      a = []
+      StringSpecs::MyString.new("hello\nworld").send(@method) { |s| a << s.class }
+      a.should == [String, String]
+    end
   end
 
   it "returns self" do

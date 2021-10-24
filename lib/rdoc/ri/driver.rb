@@ -17,7 +17,7 @@ require 'rdoc'
 ##
 # For RubyGems backwards compatibility
 
-require 'rdoc/ri/formatter'
+require_relative 'formatter'
 
 ##
 # The RI driver implements the command-line ri tool.
@@ -142,6 +142,8 @@ Where name can be:
 
   gem_name: | gem_name:README | gem_name:History
 
+  ruby: | ruby:NEWS | ruby:globals
+
 All class names may be abbreviated to their minimum unambiguous form.
 If a name is ambiguous, all valid options will be listed.
 
@@ -153,6 +155,10 @@ they're contained in.  If the gem name is followed by a ':' all files in the
 gem will be shown.  The file name extension may be omitted where it is
 unambiguous.
 
+'ruby' can be used as a pseudo gem name to display files from the Ruby
+core documentation. Use 'ruby:' by itself to get a list of all available
+core documentation files.
+
 For example:
 
     #{opt.program_name} Fil
@@ -160,6 +166,7 @@ For example:
     #{opt.program_name} File.new
     #{opt.program_name} zip
     #{opt.program_name} rdoc:README
+    #{opt.program_name} ruby:comments
 
 Note that shell quoting or escaping may be required for method names
 containing punctuation:
@@ -356,7 +363,7 @@ or the PAGER environment variable.
       end
     end
 
-    argv = ENV['RI'].to_s.split.concat argv
+    argv = ENV['RI'].to_s.split(' ').concat argv
 
     opts.parse! argv
 
@@ -609,11 +616,11 @@ or the PAGER environment variable.
 
       stores = classes[current]
 
-      break unless stores and not stores.empty?
+      next unless stores and not stores.empty?
 
-      klasses = stores.map do |store|
-        store.ancestors[current]
-      end.flatten.uniq
+      klasses = stores.flat_map do |store|
+        store.ancestors[current] || []
+      end.uniq
 
       klasses = klasses - seen
 
@@ -1228,7 +1235,7 @@ or the PAGER environment variable.
   # +cache+ indicate if it is a class or instance method.
 
   def load_method store, cache, klass, type, name
-    methods = store.send(cache)[klass]
+    methods = store.public_send(cache)[klass]
 
     return unless methods
 
@@ -1521,7 +1528,7 @@ or the PAGER environment variable.
     pagers.compact.uniq.each do |pager|
       next unless pager
 
-      pager_cmd = pager.split.first
+      pager_cmd = pager.split(' ').first
 
       next unless in_path? pager_cmd
 
@@ -1551,7 +1558,11 @@ or the PAGER environment variable.
   # Starts a WEBrick server for ri.
 
   def start_server
-    require 'webrick'
+    begin
+      require 'webrick'
+    rescue LoadError
+      abort "webrick is not found. You may need to `gem install webrick` to install webrick."
+    end
 
     server = WEBrick::HTTPServer.new :Port => @server
 

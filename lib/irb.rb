@@ -9,19 +9,20 @@
 #
 #
 #
-require "e2mmap"
 require "ripper"
+require "reline"
 
-require "irb/init"
-require "irb/context"
-require "irb/extend-command"
+require_relative "irb/init"
+require_relative "irb/context"
+require_relative "irb/extend-command"
 
-require "irb/ruby-lex"
-require "irb/input-method"
-require "irb/locale"
-require "irb/color"
+require_relative "irb/ruby-lex"
+require_relative "irb/input-method"
+require_relative "irb/locale"
+require_relative "irb/color"
 
-require "irb/version"
+require_relative "irb/version"
+require_relative "irb/easter-egg"
 
 # IRB stands for "interactive Ruby" and is a tool to interactively execute Ruby
 # expressions read from the standard input.
@@ -45,8 +46,8 @@ require "irb/version"
 #     irb(main):006:1> end
 #     #=> nil
 #
-# The Readline extension module can be used with irb. Use of Readline is
-# default if it's installed.
+# The singleline editor module or multiline editor module can be used with irb.
+# Use of multiline editor is default if it's installed.
 #
 # == Command line options
 #
@@ -59,27 +60,44 @@ require "irb/version"
 #     -E enc            Same as `ruby -E`
 #     -w                Same as `ruby -w`
 #     -W[level=2]       Same as `ruby -W`
-#     --inspect         Use `inspect' for output (default except for bc mode)
+#     --context-mode n  Set n[0-4] to method to create Binding Object,
+#                       when new workspace was created
+#     --echo            Show result (default)
+#     --noecho          Don't show result
+#     --echo-on-assignment
+#                       Show result on assignment
+#     --noecho-on-assignment
+#                       Don't show result on assignment
+#     --truncate-echo-on-assignment
+#                       Show truncated result on assignment (default)
+#     --inspect         Use `inspect' for output
 #     --noinspect       Don't use inspect for output
-#     --reidline        Use Reidline extension module
-#     --noreidline      Don't use Reidline extension module
-#     --readline        Use Readline extension module
-#     --noreadline      Don't use Readline extension module
+#     --multiline       Use multiline editor module
+#     --nomultiline     Don't use multiline editor module
+#     --singleline      Use singleline editor module
+#     --nosingleline    Don't use singleline editor module
 #     --colorize        Use colorization
 #     --nocolorize      Don't use colorization
-#     --prompt prompt-mode
-#     --prompt-mode prompt-mode
+#     --autocomplete    Use autocompletion
+#     --noautocomplete  Don't use autocompletion
+#     --prompt prompt-mode/--prompt-mode prompt-mode
 #                       Switch prompt mode. Pre-defined prompt modes are
 #                       `default', `simple', `xmp' and `inf-ruby'
 #     --inf-ruby-mode   Use prompt appropriate for inf-ruby-mode on emacs.
-#                       Suppresses --reidline and --readline.
-#     --simple-prompt   Simple prompt mode
+#                       Suppresses --multiline and --singleline.
+#     --sample-book-mode/--simple-prompt
+#                       Simple prompt mode
 #     --noprompt        No prompt mode
+#     --single-irb      Share self with sub-irb.
 #     --tracer          Display trace for each execution of commands.
 #     --back-trace-limit n
 #                       Display backtrace top n and tail n. The default
 #                       value is 16.
-#     -v, --version     Print the version of irb
+#     --verbose         Show details
+#     --noverbose       Don't show details
+#     -v, --version	    Print the version of irb
+#     -h, --help        Print help
+#     --                Separate options of irb from the list of command-line args
 #
 # == Configuration
 #
@@ -100,10 +118,11 @@ require "irb/version"
 #     IRB.conf[:IRB_RC] = nil
 #     IRB.conf[:BACK_TRACE_LIMIT]=16
 #     IRB.conf[:USE_LOADER] = false
-#     IRB.conf[:USE_REIDLINE] = nil
-#     IRB.conf[:USE_READLINE] = nil
+#     IRB.conf[:USE_MULTILINE] = nil
+#     IRB.conf[:USE_SINGLELINE] = nil
 #     IRB.conf[:USE_COLORIZE] = true
 #     IRB.conf[:USE_TRACER] = false
+#     IRB.conf[:USE_AUTOCOMPLETE] = true
 #     IRB.conf[:IGNORE_SIGINT] = true
 #     IRB.conf[:IGNORE_EOF] = false
 #     IRB.conf[:PROMPT_MODE] = :DEFAULT
@@ -124,13 +143,21 @@ require "irb/version"
 # === History
 #
 # By default, irb will store the last 1000 commands you used in
-# <code>~/.irb_history</code>.
+# <code>IRB.conf[:HISTORY_FILE]</code> (<code>~/.irb_history</code> by default).
 #
 # If you want to disable history, add the following to your +.irbrc+:
 #
 #     IRB.conf[:SAVE_HISTORY] = nil
 #
 # See IRB::Context#save_history= for more information.
+#
+# The history of _results_ of commands evaluated is not stored by default,
+# but can be turned on to be stored with this +.irbrc+ setting:
+#
+#     IRB.conf[:EVAL_HISTORY] = <number>
+#
+# See IRB::Context#eval_history= and History class. The history of command
+# results is not permanently saved in any file.
 #
 # == Customizing the IRB Prompt
 #
@@ -263,7 +290,7 @@ require "irb/version"
 # On the other hand, each conf in IRB@Command+line+options is used to
 # individually configure IRB.irb.
 #
-# If a proc is set for IRB.conf[:IRB_RC], its will be invoked after execution
+# If a proc is set for <code>IRB.conf[:IRB_RC]</code>, its will be invoked after execution
 # of that proc with the context of the current session as its argument. Each
 # session can be configured using this mechanism.
 #
@@ -274,7 +301,9 @@ require "irb/version"
 # <code>_</code>::
 #   The value command executed, as a local variable
 # <code>__</code>::
-#   The history of evaluated commands
+#   The history of evaluated commands. Available only if
+#   <code>IRB.conf[:EVAL_HISTORY]</code> is not +nil+ (which is the default).
+#   See also IRB::Context#eval_history= and IRB::History.
 # <code>__[line_no]</code>::
 #   Returns the evaluation value at the given line number, +line_no+.
 #   If +line_no+ is a negative, the return value +line_no+ many lines before
@@ -310,7 +339,7 @@ require "irb/version"
 #   # check if Foo#foo is available
 #   irb(main):005:0> Foo.instance_methods #=> [:foo, ...]
 #
-#   # change the active sesssion
+#   # change the active session
 #   irb(main):006:0> fg 2
 #   # define Foo#bar in the context of Foo
 #   irb.2(Foo):005:0> def bar
@@ -389,7 +418,7 @@ module IRB
     irb.run(@CONF)
   end
 
-  # Calls each event hook of IRB.conf[:AT_EXIT] when the current session quits.
+  # Calls each event hook of <code>IRB.conf[:AT_EXIT]</code> when the current session quits.
   def IRB.irb_at_exit
     @CONF[:AT_EXIT].each{|hook| hook.call}
   end
@@ -441,8 +470,8 @@ module IRB
     # parsed as a :method_add_arg and the output won't be suppressed
 
     # Creates a new irb session
-    def initialize(workspace = nil, input_method = nil, output_method = nil)
-      @context = Context.new(self, workspace, input_method, output_method)
+    def initialize(workspace = nil, input_method = nil)
+      @context = Context.new(self, workspace, input_method)
       @context.main.extend ExtendCommandBundle
       @signal_status = :IN_IRB
       @scanner = RubyLex.new
@@ -452,7 +481,7 @@ module IRB
       conf[:IRB_RC].call(context) if conf[:IRB_RC]
       conf[:MAIN_CONTEXT] = context
 
-      trap("SIGINT") do
+      prev_trap = trap("SIGINT") do
         signal_handle
       end
 
@@ -461,6 +490,7 @@ module IRB
           eval_input
         end
       ensure
+        trap("SIGINT", prev_trap)
         conf[:AT_EXIT].each{|hook| hook.call}
       end
     end
@@ -503,7 +533,7 @@ module IRB
         @context.io.prompt
       end
 
-      @scanner.set_input(@context.io) do
+      @scanner.set_input(@context.io, context: @context) do
         signal_status(:IN_INPUT) do
           if l = @context.io.gets
             print l if @context.verbose?
@@ -514,7 +544,7 @@ module IRB
                 printf "Use \"exit\" to leave %s\n", @context.ap_name
               end
             else
-              print "\n"
+              print "\n" if @context.prompting?
             end
           end
           l
@@ -526,9 +556,34 @@ module IRB
       @scanner.each_top_level_statement do |line, line_no|
         signal_status(:IN_EVAL) do
           begin
-            line.untaint
-            @context.evaluate(line, line_no, exception: exc)
-            output_value if @context.echo? && (@context.echo_on_assignment? || !assignment_expression?(line))
+            line.untaint if RUBY_VERSION < '2.7'
+            if IRB.conf[:MEASURE] && IRB.conf[:MEASURE_CALLBACKS].empty?
+              IRB.set_measure_callback
+            end
+            if IRB.conf[:MEASURE] && !IRB.conf[:MEASURE_CALLBACKS].empty?
+              result = nil
+              last_proc = proc{ result = @context.evaluate(line, line_no, exception: exc) }
+              IRB.conf[:MEASURE_CALLBACKS].inject(last_proc) { |chain, item|
+                _name, callback, arg = item
+                proc {
+                  callback.(@context, line, line_no, arg, exception: exc) do
+                    chain.call
+                  end
+                }
+              }.call
+              @context.set_last_value(result)
+            else
+              @context.evaluate(line, line_no, exception: exc)
+            end
+            if @context.echo?
+              if assignment_expression?(line)
+                if @context.echo_on_assignment?
+                  output_value(@context.echo_on_assignment? == :truncate)
+                end
+              else
+                output_value
+              end
+            end
           rescue Interrupt => exc
           rescue SystemExit, SignalException
             raise
@@ -538,61 +593,91 @@ module IRB
             next
           end
           handle_exception(exc)
+          @context.workspace.local_variable_set(:_, exc)
+          exc = nil
         end
       end
     end
 
+    def convert_invalid_byte_sequence(str, enc)
+      str.force_encoding(enc)
+      str.scrub { |c|
+        c.bytes.map{ |b| "\\x#{b.to_s(16).upcase}" }.join
+      }
+    end
+
+    def encode_with_invalid_byte_sequence(str, enc)
+      conv = Encoding::Converter.new(str.encoding, enc)
+      dst = String.new
+      begin
+        ret = conv.primitive_convert(str, dst)
+        case ret
+        when :invalid_byte_sequence
+          conv.insert_output(conv.primitive_errinfo[3].dump[1..-2])
+          redo
+        when :undefined_conversion
+          c = conv.primitive_errinfo[3].dup.force_encoding(conv.primitive_errinfo[1])
+          conv.insert_output(c.dump[1..-2])
+          redo
+        when :incomplete_input
+          conv.insert_output(conv.primitive_errinfo[3].dump[1..-2])
+        when :finished
+        end
+        break
+      end while nil
+      dst
+    end
+
     def handle_exception(exc)
-      if exc.backtrace && exc.backtrace[0] =~ /irb(2)?(\/.*|-.*|\.rb)?:/ && exc.class.to_s !~ /^IRB/ &&
-         !(SyntaxError === exc)
+      if exc.backtrace && exc.backtrace[0] =~ /\/irb(2)?(\/.*|-.*|\.rb)?:/ && exc.class.to_s !~ /^IRB/ &&
+         !(SyntaxError === exc) && !(EncodingError === exc)
+        # The backtrace of invalid encoding hash (ex. {"\xAE": 1}) raises EncodingError without lineno.
         irb_bug = true
       else
         irb_bug = false
       end
 
-      if STDOUT.tty?
-        attr = ATTR_TTY
-        print "#{attr[1]}Traceback#{attr[]} (most recent call last):\n"
-      else
-        attr = ATTR_PLAIN
-      end
-      messages = []
-      lasts = []
-      levels = 0
       if exc.backtrace
-        count = 0
-        exc.backtrace.each do |m|
-          m = @context.workspace.filter_backtrace(m) or next unless irb_bug
-          count += 1
-          if attr == ATTR_TTY
-            m = sprintf("%9d: from %s", count, m)
+        order = nil
+        if '2.5.0' == RUBY_VERSION
+          # Exception#full_message doesn't have keyword arguments.
+          message = exc.full_message # the same of (highlight: true, order: bottom)
+          order = :bottom
+        elsif '2.5.1' <= RUBY_VERSION && RUBY_VERSION < '3.0.0'
+          if STDOUT.tty?
+            message = exc.full_message(order: :bottom)
+            order = :bottom
           else
-            m = "\tfrom #{m}"
+            message = exc.full_message(order: :top)
+            order = :top
           end
-          if messages.size < @context.back_trace_limit
-            messages.push(m)
-          elsif lasts.size < @context.back_trace_limit
-            lasts.push(m).shift
-            levels += 1
+        else # '3.0.0' <= RUBY_VERSION
+          message = exc.full_message(order: :top)
+          order = :top
+        end
+        message = convert_invalid_byte_sequence(message, exc.message.encoding)
+        message = encode_with_invalid_byte_sequence(message, IRB.conf[:LC_MESSAGES].encoding) unless message.encoding.to_s.casecmp?(IRB.conf[:LC_MESSAGES].encoding.to_s)
+        message = message.gsub(/((?:^\t.+$\n)+)/)  { |m|
+          case order
+          when :top
+            lines = m.split("\n")
+          when :bottom
+            lines = m.split("\n").reverse
           end
-        end
-      end
-      if attr == ATTR_TTY
-        unless lasts.empty?
-          puts lasts.reverse
-          printf "... %d levels...\n", levels if levels > 0
-        end
-        puts messages.reverse
-      end
-      m = exc.to_s.split(/\n/)
-      print "#{attr[1]}#{exc.class} (#{attr[4]}#{m.shift}#{attr[0, 1]})#{attr[]}\n"
-      puts m.map {|s| "#{attr[1]}#{s}#{attr[]}\n"}
-      if attr == ATTR_PLAIN
-        puts messages
-        unless lasts.empty?
-          puts lasts
-          printf "... %d levels...\n", levels if levels > 0
-        end
+          unless irb_bug
+            lines = lines.map { |l| @context.workspace.filter_backtrace(l) }.compact
+            if lines.size > @context.back_trace_limit
+              omit = lines.size - @context.back_trace_limit
+              lines = lines[0..(@context.back_trace_limit - 1)]
+              lines << "\t... %d levels..." % omit
+            end
+          end
+          lines = lines.reverse if order == :bottom
+          lines.map{ |l| l + "\n" }.join
+        }
+        # The "<top (required)>" in "(irb)" may be the top level of IRB so imitate the main object.
+        message = message.gsub(/\(irb\):(?<num>\d+):in `<(?<frame>top \(required\))>'/)  { "(irb):#{$~[:num]}:in `<main>'" }
+        puts message
       end
       print "Maybe IRB bug!\n" if irb_bug
     end
@@ -726,8 +811,37 @@ module IRB
       p
     end
 
-    def output_value # :nodoc:
-      printf @context.return_format, @context.inspect_last_value
+    def output_value(omit = false) # :nodoc:
+      str = @context.inspect_last_value
+      multiline_p = str.include?("\n")
+      if omit
+        winwidth = @context.io.winsize.last
+        if multiline_p
+          first_line = str.split("\n").first
+          result = @context.newline_before_multiline_output? ? (@context.return_format % first_line) : first_line
+          output_width = Reline::Unicode.calculate_width(result, true)
+          diff_size = output_width - Reline::Unicode.calculate_width(first_line, true)
+          if diff_size.positive? and output_width > winwidth
+            lines, _ = Reline::Unicode.split_by_width(first_line, winwidth - diff_size - 3)
+            str = "%s...\e[0m" % lines.first
+            multiline_p = false
+          else
+            str = str.gsub(/(\A.*?\n).*/m, "\\1...")
+          end
+        else
+          output_width = Reline::Unicode.calculate_width(@context.return_format % str, true)
+          diff_size = output_width - Reline::Unicode.calculate_width(str, true)
+          if diff_size.positive? and output_width > winwidth
+            lines, _ = Reline::Unicode.split_by_width(str, winwidth - diff_size - 3)
+            str = "%s...\e[0m" % lines.first
+          end
+        end
+      end
+      if multiline_p && @context.newline_before_multiline_output?
+        printf @context.return_format, "\n#{str}"
+      else
+        printf @context.return_format, str
+      end
     end
 
     # Outputs the local variables to this current session, including
@@ -753,10 +867,13 @@ module IRB
 
       # If the expression is invalid, Ripper.sexp should return nil which will
       # result in false being returned. Any valid expression should return an
-      # s-expression where the second selement of the top level array is an
+      # s-expression where the second element of the top level array is an
       # array of parsed expressions. The first element of each expression is the
       # expression's type.
-      ASSIGNMENT_NODE_TYPES.include?(Ripper.sexp(line)&.dig(1,-1,0))
+      verbose, $VERBOSE = $VERBOSE, nil
+      result = ASSIGNMENT_NODE_TYPES.include?(Ripper.sexp(line)&.dig(1,-1,0))
+      $VERBOSE = verbose
+      result
     end
 
     ATTR_TTY = "\e[%sm"
@@ -850,6 +967,8 @@ class Binding
     IRB.setup(source_location[0], argv: [])
     workspace = IRB::WorkSpace.new(self)
     STDOUT.print(workspace.code_around_binding)
-    IRB::Irb.new(workspace).run(IRB.conf)
+    binding_irb = IRB::Irb.new(workspace)
+    binding_irb.context.irb_path = File.expand_path(source_location[0])
+    binding_irb.run(IRB.conf)
   end
 end

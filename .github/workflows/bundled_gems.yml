@@ -1,0 +1,66 @@
+name: bundled_gems
+
+on:
+  schedule:
+    - cron: '45 6 * * *'
+
+jobs:
+  update:
+    if: ${{ github.repository == 'ruby/ruby' }}
+    name: update ${{ github.workflow }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: git config
+        run: |
+          git config --global advice.detachedHead 0
+          git config --global init.defaultBranch garbage
+
+      - name: Set ENV
+        run: |
+          echo "JOBS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v2
+
+      - name: Update ${{ github.workflow }}
+        run: |
+          ruby -i~ tool/update-bundled_gems.rb gems/${{ github.workflow }}
+
+      - name: Check diffs
+        id: diff
+        run: |
+          git diff --no-ext-diff --ignore-submodules --exit-code
+        continue-on-error: true
+
+      - name: Install libraries
+        run: |
+          set -x
+          sudo apt-get update -q || :
+          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison autoconf ruby
+        if: ${{ steps.diff.outcome == 'failure' }}
+
+      - name: Build
+        run: |
+          ./autogen.sh
+          ./configure -C --disable-install-doc
+          make $JOBS
+        if: ${{ steps.diff.outcome == 'failure' }}
+
+      - name: Test bundled gems
+        run: |
+          make $JOBS -s test-bundled-gems
+        timeout-minutes: 30
+        env:
+          RUBY_TESTOPTS: "-q --tty=no"
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ""
+        if: ${{ steps.diff.outcome == 'failure' }}
+
+      - name: Commit
+        run: |
+          git commit --message="Update ${{ github.workflow }} at $(date +%F)" gems/${{ github.workflow }}
+          git pull --ff-only origin ${GITHUB_REF#refs/heads/}
+          git push origin ${GITHUB_REF#refs/heads/}
+        env:
+          EMAIL: svn-admin@ruby-lang.org
+          GIT_AUTHOR_NAME: git
+          GIT_COMMITTER_NAME: git
+        if: ${{ steps.diff.outcome == 'failure' }}

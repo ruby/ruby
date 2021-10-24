@@ -29,6 +29,7 @@ continued_name = nil
 continued_line = nil
 install_name = nil
 so_name = nil
+platform = nil
 File.foreach "config.status" do |line|
   next if /^#/ =~ line
   name = nil
@@ -62,7 +63,7 @@ File.foreach "config.status" do |line|
     when /^(?:X|(?:MINI|RUN|(?:HAVE_)?BASE|BOOTSTRAP|BTEST)RUBY(?:_COMMAND)?$)/; next
     when /^INSTALLDOC|TARGET$/; next
     when /^DTRACE/; next
-    when /^MJIT_SUPPORT/; # pass
+    when /^MJIT_(CC|SUPPORT)$/; # pass
     when /^MJIT_/; next
     when /^(?:MAJOR|MINOR|TEENY)$/; vars[name] = val; next
     when /^LIBRUBY_D?LD/; next
@@ -121,9 +122,9 @@ File.foreach "config.status" do |line|
       universal, val = val, 'universal' if universal
     when /^arch$/
       if universal
-        val.sub!(/universal/, %q[#{arch && universal[/(?:\A|\s)#{Regexp.quote(arch)}=(\S+)/, 1] || '\&'}])
+        platform = val.sub(/universal/, %q[#{arch && universal[/(?:\A|\s)#{Regexp.quote(arch)}=(\S+)/, 1] || RUBY_PLATFORM[/\A[^-]*/]}])
       end
-    when /^oldincludedir$/
+    when /^includedir$/
       val = '"$(SDKROOT)"'+val if /darwin/ =~ arch
     end
     v = "  CONFIG[\"#{name}\"] #{eq} #{val}\n"
@@ -268,9 +269,18 @@ print <<EOS if $unicode_emoji_version
   CONFIG["UNICODE_EMOJI_VERSION"] = #{$unicode_emoji_version.dump}
 EOS
 print <<EOS if /darwin/ =~ arch
-  CONFIG["SDKROOT"] = ENV["SDKROOT"] || "" # don't run xcrun everytime, usually useless.
+  if sdkroot = ENV["SDKROOT"]
+    sdkroot = sdkroot.dup
+  elsif File.exist?(File.join(CONFIG["prefix"], "include")) ||
+        !(sdkroot = (IO.popen(%w[/usr/bin/xcrun --sdk macosx --show-sdk-path], in: IO::NULL, err: IO::NULL, &:read) rescue nil))
+    sdkroot = +""
+  else
+    sdkroot.chomp!
+  end
+  CONFIG["SDKROOT"] = sdkroot
 EOS
 print <<EOS
+  CONFIG["platform"] = #{platform || '"$(arch)"'}
   CONFIG["archdir"] = "$(rubyarchdir)"
   CONFIG["topdir"] = File.dirname(__FILE__)
   # Almost same with CONFIG. MAKEFILE_CONFIG has other variable
@@ -283,9 +293,9 @@ print <<EOS
   #   require 'rbconfig'
   #
   #   print <<-END_OF_MAKEFILE
-  #   prefix = \#{Config::MAKEFILE_CONFIG['prefix']}
-  #   exec_prefix = \#{Config::MAKEFILE_CONFIG['exec_prefix']}
-  #   bindir = \#{Config::MAKEFILE_CONFIG['bindir']}
+  #   prefix = \#{RbConfig::MAKEFILE_CONFIG['prefix']}
+  #   exec_prefix = \#{RbConfig::MAKEFILE_CONFIG['exec_prefix']}
+  #   bindir = \#{RbConfig::MAKEFILE_CONFIG['bindir']}
   #   END_OF_MAKEFILE
   #
   #   => prefix = /usr/local
@@ -295,7 +305,7 @@ print <<EOS
   # RbConfig.expand is used for resolving references like above in rbconfig.
   #
   #   require 'rbconfig'
-  #   p Config.expand(Config::MAKEFILE_CONFIG["bindir"])
+  #   p RbConfig.expand(RbConfig::MAKEFILE_CONFIG["bindir"])
   #   # => "/usr/local/bin"
   MAKEFILE_CONFIG = {}
   CONFIG.each{|k,v| MAKEFILE_CONFIG[k] = v.dup}
@@ -333,8 +343,8 @@ print <<EOS
   # :nodoc:
   # call-seq:
   #
-  #   RbConfig.fire_update!(key, val)               -> string
-  #   RbConfig.fire_update!(key, val, mkconf, conf) -> string
+  #   RbConfig.fire_update!(key, val)               -> array
+  #   RbConfig.fire_update!(key, val, mkconf, conf) -> array
   #
   # updates +key+ in +mkconf+ with +val+, and all values depending on
   # the +key+ in +mkconf+.

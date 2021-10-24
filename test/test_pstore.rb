@@ -75,7 +75,7 @@ class PStoreTest < Test::Unit::TestCase
   end
 
   def test_thread_safe
-    q1 = Queue.new
+    q1 = Thread::Queue.new
     assert_raise(PStore::Error) do
       th = Thread.new do
         @pstore.transaction do
@@ -92,7 +92,7 @@ class PStoreTest < Test::Unit::TestCase
         th.join
       end
     end
-    q2 = Queue.new
+    q2 = Thread::Queue.new
     begin
       pstore = PStore.new(second_file, true)
       cur = Thread.current

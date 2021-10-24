@@ -3,10 +3,10 @@ require_relative '../spec_helper'
 describe "Addrinfo#ipv4_loopback?" do
   describe "for an ipv4 socket" do
     it "returns true for the loopback address" do
-      Addrinfo.ip('127.0.0.1').ipv4_loopback?.should == true
-      Addrinfo.ip('127.0.0.2').ipv4_loopback?.should == true
-      Addrinfo.ip('127.255.0.1').ipv4_loopback?.should == true
-      Addrinfo.ip('127.255.255.255').ipv4_loopback?.should == true
+      Addrinfo.ip('127.0.0.1').should.ipv4_loopback?
+      Addrinfo.ip('127.0.0.2').should.ipv4_loopback?
+      Addrinfo.ip('127.255.0.1').should.ipv4_loopback?
+      Addrinfo.ip('127.255.255.255').should.ipv4_loopback?
     end
 
     it "returns false for another address" do

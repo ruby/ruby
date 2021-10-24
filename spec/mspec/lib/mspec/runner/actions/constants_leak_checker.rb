@@ -1,9 +1,14 @@
 class ConstantsLockFile
   LOCK_FILE_NAME = '.mspec.constants'
 
+  def self.lock_file
+    @prefix ||= File.expand_path(MSpecScript.get(:prefix) || '.')
+    "#{@prefix}/#{LOCK_FILE_NAME}"
+  end
+
   def self.load
-    if File.exist?(LOCK_FILE_NAME)
-      File.readlines(LOCK_FILE_NAME).map(&:chomp)
+    if File.exist?(lock_file)
+      File.readlines(lock_file).map(&:chomp)
     else
       []
     end
@@ -11,7 +16,7 @@ class ConstantsLockFile
 
   def self.dump(ary)
     contents = ary.map(&:to_s).uniq.sort.join("\n") + "\n"
-    File.write(LOCK_FILE_NAME, contents)
+    File.write(lock_file, contents)
   end
 end
 

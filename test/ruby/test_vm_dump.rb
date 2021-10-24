@@ -16,6 +16,6 @@ class TestVMDump < Test::Unit::TestCase
   end
 
   def test_darwin_invalid_access
-    assert_darwin_vm_dump_works(['-rfiddle', '-eFiddle.dlunwrap(100).class'])
+    assert_darwin_vm_dump_works(['-rfiddle', '-eFiddle.dlunwrap(100).inspect'])
   end
 end

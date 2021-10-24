@@ -11,6 +11,22 @@ describe "File.dirname" do
     File.dirname('/foo/foo').should == '/foo'
   end
 
+  ruby_version_is '3.1' do
+    it "returns all the components of filename except the last parts by the level" do
+      File.dirname('/home/jason', 2).should == '/'
+      File.dirname('/home/jason/poot.txt', 2).should == '/home'
+    end
+
+    it "returns the same string if the level is 0" do
+      File.dirname('poot.txt', 0).should == 'poot.txt'
+      File.dirname('/', 0).should == '/'
+    end
+
+    it "raises ArgumentError if the level is negative" do
+      -> {File.dirname('/home/jason', -1)}.should raise_error(ArgumentError)
+    end
+  end
+
   it "returns a String" do
     File.dirname("foo").should be_kind_of(String)
   end

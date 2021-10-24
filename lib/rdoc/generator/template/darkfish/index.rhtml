@@ -13,11 +13,10 @@
 </nav>
 
 <main role="main">
-<% if @options.main_page and
+<%- if @options.main_page and
       main_page = @files.find { |f| f.full_name == @options.main_page } then %>
 <%= main_page.description %>
-<% else %>
+<%- else -%>
 <p>This is the API documentation for <%= @title %>.
-<% end %>
+<%- end -%>
 </main>
-

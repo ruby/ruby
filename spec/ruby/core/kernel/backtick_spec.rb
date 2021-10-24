@@ -36,20 +36,24 @@ describe "Kernel#`" do
   end
 
   platform_is_not :windows do
+    it "handles invalid UTF-8 bytes in command" do
+      `echo "testing\xC2 a non UTF-8 string"`.b.should == "testing\xC2 a non UTF-8 string\n".b
+    end
+
     it "sets $? to the exit status of the executed sub-process" do
       ip = 'world'
       `echo disc #{ip}`
       $?.should be_kind_of(Process::Status)
-      $?.stopped?.should == false
-      $?.exited?.should == true
+      $?.should_not.stopped?
+      $?.should.exited?
       $?.exitstatus.should == 0
-      $?.success?.should == true
+      $?.should.success?
       `echo disc #{ip}; exit 99`
       $?.should be_kind_of(Process::Status)
-      $?.stopped?.should == false
-      $?.exited?.should == true
+      $?.should_not.stopped?
+      $?.should.exited?
       $?.exitstatus.should == 99
-      $?.success?.should == false
+      $?.should_not.success?
     end
   end
 
@@ -58,16 +62,16 @@ describe "Kernel#`" do
       ip = 'world'
       `echo disc #{ip}`
       $?.should be_kind_of(Process::Status)
-      $?.stopped?.should == false
-      $?.exited?.should == true
+      $?.should_not.stopped?
+      $?.should.exited?
       $?.exitstatus.should == 0
-      $?.success?.should == true
+      $?.should.success?
       `echo disc #{ip}& exit 99`
       $?.should be_kind_of(Process::Status)
-      $?.stopped?.should == false
-      $?.exited?.should == true
+      $?.should_not.stopped?
+      $?.should.exited?
       $?.exitstatus.should == 99
-      $?.success?.should == false
+      $?.should_not.success?
     end
   end
 end

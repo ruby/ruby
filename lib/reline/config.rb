@@ -1,9 +1,5 @@
-require 'pathname'
-
 class Reline::Config
   attr_reader :test_mode
-
-  DEFAULT_PATH = '~/.inputrc'
 
   KEYSEQ_PATTERN = /\\(?:C|Control)-[A-Za-z_]|\\(?:M|Meta)-[0-9A-Za-z_]|\\(?:C|Control)-(?:M|Meta)-[A-Za-z_]|\\(?:M|Meta)-(?:C|Control)-[A-Za-z_]|\\e|\\[\\\"\'abdfnrtv]|\\\d{1,3}|\\x\h{1,2}|./
 
@@ -37,6 +33,12 @@ class Reline::Config
     show-all-if-ambiguous
     show-all-if-unmodified
     visible-stats
+    show-mode-in-prompt
+    vi-cmd-mode-string
+    vi-ins-mode-string
+    emacs-mode-string
+    enable-bracketed-paste
+    isearch-terminators
   }
   VARIABLE_NAME_SYMBOLS = VARIABLE_NAMES.map { |v| :"#{v.tr(?-, ?_)}" }
   VARIABLE_NAME_SYMBOLS.each do |v|
@@ -45,7 +47,10 @@ class Reline::Config
 
   def initialize
     @additional_key_bindings = {} # from inputrc
-    @default_key_bindings = {} # environment-dependent
+    @additional_key_bindings[:emacs] = {}
+    @additional_key_bindings[:vi_insert] = {}
+    @additional_key_bindings[:vi_command] = {}
+    @oneshot_key_bindings = {}
     @skip_section = nil
     @if_stack = nil
     @editing_mode_label = :emacs
@@ -54,17 +59,25 @@ class Reline::Config
     @key_actors[:emacs] = Reline::KeyActor::Emacs.new
     @key_actors[:vi_insert] = Reline::KeyActor::ViInsert.new
     @key_actors[:vi_command] = Reline::KeyActor::ViCommand.new
-    @history_size = 500
+    @vi_cmd_mode_string = '(cmd)'
+    @vi_ins_mode_string = '(ins)'
+    @emacs_mode_string = '@'
+    # https://tiswww.case.edu/php/chet/readline/readline.html#IDX25
+    @history_size = -1 # unlimited
     @keyseq_timeout = 500
     @test_mode = false
+    @autocompletion = false
   end
 
   def reset
     if editing_mode_is?(:vi_command)
       @editing_mode_label = :vi_insert
     end
-    @additional_key_bindings = {}
-    @default_key_bindings = {}
+    @additional_key_bindings.keys.each do |key|
+      @additional_key_bindings[key].clear
+    end
+    @oneshot_key_bindings.clear
+    reset_default_key_bindings
   end
 
   def editing_mode
@@ -79,12 +92,50 @@ class Reline::Config
     (val.respond_to?(:any?) ? val : [val]).any?(@editing_mode_label)
   end
 
+  def autocompletion=(val)
+    @autocompletion = val
+  end
+
+  def autocompletion
+    @autocompletion
+  end
+
   def keymap
     @key_actors[@keymap_label]
   end
 
+  def inputrc_path
+    case ENV['INPUTRC']
+    when nil, ''
+    else
+      return File.expand_path(ENV['INPUTRC'])
+    end
+
+    # In the XDG Specification, if ~/.config/readline/inputrc exists, then
+    # ~/.inputrc should not be read, but for compatibility with GNU Readline,
+    # if ~/.inputrc exists, then it is given priority.
+    home_rc_path = File.expand_path('~/.inputrc')
+    return home_rc_path if File.exist?(home_rc_path)
+
+    case path = ENV['XDG_CONFIG_HOME']
+    when nil, ''
+    else
+      path = File.join(path, 'readline/inputrc')
+      return path if File.exist?(path) and path == File.expand_path(path)
+    end
+
+    path = File.expand_path('~/.config/readline/inputrc')
+    return path if File.exist?(path)
+
+    return home_rc_path
+  end
+
+  private def default_inputrc_path
+    @default_inputrc_path ||= inputrc_path
+  end
+
   def read(file = nil)
-    file ||= File.expand_path(ENV['INPUTRC'] || DEFAULT_PATH)
+    file ||= default_inputrc_path
     begin
       if file.respond_to?(:readlines)
         lines = file.readlines
@@ -103,19 +154,46 @@ class Reline::Config
   end
 
   def key_bindings
-    # override @default_key_bindings with @additional_key_bindings
-    @default_key_bindings.merge(@additional_key_bindings)
+    # The key bindings for each editing mode will be overwritten by the user-defined ones.
+    kb = @key_actors[@editing_mode_label].default_key_bindings.dup
+    kb.merge!(@additional_key_bindings[@editing_mode_label])
+    kb.merge!(@oneshot_key_bindings)
+    kb
+  end
+
+  def add_oneshot_key_binding(keystroke, target)
+    @oneshot_key_bindings[keystroke] = target
+  end
+
+  def reset_oneshot_key_bindings
+    @oneshot_key_bindings.clear
+  end
+
+  def add_default_key_binding_by_keymap(keymap, keystroke, target)
+    @key_actors[keymap].default_key_bindings[keystroke] = target
   end
 
   def add_default_key_binding(keystroke, target)
-    @default_key_bindings[keystroke] = target
+    @key_actors[@keymap_label].default_key_bindings[keystroke] = target
   end
 
   def reset_default_key_bindings
-    @default_key_bindings = {}
+    @key_actors.values.each do |ka|
+      ka.reset_default_key_bindings
+    end
   end
 
   def read_lines(lines, file = nil)
+    if not lines.empty? and lines.first.encoding != Reline.encoding_system_needs
+      begin
+        lines = lines.map do |l|
+          l.encode(Reline.encoding_system_needs)
+        rescue Encoding::UndefinedConversionError
+          mes = "The inputrc encoded in #{lines.first.encoding.name} can't be converted to the locale #{Reline.encoding_system_needs.name}."
+          raise Reline::ConfigEncodingConversionError.new(mes)
+        end
+      end
+    end
     conditions = [@skip_section, @if_stack]
     @skip_section = nil
     @if_stack = []
@@ -135,14 +213,14 @@ class Reline::Config
 
       case line
       when /^set +([^ ]+) +([^ ]+)/i
-        var, value = $1.downcase, $2.downcase
+        var, value = $1.downcase, $2
         bind_variable(var, value)
         next
       when /\s*("#{KEYSEQ_PATTERN}+")\s*:\s*(.*)\s*$/o
         key, func_name = $1, $2
         keystroke, func = bind_key(key, func_name)
         next unless keystroke
-        @additional_key_bindings[keystroke] = func
+        @additional_key_bindings[@keymap_label][keystroke] = func
       end
     end
     unless @if_stack.empty?
@@ -157,7 +235,7 @@ class Reline::Config
     case directive
     when 'if'
       condition = false
-      case args # TODO: variables
+      case args
       when 'mode'
       when 'term'
       when 'version'
@@ -184,9 +262,12 @@ class Reline::Config
 
   def bind_variable(name, value)
     case name
-    when VARIABLE_NAMES then
-      variable_name = :"@#{name.tr(?-, ?_)}"
-      instance_variable_set(variable_name, value.nil? || value == '1' || value == 'on')
+    when 'history-size'
+      begin
+        @history_size = Integer(value)
+      rescue ArgumentError
+        @history_size = 500
+      end
     when 'bell-style'
       @bell_style =
         case value
@@ -204,7 +285,7 @@ class Reline::Config
     when 'completion-query-items'
       @completion_query_items = value.to_i
     when 'isearch-terminators'
-      @isearch_terminators = instance_eval(value)
+      @isearch_terminators = retrieve_string(value)
     when 'editing-mode'
       case value
       when 'emacs'
@@ -225,7 +306,30 @@ class Reline::Config
       end
     when 'keyseq-timeout'
       @keyseq_timeout = value.to_i
+    when 'show-mode-in-prompt'
+      case value
+      when 'off'
+        @show_mode_in_prompt = false
+      when 'on'
+        @show_mode_in_prompt = true
+      else
+        @show_mode_in_prompt = false
+      end
+    when 'vi-cmd-mode-string'
+      @vi_cmd_mode_string = retrieve_string(value)
+    when 'vi-ins-mode-string'
+      @vi_ins_mode_string = retrieve_string(value)
+    when 'emacs-mode-string'
+      @emacs_mode_string = retrieve_string(value)
+    when *VARIABLE_NAMES then
+      variable_name = :"@#{name.tr(?-, ?_)}"
+      instance_variable_set(variable_name, value.nil? || value == '1' || value == 'on')
     end
+  end
+
+  def retrieve_string(str)
+    str = $1 if str =~ /\A"(.*)"\z/
+    parse_keyseq(str).map { |c| c.chr(Reline.encoding_system_needs) }.join
   end
 
   def bind_key(key, func_name)

@@ -53,7 +53,7 @@ module Bundler
       end
     end
 
-  private
+    private
 
     def fetch_latest_specs
       definition = Bundler.definition(true)

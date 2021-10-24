@@ -1,3 +1,5 @@
+#ifndef RUBY_ENCINDEX_H
+#define RUBY_ENCINDEX_H 1
 /**********************************************************************
 
   encindex.h -
@@ -9,8 +11,7 @@
 
 **********************************************************************/
 
-#ifndef RUBY_ENCINDEX_H
-#define RUBY_ENCINDEX_H 1
+#include "ruby/encoding.h"      /* rb_ascii8bit_encindex etc. */
 #if defined(__cplusplus)
 extern "C" {
 #if 0

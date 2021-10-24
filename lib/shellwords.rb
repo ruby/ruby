@@ -24,28 +24,37 @@
 #   argv = "see how they run".shellsplit
 #   argv #=> ["see", "how", "they", "run"]
 #
-# Be careful you don't leave a quote unmatched.
+# They treat quotes as special characters, so an unmatched quote will
+# cause an ArgumentError.
 #
 #   argv = "they all ran after the farmer's wife".shellsplit
-#        #=> ArgumentError: Unmatched double quote: ...
+#        #=> ArgumentError: Unmatched quote: ...
 #
-# In this case, you might want to use Shellwords.escape, or its alias
-# String#shellescape.
+# Shellwords also provides methods that do the opposite.
+# Shellwords.escape, or its alias, String#shellescape, escapes
+# shell metacharacters in a string for use in a command line.
 #
-# This method will escape the String for you to safely use with a Bourne shell.
+#   filename = "special's.txt"
 #
-#   argv = Shellwords.escape("special's.txt")
-#   argv #=> "special\\'s.txt"
-#   system("cat " + argv)
+#   system("cat -- #{filename.shellescape}")
+#   # runs "cat -- special\\'s.txt"
+#
+# Note the '--'.  Without it, cat(1) will treat the following argument
+# as a command line option if it starts with '-'.  It is guaranteed
+# that Shellwords.escape converts a string to a form that a Bourne
+# shell will parse back to the original string, but it is the
+# programmer's responsibility to make sure that passing an arbitrary
+# argument to a command does no harm.
 #
 # Shellwords also comes with a core extension for Array, Array#shelljoin.
 #
-#   argv = %w{ls -lta lib}
-#   system(argv.shelljoin)
+#   dir = "Funny GIFs"
+#   argv = %W[ls -lta -- #{dir}]
+#   system(argv.shelljoin + " | less")
+#   # runs "ls -lta -- Funny\\ GIFs | less"
 #
-# You can use this method to create an escaped string out of an array of tokens
-# separated by a space. In this example we used the literal shortcut for
-# Array.new.
+# You can use this method to build a complete command line out of an
+# array of arguments.
 #
 # === Authors
 # * Wakou Aoyama
@@ -81,7 +90,7 @@ module Shellwords
     field = String.new
     line.scan(/\G\s*(?>([^\s\\\'\"]+)|'([^\']*)'|"((?:[^\"\\]|\\.)*)"|(\\.?)|(\S))(\s|\z)?/m) do
       |word, sq, dq, esc, garbage, sep|
-      raise ArgumentError, "Unmatched double quote: #{line.inspect}" if garbage
+      raise ArgumentError, "Unmatched quote: #{line.inspect}" if garbage
       # 2.2.3 Double-Quotes:
       #
       #   The <backslash> shall retain its special meaning as an
@@ -123,7 +132,7 @@ module Shellwords
   #
   #   # Search files in lib for method definitions
   #   pattern = "^[ \t]*def "
-  #   open("| grep -Ern #{pattern.shellescape} lib") { |grep|
+  #   open("| grep -Ern -e #{pattern.shellescape} lib") { |grep|
   #     grep.each_line { |line|
   #       file, lineno, matched_line = line.split(':', 3)
   #       # ...
@@ -147,7 +156,7 @@ module Shellwords
     # Treat multibyte characters as is.  It is the caller's responsibility
     # to encode the string in the right encoding for the shell
     # environment.
-    str.gsub!(/([^A-Za-z0-9_\-.,:\/@\n])/, "\\\\\\1")
+    str.gsub!(/[^A-Za-z0-9_\-.,:+\/@\n]/, "\\\\\\&")
 
     # A LF cannot be escaped with a backslash because a backslash + LF
     # combo is regarded as a line continuation and simply ignored.

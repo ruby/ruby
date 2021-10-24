@@ -7,7 +7,7 @@ module Gem
   # Psych.safe_load
 
   module SafeYAML
-    PERMITTED_CLASSES = %w(
+    PERMITTED_CLASSES = %w[
       Symbol
       Time
       Date
@@ -17,14 +17,12 @@ module Gem
       Gem::Specification
       Gem::Version
       Gem::Version::Requirement
-      YAML::Syck::DefaultKey
-      Syck::DefaultKey
-    ).freeze
+    ].freeze
 
-    PERMITTED_SYMBOLS = %w(
+    PERMITTED_SYMBOLS = %w[
       development
       runtime
-    ).freeze
+    ].freeze
 
     if ::YAML.respond_to? :safe_load
       def self.safe_load(input)

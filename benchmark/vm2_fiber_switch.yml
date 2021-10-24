@@ -1,9 +1,0 @@
-prelude: |
-  # based on benchmark for [ruby-core:65518] [Feature #10341] by Knut Franke
-  fib = Fiber.new do
-    loop { Fiber.yield }
-  end
-benchmark:
-  vm2_fiber_switch: |
-    fib.resume
-loop_count: 20000000

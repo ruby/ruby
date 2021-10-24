@@ -482,7 +482,7 @@ class RDoc::Store
     when :gem    then
       parent = File.expand_path '..', @path
       "gem #{File.basename parent}"
-    when :home   then '~/.rdoc'
+    when :home   then RDoc.home
     when :site   then 'ruby site'
     when :system then 'ruby core'
     else @path
@@ -723,7 +723,7 @@ class RDoc::Store
 
   def page name
     @text_files_hash.each_value.find do |file|
-      file.page_name == name
+      file.page_name == name or file.base_name == name
     end
   end
 

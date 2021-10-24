@@ -39,7 +39,7 @@ describe :dir_exist, shared: true do
   end
 
   it "returns false if the argument exists but is a file" do
-    File.exist?(__FILE__).should be_true
+    File.should.exist?(__FILE__)
     Dir.send(@method, __FILE__).should be_false
   end
 

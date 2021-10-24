@@ -104,7 +104,7 @@ describe "Regexps with modifiers" do
     /./m.match("\n").to_a.should == ["\n"]
   end
 
-  it "supports ASII/Unicode modifiers" do
+  it "supports ASCII/Unicode modifiers" do
     eval('/(?a)[[:alpha:]]+/').match("a\u3042").to_a.should == ["a"]
     eval('/(?d)[[:alpha:]]+/').match("a\u3042").to_a.should == ["a\u3042"]
     eval('/(?u)[[:alpha:]]+/').match("a\u3042").to_a.should == ["a\u3042"]

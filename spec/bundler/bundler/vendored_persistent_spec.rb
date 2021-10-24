@@ -23,14 +23,14 @@ RSpec.describe Bundler::PersistentHTTP do
     shared_examples_for "does not warn" do
       it "does not warn" do
         allow(Bundler.ui).to receive(:warn).never
-        subject.warn_old_tls_version_rubygems_connection(URI(uri), connection)
+        subject.warn_old_tls_version_rubygems_connection(Bundler::URI(uri), connection)
       end
     end
 
     shared_examples_for "does warn" do |*expected|
       it "warns" do
         expect(Bundler.ui).to receive(:warn).with(*expected)
-        subject.warn_old_tls_version_rubygems_connection(URI(uri), connection)
+        subject.warn_old_tls_version_rubygems_connection(Bundler::URI(uri), connection)
       end
     end
 

@@ -44,9 +44,9 @@ transdirs.each do |transdir|
           from_to = "%s to %s" % [$1, $2]
           if converters[from_to]
             raise ArgumentError, '%s:%d: transcode "%s" is already registered at %s:%d' %
-            [path, $., from_to, *converters[from_to].values_at(3, 4)]
+            [path, f.lineno, from_to, *converters[from_to].values_at(3, 4)]
           else
-            converters[from_to] = [$1, $2, fn[0..-3], path, $.]
+            converters[from_to] = [$1, $2, fn[0..-3], path, f.lineno]
             converter_list << from_to
           end
         end

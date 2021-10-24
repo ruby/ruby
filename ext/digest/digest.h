@@ -49,3 +49,24 @@ rb_digest_##name##_finish(void *ctx, unsigned char *ptr) \
 { \
     return name##_Final(ptr, ctx); \
 }
+
+static inline VALUE
+rb_digest_namespace(void)
+{
+    rb_require("digest");
+    return rb_path2class("Digest");
+}
+
+static inline ID
+rb_id_metadata(void)
+{
+    return rb_intern_const("metadata");
+}
+
+static inline VALUE
+rb_digest_make_metadata(const rb_digest_metadata_t *meta)
+{
+#undef RUBY_UNTYPED_DATA_WARNING
+#define RUBY_UNTYPED_DATA_WARNING 0
+    return rb_obj_freeze(Data_Wrap_Struct(0, 0, 0, (void *)meta));
+}

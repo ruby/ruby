@@ -9,23 +9,64 @@
 #
 #
 #
-require "e2mmap"
 
 # :stopdoc:
 module IRB
-  # exceptions
-  extend Exception2MessageMapper
-  def_exception :UnrecognizedSwitch, 'スイッチ(%s)が分りません'
-  def_exception :NotImplementedError, '`%s\'の定義が必要です'
-  def_exception :CantReturnToNormalMode, 'Normalモードに戻れません.'
-  def_exception :IllegalParameter, 'パラメータ(%s)が間違っています.'
-  def_exception :IrbAlreadyDead, 'Irbは既に死んでいます.'
-  def_exception :IrbSwitchedToCurrentThread, 'カレントスレッドに切り替わりました.'
-  def_exception :NoSuchJob, 'そのようなジョブ(%s)はありません.'
-  def_exception :CantShiftToMultiIrbMode, 'multi-irb modeに移れません.'
-  def_exception :CantChangeBinding, 'バインディング(%s)に変更できません.'
-  def_exception :UndefinedPromptMode, 'プロンプトモード(%s)は定義されていません.'
-  def_exception :IllegalRCNameGenerator, 'RC_NAME_GENERATORが正しく定義されていません.'
+  class UnrecognizedSwitch < StandardError
+    def initialize(val)
+      super("スイッチ(#{val})が分りません")
+    end
+  end
+  class NotImplementedError < StandardError
+    def initialize(val)
+      super("`#{val}'の定義が必要です")
+    end
+  end
+  class CantReturnToNormalMode < StandardError
+    def initialize
+      super("Normalモードに戻れません.")
+    end
+  end
+  class IllegalParameter < StandardError
+    def initialize(val)
+      super("パラメータ(#{val})が間違っています.")
+    end
+  end
+  class IrbAlreadyDead < StandardError
+    def initialize
+      super("Irbは既に死んでいます.")
+    end
+  end
+  class IrbSwitchedToCurrentThread < StandardError
+    def initialize
+      super("カレントスレッドに切り替わりました.")
+    end
+  end
+  class NoSuchJob < StandardError
+    def initialize(val)
+      super("そのようなジョブ(#{val})はありません.")
+    end
+  end
+  class CantShiftToMultiIrbMode < StandardError
+    def initialize
+      super("multi-irb modeに移れません.")
+    end
+  end
+  class CantChangeBinding < StandardError
+    def initialize(val)
+      super("バインディング(#{val})に変更できません.")
+    end
+  end
+  class UndefinedPromptMode < StandardError
+    def initialize(val)
+      super("プロンプトモード(#{val})は定義されていません.")
+    end
+  end
+  class IllegalRCGenerator < StandardError
+    def initialize
+      super("RC_NAME_GENERATORが正しく定義されていません.")
+    end
+  end
 end
 # :startdoc:
 # vim:fileencoding=utf-8

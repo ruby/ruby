@@ -131,14 +131,14 @@ describe "BasicObject#instance_eval" do
   end
 
 quarantine! do # Not clean, leaves cvars lying around to break other specs
-  it "scopes class var accesses in the caller when called on a Fixnum" do
-    # Fixnum can take instance vars
-    Fixnum.class_eval "@@__tmp_instance_eval_spec = 1"
+  it "scopes class var accesses in the caller when called on an Integer" do
+    # Integer can take instance vars
+    Integer.class_eval "@@__tmp_instance_eval_spec = 1"
     (defined? @@__tmp_instance_eval_spec).should be_nil
 
     @@__tmp_instance_eval_spec = 2
     1.instance_eval { @@__tmp_instance_eval_spec }.should == 2
-    Fixnum.__send__(:remove_class_variable, :@@__tmp_instance_eval_spec)
+    Integer.__send__(:remove_class_variable, :@@__tmp_instance_eval_spec)
   end
 end
 

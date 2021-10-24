@@ -10,9 +10,9 @@
 
 module Gem::Ext; end
 
-require 'rubygems/ext/build_error'
-require 'rubygems/ext/builder'
-require 'rubygems/ext/configure_builder'
-require 'rubygems/ext/ext_conf_builder'
-require 'rubygems/ext/rake_builder'
-require 'rubygems/ext/cmake_builder'
+require_relative 'ext/build_error'
+require_relative 'ext/builder'
+require_relative 'ext/configure_builder'
+require_relative 'ext/ext_conf_builder'
+require_relative 'ext/rake_builder'
+require_relative 'ext/cmake_builder'

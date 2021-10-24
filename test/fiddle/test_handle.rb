@@ -8,32 +8,15 @@ module Fiddle
   class TestHandle < TestCase
     include Fiddle
 
-    def test_safe_handle_open
-      Thread.new do
-        $SAFE = 1
-        assert_raise(SecurityError) {
-          Fiddle::Handle.new(LIBC_SO.dup.taint)
-        }
-      end.join
-    ensure
-      $SAFE = 0
-    end
-
-    def test_safe_function_lookup
-      Thread.new do
-        h = Fiddle::Handle.new(LIBC_SO)
-        $SAFE = 1
-        assert_raise(SecurityError) {
-          h["qsort".dup.taint]
-        }
-      end.join
-    ensure
-      $SAFE = 0
-    end
-
     def test_to_i
       handle = Fiddle::Handle.new(LIBC_SO)
       assert_kind_of Integer, handle.to_i
+    end
+
+    def test_to_ptr
+      handle = Fiddle::Handle.new(LIBC_SO)
+      ptr = handle.to_ptr
+      assert_equal ptr.to_i, handle.to_i
     end
 
     def test_static_sym_unknown
@@ -129,6 +112,24 @@ module Fiddle
       assert !handle.close_enabled?, 'close is enabled'
     end
 
+    def test_file_name
+      file_name = Handle.new(LIBC_SO).file_name
+      if file_name
+        assert_kind_of String, file_name
+        expected = [File.basename(LIBC_SO)]
+        begin
+          expected << File.basename(File.realpath(LIBC_SO, File.dirname(file_name)))
+        rescue Errno::ENOENT
+        end
+        basename = File.basename(file_name)
+        unless File::FNM_SYSCASE.zero?
+          basename.downcase!
+          expected.each(&:downcase!)
+        end
+        assert_include expected, basename
+      end
+    end
+
     def test_NEXT
       begin
         # Linux / Darwin
@@ -184,7 +185,16 @@ module Fiddle
     end if /freebsd/=~ RUBY_PLATFORM
 
     def test_no_memory_leak
-      assert_no_memory_leak(%w[-W0 -rfiddle.so], '', '100_000.times {Fiddle::Handle.allocate}; GC.start', rss: true)
+      if respond_to?(:assert_nothing_leaked_memory)
+        n_tries = 100_000
+        assert_nothing_leaked_memory(SIZEOF_VOIDP * (n_tries / 100)) do
+          n_tries.times do
+            Fiddle::Handle.allocate
+          end
+        end
+      else
+        assert_no_memory_leak(%w[-W0 -rfiddle.so], '', '100_000.times {Fiddle::Handle.allocate}; GC.start', rss: true)
+      end
     end
 
     if /cygwin|mingw|mswin/ =~ RUBY_PLATFORM

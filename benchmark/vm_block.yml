@@ -1,0 +1,9 @@
+prelude: |
+  def m
+    yield
+  end
+benchmark:
+  vm_block: |
+    m{
+    }
+loop_count: 30000000

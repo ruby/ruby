@@ -8,8 +8,8 @@ RSpec.describe "bundle update" do
         gem 'rack'
       G
 
-      bundle! :install, :gemfile => bundled_app("NotGemfile")
-      bundle! :update, :gemfile => bundled_app("NotGemfile"), :all => true
+      bundle :install, :gemfile => bundled_app("NotGemfile")
+      bundle :update, :gemfile => bundled_app("NotGemfile"), :all => true
 
       # Specify BUNDLE_GEMFILE for `the_bundle`
       # to retrieve the proper Gemfile
@@ -26,11 +26,11 @@ RSpec.describe "bundle update" do
       G
 
       bundle "config set --local gemfile #{bundled_app("NotGemfile")}"
-      bundle! :install
+      bundle :install
     end
 
     it "uses the gemfile to update" do
-      bundle! "update", :all => true
+      bundle "update", :all => true
       bundle "list"
 
       expect(out).to include("rack (1.0.0)")
@@ -38,12 +38,10 @@ RSpec.describe "bundle update" do
 
     it "uses the gemfile while in a subdirectory" do
       bundled_app("subdir").mkpath
-      Dir.chdir(bundled_app("subdir")) do
-        bundle! "update", :all => true
-        bundle "list"
+      bundle "update", :all => true, :dir => bundled_app("subdir")
+      bundle "list", :dir => bundled_app("subdir")
 
-        expect(out).to include("rack (1.0.0)")
-      end
+      expect(out).to include("rack (1.0.0)")
     end
   end
 end

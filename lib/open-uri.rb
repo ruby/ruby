@@ -3,38 +3,17 @@ require 'uri'
 require 'stringio'
 require 'time'
 
-module Kernel
-  private
-  alias open_uri_original_open open # :nodoc:
-  class << self
-    alias open_uri_original_open open # :nodoc:
-  end
-
-  def open(name, *rest, &block) # :nodoc:
-    if (name.respond_to?(:open) && !name.respond_to?(:to_path)) ||
-       (name.respond_to?(:to_str) &&
-        %r{\A[A-Za-z][A-Za-z0-9+\-\.]*://} =~ name &&
-        (uri = URI.parse(name)).respond_to?(:open))
-      warn('calling URI.open via Kernel#open is deprecated, call URI.open directly', uplevel: 1)
-      URI.open(name, *rest, &block)
-    else
-      open_uri_original_open(name, *rest, &block)
-    end
-  end
-  module_function :open
-end
-
 module URI
   # Allows the opening of various resources including URIs.
   #
   # If the first argument responds to the 'open' method, 'open' is called on
   # it with the rest of the arguments.
   #
-  # If the first argument is a string that begins with xxx://, it is parsed by
+  # If the first argument is a string that begins with <code>(protocol)://<code>, it is parsed by
   # URI.parse.  If the parsed object responds to the 'open' method,
   # 'open' is called on it with the rest of the arguments.
   #
-  # Otherwise, the original Kernel#open is called.
+  # Otherwise, Kernel#open is called.
   #
   # OpenURI::OpenRead#open provides URI::HTTP#open, URI::HTTPS#open and
   # URI::FTP#open, Kernel#open.
@@ -49,9 +28,7 @@ module URI
           (uri = URI.parse(name)).respond_to?(:open)
       uri.open(*rest, &block)
     else
-      open_uri_original_open(name, *rest, &block)
-      # After Kernel#open override is removed:
-      #super
+      super
     end
   end
 end
@@ -62,14 +39,14 @@ end
 #
 # It is possible to open an http, https or ftp URL as though it were a file:
 #
-#   open("http://www.ruby-lang.org/") {|f|
+#   URI.open("http://www.ruby-lang.org/") {|f|
 #     f.each_line {|line| p line}
 #   }
 #
 # The opened file has several getter methods for its meta-information, as
 # follows, since it is extended by OpenURI::Meta.
 #
-#   open("http://www.ruby-lang.org/en") {|f|
+#   URI.open("http://www.ruby-lang.org/en") {|f|
 #     f.each_line {|line| p line}
 #     p f.base_uri         # <URI::HTTP:0x40e6ef2 URL:http://www.ruby-lang.org/en/>
 #     p f.content_type     # "text/html"
@@ -80,7 +57,7 @@ end
 #
 # Additional header fields can be specified by an optional hash argument.
 #
-#   open("http://www.ruby-lang.org/en/",
+#   URI.open("http://www.ruby-lang.org/en/",
 #     "User-Agent" => "Ruby/#{RUBY_VERSION}",
 #     "From" => "foo@bar.invalid",
 #     "Referer" => "http://www.ruby-lang.org/") {|f|
@@ -90,11 +67,11 @@ end
 # The environment variables such as http_proxy, https_proxy and ftp_proxy
 # are in effect by default. Here we disable proxy:
 #
-#   open("http://www.ruby-lang.org/en/", :proxy => nil) {|f|
+#   URI.open("http://www.ruby-lang.org/en/", :proxy => nil) {|f|
 #     # ...
 #   }
 #
-# See OpenURI::OpenRead.open and Kernel#open for more on available options.
+# See OpenURI::OpenRead.open and URI.open for more on available options.
 #
 # URI objects can be opened in a similar way.
 #
@@ -744,7 +721,7 @@ module OpenURI
       OpenURI.open_uri(self, *rest, &block)
     end
 
-    # OpenURI::OpenRead#read([options]) reads a content referenced by self and
+    # OpenURI::OpenRead#read([ options ]) reads a content referenced by self and
     # returns the content as string.
     # The string is extended with OpenURI::Meta.
     # The argument +options+ is same as OpenURI::OpenRead#open.
@@ -773,7 +750,12 @@ module URI
         OpenURI.open_http(buf, self, proxy, options)
         return
       end
-      require 'net/ftp'
+
+      begin
+        require 'net/ftp'
+      rescue LoadError
+        abort "net/ftp is not found. You may need to `gem install net-ftp` to install net/ftp."
+      end
 
       path = self.path
       path = path.sub(%r{\A/}, '%2F') # re-encode the beginning slash because uri library decodes it.

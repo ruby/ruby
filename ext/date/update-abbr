@@ -1,0 +1,52 @@
+# -*- mode: ruby -*-
+require 'nokogiri'
+require 'open-uri'
+
+doc = Nokogiri::HTML(URI.open(ARGV[0] || 'https://www.timeanddate.com/time/zones/'))
+
+h = {}
+
+doc.css('#tz-abb tbody tr').each do |tr|
+  tds = tr.css('td')
+  abbr = tds[0].text.strip.downcase
+  offset = tds[3].text.strip.gsub(/UTC\s*/, '')
+  next if offset.include?('/') # skip ambiguous timezones
+  next if offset.empty?
+
+
+  hour, min = offset.split(':', 2)
+  offset = (Integer(hour) * 60 + (Integer(min || 0)))*60
+  if h.has_key?(abbr)
+    h[abbr] = false
+  else
+    h[abbr] = offset
+  end
+end
+
+h.delete_if{|_,v| !v}
+
+lines = File.readlines('zonetab.list')
+lines.map! do |l|
+  if (sep = /^%%/ =~ l)...(sep = /^%%/ =~ l) and !sep
+    z, o = l.split(/,\s*/, 2)
+    o.strip!
+    if ho = h.delete(z) and ho != eval(o)
+      warn "offset of #{z}: #{o} -> #{ho}"
+      l = l.sub(/,\s*\K.*/) {
+        if o.include?("*")
+          o1, o2 = ho.abs.divmod(3600)
+          o1 = "#{o1}*3600"
+          o1 = "(#{o1}+#{o2})" if o2 != 0
+          ho < 0 ? "-#{o1}" : o1
+        else
+          ho.to_s
+        end
+      }
+    end
+  end
+  l
+end
+
+lines.insert(-2, h.sort.map{|k,v| "#{k},#{v}\n"})
+lines.flatten!
+File.write('zonetab.list', lines.join)

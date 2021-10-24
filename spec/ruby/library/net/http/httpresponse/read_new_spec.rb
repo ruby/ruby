@@ -1,5 +1,6 @@
 require_relative '../../../../spec_helper'
 require 'net/http'
+require 'stringio'
 
 describe "Net::HTTPResponse.read_new" do
   it "creates a HTTPResponse object based on the response read from the passed socket" do

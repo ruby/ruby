@@ -1,3 +1,5 @@
+#ifndef RUBY_VM_EXEC_H
+#define RUBY_VM_EXEC_H
 /**********************************************************************
 
   vm.h -
@@ -9,20 +11,10 @@
 
 **********************************************************************/
 
-#ifndef RUBY_VM_EXEC_H
-#define RUBY_VM_EXEC_H
-
 typedef long OFFSET;
 typedef unsigned long lindex_t;
 typedef VALUE GENTRY;
 typedef rb_iseq_t *ISEQ;
-
-#ifdef __GNUC__
-/* TODO: machine dependent prefetch instruction */
-#define PREFETCH(pc)
-#else
-#define PREFETCH(pc)
-#endif
 
 #if VMDEBUG > 0
 #define debugs printf
@@ -45,8 +37,12 @@ typedef rb_iseq_t *ISEQ;
 #define DEBUG_END_INSN()
 #endif
 
-#define throwdebug if(0)printf
-/* #define throwdebug printf */
+#define throwdebug if(0)ruby_debug_printf
+/* #define throwdebug ruby_debug_printf */
+
+#ifndef USE_INSNS_COUNTER
+#define USE_INSNS_COUNTER 0
+#endif
 
 /************************************************/
 #if defined(DISPATCH_XXX)
@@ -78,27 +74,20 @@ error !
 #define LABEL_PTR(x) RB_GNUC_EXTENSION(&&LABEL(x))
 
 #define INSN_ENTRY_SIG(insn) \
-  if (0) fprintf(stderr, "exec: %s@(%d, %d)@%s:%d\n", #insn, \
-		 (int)(reg_pc - reg_cfp->iseq->body->iseq_encoded), \
-		 (int)(reg_cfp->pc - reg_cfp->iseq->body->iseq_encoded), \
-		 RSTRING_PTR(rb_iseq_path(reg_cfp->iseq)), \
-		 (int)(rb_iseq_line_no(reg_cfp->iseq, reg_pc - reg_cfp->iseq->body->iseq_encoded)));
+  if (0) { \
+      ruby_debug_printf("exec: %s@(%"PRIdPTRDIFF", %"PRIdPTRDIFF")@%s:%u\n", #insn, \
+                        (reg_pc - reg_cfp->iseq->body->iseq_encoded), \
+                        (reg_cfp->pc - reg_cfp->iseq->body->iseq_encoded), \
+                        RSTRING_PTR(rb_iseq_path(reg_cfp->iseq)), \
+                        rb_iseq_line_no(reg_cfp->iseq, reg_pc - reg_cfp->iseq->body->iseq_encoded)); \
+  } \
+  if (USE_INSNS_COUNTER) vm_insns_counter_count_insn(BIN(insn));
 
 #define INSN_DISPATCH_SIG(insn)
 
 #define INSN_ENTRY(insn) \
   LABEL(insn): \
   INSN_ENTRY_SIG(insn); \
-
-/* dispatcher */
-#if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__)) && __GNUC__ == 3
-#define DISPATCH_ARCH_DEPEND_WAY(addr) \
-  __asm__ __volatile__("jmp *%0;\t# -- inserted by vm.h\t[length = 2]" : : "r" (addr))
-
-#else
-#define DISPATCH_ARCH_DEPEND_WAY(addr) \
-				/* do nothing */
-#endif
 
 /**********************************/
 #if OPT_DIRECT_THREADED_CODE
@@ -112,14 +101,22 @@ error !
 #else
 /* token threaded code */
 
+/* dispatcher */
+#if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__)) && __GNUC__ == 3
+#define DISPATCH_ARCH_DEPEND_WAY(addr) \
+  __asm__ __volatile__("jmp *%0;\t# -- inserted by vm.h\t[length = 2]" : : "r" (addr))
+
+#else
+#define DISPATCH_ARCH_DEPEND_WAY(addr) \
+                                /* do nothing */
+#endif
 #define TC_DISPATCH(insn)  \
   DISPATCH_ARCH_DEPEND_WAY(insns_address_table[GET_CURRENT_INSN()]); \
   INSN_DISPATCH_SIG(insn); \
   RB_GNUC_EXTENSION_BLOCK(goto *insns_address_table[GET_CURRENT_INSN()]); \
   rb_bug("tc error");
 
-
-#endif /* DISPATCH_DIRECT_THREADED_CODE */
+#endif /* OPT_DIRECT_THREADED_CODE */
 
 #define END_INSN(insn)      \
   DEBUG_END_INSN();         \
@@ -134,9 +131,6 @@ error !
   }   /* end of while loop */   \
 
 #define NEXT_INSN() TC_DISPATCH(__NEXT_INSN__)
-
-#define START_OF_ORIGINAL_INSN(x) start_of_##x:
-#define DISPATCH_ORIGINAL_INSN(x) goto  start_of_##x;
 
 /************************************************/
 #else /* no threaded code */
@@ -162,9 +156,11 @@ default:                        \
 
 #define NEXT_INSN() goto first
 
-#define START_OF_ORIGINAL_INSN(x) start_of_##x:
-#define DISPATCH_ORIGINAL_INSN(x) goto  start_of_##x;
+#endif
 
+#ifndef START_OF_ORIGINAL_INSN
+#define START_OF_ORIGINAL_INSN(x) if (0) goto start_of_##x; start_of_##x:
+#define DISPATCH_ORIGINAL_INSN(x) goto  start_of_##x;
 #endif
 
 #define VM_SP_CNT(ec, sp) ((sp) - (ec)->vm_stack)
@@ -190,8 +186,7 @@ default:                        \
 #define VM_DEBUG_STACKOVERFLOW 0
 
 #if VM_DEBUG_STACKOVERFLOW
-#define CHECK_VM_STACK_OVERFLOW_FOR_INSN(cfp, margin) \
-    WHEN_VM_STACK_OVERFLOWED(cfp, (cfp)->sp, margin) vm_stack_overflow_for_insn()
+#define CHECK_VM_STACK_OVERFLOW_FOR_INSN CHECK_VM_STACK_OVERFLOW
 #else
 #define CHECK_VM_STACK_OVERFLOW_FOR_INSN(cfp, margin)
 #endif

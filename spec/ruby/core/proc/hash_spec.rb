@@ -7,7 +7,7 @@ describe "Proc#hash" do
   end
 
   it "returns an Integer" do
-    proc { 1 + 489 }.hash.should be_kind_of(Fixnum)
+    proc { 1 + 489 }.hash.should be_kind_of(Integer)
   end
 
   it "is stable" do

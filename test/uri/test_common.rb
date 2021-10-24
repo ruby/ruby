@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require 'envutil'
 require 'uri'
 
 module URI
@@ -30,6 +31,28 @@ class TestCommon < Test::Unit::TestCase
       assert_equal(['From:', 'mailto:xxx@xxx.xxx.xxx]'].sort,
                    URI.extract('From: XXX [mailto:xxx@xxx.xxx.xxx]').sort)
     end
+  end
+
+  def test_ractor
+    return unless defined?(Ractor)
+    assert_ractor(<<~RUBY, require: 'uri')
+      r = Ractor.new { URI.parse("https://ruby-lang.org/").inspect }
+      assert_equal(URI.parse("https://ruby-lang.org/").inspect, r.take)
+    RUBY
+  end
+
+  def test_register_scheme
+    assert_equal(["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO", "WS"].sort, URI.scheme_list.keys.sort)
+
+    foobar = Class.new(URI::Generic)
+    URI.register_scheme 'FOOBAR', foobar
+    begin
+      assert_equal(["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO", "WS", "FOOBAR"].sort, URI.scheme_list.keys.sort)
+    ensure
+      URI.const_get(:Schemes).send(:remove_const, :FOOBAR)
+    end
+
+    assert_equal(["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO", "WS"].sort, URI.scheme_list.keys.sort)
   end
 
   def test_regexp
@@ -81,6 +104,8 @@ class TestCommon < Test::Unit::TestCase
                    "\u3042".encode("sjis"), Encoding::UTF_8))
     assert_equal("B0", URI.encode_www_form_component(
                    "\u3042".encode("sjis"), Encoding::UTF_16LE))
+    assert_equal("%26%23730%3B", URI.encode_www_form_component(
+                   "\u02DA", Encoding::WINDOWS_1252))
 
     # invalid
     assert_equal("%EF%BF%BD%EF%BF%BD", URI.encode_www_form_component(

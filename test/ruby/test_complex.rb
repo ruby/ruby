@@ -123,6 +123,10 @@ class Complex_Test < Test::Unit::TestCase
     assert_raise(TypeError){Complex(Object.new)}
     assert_raise(ArgumentError){Complex()}
     assert_raise(ArgumentError){Complex(1,2,3)}
+    c = Complex(1,0)
+    assert_same(c, Complex(c))
+    assert_same(c, Complex(c, exception: false))
+    assert_raise(ArgumentError){Complex(c, bad_keyword: true)}
 
     if (0.0/0).nan?
       assert_nothing_raised{Complex(0.0/0)}
@@ -216,6 +220,11 @@ class Complex_Test < Test::Unit::TestCase
   def test_polar
     assert_equal([1,2], Complex.polar(1,2).polar)
     assert_equal(Complex.polar(1.0, Math::PI * 2 / 3), Complex.polar(1, Math::PI * 2 / 3))
+
+    assert_in_out_err([], <<-'end;', ['OK'], [])
+      Complex.polar(1, Complex(1, 0))
+      puts :OK
+    end;
   end
 
   def test_uplus

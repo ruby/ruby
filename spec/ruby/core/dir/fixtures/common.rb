@@ -22,7 +22,7 @@ module DirSpecs
       [0xe9].pack('U')
     ].each do |dir|
       begin
-        Dir.rmdir dir
+        Dir.rmdir mock_dir(dir)
       rescue
       end
     end
@@ -36,6 +36,8 @@ module DirSpecs
         .dotfile
         .dotsubdir/.dotfile
         .dotsubdir/nondotfile
+        nested/.dotsubir/.dotfile
+        nested/.dotsubir/nondotfile
 
         deeply/.dotfile
         deeply/nested/.dotfile.ext
@@ -79,6 +81,7 @@ module DirSpecs
         special/}
 
         special/test{1}/file[1]
+        special/{}/special
       ]
 
       platform_is_not :windows do
@@ -89,6 +92,7 @@ module DirSpecs
           special/|
 
           special/こんにちは.txt
+          special/\a
         ]
       end
     end
@@ -160,10 +164,21 @@ module DirSpecs
       dir_filename_ordering
       file_one.ext
       file_two.ext
+      nested
       nondotfile
       special
       subdir_one
       subdir_two
     ]
+  end
+
+  if RUBY_VERSION > '3.1'
+    def self.expected_glob_paths
+      expected_paths - ['..']
+    end
+  else
+    def self.expected_glob_paths
+      expected_paths
+    end
   end
 end

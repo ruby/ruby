@@ -589,6 +589,8 @@ folerecord_inspect(VALUE self)
                       field);
 }
 
+VALUE cWIN32OLE_RECORD;
+
 void
 Init_win32ole_record(void)
 {

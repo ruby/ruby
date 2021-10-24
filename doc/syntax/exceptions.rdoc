@@ -17,7 +17,14 @@ wish to limit the scope of rescued exceptions:
     # ...
   end
 
-The same is true for a +class+ or +module+.
+The same is true for a +class+, +module+, and +block+:
+
+  [0, 1, 2].map do |i|
+    10 / i
+  rescue ZeroDivisionError
+    nil
+  end
+  #=> [nil, 10, 5]
 
 You can assign the exception to a local variable by using <tt>=>
 variable_name</tt> at the end of the +rescue+ line:

@@ -1,13 +1,14 @@
+#--
 #
-# $Id: 5e1871defa15d288d2252e6a76bb2c4cf2119ed3 $
+#
 #
 # Copyright (c) 1999-2006 Minero Aoki
 #
 # This program is free software.
-# You can distribute/modify this program under the terms of
-# the GNU LGPL, Lesser General Public License version 2.1.
-# For details of the GNU LGPL, see the file "COPYING".
+# You can distribute/modify this program under the same terms of ruby.
+# see the file "COPYING".
 #
+#++
 
 require 'racc'
 require 'racc/compat'
@@ -286,7 +287,7 @@ module Racc
     end
 
     def add_user_code(label, src)
-      @result.params.send(USER_CODE_LABELS[label]).push src
+      @result.params.public_send(USER_CODE_LABELS[label]).push src
     end
 
   end
@@ -427,7 +428,7 @@ module Racc
     $raccs_print_type = false
 
     def scan_action
-      buf = ''
+      buf = String.new
       nest = 1
       pre = nil
       @in_block = 'action'
@@ -450,6 +451,7 @@ module Racc
             nest -= 1
             if nest == 0
               @in_block = nil
+              buf.sub!(/[ \t\f]+\z/, '')
               return buf
             end
             buf << (pre = ch)

@@ -9,7 +9,7 @@ class TestTimeTZ < Test::Unit::TestCase
   case RUBY_PLATFORM
   when /linux/
     force_tz_test = true
-  when /darwin|freebsd/
+  when /darwin|freebsd|openbsd/
     has_lisbon_tz = false
     force_tz_test = true
   end
@@ -156,6 +156,12 @@ class TestTimeTZ < Test::Unit::TestCase
     }
   end
 
+  def test_asia_kuala_lumpur
+    with_tz(tz="Asia/Kuala_Lumpur") {
+      assert_time_constructor(tz, "1933-01-01 00:20:00 +0720", :local, [1933])
+    }
+  end
+
   def test_canada_newfoundland
     with_tz(tz="America/St_Johns") {
       assert_time_constructor(tz, "2007-11-03 23:00:59 -0230", :new, [2007,11,3,23,0,59,:dst])
@@ -213,7 +219,6 @@ class TestTimeTZ < Test::Unit::TestCase
 
   def test_right_utc
     with_tz(tz="right/UTC") {
-      ::Bug::Time.reset_leap_second_info
       assert_time_constructor(tz, "2008-12-31 23:59:59 UTC", :utc, [2008,12,31,23,59,59])
       assert_time_constructor(tz, "2008-12-31 23:59:60 UTC", :utc, [2008,12,31,23,59,60])
       assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2008,12,31,24,0,0])
@@ -223,25 +228,23 @@ class TestTimeTZ < Test::Unit::TestCase
 
   def test_right_utc_switching
     with_tz("UTC") { # ensure no leap second timezone
-      ::Bug::Time.reset_leap_second_info
       assert_equal(4102444800, Time.utc(2100,1,1,0,0,0).to_i)
       with_tz(tz="right/UTC") {
         assert_time_constructor(tz, "2008-12-31 23:59:59 UTC", :utc, [2008,12,31,23,59,59])
-        assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2008,12,31,23,59,60])
+        assert_time_constructor(tz, "2008-12-31 23:59:60 UTC", :utc, [2008,12,31,23,59,60])
         assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2008,12,31,24,0,0])
         assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2009,1,1,0,0,0])
-        assert_equal(4102444800, Time.utc(2100,1,1,0,0,0).to_i)
+        assert_not_equal(4102444800, Time.utc(2100,1,1,0,0,0).to_i)
       }
     }
     with_tz("right/UTC") {
-      ::Bug::Time.reset_leap_second_info
       assert_not_equal(4102444800, Time.utc(2100,1,1,0,0,0).to_i)
       with_tz(tz="UTC") {
         assert_time_constructor(tz, "2008-12-31 23:59:59 UTC", :utc, [2008,12,31,23,59,59])
         assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2008,12,31,23,59,60])
         assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2008,12,31,24,0,0])
         assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2009,1,1,0,0,0])
-        assert_not_equal(4102444800, Time.utc(2100,1,1,0,0,0).to_i)
+        assert_equal(4102444800, Time.utc(2100,1,1,0,0,0).to_i)
       }
     }
   end if has_right_tz
@@ -258,6 +261,8 @@ class TestTimeTZ < Test::Unit::TestCase
     assert_predicate(Time.new(2019, 1, 1, 0, 0, 0, "UTC"), :utc?)
     assert_predicate(Time.new(2019, 1, 1, 0, 0, 0, "utc"), :utc?)
     assert_predicate(Time.new(2019, 1, 1, 0, 0, 0, "Z"), :utc?)
+    assert_predicate(Time.new(2019, 1, 1, 0, 0, 0, "-00:00"), :utc?)
+    assert_not_predicate(Time.new(2019, 1, 1, 0, 0, 0, "+00:00"), :utc?)
   end
 
   def test_military_names
@@ -370,7 +375,6 @@ class TestTimeTZ < Test::Unit::TestCase
       mesg = "#{mesg_utc}.localtime"
       define_method(gen_test_name(tz)) {
         with_tz(tz) {
-          ::Bug::Time.reset_leap_second_info
           t = nil
           assert_nothing_raised(mesg) { t = Time.utc(*u) }
           assert_equal(expected_utc, time_to_s(t), mesg_utc)
@@ -602,6 +606,10 @@ module TestTimeTZ::WithTZ
     assert_equal([2018, 9, 1, 12, 0, 0, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
     h, m = (-utc_offset / 60).divmod(60)
     assert_equal(time_class.utc(2018, 9, 1, 12+h, m, 0).to_i, t.to_i)
+    assert_equal(6, t.wday)
+    assert_equal(244, t.yday)
+    assert_equal(t, time_class.new(2018, 9, 1, 12, in: tzarg))
+    assert_raise(ArgumentError) {time_class.new(2018, 9, 1, 12, 0, 0, tzarg, in: tzarg)}
   end
 
   def subtest_now(time_class, tz, tzarg, tzname, abbr, utc_offset)
@@ -628,6 +636,7 @@ module TestTimeTZ::WithTZ
     h, m = (utc_offset.abs / 60).divmod(60)
     h = -h if utc_offset < 0
     assert_equal("%+.2d%.2d %s" % [h, m, abbr], t.strftime("%z %Z"))
+    assert_equal("34 35 35", t.strftime("%U %V %W"))
   end
 
   def subtest_plus(time_class, tz, tzarg, tzname, abbr, utc_offset)
@@ -654,6 +663,12 @@ module TestTimeTZ::WithTZ
     t = time_class.at(utc, in: tzarg)
     assert_equal([2018, 9, 1, 12+h, m, 0, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
     assert_equal(utc, t.to_i)
+  end
+
+  def subtest_to_a(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    t = time_class.new(2018, 9, 1, 12, 0, 0, tzarg)
+    ary = t.to_a
+    assert_equal(ary, [t.sec, t.min, t.hour, t.mday, t.mon, t.year, t.wday, t.yday, t.isdst, t.zone])
   end
 
   def subtest_marshal(time_class, tz, tzarg, tzname, abbr, utc_offset)
@@ -740,6 +755,16 @@ class TestTimeTZ::DummyTZ < Test::Unit::TestCase
 
   def self.make_timezone(tzname, abbr, utc_offset, abbr2 = nil, utc_offset2 = nil)
     TestTimeTZ::TZ.new(tzname, abbr, utc_offset, abbr2, utc_offset2)
+  end
+
+  def test_fractional_second
+    x = Object.new
+    def x.local_to_utc(t); t + 8*3600; end
+    def x.utc_to_local(t); t - 8*3600; end
+
+    t1 = Time.new(2020,11,11,12,13,14.124r, '-08:00')
+    t2 = Time.new(2020,11,11,12,13,14.124r, x)
+    assert_equal(t1, t2)
   end
 end
 

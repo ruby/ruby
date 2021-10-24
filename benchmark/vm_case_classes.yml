@@ -1,0 +1,9 @@
+benchmark:
+  vm_case_classes: |
+    case :foo
+    when Hash
+      raise
+    when Array
+      raise
+    end
+loop_count: 6000000

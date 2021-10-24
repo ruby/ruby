@@ -1,7 +1,21 @@
 require_relative '../../spec_helper'
+require_relative '../kernel/shared/sprintf'
+require_relative '../kernel/shared/sprintf_encoding'
 require_relative 'fixtures/classes'
 require_relative '../../shared/hash/key_error'
 
+describe "String#%" do
+  it_behaves_like :kernel_sprintf, -> format, *args {
+    format % args
+  }
+
+  it_behaves_like :kernel_sprintf_encoding, -> format, *args {
+    format % args
+  }
+end
+
+# TODO: these specs are mostly redundant with kernel/shared/sprintf.rb specs.
+# These specs should be moved there and deduplicated.
 describe "String#%" do
   context "when key is missing from passed-in hash" do
     it_behaves_like :key_error, -> obj, key { "%{#{key}}" % obj }, { a: 5 }
@@ -36,18 +50,9 @@ describe "String#%" do
     end
   end
 
-  ruby_version_is ""..."2.5" do
-    it "formats single % character at the end as literal %" do
-      ("%" % []).should == "%"
-      ("foo%" % []).should == "foo%"
-    end
-  end
-
-  ruby_version_is "2.5" do
-    it "raises an error if single % appears at the end" do
-      -> { ("%" % []) }.should raise_error(ArgumentError)
-      -> { ("foo%" % [])}.should raise_error(ArgumentError)
-    end
+  it "raises an error if single % appears at the end" do
+    -> { ("%" % []) }.should raise_error(ArgumentError)
+    -> { ("foo%" % [])}.should raise_error(ArgumentError)
   end
 
   it "formats single % character before a newline as literal %" do
@@ -297,24 +302,26 @@ describe "String#%" do
     end
   end
 
-  it "always taints the result when the format string is tainted" do
-    universal = mock('0')
-    def universal.to_int() 0 end
-    def universal.to_str() "0" end
-    def universal.to_f() 0.0 end
+  ruby_version_is ''...'2.7' do
+    it "always taints the result when the format string is tainted" do
+      universal = mock('0')
+      def universal.to_int() 0 end
+      def universal.to_str() "0" end
+      def universal.to_f() 0.0 end
 
-    [
-      "", "foo",
-      "%b", "%B", "%c", "%d", "%e", "%E",
-      "%f", "%g", "%G", "%i", "%o", "%p",
-      "%s", "%u", "%x", "%X"
-    ].each do |format|
-      subcls_format = StringSpecs::MyString.new(format)
-      subcls_format.taint
-      format.taint
+      [
+        "", "foo",
+        "%b", "%B", "%c", "%d", "%e", "%E",
+        "%f", "%g", "%G", "%i", "%o", "%p",
+        "%s", "%u", "%x", "%X"
+      ].each do |format|
+        subcls_format = StringSpecs::MyString.new(format)
+        subcls_format.taint
+        format.taint
 
-      (format % universal).tainted?.should == true
-      (subcls_format % universal).tainted?.should == true
+        (format % universal).should.tainted?
+        (subcls_format % universal).should.tainted?
+      end
     end
   end
 
@@ -571,16 +578,18 @@ describe "String#%" do
     # ("%p" % obj).should == "obj"
   end
 
-  it "taints result for %p when argument.inspect is tainted" do
-    obj = mock('x')
-    def obj.inspect() "x".taint end
+  ruby_version_is ''...'2.7' do
+    it "taints result for %p when argument.inspect is tainted" do
+      obj = mock('x')
+      def obj.inspect() "x".taint end
 
-    ("%p" % obj).tainted?.should == true
+      ("%p" % obj).should.tainted?
 
-    obj = mock('x'); obj.taint
-    def obj.inspect() "x" end
+      obj = mock('x'); obj.taint
+      def obj.inspect() "x" end
 
-    ("%p" % obj).tainted?.should == false
+      ("%p" % obj).should_not.tainted?
+    end
   end
 
   it "supports string formats using %s" do
@@ -611,9 +620,11 @@ describe "String#%" do
     # ("%s" % obj).should == "obj"
   end
 
-  it "taints result for %s when argument is tainted" do
-    ("%s" % "x".taint).tainted?.should == true
-    ("%s" % mock('x').taint).tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "taints result for %s when argument is tainted" do
+      ("%s" % "x".taint).should.tainted?
+      ("%s" % mock('x').taint).should.tainted?
+    end
   end
 
   # MRI crashes on this one.
@@ -776,8 +787,10 @@ describe "String#%" do
       (format % "0xA").should == (format % 0xA)
     end
 
-    it "doesn't taint the result for #{format} when argument is tainted" do
-      (format % "5".taint).tainted?.should == false
+    ruby_version_is ''...'2.7' do
+      it "doesn't taint the result for #{format} when argument is tainted" do
+        (format % "5".taint).should_not.tainted?
+      end
     end
   end
 

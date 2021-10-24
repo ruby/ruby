@@ -922,10 +922,6 @@ ev_advise(int argc, VALUE *argv, VALUE self)
 
     if(!RB_TYPE_P(itf, T_NIL)) {
         pitf = StringValuePtr(itf);
-        if (rb_safe_level() > 0 && OBJ_TAINTED(itf)) {
-            rb_raise(rb_eSecurityError, "insecure event creation - `%s'",
-                     StringValuePtr(itf));
-        }
         hr = find_iid(ole, pitf, &iid, &pTypeInfo);
     }
     else {

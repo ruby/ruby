@@ -1,0 +1,8 @@
+benchmark:
+  - 0.zero?
+  - 1.zero?
+  - 0r.zero?
+  - 1r.zero?
+  - 0i.zero?
+  - 1i.zero?
+loop_count: 50000000

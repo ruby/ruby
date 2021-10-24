@@ -49,6 +49,9 @@ describe :proc_call_on_proc_or_lambda, shared: true do
 
     a = proc {|x| x}.send(@method, 1, 2, 3)
     a.should == 1
+
+    a = proc {|x:| x}.send(@method, 2, x: 1)
+    a.should == 1
   end
 
   it "will call #to_ary on argument and return self if return is nil" do

@@ -53,8 +53,9 @@ module LangSendSpecs
   end
 
   class PrivateGetter
-    attr_reader :foo
+    attr_accessor :foo
     private :foo
+    private :foo=
 
     def call_self_foo
       self.foo

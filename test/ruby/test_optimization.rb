@@ -150,6 +150,64 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_redefine_method('String', '-@', 'assert_nil(-"foo")')
   end
 
+  def test_array_min
+    assert_equal 1, [1, 2, 4].min
+    assert_redefine_method('Array', 'min', 'assert_nil([1, 2, 4].min)')
+    assert_redefine_method('Array', 'min', 'assert_nil([1 + 0, 2, 4].min)')
+  end
+
+  def test_array_max
+    assert_equal 4, [1, 2, 4].max
+    assert_redefine_method('Array', 'max', 'assert_nil([1, 2, 4].max)')
+    assert_redefine_method('Array', 'max', 'assert_nil([1 + 0, 2, 4].max)')
+  end
+
+  def test_trace_optimized_methods
+    bug14870 = "[ruby-core:87638]"
+    expected = [:-@, :max, :min, :+, :-, :*, :/, :%, :==, :<, :<=, :>, :>=, :<<,
+                :&, :|, :[], :[]=, :length, :empty?, :nil?, :succ, :!, :=~]
+    [:c_call, :c_return].each do |type|
+      methods = []
+      tp = TracePoint.new(type) { |tp| methods << tp.method_id }
+      tp.enable do
+        x = "a"; x = -x
+        [1].max
+        [1].min
+        x = 42 + 2
+        x = 42 - 2
+        x = 42 * 2
+        x = 42 / 2
+        x = 42 % 2
+        y = x == 42
+        y = x < 42
+        y = x <= 42
+        y = x > 42
+        y = x >= 42
+        x = x << 1
+        x = x & 1
+        x = x | 1
+        x = []; x[1]
+        x[1] = 2
+        x.length
+        x.empty?
+        x.nil?
+        x = 1; x.succ
+        !x
+        x = 'a'; x =~ /a/
+        x = y
+      end
+      assert_equal(expected, methods, bug14870)
+    end
+
+    methods = []
+    tp = TracePoint.new(:c_call, :c_return) { |tp| methods << tp.method_id }
+    tp.enable do
+      x = 1
+      x != 42
+    end
+    assert_equal([:!=, :==, :==, :!=], methods, bug14870)
+  end
+
   def test_string_freeze_saves_memory
     n = 16384
     data = '.'.freeze
@@ -398,7 +456,7 @@ class TestRubyOptimization < Test::Unit::TestCase
         foo
       end;1
     end;
-    status, _err = EnvUtil.invoke_ruby([], "", true, true, {}) {
+    status, _err = EnvUtil.invoke_ruby([], "", true, true, **{}) {
       |in_p, out_p, err_p, pid|
       in_p.write(script)
       in_p.close
@@ -449,6 +507,22 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_nothing_raised(SystemStackError, mesg) {
       obj.run(1, level)
     }
+  end
+
+  def test_tailcall_not_to_grow_stack
+    skip 'currently JIT-ed code always creates a new stack frame' if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
+    bug16161 = '[ruby-core:94881]'
+
+    tailcall("#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
+      def foo(n)
+        return :ok if n < 1
+        foo(n - 1)
+      end
+    end;
+    assert_nothing_raised(SystemStackError, bug16161) do
+      assert_equal(:ok, foo(1_000_000), bug16161)
+    end
   end
 
   class Bug10557
@@ -685,27 +759,16 @@ class TestRubyOptimization < Test::Unit::TestCase
 
   def test_block_parameter_should_not_create_objects
     assert_separately [], <<-END
-      #
       def foo &b
       end
       h1 = {}; h2 = {}
-      ObjectSpace.count_objects(h1) # reharsal
+      ObjectSpace.count_objects(h1) # rehearsal
+      GC.start; GC.disable          # to disable GC while foo{}
       ObjectSpace.count_objects(h1)
       foo{}
       ObjectSpace.count_objects(h2)
 
-      assert_equal 0, h2[:TOTAL] - h1[:TOTAL]
-    END
-  end
-
-  def test_block_parameter_should_restore_safe_level
-    assert_separately [], <<-END
-      #
-      def foo &b
-        $SAFE = 1
-        b.call
-      end
-      assert_equal 1, foo{$SAFE}
+      assert_equal 0, h2[:T_DATA] - h1[:T_DATA] # Proc is T_DATA
     END
   end
 
@@ -823,6 +886,21 @@ class TestRubyOptimization < Test::Unit::TestCase
       assert_raise(RuntimeError) {
         begin raise ensure nil if nil end
       }
+    end;
+  end
+
+  def test_optimized_rescue
+    assert_in_out_err("", "#{<<~"begin;"}\n#{<<~'end;'}", [], /END \(RuntimeError\)/)
+    begin;
+      if false
+        begin
+          require "some_mad_stuff"
+        rescue LoadError
+          puts "no mad stuff loaded"
+        end
+      end
+
+      raise  "END"
     end;
   end
 end

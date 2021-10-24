@@ -365,6 +365,8 @@ folevariable_inspect(VALUE self)
     return make_inspect("WIN32OLE_VARIABLE", detail);
 }
 
+VALUE cWIN32OLE_VARIABLE;
+
 void Init_win32ole_variable(void)
 {
     cWIN32OLE_VARIABLE = rb_define_class("WIN32OLE_VARIABLE", rb_cObject);

@@ -1,60 +1,62 @@
-name: macos
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - '*'
+name: macOS
+on: [push, pull_request]
 jobs:
-  latest:
-    runs-on: macos-latest
+  make:
     strategy:
       matrix:
-        test_task: [ "check", "test-bundler", "test-bundled-gems" ]
+        os: [macos-10.15, macos-11]
+        test_task: [ "check", "test-bundler-parallel" ] #, "test-bundled-gems" ] matrix tests has unknown issues
       fail-fast: false
+    env:
+      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+    runs-on: ${{ matrix.os }}
     steps:
-      - name: Disable Firewall
+      - run: mkdir build
+        working-directory:
+      - name: git config
         run: |
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
+          git config --global advice.detachedHead 0
+          git config --global init.defaultBranch garbage
+      - uses: actions/checkout@v2
+        with:
+          path: src
       - name: Install libraries
         run: |
-          brew update
-          brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
-      # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
-      - name: Checkout ruby/ruby
-        run: git clone --depth=50 https://github.com/ruby/ruby . && git reset --hard "$GITHUB_SHA"
-        env:
-          GITHUB_SHA: ${{ github.sha }}
-        if: github.event_name == 'push'
-      - name: Checkout a pull request
-        run: git clone --depth=50 "--branch=$GITHUB_BRANCH" "https://github.com/${GITHUB_REPO}" . && git reset --hard "$GITHUB_REV"
-        env:
-          GITHUB_REV: ${{ github.event.pull_request.head.sha }}
-          GITHUB_BRANCH: ${{ github.event.pull_request.head.ref }}
-          GITHUB_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-        if: github.event_name == 'pull_request'
+          brew upgrade
+          brew install gmp libffi openssl@1.1 zlib autoconf automake libtool readline
+        working-directory: src
       - name: Set ENV
         run: |
-          echo '##[set-env name=JOBS]'-j$((1 + $(sysctl -n hw.activecpu)))
-      - run: autoconf
-      - name: configure
-        run: ./configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
+          echo "JOBS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
+      - run: ./autogen.sh
+        working-directory: src
+      - name: Run configure
+        run: ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
+      - run: make $JOBS incs
       - run: make $JOBS
-      - name: make check
-        run: make -s ${{ matrix.test_task }}
+      - run: make leaked-globals
+        if: ${{ matrix.test_task == 'check' }}
+      - run: make prepare-gems
+        if: ${{ matrix.test_task == 'check' }}
+      - run: make $JOBS -s ${{ matrix.test_task }}
+        timeout-minutes: ${{ matrix.test_task == 'check' && 15 || 40 }}
         env:
-          TESTOPTS: "$JOBS -q --tty=no"
-          MSPECOPT: "-ff" # not using `-j` because sometimes `mspec -j` silently dies
-        if: matrix.test_task == 'check'
-      # test-bundler/test-bundled-gems are separated because it randomly fails and ends up cancelling `make check`.
-      # TODO: Remove `continue-on-error` once they become stable and also we have a notification for their failure.
-      - name: make test-bundler/test-bundled-gems
-        run: make -s ${{ matrix.test_task }}
+          RUBY_TESTOPTS: "-q --tty=no"
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: "rexml"
+      - uses: k0kubun/action-slack@v2.0.0
+        with:
+          payload: |
+            {
+              "ci": "GitHub Actions",
+              "env": "${{ github.workflow }} / ${{ matrix.test_task }}",
+              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref }}".split('/').reverse()[0]
+            }
         env:
-          TESTOPTS: "$JOBS -q --tty=no"
-        continue-on-error: true
-        if: matrix.test_task != 'check'
-      - name: Leaked Globals
-        run: make -s leaked-globals
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() && github.event_name == 'push' }}
+
+defaults:
+  run:
+    working-directory: build

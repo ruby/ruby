@@ -1,8 +1,11 @@
 # frozen_string_literal: true
 
+# load CompactIndexClient upfront to prevent thread safety issues during parallel specs
+require "bundler/compact_index_client"
+
 RSpec.describe Bundler::Fetcher::CompactIndex do
   let(:downloader)  { double(:downloader) }
-  let(:display_uri) { URI("http://sampleuri.com") }
+  let(:display_uri) { Bundler::URI("http://sampleuri.com") }
   let(:remote)      { double(:remote, :cache_slug => "lsjdf", :uri => display_uri) }
   let(:compact_index) { described_class.new(downloader, remote, display_uri) }
 
@@ -62,7 +65,7 @@ RSpec.describe Bundler::Fetcher::CompactIndex do
 
         context "when FIPS-mode is active" do
           before do
-            allow(OpenSSL::Digest::MD5).to receive(:digest).
+            allow(OpenSSL::Digest).to receive(:digest).with("MD5", "").
               and_raise(OpenSSL::Digest::DigestError)
           end
 

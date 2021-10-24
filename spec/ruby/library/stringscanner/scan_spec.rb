@@ -50,10 +50,48 @@ describe "StringScanner#scan" do
     @s.scan(/./).should be_nil
   end
 
-  it "raises a TypeError if pattern isn't a Regexp" do
-    -> { @s.scan("aoeu")    }.should raise_error(TypeError)
+  ruby_version_is ""..."2.7" do
+    it "raises a TypeError if pattern is a String" do
+      -> { @s.scan("aoeu") }.should raise_error(TypeError)
+    end
+  end
+
+  ruby_version_is "2.7" do
+    it "treats String as the pattern itself" do
+      @s.scan("this").should be_nil
+      @s.scan("This").should == "This"
+    end
+  end
+
+  it "raises a TypeError if pattern isn't a Regexp nor String" do
     -> { @s.scan(5)         }.should raise_error(TypeError)
     -> { @s.scan(:test)     }.should raise_error(TypeError)
     -> { @s.scan(mock('x')) }.should raise_error(TypeError)
+  end
+end
+
+describe "StringScanner#scan with fixed_anchor: true" do
+  before :each do
+    @s = StringScanner.new("This\nis\na\ntest", fixed_anchor: true)
+  end
+
+  ruby_version_is "2.7" do
+    it "returns the matched string" do
+      @s.scan(/\w+/).should == "This"
+      @s.scan(/.../m).should == "\nis"
+      @s.scan(//).should == ""
+      @s.scan(/\s+/).should == "\n"
+    end
+
+    it "treats ^ as matching from the beginning of line" do
+      @s.scan(/\w+\n/).should == "This\n"
+      @s.scan(/^\w/).should == "i"
+      @s.scan(/^\w/).should be_nil
+    end
+
+    it "treats \\A as matching from the beginning of string" do
+      @s.scan(/\A\w/).should == "T"
+      @s.scan(/\A\w/).should be_nil
+    end
   end
 end

@@ -15,9 +15,12 @@ static VALUE object_spec_FL_ABLE(VALUE self, VALUE obj) {
 
 static int object_spec_FL_TEST_flag(VALUE flag_string) {
   char *flag_cstr = StringValueCStr(flag_string);
+#ifndef RUBY_VERSION_IS_3_1
   if (strcmp(flag_cstr, "FL_TAINT") == 0) {
     return FL_TAINT;
-  } else if (strcmp(flag_cstr, "FL_FREEZE") == 0) {
+  }
+#endif
+  if (strcmp(flag_cstr, "FL_FREEZE") == 0) {
     return FL_FREEZE;
   }
   return 0;
@@ -27,6 +30,7 @@ static VALUE object_spec_FL_TEST(VALUE self, VALUE obj, VALUE flag) {
   return INT2FIX(FL_TEST(obj, object_spec_FL_TEST_flag(flag)));
 }
 
+#ifndef RUBY_VERSION_IS_3_1
 static VALUE object_spec_OBJ_TAINT(VALUE self, VALUE obj) {
   OBJ_TAINT(obj);
   return Qnil;
@@ -40,6 +44,7 @@ static VALUE object_spec_OBJ_INFECT(VALUE self, VALUE host, VALUE source) {
   OBJ_INFECT(host, source);
   return Qnil;
 }
+#endif
 
 static VALUE object_spec_rb_any_to_s(VALUE self, VALUE obj) {
   return rb_any_to_s(obj);
@@ -102,7 +107,7 @@ static VALUE so_rb_obj_dup(VALUE self, VALUE klass) {
 static VALUE so_rb_obj_call_init(VALUE self, VALUE object,
                                  VALUE nargs, VALUE args) {
   int c_nargs = FIX2INT(nargs);
-  VALUE *c_args = alloca(sizeof(VALUE) * c_nargs);
+  VALUE *c_args = (VALUE*) alloca(sizeof(VALUE) * c_nargs);
   int i;
 
   for (i = 0; i < c_nargs; i++)
@@ -142,9 +147,31 @@ static VALUE object_specs_rb_obj_method_arity(VALUE self, VALUE obj, VALUE mid) 
   return INT2FIX(rb_obj_method_arity(obj, SYM2ID(mid)));
 }
 
+static VALUE object_specs_rb_obj_method(VALUE self, VALUE obj, VALUE method) {
+  return rb_obj_method(obj, method);
+}
+
+#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(__clang__) && defined(__has_warning)
+# if __has_warning("-Wdeprecated-declarations")
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wdeprecated-declarations"
+# endif
+#endif
+
 static VALUE object_spec_rb_obj_taint(VALUE self, VALUE obj) {
   return rb_obj_taint(obj);
 }
+
+#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
+# pragma GCC diagnostic pop
+#elif defined(__clang__) && defined(__has_warning)
+# if __has_warning("-Wdeprecated-declarations")
+#  pragma clang diagnostic pop
+# endif
+#endif
 
 static VALUE so_require(VALUE self) {
   rb_require("fixtures/foo");
@@ -178,6 +205,11 @@ static VALUE so_to_id(VALUE self, VALUE obj) {
 
 static VALUE object_spec_RTEST(VALUE self, VALUE value) {
   return RTEST(value) ? Qtrue : Qfalse;
+}
+
+static VALUE so_check_type(VALUE self, VALUE obj, VALUE other) {
+  rb_check_type(obj, TYPE(other));
+  return Qtrue;
 }
 
 static VALUE so_is_type_nil(VALUE self, VALUE obj) {
@@ -315,6 +347,10 @@ static VALUE object_spec_rb_iv_set(VALUE self, VALUE obj, VALUE name, VALUE valu
   return rb_iv_set(obj, RSTRING_PTR(name), value);
 }
 
+static VALUE object_spec_rb_ivar_count(VALUE self, VALUE obj) {
+  return ULONG2NUM(rb_ivar_count(obj));
+}
+
 static VALUE object_spec_rb_ivar_get(VALUE self, VALUE obj, VALUE sym_name) {
   return rb_ivar_get(obj, SYM2ID(sym_name));
 }
@@ -345,14 +381,50 @@ static VALUE object_spec_rb_class_inherited_p(VALUE self, VALUE mod, VALUE arg) 
   return rb_class_inherited_p(mod, arg);
 }
 
+static VALUE speced_allocator(VALUE klass) {
+  VALUE flags = 0;
+  VALUE instance;
+  if (RTEST(rb_class_inherited_p(klass, rb_cString))) {
+    flags = T_STRING;
+  } else if (RTEST(rb_class_inherited_p(klass, rb_cArray))) {
+    flags = T_ARRAY;
+  } else {
+    flags = T_OBJECT;
+  }
+  instance = rb_newobj_of(klass, flags);
+  rb_iv_set(instance, "@from_custom_allocator", Qtrue);
+  return instance;
+}
+
+static VALUE define_alloc_func(VALUE self, VALUE klass) {
+  rb_define_alloc_func(klass, speced_allocator);
+  return Qnil;
+}
+
+static VALUE undef_alloc_func(VALUE self, VALUE klass) {
+  rb_undef_alloc_func(klass);
+  return Qnil;
+}
+
+static VALUE speced_allocator_p(VALUE self, VALUE klass) {
+  rb_alloc_func_t allocator = rb_get_alloc_func(klass);
+  return (allocator == speced_allocator) ? Qtrue : Qfalse;
+}
+
+static VALUE custom_alloc_func_p(VALUE self, VALUE klass) {
+  rb_alloc_func_t allocator = rb_get_alloc_func(klass);
+  return allocator ? Qtrue : Qfalse;
+}
 
 void Init_object_spec(void) {
   VALUE cls = rb_define_class("CApiObjectSpecs", rb_cObject);
   rb_define_method(cls, "FL_ABLE", object_spec_FL_ABLE, 1);
   rb_define_method(cls, "FL_TEST", object_spec_FL_TEST, 2);
+#ifndef RUBY_VERSION_IS_3_1
   rb_define_method(cls, "OBJ_TAINT", object_spec_OBJ_TAINT, 1);
   rb_define_method(cls, "OBJ_TAINTED", object_spec_OBJ_TAINTED, 1);
   rb_define_method(cls, "OBJ_INFECT", object_spec_OBJ_INFECT, 2);
+#endif
   rb_define_method(cls, "rb_any_to_s", object_spec_rb_any_to_s, 1);
   rb_define_method(cls, "rb_attr_get", so_attr_get, 2);
   rb_define_method(cls, "rb_obj_instance_variables", object_spec_rb_obj_instance_variables, 1);
@@ -375,6 +447,7 @@ void Init_object_spec(void) {
   rb_define_method(cls, "rb_obj_is_instance_of", so_instance_of, 2);
   rb_define_method(cls, "rb_obj_is_kind_of", so_kind_of, 2);
   rb_define_method(cls, "rb_obj_method_arity", object_specs_rb_obj_method_arity, 2);
+  rb_define_method(cls, "rb_obj_method", object_specs_rb_obj_method, 2);
   rb_define_method(cls, "rb_obj_taint", object_spec_rb_obj_taint, 1);
   rb_define_method(cls, "rb_require", so_require, 0);
   rb_define_method(cls, "rb_respond_to", so_respond_to, 2);
@@ -384,6 +457,7 @@ void Init_object_spec(void) {
 
   rb_define_method(cls, "rb_to_id", so_to_id, 1);
   rb_define_method(cls, "RTEST", object_spec_RTEST, 1);
+  rb_define_method(cls, "rb_check_type", so_check_type, 2);
   rb_define_method(cls, "rb_is_type_nil", so_is_type_nil, 1);
   rb_define_method(cls, "rb_is_type_object", so_is_type_object, 1);
   rb_define_method(cls, "rb_is_type_array", so_is_type_array, 1);
@@ -407,11 +481,17 @@ void Init_object_spec(void) {
   rb_define_method(cls, "rb_obj_instance_eval", object_spec_rb_obj_instance_eval, 1);
   rb_define_method(cls, "rb_iv_get", object_spec_rb_iv_get, 2);
   rb_define_method(cls, "rb_iv_set", object_spec_rb_iv_set, 3);
+  rb_define_method(cls, "rb_ivar_count", object_spec_rb_ivar_count, 1);
   rb_define_method(cls, "rb_ivar_get", object_spec_rb_ivar_get, 2);
   rb_define_method(cls, "rb_ivar_set", object_spec_rb_ivar_set, 3);
   rb_define_method(cls, "rb_ivar_defined", object_spec_rb_ivar_defined, 2);
   rb_define_method(cls, "rb_copy_generic_ivar", object_spec_rb_copy_generic_ivar, 2);
   rb_define_method(cls, "rb_free_generic_ivar", object_spec_rb_free_generic_ivar, 1);
+  rb_define_method(cls, "rb_define_alloc_func", define_alloc_func, 1);
+  rb_define_method(cls, "rb_undef_alloc_func", undef_alloc_func, 1);
+  rb_define_method(cls, "speced_allocator?", speced_allocator_p, 1);
+  rb_define_method(cls, "custom_alloc_func?", custom_alloc_func_p, 1);
+  rb_define_method(cls, "not_implemented_method", rb_f_notimplement, -1);
 }
 
 #ifdef __cplusplus

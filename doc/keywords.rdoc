@@ -76,12 +76,14 @@ for::
   expressions}[rdoc-ref:syntax/control_expressions.rdoc]
 
 if::
-  Used for +if+ and modifier +if+ expressions.  See {control
+  Used for +if+ and modifier +if+ statements.  See {control
   expressions}[rdoc-ref:syntax/control_expressions.rdoc]
 
 in::
   Used to separate the iterable object and iterator variable in a +for+ loop.
   See {control expressions}[rdoc-ref:syntax/control_expressions.rdoc]
+  It also serves as a pattern in a +case+ expression.
+  See {pattern matching}[rdoc-ref:syntax/pattern_matching.rdoc]
 
 module::
   Creates or opens a module.  See {modules and classes
@@ -115,7 +117,9 @@ retry::
   handling}[rdoc-ref:syntax/exceptions.rdoc]
 
 return::
-  Exits a method.  See {methods}[rdoc-ref:syntax/methods.rdoc]
+  Exits a method.  See {methods}[rdoc-ref:syntax/methods.rdoc].
+  If met in top-level scope, immediately stops interpretation of
+  the current file.
 
 self::
   The object the current method is attached to.  See
@@ -137,7 +141,7 @@ undef::
   See {modules and classes}[rdoc-ref:syntax/modules_and_classes.rdoc]
 
 unless::
-  Used for +unless+ and modifier +unless+ expressions.  See {control
+  Used for +unless+ and modifier +unless+ statements.  See {control
   expressions}[rdoc-ref:syntax/control_expressions.rdoc]
 
 until::

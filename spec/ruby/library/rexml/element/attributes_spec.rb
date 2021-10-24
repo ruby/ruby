@@ -1,19 +1,22 @@
-require 'rexml/document'
 require_relative '../../../spec_helper'
 
-describe "REXML::Element#attributes" do
-  it "returns element's Attributes" do
-    p = REXML::Element.new "Person"
+ruby_version_is ''...'3.0' do
+  require 'rexml/document'
 
-    name = REXML::Attribute.new("name", "John")
-    attrs = REXML::Attributes.new(p)
-    attrs.add name
+  describe "REXML::Element#attributes" do
+    it "returns element's Attributes" do
+      p = REXML::Element.new "Person"
 
-    p.add_attribute name
-    p.attributes.should == attrs
-  end
+      name = REXML::Attribute.new("name", "John")
+      attrs = REXML::Attributes.new(p)
+      attrs.add name
 
-  it "returns an empty hash if element has no attributes" do
-    REXML::Element.new("Person").attributes.should == {}
+      p.add_attribute name
+      p.attributes.should == attrs
+    end
+
+    it "returns an empty hash if element has no attributes" do
+      REXML::Element.new("Person").attributes.should == {}
+    end
   end
 end

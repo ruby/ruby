@@ -11,7 +11,7 @@ describe "File::Stat#nlink" do
     rm_r @link, @file
   end
 
-  platform_is_not :windows do
+  platform_is_not :windows, :android do
     it "returns the number of links to a file" do
       File::Stat.new(@file).nlink.should == 1
       File.link(@file, @link)

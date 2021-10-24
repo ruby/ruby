@@ -1,10 +1,9 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/available_set'
 require 'rubygems/security'
 
 class TestGemAvailableSet < Gem::TestCase
-
   def setup
     super
 
@@ -37,12 +36,12 @@ class TestGemAvailableSet < Gem::TestCase
 
     dep = Gem::Resolver::DependencyRequest.new dep('a'), nil
 
-    assert_equal %w[a-1], set.find_all(dep).map { |spec| spec.full_name }
+    assert_equal %w[a-1], set.find_all(dep).map {|spec| spec.full_name }
 
     dep = Gem::Resolver::DependencyRequest.new dep('a', '>= 0.a'), nil
 
     assert_equal %w[a-1 a-1.a],
-                 set.find_all(dep).map { |spec| spec.full_name }.sort
+                 set.find_all(dep).map {|spec| spec.full_name }.sort
   end
 
   def test_match_platform
@@ -123,9 +122,8 @@ class TestGemAvailableSet < Gem::TestCase
     set.add a2a, @source
     set.add a2, @source
 
-    g = set.sorted.map { |t| t.spec }
+    g = set.sorted.map {|t| t.spec }
 
     assert_equal [a3a, a2, a2a, a1, a1a], g
   end
-
 end

@@ -44,6 +44,6 @@ describe "Float#next_float" do
   end
 
   it "returns NAN if NAN was the receiver" do
-    Float::NAN.next_float.nan?.should == true
+    Float::NAN.next_float.should.nan?
   end
 end

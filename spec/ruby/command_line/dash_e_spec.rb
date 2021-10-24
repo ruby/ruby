@@ -23,9 +23,9 @@ describe "The -e command line option" do
 
   #needs to test return => LocalJumpError
 
-  describe "with -n and a Fixnum range" do
+  describe "with -n and an Integer range" do
     before :each do
-      @script = "-W0 -ne 'print if %s' #{fixture(__FILE__, "conditional_range.txt")}"
+      @script = "-ne 'print if %s' #{fixture(__FILE__, "conditional_range.txt")}"
     end
 
     it "mimics an awk conditional by comparing an inclusive-end range with $." do

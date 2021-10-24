@@ -6,6 +6,7 @@ class ExceptionState
 
   def initialize(state, location, exception)
     @exception = exception
+    @failure = exception.class == SpecExpectationNotMetError || exception.class == SpecExpectationNotFoundError
 
     @description = location ? "An exception occurred during: #{location}" : ""
     if state
@@ -19,25 +20,35 @@ class ExceptionState
   end
 
   def failure?
-    [SpecExpectationNotMetError, SpecExpectationNotFoundError].any? { |e| @exception.is_a? e }
+    @failure
   end
 
   def message
-    if @exception.message.empty?
-      "<No message>"
-    elsif @exception.class == SpecExpectationNotMetError ||
-          @exception.class == SpecExpectationNotFoundError
-      @exception.message
+    message = @exception.message
+    message = "<No message>" if message.empty?
+
+    if @failure
+      message
+    elsif raise_error_message = @exception.instance_variable_get(:@mspec_raise_error_message)
+      raise_error_message.join("\n")
     else
-      "#{@exception.class}: #{@exception.message}"
+      "#{@exception.class}: #{message}"
     end
   end
 
   def backtrace
-    @backtrace_filter ||= MSpecScript.config[:backtrace_filter]
+    @backtrace_filter ||= MSpecScript.config[:backtrace_filter] || %r{(?:/bin/mspec|/lib/mspec/)}
 
     bt = @exception.backtrace || []
-
-    bt.select { |line| $MSPEC_DEBUG or @backtrace_filter !~ line }.join("\n")
+    unless $MSPEC_DEBUG
+      # Exclude <internal: entries inside MSpec code, so only after the first ignored entry
+      first_excluded_line = bt.index { |line| @backtrace_filter =~ line }
+      if first_excluded_line
+        bt = bt[0...first_excluded_line] + bt[first_excluded_line..-1].reject { |line|
+          @backtrace_filter =~ line || /^<internal:/ =~ line
+        }
+      end
+    end
+    bt.join("\n")
   end
 end

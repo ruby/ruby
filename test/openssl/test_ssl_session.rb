@@ -1,12 +1,10 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative "utils"
 
 if defined?(OpenSSL)
 
 class OpenSSL::TestSSLSession < OpenSSL::SSLTestCase
   def test_session
-    pend "TLS 1.2 is not supported" unless tls12_supported?
-
     ctx_proc = proc { |ctx| ctx.ssl_version = :TLSv1_2 }
     start_server(ctx_proc: ctx_proc) do |port|
       server_connect_with_session(port, nil, nil) { |ssl|
@@ -122,6 +120,7 @@ __EOS__
       ctx.options &= ~OpenSSL::SSL::OP_NO_TICKET
       # Disable server-side session cache which is enabled by default
       ctx.session_cache_mode = OpenSSL::SSL::SSLContext::SESSION_CACHE_OFF
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION if libressl?(3, 2, 0)
     }
     start_server(ctx_proc: ctx_proc) do |port|
       sess1 = server_connect_with_session(port, nil, nil) { |ssl|
@@ -143,8 +142,6 @@ __EOS__
   end
 
   def test_server_session_cache
-    pend "TLS 1.2 is not supported" unless tls12_supported?
-
     ctx_proc = Proc.new do |ctx|
       ctx.ssl_version = :TLSv1_2
       ctx.options |= OpenSSL::SSL::OP_NO_TICKET
@@ -223,8 +220,6 @@ __EOS__
   TEST_SESSION_REMOVE_CB = ENV["OSSL_TEST_ALL"] == "1"
 
   def test_ctx_client_session_cb
-    pend "TLS 1.2 is not supported" unless tls12_supported?
-
     ctx_proc = proc { |ctx| ctx.ssl_version = :TLSv1_2 }
     start_server(ctx_proc: ctx_proc) do |port|
       called = {}
@@ -256,8 +251,6 @@ __EOS__
   end
 
   def test_ctx_server_session_cb
-    pend "TLS 1.2 is not supported" unless tls12_supported?
-
     connections = nil
     called = {}
     cctx = OpenSSL::SSL::SSLContext.new

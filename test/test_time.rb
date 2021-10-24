@@ -62,6 +62,15 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal(true, t.utc?)
   end
 
+  if defined?(Ractor)
+    def test_rfc2822_ractor
+      assert_ractor(<<~RUBY, require: 'time')
+        actual = Ractor.new { Time.rfc2822("Fri, 21 Nov 1997 09:55:06 -0600") }.take
+        assert_equal(Time.utc(1997, 11, 21, 9, 55, 6) + 6 * 3600, actual)
+      RUBY
+    end
+  end
+
   def test_encode_rfc2822
     t = Time.utc(1)
     assert_equal("Mon, 01 Jan 0001 00:00:00 -0000", t.rfc2822)
@@ -526,6 +535,17 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal(3, t.hour)
     t = Time.strptime("3P.M.", "%I%p")
     assert_equal(15, t.hour)
+  end
+
+  def test_strptime_wuvg
+    assert_equal(Time.local(2019, 1, 30), Time.strptime("3 4 2019", "%w %W %Y"))
+    assert_equal(Time.local(2019, 2, 7), Time.strptime("4 5 2019", "%u %U %Y"))
+    assert_equal(Time.local(2019, 1, 28), Time.strptime("4 2019", "%W %Y"))
+    assert_equal(Time.local(2019, 2, 3), Time.strptime("5 2019", "%U %Y"))
+    assert_equal(Time.local(2019, 1, 1), Time.strptime("1 2 2019", "%V %w %G"))
+    assert_equal(Time.local(2016, 1, 1), Time.strptime("53 5 15", "%V %w %g"))
+    assert_equal(Time.local(2018, 12, 31), Time.strptime("1 2019", "%V %G"))
+    assert_equal(Time.local(2015, 12, 28), Time.strptime("53 15", "%V %g"))
   end
 
   def test_nsec

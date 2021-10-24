@@ -22,7 +22,7 @@ unixsock_connect_internal(VALUE a)
 {
     struct unixsock_arg *arg = (struct unixsock_arg *)a;
     return (VALUE)rsock_connect(arg->fd, (struct sockaddr*)arg->sockaddr,
-			        arg->sockaddrlen, 0);
+			        arg->sockaddrlen, 0, NULL);
 }
 
 static VALUE
@@ -39,7 +39,6 @@ unixsock_path_value(VALUE path)
 #endif
     if (isstr) {
         if (RSTRING_LEN(name) == 0 || RSTRING_PTR(name)[0] == '\0') {
-            rb_check_safe_obj(name);
             return name;             /* ignore encoding */
         }
     }
@@ -456,11 +455,7 @@ retry:
 #endif
 
     rb_update_max_fd(fd);
-
-    if (rsock_cmsg_cloexec_state < 0)
-	rsock_cmsg_cloexec_state = rsock_detect_cloexec(fd);
-    if (rsock_cmsg_cloexec_state == 0 || fd <= 2)
-	rb_maygvl_fd_fix_cloexec(fd);
+    rb_maygvl_fd_fix_cloexec(fd);
 
     if (klass == Qnil)
 	return INT2FIX(fd);

@@ -13,5 +13,6 @@ module SHA256Constants
   Digest         = "\230b\265\344_\337\357\337\242\004\314\311A\211jb\350\373\254\370\365M\230B\002\372\020j\as\270\376"
   BlankHexdigest = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   Hexdigest      = "9862b5e45fdfefdfa204ccc941896a62e8fbacf8f54d984202fa106a0773b8fe"
+  Base64digest   = "mGK15F/f79+iBMzJQYlqYuj7rPj1TZhCAvoQagdzuP4="
 
 end

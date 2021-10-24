@@ -28,7 +28,6 @@ constant_arg(VALUE arg, int (*str_to_int)(const char*, long, int*), const char *
     else if (!NIL_P(tmp = rb_check_string_type(arg))) {
 	arg = tmp;
       str:
-	rb_check_safe_obj(arg);
         ptr = RSTRING_PTR(arg);
         if (str_to_int(ptr, RSTRING_LEN(arg), &ret) == -1)
 	    rb_raise(rb_eSocket, "%s: %s", errmsg, ptr);

@@ -33,7 +33,8 @@ class Bundler::Thor
       # Boolean:: true if it is identical, false otherwise.
       #
       def identical?
-        exists? && File.identical?(render, destination)
+        source = File.expand_path(render, File.dirname(destination))
+        exists? && File.identical?(source, destination)
       end
 
       def invoke!

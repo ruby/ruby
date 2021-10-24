@@ -3,17 +3,21 @@ require 'test/unit'
 
 class TestSetTraceFunc < Test::Unit::TestCase
   def setup
-    @original_compile_option = RubyVM::InstructionSequence.compile_option
-    RubyVM::InstructionSequence.compile_option = {
-      :trace_instruction => true,
-      :specialized_instruction => false
-    }
+    if defined?(RubyVM)
+      @original_compile_option = RubyVM::InstructionSequence.compile_option
+      RubyVM::InstructionSequence.compile_option = {
+        :trace_instruction => true,
+        :specialized_instruction => false
+      }
+    end
     @target_thread = Thread.current
   end
 
   def teardown
     set_trace_func(nil)
-    RubyVM::InstructionSequence.compile_option = @original_compile_option
+    if defined?(RubyVM)
+      RubyVM::InstructionSequence.compile_option = @original_compile_option
+    end
     @target_thread = nil
   end
 
@@ -137,6 +141,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal(["c-call", 9, :set_trace_func, Kernel],
                  events.shift)
     assert_equal([], events)
+
+    self.class.class_eval do
+      remove_const :Foo
+    end
   end
 
   def test_return # [ruby-dev:38701]
@@ -362,6 +370,11 @@ class TestSetTraceFunc < Test::Unit::TestCase
     end
     assert_equal([], events[:set])
     assert_equal([], events[:add])
+
+    # cleanup
+    self.class.class_eval do
+      remove_const :ThreadTraceInnerClass
+    end
   end
 
   def test_trace_defined_method
@@ -468,13 +481,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
     answer_events = [
      #
-     [:c_return, 1, "xyzzy", TracePoint,  :trace,           TracePoint,  :outer,  trace],
      [:line,     4, 'xyzzy', self.class,  method,           self,        :outer, :nothing],
      [:c_call,   4, 'xyzzy', Integer,     :times,           1,           :outer, :nothing],
      [:line,     4, 'xyzzy', self.class,  method,           self,        nil,    :nothing],
      [:line,     5, 'xyzzy', self.class,  method,           self,        :inner, :nothing],
-     [:c_call,   5, 'xyzzy', Kernel,      :tap,             self,        :inner, :nothing],
-     [:c_return, 5, "xyzzy", Kernel,      :tap,             self,        :inner, self],
      [:c_return, 4, "xyzzy", Integer,     :times,           1,           :outer, 1],
      [:line,     7, 'xyzzy', self.class,  method,           self,        :outer, :nothing],
      [:c_call,   7, "xyzzy", Class,       :inherited,       Object,      :outer, :nothing],
@@ -500,8 +510,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:call,    13, "xyzzy", xyzzy.class, :bar,             xyzzy,       nil, :nothing],
      [:line,    14, "xyzzy", xyzzy.class, :bar,             xyzzy,       nil, :nothing],
      [:line,    15, "xyzzy", xyzzy.class, :bar,             xyzzy,       :XYZZY_bar, :nothing],
-     [:c_call,  15, "xyzzy", Kernel,      :tap,             xyzzy,       :XYZZY_bar, :nothing],
-     [:c_return,15, "xyzzy", Kernel,      :tap,             xyzzy,       :XYZZY_bar, xyzzy],
      [:return,  16, "xyzzy", xyzzy.class, :bar,             xyzzy,       :XYZZY_bar, xyzzy],
      [:return,  12, "xyzzy", xyzzy.class, :foo,             xyzzy,       :XYZZY_foo, xyzzy],
      [:line,    20, "xyzzy", TestSetTraceFunc, method,      self,        :outer, :nothing],
@@ -517,10 +525,43 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:c_call,  20, "xyzzy", Module,      :===,             RuntimeError,:outer, :nothing],
      [:c_return,20, "xyzzy", Module,      :===,             RuntimeError,:outer, true],
      [:line,    21, "xyzzy", TestSetTraceFunc, method,      self,        :outer, :nothing],
-     [:c_call,  21, "xyzzy", TracePoint,  :disable,         trace,       :outer, :nothing],
      ]
 
     return events, answer_events
+  end
+
+  def test_tracepoint
+    events1, answer_events = *trace_by_tracepoint(:line, :class, :end, :call, :return, :c_call, :c_return, :raise)
+
+    ms = [events1, answer_events].map{|evs|
+      evs.map{|e|
+        "#{e[0]} - #{e[2]}:#{e[1]} id: #{e[4]}"
+      }
+    }
+
+    if false # show all events
+      printf(" %-60s | %-60s\n", "actual", "expected")
+      ms[0].zip(ms[1]){|a, b|
+        printf("%s%-60s | %-60s\n", a==b ? ' ' : '!', a, b)
+      }
+    end
+
+    mesg = ms[0].zip(ms[1]).map{|a, b|
+      if a != b
+        "actual: #{a} <-> expected: #{b}"
+      end
+    }.compact.join("\n")
+
+    answer_events.zip(events1){|answer, event|
+      assert_equal answer, event, mesg
+    }
+
+    [:line, :class, :end, :call, :return, :c_call, :c_return, :raise].each{|event|
+      events1, answer_events = *trace_by_tracepoint(event)
+      answer_events.find_all{|e| e[0] == event}.zip(events1){|answer_line, event_line|
+        assert_equal answer_line, event_line
+      }
+    }
   end
 
   def trace_by_set_trace_func
@@ -530,6 +571,9 @@ class TestSetTraceFunc < Test::Unit::TestCase
     xyzzy = nil
     xyzzy = xyzzy
     _local_var = :outer
+    method = :trace_by_set_trace_func
+    raised_exc = nil
+
     eval <<-EOF.gsub(/^.*?: /, ""), nil, 'xyzzy'
     1: set_trace_func(lambda{|event, file, line, id, binding, klass|
     2:   events << [event, line, file, klass, id, binding.eval('self'), binding.eval("_local_var")] if file == 'xyzzy'
@@ -554,44 +598,69 @@ class TestSetTraceFunc < Test::Unit::TestCase
    21: set_trace_func(nil)
     EOF
     self.class.class_eval{remove_const(:XYZZY)}
-    return events
+
+    answer_events = [
+     #
+     [:c_return, 1, "xyzzy", TracePoint,  :trace,           TracePoint,  :outer,  trace],
+     [:line,     4, 'xyzzy', self.class,  method,           self,        :outer, :nothing],
+     [:c_call,   4, 'xyzzy', Integer,     :times,           1,           :outer, :nothing],
+     [:line,     4, 'xyzzy', self.class,  method,           self,        nil,    :nothing],
+     [:line,     5, 'xyzzy', self.class,  method,           self,        :inner, :nothing],
+     [:c_return, 4, "xyzzy", Integer,     :times,           1,           :outer, 1],
+     [:line,     7, 'xyzzy', self.class,  method,           self,        :outer, :nothing],
+     [:c_call,   7, "xyzzy", Class,       :inherited,       Object,      :outer, :nothing],
+     [:c_return, 7, "xyzzy", Class,       :inherited,       Object,      :outer, nil],
+     [:class,    7, "xyzzy", nil,         nil,              xyzzy.class, nil,    :nothing],
+     [:line,     8, "xyzzy", nil,         nil,              xyzzy.class, nil,    :nothing],
+     [:line,     9, "xyzzy", nil,         nil,              xyzzy.class, :XYZZY_outer, :nothing],
+     [:c_call,   9, "xyzzy", Module,      :method_added,    xyzzy.class, :XYZZY_outer, :nothing],
+     [:c_return, 9, "xyzzy", Module,      :method_added,    xyzzy.class, :XYZZY_outer, nil],
+     [:line,    13, "xyzzy", nil,         nil,              xyzzy.class, :XYZZY_outer, :nothing],
+     [:c_call,  13, "xyzzy", Module,      :method_added,    xyzzy.class, :XYZZY_outer, :nothing],
+     [:c_return,13, "xyzzy", Module,      :method_added,    xyzzy.class, :XYZZY_outer, nil],
+     [:end,     17, "xyzzy", nil,         nil,              xyzzy.class, :XYZZY_outer, :nothing],
+     [:line,    18, "xyzzy", TestSetTraceFunc, method,      self,        :outer, :nothing],
+     [:c_call,  18, "xyzzy", Class,       :new,             xyzzy.class, :outer, :nothing],
+     [:c_call,  18, "xyzzy", BasicObject, :initialize,      xyzzy,       :outer, :nothing],
+     [:c_return,18, "xyzzy", BasicObject, :initialize,      xyzzy,       :outer, nil],
+     [:c_return,18, "xyzzy", Class,       :new,             xyzzy.class, :outer, xyzzy],
+     [:line,    19, "xyzzy", TestSetTraceFunc, method,      self, :outer, :nothing],
+     [:call,     9, "xyzzy", xyzzy.class, :foo,             xyzzy,       nil,  :nothing],
+     [:line,    10, "xyzzy", xyzzy.class, :foo,             xyzzy,       nil,  :nothing],
+     [:line,    11, "xyzzy", xyzzy.class, :foo,             xyzzy,       :XYZZY_foo, :nothing],
+     [:call,    13, "xyzzy", xyzzy.class, :bar,             xyzzy,       nil, :nothing],
+     [:line,    14, "xyzzy", xyzzy.class, :bar,             xyzzy,       nil, :nothing],
+     [:line,    15, "xyzzy", xyzzy.class, :bar,             xyzzy,       :XYZZY_bar, :nothing],
+     [:return,  16, "xyzzy", xyzzy.class, :bar,             xyzzy,       :XYZZY_bar, xyzzy],
+     [:return,  12, "xyzzy", xyzzy.class, :foo,             xyzzy,       :XYZZY_foo, xyzzy],
+     [:line,    20, "xyzzy", TestSetTraceFunc, method,      self,        :outer, :nothing],
+     [:c_call,  20, "xyzzy", Kernel,      :raise,           self,        :outer, :nothing],
+     [:c_call,  20, "xyzzy", Exception,   :exception,       RuntimeError, :outer, :nothing],
+     [:c_call,  20, "xyzzy", Exception,   :initialize,      raised_exc,  :outer, :nothing],
+     [:c_return,20, "xyzzy", Exception,   :initialize,      raised_exc,  :outer, raised_exc],
+     [:c_return,20, "xyzzy", Exception,   :exception,       RuntimeError, :outer, raised_exc],
+     [:c_return,20, "xyzzy", Kernel,      :raise,           self,        :outer, nil],
+     [:c_call,  20, "xyzzy", Exception,   :backtrace,       raised_exc,  :outer, :nothing],
+     [:c_return,20, "xyzzy", Exception,   :backtrace,       raised_exc,  :outer, nil],
+     [:raise,   20, "xyzzy", TestSetTraceFunc, :trace_by_tracepoint, self, :outer, raised_exc],
+     [:c_call,  20, "xyzzy", Module,      :===,             RuntimeError,:outer, :nothing],
+     [:c_return,20, "xyzzy", Module,      :===,             RuntimeError,:outer, true],
+     [:line,    21, "xyzzy", TestSetTraceFunc, method,      self,        :outer, :nothing],
+     [:c_call,  21, "xyzzy", TracePoint,  :disable,         trace,       :outer, :nothing],
+     ]
+    return events, answer_events
   end
 
-  def test_tracepoint
-    events1, answer_events = *trace_by_tracepoint(:line, :class, :end, :call, :return, :c_call, :c_return, :raise)
-
-    ms = [events1, answer_events].map{|evs|
-      evs.map{|e|
-        "#{e[0]} - #{e[2]}:#{e[1]} id: #{e[4]}"
-      }
-    }
-
-    mesg = ms[0].zip(ms[1]).map{|a, b|
-      if a != b
-        "#{a} <-> #{b}"
-      end
-    }.compact.join("\n")
-
-    answer_events.zip(events1){|answer, event|
-      assert_equal answer, event, mesg
-    }
-
-    events2 = trace_by_set_trace_func
-    events1.zip(events2){|ev1, ev2|
-      ev2[0] = ev2[0].sub('-', '_').to_sym
-      assert_equal ev1[0..2], ev2[0..2], ev1.inspect
+  def test_set_trace_func
+    actual_events, expected_events = trace_by_set_trace_func
+    expected_events.zip(actual_events){|e, a|
+      a[0] = a[0].to_s.sub('-', '_').to_sym
+      assert_equal e[0..2], a[0..2], a.inspect
 
       # event, line, file, klass, id, binding.eval('self'), binding.eval("_local_var")
-      assert_equal ev1[3].nil?, ev2[3].nil? # klass
-      assert_equal ev1[4].nil?, ev2[4].nil? # id
-      assert_equal ev1[6], ev2[6]           # _local_var
-    }
-
-    [:line, :class, :end, :call, :return, :c_call, :c_return, :raise].each{|event|
-      events1, answer_events = *trace_by_tracepoint(event)
-      answer_events.find_all{|e| e[0] == event}.zip(events1){|answer_line, event_line|
-        assert_equal answer_line, event_line
-      }
+      assert_equal e[3].nil?, a[3].nil? # klass
+      assert_equal e[4].nil?, a[4].nil? # id
+      assert_equal e[6], a[6]           # _local_var
     }
   end
 
@@ -676,7 +745,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     }
     foo
     trace.disable
-    assert_equal([:foo, :foo], ary)
+    assert_equal([:foo, :disable, :foo, :disable], ary)
     assert_equal([], args)
 
     trace = TracePoint.new{}
@@ -760,6 +829,56 @@ class TestSetTraceFunc < Test::Unit::TestCase
     trace.enable{
       method_test_tracepoint_return_value "xyzzy"
     }
+  end
+
+  def test_tracepoint_attr
+    c = Class.new do
+      attr_accessor :x
+      alias y x
+      alias y= x=
+    end
+    obj = c.new
+
+    ar_meth = obj.method(:x)
+    aw_meth = obj.method(:x=)
+    aar_meth = obj.method(:y)
+    aaw_meth = obj.method(:y=)
+    events = []
+    trace = TracePoint.new(:c_call, :c_return){|tp|
+      next if !target_thread?
+      next if tp.path != __FILE__
+      next if tp.method_id == :call
+      case tp.event
+      when :c_call
+        assert_raise(RuntimeError) {tp.return_value}
+        events << [tp.event, tp.method_id, tp.callee_id]
+      when :c_return
+        events << [tp.event, tp.method_id, tp.callee_id, tp.return_value]
+      end
+    }
+    test_proc = proc do
+      obj.x = 1
+      obj.x
+      obj.y = 2
+      obj.y
+      aw_meth.call(1)
+      ar_meth.call
+      aaw_meth.call(2)
+      aar_meth.call
+    end
+    test_proc.call # populate call caches
+    trace.enable(&test_proc)
+    expected = [
+      [:c_call, :x=, :x=],
+      [:c_return, :x=, :x=, 1],
+      [:c_call, :x, :x],
+      [:c_return, :x, :x, 1],
+      [:c_call, :x=, :y=],
+      [:c_return, :x=, :y=, 2],
+      [:c_call, :x, :y],
+      [:c_return, :x, :y, 2],
+    ]
+    assert_equal(expected*2, events)
   end
 
   class XYZZYException < Exception; end
@@ -868,9 +987,9 @@ class TestSetTraceFunc < Test::Unit::TestCase
       when :line
         assert_match(/ in /, str)
       when :call, :c_call
-        assert_match(/call \`/, str) # #<TracePoint:c_call `inherited'@../trunk/test.rb:11>
+        assert_match(/call \`/, str) # #<TracePoint:c_call `inherited' ../trunk/test.rb:11>
       when :return, :c_return
-        assert_match(/return \`/, str) # #<TracePoint:return `m'@../trunk/test.rb:3>
+        assert_match(/return \`/, str) # #<TracePoint:return `m' ../trunk/test.rb:3>
       when /thread/
         assert_match(/\#<Thread:/, str) # #<TracePoint:thread_end of #<Thread:0x87076c0>>
       else
@@ -913,20 +1032,24 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_tracepoint_with_multithreads
     assert_nothing_raised do
-      TracePoint.new{
+      TracePoint.new(:line){
         10.times{
           Thread.pass
         }
       }.enable do
         (1..10).map{
           Thread.new{
-            1000.times{
+            1_000.times{|i|
+              _a = i
             }
           }
         }.each{|th|
           th.join
         }
       end
+      _a = 1
+      _b = 2
+      _c = 3 # to make sure the deletion of unused TracePoints
     end
   end
 
@@ -1524,6 +1647,33 @@ class TestSetTraceFunc < Test::Unit::TestCase
       assert_equal ev, :fiber_switch
     }
 
+    # test for raise into resumable fiber
+    evs = []
+    f = nil
+    TracePoint.new(:raise, :fiber_switch){|tp|
+      next unless target_thread?
+      evs << [tp.event, Fiber.current]
+    }.enable{
+      f = Fiber.new{
+        Fiber.yield # will raise
+        Fiber.yield # unreachable
+      }
+      begin
+        f.resume
+        f.raise StopIteration
+      rescue StopIteration
+        evs << :rescued
+      end
+    }
+    assert_equal [:fiber_switch, f],             evs[0], "initial resume"
+    assert_equal [:fiber_switch, Fiber.current], evs[1], "Fiber.yield"
+    assert_equal [:fiber_switch, f],             evs[2], "fiber.raise"
+    assert_equal [:raise, f],                    evs[3], "fiber.raise"
+    assert_equal [:fiber_switch, Fiber.current], evs[4], "terminated with raise"
+    assert_equal [:raise, Fiber.current],        evs[5], "terminated with raise"
+    assert_equal :rescued,                       evs[6]
+    assert_equal 7, evs.size
+
     # test for transfer
     evs = []
     TracePoint.new(:fiber_switch){|tp|
@@ -1546,6 +1696,41 @@ class TestSetTraceFunc < Test::Unit::TestCase
     evs.each{|ev|
       assert_equal ev, :fiber_switch
     }
+
+    # test for raise and from transferring fibers
+    evs = []
+    f1 = f2 = nil
+    TracePoint.new(:raise, :fiber_switch){|tp|
+      next unless target_thread?
+      evs << [tp.event, Fiber.current]
+    }.enable{
+      f1 = Fiber.new{
+        f2.transfer
+        f2.raise ScriptError
+        Fiber.yield :ok
+      }
+      f2 = Fiber.new{
+        f1.transfer
+        f1.transfer
+      }
+      begin
+        f1.resume
+      rescue ScriptError
+        evs << :rescued
+      end
+    }
+    assert_equal [:fiber_switch, f1],            evs[0], "initial resume"
+    assert_equal [:fiber_switch, f2],            evs[1], "f2.transfer"
+    assert_equal [:fiber_switch, f1],            evs[2], "f1.transfer"
+    assert_equal [:fiber_switch, f2],            evs[3], "f2.raise ScriptError"
+    assert_equal [:raise,        f2],            evs[4], "f2.raise ScriptError"
+    assert_equal [:fiber_switch, f1],            evs[5], "f2 unhandled exception"
+    assert_equal [:raise,        f1],            evs[6], "f2 unhandled exception"
+    assert_equal [:fiber_switch, Fiber.current], evs[7], "f1 unhandled exception"
+    assert_equal [:raise,        Fiber.current], evs[8], "f1 unhandled exception"
+    assert_equal :rescued,                       evs[9], "rescued everything"
+    assert_equal 10, evs.size
+
   end
 
   def test_tracepoint_callee_id
@@ -1608,7 +1793,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     TracePoint.new(:return, &capture_events).enable{
       o.alias_m
     }
-    assert_equal [[:return, :m, :alias_m]], events
+    assert_equal [[:return, :tap, :tap], [:return, :m, :alias_m]], events
     events.clear
 
     o = Class.new{
@@ -1632,13 +1817,13 @@ class TestSetTraceFunc < Test::Unit::TestCase
     events.clear
 
     o = Class.new{
-      alias alias_tap tap
-      define_method(:m){alias_tap{return}}
+      alias alias_singleton_class singleton_class
+      define_method(:m){alias_singleton_class}
     }.new
     TracePoint.new(:c_return, &capture_events).enable{
       o.m
     }
-    assert_equal [[:c_return, :tap, :alias_tap]], events
+    assert_equal [[:c_return, :singleton_class, :alias_singleton_class]], events
     events.clear
 
     c = Class.new{
@@ -1853,7 +2038,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def test_thread_add_trace_func
     events = []
     base_line = __LINE__
-    q = Queue.new
+    q = Thread::Queue.new
     t = Thread.new{
       Thread.current.add_trace_func proc{|ev, file, line, *args|
         events << [ev, line]
@@ -1879,7 +2064,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
     # other thread
     events = []
-    m2t_q = Queue.new
+    m2t_q = Thread::Queue.new
 
     t = Thread.new{
       Thread.current.abort_on_exception = true
@@ -1894,7 +2079,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     Thread.pass until t.status == 'sleep'
     # When MJIT thread exists, t.status becomes 'sleep' even if it does not reach m2t_q.pop.
     # This sleep forces it to reach m2t_q.pop for --jit-wait.
-    sleep 1 if RubyVM::MJIT.enabled?
+    sleep 1 if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
 
     t.add_trace_func proc{|ev, file, line, *args|
       if file == __FILE__
@@ -2106,6 +2291,31 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal 'target_line is specified, but line event is not specified', e.message
   end
 
+  def test_tracepoint_enable_with_target_line_two_times
+    events = []
+    line_0 = __LINE__
+    code1 = proc{
+      events << 1 # tp1
+      events << 2
+      events << 3 # tp2
+    }
+
+    tp1 = TracePoint.new(:line) do |tp|
+      events << :tp1
+    end
+    tp2 = TracePoint.new(:line) do |tp|
+      events << :tp2
+    end
+
+    tp1.enable(target: code1, target_line: line_0 + 2) do
+      tp2.enable(target: code1, target_line: line_0 + 4) do
+        # two hooks
+        code1.call
+      end
+    end
+    assert_equal [:tp1, 1, 2, :tp2, 3], events
+  end
+
   def test_script_compiled
     events = []
     tp = TracePoint.new(:script_compiled){|tp|
@@ -2124,10 +2334,19 @@ class TestSetTraceFunc < Test::Unit::TestCase
                   [__FILE__+"/instance_eval", eval_script],
                   [__FILE__+"/class_eval", eval_script],
                  ], events
+
     events.clear
+    tp.enable{
+      begin
+        eval('a=')
+      rescue SyntaxError
+      end
+    }
+    assert_equal [], events, 'script_compiled event should not be invoked on compile error'
 
     skip "TODO: test for requires"
 
+    events.clear
     tp.enable{
       require ''
       require_relative ''
@@ -2155,8 +2374,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
       events << Thread.current
     end
 
-    q1 = Queue.new
-    q2 = Queue.new
+    q1 = Thread::Queue.new
+    q2 = Thread::Queue.new
 
     th = Thread.new{
       q1 << :ok; q2.pop
@@ -2201,5 +2420,39 @@ class TestSetTraceFunc < Test::Unit::TestCase
     end
     bar
     EOS
+  end
+
+  def test_stat_exists
+    assert_instance_of Hash, TracePoint.stat
+  end
+
+  def test_tracepoint_opt_invokebuiltin_delegate_leave
+    code = 'puts RubyVM::InstructionSequence.of("\x00".method(:unpack)).disasm'
+    out = EnvUtil.invoke_ruby(['-e', code], '', true).first
+    assert_match(/^0000 opt_invokebuiltin_delegate_leave /, out)
+
+    event = eval(EnvUtil.invoke_ruby(['-e', <<~'EOS'], '', true).first)
+      TracePoint.new(:return) do |tp|
+        p [tp.event, tp.method_id]
+      end.enable do
+        "\x00".unpack("c")
+      end
+    EOS
+    assert_equal [:return, :unpack], event
+  end
+
+  def test_while_in_while
+    lines = []
+
+    TracePoint.new(:line){|tp|
+      next unless target_thread?
+      lines << tp.lineno
+    }.enable{
+      n = 3
+      while n > 0
+        n -= 1 while n > 0
+      end
+    }
+    assert_equal [__LINE__ - 5, __LINE__ - 4, __LINE__ - 3], lines, 'Bug #17868'
   end
 end

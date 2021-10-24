@@ -1,9 +1,9 @@
 describe :float_quo, shared: true do
-  it "performs floating-point division between self and a Fixnum" do
+  it "performs floating-point division between self and an Integer" do
     8.9.send(@method, 7).should == 1.2714285714285716
   end
 
-  it "performs floating-point division between self and a Bignum" do
+  it "performs floating-point division between self and an Integer" do
     8.9.send(@method, 9999999999999**9).should == 8.900000000008011e-117
   end
 

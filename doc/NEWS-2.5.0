@@ -68,7 +68,7 @@ with all sufficient information, see the ChangeLog file or Redmine
   * File.rename releases GVL. [Feature #13951]
   * File::Stat#atime, File::Stat#mtime and File::Stat#ctime support fractional
     second timestamps on Windows 8 and later.  [Feature #13726]
-  * File::Stat#ino and File.indentical? support ReFS 128bit ino on Windows 8.1
+  * File::Stat#ino and File.identical? support ReFS 128bit ino on Windows 8.1
     and later.  [Feature #13731]
   * File.readable?, File.readable_real?, File.writable?, File.writable_real?,
     File.executable?, File.executable_real?, File.mkfifo, File.readlink,

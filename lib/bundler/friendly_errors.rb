@@ -1,11 +1,22 @@
 # frozen_string_literal: true
 
-require "cgi"
 require_relative "vendored_thor"
 
 module Bundler
   module FriendlyErrors
-  module_function
+    module_function
+
+    def enable!
+      @disabled = false
+    end
+
+    def disabled?
+      @disabled
+    end
+
+    def disable!
+      @disabled = true
+    end
 
     def log_error(error)
       case error
@@ -16,7 +27,7 @@ module Bundler
         Bundler.ui.error error.message
       when GemRequireError
         Bundler.ui.error error.message
-        Bundler.ui.trace error.orig_exception, nil, true
+        Bundler.ui.trace error.orig_exception
       when BundlerError
         Bundler.ui.error error.message, :wrap => true
         Bundler.ui.trace error
@@ -24,13 +35,7 @@ module Bundler
         Bundler.ui.error error.message
       when LoadError
         raise error unless error.message =~ /cannot load such file -- openssl|openssl.so|libcrypto.so/
-        Bundler.ui.error "\nCould not load OpenSSL."
-        Bundler.ui.warn <<-WARN, :wrap => true
-          You must recompile Ruby with OpenSSL support or change the sources in your \
-          Gemfile from 'https' to 'http'. Instructions for compiling with OpenSSL \
-          using RVM are available at http://rvm.io/packages/openssl.
-        WARN
-        Bundler.ui.trace error
+        Bundler.ui.error "\nCould not load OpenSSL. #{error.class}: #{error}\n#{error.backtrace.join("\n  ")}"
       when Interrupt
         Bundler.ui.error "\nQuitting..."
         Bundler.ui.trace error
@@ -44,8 +49,6 @@ module Bundler
           "Alternatively, you can increase the amount of memory the JVM is able to use by running Bundler with jruby -J-Xmx1024m -S bundle (JRuby defaults to 500MB)."
       else request_issue_report_for(error)
       end
-    rescue StandardError
-      raise error
     end
 
     def exit_status(error)
@@ -58,7 +61,7 @@ module Bundler
     end
 
     def request_issue_report_for(e)
-      Bundler.ui.info <<-EOS.gsub(/^ {8}/, "")
+      Bundler.ui.error <<-EOS.gsub(/^ {8}/, ""), nil, nil
         --- ERROR REPORT TEMPLATE -------------------------------------------------------
         # Error Report
 
@@ -83,7 +86,7 @@ module Bundler
 
           I tried...
 
-        - **Have you read our issues document, https://github.com/bundler/bundler/blob/master/doc/contributing/ISSUES.md?**
+        - **Have you read our issues document, https://github.com/rubygems/rubygems/blob/master/bundler/doc/contributing/ISSUES.md?**
 
           ...
 
@@ -101,29 +104,33 @@ module Bundler
 
       Bundler.ui.error "Unfortunately, an unexpected error occurred, and Bundler cannot continue."
 
-      Bundler.ui.warn <<-EOS.gsub(/^ {8}/, "")
+      Bundler.ui.error <<-EOS.gsub(/^ {8}/, ""), nil, :yellow
 
         First, try this link to see if there are any existing issue reports for this error:
         #{issues_url(e)}
 
-        If there aren't any reports for this error yet, please create copy and paste the report template above into a new issue. Don't forget to anonymize any private data! The new issue form is located at:
-        https://github.com/bundler/bundler/issues/new
+        If there aren't any reports for this error yet, please copy and paste the report template above into a new issue. Don't forget to anonymize any private data! The new issue form is located at:
+        https://github.com/rubygems/rubygems/issues/new?labels=Bundler&template=bundler-related-issue.md
       EOS
     end
 
     def issues_url(exception)
       message = exception.message.lines.first.tr(":", " ").chomp
       message = message.split("-").first if exception.is_a?(Errno)
-      "https://github.com/bundler/bundler/search?q=" \
+      require "cgi"
+      "https://github.com/rubygems/rubygems/search?q=" \
         "#{CGI.escape(message)}&type=Issues"
     end
   end
 
   def self.with_friendly_errors
+    FriendlyErrors.enable!
     yield
   rescue SignalException
     raise
   rescue Exception => e # rubocop:disable Lint/RescueException
+    raise if FriendlyErrors.disabled?
+
     FriendlyErrors.log_error(e)
     exit FriendlyErrors.exit_status(e)
   end

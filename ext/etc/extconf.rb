@@ -47,6 +47,8 @@ if !File.exist?("#{srcdir}/depend")
   %x[#{RbConfig.ruby} #{srcdir}/mkconstants.rb -o #{srcdir}/constdefs.h]
 end
 
+have_func('rb_deprecate_constant(Qnil, "None")')
+
 $distcleanfiles << "constdefs.h"
 
 create_makefile("etc")

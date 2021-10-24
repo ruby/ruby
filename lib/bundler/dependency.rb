@@ -74,15 +74,6 @@ module Bundler
       :x64_mingw_26 => Gem::Platform::X64_MINGW,
     }.freeze
 
-    REVERSE_PLATFORM_MAP = {}.tap do |reverse_platform_map|
-      PLATFORM_MAP.each do |key, value|
-        reverse_platform_map[value] ||= []
-        reverse_platform_map[value] << key
-      end
-
-      reverse_platform_map.each {|_, platforms| platforms.freeze }
-    end.freeze
-
     def initialize(name, version, options = {}, &blk)
       type = options["type"] || :runtime
       super(name, version, type)
@@ -105,13 +96,11 @@ module Bundler
     def gem_platforms(valid_platforms)
       return valid_platforms if @platforms.empty?
 
-      @gem_platforms ||= expanded_platforms.compact.uniq
-
-      valid_platforms & @gem_platforms
+      valid_platforms.select {|p| expanded_platforms.include?(GemHelpers.generic(p)) }
     end
 
     def expanded_platforms
-      @platforms.map {|pl| PLATFORM_MAP[pl] }
+      @expanded_platforms ||= @platforms.map {|pl| PLATFORM_MAP[pl] }.compact.uniq
     end
 
     def should_include?

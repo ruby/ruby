@@ -29,7 +29,7 @@ end
 # == Command-line Reference
 #
 #     racc [-o<var>filename</var>] [--output-file=<var>filename</var>]
-#          [-e<var>rubypath</var>] [--embedded=<var>rubypath</var>]
+#          [-e<var>rubypath</var>] [--executable=<var>rubypath</var>]
 #          [-v] [--verbose]
 #          [-O<var>filename</var>] [--log-file=<var>filename</var>]
 #          [-g] [--debug]
@@ -41,7 +41,7 @@ end
 #          [-S] [--output-status]
 #          [--version] [--copyright] [--help] <var>grammarfile</var>
 #
-# [+filename+]
+# [+grammarfile+]
 #   Racc grammar file. Any extension is permitted.
 # [-o+outfile+, --output-file=+outfile+]
 #   A filename for output. default is <+filename+>.tab.rb
@@ -58,7 +58,7 @@ end
 # [-E, --embedded]
 #   Output parser which doesn't need runtime files (racc/parser.rb).
 # [-C, --check-only]
-#   Check syntax of racc grammer file and quit.
+#   Check syntax of racc grammar file and quit.
 # [-S, --output-status]
 #   Print messages time to time while compiling.
 # [-l, --no-line-convert]
@@ -179,45 +179,39 @@ end
 # Your own parser is completely yours.
 module Racc
 
-  unless defined?(Racc_No_Extentions)
-    Racc_No_Extentions = false # :nodoc:
+  unless defined?(Racc_No_Extensions)
+    Racc_No_Extensions = false # :nodoc:
   end
 
   class Parser
 
     Racc_Runtime_Version = ::Racc::VERSION
-    Racc_Runtime_Revision = '$Id: 87af5c09d4467cae567837b4162ec2145417a90e $'
-
     Racc_Runtime_Core_Version_R = ::Racc::VERSION
-    Racc_Runtime_Core_Revision_R = '$Id: 87af5c09d4467cae567837b4162ec2145417a90e $'.split[1]
+
     begin
       if Object.const_defined?(:RUBY_ENGINE) and RUBY_ENGINE == 'jruby'
+        require 'jruby'
         require 'racc/cparse-jruby.jar'
         com.headius.racc.Cparse.new.load(JRuby.runtime, false)
       else
         require 'racc/cparse'
       end
-    # Racc_Runtime_Core_Version_C  = (defined in extention)
-      Racc_Runtime_Core_Revision_C = Racc_Runtime_Core_Id_C.split[2]
+
       unless new.respond_to?(:_racc_do_parse_c, true)
         raise LoadError, 'old cparse.so'
       end
-      if Racc_No_Extentions
+      if Racc_No_Extensions
         raise LoadError, 'selecting ruby version of racc runtime core'
       end
 
       Racc_Main_Parsing_Routine    = :_racc_do_parse_c # :nodoc:
       Racc_YY_Parse_Method         = :_racc_yyparse_c # :nodoc:
       Racc_Runtime_Core_Version    = Racc_Runtime_Core_Version_C # :nodoc:
-      Racc_Runtime_Core_Revision   = Racc_Runtime_Core_Revision_C # :nodoc:
       Racc_Runtime_Type            = 'c' # :nodoc:
     rescue LoadError
-puts $!
-puts $!.backtrace
       Racc_Main_Parsing_Routine    = :_racc_do_parse_rb
       Racc_YY_Parse_Method         = :_racc_yyparse_rb
       Racc_Runtime_Core_Version    = Racc_Runtime_Core_Version_R
-      Racc_Runtime_Core_Revision   = Racc_Runtime_Core_Revision_R
       Racc_Runtime_Type            = 'ruby'
     end
 
@@ -330,7 +324,7 @@ puts $!.backtrace
     # It must 'yield' the token, which format is [TOKEN-SYMBOL, VALUE].
     class_eval %{
     def yyparse(recv, mid)
-      #{Racc_YY_Parse_Method}(recv, mid, _racc_setup(), true)
+      #{Racc_YY_Parse_Method}(recv, mid, _racc_setup(), false)
     end
     }
 
@@ -552,7 +546,7 @@ puts $!.backtrace
     end
 
     # Exit parser.
-    # Return value is Symbol_Value_Stack[0].
+    # Return value is +Symbol_Value_Stack[0]+.
     def yyaccept
       throw :racc_jump, 2
     end

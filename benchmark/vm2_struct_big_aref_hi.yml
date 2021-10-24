@@ -1,7 +1,0 @@
-prelude: |
-  s = Struct.new(*('a'..'z').map { |x| x.to_sym })
-  x = s.new
-benchmark:
-  vm2_struct_big_aref_hi: |
-    x.z # x[25]
-loop_count: 6000000

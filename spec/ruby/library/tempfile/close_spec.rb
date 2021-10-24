@@ -18,7 +18,7 @@ describe "Tempfile#close when passed no argument or [false]" do
   it "does not unlink self" do
     path = @tempfile.path
     @tempfile.close
-    File.exist?(path).should be_true
+    File.should.exist?(path)
   end
 end
 
@@ -35,7 +35,7 @@ describe "Tempfile#close when passed [true]" do
   it "unlinks self" do
     path = @tempfile.path
     @tempfile.close(true)
-    File.exist?(path).should be_false
+    File.should_not.exist?(path)
   end
 end
 
@@ -52,6 +52,6 @@ describe "Tempfile#close!" do
   it "unlinks self" do
     path =  @tempfile.path
     @tempfile.close!
-    File.exist?(path).should be_false
+    File.should_not.exist?(path)
   end
 end

@@ -9,13 +9,19 @@
  */
 #include "ossl.h"
 #include <stdarg.h> /* for ossl_raise */
-#include <ruby/thread_native.h> /* for OpenSSL < 1.1.0 locks */
+
+/* OpenSSL >= 1.1.0 and LibreSSL >= 2.9.0 */
+#if defined(LIBRESSL_VERSION_NUMBER) || OPENSSL_VERSION_NUMBER >= 0x10100000
+# define HAVE_OPENSSL_110_THREADING_API
+#else
+# include <ruby/thread_native.h>
+#endif
 
 /*
  * Data Conversion
  */
 #define OSSL_IMPL_ARY2SK(name, type, expected_class, dup)	\
-STACK_OF(type) *						\
+VALUE								\
 ossl_##name##_ary2sk0(VALUE ary)				\
 {								\
     STACK_OF(type) *sk;						\
@@ -37,7 +43,7 @@ ossl_##name##_ary2sk0(VALUE ary)				\
 	x = dup(val); /* NEED TO DUP */				\
 	sk_##type##_push(sk, x);				\
     }								\
-    return sk;							\
+    return (VALUE)sk;						\
 }								\
 								\
 STACK_OF(type) *						\
@@ -262,15 +268,11 @@ ossl_to_der_if_possible(VALUE obj)
 /*
  * Errors
  */
-static VALUE
-ossl_make_error(VALUE exc, const char *fmt, va_list args)
+VALUE
+ossl_make_error(VALUE exc, VALUE str)
 {
-    VALUE str = Qnil;
     unsigned long e;
 
-    if (fmt) {
-	str = rb_vsprintf(fmt, args);
-    }
     e = ERR_peek_last_error();
     if (e) {
 	const char *msg = ERR_reason_error_string(e);
@@ -294,37 +296,48 @@ ossl_raise(VALUE exc, const char *fmt, ...)
 {
     va_list args;
     VALUE err;
-    va_start(args, fmt);
-    err = ossl_make_error(exc, fmt, args);
-    va_end(args);
-    rb_exc_raise(err);
+
+    if (fmt) {
+	va_start(args, fmt);
+	err = rb_vsprintf(fmt, args);
+	va_end(args);
+    }
+    else {
+	err = Qnil;
+    }
+
+    rb_exc_raise(ossl_make_error(exc, err));
 }
 
 void
 ossl_clear_error(void)
 {
     if (dOSSL == Qtrue) {
-	unsigned long e;
-	const char *file, *data, *errstr;
-	int line, flags;
+        unsigned long e;
+        const char *file, *data, *func, *lib, *reason;
+        char append[256] = "";
+        int line, flags;
 
-	while ((e = ERR_get_error_line_data(&file, &line, &data, &flags))) {
-	    errstr = ERR_error_string(e, NULL);
-	    if (!errstr)
-		errstr = "(null)";
+#ifdef HAVE_ERR_GET_ERROR_ALL
+        while ((e = ERR_get_error_all(&file, &line, &func, &data, &flags))) {
+#else
+        while ((e = ERR_get_error_line_data(&file, &line, &data, &flags))) {
+            func = ERR_func_error_string(e);
+#endif
+            lib = ERR_lib_error_string(e);
+            reason = ERR_reason_error_string(e);
 
-	    if (flags & ERR_TXT_STRING) {
-		if (!data)
-		    data = "(null)";
-		rb_warn("error on stack: %s (%s)", errstr, data);
-	    }
-	    else {
-		rb_warn("error on stack: %s", errstr);
-	    }
-	}
+            if (flags & ERR_TXT_STRING) {
+                if (!data)
+                    data = "(null)";
+                snprintf(append, sizeof(append), " (%s)", data);
+            }
+            rb_warn("error on stack: error:%08lX:%s:%s:%s%s", e, lib ? lib : "",
+                    func ? func : "", reason ? reason : "", append);
+        }
     }
     else {
-	ERR_clear_error();
+        ERR_clear_error();
     }
 }
 
@@ -338,7 +351,7 @@ ossl_clear_error(void)
  * implementation.
  */
 VALUE
-ossl_get_errors(void)
+ossl_get_errors(VALUE _)
 {
     VALUE ary;
     long e;
@@ -386,7 +399,7 @@ ossl_debug_get(VALUE self)
  * call-seq:
  *   OpenSSL.debug = boolean -> boolean
  *
- * Turns on or off debug mode. With debug mode, all erros added to the OpenSSL
+ * Turns on or off debug mode. With debug mode, all errors added to the OpenSSL
  * error queue will be printed to stderr.
  */
 static VALUE
@@ -497,8 +510,11 @@ print_mem_leaks(VALUE self)
     int ret;
 #endif
 
-    BN_CTX_free(ossl_bn_ctx);
-    ossl_bn_ctx = NULL;
+#ifndef HAVE_RB_EXT_RACTOR_SAFE
+    // for Ruby 2.x
+    void ossl_bn_ctx_free(void); // ossl_bn.c
+    ossl_bn_ctx_free();
+#endif
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000
     ret = CRYPTO_mem_leaks_fp(stderr);
@@ -605,6 +621,35 @@ static void Init_ossl_locks(void)
 #endif /* !HAVE_OPENSSL_110_THREADING_API */
 
 /*
+ * call-seq:
+ *   OpenSSL.fixed_length_secure_compare(string, string) -> boolean
+ *
+ * Constant time memory comparison for fixed length strings, such as results
+ * of HMAC calculations.
+ *
+ * Returns +true+ if the strings are identical, +false+ if they are of the same
+ * length but not identical. If the length is different, +ArgumentError+ is
+ * raised.
+ */
+static VALUE
+ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
+{
+    const unsigned char *p1 = (const unsigned char *)StringValuePtr(str1);
+    const unsigned char *p2 = (const unsigned char *)StringValuePtr(str2);
+    long len1 = RSTRING_LEN(str1);
+    long len2 = RSTRING_LEN(str2);
+
+    if (len1 != len2) {
+        ossl_raise(rb_eArgError, "inputs must be of equal length");
+    }
+
+    switch (CRYPTO_memcmp(p1, p2, len1)) {
+        case 0:	return Qtrue;
+        default: return Qfalse;
+    }
+}
+
+/*
  * OpenSSL provides SSL, TLS and general purpose cryptography.  It wraps the
  * OpenSSL[https://www.openssl.org/] library.
  *
@@ -635,7 +680,7 @@ static void Init_ossl_locks(void)
  * ahold of the key may use it unless it is encrypted.  In order to securely
  * export a key you may export it with a pass phrase.
  *
- *   cipher = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   cipher = OpenSSL::Cipher.new 'aes-256-cbc'
  *   pass_phrase = 'my secure pass phrase goes here'
  *
  *   key_secure = key.export cipher, pass_phrase
@@ -650,13 +695,13 @@ static void Init_ossl_locks(void)
  *
  * A key can also be loaded from a file.
  *
- *   key2 = OpenSSL::PKey::RSA.new File.read 'private_key.pem'
+ *   key2 = OpenSSL::PKey.read File.read 'private_key.pem'
  *   key2.public? # => true
  *   key2.private? # => true
  *
  * or
  *
- *   key3 = OpenSSL::PKey::RSA.new File.read 'public_key.pem'
+ *   key3 = OpenSSL::PKey.read File.read 'public_key.pem'
  *   key3.public? # => true
  *   key3.private? # => false
  *
@@ -668,7 +713,7 @@ static void Init_ossl_locks(void)
  *
  *   key4_pem = File.read 'private.secure.pem'
  *   pass_phrase = 'my secure pass phrase goes here'
- *   key4 = OpenSSL::PKey::RSA.new key4_pem, pass_phrase
+ *   key4 = OpenSSL::PKey.read key4_pem, pass_phrase
  *
  * == RSA Encryption
  *
@@ -710,16 +755,14 @@ static void Init_ossl_locks(void)
  * To sign a document, a cryptographically secure hash of the document is
  * computed first, which is then signed using the private key.
  *
- *   digest = OpenSSL::Digest::SHA256.new
- *   signature = key.sign digest, document
+ *   signature = key.sign 'SHA256', document
  *
  * To validate the signature, again a hash of the document is computed and
  * the signature is decrypted using the public key. The result is then
  * compared to the hash just computed, if they are equal the signature was
  * valid.
  *
- *   digest = OpenSSL::Digest::SHA256.new
- *   if key.verify digest, signature, document
+ *   if key.verify 'SHA256', signature, document
  *     puts 'Valid'
  *   else
  *     puts 'Invalid'
@@ -745,7 +788,7 @@ static void Init_ossl_locks(void)
  * using PBKDF2. PKCS #5 v2.0 recommends at least 8 bytes for the salt,
  * the number of iterations largely depends on the hardware being used.
  *
- *   cipher = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   cipher = OpenSSL::Cipher.new 'aes-256-cbc'
  *   cipher.encrypt
  *   iv = cipher.random_iv
  *
@@ -753,7 +796,7 @@ static void Init_ossl_locks(void)
  *   salt = OpenSSL::Random.random_bytes 16
  *   iter = 20000
  *   key_len = cipher.key_len
- *   digest = OpenSSL::Digest::SHA256.new
+ *   digest = OpenSSL::Digest.new('SHA256')
  *
  *   key = OpenSSL::PKCS5.pbkdf2_hmac(pwd, salt, iter, key_len, digest)
  *   cipher.key = key
@@ -768,7 +811,7 @@ static void Init_ossl_locks(void)
  * Use the same steps as before to derive the symmetric AES key, this time
  * setting the Cipher up for decryption.
  *
- *   cipher = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   cipher = OpenSSL::Cipher.new 'aes-256-cbc'
  *   cipher.decrypt
  *   cipher.iv = iv # the one generated with #random_iv
  *
@@ -776,7 +819,7 @@ static void Init_ossl_locks(void)
  *   salt = ... # the one generated above
  *   iter = 20000
  *   key_len = cipher.key_len
- *   digest = OpenSSL::Digest::SHA256.new
+ *   digest = OpenSSL::Digest.new('SHA256')
  *
  *   key = OpenSSL::PKCS5.pbkdf2_hmac(pwd, salt, iter, key_len, digest)
  *   cipher.key = key
@@ -803,7 +846,7 @@ static void Init_ossl_locks(void)
  *
  * First set up the cipher for encryption
  *
- *   encryptor = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   encryptor = OpenSSL::Cipher.new 'aes-256-cbc'
  *   encryptor.encrypt
  *   encryptor.pkcs5_keyivgen pass_phrase, salt
  *
@@ -816,7 +859,7 @@ static void Init_ossl_locks(void)
  *
  * Use a new Cipher instance set up for decryption
  *
- *   decryptor = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   decryptor = OpenSSL::Cipher.new 'aes-256-cbc'
  *   decryptor.decrypt
  *   decryptor.pkcs5_keyivgen pass_phrase, salt
  *
@@ -833,7 +876,7 @@ static void Init_ossl_locks(void)
  * signature.
  *
  *   key = OpenSSL::PKey::RSA.new 2048
- *   name = OpenSSL::X509::Name.parse 'CN=nobody/DC=example'
+ *   name = OpenSSL::X509::Name.parse '/CN=nobody/DC=example'
  *
  *   cert = OpenSSL::X509::Certificate.new
  *   cert.version = 2
@@ -872,7 +915,7 @@ static void Init_ossl_locks(void)
  * certificate.
  *
  *   cert.issuer = name
- *   cert.sign key, OpenSSL::Digest::SHA1.new
+ *   cert.sign key, OpenSSL::Digest.new('SHA1')
  *
  *   open 'certificate.pem', 'w' do |io| io.write cert.to_pem end
  *
@@ -904,7 +947,7 @@ static void Init_ossl_locks(void)
  *   ca_key = OpenSSL::PKey::RSA.new 2048
  *   pass_phrase = 'my secure pass phrase goes here'
  *
- *   cipher = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   cipher = OpenSSL::Cipher.new 'aes-256-cbc'
  *
  *   open 'ca_key.pem', 'w', 0400 do |io|
  *     io.write ca_key.export(cipher, pass_phrase)
@@ -915,7 +958,7 @@ static void Init_ossl_locks(void)
  * A CA certificate is created the same way we created a certificate above, but
  * with different extensions.
  *
- *   ca_name = OpenSSL::X509::Name.parse 'CN=ca/DC=example'
+ *   ca_name = OpenSSL::X509::Name.parse '/CN=ca/DC=example'
  *
  *   ca_cert = OpenSSL::X509::Certificate.new
  *   ca_cert.serial = 0
@@ -948,7 +991,7 @@ static void Init_ossl_locks(void)
  *
  * Root CA certificates are self-signed.
  *
- *   ca_cert.sign ca_key, OpenSSL::Digest::SHA1.new
+ *   ca_cert.sign ca_key, OpenSSL::Digest.new('SHA1')
  *
  * The CA certificate is saved to disk so it may be distributed to all the
  * users of the keys this CA will sign.
@@ -966,7 +1009,7 @@ static void Init_ossl_locks(void)
  *   csr.version = 0
  *   csr.subject = name
  *   csr.public_key = key.public_key
- *   csr.sign key, OpenSSL::Digest::SHA1.new
+ *   csr.sign key, OpenSSL::Digest.new('SHA1')
  *
  * A CSR is saved to disk and sent to the CA for signing.
  *
@@ -1010,7 +1053,7 @@ static void Init_ossl_locks(void)
  *   csr_cert.add_extension \
  *     extension_factory.create_extension('subjectKeyIdentifier', 'hash')
  *
- *   csr_cert.sign ca_key, OpenSSL::Digest::SHA1.new
+ *   csr_cert.sign ca_key, OpenSSL::Digest.new('SHA1')
  *
  *   open 'csr_cert.pem', 'w' do |io|
  *     io.write csr_cert.to_pem
@@ -1042,13 +1085,13 @@ static void Init_ossl_locks(void)
  *   loop do
  *     ssl_connection = ssl_server.accept
  *
- *     data = connection.gets
+ *     data = ssl_connection.gets
  *
  *     response = "I got #{data.dump}"
  *     puts response
  *
- *     connection.puts "I got #{data.dump}"
- *     connection.close
+ *     ssl_connection.puts "I got #{data.dump}"
+ *     ssl_connection.close
  *   end
  *
  * === SSL client
@@ -1099,6 +1142,10 @@ static void Init_ossl_locks(void)
 void
 Init_openssl(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
 #undef rb_intern
     /*
      * Init timezone info
@@ -1125,11 +1172,7 @@ Init_openssl(void)
      */
     mOSSL = rb_define_module("OpenSSL");
     rb_global_variable(&mOSSL);
-
-    /*
-     * OpenSSL ruby extension version
-     */
-    rb_define_const(mOSSL, "VERSION", rb_str_new2(OSSL_VERSION));
+    rb_define_singleton_method(mOSSL, "fixed_length_secure_compare", ossl_crypto_fixed_length_secure_compare, 2);
 
     /*
      * Version of OpenSSL the ruby OpenSSL extension was built with
@@ -1205,6 +1248,9 @@ Init_openssl(void)
     Init_ossl_pkey();
     Init_ossl_rand();
     Init_ossl_ssl();
+#ifndef OPENSSL_NO_TS
+    Init_ossl_ts();
+#endif
     Init_ossl_x509();
     Init_ossl_ocsp();
     Init_ossl_engine();

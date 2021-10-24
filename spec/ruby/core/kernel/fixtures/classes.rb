@@ -49,7 +49,7 @@ module KernelSpecs
 
   def self.chomp(str, method, sep="\n")
     code = "$_ = #{str.inspect}; $/ = #{sep.inspect}; #{method}; print $_"
-    IO.popen([*ruby_exe, "-n", "-e", code], "r+") do |io|
+    IO.popen([*ruby_exe, "-W0", "-n", "-e", code], "r+") do |io|
       io.puts
       io.close_write
       io.read
@@ -288,7 +288,13 @@ module KernelSpecs
 
   class Clone
     def initialize_clone(other)
-      ScratchPad.record other.object_id
+      ScratchPad.record other
+    end
+  end
+
+  class CloneFreeze
+    def initialize_clone(other, **kwargs)
+      ScratchPad.record([other, kwargs])
     end
   end
 
@@ -337,21 +343,44 @@ module KernelSpecs
     end
   end
 
+  module LambdaSpecs
+    module ZSuper
+      def lambda
+        super
+      end
+    end
+
+    class ForwardBlockWithZSuper
+      prepend(ZSuper)
+    end
+
+    module Ampersand
+      def lambda(&block)
+        suppress_warning {super(&block)}
+      end
+    end
+
+    class SuperAmpersand
+      prepend(Ampersand)
+    end
+  end
+
   class RespondViaMissing
     def respond_to_missing?(method, priv=false)
       case method
-        when :handled_publicly
-          true
-        when :handled_privately
-          priv
-        when :not_handled
-          false
-        else
-          raise "Typo in method name"
+      when :handled_publicly
+        true
+      when :handled_privately
+        priv
+      when :not_handled
+        false
+      else
+        raise "Typo in method name: #{method.inspect}"
       end
     end
 
     def method_missing(method, *args)
+      raise "the method name should be a Symbol" unless Symbol === method
       "Done #{method}(#{args})"
     end
   end

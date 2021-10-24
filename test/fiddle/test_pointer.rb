@@ -32,6 +32,31 @@ module Fiddle
       assert_equal free.to_i, ptr.free.to_i
     end
 
+    def test_malloc_block
+      escaped_ptr = nil
+      returned = Pointer.malloc(10, Fiddle::RUBY_FREE) do |ptr|
+        assert_equal 10, ptr.size
+        assert_equal Fiddle::RUBY_FREE, ptr.free.to_i
+        escaped_ptr = ptr
+        :returned
+      end
+      assert_equal :returned, returned
+      assert escaped_ptr.freed?
+    end
+
+    def test_malloc_block_no_free
+      assert_raise ArgumentError do
+        Pointer.malloc(10) { |ptr| }
+      end
+    end
+
+    def test_malloc_subclass
+      subclass = Class.new(Pointer)
+      subclass.malloc(10, Fiddle::RUBY_FREE) do |ptr|
+        assert ptr.is_a?(subclass)
+      end
+    end
+
     def test_to_str
       str = Marshal.load(Marshal.dump("hello world"))
       ptr = Pointer[str]
@@ -79,23 +104,23 @@ module Fiddle
     def test_to_ptr_string
       str = "hello world"
       ptr = Pointer[str]
-      assert ptr.tainted?, 'pointer should be tainted'
       assert_equal str.length, ptr.size
       assert_equal 'hello', ptr[0,5]
     end
 
     def test_to_ptr_io
-      buf = Pointer.malloc(10)
-      File.open(__FILE__, 'r') do |f|
-        ptr = Pointer.to_ptr f
-        fread = Function.new(@libc['fread'],
-                             [TYPE_VOIDP, TYPE_INT, TYPE_INT, TYPE_VOIDP],
-                             TYPE_INT)
-        fread.call(buf.to_i, Fiddle::SIZEOF_CHAR, buf.size - 1, ptr.to_i)
-      end
+      Pointer.malloc(10, Fiddle::RUBY_FREE) do |buf|
+        File.open(__FILE__, 'r') do |f|
+          ptr = Pointer.to_ptr f
+          fread = Function.new(@libc['fread'],
+                              [TYPE_VOIDP, TYPE_INT, TYPE_INT, TYPE_VOIDP],
+                              TYPE_INT)
+          fread.call(buf.to_i, Fiddle::SIZEOF_CHAR, buf.size - 1, ptr.to_i)
+        end
 
-      File.open(__FILE__, 'r') do |f|
-        assert_equal f.read(9), buf.to_s
+        File.open(__FILE__, 'r') do |f|
+          assert_equal f.read(9), buf.to_s
+        end
       end
     end
 
@@ -146,25 +171,46 @@ module Fiddle
 
     def test_free
       ptr = Pointer.malloc(4)
-      assert_nil ptr.free
+      begin
+        assert_nil ptr.free
+      ensure
+        Fiddle.free ptr
+      end
     end
 
     def test_free=
-      assert_normal_exit(<<-"End", '[ruby-dev:39269]')
-        require 'fiddle'
-        include Fiddle
-        free = Fiddle::Function.new(Fiddle::RUBY_FREE, [TYPE_VOIDP], TYPE_VOID)
-        ptr = Fiddle::Pointer.malloc(4)
-        ptr.free = free
-        free.ptr
-        ptr.free.ptr
-      End
-
       free = Function.new(Fiddle::RUBY_FREE, [TYPE_VOIDP], TYPE_VOID)
       ptr = Pointer.malloc(4)
       ptr.free = free
 
       assert_equal free.ptr, ptr.free.ptr
+    end
+
+    def test_free_with_func
+      ptr = Pointer.malloc(4, Fiddle::RUBY_FREE)
+      refute ptr.freed?
+      ptr.call_free
+      assert ptr.freed?
+      ptr.call_free                 # you can safely run it again
+      assert ptr.freed?
+      GC.start                      # you can safely run the GC routine
+      assert ptr.freed?
+    end
+
+    def test_free_with_no_func
+      ptr = Pointer.malloc(4)
+      refute ptr.freed?
+      ptr.call_free
+      refute ptr.freed?
+      ptr.call_free                 # you can safely run it again
+      refute ptr.freed?
+    end
+
+    def test_freed?
+      ptr = Pointer.malloc(4, Fiddle::RUBY_FREE)
+      refute ptr.freed?
+      ptr.call_free
+      assert ptr.freed?
     end
 
     def test_null?
@@ -173,16 +219,16 @@ module Fiddle
     end
 
     def test_size
-      ptr = Pointer.malloc(4)
-      assert_equal 4, ptr.size
-      Fiddle.free ptr.to_i
+      Pointer.malloc(4, Fiddle::RUBY_FREE) do |ptr|
+        assert_equal 4, ptr.size
+      end
     end
 
     def test_size=
-      ptr = Pointer.malloc(4)
-      ptr.size = 10
-      assert_equal 10, ptr.size
-      Fiddle.free ptr.to_i
+      Pointer.malloc(4, Fiddle::RUBY_FREE) do |ptr|
+        ptr.size = 10
+        assert_equal 10, ptr.size
+      end
     end
 
     def test_aref_aset
@@ -226,7 +272,16 @@ module Fiddle
     end
 
     def test_no_memory_leak
-      assert_no_memory_leak(%w[-W0 -rfiddle.so], '', '100_000.times {Fiddle::Pointer.allocate}', rss: true)
+      if respond_to?(:assert_nothing_leaked_memory)
+        n_tries = 100_000
+        assert_nothing_leaked_memory(SIZEOF_VOIDP * (n_tries / 100)) do
+          n_tries.times do
+            Fiddle::Pointer.allocate
+          end
+        end
+      else
+        assert_no_memory_leak(%w[-W0 -rfiddle.so], '', '100_000.times {Fiddle::Pointer.allocate}', rss: true)
+      end
     end
   end
 end if defined?(Fiddle)

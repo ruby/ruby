@@ -52,7 +52,7 @@
 #ifndef UNALIGNED_WORD_ACCESS
 # if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
      defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || \
-     defined(__powerpc64__) || \
+     defined(__powerpc64__) || defined(__aarch64__) || \
      defined(__mc68020__)
 #  define UNALIGNED_WORD_ACCESS 1
 # else
@@ -903,9 +903,13 @@ extern void onig_print_statistics(FILE* f);
 # endif
 #endif
 
+#ifndef PRINTF_ARGS
+#define PRINTF_ARGS(func, fmt, vargs) func
+#endif
+
 extern UChar* onig_error_code_to_format(OnigPosition code);
-extern void onig_vsnprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc, UChar* pat, UChar* pat_end, const UChar *fmt, va_list args);
-extern void onig_snprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc, UChar* pat, UChar* pat_end, const UChar *fmt, ...);
+PRINTF_ARGS(extern void onig_vsnprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc, UChar* pat, UChar* pat_end, const char *fmt, va_list args), 6, 0);
+PRINTF_ARGS(extern void onig_snprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc, UChar* pat, UChar* pat_end, const char *fmt, ...), 6, 7);
 extern int  onig_bbuf_init(BBuf* buf, OnigDistance size);
 extern int  onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end, OnigErrorInfo* einfo);
 #ifdef RUBY

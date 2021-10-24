@@ -82,7 +82,7 @@ combining_class = {}  # constant to allow use in Integer#to_UTF8
 
 # read the file 'UnicodeData.txt'
 vpath.foreach("#{InputDataDir}/UnicodeData.txt") do |line|
-  codepoint, name, _2, char_class, _4, decomposition, *_rest = line.split(";")
+  codepoint, name, _, char_class, _, decomposition, *_rest = line.split(";")
 
   case decomposition
   when /^[0-9A-F]/

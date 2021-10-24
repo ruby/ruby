@@ -1,31 +1,34 @@
 require_relative '../../../spec_helper'
-require 'set'
 
-describe "SortedSet#keep_if" do
-  before :each do
-    @set = SortedSet["one", "two", "three"]
-  end
+ruby_version_is ""..."3.0" do
+  require 'set'
 
-  it "yields each Object in self in sorted order" do
-    ret = []
-    @set.keep_if { |x| ret << x }
-    ret.should == ["one", "two", "three"].sort
-  end
+  describe "SortedSet#keep_if" do
+    before :each do
+      @set = SortedSet["one", "two", "three"]
+    end
 
-  it "keeps every element from self for which the passed block returns true" do
-    @set.keep_if { |x| x.size != 3 }
-    @set.to_a.should == ["three"]
-  end
+    it "yields each Object in self in sorted order" do
+      ret = []
+      @set.keep_if { |x| ret << x }
+      ret.should == ["one", "two", "three"].sort
+    end
 
-  it "returns self" do
-    @set.keep_if {}.should equal(@set)
-  end
+    it "keeps every element from self for which the passed block returns true" do
+      @set.keep_if { |x| x.size != 3 }
+      @set.to_a.should == ["three"]
+    end
 
-  it "returns an Enumerator when passed no block" do
-    enum = @set.keep_if
-    enum.should be_an_instance_of(Enumerator)
+    it "returns self" do
+      @set.keep_if {}.should equal(@set)
+    end
 
-    enum.each { |x| x.size != 3 }
-    @set.to_a.should == ["three"]
+    it "returns an Enumerator when passed no block" do
+      enum = @set.keep_if
+      enum.should be_an_instance_of(Enumerator)
+
+      enum.each { |x| x.size != 3 }
+      @set.to_a.should == ["three"]
+    end
   end
 end

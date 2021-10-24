@@ -248,6 +248,6 @@ OnigEncodingDefine(windows_1251, Windows_1251) = {
  * MIBenum: 2251
  * Link: http://www.iana.org/assignments/character-sets
  * Link: http://www.microsoft.com/globaldev/reference/sbcs/1251.mspx
- * Link: http://en.wikipedia.org/wiki/Windows-1251
+ * Link: https://en.wikipedia.org/wiki/Windows-1251
  */
 ENC_ALIAS("CP1251", "Windows-1251")

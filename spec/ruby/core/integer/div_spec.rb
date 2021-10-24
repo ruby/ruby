@@ -36,7 +36,7 @@ describe "Integer#div" do
       10.div(y).should == result
     end
 
-    it "coerces self and the given argument to Floats and returns self divided by other as Fixnum" do
+    it "coerces self and the given argument to Floats and returns self divided by other as Integer" do
       1.div(0.2).should == 5
       1.div(0.16).should == 6
       1.div(0.169).should == 5

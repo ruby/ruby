@@ -17,7 +17,7 @@ module RubyVM::CEscape
 
   # generate comment, with escaps.
   def commentify str
-    return "/* #{str.strip.b.gsub '*/', '*\\/'} */"
+    return "/* #{str.b.gsub('*/', '*\\/').gsub('/*', '/\\*')} */"
   end
 
   # Mimic gensym of CL.
@@ -46,7 +46,7 @@ module RubyVM::CEscape
     # I believe this is the fastest implementation done in pure-ruby.
     # Constants cached, gsub skips block evaluation, string literal optimized.
     buf = str.b
-    buf.gsub! %r/./n, RString2CStr
+    buf.gsub! %r/./nm, RString2CStr
     return %'"#{buf}"'
   end
 
@@ -60,7 +60,7 @@ module RubyVM::CEscape
       "\x18"=>"\\x18", "\x19"=>"\\x19", "\x1A"=>"\\x1a",   "\e"=>"\\x1b",
       "\x1C"=>"\\x1c", "\x1D"=>"\\x1d", "\x1E"=>"\\x1e", "\x1F"=>"\\x1f",
          " "=>    " ",    "!"=>    "!",   "\""=> "\\\"",    "#"=>    "#",
-         "$"=>    "$",    "%"=>    "%",    "&"=>    "&",    "'"=>  "\\'",
+         "$"=>    "$",    "%"=>    "%",    "&"=>    "&",    "'"=>    "'",
          "("=>    "(",    ")"=>    ")",    "*"=>    "*",    "+"=>    "+",
          ","=>    ",",    "-"=>    "-",    "."=>    ".",    "/"=>    "/",
          "0"=>    "0",    "1"=>    "1",    "2"=>    "2",    "3"=>    "3",

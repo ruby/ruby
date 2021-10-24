@@ -164,5 +164,20 @@ describe "File.basename" do
     basename.encoding.should == Encoding::Windows_1250
   end
 
+  it "returns a new unfrozen String" do
+    exts = [nil, '.rb', '.*', '.txt']
+    ['foo.rb','//', '/test/', 'test'].each do |example|
+      exts.each do |ext|
+        original = example.freeze
+        result = if ext
+                   File.basename(original, ext)
+                 else
+                   File.basename(original)
+                 end
+        result.should_not equal(original)
+        result.frozen?.should == false
+      end
+    end
+  end
 
 end
