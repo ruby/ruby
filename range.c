@@ -2250,10 +2250,10 @@ range_count(int argc, VALUE *argv, VALUE range)
  *
  * === Methods for Iterating
  *
- * - #%:: Requires argument +n+; calls the block with each +n+th element of +self+.
+ * - #%:: Requires argument +n+; calls the block with each +n+-th element of +self+.
  * - #each:: Calls the block with each element of +self+.
  * - #step:: Takes optional argument +n+ (defaults to 1);
-             calls the block with each +n+th element of +self+.
+             calls the block with each +n+-th element of +self+.
  *
  * === Methods for Converting
  *

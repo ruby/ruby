@@ -3204,8 +3204,8 @@ zip_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, memoval))
  *  Each nested array <tt>new_array[n]</tt>
  *  is of size <tt>other_enums.size+1</tt>, and contains:
  *
- *  - The +n+th element of self.
- *  - The +n+th element of each of the +other_enums+.
+ *  - The +n+-th element of self.
+ *  - The +n+-th element of each of the +other_enums+.
  *
  *  If all +other_enums+ and self are the same size,
  *  all elements are included in the result, and there is no +nil+-filling:

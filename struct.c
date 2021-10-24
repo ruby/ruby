@@ -1245,7 +1245,7 @@ rb_struct_aref(VALUE s, VALUE idx)
  *  Raises NameError if +name+ is not the name of a member.
  *
  *  With integer argument +n+ given, assigns the given +value+
- *  to the +n+th member if +n+ is in range;
+ *  to the +n+-th member if +n+ is in range;
  *  see {Array Indexes}[Array.html#class-Array-label-Array+Indexes]:
  *
  *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
