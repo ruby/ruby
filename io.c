@@ -302,6 +302,12 @@ rb_fix_detect_o_cloexec(int fd)
     return 0;
 }
 
+static inline bool
+io_again_p(int e)
+{
+    return (e == EWOULDBLOCK) || (e == EAGAIN);
+}
+
 int
 rb_cloexec_open(const char *pathname, int flags, mode_t mode)
 {
@@ -322,7 +328,7 @@ rb_cloexec_open(const char *pathname, int flags, mode_t mode)
 
     while ((ret = open(pathname, flags, mode)) == -1) {
         int e = errno;
-        if ((e != EAGAIN) && (e != EWOULDBLOCK)) break;
+        if (!io_again_p(e)) break;
         if (retry_count++ >= retry_max_count) break;
 
         sleep(retry_interval);
@@ -1084,7 +1090,7 @@ retry:
     r = read(iis->fd, iis->buf, iis->capa);
     if (r < 0 && !iis->nonblock) {
         int e = errno;
-        if (e == EAGAIN || e == EWOULDBLOCK) {
+        if (io_again_p(e)) {
             if (nogvl_wait_for_single_fd(iis->th, iis->fd, RB_WAITFD_IN) != -1) {
                 goto retry;
             }
@@ -3082,7 +3088,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
 	    int e = errno;
             if (!nonblock && fptr_wait_readable(fptr))
                 goto again;
-	    if (nonblock && ((e == EWOULDBLOCK) || (e == EAGAIN))) {
+	    if (nonblock && (io_again_p(e))) {
                 if (no_exception)
                     return sym_wait_readable;
                 else
@@ -3218,7 +3224,7 @@ io_read_nonblock(rb_execution_context_t *ec, VALUE io, VALUE length, VALUE str, 
         n = read_internal_locktmp(str, &iis);
         if (n < 0) {
 	    int e = errno;
-	    if ((e == EWOULDBLOCK) || (e == EAGAIN)) {
+	    if (io_again_p(e)) {
                 if (!ex) return sym_wait_readable;
 		rb_readwrite_syserr_fail(RB_IO_WAIT_READABLE,
 					 e, "read would block");
@@ -3260,7 +3266,7 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
 
     if (n < 0) {
 	int e = errno;
-	if ((e == EWOULDBLOCK) || (e == EAGAIN)) {
+	if (io_again_p(e)) {
             if (!ex) {
 		return sym_wait_writable;
 	    }
@@ -11688,7 +11694,7 @@ nogvl_copy_stream_write(struct copy_stream_struct *stp, char *buf, size_t len)
         if (ss < 0) {
             if (maygvl_copy_stream_continue_p(0, stp))
                 continue;
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            if (io_again_p(errno)) {
                 int ret = nogvl_copy_stream_wait_write(stp);
                 if (ret < 0) return ret;
                 continue;
