@@ -1347,7 +1347,7 @@ rb_io_wait_readable(int f)
         return TRUE;
 
       case EAGAIN:
-#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+#if EWOULDBLOCK != EAGAIN
       case EWOULDBLOCK:
 #endif
         if (scheduler != Qnil) {
@@ -1390,7 +1390,7 @@ rb_io_wait_writable(int f)
         return TRUE;
 
       case EAGAIN:
-#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+#if EWOULDBLOCK != EAGAIN
       case EWOULDBLOCK:
 #endif
         if (scheduler != Qnil) {
@@ -1455,7 +1455,7 @@ rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout)
         return events;
 
       case EAGAIN:
-#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+#if EWOULDBLOCK != EAGAIN
       case EWOULDBLOCK:
 #endif
         // The operation would block, so wait for the specified events:
@@ -6882,7 +6882,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
 	    /* exec failed */
 	    switch (e = errno) {
 	      case EAGAIN:
-#   if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+#   if EWOULDBLOCK != EAGAIN
 	      case EWOULDBLOCK:
 #   endif
 		rb_thread_sleep(1);
@@ -11382,7 +11382,7 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
 #endif
             return 0;
 	  case EAGAIN:
-#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+#if EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
             {
@@ -11602,7 +11602,7 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
 #endif
             return 0;
 	  case EAGAIN:
-#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+#if EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
             {
@@ -11664,7 +11664,7 @@ maygvl_copy_stream_read(int has_gvl, struct copy_stream_struct *stp, char *buf, 
 	    goto retry_read;
         switch (errno) {
 	  case EAGAIN:
-#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+#if EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
             {
