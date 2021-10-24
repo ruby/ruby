@@ -11,8 +11,8 @@ jobs:
         yjit_opts: [
           "--yjit",
           "--yjit --yjit-call-threshold=1 --yjit-max-versions=1",
-          "--yjit --yjit-call-threshold=1",
-          "--yjit --yjit-call-threshold=2"
+          # "--yjit --yjit-call-threshold=1",
+          # "--yjit --yjit-call-threshold=2"
         ]
         configure: ["", "cppflags=-DRUBY_DEBUG"]
         include:
