@@ -5,7 +5,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = "ipaddr"
-  spec.version       = "1.2.2"
+  spec.version       = "1.2.3"
   spec.authors       = ["Akinori MUSHA", "Hajimu UMEMOTO"]
   spec.email         = ["knu@idaemons.org", "ume@mahoroba.org"]
 
