@@ -373,59 +373,20 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
-  def test_read_nonblock_without_session
-    EnvUtil.suppress_warning do
-      start_server(start_immediately: false) { |port|
-        sock = TCPSocket.new("127.0.0.1", port)
-        ssl = OpenSSL::SSL::SSLSocket.new(sock)
-        ssl.sync_close = true
+  def test_unstarted_session
+    start_server do |port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock)
 
-        assert_equal :wait_readable, ssl.read_nonblock(100, exception: false)
-        ssl.write("abc\n")
-        IO.select [ssl]
-        assert_equal('a', ssl.read_nonblock(1))
-        assert_equal("bc\n", ssl.read_nonblock(100))
-        assert_equal :wait_readable, ssl.read_nonblock(100, exception: false)
-        ssl.close
-      }
-    end
-  end
+      assert_raise(OpenSSL::SSL::SSLError) { ssl.syswrite("data") }
+      assert_raise(OpenSSL::SSL::SSLError) { ssl.sysread(1) }
 
-  def test_starttls
-    server_proc = -> (ctx, ssl) {
-      while line = ssl.gets
-        if line =~ /^STARTTLS$/
-          ssl.write("x")
-          ssl.flush
-          ssl.accept
-          break
-        end
-        ssl.write(line)
-      end
-      readwrite_loop(ctx, ssl)
-    }
-
-    EnvUtil.suppress_warning do # read/write on not started session
-      start_server(start_immediately: false,
-                   server_proc: server_proc) { |port|
-        begin
-          sock = TCPSocket.new("127.0.0.1", port)
-          ssl = OpenSSL::SSL::SSLSocket.new(sock)
-
-          ssl.puts "plaintext"
-          assert_equal "plaintext\n", ssl.gets
-
-          ssl.puts("STARTTLS")
-          ssl.read(1)
-          ssl.connect
-
-          ssl.puts "over-tls"
-          assert_equal "over-tls\n", ssl.gets
-        ensure
-          ssl&.close
-          sock&.close
-        end
-      }
+      ssl.connect
+      ssl.puts "abc"
+      assert_equal "abc\n", ssl.gets
+    ensure
+      ssl&.close
+      sock&.close
     end
   end
 

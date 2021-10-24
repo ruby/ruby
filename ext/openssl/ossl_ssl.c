@@ -1704,8 +1704,7 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
  * call-seq:
  *    ssl.connect => self
  *
- * Initiates an SSL/TLS handshake with a server.  The handshake may be started
- * after unencrypted data has been sent over the socket.
+ * Initiates an SSL/TLS handshake with a server.
  */
 static VALUE
 ossl_ssl_connect(VALUE self)
@@ -1752,8 +1751,7 @@ ossl_ssl_connect_nonblock(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *    ssl.accept => self
  *
- * Waits for a SSL/TLS client to initiate a handshake.  The handshake may be
- * started after unencrypted data has been sent over the socket.
+ * Waits for a SSL/TLS client to initiate a handshake.
  */
 static VALUE
 ossl_ssl_accept(VALUE self)
@@ -1800,7 +1798,7 @@ static VALUE
 ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 {
     SSL *ssl;
-    int ilen, nread = 0;
+    int ilen;
     VALUE len, str;
     rb_io_t *fptr;
     VALUE io, opts = Qnil;
@@ -1810,6 +1808,9 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
     } else {
 	rb_scan_args(argc, argv, "11", &len, &str);
     }
+    GetSSL(self, ssl);
+    if (!ssl_started(ssl))
+        rb_raise(eSSLError, "SSL session is not started yet");
 
     ilen = NUM2INT(len);
     if (NIL_P(str))
@@ -1825,85 +1826,60 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
     if (ilen == 0)
 	return str;
 
-    GetSSL(self, ssl);
     io = rb_attr_get(self, id_i_io);
     GetOpenFile(io, fptr);
-    if (ssl_started(ssl)) {
-        rb_str_locktmp(str);
-        for (;;) {
-	    nread = SSL_read(ssl, RSTRING_PTR(str), ilen);
-	    switch(ssl_get_error(ssl, nread)){
-	    case SSL_ERROR_NONE:
+
+    rb_str_locktmp(str);
+    for (;;) {
+        int nread = SSL_read(ssl, RSTRING_PTR(str), ilen);
+        switch (ssl_get_error(ssl, nread)) {
+          case SSL_ERROR_NONE:
+            rb_str_unlocktmp(str);
+            rb_str_set_len(str, nread);
+            return str;
+          case SSL_ERROR_ZERO_RETURN:
+            rb_str_unlocktmp(str);
+            if (no_exception_p(opts)) { return Qnil; }
+            rb_eof_error();
+          case SSL_ERROR_WANT_WRITE:
+            if (nonblock) {
                 rb_str_unlocktmp(str);
-		goto end;
-	    case SSL_ERROR_ZERO_RETURN:
+                if (no_exception_p(opts)) { return sym_wait_writable; }
+                write_would_block(nonblock);
+            }
+            io_wait_writable(fptr);
+            continue;
+          case SSL_ERROR_WANT_READ:
+            if (nonblock) {
                 rb_str_unlocktmp(str);
-		if (no_exception_p(opts)) { return Qnil; }
-		rb_eof_error();
-	    case SSL_ERROR_WANT_WRITE:
-                if (nonblock) {
-                    rb_str_unlocktmp(str);
-                    if (no_exception_p(opts)) { return sym_wait_writable; }
-                    write_would_block(nonblock);
+                if (no_exception_p(opts)) { return sym_wait_readable; }
+                read_would_block(nonblock);
+            }
+            io_wait_readable(fptr);
+            continue;
+          case SSL_ERROR_SYSCALL:
+            if (!ERR_peek_error()) {
+                rb_str_unlocktmp(str);
+                if (errno)
+                    rb_sys_fail(0);
+                else {
+                    /*
+                     * The underlying BIO returned 0. This is actually a
+                     * protocol error. But unfortunately, not all
+                     * implementations cleanly shutdown the TLS connection
+                     * but just shutdown/close the TCP connection. So report
+                     * EOF for now...
+                     */
+                    if (no_exception_p(opts)) { return Qnil; }
+                    rb_eof_error();
                 }
-                io_wait_writable(fptr);
-                continue;
-	    case SSL_ERROR_WANT_READ:
-                if (nonblock) {
-                    rb_str_unlocktmp(str);
-                    if (no_exception_p(opts)) { return sym_wait_readable; }
-                    read_would_block(nonblock);
-                }
-                io_wait_readable(fptr);
-		continue;
-	    case SSL_ERROR_SYSCALL:
-		if (!ERR_peek_error()) {
-                    rb_str_unlocktmp(str);
-		    if (errno)
-			rb_sys_fail(0);
-		    else {
-			/*
-			 * The underlying BIO returned 0. This is actually a
-			 * protocol error. But unfortunately, not all
-			 * implementations cleanly shutdown the TLS connection
-			 * but just shutdown/close the TCP connection. So report
-			 * EOF for now...
-			 */
-			if (no_exception_p(opts)) { return Qnil; }
-			rb_eof_error();
-		    }
-		}
-                /* fall through */
-	    default:
-                rb_str_unlocktmp(str);
-		ossl_raise(eSSLError, "SSL_read");
-	    }
+            }
+            /* fall through */
+          default:
+            rb_str_unlocktmp(str);
+            ossl_raise(eSSLError, "SSL_read");
         }
     }
-    else {
-        ID meth = nonblock ? rb_intern("read_nonblock") : rb_intern("sysread");
-
-        rb_warning("SSL session is not started yet.");
-#if defined(RB_PASS_KEYWORDS)
-        if (nonblock) {
-            VALUE argv[3];
-            argv[0] = len;
-            argv[1] = str;
-            argv[2] = opts;
-            return rb_funcallv_kw(io, meth, 3, argv, RB_PASS_KEYWORDS);
-        }
-#else
-        if (nonblock) {
-            return rb_funcall(io, meth, 3, len, str, opts);
-        }
-#endif
-        else
-            return rb_funcall(io, meth, 2, len, str);
-    }
-
-  end:
-    rb_str_set_len(str, nread);
-    return str;
 }
 
 /*
@@ -1943,78 +1919,55 @@ static VALUE
 ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
 {
     SSL *ssl;
-    int nwrite = 0;
     rb_io_t *fptr;
-    int nonblock = opts != Qfalse;
+    int num, nonblock = opts != Qfalse;
     VALUE tmp, io;
 
-    tmp = rb_str_new_frozen(StringValue(str));
     GetSSL(self, ssl);
+    if (!ssl_started(ssl))
+        rb_raise(eSSLError, "SSL session is not started yet");
+
+    tmp = rb_str_new_frozen(StringValue(str));
     io = rb_attr_get(self, id_i_io);
     GetOpenFile(io, fptr);
-    if (ssl_started(ssl)) {
-	for (;;) {
-	    int num = RSTRING_LENINT(tmp);
 
-	    /* SSL_write(3ssl) manpage states num == 0 is undefined */
-	    if (num == 0)
-		goto end;
+    /* SSL_write(3ssl) manpage states num == 0 is undefined */
+    num = RSTRING_LENINT(tmp);
+    if (num == 0)
+        return INT2FIX(0);
 
-	    nwrite = SSL_write(ssl, RSTRING_PTR(tmp), num);
-	    switch(ssl_get_error(ssl, nwrite)){
-	    case SSL_ERROR_NONE:
-		goto end;
-	    case SSL_ERROR_WANT_WRITE:
-		if (no_exception_p(opts)) { return sym_wait_writable; }
-                write_would_block(nonblock);
-                io_wait_writable(fptr);
-                continue;
-	    case SSL_ERROR_WANT_READ:
-		if (no_exception_p(opts)) { return sym_wait_readable; }
-                read_would_block(nonblock);
-                io_wait_readable(fptr);
-                continue;
-	    case SSL_ERROR_SYSCALL:
+    for (;;) {
+        int nwritten = SSL_write(ssl, RSTRING_PTR(tmp), num);
+        switch (ssl_get_error(ssl, nwritten)) {
+          case SSL_ERROR_NONE:
+            return INT2NUM(nwritten);
+          case SSL_ERROR_WANT_WRITE:
+            if (no_exception_p(opts)) { return sym_wait_writable; }
+            write_would_block(nonblock);
+            io_wait_writable(fptr);
+            continue;
+          case SSL_ERROR_WANT_READ:
+            if (no_exception_p(opts)) { return sym_wait_readable; }
+            read_would_block(nonblock);
+            io_wait_readable(fptr);
+            continue;
+          case SSL_ERROR_SYSCALL:
 #ifdef __APPLE__
-                /*
-                 * It appears that send syscall can return EPROTOTYPE if the
-                 * socket is being torn down. Retry to get a proper errno to
-                 * make the error handling in line with the socket library.
-                 * [Bug #14713] https://bugs.ruby-lang.org/issues/14713
-                 */
-                if (errno == EPROTOTYPE)
-                    continue;
+            /*
+             * It appears that send syscall can return EPROTOTYPE if the
+             * socket is being torn down. Retry to get a proper errno to
+             * make the error handling in line with the socket library.
+             * [Bug #14713] https://bugs.ruby-lang.org/issues/14713
+             */
+            if (errno == EPROTOTYPE)
+                continue;
 #endif
-		if (errno) rb_sys_fail(0);
-		/* fallthrough */
-	    default:
-		ossl_raise(eSSLError, "SSL_write");
-	    }
+            if (errno) rb_sys_fail(0);
+            /* fallthrough */
+          default:
+            ossl_raise(eSSLError, "SSL_write");
         }
     }
-    else {
-	ID meth = nonblock ?
-	    rb_intern("write_nonblock") : rb_intern("syswrite");
-
-        rb_warning("SSL session is not started yet.");
-#if defined(RB_PASS_KEYWORDS)
-        if (nonblock) {
-            VALUE argv[2];
-            argv[0] = str;
-            argv[1] = opts;
-            return rb_funcallv_kw(io, meth, 2, argv, RB_PASS_KEYWORDS);
-        }
-#else
-        if (nonblock) {
-            return rb_funcall(io, meth, 2, str, opts);
-        }
-#endif
-        else
-            return rb_funcall(io, meth, 1, str);
-    }
-
-  end:
-    return INT2NUM(nwrite);
 }
 
 /*
