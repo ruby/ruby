@@ -59,7 +59,7 @@ module Bundler
         size   = string.bytesize * 8
         buffer = string.bytes << 128
         buffer << 0 while buffer.size % 64 != 56
-        [size].pack("Q").bytes.reverse_each {|b| buffer << b }
+        buffer.concat([size].pack("Q>").bytes)
         buffer.each_slice(64, &block)
       end
 
