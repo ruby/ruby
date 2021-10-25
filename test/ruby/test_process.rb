@@ -2563,7 +2563,7 @@ EOS
       r.close
       Process.waitpid(pid)
     end
-  end if defined?(Process._fork)
+  end if Process.respond_to?(:_fork)
 
   def test__fork_hook
     %w(fork Process.fork).each do |method|
@@ -2593,7 +2593,7 @@ EOS
         assert_equal("nil", s[2])
       end
     end
-  end if defined?(Process._fork)
+  end if Process.respond_to?(:_fork)
 
   def test__fork_hook_popen
     feature17795 = '[ruby-core:103400] [Feature #17795]'
@@ -2617,7 +2617,7 @@ EOS
         end
       }
     end;
-  end if defined?(Process._fork)
+  end if Process.respond_to?(:_fork)
 
   def test__fork_wrong_type_hook
     feature17795 = '[ruby-core:103400] [Feature #17795]'
@@ -2636,5 +2636,5 @@ EOS
         puts "OK"
       end
     end;
-  end if defined?(Process._fork)
+  end if Process.respond_to?(:_fork)
 end
