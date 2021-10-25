@@ -4732,6 +4732,9 @@ VALUE rb_false_to_s(VALUE);
 /* numeric.c */
 VALUE rb_int_to_s(int argc, VALUE *argv, VALUE x);
 VALUE rb_fix_to_s(VALUE);
+/* variable.c */
+VALUE rb_mod_to_s(VALUE);
+VALUE rb_mod_name(VALUE);
 
 static VALUE
 vm_concat_tostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
@@ -4749,26 +4752,31 @@ vm_concat_tostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
             return rb_sym2str(recv);
         }
         break;
+      case T_MODULE:
+      case T_CLASS:
+        if (check_cfunc(vm_cc_cme(cc), rb_mod_to_s)) {
+            // rb_mod_to_s() allocates a mutable string, but since we are only
+            // going to use this string for interpolation, it's fine to use the
+            // frozen string.
+            return rb_mod_name(recv);
+        }
+        break;
       case T_NIL:
-        cc = vm_search_method((VALUE)iseq, cd, recv);
         if (check_cfunc(vm_cc_cme(cc), rb_nil_to_s)) {
             return rb_nil_to_s(recv);
         }
         break;
       case T_TRUE:
-        cc = vm_search_method((VALUE)iseq, cd, recv);
         if (check_cfunc(vm_cc_cme(cc), rb_true_to_s)) {
             return rb_true_to_s(recv);
         }
         break;
       case T_FALSE:
-        cc = vm_search_method((VALUE)iseq, cd, recv);
         if (check_cfunc(vm_cc_cme(cc), rb_false_to_s)) {
             return rb_false_to_s(recv);
         }
         break;
       case T_FIXNUM:
-        cc = vm_search_method((VALUE)iseq, cd, recv);
         if (check_cfunc(vm_cc_cme(cc), rb_int_to_s)) {
             return rb_fix_to_s(recv);
         }
