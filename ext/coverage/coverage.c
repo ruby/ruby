@@ -102,6 +102,11 @@ rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
  *    Coverage.resume  => nil
  *
  * Start/resume the coverage measurement.
+ *
+ * Caveat: Currently, only process-global coverage measurement is supported.
+ * You cannot measure per-thread covearge. If your process has multiple thread,
+ * using Coverage.resume/suspend to capture code coverage executed from only
+ * a limited code block, may yield misleading results.
  */
 VALUE
 rb_coverage_resume(VALUE klass)
@@ -436,6 +441,9 @@ rb_coverage_running(VALUE klass)
 
 /* Coverage provides coverage measurement feature for Ruby.
  * This feature is experimental, so these APIs may be changed in future.
+ *
+ * Caveat: Currently, only process-global coverage measurement is supported.
+ * You cannot measure per-thread covearge.
  *
  * = Usage
  *
