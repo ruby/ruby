@@ -35,6 +35,20 @@ module Test
         _report "start", Marshal.dump([inst.class.name, inst.__name__])
       end
 
+      def close_io io, suite
+        # To figure out which suite raises EBADF error.
+        begin
+          io.close if io && !io.closed?
+        rescue Exception => e
+          STDERR.puts <<~EOS
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !! #{e} at #{suite.name}
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          EOS
+          raise
+        end
+      end
+
       def _run_suite(suite, type) # :nodoc:
         @partial_report = []
         orig_testout = Test::Unit::Runner.output
@@ -65,13 +79,15 @@ module Test
         $stdin = orig_stdin
         $stdout = orig_stdout
 
-        o.close
+        close_io o, suite
+
         begin
           th.join
         rescue IOError
           raise unless /stream closed|closed stream/ =~ $!.message
         end
-        i.close
+
+        close_io i, suite
 
         result << @partial_report
         @partial_report = nil
@@ -85,21 +101,8 @@ module Test
         Test::Unit::Runner.output = orig_stdout
         $stdin = orig_stdin if orig_stdin
         $stdout = orig_stdout if orig_stdout
-
-        # To figure out which suite raises EBADF error.
-        begin
-          o.close if o && !o.closed?
-        rescue Exception => e
-          STDERR.puts "#{e} at #{suite.name} (o)"
-          raise
-        end
-
-        begin
-          i.close if i && !i.closed?
-        rescue Exception => e
-          STDERR.puts "#{e} at #{suite.name} (i)"
-          raise
-        end
+        close_io o, suite
+        close_io i, suite
       end
 
       def run(args = []) # :nodoc:
