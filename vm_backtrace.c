@@ -292,7 +292,7 @@ location_iseq(rb_backtrace_location_t *loc)
       case LOCATION_TYPE_CFUNC:
         return loc->iseq;
       default:
-	rb_bug("location_path_and_script_lines: unreachable");
+	rb_bug("location_iseq: unreachable");
 	UNREACHABLE;
     }
 }
