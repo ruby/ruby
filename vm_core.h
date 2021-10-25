@@ -667,7 +667,7 @@ typedef struct rb_vm_struct {
     rb_nativethread_lock_t workqueue_lock;
 
     VALUE orig_progname, progname;
-    VALUE coverages;
+    VALUE coverages, me2counter;
     int coverage_mode;
 
     st_table * defined_module_hash;
@@ -2060,6 +2060,8 @@ extern VALUE rb_get_coverages(void);
 extern void rb_set_coverages(VALUE, int, VALUE);
 extern void rb_clear_coverages(void);
 extern void rb_reset_coverages(void);
+extern void rb_resume_coverages(void);
+extern void rb_suspend_coverages(void);
 
 void rb_postponed_job_flush(rb_vm_t *vm);
 
