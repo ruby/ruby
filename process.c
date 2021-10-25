@@ -4347,7 +4347,7 @@ rb_fork_ruby(int *status)
 }
 
 VALUE
-rb_call_proc__fork()
+rb_call_proc__fork(void)
 {
     VALUE pid = rb_funcall(rb_mProcess, rb_intern("_fork"), 0);
 
