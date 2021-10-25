@@ -4424,6 +4424,7 @@ rb_f_fork(VALUE obj)
     return pid;
 }
 #else
+#define rb_proc__fork rb_f_notimplement
 #define rb_f_fork rb_f_notimplement
 #endif
 
