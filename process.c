@@ -103,6 +103,7 @@ int initgroups(const char *, rb_gid_t);
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/hash.h"
+#include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/process.h"
 #include "internal/thread.h"
@@ -4345,9 +4346,40 @@ rb_fork_ruby(int *status)
     return pid;
 }
 
+rb_pid_t
+rb_call_proc__fork(void)
+{
+    VALUE pid = rb_funcall(rb_mProcess, rb_intern("_fork"), 0);
+
+    return NUM2PIDT(pid);
+}
 #endif
 
 #if defined(HAVE_WORKING_FORK) && !defined(CANNOT_FORK_WITH_PTHREAD)
+/*
+ *  call-seq:
+ *     Process._fork   -> integer
+ *
+ *  An internal API for fork. Do not call this method directly.
+ *  Currently, this is called via +Kernel.#fork+, +Process.fork+, and
+ *  +popen+ with +"-"+.
+ *
+ *  This method is not for casual code but for application monitoring
+ *  libraries. You can add custom code before and after fork events
+ *  by overriding this method.
+ */
+VALUE
+rb_proc__fork(VALUE _obj)
+{
+    rb_pid_t pid = rb_fork_ruby(NULL);
+
+    if (pid == -1) {
+	rb_sys_fail("fork(2)");
+    }
+
+    return PIDT2NUM(pid);
+}
+
 /*
  *  call-seq:
  *     Kernel.fork  [{ block }]   -> integer or nil
@@ -4378,24 +4410,21 @@ rb_f_fork(VALUE obj)
 {
     rb_pid_t pid;
 
-    switch (pid = rb_fork_ruby(NULL)) {
-      case 0:
+    pid = rb_call_proc__fork();
+
+    if (pid == 0) {
 	if (rb_block_given_p()) {
 	    int status;
 	    rb_protect(rb_yield, Qundef, &status);
 	    ruby_stop(status);
 	}
 	return Qnil;
-
-      case -1:
-	rb_sys_fail("fork(2)");
-	return Qnil;
-
-      default:
-	return PIDT2NUM(pid);
     }
+
+    return PIDT2NUM(pid);
 }
 #else
+#define rb_proc__fork rb_f_notimplement
 #define rb_f_fork rb_f_notimplement
 #endif
 
@@ -8700,6 +8729,7 @@ InitVM_process(void)
     rb_define_singleton_method(rb_mProcess, "exit", f_exit, -1);
     rb_define_singleton_method(rb_mProcess, "abort", f_abort, -1);
     rb_define_singleton_method(rb_mProcess, "last_status", proc_s_last_status, 0);
+    rb_define_singleton_method(rb_mProcess, "_fork", rb_proc__fork, 0);
 
     rb_define_module_function(rb_mProcess, "kill", proc_rb_f_kill, -1);
     rb_define_module_function(rb_mProcess, "wait", proc_m_wait, -1);
