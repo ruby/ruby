@@ -324,17 +324,21 @@ class Gem::Specification < Gem::BasicSpecification
   # This should just be the name of your license. The full text of the license
   # should be inside of the gem (at the top level) when you build it.
   #
-  # The simplest way, is to specify the standard SPDX ID
+  # The simplest way is to specify the standard SPDX ID
   # https://spdx.org/licenses/ for the license.
-  # Ideally you should pick one that is OSI (Open Source Initiative)
+  # Ideally, you should pick one that is OSI (Open Source Initiative)
   # http://opensource.org/licenses/alphabetical approved.
   #
-  # The most commonly used OSI approved licenses are MIT and Apache-2.0.
+  # The most commonly used OSI-approved licenses are MIT and Apache-2.0.
   # GitHub also provides a license picker at http://choosealicense.com/.
   #
+  # You can also use a custom license file along with your gemspec and specify
+  # a LicenseRef-<idstring>, where idstring is the name of the file containing
+  # the license text.
+  #
   # You should specify a license for your gem so that people know how they are
-  # permitted to use it, and any restrictions you're placing on it.  Not
-  # specifying a license means all rights are reserved; others have no rights
+  # permitted to use it and any restrictions you're placing on it.  Not
+  # specifying a license means all rights are reserved; others have no right
   # to use the code for any purpose.
   #
   # You can set multiple licenses with #licenses=
