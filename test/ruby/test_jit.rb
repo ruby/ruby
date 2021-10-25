@@ -53,8 +53,9 @@ class TestJIT < Test::Unit::TestCase
 
     # ruby -w -Itest/lib test/ruby/test_jit.rb
     if $VERBOSE
+      pid = $$
       at_exit do
-        unless TestJIT.untested_insns.empty?
+        if pid == $$ && !TestJIT.untested_insns.empty?
           warn "you may want to add tests for following insns, when you have a chance: #{TestJIT.untested_insns.join(' ')}"
         end
       end
