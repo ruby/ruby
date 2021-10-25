@@ -4351,7 +4351,7 @@ rb_call_proc__fork(void)
 {
     VALUE pid = rb_funcall(rb_mProcess, rb_intern("_fork"), 0);
 
-    return NUM2PIDT(rb_to_int(pid));
+    return NUM2PIDT(pid);
 }
 #endif
 
