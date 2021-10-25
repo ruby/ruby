@@ -792,6 +792,7 @@ opt_concat_tostring
 (CALL_DATA cd)
 (VALUE recv)
 (VALUE val)
+// attr bool leaf = false;
 {
     val = vm_concat_tostring(GET_ISEQ(), recv, cd);
 
