@@ -3632,12 +3632,16 @@ rb_fix2str(VALUE x, int base)
     return rb_usascii_str_new(b, e - b);
 }
 
-static VALUE rb_vm_tostring_static_fixnum[10];
+static VALUE rb_fix_to_s_static[10];
 
 MJIT_FUNC_EXPORTED VALUE
-rb_vm_tostring_int_to_s(long i)
+rb_fix_to_s(VALUE x)
 {
-    return rb_vm_tostring_static_fixnum[i];
+    long i = FIX2LONG(x);
+    if (i >= 0 && i < 10) {
+        return rb_fix_to_s_static[i];
+    }
+    return rb_fix2str(x, 10);
 }
 
 /*
@@ -6008,18 +6012,18 @@ Init_Numeric(void)
 
     rb_define_method(rb_cInteger, "digits", rb_int_digits, -1);
 
-    rb_vm_tostring_static_fixnum[0] = rb_fstring_literal("0");
-    rb_vm_tostring_static_fixnum[1] = rb_fstring_literal("1");
-    rb_vm_tostring_static_fixnum[2] = rb_fstring_literal("2");
-    rb_vm_tostring_static_fixnum[3] = rb_fstring_literal("3");
-    rb_vm_tostring_static_fixnum[4] = rb_fstring_literal("4");
-    rb_vm_tostring_static_fixnum[5] = rb_fstring_literal("5");
-    rb_vm_tostring_static_fixnum[6] = rb_fstring_literal("6");
-    rb_vm_tostring_static_fixnum[7] = rb_fstring_literal("7");
-    rb_vm_tostring_static_fixnum[8] = rb_fstring_literal("8");
-    rb_vm_tostring_static_fixnum[9] = rb_fstring_literal("9");
+    rb_fix_to_s_static[0] = rb_fstring_literal("0");
+    rb_fix_to_s_static[1] = rb_fstring_literal("1");
+    rb_fix_to_s_static[2] = rb_fstring_literal("2");
+    rb_fix_to_s_static[3] = rb_fstring_literal("3");
+    rb_fix_to_s_static[4] = rb_fstring_literal("4");
+    rb_fix_to_s_static[5] = rb_fstring_literal("5");
+    rb_fix_to_s_static[6] = rb_fstring_literal("6");
+    rb_fix_to_s_static[7] = rb_fstring_literal("7");
+    rb_fix_to_s_static[8] = rb_fstring_literal("8");
+    rb_fix_to_s_static[9] = rb_fstring_literal("9");
     for(int i = 0; i < 10; i++) {
-        rb_gc_register_mark_object(rb_vm_tostring_static_fixnum[i]);
+        rb_gc_register_mark_object(rb_fix_to_s_static[i]);
     }
 
     /* An obsolete class, use Integer */

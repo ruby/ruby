@@ -4731,7 +4731,7 @@ VALUE rb_true_to_s(VALUE);
 VALUE rb_false_to_s(VALUE);
 /* numeric.c */
 VALUE rb_int_to_s(int argc, VALUE *argv, VALUE x);
-VALUE rb_vm_tostring_int_to_s(long i);
+VALUE rb_fix_to_s(VALUE);
 
 static VALUE
 vm_concat_tostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
@@ -4767,14 +4767,12 @@ vm_concat_tostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
             return rb_false_to_s(recv);
         }
         break;
-      case T_FIXNUM: {
-        long i = FIX2LONG(recv);
+      case T_FIXNUM:
         cc = vm_search_method((VALUE)iseq, cd, recv);
-        if (i >= 0 && i < 10 && check_cfunc(vm_cc_cme(cc), rb_int_to_s)) {
-            return rb_vm_tostring_int_to_s(i);
+        if (check_cfunc(vm_cc_cme(cc), rb_int_to_s)) {
+            return rb_fix_to_s(recv);
         }
         break;
-      }
     }
     return Qundef;
 }
