@@ -747,6 +747,13 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
+  def self.suppress_verbose
+    verbose, $VERBOSE = $VERBOSE, nil
+    yield
+  ensure
+    $VERBOSE = verbose
+  end
+
   module IncludeIntoRefinement
     class C
       def bar
@@ -774,7 +781,9 @@ class TestRefinement < Test::Unit::TestCase
 
     module M
       refine C do
-        include Mixin
+        TestRefinement.suppress_verbose do
+          include Mixin
+        end
 
         def baz
           return super << " M#baz"
@@ -837,7 +846,9 @@ class TestRefinement < Test::Unit::TestCase
 
     module M
       refine C do
-        prepend Mixin
+        TestRefinement.suppress_verbose do
+          prepend Mixin
+        end
 
         def baz
           return super << " M#baz"
@@ -2617,7 +2628,9 @@ class TestRefinement < Test::Unit::TestCase
 
     module D
       refine A do
-        include B
+        TestRefinement.suppress_verbose do
+          include B
+        end
 
         def foo
           "refined"
