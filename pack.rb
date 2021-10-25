@@ -33,6 +33,16 @@ class Array
   #  the offset, the rest of <i>offsetOfBuffer</i> are overwritten by the result.
   #  If it's shorter, the gap is filled with ``<code>\0</code>''.
   #
+  #     # packed data is appended by default
+  #     [255].pack("C", buffer:"foo".b) #=> "foo\xFF"
+  #
+  #     # "@0" (offset 0) specifies that packed data is filled from beginning.
+  #     # Also, original data after packed data is removed. ("oo" is removed.)
+  #     [255].pack("@0C", buffer:"foo".b) #=> "\xFF"
+  #
+  #     # If the offset is bigger than the original length, \x00 is filled.
+  #     [255].pack("@5C", buffer:"foo".b) #=> "foo\x00\x00\xFF"
+  #
   #  Note that ``buffer:'' option does not guarantee not to allocate memory
   #  in +pack+.  If the capacity of <i>aBufferString</i> is not enough,
   #  +pack+ allocates memory.
