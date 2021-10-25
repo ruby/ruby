@@ -10,8 +10,6 @@
 #include "vm_sync.h"
 #include "yjit.h"
 
-#include "yjit_asm.c"
-
 #ifndef YJIT_CHECK_MODE
 # define YJIT_CHECK_MODE 0
 #endif
@@ -30,6 +28,11 @@
 
 // USE_MJIT comes from configure options
 #define JIT_ENABLED USE_MJIT
+
+// Check if we need to include YJIT in the build
+#if JIT_ENABLED && PLATFORM_SUPPORTED_P
+
+#include "yjit_asm.c"
 
 // Code block into which we write machine code
 static codeblock_t block;
@@ -154,3 +157,31 @@ static uint32_t yjit_codepage_frozen_bytes = 0;
 #include "yjit_core.c"
 #include "yjit_iface.c"
 #include "yjit_codegen.c"
+
+#else
+// !JIT_ENABLED || !PLATFORM_SUPPORTED_P
+// In these builds, YJIT could never be turned on. Provide dummy
+// implementations for YJIT functions exposed to the rest of the code base.
+// See yjit.h.
+
+void Init_builtin_yjit(void) {}
+bool rb_yjit_enabled_p(void) { return false; }
+unsigned rb_yjit_call_threshold(void) { return UINT_MAX; }
+void rb_yjit_invalidate_all_method_lookup_assumptions(void) {};
+void rb_yjit_method_lookup_change(VALUE klass, ID mid) {};
+void rb_yjit_cme_invalidate(VALUE cme) {}
+void rb_yjit_collect_vm_usage_insn(int insn) {}
+void rb_yjit_collect_binding_alloc(void) {}
+void rb_yjit_collect_binding_set(void) {}
+bool rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec) { return false; }
+void rb_yjit_init(struct rb_yjit_options *options) {}
+void rb_yjit_bop_redefined(VALUE klass, const rb_method_entry_t *me, enum ruby_basic_operators bop) {}
+void rb_yjit_constant_state_changed(void) {}
+void rb_yjit_iseq_mark(const struct rb_iseq_constant_body *body) {}
+void rb_yjit_iseq_update_references(const struct rb_iseq_constant_body *body) {}
+void rb_yjit_iseq_free(const struct rb_iseq_constant_body *body) {}
+void rb_yjit_before_ractor_spawn(void) {}
+void rb_yjit_constant_ic_update(const rb_iseq_t *iseq, IC ic) {}
+void rb_yjit_tracing_invalidate_all(void) {}
+
+#endif // if JIT_ENABLED && PLATFORM_SUPPORTED_P
