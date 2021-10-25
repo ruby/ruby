@@ -88,6 +88,8 @@ char *getenv();
 #define DEFAULT_RUBYGEMS_ENABLED "enabled"
 #endif
 
+RUBY_EXTERN struct rb_yjit_options rb_yjit_opts;
+
 void rb_warning_category_update(unsigned int mask, unsigned int bits);
 
 #define COMMA ,
@@ -1894,7 +1896,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
             exit(1);
         }
 #endif
-        rb_yjit_init(&opt->yjit);
+        opt->yjit.yjit_enabled = true;
+        rb_yjit_opts.yjit_enabled = true;
     }
     if (opt->dump & (DUMP_BIT(version) | DUMP_BIT(version_v))) {
 #if USE_MJIT
@@ -1957,6 +1960,9 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         /* Using TMP_RUBY_PREFIX created by ruby_init_loadpath(). */
         mjit_init(&opt->mjit);
 #endif
+
+    if (opt->yjit.yjit_enabled)
+        rb_yjit_init(&opt->yjit);
 
     Init_ruby_description();
     Init_enc();

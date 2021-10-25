@@ -98,6 +98,8 @@ Init_version(void)
 #define MJIT_OPTS_ON 0
 #endif
 
+RUBY_EXTERN struct rb_yjit_options rb_yjit_opts;
+
 void
 Init_ruby_description(void)
 {
@@ -106,7 +108,7 @@ Init_ruby_description(void)
     if (MJIT_OPTS_ON) {
         description = MKSTR(description_with_jit);
     }
-    else if (rb_yjit_enabled_p()) {
+    else if (rb_yjit_opts.yjit_enabled) {
         description = MKSTR(description_with_yjit);
     }
     else {
@@ -125,7 +127,7 @@ ruby_show_version(void)
     if (MJIT_OPTS_ON) {
         PRINT(description_with_jit);
     }
-    else if (rb_yjit_enabled_p()) {
+    else if (rb_yjit_opts.yjit_enabled) {
         PRINT(description_with_yjit);
     }
     else {
