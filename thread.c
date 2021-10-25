@@ -3326,12 +3326,7 @@ rb_thread_status(VALUE thread)
 static VALUE
 rb_thread_alive_p(VALUE thread)
 {
-    if (thread_finished(rb_thread_ptr(thread))) {
-        return Qfalse;
-    }
-    else {
-        return Qtrue;
-    }
+    return RBOOL(!thread_finished(rb_thread_ptr(thread)));
 }
 
 /*
