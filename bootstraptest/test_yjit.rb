@@ -2268,3 +2268,13 @@ assert_equal "true", %q{
 
     expected == events
 }
+
+# duphash
+assert_equal '{:foo=>123}', %q{
+  def foo
+    {foo: 123}
+  end
+
+  foo
+  foo
+}

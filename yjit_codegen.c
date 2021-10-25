@@ -3,6 +3,7 @@
 #include "gc.h"
 #include "internal/compile.h"
 #include "internal/class.h"
+#include "internal/hash.h"
 #include "internal/object.h"
 #include "internal/sanitizers.h"
 #include "internal/string.h"
@@ -890,6 +891,25 @@ gen_duparray(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     call_ptr(cb, REG0, (void *)rb_ary_resurrect);
 
     x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_ARRAY);
+    mov(cb, stack_ret, RAX);
+
+    return YJIT_KEEP_COMPILING;
+}
+
+// dup hash
+static codegen_status_t
+gen_duphash(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
+{
+    VALUE hash = jit_get_arg(jit, 0);
+
+    // Save the PC and SP because we are allocating
+    jit_prepare_routine_call(jit, ctx, REG0);
+
+    // call rb_hash_resurrect(VALUE hash);
+    jit_mov_gc_ptr(jit, cb, C_ARG_REGS[0], hash);
+    call_ptr(cb, REG0, (void *)rb_hash_resurrect);
+
+    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_HASH);
     mov(cb, stack_ret, RAX);
 
     return YJIT_KEEP_COMPILING;
@@ -4640,6 +4660,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(adjuststack), gen_adjuststack);
     yjit_reg_op(BIN(newarray), gen_newarray);
     yjit_reg_op(BIN(duparray), gen_duparray);
+    yjit_reg_op(BIN(duphash), gen_duphash);
     yjit_reg_op(BIN(splatarray), gen_splatarray);
     yjit_reg_op(BIN(expandarray), gen_expandarray);
     yjit_reg_op(BIN(newhash), gen_newhash);

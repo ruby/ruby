@@ -16903,6 +16903,7 @@ yjit.$(OBJEXT): $(top_srcdir)/internal/class.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/compile.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/gc.h
+yjit.$(OBJEXT): $(top_srcdir)/internal/hash.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/object.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/re.h
