@@ -28,6 +28,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     @gem = util_spec "some_gem" do |s|
       s.license = "AGPL-3.0-only"
       s.files = ["README.md"]
+      s.required_ruby_version = "2.3.0"
     end
 
     @cmd = Gem::Commands::BuildCommand.new
@@ -178,6 +179,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   def test_execute_strict_with_warnings
     bad_gem = util_spec "some_bad_gem" do |s|
       s.files = ["README.md"]
+      s.required_ruby_version = ">= 1.9.3"
     end
 
     gemspec_file = File.join(@tempdir, bad_gem.spec_name)
