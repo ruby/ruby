@@ -1585,7 +1585,7 @@ rb_obj_cmp(VALUE obj1, VALUE obj2)
  * show information on the thing we're attached to as well.
  */
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_mod_to_s(VALUE klass)
 {
     ID id_defined_at;
