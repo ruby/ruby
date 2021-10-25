@@ -2961,11 +2961,11 @@ enum_each_slice_size(VALUE obj, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *    each_slice(n) { ... }  ->  nil
+ *    each_slice(n) { ... }  ->  self
  *    each_slice(n)          ->  enumerator
  *
  *  Calls the block with each successive disjoint +n+-tuple of elements;
- *  returns +nil+:
+ *  returns +self+:
  *
  *    a = []
  *    (1..10).each_slice(3) {|tuple| a.push(tuple) } # => nil
@@ -2997,7 +2997,7 @@ enum_each_slice(VALUE obj, VALUE n)
     ary = memo->v1;
     if (RARRAY_LEN(ary) > 0) rb_yield(ary);
 
-    return Qnil;
+    return obj;
 }
 
 static VALUE
@@ -3040,11 +3040,11 @@ enum_each_cons_size(VALUE obj, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *    each_cons(n) { ... } ->  nil
+ *    each_cons(n) { ... } ->  self
  *    each_cons(n)         ->  enumerator
  *
  *  Calls the block with each successive overlapped +n+-tuple of elements;
- *  returns +nil+:
+ *  returns +self+:
  *
  *    a = []
  *    (1..5).each_cons(3) {|element| a.push(element) } # => nil
@@ -3072,7 +3072,7 @@ enum_each_cons(VALUE obj, VALUE n)
     memo = MEMO_NEW(rb_ary_new2(size), dont_recycle_block_arg(arity), size);
     rb_block_call(obj, id_each, 0, 0, each_cons_i, (VALUE)memo);
 
-    return Qnil;
+    return obj;
 }
 
 static VALUE
