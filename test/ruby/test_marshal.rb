@@ -922,7 +922,7 @@ class TestMarshal < Test::Unit::TestCase
     end
 
     def test_modules_and_classes_are_not_frozen
-      objects = Marshal.load(encode([Object, Kernel]), freeze: true)
+      _objects = Marshal.load(encode([Object, Kernel]), freeze: true)
       refute_predicate Object, :frozen?
       refute_predicate Kernel, :frozen?
     end
