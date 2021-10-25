@@ -44,6 +44,7 @@ jobs:
         run: |
           ./miniruby -e '(("a".."z").to_a+("A".."Z").to_a+("0".."9").to_a+%w[foo bar test zzz]).each{|basename|File.write("#{basename}.rb", "raise %(do not load #{basename}.rb)")}'
         if: ${{ matrix.test_task == 'check' }}
+      - run: ../src/tool/disable_ipv6.sh
       - run: make -s ${{ matrix.test_task }}
         timeout-minutes: 30
         env:
