@@ -85,8 +85,21 @@ module Test
         Test::Unit::Runner.output = orig_stdout
         $stdin = orig_stdin if orig_stdin
         $stdout = orig_stdout if orig_stdout
-        o.close if o && !o.closed?
-        i.close if i && !i.closed?
+
+        # To figure out which suite raises EBADF error.
+        begin
+          o.close if o && !o.closed?
+        rescue Exception => e
+          STDERR.puts "#{e} at #{suite.name} (o)"
+          raise
+        end
+
+        begin
+          i.close if i && !i.closed?
+        rescue Exception => e
+          STDERR.puts "#{e} at #{suite.name} (i)"
+          raise
+        end
       end
 
       def run(args = []) # :nodoc:
