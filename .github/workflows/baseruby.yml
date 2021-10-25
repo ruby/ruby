@@ -5,6 +5,9 @@ on: [push, pull_request]
 jobs:
   baseruby:
     name: BASERUBY
+
+    # ruby/setup-ruby requires this workflow to run on a Github hosted runner
+    # (cannot use docker)
     runs-on: ubuntu-20.04
     strategy:
       matrix:

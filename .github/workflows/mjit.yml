@@ -8,6 +8,9 @@ jobs:
         jit_opts: [ "--jit", "--jit-wait" ]
       fail-fast: false
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ruby/ruby-ci-image:ubuntu-21.04
+      options: --user root
     env:
       TESTOPTS: '-q --tty=no'
       RUN_OPTS: '--disable-gems ${{ matrix.jit_opts }} --jit-debug=-ggdb3'
@@ -15,23 +18,9 @@ jobs:
     steps:
       - run: mkdir build
         working-directory:
-      - name: Install libraries
-        run: |
-          set -x
-          sudo apt-get update -q || :
-          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison autoconf ruby
-      - name: git config
-        run: |
-          git config --global advice.detachedHead 0
-          git config --global init.defaultBranch garbage
       - uses: actions/checkout@v2
         with:
           path: src
-      - name: Fixed world writable dirs
-        run: |
-          chmod -v go-w $HOME $HOME/.config
-          sudo chmod -R go-w /usr/share
-          sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v go-w $d; done' || :
       - name: Set ENV
         run: |
           echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV

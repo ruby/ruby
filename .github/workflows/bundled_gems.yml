@@ -9,12 +9,10 @@ jobs:
     if: ${{ github.repository == 'ruby/ruby' }}
     name: update ${{ github.workflow }}
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ruby/ruby-ci-image:ubuntu-21.10
+      options: --user root
     steps:
-      - name: git config
-        run: |
-          git config --global advice.detachedHead 0
-          git config --global init.defaultBranch garbage
-
       - name: Set ENV
         run: |
           echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
@@ -30,13 +28,6 @@ jobs:
         run: |
           git diff --no-ext-diff --ignore-submodules --exit-code
         continue-on-error: true
-
-      - name: Install libraries
-        run: |
-          set -x
-          sudo apt-get update -q || :
-          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison autoconf ruby
-        if: ${{ steps.diff.outcome == 'failure' }}
 
       - name: Build
         run: |
