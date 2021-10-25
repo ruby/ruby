@@ -4346,12 +4346,12 @@ rb_fork_ruby(int *status)
     return pid;
 }
 
-VALUE
+rb_pid_t
 rb_call_proc__fork(void)
 {
     VALUE pid = rb_funcall(rb_mProcess, rb_intern("_fork"), 0);
 
-    return rb_to_int(pid);
+    return NUM2PIDT(rb_to_int(pid));
 }
 #endif
 
@@ -4408,11 +4408,11 @@ rb_proc__fork(VALUE _obj)
 static VALUE
 rb_f_fork(VALUE obj)
 {
-    VALUE pid;
+    rb_pid_t pid;
 
     pid = rb_call_proc__fork();
 
-    if (pid == INT2FIX(0)) {
+    if (pid == 0) {
 	if (rb_block_given_p()) {
 	    int status;
 	    rb_protect(rb_yield, Qundef, &status);
@@ -4421,7 +4421,7 @@ rb_f_fork(VALUE obj)
 	return Qnil;
     }
 
-    return pid;
+    return PIDT2NUM(pid);
 }
 #else
 #define rb_proc__fork rb_f_notimplement
