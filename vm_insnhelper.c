@@ -4723,8 +4723,6 @@ vm_sendish(
 #endif
 }
 
-/* vm_eval.c */
-VALUE rb_vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const VALUE *argv);
 /* object.c */
 VALUE rb_nil_to_s(VALUE);
 VALUE rb_true_to_s(VALUE);

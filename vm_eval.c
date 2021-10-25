@@ -163,12 +163,6 @@ vm_call0_cfunc(rb_execution_context_t *ec, struct rb_calling_info *calling, cons
     return vm_call0_cfunc_with_frame(ec, calling, argv);
 }
 
-MJIT_FUNC_EXPORTED VALUE
-rb_vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const VALUE *argv)
-{
-    return vm_call0_body(ec, calling, argv);
-}
-
 /* `ci' should point temporal value (on stack value) */
 static VALUE
 vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const VALUE *argv)
