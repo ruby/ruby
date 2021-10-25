@@ -2,6 +2,8 @@
 # Each line is a file pattern followed by one or more owners.
 # Code owners will be automatically tagged as reviewers when a pull request is opened
 
+# YJIT sources and tests
 yjit* @maximecb @xrxr
 doc/yjit/* @maximecb @xrxr
 bootstraptest/test_yjit* @maximecb @xrxr
+test/ruby/test_yjit* @maximecb @xrxr

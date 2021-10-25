@@ -40,7 +40,7 @@ struct rb_yjit_options {
     bool test_backend;
 };
 
-bool rb_yjit_enabled_p(void) ;
+bool rb_yjit_enabled_p(void);
 unsigned rb_yjit_call_threshold(void);
 
 void rb_yjit_invalidate_all_method_lookup_assumptions(void);
