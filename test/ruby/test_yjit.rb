@@ -85,6 +85,10 @@ class TestYJIT < Test::Unit::TestCase
     assert_compiles('e = 5; (..e)', insns: %i[newrange], result: ..5)
   end
 
+  def test_compile_duphash
+    assert_compiles('{ two: 2 }', insns: %i[duphash], result: { two: 2 })
+  end
+
   def test_compile_newhash
     assert_compiles('{}', insns: %i[newhash], result: {})
     assert_compiles('{ two: 1 + 1 }', insns: %i[newhash], result: { two: 2 })
