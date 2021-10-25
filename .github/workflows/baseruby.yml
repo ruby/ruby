@@ -23,14 +23,14 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: none
-      - run: echo "make=make -sj$((1 + $(nproc --all)))" >> $GITHUB_ENV
+      - run: echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
       - run: sudo apt-get install build-essential autoconf bison
       - run: ./autogen.sh
       - run: ./configure --disable-install-doc
-      - run: $make common-srcs
-      - run: $make incs
-      - run: $make all
-      - run: $make test
+      - run: make common-srcs
+      - run: make incs
+      - run: make all
+      - run: make test
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |
