@@ -693,8 +693,12 @@ class RubyLex
           unless t.state.allbits?(Ripper::EXPR_LABEL)
             spaces_of_nest.push(spaces_at_line_head)
           end
-        when 'else', 'elsif', 'ensure', 'when', 'in'
+        when 'else', 'elsif', 'ensure', 'when'
           corresponding_token_depth = spaces_of_nest.last
+        when 'in'
+          if in_keyword_case_scope?
+            corresponding_token_depth = spaces_of_nest.last
+          end
         when 'end'
           if is_first_printable_of_line
             corresponding_token_depth = spaces_of_nest.pop
@@ -836,6 +840,22 @@ class RubyLex
   def heredoc_scope?
     heredoc_tokens = @tokens.select { |t| [:on_heredoc_beg, :on_heredoc_end].include?(t.event) }
     heredoc_tokens[-1]&.event == :on_heredoc_beg
+  end
+
+  def in_keyword_case_scope?
+    kw_tokens = @tokens.select { |t| t.event == :on_kw && ['case', 'for', 'end'].include?(t.tok) }
+    counter = 0
+    kw_tokens.reverse.each do |t|
+      if t.tok == 'case'
+        return true if counter.zero?
+        counter += 1
+      elsif t.tok == 'for'
+        counter += 1
+      elsif t.tok == 'end'
+        counter -= 1
+      end
+    end
+    false
   end
 end
 # :startdoc:
