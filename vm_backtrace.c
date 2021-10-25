@@ -283,7 +283,7 @@ location_base_label_m(VALUE self)
     return location_base_label(location_ptr(self));
 }
 
-static rb_iseq_t *
+static const rb_iseq_t *
 location_iseq(rb_backtrace_location_t *loc)
 {
     switch (loc->type) {
@@ -310,7 +310,7 @@ location_iseq(rb_backtrace_location_t *loc)
 static VALUE
 location_path_m(VALUE self)
 {
-    rb_iseq_t *iseq = location_iseq(location_ptr(self));
+    const rb_iseq_t *iseq = location_iseq(location_ptr(self));
     return iseq ? rb_iseq_path(iseq) : Qnil;
 }
 
@@ -338,7 +338,7 @@ rb_frame_info_get(VALUE obj, VALUE *path, VALUE *script_lines, int *node_id)
 {
 #ifdef USE_ISEQ_NODE_ID
     rb_backtrace_location_t *loc = location_ptr(obj);
-    rb_iseq_t *iseq = location_iseq(loc);
+    const rb_iseq_t *iseq = location_iseq(loc);
     *path = iseq ? rb_iseq_path(iseq) : Qnil;
     *script_lines = iseq ? iseq->body->variable.script_lines : Qnil;
     *node_id = location_node_id(loc);
