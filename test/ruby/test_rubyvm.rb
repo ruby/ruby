@@ -18,12 +18,12 @@ class TestRubyVM < Test::Unit::TestCase
 
   def parse_and_compile
     script = <<~RUBY
-      a = 1
+      _a = 1
       def foo
-        b = 2
+        _b = 2
       end
       1.times{
-        c = 3
+        _c = 3
       }
     RUBY
 
