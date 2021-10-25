@@ -6414,6 +6414,7 @@ lex_getline(struct parser_params *p)
     VALUE line = (*p->lex.gets)(p, p->lex.input);
     if (NIL_P(line)) return line;
     must_be_ascii_compatible(line);
+    if (RB_OBJ_FROZEN(line)) line = rb_str_dup(line); // needed for RubyVM::AST.of because script_lines in iseq is deep-frozen
 #ifndef RIPPER
     if (p->debug_lines) {
 	rb_enc_associate(line, p->enc);

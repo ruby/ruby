@@ -195,12 +195,12 @@ script_lines(VALUE path)
 static VALUE
 ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body, VALUE keep_script_lines)
 {
-    VALUE path, node, lines;
+    VALUE path, node, lines = Qnil;
     int node_id;
 
     if (rb_frame_info_p(body)) {
-        rb_frame_info_get(body, &path, &node_id);
-        if (NIL_P(path)) return Qnil;
+        rb_frame_info_get(body, &path, &lines, &node_id);
+        if (NIL_P(path) && NIL_P(lines)) return Qnil;
     }
     else {
         const rb_iseq_t *iseq = NULL;
@@ -220,10 +220,11 @@ ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body, VALUE keep_script
             rb_raise(rb_eArgError, "cannot get AST for method defined in eval");
         }
         path = rb_iseq_path(iseq);
+        lines = iseq->body->variable.script_lines;
         node_id = iseq->body->location.node_id;
     }
 
-    if (!NIL_P(lines = script_lines(path))) {
+    if (!NIL_P(lines) || !NIL_P(lines = script_lines(path))) {
         node = rb_ast_parse_array(lines, keep_script_lines);
     }
     else if (RSTRING_LEN(path) == 2 && memcmp(RSTRING_PTR(path), "-e", 2) == 0) {
