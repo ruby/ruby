@@ -4756,7 +4756,11 @@ vm_concat_tostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
             // rb_mod_to_s() allocates a mutable string, but since we are only
             // going to use this string for interpolation, it's fine to use the
             // frozen string.
-            return rb_mod_name(recv);
+            VALUE val = rb_mod_name(recv);
+            if (val == Qnil) {
+                val = rb_mod_to_s(recv);
+            }
+            return val;
         }
         break;
       case T_NIL:
