@@ -684,14 +684,6 @@ yjit_disasm(VALUE self, VALUE code, VALUE from)
 }
 #endif
 
-static VALUE
-at_exit_print_stats(RB_BLOCK_CALL_FUNC_ARGLIST(yieldarg, data))
-{
-    // Defined in yjit.rb
-    rb_funcall(mYjit, rb_intern("_print_stats"), 0);
-    return Qnil;
-}
-
 // Primitive called in yjit.rb. Export all machine code comments as a Ruby array.
 static VALUE
 comments_for(rb_execution_context_t *ec, VALUE self, VALUE start_address, VALUE end_address)
@@ -721,6 +713,12 @@ comments_for(rb_execution_context_t *ec, VALUE self, VALUE start_address, VALUE 
 #endif // if RUBY_DEBUG
 
     return comment_array;
+}
+
+static VALUE
+yjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self)
+{
+    return RBOOL(YJIT_STATS && rb_yjit_opts.gen_stats);
 }
 
 // Primitive called in yjit.rb. Export all YJIT statistics as a Ruby hash.
@@ -1143,11 +1141,6 @@ rb_yjit_init(struct rb_yjit_options *options)
     cYjitCodeComment = rb_struct_define_under(cYjitDisasm, "Comment", "address", "comment", NULL);
 #endif
 #endif
-
-    if (YJIT_STATS && rb_yjit_opts.gen_stats) {
-        // Setup at_exit callback for printing out counters
-        rb_block_call(rb_mKernel, rb_intern("at_exit"), 0, NULL, at_exit_print_stats, Qfalse);
-    }
 
     // Make dependency tables
     method_lookup_dependency = st_init_numtable();

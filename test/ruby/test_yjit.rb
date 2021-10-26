@@ -37,6 +37,11 @@ class TestYJIT < Test::Unit::TestCase
     assert_in_out_err('--yjit-greedy-versioning=1', '', [], /warning: argument to --yjit-greedy-versioning is ignored/)
   end
 
+  def test_yjit_stats_and_v_no_error
+    _stdout, stderr, _status = EnvUtil.invoke_ruby(%w(-v --yjit-stats), '', true, true)
+    refute_includes(stderr, "NoMethodError")
+  end
+
   def test_enable_from_env_var
     yjit_child_env = {'RUBY_YJIT_ENABLE' => '1'}
     assert_in_out_err([yjit_child_env, '--version'], '') do |stdout, stderr|
