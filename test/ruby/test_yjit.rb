@@ -23,7 +23,7 @@ class TestYJIT < Test::Unit::TestCase
       %w(--version --disable=yjit --enable=yjit),
     ].each do |version_args|
       assert_in_out_err(version_args) do |stdout, stderr|
-        assert_equal([RUBY_DESCRIPTION], stdout)
+        assert_equal(RUBY_DESCRIPTION, stdout.first)
         assert_equal([], stderr)
       end
     end
@@ -39,7 +39,10 @@ class TestYJIT < Test::Unit::TestCase
 
   def test_enable_from_env_var
     yjit_child_env = {'RUBY_YJIT_ENABLE' => '1'}
-    assert_in_out_err([yjit_child_env, '--version'], '', [RUBY_DESCRIPTION])
+    assert_in_out_err([yjit_child_env, '--version'], '') do |stdout, stderr|
+      assert_equal(RUBY_DESCRIPTION, stdout.first)
+      assert_equal([], stderr)
+    end
     assert_in_out_err([yjit_child_env, '-e puts RUBY_DESCRIPTION'], '', [RUBY_DESCRIPTION])
     assert_in_out_err([yjit_child_env, '-e p YJIT.enabled?'], '', ['true'])
   end
