@@ -154,6 +154,42 @@ class TestBacktrace < Test::Unit::TestCase
     assert_equal caller(0), caller(0, nil)
   end
 
+  def test_caller_block
+    i = 0
+    ary = []
+    cllr = caller(1, 2); last = caller{|x| ary << x; i+=1; break x if i == 2}
+    assert_equal(cllr, ary)
+    assert_equal(cllr.last, last)
+    assert_kind_of(String, last)
+
+    i = 0
+    ary = []
+    ->{->{
+      cllr = caller(1, 4); last = caller{|x| ary << x; i+=1; break x if i == 4}
+    }.()}.()
+    assert_equal(cllr, ary)
+    assert_equal(cllr.last, last)
+    assert_kind_of(String, last)
+  end
+
+  def test_caller_locations_block
+    i = 0
+    ary = []
+    cllr = caller_locations(1, 2); last = caller_locations{|x| ary << x; i+=1; break x if i == 2}
+    assert_equal(cllr.map(&:to_s), ary.map(&:to_s))
+    assert_equal(cllr.last.to_s, last.to_s)
+    assert_kind_of(Thread::Backtrace::Location, last)
+
+    i = 0
+    ary = []
+    ->{->{
+      cllr = caller_locations(1, 2); last = caller_locations{|x| ary << x; i+=1; break x if i == 2}
+    }.()}.()
+    assert_equal(cllr.map(&:to_s), ary.map(&:to_s))
+    assert_equal(cllr.last.to_s, last.to_s)
+    assert_kind_of(Thread::Backtrace::Location, last)
+  end
+
   def test_caller_locations_first_label
     def self.label
       caller_locations.first.label

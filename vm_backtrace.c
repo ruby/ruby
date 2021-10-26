@@ -567,14 +567,33 @@ bt_update_cfunc_loc(unsigned long cfunc_counter, rb_backtrace_location_t *cfunc_
     }
 }
 
+static VALUE location_create(rb_backtrace_location_t *srcloc, void *btobj);
+
+static void
+bt_yield_loc(rb_backtrace_location_t *loc, long num_frames, VALUE btary, VALUE btobj, int to_str)
+{
+    VALUE locval;
+    for (; num_frames > 0; num_frames--, loc++) {
+        if (to_str) {
+            locval = location_to_str(loc);
+        }
+        else {
+            locval = location_create(loc, (void *)btobj);
+        }
+        rb_ary_push(btary, locval);
+        rb_yield(locval);
+    }
+}
+
 static VALUE
-rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_frame, long num_frames, int* start_too_large, bool skip_internal)
+rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_frame, long num_frames, int* start_too_large, bool skip_internal, int to_str, bool do_yield)
 {
     const rb_control_frame_t *cfp = ec->cfp;
     const rb_control_frame_t *end_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
     ptrdiff_t size;
     rb_backtrace_t *bt;
     VALUE btobj = backtrace_alloc(rb_cBacktrace);
+    VALUE btary;
     rb_backtrace_location_t *loc;
     unsigned long cfunc_counter = 0;
     GetCoreDataFromValue(btobj, rb_backtrace_t, bt);
@@ -612,6 +631,16 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
         return btobj;
     }
 
+    if (do_yield) {
+        btary = rb_ary_new2(num_frames);
+        if (to_str) {
+            bt->strary = btary;
+        }
+        else {
+            bt->locary = btary;
+        }
+    }
+
     for (; cfp != end_cfp && (bt->backtrace_size < num_frames); cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
         if (cfp->iseq) {
             if (cfp->pc) {
@@ -626,6 +655,9 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
                     loc->iseq = iseq;
                     loc->pc = pc;
                     bt_update_cfunc_loc(cfunc_counter, loc-1, iseq, pc);
+                    if (do_yield) {
+                        bt_yield_loc(loc - cfunc_counter, cfunc_counter+1, btary, btobj, to_str);
+                    }
                     cfunc_counter = 0;
                 }
             }
@@ -649,6 +681,9 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
         for (; cfp != end_cfp; cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
             if (cfp->iseq && cfp->pc && (!skip_internal || !is_internal_location(cfp))) {
                 bt_update_cfunc_loc(cfunc_counter, loc, cfp->iseq, cfp->pc);
+                if (do_yield) {
+                    bt_yield_loc(loc - cfunc_counter, cfunc_counter, btary, btobj, to_str);
+                }
                 break;
             }
         }
@@ -661,7 +696,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
 MJIT_FUNC_EXPORTED VALUE
 rb_ec_backtrace_object(const rb_execution_context_t *ec)
 {
-    return rb_ec_partial_backtrace_object(ec, BACKTRACE_START, ALL_BACKTRACE_LINES, NULL, FALSE);
+    return rb_ec_partial_backtrace_object(ec, BACKTRACE_START, ALL_BACKTRACE_LINES, NULL, FALSE, 0, FALSE);
 }
 
 static VALUE
@@ -786,13 +821,13 @@ backtrace_limit(VALUE self)
 VALUE
 rb_ec_backtrace_str_ary(const rb_execution_context_t *ec, long lev, long n)
 {
-    return backtrace_to_str_ary(rb_ec_partial_backtrace_object(ec, lev, n, NULL, FALSE));
+    return rb_backtrace_to_str_ary(rb_ec_partial_backtrace_object(ec, lev, n, NULL, FALSE, 0, FALSE));
 }
 
 VALUE
 rb_ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, long n, bool skip_internal)
 {
-    return backtrace_to_location_ary(rb_ec_partial_backtrace_object(ec, lev, n, NULL, skip_internal));
+    return rb_backtrace_to_location_ary(rb_ec_partial_backtrace_object(ec, lev, n, NULL, skip_internal, 0, FALSE));
 }
 
 /* make old style backtrace directly */
@@ -1006,7 +1041,7 @@ rb_make_backtrace(void)
 }
 
 static VALUE
-ec_backtrace_to_ary(const rb_execution_context_t *ec, int argc, const VALUE *argv, int lev_default, int lev_plus, int to_str)
+ec_create_backtrace_ary(const rb_execution_context_t *ec, int argc, const VALUE *argv, int lev_default, int lev_plus, int to_str, bool do_yield)
 {
     VALUE level, vn;
     long lev, n;
@@ -1064,20 +1099,30 @@ ec_backtrace_to_ary(const rb_execution_context_t *ec, int argc, const VALUE *arg
 	return rb_ary_new();
     }
 
-    btval = rb_ec_partial_backtrace_object(ec, lev, n, &too_large, FALSE);
+    btval = rb_ec_partial_backtrace_object(ec, lev, n, &too_large, FALSE, to_str, do_yield);
 
     if (too_large) {
+        rb_backtrace_t *bt;
+        GetCoreDataFromValue(btval, rb_backtrace_t, bt);
+        bt->strary = (VALUE)NULL;
+        bt->locary = (VALUE)NULL;
         return Qnil;
     }
 
     if (to_str) {
-        r = backtrace_to_str_ary(btval);
+        r = rb_backtrace_to_str_ary(btval);
     }
     else {
-        r = backtrace_to_location_ary(btval);
+        r = rb_backtrace_to_location_ary(btval);
     }
     RB_GC_GUARD(btval);
     return r;
+}
+
+static VALUE
+ec_backtrace_to_ary(const rb_execution_context_t *ec, int argc, const VALUE *argv, int lev_default, int lev_plus, int to_str)
+{
+    return ec_create_backtrace_ary(ec, argc, argv, lev_default, lev_plus, to_str, FALSE);
 }
 
 static VALUE
@@ -1154,7 +1199,7 @@ VALUE rb_vm_backtrace_locations(int argc, const VALUE * argv, struct rb_executio
 static VALUE
 rb_f_caller(int argc, VALUE *argv, VALUE _)
 {
-    return ec_backtrace_to_ary(GET_EC(), argc, argv, 1, 1, 1);
+    return ec_create_backtrace_ary(GET_EC(), argc, argv, 1, 1, 1, rb_block_given_p());
 }
 
 /*
@@ -1182,7 +1227,7 @@ rb_f_caller(int argc, VALUE *argv, VALUE _)
 static VALUE
 rb_f_caller_locations(int argc, VALUE *argv, VALUE _)
 {
-    return ec_backtrace_to_ary(GET_EC(), argc, argv, 1, 1, 0);
+    return ec_create_backtrace_ary(GET_EC(), argc, argv, 1, 1, 0, rb_block_given_p());
 }
 
 /* called from Init_vm() in vm.c */
