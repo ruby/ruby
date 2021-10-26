@@ -1078,7 +1078,7 @@ gen_expandarray(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 static codegen_status_t
 gen_newhash(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
-    rb_num_t num = (rb_num_t)jit_get_arg(jit, 0);
+    int32_t num = (int32_t)jit_get_arg(jit, 0);
 
     // Save the PC and SP because we are allocating
     jit_prepare_routine_call(jit, ctx, REG0);
