@@ -3157,7 +3157,9 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
         PARAM_TYPE(keyrest);
         if (body->param.flags.has_kwrest &&
             rb_id2str(param = PARAM_ID(keyword->rest_start))) {
-            rb_ary_push(a, ID2SYM(param));
+            if (param_name(PARAM_ID(keyword->rest_start))) {
+                rb_ary_push(a, ID2SYM(param));
+            }
         }
         else if (body->param.flags.ruby2_keywords) {
             rb_ary_push(a, ID2SYM(idPow));

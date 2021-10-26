@@ -5465,8 +5465,7 @@ f_kwrest	: kwrest_mark tIDENTIFIER
 		| kwrest_mark
 		    {
 		    /*%%%*/
-			$$ = internal_id(p);
-			arg_var(p, $$);
+			arg_var(p, idREST);
 		    /*% %*/
 		    /*% ripper: kwrest_param!(Qnil) %*/
 		    }

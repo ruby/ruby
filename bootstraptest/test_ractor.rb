@@ -1512,6 +1512,15 @@ assert_equal "ok", %q{
 }
 
 assert_equal "ok", %q{
+  def foo(**); ->{ super }; end
+  begin
+    Ractor.make_shareable(foo)
+  rescue Ractor::IsolationError
+    "ok"
+  end
+}
+
+assert_equal "ok", %q{
   def foo(...); ->{ super }; end
   begin
     Ractor.make_shareable(foo)

@@ -105,6 +105,16 @@ class TestISeq < Test::Unit::TestCase
     assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
   end
 
+  def test_super_with_block_and_kwrest
+    iseq = compile(<<~EOF)
+      def touch(**) # :nodoc:
+        foo { super }
+      end
+      42
+    EOF
+    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
+  end
+
   def test_lambda_with_ractor_roundtrip
     iseq = compile(<<~EOF)
       x = 42
