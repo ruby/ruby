@@ -2702,6 +2702,8 @@ static const rb_data_type_t label_wrapper = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
+#define idREST '?'
+
 static VALUE
 iseq_data_to_ary(const rb_iseq_t *iseq)
 {
@@ -2770,7 +2772,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     for (i=0; i<iseq_body->local_table_size; i++) {
 	ID lid = iseq_body->local_table[i];
 	if (lid) {
-	    if (rb_id2str(lid)) {
+	    if (lid != idREST && rb_id2str(lid)) {
 		rb_ary_push(locals, ID2SYM(lid));
 	    }
 	    else { /* hidden variable from id_internal() */
@@ -3054,8 +3056,6 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     rb_ary_push(val, body);
     return val;
 }
-
-#define idREST '?'
 
 static VALUE
 param_name(ID name)

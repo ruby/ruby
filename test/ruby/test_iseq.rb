@@ -348,6 +348,14 @@ class TestISeq < Test::Unit::TestCase
     end
   end
 
+  def anon_star(*); end
+
+  def test_anon_param_in_disasm
+    iseq = RubyVM::InstructionSequence.of(method(:anon_star))
+    param_names = iseq.to_a[iseq.to_a.index(:method) + 1]
+    assert_equal [2], param_names
+  end
+
   def strip_lineno(source)
     source.gsub(/^.*?: /, "")
   end
