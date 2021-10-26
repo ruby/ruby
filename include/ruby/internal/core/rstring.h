@@ -276,14 +276,9 @@ struct RString {
                 VALUE shared;
             } aux;
         } heap;
+
+        /** Embedded contents. */
         struct {
-            /**
-            * Embedded contents.  When a string is short enough, it uses this area
-            * to store the contents themselves.   This was impractical in the 20th
-            * century, but these days 64 bit  machines can typically hold 24 bytes
-            * here.   Could be  sufficiently large.   In this  case the  length is
-            * encoded into the flags.
-            */
 #if USE_RVARGC
             short len;
             /* This is a length 1 array because:
@@ -293,6 +288,13 @@ struct RString {
              */
             char ary[1];
 #else
+            /**
+             * When a  string is short enough,  it uses this area  to store the
+             * contents themselves.  This was  impractical in the 20th century,
+             * but these days 64 bit machines can typically hold 24 bytes here.
+             * Could be sufficiently large.  In this case the length is encoded
+             * into the flags.
+             */
             char ary[RSTRING_EMBED_LEN_MAX + 1];
 #endif
         } embed;
