@@ -35,7 +35,7 @@ enum ruby_num_rounding_mode {
     RUBY_NUM_ROUND_DEFAULT = ROUND_DEFAULT,
 };
 
-#if SIZEOF_DOUBLE < SIZEOF_VALUE
+#if SIZEOF_DOUBLE <= SIZEOF_VALUE
 typedef double rb_float_value_type;
 #else
 typedef struct {
@@ -218,7 +218,7 @@ rb_float_flonum_value(VALUE v)
 static inline double
 rb_float_noflonum_value(VALUE v)
 {
-#if SIZEOF_DOUBLE < SIZEOF_VALUE
+#if SIZEOF_DOUBLE <= SIZEOF_VALUE
     return RFLOAT(v)->float_value;
 #else
     union {
