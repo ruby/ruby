@@ -202,7 +202,7 @@ For message sending and receiving, there are two types of APIs: push type and pu
   * If the incoming port is closed for a Ractor, you can't `send` to the Ractor. If `Ractor.receive` is blocked for the closed incoming port, then it will raise an exception.
   * If the outgoing port is closed for a Ractor, you can't call `Ractor#take` and `Ractor.yield` on the Ractor. If ractors are blocking by `Ractor#take` or `Ractor.yield`, closing outgoing port will raise an exception on these blocking ractors.
   * When a Ractor is terminated, the Ractor's ports are closed.
-* There are 3 way to send an object as a message
+* There are 3 ways to send an object as a message
   * (1) Send a reference: Sending a shareable object, send only a reference to the object (fast)
   * (2) Copy an object: Sending an unshareable object by copying an object deeply (slow). Note that you can not send an object which does not support deep copy. Some `T_DATA` objects are not supported.
   * (3) Move an object: Sending an unshareable object reference with a membership. Sender Ractor can not access moved objects anymore (raise an exception) after moving it. Current implementation makes new object as a moved object for receiver Ractor and copies references of sending object to moved object.
