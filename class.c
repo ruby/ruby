@@ -1335,6 +1335,41 @@ rb_mod_ancestors(VALUE mod)
 }
 
 static void
+class_descendants_recursive(VALUE klass, VALUE ary)
+{
+    if (BUILTIN_TYPE(klass) == T_CLASS && !FL_TEST(klass, FL_SINGLETON)) {
+        rb_ary_push(ary, klass);
+    }
+    rb_class_foreach_subclass(klass, class_descendants_recursive, ary);
+}
+
+/*
+ *  call-seq:
+ *     descendants -> array
+ *
+ *  Returns an array of classes where the receiver is one of
+ *  the ancestors of the class, excluding the receiver and
+ *  singleton classes. The order of the returned array is not
+ *  defined.
+ *
+ *     class A; end
+ *     class B < A; end
+ *     class C < B; end
+ *
+ *     A.descendants        #=> [B, C]
+ *     B.descendants        #=> [C]
+ *     C.descendants        #=> []
+ */
+
+VALUE
+rb_class_descendants(VALUE klass)
+{
+    VALUE ary = rb_ary_new();
+    rb_class_foreach_subclass(klass, class_descendants_recursive, ary);
+    return ary;
+}
+
+static void
 ins_methods_push(st_data_t name, st_data_t ary)
 {
     rb_ary_push((VALUE)ary, ID2SYM((ID)name));
