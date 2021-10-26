@@ -30,11 +30,11 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_command_line_switches
-      assert_in_out_err('--yjit-', '', [], /invalid option --yjit-/)
-      assert_in_out_err('--yjithello', '', [], /invalid option --yjithello/)
-      assert_in_out_err('--yjit-call-threshold', '', [], /--yjit-call-threshold needs an argument/)
-      assert_in_out_err('--yjit-call-threshold=', '', [], /--yjit-call-threshold needs an argument/)
-      assert_in_out_err('--yjit-greedy-versioning=1', '', [], /warning: argument to --yjit-greedy-versioning is ignored/)
+    assert_in_out_err('--yjit-', '', [], /invalid option --yjit-/)
+    assert_in_out_err('--yjithello', '', [], /invalid option --yjithello/)
+    assert_in_out_err('--yjit-call-threshold', '', [], /--yjit-call-threshold needs an argument/)
+    assert_in_out_err('--yjit-call-threshold=', '', [], /--yjit-call-threshold needs an argument/)
+    assert_in_out_err('--yjit-greedy-versioning=1', '', [], /warning: argument to --yjit-greedy-versioning is ignored/)
   end
 
   def test_enable_from_env_var
