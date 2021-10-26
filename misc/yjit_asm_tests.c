@@ -401,7 +401,7 @@ void run_runtime_tests(void)
     int (*function)(void);
     function = (int (*)(void))mem_block;
 
-    #define TEST(BODY) cb_set_pos(cb, 0); BODY ret(cb); assert_equal(7, function());
+    #define TEST(BODY) cb_set_pos(cb, 0); BODY ret(cb); cb_mark_all_executable(cb); assert_equal(7, function());
 
     // add
     TEST({ mov(cb, RAX, imm_opnd(0)); add(cb, RAX, imm_opnd(7)); })

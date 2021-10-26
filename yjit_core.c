@@ -833,11 +833,15 @@ gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx, rb_execution_context_t
     // The entry context makes no assumptions about types
     blockid_t blockid = { iseq, insn_idx };
 
+    rb_vm_barrier();
     // Write the interpreter entry prologue. Might be NULL when out of memory.
     uint8_t *code_ptr = yjit_entry_prologue(cb, iseq);
 
     // Try to generate code for the entry block
     block_t *block = gen_block_version(blockid, &DEFAULT_CTX, ec);
+
+    cb_mark_all_executable(ocb);
+    cb_mark_all_executable(cb);
 
     // If we couldn't generate any code
     if (!block || block->end_idx == insn_idx) {
@@ -872,6 +876,8 @@ branch_stub_hit(branch_t *branch, const uint32_t target_idx, rb_execution_contex
         dst_addr = branch->dst_addrs[target_idx];
     }
     else {
+        rb_vm_barrier();
+
         // :stub-sp-flush:
         // Generated code do stack operations without modifying cfp->sp, while the
         // cfp->sp tells the GC what values on the stack to root. Generated code
@@ -952,6 +958,9 @@ branch_stub_hit(branch_t *branch, const uint32_t target_idx, rb_execution_contex
             // frame. We do that in code_for_exit_from_stub.
             dst_addr = code_for_exit_from_stub;
         }
+
+        cb_mark_all_executable(ocb);
+        cb_mark_all_executable(cb);
     }
 
     const ptrdiff_t new_branch_size = branch_code_size(branch);
@@ -1201,6 +1210,7 @@ static void
 invalidate_block_version(block_t *block)
 {
     ASSERT_vm_locking();
+
     // TODO: want to assert that all other ractors are stopped here. Can't patch
     // machine code that some other thread is running.
 
@@ -1323,6 +1333,9 @@ invalidate_block_version(block_t *block)
 #if YJIT_STATS
     yjit_runtime_counters.invalidation_count++;
 #endif
+
+    cb_mark_all_executable(ocb);
+    cb_mark_all_executable(cb);
 
     // fprintf(stderr, "invalidation done\n");
 }

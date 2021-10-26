@@ -163,7 +163,7 @@ static uint8_t *alloc_exec_mem(uint32_t mem_size)
             mem_block = (uint8_t*)mmap(
                 (void*)req_addr,
                 mem_size,
-                PROT_READ | PROT_WRITE | PROT_EXEC,
+                PROT_READ | PROT_EXEC,
                 MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE,
                 -1,
                 0
@@ -184,7 +184,7 @@ static uint8_t *alloc_exec_mem(uint32_t mem_size)
         mem_block = (uint8_t*)mmap(
             (void*)alloc_exec_mem,
             mem_size,
-            PROT_READ | PROT_WRITE | PROT_EXEC,
+            PROT_READ | PROT_EXEC,
             MAP_PRIVATE | MAP_ANONYMOUS,
             -1,
             0
@@ -197,7 +197,7 @@ static uint8_t *alloc_exec_mem(uint32_t mem_size)
         mem_block = (uint8_t*)mmap(
             NULL,
             mem_size,
-            PROT_READ | PROT_WRITE | PROT_EXEC,
+            PROT_READ | PROT_EXEC,
             MAP_PRIVATE | MAP_ANONYMOUS,
             -1,
             0
@@ -210,9 +210,17 @@ static uint8_t *alloc_exec_mem(uint32_t mem_size)
         exit(-1);
     }
 
+    codeblock_t block;
+    block.current_aligned_write_pos = ALIGNED_WRITE_POSITION_NONE;
+    block.mem_block = mem_block;
+    block.mem_size = mem_size;
+
+    codeblock_t * cb = &block;
     // Fill the executable memory with INT3 (0xCC) so that
     // executing uninitialized memory will fault
+    cb_mark_all_writeable(cb);
     memset(mem_block, 0xCC, mem_size);
+    cb_mark_all_executable(cb);
 
     return mem_block;
 #else
@@ -230,6 +238,7 @@ void cb_init(codeblock_t *cb, uint8_t *mem_block, uint32_t mem_size)
     cb->write_pos = 0;
     cb->num_labels = 0;
     cb->num_refs = 0;
+    cb->current_aligned_write_pos = ALIGNED_WRITE_POSITION_NONE;
 }
 
 // Align the current write position to a multiple of bytes
@@ -277,6 +286,7 @@ void cb_write_byte(codeblock_t *cb, uint8_t byte)
 {
     assert (cb->mem_block);
     assert (cb->write_pos + 1 <= cb->mem_size);
+    cb_mark_position_writeable(cb, cb->write_pos);
     cb->mem_block[cb->write_pos++] = byte;
 }
 
@@ -1771,3 +1781,35 @@ void cb_write_lock_prefix(codeblock_t *cb)
 {
     cb_write_byte(cb, 0xF0);
 }
+
+void cb_mark_all_writeable(codeblock_t * cb)
+{
+    if (mprotect(cb->mem_block, cb->mem_size, PROT_READ | PROT_WRITE)) {
+        fprintf(stderr, "Couldn't make JIT page (%p) writeable, errno: %s", (void *)cb->mem_block, strerror(errno));
+        abort();
+    }
+}
+
+void cb_mark_position_writeable(codeblock_t * cb, uint32_t write_pos)
+{
+    uint32_t pagesize = (uint32_t)sysconf(_SC_PAGESIZE);
+    uint32_t aligned_position = (write_pos / pagesize) * pagesize;
+
+    if (cb->current_aligned_write_pos != aligned_position) {
+        cb->current_aligned_write_pos = aligned_position;
+        if (mprotect(cb->mem_block + aligned_position, pagesize, PROT_READ | PROT_WRITE)) {
+            fprintf(stderr, "Couldn't make JIT page (%p) writeable, errno: %s", (void *)(cb->mem_block + aligned_position), strerror(errno));
+            abort();
+        }
+    }
+}
+
+void cb_mark_all_executable(codeblock_t * cb)
+{
+    cb->current_aligned_write_pos = ALIGNED_WRITE_POSITION_NONE;
+    if (mprotect(cb->mem_block, cb->mem_size, PROT_READ | PROT_EXEC)) {
+        fprintf(stderr, "Couldn't make JIT page (%p) executable, errno: %s", (void *)cb->mem_block, strerror(errno));
+        abort();
+    }
+}
+

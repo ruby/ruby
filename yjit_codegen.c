@@ -4876,6 +4876,8 @@ rb_yjit_tracing_invalidate_all(void)
     RUBY_ASSERT_ALWAYS(yjit_codepage_frozen_bytes <= old_pos && "frozen bytes should increase monotonically");
     yjit_codepage_frozen_bytes = old_pos;
 
+    cb_mark_all_executable(ocb);
+    cb_mark_all_executable(cb);
     RB_VM_LOCK_LEAVE();
 }
 
@@ -4957,6 +4959,7 @@ yjit_init_codegen(void)
 
     // Generate full exit code for C func
     gen_full_cfunc_return();
+    cb_mark_all_executable(cb);
 
     // Map YARV opcodes to the corresponding codegen functions
     yjit_reg_op(BIN(nop), gen_nop);

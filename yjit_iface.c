@@ -478,7 +478,7 @@ rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec)
 #if (OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE) && JIT_ENABLED
     bool success = true;
     RB_VM_LOCK_ENTER();
-    // TODO: I think we need to stop all other ractors here
+    rb_vm_barrier();
 
     // Compile a block version starting at the first instruction
     uint8_t *code_ptr = gen_entry_point(iseq, 0, ec);
@@ -914,6 +914,8 @@ rb_yjit_iseq_mark(const struct rb_iseq_constant_body *body)
 void
 rb_yjit_iseq_update_references(const struct rb_iseq_constant_body *body)
 {
+    rb_vm_barrier();
+
     rb_darray_for(body->yjit_blocks, version_array_idx) {
         rb_yjit_block_array_t version_array = rb_darray_get(body->yjit_blocks, version_array_idx);
 
@@ -947,6 +949,11 @@ rb_yjit_iseq_update_references(const struct rb_iseq_constant_body *body)
                 VALUE possibly_moved = rb_gc_location(object);
                 // Only write when the VALUE moves, to be CoW friendly.
                 if (possibly_moved != object) {
+                    // Possibly unlock the page we need to update
+                    cb_mark_position_writeable(cb, offset_to_value);
+
+                    // Object could cross a page boundary, so unlock there as well
+                    cb_mark_position_writeable(cb, offset_to_value + SIZEOF_VALUE - 1);
                     memcpy(value_address, &possibly_moved, SIZEOF_VALUE);
                 }
             }
@@ -955,6 +962,8 @@ rb_yjit_iseq_update_references(const struct rb_iseq_constant_body *body)
             //block->code_page = rb_gc_location(block->code_page);
         }
     }
+    cb_mark_all_executable(cb);
+    cb_mark_all_executable(ocb);
 }
 
 // Free the yjit resources associated with an iseq

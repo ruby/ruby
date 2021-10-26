@@ -55,7 +55,13 @@ typedef struct CodeBlock
     // Flag to enable or disable comments
     bool has_asm;
 
+    // Keep track of the current aligned write position.
+    // Used for changing protection when writing to the JIT buffer
+    uint32_t current_aligned_write_pos;
 } codeblock_t;
+
+// 1 is not aligned so this won't match any pages
+#define ALIGNED_WRITE_POSITION_NONE 1
 
 enum OpndType
 {
@@ -261,6 +267,9 @@ static inline uint32_t cb_new_label(codeblock_t *cb, const char *name);
 static inline void cb_write_label(codeblock_t *cb, uint32_t label_idx);
 static inline void cb_label_ref(codeblock_t *cb, uint32_t label_idx);
 static inline void cb_link_labels(codeblock_t *cb);
+static inline void cb_mark_all_writeable(codeblock_t *cb);
+static inline void cb_mark_position_writeable(codeblock_t *cb, uint32_t write_pos);
+static inline void cb_mark_all_executable(codeblock_t *cb);
 
 // Encode individual instructions into a code block
 static inline void add(codeblock_t *cb, x86opnd_t opnd0, x86opnd_t opnd1);
