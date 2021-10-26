@@ -113,8 +113,9 @@ module Bundler
         source = ", :source => \"#{d.source}\"" unless d.source.nil?
         git = ", :git => \"#{d.git}\"" unless d.git.nil?
         branch = ", :branch => \"#{d.branch}\"" unless d.branch.nil?
+        require_path = ", :require => #{convert_autorequire(d.autorequire)}" unless d.autorequire.nil?
 
-        %(gem #{name}#{requirement}#{group}#{source}#{git}#{branch})
+        %(gem #{name}#{requirement}#{group}#{source}#{git}#{branch}#{require_path})
       end.join("\n")
     end
 
@@ -268,6 +269,12 @@ module Bundler
 
     def show_warning(message)
       Bundler.ui.info Bundler.ui.add_color(message, :yellow)
+    end
+
+    def convert_autorequire(autorequire)
+      autorequire = autorequire.first
+      return autorequire if autorequire == "false"
+      autorequire.inspect
     end
   end
 end
