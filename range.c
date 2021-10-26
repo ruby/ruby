@@ -1792,12 +1792,12 @@ range_include_internal(VALUE range, VALUE val, int string_use_cover)
         else if (NIL_P(beg)) {
 	    VALUE r = rb_funcall(val, id_cmp, 1, end);
 	    if (NIL_P(r)) return Qfalse;
-        return RBOOL(rb_cmpint(r, val, end) <= 0);
+            return RBOOL(rb_cmpint(r, val, end) <= 0);
         }
 	else if (NIL_P(end)) {
 	    VALUE r = rb_funcall(beg, id_cmp, 1, val);
 	    if (NIL_P(r)) return Qfalse;
-        return RBOOL(rb_cmpint(r, beg, val) <= 0);
+            return RBOOL(rb_cmpint(r, beg, val) <= 0);
 	}
     }
     return Qundef;
