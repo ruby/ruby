@@ -35,9 +35,18 @@ enum ruby_num_rounding_mode {
     RUBY_NUM_ROUND_DEFAULT = ROUND_DEFAULT,
 };
 
+#if SIZEOF_DOUBLE < SIZEOF_VALUE
+typedef double rb_float_value_type;
+#else
+typedef struct {
+    VALUE values[(SIZEOF_DOUBLE + SIZEOF_VALUE - 1) / SIZEOF_VALUE];
+    /* roomof() needs internal.h, and the order of some macros may matter */
+} rb_float_value_type;
+#endif
+
 struct RFloat {
     struct RBasic basic;
-    double float_value;
+    rb_float_value_type float_value;
 };
 
 #define RFLOAT(obj)  ((struct RFloat *)(obj))
@@ -206,21 +215,17 @@ rb_float_flonum_value(VALUE v)
     return 0.0;
 }
 
-#if SIZEOF_VALUE >= SIZEOF_DOUBLE || defined(UNALIGNED_WORD_ACCESS)
-# define UNALIGNED_DOUBLE_ACCESS 1
-#else
-# define UNALIGNED_DOUBLE_ACCESS 0
-#endif
-
 static inline double
 rb_float_noflonum_value(VALUE v)
 {
-#if UNALIGNED_DOUBLE_ACCESS
+#if SIZEOF_DOUBLE < SIZEOF_VALUE
     return RFLOAT(v)->float_value;
 #else
-    double d;
-    memcpy(&d, &RFLOAT(v)->float_value, sizeof(double));
-    return d;
+    union {
+        rb_float_value_type v;
+        double d;
+    } u = {RFLOAT(v)->float_value};
+    return u.d;
 #endif
 }
 
