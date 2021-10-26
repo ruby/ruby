@@ -11924,7 +11924,7 @@ negate_lit(struct parser_params *p, VALUE lit)
 	RCOMPLEX_SET_IMAG(lit, negate_lit(p, RCOMPLEX(lit)->imag));
 	break;
       case T_FLOAT:
-	RFLOAT(lit)->float_value = -RFLOAT_VALUE(lit);
+	lit = DBL2NUM(-RFLOAT_VALUE(lit));
 	break;
       unknown:
       default:
