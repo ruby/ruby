@@ -142,11 +142,16 @@ module YJIT
   end
 
   def self.stats_enabled?
-    Primitive.cexpr! 'rb_yjit_opts.gen_stats ? Qtrue : Qfalse'
+    Primitive.yjit_stats_enabled_p
   end
 
   def self.enabled?
     Primitive.cexpr! 'rb_yjit_enabled_p() ? Qtrue : Qfalse'
+  end
+
+  # Avoid calling a method here to not interfere with compilation tests
+  if Primitive.yjit_stats_enabled_p
+    at_exit { _print_stats }
   end
 
   class << self
