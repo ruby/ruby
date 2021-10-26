@@ -206,10 +206,22 @@ rb_float_flonum_value(VALUE v)
     return 0.0;
 }
 
+#if SIZEOF_VALUE >= SIZEOF_DOUBLE || defined(UNALIGNED_WORD_ACCESS)
+# define UNALIGNED_DOUBLE_ACCESS 1
+#else
+# define UNALIGNED_DOUBLE_ACCESS 0
+#endif
+
 static inline double
 rb_float_noflonum_value(VALUE v)
 {
+#if UNALIGNED_DOUBLE_ACCESS
     return RFLOAT(v)->float_value;
+#else
+    double d;
+    memcpy(&d, &RFLOAT(v)->float_value, sizeof(double));
+    return d;
+#endif
 }
 
 static inline double

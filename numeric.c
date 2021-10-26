@@ -951,7 +951,11 @@ rb_float_new_in_heap(double d)
 {
     NEWOBJ_OF(flt, struct RFloat, rb_cFloat, T_FLOAT | (RGENGC_WB_PROTECTED_FLOAT ? FL_WB_PROTECTED : 0));
 
+#if UNALIGNED_DOUBLE_ACCESS
     flt->float_value = d;
+#else
+    memcpy(&flt->float_value, &d, sizeof(double));
+#endif
     OBJ_FREEZE((VALUE)flt);
     return (VALUE)flt;
 }
