@@ -689,6 +689,8 @@ Init_class_hierarchy(void)
     RBASIC_SET_CLASS(rb_cObject, rb_cClass);
     RBASIC_SET_CLASS(rb_cRefinement, rb_cClass);
     RBASIC_SET_CLASS(rb_cBasicObject, rb_cClass);
+
+    ENSURE_EIGENCLASS(rb_cRefinement);
 }
 
 

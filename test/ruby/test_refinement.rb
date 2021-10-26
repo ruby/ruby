@@ -2668,6 +2668,10 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
+  def test_inherit_singleton_methods_of_module
+    assert_equal([], Refinement.used_modules)
+  end
+
   private
 
   def eval_using(mod, s)
