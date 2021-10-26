@@ -280,7 +280,7 @@ struct RString {
             /**
             * Embedded contents.  When a string is short enough, it uses this area
             * to store the contents themselves.   This was impractical in the 20th
-            * century, but these days 64 bit  machines can typically hold 48 bytes
+            * century, but these days 64 bit  machines can typically hold 24 bytes
             * here.   Could be  sufficiently large.   In this  case the  length is
             * encoded into the flags.
             */
