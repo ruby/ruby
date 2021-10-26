@@ -565,7 +565,8 @@ struct RMoved {
 
 #define RMOVED(obj) ((struct RMoved *)(obj))
 
-#if (SIZEOF_DOUBLE > SIZEOF_VALUE) && (defined(_MSC_VER) || defined(__CYGWIN__))
+#define SHOULD_PACK_RVALUE ((SIZEOF_DOUBLE > SIZEOF_VALUE) && (defined(__sun) || defined(_MSC_VER) || defined(__CYGWIN__)))
+#if SHOULD_PACK_RVALUE
 #pragma pack(push, 4) /* == SIZEOF_VALUE: magic for reducing sizeof(RVALUE): 24 -> 20 */
 #endif
 
@@ -618,7 +619,7 @@ typedef struct RVALUE {
 #endif
 } RVALUE;
 
-#if (SIZEOF_DOUBLE > SIZEOF_VALUE) && (defined(_MSC_VER) || defined(__CYGWIN__))
+#if SHOULD_PACK_RVALUE
 #pragma pack(pop)
 #endif
 
