@@ -1439,9 +1439,12 @@ ignored_block(VALUE module, const char *klass)
  */
 
 static VALUE
-mod_using(VALUE self, VALUE module)
+mod_using(int argc, VALUE *argv, VALUE self)
 {
     rb_control_frame_t *prev_cfp = previous_frame(GET_EC());
+    VALUE module;
+
+    rb_check_arity(argc, rb_block_given_p() ? 0 : 1, 1);
 
     if (prev_frame_func()) {
 	rb_raise(rb_eRuntimeError,
@@ -1450,9 +1453,17 @@ mod_using(VALUE self, VALUE module)
     if (prev_cfp && prev_cfp->self != self) {
 	rb_raise(rb_eRuntimeError, "Module#using is not called on self");
     }
-    if (rb_block_given_p()) {
-	ignored_block(module, "Module#");
+    if (argc == 1) {
+        module = argv[0];
+        if (rb_block_given_p()) {
+            ignored_block(module, "Module#");
+        }
     }
+    else {
+        module = rb_module_new();
+        rb_mod_module_exec(0, NULL, module);
+    }
+
     rb_using_module(rb_vm_cref_replace_with_duplicated_cref(), module);
     return self;
 }
@@ -1694,17 +1705,29 @@ top_include(int argc, VALUE *argv, VALUE self)
  */
 
 static VALUE
-top_using(VALUE self, VALUE module)
+top_using(int argc, VALUE *argv, VALUE self)
 {
     const rb_cref_t *cref = rb_vm_cref();
     rb_control_frame_t *prev_cfp = previous_frame(GET_EC());
+    VALUE module;
 
     if (CREF_NEXT(cref) || (prev_cfp && rb_vm_frame_method_entry(prev_cfp))) {
-	rb_raise(rb_eRuntimeError, "main.using is permitted only at toplevel");
+        rb_raise(rb_eRuntimeError, "main.using is permitted only at toplevel");
     }
-    if (rb_block_given_p()) {
-	ignored_block(module, "main.");
+
+    rb_check_arity(argc, rb_block_given_p() ? 0 : 1, 1);
+
+    if (argc == 1) {
+        module = argv[0];
+        if (rb_block_given_p()) {
+            ignored_block(module, "main.");
+        }
     }
+    else {
+        module = rb_module_new();
+        rb_mod_module_exec(0, NULL, module);
+    }
+
     rb_using_module(rb_vm_cref_replace_with_duplicated_cref(), module);
     return self;
 }
@@ -1946,7 +1969,7 @@ Init_eval(void)
     rb_define_private_method(rb_cModule, "extend_object", rb_mod_extend_object, 1);
     rb_define_private_method(rb_cModule, "prepend_features", rb_mod_prepend_features, 1);
     rb_define_private_method(rb_cModule, "refine", rb_mod_refine, 1);
-    rb_define_private_method(rb_cModule, "using", mod_using, 1);
+    rb_define_private_method(rb_cModule, "using", mod_using, -1);
     rb_define_singleton_method(rb_cModule, "used_modules",
 			       rb_mod_s_used_modules, 0);
     rb_undef_method(rb_cClass, "refine");
@@ -1963,7 +1986,7 @@ Init_eval(void)
     rb_define_private_method(rb_singleton_class(rb_vm_top_self()),
 			     "include", top_include, -1);
     rb_define_private_method(rb_singleton_class(rb_vm_top_self()),
-			     "using", top_using, 1);
+                             "using", top_using, -1);
 
     rb_define_method(rb_mKernel, "extend", rb_obj_extend, -1);
 

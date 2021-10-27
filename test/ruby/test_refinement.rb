@@ -147,6 +147,39 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
+  class TestRefinement::UsingBlock
+    using do
+      refine String do
+        def using_block; 1; end
+      end
+    end
+
+    def self.t; "".using_block; end
+
+    begin
+      using
+    rescue ArgumentError
+      def self.t2; 3; end
+    end
+  end
+
+  def test_using_block
+    assert_equal(1, TestRefinement::UsingBlock.t)
+    assert_equal(3, TestRefinement::UsingBlock.t2)
+  end
+
+  def test_top_using_block
+    assert_separately([], <<-"end;")
+      using do
+        refine(String) do
+          def top_using_block; 2; end
+        end
+      end
+      assert_equal(2, "".top_using_block)
+      assert_raise(ArgumentError){using}
+    end;
+  end
+
   def test_override
     foo = Foo.new
     assert_equal("Foo#x", foo.x)
