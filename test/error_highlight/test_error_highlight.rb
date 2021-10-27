@@ -5,7 +5,7 @@ require "tempfile"
 
 class ErrorHighlightTest < Test::Unit::TestCase
   class DummyFormatter
-    def message_for(corrections)
+    def self.message_for(corrections)
       ""
     end
   end
@@ -13,7 +13,7 @@ class ErrorHighlightTest < Test::Unit::TestCase
   def setup
     if defined?(DidYouMean)
       @did_you_mean_old_formatter = DidYouMean.formatter
-      DidYouMean.formatter = DummyFormatter.new
+      DidYouMean.formatter = DummyFormatter
     end
   end
 
