@@ -2118,11 +2118,14 @@ set_visibility(int argc, const VALUE *argv, VALUE module, rb_method_visibility_t
     if (argc == 0) {
         scope_visibility_check();
         rb_scope_visibility_set(visi);
+        return Qnil;
     }
-    else {
-	set_method_visibility(module, argc, argv, visi);
+
+    set_method_visibility(module, argc, argv, visi);
+    if (argc == 1) {
+        return argv[0];
     }
-    return module;
+    return rb_ary_new_from_values(argc, argv);
 }
 
 /*
@@ -2469,7 +2472,7 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
 
     if (argc == 0) {
 	rb_scope_module_func_set();
-	return module;
+        return Qnil;
     }
 
     set_method_visibility(module, argc, argv, METHOD_VISI_PRIVATE);
@@ -2495,7 +2498,10 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
 	}
 	rb_method_entry_set(rb_singleton_class(module), id, me, METHOD_VISI_PUBLIC);
     }
-    return module;
+    if (argc == 1) {
+        return argv[0];
+    }
+    return rb_ary_new_from_values(argc, argv);
 }
 
 #ifdef __GNUC__

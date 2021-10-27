@@ -1014,6 +1014,28 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NoMethodError, /protected method/) {o.aClass2}
   end
 
+  def test_visibility_method_return_value
+    no_arg_results = nil
+    c = Module.new do
+      singleton_class.send(:public, :public, :private, :protected, :module_function)
+      def foo; end
+      def bar; end
+      no_arg_results = [public, private, protected, module_function]
+    end
+
+    assert_equal([nil]*4, no_arg_results)
+
+    assert_equal(:foo, c.private(:foo))
+    assert_equal(:foo, c.public(:foo))
+    assert_equal(:foo, c.protected(:foo))
+    assert_equal(:foo, c.module_function(:foo))
+
+    assert_equal([:foo, :bar], c.private(:foo, :bar))
+    assert_equal([:foo, :bar], c.public(:foo, :bar))
+    assert_equal([:foo, :bar], c.protected(:foo, :bar))
+    assert_equal([:foo, :bar], c.module_function(:foo, :bar))
+  end
+
   def test_s_constants
     c1 = Module.constants
     Object.module_eval "WALTER = 99"
