@@ -75,7 +75,7 @@ void check_bytes(codeblock_t* cb, const char* bytes)
     }
 }
 
-void run_assembler_tests()
+void run_assembler_tests(void)
 {
     printf("Running assembler tests\n");
 
@@ -378,7 +378,7 @@ void assert_equal(expected, actual)
     }
 }
 
-void run_runtime_tests()
+void run_runtime_tests(void)
 {
     printf("Running runtime tests\n");
 
