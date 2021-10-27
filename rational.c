@@ -1173,7 +1173,7 @@ nurat_coerce(VALUE self, VALUE other)
     }
     else if (RB_TYPE_P(other, T_COMPLEX)) {
 	if (!k_exact_zero_p(RCOMPLEX(other)->imag))
-	    return rb_assoc_new(other, rb_Complex(self, INT2FIX(0)));
+	    return rb_assoc_new(other, rb_Complex(self, ZERO));
         other = RCOMPLEX(other)->real;
         if (RB_FLOAT_TYPE_P(other)) {
             other = float_to_r(other);
@@ -2074,7 +2074,7 @@ integer_numerator(VALUE self)
 static VALUE
 integer_denominator(VALUE self)
 {
-    return INT2FIX(1);
+    return ONE;
 }
 
 /*
@@ -2115,7 +2115,7 @@ rb_float_denominator(VALUE self)
     double d = RFLOAT_VALUE(self);
     VALUE r;
     if (!isfinite(d))
-	return INT2FIX(1);
+	return ONE;
     r = float_to_r(self);
     return nurat_denominator(r);
 }
@@ -2129,7 +2129,7 @@ rb_float_denominator(VALUE self)
 static VALUE
 nilclass_to_r(VALUE self)
 {
-    return rb_rational_new1(INT2FIX(0));
+    return rb_rational_new1(ZERO);
 }
 
 /*
