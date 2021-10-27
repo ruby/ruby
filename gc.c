@@ -2331,7 +2331,7 @@ rb_gc_obj_slot_size(VALUE obj)
 }
 
 static inline size_t
-size_pool_slot_size(char pool_id)
+size_pool_slot_size(unsigned char pool_id)
 {
     GC_ASSERT(pool_id < SIZE_POOL_COUNT);
 
