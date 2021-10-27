@@ -948,8 +948,8 @@ class TestBigDecimal < Test::Unit::TestCase
 
     BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, true)
     BigDecimal.mode(BigDecimal::EXCEPTION_ZERODIVIDE, false)
-    assert_raise_with_message(FloatDomainError, "Computation results to 'Infinity'") { BigDecimal("1") / 0 }
-    assert_raise_with_message(FloatDomainError, "Computation results to '-Infinity'") { BigDecimal("-1") / 0 }
+    assert_raise_with_message(FloatDomainError, "Computation results in 'Infinity'") { BigDecimal("1") / 0 }
+    assert_raise_with_message(FloatDomainError, "Computation results in '-Infinity'") { BigDecimal("-1") / 0 }
   end
 
   def test_div_with_float
