@@ -1078,23 +1078,42 @@ gen_expandarray(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 static codegen_status_t
 gen_newhash(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
-    rb_num_t n = (rb_num_t)jit_get_arg(jit, 0);
+    int32_t num = (int32_t)jit_get_arg(jit, 0);
 
-    if (n == 0) {
-        // Save the PC and SP because we are allocating
-        jit_prepare_routine_call(jit, ctx, REG0);
+    // Save the PC and SP because we are allocating
+    jit_prepare_routine_call(jit, ctx, REG0);
 
+    if (num) {
+        // val = rb_hash_new_with_size(num / 2);
+        mov(cb, C_ARG_REGS[0], imm_opnd(num / 2));
+        call_ptr(cb, REG0, (void *)rb_hash_new_with_size);
+
+        // save the allocated hash as we want to push it after insertion
+        push(cb, RAX);
+        push(cb, RAX); // alignment
+
+        // rb_hash_bulk_insert(num, STACK_ADDR_FROM_TOP(num), val);
+        mov(cb, C_ARG_REGS[0], imm_opnd(num));
+        lea(cb, C_ARG_REGS[1], ctx_stack_opnd(ctx, num - 1));
+        mov(cb, C_ARG_REGS[2], RAX);
+        call_ptr(cb, REG0, (void *)rb_hash_bulk_insert);
+
+        pop(cb, RAX); // alignment
+        pop(cb, RAX);
+
+        ctx_stack_pop(ctx, num);
+        x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_HASH);
+        mov(cb, stack_ret, RAX);
+    }
+    else {
         // val = rb_hash_new();
         call_ptr(cb, REG0, (void *)rb_hash_new);
 
         x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_HASH);
         mov(cb, stack_ret, RAX);
+    }
 
-        return YJIT_KEEP_COMPILING;
-    }
-    else {
-        return YJIT_CANT_COMPILE;
-    }
+    return YJIT_KEEP_COMPILING;
 }
 
 static codegen_status_t
