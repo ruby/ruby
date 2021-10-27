@@ -5751,7 +5751,7 @@ rb_set_coverages(VALUE coverages, int mode, VALUE me2counter)
 }
 
 void
-rb_resume_coverages()
+rb_resume_coverages(void)
 {
     int mode = GET_VM()->coverage_mode;
     VALUE me2counter = GET_VM()->me2counter;
@@ -5765,7 +5765,7 @@ rb_resume_coverages()
 }
 
 void
-rb_suspend_coverages()
+rb_suspend_coverages(void)
 {
     rb_remove_event_hook((rb_event_hook_func_t) update_line_coverage);
     if (GET_VM()->coverage_mode & COVERAGE_TARGET_BRANCHES) {
