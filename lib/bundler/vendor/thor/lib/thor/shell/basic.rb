@@ -94,6 +94,8 @@ class Bundler::Thor
       # say("I know you knew that.")
       #
       def say(message = "", color = nil, force_new_line = (message.to_s !~ /( |\t)\Z/))
+        return if quiet?
+
         buffer = prepare_message(message, *color)
         buffer << "\n" if force_new_line && !message.to_s.end_with?("\n")
 
@@ -230,8 +232,9 @@ class Bundler::Thor
         paras = message.split("\n\n")
 
         paras.map! do |unwrapped|
-          counter = 0
-          unwrapped.split(" ").inject do |memo, word|
+          words = unwrapped.split(" ")
+          counter = words.first.length
+          words.inject do |memo, word|
             word = word.gsub(/\n\005/, "\n").gsub(/\005/, "\n")
             counter = 0 if word.include? "\n"
             if (counter + word.length + 1) < width

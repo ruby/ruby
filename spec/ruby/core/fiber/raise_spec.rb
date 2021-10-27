@@ -72,6 +72,26 @@ ruby_version_is "2.7" do
       -> { fiber.raise }.should raise_error
       -> { fiber.resume }.should raise_error(FiberError, /dead fiber called|attempt to resume a terminated fiber/)
     end
+
+    it "returns to calling fiber after raise" do
+      fiber_one = Fiber.new do
+        Fiber.yield :yield_one
+        :unreachable
+      end
+
+      fiber_two = Fiber.new do
+        results = []
+        results << fiber_one.resume
+        begin
+          fiber_one.raise
+        rescue
+          results << :rescued
+        end
+        results
+      end
+
+      fiber_two.resume.should == [:yield_one, :rescued]
+    end
   end
 
 end

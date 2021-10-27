@@ -136,7 +136,6 @@ bug.o: $(hdrdir)/ruby/internal/static_assert.h
 bug.o: $(hdrdir)/ruby/internal/stdalign.h
 bug.o: $(hdrdir)/ruby/internal/stdbool.h
 bug.o: $(hdrdir)/ruby/internal/symbol.h
-bug.o: $(hdrdir)/ruby/internal/token_paste.h
 bug.o: $(hdrdir)/ruby/internal/value.h
 bug.o: $(hdrdir)/ruby/internal/value_type.h
 bug.o: $(hdrdir)/ruby/internal/variable.h

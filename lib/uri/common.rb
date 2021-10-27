@@ -16,6 +16,7 @@ module URI
   REGEXP = RFC2396_REGEXP
   Parser = RFC2396_Parser
   RFC3986_PARSER = RFC3986_Parser.new
+  Ractor.make_shareable(RFC3986_PARSER) if defined?(Ractor)
 
   # URI::Parser.new
   DEFAULT_PARSER = Parser.new
@@ -27,6 +28,7 @@ module URI
   DEFAULT_PARSER.regexp.each_pair do |sym, str|
     const_set(sym, str)
   end
+  Ractor.make_shareable(DEFAULT_PARSER) if defined?(Ractor)
 
   module Util # :nodoc:
     def make_components_hash(klass, array_hash)
@@ -62,22 +64,37 @@ module URI
 
   include REGEXP
 
-  @@schemes = {}
+  module Schemes
+  end
+  private_constant :Schemes
+
+  def self.register_scheme(scheme, klass)
+    Schemes.const_set(scheme, klass)
+  end
+
   # Returns a Hash of the defined schemes.
   def self.scheme_list
-    @@schemes
+    Schemes.constants.map { |name|
+      [name.to_s.upcase, Schemes.const_get(name)]
+    }.to_h
   end
+
+  INITIAL_SCHEMES = scheme_list
+  private_constant :INITIAL_SCHEMES
+  Ractor.make_shareable(INITIAL_SCHEMES) if defined?(Ractor)
 
   #
   # Construct a URI instance, using the scheme to detect the appropriate class
   # from +URI.scheme_list+.
   #
   def self.for(scheme, *arguments, default: Generic)
-    if scheme
-      uri_class = @@schemes[scheme.upcase] || default
-    else
-      uri_class = default
+    const_name = scheme.to_s.upcase
+
+    uri_class = INITIAL_SCHEMES[const_name]
+    uri_class ||= if /\A[A-Z]\w*\z/.match?(const_name) && Schemes.const_defined?(const_name, false)
+      Schemes.const_get(const_name, false)
     end
+    uri_class ||= default
 
     return uri_class.new(scheme, *arguments)
   end
@@ -321,7 +338,7 @@ module URI
   #
   # See URI.encode_www_form_component, URI.decode_www_form.
   def self.decode_www_form_component(str, enc=Encoding::UTF_8)
-    raise ArgumentError, "invalid %-encoding (#{str})" if /%(?!\h\h)/ =~ str
+    raise ArgumentError, "invalid %-encoding (#{str})" if /%(?!\h\h)/.match?(str)
     str.b.gsub(/\+|%\h\h/, TBLDECWWWCOMP_).force_encoding(enc)
   end
 
@@ -653,6 +670,7 @@ module URI
     "utf-16"=>"utf-16le",
     "utf-16le"=>"utf-16le",
   } # :nodoc:
+  Ractor.make_shareable(WEB_ENCODINGS_) if defined?(Ractor)
 
   # :nodoc:
   # return encoding or nil

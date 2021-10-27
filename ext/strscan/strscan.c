@@ -22,7 +22,7 @@ extern size_t onig_region_memsize(const struct re_registers *regs);
 
 #include <stdbool.h>
 
-#define STRSCAN_VERSION "3.0.0"
+#define STRSCAN_VERSION "3.0.1"
 
 /* =======================================================================
                          Data Type Definitions
@@ -445,13 +445,10 @@ static VALUE
 strscan_get_charpos(VALUE self)
 {
     struct strscanner *p;
-    VALUE substr;
 
     GET_SCANNER(self, p);
 
-    substr = rb_funcall(p->str, id_byteslice, 2, INT2FIX(0), LONG2NUM(p->curr));
-
-    return rb_str_length(substr);
+    return LONG2NUM(rb_enc_strlen(S_PBEG(p), CURPTR(p), rb_enc_get(p->str)));
 }
 
 /*
@@ -984,7 +981,7 @@ strscan_unscan(VALUE self)
 }
 
 /*
- * Returns +true+ iff the scan pointer is at the beginning of the line.
+ * Returns +true+ if and only if the scan pointer is at the beginning of the line.
  *
  *   s = StringScanner.new("test\ntest\n")
  *   s.bol?           # => true
@@ -1037,7 +1034,7 @@ strscan_empty_p(VALUE self)
 }
 
 /*
- * Returns true iff there is more data in the string.  See #eos?.
+ * Returns true if and only if there is more data in the string.  See #eos?.
  * This method is obsolete; use #eos? instead.
  *
  *   s = StringScanner.new('test string')
@@ -1054,7 +1051,7 @@ strscan_rest_p(VALUE self)
 }
 
 /*
- * Returns +true+ iff the last match was successful.
+ * Returns +true+ if and only if the last match was successful.
  *
  *   s = StringScanner.new('test string')
  *   s.match?(/\w+/)     # => 4
@@ -1537,7 +1534,7 @@ strscan_fixed_anchor_p(VALUE self)
  *
  * === Finding Where we Are
  *
- * - #beginning_of_line? (#bol?)
+ * - #beginning_of_line? (<tt>#bol?</tt>)
  * - #eos?
  * - #rest?
  * - #rest_size
@@ -1554,13 +1551,13 @@ strscan_fixed_anchor_p(VALUE self)
  * - #matched
  * - #matched?
  * - #matched_size
- * - []
+ * - <tt>#[]</tt>
  * - #pre_match
  * - #post_match
  *
  * === Miscellaneous
  *
- * - <<
+ * - <tt><<</tt>
  * - #concat
  * - #string
  * - #string=

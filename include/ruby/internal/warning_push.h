@@ -17,15 +17,14 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
- * @brief      Defines RBIMPL_WARNING_PUSH.
- * @cond       INTERNAL_MACRO
+ *             extension libraries.  They could be written in C++98.
+ * @brief      Defines #RBIMPL_WARNING_PUSH.
  *
  * ### Q&A ###
  *
  * Q: Why all the macros defined in this file are function-like macros?
  *
- * A: Sigh.   This  is  because of  Doxgen.   Its  `SKIP_FUNCTION_MACROS = YES`
+ * A: Sigh.   This  is  because of  Doxygen.  Its  `SKIP_FUNCTION_MACROS = YES`
  *    configuration setting  requests us  that if  we want  it to  ignore these
  *    macros,  then we  have to  do  two things:  (1)  let them  be defined  as
  *    function-like macros,  and (2) place  them separately in their  own line,
@@ -46,7 +45,41 @@
 #include "ruby/internal/compiler_is.h"
 #include "ruby/internal/compiler_since.h"
 
-#if RBIMPL_COMPILER_SINCE(MSVC, 12, 0, 0)
+#if defined(__DOXYGEN__)
+
+/**
+ * @private
+ *
+ * Pushes compiler warning state.
+ */
+#define RBIMPL_WARNING_PUSH()        __pragma(warning(push))
+
+/**
+ * @private
+ *
+ * Pops compiler warning state.
+ */
+#define RBIMPL_WARNING_POP()         __pragma(warning(pop))
+
+/**
+ * @private
+ *
+ * Turns a warning into a fatal error.
+ *
+ * @param  flag  A flag that represents the kind of warnings.
+ */
+#define RBIMPL_WARNING_ERROR(flag)   __pragma(warning(error: flag))
+
+/**
+ * @private
+ *
+ * Suppresses a warning.
+ *
+ * @param  flag  A flag that represents the kind of warnings.
+ */
+#define RBIMPL_WARNING_IGNORED(flag) __pragma(warning(disable: flag))
+
+#elif RBIMPL_COMPILER_SINCE(MSVC, 12, 0, 0)
 # /* Not sure exactly when but it seems VC++ 6.0 is a version with it.*/
 # define RBIMPL_WARNING_PUSH()        __pragma(warning(push))
 # define RBIMPL_WARNING_POP()         __pragma(warning(pop))

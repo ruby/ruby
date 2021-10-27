@@ -91,40 +91,12 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
 
 #include <sys/stat.h>
 
-#ifdef _MSC_VER
-#define SAVE_ROOT_JMPBUF_BEFORE_STMT \
-    __try {
-#define SAVE_ROOT_JMPBUF_AFTER_STMT \
-    } \
-    __except (GetExceptionCode() == EXCEPTION_STACK_OVERFLOW ? \
-	      (rb_ec_raised_set(GET_EC(), RAISED_STACKOVERFLOW), \
-	       raise(SIGSEGV), \
-	       EXCEPTION_EXECUTE_HANDLER) : \
-	      EXCEPTION_CONTINUE_SEARCH) { \
-	/* never reaches here */ \
-    }
-#elif defined(__MINGW32__)
-LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
-#define SAVE_ROOT_JMPBUF_BEFORE_STMT \
-    do { \
-	PVOID _handler = AddVectoredExceptionHandler(1, rb_w32_stack_overflow_handler);
-
-#define SAVE_ROOT_JMPBUF_AFTER_STMT \
-	RemoveVectoredExceptionHandler(_handler); \
-    } while (0);
-#else
-#define SAVE_ROOT_JMPBUF_BEFORE_STMT
-#define SAVE_ROOT_JMPBUF_AFTER_STMT
-#endif
 
 #define SAVE_ROOT_JMPBUF(th, stmt) do \
-  if (ruby_setjmp((th)->root_jmpbuf) == 0) { \
-      SAVE_ROOT_JMPBUF_BEFORE_STMT \
+  if (true) { \
       stmt; \
-      SAVE_ROOT_JMPBUF_AFTER_STMT \
   } \
-  else { \
-      rb_fiber_start(); \
+  else if (th) { /* suppress unused-variable warning */ \
   } while (0)
 
 #define EC_PUSH_TAG(ec) do { \
@@ -144,7 +116,7 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 
 #define EC_REPUSH_TAG() (void)(_ec->tag = &_tag)
 
-#if defined __GNUC__ && __GNUC__ == 4 && (__GNUC_MINOR__ >= 6 && __GNUC_MINOR__ <= 8) || __clang__
+#if defined __GNUC__ && __GNUC__ == 4 && (__GNUC_MINOR__ >= 6 && __GNUC_MINOR__ <= 8) || defined __clang__
 /* This macro prevents GCC 4.6--4.8 from emitting maybe-uninitialized warnings.
  * This macro also prevents Clang from dumping core in EC_EXEC_TAG().
  * (I confirmed Clang 4.0.1 and 5.0.0.)
@@ -280,7 +252,7 @@ VALUE rb_make_exception(int argc, const VALUE *argv);
 
 NORETURN(void rb_method_name_error(VALUE, VALUE));
 
-NORETURN(void rb_fiber_start(void));
+void rb_fiber_start(rb_fiber_t*);
 
 NORETURN(void rb_print_undef(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_print_undef_str(VALUE, VALUE));
@@ -302,7 +274,16 @@ VALUE rb_ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, l
 
 #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
 # ifdef HAVE_MBLEN
-#  define CharNext(p) ((p) + mblen((p), RUBY_MBCHAR_MAXSIZE))
+#  define CharNext(p) rb_char_next(p)
+static inline char *
+rb_char_next(const char *p)
+{
+    if (p) {
+        int len = mblen(p, RUBY_MBCHAR_MAXSIZE);
+        p += len > 0 ? len : 1;
+    }
+    return (char *)p;
+}
 # else
 #  define CharNext(p) ((p) + 1)
 # endif

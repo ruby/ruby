@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/commands/list_command'
 
 class TestGemCommandsListCommand < Gem::TestCase
@@ -20,7 +20,7 @@ class TestGemCommandsListCommand < Gem::TestCase
   def test_execute_installed
     @cmd.handle_options %w[c --installed]
 
-    assert_raises Gem::MockGemUi::SystemExitException do
+    assert_raise Gem::MockGemUi::SystemExitException do
       use_ui @ui do
         @cmd.execute
       end

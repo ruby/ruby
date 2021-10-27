@@ -526,6 +526,8 @@ typedef struct Bigint Bigint;
 
 static Bigint *freelist[Kmax+1];
 
+#define BLOCKING_BIGINT ((Bigint *)(-1))
+
 static Bigint *
 Balloc(int k)
 {
@@ -541,8 +543,10 @@ Balloc(int k)
         rv = freelist[k];
         while (rv) {
             Bigint *rvn = rv;
-            rv = ATOMIC_PTR_CAS(freelist[k], rv, rv->next);
-            if (LIKELY(rvn == rv)) {
+            rv = ATOMIC_PTR_CAS(freelist[k], rv, BLOCKING_BIGINT);
+            if (LIKELY(rv != BLOCKING_BIGINT && rvn == rv)) {
+                rvn = ATOMIC_PTR_CAS(freelist[k], BLOCKING_BIGINT, rv->next);
+                assert(rvn == BLOCKING_BIGINT);
                 ASSUME(rv);
                 break;
             }
@@ -589,7 +593,10 @@ Bfree(Bigint *v)
         }
         ACQUIRE_DTOA_LOCK(0);
         do {
-            vn = v->next = freelist[v->k];
+            do {
+                vn = ATOMIC_PTR_CAS(freelist[v->k], 0, 0);
+            } while (UNLIKELY(vn == BLOCKING_BIGINT));
+            v->next = vn;
         } while (UNLIKELY(ATOMIC_PTR_CAS(freelist[v->k], vn, v) != vn));
         FREE_DTOA_LOCK(0);
     }

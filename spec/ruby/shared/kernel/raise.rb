@@ -12,6 +12,28 @@ describe :kernel_raise, shared: true do
     ScratchPad.recorded.should be_nil
   end
 
+  it "accepts an exception that implements to_hash" do
+    custom_error = Class.new(StandardError) do
+      def to_hash
+        {}
+      end
+    end
+    error = custom_error.new
+    -> { @object.raise(error) }.should raise_error(custom_error)
+  end
+
+  it "allows the message parameter to be a hash" do
+    data_error = Class.new(StandardError) do
+      attr_reader :data
+      def initialize(data)
+        @data = data
+      end
+    end
+    -> { @object.raise(data_error, {:data => 42}) }.should raise_error(data_error) do |ex|
+      ex.data.should == {:data => 42}
+    end
+  end
+
   it "raises RuntimeError if no exception class is given" do
     -> { @object.raise }.should raise_error(RuntimeError, "")
   end

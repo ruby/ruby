@@ -36,6 +36,7 @@ describe "Array#[]=" do
     a[3, 2] = ['a', 'b', 'c', 'd']
     a.should == [2, 2, 3, "a", "b", "c", "d", 6]
   end
+
   it "replaces the section defined by [start,length] with the given values" do
     a = [1, 2, 3, 4, 5, 6]
     a[3, 2] = 'a', 'b', 'c', 'd'
@@ -169,6 +170,7 @@ describe "Array#[]=" do
     ary[1...1] = []
     ary.should == [1, 2, 3]
   end
+
   it "does nothing if the section defined by range has negative width and the rhs is an empty array" do
     ary = [1, 2, 3, 4, 5]
     ary[1...0] = []
@@ -282,6 +284,12 @@ describe "Array#[]= with [index, count]" do
   it "returns array if array assigned" do
     a = [1, 2, 3, 4, 5]
     (a[2, 3] = [4, 5]).should == [4, 5]
+  end
+
+  it "accepts a frozen String literal as RHS" do
+    a = ['a', 'b', 'c']
+    a[0, 2] = 'd'.freeze
+    a.should == ['d', 'c']
   end
 
   it "just sets the section defined by [start,length] to nil even if the rhs is nil" do
@@ -437,41 +445,39 @@ describe "Array#[]= with [m..n]" do
   end
 end
 
-ruby_version_is "2.6" do
-  describe "Array#[]= with [m..]" do
-    it "just sets the section defined by range to nil even if the rhs is nil" do
-      a = [1, 2, 3, 4, 5]
-      a[eval("(2..)")] = nil
-      a.should == [1, 2, nil]
-    end
+describe "Array#[]= with [m..]" do
+  it "just sets the section defined by range to nil even if the rhs is nil" do
+    a = [1, 2, 3, 4, 5]
+    a[eval("(2..)")] = nil
+    a.should == [1, 2, nil]
+  end
 
-    it "just sets the section defined by range to nil if m and n < 0 and the rhs is nil" do
-      a = [1, 2, 3, 4, 5]
-      a[eval("(-3..)")] = nil
-      a.should == [1, 2, nil]
-    end
+  it "just sets the section defined by range to nil if m and n < 0 and the rhs is nil" do
+    a = [1, 2, 3, 4, 5]
+    a[eval("(-3..)")] = nil
+    a.should == [1, 2, nil]
+  end
 
-    it "replaces the section defined by range" do
-      a = [6, 5, 4, 3, 2, 1]
-      a[eval("(3...)")] = 9
-      a.should == [6, 5, 4, 9]
-      a[eval("(2..)")] = [7, 7, 7]
-      a.should == [6, 5, 7, 7, 7]
-    end
+  it "replaces the section defined by range" do
+    a = [6, 5, 4, 3, 2, 1]
+    a[eval("(3...)")] = 9
+    a.should == [6, 5, 4, 9]
+    a[eval("(2..)")] = [7, 7, 7]
+    a.should == [6, 5, 7, 7, 7]
+  end
 
-    it "replaces the section if m and n < 0" do
-      a = [1, 2, 3, 4, 5]
-      a[eval("(-3..)")] = [7, 8, 9]
-      a.should == [1, 2, 7, 8, 9]
-    end
+  it "replaces the section if m and n < 0" do
+    a = [1, 2, 3, 4, 5]
+    a[eval("(-3..)")] = [7, 8, 9]
+    a.should == [1, 2, 7, 8, 9]
+  end
 
-    it "inserts at the end if m > the array size" do
-      a = [1, 2, 3]
-      a[eval("(3..)")] = [4]
-      a.should == [1, 2, 3, 4]
-      a[eval("(5..)")] = [6]
-      a.should == [1, 2, 3, 4, nil, 6]
-    end
+  it "inserts at the end if m > the array size" do
+    a = [1, 2, 3]
+    a[eval("(3..)")] = [4]
+    a.should == [1, 2, 3, 4]
+    a[eval("(5..)")] = [6]
+    a.should == [1, 2, 3, 4, nil, 6]
   end
 end
 

@@ -83,7 +83,7 @@ class UserPreviouslyDefinedWithInitializedIvar
 end
 
 class UserMarshal
-  attr_reader :data
+  attr_accessor :data
 
   def initialize
     @data = 'stuff'

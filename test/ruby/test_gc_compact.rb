@@ -4,11 +4,31 @@ require 'fiddle'
 require 'etc'
 
 class TestGCCompact < Test::Unit::TestCase
-  class AutoCompact < Test::Unit::TestCase
+  module SupportsCompact
     def setup
       skip "autocompact not supported on this platform" unless supports_auto_compact?
       super
     end
+
+    private
+
+    def supports_auto_compact?
+      return true unless defined?(Etc::SC_PAGE_SIZE)
+
+      begin
+        return GC::INTERNAL_CONSTANTS[:HEAP_PAGE_SIZE] % Etc.sysconf(Etc::SC_PAGE_SIZE) == 0
+      rescue NotImplementedError
+      rescue ArgumentError
+      end
+
+      true
+    end
+  end
+
+  include SupportsCompact
+
+  class AutoCompact < Test::Unit::TestCase
+    include SupportsCompact
 
     def test_enable_autocompact
       before = GC.auto_compact
@@ -49,34 +69,26 @@ class TestGCCompact < Test::Unit::TestCase
       }
       count = GC.stat :compact_count
       GC.auto_compact = true
-      loop do
+      n = 1_000_000
+      n.times do
         break if count < GC.stat(:compact_count)
         list2 << Object.new
-      end
+      end and skip "implicit compaction didn't happen within #{n} objects"
       compact_stats = GC.latest_compact_info
       refute_predicate compact_stats[:considered], :empty?
       refute_predicate compact_stats[:moved], :empty?
     ensure
       GC.auto_compact = before
     end
-
-    private
-
-    def supports_auto_compact?
-      return true unless defined?(Etc::SC_PAGE_SIZE)
-
-      begin
-        return GC::INTERNAL_CONSTANTS[:HEAP_PAGE_SIZE] % Etc.sysconf(Etc::SC_PAGE_SIZE) == 0
-      rescue NotImplementedError
-      rescue ArgumentError
-      end
-
-      true
-    end
   end
 
   def os_page_size
     return true unless defined?(Etc::SC_PAGE_SIZE)
+  end
+
+  def setup
+    skip "autocompact not supported on this platform" unless supports_auto_compact?
+    super
   end
 
   def test_gc_compact_stats
@@ -133,18 +145,20 @@ class TestGCCompact < Test::Unit::TestCase
     assert_equal hash, list_of_objects.hash
   end
 
-  def walk_ast ast
-    children = ast.children.grep(RubyVM::AbstractSyntaxTree::Node)
-    children.each do |child|
-      assert child.type
-      walk_ast child
-    end
-  end
-
   def test_ast_compacts
-    ast = RubyVM::AbstractSyntaxTree.parse_file __FILE__
-    assert GC.compact
-    walk_ast ast
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      def walk_ast ast
+        children = ast.children.grep(RubyVM::AbstractSyntaxTree::Node)
+        children.each do |child|
+          assert child.type
+          walk_ast child
+        end
+      end
+      ast = RubyVM::AbstractSyntaxTree.parse_file #{__FILE__.dump}
+      assert GC.compact
+      walk_ast ast
+    end;
   end
 
   def test_compact_count

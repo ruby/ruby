@@ -2,48 +2,44 @@ name: macOS
 on: [push, pull_request]
 jobs:
   make:
-    runs-on: macos-latest
     strategy:
       matrix:
-        test_task: [ "check", "test-bundler-parallel", "test-bundled-gems" ]
+        os: [macos-10.15, macos-11]
+        test_task: [ "check", "test-bundler-parallel" ] #, "test-bundled-gems" ] matrix tests has unknown issues
       fail-fast: false
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    runs-on: ${{ matrix.os }}
     steps:
       - run: mkdir build
         working-directory:
-      - name: Disable Firewall
-        run: |
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
       - name: git config
         run: |
           git config --global advice.detachedHead 0
+          git config --global init.defaultBranch garbage
       - uses: actions/checkout@v2
         with:
           path: src
       - name: Install libraries
         run: |
-          export WAITS='5 60'
-          tool/travis_retry.sh brew upgrade
-          tool/travis_retry.sh brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
+          brew upgrade
+          brew install gmp libffi openssl@1.1 zlib autoconf automake libtool readline
         working-directory: src
       - name: Set ENV
         run: |
-          echo "JOBS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
-      - run: autoconf
+          echo "MAKEFLAGS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
+      - run: ./autogen.sh
         working-directory: src
       - name: Run configure
         run: ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
-      - run: make $JOBS incs
-      - run: make $JOBS
+      - run: make incs
+      - run: make
       - run: make leaked-globals
-        if: matrix.test_task == 'check'
+        if: ${{ matrix.test_task == 'check' }}
       - run: make prepare-gems
-        if: matrix.test_task == 'check'
-      - run: make $JOBS -s ${{ matrix.test_task }}
-        timeout-minutes: 60
+        if: ${{ matrix.test_task == 'check' }}
+      - run: make -s ${{ matrix.test_task }}
+        timeout-minutes: ${{ matrix.test_task == 'check' && 15 || 40 }}
         env:
           RUBY_TESTOPTS: "-q --tty=no"
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: "rexml"
@@ -59,7 +55,7 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: failure() && github.event_name == 'push'
+        if: ${{ failure() && github.event_name == 'push' }}
 
 defaults:
   run:

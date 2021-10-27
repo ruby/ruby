@@ -1758,6 +1758,17 @@ describe "A method" do
       end
     end
   end
+
+  it "assigns the last Hash to the last optional argument if the Hash contains non-Symbol keys and is not passed as keywords" do
+    def m(a = nil, b = {}, v: false)
+      [a, b, v]
+    end
+
+    h = { "key" => "value" }
+    m(:a, h).should == [:a, h, false]
+    m(:a, h, v: true).should == [:a, h, true]
+    m(v: true).should == [nil, {}, true]
+  end
 end
 
 describe "A method call with a space between method name and parentheses" do
@@ -1850,15 +1861,158 @@ describe "An array-dereference method ([])" do
   end
 end
 
-ruby_version_is '3.0' do
+ruby_version_is "3.0" do
   describe "An endless method definition" do
-    evaluate <<-ruby do
-      def m(a) = a
-    ruby
+    context "without arguments" do
+      evaluate <<-ruby do
+          def m() = 42
+        ruby
 
-      a = b = m 1
-      a.should == 1
-      b.should == 1
+        m.should == 42
+      end
+    end
+
+    context "with arguments" do
+      evaluate <<-ruby do
+          def m(a, b) = a + b
+        ruby
+
+        m(1, 4).should == 5
+      end
+    end
+
+    context "with multiline body" do
+      evaluate <<-ruby do
+          def m(n) =
+            if n > 2
+              m(n - 2) + m(n - 1)
+            else
+              1
+            end
+        ruby
+
+        m(6).should == 8
+      end
+    end
+
+    context "with args forwarding" do
+      evaluate <<-ruby do
+          def mm(word, num:)
+            word * num
+          end
+
+          def m(...) = mm(...) + mm(...)
+        ruby
+
+        m("meow", num: 2).should == "meow" * 4
+      end
+    end
+  end
+
+  describe "Keyword arguments are now separated from positional arguments" do
+    context "when the method has only positional parameters" do
+      it "treats incoming keyword arguments as positional for compatibility" do
+        def foo(a, b, c, hsh)
+          hsh[:key]
+        end
+
+        foo(1, 2, 3, key: 42).should == 42
+      end
+    end
+
+    context "when the method takes a ** parameter" do
+      it "captures the passed literal keyword arguments" do
+        def foo(a, b, c, **hsh)
+          hsh[:key]
+        end
+
+        foo(1, 2, 3, key: 42).should == 42
+      end
+
+      it "captures the passed ** keyword arguments" do
+        def foo(a, b, c, **hsh)
+          hsh[:key]
+        end
+
+        h = { key: 42 }
+        foo(1, 2, 3, **h).should == 42
+      end
+
+      it "does not convert a positional Hash to keyword arguments" do
+        def foo(a, b, c, **hsh)
+          hsh[:key]
+        end
+
+        -> {
+          foo(1, 2, 3, { key: 42 })
+        }.should raise_error(ArgumentError, 'wrong number of arguments (given 4, expected 3)')
+      end
+    end
+
+    context "when the method takes a key: parameter" do
+      context "when it's called with a positional Hash and no **" do
+        it "raises ArgumentError" do
+          def foo(a, b, c, key: 1)
+            key
+          end
+
+          -> {
+            foo(1, 2, 3, { key: 42 })
+          }.should raise_error(ArgumentError, 'wrong number of arguments (given 4, expected 3)')
+        end
+      end
+
+      context "when it's called with **" do
+        it "captures the passed keyword arguments" do
+          def foo(a, b, c, key: 1)
+            key
+          end
+
+          h = { key: 42 }
+          foo(1, 2, 3, **h).should == 42
+        end
+      end
+    end
+  end
+end
+
+ruby_version_is "3.1" do
+  describe "kwarg with omitted value in a method call" do
+    context "accepts short notation 'kwarg' in method call" do
+      evaluate <<-ruby do
+          def call(*args, **kwargs) = [args, kwargs]
+        ruby
+
+        a, b, c = 1, 2, 3
+        arr, h = eval('call a:')
+        h.should == {a: 1}
+        arr.should == []
+
+        arr, h = eval('call(a:, b:, c:)')
+        h.should == {a: 1, b: 2, c: 3}
+        arr.should == []
+
+        arr, h = eval('call(a:, b: 10, c:)')
+        h.should == {a: 1, b: 10, c: 3}
+        arr.should == []
+      end
+    end
+
+    context "with methods and local variables" do
+      evaluate <<-ruby do
+          def call(*args, **kwargs) = [args, kwargs]
+
+          def bar
+            "baz"
+          end
+
+          def foo(val)
+            call bar:, val:
+          end
+        ruby
+
+        foo(1).should == [[], {bar: "baz", val: 1}]
+      end
     end
   end
 end

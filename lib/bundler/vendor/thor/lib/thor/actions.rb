@@ -219,7 +219,7 @@ class Bundler::Thor
 
       contents = if is_uri
         require "open-uri"
-        open(path, "Accept" => "application/x-thor-template", &:read)
+        URI.open(path, "Accept" => "application/x-thor-template", &:read)
       else
         open(path, &:read)
       end

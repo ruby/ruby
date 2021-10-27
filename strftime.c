@@ -59,7 +59,7 @@
 #endif
 #if defined(TM_IN_SYS_TIME) || !defined(GAWK)
 #include <sys/types.h>
-#if HAVE_SYS_TIME_H
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
 #endif
@@ -67,10 +67,10 @@
 
 #include "internal.h"
 #include "internal/string.h"
-#include "internal/util.h"
 #include "internal/vm.h"
 #include "ruby/encoding.h"
 #include "ruby/ruby.h"
+#include "ruby/util.h"
 #include "timev.h"
 
 /* defaults: season to taste */
@@ -219,7 +219,7 @@ case_conv(char *s, ptrdiff_t i, int flags)
 static VALUE
 format_value(VALUE val, int base)
 {
-	if (!RB_TYPE_P(val, T_BIGNUM))
+	if (!RB_BIGNUM_TYPE_P(val))
 		val = rb_Integer(val);
 	return rb_big2str(val, base);
 }
@@ -389,7 +389,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(UPPER);
 			}
-			if (vtm->wday < 0 || vtm->wday > 6)
+			if (vtm->wday > 6)
 				i = 1, tp = "?";
 			else
 				i = 3, tp = days_l[vtm->wday];
@@ -400,7 +400,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(UPPER);
 			}
-			if (vtm->wday < 0 || vtm->wday > 6)
+			if (vtm->wday > 6)
 				i = 1, tp = "?";
 			else
 				i = strlen(tp = days_l[vtm->wday]);
@@ -547,7 +547,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 			else {
 				off = NUM2LONG(rb_funcall(vtm->utc_offset, rb_intern("round"), 0));
 			}
-			if (off < 0) {
+			if (off < 0 || (gmt && (flags & BIT_OF(LEFT)))) {
 				off = -off;
 				sign = -1;
 			}

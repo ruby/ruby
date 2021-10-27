@@ -996,6 +996,7 @@ Init_objspace(void)
      * You can use the #type method to check the type of the internal object.
      */
     rb_cInternalObjectWrapper = rb_define_class_under(rb_mObjSpace, "InternalObjectWrapper", rb_cObject);
+    rb_undef_alloc_func(rb_cInternalObjectWrapper);
     rb_define_method(rb_cInternalObjectWrapper, "type", iow_type, 0);
     rb_define_method(rb_cInternalObjectWrapper, "inspect", iow_inspect, 0);
     rb_define_method(rb_cInternalObjectWrapper, "internal_object_id", iow_internal_object_id, 0);

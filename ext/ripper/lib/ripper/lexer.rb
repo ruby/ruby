@@ -136,7 +136,7 @@ class Ripper
       end
       @buf.flatten!
       unless (result = @buf).empty?
-        result.concat(@buf) until (@buf = []; super(); @buf.empty?)
+        result.concat(@buf) until (@buf = []; super(); @buf.flatten!; @buf.empty?)
       end
       result
     end

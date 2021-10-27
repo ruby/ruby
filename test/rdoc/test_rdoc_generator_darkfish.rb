@@ -142,15 +142,6 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     @g.install_rdoc_static_file src, dst, options
 
     assert_file dst
-
-    begin
-      assert_hard_link dst
-    rescue MiniTest::Assertion
-      return # hard links are not supported, no further tests needed
-    end
-
-    @g.install_rdoc_static_file src, dst, options
-
     assert_hard_link dst
   end
 
@@ -218,6 +209,21 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     f.close
 
     assert_includes method_name, '{ |%&lt;&lt;script&gt;alert(&quot;atui&quot;)&lt;/script&gt;&gt;, yield_arg| ... }'
+  end
+
+  def test_template_stylesheets
+    css = Tempfile.create(%W'hoge .css', Dir.mktmpdir('tmp', '.'))
+    File.write(css, '')
+    css.close
+    base = File.basename(css)
+    refute_file(base)
+
+    @options.template_stylesheets << css
+
+    @g.generate
+
+    assert_file base
+    assert_include File.read('index.html'), %Q[href="./#{base}"]
   end
 
   ##

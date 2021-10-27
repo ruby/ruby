@@ -130,6 +130,21 @@ class Downloader
     options
   end
 
+  def self.httpdate(date)
+    Time.httpdate(date)
+  rescue ArgumentError => e
+    # Some hosts (e.g., zlib.net) return similar to RFC 850 but 4
+    # digit year, sometimes.
+    /\A\s*
+     (?:Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day,\x20
+     (\d\d)-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{4})\x20
+     (\d\d):(\d\d):(\d\d)\x20
+     GMT
+     \s*\z/ix =~ date or raise
+    warn e.message
+    Time.utc($3, $2, $1, $4, $5, $6)
+  end
+
   # Downloader.download(url, name, [dir, [since]])
   #
   # Update a file from url if newer version is available.
@@ -231,7 +246,7 @@ class Downloader
       mtime = data.meta["last-modified"]
     end
     if mtime
-      mtime = Time.httpdate(mtime)
+      mtime = httpdate(mtime)
       dest.utime(mtime, mtime)
     end
     if $VERBOSE

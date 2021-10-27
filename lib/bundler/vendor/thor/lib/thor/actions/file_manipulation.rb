@@ -251,7 +251,8 @@ class Bundler::Thor
     # path<String>:: path of the file to be changed
     # flag<Regexp|String>:: the regexp or string to be replaced
     # replacement<String>:: the replacement, can be also given as a block
-    # config<Hash>:: give :verbose => false to not log the status.
+    # config<Hash>:: give :verbose => false to not log the status, and
+    #                :force => true, to force the replacement regardless of runner behavior.
     #
     # ==== Example
     #
@@ -262,8 +263,9 @@ class Bundler::Thor
     #   end
     #
     def gsub_file(path, flag, *args, &block)
-      return unless behavior == :invoke
       config = args.last.is_a?(Hash) ? args.pop : {}
+
+      return unless behavior == :invoke || config.fetch(:force, false)
 
       path = File.expand_path(path, destination_root)
       say_status :gsub, relative_to_original_destination_root(path), config.fetch(:verbose, true)

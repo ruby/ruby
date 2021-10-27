@@ -24,7 +24,6 @@ typedef union
     void * pointer;        /* ffi_type_pointer */
 } fiddle_generic;
 
-/* Deprecated. Use rb_fiddle_*() version. */
 VALUE rb_fiddle_type_ensure(VALUE type);
 ffi_type * rb_fiddle_int_to_ffi_type(int type);
 void rb_fiddle_value_to_generic(int type, VALUE *src, fiddle_generic *dst);

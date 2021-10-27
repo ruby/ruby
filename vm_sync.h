@@ -1,4 +1,3 @@
-
 #ifndef RUBY_VM_SYNC_H
 #define RUBY_VM_SYNC_H
 
@@ -91,7 +90,7 @@ static inline void
 rb_vm_lock_leave(unsigned int *lev, const char *file, int line)
 {
     if (rb_multi_ractor_p()) {
-      rb_vm_lock_leave_body(lev APPEND_LOCATION_PARAMS);
+        rb_vm_lock_leave_body(lev APPEND_LOCATION_PARAMS);
     }
 }
 

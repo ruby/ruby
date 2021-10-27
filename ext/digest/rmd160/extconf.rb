@@ -6,7 +6,9 @@
 require "mkmf"
 require File.expand_path("../../digest_conf", __FILE__)
 
-$defs << "-DNDEBUG" << "-DHAVE_CONFIG_H"
+if try_static_assert("RUBY_API_VERSION_MAJOR < 3", "ruby/version.h")
+  $defs << "-DNDEBUG"
+end
 
 $objs = [ "rmd160init.#{$OBJEXT}" ]
 

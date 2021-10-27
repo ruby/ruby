@@ -1,11 +1,11 @@
 require_relative '../spec_helper'
 
-require 'optparse'
+platform_is_not :darwin do # frequent timeout/hang on macOS
+  require 'optparse'
 
-require 'rubygems'
-require 'rubygems/gemcutter_utilities'
+  require 'rubygems'
+  require 'rubygems/gemcutter_utilities'
 
-ruby_version_is "2.5.5" do
   describe "CVE-2019-8323 is resisted by" do
     describe "sanitising the body" do
       it "for success codes" do

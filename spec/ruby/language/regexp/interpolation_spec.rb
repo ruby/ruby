@@ -36,7 +36,7 @@ describe "Regexps with interpolation" do
 
   it "gives precedence to escape sequences over substitution" do
     str = "J"
-    /\c#{str}/.to_s.should == '(?-mix:\c#' + '{str})'
+    /\c#{str}/.to_s.should include('{str}')
   end
 
   it "throws RegexpError for malformed interpolation" do

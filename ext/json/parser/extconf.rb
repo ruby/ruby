@@ -2,6 +2,7 @@
 require 'mkmf'
 
 have_func("rb_enc_raise", "ruby.h")
+have_func("rb_enc_interned_str", "ruby.h")
 
 # checking if String#-@ (str_uminus) dedupes... '
 begin

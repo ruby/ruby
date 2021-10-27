@@ -562,6 +562,21 @@ class TestParse < Test::Unit::TestCase
     assert_syntax_error("\"\\M-\x01\"", 'Invalid escape character syntax')
     assert_syntax_error("\"\\M-\\C-\x01\"", 'Invalid escape character syntax')
     assert_syntax_error("\"\\C-\\M-\x01\"", 'Invalid escape character syntax')
+
+    e = assert_syntax_error('"\c\u0000"', 'Invalid escape character syntax')
+    assert_equal(' ^~~~'"\n", e.message.lines.last)
+    e = assert_syntax_error('"\c\U0000"', 'Invalid escape character syntax')
+    assert_equal(' ^~~~'"\n", e.message.lines.last)
+
+    e = assert_syntax_error('"\C-\u0000"', 'Invalid escape character syntax')
+    assert_equal(' ^~~~~'"\n", e.message.lines.last)
+    e = assert_syntax_error('"\C-\U0000"', 'Invalid escape character syntax')
+    assert_equal(' ^~~~~'"\n", e.message.lines.last)
+
+    e = assert_syntax_error('"\M-\u0000"', 'Invalid escape character syntax')
+    assert_equal(' ^~~~~'"\n", e.message.lines.last)
+    e = assert_syntax_error('"\M-\U0000"', 'Invalid escape character syntax')
+    assert_equal(' ^~~~~'"\n", e.message.lines.last)
   end
 
   def test_question
@@ -669,6 +684,15 @@ FOO
 
   def test_magic_comment
     x = nil
+
+    assert_nothing_raised do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# coding: utf-8
+x = __ENCODING__
+      END
+    end
+    assert_equal(Encoding.find("UTF-8"), x)
+
     assert_nothing_raised do
       eval <<-END, nil, __FILE__, __LINE__+1
 # coding = utf-8
@@ -683,6 +707,14 @@ x = __ENCODING__
 x = __ENCODING__
       END
     end
+
+    assert_nothing_raised do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# xxxx : coding sjis
+x = __ENCODING__
+      END
+    end
+    assert_equal(__ENCODING__, x)
   end
 
   def test_utf8_bom
@@ -1048,6 +1080,32 @@ x = __ENCODING__
     end;
   end
 
+    def test_heredoc_interpolation
+      var = 1
+
+      v1 = <<~HEREDOC
+        something
+        #{"/#{var}"}
+      HEREDOC
+
+      v2 = <<~HEREDOC
+        something
+        #{_other = "/#{var}"}
+      HEREDOC
+
+      v3 = <<~HEREDOC
+        something
+        #{("/#{var}")}
+      HEREDOC
+
+      assert_equal "something\n/1\n", v1
+      assert_equal "something\n/1\n", v2
+      assert_equal "something\n/1\n", v3
+      assert_equal v1, v2
+      assert_equal v2, v3
+      assert_equal v1, v3
+    end
+
   def test_unexpected_token_error
     assert_syntax_error('"x"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', /unexpected/)
   end
@@ -1102,6 +1160,10 @@ x = __ENCODING__
     assert_syntax_error("def m\n\0""end", /unexpected/)
     assert_syntax_error("def m\n\C-d""end", /unexpected/)
     assert_syntax_error("def m\n\C-z""end", /unexpected/)
+  end
+
+  def test_unexpected_eof
+    assert_syntax_error('unless', /^      \^\Z/)
   end
 
   def test_location_of_invalid_token
@@ -1169,10 +1231,12 @@ x = __ENCODING__
     assert_valid_syntax('let () { m(a) do; end }')
   end
 
-  def test_void_value_in_command_rhs
+  def test_void_value_in_rhs
     w = "void value expression"
-    ex = assert_syntax_error("x = return 1", w)
-    assert_equal(1, ex.message.scan(w).size, "same #{w.inspect} warning should be just once")
+    ["x = return 1", "x = return, 1", "x = 1, return", "x, y = return"].each do |code|
+      ex = assert_syntax_error(code, w)
+      assert_equal(1, ex.message.scan(w).size, ->{"same #{w.inspect} warning should be just once\n#{w.message}"})
+    end
   end
 
   def eval_separately(code)

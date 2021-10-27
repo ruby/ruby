@@ -21,17 +21,57 @@ RSpec.describe "bundle install" do
       expect(the_bundle).to include_gems "bundler #{Bundler::VERSION}"
     end
 
-    it "are not added if not already present" do
+    it "are forced to the current bundler version even if not already present" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
-      expect(the_bundle).not_to include_gems "bundler #{Bundler::VERSION}"
+      expect(the_bundle).to include_gems "bundler #{Bundler::VERSION}"
     end
 
-    it "causes a conflict if explicitly requesting a different version" do
-      bundle "config set force_ruby_platform true"
+    it "causes a conflict if explicitly requesting a different version of bundler" do
+      install_gemfile <<-G, :raise_on_error => false
+        source "#{file_uri_for(gem_repo2)}"
+        gem "rails", "3.0"
+        gem "bundler", "0.9.1"
+      G
 
+      nice_error = <<-E.strip.gsub(/^ {8}/, "")
+        Bundler could not find compatible versions for gem "bundler":
+          In Gemfile:
+            bundler (= 0.9.1)
+
+          Current Bundler version:
+            bundler (#{Bundler::VERSION})
+
+        Your bundle requires a different version of Bundler than the one you're running.
+        Install the necessary version with `gem install bundler:0.9.1` and rerun bundler using `bundle _0.9.1_ install`
+        E
+      expect(err).to include(nice_error)
+    end
+
+    it "causes a conflict if explicitly requesting a non matching requirement on bundler" do
+      install_gemfile <<-G, :raise_on_error => false
+        source "#{file_uri_for(gem_repo2)}"
+        gem "rails", "3.0"
+        gem "bundler", "~> 0.8"
+      G
+
+      nice_error = <<-E.strip.gsub(/^ {8}/, "")
+        Bundler could not find compatible versions for gem "bundler":
+          In Gemfile:
+            bundler (~> 0.8)
+
+          Current Bundler version:
+            bundler (#{Bundler::VERSION})
+
+        Your bundle requires a different version of Bundler than the one you're running.
+        Install the necessary version with `gem install bundler:0.9.1` and rerun bundler using `bundle _0.9.1_ install`
+        E
+      expect(err).to include(nice_error)
+    end
+
+    it "causes a conflict if explicitly requesting a version of bundler that doesn't exist" do
       install_gemfile <<-G, :raise_on_error => false
         source "#{file_uri_for(gem_repo2)}"
         gem "rails", "3.0"
@@ -45,10 +85,8 @@ RSpec.describe "bundle install" do
 
           Current Bundler version:
             bundler (#{Bundler::VERSION})
-        This Gemfile requires a different version of Bundler.
-        Perhaps you need to update Bundler by running `gem install bundler`?
 
-        Could not find gem 'bundler (= 0.9.2)' in any
+        Your bundle requires a different version of Bundler than the one you're running, and that version could not be found.
         E
       expect(err).to include(nice_error)
     end
@@ -196,28 +234,6 @@ RSpec.describe "bundle install" do
 
       bundle "check"
       expect(out).to include("The Gemfile's dependencies are satisfied")
-    end
-
-    context "with allow_bundler_dependency_conflicts set" do
-      before { bundle "config set allow_bundler_dependency_conflicts true" }
-
-      it "are forced to the current bundler version with warnings when no compatible version is found" do
-        build_repo4 do
-          build_gem "requires_nonexistant_bundler" do |s|
-            s.add_runtime_dependency "bundler", "99.99.99.99"
-          end
-        end
-
-        install_gemfile <<-G
-          source "#{file_uri_for(gem_repo4)}"
-          gem "requires_nonexistant_bundler"
-        G
-
-        expect(err).to include "requires_nonexistant_bundler (1.0) has dependency bundler (= 99.99.99.99), " \
-                               "which is unsatisfied by the current bundler version #{Bundler::VERSION}, so the dependency is being ignored"
-
-        expect(the_bundle).to include_gems "bundler #{Bundler::VERSION}", "requires_nonexistant_bundler 1.0"
-      end
     end
   end
 end

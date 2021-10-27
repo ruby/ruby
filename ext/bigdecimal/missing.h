@@ -45,7 +45,7 @@ extern "C" {
 # if __has_builtin(__builtin_unreachable)
 #  define UNREACHABLE __builtin_unreachable()
 
-# elif HAVE___ASSUME
+# elif defined(HAVE___ASSUME)
 #  define UNREACHABLE __assume(0)
 
 # else

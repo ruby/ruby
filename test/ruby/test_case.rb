@@ -102,6 +102,18 @@ class TestCase < Test::Unit::TestCase
     else
       assert(false)
     end
+    case 0
+    when 0r
+      assert(true)
+    else
+      assert(false)
+    end
+    case 0
+    when 0i
+      assert(true)
+    else
+      assert(false)
+    end
   end
 
   def test_method_missing

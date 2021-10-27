@@ -149,7 +149,6 @@ memory_status.o: $(hdrdir)/ruby/internal/static_assert.h
 memory_status.o: $(hdrdir)/ruby/internal/stdalign.h
 memory_status.o: $(hdrdir)/ruby/internal/stdbool.h
 memory_status.o: $(hdrdir)/ruby/internal/symbol.h
-memory_status.o: $(hdrdir)/ruby/internal/token_paste.h
 memory_status.o: $(hdrdir)/ruby/internal/value.h
 memory_status.o: $(hdrdir)/ruby/internal/value_type.h
 memory_status.o: $(hdrdir)/ruby/internal/variable.h

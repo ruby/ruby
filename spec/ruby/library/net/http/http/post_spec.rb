@@ -27,7 +27,7 @@ describe "Net::HTTP.post" do
 
   it "sends Content-Type: application/x-www-form-urlencoded by default" do
     response = Net::HTTP.post(URI("http://localhost:#{NetHTTPSpecs.port}/request/header"), "test=test")
-    response.body.should include('"content-type"=>["application/x-www-form-urlencoded"]')
+    response.body.should include('"Content-Type"=>"application/x-www-form-urlencoded"')
   end
 
   it "does not support HTTP Basic Auth" do

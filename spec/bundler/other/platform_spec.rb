@@ -213,11 +213,13 @@ G
 
     it "handles when there is a locked requirement" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         ruby "< 1.8.7"
       G
 
       lockfile <<-L
         GEM
+          remote: #{file_uri_for(gem_repo1)}/
           specs:
 
         PLATFORMS
@@ -238,6 +240,7 @@ G
 
     it "handles when there is a requirement in the gemfile" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         ruby ">= 1.8.7"
       G
 
@@ -247,6 +250,7 @@ G
 
     it "handles when there are multiple requirements in the gemfile" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         ruby ">= 1.8.7", "< 2.0.0"
       G
 
@@ -685,6 +689,7 @@ G
 
     it "copies the .gem file to vendor/cache when ruby version matches" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
 
         #{ruby_version_correct}
@@ -708,6 +713,7 @@ G
 
     it "fails if the ruby version doesn't match" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
 
         #{ruby_version_incorrect}
@@ -719,6 +725,7 @@ G
 
     it "fails if the engine doesn't match" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
 
         #{engine_incorrect}
@@ -730,6 +737,7 @@ G
 
     it "fails if the engine version doesn't match", :jruby do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
 
         #{engine_version_incorrect}
@@ -762,6 +770,7 @@ G
 
     it "copies the .gem file to vendor/cache when ruby version matches" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
 
         #{ruby_version_correct}
@@ -785,6 +794,7 @@ G
 
     it "fails if the ruby version doesn't match" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
 
         #{ruby_version_incorrect}
@@ -796,6 +806,7 @@ G
 
     it "fails if the engine doesn't match" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
 
         #{engine_incorrect}
@@ -807,6 +818,7 @@ G
 
     it "fails if the engine version doesn't match", :jruby do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
 
         #{engine_version_incorrect}
@@ -837,6 +849,7 @@ G
 
     it "activates the correct gem when ruby version matches" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", "0.9.1"
 
         #{ruby_version_correct}
@@ -849,6 +862,7 @@ G
     it "activates the correct gem when ruby version matches any engine", :jruby do
       system_gems "rack-1.0.0", "rack-0.9.1", :path => default_bundle_path
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", "0.9.1"
 
         #{ruby_version_correct_engineless}
@@ -860,6 +874,7 @@ G
 
     it "fails when the ruby version doesn't match" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", "0.9.1"
 
         #{ruby_version_incorrect}
@@ -871,6 +886,7 @@ G
 
     it "fails when the engine doesn't match" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", "0.9.1"
 
         #{engine_incorrect}

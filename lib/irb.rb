@@ -60,7 +60,17 @@ require_relative "irb/easter-egg"
 #     -E enc            Same as `ruby -E`
 #     -w                Same as `ruby -w`
 #     -W[level=2]       Same as `ruby -W`
-#     --inspect         Use `inspect' for output (default except for bc mode)
+#     --context-mode n  Set n[0-4] to method to create Binding Object,
+#                       when new workspace was created
+#     --echo            Show result (default)
+#     --noecho          Don't show result
+#     --echo-on-assignment
+#                       Show result on assignment
+#     --noecho-on-assignment
+#                       Don't show result on assignment
+#     --truncate-echo-on-assignment
+#                       Show truncated result on assignment (default)
+#     --inspect         Use `inspect' for output
 #     --noinspect       Don't use inspect for output
 #     --multiline       Use multiline editor module
 #     --nomultiline     Don't use multiline editor module
@@ -68,19 +78,26 @@ require_relative "irb/easter-egg"
 #     --nosingleline    Don't use singleline editor module
 #     --colorize        Use colorization
 #     --nocolorize      Don't use colorization
-#     --prompt prompt-mode
-#     --prompt-mode prompt-mode
+#     --autocomplete    Use autocompletion
+#     --noautocomplete  Don't use autocompletion
+#     --prompt prompt-mode/--prompt-mode prompt-mode
 #                       Switch prompt mode. Pre-defined prompt modes are
 #                       `default', `simple', `xmp' and `inf-ruby'
 #     --inf-ruby-mode   Use prompt appropriate for inf-ruby-mode on emacs.
 #                       Suppresses --multiline and --singleline.
-#     --simple-prompt   Simple prompt mode
+#     --sample-book-mode/--simple-prompt
+#                       Simple prompt mode
 #     --noprompt        No prompt mode
+#     --single-irb      Share self with sub-irb.
 #     --tracer          Display trace for each execution of commands.
 #     --back-trace-limit n
 #                       Display backtrace top n and tail n. The default
 #                       value is 16.
-#     -v, --version     Print the version of irb
+#     --verbose         Show details
+#     --noverbose       Don't show details
+#     -v, --version	    Print the version of irb
+#     -h, --help        Print help
+#     --                Separate options of irb from the list of command-line args
 #
 # == Configuration
 #
@@ -105,6 +122,7 @@ require_relative "irb/easter-egg"
 #     IRB.conf[:USE_SINGLELINE] = nil
 #     IRB.conf[:USE_COLORIZE] = true
 #     IRB.conf[:USE_TRACER] = false
+#     IRB.conf[:USE_AUTOCOMPLETE] = true
 #     IRB.conf[:IGNORE_SIGINT] = true
 #     IRB.conf[:IGNORE_EOF] = false
 #     IRB.conf[:PROMPT_MODE] = :DEFAULT
@@ -463,7 +481,7 @@ module IRB
       conf[:IRB_RC].call(context) if conf[:IRB_RC]
       conf[:MAIN_CONTEXT] = context
 
-      trap("SIGINT") do
+      prev_trap = trap("SIGINT") do
         signal_handle
       end
 
@@ -472,6 +490,7 @@ module IRB
           eval_input
         end
       ensure
+        trap("SIGINT", prev_trap)
         conf[:AT_EXIT].each{|hook| hook.call}
       end
     end
@@ -514,7 +533,7 @@ module IRB
         @context.io.prompt
       end
 
-      @scanner.set_input(@context.io) do
+      @scanner.set_input(@context.io, context: @context) do
         signal_status(:IN_INPUT) do
           if l = @context.io.gets
             print l if @context.verbose?
@@ -525,7 +544,7 @@ module IRB
                 printf "Use \"exit\" to leave %s\n", @context.ap_name
               end
             else
-              print "\n"
+              print "\n" if @context.prompting?
             end
           end
           l
@@ -580,15 +599,21 @@ module IRB
       end
     end
 
-    def convert_invalid_byte_sequence(str)
-      str = str.force_encoding(Encoding::ASCII_8BIT)
-      conv = Encoding::Converter.new(Encoding::ASCII_8BIT, Encoding::UTF_8)
+    def convert_invalid_byte_sequence(str, enc)
+      str.force_encoding(enc)
+      str.scrub { |c|
+        c.bytes.map{ |b| "\\x#{b.to_s(16).upcase}" }.join
+      }
+    end
+
+    def encode_with_invalid_byte_sequence(str, enc)
+      conv = Encoding::Converter.new(str.encoding, enc)
       dst = String.new
       begin
         ret = conv.primitive_convert(str, dst)
         case ret
         when :invalid_byte_sequence
-          conv.insert_output(conf.primitive_errinfo[3].dump[1..-2])
+          conv.insert_output(conv.primitive_errinfo[3].dump[1..-2])
           redo
         when :undefined_conversion
           c = conv.primitive_errinfo[3].dup.force_encoding(conv.primitive_errinfo[1])
@@ -630,7 +655,8 @@ module IRB
           message = exc.full_message(order: :top)
           order = :top
         end
-        message = convert_invalid_byte_sequence(message)
+        message = convert_invalid_byte_sequence(message, exc.message.encoding)
+        message = encode_with_invalid_byte_sequence(message, IRB.conf[:LC_MESSAGES].encoding) unless message.encoding.to_s.casecmp?(IRB.conf[:LC_MESSAGES].encoding.to_s)
         message = message.gsub(/((?:^\t.+$\n)+)/)  { |m|
           case order
           when :top
@@ -649,6 +675,8 @@ module IRB
           lines = lines.reverse if order == :bottom
           lines.map{ |l| l + "\n" }.join
         }
+        # The "<top (required)>" in "(irb)" may be the top level of IRB so imitate the main object.
+        message = message.gsub(/\(irb\):(?<num>\d+):in `<(?<frame>top \(required\))>'/)  { "(irb):#{$~[:num]}:in `<main>'" }
         puts message
       end
       print "Maybe IRB bug!\n" if irb_bug
@@ -839,7 +867,7 @@ module IRB
 
       # If the expression is invalid, Ripper.sexp should return nil which will
       # result in false being returned. Any valid expression should return an
-      # s-expression where the second selement of the top level array is an
+      # s-expression where the second element of the top level array is an
       # array of parsed expressions. The first element of each expression is the
       # expression's type.
       verbose, $VERBOSE = $VERBOSE, nil

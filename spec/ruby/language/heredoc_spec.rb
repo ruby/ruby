@@ -100,6 +100,11 @@ HERE
     SquigglyHeredocSpecs.singlequoted.should == "singlequoted \#{\"interpolated\"}\n"
   end
 
+  it "allows HEREDOC with <<~'identifier', no interpolation, with backslash" do
+    require_relative 'fixtures/squiggly_heredoc'
+    SquigglyHeredocSpecs.backslash.should == "a\nbc\n"
+  end
+
   it "selects the least-indented line and removes its indentation from all the lines" do
     require_relative 'fixtures/squiggly_heredoc'
     SquigglyHeredocSpecs.least_indented_on_the_first_line.should == "a\n  b\n    c\n"

@@ -20,9 +20,9 @@
 #ifdef HAVE_THR_STKSEGMENT
 #include <thread.h>
 #endif
-#if HAVE_FCNTL_H
+#if defined(HAVE_FCNTL_H)
 #include <fcntl.h>
-#elif HAVE_SYS_FCNTL_H
+#elif defined(HAVE_SYS_FCNTL_H)
 #include <sys/fcntl.h>
 #endif
 #ifdef HAVE_SYS_PRCTL_H
@@ -33,6 +33,9 @@
 #endif
 #if defined(__HAIKU__)
 #include <kernel/OS.h>
+#endif
+#ifdef __linux__
+#include <sys/syscall.h> /* for SYS_gettid */
 #endif
 #include <time.h>
 #include <signal.h>
@@ -103,12 +106,51 @@ enum rtimer_state {
 #if UBF_TIMER == UBF_TIMER_POSIX
 static const struct itimerspec zero;
 static struct {
-    rb_atomic_t state; /* rtimer_state */
+    rb_atomic_t state_; /* rtimer_state */
     rb_pid_t owner;
     timer_t timerid;
 } timer_posix = {
     /* .state = */ RTIMER_DEAD,
 };
+
+#define TIMER_STATE_DEBUG 0
+
+static const char *
+rtimer_state_name(enum rtimer_state state)
+{
+    switch (state) {
+      case RTIMER_DISARM: return "disarm";
+      case RTIMER_ARMING: return "arming";
+      case RTIMER_ARMED:  return "armed";
+      case RTIMER_DEAD:   return "dead";
+      default: rb_bug("unreachable");
+    }
+}
+
+static enum rtimer_state
+timer_state_exchange(enum rtimer_state state)
+{
+    enum rtimer_state prev = ATOMIC_EXCHANGE(timer_posix.state_, state);
+    if (TIMER_STATE_DEBUG) fprintf(stderr, "state (exc): %s->%s\n", rtimer_state_name(prev), rtimer_state_name(state));
+    return prev;
+}
+
+static enum rtimer_state
+timer_state_cas(enum rtimer_state expected_prev, enum rtimer_state state)
+{
+    enum rtimer_state prev = ATOMIC_CAS(timer_posix.state_, expected_prev, state);
+
+    if (TIMER_STATE_DEBUG) {
+        if (prev == expected_prev) {
+            fprintf(stderr, "state (cas): %s->%s\n", rtimer_state_name(prev), rtimer_state_name(state));
+        }
+        else {
+            fprintf(stderr, "state (cas): %s (expected:%s)\n", rtimer_state_name(prev), rtimer_state_name(expected_prev));
+        }
+    }
+
+    return prev;
+}
 
 #elif UBF_TIMER == UBF_TIMER_PTHREAD
 static void *timer_pthread_fn(void *);
@@ -566,7 +608,7 @@ null_func(int i)
     /* null */
 }
 
-static rb_thread_t *
+rb_thread_t *
 ruby_thread_from_native(void)
 {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
@@ -576,7 +618,7 @@ ruby_thread_from_native(void)
 #endif
 }
 
-static int
+int
 ruby_thread_set_native(rb_thread_t *th)
 {
     if (th && th->ec) {
@@ -620,11 +662,26 @@ Init_native_thread(rb_thread_t *th)
     posix_signal(SIGVTALRM, null_func);
 }
 
+#ifdef RB_THREAD_T_HAS_NATIVE_ID
+static int
+get_native_thread_id(void)
+{
+#ifdef __linux__
+    return (int)syscall(SYS_gettid);
+#elif defined(__FreeBSD__)
+    return pthread_getthreadid_np();
+#endif
+}
+#endif
+
 static void
 native_thread_init(rb_thread_t *th)
 {
     native_thread_data_t *nd = &th->native_thread_data;
 
+#ifdef RB_THREAD_T_HAS_NATIVE_ID
+    th->tid = get_native_thread_id();
+#endif
 #ifdef USE_UBF_LIST
     list_node_init(&nd->node.ubf);
 #endif
@@ -708,10 +765,10 @@ get_stack(void **addr, size_t *size)
 # endif
 # ifdef HAVE_PTHREAD_ATTR_GETGUARDSIZE
     CHECK_ERR(pthread_attr_getguardsize(&attr, &guard));
-    *size -= guard;
 # else
-    *size -= getpagesize();
+    guard = getpagesize();
 # endif
+    *size -= guard;
     pthread_attr_destroy(&attr);
 #elif defined HAVE_PTHREAD_ATTR_GET_NP /* FreeBSD, DragonFly BSD, NetBSD */
     pthread_attr_t attr;
@@ -851,10 +908,6 @@ reserve_stack(volatile char *limit, size_t size)
 #endif
 
 #undef ruby_init_stack
-/* Set stack bottom of Ruby implementation.
- *
- * You must call this function before any heap allocation by Ruby implementation.
- * Or GC will break living objects */
 void
 ruby_init_stack(volatile VALUE *addr)
 {
@@ -1423,7 +1476,7 @@ ubf_timer_arm(rb_pid_t current) /* async signal safe */
 {
 #if UBF_TIMER == UBF_TIMER_POSIX
     if ((!current || timer_posix.owner == current) &&
-            !ATOMIC_CAS(timer_posix.state, RTIMER_DISARM, RTIMER_ARMING)) {
+        timer_state_cas(RTIMER_DISARM, RTIMER_ARMING) == RTIMER_DISARM) {
         struct itimerspec it;
 
         it.it_interval.tv_sec = it.it_value.tv_sec = 0;
@@ -1432,7 +1485,7 @@ ubf_timer_arm(rb_pid_t current) /* async signal safe */
         if (timer_settime(timer_posix.timerid, 0, &it, 0))
             rb_async_bug_errno("timer_settime (arm)", errno);
 
-        switch (ATOMIC_CAS(timer_posix.state, RTIMER_ARMING, RTIMER_ARMED)) {
+        switch (timer_state_cas(RTIMER_ARMING, RTIMER_ARMED)) {
           case RTIMER_DISARM:
             /* somebody requested a disarm while we were arming */
             /* may race harmlessly with ubf_timer_destroy */
@@ -1669,6 +1722,26 @@ native_set_another_thread_name(rb_nativethread_id_t thread_id, VALUE name)
 #endif
 }
 
+#if defined(RB_THREAD_T_HAS_NATIVE_ID) || defined(__APPLE__)
+static VALUE
+native_thread_native_thread_id(rb_thread_t *target_th)
+{
+#ifdef RB_THREAD_T_HAS_NATIVE_ID
+    int tid = target_th->tid;
+    if (tid == 0) return Qnil;
+    return INT2FIX(tid);
+#elif defined(__APPLE__)
+    uint64_t tid;
+    int e = pthread_threadid_np(target_th->thread_id, &tid);
+    if (e != 0) rb_syserr_fail(e, "pthread_threadid_np");
+    return ULL2NUM((unsigned long long)tid);
+#endif
+}
+# define USE_NATIVE_THREAD_NATIVE_THREAD_ID 1
+#else
+# define USE_NATIVE_THREAD_NATIVE_THREAD_ID 0
+#endif
+
 static void
 ubf_timer_invalidate(void)
 {
@@ -1714,7 +1787,7 @@ ubf_timer_create(rb_pid_t current)
     sev.sigev_value.sival_ptr = &timer_posix;
 
     if (!timer_create(UBF_TIMER_CLOCK, &sev, &timer_posix.timerid)) {
-        rb_atomic_t prev = ATOMIC_EXCHANGE(timer_posix.state, RTIMER_DISARM);
+        rb_atomic_t prev = timer_state_exchange(RTIMER_DISARM);
 
         if (prev != RTIMER_DEAD) {
             rb_bug("timer_posix was not dead: %u\n", (unsigned)prev);
@@ -1759,7 +1832,8 @@ ubf_timer_disarm(void)
 #if UBF_TIMER == UBF_TIMER_POSIX
     rb_atomic_t prev;
 
-    prev = ATOMIC_CAS(timer_posix.state, RTIMER_ARMED, RTIMER_DISARM);
+    if (timer_posix.owner && timer_posix.owner != getpid()) return;
+    prev = timer_state_cas(RTIMER_ARMED, RTIMER_DISARM);
     switch (prev) {
       case RTIMER_DISARM: return; /* likely */
       case RTIMER_ARMING: return; /* ubf_timer_arm will disarm itself */
@@ -1768,7 +1842,7 @@ ubf_timer_disarm(void)
             int err = errno;
 
             if (err == EINVAL) {
-                prev = ATOMIC_CAS(timer_posix.state, RTIMER_DISARM, RTIMER_DISARM);
+                prev = timer_state_cas(RTIMER_DISARM, RTIMER_DISARM);
 
                 /* main thread may have killed the timer */
                 if (prev == RTIMER_DEAD) return;
@@ -1797,7 +1871,7 @@ ubf_timer_destroy(void)
 
         /* prevent signal handler from arming: */
         for (i = 0; i < max; i++) {
-            switch (ATOMIC_CAS(timer_posix.state, expect, RTIMER_DEAD)) {
+            switch (timer_state_cas(expect, RTIMER_DEAD)) {
               case RTIMER_DISARM:
                 if (expect == RTIMER_DISARM) goto done;
                 expect = RTIMER_DISARM;
@@ -1823,7 +1897,7 @@ done:
         if (timer_delete(timer_posix.timerid) < 0)
             rb_sys_fail("timer_delete");
 
-        VM_ASSERT(ATOMIC_EXCHANGE(timer_posix.state, RTIMER_DEAD) == RTIMER_DEAD);
+        VM_ASSERT(timer_state_exchange(RTIMER_DEAD) == RTIMER_DEAD);
     }
 #elif UBF_TIMER == UBF_TIMER_PTHREAD
     int err;

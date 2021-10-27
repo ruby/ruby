@@ -50,6 +50,11 @@ describe "IO#sysread on a file" do
     @file.sysread(5).should == "56789"
   end
 
+  it "raises an error when called after buffered reads" do
+    @file.readline
+    -> { @file.sysread(5) }.should raise_error(IOError)
+  end
+
   it "reads normally even when called immediately after a buffered IO#read" do
     @file.read(15)
     @file.sysread(5).should == "56789"

@@ -354,14 +354,16 @@ ary_heap_free(VALUE ary)
     }
 }
 
-static void
+static size_t
 ary_heap_realloc(VALUE ary, size_t new_capa)
 {
+    size_t alloc_capa = new_capa;
     size_t old_capa = ARY_HEAP_CAPA(ary);
 
     if (RARRAY_TRANSIENT_P(ary)) {
         if (new_capa <= old_capa) {
             /* do nothing */
+            alloc_capa = old_capa;
         }
         else {
             VALUE *new_ptr = rb_transient_heap_alloc(ary, sizeof(VALUE) * new_capa);
@@ -379,6 +381,8 @@ ary_heap_realloc(VALUE ary, size_t new_capa)
         SIZED_REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, new_capa, old_capa);
     }
     ary_verify(ary);
+
+    return alloc_capa;
 }
 
 #if USE_TRANSIENT_HEAP
@@ -443,6 +447,7 @@ ary_resize_capa(VALUE ary, long capacity)
     assert(!ARY_SHARED_P(ary));
 
     if (capacity > RARRAY_EMBED_LEN_MAX) {
+        size_t new_capa = capacity;
         if (ARY_EMBED_P(ary)) {
             long len = ARY_EMBED_LEN(ary);
             VALUE *ptr = ary_heap_alloc(ary, capacity);
@@ -453,9 +458,9 @@ ary_resize_capa(VALUE ary, long capacity)
             ARY_SET_HEAP_LEN(ary, len);
         }
         else {
-            ary_heap_realloc(ary, capacity);
+            new_capa = ary_heap_realloc(ary, capacity);
         }
-        ARY_SET_CAPA(ary, capacity);
+        ARY_SET_CAPA(ary, new_capa);
     }
     else {
         if (!ARY_EMBED_P(ary)) {
@@ -994,6 +999,12 @@ MJIT_FUNC_EXPORTED VALUE
 rb_check_to_array(VALUE ary)
 {
     return rb_check_convert_type_with_id(ary, T_ARRAY, "Array", idTo_a);
+}
+
+VALUE
+rb_to_array(VALUE ary)
+{
+    return rb_convert_type_with_id(ary, T_ARRAY, "Array", idTo_a);
 }
 
 /*
@@ -2223,14 +2234,6 @@ rb_ary_set_len(VALUE ary, long len)
     ARY_SET_LEN(ary, len);
 }
 
-/*!
- * expands or shrinks \a ary to \a len elements.
- * expanded region will be filled with Qnil.
- * \param ary  an array
- * \param len  new size
- * \return     \a ary
- * \post       the size of \a ary is \a len.
- */
 VALUE
 rb_ary_resize(VALUE ary, long len)
 {
@@ -2261,8 +2264,8 @@ rb_ary_resize(VALUE ary, long len)
     }
     else {
 	if (olen > len + ARY_DEFAULT_SIZE) {
-            ary_heap_realloc(ary, len);
-	    ARY_SET_CAPA(ary, len);
+            size_t new_capa = ary_heap_realloc(ary, len);
+            ARY_SET_CAPA(ary, new_capa);
 	}
 	ARY_SET_HEAP_LEN(ary, len);
     }
@@ -2657,9 +2660,7 @@ rb_ary_length(VALUE ary)
 static VALUE
 rb_ary_empty_p(VALUE ary)
 {
-    if (RARRAY_LEN(ary) == 0)
-	return Qtrue;
-    return Qfalse;
+    return RBOOL(RARRAY_LEN(ary) == 0);
 }
 
 VALUE
@@ -3063,11 +3064,13 @@ ary_rotate_ptr(VALUE *ptr, long len, long cnt)
         VALUE tmp = *ptr;
         memmove(ptr, ptr + 1, sizeof(VALUE)*(len - 1));
         *(ptr + len - 1) = tmp;
-    } else if (cnt == len - 1) {
+    }
+    else if (cnt == len - 1) {
         VALUE tmp = *(ptr + len - 1);
         memmove(ptr + 1, ptr, sizeof(VALUE)*(len - 1));
         *ptr = tmp;
-    } else {
+    }
+    else {
         --len;
         if (cnt < len) ary_reverse(ptr + cnt, ptr + len);
         if (--cnt > 0) ary_reverse(ptr, ptr + cnt);
@@ -3202,6 +3205,7 @@ rb_ary_rotate_m(int argc, VALUE *argv, VALUE ary)
 
 struct ary_sort_data {
     VALUE ary;
+    VALUE receiver;
     struct cmp_opt_data cmp_opt;
 };
 
@@ -3212,6 +3216,15 @@ sort_reentered(VALUE ary)
 	rb_raise(rb_eRuntimeError, "sort reentered");
     }
     return Qnil;
+}
+
+static void
+sort_returned(struct ary_sort_data *data)
+{
+    if (rb_obj_frozen_p(data->receiver)) {
+        rb_raise(rb_eFrozenError, "array frozen during sort");
+    }
+    sort_reentered(data->ary);
 }
 
 static int
@@ -3227,7 +3240,7 @@ sort_1(const void *ap, const void *bp, void *dummy)
     args[1] = b;
     retval = rb_yield_values2(2, args);
     n = rb_cmpint(retval, a, b);
-    sort_reentered(data->ary);
+    sort_returned(data);
     return n;
 }
 
@@ -3253,7 +3266,7 @@ sort_2(const void *ap, const void *bp, void *dummy)
 
     retval = rb_funcallv(a, id_cmp, 1, &b);
     n = rb_cmpint(retval, a, b);
-    sort_reentered(data->ary);
+    sort_returned(data);
 
     return n;
 }
@@ -3305,6 +3318,7 @@ rb_ary_sort_bang(VALUE ary)
 	long len = RARRAY_LEN(ary);
 	RBASIC_CLEAR_CLASS(tmp);
 	data.ary = tmp;
+        data.receiver = ary;
 	data.cmp_opt.opt_methods = 0;
 	data.cmp_opt.opt_inited = 0;
 	RARRAY_PTR_USE(tmp, ptr, {
@@ -3408,89 +3422,8 @@ static VALUE rb_ary_bsearch_index(VALUE ary);
  *    array.bsearch -> new_enumerator
  *
  *  Returns an element from +self+ selected by a binary search.
- *  +self+ should be sorted, but this is not checked.
  *
- *  By using binary search, finds a value from this array which meets
- *  the given condition in <tt>O(log n)</tt> where +n+ is the size of the array.
- *
- *  There are two search modes:
- *  - <b>Find-minimum mode</b>: the block should return +true+ or +false+.
- *  - <b>Find-any mode</b>: the block should return a numeric value.
- *
- *  The block should not mix the modes by and sometimes returning +true+ or +false+
- *  and sometimes returning a numeric value, but this is not checked.
- *
- *  <b>Find-Minimum Mode</b>
- *
- *  In find-minimum mode, the block always returns +true+ or +false+.
- *  The further requirement (though not checked) is that
- *  there are no indexes +i+ and +j+ such that:
- *  - <tt>0 <= i < j <= self.size</tt>.
- *  - The block returns +true+ for <tt>self[i]</tt> and +false+ for <tt>self[j]</tt>.
- *
- *  In find-minimum mode, method bsearch returns the first element for which the block returns true.
- *
- *  Examples:
- *    a = [0, 4, 7, 10, 12]
- *    a.bsearch {|x| x >= 4 } # => 4
- *    a.bsearch {|x| x >= 6 } # => 7
- *    a.bsearch {|x| x >= -1 } # => 0
- *    a.bsearch {|x| x >= 100 } # => nil
- *
- *  Less formally: the block is such that all +false+-evaluating elements
- *  precede all +true+-evaluating elements.
- *
- *  These make sense as blocks in find-minimum mode:
- *    a = [0, 4, 7, 10, 12]
- *    a.map {|x| x >= 4 } # => [false, true, true, true, true]
- *    a.map {|x| x >= 6 } # => [false, false, true, true, true]
- *    a.map {|x| x >= -1 } # => [true, true, true, true, true]
- *    a.map {|x| x >= 100 } # => [false, false, false, false, false]
- *
- *  This would not make sense:
- *    a = [0, 4, 7, 10, 12]
- *    a.map {|x| x == 7 } # => [false, false, true, false, false]
- *
- *  <b>Find-Any Mode</b>
- *
- *  In find-any mode, the block always returns a numeric value.
- *  The further requirement (though not checked) is that
- *  there are no indexes +i+ and +j+ such that:
- *  - <tt>0 <= i < j <= self.size</tt>.
- *  - The block returns a negative value for <tt>self[i]</tt>
- *    and a positive value for <tt>self[j]</tt>.
- *  - The block returns a negative value for <tt>self[i]</tt> and zero <tt>self[j]</tt>.
- *  - The block returns zero for <tt>self[i]</tt> and a positive value for <tt>self[j]</tt>.
- *
- *  In find-any mode, method bsearch returns some element
- *  for which the block returns zero, or +nil+ if no such element is found.
- *
- *  Examples:
- *    a = [0, 4, 7, 10, 12]
- *    a.bsearch {|element| 7 <=> element } # => 7
- *    a.bsearch {|element| -1 <=> element } # => nil
- *    a.bsearch {|element| 5 <=> element } # => nil
- *    a.bsearch {|element| 15 <=> element } # => nil
- *
- *  Less formally: the block is such that:
- *  - All positive-evaluating elements precede all zero-evaluating elements.
- *  - All positive-evaluating elements precede all negative-evaluating elements.
- *  - All zero-evaluating elements precede all negative-evaluating elements.
- *
- *  These make sense as blocks in find-any mode:
- *    a = [0, 4, 7, 10, 12]
- *    a.map {|element| 7 <=> element } # => [1, 1, 0, -1, -1]
- *    a.map {|element| -1 <=> element } # => [-1, -1, -1, -1, -1]
- *    a.map {|element| 5 <=> element } # => [1, 1, -1, -1, -1]
- *    a.map {|element| 15 <=> element } # => [1, 1, 1, 1, 1]
- *
- *  This would not make sense:
- *    a = [0, 4, 7, 10, 12]
- *    a.map {|element| element <=> 7 } # => [-1, -1, 0, 1, 1]
- *
- *  Returns an enumerator if no block given:
- *    a = [0, 4, 7, 10, 12]
- *    a.bsearch # => #<Enumerator: [0, 4, 7, 10, 12]:bsearch>
+ *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
  */
 
 static VALUE
@@ -3533,7 +3466,7 @@ rb_ary_bsearch_index(VALUE ary)
 	    satisfied = 1;
 	    smaller = 1;
 	}
-	else if (v == Qfalse || v == Qnil) {
+	else if (!RTEST(v)) {
 	    smaller = 0;
 	}
 	else if (rb_obj_is_kind_of(v, rb_cNumeric)) {
@@ -3728,15 +3661,17 @@ append_values_at_single(VALUE result, VALUE ary, long olen, VALUE idx)
  *    array.values_at(*indexes) -> new_array
  *
  *  Returns a new \Array whose elements are the elements
- *  of +self+ at the given \Integer +indexes+.
+ *  of +self+ at the given \Integer or \Range +indexes+.
  *
  *  For each positive +index+, returns the element at offset +index+:
  *    a = [:foo, 'bar', 2]
  *    a.values_at(0, 2) # => [:foo, 2]
+ *    a.values_at(0..1) # => [:foo, "bar"]
  *
  *  The given +indexes+ may be in any order, and may repeat:
  *    a = [:foo, 'bar', 2]
  *    a.values_at(2, 0, 1, 0, 2) # => [2, :foo, "bar", :foo, 2]
+ *    a.values_at(1, 0..2) # => ["bar", :foo, "bar", 2]
  *
  *  Assigns +nil+ for an +index+ that is too large:
  *    a = [:foo, 'bar', 2]
@@ -3838,6 +3773,7 @@ select_bang_ensure(VALUE a)
 
     if (i2 < len && i2 < i1) {
 	long tail = 0;
+        rb_ary_modify(ary);
 	if (i1 < len) {
 	    tail = len - i1;
             RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
@@ -4071,7 +4007,7 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
     else if (orig_len < pos) {
         return Qnil;
     }
-    else if (orig_len < pos + len) {
+    if (orig_len < pos + len) {
         len = orig_len - pos;
     }
     if (len == 0) {
@@ -4302,10 +4238,9 @@ static VALUE
 take_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, cbarg))
 {
     VALUE *args = (VALUE *)cbarg;
-    if (args[1] == 0) rb_iter_break();
-    else args[1]--;
     if (argc > 1) val = rb_ary_new4(argc, argv);
     rb_ary_push(args[0], val);
+    if (--args[1] == 0) rb_iter_break();
     return Qnil;
 }
 
@@ -4315,6 +4250,7 @@ take_items(VALUE obj, long n)
     VALUE result = rb_check_array_type(obj);
     VALUE args[2];
 
+    if (n == 0) return result;
     if (!NIL_P(result)) return rb_ary_subseq(result, 0, n);
     result = rb_ary_new2(n);
     args[0] = result; args[1] = (VALUE)n;
@@ -4820,6 +4756,7 @@ ary_append(VALUE x, VALUE y)
     if (n > 0) {
         rb_ary_splice(x, RARRAY_LEN(x), 0, RARRAY_CONST_PTR_TRANSIENT(y), n);
     }
+    RB_GC_GUARD(y);
     return x;
 }
 
@@ -5291,6 +5228,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
     long i;
 
     ary2 = to_ary(ary2);
+    if (RARRAY_LEN(ary2) == 0) { return ary_make_shared_copy(ary1); }
     ary3 = rb_ary_new();
 
     if (RARRAY_LEN(ary1) <= SMALL_ARRAY_LEN || RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
@@ -5557,6 +5495,61 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
     return ary_union;
 }
 
+/*
+ *  call-seq:
+ *     ary.intersect?(other_ary)   -> true or false
+ *
+ *  Returns +true+ if the array and +other_ary+ have at least one element in
+ *  common, otherwise returns +false+.
+ *
+ *     a = [ 1, 2, 3 ]
+ *     b = [ 3, 4, 5 ]
+ *     c = [ 5, 6, 7 ]
+ *     a.intersect?(b)   #=> true
+ *     a.intersect?(c)   #=> false
+ */
+
+static VALUE
+rb_ary_intersect_p(VALUE ary1, VALUE ary2)
+{
+    VALUE hash, v, result, shorter, longer;
+    st_data_t vv;
+    long i;
+
+    ary2 = to_ary(ary2);
+    if (RARRAY_LEN(ary1) == 0 || RARRAY_LEN(ary2) == 0) return Qfalse;
+
+    if (RARRAY_LEN(ary1) <= SMALL_ARRAY_LEN && RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
+        for (i=0; i<RARRAY_LEN(ary1); i++) {
+            v = RARRAY_AREF(ary1, i);
+            if (rb_ary_includes_by_eql(ary2, v)) return Qtrue;
+        }
+        return Qfalse;
+    }
+
+    shorter = ary1;
+    longer = ary2;
+    if (RARRAY_LEN(ary1) > RARRAY_LEN(ary2)) {
+        longer = ary1;
+        shorter = ary2;
+    }
+
+    hash = ary_make_hash(shorter);
+    result = Qfalse;
+
+    for (i=0; i<RARRAY_LEN(longer); i++) {
+        v = RARRAY_AREF(longer, i);
+        vv = (st_data_t)v;
+        if (rb_hash_stlike_lookup(hash, vv, 0)) {
+            result = Qtrue;
+            break;
+        }
+    }
+    ary_recycle_hash(hash);
+
+    return result;
+}
+
 static VALUE
 ary_max_generic(VALUE ary, long i, VALUE vmax)
 {
@@ -5667,7 +5660,7 @@ ary_max_opt_string(VALUE ary, long i, VALUE vmax)
  *  With an argument \Integer +n+ and no block, returns a new \Array with at most +n+ elements,
  *  in descending order per method <tt><=></tt>:
  *    [0, 1, 2, 3].max(3) # => [3, 2, 1]
- *    [0, 1, 2, 3].max(6) # => [3, 2, 1]
+ *    [0, 1, 2, 3].max(6) # => [3, 2, 1, 0]
  *
  *  When a block is given, the block must return an \Integer.
  *
@@ -5840,8 +5833,7 @@ ary_min_opt_string(VALUE ary, long i, VALUE vmin)
  *
  *  With an argument +n+ and a block, returns a new \Array with at most +n+ elements,
  *  in ascending order per the block:
- *    [0, 1, 2, 3].min(3) # => [0, 1, 2]
- *    [0, 1, 2, 3].min(6) # => [0, 1, 2, 3]
+ *    ['0', '00', '000'].min(2) {|a, b| a.size <=> b.size } # => ["0", "00"]
  */
 static VALUE
 rb_ary_min(int argc, VALUE *argv, VALUE ary)
@@ -6083,8 +6075,8 @@ rb_ary_compact(VALUE ary)
  *    [0, 1, 2].count # => 3
  *    [].count # => 0
  *
- *  With argument +obj+, returns the count of elements <tt>eql?</tt> to +obj+:
- *    [0, 1, 2, 0].count(0) # => 2
+ *  With argument +obj+, returns the count of elements <tt>==</tt> to +obj+:
+ *    [0, 1, 2, 0.0].count(0) # => 2
  *    [0, 1, 2].count(3) # => 0
  *
  *  With no argument and a block given, calls the block with each element;
@@ -6092,7 +6084,7 @@ rb_ary_compact(VALUE ary)
  *    [0, 1, 2, 3].count {|element| element > 1} # => 2
  *
  *  With argument +obj+ and a block given, issues a warning, ignores the block,
- *  and returns the count of elements <tt>eql?</tt> to +obj+:
+ *  and returns the count of elements <tt>==</tt> to +obj+:
  */
 
 static VALUE
@@ -6487,7 +6479,7 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
 	n = RARRAY_AREF(args, 0);
     }
     if (RARRAY_LEN(self) == 0) return INT2FIX(0);
-    if (n == Qnil) return DBL2NUM(HUGE_VAL);
+    if (NIL_P(n)) return DBL2NUM(HUGE_VAL);
     mul = NUM2LONG(n);
     if (mul <= 0) return INT2FIX(0);
     n = LONG2FIX(mul);
@@ -7352,7 +7344,7 @@ rb_ary_drop(VALUE ary, VALUE n)
     }
 
     result = rb_ary_subseq(ary, pos, RARRAY_LEN(ary));
-    if (result == Qnil) result = rb_ary_new();
+    if (NIL_P(result)) result = rb_ary_new();
     return result;
 }
 
@@ -7636,7 +7628,7 @@ rb_ary_one_p(int argc, VALUE *argv, VALUE ary)
  *  Finds and returns the object in nested objects
  *  that is specified by +index+ and +identifiers+.
  *  The nested objects may be instances of various classes.
- *  See {Dig Methods}[rdoc-ref:doc/dig_methods.rdoc].
+ *  See {Dig Methods}[rdoc-ref:dig_methods.rdoc].
  *
  *  Examples:
  *    a = [:foo, [:bar, :baz, [:bat, :bam]]]
@@ -7679,7 +7671,7 @@ finish_exact_sum(long n, VALUE r, VALUE v, int z)
  *    sum = init
  *    array.each {|element| sum += element }
  *    sum
- *  For example, <tt>[e1, e2, e3].sum</tt> returns </tt>init + e1 + e2 + e3</tt>.
+ *  For example, <tt>[e1, e2, e3].sum</tt> returns <tt>init + e1 + e2 + e3</tt>.
  *
  *  Examples:
  *    a = [0, 1, 2, 3]
@@ -7730,7 +7722,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
                 n = 0;
             }
         }
-        else if (RB_TYPE_P(e, T_BIGNUM))
+        else if (RB_BIGNUM_TYPE_P(e))
             v = rb_big_plus(e, v);
         else if (RB_TYPE_P(e, T_RATIONAL)) {
             if (r == Qundef)
@@ -7767,7 +7759,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
                 x = RFLOAT_VALUE(e);
             else if (FIXNUM_P(e))
                 x = FIX2LONG(e);
-            else if (RB_TYPE_P(e, T_BIGNUM))
+            else if (RB_BIGNUM_TYPE_P(e))
                 x = rb_big2dbl(e);
             else if (RB_TYPE_P(e, T_RATIONAL))
                 x = rb_num2dbl(e);
@@ -8077,8 +8069,11 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  == What's Here
  *
- *  First, what's elsewhere. \Array includes the module Enumerable,
- *  which provides dozens of additional methods.
+ *  First, what's elsewhere. \Class \Array:
+ *
+ *  - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
+ *  - Includes {module Enumerable}[Enumerable.html#module-Enumerable-label-What-27s+Here],
+ *    which provides dozens of additional methods.
  *
  *  Here, class \Array provides methods that are useful for:
  *
@@ -8249,7 +8244,7 @@ rb_ary_deconstruct(VALUE ary)
  *       - With string argument +field_separator+, a new string that is equivalent to
  *         <tt>join(field_separator)</tt>.
  *  #abbrev:: Returns a hash of unambiguous abbreviations for elements.
- *  #pack:: Packs the the elements into a binary sequence.
+ *  #pack:: Packs the elements into a binary sequence.
  *  #sum:: Returns a sum of elements according to either <tt>+</tt> or a given block.
  */
 
@@ -8285,6 +8280,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "union", rb_ary_union_multi, -1);
     rb_define_method(rb_cArray, "difference", rb_ary_difference_multi, -1);
     rb_define_method(rb_cArray, "intersection", rb_ary_intersection_multi, -1);
+    rb_define_method(rb_cArray, "intersect?", rb_ary_intersect_p, 1);
     rb_define_method(rb_cArray, "<<", rb_ary_push, 1);
     rb_define_method(rb_cArray, "push", rb_ary_push_m, -1);
     rb_define_alias(rb_cArray,  "append", "push");
@@ -8297,7 +8293,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "each_index", rb_ary_each_index, 0);
     rb_define_method(rb_cArray, "reverse_each", rb_ary_reverse_each, 0);
     rb_define_method(rb_cArray, "length", rb_ary_length, 0);
-    rb_define_alias(rb_cArray,  "size", "length");
+    rb_define_method(rb_cArray, "size", rb_ary_length, 0);
     rb_define_method(rb_cArray, "empty?", rb_ary_empty_p, 0);
     rb_define_method(rb_cArray, "find_index", rb_ary_index, -1);
     rb_define_method(rb_cArray, "index", rb_ary_index, -1);

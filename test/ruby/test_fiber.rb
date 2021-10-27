@@ -35,7 +35,7 @@ class TestFiber < Test::Unit::TestCase
 
   def test_many_fibers
     skip 'This is unstable on GitHub Actions --jit-wait. TODO: debug it' if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
-    max = 10_000
+    max = 1000
     assert_equal(max, max.times{
       Fiber.new{}
     })
@@ -50,7 +50,7 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_many_fibers_with_threads
-    assert_normal_exit <<-SRC, timeout: 180
+    assert_normal_exit <<-SRC, timeout: (/solaris/i =~ RUBY_PLATFORM ? 300 : 60)
       max = 1000
       @cnt = 0
       (1..100).map{|ti|
@@ -391,8 +391,7 @@ class TestFiber < Test::Unit::TestCase
           Fiber.new {
             xpid = fork do
               # enough to trigger GC on old root fiber
-              count = 10000
-              count = 1000 if /openbsd/i =~ RUBY_PLATFORM
+              count = 1000
               count.times do
                 Fiber.new {}.transfer
                 Fiber.new { Fiber.yield }

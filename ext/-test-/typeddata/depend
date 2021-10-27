@@ -136,7 +136,6 @@ typeddata.o: $(hdrdir)/ruby/internal/static_assert.h
 typeddata.o: $(hdrdir)/ruby/internal/stdalign.h
 typeddata.o: $(hdrdir)/ruby/internal/stdbool.h
 typeddata.o: $(hdrdir)/ruby/internal/symbol.h
-typeddata.o: $(hdrdir)/ruby/internal/token_paste.h
 typeddata.o: $(hdrdir)/ruby/internal/value.h
 typeddata.o: $(hdrdir)/ruby/internal/value_type.h
 typeddata.o: $(hdrdir)/ruby/internal/variable.h

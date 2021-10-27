@@ -381,52 +381,6 @@ describe "Constant resolution within methods" do
     ConstantSpecs::ClassA.constx.should == :CS_CONSTX
     ConstantSpecs::ClassA.new.constx.should == :CS_CONSTX
   end
-
-  describe "with ||=" do
-    it "assigns a scoped constant if previously undefined" do
-      ConstantSpecs.should_not have_constant(:OpAssignUndefined)
-      module ConstantSpecs
-        OpAssignUndefined ||= 42
-      end
-      ConstantSpecs::OpAssignUndefined.should == 42
-      ConstantSpecs::OpAssignUndefinedOutside ||= 42
-      ConstantSpecs::OpAssignUndefinedOutside.should == 42
-      ConstantSpecs.send(:remove_const, :OpAssignUndefined)
-      ConstantSpecs.send(:remove_const, :OpAssignUndefinedOutside)
-    end
-
-    it "assigns a global constant if previously undefined" do
-      OpAssignGlobalUndefined ||= 42
-      ::OpAssignGlobalUndefinedExplicitScope ||= 42
-      OpAssignGlobalUndefined.should == 42
-      ::OpAssignGlobalUndefinedExplicitScope.should == 42
-      Object.send :remove_const, :OpAssignGlobalUndefined
-      Object.send :remove_const, :OpAssignGlobalUndefinedExplicitScope
-    end
-
-  end
-
-  describe "with &&=" do
-    it "re-assigns a scoped constant if already true" do
-      module ConstantSpecs
-        OpAssignTrue = true
-      end
-      suppress_warning do
-        ConstantSpecs::OpAssignTrue &&= 1
-      end
-      ConstantSpecs::OpAssignTrue.should == 1
-      ConstantSpecs.send :remove_const, :OpAssignTrue
-    end
-
-    it "leaves scoped constant if not true" do
-      module ConstantSpecs
-        OpAssignFalse = false
-      end
-      ConstantSpecs::OpAssignFalse &&= 1
-      ConstantSpecs::OpAssignFalse.should == false
-      ConstantSpecs.send :remove_const, :OpAssignFalse
-    end
-  end
 end
 
 describe "Constant resolution within a singleton class (class << obj)" do
@@ -478,17 +432,15 @@ describe "Module#private_constant marked constants" do
     -> {mod::Foo}.should raise_error(NameError)
   end
 
-  ruby_version_is "2.6" do
-    it "sends #const_missing to the original class or module" do
-      mod = Module.new
-      mod.const_set :Foo, true
-      mod.send :private_constant, :Foo
-      def mod.const_missing(name)
-        name == :Foo ? name : super
-      end
-
-      mod::Foo.should == :Foo
+  it "sends #const_missing to the original class or module" do
+    mod = Module.new
+    mod.const_set :Foo, true
+    mod.send :private_constant, :Foo
+    def mod.const_missing(name)
+      name == :Foo ? name : super
     end
+
+    mod::Foo.should == :Foo
   end
 
   describe "in a module" do
@@ -551,11 +503,24 @@ describe "Module#private_constant marked constants" do
     end
 
     it "can be accessed from classes that include the module" do
-      ConstantVisibility::PrivConstModuleChild.new.private_constant_from_include.should be_true
+      ConstantVisibility::ClassIncludingPrivConstModule.new.private_constant_from_include.should be_true
+    end
+
+    it "can be accessed from modules that include the module" do
+      ConstantVisibility::ModuleIncludingPrivConstModule.private_constant_from_include.should be_true
+    end
+
+    it "raises a NameError when accessed directly from modules that include the module" do
+      -> do
+        ConstantVisibility::ModuleIncludingPrivConstModule.private_constant_self_from_include
+      end.should raise_error(NameError)
+      -> do
+        ConstantVisibility::ModuleIncludingPrivConstModule.private_constant_named_from_include
+      end.should raise_error(NameError)
     end
 
     it "is defined? from classes that include the module" do
-      ConstantVisibility::PrivConstModuleChild.new.defined_from_include.should == "constant"
+      ConstantVisibility::ClassIncludingPrivConstModule.new.defined_from_include.should == "constant"
     end
   end
 
@@ -673,7 +638,7 @@ describe "Module#private_constant marked constants" do
       }
 
       -> do
-        ConstantVisibility::PrivConstModuleChild::PRIVATE_CONSTANT_MODULE
+        ConstantVisibility::ClassIncludingPrivConstModule::PRIVATE_CONSTANT_MODULE
       end.should raise_error(NameError) {|e|
         e.receiver.should == ConstantVisibility::PrivConstModule
         e.name.should == :PRIVATE_CONSTANT_MODULE
@@ -746,20 +711,10 @@ describe 'Allowed characters' do
     end.should raise_error(NameError, /wrong constant name/)
   end
 
-  ruby_version_is ""..."2.6" do
-    it 'does not allow not ASCII upcased characters at the beginning' do
-      -> do
-        Module.new.const_set("ἍBB", 1)
-      end.should raise_error(NameError, /wrong constant name/)
-    end
-  end
+  it 'allows not ASCII upcased characters at the beginning' do
+    mod = Module.new
+    mod.const_set("ἍBB", 1)
 
-  ruby_version_is "2.6" do
-    it 'allows not ASCII upcased characters at the beginning' do
-      mod = Module.new
-      mod.const_set("ἍBB", 1)
-
-      eval("mod::ἍBB").should == 1
-    end
+    eval("mod::ἍBB").should == 1
   end
 end

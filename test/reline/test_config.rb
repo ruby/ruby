@@ -241,6 +241,21 @@ class Reline::Config::Test < Reline::TestCase
     assert_equal expected, @config.key_bindings
   end
 
+  def test_additional_key_bindings_for_other_keymap
+    @config.read_lines(<<~'LINES'.lines)
+      set keymap vi-command
+      "ab": "AB"
+      set keymap vi-insert
+      "cd": "CD"
+      set keymap emacs
+      "ef": "EF"
+      set editing-mode vi # keymap changes to be vi-insert
+    LINES
+
+    expected = { 'cd'.bytes => 'CD'.bytes }
+    assert_equal expected, @config.key_bindings
+  end
+
   def test_history_size
     @config.read_lines(<<~LINES.lines)
       set history-size 5000
@@ -269,6 +284,37 @@ class Reline::Config::Test < Reline::TestCase
     assert_equal expected, @config.inputrc_path
   ensure
     ENV['INPUTRC'] = inputrc_backup
+  end
+
+  def test_inputrc_with_utf8
+    # This file is encoded by UTF-8 so this heredoc string is also UTF-8.
+    @config.read_lines(<<~'LINES'.lines)
+      set editing-mode vi
+      set vi-cmd-mode-string 🍸
+      set vi-ins-mode-string 🍶
+    LINES
+    assert_equal '🍸', @config.vi_cmd_mode_string
+    assert_equal '🍶', @config.vi_ins_mode_string
+  rescue Reline::ConfigEncodingConversionError
+    # do nothing
+  end
+
+  def test_inputrc_with_eucjp
+    @config.read_lines(<<~"LINES".encode(Encoding::EUC_JP).lines)
+      set editing-mode vi
+      set vi-cmd-mode-string ｫｬｯ
+      set vi-ins-mode-string 能
+    LINES
+    assert_equal 'ｫｬｯ'.encode(Reline.encoding_system_needs), @config.vi_cmd_mode_string
+    assert_equal '能'.encode(Reline.encoding_system_needs), @config.vi_ins_mode_string
+  rescue Reline::ConfigEncodingConversionError
+    # do nothing
+  end
+
+  def test_empty_inputrc
+    assert_nothing_raised do
+      @config.read_lines([])
+    end
   end
 
   def test_xdg_config_home

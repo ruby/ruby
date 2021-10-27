@@ -89,7 +89,7 @@ static void buffer_append(struct dump_config *dc, const char *cstr, unsigned lon
 static void
 dump_append_ld(struct dump_config *dc, const long number)
 {
-    const int width = DECIMAL_SIZE_OF_BITS(sizeof(number) * CHAR_BIT - 1) + 2;
+    const unsigned int width = DECIMAL_SIZE_OF_BITS(sizeof(number) * CHAR_BIT - 1) + 2;
     buffer_ensure_capa(dc, width);
     unsigned long required = snprintf(dc->buffer + dc->buffer_len, width, "%ld", number);
     RUBY_ASSERT(required <= width);
@@ -99,7 +99,7 @@ dump_append_ld(struct dump_config *dc, const long number)
 static void
 dump_append_lu(struct dump_config *dc, const unsigned long number)
 {
-    const int width = DECIMAL_SIZE_OF_BITS(sizeof(number) * CHAR_BIT) + 1;
+    const unsigned int width = DECIMAL_SIZE_OF_BITS(sizeof(number) * CHAR_BIT) + 1;
     buffer_ensure_capa(dc, width);
     unsigned long required = snprintf(dc->buffer + dc->buffer_len, width, "%lu", number);
     RUBY_ASSERT(required <= width);
@@ -123,7 +123,7 @@ dump_append_g(struct dump_config *dc, const double number)
 static void
 dump_append_d(struct dump_config *dc, const int number)
 {
-    const int width = DECIMAL_SIZE_OF_BITS(sizeof(number) * CHAR_BIT - 1) + 2;
+    const unsigned int width = DECIMAL_SIZE_OF_BITS(sizeof(number) * CHAR_BIT - 1) + 2;
     buffer_ensure_capa(dc, width);
     unsigned long required = snprintf(dc->buffer + dc->buffer_len, width, "%d", number);
     RUBY_ASSERT(required <= width);
@@ -133,7 +133,7 @@ dump_append_d(struct dump_config *dc, const int number)
 static void
 dump_append_sizet(struct dump_config *dc, const size_t number)
 {
-    const int width = DECIMAL_SIZE_OF_BITS(sizeof(number) * CHAR_BIT) + 1;
+    const unsigned int width = DECIMAL_SIZE_OF_BITS(sizeof(number) * CHAR_BIT) + 1;
     buffer_ensure_capa(dc, width);
     unsigned long required = snprintf(dc->buffer + dc->buffer_len, width, "%"PRIuSIZE, number);
     RUBY_ASSERT(required <= width);
@@ -144,7 +144,7 @@ static void
 dump_append_c(struct dump_config *dc, char c)
 {
     if (c <= 0x1f) {
-        const int width = (sizeof(c) * CHAR_BIT / 4) + 5;
+        const unsigned int width = (sizeof(c) * CHAR_BIT / 4) + 5;
         buffer_ensure_capa(dc, width);
         unsigned long required = snprintf(dc->buffer + dc->buffer_len, width, "\\u00%02x", c);
         RUBY_ASSERT(required <= width);
@@ -419,14 +419,37 @@ dump_object(VALUE obj, struct dump_config *dc)
             dump_append(dc, ", \"embedded\":true");
         break;
 
+      case T_ICLASS:
+        if (rb_class_get_superclass(obj)) {
+            dump_append(dc, ", \"superclass\":");
+            dump_append_ref(dc, rb_class_get_superclass(obj));
+        }
+        break;
+
       case T_CLASS:
       case T_MODULE:
+        if (rb_class_get_superclass(obj)) {
+            dump_append(dc, ", \"superclass\":");
+            dump_append_ref(dc, rb_class_get_superclass(obj));
+        }
+
         if (dc->cur_obj_klass) {
             VALUE mod_name = rb_mod_name(obj);
             if (!NIL_P(mod_name)) {
                 dump_append(dc, ", \"name\":\"");
                 dump_append(dc, RSTRING_PTR(mod_name));
                 dump_append(dc, "\"");
+            } else {
+                VALUE real_mod_name = rb_mod_name(rb_class_real(obj));
+                if (RTEST(real_mod_name)) {
+                    dump_append(dc, ", \"real_class_name\":\"");
+                    dump_append(dc, RSTRING_PTR(real_mod_name));
+                    dump_append(dc, "\"");
+                }
+            }
+
+            if (FL_TEST(obj, FL_SINGLETON)) {
+                dump_append(dc, ", \"singleton\":true");
             }
         }
         break;

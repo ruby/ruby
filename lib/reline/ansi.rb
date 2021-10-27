@@ -1,7 +1,13 @@
 require 'io/console'
+require 'io/wait'
 require 'timeout'
+require_relative 'terminfo'
 
 class Reline::ANSI
+  if Reline::Terminfo.enabled?
+    Reline::Terminfo.setupterm(0, 2)
+  end
+
   def self.encoding
     Encoding.default_external
   end
@@ -10,52 +16,100 @@ class Reline::ANSI
     false
   end
 
-  RAW_KEYSTROKE_CONFIG = {
-    # Console (80x25)
-    [27, 91, 49, 126] => :ed_move_to_beg, # Home
-    [27, 91, 52, 126] => :ed_move_to_end, # End
-    [27, 91, 51, 126] => :key_delete,     # Del
-    [27, 91, 65] => :ed_prev_history,     # ↑
-    [27, 91, 66] => :ed_next_history,     # ↓
-    [27, 91, 67] => :ed_next_char,        # →
-    [27, 91, 68] => :ed_prev_char,        # ←
+  def self.set_default_key_bindings(config)
+    if Reline::Terminfo.enabled?
+      set_default_key_bindings_terminfo(config)
+    else
+      set_default_key_bindings_comprehensive_list(config)
+    end
+    {
+      # extended entries of terminfo
+      [27, 91, 49, 59, 53, 67] => :em_next_word, # Ctrl+→, extended entry
+      [27, 91, 49, 59, 53, 68] => :ed_prev_word, # Ctrl+←, extended entry
+      [27, 91, 49, 59, 51, 67] => :em_next_word, # Meta+→, extended entry
+      [27, 91, 49, 59, 51, 68] => :ed_prev_word, # Meta+←, extended entry
+    }.each_pair do |key, func|
+      config.add_default_key_binding_by_keymap(:emacs, key, func)
+      config.add_default_key_binding_by_keymap(:vi_insert, key, func)
+      config.add_default_key_binding_by_keymap(:vi_command, key, func)
+    end
+    {
+      # default bindings
+      [27, 32] => :em_set_mark,             # M-<space>
+      [24, 24] => :em_exchange_mark,        # C-x C-x
+      [27, 91, 90] => :completion_journey_up, # S-Tab
+    }.each_pair do |key, func|
+      config.add_default_key_binding_by_keymap(:emacs, key, func)
+    end
+  end
 
-    # KDE
-    [27, 91, 72] => :ed_move_to_beg,      # Home
-    [27, 91, 70] => :ed_move_to_end,      # End
-    # Del is 0x08
-    [27, 71, 65] => :ed_prev_history,     # ↑
-    [27, 71, 66] => :ed_next_history,     # ↓
-    [27, 71, 67] => :ed_next_char,        # →
-    [27, 71, 68] => :ed_prev_char,        # ←
+  def self.set_default_key_bindings_terminfo(config)
+    {
+      Reline::Terminfo.tigetstr('khome').bytes => :ed_move_to_beg,
+      Reline::Terminfo.tigetstr('kend').bytes => :ed_move_to_end,
+      Reline::Terminfo.tigetstr('kcuu1').bytes => :ed_prev_history,
+      Reline::Terminfo.tigetstr('kcud1').bytes => :ed_next_history,
+      Reline::Terminfo.tigetstr('kcuf1').bytes => :ed_next_char,
+      Reline::Terminfo.tigetstr('kcub1').bytes => :ed_prev_char,
+      # Escape sequences that omit the move distance and are set to defaults
+      # value 1 may be sometimes sent by pressing the arrow-key.
+      Reline::Terminfo.tigetstr('cuu').sub(/%p1%d/, '').bytes => :ed_prev_history,
+      Reline::Terminfo.tigetstr('cud').sub(/%p1%d/, '').bytes => :ed_next_history,
+      Reline::Terminfo.tigetstr('cuf').sub(/%p1%d/, '').bytes => :ed_next_char,
+      Reline::Terminfo.tigetstr('cub').sub(/%p1%d/, '').bytes => :ed_prev_char,
+    }.each_pair do |key, func|
+      config.add_default_key_binding_by_keymap(:emacs, key, func)
+      config.add_default_key_binding_by_keymap(:vi_insert, key, func)
+      config.add_default_key_binding_by_keymap(:vi_command, key, func)
+    end
+  end
 
-    # urxvt / exoterm
-    [27, 91, 55, 126] => :ed_move_to_beg, # Home
-    [27, 91, 56, 126] => :ed_move_to_end, # End
+  def self.set_default_key_bindings_comprehensive_list(config)
+    {
+      # Console (80x25)
+      [27, 91, 49, 126] => :ed_move_to_beg, # Home
+      [27, 91, 52, 126] => :ed_move_to_end, # End
+      [27, 91, 51, 126] => :key_delete,     # Del
+      [27, 91, 65] => :ed_prev_history,     # ↑
+      [27, 91, 66] => :ed_next_history,     # ↓
+      [27, 91, 67] => :ed_next_char,        # →
+      [27, 91, 68] => :ed_prev_char,        # ←
 
-    # GNOME
-    [27, 79, 72] => :ed_move_to_beg,      # Home
-    [27, 79, 70] => :ed_move_to_end,      # End
-    # Del is 0x08
-    # Arrow keys are the same of KDE
+      # KDE
+      [27, 91, 72] => :ed_move_to_beg,      # Home
+      [27, 91, 70] => :ed_move_to_end,      # End
+      # Del is 0x08
+      [27, 71, 65] => :ed_prev_history,     # ↑
+      [27, 71, 66] => :ed_next_history,     # ↓
+      [27, 71, 67] => :ed_next_char,        # →
+      [27, 71, 68] => :ed_prev_char,        # ←
 
-    # iTerm2
-    [27, 27, 91, 67] => :em_next_word,    # Option+→
-    [27, 27, 91, 68] => :ed_prev_word,    # Option+←
-    [195, 166] => :em_next_word,          # Option+f
-    [195, 162] => :ed_prev_word,          # Option+b
+      # urxvt / exoterm
+      [27, 91, 55, 126] => :ed_move_to_beg, # Home
+      [27, 91, 56, 126] => :ed_move_to_end, # End
 
-    # others
-    [27, 32] => :em_set_mark,             # M-<space>
-    [24, 24] => :em_exchange_mark,        # C-x C-x TODO also add Windows
-    [27, 91, 49, 59, 53, 67] => :em_next_word, # Ctrl+→
-    [27, 91, 49, 59, 53, 68] => :ed_prev_word, # Ctrl+←
+      # GNOME
+      [27, 79, 72] => :ed_move_to_beg,      # Home
+      [27, 79, 70] => :ed_move_to_end,      # End
+      # Del is 0x08
+      # Arrow keys are the same of KDE
 
-    [27, 79, 65] => :ed_prev_history,     # ↑
-    [27, 79, 66] => :ed_next_history,     # ↓
-    [27, 79, 67] => :ed_next_char,        # →
-    [27, 79, 68] => :ed_prev_char,        # ←
-  }
+      # iTerm2
+      [27, 27, 91, 67] => :em_next_word,    # Option+→, extended entry
+      [27, 27, 91, 68] => :ed_prev_word,    # Option+←, extended entry
+      [195, 166] => :em_next_word,          # Option+f
+      [195, 162] => :ed_prev_word,          # Option+b
+
+      [27, 79, 65] => :ed_prev_history,     # ↑
+      [27, 79, 66] => :ed_next_history,     # ↓
+      [27, 79, 67] => :ed_next_char,        # →
+      [27, 79, 68] => :ed_prev_char,        # ←
+    }.each_pair do |key, func|
+      config.add_default_key_binding_by_keymap(:emacs, key, func)
+      config.add_default_key_binding_by_keymap(:vi_insert, key, func)
+      config.add_default_key_binding_by_keymap(:vi_command, key, func)
+    end
+  end
 
   @@input = STDIN
   def self.input=(val)
@@ -72,12 +126,14 @@ class Reline::ANSI
     unless @@buf.empty?
       return @@buf.shift
     end
-    until c = @@input.raw(intr: true, &:getbyte)
-      sleep 0.1
+    until c = @@input.raw(intr: true) { select([@@input], [], [], 0.1) && @@input.getbyte }
+      Reline.core.line_editor.resize
     end
     (c == 0x16 && @@input.raw(min: 0, tim: 0, &:getbyte)) || c
   rescue Errno::EIO
     # Maybe the I/O has been closed.
+    nil
+  rescue Errno::ENOTTY
     nil
   end
 
@@ -129,12 +185,7 @@ class Reline::ANSI
     unless @@buf.empty?
       return false
     end
-    rs, = IO.select([@@input], [], [], 0.00001)
-    if rs and rs[0]
-      false
-    else
-      true
-    end
+    !@@input.wait_readable(0)
   end
 
   def self.ungetc(c)
@@ -143,8 +194,7 @@ class Reline::ANSI
 
   def self.retrieve_keybuffer
     begin
-      result = select([@@input], [], [], 0.001)
-      return if result.nil?
+      return unless @@input.wait_readable(0.001)
       str = @@input.read_nonblock(1024)
       str.bytes.each do |c|
         @@buf.push(c)
@@ -225,6 +275,22 @@ class Reline::ANSI
     end
   end
 
+  def self.hide_cursor
+    if Reline::Terminfo.enabled?
+      @@output.write Reline::Terminfo.tigetstr('civis')
+    else
+      # ignored
+    end
+  end
+
+  def self.show_cursor
+    if Reline::Terminfo.enabled?
+      @@output.write Reline::Terminfo.tigetstr('cnorm')
+    else
+      # ignored
+    end
+  end
+
   def self.erase_after_cursor
     @@output.write "\e[K"
   end
@@ -246,8 +312,6 @@ class Reline::ANSI
 
   def self.prep
     retrieve_keybuffer
-    int_handle = Signal.trap('INT', 'IGNORE')
-    Signal.trap('INT', int_handle)
     nil
   end
 

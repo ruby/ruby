@@ -20,9 +20,10 @@ module Bundler
 
         Hopefully the troubleshooting steps above resolved your problem!  If things
         still aren't working the way you expect them to, please let us know so
-        that we can diagnose and help fix the problem you're having. Please
-        view the Filing Issues guide for more information:
-        https://github.com/rubygems/rubygems/blob/master/bundler/doc/contributing/ISSUES.md
+        that we can diagnose and help fix the problem you're having, by filling
+        in the new issue form located at
+        https://github.com/rubygems/rubygems/issues/new?labels=Bundler&template=bundler-related-issue.md,
+        and copy and pasting the information below.
 
       EOS
 

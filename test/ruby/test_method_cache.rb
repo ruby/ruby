@@ -61,5 +61,16 @@ class TestMethodCache < Test::Unit::TestCase
 
     assert_equal :c2, c3.new.foo
   end
+
+  def test_negative_cache_with_and_without_subclasses
+    c0 = Class.new{}
+    c1 = Class.new(c0){}
+    c0.new.foo rescue nil
+    c1.new.foo rescue nil
+    c1.module_eval{ def foo = :c1 }
+    c0.module_eval{ def foo = :c0 }
+
+    assert_equal :c0, c0.new.foo
+  end
 end
 

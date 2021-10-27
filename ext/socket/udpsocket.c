@@ -153,23 +153,26 @@ udp_send_internal(VALUE v)
 {
     struct udp_send_arg *arg = (void *)v;
     rb_io_t *fptr;
-    int n;
     struct addrinfo *res;
 
     rb_io_check_closed(fptr = arg->fptr);
     for (res = arg->res->ai; res; res = res->ai_next) {
       retry:
-	arg->sarg.fd = fptr->fd;
-	arg->sarg.to = res->ai_addr;
-	arg->sarg.tolen = res->ai_addrlen;
-	rsock_maybe_fd_writable(arg->sarg.fd);
-	n = (int)BLOCKING_REGION_FD(rsock_sendto_blocking, &arg->sarg);
-	if (n >= 0) {
-	    return INT2FIX(n);
-	}
-	if (rb_io_wait_writable(fptr->fd)) {
-	    goto retry;
-	}
+        arg->sarg.fd = fptr->fd;
+        arg->sarg.to = res->ai_addr;
+        arg->sarg.tolen = res->ai_addrlen;
+
+#ifdef RSOCK_WAIT_BEFORE_BLOCKING
+        rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_WRITABLE), Qnil);
+#endif
+
+        ssize_t n = (ssize_t)BLOCKING_REGION_FD(rsock_sendto_blocking, &arg->sarg);
+
+        if (n >= 0) return RB_SSIZE2NUM(n);
+
+        if (rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
+            goto retry;
+        }
     }
     return Qfalse;
 }

@@ -34,6 +34,20 @@ describe "IO#set_encoding_by_bom" do
       @io.external_encoding.should == Encoding::UTF_16BE
     end
 
+    it "returns the result encoding if found BOM UTF_32LE sequence" do
+      File.binwrite(@name, "\xFF\xFE\x00\x00abc")
+
+      @io.set_encoding_by_bom.should == Encoding::UTF_32LE
+      @io.external_encoding.should == Encoding::UTF_32LE
+    end
+
+    it "returns the result encoding if found BOM UTF_32BE sequence" do
+      File.binwrite(@name, "\x00\x00\xFE\xFFabc")
+
+      @io.set_encoding_by_bom.should == Encoding::UTF_32BE
+      @io.external_encoding.should == Encoding::UTF_32BE
+    end
+
     it "returns nil if found BOM sequence not provided" do
       File.write(@name, "abc")
 
@@ -52,6 +66,12 @@ describe "IO#set_encoding_by_bom" do
       @io.set_encoding("utf-8")
 
       -> { @io.set_encoding_by_bom }.should raise_error(ArgumentError, 'encoding is set to UTF-8 already')
+    end
+
+    it 'returns exception if encoding conversion is already set' do
+      @io.set_encoding(Encoding::UTF_8, Encoding::UTF_16BE)
+
+      -> { @io.set_encoding_by_bom }.should raise_error(ArgumentError, 'encoding conversion is set')
     end
   end
 end

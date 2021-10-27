@@ -71,6 +71,67 @@ class TestVariable < Test::Unit::TestCase
     assert_equal(1, o.singleton_class.class_variable_get(:@@foo))
   end
 
+  def test_cvar_overtaken_by_parent_class
+    error = eval <<~EORB
+      class Parent
+      end
+
+      class Child < Parent
+        @@cvar = 1
+
+        def self.cvar
+          @@cvar
+        end
+      end
+
+      assert_equal 1, Child.cvar
+
+      class Parent
+        @@cvar = 2
+      end
+
+      assert_raise RuntimeError do
+        Child.cvar
+      end
+    EORB
+
+    assert_equal "class variable @@cvar of TestVariable::Child is overtaken by TestVariable::Parent", error.message
+  ensure
+    TestVariable.send(:remove_const, :Child) rescue nil
+    TestVariable.send(:remove_const, :Parent) rescue nil
+  end
+
+  def test_cvar_overtaken_by_module
+    error = eval <<~EORB
+      class ParentForModule
+        @@cvar = 1
+
+        def self.cvar
+          @@cvar
+        end
+      end
+
+      assert_equal 1, ParentForModule.cvar
+
+      module Mixin
+        @@cvar = 2
+      end
+
+      class ParentForModule
+        include Mixin
+      end
+
+      assert_raise RuntimeError do
+        ParentForModule.cvar
+      end
+    EORB
+
+    assert_equal "class variable @@cvar of TestVariable::ParentForModule is overtaken by TestVariable::Mixin", error.message
+  ensure
+    TestVariable.send(:remove_const, :Mixin) rescue nil
+    TestVariable.send(:remove_const, :ParentForModule) rescue nil
+  end
+
   class IncludeRefinedModuleClassVariableNoWarning
     module Mod
       @@_test_include_refined_module_class_variable = true

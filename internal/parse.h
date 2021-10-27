@@ -1,7 +1,6 @@
 #ifndef INTERNAL_PARSE_H                                 /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_PARSE_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -15,6 +14,7 @@ struct rb_iseq_struct;          /* in vm_core.h */
 /* parse.y */
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
 void *rb_parser_load_file(VALUE parser, VALUE name);
+void rb_parser_keep_script_lines(VALUE vparser);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_parser_set_context(VALUE, const struct rb_iseq_struct *, int);

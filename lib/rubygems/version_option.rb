@@ -5,7 +5,7 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems'
+require_relative '../rubygems'
 
 ##
 # Mixin methods for --version and --platform Gem::Command options.

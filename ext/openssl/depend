@@ -11,7 +11,6 @@ ossl.o: $(hdrdir)/ruby/backward.h
 ossl.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -89,6 +88,15 @@ ossl.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl.o: $(hdrdir)/ruby/internal/ctype.h
 ossl.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl.o: $(hdrdir)/ruby/internal/dosish.h
+ossl.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl.o: $(hdrdir)/ruby/internal/error.h
 ossl.o: $(hdrdir)/ruby/internal/eval.h
 ossl.o: $(hdrdir)/ruby/internal/event.h
@@ -154,7 +162,6 @@ ossl.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl.o: $(hdrdir)/ruby/internal/symbol.h
-ossl.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl.o: $(hdrdir)/ruby/internal/value.h
 ossl.o: $(hdrdir)/ruby/internal/value_type.h
 ossl.o: $(hdrdir)/ruby/internal/variable.h
@@ -168,7 +175,6 @@ ossl.o: $(hdrdir)/ruby/ruby.h
 ossl.o: $(hdrdir)/ruby/st.h
 ossl.o: $(hdrdir)/ruby/subst.h
 ossl.o: $(hdrdir)/ruby/thread.h
-ossl.o: $(hdrdir)/ruby/thread_native.h
 ossl.o: openssl_missing.h
 ossl.o: ossl.c
 ossl.o: ossl.h
@@ -190,7 +196,6 @@ ossl.o: ossl_rand.h
 ossl.o: ossl_ssl.h
 ossl.o: ossl_ts.h
 ossl.o: ossl_x509.h
-ossl.o: ruby_missing.h
 ossl_asn1.o: $(RUBY_EXTCONF_H)
 ossl_asn1.o: $(arch_hdrdir)/ruby/config.h
 ossl_asn1.o: $(hdrdir)/ruby.h
@@ -199,7 +204,6 @@ ossl_asn1.o: $(hdrdir)/ruby/backward.h
 ossl_asn1.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_asn1.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_asn1.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_asn1.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_asn1.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_asn1.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_asn1.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -277,6 +281,15 @@ ossl_asn1.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_asn1.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_asn1.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_asn1.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_asn1.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_asn1.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_asn1.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_asn1.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_asn1.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_asn1.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/error.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/eval.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/event.h
@@ -342,7 +355,6 @@ ossl_asn1.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_asn1.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/value.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/variable.h
@@ -377,7 +389,6 @@ ossl_asn1.o: ossl_rand.h
 ossl_asn1.o: ossl_ssl.h
 ossl_asn1.o: ossl_ts.h
 ossl_asn1.o: ossl_x509.h
-ossl_asn1.o: ruby_missing.h
 ossl_bio.o: $(RUBY_EXTCONF_H)
 ossl_bio.o: $(arch_hdrdir)/ruby/config.h
 ossl_bio.o: $(hdrdir)/ruby.h
@@ -386,7 +397,6 @@ ossl_bio.o: $(hdrdir)/ruby/backward.h
 ossl_bio.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_bio.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_bio.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_bio.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_bio.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_bio.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_bio.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -464,6 +474,15 @@ ossl_bio.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_bio.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_bio.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_bio.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_bio.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_bio.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_bio.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_bio.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_bio.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_bio.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_bio.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_bio.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_bio.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_bio.o: $(hdrdir)/ruby/internal/error.h
 ossl_bio.o: $(hdrdir)/ruby/internal/eval.h
 ossl_bio.o: $(hdrdir)/ruby/internal/event.h
@@ -529,7 +548,6 @@ ossl_bio.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_bio.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_bio.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_bio.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_bio.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_bio.o: $(hdrdir)/ruby/internal/value.h
 ossl_bio.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_bio.o: $(hdrdir)/ruby/internal/variable.h
@@ -564,7 +582,6 @@ ossl_bio.o: ossl_rand.h
 ossl_bio.o: ossl_ssl.h
 ossl_bio.o: ossl_ts.h
 ossl_bio.o: ossl_x509.h
-ossl_bio.o: ruby_missing.h
 ossl_bn.o: $(RUBY_EXTCONF_H)
 ossl_bn.o: $(arch_hdrdir)/ruby/config.h
 ossl_bn.o: $(hdrdir)/ruby.h
@@ -573,7 +590,6 @@ ossl_bn.o: $(hdrdir)/ruby/backward.h
 ossl_bn.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_bn.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_bn.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_bn.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_bn.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_bn.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_bn.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -651,6 +667,15 @@ ossl_bn.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_bn.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_bn.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_bn.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_bn.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_bn.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_bn.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_bn.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_bn.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_bn.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_bn.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_bn.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_bn.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_bn.o: $(hdrdir)/ruby/internal/error.h
 ossl_bn.o: $(hdrdir)/ruby/internal/eval.h
 ossl_bn.o: $(hdrdir)/ruby/internal/event.h
@@ -716,7 +741,6 @@ ossl_bn.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_bn.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_bn.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_bn.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_bn.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_bn.o: $(hdrdir)/ruby/internal/value.h
 ossl_bn.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_bn.o: $(hdrdir)/ruby/internal/variable.h
@@ -752,7 +776,6 @@ ossl_bn.o: ossl_rand.h
 ossl_bn.o: ossl_ssl.h
 ossl_bn.o: ossl_ts.h
 ossl_bn.o: ossl_x509.h
-ossl_bn.o: ruby_missing.h
 ossl_cipher.o: $(RUBY_EXTCONF_H)
 ossl_cipher.o: $(arch_hdrdir)/ruby/config.h
 ossl_cipher.o: $(hdrdir)/ruby.h
@@ -761,7 +784,6 @@ ossl_cipher.o: $(hdrdir)/ruby/backward.h
 ossl_cipher.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_cipher.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_cipher.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_cipher.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_cipher.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_cipher.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_cipher.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -839,6 +861,15 @@ ossl_cipher.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_cipher.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_cipher.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_cipher.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_cipher.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_cipher.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_cipher.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_cipher.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_cipher.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_cipher.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/error.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/eval.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/event.h
@@ -904,7 +935,6 @@ ossl_cipher.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_cipher.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/value.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/variable.h
@@ -939,7 +969,6 @@ ossl_cipher.o: ossl_rand.h
 ossl_cipher.o: ossl_ssl.h
 ossl_cipher.o: ossl_ts.h
 ossl_cipher.o: ossl_x509.h
-ossl_cipher.o: ruby_missing.h
 ossl_config.o: $(RUBY_EXTCONF_H)
 ossl_config.o: $(arch_hdrdir)/ruby/config.h
 ossl_config.o: $(hdrdir)/ruby.h
@@ -948,7 +977,6 @@ ossl_config.o: $(hdrdir)/ruby/backward.h
 ossl_config.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_config.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_config.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_config.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_config.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_config.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_config.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -1026,6 +1054,15 @@ ossl_config.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_config.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_config.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_config.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_config.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_config.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_config.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_config.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_config.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_config.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_config.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_config.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_config.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_config.o: $(hdrdir)/ruby/internal/error.h
 ossl_config.o: $(hdrdir)/ruby/internal/eval.h
 ossl_config.o: $(hdrdir)/ruby/internal/event.h
@@ -1091,7 +1128,6 @@ ossl_config.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_config.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_config.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_config.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_config.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_config.o: $(hdrdir)/ruby/internal/value.h
 ossl_config.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_config.o: $(hdrdir)/ruby/internal/variable.h
@@ -1126,7 +1162,6 @@ ossl_config.o: ossl_rand.h
 ossl_config.o: ossl_ssl.h
 ossl_config.o: ossl_ts.h
 ossl_config.o: ossl_x509.h
-ossl_config.o: ruby_missing.h
 ossl_digest.o: $(RUBY_EXTCONF_H)
 ossl_digest.o: $(arch_hdrdir)/ruby/config.h
 ossl_digest.o: $(hdrdir)/ruby.h
@@ -1135,7 +1170,6 @@ ossl_digest.o: $(hdrdir)/ruby/backward.h
 ossl_digest.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_digest.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_digest.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_digest.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_digest.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_digest.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_digest.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -1213,6 +1247,15 @@ ossl_digest.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_digest.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_digest.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_digest.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_digest.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_digest.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_digest.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_digest.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_digest.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_digest.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_digest.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_digest.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_digest.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_digest.o: $(hdrdir)/ruby/internal/error.h
 ossl_digest.o: $(hdrdir)/ruby/internal/eval.h
 ossl_digest.o: $(hdrdir)/ruby/internal/event.h
@@ -1278,7 +1321,6 @@ ossl_digest.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_digest.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_digest.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_digest.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_digest.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_digest.o: $(hdrdir)/ruby/internal/value.h
 ossl_digest.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_digest.o: $(hdrdir)/ruby/internal/variable.h
@@ -1313,7 +1355,6 @@ ossl_digest.o: ossl_rand.h
 ossl_digest.o: ossl_ssl.h
 ossl_digest.o: ossl_ts.h
 ossl_digest.o: ossl_x509.h
-ossl_digest.o: ruby_missing.h
 ossl_engine.o: $(RUBY_EXTCONF_H)
 ossl_engine.o: $(arch_hdrdir)/ruby/config.h
 ossl_engine.o: $(hdrdir)/ruby.h
@@ -1322,7 +1363,6 @@ ossl_engine.o: $(hdrdir)/ruby/backward.h
 ossl_engine.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_engine.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_engine.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_engine.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_engine.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_engine.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_engine.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -1400,6 +1440,15 @@ ossl_engine.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_engine.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_engine.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_engine.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_engine.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_engine.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_engine.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_engine.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_engine.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_engine.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_engine.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_engine.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_engine.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_engine.o: $(hdrdir)/ruby/internal/error.h
 ossl_engine.o: $(hdrdir)/ruby/internal/eval.h
 ossl_engine.o: $(hdrdir)/ruby/internal/event.h
@@ -1465,7 +1514,6 @@ ossl_engine.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_engine.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_engine.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_engine.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_engine.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_engine.o: $(hdrdir)/ruby/internal/value.h
 ossl_engine.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_engine.o: $(hdrdir)/ruby/internal/variable.h
@@ -1500,7 +1548,6 @@ ossl_engine.o: ossl_rand.h
 ossl_engine.o: ossl_ssl.h
 ossl_engine.o: ossl_ts.h
 ossl_engine.o: ossl_x509.h
-ossl_engine.o: ruby_missing.h
 ossl_hmac.o: $(RUBY_EXTCONF_H)
 ossl_hmac.o: $(arch_hdrdir)/ruby/config.h
 ossl_hmac.o: $(hdrdir)/ruby.h
@@ -1509,7 +1556,6 @@ ossl_hmac.o: $(hdrdir)/ruby/backward.h
 ossl_hmac.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_hmac.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_hmac.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_hmac.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_hmac.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_hmac.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_hmac.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -1587,6 +1633,15 @@ ossl_hmac.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_hmac.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_hmac.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_hmac.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_hmac.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_hmac.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_hmac.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_hmac.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_hmac.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_hmac.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/error.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/eval.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/event.h
@@ -1652,7 +1707,6 @@ ossl_hmac.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_hmac.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/value.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/variable.h
@@ -1687,7 +1741,6 @@ ossl_hmac.o: ossl_rand.h
 ossl_hmac.o: ossl_ssl.h
 ossl_hmac.o: ossl_ts.h
 ossl_hmac.o: ossl_x509.h
-ossl_hmac.o: ruby_missing.h
 ossl_kdf.o: $(RUBY_EXTCONF_H)
 ossl_kdf.o: $(arch_hdrdir)/ruby/config.h
 ossl_kdf.o: $(hdrdir)/ruby.h
@@ -1696,7 +1749,6 @@ ossl_kdf.o: $(hdrdir)/ruby/backward.h
 ossl_kdf.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_kdf.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_kdf.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_kdf.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_kdf.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_kdf.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_kdf.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -1774,6 +1826,15 @@ ossl_kdf.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_kdf.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_kdf.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_kdf.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_kdf.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_kdf.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_kdf.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_kdf.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_kdf.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_kdf.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/error.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/eval.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/event.h
@@ -1839,7 +1900,6 @@ ossl_kdf.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_kdf.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/value.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/variable.h
@@ -1874,7 +1934,6 @@ ossl_kdf.o: ossl_rand.h
 ossl_kdf.o: ossl_ssl.h
 ossl_kdf.o: ossl_ts.h
 ossl_kdf.o: ossl_x509.h
-ossl_kdf.o: ruby_missing.h
 ossl_ns_spki.o: $(RUBY_EXTCONF_H)
 ossl_ns_spki.o: $(arch_hdrdir)/ruby/config.h
 ossl_ns_spki.o: $(hdrdir)/ruby.h
@@ -1883,7 +1942,6 @@ ossl_ns_spki.o: $(hdrdir)/ruby/backward.h
 ossl_ns_spki.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_ns_spki.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_ns_spki.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_ns_spki.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_ns_spki.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_ns_spki.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_ns_spki.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -1961,6 +2019,15 @@ ossl_ns_spki.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_ns_spki.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_ns_spki.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_ns_spki.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_ns_spki.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_ns_spki.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_ns_spki.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_ns_spki.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_ns_spki.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_ns_spki.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/error.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/eval.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/event.h
@@ -2026,7 +2093,6 @@ ossl_ns_spki.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_ns_spki.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/value.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/variable.h
@@ -2061,7 +2127,6 @@ ossl_ns_spki.o: ossl_rand.h
 ossl_ns_spki.o: ossl_ssl.h
 ossl_ns_spki.o: ossl_ts.h
 ossl_ns_spki.o: ossl_x509.h
-ossl_ns_spki.o: ruby_missing.h
 ossl_ocsp.o: $(RUBY_EXTCONF_H)
 ossl_ocsp.o: $(arch_hdrdir)/ruby/config.h
 ossl_ocsp.o: $(hdrdir)/ruby.h
@@ -2070,7 +2135,6 @@ ossl_ocsp.o: $(hdrdir)/ruby/backward.h
 ossl_ocsp.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_ocsp.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_ocsp.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_ocsp.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_ocsp.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_ocsp.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_ocsp.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -2148,6 +2212,15 @@ ossl_ocsp.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_ocsp.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_ocsp.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_ocsp.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_ocsp.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_ocsp.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_ocsp.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_ocsp.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_ocsp.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_ocsp.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/error.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/eval.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/event.h
@@ -2213,7 +2286,6 @@ ossl_ocsp.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_ocsp.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/value.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/variable.h
@@ -2248,7 +2320,6 @@ ossl_ocsp.o: ossl_rand.h
 ossl_ocsp.o: ossl_ssl.h
 ossl_ocsp.o: ossl_ts.h
 ossl_ocsp.o: ossl_x509.h
-ossl_ocsp.o: ruby_missing.h
 ossl_pkcs12.o: $(RUBY_EXTCONF_H)
 ossl_pkcs12.o: $(arch_hdrdir)/ruby/config.h
 ossl_pkcs12.o: $(hdrdir)/ruby.h
@@ -2257,7 +2328,6 @@ ossl_pkcs12.o: $(hdrdir)/ruby/backward.h
 ossl_pkcs12.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_pkcs12.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_pkcs12.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_pkcs12.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_pkcs12.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_pkcs12.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_pkcs12.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -2335,6 +2405,15 @@ ossl_pkcs12.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_pkcs12.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_pkcs12.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_pkcs12.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_pkcs12.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_pkcs12.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_pkcs12.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_pkcs12.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_pkcs12.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_pkcs12.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/error.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/eval.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/event.h
@@ -2400,7 +2479,6 @@ ossl_pkcs12.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_pkcs12.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/value.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/variable.h
@@ -2435,7 +2513,6 @@ ossl_pkcs12.o: ossl_rand.h
 ossl_pkcs12.o: ossl_ssl.h
 ossl_pkcs12.o: ossl_ts.h
 ossl_pkcs12.o: ossl_x509.h
-ossl_pkcs12.o: ruby_missing.h
 ossl_pkcs7.o: $(RUBY_EXTCONF_H)
 ossl_pkcs7.o: $(arch_hdrdir)/ruby/config.h
 ossl_pkcs7.o: $(hdrdir)/ruby.h
@@ -2444,7 +2521,6 @@ ossl_pkcs7.o: $(hdrdir)/ruby/backward.h
 ossl_pkcs7.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_pkcs7.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_pkcs7.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_pkcs7.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_pkcs7.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_pkcs7.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_pkcs7.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -2522,6 +2598,15 @@ ossl_pkcs7.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_pkcs7.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_pkcs7.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_pkcs7.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_pkcs7.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_pkcs7.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_pkcs7.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_pkcs7.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_pkcs7.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_pkcs7.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/error.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/eval.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/event.h
@@ -2587,7 +2672,6 @@ ossl_pkcs7.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_pkcs7.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/value.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/variable.h
@@ -2622,7 +2706,6 @@ ossl_pkcs7.o: ossl_rand.h
 ossl_pkcs7.o: ossl_ssl.h
 ossl_pkcs7.o: ossl_ts.h
 ossl_pkcs7.o: ossl_x509.h
-ossl_pkcs7.o: ruby_missing.h
 ossl_pkey.o: $(RUBY_EXTCONF_H)
 ossl_pkey.o: $(arch_hdrdir)/ruby/config.h
 ossl_pkey.o: $(hdrdir)/ruby.h
@@ -2631,7 +2714,6 @@ ossl_pkey.o: $(hdrdir)/ruby/backward.h
 ossl_pkey.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_pkey.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_pkey.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_pkey.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_pkey.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_pkey.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_pkey.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -2709,6 +2791,15 @@ ossl_pkey.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_pkey.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_pkey.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_pkey.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_pkey.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_pkey.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_pkey.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_pkey.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_pkey.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_pkey.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/error.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/eval.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/event.h
@@ -2774,7 +2865,6 @@ ossl_pkey.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_pkey.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/value.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/variable.h
@@ -2809,7 +2899,6 @@ ossl_pkey.o: ossl_rand.h
 ossl_pkey.o: ossl_ssl.h
 ossl_pkey.o: ossl_ts.h
 ossl_pkey.o: ossl_x509.h
-ossl_pkey.o: ruby_missing.h
 ossl_pkey_dh.o: $(RUBY_EXTCONF_H)
 ossl_pkey_dh.o: $(arch_hdrdir)/ruby/config.h
 ossl_pkey_dh.o: $(hdrdir)/ruby.h
@@ -2818,7 +2907,6 @@ ossl_pkey_dh.o: $(hdrdir)/ruby/backward.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_pkey_dh.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -2896,6 +2984,15 @@ ossl_pkey_dh.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_pkey_dh.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_pkey_dh.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_pkey_dh.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_pkey_dh.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_pkey_dh.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_pkey_dh.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_pkey_dh.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_pkey_dh.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_pkey_dh.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/error.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/eval.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/event.h
@@ -2961,7 +3058,6 @@ ossl_pkey_dh.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_pkey_dh.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/value.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/variable.h
@@ -2996,7 +3092,6 @@ ossl_pkey_dh.o: ossl_rand.h
 ossl_pkey_dh.o: ossl_ssl.h
 ossl_pkey_dh.o: ossl_ts.h
 ossl_pkey_dh.o: ossl_x509.h
-ossl_pkey_dh.o: ruby_missing.h
 ossl_pkey_dsa.o: $(RUBY_EXTCONF_H)
 ossl_pkey_dsa.o: $(arch_hdrdir)/ruby/config.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby.h
@@ -3005,7 +3100,6 @@ ossl_pkey_dsa.o: $(hdrdir)/ruby/backward.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_pkey_dsa.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -3083,6 +3177,15 @@ ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/error.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/eval.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/event.h
@@ -3148,7 +3251,6 @@ ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/value.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/variable.h
@@ -3183,7 +3285,6 @@ ossl_pkey_dsa.o: ossl_rand.h
 ossl_pkey_dsa.o: ossl_ssl.h
 ossl_pkey_dsa.o: ossl_ts.h
 ossl_pkey_dsa.o: ossl_x509.h
-ossl_pkey_dsa.o: ruby_missing.h
 ossl_pkey_ec.o: $(RUBY_EXTCONF_H)
 ossl_pkey_ec.o: $(arch_hdrdir)/ruby/config.h
 ossl_pkey_ec.o: $(hdrdir)/ruby.h
@@ -3192,7 +3293,6 @@ ossl_pkey_ec.o: $(hdrdir)/ruby/backward.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_pkey_ec.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -3270,6 +3370,15 @@ ossl_pkey_ec.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_pkey_ec.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_pkey_ec.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_pkey_ec.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_pkey_ec.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_pkey_ec.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_pkey_ec.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_pkey_ec.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_pkey_ec.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_pkey_ec.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/error.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/eval.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/event.h
@@ -3335,7 +3444,6 @@ ossl_pkey_ec.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_pkey_ec.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/value.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/variable.h
@@ -3370,7 +3478,6 @@ ossl_pkey_ec.o: ossl_rand.h
 ossl_pkey_ec.o: ossl_ssl.h
 ossl_pkey_ec.o: ossl_ts.h
 ossl_pkey_ec.o: ossl_x509.h
-ossl_pkey_ec.o: ruby_missing.h
 ossl_pkey_rsa.o: $(RUBY_EXTCONF_H)
 ossl_pkey_rsa.o: $(arch_hdrdir)/ruby/config.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby.h
@@ -3379,7 +3486,6 @@ ossl_pkey_rsa.o: $(hdrdir)/ruby/backward.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_pkey_rsa.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -3457,6 +3563,15 @@ ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/error.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/eval.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/event.h
@@ -3522,7 +3637,6 @@ ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/value.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/variable.h
@@ -3557,7 +3671,6 @@ ossl_pkey_rsa.o: ossl_rand.h
 ossl_pkey_rsa.o: ossl_ssl.h
 ossl_pkey_rsa.o: ossl_ts.h
 ossl_pkey_rsa.o: ossl_x509.h
-ossl_pkey_rsa.o: ruby_missing.h
 ossl_rand.o: $(RUBY_EXTCONF_H)
 ossl_rand.o: $(arch_hdrdir)/ruby/config.h
 ossl_rand.o: $(hdrdir)/ruby.h
@@ -3566,7 +3679,6 @@ ossl_rand.o: $(hdrdir)/ruby/backward.h
 ossl_rand.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_rand.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_rand.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_rand.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_rand.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_rand.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_rand.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -3644,6 +3756,15 @@ ossl_rand.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_rand.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_rand.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_rand.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_rand.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_rand.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_rand.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_rand.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_rand.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_rand.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_rand.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_rand.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_rand.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_rand.o: $(hdrdir)/ruby/internal/error.h
 ossl_rand.o: $(hdrdir)/ruby/internal/eval.h
 ossl_rand.o: $(hdrdir)/ruby/internal/event.h
@@ -3709,7 +3830,6 @@ ossl_rand.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_rand.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_rand.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_rand.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_rand.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_rand.o: $(hdrdir)/ruby/internal/value.h
 ossl_rand.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_rand.o: $(hdrdir)/ruby/internal/variable.h
@@ -3744,7 +3864,6 @@ ossl_rand.o: ossl_rand.h
 ossl_rand.o: ossl_ssl.h
 ossl_rand.o: ossl_ts.h
 ossl_rand.o: ossl_x509.h
-ossl_rand.o: ruby_missing.h
 ossl_ssl.o: $(RUBY_EXTCONF_H)
 ossl_ssl.o: $(arch_hdrdir)/ruby/config.h
 ossl_ssl.o: $(hdrdir)/ruby.h
@@ -3753,7 +3872,6 @@ ossl_ssl.o: $(hdrdir)/ruby/backward.h
 ossl_ssl.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_ssl.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_ssl.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_ssl.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_ssl.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_ssl.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_ssl.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -3831,6 +3949,15 @@ ossl_ssl.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_ssl.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_ssl.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_ssl.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_ssl.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_ssl.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_ssl.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_ssl.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_ssl.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_ssl.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/error.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/eval.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/event.h
@@ -3896,7 +4023,6 @@ ossl_ssl.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_ssl.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/value.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/variable.h
@@ -3931,7 +4057,6 @@ ossl_ssl.o: ossl_ssl.c
 ossl_ssl.o: ossl_ssl.h
 ossl_ssl.o: ossl_ts.h
 ossl_ssl.o: ossl_x509.h
-ossl_ssl.o: ruby_missing.h
 ossl_ssl_session.o: $(RUBY_EXTCONF_H)
 ossl_ssl_session.o: $(arch_hdrdir)/ruby/config.h
 ossl_ssl_session.o: $(hdrdir)/ruby.h
@@ -3940,7 +4065,6 @@ ossl_ssl_session.o: $(hdrdir)/ruby/backward.h
 ossl_ssl_session.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_ssl_session.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_ssl_session.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_ssl_session.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_ssl_session.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_ssl_session.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_ssl_session.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -4018,6 +4142,15 @@ ossl_ssl_session.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_ssl_session.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_ssl_session.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_ssl_session.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_ssl_session.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_ssl_session.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_ssl_session.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_ssl_session.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_ssl_session.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_ssl_session.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/error.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/eval.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/event.h
@@ -4083,7 +4216,6 @@ ossl_ssl_session.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_ssl_session.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/value.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/variable.h
@@ -4118,7 +4250,6 @@ ossl_ssl_session.o: ossl_ssl.h
 ossl_ssl_session.o: ossl_ssl_session.c
 ossl_ssl_session.o: ossl_ts.h
 ossl_ssl_session.o: ossl_x509.h
-ossl_ssl_session.o: ruby_missing.h
 ossl_ts.o: $(RUBY_EXTCONF_H)
 ossl_ts.o: $(arch_hdrdir)/ruby/config.h
 ossl_ts.o: $(hdrdir)/ruby.h
@@ -4127,7 +4258,6 @@ ossl_ts.o: $(hdrdir)/ruby/backward.h
 ossl_ts.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_ts.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_ts.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_ts.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_ts.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_ts.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_ts.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -4205,6 +4335,15 @@ ossl_ts.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_ts.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_ts.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_ts.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_ts.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_ts.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_ts.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_ts.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_ts.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_ts.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_ts.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_ts.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_ts.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_ts.o: $(hdrdir)/ruby/internal/error.h
 ossl_ts.o: $(hdrdir)/ruby/internal/eval.h
 ossl_ts.o: $(hdrdir)/ruby/internal/event.h
@@ -4270,7 +4409,6 @@ ossl_ts.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_ts.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_ts.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_ts.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_ts.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_ts.o: $(hdrdir)/ruby/internal/value.h
 ossl_ts.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_ts.o: $(hdrdir)/ruby/internal/variable.h
@@ -4305,7 +4443,6 @@ ossl_ts.o: ossl_ssl.h
 ossl_ts.o: ossl_ts.c
 ossl_ts.o: ossl_ts.h
 ossl_ts.o: ossl_x509.h
-ossl_ts.o: ruby_missing.h
 ossl_x509.o: $(RUBY_EXTCONF_H)
 ossl_x509.o: $(arch_hdrdir)/ruby/config.h
 ossl_x509.o: $(hdrdir)/ruby.h
@@ -4314,7 +4451,6 @@ ossl_x509.o: $(hdrdir)/ruby/backward.h
 ossl_x509.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_x509.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_x509.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_x509.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_x509.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_x509.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_x509.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -4392,6 +4528,15 @@ ossl_x509.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_x509.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_x509.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_x509.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_x509.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_x509.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_x509.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_x509.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_x509.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_x509.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_x509.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_x509.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_x509.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_x509.o: $(hdrdir)/ruby/internal/error.h
 ossl_x509.o: $(hdrdir)/ruby/internal/eval.h
 ossl_x509.o: $(hdrdir)/ruby/internal/event.h
@@ -4457,7 +4602,6 @@ ossl_x509.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_x509.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_x509.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_x509.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_x509.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_x509.o: $(hdrdir)/ruby/internal/value.h
 ossl_x509.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_x509.o: $(hdrdir)/ruby/internal/variable.h
@@ -4492,7 +4636,6 @@ ossl_x509.o: ossl_ssl.h
 ossl_x509.o: ossl_ts.h
 ossl_x509.o: ossl_x509.c
 ossl_x509.o: ossl_x509.h
-ossl_x509.o: ruby_missing.h
 ossl_x509attr.o: $(RUBY_EXTCONF_H)
 ossl_x509attr.o: $(arch_hdrdir)/ruby/config.h
 ossl_x509attr.o: $(hdrdir)/ruby.h
@@ -4501,7 +4644,6 @@ ossl_x509attr.o: $(hdrdir)/ruby/backward.h
 ossl_x509attr.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_x509attr.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_x509attr.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_x509attr.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_x509attr.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_x509attr.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_x509attr.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -4579,6 +4721,15 @@ ossl_x509attr.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_x509attr.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_x509attr.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_x509attr.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_x509attr.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_x509attr.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_x509attr.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_x509attr.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_x509attr.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_x509attr.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/error.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/eval.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/event.h
@@ -4644,7 +4795,6 @@ ossl_x509attr.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_x509attr.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/value.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/variable.h
@@ -4679,7 +4829,6 @@ ossl_x509attr.o: ossl_ssl.h
 ossl_x509attr.o: ossl_ts.h
 ossl_x509attr.o: ossl_x509.h
 ossl_x509attr.o: ossl_x509attr.c
-ossl_x509attr.o: ruby_missing.h
 ossl_x509cert.o: $(RUBY_EXTCONF_H)
 ossl_x509cert.o: $(arch_hdrdir)/ruby/config.h
 ossl_x509cert.o: $(hdrdir)/ruby.h
@@ -4688,7 +4837,6 @@ ossl_x509cert.o: $(hdrdir)/ruby/backward.h
 ossl_x509cert.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_x509cert.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_x509cert.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_x509cert.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_x509cert.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_x509cert.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_x509cert.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -4766,6 +4914,15 @@ ossl_x509cert.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_x509cert.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_x509cert.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_x509cert.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_x509cert.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_x509cert.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_x509cert.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_x509cert.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_x509cert.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_x509cert.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/error.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/eval.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/event.h
@@ -4831,7 +4988,6 @@ ossl_x509cert.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_x509cert.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/value.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/variable.h
@@ -4866,7 +5022,6 @@ ossl_x509cert.o: ossl_ssl.h
 ossl_x509cert.o: ossl_ts.h
 ossl_x509cert.o: ossl_x509.h
 ossl_x509cert.o: ossl_x509cert.c
-ossl_x509cert.o: ruby_missing.h
 ossl_x509crl.o: $(RUBY_EXTCONF_H)
 ossl_x509crl.o: $(arch_hdrdir)/ruby/config.h
 ossl_x509crl.o: $(hdrdir)/ruby.h
@@ -4875,7 +5030,6 @@ ossl_x509crl.o: $(hdrdir)/ruby/backward.h
 ossl_x509crl.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_x509crl.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_x509crl.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_x509crl.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_x509crl.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_x509crl.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_x509crl.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -4953,6 +5107,15 @@ ossl_x509crl.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_x509crl.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_x509crl.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_x509crl.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_x509crl.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_x509crl.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_x509crl.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_x509crl.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_x509crl.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_x509crl.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/error.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/eval.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/event.h
@@ -5018,7 +5181,6 @@ ossl_x509crl.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_x509crl.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/value.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/variable.h
@@ -5053,7 +5215,6 @@ ossl_x509crl.o: ossl_ssl.h
 ossl_x509crl.o: ossl_ts.h
 ossl_x509crl.o: ossl_x509.h
 ossl_x509crl.o: ossl_x509crl.c
-ossl_x509crl.o: ruby_missing.h
 ossl_x509ext.o: $(RUBY_EXTCONF_H)
 ossl_x509ext.o: $(arch_hdrdir)/ruby/config.h
 ossl_x509ext.o: $(hdrdir)/ruby.h
@@ -5062,7 +5223,6 @@ ossl_x509ext.o: $(hdrdir)/ruby/backward.h
 ossl_x509ext.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_x509ext.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_x509ext.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_x509ext.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_x509ext.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_x509ext.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_x509ext.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -5140,6 +5300,15 @@ ossl_x509ext.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_x509ext.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_x509ext.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_x509ext.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_x509ext.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_x509ext.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_x509ext.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_x509ext.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_x509ext.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_x509ext.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/error.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/eval.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/event.h
@@ -5205,7 +5374,6 @@ ossl_x509ext.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_x509ext.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/value.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/variable.h
@@ -5240,7 +5408,6 @@ ossl_x509ext.o: ossl_ssl.h
 ossl_x509ext.o: ossl_ts.h
 ossl_x509ext.o: ossl_x509.h
 ossl_x509ext.o: ossl_x509ext.c
-ossl_x509ext.o: ruby_missing.h
 ossl_x509name.o: $(RUBY_EXTCONF_H)
 ossl_x509name.o: $(arch_hdrdir)/ruby/config.h
 ossl_x509name.o: $(hdrdir)/ruby.h
@@ -5249,7 +5416,6 @@ ossl_x509name.o: $(hdrdir)/ruby/backward.h
 ossl_x509name.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_x509name.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_x509name.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_x509name.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_x509name.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_x509name.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_x509name.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -5327,6 +5493,15 @@ ossl_x509name.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_x509name.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_x509name.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_x509name.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_x509name.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_x509name.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_x509name.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_x509name.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_x509name.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_x509name.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/error.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/eval.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/event.h
@@ -5392,7 +5567,6 @@ ossl_x509name.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_x509name.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/value.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/variable.h
@@ -5427,7 +5601,6 @@ ossl_x509name.o: ossl_ssl.h
 ossl_x509name.o: ossl_ts.h
 ossl_x509name.o: ossl_x509.h
 ossl_x509name.o: ossl_x509name.c
-ossl_x509name.o: ruby_missing.h
 ossl_x509req.o: $(RUBY_EXTCONF_H)
 ossl_x509req.o: $(arch_hdrdir)/ruby/config.h
 ossl_x509req.o: $(hdrdir)/ruby.h
@@ -5436,7 +5609,6 @@ ossl_x509req.o: $(hdrdir)/ruby/backward.h
 ossl_x509req.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_x509req.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_x509req.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_x509req.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_x509req.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_x509req.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_x509req.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -5514,6 +5686,15 @@ ossl_x509req.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_x509req.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_x509req.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_x509req.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_x509req.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_x509req.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_x509req.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_x509req.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_x509req.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_x509req.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/error.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/eval.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/event.h
@@ -5579,7 +5760,6 @@ ossl_x509req.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_x509req.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/value.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/variable.h
@@ -5614,7 +5794,6 @@ ossl_x509req.o: ossl_ssl.h
 ossl_x509req.o: ossl_ts.h
 ossl_x509req.o: ossl_x509.h
 ossl_x509req.o: ossl_x509req.c
-ossl_x509req.o: ruby_missing.h
 ossl_x509revoked.o: $(RUBY_EXTCONF_H)
 ossl_x509revoked.o: $(arch_hdrdir)/ruby/config.h
 ossl_x509revoked.o: $(hdrdir)/ruby.h
@@ -5623,7 +5802,6 @@ ossl_x509revoked.o: $(hdrdir)/ruby/backward.h
 ossl_x509revoked.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_x509revoked.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_x509revoked.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_x509revoked.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_x509revoked.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_x509revoked.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_x509revoked.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -5701,6 +5879,15 @@ ossl_x509revoked.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_x509revoked.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_x509revoked.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_x509revoked.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_x509revoked.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_x509revoked.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_x509revoked.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_x509revoked.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_x509revoked.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_x509revoked.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/error.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/eval.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/event.h
@@ -5766,7 +5953,6 @@ ossl_x509revoked.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_x509revoked.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/value.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/variable.h
@@ -5801,7 +5987,6 @@ ossl_x509revoked.o: ossl_ssl.h
 ossl_x509revoked.o: ossl_ts.h
 ossl_x509revoked.o: ossl_x509.h
 ossl_x509revoked.o: ossl_x509revoked.c
-ossl_x509revoked.o: ruby_missing.h
 ossl_x509store.o: $(RUBY_EXTCONF_H)
 ossl_x509store.o: $(arch_hdrdir)/ruby/config.h
 ossl_x509store.o: $(hdrdir)/ruby.h
@@ -5810,7 +5995,6 @@ ossl_x509store.o: $(hdrdir)/ruby/backward.h
 ossl_x509store.o: $(hdrdir)/ruby/backward/2/assume.h
 ossl_x509store.o: $(hdrdir)/ruby/backward/2/attributes.h
 ossl_x509store.o: $(hdrdir)/ruby/backward/2/bool.h
-ossl_x509store.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ossl_x509store.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ossl_x509store.o: $(hdrdir)/ruby/backward/2/limits.h
 ossl_x509store.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -5888,6 +6072,15 @@ ossl_x509store.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/ctype.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/dllexport.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/dosish.h
+ossl_x509store.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ossl_x509store.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ossl_x509store.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ossl_x509store.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ossl_x509store.o: $(hdrdir)/ruby/internal/encoding/re.h
+ossl_x509store.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ossl_x509store.o: $(hdrdir)/ruby/internal/encoding/string.h
+ossl_x509store.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ossl_x509store.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/error.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/eval.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/event.h
@@ -5953,7 +6146,6 @@ ossl_x509store.o: $(hdrdir)/ruby/internal/static_assert.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/stdalign.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/stdbool.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/symbol.h
-ossl_x509store.o: $(hdrdir)/ruby/internal/token_paste.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/value.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/value_type.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/variable.h
@@ -5988,5 +6180,4 @@ ossl_x509store.o: ossl_ssl.h
 ossl_x509store.o: ossl_ts.h
 ossl_x509store.o: ossl_x509.h
 ossl_x509store.o: ossl_x509store.c
-ossl_x509store.o: ruby_missing.h
 # AUTOGENERATED DEPENDENCIES END

@@ -29,6 +29,7 @@ static volatile DWORD ruby_native_thread_key = TLS_OUT_OF_INDEXES;
 
 static int w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th);
 
+RBIMPL_ATTR_NORETURN()
 static void
 w32_error(const char *func)
 {
@@ -49,6 +50,7 @@ w32_error(const char *func)
 		      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 		      (LPTSTR) & lpMsgBuf, 0, NULL);
     rb_bug("%s: %s", func, (char*)lpMsgBuf);
+    UNREACHABLE;
 }
 
 static int
@@ -129,13 +131,13 @@ gvl_destroy(rb_global_vm_lock_t *gvl)
     CloseHandle(gvl->lock);
 }
 
-static rb_thread_t *
+rb_thread_t *
 ruby_thread_from_native(void)
 {
     return TlsGetValue(ruby_native_thread_key);
 }
 
-static int
+int
 ruby_thread_set_native(rb_thread_t *th)
 {
     if (th && th->ec) {
@@ -322,7 +324,7 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 void
 rb_native_mutex_lock(rb_nativethread_lock_t *lock)
 {
-#if USE_WIN32_MUTEX
+#ifdef USE_WIN32_MUTEX
     w32_mutex_lock(lock->mutex, false);
 #else
     EnterCriticalSection(&lock->crit);
@@ -332,7 +334,7 @@ rb_native_mutex_lock(rb_nativethread_lock_t *lock)
 int
 rb_native_mutex_trylock(rb_nativethread_lock_t *lock)
 {
-#if USE_WIN32_MUTEX
+#ifdef USE_WIN32_MUTEX
     return w32_mutex_lock(lock->mutex, true);
 #else
     return TryEnterCriticalSection(&lock->crit) == 0 ? EBUSY : 0;
@@ -342,7 +344,7 @@ rb_native_mutex_trylock(rb_nativethread_lock_t *lock)
 void
 rb_native_mutex_unlock(rb_nativethread_lock_t *lock)
 {
-#if USE_WIN32_MUTEX
+#ifdef USE_WIN32_MUTEX
     thread_debug("release mutex: %p\n", lock->mutex);
     ReleaseMutex(lock->mutex);
 #else
@@ -353,7 +355,7 @@ rb_native_mutex_unlock(rb_nativethread_lock_t *lock)
 void
 rb_native_mutex_initialize(rb_nativethread_lock_t *lock)
 {
-#if USE_WIN32_MUTEX
+#ifdef USE_WIN32_MUTEX
     lock->mutex = w32_mutex_create();
     /* thread_debug("initialize mutex: %p\n", lock->mutex); */
 #else
@@ -364,7 +366,7 @@ rb_native_mutex_initialize(rb_nativethread_lock_t *lock)
 void
 rb_native_mutex_destroy(rb_nativethread_lock_t *lock)
 {
-#if USE_WIN32_MUTEX
+#ifdef USE_WIN32_MUTEX
     w32_close_handle(lock->mutex);
 #else
     DeleteCriticalSection(&lock->crit);
@@ -546,6 +548,17 @@ ruby_init_stack(volatile VALUE *addr)
 #define CHECK_ERR(expr) \
     {if (!(expr)) {rb_bug("err: %lu - %s", GetLastError(), #expr);}}
 
+COMPILER_WARNING_PUSH
+#if defined(__GNUC__)
+COMPILER_WARNING_IGNORED(-Wmaybe-uninitialized)
+#endif
+static inline SIZE_T
+query_memory_basic_info(PMEMORY_BASIC_INFORMATION mi)
+{
+    return VirtualQuery(mi, mi, sizeof(*mi));
+}
+COMPILER_WARNING_POP
+
 static void
 native_thread_init_stack(rb_thread_t *th)
 {
@@ -553,7 +566,7 @@ native_thread_init_stack(rb_thread_t *th)
     char *base, *end;
     DWORD size, space;
 
-    CHECK_ERR(VirtualQuery(&mi, &mi, sizeof(mi)));
+    CHECK_ERR(query_memory_basic_info(&mi));
     base = mi.AllocationBase;
     end = mi.BaseAddress;
     end += mi.RegionSize;
@@ -823,6 +836,15 @@ static void
 native_set_thread_name(rb_thread_t *th)
 {
 }
+
+static VALUE
+native_thread_native_thread_id(rb_thread_t *th)
+{
+    DWORD tid = GetThreadId(th->thread_id);
+    if (tid == 0) rb_sys_fail("GetThreadId");
+    return ULONG2NUM(tid);
+}
+#define USE_NATIVE_THREAD_NATIVE_THREAD_ID 1
 
 #if USE_MJIT
 static unsigned long __stdcall

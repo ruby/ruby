@@ -8,7 +8,10 @@ module IRB
         super(*args)
       end
 
-      def execute(type = nil, arg = nil)
+      def execute(type = nil, arg = nil, &block)
+        # Please check IRB.init_config in lib/irb/init.rb that sets
+        # IRB.conf[:MEASURE_PROC] to register default "measure" methods,
+        # "measure :time" (abbreviated as "measure") and "measure :stackprof".
         case type
         when :off
           IRB.conf[:MEASURE] = nil
@@ -22,9 +25,15 @@ module IRB
           added = IRB.set_measure_callback(type, arg)
           puts "#{added[0]} is added." if added
         else
-          IRB.conf[:MEASURE] = true
-          added = IRB.set_measure_callback(type, arg)
-          puts "#{added[0]} is added." if added
+          if block_given?
+            IRB.conf[:MEASURE] = true
+            added = IRB.set_measure_callback(&block)
+            puts "#{added[0]} is added." if added
+          else
+            IRB.conf[:MEASURE] = true
+            added = IRB.set_measure_callback(type, arg)
+            puts "#{added[0]} is added." if added
+          end
         end
         nil
       end

@@ -17,7 +17,9 @@ dir.rb
 gc.rb
 io.rb
 kernel.rb
+marshal.rb
 numeric.rb
+nilclass.rb
 pack.rb
 ractor.rb
 timev.rb

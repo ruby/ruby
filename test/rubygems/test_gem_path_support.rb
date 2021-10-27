@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems'
 require 'fileutils'
 
@@ -16,7 +16,7 @@ class TestGemPathSupport < Gem::TestCase
 
     assert_equal ENV["GEM_HOME"], ps.home
 
-    expected = util_path
+    expected = ENV["GEM_PATH"].split(File::PATH_SEPARATOR)
     assert_equal expected, ps.path, "defaults to GEM_PATH"
   end
 
@@ -25,7 +25,7 @@ class TestGemPathSupport < Gem::TestCase
 
     assert_equal File.join(@tempdir, "foo"), ps.home
 
-    expected = util_path + [File.join(@tempdir, 'foo')]
+    expected = ENV["GEM_PATH"].split(File::PATH_SEPARATOR) + [File.join(@tempdir, 'foo')]
     assert_equal expected, ps.path
   end
 
@@ -102,10 +102,6 @@ class TestGemPathSupport < Gem::TestCase
     end
   end
 
-  def util_path
-    ENV["GEM_PATH"].split(File::PATH_SEPARATOR)
-  end
-
   def test_initialize_spec
     ENV["GEM_SPEC_CACHE"] = nil
 
@@ -130,7 +126,7 @@ class TestGemPathSupport < Gem::TestCase
     begin
       File.symlink(dir, symlink)
     rescue NotImplementedError, SystemCallError
-      skip 'symlinks not supported'
+      pend 'symlinks not supported'
     end
     not_existing = "#{@tempdir}/does_not_exist"
     path = "#{symlink}#{File::PATH_SEPARATOR}#{not_existing}"

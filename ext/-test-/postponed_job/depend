@@ -136,7 +136,6 @@ postponed_job.o: $(hdrdir)/ruby/internal/static_assert.h
 postponed_job.o: $(hdrdir)/ruby/internal/stdalign.h
 postponed_job.o: $(hdrdir)/ruby/internal/stdbool.h
 postponed_job.o: $(hdrdir)/ruby/internal/symbol.h
-postponed_job.o: $(hdrdir)/ruby/internal/token_paste.h
 postponed_job.o: $(hdrdir)/ruby/internal/value.h
 postponed_job.o: $(hdrdir)/ruby/internal/value_type.h
 postponed_job.o: $(hdrdir)/ruby/internal/variable.h

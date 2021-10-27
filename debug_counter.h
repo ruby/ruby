@@ -24,6 +24,12 @@ RB_DEBUG_COUNTER(mc_inline_miss_same_cme)    // IMC miss, but same CME
 RB_DEBUG_COUNTER(mc_inline_miss_same_def)    // IMC miss, but same definition
 RB_DEBUG_COUNTER(mc_inline_miss_diff)        // IMC miss, different methods
 
+RB_DEBUG_COUNTER(cvar_write_inline_hit)      // cvar cache hit on write
+RB_DEBUG_COUNTER(cvar_read_inline_hit)       // cvar cache hit on read
+RB_DEBUG_COUNTER(cvar_inline_miss)           // miss inline cache
+RB_DEBUG_COUNTER(cvar_class_invalidate)      // invalidate cvar cache when define a cvar that's defined on a subclass
+RB_DEBUG_COUNTER(cvar_include_invalidate)    // invalidate cvar cache on module include or prepend
+
 RB_DEBUG_COUNTER(mc_cme_complement)          // number of acquiring complement CME
 RB_DEBUG_COUNTER(mc_cme_complement_hit)      // number of cache hit for complemented CME
 
@@ -46,10 +52,10 @@ RB_DEBUG_COUNTER(cc_not_found_in_ccs)  // count for CC lookup success in CCS
 RB_DEBUG_COUNTER(cc_ent_invalidate) // count for invalidating cc (cc->klass = 0)
 RB_DEBUG_COUNTER(cc_cme_invalidate) // count for invalidating CME
 
-RB_DEBUG_COUNTER(cc_invalidate_leaf)          // count for invalidating klass if klass has no-sublcasses
+RB_DEBUG_COUNTER(cc_invalidate_leaf)          // count for invalidating klass if klass has no-subclasses
 RB_DEBUG_COUNTER(cc_invalidate_leaf_ccs)      //                        corresponding CCS
 RB_DEBUG_COUNTER(cc_invalidate_leaf_callable) //                        complimented cache (no-subclasses)
-RB_DEBUG_COUNTER(cc_invalidate_tree)          // count for invalidating klass if klass has sublcasses
+RB_DEBUG_COUNTER(cc_invalidate_tree)          // count for invalidating klass if klass has subclasses
 RB_DEBUG_COUNTER(cc_invalidate_tree_cme)      //                        cme if cme is found in this class or superclasses
 RB_DEBUG_COUNTER(cc_invalidate_tree_callable) //                        complimented cache (subclasses)
 RB_DEBUG_COUNTER(cc_invalidate_negative)      // count for invalidating negative cache
@@ -62,6 +68,9 @@ RB_DEBUG_COUNTER(ccs_not_found)  // count for not found corresponding ccs on met
 // vm_eval.c
 RB_DEBUG_COUNTER(call0_public)
 RB_DEBUG_COUNTER(call0_other)
+RB_DEBUG_COUNTER(gccct_hit)
+RB_DEBUG_COUNTER(gccct_miss)
+RB_DEBUG_COUNTER(gccct_null)
 
 // iseq
 RB_DEBUG_COUNTER(iseq_num)    // number of total created iseq

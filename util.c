@@ -48,7 +48,7 @@ ruby_scan_oct(const char *start, size_t len, size_t *retlen)
 	retval <<= 3;
 	retval |= *s++ - '0';
     }
-    *retlen = (int)(s - start);	/* less than len */
+    *retlen = (size_t)(s - start);
     return retval;
 }
 
@@ -57,22 +57,19 @@ ruby_scan_hex(const char *start, size_t len, size_t *retlen)
 {
     register const char *s = start;
     register unsigned long retval = 0;
-    const char *tmp;
+    signed char d;
     size_t i = 0;
 
     for (i = 0; i < len; i++) {
-        if (! s[0]) {
-            break;
-        }
-        tmp = strchr(hexdigit, *s);
-        if (! tmp) {
+        d = ruby_digit36_to_number_table[(unsigned char)*s];
+        if (d < 0 || 15 < d) {
             break;
         }
 	retval <<= 4;
-	retval |= (tmp - hexdigit) & 15;
+	retval |= d;
 	s++;
     }
-    *retlen = (int)(s - start);	/* less than len */
+    *retlen = (size_t)(s - start);
     return retval;
 }
 
@@ -100,6 +97,8 @@ NO_SANITIZE("unsigned-integer-overflow", extern unsigned long ruby_scan_digits(c
 unsigned long
 ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow)
 {
+    RBIMPL_ASSERT_OR_ASSUME(base >= 2);
+    RBIMPL_ASSERT_OR_ASSUME(base <= 36);
 
     const char *start = str;
     unsigned long ret = 0, x;
@@ -138,6 +137,11 @@ ruby_strtoul(const char *str, char **endptr, int base)
     size_t len;
     unsigned long ret;
     const char *subject_found = str;
+
+    if (base < 0) {
+        errno = EINVAL;
+        return 0;
+    }
 
     if (base == 1 || 36 < base) {
         errno = EINVAL;
@@ -400,7 +404,8 @@ ruby_qsort(void* base, const size_t nel, const size_t size, cmpfunc_t *cmp, void
   for (;;) {
     start:
     if (L + size == R) {       /* 2 elements */
-      if ((*cmp)(L,R,d) > 0) mmswap(L,R); goto nxt;
+      if ((*cmp)(L,R,d) > 0) mmswap(L,R);
+      goto nxt;
     }
 
     l = L; r = R;

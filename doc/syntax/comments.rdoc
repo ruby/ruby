@@ -58,7 +58,7 @@ Magic comments may consist of a single directive (as in the example above).
 Alternatively, multiple directives may appear on the same line if separated by ";"
 and wrapped between "-*-" (see Emacs' {file variables}[https://www.gnu.org/software/emacs/manual/html_node/emacs/Specifying-File-Variables.html]).
 
-  # emacs-compatible; -*- coding: big5; mode: ruby -*-
+  # emacs-compatible; -*- coding: big5; mode: ruby; frozen_string_literal: true -*-
 
   p 'hello'.frozen? # => true
   p 'hello'.encoding # => #<Encoding:Big5>

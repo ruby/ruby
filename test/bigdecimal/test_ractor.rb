@@ -6,7 +6,7 @@ class TestBigDecimalRactor < Test::Unit::TestCase
 
   def setup
     super
-    skip unless defined? Ractor
+    omit unless defined? Ractor
   end
 
   def test_ractor_shareable

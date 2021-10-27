@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/query_utils'
-require 'rubygems/deprecate'
+require_relative '../command'
+require_relative '../query_utils'
+require_relative '../deprecate'
 
 class Gem::Commands::QueryCommand < Gem::Command
   extend Gem::Deprecate

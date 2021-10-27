@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require 'rubygems'
-require 'rubygems/package'
+require_relative '../rubygems'
+require_relative 'package'
 require 'tmpdir'
 
 ##
@@ -136,7 +136,7 @@ class Gem::Indexer
     say "Generating #{name} index"
 
     Gem.time "Generated #{name} index" do
-      open(file, 'wb') do |io|
+      File.open(file, 'wb') do |io|
         specs = index.map do |*spec|
           # We have to splat here because latest_specs is an array, while the
           # others are hashes.

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'set'
 require 'tsort'
 
 require_relative 'dependency_graph/log'

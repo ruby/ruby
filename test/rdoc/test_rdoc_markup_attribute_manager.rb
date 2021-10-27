@@ -172,22 +172,25 @@ class TestRDocMarkupAttributeManager < RDoc::TestCase
 
   def test_convert_attrs
     str = '+foo+'.dup
-    attrs = RDoc::Markup::AttrSpan.new str.length
+    attrs = RDoc::Markup::AttrSpan.new str.length, @am.exclusive_bitmap
 
+    @am.convert_attrs str, attrs, true
     @am.convert_attrs str, attrs
 
     assert_equal "\000foo\000", str
 
     str = '+:foo:+'.dup
-    attrs = RDoc::Markup::AttrSpan.new str.length
+    attrs = RDoc::Markup::AttrSpan.new str.length, @am.exclusive_bitmap
 
+    @am.convert_attrs str, attrs, true
     @am.convert_attrs str, attrs
 
     assert_equal "\000:foo:\000", str
 
     str = '+x-y+'.dup
-    attrs = RDoc::Markup::AttrSpan.new str.length
+    attrs = RDoc::Markup::AttrSpan.new str.length, @am.exclusive_bitmap
 
+    @am.convert_attrs str, attrs, true
     @am.convert_attrs str, attrs
 
     assert_equal "\000x-y\000", str
@@ -241,6 +244,22 @@ class TestRDocMarkupAttributeManager < RDoc::TestCase
                  output('illegal <tag>not</tag> changed')
     assert_equal 'unhandled <p>tag</p> unchanged',
                  output('unhandled <p>tag</p> unchanged')
+  end
+
+  def test_exclude_tag
+    assert_equal '<CODE>aaa</CODE>[:symbol]', output('+aaa+[:symbol]')
+    assert_equal '<CODE>aaa[:symbol]</CODE>', output('+aaa[:symbol]+')
+    assert_equal 'aaa[:symbol]', output('aaa[:symbol]')
+    assert_equal '<B><CODE>index</CODE></B>', output('<b><tt>index</tt></b>')
+  end
+
+  def test_exclude_tag_flow
+    assert_equal [@tt_on, "aaa", @tt_off, "[:symbol]"],
+                  @am.flow("+aaa+[:symbol]")
+    assert_equal [@tt_on, "aaa[:symbol]", @tt_off],
+                  @am.flow("+aaa[:symbol]+")
+    assert_equal ["aaa[:symbol]"],
+                  @am.flow("aaa[:symbol]")
   end
 
   def test_html_like_em_bold

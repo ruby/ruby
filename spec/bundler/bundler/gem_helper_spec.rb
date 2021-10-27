@@ -9,7 +9,8 @@ RSpec.describe Bundler::GemHelper do
   let(:app_gemspec_path) { app_path.join("#{app_name}.gemspec") }
 
   before(:each) do
-    global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false", "BUNDLE_GEM__RUBOCOP" => "false", "BUNDLE_GEM__CI" => "false"
+    global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false", "BUNDLE_GEM__LINTER" => "false",
+                  "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__CHANGELOG" => "false"
     bundle "gem #{app_name}"
     prepare_gemspec(app_gemspec_path)
   end
@@ -60,10 +61,16 @@ RSpec.describe Bundler::GemHelper do
       mock_confirm_message message
     end
 
+    def mock_checksum_message(name, version)
+      message = "#{name} #{version} checksum written to checksums/#{name}-#{version}.gem.sha512."
+      mock_confirm_message message
+    end
+
     subject! { Bundler::GemHelper.new(app_path) }
     let(:app_version) { "0.1.0" }
     let(:app_gem_dir) { app_path.join("pkg") }
     let(:app_gem_path) { app_gem_dir.join("#{app_name}-#{app_version}.gem") }
+    let(:app_sha_path) { app_path.join("checksums", "#{app_name}-#{app_version}.gem.sha512") }
     let(:app_gemspec_content) { File.read(app_gemspec_path) }
 
     before(:each) do
@@ -97,6 +104,7 @@ RSpec.describe Bundler::GemHelper do
         context "before installation" do
           it "raises an error with appropriate message" do
             task_names.each do |name|
+              skip "Rake::FileTask '#{name}' exists" if File.exist?(name)
               expect { Rake.application[name] }.
                 to raise_error(/^Don't know how to build task '#{name}'/)
             end
@@ -160,6 +168,37 @@ RSpec.describe Bundler::GemHelper do
       end
     end
 
+    describe "#build_checksum" do
+      context "when build was successful" do
+        it "creates .sha512 file" do
+          mock_build_message app_name, app_version
+          mock_checksum_message app_name, app_version
+          subject.build_checksum
+          expect(app_sha_path).to exist
+        end
+      end
+      context "when building in the current working directory" do
+        it "creates a .sha512 file" do
+          mock_build_message app_name, app_version
+          mock_checksum_message app_name, app_version
+          Dir.chdir app_path do
+            Bundler::GemHelper.new.build_checksum
+          end
+          expect(app_sha_path).to exist
+        end
+      end
+      context "when building in a location relative to the current working directory" do
+        it "creates a .sha512 file" do
+          mock_build_message app_name, app_version
+          mock_checksum_message app_name, app_version
+          Dir.chdir File.dirname(app_path) do
+            Bundler::GemHelper.new(File.basename(app_path)).build_checksum
+          end
+          expect(app_sha_path).to exist
+        end
+      end
+    end
+
     describe "#install_gem" do
       context "when installation was successful" do
         it "gem is installed" do
@@ -180,7 +219,7 @@ RSpec.describe Bundler::GemHelper do
             FileUtils.touch app_gem_path
             app_gem_path
           end
-          expect { subject.install_gem }.to raise_error(/Couldn't install gem/)
+          expect { subject.install_gem }.to raise_error(/Running `#{gem_bin} install #{app_gem_path}` failed/)
         end
       end
     end
@@ -261,6 +300,14 @@ RSpec.describe Bundler::GemHelper do
             # Create a branch with the same name as the tag
             sys_exec("git checkout -b v#{app_version}", :dir => app_path)
             sys_exec("git push -u origin v#{app_version}", :dir => app_path)
+
+            expect(subject).to receive(:rubygem_push).with(app_gem_path.to_s)
+
+            Rake.application["release"].invoke
+          end
+
+          it "also works with releasing from a branch not yet pushed" do
+            sys_exec("git checkout -b module_function", :dir => app_path)
 
             expect(subject).to receive(:rubygem_push).with(app_gem_path.to_s)
 

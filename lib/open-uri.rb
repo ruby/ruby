@@ -750,7 +750,12 @@ module URI
         OpenURI.open_http(buf, self, proxy, options)
         return
       end
-      require 'net/ftp'
+
+      begin
+        require 'net/ftp'
+      rescue LoadError
+        abort "net/ftp is not found. You may need to `gem install net-ftp` to install net/ftp."
+      end
 
       path = self.path
       path = path.sub(%r{\A/}, '%2F') # re-encode the beginning slash because uri library decodes it.

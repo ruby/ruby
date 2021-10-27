@@ -10,6 +10,7 @@ CHDIR = cd
 PATH_SEPARATOR = ;
 TZ =				# skip timezone tests
 PWD = $(MAKEDIR)
+empty =
 
 !ifndef MFLAGS
 MFLAGS=-l
@@ -88,6 +89,7 @@ RMALL = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat -f -r
 MAKEDIRS = $(COMSPEC) /E:ON /C $(srcdir:/=\)\win32\makedirs.bat
 CP = copy > nul
 MV = move > nul
+RM1 = del /f /q
 !if !defined(BASERUBY)
 BASERUBY = ruby
 !endif
@@ -275,7 +277,7 @@ LIBS = user32.lib advapi32.lib shell32.lib ws2_32.lib
 !if $(MSC_VER) >= 1400
 LIBS = $(LIBS) iphlpapi.lib
 !endif
-LIBS = $(LIBS) imagehlp.lib shlwapi.lib $(EXTLIBS)
+LIBS = $(LIBS) imagehlp.lib shlwapi.lib bcrypt.lib $(EXTLIBS)
 !endif
 !if !defined(MISSING)
 MISSING = crypt.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj
@@ -526,6 +528,14 @@ GOLF_PRELUDE_C = golf_prelude.c
 !endif
 RBCONFIG      = ./.rbconfig.time
 
+!if "$(GITHUB_ACTIONS)" == "true"
+ACTIONS_GROUP = @echo ^#^#[group]$(@:yes-=)
+ACTIONS_ENDGROUP = @echo ^#^#[endgroup]
+!else
+ACTIONS_GROUP = @:: $(empty)
+ACTIONS_ENDGROUP = @::
+!endif
+
 !include $(srcdir)/common.mk
 
 !ifdef SCRIPTPROGRAMS
@@ -700,7 +710,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !else
 #define PACKED_STRUCT(x) x
 !endif
-!if "$(ARCH)" == "x86" || "$(ARCH)" == "x64"
+!if "$(MACHINE)" == "x86" || "$(ARCH)" == "x64"
 #define PACKED_STRUCT_UNALIGNED(x) PACKED_STRUCT(x)
 !else
 #define PACKED_STRUCT_UNALIGNED(x) x
@@ -863,7 +873,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define STACK_GROW_DIRECTION -1
 !endif
 #define COROUTINE_H "$(COROUTINE_H)"
-#define DEFAULT_KCODE KCODE_NONE
 #define LOAD_RELATIVE 1
 #define DLEXT ".so"
 !if "$(libdir_basename)" != "lib"
@@ -967,7 +976,6 @@ s,@RMALL@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rm.bat -f -r,:t t
 s,@MAKEDIRS@,$$(COMSPEC) /E:ON /C $$(top_srcdir:/=\)\win32\makedirs.bat,;t t
 s,@LIBOBJS@,$(LIBOBJS),;t t
 s,@ALLOCA@,$(ALLOCA),;t t
-s,@DEFAULT_KCODE@,$(DEFAULT_KCODE),;t t
 s,@EXEEXT@,.exe,;t t
 s,@EXECUTABLE_EXTS@,$(EXECUTABLE_EXTS),;t t
 s,@OBJEXT@,$(OBJEXT),;t t
@@ -984,6 +992,7 @@ s,@SOEXT@,dll,;t t
 s,@DLEXT@,so,;t t
 s,@LIBEXT@,lib,;t t
 s,@STRIP@,$(STRIP),;t t
+s,@ENCSTATIC@,$(ENCSTATIC),;t t
 s,@EXTSTATIC@,$(EXTSTATIC),;t t
 s,@setup@,Setup,;t t
 s,@MINIRUBY@,$(MINIRUBY),;t t
@@ -1224,9 +1233,6 @@ $(ruby_pc): $(RBCONFIG)
 {$(srcdir)/coroutine/win64}.asm{coroutine/win64}.obj:
 	$(ECHO) assembling $(<:\=/)
 	$(Q) $(AS) $(ASFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
-{$(srcdir)/coroutine/copy}.c{coroutine/copy}.obj:
-	$(ECHO) compiling $(<:\=/)
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
 
 {$(srcdir)/enc/trans}.c.obj:
 	$(ECHO) compiling $(<:\=/)
@@ -1262,16 +1268,16 @@ $(ruby_pc): $(RBCONFIG)
 
 {$(srcdir)/missing}.c.i:
 	$(ECHO) preprocessing $(<:\=/)
-	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P $(CSRCFLAG)$(<:\=/) > $@
+	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P -Fi:$@ $(CSRCFLAG)$(<:\=/)
 {$(win_srcdir)}.c.i:
 	$(ECHO) preprocessing $(<:\=/)
-	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P $(CSRCFLAG)$(<:\=/)
+	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P -Fi:$@ $(CSRCFLAG)$(<:\=/)
 {$(srcdir)}.c{}.i:
 	$(ECHO) preprocessing $(<:\=/)
-	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P $(CSRCFLAG)$(<:\=/)
+	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P -Fi:$@ $(CSRCFLAG)$(<:\=/)
 .c.i:
 	$(ECHO) preprocessing $(<:\=/)
-	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P $(CSRCFLAG)$(<:\=/)
+	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P -Fi:$@ $(CSRCFLAG)$(<:\=/)
 
 .rc.res:
 	$(ECHO) compiling $(<:\=/)

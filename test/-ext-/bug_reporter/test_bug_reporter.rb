@@ -8,6 +8,7 @@ class TestBugReporter < Test::Unit::TestCase
 
     description = RUBY_DESCRIPTION
     description = description.sub(/\+JIT /, '') if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
+    description = description.sub(/\+YJIT /, '') if defined?(YJIT.enabled?) && YJIT.enabled?
     expected_stderr = [
       :*,
       /\[BUG\]\sSegmentation\sfault.*\n/,

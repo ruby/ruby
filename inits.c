@@ -65,7 +65,7 @@ rb_call_inits(void)
     CALL(VM);
     CALL(ISeq);
     CALL(Thread);
-    CALL(Scheduler);
+    CALL(Fiber_Scheduler);
     CALL(process);
     CALL(Cont);
     CALL(Rational);
@@ -97,6 +97,9 @@ rb_call_builtin_inits(void)
     BUILTIN(array);
     BUILTIN(kernel);
     BUILTIN(timev);
+    BUILTIN(yjit);
+    BUILTIN(nilclass);
+    BUILTIN(marshal);
     Init_builtin_prelude();
 }
 #undef CALL

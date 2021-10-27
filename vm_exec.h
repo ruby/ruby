@@ -37,8 +37,8 @@ typedef rb_iseq_t *ISEQ;
 #define DEBUG_END_INSN()
 #endif
 
-#define throwdebug if(0)printf
-/* #define throwdebug printf */
+#define throwdebug if(0)ruby_debug_printf
+/* #define throwdebug ruby_debug_printf */
 
 #ifndef USE_INSNS_COUNTER
 #define USE_INSNS_COUNTER 0
@@ -74,11 +74,13 @@ error !
 #define LABEL_PTR(x) RB_GNUC_EXTENSION(&&LABEL(x))
 
 #define INSN_ENTRY_SIG(insn) \
-  if (0) fprintf(stderr, "exec: %s@(%"PRIdPTRDIFF", %"PRIdPTRDIFF")@%s:%u\n", #insn, \
-                 (reg_pc - reg_cfp->iseq->body->iseq_encoded), \
-                 (reg_cfp->pc - reg_cfp->iseq->body->iseq_encoded), \
-                 RSTRING_PTR(rb_iseq_path(reg_cfp->iseq)), \
-                 rb_iseq_line_no(reg_cfp->iseq, reg_pc - reg_cfp->iseq->body->iseq_encoded)); \
+  if (0) { \
+      ruby_debug_printf("exec: %s@(%"PRIdPTRDIFF", %"PRIdPTRDIFF")@%s:%u\n", #insn, \
+                        (reg_pc - reg_cfp->iseq->body->iseq_encoded), \
+                        (reg_cfp->pc - reg_cfp->iseq->body->iseq_encoded), \
+                        RSTRING_PTR(rb_iseq_path(reg_cfp->iseq)), \
+                        rb_iseq_line_no(reg_cfp->iseq, reg_pc - reg_cfp->iseq->body->iseq_encoded)); \
+  } \
   if (USE_INSNS_COUNTER) vm_insns_counter_count_insn(BIN(insn));
 
 #define INSN_DISPATCH_SIG(insn)
@@ -130,9 +132,6 @@ error !
 
 #define NEXT_INSN() TC_DISPATCH(__NEXT_INSN__)
 
-#define START_OF_ORIGINAL_INSN(x) start_of_##x:
-#define DISPATCH_ORIGINAL_INSN(x) goto  start_of_##x;
-
 /************************************************/
 #else /* no threaded code */
 /* most common method */
@@ -157,9 +156,11 @@ default:                        \
 
 #define NEXT_INSN() goto first
 
-#define START_OF_ORIGINAL_INSN(x) start_of_##x:
-#define DISPATCH_ORIGINAL_INSN(x) goto  start_of_##x;
+#endif
 
+#ifndef START_OF_ORIGINAL_INSN
+#define START_OF_ORIGINAL_INSN(x) if (0) goto start_of_##x; start_of_##x:
+#define DISPATCH_ORIGINAL_INSN(x) goto  start_of_##x;
 #endif
 
 #define VM_SP_CNT(ec, sp) ((sp) - (ec)->vm_stack)

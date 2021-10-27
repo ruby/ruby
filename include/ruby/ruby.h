@@ -14,6 +14,8 @@
  */
 #include "ruby/internal/config.h"
 
+/* @shyouhei  doesn't  understand  why  we need  <intrinsics.h>  at  this  very
+ * beginning of the entire <ruby.h> circus. */
 #ifdef HAVE_INTRINSICS_H
 # include <intrinsics.h>
 #endif
@@ -55,14 +57,52 @@
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /* Module#methods, #singleton_methods and so on return Symbols */
+/**
+ * @private
+ *
+ * @deprecated  This macro once was a thing in the old days, but makes no sense
+ *              any  longer today.   Exists  here  for backwards  compatibility
+ *              only.  You can safely forget about it.
+ */
 #define USE_SYMBOL_AS_METHOD_NAME 1
 
-VALUE rb_get_path(VALUE);
+/**
+ * Converts an object to a path.  It first tries `#to_path` method if any, then
+ * falls back to `#to_str` method.
+ *
+ * @param[in]  obj                 Arbitrary ruby object.
+ * @exception  rb_eArgError        `obj` contains a NUL byte.
+ * @exception  rb_eTypeError       `obj` is not path-ish.
+ * @exception  rb_eEncCompatError  No encoding conversion from `obj` to path.
+ * @return     Converted path object.
+ */
+VALUE rb_get_path(VALUE obj);
+
+/**
+ * Ensures that the parameter object is a path.
+ *
+ * @param[in,out]  v                   Arbitrary ruby object.
+ * @exception      rb_eArgError        `v` contains a NUL byte.
+ * @exception      rb_eTypeError       `v` is not path-ish.
+ * @exception      rb_eEncCompatError  `v` is not path-compatible.
+ * @post           `v` is a path.
+ */
 #define FilePathValue(v) (RB_GC_GUARD(v) = rb_get_path(v))
 
+/**
+ * @deprecated  This function is an alias  of rb_get_path() now.  The part that
+ *              did "no_checksafe" was deleted.  It  remains here because of no
+ *              harm.
+ */
 VALUE rb_get_path_no_checksafe(VALUE);
+
+/**
+ * @deprecated  This macro is an alias of #FilePathValue now.  The part that did
+ *              "String" was deleted.  It remains here because of no harm.
+ */
 #define FilePathStringValue(v) ((v) = rb_get_path(v))
 
+/** @cond INTERNAL_MACRO */
 #if defined(HAVE_BUILTIN___BUILTIN_CONSTANT_P) && defined(HAVE_STMT_AND_DECL_IN_EXPR)
 # define rb_varargs_argc_check_runtime(argc, vargc) \
     (((argc) <= (vargc)) ? (argc) : \
@@ -72,7 +112,7 @@ VALUE rb_get_path_no_checksafe(VALUE);
     ((argc) == 0 ? (vargc) <= 1 : /* [ruby-core:85266] [Bug #14425] */ \
      (argc) == (vargc))
 # if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
-#   if HAVE_ATTRIBUTE_ERRORFUNC
+#   ifdef HAVE_ATTRIBUTE_ERRORFUNC
 ERRORFUNC((" argument length doesn't match"), int rb_varargs_bad_length(int,int));
 #   else
 #     define rb_varargs_bad_length(argc, vargc) \
@@ -88,32 +128,149 @@ ERRORFUNC((" argument length doesn't match"), int rb_varargs_bad_length(int,int)
 	rb_varargs_argc_check_runtime(argc, vargc)
 # endif
 #endif
+/** @endcond */
 
-const char *rb_class2name(VALUE);
-const char *rb_obj_classname(VALUE);
+/**
+ * Queries the name of the passed class.
+ *
+ * @param[in]  klass  An instance of a class.
+ * @return     The name of `klass`.
+ * @note       Return value is managed by our GC.  Don't free.
+ */
+const char *rb_class2name(VALUE klass);
 
-void rb_p(VALUE);
+/**
+ * Queries the name of the class of the passed object.
+ *
+ * @param[in]  obj  Arbitrary ruby object.
+ * @return     The name of the class of `obj`.
+ * @note       Return value is managed by our GC.  Don't free.
+ */
+const char *rb_obj_classname(VALUE obj);
 
-VALUE rb_equal(VALUE,VALUE);
+/**
+ * Inspects an object.   It first calls the argument's  `#inspect` method, then
+ * feeds its result string into ::rb_stdout.
+ *
+ * This is identical to Ruby level `Kernel#p`, except it takes only one object.
+ *
+ * @internal
+ *
+ * Above description is in fact inaccurate.  This API interfaces with Ractors.
+ */
+void rb_p(VALUE obj);
 
-VALUE rb_require(const char*);
+/**
+ * This function is an optimised version  of calling `#==`.  It checks equality
+ * between two  objects by first  doing a fast  identity check using  using C's
+ * `==` (same  as `BasicObject#equal?`).  If  that check fails, it  calls `#==`
+ * dynamically.   This optimisation  actually affects  semantics, because  when
+ * `#==`  returns false  for the  same object  obj, `rb_equal(obj,  obj)` would
+ * still  return true.   This happens  for `Float::NAN`,  where `Float::NAN  ==
+ * Float::NAN` is `false`, but `rb_equal(Float::NAN, Float::NAN)` is `true`.
+ *
+ * @param[in]  lhs          Comparison LHS.
+ * @param[in]  rhs          Comparison RHS.
+ * @retval     RUBY_Qtrue   They are the same.
+ * @retval     RUBY_Qfalse  They are different.
+ */
+VALUE rb_equal(VALUE lhs, VALUE rhs);
+
+/**
+ * Identical  to rb_require_string(),  except it  takes C's  string instead  of
+ * Ruby's.
+ *
+ * @param[in]  feature           Name of a feature, e.g. `"json"`.
+ * @exception  rb_eLoadError     No such feature.
+ * @exception  rb_eRuntimeError  `$"` is frozen; unable to push.
+ * @retval     RUBY_Qtrue        The feature is loaded for the first time.
+ * @retval     RUBY_Qfalse       The feature has already been loaded.
+ * @post       `$"` is updated.
+ */
+VALUE rb_require(const char *feature);
 
 #include "ruby/intern.h"
 
-#if defined(EXTLIB) && defined(USE_DLN_A_OUT)
-/* hook for external modules */
-static char *dln_libs_to_be_linked[] = { EXTLIB, 0 };
-#endif
-
+/**
+ * @private
+ *
+ * @deprecated  This macro once was a thing in the old days, but makes no sense
+ *              any  longer today.   Exists  here  for backwards  compatibility
+ *              only.  You can safely forget about it.
+ */
 #define RUBY_VM 1 /* YARV */
+
+/**
+ * @private
+ *
+ * @deprecated  This macro once was a thing in the old days, but makes no sense
+ *              any  longer today.   Exists  here  for backwards  compatibility
+ *              only.  You can safely forget about it.
+ */
 #define HAVE_NATIVETHREAD
+
+/**
+ * Queries  if  the thread  which  calls  this  function  is a  ruby's  thread.
+ * "Ruby's" in  this context  is a thread  created using one  of our  APIs like
+ * rb_thread_create().   There  are  distinctions   between  ruby's  and  other
+ * threads.  For instance calling ruby methods  are allowed only from inside of
+ * a ruby's thread.
+ *
+ * @retval  1  The current thread is a Ruby's thread.
+ * @retval  0  The current thread is a random thread from outside of Ruby.
+ */
 int ruby_native_thread_p(void);
 
+/**
+ * @private
+ *
+ * This macro is for internal use.  Must be a mistake to place here.
+ */
 #define InitVM(ext) {void InitVM_##ext(void);InitVM_##ext();}
 
-PRINTF_ARGS(int ruby_snprintf(char *str, size_t n, char const *fmt, ...), 3, 4);
+RBIMPL_ATTR_NONNULL((3))
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 3, 4)
+/**
+ * Our own locale-insensitive version of `snprintf(3)`.  It can also be seen as
+ * a routine  identical to rb_sprintf(),  except it  writes back to  the passed
+ * buffer instead of allocating a new Ruby object.
+ *
+ * @param[out]  str  Return buffer
+ * @param[in]   n    Number of bytes of `str`.
+ * @param[in]   fmt  A `printf`-like format specifier.
+ * @param[in]   ...  Variadic number of contents to format.
+ * @return      Number of bytes  that would have been written to  `str`, if `n`
+ *              was large enough.  Comparing this  to `n` can give you insights
+ *              that the buffer is too small  or too big.  Especially passing 0
+ *              to `n`  gives you the exact  number of bytes necessary  to hold
+ *              the result string without writing anything to anywhere.
+ * @post        `str` holds  up to `n-1`  bytes of formatted contents  (and the
+ *              terminating NUL character.)
+ */
+int ruby_snprintf(char *str, size_t n, char const *fmt, ...);
+
+RBIMPL_ATTR_NONNULL((3))
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 3, 0)
+/**
+ * Identical to ruby_snprintf(),  except it takes a `va_list`.  It  can also be
+ * seen as a  routine identical to rb_vsprintf(), except it  writes back to the
+ * passed buffer instead of allocating a new Ruby object.
+ *
+ * @param[out]  str  Return buffer
+ * @param[in]   n    Number of bytes of `str`.
+ * @param[in]   fmt  A `printf`-like format specifier.
+ * @param[in]   ap   Contents  to format.
+ * @return      Number of bytes  that would have been written to  `str`, if `n`
+ *              was large enough.  Comparing this  to `n` can give you insights
+ *              that the buffer is too small  or too big.  Especially passing 0
+ *              to `n`  gives you the exact  number of bytes necessary  to hold
+ *              the result string without writing anything to anywhere.
+ * @post        `str` holds  up to `n-1`  bytes of formatted contents  (and the
+ *              terminating NUL character.)
+ */
 int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 
+/** @cond INTERNAL_MACRO */
 #if RBIMPL_HAS_WARNING("-Wgnu-zero-variadic-macro-arguments")
 # /* Skip it; clang -pedantic doesn't like the following */
 #elif defined(__GNUC__) && defined(HAVE_VA_ARGS_MACRO) && defined(__OPTIMIZE__)
@@ -139,6 +296,7 @@ __extension__({ \
 	    rb_funcall_nargs ? rb_funcall_args : NULL); \
     })
 #endif
+/** @endcond */
 
 #ifndef RUBY_DONT_SUBST
 #include "ruby/subst.h"

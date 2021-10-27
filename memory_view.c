@@ -9,8 +9,8 @@
 #include "internal.h"
 #include "internal/hash.h"
 #include "internal/variable.h"
-#include "internal/util.h"
 #include "ruby/memory_view.h"
+#include "ruby/util.h"
 #include "vm_sync.h"
 
 #if SIZEOF_INTPTR_T == SIZEOF_LONG_LONG
@@ -128,7 +128,8 @@ static const rb_data_type_t memory_view_entry_data_type = {
 
 /* Register memory view functions for the given class */
 bool
-rb_memory_view_register(VALUE klass, const rb_memory_view_entry_t *entry) {
+rb_memory_view_register(VALUE klass, const rb_memory_view_entry_t *entry)
+{
     Check_Type(klass, T_CLASS);
     VALUE entry_obj = rb_ivar_lookup(klass, id_memory_view, Qnil);
     if (! NIL_P(entry_obj)) {
@@ -209,7 +210,7 @@ rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data,
     view->shape = NULL;
     view->strides = NULL;
     view->sub_offsets = NULL;
-    *((void **)&view->private) = NULL;
+    view->private_data = NULL;
 
     return true;
 }
@@ -372,7 +373,8 @@ get_format_size(const char *format, bool *native_p, ssize_t *alignment, endianne
 }
 
 static inline ssize_t
-calculate_padding(ssize_t total, ssize_t alignment_size) {
+calculate_padding(ssize_t total, ssize_t alignment_size)
+{
     if (alignment_size > 1) {
         ssize_t res = total % alignment_size;
         if (res > 0) {
@@ -396,7 +398,7 @@ rb_memory_view_parse_item_format(const char *format,
     ssize_t max_alignment_size = 0;
 
     const char *p = format;
-    if (*p == '|') {  // alginment specifier
+    if (*p == '|') {  // alignment specifier
         alignment = true;
         ++format;
         ++p;
@@ -671,7 +673,7 @@ extract_item_member(const uint8_t *ptr, const rb_memory_view_item_component_t *m
             return LL2NUM(val.ll);
         }
         else {
-#if SIZEOF_INT64_t == SIZEOF_LONG
+#if SIZEOF_INT64_T == SIZEOF_LONG
             return LONG2NUM(val.i64);
 #else
             return LL2NUM(val.i64);
@@ -683,7 +685,7 @@ extract_item_member(const uint8_t *ptr, const rb_memory_view_item_component_t *m
             return ULL2NUM(val.ull);
         }
         else {
-#if SIZEOF_UINT64_t == SIZEOF_LONG
+#if SIZEOF_UINT64_T == SIZEOF_LONG
             return ULONG2NUM(val.u64);
 #else
             return ULL2NUM(val.u64);

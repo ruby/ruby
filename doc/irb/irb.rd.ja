@@ -51,6 +51,12 @@ irbの使い方は, Rubyさえ知っていればいたって簡単です. 基本
 		    オブジェクトの作成方法を 0 から 3 のいずれかに設定する.
   --echo	    実行結果を表示する(デフォルト).
   --noecho	    実行結果を表示しない.
+  --echo-on-assignment
+                    代入時に実行結果を表示する.
+  --noecho-on-assignment
+                    代入時に実行結果を表示しない.
+  --truncate-echo-on-assignment
+                    代入時に省略された実行結果を表示する(デフォルト).
   --inspect	    結果出力にinspectを用いる.
   --noinspect	    結果出力にinspectを用いない.
   --singleline      シングルラインエディタを利用する.
@@ -59,7 +65,10 @@ irbの使い方は, Rubyさえ知っていればいたって簡単です. 基本
                     用しようとする.
   --colorize	    色付けを利用する.
   --nocolorize	    色付けを利用しない.
-  --prompt prompt-mode/--prompt-mode prompt-mode
+  --autocomplete    オートコンプリートを利用する.
+  --noautocomplete  オートコンプリートを利用しない.
+  --prompt prompt-mode
+  --prompt-mode prompt-mode
 		    プロンプトモードを切替えます. 現在定義されているプ
 		    ロンプトモードは, default, simple, xmp, inf-rubyが
 		    用意されています.
@@ -144,12 +153,12 @@ PROMPT_I, PROMPT_N, PROMPT_S, PROMPT_Cは, フォーマットを指定します.
 
 例えば, デフォルトのプロンプトモードは:
 
-  IRB.conf[:PROMPT_MODE][:DEFAULT] = {
+  IRB.conf[:PROMPT][:DEFAULT] = {
       :PROMPT_I => "%N(%m):%03n:%i> ",
       :PROMPT_N => "%N(%m):%03n:%i> ",
       :PROMPT_S => "%N(%m):%03n:%i%l ",
       :PROMPT_C => "%N(%m):%03n:%i* ",
-      :RETURN => "%s\n"
+      :RETURN => "=> %s\n"
   }
 
 となっています.
@@ -381,7 +390,7 @@ rubyでは, 以下のプログラムはエラーになります.
 パイルしてローカル変数を決定するからです. それに対し, irbは実行可能に
 なる(式が閉じる)と自動的に評価しているからです. 上記の例では,
 
-  evel "foo = 0"
+  eval "foo = 0"
 
 を行なった時点で評価を行ない, その時点で変数が定義されるため, 次式で
 変数fooは定義されているからです.

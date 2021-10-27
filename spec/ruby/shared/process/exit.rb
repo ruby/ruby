@@ -75,25 +75,25 @@ end
 
 describe :process_exit!, shared: true do
   it "exits with the given status" do
-    out = ruby_exe("#{@object}.send(:exit!, 21)", args: '2>&1')
+    out = ruby_exe("#{@object}.send(:exit!, 21)", args: '2>&1', exit_status: 21)
     out.should == ""
     $?.exitstatus.should == 21
   end
 
   it "exits when called from a thread" do
-    out = ruby_exe("Thread.new { #{@object}.send(:exit!, 21) }.join; sleep", args: '2>&1')
+    out = ruby_exe("Thread.new { #{@object}.send(:exit!, 21) }.join; sleep", args: '2>&1', exit_status: 21)
     out.should == ""
     $?.exitstatus.should == 21
   end
 
   it "exits when called from a fiber" do
-    out = ruby_exe("Fiber.new { #{@object}.send(:exit!, 21) }.resume", args: '2>&1')
+    out = ruby_exe("Fiber.new { #{@object}.send(:exit!, 21) }.resume", args: '2>&1', exit_status: 21)
     out.should == ""
     $?.exitstatus.should == 21
   end
 
   it "skips at_exit handlers" do
-    out = ruby_exe("at_exit { STDERR.puts 'at_exit' }; #{@object}.send(:exit!, 21)", args: '2>&1')
+    out = ruby_exe("at_exit { STDERR.puts 'at_exit' }; #{@object}.send(:exit!, 21)", args: '2>&1', exit_status: 21)
     out.should == ""
     $?.exitstatus.should == 21
   end
@@ -107,7 +107,7 @@ describe :process_exit!, shared: true do
     end
     raise 'original error'
     RUBY
-    out = ruby_exe(code, args: '2>&1')
+    out = ruby_exe(code, args: '2>&1', exit_status: 21)
     out.should == "in at_exit\n$! is RuntimeError:original error\n"
     $?.exitstatus.should == 21
   end

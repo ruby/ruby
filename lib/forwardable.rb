@@ -76,7 +76,7 @@
 #     def_delegators :@q, :clear, :first, :push, :shift, :size
 #   end
 #
-#   q = Queue.new
+#   q = Thread::Queue.new
 #   q.enq 1, 2, 3, 4, 5
 #   q.push 6
 #

@@ -19,43 +19,157 @@ describe :marshal_load, shared: true do
     -> { Marshal.send(@method, kaboom) }.should raise_error(ArgumentError)
   end
 
+  ruby_version_is "3.1" do
+    describe "when called with freeze: true" do
+      it "returns frozen strings" do
+        string = Marshal.send(@method, Marshal.dump("foo"), freeze: true)
+        string.should == "foo"
+        string.should.frozen?
+
+        utf8_string = "foo".encode(Encoding::UTF_8)
+        string = Marshal.send(@method, Marshal.dump(utf8_string), freeze: true)
+        string.should == utf8_string
+        string.should.frozen?
+      end
+
+      it "returns frozen arrays" do
+        array = Marshal.send(@method, Marshal.dump([1, 2, 3]), freeze: true)
+        array.should == [1, 2, 3]
+        array.should.frozen?
+      end
+
+      it "returns frozen hashes" do
+        hash = Marshal.send(@method, Marshal.dump({foo: 42}), freeze: true)
+        hash.should == {foo: 42}
+        hash.should.frozen?
+      end
+
+      it "returns frozen regexps" do
+        regexp = Marshal.send(@method, Marshal.dump(/foo/), freeze: true)
+        regexp.should == /foo/
+        regexp.should.frozen?
+      end
+
+      it "returns frozen objects" do
+        source_object = Object.new
+        source_object.instance_variable_set(:@foo, "bar")
+
+        object = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
+        object.should.frozen?
+        object.instance_variable_get(:@foo).should.frozen?
+      end
+
+      it "does not freeze modules" do
+        Marshal.send(@method, Marshal.dump(Kernel), freeze: true)
+        Kernel.should_not.frozen?
+      end
+
+      it "does not freeze classes" do
+        Marshal.send(@method, Marshal.dump(Object), freeze: true)
+        Object.should_not.frozen?
+      end
+
+      describe "when called with a proc" do
+        it "call the proc with frozen objects" do
+          arr = []
+          s = 'hi'
+          s.instance_variable_set(:@foo, 5)
+          st = Struct.new("Brittle", :a).new
+          st.instance_variable_set(:@clue, 'none')
+          st.a = 0.0
+          h = Hash.new('def')
+          h['nine'] = 9
+          a = [:a, :b, :c]
+          a.instance_variable_set(:@two, 2)
+          obj = [s, 10, s, s, st, a]
+          obj.instance_variable_set(:@zoo, 'ant')
+          proc = Proc.new { |o| arr << o; o}
+
+          Marshal.send(
+            @method,
+            "\x04\bI[\vI\"\ahi\a:\x06EF:\t@fooi\ni\x0F@\x06@\x06IS:\x14Struct::Brittle\x06:\x06af\x060\x06:\n@clueI\"\tnone\x06;\x00FI[\b;\b:\x06b:\x06c\x06:\t@twoi\a\x06:\t@zooI\"\bant\x06;\x00F",
+            proc,
+            freeze: true,
+          )
+
+          arr.should == [
+            false, 5, "hi", 10, "hi", "hi", 0.0, false, "none", st,
+            :b, :c, 2, a, false, "ant", ["hi", 10, "hi", "hi", st, [:a, :b, :c]],
+          ]
+
+          arr.each do |v|
+            v.should.frozen?
+          end
+
+          Struct.send(:remove_const, :Brittle)
+        end
+
+        it "does not freeze the object returned by the proc" do
+          string = Marshal.send(@method, Marshal.dump("foo"), proc { |o| o.upcase }, freeze: true)
+          string.should == "FOO"
+          string.should_not.frozen?
+        end
+      end
+    end
+  end
+
   describe "when called with a proc" do
+    ruby_bug "#18141", ""..."3.1" do
+      it "call the proc with fully initialized strings" do
+        utf8_string = "foo".encode(Encoding::UTF_8)
+        Marshal.send(@method, Marshal.dump(utf8_string), proc { |arg|
+          if arg.is_a?(String)
+            arg.should == utf8_string
+            arg.encoding.should == Encoding::UTF_8
+          end
+          arg
+        })
+      end
+
+      it "no longer mutate the object after it was passed to the proc" do
+        string = Marshal.load(Marshal.dump("foo"), :freeze.to_proc)
+        string.should.frozen?
+      end
+    end
+
     it "returns the value of the proc" do
       Marshal.send(@method, Marshal.dump([1,2]), proc { [3,4] }).should ==  [3,4]
     end
 
-    it "calls the proc for recursively visited data" do
-      a = [1]
-      a << a
-      ret = []
-      Marshal.send(@method, Marshal.dump(a), proc { |arg| ret << arg; arg })
-      ret.first.should == 1
-      ret[1].should == [1,a]
-      ret[2].should == a
-      ret.size.should == 3
-    end
+    ruby_bug "#18141", ""..."3.1" do
+      it "calls the proc for recursively visited data" do
+        a = [1]
+        a << a
+        ret = []
+        Marshal.send(@method, Marshal.dump(a), proc { |arg| ret << arg.inspect; arg })
+        ret[0].should == 1.inspect
+        ret[1].should == a.inspect
+        ret.size.should == 2
+      end
 
-    it "loads an Array with proc" do
-      arr = []
-      s = 'hi'
-      s.instance_variable_set(:@foo, 5)
-      st = Struct.new("Brittle", :a).new
-      st.instance_variable_set(:@clue, 'none')
-      st.a = 0.0
-      h = Hash.new('def')
-      h['nine'] = 9
-      a = [:a, :b, :c]
-      a.instance_variable_set(:@two, 2)
-      obj = [s, 10, s, s, st, a]
-      obj.instance_variable_set(:@zoo, 'ant')
-      proc = Proc.new { |o| arr << o; o}
+      it "loads an Array with proc" do
+        arr = []
+        s = 'hi'
+        s.instance_variable_set(:@foo, 5)
+        st = Struct.new("Brittle", :a).new
+        st.instance_variable_set(:@clue, 'none')
+        st.a = 0.0
+        h = Hash.new('def')
+        h['nine'] = 9
+        a = [:a, :b, :c]
+        a.instance_variable_set(:@two, 2)
+        obj = [s, 10, s, s, st, a]
+        obj.instance_variable_set(:@zoo, 'ant')
+        proc = Proc.new { |o| arr << o.dup; o}
 
-      Marshal.send(@method, "\x04\bI[\vI\"\ahi\a:\x06EF:\t@fooi\ni\x0F@\x06@\x06IS:\x14Struct::Brittle\x06:\x06af\x060\x06:\n@clueI\"\tnone\x06;\x00FI[\b;\b:\x06b:\x06c\x06:\t@twoi\a\x06:\t@zooI\"\bant\x06;\x00F", proc)
+        Marshal.send(@method, "\x04\bI[\vI\"\ahi\a:\x06EF:\t@fooi\ni\x0F@\x06@\x06IS:\x14Struct::Brittle\x06:\x06af\x060\x06:\n@clueI\"\tnone\x06;\x00FI[\b;\b:\x06b:\x06c\x06:\t@twoi\a\x06:\t@zooI\"\bant\x06;\x00F", proc)
 
-      arr.should == ["hi", false, 5, 10, "hi", "hi", 0.0, st, "none", false,
-                     :b, :c, a, 2, ["hi", 10, "hi", "hi", st, [:a, :b, :c]], "ant", false]
-
-      Struct.send(:remove_const, :Brittle)
+        arr.should == [
+          false, 5, "hi", 10, "hi", "hi", 0.0, false, "none", st,
+          :b, :c, 2, a, false, "ant", ["hi", 10, "hi", "hi", st, [:a, :b, :c]],
+        ]
+        Struct.send(:remove_const, :Brittle)
+      end
     end
   end
 
@@ -119,28 +233,39 @@ describe :marshal_load, shared: true do
     end
   end
 
-  it "loads an array containing objects having _dump method, and with proc" do
-    arr = []
-    myproc = Proc.new { |o| arr << o; o }
-    o1 = UserDefined.new;
-    o2 = UserDefinedWithIvar.new
-    obj = [o1, o2, o1, o2]
+  ruby_bug "#18141", ""..."3.1" do
+    it "loads an array containing objects having _dump method, and with proc" do
+      arr = []
+      myproc = Proc.new { |o| arr << o.dup; o }
+      o1 = UserDefined.new;
+      o2 = UserDefinedWithIvar.new
+      obj = [o1, o2, o1, o2]
 
-    Marshal.send(@method, "\x04\b[\tu:\x10UserDefined\x18\x04\b[\aI\"\nstuff\x06:\x06EF@\x06u:\x18UserDefinedWithIvar>\x04\b[\bI\"\nstuff\a:\x06EF:\t@foo:\x18UserDefinedWithIvarI\"\tmore\x06;\x00F@\a@\x06@\a", myproc)
+      Marshal.send(@method, "\x04\b[\tu:\x10UserDefined\x18\x04\b[\aI\"\nstuff\x06:\x06EF@\x06u:\x18UserDefinedWithIvar>\x04\b[\bI\"\nstuff\a:\x06EF:\t@foo:\x18UserDefinedWithIvarI\"\tmore\x06;\x00F@\a@\x06@\a", myproc)
 
-    arr.should == [o1, o2, o1, o2, obj]
-  end
+      arr[0].should == o1
+      arr[1].should == o2
+      arr[2].should == obj
+      arr.size.should == 3
+    end
 
-  it "loads an array containing objects having marshal_dump method, and with proc" do
-    arr = []
-    proc = Proc.new { |o| arr << o; o }
-    o1 = UserMarshal.new
-    o2 = UserMarshalWithIvar.new
-    obj = [o1, o2, o1, o2]
+    it "loads an array containing objects having marshal_dump method, and with proc" do
+      arr = []
+      proc = Proc.new { |o| arr << o.dup; o }
+      o1 = UserMarshal.new
+      o2 = UserMarshalWithIvar.new
 
-    Marshal.send(@method, "\004\b[\tU:\020UserMarshal\"\nstuffU:\030UserMarshalWithIvar[\006\"\fmy data@\006@\b", proc)
+      Marshal.send(@method, "\004\b[\tU:\020UserMarshal\"\nstuffU:\030UserMarshalWithIvar[\006\"\fmy data@\006@\b", proc)
 
-    arr.should == ['stuff', o1, 'my data', ['my data'], o2, o1, o2, obj]
+      arr[0].should == 'stuff'
+      arr[1].should == o1
+      arr[2].should == 'my data'
+      arr[3].should == ['my data']
+      arr[4].should == o2
+      arr[5].should == [o1, o2, o1, o2]
+
+      arr.size.should == 6
+    end
   end
 
   it "assigns classes to nested subclasses of Array correctly" do
@@ -309,7 +434,8 @@ describe :marshal_load, shared: true do
 
     it "loads an extended Array object containing a user-marshaled object" do
       obj = [UserMarshal.new, UserMarshal.new].extend(Meths)
-      new_obj = Marshal.send(@method, "\x04\be:\nMeths[\ao:\x10UserMarshal\x06:\n@dataI\"\nstuff\x06:\x06ETo;\x06\x06;\aI\"\nstuff\x06;\bT")
+      dump = "\x04\be:\nMeths[\ao:\x10UserMarshal\x06:\n@dataI\"\nstuff\x06:\x06ETo;\x06\x06;\aI\"\nstuff\x06;\bT"
+      new_obj = Marshal.send(@method, dump)
 
       new_obj.should == obj
       obj_ancestors = class << obj; ancestors[1..-1]; end
@@ -399,6 +525,24 @@ describe :marshal_load, shared: true do
       sym.should == s
       sym.encoding.should == Encoding::BINARY
     end
+
+    it "loads multiple Symbols sharing the same encoding" do
+      # Note that the encoding is a link for the second Symbol
+      symbol1 = "I:\t\xE2\x82\xACa\x06:\x06ET"
+      symbol2 = "I:\t\xE2\x82\xACb\x06;\x06T"
+      dump = "\x04\b[\a#{symbol1}#{symbol2}"
+      value = Marshal.send(@method, dump)
+      value.map(&:encoding).should == [Encoding::UTF_8, Encoding::UTF_8]
+      expected = [
+        "€a".force_encoding(Encoding::UTF_8).to_sym,
+        "€b".force_encoding(Encoding::UTF_8).to_sym
+      ]
+      value.should == expected
+
+      value = Marshal.send(@method, "\x04\b[\b#{symbol1}#{symbol2};\x00")
+      value.map(&:encoding).should == [Encoding::UTF_8, Encoding::UTF_8, Encoding::UTF_8]
+      value.should == [*expected, expected[0]]
+    end
   end
 
   describe "for a String" do
@@ -460,20 +604,23 @@ describe :marshal_load, shared: true do
   describe "for a Struct" do
     it "loads a extended_struct having fields with same objects" do
       s = 'hi'
-      obj = Struct.new("Ure2", :a, :b).new.extend(Meths)
+      obj = Struct.new("Extended", :a, :b).new.extend(Meths)
+      dump = "\004\be:\nMethsS:\025Struct::Extended\a:\006a0:\006b0"
+      Marshal.send(@method, dump).should == obj
+
       obj.a = [:a, s]
       obj.b = [:Meths, s]
-
-      Marshal.send(@method,
-        "\004\be:\nMethsS:\021Struct::Ure2\a:\006a[\a;\a\"\ahi:\006b[\a;\000@\a"
-        ).should == obj
-      Struct.send(:remove_const, :Ure2)
+      dump = "\004\be:\nMethsS:\025Struct::Extended\a:\006a[\a;\a\"\ahi:\006b[\a;\000@\a"
+      Marshal.send(@method, dump).should == obj
+      Struct.send(:remove_const, :Extended)
     end
 
     it "loads a struct having ivar" do
       obj = Struct.new("Thick").new
       obj.instance_variable_set(:@foo, 5)
-      Marshal.send(@method, "\004\bIS:\022Struct::Thick\000\006:\t@fooi\n").should == obj
+      reloaded = Marshal.send(@method, "\004\bIS:\022Struct::Thick\000\006:\t@fooi\n")
+      reloaded.should == obj
+      reloaded.instance_variable_get(:@foo).should == 5
       Struct.send(:remove_const, :Thick)
     end
 
@@ -585,6 +732,18 @@ describe :marshal_load, shared: true do
       -> do
         Marshal.send(@method, "\x04\bo:\tFile\001\001:\001\005@path\"\x10/etc/passwd")
       end.should raise_error(ArgumentError)
+    end
+  end
+
+  describe "for an object responding to #marshal_dump and #marshal_load" do
+    it "loads a user-marshaled object" do
+      obj = UserMarshal.new
+      obj.data = :data
+      value = [obj, :data]
+      dump = Marshal.dump(value)
+      dump.should == "\x04\b[\aU:\x10UserMarshal:\tdata;\x06"
+      reloaded = Marshal.load(dump)
+      reloaded.should == value
     end
   end
 

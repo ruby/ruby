@@ -102,7 +102,7 @@ end
 # <tt>:verbose</tt> flags to methods in FileUtils.
 #
 module FileUtils
-  VERSION = "1.5.0"
+  VERSION = "1.6.0"
 
   def self.private_module_function(name)   #:nodoc:
     module_function name
@@ -211,21 +211,11 @@ module FileUtils
     list.each do |item|
       path = remove_trailing_slash(item)
 
-      # optimize for the most common case
-      begin
-        fu_mkdir path, mode
-        next
-      rescue SystemCallError
-        next if File.directory?(path)
-      end
-
       stack = []
-      until path == stack.last   # dirname("/")=="/", dirname("C:/")=="C:/"
+      until File.directory?(path)
         stack.push path
         path = File.dirname(path)
-        break if File.directory?(path)
       end
-      stack.pop if path == stack.last   # root directory should exist
       stack.reverse_each do |dir|
         begin
           fu_mkdir dir, mode

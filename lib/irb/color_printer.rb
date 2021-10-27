@@ -21,6 +21,15 @@ module IRB
       end
     end
 
+    def pp(obj)
+      if obj.is_a?(String)
+        # Avoid calling Ruby 2.4+ String#pretty_print that splits a string by "\n"
+        text(obj.inspect)
+      else
+        super
+      end
+    end
+
     def text(str, width = nil)
       unless str.is_a?(String)
         str = str.inspect

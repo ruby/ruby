@@ -140,7 +140,7 @@ Both array and hash patterns support "rest" specification:
   end
   #=> "matched"
 
-In +case+ (but not in <code>=></code> and +in+) expressions, parentheses around both kinds of patterns could be omitted:
+Parentheses around both kinds of patterns could be omitted:
 
   case [1, 2]
   in Integer, Integer
@@ -157,6 +157,12 @@ In +case+ (but not in <code>=></code> and +in+) expressions, parentheses around 
     "not matched"
   end
   #=> "matched"
+
+ [1, 2] => a, b
+ [1, 2] in a, b
+
+ {a: 1, b: 2, c: 3} => a:
+ {a: 1, b: 2, c: 3} in a:
 
 Find pattern is similar to array pattern but it can be used to check if the given object has any elements that match the pattern:
 
@@ -312,6 +318,33 @@ One important usage of variable pinning is specifying that the same value should
   end
   #=> "not matched"
 
+In addition to pinning local variables, you can also pin instance, global, and class variables:
+
+  $gvar = 1
+  class A
+    @ivar = 2
+    @@cvar = 3
+    case [1, 2, 3]
+    in ^$gvar, ^@ivar, ^@@cvar
+      "matched"
+    else
+      "not matched"
+    end
+    #=> "matched"
+  end
+
+You can also pin the result of arbitrary expressions using parentheses:
+
+  a = 1
+  b = 2
+  case 3
+  in ^(a + b)
+    "matched"
+  else
+    "not matched"
+  end
+  #=> "matched"
+
 == Matching non-primitive objects: +deconstruct+ and +deconstruct_keys+
 
 As already mentioned above, array, find, and hash patterns besides literal arrays and hashes will try to match any object implementing +deconstruct+ (for array/find patterns) or +deconstruct_keys+ (for hash patterns).
@@ -414,7 +447,7 @@ Additionally, when matching custom classes, the expected class can be specified 
 
 == Current feature status
 
-As of Ruby 3.0, one-line pattern matching and find patterns are considered _experimental_: its syntax can change in the future. Every time you use these features in code, a warning will be printed:
+As of Ruby 3.1, find patterns are considered _experimental_: its syntax can change in the future. Every time you use these features in code, a warning will be printed:
 
   [0] => [*, 0, *]
   # warning: Find pattern is experimental, and the behavior may change in future versions of Ruby!
@@ -449,7 +482,11 @@ Approximate syntax is:
 
   value_pattern: literal
                | Constant
-               | ^variable
+               | ^local_variable
+               | ^instance_variable
+               | ^class_variable
+               | ^global_variable
+               | ^(expression)
 
   variable_pattern: variable
 

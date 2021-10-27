@@ -26,6 +26,13 @@ module Gem::Resolver::Molinillo
         end
       end
 
+      # (see Gem::Resolver::Molinillo::SpecificationProvider#dependencies_equal?)
+      def dependencies_equal?(dependencies, other_dependencies)
+        with_no_such_dependency_error_handling do
+          specification_provider.dependencies_equal?(dependencies, other_dependencies)
+        end
+      end
+
       # (see Gem::Resolver::Molinillo::SpecificationProvider#name_for)
       def name_for(dependency)
         with_no_such_dependency_error_handling do

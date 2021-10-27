@@ -47,10 +47,6 @@ configuration only from the local application.
 Executing bundle with the `BUNDLE_IGNORE_CONFIG` environment variable set will
 cause it to ignore all configuration.
 
-Executing `bundle config set --local disable_multisource true` upgrades the warning about
-the Gemfile containing multiple primary sources to an error. Executing `bundle
-config unset disable_multisource` downgrades this error to a warning.
-
 ## REMEMBERING OPTIONS
 
 Flags passed to `bundle install` or the Bundler runtime, such as `--path foo` or
@@ -133,9 +129,6 @@ the environment variable `BUNDLE_LOCAL__RACK`.
 The following is a list of all configuration keys and their purpose. You can
 learn more about their operation in [bundle install(1)](bundle-install.1.html).
 
-* `allow_bundler_dependency_conflicts` (`BUNDLE_ALLOW_BUNDLER_DEPENDENCY_CONFLICTS`):
-   Allow resolving to specifications that have dependencies on `bundler` that
-   are incompatible with the running Bundler version.
 * `allow_deployment_source_credential_changes` (`BUNDLE_ALLOW_DEPLOYMENT_SOURCE_CREDENTIAL_CHANGES`):
    When in deployment mode, allow changing the credentials to a gem's source.
    Ex: `https://some.host.com/gems/path/` -> `https://user_name:password@some.host.com/gems/path`
@@ -178,10 +171,9 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `disable_local_branch_check` (`BUNDLE_DISABLE_LOCAL_BRANCH_CHECK`):
    Allow Bundler to use a local git override without a branch specified in the
    Gemfile.
-* `disable_multisource` (`BUNDLE_DISABLE_MULTISOURCE`):
-   When set, Gemfiles containing multiple sources will produce errors
-   instead of warnings.
-   Use `bundle config unset disable_multisource` to unset.
+* `disable_local_revision_check` (`BUNDLE_DISABLE_LOCAL_REVISION_CHECK`):
+   Allow Bundler to use a local git override without checking if the revision
+   present in the lockfile is present in the repository.
 * `disable_shared_gems` (`BUNDLE_DISABLE_SHARED_GEMS`):
    Stop Bundler from accessing gems installed to RubyGems' normal location.
 * `disable_version_check` (`BUNDLE_DISABLE_VERSION_CHECK`):
@@ -194,6 +186,10 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Disallow changes to the `Gemfile`. When the `Gemfile` is changed and the
    lockfile has not been updated, running Bundler commands will be blocked.
    Defaults to `true` when `--deployment` is used.
+* `gem.github_username` (`BUNDLE_GEM__GITHUB_USERNAME`):
+   Sets a GitHub username or organization to be used in `README` file when you
+   create a new gem via `bundle gem` command. It can be overridden by passing an
+   explicit `--github-username` flag to `bundle gem`.
 * `gem.push_key` (`BUNDLE_GEM__PUSH_KEY`):
    Sets the `--key` parameter for `gem push` when using the `rake release`
    command with a private gemstash server.
@@ -212,15 +208,12 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `init_gems_rb` (`BUNDLE_INIT_GEMS_RB`):
    Generate a `gems.rb` instead of a `Gemfile` when running `bundle init`.
 * `jobs` (`BUNDLE_JOBS`):
-   The number of gems Bundler can install in parallel. Defaults to 1 on Windows,
-   and to the the number of processors on other platforms.
+   The number of gems Bundler can install in parallel. Defaults to the number of
+   available processors.
 * `no_install` (`BUNDLE_NO_INSTALL`):
    Whether `bundle package` should skip installing gems.
 * `no_prune` (`BUNDLE_NO_PRUNE`):
    Whether Bundler should leave outdated gems unpruned when caching.
-* `only_update_to_newer_versions` (`BUNDLE_ONLY_UPDATE_TO_NEWER_VERSIONS`):
-   During `bundle update`, only resolve to newer versions of the gems in the
-   lockfile.
 * `path` (`BUNDLE_PATH`):
    The location on disk where all gems in your bundle will be located regardless
    of `$GEM_HOME` or `$GEM_PATH` values. Bundle gems not found in this location
@@ -267,9 +260,6 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    The location where RubyGems installs binstubs. Defaults to `Gem.bindir`.
 * `timeout` (`BUNDLE_TIMEOUT`):
    The seconds allowed before timing out for network requests. Defaults to `10`.
-* `unlock_source_unlocks_spec` (`BUNDLE_UNLOCK_SOURCE_UNLOCKS_SPEC`):
-   Whether running `bundle update --source NAME` unlocks a gem with the given
-   name. Defaults to `true`.
 * `update_requires_all_flag` (`BUNDLE_UPDATE_REQUIRES_ALL_FLAG`):
    Require passing `--all` to `bundle update` when everything should be updated,
    and disallow passing no options to `bundle update`.
@@ -375,6 +365,23 @@ where you can use personal OAuth tokens:
 
     export BUNDLE_GITHUB__COM=abcd0123generatedtoken:x-oauth-basic
 
+Note that any configured credentials will be redacted by informative commands
+such as `bundle config list` or `bundle config get`, unless you use the
+`--parseable` flag. This is to avoid unintentially leaking credentials when
+copy-pasting bundler output.
+
+Also note that to guarantee a sane mapping between valid environment variable
+names and valid host names, bundler makes the following transformations:
+
+* Any `-` characters in a host name are mapped to a triple dash (`___`) in the
+  corresponding enviroment variable.
+
+* Any `.` characters in a host name are mapped to a double dash (`__`) in the
+  corresponding environment variable.
+
+This means that if you have a gem server named `my.gem-host.com`, you'll need to
+use the `BUNDLE_MY__GEM___HOST__COM` variable to configure credentials for it
+through ENV.
 
 ## CONFIGURE BUNDLER DIRECTORIES
 

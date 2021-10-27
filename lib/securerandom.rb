@@ -31,7 +31,7 @@
 # * uuid
 #
 # These methods are usable as class methods of SecureRandom such as
-# `SecureRandom.hex`.
+# +SecureRandom.hex+.
 #
 # === Examples
 #

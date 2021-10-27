@@ -15,6 +15,7 @@
 static void vm_analysis_insn(int insn);
 #endif
 
+MAYBE_UNUSED(static void vm_insns_counter_count_insn(int insn));
 #if USE_INSNS_COUNTER
 static size_t rb_insns_counter[VM_INSTRUCTION_SIZE];
 
@@ -104,6 +105,8 @@ vm_exec_core(rb_execution_context_t *ec, VALUE initial)
 #else
     register rb_control_frame_t *reg_cfp;
     const VALUE *reg_pc;
+#define USE_MACHINE_REGS 0
+
 #endif
 
 #if USE_MACHINE_REGS

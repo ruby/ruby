@@ -1,4 +1,4 @@
-# -*- Autoconf -*-
+dnl -*- Autoconf -*-
 AC_DEFUN([RUBY_TRY_LDFLAGS], [
     save_LDFLAGS="$LDFLAGS"
     LDFLAGS="[$]LDFLAGS $1"

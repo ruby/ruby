@@ -1,21 +1,30 @@
 require 'timeout'
 
 class Reline::GeneralIO
-  def self.reset
+  def self.reset(encoding: nil)
     @@pasting = false
+    @@encoding = encoding
   end
 
   def self.encoding
-    RUBY_PLATFORM =~ /mswin|mingw/ ? Encoding::UTF_8 : Encoding::default_external
+    if defined?(@@encoding)
+      @@encoding
+    elsif RUBY_PLATFORM =~ /mswin|mingw/
+      Encoding::UTF_8
+    else
+      Encoding::default_external
+    end
   end
 
   def self.win?
     false
   end
 
-  RAW_KEYSTROKE_CONFIG = {}
+  def self.set_default_key_bindings(_)
+  end
 
   @@buf = []
+  @@input = STDIN
 
   def self.input=(val)
     @@input = val

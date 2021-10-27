@@ -32,7 +32,8 @@ RSpec.configure do |config|
   config.filter_run_excluding :no_color_tty => Gem.win_platform? || !ENV["GITHUB_ACTION"].nil?
   config.filter_run_excluding :permissions => Gem.win_platform?
   config.filter_run_excluding :readline => Gem.win_platform?
-  config.filter_run_excluding :jruby => RUBY_PLATFORM != "java"
+  config.filter_run_excluding :jruby => RUBY_ENGINE != "jruby"
+  config.filter_run_excluding :truffleruby => RUBY_ENGINE != "truffleruby"
 
   config.filter_run_when_matching :focus unless ENV["CI"]
 end

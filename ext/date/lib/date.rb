@@ -30,6 +30,8 @@ class Date
     def <=>(other)
       case other
       when Infinity; return d <=> other.d
+      when Float::INFINITY; return d <=> 1
+      when -Float::INFINITY; return d <=> -1
       when Numeric; return d
       else
         begin

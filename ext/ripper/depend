@@ -135,6 +135,15 @@ ripper.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ripper.o: $(hdrdir)/ruby/internal/ctype.h
 ripper.o: $(hdrdir)/ruby/internal/dllexport.h
 ripper.o: $(hdrdir)/ruby/internal/dosish.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/re.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/string.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ripper.o: $(hdrdir)/ruby/internal/error.h
 ripper.o: $(hdrdir)/ruby/internal/eval.h
 ripper.o: $(hdrdir)/ruby/internal/event.h
@@ -200,7 +209,6 @@ ripper.o: $(hdrdir)/ruby/internal/static_assert.h
 ripper.o: $(hdrdir)/ruby/internal/stdalign.h
 ripper.o: $(hdrdir)/ruby/internal/stdbool.h
 ripper.o: $(hdrdir)/ruby/internal/symbol.h
-ripper.o: $(hdrdir)/ruby/internal/token_paste.h
 ripper.o: $(hdrdir)/ruby/internal/value.h
 ripper.o: $(hdrdir)/ruby/internal/value_type.h
 ripper.o: $(hdrdir)/ruby/internal/variable.h

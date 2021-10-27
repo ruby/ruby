@@ -10,7 +10,7 @@ module Spec
 
     def reset!
       Dir.glob("#{tmp}/{gems/*,*}", File::FNM_DOTMATCH).each do |dir|
-        next if %w[base base_system remote1 gems rubygems . ..].include?(File.basename(dir))
+        next if %w[base base_system remote1 rubocop standard gems rubygems . ..].include?(File.basename(dir))
         FileUtils.rm_rf(dir)
       end
       FileUtils.mkdir_p(home)
@@ -60,7 +60,7 @@ module Spec
     def run(cmd, *args)
       opts = args.last.is_a?(Hash) ? args.pop : {}
       groups = args.map(&:inspect).join(", ")
-      setup = "require '#{lib_dir}/bundler' ; Bundler.ui.silence { Bundler.setup(#{groups}) }"
+      setup = "require '#{entrypoint}' ; Bundler.ui.silence { Bundler.setup(#{groups}) }"
       ruby([setup, cmd].join(" ; "), opts)
     end
 
@@ -87,9 +87,11 @@ module Spec
       env = options.delete(:env) || {}
 
       requires = options.delete(:requires) || []
+      realworld = RSpec.current_example.metadata[:realworld]
+      options[:verbose] = true if options[:verbose].nil? && realworld
 
       artifice = options.delete(:artifice) do
-        if RSpec.current_example.metadata[:realworld]
+        if realworld
           "vcr"
         else
           "fail"
@@ -130,7 +132,7 @@ module Spec
 
     def ruby(ruby, options = {})
       ruby_cmd = build_ruby_cmd
-      escaped_ruby = RUBY_PLATFORM == "java" ? ruby.shellescape.dump : ruby.shellescape
+      escaped_ruby = ruby.shellescape
       sys_exec(%(#{ruby_cmd} -w -e #{escaped_ruby}), options)
     end
 
@@ -275,14 +277,12 @@ module Spec
     def install_gemfile(*args)
       gemfile(*args)
       opts = args.last.is_a?(Hash) ? args.last : {}
-      opts[:retry] ||= 0
       bundle :install, opts
     end
 
     def lock_gemfile(*args)
       gemfile(*args)
       opts = args.last.is_a?(Hash) ? args.last : {}
-      opts[:retry] ||= 0
       bundle :lock, opts
     end
 
@@ -457,20 +457,15 @@ module Spec
     end
 
     def simulate_windows(platform = mswin)
-      old = ENV["BUNDLER_SPEC_WINDOWS"]
-      ENV["BUNDLER_SPEC_WINDOWS"] = "true"
       simulate_platform platform do
         simulate_bundler_version_when_missing_prerelease_default_gem_activation do
           yield
         end
       end
-    ensure
-      ENV["BUNDLER_SPEC_WINDOWS"] = old
     end
 
-    # workaround for missing https://github.com/rubygems/rubygems/commit/929e92d752baad3a08f3ac92eaec162cb96aedd1
     def simulate_bundler_version_when_missing_prerelease_default_gem_activation
-      return yield unless Gem.rubygems_version < Gem::Version.new("3.1.0.pre.1")
+      return yield unless rubygems_version_failing_to_activate_bundler_prereleases
 
       old = ENV["BUNDLER_VERSION"]
       ENV["BUNDLER_VERSION"] = Bundler::VERSION
@@ -479,13 +474,18 @@ module Spec
       ENV["BUNDLER_VERSION"] = old
     end
 
-    # workaround for missing https://github.com/rubygems/rubygems/commit/929e92d752baad3a08f3ac92eaec162cb96aedd1
     def env_for_missing_prerelease_default_gem_activation
-      if Gem.rubygems_version < Gem::Version.new("3.1.0.pre.1")
+      if rubygems_version_failing_to_activate_bundler_prereleases
         { "BUNDLER_VERSION" => Bundler::VERSION }
       else
         {}
       end
+    end
+
+    # versions providing a bundler version finder but not including
+    # https://github.com/rubygems/rubygems/commit/929e92d752baad3a08f3ac92eaec162cb96aedd1
+    def rubygems_version_failing_to_activate_bundler_prereleases
+      Gem.rubygems_version < Gem::Version.new("3.1.0.pre.1") && Gem.rubygems_version >= Gem::Version.new("2.7.0")
     end
 
     def revision_for(path)

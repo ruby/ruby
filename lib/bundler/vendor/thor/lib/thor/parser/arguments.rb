@@ -30,7 +30,11 @@ class Bundler::Thor
 
       arguments.each do |argument|
         if !argument.default.nil?
-          @assigns[argument.human_name] = argument.default
+          begin
+            @assigns[argument.human_name] = argument.default.dup
+          rescue TypeError  # Compatibility shim for un-dup-able Fixnum in Ruby < 2.4
+            @assigns[argument.human_name] = argument.default
+          end
         elsif argument.required?
           @non_assigned_required << argument
         end

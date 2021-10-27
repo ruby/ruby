@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 require_relative "../vendored_fileutils"
-require "stringio"
-require "zlib"
 
 module Bundler
   class CompactIndexClient
@@ -45,29 +43,27 @@ module Bundler
               else
                 "bytes=#{local_temp_path.size}-"
               end
-          else
-            # Fastly ignores Range when Accept-Encoding: gzip is set
-            headers["Accept-Encoding"] = "gzip"
           end
 
           response = @fetcher.call(remote_path, headers)
           return nil if response.is_a?(Net::HTTPNotModified)
 
           content = response.body
-          if response["Content-Encoding"] == "gzip"
-            content = Zlib::GzipReader.new(StringIO.new(content)).read
-          end
 
-          SharedHelpers.filesystem_access(local_temp_path) do
+          etag = (response["ETag"] || "").gsub(%r{\AW/}, "")
+          correct_response = SharedHelpers.filesystem_access(local_temp_path) do
             if response.is_a?(Net::HTTPPartialContent) && local_temp_path.size.nonzero?
               local_temp_path.open("a") {|f| f << slice_body(content, 1..-1) }
+
+              etag_for(local_temp_path) == etag
             else
-              local_temp_path.open("w") {|f| f << content }
+              local_temp_path.open("wb") {|f| f << content }
+
+              etag.length.zero? || etag_for(local_temp_path) == etag
             end
           end
 
-          etag = (response["ETag"] || "").gsub(%r{\AW/}, "")
-          if etag.length.zero? || etag_for(local_temp_path) == etag
+          if correct_response
             SharedHelpers.filesystem_access(local_path) do
               FileUtils.mv(local_temp_path, local_path)
             end
@@ -100,11 +96,11 @@ module Bundler
 
       def checksum_for_file(path)
         return nil unless path.file?
-        # This must use IO.read instead of Digest.file().hexdigest
+        # This must use File.read instead of Digest.file().hexdigest
         # because we need to preserve \n line endings on windows when calculating
         # the checksum
         SharedHelpers.filesystem_access(path, :read) do
-          SharedHelpers.digest(:MD5).hexdigest(IO.read(path))
+          SharedHelpers.digest(:MD5).hexdigest(File.read(path))
         end
       end
     end

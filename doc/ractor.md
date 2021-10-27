@@ -95,9 +95,9 @@ r.name #=> 'test-name'
 ### Given block isolation
 
 The Ractor executes given `expr` in a given block.
-Given block will be isolated from outer scope by `Proc#isolate`. To prevent sharing unshareable objects between ractors, block outer-variables, `self` and other information are isolated.
+Given block will be isolated from outer scope by the `Proc#isolate` method (not exposed yet for Ruby users). To prevent sharing unshareable objects between ractors, block outer-variables, `self` and other information are isolated.
 
-Given block will be isolated by `Proc#isolate` method (not exposed yet for Ruby users). `Proc#isolate` is called at Ractor creation timing (`Ractor.new` is called). If given Proc object is not able to isolate because of outer variables and so on, an error will be raised.
+`Proc#isolate` is called at Ractor creation time (when `Ractor.new` is called). If given Proc object is not able to isolate because of outer variables and so on, an error will be raised.
 
 ```ruby
 begin
@@ -202,7 +202,7 @@ For message sending and receiving, there are two types of APIs: push type and pu
   * If the incoming port is closed for a Ractor, you can't `send` to the Ractor. If `Ractor.receive` is blocked for the closed incoming port, then it will raise an exception.
   * If the outgoing port is closed for a Ractor, you can't call `Ractor#take` and `Ractor.yield` on the Ractor. If ractors are blocking by `Ractor#take` or `Ractor.yield`, closing outgoing port will raise an exception on these blocking ractors.
   * When a Ractor is terminated, the Ractor's ports are closed.
-* There are 3 way to send an object as a message
+* There are 3 ways to send an object as a message
   * (1) Send a reference: Sending a shareable object, send only a reference to the object (fast)
   * (2) Copy an object: Sending an unshareable object by copying an object deeply (slow). Note that you can not send an object which does not support deep copy. Some `T_DATA` objects are not supported.
   * (3) Move an object: Sending an unshareable object reference with a membership. Sender Ractor can not access moved objects anymore (raise an exception) after moving it. Current implementation makes new object as a moved object for receiver Ractor and copies references of sending object to moved object.
@@ -565,26 +565,47 @@ Note that some special global variables are ractor-local, like `$stdin`, `$stdou
 
 ### Instance variables of shareable objects
 
-Only the main Ractor can access instance variables of shareable objects.
+Instance variables of classes/modules can be get from non-main Ractors if the referring values are shareable objects.
 
 ```ruby
 class C
-  @iv = 'str'
+  @iv = 1
 end
 
-r = Ractor.new do
+p Ractor.new do
   class C
-    p @iv
+     @iv
   end
-end
-
-
-begin
-  r.take
-rescue => e
-  e.class #=> Ractor::IsolationError
-end
+end.take #=> 1
 ```
+
+Otherwise, only the main Ractor can access instance variables of shareable objects.
+
+```ruby
+class C
+  @iv = [] # unshareable object
+end
+
+Ractor.new do
+  class C
+    begin
+      p @iv
+    rescue Ractor::IsolationError
+      p $!.message
+      #=> "can not get unshareable values from instance variables of classes/modules from non-main Ractors"
+    end
+
+    begin
+      @iv = 42
+    rescue Ractor::IsolationError
+      p $!.message
+      #=> "can not set instance variables of classes/modules by non-main Ractors"
+    end
+  end
+end.take
+```
+
+
 
 ```ruby
 shared = Ractor.new{}
@@ -674,7 +695,7 @@ TABLE = Ractor.make_shareable( {a: 'ko1', b: 'ko2', c: 'ko3'} )
 To make it easy, Ruby 3.0 introduced new `shareable_constant_value` Directive.
 
 ```ruby
-shareable_constant_value: literal
+# shareable_constant_value: literal
 
 TABLE = {a: 'ko1', b: 'ko2', c: 'ko3'}
 #=> Same as: TABLE = Ractor.make_shareable( {a: 'ko1', b: 'ko2', c: 'ko3'} )
@@ -691,7 +712,7 @@ TABLE = {a: 'ko1', b: 'ko2', c: 'ko3'}
 
 Except the `none` mode (default), it is guaranteed that the assigned constants refer to only shareable objects.
 
-See [doc/syntax/comment.rdoc](syntax/comment.rdoc) for more details.
+See [doc/syntax/comments.rdoc](syntax/comments.rdoc) for more details.
 
 ## Implementation note
 

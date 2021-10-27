@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/platform'
 require 'rbconfig'
 
@@ -122,6 +122,7 @@ class TestGemPlatform < Gem::TestCase
       'i586-linux-gnu'         => ['x86',       'linux',     nil],
       'i386-linux-gnu'         => ['x86',       'linux',     nil],
       'i386-mingw32'           => ['x86',       'mingw32',   nil],
+      'x64-mingw-ucrt'         => ['x64',       'mingw',     'ucrt'],
       'i386-mswin32'           => ['x86',       'mswin32',   nil],
       'i386-mswin32_80'        => ['x86',       'mswin32',   '80'],
       'i386-mswin32-80'        => ['x86',       'mswin32',   '80'],
@@ -354,6 +355,14 @@ class TestGemPlatform < Gem::TestCase
 
     util_set_arch 'sparc-solaris2.8'
     assert_local_match 'sparc-solaris2.8-mq5.3'
+  end
+
+  def test_inspect
+    result = Gem::Platform.new("universal-java11").inspect
+
+    assert_equal 1, result.scan(/@cpu=/).size
+    assert_equal 1, result.scan(/@os=/).size
+    assert_equal 1, result.scan(/@version=/).size
   end
 
   def assert_local_match(name)

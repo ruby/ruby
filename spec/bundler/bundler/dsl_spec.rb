@@ -25,7 +25,7 @@ RSpec.describe Bundler::Dsl do
       expect { subject.git_source(:example) }.to raise_error(Bundler::InvalidOption)
     end
 
-    context "default hosts", :bundler => "2" do
+    context "default hosts", :bundler => "< 3" do
       it "converts :github to URI using https" do
         subject.gem("sparks", :github => "indirect/sparks")
         github_uri = "https://github.com/indirect/sparks.git"
@@ -195,19 +195,6 @@ RSpec.describe Bundler::Dsl do
     #   gem 'spree_api'
     #   gem 'spree_backend'
     # end
-    describe "#github", :bundler => "< 3" do
-      it "from github" do
-        spree_gems = %w[spree_core spree_api spree_backend]
-        subject.github "spree" do
-          spree_gems.each {|spree_gem| subject.send :gem, spree_gem }
-        end
-
-        subject.dependencies.each do |d|
-          expect(d.source.uri).to eq("https://github.com/spree/spree.git")
-        end
-      end
-    end
-
     describe "#github" do
       it "from github" do
         spree_gems = %w[spree_core spree_api spree_backend]
@@ -251,6 +238,23 @@ RSpec.describe Bundler::Dsl do
         end
 
         expect(subject.dependencies.last.source).to eq(other_source)
+      end
+    end
+  end
+
+  describe "#check_primary_source_safety" do
+    context "when a global source is not defined implicitly" do
+      it "will raise a major deprecation warning" do
+        not_a_global_source = double("not-a-global-source", :no_remotes? => true)
+        allow(Bundler::Source::Rubygems).to receive(:new).and_return(not_a_global_source)
+
+        warning = "This Gemfile does not include an explicit global source. " \
+          "Not using an explicit global source may result in a different lockfile being generated depending on " \
+          "the gems you have installed locally before bundler is run. " \
+          "Instead, define a global source in your Gemfile like this: source \"https://rubygems.org\"."
+        expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(2, warning)
+
+        subject.check_primary_source_safety
       end
     end
   end

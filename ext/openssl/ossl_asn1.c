@@ -69,6 +69,12 @@ asn1time_to_time(const ASN1_TIME *time)
     return rb_funcall2(rb_cTime, rb_intern("utc"), 6, argv);
 }
 
+static VALUE
+asn1time_to_time_i(VALUE arg)
+{
+    return asn1time_to_time((ASN1_TIME *)arg);
+}
+
 void
 ossl_time_split(VALUE time, time_t *sec, int *days)
 {
@@ -134,6 +140,12 @@ num_to_asn1integer(VALUE obj, ASN1_INTEGER *ai)
 	ossl_raise(eOSSLError, NULL);
 
     return ai;
+}
+
+static VALUE
+asn1integer_to_num_i(VALUE arg)
+{
+    return asn1integer_to_num((ASN1_INTEGER *)arg);
 }
 
 /********/
@@ -325,7 +337,7 @@ decode_int(unsigned char* der, long length)
     p = der;
     if(!(ai = d2i_ASN1_INTEGER(NULL, &p, length)))
 	ossl_raise(eASN1Error, NULL);
-    ret = rb_protect((VALUE (*)(VALUE))asn1integer_to_num,
+    ret = rb_protect(asn1integer_to_num_i,
 		     (VALUE)ai, &status);
     ASN1_INTEGER_free(ai);
     if(status) rb_jump_tag(status);
@@ -365,7 +377,7 @@ decode_enum(unsigned char* der, long length)
     p = der;
     if(!(ai = d2i_ASN1_ENUMERATED(NULL, &p, length)))
 	ossl_raise(eASN1Error, NULL);
-    ret = rb_protect((VALUE (*)(VALUE))asn1integer_to_num,
+    ret = rb_protect(asn1integer_to_num_i,
 		     (VALUE)ai, &status);
     ASN1_ENUMERATED_free(ai);
     if(status) rb_jump_tag(status);
@@ -427,7 +439,7 @@ decode_time(unsigned char* der, long length)
     p = der;
     if(!(time = d2i_ASN1_TIME(NULL, &p, length)))
 	ossl_raise(eASN1Error, NULL);
-    ret = rb_protect((VALUE (*)(VALUE))asn1time_to_time,
+    ret = rb_protect(asn1time_to_time_i,
 		     (VALUE)time, &status);
     ASN1_TIME_free(time);
     if(status) rb_jump_tag(status);
@@ -1510,7 +1522,7 @@ Init_ossl_asn1(void)
      *
      * An Array that stores the name of a given tag number. These names are
      * the same as the name of the tag constant that is additionally defined,
-     * e.g. UNIVERSAL_TAG_NAME[2] = "INTEGER" and OpenSSL::ASN1::INTEGER = 2.
+     * e.g. +UNIVERSAL_TAG_NAME[2] = "INTEGER"+ and +OpenSSL::ASN1::INTEGER = 2+.
      *
      * == Example usage
      *

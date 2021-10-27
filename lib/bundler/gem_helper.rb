@@ -47,6 +47,11 @@ module Bundler
         built_gem_path = build_gem
       end
 
+      desc "Generate SHA512 checksum if #{name}-#{version}.gem into the checksums directory."
+      task "build:checksum" => "build" do
+        build_checksum(built_gem_path)
+      end
+
       desc "Build and install #{name}-#{version}.gem into system gems."
       task "install" => "build" do
         install_gem(built_gem_path)
@@ -71,7 +76,7 @@ module Bundler
         tag_version { git_push(args[:remote]) } unless already_tagged?
       end
 
-      task "release:rubygem_push" do
+      task "release:rubygem_push" => "build" do
         rubygem_push(built_gem_path) if gem_push?
       end
 
@@ -93,11 +98,19 @@ module Bundler
       built_gem_path ||= build_gem
       cmd = [*gem_command, "install", built_gem_path.to_s]
       cmd << "--local" if local
-      _, status = sh_with_status(cmd)
-      unless status.success?
-        raise "Couldn't install gem, run `gem install #{built_gem_path}' for more detailed output"
-      end
+      sh(cmd)
       Bundler.ui.confirm "#{name} (#{version}) installed."
+    end
+
+    def build_checksum(built_gem_path = nil)
+      built_gem_path ||= build_gem
+      SharedHelpers.filesystem_access(File.join(base, "checksums")) {|p| FileUtils.mkdir_p(p) }
+      file_name = "#{File.basename(built_gem_path)}.sha512"
+      require "digest/sha2"
+      checksum = ::Digest::SHA512.new.hexdigest(built_gem_path.to_s)
+      target = File.join(base, "checksums", file_name)
+      File.write(target, checksum)
+      Bundler.ui.confirm "#{name} #{version} checksum written to checksums/#{file_name}."
     end
 
     protected
@@ -116,19 +129,21 @@ module Bundler
 
     def git_push(remote = nil)
       remote ||= default_remote
-      perform_git_push remote
-      perform_git_push "#{remote} refs/tags/#{version_tag}"
+      sh(%W[git push #{remote} refs/heads/#{current_branch}])
+      sh(%W[git push #{remote} refs/tags/#{version_tag}])
       Bundler.ui.confirm "Pushed git commits and release tag."
     end
 
     def default_remote
+      remote_for_branch, status = sh_with_status(%W[git config --get branch.#{current_branch}.remote])
+      return "origin" unless status.success?
+
+      remote_for_branch.strip
+    end
+
+    def current_branch
       # We can replace this with `git branch --show-current` once we drop support for git < 2.22.0
-      current_branch = sh(%w[git rev-parse --abbrev-ref HEAD]).gsub(%r{\Aheads/}, "").strip
-
-      remote_for_branch = sh(%W[git config --get branch.#{current_branch}.remote]).strip
-      return "origin" if remote_for_branch.empty?
-
-      remote_for_branch
+      sh(%w[git rev-parse --abbrev-ref HEAD]).gsub(%r{\Aheads/}, "").strip
     end
 
     def allowed_push_host
@@ -141,13 +156,6 @@ module Bundler
         env_rubygems_host && env_rubygems_host.empty?
 
       allowed_push_host || env_rubygems_host || "rubygems.org"
-    end
-
-    def perform_git_push(options = "")
-      cmd = "git push #{options}"
-      out, status = sh_with_status(cmd.shellsplit)
-      return if status.success?
-      raise "Couldn't git push. `#{cmd}' failed with the following output:\n\n#{out}\n"
     end
 
     def already_tagged?
@@ -200,8 +208,7 @@ module Bundler
     def sh(cmd, &block)
       out, status = sh_with_status(cmd, &block)
       unless status.success?
-        cmd = cmd.shelljoin if cmd.respond_to?(:shelljoin)
-        raise(out.empty? ? "Running `#{cmd}` failed. Run this command directly for more detailed output." : out)
+        raise("Running `#{cmd.shelljoin}` failed with the following output:\n\n#{out}\n")
       end
       out
     end

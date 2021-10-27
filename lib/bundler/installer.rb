@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "rubygems/dependency_installer"
 require_relative "worker"
 require_relative "installer/parallel_installer"
 require_relative "installer/standalone"
@@ -82,13 +81,14 @@ module Bundler
 
         if resolve_if_needed(options)
           ensure_specs_are_compatible!
-          warn_on_incompatible_bundler_deps
           load_plugins
           options.delete(:jobs)
         else
           options[:jobs] = 1 # to avoid the overhead of Bundler::Worker
         end
         install(options)
+
+        Gem::Specification.reset # invalidate gem specification cache so that installed gems are immediately available
 
         lock unless Bundler.frozen_bundle?
         Standalone.new(options[:standalone], @definition).generate if options[:standalone]
@@ -134,7 +134,7 @@ module Bundler
           next
         end
 
-        mode = Bundler::WINDOWS ? "wb:UTF-8" : "w"
+        mode = Gem.win_platform? ? "wb:UTF-8" : "w"
         require "erb"
         content = if RUBY_VERSION >= "2.6"
           ERB.new(template, :trim_mode => "-").result(binding)
@@ -143,7 +143,7 @@ module Bundler
         end
 
         File.write(binstub_path, content, :mode => mode, :perm => 0o777 & ~File.umask)
-        if Bundler::WINDOWS || options[:all_platforms]
+        if Gem.win_platform? || options[:all_platforms]
           prefix = "@ruby -x \"%~f0\" %*\n@exit /b %ERRORLEVEL%\n\n"
           File.write("#{binstub_path}.cmd", prefix + content, :mode => mode)
         end
@@ -181,7 +181,7 @@ module Bundler
         executable_path = Pathname(spec.full_gem_path).join(spec.bindir, executable).relative_path_from(bin_path)
         executable_path = executable_path
 
-        mode = Bundler::WINDOWS ? "wb:UTF-8" : "w"
+        mode = Gem.win_platform? ? "wb:UTF-8" : "w"
         require "erb"
         content = if RUBY_VERSION >= "2.6"
           ERB.new(template, :trim_mode => "-").result(binding)
@@ -190,7 +190,7 @@ module Bundler
         end
 
         File.write("#{bin_path}/#{executable}", content, :mode => mode, :perm => 0o755)
-        if Bundler::WINDOWS || options[:all_platforms]
+        if Gem.win_platform? || options[:all_platforms]
           prefix = "@ruby -x \"%~f0\" %*\n@exit /b %ERRORLEVEL%\n\n"
           File.write("#{bin_path}/#{executable}.cmd", prefix + content, :mode => mode)
         end
@@ -218,17 +218,7 @@ module Bundler
         return jobs
       end
 
-      # Parallelization has some issues on Windows, so it's not yet the default
-      return 1 if Gem.win_platform?
-
-      processor_count
-    end
-
-    def processor_count
-      require "etc"
-      Etc.nprocessors
-    rescue StandardError
-      1
+      Bundler.settings.processor_count
     end
 
     def load_plugins
@@ -261,22 +251,6 @@ module Bundler
         unless required_rubygems_version.satisfied_by?(rubygems_version)
           raise InstallError, "#{spec.full_name} requires rubygems version #{required_rubygems_version}, " \
             "which is incompatible with the current version, #{rubygems_version}"
-        end
-      end
-    end
-
-    def warn_on_incompatible_bundler_deps
-      bundler_version = Gem::Version.create(Bundler::VERSION)
-      @definition.specs.each do |spec|
-        spec.dependencies.each do |dep|
-          next if dep.type == :development
-          next unless dep.name == "bundler".freeze
-          next if dep.requirement.satisfied_by?(bundler_version)
-
-          Bundler.ui.warn "#{spec.name} (#{spec.version}) has dependency" \
-            " #{SharedHelpers.pretty_dependency(dep)}" \
-            ", which is unsatisfied by the current bundler version #{VERSION}" \
-            ", so the dependency is being ignored"
         end
       end
     end

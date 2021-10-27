@@ -23,14 +23,7 @@ describe :dir_glob, shared: true do
     Dir.send(@method, obj).should == %w[file_one.ext]
   end
 
-  ruby_version_is ""..."2.6" do
-    it "splits the string on \\0 if there is only one string given" do
-      Dir.send(@method, "file_o*\0file_t*").should ==
-        %w!file_one.ext file_two.ext!
-    end
-  end
-
-  ruby_version_is "2.6"..."2.7" do
+  ruby_version_is ""..."2.7" do
     it "splits the string on \\0 if there is only one string given and warns" do
       -> {
         Dir.send(@method, "file_o*\0file_t*").should ==
@@ -42,6 +35,23 @@ describe :dir_glob, shared: true do
   ruby_version_is "2.7" do
     it "raises an ArgumentError if the string contains \\0" do
       -> {Dir.send(@method, "file_o*\0file_t*")}.should raise_error ArgumentError, /nul-separated/
+    end
+  end
+
+  ruby_version_is "3.0" do
+    it "result is sorted by default" do
+      result = Dir.send(@method, '*')
+      result.should == result.sort
+    end
+
+    it "result is sorted with sort: true" do
+      result = Dir.send(@method, '*', sort: true)
+      result.should == result.sort
+    end
+
+    it "sort: false returns same files" do
+      result = Dir.send(@method,'*', sort: false)
+      result.sort.should == Dir.send(@method, '*').sort
     end
   end
 
@@ -71,6 +81,10 @@ describe :dir_glob, shared: true do
     Dir.send(@method, 'special/+').should == ['special/+']
   end
 
+  it "matches directories with special characters when escaped" do
+    Dir.send(@method, 'special/\{}/special').should == ["special/{}/special"]
+  end
+
   platform_is_not :windows do
     it "matches regexp special *" do
       Dir.send(@method, 'special/\*').should == ['special/*']
@@ -82,6 +96,10 @@ describe :dir_glob, shared: true do
 
     it "matches regexp special |" do
       Dir.send(@method, 'special/|').should == ['special/|']
+    end
+
+    it "matches files with backslashes in their name" do
+      Dir.glob('special/\\\\{a,b}').should == ['special/\a']
     end
   end
 
@@ -198,11 +216,20 @@ describe :dir_glob, shared: true do
       nested/
       special/
       special/test{1}/
+      special/{}/
       subdir_one/
       subdir_two/
     ]
 
     Dir.send(@method, '**/').sort.should == expected
+  end
+
+  it "recursively matches any subdirectories except './' or '../' with '**/' from the base directory if that is specified" do
+    expected = %w[
+      nested/directory
+    ]
+
+    Dir.send(@method, '**/*ory', base: 'deeply').sort.should == expected
   end
 
   ruby_version_is ''...'3.1' do

@@ -9,6 +9,9 @@ jobs:
       - name: Check if C-sources are US-ASCII
         run: |
           ! grep -r -n '[^	 -~]' *.[chy] include internal win32/*.[ch]
+      - name: Check for trailing spaces
+        run: |
+          ! git grep -n '[	 ]$' '*.rb' '*.[chy]'
       - name: Check for header macros
         run: |
           ! for header in ruby/*.h; do \

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/version_option'
+require_relative '../command'
+require_relative '../version_option'
 
 class Gem::Commands::OpenCommand < Gem::Command
   include Gem::VersionOption
@@ -36,7 +36,7 @@ class Gem::Commands::OpenCommand < Gem::Command
   end
 
   def usage # :nodoc:
-    "#{program_name} GEMNAME [-e COMMAND]"
+    "#{program_name} [-e COMMAND] GEMNAME"
   end
 
   def get_env_editor

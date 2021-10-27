@@ -168,6 +168,12 @@ describe "Kernel#eval" do
       suppress_warning {eval("eval '__FILE__', binding", binding)}.should == __FILE__
       suppress_warning {eval("eval '__FILE__', binding", binding, 'success')}.should == 'success'
     end
+
+    it 'uses the given binding file and line for __FILE__ and __LINE__' do
+      suppress_warning {
+        eval("[__FILE__, __LINE__]", binding).should == [__FILE__, __LINE__]
+      }
+    end
   end
 
   ruby_version_is "3.0" do
@@ -179,6 +185,10 @@ describe "Kernel#eval" do
       eval("eval '__FILE__', binding", binding).should == "(eval)"
       eval("eval '__FILE__', binding", binding, 'success').should == '(eval)'
       eval("eval '__FILE__', binding, 'success'", binding).should == 'success'
+    end
+
+    it 'uses (eval) for __FILE__ and 1 for __LINE__ with a binding argument' do
+      eval("[__FILE__, __LINE__]", binding).should == ["(eval)", 1]
     end
   end
 
@@ -226,6 +236,17 @@ describe "Kernel#eval" do
   it "raises a LocalJumpError if there is no lambda-style closure in the chain" do
     code = fixture __FILE__, "eval_return_without_lambda.rb"
     ruby_exe(code).chomp.should == "a,b,c,e,LocalJumpError,f"
+  end
+
+  it "can be called with Method#call" do
+    method(:eval).call("2 * 3").should == 6
+  end
+
+  it "has the correct default definee when called through Method#call" do
+    class EvalSpecs
+      method(:eval).call("def eval_spec_method_call; end")
+      EvalSpecs.should have_instance_method(:eval_spec_method_call)
+    end
   end
 
   # See language/magic_comment_spec.rb for more magic comments specs
@@ -374,43 +395,45 @@ CODE
     end
   end
 
-  it "activates refinements from the eval scope" do
-    refinery = Module.new do
-      refine EvalSpecs::A do
-        def foo
-          "bar"
+  describe 'with refinements' do
+    it "activates refinements from the eval scope" do
+      refinery = Module.new do
+        refine EvalSpecs::A do
+          def foo
+            "bar"
+          end
         end
       end
+
+      result = nil
+
+      Module.new do
+        using refinery
+
+        result = eval "EvalSpecs::A.new.foo"
+      end
+
+      result.should == "bar"
     end
 
-    result = nil
-
-    Module.new do
-      using refinery
-
-      result = eval "EvalSpecs::A.new.foo"
-    end
-
-    result.should == "bar"
-  end
-
-  it "activates refinements from the binding" do
-    refinery = Module.new do
-      refine EvalSpecs::A do
-        def foo
-          "bar"
+    it "activates refinements from the binding" do
+      refinery = Module.new do
+        refine EvalSpecs::A do
+          def foo
+            "bar"
+          end
         end
       end
+
+      b = nil
+      m = Module.new do
+        using refinery
+        b = binding
+      end
+
+      result = eval "EvalSpecs::A.new.foo", b
+
+      result.should == "bar"
     end
-
-    b = nil
-    m = Module.new do
-      using refinery
-      b = binding
-    end
-
-    result = eval "EvalSpecs::A.new.foo", b
-
-    result.should == "bar"
   end
 end

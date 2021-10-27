@@ -1,7 +1,6 @@
 #ifndef INTERNAL_NUMERIC_H                               /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_NUMERIC_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -36,9 +35,18 @@ enum ruby_num_rounding_mode {
     RUBY_NUM_ROUND_DEFAULT = ROUND_DEFAULT,
 };
 
+#if SIZEOF_DOUBLE <= SIZEOF_VALUE
+typedef double rb_float_value_type;
+#else
+typedef struct {
+    VALUE values[(SIZEOF_DOUBLE + SIZEOF_VALUE - 1) / SIZEOF_VALUE];
+    /* roomof() needs internal.h, and the order of some macros may matter */
+} rb_float_value_type;
+#endif
+
 struct RFloat {
     struct RBasic basic;
-    double float_value;
+    rb_float_value_type float_value;
 };
 
 #define RFLOAT(obj)  ((struct RFloat *)(obj))
@@ -77,6 +85,7 @@ VALUE rb_int_lshift(VALUE x, VALUE y);
 VALUE rb_int_div(VALUE x, VALUE y);
 int rb_int_positive_p(VALUE num);
 int rb_int_negative_p(VALUE num);
+VALUE rb_check_integer_type(VALUE);
 VALUE rb_num_pow(VALUE x, VALUE y);
 VALUE rb_float_ceil(VALUE num, int ndigits);
 VALUE rb_float_floor(VALUE x, int ndigits);
@@ -96,7 +105,6 @@ static inline bool FLOAT_ZERO_P(VALUE num);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* numeric.c (export) */
-VALUE rb_int_positive_pow(long x, unsigned long y);
 RUBY_SYMBOL_EXPORT_END
 
 MJIT_SYMBOL_EXPORT_BEGIN
@@ -210,7 +218,15 @@ rb_float_flonum_value(VALUE v)
 static inline double
 rb_float_noflonum_value(VALUE v)
 {
+#if SIZEOF_DOUBLE <= SIZEOF_VALUE
     return RFLOAT(v)->float_value;
+#else
+    union {
+        rb_float_value_type v;
+        double d;
+    } u = {RFLOAT(v)->float_value};
+    return u.d;
+#endif
 }
 
 static inline double

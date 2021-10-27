@@ -136,7 +136,6 @@ update.o: $(hdrdir)/ruby/internal/static_assert.h
 update.o: $(hdrdir)/ruby/internal/stdalign.h
 update.o: $(hdrdir)/ruby/internal/stdbool.h
 update.o: $(hdrdir)/ruby/internal/symbol.h
-update.o: $(hdrdir)/ruby/internal/token_paste.h
 update.o: $(hdrdir)/ruby/internal/value.h
 update.o: $(hdrdir)/ruby/internal/value_type.h
 update.o: $(hdrdir)/ruby/internal/variable.h

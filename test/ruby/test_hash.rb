@@ -113,16 +113,36 @@ class TestHash < Test::Unit::TestCase
     assert_equal(2, h[1])
   end
 
-  def test_dup_will_rehash
-    set1 = @cls[]
-    set2 = @cls[set1 => true]
-
-    set1[set1] = true
-
-    assert_equal set2, set2.dup
+  def test_dup_will_not_rehash
+    assert_hash_does_not_rehash(&:dup)
   end
 
-  def test_s_AREF
+  def assert_hash_does_not_rehash
+    obj = Object.new
+    class << obj
+      attr_accessor :hash_calls
+      def hash
+        @hash_calls += 1
+        super
+      end
+    end
+    obj.hash_calls = 0
+    hash = {obj => 42}
+    assert_equal(1, obj.hash_calls)
+    yield hash
+    assert_equal(1, obj.hash_calls)
+  end
+
+  def test_select_reject_will_not_rehash
+    assert_hash_does_not_rehash do |hash|
+      hash.select { true }
+    end
+    assert_hash_does_not_rehash do |hash|
+      hash.reject { false }
+    end
+  end
+
+  def test_s_AREF_from_hash
     h = @cls["a" => 100, "b" => 200]
     assert_equal(100, h['a'])
     assert_equal(200, h['b'])
@@ -133,11 +153,21 @@ class TestHash < Test::Unit::TestCase
     assert_equal(200, h['b'])
     assert_nil(h['c'])
 
+    h = @cls[Hash.new(42)]
+    assert_nil(h['a'])
+
+    h = @cls[Hash.new {42}]
+    assert_nil(h['a'])
+  end
+
+  def test_s_AREF_from_list
     h = @cls["a", 100, "b", 200]
     assert_equal(100, h['a'])
     assert_equal(200, h['b'])
     assert_nil(h['c'])
+  end
 
+  def test_s_AREF_from_pairs
     h = @cls[[["a", 100], ["b", 200]]]
     assert_equal(100, h['a'])
     assert_equal(200, h['b'])
@@ -419,6 +449,15 @@ class TestHash < Test::Unit::TestCase
       true
     }
     assert_equal(base.size, n)
+
+    h = base.dup
+    assert_raise(FrozenError) do
+      h.delete_if do
+        h.freeze
+        true
+      end
+    end
+    assert_equal(base.dup, h)
   end
 
   def test_keep_if
@@ -426,6 +465,14 @@ class TestHash < Test::Unit::TestCase
     assert_equal({3=>4,5=>6}, h.keep_if {|k, v| k + v >= 7 })
     h = @cls[1=>2,3=>4,5=>6]
     assert_equal({1=>2,3=>4,5=>6}, h.keep_if{true})
+    h = @cls[1=>2,3=>4,5=>6]
+    assert_raise(FrozenError) do
+      h.keep_if do
+        h.freeze
+        false
+      end
+    end
+    assert_equal(@cls[1=>2,3=>4,5=>6], h)
   end
 
   def test_compact
@@ -455,6 +502,7 @@ class TestHash < Test::Unit::TestCase
     h1 = @cls[h => 1]
     assert_equal(h1, h1.dup)
     h[1] = 2
+    h1.rehash
     assert_equal(h1, h1.dup)
   end
 
@@ -701,6 +749,33 @@ class TestHash < Test::Unit::TestCase
     assert_not_send([h, :instance_variable_defined?, :@foo])
   end
 
+  def test_reject_on_identhash
+    h = @cls[1=>2,3=>4,5=>6]
+    h.compare_by_identity
+    str1 = +'str'
+    str2 = +'str'
+    h[str1] = 1
+    h[str2] = 2
+    expected = {}.compare_by_identity
+    expected[str1] = 1
+    expected[str2] = 2
+    h2 = h.reject{|k,| k != 'str'}
+    assert_equal(expected, h2)
+    assert_equal(true, h2.compare_by_identity?)
+    h2 = h.reject{true}
+    assert_equal({}.compare_by_identity, h2)
+    assert_equal(true, h2.compare_by_identity?)
+
+    h = @cls[]
+    h.compare_by_identity
+    h2 = h.reject{true}
+    assert_equal({}.compare_by_identity, h2)
+    assert_equal(true, h2.compare_by_identity?)
+    h2 = h.reject{|k,| k != 'str'}
+    assert_equal({}.compare_by_identity, h2)
+    assert_equal(true, h2.compare_by_identity?)
+  end
+
   def test_reject!
     base = @cls[ 1 => 'one', 2 => false, true => 'true', 'cat' => 99 ]
     h1   = @cls[ 1 => 'one', 2 => false, true => 'true' ]
@@ -722,6 +797,15 @@ class TestHash < Test::Unit::TestCase
     h = base.dup
     assert_equal(h3, h.reject! {|k,v| v })
     assert_equal(h3, h)
+
+    h = base.dup
+    assert_raise(FrozenError) do
+      h.reject! do
+        h.freeze
+        true
+      end
+    end
+    assert_equal(base.dup, h)
   end
 
   def test_replace
@@ -1019,12 +1103,47 @@ class TestHash < Test::Unit::TestCase
     assert_not_send([h, :instance_variable_defined?, :@foo])
   end
 
+  def test_select_on_identhash
+    h = @cls[1=>2,3=>4,5=>6]
+    h.compare_by_identity
+    str1 = +'str'
+    str2 = +'str'
+    h[str1] = 1
+    h[str2] = 2
+    expected = {}.compare_by_identity
+    expected[str1] = 1
+    expected[str2] = 2
+    h2 = h.select{|k,| k == 'str'}
+    assert_equal(expected, h2)
+    assert_equal(true, h2.compare_by_identity?)
+    h2 = h.select{false}
+    assert_equal({}.compare_by_identity, h2)
+    assert_equal(true, h2.compare_by_identity?)
+
+    h = @cls[]
+    h.compare_by_identity
+    h2 = h.select{false}
+    assert_equal({}.compare_by_identity, h2)
+    assert_equal(true, h2.compare_by_identity?)
+    h2 = h.select{|k,| k == 'str'}
+    assert_equal({}.compare_by_identity, h2)
+    assert_equal(true, h2.compare_by_identity?)
+  end
+
   def test_select!
     h = @cls[1=>2,3=>4,5=>6]
     assert_equal(h, h.select! {|k, v| k + v >= 7 })
     assert_equal({3=>4,5=>6}, h)
     h = @cls[1=>2,3=>4,5=>6]
     assert_equal(nil, h.select!{true})
+    h = @cls[1=>2,3=>4,5=>6]
+    assert_raise(FrozenError) do
+      h.select! do
+        h.freeze
+        false
+      end
+    end
+    assert_equal(@cls[1=>2,3=>4,5=>6], h)
   end
 
   def test_slice
@@ -1035,12 +1154,63 @@ class TestHash < Test::Unit::TestCase
     assert_equal({}, {}.slice)
   end
 
+  def test_slice_on_identhash
+    h = @cls[1=>2,3=>4,5=>6]
+    h.compare_by_identity
+    str1 = +'str'
+    str2 = +'str'
+    h[str1] = 1
+    h[str2] = 2
+    sliced = h.slice(str1, str2)
+    expected = {}.compare_by_identity
+    expected[str1] = 1
+    expected[str2] = 2
+    assert_equal(expected, sliced)
+    assert_equal(true, sliced.compare_by_identity?)
+    sliced = h.slice
+    assert_equal({}.compare_by_identity, sliced)
+    assert_equal(true, sliced.compare_by_identity?)
+
+    h = @cls[]
+    h.compare_by_identity
+    sliced= h.slice
+    assert_equal({}.compare_by_identity, sliced)
+    assert_equal(true, sliced.compare_by_identity?)
+    sliced = h.slice(str1, str2)
+    assert_equal({}.compare_by_identity, sliced)
+    assert_equal(true, sliced.compare_by_identity?)
+  end
+
   def test_except
     h = @cls[1=>2,3=>4,5=>6]
     assert_equal({5=>6}, h.except(1, 3))
     assert_equal({1=>2,3=>4,5=>6}, h.except(7))
     assert_equal({1=>2,3=>4,5=>6}, h.except)
     assert_equal({}, {}.except)
+  end
+
+  def test_except_on_identhash
+    h = @cls[1=>2,3=>4,5=>6]
+    h.compare_by_identity
+    str1 = +'str'
+    str2 = +'str'
+    h[str1] = 1
+    h[str2] = 2
+    excepted = h.except(str1, str2)
+    assert_equal({1=>2,3=>4,5=>6}.compare_by_identity, excepted)
+    assert_equal(true, excepted.compare_by_identity?)
+    excepted = h.except
+    assert_equal(h, excepted)
+    assert_equal(true, excepted.compare_by_identity?)
+
+    h = @cls[]
+    h.compare_by_identity
+    excepted = h.except
+    assert_equal({}.compare_by_identity, excepted)
+    assert_equal(true, excepted.compare_by_identity?)
+    excepted = h.except(str1, str2)
+    assert_equal({}.compare_by_identity, excepted)
+    assert_equal(true, excepted.compare_by_identity?)
   end
 
   def test_filter
@@ -1077,6 +1247,14 @@ class TestHash < Test::Unit::TestCase
     assert_equal({3=>4,5=>6}, h)
     h = @cls[1=>2,3=>4,5=>6]
     assert_equal(nil, h.filter!{true})
+    h = @cls[1=>2,3=>4,5=>6]
+    assert_raise(FrozenError) do
+      h.filter! do
+        h.freeze
+        false
+      end
+    end
+    assert_equal(@cls[1=>2,3=>4,5=>6], h)
   end
 
   def test_clear2
@@ -1098,6 +1276,15 @@ class TestHash < Test::Unit::TestCase
     assert_raise(ArgumentError) { h2.replace() }
     assert_raise(FrozenError) { h2.replace(h1) }
     assert_raise(FrozenError) { h2.replace(42) }
+  end
+
+  def test_replace_memory_leak
+    assert_no_memory_leak([], "#{<<-"begin;"}", "#{<<-'end;'}")
+    h = ("aa".."zz").each_with_index.to_h
+    10_000.times {h.dup}
+    begin;
+      500_000.times {h.dup.replace(h)}
+    end;
   end
 
   def test_size2
@@ -1169,6 +1356,20 @@ class TestHash < Test::Unit::TestCase
     assert_equal({1=>8, 2=>4, 3=>4, 5=>7}, h1)
   end
 
+  def test_update5
+    h = @cls[a: 1, b: 2, c: 3]
+    assert_raise(FrozenError) do
+      h.update({a: 10, b: 20}){ |key, v1, v2| key == :b && h.freeze; v2 }
+    end
+    assert_equal(@cls[a: 10, b: 2, c: 3], h)
+
+    h = @cls[a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10]
+    assert_raise(FrozenError) do
+      h.update({a: 10, b: 20}){ |key, v1, v2| key == :b && h.freeze; v2 }
+    end
+    assert_equal(@cls[a: 10, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10], h)
+  end
+
   def test_merge
     h1 = @cls[1=>2, 3=>4]
     h2 = {1=>3, 5=>7}
@@ -1178,6 +1379,48 @@ class TestHash < Test::Unit::TestCase
     assert_equal({1=>6, 3=>4, 5=>7}, h1.merge(h2) {|k, v1, v2| k + v1 + v2 })
     assert_equal({1=>1, 2=>4, 3=>4, 5=>7}, h1.merge(h2, h3))
     assert_equal({1=>8, 2=>4, 3=>4, 5=>7}, h1.merge(h2, h3) {|k, v1, v2| k + v1 + v2 })
+  end
+
+  def test_merge_on_identhash
+    h = @cls[1=>2,3=>4,5=>6]
+    h.compare_by_identity
+    str1 = +'str'
+    str2 = +'str'
+    h[str1] = 1
+    h[str2] = 2
+    expected = h.dup
+    expected[7] = 8
+    h2 = h.merge(7=>8)
+    assert_equal(expected, h2)
+    assert_equal(true, h2.compare_by_identity?)
+    h2 = h.merge({})
+    assert_equal(h, h2)
+    assert_equal(true, h2.compare_by_identity?)
+
+    h = @cls[]
+    h.compare_by_identity
+    h1 = @cls[7=>8]
+    h1.compare_by_identity
+    h2 = h.merge(7=>8)
+    assert_equal(h1, h2)
+    assert_equal(true, h2.compare_by_identity?)
+    h2 = h.merge({})
+    assert_equal(h, h2)
+    assert_equal(true, h2.compare_by_identity?)
+  end
+
+  def test_merge!
+    h = @cls[a: 1, b: 2, c: 3]
+    assert_raise(FrozenError) do
+      h.merge!({a: 10, b: 20}){ |key, v1, v2| key == :b && h.freeze; v2 }
+    end
+    assert_equal(@cls[a: 10, b: 2, c: 3], h)
+
+    h = @cls[a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10]
+    assert_raise(FrozenError) do
+      h.merge!({a: 10, b: 20}){ |key, v1, v2| key == :b && h.freeze; v2 }
+    end
+    assert_equal(@cls[a: 10, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10], h)
   end
 
   def test_assoc
@@ -1657,6 +1900,24 @@ class TestHash < Test::Unit::TestCase
     assert_equal({A: 1, B: 2, "c" => 3}, x.transform_keys({a: :A, b: :B, d: :D}, &:to_s))
   end
 
+  def test_transform_keys_on_identhash
+    h = @cls[1=>2,3=>4,5=>6]
+    h.compare_by_identity
+    str1 = +'str'
+    str2 = +'str'
+    h[str1] = 1
+    h[str2] = 2
+    h2 = h.transform_keys(&:itself)
+    assert_equal(Hash[h.to_a], h2)
+    assert_equal(false, h2.compare_by_identity?)
+
+    h = @cls[]
+    h.compare_by_identity
+    h2 = h.transform_keys(&:itself)
+    assert_equal({}, h2)
+    assert_equal(false, h2.compare_by_identity?)
+  end
+
   def test_transform_keys_bang
     x = @cls[a: 1, b: 2, c: 3]
     y = x.transform_keys! {|k| :"#{k}!" }
@@ -1673,6 +1934,10 @@ class TestHash < Test::Unit::TestCase
     x = @cls[1 => :a, -1 => :b]
     x.transform_keys! {|k| -k }
     assert_equal([-1, :a, 1, :b], x.flatten)
+
+    x = @cls[a: 1, b: 2, c: 3]
+    x.transform_keys! { |k| k == :b && break }
+    assert_equal({false => 1, b: 2, c: 3}, x)
 
     x = @cls[true => :a, false => :b]
     x.transform_keys! {|k| !k }
@@ -1703,6 +1968,24 @@ class TestHash < Test::Unit::TestCase
     assert_equal(%w(1.0  2.1  3.2), y.values_at(:a, :b, :c))
   end
 
+  def test_transform_values_on_identhash
+    h = @cls[1=>2,3=>4,5=>6]
+    h.compare_by_identity
+    str1 = +'str'
+    str2 = +'str'
+    h[str1] = 1
+    h[str2] = 2
+    h2 = h.transform_values(&:itself)
+    assert_equal(h, h2)
+    assert_equal(true, h2.compare_by_identity?)
+
+    h = @cls[]
+    h.compare_by_identity
+    h2 = h.transform_values(&:itself)
+    assert_equal({}.compare_by_identity, h2)
+    assert_equal(true, h2.compare_by_identity?)
+  end
+
   def test_transform_values_bang
     x = @cls[a: 1, b: 2, c: 3]
     y = x.transform_values! {|v| v ** 2 }
@@ -1710,8 +1993,21 @@ class TestHash < Test::Unit::TestCase
     assert_same(x, y)
 
     x = @cls[a: 1, b: 2, c: 3]
+    x.transform_values! { |v| v == 2 && break }
+    assert_equal({a: false, b: 2, c: 3}, x)
+
+    x = @cls[a: 1, b: 2, c: 3]
     y = x.transform_values!.with_index {|v, i| "#{v}.#{i}" }
     assert_equal(%w(1.0  2.1  3.2), y.values_at(:a, :b, :c))
+
+    x = @cls[a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10]
+    assert_raise(FrozenError) do
+      x.transform_values!() do |v|
+        x.freeze if v == 2
+        v.succ
+      end
+    end
+    assert_equal(@cls[a: 2, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10], x)
   end
 
   def test_broken_hash_value
@@ -1761,20 +2057,11 @@ class TestHash < Test::Unit::TestCase
 
   class TestSubHash < TestHash
     class SubHash < Hash
-      def reject(*)
-        super
-      end
     end
 
     def setup
       @cls = SubHash
       super
-    end
-
-    def test_reject
-      assert_warning(/extra states are no longer copied/) do
-        super
-      end
     end
   end
 

@@ -308,4 +308,14 @@ describe "Ruby String interpolation" do
       eval(code).should_not.frozen?
     end
   end
+
+  ruby_version_is ""..."3.0" do
+    it "creates a frozen String when # frozen-string-literal: true is used" do
+      code = <<~'RUBY'
+      # frozen-string-literal: true
+      "a#{6*7}c"
+      RUBY
+      eval(code).should.frozen?
+    end
+  end
 end

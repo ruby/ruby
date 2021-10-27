@@ -56,5 +56,9 @@ describe "Struct#hash" do
     # See the Struct#eql? specs
   end
 
+  it "returns different hashes for different struct classes" do
+    Struct.new(:x).new(1).hash.should != Struct.new(:y).new(1).hash
+  end
+
   it_behaves_like :struct_accessor, :hash
 end

@@ -17,15 +17,17 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Compile-time static implementation of ::rb_scan_args().
  *
  * This  is a  beast.  It  statically analyses  the argument  spec string,  and
  * expands the assignment of variables into dedicated codes.
  */
+#include "ruby/assert.h"
 #include "ruby/internal/attr/diagnose_if.h"
 #include "ruby/internal/attr/error.h"
 #include "ruby/internal/attr/forceinline.h"
+#include "ruby/internal/attr/nonnull.h"
 #include "ruby/internal/attr/noreturn.h"
 #include "ruby/internal/config.h"
 #include "ruby/internal/dllexport.h"
@@ -38,28 +40,154 @@
 #include "ruby/internal/static_assert.h"
 #include "ruby/internal/stdbool.h"
 #include "ruby/internal/value.h"
-#include "ruby/assert.h"
 
+/**
+ * @name Possible values that you should pass to rb_scan_args_kw().
+ * @{
+ */
+
+/** Same behaviour as rb_scan_args(). */
 #define RB_SCAN_ARGS_PASS_CALLED_KEYWORDS 0
+
+/** The final argument should be a hash treated as keywords.*/
 #define RB_SCAN_ARGS_KEYWORDS 1
+
+/**
+ * Treat a  final argument as  keywords if  it is a  hash, and not  as keywords
+ * otherwise.
+ */
 #define RB_SCAN_ARGS_LAST_HASH_KEYWORDS 3
+
+/** @} */
+
+/**
+ * @name Possible values that you should pass to rb_funcallv_kw().
+ * @{
+ */
+
+/** Do not pass keywords. */
 #define RB_NO_KEYWORDS 0
+
+/** Pass keywords, final argument should be a hash of keywords. */
 #define RB_PASS_KEYWORDS 1
+
+/**
+ * Pass keywords if current method is called with keywords, useful for argument
+ * delegation
+ */
 #define RB_PASS_CALLED_KEYWORDS rb_keyword_given_p()
-/* rb_scan_args() format allows ':' for optional hash */
+
+/** @} */
+
+/**
+ * @private
+ *
+ * @deprecated  This macro once was a thing in the old days, but makes no sense
+ *              any  longer today.   Exists  here  for backwards  compatibility
+ *              only.  You can safely forget about it.
+ */
 #define HAVE_RB_SCAN_ARGS_OPTIONAL_HASH 1
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
-int rb_scan_args(int, const VALUE*, const char*, ...);
-int rb_scan_args_kw(int, int, const VALUE*, const char*, ...);
+RBIMPL_ATTR_NONNULL((2, 3))
+/**
+ * Retrieves argument from argc and  argv to given ::VALUE references according
+ * to the format string.  The format can be described in ABNF as follows:
+ *
+ * ```
+ * scan-arg-spec  := param-arg-spec [keyword-arg-spec] [block-arg-spec]
+ *
+ * param-arg-spec        := pre-arg-spec [post-arg-spec] / post-arg-spec /
+ *                          pre-opt-post-arg-spec
+ * pre-arg-spec          := num-of-leading-mandatory-args
+                            [num-of-optional-args]
+ * post-arg-spec         := sym-for-variable-length-args
+ *                          [num-of-trailing-mandatory-args]
+ * pre-opt-post-arg-spec := num-of-leading-mandatory-args num-of-optional-args
+ *                          num-of-trailing-mandatory-args
+ * keyword-arg-spec      := sym-for-keyword-arg
+ * block-arg-spec        := sym-for-block-arg
+ *
+ * num-of-leading-mandatory-args  := DIGIT ; The number of leading mandatory
+ *                                         ; arguments
+ * num-of-optional-args           := DIGIT ; The number of optional arguments
+ * sym-for-variable-length-args   := "*"   ; Indicates that variable length
+ *                                         ;  arguments are captured as a ruby
+ *                                         ; array
+ * num-of-trailing-mandatory-args := DIGIT ; The number of trailing mandatory
+ *                                         ; arguments
+ * sym-for-keyword-arg            := ":"   ; Indicates that keyword argument
+ *                                         ; captured as a hash.
+ *                                         ; If keyword arguments are not
+ *                                         ; provided, returns nil.
+ * sym-for-block-arg              := "&"   ; Indicates that an iterator block
+ *                                         ; should be captured if given
+ * ```
+ *
+ * For example, "12" means that the  method requires at least one argument, and
+ * at  most receives  three (1+2)  arguments.  So,  the format  string must  be
+ * followed by three variable references, which  are to be assigned to captured
+ * arguments.  For omitted arguments, variables are set to ::RUBY_Qnil.  `NULL`
+ * can be put  in place of a variable reference,  which means the corresponding
+ * captured argument(s) should be just dropped.
+ *
+ * The number of  given arguments, excluding an option hash  or iterator block,
+ * is returned.
+ *
+ * @param[in]   argc          Length of `argv`.
+ * @param[in]   argv          Pointer to the arguments to parse.
+ * @param[in]   fmt           Format, in the language described above.
+ * @param[out]  ...           Variables to fill in.
+ * @exception   rb_eFatal     Malformed `fmt`.
+ * @exception   rb_eArgError  Arity mismatch.
+ * @return      Actually parsed number of given arguments.
+ * @post        Each  values  passed to  `argv`  is  filled into  the  variadic
+ *              arguments, according to the format.
+ */
+int rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...);
+
+RBIMPL_ATTR_NONNULL((3, 4))
+/**
+ * Identical to rb_scan_args(), except it also accepts `kw_splat`.
+ *
+ * @param[in]   kw_splat      How to understand the keyword arguments.
+ *   - RB_SCAN_ARGS_PASS_CALLED_KEYWORDS: Same behaviour as rb_scan_args().
+ *   - RB_SCAN_ARGS_KEYWORDS:             The final argument is a kwarg.
+ *   - RB_SCAN_ARGS_LAST_HASH_KEYWORDS:   The final argument is a kwarg, iff it
+ *                                        is a hash.
+ * @param[in]   argc          Length of `argv`.
+ * @param[in]   argv          Pointer to the arguments to parse.
+ * @param[in]   fmt           Format, in the language described above.
+ * @param[out]  ...           Variables to fill in.
+ * @exception   rb_eFatal     Malformed `fmt`.
+ * @exception   rb_eArgError  Arity mismatch.
+ * @return      Actually parsed number of given arguments.
+ * @post        Each  values  passed to  `argv`  is  filled into  the  variadic
+ *              arguments, according to the format.
+ */
+int rb_scan_args_kw(int kw_splat, int argc, const VALUE *argv, const char *fmt, ...);
 
 RBIMPL_ATTR_ERROR(("bad scan arg format"))
+/**
+ * @private
+ *
+ * This is  an implementation  detail of rb_scan_args().   People don't  use it
+ * directly.
+ */
 void rb_scan_args_bad_format(const char*);
 
 RBIMPL_ATTR_ERROR(("variable argument length doesn't match"))
+/**
+ * @private
+ *
+ * This is  an implementation  detail of rb_scan_args().   People don't  use it
+ * directly.
+ */
 void rb_scan_args_length_mismatch(const char*,int);
 
 RBIMPL_SYMBOL_EXPORT_END()
+
+/** @cond INTERNAL_MACRO */
 
 /* If we could use constexpr the following macros could be inline functions
  * ... but sadly we cannot. */
@@ -106,13 +234,13 @@ RBIMPL_SYMBOL_EXPORT_END()
 # define rb_scan_args_verify(fmt, varc) RBIMPL_ASSERT_NOTHING
 #else
 # /* At  one sight  it _seems_  the expressions  below could  be written  using
-#  * static assrtions.  The reality is no, they don't.  Because fmt is a string
-#  * literal, any operations  against fmt cannot produce  the "integer constant
-#  * expression"s, as  defined in ISO/IEC  9899:2018 section 6.6  paragraph #6.
-#  * Static assertions  need such  integer constant  expressions as  defined in
-#  * ISO/IEC 9899:2018 section 6.7.10 paragraph #3.
+#  * static  assertions.  The  reality is  no, they  don't.  Because  fmt is  a
+#  * string literal,  any operations  against fmt  cannot produce  the "integer
+#  * constant  expression"s,  as  defined  in  ISO/IEC  9899:2018  section  6.6
+#  * paragraph #6.  Static assertions need such integer constant expressions as
+#  * defined in ISO/IEC 9899:2018 section 6.7.10 paragraph #3.
 #  *
-#  * GCC nonetheless constant-folds this into no-op, though. */
+#  * GCC nonetheless constant-folds this into a no-op, though. */
 # define rb_scan_args_verify(fmt, varc) \
     (sizeof(char[1-2*(rb_scan_args_count(fmt)<0)])!=1 ? \
      rb_scan_args_bad_format(fmt) : \
@@ -349,7 +477,12 @@ rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
 #undef rb_scan_args_next_param
 }
 
-#if ! defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
+/** @endcond */
+
+#if defined(__DOXYGEN__)
+# /* don't bother */
+
+#elif ! defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
 # /* skip */
 
 #elif ! defined(HAVE_VA_ARGS_MACRO)

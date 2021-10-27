@@ -146,6 +146,7 @@ class TestBigDecimal < Test::Unit::TestCase
   def test_BigDecimal_with_float
     assert_equal(BigDecimal("0.1235"), BigDecimal(0.1234567, 4))
     assert_equal(BigDecimal("-0.1235"), BigDecimal(-0.1234567, 4))
+    assert_equal(BigDecimal("0.01"), BigDecimal(0.01, Float::DIG + 1))
     assert_raise_with_message(ArgumentError, "can't omit precision for a Float.") { BigDecimal(4.2) }
     assert_raise(ArgumentError) { BigDecimal(0.1, Float::DIG + 2) }
     assert_nothing_raised { BigDecimal(0.1, Float::DIG + 1) }
@@ -656,13 +657,10 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_precs_deprecated
-    saved = Warning[:deprecated]
-    Warning[:deprecated] = true
     assert_warn(/BigDecimal#precs is deprecated and will be removed in the future/) do
+      Warning[:deprecated] = true if defined?(Warning.[])
       BigDecimal("1").precs
     end
-  ensure
-    Warning[:deprecated] = saved
   end
 
   def test_precs

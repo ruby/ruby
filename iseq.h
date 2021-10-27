@@ -17,6 +17,10 @@ RUBY_EXTERN const int ruby_api_version[];
 #define ISEQ_MAJOR_VERSION ((unsigned int)ruby_api_version[0])
 #define ISEQ_MINOR_VERSION ((unsigned int)ruby_api_version[1])
 
+#ifndef USE_ISEQ_NODE_ID
+#define USE_ISEQ_NODE_ID 1
+#endif
+
 #ifndef rb_iseq_t
 typedef struct rb_iseq_struct rb_iseq_t;
 #define rb_iseq_t rb_iseq_t
@@ -70,6 +74,8 @@ ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 			   RUBY_EVENT_END   | \
 			   RUBY_EVENT_CALL  | \
 			   RUBY_EVENT_RETURN| \
+                           RUBY_EVENT_C_CALL| \
+                           RUBY_EVENT_C_RETURN| \
 			   RUBY_EVENT_B_CALL| \
 			   RUBY_EVENT_B_RETURN| \
                            RUBY_EVENT_COVERAGE_LINE| \
@@ -101,6 +107,7 @@ struct iseq_compile_data {
       struct iseq_compile_data_storage *storage_head;
       struct iseq_compile_data_storage *storage_current;
     } insn;
+    bool in_rescue;
     int loopval_popped;	/* used by NODE_BREAK */
     int last_line;
     int label_no;
@@ -160,6 +167,8 @@ const rb_iseq_t *rb_iseq_load_iseq(VALUE fname);
 unsigned int *rb_iseq_insns_info_decode_positions(const struct rb_iseq_constant_body *body);
 #endif
 
+int rb_vm_insn_addr2opcode(const void *addr);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /* compile.c */
@@ -175,6 +184,9 @@ void rb_iseq_mark_insn_storage(struct iseq_compile_data_storage *arena);
 VALUE rb_iseq_load(VALUE data, VALUE parent, VALUE opt);
 VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
 unsigned int rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos);
+#ifdef USE_ISEQ_NODE_ID
+int rb_iseq_node_id(const rb_iseq_t *iseq, size_t pos);
+#endif
 void rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events);
 void rb_iseq_trace_set_all(rb_event_flag_t turnon_events);
 void rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq);
@@ -184,6 +196,7 @@ VALUE rb_iseqw_new(const rb_iseq_t *iseq);
 const rb_iseq_t *rb_iseqw_to_iseq(VALUE iseqw);
 
 VALUE rb_iseq_absolute_path(const rb_iseq_t *iseq); /* obsolete */
+int rb_iseq_from_eval_p(const rb_iseq_t *iseq);
 VALUE rb_iseq_label(const rb_iseq_t *iseq);
 VALUE rb_iseq_base_label(const rb_iseq_t *iseq);
 VALUE rb_iseq_first_lineno(const rb_iseq_t *iseq);
@@ -212,6 +225,9 @@ struct rb_compile_option_struct {
 
 struct iseq_insn_info_entry {
     int line_no;
+#ifdef USE_ISEQ_NODE_ID
+    int node_id;
+#endif
     rb_event_flag_t events;
 };
 
@@ -289,7 +305,6 @@ enum defined_type {
     DEFINED_FALSE,
     DEFINED_ASGN,
     DEFINED_EXPR,
-    DEFINED_IVAR2,
     DEFINED_REF,
     DEFINED_FUNC,
     DEFINED_CONST_FROM

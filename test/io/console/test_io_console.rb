@@ -7,7 +7,7 @@ rescue LoadError
 end
 
 class TestIO_Console < Test::Unit::TestCase
-  PATHS = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|/\w+\.rb)\z") {$`}
+  PATHS = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|\.rb|/\w+\.rb)\z") {$`}
   PATHS.uniq!
 
   # FreeBSD seems to hang on TTOU when running parallel tests
@@ -35,7 +35,7 @@ class TestIO_Console < Test::Unit::TestCase
       Errno.const_get(e) if Errno.const_defined?(e)
     }
     exceptions.compact!
-    skip if exceptions.empty?
+    omit if exceptions.empty?
     File.open(IO::NULL) do |f|
       e = assert_raise(*exceptions) do
         f.echo?
@@ -226,7 +226,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 
   def test_getpass
-    skip unless IO.method_defined?("getpass")
+    omit unless IO.method_defined?("getpass")
     run_pty("p IO.console.getpass('> ')") do |r, w|
       assert_equal("> ", r.readpartial(10))
       sleep 0.1
@@ -375,7 +375,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       if cc = ctrl["intr"]
         assert_ctrl("#{cc.ord}", cc, r, w)
         assert_ctrl("#{cc.ord}", cc, r, w)
-        assert_ctrl("Interrupt", cc, r, w) unless /linux/ =~ RUBY_PLATFORM
+        assert_ctrl("Interrupt", cc, r, w) unless /linux|solaris/ =~ RUBY_PLATFORM
       end
       if cc = ctrl["dsusp"]
         assert_ctrl("#{cc.ord}", cc, r, w)
@@ -410,7 +410,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   def helper
     m, s = PTY.open
   rescue RuntimeError
-    skip $!
+    omit $!
   else
     yield m, s
   ensure
@@ -419,9 +419,11 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 
   def run_pty(src, n = 1)
+    pend("PTY.spawn cannot control terminal on JRuby") if RUBY_ENGINE == 'jruby'
+
     r, w, pid = PTY.spawn(EnvUtil.rubybin, "-I#{TestIO_Console::PATHS.join(File::PATH_SEPARATOR)}", "-rio/console", "-e", src)
   rescue RuntimeError
-    skip $!
+    omit $!
   else
     if block_given?
       yield r, w, pid
@@ -545,14 +547,14 @@ end
 
 TestIO_Console.class_eval do
   def test_stringio_getch
-    assert_separately %w"--disable=gems -rstringio -rio/console", %q{
-      assert_operator(StringIO, :method_defined?, :getch)
+    assert_ruby_status %w"--disable=gems -rstringio -rio/console", %q{
+      abort unless StringIO.method_defined?(:getch)
     }
-    assert_separately %w"--disable=gems -rio/console -rstringio", %q{
-      assert_operator(StringIO, :method_defined?, :getch)
+    assert_ruby_status %w"--disable=gems -rio/console -rstringio", %q{
+      abort unless StringIO.method_defined?(:getch)
     }
-    assert_separately %w"--disable=gems -rstringio", %q{
-      assert_not_operator(StringIO, :method_defined?, :getch)
+    assert_ruby_status %w"--disable=gems -rstringio", %q{
+      abort if StringIO.method_defined?(:getch)
     }
   end
 end

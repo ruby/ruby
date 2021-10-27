@@ -13,6 +13,10 @@ class CApiModuleSpecs
     autoload :D, File.expand_path('../const_get.rb', __FILE__)
 
     X = 1
+    Q = 1
+    R = 2
+    S = 3
+    T = 5
   end
 
   class B < A

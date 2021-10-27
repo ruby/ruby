@@ -366,6 +366,15 @@ See also Warning in {Core classes updates}[#label-Core+classes+updates+-28outsta
 
 [File]
 
+  [New method]
+
+    * Added File.absolute_path? to check whether a path is absolute or
+      not in a portable way. [Feature #15868]
+
+        File.absolute_path?("/foo")   # => true (on *nix)
+        File.absolute_path?("C:/foo") # => true (on Windows)
+        File.absolute_path?("foo")    # => false
+
   [Modified method]
 
     * File.extname now returns a dot string for names ending with a dot on

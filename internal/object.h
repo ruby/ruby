@@ -1,7 +1,6 @@
 #ifndef INTERNAL_OBJECT_H                                /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_OBJECT_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -42,13 +41,14 @@ void rb_obj_copy_ivar(VALUE dest, VALUE obj);
 VALUE rb_false(VALUE obj);
 VALUE rb_convert_type_with_id(VALUE v, int t, const char* nam, ID mid);
 VALUE rb_obj_size(VALUE self, VALUE args, VALUE obj);
+VALUE rb_get_freeze_opt(int argc, VALUE *argv);
 MJIT_SYMBOL_EXPORT_END
 
 static inline void
 RBASIC_SET_CLASS_RAW(VALUE obj, VALUE klass)
 {
-    struct { VALUE flags; VALUE klass; } *ptr = (void *)obj;
-    ptr->klass = klass;
+    const VALUE *ptr = &RBASIC(obj)->klass;
+    *(VALUE *)ptr = klass;
 }
 
 static inline void

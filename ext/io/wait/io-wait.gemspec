@@ -1,6 +1,8 @@
+_VERSION = "0.2.0"
+
 Gem::Specification.new do |spec|
   spec.name          = "io-wait"
-  spec.version       = "0.1.0"
+  spec.version       = _VERSION
   spec.authors       = ["Nobu Nakada"]
   spec.email         = ["nobu@ruby-lang.org"]
 
@@ -8,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.description   = %q{Waits until IO is readable or writable without blocking.}
   spec.homepage      = "https://github.com/ruby/io-wait"
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
-  spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
+  spec.required_ruby_version = Gem::Requirement.new(">= 3.0.0")
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
@@ -20,6 +22,6 @@ Gem::Specification.new do |spec|
   end
   spec.extensions    = %w[ext/io/wait/extconf.rb]
   spec.bindir        = "exe"
-  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
+  spec.executables   = []
   spec.require_paths = ["lib"]
 end

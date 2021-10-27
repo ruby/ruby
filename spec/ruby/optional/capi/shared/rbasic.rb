@@ -2,7 +2,7 @@ describe :rbasic, shared: true do
 
   before :all do
     specs = CApiRBasicSpecs.new
-    @taint = specs.taint_flag
+    @taint = ruby_version_is(''...'3.1') ? specs.taint_flag : 0
     @freeze = specs.freeze_flag
   end
 
@@ -52,26 +52,6 @@ describe :rbasic, shared: true do
       obj.should.tainted?
       obj.should.frozen?
     end
-  end
-
-  it "supports user flags" do
-    obj, _ = @data.call
-    initial = @specs.get_flags(obj)
-    @specs.set_flags(obj, 1 << 14 | 1 << 16 | initial).should == 1 << 14 | 1 << 16 | initial
-    @specs.get_flags(obj).should == 1 << 14 | 1 << 16 | initial
-    @specs.set_flags(obj, initial).should == initial
-  end
-
-  it "supports copying the flags from one object over to the other" do
-    obj1, obj2 = @data.call
-    initial = @specs.get_flags(obj1)
-    @specs.get_flags(obj2).should == initial
-    @specs.set_flags(obj1, 1 << 14 | 1 << 16 | initial)
-    @specs.copy_flags(obj2, obj1)
-    @specs.get_flags(obj2).should == 1 << 14 | 1 << 16 | initial
-    @specs.set_flags(obj1, initial)
-    @specs.copy_flags(obj2, obj1)
-    @specs.get_flags(obj2).should == initial
   end
 
   it "supports retrieving the (meta)class" do

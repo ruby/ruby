@@ -5,6 +5,7 @@ RSpec.describe "bundle lock with git gems" do
     build_git "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem 'foo', :git => "#{lib_path("foo-1.0")}"
     G
   end

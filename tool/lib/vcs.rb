@@ -52,9 +52,6 @@ module DebugSystem
     ret
   end
 end
-module Kernel
-  prepend(DebugSystem)
-end
 
 class VCS
   prepend(DebugSystem) if defined?(DebugSystem)
@@ -65,7 +62,8 @@ class VCS
     @@dirs << [dir, self, pred]
   end
 
-  def self.detect(path = '.', options = {}, parser = nil)
+  def self.detect(path = '.', options = {}, parser = nil, **opts)
+    options.update(opts)
     uplevel_limit = options.fetch(:uplevel_limit, 0)
     curr = path
     begin
@@ -341,7 +339,7 @@ class VCS
       rev.to_i if rev
     end
 
-    def export_changelog(url, from, to, path)
+    def export_changelog(url = '.', from = nil, to = nil, _path = nil, path: _path)
       range = [to || 'HEAD', (from ? from+1 : branch_beginning(url))].compact.join(':')
       IO.popen({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
                %W"#{COMMAND} log -r#{range} #{url}") do |r|
@@ -525,7 +523,7 @@ class VCS
                    #{url.to_str} -- version.h include/ruby/version.h])
     end
 
-    def export_changelog(url, from, to, path)
+    def export_changelog(url = '@', from = nil, to = nil, _path = nil, path: _path, base_url: nil)
       svn = nil
       from, to = [from, to].map do |rev|
         rev or next
@@ -554,14 +552,32 @@ class VCS
       else
         arg = ["--since=25 Dec 00:00:00", to]
       end
-      if svn
-        format_changelog_as_svn(path, arg)
+      writer =
+        if svn
+          format_changelog_as_svn(path, arg)
+        else
+          if base_url == true
+            remote, = upstream
+            if remote &&= cmd_read(env, %W[#{COMMAND} remote get-url --no-push #{remote}])
+              remote.chomp!
+              # hack to redirect git.r-l.o to github
+              remote.sub!(/\Agit@git\.ruby-lang\.org:/, 'git@github.com:ruby/')
+              remote.sub!(/\Agit@(.*?):(.*?)(?:\.git)?\z/, 'https://\1/\2/commit/')
+            end
+            base_url = remote
+          end
+          format_changelog(path, arg, base_url)
+        end
+      if !path or path == '-'
+        writer[$stdout]
       else
-        format_changelog(path, arg)
+        File.open(path, 'wb', &writer)
       end
     end
 
-    def format_changelog(path, arg)
+    LOG_FIX_REGEXP_SEPARATORS = '/!:;|,#%&'
+
+    def format_changelog(path, arg, base_url = nil)
       env = {'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'}
       cmd = %W"#{COMMAND} log --format=fuller --notes=commits --notes=log-fix --topo-order --no-merges"
       date = "--date=iso-local"
@@ -570,8 +586,9 @@ class VCS
       end
       cmd << date
       cmd.concat(arg)
-      File.open(path, 'w') do |w|
+      proc do |w|
         w.print "-*- coding: utf-8 -*-\n\n"
+        w.print "base-url = #{base_url}\n\n" if base_url
         cmd_pipe(env, cmd, chdir: @srcdir) do |r|
           while s = r.gets("\ncommit ")
             h, s = s.split(/^$/, 2)
@@ -581,13 +598,16 @@ class VCS
               s = s.lines
               fix.each_line do |x|
                 case x
-                when %r[^ +(\d+)s/(.+)/(.*)/]
+                when %r[^ +(\d+)s([#{LOG_FIX_REGEXP_SEPARATORS}])(.+)\2(.*)\2]o
+                  n = $1.to_i
+                  wrong = $3
+                  correct = $4
                   begin
-                    s[$1.to_i][$2] = $3
+                    s[n][wrong] = correct
                   rescue IndexError
-                    message = ["format_changelog failed to replace #{$2.dump} with #{$3.dump} at #$1\n"]
-                    from = [1, $1.to_i-2].max
-                    to = [s.size-1, $1.to_i+2].min
+                    message = ["format_changelog failed to replace #{wrong.dump} with #{correct.dump} at #$1\n"]
+                    from = [1, n-2].max
+                    to = [s.size-1, n+2].min
                     s.each_with_index do |e, i|
                       next if i < from
                       break if to < i
@@ -595,12 +615,22 @@ class VCS
                     end
                     raise message.join('')
                   end
-                when %r[^( +)(\d+)i/(.+)/]
-                  s[$2.to_i, 0] = "#{$1}#{$3}\n"
+                when %r[^( +)(\d+)i([#{LOG_FIX_REGEXP_SEPARATORS}])(.*)\3]o
+                  s[$2.to_i, 0] = "#{$1}#{$4}\n"
+                when %r[^ +(\d+)(?:,(\d+))?d]
+                  n = $1.to_i
+                  e = $2
+                  s[n..(e ? e.to_i : n)] = []
                 end
               end
               s = s.join('')
             end
+
+            if %r[^ +(https://github\.com/[^/]+/[^/]+/)commit/\h+\n(?=(?: +\n(?i: +Co-authored-by: .*\n)+)?(?:\n|\Z))] =~ s
+              issue = "#{$1}pull/"
+              s.gsub!(/\b[Ff]ix(?:e[sd])? \K#(?=\d+)/) {issue}
+            end
+
             s.gsub!(/ +\n/, "\n")
             s.sub!(/^Notes:/, '  \&')
             w.print h, s
@@ -612,7 +642,7 @@ class VCS
     def format_changelog_as_svn(path, arg)
       cmd = %W"#{COMMAND} log --topo-order --no-notes -z --format=%an%n%at%n%B"
       cmd.concat(arg)
-      File.open(path, 'w') do |w|
+      proc do |w|
         sep = "-"*72 + "\n"
         w.print sep
         cmd_pipe(cmd) do |r|

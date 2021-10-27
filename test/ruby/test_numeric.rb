@@ -200,6 +200,14 @@ class TestNumeric < Test::Unit::TestCase
     assert_nil(a <=> :foo)
   end
 
+  def test_float_round_ndigits
+    bug14635 = "[ruby-core:86323]"
+    f = 0.5
+    31.times do |i|
+      assert_equal(0.5, f.round(i+1), bug14635 + " (argument: #{i+1})")
+    end
+  end
+
   def test_floor_ceil_round_truncate
     a = Class.new(Numeric) do
       def to_f; 1.5; end
@@ -227,6 +235,15 @@ class TestNumeric < Test::Unit::TestCase
     assert_equal(-1, a.ceil)
     assert_equal(-2, a.round)
     assert_equal(-1, a.truncate)
+  end
+
+  def test_floor_ceil_ndigits
+    bug17183 = "[ruby-core:100090]"
+    f = 291.4
+    31.times do |i|
+      assert_equal(291.4, f.floor(i+1), bug17183)
+      assert_equal(291.4, f.ceil(i+1), bug17183)
+    end
   end
 
   def assert_step(expected, (from, *args), inf: false)
@@ -382,6 +399,18 @@ class TestNumeric < Test::Unit::TestCase
       end.new
       assert_raise(ArgumentError) {1.remainder(x)}
     end;
+  end
+
+  def test_remainder_infinity
+    assert_equal(4, 4.remainder(Float::INFINITY))
+    assert_equal(4, 4.remainder(-Float::INFINITY))
+    assert_equal(-4, -4.remainder(Float::INFINITY))
+    assert_equal(-4, -4.remainder(-Float::INFINITY))
+
+    assert_equal(4.2, 4.2.remainder(Float::INFINITY))
+    assert_equal(4.2, 4.2.remainder(-Float::INFINITY))
+    assert_equal(-4.2, -4.2.remainder(Float::INFINITY))
+    assert_equal(-4.2, -4.2.remainder(-Float::INFINITY))
   end
 
   def test_comparison_comparable

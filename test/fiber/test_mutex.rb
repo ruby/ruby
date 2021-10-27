@@ -4,7 +4,7 @@ require_relative 'scheduler'
 
 class TestFiberMutex < Test::Unit::TestCase
   def test_mutex_synchronize
-    mutex = Mutex.new
+    mutex = Thread::Mutex.new
 
     thread = Thread.new do
       scheduler = Scheduler.new
@@ -23,7 +23,7 @@ class TestFiberMutex < Test::Unit::TestCase
   end
 
   def test_mutex_interleaved_locking
-    mutex = Mutex.new
+    mutex = Thread::Mutex.new
 
     thread = Thread.new do
       scheduler = Scheduler.new
@@ -48,7 +48,7 @@ class TestFiberMutex < Test::Unit::TestCase
   end
 
   def test_mutex_thread
-    mutex = Mutex.new
+    mutex = Thread::Mutex.new
     mutex.lock
 
     thread = Thread.new do
@@ -71,7 +71,7 @@ class TestFiberMutex < Test::Unit::TestCase
   end
 
   def test_mutex_fiber_raise
-    mutex = Mutex.new
+    mutex = Thread::Mutex.new
     ran = false
 
     main = Thread.new do
@@ -103,8 +103,8 @@ class TestFiberMutex < Test::Unit::TestCase
   end
 
   def test_condition_variable
-    mutex = Mutex.new
-    condition = ConditionVariable.new
+    mutex = Thread::Mutex.new
+    condition = Thread::ConditionVariable.new
 
     signalled = 0
 
@@ -138,7 +138,7 @@ class TestFiberMutex < Test::Unit::TestCase
   end
 
   def test_queue
-    queue = Queue.new
+    queue = Thread::Queue.new
     processed = 0
 
     thread = Thread.new do
@@ -169,7 +169,7 @@ class TestFiberMutex < Test::Unit::TestCase
   end
 
   def test_queue_pop_waits
-    queue = Queue.new
+    queue = Thread::Queue.new
     running = false
 
     thread = Thread.new do
@@ -198,7 +198,7 @@ class TestFiberMutex < Test::Unit::TestCase
 
     assert_in_out_err %W[-I#{__dir__} -], <<-RUBY, ['in synchronize'], error_pattern, success: false
     require 'scheduler'
-    mutex = Mutex.new
+    mutex = Thread::Mutex.new
 
     thread = Thread.new do
       scheduler = Scheduler.new

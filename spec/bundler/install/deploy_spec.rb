@@ -53,6 +53,7 @@ RSpec.describe "install in deployment or frozen mode" do
   it "works if you exclude a group with a git gem" do
     build_git "foo"
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       group :test do
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       end
@@ -76,8 +77,22 @@ RSpec.describe "install in deployment or frozen mode" do
     build_lib "foo", :path => lib_path("nested/foo")
     build_lib "bar", :path => lib_path("nested/bar")
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", "1.0", :path => "#{lib_path("nested")}"
       gem "bar", :path => "#{lib_path("nested")}"
+    G
+
+    bundle :install
+    bundle "config set --local deployment true"
+    bundle :install
+  end
+
+  it "works when path gems are specified twice" do
+    build_lib "foo", :path => lib_path("nested/foo")
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "foo", :path => "#{lib_path("nested/foo")}"
+      gem "foo", :path => "#{lib_path("nested/foo")}"
     G
 
     bundle :install
@@ -98,6 +113,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
   it "works with sources given by a block" do
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       source "#{file_uri_for(gem_repo1)}" do
         gem "rack"
       end
@@ -114,21 +130,21 @@ RSpec.describe "install in deployment or frozen mode" do
       bundle "config set --local path vendor/bundle"
       bundle "install"
       gemfile <<-G
-      source "http://user_name:password@localgemserver.test/"
-      gem "rack"
+        source "http://user_name:password@localgemserver.test/"
+        gem "rack"
       G
 
       lockfile <<-G
-      GEM
-        remote: http://localgemserver.test/
-        specs:
-          rack (1.0.0)
+        GEM
+          remote: http://localgemserver.test/
+          specs:
+            rack (1.0.0)
 
-      PLATFORMS
-        #{local}
+        PLATFORMS
+          #{local}
 
-      DEPENDENCIES
-        rack
+        DEPENDENCIES
+          rack
       G
 
       bundle "config set --local deployment true"
@@ -341,7 +357,7 @@ RSpec.describe "install in deployment or frozen mode" do
       bundle "config set --local deployment true"
       bundle :install, :raise_on_error => false
       expect(err).to include("deployment mode")
-      expect(err).to include("You have added to the Gemfile:\n* source: git://hubz.com (at master)")
+      expect(err).to include("You have added to the Gemfile:\n* source: git://hubz.com")
       expect(err).not_to include("You have changed in the Gemfile")
     end
 
@@ -361,7 +377,7 @@ RSpec.describe "install in deployment or frozen mode" do
       bundle "config set --local deployment true"
       bundle :install, :raise_on_error => false
       expect(err).to include("deployment mode")
-      expect(err).to include("You have deleted from the Gemfile:\n* source: #{lib_path("rack-1.0")} (at master@#{revision_for(lib_path("rack-1.0"))[0..6]}")
+      expect(err).to include("You have deleted from the Gemfile:\n* source: #{lib_path("rack-1.0")}")
       expect(err).not_to include("You have added to the Gemfile")
       expect(err).not_to include("You have changed in the Gemfile")
     end
@@ -385,7 +401,7 @@ RSpec.describe "install in deployment or frozen mode" do
       bundle "config set --local deployment true"
       bundle :install, :raise_on_error => false
       expect(err).to include("deployment mode")
-      expect(err).to include("You have changed in the Gemfile:\n* rack from `no specified source` to `#{lib_path("rack")} (at master@#{revision_for(lib_path("rack"))[0..6]})`")
+      expect(err).to include("You have changed in the Gemfile:\n* rack from `no specified source` to `#{lib_path("rack")}`")
       expect(err).not_to include("You have added to the Gemfile")
       expect(err).not_to include("You have deleted from the Gemfile")
     end
@@ -401,7 +417,7 @@ RSpec.describe "install in deployment or frozen mode" do
         gem "rack-obama"
       G
 
-      expect(the_bundle).not_to include_gems "rack 1.0.0"
+      run "require 'rack'", :raise_on_error => false
       expect(err).to include strip_whitespace(<<-E).strip
 The dependencies in your gemfile changed
 
@@ -419,6 +435,7 @@ You have deleted from the Gemfile:
     it "works fine after bundle package and bundle install --local" do
       build_lib "foo", :path => lib_path("foo")
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :path => "#{lib_path("foo")}"
       G
 

@@ -12,12 +12,7 @@ module Bundler
       @options = options
       @cmd = args.shift
       @args = args
-
-      if !Bundler.current_ruby.jruby?
-        @args << { :close_others => !options.keep_file_descriptors? }
-      elsif options.keep_file_descriptors?
-        Bundler.ui.warn "Ruby version #{RUBY_VERSION} defaults to keeping non-standard file descriptors on Kernel#exec."
-      end
+      @args << { :close_others => !options.keep_file_descriptors? } unless Bundler.current_ruby.jruby?
     end
 
     def run

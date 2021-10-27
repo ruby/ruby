@@ -1,7 +1,6 @@
 # frozen_string_literal: false
 require 'net/http'
 require 'test/unit'
-require 'stringio'
 
 class HTTPRequestTest < Test::Unit::TestCase
 

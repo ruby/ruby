@@ -5,6 +5,19 @@ require "fileutils"
 
 module TestIRB
   class TestInit < Test::Unit::TestCase
+    def setup
+      # IRBRC is for RVM...
+      @backup_env = %w[HOME XDG_CONFIG_HOME IRBRC].each_with_object({}) do |env, hash|
+        hash[env] = ENV.delete(env)
+      end
+      ENV["HOME"] = @tmpdir = Dir.mktmpdir("test_irb_init_#{$$}")
+    end
+
+    def teardown
+      ENV.update(@backup_env)
+      FileUtils.rm_rf(@tmpdir)
+    end
+
     def test_setup_with_argv_preserves_global_argv
       argv = ["foo", "bar"]
       with_argv(argv) do
@@ -20,12 +33,8 @@ module TestIRB
     end
 
     def test_rc_file
-      backup_irbrc = ENV.delete("IRBRC") # This is for RVM...
-      backup_xdg_config_home = ENV.delete("XDG_CONFIG_HOME")
-      backup_home = ENV["HOME"]
-      Dir.mktmpdir("test_irb_init_#{$$}") do |tmpdir|
-        ENV["HOME"] = tmpdir
-
+      tmpdir = @tmpdir
+      Dir.chdir(tmpdir) do
         IRB.conf[:RC_NAME_GENERATOR] = nil
         assert_equal(tmpdir+"/.irb#{IRB::IRBRC_EXT}", IRB.rc_file)
         assert_equal(tmpdir+"/.irb_history", IRB.rc_file("_history"))
@@ -34,19 +43,11 @@ module TestIRB
         assert_equal(tmpdir+"/.irb#{IRB::IRBRC_EXT}", IRB.rc_file)
         assert_equal(tmpdir+"/.irb_history", IRB.rc_file("_history"))
       end
-    ensure
-      ENV["HOME"] = backup_home
-      ENV["XDG_CONFIG_HOME"] = backup_xdg_config_home
-      ENV["IRBRC"] = backup_irbrc
     end
 
     def test_rc_file_in_subdir
-      backup_irbrc = ENV.delete("IRBRC") # This is for RVM...
-      backup_xdg_config_home = ENV.delete("XDG_CONFIG_HOME")
-      backup_home = ENV["HOME"]
-      Dir.mktmpdir("test_irb_init_#{$$}") do |tmpdir|
-        ENV["HOME"] = tmpdir
-
+      tmpdir = @tmpdir
+      Dir.chdir(tmpdir) do
         FileUtils.mkdir_p("#{tmpdir}/mydir")
         Dir.chdir("#{tmpdir}/mydir") do
           IRB.conf[:RC_NAME_GENERATOR] = nil
@@ -58,10 +59,31 @@ module TestIRB
           assert_equal(tmpdir+"/.irb_history", IRB.rc_file("_history"))
         end
       end
+    end
+
+    def test_recovery_sigint
+      bundle_exec = ENV.key?('BUNDLE_GEMFILE') ? ['-rbundler/setup'] : []
+      status = assert_in_out_err(bundle_exec + %w[-W0 -rirb -e binding.irb;loop{Process.kill("SIGINT",$$)} -- -f --], "exit\n", //, //)
+      Process.kill("SIGKILL", status.pid) if !status.exited? && !status.stopped? && !status.signaled?
+    end
+
+    def test_no_color_environment_variable
+      orig_no_color = ENV['NO_COLOR']
+      orig_use_colorize = IRB.conf[:USE_COLORIZE]
+      IRB.conf[:USE_COLORIZE] = true
+
+      assert IRB.conf[:USE_COLORIZE]
+
+      ENV['NO_COLOR'] = 'true'
+      IRB.setup(__FILE__)
+      refute IRB.conf[:USE_COLORIZE]
+
+      ENV['NO_COLOR'] = nil
+      IRB.setup(__FILE__)
+      assert IRB.conf[:USE_COLORIZE]
     ensure
-      ENV["HOME"] = backup_home
-      ENV["XDG_CONFIG_HOME"] = backup_xdg_config_home
-      ENV["IRBRC"] = backup_irbrc
+      ENV['NO_COLOR'] = orig_no_color
+      IRB.conf[:USE_COLORIZE] = orig_use_colorize
     end
 
     private

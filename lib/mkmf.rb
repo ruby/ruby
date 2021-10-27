@@ -207,8 +207,8 @@ module MakeMakefile
         ['RUBYCOMMONDIR', '$(vendordir)$(target_prefix)'],
         ['RUBYLIBDIR',    '$(vendorlibdir)$(target_prefix)'],
         ['RUBYARCHDIR',   '$(vendorarchdir)$(target_prefix)'],
-        ['HDRDIR',        '$(rubyhdrdir)/ruby$(target_prefix)'],
-        ['ARCHHDRDIR',    '$(rubyhdrdir)/$(arch)/ruby$(target_prefix)'],
+        ['HDRDIR',        '$(vendorhdrdir)$(target_prefix)'],
+        ['ARCHHDRDIR',    '$(vendorarchhdrdir)$(target_prefix)'],
       ]
     else
       dirs = [
@@ -216,8 +216,8 @@ module MakeMakefile
         ['RUBYCOMMONDIR', '$(sitedir)$(target_prefix)'],
         ['RUBYLIBDIR',    '$(sitelibdir)$(target_prefix)'],
         ['RUBYARCHDIR',   '$(sitearchdir)$(target_prefix)'],
-        ['HDRDIR',        '$(rubyhdrdir)/ruby$(target_prefix)'],
-        ['ARCHHDRDIR',    '$(rubyhdrdir)/$(arch)/ruby$(target_prefix)'],
+        ['HDRDIR',        '$(sitehdrdir)$(target_prefix)'],
+        ['ARCHHDRDIR',    '$(sitearchhdrdir)$(target_prefix)'],
       ]
     end
     dirs << ['target_prefix', (target_prefix ? "/#{target_prefix}" : "")]
@@ -284,7 +284,8 @@ MESSAGE
   end
 
   def split_libs(*strs)
-    strs.map {|s| s.split(/\s+(?=-|\z)/)}.flatten
+    sep = $mswin ? /\s+/ : /\s+(?=-|\z)/
+    strs.map {|s| s.lstrip.split(sep)}.flatten
   end
 
   def merge_libs(*libs)
@@ -446,7 +447,7 @@ EOM
     src.sub!(/[^\n]\z/, "\\&\n")
     count = 0
     begin
-      open(conftest_source, "wb") do |cfile|
+      File.open(conftest_source, "wb") do |cfile|
         cfile.print src
       end
     rescue Errno::EACCES
@@ -770,11 +771,20 @@ int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const
   #             files.
   def try_func(func, libs, headers = nil, opt = "", &b)
     headers = cpp_include(headers)
+    prepare = String.new
     case func
     when /^&/
       decltype = proc {|x|"const volatile void *#{x}"}
     when /\)$/
-      call = func
+      strvars = []
+      call = func.gsub(/""/) {
+        v = "s#{strvars.size + 1}"
+        strvars << v
+        v
+      }
+      unless strvars.empty?
+        prepare << "char " << strvars.map {|v| "#{v}[1024]"}.join(", ") << "; "
+      end
     when nil
       call = ""
     else
@@ -804,7 +814,7 @@ SRC
 extern int t(void);
 #{MAIN_DOES_NOTHING 't'}
 #{"extern void #{call};" if decltype}
-int t(void) { #{call}; return 0; }
+int t(void) { #{prepare}#{call}; return 0; }
 SRC
   end
 
@@ -1728,7 +1738,7 @@ SRC
     hdr = hdr.join("")
     log_src(hdr, "#{header} is")
     unless (IO.read(header) == hdr rescue false)
-      open(header, "wb") do |hfile|
+      File.open(header, "wb") do |hfile|
         hfile.write(hdr)
       end
     end
@@ -1908,7 +1918,7 @@ SRC
         path.sub!(/\A([A-Za-z]):(?=\/)/, '/\1')
         path
       end
-    when 'cygwin'
+    when 'cygwin', 'msys'
       if CONFIG['target_os'] != 'cygwin'
         def mkintpath(path)
           IO.popen(["cygpath", "-u", path], &:read).chomp
@@ -1943,7 +1953,7 @@ NULLCMD = #{CONFIG['NULLCMD']}
 srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {mkintpath(CONFIG[$1||$2]).unspace}}
 topdir = #{mkintpath(topdir = $extmk ? CONFIG["topdir"] : $topdir).unspace}
 hdrdir = #{(hdrdir = CONFIG["hdrdir"]) == topdir ? "$(topdir)" : mkintpath(hdrdir).unspace}
-arch_hdrdir = #{$arch_hdrdir.quote}
+arch_hdrdir = #{mkintpath($arch_hdrdir).unspace}
 PATH_SEPARATOR = #{CONFIG['PATH_SEPARATOR']}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
 }
@@ -2038,7 +2048,7 @@ RUBY = $(ruby#{sep})
 ruby_headers = #{headers.join(' ')}
 
 RM = #{config_string('RM', &possible_command) || '$(RUBY) -run -e rm -- -f'}
-RM_RF = #{'$(RUBY) -run -e rm -- -rf'}
+RM_RF = #{config_string('RMALL', &possible_command) || '$(RUBY) -run -e rm -- -rf'}
 RMDIRS = #{config_string('RMDIRS', &possible_command) || '$(RUBY) -run -e rmdir -- -p'}
 MAKEDIRS = #{config_string('MAKEDIRS', &possible_command) || '@$(RUBY) -run -e mkdir -- -p'}
 INSTALL = #{config_string('INSTALL', &possible_command) || '@$(RUBY) -run -e install -- -vp'}
@@ -2340,7 +2350,7 @@ CLEANOBJS     = *.#{$OBJEXT} #{config_string('cleanobjs') {|t| t.gsub(/\$\*/, "$
 " #"
 
     conf = yield(conf) if block_given?
-    mfile = open("Makefile", "wb")
+    mfile = File.open("Makefile", "wb")
     mfile.puts(conf)
     mfile.print "
 all:    #{$extout ? "install" : target ? "$(DLLIB)" : "Makefile"}
@@ -2497,7 +2507,7 @@ site-install-rb: install-rb
       mfile.print "$(ECHO) linking static-library $(@#{rsep})\n\t$(Q) "
       mfile.print "$(AR) #{config_string('ARFLAGS') || 'cru '}$@ $(OBJS)"
       config_string('RANLIB') do |ranlib|
-        mfile.print "\n\t-$(Q)#{ranlib} $(@) 2> /dev/null || true"
+        mfile.print "\n\t-$(Q)#{ranlib} $(@)#{$ignore_error}"
       end
     end
     mfile.print "\n\n"
@@ -2763,7 +2773,7 @@ clean-rb-default::
 clean-rb::
 clean-so::
 clean: clean-so clean-static clean-rb-default clean-rb
-\t\t-$(Q)$(RM) $(CLEANLIBS#{sep}) $(CLEANOBJS#{sep}) $(CLEANFILES#{sep}) .*.time
+\t\t-$(Q)$(RM_RF) $(CLEANLIBS#{sep}) $(CLEANOBJS#{sep}) $(CLEANFILES#{sep}) .*.time
 
 distclean-rb-default::
 distclean-rb::

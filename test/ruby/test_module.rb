@@ -267,7 +267,7 @@ class TestModule < Test::Unit::TestCase
     ].each do |name, msg|
       expected = "wrong constant name %s" % name
       msg = "#{msg}#{': ' if msg}wrong constant name #{name.dump}"
-      assert_raise_with_message(NameError, expected, "#{msg} to #{m}") do
+      assert_raise_with_message(NameError, Regexp.compile(Regexp.quote(expected)), "#{msg} to #{m}") do
         yield name
       end
     end
@@ -404,19 +404,20 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:MIXIN, :USER], User.constants.sort)
   end
 
-  def test_self_initialize_copy
-    bug9535 = '[ruby-dev:47989] [Bug #9535]'
-    m = Module.new do
-      def foo
-        :ok
-      end
-      initialize_copy(self)
+  def test_initialize_copy
+    mod = Module.new { define_method(:foo) {:first} }
+    klass = Class.new { include mod }
+    instance = klass.new
+    assert_equal(:first, instance.foo)
+    new_mod = Module.new { define_method(:foo) { :second } }
+    assert_raise(TypeError) do
+      mod.send(:initialize_copy, new_mod)
     end
-    assert_equal(:ok, Object.new.extend(m).foo, bug9535)
+    4.times { GC.start }
+    assert_equal(:first, instance.foo) # [BUG] unreachable
   end
 
   def test_initialize_copy_empty
-    bug9813 = '[ruby-dev:48182] [Bug #9813]'
     m = Module.new do
       def x
       end
@@ -426,12 +427,52 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:x], m.instance_methods)
     assert_equal([:@x], m.instance_variables)
     assert_equal([:X], m.constants)
-    m.module_eval do
-      initialize_copy(Module.new)
+    assert_raise(TypeError) do
+      m.module_eval do
+        initialize_copy(Module.new)
+      end
     end
-    assert_empty(m.instance_methods, bug9813)
-    assert_empty(m.instance_variables, bug9813)
-    assert_empty(m.constants, bug9813)
+
+    m = Class.new(Module) do
+      def initialize_copy(other)
+        # leave uninitialized
+      end
+    end.new.dup
+    c = Class.new
+    assert_operator(c.include(m), :<, m)
+    cp = Module.instance_method(:initialize_copy)
+    assert_raise(TypeError) do
+      cp.bind_call(m, Module.new)
+    end
+  end
+
+  class Bug18185 < Module
+    module InstanceMethods
+    end
+    attr_reader :ancestor_list
+    def initialize
+      @ancestor_list = ancestors
+      include InstanceMethods
+    end
+    class Foo
+      attr_reader :key
+      def initialize(key:)
+        @key = key
+      end
+    end
+  end
+
+  def test_module_subclass_initialize
+    mod = Bug18185.new
+    c = Class.new(Bug18185::Foo) do
+      include mod
+    end
+    anc = c.ancestors
+    assert_include(anc, mod)
+    assert_equal(1, anc.count(BasicObject), ->{anc.inspect})
+    b = c.new(key: 1)
+    assert_equal(1, b.key)
+    assert_not_include(mod.ancestor_list, BasicObject)
   end
 
   def test_dup
@@ -476,6 +517,26 @@ class TestModule < Test::Unit::TestCase
 
   def test_include_with_no_args
     assert_raise(ArgumentError) { Module.new { include } }
+  end
+
+  def test_prepend_self
+    m = Module.new
+    assert_equal([m], m.ancestors)
+    m.prepend(m) rescue nil
+    assert_equal([m], m.ancestors)
+  end
+
+  def test_bug17590
+    m = Module.new
+    c = Class.new
+    c.prepend(m)
+    c.include(m)
+    m.prepend(m) rescue nil
+    m2 = Module.new
+    m2.prepend(m)
+    c.include(m2)
+
+    assert_equal([m, c, m2] + Object.ancestors, c.ancestors)
   end
 
   def test_prepend_works_with_duped_classes
@@ -1027,6 +1088,7 @@ class TestModule < Test::Unit::TestCase
   def test_attr_obsoleted_flag
     c = Class.new do
       extend Test::Unit::Assertions
+      extend Test::Unit::CoreAssertions
       def initialize
         @foo = :foo
         @bar = :bar
@@ -2274,6 +2336,137 @@ class TestModule < Test::Unit::TestCase
     assert_equal(0, 1 / 2)
   end
 
+  def test_visibility_after_refine_and_visibility_change_with_origin_class
+    m = Module.new
+    c = Class.new do
+      def x; :x end
+    end
+    c.prepend(m)
+    Module.new do
+      refine c do
+        def x; :y end
+      end
+    end
+
+    o1 = c.new
+    o2 = c.new
+    assert_equal(:x, o1.public_send(:x))
+    assert_equal(:x, o2.public_send(:x))
+    o1.singleton_class.send(:private, :x)
+    o2.singleton_class.send(:public, :x)
+
+    assert_raise(NoMethodError) { o1.public_send(:x) }
+    assert_equal(:x, o2.public_send(:x))
+  end
+
+  def test_visibility_after_multiple_refine_and_visibility_change_with_origin_class
+    m = Module.new
+    c = Class.new do
+      def x; :x end
+    end
+    c.prepend(m)
+    Module.new do
+      refine c do
+        def x; :y end
+      end
+    end
+    Module.new do
+      refine c do
+        def x; :z end
+      end
+    end
+
+    o1 = c.new
+    o2 = c.new
+    assert_equal(:x, o1.public_send(:x))
+    assert_equal(:x, o2.public_send(:x))
+    o1.singleton_class.send(:private, :x)
+    o2.singleton_class.send(:public, :x)
+
+    assert_raise(NoMethodError) { o1.public_send(:x) }
+    assert_equal(:x, o2.public_send(:x))
+  end
+
+  def test_visibility_after_refine_and_visibility_change_without_origin_class
+    c = Class.new do
+      def x; :x end
+    end
+    Module.new do
+      refine c do
+        def x; :y end
+      end
+    end
+    o1 = c.new
+    o2 = c.new
+    o1.singleton_class.send(:private, :x)
+    o2.singleton_class.send(:public, :x)
+    assert_raise(NoMethodError) { o1.public_send(:x) }
+    assert_equal(:x, o2.public_send(:x))
+  end
+
+  def test_visibility_after_multiple_refine_and_visibility_change_without_origin_class
+    c = Class.new do
+      def x; :x end
+    end
+    Module.new do
+      refine c do
+        def x; :y end
+      end
+    end
+    Module.new do
+      refine c do
+        def x; :z end
+      end
+    end
+    o1 = c.new
+    o2 = c.new
+    o1.singleton_class.send(:private, :x)
+    o2.singleton_class.send(:public, :x)
+    assert_raise(NoMethodError) { o1.public_send(:x) }
+    assert_equal(:x, o2.public_send(:x))
+  end
+
+  def test_visibility_after_refine_and_visibility_change_with_superclass
+    c = Class.new do
+      def x; :x end
+    end
+    sc = Class.new(c)
+    Module.new do
+      refine sc do
+        def x; :y end
+      end
+    end
+    o1 = sc.new
+    o2 = sc.new
+    o1.singleton_class.send(:private, :x)
+    o2.singleton_class.send(:public, :x)
+    assert_raise(NoMethodError) { o1.public_send(:x) }
+    assert_equal(:x, o2.public_send(:x))
+  end
+
+  def test_visibility_after_multiple_refine_and_visibility_change_with_superclass
+    c = Class.new do
+      def x; :x end
+    end
+    sc = Class.new(c)
+    Module.new do
+      refine sc do
+        def x; :y end
+      end
+    end
+    Module.new do
+      refine sc do
+        def x; :z end
+      end
+    end
+    o1 = sc.new
+    o2 = sc.new
+    o1.singleton_class.send(:private, :x)
+    o2.singleton_class.send(:public, :x)
+    assert_raise(NoMethodError) { o1.public_send(:x) }
+    assert_equal(:x, o2.public_send(:x))
+  end
+
   def test_prepend_visibility
     bug8005 = '[ruby-core:53106] [Bug #8005]'
     c = Class.new do
@@ -2737,6 +2930,61 @@ class TestModule < Test::Unit::TestCase
       end
       1_000_000.times{''} # cause GC
     }
+  end
+
+  def test_prepend_constant_lookup
+    m = Module.new do
+      const_set(:C, :m)
+    end
+    c = Class.new do
+      const_set(:C, :c)
+      prepend m
+    end
+    sc = Class.new(c)
+    # Situation from [Bug #17887]
+    assert_equal(sc.ancestors.take(3), [sc, m, c])
+    assert_equal(:m, sc.const_get(:C))
+    assert_equal(:m, sc::C)
+
+    assert_equal(:c, c::C)
+
+    m.send(:remove_const, :C)
+    assert_equal(:c, sc.const_get(:C))
+    assert_equal(:c, sc::C)
+
+    # Same ancestors, built with include instead of prepend
+    m = Module.new do
+      const_set(:C, :m)
+    end
+    c = Class.new do
+      const_set(:C, :c)
+    end
+    sc = Class.new(c) do
+      include m
+    end
+
+    assert_equal(sc.ancestors.take(3), [sc, m, c])
+    assert_equal(:m, sc.const_get(:C))
+    assert_equal(:m, sc::C)
+
+    m.send(:remove_const, :C)
+    assert_equal(:c, sc.const_get(:C))
+    assert_equal(:c, sc::C)
+
+    # Situation from [Bug #17887], but with modules
+    m = Module.new do
+      const_set(:C, :m)
+    end
+    m2 = Module.new do
+      const_set(:C, :m2)
+      prepend m
+    end
+    c = Class.new do
+      include m2
+    end
+    assert_equal(c.ancestors.take(3), [c, m, m2])
+    assert_equal(:m, c.const_get(:C))
+    assert_equal(:m, c::C)
   end
 
   def test_inspect_segfault

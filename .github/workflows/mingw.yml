@@ -8,8 +8,7 @@ jobs:
   make:
     runs-on: windows-2019
     env:
-      MSYSTEM: MINGW64
-      MSYSTEM_PREFIX: /mingw64
+      MSYSTEM: ${{ matrix.msystem }}
       MSYS2_ARCH: x86_64
       CHOST: "x86_64-w64-mingw32"
       CFLAGS:   "-march=x86-64 -mtune=generic -O3 -pipe -fstack-protector-strong"
@@ -20,25 +19,32 @@ jobs:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     strategy:
       matrix:
-        test_task: [ "check" ] # to make job names consistent
+        include:
+          - msystem: "MINGW64"
+            base_ruby: 2.6
+            test_task: [ "check" ] # to make job names consistent
+          - msystem: "UCRT64"
+            base_ruby: head
+            test_task: [ "check" ] # to make job names consistent
       fail-fast: false
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
       - run: mkdir build
         working-directory:
       - name: git config
         run: |
-          git config --system core.autocrlf false
-          git config --system core.eol lf
-          git config --system advice.detachedHead 0
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+          git config --global advice.detachedHead 0
+          git config --global init.defaultBranch garbage
       - uses: actions/checkout@v2
         with:
           path: src
       - name: Set up Ruby & MSYS2
-        uses: MSP-Greg/setup-ruby-pkgs@v1
+        uses: MSP-Greg/setup-ruby-pkgs@ucrt
         with:
-          ruby-version: 2.6
-          mingw: _upgrade_ gdbm gmp libffi libyaml openssl ragel readline
+          ruby-version: ${{ matrix.base_ruby }}
+          setup-ruby-ref: MSP-Greg/ruby-setup-ruby/00-win-ucrt
+          mingw: _upgrade_ gmp libffi libyaml openssl ragel readline gcc
           msys2: automake1.16 bison
       - name: where check
         run: |
@@ -81,7 +87,7 @@ jobs:
           make -j $jobs update-gems
 
       - name: make all
-        timeout-minutes: 40
+        timeout-minutes: 20
         run: |
           $jobs = [int](2 * $env:NUMBER_OF_PROCESSORS)
           make -j $jobs
@@ -102,7 +108,7 @@ jobs:
           make test
 
       - name: test-all
-        timeout-minutes: 60
+        timeout-minutes: 30
         run: |
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           $PSDefaultParameterValues['*:Encoding'] = 'utf8'
@@ -122,7 +128,7 @@ jobs:
           [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
           [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
           ruby -v
-          ruby ../mspec/bin/mspec -I../../tool/lib -j
+          ruby ../mspec/bin/mspec -I../../tool/lib -j --timeout 60
 
       - uses: k0kubun/action-slack@v2.0.0
         with:
@@ -136,7 +142,7 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: failure() && github.event_name == 'push'
+        if: ${{ failure() && github.event_name == 'push' }}
 
 defaults:
   run:

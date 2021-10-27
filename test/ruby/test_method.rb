@@ -578,7 +578,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], method(:mk8).parameters)
     assert_equal([[:nokey]], method(:mnk).parameters)
     # pending
-    assert_equal([[:rest, :*], [:block, :&]], method(:mf).parameters)
+    assert_equal([[:rest, :*], [:keyrest, :**], [:block, :&]], method(:mf).parameters)
   end
 
   def test_unbound_parameters
@@ -604,7 +604,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], self.class.instance_method(:mk8).parameters)
     assert_equal([[:nokey]], self.class.instance_method(:mnk).parameters)
     # pending
-    assert_equal([[:rest, :*], [:block, :&]], self.class.instance_method(:mf).parameters)
+    assert_equal([[:rest, :*], [:keyrest, :**], [:block, :&]], self.class.instance_method(:mf).parameters)
   end
 
   def test_bmethod_bound_parameters
@@ -1168,6 +1168,19 @@ class TestMethod < Test::Unit::TestCase
     assert_nil(m.super_method)
   end
 
+  # Bug 17780
+  def test_super_method_module_alias
+    m = Module.new do
+      def foo
+      end
+      alias :f :foo
+    end
+
+    method = m.instance_method(:f)
+    super_method = method.super_method
+    assert_nil(super_method)
+  end
+
   def rest_parameter(*rest)
     rest
   end
@@ -1287,6 +1300,21 @@ class TestMethod < Test::Unit::TestCase
 
       m = Object.instance_method(:x)
       assert_equal M, m.owner
+    end;
+  end
+
+  def test_override_optimized_method_on_class_using_prepend
+    assert_separately(%w(--disable-gems), <<-'end;', timeout: 30)
+      # Bug #17725 [ruby-core:102884]
+      $VERBOSE = nil
+      String.prepend(Module.new)
+      class String
+        def + other
+          'blah blah'
+        end
+      end
+
+      assert_equal('blah blah', 'a' + 'b')
     end;
   end
 

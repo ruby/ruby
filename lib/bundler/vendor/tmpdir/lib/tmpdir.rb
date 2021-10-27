@@ -115,7 +115,7 @@ class Bundler::Dir < Dir
       Bundler::Dir.tmpdir
     end
 
-    UNUSABLE_CHARS = [File::SEPARATOR, File::ALT_SEPARATOR, File::PATH_SEPARATOR, ":"].uniq.join("").freeze
+    UNUSABLE_CHARS = "^,-.0-9A-Z_a-z~"
 
     class << (RANDOM = Random.new)
       MAX = 36**6 # < 0x100000000

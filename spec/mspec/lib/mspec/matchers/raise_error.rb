@@ -1,4 +1,6 @@
 class RaiseErrorMatcher
+  attr_writer :block
+
   def initialize(exception, message, &block)
     @exception = exception
     @message = message

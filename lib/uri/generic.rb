@@ -643,7 +643,7 @@ module URI
     #
     def hostname
       v = self.host
-      /\A\[(.*)\]\z/ =~ v ? $1 : v
+      v&.start_with?('[') && v.end_with?(']') ? v[1..-2] : v
     end
 
     # Sets the host part of the URI as the argument with brackets for IPv6 addresses.
@@ -659,7 +659,7 @@ module URI
     # it is wrapped with brackets.
     #
     def hostname=(v)
-      v = "[#{v}]" if /\A\[.*\]\z/ !~ v && /:/ =~ v
+      v = "[#{v}]" if !(v&.start_with?('[') && v&.end_with?(']')) && v&.index(':')
       self.host = v
     end
 
@@ -1514,9 +1514,19 @@ module URI
           proxy_uri = env["CGI_#{name.upcase}"]
         end
       elsif name == 'http_proxy'
-        unless proxy_uri = env[name]
-          if proxy_uri = env[name.upcase]
-            warn 'The environment variable HTTP_PROXY is discouraged.  Use http_proxy.', uplevel: 1
+        if RUBY_ENGINE == 'jruby' && p_addr = ENV_JAVA['http.proxyHost']
+          p_port = ENV_JAVA['http.proxyPort']
+          if p_user = ENV_JAVA['http.proxyUser']
+            p_pass = ENV_JAVA['http.proxyPass']
+            proxy_uri = "http://#{p_user}:#{p_pass}@#{p_addr}:#{p_port}"
+          else
+            proxy_uri = "http://#{p_addr}:#{p_port}"
+          end
+        else
+          unless proxy_uri = env[name]
+            if proxy_uri = env[name.upcase]
+              warn 'The environment variable HTTP_PROXY is discouraged.  Use http_proxy.', uplevel: 1
+            end
           end
         end
       else

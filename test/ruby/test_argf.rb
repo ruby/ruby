@@ -745,6 +745,18 @@ class TestArgf < Test::Unit::TestCase
                       ["\"a\\n\"", "\"b\\n\""], [])
     assert_in_out_err(['-e', 'ARGF.each_line(chomp: true) {|para| p para}'], "a\nb\n",
                       ["\"a\"", "\"b\""], [])
+
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    lines = []
+    begin
+      argf.each_line(chomp: true) do |line|
+        lines << line
+      end
+    ensure
+      argf.close
+    end
+    assert_equal(%w[foo bar baz], lines)
   end
 
   def test_each_byte
@@ -993,6 +1005,45 @@ class TestArgf < Test::Unit::TestCase
     assert_nil(argf.gets, bug4274)
   end
 
+  def test_readlines_chomp
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    begin
+      assert_equal(%w[foo bar baz], argf.readlines(chomp: true))
+    ensure
+      argf.close
+    end
+
+    assert_in_out_err(['-e', 'p readlines(chomp: true)'], "a\nb\n",
+                      ["[\"a\", \"b\"]"], [])
+  end
+
+  def test_readline_chomp
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    begin
+      assert_equal("foo", argf.readline(chomp: true))
+    ensure
+      argf.close
+    end
+
+    assert_in_out_err(['-e', 'p readline(chomp: true)'], "a\nb\n",
+                      ["\"a\""], [])
+  end
+
+  def test_gets_chomp
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    begin
+      assert_equal("foo", argf.gets(chomp: true))
+    ensure
+      argf.close
+    end
+
+    assert_in_out_err(['-e', 'p gets(chomp: true)'], "a\nb\n",
+                      ["\"a\""], [])
+  end
+
   def test_readlines_twice
     bug5952 = '[ruby-dev:45160]'
     assert_ruby_status(["-e", "2.times {STDIN.tty?; readlines}"], "", bug5952)
@@ -1058,5 +1109,24 @@ class TestArgf < Test::Unit::TestCase
       ARGV[0] = nil
       assert_raise(TypeError, bug11610) {gets}
     };
+  end
+
+  def test_sized_read
+    s = "a"
+    [@t1, @t2, @t3].each { |t|
+      File.binwrite(t.path, s)
+      s = s.succ
+    }
+
+    ruby('-e', "print ARGF.read(3)", @t1.path, @t2.path, @t3.path) do |f|
+      assert_equal("abc", f.read)
+    end
+
+    argf = ARGF.class.new(@t1.path, @t2.path, @t3.path)
+    begin
+      assert_equal("abc", argf.read(3))
+    ensure
+      argf.close
+    end
   end
 end

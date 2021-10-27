@@ -517,27 +517,25 @@ static VALUE
 lazy_to_enum_i(VALUE self, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, int kw_splat);
 
 VALUE
-rb_enumeratorize_with_size(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn)
+rb_enumeratorize_with_size_kw(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, int kw_splat)
 {
-    /* Similar effect as calling obj.to_enum, i.e. dispatching to either
-       Kernel#to_enum vs Lazy#to_enum */
-    if (RTEST(rb_obj_is_kind_of(obj, rb_cLazy)))
-        return lazy_to_enum_i(obj, meth, argc, argv, size_fn, rb_keyword_given_p());
-    else
-	return enumerator_init(enumerator_allocate(rb_cEnumerator),
-                               obj, meth, argc, argv, size_fn, Qnil, rb_keyword_given_p());
+    VALUE base_class = rb_cEnumerator;
+
+    if (RTEST(rb_obj_is_kind_of(obj, rb_cLazy))) {
+        base_class = rb_cLazy;
+    }
+    else if (RTEST(rb_obj_is_kind_of(obj, rb_cEnumChain))) {
+        obj = enumerator_init(enumerator_allocate(rb_cEnumerator), obj, sym_each, 0, 0, 0, Qnil, false);
+    }
+
+    return enumerator_init(enumerator_allocate(base_class),
+                           obj, meth, argc, argv, size_fn, Qnil, kw_splat);
 }
 
 VALUE
-rb_enumeratorize_with_size_kw(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, int kw_splat)
+rb_enumeratorize_with_size(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn)
 {
-    /* Similar effect as calling obj.to_enum, i.e. dispatching to either
-       Kernel#to_enum vs Lazy#to_enum */
-    if (RTEST(rb_obj_is_kind_of(obj, rb_cLazy)))
-        return lazy_to_enum_i(obj, meth, argc, argv, size_fn, kw_splat);
-    else
-        return enumerator_init(enumerator_allocate(rb_cEnumerator),
-                               obj, meth, argc, argv, size_fn, Qnil, kw_splat);
+    return rb_enumeratorize_with_size_kw(obj, meth, argc, argv, size_fn, rb_keyword_given_p());
 }
 
 static VALUE
@@ -2702,8 +2700,14 @@ lazy_with_index_proc(VALUE proc_entry, struct MEMO* result, VALUE memos, long me
     return result;
 }
 
+static VALUE
+lazy_with_index_size(VALUE proc, VALUE receiver)
+{
+    return receiver;
+}
+
 static const lazyenum_funcs lazy_with_index_funcs = {
-    lazy_with_index_proc, 0,
+    lazy_with_index_proc, lazy_with_index_size,
 };
 
 /*
@@ -2711,7 +2715,8 @@ static const lazyenum_funcs lazy_with_index_funcs = {
  *   lazy.with_index(offset = 0) {|(*args), idx| block }
  *   lazy.with_index(offset = 0)
  *
- * If a block is given, iterates the given block for each element
+ * If a block is given, returns a lazy enumerator that will
+ * iterate over the given block for each element
  * with an index, which starts from +offset+, and returns a
  * lazy enumerator that yields the same values (without the index).
  *
@@ -3139,6 +3144,21 @@ enum_chain_initialize(VALUE obj, VALUE enums)
     return obj;
 }
 
+static VALUE
+new_enum_chain(VALUE enums)
+{
+    long i;
+    VALUE obj = enum_chain_initialize(enum_chain_allocate(rb_cEnumChain), enums);
+
+    for (i = 0; i < RARRAY_LEN(enums); i++) {
+        if (RTEST(rb_obj_is_kind_of(RARRAY_AREF(enums, i), rb_cLazy))) {
+            return enumerable_lazy(obj);
+        }
+    }
+
+    return obj;
+}
+
 /* :nodoc: */
 static VALUE
 enum_chain_init_copy(VALUE obj, VALUE orig)
@@ -3167,7 +3187,7 @@ enum_chain_total_size(VALUE enums)
     for (i = 0; i < RARRAY_LEN(enums); i++) {
         VALUE size = enum_size(RARRAY_AREF(enums, i));
 
-        if (NIL_P(size) || (RB_TYPE_P(size, T_FLOAT) && isinf(NUM2DBL(size)))) {
+        if (NIL_P(size) || (RB_FLOAT_TYPE_P(size) && isinf(NUM2DBL(size)))) {
             return size;
         }
         if (!RB_INTEGER_TYPE_P(size)) {
@@ -3308,8 +3328,7 @@ enum_chain(int argc, VALUE *argv, VALUE obj)
 {
     VALUE enums = rb_ary_new_from_values(1, &obj);
     rb_ary_cat(enums, argv, argc);
-
-    return enum_chain_initialize(enum_chain_allocate(rb_cEnumChain), enums);
+    return new_enum_chain(enums);
 }
 
 /*
@@ -3325,9 +3344,7 @@ enum_chain(int argc, VALUE *argv, VALUE obj)
 static VALUE
 enumerator_plus(VALUE obj, VALUE eobj)
 {
-    VALUE enums = rb_ary_new_from_args(2, obj, eobj);
-
-    return enum_chain_initialize(enum_chain_allocate(rb_cEnumChain), enums);
+    return new_enum_chain(rb_ary_new_from_args(2, obj, eobj));
 }
 
 /*
@@ -3352,7 +3369,7 @@ rb_arith_seq_new(VALUE obj, VALUE meth, int argc, VALUE const *argv,
     rb_ivar_set(aseq, id_begin, beg);
     rb_ivar_set(aseq, id_end, end);
     rb_ivar_set(aseq, id_step, step);
-    rb_ivar_set(aseq, id_exclude_end, excl ? Qtrue : Qfalse);
+    rb_ivar_set(aseq, id_exclude_end, RBOOL(excl));
     return aseq;
 }
 
@@ -3429,9 +3446,9 @@ rb_arithmetic_sequence_extract(VALUE obj, rb_arithmetic_sequence_components_t *c
 VALUE
 rb_arithmetic_sequence_beg_len_step(VALUE obj, long *begp, long *lenp, long *stepp, long len, int err)
 {
-    RUBY_ASSERT(begp != NULL);
-    RUBY_ASSERT(lenp != NULL);
-    RUBY_ASSERT(stepp != NULL);
+    RBIMPL_NONNULL_ARG(begp);
+    RBIMPL_NONNULL_ARG(lenp);
+    RBIMPL_NONNULL_ARG(stepp);
 
     rb_arithmetic_sequence_components_t aseq;
     if (!rb_arithmetic_sequence_extract(obj, &aseq)) {
@@ -4191,6 +4208,11 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cEnumChain, "size", enum_chain_size, 0);
     rb_define_method(rb_cEnumChain, "rewind", enum_chain_rewind, 0);
     rb_define_method(rb_cEnumChain, "inspect", enum_chain_inspect, 0);
+    rb_undef_method(rb_cEnumChain, "feed");
+    rb_undef_method(rb_cEnumChain, "next");
+    rb_undef_method(rb_cEnumChain, "next_values");
+    rb_undef_method(rb_cEnumChain, "peek");
+    rb_undef_method(rb_cEnumChain, "peek_values");
 
     /* ArithmeticSequence */
     rb_cArithSeq = rb_define_class_under(rb_cEnumerator, "ArithmeticSequence", rb_cEnumerator);

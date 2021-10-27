@@ -37,7 +37,7 @@ ruby_version_is "2.7" do
       end
 
       ruby_version_is "3.0" do
-        @src = '[0, 1] => [a, b]'
+        @src = 'warn "This is experimental warning.", category: :experimental'
       end
     end
 

@@ -6,11 +6,16 @@
 module Gem::InstallerUninstallerUtils
 
   def regenerate_plugins_for(spec, plugins_dir)
+    plugins = spec.plugins
+    return if plugins.empty?
+
+    require 'pathname'
+
     spec.plugins.each do |plugin|
       plugin_script_path = File.join plugins_dir, "#{spec.name}_plugin#{File.extname(plugin)}"
 
       File.open plugin_script_path, 'wb' do |file|
-        file.puts "require '#{plugin}'"
+        file.puts "require_relative '#{Pathname.new(plugin).relative_path_from(Pathname.new(plugins_dir))}'"
       end
 
       verbose plugin_script_path

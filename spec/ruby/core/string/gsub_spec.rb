@@ -594,6 +594,14 @@ describe "String#gsub with pattern and without replacement and block" do
   end
 end
 
+describe "String#gsub with a string pattern" do
+  it "handles multibyte characters" do
+    "é".gsub("é", "â").should == "â"
+    "aé".gsub("é", "â").should == "aâ"
+    "éa".gsub("é", "â").should == "âa"
+  end
+end
+
 describe "String#gsub! with pattern and replacement" do
   it "modifies self in place and returns self" do
     a = "hello"

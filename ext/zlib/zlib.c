@@ -25,7 +25,7 @@
 # define VALGRIND_MAKE_MEM_UNDEFINED(p, n) 0
 #endif
 
-#define RUBY_ZLIB_VERSION "1.1.0"
+#define RUBY_ZLIB_VERSION "2.1.1"
 
 #ifndef RB_PASS_CALLED_KEYWORDS
 # define rb_class_new_instance_kw(argc, argv, klass, kw_splat) rb_class_new_instance(argc, argv, klass)
@@ -354,7 +354,9 @@ raise_zlib_error(int err, const char *msg)
 static void
 finalizer_warn(const char *msg)
 {
+#if 0
     fprintf(stderr, "zlib(finalizer): %s\n", msg);
+#endif
 }
 
 
@@ -546,6 +548,7 @@ struct zstream {
     unsigned long flags;
     VALUE buf;
     VALUE input;
+    VALUE mutex;
     z_stream stream;
     const struct zstream_funcs {
 	int (*reset)(z_streamp);
@@ -621,6 +624,7 @@ zstream_init(struct zstream *z, const struct zstream_funcs *func)
     z->flags = 0;
     z->buf = Qnil;
     z->input = Qnil;
+    z->mutex = rb_mutex_new();
     z->stream.zalloc = zlib_mem_alloc;
     z->stream.zfree = zlib_mem_free;
     z->stream.opaque = Z_NULL;
@@ -652,7 +656,9 @@ zstream_expand_buffer(struct zstream *z)
 	        rb_obj_reveal(z->buf, rb_cString);
             }
 
+            rb_mutex_unlock(z->mutex);
 	    rb_protect(rb_yield, z->buf, &state);
+            rb_mutex_lock(z->mutex);
 
             if (ZSTREAM_REUSE_BUFFER_P(z)) {
                 rb_str_modify(z->buf);
@@ -1054,7 +1060,7 @@ zstream_unblock_func(void *ptr)
 }
 
 static void
-zstream_run(struct zstream *z, Bytef *src, long len, int flush)
+zstream_run0(struct zstream *z, Bytef *src, long len, int flush)
 {
     struct zstream_run_args args;
     int err;
@@ -1095,6 +1101,12 @@ loop:
                                RB_NOGVL_UBF_ASYNC_SAFE);
 #endif
 
+    /* retry if no exception is thrown */
+    if (err == Z_OK && args.interrupt) {
+       args.interrupt = 0;
+       goto loop;
+    }
+
     if (flush != Z_FINISH && err == Z_BUF_ERROR
 	    && z->stream.avail_out > 0) {
 	z->flags |= ZSTREAM_FLAG_IN_STREAM;
@@ -1130,6 +1142,32 @@ loop:
 
     if (args.jump_state)
 	rb_jump_tag(args.jump_state);
+}
+
+struct zstream_run_synchronized_args {
+    struct zstream *z;
+    Bytef *src;
+    long len;
+    int flush;
+};
+
+static VALUE
+zstream_run_synchronized(VALUE value_arg)
+{
+    struct zstream_run_synchronized_args *run_args = (struct zstream_run_synchronized_args *)value_arg;
+    zstream_run0(run_args->z, run_args->src, run_args->len, run_args->flush);
+    return Qnil;
+}
+
+static void
+zstream_run(struct zstream *z, Bytef *src, long len, int flush)
+{
+    struct zstream_run_synchronized_args run_args;
+    run_args.z = z;
+    run_args.src = src;
+    run_args.len = len;
+    run_args.flush = flush;
+    rb_mutex_synchronize(z->mutex, zstream_run_synchronized, (VALUE)&run_args);
 }
 
 static VALUE
@@ -1177,6 +1215,7 @@ zstream_mark(void *p)
     struct zstream *z = p;
     rb_gc_mark(z->buf);
     rb_gc_mark(z->input);
+    rb_gc_mark(z->mutex);
 }
 
 static void
@@ -3514,6 +3553,16 @@ rb_gzfile_path(VALUE obj)
     return gz->path;
 }
 
+static VALUE
+gzfile_initialize_path_partial(VALUE obj)
+{
+    struct gzfile* gz;
+    TypedData_Get_Struct(obj, struct gzfile, &gzfile_data_type, gz);
+    gz->path = rb_funcall(gz->io, id_path, 0);
+    rb_define_singleton_method(obj, "path", rb_gzfile_path, 0);
+    return Qnil;
+}
+
 static void
 rb_gzfile_ecopts(struct gzfile *gz, VALUE opts)
 {
@@ -3622,8 +3671,8 @@ rb_gzwriter_initialize(int argc, VALUE *argv, VALUE obj)
     rb_gzfile_ecopts(gz, opt);
 
     if (rb_respond_to(io, id_path)) {
-	gz->path = rb_funcall(gz->io, id_path, 0);
-	rb_define_singleton_method(obj, "path", rb_gzfile_path, 0);
+	/* File#path may raise IOError in case when a path is unavailable */
+	rb_rescue2(gzfile_initialize_path_partial, obj, NULL, Qnil, rb_eIOError, (VALUE)0);
     }
 
     return obj;
@@ -3884,8 +3933,8 @@ rb_gzreader_initialize(int argc, VALUE *argv, VALUE obj)
     rb_gzfile_ecopts(gz, opt);
 
     if (rb_respond_to(io, id_path)) {
-	gz->path = rb_funcall(gz->io, id_path, 0);
-	rb_define_singleton_method(obj, "path", rb_gzfile_path, 0);
+	/* File#path may raise IOError in case when a path is unavailable */
+	rb_rescue2(gzfile_initialize_path_partial, obj, NULL, Qnil, rb_eIOError, (VALUE)0);
     }
 
     return obj;
@@ -4150,17 +4199,17 @@ gzreader_charboundary(struct gzfile *gz, long n)
 {
     char *s = RSTRING_PTR(gz->z.buf);
     char *e = s + ZSTREAM_BUF_FILLED(&gz->z);
-    char *p = rb_enc_left_char_head(s, s + n, e, gz->enc);
+    char *p = rb_enc_left_char_head(s, s + n - 1, e, gz->enc);
     long l = p - s;
     if (l < n) {
-	n = rb_enc_precise_mbclen(p, e, gz->enc);
-	if (MBCLEN_NEEDMORE_P(n)) {
-	    if ((l = gzfile_fill(gz, l + MBCLEN_NEEDMORE_LEN(n))) > 0) {
+	int n_bytes = rb_enc_precise_mbclen(p, e, gz->enc);
+	if (MBCLEN_NEEDMORE_P(n_bytes)) {
+	    if ((l = gzfile_fill(gz, n + MBCLEN_NEEDMORE_LEN(n_bytes))) > 0) {
 		return l;
 	    }
 	}
-	else if (MBCLEN_CHARFOUND_P(n)) {
-	    return l + MBCLEN_CHARFOUND_LEN(n);
+	else if (MBCLEN_CHARFOUND_P(n_bytes)) {
+	    return l + MBCLEN_CHARFOUND_LEN(n_bytes);
 	}
     }
     return n;
@@ -4548,7 +4597,7 @@ zlib_gunzip_run(VALUE arg)
 void
 Init_zlib(void)
 {
-#if HAVE_RB_EXT_RACTOR_SAFE
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
     rb_ext_ractor_safe(true);
 #endif
 

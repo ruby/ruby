@@ -28,7 +28,8 @@ module Bundler
           " is a chance you are experiencing a man-in-the-middle attack, but" \
           " most likely your system doesn't have the CA certificates needed" \
           " for verification. For information about OpenSSL certificates, see" \
-          " http://bit.ly/ruby-ssl. To connect without using SSL, edit your Gemfile" \
+          " https://railsapps.github.io/openssl-certificate-verify-failed.html." \
+          " To connect without using SSL, edit your Gemfile" \
           " sources and change 'https' to 'http'."
       end
     end
@@ -47,7 +48,8 @@ module Bundler
         remote_uri = filter_uri(remote_uri)
         super "Authentication is required for #{remote_uri}.\n" \
           "Please supply credentials for this source. You can do this by running:\n" \
-          " bundle config set --global #{remote_uri} username:password"
+          "`bundle config set --global #{remote_uri} username:password`\n" \
+          "or by storing the credentials in the `#{Settings.key_for(remote_uri)}` environment variable"
       end
     end
     # This error is raised if HTTP authentication is provided, but incorrect.
@@ -137,7 +139,6 @@ module Bundler
       end
 
       specs.each do |name, version, platform, dependencies, metadata|
-        next if name == "bundler"
         spec = if dependencies
           EndpointSpecification.new(name, version, platform, dependencies, metadata)
         else

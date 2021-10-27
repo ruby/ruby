@@ -2,7 +2,7 @@
 
 RSpec.describe "bundler/inline#gemfile" do
   def script(code, options = {})
-    requires = ["#{lib_dir}/bundler/inline"]
+    requires = ["#{entrypoint}/inline"]
     requires.unshift "#{spec_dir}/support/artifice/" + options.delete(:artifice) if options.key?(:artifice)
     requires = requires.map {|r| "require '#{r}'" }.join("\n")
     ruby("#{requires}\n\n" + code, options)
@@ -46,10 +46,9 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "requires the gems" do
-    skip "gems not found" if Gem.win_platform?
-
     script <<-RUBY
       gemfile do
+        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem "two"
         end
@@ -60,6 +59,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     script <<-RUBY, :raise_on_error => false
       gemfile do
+        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem "eleven"
         end
@@ -94,10 +94,8 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "lets me use my own ui object" do
-    skip "prints just one CONFIRMED" if Gem.win_platform?
-
     script <<-RUBY, :artifice => "endpoint"
-      require '#{lib_dir}/bundler'
+      require '#{entrypoint}'
       class MyBundlerUI < Bundler::UI::Silent
         def confirm(msg, newline = nil)
           puts "CONFIRMED!"
@@ -114,7 +112,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
   it "has an option for quiet installation" do
     script <<-RUBY, :artifice => "endpoint"
-      require '#{lib_dir}/bundler/inline'
+      require '#{entrypoint}/inline'
 
       gemfile(true, :quiet => true) do
         source "https://notaserver.com"
@@ -140,9 +138,10 @@ RSpec.describe "bundler/inline#gemfile" do
 
   it "does not mutate the option argument" do
     script <<-RUBY
-      require '#{lib_dir}/bundler'
+      require '#{entrypoint}'
       options = { :ui => Bundler::UI::Shell.new }
       gemfile(false, options) do
+        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem "two"
         end
@@ -172,6 +171,7 @@ RSpec.describe "bundler/inline#gemfile" do
     baz_ref = build_git("baz", "2.0.0").ref_for("HEAD")
     script <<-RUBY
       gemfile do
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => #{lib_path("foo-1.0.0").to_s.dump}
         gem "baz", :git => #{lib_path("baz-2.0.0").to_s.dump}, :ref => #{baz_ref.dump}
       end
@@ -188,12 +188,14 @@ RSpec.describe "bundler/inline#gemfile" do
     script <<-RUBY
       gemfile do
         path "#{lib_path}" do
+          source "#{file_uri_for(gem_repo1)}"
           gem "two"
         end
       end
 
       gemfile do
         path "#{lib_path}" do
+          source "#{file_uri_for(gem_repo1)}"
           gem "four"
         end
       end
@@ -222,7 +224,7 @@ RSpec.describe "bundler/inline#gemfile" do
         rake
 
       BUNDLED WITH
-         1.13.6
+         #{Bundler::VERSION}
     G
 
     script <<-RUBY
@@ -239,6 +241,19 @@ RSpec.describe "bundler/inline#gemfile" do
 
   it "installs inline gems when frozen is set" do
     script <<-RUBY, :env => { "BUNDLE_FROZEN" => "true" }
+      gemfile do
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      end
+
+      puts RACK
+    RUBY
+
+    expect(last_command.stderr).to be_empty
+  end
+
+  it "installs inline gems when deployment is set" do
+    script <<-RUBY, :env => { "BUNDLE_DEPLOYMENT" => "true" }
       gemfile do
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
@@ -284,7 +299,7 @@ RSpec.describe "bundler/inline#gemfile" do
     it "installs inline gems to the system path regardless" do
       script <<-RUBY, :env => { "BUNDLE_PATH" => "./vendor/inline" }
         gemfile(true) do
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
         end
       RUBY
@@ -358,6 +373,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     script <<-RUBY, :dir => tmp("path_without_gemfile")
       gemfile do
+        source "#{file_uri_for(gem_repo2)}"
         path "#{lib_path}" do
           gem "foo", require: false
         end

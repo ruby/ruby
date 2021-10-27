@@ -1,3 +1,49 @@
+class Numeric
+  #
+  #  call-seq:
+  #     num.real?  ->  true or false
+  #
+  #  Returns +true+ if +num+ is a real number (i.e. not Complex).
+  #
+  def real?
+    return true
+  end
+
+  #
+  #  call-seq:
+  #     num.integer?  ->  true or false
+  #
+  #  Returns +true+ if +num+ is an Integer.
+  #
+  #      1.0.integer?   #=> false
+  #      1.integer?     #=> true
+  #
+  def integer?
+    return false
+  end
+
+  #
+  #  call-seq:
+  #     num.finite?  ->  true or false
+  #
+  #  Returns +true+ if +num+ is a finite number, otherwise returns +false+.
+  #
+  def finite?
+    return true
+  end
+
+  #
+  #  call-seq:
+  #     num.infinite?  ->  -1, 1, or nil
+  #
+  #  Returns +nil+, -1, or 1 depending on whether the value is
+  #  finite, <code>-Infinity</code>, or <code>+Infinity</code>.
+  #
+  def infinite?
+    return nil
+  end
+end
+
 class Integer
   # call-seq:
   #    -int  ->  integer
@@ -24,6 +70,17 @@ class Integer
     Primitive.cexpr! 'rb_int_comp(self)'
   end
 
+  # call-seq:
+  #    int.abs        ->  integer
+  #    int.magnitude  ->  integer
+  #
+  # Returns the absolute value of +int+.
+  #
+  #    (-12345).abs   #=> 12345
+  #    -12345.abs     #=> 12345
+  #    12345.abs      #=> 12345
+  #
+  # Integer#magnitude is an alias for Integer#abs.
   def abs
     Primitive.attr! 'inline'
     Primitive.cexpr! 'rb_int_abs(self)'
@@ -92,10 +149,13 @@ class Integer
     return true
   end
 
+  alias magnitude abs
+=begin
   def magnitude
     Primitive.attr! 'inline'
     Primitive.cexpr! 'rb_int_abs(self)'
   end
+=end
 
   #  call-seq:
   #     int.odd?  ->  true or false
@@ -119,6 +179,26 @@ class Integer
   #  For example, <code>?a.ord</code> returns 97 both in 1.8 and 1.9.
   def ord
     return self
+  end
+
+  #
+  #  Document-method: Integer#size
+  #  call-seq:
+  #     int.size  ->  int
+  #
+  #  Returns the number of bytes in the machine representation of +int+
+  #  (machine dependent).
+  #
+  #     1.size               #=> 8
+  #     -1.size              #=> 8
+  #     2147483647.size      #=> 8
+  #     (256**10 - 1).size   #=> 10
+  #     (256**20 - 1).size   #=> 20
+  #     (256**40 - 1).size   #=> 40
+  #
+  def size
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'rb_int_size(self)'
   end
 
   #  call-seq:
@@ -202,6 +282,28 @@ class Float
   #
   def zero?
     Primitive.attr! 'inline'
-    Primitive.cexpr! 'FLOAT_ZERO_P(self) ? Qtrue : Qfalse'
+    Primitive.cexpr! 'RBOOL(FLOAT_ZERO_P(self))'
+  end
+
+  #
+  #  call-seq:
+  #     float.positive?  ->  true or false
+  #
+  #  Returns +true+ if +float+ is greater than 0.
+  #
+  def positive?
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'RBOOL(RFLOAT_VALUE(self) > 0.0)'
+  end
+
+  #
+  #  call-seq:
+  #     float.negative?  ->  true or false
+  #
+  #  Returns +true+ if +float+ is less than 0.
+  #
+  def negative?
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'RBOOL(RFLOAT_VALUE(self) < 0.0)'
   end
 end

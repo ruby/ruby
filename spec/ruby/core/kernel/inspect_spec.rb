@@ -30,4 +30,12 @@ describe "Kernel#inspect" do
     obj = Object.new
     obj.inspect.should =~ /^#<Object:0x[0-9a-f]+>$/
   end
+
+  it "returns a String for an object without #class method" do
+    obj = Object.new
+    class << obj
+      undef_method :class
+    end
+    obj.inspect.should be_kind_of(String)
+  end
 end

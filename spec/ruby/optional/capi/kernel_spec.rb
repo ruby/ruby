@@ -312,6 +312,14 @@ describe "C-API Kernel function" do
       @s.rb_protect_null_status(42) { |x| x + 1 }.should == 43
       @s.rb_protect_null_status(42) { |x| raise }.should == nil
     end
+
+    it "populates errinfo with the captured exception" do
+      proof = []
+      @s.rb_protect_errinfo(77, proof) { |x| raise NameError }.class.should == NameError
+      proof[0].should == 23
+      proof[1].should == nil
+    end
+
   end
 
   describe "rb_eval_string_protect" do
@@ -556,20 +564,6 @@ describe "C-API Kernel function" do
       backtrace = @s.rb_make_backtrace
       lines = backtrace.select {|l| l =~ /#{__FILE__}/ }
       lines.should_not be_empty
-    end
-  end
-
-  describe "rb_obj_method" do
-    it "returns the method object for a symbol" do
-      method = @s.rb_obj_method("test", :size)
-      method.owner.should == String
-      method.name.to_sym.should == :size
-    end
-
-    it "returns the method object for a string" do
-      method = @s.rb_obj_method("test", "size")
-      method.owner.should == String
-      method.name.to_sym.should == :size
     end
   end
 

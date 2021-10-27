@@ -30,7 +30,16 @@ module Spec
     end
 
     def build_repo1
+      rake_path = Dir["#{Path.base_system_gems}/**/rake*.gem"].first
+
       build_repo gem_repo1 do
+        FileUtils.cp rake_path, "#{gem_repo1}/gems/"
+
+        build_gem "coffee-script-source"
+        build_gem "git"
+        build_gem "puma"
+        build_gem "minitest"
+
         build_gem "rack", %w[0.9.1 1.0.0] do |s|
           s.executables = "rackup"
           s.post_install_message = "Rack's post install message"
@@ -150,32 +159,6 @@ module Spec
 
         build_gem "duradura", "7.0"
 
-        build_gem "with_implicit_rake_dep" do |s|
-          s.extensions << "Rakefile"
-          s.write "Rakefile", <<-RUBY
-            task :default do
-              path = File.expand_path("../lib", __FILE__)
-              FileUtils.mkdir_p(path)
-              File.open("\#{path}/implicit_rake_dep.rb", "w") do |f|
-                f.puts "IMPLICIT_RAKE_DEP = 'YES'"
-              end
-            end
-          RUBY
-        end
-
-        build_gem "another_implicit_rake_dep" do |s|
-          s.extensions << "Rakefile"
-          s.write "Rakefile", <<-RUBY
-            task :default do
-              path = File.expand_path("../lib", __FILE__)
-              FileUtils.mkdir_p(path)
-              File.open("\#{path}/another_implicit_rake_dep.rb", "w") do |f|
-                f.puts "ANOTHER_IMPLICIT_RAKE_DEP = 'YES'"
-              end
-            end
-          RUBY
-        end
-
         build_gem "very_simple_binary", &:add_c_extension
         build_gem "simple_binary", &:add_c_extension
 
@@ -214,13 +197,6 @@ module Spec
       update_repo2(&blk) if block_given?
     end
 
-    def build_repo3
-      build_repo gem_repo3 do
-        build_gem "rack"
-      end
-      FileUtils.rm_rf Dir[gem_repo3("prerelease*")]
-    end
-
     # A repo that has no pre-installed gems included. (The caller completely
     # determines the contents with the block.)
     def build_repo4(&blk)
@@ -255,6 +231,13 @@ module Spec
 
     def build_repo(path, &blk)
       return if File.directory?(path)
+
+      FileUtils.mkdir_p("#{path}/gems")
+
+      update_repo(path, &blk)
+    end
+
+    def check_test_gems!
       rake_path = Dir["#{Path.base_system_gems}/**/rake*.gem"].first
 
       if rake_path.nil?
@@ -263,14 +246,9 @@ module Spec
         rake_path = Dir["#{Path.base_system_gems}/**/rake*.gem"].first
       end
 
-      if rake_path
-        FileUtils.mkdir_p("#{path}/gems")
-        FileUtils.cp rake_path, "#{path}/gems/"
-      else
+      if rake_path.nil?
         abort "Your test gems are missing! Run `rm -rf #{tmp}` and try again."
       end
-
-      update_repo(path, &blk)
     end
 
     def update_repo(path)
@@ -547,9 +525,11 @@ module Spec
 
     class GitBuilder < LibBuilder
       def _build(options)
+        default_branch = options[:default_branch] || "master"
         path = options[:path] || _default_path
         source = options[:source] || "git@#{path}"
         super(options.merge(:path => path, :source => source))
+        @context.git("config --global init.defaultBranch #{default_branch}", path)
         @context.git("init", path)
         @context.git("add *", path)
         @context.git("config user.email lol@wut.com", path)
@@ -573,17 +553,8 @@ module Spec
         update_gemspec = options[:gemspec] || false
         source = options[:source] || "git@#{libpath}"
 
-        @context.git "checkout master", libpath
-
         if branch = options[:branch]
-          raise "You can't specify `master` as the branch" if branch == "master"
-          escaped_branch = Shellwords.shellescape(branch)
-
-          if @context.git("branch -l #{escaped_branch}", libpath).empty?
-            @context.git("branch #{escaped_branch}", libpath)
-          end
-
-          @context.git("checkout #{escaped_branch}", libpath)
+          @context.git("checkout -b #{Shellwords.shellescape(branch)}", libpath)
         elsif tag = options[:tag]
           @context.git("tag #{Shellwords.shellescape(tag)}", libpath)
         elsif options[:remote]
@@ -597,8 +568,7 @@ module Spec
           _default_files[path] += "\n#{Builders.constantize(name)}_PREV_REF = '#{current_ref}'"
         end
         super(options.merge(:path => libpath, :gemspec => update_gemspec, :source => source))
-        @context.git("add *", libpath)
-        @context.git("commit -m BUMP", libpath, :raise_on_error => false)
+        @context.git("commit -am BUMP", libpath)
       end
     end
 

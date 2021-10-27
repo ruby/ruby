@@ -8,7 +8,7 @@ RSpec.describe "Bundler.with_env helpers" do
 
   def build_bundler_context(options = {})
     bundle "config set path vendor/bundle"
-    gemfile ""
+    gemfile "source \"#{file_uri_for(gem_repo1)}\""
     bundle "install", options
   end
 

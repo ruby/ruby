@@ -79,7 +79,7 @@ class TestEnumerator < Test::Unit::TestCase
     assert_raise(NoMethodError) { enum.each {} }
     enum.freeze
     assert_raise(ArgumentError) {
-      capture_io do
+      capture_output do
         # warning: Enumerator.new without a block is deprecated; use Object#to_enum
         enum.__send__(:initialize, @obj, :foo)
       end
@@ -814,6 +814,28 @@ class TestEnumerator < Test::Unit::TestCase
       ']>',
       e5.inspect
     )
+  end
+
+  def test_chain_with_index
+    assert_equal([[3, 0], [4, 1]], [3].chain([4]).with_index.to_a)
+  end
+
+  def test_lazy_chain
+    ea = (10..).lazy.select(&:even?).take(10)
+    ed = (20..).lazy.select(&:odd?)
+    chain = (ea + ed).select{|x| x % 3 == 0}
+    assert_equal(12, chain.next)
+    assert_equal(18, chain.next)
+    assert_equal(24, chain.next)
+    assert_equal(21, chain.next)
+    assert_equal(27, chain.next)
+    assert_equal(33, chain.next)
+  end
+
+  def test_chain_undef_methods
+    chain = [1].to_enum + [2].to_enum
+    meths = (chain.methods & [:feed, :next, :next_values, :peek, :peek_values])
+    assert_equal(0, meths.size)
   end
 
   def test_produce

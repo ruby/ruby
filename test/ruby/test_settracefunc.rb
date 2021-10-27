@@ -564,6 +564,16 @@ class TestSetTraceFunc < Test::Unit::TestCase
     }
   end
 
+  # Bug #18264
+  def test_tracpoint_memory_leak
+    assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
+code = proc { TracePoint.new(:line) { } }
+1_000.times(&code)
+PREP
+1_000_000.times(&code)
+CODE
+  end
+
   def trace_by_set_trace_func
     events = []
     trace = nil
@@ -831,6 +841,56 @@ class TestSetTraceFunc < Test::Unit::TestCase
     }
   end
 
+  def test_tracepoint_attr
+    c = Class.new do
+      attr_accessor :x
+      alias y x
+      alias y= x=
+    end
+    obj = c.new
+
+    ar_meth = obj.method(:x)
+    aw_meth = obj.method(:x=)
+    aar_meth = obj.method(:y)
+    aaw_meth = obj.method(:y=)
+    events = []
+    trace = TracePoint.new(:c_call, :c_return){|tp|
+      next if !target_thread?
+      next if tp.path != __FILE__
+      next if tp.method_id == :call
+      case tp.event
+      when :c_call
+        assert_raise(RuntimeError) {tp.return_value}
+        events << [tp.event, tp.method_id, tp.callee_id]
+      when :c_return
+        events << [tp.event, tp.method_id, tp.callee_id, tp.return_value]
+      end
+    }
+    test_proc = proc do
+      obj.x = 1
+      obj.x
+      obj.y = 2
+      obj.y
+      aw_meth.call(1)
+      ar_meth.call
+      aaw_meth.call(2)
+      aar_meth.call
+    end
+    test_proc.call # populate call caches
+    trace.enable(&test_proc)
+    expected = [
+      [:c_call, :x=, :x=],
+      [:c_return, :x=, :x=, 1],
+      [:c_call, :x, :x],
+      [:c_return, :x, :x, 1],
+      [:c_call, :x=, :y=],
+      [:c_return, :x=, :y=, 2],
+      [:c_call, :x, :y],
+      [:c_return, :x, :y, 2],
+    ]
+    assert_equal(expected*2, events)
+  end
+
   class XYZZYException < Exception; end
   def method_test_tracepoint_raised_exception err
     raise err
@@ -982,20 +1042,24 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_tracepoint_with_multithreads
     assert_nothing_raised do
-      TracePoint.new{
+      TracePoint.new(:line){
         10.times{
           Thread.pass
         }
       }.enable do
         (1..10).map{
           Thread.new{
-            1000.times{
+            1_000.times{|i|
+              _a = i
             }
           }
         }.each{|th|
           th.join
         }
       end
+      _a = 1
+      _b = 2
+      _c = 3 # to make sure the deletion of unused TracePoints
     end
   end
 
@@ -1593,6 +1657,33 @@ class TestSetTraceFunc < Test::Unit::TestCase
       assert_equal ev, :fiber_switch
     }
 
+    # test for raise into resumable fiber
+    evs = []
+    f = nil
+    TracePoint.new(:raise, :fiber_switch){|tp|
+      next unless target_thread?
+      evs << [tp.event, Fiber.current]
+    }.enable{
+      f = Fiber.new{
+        Fiber.yield # will raise
+        Fiber.yield # unreachable
+      }
+      begin
+        f.resume
+        f.raise StopIteration
+      rescue StopIteration
+        evs << :rescued
+      end
+    }
+    assert_equal [:fiber_switch, f],             evs[0], "initial resume"
+    assert_equal [:fiber_switch, Fiber.current], evs[1], "Fiber.yield"
+    assert_equal [:fiber_switch, f],             evs[2], "fiber.raise"
+    assert_equal [:raise, f],                    evs[3], "fiber.raise"
+    assert_equal [:fiber_switch, Fiber.current], evs[4], "terminated with raise"
+    assert_equal [:raise, Fiber.current],        evs[5], "terminated with raise"
+    assert_equal :rescued,                       evs[6]
+    assert_equal 7, evs.size
+
     # test for transfer
     evs = []
     TracePoint.new(:fiber_switch){|tp|
@@ -1615,6 +1706,41 @@ class TestSetTraceFunc < Test::Unit::TestCase
     evs.each{|ev|
       assert_equal ev, :fiber_switch
     }
+
+    # test for raise and from transferring fibers
+    evs = []
+    f1 = f2 = nil
+    TracePoint.new(:raise, :fiber_switch){|tp|
+      next unless target_thread?
+      evs << [tp.event, Fiber.current]
+    }.enable{
+      f1 = Fiber.new{
+        f2.transfer
+        f2.raise ScriptError
+        Fiber.yield :ok
+      }
+      f2 = Fiber.new{
+        f1.transfer
+        f1.transfer
+      }
+      begin
+        f1.resume
+      rescue ScriptError
+        evs << :rescued
+      end
+    }
+    assert_equal [:fiber_switch, f1],            evs[0], "initial resume"
+    assert_equal [:fiber_switch, f2],            evs[1], "f2.transfer"
+    assert_equal [:fiber_switch, f1],            evs[2], "f1.transfer"
+    assert_equal [:fiber_switch, f2],            evs[3], "f2.raise ScriptError"
+    assert_equal [:raise,        f2],            evs[4], "f2.raise ScriptError"
+    assert_equal [:fiber_switch, f1],            evs[5], "f2 unhandled exception"
+    assert_equal [:raise,        f1],            evs[6], "f2 unhandled exception"
+    assert_equal [:fiber_switch, Fiber.current], evs[7], "f1 unhandled exception"
+    assert_equal [:raise,        Fiber.current], evs[8], "f1 unhandled exception"
+    assert_equal :rescued,                       evs[9], "rescued everything"
+    assert_equal 10, evs.size
+
   end
 
   def test_tracepoint_callee_id
@@ -1922,7 +2048,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def test_thread_add_trace_func
     events = []
     base_line = __LINE__
-    q = Queue.new
+    q = Thread::Queue.new
     t = Thread.new{
       Thread.current.add_trace_func proc{|ev, file, line, *args|
         events << [ev, line]
@@ -1948,7 +2074,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
     # other thread
     events = []
-    m2t_q = Queue.new
+    m2t_q = Thread::Queue.new
 
     t = Thread.new{
       Thread.current.abort_on_exception = true
@@ -2258,8 +2384,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
       events << Thread.current
     end
 
-    q1 = Queue.new
-    q2 = Queue.new
+    q1 = Thread::Queue.new
+    q2 = Thread::Queue.new
 
     th = Thread.new{
       q1 << :ok; q2.pop
@@ -2323,5 +2449,20 @@ class TestSetTraceFunc < Test::Unit::TestCase
       end
     EOS
     assert_equal [:return, :unpack], event
+  end
+
+  def test_while_in_while
+    lines = []
+
+    TracePoint.new(:line){|tp|
+      next unless target_thread?
+      lines << tp.lineno
+    }.enable{
+      n = 3
+      while n > 0
+        n -= 1 while n > 0
+      end
+    }
+    assert_equal [__LINE__ - 5, __LINE__ - 4, __LINE__ - 3], lines, 'Bug #17868'
   end
 end

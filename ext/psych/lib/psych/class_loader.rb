@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require 'psych/omap'
-require 'psych/set'
+require_relative 'omap'
+require_relative 'set'
 
 module Psych
   class ClassLoader # :nodoc:
@@ -86,7 +86,7 @@ module Psych
         if @symbols.include? sym
           super
         else
-          raise DisallowedClass, 'Symbol'
+          raise DisallowedClass.new('load', 'Symbol')
         end
       end
 
@@ -96,7 +96,7 @@ module Psych
         if @classes.include? klassname
           super
         else
-          raise DisallowedClass, klassname
+          raise DisallowedClass.new('load', klassname)
         end
       end
     end

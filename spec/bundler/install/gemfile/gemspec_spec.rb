@@ -210,6 +210,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     end
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gemspec
     G
 
@@ -259,16 +260,17 @@ RSpec.describe "bundle install from an existing gemspec" do
     expect(out).to eq("WIN")
   end
 
-  it "works with only_update_to_newer_versions" do
+  it "handles downgrades" do
     build_lib "omg", "2.0", :path => lib_path("omg")
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gemspec :path => "#{lib_path("omg")}"
     G
 
     build_lib "omg", "1.0", :path => lib_path("omg")
 
-    bundle :install, :env => { "BUNDLE_BUNDLE_ONLY_UPDATE_TO_NEWER_VERSIONS" => "true" }
+    bundle :install
 
     expect(the_bundle).to include_gems "omg 1.0"
   end
@@ -422,14 +424,13 @@ RSpec.describe "bundle install from an existing gemspec" do
           end
         end
 
-        %w[ruby jruby].each do |platform|
-          simulate_platform(platform) do
-            install_gemfile <<-G
-              source "#{file_uri_for(gem_repo2)}"
-              gemspec
-            G
-          end
-        end
+        gemfile <<-G
+          source "#{file_uri_for(gem_repo2)}"
+          gemspec
+        G
+
+        simulate_platform("ruby") { bundle "install" }
+        simulate_platform("jruby") { bundle "install" }
       end
 
       context "on ruby" do
@@ -566,6 +567,59 @@ RSpec.describe "bundle install from an existing gemspec" do
 
       expect(the_bundle).to include_gem "foo 1.0.0"
       expect(the_bundle).not_to include_gem "rack"
+    end
+  end
+
+  context "with multiple platforms and resolving for more specific platforms" do
+    before do
+      build_lib("chef", :path => tmp.join("chef")) do |s|
+        s.version = "17.1.17"
+        s.write "chef-universal-mingw32.gemspec", build_spec("chef", "17.1.17", "universal-mingw32") {|sw| sw.runtime "win32-api", "~> 1.5.3" }.first.to_ruby
+      end
+    end
+
+    it "does not remove the platform specific specs from the lockfile when updating" do
+      build_repo4 do
+        build_gem "win32-api", "1.5.3" do |s|
+          s.platform = "universal-mingw32"
+        end
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gemspec :path => "../chef"
+      G
+
+      initial_lockfile = <<~L
+        PATH
+          remote: ../chef
+          specs:
+            chef (17.1.17)
+            chef (17.1.17-universal-mingw32)
+              win32-api (~> 1.5.3)
+
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            win32-api (1.5.3-universal-mingw32)
+
+        PLATFORMS
+          ruby
+          x64-mingw32
+          x86-mingw32
+
+        DEPENDENCIES
+          chef!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      lockfile initial_lockfile
+
+      bundle "update"
+
+      expect(lockfile).to eq initial_lockfile
     end
   end
 end

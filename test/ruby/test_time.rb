@@ -110,7 +110,7 @@ class TestTime < Test::Unit::TestCase
       assert_equal(946684800, Time.utc(2000, 1, 1, 0, 0, 0).tv_sec)
 
       # Giveup to try 2nd test because some state is changed.
-      skip if Minitest::Unit.current_repeat_count > 0
+      skip if Test::Unit::Runner.current_repeat_count > 0
 
       assert_equal(0x7fffffff, Time.utc(2038, 1, 19, 3, 14, 7).tv_sec)
       assert_equal(0x80000000, Time.utc(2038, 1, 19, 3, 14, 8).tv_sec)
@@ -920,6 +920,17 @@ class TestTime < Test::Unit::TestCase
     assert_equal("+09:00", t.strftime("%:z"))
     assert_equal("+09:00:01", t.strftime("%::z"))
     assert_equal("+09:00:01", t.strftime("%:::z"))
+
+    assert_equal("+0000", t2000.strftime("%z"))
+    assert_equal("-0000", t2000.strftime("%-z"))
+    assert_equal("-00:00", t2000.strftime("%-:z"))
+    assert_equal("-00:00:00", t2000.strftime("%-::z"))
+
+    t = t2000.getlocal("+00:00")
+    assert_equal("+0000", t.strftime("%z"))
+    assert_equal("+0000", t.strftime("%-z"))
+    assert_equal("+00:00", t.strftime("%-:z"))
+    assert_equal("+00:00:00", t.strftime("%-::z"))
   end
 
   def test_strftime_padding
@@ -1157,7 +1168,7 @@ class TestTime < Test::Unit::TestCase
 
   def test_2038
     # Giveup to try 2nd test because some state is changed.
-    skip if Minitest::Unit.current_repeat_count > 0
+    skip if Test::Unit::Runner.current_repeat_count > 0
 
     if no_leap_seconds?
       assert_equal(0x80000000, Time.utc(2038, 1, 19, 3, 14, 8).tv_sec)
@@ -1215,6 +1226,16 @@ class TestTime < Test::Unit::TestCase
       assert_equal(min, t.min)
       assert_equal(sec, t.sec)
     }
+  end
+
+  def test_getlocal_utc
+    t = Time.gm(2000)
+    assert_equal [00, 00, 00,  1,  1, 2000], (t1 = t.getlocal("UTC")).to_a[0, 6]
+    assert_predicate t1, :utc?
+    assert_equal [00, 00, 00,  1,  1, 2000], (t1 = t.getlocal("-0000")).to_a[0, 6]
+    assert_predicate t1, :utc?
+    assert_equal [00, 00, 00,  1,  1, 2000], (t1 = t.getlocal("+0000")).to_a[0, 6]
+    assert_not_predicate t1, :utc?
   end
 
   def test_getlocal_utc_offset

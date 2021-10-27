@@ -1,4 +1,4 @@
-# -*- Autoconf -*-
+dnl -*- Autoconf -*-
 dnl RUBY_DECL_ATTRIBUTE(attrib, macroname, cachevar, condition, type, code)
 AC_DEFUN([RUBY_DECL_ATTRIBUTE], [dnl
 m4_ifval([$2], dnl

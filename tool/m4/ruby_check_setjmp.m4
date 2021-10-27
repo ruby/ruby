@@ -1,5 +1,5 @@
-# -*- Autoconf -*-
-# used for AC_ARG_WITH(setjmp-type)
+dnl -*- Autoconf -*-
+dnl used for AC_ARG_WITH(setjmp-type)
 AC_DEFUN([RUBY_CHECK_SETJMP], [
 AC_CACHE_CHECK([for ]$1[ as a macro or function], ac_cv_func_$1,
   [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[

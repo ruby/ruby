@@ -36,9 +36,9 @@ require 'tmpdir'
 #
 # When a Tempfile object is garbage collected, or when the Ruby interpreter
 # exits, its associated temporary file is automatically deleted. This means
-# that's it's unnecessary to explicitly delete a Tempfile after use, though
-# it's good practice to do so: not explicitly deleting unused Tempfiles can
-# potentially leave behind large amounts of tempfiles on the filesystem
+# that it's unnecessary to explicitly delete a Tempfile after use, though
+# it's a good practice to do so: not explicitly deleting unused Tempfiles can
+# potentially leave behind a large number of temp files on the filesystem
 # until they're garbage collected. The existence of these temp files can make
 # it harder to determine a new Tempfile filename.
 #

@@ -107,7 +107,7 @@
 # For all these reasons, consider not using OpenStruct at all.
 #
 class OpenStruct
-  VERSION = "0.3.3"
+  VERSION = "0.5.0"
 
   #
   # Creates a new OpenStruct object.  By default, the resulting OpenStruct
@@ -166,11 +166,21 @@ class OpenStruct
   #   data.to_h {|name, value| [name.to_s, value.upcase] }
   #               # => {"country" => "AUSTRALIA", "capital" => "CANBERRA" }
   #
-  def to_h(&block)
-    if block
-      @table.to_h(&block)
-    else
-      @table.dup
+  if {test: :to_h}.to_h{ [:works, true] }[:works] # RUBY_VERSION < 2.6 compatibility
+    def to_h(&block)
+      if block
+        @table.to_h(&block)
+      else
+        @table.dup
+      end
+    end
+  else
+    def to_h(&block)
+      if block
+        @table.map(&block).to_h
+      else
+        @table.dup
+      end
     end
   end
 
@@ -187,7 +197,7 @@ class OpenStruct
   #   data.each_pair.to_a   # => [[:country, "Australia"], [:capital, "Canberra"]]
   #
   def each_pair
-    return to_enum(__method__) { @table.size } unless block_given?
+    return to_enum(__method__) { @table.size } unless block_given!
     @table.each_pair{|p| yield p}
     self
   end
@@ -211,8 +221,14 @@ class OpenStruct
   #
   def new_ostruct_member!(name) # :nodoc:
     unless @table.key?(name) || is_method_protected!(name)
-      define_singleton_method!(name) { @table[name] }
-      define_singleton_method!("#{name}=") {|x| @table[name] = x}
+      getter_proc = Proc.new { @table[name] }
+      setter_proc = Proc.new {|x| @table[name] = x}
+      if defined?(::Ractor)
+        ::Ractor.make_shareable(getter_proc)
+        ::Ractor.make_shareable(setter_proc)
+      end
+      define_singleton_method!(name, &getter_proc)
+      define_singleton_method!("#{name}=", &setter_proc)
     end
   end
   private :new_ostruct_member!
@@ -220,7 +236,7 @@ class OpenStruct
   private def is_method_protected!(name) # :nodoc:
     if !respond_to?(name, true)
       false
-    elsif name.end_with?('!')
+    elsif name.match?(/!$/)
       true
     else
       owner = method!(name).owner
@@ -298,7 +314,7 @@ class OpenStruct
   # Finds and returns the object in nested objects
   # that is specified by +name+ and +identifiers+.
   # The nested objects may be instances of various classes.
-  # See {Dig Methods}[rdoc-ref:doc/dig_methods.rdoc].
+  # See {Dig Methods}[rdoc-ref:dig_methods.rdoc].
   #
   # Examples:
   #   require "ostruct"
@@ -316,8 +332,10 @@ class OpenStruct
   end
 
   #
-  # Removes the named field from the object. Returns the value that the field
-  # contained if it was defined.
+  # Removes the named field from the object and returns the value the field
+  # contained if it was defined. You may optionally provide a block.
+  # If the field is not defined, the result of the block is returned,
+  # or a NameError is raised if no block was given.
   #
   #   require "ostruct"
   #
@@ -331,6 +349,10 @@ class OpenStruct
   #   person.pension = nil
   #   person                 # => #<OpenStruct name="John", pension=nil>
   #
+  #   person.delete_field('number')  # => NameError
+  #
+  #   person.delete_field('number') { 8675_309 } # => 8675309
+  #
   def delete_field(name)
     sym = name.to_sym
     begin
@@ -338,6 +360,7 @@ class OpenStruct
     rescue NameError
     end
     @table.delete(sym) do
+      return yield if block_given!
       raise! NameError.new("no field `#{sym}' in #{self}", sym)
     end
   end
@@ -436,5 +459,6 @@ class OpenStruct
   end
   # Other builtin private methods we use:
   alias_method :raise!, :raise
-  private :raise!
+  alias_method :block_given!, :block_given?
+  private :raise!, :block_given!
 end

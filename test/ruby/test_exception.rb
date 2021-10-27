@@ -78,6 +78,77 @@ class TestException < Test::Unit::TestCase
     assert(!bad)
   end
 
+  def test_exception_in_ensure_with_next
+    string = "[ruby-core:82936] [Bug #13930]"
+    assert_raise_with_message(RuntimeError, string) do
+      lambda do
+        next
+      rescue
+        assert(false)
+      ensure
+        raise string
+      end.call
+      assert(false)
+    end
+
+    assert_raise_with_message(RuntimeError, string) do
+      flag = true
+      while flag
+        flag = false
+        begin
+          next
+        rescue
+          assert(false)
+        ensure
+          raise string
+        end
+      end
+    end
+
+    iseq = RubyVM::InstructionSequence.compile(<<-RUBY)
+    begin
+      while true
+        break
+      end
+    rescue
+    end
+    RUBY
+
+    assert_equal false, iseq.to_a[13].any?{|(e,_)| e == :throw}
+  end
+
+  def test_exception_in_ensure_with_redo
+    string = "[ruby-core:82936] [Bug #13930]"
+
+    assert_raise_with_message(RuntimeError, string) do
+      i = 0
+      lambda do
+        i += 1
+        redo if i < 2
+      rescue
+        assert(false)
+      ensure
+        raise string
+      end.call
+      assert(false)
+    end
+  end
+
+  def test_exception_in_ensure_with_return
+    @string = "[ruby-core:97104] [Bug #16618]"
+    def self.meow
+      return if true # This if modifier suppresses "warning: statement not reached"
+      assert(false)
+    rescue
+      assert(false)
+    ensure
+      raise @string
+    end
+    assert_raise_with_message(RuntimeError, @string) do
+      meow
+    end
+  end
+
   def test_errinfo_in_debug
     bug9568 = EnvUtil.labeled_class("[ruby-core:61091] [Bug #9568]", RuntimeError) do
       def to_s
@@ -489,6 +560,35 @@ end.join
     end;
   end
 
+  def test_ensure_after_nomemoryerror
+    skip "Forcing NoMemoryError causes problems in some environments"
+    assert_separately([], "$_ = 'a' * 1_000_000_000_000_000_000")
+  rescue NoMemoryError
+    assert_raise(NoMemoryError) do
+      assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+      bug15779 = bug15779 = '[ruby-core:92342]'
+      begin;
+        require 'open-uri'
+
+        begin
+          'a' * 1_000_000_000_000_000_000
+        ensure
+          URI.open('http://www.ruby-lang.org/')
+        end
+      end;
+    end
+  rescue Test::Unit::AssertionFailedError
+    # Possibly compiled with -DRUBY_DEBUG, in which
+    # case rb_bug is used instead of NoMemoryError,
+    # and we cannot test ensure after NoMemoryError.
+  rescue RangeError
+    # MingW can raise RangeError instead of NoMemoryError,
+    # so we cannot test this case.
+  rescue Timeout::Error
+    # Solaris 11 CI times out instead of raising NoMemoryError,
+    # so we cannot test this case.
+  end
+
   def test_equal
     bug5865 = '[ruby-core:41979]'
     assert_equal(RuntimeError.new("a"), RuntimeError.new("a"), bug5865)
@@ -743,7 +843,7 @@ end.join
     bug12741 = '[ruby-core:77222] [Bug #12741]'
 
     x = Thread.current
-    q = Queue.new
+    q = Thread::Queue.new
     y = Thread.start do
       q.pop
       begin

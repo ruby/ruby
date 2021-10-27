@@ -546,7 +546,7 @@ module Racc
     end
 
     # Exit parser.
-    # Return value is Symbol_Value_Stack[0].
+    # Return value is +Symbol_Value_Stack[0]+.
     def yyaccept
       throw :racc_jump, 2
     end

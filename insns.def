@@ -230,26 +230,28 @@ setinstancevariable
 /* Get value of class variable id of klass as val. */
 DEFINE_INSN
 getclassvariable
-(ID id)
+(ID id, IVC ic)
 ()
 (VALUE val)
 /* "class variable access from toplevel" warning can be hooked. */
 // attr bool leaf = false; /* has rb_warning() */
 {
-    val = rb_cvar_get(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP(), 1), id);
+    rb_cref_t * cref = vm_get_cref(GET_EP());
+    rb_control_frame_t *cfp = GET_CFP();
+    val = vm_getclassvariable(GET_ISEQ(), cref, cfp, id, (ICVARC)ic);
 }
 
 /* Set value of class variable id of klass as val. */
 DEFINE_INSN
 setclassvariable
-(ID id)
+(ID id, IVC ic)
 (VALUE val)
 ()
 /* "class variable access from toplevel" warning can be hooked. */
 // attr bool leaf = false; /* has rb_warning() */
 {
     vm_ensure_not_refinement_module(GET_SELF());
-    rb_cvar_set(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP(), 1), id, val);
+    vm_setclassvariable(GET_ISEQ(), vm_get_cref(GET_EP()), GET_CFP(), id,  val, (ICVARC)ic);
 }
 
 /* Get constant variable id. If klass is Qnil and allow_nil is Qtrue, constants
@@ -524,10 +526,12 @@ newhash
 {
     RUBY_DTRACE_CREATE_HOOK(HASH, num);
 
-    val = rb_hash_new_with_size(num / 2);
-
     if (num) {
+        val = rb_hash_new_with_size(num / 2);
         rb_hash_bulk_insert(num, STACK_ADDR_FROM_TOP(num), val);
+    }
+    else {
+        val = rb_hash_new();
     }
 }
 
@@ -592,25 +596,6 @@ swap
     /* none */
 }
 
-/* reverse stack top N order. */
-DEFINE_INSN
-reverse
-(rb_num_t n)
-(...)
-(...)
-// attr rb_snum_t sp_inc = 0;
-{
-    rb_num_t i;
-    VALUE *sp = STACK_ADDR_FROM_TOP(n);
-
-    for (i=0; i<n/2; i++) {
-	VALUE v0 = sp[i];
-	VALUE v1 = TOPN(i);
-	sp[i] = v1;
-	TOPN(i) = v0;
-    }
-}
-
 /* for stack caching. */
 DEFINE_INSN_IF(STACK_CACHING)
 reput
@@ -662,19 +647,22 @@ adjuststack
 /* defined? */
 DEFINE_INSN
 defined
-(rb_num_t op_type, VALUE obj, VALUE needstr)
+(rb_num_t op_type, VALUE obj, VALUE pushval)
 (VALUE v)
 (VALUE val)
 // attr bool leaf = leafness_of_defined(op_type);
 {
-    val = vm_defined(ec, GET_CFP(), op_type, obj, needstr, v);
+    val = Qnil;
+    if (vm_defined(ec, GET_CFP(), op_type, obj, v)) {
+      val = pushval;
+    }
 }
 
 /* check `target' matches `pattern'.
      `flag & VM_CHECKMATCH_TYPE_MASK' describe how to check pattern.
       VM_CHECKMATCH_TYPE_WHEN: ignore target and check pattern is truthy.
       VM_CHECKMATCH_TYPE_CASE: check `patten === target'.
-      VM_CHECKMATCH_TYPE_RESCUE: check `pattern.kind_op?(Module) && pattern === target'.
+      VM_CHECKMATCH_TYPE_RESCUE: check `pattern.kind_of?(Module) && pattern === target'.
      if `flag & VM_CHECKMATCH_ARRAY' is not 0, then `patten' is array of patterns.
  */
 DEFINE_INSN
@@ -712,7 +700,7 @@ checktype
 /**********************************************************/
 
 /* enter class definition scope. if super is Qfalse, and class
-   "klass" is defined, it's redefine. otherwise, define "klass" class.
+   "klass" is defined, it's redefined. Otherwise, define "klass" class.
  */
 DEFINE_INSN
 defineclass
@@ -848,7 +836,7 @@ opt_newarray_max
 // attr bool leaf = false; /* has rb_funcall() */
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
-    val = vm_opt_newarray_max(num, STACK_ADDR_FROM_TOP(num));
+    val = vm_opt_newarray_max(ec, num, STACK_ADDR_FROM_TOP(num));
 }
 
 DEFINE_INSN
@@ -860,7 +848,7 @@ opt_newarray_min
 // attr bool leaf = false; /* has rb_funcall() */
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
-    val = vm_opt_newarray_min(num, STACK_ADDR_FROM_TOP(num));
+    val = vm_opt_newarray_min(ec, num, STACK_ADDR_FROM_TOP(num));
 }
 
 /* super(args) # args.size => num */
@@ -1039,6 +1027,7 @@ opt_setinlinecache
 (IC ic)
 (VALUE val)
 (VALUE val)
+// attr bool leaf = false;
 {
     vm_ic_update(GET_ISEQ(), ic, val, GET_EP());
 }

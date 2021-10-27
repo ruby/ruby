@@ -157,6 +157,9 @@ class TestRDocTopLevel < XrefTestCase
 
   def test_http_url
     assert_equal 'prefix/path/top_level_rb.html', @top_level.http_url('prefix')
+
+    other_level = @store.add_file 'path.other/level.rb'
+    assert_equal 'prefix/path_other/level_rb.html', other_level.http_url('prefix')
   end
 
   def test_last_modified

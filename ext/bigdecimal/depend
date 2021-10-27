@@ -150,7 +150,6 @@ bigdecimal.o: $(hdrdir)/ruby/internal/static_assert.h
 bigdecimal.o: $(hdrdir)/ruby/internal/stdalign.h
 bigdecimal.o: $(hdrdir)/ruby/internal/stdbool.h
 bigdecimal.o: $(hdrdir)/ruby/internal/symbol.h
-bigdecimal.o: $(hdrdir)/ruby/internal/token_paste.h
 bigdecimal.o: $(hdrdir)/ruby/internal/value.h
 bigdecimal.o: $(hdrdir)/ruby/internal/value_type.h
 bigdecimal.o: $(hdrdir)/ruby/internal/variable.h
@@ -317,7 +316,6 @@ missing.o: $(hdrdir)/ruby/internal/static_assert.h
 missing.o: $(hdrdir)/ruby/internal/stdalign.h
 missing.o: $(hdrdir)/ruby/internal/stdbool.h
 missing.o: $(hdrdir)/ruby/internal/symbol.h
-missing.o: $(hdrdir)/ruby/internal/token_paste.h
 missing.o: $(hdrdir)/ruby/internal/value.h
 missing.o: $(hdrdir)/ruby/internal/value_type.h
 missing.o: $(hdrdir)/ruby/internal/variable.h

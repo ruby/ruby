@@ -136,7 +136,6 @@ init.o: $(hdrdir)/ruby/internal/static_assert.h
 init.o: $(hdrdir)/ruby/internal/stdalign.h
 init.o: $(hdrdir)/ruby/internal/stdbool.h
 init.o: $(hdrdir)/ruby/internal/symbol.h
-init.o: $(hdrdir)/ruby/internal/token_paste.h
 init.o: $(hdrdir)/ruby/internal/value.h
 init.o: $(hdrdir)/ruby/internal/value_type.h
 init.o: $(hdrdir)/ruby/internal/variable.h
@@ -296,7 +295,6 @@ inspector.o: $(hdrdir)/ruby/internal/static_assert.h
 inspector.o: $(hdrdir)/ruby/internal/stdalign.h
 inspector.o: $(hdrdir)/ruby/internal/stdbool.h
 inspector.o: $(hdrdir)/ruby/internal/symbol.h
-inspector.o: $(hdrdir)/ruby/internal/token_paste.h
 inspector.o: $(hdrdir)/ruby/internal/value.h
 inspector.o: $(hdrdir)/ruby/internal/value_type.h
 inspector.o: $(hdrdir)/ruby/internal/variable.h
@@ -457,7 +455,6 @@ profile_frames.o: $(hdrdir)/ruby/internal/static_assert.h
 profile_frames.o: $(hdrdir)/ruby/internal/stdalign.h
 profile_frames.o: $(hdrdir)/ruby/internal/stdbool.h
 profile_frames.o: $(hdrdir)/ruby/internal/symbol.h
-profile_frames.o: $(hdrdir)/ruby/internal/token_paste.h
 profile_frames.o: $(hdrdir)/ruby/internal/value.h
 profile_frames.o: $(hdrdir)/ruby/internal/value_type.h
 profile_frames.o: $(hdrdir)/ruby/internal/variable.h

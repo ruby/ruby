@@ -28,7 +28,7 @@ module Psych
 
     def test_tag_round_trip
       tag   = Tagged.new
-      tag2  = Psych.load(Psych.dump(tag))
+      tag2  = Psych.unsafe_load(Psych.dump(tag))
       assert_equal tag.baz, tag2.baz
       assert_instance_of(Tagged, tag2)
     end
@@ -36,7 +36,7 @@ module Psych
     def test_cyclic_references
       foo = Foo.new(nil)
       foo.parent = foo
-      loaded = Psych.load Psych.dump foo
+      loaded = Psych.unsafe_load Psych.dump foo
 
       assert_instance_of(Foo, loaded)
       assert_equal loaded, loaded.parent

@@ -78,6 +78,20 @@ describe "Marshal.dump" do
       s = "\u2192".force_encoding("binary").to_sym
       Marshal.dump(s).should == "\x04\b:\b\xE2\x86\x92"
     end
+
+    it "dumps multiple Symbols sharing the same encoding" do
+      # Note that the encoding is a link for the second Symbol
+      symbol1 = "I:\t\xE2\x82\xACa\x06:\x06ET"
+      symbol2 = "I:\t\xE2\x82\xACb\x06;\x06T"
+      value = [
+        "€a".force_encoding(Encoding::UTF_8).to_sym,
+        "€b".force_encoding(Encoding::UTF_8).to_sym
+      ]
+      Marshal.dump(value).should == "\x04\b[\a#{symbol1}#{symbol2}"
+
+      value = [*value, value[0]]
+      Marshal.dump(value).should == "\x04\b[\b#{symbol1}#{symbol2};\x00"
+    end
   end
 
   describe "with an object responding to #marshal_dump" do
@@ -343,8 +357,13 @@ describe "Marshal.dump" do
     end
 
     it "dumps an extended Struct" do
-      st = Struct.new("Extended", :a, :b).new
-      Marshal.dump(st.extend(Meths)).should == "\004\be:\nMethsS:\025Struct::Extended\a:\006a0:\006b0"
+      obj = Struct.new("Extended", :a, :b).new.extend(Meths)
+      Marshal.dump(obj).should == "\004\be:\nMethsS:\025Struct::Extended\a:\006a0:\006b0"
+
+      s = 'hi'
+      obj.a = [:a, s]
+      obj.b = [:Meths, s]
+      Marshal.dump(obj).should == "\004\be:\nMethsS:\025Struct::Extended\a:\006a[\a;\a\"\ahi:\006b[\a;\000@\a"
       Struct.send(:remove_const, :Extended)
     end
   end

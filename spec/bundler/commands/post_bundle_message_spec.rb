@@ -32,21 +32,21 @@ RSpec.describe "post bundle message" do
       bundle "config set --local without emo"
       bundle :install
       expect(out).to include(bundle_show_message)
-      expect(out).to include("Gems in the group emo were not installed")
+      expect(out).to include("Gems in the group 'emo' were not installed")
       expect(out).to include(bundle_complete_message)
       expect(out).to include(installed_gems_stats)
 
       bundle "config set --local without emo test"
       bundle :install
       expect(out).to include(bundle_show_message)
-      expect(out).to include("Gems in the groups emo and test were not installed")
+      expect(out).to include("Gems in the groups 'emo' and 'test' were not installed")
       expect(out).to include(bundle_complete_message)
       expect(out).to include("4 Gemfile dependencies, 3 gems now installed.")
 
       bundle "config set --local without emo obama test"
       bundle :install
       expect(out).to include(bundle_show_message)
-      expect(out).to include("Gems in the groups emo, obama and test were not installed")
+      expect(out).to include("Gems in the groups 'emo', 'obama' and 'test' were not installed")
       expect(out).to include(bundle_complete_message)
       expect(out).to include("4 Gemfile dependencies, 2 gems now installed.")
     end
@@ -65,21 +65,21 @@ RSpec.describe "post bundle message" do
         bundle "config set --local without emo"
         bundle :install
         expect(out).to include(bundle_show_path_message)
-        expect(out).to include("Gems in the group emo were not installed")
+        expect(out).to include("Gems in the group 'emo' were not installed")
         expect(out).to include(bundle_complete_message)
 
         bundle "config set --local path vendor"
         bundle "config set --local without emo test"
         bundle :install
         expect(out).to include(bundle_show_path_message)
-        expect(out).to include("Gems in the groups emo and test were not installed")
+        expect(out).to include("Gems in the groups 'emo' and 'test' were not installed")
         expect(out).to include(bundle_complete_message)
 
         bundle "config set --local path vendor"
         bundle "config set --local without emo obama test"
         bundle :install
         expect(out).to include(bundle_show_path_message)
-        expect(out).to include("Gems in the groups emo, obama and test were not installed")
+        expect(out).to include("Gems in the groups 'emo', 'obama' and 'test' were not installed")
         expect(out).to include(bundle_complete_message)
       end
     end
@@ -113,16 +113,7 @@ RSpec.describe "post bundle message" do
         bundle "config set force_ruby_platform true"
       end
 
-      it "should report a helpful error message", :bundler => "< 3" do
-        install_gemfile <<-G, :raise_on_error => false
-          source "#{file_uri_for(gem_repo1)}"
-          gem "rack"
-          gem "not-a-gem", :group => :development
-        G
-        expect(err).to include("Could not find gem 'not-a-gem' in any of the gem sources listed in your Gemfile.")
-      end
-
-      it "should report a helpful error message", :bundler => "3" do
+      it "should report a helpful error message" do
         install_gemfile <<-G, :raise_on_error => false
           source "#{file_uri_for(gem_repo1)}"
           gem "rack"
@@ -130,7 +121,6 @@ RSpec.describe "post bundle message" do
         G
         expect(err).to include <<-EOS.strip
 Could not find gem 'not-a-gem' in rubygems repository #{file_uri_for(gem_repo1)}/ or installed locally.
-The source does not contain any versions of 'not-a-gem'
         EOS
       end
 
@@ -165,7 +155,7 @@ The source does not contain any versions of 'not-a-gem'
       bundle "install --without emo"
       bundle :install
       expect(out).to include(bundle_show_message)
-      expect(out).to include("Gems in the group emo were not installed")
+      expect(out).to include("Gems in the group 'emo' were not installed")
       expect(out).to include(bundle_complete_message)
       expect(out).to include(installed_gems_stats)
     end
@@ -174,7 +164,7 @@ The source does not contain any versions of 'not-a-gem'
       bundle "install --without emo test"
       bundle :install
       expect(out).to include(bundle_show_message)
-      expect(out).to include("Gems in the groups emo and test were not installed")
+      expect(out).to include("Gems in the groups 'emo' and 'test' were not installed")
       expect(out).to include(bundle_complete_message)
     end
 
@@ -182,7 +172,7 @@ The source does not contain any versions of 'not-a-gem'
       bundle "install --without emo obama test"
       bundle :install
       expect(out).to include(bundle_show_message)
-      expect(out).to include("Gems in the groups emo, obama and test were not installed")
+      expect(out).to include("Gems in the groups 'emo', 'obama' and 'test' were not installed")
       expect(out).to include(bundle_complete_message)
     end
   end
@@ -196,19 +186,19 @@ The source does not contain any versions of 'not-a-gem'
       bundle "config set --local without emo"
       bundle :install
       bundle :update, :all => true
-      expect(out).to include("Gems in the group emo were not updated")
+      expect(out).to include("Gems in the group 'emo' were not updated")
       expect(out).to include(bundle_updated_message)
 
       bundle "config set --local without emo test"
       bundle :install
       bundle :update, :all => true
-      expect(out).to include("Gems in the groups emo and test were not updated")
+      expect(out).to include("Gems in the groups 'emo' and 'test' were not updated")
       expect(out).to include(bundle_updated_message)
 
       bundle "config set --local without emo obama test"
       bundle :install
       bundle :update, :all => true
-      expect(out).to include("Gems in the groups emo, obama and test were not updated")
+      expect(out).to include("Gems in the groups 'emo', 'obama' and 'test' were not updated")
       expect(out).to include(bundle_updated_message)
     end
   end

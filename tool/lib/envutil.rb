@@ -125,7 +125,7 @@ module EnvUtil
 
   def invoke_ruby(args, stdin_data = "", capture_stdout = false, capture_stderr = false,
                   encoding: nil, timeout: 10, reprieve: 1, timeout_error: Timeout::Error,
-                  stdout_filter: nil, stderr_filter: nil,
+                  stdout_filter: nil, stderr_filter: nil, ios: nil,
                   signal: :TERM,
                   rubybin: EnvUtil.rubybin, precommand: nil,
                   **opt)
@@ -141,6 +141,8 @@ module EnvUtil
       out_p.set_encoding(encoding) if out_p
       err_p.set_encoding(encoding) if err_p
     end
+    ios.each {|i, o = i|opt[i] = o} if ios
+
     c = "C"
     child_env = {}
     LANG_ENVS.each {|lc| child_env[lc] = c}
@@ -152,7 +154,7 @@ module EnvUtil
     end
     child_env['ASAN_OPTIONS'] = ENV['ASAN_OPTIONS'] if ENV['ASAN_OPTIONS']
     args = [args] if args.kind_of?(String)
-    pid = spawn(child_env, *precommand, rubybin, *args, **opt)
+    pid = spawn(child_env, *precommand, rubybin, *args, opt)
     in_c.close
     out_c&.close
     out_c = nil

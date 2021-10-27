@@ -3,6 +3,8 @@
 require 'test/unit'
 require 'stringio'
 require 'tempfile'
+require 'tmpdir'
+require 'securerandom'
 
 begin
   require 'zlib'
@@ -502,30 +504,93 @@ if defined? Zlib
       assert_raise(Zlib::StreamError) { z.set_dictionary("foo") }
       z.close
     end
+
+    def test_multithread_deflate
+      zd = Zlib::Deflate.new
+
+      s = "x" * 10000
+      (0...10).map do |x|
+        Thread.new do
+          1000.times { zd.deflate(s) }
+        end
+      end.each do |th|
+        th.join
+      end
+    ensure
+      zd&.finish
+      zd&.close
+    end
+
+    def test_multithread_inflate
+      zi = Zlib::Inflate.new
+
+      s = Zlib.deflate("x" * 10000)
+      (0...10).map do |x|
+        Thread.new do
+          1000.times { zi.inflate(s) }
+        end
+      end.each do |th|
+        th.join
+      end
+    ensure
+      zi&.finish
+      zi&.close
+    end
+
+    def test_recursive_deflate
+      zd = Zlib::Deflate.new
+
+      s = SecureRandom.random_bytes(1024**2)
+      assert_raise(Zlib::BufError) do
+        zd.deflate(s) do
+          zd.deflate(s)
+        end
+      end
+    ensure
+      zd&.finish
+      zd&.close
+    end
+
+    def test_recursive_inflate
+      zi = Zlib::Inflate.new
+
+      s = Zlib.deflate(SecureRandom.random_bytes(1024**2))
+
+      assert_raise(Zlib::DataError) do
+        zi.inflate(s) do
+          zi.inflate(s)
+        end
+      end
+    ensure
+      zi&.close
+    end
   end
 
   class TestZlibGzipFile < Test::Unit::TestCase
     def test_gzip_reader_zcat
       Tempfile.create("test_zlib_gzip_file_to_io") {|t|
+        t.binmode
         gz = Zlib::GzipWriter.new(t)
         gz.print("foo")
         gz.close
-        t = File.open(t.path, 'ab')
-        gz = Zlib::GzipWriter.new(t)
-        gz.print("bar")
-        gz.close
+        File.open(t.path, 'ab') do |f|
+          gz = Zlib::GzipWriter.new(f)
+          gz.print("bar")
+          gz.close
+        end
 
         results = []
-        t = File.open(t.path)
-        Zlib::GzipReader.zcat(t) do |str|
-          results << str
+        File.open(t.path, 'rb') do |f|
+          Zlib::GzipReader.zcat(f) do |str|
+            results << str
+          end
         end
         assert_equal(["foo", "bar"], results)
-        t.close
 
-        t = File.open(t.path)
-        assert_equal("foobar", Zlib::GzipReader.zcat(t))
-        t.close
+        results = File.open(t.path, 'rb') do |f|
+          Zlib::GzipReader.zcat(f)
+        end
+        assert_equal("foobar", results)
       }
     end
 
@@ -719,6 +784,34 @@ if defined? Zlib
         assert_raise(NoMethodError) { gz.path }
         gz.close
       }
+    end
+
+    if defined? File::TMPFILE
+      def test_path_tmpfile
+        sio = StringIO.new("".dup, 'w')
+        gz = Zlib::GzipWriter.new(sio)
+        gz.write "hi"
+        gz.close
+
+        File.open(Dir.mktmpdir, File::RDWR | File::TMPFILE) do |io|
+          io.write sio.string
+          io.rewind
+
+          gz0 = Zlib::GzipWriter.new(io)
+          assert_raise(NoMethodError) { gz0.path }
+
+          gz1 = Zlib::GzipReader.new(io)
+          assert_raise(NoMethodError) { gz1.path }
+          gz0.close
+          gz1.close
+        end
+      rescue Errno::EINVAL
+        skip 'O_TMPFILE not supported (EINVAL)'
+      rescue Errno::EISDIR
+        skip 'O_TMPFILE not supported (EISDIR)'
+      rescue Errno::EOPNOTSUPP
+        skip 'O_TMPFILE not supported (EOPNOTSUPP)'
+      end
     end
   end
 
@@ -1226,7 +1319,7 @@ if defined? Zlib
         assert_equal(0x02820145, Zlib.adler32_combine(one, two, 1))
       rescue NotImplementedError
         skip "adler32_combine is not implemented"
-      rescue Minitest::Assertion
+      rescue Test::Unit::AssertionFailedError
         if /aix/ =~ RUBY_PLATFORM
           skip "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
         end
@@ -1261,7 +1354,7 @@ if defined? Zlib
         assert_equal(0x8c736521, Zlib.crc32_combine(one, two, 1))
       rescue NotImplementedError
         skip "crc32_combine is not implemented"
-      rescue Minitest::Assertion
+      rescue Test::Unit::AssertionFailedError
         if /aix/ =~ RUBY_PLATFORM
           skip "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
         end
@@ -1276,11 +1369,20 @@ if defined? Zlib
     end
 
     def test_inflate
-      TestZlibInflate.new(__name__).test_inflate
+      s = Zlib::Deflate.deflate("foo")
+      z = Zlib::Inflate.new
+      s = z.inflate(s)
+      s << z.inflate(nil)
+      assert_equal("foo", s)
+      z.inflate("foo") # ???
+      z << "foo" # ???
     end
 
     def test_deflate
-      TestZlibDeflate.new(__name__).test_deflate
+      s = Zlib::Deflate.deflate("foo")
+      assert_equal("foo", Zlib::Inflate.inflate(s))
+
+      assert_raise(Zlib::StreamError) { Zlib::Deflate.deflate("foo", 10000) }
     end
 
     def test_deflate_stream

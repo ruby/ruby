@@ -28,8 +28,8 @@
 #define A_LONG(val) rb_str_catf(buf, "%ld", (val))
 #define A_LIT(lit) AR(rb_dump_literal(lit))
 #define A_NODE_HEADER(node, term) \
-    rb_str_catf(buf, "@ %s (line: %d, location: (%d,%d)-(%d,%d))%s"term, \
-		ruby_node_name(nd_type(node)), nd_line(node), \
+    rb_str_catf(buf, "@ %s (id: %d, line: %d, location: (%d,%d)-(%d,%d))%s"term, \
+		ruby_node_name(nd_type(node)), nd_node_id(node), nd_line(node), \
 		nd_first_lineno(node), nd_first_column(node), \
 		nd_last_lineno(node), nd_last_column(node), \
 		(node->flags & NODE_FL_NEWLINE ? "*" : ""))
@@ -1407,6 +1407,7 @@ rb_ast_mark(rb_ast_t *ast)
 
         iterate_node_values(&nb->markable, mark_ast_value, NULL);
     }
+    if (ast->body.script_lines) rb_gc_mark(ast->body.script_lines);
 }
 
 void

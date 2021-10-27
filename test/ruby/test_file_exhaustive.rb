@@ -78,6 +78,19 @@ class TestFileExhaustive < Test::Unit::TestCase
     @notownedfile
   end
 
+  def grpownedfile
+    return nil unless POSIX
+    return @grpownedfile if defined? @grpownedfile
+    if group = (Process.groups - [Process.egid]).last
+      grpownedfile = make_tmp_filename("grpownedfile")
+      make_file("grpowned", grpownedfile)
+      File.chown(nil, group, grpownedfile)
+      return @grpownedfile = grpownedfile
+    end
+  rescue
+    @grpownedfile = nil
+  end
+
   def suidfile
     return @suidfile if defined? @suidfile
     if POSIX
@@ -493,6 +506,9 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_grpowned_p ## xxx
     assert_file.grpowned?(regular_file)
     assert_file.grpowned?(utf8_file)
+    if file = grpownedfile
+      assert_file.grpowned?(file)
+    end
   end if POSIX
 
   def io_open(file_name)
@@ -679,6 +695,13 @@ class TestFileExhaustive < Test::Unit::TestCase
     File.utime(t + 1, t + 2, zerofile)
     assert_equal(t + 1, File.atime(zerofile))
     assert_equal(t + 2, File.mtime(zerofile))
+    Dir.mktmpdir do |dir|
+      Dir.chdir(dir) do
+        path = "foo\u{30b3 30d4 30fc}"
+        File.write(path, "") rescue next
+        assert_equal(1, File.utime(nil, nil, path))
+      end
+    end
   end
 
   def test_utime_symlinkfile
@@ -1247,6 +1270,12 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal(@dir, File.dirname(regular_file))
     assert_equal(@dir, File.dirname(utf8_file))
     assert_equal(".", File.dirname(""))
+    assert_equal(regular_file, File.dirname(regular_file, 0))
+    assert_equal(@dir, File.dirname(regular_file, 1))
+    assert_equal(File.dirname(@dir), File.dirname(regular_file, 2))
+    return if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # rootdir and tmpdir are in different drives
+    assert_equal(rootdir, File.dirname(regular_file, regular_file.count('/')))
+    assert_raise(ArgumentError) {File.dirname(regular_file, -1)}
   end
 
   def test_dirname_encoding
@@ -1441,6 +1470,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       fn1,
       zerofile,
       notownedfile,
+      grpownedfile,
       suidfile,
       sgidfile,
       stickyfile,
@@ -1451,31 +1481,31 @@ class TestFileExhaustive < Test::Unit::TestCase
       fifo,
       socket
     ].compact.each do |f|
-      assert_equal(File.atime(f), test(?A, f))
-      assert_equal(File.ctime(f), test(?C, f))
-      assert_equal(File.mtime(f), test(?M, f))
-      assert_equal(File.blockdev?(f), test(?b, f))
-      assert_equal(File.chardev?(f), test(?c, f))
-      assert_equal(File.directory?(f), test(?d, f))
-      assert_equal(File.exist?(f), test(?e, f))
-      assert_equal(File.file?(f), test(?f, f))
-      assert_equal(File.setgid?(f), test(?g, f))
-      assert_equal(File.grpowned?(f), test(?G, f))
-      assert_equal(File.sticky?(f), test(?k, f))
-      assert_equal(File.symlink?(f), test(?l, f))
-      assert_equal(File.owned?(f), test(?o, f))
-      assert_nothing_raised { test(?O, f) }
-      assert_equal(File.pipe?(f), test(?p, f))
-      assert_equal(File.readable?(f), test(?r, f))
-      assert_equal(File.readable_real?(f), test(?R, f))
-      assert_equal(File.size?(f), test(?s, f))
-      assert_equal(File.socket?(f), test(?S, f))
-      assert_equal(File.setuid?(f), test(?u, f))
-      assert_equal(File.writable?(f), test(?w, f))
-      assert_equal(File.writable_real?(f), test(?W, f))
-      assert_equal(File.executable?(f), test(?x, f))
-      assert_equal(File.executable_real?(f), test(?X, f))
-      assert_equal(File.zero?(f), test(?z, f))
+      assert_equal(File.atime(f), test(?A, f), f)
+      assert_equal(File.ctime(f), test(?C, f), f)
+      assert_equal(File.mtime(f), test(?M, f), f)
+      assert_equal(File.blockdev?(f), test(?b, f), f)
+      assert_equal(File.chardev?(f), test(?c, f), f)
+      assert_equal(File.directory?(f), test(?d, f), f)
+      assert_equal(File.exist?(f), test(?e, f), f)
+      assert_equal(File.file?(f), test(?f, f), f)
+      assert_equal(File.setgid?(f), test(?g, f), f)
+      assert_equal(File.grpowned?(f), test(?G, f), f)
+      assert_equal(File.sticky?(f), test(?k, f), f)
+      assert_equal(File.symlink?(f), test(?l, f), f)
+      assert_equal(File.owned?(f), test(?o, f), f)
+      assert_nothing_raised(f) { test(?O, f) }
+      assert_equal(File.pipe?(f), test(?p, f), f)
+      assert_equal(File.readable?(f), test(?r, f), f)
+      assert_equal(File.readable_real?(f), test(?R, f), f)
+      assert_equal(File.size?(f), test(?s, f), f)
+      assert_equal(File.socket?(f), test(?S, f), f)
+      assert_equal(File.setuid?(f), test(?u, f), f)
+      assert_equal(File.writable?(f), test(?w, f), f)
+      assert_equal(File.writable_real?(f), test(?W, f), f)
+      assert_equal(File.executable?(f), test(?x, f), f)
+      assert_equal(File.executable_real?(f), test(?X, f), f)
+      assert_equal(File.zero?(f), test(?z, f), f)
     end
     assert_equal(false, test(?-, @dir, fn1))
     assert_equal(true, test(?-, fn1, fn1))
@@ -1676,6 +1706,9 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_stat_grpowned_p ## xxx
     assert_predicate(File::Stat.new(regular_file), :grpowned?)
+    if file = grpownedfile
+      assert_predicate(File::Stat.new(file), :grpowned?)
+    end
   end if POSIX
 
   def test_stat_suid

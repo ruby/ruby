@@ -1,4 +1,4 @@
-# -*- Autoconf -*-
+dnl -*- Autoconf -*-
 AC_DEFUN([RUBY_TRY_CXXFLAGS], [
     save_CXXFLAGS="$CXXFLAGS"
     CXXFLAGS="[$]CXXFLAGS $1"

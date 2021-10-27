@@ -90,5 +90,5 @@ module URI
     end
   end
 
-  @@schemes['FILE'] = File
+  register_scheme 'FILE', File
 end

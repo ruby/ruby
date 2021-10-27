@@ -152,7 +152,6 @@ rmd160.o: $(hdrdir)/ruby/internal/static_assert.h
 rmd160.o: $(hdrdir)/ruby/internal/stdalign.h
 rmd160.o: $(hdrdir)/ruby/internal/stdbool.h
 rmd160.o: $(hdrdir)/ruby/internal/symbol.h
-rmd160.o: $(hdrdir)/ruby/internal/token_paste.h
 rmd160.o: $(hdrdir)/ruby/internal/value.h
 rmd160.o: $(hdrdir)/ruby/internal/value_type.h
 rmd160.o: $(hdrdir)/ruby/internal/variable.h
@@ -315,7 +314,6 @@ rmd160init.o: $(hdrdir)/ruby/internal/static_assert.h
 rmd160init.o: $(hdrdir)/ruby/internal/stdalign.h
 rmd160init.o: $(hdrdir)/ruby/internal/stdbool.h
 rmd160init.o: $(hdrdir)/ruby/internal/symbol.h
-rmd160init.o: $(hdrdir)/ruby/internal/token_paste.h
 rmd160init.o: $(hdrdir)/ruby/internal/value.h
 rmd160init.o: $(hdrdir)/ruby/internal/value_type.h
 rmd160init.o: $(hdrdir)/ruby/internal/variable.h

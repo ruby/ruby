@@ -528,7 +528,20 @@ def compare_deps(make_deps, cc_deps, out=$stdout)
   }
 end
 
+def prepare_build
+  unless File.exist?("Makefile")
+    if File.exist?("autogen.sh")
+      system("./autogen.sh")
+    elsif !File.exist?("configure")
+      system("autoreconf", "-i", "-s")
+    end
+    system("./configure", "-q", "--enable-load-relative", "--prefix=/.",
+           "--disable-install-doc", "debugflags=-save-temps=obj -g")
+  end
+end
+
 def main_show(out=$stdout)
+  prepare_build
   make_deps, cc_deps = detect_dependencies(out)
   compare_deps(make_deps, cc_deps, out)
 end
