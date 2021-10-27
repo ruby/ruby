@@ -202,9 +202,9 @@ Outstanding ones only.
 * The following default gem are updated.
   * RubyGems
   * Bundler
-  * RDoc 6.4.0
+  * RDoc 6.3.2
   * ReLine
-  * JSON 2.6.0
+  * JSON 2.6.1
   * Psych 4.0.2
   * FileUtils 1.6.0
   * Fiddle 1.1.0
@@ -216,7 +216,7 @@ Outstanding ones only.
   * Date 3.2.0
   * Zlib 2.1.1
   * StringScanner 3.0.1
-  * IpAddr
+  * IpAddr 1.2.2
   * Logger 1.4.4
   * OStruct 0.5.0
   * Irb
@@ -238,10 +238,10 @@ Outstanding ones only.
   * Net::Http 0.2.0
   * BigDecimal
   * OptionParser 0.2.0
-  * Set
+  * Set 1.0.1
   * Find 0.1.1
   * Rinda 0.1.1
-  * Erb
+  * Erb 2.2.3
   * NKF 0.1.1
   * Base64 0.1.1
   * OpenUri 0.2.0
@@ -261,7 +261,7 @@ Outstanding ones only.
   * rake 13.0.6
   * test-unit 3.5.0
   * rbs 1.6.2
-  * typeprof 0.20.0
+  * typeprof 0.20.1
 * The following default gems are now bundled gems.
   * net-ftp
   * net-imap
