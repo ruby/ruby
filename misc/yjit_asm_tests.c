@@ -370,7 +370,7 @@ void run_assembler_tests(void)
     printf("Assembler tests done\n");
 }
 
-void assert_equal(expected, actual)
+void assert_equal(int expected, int actual)
 {
     if (expected != actual) {
         fprintf(stderr, "expected %d, got %d\n", expected, actual);
