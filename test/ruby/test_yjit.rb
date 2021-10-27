@@ -3,7 +3,7 @@ require 'test/unit'
 require 'envutil'
 require 'tmpdir'
 
-return unless defined?(YJIT) && YJIT.enabled?
+return unless defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
 
 # Tests for YJIT with assertions on compilation and side exits
 # insipired by the MJIT tests in test/ruby/test_jit.rb
@@ -49,7 +49,7 @@ class TestYJIT < Test::Unit::TestCase
       assert_equal([], stderr)
     end
     assert_in_out_err([yjit_child_env, '-e puts RUBY_DESCRIPTION'], '', [RUBY_DESCRIPTION])
-    assert_in_out_err([yjit_child_env, '-e p YJIT.enabled?'], '', ['true'])
+    assert_in_out_err([yjit_child_env, '-e p RubyVM::YJIT.enabled?'], '', ['true'])
   end
 
   def test_compile_getclassvariable
@@ -498,7 +498,7 @@ class TestYJIT < Test::Unit::TestCase
         objects[1].foo
       }
 
-      stats = YJIT.runtime_stats
+      stats = RubyVM::YJIT.runtime_stats
       return :ok unless stats[:all_stats]
       return :ok if stats[:invalidation_count] < 10
 
@@ -513,12 +513,12 @@ class TestYJIT < Test::Unit::TestCase
   ANY = Object.new
   def assert_compiles(test_script, insns: [], min_calls: 1, stdout: nil, exits: {}, result: ANY, frozen_string_literal: nil)
     reset_stats = <<~RUBY
-      YJIT.runtime_stats
-      YJIT.reset_stats!
+      RubyVM::YJIT.runtime_stats
+      RubyVM::YJIT.reset_stats!
     RUBY
 
     write_results = <<~RUBY
-      stats = YJIT.runtime_stats
+      stats = RubyVM::YJIT.runtime_stats
 
       def collect_blocks(blocks)
         blocks.sort_by(&:address).map { |b| [b.iseq_start_index, b.iseq_end_index] }
@@ -527,7 +527,7 @@ class TestYJIT < Test::Unit::TestCase
       def collect_iseqs(iseq)
         iseq_array = iseq.to_a
         insns = iseq_array.last.grep(Array)
-        blocks = YJIT.blocks_for(iseq)
+        blocks = RubyVM::YJIT.blocks_for(iseq)
         h = {
           name: iseq_array[5],
           insns: insns,
