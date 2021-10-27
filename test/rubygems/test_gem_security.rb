@@ -196,7 +196,7 @@ class TestGemSecurity < Gem::TestCase
 
   def test_class_sign
     issuer = PUBLIC_CERT.subject
-    signee = OpenSSL::X509::Name.parse "/CN=signee/DC=example"
+    signee = OpenSSL::X509::Name.new([["CN", "signee"], ["DC", "example"]])
 
     key  = PRIVATE_KEY
     cert = OpenSSL::X509::Certificate.new

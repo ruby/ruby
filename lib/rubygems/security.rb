@@ -510,9 +510,10 @@ module Gem::Security
 
     dcs = dcs.split '.'
 
-    name = "CN=#{cn}/#{dcs.map {|dc| "DC=#{dc}" }.join '/'}"
-
-    OpenSSL::X509::Name.parse name
+    OpenSSL::X509::Name.new([
+      ["CN", cn],
+      *dcs.map {|dc| ["DC", dc] },
+    ])
   end
 
   ##
