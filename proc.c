@@ -3228,6 +3228,51 @@ method_super_method(VALUE method)
 }
 
 /*
+ *  call-seq:
+ *    meth.public? -> true or false
+ *
+ *  Returns whether the method is public.
+ */
+
+static VALUE
+method_public_p(VALUE method)
+{
+    const struct METHOD *data;
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
+    return RBOOL(METHOD_ENTRY_VISI(data->me) == METHOD_VISI_PUBLIC);
+}
+
+/*
+ *  call-seq:
+ *    meth.protected? -> true or false
+ *
+ *  Returns whether the method is protected.
+ */
+
+static VALUE
+method_protected_p(VALUE method)
+{
+    const struct METHOD *data;
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
+    return RBOOL(METHOD_ENTRY_VISI(data->me) == METHOD_VISI_PROTECTED);
+}
+
+/*
+ *  call-seq:
+ *    meth.private? -> true or false
+ *
+ *  Returns whether the method is private.
+ */
+
+static VALUE
+method_private_p(VALUE method)
+{
+    const struct METHOD *data;
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
+    return RBOOL(METHOD_ENTRY_VISI(data->me) == METHOD_VISI_PRIVATE);
+}
+
+/*
  * call-seq:
  *   local_jump_error.exit_value  -> obj
  *
@@ -4163,6 +4208,9 @@ Init_Proc(void)
     rb_define_method(rb_cMethod, "source_location", rb_method_location, 0);
     rb_define_method(rb_cMethod, "parameters", rb_method_parameters, 0);
     rb_define_method(rb_cMethod, "super_method", method_super_method, 0);
+    rb_define_method(rb_cMethod, "public?", method_public_p, 0);
+    rb_define_method(rb_cMethod, "protected?", method_protected_p, 0);
+    rb_define_method(rb_cMethod, "private?", method_private_p, 0);
     rb_define_method(rb_mKernel, "method", rb_obj_method, 1);
     rb_define_method(rb_mKernel, "public_method", rb_obj_public_method, 1);
     rb_define_method(rb_mKernel, "singleton_method", rb_obj_singleton_method, 1);
@@ -4186,6 +4234,9 @@ Init_Proc(void)
     rb_define_method(rb_cUnboundMethod, "source_location", rb_method_location, 0);
     rb_define_method(rb_cUnboundMethod, "parameters", rb_method_parameters, 0);
     rb_define_method(rb_cUnboundMethod, "super_method", method_super_method, 0);
+    rb_define_method(rb_cUnboundMethod, "public?", method_public_p, 0);
+    rb_define_method(rb_cUnboundMethod, "protected?", method_protected_p, 0);
+    rb_define_method(rb_cUnboundMethod, "private?", method_private_p, 0);
 
     /* Module#*_method */
     rb_define_method(rb_cModule, "instance_method", rb_mod_instance_method, 1);

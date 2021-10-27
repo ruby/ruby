@@ -7,7 +7,7 @@ Note that each entry is kept to a minimum, see links for details.
 
 ## Language changes
 
-*   The block arguments can be now be anonymous, if the block will
+*   The block argument can be now be anonymous, if the block will
     only be passed to another method. [[Feature #11256]]
 
     ```ruby
@@ -189,6 +189,11 @@ Outstanding ones only.
     *   MatchData#match is added [[Feature #18172]]
 
     *   MatchData#match_length is added [[Feature #18172]]
+
+* Method/UnboundMethod
+
+    *   #public?, #private?, #protected have been added to both
+        Method and UnboundMethod. [[Feature #11689]]
 
 * Module
 
@@ -459,6 +464,7 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Bug #4443]:      https://bugs.ruby-lang.org/issues/4443
 [Feature #6210]:  https://bugs.ruby-lang.org/issues/6210
 [Feature #11256]: https://bugs.ruby-lang.org/issues/11256
+[Feature #11689]: https://bugs.ruby-lang.org/issues/11689
 [Feature #12194]: https://bugs.ruby-lang.org/issues/12194
 [Feature #12495]: https://bugs.ruby-lang.org/issues/12495
 [Feature #12913]: https://bugs.ruby-lang.org/issues/12913
