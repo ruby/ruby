@@ -1,6 +1,7 @@
 // For MAP_ANONYMOUS on GNU/Linux
 #define _GNU_SOURCE 1
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,9 +10,12 @@
 // This test executable doesn't compile with the rest of Ruby
 // so we need to define a rb_bug().
 _Noreturn
-static void rb_bug(char *message)
+static void rb_bug(const char *message, ...)
 {
-    fprintf(stderr, "%s\n", message);
+    va_list args;
+    va_start(args, message);
+    vfprintf(stderr, message, args);
+    va_end(args);
     abort();
 }
 
@@ -71,7 +75,7 @@ void check_bytes(codeblock_t* cb, const char* bytes)
     }
 }
 
-void run_assembler_tests()
+void run_assembler_tests(void)
 {
     printf("Running assembler tests\n");
 
@@ -366,7 +370,7 @@ void run_assembler_tests()
     printf("Assembler tests done\n");
 }
 
-void assert_equal(expected, actual)
+void assert_equal(int expected, int actual)
 {
     if (expected != actual) {
         fprintf(stderr, "expected %d, got %d\n", expected, actual);
@@ -374,7 +378,7 @@ void assert_equal(expected, actual)
     }
 }
 
-void run_runtime_tests()
+void run_runtime_tests(void)
 {
     printf("Running runtime tests\n");
 
