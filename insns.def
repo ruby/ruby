@@ -788,13 +788,13 @@ opt_send_without_block
  * frozen strings.
  */
 DEFINE_INSN
-concat_tostring
+converttostring
 (CALL_DATA cd)
 (VALUE recv)
 (VALUE val)
 // attr bool leaf = false;
 {
-    val = vm_concat_tostring(GET_ISEQ(), recv, cd);
+    val = vm_convert_to_string(GET_ISEQ(), recv, cd);
 
     if (val == Qundef) {
         CALL_SIMPLE_METHOD();
