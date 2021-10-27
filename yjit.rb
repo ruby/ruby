@@ -5,12 +5,12 @@
 #
 # This module is only defined when YJIT has support for the particular platform
 # on which CRuby is built.
-module YJIT
+module RubyVM::YJIT
   if defined?(Disasm)
     def self.disasm(iseq, tty: $stdout && $stdout.tty?)
       iseq = RubyVM::InstructionSequence.of(iseq)
 
-      blocks = YJIT.blocks_for(iseq)
+      blocks = blocks_for(iseq)
       return if blocks.empty?
 
       str = String.new
@@ -28,7 +28,7 @@ module YJIT
         end
       }
 
-      cs = YJIT::Disasm.new
+      cs = Disasm.new
       sorted_blocks.each_with_index do |block, i|
         str << "== BLOCK #{i+1}/#{blocks.length}: #{block.code.length} BYTES, ISEQ RANGE [#{block.iseq_start_index},#{block.iseq_end_index}) ".ljust(80, "=")
         str << "\n"
@@ -65,7 +65,7 @@ module YJIT
 
     def self.graphviz_for(iseq)
       iseq = RubyVM::InstructionSequence.of(iseq)
-      cs = YJIT::Disasm.new
+      cs = Disasm.new
 
       highlight = ->(comment) { "<b>#{comment}</b>" }
       linebreak = "<br align=\"left\"/>\n"

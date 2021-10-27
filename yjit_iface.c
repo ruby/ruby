@@ -1119,7 +1119,7 @@ rb_yjit_init(struct rb_yjit_options *options)
     yjit_init_codegen();
 
     // YJIT Ruby module
-    mYjit = rb_define_module("YJIT");
+    mYjit = rb_define_module_under(rb_cRubyVM, "YJIT");
     rb_define_module_function(mYjit, "blocks_for", yjit_blocks_for, 1);
 
     // YJIT::Block (block version, code block)
