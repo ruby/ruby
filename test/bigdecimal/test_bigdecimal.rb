@@ -1,7 +1,6 @@
 # frozen_string_literal: false
 require_relative "helper"
 require 'bigdecimal/math'
-require 'rbconfig/sizeof'
 
 class TestBigDecimal < Test::Unit::TestCase
   include TestBigDecimalBase
@@ -99,6 +98,19 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_same(bd, BigDecimal(bd, exception: false))
     assert_not_same(bd, BigDecimal(bd, 1))
     assert_not_same(bd, BigDecimal(bd, 1, exception: false))
+  end
+
+  def test_BigDecimal_issue_192
+    # https://github.com/ruby/bigdecimal/issues/192
+    # https://github.com/rails/rails/pull/42125
+    if BASE_FIG == 9
+      int = 1_000_000_000_12345_0000
+      big = BigDecimal("0.100000000012345e19")
+    else  # BASE_FIG == 4
+      int = 1_0000_12_00
+      big = BigDecimal("0.1000012e9")
+    end
+    assert_equal(BigDecimal(int), big, "[ruby/bigdecimal#192]")
   end
 
   def test_BigDecimal_with_invalid_string

@@ -1,8 +1,19 @@
 # frozen_string_literal: false
 require "test/unit"
 require "bigdecimal"
+require 'rbconfig/sizeof'
 
 module TestBigDecimalBase
+  if RbConfig::SIZEOF.key?("int64_t")
+    SIZEOF_DECDIG = RbConfig::SIZEOF["int32_t"]
+    BASE = 1_000_000_000
+    BASE_FIG = 9
+  else
+    SIZEOF_DECDIG = RbConfig::SIZEOF["int16_t"]
+    BASE = 1000
+    BASE_FIG = 4
+  end
+
   def setup
     @mode = BigDecimal.mode(BigDecimal::EXCEPTION_ALL)
     BigDecimal.mode(BigDecimal::EXCEPTION_ALL, true)
