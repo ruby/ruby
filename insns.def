@@ -382,9 +382,10 @@ concatstrings
     val = rb_str_concat_literals(num, STACK_ADDR_FROM_TOP(num));
 }
 
-/* push the result of to_s. */
+/* Convert the result to string if not already a string.
+   This is used as a backup if to_s does not return a string. */
 DEFINE_INSN
-tostring
+anytostring
 ()
 (VALUE val, VALUE str)
 (VALUE val)
@@ -782,19 +783,15 @@ opt_send_without_block
     }
 }
 
-/*
- * Try to convert obj to a T_STRING object for the purposes of string
- * interpolation. Some shortcuts are possible because we can accept
- * frozen strings.
- */
+/* Convert object to string using to_s or equivalent. */
 DEFINE_INSN
-converttostring
+tostring
 (CALL_DATA cd)
 (VALUE recv)
 (VALUE val)
 // attr bool leaf = false;
 {
-    val = vm_convert_to_string(GET_ISEQ(), recv, cd);
+    val = vm_tostring(GET_ISEQ(), recv, cd);
 
     if (val == Qundef) {
         CALL_SIMPLE_METHOD();

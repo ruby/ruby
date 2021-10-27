@@ -3271,13 +3271,13 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	}
     }
 
-    if (IS_INSN_ID(iobj, tostring)) {
+    if (IS_INSN_ID(iobj, anytostring)) {
 	LINK_ELEMENT *next = iobj->link.next;
 	/*
-	 *  tostring
+         *  anytostring
 	 *  concatstrings 1
 	 * =>
-	 *  tostring
+         *  anytostring
 	 */
 	if (IS_INSN(next) && IS_INSN_ID(next, concatstrings) &&
 	    OPERAND_AT(next, 0) == INT2FIX(1)) {
@@ -7645,11 +7645,11 @@ compile_evstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
         const NODE *line_node = node;
 	const unsigned int flag = VM_CALL_FCALL;
 
-        // Note, this dup could be removed if we are willing to change tostring. It pops
-        // two VALUEs off the stack whne it could work by replacing the top most VALUE.
+        // Note, this dup could be removed if we are willing to change anytostring. It pops
+        // two VALUEs off the stack when it could work by replacing the top most VALUE.
         ADD_INSN(ret, line_node, dup);
-        ADD_INSN1(ret, line_node, converttostring, new_callinfo(iseq, idTo_s, 0, flag, NULL, FALSE));
-	ADD_INSN(ret, line_node, tostring);
+        ADD_INSN1(ret, line_node, tostring, new_callinfo(iseq, idTo_s, 0, flag, NULL, FALSE));
+        ADD_INSN(ret, line_node, anytostring);
     }
     return COMPILE_OK;
 }

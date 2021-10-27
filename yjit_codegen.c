@@ -4286,7 +4286,7 @@ gen_setglobal(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 }
 
 static codegen_status_t
-gen_tostring(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
+gen_anytostring(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
     // Save the PC and SP because we might make a Ruby call for
     // Kernel#set_trace_var
@@ -4838,7 +4838,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(leave), gen_leave);
     yjit_reg_op(BIN(getglobal), gen_getglobal);
     yjit_reg_op(BIN(setglobal), gen_setglobal);
-    yjit_reg_op(BIN(tostring), gen_tostring);
+    yjit_reg_op(BIN(anytostring), gen_anytostring);
     yjit_reg_op(BIN(toregexp), gen_toregexp);
     yjit_reg_op(BIN(getspecial), gen_getspecial);
     yjit_reg_op(BIN(getclassvariable), gen_getclassvariable);
