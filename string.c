@@ -89,12 +89,16 @@ VALUE rb_cSymbol;
  *                         other strings that rely on this string's buffer)
  * 6:     STR_BORROWED (when RSTRING_NOEMBED==1 && klass==0, unsafe to recycle
  *                      early, specific to rb_str_tmp_frozen_{acquire,release})
- * 7:     STR_TMPLOCK
+ * 7:     STR_TMPLOCK (set when a pointer to the buffer is passed to syscall
+ *                     such as read(2). Any modification and realloc is prohibited)
+ *
  * 8-9:   ENC_CODERANGE (2 bits)
  * 10-16: ENCODING (7 bits == 128)
  * 17:    RSTRING_FSTR
- * 18:    STR_NOFREE
- * 19:    STR_FAKESTR
+ * 18:    STR_NOFREE (do not free this string's buffer when a String is freed.
+ *                    used for a string object based on C string literal)
+ * 19:    STR_FAKESTR (when RVALUE is not managed by GC. Typically, the string
+ *                     object header is temporarily allocated on C stack)
  */
 
 #define RUBY_MAX_CHAR_LEN 16
