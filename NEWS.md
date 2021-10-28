@@ -118,6 +118,18 @@ Outstanding ones only.
 
     * Enumerable#tally now accepts an optional hash to count. [[Feature #17744]]
 
+    * Enumerable#each_cons and each_slice to return a receiver. [[GH-1509]]
+
+      ```ruby
+      [1, 2, 3].each_cons(2){}
+      # 3.0 => nil
+      # 3.1 => [1, 2, 3]
+
+      [1, 2, 3].each_slice(2){}
+      # 3.0 => nil
+      # 3.1 => [1, 2, 3]
+      ```
+
 * Enumerator::Lazy
 
     * Enumerator::Lazy#compact is added. [[Feature #17312]]
@@ -403,4 +415,5 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #18029]: https://bugs.ruby-lang.org/issues/18029
 [Feature #18172]: https://bugs.ruby-lang.org/issues/18172
 [Feature #18229]: https://bugs.ruby-lang.org/issues/18229
+[GH-1509]: https://github.com/ruby/ruby/pull/1509
 [GH-4815]: https://github.com/ruby/ruby/pull/4815
