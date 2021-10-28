@@ -347,6 +347,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 
         rb_gc_mark_movable(body->variable.coverage);
         rb_gc_mark_movable(body->variable.pc2branchindex);
+        rb_gc_mark_movable(body->variable.script_lines);
         rb_gc_mark_movable(body->location.label);
         rb_gc_mark_movable(body->location.base_label);
         rb_gc_mark_movable(body->location.pathobj);
