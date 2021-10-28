@@ -11835,7 +11835,8 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
 
     ISEQ_COVERAGE_SET(iseq, Qnil);
     ISEQ_ORIGINAL_ISEQ_CLEAR(iseq);
-    iseq->body->variable.flip_count = variable_flip_count;
+    load_body->variable.flip_count = variable_flip_count;
+    load_body->variable.script_lines = Qnil;
 
     load_body->location.first_lineno = location_first_lineno;
     load_body->location.node_id = location_node_id;
