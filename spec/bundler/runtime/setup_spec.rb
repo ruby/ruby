@@ -1468,5 +1468,21 @@ end
 
       expect(last_command.stdboth).to eq("true")
     end
+
+    it "memoizes initial set of specs when requiring bundler/setup, so that even if further code mutates dependencies, Bundler.definition.specs is not affected" do
+      install_gemfile <<~G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "yard"
+        gem "rack", :group => :test
+      G
+
+      ruby <<-RUBY, :raise_on_error => false
+        require "bundler/setup"
+        Bundler.require(:test).select! {|d| (d.groups & [:test]).any? }
+        puts Bundler.definition.specs.map(&:name).join(", ")
+      RUBY
+
+      expect(out).to include("rack, yard")
+    end
   end
 end
