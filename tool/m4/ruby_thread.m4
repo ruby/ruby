@@ -1,15 +1,20 @@
 dnl -*- Autoconf -*-
 AC_DEFUN([RUBY_THREAD], [
-AS_CASE(["$target_os"],
-    [mingw*], [
-        THREAD_MODEL=win32
-    ],
-    [
-        AS_IF([test "$rb_with_pthread" = "yes"], [
-            THREAD_MODEL=pthread
-        ])
-    ]
-)
+AC_ARG_WITH(thread,
+    AS_HELP_STRING([--with-thread=IMPLEMENTATION], [specify the thread implementation to use]),
+    [THREAD_MODEL=$withval], [
+    THREAD_MODEL=
+    AS_CASE(["$target_os"],
+        [mingw*], [
+            THREAD_MODEL=win32
+        ],
+        [
+            AS_IF([test "$rb_with_pthread" = "yes"], [
+                THREAD_MODEL=pthread
+            ])
+        ]
+    )
+])
 
 AS_CASE(["$THREAD_MODEL"],
 [pthread], [AC_CHECK_HEADERS(pthread.h)],
