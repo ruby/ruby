@@ -9,6 +9,7 @@ allowed_failures = allowed_failures.split(',').reject(&:empty?)
 
 rake = File.realpath("../../.bundle/bin/rake", __FILE__)
 gem_dir = File.realpath('../../gems', __FILE__)
+dummy_rake_compiler_dir = File.realpath('../dummy-rake-compiler', __FILE__)
 exit_code = 0
 ruby = ENV['RUBY'] || RbConfig.ruby
 failed = []
@@ -33,6 +34,14 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     test_command << " stdlib_test validate"
 
     first_timeout *= 3
+
+    # copied from debug gem
+    build_dir = 'ext/-test-/gems/rbs'
+    FileUtils.mkdir_p(build_dir)
+    extconf_path = File.expand_path('../../gems/src/rbs/ext/rbs_extension/extconf.rb', __FILE__)
+    system("#{ruby} -C #{build_dir} #{extconf_path}") or raise
+    system("cd #{build_dir} && make extout=../../../../.ext libdir=../../../..") or raise
+    ENV["RUBYLIB"] = [File.expand_path(dummy_rake_compiler_dir), File.expand_path(build_dir), ENV.fetch("RUBYLIB", nil)].compact.join(":")
   end
 
   if gem == "minitest"
