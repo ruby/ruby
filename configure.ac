@@ -37,6 +37,7 @@ m4_include([tool/m4/ruby_replace_type.m4])dnl
 m4_include([tool/m4/ruby_rm_recursive.m4])dnl
 m4_include([tool/m4/ruby_setjmp_type.m4])dnl
 m4_include([tool/m4/ruby_stack_grow_direction.m4])dnl
+m4_include([tool/m4/ruby_thread.m4])dnl
 m4_include([tool/m4/ruby_try_cflags.m4])dnl
 m4_include([tool/m4/ruby_try_cxxflags.m4])dnl
 m4_include([tool/m4/ruby_try_ldflags.m4])dnl
@@ -3687,9 +3688,6 @@ AC_ARG_ENABLE(install-static-library,
 	    [INSTALL_STATIC_LIBRARY=yes]))
 AC_SUBST(INSTALL_STATIC_LIBRARY)
 
-AS_IF([test "$rb_with_pthread" = "yes"], [
-    THREAD_MODEL=pthread
-])
 AC_CACHE_CHECK([for prefix of external symbols], rb_cv_symbol_prefix, [
     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[extern void conftest_external(void) {}]], [[]])],[
 	rb_cv_symbol_prefix=`$NM conftest.$ac_objext |
@@ -3763,7 +3761,6 @@ AS_CASE(["$target_os"],
 	    COMMON_LIBS=m
 #	    COMMON_MACROS="WIN32_LEAN_AND_MEAN="
 	    COMMON_HEADERS="winsock2.h windows.h"
-	    THREAD_MODEL=win32
 	    PLATFORM_DIR=win32
 	    ])
 	LIBRUBY_ALIASES=''
@@ -3785,11 +3782,7 @@ AS_CASE(["$target_os"],
 
 MINIOBJS="$MINIDLNOBJ"
 
-AS_CASE(["$THREAD_MODEL"],
-[pthread], [AC_CHECK_HEADERS(pthread.h)],
-[win32],   [],
-[""],      [AC_MSG_ERROR(thread model is missing)],
-           [AC_MSG_ERROR(unknown thread model $THREAD_MODEL)])
+RUBY_THREAD
 
 AC_ARG_ENABLE(debug-env,
        AS_HELP_STRING([--enable-debug-env], [enable RUBY_DEBUG environment variable]),
