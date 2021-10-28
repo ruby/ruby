@@ -1,5 +1,15 @@
 name: MinGW
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
 
 # Notes:
 # Actions console encoding causes issues, see test-all & test-spec steps

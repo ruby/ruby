@@ -1,6 +1,16 @@
 name: Compilations
 
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
 
 # Github actions does not support YAML anchors.  This creative use of
 # environment variables (plus the "echo $GITHUB_ENV" hack) is to reroute that
