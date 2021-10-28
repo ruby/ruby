@@ -784,6 +784,7 @@ static const int8_t leap_year_days_in_month[] = {
 
 #define days_in_month_of(leap) ((leap) ? leap_year_days_in_month : common_year_days_in_month)
 #define days_in_month_in(y) days_in_month_of(leap_year_p(y))
+#define days_in_month_in_v(y) days_in_month_of(leap_year_v_p(y))
 
 #define M28(m) \
     (m),(m),(m),(m),(m),(m),(m),(m),(m),(m), \
@@ -2033,7 +2034,7 @@ vtm_add_offset(struct vtm *vtm, VALUE off, int sign)
                 vtm->yday = leap_year_v_p(vtm->year) ? 366 : 365;
             }
             else if (vtm->mday == 1) {
-                const int8_t *days_in_month = days_in_month_in(vtm->year);
+                const int8_t *days_in_month = days_in_month_in_v(vtm->year);
                 vtm->mon--;
                 vtm->mday = days_in_month[vtm->mon-1];
                 vtm->yday--;
