@@ -464,6 +464,11 @@ class TestISeq < Test::Unit::TestCase
     a1 = iseq.to_a
     a2 = iseq2.to_a
     assert_equal(a1, a2, message(mesg) {diff iseq.disassemble, iseq2.disassemble})
+    if iseq2.script_lines
+      assert_kind_of(Array, iseq2.script_lines)
+    else
+      assert_nil(iseq2.script_lines)
+    end
     iseq2
   end
 
