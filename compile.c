@@ -7643,12 +7643,15 @@ compile_evstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
 
     if (!popped && !all_string_result_p(node)) {
         const NODE *line_node = node;
-	const unsigned int flag = VM_CALL_FCALL;
-
-        // Note, this dup could be removed if we are willing to change anytostring. It pops
-        // two VALUEs off the stack when it could work by replacing the top most VALUE.
         ADD_INSN(ret, line_node, dup);
-        ADD_INSN1(ret, line_node, tostring, new_callinfo(iseq, idTo_s, 0, flag, NULL, FALSE));
+
+        if (ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
+            ADD_INSN1(ret, line_node, opt_to_s_unescaping,
+                      new_callinfo(iseq, idTo_s, 0, VM_CALL_FCALL, NULL, FALSE));
+        }
+        else {
+            ADD_SEND(ret, line_node, idTo_s, INT2FIX(0));
+        }
         ADD_INSN(ret, line_node, anytostring);
     }
     return COMPILE_OK;

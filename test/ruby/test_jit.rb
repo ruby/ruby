@@ -244,7 +244,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_putstring_concatstrings_tostring
-    assert_compile_once('"a#{}b" + "c"', result_inspect: '"abc"', insns: %i[putstring concatstrings tostring])
+    assert_compile_once('"a#{}b" + "c"', result_inspect: '"abc"', insns: %i[putstring opt_to_s_unescaping anytostring])
   end
 
   def test_compile_insn_toregexp
@@ -483,7 +483,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_tostring
-    assert_compile_once("#{<<~"begin;"}\n#{<<~'end;'}", result_inspect: '"42"', insns: %i[tostring])
+    assert_compile_once("#{<<~"begin;"}\n#{<<~'end;'}", result_inspect: '"42"', insns: %i[anytostring])
     begin;
       a = '2'
       "4#{a}"
