@@ -219,20 +219,53 @@ struct rb_control_frame_struct;
 /* iseq data type */
 typedef struct rb_compile_option_struct rb_compile_option_t;
 
+union ic_serial_entry {
+    rb_serial_t raw;
+    VALUE data[2];
+};
+
 // imemo_constcache
 struct iseq_inline_constant_cache_entry {
     VALUE flags;
 
     VALUE value;              // v0
-    rb_serial_t ic_serial;    // v1
-#if (SIZEOF_SERIAL_T < 2 * SIZEOF_VOIDP)
-    VALUE ic_padding;         // v2
-#endif
+    union ic_serial_entry ic_serial; // v1, v2
     const rb_cref_t *ic_cref; // v3
 };
 STATIC_ASSERT(sizeof_iseq_inline_constant_cache_entry,
               (offsetof(struct iseq_inline_constant_cache_entry, ic_cref) +
 	       sizeof(const rb_cref_t *)) <= sizeof(struct RObject));
+
+#if SIZEOF_SERIAL_T <= SIZEOF_VALUE
+
+#define GET_IC_SERIAL(ice) (ice)->ic_serial.raw
+#define SET_IC_SERIAL(ice, v) (ice)->ic_serial.raw = (v)
+
+#else
+
+static inline rb_serial_t
+get_ic_serial(const struct iseq_inline_constant_cache_entry *ice)
+{
+    union ic_serial_entry tmp;
+    tmp.data[0] = ice->ic_serial.data[0];
+    tmp.data[1] = ice->ic_serial.data[1];
+    return tmp.raw;
+}
+
+#define GET_IC_SERIAL(ice) get_ic_serial(ice)
+
+static inline void
+set_ic_serial(struct iseq_inline_constant_cache_entry *ice, rb_serial_t v)
+{
+    union ic_serial_entry tmp;
+    tmp.raw = v;
+    ice->ic_serial.data[0] = tmp.data[0];
+    ice->ic_serial.data[1] = tmp.data[1];
+}
+
+#define SET_IC_SERIAL(ice, v) set_ic_serial((ice), (v))
+
+#endif
 
 struct iseq_inline_constant_cache {
     struct iseq_inline_constant_cache_entry *entry;
