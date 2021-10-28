@@ -2339,7 +2339,7 @@ size_pool_slot_size(unsigned char pool_id)
 
 #if RGENGC_CHECK_MODE
     rb_objspace_t *objspace = &rb_objspace;
-    GC_ASSERT(size_pools[pool_id].slot_size == slot_size);
+    GC_ASSERT(size_pools[pool_id].slot_size == (short)slot_size);
 #endif
 
     return slot_size;
