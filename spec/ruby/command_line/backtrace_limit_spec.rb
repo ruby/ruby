@@ -9,7 +9,7 @@ ruby_version_is "3.0" do
 
       out.should == <<-MSG
 top
-/fixtures/backtrace.rb:2:in `a': unhandled exception
+/fixtures/backtrace.rb:2:in `a': oops (RuntimeError)
 \tfrom /fixtures/backtrace.rb:6:in `b'
 \tfrom /fixtures/backtrace.rb:10:in `c'
 \t ... 2 levels...
@@ -23,7 +23,7 @@ top
 
       out.should == <<-MSG
 full_message
-/fixtures/backtrace.rb:2:in `a': unhandled exception
+/fixtures/backtrace.rb:2:in `a': oops (RuntimeError)
 \tfrom /fixtures/backtrace.rb:6:in `b'
 \tfrom /fixtures/backtrace.rb:10:in `c'
 \t ... 2 levels...

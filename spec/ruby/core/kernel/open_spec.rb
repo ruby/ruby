@@ -148,6 +148,18 @@ describe "Kernel#open" do
       ruby_exe(code, args: "2>&1").should == "true\n"
     end
   end
+
+  ruby_version_is "3.0" do
+    it "is not redefined by open-uri" do
+      code = <<~RUBY
+        before = Kernel.instance_method(:open)
+        require 'open-uri'
+        after = Kernel.instance_method(:open)
+        p before == after
+      RUBY
+      ruby_exe(code, args: "2>&1").should == "true\n"
+    end
+  end
 end
 
 describe "Kernel.open" do

@@ -1,5 +1,5 @@
 def a
-  raise
+  raise 'oops'
 end
 
 def b

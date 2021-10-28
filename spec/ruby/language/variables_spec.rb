@@ -822,3 +822,32 @@ describe 'Allowed characters' do
     result.should == 1
   end
 end
+
+describe "Instance variables" do
+  context "when instance variable is uninitialized" do
+    ruby_version_is ""..."3.0" do
+      it "warns about accessing uninitialized instance variable" do
+        obj = Object.new
+        def obj.foobar; a = @a; end
+
+        -> { obj.foobar }.should complain(/warning: instance variable @a not initialized/, verbose: true)
+      end
+    end
+
+    ruby_version_is "3.0" do
+      it "doesn't warn about accessing uninitialized instance variable" do
+        obj = Object.new
+        def obj.foobar; a = @a; end
+
+        -> { obj.foobar }.should_not complain(verbose: true)
+      end
+    end
+
+    it "doesn't warn at lazy initialization" do
+      obj = Object.new
+      def obj.foobar; @a ||= 42; end
+
+      -> { obj.foobar }.should_not complain(verbose: true)
+    end
+  end
+end

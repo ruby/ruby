@@ -106,4 +106,14 @@ describe "The $SAFE variable" do
       }.should complain(/\$SAFE will become a normal global variable in Ruby 3.0/)
     end
   end
+
+  ruby_version_is "3.0" do
+    it "$SAFE is a regular global variable" do
+      $SAFE.should == nil
+      $SAFE = 42
+      $SAFE.should == 42
+    ensure
+      $SAFE = nil
+    end
+  end
 end

@@ -39,6 +39,12 @@ describe "Enumerable#grep_v" do
       ["abc", "def"].grep_v(/e/).should == ["abc"]
       $&.should == "z"
     end
+
+    it "does not modify Regexp.last_match without block" do
+      "z" =~ /z/ # Reset last match
+      ["abc", "def"].grep_v(/e/).should == ["abc"]
+      Regexp.last_match[0].should == "z"
+    end
   end
 
   describe "without block" do
