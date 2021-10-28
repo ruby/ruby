@@ -1419,14 +1419,23 @@ rb_float_pow(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.eql?(numeric)  ->  true or false
+ *    eql?(other) -> true or false
  *
- *  Returns +true+ if +num+ and +numeric+ are the same type and have equal
- *  values.  Contrast this with Numeric#==, which performs type conversions.
+ *  Returns +true+ if +self+ and +other+ are the same type and have equal values.
  *
- *     1 == 1.0        #=> true
- *     1.eql?(1.0)     #=> false
- *     1.0.eql?(1.0)   #=> true
+ *  Of the Core and Standard Library classes,
+ *  only Integer, Rational, and Complex use this implementation.
+ *
+ *  Examples:
+ *
+ *    1.eql?(1)              # => true
+ *    1.eql?(1.0)            # => false
+ *    1.eql?(Rational(1, 1)) # => false
+ *    1.eql?(Complex(1, 0))  # => false
+ *
+ *  \Method +eql?+ is different from +==+ in that +eql?+ requires matching types,
+ *  while +==+ does not.
+ *
  */
 
 static VALUE
@@ -1443,9 +1452,12 @@ num_eql(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     number <=> other  ->  0 or nil
+ *    self <=> other -> zero or nil
  *
- *  Returns zero if +number+ equals +other+, otherwise returns +nil+.
+ *  Returns zero if +self+ is the same as +other+, +nil+ otherwise.
+ *
+ *  No subclass in the Ruby Core or Standard Library uses this implementation.
+ *
  */
 
 static VALUE
@@ -2464,12 +2476,12 @@ flo_truncate(int argc, VALUE *argv, VALUE num)
 
 /*
  *  call-seq:
- *     num.floor([ndigits])  ->  integer or float
+ *    floor(digits = 0) -> integer or float
  *
- *  Returns the largest number less than or equal to +num+ with
- *  a precision of +ndigits+ decimal digits (default: 0).
+ *  Returns the largest number that is less than or equal to +self+ with
+ *  a precision of +digits+ decimal digits.
  *
- *  Numeric implements this by converting its value to a Float and
+ *  \Numeric implements this by converting +self+ to a Float and
  *  invoking Float#floor.
  */
 
@@ -2481,12 +2493,12 @@ num_floor(int argc, VALUE *argv, VALUE num)
 
 /*
  *  call-seq:
- *     num.ceil([ndigits])  ->  integer or float
+ *    ceil(digits = 0) -> integer or float
  *
- *  Returns the smallest number greater than or equal to +num+ with
- *  a precision of +ndigits+ decimal digits (default: 0).
+ *  Returns the smallest number that is greater than or equal to +self+ with
+ *  a precision of +digits+ decimal digits.
  *
- *  Numeric implements this by converting its value to a Float and
+ *  \Numeric implements this by converting +self+ to a Float and
  *  invoking Float#ceil.
  */
 
@@ -2498,12 +2510,12 @@ num_ceil(int argc, VALUE *argv, VALUE num)
 
 /*
  *  call-seq:
- *     num.round([ndigits])  ->  integer or float
+ *    round(digits = 0) -> integer or float
  *
- *  Returns +num+ rounded to the nearest value with
- *  a precision of +ndigits+ decimal digits (default: 0).
+ *  Returns +self+ rounded to the nearest value with
+ *  a precision of +digits+ decimal digits.
  *
- *  Numeric implements this by converting its value to a Float and
+ *  \Numeric implements this by converting +self+ to a Float and
  *  invoking Float#round.
  */
 
@@ -2515,12 +2527,12 @@ num_round(int argc, VALUE* argv, VALUE num)
 
 /*
  *  call-seq:
- *     num.truncate([ndigits])  ->  integer or float
+ *    truncate(digits = 0) -> integer or float
  *
- *  Returns +num+ truncated (toward zero) to
- *  a precision of +ndigits+ decimal digits (default: 0).
+ *  Returns +self+ truncated (toward zero) to
+ *  a precision of +digits+ decimal digits.
  *
- *  Numeric implements this by converting its value to a Float and
+ *  \Numeric implements this by converting +self+ to a Float and
  *  invoking Float#truncate.
  */
 
@@ -2748,25 +2760,89 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *     num.step(by: step, to: limit) {|i| block }   ->  self
- *     num.step(by: step, to: limit)                ->  an_enumerator
- *     num.step(by: step, to: limit)                ->  an_arithmetic_sequence
- *     num.step(limit=nil, step=1) {|i| block }     ->  self
- *     num.step(limit=nil, step=1)                  ->  an_enumerator
- *     num.step(limit=nil, step=1)                  ->  an_arithmetic_sequence
+ *    step(to = nil, by = 1) {|n| ... } ->  self
+ *    step(to = nil, by = 1)            ->  enumerator
+ *    step(to = nil, by: 1) {|n| ... }  ->  self
+ *    step(to = nil, by: 1)             ->  enumerator
+ *    step(by: 1, to: ) {|n| ... }      ->  self
+ *    step(by: 1, to: )                 ->  enumerator
+ *    step(by: , to: nil) {|n| ... }    ->  self
+ *    step(by: , to: nil)               ->  enumerator
  *
- *  Invokes the given block with the sequence of numbers starting at +num+,
- *  incremented by +step+ (defaulted to +1+) on each call.
+ *  Generates a sequence of numbers; with a block given, traverses the sequence.
  *
- *  The loop finishes when the value to be passed to the block is greater than
- *  +limit+ (if +step+ is positive) or less than +limit+ (if +step+ is
- *  negative), where +limit+ is defaulted to infinity.
+ *  Of the Core and Standard Library classes,
+ *  Integer, Float, and Rational use this implementation.
  *
- *  In the recommended keyword argument style, either or both of
- *  +step+ and +limit+ (default infinity) can be omitted.  In the
- *  fixed position argument style, zero as a step
- *  (i.e. <code>num.step(limit, 0)</code>) is not allowed for historical
- *  compatibility reasons.
+ *  A quick example:
+ *
+ *    squares = []
+ *    1.step(by: 2, to: 10) {|i| squares.push(i*i) }
+ *    squares # => [1, 9, 25, 49, 81]
+ *
+ *  The generated sequence:
+ *
+ *  - Begins with +self+.
+ *  - Continues at intervals of +step+ (which may not be zero).
+ *  - Ends with the last number that is within or equal to +limit+;
+ *    that is, less than or equal to +limit+ if +step+ is positive,
+ *    greater than or equal to +limit+ if +step+ is negative.
+ *    If +limit+ is not given, the sequence is of infinite length.
+ *
+ *  If a block is given, calls the block with each number in the sequence;
+ *  returns +self+.  If no block is given, returns an Enumerator::ArithmeticSequence.
+ *
+ *  <b>Keyword Arguments</b>
+ *
+ *  With keyword arguments +by+ and +to+,
+ *  their values (or defaults) determine the step and limit:
+ *
+ *    # Both keywords given.
+ *    squares = []
+ *    4.step(by: 2, to: 10) {|i| squares.push(i*i) }    # => 4
+ *    squares # => [16, 36, 64, 100]
+ *    cubes = []
+ *    3.step(by: -1.5, to: -3) {|i| cubes.push(i*i*i) } # => 3
+ *    cubes   # => [27.0, 3.375, 0.0, -3.375, -27.0]
+ *    squares = []
+ *    1.2.step(by: 0.2, to: 2.0) {|f| squares.push(f*f) }
+ *    squares # => [1.44, 1.9599999999999997, 2.5600000000000005, 3.24, 4.0]
+ *
+ *    squares = []
+ *    Rational(6/5).step(by: 0.2, to: 2.0) {|r| squares.push(r*r) }
+ *    squares # => [1.0, 1.44, 1.9599999999999997, 2.5600000000000005, 3.24, 4.0]
+ *
+ *    # Only keyword to given.
+ *    squares = []
+ *    4.step(to: 10) {|i| squares.push(i*i) }           # => 4
+ *    squares # => [16, 25, 36, 49, 64, 81, 100]
+ *    # Only by given.
+ *
+ *    # Only keyword by given
+ *    squares = []
+ *    4.step(by:2) {|i| squares.push(i*i); break if i > 10 }
+ *    squares # => [16, 36, 64, 100, 144]
+ *
+ *    # No block given.
+ *    e = 3.step(by: -1.5, to: -3) # => (3.step(by: -1.5, to: -3))
+ *    e.class                      # => Enumerator::ArithmeticSequence
+ *
+ *  <b>Positional Arguments</b>
+ *
+ *  With optional positional arguments +limit+ and +step+,
+ *  their values (or defaults) determine the step and limit:
+ *
+ *    squares = []
+ *    4.step(10, 2) {|i| squares.push(i*i) }    # => 4
+ *    squares # => [16, 36, 64, 100]
+ *    squares = []
+ *    4.step(10) {|i| squares.push(i*i) }
+ *    squares # => [16, 25, 36, 49, 64, 81, 100]
+ *    squares = []
+ *    4.step {|i| squares.push(i*i); break if i > 10 }  # => nil
+ *    squares # => [16, 25, 36, 49, 64, 81, 100, 121]
+ *
+ * <b>Implementation Notes</b>
  *
  *  If all the arguments are integers, the loop operates using an integer
  *  counter.
@@ -2774,32 +2850,8 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
  *  If any of the arguments are floating point numbers, all are converted
  *  to floats, and the loop is executed
  *  <i>floor(n + n*Float::EPSILON) + 1</i> times,
- *  where <i>n = (limit - num)/step</i>.
+ *  where <i>n = (limit - self)/step</i>.
  *
- *  Otherwise, the loop starts at +num+, uses either the
- *  less-than (<code><</code>) or greater-than (<code>></code>) operator
- *  to compare the counter against +limit+,
- *  and increments itself using the <code>+</code> operator.
- *
- *  If no block is given, an Enumerator is returned instead.
- *  Especially, the enumerator is an Enumerator::ArithmeticSequence
- *  if both +limit+ and +step+ are kind of Numeric or <code>nil</code>.
- *
- *  For example:
- *
- *     p 1.step.take(4)
- *     p 10.step(by: -1).take(4)
- *     3.step(to: 5) {|i| print i, " " }
- *     1.step(10, 2) {|i| print i, " " }
- *     Math::E.step(to: Math::PI, by: 0.2) {|f| print f, " " }
- *
- *  Will produce:
- *
- *     [1, 2, 3, 4]
- *     [10, 9, 8, 7]
- *     3 4 5
- *     1 3 5 7 9
- *     2.718281828459045 2.9182818284590453 3.118281828459045
  */
 
 static VALUE
