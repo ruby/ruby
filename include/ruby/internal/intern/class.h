@@ -158,7 +158,7 @@ VALUE rb_mod_included_modules(VALUE mod);
 VALUE rb_mod_include_p(VALUE child, VALUE parent);
 
 /**
- * Queries the  module's ancestors.  This  routine gathers classes  and modules
+ * Queries the  module's ancestors.  This routine gathers classes  and modules
  * that  the  passed  module  either  inherits,  includes,  or  prepends,  then
  * recursively applies  that routine again  and again to the  collected entries
  * until the list doesn't grow up.
@@ -186,6 +186,19 @@ VALUE rb_mod_ancestors(VALUE mod);
  * @internal
  */
 VALUE rb_class_descendants(VALUE klass);
+
+/**
+ * Queries the class's direct descendants. This  routine gathers classes that are
+ * direct subclasses of the given class,
+ * returning an array of classes that have the given class as a superclass.
+ * The returned array does not include singleton classes.
+ *
+ * @param[in]  klass A class.
+ * @return     An array of classes where `klass` is the `superclass`.
+ *
+ * @internal
+ */
+VALUE rb_class_subclasses(VALUE klass);
 
 /**
  * Generates an array of symbols, which are the list of method names defined in

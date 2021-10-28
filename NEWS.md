@@ -121,6 +121,21 @@ Outstanding ones only.
       C.descendants    #=> []
       ```
 
+    * Class#subclasses, which returns an array of classes
+      directly inheriting from the receiver, not
+      including singleton classes.
+      [[Feature #18273]]
+
+      ```ruby
+      class A; end
+      class B < A; end
+      class C < B; end
+      class D < A; end
+      A.subclasses    #=> [D, B]
+      B.subclasses    #=> [C]
+      C.subclasses    #=> []
+      ```
+
 * Enumerable
 
     * Enumerable#compact is added. [[Feature #17312]]
@@ -457,6 +472,7 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #18172]: https://bugs.ruby-lang.org/issues/18172
 [Feature #18229]: https://bugs.ruby-lang.org/issues/18229
 [Feature #18290]: https://bugs.ruby-lang.org/issues/18290
+[Feature #18273]: https://bugs.ruby-lang.org/issues/18273
 [GH-1509]: https://github.com/ruby/ruby/pull/1509
 [GH-4815]: https://github.com/ruby/ruby/pull/4815
 

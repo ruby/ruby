@@ -1377,6 +1377,7 @@ struct subclass_traverse_data
     VALUE buffer;
     long count;
     long maxcount;
+    bool immediate_only;
 };
 
 static void
@@ -1390,8 +1391,38 @@ class_descendants_recursive(VALUE klass, VALUE v)
             rb_ary_push(data->buffer, klass);
         }
         data->count++;
+        if (!data->immediate_only) {
+            rb_class_foreach_subclass(klass, class_descendants_recursive, v);
+        }
     }
-    rb_class_foreach_subclass(klass, class_descendants_recursive, v);
+    else {
+        rb_class_foreach_subclass(klass, class_descendants_recursive, v);
+    }
+}
+
+static VALUE
+class_descendants(VALUE klass, bool immediate_only)
+{
+    struct subclass_traverse_data data = { Qfalse, 0, -1, immediate_only };
+
+    // estimate the count of subclasses
+    rb_class_foreach_subclass(klass, class_descendants_recursive, (VALUE) &data);
+
+    // the following allocation may cause GC which may change the number of subclasses
+    data.buffer = rb_ary_new_capa(data.count);
+    data.maxcount = data.count;
+    data.count = 0;
+
+    size_t gc_count = rb_gc_count();
+
+    // enumerate subclasses
+    rb_class_foreach_subclass(klass, class_descendants_recursive, (VALUE) &data);
+
+    if (gc_count != rb_gc_count()) {
+        rb_bug("GC must not occur during the subclass iteration of Class#descendants");
+    }
+
+    return data.buffer;
 }
 
 /*
@@ -1415,26 +1446,32 @@ class_descendants_recursive(VALUE klass, VALUE v)
 VALUE
 rb_class_descendants(VALUE klass)
 {
-    struct subclass_traverse_data data = { Qfalse, 0, -1 };
+    return class_descendants(klass, false);
+}
 
-    // estimate the count of subclasses
-    rb_class_foreach_subclass(klass, class_descendants_recursive, (VALUE) &data);
 
-    // the following allocation may cause GC which may change the number of subclasses
-    data.buffer = rb_ary_new_capa(data.count);
-    data.maxcount = data.count;
-    data.count = 0;
+/*
+ *  call-seq:
+ *     subclasses -> array
+ *
+ *  Returns an array of classes where the receiver is the
+ *  direct superclass of the class, excluding singleton classes.
+ *  The order of the returned array is not defined.
+ *
+ *     class A; end
+ *     class B < A; end
+ *     class C < B; end
+ *     class D < A; end
+ *
+ *     A.subclasses        #=> [D, B]
+ *     B.subclasses        #=> [C]
+ *     C.subclasses        #=> []
+ */
 
-    size_t gc_count = rb_gc_count();
-
-    // enumerate subclasses
-    rb_class_foreach_subclass(klass, class_descendants_recursive, (VALUE) &data);
-
-    if (gc_count != rb_gc_count()) {
-	rb_bug("GC must not occur during the subclass iteration of Class#descendants");
-    }
-
-    return data.buffer;
+VALUE
+rb_class_subclasses(VALUE klass)
+{
+    return class_descendants(klass, true);
 }
 
 static void
