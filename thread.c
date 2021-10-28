@@ -349,8 +349,9 @@ ubf_sigwait(void *ignore)
     rb_thread_wakeup_timer_thread(0);
 }
 
+#include THREAD_IMPL_SRC
+
 #if   defined(_WIN32)
-#include "thread_win32.c"
 
 #define DEBUG_OUT() \
   WaitForSingleObject(&debug_mutex, INFINITE); \
@@ -359,7 +360,6 @@ ubf_sigwait(void *ignore)
   ReleaseMutex(&debug_mutex);
 
 #elif defined(HAVE_PTHREAD_H)
-#include "thread_pthread.c"
 
 #define DEBUG_OUT() \
   pthread_mutex_lock(&debug_mutex); \
@@ -368,8 +368,6 @@ ubf_sigwait(void *ignore)
   fflush(stdout); \
   pthread_mutex_unlock(&debug_mutex);
 
-#else
-#error "unsupported thread type"
 #endif
 
 /*
