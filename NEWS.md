@@ -415,5 +415,5 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #18029]: https://bugs.ruby-lang.org/issues/18029
 [Feature #18172]: https://bugs.ruby-lang.org/issues/18172
 [Feature #18229]: https://bugs.ruby-lang.org/issues/18229
-[GH-4815]: https://github.com/ruby/ruby/pull/4815
 [GH-1509]: https://github.com/ruby/ruby/pull/1509
+[GH-4815]: https://github.com/ruby/ruby/pull/4815
