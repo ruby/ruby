@@ -414,6 +414,8 @@ LIBRUBYARG_SHARED = $(LIBRUBY)
 LIBRUBY_RELATIVE = yes
 
 THREAD_MODEL  = win32
+THREAD_IMPL_H   = thread_$(THREAD_MODEL).h
+THREAD_IMPL_SRC = thread_$(THREAD_MODEL).c
 
 !if "$(CROSS_COMPILING)" == "yes"
 PREP          = $(arch)-fake.rb
@@ -873,6 +875,8 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define STACK_GROW_DIRECTION -1
 !endif
 #define COROUTINE_H "$(COROUTINE_H)"
+#define THREAD_IMPL_H "$(THREAD_IMPL_H)"
+#define THREAD_IMPL_SRC "$(THREAD_IMPL_SRC)"
 #define LOAD_RELATIVE 1
 #define DLEXT ".so"
 !if "$(libdir_basename)" != "lib"

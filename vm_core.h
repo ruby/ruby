@@ -80,11 +80,7 @@
 #include "darray.h"
 
 #include "ruby/thread_native.h"
-#if   defined(_WIN32)
-#include "thread_win32.h"
-#elif defined(HAVE_PTHREAD_H)
-#include "thread_pthread.h"
-#endif
+#include THREAD_IMPL_H
 
 #define RUBY_VM_THREAD_MODEL 2
 
