@@ -1072,17 +1072,21 @@ Also, a list:
       @fetcher.data["#{@gem_repo}latest_specs.#{v}.gz"]     = l_zip
       @fetcher.data["#{@gem_repo}prerelease_specs.#{v}.gz"] = p_zip
 
-      v = Gem.marshal_version
-
-      all_specs.each do |spec|
-        path = "#{@gem_repo}quick/Marshal.#{v}/#{spec.original_name}.gemspec.rz"
-        data = Marshal.dump spec
-        data_deflate = Zlib::Deflate.deflate data
-        @fetcher.data[path] = data_deflate
-      end
+      write_marshalled_gemspecs(*all_specs)
     end
 
     nil # force errors
+  end
+
+  def write_marshalled_gemspecs(*all_specs)
+    v = Gem.marshal_version
+
+    all_specs.each do |spec|
+      path = "#{@gem_repo}quick/Marshal.#{v}/#{spec.original_name}.gemspec.rz"
+      data = Marshal.dump spec
+      data_deflate = Zlib::Deflate.deflate data
+      @fetcher.data[path] = data_deflate
+    end
   end
 
   ##
