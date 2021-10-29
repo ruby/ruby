@@ -3247,7 +3247,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 		else {
 		    make_zombie(objspace, obj, dfree, data);
                     RB_DEBUG_COUNTER_INC(obj_data_zombie);
-		    return 1;
+		    return FALSE;
 		}
 	    }
             else {
@@ -3281,7 +3281,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	if (RANY(obj)->as.file.fptr) {
 	    make_io_zombie(objspace, obj);
             RB_DEBUG_COUNTER_INC(obj_file_ptr);
-	    return 1;
+	    return FALSE;
 	}
 	break;
       case T_RATIONAL:
@@ -3403,7 +3403,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             RB_DEBUG_COUNTER_INC(obj_imemo_constcache);
             break;
 	}
-	return 0;
+	return TRUE;
 
       default:
 	rb_bug("gc_sweep(): unknown data type 0x%x(%p) 0x%"PRIxVALUE,
@@ -3412,10 +3412,10 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 
     if (FL_TEST(obj, FL_FINALIZE)) {
         make_zombie(objspace, obj, 0, 0);
-	return 1;
+	return FALSE;
     }
     else {
-	return 0;
+	return TRUE;
     }
 }
 
@@ -5343,9 +5343,6 @@ gc_plane_sweep(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                     }
 #endif
                     if (obj_free(objspace, vp)) {
-                        ctx->final_slots++;
-                    }
-                    else {
                         if (heap->compact_cursor) {
                             /* We *want* to fill this slot */
                             MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(vp), vp);
@@ -5356,7 +5353,9 @@ gc_plane_sweep(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                             gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info(vp));
                             ctx->freed_slots++;
                         }
-
+                    }
+                    else {
+                        ctx->final_slots++;
                     }
                     break;
 
