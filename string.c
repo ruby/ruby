@@ -11886,16 +11886,27 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  <b>\Hash +replacement+</b>
  *
- *  If argument +replacement+ is a hash, and the matched text is one of its keys,
- *  the replacing string is the value for that key.
+ *  If argument +replacement+ is a hash, and +pattern+ matches one of its keys,
+ *  the replacing string is the value for that key:
+ *
+ *    h = {'foo' => 'bar', 'baz' => 'bat'}
+ *    'food'.sub('oo', h) # => "fd"
+ *    h = {foo: 'bar', baz: 'bat'}
+ *    'food'.sub('oo', h) # => "fd"
+ *    h = {foo: :bar, baz: :bat}
+ *    'food'.sub('oo', h) # => "fd"
  *
  *  <b>Block</b>
  *
  *  In the block form, the current match string is passed to the block;
- *  special match variables such as <tt>$1</tt>, <tt>$2</tt>, <tt>$`</tt>,
- *  <tt>$&</tt>, and <tt>$'</tt> will be set appropriately.
+ *  the block's return value becomes the replacing string:
  *
- *  The block's return value becomes the replacing string.
+ *    s = '@'
+ *   '1234'.gsub(/\d/) {|match| s.succ! } # => "ABCD"
+ *
+ *  Special match variables such as <tt>$1</tt>, <tt>$2</tt>, <tt>$`</tt>,
+ *  <tt>$&</tt>, and <tt>$'</tt> are set appropriately.
+ *
  *
  *  == What's Here
  *
