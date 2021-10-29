@@ -118,7 +118,7 @@ jobs:
           make test
 
       - name: test-all
-        timeout-minutes: 30
+        timeout-minutes: 40
         run: |
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           $PSDefaultParameterValues['*:Encoding'] = 'utf8'
