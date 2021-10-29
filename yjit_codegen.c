@@ -3929,6 +3929,7 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
                 ID ivar_name = cme->def->body.attr.id;
                 return gen_set_ivar(jit, ctx, comptime_recv, comptime_recv_klass, ivar_name);
             }
+          // Block method, e.g. define_method(:foo) { :my_block }
           case VM_METHOD_TYPE_BMETHOD:
             GEN_COUNTER_INC(cb, send_bmethod);
             return YJIT_CANT_COMPILE;
@@ -3946,6 +3947,7 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
           case VM_METHOD_TYPE_NOTIMPLEMENTED:
             GEN_COUNTER_INC(cb, send_not_implemented_method);
             return YJIT_CANT_COMPILE;
+          // Send family of methods, e.g. call/apply
           case VM_METHOD_TYPE_OPTIMIZED:
             GEN_COUNTER_INC(cb, send_optimized_method);
             return YJIT_CANT_COMPILE;
