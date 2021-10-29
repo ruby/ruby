@@ -5319,7 +5319,7 @@ rb_str_insert(VALUE str, VALUE idx, VALUE str2)
  *     string.slice!(3..6)     #=> " is "
  *     string.slice!(/s.*t/)   #=> "sa st"
  *     string.slice!("r")      #=> "r"
- *     string                  #=> "thing"
+ *     string                  #=> "Thing"
  *
  */
 
