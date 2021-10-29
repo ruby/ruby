@@ -1001,7 +1001,7 @@ static inline bool
 has_sweeping_pages(rb_objspace_t *objspace)
 {
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-        if (size_pools[i].eden_heap.sweeping_page) {
+        if (SIZE_POOL_EDEN_HEAP(&size_pools[i])->sweeping_page) {
             return TRUE;
         }
     }
@@ -1013,7 +1013,7 @@ heap_eden_total_pages(rb_objspace_t *objspace)
 {
     size_t count = 0;
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-        count += size_pools[i].eden_heap.total_pages;
+        count += SIZE_POOL_EDEN_HEAP(&size_pools[i])->total_pages;
     }
     return count;
 }
@@ -1023,7 +1023,7 @@ heap_eden_total_slots(rb_objspace_t *objspace)
 {
     size_t count = 0;
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-        count += size_pools[i].eden_heap.total_slots;
+        count += SIZE_POOL_EDEN_HEAP(&size_pools[i])->total_slots;
     }
     return count;
 }
@@ -1033,7 +1033,7 @@ heap_tomb_total_pages(rb_objspace_t *objspace)
 {
     size_t count = 0;
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-        count += size_pools[i].tomb_heap.total_pages;
+        count += SIZE_POOL_TOMB_HEAP(&size_pools[i])->total_pages;
     }
     return count;
 }
@@ -1915,7 +1915,7 @@ heap_pages_free_unused_pages(rb_objspace_t *objspace)
 
     bool has_pages_in_tomb_heap = FALSE;
     for (i = 0; i < SIZE_POOL_COUNT; i++) {
-        if (!list_empty(&size_pools[i].tomb_heap.pages)) {
+        if (!list_empty(&SIZE_POOL_TOMB_HEAP(&size_pools[i])->pages)) {
             has_pages_in_tomb_heap = TRUE;
             break;
         }
@@ -3487,7 +3487,7 @@ Init_heap(void)
     objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
 #endif
 
-    heap_add_pages(objspace, &size_pools[0], &size_pools[0].eden_heap, gc_params.heap_init_slots / HEAP_PAGE_OBJ_LIMIT);
+    heap_add_pages(objspace, &size_pools[0], SIZE_POOL_EDEN_HEAP(&size_pools[0]), gc_params.heap_init_slots / HEAP_PAGE_OBJ_LIMIT);
 
     /* Give other size pools allocatable pages. */
     for (int i = 1; i < SIZE_POOL_COUNT; i++) {
@@ -5905,7 +5905,7 @@ gc_compact_start(rb_objspace_t *objspace)
     struct heap_page *page = NULL;
 
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-        rb_heap_t *heap = &size_pools[i].eden_heap;
+        rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(&size_pools[i]);
         list_for_each(&heap->pages, page, page_node) {
             page->flags.before_sweep = TRUE;
         }
@@ -5956,7 +5956,7 @@ gc_sweep(rb_objspace_t *objspace)
         }
 
         for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-            list_for_each(&size_pools[i].eden_heap.pages, page, page_node) {
+            list_for_each(&(SIZE_POOL_EDEN_HEAP(&size_pools[i])->pages), page, page_node) {
                 page->flags.before_sweep = TRUE;
             }
         }
@@ -7760,8 +7760,8 @@ gc_verify_heap_pages(rb_objspace_t *objspace)
 {
     int remembered_old_objects = 0;
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-        remembered_old_objects += gc_verify_heap_pages_(objspace, &size_pools[i].eden_heap.pages);
-        remembered_old_objects += gc_verify_heap_pages_(objspace, &size_pools[i].tomb_heap.pages);
+        remembered_old_objects += gc_verify_heap_pages_(objspace, &(SIZE_POOL_EDEN_HEAP(&size_pools[i])->pages));
+        remembered_old_objects += gc_verify_heap_pages_(objspace, &(SIZE_POOL_TOMB_HEAP(&size_pools[i])->pages));
     }
     return remembered_old_objects;
 }
@@ -7925,7 +7925,7 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
 	objspace->marked_slots = 0;
 
         for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-            rgengc_mark_and_rememberset_clear(objspace, &size_pools[i].eden_heap);
+            rgengc_mark_and_rememberset_clear(objspace, SIZE_POOL_EDEN_HEAP(&size_pools[i]));
         }
     }
     else {
@@ -7935,7 +7935,7 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
 	objspace->profile.minor_gc_count++;
 
         for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-            rgengc_rememberset_mark(objspace, &size_pools[i].eden_heap);
+            rgengc_rememberset_mark(objspace, SIZE_POOL_EDEN_HEAP(&size_pools[i]));
         }
     }
 
@@ -8041,7 +8041,7 @@ gc_marks_finish(rb_objspace_t *objspace)
 	objspace->flags.during_incremental_marking = FALSE;
 	/* check children of all marked wb-unprotected objects */
         for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-            gc_marks_wb_unprotected_objects(objspace, &size_pools[i].eden_heap);
+            gc_marks_wb_unprotected_objects(objspace, SIZE_POOL_EDEN_HEAP(&size_pools[i]));
         }
     }
 #endif /* GC_ENABLE_INCREMENTAL_MARK */
@@ -8172,7 +8172,7 @@ gc_marks_rest(rb_objspace_t *objspace)
 
 #if GC_ENABLE_INCREMENTAL_MARK
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-        size_pools[i].eden_heap.pooled_pages = NULL;
+        SIZE_POOL_EDEN_HEAP(&size_pools[i])->pooled_pages = NULL;
     }
 #endif
 
@@ -10945,7 +10945,7 @@ gc_set_initial_pages(void)
         heap_add_pages(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool), pages_per_class);
     }
 
-    heap_add_pages(objspace, &size_pools[0], &size_pools[0].eden_heap, min_pages - heap_eden_total_pages(objspace));
+    heap_add_pages(objspace, &size_pools[0], SIZE_POOL_EDEN_HEAP(&size_pools[0]), min_pages - heap_eden_total_pages(objspace));
 }
 
 /*
