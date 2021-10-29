@@ -504,7 +504,7 @@ $script_installer = Class.new(installer) do
   if trans = CONFIG["program_transform_name"]
     exp = []
     trans.gsub!(/\$\$/, '$')
-    trans.scan(%r[\G[\s;]*(/(?:\\.|[^/])*/)?([sy])(\\?\W)((?:(?!\3)(?:\\.|.))*)\3((?:(?!\3)(?:\\.|.))*)\3([gi]*)]) do
+    trans.scan(%r[\G[\s;]*(/(?:\\.|[^/])*+/)?([sy])(\\?\W)((?:(?!\3)(?:\\.|.))*+)\3((?:(?!\3)(?:\\.|.))*+)\3([gi]*)]) do
       |addr, cmd, sep, pat, rep, opt|
       addr &&= Regexp.new(addr[/\A\/(.*)\/\z/, 1])
       case cmd
