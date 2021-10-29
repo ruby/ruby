@@ -120,6 +120,7 @@ tests = [
   [ 'dup',     %q{ x = y = true; x }, ],
   [ 'dupn',    %q{ Object::X ||= true }, ],
   [ 'reverse', %q{ q, (w, e), r = 1, [2, 3], 4; e == 3 }, ],
+  [ 'swap',    %q{ !!defined?([[]]) }, ],
   [ 'swap',    <<-'},', ],      # {
     x = [[false, true]]
     for i, j in x               # here
