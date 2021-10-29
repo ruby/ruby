@@ -1611,6 +1611,12 @@ class TestProc < Test::Unit::TestCase
       Proc.new{yield}.isolate
     end
 
+
+    name = "\u{2603 26a1}"
+    assert_raise_with_message(ArgumentError, /\(#{name}\)/) do
+      eval("#{name} = :#{name}; Proc.new {p #{name}}").isolate
+    end
+
     # binding
 
     :a.tap{|a|

@@ -1074,6 +1074,30 @@ proc_isolate_env(VALUE self, rb_proc_t *proc, VALUE read_only_variables)
     RB_OBJ_WRITTEN(self, Qundef, env);
 }
 
+static VALUE
+proc_shared_outer_variables(struct rb_id_table *outer_variables, bool isolate, const char *message)
+{
+    struct collect_outer_variable_name_data data = {
+        .isolate = isolate,
+        .ary = Qfalse,
+        .read_only = Qfalse,
+        .yield = false,
+    };
+    rb_id_table_foreach(outer_variables, collect_outer_variable_names, (void *)&data);
+
+    if (data.ary != Qfalse) {
+        VALUE str = rb_sprintf("can not %s because it accesses outer variables (%"PRIsVALUE")", message,
+                               rb_ary_join(data.ary, rb_str_new2(", ")));
+        rb_str_cat_cstr(str, data.yield ? " and uses `yield'." : ".");
+        rb_exc_raise(rb_exc_new_str(rb_eArgError, str));
+    }
+    else if (data.yield) {
+        rb_raise(rb_eArgError, "can not %s because it uses `yield'.", message);
+    }
+
+    return data.read_only;
+}
+
 VALUE
 rb_proc_isolate_bang(VALUE self)
 {
@@ -1084,28 +1108,7 @@ rb_proc_isolate_bang(VALUE self)
         if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
 
         if (iseq->body->outer_variables) {
-            struct collect_outer_variable_name_data data = {
-                .isolate = true,
-                .ary = Qfalse,
-                .yield = false,
-            };
-            rb_id_table_foreach(iseq->body->outer_variables, collect_outer_variable_names, (void *)&data);
-
-            if (data.ary != Qfalse) {
-                VALUE str = rb_ary_join(data.ary, rb_str_new2(", "));
-                if (data.yield) {
-                    rb_raise(rb_eArgError, "can not isolate a Proc because it accesses outer variables (%s) and uses `yield'.",
-                             StringValueCStr(str));
-                }
-                else {
-                    rb_raise(rb_eArgError, "can not isolate a Proc because it accesses outer variables (%s).",
-                             StringValueCStr(str));
-                }
-            }
-            else {
-                VM_ASSERT(data.yield);
-                rb_raise(rb_eArgError, "can not isolate a Proc because it uses `yield'.");
-            }
+            proc_shared_outer_variables(iseq->body->outer_variables, true, "isolate a Proc");
         }
 
         proc_isolate_env(self, proc, Qfalse);
@@ -1136,31 +1139,8 @@ rb_proc_ractor_make_shareable(VALUE self)
         VALUE read_only_variables = Qfalse;
 
         if (iseq->body->outer_variables) {
-            struct collect_outer_variable_name_data data = {
-                .isolate = false,
-                .ary = Qfalse,
-                .read_only = Qfalse,
-                .yield = false,
-            };
-
-            rb_id_table_foreach(iseq->body->outer_variables, collect_outer_variable_names, (void *)&data);
-
-            if (data.ary != Qfalse) {
-                VALUE str = rb_ary_join(data.ary, rb_str_new2(", "));
-                if (data.yield) {
-                    rb_raise(rb_eArgError, "can not make a Proc shareable because it accesses outer variables (%s) and uses `yield'.",
-                             StringValueCStr(str));
-                }
-                else {
-                    rb_raise(rb_eArgError, "can not make a Proc shareable because it accesses outer variables (%s).",
-                             StringValueCStr(str));
-                }
-            }
-            else if (data.yield) {
-                rb_raise(rb_eArgError, "can not make a Proc shareable because it uses `yield'.");
-            }
-
-            read_only_variables = data.read_only;
+            read_only_variables =
+                proc_shared_outer_variables(iseq->body->outer_variables, false, "make a Proc shareable");
         }
 
         proc_isolate_env(self, proc, read_only_variables);
