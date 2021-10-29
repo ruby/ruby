@@ -111,6 +111,10 @@ class TestISeq < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /\(#{name}\)/) do
       Ractor.make_shareable(y)
     end
+    y = eval("proc {#{name} = []; proc {|x| #{name}}}").call
+    assert_raise_with_message(Ractor::IsolationError, /`#{name}'/) do
+      Ractor.make_shareable(y)
+    end
   end
 
   def test_disasm_encoding
