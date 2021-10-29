@@ -273,7 +273,7 @@ Outstanding ones only.
   * rake 13.0.6
   * test-unit 3.5.0
   * rbs 1.6.2
-  * typeprof 0.20.1
+  * typeprof 0.20.2
 * The following default gems are now bundled gems.
   * net-ftp
   * net-imap
