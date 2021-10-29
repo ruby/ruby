@@ -5485,8 +5485,8 @@ rb_pat_search(VALUE pat, VALUE str, long pos, int set_backref_str)
  *    sub!(pattern, replacement)   -> self or nil
  *    sub!(pattern) {|match| ... } -> self or nil
  *
- *  Performs the specified substring replacement on +self+;
- *  returns +self+ if any replacement occurred, +nil+ otherwise.
+ *  Returns +self+ with only the first occurrence
+ *  (not all occurrences) of the given +pattern+ replaced.
  *
  *  See {Substitution Methods}[#class-String-label-Substitution+Methods].
  *
@@ -11784,16 +11784,20 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
 /*
  *  A \String object has an arbitrary sequence of bytes,
  *  typically representing text or binary data.
- *  A \String objects may be created using String::new or as literals.
+ *  A \String object may be created using String::new or as literals.
  *
  *  String objects differ from Symbol objects in that Symbol objects are
- *  commonly used as identifiers, instead of text or data.
+ *  designed to be used as identifiers, instead of text or data.
  *
  *  Some \String methods modify +self+.
  *  Typically, a method whose name ends with <tt>!</tt> modifies +self+
  *  and returns +self+;
  *  often a similarly named method (without the <tt>!</tt>)
  *  returns a new string.
+ *
+ *  In general, if there exist both bang and non-bang version of method,
+ *  the bang! mutates and the non-bang! does not.
+ *  However, a method without a bang can also mutate, such as String#replace.
  *
  *  == Substitution Methods
  *
