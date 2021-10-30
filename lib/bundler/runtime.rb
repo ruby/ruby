@@ -265,7 +265,7 @@ module Bundler
 
       return if manuals.empty?
       Bundler::SharedHelpers.set_env "MANPATH", manuals.concat(
-        ENV["MANPATH"].to_s.split(File::PATH_SEPARATOR)
+        ENV["MANPATH"] ? ENV["MANPATH"].to_s.split(File::PATH_SEPARATOR) : [""]
       ).uniq.join(File::PATH_SEPARATOR)
     end
 

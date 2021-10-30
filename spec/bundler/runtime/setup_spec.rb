@@ -745,41 +745,68 @@ end
     expect(err).to be_empty
   end
 
-  describe "$MANPATH" do
-    before do
+  context "when the user has `MANPATH` set", :man do
+    before { ENV["MANPATH"] = "/foo#{File::PATH_SEPARATOR}" }
+
+    it "adds the gem's man dir to the MANPATH" do
       build_repo4 do
         build_gem "with_man" do |s|
           s.write("man/man1/page.1", "MANPAGE")
         end
       end
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "with_man"
+      G
+
+      run "puts ENV['MANPATH']"
+      expect(out).to eq("#{default_bundle_path("gems/with_man-1.0/man")}#{File::PATH_SEPARATOR}/foo")
     end
+  end
 
-    context "when the user has one set" do
-      before { ENV["MANPATH"] = "/foo#{File::PATH_SEPARATOR}" }
+  context "when the user does not have `MANPATH` set", :man do
+    before { ENV.delete("MANPATH") }
 
-      it "adds the gem's man dir to the MANPATH" do
-        install_gemfile <<-G
-          source "#{file_uri_for(gem_repo4)}"
-          gem "with_man"
-        G
+    it "adds the gem's man dir to the MANPATH, leaving : in the end so that system man pages still work" do
+      build_repo4 do
+        build_gem "with_man" do |s|
+          s.write("man/man1/page.1", "MANPAGE")
+        end
 
-        run "puts ENV['MANPATH']"
-        expect(out).to eq("#{default_bundle_path("gems/with_man-1.0/man")}#{File::PATH_SEPARATOR}/foo")
+        build_gem "with_man_overriding_system_man" do |s|
+          s.write("man/man1/ls.1", "LS MANPAGE")
+        end
       end
-    end
 
-    context "when the user does not have one set" do
-      before { ENV.delete("MANPATH") }
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "with_man"
+      G
 
-      it "adds the gem's man dir to the MANPATH" do
-        install_gemfile <<-G
-          source "#{file_uri_for(gem_repo4)}"
-          gem "with_man"
-        G
+      run <<~RUBY
+        puts ENV['MANPATH']
+        require "open3"
+        puts Open3.capture2e("man", "ls")[1].success?
+      RUBY
 
-        run "puts ENV['MANPATH']"
-        expect(out).to eq(default_bundle_path("gems/with_man-1.0/man").to_s)
-      end
+      expect(out).to eq("#{default_bundle_path("gems/with_man-1.0/man")}#{File::PATH_SEPARATOR}\ntrue")
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "with_man_overriding_system_man"
+      G
+
+      run <<~RUBY
+        puts ENV['MANPATH']
+        require "open3"
+        puts Open3.capture2e("man", "ls")[0]
+      RUBY
+
+      lines = out.split("\n")
+
+      expect(lines).to include("#{default_bundle_path("gems/with_man_overriding_system_man-1.0/man")}#{File::PATH_SEPARATOR}")
+      expect(lines).to include("LS MANPAGE")
     end
   end
 
