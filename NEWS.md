@@ -417,3 +417,4 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #18229]: https://bugs.ruby-lang.org/issues/18229
 [GH-1509]: https://github.com/ruby/ruby/pull/1509
 [GH-4815]: https://github.com/ruby/ruby/pull/4815
+
