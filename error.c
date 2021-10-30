@@ -3188,36 +3188,41 @@ rb_syserr_new_path_in(const char *func_name, int n, VALUE path)
 }
 #endif
 
+NORETURN(static void rb_mod_sys_tmp(VALUE exc, VALUE mod));
+
+static void
+rb_mod_sys_tmp(VALUE exc, VALUE mod)
+{
+    rb_extend_object(exc, mod);
+    rb_exc_raise(exc);
+}
+
 void
 rb_mod_sys_fail(VALUE mod, const char *mesg)
 {
     VALUE exc = make_errno_exc(mesg);
-    rb_extend_object(exc, mod);
-    rb_exc_raise(exc);
+    rb_mod_sys_tmp(exc, mod);
 }
 
 void
 rb_mod_sys_fail_str(VALUE mod, VALUE mesg)
 {
     VALUE exc = make_errno_exc_str(mesg);
-    rb_extend_object(exc, mod);
-    rb_exc_raise(exc);
+    rb_mod_sys_tmp(exc, mod);
 }
 
 void
 rb_mod_syserr_fail(VALUE mod, int e, const char *mesg)
 {
     VALUE exc = rb_syserr_new(e, mesg);
-    rb_extend_object(exc, mod);
-    rb_exc_raise(exc);
+    rb_mod_sys_tmp(exc, mod);
 }
 
 void
 rb_mod_syserr_fail_str(VALUE mod, int e, VALUE mesg)
 {
     VALUE exc = rb_syserr_new_str(e, mesg);
-    rb_extend_object(exc, mod);
-    rb_exc_raise(exc);
+    rb_mod_sys_tmp(exc, mod);
 }
 
 static void
