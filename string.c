@@ -5313,7 +5313,7 @@ rb_str_insert(VALUE str, VALUE idx, VALUE str2)
  *  See String#[] for details about the arguments that specify the substring.
  *
  *  A few examples:
-
+ *
  *     string = "This is a string"
  *     string.slice!(2)        #=> "i"
  *     string.slice!(3..6)     #=> " is "
