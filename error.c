@@ -2421,9 +2421,7 @@ syserr_eqq(VALUE self, VALUE exc)
 	num = rb_funcallv(exc, id_errno, 0, 0);
     }
     e = rb_const_get(self, id_Errno);
-    if (FIXNUM_P(num) ? num == e : rb_equal(num, e))
-	return Qtrue;
-    return Qfalse;
+    return RBOOL(FIXNUM_P(num) ? num == e : rb_equal(num, e));
 }
 
 
