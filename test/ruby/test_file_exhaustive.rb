@@ -1408,21 +1408,24 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_flock_exclusive
+    timeout = EnvUtil.apply_timeout_scale(0.1).to_s
     File.open(regular_file, "r+") do |f|
       f.flock(File::LOCK_EX)
-      assert_separately(["-rtimeout", "-", regular_file], "#{<<~begin}#{<<~"end;"}")
-      begin
+      assert_separately(["-rtimeout", "-", regular_file, timeout], "#{<<-"begin;"}\n#{<<-'end;'}")
+      begin;
+        timeout = ARGV[1].to_f
         open(ARGV[0], "r") do |f|
-          Timeout.timeout(0.1) do
+          Timeout.timeout(timeout) do
             assert(!f.flock(File::LOCK_SH|File::LOCK_NB))
           end
         end
       end;
-      assert_separately(["-rtimeout", "-", regular_file], "#{<<~begin}#{<<~"end;"}")
-      begin
+      assert_separately(["-rtimeout", "-", regular_file, timeout], "#{<<-"begin;"}\n#{<<-'end;'}")
+      begin;
+        timeout = ARGV[1].to_f
         open(ARGV[0], "r") do |f|
           assert_raise(Timeout::Error) do
-            Timeout.timeout(0.1) do
+            Timeout.timeout(timeout) do
               f.flock(File::LOCK_SH)
             end
           end
@@ -1434,21 +1437,24 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_flock_shared
+    timeout = EnvUtil.apply_timeout_scale(0.1).to_s
     File.open(regular_file, "r+") do |f|
       f.flock(File::LOCK_SH)
-      assert_separately(["-rtimeout", "-", regular_file], "#{<<~begin}#{<<~"end;"}")
-      begin
+      assert_separately(["-rtimeout", "-", regular_file, timeout], "#{<<-"begin;"}\n#{<<-'end;'}")
+      begin;
+        timeout = ARGV[1].to_f
         open(ARGV[0], "r") do |f|
-          Timeout.timeout(0.1) do
+          Timeout.timeout(timeout) do
             assert(f.flock(File::LOCK_SH))
           end
         end
       end;
-      assert_separately(["-rtimeout", "-", regular_file], "#{<<~begin}#{<<~"end;"}")
-      begin
+      assert_separately(["-rtimeout", "-", regular_file, timeout], "#{<<-"begin;"}\n#{<<-'end;'}")
+      begin;
+        timeout = ARGV[1].to_f
         open(ARGV[0], "r+") do |f|
           assert_raise(Timeout::Error) do
-            Timeout.timeout(0.1) do
+            Timeout.timeout(timeout) do
               f.flock(File::LOCK_EX)
             end
           end
