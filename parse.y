@@ -675,7 +675,6 @@ static int  local_id_ref(struct parser_params*, ID, ID **);
 #ifndef RIPPER
 static ID   internal_id(struct parser_params*);
 static NODE *new_args_forward_call(struct parser_params*, NODE*, const YYLTYPE*, const YYLTYPE*);
-static NODE *new_args_forward_def(struct parser_params*, NODE*, const YYLTYPE*);
 #endif
 static int check_forwarding_args(struct parser_params*);
 static void add_forwarding_args(struct parser_params *p);
@@ -5128,26 +5127,6 @@ f_paren_args	: '(' f_args rparen
 			SET_LEX_STATE(EXPR_BEG);
 			p->command_start = TRUE;
 		    }
-		| '(' f_arg ',' args_forward rparen
-		    {
-			add_forwarding_args(p);
-		    /*%%%*/
-			$$ = new_args_forward_def(p, $2, &@$);
-		    /*% %*/
-		    /*% ripper: paren!(params!($2, Qnone, $4, Qnone, Qnone, Qnone, Qnone)) %*/
-			SET_LEX_STATE(EXPR_BEG);
-			p->command_start = TRUE;
-		    }
-		| '(' args_forward rparen
-		    {
-			add_forwarding_args(p);
-		    /*%%%*/
-			$$ = new_args_forward_def(p, 0, &@$);
-		    /*% %*/
-		    /*% ripper: paren!(params!(Qnone, Qnone, $2, Qnone, Qnone, Qnone, Qnone)) %*/
-			SET_LEX_STATE(EXPR_BEG);
-			p->command_start = TRUE;
-		    }
                 ;
 
 f_arglist	: f_paren_args
@@ -5180,6 +5159,11 @@ args_tail	: f_kwarg ',' f_kwrest opt_f_block_arg
 		| f_block_arg
 		    {
 			$$ = new_args_tail(p, Qnone, Qnone, $1, &@1);
+		    }
+		| args_forward
+		    {
+			add_forwarding_args(p);
+			$$ = new_args_tail(p, Qnone, $1, ID2VAL(idFWD_BLOCK), &@1);
 		    }
 		;
 
@@ -5259,7 +5243,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_args_tail
 args_forward	: tBDOT3
 		    {
 		    /*%%%*/
-			$$ = idDot3;
+			$$ = idFWD_KWREST;
 		    /*% %*/
 		    /*% ripper: args_forward! %*/
 		    }
@@ -9653,6 +9637,12 @@ parser_yylex(struct parser_params *p)
 	if ((c = nextc(p)) == '.') {
 	    if ((c = nextc(p)) == '.') {
 		if (p->lex.paren_nest == 0 && looking_at_eol_p(p)) {
+		    if (p->ctxt.in_argdef || /* def foo a, ... */
+			IS_lex_state_for(last_state, EXPR_ENDFN) || /* def foo ... */
+			0) {
+			SET_LEX_STATE(EXPR_ENDARG);
+			return tBDOT3;
+		    }
 		    rb_warn0("... at EOL, should be parenthesized?");
 		}
 		else if (p->lex.lpar_beg >= 0 && p->lex.lpar_beg+1 == p->lex.paren_nest) {
@@ -11967,6 +11957,14 @@ new_args(struct parser_params *p, NODE *pre_args, NODE *opt_args, ID rest_arg, N
     int saved_line = p->ruby_sourceline;
     struct rb_args_info *args = tail->nd_ainfo;
 
+    if (args->block_arg == idFWD_BLOCK) {
+	if (rest_arg) {
+	    yyerror1(&tail->nd_loc, "... after rest argument");
+	    return tail;
+	}
+	rest_arg = idFWD_REST;
+    }
+
     args->pre_args_num   = pre_args ? rb_long2int(pre_args->nd_plen) : 0;
     args->pre_init       = pre_args ? pre_args->nd_next : 0;
 
@@ -12696,13 +12694,6 @@ new_args_forward_call(struct parser_params *p, NODE *leading, const YYLTYPE *loc
     args = arg_append(p, splat, new_hash(p, kwrest, loc), loc);
 #endif
     return arg_blk_pass(args, block);
-}
-
-static NODE *
-new_args_forward_def(struct parser_params *p, NODE *leading, const YYLTYPE *loc)
-{
-    NODE *n = new_args_tail(p, Qnone, idFWD_KWREST, idFWD_BLOCK, loc);
-    return new_args(p, leading, Qnone, idFWD_REST, Qnone, n, loc);
 }
 #endif
 
