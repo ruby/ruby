@@ -1758,36 +1758,36 @@ expr		: command_call
 			value_expr($1);
 			SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
 			p->command_start = FALSE;
-			$<ctxt>$ = p->ctxt;
+			$<ctxt>2 = p->ctxt;
 			p->ctxt.in_kwarg = 1;
+			$<tbl>$ = push_pvtbl(p);
 		    }
-		    {$<tbl>$ = push_pvtbl(p);}
 		  p_top_expr_body
-		    {pop_pvtbl(p, $<tbl>4);}
 		    {
-			p->ctxt.in_kwarg = $<ctxt>3.in_kwarg;
+			pop_pvtbl(p, $<tbl>3);
+			p->ctxt.in_kwarg = $<ctxt>2.in_kwarg;
 		    /*%%%*/
-			$$ = NEW_CASE3($1, NEW_IN($5, 0, 0, &@5), &@$);
+			$$ = NEW_CASE3($1, NEW_IN($4, 0, 0, &@4), &@$);
 		    /*% %*/
-		    /*% ripper: case!($1, in!($5, Qnil, Qnil)) %*/
+		    /*% ripper: case!($1, in!($4, Qnil, Qnil)) %*/
 		    }
 		| arg keyword_in
 		    {
 			value_expr($1);
 			SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
 			p->command_start = FALSE;
-			$<ctxt>$ = p->ctxt;
+			$<ctxt>2 = p->ctxt;
 			p->ctxt.in_kwarg = 1;
+			$<tbl>$ = push_pvtbl(p);
 		    }
-		    {$<tbl>$ = push_pvtbl(p);}
 		  p_top_expr_body
-		    {pop_pvtbl(p, $<tbl>4);}
 		    {
-			p->ctxt.in_kwarg = $<ctxt>3.in_kwarg;
+			pop_pvtbl(p, $<tbl>3);
+			p->ctxt.in_kwarg = $<ctxt>1.in_kwarg;
 		    /*%%%*/
-			$$ = NEW_CASE3($1, NEW_IN($5, NEW_TRUE(&@5), NEW_FALSE(&@5), &@5), &@$);
+			$$ = NEW_CASE3($1, NEW_IN($4, NEW_TRUE(&@4), NEW_FALSE(&@4), &@4), &@$);
 		    /*% %*/
-		    /*% ripper: case!($1, in!($5, Qnil, Qnil)) %*/
+		    /*% ripper: case!($1, in!($4, Qnil, Qnil)) %*/
 		    }
 		| arg %prec tLBRACE_ARG
 		;
