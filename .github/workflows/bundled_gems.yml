@@ -56,8 +56,8 @@ jobs:
 
       - name: Commit
         run: |
-          git commit --message="Update ${{ github.workflow }} at $(date +%F)" gems/${{ github.workflow }}
           git pull --ff-only origin ${GITHUB_REF#refs/heads/}
+          git commit --message="Update ${{ github.workflow }} at $(date +%F)" gems/$file
           git push origin ${GITHUB_REF#refs/heads/}
         env:
           EMAIL: svn-admin@ruby-lang.org
