@@ -82,7 +82,6 @@ YJIT_DECLARE_COUNTERS(
     send_iseq_arity_error,
     send_iseq_only_keywords,
     send_iseq_kwargs_req_and_opt_missing,
-    send_iseq_kwargs_none_passed,
     send_iseq_kwargs_mismatch,
     send_iseq_complex_callee,
     send_not_implemented_method,
