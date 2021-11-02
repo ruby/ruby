@@ -691,6 +691,8 @@ typedef struct rb_size_pool_struct {
 
     rb_heap_t eden_heap;
     rb_heap_t tomb_heap;
+
+    bool compacted;
 } rb_size_pool_t;
 
 enum gc_mode {
@@ -4990,7 +4992,8 @@ gc_unprotect_pages(rb_objspace_t *objspace, rb_heap_t *heap)
     }
 }
 
-static void gc_update_references(rb_objspace_t * objspace);
+static void gc_update_references_rest(rb_objspace_t * objspace);
+static void gc_update_references_heap(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap);
 static void invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page);
 
 static void
@@ -5138,16 +5141,27 @@ check_stack_for_moved(rb_objspace_t *objspace)
     each_machine_stack_value(ec, revert_machine_stack_references);
 }
 
-static void
-gc_compact_finish(rb_objspace_t *objspace, rb_size_pool_t *pool, rb_heap_t *heap)
+static bool
+gc_uncompacted_pools_p(rb_objspace_t *objspace)
 {
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
-        rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
-        gc_unprotect_pages(objspace, heap);
+        if (!size_pool->compacted) {
+            return TRUE;
+        }
     }
+    return FALSE;
+}
 
-    uninstall_handlers();
+static void
+gc_compact_finish_pool(rb_objspace_t *objspace, rb_size_pool_t *pool, rb_heap_t *heap)
+{
+    pool->compacted = TRUE;
+
+    gc_unprotect_pages(objspace, heap);
+
+    heap->compact_cursor = NULL;
+    heap->compact_cursor_index = 0;
 
     /* The mutator is allowed to run during incremental sweeping. T_MOVED
      * objects can get pushed on the stack and when the compaction process
@@ -5156,21 +5170,30 @@ gc_compact_finish(rb_objspace_t *objspace, rb_size_pool_t *pool, rb_heap_t *heap
      * then revert any moved objects that made it to the stack. */
     check_stack_for_moved(objspace);
 
-    gc_update_references(objspace);
-    objspace->profile.compact_count++;
-
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
-        rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
-        heap->compact_cursor = NULL;
-        heap->compact_cursor_index = 0;
+        gc_update_references_heap(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool));
     }
+
+    gc_update_references_rest(objspace);
+}
+
+static void
+gc_compact_finish(rb_objspace_t *objspace, rb_size_pool_t *pool, rb_heap_t *heap) {
+    /* finish compacting this pool, and quit if there are still pools left to compact */
+    gc_compact_finish_pool(objspace, pool, heap);
+    if (gc_uncompacted_pools_p(objspace)) {
+        return;
+    }
+
+    uninstall_handlers();
+
+    objspace->profile.compact_count++;
 
     if (gc_prof_enabled(objspace)) {
         gc_profile_record *record = gc_prof_record(objspace);
         record->moved_objects = objspace->rcompactor.total_moved - record->moved_objects;
     }
-    rb_clear_constant_cache();
     objspace->flags.during_compacting = FALSE;
 }
 
@@ -5275,7 +5298,7 @@ gc_fill_swept_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *s
 }
 
 static inline void
-gc_plane_sweep(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bitset, struct gc_sweep_context *ctx)
+gc_plane_sweep(rb_objspace_t *objspace, rb_size_pool_t *pool, rb_heap_t *heap, uintptr_t p, bits_t bitset, struct gc_sweep_context *ctx)
 {
     struct heap_page * sweep_page = ctx->page;
     short slot_size = sweep_page->slot_size;
@@ -5315,12 +5338,12 @@ gc_plane_sweep(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                     break;
 
                 case T_MOVED:
-                    if (objspace->flags.during_compacting) {
+                    if (!pool->compacted) {
                         /* The sweep cursor shouldn't have made it to any
-                         * T_MOVED slots while the compact flag is enabled.
+                         * T_MOVED slots until this size pool has been completely compacted.
                          * The sweep cursor and compact cursor move in
                          * opposite directions, and when they meet references will
-                         * get updated and "during_compacting" should get disabled */
+                         * get updated and the pool will be marked as compacted */
                         rb_bug("T_MOVED shouldn't be seen until compaction is finished\n");
                     }
                     gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info(vp));
@@ -5393,14 +5416,14 @@ gc_page_sweep(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
     bitset = ~bits[0];
     bitset >>= NUM_IN_PAGE(p);
     if (bitset) {
-        gc_plane_sweep(objspace, heap, (uintptr_t)p, bitset, ctx);
+        gc_plane_sweep(objspace, size_pool, heap, (uintptr_t)p, bitset, ctx);
     }
     p += (BITS_BITLENGTH - NUM_IN_PAGE(p));
 
     for (i=1; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
         bitset = ~bits[i];
         if (bitset) {
-            gc_plane_sweep(objspace, heap, (uintptr_t)p, bitset, ctx);
+            gc_plane_sweep(objspace, size_pool, heap, (uintptr_t)p, bitset, ctx);
         }
         p += BITS_BITLENGTH;
     }
@@ -5852,13 +5875,16 @@ gc_compact_start(rb_objspace_t *objspace)
     struct heap_page *page = NULL;
 
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-        rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(&size_pools[i]);
+        rb_size_pool_t *pool = &size_pools[i];
+        rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(pool);
         list_for_each(&heap->pages, page, page_node) {
             page->flags.before_sweep = TRUE;
         }
 
         heap->compact_cursor = list_tail(&heap->pages, struct heap_page, page_node);
         heap->compact_cursor_index = 0;
+
+       pool->compacted = 0;
     }
 
     if (gc_prof_enabled(objspace)) {
@@ -10133,31 +10159,31 @@ extern rb_symbols_t ruby_global_symbols;
 #define global_symbols ruby_global_symbols
 
 static void
-gc_update_references(rb_objspace_t *objspace)
+gc_update_references_heap(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap)
+{
+    struct heap_page *page = NULL;
+    bool should_set_mark_bits = TRUE;
+
+    list_for_each(&heap->pages, page, page_node) {
+        uintptr_t start = (uintptr_t)page->start;
+        uintptr_t end = start + (page->total_slots * size_pool->slot_size);
+
+        gc_ref_update((void *)start, (void *)end, size_pool->slot_size, objspace, page);
+        if (page == heap->sweeping_page) {
+            should_set_mark_bits = FALSE;
+        }
+        if (should_set_mark_bits) {
+            gc_setup_mark_bits(page);
+        }
+    }
+}
+
+static void
+gc_update_references_rest(rb_objspace_t *objspace)
 {
     rb_execution_context_t *ec = GET_EC();
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
 
-    struct heap_page *page = NULL;
-
-    for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-        bool should_set_mark_bits = TRUE;
-        rb_size_pool_t *size_pool = &size_pools[i];
-        rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
-
-        list_for_each(&heap->pages, page, page_node) {
-            uintptr_t start = (uintptr_t)page->start;
-            uintptr_t end = start + (page->total_slots * size_pool->slot_size);
-
-            gc_ref_update((void *)start, (void *)end, size_pool->slot_size, objspace, page);
-            if (page == heap->sweeping_page) {
-                should_set_mark_bits = FALSE;
-            }
-            if (should_set_mark_bits) {
-                gc_setup_mark_bits(page);
-            }
-        }
-    }
     rb_vm_update_references(vm);
     rb_transient_heap_update_references();
     rb_gc_update_global_tbl();
