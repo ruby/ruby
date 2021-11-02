@@ -11859,7 +11859,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  However, you may refer to some special match variables using these
  *  combinations:
  *
- *  - <tt>\&</tt> corresponds to <tt>$&</tt>,
+ *  - <tt>\&</tt> and <tt>\0</tt> correspond to <tt>$&</tt>,
  *    which contains the complete matched text.
  *  - <tt>\'</tt> corresponds to <tt>$'</tt>,
  *    which contains string after match.
@@ -11894,11 +11894,12 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  the replacing string is the value for that key:
  *
  *    h = {'foo' => 'bar', 'baz' => 'bat'}
- *    'food'.sub('oo', h) # => "fd"
+ *    'food'.sub('foo', h) # => "bard"
+ *
+ *  Note that a symbol key does not match:
+ *
  *    h = {foo: 'bar', baz: 'bat'}
- *    'food'.sub('oo', h) # => "fd"
- *    h = {foo: :bar, baz: :bat}
- *    'food'.sub('oo', h) # => "fd"
+ *    'food'.sub('foo', h) # => "d"
  *
  *  <b>Block</b>
  *
