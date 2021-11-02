@@ -3488,11 +3488,9 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
         }
 
         if (vm_ci_flag(ci) & VM_CALL_KWARG) {
-            if ((kw_arg->keyword_len != keyword->num) || (lead_num != argc - kw_arg->keyword_len)) {
-                // Here the method being called specifies optional and required
-                // keyword arguments and the callee is not specifying every one
-                // of them.
-                GEN_COUNTER_INC(cb, send_iseq_kwargs_req_and_opt_missing);
+            // Check that the size of non-keyword arguments matches
+            if (lead_num != argc - kw_arg->keyword_len) {
+                GEN_COUNTER_INC(cb, send_iseq_complex_callee);
                 return YJIT_CANT_COMPILE;
             }
 
@@ -3617,33 +3615,65 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
         // keyword parameters.
         const struct rb_iseq_param_keyword *keyword = iseq->body->param.keyword;
 
-        // Note: we are about to do argument shuffling for a keyword argument
-        // call. Assert that we are in one of currently supported cases: either
-        // all keywords are provided or they are all the default values.
-        // The various checks for whether we can do it happened earlier in this
-        // function.
-        RUBY_ASSERT(
-                ((caller_keyword_len == keyword->num) &&
-                 (lead_num == argc - caller_keyword_len)) ||
-                (caller_keyword_len == 0 && lead_num == argc));
+        ADD_COMMENT(cb, "keyword args");
 
         // This is the list of keyword arguments that the callee specified
         // in its initial declaration.
         const ID *callee_kwargs = keyword->table;
+
+        int total_kwargs = keyword->num;
 
         // Here we're going to build up a list of the IDs that correspond to
         // the caller-specified keyword arguments. If they're not in the
         // same order as the order specified in the callee declaration, then
         // we're going to need to generate some code to swap values around
         // on the stack.
-        ID *caller_kwargs = ALLOCA_N(VALUE, caller_keyword_len);
-        for (int kwarg_idx = 0; kwarg_idx < caller_keyword_len; kwarg_idx++)
-            caller_kwargs[kwarg_idx] = SYM2ID(caller_keywords[kwarg_idx]);
+        ID *caller_kwargs = ALLOCA_N(VALUE, total_kwargs);
+        int kwarg_idx;
+        for (kwarg_idx = 0; kwarg_idx < caller_keyword_len; kwarg_idx++) {
+                caller_kwargs[kwarg_idx] = SYM2ID(caller_keywords[kwarg_idx]);
+        }
+
+        int unspecified_bits = 0;
+
+        for (int callee_idx = keyword->required_num; callee_idx < total_kwargs; callee_idx++) {
+            bool already_passed = false;
+            ID callee_kwarg = callee_kwargs[callee_idx];
+
+            for (int caller_idx = 0; caller_idx < caller_keyword_len; caller_idx++) {
+                if (caller_kwargs[caller_idx] == callee_kwarg) {
+                    already_passed = true;
+                    break;
+                }
+            }
+
+            if (!already_passed) {
+                // Reserve space on the stack for each default value we'll be
+                // filling in (which is done in the next loop). Also increments
+                // argc so that the callee's SP is recorded correctly.
+                argc++;
+                x86opnd_t default_arg = ctx_stack_push(ctx, TYPE_UNKNOWN);
+                VALUE default_value = keyword->default_values[callee_idx - keyword->required_num];
+
+                if (default_value == Qundef) {
+                    // Qundef means that this value is not constant and must be
+                    // recalculated at runtime, so we record it in unspecified_bits
+                    // (Qnil is then used as a placeholder instead of Qundef).
+                    unspecified_bits |= 0x01 << (callee_idx - keyword->required_num);
+                    default_value = Qnil;
+                }
+
+                mov(cb, default_arg, imm_opnd(default_value));
+
+                caller_kwargs[kwarg_idx++] = callee_kwarg;
+            }
+        }
+        RUBY_ASSERT(kwarg_idx == total_kwargs);
 
         // Next, we're going to loop through every keyword that was
         // specified by the caller and make sure that it's in the correct
         // place. If it's not we're going to swap it around with another one.
-        for (int kwarg_idx = 0; kwarg_idx < caller_keyword_len; kwarg_idx++) {
+        for (kwarg_idx = 0; kwarg_idx < total_kwargs; kwarg_idx++) {
             ID callee_kwarg = callee_kwargs[kwarg_idx];
 
             // If the argument is already in the right order, then we don't
@@ -3654,7 +3684,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
             // In this case the argument is not in the right place, so we
             // need to find its position where it _should_ be and swap with
             // that location.
-            for (int swap_idx = kwarg_idx + 1; swap_idx < caller_keyword_len; swap_idx++) {
+            for (int swap_idx = kwarg_idx + 1; swap_idx < total_kwargs; swap_idx++) {
                 if (callee_kwarg == caller_kwargs[swap_idx]) {
                     // First we're going to generate the code that is going
                     // to perform the actual swapping at runtime.
@@ -3669,35 +3699,6 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
 
                     break;
                 }
-            }
-        }
-
-        int unspecified_bits = 0;
-
-        if (caller_keyword_len == 0) {
-            ADD_COMMENT(cb, "default kwarg values");
-
-            for (int callee_idx = 0; callee_idx < keyword->num; callee_idx++) {
-                // Reserve space on the stack for each default value we'll be
-                // filling in (which is done in the next loop). Also increments
-                // argc so that the callee's SP is recorded correctly.
-                argc++;
-                ctx_stack_push(ctx, TYPE_UNKNOWN);
-            }
-
-            for (int callee_idx = 0; callee_idx < keyword->num; callee_idx++) {
-                VALUE default_value = keyword->default_values[callee_idx];
-
-                if (default_value == Qundef) {
-                    // Qundef means that this value is not constant and must be
-                    // recalculated at runtime, so we record it in unspecified_bits
-                    // (Qnil is then used as a placeholder instead of Qundef).
-                    unspecified_bits |= 0x01 << callee_idx;
-                    default_value = Qnil;
-                }
-
-                x86opnd_t stack_arg = ctx_stack_opnd(ctx, keyword->num - callee_idx - 1);
-                mov(cb, stack_arg, imm_opnd(default_value));
             }
         }
 
