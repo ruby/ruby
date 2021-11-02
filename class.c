@@ -19,6 +19,7 @@
 
 #include "constant.h"
 #include "debug_counter.h"
+#include "gc.h"
 #include "id_table.h"
 #include "internal.h"
 #include "internal/class.h"
@@ -1337,7 +1338,7 @@ rb_mod_ancestors(VALUE mod)
 static void
 class_descendants_recursive(VALUE klass, VALUE ary)
 {
-    if (BUILTIN_TYPE(klass) == T_CLASS && !FL_TEST(klass, FL_SINGLETON)) {
+    if (BUILTIN_TYPE(klass) == T_CLASS && !FL_TEST(klass, FL_SINGLETON) && !rb_objspace_garbage_object_p(klass)) {
         rb_ary_push(ary, klass);
     }
     rb_class_foreach_subclass(klass, class_descendants_recursive, ary);
