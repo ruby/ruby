@@ -1383,13 +1383,17 @@ rb_class_descendants(VALUE klass)
     rb_class_foreach_subclass(klass, class_descendants_recursive, (VALUE) &data);
 
     // this allocation may cause GC which may reduce the subclasses
-    data.buffer = ALLOCA_N(VALUE, data.count);
+    data.buffer = ALLOC_N(VALUE, data.count);
     data.count = 0;
 
     // enumerate subclasses
     rb_class_foreach_subclass(klass, class_descendants_recursive, (VALUE) &data);
 
-    return rb_ary_new_from_values(data.count, data.buffer);
+    VALUE ary = rb_ary_new_from_values(data.count, data.buffer);
+
+    free(data.buffer);
+
+    return ary;
 }
 
 static void
