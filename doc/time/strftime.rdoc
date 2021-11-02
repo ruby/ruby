@@ -1,0 +1,353 @@
+== Formats for \Method +strftime+
+
+Each of the methods Time#strftime, DateTime#strftime, and Date#strftime
+takes an optional string argument +format+.
+
+The format may have embedded _directives_ that control formatting.
+Non-directive text is copied through to the output string.
+
+About the examples on this page:
+
+- For most directives, the three classes
+  (Time, DateTime, and Date) behave the same way.
+  In those cases examples are given only for Time,
+  whose example instance is named +t+.
+- For a few directives, the behaviors differ.
+  In those cases examples are given for all three classes,
+  whose example instances are named +t+ (\Time),
+  +dt+ (\DateTime), and +d+ (\Date).
+
+A format directive consists of:
+
+- A percent character (<tt>'%'</tt>).
+- Zero or more <em>flags</em>.
+- An optional <em>minimum field width</em>.
+- An optional <em>modifier</em>.
+- A 1-letter conversion specifier.
+
+<b>Minumum Field Width</b>
+
+The default width for a field is the width of the data itself.
+The integer optional minimum field width specifies the minimum width;
+it is ignored if smaller than the default width:
+
+  t = Time.now
+  t.strftime('%Y')   # => "2021"
+  t.strftime('%8Y')  # => "00002021"
+  t.strftime('%20Y') # => "2021"
+
+  t.strftime('%b')   # => "Oct"
+  t.strftime('%6b')  # => "   Oct"
+  t.strftime('%0b')  # => "Oct"
+
+<b>Flags</b>
+
+Flags for padding:
+
+- <tt>-</tt>: Omit numerical padding.
+- <tt>_</tt>: Use spaces for numerical padding.
+- <tt>0</tt>: Use zeros for numerical padding:
+
+Examples:
+
+  t.strftime('%-8Y')    # => "2021"
+  t.strftime('%_8Y')    # => "    2021"
+  t.strftime('%08Y')    # => "00002021"
+
+  t.strftime('%-6b')    # => "Oct"
+  t.strftime('%_6b')    # => "   Oct"
+  t.strftime('%06b')    # => "000Oct"
+
+Flags for casing:
+
+- <tt>^</tt>: Upcase.
+- <tt>%</tt>: Change case.
+
+Examples:
+
+  t.strftime('%p')  # => "PM"
+  t.strftime('%^p') # => "PM"
+  t.strftime('%#p') # => "pm"
+  t.strftime('%P')  # => "pm"
+  t.strftime('%^P') # => "PM"
+  t.strftime('%#P') # => "PM"
+
+<b>Modifiers</b>
+
+<em>Integer Modifier</em>
+
+Any conversion specifier may have an integer padding modifier added;
+for some specifiers and some integers, this adds padding;
+for others, the modifier is ignored.
+
+<em>Colon Modifiers</em>
+
+For specifier <tt>%z</tt> only, one, two, or three colons may added
+as a modifier.  See <tt>%z</tt> below.
+
+<em>Modifiers +E+ and +O+</em>
+
+For compatibility with other languages,
+some specifiers allow (but ignore) modifier +E+ or +O+;
+that is the directive behaves the same way with or without the modifier.
+
+In other cases, the modifier "spoils" the specifier,
+so that the text is not seen as a directive,
+but instead is passed through as plain text.
+
+<b>Conversion Specifiers</b>
+
+Note: Although technically a conversion specifier is a single character,
+we follow tradition here and list each with a prefixed percent character.
+
+<em>Year</em>
+
+- <tt>%Y</tt>: Year with century; may be negative; at least four digits.
+- <tt>%C</tt>: 2-digit century; <tt>year / 100</tt>, rounded down.
+- <tt>%y</tt>: 2-digit year; <tt>year % 100</tt>.
+
+Examples:
+
+  t = Time.now        # => 2021-11-01 09:14:14.0821024 -0500
+  t.strftime('%Y')    # => "2021"
+  t = Time.new(-1)    # => -0001-01-01 00:00:00 -0600
+  t.strftime('%Y')    # => "-0001"
+  t = Time.new(12345) # => 12345-01-01 00:00:00 -0600
+  t.strftime('%Y')    # => "12345"
+
+  t = Time.now        # => 2021-11-01 09:19:14.8958704 -0500
+  t.strftime('%C')    # => "20"
+  t = Time.new(2099)  # => 2099-01-01 00:00:00 -0600
+  t.strftime('%C')    # => "20"
+
+  t  = Time.now       # => 2021-11-01 09:21:41.0455507 -0500
+  t.strftime('%y')    # => "21"
+
+<em>Month</em>
+
+- <tt>%m</tt>: 2-digit month of the year, zero-padded; range (1..12).
+- <tt>%B</tt>: Full month name.
+- <tt>%b</tt>: 3-character abbreviated month name,
+
+Examples:
+
+   t = Time.new(2021, 12) # => 2021-12-01 00:00:00 -0600
+   t.strftime('%m')       # => "12"
+   t.strftime('%B')       # => "December"
+   t.strftime('%b')       # => "Dec"
+
+<em>Day</em>
+
+- <tt>%d</tt>: 2-digit day of the month, zero-padded; range (1..31).
+- <tt>%e</tt>: 2-character day of the month, blank-padded; range (1..31).
+- <tt>%j</tt>: 3-digit day of the year, zero-padded; range (1..366).
+
+Examples:
+
+  t = Time.new(2020, 1, 1)    # => 2020-01-01 00:00:00 -0600
+  t.strftime('%d')            # => "01"
+  t.strftime('%e')            # => " 1"
+  t = Time.new(2020, 12, 31)  # => 2020-12-31 00:00:00 -0600
+  t.strftime('%j')            # => "366" # Leap year.
+
+<em>Hour</em>
+
+- <tt>%H</tt>: 2-digit hour of the day, zero-padded; range (0..23).
+- <tt>%k</tt>: 2-character hour of the day, blank-padded; range (0..23).
+- <tt>%I</tt>: 2-digit hour of the day, zero-padded; range (1..12).
+- <tt>%l</tt>: 2-character hour of the day, blank-padded; range (1..12).
+
+Examples:
+
+  t = Time.new(2021, 12, 31, 0) # => 2021-12-31 00:00:00 -0600
+  t.strftime('%H')              # => "00"
+  t.strftime('%k')              # => " 0"
+  t = Time.new(2021, 12, 31, 1) # => 2021-12-31 01:00:00 -0600
+  t.strftime('%I')              # => "01"
+  t.strftime('%l')              # => " 1"
+
+<em>Meridian Indicator</em>
+
+- <tt>%P</tt>: 2-character meridian indicator, lowercase.
+- <tt>%p</tt>: 2-character meridian indicator, uppercase.
+
+Examples:
+
+  t = Time.new(2021, 1, 1, 6)  # => 2021-01-01 06:00:00 -0600
+  t.strftime('%P')             # => "am"
+  t.strftime('%p')             # => "AM"
+  t = Time.new(2021, 1, 1, 18) # => 2021-01-01 18:00:00 -0600
+  t.strftime('%P')             # => "pm"
+  t.strftime('%p')             # => "PM"
+
+<em>Minute</em>
+
+- <tt>%M</tt>: 2-digit minute of the hour, zero padded; range (0..59).
+
+Examples:
+
+  t = Time.new(2021, 1, 1, 0, 0)  # => 2021-01-01 00:00:00 -0600
+  t.strftime('%M')                # => "00"
+  t = Time.new(2021, 1, 1, 0, 59) # => 2021-01-01 00:59:00 -0600
+  t.strftime('%M')                # => "59"
+
+<em>Second</em>
+
+- <tt>%S</tt>: 2-digit second of the minute, zero padded; range (0..60).
+- <tt>%L</tt>: 3-digit millisecond of the second, zero padded; range (0..999).
+- <tt>%N</tt>: 9-digit nanosecond of the minute, zero padded.
+
+Examples:
+
+  t = Time.new(1973, 12, 31, 23, 0, 0) # => 1973-12-31 23:00:00 -0600
+  t.strftime('%S')                     # => "00"
+  t.strftime('%L')                     # => "000"
+  t.strftime('%N')                     # => "000000000"
+
+Conversion specifier <tt>%N</tt> may take a positive integer modifier
+that specifies the number of digits to display:
+
+   t = Time.new(1973, 12, 31, 23, 0, 30.1)
+   # => 1973-12-31 23:00:30 14073748835533/140737488355328 -0600
+   t.strftime('%3N')  # => "100"                      # Milliseconds.
+   t.strftime('%6N')  # => "100000"                   # Microseconds.
+   t.strftime('%9N')  # => "100000000"                # Nanoseconds.
+   t.strftime('%12N') # => "100000000000"             # Picoseconds.
+   t.strftime('%15N') # => "100000000000001"          # Femtoseconds.
+   t.strftime('%18N') # => "100000000000001421"       # Attoseconds.
+   t.strftime('%21N') # => "100000000000001421085"    # Zeptoseconds.
+   t.strftime('%24N') # => "100000000000001421085471" # Yoctoseconds.
+
+<em>Epoch Seconds</em>
+
+- <tt>%s</tt>: Number of seconds since 1970-01-01 00:00:00 UTC:
+
+    t.strftime('%s')  # => "1635656400" # Time.
+    dt.strftime('%s') # => "1635803221" # DateTime.
+    d.strftime('%s')  # => "1635724800" # Date.
+
+- <tt>%Q</tt>: Number of milliseconds since 1970-01-01 00:00:00 UTC:
+
+    t.strftime('%Q')  # => "%Q"            # Time.
+    dt.strftime('%Q') # => "1635803221869" # DateTime.
+    d.strftime('%Q')  # => "1635724800000" # Date.
+
+<em>Time Zone</em>
+
+- <tt>%Z</tt>:
+
+    t.strftime('%Z')  # => "Central Daylight Time" # Time.
+    dt.strftime('%Z') # => "-05:00"                # DateTime.
+    d.strftime('%Z')  # => "+00:00"                # Date.
+
+- <tt>%z</tt>: Time zone as hour and minute offset from UTC without colon:
+
+    t.strftime('%z')  # => "-0500" # Time.
+    dt.strftime('%z') # => "-0500" # DateTime.
+    d.strftime('%z')  # => "+0000" # Date.
+
+Specifier <tt>%Z</tt> or <tt>%z</tt> may have modifier
+<tt>:</tt>, <tt>::</tt>, or <tt>:::</tt>.
+
+- <tt>%:z</tt>: hour and minute offset from UTC with one embedded colon.
+- <tt>%::z</tt>: Hour, minute and second offset from UTC with two embedded colons.
+- <tt>%:::z</tt>: Hour, minute and second offset from UTC with no embedded colon.
+
+Examples:
+
+  t.strftime('%:z')    # => "-05:00"
+  t.strftime('%::z')   # => "-05:00:00"
+  t.strftime('%:::z')  # => "-05"
+
+<em>Weekday</em>
+
+- <tt>%A</tt>: Full weekday name.
+- <tt>%a</tt>: 3-character abbreviated weekday name.
+- <tt>%u</tt>: Numerical weekday; range (1..7); Monday is 1, Sunday is 7.
+- <tt>%w</tt>: Numerical weekday; range (0..6); Sunday is 0, Saturday is 6.
+
+Examples:
+
+  t = Time.new(2021, 10, 31)
+  # => 2021-10-31 00:00:00 -0500
+  t.strftime('%A')  # => "Sunday"
+  t.strftime('%a')  # => "Sun"
+  t.strftime('%u')  # => "7"
+  t.strftime('%w')  # => "0"
+
+<em>ISO 8601 Year and Week Number</em>
+
+The ISO year begins with the first Monday that is or precedes January 4.
+
+- <tt>%G</tt>: ISO 8601 year.
+- <tt>%g</tt>: 2-digit ISO 8601 year; range (0..99).
+
+Examples:
+
+  t.strftime('%G') # => "2021"
+  t.strftime('%g') # => "21"
+  t.strftime('%V') # => "43"
+
+- <tt>%V</tt>: ISO week number; range (1..53).
+- <tt>%U</tt>: ISO week number, week starting with Sunday; range (0..53).
+- <tt>%W</tt>: ISO week number, week starting with Monday; range (0..53).
+
+Examples:
+
+  t.strftime('%V') # => "43"
+  t.strftime('%U') # => "44"
+  t.strftime('%W') # => "43"
+
+<em>Literal String</em>
+
+These literal strings generate the specified characters into the output:
+
+- <tt>%n</tt>: Newline ("\n").
+- <tt>%t</tt>: Tab ("\t").
+- <tt>%%</tt>: Percent ("%").
+
+<em>Combination</em>
+
+\Date and time:
+
+- <tt>%c</tt>: Date and time (<tt>%a %b %e %T %Y</tt>):
+
+    t.strftime('%c') # => "Sun Oct 31 00:00:00 2021"
+
+- <tt>%+</tt>: Unix-style (<tt>%a %b %e %H:%M:%S %Z %Y</tt>)
+
+    t.strftime('%+') # => "%+"                               # Time.
+    dt.strftime('%+') # => "Mon Nov  1 16:47:01 -05:00 2021" # DateTime.
+    d.strftime('%+')  # => "Mon Nov  1 00:00:00 +00:00 2021" # Date.
+
+\Date only:
+
+- <tt>%D</tt> or <tt>%x</tt>: Date (<tt>%m/%d/%y</tt>):
+
+    t.strftime('%D') # => "10/31/21"
+    t.strftime('%x') # => "10/31/21"
+
+- <tt>%F</tt>: ISO 8601 date (<tt>%Y-%m-%d</tt>).
+
+    t.strftime('%F') # => "2021-10-31"
+
+- <tt>%v</tt>: VMS date (<tt>%e-%^b-%Y</tt>):
+
+    t.strftime('%v')  # => "31-OCT-2021" # Time.
+    dt.strftime('%v') # => " 1-Nov-2021" # DateTime.
+    d.strftime('%v')  # => " 1-Nov-2021" # Date.
+
+\Time only:
+
+- <tt>%r</tt>: 12-hour time (<tt>%I:%M:%S %p</tt>):
+
+    t.strftime('%r') # => "12:00:00 AM"
+
+- <tt>%R</tt>: 24-hour time (<tt>%H:%M</tt>):
+
+    t.strftime('%R') # => "00:00"
+
+- <tt>%T</tt> or <tt>%X</tt>: 24-hour time (<tt>%H:%M:%S</tt>):
+
+    t.strftime('%T') # => "00:00:00"
+    t.strftime('%X') # => "00:00:00"
