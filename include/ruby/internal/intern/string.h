@@ -62,13 +62,13 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
  */
 VALUE rb_str_new(const char *ptr, long len);
 
-RBIMPL_ATTR_NONNULL(())
 /**
  * Identical to rb_str_new(), except it assumes the passed pointer is a pointer
  * to a C string.
  *
  * @param[in]  ptr             A C string.
  * @exception  rb_eNoMemError  Failed to allocate memory.
+ * @exception  rb_eArgError    `ptr` is a null pointer.
  * @return     An  instance  of  ::rb_cString,   of  "binary"  encoding,  whose
  *             contents are verbatim copy of `ptr`.
  * @pre        `ptr` must not be a null pointer.
@@ -122,7 +122,6 @@ VALUE rb_str_new_frozen(VALUE str);
  */
 VALUE rb_str_new_with_class(VALUE obj, const char *ptr, long len);
 
-RBIMPL_ATTR_NONNULL(())
 /**
  * @deprecated  This function  once was a thing  in the old days,  but makes no
  *              sense   any   longer   today.   Exists   here   for   backwards
@@ -130,6 +129,7 @@ RBIMPL_ATTR_NONNULL(())
  *
  * @param[in]  ptr             A C string.
  * @exception  rb_eNoMemError  Failed to allocate memory.
+ * @exception  rb_eArgError    `ptr` is a null pointer.
  * @return     An  instance  of  ::rb_cString,   of  "binary"  encoding,  whose
  *             contents are verbatim copy of `ptr`.
  * @pre        `ptr` must not be a null pointer.
@@ -333,7 +333,6 @@ VALUE rb_str_tmp_new(long len);
  */
 VALUE rb_usascii_str_new(const char *ptr, long len);
 
-RBIMPL_ATTR_NONNULL(())
 /**
  * Identical to rb_str_new_cstr(),  except it generates a string  of "US ASCII"
  * encoding.   It   can   also   be    seen   as   a   routine   Identical   to
@@ -342,6 +341,7 @@ RBIMPL_ATTR_NONNULL(())
  *
  * @param[in]  ptr             A C string.
  * @exception  rb_eNoMemError  Failed to allocate memory.
+ * @exception  rb_eArgError    `ptr` is a null pointer.
  * @return     An  instance  of ::rb_cString,  of  "US  ASCII" encoding,  whose
  *             contents are verbatim copy of `ptr`.
  * @pre        `ptr` must not be a null pointer.
@@ -361,7 +361,6 @@ VALUE rb_usascii_str_new_cstr(const char *ptr);
  */
 VALUE rb_utf8_str_new(const char *ptr, long len);
 
-RBIMPL_ATTR_NONNULL(())
 /**
  * Identical  to rb_str_new_cstr(),  except it  generates a  string of  "UTF-8"
  * encoding.    It   can   also   be   seen   as   a   routine   Identical   to
@@ -370,6 +369,7 @@ RBIMPL_ATTR_NONNULL(())
  *
  * @param[in]  ptr             A C string.
  * @exception  rb_eNoMemError  Failed to allocate memory.
+ * @exception  rb_eArgError    `ptr` is a null pointer.
  * @return     An instance of ::rb_cString, of "UTF-8" encoding, whose contents
  *             are verbatim copy of `ptr`.
  * @pre        `ptr` must not be a null pointer.
@@ -553,7 +553,6 @@ VALUE rb_str_buf_append(VALUE dst, VALUE src);
 /** @alias{rb_str_cat} */
 VALUE rb_str_buf_cat(VALUE, const char*, long);
 
-RBIMPL_ATTR_NONNULL(())
 /** @alias{rb_str_cat_cstr} */
 VALUE rb_str_buf_cat2(VALUE, const char*);
 
@@ -874,7 +873,6 @@ VALUE rb_str_resize(VALUE str, long len);
  */
 VALUE rb_str_cat(VALUE dst, const char *src, long srclen);
 
-RBIMPL_ATTR_NONNULL(())
 /**
  * Identical to rb_str_cat(), except it assumes the passed pointer is a pointer
  * to a C string.
@@ -882,6 +880,7 @@ RBIMPL_ATTR_NONNULL(())
  * @param[out]  dst           Destination object.
  * @param[in]   src           Contents to append.
  * @exception   rb_eArgError  Result string too big.
+ * @exception   rb_eArgError  `src` is a null pointer.
  * @return      The passed `dst`.
  * @pre         `dst` must not be any arbitrary objects except ::RString.
  * @pre         `src` must not be a null pointer.
@@ -889,7 +888,6 @@ RBIMPL_ATTR_NONNULL(())
  */
 VALUE rb_str_cat_cstr(VALUE dst, const char *src);
 
-RBIMPL_ATTR_NONNULL(())
 /** @alias{rb_str_cat_cstr} */
 VALUE rb_str_cat2(VALUE, const char*);
 
@@ -1153,7 +1151,6 @@ VALUE rb_str_inspect(VALUE str);
  */
 VALUE rb_str_dump(VALUE str);
 
-RBIMPL_ATTR_NONNULL(())
 /**
  * Divides  the  given string  based  on  the  given  delimiter.  This  is  the
  * 1-argument 0-block version of `String#split`.
@@ -1161,6 +1158,7 @@ RBIMPL_ATTR_NONNULL(())
  * @param[in]  str            Object in question to split.
  * @param[in]  delim          Delimiter, in C string.
  * @exception  rb_eTypeError  `str` has no implicit conversion to String.
+ * @exception  rb_eArgError   `delim` is a null pointer.
  * @return     An array of  strings, which are substrings of  the passed `str`.
  *             If `delim` is an empty C string (i.e. `""`), `str` is split into
  *             each characters.  If `delim` is a C string whose sole content is
