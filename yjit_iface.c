@@ -514,7 +514,7 @@ yjit_blocks_for(VALUE mod, VALUE rb_iseq)
     return all_versions;
 }
 
-/* Get the address of the the code associated with a YJIT::Block */
+/* Get the address of the code associated with a YJIT::Block */
 static VALUE
 block_address(VALUE self)
 {
