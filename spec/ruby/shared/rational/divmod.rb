@@ -9,7 +9,7 @@ describe :rational_divmod_rat, shared: true do
     Rational(bignum_value, 4).divmod(Rational(4, 3)).should eql([1729382256910270464, Rational(0, 1)])
   end
 
-  it "raises a ZeroDivisonError when passed a Rational with a numerator of 0" do
+  it "raises a ZeroDivisionError when passed a Rational with a numerator of 0" do
     -> { Rational(7, 4).divmod(Rational(0, 3)) }.should raise_error(ZeroDivisionError)
   end
 end

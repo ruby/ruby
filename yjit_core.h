@@ -158,7 +158,7 @@ typedef struct yjit_context
 } ctx_t;
 STATIC_ASSERT(yjit_ctx_size, sizeof(ctx_t) <= 32);
 
-// Tuple of (iseq, idx) used to idenfity basic blocks
+// Tuple of (iseq, idx) used to identify basic blocks
 typedef struct BlockId
 {
     // Instruction sequence

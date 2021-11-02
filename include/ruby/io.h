@@ -470,7 +470,7 @@ int rb_io_modestr_fmode(const char *modestr);
 
 /**
  * Identical  to rb_io_modestr_fmode(),  except it  returns a  mixture of  `O_`
- * flags.  This for instnce returns `O_WRONLY | O_TRUNC | O_CREAT | O_EXCL` for
+ * flags.  This for instance returns `O_WRONLY | O_TRUNC | O_CREAT | O_EXCL` for
  * `"wx"`.
  *
  * @param[in]  modestr       File mode, in C's string.
@@ -735,8 +735,8 @@ int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **
  * class File
  *   def initialize: (
  *     (String | int)      path,
- *     ?(Strig | int)      fmode,
- *     ?(Strig | int)      perm,
+ *     ?(String | int)      fmode,
+ *     ?(String | int)      perm,
  *     ?mode:              (String | int),
  *     ?flags:             int,
  *     ?external_encoding: (Encoding | String),

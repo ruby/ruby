@@ -190,7 +190,7 @@ VALUE rb_enc_str_buf_cat(VALUE str, const char *ptr, long len, rb_encoding *enc)
  * In  other languages,  APIs like  this  one could  be seen  as the  primitive
  * routines where encodings' "encode" feature are implemented.  However in case
  * of  Ruby this  is not  the primitive  one.  We  directly manipulate  encoded
- * strings.  Encoding conversion routines  transocde an encoded string directly
+ * strings.  Encoding conversion routines  transcode an encoded string directly
  * to another one; not via a code point array.
  */
 VALUE rb_enc_uint_chr(unsigned int code, rb_encoding *enc);

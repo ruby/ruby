@@ -145,7 +145,7 @@ bool rb_ractor_local_storage_value_lookup(rb_ractor_local_key_t key, VALUE *val)
  * Associates the passed value to the passed key.
  *
  * @param[in]  key  A ractor-local storage key.
- * @param[in]  val  Arbitary ruby object.
+ * @param[in]  val  Arbitrary ruby object.
  * @post       `val` corresponds to `key` in the current Ractor.
  */
 void  rb_ractor_local_storage_value_set(rb_ractor_local_key_t key, VALUE val);

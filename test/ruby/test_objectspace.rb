@@ -219,7 +219,7 @@ End
     assert_same(new_obj, found[0])
   end
 
-  def test_each_object_no_gabage
+  def test_each_object_no_garbage
     assert_separately([], <<-End)
     GC.disable
     eval('begin; 1.times{}; rescue; ensure; end')

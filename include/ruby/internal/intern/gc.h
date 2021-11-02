@@ -249,7 +249,7 @@ void rb_gc(void);
  *
  * @internal
  *
- * But isn't it  easier for you to call super,  and let `Object#intialize_copy`
+ * But isn't it  easier for you to call super,  and let `Object#initialize_copy`
  * call this function instead?
  */
 void rb_gc_copy_finalizer(VALUE dst, VALUE src);

@@ -56,7 +56,7 @@ class TestISeq < Test::Unit::TestCase
     assert_equal [3, 4, 7, 9], lines(src)
   end
 
-  def test_unsupport_type
+  def test_unsupported_type
     ary = compile("p").to_a
     ary[9] = :foobar
     assert_raise_with_message(TypeError, /:foobar/) {ISeq.load(ary)}

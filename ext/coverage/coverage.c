@@ -348,7 +348,7 @@ clear_me2counter_i(VALUE key, VALUE value, VALUE unused)
  *    Coverage.suspend  => nil
  *
  * Suspend the coverage measurement.
- * You can use Coverage.resumt to restart the measurement.
+ * You can use Coverage.resume to restart the measurement.
  */
 VALUE
 rb_coverage_suspend(VALUE klass)

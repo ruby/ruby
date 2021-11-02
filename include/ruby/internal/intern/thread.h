@@ -46,7 +46,7 @@ void rb_thread_schedule(void);
  *
  * @param[in]  fd                    A file descriptor.
  * @exception  rb_eIOError           Closed stream.
- * @exception  rb_eSystemCalleError  Situations like EBADF.
+ * @exception  rb_eSystemCallError   Situations like EBADF.
  */
 int rb_thread_wait_fd(int fd);
 
@@ -56,7 +56,7 @@ int rb_thread_wait_fd(int fd);
  *
  * @param[in]  fd                    A file descriptor.
  * @exception  rb_eIOError           Closed stream.
- * @exception  rb_eSystemCalleError  Situations like EBADF.
+ * @exception  rb_eSystemCallError   Situations like EBADF.
  */
 int rb_thread_fd_writable(int fd);
 
