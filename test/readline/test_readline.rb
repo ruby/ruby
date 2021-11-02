@@ -7,6 +7,7 @@ require "open3"
 
 module BasetestReadline
   INPUTRC = "INPUTRC"
+  TERM = "TERM"
   SAVED_ENV = %w[COLUMNS LINES]
 
   TIMEOUT = 8
@@ -14,10 +15,12 @@ module BasetestReadline
   def setup
     @saved_env = ENV.values_at(*SAVED_ENV)
     @inputrc, ENV[INPUTRC] = ENV[INPUTRC], IO::NULL
+    @term, ENV[TERM] = ENV[TERM], "vt100"
   end
 
   def teardown
     ENV[INPUTRC] = @inputrc
+    ENV[TERM] = @term
     Readline.instance_variable_set("@completion_proc", nil)
     begin
       Readline.delete_text
