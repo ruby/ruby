@@ -36,6 +36,15 @@ extern st_table *rb_encoded_insn_data;
 
 struct rb_yjit_options rb_yjit_opts;
 
+// Size of code pages to allocate
+#define CODE_PAGE_SIZE 16 * 1024
+
+// How many code pages to allocate at once
+#define PAGES_PER_ALLOC 512
+
+// Current code page we are writing machine code into
+VALUE yjit_cur_code_page = Qfalse;
+
 static const rb_data_type_t yjit_block_type = {
     "YJIT/Block",
     {0, 0, 0, },
@@ -880,7 +889,7 @@ rb_yjit_iseq_mark(const struct rb_iseq_constant_body *body)
             }
 
             // Mark the machine code page this block lives on
-            rb_gc_mark_movable(block->code_page);
+            //rb_gc_mark_movable(block->code_page);
         }
     }
 }
@@ -926,7 +935,7 @@ rb_yjit_iseq_update_references(const struct rb_iseq_constant_body *body)
             }
 
             // Update the machine code page this block lives on
-            block->code_page = rb_gc_location(block->code_page);
+            //block->code_page = rb_gc_location(block->code_page);
         }
     }
 }
@@ -949,10 +958,44 @@ rb_yjit_iseq_free(const struct rb_iseq_constant_body *body)
     rb_darray_free(body->yjit_blocks);
 }
 
-static void
-yjit_code_page_free(void *code_page)
+
+
+
+
+
+
+
+
+// Struct representing a code page
+typedef struct code_page_struct
 {
-    free_code_page((code_page_t*)code_page);
+    // Chunk of executable memory
+    uint8_t* mem_block;
+
+    // Size of the executable memory chunk
+    uint32_t page_size;
+
+    // Inline code block
+    codeblock_t cb;
+
+    // Outlined code block
+    codeblock_t ocb;
+
+    // Next node in the free list (private)
+    struct code_page_struct* _next;
+
+} code_page_t;
+
+// Head of the list of free code pages
+code_page_t *freelist = NULL;
+
+// Free a code page, add it to the free list
+static void
+yjit_code_page_free(void *voidp)
+{
+    code_page_t* code_page = (code_page_t*)voidp;
+    code_page->_next = freelist;
+    freelist = code_page;
 }
 
 // Custom type for interacting with the GC
@@ -965,13 +1008,39 @@ static const rb_data_type_t yjit_code_page_type = {
 // Allocate a code page and wrap it into a Ruby object owned by the GC
 VALUE rb_yjit_code_page_alloc(void)
 {
-    code_page_t *code_page = alloc_code_page();
-    VALUE cp_obj = TypedData_Wrap_Struct(0, &yjit_code_page_type, code_page);
+    // If the free list is empty
+    if (!freelist) {
+        // Allocate many pages at once
+        uint8_t* code_chunk = alloc_exec_mem(PAGES_PER_ALLOC * CODE_PAGE_SIZE);
 
-    // Write a pointer to the wrapper object at the beginning of the code page
-    *((VALUE*)code_page->mem_block) = cp_obj;
+        // Do this in reverse order so we allocate our pages in order
+        for (int i = PAGES_PER_ALLOC - 1; i >= 0; --i) {
+            code_page_t* code_page = malloc(sizeof(code_page_t));
+            code_page->mem_block = code_chunk + i * CODE_PAGE_SIZE;
+            assert ((intptr_t)code_page->mem_block % CODE_PAGE_SIZE == 0);
+            code_page->page_size = CODE_PAGE_SIZE;
+            code_page->_next = freelist;
+            freelist = code_page;
+        }
+    }
 
-    return cp_obj;
+    code_page_t* code_page = freelist;
+    freelist = freelist->_next;
+
+    // Create a Ruby wrapper struct for the code page object
+    VALUE wrapper = TypedData_Wrap_Struct(0, &yjit_code_page_type, code_page);
+
+    // Write a pointer to the wrapper object on the page
+    *((VALUE*)code_page->mem_block) = wrapper;
+
+    // Initialize the code blocks
+    uint8_t* page_start = code_page->mem_block + sizeof(VALUE);
+    uint8_t* page_end = code_page->mem_block + CODE_PAGE_SIZE;
+    uint32_t halfsize = (uint32_t)(page_end - page_start) / 2;
+    cb_init(&code_page->cb, page_start, halfsize);
+    cb_init(&code_page->cb, page_start + halfsize, halfsize);
+
+    return wrapper;
 }
 
 // Unwrap the Ruby object representing a code page
@@ -983,21 +1052,21 @@ code_page_t *rb_yjit_code_page_unwrap(VALUE cp_obj)
 }
 
 // Get the code page wrapper object for a code pointer
-VALUE rb_yjit_code_page_from_ptr(uint8_t *code_ptr)
+VALUE rb_yjit_code_page_from_ptr(uint8_t* code_ptr)
 {
-    VALUE *page_start = (VALUE*)((intptr_t)code_ptr & ~(CODE_PAGE_SIZE - 1));
+    VALUE* page_start = (VALUE*)((intptr_t)code_ptr & ~(CODE_PAGE_SIZE - 1));
     VALUE wrapper = *page_start;
     return wrapper;
 }
 
 // Get the inline code block corresponding to a code pointer
-void rb_yjit_get_cb(codeblock_t *cb, uint8_t *code_ptr)
+void rb_yjit_get_cb(codeblock_t* cb, uint8_t* code_ptr)
 {
     VALUE page_wrapper = rb_yjit_code_page_from_ptr(code_ptr);
     code_page_t *code_page = rb_yjit_code_page_unwrap(page_wrapper);
 
     // A pointer to the page wrapper object is written at the start of the code page
-    uint8_t *mem_block = code_page->mem_block + sizeof(VALUE);
+    uint8_t* mem_block = code_page->mem_block + sizeof(VALUE);
     uint32_t mem_size = (code_page->page_size/2) - sizeof(VALUE);
     RUBY_ASSERT(mem_block);
 
@@ -1006,19 +1075,63 @@ void rb_yjit_get_cb(codeblock_t *cb, uint8_t *code_ptr)
 }
 
 // Get the outlined code block corresponding to a code pointer
-void rb_yjit_get_ocb(codeblock_t *cb, uint8_t *code_ptr)
+void rb_yjit_get_ocb(codeblock_t* cb, uint8_t* code_ptr)
 {
     VALUE page_wrapper = rb_yjit_code_page_from_ptr(code_ptr);
     code_page_t *code_page = rb_yjit_code_page_unwrap(page_wrapper);
 
     // A pointer to the page wrapper object is written at the start of the code page
-    uint8_t *mem_block = code_page->mem_block + (code_page->page_size/2);
+    uint8_t* mem_block = code_page->mem_block + (code_page->page_size/2);
     uint32_t mem_size = code_page->page_size/2;
     RUBY_ASSERT(mem_block);
 
     // Map the code block to this memory region
     cb_init(cb, mem_block, mem_size);
 }
+
+// Get the current code page or allocate a new one
+VALUE
+yjit_get_code_page(uint32_t cb_bytes_needed, uint32_t ocb_bytes_needed)
+{
+    // If this is the first code page
+    if (yjit_cur_code_page == Qfalse) {
+        yjit_cur_code_page = rb_yjit_code_page_alloc();
+    }
+
+    // Get the current code page
+    code_page_t *code_page = rb_yjit_code_page_unwrap(yjit_cur_code_page);
+
+    // Compute how many bytes are left in the code blocks
+    uint32_t cb_bytes_left = code_page->cb.mem_size - code_page->cb.write_pos;
+    uint32_t ocb_bytes_left = code_page->ocb.mem_size - code_page->ocb.write_pos;
+    RUBY_ASSERT_ALWAYS(cb_bytes_needed <= code_page->cb.mem_size);
+    RUBY_ASSERT_ALWAYS(ocb_bytes_needed <= code_page->ocb.mem_size);
+
+    // If there's enough space left in the current code page
+    if (cb_bytes_needed <= cb_bytes_left && ocb_bytes_needed <= ocb_bytes_left) {
+        return yjit_cur_code_page;
+    }
+
+    // Allocate a new code page
+    yjit_cur_code_page = rb_yjit_code_page_alloc();
+    code_page_t *new_code_page = rb_yjit_code_page_unwrap(yjit_cur_code_page);
+
+    // Jump to the new code page
+    jmp_ptr(&code_page->cb, new_code_page->cb.mem_block);
+
+    return yjit_cur_code_page;
+}
+
+
+
+
+
+
+
+
+
+
+
 
 bool
 rb_yjit_enabled_p(void)

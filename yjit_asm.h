@@ -5,12 +5,6 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-// Size of code pages to allocate
-#define CODE_PAGE_SIZE 16 * 1024
-
-// How many code pages to allocate at once
-#define PAGES_PER_ALLOC 512
-
 // Maximum number of labels to link
 #define MAX_LABELS 32
 
@@ -137,20 +131,6 @@ typedef struct X86Opnd
 
 } x86opnd_t;
 
-// Struct representing a code page
-typedef struct code_page_struct
-{
-    // Chunk of executable memory
-    uint8_t *mem_block;
-
-    // Size of the executable memory chunk
-    uint32_t page_size;
-
-    // Next node in the free list (private)
-    struct code_page_struct *_next;
-
-} code_page_t;
-
 // Dummy none/null operand
 static const x86opnd_t NO_OPND = { OPND_NONE, 0, .as.imm = 0 };
 
@@ -264,12 +244,7 @@ static inline x86opnd_t const_ptr_opnd(const void *ptr);
      sizeof(((struct_type*)0)->member_name[0]) * idx)  \
 )
 
-// Machine code allocation
-static uint8_t *alloc_exec_mem(uint32_t mem_size);
-static code_page_t *alloc_code_page(void);
-static void free_code_page(code_page_t *code_page);
-
-
+// Code block functions
 static inline void cb_init(codeblock_t *cb, uint8_t *mem_block, uint32_t mem_size);
 static inline void cb_align_pos(codeblock_t *cb, uint32_t multiple);
 static inline void cb_set_pos(codeblock_t *cb, uint32_t pos);

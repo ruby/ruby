@@ -259,9 +259,6 @@ typedef struct yjit_block_version
     // block in the system.
     cme_dependency_array_t cme_dependencies;
 
-    // Code page this block lives on
-    VALUE code_page;
-
     // Index one past the last instruction in the iseq
     uint32_t end_idx;
 
