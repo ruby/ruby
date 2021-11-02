@@ -755,4 +755,10 @@ class TestClass < Test::Unit::TestCase
     assert_include(object_descendants, sc)
     assert_include(object_descendants, ssc)
   end
+
+  def test_descendants_gc
+    c = Class.new
+    100000.times { Class.new(c) }
+    assert(c.descendants.size <= 100000)
+  end
 end
