@@ -5301,21 +5301,26 @@ rb_str_insert(VALUE str, VALUE idx, VALUE str2)
 
 /*
  *  call-seq:
- *     str.slice!(integer)           -> new_str or nil
- *     str.slice!(integer, integer)   -> new_str or nil
- *     str.slice!(range)            -> new_str or nil
- *     str.slice!(regexp)           -> new_str or nil
- *     str.slice!(other_str)        -> new_str or nil
+ *     slice!(index)               -> new_string or nil
+ *     slice!(start, length)       -> new_string or nil
+ *     slice!(range)               -> new_string or nil
+ *     slice!(regexp, capture = 0) -> new_string or nil
+ *     slice!(substring)           -> new_string or nil
  *
- *  Deletes the specified portion from <i>str</i>, and returns the portion
- *  deleted.
+ *  Removes the substring of +self+ specified by the arguments;
+ *  returns the removed substring.
  *
- *     string = "this is a string"
+ *  See String#[] for details about the arguments that specify the substring.
+ *
+ *  A few examples:
+ *
+ *     string = "This is a string"
  *     string.slice!(2)        #=> "i"
  *     string.slice!(3..6)     #=> " is "
  *     string.slice!(/s.*t/)   #=> "sa st"
  *     string.slice!("r")      #=> "r"
- *     string                  #=> "thing"
+ *     string                  #=> "Thing"
+ *
  */
 
 static VALUE
@@ -5477,13 +5482,16 @@ rb_pat_search(VALUE pat, VALUE str, long pos, int set_backref_str)
 
 /*
  *  call-seq:
- *     str.sub!(pattern, replacement)          -> str or nil
- *     str.sub!(pattern) {|match| block }      -> str or nil
+ *    sub!(pattern, replacement)   -> self or nil
+ *    sub!(pattern) {|match| ... } -> self or nil
  *
- *  Performs the same substitution as String#sub in-place.
+ *  Returns +self+ with only the first occurrence
+ *  (not all occurrences) of the given +pattern+ replaced.
  *
- *  Returns +str+ if a substitution was performed or +nil+ if no substitution
- *  was performed.
+ *  See {Substitution Methods}[#class-String-label-Substitution+Methods].
+ *
+ *  Related: String#sub, String#gsub, String#gsub!.
+ *
  */
 
 static VALUE
@@ -5597,58 +5605,16 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.sub(pattern, replacement)         -> new_str
- *     str.sub(pattern, hash)                -> new_str
- *     str.sub(pattern) {|match| block }     -> new_str
+ *    sub(pattern, replacement)   -> new_string
+ *    sub(pattern) {|match| ... } -> new_string
  *
- *  Returns a copy of +str+ with the _first_ occurrence of +pattern+
- *  replaced by the second argument. The +pattern+ is typically a Regexp; if
- *  given as a String, any regular expression metacharacters it contains will
- *  be interpreted literally, e.g. <code>\d</code> will match a backslash
- *  followed by 'd', instead of a digit.
+ *  Returns a copy of +self+ with only the first occurrence
+ *  (not all occurrences) of the given +pattern+ replaced.
  *
- *  If +replacement+ is a String it will be substituted for the matched text.
- *  It may contain back-references to the pattern's capture groups of the form
- *  <code>\d</code>, where <i>d</i> is a group number, or
- *  <code>\k<n></code>, where <i>n</i> is a group name.
- *  Similarly, <code>\&</code>, <code>\'</code>, <code>\`</code>, and
- *  <code>\+</code> correspond to special variables, <code>$&</code>,
- *  <code>$'</code>, <code>$`</code>, and <code>$+</code>, respectively.
- *  (See rdoc-ref:regexp.rdoc for details.)
- *  <code>\0</code> is the same as <code>\&</code>.
- *  <code>\\\\</code> is interpreted as an escape, i.e., a single backslash.
- *  Note that, within +replacement+ the special match variables, such as
- *  <code>$&</code>, will not refer to the current match.
+ *  See {Substitution Methods}[#class-String-label-Substitution+Methods].
  *
- *  If the second argument is a Hash, and the matched text is one of its keys,
- *  the corresponding value is the replacement string.
+ *  Related: String#sub!, String#gsub, String#gsub!.
  *
- *  In the block form, the current match string is passed in as a parameter,
- *  and variables such as <code>$1</code>, <code>$2</code>, <code>$`</code>,
- *  <code>$&</code>, and <code>$'</code> will be set appropriately.
- *  (See rdoc-ref:regexp.rdoc for details.)
- *  The value returned by the block will be substituted for the match on each
- *  call.
- *
- *     "hello".sub(/[aeiou]/, '*')                  #=> "h*llo"
- *     "hello".sub(/([aeiou])/, '<\1>')             #=> "h<e>llo"
- *     "hello".sub(/./) {|s| s.ord.to_s + ' ' }     #=> "104 ello"
- *     "hello".sub(/(?<foo>[aeiou])/, '*\k<foo>*')  #=> "h*e*llo"
- *     'Is SHELL your preferred shell?'.sub(/[[:upper:]]{2,}/, ENV)
- *      #=> "Is /bin/bash your preferred shell?"
- *
- *  Note that a string literal consumes backslashes.
- *  (See rdoc-ref:syntax/literals.rdoc for details about string literals.)
- *  Back-references are typically preceded by an additional backslash.
- *  For example, if you want to write a back-reference <code>\&</code> in
- *  +replacement+ with a double-quoted string literal, you need to write:
- *  <code>"..\\\\&.."</code>.
- *  If you want to write a non-back-reference string <code>\&</code> in
- *  +replacement+, you need first to escape the backslash to prevent
- *  this method from interpreting it as a back-reference, and then you
- *  need to escape the backslashes again to prevent a string literal from
- *  consuming them: <code>"..\\\\\\\\&.."</code>.
- *  You may want to use the block form to avoid a lot of backslashes.
  */
 
 static VALUE
@@ -5784,15 +5750,19 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 
 /*
  *  call-seq:
- *     str.gsub!(pattern, replacement)        -> str or nil
- *     str.gsub!(pattern, hash)               -> str or nil
- *     str.gsub!(pattern) {|match| block }    -> str or nil
- *     str.gsub!(pattern)                     -> an_enumerator
+ *     str.gsub!(pattern, replacement)   -> self or nil
+ *     str.gsub!(pattern) {|match| ... } -> self or nil
+ *     str.gsub!(pattern)                -> an_enumerator
  *
- *  Performs the substitutions of String#gsub in place, returning
- *  <i>str</i>, or <code>nil</code> if no substitutions were
- *  performed.  If no block and no <i>replacement</i> is given, an
- *  enumerator is returned instead.
+ *  Performs the specified substring replacement(s) on +self+;
+ *  returns +self+ if any replacement occurred, +nil+ otherwise.
+ *
+ *  See {Substitution Methods}[#class-String-label-Substitution+Methods].
+ *
+ *  Returns an Enumerator if no +replacement+ and no block given.
+ *
+ *  Related: String#sub, String#gsub, String#sub!.
+ *
  */
 
 static VALUE
@@ -5805,62 +5775,18 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.gsub(pattern, replacement)       -> new_str
- *     str.gsub(pattern, hash)              -> new_str
- *     str.gsub(pattern) {|match| block }   -> new_str
- *     str.gsub(pattern)                    -> enumerator
+ *     gsub(pattern, replacement)   -> new_string
+ *     gsub(pattern) {|match| ... } -> new_string
+ *     gsub(pattern)                -> enumerator
  *
- *  Returns a copy of <i>str</i> with <em>all</em> occurrences of
- *  <i>pattern</i> substituted for the second argument. The <i>pattern</i> is
- *  typically a Regexp; if given as a String, any
- *  regular expression metacharacters it contains will be interpreted
- *  literally, e.g. <code>\d</code> will match a backslash followed by 'd',
- *  instead of a digit.
+ *  Returns a copy of +self+ with all occurrences of the given +pattern+ replaced.
  *
- *  If +replacement+ is a String it will be substituted for the matched text.
- *  It may contain back-references to the pattern's capture groups of the form
- *  <code>\d</code>, where <i>d</i> is a group number, or
- *  <code>\k<n></code>, where <i>n</i> is a group name.
- *  Similarly, <code>\&</code>, <code>\'</code>, <code>\`</code>, and
- *  <code>\+</code> correspond to special variables, <code>$&</code>,
- *  <code>$'</code>, <code>$`</code>, and <code>$+</code>, respectively.
- *  (See rdoc-ref:regexp.rdoc for details.)
- *  <code>\0</code> is the same as <code>\&</code>.
- *  <code>\\\\</code> is interpreted as an escape, i.e., a single backslash.
- *  Note that, within +replacement+ the special match variables, such as
- *  <code>$&</code>, will not refer to the current match.
+ *  See {Substitution Methods}[#class-String-label-Substitution+Methods].
  *
- *  If the second argument is a Hash, and the matched text is one
- *  of its keys, the corresponding value is the replacement string.
+ *  Returns an Enumerator if no +replacement+ and no block given.
  *
- *  In the block form, the current match string is passed in as a parameter,
- *  and variables such as <code>$1</code>, <code>$2</code>, <code>$`</code>,
- *  <code>$&</code>, and <code>$'</code> will be set appropriately.
- *  (See rdoc-ref:regexp.rdoc for details.)
- *  The value returned by the block will be substituted for the match on each
- *  call.
+ *  Related: String#sub, String#sub!, String#gsub!.
  *
- *  When neither a block nor a second argument is supplied, an
- *  Enumerator is returned.
- *
- *     "hello".gsub(/[aeiou]/, '*')                  #=> "h*ll*"
- *     "hello".gsub(/([aeiou])/, '<\1>')             #=> "h<e>ll<o>"
- *     "hello".gsub(/./) {|s| s.ord.to_s + ' '}      #=> "104 101 108 108 111 "
- *     "hello".gsub(/(?<foo>[aeiou])/, '{\k<foo>}')  #=> "h{e}ll{o}"
- *     'hello'.gsub(/[eo]/, 'e' => 3, 'o' => '*')    #=> "h3ll*"
- *
- *  Note that a string literal consumes backslashes.
- *  (See rdoc-ref:syntax/literals.rdoc for details on string literals.)
- *  Back-references are typically preceded by an additional backslash.
- *  For example, if you want to write a back-reference <code>\&</code> in
- *  +replacement+ with a double-quoted string literal, you need to write:
- *  <code>"..\\\\&.."</code>.
- *  If you want to write a non-back-reference string <code>\&</code> in
- *  +replacement+, you need first to escape the backslash to prevent
- *  this method from interpreting it as a back-reference, and then you
- *  need to escape the backslashes again to prevent a string literal from
- *  consuming them: <code>"..\\\\\\\\&.."</code>.
- *  You may want to use the block form to avoid a lot of backslashes.
  */
 
 static VALUE
@@ -11856,18 +11782,135 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
 }
 
 /*
- *  A String object holds and manipulates an arbitrary sequence of
- *  bytes, typically representing text or binary data. String objects may be
- *  created using String::new or as literals.
+ *  A \String object has an arbitrary sequence of bytes,
+ *  typically representing text or binary data.
+ *  A \String object may be created using String::new or as literals.
  *
  *  String objects differ from Symbol objects in that Symbol objects are
  *  designed to be used as identifiers, instead of text or data.
  *
- *  Because of aliasing issues, users of strings should be aware of the methods
- *  that modify the contents of a String object.  Typically,
- *  methods with names ending in ``!'' modify their receiver, while those
- *  without a ``!'' return a new String.  However, there are
- *  exceptions, such as String#[]=.
+ *  Some \String methods modify +self+.
+ *  Typically, a method whose name ends with <tt>!</tt> modifies +self+
+ *  and returns +self+;
+ *  often a similarly named method (without the <tt>!</tt>)
+ *  returns a new string.
+ *
+ *  In general, if there exist both bang and non-bang version of method,
+ *  the bang! mutates and the non-bang! does not.
+ *  However, a method without a bang can also mutate, such as String#replace.
+ *
+ *  == Substitution Methods
+ *
+ *  These methods perform substitutions:
+ *
+ *  - String#sub: One substitution (or none); returns a new string.
+ *  - String#sub!: One substitution (or none); returns +self+.
+ *  - String#gsub: Zero or more substitutions; returns a new string.
+ *  - String#gsub!: Zero or more substitutions; returns +self+.
+ *
+ *  Each of these methods takes:
+ *
+ *  - A first argument, +pattern+ (string or regexp),
+ *    that specifies the substring(s) to be replaced.
+ *
+ *  - Either of these:
+ *
+ *    - A second argument, +replacement+ (string or hash),
+ *      that determines the replacing string.
+ *    - A block that will determine the replacing string.
+ *
+ *  The examples in this section mostly use methods String#sub and String#gsub;
+ *  the principles illustrated apply to all four substitution methods.
+ *
+ *  <b>Argument +pattern+</b>
+ *
+ *  Argument +pattern+ is commonly a regular expression:
+ *
+ *    s = 'hello'
+ *    s.sub(/[aeiou]/, '*')  # => "h*llo"
+ *    s.gsub(/[aeiou]/, '*') # => "h*ll*"
+ *    s.gsub(/[aeiou]/, '')  # => "hll"
+ *    s.sub(/ell/, 'al')     # => "halo"
+ *    s.gsub(/xyzzy/, '*')   # => "hello"
+ *    'THX1138'.gsub(/\d+/, '00') # => "THX00"
+ *
+ *  When +pattern+ is a string, all its characters are treated
+ *  as ordinary characters (not as regexp special characters):
+ *
+ *    'THX1138'.gsub('\d+', '00') # => "THX1138"
+ *
+ *  <b>\String +replacement+</b>
+ *
+ *  If +replacement+ is a string, that string will determine
+ *  the replacing string that is to be substituted for the matched text.
+ *
+ *  Each of the examples above uses a simple string as the replacing string.
+ *
+ *  \String +replacement+ may contain back-references to the pattern's captures:
+ *
+ *  - <tt>\n</tt> (_n_ a non-negative integer) refers to <tt>$n</tt>.
+ *  - <tt>\k<name></tt> refers to the named capture +name+.
+ *
+ *  See rdoc-ref:regexp.rdoc for details.
+ *
+ *  Note that within the string +replacement+, a character combination
+ *  such as <tt>$&</tt> is treated as ordinary text, and not as
+ *  a special match variable.
+ *  However, you may refer to some special match variables using these
+ *  combinations:
+ *
+ *  - <tt>\&</tt> corresponds to <tt>$&</tt>,
+ *    which contains the complete matched text.
+ *  - <tt>\'</tt> corresponds to <tt>$'</tt>,
+ *    which contains string after match.
+ *  - <tt>\`</tt> corresponds to <tt>$`</tt>,
+ *    which contains string before match.
+ *  - <tt>\+</tt> corresponds to <tt>$+</tt>,
+ *    which contains last capture group.
+ *
+ *  See rdoc-ref:regexp.rdoc for details.
+ *
+ *  Note that <tt>\\\\</tt> is interpreted as an escape, i.e., a single backslash.
+ *
+ *  Note also that a string literal consumes backslashes.
+ *  See rdoc-ref:syntax/literals.rdoc for details about string literals.
+ *
+ *  A back-reference is typically preceded by an additional backslash.
+ *  For example, if you want to write a back-reference <tt>\&</tt> in
+ *  +replacement+ with a double-quoted string literal, you need to write
+ *  <tt>"..\\\\&.."</tt>.
+ *
+ *  If you want to write a non-back-reference string <tt>\&</tt> in
+ *  +replacement+, you need first to escape the backslash to prevent
+ *  this method from interpreting it as a back-reference, and then you
+ *  need to escape the backslashes again to prevent a string literal from
+ *  consuming them: <tt>"..\\\\\\\\&.."</tt>.
+ *
+ *  You may want to use the block form to avoid a lot of backslashes.
+ *
+ *  <b>\Hash +replacement+</b>
+ *
+ *  If argument +replacement+ is a hash, and +pattern+ matches one of its keys,
+ *  the replacing string is the value for that key:
+ *
+ *    h = {'foo' => 'bar', 'baz' => 'bat'}
+ *    'food'.sub('oo', h) # => "fd"
+ *    h = {foo: 'bar', baz: 'bat'}
+ *    'food'.sub('oo', h) # => "fd"
+ *    h = {foo: :bar, baz: :bat}
+ *    'food'.sub('oo', h) # => "fd"
+ *
+ *  <b>Block</b>
+ *
+ *  In the block form, the current match string is passed to the block;
+ *  the block's return value becomes the replacing string:
+ *
+ *    s = '@'
+ *   '1234'.gsub(/\d/) {|match| s.succ! } # => "ABCD"
+ *
+ *  Special match variables such as <tt>$1</tt>, <tt>$2</tt>, <tt>$`</tt>,
+ *  <tt>$&</tt>, and <tt>$'</tt> are set appropriately.
+ *
  *
  *  == What's Here
  *
