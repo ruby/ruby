@@ -426,10 +426,6 @@ void run_runtime_tests(void)
 
 int main(int argc, char** argv)
 {
-    // suppress -Wunused-function
-    (void)alloc_code_page;
-    (void)free_code_page;
-
     run_assembler_tests();
     run_runtime_tests();
 

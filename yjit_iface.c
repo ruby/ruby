@@ -42,9 +42,6 @@ struct rb_yjit_options rb_yjit_opts;
 // How many code pages to allocate at once
 #define PAGES_PER_ALLOC 512
 
-// Current code page we are writing machine code into
-VALUE yjit_cur_code_page = Qfalse;
-
 static const rb_data_type_t yjit_block_type = {
     "YJIT/Block",
     {0, 0, 0, },
@@ -985,6 +982,9 @@ typedef struct code_page_struct
     struct code_page_struct* _next;
 
 } code_page_t;
+
+// Current code page we are writing machine code into
+static VALUE yjit_cur_code_page = Qfalse;
 
 // Head of the list of free code pages
 static code_page_t *code_page_freelist = NULL;
