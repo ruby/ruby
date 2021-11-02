@@ -147,7 +147,7 @@ static uint8_t *align_ptr(uint8_t *ptr, uint32_t multiple)
 }
 
 // Allocate a block of executable memory
-uint8_t *alloc_exec_mem(uint32_t mem_size)
+static uint8_t *alloc_exec_mem(uint32_t mem_size)
 {
 #ifndef _WIN32
     uint8_t *mem_block;

@@ -244,6 +244,9 @@ static inline x86opnd_t const_ptr_opnd(const void *ptr);
      sizeof(((struct_type*)0)->member_name[0]) * idx)  \
 )
 
+// Allocate executable memory
+static uint8_t *alloc_exec_mem(uint32_t mem_size);
+
 // Code block functions
 static inline void cb_init(codeblock_t *cb, uint8_t *mem_block, uint32_t mem_size);
 static inline void cb_align_pos(codeblock_t *cb, uint32_t multiple);

@@ -987,15 +987,15 @@ typedef struct code_page_struct
 } code_page_t;
 
 // Head of the list of free code pages
-code_page_t *freelist = NULL;
+static code_page_t *code_page_freelist = NULL;
 
 // Free a code page, add it to the free list
 static void
 yjit_code_page_free(void *voidp)
 {
     code_page_t* code_page = (code_page_t*)voidp;
-    code_page->_next = freelist;
-    freelist = code_page;
+    code_page->_next = code_page_freelist;
+    code_page_freelist = code_page;
 }
 
 // Custom type for interacting with the GC
@@ -1006,10 +1006,11 @@ static const rb_data_type_t yjit_code_page_type = {
 };
 
 // Allocate a code page and wrap it into a Ruby object owned by the GC
-VALUE rb_yjit_code_page_alloc(void)
+static VALUE
+rb_yjit_code_page_alloc(void)
 {
     // If the free list is empty
-    if (!freelist) {
+    if (!code_page_freelist) {
         // Allocate many pages at once
         uint8_t* code_chunk = alloc_exec_mem(PAGES_PER_ALLOC * CODE_PAGE_SIZE);
 
@@ -1019,13 +1020,13 @@ VALUE rb_yjit_code_page_alloc(void)
             code_page->mem_block = code_chunk + i * CODE_PAGE_SIZE;
             assert ((intptr_t)code_page->mem_block % CODE_PAGE_SIZE == 0);
             code_page->page_size = CODE_PAGE_SIZE;
-            code_page->_next = freelist;
-            freelist = code_page;
+            code_page->_next = code_page_freelist;
+            code_page_freelist = code_page;
         }
     }
 
-    code_page_t* code_page = freelist;
-    freelist = freelist->_next;
+    code_page_t* code_page = code_page_freelist;
+    code_page_freelist = code_page_freelist->_next;
 
     // Create a Ruby wrapper struct for the code page object
     VALUE wrapper = TypedData_Wrap_Struct(0, &yjit_code_page_type, code_page);
@@ -1044,7 +1045,8 @@ VALUE rb_yjit_code_page_alloc(void)
 }
 
 // Unwrap the Ruby object representing a code page
-code_page_t *rb_yjit_code_page_unwrap(VALUE cp_obj)
+static code_page_t *
+rb_yjit_code_page_unwrap(VALUE cp_obj)
 {
     code_page_t * code_page;
     TypedData_Get_Struct(cp_obj, code_page_t, &yjit_code_page_type, code_page);
@@ -1052,7 +1054,8 @@ code_page_t *rb_yjit_code_page_unwrap(VALUE cp_obj)
 }
 
 // Get the code page wrapper object for a code pointer
-VALUE rb_yjit_code_page_from_ptr(uint8_t* code_ptr)
+static VALUE
+rb_yjit_code_page_from_ptr(uint8_t* code_ptr)
 {
     VALUE* page_start = (VALUE*)((intptr_t)code_ptr & ~(CODE_PAGE_SIZE - 1));
     VALUE wrapper = *page_start;
@@ -1060,7 +1063,8 @@ VALUE rb_yjit_code_page_from_ptr(uint8_t* code_ptr)
 }
 
 // Get the inline code block corresponding to a code pointer
-void rb_yjit_get_cb(codeblock_t* cb, uint8_t* code_ptr)
+static void
+yjit_get_cb(codeblock_t* cb, uint8_t* code_ptr)
 {
     VALUE page_wrapper = rb_yjit_code_page_from_ptr(code_ptr);
     code_page_t *code_page = rb_yjit_code_page_unwrap(page_wrapper);
@@ -1075,7 +1079,8 @@ void rb_yjit_get_cb(codeblock_t* cb, uint8_t* code_ptr)
 }
 
 // Get the outlined code block corresponding to a code pointer
-void rb_yjit_get_ocb(codeblock_t* cb, uint8_t* code_ptr)
+static void
+yjit_get_ocb(codeblock_t* cb, uint8_t* code_ptr)
 {
     VALUE page_wrapper = rb_yjit_code_page_from_ptr(code_ptr);
     code_page_t *code_page = rb_yjit_code_page_unwrap(page_wrapper);
@@ -1090,7 +1095,7 @@ void rb_yjit_get_ocb(codeblock_t* cb, uint8_t* code_ptr)
 }
 
 // Get the current code page or allocate a new one
-VALUE
+static VALUE
 yjit_get_code_page(uint32_t cb_bytes_needed, uint32_t ocb_bytes_needed)
 {
     // If this is the first code page
