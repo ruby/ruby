@@ -170,7 +170,7 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     str = +"\000"; str[0] = 0b00000110.chr
     assert_equal(str, extv.value)
 
-    ext = extensions.value[0].value[2]  # subjetKeyIdentifier
+    ext = extensions.value[0].value[2]  # subjectKeyIdentifier
     assert_equal(OpenSSL::ASN1::Sequence, ext.class)
     assert_equal(2, ext.value.size)
     assert_equal(OpenSSL::ASN1::ObjectId, ext.value[0].class)

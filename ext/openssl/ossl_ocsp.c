@@ -803,7 +803,7 @@ add_status_convert_time(VALUE obj)
  * revocation, and must be one of OpenSSL::OCSP::REVOKED_STATUS_* constants.
  * _revocation_time_ is the time when the certificate is revoked.
  *
- * _this_update_ and _next_update_ indicate the time at which ths status is
+ * _this_update_ and _next_update_ indicate the time at which the status is
  * verified to be correct and the time at or before which newer information
  * will be available, respectively. _next_update_ is optional.
  *

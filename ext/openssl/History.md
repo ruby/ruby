@@ -113,7 +113,7 @@ Bug fixes
   [[GitHub #453]](https://github.com/ruby/openssl/pull/453)
 * Fix misuse of input record separator in `OpenSSL::Buffering` where it was
   for output.
-* Fix wrong interger casting in `OpenSSL::PKey::EC#dsa_verify_asn1`.
+* Fix wrong integer casting in `OpenSSL::PKey::EC#dsa_verify_asn1`.
   [[GitHub #460]](https://github.com/ruby/openssl/pull/460)
 * `extconf.rb` explicitly checks that OpenSSL's version number is 1.0.1 or
   newer but also less than 3.0. Ruby/OpenSSL v2.1.x and v2.2.x will not support
