@@ -23,7 +23,7 @@ static codegen_fn gen_fns[VM_INSTRUCTION_SIZE] = { NULL };
 // Map from method entries to code generation functions
 static st_table *yjit_method_codegen_table = NULL;
 
-// Code for exiting back to the interpreter from the leave insn
+// Code for exiting back to the interpreter from the leave instruction
 static void *leave_exit_code;
 
 // Code for full logic of returning from C method and exiting to the interpreter
@@ -303,22 +303,22 @@ _gen_counter_inc(codeblock_t *cb, int64_t *counter)
 }
 
 // Increment a counter then take an existing side exit.
-#define COUNTED_EXIT(side_exit, counter_name) _counted_side_exit(side_exit, &(yjit_runtime_counters . counter_name))
+#define COUNTED_EXIT(jit, side_exit, counter_name) _counted_side_exit(jit, side_exit, &(yjit_runtime_counters . counter_name))
 static uint8_t *
-_counted_side_exit(uint8_t *existing_side_exit, int64_t *counter)
+_counted_side_exit(jitstate_t* jit, uint8_t *existing_side_exit, int64_t *counter)
 {
     if (!rb_yjit_opts.gen_stats) return existing_side_exit;
 
-    uint8_t *start = cb_get_ptr(ocb, ocb->write_pos);
-    _gen_counter_inc(ocb, counter);
-    jmp_ptr(ocb, existing_side_exit);
+    uint8_t *start = cb_get_ptr(jit->ocb, jit->ocb->write_pos);
+    _gen_counter_inc(jit->ocb, counter);
+    jmp_ptr(jit->ocb, existing_side_exit);
     return start;
 }
 
 #else
 
 #define GEN_COUNTER_INC(cb, counter_name) ((void)0)
-#define COUNTED_EXIT(side_exit, counter_name) side_exit
+#define COUNTED_EXIT(jit, side_exit, counter_name) side_exit
 
 #endif // if YJIT_STATS
 
@@ -512,7 +512,7 @@ yjit_entry_prologue(codeblock_t *cb, const rb_iseq_t *iseq)
     cb_align_pos(cb, 64);
 
     uint8_t *code_ptr = cb_get_ptr(cb, cb->write_pos);
-    ADD_COMMENT(cb, "yjit prolog");
+    ADD_COMMENT(cb, "yjit entry");
 
     push(cb, REG_CFP);
     push(cb, REG_EC);
@@ -571,8 +571,8 @@ jit_jump_to_next_insn(jitstate_t *jit, const ctx_t *current_context)
 
     // We are at the end of the current instruction. Record the boundary.
     if (jit->record_boundary_patch_point) {
-        uint32_t exit_pos = yjit_gen_exit(jit->pc + insn_len(jit->opcode), &reset_depth, ocb);
-        record_global_inval_patch(cb, exit_pos);
+        uint32_t exit_pos = yjit_gen_exit(jit->pc + insn_len(jit->opcode), &reset_depth, jit->ocb);
+        record_global_inval_patch(jit->cb, exit_pos);
         jit->record_boundary_patch_point = false;
     }
 
@@ -1030,8 +1030,8 @@ gen_expandarray(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 
     // Move the array from the stack into REG0 and check that it's an array.
     mov(cb, REG0, array_opnd);
-    guard_object_is_heap(cb, REG0, ctx, COUNTED_EXIT(side_exit, expandarray_not_array));
-    guard_object_is_array(cb, REG0, REG1, ctx, COUNTED_EXIT(side_exit, expandarray_not_array));
+    guard_object_is_heap(cb, REG0, ctx, COUNTED_EXIT(jit, side_exit, expandarray_not_array));
+    guard_object_is_array(cb, REG0, REG1, ctx, COUNTED_EXIT(jit, side_exit, expandarray_not_array));
 
     // If we don't actually want any values, then just return.
     if (num == 0) {
@@ -1053,7 +1053,7 @@ gen_expandarray(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     // Only handle the case where the number of values in the array is greater
     // than or equal to the number of values requested.
     cmp(cb, REG1, imm_opnd(num));
-    jl_ptr(cb, COUNTED_EXIT(side_exit, expandarray_rhs_too_small));
+    jl_ptr(cb, COUNTED_EXIT(jit, side_exit, expandarray_rhs_too_small));
 
     // Load the address of the embedded array into REG1.
     // (struct RArray *)(obj)->as.ary
@@ -1663,7 +1663,7 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
             // Check that the slot is inside the extended table (num_slots > index)
             x86opnd_t num_slots = mem_opnd(32, REG0, offsetof(struct RObject, as.heap.numiv));
             cmp(cb, num_slots, imm_opnd(ivar_index));
-            jle_ptr(cb, COUNTED_EXIT(side_exit, getivar_idx_out_of_range));
+            jle_ptr(cb, COUNTED_EXIT(jit, side_exit, getivar_idx_out_of_range));
         }
 
         // Get a pointer to the extended table
@@ -1708,7 +1708,7 @@ gen_getinstancevariable(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 
     // Guard that the receiver has the same class as the one from compile time.
     mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, self));
-    guard_self_is_heap(cb, REG0, COUNTED_EXIT(side_exit, getivar_se_self_not_heap), ctx);
+    guard_self_is_heap(cb, REG0, COUNTED_EXIT(jit, side_exit, getivar_se_self_not_heap), ctx);
 
     jit_guard_known_klass(jit, ctx, comptime_val_klass, OPND_SELF, comptime_val, GETIVAR_MAX_DEPTH, side_exit);
 
@@ -2153,7 +2153,7 @@ gen_opt_aref(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         // Bail if idx is not a FIXNUM
         mov(cb, REG1, idx_opnd);
         test(cb, REG1, imm_opnd(RUBY_FIXNUM_FLAG));
-        jz_ptr(cb, COUNTED_EXIT(side_exit, oaref_arg_not_fixnum));
+        jz_ptr(cb, COUNTED_EXIT(jit, side_exit, oaref_arg_not_fixnum));
 
         // Call VALUE rb_ary_entry_internal(VALUE ary, long offset).
         // It never raises or allocates, so we don't need to write to cfp->pc.
@@ -2948,7 +2948,7 @@ jit_protected_callee_ancestry_guard(jitstate_t *jit, codeblock_t *cb, const rb_c
     // VALUE rb_obj_is_kind_of(VALUE obj, VALUE klass);
     call_ptr(cb, REG0, (void *)&rb_obj_is_kind_of);
     test(cb, RAX, RAX);
-    jz_ptr(cb, COUNTED_EXIT(side_exit, send_se_protected_check_failed));
+    jz_ptr(cb, COUNTED_EXIT(jit, side_exit, send_se_protected_check_failed));
 }
 
 // Return true when the codegen function generates code.
@@ -3195,7 +3195,7 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
     // REG_CFP <= REG_SP + 4 * sizeof(VALUE) + sizeof(rb_control_frame_t)
     lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * 4 + 2 * sizeof(rb_control_frame_t)));
     cmp(cb, REG_CFP, REG0);
-    jle_ptr(cb, COUNTED_EXIT(side_exit, send_se_cf_overflow));
+    jle_ptr(cb, COUNTED_EXIT(jit, side_exit, send_se_cf_overflow));
 
     // Points to the receiver operand on the stack
     x86opnd_t recv = ctx_stack_opnd(ctx, argc);
@@ -3597,7 +3597,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     ADD_COMMENT(cb, "stack overflow check");
     lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * (num_locals + iseq->body->stack_max) + 2 * sizeof(rb_control_frame_t)));
     cmp(cb, REG_CFP, REG0);
-    jle_ptr(cb, COUNTED_EXIT(side_exit, send_se_cf_overflow));
+    jle_ptr(cb, COUNTED_EXIT(jit, side_exit, send_se_cf_overflow));
 
     if (doing_kw_call) {
         // Here we're calling a method with keyword arguments and specifying
@@ -4126,7 +4126,7 @@ gen_invokesuper(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     x86opnd_t ep_me_opnd = mem_opnd(64, REG0, SIZEOF_VALUE * VM_ENV_DATA_INDEX_ME_CREF);
     jit_mov_gc_ptr(jit, cb, REG1, (VALUE)me);
     cmp(cb, ep_me_opnd, REG1);
-    jne_ptr(cb, COUNTED_EXIT(side_exit, invokesuper_me_changed));
+    jne_ptr(cb, COUNTED_EXIT(jit, side_exit, invokesuper_me_changed));
 
     if (!block) {
         // Guard no block passed
@@ -4139,7 +4139,7 @@ gen_invokesuper(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         // EP is in REG0 from above
         x86opnd_t ep_specval_opnd = mem_opnd(64, REG0, SIZEOF_VALUE * VM_ENV_DATA_INDEX_SPECVAL);
         cmp(cb, ep_specval_opnd, imm_opnd(VM_BLOCK_HANDLER_NONE));
-        jne_ptr(cb, COUNTED_EXIT(side_exit, invokesuper_block));
+        jne_ptr(cb, COUNTED_EXIT(jit, side_exit, invokesuper_block));
     }
 
     // Points to the receiver operand on the stack
@@ -4180,7 +4180,7 @@ gen_leave(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 
     // Check for interrupts
     ADD_COMMENT(cb, "check for interrupts");
-    yjit_check_ints(cb, COUNTED_EXIT(side_exit, leave_se_interrupt));
+    yjit_check_ints(cb, COUNTED_EXIT(jit, side_exit, leave_se_interrupt));
 
     // Load the return value
     mov(cb, REG0, ctx_stack_pop(ctx, 1));
@@ -4434,7 +4434,7 @@ gen_opt_getinlinecache(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 
         // Check the result. _Bool is one byte in SysV.
         test(cb, AL, AL);
-        jz_ptr(cb, COUNTED_EXIT(side_exit, opt_getinlinecache_miss));
+        jz_ptr(cb, COUNTED_EXIT(jit, side_exit, opt_getinlinecache_miss));
 
         // Push ic->entry->value
         mov(cb, REG0, const_ptr_opnd((void *)ic));
@@ -4487,7 +4487,7 @@ gen_getblockparamproxy(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 
     // Bail when VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM) is non zero
     test(cb, mem_opnd(64, REG0, SIZEOF_VALUE * VM_ENV_DATA_INDEX_FLAGS), imm_opnd(VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM));
-    jnz_ptr(cb, COUNTED_EXIT(side_exit, gbpp_block_param_modified));
+    jnz_ptr(cb, COUNTED_EXIT(jit, side_exit, gbpp_block_param_modified));
 
     // Load the block handler for the current frame
     // note, VM_ASSERT(VM_ENV_LOCAL_P(ep))
@@ -4498,7 +4498,7 @@ gen_getblockparamproxy(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 
     // Bail unless VM_BH_ISEQ_BLOCK_P(bh). This also checks for null.
     cmp(cb, REG0_8, imm_opnd(0x1));
-    jnz_ptr(cb, COUNTED_EXIT(side_exit, gbpp_block_handler_not_iseq));
+    jnz_ptr(cb, COUNTED_EXIT(jit, side_exit, gbpp_block_handler_not_iseq));
 
     // Push rb_block_param_proxy. It's a root, so no need to use jit_mov_gc_ptr.
     mov(cb, REG0, const_ptr_opnd((void *)rb_block_param_proxy));

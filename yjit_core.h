@@ -12,11 +12,10 @@
 
 // Scratch registers used by YJIT
 #define REG0 RAX
-#define REG1 RCX
 #define REG0_32 EAX
-#define REG1_32 ECX
-
 #define REG0_8 AL
+#define REG1 RCX
+#define REG1_32 ECX
 
 // Maximum number of temp value types we keep track of
 #define MAX_TEMP_TYPES 8
