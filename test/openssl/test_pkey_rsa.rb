@@ -306,6 +306,12 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
 
     assert_equal asn1.to_der, rsa1024.to_der
     assert_equal pem, rsa1024.export
+
+    # Unknown PEM prepended
+    cert = issue_cert(OpenSSL::X509::Name.new([["CN", "nobody"]]), rsa1024, 1, [], nil, nil)
+    str = cert.to_text + cert.to_pem + rsa1024.to_pem
+    key = OpenSSL::PKey::RSA.new(str)
+    assert_same_rsa rsa1024, key
   end
 
   def test_RSAPrivateKey_encrypted
