@@ -620,7 +620,7 @@ yjit_gen_block(block_t *block, rb_execution_context_t *ec)
     };
 
     // Mark the start position of the block
-    block->start_pos = cb->write_pos;
+    block->start_addr = cb_get_write_ptr(cb);
 
     // For each instruction to compile
     for (;;) {
@@ -704,7 +704,7 @@ yjit_gen_block(block_t *block, rb_execution_context_t *ec)
     }
 
     // Mark the end position of the block
-    block->end_pos = cb->write_pos;
+    block->end_addr = cb_get_write_ptr(cb);
 
     // Store the index of the last instruction in the block
     block->end_idx = insn_idx;

@@ -60,6 +60,7 @@ yjit_iseq_pc_at_idx(const rb_iseq_t *iseq, uint32_t insn_idx)
 }
 
 // For debugging. Print the disassembly of an iseq.
+RBIMPL_ATTR_MAYBE_UNUSED()
 static void
 yjit_print_iseq(const rb_iseq_t *iseq)
 {
@@ -526,8 +527,7 @@ block_address(VALUE self)
 {
     block_t * block;
     TypedData_Get_Struct(self, block_t, &yjit_block_type, block);
-    uint8_t *code_addr = cb_get_ptr(cb, block->start_pos);
-    return LONG2NUM((intptr_t)code_addr);
+    return LONG2NUM((intptr_t)block->start_addr);
 }
 
 /* Get the machine code for YJIT::Block as a binary string */
@@ -538,8 +538,8 @@ block_code(VALUE self)
     TypedData_Get_Struct(self, block_t, &yjit_block_type, block);
 
     return (VALUE)rb_str_new(
-        (const char*)cb->mem_block + block->start_pos,
-        block->end_pos - block->start_pos
+        (const char*)block->start_addr,
+        block->end_addr - block->start_addr
     );
 }
 

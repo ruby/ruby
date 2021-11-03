@@ -241,8 +241,8 @@ typedef struct yjit_block_version
     ctx_t ctx;
 
     // Positions where the generated code starts and ends
-    uint32_t start_pos;
-    uint32_t end_pos;
+    uint8_t* start_addr;
+    uint8_t* end_addr;
 
     // List of incoming branches (from predecessors)
     branch_array_t incoming;
