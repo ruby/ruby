@@ -955,14 +955,6 @@ rb_yjit_iseq_free(const struct rb_iseq_constant_body *body)
     rb_darray_free(body->yjit_blocks);
 }
 
-
-
-
-
-
-
-
-
 // Struct representing a code page
 typedef struct code_page_struct
 {
@@ -1126,17 +1118,6 @@ yjit_get_code_page(uint32_t cb_bytes_needed, uint32_t ocb_bytes_needed)
 
     return yjit_cur_code_page;
 }
-
-
-
-
-
-
-
-
-
-
-
 
 bool
 rb_yjit_enabled_p(void)
