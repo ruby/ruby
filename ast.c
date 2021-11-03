@@ -369,9 +369,9 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_ARGSCAT:
       case NODE_ARGSPUSH:
       case NODE_BLOCK_PASS:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_body);      
+        return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_body);
       case NODE_WHEN:
-      case NODE_IN:      
+      case NODE_IN:
         return rb_ary_new_from_node_args(ast, 3, node->nd_head, node->nd_body, node->nd_next);
       case NODE_WHILE:
       case NODE_UNTIL:
