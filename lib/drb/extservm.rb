@@ -44,19 +44,21 @@ module DRb
       end
     end
 
-    def regist(name, ro)
+    def register(name, ro)
       synchronize do
         @servers[name] = ro
         @cond.signal
       end
       self
     end
+    alias regist register
 
-    def unregist(name)
+    def unregister(name)
       synchronize do
         @servers.delete(name)
       end
     end
+    alias unregist unregister
 
     private
     def invoke_thread
