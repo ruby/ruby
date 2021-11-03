@@ -20,7 +20,7 @@ RSpec.describe "bundle install with specific platforms" do
       ])
     end
 
-    it "understands that a non-plaform specific gem in a old lockfile doesn't necessarily mean installing the non-specific variant" do
+    it "understands that a non-platform specific gem in a old lockfile doesn't necessarily mean installing the non-specific variant" do
       setup_multiplatform_gem
 
       system_gems "bundler-2.1.4"
@@ -54,7 +54,7 @@ RSpec.describe "bundle install with specific platforms" do
       expect(the_bundle).to include_gem("google-protobuf 3.0.0.alpha.5.0.5.1 universal-darwin")
     end
 
-    it "understands that a non-plaform specific gem in a new lockfile locked only to RUBY doesn't necessarily mean installing the non-specific variant" do
+    it "understands that a non-platform specific gem in a new lockfile locked only to RUBY doesn't necessarily mean installing the non-specific variant" do
       setup_multiplatform_gem
 
       system_gems "bundler-2.1.4"

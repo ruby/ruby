@@ -367,14 +367,14 @@ where you can use personal OAuth tokens:
 
 Note that any configured credentials will be redacted by informative commands
 such as `bundle config list` or `bundle config get`, unless you use the
-`--parseable` flag. This is to avoid unintentially leaking credentials when
+`--parseable` flag. This is to avoid unintentionally leaking credentials when
 copy-pasting bundler output.
 
 Also note that to guarantee a sane mapping between valid environment variable
 names and valid host names, bundler makes the following transformations:
 
 * Any `-` characters in a host name are mapped to a triple dash (`___`) in the
-  corresponding enviroment variable.
+  corresponding environment variable.
 
 * Any `.` characters in a host name are mapped to a double dash (`__`) in the
   corresponding environment variable.
