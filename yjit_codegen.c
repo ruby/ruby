@@ -1359,6 +1359,45 @@ gen_setlocal_wc0(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     return YJIT_KEEP_COMPILING;
 }
 
+// Push Qtrue or Qfalse depending on whether the given keyword was supplied by
+// the caller
+static codegen_status_t
+gen_checkkeyword(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
+{
+    // When a keyword is unspecified past index 32, a hash will be used
+    // instead. This can only happen in iseqs taking more than 32 keywords.
+    if (jit->iseq->body->param.keyword->num >= 32) {
+        return YJIT_CANT_COMPILE;
+    }
+
+    // The EP offset to the undefined bits local
+    int32_t bits_offset = (int32_t)jit_get_arg(jit, 0);
+
+    // The index of the keyword we want to check
+    int32_t index = (int32_t)jit_get_arg(jit, 1);
+
+    // Load environment pointer EP
+    gen_get_ep(cb, REG0, 0);
+
+    // VALUE kw_bits = *(ep - bits);
+    x86opnd_t bits_opnd = mem_opnd(64, REG0, sizeof(VALUE) * -bits_offset);
+
+    // unsigned int b = (unsigned int)FIX2ULONG(kw_bits);
+    // if ((b & (0x01 << idx))) {
+    //
+    // We can skip the FIX2ULONG conversion by shifting the bit we test
+    int64_t bit_test = 0x01 << (index + 1);
+    test(cb, bits_opnd, imm_opnd(bit_test));
+    mov(cb, REG0, imm_opnd(Qfalse));
+    mov(cb, REG1, imm_opnd(Qtrue));
+    cmovz(cb, REG0, REG1);
+
+    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_IMM);
+    mov(cb, stack_ret, REG0);
+
+    return YJIT_KEEP_COMPILING;
+}
+
 static codegen_status_t
 gen_setlocal_generic(jitstate_t *jit, ctx_t *ctx, uint32_t local_idx, uint32_t level)
 {
@@ -4754,6 +4793,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(setinstancevariable), gen_setinstancevariable);
     yjit_reg_op(BIN(defined), gen_defined);
     yjit_reg_op(BIN(checktype), gen_checktype);
+    yjit_reg_op(BIN(checkkeyword), gen_checkkeyword);
     yjit_reg_op(BIN(opt_lt), gen_opt_lt);
     yjit_reg_op(BIN(opt_le), gen_opt_le);
     yjit_reg_op(BIN(opt_ge), gen_opt_ge);
