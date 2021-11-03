@@ -22,5 +22,9 @@ Net::HTTPRetriableCode    = Net::HTTPRedirection
 Net::HTTPClientErrorCode  = Net::HTTPClientError
 Net::HTTPFatalErrorCode   = Net::HTTPClientError
 Net::HTTPServerErrorCode  = Net::HTTPServerError
-Net::HTTPResponceReceiver = Net::HTTPResponse
+Net::HTTPResponseReceiver = Net::HTTPResponse
 
+module Net
+  HTTPResponceReceiver = HTTPResponse # Typo since 2001
+  deprecate_constant :HTTPResponceReceiver
+end
