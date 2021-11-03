@@ -34,7 +34,8 @@ it is ignored if smaller than the default width:
   t = Time.now
   t.strftime('%Y')   # => "2021"
   t.strftime('%8Y')  # => "00002021"
-  t.strftime('%20Y') # => "2021"
+  t.strftime('%0Y')  # => "2021"
+  t.strftime('%-1Y') # => "2021"
 
   t.strftime('%b')   # => "Oct"
   t.strftime('%6b')  # => "   Oct"
@@ -61,7 +62,7 @@ Examples:
 Flags for casing:
 
 - <tt>^</tt>: Upcase.
-- <tt>%</tt>: Change case.
+- <tt>#</tt>: Change case.
 
 Examples:
 
@@ -71,6 +72,10 @@ Examples:
   t.strftime('%P')  # => "pm"
   t.strftime('%^P') # => "PM"
   t.strftime('%#P') # => "PM"
+
+Flags may be combined:
+
+  t.strftime('%^-6b') # => "JAN"
 
 <b>Modifiers</b>
 
@@ -103,7 +108,8 @@ we follow tradition here and list each with a prefixed percent character.
 <em>Year</em>
 
 - <tt>%Y</tt>: Year with century; may be negative; at least four digits.
-- <tt>%C</tt>: 2-digit century; <tt>year / 100</tt>, rounded down.
+- <tt>%C</tt>: Century; <tt>year / 100</tt>, rounded down;
+  zero-padded to 2 digits if necessary.
 - <tt>%y</tt>: 2-digit year; <tt>year % 100</tt>.
 
 Examples:
@@ -117,8 +123,10 @@ Examples:
 
   t = Time.now        # => 2021-11-01 09:19:14.8958704 -0500
   t.strftime('%C')    # => "20"
-  t = Time.new(2099)  # => 2099-01-01 00:00:00 -0600
-  t.strftime('%C')    # => "20"
+  t = Time.new(10000) # => 10000-01-01 00:00:00 -0600
+  t.strftime('%C')    # => "100"
+  t = Time.new(1)     # => 0001-01-01 00:00:00 -0600
+  t.strftime('%C')    # => "00"
 
   t  = Time.now       # => 2021-11-01 09:21:41.0455507 -0500
   t.strftime('%y')    # => "21"
@@ -286,7 +294,10 @@ Examples:
 
   t.strftime('%G') # => "2021"
   t.strftime('%g') # => "21"
-  t.strftime('%V') # => "43"
+
+The week 1 of YYYY starts with a Monday and includes YYYY-01-04.
+The days in the year before the first week are in the last week of
+the previous year:
 
 - <tt>%V</tt>: ISO week number; range (1..53).
 - <tt>%U</tt>: ISO week number, week starting with Sunday; range (0..53).
@@ -306,7 +317,7 @@ These literal strings generate the specified characters into the output:
 - <tt>%t</tt>: Tab ("\t").
 - <tt>%%</tt>: Percent ("%").
 
-<em>Combination</em>
+<em>Combinations</em>
 
 \Date and time:
 
@@ -351,3 +362,52 @@ These literal strings generate the specified characters into the output:
 
     t.strftime('%T') # => "00:00:00"
     t.strftime('%X') # => "00:00:00"
+
+<b>Some Convenience Specifiers</b>
+
+  %Y%m%d           => 20071119                  Calendar date (basic)
+  %F               => 2007-11-19                Calendar date (extended)
+  %Y-%m            => 2007-11                   Calendar date, reduced accuracy, specific month
+  %Y               => 2007                      Calendar date, reduced accuracy, specific year
+  %C               => 20                        Calendar date, reduced accuracy, specific century
+  %Y%j             => 2007323                   Ordinal date (basic)
+  %Y-%j            => 2007-323                  Ordinal date (extended)
+  %GW%V%u          => 2007W471                  Week date (basic)
+  %G-W%V-%u        => 2007-W47-1                Week date (extended)
+  %GW%V            => 2007W47                   Week date, reduced accuracy, specific week (basic)
+  %G-W%V           => 2007-W47                  Week date, reduced accuracy, specific week (extended)
+  %H%M%S           => 083748                    Local time (basic)
+  %T               => 08:37:48                  Local time (extended)
+  %H%M             => 0837                      Local time, reduced accuracy, specific minute (basic)
+  %H:%M            => 08:37                     Local time, reduced accuracy, specific minute (extended)
+  %H               => 08                        Local time, reduced accuracy, specific hour
+  %H%M%S,%L        => 083748,000                Local time with decimal fraction, comma as decimal sign (basic)
+  %T,%L            => 08:37:48,000              Local time with decimal fraction, comma as decimal sign (extended)
+  %H%M%S.%L        => 083748.000                Local time with decimal fraction, full stop as decimal sign (basic)
+  %T.%L            => 08:37:48.000              Local time with decimal fraction, full stop as decimal sign (extended)
+  %H%M%S%z         => 083748-0600               Local time and the difference from UTC (basic)
+  %T%:z            => 08:37:48-06:00            Local time and the difference from UTC (extended)
+  %Y%m%dT%H%M%S%z  => 20071119T083748-0600      Date and time of day for calendar date (basic)
+  %FT%T%:z         => 2007-11-19T08:37:48-06:00 Date and time of day for calendar date (extended)
+  %Y%jT%H%M%S%z    => 2007323T083748-0600       Date and time of day for ordinal date (basic)
+  %Y-%jT%T%:z      => 2007-323T08:37:48-06:00   Date and time of day for ordinal date (extended)
+  %GW%V%uT%H%M%S%z => 2007W471T083748-0600      Date and time of day for week date (basic)
+  %G-W%V-%uT%T%:z  => 2007-W47-1T08:37:48-06:00 Date and time of day for week date (extended)
+  %Y%m%dT%H%M      => 20071119T0837             Calendar date and local time (basic)
+  %FT%R            => 2007-11-19T08:37          Calendar date and local time (extended)
+  %Y%jT%H%MZ       => 2007323T0837Z             Ordinal date and UTC of day (basic)
+  %Y-%jT%RZ        => 2007-323T08:37Z           Ordinal date and UTC of day (extended)
+  %GW%V%uT%H%M%z   => 2007W471T0837-0600        Week date and local time and difference from UTC (basic)
+  %G-W%V-%uT%R%:z  => 2007-W47-1T08:37-06:00    Week date and local time and difference from UTC (extended)
+
+<b>Locale Dependencies</b>
+
+This method is similar to the strftime() function defined in ISO C
+and POSIX.
+Several directives (%a, %A, %b, %B, %c, %p, %r, %x, %X, %E*, %O* and %Z)
+are locale dependent in the function.
+However, this method is locale independent.
+So, the result may differ even if the same format string is used in other
+systems such as C.
+It is good practice to avoid %x and %X because there are corresponding
+locale independent representations, %D and %T.
