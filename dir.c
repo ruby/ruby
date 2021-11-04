@@ -2937,7 +2937,15 @@ dir_glob_option_base(VALUE base)
 static int
 dir_glob_option_sort(VALUE sort)
 {
-    return (sort ? 0 : FNM_GLOB_NOSORT);
+    switch (sort) {
+      case Qtrue: case Qfalse:
+        break;
+      default:
+        rb_raise(rb_eArgError, "true or false is expected as sort: %+"PRIsVALUE,
+                 sort);
+    }
+
+    return sort != Qfalse ? 0 : FNM_GLOB_NOSORT;
 }
 
 static VALUE

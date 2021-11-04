@@ -176,6 +176,9 @@ class TestDir < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /nul-separated/) do
       Dir.glob(@root + "\0\0\0" + File.join(@root, "*"))
     end
+    assert_raise_with_message(ArgumentError, /true or false is expected as sort: nil/) do
+      Dir.glob(File.join(@root, "*"), sort: nil)
+    end
 
     assert_equal(("a".."z").step(2).map {|f| File.join(File.join(@root, f), "") },
                  Dir.glob(File.join(@root, "*/")))
