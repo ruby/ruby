@@ -182,6 +182,7 @@ class Gem::Specification < Gem::BasicSpecification
     @@default_value[k].nil?
   end
 
+  @@all = nil
   @@stubs = nil
   @@stubs_by_name = {}
 
@@ -748,7 +749,7 @@ class Gem::Specification < Gem::BasicSpecification
   attr_accessor :specification_version
 
   def self._all # :nodoc:
-    unless defined?(@@all) && @@all
+    unless @@all
       @@all = stubs.map(&:to_spec)
 
       # After a reset, make sure already loaded specs
