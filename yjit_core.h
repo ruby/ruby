@@ -12,11 +12,10 @@
 
 // Scratch registers used by YJIT
 #define REG0 RAX
-#define REG1 RCX
 #define REG0_32 EAX
-#define REG1_32 ECX
-
 #define REG0_8 AL
+#define REG1 RCX
+#define REG1_32 ECX
 
 // Maximum number of temp value types we keep track of
 #define MAX_TEMP_TYPES 8
@@ -193,8 +192,8 @@ typedef struct yjit_branch_entry
     struct yjit_block_version *block;
 
     // Positions where the generated code starts and ends
-    uint32_t start_pos;
-    uint32_t end_pos;
+    uint8_t* start_addr;
+    uint8_t* end_addr;
 
     // Context right after the branch instruction
     ctx_t src_ctx;
@@ -242,8 +241,8 @@ typedef struct yjit_block_version
     ctx_t ctx;
 
     // Positions where the generated code starts and ends
-    uint32_t start_pos;
-    uint32_t end_pos;
+    uint8_t* start_addr;
+    uint8_t* end_addr;
 
     // List of incoming branches (from predecessors)
     branch_array_t incoming;
@@ -258,9 +257,6 @@ typedef struct yjit_block_version
     // CME dependencies of this block, to help to remove all pointers to this
     // block in the system.
     cme_dependency_array_t cme_dependencies;
-
-    // Code page this block lives on
-    VALUE code_page;
 
     // Index one past the last instruction in the iseq
     uint32_t end_idx;

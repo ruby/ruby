@@ -147,7 +147,7 @@ static uint8_t *align_ptr(uint8_t *ptr, uint32_t multiple)
 }
 
 // Allocate a block of executable memory
-uint8_t *alloc_exec_mem(uint32_t mem_size)
+static uint8_t *alloc_exec_mem(uint32_t mem_size)
 {
 #ifndef _WIN32
     uint8_t *mem_block;
@@ -219,41 +219,6 @@ uint8_t *alloc_exec_mem(uint32_t mem_size)
     // Windows not supported for now
     return NULL;
 #endif
-}
-
-// Head of the list of free code pages
-static code_page_t *freelist = NULL;
-
-// Allocate a single code page from a pool of free pages
-code_page_t *alloc_code_page(void)
-{
-    // If the free list is empty
-    if (!freelist) {
-        // Allocate many pages at once
-        uint8_t *code_chunk = alloc_exec_mem(PAGES_PER_ALLOC * CODE_PAGE_SIZE);
-
-        // Do this in reverse order so we allocate our pages in order
-        for (int i = PAGES_PER_ALLOC - 1; i >= 0; --i) {
-            code_page_t *code_page = malloc(sizeof(code_page_t));
-            code_page->mem_block = code_chunk + i * CODE_PAGE_SIZE;
-            assert ((intptr_t)code_page->mem_block % CODE_PAGE_SIZE == 0);
-            code_page->page_size = CODE_PAGE_SIZE;
-            code_page->_next = freelist;
-            freelist = code_page;
-        }
-    }
-
-    code_page_t *free_page = freelist;
-    freelist = freelist->_next;
-
-    return free_page;
-}
-
-// Put a code page back into the allocation pool
-void free_code_page(code_page_t *code_page)
-{
-    code_page->_next = freelist;
-    freelist = code_page;
 }
 
 // Initialize a code block object
