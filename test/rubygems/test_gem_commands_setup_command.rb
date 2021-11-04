@@ -14,9 +14,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   def setup
     super
 
-    @install_dir = File.join @tempdir, 'install'
     @cmd = Gem::Commands::SetupCommand.new
-    @cmd.options[:prefix] = @install_dir
 
     filelist = %w[
       bin/gem
@@ -269,7 +267,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   end
 
   def test_remove_old_lib_files
-    lib                   = File.join @install_dir, 'lib'
+    lib                   = RbConfig::CONFIG["sitelibdir"]
     lib_rubygems          = File.join lib, 'rubygems'
     lib_bundler           = File.join lib, 'bundler'
     lib_rubygems_defaults = File.join lib_rubygems, 'defaults'
@@ -300,7 +298,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   end
 
   def test_remove_old_man_files
-    man = File.join @install_dir, 'man'
+    man = File.join RbConfig::CONFIG['mandir'], 'man'
 
     ruby_1             = File.join man, 'man1', 'ruby.1'
     bundle_b_1         = File.join man, 'man1', 'bundle-b.1'
@@ -406,14 +404,14 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   end
 
   def default_gem_bin_path
-    File.join @install_dir, 'bin', 'gem'
+    File.join RbConfig::CONFIG['bindir'], 'gem'
   end
 
   def default_bundle_bin_path
-    File.join @install_dir, 'bin', 'bundle'
+    File.join RbConfig::CONFIG['bindir'], 'bundle'
   end
 
   def default_bundler_bin_path
-    File.join @install_dir, 'bin', 'bundler'
+    File.join RbConfig::CONFIG['bindir'], 'bundler'
   end
 end unless Gem.java_platform?

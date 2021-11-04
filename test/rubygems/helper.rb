@@ -397,6 +397,14 @@ class Gem::TestCase < Test::Unit::TestCase
     @orig_bindir = RbConfig::CONFIG["bindir"]
     RbConfig::CONFIG["bindir"] = File.join @gemhome, "bin"
 
+    @orig_sitelibdir = RbConfig::CONFIG["sitelibdir"]
+    new_sitelibdir = @orig_sitelibdir.sub(RbConfig::CONFIG["prefix"], @gemhome)
+    $LOAD_PATH.insert(Gem.load_path_insert_index, new_sitelibdir)
+    RbConfig::CONFIG["sitelibdir"] = new_sitelibdir
+
+    @orig_mandir = RbConfig::CONFIG["mandir"]
+    RbConfig::CONFIG["mandir"] = File.join @gemhome, "share", "man"
+
     Gem::Specification.unresolved_deps.clear
     Gem.use_paths(@gemhome)
 
@@ -468,6 +476,8 @@ class Gem::TestCase < Test::Unit::TestCase
 
     Gem.ruby = @orig_ruby if @orig_ruby
 
+    RbConfig::CONFIG['mandir'] = @orig_mandir
+    RbConfig::CONFIG['sitelibdir'] = @orig_sitelibdir
     RbConfig::CONFIG['bindir'] = @orig_bindir
 
     Gem.instance_variable_set :@default_specifications_dir, nil
