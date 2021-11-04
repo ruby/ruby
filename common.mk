@@ -3857,6 +3857,7 @@ debug_counter.$(OBJEXT): {$(VPATH)}thread_native.h
 dir.$(OBJEXT): $(hdrdir)/ruby.h
 dir.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 dir.$(OBJEXT): $(top_srcdir)/internal/array.h
+dir.$(OBJEXT): $(top_srcdir)/internal/class.h
 dir.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 dir.$(OBJEXT): $(top_srcdir)/internal/dir.h
 dir.$(OBJEXT): $(top_srcdir)/internal/encoding.h
@@ -3864,6 +3865,7 @@ dir.$(OBJEXT): $(top_srcdir)/internal/error.h
 dir.$(OBJEXT): $(top_srcdir)/internal/file.h
 dir.$(OBJEXT): $(top_srcdir)/internal/gc.h
 dir.$(OBJEXT): $(top_srcdir)/internal/io.h
+dir.$(OBJEXT): $(top_srcdir)/internal/object.h
 dir.$(OBJEXT): $(top_srcdir)/internal/serial.h
 dir.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 dir.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -3887,6 +3889,7 @@ dir.$(OBJEXT): {$(VPATH)}dir.rbinc
 dir.$(OBJEXT): {$(VPATH)}encindex.h
 dir.$(OBJEXT): {$(VPATH)}encoding.h
 dir.$(OBJEXT): {$(VPATH)}id.h
+dir.$(OBJEXT): {$(VPATH)}id_table.h
 dir.$(OBJEXT): {$(VPATH)}intern.h
 dir.$(OBJEXT): {$(VPATH)}internal.h
 dir.$(OBJEXT): {$(VPATH)}internal/anyargs.h
