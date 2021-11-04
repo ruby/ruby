@@ -182,14 +182,19 @@ class Gem::Specification < Gem::BasicSpecification
     @@default_value[k].nil?
   end
 
-  @@all = nil
-  @@stubs = nil
-  @@stubs_by_name = {}
+  def self.clear_specs # :nodoc:
+    @@all = nil
+    @@stubs = nil
+    @@stubs_by_name = {}
+    @@spec_with_requirable_file = {}
+    @@active_stub_with_requirable_file = {}
+  end
+  private_class_method :clear_specs
+
+  clear_specs
 
   # Sentinel object to represent "not found" stubs
   NOT_FOUND = Struct.new(:to_spec, :this).new # :nodoc:
-  @@spec_with_requirable_file = {}
-  @@active_stub_with_requirable_file = {}
 
   # Tracking removed method calls to warn users during build time.
   REMOVED_METHODS = [:rubyforge_project=].freeze # :nodoc:
@@ -1223,11 +1228,7 @@ class Gem::Specification < Gem::BasicSpecification
   def self.reset
     @@dirs = nil
     Gem.pre_reset_hooks.each {|hook| hook.call }
-    @@all = nil
-    @@stubs = nil
-    @@stubs_by_name = {}
-    @@spec_with_requirable_file = {}
-    @@active_stub_with_requirable_file = {}
+    clear_specs
     clear_load_cache
     unresolved = unresolved_deps
     unless unresolved.empty?
