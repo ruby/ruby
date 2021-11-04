@@ -1294,6 +1294,15 @@ void lea(codeblock_t *cb, x86opnd_t dst, x86opnd_t src)
     cb_write_rm(cb, false, true, dst, src, 0xFF, 1, 0x8D);
 }
 
+// Does this number fit in 32 bits and the same if you zero extend it to 64 bit?
+// If the sign bit is clear, sign extension and zero extension yield the same
+// result.
+static bool
+zero_extendable_32bit(uint64_t number)
+{
+    return number <= UINT32_MAX && (number & (1ull << 31ull)) == 0;
+}
+
 /// mov - Data move operation
 void mov(codeblock_t *cb, x86opnd_t dst, x86opnd_t src)
 {
@@ -1310,14 +1319,27 @@ void mov(codeblock_t *cb, x86opnd_t dst, x86opnd_t src)
                 unsig_imm_size(src.as.imm) <= dst.num_bits
             );
 
-            if (dst.num_bits == 16)
-                cb_write_byte(cb, 0x66);
-            if (rex_needed(dst) || dst.num_bits == 64)
-                cb_write_rex(cb, dst.num_bits == 64, 0, 0, dst.as.reg.reg_no);
+            // In case the source immediate could be zero extended to be 64
+            // bit, we can use the 32-bit operands version of the instruction.
+            // For example, we can turn mov(rax, 0x34) into the equivalent
+            // mov(eax, 0x34).
+            if (dst.num_bits == 64 && zero_extendable_32bit(src.as.unsig_imm)) {
+                if (rex_needed(dst))
+                    cb_write_rex(cb, false, 0, 0, dst.as.reg.reg_no);
+                cb_write_opcode(cb, 0xB8, dst);
+                cb_write_int(cb, src.as.imm, 32);
+            }
+            else {
+                if (dst.num_bits == 16)
+                    cb_write_byte(cb, 0x66);
 
-            cb_write_opcode(cb, (dst.num_bits == 8)? 0xB0:0xB8, dst);
+                if (rex_needed(dst) || dst.num_bits == 64)
+                    cb_write_rex(cb, dst.num_bits == 64, 0, 0, dst.as.reg.reg_no);
 
-            cb_write_int(cb, src.as.imm, dst.num_bits);
+                cb_write_opcode(cb, (dst.num_bits == 8)? 0xB0:0xB8, dst);
+
+                cb_write_int(cb, src.as.imm, dst.num_bits);
+            }
         }
 
         // M + Imm
