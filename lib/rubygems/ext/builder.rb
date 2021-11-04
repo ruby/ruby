@@ -30,7 +30,8 @@ class Gem::Ext::Builder
     end
     make_program = Shellwords.split(make_program)
 
-    destdir = 'DESTDIR=%s' % ENV['DESTDIR']
+    # The installation of the bundled gems is failed when DESTDIR is empty in mswin platform.
+    destdir = ENV['DESTDIR'] ? 'DESTDIR=%s' % ENV['DESTDIR'] : ''
 
     ['clean', '', 'install'].each do |target|
       # Pass DESTDIR via command line to override what's in MAKEFLAGS
