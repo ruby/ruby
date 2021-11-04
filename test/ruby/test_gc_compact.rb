@@ -4,7 +4,7 @@ require 'fiddle'
 require 'etc'
 
 if RUBY_PLATFORM =~ /s390x/
-  puts "Currently, it is known that the compaction does not work well on s390x; contribution is welcome https://github.com/ruby/ruby/pull/XXXX"
+  puts "Currently, it is known that the compaction does not work well on s390x; contribution is welcome https://github.com/ruby/ruby/pull/5077"
   return
 end
 
