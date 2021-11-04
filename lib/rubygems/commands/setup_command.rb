@@ -437,7 +437,6 @@ By default, this RubyGems will install gem as:
   end
 
   def generate_default_man_dir
-    install_destdir = options[:destdir]
     prefix = options[:prefix]
 
     if prefix.empty?
@@ -447,15 +446,10 @@ By default, this RubyGems will install gem as:
       man_dir = File.join prefix, 'man'
     end
 
-    unless install_destdir.empty?
-      man_dir = prepend_destdir(man_dir)
-    end
-
-    man_dir
+    prepend_destdir_if_present(man_dir)
   end
 
   def generate_default_dirs
-    install_destdir = options[:destdir]
     prefix = options[:prefix]
     site_or_vendor = options[:site_or_vendor]
 
@@ -467,12 +461,7 @@ By default, this RubyGems will install gem as:
       bin_dir = File.join prefix, 'bin'
     end
 
-    unless install_destdir.empty?
-      lib_dir = prepend_destdir(lib_dir)
-      bin_dir = prepend_destdir(bin_dir)
-    end
-
-    [lib_dir, bin_dir]
+    [prepend_destdir_if_present(lib_dir), prepend_destdir_if_present(bin_dir)]
   end
 
   def files_in(dir)
@@ -617,6 +606,13 @@ abort "#{deprecation_message}"
   end
 
   private
+
+  def prepend_destdir_if_present(path)
+    destdir = options[:destdir]
+    return path if destdir.empty?
+
+    prepend_destdir(path)
+  end
 
   def prepend_destdir(path)
     File.join(options[:destdir], path.gsub(/^[a-zA-Z]:/, ''))
