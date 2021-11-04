@@ -152,8 +152,7 @@ By default, this RubyGems will install gem as:
     install_destdir = options[:destdir]
 
     unless install_destdir.empty?
-      ENV['GEM_HOME'] ||= File.join(install_destdir,
-                                    Gem.default_dir.gsub(/^[a-zA-Z]:/, ''))
+      ENV['GEM_HOME'] ||= prepend_destdir(Gem.default_dir)
     end
 
     check_ruby_version
@@ -166,8 +165,8 @@ By default, this RubyGems will install gem as:
     end
     extend MakeDirs
 
-    lib_dir, bin_dir = make_destination_dirs install_destdir
-    man_dir = generate_default_man_dir install_destdir
+    lib_dir, bin_dir = make_destination_dirs
+    man_dir = generate_default_man_dir
 
     install_lib lib_dir
 
@@ -424,11 +423,11 @@ By default, this RubyGems will install gem as:
     say "Bundler #{bundler_spec.version} installed"
   end
 
-  def make_destination_dirs(install_destdir)
+  def make_destination_dirs
     lib_dir, bin_dir = Gem.default_rubygems_dirs
 
     unless lib_dir
-      lib_dir, bin_dir = generate_default_dirs(install_destdir)
+      lib_dir, bin_dir = generate_default_dirs
     end
 
     mkdir_p lib_dir, :mode => 0755
@@ -437,7 +436,8 @@ By default, this RubyGems will install gem as:
     return lib_dir, bin_dir
   end
 
-  def generate_default_man_dir(install_destdir)
+  def generate_default_man_dir
+    install_destdir = options[:destdir]
     prefix = options[:prefix]
 
     if prefix.empty?
@@ -448,13 +448,14 @@ By default, this RubyGems will install gem as:
     end
 
     unless install_destdir.empty?
-      man_dir = File.join install_destdir, man_dir.gsub(/^[a-zA-Z]:/, '')
+      man_dir = prepend_destdir(man_dir)
     end
 
     man_dir
   end
 
-  def generate_default_dirs(install_destdir)
+  def generate_default_dirs
+    install_destdir = options[:destdir]
     prefix = options[:prefix]
     site_or_vendor = options[:site_or_vendor]
 
@@ -467,8 +468,8 @@ By default, this RubyGems will install gem as:
     end
 
     unless install_destdir.empty?
-      lib_dir = File.join install_destdir, lib_dir.gsub(/^[a-zA-Z]:/, '')
-      bin_dir = File.join install_destdir, bin_dir.gsub(/^[a-zA-Z]:/, '')
+      lib_dir = prepend_destdir(lib_dir)
+      bin_dir = prepend_destdir(bin_dir)
     end
 
     [lib_dir, bin_dir]
@@ -616,6 +617,10 @@ abort "#{deprecation_message}"
   end
 
   private
+
+  def prepend_destdir(path)
+    File.join(options[:destdir], path.gsub(/^[a-zA-Z]:/, ''))
+  end
 
   def install_file_list(files, dest_dir)
     files.each do |file|
