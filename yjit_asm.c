@@ -1294,7 +1294,7 @@ void lea(codeblock_t *cb, x86opnd_t dst, x86opnd_t src)
     cb_write_rm(cb, false, true, dst, src, 0xFF, 1, 0x8D);
 }
 
-// Does this number fit in 32 bits and the same if you zero extend it to 64 bit?
+// Does this number fit in 32 bits and stays the same if you zero extend it to 64 bit?
 // If the sign bit is clear, sign extension and zero extension yield the same
 // result.
 static bool
