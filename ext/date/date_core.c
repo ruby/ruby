@@ -6900,7 +6900,7 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
  *      %c - date and time (%a %b %e %T %Y)
  *      %D - Date (%m/%d/%y)
  *      %F - The ISO 8601 date format (%Y-%m-%d)
- *      %v - VMS date (%e-%b-%Y)
+ *      %v - VMS date (%e-%^b-%Y)
  *      %x - Same as %D
  *      %X - Same as %T
  *      %r - 12-hour time (%I:%M:%S %p)
@@ -8380,7 +8380,7 @@ dt_lite_to_s(VALUE self)
  *      %c - date and time (%a %b %e %T %Y)
  *      %D - Date (%m/%d/%y)
  *      %F - The ISO 8601 date format (%Y-%m-%d)
- *      %v - VMS date (%e-%b-%Y)
+ *      %v - VMS date (%e-%^b-%Y)
  *      %x - Same as %D
  *      %X - Same as %T
  *      %r - 12-hour time (%I:%M:%S %p)
