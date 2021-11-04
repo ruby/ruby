@@ -102,12 +102,8 @@ class Gem::Specification < Gem::BasicSpecification
   today = Time.now.utc
   TODAY = Time.utc(today.year, today.month, today.day) # :nodoc:
 
-  # rubocop:disable Style/MutableConstant
-  LOAD_CACHE = {} # :nodoc:
-  # rubocop:enable Style/MutableConstant
-  LOAD_CACHE_MUTEX = Thread::Mutex.new
-
-  private_constant :LOAD_CACHE if defined? private_constant
+  @load_cache = {} # :nodoc:
+  @load_cache_mutex = Thread::Mutex.new
 
   VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/.freeze # :nodoc:
 
@@ -758,8 +754,8 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   def self.clear_load_cache # :nodoc:
-    LOAD_CACHE_MUTEX.synchronize do
-      LOAD_CACHE.clear
+    @load_cache_mutex.synchronize do
+      @load_cache.clear
     end
   end
   private_class_method :clear_load_cache
@@ -1110,7 +1106,7 @@ class Gem::Specification < Gem::BasicSpecification
   def self.load(file)
     return unless file
 
-    _spec = LOAD_CACHE_MUTEX.synchronize { LOAD_CACHE[file] }
+    _spec = @load_cache_mutex.synchronize { @load_cache[file] }
     return _spec if _spec
 
     file = file.dup.tap(&Gem::UNTAINT)
@@ -1125,12 +1121,12 @@ class Gem::Specification < Gem::BasicSpecification
 
       if Gem::Specification === _spec
         _spec.loaded_from = File.expand_path file.to_s
-        LOAD_CACHE_MUTEX.synchronize do
-          prev = LOAD_CACHE[file]
+        @load_cache_mutex.synchronize do
+          prev = @load_cache[file]
           if prev
             _spec = prev
           else
-            LOAD_CACHE[file] = _spec
+            @load_cache[file] = _spec
           end
         end
         return _spec
