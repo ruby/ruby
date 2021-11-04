@@ -140,13 +140,13 @@ class Dir
   # paths.
   #
   # The results which matched single wildcard or character set are sorted in
-  # binary ascending order, unless false is given as the optional +sort+
+  # binary ascending order, unless +false+ is given as the optional +sort+
   # keyword argument.  The order of an Array of pattern strings and braces
   # are preserved.
   #
   # Note that the pattern is not a regexp, it's closer to a shell glob.
   # See File::fnmatch for the meaning of the +flags+ parameter.
-  # Case sensitivity depends on your system (File::FNM_CASEFOLD is ignored).
+  # Case sensitivity depends on your system (+File::FNM_CASEFOLD+ is ignored).
   #
   # <code>*</code>::
   #   Matches any file. Can be restricted by other values in the glob.
