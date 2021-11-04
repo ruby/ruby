@@ -257,35 +257,32 @@ By default, this RubyGems will install gem as:
       say "Installing #{tool} executable" if @verbose
 
       Dir.chdir path do
-        bin_files = Dir['*']
+        bin_file = "gem"
 
-        bin_files -= %w[update_rubygems]
+        dest_file = target_bin_path(bin_dir, bin_file)
+        bin_tmp_file = File.join Dir.tmpdir, "#{bin_file}.#{$$}"
 
-        bin_files.each do |bin_file|
-          dest_file = target_bin_path(bin_dir, bin_file)
-          bin_tmp_file = File.join Dir.tmpdir, "#{bin_file}.#{$$}"
+        begin
+          bin = File.readlines bin_file
+          bin[0] = shebang
 
-          begin
-            bin = File.readlines bin_file
-            bin[0] = shebang
-
-            File.open bin_tmp_file, 'w' do |fp|
-              fp.puts bin.join
-            end
-
-            install bin_tmp_file, dest_file, :mode => prog_mode
-            bin_file_names << dest_file
-          ensure
-            rm bin_tmp_file
+          File.open bin_tmp_file, 'w' do |fp|
+            fp.puts bin.join
           end
 
-          next unless Gem.win_platform?
+          install bin_tmp_file, dest_file, :mode => prog_mode
+          bin_file_names << dest_file
+        ensure
+          rm bin_tmp_file
+        end
 
-          begin
-            bin_cmd_file = File.join Dir.tmpdir, "#{bin_file}.bat"
+        next unless Gem.win_platform?
 
-            File.open bin_cmd_file, 'w' do |file|
-              file.puts <<-TEXT
+        begin
+          bin_cmd_file = File.join Dir.tmpdir, "#{bin_file}.bat"
+
+          File.open bin_cmd_file, 'w' do |file|
+            file.puts <<-TEXT
   @ECHO OFF
   IF NOT "%~f0" == "~f0" GOTO :WinNT
   @"#{File.basename(Gem.ruby).chomp('"')}" "#{dest_file}" %1 %2 %3 %4 %5 %6 %7 %8 %9
@@ -293,12 +290,11 @@ By default, this RubyGems will install gem as:
   :WinNT
   @"#{File.basename(Gem.ruby).chomp('"')}" "%~dpn0" %*
   TEXT
-            end
-
-            install bin_cmd_file, "#{dest_file}.bat", :mode => prog_mode
-          ensure
-            rm bin_cmd_file
           end
+
+          install bin_cmd_file, "#{dest_file}.bat", :mode => prog_mode
+        ensure
+          rm bin_cmd_file
         end
       end
     end
