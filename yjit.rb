@@ -149,6 +149,10 @@ module RubyVM::YJIT
     Primitive.cexpr! 'rb_yjit_enabled_p() ? Qtrue : Qfalse'
   end
 
+  def self.simulate_oom!
+    Primitive.simulate_oom_bang
+  end
+
   # Avoid calling a method here to not interfere with compilation tests
   if Primitive.yjit_stats_enabled_p
     at_exit { _print_stats }

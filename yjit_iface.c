@@ -115,12 +115,13 @@ struct yjit_root_struct {
 static st_table *blocks_assuming_bops;
 
 static bool
-assume_bop_not_redefined(block_t *block, int redefined_flag, enum ruby_basic_operators bop)
+assume_bop_not_redefined(jitstate_t *jit, int redefined_flag, enum ruby_basic_operators bop)
 {
     if (BASIC_OP_UNREDEFINED_P(bop, redefined_flag)) {
-        if (blocks_assuming_bops) {
-            st_insert(blocks_assuming_bops, (st_data_t)block, 0);
-        }
+        RUBY_ASSERT(blocks_assuming_bops);
+
+        jit_ensure_block_entry_exit(jit);
+        st_insert(blocks_assuming_bops, (st_data_t)jit->block, 0);
         return true;
     }
     else {
@@ -206,13 +207,17 @@ add_lookup_dependency_i(st_data_t *key, st_data_t *value, st_data_t data, int ex
 //
 // @raise NoMemoryError
 static void
-assume_method_lookup_stable(VALUE receiver_klass, const rb_callable_method_entry_t *cme, block_t *block)
+assume_method_lookup_stable(VALUE receiver_klass, const rb_callable_method_entry_t *cme, jitstate_t *jit)
 {
     RUBY_ASSERT(cme_validity_dependency);
     RUBY_ASSERT(method_lookup_dependency);
     RUBY_ASSERT(rb_callable_method_entry(receiver_klass, cme->called_id) == cme);
     RUBY_ASSERT_ALWAYS(RB_TYPE_P(receiver_klass, T_CLASS) || RB_TYPE_P(receiver_klass, T_ICLASS));
     RUBY_ASSERT_ALWAYS(!rb_objspace_garbage_object_p(receiver_klass));
+
+    jit_ensure_block_entry_exit(jit);
+
+    block_t *block = jit->block;
 
     cme_dependency_t cme_dep = { receiver_klass, (VALUE)cme };
     rb_darray_append(&block->cme_dependencies, cme_dep);
@@ -228,10 +233,13 @@ static st_table *blocks_assuming_single_ractor_mode;
 // Can raise NoMemoryError.
 RBIMPL_ATTR_NODISCARD()
 static bool
-assume_single_ractor_mode(block_t *block) {
+assume_single_ractor_mode(jitstate_t *jit)
+{
     if (rb_multi_ractor_p()) return false;
 
-    st_insert(blocks_assuming_single_ractor_mode, (st_data_t)block, 1);
+    jit_ensure_block_entry_exit(jit);
+
+    st_insert(blocks_assuming_single_ractor_mode, (st_data_t)jit->block, 1);
     return true;
 }
 
@@ -240,9 +248,10 @@ static st_table *blocks_assuming_stable_global_constant_state;
 // Assume that the global constant state has not changed since call to this function.
 // Can raise NoMemoryError.
 static void
-assume_stable_global_constant_state(block_t *block)
+assume_stable_global_constant_state(jitstate_t *jit)
 {
-    st_insert(blocks_assuming_stable_global_constant_state, (st_data_t)block, 1);
+    jit_ensure_block_entry_exit(jit);
+    st_insert(blocks_assuming_stable_global_constant_state, (st_data_t)jit->block, 1);
 }
 
 static int
@@ -816,6 +825,18 @@ reset_stats_bang(rb_execution_context_t *ec, VALUE self)
     memset(&exit_op_count, 0, sizeof(exit_op_count));
     memset(&yjit_runtime_counters, 0, sizeof(yjit_runtime_counters));
 #endif // if YJIT_STATS
+    return Qnil;
+}
+
+// Primitive for yjit.rb. For testing running out of executable memory
+static VALUE
+simulate_oom_bang(rb_execution_context_t *ec, VALUE self)
+{
+    if (RUBY_DEBUG && cb && ocb) {
+        // Only simulate in debug builds for paranoia.
+        cb_set_pos(cb, cb->mem_size-1);
+        cb_set_pos(ocb, ocb->mem_size-1);
+    }
     return Qnil;
 }
 

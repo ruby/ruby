@@ -405,6 +405,26 @@ yjit_side_exit(jitstate_t *jit, ctx_t *ctx)
     return jit->side_exit_for_pc;
 }
 
+// Ensure that there is an exit for the start of the block being compiled.
+// Block invalidation uses this exit.
+static void
+jit_ensure_block_entry_exit(jitstate_t *jit)
+{
+    block_t *block = jit->block;
+    if (block->entry_exit) return;
+
+    if (jit->insn_idx == block->blockid.idx) {
+        // We are compiling the first instruction in the block.
+        // Generate the exit with the cache in jitstate.
+        block->entry_exit = yjit_side_exit(jit, &block->ctx);
+    }
+    else {
+        VALUE *pc = yjit_iseq_pc_at_idx(block->blockid.iseq, block->blockid.idx);
+        uint32_t pos = yjit_gen_exit(pc, &block->ctx, ocb);
+        block->entry_exit = cb_get_ptr(ocb, pos);
+    }
+}
+
 // Generate a runtime guard that ensures the PC is at the start of the iseq,
 // otherwise take a side exit.  This is to handle the situation of optional
 // parameters.  When a function with optional parameters is called, the entry
@@ -630,7 +650,7 @@ yjit_gen_block(block_t *block, rb_execution_context_t *ec)
         RUBY_ASSERT(opcode >= 0 && opcode < VM_INSTRUCTION_SIZE);
 
         // opt_getinlinecache wants to be in a block all on its own. Cut the block short
-        // if we run into it. See gen_opt_getinlinecache for details.
+        // if we run into it. See gen_opt_getinlinecache() for details.
         if (opcode == BIN(opt_getinlinecache) && insn_idx > starting_insn_idx) {
             jit_jump_to_next_insn(&jit, ctx);
             break;
@@ -657,32 +677,24 @@ yjit_gen_block(block_t *block, rb_execution_context_t *ec)
 
         // Lookup the codegen function for this instruction
         codegen_fn gen_fn = gen_fns[opcode];
-        if (!gen_fn) {
-            // If we reach an unknown instruction,
-            // exit to the interpreter and stop compiling
-            yjit_gen_exit(jit.pc, ctx, cb);
-            break;
+        codegen_status_t status = YJIT_CANT_COMPILE;
+        if (gen_fn) {
+            if (0) {
+                fprintf(stderr, "compiling %d: %s\n", insn_idx, insn_name(opcode));
+                print_str(cb, insn_name(opcode));
+            }
+
+            // :count-placement:
+            // Count bytecode instructions that execute in generated code.
+            // Note that the increment happens even when the output takes side exit.
+            GEN_COUNTER_INC(cb, exec_instruction);
+
+            // Add a comment for the name of the YARV instruction
+            ADD_COMMENT(cb, insn_name(opcode));
+
+            // Call the code generation function
+            status = gen_fn(&jit, ctx, cb);
         }
-
-        if (0) {
-            fprintf(stderr, "compiling %d: %s\n", insn_idx, insn_name(opcode));
-            print_str(cb, insn_name(opcode));
-        }
-
-        // :count-placement:
-        // Count bytecode instructions that execute in generated code.
-        // Note that the increment happens even when the output takes side exit.
-        GEN_COUNTER_INC(cb, exec_instruction);
-
-        // Add a comment for the name of the YARV instruction
-        ADD_COMMENT(cb, insn_name(opcode));
-
-        // Call the code generation function
-        codegen_status_t status = gen_fn(&jit, ctx, cb);
-
-        // For now, reset the chain depth after each instruction as only the
-        // first instruction in the block can concern itself with the depth.
-        ctx->chain_depth = 0;
 
         // If we can't compile this instruction
         // exit to the interpreter and stop compiling
@@ -690,9 +702,19 @@ yjit_gen_block(block_t *block, rb_execution_context_t *ec)
             // TODO: if the codegen function makes changes to ctx and then return YJIT_CANT_COMPILE,
             // the exit this generates would be wrong. We could save a copy of the entry context
             // and assert that ctx is the same here.
-            yjit_gen_exit(jit.pc, ctx, cb);
+            uint32_t exit_off = yjit_gen_exit(jit.pc, ctx, cb);
+
+            // If this is the first instruction in the block, then we can use
+            // the exit for block->entry_exit.
+            if (insn_idx == block->blockid.idx) {
+                block->entry_exit = cb_get_ptr(cb, exit_off);
+            }
             break;
         }
+
+        // For now, reset the chain depth after each instruction as only the
+        // first instruction in the block can concern itself with the depth.
+        ctx->chain_depth = 0;
 
         // Move to the next instruction to compile
         insn_idx += insn_len(opcode);
@@ -1971,7 +1993,7 @@ gen_fixnum_cmp(jitstate_t *jit, ctx_t *ctx, cmov_fn cmov_op)
         // Note: we generate the side-exit before popping operands from the stack
         uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
-        if (!assume_bop_not_redefined(jit->block, INTEGER_REDEFINED_OP_FLAG, BOP_LT)) {
+        if (!assume_bop_not_redefined(jit, INTEGER_REDEFINED_OP_FLAG, BOP_LT)) {
             return YJIT_CANT_COMPILE;
         }
 
@@ -2036,7 +2058,7 @@ gen_equality_specialized(jitstate_t *jit, ctx_t *ctx, uint8_t *side_exit)
     x86opnd_t b_opnd = ctx_stack_opnd(ctx, 0);
 
     if (FIXNUM_P(comptime_a) && FIXNUM_P(comptime_b)) {
-        if (!assume_bop_not_redefined(jit->block, INTEGER_REDEFINED_OP_FLAG, BOP_EQ)) {
+        if (!assume_bop_not_redefined(jit, INTEGER_REDEFINED_OP_FLAG, BOP_EQ)) {
             // if overridden, emit the generic version
             return false;
         }
@@ -2059,7 +2081,7 @@ gen_equality_specialized(jitstate_t *jit, ctx_t *ctx, uint8_t *side_exit)
     }
     else if (CLASS_OF(comptime_a) == rb_cString &&
             CLASS_OF(comptime_b) == rb_cString) {
-        if (!assume_bop_not_redefined(jit->block, STRING_REDEFINED_OP_FLAG, BOP_EQ)) {
+        if (!assume_bop_not_redefined(jit, STRING_REDEFINED_OP_FLAG, BOP_EQ)) {
             // if overridden, emit the generic version
             return false;
         }
@@ -2164,7 +2186,7 @@ gen_opt_aref(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
     if (CLASS_OF(comptime_recv) == rb_cArray && RB_FIXNUM_P(comptime_idx)) {
-        if (!assume_bop_not_redefined(jit->block, ARRAY_REDEFINED_OP_FLAG, BOP_AREF)) {
+        if (!assume_bop_not_redefined(jit, ARRAY_REDEFINED_OP_FLAG, BOP_AREF)) {
             return YJIT_CANT_COMPILE;
         }
 
@@ -2212,7 +2234,7 @@ gen_opt_aref(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         return YJIT_END_BLOCK;
     }
     else if (CLASS_OF(comptime_recv) == rb_cHash) {
-        if (!assume_bop_not_redefined(jit->block, HASH_REDEFINED_OP_FLAG, BOP_AREF)) {
+        if (!assume_bop_not_redefined(jit, HASH_REDEFINED_OP_FLAG, BOP_AREF)) {
             return YJIT_CANT_COMPILE;
         }
 
@@ -2347,7 +2369,7 @@ gen_opt_and(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         // Note: we generate the side-exit before popping operands from the stack
         uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
-        if (!assume_bop_not_redefined(jit->block, INTEGER_REDEFINED_OP_FLAG, BOP_AND)) {
+        if (!assume_bop_not_redefined(jit, INTEGER_REDEFINED_OP_FLAG, BOP_AND)) {
             return YJIT_CANT_COMPILE;
         }
 
@@ -2391,7 +2413,7 @@ gen_opt_or(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         // Note: we generate the side-exit before popping operands from the stack
         uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
-        if (!assume_bop_not_redefined(jit->block, INTEGER_REDEFINED_OP_FLAG, BOP_OR)) {
+        if (!assume_bop_not_redefined(jit, INTEGER_REDEFINED_OP_FLAG, BOP_OR)) {
             return YJIT_CANT_COMPILE;
         }
 
@@ -2435,7 +2457,7 @@ gen_opt_minus(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         // Note: we generate the side-exit before popping operands from the stack
         uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
-        if (!assume_bop_not_redefined(jit->block, INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)) {
+        if (!assume_bop_not_redefined(jit, INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)) {
             return YJIT_CANT_COMPILE;
         }
 
@@ -2481,7 +2503,7 @@ gen_opt_plus(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         // Note: we generate the side-exit before popping operands from the stack
         uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
-        if (!assume_bop_not_redefined(jit->block, INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)) {
+        if (!assume_bop_not_redefined(jit, INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)) {
             return YJIT_CANT_COMPILE;
         }
 
@@ -2579,7 +2601,7 @@ gen_opt_empty_p(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 static codegen_status_t
 gen_opt_str_freeze(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
-    if (!assume_bop_not_redefined(jit->block, STRING_REDEFINED_OP_FLAG, BOP_FREEZE)) {
+    if (!assume_bop_not_redefined(jit, STRING_REDEFINED_OP_FLAG, BOP_FREEZE)) {
         return YJIT_CANT_COMPILE;
     }
 
@@ -2596,7 +2618,7 @@ gen_opt_str_freeze(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 static codegen_status_t
 gen_opt_str_uminus(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
-    if (!assume_bop_not_redefined(jit->block, STRING_REDEFINED_OP_FLAG, BOP_UMINUS)) {
+    if (!assume_bop_not_redefined(jit, STRING_REDEFINED_OP_FLAG, BOP_UMINUS)) {
         return YJIT_CANT_COMPILE;
     }
 
@@ -3965,7 +3987,7 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
 
     // Register block for invalidation
     RUBY_ASSERT(cme->called_id == mid);
-    assume_method_lookup_stable(comptime_recv_klass, cme, jit->block);
+    assume_method_lookup_stable(comptime_recv_klass, cme, jit);
 
     // To handle the aliased method case (VM_METHOD_TYPE_ALIAS)
     while (true) {
@@ -4191,8 +4213,8 @@ gen_invokesuper(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 
     // We need to assume that both our current method entry and the super
     // method entry we invoke remain stable
-    assume_method_lookup_stable(current_defined_class, me, jit->block);
-    assume_method_lookup_stable(comptime_superclass, cme, jit->block);
+    assume_method_lookup_stable(current_defined_class, me, jit);
+    assume_method_lookup_stable(comptime_superclass, cme, jit);
 
     // Method calls may corrupt types
     ctx_clear_local_types(ctx);
@@ -4482,6 +4504,10 @@ gen_opt_getinlinecache(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         return YJIT_CANT_COMPILE;
     }
 
+    // Make sure there is an exit for this block as the interpreter might want
+    // to invalidate this block from yjit_constant_ic_update().
+    jit_ensure_block_entry_exit(jit);
+
     if (ice->ic_cref) {
         // Cache is keyed on a certain lexical scope. Use the interpreter's cache.
         uint8_t *side_exit = yjit_side_exit(jit, ctx);
@@ -4506,11 +4532,11 @@ gen_opt_getinlinecache(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     else {
         // Optimize for single ractor mode.
         // FIXME: This leaks when st_insert raises NoMemoryError
-        if (!assume_single_ractor_mode(jit->block)) return YJIT_CANT_COMPILE;
+        if (!assume_single_ractor_mode(jit)) return YJIT_CANT_COMPILE;
 
         // Invalidate output code on any and all constant writes
         // FIXME: This leaks when st_insert raises NoMemoryError
-        assume_stable_global_constant_state(jit->block);
+        assume_stable_global_constant_state(jit);
 
         val_type_t type = yjit_type_of_value(ice->value);
         x86opnd_t stack_top = ctx_stack_push(ctx, type);

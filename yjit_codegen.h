@@ -10,6 +10,8 @@ typedef enum codegen_status {
 // Code generation function signature
 typedef codegen_status_t (*codegen_fn)(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb);
 
+static void jit_ensure_block_entry_exit(jitstate_t *jit);
+
 static uint8_t *yjit_entry_prologue(codeblock_t *cb, const rb_iseq_t *iseq);
 
 static void yjit_gen_block(block_t *block, rb_execution_context_t *ec);
