@@ -3711,6 +3711,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     x86opnd_t recv = ctx_stack_opnd(ctx, argc);
 
     // Store the updated SP on the current frame (pop arguments and receiver)
+    ADD_COMMENT(cb, "store caller sp");
     lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * -(argc + 1)));
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), REG0);
 
@@ -3733,6 +3734,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
         mov(cb, mem_opnd(64, REG0, sizeof(VALUE) * (i - num_locals - 3)), imm_opnd(Qnil));
     }
 
+    ADD_COMMENT(cb, "push env");
     // Put compile time cme into REG1. It's assumed to be valid because we are notified when
     // any cme we depend on become outdated. See rb_yjit_method_lookup_change().
     jit_mov_gc_ptr(jit, cb, REG1, (VALUE)cme);
@@ -3757,6 +3759,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     uint64_t frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
     mov(cb, mem_opnd(64, REG0, 8 * -1), imm_opnd(frame_type));
 
+    ADD_COMMENT(cb, "push callee CFP");
     // Allocate a new CFP (ec->cfp--)
     sub(cb, REG_CFP, imm_opnd(sizeof(rb_control_frame_t)));
     mov(cb, member_opnd(REG_EC, rb_execution_context_t, cfp), REG_CFP);
