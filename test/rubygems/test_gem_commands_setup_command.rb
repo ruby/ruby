@@ -259,6 +259,24 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     end
   end
 
+  def test_install_default_bundler_gem_with_destdir_and_prefix_flags
+    @cmd.extend FileUtils
+
+    destdir = File.join(@tempdir, 'foo')
+    bin_dir = File.join(destdir, 'bin')
+
+    @cmd.options[:destdir] = destdir
+    @cmd.options[:prefix] = "/"
+
+    @cmd.install_default_bundler_gem bin_dir
+
+    spec = Gem::Specification.load("bundler/bundler.gemspec")
+
+    spec.executables.each do |e|
+      assert_path_exist File.join destdir, 'gems', spec.full_name, spec.bindir, e
+    end
+  end
+
   def test_remove_old_lib_files
     lib                   = RbConfig::CONFIG["sitelibdir"]
     lib_rubygems          = File.join lib, 'rubygems'

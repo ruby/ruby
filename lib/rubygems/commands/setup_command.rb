@@ -360,7 +360,7 @@ By default, this RubyGems will install gem as:
   end
 
   def install_default_bundler_gem(bin_dir)
-    specs_dir = prepend_destdir_if_present(Gem.default_specifications_dir)
+    specs_dir = File.join(default_dir, "specifications", "default")
     mkdir_p specs_dir, :mode => 0755
 
     bundler_spec = Dir.chdir("bundler") { Gem::Specification.load("bundler.gemspec") }
@@ -388,7 +388,7 @@ By default, this RubyGems will install gem as:
     bundler_spec.instance_variable_set(:@base_dir, File.dirname(File.dirname(specs_dir)))
 
     # Remove gemspec that was same version of vendored bundler.
-    normal_gemspec = File.join(Gem.default_dir, "specifications", "bundler-#{bundler_spec.version}.gemspec")
+    normal_gemspec = File.join(default_dir, "specifications", "bundler-#{bundler_spec.version}.gemspec")
     if File.file? normal_gemspec
       File.delete normal_gemspec
     end
@@ -606,6 +606,18 @@ abort "#{deprecation_message}"
   end
 
   private
+
+  def default_dir
+    prefix = options[:prefix]
+
+    if prefix.empty?
+      dir = Gem.default_dir
+    else
+      dir = prefix
+    end
+
+    prepend_destdir_if_present(dir)
+  end
 
   def prepend_destdir_if_present(path)
     destdir = options[:destdir]
