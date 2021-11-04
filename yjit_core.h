@@ -192,8 +192,8 @@ typedef struct yjit_branch_entry
     struct yjit_block_version *block;
 
     // Positions where the generated code starts and ends
-    uint32_t start_pos;
-    uint32_t end_pos;
+    uint8_t* start_addr;
+    uint8_t* end_addr;
 
     // Context right after the branch instruction
     ctx_t src_ctx;
