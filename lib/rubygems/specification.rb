@@ -749,10 +749,7 @@ class Gem::Specification < Gem::BasicSpecification
   attr_accessor :specification_version
 
   def self._all # :nodoc:
-    unless @@all
-      @@all = Gem.loaded_specs.values | stubs.map(&:to_spec)
-    end
-    @@all
+    @@all ||= Gem.loaded_specs.values | stubs.map(&:to_spec)
   end
 
   def self._clear_load_cache # :nodoc:
