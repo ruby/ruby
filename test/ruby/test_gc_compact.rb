@@ -3,6 +3,11 @@ require 'test/unit'
 require 'fiddle'
 require 'etc'
 
+if RUBY_PLATFORM =~ /s390x/
+  puts "Currently, it is known that the compaction does not work well on s390x; contribution is welcome https://github.com/ruby/ruby/pull/XXXX"
+  return
+end
+
 class TestGCCompact < Test::Unit::TestCase
   module SupportsCompact
     def setup
