@@ -370,8 +370,7 @@ By default, this RubyGems will install gem as:
   end
 
   def install_default_bundler_gem(bin_dir)
-    specs_dir = Gem.default_specifications_dir
-    specs_dir = File.join(options[:destdir], specs_dir) unless Gem.win_platform?
+    specs_dir = prepend_destdir_if_present(Gem.default_specifications_dir)
     mkdir_p specs_dir, :mode => 0755
 
     bundler_spec = Dir.chdir("bundler") { Gem::Specification.load("bundler.gemspec") }
