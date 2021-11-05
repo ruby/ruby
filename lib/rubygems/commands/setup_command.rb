@@ -418,6 +418,7 @@ By default, this RubyGems will install gem as:
           force: options[:force],
           install_as_default: true,
           bin_dir: bin_dir,
+          install_dir: default_dir,
           wrappers: true
         ).install
       ensure
