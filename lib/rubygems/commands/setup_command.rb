@@ -149,12 +149,6 @@ By default, this RubyGems will install gem as:
   def execute
     @verbose = Gem.configuration.really_verbose
 
-    install_destdir = options[:destdir]
-
-    unless install_destdir.empty?
-      ENV['GEM_HOME'] ||= prepend_destdir(Gem.default_dir)
-    end
-
     check_ruby_version
 
     require 'fileutils'
