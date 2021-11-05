@@ -225,22 +225,20 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       f.puts 'echo "hello"'
     end
 
-    bindir(bin_dir) do
-      @cmd.options[:force] = true
+    @cmd.options[:force] = true
 
-      @cmd.install_default_bundler_gem bin_dir
+    @cmd.install_default_bundler_gem bin_dir
 
-      bundler_spec = Gem::Specification.load("bundler/bundler.gemspec")
-      default_spec_path = File.join(Gem.default_specifications_dir, "#{bundler_spec.full_name}.gemspec")
-      spec = Gem::Specification.load(default_spec_path)
+    bundler_spec = Gem::Specification.load("bundler/bundler.gemspec")
+    default_spec_path = File.join(Gem.default_specifications_dir, "#{bundler_spec.full_name}.gemspec")
+    spec = Gem::Specification.load(default_spec_path)
 
-      spec.executables.each do |e|
-        if Gem.win_platform?
-          assert_path_exist File.join(bin_dir, "#{e}.bat")
-        end
-
-        assert_path_exist File.join bin_dir, e
+    spec.executables.each do |e|
+      if Gem.win_platform?
+        assert_path_exist File.join(bin_dir, "#{e}.bat")
       end
+
+      assert_path_exist File.join bin_dir, e
     end
   end
 
@@ -249,18 +247,16 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
     bin_dir = File.join(@gemhome, 'bin')
 
-    bindir(bin_dir) do
-      destdir = File.join(@tempdir, 'foo')
+    destdir = File.join(@tempdir, 'foo')
 
-      @cmd.options[:destdir] = destdir
+    @cmd.options[:destdir] = destdir
 
-      @cmd.install_default_bundler_gem bin_dir
+    @cmd.install_default_bundler_gem bin_dir
 
-      spec = Gem::Specification.load("bundler/bundler.gemspec")
+    spec = Gem::Specification.load("bundler/bundler.gemspec")
 
-      spec.executables.each do |e|
-        assert_path_exist File.join destdir, @gemhome.gsub(/^[a-zA-Z]:/, ''), 'gems', spec.full_name, spec.bindir, e
-      end
+    spec.executables.each do |e|
+      assert_path_exist File.join destdir, @gemhome.gsub(/^[a-zA-Z]:/, ''), 'gems', spec.full_name, spec.bindir, e
     end
   end
 
