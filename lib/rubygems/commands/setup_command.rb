@@ -610,6 +610,7 @@ abort "#{deprecation_message}"
 
     args = %w[--all --only-plugins --silent]
     args << "--bindir=#{bindir}"
+    args << "--install-dir=#{default_dir}"
 
     command = Gem::Commands::PristineCommand.new
     command.invoke(*args)
