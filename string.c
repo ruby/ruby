@@ -1164,7 +1164,6 @@ str_cat_conv_enc_opts(VALUE newstr, long ofs, const char *ptr, long len,
     }
     DATA_PTR(econv_wrapper) = 0;
     rb_econv_close(ec);
-    rb_gc_force_recycle(econv_wrapper);
     switch (ret) {
       case econv_finished:
 	len = dp - (unsigned char*)RSTRING_PTR(newstr);
@@ -1380,20 +1379,24 @@ rb_str_tmp_frozen_release(VALUE orig, VALUE tmp)
 
     if (STR_EMBED_P(tmp)) {
 	assert(OBJ_FROZEN_RAW(tmp));
-	rb_gc_force_recycle(tmp);
     }
     else if (FL_TEST_RAW(orig, STR_SHARED) &&
 	    !FL_TEST_RAW(orig, STR_TMPLOCK|RUBY_FL_FREEZE)) {
 	VALUE shared = RSTRING(orig)->as.heap.aux.shared;
 
 	if (shared == tmp && !FL_TEST_RAW(tmp, STR_BORROWED)) {
+            assert(RSTRING(orig)->as.heap.ptr == RSTRING(tmp)->as.heap.ptr);
+            assert(RSTRING(orig)->as.heap.len == RSTRING(tmp)->as.heap.len);
+
+            /* Unshare orig since the root (tmp) only has this one child. */
 	    FL_UNSET_RAW(orig, STR_SHARED);
-	    assert(RSTRING(orig)->as.heap.ptr == RSTRING(tmp)->as.heap.ptr);
-	    assert(RSTRING(orig)->as.heap.len == RSTRING(tmp)->as.heap.len);
 	    RSTRING(orig)->as.heap.aux.capa = RSTRING(tmp)->as.heap.aux.capa;
 	    RBASIC(orig)->flags |= RBASIC(tmp)->flags & STR_NOFREE;
 	    assert(OBJ_FROZEN_RAW(tmp));
-	    rb_gc_force_recycle(tmp);
+
+            /* Make tmp embedded and empty so it is safe for sweeping. */
+            STR_SET_EMBED(tmp);
+            STR_SET_EMBED_LEN(tmp, 0);
 	}
     }
 }

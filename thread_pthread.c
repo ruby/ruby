@@ -1684,7 +1684,7 @@ native_set_thread_name(rb_thread_t *th)
             name = p + 1;
 
         n = snprintf(buf, sizeof(buf), "%s:%d", name, NUM2INT(RARRAY_AREF(loc, 1)));
-        rb_gc_force_recycle(loc); /* acts as a GC guard, too */
+        RB_GC_GUARD(loc);
 
         len = (size_t)n;
         if (len >= sizeof(buf)) {

@@ -6934,8 +6934,6 @@ rb_big_isqrt(VALUE n)
 	    bary_small_rshift(xds, xds, xn, 1, carry);
 	    tn = BIGNUM_LEN(t);
 	}
-	rb_big_realloc(t, 0);
-	rb_gc_force_recycle(t);
     }
     RBASIC_SET_CLASS_RAW(x, rb_cInteger);
     return x;

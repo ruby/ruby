@@ -1267,7 +1267,6 @@ rb_hash_transient_heap_evacuate(VALUE hash, int promote)
         ar_table *old_tab = RHASH_AR_TABLE(hash);
 
         if (UNLIKELY(old_tab == NULL)) {
-            rb_gc_force_recycle(hash);
             return;
         }
         HASH_ASSERT(old_tab != NULL);
@@ -4397,7 +4396,6 @@ rb_hash_compare_by_id(VALUE hash)
     st_free_table(RHASH_ST_TABLE(hash));
     RHASH_ST_TABLE_SET(hash, identtable);
     RHASH_ST_CLEAR(tmp);
-    rb_gc_force_recycle(tmp);
 
     return hash;
 }
