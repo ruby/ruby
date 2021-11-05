@@ -182,10 +182,20 @@ void run_assembler_tests(void)
     // mov
     cb_set_pos(cb, 0); mov(cb, EAX, imm_opnd(7)); check_bytes(cb, "B807000000");
     cb_set_pos(cb, 0); mov(cb, EAX, imm_opnd(-3)); check_bytes(cb, "B8FDFFFFFF");
-    cb_set_pos(cb, 0); mov(cb, R15, imm_opnd(3)); check_bytes(cb, "49BF0300000000000000");
+    cb_set_pos(cb, 0); mov(cb, R15, imm_opnd(3)); check_bytes(cb, "41BF03000000");
     cb_set_pos(cb, 0); mov(cb, EAX, EBX); check_bytes(cb, "89D8");
     cb_set_pos(cb, 0); mov(cb, EAX, ECX); check_bytes(cb, "89C8");
     cb_set_pos(cb, 0); mov(cb, EDX, mem_opnd(32, RBX, 128)); check_bytes(cb, "8B9380000000");
+
+    // Test `mov rax, 3` => `mov eax, 3` optimization
+    cb_set_pos(cb, 0); mov(cb, R8, imm_opnd(0x34)); check_bytes(cb, "41B834000000");
+    cb_set_pos(cb, 0); mov(cb, R8, imm_opnd(0x80000000)); check_bytes(cb, "49B80000008000000000");
+    cb_set_pos(cb, 0); mov(cb, R8, imm_opnd(-1)); check_bytes(cb, "49B8FFFFFFFFFFFFFFFF");
+
+    cb_set_pos(cb, 0); mov(cb, RAX, imm_opnd(0x34)); check_bytes(cb, "B834000000");
+    cb_set_pos(cb, 0); mov(cb, RAX, imm_opnd(0x80000000)); check_bytes(cb, "48B80000008000000000");
+    cb_set_pos(cb, 0); mov(cb, RAX, imm_opnd(-52)); check_bytes(cb, "48B8CCFFFFFFFFFFFFFF");
+    cb_set_pos(cb, 0); mov(cb, RAX, imm_opnd(-1)); check_bytes(cb, "48B8FFFFFFFFFFFFFFFF");
     /*
     test(
         delegate void (CodeBlock cb) { cb.mov(X86Opnd(AL), X86Opnd(8, RCX, 0, 1, RDX)); },
