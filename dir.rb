@@ -81,6 +81,7 @@
 # - ::unlink (aliased as ::delete and ::rmdir):: Removes the given directory.
 # - #inspect:: Returns a string description of +self+.
 class Dir
+  # call-seq:
   #    Dir.open( string ) -> aDir
   #    Dir.open( string, encoding: enc ) -> aDir
   #    Dir.open( string ) {| aDir | block } -> anObject
@@ -106,6 +107,7 @@ class Dir
     end
   end
 
+  # call-seq:
   #    Dir.new( string ) -> aDir
   #    Dir.new( string, encoding: enc ) -> aDir
   #
@@ -117,6 +119,7 @@ class Dir
     Primitive.dir_initialize(name, encoding)
   end
 
+  # call-seq:
   #    Dir[ string [, string ...] [, base: path] [, sort: true] ] -> array
   #
   # Equivalent to calling
@@ -125,6 +128,7 @@ class Dir
     Primitive.dir_s_aref(args, base, sort)
   end
 
+  # call-seq:
   #    Dir.glob( pattern, [flags], [base: path] [, sort: true] )                       -> array
   #    Dir.glob( pattern, [flags], [base: path] [, sort: true] ) { |filename| block }  -> nil
   #
