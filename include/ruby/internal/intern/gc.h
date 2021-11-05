@@ -208,7 +208,9 @@ VALUE rb_gc_location(VALUE obj);
  * @post        `obj` could be invalidated.
  * @warning     It  is a  failure  to pass  an object  multiple  times to  this
  *              function.
+ * @deprecated  This is now a no-op function.
  */
+RBIMPL_ATTR_DEPRECATED(("this is now a no-op function"))
 void rb_gc_force_recycle(VALUE obj);
 
 /**
