@@ -6142,35 +6142,6 @@ pop_mark_stack(mark_stack_t *stack, VALUE *data)
     return TRUE;
 }
 
-#if GC_ENABLE_INCREMENTAL_MARK
-static int
-invalidate_mark_stack_chunk(stack_chunk_t *chunk, int limit, VALUE obj)
-{
-    int i;
-    for (i=0; i<limit; i++) {
-	if (chunk->data[i] == obj) {
-	    chunk->data[i] = Qundef;
-	    return TRUE;
-	}
-    }
-    return FALSE;
-}
-
-static void
-invalidate_mark_stack(mark_stack_t *stack, VALUE obj)
-{
-    stack_chunk_t *chunk = stack->chunk;
-    int limit = stack->index;
-
-    while (chunk) {
-	if (invalidate_mark_stack_chunk(chunk, limit, obj)) return;
-	chunk = chunk->next;
-	limit = stack->limit;
-    }
-    rb_bug("invalid_mark_stack: unreachable");
-}
-#endif
-
 static void
 init_mark_stack(mark_stack_t *stack)
 {
@@ -8743,49 +8714,7 @@ rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache)
 void
 rb_gc_force_recycle(VALUE obj)
 {
-    rb_objspace_t *objspace = &rb_objspace;
-    RB_VM_LOCK_ENTER();
-    {
-        int is_old = RVALUE_OLD_P(obj);
-
-        gc_report(2, objspace, "rb_gc_force_recycle: %s\n", obj_info(obj));
-
-        if (is_old) {
-            if (RVALUE_MARKED(obj)) {
-                objspace->rgengc.old_objects--;
-            }
-        }
-        CLEAR_IN_BITMAP(GET_HEAP_UNCOLLECTIBLE_BITS(obj), obj);
-        CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
-        CLEAR_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
-
-        if (is_incremental_marking(objspace)) {
-#if GC_ENABLE_INCREMENTAL_MARK
-            if (MARKED_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj)) {
-                invalidate_mark_stack(&objspace->mark_stack, obj);
-                CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj);
-            }
-            CLEAR_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj);
-#endif
-        }
-        else {
-            if (is_old || GET_HEAP_PAGE(obj)->flags.before_sweep) {
-                CLEAR_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj);
-            }
-            CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj);
-        }
-
-        objspace->profile.total_freed_objects++;
-
-        heap_page_add_freeobj(objspace, GET_HEAP_PAGE(obj), obj);
-
-        /* Disable counting swept_slots because there are no meaning.
-         * if (!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(p), p)) {
-         *   objspace->heap.swept_slots++;
-         * }
-         */
-    }
-    RB_VM_LOCK_LEAVE();
+    /* no-op */
 }
 
 #ifndef MARK_OBJECT_ARY_BUCKET_SIZE
