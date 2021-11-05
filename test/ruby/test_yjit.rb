@@ -397,6 +397,16 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_checkkeyword
+    assert_compiles(<<~'RUBY', insns: %i[checkkeyword], result: [2, 5])
+      def foo(foo: 1+1)
+        foo
+      end
+
+      [foo, foo(foo: 5)]
+    RUBY
+  end
+
   def test_invokebuiltin
     assert_compiles(<<~RUBY)
       def foo(obj)
