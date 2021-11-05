@@ -256,12 +256,10 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
       @cmd.install_default_bundler_gem bin_dir
 
-      bundler_spec = Gem::Specification.load("bundler/bundler.gemspec")
-      default_spec_path = File.join(Gem.default_specifications_dir, "#{bundler_spec.full_name}.gemspec")
-      spec = Gem::Specification.load(default_spec_path)
+      spec = Gem::Specification.load("bundler/bundler.gemspec")
 
       spec.executables.each do |e|
-        assert_path_exist File.join destdir, spec.bin_dir.gsub(/^[a-zA-Z]:/, ''), e
+        assert_path_exist File.join destdir, @gemhome.gsub(/^[a-zA-Z]:/, ''), 'gems', spec.full_name, spec.bindir, e
       end
     end
   end
