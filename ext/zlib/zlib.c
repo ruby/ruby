@@ -894,7 +894,6 @@ zstream_discard_input(struct zstream *z, long len)
 	}
 	rb_str_resize(z->input, newlen);
 	if (newlen == 0) {
-	    rb_gc_force_recycle(z->input);
 	    z->input = Qnil;
 	}
 	else {
@@ -1137,7 +1136,6 @@ loop:
     }
     if (!NIL_P(old_input)) {
 	rb_str_resize(old_input, 0);
-	rb_gc_force_recycle(old_input);
     }
 
     if (args.jump_state)
@@ -2906,8 +2904,6 @@ gzfile_readpartial(struct gzfile *gz, long len, VALUE outbuf)
     if (!NIL_P(outbuf)) {
         rb_str_resize(outbuf, RSTRING_LEN(dst));
         memcpy(RSTRING_PTR(outbuf), RSTRING_PTR(dst), RSTRING_LEN(dst));
-	rb_str_resize(dst, 0);
-	rb_gc_force_recycle(dst);
 	dst = outbuf;
     }
     return dst;

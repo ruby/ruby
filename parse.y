@@ -13401,12 +13401,10 @@ rb_parser_free(struct parser_params *p, void *ptr)
     while ((n = *prev) != NULL) {
 	if (n->ptr == ptr) {
 	    *prev = n->next;
-	    rb_gc_force_recycle((VALUE)n);
 	    break;
 	}
 	prev = &n->next;
     }
-    xfree(ptr);
 }
 #endif
 

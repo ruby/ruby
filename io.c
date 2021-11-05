@@ -9399,7 +9399,7 @@ rb_f_backquote(VALUE obj, VALUE str)
     rb_io_close(port);
     RFILE(port)->fptr = NULL;
     rb_io_fptr_finalize(fptr);
-    rb_gc_force_recycle(port); /* also guards from premature GC */
+    RB_GC_GUARD(port);
 
     return result;
 }

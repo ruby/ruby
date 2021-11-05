@@ -696,7 +696,6 @@ str_subpos(const char *ptr, const char *end, long beg, long *sublen, rb_encoding
     VALUE str = rb_enc_str_new_static(ptr, end-ptr, enc);
     OBJ_FREEZE(str);
     ptr = rb_str_subpos(str, beg, sublen);
-    rb_gc_force_recycle(str);
     return ptr;
 }
 
