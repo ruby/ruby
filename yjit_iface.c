@@ -1249,4 +1249,8 @@ rb_yjit_init(struct rb_yjit_options *options)
     struct yjit_root_struct *root;
     VALUE yjit_root = TypedData_Make_Struct(0, struct yjit_root_struct, &yjit_root_type, root);
     rb_gc_register_mark_object(yjit_root);
+
+    (void)yjit_get_cb;
+    (void)yjit_get_ocb;
+    (void)yjit_get_code_page;
 }
