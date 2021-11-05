@@ -152,8 +152,7 @@ By default, this RubyGems will install gem as:
     install_destdir = options[:destdir]
 
     unless install_destdir.empty?
-      ENV['GEM_HOME'] ||= File.join(install_destdir,
-                                    Gem.default_dir.gsub(/^[a-zA-Z]:/, ''))
+      ENV['GEM_HOME'] ||= prepend_destdir(Gem.default_dir)
     end
 
     check_ruby_version
@@ -166,8 +165,8 @@ By default, this RubyGems will install gem as:
     end
     extend MakeDirs
 
-    lib_dir, bin_dir = make_destination_dirs install_destdir
-    man_dir = generate_default_man_dir install_destdir
+    lib_dir, bin_dir = make_destination_dirs
+    man_dir = generate_default_man_dir
 
     install_lib lib_dir
 
@@ -371,8 +370,7 @@ By default, this RubyGems will install gem as:
   end
 
   def install_default_bundler_gem(bin_dir)
-    specs_dir = Gem.default_specifications_dir
-    specs_dir = File.join(options[:destdir], specs_dir) unless Gem.win_platform?
+    specs_dir = prepend_destdir_if_present(Gem.default_specifications_dir)
     mkdir_p specs_dir, :mode => 0755
 
     bundler_spec = Dir.chdir("bundler") { Gem::Specification.load("bundler.gemspec") }
@@ -386,6 +384,18 @@ By default, this RubyGems will install gem as:
     Gem.write_binary(default_spec_path, bundler_spec.to_ruby)
 
     bundler_spec = Gem::Specification.load(default_spec_path)
+
+    # The base_dir value for a specification is inferred by walking up from the
+    # folder where the spec was `loaded_from`. In the case of default gems, we
+    # walk up two levels, because they live at `specifications/default/`, whereas
+    # in the case of regular gems we walk up just one level because they live at
+    # `specifications/`. However, in this case, the gem we are installing is
+    # misdetected as a regular gem, when it's a default gem in reality. This is
+    # because when there's a `:destdir`, the `loaded_from` path has changed and
+    # doesn't match `Gem.default_specifications_dir` which is the criteria to
+    # tag a gem as a default gem. So, in that case, write the correct
+    # `@base_dir` directly.
+    bundler_spec.instance_variable_set(:@base_dir, File.dirname(File.dirname(specs_dir)))
 
     # Remove gemspec that was same version of vendored bundler.
     normal_gemspec = File.join(Gem.default_dir, "specifications", "bundler-#{bundler_spec.version}.gemspec")
@@ -401,7 +411,6 @@ By default, this RubyGems will install gem as:
     end
 
     bundler_bin_dir = bundler_spec.bin_dir
-    bundler_bin_dir = File.join(options[:destdir], bundler_bin_dir) unless Gem.win_platform?
     mkdir_p bundler_bin_dir, :mode => 0755
     bundler_spec.executables.each do |e|
       cp File.join("bundler", bundler_spec.bindir, e), File.join(bundler_bin_dir, e)
@@ -424,11 +433,11 @@ By default, this RubyGems will install gem as:
     say "Bundler #{bundler_spec.version} installed"
   end
 
-  def make_destination_dirs(install_destdir)
+  def make_destination_dirs
     lib_dir, bin_dir = Gem.default_rubygems_dirs
 
     unless lib_dir
-      lib_dir, bin_dir = generate_default_dirs(install_destdir)
+      lib_dir, bin_dir = generate_default_dirs
     end
 
     mkdir_p lib_dir, :mode => 0755
@@ -437,7 +446,7 @@ By default, this RubyGems will install gem as:
     return lib_dir, bin_dir
   end
 
-  def generate_default_man_dir(install_destdir)
+  def generate_default_man_dir
     prefix = options[:prefix]
 
     if prefix.empty?
@@ -447,14 +456,10 @@ By default, this RubyGems will install gem as:
       man_dir = File.join prefix, 'man'
     end
 
-    unless install_destdir.empty?
-      man_dir = File.join install_destdir, man_dir.gsub(/^[a-zA-Z]:/, '')
-    end
-
-    man_dir
+    prepend_destdir_if_present(man_dir)
   end
 
-  def generate_default_dirs(install_destdir)
+  def generate_default_dirs
     prefix = options[:prefix]
     site_or_vendor = options[:site_or_vendor]
 
@@ -466,12 +471,7 @@ By default, this RubyGems will install gem as:
       bin_dir = File.join prefix, 'bin'
     end
 
-    unless install_destdir.empty?
-      lib_dir = File.join install_destdir, lib_dir.gsub(/^[a-zA-Z]:/, '')
-      bin_dir = File.join install_destdir, bin_dir.gsub(/^[a-zA-Z]:/, '')
-    end
-
-    [lib_dir, bin_dir]
+    [prepend_destdir_if_present(lib_dir), prepend_destdir_if_present(bin_dir)]
   end
 
   def files_in(dir)
@@ -616,6 +616,17 @@ abort "#{deprecation_message}"
   end
 
   private
+
+  def prepend_destdir_if_present(path)
+    destdir = options[:destdir]
+    return path if destdir.empty?
+
+    prepend_destdir(path)
+  end
+
+  def prepend_destdir(path)
+    File.join(options[:destdir], path.gsub(/^[a-zA-Z]:/, ''))
+  end
 
   def install_file_list(files, dest_dir)
     files.each do |file|

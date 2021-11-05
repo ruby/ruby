@@ -171,6 +171,8 @@ class TestDir < Test::Unit::TestCase
                  Dir.glob([@root, File.join(@root, "*")]))
     assert_equal([@root] + ("a".."z").map {|f| File.join(@root, f) },
                  Dir.glob([@root, File.join(@root, "*")], sort: false).sort)
+    assert_equal([@root] + ("a".."z").map {|f| File.join(@root, f) },
+                 Dir.glob([@root, File.join(@root, "*")], sort: true))
     assert_raise_with_message(ArgumentError, /nul-separated/) do
       Dir.glob(@root + "\0\0\0" + File.join(@root, "*"))
     end

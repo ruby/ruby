@@ -1039,6 +1039,10 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     end
     next unless spec.platform == Gem::Platform::RUBY
     next unless spec.full_name == gem_name
+    if !spec.extensions.empty? && CONFIG["EXTSTATIC"] == "static"
+      puts "skip installation of #{spec.name} #{spec.version}; bundled gem with an extension library is not supported on --with-static-linked-ext"
+      next
+    end
     spec.extension_dir = "#{extensions_dir}/#{spec.full_name}"
     if File.directory?(ext = "#{gem_ext_dir}/#{spec.full_name}")
       spec.extensions[0] ||= "-"
