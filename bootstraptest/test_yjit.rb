@@ -2187,6 +2187,60 @@ assert_equal '[3]', %q{
   5.times.map { default_expression }.uniq
 }
 
+# reordered optional kwargs
+assert_equal '[[100, 1]]', %q{
+  def foo(capacity: 100, max: nil)
+    [capacity, max]
+  end
+
+  5.times.map { foo(max: 1) }.uniq
+}
+
+# invalid lead param
+assert_equal 'ok', %q{
+  def bar(baz: 2)
+    baz
+  end
+
+  def foo
+    bar(1, baz: 123)
+  end
+
+  begin
+    foo
+    foo
+  rescue ArgumentError => e
+    print "ok"
+  end
+}
+
+# reordered required kwargs
+assert_equal '[[1, 2, 3, 4]]', %q{
+  def foo(default1: 1, required1:, default2: 3, required2:)
+    [default1, required1, default2, required2]
+  end
+
+  5.times.map { foo(required1: 2, required2: 4) }.uniq
+}
+
+# reordered default expression kwargs
+assert_equal '[[:one, :two, 3]]', %q{
+  def foo(arg1: (1+0), arg2: (2+0), arg3: (3+0))
+    [arg1, arg2, arg3]
+  end
+
+  5.times.map { foo(arg2: :two, arg1: :one) }.uniq
+}
+
+# complex kwargs
+assert_equal '[[1, 2, 3, 4]]', %q{
+  def foo(required:, specified: 999, simple_default: 3, complex_default: "4".to_i)
+    [required, specified, simple_default, complex_default]
+  end
+
+  5.times.map { foo(specified: 2, required: 1) }.uniq
+}
+
 # attr_reader on frozen object
 assert_equal 'false', %q{
   class Foo
