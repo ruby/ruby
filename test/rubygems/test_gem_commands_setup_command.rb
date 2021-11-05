@@ -245,9 +245,8 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   def test_install_default_bundler_gem_with_destdir_flag
     @cmd.extend FileUtils
 
-    bin_dir = File.join(@gemhome, 'bin')
-
     destdir = File.join(@tempdir, 'foo')
+    bin_dir = File.join(destdir, 'bin')
 
     @cmd.options[:destdir] = destdir
 
