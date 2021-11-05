@@ -182,8 +182,8 @@ By default, this RubyGems will install gem as:
 
     say "RubyGems #{Gem::VERSION} installed"
 
-    regenerate_binstubs if options[:regenerate_binstubs]
-    regenerate_plugins if options[:regenerate_plugins]
+    regenerate_binstubs(bin_dir) if options[:regenerate_binstubs]
+    regenerate_plugins(bin_dir) if options[:regenerate_plugins]
 
     uninstall_old_gemcutter
 
@@ -582,11 +582,12 @@ abort "#{deprecation_message}"
   rescue Gem::InstallError
   end
 
-  def regenerate_binstubs
+  def regenerate_binstubs(bindir)
     require_relative "pristine_command"
     say "Regenerating binstubs"
 
     args = %w[--all --only-executables --silent]
+    args << "--bindir=#{bindir}"
     if options[:env_shebang]
       args << "--env-shebang"
     end
@@ -595,11 +596,12 @@ abort "#{deprecation_message}"
     command.invoke(*args)
   end
 
-  def regenerate_plugins
+  def regenerate_plugins(bindir)
     require_relative "pristine_command"
     say "Regenerating plugins"
 
     args = %w[--all --only-plugins --silent]
+    args << "--bindir=#{bindir}"
 
     command = Gem::Commands::PristineCommand.new
     command.invoke(*args)
