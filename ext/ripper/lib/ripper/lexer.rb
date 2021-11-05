@@ -95,7 +95,7 @@ class Ripper
 
       def to_a
         a = super
-        a.pop unless a.last
+        a.pop unless a.empty?
         a
       end
     end
