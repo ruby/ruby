@@ -6653,7 +6653,7 @@ const char ruby_null_device[] =
  *  _Contents_
  *
  *  - ::empty? (aliased as ::zero?):: Returns whether the file at the given path
- *                                   exists and is empty.
+ *                                    exists and is empty.
  *  - ::size:: Returns the size (bytes) of the file at the given path.
  *  - ::size?:: Returns +nil+ if there is no file at the given path,
  *              or if that file is empty; otherwise returns the file size (bytes).
