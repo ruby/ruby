@@ -1340,6 +1340,7 @@ struct subclass_traverse_data
 {
     VALUE *buffer;
     long count;
+    long maxcount;
 };
 
 static void
@@ -1348,7 +1349,7 @@ class_descendants_recursive(VALUE klass, VALUE v)
     struct subclass_traverse_data *data = (struct subclass_traverse_data *) v;
 
     if (BUILTIN_TYPE(klass) == T_CLASS && !FL_TEST(klass, FL_SINGLETON)) {
-        if (data->buffer) {
+        if (data->buffer && (data->count < data->maxcount || data->maxcount == -1)) {
             data->buffer[data->count] = klass;
         }
         data->count++;
@@ -1377,13 +1378,14 @@ class_descendants_recursive(VALUE klass, VALUE v)
 VALUE
 rb_class_descendants(VALUE klass)
 {
-    struct subclass_traverse_data data = { NULL, 0 };
+    struct subclass_traverse_data data = { NULL, 0, -1 };
 
     // estimate the count of subclasses
     rb_class_foreach_subclass(klass, class_descendants_recursive, (VALUE) &data);
 
     // this allocation may cause GC which may reduce the subclasses
     data.buffer = ALLOC_N(VALUE, data.count);
+    data.maxcount = data.count;
     data.count = 0;
 
     // enumerate subclasses
