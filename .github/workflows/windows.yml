@@ -90,30 +90,20 @@ jobs:
       - name: Configure
         run: |
           ../src/win32/configure.bat --disable-install-doc --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
-      - name: nmake
-        run: |
-          echo ^#^#[group]incs
-          nmake incs
-          echo ^#^#[endgroup]
-          echo ^#^#[group]extract-extlibs
-          nmake extract-extlibs
-          echo ^#^#[endgroup]
-          nmake
+      - run: nmake incs
+      - run: nmake extract-extlibs
+      - run: nmake
         env:
           YACC: win_bison
-      - name: nmake test
+      - run: nmake test
         timeout-minutes: 5
-        run: |
-          nmake test
       - name: nmake test-all
         timeout-minutes: 60
         run: |
           nmake test-all TESTOPTS="-j%NUMBER_OF_PROCESSORS% --job-status=normal"
         continue-on-error: ${{ matrix.continue-on-error || false }}
-      - name: nmake test-spec
+      - run: nmake test-spec
         timeout-minutes: 10
-        run: |
-          nmake test-spec
         continue-on-error: ${{ matrix.continue-on-error || false }}
       - uses: k0kubun/action-slack@v2.0.0
         with:
