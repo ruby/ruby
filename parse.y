@@ -10789,7 +10789,7 @@ rb_parser_set_pos(YYLTYPE *yylloc, int sourceline, int beg_pos, int end_pos)
     yylloc->beg_pos.column = beg_pos;
     yylloc->end_pos.lineno = sourceline;
     yylloc->end_pos.column = end_pos;
-	return yylloc;
+    return yylloc;
 }
 
 YYLTYPE *
