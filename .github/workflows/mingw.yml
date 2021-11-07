@@ -17,6 +17,7 @@ on:
 jobs:
   make:
     runs-on: windows-2019
+    name: ${{ github.workflow }} (${{ matrix.msystem }})
     env:
       MSYSTEM: ${{ matrix.msystem }}
       MSYS2_ARCH: x86_64
