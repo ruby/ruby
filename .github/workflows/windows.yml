@@ -84,6 +84,7 @@ jobs:
           call %VCVARS%
           set TMP=%USERPROFILE%\AppData\Local\Temp
           set TEMP=%USERPROFILE%\AppData\Local\Temp
+          set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
           set | C:\msys64\usr\bin\sort > new.env
           C:\msys64\usr\bin\comm -13 old.env new.env >> %GITHUB_ENV%
           del *.env
@@ -97,10 +98,10 @@ jobs:
           YACC: win_bison
       - run: nmake test
         timeout-minutes: 5
-      - name: nmake test-all
+      - run: nmake test-all
+        env:
+          RUBY_TESTOPTS: -j${{env.TEST_JOBS}} --job-status=normal
         timeout-minutes: 60
-        run: |
-          nmake test-all TESTOPTS="-j%NUMBER_OF_PROCESSORS% --job-status=normal"
         continue-on-error: ${{ matrix.continue-on-error || false }}
       - run: nmake test-spec
         timeout-minutes: 10
