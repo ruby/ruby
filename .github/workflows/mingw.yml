@@ -66,8 +66,9 @@ jobs:
           # show where
           result=true
           for e in gcc.exe ragel.exe make.exe bison.exe libcrypto-1_1-x64.dll libssl-1_1-x64.dll; do
-            echo
+            echo '##['group']'$'\033[93m'$e$'\033[m'
             where $e || result=false
+            echo '##['endgroup']'
           done
           $result
 
