@@ -123,11 +123,8 @@ jobs:
 
       - name: test-spec
         timeout-minutes: 10
-        working-directory: src/spec/ruby
         run: |
-          $env:Path = "$pwd/../../../install/bin;$env:Path"
-          ruby -v
-          ruby ../mspec/bin/mspec -I../../tool/lib -j --timeout 60
+          make test-spec
 
       - uses: k0kubun/action-slack@v2.0.0
         with:
