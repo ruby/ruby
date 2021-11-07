@@ -60,7 +60,7 @@ jobs:
         run: |
           $build_jobs = [int](2 * $env:NUMBER_OF_PROCESSORS)
           $test_jobs = [int](1.5 * $env:NUMBER_OF_PROCESSORS)
-          Write-Output "BUILD_JOBS=$build_jobs" >> $env:GITHUB_ENV
+          Write-Output "GNUMAKEFLAGS=-j$build_jobs" >> $env:GITHUB_ENV
           Write-Output "TEST_JOBS=$test_jobs" >> $env:GITHUB_ENV
       - name: where check
         run: |
@@ -89,16 +89,16 @@ jobs:
 
       - name: update
         run: |
-          make -j $env:BUILD_JOBS incs
+          make incs
 
       - name: download gems
         run: |
-          make -j $env:BUILD_JOBS update-gems
+          make update-gems
 
       - name: make all
         timeout-minutes: 20
         run: |
-          make -j $env:BUILD_JOBS
+          make
 
       - run: make leaked-globals
 
@@ -116,8 +116,9 @@ jobs:
         run: |
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           chcp.com 437
-          make test-all TESTOPTS="-j $env:TEST_JOBS --retry --job-status=normal --show-skip --timeout-scale=1.5"
+          make test-all
         env:
+          RUBY_TESTOPTS: -j${{env.TEST_JOBS}} --retry --job-status=normal --show-skip --timeout-scale=1.5
           BUNDLER_VERSION:
 
       - name: test-spec
