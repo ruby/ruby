@@ -58,34 +58,28 @@ jobs:
           msys2: automake1.16 bison
       - name: set env
         run: |
-          $build_jobs = [int](2 * $env:NUMBER_OF_PROCESSORS)
-          $test_jobs = [int](1.5 * $env:NUMBER_OF_PROCESSORS)
-          Write-Output "GNUMAKEFLAGS=-j$build_jobs" >> $env:GITHUB_ENV
-          Write-Output "TEST_JOBS=$test_jobs" >> $env:GITHUB_ENV
+          echo "GNUMAKEFLAGS=-j$((2 * NUMBER_OF_PROCESSORS))" >> $GITHUB_ENV
+          echo "TEST_JOBS=$((15 * NUMBER_OF_PROCESSORS / 10))" >> $GITHUB_ENV
+
       - name: where check
         run: |
           # show where
-          Write-Host
-          $where = 'gcc.exe', 'ragel.exe', 'make.exe', 'bison.exe', 'libcrypto-1_1-x64.dll', 'libssl-1_1-x64.dll'
-          foreach ($e in $where) {
-            $rslt = where.exe $e 2>&1 | Out-String
-            if ($rslt.contains($e)) { Write-Host $rslt }
-            else { Write-Host "`nCan't find $e" }
-          }
+          result=true
+          for e in gcc.exe ragel.exe make.exe bison.exe libcrypto-1_1-x64.dll libssl-1_1-x64.dll; do
+            echo
+            where $e || result=false
+          done
+          $result
 
       - name: autogen
         run: |
           ./autogen.sh
         working-directory: src
-        shell: sh
 
       - name: configure
-        run: |
-          $config_args = "--build=$env:CHOST --host=$env:CHOST --target=$env:CHOST"
-          Write-Host $config_args
-          sh -c "../src/configure --disable-install-doc --prefix=/. $config_args"
-          # Write-Host "-------------------------------------- config.log"
-          # Get-Content ./config.log | foreach {Write-Output $_}
+        run: >
+          ../src/configure --disable-install-doc --prefix=/.
+          --build=$CHOST --host=$CHOST --target=$CHOST
 
       - name: update
         run: |
@@ -143,3 +137,4 @@ jobs:
 defaults:
   run:
     working-directory: build
+    shell: sh
