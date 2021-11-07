@@ -10800,7 +10800,7 @@ rb_parser_set_location_from_strterm_heredoc(struct parser_params *p, rb_strterm_
 	- (rb_strlen_lit("<<-") - !(here->func & STR_FUNC_INDENT));
     int end_pos = (int)here->offset + here->length + here->quote;
 
-	return rb_parser_set_pos(yylloc, sourceline, beg_pos, end_pos);
+    return rb_parser_set_pos(yylloc, sourceline, beg_pos, end_pos);
 }
 
 YYLTYPE *
@@ -10808,7 +10808,7 @@ rb_parser_set_location_of_none(struct parser_params *p, YYLTYPE *yylloc)
 {
     int sourceline = p->ruby_sourceline;
     int beg_pos = (int)(p->lex.ptok - p->lex.pbeg);
-	int end_pos = (int)(p->lex.ptok - p->lex.pbeg);
+    int end_pos = (int)(p->lex.ptok - p->lex.pbeg);
     return rb_parser_set_pos(yylloc, sourceline, beg_pos, end_pos);
 }
 
