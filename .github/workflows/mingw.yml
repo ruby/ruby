@@ -116,8 +116,9 @@ jobs:
         run: |
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           chcp.com 437
-          if ($env:BUNDLER_VERSION) { Remove-Item env:\BUNDLER_VERSION }
           make test-all TESTOPTS="-j $env:TEST_JOBS --retry --job-status=normal --show-skip --timeout-scale=1.5"
+        env:
+          BUNDLER_VERSION:
 
       - name: test-spec
         timeout-minutes: 10
