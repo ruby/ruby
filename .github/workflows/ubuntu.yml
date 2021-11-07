@@ -21,6 +21,9 @@ jobs:
 #         - ubuntu-18.04
         configure: ["", "cppflags=-DRUBY_DEBUG"]
         include:
+          - test_task: "check"
+            os: ubuntu-20.04
+            configure: "--host=i686-$OSTYPE"
           - test_task: "test-all TESTS=--repeat-count=2"
             os: ubuntu-20.04
             configure: ""
@@ -32,11 +35,25 @@ jobs:
     steps:
       - run: mkdir build
         working-directory:
+      - name: Set ENV
+        env:
+          configure: ${{matrix.configure}}
+        run: |
+          echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
+          arch=`echo " $configure" | sed '/.* --host=/!d;s///;s/[- ].*//'`
+          echo "SETARCH=${arch:+setarch $arch}" >> $GITHUB_ENV
       - name: Install libraries
         run: |
           set -x
+          arch="${SETARCH##* }"
+          arch=${arch:+:${arch/i[3-6]86/i386}}
+          ${arch:+sudo dpkg --add-architecture ${arch#:}}
           sudo apt-get update -q || :
-          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison autoconf ruby
+          sudo apt-get install --no-install-recommends -q -y \
+          ${arch:+cross}build-essential${arch/:/-} \
+          libssl-dev${arch} libyaml-dev${arch} libreadline6-dev${arch} \
+          zlib1g-dev${arch} libncurses5-dev${arch} libffi-dev${arch} \
+          bison autoconf ruby
       - name: git config
         run: |
           git config --global advice.detachedHead 0
@@ -49,24 +66,25 @@ jobs:
           chmod -v go-w $HOME $HOME/.config
           sudo chmod -R go-w /usr/share
           sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v go-w $d; done' || :
-      - name: Set ENV
-        run: |
-          echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
       - run: ./autogen.sh
         working-directory: src
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
-      - run: make incs
-      - run: make
-      - run: make leaked-globals
+        env:
+          arch: ${{matrix.arch}}
+        run: >-
+          $SETARCH ../src/configure -C --disable-install-doc ${{ matrix.configure }}
+          ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
+      - run: $SETARCH make incs
+      - run: $SETARCH make
+      - run: $SETARCH make leaked-globals
         if: ${{ matrix.test_task == 'check' }}
-      - run: make prepare-gems
+      - run: $SETARCH make prepare-gems
         if: ${{ matrix.test_task == 'check' }}
       - name: Create dummy files in build dir
         run: |
-          ./miniruby -e '(("a".."z").to_a+("A".."Z").to_a+("0".."9").to_a+%w[foo bar test zzz]).each{|basename|File.write("#{basename}.rb", "raise %(do not load #{basename}.rb)")}'
+          $SETARCH ./miniruby -e '(("a".."z").to_a+("A".."Z").to_a+("0".."9").to_a+%w[foo bar test zzz]).each{|basename|File.write("#{basename}.rb", "raise %(do not load #{basename}.rb)")}'
         if: ${{ matrix.test_task == 'check' }}
-      - run: make -s ${{ matrix.test_task }}
+      - run: $SETARCH make -s ${{ matrix.test_task }}
         timeout-minutes: 40
         env:
           RUBY_TESTOPTS: "-q --tty=no"
