@@ -994,6 +994,24 @@ struct collect_outer_variable_name_data {
     bool isolate;
 };
 
+static VALUE
+ID2NUM(ID id)
+{
+    if (SIZEOF_VOIDP > SIZEOF_LONG)
+        return ULL2NUM(id);
+    else
+        return ULONG2NUM(id);
+}
+
+static ID
+NUM2ID(VALUE num)
+{
+    if (SIZEOF_VOIDP > SIZEOF_LONG)
+        return (ID)NUM2ULL(num);
+    else
+        return (ID)NUM2ULONG(num);
+}
+
 static enum rb_id_table_iterator_result
 collect_outer_variable_names(ID id, VALUE val, void *ptr)
 {
@@ -1012,7 +1030,7 @@ collect_outer_variable_names(ID id, VALUE val, void *ptr)
             store = &data->read_only;
         }
         if (*store == Qfalse) *store = rb_ary_new();
-        rb_ary_push(*store, ID2SYM(id));
+        rb_ary_push(*store, ID2NUM(id));
     }
     return ID_TABLE_CONTINUE;
 }
@@ -1029,7 +1047,7 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
 
     if (read_only_variables) {
         for (int i=RARRAY_LENINT(read_only_variables)-1; i>=0; i--) {
-            ID id = SYM2ID(RARRAY_AREF(read_only_variables, i));
+            ID id = NUM2ID(RARRAY_AREF(read_only_variables, i));
 
             for (unsigned int j=0; j<src_env->iseq->body->local_table_size; j++) {
                 if (id ==  src_env->iseq->body->local_table[j]) {
@@ -1091,8 +1109,17 @@ proc_shared_outer_variables(struct rb_id_table *outer_variables, bool isolate, c
     rb_id_table_foreach(outer_variables, collect_outer_variable_names, (void *)&data);
 
     if (data.ary != Qfalse) {
-        VALUE str = rb_sprintf("can not %s because it accesses outer variables (%"PRIsVALUE")", message,
-                               rb_ary_join(data.ary, rb_str_new2(", ")));
+        VALUE str = rb_sprintf("can not %s because it accesses outer variables", message);
+        VALUE ary = data.ary;
+        const char *sep = " (";
+        for (long i = 0; i < RARRAY_LEN(ary); i++) {
+            VALUE name = rb_id2str(NUM2ID(RARRAY_AREF(ary, i)));
+            if (!name) continue;
+            rb_str_cat_cstr(str, sep);
+            sep = ", ";
+            rb_str_append(str, name);
+        }
+        if (*sep == ',') rb_str_cat_cstr(str, ")");
         rb_str_cat_cstr(str, data.yield ? " and uses `yield'." : ".");
         rb_exc_raise(rb_exc_new_str(rb_eArgError, str));
     }
