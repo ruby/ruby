@@ -72,12 +72,12 @@ jobs:
             if ($rslt.contains($e)) { Write-Host $rslt }
             else { Write-Host "`nCan't find $e" }
           }
-      - name: misc setup, autoreconf
+
+      - name: autogen
         run: |
-          mkdir temp
-          cd src
-          sh -c "autoreconf -fi"
-        working-directory:
+          ./autogen.sh
+        working-directory: src
+        shell: sh
 
       - name: configure
         run: |
