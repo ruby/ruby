@@ -108,9 +108,8 @@ static void
 unregister_exported_object(VALUE obj)
 {
     RB_VM_LOCK_ENTER();
-    if (!exported_object_table)
-        return;
-    st_update(exported_object_table, (st_data_t)obj, exported_object_dec_ref, 0);
+    if (exported_object_table)
+        st_update(exported_object_table, (st_data_t)obj, exported_object_dec_ref, 0);
     RB_VM_LOCK_LEAVE();
 }
 
