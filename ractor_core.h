@@ -3,6 +3,7 @@
 #include "vm_core.h"
 #include "id_table.h"
 #include "vm_debug.h"
+#include "event_profiling.h"
 
 #ifndef RACTOR_CHECK_MODE
 #define RACTOR_CHECK_MODE (0 || VM_CHECK_MODE || RUBY_DEBUG)
@@ -146,6 +147,10 @@ struct rb_ractor_struct {
         void *data;
         void (*mark_func)(VALUE v, void *data);
     } *mfd;
+
+#if USE_EVENT_PROFILING
+    rb_event_profiling_list_t *event_profiling_storage;
+#endif
 }; // rb_ractor_t is defined in vm_core.h
 
 

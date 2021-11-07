@@ -37,6 +37,7 @@
 #include "ruby/vm.h"
 #include "vm_core.h"
 #include "ractor_core.h"
+#include "event_profiling.h"
 
 NORETURN(static void rb_raise_jump(VALUE, VALUE));
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
@@ -263,6 +264,10 @@ rb_ec_cleanup(rb_execution_context_t *ec, int ex0)
     rb_thread_stop_timer_thread();
     ruby_vm_destruct(th->vm);
     if (state) ruby_default_signal(state);
+
+    /* Record the last event and stop event-based profiling, generate a JSON file */
+    RB_SYSTEM_CLEANUP_EVENT_PROFILING();
+    RB_FINALIZE_EVENT_PROFILING_DEFAULT();
 
     return sysex;
 }
