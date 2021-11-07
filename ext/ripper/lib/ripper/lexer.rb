@@ -53,10 +53,16 @@ class Ripper
   end
 
   class Lexer < ::Ripper   #:nodoc: internal use only
-    State = Struct.new(:to_int, :to_s) do
+    class State
+      attr_reader :to_int, :to_s
+
+      def initialize(i)
+        @to_int = i
+        @to_s = Ripper.lex_state_name(i)
+        freeze
+      end
+
       alias to_i to_int
-      def initialize(i) super(i, Ripper.lex_state_name(i)).freeze end
-      # def inspect; "#<#{self.class}: #{self}>" end
       alias inspect to_s
       def pretty_print(q) q.text(to_s) end
       def ==(i) super or to_int == i end
@@ -67,9 +73,15 @@ class Ripper
       def nobits?(i) to_int.nobits?(i) end
     end
 
-    Elem = Struct.new(:pos, :event, :tok, :state, :message) do
+    class Elem
+      attr_accessor :pos, :event, :tok, :state, :message
+
       def initialize(pos, event, tok, state, message = nil)
-        super(pos, event, tok, State.new(state), message)
+        @pos = pos
+        @event = event
+        @tok = tok
+        @state = State.new(state)
+        @message = message
       end
 
       def inspect
@@ -94,9 +106,11 @@ class Ripper
       end
 
       def to_a
-        a = super
-        a.pop unless a.last
-        a
+        if @message
+          [@pos, @event, @tok, @state, @message]
+        else
+          [@pos, @event, @tok, @state]
+        end
       end
     end
 
