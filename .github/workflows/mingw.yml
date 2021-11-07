@@ -81,10 +81,6 @@ jobs:
 
       - name: configure
         run: |
-          # Actions uses UTF8, causes test failures, similar to normal OS setup
-          $PSDefaultParameterValues['*:Encoding'] = 'utf8'
-          [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
-          [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
           $config_args = "--build=$env:CHOST --host=$env:CHOST --target=$env:CHOST"
           Write-Host $config_args
           sh -c "../src/configure --disable-install-doc --prefix=/. $config_args"
@@ -108,10 +104,6 @@ jobs:
 
       - name: make install
         run: |
-          # Actions uses UTF8, causes test failures, similar to normal OS setup
-          $PSDefaultParameterValues['*:Encoding'] = 'utf8'
-          [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
-          [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
           make DESTDIR=../install install-nodoc
 
       - name: test
@@ -123,9 +115,7 @@ jobs:
         timeout-minutes: 40
         run: |
           # Actions uses UTF8, causes test failures, similar to normal OS setup
-          $PSDefaultParameterValues['*:Encoding'] = 'utf8'
-          [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
-          [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
+          chcp.com 437
           if ($env:BUNDLER_VERSION) { Remove-Item env:\BUNDLER_VERSION }
           make test-all TESTOPTS="-j $env:TEST_JOBS --retry --job-status=normal --show-skip --timeout-scale=1.5"
 
@@ -134,10 +124,6 @@ jobs:
         working-directory: src/spec/ruby
         run: |
           $env:Path = "$pwd/../../../install/bin;$env:Path"
-          # Actions uses UTF8, causes test failures, similar to normal OS setup
-          $PSDefaultParameterValues['*:Encoding'] = 'utf8'
-          [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
-          [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
           ruby -v
           ruby ../mspec/bin/mspec -I../../tool/lib -j --timeout 60
 
