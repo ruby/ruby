@@ -721,26 +721,31 @@ AS_IF([test "$GCC" = yes], [
     # argument check. The performance drop is very little and Ubuntu enables
     # _FORTIFY_SOURCE=2 by default. So, let's support it for protecting us from
     # a mistake of silly C extensions.
-
-    # TODO: check if link succeeds with _FORTIFY_SOURCE=2.
-    AS_CASE(["$target_os"],
-    [mingw*], [
-	fortify_source=no
-    ])
     AC_ARG_ENABLE(fortify_source,
 		  AS_HELP_STRING([--disable-fortify-source],
-				 [disable -D_FORTIFY_SOURCE=2 option, which causes link error on mingw]),
-		  [fortify_source=$enableval])
+				 [disable -D_FORTIFY_SOURCE=2 option]),
+		  [fortify_source=$enableval], [fortify_source=yes])
     AS_IF([test "x$fortify_source" != xno], [
-        RUBY_TRY_CFLAGS([$optflags -D_FORTIFY_SOURCE=2], [RUBY_APPEND_OPTION(XCFLAGS, -D_FORTIFY_SOURCE=2)], [],
-                        [@%:@include <stdio.h>])
+        fortify_source=
+	AS_FOR(option, opt, [-D_FORTIFY_SOURCE=2], [
+	    RUBY_TRY_CFLAGS(option, [fortify_source=yes], [],
+                            [@%:@include <stdio.h>])
+	    AS_IF([test "x$stack_protector" = xyes], [
+		RUBY_TRY_LDFLAGS(option, [], [fortify_source=], [].
+                                 [@%:@include <stdio.h>])
+	    ])
+	    AS_IF([test "x$fortify_source" = xyes], [fortify_source=option; break])
+	])
+    ])
+    AS_CASE(["$fortify_source"], [-*], [
+	RUBY_APPEND_OPTION(CPPFLAGS, $fortify_source)
     ])
 
     : ${MJIT_HEADER_FLAGS='-P -dD'}
 
     # -fstack-protector
     AS_CASE(["$target_os"],
-    [mingw*|emscripten*], [
+    [emscripten*], [
 	stack_protector=no
     ])
     AS_IF([test -z "${stack_protector+set}"], [
@@ -865,7 +870,9 @@ AS_IF([test "$GCC" = yes], [
     # optflags
 
     AS_CASE(["$target_os"], [mingw*], [
-	RUBY_TRY_CFLAGS(-fno-omit-frame-pointer, [optflags="${optflags+$optflags }-fno-omit-frame-pointer"])
+	AS_IF([test "$gcc_major" -le 4], [
+	    RUBY_TRY_CFLAGS(-fno-omit-frame-pointer, [optflags="${optflags+$optflags }-fno-omit-frame-pointer"])
+	])
 	RUBY_TRY_CFLAGS(-static-libgcc, [static_libgcc=yes], [static_libgcc=no])
 	AS_IF([test "$static_libgcc" = yes], [
 	    RUBY_APPEND_OPTION(EXTLDFLAGS, -static-libgcc)
@@ -931,6 +938,8 @@ AS_CASE(["$target_os"],
 [mingw*], [
   RUBY_APPEND_OPTION(CPPFLAGS, -D_WIN32_WINNT=$with_winnt_ver)
   RUBY_APPEND_OPTION(CPPFLAGS, -D__MINGW_USE_VC2005_COMPAT)
+  RUBY_APPEND_OPTION(CPPFLAGS, -D__USE_MINGW_ANSI_STDIO=1)
+  RUBY_APPEND_OPTION(CPPFLAGS, -DFD_SETSIZE=2048)
 ])
 
 AS_CASE(["$target_os"],
