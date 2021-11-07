@@ -10782,7 +10782,7 @@ rb_parser_fatal(struct parser_params *p, const char *fmt, ...)
     p->debug = TRUE;
 }
 
-YYLTYPE *
+static YYLTYPE *
 rb_parser_set_pos(YYLTYPE *yylloc, int sourceline, int beg_pos, int end_pos)
 {
     yylloc->beg_pos.lineno = sourceline;
