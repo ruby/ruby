@@ -17,7 +17,9 @@ Bar_alloc(VALUE klass)
     return TypedData_Wrap_Struct(klass, &Bar_type, NULL);
 }
 
-VALUE Bar_to_ary(VALUE _self) {
+static VALUE
+Bar_to_ary(VALUE _self)
+{
     VALUE ary = rb_ary_new2(2);
     VALUE foo = rb_ary_new2(0);
     rb_ary_push(ary, foo);
@@ -26,7 +28,9 @@ VALUE Bar_to_ary(VALUE _self) {
     return ary;
 }
 
-void Init_to_ary_concat() {
+void
+Init_to_ary_concat(void)
+{
     VALUE mBug = rb_define_module("Bug");
     VALUE bar = rb_define_class_under(mBug, "Bar", rb_cObject);
     rb_define_alloc_func(bar, Bar_alloc);
