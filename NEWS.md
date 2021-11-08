@@ -310,6 +310,9 @@ Excluding feature bug fixes.
 
 * Documented. [[GH-4815]]
 
+* `rb_gc_force_recycle` is deprecated and has been changed to a no-op.
+  [[Feature #18290]]
+
 ## Implementation improvements
 
 ### JIT
@@ -423,5 +426,6 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #18029]: https://bugs.ruby-lang.org/issues/18029
 [Feature #18172]: https://bugs.ruby-lang.org/issues/18172
 [Feature #18229]: https://bugs.ruby-lang.org/issues/18229
+[Feature #18290]: https://bugs.ruby-lang.org/issues/18290
 [GH-1509]: https://github.com/ruby/ruby/pull/1509
 [GH-4815]: https://github.com/ruby/ruby/pull/4815
