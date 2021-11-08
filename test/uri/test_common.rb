@@ -33,6 +33,28 @@ class TestCommon < Test::Unit::TestCase
     end
   end
 
+  def test_ractor
+    return unless defined?(Ractor)
+    assert_ractor(<<~RUBY, require: 'uri')
+      r = Ractor.new { URI.parse("https://ruby-lang.org/").inspect }
+      assert_equal(URI.parse("https://ruby-lang.org/").inspect, r.take)
+    RUBY
+  end
+
+  def test_register_scheme
+    assert_equal(["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO", "WS"].sort, URI.scheme_list.keys.sort)
+
+    foobar = Class.new(URI::Generic)
+    URI.register_scheme 'FOOBAR', foobar
+    begin
+      assert_equal(["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO", "WS", "FOOBAR"].sort, URI.scheme_list.keys.sort)
+    ensure
+      URI.const_get(:Schemes).send(:remove_const, :FOOBAR)
+    end
+
+    assert_equal(["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO", "WS"].sort, URI.scheme_list.keys.sort)
+  end
+
   def test_regexp
     EnvUtil.suppress_warning do
       assert_instance_of Regexp, URI.regexp

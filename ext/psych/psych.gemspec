@@ -64,4 +64,6 @@ DESCRIPTION
   else
     s.extensions = ["ext/psych/extconf.rb"]
   end
+
+  s.add_dependency 'stringio'
 end

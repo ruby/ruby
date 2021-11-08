@@ -38,16 +38,48 @@ module IRB
 
     BASIC_WORD_BREAK_CHARACTERS = " \t\n`><=;|&{("
 
-    def self.retrieve_files_to_require_from_load_path
-      @@files_from_load_path ||= $LOAD_PATH.flat_map { |path|
-        begin
-          Dir.glob("**/*.{rb,#{RbConfig::CONFIG['DLEXT']}}", base: path)
-        rescue Errno::ENOENT
-          []
+    def self.absolute_path?(p) # TODO Remove this method after 2.6 EOL.
+      if File.respond_to?(:absolute_path?)
+        File.absolute_path?(p)
+      else
+        if File.absolute_path(p) == p
+          true
+        else
+          false
         end
-      }.uniq.map { |path|
-        path.sub(/\.(rb|#{RbConfig::CONFIG['DLEXT']})\z/, '')
-      }
+      end
+    end
+
+    def self.retrieve_gem_and_system_load_path
+      gem_paths = Gem::Specification.latest_specs(true).map { |s|
+        s.require_paths.map { |p|
+          if absolute_path?(p)
+            p
+          else
+            File.join(s.full_gem_path, p)
+          end
+        }
+      }.flatten if defined?(Gem::Specification)
+      (gem_paths.to_a | $LOAD_PATH).sort
+    end
+
+    def self.retrieve_files_to_require_from_load_path
+      @@files_from_load_path ||=
+        (
+          shortest = []
+          rest = retrieve_gem_and_system_load_path.each_with_object([]) { |path, result|
+            begin
+              names = Dir.glob("**/*.{rb,#{RbConfig::CONFIG['DLEXT']}}", base: path)
+            rescue Errno::ENOENT
+              nil
+            end
+            next if names.empty?
+            names.map! { |n| n.sub(/\.(rb|#{RbConfig::CONFIG['DLEXT']})\z/, '') }.sort!
+            shortest << names.shift
+            result.concat(names)
+          }
+          shortest.sort! | rest
+        )
     end
 
     def self.retrieve_files_to_require_relative_from_current_dir
@@ -160,12 +192,12 @@ module IRB
         sym = $1
         candidates = Symbol.all_symbols.collect do |s|
           ":" + s.id2name.encode(Encoding.default_external)
-        rescue Encoding::UndefinedConversionError
+        rescue EncodingError
           # ignore
         end
         candidates.grep(/^#{Regexp.quote(sym)}/)
 
-      when /^::([A-Z][^:\.\(]*)$/
+      when /^::([A-Z][^:\.\(\)]*)$/
         # Absolute Constant or class methods
         receiver = $1
         candidates = Object.constants.collect{|m| m.to_s}
@@ -258,7 +290,7 @@ module IRB
           all_gvars.grep(Regexp.new(Regexp.quote(gvar)))
         end
 
-      when /^([^."].*)(\.|::)([^.]*)$/
+      when /^([^.:"].*)(\.|::)([^.]*)$/
         # variable.func or func.func
         receiver = $1
         sep = $2
@@ -296,7 +328,8 @@ module IRB
           candidates.uniq!
         end
         if doc_namespace
-          "#{rec.class.name}#{sep}#{candidates.find{ |i| i == message }}"
+          rec_class = rec.is_a?(Module) ? rec : rec.class
+          "#{rec_class.name}#{sep}#{candidates.find{ |i| i == message }}"
         else
           select_message(receiver, message, candidates, sep)
         end
@@ -315,12 +348,19 @@ module IRB
         end
 
       else
-        candidates = eval("methods | private_methods | local_variables | instance_variables | self.class.constants", bind).collect{|m| m.to_s}
-        candidates |= ReservedWords
-
         if doc_namespace
-          candidates.find{ |i| i == input }
+          vars = eval("local_variables | instance_variables", bind).collect{|m| m.to_s}
+          perfect_match_var = vars.find{|m| m.to_s == input}
+          if perfect_match_var
+            eval("#{perfect_match_var}.class.name", bind)
+          else
+            candidates = eval("methods | private_methods | local_variables | instance_variables | self.class.constants", bind).collect{|m| m.to_s}
+            candidates |= ReservedWords
+            candidates.find{ |i| i == input }
+          end
         else
+          candidates = eval("methods | private_methods | local_variables | instance_variables | self.class.constants", bind).collect{|m| m.to_s}
+          candidates |= ReservedWords
           candidates.grep(/^#{Regexp.quote(input)}/)
         end
       end

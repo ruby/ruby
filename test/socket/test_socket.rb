@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+# tentatively disabled due to IPv6 configuration issue on Solaris CI
+# http://rubyci.s3.amazonaws.com/solaris10-gcc/ruby-master/log/20210729T040002Z.fail.html.gz
+return if /solaris/ =~ RUBY_PLATFORM
+
 begin
   require "socket"
   require "tmpdir"

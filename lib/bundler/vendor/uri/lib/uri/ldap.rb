@@ -7,7 +7,6 @@
 # License::
 #   Bundler::URI::LDAP is copyrighted free software by Takaaki Tateishi and Akira Yamada.
 #   You can redistribute it and/or modify it under the same term as Ruby.
-# Revision:: $Id$
 #
 # See Bundler::URI for general documentation
 #
@@ -119,6 +118,7 @@ module Bundler::URI
 
     # Private method to cleanup +dn+ from using the +path+ component attribute.
     def parse_dn
+      raise InvalidURIError, 'bad LDAP URL' unless @path
       @dn = @path[1..-1]
     end
     private :parse_dn

@@ -43,12 +43,10 @@ describe "Thread#backtrace_locations" do
     Thread.current.backtrace_locations(2..-2).map(&:to_s).should == Thread.current.backtrace_locations[2..-2].map(&:to_s)
   end
 
-  ruby_version_is "2.6" do
-    it "can be called with an endless range" do
-      locations1 = Thread.current.backtrace_locations(0)
-      locations2 = Thread.current.backtrace_locations(eval("(2..)"))
-      locations2.map(&:to_s).should == locations1[2..-1].map(&:to_s)
-    end
+  it "can be called with an endless range" do
+    locations1 = Thread.current.backtrace_locations(0)
+    locations2 = Thread.current.backtrace_locations(eval("(2..)"))
+    locations2.map(&:to_s).should == locations1[2..-1].map(&:to_s)
   end
 
   ruby_version_is "2.7" do

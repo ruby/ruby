@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/indexer'
+require_relative '../command'
+require_relative '../indexer'
 
 ##
 # Generates a index files for use as a gem server.

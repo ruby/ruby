@@ -368,6 +368,18 @@ class TC_OpenStruct < Test::Unit::TestCase
     RUBY
   end if defined?(Ractor)
 
+  def test_access_methods_from_different_ractor
+    assert_ractor(<<~RUBY, require: 'ostruct')
+      os = OpenStruct.new
+      os.value = 100
+      r = Ractor.new(os) do |x|
+        v = x.value
+        Ractor.yield v
+      end
+      assert 100 == r.take
+    RUBY
+  end if defined?(Ractor)
+
   def test_legacy_yaml
     s = "--- !ruby/object:OpenStruct\ntable:\n  :foo: 42\n"
     o = YAML.safe_load(s, permitted_classes: [Symbol, OpenStruct])
@@ -375,7 +387,7 @@ class TC_OpenStruct < Test::Unit::TestCase
 
     o = OpenStruct.new(table: {foo: 42})
     assert_equal({foo: 42}, YAML.safe_load(YAML.dump(o), permitted_classes: [Symbol, OpenStruct]).table)
-  end
+  end if RUBY_VERSION >= '2.6'
 
   def test_yaml
     h = {name: "John Smith", age: 70, pension: 300.42}
@@ -386,7 +398,7 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_equal os1, os2
     assert_equal true, os1.eql?(os2)
     assert_equal 300.42, os2.pension
-  end
+  end if RUBY_VERSION >= '2.6'
 
   def test_marshal
     o = OpenStruct.new(name: "John Smith", age: 70, pension: 300.42)

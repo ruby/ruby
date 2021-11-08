@@ -10,6 +10,7 @@ CHDIR = cd
 PATH_SEPARATOR = ;
 TZ =				# skip timezone tests
 PWD = $(MAKEDIR)
+empty =
 
 !ifndef MFLAGS
 MFLAGS=-l
@@ -88,6 +89,7 @@ RMALL = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat -f -r
 MAKEDIRS = $(COMSPEC) /E:ON /C $(srcdir:/=\)\win32\makedirs.bat
 CP = copy > nul
 MV = move > nul
+RM1 = del /f /q
 !if !defined(BASERUBY)
 BASERUBY = ruby
 !endif
@@ -275,7 +277,7 @@ LIBS = user32.lib advapi32.lib shell32.lib ws2_32.lib
 !if $(MSC_VER) >= 1400
 LIBS = $(LIBS) iphlpapi.lib
 !endif
-LIBS = $(LIBS) imagehlp.lib shlwapi.lib $(EXTLIBS)
+LIBS = $(LIBS) imagehlp.lib shlwapi.lib bcrypt.lib $(EXTLIBS)
 !endif
 !if !defined(MISSING)
 MISSING = crypt.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj
@@ -412,6 +414,8 @@ LIBRUBYARG_SHARED = $(LIBRUBY)
 LIBRUBY_RELATIVE = yes
 
 THREAD_MODEL  = win32
+THREAD_IMPL_H   = thread_$(THREAD_MODEL).h
+THREAD_IMPL_SRC = thread_$(THREAD_MODEL).c
 
 !if "$(CROSS_COMPILING)" == "yes"
 PREP          = $(arch)-fake.rb
@@ -525,6 +529,14 @@ GOLF_PRELUDE_C = $(srcdir)/golf_prelude.c
 GOLF_PRELUDE_C = golf_prelude.c
 !endif
 RBCONFIG      = ./.rbconfig.time
+
+!if "$(GITHUB_ACTIONS)" == "true"
+ACTIONS_GROUP = @echo ^#^#[group]$(@:yes-=)
+ACTIONS_ENDGROUP = @echo ^#^#[endgroup]
+!else
+ACTIONS_GROUP = @:: $(empty)
+ACTIONS_ENDGROUP = @::
+!endif
 
 !include $(srcdir)/common.mk
 
@@ -863,6 +875,8 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define STACK_GROW_DIRECTION -1
 !endif
 #define COROUTINE_H "$(COROUTINE_H)"
+#define THREAD_IMPL_H "$(THREAD_IMPL_H)"
+#define THREAD_IMPL_SRC "$(THREAD_IMPL_SRC)"
 #define LOAD_RELATIVE 1
 #define DLEXT ".so"
 !if "$(libdir_basename)" != "lib"
@@ -1093,9 +1107,8 @@ miniruby.rc:
 !if "$(PROGRAM)" != ""
 $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 		$(ECHO) linking $(@:\=/)
-		$(Q) $(PURIFY) $(CC) $(MAINOBJ) \
-			$(RUBY_INSTALL_NAME).res $(OUTFLAG)$@ $(LIBRUBYARG) \
-			-link $(LDFLAGS) $(XLDFLAGS)
+		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(EXTOBJS) $(RUBY_INSTALL_NAME).res \
+			$(OUTFLAG)$@ $(LIBRUBYARG) -link $(LDFLAGS) $(XLDFLAGS)
 		$(Q) $(LDSHARED_0)
 		$(Q) $(LDSHARED_1)
 		$(Q) $(LDSHARED_2)

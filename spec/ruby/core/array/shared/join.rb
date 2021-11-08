@@ -124,6 +124,7 @@ describe :array_join_with_default_separator, shared: true do
 
       it "warns" do
         -> { [].join }.should complain(/warning: \$, is set to non-nil value/)
+        -> { [].join(nil) }.should complain(/warning: \$, is set to non-nil value/)
       end
     end
   end

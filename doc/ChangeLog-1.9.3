@@ -5746,7 +5746,7 @@ Wed Mar  2 14:06:01 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 Wed Mar  2 14:02:29 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* test/testunit/test_parallel.rb(TestParallel#spawn_runner):
-	  Fix outputing empty line in running test.
+	  Fix outputting empty line in running test.
 
 	* test/testunit/tests_for_parallel/test_third.rb: Remove `sleep`
 
@@ -5765,7 +5765,7 @@ Tue Mar  1 21:48:22 2011  Shota Fukumori  <sorah@tubusu.net>
 	* test/testunit/test_parallel.rb(TestParallelWorker#test_quit_in_test):
 	  Fix for above specification change.
 	* test/testunit/test_parallel.rb(TestParallel#spawn_runner):
-	  Fix outputing empty line in running test.
+	  Fix outputting empty line in running test.
 
 Tue Mar  1 20:51:57 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
@@ -7541,7 +7541,7 @@ Tue Jan 11 20:32:59 2011  Tanaka Akira  <akr@fsij.org>
 
 Tue Jan 11 13:06:38 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* array.c (rb_ary_resize): should care of embeded array when extending
+	* array.c (rb_ary_resize): should care of embedded array when extending
 	  the array.
 
 	* array.c (rb_ary_resize): need to set capa when changing the real
@@ -9563,7 +9563,7 @@ Wed Nov 17 16:09:52 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 Wed Nov 17 16:04:23 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* test/ruby/envutil.rb (Test::Unit::Assersions#assert_warn):
+	* test/ruby/envutil.rb (Test::Unit::Assertions#assert_warn):
 	  new assertion to assert that a particular warning message is
 	  displayed.
 	  forward port from branches/ruby_1_9_2@29795.
@@ -9781,7 +9781,7 @@ Wed Nov 10 07:20:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Tue Nov  9 21:57:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (init_funcname): allocate and build initialization
-	  funciton name at once.
+	  function name at once.
 
 Tue Nov  9 21:14:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -62969,7 +62969,7 @@ Thu Jul 12 12:24:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Thu Jul 12 10:30:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* thread.c (thread_start_func_2): moved prototye from thread_*.ci.
+	* thread.c (thread_start_func_2): moved prototype from thread_*.ci.
 
 	* thread_pthread.ci (thread_start_func_2): not use a directive
 	  inside a macro argument.  [ruby-talk:258763]
@@ -73273,7 +73273,7 @@ Fri Nov 18 17:35:09 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: add restriction to access the entried
 	  command table and manipulate other IPs (for reason of security).
-	  Now, a IP object can be controlled by only its master IP or the
+	  Now, an IP object can be controlled by only its master IP or the
 	  default IP.
 
 	* ext/tk/lib/remote-tk.rb: add restriction to manipulate.
@@ -76346,7 +76346,7 @@ Tue Jul  5 14:52:56 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/validation.rb: ditto.
 
-	* ext/tk/lib/tk/namespace.rb: arguemnts for TclTkIp#_merge_tklist
+	* ext/tk/lib/tk/namespace.rb: arguments for TclTkIp#_merge_tklist
 	  should be UTF-8 strings.
 
 Mon Jul  4 19:29:32 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
@@ -77285,7 +77285,7 @@ Sun May 15 09:57:30 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sat May 14 23:59:11 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (exc_exception, {exit,name_err,syserr}_initialize): call
-	  Execption#initialize.  fixed: [ruby-talk:142593]
+	  Exception#initialize.  fixed: [ruby-talk:142593]
 
 Sat May 14 23:56:41 2005  Erik Huelsmann  <ehuels@gmail.com>
 
@@ -77435,7 +77435,7 @@ Sat Apr 30 06:57:39 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	  (suggested by Tatsuki Sugiura)
 
 	* lib/webrick/cgi.rb
-	  (WEBrick::CGI#initalize): set a dummy to @config[:ServerSoftware]
+	  (WEBrick::CGI#initialize): set a dummy to @config[:ServerSoftware]
 	  if SERVER_SOFTWARE environment variable is not given.
 	  (WEBrick::CGI#start): req.path_info must be a String.
 	  (WEBrick::CGI::Socket#request_line): treat REQUEST_METHOD, PATH_INFO
@@ -82696,7 +82696,7 @@ Tue Sep 14 20:24:49 2004  Minero Aoki  <aamine@loveruby.net>
 	* ext/ripper/depend: Borland make does not accept pipes in
 	  Makefile rules. [ruby-dev:24589]
 
-	* ext/ripper/depend: separate rules for developpers.
+	* ext/ripper/depend: separate rules for developers.
 
 	* ext/ripper/Makefile.dev: new file.
 
@@ -82931,7 +82931,7 @@ Wed Sep  8 18:44:03 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Sep  8 15:19:49 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tcltklib/tcltklib.c (ip_init): cannot create a IP at level 4
+	* ext/tcltklib/tcltklib.c (ip_init): cannot create an IP at level 4
 
 	* ext/tk/lib/multi-tk.rb: improve 'exit' operation, security check,
 	  and error treatment
@@ -88452,7 +88452,7 @@ Tue Dec 16 03:17:29 2003  why the lucky stiff  <why@ruby-lang.org>
 
 Tue Dec 16 01:14:44 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* eval.c (catch_timer): check rb_thread_crtical in main native
+	* eval.c (catch_timer): check rb_thread_critical in main native
 	  thread.
 
 	* eval.c (thread_timer): just sends signals periodically, to
@@ -92616,7 +92616,7 @@ Fri Aug  8 03:22:28 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 Thu Aug  7 14:40:37 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* cygwin/GNUmakefile: better --disbale-shared option support.
+	* cygwin/GNUmakefile: better --disable-shared option support.
 
 	* cygwin/GNUmakefile: add forwarding DLL target for cygwin.
 

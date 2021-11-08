@@ -66,7 +66,6 @@ total_i(VALUE v, void *ptr)
       case T_IMEMO:
       case T_ICLASS:
       case T_NODE:
-      case T_PAYLOAD:
       case T_ZOMBIE:
           return;
       default:
@@ -225,7 +224,6 @@ type2sym(enum ruby_value_type i)
 	CASE_TYPE(T_ICLASS);
         CASE_TYPE(T_MOVED);
 	CASE_TYPE(T_ZOMBIE);
-	CASE_TYPE(T_PAYLOAD);
 #undef CASE_TYPE
       default: rb_bug("type2sym: unknown type (%d)", i);
     }
@@ -998,6 +996,7 @@ Init_objspace(void)
      * You can use the #type method to check the type of the internal object.
      */
     rb_cInternalObjectWrapper = rb_define_class_under(rb_mObjSpace, "InternalObjectWrapper", rb_cObject);
+    rb_undef_alloc_func(rb_cInternalObjectWrapper);
     rb_define_method(rb_cInternalObjectWrapper, "type", iow_type, 0);
     rb_define_method(rb_cInternalObjectWrapper, "inspect", iow_inspect, 0);
     rb_define_method(rb_cInternalObjectWrapper, "internal_object_id", iow_internal_object_id, 0);

@@ -657,8 +657,10 @@ with the next macro.
 
 TypedData_Wrap_Struct() returns a created Ruby object as a VALUE.
 
-The klass argument is the class for the object. It is recommended
-that klass derives from rb_cObject.
+The klass argument is the class for the object.  The klass should
+derive from rb_cObject, and the allocator must be set by calling
+rb_define_alloc_func or rb_undef_alloc_func.
+
 data_type is a pointer to a const rb_data_type_t which describes
 how Ruby should manage the struct.
 
@@ -668,17 +670,17 @@ member of the struct.
   typedef struct rb_data_type_struct rb_data_type_t;
 
   struct rb_data_type_struct {
-          const char *wrap_struct_name;
-          struct {
-                  void (*dmark)(void*);
-                  void (*dfree)(void*);
-                  size_t (*dsize)(const void *);
-                  void (*dcompact)(void*);
-                  void *reserved[1];
-          } function;
-          const rb_data_type_t *parent;
-          void *data;
-          VALUE flags;
+      const char *wrap_struct_name;
+      struct {
+          void (*dmark)(void*);
+          void (*dfree)(void*);
+          size_t (*dsize)(const void *);
+          void (*dcompact)(void*);
+          void *reserved[1];
+      } function;
+      const rb_data_type_t *parent;
+      void *data;
+      VALUE flags;
   };
 
 wrap_struct_name is an identifier of this instance of the struct.
@@ -699,7 +701,7 @@ Note that it is recommended to avoid such a reference.
 ++
 
 dfree is a function to free the pointer allocation.
-If this is -1, the pointer will be just freed.
+If this is RUBY_DEFAULT_FREE, the pointer will be just freed.
 
 dsize calculates memory consumption in bytes by the struct.
 Its parameter is a pointer to your struct.

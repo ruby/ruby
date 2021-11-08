@@ -1,12 +1,11 @@
 # frozen_string_literal: true
-require 'rubygems'
-require 'rubygems/request'
-require 'rubygems/request/connection_pools'
-require 'rubygems/s3_uri_signer'
-require 'rubygems/uri_formatter'
-require 'rubygems/uri_parser'
-require 'rubygems/user_interaction'
-require 'resolv'
+require_relative '../rubygems'
+require_relative 'request'
+require_relative 'request/connection_pools'
+require_relative 's3_uri_signer'
+require_relative 'uri_formatter'
+require_relative 'uri'
+require_relative 'user_interaction'
 
 ##
 # RemoteFetcher handles the details of fetching gems and gem information from
@@ -26,15 +25,12 @@ class Gem::RemoteFetcher
     attr_accessor :uri, :original_uri
 
     def initialize(message, uri)
-      super message
+      uri = Gem::Uri.new(uri)
 
-      uri = Gem::UriParser.parse_uri(uri)
+      super uri.redact_credentials_from(message)
 
-      @original_uri = uri.dup
-
-      uri.password = 'REDACTED' if uri.respond_to?(:password) && uri.password
-
-      @uri = uri.to_s
+      @original_uri = uri.to_s
+      @uri = uri.redacted.to_s
     end
 
     def to_s # :nodoc:
@@ -76,7 +72,7 @@ class Gem::RemoteFetcher
   #            fetching the gem.
 
   def initialize(proxy=nil, dns=nil, headers={})
-    require 'rubygems/core_ext/tcpsocket_init' if Gem.configuration.ipv4_fallback_enabled
+    require_relative 'core_ext/tcpsocket_init' if Gem.configuration.ipv4_fallback_enabled
     require 'net/http'
     require 'stringio'
     require 'uri'
@@ -130,7 +126,7 @@ class Gem::RemoteFetcher
     require "fileutils"
     FileUtils.mkdir_p cache_dir rescue nil unless File.exist? cache_dir
 
-    source_uri = Gem::UriParser.parse_uri(source_uri)
+    source_uri = Gem::Uri.new(source_uri)
 
     scheme = source_uri.scheme
 
@@ -225,7 +221,7 @@ class Gem::RemoteFetcher
       unless location = response['Location']
         raise FetchError.new("redirecting but no redirect location was given", uri)
       end
-      location = Gem::UriParser.parse_uri location
+      location = Gem::Uri.new location
 
       if https?(uri) && !https?(location)
         raise FetchError.new("redirecting to non-https resource: #{location}", uri)
@@ -243,7 +239,7 @@ class Gem::RemoteFetcher
   # Downloads +uri+ and returns it as a String.
 
   def fetch_path(uri, mtime = nil, head = false)
-    uri = Gem::UriParser.parse_uri uri
+    uri = Gem::Uri.new uri
 
     unless uri.scheme
       raise ArgumentError, "uri scheme is invalid: #{uri.scheme.inspect}"

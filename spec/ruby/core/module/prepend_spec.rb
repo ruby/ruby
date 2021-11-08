@@ -222,6 +222,191 @@ describe "Module#prepend" do
     foo.call.should == 'n'
   end
 
+  it "updates the constant when a module is prepended" do
+    module ModuleSpecs::ConstUpdatePrepended
+      module M
+        FOO = 'm'
+      end
+      module A
+        FOO = 'a'
+      end
+      module B
+        include A
+        def self.foo
+          FOO
+        end
+      end
+
+      B.foo.should == 'a'
+      B.prepend M
+      B.foo.should == 'm'
+    end
+  end
+
+  it "updates the constant when a prepended module is updated" do
+    module ModuleSpecs::ConstPrependedUpdated
+      module M
+      end
+      module A
+        FOO = 'a'
+      end
+      module B
+        include A
+        prepend M
+        def self.foo
+          FOO
+        end
+      end
+      B.foo.should == 'a'
+      M.const_set(:FOO, 'm')
+      B.foo.should == 'm'
+    end
+  end
+
+  it "updates the constant when there is a base included constant and the prepended module overrides it" do
+    module ModuleSpecs::ConstIncludedPrependedOverride
+      module Base
+        FOO = 'a'
+      end
+      module A
+        include Base
+        def self.foo
+          FOO
+        end
+      end
+      A.foo.should == 'a'
+
+      module M
+        FOO = 'm'
+      end
+      A.prepend M
+      A.foo.should == 'm'
+    end
+  end
+
+  it "updates the constant when there is a base included constant and the prepended module is later updated" do
+    module ModuleSpecs::ConstIncludedPrependedLaterUpdated
+      module Base
+        FOO = 'a'
+      end
+      module A
+        include Base
+        def self.foo
+          FOO
+        end
+      end
+      A.foo.should == 'a'
+
+      module M
+      end
+      A.prepend M
+      A.foo.should == 'a'
+
+      M.const_set(:FOO, 'm')
+      A.foo.should == 'm'
+    end
+  end
+
+  it "updates the constant when a module prepended after a constant is later updated" do
+    module ModuleSpecs::ConstUpdatedPrependedAfterLaterUpdated
+      module M
+      end
+      module A
+        FOO = 'a'
+      end
+      module B
+        include A
+        def self.foo
+          FOO
+        end
+      end
+      B.foo.should == 'a'
+
+      B.prepend M
+      B.foo.should == 'a'
+
+      M.const_set(:FOO, 'm')
+      B.foo.should == 'm'
+    end
+  end
+
+  it "updates the constant when a module is prepended after another and the constant is defined later on that module" do
+    module ModuleSpecs::ConstUpdatedPrependedAfterConstDefined
+      module M
+        FOO = 'm'
+      end
+      module A
+        prepend M
+        def self.foo
+          FOO
+        end
+      end
+
+      A.foo.should == 'm'
+
+      module N
+      end
+      A.prepend N
+      A.foo.should == 'm'
+
+      N.const_set(:FOO, 'n')
+      A.foo.should == 'n'
+    end
+  end
+
+  it "updates the constant when a module is included in a prepended module and the constant is defined later" do
+    module ModuleSpecs::ConstUpdatedIncludedInPrependedConstDefinedLater
+      module A
+        def self.foo
+          FOO
+        end
+      end
+      module Base
+        FOO = 'a'
+      end
+
+      A.prepend Base
+      A.foo.should == 'a'
+
+      module N
+      end
+      module M
+        include N
+      end
+
+      A.prepend M
+
+      N.const_set(:FOO, 'n')
+      A.foo.should == 'n'
+    end
+  end
+
+  it "updates the constant when a new module with an included module is prepended" do
+    module ModuleSpecs::ConstUpdatedNewModuleIncludedPrepended
+      module A
+        FOO = 'a'
+      end
+      module B
+        include A
+        def self.foo
+          FOO
+        end
+      end
+      module N
+        FOO = 'n'
+      end
+
+      module M
+        include N
+      end
+
+      B.foo.should == 'a'
+
+      B.prepend M
+      B.foo.should == 'n'
+    end
+  end
+
   it "raises a TypeError when the argument is not a Module" do
     -> { ModuleSpecs::Basic.prepend(Class.new) }.should raise_error(TypeError)
   end

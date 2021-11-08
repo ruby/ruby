@@ -56,7 +56,7 @@ class TestISeq < Test::Unit::TestCase
     assert_equal [3, 4, 7, 9], lines(src)
   end
 
-  def test_unsupport_type
+  def test_unsupported_type
     ary = compile("p").to_a
     ary[9] = :foobar
     assert_raise_with_message(TypeError, /:foobar/) {ISeq.load(ary)}
@@ -93,6 +93,53 @@ class TestISeq < Test::Unit::TestCase
       end
     EOF
     assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
+  end
+
+  def test_super_with_block
+    iseq = compile(<<~EOF)
+      def touch(*) # :nodoc:
+        foo { super }
+      end
+      42
+    EOF
+    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
+  end
+
+  def test_super_with_block_and_kwrest
+    iseq = compile(<<~EOF)
+      def touch(**) # :nodoc:
+        foo { super }
+      end
+      42
+    EOF
+    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
+  end
+
+  def test_lambda_with_ractor_roundtrip
+    iseq = compile(<<~EOF)
+      x = 42
+      y = lambda { x }
+      Ractor.make_shareable(y)
+      y.call
+    EOF
+    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
+  end
+
+  def test_ractor_unshareable_outer_variable
+    name = "\u{2603 26a1}"
+    y = eval("proc {#{name} = nil; proc {|x| #{name} = x}}").call
+    assert_raise_with_message(ArgumentError, /\(#{name}\)/) do
+      Ractor.make_shareable(y)
+    end
+    y = eval("proc {#{name} = []; proc {|x| #{name}}}").call
+    assert_raise_with_message(Ractor::IsolationError, /`#{name}'/) do
+      Ractor.make_shareable(y)
+    end
+    obj = Object.new
+    def obj.foo(*) ->{super} end
+    assert_raise_with_message(Ractor::IsolationError, /hidden variable/) do
+      Ractor.make_shareable(obj.foo)
+    end
   end
 
   def test_disasm_encoding
@@ -318,6 +365,14 @@ class TestISeq < Test::Unit::TestCase
     end
   end
 
+  def anon_star(*); end
+
+  def test_anon_param_in_disasm
+    iseq = RubyVM::InstructionSequence.of(method(:anon_star))
+    param_names = iseq.to_a[iseq.to_a.index(:method) + 1]
+    assert_equal [2], param_names
+  end
+
   def strip_lineno(source)
     source.gsub(/^.*?: /, "")
   end
@@ -454,6 +509,11 @@ class TestISeq < Test::Unit::TestCase
     a1 = iseq.to_a
     a2 = iseq2.to_a
     assert_equal(a1, a2, message(mesg) {diff iseq.disassemble, iseq2.disassemble})
+    if iseq2.script_lines
+      assert_kind_of(Array, iseq2.script_lines)
+    else
+      assert_nil(iseq2.script_lines)
+    end
     iseq2
   end
 

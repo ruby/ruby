@@ -456,6 +456,31 @@ p Foo::Bar
     end;
   end
 
+  def test_autoload_after_failed_and_removed_from_loaded_features
+    Dir.mktmpdir('autoload') do |tmpdir|
+      autoload_path = File.join(tmpdir, "test-bug-15790.rb")
+      File.write(autoload_path, '')
+
+      assert_separately(%W[-I #{tmpdir}], <<-RUBY)
+        path = #{File.realpath(autoload_path).inspect}
+        autoload :X, path
+        assert_equal(path, Object.autoload?(:X))
+
+        assert_raise(NameError){X}
+        assert_nil(Object.autoload?(:X))
+        assert_equal(false, Object.const_defined?(:X))
+
+        $LOADED_FEATURES.delete(path)
+        assert_equal(false, Object.const_defined?(:X))
+        assert_nil(Object.autoload?(:X))
+
+        assert_raise(NameError){X}
+        assert_equal(false, Object.const_defined?(:X))
+        assert_nil(Object.autoload?(:X))
+      RUBY
+    end
+  end
+
   def add_autoload(path)
     (@autoload_paths ||= []) << path
     ::Object.class_eval {autoload(:AutoloadTest, path)}
@@ -463,7 +488,7 @@ p Foo::Bar
 
   def remove_autoload_constant
     $".replace($" - @autoload_paths)
-    ::Object.class_eval {remove_const(:AutoloadTest)}
+    ::Object.class_eval {remove_const(:AutoloadTest)} if defined? Object::AutoloadTest
     TestAutoload.class_eval {remove_const(:AutoloadTest)} if defined? TestAutoload::AutoloadTest
   end
 end

@@ -21,6 +21,9 @@ module ErrorHighlight
   end
 
   class Spotter
+    class NonAscii < Exception; end
+    private_constant :NonAscii
+
     def initialize(node, point_type: :name, name: nil)
       @node = node
       @point_type = point_type
@@ -31,7 +34,15 @@ module ErrorHighlight
       @multiline = false # Allow multiline spot
 
       @fetch = -> (lineno, last_lineno = lineno) do
-        @node.script_lines[lineno - 1 .. last_lineno - 1].join("")
+        snippet = @node.script_lines[lineno - 1 .. last_lineno - 1].join("")
+        snippet += "\n" unless snippet.end_with?("\n")
+
+        # It require some work to support Unicode (or multibyte) characters.
+        # Tentatively, we stop highlighting if the code snippet has non-ascii characters.
+        # See https://github.com/ruby/error_highlight/issues/4
+        raise NonAscii unless snippet.ascii_only?
+
+        snippet
       end
     end
 
@@ -115,6 +126,9 @@ module ErrorHighlight
       else
         return nil
       end
+
+    rescue NonAscii
+      nil
     end
 
     private
@@ -134,7 +148,7 @@ module ErrorHighlight
       nd_recv, mid, nd_args = @node.children
       lineno = nd_recv.last_lineno
       lines = @fetch[lineno, @node.last_lineno]
-      if mid == :[] && lines.match(/\G\s*(\[(?:\s*\])?)/, nd_recv.last_column)
+      if mid == :[] && lines.match(/\G[\s)]*(\[(?:\s*\])?)/, nd_recv.last_column)
         @beg_column = $~.begin(1)
         @snippet = lines[/.*\n/]
         @beg_lineno = @end_lineno = lineno
@@ -143,11 +157,11 @@ module ErrorHighlight
             @end_column = $~.end(0)
           end
         else
-          if lines.match(/\G\s*?\[\s*\]/, nd_recv.last_column)
+          if lines.match(/\G[\s)]*?\[\s*\]/, nd_recv.last_column)
             @end_column = $~.end(0)
           end
         end
-      elsif lines.match(/\G\s*?(\&?\.)(\s*?)(#{ Regexp.quote(mid) }).*\n/, nd_recv.last_column)
+      elsif lines.match(/\G[\s)]*?(\&?\.)(\s*?)(#{ Regexp.quote(mid) }).*\n/, nd_recv.last_column)
         lines = $` + $&
         @beg_column = $~.begin($2.include?("\n") ? 3 : 1)
         @end_column = $~.end(3)
@@ -193,16 +207,16 @@ module ErrorHighlight
       nd_recv, mid, nd_args = @node.children
       *nd_args, _nd_last_arg, _nil = nd_args.children
       fetch_line(nd_recv.last_lineno)
-      if mid == :[]= && @snippet.match(/\G\s*(\[)/, nd_recv.last_column)
+      if mid == :[]= && @snippet.match(/\G[\s)]*(\[)/, nd_recv.last_column)
         @beg_column = $~.begin(1)
         args_last_column = $~.end(0)
         if nd_args.last && nd_recv.last_lineno == nd_args.last.last_lineno
           args_last_column = nd_args.last.last_column
         end
-        if @snippet.match(/\s*\]\s*=/, args_last_column)
+        if @snippet.match(/[\s)]*\]\s*=/, args_last_column)
           @end_column = $~.end(0)
         end
-      elsif @snippet.match(/\G\s*(\.\s*#{ Regexp.quote(mid.to_s.sub(/=\z/, "")) }\s*=)/, nd_recv.last_column)
+      elsif @snippet.match(/\G[\s)]*(\.\s*#{ Regexp.quote(mid.to_s.sub(/=\z/, "")) }\s*=)/, nd_recv.last_column)
         @beg_column = $~.begin(1)
         @end_column = $~.end(1)
       end
@@ -218,7 +232,7 @@ module ErrorHighlight
     def spot_attrasgn_for_args
       nd_recv, mid, nd_args = @node.children
       fetch_line(nd_recv.last_lineno)
-      if mid == :[]= && @snippet.match(/\G\s*\[/, nd_recv.last_column)
+      if mid == :[]= && @snippet.match(/\G[\s)]*\[/, nd_recv.last_column)
         @beg_column = $~.end(0)
         if nd_recv.last_lineno == nd_args.last_lineno
           @end_column = nd_args.last_column
@@ -240,7 +254,7 @@ module ErrorHighlight
       fetch_line(nd_recv.last_lineno)
       if nd_arg
         # binary operator
-        if @snippet.match(/\G\s*(#{ Regexp.quote(op) })/, nd_recv.last_column)
+        if @snippet.match(/\G[\s)]*(#{ Regexp.quote(op) })/, nd_recv.last_column)
           @beg_column = $~.begin(1)
           @end_column = $~.end(1)
         end
@@ -316,7 +330,7 @@ module ErrorHighlight
     def spot_op_asgn1_for_name
       nd_recv, op, nd_args, _nd_rhs = @node.children
       fetch_line(nd_recv.last_lineno)
-      if @snippet.match(/\G\s*(\[)/, nd_recv.last_column)
+      if @snippet.match(/\G[\s)]*(\[)/, nd_recv.last_column)
         bracket_beg_column = $~.begin(1)
         args_last_column = $~.end(0)
         if nd_args && nd_recv.last_lineno == nd_args.last_lineno
@@ -363,7 +377,7 @@ module ErrorHighlight
     def spot_op_asgn2_for_name
       nd_recv, _qcall, attr, op, _nd_rhs = @node.children
       fetch_line(nd_recv.last_lineno)
-      if @snippet.match(/\G\s*(\.)\s*#{ Regexp.quote(attr) }()\s*(#{ Regexp.quote(op) })(=)/, nd_recv.last_column)
+      if @snippet.match(/\G[\s)]*(\.)\s*#{ Regexp.quote(attr) }()\s*(#{ Regexp.quote(op) })(=)/, nd_recv.last_column)
         case @name
         when attr
           @beg_column = $~.begin(1)

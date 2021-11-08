@@ -138,7 +138,7 @@ def parse_scripts(data, categories)
     {:fn => 'DerivedCoreProperties.txt', :title => 'Derived Property'},
     {:fn => 'Scripts.txt', :title => 'Script'},
     {:fn => 'PropList.txt', :title => 'Binary Property'},
-    {:fn => 'emoji-data.txt', :title => 'Emoji'}
+    {:fn => 'emoji/emoji-data.txt', :title => 'Emoji'}
   ]
   current = nil
   cps = []
@@ -305,13 +305,13 @@ def constantize_blockname(name)
 end
 
 def get_file(name)
-  File.join(ARGV[name.start_with?("emoji-") ? 1 : 0], name)
+  File.join(ARGV[name.start_with?("emoji-[stz]") ? 1 : 0], name)
 end
 
 def data_foreach(name, &block)
   fn = get_file(name)
   warn "Reading #{name}"
-  if /^emoji-/ =~ name
+  if /^emoji/ =~ name
     sep = ""
     pat = /^# #{Regexp.quote(File.basename(name))}.*^# Version: ([\d.]+)/m
     type = :Emoji

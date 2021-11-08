@@ -196,26 +196,12 @@ RSpec.describe "real world edgecases", :realworld => true do
     expect(lockfile).to include(rubygems_version("paperclip", "~> 5.1.0"))
   end
 
-  # https://github.com/rubygems/bundler/issues/1500
-  it "does not fail install because of gem plugins" do
-    realworld_system_gems("open_gem --version 1.4.2", "rake --version 0.9.2")
-    gemfile <<-G
-      source "https://rubygems.org"
-
-      gem 'rack', '1.0.1'
-    G
-
-    bundle "config set --local path vendor/bundle"
-    bundle :install
-    expect(err).not_to include("Could not find rake")
-    expect(err).to be_empty
-  end
-
   it "outputs a helpful error message when gems have invalid gemspecs" do
-    install_gemfile <<-G, :standalone => true, :raise_on_error => false
+    install_gemfile <<-G, :standalone => true, :raise_on_error => false, :env => { "BUNDLE_FORCE_RUBY_PLATFORM" => "1" }
       source 'https://rubygems.org'
       gem "resque-scheduler", "2.2.0"
       gem "redis-namespace", "1.6.0" # for a consistent resolution including ruby 2.3.0
+      gem "ruby2_keywords", "0.0.5"
     G
     expect(err).to include("You have one or more invalid gemspecs that need to be fixed.")
     expect(err).to include("resque-scheduler 2.2.0 has an invalid gemspec")

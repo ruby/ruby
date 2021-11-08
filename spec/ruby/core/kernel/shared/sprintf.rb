@@ -320,6 +320,10 @@ describe :kernel_sprintf, shared: true do
         @method.call("%s", "abc").should == "abc"
       end
 
+      it "substitutes '' for nil" do
+        @method.call("%s", nil).should == ""
+      end
+
       it "converts argument to string with to_s" do
         obj = mock("string")
         obj.should_receive(:to_s).and_return("abc")
@@ -346,6 +350,28 @@ describe :kernel_sprintf, shared: true do
       it "formats string with precision" do
         Kernel.format("%.3s", "hello").should == "hel"
         Kernel.format("%-3.3s", "hello").should == "hel"
+      end
+
+      it "formats string with width" do
+        @method.call("%6s", "abc").should == "   abc"
+        @method.call("%6s", "abcdefg").should == "abcdefg"
+      end
+
+      it "formats string with width and precision" do
+        @method.call("%4.6s", "abc").should == " abc"
+        @method.call("%4.6s", "abcdefg").should == "abcdef"
+      end
+
+      it "formats nli with width" do
+        @method.call("%6s", nil).should == "      "
+      end
+
+      it "formats nli with precision" do
+        @method.call("%.6s", nil).should == ""
+      end
+
+      it "formats nil with width and precision" do
+        @method.call("%4.6s", nil).should == "    "
       end
 
       it "formats multibyte string with precision" do

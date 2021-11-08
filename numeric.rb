@@ -70,6 +70,17 @@ class Integer
     Primitive.cexpr! 'rb_int_comp(self)'
   end
 
+  # call-seq:
+  #    int.abs        ->  integer
+  #    int.magnitude  ->  integer
+  #
+  # Returns the absolute value of +int+.
+  #
+  #    (-12345).abs   #=> 12345
+  #    -12345.abs     #=> 12345
+  #    12345.abs      #=> 12345
+  #
+  # Integer#magnitude is an alias for Integer#abs.
   def abs
     Primitive.attr! 'inline'
     Primitive.cexpr! 'rb_int_abs(self)'
@@ -138,10 +149,13 @@ class Integer
     return true
   end
 
+  alias magnitude abs
+=begin
   def magnitude
     Primitive.attr! 'inline'
     Primitive.cexpr! 'rb_int_abs(self)'
   end
+=end
 
   #  call-seq:
   #     int.odd?  ->  true or false
@@ -268,7 +282,7 @@ class Float
   #
   def zero?
     Primitive.attr! 'inline'
-    Primitive.cexpr! 'FLOAT_ZERO_P(self) ? Qtrue : Qfalse'
+    Primitive.cexpr! 'RBOOL(FLOAT_ZERO_P(self))'
   end
 
   #
@@ -279,7 +293,7 @@ class Float
   #
   def positive?
     Primitive.attr! 'inline'
-    Primitive.cexpr! 'RFLOAT_VALUE(self) > 0.0 ? Qtrue : Qfalse'
+    Primitive.cexpr! 'RBOOL(RFLOAT_VALUE(self) > 0.0)'
   end
 
   #
@@ -290,6 +304,6 @@ class Float
   #
   def negative?
     Primitive.attr! 'inline'
-    Primitive.cexpr! 'RFLOAT_VALUE(self) < 0.0 ? Qtrue : Qfalse'
+    Primitive.cexpr! 'RBOOL(RFLOAT_VALUE(self) < 0.0)'
   end
 end

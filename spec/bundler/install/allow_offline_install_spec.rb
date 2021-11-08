@@ -75,6 +75,7 @@ RSpec.describe "bundle install with :allow_offline_install" do
       git = build_git "a", "1.0.0", :path => lib_path("a")
       update_git("a", :path => git.path, :branch => "new_branch")
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "a", :git => #{git.path.to_s.dump}
       G
 
@@ -84,6 +85,7 @@ RSpec.describe "bundle install with :allow_offline_install" do
 
       break_git_remote_ops! do
         install_gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
           gem "a", :git => #{git.path.to_s.dump}, :branch => "new_branch"
         G
       end

@@ -35,7 +35,7 @@
 
 #define SYMBOL_PINNED_P(sym) (RSYMBOL(sym)->id&~ID_SCOPE_MASK)
 
-#define STATIC_SYM2ID(sym) RSHIFT((unsigned long)(sym), RUBY_SPECIAL_SHIFT)
+#define STATIC_SYM2ID(sym) RSHIFT((VALUE)(sym), RUBY_SPECIAL_SHIFT)
 
 static ID register_static_symid(ID, const char *, long, rb_encoding *);
 static ID register_static_symid_str(ID, VALUE);
@@ -482,14 +482,12 @@ get_id_entry(ID id, const enum id_entry_type t)
 }
 
 static inline ID
-#ifdef __GNUC__
-__attribute__((unused))
-#endif
 rb_id_serial_to_id(rb_id_serial_t num)
 {
     if (is_notop_id((ID)num)) {
         VALUE sym = get_id_serial_entry(num, 0, ID_ENTRY_SYM);
-	return SYM2ID(sym);
+	if (sym) return SYM2ID(sym);
+	return ((ID)num << ID_SCOPE_SHIFT) | ID_INTERNAL | ID_STATIC_SYM;
     }
     else {
 	return (ID)num;
@@ -1053,17 +1051,6 @@ rb_is_attrset_sym(VALUE sym)
     return is_attrset_sym(sym);
 }
 
-/**
- * Returns ID for the given name if it is interned already, or 0.
- *
- * \param namep   the pointer to the name object
- * \return        the ID for *namep
- * \pre           the object referred by \p namep must be a Symbol or
- *                a String, or possible to convert with to_str method.
- * \post          the object referred by \p namep is a Symbol or a
- *                String if non-zero value is returned, or is a String
- *                if 0 is returned.
- */
 ID
 rb_check_id(volatile VALUE *namep)
 {
@@ -1097,18 +1084,6 @@ rb_check_id(volatile VALUE *namep)
     return lookup_str_id(name);
 }
 
-/**
- * Returns Symbol for the given name if it is interned already, or
- * nil.
- *
- * \param namep   the pointer to the name object
- * \return        the Symbol for *namep
- * \pre           the object referred by \p namep must be a Symbol or
- *                a String, or possible to convert with to_str method.
- * \post          the object referred by \p namep is a Symbol or a
- *                String if non-nil value is returned, or is a String
- *                if nil is returned.
- */
 VALUE
 rb_check_symbol(volatile VALUE *namep)
 {

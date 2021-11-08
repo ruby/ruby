@@ -45,7 +45,7 @@
 #include "builtin.h"
 
 /*!
- * \defgroup exception Exception handlings
+ * \addtogroup exception
  * \{
  */
 
@@ -108,6 +108,7 @@ err_position_0(char *buf, long len, const char *file, int line)
     }
 }
 
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 5, 0)
 static VALUE
 err_vcatf(VALUE str, const char *pre, const char *file, int line,
 	  const char *fmt, va_list args)
@@ -217,9 +218,7 @@ static VALUE
 rb_warning_s_aref(VALUE mod, VALUE category)
 {
     rb_warning_category_t cat = rb_warning_category_from_name(category);
-    if (rb_warning_category_enabled_p(cat))
-        return Qtrue;
-    return Qfalse;
+    return RBOOL(rb_warning_category_enabled_p(cat));
 }
 
 /*
@@ -346,6 +345,7 @@ rb_write_warning_str(VALUE str)
     rb_warning_warn(rb_mWarning, str);
 }
 
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 4, 0)
 static VALUE
 warn_vsprintf(rb_encoding *enc, const char *file, int line, const char *fmt, va_list args)
 {
@@ -398,6 +398,7 @@ rb_category_compile_warn(rb_warning_category_t category, const char *file, int l
     rb_warn_category(str, rb_warning_category_to_name(category));
 }
 
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 0)
 static VALUE
 warning_string(rb_encoding *enc, const char *fmt, va_list args)
 {
@@ -718,6 +719,7 @@ postscript_dump(FILE *out)
     bug_important_message(out, msg, msglen);
 }
 
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 0)
 static void
 bug_report_begin_valist(FILE *out, const char *fmt, va_list args)
 {
@@ -781,6 +783,7 @@ die(void)
     abort();
 }
 
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 0)
 void
 rb_bug_without_die(const char *fmt, va_list args)
 {
@@ -911,9 +914,9 @@ static const char builtin_types[][10] = {
     "",				/* 0x17 */
     "",				/* 0x18 */
     "",				/* 0x19 */
-    "Memo",			/* internal use: general memo */
-    "Node",			/* internal use: syntax tree node */
-    "iClass",			/* internal use: mixed-in module holder */
+    "<Memo>",			/* internal use: general memo */
+    "<Node>",			/* internal use: syntax tree node */
+    "<iClass>", 		/* internal use: mixed-in module holder */
 };
 
 const char *
@@ -974,7 +977,7 @@ rb_builtin_class_name(VALUE x)
     return etype;
 }
 
-NORETURN(static void unexpected_type(VALUE, int, int));
+COLDFUNC NORETURN(static void unexpected_type(VALUE, int, int));
 #define UNDEF_LEAKED "undef leaked to the Ruby space"
 
 static void
@@ -1003,12 +1006,20 @@ rb_check_type(VALUE x, int t)
 {
     int xt;
 
-    if (x == Qundef) {
+    if (RB_UNLIKELY(x == Qundef)) {
 	rb_bug(UNDEF_LEAKED);
     }
 
     xt = TYPE(x);
-    if (xt != t || (xt == T_DATA && RTYPEDDATA_P(x))) {
+    if (xt != t || (xt == T_DATA && rbimpl_rtypeddata_p(x))) {
+        /*
+         * Typed data is not simple `T_DATA`, but in a sense an
+         * extension of `struct RVALUE`, which are incompatible with
+         * each other except when inherited.
+         *
+         * So it is not enough to just check `T_DATA`, it must be
+         * identified by its `type` using `Check_TypedStruct` instead.
+         */
 	unexpected_type(x, xt, t);
     }
 }
@@ -1016,7 +1027,7 @@ rb_check_type(VALUE x, int t)
 void
 rb_unexpected_type(VALUE x, int t)
 {
-    if (x == Qundef) {
+    if (RB_UNLIKELY(x == Qundef)) {
 	rb_bug(UNDEF_LEAKED);
     }
 
@@ -1098,6 +1109,7 @@ VALUE rb_eNotImpError;
 VALUE rb_eNoMemError;
 VALUE rb_cNameErrorMesg;
 VALUE rb_eNoMatchingPatternError;
+VALUE rb_eNoMatchingPatternKeyError;
 
 VALUE rb_eScriptError;
 VALUE rb_eSyntaxError;
@@ -1110,7 +1122,7 @@ static VALUE rb_eNOERROR;
 ID ruby_static_id_cause;
 #define id_cause ruby_static_id_cause
 static ID id_message, id_backtrace;
-static ID id_key, id_args, id_Errno, id_errno, id_i_path;
+static ID id_key, id_matchee, id_args, id_Errno, id_errno, id_i_path;
 static ID id_receiver, id_recv, id_iseq, id_local_variables;
 static ID id_private_call_p, id_top, id_bottom;
 #define id_bt idBt
@@ -1231,7 +1243,7 @@ rb_get_message(VALUE exc)
 static VALUE
 exc_s_to_tty_p(VALUE self)
 {
-    return rb_stderr_tty_p() ? Qtrue : Qfalse;
+    return RBOOL(rb_stderr_tty_p());
 }
 
 /*
@@ -1271,8 +1283,8 @@ exc_full_message(int argc, VALUE *argv, VALUE exc)
 	rb_get_kwargs(opt, kw, 0, kw_max_, args);
 	switch (args[kw_highlight]) {
 	  default:
-	    rb_raise(rb_eArgError, "expected true or false as "
-		     "highlight: %+"PRIsVALUE, args[kw_highlight]);
+            rb_bool_expected(args[kw_highlight], "highlight");
+	    UNREACHABLE;
 	  case Qundef: args[kw_highlight] = Qnil; break;
 	  case Qtrue: case Qfalse: case Qnil: break;
 	}
@@ -1536,9 +1548,7 @@ exc_equal(VALUE exc, VALUE obj)
 
     if (!rb_equal(rb_attr_get(exc, id_mesg), mesg))
 	return Qfalse;
-    if (!rb_equal(exc_backtrace(exc), backtrace))
-	return Qfalse;
-    return Qtrue;
+    return rb_equal(exc_backtrace(exc), backtrace);
 }
 
 /*
@@ -1626,10 +1636,7 @@ exit_success_p(VALUE exc)
     if (NIL_P(status_val))
 	return Qtrue;
     status = NUM2INT(status_val);
-    if (WIFEXITED(status) && WEXITSTATUS(status) == EXIT_SUCCESS)
-	return Qtrue;
-
-    return Qfalse;
+    return RBOOL(WIFEXITED(status) && WEXITSTATUS(status) == EXIT_SUCCESS);
 }
 
 static VALUE
@@ -1802,7 +1809,7 @@ static VALUE
 nometh_err_init_attr(VALUE exc, VALUE args, int priv)
 {
     rb_ivar_set(exc, id_args, args);
-    rb_ivar_set(exc, id_private_call_p, priv ? Qtrue : Qfalse);
+    rb_ivar_set(exc, id_private_call_p, RBOOL(priv));
     return exc;
 }
 
@@ -1979,7 +1986,7 @@ name_err_mesg_to_str(VALUE obj)
 	    break;
 	  default:
 	    d = rb_protect(name_err_mesg_receiver_name, obj, &state);
-	    if (state || d == Qundef || d == Qnil)
+	    if (state || d == Qundef || NIL_P(d))
 		d = rb_protect(rb_inspect, obj, &state);
 	    if (state) {
 		rb_set_errinfo(Qnil);
@@ -2155,6 +2162,73 @@ key_err_initialize(int argc, VALUE *argv, VALUE self)
 
     return self;
 }
+
+/*
+ * call-seq:
+ *   no_matching_pattern_key_error.matchee  -> object
+ *
+ * Return the matchee associated with this NoMatchingPatternKeyError exception.
+ */
+
+static VALUE
+no_matching_pattern_key_err_matchee(VALUE self)
+{
+    VALUE matchee;
+
+    matchee = rb_ivar_lookup(self, id_matchee, Qundef);
+    if (matchee != Qundef) return matchee;
+    rb_raise(rb_eArgError, "no matchee is available");
+}
+
+/*
+ * call-seq:
+ *   no_matching_pattern_key_error.key  -> object
+ *
+ * Return the key caused this NoMatchingPatternKeyError exception.
+ */
+
+static VALUE
+no_matching_pattern_key_err_key(VALUE self)
+{
+    VALUE key;
+
+    key = rb_ivar_lookup(self, id_key, Qundef);
+    if (key != Qundef) return key;
+    rb_raise(rb_eArgError, "no key is available");
+}
+
+/*
+ * call-seq:
+ *   NoMatchingPatternKeyError.new(message=nil, matchee: nil, key: nil) -> no_matching_pattern_key_error
+ *
+ * Construct a new +NoMatchingPatternKeyError+ exception with the given message,
+ * matchee and key.
+ */
+
+static VALUE
+no_matching_pattern_key_err_initialize(int argc, VALUE *argv, VALUE self)
+{
+    VALUE options;
+
+    rb_call_super(rb_scan_args(argc, argv, "01:", NULL, &options), argv);
+
+    if (!NIL_P(options)) {
+        ID keywords[2];
+        VALUE values[numberof(keywords)];
+        int i;
+        keywords[0] = id_matchee;
+        keywords[1] = id_key;
+        rb_get_kwargs(options, keywords, 0, numberof(values), values);
+        for (i = 0; i < numberof(values); ++i) {
+            if (values[i] != Qundef) {
+                rb_ivar_set(self, keywords[i], values[i]);
+            }
+        }
+    }
+
+    return self;
+}
+
 
 /*
  * call-seq:
@@ -2869,6 +2943,10 @@ Init_Exception(void)
     rb_eEncodingError = rb_define_class("EncodingError", rb_eStandardError);
     rb_eEncCompatError = rb_define_class_under(rb_cEncoding, "CompatibilityError", rb_eEncodingError);
     rb_eNoMatchingPatternError = rb_define_class("NoMatchingPatternError", rb_eStandardError);
+    rb_eNoMatchingPatternKeyError = rb_define_class("NoMatchingPatternKeyError", rb_eNoMatchingPatternError);
+    rb_define_method(rb_eNoMatchingPatternKeyError, "initialize", no_matching_pattern_key_err_initialize, -1);
+    rb_define_method(rb_eNoMatchingPatternKeyError, "matchee", no_matching_pattern_key_err_matchee, 0);
+    rb_define_method(rb_eNoMatchingPatternKeyError, "key", no_matching_pattern_key_err_key, 0);
 
     syserr_tbl = st_init_numtable();
     rb_eSystemCallError = rb_define_class("SystemCallError", rb_eStandardError);
@@ -2892,6 +2970,7 @@ Init_Exception(void)
     id_message = rb_intern_const("message");
     id_backtrace = rb_intern_const("backtrace");
     id_key = rb_intern_const("key");
+    id_matchee = rb_intern_const("matchee");
     id_args = rb_intern_const("args");
     id_receiver = rb_intern_const("receiver");
     id_private_call_p = rb_intern_const("private_call?");
@@ -3109,36 +3188,41 @@ rb_syserr_new_path_in(const char *func_name, int n, VALUE path)
 }
 #endif
 
+NORETURN(static void rb_mod_exc_raise(VALUE exc, VALUE mod));
+
+static void
+rb_mod_exc_raise(VALUE exc, VALUE mod)
+{
+    rb_extend_object(exc, mod);
+    rb_exc_raise(exc);
+}
+
 void
 rb_mod_sys_fail(VALUE mod, const char *mesg)
 {
     VALUE exc = make_errno_exc(mesg);
-    rb_extend_object(exc, mod);
-    rb_exc_raise(exc);
+    rb_mod_exc_raise(exc, mod);
 }
 
 void
 rb_mod_sys_fail_str(VALUE mod, VALUE mesg)
 {
     VALUE exc = make_errno_exc_str(mesg);
-    rb_extend_object(exc, mod);
-    rb_exc_raise(exc);
+    rb_mod_exc_raise(exc, mod);
 }
 
 void
 rb_mod_syserr_fail(VALUE mod, int e, const char *mesg)
 {
     VALUE exc = rb_syserr_new(e, mesg);
-    rb_extend_object(exc, mod);
-    rb_exc_raise(exc);
+    rb_mod_exc_raise(exc, mod);
 }
 
 void
 rb_mod_syserr_fail_str(VALUE mod, int e, VALUE mesg)
 {
     VALUE exc = rb_syserr_new_str(e, mesg);
-    rb_extend_object(exc, mod);
-    rb_exc_raise(exc);
+    rb_mod_exc_raise(exc, mod);
 }
 
 static void

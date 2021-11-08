@@ -38,6 +38,8 @@ module TestWEBrick
   require "test/unit" unless defined?(Test::Unit)
   include Test::Unit::Assertions
   extend Test::Unit::Assertions
+  include Test::Unit::CoreAssertions
+  extend Test::Unit::CoreAssertions
 
   module_function
 

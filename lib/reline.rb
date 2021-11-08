@@ -7,6 +7,7 @@ require 'reline/key_actor'
 require 'reline/key_stroke'
 require 'reline/line_editor'
 require 'reline/history'
+require 'reline/terminfo'
 require 'rbconfig'
 
 module Reline
@@ -15,8 +16,24 @@ module Reline
 
   class ConfigEncodingConversionError < StandardError; end
 
-  Key = Struct.new('Key', :char, :combined_char, :with_meta)
+  Key = Struct.new('Key', :char, :combined_char, :with_meta) do
+    def match?(other)
+      case other
+      when Reline::Key
+        (other.char.nil? or char.nil? or char == other.char) and
+        (other.combined_char.nil? or combined_char.nil? or combined_char == other.combined_char) and
+        (other.with_meta.nil? or with_meta.nil? or with_meta == other.with_meta)
+      when Integer, Symbol
+        (combined_char and combined_char == other) or
+        (combined_char.nil? and char and char == other)
+      else
+        false
+      end
+    end
+    alias_method :==, :match?
+  end
   CursorPos = Struct.new(:x, :y)
+  DialogRenderInfo = Struct.new(:pos, :contents, :bg_color, :width, :height, :scrollbar, keyword_init: true)
 
   class Core
     ATTR_READER_NAMES = %i(
@@ -43,6 +60,7 @@ module Reline
 
     def initialize
       self.output = STDOUT
+      @dialog_proc_list = []
       yield self
       @completion_quote_character = nil
       @bracketed_paste_finished = false
@@ -105,6 +123,14 @@ module Reline
       @completion_proc = p
     end
 
+    def autocompletion
+      @config.autocompletion
+    end
+
+    def autocompletion=(val)
+      @config.autocompletion = val
+    end
+
     def output_modifier_proc=(p)
       raise ArgumentError unless p.respond_to?(:call) or p.nil?
       @output_modifier_proc = p
@@ -127,6 +153,12 @@ module Reline
     def dig_perfect_match_proc=(p)
       raise ArgumentError unless p.respond_to?(:call) or p.nil?
       @dig_perfect_match_proc = p
+    end
+
+    def add_dialog_proc(name_sym, p, context = nil)
+      raise ArgumentError unless p.respond_to?(:call) or p.nil?
+      raise ArgumentError unless name_sym.instance_of?(Symbol)
+      @dialog_proc_list << [name_sym, p, context]
     end
 
     def input=(val)
@@ -169,6 +201,46 @@ module Reline
     def get_screen_size
       Reline::IOGate.get_screen_size
     end
+
+    Reline::DEFAULT_DIALOG_PROC_AUTOCOMPLETE = ->() {
+      # autocomplete
+      return nil unless config.autocompletion
+      if just_cursor_moving and completion_journey_data.nil?
+        # Auto complete starts only when edited
+        return nil
+      end
+      pre, target, post = retrieve_completion_block(true)
+      if target.nil? or target.empty? or (completion_journey_data&.pointer == -1 and target.size <= 3)
+        return nil
+      end
+      if completion_journey_data and completion_journey_data.list
+        result = completion_journey_data.list.dup
+        result.shift
+        pointer = completion_journey_data.pointer - 1
+      else
+        result = call_completion_proc_with_checking_args(pre, target, post)
+        pointer = nil
+      end
+      if result and result.size == 1 and result[0] == target and pointer != 0
+        result = nil
+      end
+      target_width = Reline::Unicode.calculate_width(target)
+      x = cursor_pos.x - target_width
+      if x < 0
+        x = screen_width + x
+        y = -1
+      else
+        y = 0
+      end
+      cursor_pos_to_render = Reline::CursorPos.new(x, y)
+      if context and context.is_a?(Array)
+        context.clear
+        context.push(cursor_pos_to_render, result, pointer, dialog)
+      end
+      dialog.pointer = pointer
+      DialogRenderInfo.new(pos: cursor_pos_to_render, contents: result, scrollbar: true, height: 15)
+    }
+    Reline::DEFAULT_DIALOG_CONTEXT = Array.new
 
     def readmultiline(prompt = '', add_hist = false, &confirm_multiline_termination)
       unless confirm_multiline_termination
@@ -229,6 +301,10 @@ module Reline
       line_editor.auto_indent_proc = auto_indent_proc
       line_editor.dig_perfect_match_proc = dig_perfect_match_proc
       line_editor.pre_input_hook = pre_input_hook
+      @dialog_proc_list.each do |d|
+        name_sym, dialog_proc, context = d
+        line_editor.add_dialog_proc(name_sym, dialog_proc, context)
+      end
 
       unless config.test_mode
         config.read
@@ -302,25 +378,9 @@ module Reline
           break
         when :matching
           if buffer.size == 1
-            begin
-              succ_c = nil
-              Timeout.timeout(keyseq_timeout / 1000.0) {
-                succ_c = Reline::IOGate.getc
-              }
-            rescue Timeout::Error # cancel matching only when first byte
-              block.([Reline::Key.new(c, c, false)])
-              break
-            else
-              if key_stroke.match_status(buffer.dup.push(succ_c)) == :unmatched
-                if c == "\e".ord
-                  block.([Reline::Key.new(succ_c, succ_c | 0b10000000, true)])
-                else
-                  block.([Reline::Key.new(c, c, false), Reline::Key.new(succ_c, succ_c, false)])
-                end
-                break
-              else
-                Reline::IOGate.ungetc(succ_c)
-              end
+            case read_2nd_character_of_key_sequence(keyseq_timeout, buffer, c, block)
+            when :break then break
+            when :next  then next
             end
           end
         when :unmatched
@@ -333,6 +393,38 @@ module Reline
             block.(expanded)
           end
           break
+        end
+      end
+    end
+
+    private def read_2nd_character_of_key_sequence(keyseq_timeout, buffer, c, block)
+      begin
+        succ_c = nil
+        Timeout.timeout(keyseq_timeout / 1000.0) {
+          succ_c = Reline::IOGate.getc
+        }
+      rescue Timeout::Error # cancel matching only when first byte
+        block.([Reline::Key.new(c, c, false)])
+        return :break
+      else
+        case key_stroke.match_status(buffer.dup.push(succ_c))
+        when :unmatched
+          if c == "\e".ord
+            block.([Reline::Key.new(succ_c, succ_c | 0b10000000, true)])
+          else
+            block.([Reline::Key.new(c, c, false), Reline::Key.new(succ_c, succ_c, false)])
+          end
+          return :break
+        when :matching
+          Reline::IOGate.ungetc(succ_c)
+          return :next
+        when :matched
+          buffer << succ_c
+          expanded = key_stroke.expand(buffer).map{ |expanded_c|
+            Reline::Key.new(expanded_c, expanded_c, false)
+          }
+          block.(expanded)
+          return :break
         end
       end
     end
@@ -365,7 +457,7 @@ module Reline
 
     private def may_req_ambiguous_char_width
       @ambiguous_width = 2 if Reline::IOGate == Reline::GeneralIO or STDOUT.is_a?(File)
-      return if @ambiguous_width
+      return if defined? @ambiguous_width
       Reline::IOGate.move_cursor_column(0)
       begin
         output.write "\u{25bd}"
@@ -388,7 +480,7 @@ module Reline
   #--------------------------------------------------------
 
   (Core::ATTR_READER_NAMES).each { |name|
-    def_single_delegators :core, "#{name}", "#{name}="
+    def_single_delegators :core, :"#{name}", :"#{name}="
   }
   def_single_delegators :core, :input=, :output=
   def_single_delegators :core, :vi_editing_mode, :emacs_editing_mode
@@ -423,6 +515,8 @@ module Reline
   def_single_delegators :core, :ambiguous_width
   def_single_delegators :core, :last_incremental_search
   def_single_delegators :core, :last_incremental_search=
+  def_single_delegators :core, :add_dialog_proc
+  def_single_delegators :core, :autocompletion, :autocompletion=
 
   def_single_delegators :core, :readmultiline
   def_instance_delegators self, :readmultiline
@@ -444,6 +538,7 @@ module Reline
       core.completer_quote_characters = '"\''
       core.filename_quote_characters = ""
       core.special_prefixes = ""
+      core.add_dialog_proc(:autocomplete, Reline::DEFAULT_DIALOG_PROC_AUTOCOMPLETE, Reline::DEFAULT_DIALOG_CONTEXT)
     }
   end
 

@@ -1918,6 +1918,9 @@ username_completion_proc_call(VALUE self, VALUE str)
     return result;
 }
 
+#ifdef HAVE_RL_CATCH_SIGNALS
+RUBY_EXTERN int rl_catch_signals;
+#endif
 #ifdef HAVE_RL_CLEAR_SIGNALS
 RUBY_EXTERN int rl_clear_signals(void);
 #endif

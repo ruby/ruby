@@ -43,6 +43,7 @@ module Bundler
   autoload :Dependency,             File.expand_path("bundler/dependency", __dir__)
   autoload :DepProxy,               File.expand_path("bundler/dep_proxy", __dir__)
   autoload :Deprecate,              File.expand_path("bundler/deprecate", __dir__)
+  autoload :Digest,                 File.expand_path("bundler/digest", __dir__)
   autoload :Dsl,                    File.expand_path("bundler/dsl", __dir__)
   autoload :EndpointSpecification,  File.expand_path("bundler/endpoint_specification", __dir__)
   autoload :Env,                    File.expand_path("bundler/env", __dir__)
@@ -236,8 +237,9 @@ module Bundler
         end
 
         if warning
-          user_home = tmp_home_path(warning)
-          Bundler.ui.warn "#{warning}\nBundler will use `#{user_home}' as your home directory temporarily.\n"
+          Bundler.ui.warn "#{warning}\n"
+          user_home = tmp_home_path
+          Bundler.ui.warn "Bundler will use `#{user_home}' as your home directory temporarily.\n"
           user_home
         else
           Pathname.new(home)
@@ -635,15 +637,19 @@ EOF
       @rubygems = nil
     end
 
+    def configure_gem_home_and_path(path = bundle_path)
+      configure_gem_path
+      configure_gem_home(path)
+      Bundler.rubygems.clear_paths
+    end
+
     private
 
     def eval_yaml_gemspec(path, contents)
       require_relative "bundler/psyched_yaml"
 
-      # If the YAML is invalid, Syck raises an ArgumentError, and Psych
-      # raises a Psych::SyntaxError. See psyched_yaml.rb for more info.
       Gem::Specification.from_yaml(contents)
-    rescue YamlLibrarySyntaxError, ArgumentError, Gem::EndOfYAMLException, Gem::Exception
+    rescue ::Psych::SyntaxError, ArgumentError, Gem::EndOfYAMLException, Gem::Exception
       eval_gemspec(path, contents)
     end
 
@@ -652,47 +658,29 @@ EOF
     rescue ScriptError, StandardError => e
       msg = "There was an error while loading `#{path.basename}`: #{e.message}"
 
-      if e.is_a?(LoadError)
-        msg += "\nDoes it try to require a relative path? That's been removed in Ruby 1.9"
-      end
-
       raise GemspecError, Dsl::DSLError.new(msg, path, e.backtrace, contents)
     end
 
-    def configure_gem_home_and_path
-      configure_gem_path
-      configure_gem_home
-      bundle_path
-    end
-
-    def configure_gem_path(env = ENV)
-      blank_home = env["GEM_HOME"].nil? || env["GEM_HOME"].empty?
-      if !use_system_gems?
+    def configure_gem_path
+      unless use_system_gems?
         # this needs to be empty string to cause
         # PathSupport.split_gem_path to only load up the
         # Bundler --path setting as the GEM_PATH.
-        env["GEM_PATH"] = ""
-      elsif blank_home
-        possibles = [Bundler.rubygems.gem_dir, Bundler.rubygems.gem_path]
-        paths = possibles.flatten.compact.uniq.reject(&:empty?)
-        env["GEM_PATH"] = paths.join(File::PATH_SEPARATOR)
+        Bundler::SharedHelpers.set_env "GEM_PATH", ""
       end
     end
 
-    def configure_gem_home
-      Bundler::SharedHelpers.set_env "GEM_HOME", File.expand_path(bundle_path, root)
-      Bundler.rubygems.clear_paths
+    def configure_gem_home(path)
+      Bundler::SharedHelpers.set_env "GEM_HOME", path.to_s
     end
 
-    def tmp_home_path(warning)
+    def tmp_home_path
       Kernel.send(:require, "tmpdir")
       SharedHelpers.filesystem_access(Dir.tmpdir) do
         path = Bundler.tmp
         at_exit { Bundler.rm_rf(path) }
         path
       end
-    rescue RuntimeError => e
-      raise e.exception("#{warning}\nBundler also failed to create a temporary home directory':\n#{e}")
     end
 
     # @param env [Hash]

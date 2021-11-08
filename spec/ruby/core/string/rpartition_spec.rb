@@ -1,7 +1,10 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'shared/partition'
 
 describe "String#rpartition with String" do
+  it_behaves_like :string_partition, :rpartition
+
   it "returns an array of substrings based on splitting on the given string" do
     "hello world".rpartition("o").should == ["hello w", "o", "rld"]
   end

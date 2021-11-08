@@ -419,7 +419,15 @@ module Bundler
       elsif is_credential(key)
         "[REDACTED]"
       elsif is_userinfo(converted)
-        converted.gsub(/:.*$/, ":[REDACTED]")
+        username, pass = converted.split(":", 2)
+
+        if pass == "x-oauth-basic"
+          username = "[REDACTED]"
+        else
+          pass = "[REDACTED]"
+        end
+
+        [username, pass].join(":")
       else
         converted
       end
@@ -428,12 +436,12 @@ module Bundler
     def global_config_file
       if ENV["BUNDLE_CONFIG"] && !ENV["BUNDLE_CONFIG"].empty?
         Pathname.new(ENV["BUNDLE_CONFIG"])
-      else
-        begin
-          Bundler.user_bundle_path("config")
-        rescue PermissionError, GenericSystemCallError
-          nil
-        end
+      elsif ENV["BUNDLE_USER_CONFIG"] && !ENV["BUNDLE_USER_CONFIG"].empty?
+        Pathname.new(ENV["BUNDLE_USER_CONFIG"])
+      elsif ENV["BUNDLE_USER_HOME"] && !ENV["BUNDLE_USER_HOME"].empty?
+        Pathname.new(ENV["BUNDLE_USER_HOME"]).join("config")
+      elsif Bundler.rubygems.user_home && !Bundler.rubygems.user_home.empty?
+        Pathname.new(Bundler.rubygems.user_home).join(".bundle/config")
       end
     end
 

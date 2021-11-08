@@ -195,11 +195,7 @@ module Bundler
           if base # allow all platforms when searching from a lockfile
             dependency.matches_spec?(spec)
           else
-            if Gem::Platform.respond_to? :match_spec?
-              dependency.matches_spec?(spec) && Gem::Platform.match_spec?(spec)
-            else
-              dependency.matches_spec?(spec) && Gem::Platform.match(spec.platform)
-            end
+            dependency.matches_spec?(spec) && Gem::Platform.match_spec?(spec)
           end
         end
 

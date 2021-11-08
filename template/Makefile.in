@@ -107,6 +107,7 @@ MJIT_MIN_HEADER = $(MJIT_HEADER_BUILD_DIR)/$(MJIT_MIN_HEADER_NAME)
 MJIT_HEADER_BUILD_DIR = $(EXTOUT)/include/$(arch)
 MJIT_TABS=@MJIT_TABS@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
+EXE_LDFLAGS = $(LDFLAGS)
 EXTLDFLAGS = @EXTLDFLAGS@
 XLDFLAGS = @XLDFLAGS@ $(EXTLDFLAGS)
 EXTLIBS =
@@ -207,6 +208,7 @@ MAKEDIRS      = @MKDIR_P@
 CP            = cp
 MV            = mv
 RM            = rm -f
+RM1           = $(RM)
 RMDIR         = @RMDIR@
 RMDIRS        = @RMDIRS@
 RMALL         = @RMALL@
@@ -256,6 +258,9 @@ MESSAGE_END = ; do echo "$$line"; done
 ECHO_BEGIN = @sep=''; for word in
 ECHO_END = ; do echo @ECHO_N@ "$$sep'$$word'@ECHO_C@"; sep=' '; done; echo
 
+ACTIONS_GROUP = @$(NULLCMD) $(empty)
+ACTIONS_ENDGROUP = @$(NULLCMD)
+
 DESTDIR       = @DESTDIR@
 
 configure_args = @configure_args@
@@ -271,13 +276,13 @@ all:
 miniruby$(EXEEXT):
 		@-if test -f $@; then $(MV) -f $@ $@.old; $(RM) $@.old; fi
 		$(ECHO) linking $@
-		$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(MAINLIBS) $(LIBS) $(OUTFLAG)$@
+		$(Q) $(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(MAINLIBS) $(LIBS) $(OUTFLAG)$@
 		$(Q) $(POSTLINK)
 
 $(PROGRAM):
 		@$(RM) $@
 		$(ECHO) linking $@
-		$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(LIBRUBYARG) $(MAINLIBS) $(LIBS) $(EXTLIBS) $(OUTFLAG)$@
+		$(Q) $(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(MAINLIBS) $(LIBS) $(EXTLIBS) $(OUTFLAG)$@
 		$(Q) $(POSTLINK)
 
 PRE_LIBRUBY_UPDATE = [ -n "$(LIBRUBY_SO_UPDATE)" ] || $(gnumake:yes=exec) $(RM) $(LIBRUBY_EXTS)
@@ -294,7 +299,7 @@ $(LIBRUBY_A):
 
 verify-static-library: $(LIBRUBY_A)
 		$(ECHO) verifying static-library $@
-		@$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)conftest$(EXEEXT)
+		@$(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)conftest$(EXEEXT)
 		@$(RMALL) conftest$(EXEEXT) conftest.c conftest.dSYM
 
 $(LIBRUBY_SO):
@@ -311,10 +316,18 @@ $(LIBRUBY_SO):
 LIBRUBY_WITH_EXT = @LIBRUBY_WITH_EXT@
 $(LIBRUBY_$(LIBRUBY_WITH_EXT)): $(LIBRUBY_SO_UPDATE)
 
+PKG_CONFIG = @PKG_CONFIG@
 ruby_pc = @ruby_pc@
 ruby.pc: $(ruby_pc)
-$(ruby_pc): config.status
-		@./config.status --file=$@:$(srcdir)/template/ruby.pc.in
+$(ruby_pc): config.status Makefile
+	$(Q)./config.status --file=-:$(srcdir)/template/ruby.pc.in | \
+	sed -e 's/\$$(\([A-Za-z_][A-Za-z0-9_]*\))/$${\1}/g' \
+	    -e 's|^prefix=.*|prefix=$(prefix)|' \
+	    > ruby.tmp.pc
+	$(Q)pkg_config=${PKG_CONFIG} && PKG_CONFIG_PATH=. $${pkg_config:-:} --print-errors ruby.tmp
+	$(Q)$(MV) -f ruby.tmp.pc $(ruby_pc)
+
+pre-install-local:: pkgconfig-data
 
 ruby-runner.h: template/ruby-runner.h.in config.status
 		@./config.status --file=$@:$(srcdir)/template/$(@F).in
@@ -324,7 +337,7 @@ $(RBCONFIG): $(PREP)
 rbconfig.rb: $(RBCONFIG)
 
 install-cross: $(arch)-fake.rb $(RBCONFIG) rbconfig.rb $(arch_hdrdir)/ruby/config.h \
-	$(LIBRUBY_A) $(LIBRUBY_SO) $(ARCHFILE)
+	$(LIBRUBY_A) $(LIBRUBY_SO) $(ARCHFILE) pkgconfig-data
 	$(ECHO) installing cross-compiling stuff
 	$(Q) $(MAKEDIRS) $(XRUBY_RUBYLIBDIR)/$(arch) $(XRUBY_RUBYHDRDIR)/$(arch)/ruby
 	$(Q) sed '/^\$$:\.unshift/q' $(arch)-fake.rb > fake.rb

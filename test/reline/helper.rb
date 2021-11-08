@@ -1,4 +1,7 @@
 $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
+
+ENV['TERM'] = 'xterm' # for some CI environments
+
 require 'reline'
 require 'test/unit'
 

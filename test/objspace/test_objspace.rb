@@ -29,12 +29,12 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_memsize_of_root_shared_string
-    a = "hello" * 5
+    a = "a" * GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE]
     b = a.dup
     c = nil
     ObjectSpace.each_object(String) {|x| break c = x if x == a and x.frozen?}
     rv_size = GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
-    assert_equal([rv_size, rv_size, 26 + rv_size], [a, b, c].map {|x| ObjectSpace.memsize_of(x)})
+    assert_equal([rv_size, rv_size, a.length + 1 + rv_size], [a, b, c].map {|x| ObjectSpace.memsize_of(x)})
   end
 
   def test_argf_memsize

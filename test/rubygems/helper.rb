@@ -16,16 +16,6 @@ begin
 rescue Gem::LoadError
 end
 
-begin
-  require 'simplecov'
-  SimpleCov.start do
-    add_filter "/test/"
-    add_filter "/bundler/"
-    add_filter "/lib/rubygems/resolver/molinillo"
-  end
-rescue LoadError
-end
-
 if File.exist?(bundler_gemspec)
   require_relative '../../bundler/lib/bundler'
 else
@@ -396,6 +386,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
     ENV['GEM_PRIVATE_KEY_PASSPHRASE'] = PRIVATE_KEY_PASSPHRASE
 
+    Gem.instance_variable_set(:@default_specifications_dir, nil)
     if Gem.java_platform?
       @orig_default_gem_home = RbConfig::CONFIG['default_gem_home']
       RbConfig::CONFIG['default_gem_home'] = @gemhome
@@ -405,6 +396,14 @@ class Gem::TestCase < Test::Unit::TestCase
 
     @orig_bindir = RbConfig::CONFIG["bindir"]
     RbConfig::CONFIG["bindir"] = File.join @gemhome, "bin"
+
+    @orig_sitelibdir = RbConfig::CONFIG["sitelibdir"]
+    new_sitelibdir = @orig_sitelibdir.sub(RbConfig::CONFIG["prefix"], @gemhome)
+    $LOAD_PATH.insert(Gem.load_path_insert_index, new_sitelibdir)
+    RbConfig::CONFIG["sitelibdir"] = new_sitelibdir
+
+    @orig_mandir = RbConfig::CONFIG["mandir"]
+    RbConfig::CONFIG["mandir"] = File.join @gemhome, "share", "man"
 
     Gem::Specification.unresolved_deps.clear
     Gem.use_paths(@gemhome)
@@ -477,8 +476,11 @@ class Gem::TestCase < Test::Unit::TestCase
 
     Gem.ruby = @orig_ruby if @orig_ruby
 
+    RbConfig::CONFIG['mandir'] = @orig_mandir
+    RbConfig::CONFIG['sitelibdir'] = @orig_sitelibdir
     RbConfig::CONFIG['bindir'] = @orig_bindir
 
+    Gem.instance_variable_set :@default_specifications_dir, nil
     if Gem.java_platform?
       RbConfig::CONFIG['default_gem_home'] = @orig_default_gem_home
     else
@@ -595,7 +597,7 @@ class Gem::TestCase < Test::Unit::TestCase
   def have_git?
     return if in_path? @git
 
-    skip 'cannot find git executable, use GIT environment variable to set'
+    pend 'cannot find git executable, use GIT environment variable to set'
   end
 
   def in_path?(executable) # :nodoc:
@@ -821,16 +823,6 @@ class Gem::TestCase < Test::Unit::TestCase
 
   def unresolved_names
     Gem::Specification.unresolved_deps.values.map(&:to_s).sort
-  end
-
-  def save_loaded_features
-    old_loaded_features = $LOADED_FEATURES.dup
-    yield
-  ensure
-    prefix = File.dirname(__FILE__) + "/"
-    new_features = ($LOADED_FEATURES - old_loaded_features)
-    old_loaded_features.concat(new_features.select {|f| f.rindex(prefix, 0) })
-    $LOADED_FEATURES.replace old_loaded_features
   end
 
   def new_default_spec(name, version, deps = nil, *files)
@@ -1090,17 +1082,21 @@ Also, a list:
       @fetcher.data["#{@gem_repo}latest_specs.#{v}.gz"]     = l_zip
       @fetcher.data["#{@gem_repo}prerelease_specs.#{v}.gz"] = p_zip
 
-      v = Gem.marshal_version
-
-      all_specs.each do |spec|
-        path = "#{@gem_repo}quick/Marshal.#{v}/#{spec.original_name}.gemspec.rz"
-        data = Marshal.dump spec
-        data_deflate = Zlib::Deflate.deflate data
-        @fetcher.data[path] = data_deflate
-      end
+      write_marshalled_gemspecs(*all_specs)
     end
 
     nil # force errors
+  end
+
+  def write_marshalled_gemspecs(*all_specs)
+    v = Gem.marshal_version
+
+    all_specs.each do |spec|
+      path = "#{@gem_repo}quick/Marshal.#{v}/#{spec.original_name}.gemspec.rz"
+      data = Marshal.dump spec
+      data_deflate = Zlib::Deflate.deflate data
+      @fetcher.data[path] = data_deflate
+    end
   end
 
   ##
@@ -1295,7 +1291,11 @@ Also, a list:
   end
 
   def ruby_with_rubygems_in_load_path
-    [Gem.ruby, "-I", $LOAD_PATH.find{|p| p == File.dirname($LOADED_FEATURES.find{|f| f.end_with?("/rubygems.rb") }) }]
+    [Gem.ruby, "-I", rubygems_path]
+  end
+
+  def rubygems_path
+    $LOAD_PATH.find{|p| p == File.dirname($LOADED_FEATURES.find{|f| f.end_with?("/rubygems.rb") }) }
   end
 
   def with_clean_path_to_ruby
@@ -1523,14 +1523,14 @@ Also, a list:
   end
 
   ##
-  # Loads an RSA private key named +key_name+ with +passphrase+ in <tt>test/rubygems/</tt>
+  # Loads a private key named +key_name+ with +passphrase+ in <tt>test/rubygems/</tt>
 
   def self.load_key(key_name, passphrase = nil)
     key_file = key_path key_name
 
     key = File.read key_file
 
-    OpenSSL::PKey::RSA.new key, passphrase
+    OpenSSL::PKey.read key, passphrase
   end
 
   ##

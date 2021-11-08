@@ -6,12 +6,12 @@
 #include <ruby/ruby.h>
 #include <ruby/io.h>
 
+#include <ctype.h>
+#include <fiddle.h>
+
 #ifdef HAVE_RUBY_MEMORY_VIEW_H
 # include <ruby/memory_view.h>
 #endif
-
-#include <ctype.h>
-#include <fiddle.h>
 
 #ifdef PRIsVALUE
 # define RB_OBJ_CLASSNAME(obj) rb_obj_class(obj)
@@ -24,7 +24,7 @@
 
 VALUE rb_cPointer;
 
-typedef void (*freefunc_t)(void*);
+typedef rb_fiddle_freefunc_t freefunc_t;
 
 struct ptr_data {
     void *ptr;
@@ -92,7 +92,7 @@ static const rb_data_type_t fiddle_ptr_data_type = {
     {fiddle_ptr_mark, fiddle_ptr_free, fiddle_ptr_memsize,},
 };
 
-#ifdef FIDDLE_MEMORY_VIEW
+#ifdef HAVE_RUBY_MEMORY_VIEW_H
 static struct ptr_data *
 fiddle_ptr_check_memory_view(VALUE obj)
 {
@@ -125,7 +125,7 @@ static const rb_memory_view_entry_t fiddle_ptr_memory_view_entry = {
 #endif
 
 static VALUE
-rb_fiddle_ptr_new2(VALUE klass, void *ptr, long size, freefunc_t func)
+rb_fiddle_ptr_new2(VALUE klass, void *ptr, long size, freefunc_t func, VALUE wrap0, VALUE wrap1)
 {
     struct ptr_data *data;
     VALUE val;
@@ -135,14 +135,22 @@ rb_fiddle_ptr_new2(VALUE klass, void *ptr, long size, freefunc_t func)
     data->free = func;
     data->freed = false;
     data->size = size;
+    data->wrap[0] = wrap0;
+    data->wrap[1] = wrap1;
 
     return val;
+}
+
+VALUE
+rb_fiddle_ptr_new_wrap(void *ptr, long size, freefunc_t func, VALUE wrap0, VALUE wrap1)
+{
+    return rb_fiddle_ptr_new2(rb_cPointer, ptr, size, func, wrap0, wrap1);
 }
 
 static VALUE
 rb_fiddle_ptr_new(void *ptr, long size, freefunc_t func)
 {
-    return rb_fiddle_ptr_new2(rb_cPointer, ptr, size, func);
+    return rb_fiddle_ptr_new2(rb_cPointer, ptr, size, func, 0, 0);
 }
 
 static VALUE
@@ -152,7 +160,7 @@ rb_fiddle_ptr_malloc(VALUE klass, long size, freefunc_t func)
 
     ptr = ruby_xmalloc((size_t)size);
     memset(ptr,0,(size_t)size);
-    return rb_fiddle_ptr_new2(klass, ptr, size, func);
+    return rb_fiddle_ptr_new2(klass, ptr, size, func, 0, 0);
 }
 
 static void *
@@ -770,6 +778,7 @@ rb_fiddle_ptr_s_to_ptr(VALUE self, VALUE val)
     }
     else if (RTEST(rb_obj_is_kind_of(val, rb_cString))){
 	char *str = StringValuePtr(val);
+        wrap = val;
 	ptr = rb_fiddle_ptr_new(str, RSTRING_LEN(val), NULL);
     }
     else if ((vptr = rb_check_funcall(val, id_to_ptr, 0, 0)) != Qundef){
@@ -832,7 +841,7 @@ Init_fiddle_pointer(void)
     rb_define_method(rb_cPointer, "size", rb_fiddle_ptr_size_get, 0);
     rb_define_method(rb_cPointer, "size=", rb_fiddle_ptr_size_set, 1);
 
-#ifdef FIDDLE_MEMORY_VIEW
+#ifdef HAVE_RUBY_MEMORY_VIEW_H
     rb_memory_view_register(rb_cPointer, &fiddle_ptr_memory_view_entry);
 #endif
 

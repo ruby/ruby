@@ -53,6 +53,7 @@ RSpec.describe "install in deployment or frozen mode" do
   it "works if you exclude a group with a git gem" do
     build_git "foo"
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       group :test do
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       end
@@ -76,6 +77,7 @@ RSpec.describe "install in deployment or frozen mode" do
     build_lib "foo", :path => lib_path("nested/foo")
     build_lib "bar", :path => lib_path("nested/bar")
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", "1.0", :path => "#{lib_path("nested")}"
       gem "bar", :path => "#{lib_path("nested")}"
     G
@@ -88,6 +90,7 @@ RSpec.describe "install in deployment or frozen mode" do
   it "works when path gems are specified twice" do
     build_lib "foo", :path => lib_path("nested/foo")
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :path => "#{lib_path("nested/foo")}"
       gem "foo", :path => "#{lib_path("nested/foo")}"
     G
@@ -110,6 +113,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
   it "works with sources given by a block" do
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       source "#{file_uri_for(gem_repo1)}" do
         gem "rack"
       end
@@ -431,6 +435,7 @@ You have deleted from the Gemfile:
     it "works fine after bundle package and bundle install --local" do
       build_lib "foo", :path => lib_path("foo")
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :path => "#{lib_path("foo")}"
       G
 

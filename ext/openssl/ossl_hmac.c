@@ -238,8 +238,8 @@ ossl_hmac_reset(VALUE self)
     EVP_PKEY *pkey;
 
     GetHMAC(self, ctx);
-    pkey = EVP_PKEY_CTX_get0_pkey(EVP_MD_CTX_pkey_ctx(ctx));
-    if (EVP_DigestSignInit(ctx, NULL, EVP_MD_CTX_md(ctx), NULL, pkey) != 1)
+    pkey = EVP_PKEY_CTX_get0_pkey(EVP_MD_CTX_get_pkey_ctx(ctx));
+    if (EVP_DigestSignInit(ctx, NULL, EVP_MD_CTX_get0_md(ctx), NULL, pkey) != 1)
         ossl_raise(eHMACError, "EVP_DigestSignInit");
 
     return self;

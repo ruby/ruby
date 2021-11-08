@@ -222,13 +222,13 @@ jeopardises the overall match.
 == Capturing
 
 Parentheses can be used for <i>capturing</i>. The text enclosed by the
-<i>n</i><sup>th</sup> group of parentheses can be subsequently referred to
+<i>n</i>th group of parentheses can be subsequently referred to
 with <i>n</i>. Within a pattern use the <i>backreference</i>
-<tt>\n</tt>; outside of the pattern use
-<tt>MatchData[</tt><i>n</i><tt>]</tt>.
+<tt>\n</tt> (e.g. <tt>\1</tt>); outside of the pattern use
+<tt>MatchData[n]</tt> (e.g. <tt>MatchData[1]</tt>).
 
-'at' is captured by the first group of parentheses, then referred to later
-with <tt>\1</tt>:
+In this example, <tt>'at'</tt> is captured by the first group of
+parentheses, then referred to later with <tt>\1</tt>:
 
     /[csh](..) [csh]\1 in/.match("The cat sat in the hat")
         #=> #<MatchData "cat sat in" 1:"at">
@@ -237,6 +237,21 @@ Regexp#match returns a MatchData object which makes the captured text
 available with its #[] method:
 
     /[csh](..) [csh]\1 in/.match("The cat sat in the hat")[1] #=> 'at'
+
+While Ruby supports an arbitrary number of numbered captured groups,
+only groups 1-9 are supported using the <tt>\n</tt> backreference
+syntax.
+
+Ruby also supports <tt>\0</tt> as a special backreference, which
+references the entire matched string.  This is also available at
+<tt>MatchData[0]</tt>.  Note that the <tt>\0</tt> backreference cannot
+be used inside the regexp, as backreferences can only be used after the
+end of the capture group, and the <tt>\0</tt> backreference uses the
+implicit capture group of the entire match.  However, you can use
+this backreference when doing substitution:
+
+  "The cat sat in the hat".gsub(/[csh]at/, '\0s')
+    # => "The cats sats in the hats"
 
 === Named captures
 
@@ -372,8 +387,8 @@ then matches a literal <i>)</i>:
 
 == Alternation
 
-The vertical bar metacharacter (<tt>|</tt>) combines two expressions into
-a single one that matches either of the expressions. Each expression is an
+The vertical bar metacharacter (<tt>|</tt>) combines several expressions into
+a single one that matches any of the expressions. Each expression is an
 <i>alternative</i>.
 
     /\w(and|or)\w/.match("Feliformia") #=> #<MatchData "form" 1:"or">
@@ -524,6 +539,17 @@ characters, <i>anchoring</i> the match to a specific position.
 * <tt>(?<!</tt><i>pat</i><tt>)</tt> - <i>Negative lookbehind</i>
   assertion: ensures that the preceding characters do not match
   <i>pat</i>, but doesn't include those characters in the matched text
+* <tt>\K</tt> - Uses an positive lookbehind of the content preceding
+  <tt>\K</tt> in the regexp.  For example, the following two regexps are
+  almost equivalent:
+
+      /ab\Kc/
+      /(?<=ab)c/
+
+  As are the following two regexps:
+
+      /(a)\K(b)\Kc/
+      /(?<=(?<=(a))(b))c/
 
 If a pattern isn't anchored it can begin at any point in the string:
 

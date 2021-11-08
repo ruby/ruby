@@ -89,9 +89,8 @@ class Gem::NameTuple
   alias to_s inspect # :nodoc:
 
   def <=>(other)
-    [@name, @version, @platform == Gem::Platform::RUBY ? -1 : 1] <=>
-      [other.name, other.version,
-       other.platform == Gem::Platform::RUBY ? -1 : 1]
+    [@name, @version, Gem::Platform.sort_priority(@platform)] <=>
+      [other.name, other.version, Gem::Platform.sort_priority(other.platform)]
   end
 
   include Comparable

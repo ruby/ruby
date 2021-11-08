@@ -311,6 +311,12 @@ class Reline::Config::Test < Reline::TestCase
     # do nothing
   end
 
+  def test_empty_inputrc
+    assert_nothing_raised do
+      @config.read_lines([])
+    end
+  end
+
   def test_xdg_config_home
     home_backup = ENV['HOME']
     xdg_config_home_backup = ENV['XDG_CONFIG_HOME']

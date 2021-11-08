@@ -1,7 +1,6 @@
 #ifndef INTERNAL_CLASS_H                                 /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_CLASS_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -114,6 +113,10 @@ void rb_class_subclass_add(VALUE super, VALUE klass);
 void rb_class_remove_from_super_subclasses(VALUE);
 int rb_singleton_class_internal_p(VALUE sklass);
 VALUE rb_class_boot(VALUE);
+VALUE rb_class_s_alloc(VALUE klass);
+VALUE rb_module_s_alloc(VALUE klass);
+void rb_module_set_initialized(VALUE module);
+void rb_module_check_initializable(VALUE module);
 VALUE rb_make_metaclass(VALUE, VALUE);
 VALUE rb_include_class_new(VALUE, VALUE);
 void rb_class_foreach_subclass(VALUE klass, void (*f)(VALUE, VALUE), VALUE);
@@ -127,7 +130,6 @@ VALUE rb_obj_public_methods(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_special_singleton_class(VALUE);
 VALUE rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach);
 VALUE rb_singleton_class_get(VALUE obj);
-int rb_class_has_methods(VALUE c);
 void rb_undef_methods_from(VALUE klass, VALUE super);
 
 static inline void RCLASS_SET_ORIGIN(VALUE klass, VALUE origin);

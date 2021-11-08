@@ -56,22 +56,11 @@ describe "Kernel#BigDecimal" do
     BigDecimal(initial).should == BigDecimal("123")
   end
 
-  ruby_version_is ""..."2.6" do
-    it "ignores trailing garbage" do
-      BigDecimal("123E45ruby").should == BigDecimal("123E45")
-      BigDecimal("123x45").should == BigDecimal("123")
-      BigDecimal("123.4%E5").should == BigDecimal("123.4")
-      BigDecimal("1E2E3E4E5E").should == BigDecimal("100")
-    end
-  end
-
-  ruby_version_is "2.6" do
-    it "does not ignores trailing garbage" do
-      -> { BigDecimal("123E45ruby") }.should raise_error(ArgumentError)
-      -> { BigDecimal("123x45") }.should raise_error(ArgumentError)
-      -> { BigDecimal("123.4%E5") }.should raise_error(ArgumentError)
-      -> { BigDecimal("1E2E3E4E5E") }.should raise_error(ArgumentError)
-    end
+  it "does not ignores trailing garbage" do
+    -> { BigDecimal("123E45ruby") }.should raise_error(ArgumentError)
+    -> { BigDecimal("123x45") }.should raise_error(ArgumentError)
+    -> { BigDecimal("123.4%E5") }.should raise_error(ArgumentError)
+    -> { BigDecimal("1E2E3E4E5E") }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError for invalid strings" do
@@ -83,24 +72,12 @@ describe "Kernel#BigDecimal" do
     BigDecimal(".123").should == BigDecimal("0.123")
   end
 
-  ruby_version_is ""..."2.6" do
-    it "allows for underscores in all parts" do
-      reference = BigDecimal("12345.67E89")
+  it "process underscores as Float()" do
+    reference = BigDecimal("12345.67E89")
 
-      BigDecimal("12_345.67E89").should == reference
-      BigDecimal("1_2_3_4_5_._6____7_E89").should == reference
-      BigDecimal("12345_.67E_8__9_").should == reference
-    end
-  end
-
-  ruby_version_is "2.6" do
-    it "process underscores as Float()" do
-      reference = BigDecimal("12345.67E89")
-
-      BigDecimal("12_345.67E89").should == reference
-      -> { BigDecimal("1_2_3_4_5_._6____7_E89") }.should raise_error(ArgumentError)
-      -> { BigDecimal("12345_.67E_8__9_") }.should raise_error(ArgumentError)
-    end
+    BigDecimal("12_345.67E89").should == reference
+    -> { BigDecimal("1_2_3_4_5_._6____7_E89") }.should raise_error(ArgumentError)
+    -> { BigDecimal("12345_.67E_8__9_") }.should raise_error(ArgumentError)
   end
 
   it "accepts NaN and [+-]Infinity" do
@@ -116,14 +93,12 @@ describe "Kernel#BigDecimal" do
     neg_inf.should < 0
   end
 
-  ruby_version_is "2.6" do
-    describe "with exception: false" do
-      it "returns nil for invalid strings" do
-        BigDecimal("invalid", exception: false).should be_nil
-        BigDecimal("0invalid", exception: false).should be_nil
-        BigDecimal("invalid0", exception: false).should be_nil
-        BigDecimal("0.", exception: false).should be_nil
-      end
+  describe "with exception: false" do
+    it "returns nil for invalid strings" do
+      BigDecimal("invalid", exception: false).should be_nil
+      BigDecimal("0invalid", exception: false).should be_nil
+      BigDecimal("invalid0", exception: false).should be_nil
+      BigDecimal("0.", exception: false).should be_nil
     end
   end
 

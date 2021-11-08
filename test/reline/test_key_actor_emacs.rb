@@ -5,6 +5,7 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     Reline.send(:test_mode)
     @prompt = '> '
     @config = Reline::Config.new # Emacs mode is default
+    @config.autocompletion = false
     Reline::HISTORY.instance_variable_set(:@config, @config)
     Reline::HISTORY.clear
     @encoding = Reline::IOGate.encoding
@@ -2141,7 +2142,7 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
 
   # Unicode emoji test
   def test_ed_insert_for_include_zwj_emoji
-    return if Reline::IOGate.encoding != Encoding::UTF_8
+    omit "This test is for UTF-8 but the locale is #{Reline::IOGate.encoding}" if Reline::IOGate.encoding != Encoding::UTF_8
     # U+1F468 U+200D U+1F469 U+200D U+1F467 U+200D U+1F466 is family: man, woman, girl, boy "👨‍👩‍👧‍👦"
     input_keys("\u{1F468}") # U+1F468 is man "👨"
     assert_line("\u{1F468}")
@@ -2187,7 +2188,7 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
   end
 
   def test_ed_insert_for_include_valiation_selector
-    return if Reline::IOGate.encoding != Encoding::UTF_8
+    omit "This test is for UTF-8 but the locale is #{Reline::IOGate.encoding}" if Reline::IOGate.encoding != Encoding::UTF_8
     # U+0030 U+FE00 is DIGIT ZERO + VARIATION SELECTOR-1 "0︀"
     input_keys("\u0030") # U+0030 is DIGIT ZERO
     assert_line("\u0030")
@@ -2282,6 +2283,27 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_cursor(5)
     assert_cursor_max(7)
     assert_line('  12345')
+  end
+
+  def test_ignore_NUL_by_ed_quoted_insert
+    input_keys(%Q{"\C-v\C-@"}, false)
+    assert_byte_pointer_size('""')
+    assert_cursor(2)
+    assert_cursor_max(2)
+  end
+
+  def test_ed_argument_digit_by_meta_num
+    input_keys('abcdef')
+    assert_byte_pointer_size('abcdef')
+    assert_cursor(6)
+    assert_cursor_max(6)
+    assert_line('abcdef')
+    input_keys("\M-2", false)
+    input_keys("\C-h", false)
+    assert_byte_pointer_size('abcd')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('abcd')
   end
 
   def test_input_unknown_char

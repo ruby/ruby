@@ -4353,7 +4353,7 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
  * Parses the given representation of date and time, and returns a
  * hash of parsed elements.
  *
- * This method **does not** function as a validator.  If the input
+ * This method *does not* function as a validator.  If the input
  * string does not match valid formats strictly, you may get a cryptic
  * result.  Should consider to use `Date._strptime` or
  * `DateTime._strptime` instead of this method as possible.
@@ -4377,7 +4377,7 @@ date_s__parse(int argc, VALUE *argv, VALUE klass)
  * Parses the given representation of date and time, and creates a
  * date object.
  *
- * This method **does not** function as a validator.  If the input
+ * This method *does not* function as a validator.  If the input
  * string does not match valid formats strictly, you may get a cryptic
  * result.  Should consider to use `Date.strptime` instead of this
  * method as possible.
@@ -6900,7 +6900,7 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
  *      %c - date and time (%a %b %e %T %Y)
  *      %D - Date (%m/%d/%y)
  *      %F - The ISO 8601 date format (%Y-%m-%d)
- *      %v - VMS date (%e-%b-%Y)
+ *      %v - VMS date (%e-%^b-%Y)
  *      %x - Same as %D
  *      %X - Same as %T
  *      %r - 12-hour time (%I:%M:%S %p)
@@ -7797,7 +7797,7 @@ datetime_s_now(int argc, VALUE *argv, VALUE klass)
 #ifdef HAVE_STRUCT_TM_TM_GMTOFF
     of = tm.tm_gmtoff;
 #elif defined(HAVE_TIMEZONE)
-#ifdef HAVE_ALTZONE
+#if defined(HAVE_ALTZONE) && !defined(_AIX)
     of = (long)-((tm.tm_isdst > 0) ? altzone : timezone);
 #else
     of = (long)-timezone;
@@ -8018,7 +8018,7 @@ datetime_s_strptime(int argc, VALUE *argv, VALUE klass)
  * Parses the given representation of date and time, and creates a
  * DateTime object.
  *
- * This method **does not** function as a validator.  If the input
+ * This method *does not* function as a validator.  If the input
  * string does not match valid formats strictly, you may get a cryptic
  * result.  Should consider to use `DateTime.strptime` instead of this
  * method as possible.
@@ -8380,7 +8380,7 @@ dt_lite_to_s(VALUE self)
  *      %c - date and time (%a %b %e %T %Y)
  *      %D - Date (%m/%d/%y)
  *      %F - The ISO 8601 date format (%Y-%m-%d)
- *      %v - VMS date (%e-%b-%Y)
+ *      %v - VMS date (%e-%^b-%Y)
  *      %x - Same as %D
  *      %X - Same as %T
  *      %r - 12-hour time (%I:%M:%S %p)

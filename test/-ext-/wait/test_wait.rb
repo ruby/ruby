@@ -12,14 +12,18 @@ class TestWait < Test::Unit::TestCase
   end
 
   def test_wait_for_invalid_fd
-    r, w = IO.pipe
-    r.close
+    assert_separately [], <<~'RUBY'
+      require '-test-/wait'
 
-    IO.for_fd(w.fileno).close
+      r, w = IO.pipe
+      r.close
 
-    assert_raise(Errno::EBADF) do
-      IO.io_wait(w, IO::WRITABLE, nil)
-    end
+      IO.for_fd(w.fileno).close
+
+      assert_raise(Errno::EBADF) do
+        IO.io_wait(w, IO::WRITABLE, nil)
+      end
+    RUBY
   end
 
   def test_wait_for_closed_pipe

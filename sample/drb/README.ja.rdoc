@@ -50,7 +50,7 @@
   * drbssl_s.rb
   * drbssl_c.rb
 
-* DRbProtoclの追加例
+* DRbProtocolの追加例
   * http0.rb
   * http0serv.rb
 

@@ -94,6 +94,7 @@ module UnicodeNormalize  # :nodoc:
     "\u1A75-\u1A7C" \
     "\u1A7F" \
     "\u1AB0-\u1ABD" \
+    "\u1ABF\u1AC0" \
     "\u1B34\u1B35" \
     "\u1B44" \
     "\u1B6B-\u1B73" \
@@ -122,6 +123,7 @@ module UnicodeNormalize  # :nodoc:
     "\uA69E\uA69F" \
     "\uA6F0\uA6F1" \
     "\uA806" \
+    "\uA82C" \
     "\uA8C4" \
     "\uA8E0-\uA8F1" \
     "\uA92B-\uA92D" \
@@ -146,6 +148,7 @@ module UnicodeNormalize  # :nodoc:
     "\u{10A3F}" \
     "\u{10AE5}\u{10AE6}" \
     "\u{10D24}-\u{10D27}" \
+    "\u{10EAB}\u{10EAC}" \
     "\u{10F46}-\u{10F50}" \
     "\u{11046}" \
     "\u{1107F}" \
@@ -177,6 +180,9 @@ module UnicodeNormalize  # :nodoc:
     "\u{116B6}\u{116B7}" \
     "\u{1172B}" \
     "\u{11839}\u{1183A}" \
+    "\u{11930}" \
+    "\u{1193D}\u{1193E}" \
+    "\u{11943}" \
     "\u{119E0}" \
     "\u{11A34}" \
     "\u{11A47}" \
@@ -187,6 +193,7 @@ module UnicodeNormalize  # :nodoc:
     "\u{11D97}" \
     "\u{16AF0}-\u{16AF4}" \
     "\u{16B30}-\u{16B36}" \
+    "\u{16FF0}\u{16FF1}" \
     "\u{1BC9E}" \
     "\u{1D165}-\u{1D169}" \
     "\u{1D16D}-\u{1D172}" \
@@ -434,6 +441,7 @@ module UnicodeNormalize  # :nodoc:
     "\u{114BB}\u{114BC}" \
     "\u{114BE}" \
     "\u{115BA}\u{115BB}" \
+    "\u{11938}" \
     "\u{1D15E}-\u{1D164}" \
     "\u{1D1BB}-\u{1D1C0}" \
     "\u{2F800}-\u{2FA1D}" \
@@ -604,6 +612,7 @@ module UnicodeNormalize  # :nodoc:
     "\u{11347}" \
     "\u{114B9}" \
     "\u{115B8}\u{115B9}" \
+    "\u{11935}" \
     "]?#{accents}+" \
     "|#{''  # precomposed Hangul syllables
     }" \
@@ -885,6 +894,8 @@ module UnicodeNormalize  # :nodoc:
     "\u{114BB}\u{114BC}" \
     "\u{114BE}" \
     "\u{115B8}-\u{115BB}" \
+    "\u{11935}" \
+    "\u{11938}" \
     "]?#{accents}+" \
     "|#{''  # Hangul syllables with separate trailer
     }" \
@@ -1393,6 +1404,7 @@ module UnicodeNormalize  # :nodoc:
     "\uA770" \
     "\uA7F8\uA7F9" \
     "\uAB5C-\uAB5F" \
+    "\uAB69" \
     "\uFB00-\uFB06" \
     "\uFB13-\uFB17" \
     "\uFB20-\uFB29" \
@@ -1479,6 +1491,7 @@ module UnicodeNormalize  # :nodoc:
     "\u{1F210}-\u{1F23B}" \
     "\u{1F240}-\u{1F248}" \
     "\u{1F250}\u{1F251}" \
+    "\u{1FBF0}-\u{1FBF9}" \
     "]"
 
   class_table = {
@@ -1906,6 +1919,8 @@ module UnicodeNormalize  # :nodoc:
     "\u1ABB"=>230,
     "\u1ABC"=>230,
     "\u1ABD"=>220,
+    "\u1ABF"=>220,
+    "\u1AC0"=>220,
     "\u1B34"=>7,
     "\u1B44"=>9,
     "\u1B6B"=>230,
@@ -2099,6 +2114,7 @@ module UnicodeNormalize  # :nodoc:
     "\uA6F0"=>230,
     "\uA6F1"=>230,
     "\uA806"=>9,
+    "\uA82C"=>9,
     "\uA8C4"=>9,
     "\uA8E0"=>230,
     "\uA8E1"=>230,
@@ -2171,6 +2187,8 @@ module UnicodeNormalize  # :nodoc:
     "\u{10D25}"=>230,
     "\u{10D26}"=>230,
     "\u{10D27}"=>230,
+    "\u{10EAB}"=>230,
+    "\u{10EAC}"=>230,
     "\u{10F46}"=>220,
     "\u{10F47}"=>220,
     "\u{10F48}"=>230,
@@ -2226,6 +2244,9 @@ module UnicodeNormalize  # :nodoc:
     "\u{1172B}"=>9,
     "\u{11839}"=>9,
     "\u{1183A}"=>7,
+    "\u{1193D}"=>9,
+    "\u{1193E}"=>9,
+    "\u{11943}"=>7,
     "\u{119E0}"=>9,
     "\u{11A34}"=>9,
     "\u{11A47}"=>9,
@@ -2247,6 +2268,8 @@ module UnicodeNormalize  # :nodoc:
     "\u{16B34}"=>230,
     "\u{16B35}"=>230,
     "\u{16B36}"=>230,
+    "\u{16FF0}"=>6,
+    "\u{16FF1}"=>6,
     "\u{1BC9E}"=>1,
     "\u{1D165}"=>216,
     "\u{1D166}"=>216,
@@ -3854,6 +3877,7 @@ module UnicodeNormalize  # :nodoc:
     "\u{114BE}"=>"\u{114B9}\u{114BD}",
     "\u{115BA}"=>"\u{115B8}\u{115AF}",
     "\u{115BB}"=>"\u{115B9}\u{115AF}",
+    "\u{11938}"=>"\u{11935}\u{11930}",
     "\u{1D15E}"=>"\u{1D157}\u{1D165}",
     "\u{1D15F}"=>"\u{1D158}\u{1D165}",
     "\u{1D160}"=>"\u{1D158}\u{1D165}\u{1D16E}",
@@ -5758,6 +5782,7 @@ module UnicodeNormalize  # :nodoc:
     "\uAB5D"=>"\uAB37",
     "\uAB5E"=>"\u026B",
     "\uAB5F"=>"\uAB52",
+    "\uAB69"=>"\u028D",
     "\uFB00"=>"ff",
     "\uFB01"=>"fi",
     "\uFB02"=>"fl",
@@ -8076,6 +8101,16 @@ module UnicodeNormalize  # :nodoc:
     "\u{1F248}"=>"\u3014\u6557\u3015",
     "\u{1F250}"=>"\u5F97",
     "\u{1F251}"=>"\u53EF",
+    "\u{1FBF0}"=>"0",
+    "\u{1FBF1}"=>"1",
+    "\u{1FBF2}"=>"2",
+    "\u{1FBF3}"=>"3",
+    "\u{1FBF4}"=>"4",
+    "\u{1FBF5}"=>"5",
+    "\u{1FBF6}"=>"6",
+    "\u{1FBF7}"=>"7",
+    "\u{1FBF8}"=>"8",
+    "\u{1FBF9}"=>"9",
     "\u0385"=>" \u0308\u0301",
     "\u03D3"=>"\u03A5\u0301",
     "\u03D4"=>"\u03A5\u0308",
@@ -9035,5 +9070,6 @@ module UnicodeNormalize  # :nodoc:
     "\u{114B9}\u{114BD}"=>"\u{114BE}",
     "\u{115B8}\u{115AF}"=>"\u{115BA}",
     "\u{115B9}\u{115AF}"=>"\u{115BB}",
+    "\u{11935}\u{11930}"=>"\u{11938}",
   }.freeze
 end

@@ -114,7 +114,7 @@ class GetoptLong
   class InvalidOption    < Error; end
 
   #
-  # Set up option processing.
+  # \Set up option processing.
   #
   # The options to support are passed to new() as an array of arrays.
   # Each sub-array contains any number of String option names which carry
@@ -190,7 +190,7 @@ class GetoptLong
   end
 
   #
-  # Set the handling of the ordering of options and arguments.
+  # \Set the handling of the ordering of options and arguments.
   # A RuntimeError is raised if option processing has already started.
   #
   # The supplied value must be a member of GetoptLong::ORDERINGS. It alters
@@ -267,7 +267,7 @@ class GetoptLong
   attr_reader :ordering
 
   #
-  # Set options. Takes the same argument as GetoptLong.new.
+  # \Set options. Takes the same argument as GetoptLong.new.
   #
   # Raises a RuntimeError if option processing has already started.
   #
@@ -341,7 +341,7 @@ class GetoptLong
   end
 
   #
-  # Set/Unset `quiet' mode.
+  # \Set/Unset `quiet' mode.
   #
   attr_writer :quiet
 
@@ -383,7 +383,7 @@ class GetoptLong
   end
 
   #
-  # Set an error (a protected method).
+  # \Set an error (a protected method).
   #
   def set_error(type, message)
     $stderr.print("#{$0}: #{message}\n") if !@quiet

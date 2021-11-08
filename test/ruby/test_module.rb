@@ -404,19 +404,20 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:MIXIN, :USER], User.constants.sort)
   end
 
-  def test_self_initialize_copy
-    bug9535 = '[ruby-dev:47989] [Bug #9535]'
-    m = Module.new do
-      def foo
-        :ok
-      end
-      initialize_copy(self)
+  def test_initialize_copy
+    mod = Module.new { define_method(:foo) {:first} }
+    klass = Class.new { include mod }
+    instance = klass.new
+    assert_equal(:first, instance.foo)
+    new_mod = Module.new { define_method(:foo) { :second } }
+    assert_raise(TypeError) do
+      mod.send(:initialize_copy, new_mod)
     end
-    assert_equal(:ok, Object.new.extend(m).foo, bug9535)
+    4.times { GC.start }
+    assert_equal(:first, instance.foo) # [BUG] unreachable
   end
 
   def test_initialize_copy_empty
-    bug9813 = '[ruby-dev:48182] [Bug #9813]'
     m = Module.new do
       def x
       end
@@ -426,12 +427,52 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:x], m.instance_methods)
     assert_equal([:@x], m.instance_variables)
     assert_equal([:X], m.constants)
-    m.module_eval do
-      initialize_copy(Module.new)
+    assert_raise(TypeError) do
+      m.module_eval do
+        initialize_copy(Module.new)
+      end
     end
-    assert_empty(m.instance_methods, bug9813)
-    assert_empty(m.instance_variables, bug9813)
-    assert_empty(m.constants, bug9813)
+
+    m = Class.new(Module) do
+      def initialize_copy(other)
+        # leave uninitialized
+      end
+    end.new.dup
+    c = Class.new
+    assert_operator(c.include(m), :<, m)
+    cp = Module.instance_method(:initialize_copy)
+    assert_raise(TypeError) do
+      cp.bind_call(m, Module.new)
+    end
+  end
+
+  class Bug18185 < Module
+    module InstanceMethods
+    end
+    attr_reader :ancestor_list
+    def initialize
+      @ancestor_list = ancestors
+      include InstanceMethods
+    end
+    class Foo
+      attr_reader :key
+      def initialize(key:)
+        @key = key
+      end
+    end
+  end
+
+  def test_module_subclass_initialize
+    mod = Bug18185.new
+    c = Class.new(Bug18185::Foo) do
+      include mod
+    end
+    anc = c.ancestors
+    assert_include(anc, mod)
+    assert_equal(1, anc.count(BasicObject), ->{anc.inspect})
+    b = c.new(key: 1)
+    assert_equal(1, b.key)
+    assert_not_include(mod.ancestor_list, BasicObject)
   end
 
   def test_dup
@@ -1047,6 +1088,7 @@ class TestModule < Test::Unit::TestCase
   def test_attr_obsoleted_flag
     c = Class.new do
       extend Test::Unit::Assertions
+      extend Test::Unit::CoreAssertions
       def initialize
         @foo = :foo
         @bar = :bar

@@ -1110,4 +1110,23 @@ class TestArgf < Test::Unit::TestCase
       assert_raise(TypeError, bug11610) {gets}
     };
   end
+
+  def test_sized_read
+    s = "a"
+    [@t1, @t2, @t3].each { |t|
+      File.binwrite(t.path, s)
+      s = s.succ
+    }
+
+    ruby('-e', "print ARGF.read(3)", @t1.path, @t2.path, @t3.path) do |f|
+      assert_equal("abc", f.read)
+    end
+
+    argf = ARGF.class.new(@t1.path, @t2.path, @t3.path)
+    begin
+      assert_equal("abc", argf.read(3))
+    ensure
+      argf.close
+    end
+  end
 end

@@ -22,7 +22,6 @@ require 'fileutils'
 require 'shellwords'
 require 'optparse'
 require 'optparse/shellwords'
-require 'pathname'
 require 'rubygems'
 begin
   require "zlib"
@@ -52,6 +51,7 @@ def parse_args(argv = ARGV)
   $dir_mode = nil
   $script_mode = nil
   $strip = false
+  $debug_symbols = nil
   $cmdtype = (if File::ALT_SEPARATOR == '\\'
                 File.exist?("rubystub.exe") ? 'exe' : 'cmd'
               end)
@@ -93,12 +93,13 @@ def parse_args(argv = ARGV)
   opt.on('--cmd-type=TYPE', %w[cmd plain]) {|cmd| $cmdtype = (cmd unless cmd == 'plain')}
   opt.on('--[no-]strip') {|strip| $strip = strip}
   opt.on('--gnumake') {gnumake = true}
+  opt.on('--debug-symbols=SUFFIX', /\w+/) {|name| $debug_symbols = ".#{name}"}
 
   opt.order!(argv) do |v|
     case v
     when /\AINSTALL[-_]([-\w]+)=(.*)/
       argv.unshift("--#{$1.tr('_', '-')}=#{$2}")
-    when /\A\w[-\w+]*=\z/
+    when /\A\w[-\w]*=/
       mflags << v
     when /\A\w[-\w+]*\z/
       $install << v.intern
@@ -503,7 +504,7 @@ $script_installer = Class.new(installer) do
   if trans = CONFIG["program_transform_name"]
     exp = []
     trans.gsub!(/\$\$/, '$')
-    trans.scan(%r[\G[\s;]*(/(?:\\.|[^/])*/)?([sy])(\\?\W)((?:(?!\3)(?:\\.|.))*)\3((?:(?!\3)(?:\\.|.))*)\3([gi]*)]) do
+    trans.scan(%r[\G[\s;]*(/(?:\\.|[^/])*+/)?([sy])(\\?\W)((?:(?!\3)(?:\\.|.))*+)\3((?:(?!\3)(?:\\.|.))*+)\3([gi]*)]) do
       |addr, cmd, sep, pat, rep, opt|
       addr &&= Regexp.new(addr[/\A\/(.*)\/\z/, 1])
       case cmd
@@ -679,6 +680,20 @@ install?(:dbg, :nodefault) do
   end
   install File.join(srcdir, "misc/lldb_cruby.py"), File.join(rubylibdir, "lldb_cruby.py")
   install File.join(srcdir, ".gdbinit"), File.join(rubylibdir, "gdbinit")
+  if $debug_symbols
+    {
+      ruby_install_name => bindir,
+      rubyw_install_name => bindir,
+      goruby_install_name => bindir,
+      dll => libdir,
+    }.each do |src, dest|
+      next if src.empty?
+      src += $debug_symbols
+      if File.directory?(src)
+        install_recursive src, File.join(dest, src)
+      end
+    end
+  end
 end
 
 module RbInstall
@@ -730,7 +745,7 @@ module RbInstall
           base = @base_dir
           prefix = base.sub(/lib\/.*?\z/, "")
           # for lib/net/net-smtp.gemspec
-          if m = Pathname.new(@gemspec).basename(".gemspec").to_s.match(/.*\-(.*)\z/)
+          if m = File.basename(@gemspec, ".gemspec").match(/.*\-(.*)\z/)
             base = "#{@base_dir}/#{m[1]}" unless remove_prefix(prefix, @base_dir).include?(m[1])
           end
         end
@@ -743,7 +758,7 @@ module RbInstall
                   [File.basename(@gemspec, '.gemspec') + '.rb']
                 end
 
-        case Pathname.new(@gemspec).basename(".gemspec").to_s
+        case File.basename(@gemspec, ".gemspec")
         when "net-http"
           files << "lib/net/https.rb"
         when "optparse"
@@ -818,9 +833,6 @@ module RbInstall
 
   class UnpackedInstaller < GemInstaller
     def write_cache_file
-    end
-
-    def build_extensions
     end
 
     def shebang(bin_file_name)
@@ -977,6 +989,20 @@ def install_default_gem(dir, srcdir, bindir)
 end
 
 install?(:ext, :comm, :gem, :'bundled-gems') do
+  if CONFIG['CROSS_COMPILING'] == 'yes'
+    # The following hacky steps set "$ruby = BASERUBY" in tool/fake.rb
+    $hdrdir = ''
+    $extmk = nil
+    $ruby = nil  # ...
+    ruby_path = $ruby + " -I#{Dir.pwd}" # $baseruby + " -I#{Dir.pwd}"
+  else
+    # ruby_path = File.expand_path(with_destdir(File.join(bindir, ruby_install_name)))
+    ENV['RUBYLIB'] = nil
+    ENV['RUBYOPT'] = nil
+    ruby_path = File.expand_path(with_destdir(File.join(bindir, ruby_install_name))) + " --disable=gems -I#{with_destdir(archlibdir)}"
+  end
+  Gem.instance_variable_set(:@ruby, ruby_path) if Gem.ruby != ruby_path
+
   gem_dir = Gem.default_dir
   install_dir = with_destdir(gem_dir)
   prepare "bundled gems", gem_dir
@@ -997,7 +1023,8 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     :format_executable => true,
   }
   gem_ext_dir = "#$extout/gems/#{CONFIG['arch']}"
-  extensions_dir = Gem::StubSpecification.gemspec_stub("", gem_dir, gem_dir).extensions_dir
+  extensions_dir = with_destdir(Gem::StubSpecification.gemspec_stub("", gem_dir, gem_dir).extensions_dir)
+
   File.foreach("#{srcdir}/gems/bundled_gems") do |name|
     next if /^\s*(?:#|$)/ =~ name
     next unless /^(\S+)\s+(\S+).*/ =~ name
@@ -1012,6 +1039,10 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     end
     next unless spec.platform == Gem::Platform::RUBY
     next unless spec.full_name == gem_name
+    if !spec.extensions.empty? && CONFIG["EXTSTATIC"] == "static"
+      puts "skip installation of #{spec.name} #{spec.version}; bundled gem with an extension library is not supported on --with-static-linked-ext"
+      next
+    end
     spec.extension_dir = "#{extensions_dir}/#{spec.full_name}"
     if File.directory?(ext = "#{gem_ext_dir}/#{spec.full_name}")
       spec.extensions[0] ||= "-"

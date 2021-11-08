@@ -90,11 +90,11 @@
 # with any questions.
 
 require "forwardable"
-require "English"
 require "date"
 require "stringio"
 
 require_relative "csv/fields_converter"
+require_relative "csv/input_record_separator"
 require_relative "csv/match_p"
 require_relative "csv/parser"
 require_relative "csv/row"
@@ -502,7 +502,7 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #  [" 1 ", #<struct CSV::FieldInfo index=1, line=2, header=nil>]
 #  [" baz ", #<struct CSV::FieldInfo index=0, line=3, header=nil>]
 #  [" 2 ", #<struct CSV::FieldInfo index=1, line=3, header=nil>]
-# Each CSV::Info object shows:
+# Each CSV::FieldInfo object shows:
 # - The 0-based field index.
 # - The 1-based line index.
 # - The field header, if any.
@@ -535,6 +535,14 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 # - <tt>:symbol</tt>: Converts each header to a \Symbol.
 #
 # There is no such storage structure for write headers.
+#
+# In order for the parsing methods to access stored converters in non-main-Ractors, the
+# storage structure must be made shareable first.
+# Therefore, <tt>Ractor.make_shareable(CSV::Converters)</tt> and
+# <tt>Ractor.make_shareable(CSV::HeaderConverters)</tt> must be called before the creation
+# of Ractors that use the converters stored in these structures. (Since making the storage
+# structures shareable involves freezing them, any custom converters that are to be used
+# must be added first.)
 #
 # ===== Converter Lists
 #
@@ -908,6 +916,7 @@ class CSV
                                            gsub(/\s+/, "_").to_sym
     }
   }
+
   # Default values for method options.
   DEFAULT_OPTIONS = {
     # For both parsing and generating.
@@ -945,6 +954,8 @@ class CSV
     #
     # Creates or retrieves cached \CSV objects.
     # For arguments and options, see CSV.new.
+    #
+    # This API is not Ractor-safe.
     #
     # ---
     #
@@ -1051,7 +1062,7 @@ class CSV
     #   out_string # => "FOO,0000\nBAR,1111\nBAZ,2222\n"
     def filter(input=nil, output=nil, **options)
       # parse options for input, output, or both
-      in_options, out_options = Hash.new, {row_sep: $INPUT_RECORD_SEPARATOR}
+      in_options, out_options = Hash.new, {row_sep: InputRecordSeparator.value}
       options.each do |key, value|
         case key.to_s
         when /\Ain(?:put)?_(.+)\Z/
@@ -1292,8 +1303,8 @@ class CSV
     # Argument +ary+ must be an \Array.
     #
     # Special options:
-    # * Option <tt>:row_sep</tt> defaults to <tt>$INPUT_RECORD_SEPARATOR</tt>
-    #   (<tt>$/</tt>).:
+    # * Option <tt>:row_sep</tt> defaults to <tt>"\n"> on Ruby 3.0 or later
+    #   and <tt>$INPUT_RECORD_SEPARATOR</tt> (<tt>$/</tt>) otherwise.:
     #     $INPUT_RECORD_SEPARATOR # => "\n"
     # * This method accepts an additional option, <tt>:encoding</tt>, which sets the base
     #   Encoding for the output. This method will try to guess your Encoding from
@@ -1315,7 +1326,7 @@ class CSV
     #   CSV.generate_line(:foo)
     #
     def generate_line(row, **options)
-      options = {row_sep: $INPUT_RECORD_SEPARATOR}.merge(options)
+      options = {row_sep: InputRecordSeparator.value}.merge(options)
       str = +""
       if options[:encoding]
         str.force_encoding(options[:encoding])
@@ -1873,6 +1884,10 @@ class CSV
   #   csv.converters # => [:integer]
   #   csv.convert(proc {|x| x.to_s })
   #   csv.converters
+  #
+  # Notes that you need to call
+  # +Ractor.make_shareable(CSV::Converters)+ on the main Ractor to use
+  # this method.
   def converters
     parser_fields_converter.map do |converter|
       name = Converters.rassoc(converter)
@@ -1935,6 +1950,10 @@ class CSV
   # Returns an \Array containing header converters; used for parsing;
   # see {Header Converters}[#class-CSV-label-Header+Converters]:
   #   CSV.new('').header_converters # => []
+  #
+  # Notes that you need to call
+  # +Ractor.make_shareable(CSV::HeaderConverters)+ on the main Ractor
+  # to use this method.
   def header_converters
     header_fields_converter.map do |converter|
       name = HeaderConverters.rassoc(converter)
@@ -2575,7 +2594,7 @@ class CSV
 
   def build_parser_fields_converter
     specific_options = {
-      builtin_converters: Converters,
+      builtin_converters_name: :Converters,
     }
     options = @base_fields_converter_options.merge(specific_options)
     build_fields_converter(@initial_converters, options)
@@ -2587,7 +2606,7 @@ class CSV
 
   def build_header_fields_converter
     specific_options = {
-      builtin_converters: HeaderConverters,
+      builtin_converters_name: :HeaderConverters,
       accept_nil: true,
     }
     options = @base_fields_converter_options.merge(specific_options)
@@ -2650,8 +2669,15 @@ end
 #     c.read.any? { |a| a.include?("zombies") }
 #   } #=> false
 #
-def CSV(*args, &block)
-  CSV.instance(*args, &block)
+# CSV options may also be given.
+#
+#   io = StringIO.new
+#   CSV(io, col_sep: ";") { |csv| csv << ["a", "b", "c"] }
+#
+# This API is not Ractor-safe.
+#
+def CSV(*args, **options, &block)
+  CSV.instance(*args, **options, &block)
 end
 
 require_relative "csv/version"

@@ -187,6 +187,7 @@ else
 end
 
 have_header 'sys/mman.h'
+have_header 'link.h'
 
 if have_header "dlfcn.h"
   have_library "dl"
@@ -196,8 +197,10 @@ if have_header "dlfcn.h"
   end
 
   have_func "dlerror"
+  have_func "dlinfo"
+  have_const("RTLD_DI_LINKMAP", "dlfcn.h")
 elsif have_header "windows.h"
-  %w{ LoadLibrary FreeLibrary GetProcAddress }.each do |func|
+  %w{ LoadLibrary FreeLibrary GetProcAddress GetModuleFileName }.each do |func|
     abort "missing function #{func}" unless have_func(func)
   end
 
@@ -220,10 +223,6 @@ types.each do |type, signed|
   else
     check_signedness(type.downcase, "stddef.h")
   end
-end
-
-if have_header("ruby/memory_view.h")
-  have_type("rb_memory_view_t", ["ruby/memory_view.h"])
 end
 
 if libffi

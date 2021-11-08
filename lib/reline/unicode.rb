@@ -101,9 +101,9 @@ class Reline::Unicode
 
   def self.get_mbchar_width(mbchar)
     ord = mbchar.ord
-    if (0x00 <= ord and ord <= 0x1F)
+    if (0x00 <= ord and ord <= 0x1F) # in EscapedPairs
       return 2
-    elsif (0x20 <= ord and ord <= 0x7E)
+    elsif (0x20 <= ord and ord <= 0x7E) # printable ASCII chars
       return 1
     end
     m = mbchar.encode(Encoding::UTF_8).match(MBCharWidthRE)
@@ -183,6 +183,37 @@ class Reline::Unicode
       height += 1
     end
     [lines, height]
+  end
+
+  # Take a chunk of a String cut by width with escape sequences.
+  def self.take_range(str, start_col, max_width, encoding = str.encoding)
+    chunk = String.new(encoding: encoding)
+    total_width = 0
+    rest = str.encode(Encoding::UTF_8)
+    in_zero_width = false
+    rest.scan(WIDTH_SCANNER) do |gc|
+      case
+      when gc[NON_PRINTING_START_INDEX]
+        in_zero_width = true
+      when gc[NON_PRINTING_END_INDEX]
+        in_zero_width = false
+      when gc[CSI_REGEXP_INDEX]
+        chunk << gc[CSI_REGEXP_INDEX]
+      when gc[OSC_REGEXP_INDEX]
+        chunk << gc[OSC_REGEXP_INDEX]
+      when gc[GRAPHEME_CLUSTER_INDEX]
+        gc = gc[GRAPHEME_CLUSTER_INDEX]
+        if in_zero_width
+          chunk << gc
+        else
+          mbchar_width = get_mbchar_width(gc)
+          total_width += mbchar_width
+          break if (start_col + max_width) < total_width
+          chunk << gc if start_col < total_width
+        end
+      end
+    end
+    chunk
   end
 
   def self.get_next_mbchar_size(line, byte_pointer)

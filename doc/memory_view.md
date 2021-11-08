@@ -89,7 +89,7 @@ The MemoryView structure consists of the following members.
     A `ndim` size array consisting of the offsets in each dimension when the MemoryView exposes a nested array.
     This can be `NULL` when the MemoryView exposes a flat array.
 
-- `void *const private`
+- `void *private_data`
 
     The private data that MemoryView provider uses internally.
     This can be `NULL` when any private data is unnecessary.

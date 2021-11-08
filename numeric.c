@@ -262,7 +262,7 @@ rb_num_to_uint(VALUE val, unsigned int *ret)
 	return 0;
     }
 
-    if (RB_TYPE_P(val, T_BIGNUM)) {
+    if (RB_BIGNUM_TYPE_P(val)) {
 	if (BIGNUM_NEGATIVE_P(val)) return NUMERR_NEGATIVE;
 #if SIZEOF_INT < SIZEOF_LONG
 	/* long is 64bit */
@@ -285,7 +285,7 @@ int_pos_p(VALUE num)
     if (FIXNUM_P(num)) {
 	return FIXNUM_POSITIVE_P(num);
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
 	return BIGNUM_POSITIVE_P(num);
     }
     rb_raise(rb_eTypeError, "not an Integer");
@@ -297,7 +297,7 @@ int_neg_p(VALUE num)
     if (FIXNUM_P(num)) {
 	return FIXNUM_NEGATIVE_P(num);
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
 	return BIGNUM_NEGATIVE_P(num);
     }
     rb_raise(rb_eTypeError, "not an Integer");
@@ -387,19 +387,37 @@ num_funcall1(VALUE x, ID func, VALUE y)
 
 /*
  *  call-seq:
- *     num.coerce(numeric)  ->  array
+ *    coerce(other) -> array
  *
- *  If +numeric+ is the same type as +num+, returns an array
- *  <code>[numeric, num]</code>. Otherwise, returns an array with both
- *  +numeric+ and +num+ represented as Float objects.
+ *  Returns a 2-element array containing two numeric elements,
+ *  formed from the two operands +self+ and +other+,
+ *  of a common compatible type.
  *
- *  This coercion mechanism is used by Ruby to handle mixed-type numeric
- *  operations: it is intended to find a compatible common type between the two
- *  operands of the operator.
+ *  Of the Core and Standard Library classes,
+ *  Integer, Rational, and Complex use this implementation.
  *
- *     1.coerce(2.5)   #=> [2.5, 1.0]
- *     1.2.coerce(3)   #=> [3.0, 1.2]
- *     1.coerce(2)     #=> [2, 1]
+ *  Examples:
+ *
+ *    i = 2                    # => 2
+ *    i.coerce(3)              # => [3, 2]
+ *    i.coerce(3.0)            # => [3.0, 2.0]
+ *    i.coerce(Rational(1, 2)) # => [0.5, 2.0]
+ *    i.coerce(Complex(3, 4))  # Raises RangeError.
+ *
+ *    r = Rational(5, 2)       # => (5/2)
+ *    r.coerce(2)              # => [(2/1), (5/2)]
+ *    r.coerce(2.0)            # => [2.0, 2.5]
+ *    r.coerce(Rational(2, 3)) # => [(2/3), (5/2)]
+ *    r.coerce(Complex(3, 4))  # => [(3+4i), ((5/2)+0i)]
+ *
+ *    c = Complex(2, 3)        # => (2+3i)
+ *    c.coerce(2)              # => [(2+0i), (2+3i)]
+ *    c.coerce(2.0)            # => [(2.0+0i), (2+3i)]
+ *    c.coerce(Rational(1, 2)) # => [((1/2)+0i), (2+3i)]
+ *    c.coerce(Complex(3, 4))  # => [(3+4i), (2+3i)]
+ *
+ *  Raises an exception if any type conversion fails.
+ *
  */
 
 static VALUE
@@ -509,9 +527,14 @@ num_sadded(VALUE x, VALUE name)
 #if 0
 /*
  *  call-seq:
- *     num.clone(freeze: true)  ->  num
+ *    clone(freeze: true) -> self
  *
- *  Returns the receiver.  +freeze+ cannot be +false+.
+ *  Returns +self+.
+ *
+ *  Raises an exception if the value for +freeze+ is neither +true+ nor +nil+.
+ *
+ *  Related: Numeric#dup.
+ *
  */
 static VALUE
 num_clone(int argc, VALUE *argv, VALUE x)
@@ -525,9 +548,12 @@ num_clone(int argc, VALUE *argv, VALUE x)
 #if 0
 /*
  *  call-seq:
- *     num.dup  ->  num
+ *    dup -> self
  *
- *  Returns the receiver.
+ *  Returns +self+.
+ *
+ *  Related: Numeric#clone.
+ *
  */
 static VALUE
 num_dup(VALUE x)
@@ -540,9 +566,10 @@ num_dup(VALUE x)
 
 /*
  *  call-seq:
- *     +num  ->  num
+ *    +self -> self
  *
- *  Unary Plus---Returns the receiver.
+ *  Returns +self+.
+ *
  */
 
 static VALUE
@@ -553,13 +580,16 @@ num_uplus(VALUE num)
 
 /*
  *  call-seq:
- *     num.i  ->  Complex(0, num)
+ *    i -> complex
  *
- *  Returns the corresponding imaginary number.
- *  Not available for complex numbers.
+ *  Returns <tt>Complex(0, self)</tt>:
  *
- *     -42.i  #=> (0-42i)
- *     2.0.i  #=> (0+2.0i)
+ *    2.i              # => (0+2i)
+ *    -2.i             # => (0-2i)
+ *    2.0.i            # => (0+2.0i)
+ *    Rational(1, 2).i # => (0+(1/2)*i)
+ *    Complex(3, 4).i  # Raises NoMethodError.
+ *
  */
 
 static VALUE
@@ -570,7 +600,7 @@ num_imaginary(VALUE num)
 
 /*
  *  call-seq:
- *     -num  ->  numeric
+ *    -self -> numeric
  *
  *  Unary Minus---Returns the receiver, negated.
  */
@@ -588,9 +618,15 @@ num_uminus(VALUE num)
 
 /*
  *  call-seq:
- *     num.fdiv(numeric)  ->  float
+ *    fdiv(other) -> float
  *
- *  Returns float division.
+ *  Returns the quotient <tt>self/other</tt> as a float,
+ *  using method +/+ in the derived class of +self+.
+ *  (\Numeric itself does not define method +/+.)
+ *
+ *  Of the Core and Standard Library classes,
+ *  only BigDecimal uses this implementation.
+ *
  */
 
 static VALUE
@@ -601,14 +637,15 @@ num_fdiv(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.div(numeric)  ->  integer
+ *    div(other) -> integer
  *
- *  Uses +/+ to perform division, then converts the result to an integer.
- *  Numeric does not define the +/+ operator; this is left to subclasses.
+ *  Returns the quotient <tt>self/other</tt> as an integer (via +floor+),
+ *  using method +/+ in the derived class of +self+.
+ *  (\Numeric itself does not define method +/+.)
  *
- *  Equivalent to <code>num.divmod(numeric)[0]</code>.
+ *  Of the Core and Standard Library classes,
+ *  Float, Rational, and Complex use this implementation.
  *
- *  See Numeric#divmod.
  */
 
 static VALUE
@@ -620,13 +657,38 @@ num_div(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.modulo(numeric)  ->  real
+ *    self % other -> real_numeric
  *
- *  <code>x.modulo(y)</code> means <code>x-y*(x/y).floor</code>.
+ *  Returns +self+ modulo +other+ as a real number.
  *
- *  Equivalent to <code>num.divmod(numeric)[1]</code>.
+ *  Of the Core and Standard Library classes,
+ *  only Rational uses this implementation.
+ *
+ *  For \Rational +r+ and real number +n+, these expressions are equivalent:
+ *
+ *    c % n
+ *    c-n*(c/n).floor
+ *    c.divmod(n)[1]
  *
  *  See Numeric#divmod.
+ *
+ *  Examples:
+ *
+ *    r = Rational(1, 2)    # => (1/2)
+ *    r2 = Rational(2, 3)   # => (2/3)
+ *    r % r2                # => (1/2)
+ *    r % 2                 # => (1/2)
+ *    r % 2.0               # => 0.5
+ *
+ *    r = Rational(301,100) # => (301/100)
+ *    r2 = Rational(7,5)    # => (7/5)
+ *    r % r2                # => (21/100)
+ *    r % -r2               # => (-119/100)
+ *    (-r) % r2             # => (119/100)
+ *    (-r) %-r2             # => (-21/100)
+ *
+ *  Numeric#modulo is an alias for Numeric#%.
+ *
  */
 
 static VALUE
@@ -639,11 +701,33 @@ num_modulo(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.remainder(numeric)  ->  real
+ *    remainder(other) -> real_number
  *
- *  <code>x.remainder(y)</code> means <code>x-y*(x/y).truncate</code>.
+ *  Returns the remainder after dividing +self+ by +other+.
  *
- *  See Numeric#divmod.
+ *  Of the Core and Standard Library classes,
+ *  only Float and Rational use this implementation.
+ *
+ *  Examples:
+ *
+ *    11.0.remainder(4)              # => 3.0
+ *    11.0.remainder(-4)             # => 3.0
+ *    -11.0.remainder(4)             # => -3.0
+ *    -11.0.remainder(-4)            # => -3.0
+ *
+ *    12.0.remainder(4)              # => 0.0
+ *    12.0.remainder(-4)             # => 0.0
+ *    -12.0.remainder(4)             # => -0.0
+ *    -12.0.remainder(-4)            # => -0.0
+ *
+ *    13.0.remainder(4.0)            # => 1.0
+ *    13.0.remainder(Rational(4, 1)) # => 1.0
+ *
+ *    Rational(13, 1).remainder(4)   # => (1/1)
+ *    Rational(13, 1).remainder(-4)  # => (1/1)
+ *    Rational(-13, 1).remainder(4)  # => (-1/1)
+ *    Rational(-13, 1).remainder(-4) # => (-1/1)
+ *
  */
 
 static VALUE
@@ -656,7 +740,7 @@ num_remainder(VALUE x, VALUE y)
 	  rb_num_positive_int_p(y)) ||
 	 (rb_num_positive_int_p(x) &&
 	  rb_num_negative_int_p(y)))) {
-        if (RB_TYPE_P(y, T_FLOAT)) {
+        if (RB_FLOAT_TYPE_P(y)) {
             if (isinf(RFLOAT_VALUE(y))) {
                 return x;
             }
@@ -668,45 +752,30 @@ num_remainder(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.divmod(numeric)  ->  array
+ *    divmod(other) -> array
  *
- *  Returns an array containing the quotient and modulus obtained by dividing
- *  +num+ by +numeric+.
+ *  Returns a 2-element array <tt>[q, r]</tt>, where
  *
- *  If <code>q, r = x.divmod(y)</code>, then
+ *    q = (self/other).floor                  # Quotient
+ *    r = self % other                        # Remainder
  *
- *      q = floor(x/y)
- *      x = q*y + r
+ *  Of the Core and Standard Library classes,
+ *  only Rational uses this implementation.
  *
- *  The quotient is rounded toward negative infinity, as shown in the
- *  following table:
+ *  Examples:
  *
- *     a    |  b  |  a.divmod(b)  |   a/b   | a.modulo(b) | a.remainder(b)
- *    ------+-----+---------------+---------+-------------+---------------
- *     13   |  4  |   3,    1     |   3     |    1        |     1
- *    ------+-----+---------------+---------+-------------+---------------
- *     13   | -4  |  -4,   -3     |  -4     |   -3        |     1
- *    ------+-----+---------------+---------+-------------+---------------
- *    -13   |  4  |  -4,    3     |  -4     |    3        |    -1
- *    ------+-----+---------------+---------+-------------+---------------
- *    -13   | -4  |   3,   -1     |   3     |   -1        |    -1
- *    ------+-----+---------------+---------+-------------+---------------
- *     11.5 |  4  |   2,    3.5   |   2.875 |    3.5      |     3.5
- *    ------+-----+---------------+---------+-------------+---------------
- *     11.5 | -4  |  -3,   -0.5   |  -2.875 |   -0.5      |     3.5
- *    ------+-----+---------------+---------+-------------+---------------
- *    -11.5 |  4  |  -3,    0.5   |  -2.875 |    0.5      |    -3.5
- *    ------+-----+---------------+---------+-------------+---------------
- *    -11.5 | -4  |   2,   -3.5   |   2.875 |   -3.5      |    -3.5
+ *    Rational(11, 1).divmod(4)               # => [2, (3/1)]
+ *    Rational(11, 1).divmod(-4)              # => [-3, (-1/1)]
+ *    Rational(-11, 1).divmod(4)              # => [-3, (1/1)]
+ *    Rational(-11, 1).divmod(-4)             # => [2, (-3/1)]
  *
+ *    Rational(12, 1).divmod(4)               # => [3, (0/1)]
+ *    Rational(12, 1).divmod(-4)              # => [-3, (0/1)]
+ *    Rational(-12, 1).divmod(4)              # => [-3, (0/1)]
+ *    Rational(-12, 1).divmod(-4)             # => [3, (0/1)]
  *
- *  Examples
- *
- *     11.divmod(3)        #=> [3, 2]
- *     11.divmod(-3)       #=> [-4, -1]
- *     11.divmod(3.5)      #=> [3, 0.5]
- *     (-11).divmod(3.5)   #=> [-4, 3.0]
- *     11.5.divmod(3.5)    #=> [3, 1.0]
+ *    Rational(13, 1).divmod(4.0)             # => [3, 1.0]
+ *    Rational(13, 1).divmod(Rational(4, 11)) # => [35, (3/11)]
  */
 
 static VALUE
@@ -717,16 +786,16 @@ num_divmod(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.abs        ->  numeric
- *     num.magnitude  ->  numeric
+ *    abs -> numeric
  *
- *  Returns the absolute value of +num+.
+ *  Returns the absolute value of +self+.
  *
- *     12.abs         #=> 12
- *     (-34.56).abs   #=> 34.56
- *     -34.56.abs     #=> 34.56
+ *    12.abs        #=> 12
+ *    (-34.56).abs  #=> 34.56
+ *    -34.56.abs    #=> 34.56
  *
  *  Numeric#magnitude is an alias for Numeric#abs.
+ *
  */
 
 static VALUE
@@ -740,9 +809,13 @@ num_abs(VALUE num)
 
 /*
  *  call-seq:
- *     num.zero?  ->  true or false
+ *    zero? -> true or false
  *
- *  Returns +true+ if +num+ has a zero value.
+ *  Returns +true+ if +zero+ has a zero value, +false+ otherwise.
+ *
+ *  Of the Core and Standard Library classes,
+ *  only Rational and Complex use this implementation.
+ *
  */
 
 static VALUE
@@ -755,18 +828,10 @@ static VALUE
 int_zero_p(VALUE num)
 {
     if (FIXNUM_P(num)) {
-	if (FIXNUM_ZERO_P(num)) {
-	    return Qtrue;
-	}
+        return RBOOL(FIXNUM_ZERO_P(num));
     }
-    else {
-        assert(RB_TYPE_P(num, T_BIGNUM));
-	if (rb_bigzero_p(num)) {
-	    /* this should not happen usually */
-	    return Qtrue;
-	}
-    }
-    return Qfalse;
+    assert(RB_BIGNUM_TYPE_P(num));
+    return RBOOL(rb_bigzero_p(num));
 }
 
 VALUE
@@ -777,15 +842,20 @@ rb_int_zero_p(VALUE num)
 
 /*
  *  call-seq:
- *     num.nonzero?  ->  self or nil
+ *    nonzero?  ->  self or nil
  *
- *  Returns +self+ if +num+ is not zero, +nil+ otherwise.
+ *  Returns +self+ if +self+ is not a zero value, +nil+ otherwise;
+ *  uses method <tt>zero?</tt> for the evaluation.
  *
- *  This behavior is useful when chaining comparisons:
+ *  The returned +self+ allows the method to be chained:
  *
- *     a = %w( z Bb bB bb BB a aA Aa AA A )
- *     b = a.sort {|a,b| (a.downcase <=> b.downcase).nonzero? || a <=> b }
- *     b   #=> ["A", "a", "AA", "Aa", "aA", "BB", "Bb", "bB", "bb", "z"]
+ *    a = %w[z Bb bB bb BB a aA Aa AA A]
+ *    a.sort {|a, b| (a.downcase <=> b.downcase).nonzero? || a <=> b }
+ *    # => ["A", "a", "AA", "Aa", "aA", "BB", "Bb", "bB", "bb", "z"]
+ *
+ *  Of the Core and Standard Library classes,
+ *  Integer, Float, Rational, and Complex use this implementation.
+ *
  */
 
 static VALUE
@@ -799,13 +869,21 @@ num_nonzero_p(VALUE num)
 
 /*
  *  call-seq:
- *     num.to_int  ->  integer
+ *    to_int -> integer
  *
- *  Invokes the child class's +to_i+ method to convert +num+ to an integer.
+ *  Returns +self+ as an integer;
+ *  converts using method +to_i+ in the derived class.
  *
- *      1.0.class          #=> Float
- *      1.0.to_int.class   #=> Integer
- *      1.0.to_i.class     #=> Integer
+ *  Of the Core and Standard Library classes,
+ *  only Rational and Complex use this implementation.
+ *
+ *  Examples:
+ *
+ *    Rational(1, 2).to_int # => 0
+ *    Rational(2, 1).to_int # => 2
+ *    Complex(2, 0).to_int  # => 2
+ *    Complex(2, 1)         # Raises RangeError (non-zero imaginary part)
+ *
  */
 
 static VALUE
@@ -816,9 +894,10 @@ num_to_int(VALUE num)
 
 /*
  *  call-seq:
- *     num.positive?  ->  true or false
+ *    positive? -> true or false
  *
- *  Returns +true+ if +num+ is greater than 0.
+ *  Returns +true+ if +self+ is greater than 0, +false+ otherwise.
+ *
  */
 
 static VALUE
@@ -828,26 +907,27 @@ num_positive_p(VALUE num)
 
     if (FIXNUM_P(num)) {
 	if (method_basic_p(rb_cInteger))
-	    return (SIGNED_VALUE)num > (SIGNED_VALUE)INT2FIX(0) ? Qtrue : Qfalse;
+	    return RBOOL((SIGNED_VALUE)num > (SIGNED_VALUE)INT2FIX(0));
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
 	if (method_basic_p(rb_cInteger))
-	    return BIGNUM_POSITIVE_P(num) && !rb_bigzero_p(num) ? Qtrue : Qfalse;
+	    return RBOOL(BIGNUM_POSITIVE_P(num) && !rb_bigzero_p(num));
     }
     return rb_num_compare_with_zero(num, mid);
 }
 
 /*
  *  call-seq:
- *     num.negative?  ->  true or false
+ *    negative? -> true or false
  *
- *  Returns +true+ if +num+ is less than 0.
+ *  Returns +true+ if +self+ is less than 0, +false+ otherwise.
+ *
  */
 
 static VALUE
 num_negative_p(VALUE num)
 {
-    return rb_num_negative_int_p(num) ? Qtrue : Qfalse;
+    return RBOOL(rb_num_negative_int_p(num));
 }
 
 
@@ -871,7 +951,15 @@ rb_float_new_in_heap(double d)
 {
     NEWOBJ_OF(flt, struct RFloat, rb_cFloat, T_FLOAT | (RGENGC_WB_PROTECTED_FLOAT ? FL_WB_PROTECTED : 0));
 
+#if SIZEOF_DOUBLE <= SIZEOF_VALUE
     flt->float_value = d;
+#else
+    union {
+        double d;
+        rb_float_value_type v;
+    } u = {d};
+    flt->float_value = u.v;
+#endif
     OBJ_FREEZE((VALUE)flt);
     return (VALUE)flt;
 }
@@ -961,15 +1049,21 @@ flo_to_s(VALUE flt)
 
 /*
  *  call-seq:
- *     float.coerce(numeric)  ->  array
+ *    coerce(other) -> array
  *
- *  Returns an array with both +numeric+ and +float+ represented as Float
- *  objects.
+ *  Returns a 2-element array containing +other+ converted to a \Float
+ *  and +self+:
  *
- *  This is achieved by converting +numeric+ to a Float.
+ *    f = 3.14                 # => 3.14
+ *    f.coerce(2)              # => [2.0, 3.14]
+ *    f.coerce(2.0)            # => [2.0, 3.14]
+ *    f.coerce(Rational(1, 2)) # => [0.5, 3.14]
+ *    f.coerce(Complex(3, 4))  # Raises RangeError.
  *
- *     1.2.coerce(3)       #=> [3.0, 1.2]
- *     2.5.coerce(1.1)     #=> [1.1, 2.5]
+ *  Related: Numeric#coerce (for other numeric types).
+ *
+ *  Raises an exception if a type conversion fails.
+ *
  */
 
 static VALUE
@@ -994,13 +1088,13 @@ rb_float_uminus(VALUE flt)
 VALUE
 rb_float_plus(VALUE x, VALUE y)
 {
-    if (RB_TYPE_P(y, T_FIXNUM)) {
+    if (FIXNUM_P(y)) {
 	return DBL2NUM(RFLOAT_VALUE(x) + (double)FIX2LONG(y));
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	return DBL2NUM(RFLOAT_VALUE(x) + rb_big2dbl(y));
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	return DBL2NUM(RFLOAT_VALUE(x) + RFLOAT_VALUE(y));
     }
     else {
@@ -1018,13 +1112,13 @@ rb_float_plus(VALUE x, VALUE y)
 VALUE
 rb_float_minus(VALUE x, VALUE y)
 {
-    if (RB_TYPE_P(y, T_FIXNUM)) {
+    if (FIXNUM_P(y)) {
 	return DBL2NUM(RFLOAT_VALUE(x) - (double)FIX2LONG(y));
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	return DBL2NUM(RFLOAT_VALUE(x) - rb_big2dbl(y));
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	return DBL2NUM(RFLOAT_VALUE(x) - RFLOAT_VALUE(y));
     }
     else {
@@ -1042,13 +1136,13 @@ rb_float_minus(VALUE x, VALUE y)
 VALUE
 rb_float_mul(VALUE x, VALUE y)
 {
-    if (RB_TYPE_P(y, T_FIXNUM)) {
+    if (FIXNUM_P(y)) {
 	return DBL2NUM(RFLOAT_VALUE(x) * (double)FIX2LONG(y));
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	return DBL2NUM(RFLOAT_VALUE(x) * rb_big2dbl(y));
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	return DBL2NUM(RFLOAT_VALUE(x) * RFLOAT_VALUE(y));
     }
     else {
@@ -1094,13 +1188,13 @@ rb_float_div(VALUE x, VALUE y)
     double den;
     double ret;
 
-    if (RB_TYPE_P(y, T_FIXNUM)) {
+    if (FIXNUM_P(y)) {
         den = FIX2LONG(y);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
         den = rb_big2dbl(y);
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
         den = RFLOAT_VALUE(y);
     }
     else {
@@ -1178,13 +1272,33 @@ ruby_float_mod(double x, double y)
 
 /*
  *  call-seq:
- *     float % other        ->  float
- *     float.modulo(other)  ->  float
+ *    self % other -> float
  *
- *  Returns the modulo after division of +float+ by +other+.
+ *  Returns +self+ modulo +other+ as a float.
  *
- *     6543.21.modulo(137)      #=> 104.21000000000004
- *     6543.21.modulo(137.24)   #=> 92.92999999999961
+ *  For float +f+ and real number +r+, these expressions are equivalent:
+ *
+ *    f % r
+ *    f-r*(f/r).floor
+ *    f.divmod(r)[1]
+ *
+ *  See Numeric#divmod.
+ *
+ *  Examples:
+ *
+ *    10.0 % 2              # => 0.0
+ *    10.0 % 3              # => 1.0
+ *    10.0 % 4              # => 2.0
+ *
+ *    10.0 % -2             # => 0.0
+ *    10.0 % -3             # => -2.0
+ *    10.0 % -4             # => -2.0
+ *
+ *    10.0 % 4.0            # => 2.0
+ *    10.0 % Rational(4, 1) # => 2.0
+ *
+ *  Float#modulo is an alias for Float#%.
+ *
  */
 
 static VALUE
@@ -1192,13 +1306,13 @@ flo_mod(VALUE x, VALUE y)
 {
     double fy;
 
-    if (RB_TYPE_P(y, T_FIXNUM)) {
+    if (FIXNUM_P(y)) {
 	fy = (double)FIX2LONG(y);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	fy = rb_big2dbl(y);
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	fy = RFLOAT_VALUE(y);
     }
     else {
@@ -1218,12 +1332,28 @@ dbl2ival(double d)
 
 /*
  *  call-seq:
- *     float.divmod(numeric)  ->  array
+ *    divmod(other) -> array
  *
- *  See Numeric#divmod.
+ *  Returns a 2-element array <tt>[q, r]</tt>, where
  *
- *     42.0.divmod(6)   #=> [7, 0.0]
- *     42.0.divmod(5)   #=> [8, 2.0]
+ *    q = (self/other).floor      # Quotient
+ *    r = self % other            # Remainder
+ *
+ *  Examples:
+ *
+ *    11.0.divmod(4)              # => [2, 3.0]
+ *    11.0.divmod(-4)             # => [-3, -1.0]
+ *    -11.0.divmod(4)             # => [-3, 1.0]
+ *    -11.0.divmod(-4)            # => [2, -3.0]
+ *
+ *    12.0.divmod(4)              # => [3, 0.0]
+ *    12.0.divmod(-4)             # => [-3, 0.0]
+ *    -12.0.divmod(4)             # => [-3, -0.0]
+ *    -12.0.divmod(-4)            # => [3, -0.0]
+ *
+ *    13.0.divmod(4.0)            # => [3, 1.0]
+ *    13.0.divmod(Rational(4, 1)) # => [3, 1.0]
+ *
  */
 
 static VALUE
@@ -1232,13 +1362,13 @@ flo_divmod(VALUE x, VALUE y)
     double fy, div, mod;
     volatile VALUE a, b;
 
-    if (RB_TYPE_P(y, T_FIXNUM)) {
+    if (FIXNUM_P(y)) {
 	fy = (double)FIX2LONG(y);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	fy = rb_big2dbl(y);
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	fy = RFLOAT_VALUE(y);
     }
     else {
@@ -1267,15 +1397,15 @@ rb_float_pow(VALUE x, VALUE y)
 	dx = RFLOAT_VALUE(x);
         return DBL2NUM(dx * dx);
     }
-    else if (RB_TYPE_P(y, T_FIXNUM)) {
+    else if (FIXNUM_P(y)) {
 	dx = RFLOAT_VALUE(x);
 	dy = (double)FIX2LONG(y);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	dx = RFLOAT_VALUE(x);
 	dy = rb_big2dbl(y);
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	dx = RFLOAT_VALUE(x);
 	dy = RFLOAT_VALUE(y);
 	if (dx < 0 && dy != round(dy))
@@ -1289,14 +1419,23 @@ rb_float_pow(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.eql?(numeric)  ->  true or false
+ *    eql?(other) -> true or false
  *
- *  Returns +true+ if +num+ and +numeric+ are the same type and have equal
- *  values.  Contrast this with Numeric#==, which performs type conversions.
+ *  Returns +true+ if +self+ and +other+ are the same type and have equal values.
  *
- *     1 == 1.0        #=> true
- *     1.eql?(1.0)     #=> false
- *     1.0.eql?(1.0)   #=> true
+ *  Of the Core and Standard Library classes,
+ *  only Integer, Rational, and Complex use this implementation.
+ *
+ *  Examples:
+ *
+ *    1.eql?(1)              # => true
+ *    1.eql?(1.0)            # => false
+ *    1.eql?(Rational(1, 1)) # => false
+ *    1.eql?(Complex(1, 0))  # => false
+ *
+ *  \Method +eql?+ is different from +==+ in that +eql?+ requires matching types,
+ *  while +==+ does not.
+ *
  */
 
 static VALUE
@@ -1304,7 +1443,7 @@ num_eql(VALUE x, VALUE y)
 {
     if (TYPE(x) != TYPE(y)) return Qfalse;
 
-    if (RB_TYPE_P(x, T_BIGNUM)) {
+    if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_eql(x, y);
     }
 
@@ -1313,9 +1452,12 @@ num_eql(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     number <=> other  ->  0 or nil
+ *    self <=> other -> zero or nil
  *
- *  Returns zero if +number+ equals +other+, otherwise returns +nil+.
+ *  Returns zero if +self+ is the same as +other+, +nil+ otherwise.
+ *
+ *  No subclass in the Ruby Core or Standard Library uses this implementation.
+ *
  */
 
 static VALUE
@@ -1331,8 +1473,7 @@ num_equal(VALUE x, VALUE y)
     VALUE result;
     if (x == y) return Qtrue;
     result = num_funcall1(y, id_eq, x);
-    if (RTEST(result)) return Qtrue;
-    return Qfalse;
+    return RBOOL(RTEST(result));
 }
 
 /*
@@ -1353,10 +1494,10 @@ rb_float_equal(VALUE x, VALUE y)
 {
     volatile double a, b;
 
-    if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
+    if (RB_INTEGER_TYPE_P(y)) {
         return rb_integer_float_eq(y, x);
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	b = RFLOAT_VALUE(y);
 #if MSC_VERSION_BEFORE(1300)
 	if (isnan(b)) return Qfalse;
@@ -1369,7 +1510,7 @@ rb_float_equal(VALUE x, VALUE y)
 #if MSC_VERSION_BEFORE(1300)
     if (isnan(a)) return Qfalse;
 #endif
-    return (a == b)?Qtrue:Qfalse;
+    return RBOOL(a == b);
 }
 
 #define flo_eq rb_float_equal
@@ -1428,13 +1569,13 @@ flo_cmp(VALUE x, VALUE y)
 
     a = RFLOAT_VALUE(x);
     if (isnan(a)) return Qnil;
-    if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
+    if (RB_INTEGER_TYPE_P(y)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
             return LONG2FIX(-FIX2LONG(rel));
         return rel;
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	b = RFLOAT_VALUE(y);
     }
     else {
@@ -1474,13 +1615,13 @@ rb_float_gt(VALUE x, VALUE y)
     double a, b;
 
     a = RFLOAT_VALUE(x);
-    if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
+    if (RB_INTEGER_TYPE_P(y)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
-            return -FIX2LONG(rel) > 0 ? Qtrue : Qfalse;
+            return RBOOL(-FIX2LONG(rel) > 0);
         return Qfalse;
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	b = RFLOAT_VALUE(y);
 #if MSC_VERSION_BEFORE(1300)
 	if (isnan(b)) return Qfalse;
@@ -1492,7 +1633,7 @@ rb_float_gt(VALUE x, VALUE y)
 #if MSC_VERSION_BEFORE(1300)
     if (isnan(a)) return Qfalse;
 #endif
-    return (a > b)?Qtrue:Qfalse;
+    return RBOOL(a > b);
 }
 
 /*
@@ -1511,13 +1652,13 @@ flo_ge(VALUE x, VALUE y)
     double a, b;
 
     a = RFLOAT_VALUE(x);
-    if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
+    if (RB_TYPE_P(y, T_FIXNUM) || RB_BIGNUM_TYPE_P(y)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
-            return -FIX2LONG(rel) >= 0 ? Qtrue : Qfalse;
+            return RBOOL(-FIX2LONG(rel) >= 0);
         return Qfalse;
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	b = RFLOAT_VALUE(y);
 #if MSC_VERSION_BEFORE(1300)
 	if (isnan(b)) return Qfalse;
@@ -1529,7 +1670,7 @@ flo_ge(VALUE x, VALUE y)
 #if MSC_VERSION_BEFORE(1300)
     if (isnan(a)) return Qfalse;
 #endif
-    return (a >= b)?Qtrue:Qfalse;
+    return RBOOL(a >= b);
 }
 
 /*
@@ -1548,13 +1689,13 @@ flo_lt(VALUE x, VALUE y)
     double a, b;
 
     a = RFLOAT_VALUE(x);
-    if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
+    if (RB_INTEGER_TYPE_P(y)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
-            return -FIX2LONG(rel) < 0 ? Qtrue : Qfalse;
+            return RBOOL(-FIX2LONG(rel) < 0);
         return Qfalse;
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	b = RFLOAT_VALUE(y);
 #if MSC_VERSION_BEFORE(1300)
 	if (isnan(b)) return Qfalse;
@@ -1566,7 +1707,7 @@ flo_lt(VALUE x, VALUE y)
 #if MSC_VERSION_BEFORE(1300)
     if (isnan(a)) return Qfalse;
 #endif
-    return (a < b)?Qtrue:Qfalse;
+    return RBOOL(a < b);
 }
 
 /*
@@ -1585,13 +1726,13 @@ flo_le(VALUE x, VALUE y)
     double a, b;
 
     a = RFLOAT_VALUE(x);
-    if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
+    if (RB_INTEGER_TYPE_P(y)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
-            return -FIX2LONG(rel) <= 0 ? Qtrue : Qfalse;
+            return RBOOL(-FIX2LONG(rel) <= 0);
         return Qfalse;
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	b = RFLOAT_VALUE(y);
 #if MSC_VERSION_BEFORE(1300)
 	if (isnan(b)) return Qfalse;
@@ -1603,7 +1744,7 @@ flo_le(VALUE x, VALUE y)
 #if MSC_VERSION_BEFORE(1300)
     if (isnan(a)) return Qfalse;
 #endif
-    return (a <= b)?Qtrue:Qfalse;
+    return RBOOL(a <= b);
 }
 
 /*
@@ -1622,14 +1763,13 @@ flo_le(VALUE x, VALUE y)
 MJIT_FUNC_EXPORTED VALUE
 rb_float_eql(VALUE x, VALUE y)
 {
-    if (RB_TYPE_P(y, T_FLOAT)) {
+    if (RB_FLOAT_TYPE_P(y)) {
 	double a = RFLOAT_VALUE(x);
 	double b = RFLOAT_VALUE(y);
 #if MSC_VERSION_BEFORE(1300)
 	if (isnan(a) || isnan(b)) return Qfalse;
 #endif
-	if (a == b)
-	    return Qtrue;
+    return RBOOL(a == b);
     }
     return Qfalse;
 }
@@ -1660,7 +1800,7 @@ flo_is_nan_p(VALUE num)
 {
     double value = RFLOAT_VALUE(num);
 
-    return isnan(value) ? Qtrue : Qfalse;
+    return RBOOL(isnan(value));
 }
 
 /*
@@ -1700,15 +1840,7 @@ rb_flo_is_finite_p(VALUE num)
 {
     double value = RFLOAT_VALUE(num);
 
-#ifdef HAVE_ISFINITE
-    if (!isfinite(value))
-	return Qfalse;
-#else
-    if (isinf(value) || isnan(value))
-	return Qfalse;
-#endif
-
-    return Qtrue;
+    return RBOOL(isfinite(value));
 }
 
 static VALUE
@@ -1829,20 +1961,24 @@ flo_prev_float(VALUE vx)
 VALUE
 rb_float_floor(VALUE num, int ndigits)
 {
-    double number, f;
+    double number;
     number = RFLOAT_VALUE(num);
     if (number == 0.0) {
 	return ndigits > 0 ? DBL2NUM(number) : INT2FIX(0);
     }
     if (ndigits > 0) {
 	int binexp;
+        double f, mul, res;
 	frexp(number, &binexp);
 	if (float_round_overflow(ndigits, binexp)) return num;
 	if (number > 0.0 && float_round_underflow(ndigits, binexp))
 	    return DBL2NUM(0.0);
 	f = pow(10, ndigits);
-	f = floor(number * f) / f;
-	return DBL2NUM(f);
+        mul = floor(number * f);
+        res = (mul + 1) / f;
+        if (res > number)
+            res = mul / f;
+        return DBL2NUM(res);
     }
     else {
 	num = dbl2ival(floor(number));
@@ -1890,13 +2026,19 @@ rb_float_floor(VALUE num, int ndigits)
  *     (0.3 / 0.1).floor  #=> 2 (!)
  */
 
+static int
+flo_ndigits(int argc, VALUE *argv)
+{
+    if (rb_check_arity(argc, 0, 1)) {
+	return NUM2INT(argv[0]);
+    }
+    return 0;
+}
+
 static VALUE
 flo_floor(int argc, VALUE *argv, VALUE num)
 {
-    int ndigits = 0;
-    if (rb_check_arity(argc, 0, 1)) {
-	ndigits = NUM2INT(argv[0]);
-    }
+    int ndigits = flo_ndigits(argc, argv);
     return rb_float_floor(num, ndigits);
 }
 
@@ -1942,11 +2084,7 @@ flo_floor(int argc, VALUE *argv, VALUE num)
 static VALUE
 flo_ceil(int argc, VALUE *argv, VALUE num)
 {
-    int ndigits = 0;
-
-    if (rb_check_arity(argc, 0, 1)) {
-	ndigits = NUM2INT(argv[0]);
-    }
+    int ndigits = flo_ndigits(argc, argv);
     return rb_float_ceil(num, ndigits);
 }
 
@@ -1985,7 +2123,7 @@ int_round_zero_p(VALUE num, int ndigits)
     if (FIXNUM_P(num)) {
 	bytes = sizeof(long);
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
 	bytes = rb_big_size(num);
     }
     else {
@@ -2055,7 +2193,7 @@ rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode)
 	if (neg) x = -x;
 	return LONG2NUM(x);
     }
-    if (RB_TYPE_P(f, T_FLOAT)) {
+    if (RB_FLOAT_TYPE_P(f)) {
 	/* then int_pow overflow */
 	return INT2FIX(0);
     }
@@ -2086,7 +2224,7 @@ rb_int_floor(VALUE num, int ndigits)
 	if (neg) x = -x;
 	return LONG2NUM(x);
     }
-    if (RB_TYPE_P(f, T_FLOAT)) {
+    if (RB_FLOAT_TYPE_P(f)) {
 	/* then int_pow overflow */
 	return INT2FIX(0);
     }
@@ -2110,7 +2248,7 @@ rb_int_ceil(VALUE num, int ndigits)
 	if (neg) x = -x;
 	return LONG2NUM(x);
     }
-    if (RB_TYPE_P(f, T_FLOAT)) {
+    if (RB_FLOAT_TYPE_P(f)) {
 	/* then int_pow overflow */
 	return INT2FIX(0);
     }
@@ -2134,7 +2272,7 @@ rb_int_truncate(VALUE num, int ndigits)
 	if (neg) x = -x;
 	return LONG2NUM(x);
     }
-    if (RB_TYPE_P(f, T_FLOAT)) {
+    if (RB_FLOAT_TYPE_P(f)) {
 	/* then int_pow overflow */
 	return INT2FIX(0);
     }
@@ -2227,6 +2365,10 @@ flo_round(int argc, VALUE *argv, VALUE num)
 	frexp(number, &binexp);
 	if (float_round_overflow(ndigits, binexp)) return num;
 	if (float_round_underflow(ndigits, binexp)) return DBL2NUM(0);
+        if (ndigits > 14) {
+            /* In this case, pow(10, ndigits) may not be accurate. */
+            return rb_flo_round_by_rational(argc, argv, num);
+        }
 	f = pow(10, ndigits);
 	x = ROUND_CALL(mode, round, (number, f));
 	return DBL2NUM(x / f);
@@ -2334,12 +2476,12 @@ flo_truncate(int argc, VALUE *argv, VALUE num)
 
 /*
  *  call-seq:
- *     num.floor([ndigits])  ->  integer or float
+ *    floor(digits = 0) -> integer or float
  *
- *  Returns the largest number less than or equal to +num+ with
- *  a precision of +ndigits+ decimal digits (default: 0).
+ *  Returns the largest number that is less than or equal to +self+ with
+ *  a precision of +digits+ decimal digits.
  *
- *  Numeric implements this by converting its value to a Float and
+ *  \Numeric implements this by converting +self+ to a Float and
  *  invoking Float#floor.
  */
 
@@ -2351,12 +2493,12 @@ num_floor(int argc, VALUE *argv, VALUE num)
 
 /*
  *  call-seq:
- *     num.ceil([ndigits])  ->  integer or float
+ *    ceil(digits = 0) -> integer or float
  *
- *  Returns the smallest number greater than or equal to +num+ with
- *  a precision of +ndigits+ decimal digits (default: 0).
+ *  Returns the smallest number that is greater than or equal to +self+ with
+ *  a precision of +digits+ decimal digits.
  *
- *  Numeric implements this by converting its value to a Float and
+ *  \Numeric implements this by converting +self+ to a Float and
  *  invoking Float#ceil.
  */
 
@@ -2368,12 +2510,12 @@ num_ceil(int argc, VALUE *argv, VALUE num)
 
 /*
  *  call-seq:
- *     num.round([ndigits])  ->  integer or float
+ *    round(digits = 0) -> integer or float
  *
- *  Returns +num+ rounded to the nearest value with
- *  a precision of +ndigits+ decimal digits (default: 0).
+ *  Returns +self+ rounded to the nearest value with
+ *  a precision of +digits+ decimal digits.
  *
- *  Numeric implements this by converting its value to a Float and
+ *  \Numeric implements this by converting +self+ to a Float and
  *  invoking Float#round.
  */
 
@@ -2385,12 +2527,12 @@ num_round(int argc, VALUE* argv, VALUE num)
 
 /*
  *  call-seq:
- *     num.truncate([ndigits])  ->  integer or float
+ *    truncate(digits = 0) -> integer or float
  *
- *  Returns +num+ truncated (toward zero) to
- *  a precision of +ndigits+ decimal digits (default: 0).
+ *  Returns +self+ truncated (toward zero) to
+ *  a precision of +digits+ decimal digits.
  *
- *  Numeric implements this by converting its value to a Float and
+ *  \Numeric implements this by converting +self+ to a Float and
  *  invoking Float#truncate.
  */
 
@@ -2448,7 +2590,7 @@ ruby_float_step_size(double beg, double end, double unit, int excl)
 int
 ruby_float_step(VALUE from, VALUE to, VALUE step, int excl, int allow_endless)
 {
-    if (RB_TYPE_P(from, T_FLOAT) || RB_TYPE_P(to, T_FLOAT) || RB_TYPE_P(step, T_FLOAT)) {
+    if (RB_FLOAT_TYPE_P(from) || RB_FLOAT_TYPE_P(to) || RB_FLOAT_TYPE_P(step)) {
         double unit = NUM2DBL(step);
 	double beg = NUM2DBL(from);
         double end = (allow_endless && NIL_P(to)) ? (unit < 0 ? -1 : 1)*HUGE_VAL : NUM2DBL(to);
@@ -2499,7 +2641,7 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
 	}
 	return ULONG2NUM(delta / diff + 1UL);
     }
-    else if (RB_TYPE_P(from, T_FLOAT) || RB_TYPE_P(to, T_FLOAT) || RB_TYPE_P(step, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(from) || RB_FLOAT_TYPE_P(to) || RB_FLOAT_TYPE_P(step)) {
 	double n = ruby_float_step_size(NUM2DBL(from), NUM2DBL(to), NUM2DBL(step), excl);
 
 	if (isinf(n)) return DBL2NUM(n);
@@ -2533,7 +2675,7 @@ num_step_negative_p(VALUE num)
 	if (method_basic_p(rb_cInteger))
 	    return (SIGNED_VALUE)num < 0;
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
 	if (method_basic_p(rb_cInteger))
 	    return BIGNUM_NEGATIVE_P(num);
     }
@@ -2618,25 +2760,89 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *     num.step(by: step, to: limit) {|i| block }   ->  self
- *     num.step(by: step, to: limit)                ->  an_enumerator
- *     num.step(by: step, to: limit)                ->  an_arithmetic_sequence
- *     num.step(limit=nil, step=1) {|i| block }     ->  self
- *     num.step(limit=nil, step=1)                  ->  an_enumerator
- *     num.step(limit=nil, step=1)                  ->  an_arithmetic_sequence
+ *    step(to = nil, by = 1) {|n| ... } ->  self
+ *    step(to = nil, by = 1)            ->  enumerator
+ *    step(to = nil, by: 1) {|n| ... }  ->  self
+ *    step(to = nil, by: 1)             ->  enumerator
+ *    step(by: 1, to: ) {|n| ... }      ->  self
+ *    step(by: 1, to: )                 ->  enumerator
+ *    step(by: , to: nil) {|n| ... }    ->  self
+ *    step(by: , to: nil)               ->  enumerator
  *
- *  Invokes the given block with the sequence of numbers starting at +num+,
- *  incremented by +step+ (defaulted to +1+) on each call.
+ *  Generates a sequence of numbers; with a block given, traverses the sequence.
  *
- *  The loop finishes when the value to be passed to the block is greater than
- *  +limit+ (if +step+ is positive) or less than +limit+ (if +step+ is
- *  negative), where +limit+ is defaulted to infinity.
+ *  Of the Core and Standard Library classes,
+ *  Integer, Float, and Rational use this implementation.
  *
- *  In the recommended keyword argument style, either or both of
- *  +step+ and +limit+ (default infinity) can be omitted.  In the
- *  fixed position argument style, zero as a step
- *  (i.e. <code>num.step(limit, 0)</code>) is not allowed for historical
- *  compatibility reasons.
+ *  A quick example:
+ *
+ *    squares = []
+ *    1.step(by: 2, to: 10) {|i| squares.push(i*i) }
+ *    squares # => [1, 9, 25, 49, 81]
+ *
+ *  The generated sequence:
+ *
+ *  - Begins with +self+.
+ *  - Continues at intervals of +step+ (which may not be zero).
+ *  - Ends with the last number that is within or equal to +limit+;
+ *    that is, less than or equal to +limit+ if +step+ is positive,
+ *    greater than or equal to +limit+ if +step+ is negative.
+ *    If +limit+ is not given, the sequence is of infinite length.
+ *
+ *  If a block is given, calls the block with each number in the sequence;
+ *  returns +self+.  If no block is given, returns an Enumerator::ArithmeticSequence.
+ *
+ *  <b>Keyword Arguments</b>
+ *
+ *  With keyword arguments +by+ and +to+,
+ *  their values (or defaults) determine the step and limit:
+ *
+ *    # Both keywords given.
+ *    squares = []
+ *    4.step(by: 2, to: 10) {|i| squares.push(i*i) }    # => 4
+ *    squares # => [16, 36, 64, 100]
+ *    cubes = []
+ *    3.step(by: -1.5, to: -3) {|i| cubes.push(i*i*i) } # => 3
+ *    cubes   # => [27.0, 3.375, 0.0, -3.375, -27.0]
+ *    squares = []
+ *    1.2.step(by: 0.2, to: 2.0) {|f| squares.push(f*f) }
+ *    squares # => [1.44, 1.9599999999999997, 2.5600000000000005, 3.24, 4.0]
+ *
+ *    squares = []
+ *    Rational(6/5).step(by: 0.2, to: 2.0) {|r| squares.push(r*r) }
+ *    squares # => [1.0, 1.44, 1.9599999999999997, 2.5600000000000005, 3.24, 4.0]
+ *
+ *    # Only keyword to given.
+ *    squares = []
+ *    4.step(to: 10) {|i| squares.push(i*i) }           # => 4
+ *    squares # => [16, 25, 36, 49, 64, 81, 100]
+ *    # Only by given.
+ *
+ *    # Only keyword by given
+ *    squares = []
+ *    4.step(by:2) {|i| squares.push(i*i); break if i > 10 }
+ *    squares # => [16, 36, 64, 100, 144]
+ *
+ *    # No block given.
+ *    e = 3.step(by: -1.5, to: -3) # => (3.step(by: -1.5, to: -3))
+ *    e.class                      # => Enumerator::ArithmeticSequence
+ *
+ *  <b>Positional Arguments</b>
+ *
+ *  With optional positional arguments +limit+ and +step+,
+ *  their values (or defaults) determine the step and limit:
+ *
+ *    squares = []
+ *    4.step(10, 2) {|i| squares.push(i*i) }    # => 4
+ *    squares # => [16, 36, 64, 100]
+ *    squares = []
+ *    4.step(10) {|i| squares.push(i*i) }
+ *    squares # => [16, 25, 36, 49, 64, 81, 100]
+ *    squares = []
+ *    4.step {|i| squares.push(i*i); break if i > 10 }  # => nil
+ *    squares # => [16, 25, 36, 49, 64, 81, 100, 121]
+ *
+ * <b>Implementation Notes</b>
  *
  *  If all the arguments are integers, the loop operates using an integer
  *  counter.
@@ -2644,32 +2850,8 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
  *  If any of the arguments are floating point numbers, all are converted
  *  to floats, and the loop is executed
  *  <i>floor(n + n*Float::EPSILON) + 1</i> times,
- *  where <i>n = (limit - num)/step</i>.
+ *  where <i>n = (limit - self)/step</i>.
  *
- *  Otherwise, the loop starts at +num+, uses either the
- *  less-than (<code><</code>) or greater-than (<code>></code>) operator
- *  to compare the counter against +limit+,
- *  and increments itself using the <code>+</code> operator.
- *
- *  If no block is given, an Enumerator is returned instead.
- *  Especially, the enumerator is an Enumerator::ArithmeticSequence
- *  if both +limit+ and +step+ are kind of Numeric or <code>nil</code>.
- *
- *  For example:
- *
- *     p 1.step.take(4)
- *     p 10.step(by: -1).take(4)
- *     3.step(to: 5) {|i| print i, " " }
- *     1.step(10, 2) {|i| print i, " " }
- *     Math::E.step(to: Math::PI, by: 0.2) {|f| print f, " " }
- *
- *  Will produce:
- *
- *     [1, 2, 3, 4]
- *     [10, 9, 8, 7]
- *     3 4 5
- *     1 3 5 7 9
- *     2.718281828459045 2.9182818284590453 3.118281828459045
  */
 
 static VALUE
@@ -2704,7 +2886,7 @@ num_step(int argc, VALUE *argv, VALUE from)
     if (rb_equal(step, INT2FIX(0))) {
 	inf = 1;
     }
-    else if (RB_TYPE_P(to, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(to)) {
 	double f = RFLOAT_VALUE(to);
 	inf = isinf(f) && (signbit(f) ? desc : !desc);
     }
@@ -2783,7 +2965,7 @@ rb_num2long(VALUE val)
 
     if (FIXNUM_P(val)) return FIX2LONG(val);
 
-    else if (RB_TYPE_P(val, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(val)) {
 	if (RFLOAT_VALUE(val) < LONG_MAX_PLUS_ONE
 	    && LONG_MIN_MINUS_ONE_IS_LESS_THAN(RFLOAT_VALUE(val))) {
 	    return (long)RFLOAT_VALUE(val);
@@ -2792,7 +2974,7 @@ rb_num2long(VALUE val)
 	    FLOAT_OUT_OF_RANGE(val, "integer");
 	}
     }
-    else if (RB_TYPE_P(val, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(val)) {
 	return rb_big2long(val);
     }
     else {
@@ -2815,7 +2997,7 @@ rb_num2ulong_internal(VALUE val, int *wrap_p)
             *wrap_p = l < 0;
         return (unsigned long)l;
     }
-    else if (RB_TYPE_P(val, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(val)) {
 	double d = RFLOAT_VALUE(val);
 	if (d < ULONG_MAX_PLUS_ONE && LONG_MIN_MINUS_ONE_IS_LESS_THAN(d)) {
 	    if (wrap_p)
@@ -2828,7 +3010,7 @@ rb_num2ulong_internal(VALUE val, int *wrap_p)
 	    FLOAT_OUT_OF_RANGE(val, "integer");
 	}
     }
-    else if (RB_TYPE_P(val, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(val)) {
         {
             unsigned long ul = rb_big2ulong(val);
             if (wrap_p)
@@ -2917,7 +3099,7 @@ rb_fix2uint(VALUE val)
     }
     num = FIX2ULONG(val);
 
-    check_uint(num, rb_num_negative_int_p(val));
+    check_uint(num, FIXNUM_NEGATIVE_P(val));
     return num;
 }
 #else
@@ -3015,7 +3197,7 @@ rb_fix2ushort(VALUE val)
     }
     num = FIX2ULONG(val);
 
-    check_ushort(num, rb_num_negative_int_p(val));
+    check_ushort(num, FIXNUM_NEGATIVE_P(val));
     return num;
 }
 
@@ -3054,7 +3236,7 @@ rb_num2ll(VALUE val)
 
     if (FIXNUM_P(val)) return (LONG_LONG)FIX2LONG(val);
 
-    else if (RB_TYPE_P(val, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(val)) {
 	double d = RFLOAT_VALUE(val);
 	if (d < LLONG_MAX_PLUS_ONE && (LLONG_MIN_MINUS_ONE_IS_LESS_THAN(d))) {
 	    return (LONG_LONG)d;
@@ -3063,7 +3245,7 @@ rb_num2ll(VALUE val)
 	    FLOAT_OUT_OF_RANGE(val, "long long");
 	}
     }
-    else if (RB_TYPE_P(val, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(val)) {
 	return rb_big2ll(val);
     }
     else if (RB_TYPE_P(val, T_STRING)) {
@@ -3080,13 +3262,13 @@ rb_num2ll(VALUE val)
 unsigned LONG_LONG
 rb_num2ull(VALUE val)
 {
-    if (RB_TYPE_P(val, T_NIL)) {
+    if (NIL_P(val)) {
 	rb_raise(rb_eTypeError, "no implicit conversion from nil");
     }
-    else if (RB_TYPE_P(val, T_FIXNUM)) {
+    else if (FIXNUM_P(val)) {
 	return (LONG_LONG)FIX2LONG(val); /* this is FIX2LONG, intended */
     }
-    else if (RB_TYPE_P(val, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(val)) {
 	double d = RFLOAT_VALUE(val);
 	if (d < ULLONG_MAX_PLUS_ONE && LLONG_MIN_MINUS_ONE_IS_LESS_THAN(d)) {
 	    if (0 <= d)
@@ -3097,7 +3279,7 @@ rb_num2ull(VALUE val)
 	    FLOAT_OUT_OF_RANGE(val, "unsigned long long");
 	}
     }
-    else if (RB_TYPE_P(val, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(val)) {
 	return rb_big2ull(val);
     }
     else if (RB_TYPE_P(val, T_STRING)) {
@@ -3126,13 +3308,10 @@ VALUE
 rb_int_odd_p(VALUE num)
 {
     if (FIXNUM_P(num)) {
-	if (num & 2) {
-	    return Qtrue;
-	}
-        return Qfalse;
+        return RBOOL(num & 2);
     }
     else {
-        assert(RB_TYPE_P(num, T_BIGNUM));
+        assert(RB_BIGNUM_TYPE_P(num));
 	return rb_big_odd_p(num);
     }
 }
@@ -3141,13 +3320,10 @@ static VALUE
 int_even_p(VALUE num)
 {
     if (FIXNUM_P(num)) {
-	if ((num & 2) == 0) {
-	    return Qtrue;
-	}
-        return Qfalse;
+        return RBOOL((num & 2) == 0);
     }
     else {
-        assert(RB_TYPE_P(num, T_BIGNUM));
+        assert(RB_BIGNUM_TYPE_P(num));
 	return rb_big_even_p(num);
     }
 }
@@ -3223,7 +3399,7 @@ rb_int_succ(VALUE num)
 	long i = FIX2LONG(num) + 1;
 	return LONG2NUM(i);
     }
-    if (RB_TYPE_P(num, T_BIGNUM)) {
+    if (RB_BIGNUM_TYPE_P(num)) {
 	return rb_big_plus(num, INT2FIX(1));
     }
     return num_funcall1(num, '+', INT2FIX(1));
@@ -3249,7 +3425,7 @@ rb_int_pred(VALUE num)
 	long i = FIX2LONG(num) - 1;
 	return LONG2NUM(i);
     }
-    if (RB_TYPE_P(num, T_BIGNUM)) {
+    if (RB_BIGNUM_TYPE_P(num)) {
 	return rb_big_minus(num, INT2FIX(1));
     }
     return num_funcall1(num, '-', INT2FIX(1));
@@ -3352,7 +3528,7 @@ rb_int_uminus(VALUE num)
 	return fix_uminus(num);
     }
     else {
-        assert(RB_TYPE_P(num, T_BIGNUM));
+        assert(RB_BIGNUM_TYPE_P(num));
 	return rb_big_uminus(num);
     }
 }
@@ -3434,7 +3610,7 @@ rb_int2str(VALUE x, int base)
     if (FIXNUM_P(x)) {
 	return rb_fix2str(x, base);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big2str(x, base);
     }
 
@@ -3456,10 +3632,10 @@ fix_plus(VALUE x, VALUE y)
     if (FIXNUM_P(y)) {
 	return rb_fix_plus_fix(x, y);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	return rb_big_plus(y, x);
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	return DBL2NUM((double)FIX2LONG(x) + RFLOAT_VALUE(y));
     }
     else if (RB_TYPE_P(y, T_COMPLEX)) {
@@ -3482,7 +3658,7 @@ rb_int_plus(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_plus(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_plus(x, y);
     }
     return rb_num_coerce_bin(x, y, '+');
@@ -3503,11 +3679,11 @@ fix_minus(VALUE x, VALUE y)
     if (FIXNUM_P(y)) {
 	return rb_fix_minus_fix(x, y);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_minus(x, y);
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	return DBL2NUM((double)FIX2LONG(x) - RFLOAT_VALUE(y));
     }
     else {
@@ -3521,7 +3697,7 @@ rb_int_minus(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_minus(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_minus(x, y);
     }
     return rb_num_coerce_bin(x, y, '-');
@@ -3547,14 +3723,14 @@ fix_mul(VALUE x, VALUE y)
     if (FIXNUM_P(y)) {
 	return rb_fix_mul_fix(x, y);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	switch (x) {
 	  case INT2FIX(0): return x;
 	  case INT2FIX(1): return y;
 	}
 	return rb_big_mul(y, x);
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	return DBL2NUM((double)FIX2LONG(x) * RFLOAT_VALUE(y));
     }
     else if (RB_TYPE_P(y, T_COMPLEX)) {
@@ -3571,7 +3747,7 @@ rb_int_mul(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_mul(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_mul(x, y);
     }
     return rb_num_coerce_bin(x, y, '*');
@@ -3583,10 +3759,10 @@ fix_fdiv_double(VALUE x, VALUE y)
     if (FIXNUM_P(y)) {
         return double_div_double(FIX2LONG(x), FIX2LONG(y));
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
         return rb_big_fdiv_double(rb_int2big(FIX2LONG(x)), y);
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
         return double_div_double(FIX2LONG(x), RFLOAT_VALUE(y));
     }
     else {
@@ -3607,7 +3783,7 @@ rb_int_fdiv_double(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
         return fix_fdiv_double(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
         return rb_big_fdiv_double(x, y);
     }
     else {
@@ -3652,11 +3828,11 @@ fix_divide(VALUE x, VALUE y, ID op)
 	if (FIXNUM_ZERO_P(y)) rb_num_zerodiv();
 	return rb_fix_div_fix(x, y);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_div(x, y);
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	    if (op == '/') {
                 double d = FIX2LONG(x);
                 return rb_flo_div_flo(DBL2NUM(d), y);
@@ -3688,7 +3864,7 @@ rb_int_div(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_div(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_div(x, y);
     }
     return Qnil;
@@ -3715,23 +3891,11 @@ rb_int_idiv(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_idiv(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_idiv(x, y);
     }
     return num_div(x, y);
 }
-
-/*
- *  Document-method: Integer#%
- *  Document-method: Integer#modulo
- *  call-seq:
- *     int % other        ->  real
- *     int.modulo(other)  ->  real
- *
- *  Returns +int+ modulo +other+.
- *
- *  See Numeric#divmod for more information.
- */
 
 static VALUE
 fix_mod(VALUE x, VALUE y)
@@ -3740,11 +3904,11 @@ fix_mod(VALUE x, VALUE y)
 	if (FIXNUM_ZERO_P(y)) rb_num_zerodiv();
 	return rb_fix_mod_fix(x, y);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_modulo(x, y);
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	return DBL2NUM(ruby_float_mod((double)FIX2LONG(x), RFLOAT_VALUE(y)));
     }
     else {
@@ -3752,13 +3916,43 @@ fix_mod(VALUE x, VALUE y)
     }
 }
 
+/*
+ *  call-seq:
+ *    self % other -> real_number
+ *
+ *  Returns +self+ modulo +other+ as a real number.
+ *
+ *  For integer +n+ and real number +r+, these expressions are equivalent:
+ *
+ *    n % r
+ *    n-r*(n/r).floor
+ *    n.divmod(r)[1]
+ *
+ *  See Numeric#divmod.
+ *
+ *  Examples:
+ *
+ *    10 % 2              # => 0
+ *    10 % 3              # => 1
+ *    10 % 4              # => 2
+ *
+ *    10 % -2             # => 0
+ *    10 % -3             # => -2
+ *    10 % -4             # => -2
+ *
+ *    10 % 3.0            # => 1.0
+ *    10 % Rational(3, 1) # => (1/1)
+ *
+ *  Integer#modulo is an alias for Integer#%.
+ *
+ */
 VALUE
 rb_int_modulo(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
 	return fix_mod(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_modulo(x, y);
     }
     return num_modulo(x, y);
@@ -3766,19 +3960,25 @@ rb_int_modulo(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     int.remainder(numeric)  ->  real
+ *    remainder(other) -> real_number
  *
- *  Returns the remainder after dividing +int+ by +numeric+.
+ *  Returns the remainder after dividing +self+ by +other+.
  *
- *  <code>x.remainder(y)</code> means <code>x-y*(x/y).truncate</code>.
+ *  Examples:
  *
- *     5.remainder(3)     #=> 2
- *     -5.remainder(3)    #=> -2
- *     5.remainder(-3)    #=> 2
- *     -5.remainder(-3)   #=> -2
- *     5.remainder(1.5)   #=> 0.5
+ *    11.remainder(4)              # => 3
+ *    11.remainder(-4)             # => 3
+ *    -11.remainder(4)             # => -3
+ *    -11.remainder(-4)            # => -3
  *
- *  See Numeric#divmod.
+ *    12.remainder(4)              # => 0
+ *    12.remainder(-4)             # => 0
+ *    -12.remainder(4)             # => 0
+ *    -12.remainder(-4)            # => 0
+ *
+ *    13.remainder(4.0)            # => 1.0
+ *    13.remainder(Rational(4, 1)) # => (1/1)
+ *
  */
 
 static VALUE
@@ -3787,19 +3987,12 @@ int_remainder(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return num_remainder(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_remainder(x, y);
     }
     return Qnil;
 }
 
-/*
- *  Document-method: Integer#divmod
- *  call-seq:
- *     int.divmod(numeric)  ->  array
- *
- *  See Numeric#divmod.
- */
 static VALUE
 fix_divmod(VALUE x, VALUE y)
 {
@@ -3809,11 +4002,11 @@ fix_divmod(VALUE x, VALUE y)
 	rb_fix_divmod_fix(x, y, &div, &mod);
 	return rb_assoc_new(div, mod);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_divmod(x, y);
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	{
 	    double div, mod;
 	    volatile VALUE a, b;
@@ -3829,13 +4022,38 @@ fix_divmod(VALUE x, VALUE y)
     }
 }
 
+/*
+ *  call-seq:
+ *    divmod(other) -> array
+ *
+ *  Returns a 2-element array <tt>[q, r]</tt>, where
+ *
+ *    q = (self/other).floor    # Quotient
+ *    r = self % other          # Remainder
+ *
+ *  Examples:
+ *
+ *    11.divmod(4)              # => [2, 3]
+ *    11.divmod(-4)             # => [-3, -1]
+ *    -11.divmod(4)             # => [-3, 1]
+ *    -11.divmod(-4)            # => [2, -3]
+ *
+ *    12.divmod(4)              # => [3, 0]
+ *    12.divmod(-4)             # => [-3, 0]
+ *    -12.divmod(4)             # => [-3, 0]
+ *    -12.divmod(-4)            # => [3, 0]
+ *
+ *    13.divmod(4.0)            # => [3, 1.0]
+ *    13.divmod(Rational(4, 1)) # => [3, (1/1)]
+ *
+ */
 VALUE
 rb_int_divmod(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
 	return fix_divmod(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_divmod(x, y);
     }
     return Qnil;
@@ -3943,7 +4161,7 @@ fix_pow(VALUE x, VALUE y)
 	if (a == 0) return INT2FIX(0);
 	return int_pow(a, b);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	if (a == 1) return INT2FIX(1);
         if (a == -1) return INT2FIX(int_even_p(y) ? 1 : -1);
         if (BIGNUM_NEGATIVE_P(y)) return fix_pow_inverted(x, rb_big_uminus(y));
@@ -3951,7 +4169,7 @@ fix_pow(VALUE x, VALUE y)
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_pow(x, y);
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	double dy = RFLOAT_VALUE(y);
 	if (dy == 0.0) return DBL2NUM(1.0);
 	if (a == 0) {
@@ -3973,7 +4191,7 @@ rb_int_pow(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_pow(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_pow(x, y);
     }
     return Qnil;
@@ -4015,10 +4233,10 @@ fix_equal(VALUE x, VALUE y)
 {
     if (x == y) return Qtrue;
     if (FIXNUM_P(y)) return Qfalse;
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	return rb_big_eq(y, x);
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
         return rb_integer_float_eq(x, y);
     }
     else {
@@ -4032,7 +4250,7 @@ rb_int_equal(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_equal(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_eq(x, y);
     }
     return Qnil;
@@ -4059,7 +4277,7 @@ fix_cmp(VALUE x, VALUE y)
 	if (FIX2LONG(x) > FIX2LONG(y)) return INT2FIX(1);
 	return INT2FIX(-1);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(y)) {
 	VALUE cmp = rb_big_cmp(y, x);
 	switch (cmp) {
 	  case INT2FIX(+1): return INT2FIX(-1);
@@ -4067,7 +4285,7 @@ fix_cmp(VALUE x, VALUE y)
 	}
 	return cmp;
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	return rb_integer_float_cmp(x, y);
     }
     else {
@@ -4081,7 +4299,7 @@ rb_int_cmp(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_cmp(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_cmp(x, y);
     }
     else {
@@ -4101,14 +4319,13 @@ static VALUE
 fix_gt(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-	if (FIX2LONG(x) > FIX2LONG(y)) return Qtrue;
-	return Qfalse;
+        return RBOOL(FIX2LONG(x) > FIX2LONG(y));
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
-	return rb_big_cmp(y, x) == INT2FIX(-1) ? Qtrue : Qfalse;
+    else if (RB_BIGNUM_TYPE_P(y)) {
+	return RBOOL(rb_big_cmp(y, x) == INT2FIX(-1));
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
-        return rb_integer_float_cmp(x, y) == INT2FIX(1) ? Qtrue : Qfalse;
+    else if (RB_FLOAT_TYPE_P(y)) {
+        return RBOOL(rb_integer_float_cmp(x, y) == INT2FIX(1));
     }
     else {
 	return rb_num_coerce_relop(x, y, '>');
@@ -4121,7 +4338,7 @@ rb_int_gt(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_gt(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_gt(x, y);
     }
     return Qnil;
@@ -4140,15 +4357,14 @@ static VALUE
 fix_ge(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-	if (FIX2LONG(x) >= FIX2LONG(y)) return Qtrue;
-	return Qfalse;
+        return RBOOL(FIX2LONG(x) >= FIX2LONG(y));
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
-	return rb_big_cmp(y, x) != INT2FIX(+1) ? Qtrue : Qfalse;
+    else if (RB_BIGNUM_TYPE_P(y)) {
+	return RBOOL(rb_big_cmp(y, x) != INT2FIX(+1));
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	VALUE rel = rb_integer_float_cmp(x, y);
-	return rel == INT2FIX(1) || rel == INT2FIX(0) ? Qtrue : Qfalse;
+	return RBOOL(rel == INT2FIX(1) || rel == INT2FIX(0));
     }
     else {
 	return rb_num_coerce_relop(x, y, idGE);
@@ -4161,7 +4377,7 @@ rb_int_ge(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_ge(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_ge(x, y);
     }
     return Qnil;
@@ -4179,14 +4395,13 @@ static VALUE
 fix_lt(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-	if (FIX2LONG(x) < FIX2LONG(y)) return Qtrue;
-	return Qfalse;
+        return RBOOL(FIX2LONG(x) < FIX2LONG(y));
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
-	return rb_big_cmp(y, x) == INT2FIX(+1) ? Qtrue : Qfalse;
+    else if (RB_BIGNUM_TYPE_P(y)) {
+	return RBOOL(rb_big_cmp(y, x) == INT2FIX(+1));
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
-        return rb_integer_float_cmp(x, y) == INT2FIX(-1) ? Qtrue : Qfalse;
+    else if (RB_FLOAT_TYPE_P(y)) {
+        return RBOOL(rb_integer_float_cmp(x, y) == INT2FIX(-1));
     }
     else {
 	return rb_num_coerce_relop(x, y, '<');
@@ -4199,7 +4414,7 @@ int_lt(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_lt(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_lt(x, y);
     }
     return Qnil;
@@ -4218,15 +4433,14 @@ static VALUE
 fix_le(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-	if (FIX2LONG(x) <= FIX2LONG(y)) return Qtrue;
-	return Qfalse;
+        return RBOOL(FIX2LONG(x) <= FIX2LONG(y));
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
-	return rb_big_cmp(y, x) != INT2FIX(-1) ? Qtrue : Qfalse;
+    else if (RB_BIGNUM_TYPE_P(y)) {
+	return RBOOL(rb_big_cmp(y, x) != INT2FIX(-1));
     }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(y)) {
 	VALUE rel = rb_integer_float_cmp(x, y);
-	return rel == INT2FIX(-1) || rel == INT2FIX(0) ? Qtrue : Qfalse;
+	return RBOOL(rel == INT2FIX(-1) || rel == INT2FIX(0));
     }
     else {
 	return rb_num_coerce_relop(x, y, idLE);
@@ -4239,7 +4453,7 @@ int_le(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_le(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_le(x, y);
     }
     return Qnil;
@@ -4257,7 +4471,7 @@ rb_int_comp(VALUE num)
     if (FIXNUM_P(num)) {
 	return fix_comp(num);
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
 	return rb_big_comp(num);
     }
     return Qnil;
@@ -4308,7 +4522,7 @@ fix_and(VALUE x, VALUE y)
 	return LONG2NUM(val);
     }
 
-    if (RB_TYPE_P(y, T_BIGNUM)) {
+    if (RB_BIGNUM_TYPE_P(y)) {
 	return rb_big_and(y, x);
     }
 
@@ -4321,7 +4535,7 @@ rb_int_and(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_and(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_and(x, y);
     }
     return Qnil;
@@ -4343,7 +4557,7 @@ fix_or(VALUE x, VALUE y)
 	return LONG2NUM(val);
     }
 
-    if (RB_TYPE_P(y, T_BIGNUM)) {
+    if (RB_BIGNUM_TYPE_P(y)) {
 	return rb_big_or(y, x);
     }
 
@@ -4356,7 +4570,7 @@ int_or(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_or(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_or(x, y);
     }
     return Qnil;
@@ -4378,7 +4592,7 @@ fix_xor(VALUE x, VALUE y)
 	return LONG2NUM(val);
     }
 
-    if (RB_TYPE_P(y, T_BIGNUM)) {
+    if (RB_BIGNUM_TYPE_P(y)) {
 	return rb_big_xor(y, x);
     }
 
@@ -4391,7 +4605,7 @@ int_xor(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return fix_xor(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_xor(x, y);
     }
     return Qnil;
@@ -4437,7 +4651,7 @@ rb_int_lshift(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return rb_fix_lshift(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_lshift(x, y);
     }
     return Qnil;
@@ -4484,7 +4698,7 @@ rb_int_rshift(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 	return rb_fix_rshift(x, y);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return rb_big_rshift(x, y);
     }
     return Qnil;
@@ -4585,7 +4799,7 @@ one_bit:
     if (FIXNUM_P(num)) {
         return rb_fix_aref(num, arg);
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
         return rb_big_aref(num, arg);
     }
     return Qnil;
@@ -4667,7 +4881,7 @@ int_to_f(VALUE num)
     if (FIXNUM_P(num)) {
 	val = (double)FIX2LONG(num);
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
 	val = rb_big2dbl(num);
     }
     else {
@@ -4676,22 +4890,6 @@ int_to_f(VALUE num)
 
     return DBL2NUM(val);
 }
-
-/*
- *  Document-method: Integer#abs
- *  Document-method: Integer#magnitude
- *  call-seq:
- *     int.abs        ->  integer
- *     int.magnitude  ->  integer
- *
- *  Returns the absolute value of +int+.
- *
- *     (-12345).abs   #=> 12345
- *     -12345.abs     #=> 12345
- *     12345.abs      #=> 12345
- *
- *  Integer#magnitude is an alias for Integer#abs.
- */
 
 static VALUE
 fix_abs(VALUE fix)
@@ -4709,7 +4907,7 @@ rb_int_abs(VALUE num)
     if (FIXNUM_P(num)) {
 	return fix_abs(num);
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
 	return rb_big_abs(num);
     }
     return Qnil;
@@ -4727,7 +4925,7 @@ rb_int_size(VALUE num)
     if (FIXNUM_P(num)) {
 	return fix_size(num);
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
 	return rb_big_size_m(num);
     }
     return Qnil;
@@ -4748,7 +4946,7 @@ rb_int_bit_length(VALUE num)
     if (FIXNUM_P(num)) {
 	return rb_fix_bit_length(num);
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
 	return rb_big_bit_length(num);
     }
     return Qnil;
@@ -4801,16 +4999,16 @@ rb_fix_digits(VALUE fix, long base)
 static VALUE
 rb_int_digits_bigbase(VALUE num, VALUE base)
 {
-    VALUE digits;
+    VALUE digits, bases;
 
     assert(!rb_num_negative_p(num));
 
-    if (RB_TYPE_P(base, T_BIGNUM))
+    if (RB_BIGNUM_TYPE_P(base))
         base = rb_big_norm(base);
 
     if (FIXNUM_P(base) && FIX2LONG(base) < 2)
         rb_raise(rb_eArgError, "invalid radix %ld", FIX2LONG(base));
-    else if (RB_TYPE_P(base, T_BIGNUM) && BIGNUM_NEGATIVE_P(base))
+    else if (RB_BIGNUM_TYPE_P(base) && BIGNUM_NEGATIVE_P(base))
         rb_raise(rb_eArgError, "negative radix");
 
     if (FIXNUM_P(base) && FIXNUM_P(num))
@@ -4819,11 +5017,32 @@ rb_int_digits_bigbase(VALUE num, VALUE base)
     if (FIXNUM_P(num))
         return rb_ary_new_from_args(1, num);
 
-    digits = rb_ary_new();
-    while (!FIXNUM_P(num) || FIX2LONG(num) > 0) {
-        VALUE qr = rb_int_divmod(num, base);
-        rb_ary_push(digits, RARRAY_AREF(qr, 1));
-        num = RARRAY_AREF(qr, 0);
+    if (int_lt(rb_int_div(rb_int_bit_length(num), rb_int_bit_length(base)), INT2FIX(50))) {
+        digits = rb_ary_new();
+        while (!FIXNUM_P(num) || FIX2LONG(num) > 0) {
+            VALUE qr = rb_int_divmod(num, base);
+            rb_ary_push(digits, RARRAY_AREF(qr, 1));
+            num = RARRAY_AREF(qr, 0);
+        }
+        return digits;
+    }
+
+    bases = rb_ary_new();
+    for (VALUE b = base; int_lt(b, num) == Qtrue; b = rb_int_mul(b, b)) {
+        rb_ary_push(bases, b);
+    }
+    digits = rb_ary_new_from_args(1, num);
+    while (RARRAY_LEN(bases)) {
+        VALUE b = rb_ary_pop(bases);
+        long i, last_idx = RARRAY_LEN(digits) - 1;
+        for(i = last_idx; i >= 0; i--) {
+            VALUE n = RARRAY_AREF(digits, i);
+            VALUE divmod = rb_int_divmod(n, b);
+            VALUE div = RARRAY_AREF(divmod, 0);
+            VALUE mod = RARRAY_AREF(divmod, 1);
+            if (i != last_idx || div != INT2FIX(0)) rb_ary_store(digits, 2 * i + 1,  div);
+            rb_ary_store(digits, 2 * i, mod);
+        }
     }
 
     return digits;
@@ -4843,7 +5062,7 @@ rb_int_digits(int argc, VALUE *argv, VALUE num)
         if (!RB_INTEGER_TYPE_P(base_value))
             rb_raise(rb_eTypeError, "wrong argument type %s (expected Integer)",
                      rb_obj_classname(argv[0]));
-        if (RB_TYPE_P(base_value, T_BIGNUM))
+        if (RB_BIGNUM_TYPE_P(base_value))
             return rb_int_digits_bigbase(num, base_value);
 
         base = FIX2LONG(base_value);
@@ -4857,7 +5076,7 @@ rb_int_digits(int argc, VALUE *argv, VALUE num)
 
     if (FIXNUM_P(num))
         return rb_fix_digits(num, base);
-    else if (RB_TYPE_P(num, T_BIGNUM))
+    else if (RB_BIGNUM_TYPE_P(num))
         return rb_int_digits_bigbase(num, LONG2FIX(base));
 
     return Qnil;
@@ -5247,6 +5466,12 @@ rb_int_s_isqrt(VALUE self, VALUE num)
     }
 }
 
+static VALUE
+int_s_try_convert(VALUE self, VALUE num)
+{
+    return rb_check_integer_type(num);
+}
+
 /*
  *  Document-class: ZeroDivisionError
  *
@@ -5473,6 +5698,7 @@ Init_Numeric(void)
     rb_undef_alloc_func(rb_cInteger);
     rb_undef_method(CLASS_OF(rb_cInteger), "new");
     rb_define_singleton_method(rb_cInteger, "sqrt", rb_int_s_isqrt, 1);
+    rb_define_singleton_method(rb_cInteger, "try_convert", int_s_try_convert, 1);
 
     rb_define_method(rb_cInteger, "to_s", int_to_s, -1);
     rb_define_alias(rb_cInteger, "inspect", "to_s");

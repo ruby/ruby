@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require 'rubygems/deprecate'
-require 'rubygems/unknown_command_spell_checker'
+require_relative 'deprecate'
+require_relative 'unknown_command_spell_checker'
 
 ##
 # Base exception class for RubyGems.  All exception raised by RubyGems are a
@@ -225,7 +225,7 @@ class Gem::SystemExitException < SystemExit
   def initialize(exit_code)
     @exit_code = exit_code
 
-    super "Exiting RubyGems with exit_code #{exit_code}"
+    super exit_code, "Exiting RubyGems with exit_code #{exit_code}"
   end
 end
 

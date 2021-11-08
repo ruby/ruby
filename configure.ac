@@ -37,6 +37,7 @@ m4_include([tool/m4/ruby_replace_type.m4])dnl
 m4_include([tool/m4/ruby_rm_recursive.m4])dnl
 m4_include([tool/m4/ruby_setjmp_type.m4])dnl
 m4_include([tool/m4/ruby_stack_grow_direction.m4])dnl
+m4_include([tool/m4/ruby_thread.m4])dnl
 m4_include([tool/m4/ruby_try_cflags.m4])dnl
 m4_include([tool/m4/ruby_try_cxxflags.m4])dnl
 m4_include([tool/m4/ruby_try_ldflags.m4])dnl
@@ -218,7 +219,7 @@ rb_test_CXXFLAGS=${CXXFLAGS+yes}
 # BSD's ports and MacPorts prefix GNU binutils with 'g'
 
 dnl Seems necessarily in order to add -std=gnu99 option for gcc 4.9.
-m4_version_prereq([2.70], [], [AC_PROG_CC_C99])
+m4_version_prereq([2.70], [AC_PROG_CC], [AC_PROG_CC_C99])
 
 AC_PROG_CXX
 AC_PROG_CPP
@@ -450,11 +451,13 @@ AS_CASE(["$target_os"],
 		    [[FILE* volatile f = stdin; return 0;]])],
 		    [rb_cv_msvcrt=`$OBJDUMP -p conftest$ac_exeext |
 				   tr A-Z a-z |
-				   sed -n '/^[[ 	]]*dll name: \(msvc.*\)\.dll$/{s//\1/p;q;}'`],
+				   sed -n '/^[[ 	]]*dll name: \(msvc.*\)\.dll$/{s//\1/p;q;};
+					/^[[ 	]]*dll name: \(ucrtbase\|api-ms-win-crt-.*\)\.dll$/{s//ucrt/p;q;}'`],
 		    [rb_cv_msvcrt=msvcrt])
 	test "$rb_cv_msvcrt" = "" && rb_cv_msvcrt=msvcrt])
 	RT_VER=`echo "$rb_cv_msvcrt" | tr -cd [0-9]`
 	test "$RT_VER" = "" && RT_VER=60
+	test "$rb_cv_msvcrt" = "ucrt" && RT_VER=140
 	AC_DEFINE_UNQUOTED(RUBY_MSVCRT_VERSION, $RT_VER)
 	sysconfdir=
     ])
@@ -634,6 +637,7 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 		 -Werror=pointer-arith \
 		 -Werror=shorten-64-to-32 \
 		 -Werror=write-strings \
+		 -Werror=old-style-definition \
 		 -Wimplicit-fallthrough=0 \
 		 -Wmissing-noreturn \
 		 -Wno-cast-function-type \
@@ -799,7 +803,7 @@ AS_IF([test "$GCC" = yes], [
       ])
     ],
     [cygwin*|msys*|darwin*|netbsd*], [
-      # need lgamma_r(), finite()
+      # need lgamma_r()
     ])
 
     # ANSI (no XCFLAGS because this is C only)
@@ -1105,7 +1109,7 @@ main()
 		])
 		],
 [haiku*], [
-		LIBS="$LIBS -lssp" # m lib is include in root
+		LIBS="$LIBS" # m lib is include in root
 		],
 [cygwin*|msys*], [
 		ac_cv_header_langinfo_h=yes
@@ -1113,7 +1117,7 @@ main()
 		AC_CHECK_FUNCS(cygwin_conv_path)
 		AC_LIBOBJ([langinfo])
 		],
-[mingw*], [	LIBS="-lshell32 -lws2_32 -liphlpapi -limagehlp -lshlwapi $LIBS"
+[mingw*], [	LIBS="-lshell32 -lws2_32 -liphlpapi -limagehlp -lshlwapi -lbcrypt $LIBS"
 		ac_cv_header_pwd_h=no
 		ac_cv_header_utime_h=no
 		ac_cv_header_sys_ioctl_h=no
@@ -1200,6 +1204,7 @@ main()
 		RUBY_APPEND_OPTIONS(LDFLAGS, "-sALLOW_MEMORY_GROWTH=1")
 		RUBY_APPEND_OPTIONS(LDFLAGS, "-sASYNCIFY")
 		RUBY_APPEND_OPTIONS(LDFLAGS, "-sFORCE_FILESYSTEM=1")
+		ac_cv_func_shutdown=no
 		],
 [	LIBS="-lm $LIBS"])
 : ${ORIG_LIBS=$LIBS}
@@ -1226,6 +1231,15 @@ AC_CHECK_LIB(crypt, crypt)      # glibc (GNU/Linux, GNU/Hurd, GNU/kFreeBSD)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
 AC_CHECK_LIB(socket, shutdown)  # SunOS/Solaris
+
+if pkg-config --exists capstone; then
+   CAPSTONE_CFLAGS=`pkg-config --cflags capstone`
+   CAPSTONE_LIB_L=`pkg-config --libs-only-L capstone`
+   LDFLAGS="$LDFLAGS $CAPSTONE_LIB_L"
+   CFLAGS="$CFLAGS $CAPSTONE_CFLAGS"
+fi
+
+AC_CHECK_LIB(capstone, cs_open) # Capstone disassembler for debugging YJIT
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
@@ -1281,6 +1295,7 @@ AC_CHECK_HEADERS(utime.h)
 AS_CASE("$target_cpu", [x64|x86_64|i[3-6]86*], [
   AC_CHECK_HEADERS(x86intrin.h)
 ])
+RUBY_UNIVERSAL_CHECK_HEADER([x86_64, i386], x86intrin.h)
 
 AC_ARG_WITH([gmp],
   [AS_HELP_STRING([--without-gmp],
@@ -1383,7 +1398,7 @@ AS_CASE(["$target_os"],
 	])
     ])
 
-AC_C_BIGENDIAN
+AC_C_BIGENDIAN([], [], [], [AC_DEFINE(AC_APPLE_UNIVERSAL_BUILD, 1)])
 AC_C_CONST
 AC_C_CHAR_UNSIGNED
 AC_C_INLINE
@@ -1662,7 +1677,7 @@ AC_CACHE_CHECK(for function name string predefined identifier,
       RUBY_WERROR_FLAG([
         for func in __func__ __FUNCTION__; do
             AC_LINK_IFELSE([AC_LANG_PROGRAM([[@%:@include <stdio.h>]],
-			 		    [[puts($func);]])],
+					    [[puts($func);]])],
             [rb_cv_function_name_string=$func
             break])
         done
@@ -1906,9 +1921,7 @@ AC_REPLACE_FUNCS(strlcpy)
 AC_REPLACE_FUNCS(strstr)
 AC_REPLACE_FUNCS(tgamma)
 
-RUBY_REPLACE_FUNC([finite], [@%:@include <math.h>])
-RUBY_REPLACE_FUNC([isinf], [@%:@include <math.h>])
-RUBY_REPLACE_FUNC([isnan], [@%:@include <math.h>])
+AC_DEFINE(HAVE_ISFINITE)        # C99; backward compatibility
 
 # for missing/setproctitle.c
 AS_CASE(["$target_os"],
@@ -1918,17 +1931,7 @@ AS_CASE(["$target_os"],
 AC_CHECK_HEADERS(sys/pstat.h)
 
 
-AC_CACHE_CHECK(for signbit, rb_cv_have_signbit,
-  [AC_LINK_IFELSE([AC_LANG_PROGRAM([[
-#include <math.h>
-]], [[int v = signbit(-0.0);]])],
-	rb_cv_have_signbit=yes,
-	rb_cv_have_signbit=no)])
-AS_IF([test "$rb_cv_have_signbit" = yes], [
-  AC_DEFINE(HAVE_SIGNBIT)
-], [
-  AC_LIBOBJ([signbit])
-])
+AC_DEFINE(HAVE_SIGNBIT)         # C99; backward compatibility
 
 AC_FUNC_FORK
 
@@ -2518,10 +2521,10 @@ AS_CASE([$coroutine_type], [yes|''], [
         [*86-linux*], [
             coroutine_type=x86
         ],
-        [x64-mingw32], [
+        [x64-mingw*], [
             coroutine_type=win64
         ],
-        [*86-mingw32], [
+        [*86-mingw*], [
             coroutine_type=win32
         ],
         [arm*-linux*], [
@@ -2536,6 +2539,24 @@ AS_CASE([$coroutine_type], [yes|''], [
         [riscv64-linux*], [
             coroutine_type=riscv64
         ],
+        [x86_64-freebsd*], [
+            coroutine_type=amd64
+        ],
+        [i386-freebsd*], [
+            coroutine_type=x86
+        ],
+        [aarch64-freebsd*], [
+            coroutine_type=arm64
+        ],
+        [x86_64-netbsd*], [
+            coroutine_type=amd64
+        ],
+        [i386-netbsd*], [
+            coroutine_type=x86
+        ],
+        [aarch64-netbsd*], [
+            coroutine_type=arm64
+        ],
         [x86_64-openbsd*], [
             coroutine_type=amd64
         ],
@@ -2544,6 +2565,9 @@ AS_CASE([$coroutine_type], [yes|''], [
         ],
         [*-openbsd*], [
             coroutine_type=pthread
+        ],
+        [x86_64-dragonfly*], [
+            coroutine_type=amd64
         ],
         [*-haiku*], [
             coroutine_type=pthread
@@ -2564,14 +2588,9 @@ AS_CASE([$coroutine_type], [yes|''], [
 COROUTINE_H=coroutine/$coroutine_type/Context.h
 AS_IF([test ! -f "$srcdir/$COROUTINE_H"],
       [AC_MSG_ERROR('$coroutine_type' is not supported as coroutine)])
-AS_CASE([$coroutine_type],
-    [ucontext|pthread], [
-        COROUTINE_SRC=coroutine/$coroutine_type/Context.c
-    ],
-    [
-        COROUTINE_SRC=coroutine/$coroutine_type/Context.'$(ASMEXT)'
-    ]
-)
+COROUTINE_SRC=coroutine/$coroutine_type/Context.c
+AS_IF([test ! -f "$srcdir/$COROUTINE_SRC"],
+      [COROUTINE_SRC=coroutine/$coroutine_type/Context.'$(ASMEXT)'])
 AC_DEFINE_UNQUOTED(COROUTINE_H, ["$COROUTINE_H"])
 AC_SUBST(X_COROUTINE_H, [$COROUTINE_H])
 AC_SUBST(X_COROUTINE_SRC, [$COROUTINE_SRC])
@@ -2861,7 +2880,6 @@ AC_SUBST(CCDLFLAGS)dnl
 AC_SUBST(LDSHARED)dnl
 AC_SUBST(LDSHAREDXX)dnl
 AC_SUBST(DLEXT)dnl
-AC_SUBST(DLEXT2)dnl
 AC_SUBST(LIBEXT)dnl
 AC_SUBST(ASMEXT, S)dnl
 
@@ -3181,10 +3199,8 @@ AS_IF([test x"$LOAD_RELATIVE" = x1], [
 
 len=2 # .rb
 n=`expr "$DLEXT"  : '.*'`; test "$n" -gt "$len" && len=$n
-n=`expr "$DLEXT2" : '.*'`; test "$n" -gt "$len" && len=$n
 AC_DEFINE_UNQUOTED(DLEXT_MAXLEN, `expr $len + 1`)
 test ".$DLEXT"  = "." || AC_DEFINE_UNQUOTED(DLEXT,  ".$DLEXT")
-test ".$DLEXT2" = "." || AC_DEFINE_UNQUOTED(DLEXT2, ".$DLEXT2")
 AC_SUBST(DLEXT)
 
 : "strip" && {
@@ -3674,15 +3690,15 @@ AC_SUBST(MJIT_SUPPORT)
 
 AC_ARG_ENABLE(install-static-library,
 	AS_HELP_STRING([--disable-install-static-library], [do not install static ruby library]),
-	[INSTALL_STATIC_LIBRARY=$enableval],
+	[INSTALL_STATIC_LIBRARY=$enableval
+         AS_IF([test x"$enable_shared" = xno -a x"$INSTALL_STATIC_LIBRARY" = xno],
+                 [AC_MSG_ERROR([must install either static or shared library])],
+                 [])],
 	AS_IF([test x"$enable_shared" = xyes],
 	    [INSTALL_STATIC_LIBRARY=no],
 	    [INSTALL_STATIC_LIBRARY=yes]))
 AC_SUBST(INSTALL_STATIC_LIBRARY)
 
-AS_IF([test "$rb_with_pthread" = "yes"], [
-    THREAD_MODEL=pthread
-])
 AC_CACHE_CHECK([for prefix of external symbols], rb_cv_symbol_prefix, [
     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[extern void conftest_external(void) {}]], [[]])],[
 	rb_cv_symbol_prefix=`$NM conftest.$ac_objext |
@@ -3750,13 +3766,12 @@ AS_CASE(["$target_os"],
 		LIBRUBY_DLDFLAGS="${LIBRUBY_DLDFLAGS}"' $(RUBYDEF)'
 	    ])
 	    EXPORT_PREFIX=' '
-	    DLDFLAGS="${DLDFLAGS}"' $(DEFFILE)'
+	    EXTDLDFLAGS='$(DEFFILE)'
 	    AC_LIBOBJ([win32/win32])
 	    AC_LIBOBJ([win32/file])
 	    COMMON_LIBS=m
 #	    COMMON_MACROS="WIN32_LEAN_AND_MEAN="
 	    COMMON_HEADERS="winsock2.h windows.h"
-	    THREAD_MODEL=win32
 	    PLATFORM_DIR=win32
 	    ])
 	LIBRUBY_ALIASES=''
@@ -3778,11 +3793,7 @@ AS_CASE(["$target_os"],
 
 MINIOBJS="$MINIDLNOBJ"
 
-AS_CASE(["$THREAD_MODEL"],
-[pthread], [AC_CHECK_HEADERS(pthread.h)],
-[win32],   [],
-[""],      [AC_MSG_ERROR(thread model is missing)],
-           [AC_MSG_ERROR(unknown thread model $THREAD_MODEL)])
+RUBY_THREAD
 
 AC_ARG_ENABLE(debug-env,
        AS_HELP_STRING([--enable-debug-env], [enable RUBY_DEBUG environment variable]),
@@ -4070,7 +4081,11 @@ AS_IF([test "${universal_binary-no}" = yes ], [
     AC_DEFINE_UNQUOTED(RUBY_ARCH, "universal-" RUBY_PLATFORM_OS)
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "universal." RUBY_PLATFORM_CPU "-" RUBY_PLATFORM_OS)
 ], [
-    arch="${target_cpu}-${target_os}"
+    AS_IF([test "${target_os}-${rb_cv_msvcrt}" = "mingw32-ucrt" ], [
+        arch="${target_cpu}-mingw-ucrt"
+    ], [
+        arch="${target_cpu}-${target_os}"
+    ])
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "$arch")
 ])
 
@@ -4270,21 +4285,6 @@ AC_ARG_WITH(destdir,
 	    AS_HELP_STRING([--with-destdir=DESTDIR], [specify default directory to install]),
 	    [DESTDIR="$withval"])
 AC_SUBST(DESTDIR)
-
-AC_CONFIG_FILES($ruby_pc:template/ruby.pc.in,
-    [
-    AS_IF([sed ['s/\$(\([A-Za-z_][A-Za-z0-9_]*\))/${\1}/g;s/@[A-Za-z_][A-Za-z0-9_]*@//'] $ruby_pc > ruby.tmp.pc &&
-	{
-	    test -z "$PKG_CONFIG" ||
-	    PKG_CONFIG_PATH=. $PKG_CONFIG --print-errors ruby.tmp
-	}],
-    [
-	mv -f ruby.tmp.pc $ruby_pc
-    ], [
-	exit 1
-    ])
-    ],
-    [ruby_pc='$ruby_pc' PKG_CONFIG='$PKG_CONFIG'])
 
 AC_OUTPUT
 }

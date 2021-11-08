@@ -42,6 +42,14 @@ class Reline::Windows
     }.each_pair do |key, func|
       config.add_default_key_binding_by_keymap(:emacs, key, func)
     end
+
+    # Emulate ANSI key sequence.
+    {
+      [27, 91, 90] => :completion_journey_up, # S-Tab
+    }.each_pair do |key, func|
+      config.add_default_key_binding_by_keymap(:emacs, key, func)
+      config.add_default_key_binding_by_keymap(:vi_insert, key, func)
+    end
   end
 
   if defined? JRUBY_VERSION
@@ -91,6 +99,7 @@ class Reline::Windows
   VK_LMENU = 0xA4
   VK_CONTROL = 0x11
   VK_SHIFT = 0x10
+  VK_DIVIDE = 0x6F
 
   KEY_EVENT = 0x01
   WINDOW_BUFFER_SIZE_EVENT = 0x04
@@ -105,6 +114,7 @@ class Reline::Windows
   SCROLLLOCK_ON = 0x0040
   SHIFT_PRESSED = 0x0010
 
+  VK_TAB = 0x09
   VK_END = 0x23
   VK_HOME = 0x24
   VK_LEFT = 0x25
@@ -132,9 +142,11 @@ class Reline::Windows
   @@GetFileType = Win32API.new('kernel32', 'GetFileType', ['L'], 'L')
   @@GetFileInformationByHandleEx = Win32API.new('kernel32', 'GetFileInformationByHandleEx', ['L', 'I', 'P', 'L'], 'I')
   @@FillConsoleOutputAttribute = Win32API.new('kernel32', 'FillConsoleOutputAttribute', ['L', 'L', 'L', 'L', 'P'], 'L')
+  @@SetConsoleCursorInfo = Win32API.new('kernel32', 'SetConsoleCursorInfo', ['L', 'P'], 'L')
 
   @@GetConsoleMode = Win32API.new('kernel32', 'GetConsoleMode', ['L', 'P'], 'L')
   @@SetConsoleMode = Win32API.new('kernel32', 'SetConsoleMode', ['L', 'L'], 'L')
+  @@WaitForSingleObject = Win32API.new('kernel32', 'WaitForSingleObject', ['L', 'L'], 'L')
   ENABLE_VIRTUAL_TERMINAL_PROCESSING = 4
 
   private_class_method def self.getconsolemode
@@ -172,7 +184,7 @@ class Reline::Windows
     #     DWORD FileNameLength;
     #     WCHAR FileName[1];
     #   } FILE_NAME_INFO
-    len = p_buffer[0, 4].unpack("L")[0]
+    len = p_buffer[0, 4].unpack1("L")
     name = p_buffer[4, len].encode(Encoding::UTF_8, Encoding::UTF_16LE, invalid: :replace)
 
     # Check if this could be a MSYS2 pty pipe ('\msys-XXXX-ptyN-XX')
@@ -180,66 +192,65 @@ class Reline::Windows
     name =~ /(msys-|cygwin-).*-pty/ ? true : false
   end
 
+  KEY_MAP = [
+    # It's treated as Meta+Enter on Windows.
+    [ { control_keys: :CTRL,  virtual_key_code: 0x0D }, "\e\r".bytes ],
+    [ { control_keys: :SHIFT, virtual_key_code: 0x0D }, "\e\r".bytes ],
+
+    # It's treated as Meta+Space on Windows.
+    [ { control_keys: :CTRL,  char_code: 0x20 }, "\e ".bytes ],
+
+    # Emulate getwch() key sequences.
+    [ { control_keys: [], virtual_key_code: VK_UP },     [0, 72] ],
+    [ { control_keys: [], virtual_key_code: VK_DOWN },   [0, 80] ],
+    [ { control_keys: [], virtual_key_code: VK_RIGHT },  [0, 77] ],
+    [ { control_keys: [], virtual_key_code: VK_LEFT },   [0, 75] ],
+    [ { control_keys: [], virtual_key_code: VK_DELETE }, [0, 83] ],
+    [ { control_keys: [], virtual_key_code: VK_HOME },   [0, 71] ],
+    [ { control_keys: [], virtual_key_code: VK_END },    [0, 79] ],
+
+    # Emulate ANSI key sequence.
+    [ { control_keys: :SHIFT, virtual_key_code: VK_TAB }, [27, 91, 90] ],
+  ]
+
   def self.process_key_event(repeat_count, virtual_key_code, virtual_scan_code, char_code, control_key_state)
-    char = char_code.chr(Encoding::UTF_8)
-    if char_code == 0x0D and control_key_state.anybits?(LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED | SHIFT_PRESSED)
-      # It's treated as Meta+Enter on Windows.
-      @@output_buf.push("\e".ord)
-      @@output_buf.push(char_code)
-    elsif char_code == 0x20 and control_key_state.anybits?(LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED)
-      # It's treated as Meta+Space on Windows.
-      @@output_buf.push("\e".ord)
-      @@output_buf.push(char_code)
-    elsif control_key_state.anybits?(LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED)
-      @@output_buf.push("\e".ord)
-      @@output_buf.concat(char.bytes)
-    elsif control_key_state.anybits?(ENHANCED_KEY)
-      case virtual_key_code # Emulate getwch() key sequences.
-      when VK_END
-        @@output_buf.push(0, 79)
-      when VK_HOME
-        @@output_buf.push(0, 71)
-      when VK_LEFT
-        @@output_buf.push(0, 75)
-      when VK_UP
-        @@output_buf.push(0, 72)
-      when VK_RIGHT
-        @@output_buf.push(0, 77)
-      when VK_DOWN
-        @@output_buf.push(0, 80)
-      when VK_DELETE
-        @@output_buf.push(0, 83)
-      end
-    elsif char_code == 0 and control_key_state != 0
-      # unknown
-    else
-      case virtual_key_code
-      when VK_RETURN
-        @@output_buf.push("\n".ord)
-      else
-        @@output_buf.concat(char.bytes)
-      end
+
+    key = KeyEventRecord.new(virtual_key_code, char_code, control_key_state)
+
+    match = KEY_MAP.find { |args,| key.matches?(**args) }
+    unless match.nil?
+      @@output_buf.concat(match.last)
+      return
     end
+
+    # no char, only control keys
+    return if key.char_code == 0 and key.control_keys.any?
+
+    @@output_buf.push("\e".ord) if key.control_keys.include?(:ALT)
+
+    @@output_buf.concat(key.char.bytes)
   end
 
   def self.check_input_event
     num_of_events = 0.chr * 8
-    while @@output_buf.empty? #or true
-      next if @@GetNumberOfConsoleInputEvents.(@@hConsoleInputHandle, num_of_events) == 0 or num_of_events.unpack('L').first == 0
+    while @@output_buf.empty?
+      Reline.core.line_editor.resize
+      next if @@WaitForSingleObject.(@@hConsoleInputHandle, 100) != 0 # max 0.1 sec
+      next if @@GetNumberOfConsoleInputEvents.(@@hConsoleInputHandle, num_of_events) == 0 or num_of_events.unpack1('L') == 0
       input_record = 0.chr * 18
       read_event = 0.chr * 4
       if @@ReadConsoleInputW.(@@hConsoleInputHandle, input_record, 1, read_event) != 0
-        event = input_record[0, 2].unpack('s*').first
+        event = input_record[0, 2].unpack1('s*')
         case event
         when WINDOW_BUFFER_SIZE_EVENT
           @@winch_handler.()
         when KEY_EVENT
-          key_down = input_record[4, 4].unpack('l*').first
-          repeat_count = input_record[8, 2].unpack('s*').first
-          virtual_key_code = input_record[10, 2].unpack('s*').first
-          virtual_scan_code = input_record[12, 2].unpack('s*').first
-          char_code = input_record[14, 2].unpack('S*').first
-          control_key_state = input_record[16, 2].unpack('S*').first
+          key_down = input_record[4, 4].unpack1('l*')
+          repeat_count = input_record[8, 2].unpack1('s*')
+          virtual_key_code = input_record[10, 2].unpack1('s*')
+          virtual_scan_code = input_record[12, 2].unpack1('s*')
+          char_code = input_record[14, 2].unpack1('S*')
+          control_key_state = input_record[16, 2].unpack1('S*')
           is_key_down = key_down.zero? ? false : true
           if is_key_down
             process_key_event(repeat_count, virtual_key_code, virtual_scan_code, char_code, control_key_state)
@@ -272,17 +283,25 @@ class Reline::Windows
     end
   end
 
-  def self.get_screen_size
+  def self.get_console_screen_buffer_info
     csbi = 0.chr * 22
-    @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi)
+    return if @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi) == 0
+    csbi
+  end
+
+  def self.get_screen_size
+    unless csbi = get_console_screen_buffer_info
+      return [1, 1]
+    end
     csbi[0, 4].unpack('SS').reverse
   end
 
   def self.cursor_pos
-    csbi = 0.chr * 22
-    @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi)
-    x = csbi[4, 2].unpack('s*').first
-    y = csbi[6, 2].unpack('s*').first
+    unless csbi = get_console_screen_buffer_info
+      return Reline::CursorPos.new(0, 0)
+    end
+    x = csbi[4, 2].unpack1('s*')
+    y = csbi[6, 2].unpack1('s*')
     Reline::CursorPos.new(x, y)
   end
 
@@ -302,6 +321,7 @@ class Reline::Windows
 
   def self.move_cursor_down(val)
     if val > 0
+      return unless csbi = get_console_screen_buffer_info
       screen_height = get_screen_size.first
       y = cursor_pos.y + val
       y = screen_height - 1 if y > (screen_height - 1)
@@ -312,12 +332,12 @@ class Reline::Windows
   end
 
   def self.erase_after_cursor
-    csbi = 0.chr * 24
-    @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi)
-    cursor = csbi[4, 4].unpack('L').first
+    return unless csbi = get_console_screen_buffer_info
+    attributes = csbi[8, 2].unpack1('S')
+    cursor = csbi[4, 4].unpack1('L')
     written = 0.chr * 4
     @@FillConsoleOutputCharacter.call(@@hConsoleHandle, 0x20, get_screen_size.last - cursor_pos.x, cursor, written)
-    @@FillConsoleOutputAttribute.call(@@hConsoleHandle, 0, get_screen_size.last - cursor_pos.x, cursor, written)
+    @@FillConsoleOutputAttribute.call(@@hConsoleHandle, attributes, get_screen_size.last - cursor_pos.x, cursor, written)
   end
 
   def self.scroll_down(val)
@@ -331,10 +351,9 @@ class Reline::Windows
   end
 
   def self.clear_screen
-    csbi = 0.chr * 22
-    return if @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi) == 0
-    buffer_width = csbi[0, 2].unpack('S').first
-    attributes = csbi[8, 2].unpack('S').first
+    return unless csbi = get_console_screen_buffer_info
+    buffer_width = csbi[0, 2].unpack1('S')
+    attributes = csbi[8, 2].unpack1('S')
     _window_left, window_top, _window_right, window_bottom = *csbi[10,8].unpack('S*')
     fill_length = buffer_width * (window_bottom - window_top + 1)
     screen_topleft = window_top * 65536
@@ -348,6 +367,20 @@ class Reline::Windows
     raise NotImplementedError
   end
 
+  def self.hide_cursor
+    size = 100
+    visible = 0 # 0 means false
+    cursor_info = [size, visible].pack('Li')
+    @@SetConsoleCursorInfo.call(@@hConsoleHandle, cursor_info)
+  end
+
+  def self.show_cursor
+    size = 100
+    visible = 1 # 1 means true
+    cursor_info = [size, visible].pack('Li')
+    @@SetConsoleCursorInfo.call(@@hConsoleHandle, cursor_info)
+  end
+
   def self.set_winch_handler(&handler)
     @@winch_handler = handler
   end
@@ -359,5 +392,44 @@ class Reline::Windows
 
   def self.deprep(otio)
     # do nothing
+  end
+
+  class KeyEventRecord
+
+    attr_reader :virtual_key_code, :char_code, :control_key_state, :control_keys
+
+    def initialize(virtual_key_code, char_code, control_key_state)
+      @virtual_key_code = virtual_key_code
+      @char_code = char_code
+      @control_key_state = control_key_state
+      @enhanced = control_key_state & ENHANCED_KEY != 0
+
+      (@control_keys = []).tap do |control_keys|
+        # symbols must be sorted to make comparison is easier later on
+        control_keys << :ALT   if control_key_state & (LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED) != 0
+        control_keys << :CTRL  if control_key_state & (LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED) != 0
+        control_keys << :SHIFT if control_key_state & SHIFT_PRESSED != 0
+      end.freeze
+    end
+
+    def char
+      @char_code.chr(Encoding::UTF_8)
+    end
+
+    def enhanced?
+      @enhanced
+    end
+
+    # Verifies if the arguments match with this key event.
+    # Nil arguments are ignored, but at least one must be passed as non-nil.
+    # To verify that no control keys were pressed, pass an empty array: `control_keys: []`.
+    def matches?(control_keys: nil, virtual_key_code: nil, char_code: nil)
+      raise ArgumentError, 'No argument was passed to match key event' if control_keys.nil? && virtual_key_code.nil? && char_code.nil?
+
+      (control_keys.nil? || [*control_keys].sort == @control_keys) &&
+      (virtual_key_code.nil? || @virtual_key_code == virtual_key_code) &&
+      (char_code.nil? || char_code == @char_code)
+    end
+
   end
 end

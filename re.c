@@ -724,8 +724,7 @@ static VALUE
 rb_reg_casefold_p(VALUE re)
 {
     rb_reg_check(re);
-    if (RREGEXP_PTR(re)->options & ONIG_OPTION_IGNORECASE) return Qtrue;
-    return Qfalse;
+    return RBOOL(RREGEXP_PTR(re)->options & ONIG_OPTION_IGNORECASE);
 }
 
 
@@ -1151,6 +1150,21 @@ match_size(VALUE match)
 }
 
 static int name_to_backref_number(struct re_registers *, VALUE, const char*, const char*);
+NORETURN(static void name_to_backref_error(VALUE name));
+
+static void
+name_to_backref_error(VALUE name)
+{
+    rb_raise(rb_eIndexError, "undefined group name reference: % "PRIsVALUE,
+	     name);
+}
+
+static void
+backref_number_check(struct re_registers *regs, int i)
+{
+    if (i < 0 || regs->num_regs <= i)
+	rb_raise(rb_eIndexError, "index %d out of matches", i);
+}
 
 static int
 match_backref_number(VALUE match, VALUE backref)
@@ -1170,10 +1184,10 @@ match_backref_number(VALUE match, VALUE backref)
     }
     name = StringValueCStr(backref);
 
-    num = name_to_backref_number(regs, regexp, name, name + strlen(name));
+    num = name_to_backref_number(regs, regexp, name, name + RSTRING_LEN(backref));
 
     if (num < 1) {
-        rb_raise(rb_eIndexError, "undefined group name reference: %s", name);
+        name_to_backref_error(backref);
     }
 
     return num;
@@ -1210,8 +1224,7 @@ match_offset(VALUE match, VALUE n)
     struct re_registers *regs = RMATCH_REGS(match);
 
     match_check(match);
-    if (i < 0 || regs->num_regs <= i)
-	rb_raise(rb_eIndexError, "index %d out of matches", i);
+    backref_number_check(regs, i);
 
     if (BEG(i) < 0)
 	return rb_assoc_new(Qnil, Qnil);
@@ -1246,8 +1259,7 @@ match_begin(VALUE match, VALUE n)
     struct re_registers *regs = RMATCH_REGS(match);
 
     match_check(match);
-    if (i < 0 || regs->num_regs <= i)
-	rb_raise(rb_eIndexError, "index %d out of matches", i);
+    backref_number_check(regs, i);
 
     if (BEG(i) < 0)
 	return Qnil;
@@ -1281,14 +1293,82 @@ match_end(VALUE match, VALUE n)
     struct re_registers *regs = RMATCH_REGS(match);
 
     match_check(match);
-    if (i < 0 || regs->num_regs <= i)
-	rb_raise(rb_eIndexError, "index %d out of matches", i);
+    backref_number_check(regs, i);
 
     if (BEG(i) < 0)
 	return Qnil;
 
     update_char_offset(match);
     return INT2FIX(RMATCH(match)->rmatch->char_offset[i].end);
+}
+
+/*
+ *  call-seq:
+ *     mtch.match(n)   -> string or nil
+ *
+ *  Returns the captured substring corresponding to the argument.
+ *  <em>n</em> can be a string or symbol to reference a named capture.
+ *
+ *     m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
+ *     m.match(0)       #=> "HX1138"
+ *     m.match(4)       #=> "8"
+ *     m.match(5)       #=> nil
+ *
+ *     m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
+ *     m.match(:foo)    #=> "h"
+ *     m.match(:bar)    #=> "ge"
+ *
+ */
+
+static VALUE
+match_nth(VALUE match, VALUE n)
+{
+    int i = match_backref_number(match, n);
+    struct re_registers *regs = RMATCH_REGS(match);
+
+    backref_number_check(regs, i);
+
+    long start = BEG(i), end = END(i);
+    if (start < 0)
+	return Qnil;
+
+    return rb_str_subseq(RMATCH(match)->str, start, end - start);
+}
+
+/*
+ *  call-seq:
+ *     mtch.match_length(n)   -> array
+ *
+ *  Returns the length of the captured substring corresponding to the argument.
+ *  <em>n</em> can be a string or symbol to reference a named capture.
+ *
+ *     m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
+ *     m.match_length(0)       #=> 6
+ *     m.match_length(4)       #=> 1
+ *     m.match_length(5)       #=> nil
+ *
+ *     m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
+ *     m.match_length(:foo)    #=> 1
+ *     m.match_length(:bar)    #=> 2
+ *
+ */
+
+static VALUE
+match_nth_length(VALUE match, VALUE n)
+{
+    int i = match_backref_number(match, n);
+    struct re_registers *regs = RMATCH_REGS(match);
+
+    match_check(match);
+    backref_number_check(regs, i);
+
+    if (BEG(i) < 0)
+	return Qnil;
+
+    update_char_offset(match);
+    const struct rmatch_offset *const ofs =
+	&RMATCH(match)->rmatch->char_offset[i];
+    return LONG2NUM(ofs->end - ofs->beg);
 }
 
 #define MATCH_BUSY FL_USER2
@@ -1389,10 +1469,7 @@ rb_backref_set_string(VALUE string, long pos, long len)
 static VALUE
 rb_reg_fixed_encoding_p(VALUE re)
 {
-    if (FL_TEST(re, KCODE_FIXED))
-        return Qtrue;
-    else
-        return Qfalse;
+    return RBOOL(FL_TEST(re, KCODE_FIXED));
 }
 
 static VALUE
@@ -1480,7 +1557,7 @@ rb_reg_prepare_re0(VALUE re, VALUE str, onig_errmsg_buffer err)
 	pattern, pattern + RREGEXP_SRC_LEN(re), enc,
 	&fixed_enc, err);
 
-    if (unescaped == Qnil) {
+    if (NIL_P(unescaped)) {
 	rb_raise(rb_eArgError, "regexp preprocess failed: %s", err);
     }
 
@@ -1538,8 +1615,8 @@ rb_reg_adjust_startpos(VALUE re, VALUE str, long pos, int reverse)
 }
 
 /* returns byte offset */
-long
-rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
+static long
+rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_backref_str, VALUE *set_match)
 {
     long result;
     VALUE match;
@@ -1561,18 +1638,7 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
     tmpreg = reg != RREGEXP_PTR(re);
     if (!tmpreg) RREGEXP(re)->usecnt++;
 
-    match = rb_backref_get();
-    if (!NIL_P(match)) {
-	if (FL_TEST(match, MATCH_BUSY)) {
-	    match = Qnil;
-	}
-	else {
-	    regs = RMATCH_REGS(match);
-	}
-    }
-    if (NIL_P(match)) {
-	MEMZERO(regs, struct re_registers, 1);
-    }
+    MEMZERO(regs, struct re_registers, 1);
     if (!reverse) {
 	range += len;
     }
@@ -1605,13 +1671,10 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
 	}
     }
 
-    if (NIL_P(match)) {
-	int err;
-	match = match_alloc(rb_cMatch);
-	err = rb_reg_region_copy(RMATCH_REGS(match), regs);
-	onig_region_free(regs, 0);
-	if (err) rb_memerror();
-    }
+    match = match_alloc(rb_cMatch);
+    int copy_err = rb_reg_region_copy(RMATCH_REGS(match), regs);
+    onig_region_free(regs, 0);
+    if (copy_err) rb_memerror();
 
     if (set_backref_str) {
 	RMATCH(match)->str = rb_str_new4(str);
@@ -1619,8 +1682,15 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
 
     RMATCH(match)->regexp = re;
     rb_backref_set(match);
+    if (set_match) *set_match = match;
 
     return result;
+}
+
+long
+rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
+{
+    return rb_reg_search_set_match(re, str, pos, reverse, set_backref_str, NULL);
 }
 
 long
@@ -1716,8 +1786,7 @@ rb_reg_nth_defined(int nth, VALUE match)
 	nth += regs->num_regs;
 	if (nth <= 0) return Qnil;
     }
-    if (BEG(nth) == -1) return Qfalse;
-    return Qtrue;
+    return RBOOL(BEG(nth) != -1);
 }
 
 VALUE
@@ -1926,14 +1995,6 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
     if (NIL_P(regexp)) return -1;
     return onig_name_to_backref_number(RREGEXP_PTR(regexp),
 	(const unsigned char *)name, (const unsigned char *)name_end, regs);
-}
-
-NORETURN(static void name_to_backref_error(VALUE name));
-static void
-name_to_backref_error(VALUE name)
-{
-    rb_raise(rb_eIndexError, "undefined group name reference: % "PRIsVALUE,
-	     name);
 }
 
 #define NAME_TO_NUMBER(regs, re, name, name_ptr, name_end)	\
@@ -2296,7 +2357,7 @@ match_inspect(VALUE match)
             rb_str_buf_cat2(str, ":");
         }
         v = rb_reg_nth_match(i, match);
-        if (v == Qnil)
+        if (NIL_P(v))
             rb_str_buf_cat2(str, "nil");
         else
             rb_str_buf_append(str, rb_str_inspect(v));
@@ -2739,7 +2800,7 @@ rb_reg_check_preprocess(VALUE str)
     buf = rb_reg_preprocess(p, end, enc, &fixed_enc, err);
     RB_GC_GUARD(str);
 
-    if (buf == Qnil) {
+    if (NIL_P(buf)) {
 	return rb_reg_error_desc(str, 0, err);
     }
     return Qnil;
@@ -2780,7 +2841,7 @@ rb_reg_preprocess_dregexp(VALUE ary, int options)
 
         buf = rb_reg_preprocess(p, end, src_enc, &fixed_enc, err);
 
-        if (buf == Qnil)
+        if (NIL_P(buf))
             rb_raise(rb_eArgError, "%s", err);
 
         if (fixed_enc != 0) {
@@ -2826,7 +2887,7 @@ rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
     }
 
     unescaped = rb_reg_preprocess(s, s+len, enc, &fixed_enc, err);
-    if (unescaped == Qnil)
+    if (NIL_P(unescaped))
         return -1;
 
     if (fixed_enc) {
@@ -3053,10 +3114,7 @@ rb_reg_equal(VALUE re1, VALUE re2)
     if (RREGEXP_PTR(re1)->options != RREGEXP_PTR(re2)->options) return Qfalse;
     if (RREGEXP_SRC_LEN(re1) != RREGEXP_SRC_LEN(re2)) return Qfalse;
     if (ENCODING_GET(re1) != ENCODING_GET(re2)) return Qfalse;
-    if (memcmp(RREGEXP_SRC_PTR(re1), RREGEXP_SRC_PTR(re2), RREGEXP_SRC_LEN(re1)) == 0) {
-	return Qtrue;
-    }
-    return Qfalse;
+    return RBOOL(memcmp(RREGEXP_SRC_PTR(re1), RREGEXP_SRC_PTR(re2), RREGEXP_SRC_LEN(re1)) == 0);
 }
 
 /*
@@ -3128,7 +3186,7 @@ reg_operand(VALUE s, int check)
 }
 
 static long
-reg_match_pos(VALUE re, VALUE *strp, long pos)
+reg_match_pos(VALUE re, VALUE *strp, long pos, VALUE* set_match)
 {
     VALUE str = *strp;
 
@@ -3147,7 +3205,7 @@ reg_match_pos(VALUE re, VALUE *strp, long pos)
 	}
 	pos = rb_str_offset(str, pos);
     }
-    return rb_reg_search(re, str, pos, 0);
+    return rb_reg_search_set_match(re, str, pos, 0, 1, set_match);
 }
 
 /*
@@ -3201,7 +3259,7 @@ reg_match_pos(VALUE re, VALUE *strp, long pos)
 VALUE
 rb_reg_match(VALUE re, VALUE str)
 {
-    long pos = reg_match_pos(re, &str, 0);
+    long pos = reg_match_pos(re, &str, 0, NULL);
     if (pos < 0) return Qnil;
     pos = rb_str_sublen(str, pos);
     return LONG2FIX(pos);
@@ -3312,7 +3370,7 @@ rb_reg_match2(VALUE re)
 static VALUE
 rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 {
-    VALUE result, str, initpos;
+    VALUE result = Qnil, str, initpos;
     long pos;
 
     if (rb_scan_args(argc, argv, "11", &str, &initpos) == 2) {
@@ -3322,12 +3380,11 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 	pos = 0;
     }
 
-    pos = reg_match_pos(re, &str, pos);
+    pos = reg_match_pos(re, &str, pos, &result);
     if (pos < 0) {
 	rb_backref_set(Qnil);
 	return Qnil;
     }
-    result = rb_backref_get();
     rb_match_busy(result);
     if (!NIL_P(result) && rb_block_given_p()) {
 	return rb_yield(result);
@@ -3337,10 +3394,10 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 
 /*
  *  call-seq:
- *     rxp.match?(str)       -> true or false
- *     rxp.match?(str,pos)   -> true or false
+ *     rxp.match?(str)          -> true or false
+ *     rxp.match?(str, pos=0)   -> true or false
  *
- *  Returns a <code>true</code> or <code>false</code> indicates whether the
+ *  Returns <code>true</code> or <code>false</code> to indicate whether the
  *  regexp is matched or not without updating $~ and other related variables.
  *  If the second parameter is present, it specifies the position in the string
  *  to begin the search.
@@ -4106,6 +4163,8 @@ Init_Regexp(void)
     rb_define_method(rb_cMatch, "offset", match_offset, 1);
     rb_define_method(rb_cMatch, "begin", match_begin, 1);
     rb_define_method(rb_cMatch, "end", match_end, 1);
+    rb_define_method(rb_cMatch, "match", match_nth, 1);
+    rb_define_method(rb_cMatch, "match_length", match_nth_length, 1);
     rb_define_method(rb_cMatch, "to_a", match_to_a, 0);
     rb_define_method(rb_cMatch, "[]", match_aref, -1);
     rb_define_method(rb_cMatch, "captures", match_captures, 0);

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'psych/scalar_scanner'
-require 'psych/class_loader'
-require 'psych/exception'
+require_relative '../scalar_scanner'
+require_relative '../class_loader'
+require_relative '../exception'
 
 unless defined?(Regexp::NOENCODING)
   Regexp::NOENCODING = 32

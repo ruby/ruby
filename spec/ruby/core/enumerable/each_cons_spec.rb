@@ -10,7 +10,7 @@ describe "Enumerable#each_cons" do
 
   it "passes element groups to the block" do
     acc = []
-    @enum.each_cons(3){|g| acc << g}.should be_nil
+    @enum.each_cons(3){|g| acc << g}
     acc.should == @in_threes
   end
 
@@ -27,7 +27,7 @@ describe "Enumerable#each_cons" do
 
   it "tries to convert n to an Integer using #to_int" do
     acc = []
-    @enum.each_cons(3.3){|g| acc << g}.should == nil
+    @enum.each_cons(3.3){|g| acc << g}
     acc.should == @in_threes
 
     obj = mock('to_int')

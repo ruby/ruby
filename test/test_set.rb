@@ -354,13 +354,17 @@ class TC_Set < Test::Unit::TestCase
     case expected
     when true
       assert_send([set, :intersect?, other])
+      assert_send([set, :intersect?, other.to_a])
       assert_send([other, :intersect?, set])
       assert_not_send([set, :disjoint?, other])
+      assert_not_send([set, :disjoint?, other.to_a])
       assert_not_send([other, :disjoint?, set])
     when false
       assert_not_send([set, :intersect?, other])
+      assert_not_send([set, :intersect?, other.to_a])
       assert_not_send([other, :intersect?, set])
       assert_send([set, :disjoint?, other])
+      assert_send([set, :disjoint?, other.to_a])
       assert_send([other, :disjoint?, set])
     when Class
       assert_raise(expected) {
@@ -378,7 +382,7 @@ class TC_Set < Test::Unit::TestCase
     set = Set[3,4,5]
 
     assert_intersect(ArgumentError, set, 3)
-    assert_intersect(ArgumentError, set, [2,4,6])
+    assert_intersect(true, set, Set[2,4,6])
 
     assert_intersect(true, set, set)
     assert_intersect(true, set, Set[2,4])

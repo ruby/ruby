@@ -60,6 +60,7 @@ class Scheduler
 
       readable&.each do |io|
         if fiber = @readable.delete(io)
+          @writable.delete(io) if @writable[io] == fiber
           selected[fiber] = IO::READABLE
         elsif io == @urgent.first
           @urgent.first.read_nonblock(1024)
@@ -68,7 +69,8 @@ class Scheduler
 
       writable&.each do |io|
         if fiber = @writable.delete(io)
-          selected[fiber] |= IO::WRITABLE
+          @readable.delete(io) if @readable[io] == fiber
+          selected[fiber] = selected.fetch(fiber, 0) | IO::WRITABLE
         end
       end
 
@@ -105,17 +107,31 @@ class Scheduler
     end
   end
 
-  def close
+  def scheduler_close
+    close(true)
+  end
+
+  def close(internal = false)
     # $stderr.puts [__method__, Fiber.current].inspect
 
-    raise "Scheduler already closed!" if @closed
+    unless internal
+      if Fiber.scheduler == self
+        return Fiber.set_scheduler(nil)
+      end
+    end
+
+    if @closed
+      raise "Scheduler already closed!"
+    end
 
     self.run
   ensure
-    @urgent.each(&:close)
-    @urgent = nil
+    if @urgent
+      @urgent.each(&:close)
+      @urgent = nil
+    end
 
-    @closed = true
+    @closed ||= true
 
     # We freeze to detect any unintended modifications after the scheduler is closed:
     self.freeze
@@ -238,5 +254,15 @@ class BrokenUnblockScheduler < Scheduler
     super
 
     raise "Broken unblock!"
+  end
+end
+
+class SleepingUnblockScheduler < Scheduler
+  # This method is invoked when the thread is exiting.
+  def unblock(blocker, fiber)
+    super
+
+    # This changes the current thread state to `THREAD_RUNNING` which causes `thread_join_sleep` to hang.
+    sleep(0.1)
   end
 end

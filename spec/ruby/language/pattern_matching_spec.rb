@@ -18,6 +18,63 @@ ruby_version_is "2.7" do
           RUBY
         end
       end
+
+      describe "find pattern" do
+        it "captures preceding elements to the pattern" do
+          eval(<<~RUBY).should == [0, 1]
+            case [0, 1, 2, 3]
+            in [*pre, 2, 3]
+              pre
+            else
+              false
+            end
+          RUBY
+        end
+
+        it "captures following elements to the pattern" do
+          eval(<<~RUBY).should == [2, 3]
+            case [0, 1, 2, 3]
+            in [0, 1, *post]
+              post
+            else
+              false
+            end
+          RUBY
+        end
+
+        it "captures both preceding and following elements to the pattern" do
+          eval(<<~RUBY).should == [[0, 1], [3, 4]]
+            case [0, 1, 2, 3, 4]
+            in [*pre, 2, *post]
+              [pre, post]
+            else
+              false
+            end
+          RUBY
+        end
+
+        it "can capture the entirety of the pattern" do
+          eval(<<~RUBY).should == [0, 1, 2, 3, 4]
+            case [0, 1, 2, 3, 4]
+            in [*everything]
+              everything
+            else
+              false
+            end
+          RUBY
+        end
+
+        it "will match an empty Array-like structure" do
+          eval(<<~RUBY).should == []
+            case []
+            in [*everything]
+              everything
+            else
+              false
+            end
+          RUBY
+        end
+      end
     end
 
     it "extends case expression with case/in construction" do
@@ -42,14 +99,6 @@ ruby_version_is "2.7" do
 
     describe "warning" do
       before :each do
-        ruby_version_is ""..."3.0" do
-          @src = 'case [0, 1]; in [a, b]; end'
-        end
-
-        ruby_version_is "3.0" do
-          @src = '[0, 1] => [a, b]'
-        end
-
         @experimental, Warning[:experimental] = Warning[:experimental], true
       end
 
@@ -57,8 +106,42 @@ ruby_version_is "2.7" do
         Warning[:experimental] = @experimental
       end
 
-      it "warns about pattern matching is experimental feature" do
-        -> { eval @src }.should complain(/pattern matching is experimental, and the behavior may change in future versions of Ruby!/i)
+      context 'when regular form' do
+        before :each do
+          @src = 'case [0, 1]; in [a, b]; end'
+        end
+
+        ruby_version_is ""..."3.0" do
+          it "warns about pattern matching is experimental feature" do
+            -> { eval @src }.should complain(/pattern matching is experimental, and the behavior may change in future versions of Ruby!/i)
+          end
+        end
+
+        ruby_version_is "3.0" do
+          it "does not warn about pattern matching is experimental feature" do
+            -> { eval @src }.should_not complain
+          end
+        end
+      end
+
+      context 'when one-line form' do
+        ruby_version_is '3.0' do
+          before :each do
+            @src = '[0, 1] => [a, b]'
+          end
+
+          ruby_version_is ""..."3.1" do
+            it "warns about pattern matching is experimental feature" do
+              -> { eval @src }.should complain(/pattern matching is experimental, and the behavior may change in future versions of Ruby!/i)
+            end
+          end
+
+          ruby_version_is "3.1" do
+            it "does not warn about pattern matching is experimental feature" do
+              -> { eval @src }.should_not complain
+            end
+          end
+        end
       end
     end
 
@@ -442,6 +525,28 @@ ruby_version_is "2.7" do
           end
         RUBY
       end
+
+      it "can be used as a nested pattern" do
+        eval(<<~RUBY).should == true
+          case [[1], ["2"]]
+            in [[0] | nil, _]
+              false
+            in [[1], [1]]
+              false
+            in [[1], [2 | "2"]]
+              true
+          end
+        RUBY
+
+        eval(<<~RUBY).should == true
+          case [1, 2]
+            in [0, _] | {a: 0}
+              false
+            in {a: 1, b: 2} | [1, 2]
+              true
+          end
+        RUBY
+      end
     end
 
     describe "AS pattern" do
@@ -700,6 +805,28 @@ ruby_version_is "2.7" do
           case [0, 1]
           in *;
             true
+          end
+        RUBY
+      end
+
+      it "can be used as a nested pattern" do
+        eval(<<~RUBY).should == true
+          case [[1], ["2"]]
+            in [[0] | nil, _]
+              false
+            in [[1], [1]]
+              false
+            in [[1], [2 | "2"]]
+              true
+          end
+        RUBY
+
+        eval(<<~RUBY).should == true
+          case [1, 2]
+            in [0, _] | {a: 0}
+              false
+            in {a: 1, b: 2} | [1, 2]
+              true
           end
         RUBY
       end
@@ -1058,6 +1185,30 @@ ruby_version_is "2.7" do
           end
         RUBY
       end
+
+      it "can be used as a nested pattern" do
+        eval(<<~RUBY).should == true
+          case {a: {a: 1, b: 1}, b: {a: 1, b: 2}}
+            in {a: {a: 0}}
+              false
+            in {a: {a: 1}, b: {b: 1}}
+              false
+            in {a: {a: 1}, b: {b: 2}}
+              true
+          end
+        RUBY
+
+        eval(<<~RUBY).should == true
+          case [{a: 1, b: [1]}, {a: 1, c: ["2"]}]
+            in [{a:, c:},]
+              false
+            in [{a: 1, b:}, {a: 1, c: [Integer]}]
+              false
+            in [_, {a: 1, c: [String]}]
+              true
+          end
+        RUBY
+      end
     end
 
     describe "refinements" do
@@ -1131,6 +1282,20 @@ ruby_version_is "2.7" do
         end
 
         result.should == true
+      end
+    end
+
+    ruby_version_is "3.1" do
+      it "can omit parentheses in one line pattern matching" do
+        eval(<<~RUBY).should == [1, 2]
+          [1, 2] => a, b
+          [a, b]
+        RUBY
+
+        eval(<<~RUBY).should == 1
+          {a: 1} => a:
+          a
+        RUBY
       end
     end
   end

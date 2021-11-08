@@ -4,7 +4,8 @@
 [![Actions Status: Ubuntu](https://github.com/ruby/ruby/workflows/Ubuntu/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Ubuntu")
 [![Actions Status: Windows](https://github.com/ruby/ruby/workflows/Windows/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Windows")
 [![AppVeyor status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/master?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/master)
-[![Travis Status](https://www.travis-ci.com/ruby/ruby.svg?branch=master)](https://www.travis-ci.com/ruby/ruby)
+[![Travis Status](https://app.travis-ci.com/ruby/ruby.svg?branch=master)](https://app.travis-ci.com/ruby/ruby)
+[![Cirrus Status](https://api.cirrus-ci.com/github/ruby/ruby.svg)](https://cirrus-ci.com/github/ruby/ruby/master)
 
 # What's Ruby
 
@@ -91,7 +92,7 @@ is required.
 ## How to compile and install
 
 1.  If you want to use Microsoft Visual C++ to compile Ruby, read
-    [win32/README.win32](win32/README.win32) instead of this document.
+    [win32/README.win32](rdoc-ref:win32/README.win32) instead of this document.
 
 2.  Run `./autogen.sh` to generate configure, when you build the source checked
     out from the Git repository.
@@ -163,21 +164,21 @@ to remove old configuration after installing them in such case.
 
 ## Copying
 
-See the file [COPYING](COPYING).
+See the file [COPYING](rdoc-ref:COPYING).
 
 ## Feedback
 
-Questions about the Ruby language can be asked on the Ruby-Talk mailing list
-(https://www.ruby-lang.org/en/community/mailing-lists) or on websites like
-(https://stackoverflow.com).
+Questions about the Ruby language can be asked on the [Ruby-Talk] mailing list
+or on websites like https://stackoverflow.com.
 
 Bugs should be reported at https://bugs.ruby-lang.org. Read [HowToReport] for more information.
 
+[Ruby-Talk]: https://www.ruby-lang.org/en/community/mailing-lists
 [HowToReport]: https://bugs.ruby-lang.org/projects/ruby/wiki/HowToReport
 
 ## Contributing
 
-See the file [CONTRIBUTING.md](CONTRIBUTING.md)
+See the file [CONTRIBUTING.md](rdoc-ref:CONTRIBUTING)
 
 ## The Author
 

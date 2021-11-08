@@ -1,7 +1,6 @@
 #ifndef INTERNAL_RATIONAL_H                              /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_RATIONAL_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -39,6 +38,7 @@ VALUE rb_rational_cmp(VALUE self, VALUE other);
 VALUE rb_rational_pow(VALUE self, VALUE other);
 VALUE rb_rational_floor(VALUE self, int ndigits);
 VALUE rb_numeric_quo(VALUE x, VALUE y);
+VALUE rb_flo_round_by_rational(int argc, VALUE *argv, VALUE num);
 VALUE rb_float_numerator(VALUE x);
 VALUE rb_float_denominator(VALUE x);
 

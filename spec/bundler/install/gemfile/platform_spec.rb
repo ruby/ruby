@@ -400,6 +400,7 @@ RSpec.describe "bundle install with platform conditionals" do
     build_git "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       platform :#{not_local_tag} do
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       end

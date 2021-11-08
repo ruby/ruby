@@ -103,8 +103,8 @@ module Bundler
       if current = @dependencies.find {|d| d.name == dep.name }
         deleted_dep = @dependencies.delete(current) if current.type == :development
 
-        if current.requirement != dep.requirement
-          unless deleted_dep
+        unless deleted_dep
+          if current.requirement != dep.requirement
             return if dep.type == :development
 
             update_prompt = ""
@@ -122,17 +122,14 @@ module Bundler
             raise GemfileError, "You cannot specify the same gem twice with different version requirements.\n" \
                             "You specified: #{current.name} (#{current.requirement}) and #{dep.name} (#{dep.requirement})" \
                              "#{update_prompt}"
+          else
+            Bundler.ui.warn "Your Gemfile lists the gem #{current.name} (#{current.requirement}) more than once.\n" \
+                            "You should probably keep only one of them.\n" \
+                            "Remove any duplicate entries and specify the gem only once.\n" \
+                            "While it's not a problem now, it could cause errors if you change the version of one of them later."
           end
 
-        else
-          Bundler.ui.warn "Your Gemfile lists the gem #{current.name} (#{current.requirement}) more than once.\n" \
-                          "You should probably keep only one of them.\n" \
-                          "Remove any duplicate entries and specify the gem only once.\n" \
-                          "While it's not a problem now, it could cause errors if you change the version of one of them later."
-        end
-
-        if current.source != dep.source
-          unless deleted_dep
+          if current.source != dep.source
             return if dep.type == :development
             raise GemfileError, "You cannot specify the same gem twice coming from different sources.\n" \
                             "You specified that #{dep.name} (#{dep.requirement}) should come from " \
@@ -450,8 +447,21 @@ repo_name ||= user_name
     end
 
     def check_rubygems_source_safety
-      return unless @sources.aggregate_global_source?
+      if @sources.implicit_global_source?
+        implicit_global_source_warning
+      elsif @sources.aggregate_global_source?
+        multiple_global_source_warning
+      end
+    end
 
+    def implicit_global_source_warning
+      Bundler::SharedHelpers.major_deprecation 2, "This Gemfile does not include an explicit global source. " \
+        "Not using an explicit global source may result in a different lockfile being generated depending on " \
+        "the gems you have installed locally before bundler is run. " \
+        "Instead, define a global source in your Gemfile like this: source \"https://rubygems.org\"."
+    end
+
+    def multiple_global_source_warning
       if Bundler.feature_flag.bundler_3_mode?
         msg = "This Gemfile contains multiple primary sources. " \
           "Each source after the first must include a block to indicate which gems " \

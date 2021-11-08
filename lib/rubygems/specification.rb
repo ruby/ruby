@@ -6,11 +6,11 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/deprecate'
-require 'rubygems/basic_specification'
-require 'rubygems/stub_specification'
-require 'rubygems/specification_policy'
-require 'rubygems/util/list'
+require_relative 'deprecate'
+require_relative 'basic_specification'
+require_relative 'stub_specification'
+require_relative 'specification_policy'
+require_relative 'util/list'
 
 ##
 # The Specification class contains the information for a gem.  Typically
@@ -324,17 +324,21 @@ class Gem::Specification < Gem::BasicSpecification
   # This should just be the name of your license. The full text of the license
   # should be inside of the gem (at the top level) when you build it.
   #
-  # The simplest way, is to specify the standard SPDX ID
+  # The simplest way is to specify the standard SPDX ID
   # https://spdx.org/licenses/ for the license.
-  # Ideally you should pick one that is OSI (Open Source Initiative)
+  # Ideally, you should pick one that is OSI (Open Source Initiative)
   # http://opensource.org/licenses/alphabetical approved.
   #
-  # The most commonly used OSI approved licenses are MIT and Apache-2.0.
+  # The most commonly used OSI-approved licenses are MIT and Apache-2.0.
   # GitHub also provides a license picker at http://choosealicense.com/.
   #
+  # You can also use a custom license file along with your gemspec and specify
+  # a LicenseRef-<idstring>, where idstring is the name of the file containing
+  # the license text.
+  #
   # You should specify a license for your gem so that people know how they are
-  # permitted to use it, and any restrictions you're placing on it.  Not
-  # specifying a license means all rights are reserved; others have no rights
+  # permitted to use it and any restrictions you're placing on it.  Not
+  # specifying a license means all rights are reserved; others have no right
   # to use the code for any purpose.
   #
   # You can set multiple licenses with #licenses=
@@ -855,7 +859,7 @@ class Gem::Specification < Gem::BasicSpecification
       next names if names.nonzero?
       versions = b.version <=> a.version
       next versions if versions.nonzero?
-      b.platform == Gem::Platform::RUBY ? -1 : 1
+      Gem::Platform.sort_priority(b.platform)
     end
   end
 
@@ -1556,8 +1560,8 @@ class Gem::Specification < Gem::BasicSpecification
   # the gem.build_complete file is missing.
 
   def build_extensions # :nodoc:
-    return if default_gem?
     return if extensions.empty?
+    return if default_gem?
     return if File.exist? gem_build_complete_path
     return if !File.writable?(base_dir)
     return if !File.exist?(File.join(base_dir, 'extensions'))
@@ -1568,9 +1572,9 @@ class Gem::Specification < Gem::BasicSpecification
       unresolved_deps = Gem::Specification.unresolved_deps.dup
       Gem::Specification.unresolved_deps.clear
 
-      require 'rubygems/config_file'
-      require 'rubygems/ext'
-      require 'rubygems/user_interaction'
+      require_relative 'config_file'
+      require_relative 'ext'
+      require_relative 'user_interaction'
 
       ui = Gem::SilentUI.new
       Gem::DefaultUserInteraction.use_ui ui do
@@ -1689,12 +1693,6 @@ class Gem::Specification < Gem::BasicSpecification
     @date = case date
             when String then
               if DateTimeFormat =~ date
-                Time.utc($1.to_i, $2.to_i, $3.to_i)
-
-              # Workaround for where the date format output from psych isn't
-              # parsed as a Time object by syck and thus comes through as a
-              # string.
-              elsif /\A(\d{4})-(\d{2})-(\d{2}) \d{2}:\d{2}:\d{2}\.\d+?Z\z/ =~ date
                 Time.utc($1.to_i, $2.to_i, $3.to_i)
               else
                 raise(Gem::InvalidSpecificationException,
@@ -2126,8 +2124,8 @@ class Gem::Specification < Gem::BasicSpecification
   # probably want to build_extensions
 
   def missing_extensions?
-    return false if default_gem?
     return false if extensions.empty?
+    return false if default_gem?
     return false if File.exist? gem_build_complete_path
 
     true
@@ -2339,7 +2337,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Returns an object you can use to sort specifications in #sort_by.
 
   def sort_obj
-    [@name, @version, @new_platform == Gem::Platform::RUBY ? -1 : 1]
+    [@name, @version, Gem::Platform.sort_priority(@new_platform)]
   end
 
   ##
@@ -2531,7 +2529,7 @@ class Gem::Specification < Gem::BasicSpecification
     # back, we have to check again here to make sure that our
     # psych code was properly loaded, and load it if not.
     unless Gem.const_defined?(:NoAliasYAMLTree)
-      require 'rubygems/psych_tree'
+      require_relative 'psych_tree'
     end
 
     builder = Gem::NoAliasYAMLTree.create

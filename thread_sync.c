@@ -125,7 +125,7 @@ mutex_memsize(const void *ptr)
 static const rb_data_type_t mutex_data_type = {
     "mutex",
     {mutex_mark, mutex_free, mutex_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static rb_mutex_t *
@@ -141,12 +141,7 @@ mutex_ptr(VALUE obj)
 VALUE
 rb_obj_is_mutex(VALUE obj)
 {
-    if (rb_typeddata_is_kind_of(obj, &mutex_data_type)) {
-	return Qtrue;
-    }
-    else {
-	return Qfalse;
-    }
+    return RBOOL(rb_typeddata_is_kind_of(obj, &mutex_data_type));
 }
 
 static VALUE
@@ -190,7 +185,7 @@ rb_mutex_locked_p(VALUE self)
 {
     rb_mutex_t *mutex = mutex_ptr(self);
 
-    return mutex->fiber ? Qtrue : Qfalse;
+    return RBOOL(mutex->fiber);
 }
 
 static void
@@ -261,12 +256,7 @@ static const rb_thread_t *patrol_thread = NULL;
 static VALUE
 mutex_owned_p(rb_fiber_t *fiber, rb_mutex_t *mutex)
 {
-    if (mutex->fiber == fiber) {
-        return Qtrue;
-    }
-    else {
-        return Qfalse;
-    }
+    return RBOOL(mutex->fiber == fiber);
 }
 
 static VALUE
@@ -533,14 +523,14 @@ rb_mutex_wait_for(VALUE time)
 {
     rb_hrtime_t *rel = (rb_hrtime_t *)time;
     /* permit spurious check */
-    sleep_hrtime(GET_THREAD(), *rel, 0);
-    return Qnil;
+    return RBOOL(sleep_hrtime(GET_THREAD(), *rel, 0));
 }
 
 VALUE
 rb_mutex_sleep(VALUE self, VALUE timeout)
 {
     struct timeval t;
+    VALUE woken = Qtrue;
 
     if (!NIL_P(timeout)) {
         t = rb_time_interval(timeout);
@@ -560,18 +550,19 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
         }
         else {
             rb_hrtime_t rel = rb_timeval2hrtime(&t);
-            rb_ensure(rb_mutex_wait_for, (VALUE)&rel, mutex_lock_uninterruptible, self);
+            woken = rb_ensure(rb_mutex_wait_for, (VALUE)&rel, mutex_lock_uninterruptible, self);
         }
     }
 
     RUBY_VM_CHECK_INTS_BLOCKING(GET_EC());
+    if (!woken) return Qnil;
     time_t end = time(0) - beg;
     return TIMET2NUM(end);
 }
 
 /*
  * call-seq:
- *    mutex.sleep(timeout = nil)    -> number
+ *    mutex.sleep(timeout = nil)    -> number or nil
  *
  * Releases the lock and sleeps +timeout+ seconds if it is given and
  * non-nil or forever.  Raises +ThreadError+ if +mutex+ wasn't locked by
@@ -582,6 +573,8 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
  *
  * Note that this method can wakeup without explicit Thread#wakeup call.
  * For example, receiving signal and so on.
+ *
+ * Returns the slept time in seconds if woken up, or +nil+ if timed out.
  */
 static VALUE
 mutex_sleep(int argc, VALUE *argv, VALUE self)
@@ -939,7 +932,7 @@ rb_queue_close(VALUE self)
 static VALUE
 rb_queue_closed_p(VALUE self)
 {
-    return queue_closed_p(self) ? Qtrue : Qfalse;
+    return RBOOL(queue_closed_p(self));
 }
 
 /*
@@ -1070,7 +1063,7 @@ rb_queue_pop(int argc, VALUE *argv, VALUE self)
 static VALUE
 rb_queue_empty_p(VALUE self)
 {
-    return queue_length(self, queue_ptr(self)) == 0 ? Qtrue : Qfalse;
+    return RBOOL(queue_length(self, queue_ptr(self)) == 0);
 }
 
 /*
@@ -1368,7 +1361,7 @@ rb_szqueue_empty_p(VALUE self)
 {
     struct rb_szqueue *sq = szqueue_ptr(self);
 
-    return queue_length(self, &sq->q) == 0 ? Qtrue : Qfalse;
+    return RBOOL(queue_length(self, &sq->q) == 0);
 }
 
 
@@ -1483,6 +1476,8 @@ do_sleep(VALUE args)
  *
  * If +timeout+ is given, this method returns after +timeout+ seconds passed,
  * even if no other thread doesn't signal.
+ *
+ * Returns the slept result on +mutex+.
  */
 
 static VALUE
@@ -1502,9 +1497,7 @@ rb_condvar_wait(int argc, VALUE *argv, VALUE self)
     };
 
     list_add_tail(&cv->waitq, &sync_waiter.node);
-    rb_ensure(do_sleep, (VALUE)&args, delete_from_waitq, (VALUE)&sync_waiter);
-
-    return self;
+    return rb_ensure(do_sleep, (VALUE)&args, delete_from_waitq, (VALUE)&sync_waiter);
 }
 
 /*

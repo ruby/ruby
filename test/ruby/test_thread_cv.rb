@@ -16,6 +16,7 @@ class TestThreadConditionVariable < Test::Unit::TestCase
     mutex = Thread::Mutex.new
     condvar = Thread::ConditionVariable.new
     result = []
+    woken = nil
     mutex.synchronize do
       t = Thread.new do
         mutex.synchronize do
@@ -25,11 +26,12 @@ class TestThreadConditionVariable < Test::Unit::TestCase
       end
 
       result << 0
-      condvar.wait(mutex)
+      woken = condvar.wait(mutex)
       result << 2
       t.join
     end
     assert_equal([0, 1, 2], result)
+    assert(woken)
   end
 
   def test_condvar_wait_exception_handling
@@ -87,6 +89,9 @@ class TestThreadConditionVariable < Test::Unit::TestCase
     end
 
     assert_equal ["C1", "C1", "C1", "P1", "P2", "C2", "C2", "C2"], result
+  ensure
+    threads.each(&:kill)
+    threads.each(&:join)
   end
 
   def test_condvar_wait_deadlock
@@ -140,11 +145,12 @@ INPUT
     condvar = Thread::ConditionVariable.new
     timeout = 0.3
     locked = false
+    woken = true
 
     t0 = Time.now
     mutex.synchronize do
       begin
-        condvar.wait(mutex, timeout)
+        woken = condvar.wait(mutex, timeout)
       ensure
         locked = mutex.locked?
       end
@@ -154,6 +160,7 @@ INPUT
 
     assert_operator(timeout*0.9, :<, t)
     assert(locked)
+    assert_nil(woken)
   end
 
   def test_condvar_nolock

@@ -471,108 +471,106 @@ describe "String#split with Regexp" do
     results.should == [%w[a b c d e]] * 10
   end
 
-  ruby_version_is "2.6" do
-    context "when a block is given" do
-      it "yields each split substring with default pattern" do
+  context "when a block is given" do
+    it "yields each split substring with default pattern" do
+      a = []
+      returned_object = "chunky bacon".split { |str| a << str.capitalize }
+
+      returned_object.should == "chunky bacon"
+      a.should == ["Chunky", "Bacon"]
+    end
+
+    it "yields each split substring with default pattern for a non-ASCII string" do
+      a = []
+      returned_object = "l'été arrive bientôt".split { |str| a << str }
+
+      returned_object.should == "l'été arrive bientôt"
+      a.should == ["l'été", "arrive", "bientôt"]
+    end
+
+    it "yields the string when limit is 1" do
+      a = []
+      returned_object = "chunky bacon".split("", 1) { |str| a << str.capitalize }
+
+      returned_object.should == "chunky bacon"
+      a.should == ["Chunky bacon"]
+    end
+
+    it "yields each split letter" do
+      a = []
+      returned_object = "chunky".split("", 0) { |str| a << str.capitalize }
+
+      returned_object.should == "chunky"
+      a.should == %w(C H U N K Y)
+    end
+
+    it "yields each split substring with a pattern" do
+      a = []
+      returned_object = "chunky-bacon".split("-", 0) { |str| a << str.capitalize }
+
+      returned_object.should == "chunky-bacon"
+      a.should == ["Chunky", "Bacon"]
+    end
+
+    it "yields each split substring with empty regexp pattern" do
+      a = []
+      returned_object = "chunky".split(//) { |str| a << str.capitalize }
+
+      returned_object.should == "chunky"
+      a.should == %w(C H U N K Y)
+    end
+
+    it "yields each split substring with empty regexp pattern and limit" do
+      a = []
+      returned_object = "chunky".split(//, 3) { |str| a << str.capitalize }
+
+      returned_object.should == "chunky"
+      a.should == %w(C H Unky)
+    end
+
+    it "yields each split substring with a regexp pattern" do
+      a = []
+      returned_object = "chunky:bacon".split(/:/) { |str| a << str.capitalize }
+
+      returned_object.should == "chunky:bacon"
+      a.should == ["Chunky", "Bacon"]
+    end
+
+    it "returns a string as is (and doesn't call block) if it is empty" do
+      a = []
+      returned_object = "".split { |str| a << str.capitalize }
+
+      returned_object.should == ""
+      a.should == []
+    end
+  end
+
+  describe "for a String subclass" do
+    ruby_version_is ''...'3.0' do
+      it "yields instances of the same subclass" do
         a = []
-        returned_object = "chunky bacon".split { |str| a << str.capitalize }
+        StringSpecs::MyString.new("a|b").split("|") { |str| a << str }
+        first, last = a
 
-        returned_object.should == "chunky bacon"
-        a.should == ["Chunky", "Bacon"]
-      end
+        first.should be_an_instance_of(StringSpecs::MyString)
+        first.should == "a"
 
-      it "yields each split substring with default pattern for a non-ASCII string" do
-        a = []
-        returned_object = "l'été arrive bientôt".split { |str| a << str }
-
-        returned_object.should == "l'été arrive bientôt"
-        a.should == ["l'été", "arrive", "bientôt"]
-      end
-
-      it "yields the string when limit is 1" do
-        a = []
-        returned_object = "chunky bacon".split("", 1) { |str| a << str.capitalize }
-
-        returned_object.should == "chunky bacon"
-        a.should == ["Chunky bacon"]
-      end
-
-      it "yields each split letter" do
-        a = []
-        returned_object = "chunky".split("", 0) { |str| a << str.capitalize }
-
-        returned_object.should == "chunky"
-        a.should == %w(C H U N K Y)
-      end
-
-      it "yields each split substring with a pattern" do
-        a = []
-        returned_object = "chunky-bacon".split("-", 0) { |str| a << str.capitalize }
-
-        returned_object.should == "chunky-bacon"
-        a.should == ["Chunky", "Bacon"]
-      end
-
-      it "yields each split substring with empty regexp pattern" do
-        a = []
-        returned_object = "chunky".split(//) { |str| a << str.capitalize }
-
-        returned_object.should == "chunky"
-        a.should == %w(C H U N K Y)
-      end
-
-      it "yields each split substring with empty regexp pattern and limit" do
-        a = []
-        returned_object = "chunky".split(//, 3) { |str| a << str.capitalize }
-
-        returned_object.should == "chunky"
-        a.should == %w(C H Unky)
-      end
-
-      it "yields each split substring with a regexp pattern" do
-        a = []
-        returned_object = "chunky:bacon".split(/:/) { |str| a << str.capitalize }
-
-        returned_object.should == "chunky:bacon"
-        a.should == ["Chunky", "Bacon"]
-      end
-
-      it "returns a string as is (and doesn't call block) if it is empty" do
-        a = []
-        returned_object = "".split { |str| a << str.capitalize }
-
-        returned_object.should == ""
-        a.should == []
+        last.should be_an_instance_of(StringSpecs::MyString)
+        last.should == "b"
       end
     end
 
-    describe "for a String subclass" do
-      ruby_version_is ''...'3.0' do
-        it "yields instances of the same subclass" do
-          a = []
-          StringSpecs::MyString.new("a|b").split("|") { |str| a << str }
-          first, last = a
+    ruby_version_is '3.0' do
+      it "yields instances of String" do
+        a = []
+        StringSpecs::MyString.new("a|b").split("|") { |str| a << str }
+        first, last = a
 
-          first.should be_an_instance_of(StringSpecs::MyString)
-          first.should == "a"
+        first.should be_an_instance_of(String)
+        first.should == "a"
 
-          last.should be_an_instance_of(StringSpecs::MyString)
-          last.should == "b"
-        end
-      end
-
-      ruby_version_is '3.0' do
-        it "yields instances of String" do
-          a = []
-          StringSpecs::MyString.new("a|b").split("|") { |str| a << str }
-          first, last = a
-
-          first.should be_an_instance_of(String)
-          first.should == "a"
-
-          last.should be_an_instance_of(String)
-          last.should == "b"
-        end
+        last.should be_an_instance_of(String)
+        last.should == "b"
       end
     end
   end

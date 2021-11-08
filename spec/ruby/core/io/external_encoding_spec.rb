@@ -94,8 +94,12 @@ describe "IO#external_encoding" do
     rm_r @name
   end
 
-  it "raises an IOError on closed stream" do
-    -> { IOSpecs.closed_io.external_encoding }.should raise_error(IOError)
+  ruby_version_is '3.1' do
+    it "can be retrieved from a closed stream" do
+      io = IOSpecs.io_fixture("lines.txt", "r")
+      io.close
+      io.external_encoding.should equal(Encoding.default_external)
+    end
   end
 
   describe "with 'r' mode" do

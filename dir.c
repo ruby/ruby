@@ -989,7 +989,7 @@ chdir_yield(VALUE v)
     dir_chdir(args->new_path);
     args->done = TRUE;
     chdir_blocking++;
-    if (chdir_thread == Qnil)
+    if (NIL_P(chdir_thread))
 	chdir_thread = rb_thread_current();
     return rb_yield(args->new_path);
 }
@@ -1429,7 +1429,7 @@ with_gvl_gc_for_fd(void *ptr)
 {
     int *e = ptr;
 
-    return (void *)(rb_gc_for_fd(*e) ? Qtrue : Qfalse);
+    return (void *)RBOOL(rb_gc_for_fd(*e));
 }
 
 static int
@@ -1438,7 +1438,7 @@ gc_for_fd_with_gvl(int e)
     if (vm_initialized)
 	return (int)(VALUE)rb_thread_call_with_gvl(with_gvl_gc_for_fd, &e);
     else
-	return rb_gc_for_fd(e) ? Qtrue : Qfalse;
+	return RBOOL(rb_gc_for_fd(e));
 }
 
 static void *

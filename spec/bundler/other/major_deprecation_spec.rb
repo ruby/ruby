@@ -92,6 +92,18 @@ RSpec.describe "major deprecations" do
     end
   end
 
+  describe "bundle exec --no-keep-file-descriptors" do
+    before do
+      bundle "exec --no-keep-file-descriptors -e 1", :raise_on_error => false
+    end
+
+    it "is deprecated", :bundler => "< 3" do
+      expect(deprecations).to include "The `--no-keep-file-descriptors` has been deprecated. `bundle exec` no longer mess with your file descriptors. Close them in the exec'd script if you need to"
+    end
+
+    pending "is removed and shows a helpful error message about it", :bundler => "3"
+  end
+
   describe "bundle update --quiet" do
     it "does not print any deprecations" do
       bundle :update, :quiet => true, :raise_on_error => false
@@ -333,7 +345,7 @@ RSpec.describe "major deprecations" do
     end
 
     it "should print a proper warning, and use gems.rb" do
-      create_file "gems.rb"
+      create_file "gems.rb", "source \"#{file_uri_for(gem_repo1)}\""
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
@@ -484,7 +496,7 @@ RSpec.describe "major deprecations" do
 
   context "when Bundler.setup is run in a ruby script" do
     before do
-      create_file "gems.rb"
+      create_file "gems.rb", "source \"#{file_uri_for(gem_repo1)}\""
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack", :group => :test
@@ -612,6 +624,25 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
     end
   end
 
+  context "bundle remove" do
+    before do
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      G
+    end
+
+    context "with --install" do
+      it "shows a deprecation warning", :bundler => "< 3" do
+        bundle "remove rack --install"
+
+        expect(err).to include "[DEPRECATED] The `--install` flag has been deprecated. `bundle install` is triggered by default."
+      end
+
+      pending "fails with a helpful message", :bundler => "3"
+    end
+  end
+
   context "bundle console" do
     before do
       bundle "console", :raise_on_error => false
@@ -629,12 +660,12 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
     before do
       graphviz_version = RUBY_VERSION >= "2.4" ? "1.2.5" : "1.2.4"
       realworld_system_gems "ruby-graphviz --version #{graphviz_version}"
-      create_file "gems.rb"
+      create_file "gems.rb", "source \"#{file_uri_for(gem_repo1)}\""
       bundle "viz"
     end
 
     it "prints a deprecation warning", :bundler => "< 3" do
-      expect(deprecations).to include "The `viz` command has been moved to the `bundle-viz` gem, see https://github.com/bundler/bundler-viz"
+      expect(deprecations).to include "The `viz` command has been moved to the `bundle-viz` gem, see https://github.com/rubygems/bundler-viz"
     end
 
     pending "fails with a helpful message", :bundler => "3"

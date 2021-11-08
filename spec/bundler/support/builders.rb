@@ -35,6 +35,11 @@ module Spec
       build_repo gem_repo1 do
         FileUtils.cp rake_path, "#{gem_repo1}/gems/"
 
+        build_gem "coffee-script-source"
+        build_gem "git"
+        build_gem "puma"
+        build_gem "minitest"
+
         build_gem "rack", %w[0.9.1 1.0.0] do |s|
           s.executables = "rackup"
           s.post_install_message = "Rack's post install message"
@@ -548,17 +553,8 @@ module Spec
         update_gemspec = options[:gemspec] || false
         source = options[:source] || "git@#{libpath}"
 
-        @context.git "checkout master", libpath
-
         if branch = options[:branch]
-          raise "You can't specify `master` as the branch" if branch == "master"
-          escaped_branch = Shellwords.shellescape(branch)
-
-          if @context.git("branch -l #{escaped_branch}", libpath).empty?
-            @context.git("branch #{escaped_branch}", libpath)
-          end
-
-          @context.git("checkout #{escaped_branch}", libpath)
+          @context.git("checkout -b #{Shellwords.shellescape(branch)}", libpath)
         elsif tag = options[:tag]
           @context.git("tag #{Shellwords.shellescape(tag)}", libpath)
         elsif options[:remote]
@@ -572,8 +568,7 @@ module Spec
           _default_files[path] += "\n#{Builders.constantize(name)}_PREV_REF = '#{current_ref}'"
         end
         super(options.merge(:path => libpath, :gemspec => update_gemspec, :source => source))
-        @context.git("add *", libpath)
-        @context.git("commit -m BUMP", libpath, :raise_on_error => false)
+        @context.git("commit -am BUMP", libpath)
       end
     end
 

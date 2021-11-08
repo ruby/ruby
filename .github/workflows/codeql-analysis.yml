@@ -2,7 +2,15 @@ name: "Code scanning - action"
 
 on:
   push:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
   pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
   schedule:
     - cron: '0 12 * * 4'
 
@@ -11,6 +19,9 @@ jobs:
 
     # CodeQL runs on ubuntu-latest and windows-latest
     runs-on: ubuntu-latest
+
+    env:
+      enable_install_doc: no
 
     steps:
     - name: Install libraries
@@ -21,8 +32,6 @@ jobs:
 
     - name: Checkout repository
       uses: actions/checkout@v2
-      with:
-        fetch-depth: 2
 
     - name: Remove an obsolete rubygems vendored file
       run: sudo rm /usr/lib/ruby/vendor_ruby/rubygems/defaults/operating_system.rb
@@ -30,8 +39,10 @@ jobs:
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v1
       with:
-        languages: cpp
         config-file: ./.github/codeql/codeql-config.yml
+
+    - name: Set ENV
+      run: echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
 
     - name: Autobuild
       uses: github/codeql-action/autobuild@v1

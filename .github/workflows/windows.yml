@@ -1,21 +1,48 @@
 name: Windows
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+
 jobs:
   make:
     strategy:
       matrix:
-        test_task: [check] # to make job names consistent
-        os: [windows-2019]
-        vs: [2019]
+        include:
+          - vs: 2019
+            os: windows-2019
+            vcvars: '"C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"'
+          # - vs: 2022
+          #   os: windows-2022
+          #   vcvars: '"C:\Program Files\Microsoft Visual Studio\2022\Preview\VC\Auxiliary\Build\vcvars64.bat"'
       fail-fast: false
     runs-on: ${{ matrix.os }}
+    name: VisualStudio ${{ matrix.vs }}
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
-      VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat
+      VCVARS: ${{ matrix.vcvars }}
       PATCH: C:\msys64\usr\bin\patch.exe
     steps:
       - run: md build
         working-directory:
+      - uses: msys2/setup-msys2@v2
+        id: setup-msys2
+        with:
+          update: true
+          install: >-
+            patch
+        if: ${{ matrix.os != 'windows-2019' }}
+      - name: patch path
+        shell: msys2 {0}
+        run: echo PATCH=$(cygpath -wa $(command -v patch)) >> $GITHUB_ENV
+        if: ${{ steps.setup-msys2.outcome == 'success' }}
       - uses: actions/cache@v2
         with:
           path: C:\vcpkg\downloads
@@ -49,50 +76,49 @@ jobs:
       - uses: actions/checkout@v2
         with:
           path: src
-      - name: Configure
+      - name: setup env
+        # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
+        # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
         run: |
-          call "%VCVARS%"
-          ../src/win32/configure.bat --disable-install-doc --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
-      - name: nmake
-        run: |
-          call "%VCVARS%"
-          set YACC=win_bison
-          echo on
-          nmake incs
-          nmake extract-extlibs
-          nmake
-      - name: nmake test
-        timeout-minutes: 5
-        run: |
-          call "%VCVARS%"
-          nmake test
-      - name: nmake test-all
-        timeout-minutes: 60
-        run: |
-          call "%VCVARS%"
-          ::- %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
-          ::- https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
+          set | C:\msys64\usr\bin\sort > old.env
+          call %VCVARS%
           set TMP=%USERPROFILE%\AppData\Local\Temp
           set TEMP=%USERPROFILE%\AppData\Local\Temp
-          nmake test-all
-      - name: nmake test-spec
-        timeout-minutes: 10
+          set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
+          set | C:\msys64\usr\bin\sort > new.env
+          C:\msys64\usr\bin\comm -13 old.env new.env >> %GITHUB_ENV%
+          del *.env
+      - name: Configure
         run: |
-          call "%VCVARS%"
-          nmake test-spec
+          ../src/win32/configure.bat --disable-install-doc --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
+      - run: nmake incs
+      - run: nmake extract-extlibs
+      - run: nmake
+        env:
+          YACC: win_bison
+      - run: nmake test
+        timeout-minutes: 5
+      - run: nmake test-all
+        env:
+          RUBY_TESTOPTS: -j${{env.TEST_JOBS}} --job-status=normal
+        timeout-minutes: 60
+        continue-on-error: ${{ matrix.continue-on-error || false }}
+      - run: nmake test-spec
+        timeout-minutes: 10
+        continue-on-error: ${{ matrix.continue-on-error || false }}
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |
             {
               "ci": "GitHub Actions",
-              "env": "${{ matrix.os }} / ${{ matrix.test_task }}",
+              "env": "VS${{ matrix.vs }} / ${{ matrix.test_task || 'check' }}",
               "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "commit": "${{ github.sha }}",
               "branch": "${{ github.ref }}".split('/').reverse()[0]
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: failure() && github.event_name == 'push'
+        if: ${{ failure() && github.event_name == 'push' }}
 
 defaults:
   run:

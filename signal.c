@@ -557,10 +557,13 @@ static int rb_sigaltstack_size_value = 0;
 void *
 rb_allocate_sigaltstack(void)
 {
+    void *altstack;
     if (!rb_sigaltstack_size_value) {
 	rb_sigaltstack_size_value = rb_sigaltstack_size();
     }
-    return xmalloc(rb_sigaltstack_size_value);
+    altstack = malloc(rb_sigaltstack_size_value);
+    if (!altstack) rb_memerror();
+    return altstack;
 }
 
 /* alternate stack for SIGSEGV */
@@ -878,12 +881,13 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
         (sp_page <= fault_page && fault_page <= bp_page)) {
 	rb_execution_context_t *ec = GET_EC();
 	int crit = FALSE;
-	if ((uintptr_t)ec->tag->buf / pagesize <= fault_page + 1) {
+	int uplevel = roomof(pagesize, sizeof(*ec->tag)) / 2; /* XXX: heuristic */
+	while ((uintptr_t)ec->tag->buf / pagesize <= fault_page + 1) {
 	    /* drop the last tag if it is close to the fault,
 	     * otherwise it can cause stack overflow again at the same
 	     * place. */
+	    if ((crit = (!ec->tag->prev || !--uplevel)) != FALSE) break;
 	    ec->tag = ec->tag->prev;
-	    crit = TRUE;
 	}
 	reset_sigmask(sig);
 	rb_ec_stack_overflow(ec, crit);
@@ -970,7 +974,7 @@ static void
 sigill(int sig SIGINFO_ARG)
 {
     check_reserved_signal("ILL");
-#if defined __APPLE__
+#if defined __APPLE__ || defined __linux__
     CHECK_STACK_OVERFLOW();
 #endif
     rb_bug_for_fatal_signal(default_sigill_handler, sig, SIGINFO_CTX, "Illegal instruction" MESSAGE_FAULT_ADDRESS);

@@ -77,13 +77,10 @@
 #include "ruby/st.h"
 #include "ruby_atomic.h"
 #include "vm_opts.h"
+#include "darray.h"
 
 #include "ruby/thread_native.h"
-#if   defined(_WIN32)
-#include "thread_win32.h"
-#elif defined(HAVE_PTHREAD_H)
-#include "thread_pthread.h"
-#endif
+#include THREAD_IMPL_H
 
 #define RUBY_VM_THREAD_MODEL 2
 
@@ -136,7 +133,7 @@
 void *rb_allocate_sigaltstack(void);
 void *rb_register_sigaltstack(void *);
 #  define RB_ALTSTACK_INIT(var, altstack) var = rb_register_sigaltstack(altstack)
-#  define RB_ALTSTACK_FREE(var) xfree(var)
+#  define RB_ALTSTACK_FREE(var) free(var)
 #  define RB_ALTSTACK(var)  var
 #else /* noop */
 #  define RB_ALTSTACK_INIT(var, altstack)
@@ -218,23 +215,59 @@ struct rb_control_frame_struct;
 /* iseq data type */
 typedef struct rb_compile_option_struct rb_compile_option_t;
 
+union ic_serial_entry {
+    rb_serial_t raw;
+    VALUE data[2];
+};
+
 // imemo_constcache
 struct iseq_inline_constant_cache_entry {
     VALUE flags;
 
     VALUE value;              // v0
-    rb_serial_t ic_serial;    // v1
-#if (SIZEOF_SERIAL_T < 2 * SIZEOF_VOIDP)
-    VALUE ic_padding;         // v2
-#endif
+    union ic_serial_entry ic_serial; // v1, v2
     const rb_cref_t *ic_cref; // v3
 };
 STATIC_ASSERT(sizeof_iseq_inline_constant_cache_entry,
               (offsetof(struct iseq_inline_constant_cache_entry, ic_cref) +
 	       sizeof(const rb_cref_t *)) <= sizeof(struct RObject));
 
+#if SIZEOF_SERIAL_T <= SIZEOF_VALUE
+
+#define GET_IC_SERIAL(ice) (ice)->ic_serial.raw
+#define SET_IC_SERIAL(ice, v) (ice)->ic_serial.raw = (v)
+
+#else
+
+static inline rb_serial_t
+get_ic_serial(const struct iseq_inline_constant_cache_entry *ice)
+{
+    union ic_serial_entry tmp;
+    tmp.data[0] = ice->ic_serial.data[0];
+    tmp.data[1] = ice->ic_serial.data[1];
+    return tmp.raw;
+}
+
+#define GET_IC_SERIAL(ice) get_ic_serial(ice)
+
+static inline void
+set_ic_serial(struct iseq_inline_constant_cache_entry *ice, rb_serial_t v)
+{
+    union ic_serial_entry tmp;
+    tmp.raw = v;
+    ice->ic_serial.data[0] = tmp.data[0];
+    ice->ic_serial.data[1] = tmp.data[1];
+}
+
+#define SET_IC_SERIAL(ice, v) set_ic_serial((ice), (v))
+
+#endif
+
 struct iseq_inline_constant_cache {
     struct iseq_inline_constant_cache_entry *entry;
+    // For YJIT: the index to the opt_getinlinecache instruction in the same iseq.
+    // It's set during compile time and constant once set.
+    unsigned get_insn_idx;
 };
 
 struct iseq_inline_iv_cache_entry {
@@ -310,6 +343,10 @@ pathobj_realpath(VALUE pathobj)
 
 /* Forward declarations */
 struct rb_mjit_unit;
+
+// List of YJIT block versions
+typedef rb_darray(struct yjit_block_version *) rb_yjit_block_array_t;
+typedef rb_darray(rb_yjit_block_array_t) rb_yjit_block_array_array_t;
 
 struct rb_iseq_constant_body {
     enum iseq_type {
@@ -425,6 +462,7 @@ struct rb_iseq_constant_body {
 
     struct {
 	rb_snum_t flip_count;
+        VALUE script_lines;
 	VALUE coverage;
         VALUE pc2branchindex;
 	VALUE *original_iseq;
@@ -438,6 +476,8 @@ struct rb_iseq_constant_body {
     char catch_except_p; /* If a frame of this ISeq may catch exception, set TRUE */
     // If true, this ISeq is leaf *and* backtraces are not used, for example,
     // by rb_profile_frames. We verify only leafness on VM_CHECK_MODE though.
+    // Note that GC allocations might use backtraces due to
+    // ObjectSpace#trace_object_allocations.
     // For more details, see: https://bugs.ruby-lang.org/issues/16956
     bool builtin_inline_p;
     struct rb_id_table *outer_variables;
@@ -449,6 +489,8 @@ struct rb_iseq_constant_body {
     long unsigned total_calls; /* number of total calls with `mjit_exec()` */
     struct rb_mjit_unit *jit_unit;
 #endif
+
+    rb_yjit_block_array_array_t yjit_blocks; // empty, or has a size equal to iseq_size
 };
 
 /* T_IMEMO/iseq */
@@ -631,6 +673,7 @@ typedef struct rb_vm_struct {
     VALUE expanded_load_path;
     VALUE loaded_features;
     VALUE loaded_features_snapshot;
+    VALUE loaded_features_realpaths;
     struct st_table *loaded_features_index;
     struct st_table *loading_table;
 
@@ -653,7 +696,7 @@ typedef struct rb_vm_struct {
     rb_nativethread_lock_t workqueue_lock;
 
     VALUE orig_progname, progname;
-    VALUE coverages;
+    VALUE coverages, me2counter;
     int coverage_mode;
 
     st_table * defined_module_hash;
@@ -789,6 +832,8 @@ typedef struct rb_control_frame_struct {
 #if VM_DEBUG_BP_CHECK
     VALUE *bp_check;		/* cfp[7] */
 #endif
+    // Return address for YJIT code
+    void *jit_return;
 } rb_control_frame_t;
 
 extern const rb_data_type_t ruby_threadptr_data_type;
@@ -1023,7 +1068,6 @@ typedef struct rb_thread_struct {
 
     /* fiber */
     rb_fiber_t *root_fiber;
-    rb_jmpbuf_t root_jmpbuf;
 
     VALUE scheduler;
     unsigned blocking;
@@ -1352,6 +1396,7 @@ vm_assert_env(VALUE obj)
 }
 #endif
 
+RBIMPL_ATTR_NONNULL((1))
 static inline VALUE
 VM_ENV_ENVVAL(const VALUE *ep)
 {
@@ -1361,6 +1406,7 @@ VM_ENV_ENVVAL(const VALUE *ep)
     return envval;
 }
 
+RBIMPL_ATTR_NONNULL((1))
 static inline const rb_env_t *
 VM_ENV_ENVVAL_PTR(const VALUE *ep)
 {
@@ -1662,6 +1708,7 @@ extern void rb_vmdebug_debug_print_post(const rb_execution_context_t *ec, const 
 #define SDR2(cfp) rb_vmdebug_stack_dump_raw(GET_EC(), (cfp))
 void rb_vm_bugreport(const void *);
 typedef void (*ruby_sighandler_t)(int);
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 4, 5)
 NORETURN(void rb_bug_for_fatal_signal(ruby_sighandler_t default_sighandler, int sig, const void *, const char *fmt, ...));
 
 /* functions about thread/vm execution */
@@ -2042,6 +2089,8 @@ extern VALUE rb_get_coverages(void);
 extern void rb_set_coverages(VALUE, int, VALUE);
 extern void rb_clear_coverages(void);
 extern void rb_reset_coverages(void);
+extern void rb_resume_coverages(void);
+extern void rb_suspend_coverages(void);
 
 void rb_postponed_job_flush(rb_vm_t *vm);
 

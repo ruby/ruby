@@ -64,9 +64,11 @@
 #
 # ## What's Here
 #
-# First, what's elsewhere. \Set includes the module
-# {Enumerable}[rdoc-ref:Enumerable],
-# which provides dozens of additional methods.
+#  First, what's elsewhere. \Class \Set:
+#
+# - Inherits from {class Object}[https://docs.ruby-lang.org/en/master/Object.html#class-Object-label-What-27s+Here].
+# - Includes {module Enumerable}[https://docs.ruby-lang.org/en/master/Enumerable.html#module-Enumerable-label-What-27s+Here],
+#   which provides dozens of additional methods.
 #
 # In particular, class \Set does not have many methods of its own
 # for fetching or for iterating.
@@ -468,25 +470,35 @@ class Set
     end
   end
 
-  # Returns true if the set and the given set have at least one
+  # Returns true if the set and the given enumerable have at least one
   # element in common.
   #
   #     Set[1, 2, 3].intersect? Set[4, 5]   #=> false
   #     Set[1, 2, 3].intersect? Set[3, 4]   #=> true
+  #     Set[1, 2, 3].intersect? 4..5        #=> false
+  #     Set[1, 2, 3].intersect? [3, 4]      #=> true
   def intersect?(set)
-    set.is_a?(Set) or raise ArgumentError, "value must be a set"
-    if size < set.size
-      any? { |o| set.include?(o) }
-    else
+    case set
+    when Set
+      if size < set.size
+        any? { |o| set.include?(o) }
+      else
+        set.any? { |o| include?(o) }
+      end
+    when Enumerable
       set.any? { |o| include?(o) }
+    else
+      raise ArgumentError, "value must be enumerable"
     end
   end
 
-  # Returns true if the set and the given set have no element in
-  # common.  This method is the opposite of `intersect?`.
+  # Returns true if the set and the given enumerable have
+  # no element in common.  This method is the opposite of `intersect?`.
   #
   #     Set[1, 2, 3].disjoint? Set[3, 4]   #=> false
   #     Set[1, 2, 3].disjoint? Set[4, 5]   #=> true
+  #     Set[1, 2, 3].disjoint? [3, 4]      #=> false
+  #     Set[1, 2, 3].disjoint? 4..5        #=> true
   def disjoint?(set)
     !intersect?(set)
   end
@@ -822,13 +834,14 @@ class Set
   alias to_s inspect
 
   def pretty_print(pp)  # :nodoc:
-    pp.text sprintf('#<%s: {', self.class.name)
-    pp.nest(1) {
-      pp.seplist(self) { |o|
-        pp.pp o
+    pp.group(1, sprintf('#<%s:', self.class.name), '>') {
+      pp.breakable
+      pp.group(1, '{', '}') {
+        pp.seplist(self) { |o|
+          pp.pp o
+        }
       }
     }
-    pp.text "}>"
   end
 
   def pretty_print_cycle(pp)    # :nodoc:

@@ -326,7 +326,7 @@ module Fiddle
 
     def test_signature_variadic_arguments
       unless Fiddle.const_defined?("TYPE_VARIADIC")
-        skip "libffi doesn't support variadic arguments"
+        omit "libffi doesn't support variadic arguments"
       end
       assert_equal([
                      "printf",

@@ -50,6 +50,7 @@ class Reline::Config
     @additional_key_bindings[:emacs] = {}
     @additional_key_bindings[:vi_insert] = {}
     @additional_key_bindings[:vi_command] = {}
+    @oneshot_key_bindings = {}
     @skip_section = nil
     @if_stack = nil
     @editing_mode_label = :emacs
@@ -65,6 +66,7 @@ class Reline::Config
     @history_size = -1 # unlimited
     @keyseq_timeout = 500
     @test_mode = false
+    @autocompletion = false
   end
 
   def reset
@@ -74,6 +76,7 @@ class Reline::Config
     @additional_key_bindings.keys.each do |key|
       @additional_key_bindings[key].clear
     end
+    @oneshot_key_bindings.clear
     reset_default_key_bindings
   end
 
@@ -87,6 +90,14 @@ class Reline::Config
 
   def editing_mode_is?(*val)
     (val.respond_to?(:any?) ? val : [val]).any?(@editing_mode_label)
+  end
+
+  def autocompletion=(val)
+    @autocompletion = val
+  end
+
+  def autocompletion
+    @autocompletion
   end
 
   def keymap
@@ -119,8 +130,12 @@ class Reline::Config
     return home_rc_path
   end
 
+  private def default_inputrc_path
+    @default_inputrc_path ||= inputrc_path
+  end
+
   def read(file = nil)
-    file ||= inputrc_path
+    file ||= default_inputrc_path
     begin
       if file.respond_to?(:readlines)
         lines = file.readlines
@@ -139,8 +154,19 @@ class Reline::Config
   end
 
   def key_bindings
-    # override @key_actors[@editing_mode_label].default_key_bindings with @additional_key_bindings[@editing_mode_label]
-    @key_actors[@editing_mode_label].default_key_bindings.merge(@additional_key_bindings[@editing_mode_label])
+    # The key bindings for each editing mode will be overwritten by the user-defined ones.
+    kb = @key_actors[@editing_mode_label].default_key_bindings.dup
+    kb.merge!(@additional_key_bindings[@editing_mode_label])
+    kb.merge!(@oneshot_key_bindings)
+    kb
+  end
+
+  def add_oneshot_key_binding(keystroke, target)
+    @oneshot_key_bindings[keystroke] = target
+  end
+
+  def reset_oneshot_key_bindings
+    @oneshot_key_bindings.clear
   end
 
   def add_default_key_binding_by_keymap(keymap, keystroke, target)
@@ -158,7 +184,7 @@ class Reline::Config
   end
 
   def read_lines(lines, file = nil)
-    if lines.first.encoding != Reline.encoding_system_needs
+    if not lines.empty? and lines.first.encoding != Reline.encoding_system_needs
       begin
         lines = lines.map do |l|
           l.encode(Reline.encoding_system_needs)

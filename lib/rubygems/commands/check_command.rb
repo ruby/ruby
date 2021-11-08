@@ -1,8 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/version_option'
-require 'rubygems/validator'
-require 'rubygems/doctor'
+require_relative '../command'
+require_relative '../version_option'
+require_relative '../validator'
+require_relative '../doctor'
 
 class Gem::Commands::CheckCommand < Gem::Command
   include Gem::VersionOption

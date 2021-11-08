@@ -105,6 +105,16 @@ PREP
 CODE
   end
 
+  # Bug #18154
+  def test_initialize_nofree_memory_leak
+    assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
+code = proc {0.to_s.__send__(:initialize, capacity: 10000)}
+1_000.times(&code)
+PREP
+100_000.times(&code)
+CODE
+  end
+
   def test_AREF # '[]'
     assert_equal("A",  S("AooBar")[0])
     assert_equal("B",  S("FooBaB")[-1])
@@ -1170,6 +1180,8 @@ CODE
     assert_send([S("hello"), :end_with?, S("llo")])
     assert_not_send([S("hello"), :end_with?, S("ll")])
     assert_send([S("hello"), :end_with?, S("el"), S("lo")])
+    assert_send([S("hello"), :end_with?, S("")])
+    assert_not_send([S("hello"), :end_with?])
 
     bug5536 = '[ruby-core:40623]'
     assert_raise(TypeError, bug5536) {S("str").end_with? :not_convertible_to_string}

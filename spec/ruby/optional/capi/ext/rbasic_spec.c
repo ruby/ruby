@@ -6,9 +6,11 @@ extern "C" {
 #endif
 
 #ifndef FL_SHAREABLE
-static const VALUE VISIBLE_BITS = FL_TAINT | FL_FREEZE | ~(FL_USER0 - 1);
+static const VALUE VISIBLE_BITS = FL_TAINT | FL_FREEZE;
+static const VALUE DATA_VISIBLE_BITS = FL_TAINT | FL_FREEZE | ~(FL_USER0 - 1);
 #else
-static const VALUE VISIBLE_BITS = FL_FREEZE | ~(FL_USER0 - 1);
+static const VALUE VISIBLE_BITS = FL_FREEZE;
+static const VALUE DATA_VISIBLE_BITS = FL_FREEZE | ~(FL_USER0 - 1);
 #endif
 
 #if SIZEOF_VALUE == SIZEOF_LONG
@@ -32,27 +34,27 @@ VALUE rbasic_spec_freeze_flag(VALUE self) {
   return VALUE2NUM(RUBY_FL_FREEZE);
 }
 
-static VALUE spec_get_flags(const struct RBasic *b) {
-  VALUE flags = b->flags & VISIBLE_BITS;
+    static VALUE spec_get_flags(const struct RBasic *b, VALUE visible_bits) {
+  VALUE flags = b->flags & visible_bits;
   return VALUE2NUM(flags);
 }
 
-static VALUE spec_set_flags(struct RBasic *b, VALUE flags) {
-  flags &= VISIBLE_BITS;
-  b->flags = (b->flags & ~VISIBLE_BITS) | flags;
+static VALUE spec_set_flags(struct RBasic *b, VALUE flags, VALUE visible_bits) {
+  flags &= visible_bits;
+  b->flags = (b->flags & ~visible_bits) | flags;
   return VALUE2NUM(flags);
 }
 
 VALUE rbasic_spec_get_flags(VALUE self, VALUE val) {
-  return spec_get_flags(RBASIC(val));
+  return spec_get_flags(RBASIC(val), VISIBLE_BITS);
 }
 
 VALUE rbasic_spec_set_flags(VALUE self, VALUE val, VALUE flags) {
-  return spec_set_flags(RBASIC(val), NUM2VALUE(flags));
+  return spec_set_flags(RBASIC(val), NUM2VALUE(flags), VISIBLE_BITS);
 }
 
 VALUE rbasic_spec_copy_flags(VALUE self, VALUE to, VALUE from) {
-  return spec_set_flags(RBASIC(to), RBASIC(from)->flags);
+  return spec_set_flags(RBASIC(to), RBASIC(from)->flags, VISIBLE_BITS);
 }
 
 VALUE rbasic_spec_get_klass(VALUE self, VALUE val) {
@@ -60,15 +62,15 @@ VALUE rbasic_spec_get_klass(VALUE self, VALUE val) {
 }
 
 VALUE rbasic_rdata_spec_get_flags(VALUE self, VALUE structure) {
-  return spec_get_flags(&RDATA(structure)->basic);
+  return spec_get_flags(&RDATA(structure)->basic, DATA_VISIBLE_BITS);
 }
 
 VALUE rbasic_rdata_spec_set_flags(VALUE self, VALUE structure, VALUE flags) {
-  return spec_set_flags(&RDATA(structure)->basic, NUM2VALUE(flags));
+  return spec_set_flags(&RDATA(structure)->basic, NUM2VALUE(flags), DATA_VISIBLE_BITS);
 }
 
 VALUE rbasic_rdata_spec_copy_flags(VALUE self, VALUE to, VALUE from) {
-  return spec_set_flags(&RDATA(to)->basic, RDATA(from)->basic.flags);
+  return spec_set_flags(&RDATA(to)->basic, RDATA(from)->basic.flags, DATA_VISIBLE_BITS);
 }
 
 VALUE rbasic_rdata_spec_get_klass(VALUE self, VALUE structure) {

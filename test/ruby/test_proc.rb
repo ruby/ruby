@@ -1597,18 +1597,24 @@ class TestProc < Test::Unit::TestCase
   def test_isolate
     assert_raise_with_message ArgumentError, /\(a\)/ do
       a = :a
-      Proc.new{p a}.isolate.call
+      Proc.new{p a}.isolate
     end
 
     assert_raise_with_message ArgumentError, /\(a\)/ do
       a = :a
       1.times{
-        Proc.new{p a}.isolate.call
+        Proc.new{p a}.isolate
       }
     end
 
     assert_raise_with_message ArgumentError, /yield/ do
-      Proc.new{yield}.isolate.call
+      Proc.new{yield}.isolate
+    end
+
+
+    name = "\u{2603 26a1}"
+    assert_raise_with_message(ArgumentError, /\(#{name}\)/) do
+      eval("#{name} = :#{name}; Proc.new {p #{name}}").isolate
     end
 
     # binding

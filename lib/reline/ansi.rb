@@ -37,6 +37,7 @@ class Reline::ANSI
       # default bindings
       [27, 32] => :em_set_mark,             # M-<space>
       [24, 24] => :em_exchange_mark,        # C-x C-x
+      [27, 91, 90] => :completion_journey_up, # S-Tab
     }.each_pair do |key, func|
       config.add_default_key_binding_by_keymap(:emacs, key, func)
     end
@@ -125,8 +126,8 @@ class Reline::ANSI
     unless @@buf.empty?
       return @@buf.shift
     end
-    until c = @@input.raw(intr: true, &:getbyte)
-      sleep 0.1
+    until c = @@input.raw(intr: true) { select([@@input], [], [], 0.1) && @@input.getbyte }
+      Reline.core.line_editor.resize
     end
     (c == 0x16 && @@input.raw(min: 0, tim: 0, &:getbyte)) || c
   rescue Errno::EIO
@@ -274,6 +275,22 @@ class Reline::ANSI
     end
   end
 
+  def self.hide_cursor
+    if Reline::Terminfo.enabled?
+      @@output.write Reline::Terminfo.tigetstr('civis')
+    else
+      # ignored
+    end
+  end
+
+  def self.show_cursor
+    if Reline::Terminfo.enabled?
+      @@output.write Reline::Terminfo.tigetstr('cnorm')
+    else
+      # ignored
+    end
+  end
+
   def self.erase_after_cursor
     @@output.write "\e[K"
   end
@@ -295,8 +312,6 @@ class Reline::ANSI
 
   def self.prep
     retrieve_keybuffer
-    int_handle = Signal.trap('INT', 'IGNORE')
-    Signal.trap('INT', int_handle)
     nil
   end
 

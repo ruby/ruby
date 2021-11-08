@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/user_interaction'
+require_relative '../user_interaction'
 
 ##
 # A Gem::Security::Policy object encapsulates the settings for verifying
@@ -115,9 +115,11 @@ class Gem::Security::Policy
       raise Gem::Security::Exception, 'missing key or signature'
     end
 
+    public_key = Gem::Security.get_public_key(key)
+
     raise Gem::Security::Exception,
       "certificate #{signer.subject} does not match the signing key" unless
-        signer.public_key.to_pem == key.public_key.to_pem
+        signer.public_key.to_pem == public_key.to_pem
 
     true
   end
@@ -164,9 +166,9 @@ class Gem::Security::Policy
     end
 
     save_cert = OpenSSL::X509::Certificate.new File.read path
-    save_dgst = digester.digest save_cert.public_key.to_s
+    save_dgst = digester.digest save_cert.public_key.to_pem
 
-    pkey_str = root.public_key.to_s
+    pkey_str = root.public_key.to_pem
     cert_dgst = digester.digest pkey_str
 
     raise Gem::Security::Exception,

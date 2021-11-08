@@ -1067,6 +1067,31 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_equal x, e
   end
 
+  def test_redact_credentials_from_uri_on_warning
+    spec_fetcher do |fetcher|
+      fetcher.download 'a', 2
+    end
+
+    Gem.sources << "http://username:SECURE_TOKEN@nonexistent.example"
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal %w[a-2], @cmd.installed_specs.map {|spec| spec.full_name }
+
+    assert_match "1 gem installed", @ui.output
+
+    e = @ui.error
+
+    x = "WARNING:  Unable to pull data from 'http://username:REDACTED@nonexistent.example': no data for http://username:REDACTED@nonexistent.example/specs.4.8.gz (http://username:REDACTED@nonexistent.example/specs.4.8.gz)\n"
+    assert_equal x, e
+  end
+
   def test_execute_uses_from_a_gemdeps
     spec_fetcher do |fetcher|
       fetcher.gem 'a', 2

@@ -135,16 +135,18 @@ def ruby_exe(code = :not_given, opts = {})
     code = tmpfile
   end
 
-  expected_exit_status = opts.fetch(:exit_status, 0)
+  expected_status = opts.fetch(:exit_status, 0)
 
   begin
     platform_is_not :opal do
       command = ruby_cmd(code, opts)
       output = `#{command}`
 
-      last_status = Process.last_status
-      if last_status.exitstatus != expected_exit_status
-        raise "Expected exit status is #{expected_exit_status.inspect} but actual is #{last_status.exitstatus.inspect} for command ruby_exe(#{command.inspect})"
+      exit_status = Process.last_status.exitstatus
+      if exit_status != expected_status
+        formatted_output = output.lines.map { |line| "  #{line}" }.join
+        raise SpecExpectationNotMetError,
+          "Expected exit status is #{expected_status.inspect} but actual is #{exit_status.inspect} for command ruby_exe(#{command.inspect})\nOutput:\n#{formatted_output}"
       end
 
       output

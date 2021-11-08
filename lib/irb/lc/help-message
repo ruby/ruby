@@ -20,8 +20,15 @@ Usage:  irb.rb [options] [programfile] [arguments]
   -W[level=2]       Same as `ruby -W`
   --context-mode n  Set n[0-4] to method to create Binding Object,
                     when new workspace was created
-  --echo            Show result(default)
+  --extra-doc-dir   Add an extra doc dir for the doc dialog
+  --echo            Show result (default)
   --noecho          Don't show result
+  --echo-on-assignment
+                    Show result on assignment
+  --noecho-on-assignment
+                    Don't show result on assignment
+  --truncate-echo-on-assignment
+                    Show truncated result on assignment (default)
   --inspect         Use `inspect' for output
   --noinspect       Don't use inspect for output
   --multiline       Use multiline editor module
@@ -30,6 +37,8 @@ Usage:  irb.rb [options] [programfile] [arguments]
   --nosingleline    Don't use singleline editor module
   --colorize        Use colorization
   --nocolorize      Don't use colorization
+  --autocomplete    Use autocompletion
+  --noautocomplete  Don't use autocompletion
   --prompt prompt-mode/--prompt-mode prompt-mode
                     Switch prompt mode. Pre-defined prompt modes are
                     `default', `simple', `xmp' and `inf-ruby'

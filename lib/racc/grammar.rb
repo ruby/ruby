@@ -335,14 +335,14 @@ module Racc
         if action
           idbase = "#{type}@#{id}-#{@seqs[type] += 1}"
           target = _wrap(idbase, "#{idbase}-core", action)
-          _regist("#{idbase}-core", &block)
+          _register("#{idbase}-core", &block)
         else
-          target = _regist("#{type}@#{id}", &block)
+          target = _register("#{type}@#{id}", &block)
         end
         @grammar.intern(target)
       end
 
-      def _regist(target_name)
+      def _register(target_name)
         target = target_name.intern
         unless _added?(@grammar.intern(target))
           yield(target).each_rule do |rule|

@@ -9,7 +9,10 @@ module Gem
     Gem.ruby = ENV["RUBY"]
   end
 
-  @default_dir = ENV["BUNDLER_GEM_DEFAULT_DIR"] if ENV["BUNDLER_GEM_DEFAULT_DIR"]
+  if ENV["BUNDLER_GEM_DEFAULT_DIR"]
+    @default_dir = ENV["BUNDLER_GEM_DEFAULT_DIR"]
+    @default_specifications_dir = nil
+  end
 
   if ENV["BUNDLER_SPEC_PLATFORM"]
     class Platform
@@ -26,6 +29,10 @@ module Gem
         end
       end
     end
+  end
+
+  if ENV["BUNDLER_SPEC_GEM_SOURCES"]
+    @sources = [ENV["BUNDLER_SPEC_GEM_SOURCES"]]
   end
 
   # We only need this hack for rubygems versions without the BundlerVersionFinder

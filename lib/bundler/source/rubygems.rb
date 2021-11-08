@@ -29,6 +29,7 @@ module Bundler
       def local_only!
         @specs = nil
         @allow_local = true
+        @allow_cached = false
         @allow_remote = false
       end
 
@@ -50,6 +51,7 @@ module Bundler
         return if @allow_cached
 
         @specs = nil
+        @allow_local = true
         @allow_cached = true
       end
 
@@ -69,6 +71,10 @@ module Bundler
 
       def multiple_remotes?
         @remotes.size > 1
+      end
+
+      def no_remotes?
+        @remotes.size == 0
       end
 
       def can_lock?(spec)
@@ -92,11 +98,22 @@ module Bundler
         out << "  specs:\n"
       end
 
+      def to_err
+        if remotes.empty?
+          "locally installed gems"
+        elsif @allow_remote
+          "rubygems repository #{remote_names} or installed locally"
+        elsif @allow_cached
+          "cached gems from rubygems repository #{remote_names} or installed locally"
+        else
+          "locally installed gems"
+        end
+      end
+
       def to_s
         if remotes.empty?
           "locally installed gems"
         else
-          remote_names = remotes.map(&:to_s).join(", ")
           "rubygems repository #{remote_names} or installed locally"
         end
       end
@@ -118,7 +135,7 @@ module Bundler
         force = opts[:force]
         ensure_builtin_gems_cached = opts[:ensure_builtin_gems_cached]
 
-        if ensure_builtin_gems_cached && builtin_gem?(spec)
+        if ensure_builtin_gems_cached && spec.default_gem?
           if !cached_path(spec)
             cached_built_in_gem(spec) unless spec.remote
             force = true
@@ -127,7 +144,7 @@ module Bundler
           end
         end
 
-        if (installed?(spec) || Plugin.installed?(spec.name)) && !force
+        if installed?(spec) && !force
           print_using_message "Using #{version_message(spec)}"
           return nil # no post-install message
         end
@@ -145,7 +162,7 @@ module Bundler
           begin
             s = Bundler.rubygems.spec_from_gem(path, Bundler.settings["trust-policy"])
             spec.__swap__(s)
-          rescue StandardError
+          rescue Gem::Package::FormatError
             Bundler.rm_rf(path)
             raise
           end
@@ -157,6 +174,7 @@ module Bundler
           Bundler.ui.confirm message
 
           path = cached_gem(spec)
+          raise GemNotFound, "Could not find #{spec.file_name} for installation" unless path
           if requires_sudo?
             install_path = Bundler.tmp(spec.full_name)
             bin_path     = install_path.join("bin")
@@ -216,12 +234,8 @@ module Bundler
       end
 
       def cache(spec, custom_path = nil)
-        if builtin_gem?(spec)
-          cached_path = cached_built_in_gem(spec)
-        else
-          cached_path = cached_gem(spec)
-        end
-        raise GemNotFound, "Missing gem file '#{spec.full_name}.gem'." unless cached_path
+        cached_path = cached_gem(spec)
+        raise GemNotFound, "Missing gem file '#{spec.file_name}'." unless cached_path
         return if File.dirname(cached_path) == Bundler.app_cache.to_s
         Bundler.ui.info "  * #{File.basename(cached_path)}"
         FileUtils.cp(cached_path, Bundler.app_cache(custom_path))
@@ -315,6 +329,10 @@ module Bundler
 
       protected
 
+      def remote_names
+        remotes.map(&:to_s).join(", ")
+      end
+
       def credless_remotes
         remotes.map(&method(:suppress_configured_credentials))
       end
@@ -331,14 +349,17 @@ module Bundler
       end
 
       def cached_gem(spec)
-        cached_gem = cached_path(spec)
-        unless cached_gem
-          raise Bundler::GemNotFound, "Could not find #{spec.file_name} for installation"
+        if spec.default_gem?
+          cached_built_in_gem(spec)
+        else
+          cached_path(spec)
         end
-        cached_gem
       end
 
       def cached_path(spec)
+        global_cache_path = download_cache_path(spec)
+        @caches << global_cache_path if global_cache_path
+
         possibilities = @caches.map {|p| "#{p}/#{spec.file_name}" }
         possibilities.find {|p| File.exist?(p) }
       end
@@ -438,19 +459,26 @@ module Bundler
 
         spec.fetch_platform
 
-        download_path = requires_sudo? ? Bundler.tmp(spec.full_name) : rubygems_dir
-        gem_path = "#{rubygems_dir}/cache/#{spec.full_name}.gem"
-
-        SharedHelpers.filesystem_access("#{download_path}/cache") do |p|
-          FileUtils.mkdir_p(p)
-        end
-        download_gem(spec, download_path)
+        cache_path = download_cache_path(spec) || default_cache_path_for(rubygems_dir)
+        gem_path = "#{cache_path}/#{spec.file_name}"
 
         if requires_sudo?
-          SharedHelpers.filesystem_access("#{rubygems_dir}/cache") do |p|
+          download_path = Bundler.tmp(spec.full_name)
+          download_cache_path = default_cache_path_for(download_path)
+        else
+          download_cache_path = cache_path
+        end
+
+        SharedHelpers.filesystem_access(download_cache_path) do |p|
+          FileUtils.mkdir_p(p)
+        end
+        download_gem(spec, download_cache_path)
+
+        if requires_sudo?
+          SharedHelpers.filesystem_access(cache_path) do |p|
             Bundler.mkdir_p(p)
           end
-          Bundler.sudo "mv #{download_path}/cache/#{spec.full_name}.gem #{gem_path}"
+          Bundler.sudo "mv #{download_cache_path}/#{spec.file_name} #{gem_path}"
         end
 
         gem_path
@@ -458,16 +486,8 @@ module Bundler
         Bundler.rm_rf(download_path) if requires_sudo?
       end
 
-      def builtin_gem?(spec)
-        # Ruby 2.1, where all included gems have this summary
-        return true if spec.summary =~ /is bundled with Ruby/
-
-        # Ruby 2.0, where gemspecs are stored in specifications/default/
-        spec.loaded_from && spec.loaded_from.include?("specifications/default/")
-      end
-
       def installed?(spec)
-        installed_specs[spec].any?
+        installed_specs[spec].any? && !spec.deleted_gem?
       end
 
       def requires_sudo?
@@ -476,6 +496,10 @@ module Bundler
 
       def rubygems_dir
         Bundler.rubygems.gem_dir
+      end
+
+      def default_cache_path_for(dir)
+        "#{dir}/cache"
       end
 
       def cache_path
@@ -490,52 +514,13 @@ module Bundler
       # @param  [Specification] spec
       #         the spec we want to download or retrieve from the cache.
       #
-      # @param  [String] download_path
+      # @param  [String] download_cache_path
       #         the local directory the .gem will end up in.
       #
-      def download_gem(spec, download_path)
-        local_path = File.join(download_path, "cache/#{spec.full_name}.gem")
-
-        if (cache_path = download_cache_path(spec)) && cache_path.file?
-          SharedHelpers.filesystem_access(local_path) do
-            FileUtils.cp(cache_path, local_path)
-          end
-        else
-          uri = spec.remote.uri
-          Bundler.ui.confirm("Fetching #{version_message(spec)}")
-          rubygems_local_path = Bundler.rubygems.download_gem(spec, uri, download_path)
-
-          # older rubygems return varying file:// variants depending on version
-          rubygems_local_path = rubygems_local_path.gsub(/\Afile:/, "") unless Bundler.rubygems.provides?(">= 3.2.0.rc.2")
-          rubygems_local_path = rubygems_local_path.gsub(%r{\A//}, "") if Bundler.rubygems.provides?("< 3.1.0")
-
-          if rubygems_local_path != local_path
-            SharedHelpers.filesystem_access(local_path) do
-              FileUtils.mv(rubygems_local_path, local_path)
-            end
-          end
-          cache_globally(spec, local_path)
-        end
-      end
-
-      # Checks if the requested spec exists in the global cache. If it does
-      # not, we create the relevant global cache subdirectory if it does not
-      # exist and copy the spec from the local cache to the global cache.
-      #
-      # @param  [Specification] spec
-      #         the spec we want to copy to the global cache.
-      #
-      # @param  [String] local_cache_path
-      #         the local directory from which we want to copy the .gem.
-      #
-      def cache_globally(spec, local_cache_path)
-        return unless cache_path = download_cache_path(spec)
-        return if cache_path.exist?
-
-        SharedHelpers.filesystem_access(cache_path.dirname, &:mkpath)
-        SharedHelpers.filesystem_access(cache_path) do
-          FileUtils.cp(local_cache_path, cache_path)
-        end
+      def download_gem(spec, download_cache_path)
+        uri = spec.remote.uri
+        Bundler.ui.confirm("Fetching #{version_message(spec)}")
+        Bundler.rubygems.download_gem(spec, uri, download_cache_path)
       end
 
       # Returns the global cache path of the calling Rubygems::Source object.
@@ -554,7 +539,7 @@ module Bundler
         return unless remote = spec.remote
         return unless cache_slug = remote.cache_slug
 
-        Bundler.user_cache.join("gems", cache_slug, spec.file_name)
+        Bundler.user_cache.join("gems", cache_slug)
       end
 
       def extension_cache_slug(spec)

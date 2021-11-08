@@ -72,22 +72,29 @@
 #include "ruby/backward/2/assume.h"
 #include "ruby/backward/2/attributes.h"
 #include "ruby/backward/2/bool.h"
-#include "ruby/backward/2/gcc_version_since.h"
 #include "ruby/backward/2/long_long.h"
 #include "ruby/backward/2/stdalign.h"
 #include "ruby/backward/2/stdarg.h"
 #include "ruby/internal/dosish.h"
 #include "ruby/missing.h"
 
+/**
+ * Asserts that the compilation unit includes  Ruby's CAPI.  This has been here
+ * since the very beginning (at least since version 0.49).
+ */
 #define RUBY
 
 #ifdef __GNUC__
+# /** This is expanded to nothing for non-GCC compilers. */
 # define RB_GNUC_EXTENSION __extension__
+# /** This is expanded to the passed token for non-GCC compilers. */
 # define RB_GNUC_EXTENSION_BLOCK(x) __extension__ ({ x; })
 #else
 # define RB_GNUC_EXTENSION
 # define RB_GNUC_EXTENSION_BLOCK(x) (x)
 #endif
+
+/** @cond INTERNAL_MACRO */
 
 /* :FIXME:  Can someone  tell us  why is  this macro  defined here?   @shyouhei
  * thinks this  is a  truly internal  macro but cannot  move around  because he
@@ -105,5 +112,5 @@ RBIMPL_SYMBOL_EXPORT_END()
 #else
 # define FLUSH_REGISTER_WINDOWS ((void)0)
 #endif
-
+/** @endcond */
 #endif /* RUBY_DEFINES_H */

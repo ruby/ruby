@@ -42,9 +42,10 @@
 # include <winsock2.h>
 # include <windows.h>
 # include <wincrypt.h>
+# include <bcrypt.h>
 #endif
 
-#if defined(__OpenBSD__) || defined(__FreeBSD__)
+#if defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__)
 /* to define OpenBSD and FreeBSD for version check */
 # include <sys/param.h>
 #endif
@@ -259,14 +260,7 @@ const rb_data_type_t rb_random_data_type = {
 };
 
 #define random_mt_mark rb_random_mark
-
-static void
-random_mt_free(void *ptr)
-{
-    rb_random_mt_t *rnd = rb_ractor_local_storage_ptr(default_rand_key);
-    if (ptr != rnd)
-	xfree(ptr);
-}
+#define random_mt_free RUBY_TYPED_DEFAULT_FREE
 
 static size_t
 random_mt_memsize(const void *ptr)
@@ -544,42 +538,83 @@ fill_random_bytes_syscall(void *buf, size_t size, int unused)
 #endif
 }
 #elif defined(_WIN32)
+
+#ifndef DWORD_MAX
+# define DWORD_MAX (~(DWORD)0UL)
+#endif
+
+# if defined(CRYPT_VERIFYCONTEXT)
+STATIC_ASSERT(sizeof_HCRYPTPROV, sizeof(HCRYPTPROV) == sizeof(size_t));
+
+/* Although HCRYPTPROV is not a HANDLE, it looks like
+ * INVALID_HANDLE_VALUE is not a valid value */
+static const HCRYPTPROV INVALID_HCRYPTPROV = (HCRYPTPROV)INVALID_HANDLE_VALUE;
+
 static void
 release_crypt(void *p)
 {
-    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_PTR_EXCHANGE(*(HCRYPTPROV *)p, INVALID_HANDLE_VALUE);
-    if (prov && prov != (HCRYPTPROV)INVALID_HANDLE_VALUE) {
+    HCRYPTPROV *ptr = p;
+    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_SIZE_EXCHANGE(*ptr, INVALID_HCRYPTPROV);
+    if (prov && prov != INVALID_HCRYPTPROV) {
 	CryptReleaseContext(prov, 0);
     }
 }
 
 static int
-fill_random_bytes_syscall(void *seed, size_t size, int unused)
+fill_random_bytes_crypt(void *seed, size_t size)
 {
     static HCRYPTPROV perm_prov;
     HCRYPTPROV prov = perm_prov, old_prov;
     if (!prov) {
 	if (!CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
-	    prov = (HCRYPTPROV)INVALID_HANDLE_VALUE;
+	    prov = INVALID_HCRYPTPROV;
 	}
-	old_prov = (HCRYPTPROV)ATOMIC_PTR_CAS(perm_prov, 0, prov);
+	old_prov = (HCRYPTPROV)ATOMIC_SIZE_CAS(perm_prov, 0, prov);
 	if (LIKELY(!old_prov)) { /* no other threads acquired */
-	    if (prov != (HCRYPTPROV)INVALID_HANDLE_VALUE) {
+	    if (prov != INVALID_HCRYPTPROV) {
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
 		rb_gc_register_mark_object(Data_Wrap_Struct(0, 0, release_crypt, &perm_prov));
 	    }
 	}
 	else {			/* another thread acquired */
-	    if (prov != (HCRYPTPROV)INVALID_HANDLE_VALUE) {
+	    if (prov != INVALID_HCRYPTPROV) {
 		CryptReleaseContext(prov, 0);
 	    }
 	    prov = old_prov;
 	}
     }
-    if (prov == (HCRYPTPROV)INVALID_HANDLE_VALUE) return -1;
-    CryptGenRandom(prov, size, seed);
+    if (prov == INVALID_HCRYPTPROV) return -1;
+    while (size > 0) {
+        DWORD n = (size > (size_t)DWORD_MAX) ? DWORD_MAX : (DWORD)size;
+        if (!CryptGenRandom(prov, n, seed)) return -1;
+        seed = (char *)seed + n;
+        size -= n;
+    }
     return 0;
+}
+# else
+#   define fill_random_bytes_crypt(seed, size) -1
+# endif
+
+static int
+fill_random_bytes_bcrypt(void *seed, size_t size)
+{
+    while (size > 0) {
+        ULONG n = (size > (size_t)ULONG_MAX) ? LONG_MAX : (ULONG)size;
+        if (BCryptGenRandom(NULL, seed, n, BCRYPT_USE_SYSTEM_PREFERRED_RNG))
+            return -1;
+        seed = (char *)seed + n;
+        size -= n;
+    }
+    return 0;
+}
+
+static int
+fill_random_bytes_syscall(void *seed, size_t size, int unused)
+{
+    if (fill_random_bytes_bcrypt(seed, size) == 0) return 0;
+    return fill_random_bytes_crypt(seed, size);
 }
 #elif defined HAVE_GETRANDOM
 static int
@@ -1348,7 +1383,7 @@ static inline double
 float_value(VALUE v)
 {
     double x = RFLOAT_VALUE(v);
-    if (isinf(x) || isnan(x)) {
+    if (!isfinite(x)) {
 	domain_error();
     }
     return x;
@@ -1363,7 +1398,7 @@ rand_range(VALUE obj, rb_random_t* rnd, VALUE range)
     if ((v = vmax = range_values(range, &beg, &end, &excl)) == Qfalse)
 	return Qfalse;
     if (NIL_P(v)) domain_error();
-    if (!RB_TYPE_P(vmax, T_FLOAT) && (v = rb_check_to_int(vmax), !NIL_P(v))) {
+    if (!RB_FLOAT_TYPE_P(vmax) && (v = rb_check_to_int(vmax), !NIL_P(v))) {
 	long max;
 	vmax = v;
 	v = Qnil;
@@ -1480,7 +1515,7 @@ rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd)
     }
     vmax = argv[0];
     if (NIL_P(vmax)) return Qnil;
-    if (!RB_TYPE_P(vmax, T_FLOAT)) {
+    if (!RB_FLOAT_TYPE_P(vmax)) {
 	v = rb_check_to_int(vmax);
 	if (!NIL_P(v)) return rand_int(obj, rnd, v, 1);
     }

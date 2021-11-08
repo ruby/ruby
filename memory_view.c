@@ -9,8 +9,8 @@
 #include "internal.h"
 #include "internal/hash.h"
 #include "internal/variable.h"
-#include "internal/util.h"
 #include "ruby/memory_view.h"
+#include "ruby/util.h"
 #include "vm_sync.h"
 
 #if SIZEOF_INTPTR_T == SIZEOF_LONG_LONG
@@ -210,7 +210,7 @@ rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data,
     view->shape = NULL;
     view->strides = NULL;
     view->sub_offsets = NULL;
-    *((void **)&view->private) = NULL;
+    view->private_data = NULL;
 
     return true;
 }

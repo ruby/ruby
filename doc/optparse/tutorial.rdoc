@@ -1,6 +1,6 @@
 == Tutorial
 
-=== Why OptionParser?
+=== Why \OptionParser?
 
 When a Ruby program executes, it captures its command-line arguments
 and options into variable ARGV.
@@ -27,28 +27,91 @@ With \OptionParser, you can define options so that for each option:
 - The argument may be restricted to specified _forms_.
 - The argument may be restricted to specified _values_.
 
-The class also has:
-
-- Method #summarize: returns a text summary of the options.
-- Method #help: displays automatically-generated help text.
+The class also has method #help, which displays automatically-generated help text.
 
 === Contents
 
+- {To Begin With}[#label-To+Begin+With]
 - {Defining Options}[#label-Defining+Options]
 - {Option Names}[#label-Option+Names]
   - {Short Option Names}[#label-Short+Option+Names]
   - {Long Option Names}[#label-Long+Option+Names]
   - {Mixing Option Names}[#label-Mixing+Option+Names]
-  - {Command-Line Abbreviations}[#label-Command-Line+Abbreviations]
+  - {Option Name Abbreviations}[#label-Option+Name+Abbreviations]
 - {Option Arguments}[#label-Option+Arguments]
   - {Option with No Argument}[#label-Option+with+No+Argument]
   - {Option with Required Argument}[#label-Option+with+Required+Argument]
   - {Option with Optional Argument}[#label-Option+with+Optional+Argument]
-- {Keyword Argument <tt>into<tt>}[#label-Keyword+Argument+into]
+  - {Argument Abbreviations}[#label-Argument+Abbreviations]
+- {Argument Values}[#label-Argument+Values]
+  - {Explicit Argument Values}[#label-Explicit+Argument+Values]
+    - {Explicit Values in Array}[#label-Explicit+Values+in+Array]
+    - {Explicit Values in Hash}[#label-Explicit+Values+in+Hash]
+  - {Argument Value Patterns}[#label-Argument+Value+Patterns]
+- {Keyword Argument into}[#label-Keyword+Argument+into]
   - {Collecting Options}[#label-Collecting+Options]
   - {Checking for Missing Options}[#label-Checking+for+Missing+Options]
   - {Default Values for Options}[#label-Default+Values+for+Options]
 - {Argument Converters}[#label-Argument+Converters]
+- {Help}[#label-Help]
+- {Top List and Base List}[#label-Top+List+and+Base+List]
+- {Defining Options}[#label-Defining+Options]
+- {Parsing}[#label-Parsing]
+  - {Method parse!}[#label-Method+parse-21]
+  - {Method parse}[#label-Method+parse]
+  - {Method order!}[#label-Method+order-21]
+  - {Method order}[#label-Method+order]
+  - {Method permute!}[#label-Method+permute-21]
+  - {Method permute}[#label-Method+permute]
+
+=== To Begin With
+
+To use \OptionParser:
+
+1. Require the \OptionParser code.
+2. Create an \OptionParser object.
+3. Define one or more options.
+4. Parse the command line.
+
+File +basic.rb+ defines three options, <tt>-x</tt>,
+<tt>-y</tt>, and <tt>-z</tt>, each with a descriptive string,
+and each with a block.
+
+  :include: ruby/basic.rb
+
+From these defined options, the parser automatically builds help text:
+
+  $ ruby basic.rb --help
+  Usage: basic [options]
+      -x                               Whether to X
+      -y                               Whether to Y
+      -z                               Whether to Z
+
+When an option is found during parsing,
+the block defined for the option is called with the argument value.
+An invalid option raises an exception.
+
+Method #parse!, which is used most often in this tutorial,
+removes from \ARGV the options and arguments it finds,
+leaving other non-option arguments for the program to handle on its own.
+The method returns the possibly-reduced \ARGV array.
+
+Executions:
+
+  $ ruby basic.rb -x -z
+  ["x", true]
+  ["z", true]
+  []
+  $ ruby basic.rb -z -y -x
+  ["z", true]
+  ["y", true]
+  ["x", true]
+  []
+  $ ruby basic.rb -x input_file.txt output_file.txt
+  ["x", true]
+  ["input_file.txt", "output_file.txt"]
+  $ ruby basic.rb -a
+  basic.rb:16:in `<main>': invalid option: -a (OptionParser::InvalidOption)
 
 === Defining Options
 
@@ -106,11 +169,6 @@ Multiple short names can "share" a hyphen:
   ["x", true]
   ["-1 or -%", true]
   ["-1 or -%", true]
-
-This is a good time to note that giving an undefined option raises an exception:
-
-  $ ruby short_names.rb -z
-  short_names.rb:9:in `<main>': invalid option: -z (OptionParser::InvalidOption)
 
 ==== Long Option Names
 
@@ -190,34 +248,34 @@ Executions:
   $ ruby mixed_names.rb --zzz BAT
   ["--zzz", "BAT"]
 
-==== Command-Line Abbreviations
+==== Option Name Abbreviations
 
-By default, abbreviations for command-line option names are allowed.
-An abbreviated option is valid if it is unique among abbreviated option names.
+By default, abbreviated option names on the command-line are allowed.
+An abbreviated name is valid if it is unique among abbreviated option names.
 
-  :include: ruby/abbreviation.rb
+  :include: ruby/name_abbrev.rb
 
 Executions:
 
-  $ ruby abbreviation.rb --help
-  Usage: abbreviation [options]
+  $ ruby name_abbrev.rb --help
+  Usage: name_abbrev [options]
       -n, --dry-run
       -d, --draft
-  $ ruby abbreviation.rb -n
+  $ ruby name_abbrev.rb -n
   ["--dry-run", true]
-  $ ruby abbreviation.rb --dry-run
+  $ ruby name_abbrev.rb --dry-run
   ["--dry-run", true]
-  $ ruby abbreviation.rb -d
+  $ ruby name_abbrev.rb -d
   ["--draft", true]
-  $ ruby abbreviation.rb --draft
+  $ ruby name_abbrev.rb --draft
   ["--draft", true]
-  $ ruby abbreviation.rb --d
-  abbreviation.rb:9:in `<main>': ambiguous option: --d (OptionParser::AmbiguousOption)
-  $ ruby abbreviation.rb --dr
-  abbreviation.rb:9:in `<main>': ambiguous option: --dr (OptionParser::AmbiguousOption)
-  $ ruby abbreviation.rb --dry
+  $ ruby name_abbrev.rb --d
+  name_abbrev.rb:9:in `<main>': ambiguous option: --d (OptionParser::AmbiguousOption)
+  $ ruby name_abbrev.rb --dr
+  name_abbrev.rb:9:in `<main>': ambiguous option: --dr (OptionParser::AmbiguousOption)
+  $ ruby name_abbrev.rb --dry
   ["--dry-run", true]
-  $ ruby abbreviation.rb --dra
+  $ ruby name_abbrev.rb --dra
   ["--draft", true]
 
 You can disable abbreviation using method +require_exact+.
@@ -293,6 +351,106 @@ Executions:
 
 Omitting an optional argument does not raise an error.
 
+=== Argument Values
+
+Permissible argument values may be restricted
+either by specifying explicit values
+or by providing a pattern that the given value must match.
+
+==== Explicit Argument Values
+
+You can specify argument values in either of two ways:
+
+- Specify values an array of strings.
+- Specify values a hash.
+
+===== Explicit Values in Array
+
+You can specify explicit argument values in an array of strings.
+The argument value must be one of those strings, or an unambiguous abbreviation.
+
+File +explicit_array_values.rb+ defines options with explicit argument values.
+
+  :include: ruby/explicit_array_values.rb
+
+Executions:
+
+  $ ruby explicit_array_values.rb --help
+  Usage: explicit_array_values [options]
+      -xXXX                            Values for required argument
+      -y [YYY]                         Values for optional argument
+  $ ruby explicit_array_values.rb -x
+  explicit_array_values.rb:9:in `<main>': missing argument: -x (OptionParser::MissingArgument)
+  $ ruby explicit_array_values.rb -x foo
+  ["-x", "foo"]
+  $ ruby explicit_array_values.rb -x f
+  ["-x", "foo"]
+  $ ruby explicit_array_values.rb -x bar
+  ["-x", "bar"]
+  $ ruby explicit_array_values.rb -y ba
+  explicit_array_values.rb:9:in `<main>': ambiguous argument: -y ba (OptionParser::AmbiguousArgument)
+  $ ruby explicit_array_values.rb -x baz
+  explicit_array_values.rb:9:in `<main>': invalid argument: -x baz (OptionParser::InvalidArgument)
+
+
+===== Explicit Values in Hash
+
+You can specify explicit argument values in a hash with string keys.
+The value passed must be one of those keys, or an unambiguous abbreviation;
+the value yielded will be the value for that key.
+
+File +explicit_hash_values.rb+ defines options with explicit argument values.
+
+  :include: ruby/explicit_hash_values.rb
+
+Executions:
+
+  $ ruby explicit_hash_values.rb --help
+  Usage: explicit_hash_values [options]
+      -xXXX                            Values for required argument
+      -y [YYY]                         Values for optional argument
+  $ ruby explicit_hash_values.rb -x
+  explicit_hash_values.rb:9:in `<main>': missing argument: -x (OptionParser::MissingArgument)
+  $ ruby explicit_hash_values.rb -x foo
+  ["-x", 0]
+  $ ruby explicit_hash_values.rb -x f
+  ["-x", 0]
+  $ ruby explicit_hash_values.rb -x bar
+  ["-x", 1]
+  $ ruby explicit_hash_values.rb -x baz
+  explicit_hash_values.rb:9:in `<main>': invalid argument: -x baz (OptionParser::InvalidArgument)
+  $ ruby explicit_hash_values.rb -y
+  ["-y", nil]
+  $ ruby explicit_hash_values.rb -y baz
+  ["-y", 2]
+  $ ruby explicit_hash_values.rb -y bat
+  ["-y", 3]
+  $ ruby explicit_hash_values.rb -y ba
+  explicit_hash_values.rb:9:in `<main>': ambiguous argument: -y ba (OptionParser::AmbiguousArgument)
+  $ ruby explicit_hash_values.rb -y bam
+  ["-y", nil]
+
+==== Argument Value Patterns
+
+You can restrict permissible argument values
+by specifying a Regexp that the given argument must match.
+
+File +matched_values.rb+ defines options with matched argument values.
+
+  :include: ruby/matched_values.rb
+
+Executions:
+
+  $ ruby matched_values.rb --help
+  Usage: matched_values [options]
+          --xxx XXX                    Matched values
+  $ ruby matched_values.rb --xxx foo
+  ["--xxx", "foo"]
+  $ ruby matched_values.rb --xxx FOO
+  ["--xxx", "FOO"]
+  $ ruby matched_values.rb --xxx bar
+  matched_values.rb:6:in `<main>': invalid argument: --xxx bar (OptionParser::InvalidArgument)
+
 === Keyword Argument +into+
 
 In parsing options, you can add keyword option +into+ with a hash-like argument;
@@ -361,7 +519,6 @@ Executions:
   $ ruby default_values.rb --yyy FOO
   {:yyy=>"FOO", :zzz=>"BBB"}
 
-
 === Argument Converters
 
 An option can specify that its argument is to be converted
@@ -386,3 +543,293 @@ Executions:
 You can also define custom converters.
 See {Argument Converters}[./argument_converters_rdoc.html]
 for both built-in and custom converters.
+
+=== Help
+
+\OptionParser makes automatically generated help text available.
+
+The help text consists of:
+
+- A banner, showing the usage.
+- Option short and long names.
+- Option dummy argument names.
+- Option descriptions.
+
+Example code:
+
+  :include: ruby/help.rb
+
+The option names and dummy argument names are defined as described above.
+
+The option description consists of the strings that are not themselves option names;
+An option can have more than one description string.
+Execution:
+
+  Usage: help [options]
+      -x, --xxx                        Adipiscing elit. Aenean commodo ligula eget.
+                                       Aenean massa. Cum sociis natoque penatibus
+      -y, --yyy YYY                    Lorem ipsum dolor sit amet, consectetuer.
+      -z, --zzz [ZZZ]                  Et magnis dis parturient montes, nascetur
+                                       ridiculus mus. Donec quam felis, ultricies
+                                       nec, pellentesque eu, pretium quis, sem.
+
+The program name is included in the default banner:
+<tt>Usage: #{program_name} [options]</tt>;
+you can change the program name.
+
+  :include: ruby/help_program_name.rb
+
+Execution:
+
+  $ ruby help_program_name.rb --help
+  Usage: help_program_name.rb [options]
+
+You can also change the entire banner.
+
+  :include: ruby/help_banner.rb
+
+Execution:
+
+  $ ruby help_banner.rb --help
+  Usage: ruby help_banner.rb
+
+By default, the option names are indented 4 spaces
+and the width of the option-names field is 32 spaces.
+
+You can change these values, along with the banner,
+by passing parameters to OptionParser.new.
+
+  :include: ruby/help_format.rb
+
+Execution:
+
+  $ ruby help_format.rb --help
+  ruby help_format.rb [options]
+    -x, --xxx            Adipiscing elit. Aenean commodo ligula eget.
+                         Aenean massa. Cum sociis natoque penatibus
+    -y, --yyy YYY        Lorem ipsum dolor sit amet, consectetuer.
+    -z, --zzz [ZZZ]      Et magnis dis parturient montes, nascetur
+                         ridiculus mus. Donec quam felis, ultricies
+                         nec, pellentesque eu, pretium quis, sem.
+
+=== Top List and Base List
+
+An \OptionParser object maintains a stack of \OptionParser::List objects,
+each of which has a collection of zero or more options.
+It is unlikely that you'll need to add or take away from that stack.
+
+The stack includes:
+
+- The <em>top list</em>, given by \OptionParser#top.
+- The <em>base list</em>, given by \OptionParser#base.
+
+When \OptionParser builds its help text, the options in the top list
+precede those in the base list.
+
+=== Defining Options
+
+Option-defining methods allow you to create an option, and also append/prepend it
+to the top list or append it to the base list.
+
+Each of these next three methods accepts a sequence of parameter arguments and a block,
+creates an option object using method \Option#make_switch (see below),
+and returns the created option:
+
+- \Method \OptionParser#define appends the created option to the top list.
+
+- \Method \OptionParser#define_head prepends the created option to the top list.
+
+- \Method \OptionParser#define_tail appends the created option to the base list.
+
+These next three methods are identical to the three above,
+except for their return values:
+
+- \Method \OptionParser#on is identical to method \OptionParser#define,
+  except that it returns the parser object +self+.
+
+- \Method \OptionParser#on_head is identical to method \OptionParser#define_head,
+  except that it returns the parser object +self+.
+
+- \Method \OptionParser#on_tail is identical to method \OptionParser#define_tail,
+  except that it returns the parser object +self+.
+
+Though you may never need to call it directly,
+here's the core method for defining an option:
+
+- \Method \OptionParser#make_switch accepts an array of parameters and a block.
+  See {Parameters for New Options}[./option_params_rdoc.html].
+  This method is unlike others here in that it:
+  - Accepts an <em>array of parameters</em>;
+    others accept a <em>sequence of parameter arguments</em>.
+  - Returns an array containing the created option object,
+    option names, and other values;
+    others return either the created option object
+    or the parser object +self+.
+
+=== Parsing
+
+\OptionParser has six instance methods for parsing.
+
+Three have names ending with a "bang" (<tt>!</tt>):
+
+- parse!
+- order!
+- permute!
+
+Each of these methods:
+
+- Accepts an optional array of string arguments +argv+;
+  if not given, +argv+ defaults to the value of OptionParser#default_argv,
+  whose initial value is ARGV.
+- Accepts an optional keyword argument +into+
+  (see {Keyword Argument into}[#label-Keyword+Argument+into]).
+- Returns +argv+, possibly with some elements removed.
+
+The three other methods have names _not_ ending with a "bang":
+
+- parse
+- order
+- permute
+
+Each of these methods:
+
+- Accepts an array of string arguments
+  _or_ zero or more string arguments.
+- Accepts an optional keyword argument +into+ and its value _into_.
+  (see {Keyword Argument into}[#label-Keyword+Argument+into]).
+- Returns +argv+, possibly with some elements removed.
+
+==== \Method parse!
+
+\Method parse!:
+
+- Accepts an optional array of string arguments +argv+;
+  if not given, +argv+ defaults to the value of OptionParser#default_argv,
+  whose initial value is ARGV.
+- Accepts an optional keyword argument +into+
+  (see {Keyword Argument into}[#label-Keyword+Argument+into]).
+- Returns +argv+, possibly with some elements removed.
+
+The method processes the elements in +argv+ beginning at <tt>argv[0]</tt>,
+and ending, by default, at the end.
+
+Otherwise processing ends and the method returns when:
+
+- The terminator argument <tt>--</tt> is found;
+  the terminator argument is removed before the return.
+- Environment variable +POSIXLY_CORRECT+ is defined
+  and a non-option argument is found;
+  the non-option argument is not removed.
+  Note that the _value_ of that variable does not matter,
+  as only its existence is checked.
+
+File +parse_bang.rb+:
+
+  :include: ruby/parse_bang.rb
+
+Help:
+
+  $ ruby parse_bang.rb --help
+  Usage: parse_bang [options]
+          --xxx
+          --yyy YYY
+          --zzz [ZZZ]
+
+Default behavior:
+
+  $ ruby parse_bang.rb input_file.txt output_file.txt --xxx --yyy FOO --zzz BAR
+  ["--xxx", true]
+  ["--yyy", "FOO"]
+  ["--zzz", "BAR"]
+  Returned: ["input_file.txt", "output_file.txt"] (Array)
+
+Processing ended by terminator argument:
+
+  $ ruby parse_bang.rb input_file.txt output_file.txt --xxx --yyy FOO -- --zzz BAR
+  ["--xxx", true]
+  ["--yyy", "FOO"]
+  Returned: ["input_file.txt", "output_file.txt", "--zzz", "BAR"] (Array)
+
+Processing ended by non-option found when +POSIXLY_CORRECT+ is defined:
+
+  $ POSIXLY_CORRECT=true ruby parse_bang.rb --xxx input_file.txt output_file.txt -yyy FOO
+  ["--xxx", true]
+  Returned: ["input_file.txt", "output_file.txt", "-yyy", "FOO"] (Array)
+
+==== \Method parse
+
+\Method parse:
+
+- Accepts an array of string arguments
+  _or_ zero or more string arguments.
+- Accepts an optional keyword argument +into+ and its value _into_.
+  (see {Keyword Argument into}[#label-Keyword+Argument+into]).
+- Returns +argv+, possibly with some elements removed.
+
+If given an array +ary+, the method forms array +argv+ as <tt>ary.dup</tt>.
+If given zero or more string arguments, those arguments are formed
+into array +argv+.
+
+The method calls
+
+  parse!(argv, into: into)
+
+Note that environment variable +POSIXLY_CORRECT+
+and the terminator argument <tt>--</tt> are honored.
+
+File +parse.rb+:
+
+  :include: ruby/parse.rb
+
+Help:
+
+  $ ruby parse.rb --help
+  Usage: parse [options]
+          --xxx
+          --yyy YYY
+          --zzz [ZZZ]
+
+Default behavior:
+
+  $ ruby parse.rb input_file.txt output_file.txt --xxx --yyy FOO --zzz BAR
+  ["--xxx", true]
+  ["--yyy", "FOO"]
+  ["--zzz", "BAR"]
+  Returned: ["input_file.txt", "output_file.txt"] (Array)
+
+Processing ended by terminator argument:
+
+  $ ruby parse.rb input_file.txt output_file.txt --xxx --yyy FOO -- --zzz BAR
+  ["--xxx", true]
+  ["--yyy", "FOO"]
+  Returned: ["input_file.txt", "output_file.txt", "--zzz", "BAR"] (Array)
+
+Processing ended by non-option found when +POSIXLY_CORRECT+ is defined:
+
+  $ POSIXLY_CORRECT=true ruby parse.rb --xxx input_file.txt output_file.txt -yyy FOO
+  ["--xxx", true]
+  Returned: ["input_file.txt", "output_file.txt", "-yyy", "FOO"] (Array)
+
+==== \Method order!
+
+Calling method OptionParser#order! gives exactly the same result as
+calling method OptionParser#parse! with environment variable
++POSIXLY_CORRECT+ defined.
+
+==== \Method order
+
+Calling method OptionParser#order gives exactly the same result as
+calling method OptionParser#parse with environment variable
++POSIXLY_CORRECT+ defined.
+
+==== \Method permute!
+
+Calling method OptionParser#permute! gives exactly the same result as
+calling method OptionParser#parse! with environment variable
++POSIXLY_CORRECT+ _not_ defined.
+
+==== \Method permute
+
+Calling method OptionParser#permute gives exactly the same result as
+calling method OptionParser#parse with environment variable
++POSIXLY_CORRECT+ _not_ defined.

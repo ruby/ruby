@@ -14,6 +14,7 @@ module Bundler
     COMMAND_ALIASES = {
       "check" => "c",
       "install" => "i",
+      "plugin" => "",
       "list" => "ls",
       "exec" => ["e", "ex", "exe"],
       "cache" => ["package", "pack"],
@@ -72,14 +73,6 @@ module Bundler
       Bundler.ui = UI::Shell.new(options)
       Bundler.ui.level = "debug" if options["verbose"]
       unprinted_warnings.each {|w| Bundler.ui.warn(w) }
-
-      if ENV["RUBYGEMS_GEMDEPS"] && !ENV["RUBYGEMS_GEMDEPS"].empty?
-        Bundler.ui.warn(
-          "The RUBYGEMS_GEMDEPS environment variable is set. This enables RubyGems' " \
-          "experimental Gemfile mode, which may conflict with Bundler and cause unexpected errors. " \
-          "To remove this warning, unset RUBYGEMS_GEMDEPS.", :wrap => true
-        )
-      end
     end
 
     check_unknown_options!(:except => [:config, :exec])
@@ -191,6 +184,7 @@ module Bundler
     method_option "install", :type => :boolean, :banner =>
       "Runs 'bundle install' after removing the gems from the Gemfile"
     def remove(*gems)
+      SharedHelpers.major_deprecation(2, "The `--install` flag has been deprecated. `bundle install` is triggered by default.") if ARGV.include?("--install")
       require_relative "cli/remove"
       Remove.new(gems, options).run
     end
@@ -468,7 +462,7 @@ module Bundler
     map aliases_for("cache")
 
     desc "exec [OPTIONS]", "Run the command in context of the bundle"
-    method_option :keep_file_descriptors, :type => :boolean, :default => false
+    method_option :keep_file_descriptors, :type => :boolean, :default => true
     method_option :gemfile, :type => :string, :required => false
     long_desc <<-D
       Exec runs a command, providing it access to the gems in the bundle. While using
@@ -476,6 +470,10 @@ module Bundler
       into the system wide RubyGems repository.
     D
     def exec(*args)
+      if ARGV.include?("--no-keep-file-descriptors")
+        SharedHelpers.major_deprecation(2, "The `--no-keep-file-descriptors` has been deprecated. `bundle exec` no longer mess with your file descriptors. Close them in the exec'd script if you need to")
+      end
+
       require_relative "cli/exec"
       Exec.new(options, args).run
     end
@@ -554,7 +552,7 @@ module Bundler
       method_option :version, :type => :boolean, :default => false, :aliases => "-v", :desc => "Set to show each gem version."
       method_option :without, :type => :array, :default => [], :aliases => "-W", :banner => "GROUP[ GROUP...]", :desc => "Exclude gems that are part of the specified named group."
       def viz
-        SharedHelpers.major_deprecation 2, "The `viz` command has been moved to the `bundle-viz` gem, see https://github.com/bundler/bundler-viz"
+        SharedHelpers.major_deprecation 2, "The `viz` command has been moved to the `bundle-viz` gem, see https://github.com/rubygems/bundler-viz"
         require_relative "cli/viz"
         Viz.new(options.dup).run
       end

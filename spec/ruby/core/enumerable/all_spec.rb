@@ -132,14 +132,6 @@ describe "Enumerable#all?" do
     end
 
     # may raise an exception in future versions
-    ruby_version_is ""..."2.6" do
-      it "ignores block" do
-        @enum2.all?(NilClass) { raise }.should == false
-        [1, 2, nil].all?(NilClass) { raise }.should == false
-        {a: 1}.all?(Array) { raise }.should == true
-      end
-    end
-
     it "always returns true on empty enumeration" do
       @empty.all?(Integer).should == true
       [].all?(Integer).should == true

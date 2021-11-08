@@ -20,7 +20,7 @@ RSpec.describe "bundle install with specific platforms" do
       ])
     end
 
-    it "understands that a non-plaform specific gem in a old lockfile doesn't necessarily mean installing the non-specific variant" do
+    it "understands that a non-platform specific gem in a old lockfile doesn't necessarily mean installing the non-specific variant" do
       setup_multiplatform_gem
 
       system_gems "bundler-2.1.4"
@@ -54,7 +54,7 @@ RSpec.describe "bundle install with specific platforms" do
       expect(the_bundle).to include_gem("google-protobuf 3.0.0.alpha.5.0.5.1 universal-darwin")
     end
 
-    it "understands that a non-plaform specific gem in a new lockfile locked only to RUBY doesn't necessarily mean installing the non-specific variant" do
+    it "understands that a non-platform specific gem in a new lockfile locked only to RUBY doesn't necessarily mean installing the non-specific variant" do
       setup_multiplatform_gem
 
       system_gems "bundler-2.1.4"
@@ -173,6 +173,7 @@ RSpec.describe "bundle install with specific platforms" do
       git = build_git "pg_array_parser", "1.0"
 
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "pg_array_parser", :git => "#{lib_path("pg_array_parser-1.0")}"
       G
 
@@ -247,6 +248,38 @@ RSpec.describe "bundle install with specific platforms" do
         ])
       end
     end
+  end
+
+  it "installs sorbet-static, which does not provide a pure ruby variant, just fine on truffleruby", :truffleruby do
+    build_repo2 do
+      build_gem("sorbet-static", "0.5.6403") {|s| s.platform = "x86_64-linux" }
+      build_gem("sorbet-static", "0.5.6403") {|s| s.platform = "universal-darwin-20" }
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo2)}"
+
+      gem "sorbet-static", "0.5.6403"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo2)}/
+        specs:
+          sorbet-static (0.5.6403-universal-darwin-20)
+          sorbet-static (0.5.6403-x86_64-linux)
+
+      PLATFORMS
+        ruby
+
+      DEPENDENCIES
+        sorbet-static (= 0.5.6403)
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "install --verbose"
   end
 
   private

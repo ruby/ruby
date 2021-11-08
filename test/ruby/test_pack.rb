@@ -764,7 +764,7 @@ EXPECTED
 
     $VERBOSE = true
 
-    _, err = capture_io do
+    _, err = capture_output do
       assert_equal "\000", [0].pack("*U")
     end
 
@@ -783,7 +783,7 @@ EXPECTED
 
     $VERBOSE = true
 
-    _, err = capture_io do
+    _, err = capture_output do
       assert_equal [0], "\000".unpack("*U")
     end
 
@@ -868,5 +868,31 @@ EXPECTED
     assert_equal 0x3042, "\u{3042 3044 3046}".unpack1("U*")
     assert_equal "hogefuga", "aG9nZWZ1Z2E=".unpack1("m")
     assert_equal "01000001", "A".unpack1("B*")
+  end
+
+  def test_unpack1_offset
+    assert_equal 65, "ZA".unpack1("C", offset: 1)
+    assert_equal "01000001", "YZA".unpack1("B*", offset: 2)
+    assert_nil "abc".unpack1("C", offset: 3)
+    assert_raise_with_message(ArgumentError, /offset can't be negative/) {
+      "a".unpack1("C", offset: -1)
+    }
+    assert_raise_with_message(ArgumentError, /offset outside of string/) {
+      "a".unpack1("C", offset: 2)
+    }
+    assert_nil "a".unpack1("C", offset: 1)
+  end
+
+  def test_unpack_offset
+    assert_equal [65], "ZA".unpack("C", offset: 1)
+    assert_equal ["01000001"], "YZA".unpack("B*", offset: 2)
+    assert_equal [nil, nil, nil], "abc".unpack("CCC", offset: 3)
+    assert_raise_with_message(ArgumentError, /offset can't be negative/) {
+      "a".unpack("C", offset: -1)
+    }
+    assert_raise_with_message(ArgumentError, /offset outside of string/) {
+      "a".unpack("C", offset: 2)
+    }
+    assert_equal [nil], "a".unpack("C", offset: 1)
   end
 end

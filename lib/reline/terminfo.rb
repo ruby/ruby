@@ -1,14 +1,36 @@
-require 'fiddle'
-require 'fiddle/import'
+begin
+  require 'fiddle'
+  require 'fiddle/import'
+rescue LoadError
+  module Reline::Terminfo
+    def self.curses_dl
+      false
+    end
+  end
+end
 
 module Reline::Terminfo
   extend Fiddle::Importer
 
   class TerminfoError < StandardError; end
 
-  @curses_dl = nil
+  def self.curses_dl_files
+    case RUBY_PLATFORM
+    when /mingw/, /mswin/
+      # aren't supported
+      []
+    when /cygwin/
+      %w[cygncursesw-10.dll cygncurses-10.dll]
+    when /darwin/
+      %w[libncursesw.dylib libcursesw.dylib libncurses.dylib libcurses.dylib]
+    else
+      %w[libncursesw.so libcursesw.so libncurses.so libcurses.so]
+    end
+  end
+
+  @curses_dl = false
   def self.curses_dl
-    return @curses_dl if @curses_dl
+    return @curses_dl unless @curses_dl == false
     if RUBY_VERSION >= '3.0.0'
       # Gem module isn't defined in test-all of the Ruby repository, and
       # Fiddle in Ruby 3.0.0 or later supports Fiddle::TYPE_VARIADIC.
@@ -19,8 +41,12 @@ module Reline::Terminfo
     else
       fiddle_supports_variadic = false
     end
+    if fiddle_supports_variadic and not Fiddle.const_defined?(:TYPE_VARIADIC)
+      # If the libffi version is not 3.0.5 or higher, there isn't TYPE_VARIADIC.
+      fiddle_supports_variadic = false
+    end
     if fiddle_supports_variadic
-      %w[libncursesw.so libcursesw.so libncurses.so libcurses.so].each do |curses_name|
+      curses_dl_files.each do |curses_name|
         result = Fiddle::Handle.new(curses_name)
       rescue Fiddle::DLError
         next
@@ -29,9 +55,10 @@ module Reline::Terminfo
         break
       end
     end
+    @curses_dl = nil if @curses_dl == false
     @curses_dl
   end
-end
+end if not Reline.const_defined?(:Terminfo) or not Reline::Terminfo.respond_to?(:curses_dl)
 
 module Reline::Terminfo
   dlload curses_dl
@@ -39,13 +66,20 @@ module Reline::Terminfo
   @setupterm = Fiddle::Function.new(curses_dl['setupterm'], [Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT, Fiddle::TYPE_VOIDP], Fiddle::TYPE_INT)
   #extern 'char *tigetstr(char *capname)'
   @tigetstr = Fiddle::Function.new(curses_dl['tigetstr'], [Fiddle::TYPE_VOIDP], Fiddle::TYPE_VOIDP)
-  #extern 'char *tiparm(const char *str, ...)'
-  @tiparm = Fiddle::Function.new(curses_dl['tiparm'], [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VARIADIC], Fiddle::TYPE_VOIDP)
+  begin
+    #extern 'char *tiparm(const char *str, ...)'
+    @tiparm = Fiddle::Function.new(curses_dl['tiparm'], [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VARIADIC], Fiddle::TYPE_VOIDP)
+  rescue Fiddle::DLError
+    # OpenBSD lacks tiparm
+    #extern 'char *tparm(const char *str, ...)'
+    @tiparm = Fiddle::Function.new(curses_dl['tparm'], [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VARIADIC], Fiddle::TYPE_VOIDP)
+  end
+  # TODO: add int tigetflag(char *capname) and int tigetnum(char *capname)
 
   def self.setupterm(term, fildes)
     errret_int = String.new("\x00" * 8, encoding: 'ASCII-8BIT')
     ret = @setupterm.(term, fildes, errret_int)
-    errret = errret_int.unpack('i')[0]
+    errret = errret_int.unpack1('i')
     case ret
     when 0 # OK
       0
@@ -65,12 +99,19 @@ module Reline::Terminfo
     end
   end
 
-  def self.tigetstr(capname)
-    result = @tigetstr.(capname).to_s
-    def result.tiparm(*args) # for method chain
+  class StringWithTiparm < String
+    def tiparm(*args) # for method chain
       Reline::Terminfo.tiparm(self, *args)
     end
-    result
+  end
+
+  def self.tigetstr(capname)
+    capability = @tigetstr.(capname)
+    case capability.to_i
+    when 0, -1
+      raise TerminfoError, "can't find capability: #{capname}"
+    end
+    StringWithTiparm.new(capability.to_s)
   end
 
   def self.tiparm(str, *args)

@@ -343,10 +343,10 @@ describe "C-API Array function" do
     end
   end
 
-  describe "rb_iterate" do
+  describe "rb_block_call" do
     it "calls an callback function as a block passed to an method" do
       s = [1,2,3,4]
-      s2 = @s.rb_iterate(s)
+      s2 = @s.rb_block_call(s)
 
       s2.should == s
 
@@ -357,7 +357,7 @@ describe "C-API Array function" do
     it "calls a function with the other function available as a block" do
       h = {a: 1, b: 2}
 
-      @s.rb_iterate_each_pair(h).sort.should == [1,2]
+      @s.rb_block_call_each_pair(h).sort.should == [1,2]
     end
 
     it "calls a function which can yield into the original block" do
@@ -371,7 +371,7 @@ describe "C-API Array function" do
         yield 4
       end
 
-      @s.rb_iterate_then_yield(o) { |x| s2 << x }
+      @s.rb_block_call_then_yield(o) { |x| s2 << x }
 
       s2.should == [1,2,3,4]
     end

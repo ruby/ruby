@@ -16,6 +16,7 @@
 #include "variable.h"
 #include "gc.h"
 #include "transient_heap.h"
+#include "yjit.h"
 
 VALUE rb_cRactor;
 
@@ -413,7 +414,7 @@ ractor_queue_enq(rb_ractor_t *r, struct rb_ractor_queue *rq, struct rb_ractor_ba
         rq->size *= 2;
     }
     rq->baskets[(rq->start + rq->cnt++) % rq->size] = *basket;
-    // fprintf(stderr, "%s %p->cnt:%d\n", __func__, rq, rq->cnt);
+    // fprintf(stderr, "%s %p->cnt:%d\n", RUBY_FUNCTION_NAME_STRING, (void *)rq, rq->cnt);
 }
 
 static void
@@ -502,7 +503,7 @@ ractor_wakeup(rb_ractor_t *r, enum ractor_wait_status wait_status, enum ractor_w
 {
     ASSERT_ractor_locking(r);
 
-    // fprintf(stderr, "%s r:%p status:%s/%s wakeup_status:%s/%s\n", __func__, r,
+    // fprintf(stderr, "%s r:%p status:%s/%s wakeup_status:%s/%s\n", RUBY_FUNCTION_NAME_STRING, (void *)r,
     //         wait_status_str(r->sync.wait.status), wait_status_str(wait_status),
     //         wakeup_status_str(r->sync.wait.wakeup_status), wakeup_status_str(wakeup_status));
 
@@ -582,7 +583,7 @@ ractor_sleep(rb_execution_context_t *ec, rb_ractor_t *cr)
 {
     VM_ASSERT(GET_RACTOR() == cr);
     VM_ASSERT(cr->sync.wait.status != wait_none);
-    // fprintf(stderr, "%s  r:%p status:%s, wakeup_status:%s\n", __func__, cr,
+    // fprintf(stderr, "%s  r:%p status:%s, wakeup_status:%s\n", RUBY_FUNCTION_NAME_STRING, (void *)cr,
     //                 wait_status_str(cr->sync.wait.status), wakeup_status_str(cr->sync.wait.wakeup_status));
 
     RACTOR_UNLOCK(cr);
@@ -754,7 +755,8 @@ rq_dump(struct rb_ractor_queue *rq)
     bool bug = false;
     for (int i=0; i<rq->cnt; i++) {
         struct rb_ractor_basket *b = ractor_queue_at(rq, i);
-        fprintf(stderr, "%d (start:%d) type:%s %p %s\n", i, rq->start, basket_type_name(b->type), b, RSTRING_PTR(RARRAY_AREF(b->v, 1)));
+        fprintf(stderr, "%d (start:%d) type:%s %p %s\n", i, rq->start, basket_type_name(b->type),
+                (void *)b, RSTRING_PTR(RARRAY_AREF(b->v, 1)));
         if (b->type == basket_type_reserved) bug = true;
     }
     if (bug) rb_bug("!!");
@@ -901,7 +903,7 @@ ractor_send_basket(rb_execution_context_t *ec, rb_ractor_t *r, struct rb_ractor_
         else {
             ractor_queue_enq(r, rq, b);
             if (ractor_wakeup(r, wait_receiving, wakeup_by_send)) {
-                RUBY_DEBUG_LOG("wakeup", 0);
+                RUBY_DEBUG_LOG("wakeup");
             }
         }
     }
@@ -1348,7 +1350,7 @@ ractor_close_incoming(rb_execution_context_t *ec, rb_ractor_t *r)
             r->sync.incoming_port_closed = true;
             if (ractor_wakeup(r, wait_receiving, wakeup_by_close)) {
                 VM_ASSERT(r->sync.incoming_queue.cnt == 0);
-                RUBY_DEBUG_LOG("cancel receiving", 0);
+                RUBY_DEBUG_LOG("cancel receiving");
             }
         }
         else {
@@ -1385,7 +1387,7 @@ ractor_close_outgoing(rb_execution_context_t *ec, rb_ractor_t *r)
         // raising yielding Ractor
         if (!r->yield_atexit &&
             ractor_wakeup(r, wait_yielding, wakeup_by_close)) {
-            RUBY_DEBUG_LOG("cancel yielding", 0);
+            RUBY_DEBUG_LOG("cancel yielding");
         }
     }
     RACTOR_UNLOCK(r);
@@ -1418,7 +1420,7 @@ static void
 cancel_single_ractor_mode(void)
 {
     // enable multi-ractor mode
-    RUBY_DEBUG_LOG("enable multi-ractor mode", 0);
+    RUBY_DEBUG_LOG("enable multi-ractor mode");
 
     VALUE was_disabled = rb_gc_enable();
 
@@ -1485,6 +1487,9 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
             rb_native_cond_signal(&vm->ractor.sync.terminate_cond);
         }
         vm->ractor.cnt--;
+
+        /* Clear the cached freelist to prevent a memory leak. */
+        rb_gc_ractor_newobj_cache_clear(&cr->newobj_cache);
 
         ractor_status_set(cr, ractor_terminated);
     }
@@ -1600,6 +1605,7 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
     r->verbose = cr->verbose;
     r->debug = cr->debug;
 
+    rb_yjit_before_ractor_spawn();
     rb_thread_create_ractor(r, args, block);
 
     RB_GC_GUARD(rv);
@@ -1919,7 +1925,7 @@ rb_ractor_terminate_interrupt_main_thread(rb_ractor_t *r)
             rb_threadptr_interrupt(main_th);
         }
         else {
-            RUBY_DEBUG_LOG("killed (%p)", main_th);
+            RUBY_DEBUG_LOG("killed (%p)", (void *)main_th);
         }
     }
 }
@@ -2365,7 +2371,11 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
                 .stop = false,
                 .data = data,
             };
-            rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
+            RB_VM_LOCK_ENTER_NO_BARRIER();
+            {
+                rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
+            }
+            RB_VM_LOCK_LEAVE_NO_BARRIER();
             if (d.stop) return 1;
         }
         break;
@@ -2675,7 +2685,11 @@ static int
 obj_refer_only_shareables_p(VALUE obj)
 {
     int cnt = 0;
-    rb_objspace_reachable_objects_from(obj, obj_refer_only_shareables_p_i, &cnt);
+    RB_VM_LOCK_ENTER_NO_BARRIER();
+    {
+        rb_objspace_reachable_objects_from(obj, obj_refer_only_shareables_p_i, &cnt);
+    }
+    RB_VM_LOCK_LEAVE_NO_BARRIER();
     return cnt == 0;
 }
 

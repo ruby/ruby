@@ -347,7 +347,6 @@ RSpec.describe "bundle install with gems on multiple sources" do
       it "fails" do
         bundle :install, :artifice => "compact_index", :raise_on_error => false
         expect(err).to include("Could not find gem 'private_gem_1' in rubygems repository https://gem.repo2/ or installed locally.")
-        expect(err).to include("The source does not contain any versions of 'private_gem_1'")
       end
     end
 
@@ -1074,6 +1073,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         build_lib "foo"
 
         gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack", :source => "https://gem.repo1"
           gem "foo", :path => "#{lib_path("foo-1.0")}"
         G
@@ -1280,7 +1280,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
     expect(out).to include("Using example 0.1.0")
   end
 
-  it "fails inmmediately with a helpful error when a non retriable network error happens while resolving sources" do
+  it "fails inmmediately with a helpful error when a rubygems source does not exist and bundler/setup is required" do
     gemfile <<-G
       source "https://gem.repo1"
 
@@ -1296,6 +1296,21 @@ RSpec.describe "bundle install with gems on multiple sources" do
     end
 
     expect(last_command).to be_failure
+    expect(err).to include("Could not find gem 'example' in locally installed gems.")
+  end
+
+  it "fails inmmediately with a helpful error when a non retriable network error happens while resolving sources" do
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      source "https://gem.repo4" do
+        gem "example"
+      end
+    G
+
+    bundle "install", :artifice => nil, :raise_on_error => false
+
+    expect(last_command).to be_failure
     expect(err).to include("Could not reach host gem.repo4. Check your network connection and try again.")
   end
 
@@ -1309,6 +1324,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       install_gemfile <<-G, :artifice => "compact_index", :raise_on_error => false
+        source "#{file_uri_for(gem_repo1)}"
+
         source "https://gem.repo4" do
           gem "depends_on_rack"
         end
@@ -1338,6 +1355,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       install_gemfile <<-G, :artifice => "compact_index", :raise_on_error => false
+        source "#{file_uri_for(gem_repo1)}"
         source "https://gem.repo4" do
           gem "depends_on_rack"
         end

@@ -42,7 +42,6 @@ struct lex_context;
 #include "internal/re.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
-#include "internal/util.h"
 #include "internal/variable.h"
 #include "node.h"
 #include "probes.h"
@@ -64,7 +63,7 @@ enum shareability {
 
 struct lex_context {
     unsigned int in_defined: 1;
-    unsigned int in_kwarg: 1;
+    unsigned int in_argdef: 1;
     unsigned int in_def: 1;
     unsigned int in_class: 1;
     BITFIELD(enum shareability, shareable_constant_value, 2);
@@ -89,7 +88,6 @@ struct lex_context {
 #define YYCALLOC(nelem, size)	rb_parser_calloc(p, (nelem), (size))
 #define YYFREE(ptr)		rb_parser_free(p, (ptr))
 #define YYFPRINTF		rb_parser_printf
-#define YYPRINT(out, tok, val)	parser_token_value_print(p, (tok), &(val))
 #define YY_LOCATION_PRINT(File, loc) \
      rb_parser_printf(p, "%d.%d-%d.%d", \
 		      (loc).beg_pos.lineno, (loc).beg_pos.column,\
@@ -107,6 +105,9 @@ struct lex_context {
           (Current).end_pos = YYRHSLOC(Rhs, 0).end_pos;                 \
         }                                                               \
     while (0)
+#define YY_(Msgid) \
+    (((Msgid)[0] == 'm') && (strcmp((Msgid), "memory exhausted") == 0) ? \
+     "nesting too deep" : (Msgid))
 
 #define RUBY_SET_YYLLOC_FROM_STRTERM_HEREDOC(Current)			\
     rb_parser_set_location_from_strterm_heredoc(p, &p->lex.strterm->u.heredoc, &(Current))
@@ -337,7 +338,7 @@ struct parser_params {
     unsigned int do_loop: 1;
     unsigned int do_chomp: 1;
     unsigned int do_split: 1;
-    unsigned int save_script_lines: 1;
+    unsigned int keep_script_lines: 1;
 
     NODE *eval_tree_begin;
     NODE *eval_tree;
@@ -397,8 +398,11 @@ pop_pktbl(struct parser_params *p, st_table *tbl)
     p->pktbl = tbl;
 }
 
+RBIMPL_ATTR_NONNULL((1, 2, 3))
 static int parser_yyerror(struct parser_params*, const YYLTYPE *yylloc, const char*);
-#define yyerror0(msg) parser_yyerror(p, NULL, (msg))
+RBIMPL_ATTR_NONNULL((1, 2))
+static int parser_yyerror0(struct parser_params*, const char*);
+#define yyerror0(msg) parser_yyerror0(p, (msg))
 #define yyerror1(loc, msg) parser_yyerror(p, (loc), (msg))
 #define yyerror(yylloc, p, msg) parser_yyerror(p, yylloc, msg)
 #define token_flush(ptr) ((ptr)->lex.ptok = (ptr)->lex.pcur)
@@ -523,7 +527,6 @@ static NODE *new_find_pattern(struct parser_params *p, NODE *constant, NODE *fnd
 static NODE *new_find_pattern_tail(struct parser_params *p, ID pre_rest_arg, NODE *args, ID post_rest_arg, const YYLTYPE *loc);
 static NODE *new_hash_pattern(struct parser_params *p, NODE *constant, NODE *hshptn, const YYLTYPE *loc);
 static NODE *new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, const YYLTYPE *loc);
-static void warn_one_line_pattern_matching(struct parser_params *p, NODE *node, NODE *pattern, bool right_assign);
 
 static NODE *new_kw_arg(struct parser_params *p, NODE *k, const YYLTYPE *loc);
 static NODE *args_with_numbered(struct parser_params*,NODE*,int);
@@ -655,7 +658,6 @@ RUBY_SYMBOL_EXPORT_END
 
 static void error_duplicate_pattern_variable(struct parser_params *p, ID id, const YYLTYPE *loc);
 static void error_duplicate_pattern_key(struct parser_params *p, ID id, const YYLTYPE *loc);
-static void parser_token_value_print(struct parser_params *p, enum yytokentype type, const YYSTYPE *valp);
 #ifndef RIPPER
 static ID formal_argument(struct parser_params*, ID);
 #else
@@ -673,7 +675,6 @@ static int  local_id_ref(struct parser_params*, ID, ID **);
 #ifndef RIPPER
 static ID   internal_id(struct parser_params*);
 static NODE *new_args_forward_call(struct parser_params*, NODE*, const YYLTYPE*, const YYLTYPE*);
-static NODE *new_args_forward_def(struct parser_params*, NODE*, const YYLTYPE*);
 #endif
 static int check_forwarding_args(struct parser_params*);
 static void add_forwarding_args(struct parser_params *p);
@@ -1085,6 +1086,35 @@ static int looking_at_eol_p(struct parser_params *p);
 %expect 0
 %define api.pure
 %define parse.error verbose
+%printer {
+#ifndef RIPPER
+    rb_parser_printf(p, "%"PRIsVALUE, rb_id2str($$));
+#else
+    rb_parser_printf(p, "%"PRIsVALUE, RNODE($$)->nd_rval);
+#endif
+} tIDENTIFIER tFID tGVAR tIVAR tCONSTANT tCVAR tLABEL tOP_ASGN
+%printer {
+#ifndef RIPPER
+    rb_parser_printf(p, "%+"PRIsVALUE, $$->nd_lit);
+#else
+    rb_parser_printf(p, "%+"PRIsVALUE, get_value($$));
+#endif
+} tINTEGER tFLOAT tRATIONAL tIMAGINARY tSTRING_CONTENT tCHAR
+%printer {
+#ifndef RIPPER
+    rb_parser_printf(p, "$%ld", $$->nd_nth);
+#else
+    rb_parser_printf(p, "%"PRIsVALUE, $$);
+#endif
+} tNTH_REF
+%printer {
+#ifndef RIPPER
+    rb_parser_printf(p, "$%c", (int)$$->nd_nth);
+#else
+    rb_parser_printf(p, "%"PRIsVALUE, $$);
+#endif
+} tBACK_REF
+
 %lex-param {struct parser_params *p}
 %parse-param {struct parser_params *p}
 %initial-action
@@ -1203,7 +1233,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
 %type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop dot_or_colon
 %type <id>   p_rest p_kwrest p_kwnorest p_any_kwrest p_kw_label
-%type <id>   f_no_kwarg f_any_kwrest args_forward excessed_comma
+%type <id>   f_no_kwarg f_any_kwrest args_forward excessed_comma nonlocal_var
  %type <ctxt> lex_ctxt /* keep <ctxt> in ripper */
 %token END_OF_INPUT 0	"end-of-input"
 %token <id> '.'
@@ -1555,7 +1585,6 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		| lhs '=' lex_ctxt mrhs
 		    {
 		    /*%%%*/
-			value_expr($4);
 			$$ = node_assign(p, $1, $4, $3, &@$);
 		    /*% %*/
 		    /*% ripper: assign!($1, $4) %*/
@@ -1564,7 +1593,6 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                     {
                     /*%%%*/
                         YYLTYPE loc = code_loc_gen(&@5, &@6);
-                        value_expr($4);
 			$$ = node_assign(p, $1, NEW_RESCUE($4, NEW_RESBODY(0, remove_begin($6), 0, &loc), 0, &@$), $3, &@$);
                     /*% %*/
                     /*% ripper: massign!($1, rescue_mod!($4, $6)) %*/
@@ -1729,38 +1757,36 @@ expr		: command_call
 			value_expr($1);
 			SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
 			p->command_start = FALSE;
-			$<ctxt>$ = p->ctxt;
-			p->ctxt.in_kwarg = 1;
+			$<ctxt>2 = p->ctxt;
+			p->ctxt.in_argdef = 1;
+			$<tbl>$ = push_pvtbl(p);
 		    }
-		    {$<tbl>$ = push_pvtbl(p);}
-		  p_expr
-		    {pop_pvtbl(p, $<tbl>4);}
+		  p_top_expr_body
 		    {
-			p->ctxt.in_kwarg = $<ctxt>3.in_kwarg;
+			pop_pvtbl(p, $<tbl>3);
+			p->ctxt.in_argdef = $<ctxt>2.in_argdef;
 		    /*%%%*/
-			$$ = NEW_CASE3($1, NEW_IN($5, 0, 0, &@5), &@$);
-			warn_one_line_pattern_matching(p, $$, $5, true);
+			$$ = NEW_CASE3($1, NEW_IN($4, 0, 0, &@4), &@$);
 		    /*% %*/
-		    /*% ripper: case!($1, in!($5, Qnil, Qnil)) %*/
+		    /*% ripper: case!($1, in!($4, Qnil, Qnil)) %*/
 		    }
 		| arg keyword_in
 		    {
 			value_expr($1);
 			SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
 			p->command_start = FALSE;
-			$<ctxt>$ = p->ctxt;
-			p->ctxt.in_kwarg = 1;
+			$<ctxt>2 = p->ctxt;
+			p->ctxt.in_argdef = 1;
+			$<tbl>$ = push_pvtbl(p);
 		    }
-		    {$<tbl>$ = push_pvtbl(p);}
-		  p_expr
-		    {pop_pvtbl(p, $<tbl>4);}
+		  p_top_expr_body
 		    {
-			p->ctxt.in_kwarg = $<ctxt>3.in_kwarg;
+			pop_pvtbl(p, $<tbl>3);
+			p->ctxt.in_argdef = $<ctxt>1.in_argdef;
 		    /*%%%*/
-			$$ = NEW_CASE3($1, NEW_IN($5, NEW_TRUE(&@5), NEW_FALSE(&@5), &@5), &@$);
-			warn_one_line_pattern_matching(p, $$, $5, false);
+			$$ = NEW_CASE3($1, NEW_IN($4, NEW_TRUE(&@4), NEW_FALSE(&@4), &@4), &@$);
 		    /*% %*/
-		    /*% ripper: case!($1, in!($5, Qnil, Qnil)) %*/
+		    /*% ripper: case!($1, in!($4, Qnil, Qnil)) %*/
 		    }
 		| arg %prec tLBRACE_ARG
 		;
@@ -2832,6 +2858,7 @@ opt_block_arg	: ',' block_arg
 		    }
 		;
 
+/* value */
 args		: arg_value
 		    {
 		    /*%%%*/
@@ -2862,10 +2889,12 @@ args		: arg_value
 		    }
 		;
 
+/* value */
 mrhs_arg	: mrhs
 		| arg_value
 		;
 
+/* value */
 mrhs		: args ',' arg_value
 		    {
 		    /*%%%*/
@@ -4020,7 +4049,7 @@ p_case_body	: keyword_in
 			SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
 			p->command_start = FALSE;
 			$<ctxt>1 = p->ctxt;
-			p->ctxt.in_kwarg = 1;
+			p->ctxt.in_argdef = 1;
 			$<tbl>$ = push_pvtbl(p);
 		    }
 		    {
@@ -4030,7 +4059,7 @@ p_case_body	: keyword_in
 		    {
 			pop_pktbl(p, $<tbl>3);
 			pop_pvtbl(p, $<tbl>2);
-			p->ctxt.in_kwarg = $<ctxt>1.in_kwarg;
+			p->ctxt.in_argdef = $<ctxt>1.in_argdef;
 		    }
 		  compstmt
 		  p_cases
@@ -4204,12 +4233,12 @@ p_expr_basic	: p_value
 		    {
 			$<tbl>$ = push_pktbl(p);
 			$<ctxt>1 = p->ctxt;
-			p->ctxt.in_kwarg = 0;
+			p->ctxt.in_argdef = 0;
 		    }
 		  p_kwargs rbrace
 		    {
 			pop_pktbl(p, $<tbl>2);
-			p->ctxt.in_kwarg = $<ctxt>1.in_kwarg;
+			p->ctxt.in_argdef = $<ctxt>1.in_argdef;
 			$$ = new_hash_pattern(p, Qnone, $3, &@$);
 		    }
 		| tLBRACE rbrace
@@ -4517,6 +4546,13 @@ p_var_ref	: '^' tIDENTIFIER
 		    /*% %*/
 		    /*% ripper: var_ref!($2) %*/
 		    }
+                | '^' nonlocal_var
+		    {
+		    /*%%%*/
+			if (!($$ = gettable(p, $2, &@$))) $$ = NEW_BEGIN(0, &@$);
+		    /*% %*/
+		    /*% ripper: var_ref!($2) %*/
+                    }
 		;
 
 p_expr_ref	: '^' tLPAREN expr_value ')'
@@ -4993,6 +5029,11 @@ simple_numeric	: tINTEGER
 		| tIMAGINARY
 		;
 
+nonlocal_var    : tIVAR
+		| tGVAR
+		| tCVAR
+		;
+
 user_variable	: tIDENTIFIER
 		| tIVAR
 		| tGVAR
@@ -5086,37 +5127,17 @@ f_paren_args	: '(' f_args rparen
 			SET_LEX_STATE(EXPR_BEG);
 			p->command_start = TRUE;
 		    }
-		| '(' f_arg ',' args_forward rparen
-		    {
-			add_forwarding_args(p);
-		    /*%%%*/
-			$$ = new_args_forward_def(p, $2, &@$);
-		    /*% %*/
-		    /*% ripper: paren!(params!($2, Qnone, $4, Qnone, Qnone, Qnone, Qnone)) %*/
-			SET_LEX_STATE(EXPR_BEG);
-			p->command_start = TRUE;
-		    }
-		| '(' args_forward rparen
-		    {
-			add_forwarding_args(p);
-		    /*%%%*/
-			$$ = new_args_forward_def(p, 0, &@$);
-		    /*% %*/
-		    /*% ripper: paren!(params!(Qnone, Qnone, $2, Qnone, Qnone, Qnone, Qnone)) %*/
-			SET_LEX_STATE(EXPR_BEG);
-			p->command_start = TRUE;
-		    }
                 ;
 
 f_arglist	: f_paren_args
 		|   {
 			$<ctxt>$ = p->ctxt;
-			p->ctxt.in_kwarg = 1;
+			p->ctxt.in_argdef = 1;
 			SET_LEX_STATE(p->lex.state|EXPR_LABEL); /* force for args */
 		    }
 		  f_args term
 		    {
-			p->ctxt.in_kwarg = $<ctxt>1.in_kwarg;
+			p->ctxt.in_argdef = $<ctxt>1.in_argdef;
 			$$ = $2;
 			SET_LEX_STATE(EXPR_BEG);
 			p->command_start = TRUE;
@@ -5138,6 +5159,11 @@ args_tail	: f_kwarg ',' f_kwrest opt_f_block_arg
 		| f_block_arg
 		    {
 			$$ = new_args_tail(p, Qnone, Qnone, $1, &@1);
+		    }
+		| args_forward
+		    {
+			add_forwarding_args(p);
+			$$ = new_args_tail(p, Qnone, $1, ID2VAL(idFWD_BLOCK), &@1);
 		    }
 		;
 
@@ -5217,7 +5243,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_args_tail
 args_forward	: tBDOT3
 		    {
 		    /*%%%*/
-			$$ = idDot3;
+			$$ = idFWD_KWREST;
 		    /*% %*/
 		    /*% ripper: args_forward! %*/
 		    }
@@ -5609,6 +5635,15 @@ assoc		: arg_value tASSOC arg_value
 		    /*% %*/
 		    /*% ripper: assoc_new!($1, $2) %*/
 		    }
+		| tLABEL
+		    {
+		    /*%%%*/
+			NODE *val = gettable(p, $1, &@$);
+			if (!val) val = NEW_BEGIN(0, &@$);
+			$$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@1), &@$), val);
+		    /*% %*/
+		    /*% ripper: assoc_new!($1, Qnil) %*/
+		    }
 		| tSTRING_BEG string_contents tLABEL_END arg_value
 		    {
 		    /*%%%*/
@@ -5942,20 +5977,27 @@ parser_show_error_line(struct parser_params *p, const YYLTYPE *yylloc)
 static int
 parser_yyerror(struct parser_params *p, const YYLTYPE *yylloc, const char *msg)
 {
+#if 0
     YYLTYPE current;
 
     if (!yylloc) {
 	yylloc = RUBY_SET_YYLLOC(current);
     }
     else if ((p->ruby_sourceline != yylloc->beg_pos.lineno &&
-	      p->ruby_sourceline != yylloc->end_pos.lineno) ||
-	     (yylloc->beg_pos.lineno == yylloc->end_pos.lineno &&
-	      yylloc->beg_pos.column == yylloc->end_pos.column)) {
+	      p->ruby_sourceline != yylloc->end_pos.lineno)) {
 	yylloc = 0;
     }
+#endif
     compile_error(p, "%s", msg);
     parser_show_error_line(p, yylloc);
     return 0;
+}
+
+static int
+parser_yyerror0(struct parser_params *p, const char *msg)
+{
+    YYLTYPE current;
+    return parser_yyerror(p, RUBY_SET_YYLLOC(current), msg);
 }
 
 static void
@@ -6067,20 +6109,26 @@ static int
 parser_yyerror(struct parser_params *p, const YYLTYPE *yylloc, const char *msg)
 {
     const char *pcur = 0, *ptok = 0;
-    if (yylloc &&
-	p->ruby_sourceline == yylloc->beg_pos.lineno &&
+    if (p->ruby_sourceline == yylloc->beg_pos.lineno &&
 	p->ruby_sourceline == yylloc->end_pos.lineno) {
 	pcur = p->lex.pcur;
 	ptok = p->lex.ptok;
 	p->lex.ptok = p->lex.pbeg + yylloc->beg_pos.column;
 	p->lex.pcur = p->lex.pbeg + yylloc->end_pos.column;
     }
-    dispatch1(parse_error, STR_NEW2(msg));
-    ripper_error(p);
+    parser_yyerror0(p, msg);
     if (pcur) {
 	p->lex.ptok = ptok;
 	p->lex.pcur = pcur;
     }
+    return 0;
+}
+
+static int
+parser_yyerror0(struct parser_params *p, const char *msg)
+{
+    dispatch1(parse_error, STR_NEW2(msg));
+    ripper_error(p);
     return 0;
 }
 
@@ -6242,7 +6290,8 @@ yycompile0(VALUE arg)
 	    cov = Qtrue;
 	}
     }
-    if (p->save_script_lines) {
+
+    if (p->keep_script_lines || ruby_vm_keep_script_lines) {
         if (!p->debug_lines) {
             p->debug_lines = rb_ary_new();
         }
@@ -6349,6 +6398,7 @@ lex_getline(struct parser_params *p)
     VALUE line = (*p->lex.gets)(p, p->lex.input);
     if (NIL_P(line)) return line;
     must_be_ascii_compatible(line);
+    if (RB_OBJ_FROZEN(line)) line = rb_str_dup(line); // needed for RubyVM::AST.of because script_lines in iseq is deep-frozen
 #ifndef RIPPER
     if (p->debug_lines) {
 	rb_enc_associate(line, p->enc);
@@ -7460,7 +7510,7 @@ heredoc_identifier(struct parser_params *p)
 	len = 0;
 	while ((c = nextc(p)) != term) {
 	    if (c == -1 || c == '\r' || c == '\n') {
-		yyerror(NULL, p, "unterminated here document identifier");
+		yyerror0("unterminated here document identifier");
 		return -1;
 	    }
 	}
@@ -7486,7 +7536,7 @@ heredoc_identifier(struct parser_params *p)
 
     len = p->lex.pcur - (p->lex.pbeg + offset) - quote;
     if ((unsigned long)len >= HERETERM_LENGTH_MAX)
-	yyerror(NULL, p, "too long here document identifier");
+	yyerror0("too long here document identifier");
     dispatch_scan_event(p, tHEREDOC_BEG);
     lex_goto_eol(p);
 
@@ -8100,7 +8150,7 @@ parser_set_compile_option_flag(struct parser_params *p, const char *name, const 
     if (!p->compile_option)
 	p->compile_option = rb_obj_hide(rb_ident_hash_new());
     rb_hash_aset(p->compile_option, ID2SYM(rb_intern(name)),
-		 (b ? Qtrue : Qfalse));
+		 RBOOL(b));
 }
 
 static void
@@ -9220,7 +9270,7 @@ parser_yylex(struct parser_params *p)
                 dispatch_scan_event(p, tIGNORED_NL);
             }
             fallthru = FALSE;
-	    if (!c && p->ctxt.in_kwarg) {
+	    if (!c && p->ctxt.in_argdef) {
 		goto normal_newline;
 	    }
 	    goto retry;
@@ -9587,6 +9637,12 @@ parser_yylex(struct parser_params *p)
 	if ((c = nextc(p)) == '.') {
 	    if ((c = nextc(p)) == '.') {
 		if (p->lex.paren_nest == 0 && looking_at_eol_p(p)) {
+		    if (p->ctxt.in_argdef || /* def foo a, ... */
+			IS_lex_state_for(last_state, EXPR_ENDFN) || /* def foo ... */
+			0) {
+			SET_LEX_STATE(EXPR_ENDARG);
+			return tBDOT3;
+		    }
 		    rb_warn0("... at EOL, should be parenthesized?");
 		}
 		else if (p->lex.lpar_beg >= 0 && p->lex.lpar_beg+1 == p->lex.paren_nest) {
@@ -10172,7 +10228,10 @@ new_evstr(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 	switch (nd_type(node)) {
 	  case NODE_STR:
 	    nd_set_type(node, NODE_DSTR);
-	  case NODE_DSTR: case NODE_EVSTR:
+            return node;
+          case NODE_DSTR:
+            break;
+          case NODE_EVSTR:
 	    return node;
 	}
     }
@@ -10706,7 +10765,7 @@ rb_parser_fatal(struct parser_params *p, const char *fmt, ...)
     va_start(ap, fmt);
     rb_str_vcatf(mesg, fmt, ap);
     va_end(ap);
-    parser_yyerror(p, NULL, RSTRING_PTR(mesg));
+    yyerror0(RSTRING_PTR(mesg));
     RB_GC_GUARD(mesg);
 
     mesg = rb_str_new(0, 0);
@@ -10758,49 +10817,6 @@ rb_parser_set_location(struct parser_params *p, YYLTYPE *yylloc)
     return yylloc;
 }
 #endif /* !RIPPER */
-
-static void
-parser_token_value_print(struct parser_params *p, enum yytokentype type, const YYSTYPE *valp)
-{
-    VALUE v;
-
-    switch (type) {
-      case tIDENTIFIER: case tFID: case tGVAR: case tIVAR:
-      case tCONSTANT: case tCVAR: case tLABEL: case tOP_ASGN:
-#ifndef RIPPER
-	v = rb_id2str(valp->id);
-#else
-	v = valp->node->nd_rval;
-#endif
-	rb_parser_printf(p, "%"PRIsVALUE, v);
-	break;
-      case tINTEGER: case tFLOAT: case tRATIONAL: case tIMAGINARY:
-      case tSTRING_CONTENT: case tCHAR:
-#ifndef RIPPER
-	v = valp->node->nd_lit;
-#else
-	v = valp->val;
-#endif
-	rb_parser_printf(p, "%+"PRIsVALUE, v);
-	break;
-      case tNTH_REF:
-#ifndef RIPPER
-	rb_parser_printf(p, "$%ld", valp->node->nd_nth);
-#else
-	rb_parser_printf(p, "%"PRIsVALUE, valp->val);
-#endif
-	break;
-      case tBACK_REF:
-#ifndef RIPPER
-	rb_parser_printf(p, "$%c", (int)valp->node->nd_nth);
-#else
-	rb_parser_printf(p, "%"PRIsVALUE, valp->val);
-#endif
-	break;
-      default:
-	break;
-    }
-}
 
 static int
 assignable0(struct parser_params *p, ID id, const char **err)
@@ -11754,7 +11770,8 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
 	break;
 
       case NODE_DSYM:
-	SWITCH_BY_COND_TYPE(type, warning, "string ")
+      warn_symbol:
+	SWITCH_BY_COND_TYPE(type, warning, "symbol ")
 	break;
 
       case NODE_LIT:
@@ -11765,6 +11782,9 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
 	else if (node->nd_lit == Qtrue ||
 		 node->nd_lit == Qfalse) {
 	    /* booleans are OK, e.g., while true */
+	}
+	else if (SYMBOL_P(node->nd_lit)) {
+	    goto warn_symbol;
 	}
 	else {
 	    SWITCH_BY_COND_TYPE(type, warning, "")
@@ -11894,7 +11914,7 @@ negate_lit(struct parser_params *p, VALUE lit)
 	RCOMPLEX_SET_IMAG(lit, negate_lit(p, RCOMPLEX(lit)->imag));
 	break;
       case T_FLOAT:
-	RFLOAT(lit)->float_value = -RFLOAT_VALUE(lit);
+	lit = DBL2NUM(-RFLOAT_VALUE(lit));
 	break;
       unknown:
       default:
@@ -11936,6 +11956,14 @@ new_args(struct parser_params *p, NODE *pre_args, NODE *opt_args, ID rest_arg, N
 {
     int saved_line = p->ruby_sourceline;
     struct rb_args_info *args = tail->nd_ainfo;
+
+    if (args->block_arg == idFWD_BLOCK) {
+	if (rest_arg) {
+	    yyerror1(&tail->nd_loc, "... after rest argument");
+	    return tail;
+	}
+	rest_arg = idFWD_REST;
+    }
 
     args->pre_args_num   = pre_args ? rb_long2int(pre_args->nd_plen) : 0;
     args->pre_init       = pre_args ? pre_args->nd_next : 0;
@@ -12140,17 +12168,6 @@ new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, co
     return node;
 }
 
-static void
-warn_one_line_pattern_matching(struct parser_params *p, NODE *node, NODE *pattern, bool right_assign)
-{
-    enum node_type type;
-    type = nd_type(pattern);
-
-    if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL) &&
-	!(right_assign && (type == NODE_LASGN || type == NODE_DASGN || type == NODE_DASGN_CURR)))
-	rb_warn0L_experimental(nd_line(node), "One-line pattern matching is experimental, and the behavior may change in future versions of Ruby!");
-}
-
 static NODE*
 dsym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 {
@@ -12229,24 +12246,30 @@ remove_duplicate_keys(struct parser_params *p, NODE *hash)
 {
     st_table *literal_keys = st_init_table_with_size(&literal_type, hash->nd_alen / 2);
     NODE *result = 0;
+    NODE *last_expr = 0;
     rb_code_location_t loc = hash->nd_loc;
     while (hash && hash->nd_head && hash->nd_next) {
 	NODE *head = hash->nd_head;
 	NODE *value = hash->nd_next;
 	NODE *next = value->nd_next;
-	VALUE key = (VALUE)head;
+	st_data_t key = (st_data_t)head;
 	st_data_t data;
+	value->nd_next = 0;
 	if (nd_type(head) == NODE_LIT &&
-	    st_lookup(literal_keys, (key = head->nd_lit), &data)) {
+	    st_delete(literal_keys, (key = (st_data_t)head->nd_lit, &key), &data)) {
+	    NODE *dup_value = ((NODE *)data)->nd_next;
 	    rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
 			    "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
 			    head->nd_lit, nd_line(head));
-	    head = ((NODE *)data)->nd_next;
-	    head->nd_head = block_append(p, head->nd_head, value->nd_head);
+	    if (dup_value == last_expr) {
+		value->nd_head = block_append(p, dup_value->nd_head, value->nd_head);
+	    }
+	    else {
+		last_expr->nd_head = block_append(p, dup_value->nd_head, last_expr->nd_head);
+	    }
 	}
-	else {
-	    st_insert(literal_keys, (st_data_t)key, (st_data_t)hash);
-	}
+	st_insert(literal_keys, (st_data_t)key, (st_data_t)hash);
+	last_expr = nd_type(head) == NODE_LIT ? value : head;
 	hash = next;
     }
     st_foreach(literal_keys, append_literal_keys, (st_data_t)&result);
@@ -12671,13 +12694,6 @@ new_args_forward_call(struct parser_params *p, NODE *leading, const YYLTYPE *loc
     args = arg_append(p, splat, new_hash(p, kwrest, loc), loc);
 #endif
     return arg_blk_pass(args, block);
-}
-
-static NODE *
-new_args_forward_def(struct parser_params *p, NODE *leading, const YYLTYPE *loc)
-{
-    NODE *n = new_args_tail(p, Qnone, idFWD_KWREST, idFWD_BLOCK, loc);
-    return new_args(p, leading, Qnone, idFWD_REST, Qnone, n, loc);
 }
 #endif
 
@@ -13196,12 +13212,12 @@ rb_parser_set_context(VALUE vparser, const struct rb_iseq_struct *base, int main
 }
 
 void
-rb_parser_save_script_lines(VALUE vparser)
+rb_parser_keep_script_lines(VALUE vparser)
 {
     struct parser_params *p;
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
-    p->save_script_lines = 1;
+    p->keep_script_lines = 1;
 }
 #endif
 
@@ -13231,7 +13247,7 @@ ripper_error_p(VALUE vparser)
     struct parser_params *p;
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
-    return p->error_p ? Qtrue : Qfalse;
+    return RBOOL(p->error_p);
 }
 #endif
 
@@ -13247,7 +13263,7 @@ rb_parser_end_seen_p(VALUE vparser)
     struct parser_params *p;
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
-    return p->ruby__end__seen ? Qtrue : Qfalse;
+    return RBOOL(p->ruby__end__seen);
 }
 
 /*
@@ -13278,7 +13294,7 @@ rb_parser_get_yydebug(VALUE self)
     struct parser_params *p;
 
     TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
-    return p->debug ? Qtrue : Qfalse;
+    return RBOOL(p->debug);
 }
 #endif
 

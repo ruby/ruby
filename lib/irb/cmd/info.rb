@@ -14,6 +14,12 @@ module IRB
             str += "InputMethod: #{IRB.CurrentContext.io.inspect}\n"
             str += ".irbrc path: #{IRB.rc_file}\n" if File.exist?(IRB.rc_file)
             str += "RUBY_PLATFORM: #{RUBY_PLATFORM}\n"
+            str += "LANG env: #{ENV["LANG"]}\n" if ENV["LANG"] && !ENV["LANG"].empty?
+            str += "LC_ALL env: #{ENV["LC_ALL"]}\n" if ENV["LC_ALL"] && !ENV["LC_ALL"].empty?
+            if RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/
+              codepage = `chcp`.sub(/.*: (\d+)\n/, '\1')
+              str += "Code page: #{codepage}\n"
+            end
             str
           end
           alias_method :to_s, :inspect

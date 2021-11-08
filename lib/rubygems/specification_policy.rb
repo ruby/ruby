@@ -1,4 +1,4 @@
-require 'rubygems/user_interaction'
+require_relative 'user_interaction'
 
 class Gem::SpecificationPolicy
   include Gem::UserInteraction
@@ -381,7 +381,7 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
   end
 
   LAZY = '"FIxxxXME" or "TOxxxDO"'.gsub(/xxx/, '')
-  LAZY_PATTERN = /FI XME|TO DO/x.freeze
+  LAZY_PATTERN = /\AFI XME|\ATO DO/x.freeze
   HOMEPAGE_URI_PATTERN = /\A[a-z][a-z\d+.-]*:/i.freeze
 
   def validate_lazy_metadata

@@ -26,7 +26,7 @@ describe 'RbConfig::CONFIG' do
     it "['sitelibdir'] is set and is part of $LOAD_PATH" do
       sitelibdir = RbConfig::CONFIG['sitelibdir']
       sitelibdir.should be_kind_of String
-      $LOAD_PATH.should.include? sitelibdir
+      $LOAD_PATH.map{|path| File.realpath(path) rescue path }.should.include? sitelibdir
     end
   end
 
@@ -40,6 +40,17 @@ describe 'RbConfig::CONFIG' do
       end
       puts 'Done'
     RUBY
+  end
+
+  platform_is_not :windows do
+    it "['LIBRUBY'] is the same as LIBRUBY_SO if and only if ENABLE_SHARED" do
+      case RbConfig::CONFIG['ENABLE_SHARED']
+      when 'yes'
+        RbConfig::CONFIG['LIBRUBY'].should == RbConfig::CONFIG['LIBRUBY_SO']
+      when 'no'
+        RbConfig::CONFIG['LIBRUBY'].should_not == RbConfig::CONFIG['LIBRUBY_SO']
+      end
+    end
   end
 
   guard -> { RbConfig::TOPDIR } do

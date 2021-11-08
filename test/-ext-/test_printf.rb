@@ -21,11 +21,11 @@ class Test_SPrintf < Test::Unit::TestCase
   end
 
   def test_quote
-    assert_equal('["\n"]', Bug::Printf.q("\n"))
+    assert_equal('[\n]', Bug::Printf.q("\n"))
     assert_equal('[aaa]', Bug::Printf.q('aaa'))
     assert_equal('[a a]', Bug::Printf.q('a a'))
     assert_equal('[]', Bug::Printf.q(''))
-    assert_equal('[""]', Bug::Printf.q(:''))
+    assert_equal('[]', Bug::Printf.q(:''))
   end
 
   def test_encoding

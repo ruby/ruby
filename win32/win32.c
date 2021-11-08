@@ -887,6 +887,13 @@ socklist_delete(SOCKET *sockp, int *flagp)
     return ret;
 }
 
+#if RUBY_MSVCRT_VERSION >= 80
+# ifdef __MINGW32__
+#  define _CrtSetReportMode(type,mode) ((void)0)
+#  define _RTC_SetErrorFunc(func) ((void)0)
+# endif
+static void set_pioinfo_extra(void);
+#endif
 static int w32_cmdvector(const WCHAR *, char ***, UINT, rb_encoding *);
 //
 // Initialization stuff
@@ -896,7 +903,6 @@ void
 rb_w32_sysinit(int *argc, char ***argv)
 {
 #if RUBY_MSVCRT_VERSION >= 80
-    static void set_pioinfo_extra(void);
 
     _CrtSetReportMode(_CRT_ASSERT, 0);
     _set_invalid_parameter_handler(invalid_parameter);
@@ -1998,6 +2004,7 @@ get_final_path_fail(HANDLE f, WCHAR *buf, DWORD len, DWORD flag)
 static DWORD WINAPI
 get_final_path_unknown(HANDLE f, WCHAR *buf, DWORD len, DWORD flag)
 {
+    /* Since Windows Vista and Windows Server 2008 */
     get_final_path_func func = (get_final_path_func)
 	get_proc_address("kernel32", "GetFinalPathNameByHandleW", NULL);
     if (!func) func = get_final_path_fail;
@@ -2572,7 +2579,7 @@ set_pioinfo_extra(void)
     char *pend = p;
     /* _osfile(fh) & FDEV */
 
-# if _WIN64
+# ifdef _WIN64
     int32_t rel;
     char *rip;
     /* add rsp, _ */
@@ -2614,7 +2621,7 @@ set_pioinfo_extra(void)
 
     found:
     p += sizeof(PIOINFO_MARK) - 1;
-#if _WIN64
+#ifdef _WIN64
     rel = *(int32_t*)(p);
     rip = p + sizeof(int32_t);
     __pioinfo = (ioinfo**)(rip + rel);
@@ -5203,6 +5210,7 @@ w32_symlink(UINT cp, const char *src, const char *link)
     static DWORD create_flag = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
 
     if (create_symbolic_link == (create_symbolic_link_func)-1) {
+	/* Since Windows Vista and Windows Server 2008 */
 	create_symbolic_link = (create_symbolic_link_func)
 	    get_proc_address("kernel32", "CreateSymbolicLinkW", NULL);
     }
@@ -5337,11 +5345,13 @@ get_attr_vsn(const WCHAR *path, DWORD *atts, DWORD *vsn)
     HANDLE h = open_special(path, 0, FILE_FLAG_OPEN_REPARSE_POINT);
 
     if (h == INVALID_HANDLE_VALUE) {
-	ASSUME(e = GetLastError());
+	e = GetLastError();
+	ASSUME(e);
 	return e;
     }
     if (!GetFileInformationByHandle(h, &st)) {
-	ASSUME(e = GetLastError());
+	e = GetLastError();
+	ASSUME(e);
     }
     else {
 	*atts = st.dwFileAttributes;
@@ -5534,6 +5544,7 @@ get_ino(HANDLE h, FILE_ID_INFO *id)
     static gfibhe_t pGetFileInformationByHandleEx = (gfibhe_t)-1;
 
     if (pGetFileInformationByHandleEx == (gfibhe_t)-1)
+	/* Since Windows Vista and Windows Server 2008 */
 	pGetFileInformationByHandleEx = (gfibhe_t)get_proc_address("kernel32", "GetFileInformationByHandleEx", NULL);
 
     if (pGetFileInformationByHandleEx) {
@@ -7747,6 +7758,7 @@ fchmod(int fd, int mode)
 	return -1;
     }
     if (set_file_info == (set_file_information_by_handle_func)-1) {
+	/* Since Windows Vista and Windows Server 2008 */
 	set_file_info = (set_file_information_by_handle_func)
 	    get_proc_address("kernel32", "SetFileInformationByHandle", NULL);
     }
@@ -8153,6 +8165,7 @@ rb_w32_set_thread_description(HANDLE th, const WCHAR *name)
     static set_thread_description_func set_thread_description =
 	(set_thread_description_func)-1;
     if (set_thread_description == (set_thread_description_func)-1) {
+	/* Since Windows 10, version 1607 and Windows Server 2016 */
 	set_thread_description = (set_thread_description_func)
 	    get_proc_address("kernel32", "SetThreadDescription", NULL);
     }

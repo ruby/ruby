@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require 'rubygems'
-require 'rubygems/user_interaction'
+require_relative '../rubygems'
+require_relative 'user_interaction'
 
 ##
 # Cleans up after a partially-failed uninstall or for an invalid

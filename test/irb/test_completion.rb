@@ -17,7 +17,7 @@ module TestIRB
         status = assert_in_out_err(cmds, "", //, [], bug5938)
         assert(status.success?, bug5938)
       rescue LoadError
-        skip "cannot load irb/completion"
+        pend "cannot load irb/completion"
       end
     end
 
@@ -27,9 +27,25 @@ module TestIRB
     end
 
     def test_complete_symbol
+      %w"UTF-16LE UTF-7".each do |enc|
+        "K".force_encoding(enc).to_sym
+      rescue
+      end
       _ = :aiueo
       assert_include(IRB::InputCompletor.retrieve_completion_data(":a", bind: binding), ":aiueo")
       assert_empty(IRB::InputCompletor.retrieve_completion_data(":irb_unknown_symbol_abcdefg", bind: binding))
+    end
+
+    def test_complete_invalid_three_colons
+      assert_empty(IRB::InputCompletor.retrieve_completion_data(":::A", bind: binding))
+      assert_empty(IRB::InputCompletor.retrieve_completion_data(":::", bind: binding))
+    end
+
+    def test_complete_absolute_constants_with_special_characters
+      assert_empty(IRB::InputCompletor.retrieve_completion_data("::A:", bind: binding))
+      assert_empty(IRB::InputCompletor.retrieve_completion_data("::A.", bind: binding))
+      assert_empty(IRB::InputCompletor.retrieve_completion_data("::A(", bind: binding))
+      assert_empty(IRB::InputCompletor.retrieve_completion_data("::A)", bind: binding))
     end
 
     def test_complete_symbol_failure
@@ -68,6 +84,12 @@ module TestIRB
       end
     end
 
+    def test_complete_require_library_name_first
+      pend 'Need to use virtual library paths'
+      candidates = IRB::InputCompletor::CompletionProc.("'csv", "require ", "")
+      assert_equal "'csv", candidates.first
+    end
+
     def test_complete_require_relative
       candidates = Dir.chdir(__dir__ + "/../..") do
         IRB::InputCompletor::CompletionProc.("'lib/irb", "require_relative ", "")
@@ -82,6 +104,19 @@ module TestIRB
       %w['lib/irb/init 'lib/irb/ruby-lex].each do |word|
         assert_include candidates, word
       end
+    end
+
+    def test_complete_variable
+      str_example = ''
+      str_example.clear # suppress "assigned but unused variable" warning
+      assert_include(IRB::InputCompletor.retrieve_completion_data("str_examp", bind: binding), "str_example")
+      assert_equal(IRB::InputCompletor.retrieve_completion_data("str_example", bind: binding, doc_namespace: true), "String")
+      assert_equal(IRB::InputCompletor.retrieve_completion_data("str_example.to_s", bind: binding, doc_namespace: true), "String.to_s")
+    end
+
+    def test_complete_class_method
+      assert_include(IRB::InputCompletor.retrieve_completion_data("String.new", bind: binding), "String.new")
+      assert_equal(IRB::InputCompletor.retrieve_completion_data("String.new", bind: binding, doc_namespace: true), "String.new")
     end
   end
 end

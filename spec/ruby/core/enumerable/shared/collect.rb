@@ -89,5 +89,19 @@ describe :enumerable_collect, shared: true do
     end.should raise_error(ArgumentError)
   end
 
+  it "calls the each method on sub-classes" do
+    c = Class.new(Hash) do
+      def each
+        ScratchPad << 'in each'
+        super
+      end
+    end
+    h = c.new
+    h[1] = 'a'
+    ScratchPad.record []
+    h.send(@method) { |k,v| v }
+    ScratchPad.recorded.should == ['in each']
+  end
+
   it_should_behave_like :enumerable_enumeratorized_with_origin_size
 end

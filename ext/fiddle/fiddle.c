@@ -7,7 +7,7 @@ VALUE rb_eFiddleError;
 void Init_fiddle_pointer(void);
 void Init_fiddle_pinned(void);
 
-#ifdef FIDDLE_MEMORY_VIEW
+#ifdef HAVE_RUBY_MEMORY_VIEW_H
 void Init_fiddle_memory_view(void);
 #endif
 
@@ -546,7 +546,7 @@ Init_fiddle(void)
     Init_fiddle_pointer();
     Init_fiddle_pinned();
 
-#ifdef FIDDLE_MEMORY_VIEW
+#ifdef HAVE_RUBY_MEMORY_VIEW_H
     Init_fiddle_memory_view();
 #endif
 }

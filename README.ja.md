@@ -167,11 +167,14 @@ UNIXであれば `configure` がほとんどの差異を吸収してくれるは
 
 ## フィードバック
 
-Rubyに関する質問は Ruby-Talk（英語）や Ruby-List（日本語） (https://www.ruby-lang.org/ja/community/mailing-lists) や，
-stackoverflow (https://ja.stackoverflow.com/) などのWebサイトに投稿してください．
+Rubyに関する質問は [Ruby-Talk]（英語）や [Ruby-List]（日本語）や，
+[stackoverflow] などのWebサイトに投稿してください．
 
 バグ報告は https://bugs.ruby-lang.org で受け付けています．
 
+[Ruby-Talk]: https://www.ruby-lang.org/en/community/mailing-lists
+[Ruby-List]: https://www.ruby-lang.org/ja/community/mailing-lists
+[stackoverflow]: https://ja.stackoverflow.com/
 
 ## 著者
 

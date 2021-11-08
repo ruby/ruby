@@ -93,7 +93,12 @@
 #
 # == What's Here
 #
-# \Class \Time provides methods that are useful for:
+# First, what's elsewhere. \Class \Time:
+#
+# - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
+# - Includes {module Comparable}[Comparable.html#module-Comparable-label-What-27s+Here].
+#
+# Here, class \Time provides methods that are useful for:
 #
 # - {Creating \Time objects}[#class-Time-label-Methods+for+Creating].
 # - {Fetching \Time values}[#class-Time-label-Methods+for+Fetching].
@@ -211,7 +216,7 @@ class Time
   # This is the same as Time.new without arguments.
   #
   #    Time.now               # => 2009-06-24 12:39:54 +0900
-  #    Time.now(in: '+04:00') # => 2021-04-30 01:56:44 +0400
+  #    Time.now(in: '+04:00') # => 2009-06-24 07:39:54 +0400
   #
   # Parameter:
   # :include: doc/time/in.rdoc
@@ -225,7 +230,7 @@ class Time
   # and optional keyword argument +in+:
   #
   #   Time.at(Time.new)               # => 2021-04-26 08:52:31.6023486 -0500
-  #   Time.at(Time.new, in: '+09:00') # => 2021-04-26 22:52:32.1480341 +0900
+  #   Time.at(Time.new, in: '+09:00') # => 2021-04-26 22:52:31.6023486 +0900
   #
   # _Seconds_
   #

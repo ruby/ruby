@@ -445,41 +445,39 @@ describe "Array#[]= with [m..n]" do
   end
 end
 
-ruby_version_is "2.6" do
-  describe "Array#[]= with [m..]" do
-    it "just sets the section defined by range to nil even if the rhs is nil" do
-      a = [1, 2, 3, 4, 5]
-      a[eval("(2..)")] = nil
-      a.should == [1, 2, nil]
-    end
+describe "Array#[]= with [m..]" do
+  it "just sets the section defined by range to nil even if the rhs is nil" do
+    a = [1, 2, 3, 4, 5]
+    a[eval("(2..)")] = nil
+    a.should == [1, 2, nil]
+  end
 
-    it "just sets the section defined by range to nil if m and n < 0 and the rhs is nil" do
-      a = [1, 2, 3, 4, 5]
-      a[eval("(-3..)")] = nil
-      a.should == [1, 2, nil]
-    end
+  it "just sets the section defined by range to nil if m and n < 0 and the rhs is nil" do
+    a = [1, 2, 3, 4, 5]
+    a[eval("(-3..)")] = nil
+    a.should == [1, 2, nil]
+  end
 
-    it "replaces the section defined by range" do
-      a = [6, 5, 4, 3, 2, 1]
-      a[eval("(3...)")] = 9
-      a.should == [6, 5, 4, 9]
-      a[eval("(2..)")] = [7, 7, 7]
-      a.should == [6, 5, 7, 7, 7]
-    end
+  it "replaces the section defined by range" do
+    a = [6, 5, 4, 3, 2, 1]
+    a[eval("(3...)")] = 9
+    a.should == [6, 5, 4, 9]
+    a[eval("(2..)")] = [7, 7, 7]
+    a.should == [6, 5, 7, 7, 7]
+  end
 
-    it "replaces the section if m and n < 0" do
-      a = [1, 2, 3, 4, 5]
-      a[eval("(-3..)")] = [7, 8, 9]
-      a.should == [1, 2, 7, 8, 9]
-    end
+  it "replaces the section if m and n < 0" do
+    a = [1, 2, 3, 4, 5]
+    a[eval("(-3..)")] = [7, 8, 9]
+    a.should == [1, 2, 7, 8, 9]
+  end
 
-    it "inserts at the end if m > the array size" do
-      a = [1, 2, 3]
-      a[eval("(3..)")] = [4]
-      a.should == [1, 2, 3, 4]
-      a[eval("(5..)")] = [6]
-      a.should == [1, 2, 3, 4, nil, 6]
-    end
+  it "inserts at the end if m > the array size" do
+    a = [1, 2, 3]
+    a[eval("(3..)")] = [4]
+    a.should == [1, 2, 3, 4]
+    a[eval("(5..)")] = [6]
+    a.should == [1, 2, 3, 4, nil, 6]
   end
 end
 

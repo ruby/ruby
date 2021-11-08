@@ -74,7 +74,7 @@ RSpec.describe Bundler::Env do
 
     context "when there is a Gemfile and a lockfile and print_gemfile is true" do
       before do
-        gemfile "gem 'rack', '1.0.0'"
+        gemfile "source \"#{file_uri_for(gem_repo1)}\"; gem 'rack', '1.0.0'"
 
         lockfile <<-L
           GEM
@@ -127,6 +127,20 @@ RSpec.describe Bundler::Env do
       end
     end
 
+    context "when there's bundler config with OAuth token credentials" do
+      before do
+        bundle "config set https://localgemserver.test/ api_token:x-oauth-basic"
+      end
+
+      let(:output) { described_class.report(:print_gemfile => true) }
+
+      it "prints the config with redacted values" do
+        expect(output).to include("https://localgemserver.test")
+        expect(output).to include("[REDACTED]:x-oauth-basic")
+        expect(output).to_not include("api_token:x-oauth-basic")
+      end
+    end
+
     context "when Gemfile contains a gemspec and print_gemspecs is true" do
       let(:gemspec) do
         strip_whitespace(<<-GEMSPEC)
@@ -138,7 +152,7 @@ RSpec.describe Bundler::Env do
       end
 
       before do
-        gemfile("gemspec")
+        gemfile("source \"#{file_uri_for(gem_repo1)}\"; gemspec")
 
         File.open(bundled_app.join("foo.gemspec"), "wb") do |f|
           f.write(gemspec)

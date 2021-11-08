@@ -78,6 +78,19 @@ class TestFileExhaustive < Test::Unit::TestCase
     @notownedfile
   end
 
+  def grpownedfile
+    return nil unless POSIX
+    return @grpownedfile if defined? @grpownedfile
+    if group = (Process.groups - [Process.egid]).last
+      grpownedfile = make_tmp_filename("grpownedfile")
+      make_file("grpowned", grpownedfile)
+      File.chown(nil, group, grpownedfile)
+      return @grpownedfile = grpownedfile
+    end
+  rescue
+    @grpownedfile = nil
+  end
+
   def suidfile
     return @suidfile if defined? @suidfile
     if POSIX
@@ -493,6 +506,9 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_grpowned_p ## xxx
     assert_file.grpowned?(regular_file)
     assert_file.grpowned?(utf8_file)
+    if file = grpownedfile
+      assert_file.grpowned?(file)
+    end
   end if POSIX
 
   def io_open(file_name)
@@ -1392,21 +1408,24 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_flock_exclusive
+    timeout = EnvUtil.apply_timeout_scale(0.1).to_s
     File.open(regular_file, "r+") do |f|
       f.flock(File::LOCK_EX)
-      assert_separately(["-rtimeout", "-", regular_file], "#{<<~begin}#{<<~"end;"}")
-      begin
+      assert_separately(["-rtimeout", "-", regular_file, timeout], "#{<<-"begin;"}\n#{<<-'end;'}")
+      begin;
+        timeout = ARGV[1].to_f
         open(ARGV[0], "r") do |f|
-          Timeout.timeout(0.1) do
+          Timeout.timeout(timeout) do
             assert(!f.flock(File::LOCK_SH|File::LOCK_NB))
           end
         end
       end;
-      assert_separately(["-rtimeout", "-", regular_file], "#{<<~begin}#{<<~"end;"}")
-      begin
+      assert_separately(["-rtimeout", "-", regular_file, timeout], "#{<<-"begin;"}\n#{<<-'end;'}")
+      begin;
+        timeout = ARGV[1].to_f
         open(ARGV[0], "r") do |f|
           assert_raise(Timeout::Error) do
-            Timeout.timeout(0.1) do
+            Timeout.timeout(timeout) do
               f.flock(File::LOCK_SH)
             end
           end
@@ -1418,21 +1437,24 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_flock_shared
+    timeout = EnvUtil.apply_timeout_scale(0.1).to_s
     File.open(regular_file, "r+") do |f|
       f.flock(File::LOCK_SH)
-      assert_separately(["-rtimeout", "-", regular_file], "#{<<~begin}#{<<~"end;"}")
-      begin
+      assert_separately(["-rtimeout", "-", regular_file, timeout], "#{<<-"begin;"}\n#{<<-'end;'}")
+      begin;
+        timeout = ARGV[1].to_f
         open(ARGV[0], "r") do |f|
-          Timeout.timeout(0.1) do
+          Timeout.timeout(timeout) do
             assert(f.flock(File::LOCK_SH))
           end
         end
       end;
-      assert_separately(["-rtimeout", "-", regular_file], "#{<<~begin}#{<<~"end;"}")
-      begin
+      assert_separately(["-rtimeout", "-", regular_file, timeout], "#{<<-"begin;"}\n#{<<-'end;'}")
+      begin;
+        timeout = ARGV[1].to_f
         open(ARGV[0], "r+") do |f|
           assert_raise(Timeout::Error) do
-            Timeout.timeout(0.1) do
+            Timeout.timeout(timeout) do
               f.flock(File::LOCK_EX)
             end
           end
@@ -1454,6 +1476,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       fn1,
       zerofile,
       notownedfile,
+      grpownedfile,
       suidfile,
       sgidfile,
       stickyfile,
@@ -1689,6 +1712,9 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_stat_grpowned_p ## xxx
     assert_predicate(File::Stat.new(regular_file), :grpowned?)
+    if file = grpownedfile
+      assert_predicate(File::Stat.new(file), :grpowned?)
+    end
   end if POSIX
 
   def test_stat_suid

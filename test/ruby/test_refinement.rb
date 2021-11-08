@@ -225,7 +225,7 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
   def test_method_should_use_refinements
-    skip if Minitest::Unit.current_repeat_count > 0
+    skip if Test::Unit::Runner.current_repeat_count > 0
 
     foo = Foo.new
     assert_raise(NameError) { foo.method(:z) }
@@ -248,7 +248,7 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
   def test_instance_method_should_use_refinements
-    skip if Minitest::Unit.current_repeat_count > 0
+    skip if Test::Unit::Runner.current_repeat_count > 0
 
     foo = Foo.new
     assert_raise(NameError) { Foo.instance_method(:z) }
@@ -747,6 +747,13 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
+  def self.suppress_verbose
+    verbose, $VERBOSE = $VERBOSE, nil
+    yield
+  ensure
+    $VERBOSE = verbose
+  end
+
   module IncludeIntoRefinement
     class C
       def bar
@@ -774,7 +781,9 @@ class TestRefinement < Test::Unit::TestCase
 
     module M
       refine C do
-        include Mixin
+        TestRefinement.suppress_verbose do
+          include Mixin
+        end
 
         def baz
           return super << " M#baz"
@@ -837,7 +846,9 @@ class TestRefinement < Test::Unit::TestCase
 
     module M
       refine C do
-        prepend Mixin
+        TestRefinement.suppress_verbose do
+          prepend Mixin
+        end
 
         def baz
           return super << " M#baz"
@@ -2537,6 +2548,25 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal(:second, klass.new.foo)
   end
 
+  class Bug18180
+    module M
+      refine Array do
+        def min; :min; end
+        def max; :max; end
+      end
+    end
+
+    using M
+
+    def t
+      [[1+0, 2, 4].min, [1, 2, 4].min, [1+0, 2, 4].max, [1, 2, 4].max]
+    end
+  end
+
+  def test_refine_array_min_max
+    assert_equal([:min, :min, :max, :max], Bug18180.new.t)
+  end
+
   class Bug17822
     module Ext
       refine(Bug17822) do
@@ -2557,6 +2587,89 @@ class TestRefinement < Test::Unit::TestCase
   # [Bug #17822]
   def test_privatizing_refined_method
     assert_equal(:refined, Bug17822::Client.call_foo)
+  end
+
+  def test_ancestors
+    refinement = nil
+    as = nil
+    Module.new do
+      refine Array do
+        refinement = self
+        as = ancestors
+      end
+    end
+    assert_equal([refinement], as, "[ruby-core:86949] [Bug #14744]")
+  end
+
+  module TestImport
+    class A
+      def foo
+        "original"
+      end
+    end
+
+    module B
+      BAR = "bar"
+
+      def bar
+        "#{foo}:#{BAR}"
+      end
+    end
+
+    module C
+      refine A do
+        import_methods B
+
+        def foo
+          "refined"
+        end
+      end
+    end
+
+    module D
+      refine A do
+        TestRefinement.suppress_verbose do
+          include B
+        end
+
+        def foo
+          "refined"
+        end
+      end
+    end
+
+    module UsingC
+      using C
+
+      def self.call_bar
+        A.new.bar
+      end
+    end
+
+    module UsingD
+      using D
+
+      def self.call_bar
+        A.new.bar
+      end
+    end
+  end
+
+  def test_import_methods
+    assert_equal("refined:bar", TestImport::UsingC.call_bar)
+    assert_equal("original:bar", TestImport::UsingD.call_bar)
+
+    assert_raise(ArgumentError) do
+      Module.new do
+        refine Integer do
+          import_methods Enumerable
+        end
+      end
+    end
+  end
+
+  def test_inherit_singleton_methods_of_module
+    assert_equal([], Refinement.used_modules)
   end
 
   private

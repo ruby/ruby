@@ -1,14 +1,27 @@
 name: macOS
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+
 jobs:
   make:
-    runs-on: macos-latest
     strategy:
       matrix:
+        os: [macos-10.15, macos-11]
         test_task: [ "check", "test-bundler-parallel" ] #, "test-bundled-gems" ] matrix tests has unknown issues
       fail-fast: false
     env:
+      RUBY_TESTOPTS: '-q --tty=no'
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+    runs-on: ${{ matrix.os }}
     steps:
       - run: mkdir build
         working-directory:
@@ -26,22 +39,27 @@ jobs:
         working-directory: src
       - name: Set ENV
         run: |
-          echo "JOBS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
+          echo "MAKEFLAGS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
       - run: ./autogen.sh
         working-directory: src
       - name: Run configure
         run: ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
-      - run: make $JOBS incs
-      - run: make $JOBS
+      - run: make incs
+      - run: make
       - run: make leaked-globals
-        if: matrix.test_task == 'check'
+        if: ${{ matrix.test_task == 'check' }}
       - run: make prepare-gems
-        if: matrix.test_task == 'check'
-      - run: make $JOBS -s ${{ matrix.test_task }}
-        timeout-minutes: 60
+        if: ${{ matrix.test_task == 'check' }}
+      - run: make -s ${{ matrix.test_task }}
+        timeout-minutes: 40
         env:
-          RUBY_TESTOPTS: "-q --tty=no"
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: "rexml"
+      - run: make -s check RUN_OPTS="--yjit"
+        timeout-minutes: 60
+        if: ${{ matrix.test_task == 'check' }}
+      - run: make -s check RUN_OPTS="--yjit --yjit-call-threshold=1 --yjit-max-versions=1"
+        timeout-minutes: 60
+        if: ${{ matrix.test_task == 'check' }}
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |
@@ -54,7 +72,7 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: failure() && github.event_name == 'push'
+        if: ${{ failure() && github.event_name == 'push' }}
 
 defaults:
   run:

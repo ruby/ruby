@@ -59,6 +59,12 @@ describe "Enumerable#grep" do
       ["abc", "def"].grep(/b/).should == ["abc"]
       $&.should == "z"
     end
+
+    it "does not modify Regexp.last_match without block" do
+      "z" =~ /z/ # Reset last match
+      ["abc", "def"].grep(/b/).should == ["abc"]
+      Regexp.last_match[0].should == "z"
+    end
   end
 
   describe "with a block" do

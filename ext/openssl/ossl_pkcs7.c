@@ -330,7 +330,7 @@ ossl_pkcs7_alloc(VALUE klass)
 static VALUE
 ossl_pkcs7_initialize(int argc, VALUE *argv, VALUE self)
 {
-    PKCS7 *p7, *pkcs = DATA_PTR(self);
+    PKCS7 *p7, *p7_orig = RTYPEDDATA_DATA(self);
     BIO *in;
     VALUE arg;
 
@@ -338,19 +338,17 @@ ossl_pkcs7_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
     arg = ossl_to_der_if_possible(arg);
     in = ossl_obj2bio(&arg);
-    p7 = PEM_read_bio_PKCS7(in, &pkcs, NULL, NULL);
+    p7 = d2i_PKCS7_bio(in, NULL);
     if (!p7) {
-	OSSL_BIO_reset(in);
-        p7 = d2i_PKCS7_bio(in, &pkcs);
-	if (!p7) {
-	    BIO_free(in);
-	    PKCS7_free(pkcs);
-	    DATA_PTR(self) = NULL;
-	    ossl_raise(rb_eArgError, "Could not parse the PKCS7");
-	}
+        OSSL_BIO_reset(in);
+        p7 = PEM_read_bio_PKCS7(in, NULL, NULL, NULL);
     }
-    DATA_PTR(self) = pkcs;
     BIO_free(in);
+    if (!p7)
+        ossl_raise(rb_eArgError, "Could not parse the PKCS7");
+
+    RTYPEDDATA_DATA(self) = p7;
+    PKCS7_free(p7_orig);
     ossl_pkcs7_set_data(self, Qnil);
     ossl_pkcs7_set_err_string(self, Qnil);
 

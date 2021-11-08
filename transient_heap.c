@@ -825,7 +825,7 @@ transient_heap_evacuate(void *dmy)
             transient_heap_update_status(theap, transient_heap_none);
         }
         if (gc_disabled != Qtrue) rb_gc_enable();
-        RUBY_DEBUG_LOG("finish", 0);
+        RUBY_DEBUG_LOG("finish");
     }
 }
 
@@ -962,7 +962,7 @@ void
 rb_transient_heap_finish_marking(void)
 {
     ASSERT_vm_locking();
-    RUBY_DEBUG_LOG("", 0);
+    RUBY_DEBUG_LOG("");
 
     struct transient_heap* theap = transient_heap_get();
 

@@ -526,10 +526,12 @@ newhash
 {
     RUBY_DTRACE_CREATE_HOOK(HASH, num);
 
-    val = rb_hash_new_with_size(num / 2);
-
     if (num) {
+        val = rb_hash_new_with_size(num / 2);
         rb_hash_bulk_insert(num, STACK_ADDR_FROM_TOP(num), val);
+    }
+    else {
+        val = rb_hash_new();
     }
 }
 
@@ -660,7 +662,7 @@ defined
      `flag & VM_CHECKMATCH_TYPE_MASK' describe how to check pattern.
       VM_CHECKMATCH_TYPE_WHEN: ignore target and check pattern is truthy.
       VM_CHECKMATCH_TYPE_CASE: check `patten === target'.
-      VM_CHECKMATCH_TYPE_RESCUE: check `pattern.kind_op?(Module) && pattern === target'.
+      VM_CHECKMATCH_TYPE_RESCUE: check `pattern.kind_of?(Module) && pattern === target'.
      if `flag & VM_CHECKMATCH_ARRAY' is not 0, then `patten' is array of patterns.
  */
 DEFINE_INSN
@@ -834,7 +836,7 @@ opt_newarray_max
 // attr bool leaf = false; /* has rb_funcall() */
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
-    val = vm_opt_newarray_max(num, STACK_ADDR_FROM_TOP(num));
+    val = vm_opt_newarray_max(ec, num, STACK_ADDR_FROM_TOP(num));
 }
 
 DEFINE_INSN
@@ -846,7 +848,7 @@ opt_newarray_min
 // attr bool leaf = false; /* has rb_funcall() */
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
-    val = vm_opt_newarray_min(num, STACK_ADDR_FROM_TOP(num));
+    val = vm_opt_newarray_min(ec, num, STACK_ADDR_FROM_TOP(num));
 }
 
 /* super(args) # args.size => num */

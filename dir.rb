@@ -9,7 +9,13 @@
 #
 # == What's Here
 #
-# \Class \Dir provides methods that are useful for:
+# First, what's elsewhere. \Class \Dir:
+#
+# - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
+# - Includes {module Enumerable}[Enumerable.html#module-Enumerable-label-What-27s+Here],
+#   which provides dozens of additional methods.
+#
+# Here, class \Dir provides methods that are useful for:
 #
 # - {Reading}[#class-Dir-label-Reading]
 # - {Setting}[#class-Dir-label-Setting]
@@ -75,6 +81,7 @@
 # - ::unlink (aliased as ::delete and ::rmdir):: Removes the given directory.
 # - #inspect:: Returns a string description of +self+.
 class Dir
+  # call-seq:
   #    Dir.open( string ) -> aDir
   #    Dir.open( string, encoding: enc ) -> aDir
   #    Dir.open( string ) {| aDir | block } -> anObject
@@ -100,6 +107,7 @@ class Dir
     end
   end
 
+  # call-seq:
   #    Dir.new( string ) -> aDir
   #    Dir.new( string, encoding: enc ) -> aDir
   #
@@ -111,6 +119,7 @@ class Dir
     Primitive.dir_initialize(name, encoding)
   end
 
+  # call-seq:
   #    Dir[ string [, string ...] [, base: path] [, sort: true] ] -> array
   #
   # Equivalent to calling
@@ -119,6 +128,7 @@ class Dir
     Primitive.dir_s_aref(args, base, sort)
   end
 
+  # call-seq:
   #    Dir.glob( pattern, [flags], [base: path] [, sort: true] )                       -> array
   #    Dir.glob( pattern, [flags], [base: path] [, sort: true] ) { |filename| block }  -> nil
   #
@@ -134,13 +144,13 @@ class Dir
   # paths.
   #
   # The results which matched single wildcard or character set are sorted in
-  # binary ascending order, unless false is given as the optional +sort+
+  # binary ascending order, unless +false+ is given as the optional +sort+
   # keyword argument.  The order of an Array of pattern strings and braces
   # are preserved.
   #
   # Note that the pattern is not a regexp, it's closer to a shell glob.
   # See File::fnmatch for the meaning of the +flags+ parameter.
-  # Case sensitivity depends on your system (File::FNM_CASEFOLD is ignored).
+  # Case sensitivity depends on your system (+File::FNM_CASEFOLD+ is ignored).
   #
   # <code>*</code>::
   #   Matches any file. Can be restricted by other values in the glob.
@@ -224,13 +234,13 @@ class << File
   #   Matches any file. Can be restricted by other values in the glob.
   #   Equivalent to <code>/.*/x</code> in regexp.
   #
-  #   <code>*</code>::    Matches all files regular files
+  #   <code>*</code>::    Matches all regular files
   #   <code>c*</code>::   Matches all files beginning with <code>c</code>
   #   <code>*c</code>::   Matches all files ending with <code>c</code>
   #   <code>\*c*</code>:: Matches all files that have <code>c</code> in them
   #                       (including at the beginning or end).
   #
-  #   To match hidden files (that start with a <code>.</code> set the
+  #   To match hidden files (that start with a <code>.</code>) set the
   #   File::FNM_DOTMATCH flag.
   #
   # <code>**</code>::

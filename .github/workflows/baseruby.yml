@@ -1,6 +1,16 @@
 name: BASERUBY Check
 
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
 
 jobs:
   baseruby:
@@ -15,6 +25,7 @@ jobs:
 #         - ruby-2.5
 #         - ruby-2.6
           - ruby-2.7
+          - ruby-3.0
 
     steps:
       - uses: actions/checkout@v2
@@ -22,14 +33,14 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: none
-      - run: echo "make=make -sj$((1 + $(nproc --all)))" >> $GITHUB_ENV
+      - run: echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
       - run: sudo apt-get install build-essential autoconf bison
       - run: ./autogen.sh
       - run: ./configure --disable-install-doc
-      - run: $make common-srcs
-      - run: $make incs
-      - run: $make all
-      - run: $make test
+      - run: make common-srcs
+      - run: make incs
+      - run: make all
+      - run: make test
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |
@@ -42,4 +53,4 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: failure() && github.event_name == 'push'
+        if: ${{ failure() && github.event_name == 'push' }}

@@ -84,6 +84,15 @@ wait.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 wait.o: $(hdrdir)/ruby/internal/ctype.h
 wait.o: $(hdrdir)/ruby/internal/dllexport.h
 wait.o: $(hdrdir)/ruby/internal/dosish.h
+wait.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+wait.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+wait.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+wait.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+wait.o: $(hdrdir)/ruby/internal/encoding/re.h
+wait.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+wait.o: $(hdrdir)/ruby/internal/encoding/string.h
+wait.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+wait.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 wait.o: $(hdrdir)/ruby/internal/error.h
 wait.o: $(hdrdir)/ruby/internal/eval.h
 wait.o: $(hdrdir)/ruby/internal/event.h

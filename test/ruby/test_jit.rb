@@ -10,6 +10,7 @@ class TestJIT < Test::Unit::TestCase
   IGNORABLE_PATTERNS = [
     /\AJIT recompile: .+\n\z/,
     /\AJIT inline: .+\n\z/,
+    /\AJIT cancel: .+\n\z/,
     /\ASuccessful MJIT finish\n\z/,
   ]
   MAX_CACHE_PATTERNS = [
@@ -52,8 +53,9 @@ class TestJIT < Test::Unit::TestCase
 
     # ruby -w -Itest/lib test/ruby/test_jit.rb
     if $VERBOSE
+      pid = $$
       at_exit do
-        unless TestJIT.untested_insns.empty?
+        if pid == $$ && !TestJIT.untested_insns.empty?
           warn "you may want to add tests for following insns, when you have a chance: #{TestJIT.untested_insns.join(' ')}"
         end
       end
@@ -607,6 +609,17 @@ class TestJIT < Test::Unit::TestCase
     assert_eval_with_jit('print "\x00".unpack("c")', stdout: '[0]', success_count: 1)
   end
 
+  def test_compile_insn_checkmatch
+    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"world"', insns: %i[checkmatch])
+    begin;
+      ary = %w(hello good-bye)
+      case 'hello'
+      when *ary
+        'world'
+      end
+    end;
+  end
+
   def test_jit_output
     out, err = eval_with_jit('5.times { puts "MJIT" }', verbose: 1, min_calls: 5)
     assert_equal("MJIT\n" * 5, out)
@@ -1097,6 +1110,22 @@ class TestJIT < Test::Unit::TestCase
     begin;
       RubyVM::JIT.pause
       proc {}.call
+    end;
+  end
+
+  def test_not_cancel_by_tracepoint_class
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", success_count: 1, min_calls: 2)
+    begin;
+      TracePoint.new(:class) {}.enable
+      2.times {}
+    end;
+  end
+
+  def test_cancel_by_tracepoint
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", success_count: 0, min_calls: 2)
+    begin;
+      TracePoint.new(:line) {}.enable
+      2.times {}
     end;
   end
 

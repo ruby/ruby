@@ -91,40 +91,12 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
 
 #include <sys/stat.h>
 
-#ifdef _MSC_VER
-#define SAVE_ROOT_JMPBUF_BEFORE_STMT \
-    __try {
-#define SAVE_ROOT_JMPBUF_AFTER_STMT \
-    } \
-    __except (GetExceptionCode() == EXCEPTION_STACK_OVERFLOW ? \
-	      (rb_ec_raised_set(GET_EC(), RAISED_STACKOVERFLOW), \
-	       raise(SIGSEGV), \
-	       EXCEPTION_EXECUTE_HANDLER) : \
-	      EXCEPTION_CONTINUE_SEARCH) { \
-	/* never reaches here */ \
-    }
-#elif defined(__MINGW32__)
-LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
-#define SAVE_ROOT_JMPBUF_BEFORE_STMT \
-    do { \
-	PVOID _handler = AddVectoredExceptionHandler(1, rb_w32_stack_overflow_handler);
-
-#define SAVE_ROOT_JMPBUF_AFTER_STMT \
-	RemoveVectoredExceptionHandler(_handler); \
-    } while (0);
-#else
-#define SAVE_ROOT_JMPBUF_BEFORE_STMT
-#define SAVE_ROOT_JMPBUF_AFTER_STMT
-#endif
 
 #define SAVE_ROOT_JMPBUF(th, stmt) do \
-  if (ruby_setjmp((th)->root_jmpbuf) == 0) { \
-      SAVE_ROOT_JMPBUF_BEFORE_STMT \
+  if (true) { \
       stmt; \
-      SAVE_ROOT_JMPBUF_AFTER_STMT \
   } \
-  else { \
-      rb_fiber_start(th->ec->fiber_ptr); \
+  else if (th) { /* suppress unused-variable warning */ \
   } while (0)
 
 #define EC_PUSH_TAG(ec) do { \

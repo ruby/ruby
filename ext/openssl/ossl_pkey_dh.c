@@ -32,147 +32,56 @@ VALUE eDHError;
 /*
  * Private
  */
-struct dh_blocking_gen_arg {
-    DH *dh;
-    int size;
-    int gen;
-    BN_GENCB *cb;
-    int result;
-};
-
-static void *
-dh_blocking_gen(void *arg)
-{
-    struct dh_blocking_gen_arg *gen = (struct dh_blocking_gen_arg *)arg;
-    gen->result = DH_generate_parameters_ex(gen->dh, gen->size, gen->gen, gen->cb);
-    return 0;
-}
-
-static DH *
-dh_generate(int size, int gen)
-{
-    struct ossl_generate_cb_arg cb_arg = { 0 };
-    struct dh_blocking_gen_arg gen_arg;
-    DH *dh = DH_new();
-    BN_GENCB *cb = BN_GENCB_new();
-
-    if (!dh || !cb) {
-	DH_free(dh);
-	BN_GENCB_free(cb);
-        ossl_raise(eDHError, "malloc failure");
-    }
-
-    if (rb_block_given_p())
-	cb_arg.yield = 1;
-    BN_GENCB_set(cb, ossl_generate_cb_2, &cb_arg);
-    gen_arg.dh = dh;
-    gen_arg.size = size;
-    gen_arg.gen = gen;
-    gen_arg.cb = cb;
-    if (cb_arg.yield == 1) {
-	/* we cannot release GVL when callback proc is supplied */
-	dh_blocking_gen(&gen_arg);
-    } else {
-	/* there's a chance to unblock */
-	rb_thread_call_without_gvl(dh_blocking_gen, &gen_arg, ossl_generate_cb_stop, &cb_arg);
-    }
-
-    BN_GENCB_free(cb);
-    if (!gen_arg.result) {
-	DH_free(dh);
-	if (cb_arg.state) {
-	    /* Clear OpenSSL error queue before re-raising. */
-	    ossl_clear_error();
-	    rb_jump_tag(cb_arg.state);
-	}
-        ossl_raise(eDHError, "DH_generate_parameters_ex");
-    }
-
-    if (!DH_generate_key(dh)) {
-        DH_free(dh);
-        ossl_raise(eDHError, "DH_generate_key");
-    }
-
-    return dh;
-}
-
-/*
- *  call-seq:
- *     DH.generate(size [, generator]) -> dh
- *
- * Creates a new DH instance from scratch by generating the private and public
- * components alike.
- *
- * === Parameters
- * * _size_ is an integer representing the desired key size. Keys smaller than 1024 bits should be considered insecure.
- * * _generator_ is a small number > 1, typically 2 or 5.
- *
- */
-static VALUE
-ossl_dh_s_generate(int argc, VALUE *argv, VALUE klass)
-{
-    EVP_PKEY *pkey;
-    DH *dh ;
-    int g = 2;
-    VALUE size, gen, obj;
-
-    if (rb_scan_args(argc, argv, "11", &size, &gen) == 2) {
-	g = NUM2INT(gen);
-    }
-    obj = rb_obj_alloc(klass);
-    GetPKey(obj, pkey);
-
-    dh = dh_generate(NUM2INT(size), g);
-    if (!EVP_PKEY_assign_DH(pkey, dh)) {
-        DH_free(dh);
-        ossl_raise(eDHError, "EVP_PKEY_assign_DH");
-    }
-    return obj;
-}
-
 /*
  * call-seq:
  *   DH.new -> dh
  *   DH.new(string) -> dh
  *   DH.new(size [, generator]) -> dh
  *
- * Either generates a DH instance from scratch or by reading already existing
- * DH parameters from _string_. Note that when reading a DH instance from
- * data that was encoded from a DH instance by using DH#to_pem or DH#to_der
- * the result will *not* contain a public/private key pair yet. This needs to
- * be generated using DH#generate_key! first.
+ * Creates a new instance of OpenSSL::PKey::DH.
  *
- * === Parameters
- * * _size_ is an integer representing the desired key size. Keys smaller than 1024 bits should be considered insecure.
- * * _generator_ is a small number > 1, typically 2 or 5.
- * * _string_ contains the DER or PEM encoded key.
+ * If called without arguments, an empty instance without any parameter or key
+ * components is created. Use #set_pqg to manually set the parameters afterwards
+ * (and optionally #set_key to set private and public key components).
  *
- * === Examples
- *  DH.new # -> dh
- *  DH.new(1024) # -> dh
- *  DH.new(1024, 5) # -> dh
- *  #Reading DH parameters
- *  dh = DH.new(File.read('parameters.pem')) # -> dh, but no public/private key yet
- *  dh.generate_key! # -> dh with public and private key
+ * If a String is given, tries to parse it as a DER- or PEM- encoded parameters.
+ * See also OpenSSL::PKey.read which can parse keys of any kinds.
+ *
+ * The DH.new(size [, generator]) form is an alias of DH.generate.
+ *
+ * +string+::
+ *   A String that contains the DER or PEM encoded key.
+ * +size+::
+ *   See DH.generate.
+ * +generator+::
+ *   See DH.generate.
+ *
+ * Examples:
+ *   # Creating an instance from scratch
+ *   dh = DH.new
+ *   dh.set_pqg(bn_p, nil, bn_g)
+ *
+ *   # Generating a parameters and a key pair
+ *   dh = DH.new(2048) # An alias of DH.generate(2048)
+ *
+ *   # Reading DH parameters
+ *   dh = DH.new(File.read('parameters.pem')) # -> dh, but no public/private key yet
+ *   dh.generate_key! # -> dh with public and private key
  */
 static VALUE
 ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
     DH *dh;
-    int g = 2;
     BIO *in;
-    VALUE arg, gen;
+    VALUE arg;
 
     GetPKey(self, pkey);
-    if(rb_scan_args(argc, argv, "02", &arg, &gen) == 0) {
-      dh = DH_new();
-    }
-    else if (RB_INTEGER_TYPE_P(arg)) {
-	if (!NIL_P(gen)) {
-	    g = NUM2INT(gen);
-	}
-        dh = dh_generate(NUM2INT(arg), g);
+    /* The DH.new(size, generator) form is handled by lib/openssl/pkey.rb */
+    if (rb_scan_args(argc, argv, "01", &arg) == 0) {
+        dh = DH_new();
+        if (!dh)
+            ossl_raise(eDHError, "DH_new");
     }
     else {
 	arg = ossl_to_der_if_possible(arg);
@@ -359,121 +268,43 @@ ossl_dh_get_params(VALUE self)
 
 /*
  *  call-seq:
- *     dh.to_text -> aString
- *
- * Prints all parameters of key to buffer
- * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
- * Don't use :-)) (I's up to you)
- */
-static VALUE
-ossl_dh_to_text(VALUE self)
-{
-    DH *dh;
-    BIO *out;
-    VALUE str;
-
-    GetDH(self, dh);
-    if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eDHError, NULL);
-    }
-    if (!DHparams_print(out, dh)) {
-	BIO_free(out);
-	ossl_raise(eDHError, NULL);
-    }
-    str = ossl_membio2str(out);
-
-    return str;
-}
-
-/*
- *  call-seq:
- *     dh.public_key -> aDH
- *
- * Returns a new DH instance that carries just the public information, i.e.
- * the prime _p_ and the generator _g_, but no public/private key yet. Such
- * a pair may be generated using DH#generate_key!. The "public key" needed
- * for a key exchange with DH#compute_key is considered as per-session
- * information and may be retrieved with DH#pub_key once a key pair has
- * been generated.
- * If the current instance already contains private information (and thus a
- * valid public/private key pair), this information will no longer be present
- * in the new instance generated by DH#public_key. This feature is helpful for
- * publishing the Diffie-Hellman parameters without leaking any of the private
- * per-session information.
- *
- * === Example
- *  dh = OpenSSL::PKey::DH.new(2048) # has public and private key set
- *  public_key = dh.public_key # contains only prime and generator
- *  parameters = public_key.to_der # it's safe to publish this
- */
-static VALUE
-ossl_dh_to_public_key(VALUE self)
-{
-    EVP_PKEY *pkey;
-    DH *orig_dh, *dh;
-    VALUE obj;
-
-    obj = rb_obj_alloc(rb_obj_class(self));
-    GetPKey(obj, pkey);
-
-    GetDH(self, orig_dh);
-    dh = DHparams_dup(orig_dh);
-    if (!dh)
-        ossl_raise(eDHError, "DHparams_dup");
-    if (!EVP_PKEY_assign_DH(pkey, dh)) {
-        DH_free(dh);
-        ossl_raise(eDHError, "EVP_PKEY_assign_DH");
-    }
-    return obj;
-}
-
-/*
- *  call-seq:
  *     dh.params_ok? -> true | false
  *
  * Validates the Diffie-Hellman parameters associated with this instance.
  * It checks whether a safe prime and a suitable generator are used. If this
  * is not the case, +false+ is returned.
+ *
+ * See also the man page EVP_PKEY_param_check(3).
  */
 static VALUE
 ossl_dh_check_params(VALUE self)
 {
+    int ret;
+#ifdef HAVE_EVP_PKEY_CHECK
+    EVP_PKEY *pkey;
+    EVP_PKEY_CTX *pctx;
+
+    GetPKey(self, pkey);
+    pctx = EVP_PKEY_CTX_new(pkey, /* engine */NULL);
+    if (!pctx)
+        ossl_raise(eDHError, "EVP_PKEY_CTX_new");
+    ret = EVP_PKEY_param_check(pctx);
+    EVP_PKEY_CTX_free(pctx);
+#else
     DH *dh;
     int codes;
 
     GetDH(self, dh);
-    if (!DH_check(dh, &codes)) {
-	return Qfalse;
+    ret = DH_check(dh, &codes) == 1 && codes == 0;
+#endif
+
+    if (ret == 1)
+        return Qtrue;
+    else {
+        /* DH_check_ex() will put error entry on failure */
+        ossl_clear_error();
+        return Qfalse;
     }
-
-    return codes == 0 ? Qtrue : Qfalse;
-}
-
-/*
- *  call-seq:
- *     dh.generate_key! -> self
- *
- * Generates a private and public key unless a private key already exists.
- * If this DH instance was generated from public DH parameters (e.g. by
- * encoding the result of DH#public_key), then this method needs to be
- * called first in order to generate the per-session keys before performing
- * the actual key exchange.
- *
- * === Example
- *   dh = OpenSSL::PKey::DH.new(2048)
- *   public_key = dh.public_key #contains no private/public key yet
- *   public_key.generate_key!
- *   puts public_key.private? # => true
- */
-static VALUE
-ossl_dh_generate_key(VALUE self)
-{
-    DH *dh;
-
-    GetDH(self, dh);
-    if (!DH_generate_key(dh))
-	ossl_raise(eDHError, "Failed to generate key");
-    return self;
 }
 
 /*
@@ -530,29 +361,31 @@ Init_ossl_dh(void)
      *   The per-session private key, an OpenSSL::BN.
      *
      * === Example of a key exchange
-     *  dh1 = OpenSSL::PKey::DH.new(2048)
-     *  der = dh1.public_key.to_der #you may send this publicly to the participating party
-     *  dh2 = OpenSSL::PKey::DH.new(der)
-     *  dh2.generate_key! #generate the per-session key pair
-     *  symm_key1 = dh1.compute_key(dh2.pub_key)
-     *  symm_key2 = dh2.compute_key(dh1.pub_key)
+     *   # you may send the parameters (der) and own public key (pub1) publicly
+     *   # to the participating party
+     *   dh1 = OpenSSL::PKey::DH.new(2048)
+     *   der = dh1.to_der
+     *   pub1 = dh1.pub_key
      *
-     *  puts symm_key1 == symm_key2 # => true
+     *   # the other party generates its per-session key pair
+     *   dhparams = OpenSSL::PKey::DH.new(der)
+     *   dh2 = OpenSSL::PKey.generate_key(dhparams)
+     *   pub2 = dh2.pub_key
+     *
+     *   symm_key1 = dh1.compute_key(pub2)
+     *   symm_key2 = dh2.compute_key(pub1)
+     *   puts symm_key1 == symm_key2 # => true
      */
     cDH = rb_define_class_under(mPKey, "DH", cPKey);
-    rb_define_singleton_method(cDH, "generate", ossl_dh_s_generate, -1);
     rb_define_method(cDH, "initialize", ossl_dh_initialize, -1);
     rb_define_method(cDH, "initialize_copy", ossl_dh_initialize_copy, 1);
     rb_define_method(cDH, "public?", ossl_dh_is_public, 0);
     rb_define_method(cDH, "private?", ossl_dh_is_private, 0);
-    rb_define_method(cDH, "to_text", ossl_dh_to_text, 0);
     rb_define_method(cDH, "export", ossl_dh_export, 0);
     rb_define_alias(cDH, "to_pem", "export");
     rb_define_alias(cDH, "to_s", "export");
     rb_define_method(cDH, "to_der", ossl_dh_to_der, 0);
-    rb_define_method(cDH, "public_key", ossl_dh_to_public_key, 0);
     rb_define_method(cDH, "params_ok?", ossl_dh_check_params, 0);
-    rb_define_method(cDH, "generate_key!", ossl_dh_generate_key, 0);
 
     DEF_OSSL_PKEY_BN(cDH, dh, p);
     DEF_OSSL_PKEY_BN(cDH, dh, q);
