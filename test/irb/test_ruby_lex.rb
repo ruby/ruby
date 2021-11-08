@@ -581,8 +581,8 @@ module TestIRB
       tokens = RubyLex.ripper_lex_without_warning('%wwww')
       pos_to_index = {}
       tokens.each_with_index { |t, i|
-        assert_nil(pos_to_index[t[0]], "There is already another token in the position of #{t.inspect}.")
-        pos_to_index[t[0]] = i
+        assert_nil(pos_to_index[t.pos], "There is already another token in the position of #{t.inspect}.")
+        pos_to_index[t.pos] = i
       }
     end
 
@@ -598,8 +598,8 @@ module TestIRB
       EOC
       pos_to_index = {}
       tokens.each_with_index { |t, i|
-        assert_nil(pos_to_index[t[0]], "There is already another token in the position of #{t.inspect}.")
-        pos_to_index[t[0]] = i
+        assert_nil(pos_to_index[t.pos], "There is already another token in the position of #{t.inspect}.")
+        pos_to_index[t.pos] = i
       }
     end
   end
