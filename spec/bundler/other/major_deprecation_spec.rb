@@ -665,7 +665,7 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
     end
 
     it "prints a deprecation warning", :bundler => "< 3" do
-      expect(deprecations).to include "The `viz` command has been moved to the `bundle-viz` gem, see https://github.com/rubygems/bundler-viz"
+      expect(deprecations).to include "The `viz` command has been moved to the `bundle-viz` gem, see https://github.com/rubygems/bundler-graph"
     end
 
     pending "fails with a helpful message", :bundler => "3"
