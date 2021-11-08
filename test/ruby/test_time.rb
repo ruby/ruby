@@ -1282,22 +1282,6 @@ class TestTime < Test::Unit::TestCase
     assert_equal("366", t.strftime("%j"))
   end
 
-  def test_strftime_no_hidden_garbage
-    skip unless Thread.list.size == 1
-
-    fmt = %w(Y m d).map { |x| "%#{x}" }.join('-') # defeats optimization
-    t = Time.at(0).getutc
-    ObjectSpace.count_objects(res = {}) # creates strings on first call
-    GC.disable
-    before = ObjectSpace.count_objects(res)[:T_STRING]
-    val = t.strftime(fmt)
-    after = ObjectSpace.count_objects(res)[:T_STRING]
-    assert_equal before + 1, after, 'only new string is the created one'
-    assert_equal '1970-01-01', val
-  ensure
-    GC.enable
-  end
-
   def test_num_exact_error
     bad = EnvUtil.labeled_class("BadValue").new
     x = EnvUtil.labeled_class("Inexact") do
