@@ -2546,7 +2546,7 @@ double
 ruby_float_step_size(double beg, double end, double unit, int excl)
 {
     const double epsilon = DBL_EPSILON;
-    double n, err;
+    double d, n, err;
 
     if (unit == 0) {
         return HUGE_VAL;
@@ -2563,24 +2563,26 @@ ruby_float_step_size(double beg, double end, double unit, int excl)
 	    n = 0;
 	else
 	    n = floor(n - err);
+        d = +((n + 1) * unit) + beg;
         if (beg < end) {
-            if ((n+1)*unit+beg < end)
+            if (d < end)
                 n++;
         }
         else if (beg > end) {
-            if ((n+1)*unit+beg > end)
+            if (d > end)
                 n++;
         }
     }
     else {
 	if (n<0) return 0;
 	n = floor(n + err);
+        d = +((n + 1) * unit) + beg;
         if (beg < end) {
-            if ((n+1)*unit+beg <= end)
+            if (d <= end)
                 n++;
         }
         else if (beg > end) {
-            if ((n+1)*unit+beg >= end)
+            if (d >= end)
                n++;
         }
     }
