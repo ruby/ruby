@@ -166,17 +166,19 @@ class Ripper
     def on_heredoc_dedent(v, w)
       ignored_sp = []
       heredoc = @buf.last
-      heredoc.each_with_index do |e, i|
-        if Elem === e and e.event == :on_tstring_content and e.pos[1].zero?
-          tok = e.tok.dup if w > 0 and /\A\s/ =~ e.tok
-          if (n = dedent_string(e.tok, w)) > 0
-            if e.tok.empty?
-              e.tok = tok[0, n]
-              e.event = :on_ignored_sp
-              next
+      if Array === heredoc
+        heredoc.each_with_index do |e, i|
+          if Elem === e and e.event == :on_tstring_content and e.pos[1].zero?
+            tok = e.tok.dup if w > 0 and /\A\s/ =~ e.tok
+            if (n = dedent_string(e.tok, w)) > 0
+              if e.tok.empty?
+                e.tok = tok[0, n]
+                e.event = :on_ignored_sp
+                next
+              end
+              ignored_sp << [i, Elem.new(e.pos.dup, :on_ignored_sp, tok[0, n], e.state)]
+              e.pos[1] += n
             end
-            ignored_sp << [i, Elem.new(e.pos.dup, :on_ignored_sp, tok[0, n], e.state)]
-            e.pos[1] += n
           end
         end
       end
