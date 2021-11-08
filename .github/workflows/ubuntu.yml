@@ -24,6 +24,7 @@ jobs:
           - test_task: "check"
             os: ubuntu-20.04
             configure: "--host=i686-$OSTYPE"
+            skipped_tests: TestReadline#test_interrupt_in_other_thread
           - test_task: "test-all TESTS=--repeat-count=2"
             os: ubuntu-20.04
             configure: ""
@@ -84,7 +85,17 @@ jobs:
         run: |
           $SETARCH ./miniruby -e '(("a".."z").to_a+("A".."Z").to_a+("0".."9").to_a+%w[foo bar test zzz]).each{|basename|File.write("#{basename}.rb", "raise %(do not load #{basename}.rb)")}'
         if: ${{ matrix.test_task == 'check' }}
-      - run: $SETARCH make -s ${{ matrix.test_task }}
+      - name: make ${{ matrix.test_task }}
+        run: |
+          if [ ${{ matrix.test_task }} = 'check' ]; then
+            TESTS=`echo "${{ matrix.skipped_tests }}" | sed 's| |$/ -n!/|g;s|^|-n!/|;s|$|$/|'`
+          fi
+          $SETARCH make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
+          if [ ${{ matrix.test_task }} = 'check' -a "${TESTS:+set}" ]; then
+            TESTS=`echo "${{ matrix.skipped_tests }}" | sed 's| |$/ -n/|g;s|^|-n/|;s|$|$/|'`
+            unset GNUMAKEFLAGS
+            $SETARCH make -s test-all TESTS="$TESTS"
+          fi
         timeout-minutes: 40
         env:
           RUBY_TESTOPTS: "-q --tty=no"
