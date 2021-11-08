@@ -399,7 +399,7 @@ node_children(rb_ast_t *ast, const NODE *node)
 
             while (1) {
                 rb_ary_push(ary, NEW_CHILD(ast, node->nd_1st));
-                if (!node->nd_2nd || !nd_type_p(node->nd_2nd, (int)type))
+                if (!node->nd_2nd || !nd_type_p(node->nd_2nd, type))
                     break;
                 node = node->nd_2nd;
             }

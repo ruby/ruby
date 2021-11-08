@@ -11865,9 +11865,9 @@ logop(struct parser_params *p, ID id, NODE *left, NODE *right,
     enum node_type type = id == idAND || id == idANDOP ? NODE_AND : NODE_OR;
     NODE *op;
     value_expr(left);
-    if (left && (enum node_type)nd_type_p(left, type)) {
+    if (left && nd_type_p(left, type)) {
 	NODE *node = left, *second;
-	while ((second = node->nd_2nd) != 0 && (enum node_type)nd_type_p(second, type)) {
+	while ((second = node->nd_2nd) != 0 && nd_type_p(second, type)) {
 	    node = second;
 	}
 	node->nd_2nd = NEW_NODE(type, second, right, 0, loc);

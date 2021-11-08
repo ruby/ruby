@@ -370,7 +370,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
       andor:
 	while (1) {
 	    F_NODE(nd_1st, "left expr");
-	    if (!node->nd_2nd || !nd_type_p(node->nd_2nd, (int)type))
+	    if (!node->nd_2nd || !nd_type_p(node->nd_2nd, type))
 		break;
 	    node = node->nd_2nd;
 	}
