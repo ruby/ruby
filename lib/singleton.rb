@@ -156,7 +156,7 @@ module Singleton
 
     def self.extended(c)
       # extending an object with Singleton is a bad idea
-      c.singleton_class.undef_method :extend_object
+      c.singleton_class.send(:undef_method, :extend_object)
     end
 
     def __init__(klass) # :nodoc:
