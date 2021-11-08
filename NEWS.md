@@ -156,6 +156,14 @@ Outstanding ones only.
       modify the ancestor chain if the receiver has already prepended
       the argument. [[Bug #17423]]
 
+* Process
+
+    * Process.\_fork is added. This is a core method for fork(2).
+      Do not call this method directly; it is called by existing
+      fork methods: Kernel.#fork, Process.fork, and popen("=").
+      Application monitoring libraries can overwride this method to
+      hook fork event. [[Feature #17795]]
+
 * Struct
 
     * Passing only keyword arguments to Struct#initialize is warned.
