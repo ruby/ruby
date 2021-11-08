@@ -298,7 +298,7 @@ dump_block(rb_ast_t *ast, const NODE *node)
     do {
         rb_ary_push(ary, NEW_CHILD(ast, node->nd_head));
     } while (node->nd_next &&
-        nd_type(node->nd_next) == NODE_BLOCK &&
+        nd_type_p(node->nd_next, NODE_BLOCK) &&
         (node = node->nd_next, 1));
     if (node->nd_next) {
         rb_ary_push(ary, NEW_CHILD(ast, node->nd_next));
@@ -313,7 +313,7 @@ dump_array(rb_ast_t *ast, const NODE *node)
     VALUE ary = rb_ary_new();
     rb_ary_push(ary, NEW_CHILD(ast, node->nd_head));
 
-    while (node->nd_next && nd_type(node->nd_next) == NODE_LIST) {
+    while (node->nd_next && nd_type_p(node->nd_next, NODE_LIST)) {
         node = node->nd_next;
         rb_ary_push(ary, NEW_CHILD(ast, node->nd_head));
     }
@@ -399,7 +399,7 @@ node_children(rb_ast_t *ast, const NODE *node)
 
             while (1) {
                 rb_ary_push(ary, NEW_CHILD(ast, node->nd_1st));
-                if (!node->nd_2nd || nd_type(node->nd_2nd) != (int)type)
+                if (!node->nd_2nd || !nd_type_p(node->nd_2nd, (int)type))
                     break;
                 node = node->nd_2nd;
             }
