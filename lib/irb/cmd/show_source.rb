@@ -64,7 +64,7 @@ module IRB
         prev_tokens = []
 
         # chunk with line number
-        tokens.chunk { |tok| tok[0][0] }.each do |lnum, chunk|
+        tokens.chunk { |tok| tok.pos[0] }.each do |lnum, chunk|
           code = lines[0..lnum].join
           prev_tokens.concat chunk
           continue = lex.process_continue(prev_tokens)
