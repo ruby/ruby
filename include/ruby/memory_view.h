@@ -146,8 +146,11 @@ typedef struct {
      * Or, NULL when this memory view exposes a flat array. */
     const ssize_t *sub_offsets;
 
-    /** the private data for managing this exported memory */
+    /** The private data for managing this exported memory */
     void *private_data;
+
+    /** DO NOT TOUCH THIS: The memory view entry for the internal use */
+    const struct rb_memory_view_entry *_memory_view_entry;
 } rb_memory_view_t;
 
 /** Type of function of ::rb_memory_view_entry_t::get_func. */
@@ -160,9 +163,10 @@ typedef bool (* rb_memory_view_release_func_t)(VALUE obj, rb_memory_view_t *view
 typedef bool (* rb_memory_view_available_p_func_t)(VALUE obj);
 
 /** Operations applied to a specific kind of a memory view. */
-typedef struct {
-
-    /** Exports a memory view from a Ruby object. */
+typedef struct rb_memory_view_entry {
+    /**
+     * Exports a memory view from a Ruby object.
+     */
     rb_memory_view_get_func_t get_func;
 
     /**
