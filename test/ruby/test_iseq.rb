@@ -107,7 +107,7 @@ class TestISeq < Test::Unit::TestCase
 
   def test_super_with_block_and_kwrest
     iseq = compile(<<~EOF)
-      def touch(**) # :nodoc:
+      def touch2(**) # :nodoc:
         foo { super }
       end
       42
