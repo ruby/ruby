@@ -240,6 +240,9 @@ module Test
             filter = nil
           elsif negative.empty? and positive.size == 1 and pos_pat !~ positive[0]
             filter = positive[0]
+            unless /\A[A-Z]\w*(?:::[A-Z]\w*)*#/ =~ filter
+              filter = /##{Regexp.quote(filter)}\z/
+            end
           else
             filter = Regexp.union(*positive.map! {|s| Regexp.new(s[pos_pat, 1] || "\\A#{Regexp.quote(s)}\\z")})
           end
@@ -1497,15 +1500,9 @@ module Test
 
         all_test_methods = suite.send "#{type}_methods"
         if filter
-          if Regexp === filter
-            all_test_methods.select! {|method|
-              filter === "#{suite}##{method}"
-            }
-          else
-            all_test_methods.select! {|method|
-              filter === method || filter === "#{suite}##{method}"
-            }
-          end
+          all_test_methods.select! {|method|
+            filter === "#{suite}##{method}"
+          }
         end
         all_test_methods = @order.sort_by_name(all_test_methods)
 
