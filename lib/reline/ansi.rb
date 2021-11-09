@@ -4,6 +4,19 @@ require 'timeout'
 require_relative 'terminfo'
 
 class Reline::ANSI
+  CAPNAME_KEY_BINDINGS = {
+    'khome' => :ed_move_to_beg,
+    'kend'  => :ed_move_to_end,
+    'kcuu1' => :ed_prev_history,
+    'kcud1' => :ed_next_history,
+    'kcuf1' => :ed_next_char,
+    'kcub1' => :ed_prev_char,
+    'cuu' => :ed_prev_history,
+    'cud' => :ed_next_history,
+    'cuf' => :ed_next_char,
+    'cub' => :ed_prev_char,
+  }
+
   if Reline::Terminfo.enabled?
     Reline::Terminfo.setupterm(0, 2)
   end
@@ -44,20 +57,23 @@ class Reline::ANSI
   end
 
   def self.set_default_key_bindings_terminfo(config)
-    {
-      Reline::Terminfo.tigetstr('khome').bytes => :ed_move_to_beg,
-      Reline::Terminfo.tigetstr('kend').bytes => :ed_move_to_end,
-      Reline::Terminfo.tigetstr('kcuu1').bytes => :ed_prev_history,
-      Reline::Terminfo.tigetstr('kcud1').bytes => :ed_next_history,
-      Reline::Terminfo.tigetstr('kcuf1').bytes => :ed_next_char,
-      Reline::Terminfo.tigetstr('kcub1').bytes => :ed_prev_char,
-      # Escape sequences that omit the move distance and are set to defaults
-      # value 1 may be sometimes sent by pressing the arrow-key.
-      Reline::Terminfo.tigetstr('cuu').sub(/%p1%d/, '').bytes => :ed_prev_history,
-      Reline::Terminfo.tigetstr('cud').sub(/%p1%d/, '').bytes => :ed_next_history,
-      Reline::Terminfo.tigetstr('cuf').sub(/%p1%d/, '').bytes => :ed_next_char,
-      Reline::Terminfo.tigetstr('cub').sub(/%p1%d/, '').bytes => :ed_prev_char,
-    }.each_pair do |key, func|
+    key_bindings = CAPNAME_KEY_BINDINGS.map do |capname, key_binding|
+      begin
+        key_code = Reline::Terminfo.tigetstr(capname)
+        case capname
+        # Escape sequences that omit the move distance and are set to defaults
+        # value 1 may be sometimes sent by pressing the arrow-key.
+        when 'cuu', 'cud', 'cuf', 'cub'
+          [ key_code.sub(/%p1%d/, '').bytes, key_binding ]
+        else
+          [ key_code.bytes, key_binding ]
+        end
+      rescue TerminfoError
+        # capname is undefined
+      end
+    end.compact.to_h
+
+    key_bindings.each_pair do |key, func|
       config.add_default_key_binding_by_keymap(:emacs, key, func)
       config.add_default_key_binding_by_keymap(:vi_insert, key, func)
       config.add_default_key_binding_by_keymap(:vi_command, key, func)
@@ -277,7 +293,11 @@ class Reline::ANSI
 
   def self.hide_cursor
     if Reline::Terminfo.enabled?
-      @@output.write Reline::Terminfo.tigetstr('civis')
+      begin
+        @@output.write Reline::Terminfo.tigetstr('civis')
+      rescue TerminfoError
+        # civis is undefined
+      end
     else
       # ignored
     end
@@ -285,7 +305,11 @@ class Reline::ANSI
 
   def self.show_cursor
     if Reline::Terminfo.enabled?
-      @@output.write Reline::Terminfo.tigetstr('cnorm')
+      begin
+        @@output.write Reline::Terminfo.tigetstr('cnorm')
+      rescue TerminfoError
+        # cnorm is undefined
+      end
     else
       # ignored
     end
