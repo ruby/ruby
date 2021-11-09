@@ -761,4 +761,12 @@ class TestClass < Test::Unit::TestCase
     100000.times { Class.new(c) }
     assert(c.descendants.size <= 100000)
   end
+
+  def test_descendants_gc_stress
+    10000.times do
+      c = Class.new
+      100.times { Class.new(c) }
+      assert(c.descendants.size <= 100)
+    end
+  end
 end

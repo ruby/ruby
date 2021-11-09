@@ -29,6 +29,7 @@
 #include "internal/variable.h"
 #include "ruby/st.h"
 #include "vm_core.h"
+#include "gc.h"
 
 #define id_attached id__attached__
 
@@ -1338,7 +1339,7 @@ rb_mod_ancestors(VALUE mod)
 
 struct subclass_traverse_data
 {
-    VALUE *buffer;
+    VALUE buffer;
     long count;
     long maxcount;
 };
@@ -1349,8 +1350,9 @@ class_descendants_recursive(VALUE klass, VALUE v)
     struct subclass_traverse_data *data = (struct subclass_traverse_data *) v;
 
     if (BUILTIN_TYPE(klass) == T_CLASS && !FL_TEST(klass, FL_SINGLETON)) {
-        if (data->buffer && data->count < data->maxcount) {
-            data->buffer[data->count] = klass;
+        if (data->buffer && data->count < data->maxcount && !rb_objspace_garbage_object_p(klass)) {
+            // assumes that this does not cause GC as long as the length does not exceed the capacity
+            rb_ary_push(data->buffer, klass);
         }
         data->count++;
     }
@@ -1378,24 +1380,26 @@ class_descendants_recursive(VALUE klass, VALUE v)
 VALUE
 rb_class_descendants(VALUE klass)
 {
-    struct subclass_traverse_data data = { NULL, 0, -1 };
+    struct subclass_traverse_data data = { Qfalse, 0, -1 };
 
     // estimate the count of subclasses
     rb_class_foreach_subclass(klass, class_descendants_recursive, (VALUE) &data);
 
     // the following allocation may cause GC which may change the number of subclasses
-    data.buffer = ALLOC_N(VALUE, data.count);
+    data.buffer = rb_ary_new_capa(data.count);
     data.maxcount = data.count;
     data.count = 0;
+
+    size_t gc_count = rb_gc_count();
 
     // enumerate subclasses
     rb_class_foreach_subclass(klass, class_descendants_recursive, (VALUE) &data);
 
-    VALUE ary = rb_ary_new_from_values(data.count, data.buffer);
+    if (gc_count != rb_gc_count()) {
+	rb_bug("GC must not occur during the subclass iteration of Class#descendants");
+    }
 
-    free(data.buffer);
-
-    return ary;
+    return data.buffer;
 }
 
 static void
