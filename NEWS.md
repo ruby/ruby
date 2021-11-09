@@ -417,6 +417,7 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #17744]: https://bugs.ruby-lang.org/issues/17744
 [Feature #17750]: https://bugs.ruby-lang.org/issues/17750
 [Feature #17762]: https://bugs.ruby-lang.org/issues/17762
+[Feature #17795]: https://bugs.ruby-lang.org/issues/17795
 [Feature #17798]: https://bugs.ruby-lang.org/issues/17798
 [Bug #17827]:     https://bugs.ruby-lang.org/issues/17827
 [Feature #17853]: https://bugs.ruby-lang.org/issues/17853
