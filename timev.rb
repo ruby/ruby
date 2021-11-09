@@ -267,8 +267,8 @@ class Time
   # :include: doc/time/nsec.rdoc
   # :include: doc/time/in.rdoc
   #
-  def self.at(time, subsec = (nosubsec = true), unit = (nounit = true), in: nil)
-    __builtin.time_s_at(time, subsec, unit, __builtin.arg!(:in), nosubsec, nounit)
+  def self.at(time, subsec = nil, unit = :microsecond, in: nil)
+    __builtin.time_s_at(time, subsec, unit, __builtin.arg!(:in))
   end
 
   # Returns a new \Time object based the on given arguments.
