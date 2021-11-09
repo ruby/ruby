@@ -2089,6 +2089,16 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_raise(err) { bd.send(:initialize_dup, bd2) }
   end
 
+  def test_llong_min
+    # https://github.com/ruby/bigdecimal/issues/199
+    # Between LLONG_MIN and -ULLONG_MAX
+    llong_min = -(2 ** 63 + 1)
+    assert_equal BigDecimal(llong_min.to_s), BigDecimal(llong_min)
+
+    minus_ullong_max = -(2 ** 64 - 1)
+    assert_equal BigDecimal(minus_ullong_max.to_s), BigDecimal(minus_ullong_max)
+  end
+
   def assert_no_memory_leak(code, *rest, **opt)
     code = "8.times {20_000.times {begin #{code}; rescue NoMemoryError; end}; GC.start}"
     super(["-rbigdecimal"],

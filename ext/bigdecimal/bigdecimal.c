@@ -2770,8 +2770,12 @@ rb_big_convert_to_BigDecimal(VALUE val, RB_UNUSED_VAR(size_t digs), int raise_ex
 {
     assert(RB_TYPE_P(val, T_BIGNUM));
 
-    size_t size = rb_absint_size(val, NULL);
+    int leading_zeros;
+    size_t size = rb_absint_size(val, &leading_zeros);
     int sign = FIX2INT(rb_big_cmp(val, INT2FIX(0)));
+    if (sign < 0 && leading_zeros == 0) {
+        size += 1;
+    }
     if (size <= sizeof(long)) {
         if (sign < 0) {
             return rb_int64_convert_to_BigDecimal(NUM2LONG(val), digs, raise_exception);
