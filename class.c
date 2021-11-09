@@ -29,7 +29,6 @@
 #include "internal/variable.h"
 #include "ruby/st.h"
 #include "vm_core.h"
-#include "gc.h"
 
 #define id_attached id__attached__
 
