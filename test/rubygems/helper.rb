@@ -290,7 +290,6 @@ class Gem::TestCase < Test::Unit::TestCase
       make = parse_make_command_line(line)
 
       if make[:targets].include?(target)
-        yield make, line if block_given?
         true
       else
         false
