@@ -135,6 +135,7 @@ class TestEnumerable < Test::Unit::TestCase
   end
 
   def test_to_a_keywords
+    @obj.singleton_class.remove_method(:each)
     def @obj.each(foo:) yield foo end
     assert_equal([1], @obj.to_a(foo: 1))
   end
