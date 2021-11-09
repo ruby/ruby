@@ -1293,6 +1293,21 @@ random_s_bytes(VALUE obj, VALUE len)
     return rand_bytes(&random_mt_if, rnd, NUM2LONG(rb_to_int(len)));
 }
 
+/*
+ * call-seq: Random.seed -> integer
+ *
+ * Returns the seed value used to initialize the Ruby system PRNG.
+ * This may be used to initialize another generator with the same
+ * state at a later time, causing it to produce the same sequence of
+ * numbers.
+ *
+ *   Random.seed      #=> 1234
+ *   prng1 = Random.new(Random.seed)
+ *   prng1.seed       #=> 1234
+ *   prng1.rand(100)  #=> 47
+ *   Random.seed      #=> 1234
+ *   Random.rand(100) #=> 47
+ */
 static VALUE
 random_s_seed(VALUE obj)
 {
@@ -1646,10 +1661,10 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
  *   Random.rand(max) -> number
  *   Random.rand(range) -> number
  *
- * Generates a random number by the default PRNG.
- * See Random#rand.
+ * Returns a random number using the Ruby system PRNG.
+ *
+ * See also Random#rand.
  */
-
 static VALUE
 random_s_rand(int argc, VALUE *argv, VALUE obj)
 {
