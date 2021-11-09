@@ -279,7 +279,7 @@ class Gem::TestCase < Test::Unit::TestCase
       )
     else
       msg = build_message(msg,
-        'Expected make command "%s": %s' % [
+        'Expected make command "%s", but was "%s"' % [
           ('%s %s' % [make_command, target]).rstrip,
           output,
         ]
