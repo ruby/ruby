@@ -488,6 +488,12 @@ module BasetestReadline
     omit "Skip Readline 7.0" if Readline::VERSION == "7.0"
     omit unless respond_to?(:assert_ruby_status)
     omit if /mswin|mingw/ =~ RUBY_PLATFORM
+
+    # On 32-bit machine, readline library (or libtinfo) seems to cause SEGV internally even with Readline 8.0
+    # GDB Backtrace: https://gist.github.com/mame/d12b9de3bbc3f16d440c1927398d176a
+    # Maybe the same issue: https://github.com/facebookresearch/nle/issues/120
+    omit if /i[3-6]86-linux/ =~ RUBY_PLATFORM
+
     code = <<-"end;"
       $stdout.sync = true
       require 'readline'
