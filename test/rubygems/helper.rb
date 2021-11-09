@@ -245,16 +245,14 @@ class Gem::TestCase < Test::Unit::TestCase
     output.scan(/^#{Regexp.escape make_command}(?:[[:blank:]].*)?$/)
   end
 
-  def parse_make_command_line(line)
+  def parse_make_command_line_targets(line)
     args = line.sub(/^#{Regexp.escape make_command}/, "").shellsplit
 
     targets = []
-    macros = {}
 
     args.each do |arg|
       case arg
       when /\A(\w+)=/
-        macros[$1] = $'
       else
         targets << arg
       end
@@ -262,11 +260,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
     targets << '' if targets.empty?
 
-    {
-      :command => make_command,
-      :targets => targets,
-      :macros => macros,
-    }
+    targets
   end
 
   def assert_contains_make_command(target, output, msg = nil)
@@ -287,9 +281,9 @@ class Gem::TestCase < Test::Unit::TestCase
     end
 
     assert scan_make_command_lines(output).any? {|line|
-      make = parse_make_command_line(line)
+      targets = parse_make_command_line_targets(line)
 
-      if make[:targets].include?(target)
+      if targets.include?(target)
         true
       else
         false
