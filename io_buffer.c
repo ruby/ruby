@@ -390,7 +390,7 @@ rb_io_buffer_to_s(VALUE self)
     VALUE result = rb_str_new_cstr("#<");
 
     rb_str_append(result, rb_class_name(CLASS_OF(self)));
-    rb_str_catf(result, " %p+%ld", data->base, data->size);
+    rb_str_catf(result, " %p+%"PRIdSIZE, data->base, data->size);
 
     if (data->flags & RB_IO_BUFFER_INTERNAL) {
         rb_str_cat2(result, " INTERNAL");
