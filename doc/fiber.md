@@ -83,6 +83,7 @@ class Scheduler
   end
 
   # Read from the given io into the specified buffer.
+  # WARNING: Experimental hook! Do not use in production code!
   # @parameter io [IO] The io to read from.
   # @parameter buffer [IO::Buffer] The buffer to read into.
   # @parameter length [Integer] The minimum amount to read.
@@ -90,6 +91,7 @@ class Scheduler
   end
 
   # Write from the given buffer into the specified IO.
+  # WARNING: Experimental hook! Do not use in production code!
   # @parameter io [IO] The io to write to.
   # @parameter buffer [IO::Buffer] The buffer to write from.
   # @parameter length [Integer] The minimum amount to write.

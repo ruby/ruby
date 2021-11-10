@@ -6993,6 +6993,7 @@ io.$(OBJEXT): {$(VPATH)}vm_opts.h
 io_buffer.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/bits.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+io_buffer.$(OBJEXT): $(top_srcdir)/internal/error.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/string.h
 io_buffer.$(OBJEXT): {$(VPATH)}assert.h

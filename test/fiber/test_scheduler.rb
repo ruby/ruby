@@ -55,6 +55,7 @@ class TestFiberScheduler < Test::Unit::TestCase
   def test_close_at_exit
     assert_in_out_err %W[-I#{__dir__} -], <<-RUBY, ['Running Fiber'], [], success: true
     require 'scheduler'
+    Warning[:experimental] = false
 
     scheduler = Scheduler.new
     Fiber.set_scheduler scheduler
