@@ -3672,7 +3672,6 @@ rb_ary_sort_by_bang(VALUE ary)
     return ary;
 }
 
-
 /*
  *  call-seq:
  *    collect {|element| ... } -> new_array
@@ -3706,7 +3705,6 @@ rb_ary_collect(VALUE ary)
     }
     return collect;
 }
-
 
 /*
  *  call-seq:
@@ -5569,6 +5567,76 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
     return ary_diff;
 }
 
+static VALUE
+rb_ary_diff_bang_i(VALUE a, VALUE ary2)
+{
+    VALUE hash;
+    long i;
+    long length;
+
+    volatile struct select_bang_arg *arg = (void *)a;
+    VALUE ary1 = arg->ary;
+    length = arg->len[0];
+
+    ary2 = to_ary(ary2);
+    if (RARRAY_LEN(ary2) == 0) { return ary1; }
+
+    if (length <= SMALL_ARRAY_LEN || RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
+        for (i=0; i<length; i++) {
+            VALUE elt = rb_ary_elt(ary1, i);
+            if (rb_ary_includes_by_eql(ary2, elt)) continue;
+            rb_ary_store(ary1, arg->len[1], elt);
+            arg->len[1] += 1;
+        }
+        return ary1;
+    }
+
+    hash = ary_make_hash(ary2);
+    for (i=0; i<length; i++) {
+        VALUE aref = RARRAY_AREF(ary1, i);
+        if (rb_hash_stlike_lookup(hash, aref, NULL)) continue;
+        rb_ary_store(ary1, arg->len[1], aref);
+        arg->len[1] += 1;
+    }
+    ary_recycle_hash(hash);
+    return ary1;
+}
+
+/*
+ *  call-seq:
+ *    array.diff!(other_array) -> self
+ *
+ *  Removes values from target \Array that are found in
+ *  +other_array+. Items are compared using <tt>eql?</tt>;
+ *    order from +self+ is preserved:
+ *
+ *    [0, 1, 1, 2, 1, 1, 3, 1, 1].diff!([1]) # => [0, 2, 3]
+ *    [0, 1, 2, 3].diff!([3, 0], [1, 3]) # => [2]
+ *
+ *    array = [1, 2, 3]
+ *    result = array.diff!([4])
+ *    array == result # => true
+ *
+ *  Returns a copy of +self+ if no arguments given.
+ *
+ *  Related: Array#-.
+ *  Related: Array#difference.
+ */
+
+static VALUE
+rb_ary_diff_bang(VALUE ary, VALUE other)
+{
+    struct select_bang_arg args;
+    rb_ary_modify_check(ary);
+    args.ary = ary;
+    args.len[0] = RARRAY_LEN(ary);
+    args.len[1] = 0;
+
+    rb_ary_diff_bang_i((VALUE)&args, other);
+    select_bang_ensure((VALUE)&args);
+
+    return args.ary;
+}
 
 /*
  *  call-seq:
@@ -8819,6 +8887,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "+", rb_ary_plus, 1);
     rb_define_method(rb_cArray, "*", rb_ary_times, 1);
 
+    rb_define_method(rb_cArray, "diff!", rb_ary_diff_bang, 1);
     rb_define_method(rb_cArray, "-", rb_ary_diff, 1);
     rb_define_method(rb_cArray, "&", rb_ary_and, 1);
     rb_define_method(rb_cArray, "|", rb_ary_or, 1);
