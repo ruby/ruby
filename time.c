@@ -2683,7 +2683,7 @@ time_s_at(rb_execution_context_t *ec, VALUE klass, VALUE time, VALUE subsec, VAL
     VALUE t;
     wideval_t timew;
 
-    if (!NIL_P(subsec)) {
+    if (subsec) {
         int scale = get_scale(unit);
         time = num_exact(time);
         t = num_exact(subsec);
