@@ -565,7 +565,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   end
 
   # Bug #18264
-  def test_tracpoint_memory_leak
+  def test_tracepoint_memory_leak
     assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
 code = proc { TracePoint.new(:line) { } }
 1_000.times(&code)
