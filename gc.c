@@ -3141,8 +3141,10 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	}
 	rb_class_remove_from_module_subclasses(obj);
 	rb_class_remove_from_super_subclasses(obj);
+#if !USE_RVARGC
 	if (RCLASS_EXT(obj))
-            RCLASS_EXT(obj) = NULL;
+            xfree(RCLASS_EXT(obj));
+#endif
 
         (void)RB_DEBUG_COUNTER_INC_IF(obj_module_ptr, BUILTIN_TYPE(obj) == T_MODULE);
         (void)RB_DEBUG_COUNTER_INC_IF(obj_class_ptr, BUILTIN_TYPE(obj) == T_CLASS);
@@ -3308,7 +3310,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         cc_table_free(objspace, obj, FALSE);
 	rb_class_remove_from_module_subclasses(obj);
 	rb_class_remove_from_super_subclasses(obj);
-	RCLASS_EXT(obj) = NULL;
+#if !USE_RVARGC
+        xfree(RCLASS_EXT(obj));
+#endif
 
         RB_DEBUG_COUNTER_INC(obj_iclass_ptr);
 	break;
