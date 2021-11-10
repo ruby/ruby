@@ -160,7 +160,7 @@ Outstanding ones only.
 
     * Process.\_fork is added. This is a core method for fork(2).
       Do not call this method directly; it is called by existing
-      fork methods: Kernel.#fork, Process.fork, and popen("=").
+      fork methods: Kernel.#fork, Process.fork, and IO.popen("-").
       Application monitoring libraries can overwride this method to
       hook fork event. [[Feature #17795]]
 
