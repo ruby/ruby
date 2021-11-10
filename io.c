@@ -11270,9 +11270,12 @@ nogvl_wait_for(VALUE th, rb_io_t *fptr, short events)
         return RTEST(args.result);
     }
 
+    int fd = fptr->fd;
+    if (fd == -1) return 0;
+
     struct pollfd fds;
 
-    fds.fd = fptr->fd;
+    fds.fd = fd;
     fds.events = events;
 
     return poll(&fds, 1, -1);
@@ -11289,18 +11292,21 @@ nogvl_wait_for(VALUE th, rb_io_t *fptr, short events)
         return RTEST(args.result);
     }
 
+    int fd = fptr->fd;
+    if (fd == -1) return 0;
+
     rb_fdset_t fds;
     int ret;
 
     rb_fd_init(&fds);
-    rb_fd_set(fptr->fd, &fds);
+    rb_fd_set(fd, &fds);
 
     switch (events) {
       case RB_WAITFD_IN:
-        ret = rb_fd_select(fptr->fd + 1, &fds, 0, 0, 0);
+        ret = rb_fd_select(fd + 1, &fds, 0, 0, 0);
         break;
       case RB_WAITFD_OUT:
-        ret = rb_fd_select(fptr->fd + 1, 0, &fds, 0, 0);
+        ret = rb_fd_select(fd + 1, 0, &fds, 0, 0);
         break;
       default:
         VM_UNREACHABLE(nogvl_wait_for);
