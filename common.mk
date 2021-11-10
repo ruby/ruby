@@ -5852,6 +5852,7 @@ gc.$(OBJEXT): {$(VPATH)}encoding.h
 gc.$(OBJEXT): {$(VPATH)}eval_intern.h
 gc.$(OBJEXT): {$(VPATH)}gc.c
 gc.$(OBJEXT): {$(VPATH)}gc.h
+gc.$(OBJEXT): {$(VPATH)}gc.rb
 gc.$(OBJEXT): {$(VPATH)}gc.rbinc
 gc.$(OBJEXT): {$(VPATH)}id.h
 gc.$(OBJEXT): {$(VPATH)}id_table.h
