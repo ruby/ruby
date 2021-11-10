@@ -54,7 +54,7 @@ jobs:
           ${arch:+cross}build-essential${arch/:/-} \
           libssl-dev${arch} libyaml-dev${arch} libreadline6-dev${arch} \
           zlib1g-dev${arch} libncurses5-dev${arch} libffi-dev${arch} \
-          bison autoconf ruby
+          pkg-config${arch} bison autoconf ruby
       - name: git config
         run: |
           git config --global advice.detachedHead 0
@@ -74,7 +74,7 @@ jobs:
           arch: ${{matrix.arch}}
         run: >-
           $SETARCH ../src/configure -C --disable-install-doc ${{ matrix.configure }}
-          ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
+          ${arch:+--target=$arch-$OSTYPE}
       - run: $SETARCH make incs
       - run: $SETARCH make
       - run: $SETARCH make leaked-globals
