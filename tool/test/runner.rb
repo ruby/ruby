@@ -12,8 +12,6 @@ require "iseq_loader_checker"
 require "gc_checker"
 require_relative "../test-coverage.rb" if ENV.key?('COVERAGE')
 
-Warning[:experimental] = false
-
 case $0
 when __FILE__
   dir = __dir__
