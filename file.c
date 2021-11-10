@@ -2515,7 +2515,8 @@ rb_file_birthtime(VALUE obj)
  *
  */
 
-size_t rb_file_size(VALUE file)
+off_t
+rb_file_size(VALUE file)
 {
     rb_io_t *fptr;
     struct stat st;
@@ -2535,7 +2536,7 @@ size_t rb_file_size(VALUE file)
 static VALUE
 file_size(VALUE self)
 {
-    return RB_SIZE2NUM(rb_file_size(self));
+    return OFFT2NUM(rb_file_size(self));
 }
 
 static int

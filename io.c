@@ -2584,13 +2584,15 @@ rb_io_fileno(VALUE io)
     return INT2FIX(fd);
 }
 
-int rb_io_descriptor(VALUE io)
+int
+rb_io_descriptor(VALUE io)
 {
     if (RB_TYPE_P(io, T_FILE)) {
         rb_io_t *fptr = RFILE(io)->fptr;
         rb_io_check_closed(fptr);
         return fptr->fd;
-    } else {
+    }
+    else {
         return RB_NUM2INT(rb_funcall(io, id_fileno, 0));
     }
 }

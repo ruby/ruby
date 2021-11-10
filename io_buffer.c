@@ -34,7 +34,8 @@ struct rb_io_buffer {
     VALUE source;
 };
 
-static inline void* io_buffer_map_memory(size_t size)
+static inline void *
+io_buffer_map_memory(size_t size)
 {
 #if defined(_WIN32)
     void * base = VirtualAlloc(0, size, MEM_COMMIT, PAGE_READWRITE);
@@ -53,8 +54,8 @@ static inline void* io_buffer_map_memory(size_t size)
     return base;
 }
 
-static
-void io_buffer_map_file(struct rb_io_buffer *data, int descriptor, size_t size, off_t offset, enum rb_io_buffer_flags flags)
+static void
+io_buffer_map_file(struct rb_io_buffer *data, int descriptor, size_t size, off_t offset, enum rb_io_buffer_flags flags)
 {
 #if defined(_WIN32)
     HANDLE file = (HANDLE)_get_osfhandle(descriptor);
@@ -64,7 +65,8 @@ void io_buffer_map_file(struct rb_io_buffer *data, int descriptor, size_t size, 
 
     if (flags & RB_IO_BUFFER_IMMUTABLE) {
         data->flags |= RB_IO_BUFFER_IMMUTABLE;
-    } else {
+    }
+    else {
         protect = PAGE_READWRITE;
         access = FILE_MAP_WRITE;
     }
@@ -90,13 +92,15 @@ void io_buffer_map_file(struct rb_io_buffer *data, int descriptor, size_t size, 
 
     if (flags & RB_IO_BUFFER_IMMUTABLE) {
         data->flags |= RB_IO_BUFFER_IMMUTABLE;
-    } else {
+    }
+    else {
         protect |= PROT_WRITE;
     }
 
     if (flags & RB_IO_BUFFER_PRIVATE) {
         data->flags |= RB_IO_BUFFER_PRIVATE;
-    } else {
+    }
+    else {
         access |= MAP_SHARED;
     }
 
@@ -113,7 +117,8 @@ void io_buffer_map_file(struct rb_io_buffer *data, int descriptor, size_t size, 
     data->flags |= RB_IO_BUFFER_MAPPED;
 }
 
-static inline void io_buffer_unmap(void* base, size_t size)
+static inline void
+io_buffer_unmap(void* base, size_t size)
 {
 #ifdef _WIN32
     VirtualFree(base, 0, MEM_RELEASE);
@@ -122,7 +127,8 @@ static inline void io_buffer_unmap(void* base, size_t size)
 #endif
 }
 
-static void io_buffer_experimental(void)
+static void
+io_buffer_experimental(void)
 {
     static int warned = 0;
 
@@ -137,7 +143,8 @@ static void io_buffer_experimental(void)
     }
 }
 
-static void io_buffer_initialize(struct rb_io_buffer *data, void *base, size_t size, enum rb_io_buffer_flags flags, VALUE source)
+static void
+io_buffer_initialize(struct rb_io_buffer *data, void *base, size_t size, enum rb_io_buffer_flags flags, VALUE source)
 {
     io_buffer_experimental();
 
@@ -146,10 +153,12 @@ static void io_buffer_initialize(struct rb_io_buffer *data, void *base, size_t s
 
     if (base) {
         data->base = base;
-    } else {
+    }
+    else {
         if (data->flags & RB_IO_BUFFER_INTERNAL) {
             data->base = calloc(data->size, 1);
-        } else if (data->flags & RB_IO_BUFFER_MAPPED) {
+        }
+        else if (data->flags & RB_IO_BUFFER_MAPPED) {
             data->base = io_buffer_map_memory(data->size);
         }
     }
@@ -161,7 +170,8 @@ static void io_buffer_initialize(struct rb_io_buffer *data, void *base, size_t s
     data->source = source;
 }
 
-static int io_buffer_free(struct rb_io_buffer *data)
+static int
+io_buffer_free(struct rb_io_buffer *data)
 {
     if (data->base) {
         if (data->flags & RB_IO_BUFFER_INTERNAL) {
@@ -187,13 +197,15 @@ static int io_buffer_free(struct rb_io_buffer *data)
     return 0;
 }
 
-void rb_io_buffer_type_mark(void *_data)
+void
+rb_io_buffer_type_mark(void *_data)
 {
     struct rb_io_buffer *data = _data;
     rb_gc_mark(data->source);
 }
 
-void rb_io_buffer_type_free(void *_data)
+void
+rb_io_buffer_type_free(void *_data)
 {
     struct rb_io_buffer *data = _data;
 
@@ -202,7 +214,8 @@ void rb_io_buffer_type_free(void *_data)
     free(data);
 }
 
-size_t rb_io_buffer_type_size(const void *_data)
+size_t
+rb_io_buffer_type_size(const void *_data)
 {
     const struct rb_io_buffer *data = _data;
     size_t total = sizeof(struct rb_io_buffer);
@@ -225,7 +238,8 @@ static const rb_data_type_t rb_io_buffer_type = {
     .flags = RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
-VALUE rb_io_buffer_type_allocate(VALUE self)
+VALUE
+rb_io_buffer_type_allocate(VALUE self)
 {
     struct rb_io_buffer *data = NULL;
     VALUE instance = TypedData_Make_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -238,7 +252,8 @@ VALUE rb_io_buffer_type_allocate(VALUE self)
     return instance;
 }
 
-VALUE rb_io_buffer_new(void *base, size_t size, enum rb_io_buffer_flags flags)
+VALUE
+rb_io_buffer_new(void *base, size_t size, enum rb_io_buffer_flags flags)
 {
     VALUE instance = rb_io_buffer_type_allocate(rb_cIOBuffer);
 
@@ -250,7 +265,8 @@ VALUE rb_io_buffer_new(void *base, size_t size, enum rb_io_buffer_flags flags)
     return instance;
 }
 
-VALUE rb_io_buffer_map(VALUE io, size_t size, off_t offset, enum rb_io_buffer_flags flags)
+VALUE
+rb_io_buffer_map(VALUE io, size_t size, off_t offset, enum rb_io_buffer_flags flags)
 {
     VALUE instance = rb_io_buffer_type_allocate(rb_cIOBuffer);
 
@@ -264,8 +280,8 @@ VALUE rb_io_buffer_map(VALUE io, size_t size, off_t offset, enum rb_io_buffer_fl
     return instance;
 }
 
-static
-VALUE io_buffer_map(int argc, VALUE *argv, VALUE klass)
+static VALUE
+io_buffer_map(int argc, VALUE *argv, VALUE klass)
 {
     if (argc < 1 || argc > 4) {
         rb_error_arity(argc, 2, 4);
@@ -276,7 +292,8 @@ VALUE io_buffer_map(int argc, VALUE *argv, VALUE klass)
     size_t size;
     if (argc >= 2) {
         size = RB_NUM2SIZE(argv[1]);
-    } else {
+    }
+    else {
         size = rb_file_size(io);
     }
 
@@ -293,7 +310,8 @@ VALUE io_buffer_map(int argc, VALUE *argv, VALUE klass)
     return rb_io_buffer_map(io, size, offset, flags);
 }
 
-VALUE rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
+VALUE
+rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
 {
     if (argc < 1 || argc > 2) {
         rb_error_arity(argc, 1, 2);
@@ -307,10 +325,12 @@ VALUE rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
     enum rb_io_buffer_flags flags = 0;
     if (argc >= 2) {
         flags = RB_NUM2UINT(argv[1]);
-    } else {
+    }
+    else {
         if (size > RUBY_IO_BUFFER_PAGE_SIZE) {
             flags |= RB_IO_BUFFER_MAPPED;
-        } else {
+        }
+        else {
             flags |= RB_IO_BUFFER_INTERNAL;
         }
     }
@@ -320,14 +340,16 @@ VALUE rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-static int io_buffer_validate_slice(VALUE source, void *base, size_t size)
+static int
+io_buffer_validate_slice(VALUE source, void *base, size_t size)
 {
     const void *source_base = NULL;
     size_t source_size = 0;
 
     if (RB_TYPE_P(source, T_STRING)) {
         RSTRING_GETMEM(source, source_base, source_size);
-    } else {
+    }
+    else {
         rb_io_buffer_get_immutable(source, &source_base, &source_size);
     }
 
@@ -347,17 +369,20 @@ static int io_buffer_validate_slice(VALUE source, void *base, size_t size)
     return 1;
 }
 
-static int io_buffer_validate(struct rb_io_buffer *data)
+static int
+io_buffer_validate(struct rb_io_buffer *data)
 {
     if (data->source != Qnil) {
         // Only slices incur this overhead, unfortunately... better safe than sorry!
         return io_buffer_validate_slice(data->source, data->base, data->size);
-    } else {
+    }
+else {
         return 1;
     }
 }
 
-VALUE rb_io_buffer_to_s(VALUE self)
+VALUE
+rb_io_buffer_to_s(VALUE self)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -395,7 +420,8 @@ VALUE rb_io_buffer_to_s(VALUE self)
 
 }
 
-static VALUE io_buffer_hexdump(VALUE string, size_t width, char *base, size_t size)
+static VALUE
+io_buffer_hexdump(VALUE string, size_t width, char *base, size_t size)
 {
     char *text = alloca(width+1);
     text[width] = '\0';
@@ -410,12 +436,14 @@ static VALUE io_buffer_hexdump(VALUE string, size_t width, char *base, size_t si
 
                 if (value < 127 && isprint(value)) {
                     text[i] = (char)value;
-                } else {
+                }
+else {
                     text[i] = '.';
                 }
 
                 rb_str_catf(string, " %02x", value);
-            } else {
+            }
+else {
                 rb_str_cat2(string, "   ");
             }
         }
@@ -428,7 +456,8 @@ static VALUE io_buffer_hexdump(VALUE string, size_t width, char *base, size_t si
     return string;
 }
 
-VALUE rb_io_buffer_inspect(VALUE self)
+VALUE
+rb_io_buffer_inspect(VALUE self)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -442,7 +471,8 @@ VALUE rb_io_buffer_inspect(VALUE self)
     return result;
 }
 
-VALUE rb_io_buffer_size(VALUE self)
+VALUE
+rb_io_buffer_size(VALUE self)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -450,7 +480,8 @@ VALUE rb_io_buffer_size(VALUE self)
     return SIZET2NUM(data->size);
 }
 
-static VALUE rb_io_buffer_external_p(VALUE self)
+static VALUE
+rb_io_buffer_external_p(VALUE self)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -458,7 +489,8 @@ static VALUE rb_io_buffer_external_p(VALUE self)
     return data->flags & (RB_IO_BUFFER_INTERNAL | RB_IO_BUFFER_MAPPED) ? Qfalse : Qtrue;
 }
 
-static VALUE rb_io_buffer_internal_p(VALUE self)
+static VALUE
+rb_io_buffer_internal_p(VALUE self)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -466,7 +498,8 @@ static VALUE rb_io_buffer_internal_p(VALUE self)
     return data->flags & RB_IO_BUFFER_INTERNAL ? Qtrue : Qfalse;
 }
 
-static VALUE rb_io_buffer_mapped_p(VALUE self)
+static VALUE
+rb_io_buffer_mapped_p(VALUE self)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -474,7 +507,8 @@ static VALUE rb_io_buffer_mapped_p(VALUE self)
     return data->flags & RB_IO_BUFFER_MAPPED ? Qtrue : Qfalse;
 }
 
-static VALUE rb_io_buffer_locked_p(VALUE self)
+static VALUE
+rb_io_buffer_locked_p(VALUE self)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -482,7 +516,8 @@ static VALUE rb_io_buffer_locked_p(VALUE self)
     return data->flags & RB_IO_BUFFER_LOCKED ? Qtrue : Qfalse;
 }
 
-static VALUE rb_io_buffer_immutable_p(VALUE self)
+static VALUE
+rb_io_buffer_immutable_p(VALUE self)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -490,7 +525,8 @@ static VALUE rb_io_buffer_immutable_p(VALUE self)
     return data->flags & RB_IO_BUFFER_IMMUTABLE ? Qtrue : Qfalse;
 }
 
-VALUE rb_io_buffer_lock(VALUE self)
+VALUE
+rb_io_buffer_lock(VALUE self)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -504,7 +540,8 @@ VALUE rb_io_buffer_lock(VALUE self)
     return self;
 }
 
-VALUE rb_io_buffer_unlock(VALUE self)
+VALUE
+rb_io_buffer_unlock(VALUE self)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -518,7 +555,8 @@ VALUE rb_io_buffer_unlock(VALUE self)
     return self;
 }
 
-VALUE rb_io_buffer_locked(VALUE self)
+VALUE
+rb_io_buffer_locked(VALUE self)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -536,7 +574,8 @@ VALUE rb_io_buffer_locked(VALUE self)
     return result;
 }
 
-VALUE rb_io_buffer_free(VALUE self)
+VALUE
+rb_io_buffer_free(VALUE self)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -550,14 +589,16 @@ VALUE rb_io_buffer_free(VALUE self)
     return self;
 }
 
-static inline void rb_io_buffer_validate(struct rb_io_buffer *data, size_t offset, size_t length)
+static inline void
+rb_io_buffer_validate(struct rb_io_buffer *data, size_t offset, size_t length)
 {
     if (offset + length > data->size) {
         rb_raise(rb_eRuntimeError, "Specified offset + length exceeds source size!");
     }
 }
 
-VALUE rb_io_buffer_slice(VALUE self, VALUE _offset, VALUE _length)
+VALUE
+rb_io_buffer_slice(VALUE self, VALUE _offset, VALUE _length)
 {
     // TODO fail on negative offets/lengths.
     size_t offset = NUM2SIZET(_offset);
@@ -584,7 +625,8 @@ VALUE rb_io_buffer_slice(VALUE self, VALUE _offset, VALUE _length)
     return instance;
 }
 
-VALUE rb_io_buffer_to_str(int argc, VALUE *argv, VALUE self)
+VALUE
+rb_io_buffer_to_str(int argc, VALUE *argv, VALUE self)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -594,13 +636,16 @@ VALUE rb_io_buffer_to_str(int argc, VALUE *argv, VALUE self)
 
     if (argc == 0) {
         // Defaults.
-    } else if (argc == 1) {
+    }
+    else if (argc == 1) {
         offset = NUM2SIZET(argv[0]);
         length = data->size - offset;
-    } else if (argc == 2) {
+    }
+    else if (argc == 2) {
         offset = NUM2SIZET(argv[0]);
         length = NUM2SIZET(argv[1]);
-    } else {
+    }
+    else {
         rb_error_arity(argc, 0, 2);
     }
 
@@ -658,7 +703,8 @@ size_t rb_io_buffer_copy(VALUE self, VALUE source, size_t offset)
 
     if (RB_TYPE_P(source, T_STRING)) {
         RSTRING_GETMEM(source, source_base, source_size);
-    } else {
+    }
+    else {
         rb_io_buffer_get_immutable(source, &source_base, &source_size);
     }
 
@@ -672,7 +718,8 @@ size_t rb_io_buffer_copy(VALUE self, VALUE source, size_t offset)
     return source_size;
 }
 
-static VALUE io_buffer_copy(VALUE self, VALUE source, VALUE offset)
+static VALUE
+io_buffer_copy(VALUE self, VALUE source, VALUE offset)
 {
     size_t size = rb_io_buffer_copy(self, source, NUM2SIZET(offset));
 
@@ -716,8 +763,8 @@ void rb_io_buffer_resize(VALUE self, size_t size, size_t preserve)
     *data = updated;
 }
 
-static
-VALUE rb_io_buffer_compare(VALUE self, VALUE other)
+static VALUE
+rb_io_buffer_compare(VALUE self, VALUE other)
 {
     const void *ptr1, *ptr2;
     size_t size1, size2;
@@ -736,7 +783,8 @@ VALUE rb_io_buffer_compare(VALUE self, VALUE other)
     return RB_INT2NUM(memcmp(ptr1, ptr2, size1));
 }
 
-static VALUE io_buffer_resize(VALUE self, VALUE size, VALUE preserve)
+static VALUE
+io_buffer_resize(VALUE self, VALUE size, VALUE preserve)
 {
     rb_io_buffer_resize(self, NUM2SIZET(size), NUM2SIZET(preserve));
 
@@ -796,7 +844,8 @@ static double ruby_swapf64(double value)
 #define DECLAIR_TYPE(name, type, endian, wrap, unwrap, swap) \
 static ID RB_IO_BUFFER_TYPE_##name; \
 \
-static VALUE io_buffer_read_##name(const void* base, size_t size, size_t *offset) \
+static VALUE \
+io_buffer_read_##name(const void* base, size_t size, size_t *offset) \
 { \
     io_buffer_validate_type(size, *offset + sizeof(type)); \
     type value; \
@@ -806,7 +855,8 @@ static VALUE io_buffer_read_##name(const void* base, size_t size, size_t *offset
     return wrap(value); \
 } \
 \
-static void io_buffer_write_##name(const void* base, size_t size, size_t *offset, VALUE _value) \
+static void \
+io_buffer_write_##name(const void* base, size_t size, size_t *offset, VALUE _value) \
 { \
     io_buffer_validate_type(size, *offset + sizeof(type)); \
     type value = unwrap(_value); \
@@ -839,7 +889,8 @@ DECLAIR_TYPE(f64, double, RB_IO_BUFFER_LITTLE_ENDIAN, DBL2NUM, NUM2DBL, ruby_swa
 DECLAIR_TYPE(F64, double, RB_IO_BUFFER_BIG_ENDIAN, DBL2NUM, NUM2DBL, ruby_swapf64)
 #undef DECLAIR_TYPE
 
-VALUE rb_io_buffer_get(const void* base, size_t size, ID type, size_t offset)
+VALUE
+rb_io_buffer_get(const void* base, size_t size, ID type, size_t offset)
 {
 #define READ_TYPE(name) if (type == RB_IO_BUFFER_TYPE_##name) return io_buffer_read_##name(base, size, &offset);
     READ_TYPE(U8)
@@ -869,7 +920,8 @@ VALUE rb_io_buffer_get(const void* base, size_t size, ID type, size_t offset)
     rb_raise(rb_eArgError, "Invalid type name!");
 }
 
-static VALUE io_buffer_get(VALUE self, VALUE type, VALUE _offset)
+static VALUE
+io_buffer_get(VALUE self, VALUE type, VALUE _offset)
 {
     const void *base;
     size_t size;
@@ -910,7 +962,8 @@ void rb_io_buffer_set(const void* base, size_t size, ID type, size_t offset, VAL
     rb_raise(rb_eArgError, "Invalid type name!");
 }
 
-static VALUE io_buffer_set(VALUE self, VALUE type, VALUE _offset, VALUE value)
+static VALUE
+io_buffer_set(VALUE self, VALUE type, VALUE _offset, VALUE value)
 {
     void *base;
     size_t size;
@@ -937,8 +990,8 @@ void rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length)
     memset((char*)base + offset, value, length);
 }
 
-static
-VALUE io_buffer_clear(int argc, VALUE *argv, VALUE self)
+static VALUE
+io_buffer_clear(int argc, VALUE *argv, VALUE self)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -967,7 +1020,8 @@ VALUE io_buffer_clear(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-void Init_IO_Buffer(void)
+void
+Init_IO_Buffer(void)
 {
     rb_cIOBuffer = rb_define_class_under(rb_cIO, "Buffer", rb_cObject);
 

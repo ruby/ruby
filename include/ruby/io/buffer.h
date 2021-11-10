@@ -1,3 +1,5 @@
+#ifndef RUBY_IO_BUFFER_T
+#define RUBY_IO_BUFFER_T 1
 /**
  * @file
  * @author     Samuel Williams
@@ -54,7 +56,7 @@ enum rb_io_buffer_endian {
     RB_IO_BUFFER_HOST_ENDIAN = RB_IO_BUFFER_BIG_ENDIAN,
 #endif
 
-    RB_IO_BUFFER_NETWORK_ENDIAN = RB_IO_BUFFER_BIG_ENDIAN,
+    RB_IO_BUFFER_NETWORK_ENDIAN = RB_IO_BUFFER_BIG_ENDIAN
 };
 
 VALUE rb_io_buffer_new(void *base, size_t size, enum rb_io_buffer_flags flags);
@@ -72,3 +74,5 @@ void rb_io_buffer_resize(VALUE self, size_t size, size_t preserve);
 void rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length);
 
 RUBY_SYMBOL_EXPORT_END
+
+#endif  /* RUBY_IO_BUFFER_T */
