@@ -66,7 +66,9 @@ struct rb_classext_struct {
 struct RClass {
     struct RBasic basic;
     VALUE super;
+#if !USE_RVARGC
     struct rb_classext_struct *ptr;
+#endif
 #if SIZEOF_SERIAL_T == SIZEOF_VALUE
     /* Class serial is as wide as VALUE.  Place it here. */
     rb_serial_t class_serial;
@@ -79,7 +81,11 @@ struct RClass {
 typedef struct rb_subclass_entry rb_subclass_entry_t;
 typedef struct rb_classext_struct rb_classext_t;
 
-#define RCLASS_EXT(c) (RCLASS(c)->ptr)
+#if USE_RVARGC
+#  define RCLASS_EXT(c) ((rb_classext_t *)((char *)c + sizeof(struct RClass)))
+#else
+#  define RCLASS_EXT(c) (RCLASS(c)->ptr)
+#endif
 #define RCLASS_IV_TBL(c) (RCLASS_EXT(c)->iv_tbl)
 #define RCLASS_CONST_TBL(c) (RCLASS_EXT(c)->const_tbl)
 #if SIZEOF_SERIAL_T == SIZEOF_VALUE

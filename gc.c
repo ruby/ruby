@@ -4588,11 +4588,11 @@ obj_memsize_of(VALUE obj, int use_all_types)
                 // TODO: more correct value
 		size += st_memsize(RCLASS_IV_INDEX_TBL(obj));
 	    }
-	    if (RCLASS(obj)->ptr->iv_tbl) {
-		size += st_memsize(RCLASS(obj)->ptr->iv_tbl);
+            if (RCLASS_EXT(obj)->iv_tbl) {
+                size += st_memsize(RCLASS_EXT(obj)->iv_tbl);
 	    }
-	    if (RCLASS(obj)->ptr->const_tbl) {
-		size += rb_id_table_memsize(RCLASS(obj)->ptr->const_tbl);
+            if (RCLASS_EXT(obj)->const_tbl) {
+                size += rb_id_table_memsize(RCLASS_EXT(obj)->const_tbl);
 	    }
             if (RCLASS_CC_TBL(obj)) {
                 size += cc_table_memsize(RCLASS_CC_TBL(obj));
