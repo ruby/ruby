@@ -221,7 +221,7 @@ class Time
   # Parameter:
   # :include: doc/time/in.rdoc
   def self.now(in: nil)
-    new(in: __builtin.arg!(:in))
+    new(in: Primitive.arg!(:in))
   end
 
   # _Time_
@@ -268,7 +268,7 @@ class Time
   # :include: doc/time/in.rdoc
   #
   def self.at(time, subsec = false, unit = :microsecond, in: nil)
-    __builtin.time_s_at(time, subsec, unit, __builtin.arg!(:in))
+    Primitive.time_s_at(time, subsec, unit, Primitive.arg!(:in))
   end
 
   # Returns a new \Time object based the on given arguments.
@@ -292,17 +292,17 @@ class Time
   #
   def initialize(year = (now = true), mon = nil, mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil)
     if zone
-      if __builtin.arg!(:in)
+      if Primitive.arg!(:in)
         raise ArgumentError, "timezone argument given as positional and keyword arguments"
       end
     else
-      zone = __builtin.arg!(:in)
+      zone = Primitive.arg!(:in)
     end
 
     if now
-      return __builtin.time_init_now(zone)
+      return Primitive.time_init_now(zone)
     end
 
-    __builtin.time_init_args(year, mon, mday, hour, min, sec, zone)
+    Primitive.time_init_args(year, mon, mday, hour, min, sec, zone)
   end
 end
