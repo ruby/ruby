@@ -769,4 +769,13 @@ class TestClass < Test::Unit::TestCase
       assert(c.descendants.size <= 100)
     end
   end
+
+  def test_classext_memory_leak
+    assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
+code = proc { Class.new }
+1_000.times(&code)
+PREP
+3_000_000.times(&code)
+CODE
+  end
 end
