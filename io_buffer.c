@@ -376,7 +376,7 @@ io_buffer_validate(struct rb_io_buffer *data)
         // Only slices incur this overhead, unfortunately... better safe than sorry!
         return io_buffer_validate_slice(data->source, data->base, data->size);
     }
-else {
+    else {
         return 1;
     }
 }
@@ -437,13 +437,13 @@ io_buffer_hexdump(VALUE string, size_t width, char *base, size_t size)
                 if (value < 127 && isprint(value)) {
                     text[i] = (char)value;
                 }
-else {
+                else {
                     text[i] = '.';
                 }
 
                 rb_str_catf(string, " %02x", value);
             }
-else {
+            else {
                 rb_str_cat2(string, "   ");
             }
         }
