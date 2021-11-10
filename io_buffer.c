@@ -11,6 +11,7 @@
 
 #include "internal/string.h"
 #include "internal/bits.h"
+#include "internal/error.h"
 
 VALUE rb_cIOBuffer;
 size_t RUBY_IO_BUFFER_PAGE_SIZE;
@@ -121,8 +122,25 @@ static inline void io_buffer_unmap(void* base, size_t size)
 #endif
 }
 
+static void io_buffer_experimental(void)
+{
+    static int warned = 0;
+
+    if (warned) return;
+
+    warned = 1;
+
+    if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL)) {
+        rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL,
+          "IO::Buffer is experimental and both the Ruby and C interface may change in the future!"
+        );
+    }
+}
+
 static void io_buffer_initialize(struct rb_io_buffer *data, void *base, size_t size, enum rb_io_buffer_flags flags, VALUE source)
 {
+    io_buffer_experimental();
+
     data->flags = flags;
     data->size = size;
 

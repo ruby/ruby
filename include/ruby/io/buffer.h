@@ -16,6 +16,9 @@
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
+// WARNING: This entire interface is experimental and may change in the future!
+#define RB_IO_BUFFER_EXPERIMENTAL 1
+
 RUBY_EXTERN VALUE rb_cIOBuffer;
 RUBY_EXTERN size_t RUBY_IO_BUFFER_PAGE_SIZE;
 
