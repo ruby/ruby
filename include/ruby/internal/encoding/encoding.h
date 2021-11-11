@@ -65,7 +65,7 @@ enum ruby_encoding_consts {
 
 #define ENCODING_INLINE_MAX RUBY_ENCODING_INLINE_MAX /**< @old{RUBY_ENCODING_INLINE_MAX} */
 #define ENCODING_SHIFT RUBY_ENCODING_SHIFT           /**< @old{RUBY_ENCODING_SHIFT} */
-#define ENCODING_MASK RUBY_ENCODING_MASK             /**< @old{RUBY_ENCODING_SHIFT} */
+#define ENCODING_MASK RUBY_ENCODING_MASK             /**< @old{RUBY_ENCODING_MASK} */
 
 /**
  * Destructively assigns the passed encoding  to the passed object.  The object
