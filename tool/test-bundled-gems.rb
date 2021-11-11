@@ -23,7 +23,8 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   first_timeout = 600 # 10min
 
   if gem == "typeprof"
-    raise "need to run rbs test suite before typeprof" unless File.readable?("#{gem_dir}/src/rbs/lib/rbs/parser.rb")
+    rbs_build_dir = 'ext/-test-/gems/rbs'
+    raise "need to run rbs test suite before typeprof" unless File.readable?("#{rbs_build_dir}/rbs_extension.so")
     ENV["RUBYLIB"] = ["#{gem_dir}/src/rbs/lib", ENV.fetch("RUBYLIB", nil)].compact.join(":")
   end
 
