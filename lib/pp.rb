@@ -237,7 +237,7 @@ class PP < PrettyPrint
         else
           sep.call
         end
-        yield(*v, **{})
+        RUBY_VERSION >= "3.0" ? yield(*v, **{}) : yield(*v)
       }
     end
 
