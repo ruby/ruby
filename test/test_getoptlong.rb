@@ -20,7 +20,7 @@ class TestGetoptLong < Test::Unit::TestCase
       actual_options << "#{opt}: #{arg}"
     end
     # Save remaining test ARGV and restore original ARGV.
-    actual_remaining_argv = ARGV
+    actual_remaining_argv = ARGV.dup
     ARGV.replace(argv_saved)
     # Assert.
     assert_equal(expected_remaining_argv, actual_remaining_argv, 'ARGV')
