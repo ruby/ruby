@@ -75,4 +75,34 @@ class TestOptionParser < Test::Unit::TestCase
     assert_equal({host: "localhost", port: 8000, verbose: true}, result)
     assert_equal(true, @verbose)
   end
+
+  def test_require_exact
+    @opt.def_option('-F', '--zrs=IRS', 'zrs')
+    %w(--zrs --zr --z -zfoo -z -F -Ffoo).each do |arg|
+      result = {}
+      @opt.parse([arg, 'foo'], into: result)
+      assert_equal({zrs: 'foo'}, result)
+    end
+
+    @opt.require_exact = true
+    %w(--zrs -F -Ffoo).each do |arg|
+      result = {}
+      @opt.parse([arg, 'foo'], into: result)
+      assert_equal({zrs: 'foo'}, result)
+    end
+
+    assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(--zr foo))}
+    assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(--z foo))}
+    assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-zrs foo))}
+    assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-zr foo))}
+    assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-z foo))}
+  end
+
+  def test_nonopt_pattern
+    @opt.def_option(/^[^-]/) do |arg|
+      assert(false, "Never gets called")
+    end
+    e = assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-t))}
+    assert_equal(["-t"], e.args)
+  end
 end
