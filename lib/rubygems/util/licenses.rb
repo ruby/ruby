@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/text'
+require_relative '../text'
 
 class Gem::Licenses
   extend Gem::Text

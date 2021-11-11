@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/version_option'
-require 'rubygems/rdoc'
+require_relative '../command'
+require_relative '../version_option'
+require_relative '../rdoc'
 require 'fileutils'
 
 class Gem::Commands::RdocCommand < Gem::Command

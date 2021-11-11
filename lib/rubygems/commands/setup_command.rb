@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/command'
+require_relative '../command'
 
 ##
 # Installs RubyGems itself.  This command is ordinarily only available from a
@@ -348,7 +348,7 @@ By default, this RubyGems will install gem as:
         rm_rf dir
       end
 
-      require 'rubygems/rdoc'
+      require_relative '../rdoc'
 
       fake_spec = Gem::Specification.new 'rubygems', Gem::VERSION
       def fake_spec.full_gem_path
@@ -407,7 +407,7 @@ By default, this RubyGems will install gem as:
       cp File.join("bundler", bundler_spec.bindir, e), File.join(bundler_bin_dir, e)
     end
 
-    require 'rubygems/installer'
+    require_relative '../installer'
 
     Dir.chdir("bundler") do
       built_gem = Gem::Package.build(bundler_spec)
@@ -596,7 +596,7 @@ abort "#{deprecation_message}"
   end
 
   def uninstall_old_gemcutter
-    require 'rubygems/uninstaller'
+    require_relative '../uninstaller'
 
     ui = Gem::Uninstaller.new('gemcutter', :all => true, :ignore => true,
                               :version => '< 0.4')
@@ -605,7 +605,7 @@ abort "#{deprecation_message}"
   end
 
   def regenerate_binstubs
-    require "rubygems/commands/pristine_command"
+    require_relative "pristine_command"
     say "Regenerating binstubs"
 
     args = %w[--all --only-executables --silent]

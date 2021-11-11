@@ -2,7 +2,8 @@ name: Ruby
 
 on:
   push:
-    - <%= config[:git_default_branch] %>
+    branches:
+      - <%= config[:git_default_branch] %>
 
   pull_request:
 

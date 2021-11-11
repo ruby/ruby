@@ -5,8 +5,8 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems'
-require 'rubygems/security_option'
+require_relative '../rubygems'
+require_relative 'security_option'
 
 ##
 # Mixin methods for install and update options for Gem::Commands

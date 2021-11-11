@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require "rubygems/deprecate"
+require_relative "deprecate"
 
 ##
 # Available list of platforms for targeting Gem installations.
