@@ -35,6 +35,11 @@ module Spec
       build_repo gem_repo1 do
         FileUtils.cp rake_path, "#{gem_repo1}/gems/"
 
+        build_gem "coffee-script-source"
+        build_gem "git"
+        build_gem "puma"
+        build_gem "minitest"
+
         build_gem "rack", %w[0.9.1 1.0.0] do |s|
           s.executables = "rackup"
           s.post_install_message = "Rack's post install message"

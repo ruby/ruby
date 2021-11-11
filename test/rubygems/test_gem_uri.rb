@@ -29,4 +29,11 @@ class TestUri < Gem::TestCase
   def test_redacted_with_invalid_uri
     assert_equal "https://www.example.com:80index", Gem::Uri.new("https://www.example.com:80index").redacted.to_s
   end
+
+  def test_redacted_does_not_modify_uri
+    url = 'https://user:password@example.com'
+    uri = Gem::Uri.new(url)
+    assert_equal 'https://user:REDACTED@example.com', uri.redacted.to_s
+    assert_equal url, uri.to_s
+  end
 end

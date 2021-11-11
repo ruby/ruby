@@ -450,7 +450,7 @@ RSpec.describe "bundle gem" do
       bundle "gem #{gem_name}"
 
       expect(generated_gemspec.metadata["allowed_push_host"]).
-        to match(/mygemserver\.com/)
+        to match(/example\.com/)
     end
 
     it "sets a minimum ruby version" do
