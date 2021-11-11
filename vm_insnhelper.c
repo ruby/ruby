@@ -1936,7 +1936,8 @@ vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 
 #if OPT_INLINE_METHOD_CACHE
     if (LIKELY(vm_cc_class_check(cc, klass))) {
-        if (LIKELY(!METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc)))) {
+        const struct rb_callable_method_entry_struct *cme = vm_cc_cme(cc);
+        if (LIKELY(cme && !METHOD_ENTRY_INVALIDATED(cme))) {
             VM_ASSERT(callable_method_entry_p(vm_cc_cme(cc)));
             RB_DEBUG_COUNTER_INC(mc_inline_hit);
             VM_ASSERT(vm_cc_cme(cc) == NULL ||                        // not found
