@@ -29,9 +29,6 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   end
 
   if gem == "rbs"
-    racc = File.realpath("../../libexec/racc", __FILE__)
-    pid = Process.spawn("#{ruby} -C #{gem_dir}/src/#{gem} -Ilib #{racc} -v -o lib/rbs/parser.rb lib/rbs/parser.y")
-    Process.waitpid(pid)
     test_command << " stdlib_test validate"
 
     first_timeout *= 3
