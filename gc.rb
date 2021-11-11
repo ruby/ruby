@@ -292,23 +292,13 @@ module GC
     }
   end
 
-  Primitive.cinit! %{
-    #if SIZEOF_LONG == 8
-      #define UINT64_2NUM RB_ULONG2NUM
-    #elif SIZEOF_LONG_LONG == 8
-      #define UINT64_2NUM RB_ULL2NUM
-    #else
-      #error Can not make UINT64_2NUM
-    #endif
-  }
-
   # call-seq:
   #    GC.total_time -> int
   #
   # Return measured GC total time in nano seconds.
   def self.total_time
     Primitive.cexpr! %{
-      UINT64_2NUM(rb_objspace.profile.total_time_ns)
+      ULL2NUM(rb_objspace.profile.total_time_ns)
     }
   end
 end
