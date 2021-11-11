@@ -16,7 +16,7 @@
 #include "ruby/ruby.h"
 #include "ruby/internal/config.h"
 
-RUBY_SYMBOL_EXPORT_BEGIN
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 // WARNING: This entire interface is experimental and may change in the future!
 #define RB_IO_BUFFER_EXPERIMENTAL 1
@@ -73,6 +73,6 @@ size_t rb_io_buffer_copy(VALUE self, VALUE source, size_t offset);
 void rb_io_buffer_resize(VALUE self, size_t size, size_t preserve);
 void rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length);
 
-RUBY_SYMBOL_EXPORT_END
+RBIMPL_SYMBOL_EXPORT_END()
 
 #endif  /* RUBY_IO_BUFFER_T */
