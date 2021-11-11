@@ -127,9 +127,9 @@ RSpec.describe "bundle install with explicit source paths" do
     L
 
     bundle :install, :dir => lib_path("demo")
-    expect(lib_path("demo/Gemfile.lock")).to have_lockfile(lockfile)
+    expect(lib_path("demo/Gemfile.lock")).to read_as(lockfile)
     bundle :update, :all => true, :dir => lib_path("demo")
-    expect(lib_path("demo/Gemfile.lock")).to have_lockfile(lockfile)
+    expect(lib_path("demo/Gemfile.lock")).to read_as(lockfile)
   end
 
   it "expands paths when comparing locked paths to Gemfile paths" do
