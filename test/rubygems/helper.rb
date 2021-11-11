@@ -16,16 +16,6 @@ begin
 rescue Gem::LoadError
 end
 
-begin
-  require 'simplecov'
-  SimpleCov.start do
-    add_filter "/test/"
-    add_filter "/bundler/"
-    add_filter "/lib/rubygems/resolver/molinillo"
-  end
-rescue LoadError
-end
-
 if File.exist?(bundler_gemspec)
   require_relative '../../bundler/lib/bundler'
 else
@@ -409,6 +399,14 @@ class Gem::TestCase < Test::Unit::TestCase
     @orig_bindir = RbConfig::CONFIG["bindir"]
     RbConfig::CONFIG["bindir"] = File.join @gemhome, "bin"
 
+    @orig_sitelibdir = RbConfig::CONFIG["sitelibdir"]
+    new_sitelibdir = @orig_sitelibdir.sub(RbConfig::CONFIG["prefix"], @gemhome)
+    $LOAD_PATH.insert(Gem.load_path_insert_index, new_sitelibdir)
+    RbConfig::CONFIG["sitelibdir"] = new_sitelibdir
+
+    @orig_mandir = RbConfig::CONFIG["mandir"]
+    RbConfig::CONFIG["mandir"] = File.join @gemhome, "share", "man"
+
     Gem::Specification.unresolved_deps.clear
     Gem.use_paths(@gemhome)
 
@@ -480,6 +478,8 @@ class Gem::TestCase < Test::Unit::TestCase
 
     Gem.ruby = @orig_ruby if @orig_ruby
 
+    RbConfig::CONFIG['mandir'] = @orig_mandir
+    RbConfig::CONFIG['sitelibdir'] = @orig_sitelibdir
     RbConfig::CONFIG['bindir'] = @orig_bindir
 
     Gem.instance_variable_set :@default_specifications_dir, nil
@@ -1084,17 +1084,21 @@ Also, a list:
       @fetcher.data["#{@gem_repo}latest_specs.#{v}.gz"]     = l_zip
       @fetcher.data["#{@gem_repo}prerelease_specs.#{v}.gz"] = p_zip
 
-      v = Gem.marshal_version
-
-      all_specs.each do |spec|
-        path = "#{@gem_repo}quick/Marshal.#{v}/#{spec.original_name}.gemspec.rz"
-        data = Marshal.dump spec
-        data_deflate = Zlib::Deflate.deflate data
-        @fetcher.data[path] = data_deflate
-      end
+      write_marshalled_gemspecs(*all_specs)
     end
 
     nil # force errors
+  end
+
+  def write_marshalled_gemspecs(*all_specs)
+    v = Gem.marshal_version
+
+    all_specs.each do |spec|
+      path = "#{@gem_repo}quick/Marshal.#{v}/#{spec.original_name}.gemspec.rz"
+      data = Marshal.dump spec
+      data_deflate = Zlib::Deflate.deflate data
+      @fetcher.data[path] = data_deflate
+    end
   end
 
   ##

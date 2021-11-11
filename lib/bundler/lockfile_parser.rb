@@ -86,6 +86,7 @@ module Bundler
 
     def warn_for_outdated_bundler_version
       return unless bundler_version
+      return if bundler_version.segments.last == "dev"
       prerelease_text = bundler_version.prerelease? ? " --pre" : ""
       current_version = Gem::Version.create(Bundler::VERSION)
       return unless current_version < bundler_version

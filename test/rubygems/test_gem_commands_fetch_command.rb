@@ -79,6 +79,42 @@ class TestGemCommandsFetchCommand < Gem::TestCase
                        "#{a2.full_name} not fetched")
   end
 
+  def test_execute_platform
+    a2_spec, a2 = util_gem("a", "2")
+
+    a2_universal_darwin_spec, a2_universal_darwin = util_gem("a", "2") do |s|
+      s.platform = 'universal-darwin'
+    end
+
+    Gem::RemoteFetcher.fetcher = @fetcher = Gem::FakeFetcher.new
+
+    write_marshalled_gemspecs(a2_spec, a2_universal_darwin_spec)
+
+    @cmd.options[:args] = %w[a]
+
+    @fetcher.data["#{@gem_repo}latest_specs.#{Gem.marshal_version}.gz"] = util_gzip(Marshal.dump([
+      Gem::NameTuple.new(a2_spec.name, a2_spec.version, a2_spec.platform),
+      Gem::NameTuple.new(a2_universal_darwin_spec.name, a2_universal_darwin_spec.version, a2_universal_darwin_spec.platform),
+    ]))
+
+    @fetcher.data["#{@gem_repo}gems/#{a2_spec.file_name}"] = Gem.read_binary(a2)
+    FileUtils.cp a2, a2_spec.cache_file
+
+    @fetcher.data["#{@gem_repo}gems/#{a2_universal_darwin_spec.file_name}"] = Gem.read_binary(a2_universal_darwin)
+    FileUtils.cp a2_universal_darwin, a2_universal_darwin_spec.cache_file
+
+    util_set_arch 'arm64-darwin20' do
+      use_ui @ui do
+        Dir.chdir @tempdir do
+          @cmd.execute
+        end
+      end
+    end
+
+    assert_path_exist(File.join(@tempdir, a2_universal_darwin_spec.file_name),
+                       "#{a2_universal_darwin_spec.full_name} not fetched")
+  end
+
   def test_execute_specific_prerelease
     specs = spec_fetcher do |fetcher|
       fetcher.gem 'a', 2

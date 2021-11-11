@@ -5,7 +5,7 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'optparse'
+require_relative 'optparse'
 require_relative 'requirement'
 require_relative 'user_interaction'
 
@@ -19,7 +19,7 @@ require_relative 'user_interaction'
 class Gem::Command
   include Gem::UserInteraction
 
-  OptionParser.accept Symbol do |value|
+  Gem::OptionParser.accept Symbol do |value|
     value.to_sym
   end
 
@@ -344,7 +344,7 @@ class Gem::Command
   ##
   # Add a command-line option and handler to the command.
   #
-  # See OptionParser#make_switch for an explanation of +opts+.
+  # See Gem::OptionParser#make_switch for an explanation of +opts+.
   #
   # +handler+ will be called with two values, the value of the argument and
   # the options hash.
@@ -540,7 +540,7 @@ class Gem::Command
   # command.
 
   def create_option_parser
-    @parser = OptionParser.new
+    @parser = Gem::OptionParser.new
 
     add_parser_options
 

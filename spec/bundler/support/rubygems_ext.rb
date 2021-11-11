@@ -69,6 +69,7 @@ module Spec
 
       install_gems(test_gemfile)
       install_gems(rubocop_gemfile, Path.rubocop_gems.to_s)
+      install_gems(standard_gemfile, Path.standard_gems.to_s)
     end
 
     private
@@ -116,6 +117,10 @@ module Spec
 
     def rubocop_gemfile
       Path.rubocop_gemfile
+    end
+
+    def standard_gemfile
+      Path.standard_gemfile
     end
 
     def dev_gemfile

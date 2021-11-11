@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'tsort'
+require_relative 'tsort'
 
 ##
 # A RequestSet groups a request to activate a set of dependencies.
@@ -15,7 +15,7 @@ require 'tsort'
 #   #=> ["nokogiri-1.6.0", "mini_portile-0.5.1", "pg-0.17.0"]
 
 class Gem::RequestSet
-  include TSort
+  include Gem::TSort
 
   ##
   # Array of gems to install even if already installed

@@ -11,10 +11,10 @@ class Gem::Commands::ServerCommand < Gem::Command
     super 'server', 'Documentation and gem repository HTTP server',
           :port => 8808, :gemdir => [], :daemon => false
 
-    OptionParser.accept :Port do |port|
+    Gem::OptionParser.accept :Port do |port|
       if port =~ /\A\d+\z/
         port = Integer port
-        raise OptionParser::InvalidArgument, "#{port}: not a port number" if
+        raise Gem::OptionParser::InvalidArgument, "#{port}: not a port number" if
           port > 65535
 
         port
@@ -22,7 +22,7 @@ class Gem::Commands::ServerCommand < Gem::Command
         begin
           Socket.getservbyname port
         rescue SocketError
-          raise OptionParser::InvalidArgument, "#{port}: no such named service"
+          raise Gem::OptionParser::InvalidArgument, "#{port}: no such named service"
         end
       end
     end

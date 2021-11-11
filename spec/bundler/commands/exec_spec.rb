@@ -612,6 +612,36 @@ RSpec.describe "bundle exec" do
     expect(out).to include("Installing foo 1.0")
   end
 
+  it "loads the correct optparse when `auto_install` is set, and optparse is a dependency" do
+    if Gem.ruby_version >= Gem::Version.new("3.0.0") && Gem.rubygems_version < Gem::Version.new("3.3.0.a")
+      skip "optparse is a default gem, and rubygems loads install during install"
+    end
+
+    build_repo4 do
+      build_gem "fastlane", "2.192.0" do |s|
+        s.executables = "fastlane"
+        s.add_dependency "optparse", "~> 0.1.1"
+      end
+
+      build_gem "optparse", "0.1.0"
+      build_gem "optparse", "0.1.1"
+    end
+
+    system_gems "optparse-0.1.0", :gem_repo => gem_repo4
+
+    bundle "config set auto_install 1"
+    bundle "config set --local path vendor/bundle"
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "fastlane"
+    G
+
+    bundle "exec fastlane"
+    expect(out).to include("Installing optparse 0.1.1")
+    expect(out).to include("2.192.0")
+  end
+
   describe "with gems bundled via :path with invalid gemspecs" do
     it "outputs the gemspec validation errors" do
       build_lib "foo"

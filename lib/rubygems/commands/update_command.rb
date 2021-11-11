@@ -25,7 +25,7 @@ class Gem::Commands::UpdateCommand < Gem::Command
 
     add_install_update_options
 
-    OptionParser.accept Gem::Version do |value|
+    Gem::OptionParser.accept Gem::Version do |value|
       Gem::Version.new value
 
       value

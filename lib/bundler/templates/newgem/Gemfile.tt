@@ -14,7 +14,10 @@ gem "rake-compiler"
 
 gem "<%= config[:test] %>", "~> <%= config[:test_framework_version] %>"
 <%- end -%>
-<%- if config[:rubocop] -%>
+<%- if config[:linter] == "rubocop" -%>
 
-gem "rubocop", "~> <%= config[:rubocop_version] %>"
+gem "rubocop", "~> <%= config[:linter_version] %>"
+<%- elsif config[:linter] == "standard" -%>
+
+gem "standard", "~> <%= config[:linter_version] %>"
 <%- end -%>

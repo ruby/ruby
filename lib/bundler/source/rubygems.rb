@@ -162,7 +162,7 @@ module Bundler
           begin
             s = Bundler.rubygems.spec_from_gem(path, Bundler.settings["trust-policy"])
             spec.__swap__(s)
-          rescue StandardError
+          rescue Gem::Package::FormatError
             Bundler.rm_rf(path)
             raise
           end

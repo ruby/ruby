@@ -56,7 +56,6 @@ module Bundler
           @ref      = ref
           @revision = revision
           @git      = git
-          raise GitNotInstalledError.new if allow? && !Bundler.git_present?
         end
 
         def revision
@@ -208,7 +207,11 @@ module Bundler
         end
 
         def allow?
-          @git ? @git.allow_git_ops? : true
+          allowed = @git ? @git.allow_git_ops? : true
+
+          raise GitNotInstalledError.new if allowed && !Bundler.git_present?
+
+          allowed
         end
 
         def with_path(&blk)

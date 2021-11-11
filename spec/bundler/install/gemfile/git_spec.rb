@@ -1436,7 +1436,44 @@ In Gemfile:
   end
 
   describe "without git installed" do
-    it "prints a better error message" do
+    it "prints a better error message when installing" do
+      build_git "foo"
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+
+        gem "rake", git: "https://github.com/ruby/rake"
+      G
+
+      lockfile <<-L
+        GIT
+          remote: https://github.com/ruby/rake
+          revision: 5c60da8644a9e4f655e819252e3b6ca77f42b7af
+          specs:
+            rake (13.0.6)
+
+        GEM
+          remote: https://rubygems.org/
+          specs:
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          rake!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      with_path_as("") do
+        bundle "install", :raise_on_error => false
+      end
+      expect(err).
+        to include("You need to install git to be able to use gems from git repositories. For help installing git, please refer to GitHub's tutorial at https://help.github.com/articles/set-up-git")
+    end
+
+    it "prints a better error message when updating" do
       build_git "foo"
 
       install_gemfile <<-G

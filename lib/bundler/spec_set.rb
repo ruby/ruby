@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "tsort"
+require_relative "vendored_tsort"
 
 module Bundler
   class SpecSet

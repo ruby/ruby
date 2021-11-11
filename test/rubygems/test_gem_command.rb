@@ -118,7 +118,7 @@ class TestGemCommand < Gem::TestCase
     use_ui @ui do
       @cmd.when_invoked { true }
 
-      ex = assert_raise OptionParser::InvalidOption do
+      ex = assert_raise Gem::OptionParser::InvalidOption do
         @cmd.invoke('-zzz')
       end
 
