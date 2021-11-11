@@ -827,16 +827,6 @@ class Gem::TestCase < Test::Unit::TestCase
     Gem::Specification.unresolved_deps.values.map(&:to_s).sort
   end
 
-  def save_loaded_features
-    old_loaded_features = $LOADED_FEATURES.dup
-    yield
-  ensure
-    prefix = File.dirname(__FILE__) + "/"
-    new_features = ($LOADED_FEATURES - old_loaded_features)
-    old_loaded_features.concat(new_features.select {|f| f.rindex(prefix, 0) })
-    $LOADED_FEATURES.replace old_loaded_features
-  end
-
   def new_default_spec(name, version, deps = nil, *files)
     spec = util_spec name, version, deps
 
@@ -1531,14 +1521,14 @@ Also, a list:
   end
 
   ##
-  # Loads an RSA private key named +key_name+ with +passphrase+ in <tt>test/rubygems/</tt>
+  # Loads a private key named +key_name+ with +passphrase+ in <tt>test/rubygems/</tt>
 
   def self.load_key(key_name, passphrase = nil)
     key_file = key_path key_name
 
     key = File.read key_file
 
-    OpenSSL::PKey::RSA.new key, passphrase
+    OpenSSL::PKey.read key, passphrase
   end
 
   ##

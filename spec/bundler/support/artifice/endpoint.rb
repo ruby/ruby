@@ -8,7 +8,7 @@ require "artifice"
 require "sinatra/base"
 
 ALL_REQUESTS = [] # rubocop:disable Style/MutableConstant
-ALL_REQUESTS_MUTEX = Mutex.new
+ALL_REQUESTS_MUTEX = Thread::Mutex.new
 
 at_exit do
   if expected = ENV["BUNDLER_SPEC_ALL_REQUESTS"]

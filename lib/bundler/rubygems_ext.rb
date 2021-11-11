@@ -85,6 +85,10 @@ module Gem
       dependencies - development_dependencies
     end
 
+    def deleted_gem?
+      !default_gem? && !File.directory?(full_gem_path)
+    end
+
     private
 
     def dependencies_to_gemfile(dependencies, group = nil)

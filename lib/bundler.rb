@@ -37,12 +37,13 @@ module Bundler
   environment_preserver = EnvironmentPreserver.from_env
   ORIGINAL_ENV = environment_preserver.restore
   environment_preserver.replace_with_backup
-  SUDO_MUTEX = Mutex.new
+  SUDO_MUTEX = Thread::Mutex.new
 
   autoload :Definition,             File.expand_path("bundler/definition", __dir__)
   autoload :Dependency,             File.expand_path("bundler/dependency", __dir__)
   autoload :DepProxy,               File.expand_path("bundler/dep_proxy", __dir__)
   autoload :Deprecate,              File.expand_path("bundler/deprecate", __dir__)
+  autoload :Digest,                 File.expand_path("bundler/digest", __dir__)
   autoload :Dsl,                    File.expand_path("bundler/dsl", __dir__)
   autoload :EndpointSpecification,  File.expand_path("bundler/endpoint_specification", __dir__)
   autoload :Env,                    File.expand_path("bundler/env", __dir__)

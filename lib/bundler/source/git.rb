@@ -307,7 +307,9 @@ module Bundler
           # If there is no URI scheme, assume it is an ssh/git URI
           input = uri
         end
-        SharedHelpers.digest(:SHA1).hexdigest(input)
+        # We use SHA1 here for historical reason and to preserve backward compatibility.
+        # But a transition to a simpler mangling algorithm would be welcome.
+        Bundler::Digest.sha1(input)
       end
 
       def cached_revision

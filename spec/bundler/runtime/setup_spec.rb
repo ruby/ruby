@@ -1228,6 +1228,41 @@ end
   end
 
   describe "with gemified standard libraries" do
+    it "does not load Digest", :ruby_repo do
+      skip "Only for Ruby 3.0+" unless RUBY_VERSION >= "3.0"
+
+      build_git "bar", :gemspec => false do |s|
+        s.write "lib/bar/version.rb", %(BAR_VERSION = '1.0')
+        s.write "bar.gemspec", <<-G
+          require_relative 'lib/bar/version'
+
+          Gem::Specification.new do |s|
+            s.name        = 'bar'
+            s.version     = BAR_VERSION
+            s.summary     = 'Bar'
+            s.files       = Dir["lib/**/*.rb"]
+            s.author      = 'no one'
+
+            s.add_runtime_dependency 'digest'
+          end
+        G
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "bar", :git => "#{lib_path("bar-1.0")}"
+      G
+
+      bundle :install
+
+      ruby <<-RUBY
+        require '#{entrypoint}/setup'
+        puts defined?(::Digest) ? "Digest defined" : "Digest undefined"
+        require 'digest'
+      RUBY
+      expect(out).to eq("Digest undefined")
+    end
+
     it "does not load Psych" do
       gemfile "source \"#{file_uri_for(gem_repo1)}\""
       ruby <<-RUBY

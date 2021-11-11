@@ -43,6 +43,11 @@ class Gem::Commands::CertCommand < Gem::Command
       options[:key] = open_private_key(key_file)
     end
 
+    add_option('-A', '--key-algorithm ALGORITHM',
+               'Select which key algorithm to use for --build') do |algorithm, options|
+      options[:key_algorithm] = algorithm
+    end
+
     add_option('-s', '--sign CERT',
                'Signs CERT with the key from -K',
                'and the certificate from -C') do |cert_file, options|
@@ -89,14 +94,14 @@ class Gem::Commands::CertCommand < Gem::Command
   def open_private_key(key_file)
     check_openssl
     passphrase = ENV['GEM_PRIVATE_KEY_PASSPHRASE']
-    key = OpenSSL::PKey::RSA.new File.read(key_file), passphrase
+    key = OpenSSL::PKey.read File.read(key_file), passphrase
     raise OptionParser::InvalidArgument,
       "#{key_file}: private key not found" unless key.private?
     key
   rescue Errno::ENOENT
     raise OptionParser::InvalidArgument, "#{key_file}: does not exist"
-  rescue OpenSSL::PKey::RSAError
-    raise OptionParser::InvalidArgument, "#{key_file}: invalid RSA key"
+  rescue OpenSSL::PKey::PKeyError, ArgumentError
+    raise OptionParser::InvalidArgument, "#{key_file}: invalid RSA, DSA, or EC key"
   end
 
   def execute
@@ -170,7 +175,8 @@ class Gem::Commands::CertCommand < Gem::Command
     raise Gem::CommandLineError,
           "Passphrase and passphrase confirmation don't match" unless passphrase == passphrase_confirmation
 
-    key      = Gem::Security.create_key
+    algorithm = options[:key_algorithm] || Gem::Security::DEFAULT_KEY_ALGORITHM
+    key = Gem::Security.create_key(algorithm)
     key_path = Gem::Security.write key, "gem-private_key.pem", 0600, passphrase
 
     return key, key_path
@@ -255,13 +261,14 @@ For further reading on signing gems see `ri Gem::Security`.
     key_file = File.join Gem.default_key_path
     key = File.read key_file
     passphrase = ENV['GEM_PRIVATE_KEY_PASSPHRASE']
-    options[:key] = OpenSSL::PKey::RSA.new key, passphrase
+    options[:key] = OpenSSL::PKey.read key, passphrase
+
   rescue Errno::ENOENT
     alert_error \
       "--private-key not specified and ~/.gem/gem-private_key.pem does not exist"
 
     terminate_interaction 1
-  rescue OpenSSL::PKey::RSAError
+  rescue OpenSSL::PKey::PKeyError
     alert_error \
       "--private-key not specified and ~/.gem/gem-private_key.pem is not valid"
 

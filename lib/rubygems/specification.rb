@@ -105,7 +105,7 @@ class Gem::Specification < Gem::BasicSpecification
   # rubocop:disable Style/MutableConstant
   LOAD_CACHE = {} # :nodoc:
   # rubocop:enable Style/MutableConstant
-  LOAD_CACHE_MUTEX = Mutex.new
+  LOAD_CACHE_MUTEX = Thread::Mutex.new
 
   private_constant :LOAD_CACHE if defined? private_constant
 

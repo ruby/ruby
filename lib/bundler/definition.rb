@@ -73,7 +73,6 @@ module Bundler
       @lockfile_contents      = String.new
       @locked_bundler_version = nil
       @locked_ruby_version    = nil
-      @locked_specs_incomplete_for_platform = false
       @new_platform = nil
 
       if lockfile && File.exist?(lockfile)
@@ -138,6 +137,8 @@ module Bundler
 
       @dependency_changes = converge_dependencies
       @local_changes = converge_locals
+
+      @locked_specs_incomplete_for_platform = !@locked_specs.for(expand_dependencies(requested_dependencies & locked_dependencies), true, true)
 
       @requires = compute_requires
     end
@@ -226,6 +227,10 @@ module Bundler
       dependencies.select do |d|
         d.should_include? && !d.gem_platforms(@platforms).empty?
       end
+    end
+
+    def locked_dependencies
+      @locked_deps.values
     end
 
     def specs_for(groups)
@@ -367,8 +372,8 @@ module Bundler
       new_sources = gemfile_sources - @locked_sources
       deleted_sources = @locked_sources - gemfile_sources
 
-      new_deps = @dependencies - @locked_deps.values
-      deleted_deps = @locked_deps.values - @dependencies
+      new_deps = @dependencies - locked_dependencies
+      deleted_deps = locked_dependencies - @dependencies
 
       # Check if it is possible that the source is only changed thing
       if (new_deps.empty? && deleted_deps.empty?) && (!new_sources.empty? && !deleted_sources.empty?)
@@ -560,7 +565,7 @@ module Bundler
 
     def dependencies_for_source_changed?(source, locked_source = source)
       deps_for_source = @dependencies.select {|s| s.source == source }
-      locked_deps_for_source = @locked_deps.values.select {|dep| dep.source == locked_source }
+      locked_deps_for_source = locked_dependencies.select {|dep| dep.source == locked_source }
 
       deps_for_source.uniq.sort != locked_deps_for_source.sort
     end
@@ -644,7 +649,7 @@ module Bundler
 
     def converge_dependencies
       frozen = Bundler.frozen_bundle?
-      (@dependencies + @locked_deps.values).each do |dep|
+      (@dependencies + locked_dependencies).each do |dep|
         locked_source = @locked_deps[dep.name]
         # This is to make sure that if bundler is installing in deployment mode and
         # after locked_source and sources don't match, we still use locked_source.
@@ -751,7 +756,6 @@ module Bundler
       end
 
       resolve = SpecSet.new(converged)
-      @locked_specs_incomplete_for_platform = !resolve.for(expand_dependencies(requested_dependencies & deps), true, true)
       resolve = SpecSet.new(resolve.for(expand_dependencies(deps, true), false, false).reject{|s| @unlock[:gems].include?(s.name) })
       diff    = nil
 

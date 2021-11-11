@@ -291,7 +291,7 @@ module Bundler
       return unless activated_spec = Bundler.rubygems.loaded_specs(spec.name)
       return if activated_spec.version == spec.version
 
-      suggestion = if Bundler.rubygems.spec_default_gem?(activated_spec)
+      suggestion = if activated_spec.default_gem?
         "Since #{spec.name} is a default gem, you can either remove your dependency on it" \
         " or try updating to a newer version of bundler that supports #{spec.name} as a default gem."
       else

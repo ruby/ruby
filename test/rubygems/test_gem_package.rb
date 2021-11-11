@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'package/tar_test_case'
-require 'digest'
+require 'rubygems/openssl'
 
 class TestGemPackage < Gem::Package::TarTestCase
   def setup
@@ -84,17 +84,17 @@ class TestGemPackage < Gem::Package::TarTestCase
       io.write spec.to_yaml
     end
 
-    metadata_sha256 = Digest::SHA256.hexdigest s.string
-    metadata_sha512 = Digest::SHA512.hexdigest s.string
+    metadata_sha256 = OpenSSL::Digest::SHA256.hexdigest s.string
+    metadata_sha512 = OpenSSL::Digest::SHA512.hexdigest s.string
 
     expected = {
       'SHA512' => {
         'metadata.gz' => metadata_sha512,
-        'data.tar.gz' => Digest::SHA512.hexdigest(tar),
+        'data.tar.gz' => OpenSSL::Digest::SHA512.hexdigest(tar),
       },
       'SHA256' => {
         'metadata.gz' => metadata_sha256,
-        'data.tar.gz' => Digest::SHA256.hexdigest(tar),
+        'data.tar.gz' => OpenSSL::Digest::SHA256.hexdigest(tar),
       },
     }
 
@@ -574,18 +574,19 @@ class TestGemPackage < Gem::Package::TarTestCase
     destination_subdir = File.join @destination, 'subdir'
     FileUtils.mkdir_p destination_subdir
 
-    e = assert_raise(Gem::Package::PathError, Errno::EACCES) do
+    expected_exceptions = win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]
+
+    e = assert_raise(*expected_exceptions) do
       package.extract_tar_gz tgz_io, destination_subdir
     end
 
-    if Gem::Package::PathError === e
-      assert_equal("installing into parent path lib/link/outside.txt of " +
-                  "#{destination_subdir} is not allowed", e.message)
-    elsif win_platform?
-      pend "symlink - must be admin with no UAC on Windows"
-    else
-      raise e
-    end
+    pend "symlink - must be admin with no UAC on Windows" if Errno::EACCES === e
+
+    assert_equal("installing symlink 'lib/link' pointing to parent path #{@destination} of " +
+                "#{destination_subdir} is not allowed", e.message)
+
+    assert_path_not_exist File.join(@destination, "outside.txt")
+    assert_path_not_exist File.join(destination_subdir, "lib/link")
   end
 
   def test_extract_symlink_parent_doesnt_delete_user_dir
@@ -608,20 +609,20 @@ class TestGemPackage < Gem::Package::TarTestCase
       tar.add_symlink 'link/dir', '.', 16877
     end
 
-    e = assert_raise(Gem::Package::PathError, Errno::EACCES) do
+    expected_exceptions = win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]
+
+    e = assert_raise(*expected_exceptions) do
       package.extract_tar_gz tgz_io, destination_subdir
     end
 
-    assert_path_exist destination_user_subdir
+    pend "symlink - must be admin with no UAC on Windows" if Errno::EACCES === e
 
-    if Gem::Package::PathError === e
-      assert_equal("installing into parent path #{destination_user_subdir} of " +
-                  "#{destination_subdir} is not allowed", e.message)
-    elsif win_platform?
-      pend "symlink - must be admin with no UAC on Windows"
-    else
-      raise e
-    end
+    assert_equal("installing symlink 'link' pointing to parent path #{destination_user_dir} of " +
+                "#{destination_subdir} is not allowed", e.message)
+
+    assert_path_exist destination_user_subdir
+    assert_path_not_exist File.join(destination_subdir, "link/dir")
+    assert_path_not_exist File.join(destination_subdir, "link")
   end
 
   def test_extract_tar_gz_directory
@@ -856,7 +857,7 @@ class TestGemPackage < Gem::Package::TarTestCase
         io.write metadata_gz
       end
 
-      digest = Digest::SHA1.new
+      digest = OpenSSL::Digest::SHA1.new
       digest << metadata_gz
 
       checksums = {
@@ -1015,7 +1016,7 @@ class TestGemPackage < Gem::Package::TarTestCase
         bogus_data = Gem::Util.gzip 'hello'
         fake_signer = Class.new do
           def digest_name; 'SHA512'; end
-          def digest_algorithm; Digest(:SHA512).new; end
+          def digest_algorithm; OpenSSL::Digest(:SHA512).new; end
           def key; 'key'; end
           def sign(*); 'fake_sig'; end
         end

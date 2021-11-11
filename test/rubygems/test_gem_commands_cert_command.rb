@@ -14,9 +14,10 @@ class TestGemCommandsCertCommand < Gem::TestCase
   ALTERNATE_CERT = load_cert 'alternate'
   EXPIRED_PUBLIC_CERT = load_cert 'expired'
 
-  ALTERNATE_KEY_FILE = key_path 'alternate'
-  PRIVATE_KEY_FILE   = key_path 'private'
-  PUBLIC_KEY_FILE    = key_path 'public'
+  ALTERNATE_KEY_FILE  = key_path 'alternate'
+  PRIVATE_KEY_FILE    = key_path 'private'
+  PRIVATE_EC_KEY_FILE = key_path 'private_ec'
+  PUBLIC_KEY_FILE     = key_path 'public'
 
   ALTERNATE_CERT_FILE      = cert_path 'alternate'
   CHILD_CERT_FILE          = cert_path 'child'
@@ -140,6 +141,42 @@ Added '/CN=alternate/DC=example'
 
     assert_path_exist File.join(@tempdir, 'gem-private_key.pem')
     assert_path_exist File.join(@tempdir, 'gem-public_cert.pem')
+  end
+
+  def test_execute_build_key_algorithm_ec_key
+    passphrase = 'Foo bar'
+
+    @cmd.handle_options %W[--build nobody@example.com --key-algorithm ec]
+
+    @build_ui = Gem::MockGemUi.new "#{passphrase}\n#{passphrase}"
+
+    use_ui @build_ui do
+      @cmd.execute
+    end
+
+    output = @build_ui.output.squeeze("\n").split "\n"
+
+    assert_equal "Passphrase for your Private Key:  ",
+                 output.shift
+    assert_equal "Please repeat the passphrase for your Private Key:  ",
+                 output.shift
+    assert_equal "Certificate: #{File.join @tempdir, 'gem-public_cert.pem'}",
+                 output.shift
+    assert_equal "Private Key: #{File.join @tempdir, 'gem-private_key.pem'}",
+                 output.shift
+
+    assert_equal "Don't forget to move the key file to somewhere private!",
+                 output.shift
+
+    assert_empty output
+    assert_empty @build_ui.error
+
+    assert_path_exist File.join(@tempdir, 'gem-private_key.pem')
+
+    cert_path = File.join(@tempdir, 'gem-public_cert.pem')
+    assert_path_exist cert_path
+    cert = OpenSSL::X509::Certificate.new(File.read(cert_path))
+    assert cert.public_key.is_a? OpenSSL::PKey::EC
   end
 
   def test_execute_build_bad_email_address
@@ -277,6 +314,28 @@ Added '/CN=alternate/DC=example'
     assert_empty @ui.error
 
     assert_path_exist File.join(@tempdir, 'gem-public_cert.pem')
+  end
+
+  def test_execute_build_ec_key
+    @cmd.handle_options %W[
+      --build nobody@example.com
+      --private-key #{PRIVATE_EC_KEY_FILE}
+    ]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    output = @ui.output.split "\n"
+
+    assert_equal "Certificate: #{File.join @tempdir, 'gem-public_cert.pem'}",
+                 output.shift
+
+    assert_empty output
+    assert_empty @ui.error
+
+    assert_path_exist File.join(@tempdir, 'gem-public_cert.pem')
+    assert_path_not_exist File.join(@tempdir, 'gem-private_key.pem')
   end
 
   def test_execute_certificate
@@ -742,7 +801,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
       @cmd.handle_options %W[--private-key #{bad}]
     end
 
-    assert_equal "invalid argument: --private-key #{bad}: invalid RSA key",
+    assert_equal "invalid argument: --private-key #{bad}: invalid RSA, DSA, or EC key",
                  e.message
 
     e = assert_raise OptionParser::InvalidArgument do

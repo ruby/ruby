@@ -94,6 +94,21 @@ RSpec.describe "bundle install with gem sources" do
       expect(the_bundle).to include_gems("rack 1.0.0")
     end
 
+    it "auto-heals missing gems" do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem 'rack'
+      G
+
+      FileUtils.rm_rf(default_bundle_path("gems/rack-1.0.0"))
+
+      bundle "install --verbose"
+
+      expect(out).to include("Installing rack 1.0.0")
+      expect(default_bundle_path("gems/rack-1.0.0")).to exist
+      expect(the_bundle).to include_gems("rack 1.0.0")
+    end
+
     it "fetches gems when multiple versions are specified" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
@@ -663,6 +678,77 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
+  describe "when bundle gems path does not have write access", :permissions do
+    let(:gems_path) { bundled_app("vendor/#{Bundler.ruby_scope}/gems") }
+
+    before do
+      FileUtils.mkdir_p(gems_path)
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem 'rack'
+      G
+    end
+
+    it "should display a proper message to explain the problem" do
+      FileUtils.chmod("-x", gems_path)
+      bundle "config set --local path vendor"
+
+      begin
+        bundle :install, :raise_on_error => false
+      ensure
+        FileUtils.chmod("+x", gems_path)
+      end
+
+      expect(err).not_to include("ERROR REPORT TEMPLATE")
+
+      expect(err).to include(
+        "There was an error while trying to create `#{gems_path.join("rack-1.0.0")}`. " \
+        "It is likely that you need to grant executable permissions for all parent directories and write permissions for `#{gems_path}`."
+      )
+    end
+  end
+
+  describe "when the path of a specific gem is not writable", :permissions do
+    let(:gems_path) { bundled_app("vendor/#{Bundler.ruby_scope}/gems") }
+    let(:foo_path) { gems_path.join("foo-1.0.0") }
+
+    before do
+      build_repo4 do
+        build_gem "foo", "1.0.0" do |s|
+          s.write "CHANGELOG.md", "foo"
+        end
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem 'foo'
+      G
+    end
+
+    it "should display a proper message to explain the problem" do
+      bundle "config set --local path vendor"
+      bundle :install
+      expect(out).to include("Bundle complete!")
+      expect(err).to be_empty
+
+      FileUtils.chmod("-x", foo_path)
+
+      begin
+        bundle "install --redownload", :raise_on_error => false
+      ensure
+        FileUtils.chmod("+x", foo_path)
+      end
+
+      expect(err).not_to include("ERROR REPORT TEMPLATE")
+
+      expect(err).to include(
+        "There was an error while trying to delete `#{foo_path}`. " \
+        "It is likely that you need to grant executable permissions for all parent directories " \
+        "and write permissions for `#{gems_path}`, and the same thing for all subdirectories inside #{foo_path}."
+      )
+    end
+  end
+
   describe "when bundle cache path does not have write access", :permissions do
     let(:cache_path) { bundled_app("vendor/#{Bundler.ruby_scope}/cache") }
 
@@ -757,6 +843,101 @@ RSpec.describe "bundle install with gem sources" do
         "Your bundle only supports platforms [\"x86_64-darwin-19\"] but your local platform is x86_64-linux. " \
         "Add the current platform to the lockfile with `bundle lock --add-platform x86_64-linux` and try again."
       )
+    end
+  end
+
+  context "with missing platform specific gems in lockfile" do
+    before do
+      build_repo4 do
+        build_gem "racc", "1.5.2"
+
+        build_gem "nokogiri", "1.12.4" do |s|
+          s.platform = "x86_64-darwin"
+          s.add_runtime_dependency "racc", "~> 1.4"
+        end
+
+        build_gem "nokogiri", "1.12.4" do |s|
+          s.platform = "x86_64-linux"
+          s.add_runtime_dependency "racc", "~> 1.4"
+        end
+
+        build_gem "crass", "1.0.6"
+
+        build_gem "loofah", "2.12.0" do |s|
+          s.add_runtime_dependency "crass", "~> 1.0.2"
+          s.add_runtime_dependency "nokogiri", ">= 1.5.9"
+        end
+      end
+
+      gemfile <<-G
+        source "https://gem.repo4"
+
+        ruby "#{RUBY_VERSION}"
+
+        gem "loofah", "~> 2.12.0"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            crass (1.0.6)
+            loofah (2.12.0)
+              crass (~> 1.0.2)
+              nokogiri (>= 1.5.9)
+            nokogiri (1.12.4-x86_64-darwin)
+              racc (~> 1.4)
+            racc (1.5.2)
+
+        PLATFORMS
+          x86_64-darwin-20
+          x86_64-linux
+
+        DEPENDENCIES
+          loofah (~> 2.12.0)
+
+        RUBY VERSION
+           #{Bundler::RubyVersion.system}
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    it "automatically fixes the lockfile" do
+      bundle "config set --local path vendor/bundle"
+
+      simulate_platform "x86_64-linux" do
+        bundle "install", :artifice => "compact_index"
+      end
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            crass (1.0.6)
+            loofah (2.12.0)
+              crass (~> 1.0.2)
+              nokogiri (>= 1.5.9)
+            nokogiri (1.12.4-x86_64-darwin)
+              racc (~> 1.4)
+            nokogiri (1.12.4-x86_64-linux)
+              racc (~> 1.4)
+            racc (1.5.2)
+
+        PLATFORMS
+          x86_64-darwin-20
+          x86_64-linux
+
+        DEPENDENCIES
+          loofah (~> 2.12.0)
+
+        RUBY VERSION
+           #{Bundler::RubyVersion.system}
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
     end
   end
 

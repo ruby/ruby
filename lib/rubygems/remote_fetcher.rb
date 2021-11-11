@@ -72,7 +72,7 @@ class Gem::RemoteFetcher
   #            fetching the gem.
 
   def initialize(proxy=nil, dns=nil, headers={})
-    require 'rubygems/core_ext/tcpsocket_init' if Gem.configuration.ipv4_fallback_enabled
+    require_relative 'core_ext/tcpsocket_init' if Gem.configuration.ipv4_fallback_enabled
     require 'net/http'
     require 'stringio'
     require 'uri'
@@ -81,7 +81,7 @@ class Gem::RemoteFetcher
 
     @proxy = proxy
     @pools = {}
-    @pool_lock = Mutex.new
+    @pool_lock = Thread::Mutex.new
     @cert_files = Gem::Request.get_cert_files
 
     @headers = headers

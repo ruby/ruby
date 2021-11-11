@@ -618,7 +618,7 @@ abort "#{deprecation_message}"
   end
 
   def regenerate_plugins
-    require "rubygems/commands/pristine_command"
+    require_relative "pristine_command"
     say "Regenerating plugins"
 
     args = %w[--all --only-plugins --silent]
