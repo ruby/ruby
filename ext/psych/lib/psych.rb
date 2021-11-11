@@ -271,7 +271,7 @@ module Psych
   # YAML documents that are supplied via user input.  Instead, please use the
   # safe_load method.
   #
-  def self.load yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: false, symbolize_names: false, freeze: false
+  def self.unsafe_load yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: false, symbolize_names: false, freeze: false
     if legacy_filename != NOT_GIVEN
       warn_with_uplevel 'Passing filename with the 2nd argument of Psych.load is deprecated. Use keyword argument like Psych.load(yaml, filename: ...) instead.', uplevel: 1 if $VERBOSE
       filename = legacy_filename
@@ -281,6 +281,7 @@ module Psych
     return fallback unless result
     result.to_ruby(symbolize_names: symbolize_names, freeze: freeze)
   end
+  class << self; alias :load :unsafe_load; end
 
   ###
   # Safely load the yaml string in +yaml+.  By default, only the following
@@ -577,11 +578,12 @@ module Psych
   # NOTE: This method *should not* be used to parse untrusted documents, such as
   # YAML documents that are supplied via user input.  Instead, please use the
   # safe_load_file method.
-  def self.load_file filename, **kwargs
+  def self.unsafe_load_file filename, **kwargs
     File.open(filename, 'r:bom|utf-8') { |f|
-      self.load f, filename: filename, **kwargs
+      self.unsafe_load f, filename: filename, **kwargs
     }
   end
+  class << self; alias :load_file :unsafe_load_file; end
 
   ###
   # Safely loads the document contained in +filename+.  Returns the yaml contained in
