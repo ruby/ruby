@@ -98,26 +98,30 @@ module Bundler
         out << "  specs:\n"
       end
 
-      def to_err
+      def to_s
         if remotes.empty?
           "locally installed gems"
-        elsif @allow_remote
+        elsif @allow_remote && @allow_cached && @allow_local
+          "rubygems repository #{remote_names}, cached gems or installed locally"
+        elsif @allow_remote && @allow_local
           "rubygems repository #{remote_names} or installed locally"
-        elsif @allow_cached
-          "cached gems from rubygems repository #{remote_names} or installed locally"
+        elsif @allow_remote
+          "rubygems repository #{remote_names}"
+        elsif @allow_cached && @allow_local
+          "cached gems or installed locally"
         else
           "locally installed gems"
         end
       end
 
-      def to_s
+      def identifier
         if remotes.empty?
           "locally installed gems"
         else
-          "rubygems repository #{remote_names} or installed locally"
+          "rubygems repository #{remote_names}"
         end
       end
-      alias_method :name, :to_s
+      alias_method :name, :identifier
 
       def specs
         @specs ||= begin
