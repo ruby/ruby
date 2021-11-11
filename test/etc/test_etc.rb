@@ -171,6 +171,7 @@ class TestEtc < Test::Unit::TestCase
 
   def test_ractor
     return unless Etc.passwd # => skip test if no platform support
+    Etc.endpwent
 
     assert_ractor(<<~RUBY, require: 'etc')
       ractor = Ractor.new do
