@@ -187,6 +187,23 @@ RBIMPL_ATTR_PURE()
  */
 int rb_is_absolute_path(const char *path);
 
+/**
+ * Queries  the file  size  of the  given file.   Because  this function  calls
+ * `fstat(2)`  internally, it  is  a failure  to  pass a  closed  file to  this
+ * function.
+ *
+ * This function flushes the passed file's buffer if any.  Can take time.
+ *
+ * @param[in]   file                 A file object.
+ * @exception   rb_eFrozenError      `file` is frozen.
+ * @exception   rb_eIOError          `file` is closed.
+ * @exception   rb_eSystemCallError  Permission denied etc.
+ * @return      The size of the passed file.
+ * @note        Passing a non-regular file such as a UNIX domain socket to this
+ *              function  is   not  a  failure.    But  the  return   value  is
+ *              unpredictable.  POSIX's `<sys/stat.h>` states  that "the use of
+ *              this field is unspecified" then.
+ */
 off_t rb_file_size(VALUE file);
 
 RBIMPL_SYMBOL_EXPORT_END()
