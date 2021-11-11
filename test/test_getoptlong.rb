@@ -5,7 +5,7 @@ class TestGetoptLong < Test::Unit::TestCase
 
   def verify(test_argv, expected_remaining_argv, expected_options)
     # Save ARGV and replace it with a test ARGV.
-    argv_saved = ARGV
+    argv_saved = ARGV.dup
     ARGV.replace(test_argv)
     # Define options.
     opts = GetoptLong.new(
