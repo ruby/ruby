@@ -509,9 +509,9 @@ module Psych
       def emit_coder c, o
         case c.type
         when :scalar
-          @emitter.scalar c.scalar, nil, c.tag, c.tag.nil?, false, Nodes::Scalar::ANY
+          @emitter.scalar c.scalar, nil, c.tag, c.tag.nil?, false, c.style
         when :seq
-          @emitter.start_sequence nil, c.tag, c.tag.nil?, Nodes::Sequence::BLOCK
+          @emitter.start_sequence nil, c.tag, c.tag.nil?, c.style
           c.seq.each do |thing|
             accept thing
           end
