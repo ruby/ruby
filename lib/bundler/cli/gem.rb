@@ -68,7 +68,7 @@ module Bundler
         :bundler_version  => bundler_dependency_version,
         :git              => use_git,
         :github_username  => github_username.empty? ? "[USERNAME]" : github_username,
-        :required_ruby_version => Gem.ruby_version < Gem::Version.new("2.4.a") ? "2.3.0" : "2.4.0",
+        :required_ruby_version => required_ruby_version,
       }
       ensure_safe_gem_name(name, constant_array)
 
@@ -169,7 +169,7 @@ module Bundler
         "For more information, see the RuboCop docs (https://docs.rubocop.org/en/stable/) " \
         "and the Ruby Style Guides (https://github.com/rubocop-hq/ruby-style-guide).")
         config[:rubocop] = true
-        config[:rubocop_version] = Gem.ruby_version < Gem::Version.new("2.4.a") ? "0.81.0" : "1.7"
+        config[:rubocop_version] = rubocop_version
         Bundler.ui.info "RuboCop enabled in config"
         templates.merge!("rubocop.yml.tt" => ".rubocop.yml")
       end
@@ -349,6 +349,23 @@ module Bundler
 
     def open_editor(editor, file)
       thor.run(%(#{editor} "#{file}"))
+    end
+
+    def required_ruby_version
+      if Gem.ruby_version < Gem::Version.new("2.4.a") then "2.3.0"
+      elsif Gem.ruby_version < Gem::Version.new("2.5.a") then "2.4.0"
+      elsif Gem.ruby_version < Gem::Version.new("2.6.a") then "2.5.0"
+      else
+        "2.6.0"
+      end
+    end
+
+    def rubocop_version
+      if Gem.ruby_version < Gem::Version.new("2.4.a") then "0.81.0"
+      elsif Gem.ruby_version < Gem::Version.new("2.5.a") then "1.12"
+      else
+        "1.21"
+      end
     end
   end
 end

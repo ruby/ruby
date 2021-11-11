@@ -73,7 +73,7 @@ module Gem
   # Path to specification files of default gems.
 
   def self.default_specifications_dir
-    File.join(Gem.default_dir, "specifications", "default")
+    @default_specifications_dir ||= File.join(Gem.default_dir, "specifications", "default")
   end
 
   ##
