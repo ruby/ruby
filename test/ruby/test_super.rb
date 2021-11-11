@@ -521,6 +521,37 @@ class TestSuper < Test::Unit::TestCase
     assert_equal(%w[B A], result, bug9721)
   end
 
+  # [Bug #18329]
+  def test_super_missing_prepended_module
+    a = Module.new do
+      def probe(*methods)
+        prepend(probing_module(methods))
+      end
+
+      def probing_module(methods)
+        Module.new do
+          methods.each do |method|
+            define_method(method) do |*args, **kwargs, &block|
+              super(*args, **kwargs, &block)
+            end
+          end
+        end
+      end
+    end
+
+    b = Class.new do
+      extend a
+
+      probe :danger!, :missing
+
+      def danger!; end
+    end
+
+    o = b.new
+    o.danger!
+    2.times { o.missing rescue NoMethodError }
+  end
+
   def test_from_eval
     bug10263 = '[ruby-core:65122] [Bug #10263a]'
     a = Class.new do
