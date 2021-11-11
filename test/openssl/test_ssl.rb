@@ -1002,8 +1002,9 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
 
     ctx_proc = proc { |ctx|
+      now = Time.now
       ctx.cert = issue_cert(@svr, @svr_key, 30, [], @ca_cert, @ca_key,
-                            not_before: Time.now-100, not_after: Time.now-10)
+                            not_before: now - 7200, not_after: now - 3600)
     }
     start_server(ignore_listener_error: true, ctx_proc: ctx_proc) { |port|
       store = OpenSSL::X509::Store.new
