@@ -450,7 +450,7 @@ you may rely on:
 
 To specify whether keyword arguments are passed when calling super:
 
-  VALUE rb_call_super(int argc, const VALUE *argv, int kw_splat)
+  VALUE rb_call_super_kw(int argc, const VALUE *argv, int kw_splat)
 
 +kw_splat+ can have these possible values (used by all methods that accept
 +kw_splat+ argument):
