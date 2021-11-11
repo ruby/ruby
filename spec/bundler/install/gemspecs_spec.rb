@@ -34,6 +34,8 @@ RSpec.describe "bundle install" do
       gem 'rack'
     G
 
+    system_gems "rack-1.0.0", :path => default_bundle_path
+
     FileUtils.mkdir_p "#{default_bundle_path}/specifications"
     File.open("#{default_bundle_path}/specifications/rack-1.0.0.gemspec", "w+") do |f|
       spec = Gem::Specification.new do |s|
@@ -44,7 +46,7 @@ RSpec.describe "bundle install" do
       f.write spec.to_ruby
     end
     bundle :install, :artifice => "endpoint_marshal_fail" # force gemspec load
-    expect(the_bundle).to include_gems "activesupport 2.3.2"
+    expect(the_bundle).to include_gems "rack 1.0.0", "activesupport 2.3.2"
   end
 
   it "does not hang when gemspec has incompatible encoding" do

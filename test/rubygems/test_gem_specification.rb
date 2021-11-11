@@ -127,265 +127,241 @@ end
   end
 
   def test_self_activate_ambiguous_direct
-    save_loaded_features do
-      a1 = util_spec "a", "1", "b" => "> 0"
-      b1 = util_spec("b", "1", { "c" => ">= 1" }, "lib/d#{$$}.rb")
-      b2 = util_spec("b", "2", { "c" => ">= 2" }, "lib/d#{$$}.rb")
-      c1 = util_spec "c", "1"
-      c2 = util_spec "c", "2"
+    a1 = util_spec "a", "1", "b" => "> 0"
+    b1 = util_spec("b", "1", { "c" => ">= 1" }, "lib/d#{$$}.rb")
+    b2 = util_spec("b", "2", { "c" => ">= 2" }, "lib/d#{$$}.rb")
+    c1 = util_spec "c", "1"
+    c2 = util_spec "c", "2"
 
-      Gem::Specification.reset
-      install_specs c1, c2, b1, b2, a1
+    Gem::Specification.reset
+    install_specs c1, c2, b1, b2, a1
 
-      a1.activate
-      assert_equal %w[a-1], loaded_spec_names
-      assert_equal ["b (> 0)"], unresolved_names
+    a1.activate
+    assert_equal %w[a-1], loaded_spec_names
+    assert_equal ["b (> 0)"], unresolved_names
 
-      require "d#{$$}"
+    require "d#{$$}"
 
-      assert_equal %w[a-1 b-2 c-2], loaded_spec_names
-      assert_equal [], unresolved_names
-    end
+    assert_equal %w[a-1 b-2 c-2], loaded_spec_names
+    assert_equal [], unresolved_names
   end
 
   def test_find_in_unresolved_tree_is_not_exponentiental
-    save_loaded_features do
-      num_of_pkg = 7
-      num_of_version_per_pkg = 3
-      packages = (0..num_of_pkg).map do |pkgi|
-        (0..num_of_version_per_pkg).map do |pkg_version|
-          deps = Hash[((pkgi + 1)..num_of_pkg).map do |deppkgi|
-            ["pkg#{deppkgi}", ">= 0"]
-          end]
-          util_spec "pkg#{pkgi}", pkg_version.to_s, deps
-        end
+    num_of_pkg = 7
+    num_of_version_per_pkg = 3
+    packages = (0..num_of_pkg).map do |pkgi|
+      (0..num_of_version_per_pkg).map do |pkg_version|
+        deps = Hash[((pkgi + 1)..num_of_pkg).map do |deppkgi|
+                      ["pkg#{deppkgi}", ">= 0"]
+                    end]
+        util_spec "pkg#{pkgi}", pkg_version.to_s, deps
       end
-      base = util_spec "pkg_base", "1", {"pkg0" => ">= 0"}
-
-      Gem::Specification.reset
-      install_specs(*packages.flatten.reverse)
-      install_specs base
-      base.activate
-
-      tms = Benchmark.measure do
-        assert_raise(LoadError) { require 'no_such_file_foo' }
-      end
-      assert_operator tms.total, :<=, 10
     end
+    base = util_spec "pkg_base", "1", {"pkg0" => ">= 0"}
+
+    Gem::Specification.reset
+    install_specs(*packages.flatten.reverse)
+    install_specs base
+    base.activate
+
+    tms = Benchmark.measure do
+      assert_raise(LoadError) { require 'no_such_file_foo' }
+    end
+    assert_operator tms.total, :<=, 10
   end
 
   def test_self_activate_ambiguous_indirect
-    save_loaded_features do
-      a1 = util_spec "a", "1", "b" => "> 0"
-      b1 = util_spec "b", "1", "c" => ">= 1"
-      b2 = util_spec "b", "2", "c" => ">= 2"
-      c1 = util_spec "c", "1", nil, "lib/d#{$$}.rb"
-      c2 = util_spec "c", "2", nil, "lib/d#{$$}.rb"
+    a1 = util_spec "a", "1", "b" => "> 0"
+    b1 = util_spec "b", "1", "c" => ">= 1"
+    b2 = util_spec "b", "2", "c" => ">= 2"
+    c1 = util_spec "c", "1", nil, "lib/d#{$$}.rb"
+    c2 = util_spec "c", "2", nil, "lib/d#{$$}.rb"
 
-      install_specs c1, c2, b1, b2, a1
+    install_specs c1, c2, b1, b2, a1
 
-      a1.activate
-      assert_equal %w[a-1], loaded_spec_names
-      assert_equal ["b (> 0)"], unresolved_names
+    a1.activate
+    assert_equal %w[a-1], loaded_spec_names
+    assert_equal ["b (> 0)"], unresolved_names
 
-      require "d#{$$}"
+    require "d#{$$}"
 
-      assert_equal %w[a-1 b-2 c-2], loaded_spec_names
-      assert_equal [], unresolved_names
-    end
+    assert_equal %w[a-1 b-2 c-2], loaded_spec_names
+    assert_equal [], unresolved_names
   end
 
   def test_self_activate_ambiguous_indirect_conflict
-    save_loaded_features do
-      a1 = util_spec "a", "1", "b" => "> 0"
-      a2 = util_spec "a", "2", "b" => "> 0"
-      b1 = util_spec "b", "1", "c" => ">= 1"
-      b2 = util_spec "b", "2", "c" => ">= 2"
-      c1 = util_spec "c", "1", nil, "lib/d#{$$}.rb"
-      c2 = util_spec("c", "2", { "a" => "1" }, "lib/d#{$$}.rb") # conflicts with a-2
+    a1 = util_spec "a", "1", "b" => "> 0"
+    a2 = util_spec "a", "2", "b" => "> 0"
+    b1 = util_spec "b", "1", "c" => ">= 1"
+    b2 = util_spec "b", "2", "c" => ">= 2"
+    c1 = util_spec "c", "1", nil, "lib/d#{$$}.rb"
+    c2 = util_spec("c", "2", { "a" => "1" }, "lib/d#{$$}.rb") # conflicts with a-2
 
-      install_specs c1, b1, a1, a2, c2, b2
+    install_specs c1, b1, a1, a2, c2, b2
 
-      a2.activate
-      assert_equal %w[a-2], loaded_spec_names
-      assert_equal ["b (> 0)"], unresolved_names
+    a2.activate
+    assert_equal %w[a-2], loaded_spec_names
+    assert_equal ["b (> 0)"], unresolved_names
 
-      require "d#{$$}"
+    require "d#{$$}"
 
-      assert_equal %w[a-2 b-1 c-1], loaded_spec_names
-      assert_equal [], unresolved_names
-    end
+    assert_equal %w[a-2 b-1 c-1], loaded_spec_names
+    assert_equal [], unresolved_names
   end
 
   def test_self_activate_ambiguous_unrelated
-    save_loaded_features do
-      a1 = util_spec "a", "1", "b" => "> 0"
-      b1 = util_spec "b", "1", "c" => ">= 1"
-      b2 = util_spec "b", "2", "c" => ">= 2"
-      c1 = util_spec "c", "1"
-      c2 = util_spec "c", "2"
-      d1 = util_spec "d", "1", nil, "lib/d#{$$}.rb"
+    a1 = util_spec "a", "1", "b" => "> 0"
+    b1 = util_spec "b", "1", "c" => ">= 1"
+    b2 = util_spec "b", "2", "c" => ">= 2"
+    c1 = util_spec "c", "1"
+    c2 = util_spec "c", "2"
+    d1 = util_spec "d", "1", nil, "lib/d#{$$}.rb"
 
-      install_specs d1, c1, c2, b1, b2, a1
+    install_specs d1, c1, c2, b1, b2, a1
 
-      a1.activate
-      assert_equal %w[a-1], loaded_spec_names
-      assert_equal ["b (> 0)"], unresolved_names
+    a1.activate
+    assert_equal %w[a-1], loaded_spec_names
+    assert_equal ["b (> 0)"], unresolved_names
 
-      require "d#{$$}"
+    require "d#{$$}"
 
-      assert_equal %w[a-1 d-1], loaded_spec_names
-      assert_equal ["b (> 0)"], unresolved_names
-    end
+    assert_equal %w[a-1 d-1], loaded_spec_names
+    assert_equal ["b (> 0)"], unresolved_names
   end
 
   def test_require_should_prefer_latest_gem_level1
-    save_loaded_features do
-      a1 = util_spec "a", "1", "b" => "> 0"
-      b1 = util_spec "b", "1", "c" => ">= 0" # unresolved
-      b2 = util_spec "b", "2", "c" => ">= 0"
-      c1 = util_spec "c", "1", nil, "lib/c#{$$}.rb" # 1st level
-      c2 = util_spec "c", "2", nil, "lib/c#{$$}.rb"
+    a1 = util_spec "a", "1", "b" => "> 0"
+    b1 = util_spec "b", "1", "c" => ">= 0" # unresolved
+    b2 = util_spec "b", "2", "c" => ">= 0"
+    c1 = util_spec "c", "1", nil, "lib/c#{$$}.rb" # 1st level
+    c2 = util_spec "c", "2", nil, "lib/c#{$$}.rb"
 
-      install_specs c1, c2, b1, b2, a1
+    install_specs c1, c2, b1, b2, a1
 
-      a1.activate
+    a1.activate
 
-      require "c#{$$}"
+    require "c#{$$}"
 
-      assert_equal %w[a-1 b-2 c-2], loaded_spec_names
-    end
+    assert_equal %w[a-1 b-2 c-2], loaded_spec_names
   end
 
   def test_require_should_prefer_latest_gem_level2
-    save_loaded_features do
-      a1 = util_spec "a", "1", "b" => "> 0"
-      b1 = util_spec "b", "1", "c" => ">= 0" # unresolved
-      b2 = util_spec "b", "2", "c" => ">= 0"
-      c1 = util_spec "c", "1", "d" => ">= 0" # 1st level
-      c2 = util_spec "c", "2", "d" => ">= 0"
-      d1 = util_spec "d", "1", nil, "lib/d#{$$}.rb" # 2nd level
-      d2 = util_spec "d", "2", nil, "lib/d#{$$}.rb"
+    a1 = util_spec "a", "1", "b" => "> 0"
+    b1 = util_spec "b", "1", "c" => ">= 0" # unresolved
+    b2 = util_spec "b", "2", "c" => ">= 0"
+    c1 = util_spec "c", "1", "d" => ">= 0" # 1st level
+    c2 = util_spec "c", "2", "d" => ">= 0"
+    d1 = util_spec "d", "1", nil, "lib/d#{$$}.rb" # 2nd level
+    d2 = util_spec "d", "2", nil, "lib/d#{$$}.rb"
 
-      install_specs d1, d2, c1, c2, b1, b2, a1
+    install_specs d1, d2, c1, c2, b1, b2, a1
 
-      a1.activate
+    a1.activate
 
-      require "d#{$$}"
+    require "d#{$$}"
 
-      assert_equal %w[a-1 b-2 c-2 d-2], loaded_spec_names
-    end
+    assert_equal %w[a-1 b-2 c-2 d-2], loaded_spec_names
   end
 
   def test_require_finds_in_2nd_level_indirect
-    save_loaded_features do
-      a1 = util_spec "a", "1", "b" => "> 0"
-      b1 = util_spec "b", "1", "c" => ">= 0" # unresolved
-      b2 = util_spec "b", "2", "c" => ">= 0"
-      c1 = util_spec "c", "1", "d" => "<= 2" # 1st level
-      c2 = util_spec "c", "2", "d" => "<= 2"
-      d1 = util_spec "d", "1", nil, "lib/d#{$$}.rb" # 2nd level
-      d2 = util_spec "d", "2", nil, "lib/d#{$$}.rb"
-      d3 = util_spec "d", "3", nil, "lib/d#{$$}.rb"
+    a1 = util_spec "a", "1", "b" => "> 0"
+    b1 = util_spec "b", "1", "c" => ">= 0" # unresolved
+    b2 = util_spec "b", "2", "c" => ">= 0"
+    c1 = util_spec "c", "1", "d" => "<= 2" # 1st level
+    c2 = util_spec "c", "2", "d" => "<= 2"
+    d1 = util_spec "d", "1", nil, "lib/d#{$$}.rb" # 2nd level
+    d2 = util_spec "d", "2", nil, "lib/d#{$$}.rb"
+    d3 = util_spec "d", "3", nil, "lib/d#{$$}.rb"
 
-      install_specs d1, d2, d3, c1, c2, b1, b2, a1
+    install_specs d1, d2, d3, c1, c2, b1, b2, a1
 
-      a1.activate
+    a1.activate
 
-      require "d#{$$}"
+    require "d#{$$}"
 
-      assert_equal %w[a-1 b-2 c-2 d-2], loaded_spec_names
-    end
+    assert_equal %w[a-1 b-2 c-2 d-2], loaded_spec_names
   end
 
   def test_require_should_prefer_reachable_gems
-    save_loaded_features do
-      a1 = util_spec "a", "1", "b" => "> 0"
-      b1 = util_spec "b", "1", "c" => ">= 0" # unresolved
-      b2 = util_spec "b", "2", "c" => ">= 0"
-      c1 = util_spec "c", "1", "d" => "<= 2" # 1st level
-      c2 = util_spec "c", "2", "d" => "<= 2"
-      d1 = util_spec "d", "1", nil, "lib/d#{$$}.rb" # 2nd level
-      d2 = util_spec "d", "2", nil, "lib/d#{$$}.rb"
-      d3 = util_spec "d", "3", nil, "lib/d#{$$}.rb"
-      e  = util_spec "anti_d", "1", nil, "lib/d#{$$}.rb"
+    a1 = util_spec "a", "1", "b" => "> 0"
+    b1 = util_spec "b", "1", "c" => ">= 0" # unresolved
+    b2 = util_spec "b", "2", "c" => ">= 0"
+    c1 = util_spec "c", "1", "d" => "<= 2" # 1st level
+    c2 = util_spec "c", "2", "d" => "<= 2"
+    d1 = util_spec "d", "1", nil, "lib/d#{$$}.rb" # 2nd level
+    d2 = util_spec "d", "2", nil, "lib/d#{$$}.rb"
+    d3 = util_spec "d", "3", nil, "lib/d#{$$}.rb"
+    e  = util_spec "anti_d", "1", nil, "lib/d#{$$}.rb"
 
-      install_specs d1, d2, d3, e, c1, c2, b1, b2, a1
+    install_specs d1, d2, d3, e, c1, c2, b1, b2, a1
 
-      a1.activate
+    a1.activate
 
-      require "d#{$$}"
+    require "d#{$$}"
 
-      assert_equal %w[a-1 b-2 c-2 d-2], loaded_spec_names
-    end
+    assert_equal %w[a-1 b-2 c-2 d-2], loaded_spec_names
   end
 
   def test_require_should_not_conflict
-    save_loaded_features do
-      base = util_spec "0", "1", "A" => ">= 1"
-      a1 = util_spec "A", "1", {"c" => ">= 2", "b" => "> 0"}, "lib/a.rb"
-      a2 = util_spec "A", "2", {"c" => ">= 2", "b" => "> 0"}, "lib/a.rb"
-      b1 = util_spec "b", "1", {"c" => "= 1"}, "lib/d#{$$}.rb"
-      b2 = util_spec "b", "2", {"c" => "= 2"}, "lib/d#{$$}.rb"
-      c1 = util_spec "c", "1", {}, "lib/c.rb"
-      c2 = util_spec "c", "2", {}, "lib/c.rb"
-      c3 = util_spec "c", "3", {}, "lib/c.rb"
+    base = util_spec "0", "1", "A" => ">= 1"
+    a1 = util_spec "A", "1", {"c" => ">= 2", "b" => "> 0"}, "lib/a.rb"
+    a2 = util_spec "A", "2", {"c" => ">= 2", "b" => "> 0"}, "lib/a.rb"
+    b1 = util_spec "b", "1", {"c" => "= 1"}, "lib/d#{$$}.rb"
+    b2 = util_spec "b", "2", {"c" => "= 2"}, "lib/d#{$$}.rb"
+    c1 = util_spec "c", "1", {}, "lib/c.rb"
+    c2 = util_spec "c", "2", {}, "lib/c.rb"
+    c3 = util_spec "c", "3", {}, "lib/c.rb"
 
-      install_specs c1, c2, c3, b1, b2, a1, a2, base
+    install_specs c1, c2, c3, b1, b2, a1, a2, base
 
-      base.activate
-      assert_equal %w[0-1], loaded_spec_names
-      assert_equal ["A (>= 1)"], unresolved_names
+    base.activate
+    assert_equal %w[0-1], loaded_spec_names
+    assert_equal ["A (>= 1)"], unresolved_names
 
-      require "d#{$$}"
+    require "d#{$$}"
 
-      assert_equal %w[0-1 A-2 b-2 c-2], loaded_spec_names
-      assert_equal [], unresolved_names
-    end
+    assert_equal %w[0-1 A-2 b-2 c-2], loaded_spec_names
+    assert_equal [], unresolved_names
   end
 
   def test_inner_clonflict_in_indirect_gems
-    save_loaded_features do
-      a1 = util_spec "a", "1", "b" => "> 0"
-      b1 = util_spec "b", "1", "c" => ">= 1" # unresolved
-      b2 = util_spec "b", "2", "c" => ">= 1", "d" => "< 3"
-      c1 = util_spec "c", "1", "d" => "<= 2" # 1st level
-      c2 = util_spec "c", "2", "d" => "<= 2"
-      c3 = util_spec "c", "3", "d" => "<= 3"
-      d1 = util_spec "d", "1", nil, "lib/d#{$$}.rb" # 2nd level
-      d2 = util_spec "d", "2", nil, "lib/d#{$$}.rb"
-      d3 = util_spec "d", "3", nil, "lib/d#{$$}.rb"
+    a1 = util_spec "a", "1", "b" => "> 0"
+    b1 = util_spec "b", "1", "c" => ">= 1" # unresolved
+    b2 = util_spec "b", "2", "c" => ">= 1", "d" => "< 3"
+    c1 = util_spec "c", "1", "d" => "<= 2" # 1st level
+    c2 = util_spec "c", "2", "d" => "<= 2"
+    c3 = util_spec "c", "3", "d" => "<= 3"
+    d1 = util_spec "d", "1", nil, "lib/d#{$$}.rb" # 2nd level
+    d2 = util_spec "d", "2", nil, "lib/d#{$$}.rb"
+    d3 = util_spec "d", "3", nil, "lib/d#{$$}.rb"
 
-      install_specs d1, d2, d3, c1, c2, c3, b1, b2, a1
+    install_specs d1, d2, d3, c1, c2, c3, b1, b2, a1
 
-      a1.activate
+    a1.activate
 
-      require "d#{$$}"
+    require "d#{$$}"
 
-      assert_includes [%w[a-1 b-2 c-3 d-2],%w[a-1 b-2 d-2]], loaded_spec_names
-    end
+    assert_includes [%w[a-1 b-2 c-3 d-2],%w[a-1 b-2 d-2]], loaded_spec_names
   end
 
   def test_inner_clonflict_in_indirect_gems_reversed
-    save_loaded_features do
-      a1 = util_spec "a", "1", "b" => "> 0"
-      b1 = util_spec "b", "1", "xc" => ">= 1" # unresolved
-      b2 = util_spec "b", "2", "xc" => ">= 1", "d" => "< 3"
-      c1 = util_spec "xc", "1", "d" => "<= 3" # 1st level
-      c2 = util_spec "xc", "2", "d" => "<= 2"
-      c3 = util_spec "xc", "3", "d" => "<= 3"
-      d1 = util_spec "d", "1", nil, "lib/d#{$$}.rb" # 2nd level
-      d2 = util_spec "d", "2", nil, "lib/d#{$$}.rb"
-      d3 = util_spec "d", "3", nil, "lib/d#{$$}.rb"
+    a1 = util_spec "a", "1", "b" => "> 0"
+    b1 = util_spec "b", "1", "xc" => ">= 1" # unresolved
+    b2 = util_spec "b", "2", "xc" => ">= 1", "d" => "< 3"
+    c1 = util_spec "xc", "1", "d" => "<= 3" # 1st level
+    c2 = util_spec "xc", "2", "d" => "<= 2"
+    c3 = util_spec "xc", "3", "d" => "<= 3"
+    d1 = util_spec "d", "1", nil, "lib/d#{$$}.rb" # 2nd level
+    d2 = util_spec "d", "2", nil, "lib/d#{$$}.rb"
+    d3 = util_spec "d", "3", nil, "lib/d#{$$}.rb"
 
-      install_specs d1, d2, d3, c1, c2, c3, b1, b2, a1
+    install_specs d1, d2, d3, c1, c2, c3, b1, b2, a1
 
-      a1.activate
+    a1.activate
 
-      require "d#{$$}"
+    require "d#{$$}"
 
-      assert_includes [%w[a-1 b-2 d-2 xc-3], %w[a-1 b-2 d-2]], loaded_spec_names
-    end
+    assert_includes [%w[a-1 b-2 d-2 xc-3], %w[a-1 b-2 d-2]], loaded_spec_names
   end
 
   ##
@@ -509,41 +485,37 @@ end
     install_specs b1, b2, a1
 
     a1.activate
-    save_loaded_features do
-      require "b/c"
-    end
+    require "b/c"
 
     assert_equal %w[a-1 b-1], loaded_spec_names
   end
 
   def test_self_activate_via_require_wtf
-    save_loaded_features do
-      a1 = util_spec "a", "1", "b" => "> 0", "d" => "> 0" # this
-      b1 = util_spec "b", "1", { "c" => ">= 1" }, "lib/b#{$$}.rb"
-      b2 = util_spec "b", "2", { "c" => ">= 2" }, "lib/b#{$$}.rb" # this
-      c1 = util_spec "c", "1"
-      c2 = util_spec "c", "2" # this
-      d1 = util_spec "d", "1", { "c" => "< 2" },  "lib/d#{$$}.rb"
-      d2 = util_spec "d", "2", { "c" => "< 2" },  "lib/d#{$$}.rb" # this
+    a1 = util_spec "a", "1", "b" => "> 0", "d" => "> 0" # this
+    b1 = util_spec "b", "1", { "c" => ">= 1" }, "lib/b#{$$}.rb"
+    b2 = util_spec "b", "2", { "c" => ">= 2" }, "lib/b#{$$}.rb" # this
+    c1 = util_spec "c", "1"
+    c2 = util_spec "c", "2" # this
+    d1 = util_spec "d", "1", { "c" => "< 2" },  "lib/d#{$$}.rb"
+    d2 = util_spec "d", "2", { "c" => "< 2" },  "lib/d#{$$}.rb" # this
 
-      install_specs c1, c2, b1, b2, d1, d2, a1
+    install_specs c1, c2, b1, b2, d1, d2, a1
 
-      a1.activate
+    a1.activate
 
-      assert_equal %w[a-1], loaded_spec_names
-      assert_equal ["b (> 0)", "d (> 0)"], unresolved_names
+    assert_equal %w[a-1], loaded_spec_names
+    assert_equal ["b (> 0)", "d (> 0)"], unresolved_names
 
-      require "b#{$$}"
+    require "b#{$$}"
 
-      e = assert_raise Gem::LoadError do
-        require "d#{$$}"
-      end
-
-      assert_equal "unable to find a version of 'd' to activate", e.message
-
-      assert_equal %w[a-1 b-2 c-2], loaded_spec_names
-      assert_equal ["d (> 0)"], unresolved_names
+    e = assert_raise Gem::LoadError do
+      require "d#{$$}"
     end
+
+    assert_equal "unable to find a version of 'd' to activate", e.message
+
+    assert_equal %w[a-1 b-2 c-2], loaded_spec_names
+    assert_equal ["d (> 0)"], unresolved_names
   end
 
   def test_self_activate_deep_unambiguous
@@ -2146,43 +2118,39 @@ dependencies: []
   end
 
   def test_require_already_activated
-    save_loaded_features do
-      a1 = util_spec "a", "1", nil, "lib/d#{$$}.rb"
+    a1 = util_spec "a", "1", nil, "lib/d#{$$}.rb"
 
-      install_specs a1 # , a2, b1, b2, c1, c2
+    install_specs a1 # , a2, b1, b2, c1, c2
 
-      a1.activate
-      assert_equal %w[a-1], loaded_spec_names
-      assert_equal [], unresolved_names
+    a1.activate
+    assert_equal %w[a-1], loaded_spec_names
+    assert_equal [], unresolved_names
 
-      assert require "d#{$$}"
+    assert require "d#{$$}"
 
-      assert_equal %w[a-1], loaded_spec_names
-      assert_equal [], unresolved_names
-    end
+    assert_equal %w[a-1], loaded_spec_names
+    assert_equal [], unresolved_names
   end
 
   def test_require_already_activated_indirect_conflict
-    save_loaded_features do
-      a1 = util_spec "a", "1", "b" => "> 0"
-      a2 = util_spec "a", "2", "b" => "> 0"
-      b1 = util_spec "b", "1", "c" => ">= 1"
-      b2 = util_spec "b", "2", "c" => ">= 2"
-      c1 = util_spec "c", "1", nil, "lib/d#{$$}.rb"
-      c2 = util_spec("c", "2", { "a" => "1" }, "lib/d#{$$}.rb") # conflicts with a-2
+    a1 = util_spec "a", "1", "b" => "> 0"
+    a2 = util_spec "a", "2", "b" => "> 0"
+    b1 = util_spec "b", "1", "c" => ">= 1"
+    b2 = util_spec "b", "2", "c" => ">= 2"
+    c1 = util_spec "c", "1", nil, "lib/d#{$$}.rb"
+    c2 = util_spec("c", "2", { "a" => "1" }, "lib/d#{$$}.rb") # conflicts with a-2
 
-      install_specs c1, b1, a1, a2, c2, b2
+    install_specs c1, b1, a1, a2, c2, b2
 
-      a1.activate
-      c1.activate
-      assert_equal %w[a-1 c-1], loaded_spec_names
-      assert_equal ["b (> 0)"], unresolved_names
+    a1.activate
+    c1.activate
+    assert_equal %w[a-1 c-1], loaded_spec_names
+    assert_equal ["b (> 0)"], unresolved_names
 
-      assert require "d#{$$}"
+    assert require "d#{$$}"
 
-      assert_equal %w[a-1 c-1], loaded_spec_names
-      assert_equal ["b (> 0)"], unresolved_names
-    end
+    assert_equal %w[a-1 c-1], loaded_spec_names
+    assert_equal ["b (> 0)"], unresolved_names
   end
 
   def test_requirements

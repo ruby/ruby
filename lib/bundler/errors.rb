@@ -75,10 +75,26 @@ module Bundler
       end
     end
 
+    def permission_type
+      case @permission_type
+      when :create
+        "executable permissions for all parent directories and write permissions for `#{parent_folder}`"
+      when :delete
+        permissions = "executable permissions for all parent directories and write permissions for `#{parent_folder}`"
+        permissions += ", and the same thing for all subdirectories inside #{@path}" if File.directory?(@path)
+        permissions
+      else
+        "#{@permission_type} permissions for that path"
+      end
+    end
+
+    def parent_folder
+      File.dirname(@path)
+    end
+
     def message
       "There was an error while trying to #{action} `#{@path}`. " \
-      "It is likely that you need to grant #{@permission_type} permissions " \
-      "for that path."
+      "It is likely that you need to grant #{permission_type}."
     end
 
     status_code(23)

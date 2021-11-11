@@ -151,7 +151,7 @@ class Gem::RequestSet
     @prerelease = options[:prerelease]
 
     requests = []
-    download_queue = Queue.new
+    download_queue = Thread::Queue.new
 
     # Create a thread-safe list of gems to download
     sorted_requests.each do |req|

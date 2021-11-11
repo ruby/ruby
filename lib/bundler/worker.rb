@@ -21,8 +21,8 @@ module Bundler
     # @param func [Proc] job to run in inside the worker pool
     def initialize(size, name, func)
       @name = name
-      @request_queue = Queue.new
-      @response_queue = Queue.new
+      @request_queue = Thread::Queue.new
+      @response_queue = Thread::Queue.new
       @func = func
       @size = size
       @threads = nil

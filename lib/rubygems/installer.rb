@@ -68,7 +68,7 @@ class Gem::Installer
 
   @path_warning = false
 
-  @install_lock = Mutex.new
+  @install_lock = Thread::Mutex.new
 
   class << self
     ##

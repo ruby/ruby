@@ -8,7 +8,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.2.29".freeze
+  VERSION = "3.2.30".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -178,7 +178,7 @@ module Gem
   @configuration = nil
   @gemdeps = nil
   @loaded_specs = {}
-  LOADED_SPECS_MUTEX = Mutex.new
+  LOADED_SPECS_MUTEX = Thread::Mutex.new
   @path_to_default_spec_map = {}
   @platforms = []
   @ruby = nil
