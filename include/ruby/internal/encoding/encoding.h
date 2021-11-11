@@ -72,9 +72,9 @@ enum ruby_encoding_consts {
  * must be  capable of  having inline  encoding.  Using  this macro  needs deep
  * understanding of bit level object binary layout.
  *
- * @param[out]  obj  Target object to modify.
- * @param[in]   i    Encoding in encindex format.
- * @post        `obj`'s encoding is `i`.
+ * @param[out]  obj      Target object to modify.
+ * @param[in]   ecindex  Encoding in encindex format.
+ * @post        `obj`'s encoding is `encindex`.
  */
 static inline void
 RB_ENCODING_SET_INLINED(VALUE obj, int encindex)
