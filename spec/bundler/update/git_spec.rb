@@ -305,7 +305,7 @@ RSpec.describe "bundle update" do
 
       bundle "update --source bar"
 
-      lockfile_should_be <<-G
+      expect(lockfile).to eq <<~G
         GIT
           remote: #{@git.path}
           revision: #{ref}
@@ -341,7 +341,7 @@ RSpec.describe "bundle update" do
 
       bundle "update --source bar"
 
-      lockfile_should_be <<-G
+      expect(lockfile).to eq <<~G
         GIT
           remote: #{@git.path}
           revision: #{ref}

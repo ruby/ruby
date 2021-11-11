@@ -59,7 +59,7 @@ RSpec.describe Bundler::Definition do
       bundle :install, :env => { "DEBUG" => "1" }
 
       expect(out).to match(/re-resolving dependencies/)
-      lockfile_should_be <<-G
+      expect(lockfile).to eq <<~G
         PATH
           remote: #{lib_path("foo")}
           specs:
@@ -96,7 +96,7 @@ RSpec.describe Bundler::Definition do
       bundle :check, :env => { "DEBUG" => "1" }
 
       expect(out).to match(/using resolution from the lockfile/)
-      lockfile_should_be <<-G
+      expect(lockfile).to eq <<~G
         PATH
           remote: #{lib_path("foo")}
           specs:
@@ -129,7 +129,7 @@ RSpec.describe Bundler::Definition do
       bundle :check, :env => { "DEBUG" => "1" }
 
       expect(out).to match(/using resolution from the lockfile/)
-      lockfile_should_be <<-G
+      expect(lockfile).to eq <<~G
         GEM
           remote: #{file_uri_for(gem_repo1)}/
           specs:
@@ -155,7 +155,7 @@ RSpec.describe Bundler::Definition do
       bundle :check, :env => { "DEBUG" => "1" }
 
       expect(out).to match(/using resolution from the lockfile/)
-      lockfile_should_be <<-G
+      expect(lockfile).to eq <<~G
         GEM
           remote: #{file_uri_for(gem_repo1)}/
           specs:

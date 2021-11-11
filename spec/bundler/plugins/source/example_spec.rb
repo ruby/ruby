@@ -70,7 +70,7 @@ RSpec.describe "real source plugins" do
     it "writes to lock file" do
       bundle "install"
 
-      lockfile_should_be <<-G
+      expect(lockfile).to eq <<~G
         PLUGIN SOURCE
           remote: #{lib_path("a-path-gem-1.0")}
           type: mpath
@@ -342,7 +342,7 @@ RSpec.describe "real source plugins" do
       revision = revision_for(lib_path("ma-gitp-gem-1.0"))
       bundle "install"
 
-      lockfile_should_be <<-G
+      expect(lockfile).to eq <<~G
         PLUGIN SOURCE
           remote: #{file_uri_for(lib_path("ma-gitp-gem-1.0"))}
           type: gitp

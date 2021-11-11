@@ -939,7 +939,7 @@ RSpec.describe "bundle update --ruby" do
     it "removes the Ruby from the Gemfile.lock" do
       bundle "update --ruby"
 
-      lockfile_should_be <<-L
+      expect(lockfile).to eq <<~L
        GEM
          remote: #{file_uri_for(gem_repo1)}/
          specs:
@@ -967,7 +967,7 @@ RSpec.describe "bundle update --ruby" do
     it "updates the Gemfile.lock with the latest version" do
       bundle "update --ruby"
 
-      lockfile_should_be <<-L
+      expect(lockfile).to eq <<~L
        GEM
          remote: #{file_uri_for(gem_repo1)}/
          specs:
@@ -1014,7 +1014,7 @@ RSpec.describe "bundle update --ruby" do
     it "updates the Gemfile.lock with the latest version" do
       bundle "update --ruby"
 
-      lockfile_should_be <<-L
+      expect(lockfile).to eq <<~L
        GEM
          remote: #{file_uri_for(gem_repo1)}/
          specs:

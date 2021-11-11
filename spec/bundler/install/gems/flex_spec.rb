@@ -259,24 +259,24 @@ RSpec.describe "bundle flex_install" do
         gem "rack"
       G
 
-      lockfile_should_be <<-L
-      GEM
-        remote: #{file_uri_for(gem_repo1)}/
-        specs:
-          rack (1.0.0)
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo1)}/
+          specs:
+            rack (1.0.0)
 
-      GEM
-        remote: #{file_uri_for(gem_repo2)}/
-        specs:
+        GEM
+          remote: #{file_uri_for(gem_repo2)}/
+          specs:
 
-      PLATFORMS
-        #{lockfile_platforms}
+        PLATFORMS
+          #{lockfile_platforms}
 
-      DEPENDENCIES
-        rack
+        DEPENDENCIES
+          rack
 
-      BUNDLED WITH
-         #{Bundler::VERSION}
+        BUNDLED WITH
+           #{Bundler::VERSION}
       L
     end
   end

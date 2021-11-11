@@ -226,10 +226,6 @@ module Spec
       end
     end
 
-    def lockfile_should_be(expected)
-      expect(bundled_app_lock).to have_lockfile(expected)
-    end
-
     def gemfile_should_be(expected)
       expect(bundled_app_gemfile).to read_as(strip_whitespace(expected))
     end

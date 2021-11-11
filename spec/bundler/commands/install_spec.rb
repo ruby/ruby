@@ -518,7 +518,7 @@ RSpec.describe "bundle install with gem sources" do
       end
 
       it "writes current Ruby version to Gemfile.lock" do
-        lockfile_should_be <<-L
+        expect(lockfile).to eq <<~L
          GEM
            remote: #{file_uri_for(gem_repo1)}/
            specs:
@@ -544,7 +544,7 @@ RSpec.describe "bundle install with gem sources" do
           source "#{file_uri_for(gem_repo1)}"
         G
 
-        lockfile_should_be <<-L
+        expect(lockfile).to eq <<~L
          GEM
            remote: #{file_uri_for(gem_repo1)}/
            specs:
