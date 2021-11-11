@@ -853,7 +853,7 @@ module Bundler
     def additional_base_requirements_for_resolve
       return [] unless @locked_gems && unlocking? && !sources.expired_sources?(@locked_gems.sources)
       dependencies_by_name = dependencies.inject({}) {|memo, dep| memo.update(dep.name => dep) }
-      @locked_gems.specs.reduce({}) do |requirements, locked_spec|
+      converge_specs(@locked_gems.specs).reduce({}) do |requirements, locked_spec|
         name = locked_spec.name
         dependency = dependencies_by_name[name]
         next requirements if @locked_gems.dependencies[name] != dependency
