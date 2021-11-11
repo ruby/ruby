@@ -43,6 +43,11 @@ class Gem::Uri
     @parsed_uri.respond_to?(method_name, include_private) || super
   end
 
+  protected
+
+  # Add a protected reader for the cloned instance to access the original object's parsed uri
+  attr_reader :parsed_uri
+
   private
 
   ##
@@ -98,5 +103,9 @@ class Gem::Uri
 
   def token?
     !user.nil? && password.nil?
+  end
+
+  def initialize_copy(original)
+    @parsed_uri = original.parsed_uri.clone
   end
 end

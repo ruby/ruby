@@ -624,6 +624,25 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
     end
   end
 
+  context "bundle remove" do
+    before do
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      G
+    end
+
+    context "with --install" do
+      it "shows a deprecation warning", :bundler => "< 3" do
+        bundle "remove rack --install"
+
+        expect(err).to include "[DEPRECATED] The `--install` flag has been deprecated. `bundle install` is triggered by default."
+      end
+
+      pending "fails with a helpful message", :bundler => "3"
+    end
+  end
+
   context "bundle console" do
     before do
       bundle "console", :raise_on_error => false

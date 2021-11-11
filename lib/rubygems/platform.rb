@@ -100,6 +100,7 @@ class Gem::Platform
                       when /^dotnet([\d.]*)/ then       [ 'dotnet',    $1  ]
                       when /linux-?((?!gnu)\w+)?/ then  [ 'linux',     $1  ]
                       when /mingw32/ then               [ 'mingw32',   nil ]
+                      when /mingw-?(\w+)?/ then         [ 'mingw',     $1  ]
                       when /(mswin\d+)(\_(\d+))?/ then
                         os, version = $1, $3
                         @cpu = 'x86' if @cpu.nil? and os =~ /32$/

@@ -381,7 +381,7 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
   end
 
   LAZY = '"FIxxxXME" or "TOxxxDO"'.gsub(/xxx/, '')
-  LAZY_PATTERN = /FI XME|TO DO/x.freeze
+  LAZY_PATTERN = /^FI XME|^TO DO/x.freeze
   HOMEPAGE_URI_PATTERN = /\A[a-z][a-z\d+.-]*:/i.freeze
 
   def validate_lazy_metadata
