@@ -8,15 +8,15 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.2.26".freeze
+  VERSION = "3.2.27".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
-require 'rubygems/compatibility'
+require_relative 'rubygems/compatibility'
 
-require 'rubygems/defaults'
-require 'rubygems/deprecate'
-require 'rubygems/errors'
+require_relative 'rubygems/defaults'
+require_relative 'rubygems/deprecate'
+require_relative 'rubygems/errors'
 
 ##
 # RubyGems is the Ruby standard for publishing and managing third party
@@ -559,7 +559,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   #   => [#<Gem::Specification:0x1013b4528 @name="minitest", ...>]
 
   def self.install(name, version = Gem::Requirement.default, *options)
-    require "rubygems/dependency_installer"
+    require_relative "rubygems/dependency_installer"
     inst = Gem::DependencyInstaller.new(*options)
     inst.install name, version
     inst.installed_gems
@@ -625,12 +625,12 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     rescue ::LoadError
       # If we can't load psych, that's fine, go on.
     else
-      require 'rubygems/psych_additions'
-      require 'rubygems/psych_tree'
+      require_relative 'rubygems/psych_additions'
+      require_relative 'rubygems/psych_tree'
     end
 
     require 'yaml'
-    require 'rubygems/safe_yaml'
+    require_relative 'rubygems/safe_yaml'
 
     @yaml_loaded = true
   end
@@ -990,7 +990,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Lazily loads DefaultUserInteraction and returns the default UI.
 
   def self.ui
-    require 'rubygems/user_interaction'
+    require_relative 'rubygems/user_interaction'
 
     Gem::DefaultUserInteraction.ui
   end
@@ -1110,7 +1110,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     end
 
     ENV["BUNDLE_GEMFILE"] ||= File.expand_path(path)
-    require 'rubygems/user_interaction'
+    require_relative 'rubygems/user_interaction'
     require "bundler"
     begin
       Gem::DefaultUserInteraction.use_ui(ui) do
@@ -1322,7 +1322,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   autoload :Version,            File.expand_path('rubygems/version', __dir__)
 end
 
-require 'rubygems/exceptions'
+require_relative 'rubygems/exceptions'
 
 # REFACTOR: This should be pulled out into some kind of hacks file.
 begin
@@ -1353,6 +1353,6 @@ end
 # Loads the default specs.
 Gem::Specification.load_defaults
 
-require 'rubygems/core_ext/kernel_gem'
-require 'rubygems/core_ext/kernel_require'
-require 'rubygems/core_ext/kernel_warn'
+require_relative 'rubygems/core_ext/kernel_gem'
+require_relative 'rubygems/core_ext/kernel_require'
+require_relative 'rubygems/core_ext/kernel_warn'

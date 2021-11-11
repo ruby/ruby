@@ -26,6 +26,13 @@ module Bundler
         Array(options["remotes"]).reverse_each {|r| add_remote(r) }
       end
 
+      def local_only!
+        @specs = nil
+        @allow_local = true
+        @allow_cached = false
+        @allow_remote = false
+      end
+
       def local!
         return if @allow_local
 
@@ -137,7 +144,7 @@ module Bundler
           end
         end
 
-        if (installed?(spec) || Plugin.installed?(spec.name)) && !force
+        if installed?(spec) && !force
           print_using_message "Using #{version_message(spec)}"
           return nil # no post-install message
         end

@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require "rubygems/deprecate"
+require_relative "deprecate"
 
 ##
 # A Requirement is a set of one or more version restrictions. It supports a

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'rubygems/deprecate'
+require_relative 'deprecate'
 
 ##
 # Base exception class for RubyGems.  All exception raised by RubyGems are a

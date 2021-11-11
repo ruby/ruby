@@ -636,6 +636,12 @@ EOF
       @rubygems = nil
     end
 
+    def configure_gem_home_and_path(path = bundle_path)
+      configure_gem_path
+      configure_gem_home(path)
+      Bundler.rubygems.clear_paths
+    end
+
     private
 
     def eval_yaml_gemspec(path, contents)
@@ -656,29 +662,17 @@ EOF
       raise GemspecError, Dsl::DSLError.new(msg, path, e.backtrace, contents)
     end
 
-    def configure_gem_home_and_path
-      configure_gem_path
-      configure_gem_home
-      bundle_path
-    end
-
-    def configure_gem_path(env = ENV)
-      blank_home = env["GEM_HOME"].nil? || env["GEM_HOME"].empty?
-      if !use_system_gems?
+    def configure_gem_path
+      unless use_system_gems?
         # this needs to be empty string to cause
         # PathSupport.split_gem_path to only load up the
         # Bundler --path setting as the GEM_PATH.
-        env["GEM_PATH"] = ""
-      elsif blank_home
-        possibles = [Bundler.rubygems.gem_dir, Bundler.rubygems.gem_path]
-        paths = possibles.flatten.compact.uniq.reject(&:empty?)
-        env["GEM_PATH"] = paths.join(File::PATH_SEPARATOR)
+        Bundler::SharedHelpers.set_env "GEM_PATH", ""
       end
     end
 
-    def configure_gem_home
-      Bundler::SharedHelpers.set_env "GEM_HOME", File.expand_path(bundle_path, root)
-      Bundler.rubygems.clear_paths
+    def configure_gem_home(path)
+      Bundler::SharedHelpers.set_env "GEM_HOME", path.to_s
     end
 
     def tmp_home_path
