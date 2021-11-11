@@ -52,7 +52,7 @@ char *getenv();
 #endif
 char *getlogin();
 
-#define RUBY_ETC_VERSION "1.2.0"
+#define RUBY_ETC_VERSION "1.3.0"
 
 #ifdef HAVE_RB_DEPRECATE_CONSTANT
 void rb_deprecate_constant(VALUE mod, const char *name);
@@ -68,6 +68,15 @@ void rb_deprecate_constant(VALUE mod, const char *name);
 typedef int rb_atomic_t;
 # define RUBY_ATOMIC_CAS(var, oldval, newval) \
     ((var) == (oldval) ? ((var) = (newval), (oldval)) : (var))
+# define RUBY_ATOMIC_EXCHANGE(var, newval) \
+    atomic_exchange(&var, newval)
+static inline rb_atomic_t
+atomic_exchange(volatile rb_atomic_t *var, rb_atomic_t newval)
+{
+    rb_atomic_t oldval = *var;
+    *var = newval;
+    return oldval;
+}
 #endif
 
 /* call-seq:
@@ -253,7 +262,9 @@ static VALUE
 passwd_ensure(VALUE _)
 {
     endpwent();
-    passwd_blocking = 0;
+    if (RUBY_ATOMIC_EXCHANGE(passwd_blocking, 0) != 1) {
+	rb_raise(rb_eRuntimeError, "unexpected passwd_blocking");
+    }
     return Qnil;
 }
 
@@ -495,7 +506,9 @@ static VALUE
 group_ensure(VALUE _)
 {
     endgrent();
-    group_blocking = 0;
+    if (RUBY_ATOMIC_EXCHANGE(group_blocking, 0) != 1) {
+	rb_raise(rb_eRuntimeError, "unexpected group_blocking");
+    }
     return Qnil;
 }
 
@@ -944,10 +957,12 @@ io_pathconf(VALUE io, VALUE arg)
 static int
 etc_nprocessors_affin(void)
 {
-    cpu_set_t *cpuset;
+    cpu_set_t *cpuset, cpuset_buff[1024 / sizeof(cpu_set_t)];
     size_t size;
     int ret;
     int n;
+
+    CPU_ZERO_S(sizeof(cpuset_buff), cpuset_buff);
 
     /*
      * XXX:
@@ -967,13 +982,12 @@ etc_nprocessors_affin(void)
      */
     for (n=64; n <= 16384; n *= 2) {
 	size = CPU_ALLOC_SIZE(n);
-	if (size >= 1024) {
+	if (size >= sizeof(cpuset_buff)) {
 	    cpuset = xcalloc(1, size);
 	    if (!cpuset)
 		return -1;
 	} else {
-	    cpuset = alloca(size);
-	    CPU_ZERO_S(size, cpuset);
+	    cpuset = cpuset_buff;
 	}
 
 	ret = sched_getaffinity(0, size, cpuset);
@@ -982,10 +996,10 @@ etc_nprocessors_affin(void)
 	    ret = CPU_COUNT_S(size, cpuset);
 	}
 
-	if (size >= 1024) {
+	if (size >= sizeof(cpuset_buff)) {
 	    xfree(cpuset);
 	}
-	if (ret > 0) {
+	if (ret > 0 || errno != EINVAL) {
 	    return ret;
 	}
     }
