@@ -50,7 +50,7 @@ class HTTPRequestTest < Test::Unit::TestCase
       'user-agent' => %w[Ruby],
     }
 
-    assert_equal expected, req.to_hash
+    assert_equal expected, req.to_hash.tap{_1.delete 'accept-encoding'}
   end
 
   def test_initialize_accept_encoding
