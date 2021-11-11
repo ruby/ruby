@@ -221,9 +221,5 @@ module Spec
         expect(Bundler::Plugin).not_to be_installed(name)
       end
     end
-
-    def gemfile_should_be(expected)
-      expect(bundled_app_gemfile).to read_as(strip_whitespace(expected))
-    end
   end
 end
