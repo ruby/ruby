@@ -3066,6 +3066,17 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
     WARNING
   end
 
+  def test_validate_license_ref
+    util_setup_validate
+
+    use_ui @ui do
+      @a1.licenses = ['LicenseRef-LICENSE.md']
+      @a1.validate
+    end
+
+    assert_empty @ui.error
+  end
+
   def test_validate_license_values_plus
     util_setup_validate
 

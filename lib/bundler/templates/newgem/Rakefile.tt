@@ -18,11 +18,15 @@ require "rspec/core/rake_task"
 RSpec::Core::RakeTask.new(:spec)
 
 <% end -%>
-<% if config[:rubocop] -%>
+<% if config[:linter] == "rubocop" -%>
 <% default_task_names << :rubocop -%>
 require "rubocop/rake_task"
 
 RuboCop::RakeTask.new
+
+<% elsif config[:linter] == "standard" -%>
+<% default_task_names << :standard -%>
+require "standard/rake"
 
 <% end -%>
 <% if config[:ext] -%>

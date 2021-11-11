@@ -354,30 +354,36 @@ class TestGemRequest < Gem::TestCase
 
   def test_verify_certificate
     pend if Gem.java_platform?
+
+    error_number = OpenSSL::X509::V_ERR_OUT_OF_MEM
+
     store = OpenSSL::X509::Store.new
     context = OpenSSL::X509::StoreContext.new store
-    context.error = OpenSSL::X509::V_ERR_OUT_OF_MEM
+    context.error = error_number
 
     use_ui @ui do
       Gem::Request.verify_certificate context
     end
 
-    assert_equal "ERROR:  SSL verification error at depth 0: out of memory (17)\n",
+    assert_equal "ERROR:  SSL verification error at depth 0: out of memory (#{error_number})\n",
                  @ui.error
   end
 
   def test_verify_certificate_extra_message
     pend if Gem.java_platform?
+
+    error_number = OpenSSL::X509::V_ERR_INVALID_CA
+
     store = OpenSSL::X509::Store.new
     context = OpenSSL::X509::StoreContext.new store
-    context.error = OpenSSL::X509::V_ERR_INVALID_CA
+    context.error = error_number
 
     use_ui @ui do
       Gem::Request.verify_certificate context
     end
 
     expected = <<-ERROR
-ERROR:  SSL verification error at depth 0: invalid CA certificate (24)
+ERROR:  SSL verification error at depth 0: invalid CA certificate (#{error_number})
 ERROR:  Certificate  is an invalid CA certificate
     ERROR
 

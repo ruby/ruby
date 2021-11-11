@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "BUNDLE\-CONFIG" "1" "June 2021" "" ""
+.TH "BUNDLE\-CONFIG" "1" "November 2021" "" ""
 .
 .SH "NAME"
 \fBbundle\-config\fR \- Set bundler configuration options
@@ -462,13 +462,13 @@ export BUNDLE_GITHUB__COM=abcd0123generatedtoken:x\-oauth\-basic
 .IP "" 0
 .
 .P
-Note that any configured credentials will be redacted by informative commands such as \fBbundle config list\fR or \fBbundle config get\fR, unless you use the \fB\-\-parseable\fR flag\. This is to avoid unintentially leaking credentials when copy\-pasting bundler output\.
+Note that any configured credentials will be redacted by informative commands such as \fBbundle config list\fR or \fBbundle config get\fR, unless you use the \fB\-\-parseable\fR flag\. This is to avoid unintentionally leaking credentials when copy\-pasting bundler output\.
 .
 .P
 Also note that to guarantee a sane mapping between valid environment variable names and valid host names, bundler makes the following transformations:
 .
 .IP "\(bu" 4
-Any \fB\-\fR characters in a host name are mapped to a triple dash (\fB___\fR) in the corresponding enviroment variable\.
+Any \fB\-\fR characters in a host name are mapped to a triple dash (\fB___\fR) in the corresponding environment variable\.
 .
 .IP "\(bu" 4
 Any \fB\.\fR characters in a host name are mapped to a double dash (\fB__\fR) in the corresponding environment variable\.

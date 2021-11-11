@@ -34,6 +34,7 @@ RSpec.configure do |config|
   config.filter_run_excluding :readline => Gem.win_platform?
   config.filter_run_excluding :jruby => RUBY_ENGINE != "jruby"
   config.filter_run_excluding :truffleruby => RUBY_ENGINE != "truffleruby"
+  config.filter_run_excluding :man => Gem.win_platform?
 
   config.filter_run_when_matching :focus unless ENV["CI"]
 end

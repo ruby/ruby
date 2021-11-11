@@ -37,6 +37,10 @@ module Spec
       @rubocop_gemfile ||= source_root.join(rubocop_gemfile_basename)
     end
 
+    def standard_gemfile
+      @standard_gemfile ||= source_root.join(standard_gemfile_basename)
+    end
+
     def dev_gemfile
       @dev_gemfile ||= git_root.join("dev_gems.rb")
     end
@@ -148,6 +152,10 @@ module Spec
 
     def rubocop_gems
       tmp.join("gems/rubocop")
+    end
+
+    def standard_gems
+      tmp.join("gems/standard")
     end
 
     def file_uri_for(path)
@@ -281,6 +289,17 @@ module Spec
         "rubocop24_gems"
       else
         "rubocop_gems"
+      end
+      source_root.join("tool/bundler/#{filename}.rb")
+    end
+
+    def standard_gemfile_basename
+      filename = if RUBY_VERSION.start_with?("2.3")
+        "standard23_gems"
+      elsif RUBY_VERSION.start_with?("2.4")
+        "standard24_gems"
+      else
+        "standard_gems"
       end
       source_root.join("tool/bundler/#{filename}.rb")
     end
