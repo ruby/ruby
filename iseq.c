@@ -272,6 +272,9 @@ rb_iseq_update_references(rb_iseq_t *iseq)
         if (body->parent_iseq) {
             body->parent_iseq = (struct rb_iseq_struct *)rb_gc_location((VALUE)body->parent_iseq);
         }
+        if (body->mandatory_only_iseq) {
+            body->mandatory_only_iseq = (struct rb_iseq_struct *)rb_gc_location((VALUE)body->mandatory_only_iseq);
+        }
         if (body->call_data) {
             for (unsigned int i=0; i<body->ci_size; i++) {
                 struct rb_call_data *cds = body->call_data;
@@ -351,6 +354,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
         rb_gc_mark_movable(body->location.label);
         rb_gc_mark_movable(body->location.base_label);
         rb_gc_mark_movable(body->location.pathobj);
+        RUBY_MARK_MOVABLE_UNLESS_NULL((VALUE)body->mandatory_only_iseq);
         RUBY_MARK_MOVABLE_UNLESS_NULL((VALUE)body->parent_iseq);
 
         if (body->call_data) {
