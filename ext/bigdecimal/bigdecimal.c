@@ -325,20 +325,13 @@ BigDecimal_prec(VALUE self)
  *
  *  Returns the number of decimal digits in +self+:
  *
- *    %w[0 1 -1e20 1e-20 Infinity -Infinity NaN].each do |s|
- *      precision = BigDecimal(s).precision
- *      puts format("%9s has precision %2d", s, precision)
- *    end
- *
- *  Output:
- *
- *            0 has precision  0
- *            1 has precision  1
- *        -1e20 has precision 21
- *        1e-20 has precision 20
- *     Infinity has precision  0
- *    -Infinity has precision  0
- *          NaN has precision  0
+ *    BigDecimal("0").precision         # => 0
+ *    BigDecimal("1").precision         # => 1
+ *    BigDecimal("-1e20").precision     # => 21
+ *    BigDecimal("1e-20").precision     # => 20
+ *    BigDecimal("Infinity").precision  # => 0
+ *    BigDecimal("-Infinity").precision # => 0
+ *    BigDecimal("NaN").precision       # => 0
  *
  */
 static VALUE
