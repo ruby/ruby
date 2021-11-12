@@ -58,6 +58,12 @@ class Array
   #    a.sample(random: Random.new(1))     #=> 6
   #    a.sample(4, random: Random.new(1))  #=> [6, 10, 9, 2]
   def sample(n = (ary = false), random: Random)
-    Primitive.rb_ary_sample(random, n, ary)
+    if Primitive.mandatory_only?
+      # Primitive.cexpr! %{ rb_ary_sample(self, rb_cRandom, Qfalse, Qfalse) }
+      Primitive.ary_sample0
+    else
+      # Primitive.cexpr! %{ rb_ary_sample(self, random, n, ary) }
+      Primitive.ary_sample(random, n, ary)
+    end
   end
 end
