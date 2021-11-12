@@ -733,10 +733,10 @@ check_rounding_mode(VALUE const v)
  *    Aliased as +:up+.
  *  - +ROUND_DOWN+: Round toward zero.
  *    Aliased as +:down+ and +:truncate+.
- *  - +ROUND_HALF_UP+: Round toward the nearer neighbor;
+ *  - +ROUND_HALF_UP+: Round toward the nearest neighbor;
  *    if the neighbors are equidistant, round away from zero.
  *    Aliased as +:half_up+ and +:default+.
- *  - +ROUND_HALF_DOWN+: Round toward the nearer neighbor;
+ *  - +ROUND_HALF_DOWN+: Round toward the nearest neighbor;
  *    if the neighbors are equidistant, round toward from zero.
  *    Aliased as +:half_down+.
  *  - +ROUND_HALF_EVEN+ (Banker's rounding): Round toward the nearest neighbor;
