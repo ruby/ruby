@@ -6353,10 +6353,16 @@ yycompile(VALUE vparser, struct parser_params *p, VALUE fname, int line)
     }
     p->ruby_sourceline = line - 1;
 
+    p->lvtbl = NULL;
+
     p->ast = ast = rb_ast_new();
     rb_suppress_tracing(yycompile0, (VALUE)p);
     p->ast = 0;
     RB_GC_GUARD(vparser); /* prohibit tail call optimization */
+
+    while (p->lvtbl) {
+        local_pop(p);
+    }
 
     return ast;
 }
