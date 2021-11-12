@@ -208,6 +208,10 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
 
                 vm_cme_invalidate((rb_callable_method_entry_t *)cme);
                 RB_DEBUG_COUNTER_INC(cc_invalidate_tree_cme);
+
+                if (cme->def->iseq_overload) {
+                    vm_cme_invalidate((rb_callable_method_entry_t *)cme->def->body.iseq.mandatory_only_cme);
+                }
             }
 
             // invalidate complement tbl
@@ -451,10 +455,13 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
 	  case VM_METHOD_TYPE_ISEQ:
 	    {
 		rb_method_iseq_t *iseq_body = (rb_method_iseq_t *)opts;
+                const rb_iseq_t *iseq = iseq_body->iseqptr;
 		rb_cref_t *method_cref, *cref = iseq_body->cref;
 
 		/* setup iseq first (before invoking GC) */
-		RB_OBJ_WRITE(me, &def->body.iseq.iseqptr, iseq_body->iseqptr);
+		RB_OBJ_WRITE(me, &def->body.iseq.iseqptr, iseq);
+
+                if (iseq->body->mandatory_only_iseq) def->iseq_overload = 1;
 
 		if (0) vm_cref_dump("rb_method_definition_create", cref);
 
@@ -531,7 +538,8 @@ method_definition_reset(const rb_method_entry_t *me)
       case VM_METHOD_TYPE_ISEQ:
 	RB_OBJ_WRITTEN(me, Qundef, def->body.iseq.iseqptr);
 	RB_OBJ_WRITTEN(me, Qundef, def->body.iseq.cref);
-	break;
+        RB_OBJ_WRITTEN(me, Qundef, def->body.iseq.mandatory_only_cme);
+        break;
       case VM_METHOD_TYPE_ATTRSET:
       case VM_METHOD_TYPE_IVAR:
 	RB_OBJ_WRITTEN(me, Qundef, def->body.attr.location);
@@ -893,6 +901,35 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     return me;
 }
 
+static const rb_callable_method_entry_t *
+overloaded_cme(const rb_callable_method_entry_t *cme)
+{
+    VM_ASSERT(cme->def->iseq_overload);
+    VM_ASSERT(cme->def->type == VM_METHOD_TYPE_ISEQ);
+    VM_ASSERT(cme->def->body.iseq.iseqptr != NULL);
+
+    const rb_callable_method_entry_t *monly_cme = cme->def->body.iseq.mandatory_only_cme;
+
+    if (monly_cme && !METHOD_ENTRY_INVALIDATED(monly_cme)) {
+        // ok
+    }
+    else {
+        rb_method_definition_t *def = rb_method_definition_create(VM_METHOD_TYPE_ISEQ, cme->def->original_id);
+        def->body.iseq.cref = cme->def->body.iseq.cref;
+        def->body.iseq.iseqptr = cme->def->body.iseq.iseqptr->body->mandatory_only_iseq;
+
+        rb_method_entry_t *me = rb_method_entry_alloc(cme->called_id,
+                                                      cme->owner,
+                                                      cme->defined_class,
+                                                      def);
+        METHOD_ENTRY_VISI_SET(me, METHOD_ENTRY_VISI(cme));
+        RB_OBJ_WRITE(cme, &cme->def->body.iseq.mandatory_only_cme, me);
+        monly_cme = (rb_callable_method_entry_t *)me;
+    }
+
+    return monly_cme;
+}
+
 #define CALL_METHOD_HOOK(klass, hook, mid) do {		\
 	const VALUE arg = ID2SYM(mid);			\
 	VALUE recv_class = (klass);			\
@@ -932,6 +969,7 @@ rb_add_method_iseq(VALUE klass, ID mid, const rb_iseq_t *iseq, rb_cref_t *cref, 
 
     iseq_body.iseqptr = iseq;
     iseq_body.cref = cref;
+
     rb_add_method(klass, mid, VM_METHOD_TYPE_ISEQ, &iseq_body, visi);
 }
 
@@ -1876,7 +1914,7 @@ rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_defini
 
     switch (d1->type) {
       case VM_METHOD_TYPE_ISEQ:
-	return d1->body.iseq.iseqptr == d2->body.iseq.iseqptr;
+        return d1->body.iseq.iseqptr == d2->body.iseq.iseqptr;
       case VM_METHOD_TYPE_CFUNC:
 	return
 	  d1->body.cfunc.func == d2->body.cfunc.func &&

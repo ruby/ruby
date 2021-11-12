@@ -446,6 +446,25 @@ vm_ccs_p(const struct rb_class_cc_entries *ccs)
 {
     return ccs->debug_sig == ~(VALUE)ccs;
 }
+
+static inline bool
+vm_cc_check_cme(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme)
+{
+    if (vm_cc_cme(cc) == cme ||
+        (cme->def->iseq_overload && vm_cc_cme(cc) == cme->def->body.iseq.mandatory_only_cme)) {
+        return true;
+    }
+    else {
+#if 1
+        fprintf(stderr, "iseq_overload:%d mandatory_only_cme:%p eq:%d\n",
+                (int)cme->def->iseq_overload,
+                (void *)cme->def->body.iseq.mandatory_only_cme,
+                vm_cc_cme(cc) == cme->def->body.iseq.mandatory_only_cme);
+#endif
+        return false;
+    }
+}
+
 #endif
 
 // gc.c

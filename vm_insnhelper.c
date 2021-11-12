@@ -678,7 +678,7 @@ rb_vm_frame_method_entry(const rb_control_frame_t *cfp)
     return check_method_entry(ep[VM_ENV_DATA_INDEX_ME_CREF], TRUE);
 }
 
-static rb_iseq_t *
+static const rb_iseq_t *
 method_entry_iseqptr(const rb_callable_method_entry_t *me)
 {
     switch (me->def->type) {
@@ -1754,13 +1754,16 @@ vm_ccs_verify(struct rb_class_cc_entries *ccs, ID mid, VALUE klass)
         VM_ASSERT(vm_ci_mid(ci) == mid);
         VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
         VM_ASSERT(vm_cc_class_check(cc, klass));
-        VM_ASSERT(vm_cc_cme(cc) == ccs->cme);
+        VM_ASSERT(vm_cc_check_cme(cc, ccs->cme));
     }
     return TRUE;
 }
 #endif
 
 #ifndef MJIT_HEADER
+
+static const rb_callable_method_entry_t *overloaded_cme(const rb_callable_method_entry_t *cme);
+
 static const struct rb_callcache *
 vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
 {
@@ -1829,7 +1832,6 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
 
     VM_ASSERT(cme == rb_callable_method_entry(klass, mid));
 
-    const struct rb_callcache *cc = vm_cc_new(klass, cme, vm_call_general);
     METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
 
     if (ccs == NULL) {
@@ -1846,6 +1848,14 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
         }
     }
 
+    if ((cme->def->iseq_overload &&
+         (int)vm_ci_argc(ci) == method_entry_iseqptr(cme)->body->param.lead_num)) {
+        // use alternative
+        cme = overloaded_cme(cme);
+        METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
+        // rp(cme);
+    }
+    const struct rb_callcache *cc = vm_cc_new(klass, cme, vm_call_general);
     vm_ccs_push(klass, ccs, ci, cc);
 
     VM_ASSERT(vm_cc_cme(cc) != NULL);
@@ -3529,9 +3539,10 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
 {
     const struct rb_callinfo *ci = calling->ci;
     const struct rb_callcache *cc = calling->cc;
+    const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
     VALUE v;
 
-    switch (vm_cc_cme(cc)->def->type) {
+    switch (cme->def->type) {
       case VM_METHOD_TYPE_ISEQ:
         CC_SET_FASTPATH(cc, vm_call_iseq_setup, TRUE);
         return vm_call_iseq_setup(ec, cfp, calling);

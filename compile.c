@@ -791,8 +791,10 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 	    }
 	  case ISEQ_TYPE_METHOD:
 	    {
+                ISEQ_COMPILE_DATA(iseq)->root_node = node->nd_body;
 		ADD_TRACE(ret, RUBY_EVENT_CALL);
 		CHECK(COMPILE(ret, "scoped node", node->nd_body));
+                ISEQ_COMPILE_DATA(iseq)->root_node = node->nd_body;
 		ADD_TRACE(ret, RUBY_EVENT_RETURN);
 		ISEQ_COMPILE_DATA(iseq)->last_line = nd_line(node);
 		break;
@@ -7884,6 +7886,65 @@ compile_builtin_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, c
     UNKNOWN_NODE("arg!", node, COMPILE_NG);
 }
 
+static NODE *
+mandatory_node(const rb_iseq_t *iseq, const NODE *cond_node)
+{
+    const NODE *node = ISEQ_COMPILE_DATA(iseq)->root_node;
+    if (nd_type(node) == NODE_IF && node->nd_cond == cond_node) {
+        return node->nd_body;
+    }
+    else {
+        rb_bug("mandatory_node: can't find mandatory node");
+    }
+}
+
+static int
+compile_builtin_mandatory_only_method(rb_iseq_t *iseq, const NODE *node, const NODE *line_node)
+{
+    // argumens
+    struct rb_args_info args = {
+        .pre_args_num = iseq->body->param.lead_num,
+    };
+    NODE args_node;
+    rb_node_init(&args_node, NODE_ARGS, 0, 0, (VALUE)&args);
+
+    // local table without non-mandatory parameters
+    const int skip_local_size = iseq->body->param.size - iseq->body->param.lead_num;
+    const int table_size = iseq->body->local_table_size - skip_local_size;
+    ID *tbl = ALLOCA_N(ID, table_size + 1);
+    tbl[0] = table_size;
+    int i;
+
+    // lead parameters
+    for (i=0; i<iseq->body->param.lead_num; i++) {
+        tbl[i+1] = iseq->body->local_table[i];
+    }
+    // local variables
+    for (; i<table_size; i++) {
+        tbl[i+1] = iseq->body->local_table[i + skip_local_size];
+    }
+
+    NODE scope_node;
+    rb_node_init(&scope_node, NODE_SCOPE, (VALUE)tbl, (VALUE)mandatory_node(iseq, node), (VALUE)&args_node);
+
+    rb_ast_body_t ast = {
+        .root = &scope_node,
+        .compile_option = 0,
+        .script_lines = iseq->body->variable.script_lines,
+    };
+
+    int prev_inline_index = GET_VM()->builtin_inline_index;
+
+    iseq->body->mandatory_only_iseq =
+      rb_iseq_new_with_opt(&ast, rb_iseq_base_label(iseq),
+                           rb_iseq_path(iseq), rb_iseq_realpath(iseq),
+                           INT2FIX(nd_line(line_node)), NULL, 0,
+                           ISEQ_TYPE_METHOD, ISEQ_COMPILE_DATA(iseq)->option);
+
+    GET_VM()->builtin_inline_index = prev_inline_index;
+    return COMPILE_OK;
+}
+
 static int
 compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const NODE *line_node, int popped,
                               const rb_iseq_t *parent_block, LINK_ANCHOR *args, const char *builtin_func)
@@ -7921,6 +7982,18 @@ compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
             }
             else if (strcmp("arg!", builtin_func) == 0) {
                 return compile_builtin_arg(iseq, ret, args_node, line_node, popped);
+            }
+            else if (strcmp("mandatory_only?", builtin_func) == 0) {
+                if (popped) {
+                    rb_bug("mandatory_only? should be in if condition");
+                }
+                else if (!LIST_INSN_SIZE_ZERO(ret)) {
+                    rb_bug("mandatory_only? should be put on top");
+                }
+
+                ADD_INSN1(ret, line_node, putobject, Qfalse);
+                return compile_builtin_mandatory_only_method(iseq, node, line_node);
+                return COMPILE_OK;
             }
             else if (1) {
                 rb_bug("can't find builtin function:%s", builtin_func);
@@ -11628,6 +11701,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     const ibf_offset_t catch_table_offset = ibf_dump_catch_table(dump, iseq);
     const int parent_iseq_index =           ibf_dump_iseq(dump, iseq->body->parent_iseq);
     const int local_iseq_index =            ibf_dump_iseq(dump, iseq->body->local_iseq);
+    const int mandatory_only_iseq_index =   ibf_dump_iseq(dump, iseq->body->mandatory_only_iseq);
     const ibf_offset_t ci_entries_offset =  ibf_dump_ci_entries(dump, iseq);
     const ibf_offset_t outer_variables_offset = ibf_dump_outer_variables(dump, iseq);
 
@@ -11690,6 +11764,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(catch_table_offset));
     ibf_dump_write_small_value(dump, parent_iseq_index);
     ibf_dump_write_small_value(dump, local_iseq_index);
+    ibf_dump_write_small_value(dump, mandatory_only_iseq_index);
     ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(ci_entries_offset));
     ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(outer_variables_offset));
     ibf_dump_write_small_value(dump, body->variable.flip_count);
@@ -11797,6 +11872,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     const ibf_offset_t catch_table_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
     const int parent_iseq_index = (int)ibf_load_small_value(load, &reading_pos);
     const int local_iseq_index = (int)ibf_load_small_value(load, &reading_pos);
+    const int mandatory_only_iseq_index = (int)ibf_load_small_value(load, &reading_pos);
     const ibf_offset_t ci_entries_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
     const ibf_offset_t outer_variables_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
     const rb_snum_t variable_flip_count = (rb_snum_t)ibf_load_small_value(load, &reading_pos);
@@ -11859,6 +11935,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->catch_table          = ibf_load_catch_table(load, catch_table_offset, catch_table_size);
     load_body->parent_iseq          = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)parent_iseq_index);
     load_body->local_iseq           = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)local_iseq_index);
+    load_body->mandatory_only_iseq  = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)mandatory_only_iseq_index);
 
     ibf_load_code(load, iseq, bytecode_offset, bytecode_size, iseq_size);
 #if VM_INSN_INFO_TABLE_IMPL == 2

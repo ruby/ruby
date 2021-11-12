@@ -117,6 +117,7 @@ struct iseq_compile_data {
     const rb_compile_option_t *option;
     struct rb_id_table *ivar_cache_table;
     const struct rb_builtin_function *builtin_function_table;
+    const NODE *root_node;
 #if OPT_SUPPORT_JOKE
     st_table *labels_table;
 #endif

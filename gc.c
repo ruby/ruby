@@ -2960,7 +2960,7 @@ cc_table_mark_i(ID id, VALUE ccs_ptr, void *data_ptr)
 
         for (int i=0; i<ccs->len; i++) {
             VM_ASSERT(data->klass == ccs->entries[i].cc->klass);
-            VM_ASSERT(ccs->cme == vm_cc_cme(ccs->entries[i].cc));
+            VM_ASSERT(vm_cc_check_cme(ccs->entries[i].cc, ccs->cme));
 
             gc_mark(data->objspace, (VALUE)ccs->entries[i].ci);
             gc_mark(data->objspace, (VALUE)ccs->entries[i].cc);
@@ -6443,10 +6443,11 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
 
     if (def) {
 	switch (def->type) {
-	  case VM_METHOD_TYPE_ISEQ:
-	    if (def->body.iseq.iseqptr) gc_mark(objspace, (VALUE)def->body.iseq.iseqptr);
-	    gc_mark(objspace, (VALUE)def->body.iseq.cref);
-	    break;
+          case VM_METHOD_TYPE_ISEQ:
+            if (def->body.iseq.iseqptr) gc_mark(objspace, (VALUE)def->body.iseq.iseqptr);
+            gc_mark(objspace, (VALUE)def->body.iseq.cref);
+            if (def->body.iseq.mandatory_only_cme) gc_mark(objspace, (VALUE)def->body.iseq.mandatory_only_cme);
+            break;
 	  case VM_METHOD_TYPE_ATTRSET:
 	  case VM_METHOD_TYPE_IVAR:
 	    gc_mark(objspace, def->body.attr.location);
@@ -9612,6 +9613,9 @@ gc_ref_update_method_entry(rb_objspace_t *objspace, rb_method_entry_t *me)
                 TYPED_UPDATE_IF_MOVED(objspace, rb_iseq_t *, def->body.iseq.iseqptr);
             }
             TYPED_UPDATE_IF_MOVED(objspace, rb_cref_t *, def->body.iseq.cref);
+            if (def->body.iseq.mandatory_only_cme) {
+                TYPED_UPDATE_IF_MOVED(objspace, rb_callable_method_entry_t *, def->body.iseq.mandatory_only_cme);
+            }
             break;
           case VM_METHOD_TYPE_ATTRSET:
           case VM_METHOD_TYPE_IVAR:

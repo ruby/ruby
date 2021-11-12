@@ -482,6 +482,8 @@ struct rb_iseq_constant_body {
     bool builtin_inline_p;
     struct rb_id_table *outer_variables;
 
+    const rb_iseq_t *mandatory_only_iseq;
+
 #if USE_MJIT
     /* The following fields are MJIT related info.  */
     VALUE (*jit_func)(struct rb_execution_context_struct *,
