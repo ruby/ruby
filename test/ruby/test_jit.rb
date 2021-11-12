@@ -1231,7 +1231,9 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def mark_tested_insn(insn, used_insns:, uplevel: 1)
-    unless used_insns.include?(insn)
+    # Currently, this check emits a false-positive warning against opt_regexpmatch2,
+    # so the insn is excluded explicitly. See https://bugs.ruby-lang.org/issues/18269
+    if !used_insns.include?(insn) && insn != :opt_regexpmatch2
       $stderr.puts
       warn "'#{insn}' insn is not included in the script. Actual insns are: #{used_insns.join(' ')}\n", uplevel: uplevel
     end
