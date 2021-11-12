@@ -12,7 +12,12 @@ class TestBigDecimal < Test::Unit::TestCase
     require 'fiddle'
     LONG_MAX = (1 << (Fiddle::SIZEOF_LONG*8 - 1)) - 1
     LONG_MIN = [LONG_MAX + 1].pack("L!").unpack("l!")[0]
+    LLONG_MAX = (1 << (Fiddle::SIZEOF_LONG_LONG*8 - 1)) - 1
+    LLONG_MIN = [LLONG_MAX + 1].pack("Q!").unpack("q!")[0]
+    ULLONG_MAX = (1 << Fiddle::SIZEOF_LONG_LONG*8) - 1
     LIMITS = {
+      "LLONG_MIN" => LLONG_MIN,
+      "ULLONG_MAX" => ULLONG_MAX,
       "FIXNUM_MIN" => LONG_MIN / 2,
       "FIXNUM_MAX" => LONG_MAX / 2,
       "INT64_MIN"  => -9223372036854775808,
@@ -2092,10 +2097,9 @@ class TestBigDecimal < Test::Unit::TestCase
   def test_llong_min_gh_200
     # https://github.com/ruby/bigdecimal/issues/199
     # Between LLONG_MIN and -ULLONG_MAX
-    llong_min = -(2 ** 63 + 1)
-    assert_equal(BigDecimal(llong_min.to_s), BigDecimal(llong_min), "[GH-200]")
+    assert_equal(BigDecimal(LIMITS["LLONG_MIN"].to_s), BigDecimal(LIMITS["LLONG_MIN"]), "[GH-200]")
 
-    minus_ullong_max = -(2 ** 64 - 1)
+    minus_ullong_max = -LIMITS["ULLONG_MAX"]
     assert_equal(BigDecimal(minus_ullong_max.to_s), BigDecimal(minus_ullong_max), "[GH-200]")
   end
 
