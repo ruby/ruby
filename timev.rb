@@ -268,7 +268,11 @@ class Time
   # :include: doc/time/in.rdoc
   #
   def self.at(time, subsec = false, unit = :microsecond, in: nil)
-    Primitive.time_s_at(time, subsec, unit, Primitive.arg!(:in))
+    if Primitive.mandatory_only?
+      Primitive.time_s_at1(time)
+    else
+      Primitive.time_s_at(time, subsec, unit, Primitive.arg!(:in))
+    end
   end
 
   # Returns a new \Time object based the on given arguments.

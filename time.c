@@ -2708,6 +2708,12 @@ time_s_at(rb_execution_context_t *ec, VALUE klass, VALUE time, VALUE subsec, VAL
     return t;
 }
 
+static VALUE
+time_s_at1(rb_execution_context_t *ec, VALUE klass, VALUE time)
+{
+    return time_s_at(ec, klass, time, Qfalse, ID2SYM(id_microsecond), Qnil);
+}
+
 static const char months[][4] = {
     "jan", "feb", "mar", "apr", "may", "jun",
     "jul", "aug", "sep", "oct", "nov", "dec",
