@@ -6337,7 +6337,7 @@ rb_ary_shuffle(rb_execution_context_t *ec, VALUE ary, VALUE randgen)
 }
 
 static VALUE
-rb_ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE to_array)
+ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE to_array)
 {
     VALUE result;
     long n, len, i, j, k, idx[10];
@@ -6464,6 +6464,12 @@ rb_ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VA
     ARY_SET_LEN(result, n);
 
     return result;
+}
+
+static VALUE
+ary_sample0(rb_execution_context_t *ec, VALUE ary)
+{
+    return ary_sample(ec, ary, rb_cRandom, Qfalse, Qfalse);
 }
 
 static VALUE
