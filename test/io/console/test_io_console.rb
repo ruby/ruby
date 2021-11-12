@@ -7,7 +7,12 @@ rescue LoadError
 end
 
 class TestIO_Console < Test::Unit::TestCase
-  PATHS = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|\.rb|/\w+\.rb)\z") {$`}
+  begin
+    PATHS = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|\.rb|/\w+\.rb)\z") {$`}
+  rescue Encoding::CompatibilityError
+    p $LOADED_FEATURES
+    raise
+  end
   PATHS.uniq!
 
   # FreeBSD seems to hang on TTOU when running parallel tests
