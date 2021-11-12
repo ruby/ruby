@@ -21,7 +21,7 @@ jobs:
             vcvars: '"C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"'
           # - vs: 2022
           #   os: windows-2022
-          #   vcvars: '"C:\Program Files\Microsoft Visual Studio\2022\Preview\VC\Auxiliary\Build\vcvars64.bat"'
+          #   vcvars: '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"'
       fail-fast: false
     runs-on: ${{ matrix.os }}
     name: VisualStudio ${{ matrix.vs }}
