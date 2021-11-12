@@ -292,7 +292,7 @@ BigDecimal_double_fig(VALUE self)
 /*  call-seq:
  *    precs -> array
  *
- *  Returns an array of two integer values that represent platform-dependent
+ *  Returns an Array of two Integer values that represent platform-dependent
  *  internal storage properties.
  *
  *  This method is deprecated and will be removed in the future.
@@ -624,7 +624,8 @@ check_rounding_mode(VALUE const v)
  *
  *  Mode \BigDecimal::EXCEPTION_NaN controls behavior
  *  when a \BigDecimal NaN is created.
- *  Settings"
+ *
+ *  Settings:
  *
  *  - +false+ (default): Returns <tt>BigDecimal('NaN')</tt>.
  *  - +true+: Raises FloatDomainError.
