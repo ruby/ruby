@@ -737,7 +737,7 @@ check_rounding_mode(VALUE const v)
  *    if the neighbors are equidistant, round away from zero.
  *    Aliased as +:half_up+ and +:default+.
  *  - +ROUND_HALF_DOWN+: Round toward the nearest neighbor;
- *    if the neighbors are equidistant, round toward from zero.
+ *    if the neighbors are equidistant, round toward zero.
  *    Aliased as +:half_down+.
  *  - +ROUND_HALF_EVEN+ (Banker's rounding): Round toward the nearest neighbor;
  *    if the neighbors are equidistant, round toward the even neighbor.
