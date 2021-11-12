@@ -5568,7 +5568,7 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
 }
 
 static VALUE
-rb_ary_diff_bang_i(VALUE a, VALUE ary2)
+rb_ary_subtract_bang_i(VALUE a, VALUE ary2)
 {
     VALUE hash;
     long i;
@@ -5604,17 +5604,17 @@ rb_ary_diff_bang_i(VALUE a, VALUE ary2)
 
 /*
  *  call-seq:
- *    array.diff!(other_array) -> self
+ *    array.subtract!(other_array) -> self
  *
  *  Removes values from target \Array that are found in
  *  +other_array+. Items are compared using <tt>eql?</tt>;
  *    order from +self+ is preserved:
  *
- *    [0, 1, 1, 2, 1, 1, 3, 1, 1].diff!([1]) # => [0, 2, 3]
- *    [0, 1, 2, 3].diff!([3, 0], [1, 3]) # => [2]
+ *    [0, 1, 1, 2, 1, 1, 3, 1, 1].subtract!([1]) # => [0, 2, 3]
+ *    [0, 1, 2, 3].subtract!([3, 0], [1, 3]) # => [2]
  *
  *    array = [1, 2, 3]
- *    result = array.diff!([4])
+ *    result = array.subtract!([4])
  *    array == result # => true
  *
  *  Returns a copy of +self+ if no arguments given.
@@ -5624,7 +5624,7 @@ rb_ary_diff_bang_i(VALUE a, VALUE ary2)
  */
 
 static VALUE
-rb_ary_diff_bang(VALUE ary, VALUE other)
+rb_ary_subtract_bang(VALUE ary, VALUE other)
 {
     struct select_bang_arg args;
     rb_ary_modify_check(ary);
@@ -5632,7 +5632,7 @@ rb_ary_diff_bang(VALUE ary, VALUE other)
     args.len[0] = RARRAY_LEN(ary);
     args.len[1] = 0;
 
-    rb_ary_diff_bang_i((VALUE)&args, other);
+    rb_ary_subtract_bang_i((VALUE)&args, other);
     select_bang_ensure((VALUE)&args);
 
     return args.ary;
@@ -8887,7 +8887,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "+", rb_ary_plus, 1);
     rb_define_method(rb_cArray, "*", rb_ary_times, 1);
 
-    rb_define_method(rb_cArray, "diff!", rb_ary_diff_bang, 1);
+    rb_define_method(rb_cArray, "subtract!", rb_ary_subtract_bang, 1);
     rb_define_method(rb_cArray, "-", rb_ary_diff, 1);
     rb_define_method(rb_cArray, "&", rb_ary_and, 1);
     rb_define_method(rb_cArray, "|", rb_ary_or, 1);

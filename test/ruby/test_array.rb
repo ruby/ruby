@@ -285,22 +285,22 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls['cat', 'dog', 1, 2, 3], %w(cat dog) + (1..3).to_a)
   end
 
-  def test_diff_bang
+  def test_subtract_bang
     a = @cls[1]
 
-    a.diff!([1])
+    a.subtract!([1])
     assert_equal(@cls[], a)
 
     a = @cls[1, 2, 3, 4, 5]
-    assert_equal(@cls[1], a.diff!(@cls[2, 3, 4, 5]))
+    assert_equal(@cls[1], a.subtract!(@cls[2, 3, 4, 5]))
     a = @cls[1, 2, 1]
-    assert_equal(@cls[1, 1],  a.diff!(@cls[2]))
+    assert_equal(@cls[1, 1],  a.subtract!(@cls[2]))
     a = @cls[1, 2, 1, 3, 1, 4, 1, 5]
-    assert_equal(@cls[1, 1, 1, 1], a.diff!(@cls[2, 3, 4, 5]))
+    assert_equal(@cls[1, 1, 1, 1], a.subtract!(@cls[2, 3, 4, 5]))
 
     a = [1]
-    assert_equal(@cls[1], a.dup.diff!(@cls[2]))
-    assert_equal(@cls[], a.dup.diff!(@cls[1]))
+    assert_equal(@cls[1], a.dup.subtract!(@cls[2]))
+    assert_equal(@cls[], a.dup.subtract!(@cls[1]))
     assert_equal(@cls[1], a)
   end
 
