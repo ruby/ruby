@@ -3346,11 +3346,6 @@ rb_int_even_p(VALUE num)
  *  Example values:
  *
  *    0b1010101  self
- *    0b1010101  mask
- *    0b1010101  self & mask
- *         true  self.allbits?(mask)
- *
- *    0b1010101  self
  *    0b1010100  mask
  *    0b1010100  self & mask
  *         true  self.allbits?(mask)
@@ -3385,11 +3380,6 @@ int_allbits_p(VALUE num, VALUE mask)
  *    0b10000010  self & mask
  *          true  self.anybits?(mask)
  *
- *    0b10000010  self
- *    0b10000000  mask
- *    0b10000000  self & mask
- *          true  self.anybits?(mask)
- *
  *    0b00000000  self
  *    0b11111111  mask
  *    0b00000000  self & mask
@@ -3414,11 +3404,6 @@ int_anybits_p(VALUE num, VALUE mask)
  *  is also set in +self+; returns +false+ otherwise.
  *
  *  Example values:
- *
- *    0b00000000  self
- *    0b11111111  mask
- *    0b00000000  self & mask
- *          true  self.nobits?(mask)
  *
  *    0b11110000  self
  *    0b00001111  mask
