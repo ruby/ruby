@@ -3338,9 +3338,25 @@ rb_int_even_p(VALUE num)
 
 /*
  *  call-seq:
- *     int.allbits?(mask)  ->  true or false
+ *    allbits?(mask) -> true or false
  *
- *  Returns +true+ if all bits of <code>+int+ & +mask+</code> are 1.
+ *  Returns +true+ if all bits that are set (=1) in +mask+
+ *  are also set in +self+; returns +false+ otherwise.
+ *
+ *  Example values:
+ *
+ *    0b1010101  self
+ *    0b1010100  mask
+ *    0b1010100  self & mask
+ *         true  self.allbits?(mask)
+ *
+ *    0b1010100  self
+ *    0b1010101  mask
+ *    0b1010100  self & mask
+ *        false  self.allbits?(mask)
+ *
+ *  Related: Integer#anybits?, Integer#nobits?.
+ *
  */
 
 static VALUE
@@ -3352,9 +3368,25 @@ int_allbits_p(VALUE num, VALUE mask)
 
 /*
  *  call-seq:
- *     int.anybits?(mask)  ->  true or false
+ *    anybits?(mask) -> true or false
  *
- *  Returns +true+ if any bits of <code>+int+ & +mask+</code> are 1.
+ *  Returns +true+ if any bit that is set (=1) in +mask+
+ *  is also set in +self+; returns +false+ otherwise.
+ *
+ *  Example values:
+ *
+ *    0b10000010  self
+ *    0b11111111  mask
+ *    0b10000010  self & mask
+ *          true  self.anybits?(mask)
+ *
+ *    0b00000000  self
+ *    0b11111111  mask
+ *    0b00000000  self & mask
+ *         false  self.anybits?(mask)
+ *
+ *  Related: Integer#allbits?, Integer#nobits?.
+ *
  */
 
 static VALUE
@@ -3366,9 +3398,25 @@ int_anybits_p(VALUE num, VALUE mask)
 
 /*
  *  call-seq:
- *     int.nobits?(mask)  ->  true or false
+ *    nobits?(mask) -> true or false
  *
- *  Returns +true+ if no bits of <code>+int+ & +mask+</code> are 1.
+ *  Returns +true+ if no bit that is set (=1) in +mask+
+ *  is also set in +self+; returns +false+ otherwise.
+ *
+ *  Example values:
+ *
+ *    0b11110000  self
+ *    0b00001111  mask
+ *    0b00000000  self & mask
+ *          true  self.nobits?(mask)
+ *
+ *    0b00000001  self
+ *    0b11111111  mask
+ *    0b00000001  self & mask
+ *         false  self.nobits?(mask)
+ *
+ *  Related: Integer#allbits?, Integer#anybits?.
+ *
  */
 
 static VALUE
@@ -3379,19 +3427,17 @@ int_nobits_p(VALUE num, VALUE mask)
 }
 
 /*
- *  Document-method: Integer#succ
- *  Document-method: Integer#next
  *  call-seq:
- *     int.next  ->  integer
- *     int.succ  ->  integer
+ *    succ -> next_integer
  *
- *  Returns the successor of +int+,
- *  i.e. the Integer equal to <code>int+1</code>.
+ *  Returns the successor integer of +self+ (equivalent to <tt>self + 1</tt>):
  *
- *     1.next      #=> 2
- *     (-1).next   #=> 0
- *     1.succ      #=> 2
- *     (-1).succ   #=> 0
+ *    1.succ  #=> 2
+ *    -1.succ #=> 0
+ *
+ *  Integer#next is an alias for Integer#succ.
+ *
+ *  Related: Integer#pred (predecessor value).
  */
 
 VALUE
@@ -3411,13 +3457,15 @@ rb_int_succ(VALUE num)
 
 /*
  *  call-seq:
- *     int.pred  ->  integer
+ *    pred -> next_integer
  *
- *  Returns the predecessor of +int+,
- *  i.e. the Integer equal to <code>int-1</code>.
+ *  Returns the predecessor of +self+ (equivalent to <tt>self - 1</tt>):
  *
- *     1.pred      #=> 0
- *     (-1).pred   #=> -2
+ *    1.pred  #=> 0
+ *    -1.pred #=> -2
+ *
+ *  Related: Integer#succ (successor value).
+ *
  */
 
 static VALUE
@@ -3434,19 +3482,6 @@ rb_int_pred(VALUE num)
 }
 
 #define int_pred rb_int_pred
-
-/*
- *  Document-method: Integer#chr
- *  call-seq:
- *     int.chr([encoding])  ->  string
- *
- *  Returns a string containing the character represented by the +int+'s value
- *  according to +encoding+.
- *
- *     65.chr    #=> "A"
- *     230.chr   #=> "\xE6"
- *     255.chr(Encoding::UTF_8)   #=> "\u00FF"
- */
 
 VALUE
 rb_enc_uint_chr(unsigned int code, rb_encoding *enc)
@@ -3469,6 +3504,24 @@ rb_enc_uint_chr(unsigned int code, rb_encoding *enc)
     }
     return str;
 }
+
+/*
+ *  call-seq:
+ *    chr(encoding = Encoding.default_internal) -> string
+ *
+ *  Returns a 1-character string containing the character
+ *  represented by the value of +self+, according to the given +encoding+.
+ *
+ *     65.chr                   # => "A"
+ *     0..chr                   # => "\x00"
+ *     255.chr                  # => "\xFF"
+ *     255.chr(Encoding::UTF_8) # => "ÿ"
+ *
+ *  Raises an exception if +self+ is negative.
+ *
+ *  Related: Integer#ord.
+ *
+ */
 
 static VALUE
 int_chr(int argc, VALUE *argv, VALUE num)
@@ -3535,23 +3588,6 @@ rb_int_uminus(VALUE num)
     }
 }
 
-/*
- *  Document-method: Integer#to_s
- *  call-seq:
- *     int.to_s(base=10)  ->  string
- *
- *  Returns a string containing the place-value representation of +int+
- *  with radix +base+ (between 2 and 36).
- *
- *     12345.to_s       #=> "12345"
- *     12345.to_s(2)    #=> "11000000111001"
- *     12345.to_s(8)    #=> "30071"
- *     12345.to_s(10)   #=> "12345"
- *     12345.to_s(16)   #=> "3039"
- *     12345.to_s(36)   #=> "9ix"
- *     78546939656932.to_s(36)  #=> "rubyrules"
- */
-
 VALUE
 rb_fix2str(VALUE x, int base)
 {
@@ -3594,6 +3630,27 @@ rb_fix2str(VALUE x, int base)
     return rb_usascii_str_new(b, e - b);
 }
 
+/*
+ *  call-seq:
+ *    to_s(base = 10)  ->  string
+ *
+ *  Returns a string containing the place-value representation of +self+
+ *  in radix +base+ (in 2..36).
+ *
+ *    12345.to_s               # => "12345"
+ *    12345.to_s(2)            # => "11000000111001"
+ *    12345.to_s(8)            # => "30071"
+ *    12345.to_s(10)           # => "12345"
+ *    12345.to_s(16)           # => "3039"
+ *    12345.to_s(36)           # => "9ix"
+ *    78546939656932.to_s(36)  # => "rubyrules"
+ *
+ *  Raises an exception if +base+ is out of range.
+ *
+ *  Integer#inspect is an alias for Integer#to_s.
+ *
+ */
+
 static VALUE
 int_to_s(int argc, VALUE *argv, VALUE x)
 {
@@ -3618,15 +3675,6 @@ rb_int2str(VALUE x, int base)
 
     return rb_any_to_s(x);
 }
-
-/*
- * Document-method: Integer#+
- * call-seq:
- *    int + numeric  ->  numeric_result
- *
- * Performs addition: the class of the resulting object depends on
- * the class of +numeric+.
- */
 
 static VALUE
 fix_plus(VALUE x, VALUE y)
@@ -3654,6 +3702,21 @@ rb_fix_plus(VALUE x, VALUE y)
     return fix_plus(x, y);
 }
 
+/*
+ *  call-seq:
+ *    self + numeric -> numeric
+ *
+ *  Performs addition:
+ *
+ *    2 + 2              # => 4
+ *    -2 + 2             # => 0
+ *    -2 + -2            # => -4
+ *    2 + 2.0            # => 4.0
+ *    2 + Rational(2, 1) # => (4/1)
+ *    2 + Complex(2, 0)  # => (4+0i)
+ *
+ */
+
 VALUE
 rb_int_plus(VALUE x, VALUE y)
 {
@@ -3665,15 +3728,6 @@ rb_int_plus(VALUE x, VALUE y)
     }
     return rb_num_coerce_bin(x, y, '+');
 }
-
-/*
- * Document-method: Integer#-
- * call-seq:
- *    int - numeric  ->  numeric_result
- *
- * Performs subtraction: the class of the resulting object depends on
- * the class of +numeric+.
- */
 
 static VALUE
 fix_minus(VALUE x, VALUE y)
@@ -3692,6 +3746,21 @@ fix_minus(VALUE x, VALUE y)
 	return rb_num_coerce_bin(x, y, '-');
     }
 }
+
+/*
+ *  call-seq:
+ *    int - numeric -> numeric
+ *
+ *  Performs subtraction:
+ *
+ *    4 - 2              # => 2
+ *    -4 - 2             # => -6
+ *    -4 - -2            # => -2
+ *    4 - 2.0            # => 2.0
+ *    4 - Rational(2, 1) # => (2/1)
+ *    4 - Complex(2, 0)  # => (2+0i)
+ *
+ */
 
 VALUE
 rb_int_minus(VALUE x, VALUE y)
