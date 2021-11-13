@@ -10,7 +10,8 @@ class TestIO_Console < Test::Unit::TestCase
   begin
     PATHS = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|\.rb|/\w+\.rb)\z") {$`}
   rescue Encoding::CompatibilityError
-    p $LOADED_FEATURES
+    $stderr.puts "test_io_console.rb debug"
+    $stderr.puts $LOADED_FEATURES.inspect
     raise
   end
   PATHS.uniq!
