@@ -2827,6 +2827,44 @@ rb_objspace_data_type_name(VALUE obj)
     }
 }
 
+
+static int
+ptr_in_page_body_p(const void *ptr, const void *page)
+{
+    uintptr_t p = (uintptr_t)ptr;
+    const struct heap_page *hpage = page;
+
+    uintptr_t p_body = (uintptr_t)GET_PAGE_BODY(hpage->start);
+
+    if (p <= p_body) {
+        if (p < p_body + HEAP_PAGE_SIZE) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+PUREFUNC(static inline int is_pointer_to_heap_body(rb_objspace_t *objspace, uintptr_t ptr);)
+static inline int
+is_pointer_to_heap_body(rb_objspace_t *objspace, uintptr_t ptr)
+{
+    struct heap_page *res;
+
+    if (ptr < (uintptr_t)heap_pages_lomem ||
+            ptr > (uintptr_t)heap_pages_himem) {
+        return FALSE;
+    }
+
+    res = bsearch((int *)ptr, heap_pages_sorted, heap_pages_sorted_length,
+            sizeof(struct heap_page *), ptr_in_page_body_p);
+
+    if (res == NULL) {
+        return FALSE;
+    } else {
+        return TRUE;
+    }
+}
+
 PUREFUNC(static inline int is_pointer_to_heap(rb_objspace_t *objspace, void *ptr);)
 static inline int
 is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
@@ -5038,6 +5076,10 @@ static void invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *pag
 static void
 read_barrier_handler(uintptr_t address)
 {
+    if (!is_pointer_to_heap_body(&rb_objspace, address)) {
+        rb_bug("read barrier activated for non-heap memory\n");
+    }
+
     VALUE obj;
     rb_objspace_t * objspace = &rb_objspace;
 
