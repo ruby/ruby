@@ -313,7 +313,20 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
         size = RB_NUM2SIZE(argv[1]);
     }
     else {
-        size = rb_file_size(io);
+        off_t file_size = rb_file_size(io);
+
+        // Compiler can confirm that we handled file_size < 0 case:
+        if (file_size < 0) {
+            rb_raise(rb_eArgError, "Invalid negative file size!");
+        }
+        // Here, we assume that file_size is positive:
+        else if ((uintmax_t)file_size > SIZE_MAX) {
+            rb_raise(rb_eArgError, "File larger than address space!");
+        }
+        else {
+            // This conversion shoud be safe:
+            size = (size_t)file_size;
+        }
     }
 
     off_t offset = 0;
@@ -900,10 +913,10 @@ DECLAIR_TYPE(U32, uint32_t, RB_IO_BUFFER_BIG_ENDIAN, RB_UINT2NUM, RB_NUM2UINT, r
 DECLAIR_TYPE(s32, int32_t, RB_IO_BUFFER_LITTLE_ENDIAN, RB_INT2NUM, RB_NUM2INT, ruby_swap32)
 DECLAIR_TYPE(S32, int32_t, RB_IO_BUFFER_BIG_ENDIAN, RB_INT2NUM, RB_NUM2INT, ruby_swap32)
 
-DECLAIR_TYPE(u64, uint64_t, RB_IO_BUFFER_LITTLE_ENDIAN, RB_ULONG2NUM, RB_NUM2ULONG, ruby_swap64)
-DECLAIR_TYPE(U64, uint64_t, RB_IO_BUFFER_BIG_ENDIAN, RB_ULONG2NUM, RB_NUM2ULONG, ruby_swap64)
-DECLAIR_TYPE(s64, int64_t, RB_IO_BUFFER_LITTLE_ENDIAN, RB_LONG2NUM, RB_NUM2LONG, ruby_swap64)
-DECLAIR_TYPE(S64, int64_t, RB_IO_BUFFER_BIG_ENDIAN, RB_LONG2NUM, RB_NUM2LONG, ruby_swap64)
+DECLAIR_TYPE(u64, uint64_t, RB_IO_BUFFER_LITTLE_ENDIAN, RB_ULL2NUM, RB_NUM2ULL, ruby_swap64)
+DECLAIR_TYPE(U64, uint64_t, RB_IO_BUFFER_BIG_ENDIAN, RB_ULL2NUM, RB_NUM2ULL, ruby_swap64)
+DECLAIR_TYPE(s64, int64_t, RB_IO_BUFFER_LITTLE_ENDIAN, RB_LL2NUM, RB_NUM2LL, ruby_swap64)
+DECLAIR_TYPE(S64, int64_t, RB_IO_BUFFER_BIG_ENDIAN, RB_LL2NUM, RB_NUM2LL, ruby_swap64)
 
 DECLAIR_TYPE(f32, float, RB_IO_BUFFER_LITTLE_ENDIAN, DBL2NUM, NUM2DBL, ruby_swapf32)
 DECLAIR_TYPE(F32, float, RB_IO_BUFFER_BIG_ENDIAN, DBL2NUM, NUM2DBL, ruby_swapf32)
