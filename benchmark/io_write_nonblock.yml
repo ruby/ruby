@@ -1,0 +1,9 @@
+prelude: |
+  w = IO.popen('cat > /dev/null', 'w')
+  str = 'hello'
+  sleep 0.5
+benchmark:
+  write_nonblock: |
+    w.write_nonblock(str)
+  'write_nonblock(exception: true)': |
+    w.write_nonblock(str, exception: true)
