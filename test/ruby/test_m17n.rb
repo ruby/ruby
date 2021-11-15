@@ -296,35 +296,37 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_object_inspect_external
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
-    begin;
-      $VERBOSE = false
-      Encoding.default_internal = nil
-      o = Object.new
+    orig_v, $VERBOSE = $VERBOSE, false
+    orig_int, Encoding.default_internal = Encoding.default_internal, nil
+    orig_ext = Encoding.default_external
+    o = Object.new
 
-      Encoding.default_external = Encoding::UTF_16BE
-      def o.inspect
-        "abc"
-      end
-      assert_nothing_raised(Encoding::CompatibilityError) { [o].inspect }
+    Encoding.default_external = Encoding::UTF_16BE
+    def o.inspect
+      "abc"
+    end
+    assert_nothing_raised(Encoding::CompatibilityError) { [o].inspect }
 
-      def o.inspect
-        "abc".encode(Encoding.default_external)
-      end
+    def o.inspect
+      "abc".encode(Encoding.default_external)
+    end
 
-      assert_equal '[abc]', [o].inspect
+    assert_equal '[abc]', [o].inspect
 
-      Encoding.default_external = Encoding::US_ASCII
-      def o.inspect
-        "\u3042"
-      end
-      assert_equal '[\u3042]', [o].inspect
+    Encoding.default_external = Encoding::US_ASCII
+    def o.inspect
+      "\u3042"
+    end
+    assert_equal '[\u3042]', [o].inspect
 
-      def o.inspect
-        "\x82\xa0".force_encoding(Encoding::Windows_31J)
-      end
-      assert_equal '[\x{82A0}]', [o].inspect
-    end;
+    def o.inspect
+      "\x82\xa0".force_encoding(Encoding::Windows_31J)
+    end
+    assert_equal '[\x{82A0}]', [o].inspect
+  ensure
+    Encoding.default_internal = orig_int
+    Encoding.default_external = orig_ext
+    $VERBOSE = orig_v
   end
 
   def test_str_dump
