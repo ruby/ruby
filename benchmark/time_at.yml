@@ -1,0 +1,5 @@
+benchmark:
+  - 'Time.at(0)'
+  - 'Time.at(0, 500)'
+  - 'Time.at(0, in: "+09:00")'
+  - 'Time.at(0, 500, in: "+09:00")'
