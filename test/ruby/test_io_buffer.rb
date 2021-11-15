@@ -81,6 +81,14 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal "Hello World", string
   end
 
+  def test_non_string
+    not_string = Object.new
+
+    assert_raise TypeError do
+      IO::Buffer.for(not_string)
+    end
+  end
+
   def test_resize
     buffer = IO::Buffer.new(1024, IO::Buffer::MAPPED)
     buffer.resize(2048, 0)
