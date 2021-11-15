@@ -3134,15 +3134,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             rb_id_table_foreach_values(RCLASS_CVC_TBL(obj), cvar_table_free_i, NULL);
             rb_id_table_free(RCLASS_CVC_TBL(obj));
 	}
-	if (RCLASS_SUBCLASSES(obj)) {
-	    if (BUILTIN_TYPE(obj) == T_MODULE) {
-		rb_class_detach_module_subclasses(obj);
-	    }
-	    else {
-		rb_class_detach_subclasses(obj);
-	    }
-	    RCLASS_SUBCLASSES(obj) = NULL;
-	}
+        rb_class_remove_subclass_head(obj);
 	rb_class_remove_from_module_subclasses(obj);
 	rb_class_remove_from_super_subclasses(obj);
 #if !USE_RVARGC
@@ -3307,10 +3299,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	if (RCLASS_CALLABLE_M_TBL(obj) != NULL) {
 	    rb_id_table_free(RCLASS_CALLABLE_M_TBL(obj));
 	}
-	if (RCLASS_SUBCLASSES(obj)) {
-	    rb_class_detach_subclasses(obj);
-	    RCLASS_SUBCLASSES(obj) = NULL;
-	}
+        rb_class_remove_subclass_head(obj);
         cc_table_free(objspace, obj, FALSE);
 	rb_class_remove_from_module_subclasses(obj);
 	rb_class_remove_from_super_subclasses(obj);

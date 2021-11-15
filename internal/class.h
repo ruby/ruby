@@ -22,6 +22,7 @@
 struct rb_subclass_entry {
     VALUE klass;
     struct rb_subclass_entry *next;
+    struct rb_subclass_entry *prev;
 };
 
 struct rb_iv_index_tbl_entry {
@@ -47,13 +48,13 @@ struct rb_classext_struct {
     struct rb_id_table *cc_tbl; /* ID -> [[ci, cc1], cc2, ...] */
     struct rb_id_table *cvc_tbl;
     struct rb_subclass_entry *subclasses;
-    struct rb_subclass_entry **parent_subclasses;
+    struct rb_subclass_entry *subclass_entry;
     /**
      * In the case that this is an `ICLASS`, `module_subclasses` points to the link
      * in the module's `subclasses` list that indicates that the klass has been
      * included. Hopefully that makes sense.
      */
-    struct rb_subclass_entry **module_subclasses;
+    struct rb_subclass_entry *module_subclass_entry;
 #if SIZEOF_SERIAL_T != SIZEOF_VALUE /* otherwise class_serial is in struct RClass */
     rb_serial_t class_serial;
 #endif
@@ -105,8 +106,8 @@ typedef struct rb_classext_struct rb_classext_t;
 # define RCLASS_SERIAL(c) (RCLASS_EXT(c)->class_serial)
 #endif
 #define RCLASS_INCLUDER(c) (RCLASS_EXT(c)->includer)
-#define RCLASS_PARENT_SUBCLASSES(c) (RCLASS_EXT(c)->parent_subclasses)
-#define RCLASS_MODULE_SUBCLASSES(c) (RCLASS_EXT(c)->module_subclasses)
+#define RCLASS_SUBCLASS_ENTRY(c) (RCLASS_EXT(c)->subclass_entry)
+#define RCLASS_MODULE_SUBCLASS_ENTRY(c) (RCLASS_EXT(c)->module_subclass_entry)
 #define RCLASS_ALLOCATOR(c) (RCLASS_EXT(c)->allocator)
 #define RCLASS_SUBCLASSES(c) (RCLASS_EXT(c)->subclasses)
 
@@ -117,6 +118,7 @@ typedef struct rb_classext_struct rb_classext_t;
 /* class.c */
 void rb_class_subclass_add(VALUE super, VALUE klass);
 void rb_class_remove_from_super_subclasses(VALUE);
+void rb_class_remove_subclass_head(VALUE);
 int rb_singleton_class_internal_p(VALUE sklass);
 VALUE rb_class_boot(VALUE);
 VALUE rb_class_s_alloc(VALUE klass);
