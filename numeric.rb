@@ -307,20 +307,4 @@ class Float
     Primitive.cexpr! 'RBOOL(RFLOAT_VALUE(self) < 0.0)'
   end
 
-  #  Document-method: Integer#chr
-  #  call-seq:
-  #    chr(encoding = Encoding.default_internal) -> string
-  #
-  #  Returns a 1-character string containing the character
-  #  represented by the value of +self+, according to the given +encoding+.
-  #
-  #     65.chr                   # => "A"
-  #     0..chr                   # => "\x00"
-  #     255.chr                  # => "\xFF"
-  #     255.chr(Encoding::UTF_8) # => "ÿ"
-  #
-  #  Raises an exception if +self+ is negative.
-  #
-  #  Related: Integer#ord.
-
 end
