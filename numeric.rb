@@ -306,4 +306,5 @@ class Float
     Primitive.attr! 'inline'
     Primitive.cexpr! 'RBOOL(RFLOAT_VALUE(self) < 0.0)'
   end
+
 end
