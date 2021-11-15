@@ -60,7 +60,11 @@ class IO
   # return the symbol +:wait_readable+ instead. At EOF, it will return nil
   # instead of raising EOFError.
   def read_nonblock(len, buf = nil, exception: true)
-    Primitive.io_read_nonblock(len, buf, exception)
+    if Primitive.mandatory_only?
+      Primitive.io_read_nonblock_len(len)
+    else
+      Primitive.io_read_nonblock(len, buf, exception)
+    end
   end
 
   # call-seq:
@@ -118,6 +122,10 @@ class IO
   # that write_nonblock should not raise an IO::WaitWritable exception, but
   # return the symbol +:wait_writable+ instead.
   def write_nonblock(buf, exception: true)
-    Primitive.io_write_nonblock(buf, exception)
+    if Primitive.mandatory_only?
+      Primitive.io_write_nonblock_buf(buf)
+    else
+      Primitive.io_write_nonblock(buf, exception)
+    end
   end
 end

@@ -1,0 +1,8 @@
+prelude: |
+  r = IO.popen('yes')
+  sleep 0.5
+benchmark:
+  read_nonblock: |
+    r.read_nonblock(1)
+  'read_nonblock(exception: true)': |
+    r.read_nonblock(1, exception: true)
