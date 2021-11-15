@@ -1,3 +1,5 @@
+prelude: |
+  # frozen_string_literal: true
 benchmark:
   - 'Time.at(0)'
   - 'Time.at(0, 500)'
