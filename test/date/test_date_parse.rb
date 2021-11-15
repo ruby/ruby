@@ -848,6 +848,9 @@ class TestDateParse < Test::Unit::TestCase
 
     h = Date._iso8601('')
     assert_equal({}, h)
+
+    h = Date._iso8601(nil)
+    assert_equal({}, h)
   end
 
   def test__rfc3339
@@ -862,6 +865,9 @@ class TestDateParse < Test::Unit::TestCase
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
 
     h = Date._rfc3339('')
+    assert_equal({}, h)
+
+    h = Date._rfc3339(nil)
     assert_equal({}, h)
   end
 
@@ -945,6 +951,9 @@ class TestDateParse < Test::Unit::TestCase
 
     h = Date._xmlschema('')
     assert_equal({}, h)
+
+    h = Date._xmlschema(nil)
+    assert_equal({}, h)
   end
 
   def test__rfc2822
@@ -977,6 +986,9 @@ class TestDateParse < Test::Unit::TestCase
 
     h = Date._rfc2822('')
     assert_equal({}, h)
+
+    h = Date._rfc2822(nil)
+    assert_equal({}, h)
   end
 
   def test__httpdate
@@ -996,6 +1008,9 @@ class TestDateParse < Test::Unit::TestCase
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
 
     h = Date._httpdate('')
+    assert_equal({}, h)
+
+    h = Date._httpdate(nil)
     assert_equal({}, h)
   end
 
@@ -1072,6 +1087,9 @@ class TestDateParse < Test::Unit::TestCase
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
 
     h = Date._jisx0301('')
+    assert_equal({}, h)
+
+    h = Date._jisx0301(nil)
     assert_equal({}, h)
   end
 
