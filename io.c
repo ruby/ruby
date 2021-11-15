@@ -3277,6 +3277,12 @@ io_read_nonblock(rb_execution_context_t *ec, VALUE io, VALUE length, VALUE str, 
     return str;
 }
 
+static VALUE
+io_read_nonblock_len(rb_execution_context_t *ec, VALUE io, VALUE length)
+{
+    return io_read_nonblock(ec, io, length, Qnil, Qtrue);
+}
+
 /* :nodoc: */
 static VALUE
 io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
@@ -3313,6 +3319,12 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
     }
 
     return LONG2FIX(n);
+}
+
+static VALUE
+io_write_nonblock_buf(rb_execution_context_t *ec, VALUE io, VALUE str)
+{
+    return io_write_nonblock(ec, io, str, Qtrue);
 }
 
 /*
