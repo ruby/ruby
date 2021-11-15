@@ -2797,13 +2797,49 @@ rb_objspace_data_type_name(VALUE obj)
     }
 }
 
+static int
+ptr_in_page_body_p(const void *ptr, const void *memb)
+{
+    struct heap_page *page = *(struct heap_page **)memb;
+    uintptr_t p_body = (uintptr_t)GET_PAGE_BODY(page->start);
+
+    if ((uintptr_t)ptr >= p_body) {
+        return (uintptr_t)ptr < (p_body + HEAP_PAGE_SIZE) ? 0 : 1;
+    }
+    else {
+        return -1;
+    }
+}
+
+PUREFUNC(static inline struct heap_page * heap_page_for_ptr(rb_objspace_t *objspace, uintptr_t ptr);)
+static inline struct heap_page *
+heap_page_for_ptr(rb_objspace_t *objspace, uintptr_t ptr)
+{
+    struct heap_page **res;
+
+    if (ptr < (uintptr_t)heap_pages_lomem ||
+            ptr > (uintptr_t)heap_pages_himem) {
+        return NULL;
+    }
+
+    res = bsearch((void *)ptr, heap_pages_sorted,
+                  (size_t)heap_allocated_pages, sizeof(struct heap_page *),
+                  ptr_in_page_body_p);
+
+    if (res) {
+        return *res;
+    }
+    else {
+        return NULL;
+    }
+}
+
 PUREFUNC(static inline int is_pointer_to_heap(rb_objspace_t *objspace, void *ptr);)
 static inline int
 is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
 {
     register RVALUE *p = RANY(ptr);
     register struct heap_page *page;
-    register size_t hi, lo, mid;
 
     RB_DEBUG_COUNTER_INC(gc_isptr_trial);
 
@@ -2813,30 +2849,21 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
     if ((VALUE)p % sizeof(RVALUE) != 0) return FALSE;
     RB_DEBUG_COUNTER_INC(gc_isptr_align);
 
-    /* check if p looks like a pointer using bsearch*/
-    lo = 0;
-    hi = heap_allocated_pages;
-    while (lo < hi) {
-	mid = (lo + hi) / 2;
-	page = heap_pages_sorted[mid];
-	if (page->start <= p) {
-            if ((uintptr_t)p < ((uintptr_t)page->start + (page->total_slots * page->slot_size))) {
-                RB_DEBUG_COUNTER_INC(gc_isptr_maybe);
+    page = heap_page_for_ptr(objspace, (uintptr_t)ptr);
+    if (page) {
+        GC_ASSERT(page == GET_HEAP_PAGE(ptr));
 
-                if (page->flags.in_tomb) {
-                    return FALSE;
-                }
-                else {
-                    if ((NUM_IN_PAGE(p) * sizeof(RVALUE)) % page->slot_size != 0) return FALSE;
+        RB_DEBUG_COUNTER_INC(gc_isptr_maybe);
+        if (page->flags.in_tomb) {
+            return FALSE;
+        }
+        else {
+            if ((uintptr_t)p < ((uintptr_t)page->start)) return FALSE;
+            if ((uintptr_t)p >= ((uintptr_t)page->start + (page->total_slots * page->slot_size))) return FALSE;
+            if ((NUM_IN_PAGE(p) * sizeof(RVALUE)) % page->slot_size != 0) return FALSE;
 
-                    return TRUE;
-                }
-	    }
-	    lo = mid + 1;
-	}
-	else {
-	    hi = mid;
-	}
+            return TRUE;
+        }
     }
     return FALSE;
 }
