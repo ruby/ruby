@@ -3505,8 +3505,6 @@ rb_enc_uint_chr(unsigned int code, rb_encoding *enc)
     return str;
 }
 
-}
-
 /*  call-seq:
  *   chr           -> string
  *   chr(encoding) -> string
