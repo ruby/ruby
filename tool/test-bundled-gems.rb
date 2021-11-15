@@ -24,7 +24,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
 
   if gem == "typeprof"
     rbs_build_dir = 'ext/-test-/gems/rbs'
-    raise "need to run rbs test suite before typeprof" unless File.readable?("#{rbs_build_dir}/rbs_extension.so")
+    raise "need to run rbs test suite before typeprof" unless File.readable?("#{rbs_build_dir}/rbs_extension.#{RbConfig::CONFIG['DLEXT']}")
     ENV["RUBYLIB"] = ["#{gem_dir}/src/rbs/lib", ENV.fetch("RUBYLIB", nil)].compact.join(":")
   end
 
