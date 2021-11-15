@@ -37,87 +37,113 @@
 
 RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 
-void
-rb_class_subclass_add(VALUE super, VALUE klass)
+static rb_subclass_entry_t *
+push_subclass_entry_to_list(VALUE super, VALUE klass)
 {
     rb_subclass_entry_t *entry, *head;
 
+    entry = ZALLOC(rb_subclass_entry_t);
+    entry->klass = klass;
+
+    head = RCLASS_SUBCLASSES(super);
+    if (!head) {
+        head = ZALLOC(rb_subclass_entry_t);
+        RCLASS_SUBCLASSES(super) = head;
+    }
+    entry->next = head->next;
+    entry->prev = head;
+
+    if (head->next) {
+        head->next->prev = entry;
+    }
+    head->next = entry;
+
+    return entry;
+}
+
+void
+rb_class_subclass_add(VALUE super, VALUE klass)
+{
     if (super && super != Qundef) {
-	entry = ALLOC(rb_subclass_entry_t);
-	entry->klass = klass;
-	entry->next = NULL;
-
-	head = RCLASS_SUBCLASSES(super);
-	if (head) {
-	    entry->next = head;
-	    RCLASS_PARENT_SUBCLASSES(head->klass) = &entry->next;
-	}
-
-	RCLASS_SUBCLASSES(super) = entry;
-	RCLASS_PARENT_SUBCLASSES(klass) = &RCLASS_SUBCLASSES(super);
+        rb_subclass_entry_t *entry = push_subclass_entry_to_list(super, klass);
+        RCLASS_SUBCLASS_ENTRY(klass) = entry;
     }
 }
 
 static void
 rb_module_add_to_subclasses_list(VALUE module, VALUE iclass)
 {
-    rb_subclass_entry_t *entry, *head;
+    rb_subclass_entry_t *entry = push_subclass_entry_to_list(module, iclass);
+    RCLASS_MODULE_SUBCLASS_ENTRY(iclass) = entry;
+}
 
-    entry = ALLOC(rb_subclass_entry_t);
-    entry->klass = iclass;
-    entry->next = NULL;
+void
+rb_class_remove_subclass_head(VALUE klass)
+{
+    rb_subclass_entry_t *head = RCLASS_SUBCLASSES(klass);
 
-    head = RCLASS_SUBCLASSES(module);
     if (head) {
-	entry->next = head;
-	RCLASS_MODULE_SUBCLASSES(head->klass) = &entry->next;
+        if (head->next) {
+            head->next->prev = NULL;
+        }
+        RCLASS_SUBCLASSES(klass) = NULL;
+        xfree(head);
     }
-
-    RCLASS_SUBCLASSES(module) = entry;
-    RCLASS_MODULE_SUBCLASSES(iclass) = &RCLASS_SUBCLASSES(module);
 }
 
 void
 rb_class_remove_from_super_subclasses(VALUE klass)
 {
-    rb_subclass_entry_t **prev = RCLASS_PARENT_SUBCLASSES(klass);
+    rb_subclass_entry_t *entry = RCLASS_SUBCLASS_ENTRY(klass);
 
-    if (prev) {
-	rb_subclass_entry_t *entry = *prev, *next = entry->next;
+    if (entry) {
+        rb_subclass_entry_t *prev = entry->prev, *next = entry->next;
 
-	*prev = next;
-	if (next) {
-	    RCLASS_PARENT_SUBCLASSES(next->klass) = prev;
-	}
+        if (prev) {
+            prev->next = next;
+        }
+        if (next) {
+            next->prev = prev;
+        }
+
 	xfree(entry);
     }
 
-    RCLASS_PARENT_SUBCLASSES(klass) = NULL;
+    RCLASS_SUBCLASS_ENTRY(klass) = NULL;
 }
 
 void
 rb_class_remove_from_module_subclasses(VALUE klass)
 {
-    rb_subclass_entry_t **prev = RCLASS_MODULE_SUBCLASSES(klass);
+    rb_subclass_entry_t *entry = RCLASS_MODULE_SUBCLASS_ENTRY(klass);
 
-    if (prev) {
-        rb_subclass_entry_t *entry = *prev, *next = entry->next;
+    if (entry) {
+        rb_subclass_entry_t *prev = entry->prev, *next = entry->next;
 
-	*prev = next;
+        if (prev) {
+            prev->next = next;
+        }
 	if (next) {
-	    RCLASS_MODULE_SUBCLASSES(next->klass) = prev;
+            next->prev = prev;
 	}
 
 	xfree(entry);
     }
 
-    RCLASS_MODULE_SUBCLASSES(klass) = NULL;
+    RCLASS_MODULE_SUBCLASS_ENTRY(klass) = NULL;
 }
 
 void
 rb_class_foreach_subclass(VALUE klass, void (*f)(VALUE, VALUE), VALUE arg)
 {
+    // RCLASS_SUBCLASSES should always point to our head element which has NULL klass
     rb_subclass_entry_t *cur = RCLASS_SUBCLASSES(klass);
+    // if we have a subclasses list, then the head is a placeholder with no valid
+    // class. So ignore it and use the next element in the list (if one exists)
+    if (cur) {
+        RUBY_ASSERT(!cur->klass);
+        cur = cur->next;
+    }
 
     /* do not be tempted to simplify this loop into a for loop, the order of
        operations is important here if `f` modifies the linked list */
@@ -963,6 +989,12 @@ rb_include_module(VALUE klass, VALUE module)
 
     if (RB_TYPE_P(klass, T_MODULE)) {
         rb_subclass_entry_t *iclass = RCLASS_SUBCLASSES(klass);
+        // skip the placeholder subclass entry at the head of the list
+        if (iclass && iclass->next) {
+            RUBY_ASSERT(!iclass->klass);
+            iclass = iclass->next;
+        }
+
         int do_include = 1;
         while (iclass) {
             VALUE check_class = iclass->klass;
@@ -1202,6 +1234,12 @@ rb_prepend_module(VALUE klass, VALUE module)
     }
     if (RB_TYPE_P(klass, T_MODULE)) {
         rb_subclass_entry_t *iclass = RCLASS_SUBCLASSES(klass);
+        // skip the placeholder subclass entry at the head of the list if it exists
+        if (iclass && iclass->next) {
+            RUBY_ASSERT(!iclass->klass);
+            iclass = iclass->next;
+        }
+
         VALUE klass_origin = RCLASS_ORIGIN(klass);
         struct rb_id_table *klass_m_tbl = RCLASS_M_TBL(klass);
         struct rb_id_table *klass_origin_m_tbl = RCLASS_M_TBL(klass_origin);
