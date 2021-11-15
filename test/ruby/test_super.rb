@@ -549,7 +549,13 @@ class TestSuper < Test::Unit::TestCase
 
     o = b.new
     o.danger!
-    2.times { o.missing rescue NoMethodError }
+    begin
+      original_gc_stress = GC.stress
+      GC.stress = true
+      2.times { o.missing rescue NoMethodError }
+    ensure
+      GC.stress = original_gc_stress
+    end
   end
 
   def test_from_eval
