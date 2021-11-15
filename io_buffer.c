@@ -259,6 +259,8 @@ rb_io_buffer_type_allocate(VALUE self)
 VALUE
 rb_io_buffer_type_for(VALUE klass, VALUE string)
 {
+    StringValue(string);
+
     VALUE instance = rb_io_buffer_type_allocate(klass);
 
     struct rb_io_buffer *data = NULL;
