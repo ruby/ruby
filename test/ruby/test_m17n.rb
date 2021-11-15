@@ -299,6 +299,9 @@ class TestM17N < Test::Unit::TestCase
     orig_v, $VERBOSE = $VERBOSE, false
     orig_int, Encoding.default_internal = Encoding.default_internal, nil
     orig_ext = Encoding.default_external
+
+    skip "https://bugs.ruby-lang.org/issues/18338"
+
     o = Object.new
 
     Encoding.default_external = Encoding::UTF_16BE
