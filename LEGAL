@@ -988,6 +988,15 @@ mentioned below.
 
     {MIT License}[rdoc-label:label-MIT+License]
 
+[lib/bundler/vendor/connection_pool]
+
+  connection_pool is under the following license.
+
+  >>>
+    Copyright (c) 2011 Mike Perham
+
+    {MIT License}[rdoc-label:label-MIT+License]
+
 [lib/did_you_mean]
 [lib/did_you_mean.rb]
 [test/did_you_mean]
