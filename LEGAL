@@ -997,6 +997,15 @@ mentioned below.
 
     {MIT License}[rdoc-label:label-MIT+License]
 
+[lib/bundler/vendor/net-http-persistent]
+
+  net-http-persistent is under the following license.
+
+  >>>
+    Copyright (c) Eric Hodel, Aaron Patterson
+
+    {MIT License}[rdoc-label:label-MIT+License]
+
 [lib/did_you_mean]
 [lib/did_you_mean.rb]
 [test/did_you_mean]

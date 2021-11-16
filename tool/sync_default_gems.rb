@@ -108,6 +108,7 @@ def sync_default_gems(gem)
     rm_rf("lib/rubygems/resolver/molinillo/LICENSE")
     rm_rf("lib/bundler/vendor/molinillo/LICENSE")
     rm_rf("lib/bundler/vendor/connection_pool/LICENSE")
+    rm_rf("lib/bundler/vendor/net-http-persistent/README.rdoc")
   when "rdoc"
     rm_rf(%w[lib/rdoc lib/rdoc.rb test/rdoc libexec/rdoc libexec/ri])
     cp_r(Dir.glob("#{upstream}/lib/rdoc*"), "lib")
