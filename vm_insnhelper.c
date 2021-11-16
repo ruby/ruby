@@ -3712,8 +3712,7 @@ vm_call_super_method(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, st
     RB_DEBUG_COUNTER_INC(ccf_super_method);
 
     /* this check is required to distinguish with other functions. */
-    const struct rb_callcache *cc = calling->cc;
-    if (vm_cc_call(cc) != vm_call_super_method) rb_bug("bug");
+    VM_ASSERT(vm_cc_call(calling->cc) == vm_call_super_method);
     return vm_call_method(ec, reg_cfp, calling);
 }
 
