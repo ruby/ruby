@@ -2968,12 +2968,12 @@ enum_each_slice_size(VALUE obj, VALUE args, VALUE eobj)
  *  returns +self+:
  *
  *    a = []
- *    (1..10).each_slice(3) {|tuple| a.push(tuple) } # => nil
+ *    (1..10).each_slice(3) {|tuple| a.push(tuple) }
  *    a # => [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10]]
  *
  *    a = []
  *    h = {foo: 0, bar: 1, baz: 2, bat: 3, bam: 4}
- *    h.each_slice(2) {|tuple| a.push(tuple) } # => nil
+ *    h.each_slice(2) {|tuple| a.push(tuple) }
  *    a # => [[[:foo, 0], [:bar, 1]], [[:baz, 2], [:bat, 3]], [[:bam, 4]]]
  *
  *  With no block given, returns an Enumerator.
@@ -3047,12 +3047,12 @@ enum_each_cons_size(VALUE obj, VALUE args, VALUE eobj)
  *  returns +self+:
  *
  *    a = []
- *    (1..5).each_cons(3) {|element| a.push(element) } # => nil
+ *    (1..5).each_cons(3) {|element| a.push(element) }
  *    a # => [[1, 2, 3], [2, 3, 4], [3, 4, 5]]
  *
  *    a = []
  *    h = {foo: 0,  bar: 1, baz: 2, bam: 3}
- *    h.each_cons(2) {|element| a.push(element) } # => nil
+ *    h.each_cons(2) {|element| a.push(element) }
  *    a # => [[[:foo, 0], [:bar, 1]], [[:bar, 1], [:baz, 2]], [[:baz, 2], [:bam, 3]]]
  *
  *  With no block given, returns an Enumerator.
@@ -3068,7 +3068,7 @@ enum_each_cons(VALUE obj, VALUE n)
     if (size <= 0) rb_raise(rb_eArgError, "invalid size");
     RETURN_SIZED_ENUMERATOR(obj, 1, &n, enum_each_cons_size);
     arity = rb_block_arity();
-    if (enum_size_over_p(obj, size)) return Qnil;
+    if (enum_size_over_p(obj, size)) return obj;
     memo = MEMO_NEW(rb_ary_new2(size), dont_recycle_block_arg(arity), size);
     rb_block_call(obj, id_each, 0, 0, each_cons_i, (VALUE)memo);
 

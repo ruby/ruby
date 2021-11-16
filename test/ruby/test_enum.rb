@@ -739,6 +739,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]], ary)
 
     assert_equal(1..10, (1..10).each_slice(3) { })
+    assert_equal([], [].each_slice(3) { })
   end
 
   def test_each_cons
@@ -760,6 +761,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_empty(ary)
 
     assert_equal(1..5, (1..5).each_cons(3) { })
+    assert_equal([], [].each_cons(3) { })
   end
 
   def test_zip
