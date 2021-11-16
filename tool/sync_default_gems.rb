@@ -104,11 +104,19 @@ def sync_default_gems(gem)
     cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/rubocop_gems*"), "tool/bundler")
     cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/standard_gems*"), "tool/bundler")
     rm_rf(%w[spec/bundler/support/artifice/vcr_cassettes])
-    rm_rf("lib/bundler/vendor/thor/LICENSE.md")
-    rm_rf("lib/rubygems/resolver/molinillo/LICENSE")
-    rm_rf("lib/bundler/vendor/molinillo/LICENSE")
-    rm_rf("lib/bundler/vendor/connection_pool/LICENSE")
-    rm_rf("lib/bundler/vendor/net-http-persistent/README.rdoc")
+    license_files = %w[
+      lib/bundler/vendor/thor/LICENSE.md
+      lib/rubygems/resolver/molinillo/LICENSE
+      lib/bundler/vendor/molinillo/LICENSE
+      lib/bundler/vendor/connection_pool/LICENSE
+      lib/bundler/vendor/net-http-persistent/README.rdoc
+      lib/bundler/vendor/fileutils/LICENSE.txt
+      lib/bundler/vendor/tsort/LICENSE.txt
+      lib/bundler/vendor/uri/LICENSE.txt
+      lib/rubygems/optparse/COPYING
+      lib/rubygems/tsort/LICENSE.txt
+    ]
+    rm_rf license_files
   when "rdoc"
     rm_rf(%w[lib/rdoc lib/rdoc.rb test/rdoc libexec/rdoc libexec/ri])
     cp_r(Dir.glob("#{upstream}/lib/rdoc*"), "lib")
