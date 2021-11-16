@@ -12,6 +12,7 @@ if defined?(Digest) &&
   return
 end
 
+require 'digest/version'
 require 'digest/loader'
 
 module Digest
