@@ -241,6 +241,10 @@ class TestTime < Test::Unit::TestCase
     assert_equal(1, Time.at(0, 0.001).nsec)
   end
 
+  def test_at_splat
+    assert_equal(Time.at(1, 2), Time.at(*[1, 2]))
+  end
+
   def test_at_with_unit
     assert_equal(123456789, Time.at(0, 123456789, :nanosecond).nsec)
     assert_equal(123456789, Time.at(0, 123456789, :nsec).nsec)

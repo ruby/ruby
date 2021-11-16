@@ -1848,8 +1848,10 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
         }
     }
 
-    if ((cme->def->iseq_overload &&
-         (int)vm_ci_argc(ci) == method_entry_iseqptr(cme)->body->param.lead_num)) {
+    if (cme->def->iseq_overload &&
+        (vm_ci_flag(ci) & (VM_CALL_ARGS_SIMPLE)) &&
+        (int)vm_ci_argc(ci) == method_entry_iseqptr(cme)->body->param.lead_num
+    ) {
         // use alternative
         cme = overloaded_cme(cme);
         METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
