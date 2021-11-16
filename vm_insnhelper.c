@@ -1367,6 +1367,12 @@ vm_setclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID
     update_classvariable_cache(iseq, klass, id, ic);
 }
 
+void
+rb_vm_setclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *cfp, ID id, VALUE val, ICVARC ic)
+{
+    vm_setclassvariable(iseq, cfp, id, val, ic);
+}
+
 static inline VALUE
 vm_getinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, IVC ic)
 {

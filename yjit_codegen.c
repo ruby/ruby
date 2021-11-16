@@ -4488,6 +4488,26 @@ gen_getclassvariable(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
     return YJIT_KEEP_COMPILING;
 }
 
+VALUE
+rb_vm_setclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *cfp, ID id, VALUE val, ICVARC ic);
+
+static codegen_status_t
+gen_setclassvariable(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
+{
+    // rb_vm_setclassvariable can raise exceptions.
+    jit_prepare_routine_call(jit, ctx, REG0);
+
+    mov(cb, C_ARG_REGS[0], member_opnd(REG_CFP, rb_control_frame_t, iseq));
+    mov(cb, C_ARG_REGS[1], REG_CFP);
+    mov(cb, C_ARG_REGS[2], imm_opnd(jit_get_arg(jit, 0)));
+    mov(cb, C_ARG_REGS[3], ctx_stack_pop(ctx, 1));
+    mov(cb, C_ARG_REGS[4], imm_opnd(jit_get_arg(jit, 1)));
+
+    call_ptr(cb, REG0, (void *)rb_vm_setclassvariable);
+
+    return YJIT_KEEP_COMPILING;
+}
+
 static codegen_status_t
 gen_opt_getinlinecache(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
@@ -4886,6 +4906,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(toregexp), gen_toregexp);
     yjit_reg_op(BIN(getspecial), gen_getspecial);
     yjit_reg_op(BIN(getclassvariable), gen_getclassvariable);
+    yjit_reg_op(BIN(setclassvariable), gen_setclassvariable);
 
     yjit_method_codegen_table = st_init_numtable();
 
