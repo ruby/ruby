@@ -137,6 +137,28 @@ opt.on('--autocomplete-super-long') {
     2000.times.map{ s = "Str_#{c}"; c.succ!; s }.select{ |c| c.start_with?(target) }
   }
 }
+
+opt.on('--autocomplete-width-long') {
+  Reline.autocompletion = true
+  Reline.completion_proc = lambda { |target, preposing = nil, postposing = nil|
+    %w{
+        remove_instance_variable
+        respond_to?
+        ruby2_keywords
+        rand
+        readline
+        readlines
+        require
+        require_relative
+        raise
+        respond_to_missing?
+        redo
+        rescue
+        retry
+        return
+    }.select{ |c| c.start_with?(target) }
+  }
+}
 opt.parse!(ARGV)
 
 begin

@@ -1172,6 +1172,21 @@ begin
       EOC
     end
 
+    def test_autocomplete_old_dialog_width_greater_than_dialog_width
+      start_terminal(40, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-width-long}, startup_message: 'Multiline REPL.')
+      write("0+ \n12345678901234")
+      write("\C-p")
+      write("r")
+      write("a")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> 0+ ra
+        prompt> 123rand 901234
+                   raise
+      EOC
+    end
+
     def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
