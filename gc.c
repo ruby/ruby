@@ -6869,7 +6869,7 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
 	}
 	return;
       case imemo_cref:
-	gc_mark(objspace, RANY(obj)->as.imemo.cref.klass);
+	gc_mark(objspace, RANY(obj)->as.imemo.cref.klass_or_self);
 	gc_mark(objspace, (VALUE)RANY(obj)->as.imemo.cref.next);
 	gc_mark(objspace, RANY(obj)->as.imemo.cref.refinements);
 	return;
@@ -9734,7 +9734,7 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
         }
         break;
       case imemo_cref:
-        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.cref.klass);
+        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.cref.klass_or_self);
         TYPED_UPDATE_IF_MOVED(objspace, struct rb_cref_struct *, RANY(obj)->as.imemo.cref.next);
         UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.cref.refinements);
         break;

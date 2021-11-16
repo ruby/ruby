@@ -248,6 +248,8 @@ vm_cref_new0(VALUE klass, rb_method_visibility_t visi, int module_func, rb_cref_
 	}
     }
 
+    VM_ASSERT(klass);
+
     cref = (rb_cref_t *)rb_imemo_new(imemo_cref, klass, (VALUE)(use_prev_prev ? CREF_NEXT(prev_cref) : prev_cref), scope_visi.value, refinements);
 
     if (pushed_by_eval) CREF_PUSHED_BY_EVAL_SET(cref);
@@ -277,18 +279,21 @@ ref_delete_symkey(VALUE key, VALUE value, VALUE unused)
 static rb_cref_t *
 vm_cref_dup(const rb_cref_t *cref)
 {
-    VALUE klass = CREF_CLASS(cref);
     const rb_scope_visibility_t *visi = CREF_SCOPE_VISI(cref);
     rb_cref_t *next_cref = CREF_NEXT(cref), *new_cref;
     int pushed_by_eval = CREF_PUSHED_BY_EVAL(cref);
 
-    new_cref = vm_cref_new(klass, visi->method_visi, visi->module_func, next_cref, pushed_by_eval);
+    new_cref = vm_cref_new(cref->klass_or_self, visi->method_visi, visi->module_func, next_cref, pushed_by_eval);
 
     if (!NIL_P(CREF_REFINEMENTS(cref))) {
         VALUE ref = rb_hash_dup(CREF_REFINEMENTS(cref));
         rb_hash_foreach(ref, ref_delete_symkey, Qnil);
         CREF_REFINEMENTS_SET(new_cref, ref);
-	CREF_OMOD_SHARED_UNSET(new_cref);
+        CREF_OMOD_SHARED_UNSET(new_cref);
+    }
+
+    if (CREF_SINGLETON(cref)) {
+        CREF_SINGLETON_SET(new_cref);
     }
 
     return new_cref;

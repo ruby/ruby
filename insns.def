@@ -350,6 +350,7 @@ putspecialobject
 (rb_num_t value_type)
 ()
 (VALUE val)
+// attr bool leaf = (value_type != VM_SPECIAL_OBJECT_CBASE); /* get cbase may allocate a singleton */
 {
     enum vm_special_object_type type;
 

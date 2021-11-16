@@ -914,15 +914,8 @@ static inline VALUE
 vm_get_cbase(const VALUE *ep)
 {
     const rb_cref_t *cref = vm_get_cref(ep);
-    VALUE klass = Qundef;
 
-    while (cref) {
-	if ((klass = CREF_CLASS(cref)) != 0) {
-	    break;
-	}
-	cref = CREF_NEXT(cref);
-    }
-
+    VALUE klass = CREF_CLASS_FOR_DEFINITION(cref);
     return klass;
 }
 
@@ -934,7 +927,7 @@ vm_get_const_base(const VALUE *ep)
 
     while (cref) {
 	if (!CREF_PUSHED_BY_EVAL(cref) &&
-	    (klass = CREF_CLASS(cref)) != 0) {
+	    (klass = CREF_CLASS_FOR_DEFINITION(cref)) != 0) {
 	    break;
 	}
 	cref = CREF_NEXT(cref);
@@ -1060,7 +1053,7 @@ vm_get_cvar_base(const rb_cref_t *cref, const rb_control_frame_t *cfp, int top_l
 
     while (CREF_NEXT(cref) &&
 	   (NIL_P(CREF_CLASS(cref)) || FL_TEST(CREF_CLASS(cref), FL_SINGLETON) ||
-	    CREF_PUSHED_BY_EVAL(cref))) {
+	    CREF_PUSHED_BY_EVAL(cref) || CREF_SINGLETON(cref))) {
 	cref = CREF_NEXT(cref);
     }
     if (top_level_raise && !CREF_NEXT(cref)) {
@@ -4651,13 +4644,13 @@ vm_define_method(const rb_execution_context_t *ec, VALUE obj, ID id, VALUE iseqv
     rb_method_visibility_t visi;
     rb_cref_t *cref = vm_ec_cref(ec);
 
-    if (!is_singleton) {
-        klass = CREF_CLASS(cref);
-        visi = vm_scope_visibility_get(ec);
-    }
-    else { /* singleton */
+    if (is_singleton) {
         klass = rb_singleton_class(obj); /* class and frozen checked in this API */
         visi = METHOD_VISI_PUBLIC;
+    }
+    else {
+        klass = CREF_CLASS_FOR_DEFINITION(cref);
+        visi = vm_scope_visibility_get(ec);
     }
 
     if (NIL_P(klass)) {
