@@ -3705,7 +3705,7 @@ rb_fix_plus(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self + numeric -> numeric
+ *    self + numeric -> numeric_result
  *
  *  Performs addition:
  *
@@ -3750,7 +3750,7 @@ fix_minus(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    int - numeric -> numeric
+ *    int - numeric -> numeric_result
  *
  *  Performs subtraction:
  *
@@ -3780,15 +3780,6 @@ rb_int_minus(VALUE x, VALUE y)
 /*tests if N*N would overflow*/
 #define FIT_SQRT_LONG(n) (((n)<SQRT_LONG_MAX)&&((n)>=-SQRT_LONG_MAX))
 
-/*
- * Document-method: Integer#*
- * call-seq:
- *    int * numeric  ->  numeric_result
- *
- * Performs multiplication: the class of the resulting object depends on
- * the class of +numeric+.
- */
-
 static VALUE
 fix_mul(VALUE x, VALUE y)
 {
@@ -3812,6 +3803,20 @@ fix_mul(VALUE x, VALUE y)
 	return rb_num_coerce_bin(x, y, '*');
     }
 }
+
+/*
+ *  call-seq:
+ *    self * numeric -> numeric_result
+ *
+ *  Performs multiplication:
+ *
+ *    4 * 2              # => 8
+ *    4 * -2             # => -8
+ *    -4 * 2             # => -8
+ *    4 * 2.0            # => 8.0
+ *    4 * Rational(1, 3) # => (4/3)
+ *    4 * Complex(2, 0)  # => (8+0i)
+ */
 
 VALUE
 rb_int_mul(VALUE x, VALUE y)
@@ -3864,15 +3869,19 @@ rb_int_fdiv_double(VALUE x, VALUE y)
 }
 
 /*
- *  Document-method: Integer#fdiv
  *  call-seq:
- *     int.fdiv(numeric)  ->  float
+ *    fdiv(numeric) -> float
  *
- *  Returns the floating point result of dividing +int+ by +numeric+.
+ *  Returns the Float result of dividing +self+ by +numeric+:
  *
- *     654321.fdiv(13731)      #=> 47.652829364212366
- *     654321.fdiv(13731.24)   #=> 47.65199646936475
- *     -654321.fdiv(13731)     #=> -47.652829364212366
+ *    4.fdiv(2)      # => 2.0
+ *    4.fdiv(-2)      # => -2.0
+ *    -4.fdiv(2)      # => -2.0
+ *    4.fdiv(2.0)      # => 2.0
+ *    4.fdiv(Rational(3, 4))      # => 5.333333333333333
+ *
+ *  Raises an exception if +numeric+ cannot be converted to a Float.
+ *
  */
 
 VALUE
@@ -3883,15 +3892,6 @@ rb_int_fdiv(VALUE x, VALUE y)
     }
     return Qnil;
 }
-
-/*
- * Document-method: Integer#/
- * call-seq:
- *    int / numeric  ->  numeric_result
- *
- * Performs division: the class of the resulting object depends on
- * the class of +numeric+.
- */
 
 static VALUE
 fix_divide(VALUE x, VALUE y, ID op)
@@ -3930,6 +3930,22 @@ fix_div(VALUE x, VALUE y)
     return fix_divide(x, y, '/');
 }
 
+/*
+ * call-seq:
+ *   self / numeric -> numeric_result
+ *
+ * Performs division:
+ *
+ *   4 / 3              # => 1
+ *   4 / -3             # => -2
+ *   -4 / 3             # => -2
+ *   -4 / -3            # => 1
+ *   4 / 3.0            # => 1.3333333333333333
+ *   4 / Rational(3, 1) # => (4/3)
+ *   4 / Complex(3, 0)  # => ((4/3)+0i)
+ *
+ */
+
 VALUE
 rb_int_div(VALUE x, VALUE y)
 {
@@ -3942,20 +3958,29 @@ rb_int_div(VALUE x, VALUE y)
     return Qnil;
 }
 
-/*
- * Document-method: Integer#div
- * call-seq:
- *    int.div(numeric)  ->  integer
- *
- * Performs integer division: returns the integer result of dividing +int+
- * by +numeric+.
- */
-
 static VALUE
 fix_idiv(VALUE x, VALUE y)
 {
     return fix_divide(x, y, id_div);
 }
+
+/*
+ *  call-seq:
+ *    div(numeric)  -> integer
+ *
+ * Performs integer division; returns the integer result of dividing +self+
+ * by +numeric+:
+ *
+ *    4.div(3)      # => 1
+ *    4.div(-3)      # => -2
+ *    -4.div(3)      # => -2
+ *    -4.div(-3)      # => 1
+ *    4.div(3.0)      # => 1
+ *    4.div(Rational(3, 1))      # => 1
+ *
+ *  Raises an exception if +numeric+ does not have method +div+.
+ *
+ */
 
 VALUE
 rb_int_idiv(VALUE x, VALUE y)
@@ -4132,22 +4157,19 @@ rb_int_divmod(VALUE x, VALUE y)
 }
 
 /*
- *  Document-method: Integer#**
  *  call-seq:
- *     int ** numeric  ->  numeric_result
+ *    self ** numeric -> numeric_result
  *
- *  Raises +int+ to the power of +numeric+, which may be negative or
- *  fractional.
- *  The result may be an Integer, a Float, a Rational, or a complex number.
+ *  Raises +self+ to the power of +numeric+:
  *
- *     2 ** 3        #=> 8
- *     2 ** -1       #=> (1/2)
- *     2 ** 0.5      #=> 1.4142135623730951
- *     (-1) ** 0.5   #=> (0.0+1.0i)
+ *    2 ** 3              # => 8
+ *    2 ** -3             # => (1/8)
+ *    -2 ** 3             # => -8
+ *    -2 ** -3            # => (-1/8)
+ *    2 ** 3.3            # => 9.849155306759329
+ *    2 ** Rational(3, 1) # => (8/1)
+ *    2 ** Complex(3, 0)  # => (8+0i)
  *
- *     123456789 ** 2     #=> 15241578750190521
- *     123456789 ** 1.2   #=> 5126464716.0993185
- *     123456789 ** -2    #=> (1/15241578750190521)
  */
 
 static VALUE
@@ -4887,41 +4909,42 @@ int_aref2(VALUE num, VALUE beg, VALUE len)
 }
 
 /*
- *  Document-method: Integer#[]
  *  call-seq:
- *     int[n]    -> 0, 1
- *     int[n, m] -> num
- *     int[range] -> num
+ *     self[offset]    -> 0 or 1
+ *     self[offset, size] -> integer
+ *     self[range] -> integer
  *
- *  Bit Reference---Returns the <code>n</code>th bit in the
- *  binary representation of +int+, where <code>int[0]</code>
- *  is the least significant bit.
+ *  Returns a slice of bits from +self+.
  *
- *     a = 0b11001100101010
- *     30.downto(0) {|n| print a[n] }
- *     #=> 0000000000000000011001100101010
+ *  With argument +offset+, returns the bit at the given offset,
+ *  where offset 0 refers to the least significant bit:
  *
- *     a = 9**15
- *     50.downto(0) {|n| print a[n] }
- *     #=> 000101110110100000111000011110010100111100010111001
+ *    n = 0b10 # => 2
+ *    n[0]     # => 0
+ *    n[1]     # => 1
+ *    n[2]     # => 0
+ *    n[3]     # => 0
  *
  *  In principle, <code>n[i]</code> is equivalent to <code>(n >> i) & 1</code>.
- *  Thus, any negative index always returns zero:
+ *  Thus, negative index always returns zero:
  *
- *     p 255[-1] #=> 0
+ *     255[-1] # => 0
  *
- *  Range operations <code>n[i, len]</code> and <code>n[i..j]</code>
- *  are naturally extended.
+ *  With arguments +offset+ and +size+, returns +size+ bits from +self+,
+ *  beginning at +offset+ and including bits of greater significance:
  *
- *  * <code>n[i, len]</code> equals to <code>(n >> i) & ((1 << len) - 1)</code>.
- *  * <code>n[i..j]</code> equals to <code>(n >> i) & ((1 << (j - i + 1)) - 1)</code>.
- *  * <code>n[i...j]</code> equals to <code>(n >> i) & ((1 << (j - i)) - 1)</code>.
- *  * <code>n[i..]</code> equals to <code>(n >> i)</code>.
- *  * <code>n[..j]</code> is zero if <code>n & ((1 << (j + 1)) - 1)</code> is zero.  Otherwise, raises an ArgumentError.
- *  * <code>n[...j]</code> is zero if <code>n & ((1 << j) - 1)</code> is zero.  Otherwise, raises an ArgumentError.
+ *    n = 0b111000       # => 56
+ *    "%010b" % n[0, 10] # => "0000111000"
+ *    "%010b" % n[4, 10] # => "0000000011"
  *
- *  Note that range operation may exhaust memory.
- *  For example, <code>-1[0, 1000000000000]</code> will raise NoMemoryError.
+ *  With argument +range+, returns <tt>range.size</tt> bits from +self+,
+ *  beginning at <tt>range.begin</tt> and including bits of greater significance:
+ *
+ *    n = 0b111000      # => 56
+ *    "%010b" % n[0..9] # => "0000111000"
+ *    "%010b" % n[4..9] # => "0000000011"
+ *
+ *  Raises an exception if the slice cannot be constructed.
  */
 
 static VALUE
@@ -5024,26 +5047,6 @@ rb_int_bit_length(VALUE num)
     return Qnil;
 }
 
-/*
- *  Document-method: Integer#digits
- *  call-seq:
- *     int.digits        ->  array
- *     int.digits(base)  ->  array
- *
- *  Returns the digits of +int+'s place-value representation
- *  with radix +base+ (default: 10).
- *  The digits are returned as an array with the least significant digit
- *  as the first array element.
- *
- *  +base+ must be greater than or equal to 2.
- *
- *     12345.digits      #=> [5, 4, 3, 2, 1]
- *     12345.digits(7)   #=> [4, 6, 6, 0, 5]
- *     12345.digits(100) #=> [45, 23, 1]
- *
- *     -12345.digits(7)  #=> Math::DomainError
- */
-
 static VALUE
 rb_fix_digits(VALUE fix, long base)
 {
@@ -5120,6 +5123,22 @@ rb_int_digits_bigbase(VALUE num, VALUE base)
     return digits;
 }
 
+/*
+ *  call-seq:
+ *    digits(base = 10) -> array_of_integers
+ *
+ *  Returns an array of integers representing the +base+-radix
+ *  digits of +self+;
+ *  the first element of the array represents the least significant digit:
+ *
+ *    12345.digits      # => [5, 4, 3, 2, 1]
+ *    12345.digits(7)   # => [4, 6, 6, 0, 5]
+ *    12345.digits(100) # => [45, 23, 1]
+ *
+ *  Raises an exception if +self+ is negative or +base+ is less than 2.
+ *
+ */
+
 static VALUE
 rb_int_digits(int argc, VALUE *argv, VALUE num)
 {
@@ -5154,25 +5173,31 @@ rb_int_digits(int argc, VALUE *argv, VALUE num)
     return Qnil;
 }
 
-/*
- *  Document-method: Integer#upto
- *  call-seq:
- *     int.upto(limit) {|i| block }  ->  self
- *     int.upto(limit)               ->  an_enumerator
- *
- *  Iterates the given block, passing in integer values from +int+ up to and
- *  including +limit+.
- *
- *  If no block is given, an Enumerator is returned instead.
- *
- *     5.upto(10) {|i| print i, " " }   #=> 5 6 7 8 9 10
- */
-
 static VALUE
 int_upto_size(VALUE from, VALUE args, VALUE eobj)
 {
     return ruby_num_interval_step_size(from, RARRAY_AREF(args, 0), INT2FIX(1), FALSE);
 }
+
+/*
+ *  call-seq:
+ *    upto(limit) {|i| ... } -> self
+ *    upto(limit)            ->  enumerator
+ *
+ *  Calls the given block with each integer value from +self+ up to +limit+;
+ *  returns +self+:
+ *
+ *    a = []
+ *    5.upto(10) {|i| a << i }              # => 5
+ *    a                                     # => [5, 6, 7, 8, 9, 10]
+ *    a = []
+ *    -5.upto(0) {|i| a << i }              # => -5
+ *    a                                     # => [-5, -4, -3, -2, -1, 0]
+ *    5.upto(4) {|i| fail 'Cannot happen' } # => 5
+ *
+ *  With no block given, returns an Enumerator.
+ *
+ */
 
 static VALUE
 int_upto(VALUE from, VALUE to)
@@ -5198,27 +5223,31 @@ int_upto(VALUE from, VALUE to)
     return from;
 }
 
-/*
- *  Document-method: Integer#downto
- *  call-seq:
- *     int.downto(limit) {|i| block }  ->  self
- *     int.downto(limit)               ->  an_enumerator
- *
- *  Iterates the given block, passing in decreasing values from +int+ down to
- *  and including +limit+.
- *
- *  If no block is given, an Enumerator is returned instead.
- *
- *     5.downto(1) { |n| print n, ".. " }
- *     puts "Liftoff!"
- *     #=> "5.. 4.. 3.. 2.. 1.. Liftoff!"
- */
-
 static VALUE
 int_downto_size(VALUE from, VALUE args, VALUE eobj)
 {
     return ruby_num_interval_step_size(from, RARRAY_AREF(args, 0), INT2FIX(-1), FALSE);
 }
+
+/*
+ *  call-seq:
+ *    downto(limit) {|i| ... } -> self
+ *    downto(limit)            ->  enumerator
+ *
+ *  Calls the given block with each integer value from +self+ down to +limit+;
+ *  returns +self+:
+ *
+ *    a = []
+ *    10.downto(5) {|i| a << i }              # => 10
+ *    a                                       # => [10, 9, 8, 7, 6, 5]
+ *    a = []
+ *    0.downto(-5) {|i| a << i }              # => 0
+ *    a                                       # => [0, -1, -2, -3, -4, -5]
+ *    4.downto(5) {|i| fail 'Cannot happen' } # => 4
+ *
+ *  With no block given, returns an Enumerator.
+ *
+ */
 
 static VALUE
 int_downto(VALUE from, VALUE to)
