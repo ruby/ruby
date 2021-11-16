@@ -745,7 +745,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
 
   def test_handle_options_add_bad
     nonexistent = File.join @tempdir, 'nonexistent'
-    e = assert_raise OptionParser::InvalidArgument do
+    e = assert_raise Gem::OptionParser::InvalidArgument do
       @cmd.handle_options %W[--add #{nonexistent}]
     end
 
@@ -755,7 +755,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
     bad = File.join @tempdir, 'bad'
     FileUtils.touch bad
 
-    e = assert_raise OptionParser::InvalidArgument do
+    e = assert_raise Gem::OptionParser::InvalidArgument do
       @cmd.handle_options %W[--add #{bad}]
     end
 
@@ -765,7 +765,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
 
   def test_handle_options_certificate
     nonexistent = File.join @tempdir, 'nonexistent'
-    e = assert_raise OptionParser::InvalidArgument do
+    e = assert_raise Gem::OptionParser::InvalidArgument do
       @cmd.handle_options %W[--certificate #{nonexistent}]
     end
 
@@ -775,7 +775,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
     bad = File.join @tempdir, 'bad'
     FileUtils.touch bad
 
-    e = assert_raise OptionParser::InvalidArgument do
+    e = assert_raise Gem::OptionParser::InvalidArgument do
       @cmd.handle_options %W[--certificate #{bad}]
     end
 
@@ -786,7 +786,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
 
   def test_handle_options_key_bad
     nonexistent = File.join @tempdir, 'nonexistent'
-    e = assert_raise OptionParser::InvalidArgument do
+    e = assert_raise Gem::OptionParser::InvalidArgument do
       @cmd.handle_options %W[--private-key #{nonexistent}]
     end
 
@@ -797,14 +797,14 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
     bad = File.join @tempdir, 'bad'
     FileUtils.touch bad
 
-    e = assert_raise OptionParser::InvalidArgument do
+    e = assert_raise Gem::OptionParser::InvalidArgument do
       @cmd.handle_options %W[--private-key #{bad}]
     end
 
     assert_equal "invalid argument: --private-key #{bad}: invalid RSA, DSA, or EC key",
                  e.message
 
-    e = assert_raise OptionParser::InvalidArgument do
+    e = assert_raise Gem::OptionParser::InvalidArgument do
       @cmd.handle_options %W[--private-key #{PUBLIC_KEY_FILE}]
     end
 
@@ -851,7 +851,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
 
   def test_handle_options_sign_nonexistent
     nonexistent = File.join @tempdir, 'nonexistent'
-    e = assert_raise OptionParser::InvalidArgument do
+    e = assert_raise Gem::OptionParser::InvalidArgument do
       @cmd.handle_options %W[
         --private-key #{ALTERNATE_KEY_FILE}
 

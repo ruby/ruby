@@ -623,10 +623,6 @@ abort "#{deprecation_message}"
     destdir = options[:destdir]
     return path if destdir.empty?
 
-    prepend_destdir(path)
-  end
-
-  def prepend_destdir(path)
     File.join(options[:destdir], path.gsub(/^[a-zA-Z]:/, ''))
   end
 

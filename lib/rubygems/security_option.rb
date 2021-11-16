@@ -19,16 +19,16 @@ end
 
 module Gem::SecurityOption
   def add_security_option
-    OptionParser.accept Gem::Security::Policy do |value|
+    Gem::OptionParser.accept Gem::Security::Policy do |value|
       require_relative 'security'
 
-      raise OptionParser::InvalidArgument, 'OpenSSL not installed' unless
+      raise Gem::OptionParser::InvalidArgument, 'OpenSSL not installed' unless
         defined?(Gem::Security::HighSecurity)
 
       policy = Gem::Security::Policies[value]
       unless policy
         valid = Gem::Security::Policies.keys.sort
-        raise OptionParser::InvalidArgument, "#{value} (#{valid.join ', '} are valid)"
+        raise Gem::OptionParser::InvalidArgument, "#{value} (#{valid.join ', '} are valid)"
       end
       policy
     end

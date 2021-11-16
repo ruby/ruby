@@ -656,25 +656,16 @@ module Bundler
     end
 
     def converge_dependencies
-      frozen = Bundler.frozen_bundle?
       (@dependencies + locked_dependencies).each do |dep|
-        locked_source = @locked_deps[dep.name]
-        # This is to make sure that if bundler is installing in deployment mode and
-        # after locked_source and sources don't match, we still use locked_source.
-        if frozen && !locked_source.nil? &&
-            locked_source.respond_to?(:source) && locked_source.source.instance_of?(Source::Path) && locked_source.source.path.exist?
-          dep.source = locked_source.source
-        elsif dep.source
+        if dep.source
           dep.source = sources.get(dep.source)
         end
       end
 
       changes = false
-      # We want to know if all match, but don't want to check all entries
-      # This means we need to return false if any dependency doesn't match
-      # the lock or doesn't exist in the lock.
-      @dependencies.each do |dependency|
-        unless locked_dep = @locked_deps[dependency.name]
+
+      @dependencies.each do |dep|
+        unless locked_dep = @locked_deps[dep.name]
           changes = true
           next
         end
@@ -685,11 +676,11 @@ module Bundler
         # directive, the lockfile dependencies and resolved dependencies end up
         # with a mismatch on #type. Work around that by setting the type on the
         # dep from the lockfile.
-        locked_dep.instance_variable_set(:@type, dependency.type)
+        locked_dep.instance_variable_set(:@type, dep.type)
 
         # We already know the name matches from the hash lookup
         # so we only need to check the requirement now
-        changes ||= dependency.requirement != locked_dep.requirement
+        changes ||= dep.requirement != locked_dep.requirement
       end
 
       changes
@@ -706,20 +697,8 @@ module Bundler
       # the gem in the Gemfile.lock still satisfies it, this is fine
       # too.
       @dependencies.each do |dep|
-        locked_dep = @locked_deps[dep.name]
-
-        # If the locked_dep doesn't match the dependency we're looking for then we ignore the locked_dep
-        locked_dep = nil unless locked_dep == dep
-
-        if in_locked_deps?(dep, locked_dep) || satisfies_locked_spec?(dep)
+        if satisfies_locked_spec?(dep)
           deps << dep
-        elsif dep.source.is_a?(Source::Path) && dep.current_platform? && (!locked_dep || dep.source != locked_dep.source)
-          @locked_specs.each do |s|
-            @unlock[:gems] << s.name if s.source == dep.source
-          end
-
-          dep.source.unlock! if dep.source.respond_to?(:unlock!)
-          dep.source.specs.each {|s| @unlock[:gems] << s.name }
         end
       end
 
@@ -760,7 +739,11 @@ module Bundler
           s.dependencies.replace(new_spec.dependencies)
         end
 
-        converged << s
+        if dep.nil? && @dependencies.find {|d| s.name == d.name }
+          @unlock[:gems] << s.name
+        else
+          converged << s
+        end
       end
 
       resolve = SpecSet.new(converged)
@@ -778,13 +761,6 @@ module Bundler
       end
 
       resolve
-    end
-
-    def in_locked_deps?(dep, locked_dep)
-      # Because the lockfile can't link a dep to a specific remote, we need to
-      # treat sources as equivalent anytime the locked dep has all the remotes
-      # that the Gemfile dep does.
-      locked_dep && locked_dep.source && dep.source && locked_dep.source.include?(dep.source)
     end
 
     def satisfies_locked_spec?(dep)

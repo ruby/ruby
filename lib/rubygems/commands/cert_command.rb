@@ -51,7 +51,7 @@ class Gem::Commands::CertCommand < Gem::Command
     add_option('-s', '--sign CERT',
                'Signs CERT with the key from -K',
                'and the certificate from -C') do |cert_file, options|
-      raise OptionParser::InvalidArgument, "#{cert_file}: does not exist" unless
+      raise Gem::OptionParser::InvalidArgument, "#{cert_file}: does not exist" unless
         File.file? cert_file
 
       options[:sign] << cert_file
@@ -85,9 +85,9 @@ class Gem::Commands::CertCommand < Gem::Command
     check_openssl
     OpenSSL::X509::Certificate.new File.read certificate_file
   rescue Errno::ENOENT
-    raise OptionParser::InvalidArgument, "#{certificate_file}: does not exist"
+    raise Gem::OptionParser::InvalidArgument, "#{certificate_file}: does not exist"
   rescue OpenSSL::X509::CertificateError
-    raise OptionParser::InvalidArgument,
+    raise Gem::OptionParser::InvalidArgument,
       "#{certificate_file}: invalid X509 certificate"
   end
 
@@ -95,13 +95,13 @@ class Gem::Commands::CertCommand < Gem::Command
     check_openssl
     passphrase = ENV['GEM_PRIVATE_KEY_PASSPHRASE']
     key = OpenSSL::PKey.read File.read(key_file), passphrase
-    raise OptionParser::InvalidArgument,
+    raise Gem::OptionParser::InvalidArgument,
       "#{key_file}: private key not found" unless key.private?
     key
   rescue Errno::ENOENT
-    raise OptionParser::InvalidArgument, "#{key_file}: does not exist"
+    raise Gem::OptionParser::InvalidArgument, "#{key_file}: does not exist"
   rescue OpenSSL::PKey::PKeyError, ArgumentError
-    raise OptionParser::InvalidArgument, "#{key_file}: invalid RSA, DSA, or EC key"
+    raise Gem::OptionParser::InvalidArgument, "#{key_file}: invalid RSA, DSA, or EC key"
   end
 
   def execute

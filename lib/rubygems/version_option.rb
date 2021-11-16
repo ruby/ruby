@@ -16,7 +16,7 @@ module Gem::VersionOption
   # Add the --platform option to the option parser.
 
   def add_platform_option(task = command, *wrap)
-    OptionParser.accept Gem::Platform do |value|
+    Gem::OptionParser.accept Gem::Platform do |value|
       if value == Gem::Platform::RUBY
         value
       else
@@ -51,7 +51,7 @@ module Gem::VersionOption
   # Add the --version option to the option parser.
 
   def add_version_option(task = command, *wrap)
-    OptionParser.accept Gem::Requirement do |value|
+    Gem::OptionParser.accept Gem::Requirement do |value|
       Gem::Requirement.new(*value.split(/\s*,\s*/))
     end
 
