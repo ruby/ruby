@@ -332,6 +332,7 @@ static inline vm_call_handler
 vm_cc_call(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    VM_ASSERT(cc->call_ != NULL);
     return cc->call_;
 }
 
