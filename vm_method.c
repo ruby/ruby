@@ -209,7 +209,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                 vm_cme_invalidate((rb_callable_method_entry_t *)cme);
                 RB_DEBUG_COUNTER_INC(cc_invalidate_tree_cme);
 
-                if (cme->def->iseq_overload) {
+                if (cme->def->iseq_overload && cme->def->body.iseq.mandatory_only_cme) {
                     vm_cme_invalidate((rb_callable_method_entry_t *)cme->def->body.iseq.mandatory_only_cme);
                 }
             }
