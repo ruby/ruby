@@ -691,21 +691,15 @@ module Bundler
     # generated
     def converge_locked_specs
       deps = []
-
-      # Build a list of dependencies that are the same in the Gemfile
-      # and Gemfile.lock. If the Gemfile modified a dependency, but
-      # the gem in the Gemfile.lock still satisfies it, this is fine
-      # too.
-      @dependencies.each do |dep|
-        if satisfies_locked_spec?(dep)
-          deps << dep
-        end
-      end
-
       converged = []
       @locked_specs.each do |s|
         # Replace the locked dependency's source with the equivalent source from the Gemfile
         dep = @dependencies.find {|d| s.satisfies?(d) }
+
+        if dep && (!dep.source || s.source.include?(dep.source))
+          deps << dep
+        end
+
         s.source = (dep && dep.source) || sources.get(s.source) unless multisource_allowed?
 
         # Don't add a spec to the list if its source is expired. For example,
@@ -761,10 +755,6 @@ module Bundler
       end
 
       resolve
-    end
-
-    def satisfies_locked_spec?(dep)
-      @locked_specs[dep].any? {|s| s.satisfies?(dep) && (!dep.source || s.source.include?(dep.source)) }
     end
 
     def metadata_dependencies
