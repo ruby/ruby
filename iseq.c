@@ -366,12 +366,17 @@ rb_iseq_mark(const rb_iseq_t *iseq)
                 if (vm_ci_markable(ci)) {
                     rb_gc_mark_movable((VALUE)ci);
                 }
-                if (cc && vm_cc_markable(cc)) {
-                    if (!vm_cc_invalidated_p(cc)) {
-                        rb_gc_mark_movable((VALUE)cc);
-                    }
-                    else {
-                        cds[i].cc = rb_vm_empty_cc();
+
+                if (cc) {
+                    VM_ASSERT((cc->flags & VM_CALLCACHE_ON_STACK) == 0);
+
+                    if (vm_cc_markable(cc)) {
+                        if (!vm_cc_invalidated_p(cc)) {
+                            rb_gc_mark_movable((VALUE)cc);
+                        }
+                        else {
+                            cds[i].cc = rb_vm_empty_cc();
+                        }
                     }
                 }
             }

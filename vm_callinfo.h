@@ -290,6 +290,7 @@ struct rb_callcache {
 };
 
 #define VM_CALLCACHE_UNMARKABLE IMEMO_FL_USER0
+#define VM_CALLCACHE_ON_STACK   IMEMO_FL_USER1
 
 static inline const struct rb_callcache *
 vm_cc_new(VALUE klass,
@@ -305,7 +306,8 @@ vm_cc_new(VALUE klass,
     (struct rb_callcache) {                   \
         .flags = T_IMEMO |                    \
             (imemo_callcache << FL_USHIFT) |  \
-            VM_CALLCACHE_UNMARKABLE,          \
+            VM_CALLCACHE_UNMARKABLE |         \
+            VM_CALLCACHE_ON_STACK,            \
         .klass = clazz,                       \
         .cme_  = cme,                         \
         .call_ = call,                        \
