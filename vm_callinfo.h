@@ -321,10 +321,19 @@ vm_cc_class_check(const struct rb_callcache *cc, VALUE klass)
     return cc->klass == klass;
 }
 
+static inline int
+vm_cc_markable(const struct rb_callcache *cc)
+{
+    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    return FL_TEST_RAW((VALUE)cc, VM_CALLCACHE_UNMARKABLE) == 0;
+}
+
 static inline const struct rb_callable_method_entry_struct *
 vm_cc_cme(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    VM_ASSERT(!vm_cc_markable(cc) || cc->cme_ != NULL);
+
     return cc->cme_;
 }
 
@@ -348,13 +357,6 @@ vm_cc_cmethod_missing_reason(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     return cc->aux_.method_missing_reason;
-}
-
-static inline int
-vm_cc_markable(const struct rb_callcache *cc)
-{
-    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    return FL_TEST_RAW((VALUE)cc, VM_CALLCACHE_UNMARKABLE) == 0;
 }
 
 static inline bool
