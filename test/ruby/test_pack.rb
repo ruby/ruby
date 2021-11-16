@@ -638,6 +638,14 @@ EXPECTED
     end;
   end
 
+  def test_bug_18343
+    bug18343 = '[ruby-core:106096] [Bug #18343]'
+    assert_separately(%W[- #{bug18343}], <<-'end;')
+      bug = ARGV.shift
+      assert_raise(ArgumentError, bug){[0].pack('c', {})}
+    end;
+  end
+
   def test_pack_unpack_m0
     assert_equal("", [""].pack("m0"))
     assert_equal("AA==", ["\0"].pack("m0"))
