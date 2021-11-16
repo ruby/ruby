@@ -969,6 +969,15 @@ mentioned below.
 
     {MIT License}[rdoc-label:label-MIT+License]
 
+[lib/bundler/vendor/thor]
+
+  Thor is under the following license.
+
+  >>>
+    Copyright (c) 2008 Yehuda Katz, Eric Hodel, et al.
+
+    {MIT License}[rdoc-label:label-MIT+License]
+
 [lib/did_you_mean]
 [lib/did_you_mean.rb]
 [test/did_you_mean]
