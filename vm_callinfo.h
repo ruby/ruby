@@ -382,6 +382,7 @@ vm_cc_valid_p(const struct rb_callcache *cc, const rb_callable_method_entry_t *c
 }
 
 extern const struct rb_callcache *rb_vm_empty_cc(void);
+extern const struct rb_callcache *rb_vm_empty_cc_for_super(void);
 #define vm_cc_empty() rb_vm_empty_cc()
 
 /* callcache: mutate */

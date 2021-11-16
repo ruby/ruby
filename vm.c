@@ -439,6 +439,16 @@ static const struct rb_callcache vm_empty_cc = {
     }
 };
 
+static const struct rb_callcache vm_empty_cc_for_super = {
+    .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
+    .klass = Qfalse,
+    .cme_  = NULL,
+    .call_ = vm_call_super_method,
+    .aux_  = {
+        .v = Qfalse,
+    }
+};
+
 static void thread_free(void *ptr);
 
 void
@@ -4174,6 +4184,12 @@ MJIT_FUNC_EXPORTED const struct rb_callcache *
 rb_vm_empty_cc(void)
 {
     return &vm_empty_cc;
+}
+
+MJIT_FUNC_EXPORTED const struct rb_callcache *
+rb_vm_empty_cc_for_super(void)
+{
+    return &vm_empty_cc_for_super;
 }
 
 #endif /* #ifndef MJIT_HEADER */
