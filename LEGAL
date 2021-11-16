@@ -978,6 +978,16 @@ mentioned below.
 
     {MIT License}[rdoc-label:label-MIT+License]
 
+[lib/rubygems/resolver/molinillo]
+[lib/bundler/vendor/molinillo]
+
+  molinillo is under the following license.
+
+  >>>
+    Copyright (c) 2014 Samuel E. Giddins segiddins@segiddins.me
+
+    {MIT License}[rdoc-label:label-MIT+License]
+
 [lib/did_you_mean]
 [lib/did_you_mean.rb]
 [test/did_you_mean]

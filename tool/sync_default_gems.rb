@@ -105,6 +105,8 @@ def sync_default_gems(gem)
     cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/standard_gems*"), "tool/bundler")
     rm_rf(%w[spec/bundler/support/artifice/vcr_cassettes])
     rm_rf("lib/bundler/vendor/thor/LICENSE.md")
+    rm_rf("lib/rubygems/resolver/molinillo/LICENSE")
+    rm_rf("lib/bundler/vendor/molinillo/LICENSE")
   when "rdoc"
     rm_rf(%w[lib/rdoc lib/rdoc.rb test/rdoc libexec/rdoc libexec/ri])
     cp_r(Dir.glob("#{upstream}/lib/rdoc*"), "lib")
