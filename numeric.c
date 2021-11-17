@@ -3934,12 +3934,15 @@ fix_div(VALUE x, VALUE y)
  * call-seq:
  *   self / numeric -> numeric_result
  *
- * Performs division:
+ * Performs division; for integer +numeric+, truncates the result to an integer:
  *
  *   4 / 3              # => 1
  *   4 / -3             # => -2
  *   -4 / 3             # => -2
  *   -4 / -3            # => 1
+ *
+ *  For other +numeric+, returns non-integer result:
+ *
  *   4 / 3.0            # => 1.3333333333333333
  *   4 / Rational(3, 1) # => (4/3)
  *   4 / Complex(3, 0)  # => ((4/3)+0i)
@@ -4309,19 +4312,6 @@ rb_num_pow(VALUE x, VALUE y)
     return Qnil;
 }
 
-/*
- * Document-method: Integer#==
- * Document-method: Integer#===
- * call-seq:
- *    int == other  ->  true or false
- *
- * Returns +true+ if +int+ equals +other+ numerically.
- * Contrast this with Integer#eql?, which requires +other+ to be an Integer.
- *
- *    1 == 2     #=> false
- *    1 == 1.0   #=> true
- */
-
 static VALUE
 fix_equal(VALUE x, VALUE y)
 {
@@ -4338,6 +4328,21 @@ fix_equal(VALUE x, VALUE y)
     }
 }
 
+/*
+ *  call-seq:
+ *    self == other -> true or false
+ *
+ *  Returns +true+ if +self+ is numerically equal to +other+; +false+ otherwise.
+ *
+ *    1 == 2     #=> false
+ *    1 == 1.0   #=> true
+ *
+ *  Related: Integer#eql? (requires +other+ to be an \Integer).
+ *
+ *  Integer#=== is an alias for Integer#==.
+ *
+ */
+
 VALUE
 rb_int_equal(VALUE x, VALUE y)
 {
@@ -4349,19 +4354,6 @@ rb_int_equal(VALUE x, VALUE y)
     }
     return Qnil;
 }
-
-/*
- *  Document-method: Integer#<=>
- *  call-seq:
- *     int <=> numeric  ->  -1, 0, +1, or nil
- *
- *  Comparison---Returns -1, 0, or +1 depending on whether +int+ is
- *  less than, equal to, or greater than +numeric+.
- *
- *  This is the basis for the tests in the Comparable module.
- *
- *  +nil+ is returned if the two values are incomparable.
- */
 
 static VALUE
 fix_cmp(VALUE x, VALUE y)
@@ -4387,6 +4379,32 @@ fix_cmp(VALUE x, VALUE y)
     }
 }
 
+/*
+ *  call-seq:
+ *    self <=> other  ->  -1, 0, +1, or nil
+ *
+ *  Returns:
+ *
+ *  - -1, if +self+ is less than +other+.
+ *  - 0, if +self+ is equal to +other+.
+ *  - 1, if +self+ is greater then +other+.
+ *  - +nil+, if +self+ and +other+ are incomparable.
+ *
+ *  Examples:
+ *
+ *    1 <=> 2              # => -1
+ *    1 <=> 1              # => 0
+ *    1 <=> 0              # => 1
+ *    1 <=> 'foo'          # => nil
+ *
+ *    1 <=> 1.0            # => 0
+ *    1 <=> Rational(1, 1) # => 0
+ *    1 <=> Complex(1, 0)  # => 0
+ *
+ *  This method is the basis for comparisons in module Comparable.
+ *
+ */
+
 VALUE
 rb_int_cmp(VALUE x, VALUE y)
 {
@@ -4400,14 +4418,6 @@ rb_int_cmp(VALUE x, VALUE y)
 	rb_raise(rb_eNotImpError, "need to define `<=>' in %s", rb_obj_classname(x));
     }
 }
-
-/*
- * Document-method: Integer#>
- * call-seq:
- *    int > real  ->  true or false
- *
- * Returns +true+ if the value of +int+ is greater than that of +real+.
- */
 
 static VALUE
 fix_gt(VALUE x, VALUE y)
@@ -4426,6 +4436,22 @@ fix_gt(VALUE x, VALUE y)
     }
 }
 
+/*
+ *  call-seq:
+ *    self > other -> true or false
+ *
+ * Returns +true+ if the value of +self+ is greater than that of +other+:
+ *
+ *    1 > 0              # => true
+ *    1 > 1              # => false
+ *    1 > 2              # => false
+ *    1 > 0.5            # => true
+ *    1 > Rational(1, 2) # => true
+ *
+ *  Raises an exception if the comparison cannot be made.
+ *
+ */
+
 VALUE
 rb_int_gt(VALUE x, VALUE y)
 {
@@ -4437,15 +4463,6 @@ rb_int_gt(VALUE x, VALUE y)
     }
     return Qnil;
 }
-
-/*
- * Document-method: Integer#>=
- * call-seq:
- *    int >= real  ->  true or false
- *
- * Returns +true+ if the value of +int+ is greater than or equal to that of
- * +real+.
- */
 
 static VALUE
 fix_ge(VALUE x, VALUE y)
@@ -4465,6 +4482,23 @@ fix_ge(VALUE x, VALUE y)
     }
 }
 
+/*
+ *  call-seq:
+ *    self >= real -> true or false
+ *
+ *  Returns +true+ if the value of +self+ is greater than or equal to
+ *  that of +other+:
+ *
+ *    1 >= 0              # => true
+ *    1 >= 1              # => true
+ *    1 >= 2              # => false
+ *    1 >= 0.5            # => true
+ *    1 >= Rational(1, 2) # => true
+ *
+ *  Raises an exception if the comparison cannot be made.
+ *
+ */
+
 VALUE
 rb_int_ge(VALUE x, VALUE y)
 {
@@ -4476,14 +4510,6 @@ rb_int_ge(VALUE x, VALUE y)
     }
     return Qnil;
 }
-
-/*
- * Document-method: Integer#<
- * call-seq:
- *    int < real  ->  true or false
- *
- * Returns +true+ if the value of +int+ is less than that of +real+.
- */
 
 static VALUE
 fix_lt(VALUE x, VALUE y)
@@ -4502,6 +4528,22 @@ fix_lt(VALUE x, VALUE y)
     }
 }
 
+/*
+ * call-seq:
+ *    self < other -> true or false
+ *
+ * Returns +true+ if the value of +self+ is less than that of +other+:
+ *
+ *    1 < 0              # => false
+ *    1 < 1              # => false
+ *    1 < 2              # => true
+ *    1 < 0.5            # => false
+ *    1 < Rational(1, 2) # => false
+ *
+ *  Raises an exception if the comparison cannot be made.
+ *
+ */
+
 static VALUE
 int_lt(VALUE x, VALUE y)
 {
@@ -4513,15 +4555,6 @@ int_lt(VALUE x, VALUE y)
     }
     return Qnil;
 }
-
-/*
- * Document-method: Integer#<=
- * call-seq:
- *    int <= real  ->  true or false
- *
- * Returns +true+ if the value of +int+ is less than or equal to that of
- * +real+.
- */
 
 static VALUE
 fix_le(VALUE x, VALUE y)
@@ -4540,6 +4573,23 @@ fix_le(VALUE x, VALUE y)
 	return rb_num_coerce_relop(x, y, idLE);
     }
 }
+
+/*
+ * call-seq:
+ *    self <= real -> true or false
+ *
+ *  Returns +true+ if the value of +self+ is less than or equal to
+ *  that of +other+:
+ *
+ *    1 <= 0              # => false
+ *    1 <= 1              # => true
+ *    1 <= 2              # => true
+ *    1 <= 0.5            # => false
+ *    1 <= Rational(1, 2) # => false
+ *
+ *  Raises an exception if the comparison cannot be made.
+ *
+ */
 
 static VALUE
 int_le(VALUE x, VALUE y)
@@ -4600,14 +4650,6 @@ rb_num_coerce_bit(VALUE x, VALUE y, ID func)
     return ret;
 }
 
-/*
- * Document-method: Integer#&
- * call-seq:
- *   int & other_int  ->  integer
- *
- * Bitwise AND.
- */
-
 static VALUE
 fix_and(VALUE x, VALUE y)
 {
@@ -4623,6 +4665,21 @@ fix_and(VALUE x, VALUE y)
     return rb_num_coerce_bit(x, y, '&');
 }
 
+/*
+ *  call-seq:
+ *    self & other ->  integer
+ *
+ *  Bitwise AND; each bit in the result is 1 if both corresponding bits
+ *  in +self+ and +other+ are 1, 0 otherwise:
+ *
+ *    "%04b" % (0b0101 & 0b0110) # => "0100"
+ *
+ *  Raises an exception if +other+ is not an \Integer.
+ *
+ *  Related: Integer#| (bitwise OR), Integer#^ (bitwise EXCLUSIVE OR).
+ *
+ */
+
 VALUE
 rb_int_and(VALUE x, VALUE y)
 {
@@ -4634,14 +4691,6 @@ rb_int_and(VALUE x, VALUE y)
     }
     return Qnil;
 }
-
-/*
- * Document-method: Integer#|
- * call-seq:
- *   int | other_int  ->  integer
- *
- * Bitwise OR.
- */
 
 static VALUE
 fix_or(VALUE x, VALUE y)
@@ -4658,6 +4707,21 @@ fix_or(VALUE x, VALUE y)
     return rb_num_coerce_bit(x, y, '|');
 }
 
+/*
+ *  call-seq:
+ *   self | other -> integer
+ *
+ *  Bitwise OR; each bit in the result is 1 if either corresponding bit
+ *  in +self+ or +other+ is 1, 0 otherwise:
+ *
+ *    "%04b" % (0b0101 | 0b0110) # => "0111"
+ *
+ *  Raises an exception if +other+ is not an \Integer.
+ *
+ *  Related: Integer#& (bitwise AND), Integer#^ (bitwise EXCLUSIVE OR).
+ *
+ */
+
 static VALUE
 int_or(VALUE x, VALUE y)
 {
@@ -4669,14 +4733,6 @@ int_or(VALUE x, VALUE y)
     }
     return Qnil;
 }
-
-/*
- * Document-method: Integer#^
- * call-seq:
- *   int ^ other_int  ->  integer
- *
- * Bitwise EXCLUSIVE OR.
- */
 
 static VALUE
 fix_xor(VALUE x, VALUE y)
@@ -4692,6 +4748,21 @@ fix_xor(VALUE x, VALUE y)
 
     return rb_num_coerce_bit(x, y, '^');
 }
+
+/*
+ *  call-seq:
+ *    self ^ other -> integer
+ *
+ *  Bitwise EXCLUSIVE OR; each bit in the result is 1 if the corresponding bits
+ *  in +self+ and +other+ are different, 0 otherwise:
+ *
+ *    "%04b" % (0b0101 ^ 0b0110) # => "0011"
+ *
+ *  Raises an exception if +other+ is not an \Integer.
+ *
+ *  Related: Integer#& (bitwise AND), Integer#| (bitwise OR).
+ *
+ */
 
 static VALUE
 int_xor(VALUE x, VALUE y)
