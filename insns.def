@@ -783,9 +783,9 @@ opt_send_without_block
     }
 }
 
-/* Convert object to string using to_s or equivalent. It can be frozen or not. */
+/* Convert object to string using to_s or equivalent. */
 DEFINE_INSN
-opt_to_s_unescaping
+tostring
 (CALL_DATA cd)
 (VALUE recv)
 (VALUE val)
