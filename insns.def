@@ -785,13 +785,13 @@ opt_send_without_block
 
 /* Convert object to string using to_s or equivalent. */
 DEFINE_INSN
-tostring
+objtostring
 (CALL_DATA cd)
 (VALUE recv)
 (VALUE val)
 // attr bool leaf = false;
 {
-    val = vm_tostring(GET_ISEQ(), recv, cd);
+    val = vm_objtostring(GET_ISEQ(), recv, cd);
 
     if (val == Qundef) {
         CALL_SIMPLE_METHOD();

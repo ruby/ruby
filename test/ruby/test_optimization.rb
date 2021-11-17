@@ -904,10 +904,10 @@ class TestRubyOptimization < Test::Unit::TestCase
     end;
   end
 
-  class Tostring
+  class Objtostring
   end
 
-  def test_tostring
+  def test_objtostring
     assert_raise(NoMethodError){"#{BasicObject.new}"}
     assert_redefine_method('Symbol', 'to_s', <<-'end')
       assert_match %r{\A#<Symbol:0x[0-9a-f]+>\z}, "#{:foo}"
@@ -926,7 +926,7 @@ class TestRubyOptimization < Test::Unit::TestCase
         assert_match %r{\A#<Integer:0x[0-9a-f]+>\z}, "#{i}"
       }
     end
-    assert_equal "TestRubyOptimization::Tostring", "#{Tostring}"
+    assert_equal "TestRubyOptimization::Objtostring", "#{Objtostring}"
     assert_match %r{\A#<Class:0x[0-9a-f]+>\z}, "#{Class.new}"
     assert_match %r{\A#<Module:0x[0-9a-f]+>\z}, "#{Module.new}"
     o = Object.new

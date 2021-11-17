@@ -4735,7 +4735,7 @@ VALUE rb_mod_to_s(VALUE);
 VALUE rb_mod_name(VALUE);
 
 static VALUE
-vm_tostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
+vm_objtostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
 {
     const struct rb_callcache *cc = vm_search_method((VALUE)iseq, cd, recv);
 
