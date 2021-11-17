@@ -677,10 +677,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	ANN("format: $[nd_nth]");
 	ANN("example: $&, $`, $', $+");
 	F_CUSTOM1(nd_nth, "variable") {
-	    char name[3];
-	    name[0] = '$';
+	    char name[3] = "$ ";
 	    name[1] = (char)node->nd_nth;
-	    name[2] = '\0';
 	    A(name);
 	}
 	return;
