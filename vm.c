@@ -1947,7 +1947,7 @@ vm_init_redefined_flag(void)
     OP(LE, LE), (C(Integer), C(Float));
     OP(GT, GT), (C(Integer), C(Float));
     OP(GE, GE), (C(Integer), C(Float));
-    OP(LTLT, LTLT), (C(String), C(Array));
+    OP(LTLT, LTLT), (C(String), C(Array), C(Integer));
     OP(AREF, AREF), (C(Array), C(Hash), C(Integer));
     OP(ASET, ASET), (C(Array), C(Hash));
     OP(Length, LENGTH), (C(Array), C(String), C(Hash));

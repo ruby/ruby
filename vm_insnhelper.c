@@ -5167,7 +5167,10 @@ static VALUE
 vm_opt_ltlt(VALUE recv, VALUE obj)
 {
     if (SPECIAL_CONST_P(recv)) {
-	return Qundef;
+       if (FIXNUM_2_P(recv, obj) &&
+         BASIC_OP_UNREDEFINED_P(BOP_LTLT, INTEGER_REDEFINED_OP_FLAG))
+            return rb_fix_lshift(recv, obj);
+       return Qundef;
     }
     else if (RBASIC_CLASS(recv) == rb_cString &&
 	     BASIC_OP_UNREDEFINED_P(BOP_LTLT, STRING_REDEFINED_OP_FLAG)) {

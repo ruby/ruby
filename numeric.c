@@ -4714,7 +4714,7 @@ int_xor(VALUE x, VALUE y)
  * is negative.
  */
 
-static VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_fix_lshift(VALUE x, VALUE y)
 {
     long val, width;

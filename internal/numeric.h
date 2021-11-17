@@ -90,6 +90,7 @@ VALUE rb_num_pow(VALUE x, VALUE y);
 VALUE rb_float_ceil(VALUE num, int ndigits);
 VALUE rb_float_floor(VALUE x, int ndigits);
 VALUE rb_float_abs(VALUE flt);
+VALUE rb_fix_lshift(VALUE x, VALUE y);
 static inline VALUE rb_num_compare_with_zero(VALUE num, ID mid);
 static inline int rb_num_positive_int_p(VALUE num);
 static inline int rb_num_negative_int_p(VALUE num);
