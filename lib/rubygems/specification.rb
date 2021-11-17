@@ -752,11 +752,12 @@ class Gem::Specification < Gem::BasicSpecification
     @@all ||= Gem.loaded_specs.values | stubs.map(&:to_spec)
   end
 
-  def self._clear_load_cache # :nodoc:
+  def self.clear_load_cache # :nodoc:
     LOAD_CACHE_MUTEX.synchronize do
       LOAD_CACHE.clear
     end
   end
+  private_class_method :clear_load_cache
 
   def self.each_gemspec(dirs) # :nodoc:
     dirs.each do |dir|
@@ -1227,7 +1228,7 @@ class Gem::Specification < Gem::BasicSpecification
     @@stubs_by_name = {}
     @@spec_with_requirable_file = {}
     @@active_stub_with_requirable_file = {}
-    _clear_load_cache
+    clear_load_cache
     unresolved = unresolved_deps
     unless unresolved.empty?
       w = "W" + "ARN"
