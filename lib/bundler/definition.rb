@@ -396,9 +396,7 @@ module Bundler
       end
 
       added.concat new_deps.map {|d| "* #{pretty_dep(d)}" } if new_deps.any?
-      if deleted_deps.any?
-        deleted.concat deleted_deps.map {|d| "* #{pretty_dep(d)}" }
-      end
+      deleted.concat deleted_deps.map {|d| "* #{pretty_dep(d)}" } if deleted_deps.any?
 
       both_sources = Hash.new {|h, k| h[k] = [] }
       @dependencies.each {|d| both_sources[d.name][0] = d }
