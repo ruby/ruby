@@ -1210,6 +1210,12 @@ rb_yjit_init(struct rb_yjit_options *options)
         rb_yjit_opts.max_versions = 4;
     }
 
+    // If type propagation is disabled, max 1 version per block
+    if (rb_yjit_opts.no_type_prop)
+    {
+        rb_yjit_opts.max_versions = 1;
+    }
+
     blocks_assuming_stable_global_constant_state = st_init_numtable();
     blocks_assuming_single_ractor_mode = st_init_numtable();
     blocks_assuming_bops = st_init_numtable();

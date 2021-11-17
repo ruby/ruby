@@ -1091,6 +1091,9 @@ setup_yjit_options(const char *s, struct rb_yjit_options *yjit_opt)
     else if (yjit_opt_match_noarg(s, l, "greedy-versioning")) {
         yjit_opt->greedy_versioning = true;
     }
+    else if (yjit_opt_match_noarg(s, l, "no-type-prop")) {
+        yjit_opt->no_type_prop = true;
+    }
     else if (yjit_opt_match_noarg(s, l, "stats")) {
         yjit_opt->gen_stats = true;
     }
