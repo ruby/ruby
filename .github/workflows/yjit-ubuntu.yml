@@ -22,8 +22,6 @@ jobs:
         yjit_opts: [
           "--yjit",
           "--yjit --yjit-call-threshold=1",
-          "--yjit --yjit-max-versions=2",
-          "--yjit --yjit-no-type-prop",
         ]
         configure: ["", "cppflags=-DRUBY_DEBUG"]
         include:
