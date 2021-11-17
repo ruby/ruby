@@ -7901,7 +7901,7 @@ mandatory_node(const rb_iseq_t *iseq, const NODE *cond_node)
 static int
 compile_builtin_mandatory_only_method(rb_iseq_t *iseq, const NODE *node, const NODE *line_node)
 {
-    // argumens
+    // arguments
     struct rb_args_info args = {
         .pre_args_num = iseq->body->param.lead_num,
     };
