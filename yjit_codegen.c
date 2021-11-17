@@ -4421,10 +4421,7 @@ gen_getspecial(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 }
 
 VALUE
-rb_vm_getclassvariable(const rb_iseq_t *iseq, const rb_cref_t *cref, const rb_control_frame_t *cfp, ID id, ICVARC ic);
-
-rb_cref_t *
-rb_vm_get_cref(const VALUE *ep);
+rb_vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *cfp, ID id, ICVARC ic);
 
 static codegen_status_t
 gen_getclassvariable(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
