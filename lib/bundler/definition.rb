@@ -379,12 +379,6 @@ module Bundler
       new_deps = @dependencies - locked_dependencies
       deleted_deps = locked_dependencies - @dependencies
 
-      # Check if it is possible that the source is only changed thing
-      if (new_deps.empty? && deleted_deps.empty?) && (!new_sources.empty? && !deleted_sources.empty?)
-        new_sources.reject! {|source| source.path? && source.path.exist? }
-        deleted_sources.reject! {|source| source.path? && source.path.exist? }
-      end
-
       if @locked_sources != gemfile_sources
         if new_sources.any?
           added.concat new_sources.map {|source| "* source: #{source}" }
