@@ -482,7 +482,7 @@ static int iseq_setup_insn(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 static int iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 static int iseq_insns_unification(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 
-static int iseq_set_local_table(rb_iseq_t *iseq, const ID *tbl);
+static int iseq_set_local_table(rb_iseq_t *iseq, const rb_ast_id_table_t *tbl);
 static int iseq_set_exception_local_table(rb_iseq_t *iseq);
 static int iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const anchor, const NODE *const node);
 
@@ -1946,21 +1946,13 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 }
 
 static int
-iseq_set_local_table(rb_iseq_t *iseq, const ID *tbl)
+iseq_set_local_table(rb_iseq_t *iseq, const rb_ast_id_table_t *tbl)
 {
-    unsigned int size;
-
-    if (tbl) {
-	size = (unsigned int)*tbl;
-	tbl++;
-    }
-    else {
-	size = 0;
-    }
+    unsigned int size = tbl ? tbl->size : 0;
 
     if (size > 0) {
 	ID *ids = (ID *)ALLOC_N(ID, size);
-	MEMCPY(ids, tbl, ID, size);
+	MEMCPY(ids, tbl->ids, ID, size);
 	iseq->body->local_table = ids;
     }
     iseq->body->local_table_size = size;
@@ -7908,17 +7900,20 @@ compile_builtin_mandatory_only_method(rb_iseq_t *iseq, const NODE *node, const N
     // local table without non-mandatory parameters
     const int skip_local_size = iseq->body->param.size - iseq->body->param.lead_num;
     const int table_size = iseq->body->local_table_size - skip_local_size;
-    ID *tbl = ALLOCA_N(ID, table_size + 1);
-    tbl[0] = table_size;
+
+    VALUE idtmp = 0;
+    rb_ast_id_table_t *tbl = ALLOCV(idtmp, sizeof(rb_ast_id_table_t) + table_size * sizeof(ID));
+    tbl->size = table_size;
+
     int i;
 
     // lead parameters
     for (i=0; i<iseq->body->param.lead_num; i++) {
-        tbl[i+1] = iseq->body->local_table[i];
+        tbl->ids[i] = iseq->body->local_table[i];
     }
     // local variables
     for (; i<table_size; i++) {
-        tbl[i+1] = iseq->body->local_table[i + skip_local_size];
+        tbl->ids[i] = iseq->body->local_table[i + skip_local_size];
     }
 
     NODE scope_node;
@@ -7939,6 +7934,7 @@ compile_builtin_mandatory_only_method(rb_iseq_t *iseq, const NODE *node, const N
                            ISEQ_TYPE_METHOD, ISEQ_COMPILE_DATA(iseq)->option);
 
     GET_VM()->builtin_inline_index = prev_inline_index;
+    ALLOCV_END(idtmp);
     return COMPILE_OK;
 }
 

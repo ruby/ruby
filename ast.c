@@ -600,11 +600,11 @@ node_children(rb_ast_t *ast, const NODE *node)
         }
       case NODE_SCOPE:
         {
-            ID *tbl = node->nd_tbl;
-            int i, size = tbl ? (int)*tbl++ : 0;
+            rb_ast_id_table_t *tbl = node->nd_tbl;
+            int i, size = tbl ? tbl->size : 0;
             VALUE locals = rb_ary_new_capa(size);
             for (i = 0; i < size; i++) {
-                rb_ary_push(locals, var_name(tbl[i]));
+                rb_ary_push(locals, var_name(tbl->ids[i]));
             }
             return rb_ary_new_from_args(3, locals, NEW_CHILD(ast, node->nd_args), NEW_CHILD(ast, node->nd_body));
         }
