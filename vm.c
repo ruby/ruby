@@ -1256,18 +1256,17 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     const rb_iseq_t *base_iseq, *iseq;
     rb_ast_body_t ast;
     NODE tmp_node;
-    ID minibuf[4], *dyns = minibuf;
-    VALUE idtmp = 0;
 
     if (dyncount < 0) return 0;
 
     base_block = &bind->block;
     base_iseq = vm_block_iseq(base_block);
 
-    if (dyncount >= numberof(minibuf)) dyns = ALLOCV_N(ID, idtmp, dyncount + 1);
+    VALUE idtmp = 0;
+    rb_ast_id_table_t *dyns = ALLOCV(idtmp, sizeof(rb_ast_id_table_t) + dyncount * sizeof(ID));
+    dyns->size = dyncount;
+    MEMCPY(dyns->ids, dynvars, ID, dyncount);
 
-    dyns[0] = dyncount;
-    MEMCPY(dyns + 1, dynvars, ID, dyncount);
     rb_node_init(&tmp_node, NODE_SCOPE, (VALUE)dyns, 0, 0);
     ast.root = &tmp_node;
     ast.compile_option = 0;

@@ -11,6 +11,8 @@
 
 **********************************************************************/
 
+#include "internal/compilers.h"
+
 #if defined(__cplusplus)
 extern "C" {
 #if 0
@@ -146,13 +148,18 @@ code_loc_gen(const rb_code_location_t *loc1, const rb_code_location_t *loc2)
     return loc;
 }
 
+typedef struct rb_ast_id_table {
+    int size;
+    ID ids[FLEX_ARY_LEN];
+} rb_ast_id_table_t;
+
 typedef struct RNode {
     VALUE flags;
     union {
 	struct RNode *node;
 	ID id;
 	VALUE value;
-	ID *tbl;
+	rb_ast_id_table_t *tbl;
     } u1;
     union {
 	struct RNode *node;
@@ -411,13 +418,14 @@ typedef struct rb_ast_struct {
 rb_ast_t *rb_ast_new(void);
 void rb_ast_mark(rb_ast_t*);
 void rb_ast_update_references(rb_ast_t*);
-void rb_ast_add_local_table(rb_ast_t*, ID *buf);
 void rb_ast_dispose(rb_ast_t*);
 void rb_ast_free(rb_ast_t*);
 size_t rb_ast_memsize(const rb_ast_t*);
 void rb_ast_add_mark_object(rb_ast_t*, VALUE);
 NODE *rb_ast_newnode(rb_ast_t*, enum node_type type);
 void rb_ast_delete_node(rb_ast_t*, NODE *n);
+rb_ast_id_table_t *rb_ast_new_local_table(rb_ast_t*, int);
+rb_ast_id_table_t *rb_ast_resize_latest_local_table(rb_ast_t*, int);
 
 VALUE rb_parser_new(void);
 VALUE rb_parser_end_seen_p(VALUE);

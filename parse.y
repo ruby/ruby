@@ -574,7 +574,7 @@ static NODE *symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol)
 
 static NODE *match_op(struct parser_params*,NODE*,NODE*,const YYLTYPE*,const YYLTYPE*);
 
-static ID  *local_tbl(struct parser_params*);
+static rb_ast_id_table_t *local_tbl(struct parser_params*);
 
 static VALUE reg_compile(struct parser_params*, VALUE, int);
 static void reg_fragment_setenc(struct parser_params*, VALUE, int);
@@ -3172,9 +3172,8 @@ primary		: literal
 			ID id = internal_id(p);
 			NODE *m = NEW_ARGS_AUX(0, 0, &NULL_LOC);
 			NODE *args, *scope, *internal_var = NEW_DVAR(id, &@2);
-			ID *tbl = ALLOC_N(ID, 3);
-			tbl[0] = 1 /* length of local var table */; tbl[1] = id /* internal id */;
-                        rb_ast_add_local_table(p->ast, tbl);
+                        rb_ast_id_table_t *tbl = rb_ast_new_local_table(p->ast, 1);
+			tbl->ids[0] = id; /* internal id */
 
 			switch (nd_type($2)) {
 			  case NODE_LASGN:
@@ -12585,38 +12584,36 @@ local_pop(struct parser_params *p)
 }
 
 #ifndef RIPPER
-static ID*
+static rb_ast_id_table_t *
 local_tbl(struct parser_params *p)
 {
     int cnt_args = vtable_size(p->lvtbl->args);
     int cnt_vars = vtable_size(p->lvtbl->vars);
     int cnt = cnt_args + cnt_vars;
     int i, j;
-    ID *buf;
+    rb_ast_id_table_t *tbl;
 
     if (cnt <= 0) return 0;
-    buf = ALLOC_N(ID, cnt + 2);
-    MEMCPY(buf+1, p->lvtbl->args->tbl, ID, cnt_args);
+    tbl = rb_ast_new_local_table(p->ast, cnt);
+    MEMCPY(tbl->ids, p->lvtbl->args->tbl, ID, cnt_args);
     /* remove IDs duplicated to warn shadowing */
-    for (i = 0, j = cnt_args+1; i < cnt_vars; ++i) {
+    for (i = 0, j = cnt_args; i < cnt_vars; ++i) {
 	ID id = p->lvtbl->vars->tbl[i];
 	if (!vtable_included(p->lvtbl->args, id)) {
-	    buf[j++] = id;
+	    tbl->ids[j++] = id;
 	}
     }
-    if (--j < cnt) {
-	REALLOC_N(buf, ID, (cnt = j) + 2);
+    if (j < cnt) {
+        tbl = rb_ast_resize_latest_local_table(p->ast, j);
     }
-    buf[0] = cnt;
-    rb_ast_add_local_table(p->ast, buf);
 
-    return buf;
+    return tbl;
 }
 
 static NODE*
 node_newnode_with_locals(struct parser_params *p, enum node_type type, VALUE a1, VALUE a2, const rb_code_location_t *loc)
 {
-    ID *a0;
+    rb_ast_id_table_t *a0;
     NODE *n;
 
     a0 = local_tbl(p);
