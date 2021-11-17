@@ -110,7 +110,7 @@ module Bundler
       dependency = dependency_proxy.dep
       name = dependency.name
       @search_for[dependency_proxy] ||= begin
-        results = results_for(dependency, @base[name])
+        results = results_for(dependency) + @base[name].select {|spec| requirement_satisfied_by?(dependency, nil, spec) }
 
         if vertex = @base_dg.vertex_named(name)
           locked_requirement = vertex.payload.requirement
@@ -175,8 +175,8 @@ module Bundler
       @source_requirements[name] || @source_requirements[:default]
     end
 
-    def results_for(dependency, base)
-      index_for(dependency).search(dependency, base)
+    def results_for(dependency)
+      index_for(dependency).search(dependency)
     end
 
     def name_for(dependency)
