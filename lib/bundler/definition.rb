@@ -690,9 +690,27 @@ module Bundler
     # commonly happen if the Gemfile has changed since the lockfile was last
     # generated
     def converge_locked_specs
+      resolve = converge_specs(@locked_specs)
+
+      diff = nil
+
+      # Now, we unlock any sources that do not have anymore gems pinned to it
+      sources.all_sources.each do |source|
+        next unless source.respond_to?(:unlock!)
+
+        unless resolve.any? {|s| s.source == source }
+          diff ||= @locked_specs.to_a - resolve.to_a
+          source.unlock! if diff.any? {|s| s.source == source }
+        end
+      end
+
+      resolve
+    end
+
+    def converge_specs(specs)
       deps = []
       converged = []
-      @locked_specs.each do |s|
+      specs.each do |s|
         # Replace the locked dependency's source with the equivalent source from the Gemfile
         dep = @dependencies.find {|d| s.satisfies?(d) }
 
@@ -717,7 +735,7 @@ module Bundler
           rescue PathError, GitError
             # if we won't need the source (according to the lockfile),
             # don't error if the path/git source isn't available
-            next if @locked_specs.
+            next if specs.
                     for(requested_dependencies, false, true).
                     none? {|locked_spec| locked_spec.source == s.source }
 
@@ -741,20 +759,7 @@ module Bundler
       end
 
       resolve = SpecSet.new(converged)
-      resolve = SpecSet.new(resolve.for(expand_dependencies(deps, true), false, false).reject{|s| @unlock[:gems].include?(s.name) })
-      diff    = nil
-
-      # Now, we unlock any sources that do not have anymore gems pinned to it
-      sources.all_sources.each do |source|
-        next unless source.respond_to?(:unlock!)
-
-        unless resolve.any? {|s| s.source == source }
-          diff ||= @locked_specs.to_a - resolve.to_a
-          source.unlock! if diff.any? {|s| s.source == source }
-        end
-      end
-
-      resolve
+      SpecSet.new(resolve.for(expand_dependencies(deps, true), false, false).reject{|s| @unlock[:gems].include?(s.name) })
     end
 
     def metadata_dependencies
