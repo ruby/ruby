@@ -231,11 +231,6 @@ typedef struct RNode {
 
 #define nd_entry u3.id
 #define nd_vid   u1.id
-#define nd_cflag u2.id
-#define nd_cval  u3.value
-
-#define nd_oid   u1.id
-#define nd_tbl   u1.tbl
 
 #define nd_var   u1.node
 #define nd_iter  u3.node
@@ -244,11 +239,6 @@ typedef struct RNode {
 #define nd_aid   u3.id
 
 #define nd_lit   u1.value
-
-#define nd_rest  u1.id
-#define nd_opt   u1.node
-#define nd_pid   u1.id
-#define nd_plen  u2.argc
 
 #define nd_recv  u1.node
 #define nd_mid   u2.id
@@ -263,11 +253,8 @@ typedef struct RNode {
 #define nd_beg   u1.node
 #define nd_end   u2.node
 #define nd_state u3.state
-#define nd_rval  u2.value
 
 #define nd_nth   u2.argc
-
-#define nd_tag   u1.id
 
 #define nd_alias  u1.id
 #define nd_orig   u2.id
@@ -282,6 +269,19 @@ typedef struct RNode {
 #define nd_apinfo u3.apinfo
 
 #define nd_fpinfo u3.fpinfo
+
+// for NODE_SCOPE
+#define nd_tbl   u1.tbl
+
+// for NODE_ARGS_AUX
+#define nd_pid   u1.id
+#define nd_plen  u2.argc
+#define nd_cflag u2.id
+
+// for ripper
+#define nd_cval  u3.value
+#define nd_rval  u2.value
+#define nd_tag   u1.id
 
 #define NEW_NODE(t,a0,a1,a2,loc) rb_node_newnode((t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2),loc)
 #define NEW_NODE_WITH_LOCALS(t,a1,a2,loc) node_newnode_with_locals(p, (t),(VALUE)(a1),(VALUE)(a2),loc)
