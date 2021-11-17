@@ -4672,18 +4672,7 @@ fix_and(VALUE x, VALUE y)
  *  Bitwise AND; each bit in the result is 1 if both corresponding bits
  *  in +self+ and +other+ are 1, 0 otherwise:
  *
- *    n = 0b01010101
- *
- *    other = 0b10101010
- *    result = n & other
- *    "%08b" % n      # => "01010101"
- *    "%08b" % other  # => "10101010"
- *    "%08b" % result # => "00000000"
- *
- *    other = 0b11111111
- *    "%08b" % n      # => "01010101"
- *    "%08b" % other  # => "11111111"
- *    "%08b" % result # => "00000000"
+ *    "%04b" % (0b0101 & 0b0110) # => "0100"
  *
  *  Raises an exception if +other+ is not an \Integer.
  *
@@ -4725,19 +4714,7 @@ fix_or(VALUE x, VALUE y)
  *  Bitwise OR; each bit in the result is 1 if either corresponding bit
  *  in +self+ or +other+ is 1, 0 otherwise:
  *
- *    n = 0b01010101
- *
- *    other = 0b10101010
- *     result = n | other
- *    "%08b" % n      # => "01010101"
- *    "%08b" % other  # => "10101010"
- *    "%08b" % result # => "11111111"
- *
- *    other = 0b11111111
- *    result = n | other
- *    "%08b" % n      # => "01010101"
- *    "%08b" % other  # => "11111111"
- *    "%08b" % result # => "11111111"
+ *    "%04b" % (0b0101 | 0b0110) # => "0111"
  *
  *  Raises an exception if +other+ is not an \Integer.
  *
@@ -4779,19 +4756,7 @@ fix_xor(VALUE x, VALUE y)
  *  Bitwise EXCLUSIVE OR; each bit in the result is 1 if the corresponding bits
  *  in +self+ and +other+ are different, 0 otherwise:
  *
- *    n = 0b01010101
- *
- *    other = 0b10101010
- *    result = n ^ other
- *    "%08b" % n      # => "01010101"
- *    "%08b" % other  # => "10101010"
- *    "%08b" % result # => "11111111"
- *
- *    other = 0b01010101
- *    result = n ^ other
- *    "%08b" % n      # => "01010101"
- *    "%08b" % other  # => "01010101"
- *    "%08b" % result # => "00000000"
+ *    "%04b" % (0b0101 ^ 0b0110) # => "0011"
  *
  *  Raises an exception if +other+ is not an \Integer.
  *
