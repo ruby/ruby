@@ -401,7 +401,7 @@ RSpec.describe "install in deployment or frozen mode" do
       bundle "config set --local deployment true"
       bundle :install, :raise_on_error => false
       expect(err).to include("deployment mode")
-      expect(err).to include("You have changed in the Gemfile:\n* rack from `no specified source` to `#{lib_path("rack")}`")
+      expect(err).to include("You have changed in the Gemfile:\n* rack from `#{lib_path("rack")}` to `no specified source`")
       expect(err).not_to include("You have added to the Gemfile")
       expect(err).not_to include("You have deleted from the Gemfile")
     end

@@ -400,7 +400,7 @@ module Bundler
         next if lock_source.nil? || lock_source.can_lock?(dep)
         gemfile_source_name = dep.source || "no specified source"
         lockfile_source_name = lock_source
-        changed << "* #{name} from `#{gemfile_source_name}` to `#{lockfile_source_name}`"
+        changed << "* #{name} from `#{lockfile_source_name}` to `#{gemfile_source_name}`"
       end
 
       reason = change_reason
