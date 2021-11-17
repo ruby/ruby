@@ -169,6 +169,10 @@ module Kernel
   #     Float("123.0_badstring", exception: false)  #=> nil
   #
   def Float(arg, exception: true)
-    Primitive.rb_f_float(arg, exception)
+    if Primitive.mandatory_only?
+      Primitive.rb_f_float1(arg)
+    else
+      Primitive.rb_f_float(arg, exception)
+    end
   end
 end

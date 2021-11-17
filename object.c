@@ -3532,6 +3532,12 @@ rb_Float(VALUE val)
 }
 
 static VALUE
+rb_f_float1(rb_execution_context_t *ec, VALUE obj, VALUE arg)
+{
+    return rb_convert_to_float(arg, TRUE);
+}
+
+static VALUE
 rb_f_float(rb_execution_context_t *ec, VALUE obj, VALUE arg, VALUE opts)
 {
     int exception = rb_bool_expected(opts, "exception");
