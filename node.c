@@ -1017,8 +1017,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 
       case NODE_ARGS:
 	ANN("method parameters");
-	ANN("format: def method_name(.., [nd_opt=some], *[nd_rest], [nd_pid], .., &[nd_body])");
-	ANN("example: def foo(a, b, opt1=1, opt2=2, *rest, y, z, &blk); end");
+	ANN("format: def method_name(.., [nd_ainfo->nd_optargs], *[nd_ainfo->rest_arg], [nd_ainfo->first_post_arg], .., [nd_ainfo->kw_args], **[nd_ainfo->kw_rest_arg], &[nd_ainfo->block_arg])");
+	ANN("example: def foo(a, b, opt1=1, opt2=2, *rest, y, z, kw: 1, **kwrest, &blk); end");
 	F_INT(nd_ainfo->pre_args_num, "count of mandatory (pre-)arguments");
 	F_NODE(nd_ainfo->pre_init, "initialization of (pre-)arguments");
 	F_INT(nd_ainfo->post_args_num, "count of mandatory post-arguments");
