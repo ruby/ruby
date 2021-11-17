@@ -371,35 +371,25 @@ module Bundler
       added.concat new_platforms.map {|p| "* platform: #{p}" }
       deleted.concat deleted_platforms.map {|p| "* platform: #{p}" }
 
-      gemfile_sources = sources.lock_sources
-
-      new_sources = gemfile_sources - @locked_sources
-      deleted_sources = @locked_sources - gemfile_sources
-
       new_deps = @dependencies - locked_dependencies
       deleted_deps = locked_dependencies - @dependencies
-
-      if @locked_sources != gemfile_sources
-        if new_sources.any?
-          added.concat new_sources.map {|source| "* source: #{source}" }
-        end
-
-        if deleted_sources.any?
-          deleted.concat deleted_sources.map {|source| "* source: #{source}" }
-        end
-      end
 
       added.concat new_deps.map {|d| "* #{pretty_dep(d)}" } if new_deps.any?
       deleted.concat deleted_deps.map {|d| "* #{pretty_dep(d)}" } if deleted_deps.any?
 
       both_sources = Hash.new {|h, k| h[k] = [] }
       @dependencies.each {|d| both_sources[d.name][0] = d }
-      locked_dependencies.each {|d| both_sources[d.name][1] = d.source }
+      locked_dependencies.each {|d| both_sources[d.name][1] = d }
 
-      both_sources.each do |name, (dep, lock_source)|
-        next if lock_source.nil? || lock_source.can_lock?(dep)
-        gemfile_source_name = dep.source || "no specified source"
-        lockfile_source_name = lock_source
+      both_sources.each do |name, (dep, lock_dep)|
+        next if dep.nil? || lock_dep.nil?
+
+        gemfile_source = dep.source || sources.default_source
+        lock_source = lock_dep.source || sources.default_source
+        next if lock_source.include?(gemfile_source)
+
+        gemfile_source_name = dep.source ? gemfile_source.identifier : "no specified source"
+        lockfile_source_name = lock_dep.source ? lock_source.identifier : "no specified source"
         changed << "* #{name} from `#{lockfile_source_name}` to `#{gemfile_source_name}`"
       end
 
