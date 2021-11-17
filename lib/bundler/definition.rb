@@ -644,7 +644,7 @@ module Bundler
     end
 
     def converge_dependencies
-      (@dependencies + locked_dependencies).each do |dep|
+      @dependencies.each do |dep|
         if dep.source
           dep.source = sources.get(dep.source)
         end

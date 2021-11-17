@@ -379,7 +379,7 @@ RSpec.describe "install in deployment or frozen mode" do
       expect(err).to include("deployment mode")
       expect(err).to include("You have deleted from the Gemfile:\n* source: #{lib_path("rack-1.0")}")
       expect(err).not_to include("You have added to the Gemfile")
-      expect(err).not_to include("You have changed in the Gemfile")
+      expect(err).to include("You have changed in the Gemfile:\n* rack from `#{lib_path("rack-1.0")}` to `no specified source`")
     end
 
     it "explodes if you unpin a source, leaving it pinned somewhere else" do
