@@ -400,7 +400,7 @@ module Bundler
 
       both_sources = Hash.new {|h, k| h[k] = [] }
       @dependencies.each {|d| both_sources[d.name][0] = d }
-      @locked_deps.each  {|name, d| both_sources[name][1] = d.source }
+      locked_dependencies.each {|d| both_sources[d.name][1] = d.source }
 
       both_sources.each do |name, (dep, lock_source)|
         next if lock_source.nil? || lock_source.can_lock?(dep)
