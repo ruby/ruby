@@ -852,16 +852,11 @@ module Bundler
 
     def additional_base_requirements_for_resolve
       return [] unless @locked_gems && unlocking? && !sources.expired_sources?(@locked_gems.sources)
-      dependencies_by_name = dependencies.inject({}) {|memo, dep| memo.update(dep.name => dep) }
-      converge_specs(@locked_gems.specs).reduce({}) do |requirements, locked_spec|
+      converge_specs(@locked_gems.specs).map do |locked_spec|
         name = locked_spec.name
-        dependency = dependencies_by_name[name]
-        next requirements if @locked_gems.dependencies[name] != dependency
-        next requirements if dependency && dependency.source.is_a?(Source::Path)
         dep = Gem::Dependency.new(name, ">= #{locked_spec.version}")
-        requirements[name] = DepProxy.get_proxy(dep, locked_spec.platform)
-        requirements
-      end.values
+        DepProxy.get_proxy(dep, locked_spec.platform)
+      end
     end
 
     def equivalent_rubygems_remotes?(source)
