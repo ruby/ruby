@@ -5344,20 +5344,6 @@ int_downto(VALUE from, VALUE to)
     return from;
 }
 
-/*
- *  Document-method: Integer#times
- *  call-seq:
- *     int.times {|i| block }  ->  self
- *     int.times               ->  an_enumerator
- *
- *  Iterates the given block +int+ times, passing in values from zero to
- *  <code>int - 1</code>.
- *
- *  If no block is given, an Enumerator is returned instead.
- *
- *     5.times {|i| print i, " " }   #=> 0 1 2 3 4
- */
-
 static VALUE
 int_dotimes_size(VALUE num, VALUE args, VALUE eobj)
 {
@@ -5369,6 +5355,21 @@ int_dotimes_size(VALUE num, VALUE args, VALUE eobj)
     }
     return num;
 }
+
+/*
+ *  call-seq:
+ *    times {|i| ... } -> self
+ *    times            -> enumerator
+ *
+ *  Calls the given block +self+ times with each integer in <tt>(0..self-1)</tt>:
+ *
+ *    a = []
+ *    5.times {|i| a.push(i) } # => 5
+ *    a                        # => [0, 1, 2, 3, 4]
+ *
+ *  With no block given, returns an Enumerator.
+ *
+ */
 
 static VALUE
 int_dotimes(VALUE num)
@@ -5396,35 +5397,52 @@ int_dotimes(VALUE num)
 }
 
 /*
- *  Document-method: Integer#round
  *  call-seq:
- *     int.round([ndigits] [, half: mode])  ->  integer or float
+ *    round(ndigits= 0, half: :up) -> integer
  *
- *  Returns +int+ rounded to the nearest value with
- *  a precision of +ndigits+ decimal digits (default: 0).
+ *  Returns +self+ rounded to the nearest value with
+ *  a precision of +ndigits+ decimal digits.
  *
- *  When the precision is negative, the returned value is an integer
- *  with at least <code>ndigits.abs</code> trailing zeros.
+ *  When +ndigits+ is negative, the returned value
+ *  has at least <tt>ndigits.abs</tt> trailing zeros:
+ *
+ *    555.round(-1)      # => 560
+ *    555.round(-2)      # => 600
+ *    555.round(-3)      # => 1000
+ *    -555.round(-2)     # => -600
+ *    555.round(-4)      # => 0
  *
  *  Returns +self+ when +ndigits+ is zero or positive.
  *
- *     1.round           #=> 1
- *     1.round(2)        #=> 1
- *     15.round(-1)      #=> 20
- *     (-15).round(-1)   #=> -20
+ *    555.round     # => 555
+ *    555.round(1)  # => 555
+ *    555.round(50) # => 555
  *
- *  The optional +half+ keyword argument is available
- *  similar to Float#round.
+ *  If keyword argument +half+ is given,
+ *  and +self+ is equidistant from the two candidate  values,
+ *  the rounding is according to the given +half+ value:
  *
- *     25.round(-1, half: :up)      #=> 30
- *     25.round(-1, half: :down)    #=> 20
- *     25.round(-1, half: :even)    #=> 20
- *     35.round(-1, half: :up)      #=> 40
- *     35.round(-1, half: :down)    #=> 30
- *     35.round(-1, half: :even)    #=> 40
- *     (-25).round(-1, half: :up)   #=> -30
- *     (-25).round(-1, half: :down) #=> -20
- *     (-25).round(-1, half: :even) #=> -20
+ *  - +:up+ or +nil+: round away from zero:
+ *
+ *      25.round(-1, half: :up)      # => 30
+ *      (-25).round(-1, half: :up)   # => -30
+ *
+ *  - +:down+: round toward zero:
+ *
+ *      25.round(-1, half: :down)    # => 20
+ *      (-25).round(-1, half: :down) # => -20
+ *
+ *
+ *  - +:even+: round toward the candidate whose last nonzero digit is even:
+ *
+ *      25.round(-1, half: :even)    # => 20
+ *      15.round(-1, half: :even)    # => 20
+ *      (-25).round(-1, half: :even) # => -20
+ *
+ *  Raises and exception if the value for +half+ is invalid.
+ *
+ *  Related: Integer#truncate.
+ *
  */
 
 static VALUE
@@ -5444,22 +5462,27 @@ int_round(int argc, VALUE* argv, VALUE num)
 }
 
 /*
- *  Document-method: Integer#floor
  *  call-seq:
- *     int.floor([ndigits])  ->  integer or float
+ *    floor(ndigits = 0) -> integer
  *
- *  Returns the largest number less than or equal to +int+ with
- *  a precision of +ndigits+ decimal digits (default: 0).
+ *  Returns the largest number less than or equal to +self+ with
+ *  a precision of +ndigits+ decimal digits.
  *
- *  When the precision is negative, the returned value is an integer
- *  with at least <code>ndigits.abs</code> trailing zeros.
+ *  When +ndigits+ is negative, the returned value
+ *  has at least <tt>ndigits.abs</tt> trailing zeros:
+ *
+ *    555.floor(-1)  # => 550
+ *    555.floor(-2)  # => 500
+ *    -555.floor(-2) # => -600
+ *    555.floor(-3)  # => 0
  *
  *  Returns +self+ when +ndigits+ is zero or positive.
  *
- *     1.floor           #=> 1
- *     1.floor(2)        #=> 1
- *     18.floor(-1)      #=> 10
- *     (-18).floor(-1)   #=> -20
+ *    555.floor     # => 555
+ *    555.floor(50) # => 555
+ *
+ *  Related: Integer#ceil.
+ *
  */
 
 static VALUE
@@ -5476,22 +5499,27 @@ int_floor(int argc, VALUE* argv, VALUE num)
 }
 
 /*
- *  Document-method: Integer#ceil
  *  call-seq:
- *     int.ceil([ndigits])  ->  integer or float
+ *    ceil(ndigits = 0) -> integer
  *
- *  Returns the smallest number greater than or equal to +int+ with
- *  a precision of +ndigits+ decimal digits (default: 0).
+ *  Returns the smallest number greater than or equal to +self+ with
+ *  a precision of +ndigits+ decimal digits.
  *
  *  When the precision is negative, the returned value is an integer
- *  with at least <code>ndigits.abs</code> trailing zeros.
+ *  with at least <code>ndigits.abs</code> trailing zeros:
+ *
+ *    555.ceil(-1)  # => 560
+ *    555.ceil(-2)  # => 600
+ *    -555.ceil(-2) # => -500
+ *    555.ceil(-3)  # => 1000
  *
  *  Returns +self+ when +ndigits+ is zero or positive.
  *
- *     1.ceil           #=> 1
- *     1.ceil(2)        #=> 1
- *     18.ceil(-1)      #=> 20
- *     (-18).ceil(-1)   #=> -10
+ *     555.ceil     # => 555
+ *     555.ceil(50) # => 555
+ *
+ *  Related: Integer#floor.
+ *
  */
 
 static VALUE
@@ -5508,22 +5536,26 @@ int_ceil(int argc, VALUE* argv, VALUE num)
 }
 
 /*
- *  Document-method: Integer#truncate
  *  call-seq:
- *     int.truncate([ndigits])  ->  integer or float
+ *    truncate(ndigits = 0) -> integer
  *
- *  Returns +int+ truncated (toward zero) to
- *  a precision of +ndigits+ decimal digits (default: 0).
+ *  Returns +self+ truncated (toward zero) to
+ *  a precision of +ndigits+ decimal digits.
  *
- *  When the precision is negative, the returned value is an integer
- *  with at least <code>ndigits.abs</code> trailing zeros.
+ *  When +ndigits+ is negative, the returned value
+ *  has at least <tt>ndigits.abs</tt> trailing zeros:
+ *
+ *    555.truncate(-1)  # => 550
+ *    555.truncate(-2)  # => 500
+ *    -555.truncate(-2) # => -500
  *
  *  Returns +self+ when +ndigits+ is zero or positive.
  *
- *     1.truncate           #=> 1
- *     1.truncate(2)        #=> 1
- *     18.truncate(-1)      #=> 10
- *     (-18).truncate(-1)   #=> -10
+ *    555.truncate     # => 555
+ *    555.truncate(50) # => 555
+ *
+ *  Related: Integer#round.
+ *
  */
 
 static VALUE
@@ -5581,29 +5613,35 @@ DEFINE_INT_SQRT(BDIGIT, rb_bdigit_dbl, BDIGIT_DBL)
     rb_raise(rb_eMathDomainError, "Numerical argument is out of domain - " #msg)
 
 /*
- *  Document-method: Integer::sqrt
  *  call-seq:
- *     Integer.sqrt(n)  ->  integer
+ *    Integer.sqrt(numeric) -> integer
  *
  *  Returns the integer square root of the non-negative integer +n+,
- *  i.e. the largest non-negative integer less than or equal to the
- *  square root of +n+.
+ *  which is the largest non-negative integer less than or equal to the
+ *  square root of +numeric+.
  *
- *    Integer.sqrt(0)        #=> 0
- *    Integer.sqrt(1)        #=> 1
- *    Integer.sqrt(24)       #=> 4
- *    Integer.sqrt(25)       #=> 5
- *    Integer.sqrt(10**400)  #=> 10**200
+ *    Integer.sqrt(0)       # => 0
+ *    Integer.sqrt(1)       # => 1
+ *    Integer.sqrt(24)      # => 4
+ *    Integer.sqrt(25)      # => 5
+ *    Integer.sqrt(10**400) # => 10**200
  *
- *  Equivalent to <code>Math.sqrt(n).floor</code>, except that
- *  the result of the latter code may differ from the true value
+ *  If +numeric+ is not an \Integer, it is converted to an \Integer:
+ *
+ *    Integer.sqrt(Complex(4, 0))  # => 2
+ *    Integer.sqrt(Rational(4, 1)) # => 2
+ *    Integer.sqrt(4.0)            # => 2
+ *    Integer.sqrt(3.14159)        # => 1
+ *
+ *  This method is equivalent to <tt>Math.sqrt(numeric).floor</tt>,
+ *  except that the result of the latter code may differ from the true value
  *  due to the limited precision of floating point arithmetic.
  *
- *    Integer.sqrt(10**46)     #=> 100000000000000000000000
- *    Math.sqrt(10**46).floor  #=>  99999999999999991611392 (!)
+ *    Integer.sqrt(10**46)    # => 100000000000000000000000
+ *    Math.sqrt(10**46).floor # => 99999999999999991611392
  *
- *  If +n+ is not an Integer, it is converted to an Integer first.
- *  If +n+ is negative, a Math::DomainError is raised.
+ *  Raises an exception if +numeric+ is negative.
+ *
  */
 
 static VALUE
