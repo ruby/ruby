@@ -634,15 +634,13 @@ module Bundler
     end
 
     def converge_dependencies
+      changes = false
+
       @dependencies.each do |dep|
         if dep.source
           dep.source = sources.get(dep.source)
         end
-      end
 
-      changes = false
-
-      @dependencies.each do |dep|
         unless locked_dep = @locked_deps[dep.name]
           changes = true
           next
