@@ -750,13 +750,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self._all # :nodoc:
     unless @@all
-      @@all = stubs.map(&:to_spec)
-
-      # After a reset, make sure already loaded specs
-      # are still marked as activated.
-      specs = {}
-      Gem.loaded_specs.each_value{|s| specs[s] = true }
-      @@all.each{|s| s.activated = true if specs[s] }
+      @@all = Gem.loaded_specs.values | stubs.map(&:to_spec)
     end
     @@all
   end
