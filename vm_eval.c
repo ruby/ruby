@@ -263,7 +263,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
                                   argv, MISSING_NOENTRY, calling->kw_splat);
 	}
       case VM_METHOD_TYPE_OPTIMIZED:
-	switch (vm_cc_cme(cc)->def->body.optimize_type) {
+	switch (vm_cc_cme(cc)->def->body.optimized.type) {
 	  case OPTIMIZED_METHOD_TYPE_SEND:
             ret = send_internal(calling->argc, argv, calling->recv, calling->kw_splat ? CALL_FCALL_KW : CALL_FCALL);
 	    goto success;
@@ -275,7 +275,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 		goto success;
 	    }
 	  default:
-	    rb_bug("vm_call0: unsupported optimized method type (%d)", vm_cc_cme(cc)->def->body.optimize_type);
+	    rb_bug("vm_call0: unsupported optimized method type (%d)", vm_cc_cme(cc)->def->body.optimized.type);
 	}
 	break;
       case VM_METHOD_TYPE_UNDEF:

@@ -3591,7 +3591,7 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
         return vm_call_alias(ec, cfp, calling);
 
       case VM_METHOD_TYPE_OPTIMIZED:
-	switch (vm_cc_cme(cc)->def->body.optimize_type) {
+	switch (vm_cc_cme(cc)->def->body.optimized.type) {
 	  case OPTIMIZED_METHOD_TYPE_SEND:
             CC_SET_FASTPATH(cc, vm_call_opt_send, TRUE);
             return vm_call_opt_send(ec, cfp, calling);
@@ -3603,7 +3603,7 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
             return vm_call_opt_block_call(ec, cfp, calling);
 	  default:
 	    rb_bug("vm_call_method: unsupported optimized method type (%d)",
-		   vm_cc_cme(cc)->def->body.optimize_type);
+		   vm_cc_cme(cc)->def->body.optimized.type);
 	}
 
       case VM_METHOD_TYPE_UNDEF:
