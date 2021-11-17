@@ -4432,14 +4432,10 @@ gen_getclassvariable(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb)
     // rb_vm_getclassvariable can raise exceptions.
     jit_prepare_routine_call(jit, ctx, REG0);
 
-    mov(cb, C_ARG_REGS[0], member_opnd(REG_CFP, rb_control_frame_t, ep));
-    call_ptr(cb, REG0, (void *)rb_vm_get_cref);
-
     mov(cb, C_ARG_REGS[0], member_opnd(REG_CFP, rb_control_frame_t, iseq));
-    mov(cb, C_ARG_REGS[1], RAX);
-    mov(cb, C_ARG_REGS[2], REG_CFP);
-    mov(cb, C_ARG_REGS[3], imm_opnd(jit_get_arg(jit, 0)));
-    mov(cb, C_ARG_REGS[4], imm_opnd(jit_get_arg(jit, 1)));
+    mov(cb, C_ARG_REGS[1], REG_CFP);
+    mov(cb, C_ARG_REGS[2], imm_opnd(jit_get_arg(jit, 0)));
+    mov(cb, C_ARG_REGS[3], imm_opnd(jit_get_arg(jit, 1)));
 
     call_ptr(cb, REG0, (void *)rb_vm_getclassvariable);
 
