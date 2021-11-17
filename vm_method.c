@@ -345,6 +345,15 @@ rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_me
     }
 }
 
+void
+rb_add_method_optimized(VALUE klass, ID mid, enum method_optimized_type opt_type, unsigned int index, rb_method_visibility_t visi)
+{
+    rb_method_optimized_t opt = {
+        .type = opt_type,
+    };
+    rb_add_method(klass, mid, VM_METHOD_TYPE_OPTIMIZED, &opt, visi);
+}
+
 static void
 rb_method_definition_release(rb_method_definition_t *def, int complemented)
 {
@@ -509,7 +518,7 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
 	    setup_method_cfunc_struct(UNALIGNED_MEMBER_PTR(def, body.cfunc), rb_f_notimplement, -1);
 	    return;
 	  case VM_METHOD_TYPE_OPTIMIZED:
-            def->body.optimize_type = (enum method_optimized_type)(intptr_t)opts;
+            def->body.optimized = *(rb_method_optimized_t *)opts;
 	    return;
 	  case VM_METHOD_TYPE_REFINED:
 	    {
@@ -1931,7 +1940,7 @@ rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_defini
       case VM_METHOD_TYPE_UNDEF:
 	return 1;
       case VM_METHOD_TYPE_OPTIMIZED:
-	return d1->body.optimize_type == d2->body.optimize_type;
+	return (d1->body.optimized.type == d2->body.optimized.type);
       case VM_METHOD_TYPE_REFINED:
       case VM_METHOD_TYPE_ALIAS:
 	break;
@@ -1965,7 +1974,7 @@ rb_hash_method_definition(st_index_t hash, const rb_method_definition_t *def)
       case VM_METHOD_TYPE_UNDEF:
 	return hash;
       case VM_METHOD_TYPE_OPTIMIZED:
-	return rb_hash_uint(hash, def->body.optimize_type);
+	return rb_hash_uint(hash, def->body.optimized.type);
       case VM_METHOD_TYPE_REFINED:
       case VM_METHOD_TYPE_ALIAS:
 	break; /* unreachable */

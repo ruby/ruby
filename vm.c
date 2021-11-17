@@ -3764,8 +3764,8 @@ Init_VM(void)
     vm_init_redefined_flag();
 
     rb_block_param_proxy = rb_obj_alloc(rb_cObject);
-    rb_add_method(rb_singleton_class(rb_block_param_proxy), idCall, VM_METHOD_TYPE_OPTIMIZED,
-		  (void *)OPTIMIZED_METHOD_TYPE_BLOCK_CALL, METHOD_VISI_PUBLIC);
+    rb_add_method_optimized(rb_singleton_class(rb_block_param_proxy), idCall,
+                            OPTIMIZED_METHOD_TYPE_BLOCK_CALL, 0, METHOD_VISI_PUBLIC);
     rb_obj_freeze(rb_block_param_proxy);
     rb_gc_register_mark_object(rb_block_param_proxy);
 
