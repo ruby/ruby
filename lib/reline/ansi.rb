@@ -277,7 +277,7 @@ class Reline::ANSI
 
   def self.move_cursor_up(x)
     if x > 0
-      @@output.write "\e[#{x}A" if x > 0
+      @@output.write "\e[#{x}A"
     elsif x < 0
       move_cursor_down(-x)
     end
@@ -285,7 +285,7 @@ class Reline::ANSI
 
   def self.move_cursor_down(x)
     if x > 0
-      @@output.write "\e[#{x}B" if x > 0
+      @@output.write "\e[#{x}B"
     elsif x < 0
       move_cursor_up(-x)
     end
