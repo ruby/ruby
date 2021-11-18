@@ -112,6 +112,7 @@ char *strchr(char*,char);
 #include "internal/file.h"
 #include "internal/gc.h"
 #include "internal/io.h"
+#include "internal/object.h"
 #include "internal/vm.h"
 #include "ruby/encoding.h"
 #include "ruby/ruby.h"
@@ -2937,7 +2938,7 @@ dir_glob_option_base(VALUE base)
 static int
 dir_glob_option_sort(VALUE sort)
 {
-    return (sort ? 0 : FNM_GLOB_NOSORT);
+    return (rb_bool_expected(sort, "sort") ? 0 : FNM_GLOB_NOSORT);
 }
 
 static VALUE
