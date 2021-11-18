@@ -80,4 +80,33 @@ class TestCSVParseStrip < Test::Unit::TestCase
                            %Q{"a" ,"b " \r\n},
                            strip: true))
   end
+
+  def test_col_sep_incompatible_true
+    message = "The provided strip (true) and " \
+              "col_sep (\\t) options are incompatible."
+    assert_raise_with_message(ArgumentError, message) do
+      CSV.parse_line(%Q{"a"\t"b"\n},
+                     col_sep: "\t",
+                     strip: true)
+    end
+  end
+
+  def test_col_sep_incompatible_string
+    message = "The provided strip (\\t) and " \
+              "col_sep (\\t) options are incompatible."
+    assert_raise_with_message(ArgumentError, message) do
+      CSV.parse_line(%Q{"a"\t"b"\n},
+                     col_sep: "\t",
+                     strip: "\t")
+    end
+  end
+
+  def test_col_sep_compatible_string
+    assert_equal(
+      ["a", "b"],
+      CSV.parse_line(%Q{\va\tb\v\n},
+                     col_sep: "\t",
+                     strip: "\v")
+    )
+  end
 end

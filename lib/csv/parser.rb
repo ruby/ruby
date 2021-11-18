@@ -361,6 +361,7 @@ class CSV
       prepare_skip_lines
       prepare_strip
       prepare_separators
+      validate_strip_and_col_sep_options
       prepare_quoted
       prepare_unquoted
       prepare_line
@@ -529,6 +530,28 @@ class CSV
       @lf = "\n".encode(@encoding)
       @line_end = Regexp.new("\r\n|\n|\r".encode(@encoding))
       @not_line_end = Regexp.new("[^\r\n]+".encode(@encoding))
+    end
+
+    # This method verifies that there are no (obvious) ambiguities with the
+    # provided +col_sep+ and +strip+ parsing options. For example, if +col_sep+
+    # and +strip+ were both equal to +\t+, then there would be no clear way to
+    # parse the input.
+    def validate_strip_and_col_sep_options
+      return unless @strip
+
+      if @strip.is_a?(String)
+        if @column_separator.start_with?(@strip) || @column_separator.end_with?(@strip)
+          raise ArgumentError,
+                "The provided strip (#{@escaped_strip}) and " \
+                "col_sep (#{@escaped_column_separator}) options are incompatible."
+        end
+      else
+        if Regexp.new("\\A[#{@escaped_strip}]|[#{@escaped_strip}]\\z").match?(@column_separator)
+          raise ArgumentError,
+                "The provided strip (true) and " \
+                "col_sep (#{@escaped_column_separator}) options are incompatible."
+        end
+      end
     end
 
     def prepare_quoted
