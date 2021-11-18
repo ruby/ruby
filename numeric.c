@@ -3750,7 +3750,7 @@ fix_minus(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    int - numeric -> numeric_result
+ *    self - numeric -> numeric_result
  *
  *  Performs subtraction:
  *
@@ -4282,6 +4282,21 @@ fix_pow(VALUE x, VALUE y)
     }
 }
 
+/*
+ *  call-seq:
+ *    self ** numeric -> numeric_result
+ *
+ *  Raises +self+ to the power of +numeric+:
+ *
+ *    2 ** 3              # => 8
+ *    2 ** -3             # => (1/8)
+ *    -2 ** 3             # => -8
+ *    -2 ** -3            # => (-1/8)
+ *    2 ** 3.3            # => 9.849155306759329
+ *    2 ** Rational(3, 1) # => (8/1)
+ *    2 ** Complex(3, 0)  # => (8+0i)
+ *
+ */
 VALUE
 rb_int_pow(VALUE x, VALUE y)
 {
@@ -4776,15 +4791,6 @@ int_xor(VALUE x, VALUE y)
     return Qnil;
 }
 
-/*
- * Document-method: Integer#<<
- * call-seq:
- *   int << count  ->  integer
- *
- * Returns +int+ shifted left +count+ positions, or right if +count+
- * is negative.
- */
-
 static VALUE
 rb_fix_lshift(VALUE x, VALUE y)
 {
@@ -4810,6 +4816,23 @@ fix_lshift(long val, unsigned long width)
     return LONG2NUM(val);
 }
 
+/*
+ *  call-seq:
+ *    self << count -> integer
+ *
+ *  Returns +self+ with bits shifted +count+ positions to the left,
+ *  or to the right if +count+ is negative:
+ *
+ *    n = 0b11110000
+ *    "%08b" % (n << 1)  # => "111100000"
+ *    "%08b" % (n << 3)  # => "11110000000"
+ *    "%08b" % (n << -1) # => "01111000"
+ *    "%08b" % (n << -3) # => "00011110"
+ *
+ *  Related: Integer#>>.
+ *
+ */
+
 VALUE
 rb_int_lshift(VALUE x, VALUE y)
 {
@@ -4821,15 +4844,6 @@ rb_int_lshift(VALUE x, VALUE y)
     }
     return Qnil;
 }
-
-/*
- * Document-method: Integer#>>
- * call-seq:
- *   int >> count  ->  integer
- *
- * Returns +int+ shifted right +count+ positions, or left if +count+
- * is negative.
- */
 
 static VALUE
 rb_fix_rshift(VALUE x, VALUE y)
@@ -4856,6 +4870,23 @@ fix_rshift(long val, unsigned long i)
     val = RSHIFT(val, i);
     return LONG2FIX(val);
 }
+
+/*
+ *  call-seq:
+ *    self >> count -> integer
+ *
+ *  Returns +self+ with bits shifted +count+ positions to the right,
+ *  or to the left if +count+ is negative:
+ *
+ *    n = 0b11110000
+ *    "%08b" % (n >> 1)  # => "01111000"
+ *    "%08b" % (n >> 3)  # => "00011110"
+ *    "%08b" % (n >> -1) # => "111100000"
+ *    "%08b" % (n >> -3) # => "11110000000"
+ *
+ *  Related: Integer#<<.
+ *
+ */
 
 static VALUE
 rb_int_rshift(VALUE x, VALUE y)
@@ -5031,12 +5062,20 @@ int_aref(int const argc, VALUE * const argv, VALUE const num)
 }
 
 /*
- *  Document-method: Integer#to_f
  *  call-seq:
- *     int.to_f  ->  float
+ *    to_f -> float
  *
- *  Converts +int+ to a Float.  If +int+ doesn't fit in a Float,
- *  the result is infinity.
+ *  Converts +self+ to a Float:
+ *
+ *    1.to_f  # => 1.0
+ *    -1.to_f # => -1.0
+ *
+ *  If the value of +self+ does not fit in a \Float,
+ *  the result is infinity:
+ *
+ *    (10**400).to_f  # => Infinity
+ *    (-10**400).to_f # => -Infinity
+ *
  */
 
 static VALUE
