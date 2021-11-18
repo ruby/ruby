@@ -143,6 +143,13 @@ Outstanding ones only.
 
     * Integer.try_convert is added. [[Feature #15211]]
 
+* Kernel
+
+
+    * Kernel#load now accepts a module as the second argument,
+      and will load the file using the given module as the top
+      level module. [[Feature #6210]]
+
 * MatchData
 
     * MatchData#match is added [[Feature #18172]]
@@ -155,6 +162,12 @@ Outstanding ones only.
       already includes the argument. Module#prepend still does not
       modify the ancestor chain if the receiver has already prepended
       the argument. [[Bug #17423]]
+
+    * Module#private, #public, #protected, and #module_function will
+      now return their arguments.  If a single argument is given, it
+      is returned. If no arguments are given, nil is returned.  If
+      multiple arguments are given, they are returned as an array.
+      [[Feature #12495]]
 
 * Process
 
@@ -398,7 +411,9 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
   `$VERBOSE` is `nil`.  [[Feature #17798]]
 
 [Bug #4443]:      https://bugs.ruby-lang.org/issues/4443
+[Feature #6210]:  https://bugs.ruby-lang.org/issues/6210
 [Feature #12194]: https://bugs.ruby-lang.org/issues/12194
+[Feature #12495]: https://bugs.ruby-lang.org/issues/12495
 [Feature #14256]: https://bugs.ruby-lang.org/issues/14256
 [Feature #14394]: https://bugs.ruby-lang.org/issues/14394
 [Feature #14579]: https://bugs.ruby-lang.org/issues/14579

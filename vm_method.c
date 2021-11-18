@@ -2130,16 +2130,19 @@ set_visibility(int argc, const VALUE *argv, VALUE module, rb_method_visibility_t
 
 /*
  *  call-seq:
- *     public                 -> self
- *     public(symbol, ...)    -> self
- *     public(string, ...)    -> self
- *     public(array)          -> self
+ *     public                                -> nil
+ *     public(method_name)                   -> method_name
+ *     public(method_name, method_name, ...) -> array
+ *     public(array)                         -> array
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to public. With arguments, sets the named methods to
  *  have public visibility.
  *  String arguments are converted to symbols.
  *  An Array of Symbols and/or Strings is also accepted.
+ *  If a single argument is passed, it is returned.
+ *  If no argument is passed, nil is returned.
+ *  If multiple arguments are passed, the arguments are returned as an array.
  */
 
 static VALUE
@@ -2150,16 +2153,19 @@ rb_mod_public(int argc, VALUE *argv, VALUE module)
 
 /*
  *  call-seq:
- *     protected                -> self
- *     protected(symbol, ...)   -> self
- *     protected(string, ...)   -> self
- *     protected(array)         -> self
+ *     protected                                -> nil
+ *     protected(method_name)                   -> method_name
+ *     protected(method_name, method_name, ...) -> array
+ *     protected(array)                         -> array
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to protected. With arguments, sets the named methods
  *  to have protected visibility.
  *  String arguments are converted to symbols.
  *  An Array of Symbols and/or Strings is also accepted.
+ *  If a single argument is passed, it is returned.
+ *  If no argument is passed, nil is returned.
+ *  If multiple arguments are passed, the arguments are returned as an array.
  *
  *  If a method has protected visibility, it is callable only where
  *  <code>self</code> of the context is the same as the method.
@@ -2179,16 +2185,19 @@ rb_mod_protected(int argc, VALUE *argv, VALUE module)
 
 /*
  *  call-seq:
- *     private                 -> self
- *     private(symbol, ...)    -> self
- *     private(string, ...)    -> self
- *     private(array)          -> self
+ *     private                                -> nil
+ *     private(method_name)                   -> method_name
+ *     private(method_name, method_name, ...) -> array
+ *     private(array)                         -> array
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to private. With arguments, sets the named methods
  *  to have private visibility.
  *  String arguments are converted to symbols.
  *  An Array of Symbols and/or Strings is also accepted.
+ *  If a single argument is passed, it is returned.
+ *  If no argument is passed, nil is returned.
+ *  If multiple arguments are passed, the arguments are returned as an array.
  *
  *     module Mod
  *       def a()  end
@@ -2423,8 +2432,9 @@ top_ruby2_keywords(int argc, VALUE *argv, VALUE module)
 
 /*
  *  call-seq:
- *     module_function(symbol, ...)    -> self
- *     module_function(string, ...)    -> self
+ *     module_function                                -> nil
+ *     module_function(method_name)                   -> method_name
+ *     module_function(method_name, method_name, ...) -> array
  *
  *  Creates module functions for the named methods. These functions may
  *  be called with the module as a receiver, and also become available
@@ -2434,6 +2444,9 @@ top_ruby2_keywords(int argc, VALUE *argv, VALUE module)
  *  used with no arguments, subsequently defined methods become module
  *  functions.
  *  String arguments are converted to symbols.
+ *  If a single argument is passed, it is returned.
+ *  If no argument is passed, nil is returned.
+ *  If multiple arguments are passed, the arguments are returned as an array.
  *
  *     module Mod
  *       def one
