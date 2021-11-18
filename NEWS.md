@@ -7,6 +7,15 @@ Note that each entry is kept to a minimum, see links for details.
 
 ## Language changes
 
+* The block arguments can be now be anonymous, if the block will
+  only be passed to another method. [[Feature #11256]]
+
+    ```ruby
+    def foo(&)
+      bar(&)
+    end
+    ```
+
 * Pin operator now takes an expression. [[Feature #17411]]
 
     ```ruby
@@ -412,6 +421,7 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 
 [Bug #4443]:      https://bugs.ruby-lang.org/issues/4443
 [Feature #6210]:  https://bugs.ruby-lang.org/issues/6210
+[Feature #11256]: https://bugs.ruby-lang.org/issues/11256
 [Feature #12194]: https://bugs.ruby-lang.org/issues/12194
 [Feature #12495]: https://bugs.ruby-lang.org/issues/12495
 [Feature #14256]: https://bugs.ruby-lang.org/issues/14256

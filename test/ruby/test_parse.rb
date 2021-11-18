@@ -1044,7 +1044,7 @@ x = __ENCODING__
     end;
 
     assert_syntax_error("def\nf(000)end", /^  \^~~/)
-    assert_syntax_error("def\nf(&)end", /^   \^/)
+    assert_syntax_error("def\nf(&0)end", /^   \^/)
   end
 
   def test_method_location_in_rescue

@@ -427,6 +427,8 @@ static void token_info_drop(struct parser_params *p, const char *token, rb_code_
 
 #define lambda_beginning_p() (p->lex.lpar_beg == p->lex.paren_nest)
 
+#define ANON_BLOCK_ID '&'
+
 static enum yytokentype yylex(YYSTYPE*, YYLTYPE*, struct parser_params*);
 
 #ifndef RIPPER
@@ -2846,6 +2848,17 @@ block_arg	: tAMPER arg_value
 		    /*% %*/
 		    /*% ripper: $2 %*/
 		    }
+                | tAMPER
+                    {
+                    /*%%%*/
+                        if (!local_id(p, ANON_BLOCK_ID)) {
+                            compile_error(p, "no anonymous block parameter");
+                        }
+                        $$ = NEW_BLOCK_PASS(NEW_LVAR(ANON_BLOCK_ID, &@1), &@$);
+                    /*%
+                    $$ = Qnil;
+                    %*/
+                    }
 		;
 
 opt_block_arg	: ',' block_arg
@@ -5541,6 +5554,14 @@ f_block_arg	: blkarg_mark tIDENTIFIER
 		    /*% %*/
 		    /*% ripper: blockarg!($2) %*/
 		    }
+                | blkarg_mark
+                    {
+                    /*%%%*/
+                        arg_var(p, shadowing_lvar(p, get_id(ANON_BLOCK_ID)));
+                    /*%
+                    $$ = dispatch1(blockarg, Qnil);
+                    %*/
+                    }
 		;
 
 opt_f_block_arg	: ',' f_block_arg
