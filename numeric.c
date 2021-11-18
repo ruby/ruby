@@ -35,6 +35,7 @@
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/rational.h"
+#include "internal/string.h"
 #include "internal/util.h"
 #include "internal/variable.h"
 #include "ruby/encoding.h"
@@ -3631,6 +3632,18 @@ rb_fix2str(VALUE x, int base)
     return rb_usascii_str_new(b, e - b);
 }
 
+static VALUE rb_fix_to_s_static[10];
+
+MJIT_FUNC_EXPORTED VALUE
+rb_fix_to_s(VALUE x)
+{
+    long i = FIX2LONG(x);
+    if (i >= 0 && i < 10) {
+        return rb_fix_to_s_static[i];
+    }
+    return rb_fix2str(x, 10);
+}
+
 /*
  *  call-seq:
  *    to_s(base = 10)  ->  string
@@ -3652,8 +3665,8 @@ rb_fix2str(VALUE x, int base)
  *
  */
 
-static VALUE
-int_to_s(int argc, VALUE *argv, VALUE x)
+MJIT_FUNC_EXPORTED VALUE
+rb_int_to_s(int argc, VALUE *argv, VALUE x)
 {
     int base;
 
@@ -5949,7 +5962,7 @@ Init_Numeric(void)
     rb_define_singleton_method(rb_cInteger, "sqrt", rb_int_s_isqrt, 1);
     rb_define_singleton_method(rb_cInteger, "try_convert", int_s_try_convert, 1);
 
-    rb_define_method(rb_cInteger, "to_s", int_to_s, -1);
+    rb_define_method(rb_cInteger, "to_s", rb_int_to_s, -1);
     rb_define_alias(rb_cInteger, "inspect", "to_s");
     rb_define_method(rb_cInteger, "allbits?", int_allbits_p, 1);
     rb_define_method(rb_cInteger, "anybits?", int_anybits_p, 1);
@@ -5998,6 +6011,20 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, ">>", rb_int_rshift, 1);
 
     rb_define_method(rb_cInteger, "digits", rb_int_digits, -1);
+
+    rb_fix_to_s_static[0] = rb_fstring_literal("0");
+    rb_fix_to_s_static[1] = rb_fstring_literal("1");
+    rb_fix_to_s_static[2] = rb_fstring_literal("2");
+    rb_fix_to_s_static[3] = rb_fstring_literal("3");
+    rb_fix_to_s_static[4] = rb_fstring_literal("4");
+    rb_fix_to_s_static[5] = rb_fstring_literal("5");
+    rb_fix_to_s_static[6] = rb_fstring_literal("6");
+    rb_fix_to_s_static[7] = rb_fstring_literal("7");
+    rb_fix_to_s_static[8] = rb_fstring_literal("8");
+    rb_fix_to_s_static[9] = rb_fstring_literal("9");
+    for(int i = 0; i < 10; i++) {
+        rb_gc_register_mark_object(rb_fix_to_s_static[i]);
+    }
 
     /* An obsolete class, use Integer */
     rb_define_const(rb_cObject, "Fixnum", rb_cInteger);

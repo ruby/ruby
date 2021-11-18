@@ -1248,8 +1248,8 @@ rb_obj_frozen_p(VALUE obj)
  *  Always returns the empty string.
  */
 
-static VALUE
-nil_to_s(VALUE obj)
+MJIT_FUNC_EXPORTED VALUE
+rb_nil_to_s(VALUE obj)
 {
     return rb_cNilClass_to_s;
 }
@@ -1331,8 +1331,8 @@ nil_match(VALUE obj1, VALUE obj2)
  * The string representation of <code>true</code> is "true".
  */
 
-static VALUE
-true_to_s(VALUE obj)
+MJIT_FUNC_EXPORTED VALUE
+rb_true_to_s(VALUE obj)
 {
     return rb_cTrueClass_to_s;
 }
@@ -1408,8 +1408,8 @@ true_xor(VALUE obj, VALUE obj2)
  * The string representation of <code>false</code> is "false".
  */
 
-static VALUE
-false_to_s(VALUE obj)
+MJIT_FUNC_EXPORTED VALUE
+rb_false_to_s(VALUE obj)
 {
     return rb_cFalseClass_to_s;
 }
@@ -1585,7 +1585,7 @@ rb_obj_cmp(VALUE obj1, VALUE obj2)
  * show information on the thing we're attached to as well.
  */
 
-static VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_mod_to_s(VALUE klass)
 {
     ID id_defined_at;
@@ -4586,7 +4586,7 @@ InitVM_Object(void)
     rb_cNilClass = rb_define_class("NilClass", rb_cObject);
     rb_cNilClass_to_s = rb_fstring_enc_lit("", rb_usascii_encoding());
     rb_gc_register_mark_object(rb_cNilClass_to_s);
-    rb_define_method(rb_cNilClass, "to_s", nil_to_s, 0);
+    rb_define_method(rb_cNilClass, "to_s", rb_nil_to_s, 0);
     rb_define_method(rb_cNilClass, "to_a", nil_to_a, 0);
     rb_define_method(rb_cNilClass, "to_h", nil_to_h, 0);
     rb_define_method(rb_cNilClass, "inspect", nil_inspect, 0);
@@ -4668,7 +4668,7 @@ InitVM_Object(void)
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);
     rb_cTrueClass_to_s = rb_fstring_enc_lit("true", rb_usascii_encoding());
     rb_gc_register_mark_object(rb_cTrueClass_to_s);
-    rb_define_method(rb_cTrueClass, "to_s", true_to_s, 0);
+    rb_define_method(rb_cTrueClass, "to_s", rb_true_to_s, 0);
     rb_define_alias(rb_cTrueClass, "inspect", "to_s");
     rb_define_method(rb_cTrueClass, "&", true_and, 1);
     rb_define_method(rb_cTrueClass, "|", true_or, 1);
@@ -4680,7 +4680,7 @@ InitVM_Object(void)
     rb_cFalseClass = rb_define_class("FalseClass", rb_cObject);
     rb_cFalseClass_to_s = rb_fstring_enc_lit("false", rb_usascii_encoding());
     rb_gc_register_mark_object(rb_cFalseClass_to_s);
-    rb_define_method(rb_cFalseClass, "to_s", false_to_s, 0);
+    rb_define_method(rb_cFalseClass, "to_s", rb_false_to_s, 0);
     rb_define_alias(rb_cFalseClass, "inspect", "to_s");
     rb_define_method(rb_cFalseClass, "&", false_and, 1);
     rb_define_method(rb_cFalseClass, "|", false_or, 1);

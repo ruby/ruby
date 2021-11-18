@@ -381,9 +381,10 @@ concatstrings
     val = rb_str_concat_literals(num, STACK_ADDR_FROM_TOP(num));
 }
 
-/* push the result of to_s. */
+/* Convert the result to string if not already a string.
+   This is used as a backup if to_s does not return a string. */
 DEFINE_INSN
-tostring
+anytostring
 ()
 (VALUE val, VALUE str)
 (VALUE val)
@@ -778,6 +779,21 @@ opt_send_without_block
     if (val == Qundef) {
         RESTORE_REGS();
         NEXT_INSN();
+    }
+}
+
+/* Convert object to string using to_s or equivalent. */
+DEFINE_INSN
+objtostring
+(CALL_DATA cd)
+(VALUE recv)
+(VALUE val)
+// attr bool leaf = false;
+{
+    val = vm_objtostring(GET_ISEQ(), recv, cd);
+
+    if (val == Qundef) {
+        CALL_SIMPLE_METHOD();
     }
 }
 

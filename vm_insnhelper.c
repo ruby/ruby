@@ -4729,6 +4729,70 @@ vm_sendish(
 #endif
 }
 
+/* object.c */
+VALUE rb_nil_to_s(VALUE);
+VALUE rb_true_to_s(VALUE);
+VALUE rb_false_to_s(VALUE);
+/* numeric.c */
+VALUE rb_int_to_s(int argc, VALUE *argv, VALUE x);
+VALUE rb_fix_to_s(VALUE);
+/* variable.c */
+VALUE rb_mod_to_s(VALUE);
+VALUE rb_mod_name(VALUE);
+
+static VALUE
+vm_objtostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
+{
+    const struct rb_callcache *cc = vm_search_method((VALUE)iseq, cd, recv);
+
+    switch (TYPE(recv)) {
+      case T_STRING:
+        return recv;
+      case T_SYMBOL:
+        if (check_cfunc(vm_cc_cme(cc), rb_sym_to_s)) {
+            // rb_sym_to_s() allocates a mutable string, but since we are only
+            // going to use this string for interpolation, it's fine to use the
+            // frozen string.
+            return rb_sym2str(recv);
+        }
+        break;
+      case T_MODULE:
+      case T_CLASS:
+        if (check_cfunc(vm_cc_cme(cc), rb_mod_to_s)) {
+            // rb_mod_to_s() allocates a mutable string, but since we are only
+            // going to use this string for interpolation, it's fine to use the
+            // frozen string.
+            VALUE val = rb_mod_name(recv);
+            if (val == Qnil) {
+                val = rb_mod_to_s(recv);
+            }
+            return val;
+        }
+        break;
+      case T_NIL:
+        if (check_cfunc(vm_cc_cme(cc), rb_nil_to_s)) {
+            return rb_nil_to_s(recv);
+        }
+        break;
+      case T_TRUE:
+        if (check_cfunc(vm_cc_cme(cc), rb_true_to_s)) {
+            return rb_true_to_s(recv);
+        }
+        break;
+      case T_FALSE:
+        if (check_cfunc(vm_cc_cme(cc), rb_false_to_s)) {
+            return rb_false_to_s(recv);
+        }
+        break;
+      case T_FIXNUM:
+        if (check_cfunc(vm_cc_cme(cc), rb_int_to_s)) {
+            return rb_fix_to_s(recv);
+        }
+        break;
+    }
+    return Qundef;
+}
+
 static VALUE
 vm_opt_str_freeze(VALUE str, int bop, ID id)
 {

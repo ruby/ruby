@@ -3271,13 +3271,13 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	}
     }
 
-    if (IS_INSN_ID(iobj, tostring)) {
+    if (IS_INSN_ID(iobj, anytostring)) {
 	LINK_ELEMENT *next = iobj->link.next;
 	/*
-	 *  tostring
+         *  anytostring
 	 *  concatstrings 1
 	 * =>
-	 *  tostring
+         *  anytostring
 	 */
 	if (IS_INSN(next) && IS_INSN_ID(next, concatstrings) &&
 	    OPERAND_AT(next, 0) == INT2FIX(1)) {
@@ -7642,17 +7642,14 @@ compile_evstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     CHECK(COMPILE_(ret, "nd_body", node, popped));
 
     if (!popped && !all_string_result_p(node)) {
-	const int line = nd_line(node);
         const NODE *line_node = node;
 	const unsigned int flag = VM_CALL_FCALL;
-	LABEL *isstr = NEW_LABEL(line);
-	ADD_INSN(ret, line_node, dup);
-	ADD_INSN1(ret, line_node, checktype, INT2FIX(T_STRING));
-	ADD_INSNL(ret, line_node, branchif, isstr);
-	ADD_INSN(ret, line_node, dup);
-	ADD_SEND_R(ret, line_node, idTo_s, INT2FIX(0), NULL, INT2FIX(flag), NULL);
-	ADD_INSN(ret, line_node, tostring);
-	ADD_LABEL(ret, isstr);
+
+        // Note, this dup could be removed if we are willing to change anytostring. It pops
+        // two VALUEs off the stack when it could work by replacing the top most VALUE.
+        ADD_INSN(ret, line_node, dup);
+        ADD_INSN1(ret, line_node, objtostring, new_callinfo(iseq, idTo_s, 0, flag, NULL, FALSE));
+        ADD_INSN(ret, line_node, anytostring);
     }
     return COMPILE_OK;
 }
