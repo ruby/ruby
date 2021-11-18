@@ -691,7 +691,7 @@ eom
           msg = "exceptions on #{errs.length} threads:\n" +
             errs.map {|t, err|
             "#{t.inspect}:\n" +
-              RUBY_VERSION >= "2.5.0" ? err.full_message(highlight: false, order: :top) : err.message
+              err.full_message(highlight: false, order: :top)
           }.join("\n---\n")
           if message
             msg = "#{message}\n#{msg}"
