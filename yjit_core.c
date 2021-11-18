@@ -26,6 +26,11 @@ Return a pointer to the new stack top
 static x86opnd_t
 ctx_stack_push_mapping(ctx_t *ctx, temp_type_mapping_t mapping)
 {
+    // If type propagation is disabled, store no types
+    if (rb_yjit_opts.no_type_prop) {
+        mapping.type = TYPE_UNKNOWN;
+    }
+
     // Keep track of the type and mapping of the value
     if (ctx->stack_size < MAX_TEMP_TYPES) {
         ctx->temp_mapping[ctx->stack_size] = mapping.mapping;
@@ -80,6 +85,7 @@ ctx_stack_push_local(ctx_t *ctx, size_t local_idx)
         (temp_mapping_t){ .kind = TEMP_LOCAL, .idx = local_idx },
         TYPE_UNKNOWN
     };
+
     return ctx_stack_push_mapping(ctx, mapping);
 }
 
@@ -165,7 +171,6 @@ static int type_diff(val_type_t src, val_type_t dst);
     (dest) = (src); \
 } while (false)
 
-
 /**
 Upgrade (or "learn") the type of an instruction operand
 This value must be compatible and at least as specific as the previously known type.
@@ -175,6 +180,10 @@ propagated back to its source.
 static void
 ctx_upgrade_opnd_type(ctx_t *ctx, insn_opnd_t opnd, val_type_t type)
 {
+    // If type propagation is disabled, store no types
+    if (rb_yjit_opts.no_type_prop)
+        return;
+
     if (opnd.is_self) {
         UPGRADE_TYPE(ctx->self_type, type);
         return;
@@ -249,6 +258,10 @@ ctx_set_opnd_mapping(ctx_t *ctx, insn_opnd_t opnd, temp_type_mapping_t type_mapp
     RUBY_ASSERT(opnd.idx < ctx->stack_size);
     int stack_idx = ctx->stack_size - 1 - opnd.idx;
 
+    // If type propagation is disabled, store no types
+    if (rb_yjit_opts.no_type_prop)
+        return;
+
     // If outside of tracked range, do nothing
     if (stack_idx >= MAX_TEMP_TYPES)
         return;
@@ -265,6 +278,10 @@ Set the type of a local variable
 static void
 ctx_set_local_type(ctx_t *ctx, size_t idx, val_type_t type)
 {
+    // If type propagation is disabled, store no types
+    if (rb_yjit_opts.no_type_prop)
+        return;
+
     if (idx >= MAX_LOCAL_TYPES)
         return;
 

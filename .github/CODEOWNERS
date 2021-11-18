@@ -7,3 +7,4 @@ yjit* @maximecb @xrxr @tenderlove
 doc/yjit/* @maximecb @xrxr @tenderlove
 bootstraptest/test_yjit* @maximecb @xrxr @tenderlove
 test/ruby/test_yjit* @maximecb @xrxr @tenderlove
+.github/workflows/yjit* @maximecb @xrxr @tenderlove

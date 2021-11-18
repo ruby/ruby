@@ -78,6 +78,14 @@ To support disassembly of the generated code, `libcapstone` is also required (`b
 make -j16 install
 ```
 
+On macOS, you may need to specify where to find openssl, libyaml and gdbm:
+
+```
+# Configure with debugging/stats options for development, build and install
+./configure cppflags="-DRUBY_DEBUG -DYJIT_STATS" --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc --disable--install-rdoc --with-opt-dir=$(brew --prefix openssl):$(brew --prefix readline):$(brew --prefix libyaml):$(brew --prefix gdbm)
+make -j16 install
+```
+
 Typically configure will choose default C compiler. To specify the C compiler, use
 ```
 # Choosing a specific c compiler

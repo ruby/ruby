@@ -29,6 +29,9 @@ struct rb_yjit_options {
     // Generate versions greedily until the limit is hit
     bool greedy_versioning;
 
+    // Disable the propagation of type information
+    bool no_type_prop;
+
     // Maximum number of versions per block
     // 1 means always create generic versions
     unsigned max_versions;
