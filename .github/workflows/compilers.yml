@@ -12,6 +12,10 @@ on:
       - '**.md'
       - '**.rdoc'
 
+concurrency:
+  group: ${{ github.workflow }} / ${{ github.ref_name }}
+  cancel-in-progress: true
+
 # Github actions does not support YAML anchors.  This creative use of
 # environment variables (plus the "echo $GITHUB_ENV" hack) is to reroute that
 # restriction.

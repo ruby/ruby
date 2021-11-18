@@ -11,6 +11,10 @@ on:
       - '**.md'
       - '**.rdoc'
 
+concurrency:
+  group: ${{ github.workflow }} / ${{ github.ref_name }}
+  cancel-in-progress: true
+
 # Notes:
 # Actions console encoding causes issues, see test-all & test-spec steps
 #
