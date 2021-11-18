@@ -64,6 +64,7 @@ enum shareability {
 struct lex_context {
     unsigned int in_defined: 1;
     unsigned int in_kwarg: 1;
+    unsigned int in_argdef: 1;
     unsigned int in_def: 1;
     unsigned int in_class: 1;
     BITFIELD(enum shareability, shareable_constant_value, 2);
@@ -1817,7 +1818,12 @@ defn_head	: k_def def_name
 		    }
 		;
 
-defs_head	: k_def singleton dot_or_colon {SET_LEX_STATE(EXPR_FNAME);} def_name
+defs_head	: k_def singleton dot_or_colon
+		    {
+			SET_LEX_STATE(EXPR_FNAME);
+			p->ctxt.in_argdef = 1;
+		    }
+		  def_name
 		    {
 			SET_LEX_STATE(EXPR_ENDFN|EXPR_LABEL); /* force for args */
 			$$ = $5;
@@ -3396,6 +3402,7 @@ k_module	: keyword_module
 k_def		: keyword_def
 		    {
 			token_info_push(p, "def", &@$);
+			p->ctxt.in_argdef = 1;
 		    }
 		;
 
@@ -3591,6 +3598,8 @@ f_any_kwrest	: f_kwrest
 		| f_no_kwarg {$$ = ID2VAL(idNil);}
 		;
 
+f_eq		: {p->ctxt.in_argdef = 0;} '=';
+
 block_args_tail	: f_block_kwarg ',' f_kwrest opt_f_block_arg
 		    {
 			$$ = new_args_tail(p, $1, $3, $4, &@3);
@@ -3703,6 +3712,7 @@ block_param_def	: '|' opt_bv_decl '|'
 		    {
 			p->cur_arg = 0;
 			p->max_numparam = ORDINAL_PARAM;
+			p->ctxt.in_argdef = 0;
 		    /*%%%*/
 			$$ = 0;
 		    /*% %*/
@@ -3712,6 +3722,7 @@ block_param_def	: '|' opt_bv_decl '|'
 		    {
 			p->cur_arg = 0;
 			p->max_numparam = ORDINAL_PARAM;
+			p->ctxt.in_argdef = 0;
 		    /*%%%*/
 			$$ = $2;
 		    /*% %*/
@@ -3792,6 +3803,7 @@ lambda		: tLAMBDA
 
 f_larglist	: '(' f_args opt_bv_decl ')'
 		    {
+			p->ctxt.in_argdef = 0;
 		    /*%%%*/
 			$$ = $2;
 			p->max_numparam = ORDINAL_PARAM;
@@ -3800,6 +3812,7 @@ f_larglist	: '(' f_args opt_bv_decl ')'
 		    }
 		| f_args
 		    {
+			p->ctxt.in_argdef = 0;
 		    /*%%%*/
 			if (!args_info_empty_p($1->nd_ainfo))
 			    p->max_numparam = ORDINAL_PARAM;
@@ -5122,6 +5135,7 @@ superclass	: '<'
 f_opt_paren_args: f_paren_args
 		| none
 		    {
+			p->ctxt.in_argdef = 0;
 			$$ = new_args_tail(p, Qnone, Qnone, Qnone, &@0);
 			$$ = new_args(p, Qnone, Qnone, Qnone, Qnone, $$, &@0);
 		    }
@@ -5135,6 +5149,7 @@ f_paren_args	: '(' f_args rparen
 		    /*% ripper: paren!($2) %*/
 			SET_LEX_STATE(EXPR_BEG);
 			p->command_start = TRUE;
+			p->ctxt.in_argdef = 0;
 		    }
                 ;
 
@@ -5142,11 +5157,13 @@ f_arglist	: f_paren_args
 		|   {
 			$<ctxt>$ = p->ctxt;
 			p->ctxt.in_kwarg = 1;
+			p->ctxt.in_argdef = 1;
 			SET_LEX_STATE(p->lex.state|EXPR_LABEL); /* force for args */
 		    }
 		  f_args term
 		    {
 			p->ctxt.in_kwarg = $<ctxt>1.in_kwarg;
+			p->ctxt.in_argdef = 0;
 			$$ = $2;
 			SET_LEX_STATE(EXPR_BEG);
 			p->command_start = TRUE;
@@ -5363,6 +5380,7 @@ f_label 	: tLABEL
 			arg_var(p, formal_argument(p, $1));
 			p->cur_arg = get_id($1);
 			p->max_numparam = ORDINAL_PARAM;
+			p->ctxt.in_argdef = 0;
 			$$ = $1;
 		    }
 		;
@@ -5370,6 +5388,7 @@ f_label 	: tLABEL
 f_kw		: f_label arg_value
 		    {
 			p->cur_arg = 0;
+			p->ctxt.in_argdef = 1;
 		    /*%%%*/
 			$$ = new_kw_arg(p, assignable(p, $1, $2, &@$), &@$);
 		    /*% %*/
@@ -5378,6 +5397,7 @@ f_kw		: f_label arg_value
 		| f_label
 		    {
 			p->cur_arg = 0;
+			p->ctxt.in_argdef = 1;
 		    /*%%%*/
 			$$ = new_kw_arg(p, assignable(p, $1, NODE_SPECIAL_REQUIRED_KEYWORD, &@$), &@$);
 		    /*% %*/
@@ -5387,6 +5407,7 @@ f_kw		: f_label arg_value
 
 f_block_kw	: f_label primary_value
 		    {
+			p->ctxt.in_argdef = 1;
 		    /*%%%*/
 			$$ = new_kw_arg(p, assignable(p, $1, $2, &@$), &@$);
 		    /*% %*/
@@ -5394,6 +5415,7 @@ f_block_kw	: f_label primary_value
 		    }
 		| f_label
 		    {
+			p->ctxt.in_argdef = 1;
 		    /*%%%*/
 			$$ = new_kw_arg(p, assignable(p, $1, NODE_SPECIAL_REQUIRED_KEYWORD, &@$), &@$);
 		    /*% %*/
@@ -5464,9 +5486,10 @@ f_kwrest	: kwrest_mark tIDENTIFIER
 		    }
 		;
 
-f_opt		: f_arg_asgn '=' arg_value
+f_opt		: f_arg_asgn f_eq arg_value
 		    {
 			p->cur_arg = 0;
+			p->ctxt.in_argdef = 1;
 		    /*%%%*/
 			$$ = NEW_OPT_ARG(0, assignable(p, $1, $3, &@$), &@$);
 		    /*% %*/
@@ -5474,9 +5497,10 @@ f_opt		: f_arg_asgn '=' arg_value
 		    }
 		;
 
-f_block_opt	: f_arg_asgn '=' primary_value
+f_block_opt	: f_arg_asgn f_eq primary_value
 		    {
 			p->cur_arg = 0;
+			p->ctxt.in_argdef = 1;
 		    /*%%%*/
 			$$ = NEW_OPT_ARG(0, assignable(p, $1, $3, &@$), &@$);
 		    /*% %*/
@@ -9659,13 +9683,11 @@ parser_yylex(struct parser_params *p)
 	SET_LEX_STATE(EXPR_BEG);
 	if ((c = nextc(p)) == '.') {
 	    if ((c = nextc(p)) == '.') {
+		if (p->ctxt.in_argdef) {
+		    SET_LEX_STATE(EXPR_ENDARG);
+		    return tBDOT3;
+		}
 		if (p->lex.paren_nest == 0 && looking_at_eol_p(p)) {
-		    if (p->ctxt.in_argdef || /* def foo a, ... */
-			IS_lex_state_for(last_state, EXPR_ENDFN) || /* def foo ... */
-			0) {
-			SET_LEX_STATE(EXPR_ENDARG);
-			return tBDOT3;
-		    }
 		    rb_warn0("... at EOL, should be parenthesized?");
 		}
 		else if (p->lex.lpar_beg >= 0 && p->lex.lpar_beg+1 == p->lex.paren_nest) {
