@@ -66,6 +66,18 @@ class TestSyntax < Test::Unit::TestCase
     f&.close!
   end
 
+  def test_anonymous_block_forwarding
+    assert_syntax_error("def b; c(&); end", /no anonymous block parameter/)
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+        def b(&); c(&) end
+        def c(&); yield 1 end
+        a = nil
+        b{|c| a = c}
+        assert_equal(1, a)
+    end;
+  end
+
   def test_newline_in_block_parameters
     bug = '[ruby-dev:45292]'
     ["", "a", "a, b"].product(["", ";x", [";", "x"]]) do |params|

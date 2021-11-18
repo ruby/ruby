@@ -125,6 +125,16 @@ class TestISeq < Test::Unit::TestCase
     assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
   end
 
+  def test_super_with_anonymous_block
+    iseq = compile(<<~EOF)
+      def touch3(&block) # :nodoc:
+        foo { super }
+      end
+      42
+    EOF
+    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
+  end
+
   def test_ractor_unshareable_outer_variable
     name = "\u{2603 26a1}"
     y = eval("proc {#{name} = nil; proc {|x| #{name} = x}}").call
@@ -371,6 +381,14 @@ class TestISeq < Test::Unit::TestCase
     iseq = RubyVM::InstructionSequence.of(method(:anon_star))
     param_names = iseq.to_a[iseq.to_a.index(:method) + 1]
     assert_equal [2], param_names
+  end
+
+  def anon_block(&); end
+
+  def test_anon_block_param_in_disasm
+    iseq = RubyVM::InstructionSequence.of(method(:anon_block))
+    param_names = iseq.to_a[iseq.to_a.index(:method) + 1]
+    assert_equal [:&], param_names
   end
 
   def strip_lineno(source)
