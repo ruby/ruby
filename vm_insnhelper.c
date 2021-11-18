@@ -1321,8 +1321,10 @@ update_classvariable_cache(const rb_iseq_t *iseq, VALUE klass, ID id, ICVARC ic)
 }
 
 static inline VALUE
-vm_getclassvariable(const rb_iseq_t *iseq, const rb_cref_t *cref, const rb_control_frame_t *cfp, ID id, ICVARC ic)
+vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID id, ICVARC ic)
 {
+    const rb_cref_t *cref;
+
     if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE()) {
         VALUE v = Qundef;
         RB_DEBUG_COUNTER_INC(cvar_read_inline_hit);
@@ -1332,15 +1334,16 @@ vm_getclassvariable(const rb_iseq_t *iseq, const rb_cref_t *cref, const rb_contr
         }
     }
 
-    VALUE klass = vm_get_cvar_base(cref, cfp, 1);
+    cref = vm_get_cref(GET_EP());
+    VALUE klass = vm_get_cvar_base(cref, reg_cfp, 1);
 
     return update_classvariable_cache(iseq, klass, id, ic);
 }
 
 VALUE
-rb_vm_getclassvariable(const rb_iseq_t *iseq, const rb_cref_t *cref, const rb_control_frame_t *cfp, ID id, ICVARC ic)
+rb_vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *cfp, ID id, ICVARC ic)
 {
-    return vm_getclassvariable(iseq, cref, cfp, id, ic);
+    return vm_getclassvariable(iseq, cfp, id, ic);
 }
 
 static inline void
