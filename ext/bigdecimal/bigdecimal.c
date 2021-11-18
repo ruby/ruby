@@ -2862,21 +2862,29 @@ rb_uint64_convert_to_BigDecimal(uint64_t uval, RB_UNUSED_VAR(size_t digs), int r
     }
     else {
         DECDIG buf[BIGDECIMAL_INT64_MAX_LENGTH] = {0,};
-        size_t exp = 0, ntz = 0;
-        for (; uval > 0; ++exp) {
-            DECDIG r = uval % BASE;
-            if (r == 0) ++ntz;
-            buf[BIGDECIMAL_INT64_MAX_LENGTH - exp - 1] = r;
+        DECDIG r = uval % BASE;
+        size_t len = 0, ntz = 0;
+        if (r == 0) {
+            // Count and skip trailing zeros
+            for (; r == 0 && uval > 0; ++ntz) {
+                uval /= BASE;
+                r = uval % BASE;
+            }
+        }
+        for (; uval > 0; ++len) {
+            // Store digits
+            buf[BIGDECIMAL_INT64_MAX_LENGTH - len - 1] = r;
             uval /= BASE;
+            r = uval % BASE;
         }
 
-        const size_t len = exp - ntz;
+        const size_t exp = len + ntz;
         vp = VpAllocReal(len);
         vp->MaxPrec = len;
         vp->Prec = len;
         vp->exponent = exp;
         VpSetSign(vp, 1);
-        MEMCPY(vp->frac, buf + BIGDECIMAL_INT64_MAX_LENGTH - exp, DECDIG, len);
+        MEMCPY(vp->frac, buf + BIGDECIMAL_INT64_MAX_LENGTH - len, DECDIG, len);
     }
 
     return BigDecimal_wrap_struct(obj, vp);
