@@ -408,6 +408,8 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_invokebuiltin
+    skip "Struct's getter/setter doesn't use invokebuiltin and YJIT doesn't support new logic"
+
     assert_compiles(<<~RUBY)
       def foo(obj)
         obj.foo = 123

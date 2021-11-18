@@ -16068,6 +16068,7 @@ vm.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 vm.$(OBJEXT): $(top_srcdir)/internal/serial.h
 vm.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 vm.$(OBJEXT): $(top_srcdir)/internal/string.h
+vm.$(OBJEXT): $(top_srcdir)/internal/struct.h
 vm.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 vm.$(OBJEXT): $(top_srcdir)/internal/thread.h
 vm.$(OBJEXT): $(top_srcdir)/internal/variable.h

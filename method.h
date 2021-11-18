@@ -167,11 +167,14 @@ enum method_optimized_type {
     OPTIMIZED_METHOD_TYPE_SEND,
     OPTIMIZED_METHOD_TYPE_CALL,
     OPTIMIZED_METHOD_TYPE_BLOCK_CALL,
+    OPTIMIZED_METHOD_TYPE_STRUCT_AREF,
+    OPTIMIZED_METHOD_TYPE_STRUCT_ASET,
     OPTIMIZED_METHOD_TYPE__MAX
 };
 
 typedef struct rb_method_optimized {
     enum method_optimized_type type;
+    unsigned int index;
 } rb_method_optimized_t;
 
 struct rb_method_definition_struct {
