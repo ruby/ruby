@@ -1347,8 +1347,10 @@ rb_vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *cfp, ID 
 }
 
 static inline void
-vm_setclassvariable(const rb_iseq_t *iseq, const rb_cref_t *cref, const rb_control_frame_t *cfp, ID id, VALUE val, ICVARC ic)
+vm_setclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID id, VALUE val, ICVARC ic)
 {
+    const rb_cref_t *cref;
+
     if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE()) {
         RB_DEBUG_COUNTER_INC(cvar_write_inline_hit);
 
@@ -1356,7 +1358,8 @@ vm_setclassvariable(const rb_iseq_t *iseq, const rb_cref_t *cref, const rb_contr
         return;
     }
 
-    VALUE klass = vm_get_cvar_base(cref, cfp, 1);
+    cref = vm_get_cref(GET_EP());
+    VALUE klass = vm_get_cvar_base(cref, reg_cfp, 1);
 
     rb_cvar_set(klass, id, val);
 
