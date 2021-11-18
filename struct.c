@@ -28,9 +28,6 @@ enum {
     AREF_HASH_THRESHOLD = 10
 };
 
-const rb_iseq_t *rb_method_for_self_aref(VALUE name, VALUE arg, const struct rb_builtin_function *func);
-const rb_iseq_t *rb_method_for_self_aset(VALUE name, VALUE arg, const struct rb_builtin_function *func);
-
 VALUE rb_cStruct;
 static ID id_members, id_back_members, id_keyword_init;
 
@@ -229,32 +226,6 @@ rb_struct_getmember(VALUE obj, ID id)
     UNREACHABLE_RETURN(Qnil);
 }
 
-static VALUE rb_struct_ref0(VALUE obj) {return RSTRUCT_GET(obj, 0);}
-static VALUE rb_struct_ref1(VALUE obj) {return RSTRUCT_GET(obj, 1);}
-static VALUE rb_struct_ref2(VALUE obj) {return RSTRUCT_GET(obj, 2);}
-static VALUE rb_struct_ref3(VALUE obj) {return RSTRUCT_GET(obj, 3);}
-static VALUE rb_struct_ref4(VALUE obj) {return RSTRUCT_GET(obj, 4);}
-static VALUE rb_struct_ref5(VALUE obj) {return RSTRUCT_GET(obj, 5);}
-static VALUE rb_struct_ref6(VALUE obj) {return RSTRUCT_GET(obj, 6);}
-static VALUE rb_struct_ref7(VALUE obj) {return RSTRUCT_GET(obj, 7);}
-static VALUE rb_struct_ref8(VALUE obj) {return RSTRUCT_GET(obj, 8);}
-static VALUE rb_struct_ref9(VALUE obj) {return RSTRUCT_GET(obj, 9);}
-
-#define N_REF_FUNC numberof(ref_func)
-
-static VALUE (*const ref_func[])(VALUE) = {
-    rb_struct_ref0,
-    rb_struct_ref1,
-    rb_struct_ref2,
-    rb_struct_ref3,
-    rb_struct_ref4,
-    rb_struct_ref5,
-    rb_struct_ref6,
-    rb_struct_ref7,
-    rb_struct_ref8,
-    rb_struct_ref9,
-};
-
 static void
 rb_struct_modify(VALUE s)
 {
@@ -300,42 +271,16 @@ struct_pos_num(VALUE s, VALUE idx)
     return i;
 }
 
-static VALUE
-opt_struct_aref(rb_execution_context_t *ec, VALUE self, VALUE idx)
-{
-    long i = struct_pos_num(self, idx);
-    return RSTRUCT_GET(self, i);
-}
-
-static VALUE
-opt_struct_aset(rb_execution_context_t *ec, VALUE self, VALUE val, VALUE idx)
-{
-    long i = struct_pos_num(self, idx);
-    rb_struct_modify(self);
-    RSTRUCT_SET(self, i, val);
-    return val;
-}
-
-static const struct rb_builtin_function struct_aref_builtin =
-    RB_BUILTIN_FUNCTION(0, struct_aref, opt_struct_aref, 1, 0);
-static const struct rb_builtin_function struct_aset_builtin =
-    RB_BUILTIN_FUNCTION(1, struct_aref, opt_struct_aset, 2, 0);
-
 static void
 define_aref_method(VALUE nstr, VALUE name, VALUE off)
 {
-    const rb_iseq_t *iseq = rb_method_for_self_aref(name, off, &struct_aref_builtin);
-    iseq->body->builtin_inline_p = true;
-
-    rb_add_method_iseq(nstr, SYM2ID(name), iseq, NULL, METHOD_VISI_PUBLIC);
+    rb_add_method_optimized(nstr, SYM2ID(name), OPTIMIZED_METHOD_TYPE_STRUCT_AREF, FIX2UINT(off), METHOD_VISI_PUBLIC);
 }
 
 static void
 define_aset_method(VALUE nstr, VALUE name, VALUE off)
 {
-    const rb_iseq_t *iseq = rb_method_for_self_aset(name, off, &struct_aset_builtin);
-
-    rb_add_method_iseq(nstr, SYM2ID(name), iseq, NULL, METHOD_VISI_PUBLIC);
+    rb_add_method_optimized(nstr, SYM2ID(name), OPTIMIZED_METHOD_TYPE_STRUCT_ASET, FIX2UINT(off), METHOD_VISI_PUBLIC);
 }
 
 static VALUE
@@ -386,13 +331,8 @@ setup_struct(VALUE nstr, VALUE members)
         ID id = SYM2ID(sym);
 	VALUE off = LONG2NUM(i);
 
-	if (i < N_REF_FUNC) {
-	    rb_define_method_id(nstr, id, ref_func[i], 0);
-	}
-	else {
-            define_aref_method(nstr, sym, off);
-	}
-	define_aset_method(nstr, ID2SYM(rb_id_attrset(id)), off);
+        define_aref_method(nstr, sym, off);
+        define_aset_method(nstr, ID2SYM(rb_id_attrset(id)), off);
     }
 
     return nstr;
@@ -844,7 +784,7 @@ rb_struct_alloc(VALUE klass, VALUE values)
 VALUE
 rb_struct_new(VALUE klass, ...)
 {
-    VALUE tmpargs[N_REF_FUNC], *mem = tmpargs;
+    VALUE tmpargs[16], *mem = tmpargs;
     int size, i;
     va_list args;
 

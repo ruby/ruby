@@ -2681,6 +2681,12 @@ rb_method_entry_min_max_arity(const rb_method_entry_t *me, int *max)
 	  case OPTIMIZED_METHOD_TYPE_BLOCK_CALL:
 	    *max = UNLIMITED_ARGUMENTS;
 	    return 0;
+          case OPTIMIZED_METHOD_TYPE_STRUCT_AREF:
+            *max = 0;
+            return 0;
+          case OPTIMIZED_METHOD_TYPE_STRUCT_ASET:
+            *max = 1;
+            return 0;
 	  default:
 	    break;
 	}

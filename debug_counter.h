@@ -97,6 +97,8 @@ RB_DEBUG_COUNTER(ccf_bmethod)
 RB_DEBUG_COUNTER(ccf_opt_send)
 RB_DEBUG_COUNTER(ccf_opt_call)
 RB_DEBUG_COUNTER(ccf_opt_block_call)
+RB_DEBUG_COUNTER(ccf_opt_struct_aref)
+RB_DEBUG_COUNTER(ccf_opt_struct_aset)
 RB_DEBUG_COUNTER(ccf_super_method)
 
 /*

@@ -163,6 +163,19 @@ vm_call0_cfunc(rb_execution_context_t *ec, struct rb_calling_info *calling, cons
     return vm_call0_cfunc_with_frame(ec, calling, argv);
 }
 
+static void
+vm_call_check_arity(struct rb_calling_info *calling, int argc, const VALUE *argv)
+{
+    if (calling->kw_splat &&
+        calling->argc > 0 &&
+        RB_TYPE_P(argv[calling->argc-1], T_HASH) &&
+        RHASH_EMPTY_P(argv[calling->argc-1])) {
+        calling->argc--;
+    }
+
+    rb_check_arity(calling->argc, argc, argc);
+}
+
 /* `ci' should point temporal value (on stack value) */
 static VALUE
 vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const VALUE *argv)
@@ -196,27 +209,13 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
         ret = vm_call0_cfunc(ec, calling, argv);
 	goto success;
       case VM_METHOD_TYPE_ATTRSET:
-        if (calling->kw_splat &&
-                calling->argc > 0 &&
-                RB_TYPE_P(argv[calling->argc-1], T_HASH) &&
-                RHASH_EMPTY_P(argv[calling->argc-1])) {
-            calling->argc--;
-        }
-
-	rb_check_arity(calling->argc, 1, 1);
+        vm_call_check_arity(calling, 1, argv);
         VM_CALL_METHOD_ATTR(ret,
                             rb_ivar_set(calling->recv, vm_cc_cme(cc)->def->body.attr.id, argv[0]),
                             (void)0);
 	goto success;
       case VM_METHOD_TYPE_IVAR:
-        if (calling->kw_splat &&
-                calling->argc > 0 &&
-                RB_TYPE_P(argv[calling->argc-1], T_HASH) &&
-                RHASH_EMPTY_P(argv[calling->argc-1])) {
-            calling->argc--;
-        }
-
-	rb_check_arity(calling->argc, 0, 0);
+        vm_call_check_arity(calling, 0, argv);
         VM_CALL_METHOD_ATTR(ret,
                             rb_attr_get(calling->recv, vm_cc_cme(cc)->def->body.attr.id),
                             (void)0);
@@ -274,6 +273,14 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 		ret = rb_vm_invoke_proc(ec, proc, calling->argc, argv, calling->kw_splat, calling->block_handler);
 		goto success;
 	    }
+          case OPTIMIZED_METHOD_TYPE_STRUCT_AREF:
+            vm_call_check_arity(calling, 0, argv);
+            ret = vm_call_opt_struct_aref0(ec, ec->cfp, calling);
+            goto success;
+          case OPTIMIZED_METHOD_TYPE_STRUCT_ASET:
+            vm_call_check_arity(calling, 1, argv);
+            ret = vm_call_opt_struct_aset0(ec, ec->cfp, calling);
+            goto success;
 	  default:
 	    rb_bug("vm_call0: unsupported optimized method type (%d)", vm_cc_cme(cc)->def->body.optimized.type);
 	}

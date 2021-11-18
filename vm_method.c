@@ -350,6 +350,7 @@ rb_add_method_optimized(VALUE klass, ID mid, enum method_optimized_type opt_type
 {
     rb_method_optimized_t opt = {
         .type = opt_type,
+        .index = index,
     };
     rb_add_method(klass, mid, VM_METHOD_TYPE_OPTIMIZED, &opt, visi);
 }
@@ -1940,7 +1941,8 @@ rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_defini
       case VM_METHOD_TYPE_UNDEF:
 	return 1;
       case VM_METHOD_TYPE_OPTIMIZED:
-	return (d1->body.optimized.type == d2->body.optimized.type);
+	return (d1->body.optimized.type == d2->body.optimized.type) &&
+               (d1->body.optimized.index == d2->body.optimized.index);
       case VM_METHOD_TYPE_REFINED:
       case VM_METHOD_TYPE_ALIAS:
 	break;
@@ -1974,6 +1976,7 @@ rb_hash_method_definition(st_index_t hash, const rb_method_definition_t *def)
       case VM_METHOD_TYPE_UNDEF:
 	return hash;
       case VM_METHOD_TYPE_OPTIMIZED:
+        hash = rb_hash_uint(hash, def->body.optimized.index);
 	return rb_hash_uint(hash, def->body.optimized.type);
       case VM_METHOD_TYPE_REFINED:
       case VM_METHOD_TYPE_ALIAS:
