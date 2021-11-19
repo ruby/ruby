@@ -162,7 +162,7 @@ class TestISeq < Test::Unit::TestCase
     end
     obj = Object.new
     def obj.foo(*) nil.instance_eval{ ->{super} } end
-    assert_raise_with_message(Ractor::IsolationError, /hidden variable/) do
+    assert_raise_with_message(Ractor::IsolationError, /refer unshareable object \[\] from variable `\*'/) do
       Ractor.make_shareable(obj.foo)
     end
   end
@@ -392,10 +392,18 @@ class TestISeq < Test::Unit::TestCase
 
   def anon_star(*); end
 
-  def test_anon_param_in_disasm
+  def test_anon_rest_param_in_disasm
     iseq = RubyVM::InstructionSequence.of(method(:anon_star))
     param_names = iseq.to_a[iseq.to_a.index(:method) + 1]
-    assert_equal [2], param_names
+    assert_equal [:*], param_names
+  end
+
+  def anon_keyrest(**); end
+
+  def test_anon_keyrest_param_in_disasm
+    iseq = RubyVM::InstructionSequence.of(method(:anon_keyrest))
+    param_names = iseq.to_a[iseq.to_a.index(:method) + 1]
+    assert_equal [:**], param_names
   end
 
   def anon_block(&); end

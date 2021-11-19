@@ -1261,7 +1261,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], method(:pmo6).to_proc.parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:block, :e]], method(:pmo7).to_proc.parameters)
     assert_equal([[:req], [:block, :b]], method(:pma1).to_proc.parameters)
-    assert_equal([[:keyrest]], method(:pmk1).to_proc.parameters)
+    assert_equal([[:keyrest, :**]], method(:pmk1).to_proc.parameters)
     assert_equal([[:keyrest, :o]], method(:pmk2).to_proc.parameters)
     assert_equal([[:req, :a], [:keyrest, :o]], method(:pmk3).to_proc.parameters)
     assert_equal([[:opt, :a], [:keyrest, :o]], method(:pmk4).to_proc.parameters)

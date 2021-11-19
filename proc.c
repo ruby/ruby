@@ -3124,6 +3124,16 @@ method_inspect(VALUE method)
 
         rb_str_buf_cat2(str, "(");
 
+        if (RARRAY_LEN(params) == 3 &&
+            RARRAY_AREF(RARRAY_AREF(params, 0), 0) == rest &&
+            RARRAY_AREF(RARRAY_AREF(params, 0), 1) == ID2SYM('*') &&
+            RARRAY_AREF(RARRAY_AREF(params, 1), 0) == keyrest &&
+            RARRAY_AREF(RARRAY_AREF(params, 1), 1) == ID2SYM(idPow) &&
+            RARRAY_AREF(RARRAY_AREF(params, 2), 0) == block &&
+            RARRAY_AREF(RARRAY_AREF(params, 2), 1) == ID2SYM('&')) {
+            forwarding = 1;
+        }
+
         for (int i = 0; i < RARRAY_LEN(params); i++) {
             pair = RARRAY_AREF(params, i);
             kind = RARRAY_AREF(pair, 0);
@@ -3159,8 +3169,7 @@ method_inspect(VALUE method)
             }
             else if (kind == rest) {
                 if (name == ID2SYM('*')) {
-                    forwarding = 1;
-                    rb_str_cat_cstr(str, "...");
+                    rb_str_cat_cstr(str, forwarding ? "..." : "*");
                 }
                 else {
                     rb_str_catf(str, "*%"PRIsVALUE, name);
@@ -3172,6 +3181,9 @@ method_inspect(VALUE method)
                 }
                 else if (i > 0) {
                     rb_str_set_len(str, RSTRING_LEN(str) - 2);
+                }
+                else {
+                    rb_str_cat_cstr(str, "**");
                 }
             }
             else if (kind == block) {
