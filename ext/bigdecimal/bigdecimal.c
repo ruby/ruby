@@ -1121,12 +1121,14 @@ BigDecimal_coerce(VALUE self, VALUE other)
 }
 
 /*
- * call-seq:
- *    +big_decimal  ->  big_decimal
+ *  call-seq:
+ *    +big_decimal -> big_decimal
  *
- * Return self.
+ *  Returns +self+:
  *
- *     +BigDecimal('5')  #=> 0.5e1
+ *     +BigDecimal(5)  # => 0.5e1
+ *     +BigDecimal(-5) # => -0.5e1
+ *
  */
 
 static VALUE
@@ -1136,22 +1138,16 @@ BigDecimal_uplus(VALUE self)
 }
 
  /*
-  * Document-method: BigDecimal#add
-  * Document-method: BigDecimal#+
+  *  call-seq:
+  *    self + value -> new_bigdecimal
   *
-  * call-seq:
-  * add(value, digits)
+  *  Returns the sum of +self+ and +value+:
   *
-  * Add the specified value.
+  *    b = BigDecimal('111111.111') # => 0.111111111e6
+  *    b + 1                        # => 0.111112111e6
   *
-  * e.g.
-  *   c = a.add(b,n)
-  *   c = a + b
-  *
-  * digits:: If specified and less than the number of significant digits of the
-  *          result, the result is rounded to that number of digits, according
-  *          to BigDecimal.mode.
   */
+
 static VALUE
 BigDecimal_add(VALUE self, VALUE r)
 {
@@ -1881,6 +1877,31 @@ BigDecimal_div3(int argc, VALUE *argv, VALUE self)
 
     return BigDecimal_div2(self, b, n);
 }
+
+ /*
+  *  call-seq:
+  *    add(value, ndigits)
+  *
+  *  Returns the sum of +self+ and +value+
+  *  with a precision of +ndigits+ decimal digits.
+  *
+  *  When +ndigits+ is less than the number of significant digits
+  *  in the sum, the sum is rounded to that number of digits,
+  *  according to the current rounding mode; see BigDecimal.mode.
+  *
+  *  Examples:
+  *
+  *    BigDecimal('111111.111').add(1, 0) # => 0.111112111e6
+  *    BigDecimal('111111.111').add(1, 2) # => 0.11e6
+  *    BigDecimal('111111.111').add(1, 3) # => 0.111e6
+  *    BigDecimal('111111.111').add(1, 4) # => 0.1111e6
+  *    BigDecimal('111111.111').add(1, 5) # => 0.11111e6
+  *    BigDecimal('111111.111').add(1, 6) # => 0.111112e6
+  *    BigDecimal('111111.111').add(1, 7) # => 0.1111121e6
+  *    BigDecimal('111111.111').add(1, 8) # => 0.11111211e6
+  *    BigDecimal('111111.111').add(1, 9) # => 0.111112111e6
+  *
+  */
 
 static VALUE
 BigDecimal_add2(VALUE self, VALUE b, VALUE n)
