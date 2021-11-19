@@ -1004,6 +1004,7 @@ flo_to_s(VALUE flt)
     }
     else if (isnan(value))
 	return rb_usascii_str_new2("NaN");
+
     p = ruby_dtoa(value, 0, 0, &decpt, &sign, &e);
     s = sign ? rb_usascii_str_new_cstr("-") : rb_usascii_str_new(0, 0);
     if ((digs = (int)(e - p)) >= (int)sizeof(buf)) digs = (int)sizeof(buf) - 1;
@@ -1099,10 +1100,6 @@ rb_float_uminus(VALUE flt)
  *    f + 1.0               # => 4.140000000000001
  *    f + Rational(1, 1)    # => 4.140000000000001
  *    f + Complex(1, 0)     # => (4.140000000000001+0i)
- *    f + Float::MAX        # => 1.7976931348623157e+308
- *    f - (Float::MAX * -2) # => Infinity
- *    f - (Float::MAX * 2)  # => -Infinity
- *    f - (0.0/0.0)         # => NaN
  *
  */
 
@@ -1134,9 +1131,6 @@ rb_float_plus(VALUE x, VALUE y)
  *    f - 1.0               # => 2.14
  *    f - Rational(1, 1)    # => 2.14
  *    f - Complex(1, 0)     # => (2.14+0i)
- *    f - (Float::MAX * 2)  # => -Infinity
- *    f - (Float::MAX * -2) # => Infinity
- *    f - (0.0/0.0)         # => NaN
  *
  */
 
@@ -1168,9 +1162,6 @@ rb_float_minus(VALUE x, VALUE y)
  *    f * 2.0            # => 6.28
  *    f * Rational(1, 2) # => 1.57
  *    f * Complex(2, 0)  # => (6.28+0.0i)
- *    f * Float::MAX     # => Infinity
- *    f * -Float::MAX    # => -Infinity
- *    f * (0.0/0.0)      # => NaN
  */
 
 VALUE
@@ -1225,9 +1216,6 @@ rb_flo_div_flo(VALUE x, VALUE y)
  *    f / 2.0            # => 1.57
  *    f / Rational(2, 1) # => 1.57
  *    f / Complex(2, 0)  # => (1.57+0.0i)
- *    f / 0              # => Infinity
- *    -f / 0             # => -Infinity
- *    0.0 / 0.0          # => NaN
  *
  */
 
