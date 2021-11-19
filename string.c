@@ -868,7 +868,9 @@ static inline VALUE
 empty_str_alloc(VALUE klass)
 {
     RUBY_DTRACE_CREATE_HOOK(STRING, 0);
-    return str_alloc_embed(klass, 0);
+    VALUE str = str_alloc_embed(klass, 0);
+    memset(RSTRING(str)->as.embed.ary, 0, str_embed_capa(str));
+    return str;
 }
 
 static VALUE
@@ -1732,10 +1734,11 @@ str_duplicate_setup(VALUE klass, VALUE str, VALUE dup)
     VALUE flags = FL_TEST_RAW(str, flag_mask);
     int encidx = 0;
     if (STR_EMBED_P(str)) {
-        assert(str_embed_capa(dup) >= RSTRING_EMBED_LEN(str));
-        STR_SET_EMBED_LEN(dup, RSTRING_EMBED_LEN(str));
-        MEMCPY(RSTRING(dup)->as.embed.ary, RSTRING(str)->as.embed.ary,
-               char, RSTRING_EMBED_LEN(str));
+        long len = RSTRING_EMBED_LEN(str);
+
+        assert(str_embed_capa(dup) >= len + 1);
+        STR_SET_EMBED_LEN(dup, len);
+        MEMCPY(RSTRING(dup)->as.embed.ary, RSTRING(str)->as.embed.ary, char, len + 1);
         flags &= ~RSTRING_NOEMBED;
     }
     else {
@@ -2321,6 +2324,7 @@ rb_str_times(VALUE str, VALUE times)
     if (RSTRING_LEN(str) == 1 && RSTRING_PTR(str)[0] == 0) {
         if (STR_EMBEDDABLE_P(len, 1)) {
             str2 = str_alloc_embed(rb_cString, len + 1);
+            memset(RSTRING_PTR(str2), 0, len + 1);
         }
         else {
             str2 = str_alloc_heap(rb_cString);
