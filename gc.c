@@ -10626,7 +10626,7 @@ gc_stat_internal(VALUE hash_or_sym)
 	rb_hash_aset(hash, gc_stat_symbols[gc_stat_sym_##name], SIZET2NUM(attr));
 
     SET(count, objspace->profile.count);
-    SET(time, objspace->profile.total_time_ns / (1000 * 1000) /* ns -> ms */);
+    SET(time, (size_t) (objspace->profile.total_time_ns / (1000 * 1000) /* ns -> ms */)); // TODO: UINT64T2NUM
 
     /* implementation dependent counters */
     SET(heap_allocated_pages, heap_allocated_pages);
