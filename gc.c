@@ -659,11 +659,6 @@ typedef struct mark_stack {
     size_t unused_cache_size;
 } mark_stack_t;
 
-#if USE_RVARGC
-#define SIZE_POOL_COUNT 4
-#else
-#define SIZE_POOL_COUNT 1
-#endif
 #define SIZE_POOL_EDEN_HEAP(size_pool) (&(size_pool)->eden_heap)
 #define SIZE_POOL_TOMB_HEAP(size_pool) (&(size_pool)->tomb_heap)
 
@@ -681,11 +676,6 @@ typedef struct rb_heap_struct {
 } rb_heap_t;
 
 typedef struct rb_size_pool_struct {
-#if USE_RVARGC
-    RVALUE *freelist;
-    struct heap_page *using_page;
-#endif
-
     short slot_size;
 
     size_t allocatable_pages;
@@ -2326,7 +2316,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 
 static inline void heap_add_freepage(rb_heap_t *heap, struct heap_page *page);
 static struct heap_page *heap_next_freepage(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap);
-static inline void ractor_set_cache(rb_ractor_t *cr, struct heap_page *page);
+static inline void ractor_set_cache(rb_ractor_t *cr, struct heap_page *page, size_t size_pool_idx);
 
 size_t
 rb_gc_obj_slot_size(VALUE obj)
@@ -2356,17 +2346,14 @@ rb_gc_size_allocatable_p(size_t size)
 }
 
 static inline VALUE
-ractor_cached_free_region(rb_objspace_t *objspace, rb_ractor_t *cr, size_t size)
+ractor_cached_free_region(rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_pool_idx)
 {
-    if (size > sizeof(RVALUE)) {
-        return Qfalse;
-    }
-
-    RVALUE *p = cr->newobj_cache.freelist;
+    rb_ractor_newobj_size_pool_cache_t *cache = &cr->newobj_cache.size_pool_caches[size_pool_idx];
+    RVALUE *p = cache->freelist;
 
     if (p) {
         VALUE obj = (VALUE)p;
-        cr->newobj_cache.freelist = p->as.free.next;
+        cache->freelist = p->as.free.next;
         asan_unpoison_object(obj, true);
         return obj;
     }
@@ -2397,28 +2384,31 @@ heap_next_freepage(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t
 }
 
 static inline void
-ractor_set_cache(rb_ractor_t *cr, struct heap_page *page)
+ractor_set_cache(rb_ractor_t *cr, struct heap_page *page, size_t size_pool_idx)
 {
     gc_report(3, &rb_objspace, "ractor_set_cache: Using page %p\n", (void *)GET_PAGE_BODY(page->start));
-    cr->newobj_cache.using_page = page;
-    cr->newobj_cache.freelist = page->freelist;
+
+    rb_ractor_newobj_size_pool_cache_t *cache = &cr->newobj_cache.size_pool_caches[size_pool_idx];
+
+    cache->using_page = page;
+    cache->freelist = page->freelist;
     page->free_slots = 0;
     page->freelist = NULL;
 
-    asan_unpoison_object((VALUE)cr->newobj_cache.freelist, false);
-    GC_ASSERT(RB_TYPE_P((VALUE)cr->newobj_cache.freelist, T_NONE));
-    asan_poison_object((VALUE)cr->newobj_cache.freelist);
+    asan_unpoison_object((VALUE)cache->freelist, false);
+    GC_ASSERT(RB_TYPE_P((VALUE)cache->freelist, T_NONE));
+    asan_poison_object((VALUE)cache->freelist);
 }
 
 static inline void
-ractor_cache_slots(rb_objspace_t *objspace, rb_ractor_t *cr)
+ractor_cache_slots(rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_pool_idx)
 {
     ASSERT_vm_locking();
 
-    rb_size_pool_t *size_pool = &size_pools[0];
+    rb_size_pool_t *size_pool = &size_pools[size_pool_idx];
     struct heap_page *page = heap_next_freepage(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool));
 
-    ractor_set_cache(cr, page);
+    ractor_set_cache(cr, page, size_pool_idx);
 }
 
 static inline VALUE
@@ -2431,10 +2421,10 @@ newobj_fill(VALUE obj, VALUE v1, VALUE v2, VALUE v3)
     return obj;
 }
 
-#if USE_RVARGC
-static inline rb_size_pool_t *
-size_pool_for_size(rb_objspace_t *objspace, size_t size)
+static inline size_t
+size_pool_idx_for_size(size_t size)
 {
+#if USE_RVARGC
     size_t slot_count = CEILDIV(size, sizeof(RVALUE));
 
     /* size_pool_idx is ceil(log2(slot_count)) */
@@ -2443,41 +2433,31 @@ size_pool_for_size(rb_objspace_t *objspace, size_t size)
         rb_bug("size_pool_for_size: allocation size too large");
     }
 
+    return size_pool_idx;
+#else
+    GC_ASSERT(size <= sizeof(RVALUE));
+    return 0;
+#endif
+}
+
+#if USE_RVARGC
+static inline rb_size_pool_t *
+size_pool_for_size(rb_objspace_t *objspace, size_t size)
+{
+    size_t size_pool_idx = size_pool_idx_for_size(size);
+
     rb_size_pool_t *size_pool = &size_pools[size_pool_idx];
     GC_ASSERT(size_pool->slot_size >= (short)size);
     GC_ASSERT(size_pool_idx == 0 || size_pools[size_pool_idx - 1].slot_size < (short)size);
 
     return size_pool;
 }
-
-
-static inline VALUE
-heap_get_freeobj(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap)
-{
-    RVALUE *p = size_pool->freelist;
-
-    if (UNLIKELY(p == NULL)) {
-        struct heap_page *page = heap_next_freepage(objspace, size_pool, heap);
-        size_pool->using_page = page;
-
-        asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
-        p = page->freelist;
-        page->freelist = NULL;
-        asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
-        page->free_slots = 0;
-    }
-
-    asan_unpoison_object((VALUE)p, true);
-    size_pool->freelist = p->as.free.next;
-
-    return (VALUE)p;
-}
 #endif
 
-ALWAYS_INLINE(static VALUE newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, int wb_protected, size_t alloc_size));
+ALWAYS_INLINE(static VALUE newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, int wb_protected, size_t size_pool_idx));
 
 static inline VALUE
-newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, int wb_protected, size_t alloc_size)
+newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, int wb_protected, size_t size_pool_idx)
 {
     VALUE obj;
     unsigned int lev;
@@ -2498,22 +2478,9 @@ newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *
             }
         }
 
-        if (alloc_size <= sizeof(RVALUE)) {
-            // allocate new slot
-            while ((obj = ractor_cached_free_region(objspace, cr, alloc_size)) == Qfalse) {
-                ractor_cache_slots(objspace, cr);
-            }
-        }
-        else {
-#if USE_RVARGC
-            rb_size_pool_t *size_pool = size_pool_for_size(objspace, alloc_size);
-
-            obj = heap_get_freeobj(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool));
-
-            memset((void *)obj, 0, size_pool->slot_size);
-#else
-            rb_bug("unreachable when not using rvargc");
-#endif
+        // allocate new slot
+        while ((obj = ractor_cached_free_region(objspace, cr, size_pool_idx)) == Qfalse) {
+            ractor_cache_slots(objspace, cr, size_pool_idx);
         }
         GC_ASSERT(obj != 0);
         newobj_init(klass, flags, wb_protected, objspace, obj);
@@ -2526,20 +2493,20 @@ newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *
 }
 
 NOINLINE(static VALUE newobj_slowpath_wb_protected(VALUE klass, VALUE flags,
-                                                   rb_objspace_t *objspace, rb_ractor_t *cr, size_t alloc_size));
+                                                   rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_pool_idx));
 NOINLINE(static VALUE newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags,
-                                                     rb_objspace_t *objspace, rb_ractor_t *cr, size_t alloc_size));
+                                                     rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_pool_idx));
 
 static VALUE
-newobj_slowpath_wb_protected(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, size_t alloc_size)
+newobj_slowpath_wb_protected(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_pool_idx)
 {
-    return newobj_slowpath(klass, flags, objspace, cr, TRUE, alloc_size);
+    return newobj_slowpath(klass, flags, objspace, cr, TRUE, size_pool_idx);
 }
 
 static VALUE
-newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, size_t alloc_size)
+newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_pool_idx)
 {
-    return newobj_slowpath(klass, flags, objspace, cr, FALSE, alloc_size);
+    return newobj_slowpath(klass, flags, objspace, cr, FALSE, size_pool_idx);
 }
 
 static inline VALUE
@@ -2560,11 +2527,13 @@ newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr, size_t a
     }
 #endif
 
+    size_t size_pool_idx = size_pool_idx_for_size(alloc_size);
+
     if ((!UNLIKELY(during_gc ||
                    ruby_gc_stressful ||
                    gc_event_hook_available_p(objspace)) &&
          wb_protected &&
-         (obj = ractor_cached_free_region(objspace, cr, alloc_size)) != Qfalse)) {
+         (obj = ractor_cached_free_region(objspace, cr, size_pool_idx)) != Qfalse)) {
 
         newobj_init(klass, flags, wb_protected, objspace, obj);
     }
@@ -2572,8 +2541,8 @@ newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr, size_t a
         RB_DEBUG_COUNTER_INC(obj_newobj_slowpath);
 
         obj = wb_protected ?
-          newobj_slowpath_wb_protected(klass, flags, objspace, cr, alloc_size) :
-          newobj_slowpath_wb_unprotected(klass, flags, objspace, cr, alloc_size);
+          newobj_slowpath_wb_protected(klass, flags, objspace, cr, size_pool_idx) :
+          newobj_slowpath_wb_unprotected(klass, flags, objspace, cr, size_pool_idx);
     }
 
     return obj;
@@ -5596,13 +5565,6 @@ gc_sweep_start(rb_objspace_t *objspace)
 
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
-
-#if USE_RVARGC
-        heap_page_freelist_append(size_pool->using_page, size_pool->freelist);
-
-        size_pool->using_page = NULL;
-        size_pool->freelist = NULL;
-#endif
 
         gc_sweep_start_heap(objspace, SIZE_POOL_EDEN_HEAP(size_pool));
     }
@@ -8710,14 +8672,18 @@ rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
 void
 rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache)
 {
-    struct heap_page *page = newobj_cache->using_page;
-    RVALUE *freelist = newobj_cache->freelist;
-    RUBY_DEBUG_LOG("ractor using_page:%p freelist:%p", (void *)page, (void *)freelist);
+    for (size_t size_pool_idx = 0; size_pool_idx < SIZE_POOL_COUNT; size_pool_idx++) {
+        rb_ractor_newobj_size_pool_cache_t *cache = &newobj_cache->size_pool_caches[size_pool_idx];
 
-    heap_page_freelist_append(page, freelist);
+        struct heap_page *page = cache->using_page;
+        RVALUE *freelist = cache->freelist;
+        RUBY_DEBUG_LOG("ractor using_page:%p freelist:%p", (void *)page, (void *)freelist);
 
-    newobj_cache->using_page = NULL;
-    newobj_cache->freelist = NULL;
+        heap_page_freelist_append(page, freelist);
+
+        cache->using_page = NULL;
+        cache->freelist = NULL;
+    }
 }
 
 void
