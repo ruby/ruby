@@ -1122,7 +1122,7 @@ BigDecimal_coerce(VALUE self, VALUE other)
 
 /*
  *  call-seq:
- *    +big_decimal -> big_decimal
+ *    +big_decimal -> self
  *
  *  Returns +self+:
  *
@@ -1880,7 +1880,7 @@ BigDecimal_div3(int argc, VALUE *argv, VALUE self)
 
  /*
   *  call-seq:
-  *    add(value, ndigits)
+  *    add(value, ndigits) -> new_bigdecimal
   *
   *  Returns the sum of +self+ and +value+
   *  with a precision of +ndigits+ decimal digits.
