@@ -127,7 +127,7 @@ class TestISeq < Test::Unit::TestCase
 
   def test_super_with_anonymous_block
     iseq = compile(<<~EOF)
-      def touch3(&block) # :nodoc:
+      def touch3(&) # :nodoc:
         foo { super }
       end
       42
