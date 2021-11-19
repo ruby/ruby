@@ -80,8 +80,16 @@ describe "Proc#parameters" do
     -> x {}.parameters.should == [[:req, :x]]
   end
 
-  it "adds nameless rest arg for \"star\" argument" do
-    -> x, * {}.parameters.should == [[:req, :x], [:rest]]
+  ruby_version_is '3.1' do
+    it "adds * rest arg for \"star\" argument" do
+      -> x, * {}.parameters.should == [[:req, :x], [:rest, :*]]
+    end
+  end
+
+  ruby_version_is ''...'3.1' do
+    it "adds nameless rest arg for \"star\" argument" do
+      -> x, * {}.parameters.should == [[:req, :x], [:rest]]
+    end
   end
 
   it "does not add locals as block options with a block and splat" do

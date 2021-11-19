@@ -427,6 +427,8 @@ static void token_info_drop(struct parser_params *p, const char *token, rb_code_
 #define lambda_beginning_p() (p->lex.lpar_beg == p->lex.paren_nest)
 
 #define ANON_BLOCK_ID '&'
+#define ANON_REST_ID '*'
+#define ANON_KEYWORD_REST_ID idPow
 
 static enum yytokentype yylex(YYSTYPE*, YYLTYPE*, struct parser_params*);
 
@@ -2890,6 +2892,16 @@ args		: arg_value
 		    /*% %*/
 		    /*% ripper: args_add_star!(args_new!, $2) %*/
 		    }
+		| tSTAR
+		    {
+		    /*%%%*/
+                        if (!local_id(p, ANON_REST_ID)) {
+                            compile_error(p, "no anonymous rest parameter");
+                        }
+			$$ = NEW_SPLAT(NEW_LVAR(ANON_REST_ID, &@1), &@$);
+		    /*% %*/
+		    /*% ripper: args_add_star!(args_new!, Qnil) %*/
+		    }
 		| args ',' arg_value
 		    {
 		    /*%%%*/
@@ -2903,6 +2915,16 @@ args		: arg_value
 			$$ = rest_arg_append(p, $1, $4, &@$);
 		    /*% %*/
 		    /*% ripper: args_add_star!($1, $4) %*/
+		    }
+		| args ',' tSTAR
+		    {
+		    /*%%%*/
+                        if (!local_id(p, ANON_REST_ID)) {
+                            compile_error(p, "no anonymous rest parameter");
+                        }
+			$$ = rest_arg_append(p, $1, NEW_LVAR(ANON_REST_ID, &@3), &@$);
+		    /*% %*/
+		    /*% ripper: args_add_star!($1, Qnil) %*/
 		    }
 		;
 
@@ -5479,8 +5501,7 @@ f_kwrest	: kwrest_mark tIDENTIFIER
 		| kwrest_mark
 		    {
 		    /*%%%*/
-			$$ = internal_id(p);
-			arg_var(p, $$);
+			arg_var(p, shadowing_lvar(p, get_id(ANON_KEYWORD_REST_ID)));
 		    /*% %*/
 		    /*% ripper: kwrest_param!(Qnil) %*/
 		    }
@@ -5555,8 +5576,7 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 		| restarg_mark
 		    {
 		    /*%%%*/
-			$$ = internal_id(p);
-			arg_var(p, $$);
+                        arg_var(p, shadowing_lvar(p, get_id(ANON_REST_ID)));
 		    /*% %*/
 		    /*% ripper: rest_param!(Qnil) %*/
 		    }
@@ -5709,6 +5729,17 @@ assoc		: arg_value tASSOC arg_value
                             $$ = list_append(p, NEW_LIST(0, &@$), $2);
 		    /*% %*/
 		    /*% ripper: assoc_splat!($2) %*/
+		    }
+		| tDSTAR
+		    {
+		    /*%%%*/
+                        if (!local_id(p, ANON_KEYWORD_REST_ID)) {
+                            compile_error(p, "no anonymous keyword rest parameter");
+                        }
+                        $$ = list_append(p, NEW_LIST(0, &@$),
+                                         NEW_LVAR(ANON_KEYWORD_REST_ID, &@$));
+		    /*% %*/
+		    /*% ripper: assoc_splat!(Qnil) %*/
 		    }
 		;
 

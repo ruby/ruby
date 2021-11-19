@@ -441,6 +441,13 @@ Also, note that a bare <code>*</code> can be used to ignore arguments:
   def ignore_arguments(*)
   end
 
+You can also use a bare <code>*</code> when calling a method to pass the
+arguments directly to another method:
+
+  def delegate_arguments(*)
+    other_method(*)
+  end
+
 === Keyword Arguments
 
 Keyword arguments are similar to positional arguments with default values:
@@ -479,6 +486,13 @@ arguments must appear before any keyword arguments.
 Also, note that <code>**</code> can be used to ignore keyword arguments:
 
   def ignore_keywords(**)
+  end
+
+You can also use <code>**</code> when calling a method to delegate
+keyword arguments to another method:
+
+  def delegate_keywords(**)
+    other_method(**)
   end
 
 To mark a method as accepting keywords, but not actually accepting
