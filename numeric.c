@@ -967,11 +967,24 @@ rb_float_new_in_heap(double d)
 
 /*
  *  call-seq:
- *     float.to_s  ->  string
+ *    to_s -> string
  *
- *  Returns a string containing a representation of +self+.
- *  As well as a fixed or exponential form of the +float+,
- *  the call may return +NaN+, +Infinity+, and +-Infinity+.
+ *  Returns a string containing a representation of +self+;
+ *  depending of the value of +self+, the string representation
+ *  may contain:
+ *
+ *  - A fixed-point number.
+ *  - A number in "scientific notation" (containing an exponent).
+ *  - 'Infinity'.
+ *  - '-Infinity'.
+ *  - 'NaN' (indicating not-a-number).
+ *
+ *    3.14.to_s         # => "3.14"
+ *    (10.1**50).to_s   # => "1.644631821843879e+50"
+ *    (10.1**500).to_s  # => "Infinity"
+ *    (-10.1**500).to_s # => "-Infinity"
+ *    (0.0/0.0).to_s    # => "NaN"
+ *
  */
 
 static VALUE
@@ -1059,9 +1072,7 @@ flo_to_s(VALUE flt)
  *    f.coerce(2)              # => [2.0, 3.14]
  *    f.coerce(2.0)            # => [2.0, 3.14]
  *    f.coerce(Rational(1, 2)) # => [0.5, 3.14]
- *    f.coerce(Complex(3, 4))  # Raises RangeError.
- *
- *  Related: Numeric#coerce (for other numeric types).
+ *    f.coerce(Complex(1, 0))  # => [1.0, 3.14]
  *
  *  Raises an exception if a type conversion fails.
  *
@@ -1080,10 +1091,17 @@ rb_float_uminus(VALUE flt)
 }
 
 /*
- * call-seq:
- *   float + other  ->  float
+ *  call-seq:
+ *    self + other -> float
  *
- * Returns a new Float which is the sum of +float+ and +other+.
+ *  Returns a new \Float which is the sum of +self+ and +other+:
+ *
+ *    f = 3.14
+ *    f + 1                 # => 4.140000000000001
+ *    f + 1.0               # => 4.140000000000001
+ *    f + Rational(1, 1)    # => 4.140000000000001
+ *    f + Complex(1, 0)     # => (4.140000000000001+0i)
+ *
  */
 
 VALUE
@@ -1104,10 +1122,17 @@ rb_float_plus(VALUE x, VALUE y)
 }
 
 /*
- * call-seq:
- *   float - other  ->  float
+ *  call-seq:
+ *    self - other -> float
  *
- * Returns a new Float which is the difference of +float+ and +other+.
+ *  Returns a new \Float which is the difference of +self+ and +other+:
+ *
+ *    f = 3.14
+ *    f - 1                 # => 2.14
+ *    f - 1.0               # => 2.14
+ *    f - Rational(1, 1)    # => 2.14
+ *    f - Complex(1, 0)     # => (2.14+0i)
+ *
  */
 
 VALUE
@@ -1128,10 +1153,16 @@ rb_float_minus(VALUE x, VALUE y)
 }
 
 /*
- * call-seq:
- *   float * other  ->  float
+ *  call-seq:
+ *    self * other -> float
  *
- * Returns a new Float which is the product of +float+ and +other+.
+ *  Returns a new \Float which is the product of +self+ and +other+:
+ *
+ *    f = 3.14
+ *    f * 2              # => 6.28
+ *    f * 2.0            # => 6.28
+ *    f * Rational(1, 2) # => 1.57
+ *    f * Complex(2, 0)  # => (6.28+0.0i)
  */
 
 VALUE
@@ -1176,10 +1207,17 @@ rb_flo_div_flo(VALUE x, VALUE y)
 }
 
 /*
- * call-seq:
- *   float / other  ->  float
+ *  call-seq:
+ *    self / other -> float
  *
- * Returns a new Float which is the result of dividing +float+ by +other+.
+ *  Returns a new \Float which is the result of dividing +self+ by +other+:
+ *
+ *    f = 3.14
+ *    f / 2              # => 1.57
+ *    f / 2.0            # => 1.57
+ *    f / Rational(2, 1) # => 1.57
+ *    f / Complex(2, 0)  # => (1.57+0.0i)
+ *
  */
 
 VALUE
