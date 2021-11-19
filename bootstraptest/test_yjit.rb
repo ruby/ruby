@@ -1214,6 +1214,23 @@ assert_equal 'foo123', %q{
   make_str("foo", 123)
 }
 
+# test string interpolation with overridden to_s
+assert_equal 'foo', %q{
+  class String
+    def to_s
+      "bad"
+    end
+  end
+
+  def make_str(foo)
+    "#{foo}"
+  end
+
+  make_str("foo")
+  make_str("foo")
+}
+
+
 # test invokebuiltin as used in struct assignment
 assert_equal '123', %q{
   def foo(obj)
