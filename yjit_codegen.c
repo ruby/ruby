@@ -4308,6 +4308,30 @@ gen_anytostring(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 }
 
 static codegen_status_t
+gen_objtostring(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
+{
+    if (!jit_at_current_insn(jit)) {
+        defer_compilation(jit, ctx);
+        return YJIT_END_BLOCK;
+    }
+
+    x86opnd_t recv = ctx_stack_opnd(ctx, 0);
+    VALUE comptime_recv = jit_peek_at_stack(jit, ctx, 0);
+
+    if (RB_TYPE_P(comptime_recv, T_STRING)) {
+        uint8_t *side_exit = yjit_side_exit(jit, ctx);
+
+        mov(cb, REG0, recv);
+        jit_guard_known_klass(jit, ctx, CLASS_OF(comptime_recv), OPND_STACK(0), comptime_recv, SEND_MAX_DEPTH, side_exit);
+        // No work needed. The string value is already on the top of the stack.
+        return YJIT_KEEP_COMPILING;
+    } else {
+        struct rb_call_data *cd = (struct rb_call_data *)jit_get_arg(jit, 0);
+        return gen_send_general(jit, ctx, cd, NULL);
+    }
+}
+
+static codegen_status_t
 gen_toregexp(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
     rb_num_t opt = jit_get_arg(jit, 0);
@@ -4832,6 +4856,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(getglobal), gen_getglobal);
     yjit_reg_op(BIN(setglobal), gen_setglobal);
     yjit_reg_op(BIN(anytostring), gen_anytostring);
+    yjit_reg_op(BIN(objtostring), gen_objtostring);
     yjit_reg_op(BIN(toregexp), gen_toregexp);
     yjit_reg_op(BIN(getspecial), gen_getspecial);
     yjit_reg_op(BIN(getclassvariable), gen_getclassvariable);
