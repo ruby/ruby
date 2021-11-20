@@ -263,14 +263,6 @@ new_struct(VALUE name, VALUE super)
 
 NORETURN(static void invalid_struct_pos(VALUE s, VALUE idx));
 
-static inline long
-struct_pos_num(VALUE s, VALUE idx)
-{
-    long i = NUM2INT(idx);
-    if (i < 0 || i >= RSTRUCT_LEN(s)) invalid_struct_pos(s, idx);
-    return i;
-}
-
 static void
 define_aref_method(VALUE nstr, VALUE name, VALUE off)
 {
