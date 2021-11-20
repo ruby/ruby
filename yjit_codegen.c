@@ -545,9 +545,14 @@ yjit_entry_prologue(codeblock_t *cb, const rb_iseq_t *iseq)
 {
     RUBY_ASSERT(cb != NULL);
 
-    if (cb->write_pos + 1024 >= cb->mem_size) {
-        rb_bug("out of executable memory");
+    enum { MAX_PROLOGUE_SIZE = 1024 };
+
+    // Check if we have enough executable memory
+    if (cb->write_pos + MAX_PROLOGUE_SIZE >= cb->mem_size) {
+        return NULL;
     }
+
+    const uint32_t old_write_pos = cb->write_pos;
 
     // Align the current write positon to cache line boundaries
     cb_align_pos(cb, 64);
@@ -580,6 +585,9 @@ yjit_entry_prologue(codeblock_t *cb, const rb_iseq_t *iseq)
     if (iseq->body->param.flags.has_opt) {
         yjit_pc_guard(cb, iseq);
     }
+
+    // Verify MAX_PROLOGUE_SIZE
+    RUBY_ASSERT_ALWAYS(cb->write_pos - old_write_pos <= MAX_PROLOGUE_SIZE);
 
     return code_ptr;
 }
@@ -625,31 +633,45 @@ jit_jump_to_next_insn(jitstate_t *jit, const ctx_t *current_context)
     );
 }
 
-// Compile a sequence of bytecode instructions for a given basic block version
-static void
-yjit_gen_block(block_t *block, rb_execution_context_t *ec)
+// Compile a sequence of bytecode instructions for a given basic block version.
+// Part of gen_block_version().
+static block_t *
+gen_single_block(blockid_t blockid, const ctx_t *start_ctx, rb_execution_context_t *ec)
 {
     RUBY_ASSERT(cb != NULL);
-    RUBY_ASSERT(block != NULL);
-    RUBY_ASSERT(!(block->blockid.idx == 0 && block->ctx.stack_size > 0));
 
-    // Copy the block's context to avoid mutating it
-    ctx_t ctx_copy = block->ctx;
+    // Check if there is enough executable memory.
+    // FIXME: This bound isn't enforced and long blocks can potentially use more.
+    enum { MAX_CODE_PER_BLOCK = 1024 };
+    if (cb->write_pos + MAX_CODE_PER_BLOCK >= cb->mem_size) {
+        return NULL;
+    }
+    if (ocb->write_pos + MAX_CODE_PER_BLOCK >= ocb->mem_size) {
+        return NULL;
+    }
+
+    // Allocate the new block
+    block_t *block = calloc(1, sizeof(block_t));
+    if (!block) {
+        return NULL;
+    }
+
+    // Copy the starting context to avoid mutating it
+    ctx_t ctx_copy = *start_ctx;
     ctx_t *ctx = &ctx_copy;
+
+    // Limit the number of specialized versions for this block
+    *ctx = limit_block_versions(blockid, ctx);
+
+    // Save the starting context on the block.
+    block->blockid = blockid;
+    block->ctx = *ctx;
+
+    RUBY_ASSERT(!(blockid.idx == 0 && start_ctx->stack_size > 0));
 
     const rb_iseq_t *iseq = block->blockid.iseq;
     uint32_t insn_idx = block->blockid.idx;
     const uint32_t starting_insn_idx = insn_idx;
-
-    // NOTE: if we are ever deployed in production, we
-    // should probably just log an error and return NULL here,
-    // so we can fail more gracefully
-    if (cb->write_pos + 1024 >= cb->mem_size) {
-        rb_bug("out of executable memory");
-    }
-    if (ocb->write_pos + 1024 >= ocb->mem_size) {
-        rb_bug("out of executable memory (outlined block)");
-    }
 
     // Initialize a JIT state object
     jitstate_t jit = {
@@ -765,6 +787,8 @@ yjit_gen_block(block_t *block, rb_execution_context_t *ec)
             idx += insn_len(opcode);
         }
     }
+
+    return block;
 }
 
 static codegen_status_t gen_opt_send_without_block(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb);

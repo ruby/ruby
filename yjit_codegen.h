@@ -14,7 +14,7 @@ static void jit_ensure_block_entry_exit(jitstate_t *jit);
 
 static uint8_t *yjit_entry_prologue(codeblock_t *cb, const rb_iseq_t *iseq);
 
-static void yjit_gen_block(block_t *block, rb_execution_context_t *ec);
+static block_t *gen_single_block(blockid_t blockid, const ctx_t *start_ctx, rb_execution_context_t *ec);
 
 static void gen_code_for_exit_from_stub(void);
 

@@ -2474,6 +2474,18 @@ assert_equal 'new', %q{
   test
 } if false # disabled for now since OOM crashes in the test harness
 
+assert_equal 'ok', %q{
+  # Try to compile new method while OOM
+  def foo
+    :ok
+  end
+
+  RubyVM::YJIT.simulate_oom! if defined?(RubyVM::YJIT)
+
+  foo
+  foo
+}
+
 # struct aref embedded
 assert_equal '2', %q{
   def foo(s)
