@@ -1214,6 +1214,20 @@ assert_equal 'foo123', %q{
   make_str("foo", 123)
 }
 
+# test string interpolation where the type changes
+assert_equal 'foo123', %q{
+  def make_str(foo, bar)
+    "#{foo}#{bar}"
+  end
+
+  make_str("foo", 123)
+  make_str("foo", 123)
+  make_str(:foo, 123)
+  make_str(:foo, 123)
+  make_str(nil, :foo123)
+  make_str(nil, :foo123)
+}
+
 # test string interpolation with overridden to_s
 assert_equal 'foo', %q{
   class String
@@ -1230,6 +1244,21 @@ assert_equal 'foo', %q{
   make_str("foo")
 }
 
+# test string interpolation with overridden to_s on fixnums
+assert_equal 'ok', %q{
+  class Integer
+    def to_s
+      "ok"
+    end
+  end
+
+  def make_str(foo)
+    "#{foo}"
+  end
+
+  make_str(123)
+  make_str(123)
+}
 
 # test invokebuiltin as used in struct assignment
 assert_equal '123', %q{

@@ -18,6 +18,17 @@
 #include "yjit_codegen.h"
 #include "yjit_asm.h"
 
+/* object.c */
+VALUE rb_nil_to_s(VALUE);
+VALUE rb_true_to_s(VALUE);
+VALUE rb_false_to_s(VALUE);
+/* numeric.c */
+VALUE rb_int_to_s(int argc, VALUE *argv, VALUE x);
+VALUE rb_fix_to_s(VALUE);
+/* variable.c */
+VALUE rb_mod_to_s(VALUE);
+VALUE rb_mod_name(VALUE);
+
 // Map from YARV opcodes to code generation functions
 static codegen_fn gen_fns[VM_INSTRUCTION_SIZE] = { NULL };
 
@@ -2061,6 +2072,134 @@ static codegen_status_t
 gen_opt_gt(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
     return gen_fixnum_cmp(jit, ctx, cmovg);
+}
+
+static bool
+assume_cfunc_matches(jitstate_t *jit, VALUE klass, const rb_callable_method_entry_t * cme, VALUE (*func)(ANYARGS))
+{
+    // Same as check_cfunc in vm_insnhelper.c
+    if (!cme) {
+        return false;
+    }
+    VM_ASSERT(IMEMO_TYPE_P(cme, imemo_ment));
+    VM_ASSERT(cme->def);
+    if (cme->def->type != VM_METHOD_TYPE_CFUNC) {
+        return false;
+    }
+    if (cme->def->body.cfunc.func != func) {
+        return false;
+    }
+    assume_method_lookup_stable(klass, cme, jit);
+    return true;
+}
+
+// Implement specialized objtostring
+static codegen_status_t
+gen_objtostring_specialized(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb, VALUE comptime_recv, VALUE comptime_recv_klass, const rb_callable_method_entry_t *cme, uint8_t *side_exit) {
+    switch (TYPE(comptime_recv)) {
+    case T_STRING: {
+        x86opnd_t string_opnd = ctx_stack_opnd(ctx, 0);
+
+        // to check the class is correct, it must be in REG0 first
+        mov(cb, REG0, string_opnd);
+        jit_guard_known_klass(jit, ctx, comptime_recv_klass, OPND_STACK(0), comptime_recv, SEND_MAX_DEPTH, side_exit);
+        return true;
+    }
+    case T_SYMBOL: {
+        if (!assume_cfunc_matches(jit, comptime_recv_klass, cme, rb_sym_to_s)) {
+            return false;
+        }
+        x86opnd_t sym_opnd = ctx_stack_opnd(ctx, 0);
+
+        mov(cb, REG0, sym_opnd);
+        jit_guard_known_klass(jit, ctx, comptime_recv_klass, OPND_STACK(0), comptime_recv, SEND_MAX_DEPTH, side_exit);
+
+        // call rb_sym2str(VALUE sym)
+        mov(cb, C_ARG_REGS[0], sym_opnd);
+        call_ptr(cb, REG0, (void *)&rb_sym2str);
+
+        ctx_stack_pop(ctx, 1);
+        x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_STRING);
+        mov(cb, stack_ret, RAX);
+
+        return true;
+    }
+    case T_FIXNUM: {
+        if (!assume_cfunc_matches(jit, comptime_recv_klass, cme, rb_int_to_s)) {
+            return false;
+        }
+        x86opnd_t fix_opnd = ctx_stack_opnd(ctx, 0);
+
+        // to check the class is correct, it must be in REG0 first
+        mov(cb, REG0, fix_opnd);
+        jit_guard_known_klass(jit, ctx, comptime_recv_klass, OPND_STACK(0), comptime_recv, SEND_MAX_DEPTH, side_exit);
+
+        // call rb_fix_to_s(VALUE x)
+        mov(cb, C_ARG_REGS[0], fix_opnd);
+
+        // This has to be after fix_opnd is used above
+        // necessary because fix_to_s will allocate
+        jit_prepare_routine_call(jit, ctx, REG1);
+
+        call_ptr(cb, REG0, (void *)&rb_fix_to_s);
+
+        ctx_stack_pop(ctx, 1);
+        x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_STRING);
+        mov(cb, stack_ret, RAX);
+
+        return true;
+    }
+    case T_NIL: {
+        if (!assume_cfunc_matches(jit, comptime_recv_klass, cme, rb_false_to_s)) {
+            return false;
+        }
+        x86opnd_t top = ctx_stack_opnd(ctx, 0);
+
+        mov(cb, REG0, top);
+        jit_guard_known_klass(jit, ctx, comptime_recv_klass, OPND_STACK(0), comptime_recv, SEND_MAX_DEPTH, side_exit);
+
+        // Call rb_nil_to_s at compile time since it is a singleton value
+        VALUE nil_string = rb_nil_to_s(comptime_recv);
+        // Push the result back onto the stack
+        ctx_stack_pop(ctx, 1);
+        jit_putobject(jit, ctx, nil_string);
+        return true;
+    }
+    case T_TRUE: {
+        if (!assume_cfunc_matches(jit, comptime_recv_klass, cme, rb_false_to_s)) {
+            return false;
+        }
+
+        x86opnd_t top = ctx_stack_opnd(ctx, 0);
+
+        mov(cb, REG0, top);
+        jit_guard_known_klass(jit, ctx, comptime_recv_klass, OPND_STACK(0), comptime_recv, SEND_MAX_DEPTH, side_exit);
+
+        // Call rb_true_to_s at compile time since it is a singleton value
+        VALUE true_string = rb_true_to_s(comptime_recv);
+        // Push the result back onto the stack
+        ctx_stack_pop(ctx, 1);
+        jit_putobject(jit, ctx, true_string);
+        return true;
+    }
+    case T_FALSE: {
+        if (!assume_cfunc_matches(jit, comptime_recv_klass, cme, rb_false_to_s)) {
+            return false;
+        }
+
+        x86opnd_t top = ctx_stack_opnd(ctx, 0);
+        mov(cb, REG0, top);
+        jit_guard_known_klass(jit, ctx, comptime_recv_klass, OPND_STACK(0), comptime_recv, SEND_MAX_DEPTH, side_exit);
+
+        // Call rb_false_to_s at compile time since it is a singleton value
+        VALUE false_string = rb_false_to_s(comptime_recv);
+        ctx_stack_pop(ctx, 1);
+        jit_putobject(jit, ctx, false_string);
+        return true;
+    }
+    default:
+        return false;
+    }
 }
 
 // Implements specialized equality for either two fixnum or two strings
@@ -4447,15 +4586,15 @@ gen_objtostring(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         return YJIT_END_BLOCK;
     }
 
-    x86opnd_t recv = ctx_stack_opnd(ctx, 0);
     VALUE comptime_recv = jit_peek_at_stack(jit, ctx, 0);
+    VALUE comptime_recv_klass = CLASS_OF(comptime_recv);
+    struct rb_call_data *cd = (struct rb_call_data *)jit_get_arg(jit, 0);
 
-    if (RB_TYPE_P(comptime_recv, T_STRING)) {
-        uint8_t *side_exit = yjit_side_exit(jit, ctx);
+    ID mid = vm_ci_mid(cd->ci);
+    const rb_callable_method_entry_t *cme = rb_callable_method_entry(comptime_recv_klass, mid);
 
-        mov(cb, REG0, recv);
-        jit_guard_known_klass(jit, ctx, CLASS_OF(comptime_recv), OPND_STACK(0), comptime_recv, SEND_MAX_DEPTH, side_exit);
-        // No work needed. The string value is already on the top of the stack.
+    uint8_t *side_exit = yjit_side_exit(jit, ctx);
+    if (gen_objtostring_specialized(jit, ctx, cb, comptime_recv, comptime_recv_klass, cme, side_exit)) {
         return YJIT_KEEP_COMPILING;
     }
     else {
