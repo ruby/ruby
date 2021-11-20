@@ -1092,7 +1092,7 @@ rb_float_uminus(VALUE flt)
 
 /*
  *  call-seq:
- *    self + other -> float
+ *    self + other -> numeric
  *
  *  Returns a new \Float which is the sum of +self+ and +other+:
  *
@@ -1123,7 +1123,7 @@ rb_float_plus(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self - other -> float
+ *    self - other -> numeric
  *
  *  Returns a new \Float which is the difference of +self+ and +other+:
  *
@@ -1154,7 +1154,7 @@ rb_float_minus(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self * other -> float
+ *    self * other -> numeric
  *
  *  Returns a new \Float which is the product of +self+ and +other+:
  *
@@ -1208,7 +1208,7 @@ rb_flo_div_flo(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self / other -> float
+ *    self / other -> numeric
  *
  *  Returns a new \Float which is the result of dividing +self+ by +other+:
  *
@@ -1246,10 +1246,18 @@ rb_float_div(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     float.fdiv(numeric)  ->  float
- *     float.quo(numeric)   ->  float
+ *    quo(other) -> numeric
  *
- *  Returns <code>float / numeric</code>, same as Float#/.
+ *  Returns the quotient from dividing +self+ by +other+:
+ *
+ *    f = 3.14
+ *    f.quo(2)              # => 1.57
+ *    f.quo(-2)             # => -1.57
+ *    f.quo(Rational(2, 1)) # => 1.57
+ *    f.quo(Complex(2, 0))  # => (1.57+0.0i)
+ *
+ *  Float#fdiv is an alias for Float#quo.
+ *
  */
 
 static VALUE
@@ -1420,12 +1428,18 @@ flo_divmod(VALUE x, VALUE y)
 }
 
 /*
- * call-seq:
- *    float ** other  ->  float
+ *  call-seq:
+ *    self ** other -> numeric
  *
- * Raises +float+ to the power of +other+.
+ *  Raises +self+ to the power of +other+:
  *
- *    2.0**3   #=> 8.0
+ *    f = 3.14
+ *    f ** 2              # => 9.8596
+ *    f ** -2             # => 0.1014239928597509
+ *    f ** 2.1            # => 11.054834900588839
+ *    f ** Rational(2, 1) # => 9.8596
+ *    f ** Complex(2, 0)  # => (9.8596+0i)
+ *
  */
 
 VALUE
@@ -1517,15 +1531,19 @@ num_equal(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     float == obj  ->  true or false
+ *     self == other -> true or false
  *
- *  Returns +true+ only if +obj+ has the same value as +float+.
- *  Contrast this with Float#eql?, which requires +obj+ to be a Float.
+ *  Returns +true+ if +other+ has the same value as +self+, +false+ otherwise:
  *
- *     1.0 == 1   #=> true
+ *     2.0 == 2              # => true
+ *     2.0 == 2.0            # => true
+ *     2.0 == Rational(2, 1) # => true
+ *     2.0 == Complex(2, 0)  # => true
  *
- *  The result of <code>NaN == NaN</code> is undefined,
- *  so an implementation-dependent value is returned.
+ *  <tt>Float::NAN == Float::NAN</tt> returns an implementation-dependent value.
+ *
+ *  Related: Float#eql? (requires +other+ to be a \Float).
+ *
  */
 
 MJIT_FUNC_EXPORTED VALUE
@@ -1557,9 +1575,9 @@ static VALUE rb_dbl_hash(double d);
 
 /*
  * call-seq:
- *    float.hash  ->  integer
+ *    hash -> integer
  *
- * Returns a hash code for this float.
+ * Returns the integer hash value for +self+.
  *
  * See also Object#hash.
  */
@@ -1588,16 +1606,30 @@ rb_dbl_cmp(double a, double b)
 
 /*
  *  call-seq:
- *     float <=> real  ->  -1, 0, +1, or nil
+ *     self <=> other ->  -1, 0, +1, or nil
  *
- *  Returns -1, 0, or +1 depending on whether +float+ is
- *  less than, equal to, or greater than +real+.
+ *  Returns a value that depends on the numeric relation
+ *  between +self+ and +other+:
+ *
+ *  - -1, if +self+ is less than +other+.
+ *  - 0, if +self+ is equal to +other+.
+ *  - 1, if +self+ is greater than +other+.
+ *  - +nil+, if the two values are incommensurate.
+ *
+ *  Examples:
+ *
+ *    2.0 <=> 2              # => 0
+      2.0 <=> 2.0            # => 0
+      2.0 <=> Rational(2, 1) # => 0
+      2.0 <=> Complex(2, 0)  # => 0
+      2.0 <=> 1.9            # => 1
+      2.0 <=> 2.1            # => -1
+      2.0 <=> 'foo'          # => nil
+ *
  *  This is the basis for the tests in the Comparable module.
  *
- *  The result of <code>NaN <=> NaN</code> is undefined,
- *  so an implementation-dependent value is returned.
+ *  <tt>Float::NAN <=> Float::NAN</tt> returns an implementation-dependent value.
  *
- *  +nil+ is returned if the two values are incomparable.
  */
 
 static VALUE
