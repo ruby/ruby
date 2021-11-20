@@ -483,8 +483,7 @@ rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec)
     // Compile a block version starting at the first instruction
     uint8_t *code_ptr = gen_entry_point(iseq, 0, ec);
 
-    if (code_ptr)
-    {
+    if (code_ptr) {
         iseq->body->jit_func = (yjit_func_t)code_ptr;
     }
     else {

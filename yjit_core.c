@@ -542,9 +542,10 @@ static size_t get_num_versions(blockid_t blockid)
 
 // Keep track of a block version. Block should be fully constructed.
 static void
-add_block_version(blockid_t blockid, block_t *block)
+add_block_version(block_t *block)
 {
-    const rb_iseq_t *iseq = block->blockid.iseq;
+    const blockid_t blockid = block->blockid;
+    const rb_iseq_t *iseq = blockid.iseq;
     struct rb_iseq_constant_body *body = iseq->body;
 
     // Function entry blocks must have stack size 0
@@ -704,57 +705,66 @@ find_block_version(blockid_t blockid, const ctx_t *ctx)
 
 // Produce a generic context when the block version limit is hit for a blockid
 // Note that this will mutate the ctx argument
-static void
-limit_block_versions(blockid_t blockid, ctx_t *ctx)
+static ctx_t
+limit_block_versions(blockid_t blockid, const ctx_t *ctx)
 {
     // Guard chains implement limits separately, do nothing
     if (ctx->chain_depth > 0)
-        return;
+        return *ctx;
 
     // If this block version we're about to add will hit the version limit
-    if (get_num_versions(blockid) + 1 >= rb_yjit_opts.max_versions)
-    {
+    if (get_num_versions(blockid) + 1 >= rb_yjit_opts.max_versions) {
         // Produce a generic context that stores no type information,
-        // but still respects the stack_size and sp_offset constraints
+        // but still respects the stack_size and sp_offset constraints.
         // This new context will then match all future requests.
         ctx_t generic_ctx = DEFAULT_CTX;
         generic_ctx.stack_size = ctx->stack_size;
         generic_ctx.sp_offset = ctx->sp_offset;
 
         // Mutate the incoming context
-        *ctx = generic_ctx;
+        return generic_ctx;
     }
+
+    return *ctx;
 }
 
-// Compile a new block version immediately
+static void yjit_free_block(block_t *block);
+
+// Immediately compile a series of block versions at a starting point and
+// return the starting block.
 static block_t *
 gen_block_version(blockid_t blockid, const ctx_t *start_ctx, rb_execution_context_t *ec)
 {
-    // Allocate a new block version object
-    block_t *block = calloc(1, sizeof(block_t));
-    block->blockid = blockid;
-    memcpy(&block->ctx, start_ctx, sizeof(ctx_t));
-
-    // Store a pointer to the first block (returned by this function)
-    block_t *first_block = block;
-
-    // Limit the number of specialized versions for this block
-    limit_block_versions(block->blockid, &block->ctx);
+    // Small array to keep track of all the blocks compiled per invocation. We
+    // tend to have small batches since we often break up compilation with lazy
+    // stubs. Compilation is successful only if the whole batch is successful.
+    enum { MAX_PER_BATCH = 64 };
+    block_t *batch[MAX_PER_BATCH];
+    int compiled_count = 0;
+    bool batch_success = true;
+    block_t *block;
 
     // Generate code for the first block
-    yjit_gen_block(block, ec);
+    block = gen_single_block(blockid, start_ctx, ec);
+    batch_success = block && compiled_count < MAX_PER_BATCH;
 
-    // Keep track of the new block version
-    add_block_version(block->blockid, block);
+    if (batch_success) {
+        // Track the block
+        add_block_version(block);
+
+        batch[compiled_count] = block;
+        compiled_count++;
+    }
 
     // For each successor block to compile
-    for (;;) {
+    while (batch_success) {
         // If the previous block compiled doesn't have outgoing branches, stop
         if (rb_darray_size(block->outgoing) == 0) {
             break;
         }
 
-        // Get the last outgoing branch from the previous block
+        // Get the last outgoing branch from the previous block. Blocks can use
+        // gen_direct_jump() to request a block to be placed immediately after.
         branch_t *last_branch = rb_darray_back(block->outgoing);
 
         // If there is no next block to compile, stop
@@ -766,32 +776,48 @@ gen_block_version(blockid_t blockid, const ctx_t *start_ctx, rb_execution_contex
             rb_bug("invalid target for last branch");
         }
 
-        // Allocate a new block version object
-        // Use the context from the branch
-        block = calloc(1, sizeof(block_t));
-        block->blockid = last_branch->targets[0];
-        block->ctx = last_branch->target_ctxs[0];
-        //memcpy(&block->ctx, ctx, sizeof(ctx_t));
+        // Generate code for the current block using context from the last branch.
+        blockid_t requested_id = last_branch->targets[0];
+        const ctx_t *requested_ctx = &last_branch->target_ctxs[0];
+        block = gen_single_block(requested_id, requested_ctx, ec);
+        batch_success = block && compiled_count < MAX_PER_BATCH;
 
-        // Limit the number of specialized versions for this block
-        limit_block_versions(block->blockid, &block->ctx);
+        // If the batch failed, stop
+        if (!batch_success) {
+            break;
+        }
 
-        // Generate code for the current block
-        yjit_gen_block(block, ec);
-
-        // Keep track of the new block version
-        add_block_version(block->blockid, block);
-
-        // Patch the last branch address
+        // Connect the last branch and the new block
         last_branch->dst_addrs[0] = block->start_addr;
         rb_darray_append(&block->incoming, last_branch);
         last_branch->blocks[0] = block;
 
         // This block should immediately follow the last branch
         RUBY_ASSERT(block->start_addr == last_branch->end_addr);
+
+        // Track the block
+        add_block_version(block);
+
+        batch[compiled_count] = block;
+        compiled_count++;
     }
 
-    return first_block;
+    if (batch_success) {
+        // Success. Return first block in the batch.
+        RUBY_ASSERT(compiled_count > 0);
+        return batch[0];
+    }
+    else {
+        // The batch failed. Free everything in the batch
+        for (int block_idx = 0; block_idx < compiled_count; block_idx++) {
+            yjit_free_block(batch[block_idx]);
+        }
+
+#if YJIT_STATS
+        yjit_runtime_counters.compilation_failure++;
+#endif
+        return NULL;
+    }
 }
 
 // Generate a block version that is an entry point inserted into an iseq
@@ -807,15 +833,14 @@ gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx, rb_execution_context_t
     // The entry context makes no assumptions about types
     blockid_t blockid = { iseq, insn_idx };
 
-    // Write the interpreter entry prologue
+    // Write the interpreter entry prologue. Might be NULL when out of memory.
     uint8_t *code_ptr = yjit_entry_prologue(cb, iseq);
 
     // Try to generate code for the entry block
     block_t *block = gen_block_version(blockid, &DEFAULT_CTX, ec);
 
     // If we couldn't generate any code
-    if (block->end_idx == insn_idx)
-    {
+    if (!block || block->end_idx == insn_idx) {
         return NULL;
     }
 

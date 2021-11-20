@@ -122,6 +122,7 @@ YJIT_DECLARE_COUNTERS(
     vm_insns_count,
     compiled_iseq_count,
     compiled_block_count,
+    compilation_failure,
 
     exit_from_branch_stub,
 
