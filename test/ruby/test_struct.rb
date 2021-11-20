@@ -489,6 +489,14 @@ module TestStruct
     }
   end
 
+  def test_public_send
+    klass = @Struct.new(:a)
+    x = klass.new(1)
+    assert_equal(1, x.public_send("a"))
+    assert_equal(42, x.public_send("a=", 42))
+    assert_equal(42, x.public_send("a"))
+  end
+
   class TopStruct < Test::Unit::TestCase
     include TestStruct
 

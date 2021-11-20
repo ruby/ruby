@@ -275,11 +275,11 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 	    }
           case OPTIMIZED_METHOD_TYPE_STRUCT_AREF:
             vm_call_check_arity(calling, 0, argv);
-            ret = vm_call_opt_struct_aref0(ec, ec->cfp, calling);
+            ret = vm_call_opt_struct_aref0(ec, calling);
             goto success;
           case OPTIMIZED_METHOD_TYPE_STRUCT_ASET:
             vm_call_check_arity(calling, 1, argv);
-            ret = vm_call_opt_struct_aset0(ec, ec->cfp, calling);
+            ret = vm_call_opt_struct_aset0(ec, calling, argv[0]);
             goto success;
 	  default:
 	    rb_bug("vm_call0: unsupported optimized method type (%d)", vm_cc_cme(cc)->def->body.optimized.type);

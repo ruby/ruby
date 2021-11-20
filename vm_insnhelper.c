@@ -3531,7 +3531,7 @@ vm_call_opt_block_call(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, 
 }
 
 static VALUE
-vm_call_opt_struct_aref0(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling)
+vm_call_opt_struct_aref0(rb_execution_context_t *ec, struct rb_calling_info *calling)
 {
     VALUE recv = calling->recv;
 
@@ -3548,16 +3548,15 @@ vm_call_opt_struct_aref(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 {
     RB_DEBUG_COUNTER_INC(ccf_opt_struct_aref);
 
-    VALUE ret = vm_call_opt_struct_aref0(ec, reg_cfp, calling);
+    VALUE ret = vm_call_opt_struct_aref0(ec, calling);
     reg_cfp->sp -= 1;
     return ret;
 }
 
 static VALUE
-vm_call_opt_struct_aset0(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling)
+vm_call_opt_struct_aset0(rb_execution_context_t *ec, struct rb_calling_info *calling, VALUE val)
 {
     VALUE recv = calling->recv;
-    VALUE val = *(reg_cfp->sp - 1);
 
     VM_ASSERT(RB_TYPE_P(recv, T_STRUCT));
     VM_ASSERT(vm_cc_cme(calling->cc)->def->type == VM_METHOD_TYPE_OPTIMIZED);
@@ -3576,7 +3575,7 @@ vm_call_opt_struct_aset(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 {
     RB_DEBUG_COUNTER_INC(ccf_opt_struct_aset);
 
-    VALUE ret = vm_call_opt_struct_aset0(ec, reg_cfp, calling);
+    VALUE ret = vm_call_opt_struct_aset0(ec, calling, *(reg_cfp->sp - 1));
     reg_cfp->sp -= 2;
     return ret;
 }
