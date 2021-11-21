@@ -892,7 +892,7 @@ rb_vm_rewrite_cref(rb_cref_t *cref, VALUE old_klass, VALUE new_klass, rb_cref_t 
 }
 
 static rb_cref_t *
-vm_cref_push(const rb_execution_context_t *ec, VALUE klass, const VALUE *ep, int pushed_by_eval)
+vm_cref_push(const rb_execution_context_t *ec, VALUE klass, const VALUE *ep, int pushed_by_eval, int singleton)
 {
     rb_cref_t *prev_cref = NULL;
 
@@ -907,7 +907,7 @@ vm_cref_push(const rb_execution_context_t *ec, VALUE klass, const VALUE *ep, int
 	}
     }
 
-    return vm_cref_new(klass, METHOD_VISI_PUBLIC, FALSE, prev_cref, pushed_by_eval);
+    return vm_cref_new(klass, METHOD_VISI_PUBLIC, FALSE, prev_cref, pushed_by_eval, singleton);
 }
 
 static inline VALUE

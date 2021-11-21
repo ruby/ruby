@@ -1959,11 +1959,8 @@ yield_under(VALUE self, int singleton, int argc, const VALUE *argv, int kw_splat
     }
 
     VM_ASSERT(singleton || RB_TYPE_P(self, T_MODULE) || RB_TYPE_P(self, T_CLASS));
-    cref = vm_cref_push(ec, self, ep, TRUE);
+    cref = vm_cref_push(ec, self, ep, TRUE, singleton);
 
-    if (singleton) {
-        CREF_SINGLETON_SET(cref);
-    }
     return vm_yield_with_cref(ec, argc, argv, kw_splat, cref, is_lambda);
 }
 
@@ -1981,7 +1978,7 @@ rb_yield_refine_block(VALUE refinement, VALUE refinements)
 	struct rb_captured_block new_captured = *captured;
 	VALUE new_block_handler = VM_BH_FROM_ISEQ_BLOCK(&new_captured);
 	const VALUE *ep = captured->ep;
-	rb_cref_t *cref = vm_cref_push(ec, refinement, ep, TRUE);
+	rb_cref_t *cref = vm_cref_push(ec, refinement, ep, TRUE, FALSE);
 	CREF_REFINEMENTS_SET(cref, refinements);
 	VM_FORCE_WRITE_SPECIAL_CONST(&VM_CF_LEP(ec->cfp)[VM_ENV_DATA_INDEX_SPECVAL], new_block_handler);
 	new_captured.self = refinement;
@@ -1993,10 +1990,7 @@ rb_yield_refine_block(VALUE refinement, VALUE refinements)
 static VALUE
 eval_under(VALUE self, int singleton, VALUE src, VALUE file, int line)
 {
-    rb_cref_t *cref = vm_cref_push(GET_EC(), self, NULL, FALSE);
-    if (singleton) {
-        CREF_SINGLETON_SET(cref);
-    }
+    rb_cref_t *cref = vm_cref_push(GET_EC(), self, NULL, FALSE, singleton);
     SafeStringValue(src);
 
     return eval_string_with_cref(self, src, cref, file, line);
