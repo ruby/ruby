@@ -2,8 +2,8 @@ name: Miscellaneous checks
 on: [push, pull_request]
 
 concurrency:
-  group: ${{ github.workflow }} / ${{ github.ref_name }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 
 jobs:
   checks:
