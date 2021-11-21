@@ -10,6 +10,7 @@
 *.dylib
 *.elc
 *.i
+*.ii
 *.inc
 *.log
 *.o
