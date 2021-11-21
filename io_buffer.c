@@ -687,7 +687,8 @@ rb_io_buffer_to_str(int argc, VALUE *argv, VALUE self)
     return rb_usascii_str_new((char*)data->base + offset, length);
 }
 
-void rb_io_buffer_get_mutable(VALUE self, void **base, size_t *size)
+void
+rb_io_buffer_get_mutable(VALUE self, void **base, size_t *size)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -710,7 +711,8 @@ void rb_io_buffer_get_mutable(VALUE self, void **base, size_t *size)
     rb_raise(rb_eRuntimeError, "Buffer is not allocated!");
 }
 
-void rb_io_buffer_get_immutable(VALUE self, const void **base, size_t *size)
+void
+rb_io_buffer_get_immutable(VALUE self, const void **base, size_t *size)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -729,7 +731,8 @@ void rb_io_buffer_get_immutable(VALUE self, const void **base, size_t *size)
     rb_raise(rb_eRuntimeError, "Buffer is not allocated!");
 }
 
-size_t rb_io_buffer_copy(VALUE self, VALUE source, size_t offset)
+size_t
+rb_io_buffer_copy(VALUE self, VALUE source, size_t offset)
 {
     const void *source_base = NULL;
     size_t source_size = 0;
@@ -763,12 +766,14 @@ io_buffer_copy(VALUE self, VALUE source, VALUE offset)
     return RB_SIZE2NUM(size);
 }
 
-static int io_buffer_external_p(enum rb_io_buffer_flags flags)
+static int
+io_buffer_external_p(enum rb_io_buffer_flags flags)
 {
     return !(flags & (RB_IO_BUFFER_INTERNAL | RB_IO_BUFFER_MAPPED));
 }
 
-void rb_io_buffer_resize(VALUE self, size_t size, size_t preserve)
+void
+rb_io_buffer_resize(VALUE self, size_t size, size_t preserve)
 {
     struct rb_io_buffer *data = NULL, updated;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -828,7 +833,9 @@ io_buffer_resize(VALUE self, VALUE size, VALUE preserve)
     return self;
 }
 
-static void io_buffer_validate_type(size_t size, size_t offset) {
+static void
+io_buffer_validate_type(size_t size, size_t offset)
+{
     if (offset > size) {
         rb_raise(rb_eRuntimeError, "Type extends beyond end of buffer!");
     }
@@ -859,7 +866,8 @@ union swapf32 {
     float value;
 };
 
-static float ruby_swapf32(float value)
+static float
+ruby_swapf32(float value)
 {
     union swapf32 swap = {.value = value};
     swap.integral = ruby_swap32(swap.integral);
@@ -871,7 +879,8 @@ union swapf64 {
     double value;
 };
 
-static double ruby_swapf64(double value)
+static double
+ruby_swapf64(double value)
 {
     union swapf64 swap = {.value = value};
     swap.integral = ruby_swap64(swap.integral);
@@ -969,7 +978,8 @@ io_buffer_get(VALUE self, VALUE type, VALUE _offset)
     return rb_io_buffer_get(base, size, RB_SYM2ID(type), offset);
 }
 
-void rb_io_buffer_set(const void* base, size_t size, ID type, size_t offset, VALUE value)
+void
+rb_io_buffer_set(const void* base, size_t size, ID type, size_t offset, VALUE value)
 {
 #define WRITE_TYPE(name) if (type == RB_IO_BUFFER_TYPE_##name) {io_buffer_write_##name(base, size, &offset, value); return;}
     WRITE_TYPE(U8)
@@ -1013,7 +1023,8 @@ io_buffer_set(VALUE self, VALUE type, VALUE _offset, VALUE value)
     return SIZET2NUM(offset);
 }
 
-void rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length)
+void
+rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length)
 {
     void *base;
     size_t size;
