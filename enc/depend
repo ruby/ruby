@@ -185,7 +185,6 @@ enc/ascii.$(OBJEXT): assert.h
 enc/ascii.$(OBJEXT): backward/2/assume.h
 enc/ascii.$(OBJEXT): backward/2/attributes.h
 enc/ascii.$(OBJEXT): backward/2/bool.h
-enc/ascii.$(OBJEXT): backward/2/gcc_version_since.h
 enc/ascii.$(OBJEXT): backward/2/inttypes.h
 enc/ascii.$(OBJEXT): backward/2/limits.h
 enc/ascii.$(OBJEXT): backward/2/long_long.h
@@ -354,7 +353,6 @@ enc/big5.$(OBJEXT): assert.h
 enc/big5.$(OBJEXT): backward/2/assume.h
 enc/big5.$(OBJEXT): backward/2/attributes.h
 enc/big5.$(OBJEXT): backward/2/bool.h
-enc/big5.$(OBJEXT): backward/2/gcc_version_since.h
 enc/big5.$(OBJEXT): backward/2/long_long.h
 enc/big5.$(OBJEXT): backward/2/stdalign.h
 enc/big5.$(OBJEXT): backward/2/stdarg.h
@@ -413,7 +411,6 @@ enc/cesu_8.$(OBJEXT): backward.h
 enc/cesu_8.$(OBJEXT): backward/2/assume.h
 enc/cesu_8.$(OBJEXT): backward/2/attributes.h
 enc/cesu_8.$(OBJEXT): backward/2/bool.h
-enc/cesu_8.$(OBJEXT): backward/2/gcc_version_since.h
 enc/cesu_8.$(OBJEXT): backward/2/inttypes.h
 enc/cesu_8.$(OBJEXT): backward/2/limits.h
 enc/cesu_8.$(OBJEXT): backward/2/long_long.h
@@ -582,7 +579,6 @@ enc/cp949.$(OBJEXT): assert.h
 enc/cp949.$(OBJEXT): backward/2/assume.h
 enc/cp949.$(OBJEXT): backward/2/attributes.h
 enc/cp949.$(OBJEXT): backward/2/bool.h
-enc/cp949.$(OBJEXT): backward/2/gcc_version_since.h
 enc/cp949.$(OBJEXT): backward/2/long_long.h
 enc/cp949.$(OBJEXT): backward/2/stdalign.h
 enc/cp949.$(OBJEXT): backward/2/stdarg.h
@@ -638,7 +634,6 @@ enc/emacs_mule.$(OBJEXT): assert.h
 enc/emacs_mule.$(OBJEXT): backward/2/assume.h
 enc/emacs_mule.$(OBJEXT): backward/2/attributes.h
 enc/emacs_mule.$(OBJEXT): backward/2/bool.h
-enc/emacs_mule.$(OBJEXT): backward/2/gcc_version_since.h
 enc/emacs_mule.$(OBJEXT): backward/2/long_long.h
 enc/emacs_mule.$(OBJEXT): backward/2/stdalign.h
 enc/emacs_mule.$(OBJEXT): backward/2/stdarg.h
@@ -689,16 +684,13 @@ enc/emacs_mule.$(OBJEXT): internal/warning_push.h
 enc/emacs_mule.$(OBJEXT): internal/xmalloc.h
 enc/emacs_mule.$(OBJEXT): missing.h
 enc/emacs_mule.$(OBJEXT): onigmo.h
-enc/encdb.$(OBJEXT): $(hdrdir)/ruby.h
 enc/encdb.$(OBJEXT): $(hdrdir)/ruby/ruby.h
-enc/encdb.$(OBJEXT): $(top_srcdir)/internal.h
 enc/encdb.$(OBJEXT): $(top_srcdir)/internal/encoding.h
 enc/encdb.$(OBJEXT): assert.h
 enc/encdb.$(OBJEXT): backward.h
 enc/encdb.$(OBJEXT): backward/2/assume.h
 enc/encdb.$(OBJEXT): backward/2/attributes.h
 enc/encdb.$(OBJEXT): backward/2/bool.h
-enc/encdb.$(OBJEXT): backward/2/gcc_version_since.h
 enc/encdb.$(OBJEXT): backward/2/inttypes.h
 enc/encdb.$(OBJEXT): backward/2/limits.h
 enc/encdb.$(OBJEXT): backward/2/long_long.h
@@ -868,7 +860,6 @@ enc/euc_jp.$(OBJEXT): assert.h
 enc/euc_jp.$(OBJEXT): backward/2/assume.h
 enc/euc_jp.$(OBJEXT): backward/2/attributes.h
 enc/euc_jp.$(OBJEXT): backward/2/bool.h
-enc/euc_jp.$(OBJEXT): backward/2/gcc_version_since.h
 enc/euc_jp.$(OBJEXT): backward/2/long_long.h
 enc/euc_jp.$(OBJEXT): backward/2/stdalign.h
 enc/euc_jp.$(OBJEXT): backward/2/stdarg.h
@@ -926,7 +917,6 @@ enc/euc_kr.$(OBJEXT): assert.h
 enc/euc_kr.$(OBJEXT): backward/2/assume.h
 enc/euc_kr.$(OBJEXT): backward/2/attributes.h
 enc/euc_kr.$(OBJEXT): backward/2/bool.h
-enc/euc_kr.$(OBJEXT): backward/2/gcc_version_since.h
 enc/euc_kr.$(OBJEXT): backward/2/long_long.h
 enc/euc_kr.$(OBJEXT): backward/2/stdalign.h
 enc/euc_kr.$(OBJEXT): backward/2/stdarg.h
@@ -982,7 +972,6 @@ enc/euc_tw.$(OBJEXT): assert.h
 enc/euc_tw.$(OBJEXT): backward/2/assume.h
 enc/euc_tw.$(OBJEXT): backward/2/attributes.h
 enc/euc_tw.$(OBJEXT): backward/2/bool.h
-enc/euc_tw.$(OBJEXT): backward/2/gcc_version_since.h
 enc/euc_tw.$(OBJEXT): backward/2/long_long.h
 enc/euc_tw.$(OBJEXT): backward/2/stdalign.h
 enc/euc_tw.$(OBJEXT): backward/2/stdarg.h
@@ -1038,7 +1027,6 @@ enc/gb18030.$(OBJEXT): assert.h
 enc/gb18030.$(OBJEXT): backward/2/assume.h
 enc/gb18030.$(OBJEXT): backward/2/attributes.h
 enc/gb18030.$(OBJEXT): backward/2/bool.h
-enc/gb18030.$(OBJEXT): backward/2/gcc_version_since.h
 enc/gb18030.$(OBJEXT): backward/2/long_long.h
 enc/gb18030.$(OBJEXT): backward/2/stdalign.h
 enc/gb18030.$(OBJEXT): backward/2/stdarg.h
@@ -1094,7 +1082,6 @@ enc/gb2312.$(OBJEXT): assert.h
 enc/gb2312.$(OBJEXT): backward/2/assume.h
 enc/gb2312.$(OBJEXT): backward/2/attributes.h
 enc/gb2312.$(OBJEXT): backward/2/bool.h
-enc/gb2312.$(OBJEXT): backward/2/gcc_version_since.h
 enc/gb2312.$(OBJEXT): backward/2/long_long.h
 enc/gb2312.$(OBJEXT): backward/2/stdalign.h
 enc/gb2312.$(OBJEXT): backward/2/stdarg.h
@@ -1150,7 +1137,6 @@ enc/gbk.$(OBJEXT): assert.h
 enc/gbk.$(OBJEXT): backward/2/assume.h
 enc/gbk.$(OBJEXT): backward/2/attributes.h
 enc/gbk.$(OBJEXT): backward/2/bool.h
-enc/gbk.$(OBJEXT): backward/2/gcc_version_since.h
 enc/gbk.$(OBJEXT): backward/2/long_long.h
 enc/gbk.$(OBJEXT): backward/2/stdalign.h
 enc/gbk.$(OBJEXT): backward/2/stdarg.h
@@ -1206,7 +1192,6 @@ enc/iso_8859_1.$(OBJEXT): assert.h
 enc/iso_8859_1.$(OBJEXT): backward/2/assume.h
 enc/iso_8859_1.$(OBJEXT): backward/2/attributes.h
 enc/iso_8859_1.$(OBJEXT): backward/2/bool.h
-enc/iso_8859_1.$(OBJEXT): backward/2/gcc_version_since.h
 enc/iso_8859_1.$(OBJEXT): backward/2/long_long.h
 enc/iso_8859_1.$(OBJEXT): backward/2/stdalign.h
 enc/iso_8859_1.$(OBJEXT): backward/2/stdarg.h
@@ -1263,7 +1248,6 @@ enc/iso_8859_10.$(OBJEXT): assert.h
 enc/iso_8859_10.$(OBJEXT): backward/2/assume.h
 enc/iso_8859_10.$(OBJEXT): backward/2/attributes.h
 enc/iso_8859_10.$(OBJEXT): backward/2/bool.h
-enc/iso_8859_10.$(OBJEXT): backward/2/gcc_version_since.h
 enc/iso_8859_10.$(OBJEXT): backward/2/long_long.h
 enc/iso_8859_10.$(OBJEXT): backward/2/stdalign.h
 enc/iso_8859_10.$(OBJEXT): backward/2/stdarg.h
@@ -1320,7 +1304,6 @@ enc/iso_8859_11.$(OBJEXT): assert.h
 enc/iso_8859_11.$(OBJEXT): backward/2/assume.h
 enc/iso_8859_11.$(OBJEXT): backward/2/attributes.h
 enc/iso_8859_11.$(OBJEXT): backward/2/bool.h
-enc/iso_8859_11.$(OBJEXT): backward/2/gcc_version_since.h
 enc/iso_8859_11.$(OBJEXT): backward/2/long_long.h
 enc/iso_8859_11.$(OBJEXT): backward/2/stdalign.h
 enc/iso_8859_11.$(OBJEXT): backward/2/stdarg.h
@@ -1376,7 +1359,6 @@ enc/iso_8859_13.$(OBJEXT): assert.h
 enc/iso_8859_13.$(OBJEXT): backward/2/assume.h
 enc/iso_8859_13.$(OBJEXT): backward/2/attributes.h
 enc/iso_8859_13.$(OBJEXT): backward/2/bool.h
-enc/iso_8859_13.$(OBJEXT): backward/2/gcc_version_since.h
 enc/iso_8859_13.$(OBJEXT): backward/2/long_long.h
 enc/iso_8859_13.$(OBJEXT): backward/2/stdalign.h
 enc/iso_8859_13.$(OBJEXT): backward/2/stdarg.h
@@ -1433,7 +1415,6 @@ enc/iso_8859_14.$(OBJEXT): assert.h
 enc/iso_8859_14.$(OBJEXT): backward/2/assume.h
 enc/iso_8859_14.$(OBJEXT): backward/2/attributes.h
 enc/iso_8859_14.$(OBJEXT): backward/2/bool.h
-enc/iso_8859_14.$(OBJEXT): backward/2/gcc_version_since.h
 enc/iso_8859_14.$(OBJEXT): backward/2/long_long.h
 enc/iso_8859_14.$(OBJEXT): backward/2/stdalign.h
 enc/iso_8859_14.$(OBJEXT): backward/2/stdarg.h
@@ -1490,7 +1471,6 @@ enc/iso_8859_15.$(OBJEXT): assert.h
 enc/iso_8859_15.$(OBJEXT): backward/2/assume.h
 enc/iso_8859_15.$(OBJEXT): backward/2/attributes.h
 enc/iso_8859_15.$(OBJEXT): backward/2/bool.h
-enc/iso_8859_15.$(OBJEXT): backward/2/gcc_version_since.h
 enc/iso_8859_15.$(OBJEXT): backward/2/long_long.h
 enc/iso_8859_15.$(OBJEXT): backward/2/stdalign.h
 enc/iso_8859_15.$(OBJEXT): backward/2/stdarg.h
@@ -1547,7 +1527,6 @@ enc/iso_8859_16.$(OBJEXT): assert.h
 enc/iso_8859_16.$(OBJEXT): backward/2/assume.h
 enc/iso_8859_16.$(OBJEXT): backward/2/attributes.h
 enc/iso_8859_16.$(OBJEXT): backward/2/bool.h
-enc/iso_8859_16.$(OBJEXT): backward/2/gcc_version_since.h
 enc/iso_8859_16.$(OBJEXT): backward/2/long_long.h
 enc/iso_8859_16.$(OBJEXT): backward/2/stdalign.h
 enc/iso_8859_16.$(OBJEXT): backward/2/stdarg.h
@@ -1604,7 +1583,6 @@ enc/iso_8859_2.$(OBJEXT): assert.h
 enc/iso_8859_2.$(OBJEXT): backward/2/assume.h
 enc/iso_8859_2.$(OBJEXT): backward/2/attributes.h
 enc/iso_8859_2.$(OBJEXT): backward/2/bool.h
-enc/iso_8859_2.$(OBJEXT): backward/2/gcc_version_since.h
 enc/iso_8859_2.$(OBJEXT): backward/2/long_long.h
 enc/iso_8859_2.$(OBJEXT): backward/2/stdalign.h
 enc/iso_8859_2.$(OBJEXT): backward/2/stdarg.h
@@ -1661,7 +1639,6 @@ enc/iso_8859_3.$(OBJEXT): assert.h
 enc/iso_8859_3.$(OBJEXT): backward/2/assume.h
 enc/iso_8859_3.$(OBJEXT): backward/2/attributes.h
 enc/iso_8859_3.$(OBJEXT): backward/2/bool.h
-enc/iso_8859_3.$(OBJEXT): backward/2/gcc_version_since.h
 enc/iso_8859_3.$(OBJEXT): backward/2/long_long.h
 enc/iso_8859_3.$(OBJEXT): backward/2/stdalign.h
 enc/iso_8859_3.$(OBJEXT): backward/2/stdarg.h
@@ -1718,7 +1695,6 @@ enc/iso_8859_4.$(OBJEXT): assert.h
 enc/iso_8859_4.$(OBJEXT): backward/2/assume.h
 enc/iso_8859_4.$(OBJEXT): backward/2/attributes.h
 enc/iso_8859_4.$(OBJEXT): backward/2/bool.h
-enc/iso_8859_4.$(OBJEXT): backward/2/gcc_version_since.h
 enc/iso_8859_4.$(OBJEXT): backward/2/long_long.h
 enc/iso_8859_4.$(OBJEXT): backward/2/stdalign.h
 enc/iso_8859_4.$(OBJEXT): backward/2/stdarg.h
@@ -1775,7 +1751,6 @@ enc/iso_8859_5.$(OBJEXT): assert.h
 enc/iso_8859_5.$(OBJEXT): backward/2/assume.h
 enc/iso_8859_5.$(OBJEXT): backward/2/attributes.h
 enc/iso_8859_5.$(OBJEXT): backward/2/bool.h
-enc/iso_8859_5.$(OBJEXT): backward/2/gcc_version_since.h
 enc/iso_8859_5.$(OBJEXT): backward/2/long_long.h
 enc/iso_8859_5.$(OBJEXT): backward/2/stdalign.h
 enc/iso_8859_5.$(OBJEXT): backward/2/stdarg.h
@@ -1831,7 +1806,6 @@ enc/iso_8859_6.$(OBJEXT): assert.h
 enc/iso_8859_6.$(OBJEXT): backward/2/assume.h
 enc/iso_8859_6.$(OBJEXT): backward/2/attributes.h
 enc/iso_8859_6.$(OBJEXT): backward/2/bool.h
-enc/iso_8859_6.$(OBJEXT): backward/2/gcc_version_since.h
 enc/iso_8859_6.$(OBJEXT): backward/2/long_long.h
 enc/iso_8859_6.$(OBJEXT): backward/2/stdalign.h
 enc/iso_8859_6.$(OBJEXT): backward/2/stdarg.h
@@ -1887,7 +1861,6 @@ enc/iso_8859_7.$(OBJEXT): assert.h
 enc/iso_8859_7.$(OBJEXT): backward/2/assume.h
 enc/iso_8859_7.$(OBJEXT): backward/2/attributes.h
 enc/iso_8859_7.$(OBJEXT): backward/2/bool.h
-enc/iso_8859_7.$(OBJEXT): backward/2/gcc_version_since.h
 enc/iso_8859_7.$(OBJEXT): backward/2/long_long.h
 enc/iso_8859_7.$(OBJEXT): backward/2/stdalign.h
 enc/iso_8859_7.$(OBJEXT): backward/2/stdarg.h
@@ -1943,7 +1916,6 @@ enc/iso_8859_8.$(OBJEXT): assert.h
 enc/iso_8859_8.$(OBJEXT): backward/2/assume.h
 enc/iso_8859_8.$(OBJEXT): backward/2/attributes.h
 enc/iso_8859_8.$(OBJEXT): backward/2/bool.h
-enc/iso_8859_8.$(OBJEXT): backward/2/gcc_version_since.h
 enc/iso_8859_8.$(OBJEXT): backward/2/long_long.h
 enc/iso_8859_8.$(OBJEXT): backward/2/stdalign.h
 enc/iso_8859_8.$(OBJEXT): backward/2/stdarg.h
@@ -1999,7 +1971,6 @@ enc/iso_8859_9.$(OBJEXT): assert.h
 enc/iso_8859_9.$(OBJEXT): backward/2/assume.h
 enc/iso_8859_9.$(OBJEXT): backward/2/attributes.h
 enc/iso_8859_9.$(OBJEXT): backward/2/bool.h
-enc/iso_8859_9.$(OBJEXT): backward/2/gcc_version_since.h
 enc/iso_8859_9.$(OBJEXT): backward/2/long_long.h
 enc/iso_8859_9.$(OBJEXT): backward/2/stdalign.h
 enc/iso_8859_9.$(OBJEXT): backward/2/stdarg.h
@@ -2056,7 +2027,6 @@ enc/koi8_r.$(OBJEXT): assert.h
 enc/koi8_r.$(OBJEXT): backward/2/assume.h
 enc/koi8_r.$(OBJEXT): backward/2/attributes.h
 enc/koi8_r.$(OBJEXT): backward/2/bool.h
-enc/koi8_r.$(OBJEXT): backward/2/gcc_version_since.h
 enc/koi8_r.$(OBJEXT): backward/2/long_long.h
 enc/koi8_r.$(OBJEXT): backward/2/stdalign.h
 enc/koi8_r.$(OBJEXT): backward/2/stdarg.h
@@ -2112,7 +2082,6 @@ enc/koi8_u.$(OBJEXT): assert.h
 enc/koi8_u.$(OBJEXT): backward/2/assume.h
 enc/koi8_u.$(OBJEXT): backward/2/attributes.h
 enc/koi8_u.$(OBJEXT): backward/2/bool.h
-enc/koi8_u.$(OBJEXT): backward/2/gcc_version_since.h
 enc/koi8_u.$(OBJEXT): backward/2/long_long.h
 enc/koi8_u.$(OBJEXT): backward/2/stdalign.h
 enc/koi8_u.$(OBJEXT): backward/2/stdarg.h
@@ -2168,7 +2137,6 @@ enc/shift_jis.$(OBJEXT): assert.h
 enc/shift_jis.$(OBJEXT): backward/2/assume.h
 enc/shift_jis.$(OBJEXT): backward/2/attributes.h
 enc/shift_jis.$(OBJEXT): backward/2/bool.h
-enc/shift_jis.$(OBJEXT): backward/2/gcc_version_since.h
 enc/shift_jis.$(OBJEXT): backward/2/long_long.h
 enc/shift_jis.$(OBJEXT): backward/2/stdalign.h
 enc/shift_jis.$(OBJEXT): backward/2/stdarg.h
@@ -2229,7 +2197,6 @@ enc/trans/big5.$(OBJEXT): backward.h
 enc/trans/big5.$(OBJEXT): backward/2/assume.h
 enc/trans/big5.$(OBJEXT): backward/2/attributes.h
 enc/trans/big5.$(OBJEXT): backward/2/bool.h
-enc/trans/big5.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/big5.$(OBJEXT): backward/2/inttypes.h
 enc/trans/big5.$(OBJEXT): backward/2/limits.h
 enc/trans/big5.$(OBJEXT): backward/2/long_long.h
@@ -2388,7 +2355,6 @@ enc/trans/cesu_8.$(OBJEXT): backward.h
 enc/trans/cesu_8.$(OBJEXT): backward/2/assume.h
 enc/trans/cesu_8.$(OBJEXT): backward/2/attributes.h
 enc/trans/cesu_8.$(OBJEXT): backward/2/bool.h
-enc/trans/cesu_8.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/cesu_8.$(OBJEXT): backward/2/inttypes.h
 enc/trans/cesu_8.$(OBJEXT): backward/2/limits.h
 enc/trans/cesu_8.$(OBJEXT): backward/2/long_long.h
@@ -2547,7 +2513,6 @@ enc/trans/chinese.$(OBJEXT): backward.h
 enc/trans/chinese.$(OBJEXT): backward/2/assume.h
 enc/trans/chinese.$(OBJEXT): backward/2/attributes.h
 enc/trans/chinese.$(OBJEXT): backward/2/bool.h
-enc/trans/chinese.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/chinese.$(OBJEXT): backward/2/inttypes.h
 enc/trans/chinese.$(OBJEXT): backward/2/limits.h
 enc/trans/chinese.$(OBJEXT): backward/2/long_long.h
@@ -2706,7 +2671,6 @@ enc/trans/ebcdic.$(OBJEXT): backward.h
 enc/trans/ebcdic.$(OBJEXT): backward/2/assume.h
 enc/trans/ebcdic.$(OBJEXT): backward/2/attributes.h
 enc/trans/ebcdic.$(OBJEXT): backward/2/bool.h
-enc/trans/ebcdic.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/ebcdic.$(OBJEXT): backward/2/inttypes.h
 enc/trans/ebcdic.$(OBJEXT): backward/2/limits.h
 enc/trans/ebcdic.$(OBJEXT): backward/2/long_long.h
@@ -2865,7 +2829,6 @@ enc/trans/emoji.$(OBJEXT): backward.h
 enc/trans/emoji.$(OBJEXT): backward/2/assume.h
 enc/trans/emoji.$(OBJEXT): backward/2/attributes.h
 enc/trans/emoji.$(OBJEXT): backward/2/bool.h
-enc/trans/emoji.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/emoji.$(OBJEXT): backward/2/inttypes.h
 enc/trans/emoji.$(OBJEXT): backward/2/limits.h
 enc/trans/emoji.$(OBJEXT): backward/2/long_long.h
@@ -3024,7 +2987,6 @@ enc/trans/emoji_iso2022_kddi.$(OBJEXT): backward.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): backward/2/assume.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): backward/2/attributes.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): backward/2/bool.h
-enc/trans/emoji_iso2022_kddi.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): backward/2/inttypes.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): backward/2/limits.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): backward/2/long_long.h
@@ -3183,7 +3145,6 @@ enc/trans/emoji_sjis_docomo.$(OBJEXT): backward.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): backward/2/assume.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): backward/2/attributes.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): backward/2/bool.h
-enc/trans/emoji_sjis_docomo.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): backward/2/inttypes.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): backward/2/limits.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): backward/2/long_long.h
@@ -3342,7 +3303,6 @@ enc/trans/emoji_sjis_kddi.$(OBJEXT): backward.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): backward/2/assume.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): backward/2/attributes.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): backward/2/bool.h
-enc/trans/emoji_sjis_kddi.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): backward/2/inttypes.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): backward/2/limits.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): backward/2/long_long.h
@@ -3501,7 +3461,6 @@ enc/trans/emoji_sjis_softbank.$(OBJEXT): backward.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): backward/2/assume.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): backward/2/attributes.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): backward/2/bool.h
-enc/trans/emoji_sjis_softbank.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): backward/2/inttypes.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): backward/2/limits.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): backward/2/long_long.h
@@ -3660,7 +3619,6 @@ enc/trans/escape.$(OBJEXT): backward.h
 enc/trans/escape.$(OBJEXT): backward/2/assume.h
 enc/trans/escape.$(OBJEXT): backward/2/attributes.h
 enc/trans/escape.$(OBJEXT): backward/2/bool.h
-enc/trans/escape.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/escape.$(OBJEXT): backward/2/inttypes.h
 enc/trans/escape.$(OBJEXT): backward/2/limits.h
 enc/trans/escape.$(OBJEXT): backward/2/long_long.h
@@ -3819,7 +3777,6 @@ enc/trans/gb18030.$(OBJEXT): backward.h
 enc/trans/gb18030.$(OBJEXT): backward/2/assume.h
 enc/trans/gb18030.$(OBJEXT): backward/2/attributes.h
 enc/trans/gb18030.$(OBJEXT): backward/2/bool.h
-enc/trans/gb18030.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/gb18030.$(OBJEXT): backward/2/inttypes.h
 enc/trans/gb18030.$(OBJEXT): backward/2/limits.h
 enc/trans/gb18030.$(OBJEXT): backward/2/long_long.h
@@ -3978,7 +3935,6 @@ enc/trans/gbk.$(OBJEXT): backward.h
 enc/trans/gbk.$(OBJEXT): backward/2/assume.h
 enc/trans/gbk.$(OBJEXT): backward/2/attributes.h
 enc/trans/gbk.$(OBJEXT): backward/2/bool.h
-enc/trans/gbk.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/gbk.$(OBJEXT): backward/2/inttypes.h
 enc/trans/gbk.$(OBJEXT): backward/2/limits.h
 enc/trans/gbk.$(OBJEXT): backward/2/long_long.h
@@ -4137,7 +4093,6 @@ enc/trans/iso2022.$(OBJEXT): backward.h
 enc/trans/iso2022.$(OBJEXT): backward/2/assume.h
 enc/trans/iso2022.$(OBJEXT): backward/2/attributes.h
 enc/trans/iso2022.$(OBJEXT): backward/2/bool.h
-enc/trans/iso2022.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/iso2022.$(OBJEXT): backward/2/inttypes.h
 enc/trans/iso2022.$(OBJEXT): backward/2/limits.h
 enc/trans/iso2022.$(OBJEXT): backward/2/long_long.h
@@ -4296,7 +4251,6 @@ enc/trans/japanese.$(OBJEXT): backward.h
 enc/trans/japanese.$(OBJEXT): backward/2/assume.h
 enc/trans/japanese.$(OBJEXT): backward/2/attributes.h
 enc/trans/japanese.$(OBJEXT): backward/2/bool.h
-enc/trans/japanese.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/japanese.$(OBJEXT): backward/2/inttypes.h
 enc/trans/japanese.$(OBJEXT): backward/2/limits.h
 enc/trans/japanese.$(OBJEXT): backward/2/long_long.h
@@ -4455,7 +4409,6 @@ enc/trans/japanese_euc.$(OBJEXT): backward.h
 enc/trans/japanese_euc.$(OBJEXT): backward/2/assume.h
 enc/trans/japanese_euc.$(OBJEXT): backward/2/attributes.h
 enc/trans/japanese_euc.$(OBJEXT): backward/2/bool.h
-enc/trans/japanese_euc.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/japanese_euc.$(OBJEXT): backward/2/inttypes.h
 enc/trans/japanese_euc.$(OBJEXT): backward/2/limits.h
 enc/trans/japanese_euc.$(OBJEXT): backward/2/long_long.h
@@ -4614,7 +4567,6 @@ enc/trans/japanese_sjis.$(OBJEXT): backward.h
 enc/trans/japanese_sjis.$(OBJEXT): backward/2/assume.h
 enc/trans/japanese_sjis.$(OBJEXT): backward/2/attributes.h
 enc/trans/japanese_sjis.$(OBJEXT): backward/2/bool.h
-enc/trans/japanese_sjis.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/japanese_sjis.$(OBJEXT): backward/2/inttypes.h
 enc/trans/japanese_sjis.$(OBJEXT): backward/2/limits.h
 enc/trans/japanese_sjis.$(OBJEXT): backward/2/long_long.h
@@ -4773,7 +4725,6 @@ enc/trans/korean.$(OBJEXT): backward.h
 enc/trans/korean.$(OBJEXT): backward/2/assume.h
 enc/trans/korean.$(OBJEXT): backward/2/attributes.h
 enc/trans/korean.$(OBJEXT): backward/2/bool.h
-enc/trans/korean.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/korean.$(OBJEXT): backward/2/inttypes.h
 enc/trans/korean.$(OBJEXT): backward/2/limits.h
 enc/trans/korean.$(OBJEXT): backward/2/long_long.h
@@ -4931,7 +4882,6 @@ enc/trans/newline.$(OBJEXT): assert.h
 enc/trans/newline.$(OBJEXT): backward/2/assume.h
 enc/trans/newline.$(OBJEXT): backward/2/attributes.h
 enc/trans/newline.$(OBJEXT): backward/2/bool.h
-enc/trans/newline.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/newline.$(OBJEXT): backward/2/inttypes.h
 enc/trans/newline.$(OBJEXT): backward/2/limits.h
 enc/trans/newline.$(OBJEXT): backward/2/long_long.h
@@ -5090,7 +5040,6 @@ enc/trans/single_byte.$(OBJEXT): backward.h
 enc/trans/single_byte.$(OBJEXT): backward/2/assume.h
 enc/trans/single_byte.$(OBJEXT): backward/2/attributes.h
 enc/trans/single_byte.$(OBJEXT): backward/2/bool.h
-enc/trans/single_byte.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/single_byte.$(OBJEXT): backward/2/inttypes.h
 enc/trans/single_byte.$(OBJEXT): backward/2/limits.h
 enc/trans/single_byte.$(OBJEXT): backward/2/long_long.h
@@ -5251,7 +5200,6 @@ enc/trans/utf8_mac.$(OBJEXT): backward.h
 enc/trans/utf8_mac.$(OBJEXT): backward/2/assume.h
 enc/trans/utf8_mac.$(OBJEXT): backward/2/attributes.h
 enc/trans/utf8_mac.$(OBJEXT): backward/2/bool.h
-enc/trans/utf8_mac.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/utf8_mac.$(OBJEXT): backward/2/inttypes.h
 enc/trans/utf8_mac.$(OBJEXT): backward/2/limits.h
 enc/trans/utf8_mac.$(OBJEXT): backward/2/long_long.h
@@ -5410,7 +5358,6 @@ enc/trans/utf_16_32.$(OBJEXT): backward.h
 enc/trans/utf_16_32.$(OBJEXT): backward/2/assume.h
 enc/trans/utf_16_32.$(OBJEXT): backward/2/attributes.h
 enc/trans/utf_16_32.$(OBJEXT): backward/2/bool.h
-enc/trans/utf_16_32.$(OBJEXT): backward/2/gcc_version_since.h
 enc/trans/utf_16_32.$(OBJEXT): backward/2/inttypes.h
 enc/trans/utf_16_32.$(OBJEXT): backward/2/limits.h
 enc/trans/utf_16_32.$(OBJEXT): backward/2/long_long.h
@@ -5571,7 +5518,6 @@ enc/unicode.$(OBJEXT): assert.h
 enc/unicode.$(OBJEXT): backward/2/assume.h
 enc/unicode.$(OBJEXT): backward/2/attributes.h
 enc/unicode.$(OBJEXT): backward/2/bool.h
-enc/unicode.$(OBJEXT): backward/2/gcc_version_since.h
 enc/unicode.$(OBJEXT): backward/2/inttypes.h
 enc/unicode.$(OBJEXT): backward/2/limits.h
 enc/unicode.$(OBJEXT): backward/2/long_long.h
@@ -5731,7 +5677,6 @@ enc/us_ascii.$(OBJEXT): assert.h
 enc/us_ascii.$(OBJEXT): backward/2/assume.h
 enc/us_ascii.$(OBJEXT): backward/2/attributes.h
 enc/us_ascii.$(OBJEXT): backward/2/bool.h
-enc/us_ascii.$(OBJEXT): backward/2/gcc_version_since.h
 enc/us_ascii.$(OBJEXT): backward/2/inttypes.h
 enc/us_ascii.$(OBJEXT): backward/2/limits.h
 enc/us_ascii.$(OBJEXT): backward/2/long_long.h
@@ -5900,7 +5845,6 @@ enc/utf_16be.$(OBJEXT): assert.h
 enc/utf_16be.$(OBJEXT): backward/2/assume.h
 enc/utf_16be.$(OBJEXT): backward/2/attributes.h
 enc/utf_16be.$(OBJEXT): backward/2/bool.h
-enc/utf_16be.$(OBJEXT): backward/2/gcc_version_since.h
 enc/utf_16be.$(OBJEXT): backward/2/long_long.h
 enc/utf_16be.$(OBJEXT): backward/2/stdalign.h
 enc/utf_16be.$(OBJEXT): backward/2/stdarg.h
@@ -5957,7 +5901,6 @@ enc/utf_16le.$(OBJEXT): assert.h
 enc/utf_16le.$(OBJEXT): backward/2/assume.h
 enc/utf_16le.$(OBJEXT): backward/2/attributes.h
 enc/utf_16le.$(OBJEXT): backward/2/bool.h
-enc/utf_16le.$(OBJEXT): backward/2/gcc_version_since.h
 enc/utf_16le.$(OBJEXT): backward/2/long_long.h
 enc/utf_16le.$(OBJEXT): backward/2/stdalign.h
 enc/utf_16le.$(OBJEXT): backward/2/stdarg.h
@@ -6014,7 +5957,6 @@ enc/utf_32be.$(OBJEXT): assert.h
 enc/utf_32be.$(OBJEXT): backward/2/assume.h
 enc/utf_32be.$(OBJEXT): backward/2/attributes.h
 enc/utf_32be.$(OBJEXT): backward/2/bool.h
-enc/utf_32be.$(OBJEXT): backward/2/gcc_version_since.h
 enc/utf_32be.$(OBJEXT): backward/2/long_long.h
 enc/utf_32be.$(OBJEXT): backward/2/stdalign.h
 enc/utf_32be.$(OBJEXT): backward/2/stdarg.h
@@ -6071,7 +6013,6 @@ enc/utf_32le.$(OBJEXT): assert.h
 enc/utf_32le.$(OBJEXT): backward/2/assume.h
 enc/utf_32le.$(OBJEXT): backward/2/attributes.h
 enc/utf_32le.$(OBJEXT): backward/2/bool.h
-enc/utf_32le.$(OBJEXT): backward/2/gcc_version_since.h
 enc/utf_32le.$(OBJEXT): backward/2/long_long.h
 enc/utf_32le.$(OBJEXT): backward/2/stdalign.h
 enc/utf_32le.$(OBJEXT): backward/2/stdarg.h
@@ -6130,7 +6071,6 @@ enc/utf_8.$(OBJEXT): assert.h
 enc/utf_8.$(OBJEXT): backward/2/assume.h
 enc/utf_8.$(OBJEXT): backward/2/attributes.h
 enc/utf_8.$(OBJEXT): backward/2/bool.h
-enc/utf_8.$(OBJEXT): backward/2/gcc_version_since.h
 enc/utf_8.$(OBJEXT): backward/2/inttypes.h
 enc/utf_8.$(OBJEXT): backward/2/limits.h
 enc/utf_8.$(OBJEXT): backward/2/long_long.h
@@ -6299,7 +6239,6 @@ enc/windows_1250.$(OBJEXT): assert.h
 enc/windows_1250.$(OBJEXT): backward/2/assume.h
 enc/windows_1250.$(OBJEXT): backward/2/attributes.h
 enc/windows_1250.$(OBJEXT): backward/2/bool.h
-enc/windows_1250.$(OBJEXT): backward/2/gcc_version_since.h
 enc/windows_1250.$(OBJEXT): backward/2/long_long.h
 enc/windows_1250.$(OBJEXT): backward/2/stdalign.h
 enc/windows_1250.$(OBJEXT): backward/2/stdarg.h
@@ -6356,7 +6295,6 @@ enc/windows_1251.$(OBJEXT): assert.h
 enc/windows_1251.$(OBJEXT): backward/2/assume.h
 enc/windows_1251.$(OBJEXT): backward/2/attributes.h
 enc/windows_1251.$(OBJEXT): backward/2/bool.h
-enc/windows_1251.$(OBJEXT): backward/2/gcc_version_since.h
 enc/windows_1251.$(OBJEXT): backward/2/long_long.h
 enc/windows_1251.$(OBJEXT): backward/2/stdalign.h
 enc/windows_1251.$(OBJEXT): backward/2/stdarg.h
@@ -6412,7 +6350,6 @@ enc/windows_1252.$(OBJEXT): assert.h
 enc/windows_1252.$(OBJEXT): backward/2/assume.h
 enc/windows_1252.$(OBJEXT): backward/2/attributes.h
 enc/windows_1252.$(OBJEXT): backward/2/bool.h
-enc/windows_1252.$(OBJEXT): backward/2/gcc_version_since.h
 enc/windows_1252.$(OBJEXT): backward/2/long_long.h
 enc/windows_1252.$(OBJEXT): backward/2/stdalign.h
 enc/windows_1252.$(OBJEXT): backward/2/stdarg.h
@@ -6469,7 +6406,6 @@ enc/windows_1253.$(OBJEXT): assert.h
 enc/windows_1253.$(OBJEXT): backward/2/assume.h
 enc/windows_1253.$(OBJEXT): backward/2/attributes.h
 enc/windows_1253.$(OBJEXT): backward/2/bool.h
-enc/windows_1253.$(OBJEXT): backward/2/gcc_version_since.h
 enc/windows_1253.$(OBJEXT): backward/2/long_long.h
 enc/windows_1253.$(OBJEXT): backward/2/stdalign.h
 enc/windows_1253.$(OBJEXT): backward/2/stdarg.h
@@ -6525,7 +6461,6 @@ enc/windows_1254.$(OBJEXT): assert.h
 enc/windows_1254.$(OBJEXT): backward/2/assume.h
 enc/windows_1254.$(OBJEXT): backward/2/attributes.h
 enc/windows_1254.$(OBJEXT): backward/2/bool.h
-enc/windows_1254.$(OBJEXT): backward/2/gcc_version_since.h
 enc/windows_1254.$(OBJEXT): backward/2/long_long.h
 enc/windows_1254.$(OBJEXT): backward/2/stdalign.h
 enc/windows_1254.$(OBJEXT): backward/2/stdarg.h
@@ -6582,7 +6517,6 @@ enc/windows_1257.$(OBJEXT): assert.h
 enc/windows_1257.$(OBJEXT): backward/2/assume.h
 enc/windows_1257.$(OBJEXT): backward/2/attributes.h
 enc/windows_1257.$(OBJEXT): backward/2/bool.h
-enc/windows_1257.$(OBJEXT): backward/2/gcc_version_since.h
 enc/windows_1257.$(OBJEXT): backward/2/long_long.h
 enc/windows_1257.$(OBJEXT): backward/2/stdalign.h
 enc/windows_1257.$(OBJEXT): backward/2/stdarg.h
@@ -6639,7 +6573,6 @@ enc/windows_31j.$(OBJEXT): assert.h
 enc/windows_31j.$(OBJEXT): backward/2/assume.h
 enc/windows_31j.$(OBJEXT): backward/2/attributes.h
 enc/windows_31j.$(OBJEXT): backward/2/bool.h
-enc/windows_31j.$(OBJEXT): backward/2/gcc_version_since.h
 enc/windows_31j.$(OBJEXT): backward/2/long_long.h
 enc/windows_31j.$(OBJEXT): backward/2/stdalign.h
 enc/windows_31j.$(OBJEXT): backward/2/stdarg.h

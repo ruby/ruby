@@ -170,7 +170,6 @@ capacity.o: $(hdrdir)/ruby/oniguruma.h
 capacity.o: $(hdrdir)/ruby/ruby.h
 capacity.o: $(hdrdir)/ruby/st.h
 capacity.o: $(hdrdir)/ruby/subst.h
-capacity.o: $(top_srcdir)/internal.h
 capacity.o: $(top_srcdir)/internal/compilers.h
 capacity.o: $(top_srcdir)/internal/string.h
 capacity.o: capacity.c
@@ -181,7 +180,6 @@ coderange.o: $(hdrdir)/ruby/backward.h
 coderange.o: $(hdrdir)/ruby/backward/2/assume.h
 coderange.o: $(hdrdir)/ruby/backward/2/attributes.h
 coderange.o: $(hdrdir)/ruby/backward/2/bool.h
-coderange.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 coderange.o: $(hdrdir)/ruby/backward/2/inttypes.h
 coderange.o: $(hdrdir)/ruby/backward/2/limits.h
 coderange.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -347,7 +345,6 @@ coderange.o: $(hdrdir)/ruby/subst.h
 coderange.o: coderange.c
 cstr.o: $(RUBY_EXTCONF_H)
 cstr.o: $(arch_hdrdir)/ruby/config.h
-cstr.o: $(hdrdir)/ruby.h
 cstr.o: $(hdrdir)/ruby/assert.h
 cstr.o: $(hdrdir)/ruby/backward.h
 cstr.o: $(hdrdir)/ruby/backward/2/assume.h
@@ -518,7 +515,6 @@ cstr.o: $(hdrdir)/ruby/st.h
 cstr.o: $(hdrdir)/ruby/subst.h
 cstr.o: $(top_srcdir)/internal.h
 cstr.o: $(top_srcdir)/internal/compilers.h
-cstr.o: $(top_srcdir)/internal/error.h
 cstr.o: $(top_srcdir)/internal/string.h
 cstr.o: cstr.c
 ellipsize.o: $(RUBY_EXTCONF_H)
@@ -529,7 +525,6 @@ ellipsize.o: $(hdrdir)/ruby/backward.h
 ellipsize.o: $(hdrdir)/ruby/backward/2/assume.h
 ellipsize.o: $(hdrdir)/ruby/backward/2/attributes.h
 ellipsize.o: $(hdrdir)/ruby/backward/2/bool.h
-ellipsize.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ellipsize.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ellipsize.o: $(hdrdir)/ruby/backward/2/limits.h
 ellipsize.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -689,7 +684,6 @@ enc_associate.o: $(hdrdir)/ruby/backward.h
 enc_associate.o: $(hdrdir)/ruby/backward/2/assume.h
 enc_associate.o: $(hdrdir)/ruby/backward/2/attributes.h
 enc_associate.o: $(hdrdir)/ruby/backward/2/bool.h
-enc_associate.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 enc_associate.o: $(hdrdir)/ruby/backward/2/inttypes.h
 enc_associate.o: $(hdrdir)/ruby/backward/2/limits.h
 enc_associate.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -860,7 +854,6 @@ enc_str_buf_cat.o: $(hdrdir)/ruby/backward.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/backward/2/assume.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/backward/2/attributes.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/backward/2/bool.h
-enc_str_buf_cat.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/backward/2/inttypes.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/backward/2/limits.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -1032,7 +1025,6 @@ fstring.o: $(hdrdir)/ruby/backward.h
 fstring.o: $(hdrdir)/ruby/backward/2/assume.h
 fstring.o: $(hdrdir)/ruby/backward/2/attributes.h
 fstring.o: $(hdrdir)/ruby/backward/2/bool.h
-fstring.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 fstring.o: $(hdrdir)/ruby/backward/2/inttypes.h
 fstring.o: $(hdrdir)/ruby/backward/2/limits.h
 fstring.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -1204,7 +1196,6 @@ init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/backward/2/assume.h
 init.o: $(hdrdir)/ruby/backward/2/attributes.h
 init.o: $(hdrdir)/ruby/backward/2/bool.h
-init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h
 init.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -1364,7 +1355,6 @@ modify.o: $(hdrdir)/ruby/backward.h
 modify.o: $(hdrdir)/ruby/backward/2/assume.h
 modify.o: $(hdrdir)/ruby/backward/2/attributes.h
 modify.o: $(hdrdir)/ruby/backward/2/bool.h
-modify.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 modify.o: $(hdrdir)/ruby/backward/2/inttypes.h
 modify.o: $(hdrdir)/ruby/backward/2/limits.h
 modify.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -1524,7 +1514,6 @@ new.o: $(hdrdir)/ruby/backward.h
 new.o: $(hdrdir)/ruby/backward/2/assume.h
 new.o: $(hdrdir)/ruby/backward/2/attributes.h
 new.o: $(hdrdir)/ruby/backward/2/bool.h
-new.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 new.o: $(hdrdir)/ruby/backward/2/inttypes.h
 new.o: $(hdrdir)/ruby/backward/2/limits.h
 new.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -1696,7 +1685,6 @@ nofree.o: $(hdrdir)/ruby/backward.h
 nofree.o: $(hdrdir)/ruby/backward/2/assume.h
 nofree.o: $(hdrdir)/ruby/backward/2/attributes.h
 nofree.o: $(hdrdir)/ruby/backward/2/bool.h
-nofree.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 nofree.o: $(hdrdir)/ruby/backward/2/inttypes.h
 nofree.o: $(hdrdir)/ruby/backward/2/limits.h
 nofree.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -1850,13 +1838,11 @@ nofree.o: $(hdrdir)/ruby/subst.h
 nofree.o: nofree.c
 normalize.o: $(RUBY_EXTCONF_H)
 normalize.o: $(arch_hdrdir)/ruby/config.h
-normalize.o: $(hdrdir)/ruby.h
 normalize.o: $(hdrdir)/ruby/assert.h
 normalize.o: $(hdrdir)/ruby/backward.h
 normalize.o: $(hdrdir)/ruby/backward/2/assume.h
 normalize.o: $(hdrdir)/ruby/backward/2/attributes.h
 normalize.o: $(hdrdir)/ruby/backward/2/bool.h
-normalize.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 normalize.o: $(hdrdir)/ruby/backward/2/inttypes.h
 normalize.o: $(hdrdir)/ruby/backward/2/limits.h
 normalize.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -2019,7 +2005,6 @@ normalize.o: $(hdrdir)/ruby/oniguruma.h
 normalize.o: $(hdrdir)/ruby/ruby.h
 normalize.o: $(hdrdir)/ruby/st.h
 normalize.o: $(hdrdir)/ruby/subst.h
-normalize.o: $(top_srcdir)/internal.h
 normalize.o: $(top_srcdir)/internal/file.h
 normalize.o: normalize.c
 qsort.o: $(RUBY_EXTCONF_H)
@@ -2030,7 +2015,6 @@ qsort.o: $(hdrdir)/ruby/backward.h
 qsort.o: $(hdrdir)/ruby/backward/2/assume.h
 qsort.o: $(hdrdir)/ruby/backward/2/attributes.h
 qsort.o: $(hdrdir)/ruby/backward/2/bool.h
-qsort.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 qsort.o: $(hdrdir)/ruby/backward/2/inttypes.h
 qsort.o: $(hdrdir)/ruby/backward/2/limits.h
 qsort.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -2203,7 +2187,6 @@ rb_interned_str.o: $(hdrdir)/ruby/backward.h
 rb_interned_str.o: $(hdrdir)/ruby/backward/2/assume.h
 rb_interned_str.o: $(hdrdir)/ruby/backward/2/attributes.h
 rb_interned_str.o: $(hdrdir)/ruby/backward/2/bool.h
-rb_interned_str.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 rb_interned_str.o: $(hdrdir)/ruby/backward/2/inttypes.h
 rb_interned_str.o: $(hdrdir)/ruby/backward/2/limits.h
 rb_interned_str.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -2363,7 +2346,6 @@ rb_str_dup.o: $(hdrdir)/ruby/backward.h
 rb_str_dup.o: $(hdrdir)/ruby/backward/2/assume.h
 rb_str_dup.o: $(hdrdir)/ruby/backward/2/attributes.h
 rb_str_dup.o: $(hdrdir)/ruby/backward/2/bool.h
-rb_str_dup.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 rb_str_dup.o: $(hdrdir)/ruby/backward/2/inttypes.h
 rb_str_dup.o: $(hdrdir)/ruby/backward/2/limits.h
 rb_str_dup.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -2523,7 +2505,6 @@ set_len.o: $(hdrdir)/ruby/backward.h
 set_len.o: $(hdrdir)/ruby/backward/2/assume.h
 set_len.o: $(hdrdir)/ruby/backward/2/attributes.h
 set_len.o: $(hdrdir)/ruby/backward/2/bool.h
-set_len.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 set_len.o: $(hdrdir)/ruby/backward/2/inttypes.h
 set_len.o: $(hdrdir)/ruby/backward/2/limits.h
 set_len.o: $(hdrdir)/ruby/backward/2/long_long.h

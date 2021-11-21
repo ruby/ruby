@@ -7,7 +7,6 @@ date_core.o: $(hdrdir)/ruby/backward.h
 date_core.o: $(hdrdir)/ruby/backward/2/assume.h
 date_core.o: $(hdrdir)/ruby/backward/2/attributes.h
 date_core.o: $(hdrdir)/ruby/backward/2/bool.h
-date_core.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 date_core.o: $(hdrdir)/ruby/backward/2/inttypes.h
 date_core.o: $(hdrdir)/ruby/backward/2/limits.h
 date_core.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -181,7 +180,6 @@ date_parse.o: $(hdrdir)/ruby/backward.h
 date_parse.o: $(hdrdir)/ruby/backward/2/assume.h
 date_parse.o: $(hdrdir)/ruby/backward/2/attributes.h
 date_parse.o: $(hdrdir)/ruby/backward/2/bool.h
-date_parse.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 date_parse.o: $(hdrdir)/ruby/backward/2/inttypes.h
 date_parse.o: $(hdrdir)/ruby/backward/2/limits.h
 date_parse.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -357,7 +355,6 @@ date_strftime.o: $(hdrdir)/ruby/backward.h
 date_strftime.o: $(hdrdir)/ruby/backward/2/assume.h
 date_strftime.o: $(hdrdir)/ruby/backward/2/attributes.h
 date_strftime.o: $(hdrdir)/ruby/backward/2/bool.h
-date_strftime.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 date_strftime.o: $(hdrdir)/ruby/backward/2/inttypes.h
 date_strftime.o: $(hdrdir)/ruby/backward/2/limits.h
 date_strftime.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -518,7 +515,6 @@ date_strptime.o: $(hdrdir)/ruby/backward.h
 date_strptime.o: $(hdrdir)/ruby/backward/2/assume.h
 date_strptime.o: $(hdrdir)/ruby/backward/2/attributes.h
 date_strptime.o: $(hdrdir)/ruby/backward/2/bool.h
-date_strptime.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 date_strptime.o: $(hdrdir)/ruby/backward/2/inttypes.h
 date_strptime.o: $(hdrdir)/ruby/backward/2/limits.h
 date_strptime.o: $(hdrdir)/ruby/backward/2/long_long.h

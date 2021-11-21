@@ -8,7 +8,6 @@ wait.o: $(hdrdir)/ruby/backward.h
 wait.o: $(hdrdir)/ruby/backward/2/assume.h
 wait.o: $(hdrdir)/ruby/backward/2/attributes.h
 wait.o: $(hdrdir)/ruby/backward/2/bool.h
-wait.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 wait.o: $(hdrdir)/ruby/backward/2/inttypes.h
 wait.o: $(hdrdir)/ruby/backward/2/limits.h
 wait.o: $(hdrdir)/ruby/backward/2/long_long.h

@@ -7,12 +7,9 @@ init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/backward/2/assume.h
 init.o: $(hdrdir)/ruby/backward/2/attributes.h
 init.o: $(hdrdir)/ruby/backward/2/bool.h
-init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h
 init.o: $(hdrdir)/ruby/backward/2/long_long.h
-init.o: $(hdrdir)/ruby/backward/2/r_cast.h
-init.o: $(hdrdir)/ruby/backward/2/rmodule.h
 init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 init.o: $(hdrdir)/ruby/defines.h
@@ -168,12 +165,9 @@ loop.o: $(hdrdir)/ruby/backward.h
 loop.o: $(hdrdir)/ruby/backward/2/assume.h
 loop.o: $(hdrdir)/ruby/backward/2/attributes.h
 loop.o: $(hdrdir)/ruby/backward/2/bool.h
-loop.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 loop.o: $(hdrdir)/ruby/backward/2/inttypes.h
 loop.o: $(hdrdir)/ruby/backward/2/limits.h
 loop.o: $(hdrdir)/ruby/backward/2/long_long.h
-loop.o: $(hdrdir)/ruby/backward/2/r_cast.h
-loop.o: $(hdrdir)/ruby/backward/2/rmodule.h
 loop.o: $(hdrdir)/ruby/backward/2/stdalign.h
 loop.o: $(hdrdir)/ruby/backward/2/stdarg.h
 loop.o: $(hdrdir)/ruby/defines.h

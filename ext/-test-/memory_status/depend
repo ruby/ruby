@@ -7,7 +7,6 @@ memory_status.o: $(hdrdir)/ruby/backward.h
 memory_status.o: $(hdrdir)/ruby/backward/2/assume.h
 memory_status.o: $(hdrdir)/ruby/backward/2/attributes.h
 memory_status.o: $(hdrdir)/ruby/backward/2/bool.h
-memory_status.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 memory_status.o: $(hdrdir)/ruby/backward/2/inttypes.h
 memory_status.o: $(hdrdir)/ruby/backward/2/limits.h
 memory_status.o: $(hdrdir)/ruby/backward/2/long_long.h
