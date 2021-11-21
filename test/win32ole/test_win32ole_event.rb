@@ -65,12 +65,13 @@ if defined?(WIN32OLE_EVENT)
         if watch_ivar
           # wait until event is proceeded
           tries = 0
+          seconds = EnvUtil.apply_timeout_scale(1)
           while tries < 5 && instance_variable_get(watch_ivar) == orig_ivar
-            seconds = 2 ** tries # sleep at most 31s in total
             $stderr.puts "test_win32ole_event.rb: retrying and sleeping #{seconds}s until #{watch_ivar} is changed from #{orig_ivar.inspect}..."
             WIN32OLE_EVENT.message_loop
             sleep(seconds)
             tries += 1
+            seconds *= 2 # sleep at most 31s in total
           end
         end
       end
