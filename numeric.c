@@ -3422,7 +3422,7 @@ rb_num2ull(VALUE val)
  *
  *  An \Integer object represents an integer value.
  *
- *  An attempt to add a singleton method to this class
+ *  An attempt to add a singleton method to an instance of this class
  *  causes an exception to be raised.
  *
  * == What's Here
@@ -3449,13 +3449,8 @@ rb_num2ull(VALUE val)
  * - {<}[#method-i-3C]:: Returns whether +self+ is less than the given value.
  * - {<=}[#method-i-3C-3D]:: Returns whether +self+ is less than
  *                           or equal to the given value.
- * - {<=>}[#method-i-3C-3D-3E]:: Returns:
- *
- *   - -1 if  +self+ is less than the given value.
- *   - 0 if +self+ is equal to the given value.
- *   - 1 if +self+ is greater than the given value.
- *   - +nil+ if +self+ and the given value are not comparable.
- *
+ * - {<=>}[#method-i-3C-3D-3E]:: Returns a number indicating whether +self+ is less than,
+ *                               equal to, or greater than the given value.
  * - {==}[#method-i-3D-3D] (aliased as #===):: Returns whether +self+ is
  *                                             equal to the given value.
  * - {>}[#method-i-3E]:: Returns whether +self+ is greater than the given value.
@@ -3467,7 +3462,7 @@ rb_num2ull(VALUE val)
  * - ::sqrt:: Returns the integer square root of the given value.
  * - ::try_convert:: Returns the given value converted to an \Integer.
  * - #% (aliased as #modulo):: Returns +self+ modulo the given value.
- * - {&}[#method-i-26]:: Returns the bitwise logical AND of +self+ and the given value.
+ * - {&}[#method-i-26]:: Returns the bitwise AND of +self+ and the given value.
  * - #*:: Returns the product of +self+ and the given value.
  * - {**}[#method-i-2A-2A]:: Returns the value of +self+ raised to the power of the given value.
  * - #+:: Returns the sum of +self+ and the given value.
@@ -3476,7 +3471,7 @@ rb_num2ull(VALUE val)
  * - #<<:: Returns the value of +self+ after a leftward bit-shift.
  * - #>>:: Returns the value of +self+ after a rightward bit-shift.
  * - #[]:: Returns a slice of bits from +self+.
- * - {^}[#method-i-5E]:: Returns the bitwise logical EXCLUSIVE OR of +self+ and the given value.
+ * - {^}[#method-i-5E]:: Returns the bitwise EXCLUSIVE OR of +self+ and the given value.
  * - #ceil:: Returns the smallest number greater than or equal to +self+.
  * - #chr:: Returns a 1-character string containing the character
  *          represented by the value of +self+.
@@ -3496,7 +3491,7 @@ rb_num2ull(VALUE val)
  * - #to_s (aliased as #inspect):: Returns a string containing the place-value
  *                                 representation of +self+ in the given radix.
  * - #truncate:: Returns +self+ truncated to the given precision.
- * - {/}[#method-i-7C]:: Returns the bitwise logical OR of +self+ and the given value.
+ * - {/}[#method-i-7C]:: Returns the bitwise OR of +self+ and the given value.
  *
  * === Other
  *
