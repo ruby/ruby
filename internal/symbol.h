@@ -28,6 +28,7 @@ int rb_is_local_name(VALUE name);
 PUREFUNC(int rb_is_const_sym(VALUE sym));
 PUREFUNC(int rb_is_attrset_sym(VALUE sym));
 ID rb_make_internal_id(void);
+ID rb_make_temporary_id(size_t n);
 void rb_gc_free_dsymbol(VALUE);
 
 #if __has_builtin(__builtin_constant_p)
