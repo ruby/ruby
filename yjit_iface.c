@@ -962,8 +962,15 @@ rb_yjit_iseq_update_references(const struct rb_iseq_constant_body *body)
             //block->code_page = rb_gc_location(block->code_page);
         }
     }
-    cb_mark_all_executable(cb);
-    cb_mark_all_executable(ocb);
+
+    /* If YJIT isn't initialized, then cb or ocb could be NULL. */
+    if (cb) {
+        cb_mark_all_executable(cb);
+    }
+
+    if (ocb) {
+        cb_mark_all_executable(ocb);
+    }
 }
 
 // Free the yjit resources associated with an iseq
