@@ -952,6 +952,17 @@ rb_make_internal_id(void)
     return next_id_base() | ID_INTERNAL | ID_STATIC_SYM;
 }
 
+ID
+rb_make_temporary_id(size_t n)
+{
+    const ID max_id = RB_ID_SERIAL_MAX & ~0xffff;
+    const ID id = max_id - (ID)n;
+    if (id <= ruby_global_symbols.last_id) {
+	rb_raise(rb_eRuntimeError, "too big to make temporary ID: %" PRIdSIZE, n);
+    }
+    return (id << ID_SCOPE_SHIFT) | ID_STATIC_SYM | ID_INTERNAL;
+}
+
 static int
 symbols_i(st_data_t key, st_data_t value, st_data_t arg)
 {

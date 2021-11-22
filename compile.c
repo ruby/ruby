@@ -11554,6 +11554,7 @@ ibf_load_outer_variables(const struct ibf_load * load, ibf_offset_t outer_variab
     for (size_t i = 0; i < table_size; i++) {
         ID key = ibf_load_id(load, (ID)ibf_load_small_value(load, &reading_pos));
         VALUE value = ibf_load_small_value(load, &reading_pos);
+        if (!key) key = rb_make_temporary_id(i);
         rb_id_table_insert(tbl, key, value);
     }
 
