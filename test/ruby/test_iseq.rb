@@ -105,6 +105,17 @@ class TestISeq < Test::Unit::TestCase
     assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
   end
 
+  def test_super_with_block_hash_0
+    iseq = compile(<<~EOF)
+      # [Bug #18250] `req` specifically cause `Assertion failed: (key != 0), function hash_table_raw_insert`
+      def touch(req, *)
+        foo { super }
+      end
+      42
+    EOF
+    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
+  end
+
   def test_super_with_block_and_kwrest
     iseq = compile(<<~EOF)
       def touch2(**) # :nodoc:
