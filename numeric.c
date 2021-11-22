@@ -1671,13 +1671,18 @@ rb_float_cmp(VALUE x, VALUE y)
 }
 
 /*
- * call-seq:
- *   float > real  ->  true or false
+ *  call-seq:
+ *    self > other -> true or false
  *
- * Returns +true+ if +float+ is greater than +real+.
+ *  Returns +true+ if +self+ is numerically greater than +other+:
  *
- * The result of <code>NaN > NaN</code> is undefined,
- * so an implementation-dependent value is returned.
+ *    2.0 > 1              # => true
+ *    2.0 > 1.0            # => true
+ *    2.0 > Rational(1, 2) # => true
+ *    2.0 > 2.0            # => false
+ *
+ *  <tt>Float::NAN > Float::NAN</tt> returns an implementation-dependent value.
+ *
  */
 
 VALUE
@@ -1708,13 +1713,19 @@ rb_float_gt(VALUE x, VALUE y)
 }
 
 /*
- * call-seq:
- *   float >= real  ->  true or false
+ *  call-seq:
+ *    self >= other -> true or false
  *
- * Returns +true+ if +float+ is greater than or equal to +real+.
+ *  Returns +true+ if +self+ is numerically greater than or equal to +other+:
  *
- * The result of <code>NaN >= NaN</code> is undefined,
- * so an implementation-dependent value is returned.
+ *    2.0 >= 1              # => true
+ *    2.0 >= 1.0            # => true
+ *    2.0 >= Rational(1, 2) # => true
+ *    2.0 >= 2.0            # => true
+ *    2.0 >= 2.1            # => false
+ *
+ *  <tt>Float::NAN >= Float::NAN</tt> returns an implementation-dependent value.
+ *
  */
 
 static VALUE
@@ -1745,13 +1756,18 @@ flo_ge(VALUE x, VALUE y)
 }
 
 /*
- * call-seq:
- *   float < real  ->  true or false
+ *  call-seq:
+ *    self < other -> true or false
  *
- * Returns +true+ if +float+ is less than +real+.
+ *  Returns +true+ if +self+ is numerically less than +other+:
  *
- * The result of <code>NaN < NaN</code> is undefined,
- * so an implementation-dependent value is returned.
+ *    2.0 < 3              # => true
+ *    2.0 < 3.0            # => true
+ *    2.0 < Rational(3, 1) # => true
+ *    2.0 < 2.0            # => false
+ *
+ *  <tt>Float::NAN < Float::NAN</tt> returns an implementation-dependent value.
+ *
  */
 
 static VALUE
@@ -1782,13 +1798,19 @@ flo_lt(VALUE x, VALUE y)
 }
 
 /*
- * call-seq:
- *   float <= real  ->  true or false
+ *  call-seq:
+ *    self <= other -> true or false
  *
- * Returns +true+ if +float+ is less than or equal to +real+.
+ *  Returns +true+ if +self+ is numerically less than or equal to +other+:
  *
- * The result of <code>NaN <= NaN</code> is undefined,
- * so an implementation-dependent value is returned.
+ *    2.0 <= 3              # => true
+ *    2.0 <= 3.0            # => true
+ *    2.0 <= Rational(3, 1) # => true
+ *    2.0 <= 2.0            # => true
+ *    2.0 <= 1.0            # => false
+ *
+ *  <tt>Float::NAN <= Float::NAN</tt> returns an implementation-dependent value.
+ *
  */
 
 static VALUE
@@ -1820,15 +1842,20 @@ flo_le(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     float.eql?(obj)  ->  true or false
+ *    eql?(other) -> true or false
  *
- *  Returns +true+ only if +obj+ is a Float with the same value as +float+.
- *  Contrast this with Float#==, which performs type conversions.
+ *  Returns +true+ if +other+ is a \Float with the same value as +self+,
+ *  +false+ otherwise:
  *
- *     1.0.eql?(1)   #=> false
+ *    2.0.eql?(2.0)            # => true
+ *    2.0.eql?(1.0)            # => false
+ *    2.0.eql?(1)              # => false
+ *    2.0.eql?(Rational(2, 1)) # => false
+ *    2.0.eql?(Complex(2, 0))  # => false
  *
- *  The result of <code>NaN.eql?(NaN)</code> is undefined,
- *  so an implementation-dependent value is returned.
+ *  <tt>Float::NAN.eql?(Float::NAN)</tt> returns an implementation-dependent value.
+ *
+ *  Related: Float#== (performs type conversions).
  */
 
 MJIT_FUNC_EXPORTED VALUE
@@ -1856,14 +1883,14 @@ rb_float_abs(VALUE flt)
 
 /*
  *  call-seq:
- *     float.nan?  ->  true or false
+ *    nan? -> true or false
  *
- *  Returns +true+ if +float+ is an invalid IEEE floating point number.
+ *  Returns +true+ if +self+ is a NaN, +false+ otherwise.
  *
- *     a = -1.0      #=> -1.0
- *     a.nan?        #=> false
- *     a = 0.0/0.0   #=> NaN
- *     a.nan?        #=> true
+ *     f = -1.0     #=> -1.0
+ *     f.nan?       #=> false
+ *     f = 0.0/0.0  #=> NaN
+ *     f.nan?       #=> true
  */
 
 static VALUE
@@ -1876,14 +1903,25 @@ flo_is_nan_p(VALUE num)
 
 /*
  *  call-seq:
- *     float.infinite?  ->  -1, 1, or nil
+ *    infinite? -> -1, 1, or nil
  *
- *  Returns +nil+, -1, or 1 depending on whether the value is
- *  finite, <code>-Infinity</code>, or <code>+Infinity</code>.
+ *  Returns:
  *
- *     (0.0).infinite?        #=> nil
- *     (-1.0/0.0).infinite?   #=> -1
- *     (+1.0/0.0).infinite?   #=> 1
+ *  - 1, if +self+ is <tt>Infinity</tt>.
+ *  - -1 if +self+ is <tt>-Infinity</tt>.
+ *  - +nil+, otherwise.
+ *
+ *  Examples:
+ *
+ *    f = 1.0/0.0  # => Infinity
+ *    f.infinite?  # => 1
+ *    f = -1.0/0.0 # => -Infinity
+ *    f.infinite?  # => -1
+ *    f = 1.0      # => 1.0
+ *    f.infinite?  # => nil
+ *    f = 0.0/0.0  # => NaN
+ *    f.infinite?  # => nil
+ *
  */
 
 VALUE
@@ -1900,10 +1938,20 @@ rb_flo_is_infinite_p(VALUE num)
 
 /*
  *  call-seq:
- *     float.finite?  ->  true or false
+ *    finite? -> true or false
  *
- *  Returns +true+ if +float+ is a valid IEEE floating point number,
- *  i.e. it is not infinite and Float#nan? is +false+.
+ *  Returns +true+ if +self+ is not +Infinity+, +-Infinity+, or +Nan+,
+ *  +false+ otherwise:
+ *
+ *    f = 2.0      # => 2.0
+ *    f.finite?    # => true
+ *    f = 1.0/0.0  # => Infinity
+ *    f.finite?    # => false
+ *    f = -1.0/0.0 # => -Infinity
+ *    f.finite?    # => false
+ *    f = 0.0/0.0  # => NaN
+ *    f.finite?    # => false
+ *
  */
 
 VALUE
@@ -1925,7 +1973,7 @@ flo_nextafter(VALUE flo, double value)
 
 /*
  *  call-seq:
- *     float.next_float  ->  float
+ *    next_float -> float
  *
  *  Returns the next representable floating point number.
  *
