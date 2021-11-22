@@ -915,25 +915,22 @@ vm_get_cbase(const VALUE *ep)
 {
     const rb_cref_t *cref = vm_get_cref(ep);
 
-    VALUE klass = CREF_CLASS_FOR_DEFINITION(cref);
-    return klass;
+    return CREF_CLASS_FOR_DEFINITION(cref);
 }
 
 static inline VALUE
 vm_get_const_base(const VALUE *ep)
 {
     const rb_cref_t *cref = vm_get_cref(ep);
-    VALUE klass = Qundef;
 
     while (cref) {
-	if (!CREF_PUSHED_BY_EVAL(cref) &&
-	    (klass = CREF_CLASS_FOR_DEFINITION(cref)) != 0) {
-	    break;
-	}
-	cref = CREF_NEXT(cref);
+        if (!CREF_PUSHED_BY_EVAL(cref)) {
+            return CREF_CLASS_FOR_DEFINITION(cref);
+        }
+        cref = CREF_NEXT(cref);
     }
 
-    return klass;
+    return Qundef;
 }
 
 static inline void
