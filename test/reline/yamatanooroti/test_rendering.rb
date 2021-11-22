@@ -739,6 +739,16 @@ begin
       EOC
     end
 
+    def test_not_meta_key
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("おだんご") # "だ" in UTF-8 contains "\xA0"
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> おだんご
+      EOC
+    end
+
     def test_force_enter
       start_terminal(30, 120, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def hoge\nend\C-p\C-e")
