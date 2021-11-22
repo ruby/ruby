@@ -1683,8 +1683,6 @@ rb_float_cmp(VALUE x, VALUE y)
  *
  *  <tt>Float::NAN > Float::NAN</tt> returns an implementation-dependent value.
  *
- *  Raises an exception if +other+ does not respond to method <tt>:></tt>
- *  (including when +other+ is Complex).
  */
 
 VALUE
@@ -1728,8 +1726,6 @@ rb_float_gt(VALUE x, VALUE y)
  *
  *  <tt>Float::NAN >= Float::NAN</tt> returns an implementation-dependent value.
  *
- *  Raises an exception if +other+ does not respond to method <tt>:>=</tt>
- *  (including when +other+ is Complex).
  */
 
 static VALUE
@@ -1772,8 +1768,6 @@ flo_ge(VALUE x, VALUE y)
  *
  *  <tt>Float::NAN < Float::NAN</tt> returns an implementation-dependent value.
  *
- *  Raises an exception if +other+ does not respond to method <tt>:<</tt>
- *  (including when +other+ is Complex).
  */
 
 static VALUE
@@ -1817,8 +1811,6 @@ flo_lt(VALUE x, VALUE y)
  *
  *  <tt>Float::NAN <= Float::NAN</tt> returns an implementation-dependent value.
  *
- *  Raises an exception if +other+ does not respond to method <tt>:>=</tt>
- *  (including when +other+ is Complex).
  */
 
 static VALUE
