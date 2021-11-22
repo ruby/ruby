@@ -2708,6 +2708,18 @@ rb_mod_const_source_location(int argc, VALUE *argv, VALUE mod)
     UNREACHABLE_RETURN(Qundef);
 }
 
+static VALUE
+rb_mod_namespace(VALUE mod)
+{
+    VALUE scope = RCLASS_EXT(mod)->namespace;
+    if (scope) {
+        return scope;
+    }
+    else {
+        return Qnil;
+    }
+}
+
 /*
  *  call-seq:
  *     obj.instance_variable_get(symbol)    -> obj
@@ -4638,6 +4650,7 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "const_set", rb_mod_const_set, 2);
     rb_define_method(rb_cModule, "const_defined?", rb_mod_const_defined, -1);
     rb_define_method(rb_cModule, "const_source_location", rb_mod_const_source_location, -1);
+    rb_define_method(rb_cModule, "namespace", rb_mod_namespace, 0);
     rb_define_private_method(rb_cModule, "remove_const",
 			     rb_mod_remove_const, 1); /* in variable.c */
     rb_define_method(rb_cModule, "const_missing",

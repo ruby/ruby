@@ -48,6 +48,8 @@ struct rb_classext_struct {
     struct rb_id_table *cvc_tbl;
     struct rb_subclass_entry *subclasses;
     struct rb_subclass_entry **parent_subclasses;
+    VALUE namespace;
+
     /**
      * In the case that this is an `ICLASS`, `module_subclasses` points to the link
      * in the module's `subclasses` list that indicates that the klass has been

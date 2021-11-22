@@ -3096,6 +3096,8 @@ class TestModule < Test::Unit::TestCase
   end
 
   ConstLocation = [__FILE__, __LINE__]
+  class ConstLocationClass; end
+  module ConstLocationModule; end
 
   def test_const_source_location
     assert_equal(ConstLocation, self.class.const_source_location(:ConstLocation))
@@ -3110,6 +3112,19 @@ class TestModule < Test::Unit::TestCase
     assert_raise_with_message(TypeError, %r'does not refer to class/module') {
       self.class.const_source_location("ConstLocation::FILE")
     }
+  end
+
+  module Inner; end
+
+  module Outer
+    X = Inner
+  end
+
+  def test_namespace
+    assert_equal ::Object, ::Object.namespace
+    assert_equal ::Object, ::Kernel.namespace
+    assert_equal self.class, ConstLocationClass.namespace
+    assert_equal self.class, Outer::X.namespace
   end
 
   module CloneTestM_simple

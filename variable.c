@@ -3101,8 +3101,6 @@ set_namespace_path(VALUE named_namespace, VALUE namespace_path)
 void
 rb_const_set(VALUE klass, ID id, VALUE val)
 {
-    rb_const_entry_t *ce;
-
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class/module to define constant %"PRIsVALUE"",
 		 QUOTE_ID(id));
@@ -3118,20 +3116,14 @@ rb_const_set(VALUE klass, ID id, VALUE val)
     {
         struct rb_id_table *tbl = RCLASS_CONST_TBL(klass);
         if (!tbl) {
-            RCLASS_CONST_TBL(klass) = tbl = rb_id_table_create(0);
-            rb_clear_constant_cache();
-            ce = ZALLOC(rb_const_entry_t);
-            rb_id_table_insert(tbl, id, (VALUE)ce);
-            setup_const_entry(ce, klass, val, CONST_PUBLIC);
+            RCLASS_CONST_TBL(klass) = rb_id_table_create(0);
         }
-        else {
-            struct autoload_const ac = {
-                .mod = klass, .id = id,
-                .value = val, .flag = CONST_PUBLIC,
-                /* fill the rest with 0 */
-            };
-            const_tbl_update(&ac);
-        }
+        struct autoload_const ac = {
+            .mod = klass, .id = id,
+            .value = val, .flag = CONST_PUBLIC,
+            /* fill the rest with 0 */
+        };
+        const_tbl_update(&ac);
     }
     RB_VM_LOCK_LEAVE();
 
@@ -3232,6 +3224,11 @@ const_tbl_update(struct autoload_const *ac)
 
 	ce = ZALLOC(rb_const_entry_t);
 	rb_id_table_insert(tbl, id, (VALUE)ce);
+	if (RB_TYPE_P(val, T_MODULE) || RB_TYPE_P(val, T_CLASS)) {
+            if (!RCLASS_EXT(val)->namespace) {
+                RB_OBJ_WRITE(val, &RCLASS_EXT(val)->namespace, klass);
+            }
+        }
 	setup_const_entry(ce, klass, val, visibility);
     }
 }
