@@ -3418,10 +3418,94 @@ rb_num2ull(VALUE val)
 
 /********************************************************************
  *
- * Document-class: Integer
+ *  Document-class: Integer
  *
- *  Holds Integer values.  You cannot add a singleton method to an
- *  Integer object, any attempt to do so will raise a TypeError.
+ *  An \Integer object represents an integer value.
+ *
+ *  An attempt to add a singleton method to this class
+ *  causes an exception to be raised.
+ *
+ * == What's Here
+ *
+ * First, what's elsewhere. \Class \Integer:
+ *
+ * - Inherits from {class Numeric}[Numeric.html#class-Numeric-label-What-27s+Here].
+ *
+ * Here, class \Integer provides methods for:
+ *
+ * - {Querying}[#class-Integer-label-Querying]
+ * - {Comparing}[#class-Integer-label-Comparing]
+ * - {Converting}[#class-Integer-label-Converting]
+ * - {Other}[#class-Integer-label-Other]
+ *
+ * === Querying
+ *
+ * - #allbits?:: Returns whether all bits in +self+ are set.
+ * - #anybits?:: Returns whether any bits in +self+ are set.
+ * - #nobits?:: Returns whether no bits in +self+ are set.
+ *
+ * === Comparing
+ *
+ * - {<}[#method-i-3C]:: Returns whether +self+ is less than the given value.
+ * - {<=}[#method-i-3C-3D]:: Returns whether +self+ is less than
+ *                           or equal to the given value.
+ * - {<=>}[#method-i-3C-3D-3E]:: Returns:
+ *
+ *   - -1 if  +self+ is less than the given value.
+ *   - 0 if +self+ is equal to the given value.
+ *   - 1 if +self+ is greater than the given value.
+ *   - +nil+ if +self+ and the given value are not comparable.
+ *
+ * - {==}[#method-i-3D-3D] (aliased as #===):: Returns whether +self+ is
+ *                                             equal to the given value.
+ * - {>}[#method-i-3E]:: Returns whether +self+ is greater than the given value.
+ * - {>=}[#method-i-3E-3D]:: Returns whether +self+ is greater than
+ *                           or equal to the given value.
+ *
+ * === Converting
+ *
+ * - ::sqrt:: Returns the integer square root of the given value.
+ * - ::try_convert:: Returns the given value converted to an \Integer.
+ * - #% (aliased as #modulo):: Returns +self+ modulo the given value.
+ * - {&}[#method-i-26]:: Returns the bitwise logical AND of +self+ and the given value.
+ * - #*:: Returns the product of +self+ and the given value.
+ * - {**}[#method-i-2A-2A]:: Returns the value of +self+ raised to the power of the given value.
+ * - #+:: Returns the sum of +self+ and the given value.
+ * - #-:: Returns the difference of +self+ and the given value.
+ * - {/}[#method-i-2F]:: Returns the quotient of +self+ and the given value.
+ * - #<<:: Returns the value of +self+ after a leftward bit-shift.
+ * - #>>:: Returns the value of +self+ after a rightward bit-shift.
+ * - #[]:: Returns a slice of bits from +self+.
+ * - {^}[#method-i-5E]:: Returns the bitwise logical EXCLUSIVE OR of +self+ and the given value.
+ * - #ceil:: Returns the smallest number greater than or equal to +self+.
+ * - #chr:: Returns a 1-character string containing the character
+ *          represented by the value of +self+.
+ * - #digits:: Returns an array of integers representing the base-radix digits
+ *             of +self+.
+ * - #div:: Returns the integer result of dividing +self+ by the given value.
+ * - #divmod:: Returns a 2-element array containing the quotient and remainder
+ *             results of dividing +self+ by the given value.
+ * - #fdiv:: Returns the Float result of dividing +self+ by the given value.
+ * - #floor:: Returns the greatest number smaller than or equal to +self+.
+ * - #pow:: Returns the modular exponentiation of +self+.
+ * - #pred:: Returns the integer predecessor of +self+.
+ * - #remainder:: Returns the remainder after dividing +self+ by the given value.
+ * - #round:: Returns +self+ rounded to the nearest value with the given precision.
+ * - #succ (aliased as #next):: Returns the integer successor of +self+.
+ * - #to_f:: Returns +self+ converted to a Float.
+ * - #to_s (aliased as #inspect):: Returns a string containing the place-value
+ *                                 representation of +self+ in the given radix.
+ * - #truncate:: Returns +self+ truncated to the given precision.
+ * - {/}[#method-i-7C]:: Returns the bitwise logical OR of +self+ and the given value.
+ *
+ * === Other
+ *
+ * - #downto:: Calls the given block with each integer value from +self+
+ *             down to the given value.
+ * - #times:: Calls the given block +self+ times with each integer
+ *            in <tt>(0..self-1)</tt>.
+ * - #upto:: Calls the given block with each integer value from +self+
+ *           up to the given value.
  *
  */
 
@@ -5978,7 +6062,7 @@ int_s_try_convert(VALUE self, VALUE num)
  * - {<=>}[#method-i-3C-3D-3E]:: Returns:
  *   - -1 if  +self+ is less than the given value.
  *   - 0 if +self+ is equal to the given value.
- *   - 1 if +self is greater than the given value.
+ *   - 1 if +self+ is greater than the given value.
  *   - +nil+ if +self+ and the given value are not comparable.
  * - #eql?:: Returns whether +self+ and the given value have the same value and type.
  *
