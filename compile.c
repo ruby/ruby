@@ -4178,7 +4178,6 @@ compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node,
 static inline int
 static_literal_node_p(const NODE *node, const rb_iseq_t *iseq)
 {
-    node = node->nd_head;
     switch (nd_type(node)) {
       case NODE_LIT:
       case NODE_NIL:
@@ -4195,7 +4194,6 @@ static_literal_node_p(const NODE *node, const rb_iseq_t *iseq)
 static inline VALUE
 static_literal_value(const NODE *node, rb_iseq_t *iseq)
 {
-    node = node->nd_head;
     switch (nd_type(node)) {
       case NODE_NIL:
 	return Qnil;
@@ -4294,10 +4292,10 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
         int count = 1;
 
         /* pre-allocation check (this branch can be omittable) */
-        if (static_literal_node_p(node, iseq)) {
+        if (static_literal_node_p(node->nd_head, iseq)) {
             /* count the elements that are optimizable */
             const NODE *node_tmp = node->nd_next;
-            for (; node_tmp && static_literal_node_p(node_tmp, iseq); node_tmp = node_tmp->nd_next)
+            for (; node_tmp && static_literal_node_p(node_tmp->nd_head, iseq); node_tmp = node_tmp->nd_next)
                 count++;
 
             if ((first_chunk && stack_len == 0 && !node_tmp) || count >= min_tmp_ary_len) {
@@ -4306,7 +4304,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
 
                 /* Create a hidden array */
                 for (; count; count--, node = node->nd_next)
-                    rb_ary_push(ary, static_literal_value(node, iseq));
+                    rb_ary_push(ary, static_literal_value(node->nd_head, iseq));
                 OBJ_FREEZE(ary);
 
                 /* Emit optimized code */
@@ -4348,10 +4346,33 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
     return 1;
 }
 
+/* Compile an array containing the single element represented by node */
+static int
+compile_array_1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped)
+{
+    if (popped) {
+        CHECK(COMPILE_(ret, "array element", node, popped));
+        return 1;
+    }
+
+    if (static_literal_node_p(node, iseq)) {
+        VALUE ary = rb_ary_tmp_new(1);
+        rb_ary_push(ary, static_literal_value(node, iseq));
+        OBJ_FREEZE(ary);
+
+        ADD_INSN1(ret, node, duparray, ary);
+    } else {
+        CHECK(COMPILE_(ret, "array element", node, popped));
+        ADD_INSN1(ret, node, newarray, INT2FIX(1));
+    }
+
+    return 1;
+}
+
 static inline int
 static_literal_node_pair_p(const NODE *node, const rb_iseq_t *iseq)
 {
-    return node->nd_head && static_literal_node_p(node, iseq) && static_literal_node_p(node->nd_next, iseq);
+    return node->nd_head && static_literal_node_p(node->nd_head, iseq) && static_literal_node_p(node->nd_next->nd_head, iseq);
 }
 
 static int
@@ -4436,8 +4457,8 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
                 /* Create a hidden hash */
                 for (; count; count--, node = node->nd_next->nd_next) {
                     VALUE elem[2];
-                    elem[0] = static_literal_value(node, iseq);
-                    elem[1] = static_literal_value(node->nd_next, iseq);
+                    elem[0] = static_literal_value(node->nd_head, iseq);
+                    elem[1] = static_literal_value(node->nd_next->nd_head, iseq);
                     rb_ary_cat(ary, elem, 2);
                 }
                 VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
@@ -9490,15 +9511,14 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
       case NODE_ARGSPUSH:{
 	if (popped) {
-	    CHECK(COMPILE(ret, "arsgpush head", node->nd_head));
+	    CHECK(COMPILE(ret, "argspush head", node->nd_head));
 	    ADD_INSN1(ret, node, splatarray, Qfalse);
 	    ADD_INSN(ret, node, pop);
 	    CHECK(COMPILE_(ret, "argspush body", node->nd_body, popped));
 	}
 	else {
-	    CHECK(COMPILE(ret, "arsgpush head", node->nd_head));
-	    CHECK(COMPILE_(ret, "argspush body", node->nd_body, popped));
-	    ADD_INSN1(ret, node, newarray, INT2FIX(1));
+	    CHECK(COMPILE(ret, "argspush head", node->nd_head));
+	    CHECK(compile_array_1(iseq, ret, node->nd_body, popped));
 	    ADD_INSN(ret, node, concatarray);
 	}
 	break;
