@@ -195,6 +195,7 @@ class_alloc(VALUE flags, VALUE klass)
     RCLASS_SERIAL(obj) = rb_next_class_serial();
     RB_OBJ_WRITE(obj, &RCLASS_REFINED_CLASS(obj), Qnil);
     RCLASS_ALLOCATOR(obj) = 0;
+    RB_OBJ_WRITE(obj, &RCLASS_EXT(obj)->file, rb_source_location(&RCLASS_EXT(obj)->line));
 
     return (VALUE)obj;
 }
