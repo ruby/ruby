@@ -7,6 +7,7 @@
 #include "internal/object.h"
 #include "internal/sanitizers.h"
 #include "internal/string.h"
+#include "internal/struct.h"
 #include "internal/variable.h"
 #include "internal/re.h"
 #include "probes.h"
@@ -3901,6 +3902,29 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     return YJIT_END_BLOCK;
 }
 
+static codegen_status_t
+gen_struct_aref(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, VALUE comptime_recv, VALUE comptime_recv_klass) {
+    if (vm_ci_argc(ci) != 0) {
+        return YJIT_CANT_COMPILE;
+    }
+
+    const unsigned int off = cme->def->body.optimized.index;
+
+    x86opnd_t recv = ctx_stack_pop(ctx, 1);
+
+    ADD_COMMENT(cb, "struct aref");
+    // internal_RSTRUCT_GET(recv, off);
+    mov(cb, C_ARG_REGS[0], recv);
+    mov(cb, C_ARG_REGS[1], imm_opnd(off));
+    call_ptr(cb, REG0, (void *)RSTRUCT_GET);
+
+    x86opnd_t ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
+    mov(cb, ret, RAX);
+
+    jit_jump_to_next_insn(jit, ctx);
+    return YJIT_END_BLOCK;
+}
+
 const rb_callable_method_entry_t *
 rb_aliased_callable_method_entry(const rb_callable_method_entry_t *me);
 
@@ -4064,8 +4088,13 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
             return YJIT_CANT_COMPILE;
           // Send family of methods, e.g. call/apply
           case VM_METHOD_TYPE_OPTIMIZED:
-            GEN_COUNTER_INC(cb, send_optimized_method);
-            return YJIT_CANT_COMPILE;
+            switch (cme->def->body.optimized.type) {
+                case OPTIMIZED_METHOD_TYPE_STRUCT_AREF:
+                    return gen_struct_aref(jit, ctx, ci, cme, comptime_recv, comptime_recv_klass);
+                default:
+                    GEN_COUNTER_INC(cb, send_optimized_method);
+                    return YJIT_CANT_COMPILE;
+            }
           case VM_METHOD_TYPE_MISSING:
             GEN_COUNTER_INC(cb, send_missing_method);
             return YJIT_CANT_COMPILE;
