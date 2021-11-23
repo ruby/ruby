@@ -14,6 +14,14 @@ rescue LoadError
 end
 
 class Scheduler
+  experimental = Warning[:experimental]
+  begin
+    Warning[:experimental] = false
+    IO::Buffer.new(0)
+  ensure
+    Warning[:experimental] = experimental
+  end
+
   def initialize
     @readable = {}
     @writable = {}

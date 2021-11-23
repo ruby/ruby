@@ -1,6 +1,14 @@
 # frozen_string_literal: false
 
 class TestIOBuffer < Test::Unit::TestCase
+  experimental = Warning[:experimental]
+  begin
+    Warning[:experimental] = false
+    IO::Buffer.new(0)
+  ensure
+    Warning[:experimental] = experimental
+  end
+
   def assert_negative(value)
     assert(value < 0, "Expected #{value} to be negative!")
   end
