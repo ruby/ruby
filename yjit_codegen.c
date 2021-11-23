@@ -4125,13 +4125,22 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
           // Send family of methods, e.g. call/apply
           case VM_METHOD_TYPE_OPTIMIZED:
             switch (cme->def->body.optimized.type) {
+                case OPTIMIZED_METHOD_TYPE_SEND:
+                    GEN_COUNTER_INC(cb, send_optimized_method_send);
+                    return YJIT_CANT_COMPILE;
+                case OPTIMIZED_METHOD_TYPE_CALL:
+                    GEN_COUNTER_INC(cb, send_optimized_method_call);
+                    return YJIT_CANT_COMPILE;
+                case OPTIMIZED_METHOD_TYPE_BLOCK_CALL:
+                    GEN_COUNTER_INC(cb, send_optimized_method_block_call);
+                    return YJIT_CANT_COMPILE;
                 case OPTIMIZED_METHOD_TYPE_STRUCT_AREF:
                     return gen_struct_aref(jit, ctx, ci, cme, comptime_recv, comptime_recv_klass);
                 case OPTIMIZED_METHOD_TYPE_STRUCT_ASET:
                     return gen_struct_aset(jit, ctx, ci, cme, comptime_recv, comptime_recv_klass);
                 default:
-                    GEN_COUNTER_INC(cb, send_optimized_method);
-                    return YJIT_CANT_COMPILE;
+                    rb_bug("unknown optimized method type (%d)", cme->def->body.optimized.type);
+                    UNREACHABLE_RETURN(YJIT_CANT_COMPILE);
             }
           case VM_METHOD_TYPE_MISSING:
             GEN_COUNTER_INC(cb, send_missing_method);
