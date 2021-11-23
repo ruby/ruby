@@ -52,6 +52,11 @@ class TestYJIT < Test::Unit::TestCase
     assert_in_out_err([yjit_child_env, '-e p RubyVM::YJIT.enabled?'], '', ['true'])
   end
 
+  def test_compile_setclassvariable
+    script = 'class Foo; def self.foo; @@foo = 1; end; end; Foo.foo'
+    assert_compiles(script, insns: %i[setclassvariable], result: 1)
+  end
+
   def test_compile_getclassvariable
     script = 'class Foo; @@foo = 1; def self.foo; @@foo; end; end; Foo.foo'
     assert_compiles(script, insns: %i[getclassvariable], result: 1)
