@@ -20,7 +20,7 @@ concurrency:
 #
 jobs:
   make:
-    runs-on: windows-2019
+    runs-on: windows-2022
     name: ${{ github.workflow }} (${{ matrix.msystem }})
     env:
       MSYSTEM: ${{ matrix.msystem }}
@@ -55,12 +55,9 @@ jobs:
         with:
           path: src
       - name: Set up Ruby & MSYS2
-        uses: MSP-Greg/setup-ruby-pkgs@ucrt
+        uses: MSP-Greg/ruby-setup-ruby@win-ucrt-1
         with:
           ruby-version: ${{ matrix.base_ruby }}
-          setup-ruby-ref: MSP-Greg/ruby-setup-ruby/00-win-ucrt
-          mingw: _upgrade_ gmp libffi libyaml openssl ragel readline gcc
-          msys2: automake1.16 bison
       - name: set env
         run: |
           echo "GNUMAKEFLAGS=-j$((2 * NUMBER_OF_PROCESSORS))" >> $GITHUB_ENV
@@ -112,7 +109,7 @@ jobs:
           make test
 
       - name: test-all
-        timeout-minutes: 40
+        timeout-minutes: 45
         run: |
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           chcp.com 437
