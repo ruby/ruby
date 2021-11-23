@@ -682,7 +682,7 @@ enum_to_a(int argc, VALUE *argv, VALUE obj)
 {
     VALUE ary = rb_ary_new();
 
-    rb_block_call(obj, id_each, argc, argv, collect_all, ary);
+    rb_block_call_kw(obj, id_each, argc, argv, collect_all, ary, RB_PASS_CALLED_KEYWORDS);
 
     return ary;
 }
