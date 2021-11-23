@@ -869,7 +869,18 @@ VpCreateRbObject(size_t mx, const char *str, bool raise_exception)
 }
 
 #define VpAllocReal(prec) (Real *)VpMemAlloc(offsetof(Real, frac) + (prec) * sizeof(DECDIG))
-#define VpReallocReal(ptr, prec) (Real *)VpMemRealloc((ptr), offsetof(Real, frac) + (prec) * sizeof(DECDIG))
+
+static Real *
+VpReallocReal(Real *pv, size_t prec)
+{
+    VALUE obj = pv ? pv->obj : 0;
+    Real *new_pv = (Real *)VpMemRealloc(pv, offsetof(Real, frac) + prec * sizeof(DECDIG));
+    if (obj) {
+        new_pv->obj = 0;
+        BigDecimal_wrap_struct(obj, new_pv);
+    }
+    return new_pv;
+}
 
 static Real *
 VpCopy(Real *pv, Real const* const x)
