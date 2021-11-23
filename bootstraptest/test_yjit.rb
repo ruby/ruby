@@ -2455,3 +2455,51 @@ assert_equal 'new', %q{
 
   test
 } if false # disabled for now since OOM crashes in the test harness
+
+# struct aref
+assert_equal '2', %q{
+  def foo(s)
+    s.foo
+  end
+
+  S = Struct.new(:foo)
+  foo(S.new(1))
+  foo(S.new(2))
+}
+
+# struct aset
+assert_equal '123', %q{
+  def foo(s)
+    s.foo = 123
+  end
+
+  s = Struct.new(:foo).new
+  foo(s)
+  s = Struct.new(:foo).new
+  foo(s)
+  s.foo
+}
+
+# struct aref too many args
+assert_equal 'ok', %q{
+  def foo(s)
+    s.foo(:bad)
+  end
+
+  s = Struct.new(:foo).new
+  foo(s) rescue :ok
+  foo(s) rescue :ok
+}
+
+# struct aset too many args
+assert_equal 'ok', %q{
+  def foo(s)
+    s.set_foo(123, :bad)
+  end
+
+  s = Struct.new(:foo) do
+    alias :set_foo :foo=
+  end
+  foo(s) rescue :ok
+  foo(s) rescue :ok
+}
