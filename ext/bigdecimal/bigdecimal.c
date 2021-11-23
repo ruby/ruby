@@ -1891,6 +1891,8 @@ BigDecimal_div3(int argc, VALUE *argv, VALUE self)
   *
   *  Examples:
   *
+  *    # Set the rounding mode.
+  *    BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_HALF_UP)
   *    BigDecimal('111111.111').add(1, 0) # => 0.111112111e6
   *    BigDecimal('111111.111').add(1, 2) # => 0.11e6
   *    BigDecimal('111111.111').add(1, 3) # => 0.111e6
