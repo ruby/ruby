@@ -25,4 +25,11 @@ class TestPostponed_job < Test::Unit::TestCase
     Bug.postponed_job_register_one(ary = [])
     assert_equal [1], ary
   end
+
+  if Bug.respond_to?(:postponed_job_register_in_c_thread)
+    def test_register_in_c_thread
+      assert Bug.postponed_job_register_in_c_thread(ary = [])
+      assert_equal [1], ary
+    end
+  end
 end
