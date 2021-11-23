@@ -1977,7 +1977,7 @@ flo_nextafter(VALUE flo, double value)
  *
  *  Returns the next-larger representable \Float.
  *
- *  These example show the internally stored values (64-bit hexadecimal)
+ *  These examples show the internally stored values (64-bit hexadecimal)
  *  for each \Float +f+ and for the corresponding <tt>f.next_float</tt>:
  *
  *    f = 0.0      # 0x0000000000000000
@@ -1990,9 +1990,6 @@ flo_nextafter(VALUE flo, double value)
  *  (result +to_s+);
  *
  *    Float::MAX.next_float       # => Infinity
- *    Float::INFINITY.next_float  # => Infinity
- *    -Float::INFINITY.next_float # => -Infinity
- *    Float::NAN.next_float       # => NaN
  *
  *    0.01.next_float    # => 0.010000000000000002
  *    1.0.next_float     # => 1.0000000000000002
