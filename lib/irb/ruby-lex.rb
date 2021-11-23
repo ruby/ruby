@@ -167,7 +167,7 @@ class RubyLex
           end
         end
       else
-        tokens = lexer.parse
+        tokens = lexer.parse.reject { |it| it.pos.first == 0 }
       end
     end
     tokens
