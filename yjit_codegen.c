@@ -3910,16 +3910,27 @@ gen_struct_aref(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const
 
     const unsigned int off = cme->def->body.optimized.index;
 
-    x86opnd_t recv = ctx_stack_pop(ctx, 1);
+    // All structs from the same Struct class should have the same
+    // length. So if our comptime_recv is embedded all runtime
+    // structs of the same class should be as well, and the same is
+    // true of the converse.
+    bool embedded = FL_TEST_RAW(comptime_recv, RSTRUCT_EMBED_LEN_MASK);
 
     ADD_COMMENT(cb, "struct aref");
-    // internal_RSTRUCT_GET(recv, off);
-    mov(cb, C_ARG_REGS[0], recv);
-    mov(cb, C_ARG_REGS[1], imm_opnd(off));
-    call_ptr(cb, REG0, (void *)RSTRUCT_GET);
+
+    x86opnd_t recv = ctx_stack_pop(ctx, 1);
+
+    mov(cb, REG0, recv);
+
+    if (embedded) {
+        mov(cb, REG0, member_opnd_idx(REG0, struct RStruct, as.ary, off));
+    } else {
+        mov(cb, REG0, member_opnd(REG0, struct RStruct, as.heap.ptr));
+        mov(cb, REG0, mem_opnd(64, REG0, SIZEOF_VALUE * off));
+    }
 
     x86opnd_t ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
-    mov(cb, ret, RAX);
+    mov(cb, ret, REG0);
 
     jit_jump_to_next_insn(jit, ctx);
     return YJIT_END_BLOCK;
