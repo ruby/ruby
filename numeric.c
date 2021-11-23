@@ -1994,9 +1994,9 @@ flo_nextafter(VALUE flo, double value)
  *    -Float::INFINITY.next_float # => -Infinity
  *    Float::NAN.next_float       # => NaN
  *
- *    0.01.next_float    #=> 0.010000000000000002
- *    1.0.next_float     #=> 1.0000000000000002
- *    100.0.next_float   #=> 100.00000000000001
+ *    0.01.next_float    # => 0.010000000000000002
+ *    1.0.next_float     # => 1.0000000000000002
+ *    100.0.next_float   # => 100.00000000000001
  *
  *    f = 0.01
  *    (0..19).each_with_index {|i| printf "%2d %-20a %s\n", i, f, f.to_s; f = f.next_float }
