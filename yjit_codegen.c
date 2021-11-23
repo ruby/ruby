@@ -3924,7 +3924,8 @@ gen_struct_aref(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const
 
     if (embedded) {
         mov(cb, REG0, member_opnd_idx(REG0, struct RStruct, as.ary, off));
-    } else {
+    }
+    else {
         mov(cb, REG0, member_opnd(REG0, struct RStruct, as.heap.ptr));
         mov(cb, REG0, mem_opnd(64, REG0, SIZEOF_VALUE * off));
     }
@@ -4125,22 +4126,22 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
           // Send family of methods, e.g. call/apply
           case VM_METHOD_TYPE_OPTIMIZED:
             switch (cme->def->body.optimized.type) {
-                case OPTIMIZED_METHOD_TYPE_SEND:
-                    GEN_COUNTER_INC(cb, send_optimized_method_send);
-                    return YJIT_CANT_COMPILE;
-                case OPTIMIZED_METHOD_TYPE_CALL:
-                    GEN_COUNTER_INC(cb, send_optimized_method_call);
-                    return YJIT_CANT_COMPILE;
-                case OPTIMIZED_METHOD_TYPE_BLOCK_CALL:
-                    GEN_COUNTER_INC(cb, send_optimized_method_block_call);
-                    return YJIT_CANT_COMPILE;
-                case OPTIMIZED_METHOD_TYPE_STRUCT_AREF:
-                    return gen_struct_aref(jit, ctx, ci, cme, comptime_recv, comptime_recv_klass);
-                case OPTIMIZED_METHOD_TYPE_STRUCT_ASET:
-                    return gen_struct_aset(jit, ctx, ci, cme, comptime_recv, comptime_recv_klass);
-                default:
-                    rb_bug("unknown optimized method type (%d)", cme->def->body.optimized.type);
-                    UNREACHABLE_RETURN(YJIT_CANT_COMPILE);
+              case OPTIMIZED_METHOD_TYPE_SEND:
+                GEN_COUNTER_INC(cb, send_optimized_method_send);
+                return YJIT_CANT_COMPILE;
+              case OPTIMIZED_METHOD_TYPE_CALL:
+                GEN_COUNTER_INC(cb, send_optimized_method_call);
+                return YJIT_CANT_COMPILE;
+              case OPTIMIZED_METHOD_TYPE_BLOCK_CALL:
+                GEN_COUNTER_INC(cb, send_optimized_method_block_call);
+                return YJIT_CANT_COMPILE;
+              case OPTIMIZED_METHOD_TYPE_STRUCT_AREF:
+                return gen_struct_aref(jit, ctx, ci, cme, comptime_recv, comptime_recv_klass);
+              case OPTIMIZED_METHOD_TYPE_STRUCT_ASET:
+                return gen_struct_aset(jit, ctx, ci, cme, comptime_recv, comptime_recv_klass);
+              default:
+                rb_bug("unknown optimized method type (%d)", cme->def->body.optimized.type);
+                UNREACHABLE_RETURN(YJIT_CANT_COMPILE);
             }
           case VM_METHOD_TYPE_MISSING:
             GEN_COUNTER_INC(cb, send_missing_method);
@@ -4423,7 +4424,8 @@ gen_objtostring(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         jit_guard_known_klass(jit, ctx, CLASS_OF(comptime_recv), OPND_STACK(0), comptime_recv, SEND_MAX_DEPTH, side_exit);
         // No work needed. The string value is already on the top of the stack.
         return YJIT_KEEP_COMPILING;
-    } else {
+    }
+    else {
         struct rb_call_data *cd = (struct rb_call_data *)jit_get_arg(jit, 0);
         return gen_send_general(jit, ctx, cd, NULL);
     }
