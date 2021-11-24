@@ -597,6 +597,7 @@ rb_provide_feature(VALUE feature)
     }
     rb_str_freeze(feature);
 
+    get_loaded_features_index();
     rb_ary_push(features, rb_fstring(feature));
     features_index_add(feature, INT2FIX(RARRAY_LEN(features)-1));
     reset_loaded_features_snapshot();

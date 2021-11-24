@@ -831,6 +831,23 @@ class TestRequire < Test::Unit::TestCase
     }
   end
 
+  def test_provide_in_required_file
+    paths, loaded = $:.dup, $".dup
+    Dir.mktmpdir do |tmp|
+      provide = File.realdirpath("provide.rb", tmp)
+      File.write(File.join(tmp, "target.rb"), "raise __FILE__\n")
+      File.write(provide, '$" << '"'target.rb'\n")
+      $:.replace([tmp])
+      assert(require("provide"))
+      assert(!require("target"))
+      assert_equal($".pop, provide)
+      assert_equal($".pop, "target.rb")
+    end
+  ensure
+    $:.replace(paths)
+    $".replace(loaded)
+  end
+
   if defined?($LOAD_PATH.resolve_feature_path)
     def test_resolve_feature_path
       paths, loaded = $:.dup, $".dup
