@@ -1,3 +1,39 @@
+Version 2.1.3
+=============
+
+Bug fixes
+---------
+
+* Fix deprecation warnings on Ruby 3.0.
+* Add ".include" directive support in `OpenSSL::Config`.
+  [[GitHub #216]](https://github.com/ruby/openssl/pull/216)
+* Fix handling of IPv6 address SANs.
+  [[GitHub #185]](https://github.com/ruby/openssl/pull/185)
+* Hostname verification failure with `OpenSSL::SSL::SSLContext#verify_hostname=`
+  sets a proper error code.
+  [[GitHub #350]](https://github.com/ruby/openssl/pull/350)
+* Fix crash with `OpenSSL::BN.new(nil, 2)`.
+  [[Bug #15760]](https://bugs.ruby-lang.org/issues/15760)
+* `OpenSSL::SSL::SSLSocket#sys{read,write}` prevent internal string buffers from
+  being modified by another thread.
+  [[GitHub #453]](https://github.com/ruby/openssl/pull/453)
+* Fix misuse of input record separator in `OpenSSL::Buffering` where it was
+  for output.
+* Fix wrong interger casting in `OpenSSL::PKey::EC#dsa_verify_asn1`.
+  [[GitHub #460]](https://github.com/ruby/openssl/pull/460)
+* `extconf.rb` explicitly checks that OpenSSL's version number is 1.0.1 or
+  newer but also less than 3.0. Ruby/OpenSSL v2.1.x and v2.2.x will not support
+  OpenSSL 3.0 API.
+  [[GitHub #458]](https://github.com/ruby/openssl/pull/458)
+* Activate `digest` gem correctly. `digest` library could go into an
+  inconsistent state if there are multiple versions of `digest` is installed
+  and `openssl` is `require`d before `digest`.
+  [[GitHub #463]](https://github.com/ruby/openssl/pull/463)
+* Fix GC.compact compatibility.
+  [[GitHub #464]](https://github.com/ruby/openssl/issues/464)
+  [[GitHub #465]](https://github.com/ruby/openssl/pull/465)
+
+
 Version 2.1.2
 =============
 

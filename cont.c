@@ -324,6 +324,7 @@ fiber_pool_vacancy_push(struct fiber_pool_vacancy * vacancy, struct fiber_pool_v
 #ifdef FIBER_POOL_ALLOCATION_FREE
     if (head) {
         head->previous = vacancy;
+        vacancy->previous = NULL;
     }
 #endif
 

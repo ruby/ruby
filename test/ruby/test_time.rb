@@ -1194,6 +1194,20 @@ class TestTime < Test::Unit::TestCase
     }
   end
 
+  def test_getlocal_utc_offset
+    t = Time.gm(2000)
+    assert_equal [00, 30, 21, 31, 12, 1999], t.getlocal("-02:30").to_a[0, 6]
+    assert_equal [00, 00,  9,  1,  1, 2000], t.getlocal("+09:00").to_a[0, 6]
+    assert_equal [20, 29, 21, 31, 12, 1999], t.getlocal("-02:30:40").to_a[0, 6]
+    assert_equal [35, 10,  9,  1,  1, 2000], t.getlocal("+09:10:35").to_a[0, 6]
+    assert_equal [00, 30, 21, 31, 12, 1999], t.getlocal("-0230").to_a[0, 6]
+    assert_equal [00, 00,  9,  1,  1, 2000], t.getlocal("+0900").to_a[0, 6]
+    assert_equal [20, 29, 21, 31, 12, 1999], t.getlocal("-023040").to_a[0, 6]
+    assert_equal [35, 10,  9,  1,  1, 2000], t.getlocal("+091035").to_a[0, 6]
+    assert_raise(ArgumentError) {t.getlocal("-02:3040")}
+    assert_raise(ArgumentError) {t.getlocal("+0910:35")}
+  end
+
   def test_getlocal_nil
     now = Time.now
     now2 = nil

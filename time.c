@@ -2071,7 +2071,7 @@ utc_offset_arg(VALUE arg)
     VALUE tmp;
     if (!NIL_P(tmp = rb_check_string_type(arg))) {
         int n = 0;
-        char *s = RSTRING_PTR(tmp);
+        const char *s = RSTRING_PTR(tmp), *min = NULL, *sec = NULL;
         if (!rb_enc_str_asciicompat_p(tmp)) {
 	  invalid_utc_offset:
             return Qnil;
@@ -2100,24 +2100,38 @@ utc_offset_arg(VALUE arg)
             if (STRNCASECMP("UTC", s, 3) == 0) {
                 return UTC_ZONE;
             }
-            goto invalid_utc_offset;
-	  case 9:
-	    if (s[6] != ':') goto invalid_utc_offset;
-	    if (!ISDIGIT(s[7]) || !ISDIGIT(s[8])) goto invalid_utc_offset;
-	    n += (s[7] * 10 + s[8] - '0' * 11);
-            /* fall through */
-	  case 6:
-	    if (s[0] != '+' && s[0] != '-') goto invalid_utc_offset;
-	    if (!ISDIGIT(s[1]) || !ISDIGIT(s[2])) goto invalid_utc_offset;
-	    if (s[3] != ':') goto invalid_utc_offset;
-	    if (!ISDIGIT(s[4]) || !ISDIGIT(s[5])) goto invalid_utc_offset;
-	    if (s[4] > '5') goto invalid_utc_offset;
-	    break;
+            break; /* +HH */
+          case 5: /* +HHMM */
+            min = s+3;
+            break;
+          case 6: /* +HH:MM */
+            min = s+4;
+            break;
+          case 7: /* +HHMMSS */
+            sec = s+5;
+            min = s+3;
+            break;
+          case 9: /* +HH:MM:SS */
+            sec = s+7;
+            min = s+4;
+            break;
 	  default:
 	    goto invalid_utc_offset;
 	}
+        if (sec) {
+            if (sec == s+7 && *(sec-1) != ':') goto invalid_utc_offset;
+            if (!ISDIGIT(sec[0]) || !ISDIGIT(sec[1])) goto invalid_utc_offset;
+            n += (sec[0] * 10 + sec[1] - '0' * 11);
+        }
+        if (min) {
+            if (min == s+4 && *(min-1) != ':') goto invalid_utc_offset;
+            if (!ISDIGIT(min[0]) || !ISDIGIT(min[1])) goto invalid_utc_offset;
+            if (min[0] > '5') goto invalid_utc_offset;
+            n += (min[0] * 10 + min[1] - '0' * 11) * 60;
+        }
+        if (s[0] != '+' && s[0] != '-') goto invalid_utc_offset;
+        if (!ISDIGIT(s[1]) || !ISDIGIT(s[2])) goto invalid_utc_offset;
         n += (s[1] * 10 + s[2] - '0' * 11) * 3600;
-        n += (s[4] * 10 + s[5] - '0' * 11) * 60;
         if (s[0] == '-')
             n = -n;
         return INT2FIX(n);
@@ -5456,6 +5470,7 @@ tm_from_time(VALUE klass, VALUE time)
     ttm = DATA_PTR(tm);
     v = &vtm;
     GMTIMEW(ttm->timew = tobj->timew, v);
+    ttm->timew = wsub(ttm->timew, v->subsecx);
     v->subsecx = INT2FIX(0);
     v->zone = Qnil;
     ttm->vtm = *v;

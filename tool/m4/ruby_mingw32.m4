@@ -3,11 +3,11 @@ AC_DEFUN([RUBY_MINGW32],
 [AS_CASE(["$host_os"],
 [cygwin*], [
 AC_CACHE_CHECK(for mingw32 environment, rb_cv_mingw32,
-[AC_TRY_CPP([
+[AC_PREPROC_IFELSE([AC_LANG_SOURCE([[
 #ifndef __MINGW32__
 # error
 #endif
-], rb_cv_mingw32=yes,rb_cv_mingw32=no)
+]])],[rb_cv_mingw32=yes],[rb_cv_mingw32=no])
 rm -f conftest*])
 AS_IF([test "$rb_cv_mingw32" = yes], [
     target_os="mingw32"

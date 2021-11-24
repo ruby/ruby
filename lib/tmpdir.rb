@@ -108,7 +108,7 @@ class Dir
       Dir.tmpdir
     end
 
-    UNUSABLE_CHARS = [File::SEPARATOR, File::ALT_SEPARATOR, File::PATH_SEPARATOR, ":"].uniq.join("").freeze
+    UNUSABLE_CHARS = "^,-.0-9A-Z_a-z~"
 
     def create(basename, tmpdir=nil, max_try: nil, **opts)
       origdir = tmpdir

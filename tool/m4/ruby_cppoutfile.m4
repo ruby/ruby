@@ -4,8 +4,8 @@ AC_DEFUN([RUBY_CPPOUTFILE],
 [save_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS='-o conftest-1.i'
 rb_cv_cppoutfile=no
-AC_TRY_CPP([test-for-cppout],
-	   [grep test-for-cppout conftest-1.i > /dev/null && rb_cv_cppoutfile=yes])
+AC_PREPROC_IFELSE([AC_LANG_SOURCE([[test-for-cppout]])],
+                  [grep test-for-cppout conftest-1.i > /dev/null && rb_cv_cppoutfile=yes])
 CPPFLAGS="$save_CPPFLAGS"
 rm -f conftest*])
 AS_IF([test "$rb_cv_cppoutfile" = yes], [

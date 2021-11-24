@@ -771,7 +771,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
                 if (FIXNUM_P(e)) {
                     n += FIX2LONG(e); /* should not overflow long type */
                     if (!FIXABLE(n)) {
-                        v = rb_big_plus(ULONG2NUM(n), v);
+                        v = rb_big_plus(LONG2NUM(n), v);
                         n = 0;
                     }
                 }

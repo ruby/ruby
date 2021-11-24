@@ -17,12 +17,14 @@ module TestIRB
       Dir.chdir(@tmpdir)
       @home_backup = ENV["HOME"]
       ENV["HOME"] = @tmpdir
+      @xdg_config_home_backup = ENV.delete("XDG_CONFIG_HOME")
       @default_encoding = [Encoding.default_external, Encoding.default_internal]
       @stdio_encodings = [STDIN, STDOUT, STDERR].map {|io| [io.external_encoding, io.internal_encoding] }
       IRB.instance_variable_get(:@CONF).clear
     end
 
     def teardown
+      ENV["XDG_CONFIG_HOME"] = @xdg_config_home_backup
       ENV["HOME"] = @home_backup
       Dir.chdir(@pwd)
       FileUtils.rm_rf(@tmpdir)

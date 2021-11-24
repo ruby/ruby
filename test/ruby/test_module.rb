@@ -472,6 +472,16 @@ class TestModule < Test::Unit::TestCase
     assert_equal([Comparable, Kernel], String.included_modules - mixins)
   end
 
+  def test_include_with_prepend
+    c = Class.new{def m; [:c] end}
+    p = Module.new{def m; [:p] + super end}
+    q = Module.new{def m; [:q] + super end; include p}
+    r = Module.new{def m; [:r] + super end; prepend q}
+    s = Module.new{def m; [:s] + super end; include r}
+    a = Class.new(c){def m; [:a] + super end; prepend p; include s}
+    assert_equal([:p, :a, :s, :q, :r, :c], a.new.m)
+  end
+
   def test_instance_methods
     assert_equal([:user, :user2], User.instance_methods(false).sort)
     assert_equal([:user, :user2, :mixin].sort, User.instance_methods(true).sort)
@@ -1922,6 +1932,29 @@ class TestModule < Test::Unit::TestCase
       assert_equal(1 / 2r, 1 / 2, "#{bug11836}")
     }, ignore_stderr: true
     assert_equal(0, 1 / 2)
+  end
+
+  def test_visibility_after_refine_and_visibility_change
+    m = Module.new
+    c = Class.new do
+      def x; :x end
+    end
+    c.prepend(m)
+    Module.new do
+      refine c do
+        def x; :y end
+      end
+    end
+
+    o1 = c.new
+    o2 = c.new
+    assert_equal(:x, o1.public_send(:x))
+    assert_equal(:x, o2.public_send(:x))
+    o1.singleton_class.send(:private, :x)
+    o2.singleton_class.send(:public, :x)
+
+    assert_raise(NoMethodError) { o1.public_send(:x) }
+    assert_equal(:x, o2.public_send(:x))
   end
 
   def test_prepend_visibility

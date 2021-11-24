@@ -1812,6 +1812,7 @@ VALUE rb_float_uminus(VALUE num);
 VALUE rb_int_plus(VALUE x, VALUE y);
 VALUE rb_float_plus(VALUE x, VALUE y);
 VALUE rb_int_minus(VALUE x, VALUE y);
+VALUE rb_float_minus(VALUE x, VALUE y);
 VALUE rb_int_mul(VALUE x, VALUE y);
 VALUE rb_float_mul(VALUE x, VALUE y);
 VALUE rb_float_div(VALUE x, VALUE y);
@@ -1840,6 +1841,7 @@ int rb_int_positive_p(VALUE num);
 int rb_int_negative_p(VALUE num);
 VALUE rb_num_pow(VALUE x, VALUE y);
 VALUE rb_float_ceil(VALUE num, int ndigits);
+VALUE rb_float_floor(VALUE x, int ndigits);
 
 static inline VALUE
 rb_num_compare_with_zero(VALUE num, ID mid)
@@ -2084,6 +2086,12 @@ ARGVSTR2ARGC(VALUE argv_str)
     return i - 1;
 }
 
+#ifdef HAVE_PWD_H
+VALUE rb_getlogin(void);
+VALUE rb_getpwdirnam_for_login(VALUE login);  /* read as: "get pwd db home dir by username for login" */
+VALUE rb_getpwdiruid(void);                   /* read as: "get pwd db home dir for getuid()" */
+#endif
+
 rb_pid_t rb_fork_ruby(int *status);
 void rb_last_status_clear(void);
 
@@ -2096,13 +2104,16 @@ void rb_last_status_clear(void);
 VALUE rb_rational_canonicalize(VALUE x);
 VALUE rb_rational_uminus(VALUE self);
 VALUE rb_rational_plus(VALUE self, VALUE other);
+VALUE rb_rational_minus(VALUE self, VALUE other);
 VALUE rb_rational_mul(VALUE self, VALUE other);
+VALUE rb_rational_div(VALUE self, VALUE other);
 VALUE rb_lcm(VALUE x, VALUE y);
 VALUE rb_rational_reciprocal(VALUE x);
 VALUE rb_cstr_to_rat(const char *, int);
 VALUE rb_rational_abs(VALUE self);
 VALUE rb_rational_cmp(VALUE self, VALUE other);
 VALUE rb_rational_pow(VALUE self, VALUE other);
+VALUE rb_rational_floor(VALUE self, int ndigits);
 VALUE rb_numeric_quo(VALUE x, VALUE y);
 VALUE rb_float_numerator(VALUE x);
 VALUE rb_float_denominator(VALUE x);
@@ -2430,6 +2441,12 @@ int rb_backtrace_p(VALUE obj);
 VALUE rb_backtrace_to_str_ary(VALUE obj);
 VALUE rb_backtrace_to_location_ary(VALUE obj);
 void rb_backtrace_each(VALUE (*iter)(VALUE recv, VALUE str), VALUE output);
+
+#ifdef HAVE_PWD_H
+VALUE rb_getlogin(void);
+VALUE rb_getpwdirnam_for_login(VALUE login);  /* read as: "get pwd db home dir by username for login" */
+VALUE rb_getpwdiruid(void);                   /* read as: "get pwd db home dir for getuid()" */
+#endif
 
 RUBY_SYMBOL_EXPORT_BEGIN
 const char *rb_objspace_data_type_name(VALUE obj);

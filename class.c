@@ -32,6 +32,9 @@
 
 #define id_attached id__attached__
 
+#define METACLASS_OF(k) RBASIC(k)->klass
+#define SET_METACLASS_OF(k, cls) RBASIC_SET_CLASS(k, cls)
+
 void
 rb_class_subclass_add(VALUE super, VALUE klass)
 {
@@ -372,22 +375,35 @@ rb_singleton_class_clone(VALUE obj)
     return rb_singleton_class_clone_and_attach(obj, Qundef);
 }
 
+// Clone and return the singleton class of `obj` if it has been created and is attached to `obj`.
 VALUE
 rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
 {
     const VALUE klass = RBASIC(obj)->klass;
 
-    if (!FL_TEST(klass, FL_SINGLETON))
-	return klass;
+    // Note that `rb_singleton_class()` can create situations where `klass` is
+    // attached to an object other than `obj`. In which case `obj` does not have
+    // a material singleton class attached yet and there is no singleton class
+    // to clone.
+    if (!(FL_TEST(klass, FL_SINGLETON) && rb_attr_get(klass, id_attached) == obj)) {
+        // nothing to clone
+        return klass;
+    }
     else {
 	/* copy singleton(unnamed) class */
+        bool klass_of_clone_is_new;
 	VALUE clone = class_alloc(RBASIC(klass)->flags, 0);
 
 	if (BUILTIN_TYPE(obj) == T_CLASS) {
+            klass_of_clone_is_new = true;
 	    RBASIC_SET_CLASS(clone, clone);
 	}
 	else {
-	    RBASIC_SET_CLASS(clone, rb_singleton_class_clone(klass));
+            VALUE klass_metaclass_clone = rb_singleton_class_clone(klass);
+            // When `METACLASS_OF(klass) == klass_metaclass_clone`, it means the
+            // recursive call did not clone `METACLASS_OF(klass)`.
+            klass_of_clone_is_new = (METACLASS_OF(klass) != klass_metaclass_clone);
+            RBASIC_SET_CLASS(clone, klass_metaclass_clone);
 	}
 
 	RCLASS_SET_SUPER(clone, RCLASS_SUPER(klass));
@@ -411,7 +427,9 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
 	    arg.new_klass = clone;
 	    rb_id_table_foreach(RCLASS_M_TBL(klass), clone_method_i, &arg);
 	}
-	rb_singleton_class_attached(RBASIC(clone)->klass, clone);
+        if (klass_of_clone_is_new) {
+            rb_singleton_class_attached(RBASIC(clone)->klass, clone);
+        }
 	FL_SET(clone, FL_SINGLETON);
 
 	return clone;
@@ -432,11 +450,6 @@ rb_singleton_class_attached(VALUE klass, VALUE obj)
 	rb_class_ivar_set(klass, id_attached, obj);
     }
 }
-
-
-
-#define METACLASS_OF(k) RBASIC(k)->klass
-#define SET_METACLASS_OF(k, cls) RBASIC_SET_CLASS(k, cls)
 
 /*!
  * whether k is a meta^(n)-class of Class class
@@ -898,17 +911,22 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
     }
 
     while (module) {
+        int origin_seen = FALSE;
 	int superclass_seen = FALSE;
 	struct rb_id_table *tbl;
 
+        if (klass == c)
+            origin_seen = TRUE;
 	if (klass_m_tbl && klass_m_tbl == RCLASS_M_TBL(module))
 	    return -1;
 	/* ignore if the module included already in superclasses */
 	for (p = RCLASS_SUPER(klass); p; p = RCLASS_SUPER(p)) {
 	    int type = BUILTIN_TYPE(p);
+            if (c == p)
+                origin_seen = TRUE;
 	    if (type == T_ICLASS) {
 		if (RCLASS_M_TBL(p) == RCLASS_M_TBL(module)) {
-		    if (!superclass_seen) {
+		    if (!superclass_seen && origin_seen) {
 			c = p;  /* move insertion point */
 		    }
 		    goto skip;

@@ -691,6 +691,7 @@ class SortedSet < Set
 
     def setup   # :nodoc:
       @@setup and return
+      ret = nil
 
       @@mutex.synchronize do
         # a hack to shut up warning
@@ -698,6 +699,7 @@ class SortedSet < Set
 
         begin
           require 'rbtree'
+          ret = :rbtree
 
           module_eval <<-END, __FILE__, __LINE__+1
             def initialize(*args)
@@ -712,6 +714,7 @@ class SortedSet < Set
             alias << add
           END
         rescue LoadError
+          ret = true
           module_eval <<-END, __FILE__, __LINE__+1
             def initialize(*args)
               @keys = nil
@@ -788,13 +791,17 @@ class SortedSet < Set
         remove_method :old_init
 
         @@setup = true
+        ret
       end
     end
   end
 
   def initialize(*args, &block) # :nodoc:
-    SortedSet.setup
-    @keys = nil
+    if SortedSet.setup == :rbtree
+      @hash = RBTree.new
+    else
+      @keys = nil
+    end
     super
   end
 end

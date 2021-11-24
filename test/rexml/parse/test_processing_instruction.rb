@@ -20,6 +20,25 @@ Last 80 unconsumed characters:
 <??>
         DETAIL
       end
+
+      def test_garbage_text
+        # TODO: This should be parse error.
+        # Create test/parse/test_document.rb or something and move this to it.
+        doc = parse(<<-XML)
+x<?x y
+<!--?><?x -->?>
+<r/>
+        XML
+        pi = doc.children[1]
+        assert_equal([
+                       "x",
+                       "y\n<!--",
+                     ],
+                     [
+                       pi.target,
+                       pi.content,
+                     ])
+      end
     end
   end
 end

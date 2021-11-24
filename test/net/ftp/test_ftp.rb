@@ -61,7 +61,7 @@ class FTPTest < Test::Unit::TestCase
   end
 
   def test_parse227
-    ftp = Net::FTP.new
+    ftp = Net::FTP.new(nil, use_pasv_ip: true)
     host, port = ftp.send(:parse227, "227 Entering Passive Mode (192,168,0,1,12,34)")
     assert_equal("192.168.0.1", host)
     assert_equal(3106, port)
@@ -80,6 +80,14 @@ class FTPTest < Test::Unit::TestCase
     assert_raise(Net::FTPProtoError) do
       ftp.send(:parse227, "227 ) foo bar (")
     end
+
+    ftp = Net::FTP.new
+    sock = OpenStruct.new
+    sock.remote_address = OpenStruct.new
+    sock.remote_address.ip_address = "10.0.0.1"
+    ftp.instance_variable_set(:@bare_sock, sock)
+    host, port = ftp.send(:parse227, "227 Entering Passive Mode (192,168,0,1,12,34)")
+    assert_equal("10.0.0.1", host)
   end
 
   def test_parse228
@@ -2459,10 +2467,155 @@ EOF
     end
   end
 
+  def test_ignore_pasv_ip
+    commands = []
+    binary_data = (0..0xff).map {|i| i.chr}.join * 4 * 3
+    server = create_ftp_server(nil, "127.0.0.1") { |sock|
+      sock.print("220 (test_ftp).\r\n")
+      commands.push(sock.gets)
+      sock.print("331 Please specify the password.\r\n")
+      commands.push(sock.gets)
+      sock.print("230 Login successful.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to Binary mode.\r\n")
+      line = sock.gets
+      commands.push(line)
+      data_server = TCPServer.new("127.0.0.1", 0)
+      port = data_server.local_address.ip_port
+      sock.printf("227 Entering Passive Mode (999,0,0,1,%s).\r\n",
+                  port.divmod(256).join(","))
+      commands.push(sock.gets)
+      sock.print("150 Opening BINARY mode data connection for foo (#{binary_data.size} bytes)\r\n")
+      conn = data_server.accept
+      binary_data.scan(/.{1,1024}/nm) do |s|
+        conn.print(s)
+      end
+      conn.shutdown(Socket::SHUT_WR)
+      conn.read
+      conn.close
+      data_server.close
+      sock.print("226 Transfer complete.\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.passive = true
+        ftp.read_timeout *= 5 if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # for --jit-wait
+        ftp.connect("127.0.0.1", server.port)
+        ftp.login
+        assert_match(/\AUSER /, commands.shift)
+        assert_match(/\APASS /, commands.shift)
+        assert_equal("TYPE I\r\n", commands.shift)
+        buf = ftp.getbinaryfile("foo", nil)
+        assert_equal(binary_data, buf)
+        assert_equal(Encoding::ASCII_8BIT, buf.encoding)
+        assert_equal("PASV\r\n", commands.shift)
+        assert_equal("RETR foo\r\n", commands.shift)
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
+  def test_use_pasv_ip
+    commands = []
+    binary_data = (0..0xff).map {|i| i.chr}.join * 4 * 3
+    server = create_ftp_server(nil, "127.0.0.1") { |sock|
+      sock.print("220 (test_ftp).\r\n")
+      commands.push(sock.gets)
+      sock.print("331 Please specify the password.\r\n")
+      commands.push(sock.gets)
+      sock.print("230 Login successful.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to Binary mode.\r\n")
+      line = sock.gets
+      commands.push(line)
+      data_server = TCPServer.new("127.0.0.1", 0)
+      port = data_server.local_address.ip_port
+      sock.printf("227 Entering Passive Mode (127,0,0,1,%s).\r\n",
+                  port.divmod(256).join(","))
+      commands.push(sock.gets)
+      sock.print("150 Opening BINARY mode data connection for foo (#{binary_data.size} bytes)\r\n")
+      conn = data_server.accept
+      binary_data.scan(/.{1,1024}/nm) do |s|
+        conn.print(s)
+      end
+      conn.shutdown(Socket::SHUT_WR)
+      conn.read
+      conn.close
+      data_server.close
+      sock.print("226 Transfer complete.\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.passive = true
+        ftp.use_pasv_ip = true
+        ftp.read_timeout *= 5 if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # for --jit-wait
+        ftp.connect("127.0.0.1", server.port)
+        ftp.login
+        assert_match(/\AUSER /, commands.shift)
+        assert_match(/\APASS /, commands.shift)
+        assert_equal("TYPE I\r\n", commands.shift)
+        buf = ftp.getbinaryfile("foo", nil)
+        assert_equal(binary_data, buf)
+        assert_equal(Encoding::ASCII_8BIT, buf.encoding)
+        assert_equal("PASV\r\n", commands.shift)
+        assert_equal("RETR foo\r\n", commands.shift)
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
+  def test_use_pasv_invalid_ip
+    commands = []
+    binary_data = (0..0xff).map {|i| i.chr}.join * 4 * 3
+    server = create_ftp_server(nil, "127.0.0.1") { |sock|
+      sock.print("220 (test_ftp).\r\n")
+      commands.push(sock.gets)
+      sock.print("331 Please specify the password.\r\n")
+      commands.push(sock.gets)
+      sock.print("230 Login successful.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to Binary mode.\r\n")
+      line = sock.gets
+      commands.push(line)
+      sock.print("227 Entering Passive Mode (999,0,0,1,48,57).\r\n")
+      commands.push(sock.gets)
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.passive = true
+        ftp.use_pasv_ip = true
+        ftp.read_timeout *= 5 if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # for --jit-wait
+        ftp.connect("127.0.0.1", server.port)
+        ftp.login
+        assert_match(/\AUSER /, commands.shift)
+        assert_match(/\APASS /, commands.shift)
+        assert_equal("TYPE I\r\n", commands.shift)
+        assert_raise(SocketError) do
+          ftp.getbinaryfile("foo", nil)
+        end
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
   private
 
-  def create_ftp_server(sleep_time = nil)
-    server = TCPServer.new(SERVER_ADDR, 0)
+  def create_ftp_server(sleep_time = nil, addr = SERVER_ADDR)
+    server = TCPServer.new(addr, 0)
     @thread = Thread.start do
       if sleep_time
         sleep(sleep_time)

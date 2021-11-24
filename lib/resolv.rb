@@ -696,13 +696,13 @@ class Resolv
           rescue DecodeError
             next # broken DNS message ignored
           end
-          if s = sender_for(from, msg)
+          if sender == sender_for(from, msg)
             break
           else
             # unexpected DNS message ignored
           end
         end
-        return msg, s.data
+        return msg, sender.data
       end
 
       def sender_for(addr, msg)

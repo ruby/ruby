@@ -132,6 +132,7 @@ module TestIRB
     def assert_history(expected_history, initial_irb_history, input)
       backup_verbose, $VERBOSE = $VERBOSE, nil
       backup_home = ENV["HOME"]
+      backup_xdg_config_home = ENV.delete("XDG_CONFIG_HOME")
       IRB.conf[:LC_MESSAGES] = IRB::Locale.new
       actual_history = nil
       Dir.mktmpdir("test_irb_history_#{$$}") do |tmpdir|
@@ -160,6 +161,7 @@ module TestIRB
     ensure
       $VERBOSE = backup_verbose
       ENV["HOME"] = backup_home
+      ENV["XDG_CONFIG_HOME"] = backup_xdg_config_home
     end
 
     def with_temp_stdio

@@ -1224,7 +1224,7 @@ statx_birthtime(const struct statx *stx, VALUE fname)
         /* birthtime is not supported on the filesystem */
         statx_notimplement("birthtime");
     }
-    return rb_time_nano_new(stx->stx_btime.tv_sec, stx->stx_btime.tv_nsec);
+    return rb_time_nano_new((time_t)stx->stx_btime.tv_sec, stx->stx_btime.tv_nsec);
 }
 
 typedef struct statx statx_data;
@@ -3579,21 +3579,42 @@ rb_default_home_dir(VALUE result)
 
 #if defined HAVE_PWD_H
     if (!dir) {
-	const char *login = getlogin();
-	if (login) {
-	    struct passwd *pw = getpwnam(login);
-	    if (pw) {
-		copy_home_path(result, pw->pw_dir);
-		endpwent();
-		return result;
-	    }
-	    endpwent();
-	    rb_raise(rb_eArgError, "couldn't find HOME for login `%s' -- expanding `~'",
-		     login);
-	}
-	else {
-	    rb_raise(rb_eArgError, "couldn't find login name -- expanding `~'");
-	}
+        /* We'll look up the user's default home dir in the password db by
+         * login name, if possible, and failing that will fall back to looking
+         * the information up by uid (as would be needed for processes that
+         * are not a descendant of login(1) or a work-alike).
+         *
+         * While the lookup by uid is more likely to succeed (since we always
+         * have a uid, but may or may not have a login name), we prefer first
+         * looking up by name to accommodate the possibility of multiple login
+         * names (each with its own record in the password database, so each
+         * with a potentially different home directory) being mapped to the
+         * same uid (as explicitly allowed for by POSIX; see getlogin(3posix)).
+         */
+        VALUE login_name = rb_getlogin();
+
+# if !defined(HAVE_GETPWUID_R) && !defined(HAVE_GETPWUID)
+        /* This is a corner case, but for backward compatibility reasons we
+         * want to emit this error if neither the lookup by login name nor
+         * lookup by getuid() has a chance of succeeding.
+         */
+        if (NIL_P(login_name)) {
+            rb_raise(rb_eArgError, "couldn't find login name -- expanding `~'");
+        }
+# endif
+
+        VALUE pw_dir = rb_getpwdirnam_for_login(login_name);
+        if (NIL_P(pw_dir)) {
+            pw_dir = rb_getpwdiruid();
+            if (NIL_P(pw_dir)) {
+                rb_raise(rb_eArgError, "couldn't find home for uid `%ld'", (long)getuid());
+            }
+        }
+
+        /* found it */
+        copy_home_path(result, RSTRING_PTR(pw_dir));
+        rb_str_resize(pw_dir, 0);
+        return result;
     }
 #endif
     if (!dir) {

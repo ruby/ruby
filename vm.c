@@ -2354,6 +2354,8 @@ ruby_vm_destruct(rb_vm_t *vm)
 	if (objspace) {
 	    rb_objspace_free(objspace);
 	}
+        rb_native_mutex_destroy(&vm->waitpid_lock);
+        rb_native_mutex_destroy(&vm->workqueue_lock);
 	/* after freeing objspace, you *can't* use ruby_xfree() */
 	ruby_mimfree(vm);
 	ruby_current_vm_ptr = NULL;

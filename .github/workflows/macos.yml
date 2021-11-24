@@ -52,6 +52,8 @@ jobs:
           ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
       - name: Make
         run: make -C build $JOBS
+      - name: Remove system gems
+        run: rm -rf /usr/local/lib/ruby/gems/2.7.0/
       - name: Extract gems
         run: make -C build update-gems extract-gems
         if: matrix.test_task == 'check'
