@@ -1585,6 +1585,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
 static unsigned long
 uncompress_debug_section(ElfW(Shdr) *shdr, char *file, char **ptr)
 {
+    *ptr = NULL;
 #ifdef SUPPORT_COMPRESSED_DEBUG_LINE
     ElfW(Chdr) *chdr = (ElfW(Chdr) *)(file + shdr->sh_offset);
     unsigned long destsize = chdr->ch_size;
@@ -1605,6 +1606,7 @@ uncompress_debug_section(ElfW(Shdr) *shdr, char *file, char **ptr)
 
 fail:
     free(*ptr);
+    *ptr = NULL;
 #endif
     return 0;
 }
