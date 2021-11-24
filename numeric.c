@@ -3540,7 +3540,7 @@ rb_num2ull(VALUE val)
  * - #to_f:: Returns +self+ converted to a Float.
  * - #to_s (aliased as #inspect):: Returns a string containing the place-value
  *                                 representation of +self+ in the given radix.
-f * - #truncate:: Returns +self+ truncated to the given precision.
+ * - #truncate:: Returns +self+ truncated to the given precision.
  * - {/}[#method-i-7C]:: Returns the bitwise OR of +self+ and the given value.
  *
  * === Other
