@@ -1135,7 +1135,7 @@ end
 
   describe "when BUNDLED WITH" do
     def lock_with(bundler_version = nil)
-      lock = <<-L
+      lock = <<~L
         GEM
           remote: #{file_uri_for(gem_repo1)}/
           specs:
@@ -1149,7 +1149,7 @@ end
       L
 
       if bundler_version
-        lock += "\n        BUNDLED WITH\n           #{bundler_version}\n"
+        lock += "\nBUNDLED WITH\n   #{bundler_version}\n"
       end
 
       lock
@@ -1168,7 +1168,7 @@ end
       it "does not change the lock" do
         lockfile lock_with(nil)
         ruby "require '#{entrypoint}/setup'"
-        lockfile_should_be lock_with(nil)
+        expect(lockfile).to eq lock_with(nil)
       end
     end
 
@@ -1178,7 +1178,7 @@ end
         ruby "require 'bundler/setup'"
         expect(out).to be_empty
         expect(err).to be_empty
-        lockfile_should_be lock_with(Bundler::VERSION.succ)
+        expect(lockfile).to eq lock_with(Bundler::VERSION.succ)
       end
     end
 
@@ -1187,7 +1187,7 @@ end
         system_gems "bundler-1.10.1"
         lockfile lock_with("1.10.1")
         ruby "require '#{entrypoint}/setup'"
-        lockfile_should_be lock_with("1.10.1")
+        expect(lockfile).to eq lock_with("1.10.1")
       end
     end
   end
@@ -1196,7 +1196,7 @@ end
     let(:ruby_version) { nil }
 
     def lock_with(ruby_version = nil)
-      lock = <<-L
+      lock = <<~L
         GEM
           remote: #{file_uri_for(gem_repo1)}/
           specs:
@@ -1210,10 +1210,10 @@ end
       L
 
       if ruby_version
-        lock += "\n        RUBY VERSION\n           ruby #{ruby_version}\n"
+        lock += "\nRUBY VERSION\n   ruby #{ruby_version}\n"
       end
 
-      lock += <<-L
+      lock += <<~L
 
         BUNDLED WITH
            #{Bundler::VERSION}

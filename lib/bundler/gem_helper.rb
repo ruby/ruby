@@ -129,8 +129,8 @@ module Bundler
 
     def git_push(remote = nil)
       remote ||= default_remote
-      sh(%W[git push #{remote} refs/heads/#{current_branch}])
-      sh(%W[git push #{remote} refs/tags/#{version_tag}])
+      sh("git push #{remote} refs/heads/#{current_branch}".shellsplit)
+      sh("git push #{remote} refs/tags/#{version_tag}".shellsplit)
       Bundler.ui.confirm "Pushed git commits and release tag."
     end
 
