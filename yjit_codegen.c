@@ -3910,6 +3910,19 @@ gen_struct_aref(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const
 
     const unsigned int off = cme->def->body.optimized.index;
 
+    // Confidence checks
+    RUBY_ASSERT_ALWAYS(RB_TYPE_P(comptime_recv, T_STRUCT));
+    RUBY_ASSERT_ALWAYS((long)off < RSTRUCT_LEN(comptime_recv));
+
+    // We are going to use an encoding that takes a 4-byte immediate which
+    // limits the offset to INT32_MAX.
+    {
+        uint64_t native_off = (uint64_t)off * (uint64_t)SIZEOF_VALUE;
+        if (native_off > (uint64_t)INT32_MAX) {
+            return YJIT_CANT_COMPILE;
+        }
+    }
+
     // All structs from the same Struct class should have the same
     // length. So if our comptime_recv is embedded all runtime
     // structs of the same class should be as well, and the same is
@@ -3944,6 +3957,10 @@ gen_struct_aset(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const
     }
 
     const unsigned int off = cme->def->body.optimized.index;
+
+    // Confidence checks
+    RUBY_ASSERT_ALWAYS(RB_TYPE_P(comptime_recv, T_STRUCT));
+    RUBY_ASSERT_ALWAYS((long)off < RSTRUCT_LEN(comptime_recv));
 
     ADD_COMMENT(cb, "struct aset");
 
