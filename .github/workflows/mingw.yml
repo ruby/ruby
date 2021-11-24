@@ -42,6 +42,7 @@ jobs:
             base_ruby: head
             test_task: [ "check" ] # to make job names consistent
       fail-fast: false
+    if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') }}
     steps:
       - run: mkdir build
         working-directory:

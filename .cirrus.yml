@@ -10,7 +10,7 @@ env:
 
 task:
   name: Arm64 Graviton2 / $CC
-  skip: "changesIncludeOnly('doc/**', '**.{md,rdoc}')"
+  skip: "changesIncludeOnly('doc/**', '**.{md,rdoc}') || $CIRRUS_CHANGE_TITLE =~ '[DOC]*'"
   arm_container:
     # We use the arm64 images at http://ghcr.io/ruby/ruby-ci-image .
     image: ghcr.io/ruby/ruby-ci-image:$CC

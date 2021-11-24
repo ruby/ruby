@@ -23,6 +23,7 @@ jobs:
         jit_opts: [ "--mjit", "--mjit-wait" ]
       fail-fast: false
     runs-on: ubuntu-latest
+    if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') }}
     env:
       TESTOPTS: '-q --tty=no'
       RUN_OPTS: '--disable-gems ${{ matrix.jit_opts }} --mjit-debug=-ggdb3'

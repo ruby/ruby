@@ -11,6 +11,7 @@ clone_depth: 10
 platform:
   - x64
 skip_commits:
+  message: /^\[DOC\]/
   files:
     - doc/*
     - '**/*.md'

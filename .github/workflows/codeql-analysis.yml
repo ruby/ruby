@@ -23,6 +23,7 @@ jobs:
 
     # CodeQL runs on ubuntu-latest and windows-latest
     runs-on: ubuntu-latest
+    if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') }}
 
     env:
       enable_install_doc: no
