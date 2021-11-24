@@ -1595,7 +1595,7 @@ postponed_job_register(rb_execution_context_t *ec, rb_vm_t *vm,
 static rb_execution_context_t *
 get_valid_ec(rb_vm_t *vm)
 {
-    rb_execution_context_t *ec = rb_current_execution_context();
+    rb_execution_context_t *ec = rb_current_execution_context(false);
     if (ec == NULL) ec = rb_vm_main_ractor_ec(vm);
     return ec;
 }

@@ -38,7 +38,7 @@ jobs:
       - run: ./autogen.sh
         working-directory: src
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc
+        run: ../src/configure -C --disable-install-doc cppflags=-DVM_CHECK_MODE
       - run: make $JOBS incs
       - run: make $JOBS
       - run: sudo make $JOBS -s install
