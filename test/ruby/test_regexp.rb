@@ -691,11 +691,16 @@ class TestRegexp < Test::Unit::TestCase
     test = proc {|&blk| "abc".sub("a", ""); blk.call($~) }
 
     bug10877 = '[ruby-core:68209] [Bug #10877]'
+    bug18160 = '[Bug #18160]'
     test.call {|m| assert_raise_with_message(IndexError, /foo/, bug10877) {m["foo"]} }
     key = "\u{3042}"
     [Encoding::UTF_8, Encoding::Shift_JIS, Encoding::EUC_JP].each do |enc|
       idx = key.encode(enc)
-      test.call {|m| assert_raise_with_message(IndexError, /#{idx}/, bug10877) {m[idx]} }
+      pat = /#{idx}/
+      test.call {|m| assert_raise_with_message(IndexError, pat, bug10877) {m[idx]} }
+      test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.offset(idx)} }
+      test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.begin(idx)} }
+      test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.end(idx)} }
     end
     test.call {|m| assert_equal(/a/, m.regexp) }
     test.call {|m| assert_equal("abc", m.string) }
