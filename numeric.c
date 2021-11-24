@@ -945,6 +945,63 @@ num_negative_p(VALUE num)
  *  - https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
  *  - https://github.com/rdp/ruby_tutorials_core/wiki/Ruby-Talk-FAQ#floats_imprecise
  *  - https://en.wikipedia.org/wiki/Floating_point#Accuracy_problems
+ *
+ *  == What's Here
+ *
+ *  First, what's elsewhere. \Class \Float:
+ *
+ *  - Inherits from {class Numeric}[Numeric.html#class-Numeric-label-What-27s+Here].
+ *
+ *  Here, class \Float provides methods for:
+ *
+ *  - {Querying}[#class-Float-label-Querying]
+ *  - {Comparing}[#class-Float-label-Comparing]
+ *  - {Converting}[#class-Float-label-Converting]
+ *
+ *  === Querying
+ *
+ *  - #finite?:: Returns whether +self+ is finite.
+ *  - #hash:: Returns the integer hash code for +self+.
+ *  - #infinite?:: Returns whether +self+ is infinite.
+ *  - #nan?:: Returns whether +self+ is a NaN (not-a-number).
+ *
+ *  === Comparing
+ *
+ *  - {<}[#method-i-3C]:: Returns whether +self+ is less than the given value.
+ *  - {<=}[#method-i-3C-3D]:: Returns whether +self+ is less than
+ *                            or equal to the given value.
+ *  - {<=>}[#method-i-3C-3D-3E]:: Returns a number indicating whether +self+ is less than,
+ *                                equal to, or greater than the given value.
+ *  - {==}[#method-i-3D-3D] (aliased as #=== and #eql>):: Returns whether +self+ is
+ *                                                        equal to the given value.
+ *  - {>}[#method-i-3E]:: Returns whether +self+ is greater than the given value.
+ *  - {>=}[#method-i-3E-3D]:: Returns whether +self+ is greater than
+ *                            or equal to the given value.
+ *
+ *  === Converting
+ *
+ *  - #% (aliased as #modulo):: Returns +self+ modulo the given value.
+ *  - #*:: Returns the product of +self+ and the given value.
+ *  - {**}[#method-i-2A-2A]:: Returns the value of +self+ raised to the power of the given value.
+ *  - #+:: Returns the sum of +self+ and the given value.
+ *  - #-:: Returns the difference of +self+ and the given value.
+ *  - {/}[#method-i-2F]:: Returns the quotient of +self+ and the given value.
+ *  - #ceil:: Returns the smallest number greater than or equal to +self+.
+ *  - #coerce:: Returns a 2-element array containing the given value converted to a \Float
+                and +self+
+ *  - #divmod:: Returns a 2-element array containing the quotient and remainder
+ *              results of dividing +self+ by the given value.
+ *  - #fdiv:: Returns the Float result of dividing +self+ by the given value.
+ *  - #floor:: Returns the greatest number smaller than or equal to +self+.
+ *  - #next_float:: Returns the next-larger representable \Float.
+ *  - #prev_float:: Returns the next-smaller representable \Float.
+ *  - #quo:: Returns the quotient from dividing +self+ by the given value.
+ *  - #round:: Returns +self+ rounded to the nearest value, to a given precision.
+ *  - #to_i (aliased as #to_int):: Returns +self+ truncated to an Integer.
+ *  - #to_s (aliased as #inspect):: Returns a string containing the place-value
+ *                                  representation of +self+ in the given radix.
+ *  - #truncate:: Returns +self+ truncated to a given precision.
+ *
  */
 
 VALUE
@@ -3483,7 +3540,7 @@ rb_num2ull(VALUE val)
  * - #to_f:: Returns +self+ converted to a Float.
  * - #to_s (aliased as #inspect):: Returns a string containing the place-value
  *                                 representation of +self+ in the given radix.
- * - #truncate:: Returns +self+ truncated to the given precision.
+f * - #truncate:: Returns +self+ truncated to the given precision.
  * - {/}[#method-i-7C]:: Returns the bitwise OR of +self+ and the given value.
  *
  * === Other
