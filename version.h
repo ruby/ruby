@@ -5,8 +5,8 @@
 #define RUBY_PATCHLEVEL 192
 
 #define RUBY_RELEASE_YEAR 2021
-#define RUBY_RELEASE_MONTH 9
-#define RUBY_RELEASE_DAY 19
+#define RUBY_RELEASE_MONTH 11
+#define RUBY_RELEASE_DAY 24
 
 #include "ruby/version.h"
 
