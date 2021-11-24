@@ -43,6 +43,7 @@ jobs:
       RUN_OPTS: ${{ matrix.yjit_opts }}
       RUBY_DEBUG: ci
     runs-on: ${{ matrix.os }}
+    if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') }}
     steps:
       - run: mkdir build
         working-directory:

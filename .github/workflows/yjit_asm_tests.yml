@@ -19,6 +19,7 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') }}
     steps:
       - name: Install dependencies
         run: |

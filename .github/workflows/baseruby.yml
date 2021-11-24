@@ -20,6 +20,7 @@ jobs:
   baseruby:
     name: BASERUBY
     runs-on: ubuntu-20.04
+    if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') }}
     strategy:
       matrix:
         ruby:

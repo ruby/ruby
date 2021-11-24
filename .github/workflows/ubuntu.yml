@@ -36,6 +36,7 @@ jobs:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
       RUBY_DEBUG: ci
     runs-on: ${{ matrix.os }}
+    if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') }}
     steps:
       - run: mkdir build
         working-directory:
