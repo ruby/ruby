@@ -503,7 +503,7 @@ class TestEnv < Test::Unit::TestCase
   end
 
   def test_huge_value
-    if /mswin/ =~ RUBY_PLATFORM || /ucrt/ =~ RbConfig::CONFIG['sitearch']
+    if /mswin|ucrt/ =~ RUBY_PLATFORM
       # On Windows >= Vista each environment variable can be max 32768 characters
       huge_value = "bar" * 10900
     else
