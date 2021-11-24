@@ -4926,13 +4926,47 @@ vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
 
 #define IMEMO_CONST_CACHE_SHAREABLE IMEMO_FL_USER0
 
+// For each getconstant, associate the ID that corresponds to the first operand
+// to that instruction with the inline cache.
+static bool
+vm_ic_compile_i(VALUE *code, VALUE insn, size_t index, void *ic)
+{
+    if (insn == BIN(opt_setinlinecache)) {
+        return false;
+    }
+
+    if (insn == BIN(getconstant)) {
+        ID id = code[index + 1];
+        rb_vm_t *vm = GET_VM();
+
+        st_table *ics;
+        if (!rb_id_table_lookup(vm->constant_cache, id, (VALUE *) &ics)) {
+            ics = st_init_numtable();
+            rb_id_table_insert(vm->constant_cache, id, (VALUE) ics);
+        }
+
+        st_insert(ics, (st_data_t) ic, (st_data_t) Qtrue);
+    }
+
+    return true;
+}
+
+// Loop through the instruction sequences starting at the opt_getinlinecache
+// call and gather up every getconstant's ID. Associate that with the VM's
+// constant cache so that whenever one of the constants changes the inline cache
+// will get busted.
+static void
+vm_ic_compile(rb_control_frame_t *cfp, IC ic)
+{
+    const rb_iseq_t *iseq = cfp->iseq;
+    rb_iseq_each(iseq, cfp->pc - iseq->body->iseq_encoded, vm_ic_compile_i, (void *) ic);
+}
+
 // For MJIT inlining
 static inline bool
-vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, rb_serial_t ic_serial, const VALUE *reg_ep)
+vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, const VALUE *reg_ep)
 {
-    if (ic_serial == GET_GLOBAL_CONSTANT_STATE() &&
-        ((flags & IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p())) {
-
+    if ((flags & IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p()) {
         VM_ASSERT((flags & IMEMO_CONST_CACHE_SHAREABLE) ? rb_ractor_shareable_p(value) : true);
 
         return (ic_cref == NULL || // no need to check CREF
@@ -4945,7 +4979,7 @@ static bool
 vm_ic_hit_p(const struct iseq_inline_constant_cache_entry *ice, const VALUE *reg_ep)
 {
     VM_ASSERT(IMEMO_TYPE_P(ice, imemo_constcache));
-    return vm_inlined_ic_hit_p(ice->flags, ice->value, ice->ic_cref, GET_IC_SERIAL(ice), reg_ep);
+    return vm_inlined_ic_hit_p(ice->flags, ice->value, ice->ic_cref, reg_ep);
 }
 
 // YJIT needs this function to never allocate and never raise
@@ -4958,13 +4992,16 @@ rb_vm_ic_hit_p(IC ic, const VALUE *reg_ep)
 static void
 vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep)
 {
+    if (ruby_vm_const_missing_count > 0) {
+        ruby_vm_const_missing_count = 0;
+        ic->entry = NULL;
+        return;
+    }
 
     struct iseq_inline_constant_cache_entry *ice = (struct iseq_inline_constant_cache_entry *)rb_imemo_new(imemo_constcache, 0, 0, 0, 0);
     RB_OBJ_WRITE(ice, &ice->value, val);
     ice->ic_cref = vm_get_const_key_cref(reg_ep);
-    SET_IC_SERIAL(ice, GET_GLOBAL_CONSTANT_STATE() - ruby_vm_const_missing_count);
     if (rb_ractor_shareable_p(val)) ice->flags |= IMEMO_CONST_CACHE_SHAREABLE;
-    ruby_vm_const_missing_count = 0;
     RB_OBJ_WRITE(iseq, &ic->entry, ice);
 #ifndef MJIT_HEADER
     // MJIT and YJIT can't be on at the same time, so there is no need to
