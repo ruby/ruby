@@ -2112,20 +2112,20 @@ flo_ndigits(int argc, VALUE *argv)
  *
  *    f = 12345.6789
  *    f.floor(1) # => 12345.6
- *    f.floor(2) # => 12345.67
  *    f.floor(3) # => 12345.678
- *    f.floor(4) # => 12345.6789
- *    f.floor(5) # => 12345.6789
+ *    f = -12345.6789
+ *    f.floor(1) # => -12345.7
+ *    f.floor(3) # => -12345.679
  *
  *  When +ndigits+ is non-positive, returns an integer with at least
  *  <code>ndigits.abs</code> trailing zeros:
  *
- *    f = 1234.56
- *    f.floor(0)  # => 1234
- *    f.floor(-1) # => 1230
- *    f.floor(-2) # => 1200
- *    f.floor(-3) # => 1000
- *    f.floor(-4) # => 0
+ *    f = 12345.6789
+ *    f.floor(0)  # => 12345
+ *    f.floor(-3) # => 12000
+ *    f = -12345.6789
+ *    f.floor(0)  # => -12346
+ *    f.floor(-3) # => -13000
  *
  *  Note that the limited precision of floating-point arithmetic
  *  may lead to surprising results:
@@ -2147,7 +2147,7 @@ flo_floor(int argc, VALUE *argv, VALUE num)
  *  call-seq:
  *    ceil(ndigits = 0) -> float or integer
  *
- *  Returns the smallest number less than or equal to +self+ with
+ *  Returns the smallest number greater than or equal to +self+ with
  *  a precision of +ndigits+ decimal digits.
  *
  *  When +ndigits+ is positive, returns a float with +ndigits+
@@ -2155,21 +2155,20 @@ flo_floor(int argc, VALUE *argv, VALUE num)
  *
  *    f = 12345.6789
  *    f.ceil(1) # => 12345.7
- *    f.ceil(2) # => 12345.68
  *    f.ceil(3) # => 12345.679
- *    f.ceil(4) # => 12345.679
- *    f.ceil(5) # => 12345.6789
+ *    f = -12345.6789
+ *    f.ceil(1) # => -12345.6
+ *    f.ceil(3) # => -12345.678
  *
  *  When +ndigits+ is non-positive, returns an integer with at least
  *  <code>ndigits.abs</code> trailing zeros:
  *
- *    f = 1234.56
- *    f.ceil(0)  # => 1235
- *    f.ceil(-1) # => 1240
- *    f.ceil(-2) # => 1300
- *    f.ceil(-3) # => 2000
- *    f.ceil(-4) # => 10000
- *    f.ceil(-5) # => 100000
+ *    f = 12345.6789
+ *    f.ceil(0)  # => 12346
+ *    f.ceil(-3) # => 13000
+ *    f = -12345.6789
+ *    f.ceil(0)  # => -12345
+ *    f.ceil(-3) # => -12000
  *
  *  Note that the limited precision of floating-point arithmetic
  *  may lead to surprising results:
@@ -2395,21 +2394,21 @@ rb_int_truncate(VALUE num, int ndigits)
  *  after the decimal point (as available):
  *
  *    f = 12345.6789
- *    f.round(0) # => 12346
  *    f.round(1) # => 12345.7
- *    f.round(2) # => 12345.68
  *    f.round(3) # => 12345.679
- *    f.round(4) # => 12345.6789
- *    f.round(5) # => 12345.6789
+ *    f = -12345.6789
+ *    f.round(1) # => -12345.7
+ *    f.round(3) # => -12345.679
  *
  *  When +ndigits+ is negative, returns an integer
  *  with at least <tt>ndigits.abs</tt> trailing zeros:
  *
- *    f = 1234.56
- *    f.round(-1) # => 1230
- *    f.round(-2) # => 1200
- *    f.round(-3) # => 1000
- *    f.round(-4) # => 0
+ *    f = 12345.6789
+ *    f.round(0)  # => 12346
+ *    f.round(-3) # => 12000
+ *    f = -12345.6789
+ *    f.round(0)  # => -12346
+ *    f.round(-3) # => -12000
  *
  *  If keyword argument +half+ is given,
  *  and +self+ is equidistant from the two candidate values,
@@ -2555,20 +2554,20 @@ flo_to_i(VALUE num)
  *
  *    f = 12345.6789
  *    f.truncate(1) # => 12345.6
- *    f.truncate(2) # => 12345.67
  *    f.truncate(3) # => 12345.678
- *    f.truncate(4) # => 12345.6789
- *    f.truncate(5) # => 12345.6789
+ *    f = -12345.6789
+ *    f.truncate(1) # => -12345.6
+ *    f.truncate(3) # => -12345.678
  *
  *  When +ndigits+ is negative, returns an integer
  *  with at least <tt>ndigits.abs</tt> trailing zeros:
  *
- *    f = 1234.56
- *    f.truncate(0)  # => 1234
- *    f.truncate(-1) # => 1230
- *    f.truncate(-2) # => 1200
- *    f.truncate(-3) # => 1000
- *    f.truncate(-4) # => 0
+ *    f = 12345.6789
+ *    f.truncate(0)  # => 12345
+ *    f.truncate(-3) # => 12000
+ *    f = -12345.6789
+ *    f.truncate(0)  # => -12345
+ *    f.truncate(-3) # => -12000
  *
  *  Note that the limited precision of floating-point arithmetic
  *  may lead to surprising results:
