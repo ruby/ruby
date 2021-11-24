@@ -751,7 +751,7 @@ module Bundler
           s.dependencies.replace(new_spec.dependencies)
         end
 
-        if dep.nil? && @dependencies.find {|d| s.name == d.name }
+        if dep.nil? && requested_dependencies.find {|d| s.name == d.name }
           @unlock[:gems] << s.name
         else
           converged << s
