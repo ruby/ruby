@@ -406,8 +406,6 @@ class TestDateStrftime < Test::Unit::TestCase
     assert_equal('S64.01.07', Date.parse('1989-01-07').jisx0301)
     assert_equal('H01.01.08', Date.parse('1989-01-08').jisx0301)
     assert_equal('H18.09.01', Date.parse('2006-09-01').jisx0301)
-    assert_equal('H31.04.30', Date.parse('2019-04-30').jisx0301)
-    assert_equal('R01.05.01', Date.parse('2019-05-01').jisx0301)
 
     %w(M06.01.01
        M45.07.29
@@ -416,10 +414,7 @@ class TestDateStrftime < Test::Unit::TestCase
        S01.12.25
        S64.01.07
        H01.01.08
-       H18.09.01
-       H31.04.30
-       R01.05.01
-    ).each do |s|
+       H18.09.01).each do |s|
       assert_equal(s, Date.parse(s).jisx0301)
     end
 
