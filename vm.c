@@ -496,6 +496,16 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
     return FALSE;
 }
 
+// Iterator function to loop through each entry in the constant cache and add
+// its associated size into the given Hash.
+static enum rb_id_table_iterator_result
+vm_stat_constant_cache_i(ID id, VALUE table, void *constant_cache)
+{
+    st_index_t size = ((st_table *) table)->num_entries;
+    rb_hash_aset((VALUE) constant_cache, ID2SYM(id), LONG2NUM(size));
+    return ID_TABLE_CONTINUE;
+}
+
 /*
  *  call-seq:
  *    RubyVM.stat -> Hash
@@ -504,10 +514,10 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
  *
  *  Returns a Hash containing implementation-dependent counters inside the VM.
  *
- *  This hash includes information about method/constant cache serials:
+ *  This hash includes information about method/constant caches:
  *
  *    {
- *      :global_constant_state=>481,
+ *      :constant_cache=>{:RubyVM=>3},
  *      :class_serial=>9029
  *    }
  *
@@ -516,11 +526,10 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
  *
  *  This method is only expected to work on C Ruby.
  */
-
 static VALUE
 vm_stat(int argc, VALUE *argv, VALUE self)
 {
-    static VALUE sym_global_constant_state, sym_class_serial, sym_global_cvar_state;
+    static VALUE sym_constant_cache, sym_class_serial, sym_global_cvar_state;
     VALUE arg = Qnil;
     VALUE hash = Qnil, key = Qnil;
 
@@ -537,13 +546,11 @@ vm_stat(int argc, VALUE *argv, VALUE self)
 	hash = rb_hash_new();
     }
 
-    if (sym_global_constant_state == 0) {
 #define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
-	S(global_constant_state);
+	S(constant_cache);
 	S(class_serial);
 	S(global_cvar_state);
 #undef S
-    }
 
 #define SET(name, attr) \
     if (key == sym_##name) \
@@ -551,10 +558,24 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     else if (hash != Qnil) \
 	rb_hash_aset(hash, sym_##name, SERIALT2NUM(attr));
 
-    SET(global_constant_state, ruby_vm_global_constant_state);
     SET(class_serial, ruby_vm_class_serial);
     SET(global_cvar_state, ruby_vm_global_cvar_state);
 #undef SET
+
+    // Here we're going to set up the constant cache hash that has key-value
+    // pairs of { name => count }, where name is a Symbol that represents the
+    // ID in the cache and count is an Integer representing the number of inline
+    // constant caches associated with that Symbol.
+    if (key == sym_constant_cache || hash != Qnil) {
+        VALUE constant_cache = rb_hash_new();
+        rb_id_table_foreach(GET_VM()->constant_cache, vm_stat_constant_cache_i, (void *) constant_cache);
+
+        if (key == sym_constant_cache) {
+            return constant_cache;
+        } else {
+            rb_hash_aset(hash, sym_constant_cache, constant_cache);
+        }
+    }
 
     if (!NIL_P(key)) { /* matched key should return above */
 	rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(key));
@@ -2818,6 +2839,26 @@ size_t rb_vm_memsize_workqueue(struct list_head *workqueue); // vm_trace.c
 
 // Used for VM memsize reporting. Returns the size of the at_exit list by
 // looping through the linked list and adding up the size of the structs.
+static enum rb_id_table_iterator_result
+vm_memsize_constant_cache_i(ID id, VALUE ics, void *size)
+{
+    *((size_t *) size) += rb_st_memsize((st_table *) ics);
+    return ID_TABLE_CONTINUE;
+}
+
+// Returns a size_t representing the memory footprint of the VM's constant
+// cache, which is the memsize of the table as well as the memsize of all of the
+// nested tables.
+static size_t
+vm_memsize_constant_cache(void)
+{
+    rb_vm_t *vm = GET_VM();
+    size_t size = rb_id_table_memsize(vm->constant_cache);
+
+    rb_id_table_foreach(vm->constant_cache, vm_memsize_constant_cache_i, &size);
+    return size;
+}
+
 static size_t
 vm_memsize_at_exit_list(rb_at_exit_list *at_exit)
 {
@@ -2861,7 +2902,8 @@ vm_memsize(const void *ptr)
         rb_st_memsize(vm->frozen_strings) +
         vm_memsize_builtin_function_table(vm->builtin_function_table) +
         rb_id_table_memsize(vm->negative_cme_table) +
-        rb_st_memsize(vm->overloaded_cme_table)
+        rb_st_memsize(vm->overloaded_cme_table) +
+        vm_memsize_constant_cache()
     );
 
     // TODO
@@ -3935,6 +3977,7 @@ Init_BareVM(void)
     ruby_current_vm_ptr = vm;
     vm->negative_cme_table = rb_id_table_create(16);
     vm->overloaded_cme_table = st_init_numtable();
+    vm->constant_cache = rb_id_table_create(0);
 
     Init_native_thread(th);
     th->vm = vm;
