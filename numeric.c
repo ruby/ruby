@@ -2104,7 +2104,7 @@ flo_ndigits(int argc, VALUE *argv)
  *  call-seq:
  *    floor(ndigits = 0) -> float or integer
  *
- *  Returns the largest number less than or equal to +float+ with
+ *  Returns the largest number less than or equal to +self+ with
  *  a precision of +ndigits+ decimal digits.
  *
  *  When +ndigits+ is positive, returns a float with +ndigits+
@@ -2127,10 +2127,13 @@ flo_ndigits(int argc, VALUE *argv)
  *    f.floor(-3) # => 1000
  *    f.floor(-4) # => 0
  *
- *  Note that the limited precision of floating point arithmetic
+ *  Note that the limited precision of floating-point arithmetic
  *  may lead to surprising results:
  *
  *     (0.3 / 0.1).floor  #=> 2 (!)
+ *
+ *  Related: Float#ceil.
+ *
  */
 
 static VALUE
@@ -2142,41 +2145,39 @@ flo_floor(int argc, VALUE *argv, VALUE num)
 
 /*
  *  call-seq:
- *     float.ceil([ndigits])  ->  integer or float
+ *    ceil(ndigits = 0) -> float or integer
  *
- *  Returns the smallest number greater than or equal to +float+ with
- *  a precision of +ndigits+ decimal digits (default: 0).
+ *  Returns the smallest number less than or equal to +self+ with
+ *  a precision of +ndigits+ decimal digits.
  *
- *  When the precision is negative, the returned value is an integer
- *  with at least <code>ndigits.abs</code> trailing zeros.
+ *  When +ndigits+ is positive, returns a float with +ndigits+
+ *  digits after the decimal point (as available):
  *
- *  Returns a floating point number when +ndigits+ is positive,
- *  otherwise returns an integer.
+ *    f = 12345.6789
+ *    f.ceil(1) # => 12345.7
+ *    f.ceil(2) # => 12345.68
+ *    f.ceil(3) # => 12345.679
+ *    f.ceil(4) # => 12345.679
+ *    f.ceil(5) # => 12345.6789
  *
- *     1.2.ceil      #=> 2
- *     2.0.ceil      #=> 2
- *     (-1.2).ceil   #=> -1
- *     (-2.0).ceil   #=> -2
+ *  When +ndigits+ is non-positive, returns an integer with at least
+ *  <code>ndigits.abs</code> trailing zeros:
  *
- *     1.234567.ceil(2)   #=> 1.24
- *     1.234567.ceil(3)   #=> 1.235
- *     1.234567.ceil(4)   #=> 1.2346
- *     1.234567.ceil(5)   #=> 1.23457
+ *    f = 1234.56
+ *    f.ceil(0)  # => 1235
+ *    f.ceil(-1) # => 1240
+ *    f.ceil(-2) # => 1300
+ *    f.ceil(-3) # => 2000
+ *    f.ceil(-4) # => 10000
+ *    f.ceil(-5) # => 100000
  *
- *     34567.89.ceil(-5)  #=> 100000
- *     34567.89.ceil(-4)  #=> 40000
- *     34567.89.ceil(-3)  #=> 35000
- *     34567.89.ceil(-2)  #=> 34600
- *     34567.89.ceil(-1)  #=> 34570
- *     34567.89.ceil(0)   #=> 34568
- *     34567.89.ceil(1)   #=> 34567.9
- *     34567.89.ceil(2)   #=> 34567.89
- *     34567.89.ceil(3)   #=> 34567.89
- *
- *  Note that the limited precision of floating point arithmetic
- *  might lead to surprising results:
+ *  Note that the limited precision of floating-point arithmetic
+ *  may lead to surprising results:
  *
  *     (2.1 / 0.7).ceil  #=> 4 (!)
+ *
+ *  Related: Float#floor.
+ *
  */
 
 static VALUE
@@ -2385,54 +2386,57 @@ rb_int_truncate(VALUE num, int ndigits)
 
 /*
  *  call-seq:
- *     float.round([ndigits] [, half: mode])  ->  integer or float
+ *    round(ndigits = 0, half: :up]) -> integer or float
  *
- *  Returns +float+ rounded to the nearest value with
- *  a precision of +ndigits+ decimal digits (default: 0).
+ *  Returns +self+ rounded to the nearest value with
+ *  a precision of +ndigits+ decimal digits.
  *
- *  When the precision is negative, the returned value is an integer
- *  with at least <code>ndigits.abs</code> trailing zeros.
+ *  When +ndigits+ is non-negative, returns a float with +ndigits+
+ *  after the decimal point (as available):
  *
- *  Returns a floating point number when +ndigits+ is positive,
- *  otherwise returns an integer.
+ *    f = 12345.6789
+ *    f.round(0) # => 12346
+ *    f.round(1) # => 12345.7
+ *    f.round(2) # => 12345.68
+ *    f.round(3) # => 12345.679
+ *    f.round(4) # => 12345.6789
+ *    f.round(5) # => 12345.6789
  *
- *     1.4.round      #=> 1
- *     1.5.round      #=> 2
- *     1.6.round      #=> 2
- *     (-1.5).round   #=> -2
+ *  When +ndigits+ is negative, returns an integer
+ *  with at least <tt>ndigits.abs</tt> trailing zeros:
  *
- *     1.234567.round(2)   #=> 1.23
- *     1.234567.round(3)   #=> 1.235
- *     1.234567.round(4)   #=> 1.2346
- *     1.234567.round(5)   #=> 1.23457
+ *    f = 1234.56
+ *    f.round(-1) # => 1230
+ *    f.round(-2) # => 1200
+ *    f.round(-3) # => 1000
+ *    f.round(-4) # => 0
  *
- *     34567.89.round(-5)  #=> 0
- *     34567.89.round(-4)  #=> 30000
- *     34567.89.round(-3)  #=> 35000
- *     34567.89.round(-2)  #=> 34600
- *     34567.89.round(-1)  #=> 34570
- *     34567.89.round(0)   #=> 34568
- *     34567.89.round(1)   #=> 34567.9
- *     34567.89.round(2)   #=> 34567.89
- *     34567.89.round(3)   #=> 34567.89
+ *  If keyword argument +half+ is given,
+ *  and +self+ is equidistant from the two candidate values,
+ *  the rounding is according to the given +half+ value:
  *
- *  If the optional +half+ keyword argument is given,
- *  numbers that are half-way between two possible rounded values
- *  will be rounded according to the specified tie-breaking +mode+:
+ *  - +:up+ or +nil+: round away from zero:
  *
- *  * <code>:up</code> or +nil+: round half away from zero (default)
- *  * <code>:down</code>: round half toward zero
- *  * <code>:even</code>: round half toward the nearest even number
+ *      2.5.round(half: :up)      # => 3
+ *      3.5.round(half: :up)      # => 4
+ *      (-2.5).round(half: :up)   # => -3
  *
- *     2.5.round(half: :up)      #=> 3
- *     2.5.round(half: :down)    #=> 2
- *     2.5.round(half: :even)    #=> 2
- *     3.5.round(half: :up)      #=> 4
- *     3.5.round(half: :down)    #=> 3
- *     3.5.round(half: :even)    #=> 4
- *     (-2.5).round(half: :up)   #=> -3
- *     (-2.5).round(half: :down) #=> -2
- *     (-2.5).round(half: :even) #=> -2
+ *  - +:down+: round toward zero:
+ *
+ *      2.5.round(half: :down)    # => 2
+ *      3.5.round(half: :down)    # => 3
+ *      (-2.5).round(half: :down) # => -2
+ *
+ *  - +:even+: round toward the candidate whose last nonzero digit is even:
+ *
+ *      2.5.round(half: :even)    # => 2
+ *      3.5.round(half: :even)    # => 4
+ *      (-2.5).round(half: :even) # => -2
+ *
+ *  Raises and exception if the value for +half+ is invalid.
+ *
+ *  Related: Float#truncate.
+ *
  */
 
 static VALUE
@@ -2513,20 +2517,19 @@ float_round_underflow(int ndigits, int binexp)
 
 /*
  *  call-seq:
- *     float.to_i    ->  integer
- *     float.to_int  ->  integer
+ *    to_i -> integer
  *
- *  Returns the +float+ truncated to an Integer.
+ *  Returns +self+ truncated to an Integer.
  *
- *     1.2.to_i      #=> 1
- *     (-1.2).to_i   #=> -1
+ *    1.2.to_i    # => 1
+ *    (-1.2).to_i # => -1
  *
- *  Note that the limited precision of floating point arithmetic
- *  might lead to surprising results:
+ *  Note that the limited precision of floating-point arithmetic
+ *  may lead to surprising results:
  *
- *    (0.3 / 0.1).to_i  #=> 2 (!)
+ *    (0.3 / 0.1).to_i  # => 2 (!)
  *
- *  #to_int is an alias for #to_i.
+ *  Float#to_int is an alias for Float#to_i.
  */
 
 static VALUE
@@ -2542,26 +2545,38 @@ flo_to_i(VALUE num)
 
 /*
  *  call-seq:
- *     float.truncate([ndigits])  ->  integer or float
+ *    truncate(ndigits = 0) -> float or integer
  *
- *  Returns +float+ truncated (toward zero) to
- *  a precision of +ndigits+ decimal digits (default: 0).
+ *  Returns +self+ truncated (toward zero) to
+ *  a precision of +ndigits+ decimal digits.
  *
- *  When the precision is negative, the returned value is an integer
- *  with at least <code>ndigits.abs</code> trailing zeros.
+ *  When +ndigits+ is positive, returns a float with +ndigits+ digits
+ *  after the decimal point (as available):
  *
- *  Returns a floating point number when +ndigits+ is positive,
- *  otherwise returns an integer.
+ *    f = 12345.6789
+ *    f.truncate(1) # => 12345.6
+ *    f.truncate(2) # => 12345.67
+ *    f.truncate(3) # => 12345.678
+ *    f.truncate(4) # => 12345.6789
+ *    f.truncate(5) # => 12345.6789
  *
- *     2.8.truncate           #=> 2
- *     (-2.8).truncate        #=> -2
- *     1.234567.truncate(2)   #=> 1.23
- *     34567.89.truncate(-2)  #=> 34500
+ *  When +ndigits+ is negative, returns an integer
+ *  with at least <tt>ndigits.abs</tt> trailing zeros:
  *
- *  Note that the limited precision of floating point arithmetic
- *  might lead to surprising results:
+ *    f = 1234.56
+ *    f.truncate(0)  # => 1234
+ *    f.truncate(-1) # => 1230
+ *    f.truncate(-2) # => 1200
+ *    f.truncate(-3) # => 1000
+ *    f.truncate(-4) # => 0
+ *
+ *  Note that the limited precision of floating-point arithmetic
+ *  may lead to surprising results:
  *
  *     (0.3 / 0.1).truncate  #=> 2 (!)
+ *
+ *  Related: Float#round.
+ *
  */
 static VALUE
 flo_truncate(int argc, VALUE *argv, VALUE num)
