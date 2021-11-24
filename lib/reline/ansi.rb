@@ -68,7 +68,7 @@ class Reline::ANSI
         else
           [ key_code.bytes, key_binding ]
         end
-      rescue TerminfoError
+      rescue Reline::Terminfo::TerminfoError
         # capname is undefined
       end
     end.compact.to_h
@@ -295,7 +295,7 @@ class Reline::ANSI
     if Reline::Terminfo.enabled?
       begin
         @@output.write Reline::Terminfo.tigetstr('civis')
-      rescue TerminfoError
+      rescue Reline::Terminfo::TerminfoError
         # civis is undefined
       end
     else
@@ -307,7 +307,7 @@ class Reline::ANSI
     if Reline::Terminfo.enabled?
       begin
         @@output.write Reline::Terminfo.tigetstr('cnorm')
-      rescue TerminfoError
+      rescue Reline::Terminfo::TerminfoError
         # cnorm is undefined
       end
     else
