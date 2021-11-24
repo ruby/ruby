@@ -1987,16 +1987,14 @@ flo_nextafter(VALUE flo, double value)
  *    f.next_float # 0x3f847ae147ae147c
  *
  *  In the remaining examples here, the output is shown in the usual way
- *  (result +to_s+);
- *
- *    Float::MAX.next_float       # => Infinity
+ *  (result +to_s+):
  *
  *    0.01.next_float    # => 0.010000000000000002
  *    1.0.next_float     # => 1.0000000000000002
  *    100.0.next_float   # => 100.00000000000001
  *
  *    f = 0.01
- *    (0..19).each_with_index {|i| printf "%2d %-20a %s\n", i, f, f.to_s; f = f.next_float }
+ *    (0..3).each_with_index {|i| printf "%2d %-20a %s\n", i, f, f.to_s; f = f.next_float }
  *
  *  Output:
  *
@@ -2004,22 +2002,6 @@ flo_nextafter(VALUE flo, double value)
  *     1 0x1.47ae147ae147cp-7 0.010000000000000002
  *     2 0x1.47ae147ae147dp-7 0.010000000000000004
  *     3 0x1.47ae147ae147ep-7 0.010000000000000005
- *     4 0x1.47ae147ae147fp-7 0.010000000000000007
- *     5 0x1.47ae147ae148p-7  0.010000000000000009
- *     6 0x1.47ae147ae1481p-7 0.01000000000000001
- *     7 0x1.47ae147ae1482p-7 0.010000000000000012
- *     8 0x1.47ae147ae1483p-7 0.010000000000000014
- *     9 0x1.47ae147ae1484p-7 0.010000000000000016
- *    10 0x1.47ae147ae1485p-7 0.010000000000000018
- *    11 0x1.47ae147ae1486p-7 0.01000000000000002
- *    12 0x1.47ae147ae1487p-7 0.010000000000000021
- *    13 0x1.47ae147ae1488p-7 0.010000000000000023
- *    14 0x1.47ae147ae1489p-7 0.010000000000000024
- *    15 0x1.47ae147ae148ap-7 0.010000000000000026
- *    16 0x1.47ae147ae148bp-7 0.010000000000000028
- *    17 0x1.47ae147ae148cp-7 0.01000000000000003
- *    18 0x1.47ae147ae148dp-7 0.010000000000000031
- *    19 0x1.47ae147ae148ep-7 0.010000000000000033
  *
  *    f = 0.0; 100.times { f += 0.1 }
  *    f                           # => 9.99999999999998       # should be 10.0 in the ideal world.
@@ -2029,6 +2011,8 @@ flo_nextafter(VALUE flo, double value)
  *    (10-f)/(10*Float::EPSILON)  # => 8.8                    # approximation of the above.
  *    "%a" % 10                   # => "0x1.4p+3"
  *    "%a" % f                    # => "0x1.3fffffffffff5p+3" # the last hex digit is 5.  16 - 5 = 11 ulp.
+ *
+ *  Related: Float#prev_float
  *
  */
 static VALUE
@@ -2041,43 +2025,36 @@ flo_next_float(VALUE vx)
  *  call-seq:
  *     float.prev_float  ->  float
  *
- *  Returns the previous representable floating point number.
+ *  Returns the next-smaller representable \Float.
  *
- *  (-Float::MAX).prev_float and (-Float::INFINITY).prev_float is -Float::INFINITY.
+ *  These examples show the internally stored values (64-bit hexadecimal)
+ *  for each \Float +f+ and for the corresponding <tt>f.pev_float</tt>:
  *
- *  Float::NAN.prev_float is Float::NAN.
+ *    f = 5e-324   # 0x0000000000000001
+ *    f.prev_float # 0x0000000000000000
  *
- *  For example:
+ *    f = 0.01     # 0x3f847ae147ae147b
+ *    f.prev_float # 0x3f847ae147ae147a
  *
- *    0.01.prev_float    #=> 0.009999999999999998
- *    1.0.prev_float     #=> 0.9999999999999999
- *    100.0.prev_float   #=> 99.99999999999999
+ *  In the remaining examples here, the output is shown in the usual way
+ *  (result +to_s+):
  *
- *    0.01 - 0.01.prev_float     #=> 1.734723475976807e-18
- *    1.0 - 1.0.prev_float       #=> 1.1102230246251565e-16
- *    100.0 - 100.0.prev_float   #=> 1.4210854715202004e-14
+ *    0.01.prev_float   # => 0.009999999999999998
+ *    1.0.prev_float    # => 0.9999999999999999
+ *    100.0.prev_float  # => 99.99999999999999
  *
- *    f = 0.01; 20.times { printf "%-20a %s\n", f, f.to_s; f = f.prev_float }
- *    #=> 0x1.47ae147ae147bp-7 0.01
- *    #   0x1.47ae147ae147ap-7 0.009999999999999998
- *    #   0x1.47ae147ae1479p-7 0.009999999999999997
- *    #   0x1.47ae147ae1478p-7 0.009999999999999995
- *    #   0x1.47ae147ae1477p-7 0.009999999999999993
- *    #   0x1.47ae147ae1476p-7 0.009999999999999992
- *    #   0x1.47ae147ae1475p-7 0.00999999999999999
- *    #   0x1.47ae147ae1474p-7 0.009999999999999988
- *    #   0x1.47ae147ae1473p-7 0.009999999999999986
- *    #   0x1.47ae147ae1472p-7 0.009999999999999985
- *    #   0x1.47ae147ae1471p-7 0.009999999999999983
- *    #   0x1.47ae147ae147p-7  0.009999999999999981
- *    #   0x1.47ae147ae146fp-7 0.00999999999999998
- *    #   0x1.47ae147ae146ep-7 0.009999999999999978
- *    #   0x1.47ae147ae146dp-7 0.009999999999999976
- *    #   0x1.47ae147ae146cp-7 0.009999999999999974
- *    #   0x1.47ae147ae146bp-7 0.009999999999999972
- *    #   0x1.47ae147ae146ap-7 0.00999999999999997
- *    #   0x1.47ae147ae1469p-7 0.009999999999999969
- *    #   0x1.47ae147ae1468p-7 0.009999999999999967
+ *    f = 0.01
+ *    (0..3).each_with_index {|i| printf "%2d %-20a %s\n", i, f, f.to_s; f = f.prev_float }
+ *
+ *  Output:
+ *
+ *     0 0x1.47ae147ae147bp-7 0.01
+ *     1 0x1.47ae147ae147ap-7 0.009999999999999998
+ *     2 0x1.47ae147ae1479p-7 0.009999999999999997
+ *     3 0x1.47ae147ae1478p-7 0.009999999999999995
+ *
+ *  Related: Float#next_float.
+ *
  */
 static VALUE
 flo_prev_float(VALUE vx)
