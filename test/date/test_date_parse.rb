@@ -587,12 +587,12 @@ class TestDateParse < Test::Unit::TestCase
 
   def test__parse_too_long_year
     str = "Jan 1" + "0" * 100_000
-    h = Timeout.timeout(1) {Date._parse(str)}
+    h = Timeout.timeout(1) {Date._parse(str, limit: 100_010)}
     assert_equal(100_000, Math.log10(h[:year]))
     assert_equal(1, h[:mon])
 
     str = "Jan - 1" + "0" * 100_000
-    h = Timeout.timeout(1) {Date._parse(str)}
+    h = Timeout.timeout(1) {Date._parse(str, limit: 100_010)}
     assert_equal(1, h[:mon])
     assert_not_include(h, :year)
   end
@@ -1309,6 +1309,5 @@ class TestDateParse < Test::Unit::TestCase
     assert_raise(ArgumentError) { DateTime.jisx0301("1" * 1000) }
 
     assert_raise(ArgumentError) { Date._parse("Jan " + "9" * 1000000) }
-    assert_raise(Timeout::Error) { Timeout.timeout(1) { Date._parse("Jan " + "9" * 1000000, limit: nil) } }
   end
 end
