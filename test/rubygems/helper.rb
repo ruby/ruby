@@ -247,16 +247,14 @@ class Gem::TestCase < Test::Unit::TestCase
     output.scan(/^#{Regexp.escape make_command}(?:[[:blank:]].*)?$/)
   end
 
-  def parse_make_command_line(line)
-    command, *args = line.shellsplit
+  def parse_make_command_line_targets(line)
+    args = line.sub(/^#{Regexp.escape make_command}/, "").shellsplit
 
     targets = []
-    macros = {}
 
     args.each do |arg|
       case arg
       when /\A(\w+)=/
-        macros[$1] = $'
       else
         targets << arg
       end
@@ -264,11 +262,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
     targets << '' if targets.empty?
 
-    {
-      :command => command,
-      :targets => targets,
-      :macros => macros,
-    }
+    targets
   end
 
   def assert_contains_make_command(target, output, msg = nil)
@@ -281,7 +275,7 @@ class Gem::TestCase < Test::Unit::TestCase
       )
     else
       msg = build_message(msg,
-        'Expected make command "%s": %s' % [
+        'Expected make command "%s", but was "%s"' % [
           ('%s %s' % [make_command, target]).rstrip,
           output,
         ]
@@ -289,10 +283,9 @@ class Gem::TestCase < Test::Unit::TestCase
     end
 
     assert scan_make_command_lines(output).any? {|line|
-      make = parse_make_command_line(line)
+      targets = parse_make_command_line_targets(line)
 
-      if make[:targets].include?(target)
-        yield make, line if block_given?
+      if targets.include?(target)
         true
       else
         false
@@ -489,7 +482,6 @@ class Gem::TestCase < Test::Unit::TestCase
       Gem.instance_variable_set :@default_dir, nil
     end
 
-    Gem::Specification._clear_load_cache
     Gem::Specification.unresolved_deps.clear
     Gem::refresh
 

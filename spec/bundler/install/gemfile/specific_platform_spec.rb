@@ -87,7 +87,7 @@ RSpec.describe "bundle install with specific platforms" do
       expect(the_bundle).to include_gem("google-protobuf 3.0.0.alpha.5.0.5.1 universal-darwin")
 
       # make sure we're still only locked to ruby
-      lockfile_should_be <<-L
+      expect(lockfile).to eq <<~L
         GEM
           remote: #{file_uri_for(gem_repo2)}/
           specs:

@@ -128,7 +128,7 @@ RSpec.describe "bundle install across platforms" do
       gem "pry"
     G
 
-    lockfile_should_be <<-L
+    expect(lockfile).to eq <<~L
       GEM
         remote: #{file_uri_for(gem_repo4)}/
         specs:
@@ -156,7 +156,7 @@ RSpec.describe "bundle install across platforms" do
 
     bundle "lock --add-platform ruby"
 
-    good_lockfile = strip_whitespace(<<-L)
+    good_lockfile = <<~L
       GEM
         remote: #{file_uri_for(gem_repo4)}/
         specs:
@@ -186,9 +186,9 @@ RSpec.describe "bundle install across platforms" do
          #{Bundler::VERSION}
     L
 
-    lockfile_should_be good_lockfile
+    expect(lockfile).to eq good_lockfile
 
-    bad_lockfile = strip_whitespace <<-L
+    bad_lockfile = <<~L
       GEM
         remote: #{file_uri_for(gem_repo4)}/
         specs:
@@ -222,23 +222,23 @@ RSpec.describe "bundle install across platforms" do
     aggregate_failures do
       lockfile bad_lockfile
       bundle :install
-      lockfile_should_be good_lockfile
+      expect(lockfile).to eq good_lockfile
 
       lockfile bad_lockfile
       bundle :update, :all => true
-      lockfile_should_be good_lockfile
+      expect(lockfile).to eq good_lockfile
 
       lockfile bad_lockfile
       bundle "update ffi"
-      lockfile_should_be good_lockfile
+      expect(lockfile).to eq good_lockfile
 
       lockfile bad_lockfile
       bundle "update empyrean"
-      lockfile_should_be good_lockfile
+      expect(lockfile).to eq good_lockfile
 
       lockfile bad_lockfile
       bundle :lock
-      lockfile_should_be good_lockfile
+      expect(lockfile).to eq good_lockfile
     end
   end
 
@@ -310,7 +310,7 @@ RSpec.describe "bundle install across platforms" do
 
     expect(the_bundle).to include_gem "platform_specific 1.0 RUBY"
 
-    lockfile_should_be <<-G
+    expect(lockfile).to eq <<~G
       GEM
         remote: #{file_uri_for(gem_repo1)}/
         specs:
@@ -447,7 +447,7 @@ RSpec.describe "bundle install with platform conditionals" do
 
     expect(err).to be_empty
 
-    lockfile_should_be <<-L
+    expect(lockfile).to eq <<~L
       GEM
         remote: #{file_uri_for(gem_repo1)}/
         specs:

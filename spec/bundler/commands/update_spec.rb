@@ -354,6 +354,67 @@ RSpec.describe "bundle update" do
 
       expect(the_bundle).to include_gems("a 1.0", "b 1.0")
     end
+
+    it "should still downgrade if forced by the Gemfile, when transitive dependencies also need downgrade" do
+      build_repo4 do
+        build_gem "activesupport", "6.1.4.1" do |s|
+          s.add_dependency "tzinfo", "~> 2.0"
+        end
+
+        build_gem "activesupport", "6.0.4.1" do |s|
+          s.add_dependency "tzinfo", "~> 1.1"
+        end
+
+        build_gem "tzinfo", "2.0.4"
+        build_gem "tzinfo", "1.2.9"
+      end
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "activesupport", "~> 6.1.0"
+      G
+
+      expect(the_bundle).to include_gems("activesupport 6.1.4.1", "tzinfo 2.0.4")
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "activesupport", "~> 6.0.0"
+      G
+
+      original_lockfile = lockfile
+
+      expected_lockfile = <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            activesupport (6.0.4.1)
+              tzinfo (~> 1.1)
+            tzinfo (1.2.9)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          activesupport (~> 6.0.0)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "update activesupport"
+      expect(the_bundle).to include_gems("activesupport 6.0.4.1", "tzinfo 1.2.9")
+      expect(lockfile).to eq(expected_lockfile)
+
+      lockfile original_lockfile
+      bundle "update"
+      expect(the_bundle).to include_gems("activesupport 6.0.4.1", "tzinfo 1.2.9")
+      expect(lockfile).to eq(expected_lockfile)
+
+      lockfile original_lockfile
+      bundle "lock --update"
+      expect(the_bundle).to include_gems("activesupport 6.0.4.1", "tzinfo 1.2.9")
+      expect(lockfile).to eq(expected_lockfile)
+    end
   end
 
   describe "with --local option" do
@@ -939,7 +1000,7 @@ RSpec.describe "bundle update --ruby" do
     it "removes the Ruby from the Gemfile.lock" do
       bundle "update --ruby"
 
-      lockfile_should_be <<-L
+      expect(lockfile).to eq <<~L
        GEM
          remote: #{file_uri_for(gem_repo1)}/
          specs:
@@ -967,7 +1028,7 @@ RSpec.describe "bundle update --ruby" do
     it "updates the Gemfile.lock with the latest version" do
       bundle "update --ruby"
 
-      lockfile_should_be <<-L
+      expect(lockfile).to eq <<~L
        GEM
          remote: #{file_uri_for(gem_repo1)}/
          specs:
@@ -1014,7 +1075,7 @@ RSpec.describe "bundle update --ruby" do
     it "updates the Gemfile.lock with the latest version" do
       bundle "update --ruby"
 
-      lockfile_should_be <<-L
+      expect(lockfile).to eq <<~L
        GEM
          remote: #{file_uri_for(gem_repo1)}/
          specs:

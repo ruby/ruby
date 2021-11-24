@@ -314,7 +314,7 @@ RSpec.describe "bundle lock" do
 
     simulate_platform(mingw) { bundle :lock }
 
-    lockfile_should_be <<-G
+    expect(lockfile).to eq <<~G
       GEM
         remote: #{file_uri_for(gem_repo4)}/
         specs:
@@ -339,7 +339,7 @@ RSpec.describe "bundle lock" do
 
     simulate_platform(rb) { bundle :lock }
 
-    lockfile_should_be <<-G
+    expect(lockfile).to eq <<~G
       GEM
         remote: #{file_uri_for(gem_repo4)}/
         specs:
@@ -426,7 +426,7 @@ RSpec.describe "bundle lock" do
 
     simulate_platform(Gem::Platform.new("x86_64-darwin")) { bundle "lock" }
 
-    lockfile_should_be <<-G
+    expect(lockfile).to eq <<~G
       GEM
         remote: #{file_uri_for(gem_repo4)}/
         specs:

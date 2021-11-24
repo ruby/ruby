@@ -102,12 +102,8 @@ class Gem::Specification < Gem::BasicSpecification
   today = Time.now.utc
   TODAY = Time.utc(today.year, today.month, today.day) # :nodoc:
 
-  # rubocop:disable Style/MutableConstant
-  LOAD_CACHE = {} # :nodoc:
-  # rubocop:enable Style/MutableConstant
-  LOAD_CACHE_MUTEX = Thread::Mutex.new
-
-  private_constant :LOAD_CACHE if defined? private_constant
+  @load_cache = {} # :nodoc:
+  @load_cache_mutex = Thread::Mutex.new
 
   VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/.freeze # :nodoc:
 
@@ -182,13 +178,23 @@ class Gem::Specification < Gem::BasicSpecification
     @@default_value[k].nil?
   end
 
-  @@stubs = nil
-  @@stubs_by_name = {}
+  def self.clear_specs # :nodoc:
+    @@all_specs_mutex.synchronize do
+      @@all = nil
+      @@stubs = nil
+      @@stubs_by_name = {}
+      @@spec_with_requirable_file = {}
+      @@active_stub_with_requirable_file = {}
+    end
+  end
+  private_class_method :clear_specs
+
+  @@all_specs_mutex = Thread::Mutex.new
+
+  clear_specs
 
   # Sentinel object to represent "not found" stubs
   NOT_FOUND = Struct.new(:to_spec, :this).new # :nodoc:
-  @@spec_with_requirable_file = {}
-  @@active_stub_with_requirable_file = {}
 
   # Tracking removed method calls to warn users during build time.
   REMOVED_METHODS = [:rubyforge_project=].freeze # :nodoc:
@@ -748,23 +754,15 @@ class Gem::Specification < Gem::BasicSpecification
   attr_accessor :specification_version
 
   def self._all # :nodoc:
-    unless defined?(@@all) && @@all
-      @@all = stubs.map(&:to_spec)
-
-      # After a reset, make sure already loaded specs
-      # are still marked as activated.
-      specs = {}
-      Gem.loaded_specs.each_value{|s| specs[s] = true }
-      @@all.each{|s| s.activated = true if specs[s] }
-    end
-    @@all
+    @@all_specs_mutex.synchronize { @@all ||= Gem.loaded_specs.values | stubs.map(&:to_spec) }
   end
 
-  def self._clear_load_cache # :nodoc:
-    LOAD_CACHE_MUTEX.synchronize do
-      LOAD_CACHE.clear
+  def self.clear_load_cache # :nodoc:
+    @load_cache_mutex.synchronize do
+      @load_cache.clear
     end
   end
+  private_class_method :clear_load_cache
 
   def self.each_gemspec(dirs) # :nodoc:
     dirs.each do |dir|
@@ -1112,7 +1110,7 @@ class Gem::Specification < Gem::BasicSpecification
   def self.load(file)
     return unless file
 
-    _spec = LOAD_CACHE_MUTEX.synchronize { LOAD_CACHE[file] }
+    _spec = @load_cache_mutex.synchronize { @load_cache[file] }
     return _spec if _spec
 
     file = file.dup.tap(&Gem::UNTAINT)
@@ -1127,12 +1125,12 @@ class Gem::Specification < Gem::BasicSpecification
 
       if Gem::Specification === _spec
         _spec.loaded_from = File.expand_path file.to_s
-        LOAD_CACHE_MUTEX.synchronize do
-          prev = LOAD_CACHE[file]
+        @load_cache_mutex.synchronize do
+          prev = @load_cache[file]
           if prev
             _spec = prev
           else
-            LOAD_CACHE[file] = _spec
+            @load_cache[file] = _spec
           end
         end
         return _spec
@@ -1230,12 +1228,8 @@ class Gem::Specification < Gem::BasicSpecification
   def self.reset
     @@dirs = nil
     Gem.pre_reset_hooks.each {|hook| hook.call }
-    @@all = nil
-    @@stubs = nil
-    @@stubs_by_name = {}
-    @@spec_with_requirable_file = {}
-    @@active_stub_with_requirable_file = {}
-    _clear_load_cache
+    clear_specs
+    clear_load_cache
     unresolved = unresolved_deps
     unless unresolved.empty?
       w = "W" + "ARN"
