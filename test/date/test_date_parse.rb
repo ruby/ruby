@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require 'test/unit'
 require 'date'
+require 'timeout'
 
 class TestDateParse < Test::Unit::TestCase
 
@@ -121,8 +122,6 @@ class TestDateParse < Test::Unit::TestCase
      [['S40.05.23T23:55:21-09:00',false],[1965,5,23,23,55,21,'-09:00',-9*3600,nil], __LINE__],
      [['H11.05.23 23:55:21Z',false],[1999,5,23,23,55,21,'Z',0,nil], __LINE__],
      [['H11.05.23T23:55:21Z',false],[1999,5,23,23,55,21,'Z',0,nil], __LINE__],
-     [['H31.04.30 23:55:21Z',false],[2019,4,30,23,55,21,'Z',0,nil], __LINE__],
-     [['H31.04.30T23:55:21Z',false],[2019,4,30,23,55,21,'Z',0,nil], __LINE__],
 
      # ofx date
      [['19990523235521',false],[1999,5,23,23,55,21,nil,nil,nil], __LINE__],
@@ -418,14 +417,7 @@ class TestDateParse < Test::Unit::TestCase
 	a[1] = -1
 	a[2] = h[:yday]
       end
-      l = format('<failed at line %d>', l)
-      assert_equal(y, a, l)
-      if y[6]
-        h = Date._parse(x[0].dup.taint, *x[1..-1])
-        assert_equal(y[6], h[:zone], l)
-        assert_equal(y[6].encoding, h[:zone].encoding, l)
-        assert_predicate(h[:zone], :tainted?, l)
-      end
+      assert_equal(y, a, format('<failed at line %d>', l))
     end
   end
 
@@ -832,6 +824,13 @@ class TestDateParse < Test::Unit::TestCase
 
     h = Date._iso8601('')
     assert_equal({}, h)
+
+    h = Date._iso8601(nil)
+    assert_equal({}, h)
+
+    h = Date._iso8601('01-02-03T04:05:06Z'.to_sym)
+    assert_equal([2001, 2, 3, 4, 5, 6, 0],
+      h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
   end
 
   def test__rfc3339
@@ -847,6 +846,13 @@ class TestDateParse < Test::Unit::TestCase
 
     h = Date._rfc3339('')
     assert_equal({}, h)
+
+    h = Date._rfc3339(nil)
+    assert_equal({}, h)
+
+    h = Date._rfc3339('2001-02-03T04:05:06Z'.to_sym)
+    assert_equal([2001, 2, 3, 4, 5, 6, 0],
+      h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
   end
 
   def test__xmlschema
@@ -929,6 +935,13 @@ class TestDateParse < Test::Unit::TestCase
 
     h = Date._xmlschema('')
     assert_equal({}, h)
+
+    h = Date._xmlschema(nil)
+    assert_equal({}, h)
+
+    h = Date._xmlschema('2001-02-03'.to_sym)
+    assert_equal([2001, 2, 3, nil, nil, nil, nil],
+      h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
   end
 
   def test__rfc2822
@@ -961,6 +974,13 @@ class TestDateParse < Test::Unit::TestCase
 
     h = Date._rfc2822('')
     assert_equal({}, h)
+
+    h = Date._rfc2822(nil)
+    assert_equal({}, h)
+
+    h = Date._rfc2822('Sat, 3 Feb 2001 04:05:06 UT'.to_sym)
+    assert_equal([2001, 2, 3, 4, 5, 6, 0],
+      h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
   end
 
   def test__httpdate
@@ -981,6 +1001,13 @@ class TestDateParse < Test::Unit::TestCase
 
     h = Date._httpdate('')
     assert_equal({}, h)
+
+    h = Date._httpdate(nil)
+    assert_equal({}, h)
+
+    h = Date._httpdate('Sat, 03 Feb 2001 04:05:06 GMT'.to_sym)
+    assert_equal([2001, 2, 3, 4, 5, 6, 0],
+      h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
   end
 
   def test__jisx0301
@@ -992,15 +1019,6 @@ class TestDateParse < Test::Unit::TestCase
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
     h = Date._jisx0301('S63.02.03')
     assert_equal([1988, 2, 3, nil, nil, nil, nil],
-		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
-    h = Date._jisx0301('H31.04.30')
-    assert_equal([2019, 4, 30, nil, nil, nil, nil],
-		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
-    h = Date._jisx0301('H31.05.01')
-    assert_equal([2019, 5, 1, nil, nil, nil, nil],
-		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
-    h = Date._jisx0301('R01.05.01')
-    assert_equal([2019, 5, 1, nil, nil, nil, nil],
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
 
     h = Date._jisx0301('H13.02.03T04:05:06')
@@ -1016,47 +1034,15 @@ class TestDateParse < Test::Unit::TestCase
     assert_equal([2001, 2, 3, 4, 5, 6, 3600],
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
 
-    h = Date._jisx0301('H31.04.30T04:05:06')
-    assert_equal([2019, 4, 30, 4, 5, 6, nil],
-		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
-    h = Date._jisx0301('H31.04.30T04:05:06,07')
-    assert_equal([2019, 4, 30, 4, 5, 6, nil],
-		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
-    h = Date._jisx0301('H31.04.30T04:05:06Z')
-    assert_equal([2019, 4, 30, 4, 5, 6, 0],
-		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
-    h = Date._jisx0301('H31.04.30T04:05:06.07+0100')
-    assert_equal([2019, 4, 30, 4, 5, 6, 3600],
-		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
-
-    h = Date._jisx0301('H31.05.01T04:05:06')
-    assert_equal([2019, 5, 1, 4, 5, 6, nil],
-		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
-    h = Date._jisx0301('H31.05.01T04:05:06,07')
-    assert_equal([2019, 5, 1, 4, 5, 6, nil],
-		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
-    h = Date._jisx0301('H31.05.01T04:05:06Z')
-    assert_equal([2019, 5, 1, 4, 5, 6, 0],
-		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
-    h = Date._jisx0301('H31.05.01T04:05:06.07+0100')
-    assert_equal([2019, 5, 1, 4, 5, 6, 3600],
-		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
-
-    h = Date._jisx0301('R01.05.01T04:05:06')
-    assert_equal([2019, 5, 1, 4, 5, 6, nil],
-		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
-    h = Date._jisx0301('R01.05.01T04:05:06,07')
-    assert_equal([2019, 5, 1, 4, 5, 6, nil],
-		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
-    h = Date._jisx0301('R01.05.01T04:05:06Z')
-    assert_equal([2019, 5, 1, 4, 5, 6, 0],
-		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
-    h = Date._jisx0301('R01.05.01T04:05:06.07+0100')
-    assert_equal([2019, 5, 1, 4, 5, 6, 3600],
-		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
-
     h = Date._jisx0301('')
     assert_equal({}, h)
+
+    h = Date._jisx0301(nil)
+    assert_equal({}, h)
+
+    h = Date._jisx0301('H13.02.03T04:05:06.07+0100'.to_sym)
+    assert_equal([2001, 2, 3, 4, 5, 6, 3600],
+      h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
   end
 
   def test_iso8601
@@ -1140,32 +1126,8 @@ class TestDateParse < Test::Unit::TestCase
     assert_equal(Date.new(2001,2,3), d)
     assert_equal(Date::ITALY + 10, d.start)
 
-    d = Date.jisx0301('H31.04.30', Date::ITALY + 10)
-    assert_equal(Date.new(2019,4,30), d)
-    assert_equal(Date::ITALY + 10, d.start)
-
-    d = Date.jisx0301('H31.05.01', Date::ITALY + 10)
-    assert_equal(Date.new(2019,5,1), d)
-    assert_equal(Date::ITALY + 10, d.start)
-
-    d = Date.jisx0301('R01.05.01', Date::ITALY + 10)
-    assert_equal(Date.new(2019,5,1), d)
-    assert_equal(Date::ITALY + 10, d.start)
-
     d = DateTime.jisx0301('H13.02.03T04:05:06+07:00', Date::ITALY + 10)
     assert_equal(DateTime.new(2001,2,3,4,5,6,'+07:00'), d)
-    assert_equal(Date::ITALY + 10, d.start)
-
-    d = DateTime.jisx0301('H31.04.30T04:05:06+07:00', Date::ITALY + 10)
-    assert_equal(DateTime.new(2019,4,30,4,5,6,'+07:00'), d)
-    assert_equal(Date::ITALY + 10, d.start)
-
-    d = DateTime.jisx0301('H31.05.01T04:05:06+07:00', Date::ITALY + 10)
-    assert_equal(DateTime.new(2019,5,1,4,5,6,'+07:00'), d)
-    assert_equal(Date::ITALY + 10, d.start)
-
-    d = DateTime.jisx0301('R01.05.01T04:05:06+07:00', Date::ITALY + 10)
-    assert_equal(DateTime.new(2019,5,1,4,5,6,'+07:00'), d)
     assert_equal(Date::ITALY + 10, d.start)
   end
 
@@ -1201,16 +1163,34 @@ class TestDateParse < Test::Unit::TestCase
     s0 = s.dup
     assert_not_equal({}, Date._jisx0301(s))
     assert_equal(s0, s)
-
-    s = 'H31.04.30T04:05:06,07Z'
-    s0 = s.dup
-    assert_not_equal({}, Date._jisx0301(s))
-    assert_equal(s0, s)
-
-    s = 'H31.05.01T04:05:06,07Z'
-    s0 = s.dup
-    assert_not_equal({}, Date._jisx0301(s))
-    assert_equal(s0, s)
   end
 
+  def test_length_limit
+    assert_raise(ArgumentError) { Date._parse("1" * 1000) }
+    assert_raise(ArgumentError) { Date._iso8601("1" * 1000) }
+    assert_raise(ArgumentError) { Date._rfc3339("1" * 1000) }
+    assert_raise(ArgumentError) { Date._xmlschema("1" * 1000) }
+    assert_raise(ArgumentError) { Date._rfc2822("1" * 1000) }
+    assert_raise(ArgumentError) { Date._rfc822("1" * 1000) }
+    assert_raise(ArgumentError) { Date._jisx0301("1" * 1000) }
+
+    assert_raise(ArgumentError) { Date.parse("1" * 1000) }
+    assert_raise(ArgumentError) { Date.iso8601("1" * 1000) }
+    assert_raise(ArgumentError) { Date.rfc3339("1" * 1000) }
+    assert_raise(ArgumentError) { Date.xmlschema("1" * 1000) }
+    assert_raise(ArgumentError) { Date.rfc2822("1" * 1000) }
+    assert_raise(ArgumentError) { Date.rfc822("1" * 1000) }
+    assert_raise(ArgumentError) { Date.jisx0301("1" * 1000) }
+
+    assert_raise(ArgumentError) { DateTime.parse("1" * 1000) }
+    assert_raise(ArgumentError) { DateTime.iso8601("1" * 1000) }
+    assert_raise(ArgumentError) { DateTime.rfc3339("1" * 1000) }
+    assert_raise(ArgumentError) { DateTime.xmlschema("1" * 1000) }
+    assert_raise(ArgumentError) { DateTime.rfc2822("1" * 1000) }
+    assert_raise(ArgumentError) { DateTime.rfc822("1" * 1000) }
+    assert_raise(ArgumentError) { DateTime.jisx0301("1" * 1000) }
+
+    assert_raise(ArgumentError) { Date._parse("Jan " + "9" * 1000000) }
+    assert_raise(Timeout::Error) { Timeout.timeout(1) { Date._parse("Jan " + "9" * 1000000, limit: nil) } }
+  end
 end

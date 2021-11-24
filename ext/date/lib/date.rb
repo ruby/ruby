@@ -4,6 +4,7 @@
 require 'date_core'
 
 class Date
+  VERSION = '2.0.2' # :nodoc:
 
   class Infinity < Numeric # :nodoc:
 
