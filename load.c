@@ -28,6 +28,11 @@ static const char *const loadable_ext[] = {
     0
 };
 
+static const char *const ruby_ext[] = {
+    ".rb",
+    0
+};
+
 enum expand_type {
     EXPAND_ALL,
     EXPAND_RELATIVE,
@@ -937,7 +942,7 @@ search_required(VALUE fname, volatile VALUE *path, feature_func rb_feature_p)
 	return 'r';
     }
     tmp = fname;
-    type = rb_find_file_ext(&tmp, loadable_ext);
+    type = rb_find_file_ext(&tmp, ft == 's' ? ruby_ext : loadable_ext);
     switch (type) {
       case 0:
 	if (ft)
