@@ -651,6 +651,23 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal(['X', 'X'], Marshal.load(Marshal.dump(obj), ->(v) { v == str ? v.upcase : v }))
   end
 
+  def test_marshal_proc_string_encoding
+    string = "foo"
+    payload = Marshal.dump(string)
+    Marshal.load(payload, ->(v) {
+      if v.is_a?(String)
+        assert_equal(string, v)
+        assert_equal(string.encoding, v.encoding)
+      end
+      v
+    })
+  end
+
+  def test_marshal_proc_freeze
+    object = { foo: [42, "bar"] }
+    assert_equal object, Marshal.load(Marshal.dump(object), :freeze.to_proc)
+  end
+
   def test_marshal_load_extended_class_crash
     assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;

@@ -21,6 +21,24 @@ describe :marshal_load, shared: true do
   end
 
   describe "when called with a proc" do
+    ruby_bug "#18141", ""..."3.1" do
+      it "call the proc with fully initialized strings" do
+        utf8_string = "foo".encode(Encoding::UTF_8)
+        Marshal.send(@method, Marshal.dump(utf8_string), proc { |arg|
+          if arg.is_a?(String)
+            arg.should == utf8_string
+            arg.encoding.should == Encoding::UTF_8
+          end
+          arg
+        })
+      end
+
+      it "no longer mutate the object after it was passed to the proc" do
+        string = Marshal.load(Marshal.dump("foo"), :freeze.to_proc)
+        string.should.frozen?
+      end
+    end
+
     it "returns the value of the proc" do
       Marshal.send(@method, Marshal.dump([1,2]), proc { [3,4] }).should ==  [3,4]
     end
@@ -36,27 +54,29 @@ describe :marshal_load, shared: true do
       ret.size.should == 3
     end
 
-    it "loads an Array with proc" do
-      arr = []
-      s = 'hi'
-      s.instance_variable_set(:@foo, 5)
-      st = Struct.new("Brittle", :a).new
-      st.instance_variable_set(:@clue, 'none')
-      st.a = 0.0
-      h = Hash.new('def')
-      h['nine'] = 9
-      a = [:a, :b, :c]
-      a.instance_variable_set(:@two, 2)
-      obj = [s, 10, s, s, st, a]
-      obj.instance_variable_set(:@zoo, 'ant')
-      proc = Proc.new { |o| arr << o; o}
+    ruby_bug "#18141", ""..."3.1" do
+      it "loads an Array with proc" do
+        arr = []
+        s = 'hi'
+        s.instance_variable_set(:@foo, 5)
+        st = Struct.new("Brittle", :a).new
+        st.instance_variable_set(:@clue, 'none')
+        st.a = 0.0
+        h = Hash.new('def')
+        h['nine'] = 9
+        a = [:a, :b, :c]
+        a.instance_variable_set(:@two, 2)
+        obj = [s, 10, s, s, st, a]
+        obj.instance_variable_set(:@zoo, 'ant')
+        proc = Proc.new { |o| arr << o; o}
 
-      Marshal.send(@method, "\x04\bI[\vI\"\ahi\a:\x06EF:\t@fooi\ni\x0F@\x06@\x06IS:\x14Struct::Brittle\x06:\x06af\x060\x06:\n@clueI\"\tnone\x06;\x00FI[\b;\b:\x06b:\x06c\x06:\t@twoi\a\x06:\t@zooI\"\bant\x06;\x00F", proc)
+        Marshal.send(@method, "\x04\bI[\vI\"\ahi\a:\x06EF:\t@fooi\ni\x0F@\x06@\x06IS:\x14Struct::Brittle\x06:\x06af\x060\x06:\n@clueI\"\tnone\x06;\x00FI[\b;\b:\x06b:\x06c\x06:\t@twoi\a\x06:\t@zooI\"\bant\x06;\x00F", proc)
 
-      arr.should == ["hi", false, 5, 10, "hi", "hi", 0.0, st, "none", false,
-                     :b, :c, a, 2, ["hi", 10, "hi", "hi", st, [:a, :b, :c]], "ant", false]
+        arr.should == [false, 5, "hi", 10, "hi", "hi", 0.0, st, false, "none",
+                       :b, :c, a, 2, ["hi", 10, "hi", "hi", st, [:a, :b, :c]], false, "ant"]
 
-      Struct.send(:remove_const, :Brittle)
+        Struct.send(:remove_const, :Brittle)
+      end
     end
   end
 
