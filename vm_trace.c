@@ -726,7 +726,7 @@ tp_memsize(const void *ptr)
 
 static const rb_data_type_t tp_data_type = {
     "tracepoint",
-    {tp_mark, RUBY_TYPED_NEVER_FREE, tp_memsize,},
+    {tp_mark, RUBY_TYPED_DEFAULT_FREE, tp_memsize,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
