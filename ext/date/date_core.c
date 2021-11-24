@@ -4328,12 +4328,40 @@ date_s_strptime(int argc, VALUE *argv, VALUE klass)
 
 VALUE date__parse(VALUE str, VALUE comp);
 
+static size_t
+get_limit(VALUE opt)
+{
+    if (!NIL_P(opt)) {
+        VALUE limit = rb_hash_aref(opt, ID2SYM(rb_intern("limit")));
+        if (NIL_P(limit)) return SIZE_MAX;
+        return NUM2SIZET(limit);
+    }
+    return 128;
+}
+
+static void
+check_limit(VALUE str, VALUE opt)
+{
+    if (NIL_P(str)) return;
+    if (SYMBOL_P(str)) str = rb_sym2str(str);
+
+    StringValue(str);
+    size_t slen = RSTRING_LEN(str);
+    size_t limit = get_limit(opt);
+    if (slen > limit) {
+	rb_raise(rb_eArgError,
+		 "string length (%"PRI_SIZE_PREFIX"u) exceeds the limit %"PRI_SIZE_PREFIX"u", slen, limit);
+    }
+}
+
 static VALUE
 date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE vstr, vcomp, hash;
+    VALUE vstr, vcomp, hash, opt;
 
-    rb_scan_args(argc, argv, "11", &vstr, &vcomp);
+    rb_scan_args(argc, argv, "11:", &vstr, &vcomp, &opt);
+    if (!NIL_P(opt)) argc--;
+    check_limit(vstr, opt);
     StringValue(vstr);
     if (!rb_enc_str_asciicompat_p(vstr))
 	rb_raise(rb_eArgError,
@@ -4348,7 +4376,7 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date._parse(string[, comp=true])  ->  hash
+ *    Date._parse(string[, comp=true], limit: 128)  ->  hash
  *
  * Parses the given representation of date and time, and returns a
  * hash of parsed elements.
@@ -4363,6 +4391,10 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
  * it full.
  *
  *    Date._parse('2001-02-03')	#=> {:year=>2001, :mon=>2, :mday=>3}
+ *
+ * Raise an ArgumentError when the string length is longer than _limit_.
+ * You can stop this check by passing `limit: nil`, but note that
+ * it may take a long time to parse.
  */
 static VALUE
 date_s__parse(int argc, VALUE *argv, VALUE klass)
@@ -4372,7 +4404,7 @@ date_s__parse(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.parse(string='-4712-01-01'[, comp=true[, start=Date::ITALY]])  ->  date
+ *    Date.parse(string='-4712-01-01'[, comp=true[, start=Date::ITALY]], limit: 128)  ->  date
  *
  * Parses the given representation of date and time, and creates a
  * date object.
@@ -4389,13 +4421,18 @@ date_s__parse(int argc, VALUE *argv, VALUE klass)
  *    Date.parse('2001-02-03')		#=> #<Date: 2001-02-03 ...>
  *    Date.parse('20010203')		#=> #<Date: 2001-02-03 ...>
  *    Date.parse('3rd Feb 2001')	#=> #<Date: 2001-02-03 ...>
+ *
+ * Raise an ArgumentError when the string length is longer than _limit_.
+ * You can stop this check by passing `limit: nil`, but note that
+ * it may take a long time to parse.
  */
 static VALUE
 date_s_parse(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE str, comp, sg;
+    VALUE str, comp, sg, opt;
 
-    rb_scan_args(argc, argv, "03", &str, &comp, &sg);
+    rb_scan_args(argc, argv, "03:", &str, &comp, &sg, &opt);
+    if (!NIL_P(opt)) argc--;
 
     switch (argc) {
       case 0:
@@ -4407,11 +4444,12 @@ date_s_parse(int argc, VALUE *argv, VALUE klass)
     }
 
     {
-	VALUE argv2[2], hash;
-
-	argv2[0] = str;
-	argv2[1] = comp;
-	hash = date_s__parse(2, argv2, klass);
+        int argc2 = 2;
+	VALUE argv2[3];
+        argv2[0] = str;
+        argv2[1] = comp;
+        if (!NIL_P(opt)) argv2[argc2++] = opt;
+	VALUE hash = date_s__parse(argc2, argv2, klass);
 	return d_new_by_frags(klass, hash, sg);
     }
 }
@@ -4425,19 +4463,28 @@ VALUE date__jisx0301(VALUE);
 
 /*
  * call-seq:
- *    Date._iso8601(string)  ->  hash
+ *    Date._iso8601(string, limit: 128)  ->  hash
  *
  * Returns a hash of parsed elements.
+ *
+ * Raise an ArgumentError when the string length is longer than _limit_.
+ * You can stop this check by passing `limit: nil`, but note that
+ * it may take a long time to parse.
  */
 static VALUE
-date_s__iso8601(VALUE klass, VALUE str)
+date_s__iso8601(int argc, VALUE *argv, VALUE klass)
 {
+    VALUE str, opt;
+
+    rb_scan_args(argc, argv, "1:", &str, &opt);
+    check_limit(str, opt);
+
     return date__iso8601(str);
 }
 
 /*
  * call-seq:
- *    Date.iso8601(string='-4712-01-01'[, start=Date::ITALY])  ->  date
+ *    Date.iso8601(string='-4712-01-01'[, start=Date::ITALY], limit: 128)  ->  date
  *
  * Creates a new Date object by parsing from a string according to
  * some typical ISO 8601 formats.
@@ -4445,13 +4492,18 @@ date_s__iso8601(VALUE klass, VALUE str)
  *    Date.iso8601('2001-02-03')	#=> #<Date: 2001-02-03 ...>
  *    Date.iso8601('20010203')		#=> #<Date: 2001-02-03 ...>
  *    Date.iso8601('2001-W05-6')	#=> #<Date: 2001-02-03 ...>
+ *
+ * Raise an ArgumentError when the string length is longer than _limit_.
+ * You can stop this check by passing `limit: nil`, but note that
+ * it may take a long time to parse.
  */
 static VALUE
 date_s_iso8601(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE str, sg;
+    VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02", &str, &sg);
+    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
+    if (!NIL_P(opt)) argc--;
 
     switch (argc) {
       case 0:
@@ -4461,38 +4513,56 @@ date_s_iso8601(int argc, VALUE *argv, VALUE klass)
     }
 
     {
-	VALUE hash = date_s__iso8601(klass, str);
+        int argc2 = 1;
+        VALUE argv2[2];
+        argv2[0] = str;
+        if (!NIL_P(opt)) argv2[argc2++] = opt;
+	VALUE hash = date_s__iso8601(argc2, argv2, klass);
 	return d_new_by_frags(klass, hash, sg);
     }
 }
 
 /*
  * call-seq:
- *    Date._rfc3339(string)  ->  hash
+ *    Date._rfc3339(string, limit: 128)  ->  hash
  *
  * Returns a hash of parsed elements.
+ *
+ * Raise an ArgumentError when the string length is longer than _limit_.
+ * You can stop this check by passing `limit: nil`, but note that
+ * it may take a long time to parse.
  */
 static VALUE
-date_s__rfc3339(VALUE klass, VALUE str)
+date_s__rfc3339(int argc, VALUE *argv, VALUE klass)
 {
+    VALUE str, opt;
+
+    rb_scan_args(argc, argv, "1:", &str, &opt);
+    check_limit(str, opt);
+
     return date__rfc3339(str);
 }
 
 /*
  * call-seq:
- *    Date.rfc3339(string='-4712-01-01T00:00:00+00:00'[, start=Date::ITALY])  ->  date
+ *    Date.rfc3339(string='-4712-01-01T00:00:00+00:00'[, start=Date::ITALY], limit: 128)  ->  date
  *
  * Creates a new Date object by parsing from a string according to
  * some typical RFC 3339 formats.
  *
  *    Date.rfc3339('2001-02-03T04:05:06+07:00')	#=> #<Date: 2001-02-03 ...>
+ *
+ * Raise an ArgumentError when the string length is longer than _limit_.
+ * You can stop this check by passing `limit: nil`, but note that
+ * it may take a long time to parse.
  */
 static VALUE
 date_s_rfc3339(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE str, sg;
+    VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02", &str, &sg);
+    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
+    if (!NIL_P(opt)) argc--;
 
     switch (argc) {
       case 0:
@@ -4502,38 +4572,56 @@ date_s_rfc3339(int argc, VALUE *argv, VALUE klass)
     }
 
     {
-	VALUE hash = date_s__rfc3339(klass, str);
+        int argc2 = 1;
+        VALUE argv2[2];
+        argv2[0] = str;
+        if (!NIL_P(opt)) argv2[argc2++] = opt;
+	VALUE hash = date_s__rfc3339(argc2, argv2, klass);
 	return d_new_by_frags(klass, hash, sg);
     }
 }
 
 /*
  * call-seq:
- *    Date._xmlschema(string)  ->  hash
+ *    Date._xmlschema(string, limit: 128)  ->  hash
  *
  * Returns a hash of parsed elements.
+ *
+ * Raise an ArgumentError when the string length is longer than _limit_.
+ * You can stop this check by passing `limit: nil`, but note that
+ * it may take a long time to parse.
  */
 static VALUE
-date_s__xmlschema(VALUE klass, VALUE str)
+date_s__xmlschema(int argc, VALUE *argv, VALUE klass)
 {
+    VALUE str, opt;
+
+    rb_scan_args(argc, argv, "1:", &str, &opt);
+    check_limit(str, opt);
+
     return date__xmlschema(str);
 }
 
 /*
  * call-seq:
- *    Date.xmlschema(string='-4712-01-01'[, start=Date::ITALY])  ->  date
+ *    Date.xmlschema(string='-4712-01-01'[, start=Date::ITALY], limit: 128)  ->  date
  *
  * Creates a new Date object by parsing from a string according to
  * some typical XML Schema formats.
  *
  *    Date.xmlschema('2001-02-03')	#=> #<Date: 2001-02-03 ...>
+ *
+ * Raise an ArgumentError when the string length is longer than _limit_.
+ * You can stop this check by passing `limit: nil`, but note that
+ * it may take a long time to parse.
  */
 static VALUE
 date_s_xmlschema(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE str, sg;
+    VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02", &str, &sg);
+    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
+    if (!NIL_P(opt)) argc--;
 
     switch (argc) {
       case 0:
@@ -4543,41 +4631,58 @@ date_s_xmlschema(int argc, VALUE *argv, VALUE klass)
     }
 
     {
-	VALUE hash = date_s__xmlschema(klass, str);
+        int argc2 = 1;
+        VALUE argv2[2];
+        argv2[0] = str;
+        if (!NIL_P(opt)) argv2[argc2++] = opt;
+	VALUE hash = date_s__xmlschema(argc2, argv2, klass);
 	return d_new_by_frags(klass, hash, sg);
     }
 }
 
 /*
  * call-seq:
- *    Date._rfc2822(string)  ->  hash
- *    Date._rfc822(string)   ->  hash
+ *    Date._rfc2822(string, limit: 128)  ->  hash
+ *    Date._rfc822(string, limit: 128)   ->  hash
  *
  * Returns a hash of parsed elements.
+ *
+ * Raise an ArgumentError when the string length is longer than _limit_.
+ * You can stop this check by passing `limit: nil`, but note that
+ * it may take a long time to parse.
  */
 static VALUE
-date_s__rfc2822(VALUE klass, VALUE str)
+date_s__rfc2822(int argc, VALUE *argv, VALUE klass)
 {
+    VALUE str, opt;
+
+    rb_scan_args(argc, argv, "1:", &str, &opt);
+    check_limit(str, opt);
+
     return date__rfc2822(str);
 }
 
 /*
  * call-seq:
- *    Date.rfc2822(string='Mon, 1 Jan -4712 00:00:00 +0000'[, start=Date::ITALY])  ->  date
- *    Date.rfc822(string='Mon, 1 Jan -4712 00:00:00 +0000'[, start=Date::ITALY])   ->  date
+ *    Date.rfc2822(string='Mon, 1 Jan -4712 00:00:00 +0000'[, start=Date::ITALY], limit: 128)  ->  date
+ *    Date.rfc822(string='Mon, 1 Jan -4712 00:00:00 +0000'[, start=Date::ITALY], limit: 128)   ->  date
  *
  * Creates a new Date object by parsing from a string according to
  * some typical RFC 2822 formats.
  *
  *    Date.rfc2822('Sat, 3 Feb 2001 00:00:00 +0000')
  *						#=> #<Date: 2001-02-03 ...>
+ *
+ * Raise an ArgumentError when the string length is longer than _limit_.
+ * You can stop this check by passing `limit: nil`, but note that
+ * it may take a long time to parse.
  */
 static VALUE
 date_s_rfc2822(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE str, sg;
+    VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02", &str, &sg);
+    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
 
     switch (argc) {
       case 0:
@@ -4587,39 +4692,56 @@ date_s_rfc2822(int argc, VALUE *argv, VALUE klass)
     }
 
     {
-	VALUE hash = date_s__rfc2822(klass, str);
+        int argc2 = 1;
+        VALUE argv2[2];
+        argv2[0] = str;
+        if (!NIL_P(opt)) argv2[argc2++] = opt;
+	VALUE hash = date_s__rfc2822(argc2, argv2, klass);
 	return d_new_by_frags(klass, hash, sg);
     }
 }
 
 /*
  * call-seq:
- *    Date._httpdate(string)  ->  hash
+ *    Date._httpdate(string, limit: 128)  ->  hash
  *
  * Returns a hash of parsed elements.
+ *
+ * Raise an ArgumentError when the string length is longer than _limit_.
+ * You can stop this check by passing `limit: nil`, but note that
+ * it may take a long time to parse.
  */
 static VALUE
-date_s__httpdate(VALUE klass, VALUE str)
+date_s__httpdate(int argc, VALUE *argv, VALUE klass)
 {
+    VALUE str, opt;
+
+    rb_scan_args(argc, argv, "1:", &str, &opt);
+    check_limit(str, opt);
+
     return date__httpdate(str);
 }
 
 /*
  * call-seq:
- *    Date.httpdate(string='Mon, 01 Jan -4712 00:00:00 GMT'[, start=Date::ITALY])  ->  date
+ *    Date.httpdate(string='Mon, 01 Jan -4712 00:00:00 GMT'[, start=Date::ITALY], limit: 128)  ->  date
  *
  * Creates a new Date object by parsing from a string according to
  * some RFC 2616 format.
  *
  *    Date.httpdate('Sat, 03 Feb 2001 00:00:00 GMT')
  *						#=> #<Date: 2001-02-03 ...>
+ *
+ * Raise an ArgumentError when the string length is longer than _limit_.
+ * You can stop this check by passing `limit: nil`, but note that
+ * it may take a long time to parse.
  */
 static VALUE
 date_s_httpdate(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE str, sg;
+    VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02", &str, &sg);
+    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
 
     switch (argc) {
       case 0:
@@ -4629,26 +4751,39 @@ date_s_httpdate(int argc, VALUE *argv, VALUE klass)
     }
 
     {
-	VALUE hash = date_s__httpdate(klass, str);
+        int argc2 = 1;
+        VALUE argv2[2];
+        argv2[0] = str;
+        if (!NIL_P(opt)) argv2[argc2++] = opt;
+	VALUE hash = date_s__httpdate(argc2, argv2, klass);
 	return d_new_by_frags(klass, hash, sg);
     }
 }
 
 /*
  * call-seq:
- *    Date._jisx0301(string)  ->  hash
+ *    Date._jisx0301(string, limit: 128)  ->  hash
  *
  * Returns a hash of parsed elements.
+ *
+ * Raise an ArgumentError when the string length is longer than _limit_.
+ * You can stop this check by passing `limit: nil`, but note that
+ * it may take a long time to parse.
  */
 static VALUE
-date_s__jisx0301(VALUE klass, VALUE str)
+date_s__jisx0301(int argc, VALUE *argv, VALUE klass)
 {
+    VALUE str, opt;
+
+    rb_scan_args(argc, argv, "1:", &str, &opt);
+    check_limit(str, opt);
+
     return date__jisx0301(str);
 }
 
 /*
  * call-seq:
- *    Date.jisx0301(string='-4712-01-01'[, start=Date::ITALY])  ->  date
+ *    Date.jisx0301(string='-4712-01-01'[, start=Date::ITALY], limit: 128)  ->  date
  *
  * Creates a new Date object by parsing from a string according to
  * some typical JIS X 0301 formats.
@@ -4658,13 +4793,18 @@ date_s__jisx0301(VALUE klass, VALUE str)
  * For no-era year, legacy format, Heisei is assumed.
  *
  *    Date.jisx0301('13.02.03') 		#=> #<Date: 2001-02-03 ...>
+ *
+ * Raise an ArgumentError when the string length is longer than _limit_.
+ * You can stop this check by passing `limit: nil`, but note that
+ * it may take a long time to parse.
  */
 static VALUE
 date_s_jisx0301(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE str, sg;
+    VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02", &str, &sg);
+    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
+    if (!NIL_P(opt)) argc--;
 
     switch (argc) {
       case 0:
@@ -4674,7 +4814,11 @@ date_s_jisx0301(int argc, VALUE *argv, VALUE klass)
     }
 
     {
-	VALUE hash = date_s__jisx0301(klass, str);
+        int argc2 = 1;
+        VALUE argv2[2];
+        argv2[0] = str;
+        if (!NIL_P(opt)) argv2[argc2++] = opt;
+	VALUE hash = date_s__jisx0301(argc2, argv2, klass);
 	return d_new_by_frags(klass, hash, sg);
     }
 }
@@ -8013,7 +8157,7 @@ datetime_s_strptime(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime.parse(string='-4712-01-01T00:00:00+00:00'[, comp=true[, start=Date::ITALY]])  ->  datetime
+ *    DateTime.parse(string='-4712-01-01T00:00:00+00:00'[, comp=true[, start=Date::ITALY]], limit: 128)  ->  datetime
  *
  * Parses the given representation of date and time, and creates a
  * DateTime object.
@@ -8032,13 +8176,18 @@ datetime_s_strptime(int argc, VALUE *argv, VALUE klass)
  *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
  *    DateTime.parse('3rd Feb 2001 04:05:06 PM')
  *				#=> #<DateTime: 2001-02-03T16:05:06+00:00 ...>
+ *
+ * Raise an ArgumentError when the string length is longer than _limit_.
+ * You can stop this check by passing `limit: nil`, but note that
+ * it may take a long time to parse.
  */
 static VALUE
 datetime_s_parse(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE str, comp, sg;
+    VALUE str, comp, sg, opt;
 
-    rb_scan_args(argc, argv, "03", &str, &comp, &sg);
+    rb_scan_args(argc, argv, "03:", &str, &comp, &sg, &opt);
+    if (!NIL_P(opt)) argc--;
 
     switch (argc) {
       case 0:
@@ -8050,18 +8199,20 @@ datetime_s_parse(int argc, VALUE *argv, VALUE klass)
     }
 
     {
-	VALUE argv2[2], hash;
-
-	argv2[0] = str;
-	argv2[1] = comp;
-	hash = date_s__parse(2, argv2, klass);
+        int argc2 = 2;
+        VALUE argv2[3];
+        argv2[0] = str;
+        argv2[1] = comp;
+        argv2[2] = opt;
+        if (!NIL_P(opt)) argc2++;
+	VALUE hash = date_s__parse(argc2, argv2, klass);
 	return dt_new_by_frags(klass, hash, sg);
     }
 }
 
 /*
  * call-seq:
- *    DateTime.iso8601(string='-4712-01-01T00:00:00+00:00'[, start=Date::ITALY])  ->  datetime
+ *    DateTime.iso8601(string='-4712-01-01T00:00:00+00:00'[, start=Date::ITALY], limit: 128)  ->  datetime
  *
  * Creates a new DateTime object by parsing from a string according to
  * some typical ISO 8601 formats.
@@ -8072,13 +8223,18 @@ datetime_s_parse(int argc, VALUE *argv, VALUE klass)
  *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
  *    DateTime.iso8601('2001-W05-6T04:05:06+07:00')
  *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
+ *
+ * Raise an ArgumentError when the string length is longer than _limit_.
+ * You can stop this check by passing `limit: nil`, but note that
+ * it may take a long time to parse.
  */
 static VALUE
 datetime_s_iso8601(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE str, sg;
+    VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02", &str, &sg);
+    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
+    if (!NIL_P(opt)) argc--;
 
     switch (argc) {
       case 0:
@@ -8088,27 +8244,37 @@ datetime_s_iso8601(int argc, VALUE *argv, VALUE klass)
     }
 
     {
-	VALUE hash = date_s__iso8601(klass, str);
+        int argc2 = 1;
+        VALUE argv2[2];
+        argv2[0] = str;
+        argv2[1] = opt;
+        if (!NIL_P(opt)) argc2--;
+	VALUE hash = date_s__iso8601(argc2, argv2, klass);
 	return dt_new_by_frags(klass, hash, sg);
     }
 }
 
 /*
  * call-seq:
- *    DateTime.rfc3339(string='-4712-01-01T00:00:00+00:00'[, start=Date::ITALY])  ->  datetime
+ *    DateTime.rfc3339(string='-4712-01-01T00:00:00+00:00'[, start=Date::ITALY], limit: 128)  ->  datetime
  *
  * Creates a new DateTime object by parsing from a string according to
  * some typical RFC 3339 formats.
  *
  *    DateTime.rfc3339('2001-02-03T04:05:06+07:00')
  *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
+ *
+ * Raise an ArgumentError when the string length is longer than _limit_.
+ * You can stop this check by passing `limit: nil`, but note that
+ * it may take a long time to parse.
  */
 static VALUE
 datetime_s_rfc3339(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE str, sg;
+    VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02", &str, &sg);
+    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
+    if (!NIL_P(opt)) argc--;
 
     switch (argc) {
       case 0:
@@ -8118,27 +8284,37 @@ datetime_s_rfc3339(int argc, VALUE *argv, VALUE klass)
     }
 
     {
-	VALUE hash = date_s__rfc3339(klass, str);
+        int argc2 = 1;
+        VALUE argv2[2];
+        argv2[0] = str;
+        argv2[1] = opt;
+        if (!NIL_P(opt)) argc2++;
+	VALUE hash = date_s__rfc3339(argc2, argv2, klass);
 	return dt_new_by_frags(klass, hash, sg);
     }
 }
 
 /*
  * call-seq:
- *    DateTime.xmlschema(string='-4712-01-01T00:00:00+00:00'[, start=Date::ITALY])  ->  datetime
+ *    DateTime.xmlschema(string='-4712-01-01T00:00:00+00:00'[, start=Date::ITALY], limit: 128)  ->  datetime
  *
  * Creates a new DateTime object by parsing from a string according to
  * some typical XML Schema formats.
  *
  *    DateTime.xmlschema('2001-02-03T04:05:06+07:00')
  *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
+ *
+ * Raise an ArgumentError when the string length is longer than _limit_.
+ * You can stop this check by passing `limit: nil`, but note that
+ * it may take a long time to parse.
  */
 static VALUE
 datetime_s_xmlschema(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE str, sg;
+    VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02", &str, &sg);
+    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
+    if (!NIL_P(opt)) argc--;
 
     switch (argc) {
       case 0:
@@ -8148,28 +8324,38 @@ datetime_s_xmlschema(int argc, VALUE *argv, VALUE klass)
     }
 
     {
-	VALUE hash = date_s__xmlschema(klass, str);
+        int argc2 = 1;
+        VALUE argv2[2];
+        argv2[0] = str;
+        argv2[1] = opt;
+        if (!NIL_P(opt)) argc2++;
+	VALUE hash = date_s__xmlschema(argc2, argv2, klass);
 	return dt_new_by_frags(klass, hash, sg);
     }
 }
 
 /*
  * call-seq:
- *    DateTime.rfc2822(string='Mon, 1 Jan -4712 00:00:00 +0000'[, start=Date::ITALY])  ->  datetime
- *    DateTime.rfc822(string='Mon, 1 Jan -4712 00:00:00 +0000'[, start=Date::ITALY])   ->  datetime
+ *    DateTime.rfc2822(string='Mon, 1 Jan -4712 00:00:00 +0000'[, start=Date::ITALY], limit: 128)  ->  datetime
+ *    DateTime.rfc822(string='Mon, 1 Jan -4712 00:00:00 +0000'[, start=Date::ITALY], limit: 128)   ->  datetime
  *
  * Creates a new DateTime object by parsing from a string according to
  * some typical RFC 2822 formats.
  *
  *     DateTime.rfc2822('Sat, 3 Feb 2001 04:05:06 +0700')
  *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
+ *
+ * Raise an ArgumentError when the string length is longer than _limit_.
+ * You can stop this check by passing `limit: nil`, but note that
+ * it may take a long time to parse.
  */
 static VALUE
 datetime_s_rfc2822(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE str, sg;
+    VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02", &str, &sg);
+    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
+    if (!NIL_P(opt)) argc--;
 
     switch (argc) {
       case 0:
@@ -8179,7 +8365,12 @@ datetime_s_rfc2822(int argc, VALUE *argv, VALUE klass)
     }
 
     {
-	VALUE hash = date_s__rfc2822(klass, str);
+        int argc2 = 1;
+        VALUE argv2[2];
+        argv2[0] = str;
+        argv2[1] = opt;
+        if (!NIL_P(opt)) argc2++;
+	VALUE hash = date_s__rfc2822(argc2, argv2, klass);
 	return dt_new_by_frags(klass, hash, sg);
     }
 }
@@ -8193,13 +8384,18 @@ datetime_s_rfc2822(int argc, VALUE *argv, VALUE klass)
  *
  *    DateTime.httpdate('Sat, 03 Feb 2001 04:05:06 GMT')
  *				#=> #<DateTime: 2001-02-03T04:05:06+00:00 ...>
+ *
+ * Raise an ArgumentError when the string length is longer than _limit_.
+ * You can stop this check by passing `limit: nil`, but note that
+ * it may take a long time to parse.
  */
 static VALUE
 datetime_s_httpdate(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE str, sg;
+    VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02", &str, &sg);
+    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
+    if (!NIL_P(opt)) argc--;
 
     switch (argc) {
       case 0:
@@ -8209,14 +8405,19 @@ datetime_s_httpdate(int argc, VALUE *argv, VALUE klass)
     }
 
     {
-	VALUE hash = date_s__httpdate(klass, str);
+        int argc2 = 1;
+        VALUE argv2[2];
+        argv2[0] = str;
+        argv2[1] = opt;
+        if (!NIL_P(opt)) argc2++;
+	VALUE hash = date_s__httpdate(argc2, argv2, klass);
 	return dt_new_by_frags(klass, hash, sg);
     }
 }
 
 /*
  * call-seq:
- *    DateTime.jisx0301(string='-4712-01-01T00:00:00+00:00'[, start=Date::ITALY])  ->  datetime
+ *    DateTime.jisx0301(string='-4712-01-01T00:00:00+00:00'[, start=Date::ITALY], limit: 128)  ->  datetime
  *
  * Creates a new DateTime object by parsing from a string according to
  * some typical JIS X 0301 formats.
@@ -8228,13 +8429,18 @@ datetime_s_httpdate(int argc, VALUE *argv, VALUE klass)
  *
  *    DateTime.jisx0301('13.02.03T04:05:06+07:00')
  *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
+ *
+ * Raise an ArgumentError when the string length is longer than _limit_.
+ * You can stop this check by passing `limit: nil`, but note that
+ * it may take a long time to parse.
  */
 static VALUE
 datetime_s_jisx0301(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE str, sg;
+    VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02", &str, &sg);
+    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
+    if (!NIL_P(opt)) argc--;
 
     switch (argc) {
       case 0:
@@ -8244,7 +8450,12 @@ datetime_s_jisx0301(int argc, VALUE *argv, VALUE klass)
     }
 
     {
-	VALUE hash = date_s__jisx0301(klass, str);
+        int argc2 = 1;
+        VALUE argv2[2];
+        argv2[0] = str;
+        argv2[1] = opt;
+        if (!NIL_P(opt)) argc2++;
+	VALUE hash = date_s__jisx0301(argc2, argv2, klass);
 	return dt_new_by_frags(klass, hash, sg);
     }
 }
@@ -9403,19 +9614,19 @@ Init_date_core(void)
     rb_define_singleton_method(cDate, "strptime", date_s_strptime, -1);
     rb_define_singleton_method(cDate, "_parse", date_s__parse, -1);
     rb_define_singleton_method(cDate, "parse", date_s_parse, -1);
-    rb_define_singleton_method(cDate, "_iso8601", date_s__iso8601, 1);
+    rb_define_singleton_method(cDate, "_iso8601", date_s__iso8601, -1);
     rb_define_singleton_method(cDate, "iso8601", date_s_iso8601, -1);
-    rb_define_singleton_method(cDate, "_rfc3339", date_s__rfc3339, 1);
+    rb_define_singleton_method(cDate, "_rfc3339", date_s__rfc3339, -1);
     rb_define_singleton_method(cDate, "rfc3339", date_s_rfc3339, -1);
-    rb_define_singleton_method(cDate, "_xmlschema", date_s__xmlschema, 1);
+    rb_define_singleton_method(cDate, "_xmlschema", date_s__xmlschema, -1);
     rb_define_singleton_method(cDate, "xmlschema", date_s_xmlschema, -1);
-    rb_define_singleton_method(cDate, "_rfc2822", date_s__rfc2822, 1);
-    rb_define_singleton_method(cDate, "_rfc822", date_s__rfc2822, 1);
+    rb_define_singleton_method(cDate, "_rfc2822", date_s__rfc2822, -1);
+    rb_define_singleton_method(cDate, "_rfc822", date_s__rfc2822, -1);
     rb_define_singleton_method(cDate, "rfc2822", date_s_rfc2822, -1);
     rb_define_singleton_method(cDate, "rfc822", date_s_rfc2822, -1);
-    rb_define_singleton_method(cDate, "_httpdate", date_s__httpdate, 1);
+    rb_define_singleton_method(cDate, "_httpdate", date_s__httpdate, -1);
     rb_define_singleton_method(cDate, "httpdate", date_s_httpdate, -1);
-    rb_define_singleton_method(cDate, "_jisx0301", date_s__jisx0301, 1);
+    rb_define_singleton_method(cDate, "_jisx0301", date_s__jisx0301, -1);
     rb_define_singleton_method(cDate, "jisx0301", date_s_jisx0301, -1);
 
     rb_define_method(cDate, "initialize", date_initialize, -1);

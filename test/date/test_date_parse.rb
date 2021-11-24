@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require 'test/unit'
 require 'date'
+require 'timeout'
 
 class TestDateParse < Test::Unit::TestCase
 
@@ -847,6 +848,13 @@ class TestDateParse < Test::Unit::TestCase
 
     h = Date._iso8601('')
     assert_equal({}, h)
+
+    h = Date._iso8601(nil)
+    assert_equal({}, h)
+
+    h = Date._iso8601('01-02-03T04:05:06Z'.to_sym)
+    assert_equal([2001, 2, 3, 4, 5, 6, 0],
+      h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
   end
 
   def test__rfc3339
@@ -862,6 +870,13 @@ class TestDateParse < Test::Unit::TestCase
 
     h = Date._rfc3339('')
     assert_equal({}, h)
+
+    h = Date._rfc3339(nil)
+    assert_equal({}, h)
+
+    h = Date._rfc3339('2001-02-03T04:05:06Z'.to_sym)
+    assert_equal([2001, 2, 3, 4, 5, 6, 0],
+      h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
   end
 
   def test__xmlschema
@@ -944,6 +959,13 @@ class TestDateParse < Test::Unit::TestCase
 
     h = Date._xmlschema('')
     assert_equal({}, h)
+
+    h = Date._xmlschema(nil)
+    assert_equal({}, h)
+
+    h = Date._xmlschema('2001-02-03'.to_sym)
+    assert_equal([2001, 2, 3, nil, nil, nil, nil],
+      h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
   end
 
   def test__rfc2822
@@ -976,6 +998,13 @@ class TestDateParse < Test::Unit::TestCase
 
     h = Date._rfc2822('')
     assert_equal({}, h)
+
+    h = Date._rfc2822(nil)
+    assert_equal({}, h)
+
+    h = Date._rfc2822('Sat, 3 Feb 2001 04:05:06 UT'.to_sym)
+    assert_equal([2001, 2, 3, 4, 5, 6, 0],
+      h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
   end
 
   def test__httpdate
@@ -996,6 +1025,13 @@ class TestDateParse < Test::Unit::TestCase
 
     h = Date._httpdate('')
     assert_equal({}, h)
+
+    h = Date._httpdate(nil)
+    assert_equal({}, h)
+
+    h = Date._httpdate('Sat, 03 Feb 2001 04:05:06 GMT'.to_sym)
+    assert_equal([2001, 2, 3, 4, 5, 6, 0],
+      h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
   end
 
   def test__jisx0301
@@ -1072,6 +1108,13 @@ class TestDateParse < Test::Unit::TestCase
 
     h = Date._jisx0301('')
     assert_equal({}, h)
+
+    h = Date._jisx0301(nil)
+    assert_equal({}, h)
+
+    h = Date._jisx0301('H13.02.03T04:05:06.07+0100'.to_sym)
+    assert_equal([2001, 2, 3, 4, 5, 6, 3600],
+      h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
   end
 
   def test_iso8601
@@ -1228,4 +1271,32 @@ class TestDateParse < Test::Unit::TestCase
     assert_equal(s0, s)
   end
 
+  def test_length_limit
+    assert_raise(ArgumentError) { Date._parse("1" * 1000) }
+    assert_raise(ArgumentError) { Date._iso8601("1" * 1000) }
+    assert_raise(ArgumentError) { Date._rfc3339("1" * 1000) }
+    assert_raise(ArgumentError) { Date._xmlschema("1" * 1000) }
+    assert_raise(ArgumentError) { Date._rfc2822("1" * 1000) }
+    assert_raise(ArgumentError) { Date._rfc822("1" * 1000) }
+    assert_raise(ArgumentError) { Date._jisx0301("1" * 1000) }
+
+    assert_raise(ArgumentError) { Date.parse("1" * 1000) }
+    assert_raise(ArgumentError) { Date.iso8601("1" * 1000) }
+    assert_raise(ArgumentError) { Date.rfc3339("1" * 1000) }
+    assert_raise(ArgumentError) { Date.xmlschema("1" * 1000) }
+    assert_raise(ArgumentError) { Date.rfc2822("1" * 1000) }
+    assert_raise(ArgumentError) { Date.rfc822("1" * 1000) }
+    assert_raise(ArgumentError) { Date.jisx0301("1" * 1000) }
+
+    assert_raise(ArgumentError) { DateTime.parse("1" * 1000) }
+    assert_raise(ArgumentError) { DateTime.iso8601("1" * 1000) }
+    assert_raise(ArgumentError) { DateTime.rfc3339("1" * 1000) }
+    assert_raise(ArgumentError) { DateTime.xmlschema("1" * 1000) }
+    assert_raise(ArgumentError) { DateTime.rfc2822("1" * 1000) }
+    assert_raise(ArgumentError) { DateTime.rfc822("1" * 1000) }
+    assert_raise(ArgumentError) { DateTime.jisx0301("1" * 1000) }
+
+    assert_raise(ArgumentError) { Date._parse("Jan " + "9" * 1000000) }
+    assert_raise(Timeout::Error) { Timeout.timeout(1) { Date._parse("Jan " + "9" * 1000000, limit: nil) } }
+  end
 end
