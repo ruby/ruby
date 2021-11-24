@@ -2091,45 +2091,6 @@ rb_float_floor(VALUE num, int ndigits)
     }
 }
 
-/*
- *  call-seq:
- *     float.floor([ndigits])  ->  integer or float
- *
- *  Returns the largest number less than or equal to +float+ with
- *  a precision of +ndigits+ decimal digits (default: 0).
- *
- *  When the precision is negative, the returned value is an integer
- *  with at least <code>ndigits.abs</code> trailing zeros.
- *
- *  Returns a floating point number when +ndigits+ is positive,
- *  otherwise returns an integer.
- *
- *     1.2.floor      #=> 1
- *     2.0.floor      #=> 2
- *     (-1.2).floor   #=> -2
- *     (-2.0).floor   #=> -2
- *
- *     1.234567.floor(2)   #=> 1.23
- *     1.234567.floor(3)   #=> 1.234
- *     1.234567.floor(4)   #=> 1.2345
- *     1.234567.floor(5)   #=> 1.23456
- *
- *     34567.89.floor(-5)  #=> 0
- *     34567.89.floor(-4)  #=> 30000
- *     34567.89.floor(-3)  #=> 34000
- *     34567.89.floor(-2)  #=> 34500
- *     34567.89.floor(-1)  #=> 34560
- *     34567.89.floor(0)   #=> 34567
- *     34567.89.floor(1)   #=> 34567.8
- *     34567.89.floor(2)   #=> 34567.89
- *     34567.89.floor(3)   #=> 34567.89
- *
- *  Note that the limited precision of floating point arithmetic
- *  might lead to surprising results:
- *
- *     (0.3 / 0.1).floor  #=> 2 (!)
- */
-
 static int
 flo_ndigits(int argc, VALUE *argv)
 {
@@ -2138,6 +2099,39 @@ flo_ndigits(int argc, VALUE *argv)
     }
     return 0;
 }
+
+/*
+ *  call-seq:
+ *    floor(ndigits = 0) -> float or integer
+ *
+ *  Returns the largest number less than or equal to +float+ with
+ *  a precision of +ndigits+ decimal digits.
+ *
+ *  When +ndigits+ is positive, returns a float with +ndigits+
+ *  digits after the decimal point (as available):
+ *
+ *    f = 12345.6789
+ *    f.floor(1) # => 12345.6
+ *    f.floor(2) # => 12345.67
+ *    f.floor(3) # => 12345.678
+ *    f.floor(4) # => 12345.6789
+ *    f.floor(5) # => 12345.6789
+ *
+ *  When +ndigits+ is non-positive, returns an integer with at least
+ *  <code>ndigits.abs</code> trailing zeros:
+ *
+ *    f = 1234.56
+ *    f.floor(0)  # => 1234
+ *    f.floor(-1) # => 1230
+ *    f.floor(-2) # => 1200
+ *    f.floor(-3) # => 1000
+ *    f.floor(-4) # => 0
+ *
+ *  Note that the limited precision of floating point arithmetic
+ *  may lead to surprising results:
+ *
+ *     (0.3 / 0.1).floor  #=> 2 (!)
+ */
 
 static VALUE
 flo_floor(int argc, VALUE *argv, VALUE num)
