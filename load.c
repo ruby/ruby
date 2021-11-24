@@ -178,8 +178,17 @@ feature_key(const char *str, size_t len)
     return st_hash(str, len, 0xfea7009e);
 }
 
+static bool
+is_rbext_path(VALUE feature_path)
+{
+    long len = RSTRING_LEN(feature_path);
+    long rbext_len = rb_strlen_lit(".rb");
+    if (len <= rbext_len) return false;
+    return IS_RBEXT(RSTRING_PTR(feature_path) + len - rbext_len);
+}
+
 static void
-features_index_add_single(const char* str, size_t len, VALUE offset)
+features_index_add_single(const char* str, size_t len, VALUE offset, bool rb)
 {
     struct st_table *features_index;
     VALUE this_feature_index = Qnil;
@@ -195,17 +204,43 @@ features_index_add_single(const char* str, size_t len, VALUE offset)
 	st_insert(features_index, short_feature_key, (st_data_t)offset);
     }
     else if (RB_TYPE_P(this_feature_index, T_FIXNUM)) {
+	VALUE loaded_features = get_loaded_features();
+	VALUE this_feature_path = RARRAY_AREF(loaded_features, FIX2LONG(this_feature_index));
 	VALUE feature_indexes[2];
-	feature_indexes[0] = this_feature_index;
-	feature_indexes[1] = offset;
+	int top = (rb && !is_rbext_path(this_feature_path)) ? 1 : 0;
+	feature_indexes[top^0] = this_feature_index;
+	feature_indexes[top^1] = offset;
 	this_feature_index = (VALUE)xcalloc(1, sizeof(struct RArray));
 	RBASIC(this_feature_index)->flags = T_ARRAY; /* fake VALUE, do not mark/sweep */
 	rb_ary_cat(this_feature_index, feature_indexes, numberof(feature_indexes));
 	st_insert(features_index, short_feature_key, (st_data_t)this_feature_index);
     }
     else {
+        long pos = -1;
+
 	Check_Type(this_feature_index, T_ARRAY);
+        if (rb) {
+            VALUE loaded_features = get_loaded_features();
+            for (long i = 0; i < RARRAY_LEN(this_feature_index); ++i) {
+                VALUE idx = RARRAY_AREF(this_feature_index, i);
+                VALUE this_feature_path = RARRAY_AREF(loaded_features, FIX2LONG(idx));
+                Check_Type(this_feature_path, T_STRING);
+                if (!is_rbext_path(this_feature_path)) {
+                    /* as this_feature_index is a fake VALUE, `push` (which
+                     * doesn't wb_unprotect like as rb_ary_splice) first,
+                     * then rotate partially. */
+                    pos = i;
+                    break;
+                }
+            }
+        }
 	rb_ary_push(this_feature_index, offset);
+        if (pos >= 0) {
+            VALUE *ptr = (VALUE *)RARRAY_CONST_PTR_TRANSIENT(this_feature_index);
+            long len = RARRAY_LEN(this_feature_index);
+            MEMMOVE(ptr + pos, ptr + pos + 1, VALUE, len - pos - 1);
+            ptr[pos] = offset;
+        }
     }
 }
 
@@ -221,6 +256,7 @@ static void
 features_index_add(VALUE feature, VALUE offset)
 {
     const char *feature_str, *feature_end, *ext, *p;
+    bool rb = false;
 
     feature_str = StringValuePtr(feature);
     feature_end = feature_str + RSTRING_LEN(feature);
@@ -230,6 +266,8 @@ features_index_add(VALUE feature, VALUE offset)
 	    break;
     if (*ext != '.')
 	ext = NULL;
+    else
+        rb = IS_RBEXT(ext);
     /* Now `ext` points to the only string matching %r{^\.[^./]*$} that is
        at the end of `feature`, or is NULL if there is no such string. */
 
@@ -241,14 +279,14 @@ features_index_add(VALUE feature, VALUE offset)
 	if (p < feature_str)
 	    break;
 	/* Now *p == '/'.  We reach this point for every '/' in `feature`. */
-	features_index_add_single(p + 1, feature_end - p - 1, offset);
+	features_index_add_single(p + 1, feature_end - p - 1, offset, false);
 	if (ext) {
-	    features_index_add_single(p + 1, ext - p - 1, offset);
+	    features_index_add_single(p + 1, ext - p - 1, offset, rb);
 	}
     }
-    features_index_add_single(feature_str, feature_end - feature_str, offset);
+    features_index_add_single(feature_str, feature_end - feature_str, offset, false);
     if (ext) {
-	features_index_add_single(feature_str, ext - feature_str, offset);
+	features_index_add_single(feature_str, ext - feature_str, offset, rb);
     }
 }
 
