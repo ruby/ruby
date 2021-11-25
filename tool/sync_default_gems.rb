@@ -74,6 +74,7 @@ REPOSITORIES = {
   digest: "ruby/digest",
   error_highlight: "ruby/error_highlight",
   un: "ruby/un",
+  win32ole: "ruby/win32ole",
 }
 
 # We usually don't use this. Please consider using #sync_default_gems_with_commits instead.
@@ -353,6 +354,11 @@ def sync_default_gems(gem)
     cp_r(Dir.glob("#{upstream}/lib/error_highlight*"), "lib")
     cp_r("#{upstream}/error_highlight.gemspec", "lib/error_highlight")
     cp_r("#{upstream}/test", "test/error_highlight")
+  when "win32ole"
+    sync_lib gem, upstream
+    rm_rf(%w[ext/win32ole/lib])
+    Dir.mkdir(*%w[ext/win32ole/lib])
+    move(Dir.glob("lib/win32ole*"), "ext/win32ole/lib")
   else
     sync_lib gem, upstream
   end
