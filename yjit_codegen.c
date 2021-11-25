@@ -1142,31 +1142,30 @@ gen_newhash(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 // Push a constant value to the stack, including type information.
 // The constant may be a heap object or a special constant.
 static void
-jit_putobject(jitstate_t* jit, ctx_t* ctx, VALUE arg)
+jit_putobject(jitstate_t *jit, ctx_t *ctx, VALUE arg)
 {
     val_type_t val_type = yjit_type_of_value(arg);
     x86opnd_t stack_top = ctx_stack_push(ctx, val_type);
 
-    if (SPECIAL_CONST_P(arg))
-    {
+    if (SPECIAL_CONST_P(arg)) {
         // Immediates will not move and do not need to be tracked for GC
         // Thanks to this we can mov directly to memory when possible.
 
+        // NOTE: VALUE -> int64_t cast below is implementation defined.
+        // Hopefully it preserves the the bit pattern or raise a signal.
+        // See N1256 section 6.3.1.3.
         x86opnd_t imm = imm_opnd((int64_t)arg);
 
         // 64-bit immediates can't be directly written to memory
-        if (imm.num_bits <= 32)
-        {
+        if (imm.num_bits <= 32) {
             mov(cb, stack_top, imm);
         }
-        else
-        {
+        else {
             mov(cb, REG0, imm);
             mov(cb, stack_top, REG0);
         }
     }
-    else
-    {
+    else {
         // Load the value to push into REG0
         // Note that this value may get moved by the GC
         jit_mov_gc_ptr(jit, cb, REG0, arg);
@@ -1185,7 +1184,7 @@ gen_putnil(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 }
 
 static codegen_status_t
-gen_putobject(jitstate_t* jit, ctx_t* ctx, codeblock_t *cb)
+gen_putobject(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
     VALUE arg = jit_get_arg(jit, 0);
 
