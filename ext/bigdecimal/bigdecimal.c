@@ -341,11 +341,19 @@ BigDecimal_precision(VALUE self)
 
     Real *p;
     GUARD_OBJ(p, GetVpValue(self, 1));
+    if (VpIsZero(p) || !VpIsDef(p)) return INT2FIX(0);
 
     /*
      * The most significant digit is frac[0], and the least significant digit is frac[Prec-1].
      * When the exponent is zero, the decimal point is located just before frac[0].
+     *
+     *
      * When the exponent is negative, the decimal point moves to leftward.
+     * In this case, the precision can be calculated by BASE_FIG * (-exponent + Prec) - ntz.
+     *
+     *   0 . 0000 0000 | frac[0] frac[1] ... frac[Prec-1]
+     *      <----------| exponent == -2
+     *
      * Conversely, when the exponent is positive, the decimal point moves to rightward.
      *
      *    | frac[0] frac[1] frac[2] . frac[3] frac[4] ... frac[Prec-1]
@@ -353,24 +361,30 @@ BigDecimal_precision(VALUE self)
      */
 
     ssize_t ex = p->exponent;
-    ssize_t precision = 0;
+
+    /* Count the number of decimal digits before frac[1]. */
+    ssize_t precision = BASE_FIG;  /* The number of decimal digits in frac[0]. */
     if (ex < 0) {
-        precision = (-ex + 1) * BASE_FIG;  /* 1 is for p->frac[0] */
+        precision += -ex * BASE_FIG;  /* The number of leading zeros before frac[0]. */
         ex = 0;
     }
-    else if (p->Prec > 0) {
+    else if (ex > 0) {
+        /* Count the number of decimal digits without the leading zeros in
+         * the most significant digit in the integral part. */
         DECDIG x = p->frac[0];
         for (precision = 0; x > 0; x /= 10) {
             ++precision;
         }
     }
 
+    /* Count the number of decimal digits after frac[0]. */
     if (ex > (ssize_t)p->Prec) {
+        /* In this case the number is an integer with multiple trailing zeros. */
         precision += (ex - 1) * BASE_FIG;
     }
     else if (p->Prec > 0) {
         ssize_t n = (ssize_t)p->Prec - 1;
-        while (n > 0 && p->frac[n] == 0) --n;
+        while (n > 0 && p->frac[n] == 0) --n;  /* Skip trailing zeros, just in case. */
 
         precision += n * BASE_FIG;
 

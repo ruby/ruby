@@ -2036,10 +2036,14 @@ class TestBigDecimal < Test::Unit::TestCase
   def test_precision_only_fraction
     assert_equal(1, BigDecimal("0.1").precision)
     assert_equal(1, BigDecimal("-0.1").precision)
-    assert_equal(1, BigDecimal("0.01").precision)
-    assert_equal(1, BigDecimal("-0.01").precision)
+    assert_equal(2, BigDecimal("0.01").precision)
+    assert_equal(2, BigDecimal("-0.01").precision)
     assert_equal(2, BigDecimal("0.11").precision)
     assert_equal(2, BigDecimal("-0.11").precision)
+    assert_equal(9, BigDecimal("0.000_000_001").precision)
+    assert_equal(9, BigDecimal("-0.000_000_001").precision)
+    assert_equal(10, BigDecimal("0.000_000_000_1").precision)
+    assert_equal(10, BigDecimal("-0.000_000_000_1").precision)
     assert_equal(21, BigDecimal("0.000_000_000_000_000_000_001").precision)
     assert_equal(21, BigDecimal("-0.000_000_000_000_000_000_001").precision)
     assert_equal(100, BigDecimal("111e-100").precision)
@@ -2047,12 +2051,8 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_precision_full
-    assert_equal(1, BigDecimal("0.1").precision)
-    assert_equal(1, BigDecimal("-0.1").precision)
-    assert_equal(1, BigDecimal("0.01").precision)
-    assert_equal(1, BigDecimal("-0.01").precision)
-    assert_equal(2, BigDecimal("0.11").precision)
-    assert_equal(2, BigDecimal("-0.11").precision)
+    assert_equal(5, BigDecimal("11111e-2").precision)
+    assert_equal(5, BigDecimal("-11111e-2").precision)
     assert_equal(5, BigDecimal("11111e-2").precision)
     assert_equal(5, BigDecimal("-11111e-2").precision)
     assert_equal(21, BigDecimal("100.000_000_000_000_000_001").precision)
