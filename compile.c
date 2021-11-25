@@ -3053,6 +3053,22 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	remove_unreachable_chunk(iseq, iobj->link.next);
     }
 
+    /*
+     *  ...
+     *  duparray [...]
+     *  concatarray
+     * =>
+     *  ...
+     *  putobject [...]
+     *  concatarray
+     */
+    if (IS_INSN_ID(iobj, duparray)) {
+        LINK_ELEMENT *next = iobj->link.next;
+        if (IS_INSN(next) && IS_INSN_ID(next, concatarray)) {
+            iobj->insn_id = BIN(putobject);
+        }
+    }
+
     if (IS_INSN_ID(iobj, branchif) ||
 	IS_INSN_ID(iobj, branchnil) ||
 	IS_INSN_ID(iobj, branchunless)) {
