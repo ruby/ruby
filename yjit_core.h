@@ -192,8 +192,8 @@ typedef struct yjit_branch_entry
     struct yjit_block_version *block;
 
     // Positions where the generated code starts and ends
-    uint8_t* start_addr;
-    uint8_t* end_addr;
+    uint8_t *start_addr;
+    uint8_t *end_addr;
 
     // Context right after the branch instruction
     ctx_t src_ctx;
@@ -204,7 +204,7 @@ typedef struct yjit_branch_entry
     struct yjit_block_version *blocks[2];
 
     // Jump target addresses
-    uint8_t* dst_addrs[2];
+    uint8_t *dst_addrs[2];
 
     // Branch code generation function
     branchgen_fn gen_fn;

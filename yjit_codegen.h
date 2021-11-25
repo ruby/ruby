@@ -16,6 +16,8 @@ static uint8_t *yjit_entry_prologue(codeblock_t *cb, const rb_iseq_t *iseq);
 
 static void yjit_gen_block(block_t *block, rb_execution_context_t *ec);
 
+static void gen_code_for_exit_from_stub(void);
+
 static void yjit_init_codegen(void);
 
 #endif // #ifndef YJIT_CODEGEN_H
