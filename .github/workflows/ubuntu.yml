@@ -92,18 +92,20 @@ jobs:
         if: ${{ matrix.test_task == 'check' }}
       - name: make ${{ matrix.test_task }}
         run: |
-          if [ ${{ matrix.test_task }} = 'check' ]; then
-            TESTS="${{ matrix.skipped_tests }}"
-          fi
           $SETARCH make -s ${{ matrix.test_task }} ${TESTS:+TESTS=`echo "$TESTS" | sed 's| |$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}
-          if [ ${{ matrix.test_task }} = 'check' -a "${TESTS:+set}" ]; then
-            unset GNUMAKEFLAGS
-            $SETARCH make -s test-all TESTS=`echo "$TESTS" | sed 's| |$/ -n/|g;s|^|-n/|;s|$|$$/|'`
-          fi
         timeout-minutes: 40
         env:
           RUBY_TESTOPTS: "-q --tty=no"
+          TESTS: ${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ""
+      - name: make skipped tests
+        run: |
+          $SETARCH make -s test-all TESTS=`echo "$TESTS" | sed 's| |$/ -n/|g;s|^|-n/|;s|$|$$/|'`
+        env:
+          GNUMAKEFLAGS: ""
+          RUBY_TESTOPTS: "-v --tty=no"
+          TESTS: ${{ matrix.skipped_tests }}
+        if: ${{ matrix.test_task == 'check' && matrix.skipped_tests != '' }}
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |
