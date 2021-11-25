@@ -1139,12 +1139,46 @@ gen_newhash(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     return YJIT_KEEP_COMPILING;
 }
 
+// Push a constant value to the stack, including type information.
+// The constant may be a heap object or a special constant.
+static void
+jit_putobject(jitstate_t *jit, ctx_t *ctx, VALUE arg)
+{
+    val_type_t val_type = yjit_type_of_value(arg);
+    x86opnd_t stack_top = ctx_stack_push(ctx, val_type);
+
+    if (SPECIAL_CONST_P(arg)) {
+        // Immediates will not move and do not need to be tracked for GC
+        // Thanks to this we can mov directly to memory when possible.
+
+        // NOTE: VALUE -> int64_t cast below is implementation defined.
+        // Hopefully it preserves the the bit pattern or raise a signal.
+        // See N1256 section 6.3.1.3.
+        x86opnd_t imm = imm_opnd((int64_t)arg);
+
+        // 64-bit immediates can't be directly written to memory
+        if (imm.num_bits <= 32) {
+            mov(cb, stack_top, imm);
+        }
+        else {
+            mov(cb, REG0, imm);
+            mov(cb, stack_top, REG0);
+        }
+    }
+    else {
+        // Load the value to push into REG0
+        // Note that this value may get moved by the GC
+        jit_mov_gc_ptr(jit, cb, REG0, arg);
+
+        // Write argument at SP
+        mov(cb, stack_top, REG0);
+    }
+}
+
 static codegen_status_t
 gen_putnil(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
-    // Write constant at SP
-    x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_NIL);
-    mov(cb, stack_top, imm_opnd(Qnil));
+    jit_putobject(jit, ctx, Qnil);
     return YJIT_KEEP_COMPILING;
 }
 
@@ -1153,42 +1187,7 @@ gen_putobject(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
     VALUE arg = jit_get_arg(jit, 0);
 
-    if (FIXNUM_P(arg))
-    {
-        // Keep track of the fixnum type tag
-        x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_FIXNUM);
-        x86opnd_t imm = imm_opnd((int64_t)arg);
-
-        // 64-bit immediates can't be directly written to memory
-        if (imm.num_bits <= 32)
-        {
-            mov(cb, stack_top, imm);
-        }
-        else
-        {
-            mov(cb, REG0, imm);
-            mov(cb, stack_top, REG0);
-        }
-    }
-    else if (arg == Qtrue || arg == Qfalse)
-    {
-        x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_IMM);
-        mov(cb, stack_top, imm_opnd((int64_t)arg));
-    }
-    else
-    {
-        // Load the value to push into REG0
-        // Note that this value may get moved by the GC
-        VALUE put_val = jit_get_arg(jit, 0);
-        jit_mov_gc_ptr(jit, cb, REG0, put_val);
-
-        val_type_t val_type = yjit_type_of_value(put_val);
-
-        // Write argument at SP
-        x86opnd_t stack_top = ctx_stack_push(ctx, val_type);
-        mov(cb, stack_top, REG0);
-    }
-
+    jit_putobject(jit, ctx, arg);
     return YJIT_KEEP_COMPILING;
 }
 
@@ -1216,10 +1215,7 @@ gen_putobject_int2fix(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     int opcode = jit_get_opcode(jit);
     int cst_val = (opcode == BIN(putobject_INT2FIX_0_))? 0:1;
 
-    // Write constant at SP
-    x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_FIXNUM);
-    mov(cb, stack_top, imm_opnd(INT2FIX(cst_val)));
-
+    jit_putobject(jit, ctx, INT2FIX(cst_val));
     return YJIT_KEEP_COMPILING;
 }
 
@@ -4653,10 +4649,7 @@ gen_opt_getinlinecache(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         // FIXME: This leaks when st_insert raises NoMemoryError
         assume_stable_global_constant_state(jit);
 
-        val_type_t type = yjit_type_of_value(ice->value);
-        x86opnd_t stack_top = ctx_stack_push(ctx, type);
-        jit_mov_gc_ptr(jit, cb, REG0, ice->value);
-        mov(cb, stack_top, REG0);
+        jit_putobject(jit, ctx, ice->value);
     }
 
     // Jump over the code for filling the cache
