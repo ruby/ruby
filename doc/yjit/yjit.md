@@ -121,7 +121,7 @@ You can dump statistics about compilation and execution by running YJIT with the
 ./miniruby --yjit-stats myscript.rb
 ```
 
-The machine code generated for a given method can be printed by adding `puts YJIT.disasm(method(:method_name))` to a Ruby script. Note that no code will be generated if the method is not compiled.
+The machine code generated for a given method can be printed by adding `puts RubyVM::YJIT.disasm(method(:method_name))` to a Ruby script. Note that no code will be generated if the method is not compiled.
 
 
 ### Command-Line Options
