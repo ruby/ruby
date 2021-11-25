@@ -412,9 +412,20 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
-  def test_invokebuiltin
-    skip "Struct's getter/setter doesn't use invokebuiltin and YJIT doesn't support new logic"
+  def test_struct_aref
+    assert_compiles(<<~RUBY)
+      def foo(obj)
+        obj.foo
+        obj.bar
+      end
 
+      Foo = Struct.new(:foo, :bar)
+      foo(Foo.new(123))
+      foo(Foo.new(123))
+    RUBY
+  end
+
+  def test_struct_aset
     assert_compiles(<<~RUBY)
       def foo(obj)
         obj.foo = 123

@@ -2455,3 +2455,80 @@ assert_equal 'new', %q{
 
   test
 } if false # disabled for now since OOM crashes in the test harness
+
+# struct aref embedded
+assert_equal '2', %q{
+  def foo(s)
+    s.foo
+  end
+
+  S = Struct.new(:foo)
+  foo(S.new(1))
+  foo(S.new(2))
+}
+
+# struct aref non-embedded
+assert_equal '4', %q{
+  def foo(s)
+    s.d
+  end
+
+  S = Struct.new(:a, :b, :c, :d, :e)
+  foo(S.new(1,2,3,4,5))
+  foo(S.new(1,2,3,4,5))
+}
+
+# struct aset embedded
+assert_equal '123', %q{
+  def foo(s)
+    s.foo = 123
+  end
+
+  s = Struct.new(:foo).new
+  foo(s)
+  s = Struct.new(:foo).new
+  foo(s)
+  s.foo
+}
+
+# struct aset non-embedded
+assert_equal '[1, 2, 3, 4, 5]', %q{
+  def foo(s)
+    s.a = 1
+    s.b = 2
+    s.c = 3
+    s.d = 4
+    s.e = 5
+  end
+
+  S = Struct.new(:a, :b, :c, :d, :e)
+  s = S.new
+  foo(s)
+  s = S.new
+  foo(s)
+  [s.a, s.b, s.c, s.d, s.e]
+}
+
+# struct aref too many args
+assert_equal 'ok', %q{
+  def foo(s)
+    s.foo(:bad)
+  end
+
+  s = Struct.new(:foo).new
+  foo(s) rescue :ok
+  foo(s) rescue :ok
+}
+
+# struct aset too many args
+assert_equal 'ok', %q{
+  def foo(s)
+    s.set_foo(123, :bad)
+  end
+
+  s = Struct.new(:foo) do
+    alias :set_foo :foo=
+  end
+  foo(s) rescue :ok
+  foo(s) rescue :ok
+}

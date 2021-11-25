@@ -7,6 +7,7 @@
 #include "internal/object.h"
 #include "internal/sanitizers.h"
 #include "internal/string.h"
+#include "internal/struct.h"
 #include "internal/variable.h"
 #include "internal/re.h"
 #include "probes.h"
@@ -3901,6 +3902,83 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     return YJIT_END_BLOCK;
 }
 
+static codegen_status_t
+gen_struct_aref(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, VALUE comptime_recv, VALUE comptime_recv_klass) {
+    if (vm_ci_argc(ci) != 0) {
+        return YJIT_CANT_COMPILE;
+    }
+
+    const unsigned int off = cme->def->body.optimized.index;
+
+    // Confidence checks
+    RUBY_ASSERT_ALWAYS(RB_TYPE_P(comptime_recv, T_STRUCT));
+    RUBY_ASSERT_ALWAYS((long)off < RSTRUCT_LEN(comptime_recv));
+
+    // We are going to use an encoding that takes a 4-byte immediate which
+    // limits the offset to INT32_MAX.
+    {
+        uint64_t native_off = (uint64_t)off * (uint64_t)SIZEOF_VALUE;
+        if (native_off > (uint64_t)INT32_MAX) {
+            return YJIT_CANT_COMPILE;
+        }
+    }
+
+    // All structs from the same Struct class should have the same
+    // length. So if our comptime_recv is embedded all runtime
+    // structs of the same class should be as well, and the same is
+    // true of the converse.
+    bool embedded = FL_TEST_RAW(comptime_recv, RSTRUCT_EMBED_LEN_MASK);
+
+    ADD_COMMENT(cb, "struct aref");
+
+    x86opnd_t recv = ctx_stack_pop(ctx, 1);
+
+    mov(cb, REG0, recv);
+
+    if (embedded) {
+        mov(cb, REG0, member_opnd_idx(REG0, struct RStruct, as.ary, off));
+    }
+    else {
+        mov(cb, REG0, member_opnd(REG0, struct RStruct, as.heap.ptr));
+        mov(cb, REG0, mem_opnd(64, REG0, SIZEOF_VALUE * off));
+    }
+
+    x86opnd_t ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
+    mov(cb, ret, REG0);
+
+    jit_jump_to_next_insn(jit, ctx);
+    return YJIT_END_BLOCK;
+}
+
+static codegen_status_t
+gen_struct_aset(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, VALUE comptime_recv, VALUE comptime_recv_klass) {
+    if (vm_ci_argc(ci) != 1) {
+        return YJIT_CANT_COMPILE;
+    }
+
+    const unsigned int off = cme->def->body.optimized.index;
+
+    // Confidence checks
+    RUBY_ASSERT_ALWAYS(RB_TYPE_P(comptime_recv, T_STRUCT));
+    RUBY_ASSERT_ALWAYS((long)off < RSTRUCT_LEN(comptime_recv));
+
+    ADD_COMMENT(cb, "struct aset");
+
+    x86opnd_t val = ctx_stack_pop(ctx, 1);
+    x86opnd_t recv = ctx_stack_pop(ctx, 1);
+
+    mov(cb, C_ARG_REGS[0], recv);
+    mov(cb, C_ARG_REGS[1], imm_opnd(off));
+    mov(cb, C_ARG_REGS[2], val);
+    call_ptr(cb, REG0, (void *)RSTRUCT_SET);
+
+    x86opnd_t ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
+    mov(cb, ret, RAX);
+
+    jit_jump_to_next_insn(jit, ctx);
+    return YJIT_END_BLOCK;
+}
+
 const rb_callable_method_entry_t *
 rb_aliased_callable_method_entry(const rb_callable_method_entry_t *me);
 
@@ -4064,8 +4142,24 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
             return YJIT_CANT_COMPILE;
           // Send family of methods, e.g. call/apply
           case VM_METHOD_TYPE_OPTIMIZED:
-            GEN_COUNTER_INC(cb, send_optimized_method);
-            return YJIT_CANT_COMPILE;
+            switch (cme->def->body.optimized.type) {
+              case OPTIMIZED_METHOD_TYPE_SEND:
+                GEN_COUNTER_INC(cb, send_optimized_method_send);
+                return YJIT_CANT_COMPILE;
+              case OPTIMIZED_METHOD_TYPE_CALL:
+                GEN_COUNTER_INC(cb, send_optimized_method_call);
+                return YJIT_CANT_COMPILE;
+              case OPTIMIZED_METHOD_TYPE_BLOCK_CALL:
+                GEN_COUNTER_INC(cb, send_optimized_method_block_call);
+                return YJIT_CANT_COMPILE;
+              case OPTIMIZED_METHOD_TYPE_STRUCT_AREF:
+                return gen_struct_aref(jit, ctx, ci, cme, comptime_recv, comptime_recv_klass);
+              case OPTIMIZED_METHOD_TYPE_STRUCT_ASET:
+                return gen_struct_aset(jit, ctx, ci, cme, comptime_recv, comptime_recv_klass);
+              default:
+                rb_bug("unknown optimized method type (%d)", cme->def->body.optimized.type);
+                UNREACHABLE_RETURN(YJIT_CANT_COMPILE);
+            }
           case VM_METHOD_TYPE_MISSING:
             GEN_COUNTER_INC(cb, send_missing_method);
             return YJIT_CANT_COMPILE;
@@ -4347,7 +4441,8 @@ gen_objtostring(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         jit_guard_known_klass(jit, ctx, CLASS_OF(comptime_recv), OPND_STACK(0), comptime_recv, SEND_MAX_DEPTH, side_exit);
         // No work needed. The string value is already on the top of the stack.
         return YJIT_KEEP_COMPILING;
-    } else {
+    }
+    else {
         struct rb_call_data *cd = (struct rb_call_data *)jit_get_arg(jit, 0);
         return gen_send_general(jit, ctx, cd, NULL);
     }
