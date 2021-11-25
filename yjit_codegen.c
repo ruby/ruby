@@ -1175,7 +1175,6 @@ jit_putobject(jitstate_t *jit, ctx_t *ctx, VALUE arg)
     }
 }
 
-
 static codegen_status_t
 gen_putnil(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
