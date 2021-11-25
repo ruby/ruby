@@ -70,7 +70,7 @@ module Bundler
       gem_info << "\tPath: #{spec.full_gem_path}\n"
       gem_info << "\tDefault Gem: yes" if spec.respond_to?(:default_gem?) && spec.default_gem?
 
-      if spec.deleted_gem?
+      if name != "bundler" && spec.deleted_gem?
         return Bundler.ui.warn "The gem #{name} has been deleted. Gemspec information is still available though:\n#{gem_info}"
       end
 
