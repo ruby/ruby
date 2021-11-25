@@ -97,7 +97,7 @@ class TestISeq < Test::Unit::TestCase
 
   def test_super_with_block
     iseq = compile(<<~EOF, __LINE__+1)
-      def touch(*) # :nodoc:
+      def (Object.new).touch(*) # :nodoc:
         foo { super }
       end
       42
@@ -108,7 +108,7 @@ class TestISeq < Test::Unit::TestCase
   def test_super_with_block_hash_0
     iseq = compile(<<~EOF, __LINE__+1)
       # [Bug #18250] `req` specifically cause `Assertion failed: (key != 0), function hash_table_raw_insert`
-      def touch2(req, *)
+      def (Object.new).touch(req, *)
         foo { super }
       end
       42
@@ -118,7 +118,7 @@ class TestISeq < Test::Unit::TestCase
 
   def test_super_with_block_and_kwrest
     iseq = compile(<<~EOF, __LINE__+1)
-      def touch3(**) # :nodoc:
+      def (Object.new).touch(**) # :nodoc:
         foo { super }
       end
       42
@@ -138,7 +138,7 @@ class TestISeq < Test::Unit::TestCase
 
   def test_super_with_anonymous_block
     iseq = compile(<<~EOF, __LINE__+1)
-      def touch3(&) # :nodoc:
+      def (Object.new).touch(&) # :nodoc:
         foo { super }
       end
       42
