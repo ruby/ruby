@@ -28,7 +28,6 @@ jobs:
           - test_task: "check"
             os: ubuntu-20.04
             configure: "--host=i686-$OSTYPE"
-            skipped_tests: TestReadline#test_interrupt_in_other_thread
           - test_task: "test-all TESTS=--repeat-count=2"
             os: ubuntu-20.04
             configure: ""
