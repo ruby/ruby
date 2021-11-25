@@ -92,13 +92,12 @@ jobs:
       - name: make ${{ matrix.test_task }}
         run: |
           if [ ${{ matrix.test_task }} = 'check' ]; then
-            TESTS=`echo "${{ matrix.skipped_tests }}" | sed 's| |$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`
+            TESTS="${{ matrix.skipped_tests }}"
           fi
-          $SETARCH make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
+          $SETARCH make -s ${{ matrix.test_task }} ${TESTS:+TESTS=`echo "$TESTS" | sed 's| |$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}
           if [ ${{ matrix.test_task }} = 'check' -a "${TESTS:+set}" ]; then
-            TESTS=`echo "${{ matrix.skipped_tests }}" | sed 's| |$/ -n/|g;s|^|-n/|;s|$|$$/|'`
             unset GNUMAKEFLAGS
-            $SETARCH make -s test-all TESTS="$TESTS"
+            $SETARCH make -s test-all TESTS=`echo "$TESTS" | sed 's| |$/ -n/|g;s|^|-n/|;s|$|$$/|'`
           fi
         timeout-minutes: 40
         env:
