@@ -196,6 +196,24 @@ module GC
     Primitive.gc_stat hash_or_key
   end
 
+  # :nodoc:
+  # call-seq:
+  #    GC.stat_size_pool(size_pool_idx) -> Hash
+  #    GC.stat_size_pool(size_pool_idx, hash) -> Hash
+  #    GC.stat_size_pool(size_pool_idx, :key) -> Numeric
+  #
+  # Returns a Hash containing information about a size pool in the GC.
+  #
+  # The contents of the hash are implementation specific and may be changed in
+  # the future.
+  #
+  # If the optional argument, hash, is given, it is overwritten and returned.
+  #
+  # This method is only expected to work on C Ruby.
+  def self.stat_size_pool size_pool_idx, hash_or_key = nil
+    Primitive.gc_stat_size_pool size_pool_idx, hash_or_key
+  end
+
   #  call-seq:
   #     GC.latest_gc_info -> {:gc_by=>:newobj}
   #     GC.latest_gc_info(hash) -> hash

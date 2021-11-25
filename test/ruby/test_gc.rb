@@ -139,6 +139,54 @@ class TestGc < Test::Unit::TestCase
     end
   end
 
+  def test_stat_size_pool
+    skip 'stress' if GC.stress
+
+    stat_size_pool = {}
+    stat = {}
+    # Initialize to prevent GC in future calls
+    GC.stat_size_pool(0, stat_size_pool)
+    GC.stat(stat)
+
+    GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
+      GC.stat_size_pool(i, stat_size_pool)
+      GC.stat(stat)
+
+      assert_equal GC::INTERNAL_CONSTANTS[:RVALUE_SIZE] * (2**i), stat_size_pool[:slot_size]
+      assert_operator stat_size_pool[:heap_allocatable_pages], :<=, stat[:heap_allocatable_pages]
+      assert_operator stat_size_pool[:heap_eden_pages], :<=, stat[:heap_eden_pages]
+      assert_operator stat_size_pool[:heap_eden_slots], :>=, 0
+      assert_operator stat_size_pool[:heap_tomb_pages], :<=, stat[:heap_tomb_pages]
+      assert_operator stat_size_pool[:heap_tomb_slots], :>=, 0
+    end
+
+    assert_raise(ArgumentError) { GC.stat_size_pool(-1) }
+    assert_raise(ArgumentError) { GC.stat_size_pool(GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT]) }
+  end
+
+  def test_stat_size_pool_constraints
+    skip 'stress' if GC.stress
+
+    stat = GC.stat
+    stat_size_pools = []
+    # Initialize to prevent GC in future calls
+    GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
+      stat_size_pools << GC.stat_size_pool(i)
+    end
+    # Get actual stats
+    GC.stat(stat)
+    GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
+      GC.stat_size_pool(i, stat_size_pools[i])
+    end
+
+    stat_size_pools_sum = stat_size_pools[0].keys.to_h { |k| [k, stat_size_pools.sum { |e| e[k] }] }
+
+    assert_equal stat[:heap_allocatable_pages], stat_size_pools_sum[:heap_allocatable_pages]
+    assert_equal stat[:heap_eden_pages], stat_size_pools_sum[:heap_eden_pages]
+    assert_equal stat[:heap_tomb_pages], stat_size_pools_sum[:heap_tomb_pages]
+    assert_equal stat[:heap_available_slots], stat_size_pools_sum[:heap_eden_slots] + stat_size_pools_sum[:heap_tomb_slots]
+  end
+
   def test_latest_gc_info
     skip 'stress' if GC.stress
 
