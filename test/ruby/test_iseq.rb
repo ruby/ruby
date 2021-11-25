@@ -714,4 +714,11 @@ class TestISeq < Test::Unit::TestCase
       RubyVM::InstructionSequence.compile("", debug_level: 5)
     end;
   end
+
+  def test_mandatory_only
+    assert_separately [], <<~RUBY
+      at0 = Time.at(0)
+      assert_equal at0, Time.public_send(:at, 0, 0)
+    RUBY
+  end
 end

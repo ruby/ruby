@@ -382,7 +382,7 @@ static inline enum method_missing_reason rb_method_call_status(rb_execution_cont
 static const struct rb_callcache *
 cc_new(VALUE klass, ID mid, int argc, const rb_callable_method_entry_t *cme)
 {
-    const struct rb_callcache *cc;
+    const struct rb_callcache *cc = NULL;
 
     RB_VM_LOCK_ENTER();
     {
@@ -399,10 +399,15 @@ cc_new(VALUE klass, ID mid, int argc, const rb_callable_method_entry_t *cme)
             rb_id_table_insert(cc_tbl, mid, (VALUE)ccs);
         }
 
-        if (ccs->len > 0) {
-            cc = ccs->entries[0].cc;
+        for (int i=0; i<ccs->len; i++) {
+            cc = ccs->entries[i].cc;
+            if (vm_cc_cme(cc) == cme) {
+                break;
+            }
+            cc = NULL;
         }
-        else {
+
+        if (cc == NULL) {
             const struct rb_callinfo *ci = vm_ci_new(mid, 0, argc, false); // TODO: proper ci
             cc = vm_cc_new(klass, cme, vm_call_general);
             METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
