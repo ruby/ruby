@@ -319,6 +319,119 @@ BigDecimal_prec(VALUE self)
     return obj;
 }
 
+static void
+BigDecimal_count_precision_and_scale(VALUE self, ssize_t *out_precision, ssize_t *out_scale)
+{
+    ENTER(1);
+
+    if (out_precision == NULL && out_scale == NULL)
+        return;
+
+    Real *p;
+    GUARD_OBJ(p, GetVpValue(self, 1));
+    if (VpIsZero(p) || !VpIsDef(p)) {
+      zero:
+        if (out_precision) *out_precision = 0;
+        if (out_scale) *out_scale = 0;
+        return;
+    }
+
+    DECDIG x;
+
+    ssize_t n = p->Prec; /* The length of frac without zeros. */
+    while (n > 0 && p->frac[n-1] == 0) --n;
+    if (n == 0) goto zero;
+
+    int nlz = BASE_FIG;
+    for (x = p->frac[0]; x > 0; x /= 10) --nlz;
+
+    int ntz = 0;
+    for (x = p->frac[n-1]; x > 0 && x % 10 == 0; x /= 10) ++ntz;
+
+    /*
+     * Calculate the precision and the scale
+     * -------------------------------------
+     *
+     * The most significant digit is frac[0], and the least significant digit
+     * is frac[Prec-1].  When the exponent is zero, the decimal point is
+     * located just before frac[0].
+     *
+     * When the exponent is negative, the decimal point moves to leftward.
+     * In this case, the precision can be calculated by
+     *
+     *   precision = BASE_FIG * (-exponent + n) - ntz,
+     *
+     * and the scale is the same as precision.
+     *
+     *       0 . 0000 0000 | frac[0] ... frac[n-1] |
+     *         |<----------| exponent == -2        |
+     *         |---------------------------------->| precision
+     *         |---------------------------------->| scale
+     *
+     *
+     * Conversely, when the exponent is positive, the decimal point moves to
+     * rightward.  In this case, the scale equals to
+     *
+     *   BASE_FIG * (n - exponent) - ntz.
+     *
+     * the precision equals to
+     *
+     *   scale + BASE_FIG * exponent - nlz.
+     *
+     *       | frac[0] frac[1] . frac[2] ... frac[n-1] |
+     *       |---------------->| exponent == 2         |
+     *       |                 |---------------------->| scale
+     *       |---------------------------------------->| precision
+     */
+
+    ssize_t ex = p->exponent;
+
+    /* Count the number of decimal digits before frac[1]. */
+    ssize_t n_digits_head = BASE_FIG;
+    if (ex < 0) {
+      n_digits_head += (-ex) * BASE_FIG;  /* The number of leading zeros before frac[0]. */
+      ex = 0;
+    }
+    else if (ex > 0) {
+      /* Count the number of decimal digits without the leading zeros in
+       * the most significant digit in the integral part.
+       */
+      n_digits_head -= nlz;  /* Make the number of digits */
+    }
+
+    if (out_precision) {
+        ssize_t precision = n_digits_head;
+
+        /* Count the number of decimal digits after frac[0]. */
+        if (ex > (ssize_t)n) {
+          /* In this case the number is an integer with some trailing zeros. */
+          precision += (ex - 1) * BASE_FIG;
+        }
+        else if (n > 0) {
+          precision += (n - 1) * BASE_FIG;
+
+          if (ex < (ssize_t)n) {
+            precision -= ntz;
+          }
+        }
+
+        *out_precision = precision;
+    }
+
+    if (out_scale) {
+        ssize_t scale = 0;
+
+        if (p->exponent < 0) {
+            scale = n_digits_head + (n - 1) * BASE_FIG - ntz;
+        }
+        else if (n > p->exponent) {
+            scale = (n - p->exponent) * BASE_FIG - ntz;
+        }
+
+        *out_scale = scale;
+    }
+}
+
 /*
  *  call-seq:
  *    precision -> integer
@@ -327,6 +440,8 @@ BigDecimal_prec(VALUE self)
  *
  *    BigDecimal("0").precision         # => 0
  *    BigDecimal("1").precision         # => 1
+ *    BigDecimal("1.1").precision       # => 2
+ *    BigDecimal("3.1415").precision    # => 5
  *    BigDecimal("-1e20").precision     # => 21
  *    BigDecimal("1e-20").precision     # => 20
  *    BigDecimal("Infinity").precision  # => 0
@@ -337,66 +452,33 @@ BigDecimal_prec(VALUE self)
 static VALUE
 BigDecimal_precision(VALUE self)
 {
-    ENTER(1);
-
-    Real *p;
-    GUARD_OBJ(p, GetVpValue(self, 1));
-    if (VpIsZero(p) || !VpIsDef(p)) return INT2FIX(0);
-
-    /*
-     * The most significant digit is frac[0], and the least significant digit is frac[Prec-1].
-     * When the exponent is zero, the decimal point is located just before frac[0].
-     *
-     *
-     * When the exponent is negative, the decimal point moves to leftward.
-     * In this case, the precision can be calculated by BASE_FIG * (-exponent + Prec) - ntz.
-     *
-     *   0 . 0000 0000 | frac[0] frac[1] ... frac[Prec-1]
-     *      <----------| exponent == -2
-     *
-     * Conversely, when the exponent is positive, the decimal point moves to rightward.
-     *
-     *    | frac[0] frac[1] frac[2] . frac[3] frac[4] ... frac[Prec-1]
-     *    |------------------------> exponent == 3
-     */
-
-    ssize_t ex = p->exponent;
-
-    /* Count the number of decimal digits before frac[1]. */
-    ssize_t precision = BASE_FIG;  /* The number of decimal digits in frac[0]. */
-    if (ex < 0) {
-        precision += -ex * BASE_FIG;  /* The number of leading zeros before frac[0]. */
-        ex = 0;
-    }
-    else if (ex > 0) {
-        /* Count the number of decimal digits without the leading zeros in
-         * the most significant digit in the integral part. */
-        DECDIG x = p->frac[0];
-        for (precision = 0; x > 0; x /= 10) {
-            ++precision;
-        }
-    }
-
-    /* Count the number of decimal digits after frac[0]. */
-    if (ex > (ssize_t)p->Prec) {
-        /* In this case the number is an integer with multiple trailing zeros. */
-        precision += (ex - 1) * BASE_FIG;
-    }
-    else if (p->Prec > 0) {
-        ssize_t n = (ssize_t)p->Prec - 1;
-        while (n > 0 && p->frac[n] == 0) --n;  /* Skip trailing zeros, just in case. */
-
-        precision += n * BASE_FIG;
-
-        if (ex < (ssize_t)p->Prec) {
-            DECDIG x = p->frac[n];
-            for (; x > 0 && x % 10 == 0; x /= 10) {
-                --precision;
-            }
-        }
-    }
-
+    ssize_t precision;
+    BigDecimal_count_precision_and_scale(self, &precision, NULL);
     return SSIZET2NUM(precision);
+}
+
+/*
+ *  call-seq:
+ *    scale -> integer
+ *
+ *  Returns the number of decimal digits following the decimal digits in +self+.
+ *
+ *    BigDecimal("0").scale         # => 0
+ *    BigDecimal("1").scale         # => 1
+ *    BigDecimal("1.1").scale       # => 1
+ *    BigDecimal("3.1415").scale    # => 4
+ *    BigDecimal("-1e20").precision # => 0
+ *    BigDecimal("1e-20").precision # => 20
+ *    BigDecimal("Infinity").scale  # => 0
+ *    BigDecimal("-Infinity").scale # => 0
+ *    BigDecimal("NaN").scale       # => 0
+ */
+static VALUE
+BigDecimal_scale(VALUE self)
+{
+    ssize_t scale;
+    BigDecimal_count_precision_and_scale(self, NULL, &scale);
+    return SSIZET2NUM(scale);
 }
 
 static VALUE
@@ -406,23 +488,23 @@ BigDecimal_n_significant_digits(VALUE self)
 
     Real *p;
     GUARD_OBJ(p, GetVpValue(self, 1));
-
-    ssize_t n = p->Prec;
-    while (n > 0 && p->frac[n-1] == 0) --n;
-    if (n <= 0) {
+    if (VpIsZero(p) || !VpIsDef(p)) {
         return INT2FIX(0);
     }
 
-    int nlz, ntz;
+    ssize_t n = p->Prec;  /* The length of frac without trailing zeros. */
+    for (n = p->Prec; n > 0 && p->frac[n-1] == 0; --n);
+    if (n == 0) return INT2FIX(0);
 
-    DECDIG x = p->frac[0];
-    for (nlz = BASE_FIG; x > 0; x /= 10) --nlz;
+    DECDIG x;
+    int nlz = BASE_FIG;
+    for (x = p->frac[0]; x > 0; x /= 10) --nlz;
 
-    x = p->frac[n-1];
-    for (ntz = 0; x > 0 && x % 10 == 0; x /= 10) ++ntz;
+    int ntz = 0;
+    for (x = p->frac[n-1]; x > 0 && x % 10 == 0; x /= 10) ++ntz;
 
-    ssize_t n_digits = BASE_FIG * n - nlz - ntz;
-    return SSIZET2NUM(n_digits);
+    ssize_t n_significant_digits = BASE_FIG*n - nlz - ntz;
+    return SSIZET2NUM(n_significant_digits);
 }
 
 /*
@@ -4129,6 +4211,7 @@ Init_bigdecimal(void)
     /* instance methods */
     rb_define_method(rb_cBigDecimal, "precs", BigDecimal_prec, 0);
     rb_define_method(rb_cBigDecimal, "precision", BigDecimal_precision, 0);
+    rb_define_method(rb_cBigDecimal, "scale", BigDecimal_scale, 0);
     rb_define_method(rb_cBigDecimal, "n_significant_digits", BigDecimal_n_significant_digits, 0);
 
     rb_define_method(rb_cBigDecimal, "add", BigDecimal_add2, 2);

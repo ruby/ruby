@@ -2070,6 +2070,59 @@ class TestBigDecimal < Test::Unit::TestCase
     end
   end
 
+  def test_scale_only_integer
+    assert_equal(0, BigDecimal(0).scale)
+    assert_equal(0, BigDecimal(1).scale)
+    assert_equal(0, BigDecimal(-1).scale)
+    assert_equal(0, BigDecimal(10).scale)
+    assert_equal(0, BigDecimal(-10).scale)
+    assert_equal(0, BigDecimal(100_000_000).scale)
+    assert_equal(0, BigDecimal(-100_000_000).scale)
+    assert_equal(0, BigDecimal(100_000_000_000).scale)
+    assert_equal(0, BigDecimal(-100_000_000_000).scale)
+    assert_equal(0, BigDecimal(100_000_000_000_000_000_000).scale)
+    assert_equal(0, BigDecimal(-100_000_000_000_000_000_000).scale)
+    assert_equal(0, BigDecimal("111e100").scale)
+    assert_equal(0, BigDecimal("-111e100").scale)
+  end
+
+  def test_scale_only_fraction
+    assert_equal(1, BigDecimal("0.1").scale)
+    assert_equal(1, BigDecimal("-0.1").scale)
+    assert_equal(2, BigDecimal("0.01").scale)
+    assert_equal(2, BigDecimal("-0.01").scale)
+    assert_equal(2, BigDecimal("0.11").scale)
+    assert_equal(2, BigDecimal("-0.11").scale)
+    assert_equal(21, BigDecimal("0.000_000_000_000_000_000_001").scale)
+    assert_equal(21, BigDecimal("-0.000_000_000_000_000_000_001").scale)
+    assert_equal(100, BigDecimal("111e-100").scale)
+    assert_equal(100, BigDecimal("-111e-100").scale)
+  end
+
+  def test_scale_full
+    assert_equal(1, BigDecimal("0.1").scale)
+    assert_equal(1, BigDecimal("-0.1").scale)
+    assert_equal(2, BigDecimal("0.01").scale)
+    assert_equal(2, BigDecimal("-0.01").scale)
+    assert_equal(2, BigDecimal("0.11").scale)
+    assert_equal(2, BigDecimal("-0.11").scale)
+    assert_equal(2, BigDecimal("11111e-2").scale)
+    assert_equal(2, BigDecimal("-11111e-2").scale)
+    assert_equal(18, BigDecimal("100.000_000_000_000_000_001").scale)
+    assert_equal(18, BigDecimal("-100.000_000_000_000_000_001").scale)
+  end
+
+  def test_scale_special
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
+      BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+
+      assert_equal(0, BigDecimal("Infinity").scale)
+      assert_equal(0, BigDecimal("-Infinity").scale)
+      assert_equal(0, BigDecimal("NaN").scale)
+    end
+  end
+
   def test_n_significant_digits_only_integer
     assert_equal(0, BigDecimal(0).n_significant_digits)
     assert_equal(1, BigDecimal(1).n_significant_digits)
