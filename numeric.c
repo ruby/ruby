@@ -3468,12 +3468,12 @@ rb_num2ull(VALUE val)
 
 /********************************************************************
  *
- *  Document-class: Integer
+ * Document-class: Integer
  *
- *  An \Integer object represents an integer value.
+ * An \Integer object represents an integer value.
  *
- *  An attempt to add a singleton method to an instance of this class
- *  causes an exception to be raised.
+ * An attempt to add a singleton method to an instance of this class
+ * causes an exception to be raised.
  *
  * == What's Here
  *
