@@ -22,6 +22,8 @@ true value in conditional expressions.
 
 == Numbers
 
+=== \Integer Literals
+
 You can write integers of any size as follows:
 
   1234
@@ -30,15 +32,6 @@ You can write integers of any size as follows:
 These numbers have the same value, 1,234.  The underscore may be used to
 enhance readability for humans.  You may place an underscore anywhere in the
 number.
-
-Floating point numbers may be written as follows:
-
-  12.34
-  1234e-2
-  1.234E1
-
-These numbers have the same value, 12.34.  You may use underscores in floating
-point numbers as well.
 
 You can use a special prefix to write numbers in decimal, hexadecimal, octal
 or binary formats.  For decimal numbers use a prefix of <tt>0d</tt>, for
@@ -68,7 +61,18 @@ Examples:
 All these numbers have the same decimal value, 170.  Like integers and floats
 you may use an underscore for readability.
 
-=== Rational numbers
+=== Floating-Point Literals
+
+Floating-point numbers may be written as follows:
+
+  12.34
+  1234e-2
+  1.234E1
+
+These numbers have the same value, 12.34.  You may use underscores in floating
+point numbers as well.
+
+=== Rational Numbers
 
 Numbers suffixed by +r+ are Rational numbers.
 
