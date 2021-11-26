@@ -412,7 +412,7 @@ MESSAGE
   def xpopen command, *mode, &block
     Logging::open do
       case mode[0]
-      when nil, /^r/
+      when nil, Hash, /^r/
         puts "#{command} |"
       else
         puts "| #{command}"
