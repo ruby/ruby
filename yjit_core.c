@@ -630,9 +630,13 @@ regenerate_branch(codeblock_t *cb, branch_t *branch)
         branch->block->end_addr = branch->end_addr;
     }
 
-    // cb->write_pos is both a write cursor and a marker for the end of everything
-    // written out so far. Leave cb->write_pos at the end of the block before
-    // returning.
+    // cb->write_pos is both a write cursor and a marker for the end of
+    // everything written out so far. Leave cb->write_pos at the end of the
+    // block before returning. This function only ever bump or retain the end
+    // of block marker since that's what the majority of callers want. When the
+    // branch sits at the very end of the codeblock and it shrinks after
+    // regeneration, it's up to the caller to drop bytes off the end to
+    // not leave a gap and implement branch->shape.
     if (old_write_pos > cb->write_pos) {
         // We rewound cb->write_pos to generate the branch, now restore it.
         cb_set_pos(cb, old_write_pos);
