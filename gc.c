@@ -2354,6 +2354,10 @@ ractor_cached_free_region(rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_
         VALUE obj = (VALUE)p;
         cache->freelist = p->as.free.next;
         asan_unpoison_object(obj, true);
+#if RGENGC_CHECK_MODE
+        // zero clear
+        MEMZERO((char *)obj, char, size_pool_slot_size(size_pool_idx));
+#endif
         return obj;
     }
     else {
