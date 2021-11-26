@@ -2433,7 +2433,7 @@ size_pool_idx_for_size(size_t size)
     /* size_pool_idx is ceil(log2(slot_count)) */
     size_t size_pool_idx = 64 - nlz_int64(slot_count - 1);
     if (size_pool_idx >= SIZE_POOL_COUNT) {
-        rb_bug("size_pool_for_size: allocation size too large");
+        rb_bug("size_pool_idx_for_size: allocation size too large");
     }
 
     return size_pool_idx;
