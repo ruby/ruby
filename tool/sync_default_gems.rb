@@ -358,6 +358,7 @@ def sync_default_gems(gem)
     sync_lib gem, upstream
     rm_rf(%w[ext/win32ole/lib])
     Dir.mkdir(*%w[ext/win32ole/lib])
+    move("lib/win32ole/win32ole.gemspec", "ext/win32ole")
     move(Dir.glob("lib/win32ole*"), "ext/win32ole/lib")
   else
     sync_lib gem, upstream
