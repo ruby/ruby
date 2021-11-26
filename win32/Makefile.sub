@@ -338,7 +338,8 @@ MJIT_OPTFLAGS = -DMJIT_HEADER $(CFLAGS) $(XCFLAGS) $(CPPFLAGS)
 !endif
 !ifndef MJIT_DEBUGFLAGS
 # TODO: Make this work... Another header for debug build needs to be installed first.
-MJIT_DEBUGFLAGS = $(DEBUGFLAGS)
+MJIT_DEBUGFLAGS = $(empty) $(DEBUGFLAGS) $(empty)
+MJIT_DEBUGFLAGS = $(MJIT_DEBUGFLAGS: -Zi = -Z7 )
 !endif
 !ifndef MJIT_LDSHARED
 MJIT_LDSHARED = $(MJIT_CC) -LD
@@ -1332,7 +1333,7 @@ clean-local::
 # for --jit-debug as well.
 $(TIMESTAMPDIR)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=).time: probes.h vm.$(OBJEXT)
 	$(ECHO) building $(@F:.time=.pch)
-	$(Q) $(CC) -DMJIT_HEADER $(CFLAGS) $(XCFLAGS:-DRUBY_EXPORT =) -URUBY_EXPORT $(CPPFLAGS) $(srcdir)/vm.c -c -Yc \
+	$(Q) $(CC) -DMJIT_HEADER $(CFLAGS: -Zi = -Z7 ) $(XCFLAGS:-DRUBY_EXPORT =) -URUBY_EXPORT $(CPPFLAGS) $(srcdir)/vm.c -c -Yc \
 	  $(COUTFLAG)$(@F:.time=.)$(OBJEXT) -Fd$(@F:.time=.pdb) -Fp$(@F:.time=.pch).new -Z7
 	$(Q) $(IFCHANGE) "--timestamp=$@" $(@F:.time=.pch) $(@F:.time=.pch).new
 
