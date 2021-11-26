@@ -123,6 +123,8 @@ YJIT_DECLARE_COUNTERS(
     compiled_iseq_count,
     compiled_block_count,
 
+    exit_from_branch_stub,
+
     invalidation_count,
     invalidate_method_lookup,
     invalidate_bop_redefined,

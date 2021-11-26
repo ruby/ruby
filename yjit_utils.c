@@ -101,13 +101,9 @@ print_str(codeblock_t *cb, const char *str)
         cb_write_byte(cb, (uint8_t)str[i]);
     cb_write_byte(cb, 0);
 
-    push(cb, RSP); // Alignment
-
     // Call the print function
     mov(cb, RAX, const_ptr_opnd((void*)&print_str_cfun));
     call(cb, RAX);
-
-    pop(cb, RSP); // Alignment
 
     pop_regs(cb);
 }

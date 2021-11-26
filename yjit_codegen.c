@@ -382,6 +382,26 @@ yjit_gen_leave_exit(codeblock_t *cb)
     return code_ptr;
 }
 
+// Fill code_for_exit_from_stub. This is used by branch_stub_hit() to exit
+// to the interpreter when it cannot service a stub by generating new code.
+// Before coming here, branch_stub_hit() takes care of fully reconstructing
+// interpreter state.
+static void
+gen_code_for_exit_from_stub(void)
+{
+    codeblock_t *cb = ocb;
+    code_for_exit_from_stub = cb_get_ptr(cb, cb->write_pos);
+
+    GEN_COUNTER_INC(cb, exit_from_branch_stub);
+
+    pop(cb, REG_SP);
+    pop(cb, REG_EC);
+    pop(cb, REG_CFP);
+
+    mov(cb, RAX, imm_opnd(Qundef));
+    ret(cb);
+}
+
 // :side-exit:
 // Get an exit for the current instruction in the outlined block. The code
 // for each instruction often begins with several guards before proceeding

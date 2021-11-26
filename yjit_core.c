@@ -9,6 +9,10 @@
 #include "yjit_core.h"
 #include "yjit_codegen.h"
 
+// For exiting from YJIT frame from branch_stub_hit().
+// Filled by gen_code_for_exit_from_stub().
+static uint8_t *code_for_exit_from_stub = NULL;
+
 /*
 Get an operand for the adjusted stack pointer address
 */
@@ -597,6 +601,52 @@ add_block_version(blockid_t blockid, block_t *block)
 #endif
 }
 
+static ptrdiff_t
+branch_code_size(const branch_t *branch)
+{
+    return branch->end_addr - branch->start_addr;
+}
+
+// Generate code for a branch, possibly rewriting and changing the size of it
+static void
+regenerate_branch(codeblock_t *cb, branch_t *branch)
+{
+    if (branch->start_addr < cb_get_ptr(cb, yjit_codepage_frozen_bytes)) {
+        // Generating this branch would modify frozen bytes. Do nothing.
+        return;
+    }
+
+    const uint32_t old_write_pos = cb->write_pos;
+    const bool branch_terminates_block = branch->end_addr == branch->block->end_addr;
+
+    RUBY_ASSERT(branch->dst_addrs[0] != NULL);
+
+    cb_set_write_ptr(cb, branch->start_addr);
+    branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
+    branch->end_addr = cb_get_write_ptr(cb);
+
+    if (branch_terminates_block) {
+        // Adjust block size
+        branch->block->end_addr = branch->end_addr;
+    }
+
+    // cb->write_pos is both a write cursor and a marker for the end of
+    // everything written out so far. Leave cb->write_pos at the end of the
+    // block before returning. This function only ever bump or retain the end
+    // of block marker since that's what the majority of callers want. When the
+    // branch sits at the very end of the codeblock and it shrinks after
+    // regeneration, it's up to the caller to drop bytes off the end to
+    // not leave a gap and implement branch->shape.
+    if (old_write_pos > cb->write_pos) {
+        // We rewound cb->write_pos to generate the branch, now restore it.
+        cb_set_pos(cb, old_write_pos);
+    }
+    else {
+        // The branch sits at the end of cb and consumed some memory.
+        // Keep cb->write_pos.
+    }
+}
+
 // Create a new outgoing branch entry for a block
 static branch_t*
 make_branch_entry(block_t *block, const ctx_t *src_ctx, branchgen_fn gen_fn)
@@ -777,12 +827,14 @@ gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx, rb_execution_context_t
 static uint8_t *
 branch_stub_hit(branch_t *branch, const uint32_t target_idx, rb_execution_context_t *ec)
 {
-    uint8_t *dst_addr;
+    uint8_t *dst_addr = NULL;
 
     // Stop other ractors since we are going to patch machine code.
     // This is how the GC does it.
     RB_VM_LOCK_ENTER();
     rb_vm_barrier();
+
+    const ptrdiff_t branch_size_on_entry = branch_code_size(branch);
 
     RUBY_ASSERT(branch != NULL);
     RUBY_ASSERT(target_idx < 2);
@@ -794,18 +846,13 @@ branch_stub_hit(branch_t *branch, const uint32_t target_idx, rb_execution_contex
     if (branch->blocks[target_idx]) {
         dst_addr = branch->dst_addrs[target_idx];
     }
-    else
-    {
-        //fprintf(stderr, "\nstub hit, branch: %p, target idx: %d\n", branch, target_idx);
-        //fprintf(stderr, "blockid.iseq=%p, blockid.idx=%d\n", target.iseq, target.idx);
-        //fprintf(stderr, "chain_depth=%d\n", target_ctx->chain_depth);
-
+    else {
         // :stub-sp-flush:
         // Generated code do stack operations without modifying cfp->sp, while the
         // cfp->sp tells the GC what values on the stack to root. Generated code
         // generally takes care of updating cfp->sp when it calls runtime routines that
-        // could trigger GC, but for the case of branch stubs, it's inconvenient. So
-        // we do it here.
+        // could trigger GC, but it's inconvenient to do it before calling this function.
+        // So we do it here instead.
         VALUE *const original_interp_sp = ec->cfp->sp;
         ec->cfp->sp += target_ctx->sp_offset;
 
@@ -818,8 +865,11 @@ branch_stub_hit(branch_t *branch, const uint32_t target_idx, rb_execution_contex
 
         // If this block hasn't yet been compiled
         if (!p_block) {
+            const uint8_t branch_old_shape = branch->shape;
+            bool branch_modified = false;
+
             // If the new block can be generated right after the branch (at cb->write_pos)
-            if (cb_get_write_ptr(cb) == branch->end_addr && branch->start_addr >= cb_get_ptr(cb, yjit_codepage_frozen_bytes)) {
+            if (cb_get_write_ptr(cb) == branch->end_addr) {
                 // This branch should be terminating its block
                 RUBY_ASSERT(branch->end_addr == branch->block->end_addr);
 
@@ -827,42 +877,61 @@ branch_stub_hit(branch_t *branch, const uint32_t target_idx, rb_execution_contex
                 branch->shape = (uint8_t)target_idx;
 
                 // Rewrite the branch with the new, potentially more compact shape
-                cb_set_write_ptr(cb, branch->start_addr);
-                branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
-                RUBY_ASSERT(cb_get_write_ptr(cb) <= branch->end_addr && "can't enlarge branches");
-                branch->end_addr = cb_get_write_ptr(cb);
-                branch->block->end_addr = cb_get_write_ptr(cb);
+                regenerate_branch(cb, branch);
+                branch_modified = true;
+
+                // Ensure that the branch terminates the codeblock just like
+                // before entering this if block. This drops bytes off the end
+                // in case we shrank the branch when regenerating.
+                cb_set_write_ptr(cb, branch->end_addr);
             }
 
             // Compile the new block version
             p_block = gen_block_version(target, target_ctx, ec);
-            RUBY_ASSERT(p_block);
+
+            if (!p_block && branch_modified) {
+                // We couldn't generate a new block for the branch, but we modified the branch.
+                // Restore the branch by regenerating it.
+                branch->shape = branch_old_shape;
+                regenerate_branch(cb, branch);
+            }
+        }
+
+        if (p_block) {
+            // Branch shape should reflect layout
             RUBY_ASSERT(!(branch->shape == (uint8_t)target_idx && p_block->start_addr != branch->end_addr));
+
+            // Add this branch to the list of incoming branches for the target
+            rb_darray_append(&p_block->incoming, branch);
+
+            // Update the branch target address
+            dst_addr = p_block->start_addr;
+            branch->dst_addrs[target_idx] = dst_addr;
+
+            // Mark this branch target as patched (no longer a stub)
+            branch->blocks[target_idx] = p_block;
+
+            // Rewrite the branch with the new jump target address
+            regenerate_branch(cb, branch);
+
+            // Restore interpreter sp, since the code hitting the stub expects the original.
+            ec->cfp->sp = original_interp_sp;
         }
-
-        // Add this branch to the list of incoming branches for the target
-        rb_darray_append(&p_block->incoming, branch);
-
-        // Update the branch target address
-        dst_addr = p_block->start_addr;
-        branch->dst_addrs[target_idx] = dst_addr;
-
-        // Rewrite the branch with the new jump target address
-        if (branch->start_addr >= cb_get_ptr(cb, yjit_codepage_frozen_bytes)) {
-            RUBY_ASSERT(branch->dst_addrs[0] != NULL);
-            uint32_t cur_pos = cb->write_pos;
-            cb_set_write_ptr(cb, branch->start_addr);
-            branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
-            RUBY_ASSERT(cb_get_write_ptr(cb) == branch->end_addr && "branch can't change size");
-            cb_set_pos(cb, cur_pos);
+        else {
+            // Failed to service the stub by generating a new block so now we
+            // need to exit to the interpreter at the stubbed location. We are
+            // intentionally *not* restoring original_interp_sp. At the time of
+            // writing, reconstructing interpreter state only involves setting
+            // cfp->sp and cfp->pc. We set both before trying to generate the
+            // block. All there is left to do to exit is to pop the native
+            // frame. We do that in code_for_exit_from_stub.
+            dst_addr = code_for_exit_from_stub;
         }
-
-        // Mark this branch target as patched (no longer a stub)
-        branch->blocks[target_idx] = p_block;
-
-        // Restore interpreter sp, since the code hitting the stub expects the original.
-        ec->cfp->sp = original_interp_sp;
     }
+
+    const ptrdiff_t new_branch_size = branch_code_size(branch);
+    RUBY_ASSERT_ALWAYS(new_branch_size >= 0);
+    RUBY_ASSERT_ALWAYS(new_branch_size <= branch_size_on_entry && "branch stubs should not enlarge branches");
 
     RB_VM_LOCK_LEAVE();
 
@@ -942,8 +1011,7 @@ gen_branch(
 
     // Call the branch generation function
     branch->start_addr = cb_get_write_ptr(cb);
-    gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], SHAPE_DEFAULT);
-    branch->end_addr = cb_get_write_ptr(cb);
+    regenerate_branch(cb, branch);
 }
 
 static void
@@ -1191,13 +1259,7 @@ invalidate_block_version(block_t *block)
         }
 
         // Rewrite the branch with the new jump target address
-        RUBY_ASSERT(branch->dst_addrs[0] != NULL);
-        uint32_t cur_pos = cb->write_pos;
-        cb_set_write_ptr(cb, branch->start_addr);
-        branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
-        branch->end_addr = cb_get_write_ptr(cb);
-        branch->block->end_addr = cb_get_write_ptr(cb);
-        cb_set_pos(cb, cur_pos);
+        regenerate_branch(cb, branch);
 
         if (target_next && branch->end_addr > block->end_addr) {
             fprintf(stderr, "branch_block_idx=%u block_idx=%u over=%ld block_size=%ld\n",
@@ -1243,5 +1305,5 @@ invalidate_block_version(block_t *block)
 static void
 yjit_init_core(void)
 {
-    // Nothing yet
+    gen_code_for_exit_from_stub();
 }

@@ -1232,8 +1232,7 @@ rb_yjit_init(struct rb_yjit_options *options)
     }
 
     // If type propagation is disabled, max 1 version per block
-    if (rb_yjit_opts.no_type_prop)
-    {
+    if (rb_yjit_opts.no_type_prop) {
         rb_yjit_opts.max_versions = 1;
     }
 
@@ -1241,8 +1240,8 @@ rb_yjit_init(struct rb_yjit_options *options)
     blocks_assuming_single_ractor_mode = st_init_numtable();
     blocks_assuming_bops = st_init_numtable();
 
-    yjit_init_core();
     yjit_init_codegen();
+    yjit_init_core();
 
     // YJIT Ruby module
     mYjit = rb_define_module_under(rb_cRubyVM, "YJIT");
