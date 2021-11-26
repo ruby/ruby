@@ -1739,7 +1739,6 @@ str_duplicate_setup(VALUE klass, VALUE str, VALUE dup)
         assert(str_embed_capa(dup) >= len + 1);
         STR_SET_EMBED_LEN(dup, len);
         MEMCPY(RSTRING(dup)->as.embed.ary, RSTRING(str)->as.embed.ary, char, len + 1);
-        flags &= ~RSTRING_NOEMBED;
     }
     else {
         VALUE root = str;
@@ -1781,7 +1780,7 @@ static inline VALUE
 ec_str_duplicate(struct rb_execution_context_struct *ec, VALUE klass, VALUE str)
 {
     VALUE dup;
-    if (FL_TEST(str, STR_NOEMBED)) {
+    if (!USE_RVARGC || FL_TEST(str, STR_NOEMBED)) {
         dup = ec_str_alloc_heap(ec, klass);
     }
     else {
@@ -1795,7 +1794,7 @@ static inline VALUE
 str_duplicate(VALUE klass, VALUE str)
 {
     VALUE dup;
-    if (FL_TEST(str, STR_NOEMBED)) {
+    if (!USE_RVARGC || FL_TEST(str, STR_NOEMBED)) {
         dup = str_alloc_heap(klass);
     }
     else {
