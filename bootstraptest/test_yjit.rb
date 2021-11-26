@@ -2435,21 +2435,21 @@ assert_equal 'ok', %q{
 }
 
 assert_equal 'ok', %q{
-# test hitting a branch stub when out of memory
-def nimai(jita)
-  if jita
-    :ng
-  else
-    :ok
+  # test hitting a branch stub when out of memory
+  def nimai(jita)
+    if jita
+      :ng
+    else
+      :ok
+    end
   end
-end
 
-nimai(true)
-nimai(true)
+  nimai(true)
+  nimai(true)
 
-RubyVM::YJIT.simulate_oom! if defined?(RubyVM::YJIT)
+  RubyVM::YJIT.simulate_oom! if defined?(RubyVM::YJIT)
 
-nimai(false)
+  nimai(false)
 } if false  # disabled for now since OOM crashes in the test harness
 
 # block invalidation while out of memory

@@ -630,6 +630,9 @@ regenerate_branch(codeblock_t *cb, branch_t *branch)
         branch->block->end_addr = branch->end_addr;
     }
 
+    // cb->write_pos is both a write cursor and a marker for the end of everything
+    // written out so far. Leave cb->write_pos at the end of the block before
+    // returning.
     if (old_write_pos > cb->write_pos) {
         // We rewound cb->write_pos to generate the branch, now restore it.
         cb_set_pos(cb, old_write_pos);
