@@ -1856,16 +1856,24 @@ SRC
   # invoked with the option and a stripped output string is returned
   # without modifying any of the global values mentioned above.
   def pkg_config(pkg, option=nil)
+    _, ldir = dir_config(pkg)
+    if ldir
+      pkg_config_path = "#{ldir}/pkgconfig"
+      if File.directory?(pkg_config_path)
+        Logging.message("PKG_CONFIG_PATH = %s\n", pkg_config_path)
+        envs = ["PKG_CONFIG_PATH"=>[pkg_config_path, ENV["PKG_CONFIG_PATH"]].compact.join(File::PATH_SEPARATOR)]
+      end
+    end
     if pkgconfig = with_config("#{pkg}-config") and find_executable0(pkgconfig)
       # if and only if package specific config command is given
     elsif ($PKGCONFIG ||=
            (pkgconfig = with_config("pkg-config", ("pkg-config" unless CROSS_COMPILING))) &&
            find_executable0(pkgconfig) && pkgconfig) and
-        xsystem("#{$PKGCONFIG} --exists #{pkg}")
+        xsystem([*envs, $PKGCONFIG, "--exists", pkg])
       # default to pkg-config command
       pkgconfig = $PKGCONFIG
       get = proc {|opt|
-        opt = xpopen("#{$PKGCONFIG} --#{opt} #{pkg}", err:[:child, :out], &:read)
+        opt = xpopen([*envs, $PKGCONFIG, "--#{opt}", pkg], err:[:child, :out], &:read)
         Logging.open {puts opt.each_line.map{|s|"=> #{s.inspect}"}}
         opt.strip if $?.success?
       }
@@ -1876,7 +1884,7 @@ SRC
     end
     if pkgconfig
       get ||= proc {|opt|
-        opt = xpopen("#{pkgconfig} --#{opt}", err:[:child, :out], &:read)
+        opt = xpopen([*envs, pkgconfig, "--#{opt}"], err:[:child, :out], &:read)
         Logging.open {puts opt.each_line.map{|s|"=> #{s.inspect}"}}
         opt.strip if $?.success?
       }
