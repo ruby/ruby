@@ -25,6 +25,7 @@ Gem::Specification.new do |spec|
   spec.files         = Dir.chdir(File.expand_path('..', __FILE__)) do
     `git ls-files -z 2>/dev/null`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
   end
+  spec.extensions    = ["ext/cgi/escape/extconf.rb"]
   spec.bindir        = "exe"
   spec.executables   = []
   spec.require_paths = ["lib"]
