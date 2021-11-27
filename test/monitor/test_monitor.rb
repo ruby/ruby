@@ -294,7 +294,7 @@ class TestMonitor < Test::Unit::TestCase
       @monitor.synchronize do
         assert_equal("foo", c)
         result3 = cond.wait(0.1)
-        assert_equal(true, result3) # wait always returns true in Ruby 1.9
+        assert_equal(false, result3)
         assert_equal("foo", c)
         queue3.enq(nil)
         result4 = cond.wait

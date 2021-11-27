@@ -10,6 +10,7 @@
 *.dylib
 *.elc
 *.i
+*.ii
 *.inc
 *.log
 *.o
@@ -181,6 +182,9 @@ lcov*.info
 /ext/-test-/win32/dln/dlntest.dll
 /ext/-test-/win32/dln/dlntest.exp
 /ext/-test-/win32/dln/dlntest.lib
+
+# /ext/-test-/gems
+/ext/-test-/gems
 
 # /ext/etc/
 /ext/etc/constdefs.h

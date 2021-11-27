@@ -89,7 +89,7 @@ class TestRDocClassModule < XrefTestCase
     assert_equal 'comment', cm.comment.text
   end
 
-  def test_docuent_self_or_methods
+  def test_document_self_or_methods
     assert @c1.document_self_or_methods
 
     @c1.document_self = false
@@ -238,7 +238,7 @@ class TestRDocClassModule < XrefTestCase
     assert_equal tl, loaded.method_list.first.file
   end
 
-  def test_marshal_dump_visibilty
+  def test_marshal_dump_visibility
     @store.path = Dir.tmpdir
     tl = @store.add_file 'file.rb'
 

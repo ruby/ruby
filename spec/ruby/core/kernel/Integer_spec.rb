@@ -10,29 +10,18 @@ describe :kernel_integer, shared: true do
     Integer(100).should == 100
   end
 
-  ruby_version_is ""..."2.6" do
-    it "uncritically return the value of to_int even if it is not an Integer" do
-      obj = mock("object")
-      obj.should_receive(:to_int).and_return("1")
-      obj.should_not_receive(:to_i)
-      Integer(obj).should == "1"
-    end
+  it "raises a TypeError when to_int returns not-an-Integer object and to_i returns nil" do
+    obj = mock("object")
+    obj.should_receive(:to_int).and_return("1")
+    obj.should_receive(:to_i).and_return(nil)
+    -> { Integer(obj) }.should raise_error(TypeError)
   end
 
-  ruby_version_is "2.6" do
-    it "raises a TypeError when to_int returns not-an-Integer object and to_i returns nil" do
-      obj = mock("object")
-      obj.should_receive(:to_int).and_return("1")
-      obj.should_receive(:to_i).and_return(nil)
-      -> { Integer(obj) }.should raise_error(TypeError)
-    end
-
-    it "return a result of to_i when to_int does not return an Integer" do
-      obj = mock("object")
-      obj.should_receive(:to_int).and_return("1")
-      obj.should_receive(:to_i).and_return(42)
-      Integer(obj).should == 42
-    end
+  it "return a result of to_i when to_int does not return an Integer" do
+    obj = mock("object")
+    obj.should_receive(:to_int).and_return("1")
+    obj.should_receive(:to_i).and_return(42)
+    Integer(obj).should == 42
   end
 
   it "raises a TypeError when passed nil" do
@@ -100,59 +89,57 @@ describe :kernel_integer, shared: true do
     -> { Integer(infinity_value) }.should raise_error(FloatDomainError)
   end
 
-  ruby_version_is "2.6" do
-    describe "when passed exception: false" do
-      describe "and to_i returns a value that is not an Integer" do
-        it "swallows an error" do
-          obj = mock("object")
-          obj.should_receive(:to_i).and_return("1")
-          Integer(obj, exception: false).should == nil
-        end
+  describe "when passed exception: false" do
+    describe "and to_i returns a value that is not an Integer" do
+      it "swallows an error" do
+        obj = mock("object")
+        obj.should_receive(:to_i).and_return("1")
+        Integer(obj, exception: false).should == nil
       end
+    end
 
-      describe "and no to_int or to_i methods exist" do
-        it "swallows an error" do
-          obj = mock("object")
-          Integer(obj, exception: false).should == nil
-        end
+    describe "and no to_int or to_i methods exist" do
+      it "swallows an error" do
+        obj = mock("object")
+        Integer(obj, exception: false).should == nil
       end
+    end
 
-      describe "and to_int returns nil and no to_i exists" do
-        it "swallows an error" do
-          obj = mock("object")
-          obj.should_receive(:to_i).and_return(nil)
-          Integer(obj, exception: false).should == nil
-        end
+    describe "and to_int returns nil and no to_i exists" do
+      it "swallows an error" do
+        obj = mock("object")
+        obj.should_receive(:to_i).and_return(nil)
+        Integer(obj, exception: false).should == nil
       end
+    end
 
-      describe "and passed NaN" do
-        it "swallows an error" do
-          Integer(nan_value, exception: false).should == nil
-        end
+    describe "and passed NaN" do
+      it "swallows an error" do
+        Integer(nan_value, exception: false).should == nil
       end
+    end
 
-      describe "and passed Infinity" do
-        it "swallows an error" do
-          Integer(infinity_value, exception: false).should == nil
-        end
+    describe "and passed Infinity" do
+      it "swallows an error" do
+        Integer(infinity_value, exception: false).should == nil
       end
+    end
 
-      describe "and passed nil" do
-        it "swallows an error" do
-          Integer(nil, exception: false).should == nil
-        end
+    describe "and passed nil" do
+      it "swallows an error" do
+        Integer(nil, exception: false).should == nil
       end
+    end
 
-      describe "and passed a String that contains numbers" do
-        it "normally parses it and returns an Integer" do
-          Integer("42", exception: false).should == 42
-        end
+    describe "and passed a String that contains numbers" do
+      it "normally parses it and returns an Integer" do
+        Integer("42", exception: false).should == 42
       end
+    end
 
-      describe "and passed a String that can't be converted to an Integer" do
-        it "swallows an error" do
-          Integer("abc", exception: false).should == nil
-        end
+    describe "and passed a String that can't be converted to an Integer" do
+      it "swallows an error" do
+        Integer("abc", exception: false).should == nil
       end
     end
   end
@@ -246,30 +233,28 @@ describe "Integer() given a String", shared: true do
     -> { Integer("") }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is "2.6" do
-    describe "when passed exception: false" do
-      describe "and multiple leading -s" do
-        it "swallows an error" do
-          Integer("---1", exception: false).should == nil
-        end
+  describe "when passed exception: false" do
+    describe "and multiple leading -s" do
+      it "swallows an error" do
+        Integer("---1", exception: false).should == nil
       end
+    end
 
-      describe "and multiple trailing -s" do
-        it "swallows an error" do
-          Integer("1---", exception: false).should == nil
-        end
+    describe "and multiple trailing -s" do
+      it "swallows an error" do
+        Integer("1---", exception: false).should == nil
       end
+    end
 
-      describe "and an argument that contains a period" do
-        it "swallows an error" do
-          Integer("0.0", exception: false).should == nil
-        end
+    describe "and an argument that contains a period" do
+      it "swallows an error" do
+        Integer("0.0", exception: false).should == nil
       end
+    end
 
-      describe "and an empty string" do
-        it "swallows an error" do
-          Integer("", exception: false).should == nil
-        end
+    describe "and an empty string" do
+      it "swallows an error" do
+        Integer("", exception: false).should == nil
       end
     end
   end
@@ -594,20 +579,18 @@ describe "Integer() given a String and base", shared: true do
     end
   end
 
-  ruby_version_is "2.6" do
-    describe "when passed exception: false" do
-      describe "and valid argument" do
-        it "returns an Integer number" do
-          Integer("100", 10, exception: false).should == 100
-          Integer("100", 2, exception: false).should == 4
-        end
+  describe "when passed exception: false" do
+    describe "and valid argument" do
+      it "returns an Integer number" do
+        Integer("100", 10, exception: false).should == 100
+        Integer("100", 2, exception: false).should == 4
       end
+    end
 
-      describe "and invalid argument" do
-        it "swallows an error" do
-          Integer("999", 2, exception: false).should == nil
-          Integer("abc", 10, exception: false).should == nil
-        end
+    describe "and invalid argument" do
+      it "swallows an error" do
+        Integer("999", 2, exception: false).should == nil
+        Integer("abc", 10, exception: false).should == nil
       end
     end
   end

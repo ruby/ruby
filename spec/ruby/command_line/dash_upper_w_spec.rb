@@ -19,34 +19,29 @@ describe "The -W command line option with 2" do
   it_behaves_like :command_line_verbose, "-W2"
 end
 
+# Regarding the defaults, see core/warning/element_reference_spec.rb
 ruby_version_is "2.7" do
+  describe "The -W command line option with :deprecated" do
+    it "enables deprecation warnings" do
+      ruby_exe('p Warning[:deprecated]', options: '-W:deprecated').should == "true\n"
+    end
+  end
+
   describe "The -W command line option with :no-deprecated" do
     it "suppresses deprecation warnings" do
-      result = ruby_exe('$; = ""', options: '-w', args: '2>&1')
-      result.should =~ /is deprecated/
+      ruby_exe('p Warning[:deprecated]', options: '-w -W:no-deprecated').should == "false\n"
+    end
+  end
 
-      result = ruby_exe('$; = ""', options: '-w -W:no-deprecated', args: '2>&1')
-      result.should == ""
+  describe "The -W command line option with :experimental" do
+    it "enables experimental warnings" do
+      ruby_exe('p Warning[:experimental]', options: '-W:experimental').should == "true\n"
     end
   end
 
   describe "The -W command line option with :no-experimental" do
-    before do
-      ruby_version_is ""..."3.0" do
-        @src = 'case [0, 1]; in [a, b]; end'
-      end
-
-      ruby_version_is "3.0" do
-        @src = '[0, 1] => [a, b]'
-      end
-    end
-
     it "suppresses experimental warnings" do
-      result = ruby_exe(@src, args: '2>&1')
-      result.should =~ /is experimental/
-
-      result = ruby_exe(@src, options: '-W:no-experimental', args: '2>&1')
-      result.should == ""
+      ruby_exe('p Warning[:experimental]', options: '-w -W:no-experimental').should == "false\n"
     end
   end
 end

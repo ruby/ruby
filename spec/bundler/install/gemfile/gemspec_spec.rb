@@ -210,6 +210,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     end
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gemspec
     G
 
@@ -263,6 +264,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     build_lib "omg", "2.0", :path => lib_path("omg")
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gemspec :path => "#{lib_path("omg")}"
     G
 

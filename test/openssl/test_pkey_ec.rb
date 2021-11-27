@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require_relative 'utils'
 
-if defined?(OpenSSL) && defined?(OpenSSL::PKey::EC)
+if defined?(OpenSSL)
 
 class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   def test_ec_key
@@ -109,13 +109,30 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal a.derive(b), a.dh_compute_key(b.public_key)
   end
 
-  def test_dsa_sign_verify
+  def test_sign_verify_raw
+    key = Fixtures.pkey("p256")
     data1 = "foo"
     data2 = "bar"
-    key = OpenSSL::PKey::EC.new("prime256v1").generate_key!
+
+    malformed_sig = "*" * 30
+
+    # Sign by #dsa_sign_asn1
     sig = key.dsa_sign_asn1(data1)
     assert_equal true, key.dsa_verify_asn1(data1, sig)
     assert_equal false, key.dsa_verify_asn1(data2, sig)
+    assert_raise(OpenSSL::PKey::ECError) { key.dsa_verify_asn1(data1, malformed_sig) }
+    assert_equal true, key.verify_raw(nil, sig, data1)
+    assert_equal false, key.verify_raw(nil, sig, data2)
+    assert_raise(OpenSSL::PKey::PKeyError) { key.verify_raw(nil, malformed_sig, data1) }
+
+    # Sign by #sign_raw
+    sig = key.sign_raw(nil, data1)
+    assert_equal true, key.dsa_verify_asn1(data1, sig)
+    assert_equal false, key.dsa_verify_asn1(data2, sig)
+    assert_raise(OpenSSL::PKey::ECError) { key.dsa_verify_asn1(data1, malformed_sig) }
+    assert_equal true, key.verify_raw(nil, sig, data1)
+    assert_equal false, key.verify_raw(nil, sig, data2)
+    assert_raise(OpenSSL::PKey::PKeyError) { key.verify_raw(nil, malformed_sig, data1) }
   end
 
   def test_dsa_sign_asn1_FIPS186_3
@@ -193,6 +210,8 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
 
   def test_PUBKEY
     p256 = Fixtures.pkey("p256")
+    p256pub = OpenSSL::PKey::EC.new(p256.public_to_der)
+
     asn1 = OpenSSL::ASN1::Sequence([
       OpenSSL::ASN1::Sequence([
         OpenSSL::ASN1::ObjectId("id-ecPublicKey"),
@@ -204,7 +223,7 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     ])
     key = OpenSSL::PKey::EC.new(asn1.to_der)
     assert_not_predicate key, :private?
-    assert_same_ec dup_public(p256), key
+    assert_same_ec p256pub, key
 
     pem = <<~EOF
     -----BEGIN PUBLIC KEY-----
@@ -213,10 +232,15 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     -----END PUBLIC KEY-----
     EOF
     key = OpenSSL::PKey::EC.new(pem)
-    assert_same_ec dup_public(p256), key
+    assert_same_ec p256pub, key
 
-    assert_equal asn1.to_der, dup_public(p256).to_der
-    assert_equal pem, dup_public(p256).export
+    assert_equal asn1.to_der, key.to_der
+    assert_equal pem, key.export
+
+    assert_equal asn1.to_der, p256.public_to_der
+    assert_equal asn1.to_der, key.public_to_der
+    assert_equal pem, p256.public_to_pem
+    assert_equal pem, key.public_to_pem
   end
 
   def test_ec_group

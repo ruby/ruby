@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Function overloads to issue warnings around #ANYARGS.
  *
  * For instance ::rb_define_method  takes a pointer to  #ANYARGS -ed functions,
@@ -246,7 +246,7 @@
 # define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function(n, f)  RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_global_function_m3,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_15(n))
 # define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id(n, f)        RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_method_id_m3,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_15(n))
 # define RBIMPL_ANYARGS_DISPATCH_rb_define_method(n, f)           RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_method_m3,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_15(n))
-# define RBIMPL_ANYARGS_ATTRSET(sym) RBIMPL_ATTR_MAYBE_UNUSED() RBIMPL_ATTR_NONNULL() RBIMPL_ATTR_WEAKREF(sym)
+# define RBIMPL_ANYARGS_ATTRSET(sym) RBIMPL_ATTR_MAYBE_UNUSED() RBIMPL_ATTR_NONNULL(()) RBIMPL_ATTR_WEAKREF(sym)
 # define RBIMPL_ANYARGS_DECL(sym, ...) \
 RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _m3(__VA_ARGS__, VALUE(*)(ANYARGS), int); \
 RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _m2(__VA_ARGS__, VALUE(*)(VALUE, VALUE), int); \
@@ -338,7 +338,7 @@ RBIMPL_ANYARGS_DECL(rb_define_method, VALUE, const char *)
 
 /**
  * @brief  Defines ::rb_mKerbel \#mid.
- * @see    ::rb_define_gobal_function
+ * @see    ::rb_define_global_function
  * @param  mid    Name of the defining method.
  * @param  func   Implementation of ::rb_mKernel \#mid.
  * @param  arity  Arity of ::rb_mKernel \#mid.
@@ -349,7 +349,7 @@ RBIMPL_ANYARGS_DECL(rb_define_method, VALUE, const char *)
 
 /**
  * This  macro is  to properly  cast  a function  parameter of  *_define_method
- * family.  It  has been  around since  1.x era so  you can  maximize backwards
+ * family.  It  has been  around since  1.x era so  you can  maximise backwards
  * compatibility by using it.
  *
  * ```CXX

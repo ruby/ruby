@@ -207,7 +207,7 @@ class RubyLex
           last_line = lines[line_index]&.byteslice(0, byte_pointer)
           code += last_line if last_line
           @tokens = self.class.ripper_lex_without_warning(code, context: context)
-          corresponding_token_depth = check_corresponding_token_depth
+          corresponding_token_depth = check_corresponding_token_depth(lines, line_index)
           if corresponding_token_depth
             corresponding_token_depth
           else
@@ -477,7 +477,7 @@ class RubyLex
 
   def take_corresponding_syntax_to_kw_do(tokens, index)
     syntax_of_do = nil
-    # Finding a syntax correnponding to "do".
+    # Finding a syntax corresponding to "do".
     index.downto(0) do |i|
       tk = tokens[i]
       # In "continue", the token isn't the corresponding syntax to "do".
@@ -508,7 +508,7 @@ class RubyLex
 
   def is_the_in_correspond_to_a_for(tokens, index)
     syntax_of_in = nil
-    # Finding a syntax correnponding to "do".
+    # Finding a syntax corresponding to "do".
     index.downto(0) do |i|
       tk = tokens[i]
       # In "continue", the token isn't the corresponding syntax to "do".
@@ -603,7 +603,7 @@ class RubyLex
     depth_difference
   end
 
-  def check_corresponding_token_depth
+  def check_corresponding_token_depth(lines, line_index)
     corresponding_token_depth = nil
     is_first_spaces_of_line = true
     is_first_printable_of_line = true
@@ -611,6 +611,11 @@ class RubyLex
     spaces_at_line_head = 0
     open_brace_on_line = 0
     in_oneliner_def = nil
+
+    if heredoc_scope?
+      return lines[line_index][/^ */].length
+    end
+
     @tokens.each_with_index do |t, index|
       # detecting one-liner method definition
       if in_oneliner_def.nil?
@@ -708,6 +713,9 @@ class RubyLex
     while i < tokens.size
       t = tokens[i]
       case t[1]
+      when *end_type.last
+        start_token.pop
+        end_type.pop
       when :on_tstring_beg
         start_token << t
         end_type << [:on_tstring_end, :on_label_end]
@@ -715,10 +723,14 @@ class RubyLex
         start_token << t
         end_type << :on_regexp_end
       when :on_symbeg
-        acceptable_single_tokens = %i{on_ident on_const on_op on_cvar on_ivar on_gvar on_kw}
-        if (i + 1) < tokens.size and acceptable_single_tokens.all?{ |st| tokens[i + 1][1] != st }
-          start_token << t
-          end_type << :on_tstring_end
+        acceptable_single_tokens = %i{on_ident on_const on_op on_cvar on_ivar on_gvar on_kw on_int on_backtick}
+        if (i + 1) < tokens.size
+          if acceptable_single_tokens.all?{ |st| tokens[i + 1][1] != st }
+            start_token << t
+            end_type << :on_tstring_end
+          else
+            i += 1
+          end
         end
       when :on_backtick
         start_token << t
@@ -729,9 +741,6 @@ class RubyLex
       when :on_heredoc_beg
         start_token << t
         end_type << :on_heredoc_end
-      when *end_type.last
-        start_token.pop
-        end_type.pop
       end
       i += 1
     end
@@ -812,6 +821,13 @@ class RubyLex
       end
     end
     false
+  end
+
+  private
+
+  def heredoc_scope?
+    heredoc_tokens = @tokens.select { |t| [:on_heredoc_beg, :on_heredoc_end].include?(t.event) }
+    heredoc_tokens[-1]&.event == :on_heredoc_beg
   end
 end
 # :startdoc:

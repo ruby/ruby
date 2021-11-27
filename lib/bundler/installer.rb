@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "rubygems/dependency_installer"
 require_relative "worker"
 require_relative "installer/parallel_installer"
 require_relative "installer/standalone"
@@ -218,9 +217,6 @@ module Bundler
       if jobs = Bundler.settings[:jobs]
         return jobs
       end
-
-      # Parallelization has some issues on Windows, so it's not yet the default
-      return 1 if Gem.win_platform?
 
       Bundler.settings.processor_count
     end

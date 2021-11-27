@@ -21,30 +21,6 @@ RSpec.describe Bundler do
       it "catches YAML syntax errors" do
         expect { subject }.to raise_error(Bundler::GemspecError, /error while loading `test.gemspec`/)
       end
-
-      context "on Rubies with a settable YAML engine", :if => defined?(YAML::ENGINE) do
-        context "with Syck as YAML::Engine" do
-          it "raises a GemspecError after YAML load throws ArgumentError" do
-            orig_yamler = YAML::ENGINE.yamler
-            YAML::ENGINE.yamler = "syck"
-
-            expect { subject }.to raise_error(Bundler::GemspecError)
-
-            YAML::ENGINE.yamler = orig_yamler
-          end
-        end
-
-        context "with Psych as YAML::Engine" do
-          it "raises a GemspecError after YAML load throws Psych::SyntaxError" do
-            orig_yamler = YAML::ENGINE.yamler
-            YAML::ENGINE.yamler = "psych"
-
-            expect { subject }.to raise_error(Bundler::GemspecError)
-
-            YAML::ENGINE.yamler = orig_yamler
-          end
-        end
-      end
     end
 
     context "with correct YAML file", :if => defined?(Encoding) do
@@ -176,11 +152,9 @@ RSpec.describe Bundler do
   describe "configuration" do
     context "disable_shared_gems" do
       it "should unset GEM_PATH with empty string" do
-        env = {}
         expect(Bundler).to receive(:use_system_gems?).and_return(false)
-        Bundler.send(:configure_gem_path, env)
-        expect(env.keys).to include("GEM_PATH")
-        expect(env["GEM_PATH"]).to eq ""
+        Bundler.send(:configure_gem_path)
+        expect(ENV["GEM_PATH"]).to eq ""
       end
     end
   end

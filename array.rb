@@ -49,6 +49,8 @@ class Array
   # But +self+ may contain duplicates:
   #    a = [1, 1, 1, 2, 2, 3]
   #    a.sample(a.size * 2) # => [1, 1, 3, 2, 1, 2]
+  # The argument +n+ must be a non-negative numeric value.
+  # The order of the result array is unrelated to the order of +self+.
   # Returns a new empty \Array if +self+ is empty.
   #
   # The optional +random+ argument will be used as the random number generator:
@@ -56,6 +58,12 @@ class Array
   #    a.sample(random: Random.new(1))     #=> 6
   #    a.sample(4, random: Random.new(1))  #=> [6, 10, 9, 2]
   def sample(n = (ary = false), random: Random)
-    Primitive.rb_ary_sample(random, n, ary)
+    if Primitive.mandatory_only?
+      # Primitive.cexpr! %{ rb_ary_sample(self, rb_cRandom, Qfalse, Qfalse) }
+      Primitive.ary_sample0
+    else
+      # Primitive.cexpr! %{ rb_ary_sample(self, random, n, ary) }
+      Primitive.ary_sample(random, n, ary)
+    end
   end
 end

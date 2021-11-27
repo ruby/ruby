@@ -9,8 +9,8 @@
 #include "internal.h"
 #include "internal/hash.h"
 #include "internal/variable.h"
-#include "internal/util.h"
 #include "ruby/memory_view.h"
+#include "ruby/util.h"
 #include "vm_sync.h"
 
 #if SIZEOF_INTPTR_T == SIZEOF_LONG_LONG
@@ -108,7 +108,8 @@ static void
 unregister_exported_object(VALUE obj)
 {
     RB_VM_LOCK_ENTER();
-    st_update(exported_object_table, (st_data_t)obj, exported_object_dec_ref, 0);
+    if (exported_object_table)
+        st_update(exported_object_table, (st_data_t)obj, exported_object_dec_ref, 0);
     RB_VM_LOCK_LEAVE();
 }
 
@@ -210,7 +211,7 @@ rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data,
     view->shape = NULL;
     view->strides = NULL;
     view->sub_offsets = NULL;
-    *((void **)&view->private) = NULL;
+    view->private_data = NULL;
 
     return true;
 }
@@ -822,6 +823,7 @@ rb_memory_view_get(VALUE obj, rb_memory_view_t* view, int flags)
 
         bool rv = (*entry->get_func)(obj, view, flags);
         if (rv) {
+            view->_memory_view_entry = entry;
             register_exported_object(view->obj);
         }
         return rv;
@@ -834,8 +836,7 @@ rb_memory_view_get(VALUE obj, rb_memory_view_t* view, int flags)
 bool
 rb_memory_view_release(rb_memory_view_t* view)
 {
-    VALUE klass = CLASS_OF(view->obj);
-    const rb_memory_view_entry_t *entry = lookup_memory_view_entry(klass);
+    const rb_memory_view_entry_t *entry = view->_memory_view_entry;
     if (entry) {
         bool rv = true;
         if (entry->release_func) {

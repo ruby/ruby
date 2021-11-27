@@ -30,7 +30,7 @@ module TestIRB
 
     def test_color_printer
       unless ripper_lexer_scan_supported?
-        skip 'Ripper::Lexer#scan is supported in Ruby 2.7+'
+        pend 'Ripper::Lexer#scan is supported in Ruby 2.7+'
       end
       {
         1 => "#{BLUE}#{BOLD}1#{CLEAR}\n",

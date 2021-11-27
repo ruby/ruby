@@ -28,12 +28,10 @@ describe 'Kernel#caller_locations' do
     locations1[2..4].map(&:to_s).should == locations2.map(&:to_s)
   end
 
-  ruby_version_is "2.6" do
-    it "works with endless ranges" do
-      locations1 = caller_locations(0)
-      locations2 = caller_locations(eval("(2..)"))
-      locations2.map(&:to_s).should == locations1[2..-1].map(&:to_s)
-    end
+  it "works with endless ranges" do
+    locations1 = caller_locations(0)
+    locations2 = caller_locations(eval("(2..)"))
+    locations2.map(&:to_s).should == locations1[2..-1].map(&:to_s)
   end
 
   ruby_version_is "2.7" do

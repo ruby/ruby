@@ -130,6 +130,21 @@ class Downloader
     options
   end
 
+  def self.httpdate(date)
+    Time.httpdate(date)
+  rescue ArgumentError => e
+    # Some hosts (e.g., zlib.net) return similar to RFC 850 but 4
+    # digit year, sometimes.
+    /\A\s*
+     (?:Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day,\x20
+     (\d\d)-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{4})\x20
+     (\d\d):(\d\d):(\d\d)\x20
+     GMT
+     \s*\z/ix =~ date or raise
+    warn e.message
+    Time.utc($3, $2, $1, $4, $5, $6)
+  end
+
   # Downloader.download(url, name, [dir, [since]])
   #
   # Update a file from url if newer version is available.
@@ -196,9 +211,15 @@ class Downloader
       $stdout.print "downloading #{name} ... "
       $stdout.flush
     end
+    mtime = nil
+    options = options.merge(http_options(file, since.nil? ? true : since))
     begin
       data = with_retry(10) do
-        url.read(options.merge(http_options(file, since.nil? ? true : since)))
+        data = url.read(options)
+        if mtime = data.meta["last-modified"]
+          mtime = Time.httpdate(mtime)
+        end
+        data
       end
     rescue OpenURI::HTTPError => http_error
       if http_error.message =~ /^304 / # 304 Not Modified
@@ -222,16 +243,13 @@ class Downloader
       end
       raise
     end
-    mtime = nil
     dest = (cache_save && cache && !cache.exist? ? cache : file)
     dest.parent.mkpath
     dest.open("wb", 0600) do |f|
       f.write(data)
       f.chmod(mode_for(data))
-      mtime = data.meta["last-modified"]
     end
     if mtime
-      mtime = Time.httpdate(mtime)
       dest.utime(mtime, mtime)
     end
     if $VERBOSE
@@ -313,7 +331,7 @@ class Downloader
     times = 0
     begin
       block.call
-    rescue Errno::ETIMEDOUT, SocketError, OpenURI::HTTPError, Net::ReadTimeout, Net::OpenTimeout => e
+    rescue Errno::ETIMEDOUT, SocketError, OpenURI::HTTPError, Net::ReadTimeout, Net::OpenTimeout, ArgumentError => e
       raise if e.is_a?(OpenURI::HTTPError) && e.message !~ /^50[023] / # retry only 500, 502, 503 for http error
       times += 1
       if times <= max_times

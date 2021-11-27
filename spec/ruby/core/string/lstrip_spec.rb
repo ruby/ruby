@@ -1,7 +1,10 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'shared/strip'
 
 describe "String#lstrip" do
+  it_behaves_like :string_strip, :lstrip
+
   it "returns a copy of self with leading whitespace removed" do
    "  hello  ".lstrip.should == "hello  "
    "  hello world  ".lstrip.should == "hello world  "

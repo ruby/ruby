@@ -146,6 +146,7 @@ describe "String#index with String" do
 
   it "returns the character index after offset" do
     "われわれ".index("わ", 1).should == 2
+    "ありがとうありがとう".index("が", 3).should == 7
   end
 
   it "returns the character index after a partial first match" do

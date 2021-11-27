@@ -13,7 +13,7 @@ class TestEmojiBreaks::BreakTest
     @filename = filename
     @line_number = line_number
     @comment = comment.gsub(/\s+/, ' ').strip
-    if filename=='emoji-test'
+    if filename=='emoji-test' or filename=='emoji-variation-sequences'
       codes, @type = data.split(/\s*;\s*/)
       @shortname = ''
     else
@@ -32,12 +32,13 @@ class TestEmojiBreaks::BreakTest
 end
 
 class TestEmojiBreaks::BreakFile
-  attr_reader :basename, :fullname
+  attr_reader :basename, :fullname, :version
   FILES = []
 
-  def initialize(basename, path)
+  def initialize(basename, path, version)
     @basename = basename
     @fullname = "#{path}/#{basename}.txt" # File.expand_path(path + version, __dir__)
+    @version  = version
     FILES << self
   end
 
@@ -53,9 +54,9 @@ class TestEmojiBreaks < Test::Unit::TestCase
   EMOJI_DATA_PATH   = File.expand_path("../../../enc/unicode/data/emoji/#{EMOJI_VERSION}", __dir__)
 
   EMOJI_DATA_FILES  = %w[emoji-sequences emoji-test emoji-zwj-sequences].map do |basename|
-    BreakFile.new(basename, EMOJI_DATA_PATH)
+    BreakFile.new(basename, EMOJI_DATA_PATH, EMOJI_VERSION)
   end
-  UNICODE_DATA_FILE = BreakFile.new('emoji-variation-sequences', UNICODE_DATA_PATH)
+  UNICODE_DATA_FILE = BreakFile.new('emoji-variation-sequences', UNICODE_DATA_PATH, UNICODE_VERSION[0..-3]) # [0..-3] deals with a versioning mismatch problem in Unicode
   EMOJI_DATA_FILES << UNICODE_DATA_FILE
 
   def self.data_files_available?
@@ -80,12 +81,21 @@ TestEmojiBreaks.data_files_available? and  class TestEmojiBreaks
       file_tests = []
       IO.foreach(file.fullname, encoding: Encoding::UTF_8) do |line|
         line.chomp!
-        raise "File Name Mismatch"  if $.==1 and not line=="# #{file.basename}.txt"
-        version_mismatch = false  if line=="# Version: #{EMOJI_VERSION}"
-        next  if /\A(#|\z)/.match? line
-        file_tests << BreakTest.new(file.basename, $., *line.split('#')) rescue 'whatever'
+        raise "File Name Mismatch: line: #{line}, expected filename: #{file.basename}.txt"  if $.==1 and not line=="# #{file.basename}.txt"
+        version_mismatch = false  if line =~ /^# Version: #{file.version}/
+        next  if line.match?(/\A(#|\z)/)
+        if line =~ /^(\h{4,6})\.\.(\h{4,6}) *(;.+)/  # deal with Unicode ranges in emoji-sequences.txt (Bug #18028)
+          range_start = $1.to_i(16)
+          range_end   = $2.to_i(16)
+          rest        = $3
+          (range_start..range_end).each do |code_point|
+            file_tests << BreakTest.new(file.basename, $., *(code_point.to_s(16)+rest).split('#', 2))
+          end
+        else
+          file_tests << BreakTest.new(file.basename, $., *line.split('#', 2))
+        end
       end
-      raise "File Version Mismatch"  if version_mismatch
+      raise "File Version Mismatch: file: #{file.fullname}, version: #{file.version}"  if version_mismatch
       tests += file_tests
     end
     tests

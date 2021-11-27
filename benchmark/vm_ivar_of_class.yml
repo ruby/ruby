@@ -1,0 +1,12 @@
+prelude: |
+  class C
+    @a = 1
+    def self.a
+      _a = @a; _a = @a; _a = @a; _a = @a; _a = @a;
+      _a = @a; _a = @a; _a = @a; _a = @a; _a = @a;
+    end
+  end
+benchmark:
+  vm_ivar_of_class: |
+    a = C.a
+loop_count: 30000000

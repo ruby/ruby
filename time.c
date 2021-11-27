@@ -87,7 +87,7 @@ cmp(VALUE x, VALUE y)
             return 1;
         return 0;
     }
-    if (RB_TYPE_P(x, T_BIGNUM)) return FIX2INT(rb_big_cmp(x, y));
+    if (RB_BIGNUM_TYPE_P(x)) return FIX2INT(rb_big_cmp(x, y));
     return rb_cmpint(rb_funcall(x, idCmp, 1, y), x, y);
 }
 
@@ -103,7 +103,7 @@ addv(VALUE x, VALUE y)
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
         return LONG2NUM(FIX2LONG(x) + FIX2LONG(y));
     }
-    if (RB_TYPE_P(x, T_BIGNUM)) return rb_big_plus(x, y);
+    if (RB_BIGNUM_TYPE_P(x)) return rb_big_plus(x, y);
     return rb_funcall(x, '+', 1, y);
 }
 
@@ -113,7 +113,7 @@ subv(VALUE x, VALUE y)
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
         return LONG2NUM(FIX2LONG(x) - FIX2LONG(y));
     }
-    if (RB_TYPE_P(x, T_BIGNUM)) return rb_big_minus(x, y);
+    if (RB_BIGNUM_TYPE_P(x)) return rb_big_minus(x, y);
     return rb_funcall(x, '-', 1, y);
 }
 
@@ -123,7 +123,7 @@ mulv(VALUE x, VALUE y)
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
 	return rb_fix_mul_fix(x, y);
     }
-    if (RB_TYPE_P(x, T_BIGNUM))
+    if (RB_BIGNUM_TYPE_P(x))
         return rb_big_mul(x, y);
     return rb_funcall(x, '*', 1, y);
 }
@@ -134,7 +134,7 @@ divv(VALUE x, VALUE y)
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
 	return rb_fix_div_fix(x, y);
     }
-    if (RB_TYPE_P(x, T_BIGNUM))
+    if (RB_BIGNUM_TYPE_P(x))
         return rb_big_div(x, y);
     return rb_funcall(x, id_div, 1, y);
 }
@@ -146,7 +146,7 @@ modv(VALUE x, VALUE y)
 	if (FIX2LONG(y) == 0) rb_num_zerodiv();
 	if (FIXNUM_P(x)) return rb_fix_mod_fix(x, y);
     }
-    if (RB_TYPE_P(x, T_BIGNUM)) return rb_big_modulo(x, y);
+    if (RB_BIGNUM_TYPE_P(x)) return rb_big_modulo(x, y);
     return rb_funcall(x, '%', 1, y);
 }
 
@@ -322,7 +322,7 @@ v2w(VALUE v)
     if (FIXNUM_P(v)) {
         return WIDEVAL_WRAP((WIDEVALUE)(SIGNED_WIDEVALUE)(long)v);
     }
-    else if (RB_TYPE_P(v, T_BIGNUM) &&
+    else if (RB_BIGNUM_TYPE_P(v) &&
         rb_absint_size(v, NULL) <= sizeof(WIDEVALUE)) {
         return v2w_bignum(v);
     }
@@ -674,7 +674,6 @@ static int leap_year_p(long y);
 static VALUE tm_from_time(VALUE klass, VALUE time);
 
 bool ruby_tz_uptodate_p;
-void ruby_reset_leap_second_info(void);
 
 void
 ruby_reset_timezone(void)
@@ -785,6 +784,7 @@ static const int8_t leap_year_days_in_month[] = {
 
 #define days_in_month_of(leap) ((leap) ? leap_year_days_in_month : common_year_days_in_month)
 #define days_in_month_in(y) days_in_month_of(leap_year_p(y))
+#define days_in_month_in_v(y) days_in_month_of(leap_year_v_p(y))
 
 #define M28(m) \
     (m),(m),(m),(m),(m),(m),(m),(m),(m),(m), \
@@ -1170,7 +1170,11 @@ init_leap_second_info(void)
         struct vtm vtm;
         wideval_t timew;
         now = time(NULL);
+#ifdef HAVE_GMTIME_R
+        gmtime_r(&now, &result);
+#else
         gmtime(&now);
+#endif
         tm = gmtime_with_leapsecond(&now, &result);
         if (!tm) return;
         this_year = tm->tm_year;
@@ -2030,7 +2034,7 @@ vtm_add_offset(struct vtm *vtm, VALUE off, int sign)
                 vtm->yday = leap_year_v_p(vtm->year) ? 366 : 365;
             }
             else if (vtm->mday == 1) {
-                const int8_t *days_in_month = days_in_month_in(vtm->year);
+                const int8_t *days_in_month = days_in_month_in_v(vtm->year);
                 vtm->mon--;
                 vtm->mday = days_in_month[vtm->mon-1];
                 vtm->yday--;
@@ -2072,14 +2076,13 @@ maybe_tzobj_p(VALUE obj)
     return TRUE;
 }
 
-NORETURN(static void invalid_utc_offset(void));
+NORETURN(static void invalid_utc_offset(VALUE));
 static void
-invalid_utc_offset(void)
+invalid_utc_offset(VALUE zone)
 {
-    static const char message[] = "\"+HH:MM\", \"-HH:MM\", \"UTC\" "
-        "or \"A\"..\"I\",\"K\"..\"Z\" expected for utc_offset";
-    VALUE str = rb_usascii_str_new_static(message, sizeof(message)-1);
-    rb_exc_raise(rb_exc_new_str(rb_eArgError, str));
+    rb_raise(rb_eArgError, "\"+HH:MM\", \"-HH:MM\", \"UTC\" or "
+             "\"A\"..\"I\",\"K\"..\"Z\" expected for utc_offset: %"PRIsVALUE,
+             zone);
 }
 
 static VALUE
@@ -2347,7 +2350,7 @@ time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VA
 
     vtm.isdst = VTM_ISDST_INITVAL;
     vtm.utc_offset = Qnil;
-    VALUE arg = zone;
+    const VALUE arg = zone;
     if (!NIL_P(arg)) {
         zone = Qnil;
         if (arg == ID2SYM(rb_intern("dst")))
@@ -2359,7 +2362,7 @@ time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VA
         else if (!NIL_P(utc = utc_offset_arg(arg)))
             vtm.utc_offset = utc == UTC_ZONE ? INT2FIX(0) : utc;
         else if (NIL_P(zone = find_timezone(time, arg)))
-            invalid_utc_offset();
+            invalid_utc_offset(arg);
     }
 
     validate_vtm(&vtm);
@@ -2377,7 +2380,7 @@ time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VA
         }
         else if (NIL_P(vtm.utc_offset = utc_offset_arg(zone))) {
             if (NIL_P(zone = find_timezone(time, zone)) || !zone_timelocal(zone, time))
-                invalid_utc_offset();
+                invalid_utc_offset(arg);
         }
     }
 
@@ -2474,11 +2477,6 @@ rb_time_nano_new(time_t sec, long nsec)
     return time_new_timew(rb_cTime, nsec2timew(sec, nsec));
 }
 
-/**
- * Returns a time object with UTC/localtime/fixed offset
- *
- * offset is -86400 < fixoff < 86400 or INT_MAX (localtime) or INT_MAX-1 (utc)
- */
 VALUE
 rb_time_timespec_new(const struct timespec *ts, int offset)
 {
@@ -2515,9 +2513,10 @@ rb_time_num_new(VALUE timev, VALUE off)
             if (zone_timelocal(zone, time)) return time;
         }
         if (NIL_P(off = utc_offset_arg(off))) {
-            if (NIL_P(zone = find_timezone(time, zone))) invalid_utc_offset();
+            off = zone;
+            if (NIL_P(zone = find_timezone(time, off))) invalid_utc_offset(off);
             time_gmtime(time);
-            if (!zone_timelocal(zone, time)) invalid_utc_offset();
+            if (!zone_timelocal(zone, time)) invalid_utc_offset(off);
             return time;
         }
         else if (off == UTC_ZONE) {
@@ -2580,7 +2579,7 @@ time_timespec(VALUE num, int interval)
 	    }
 	}
     }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(num)) {
 	t.tv_sec = NUM2TIMET(num);
         arg_range_check(t.tv_sec);
 	t.tv_nsec = 0;
@@ -2679,13 +2678,13 @@ get_scale(VALUE unit)
 }
 
 static VALUE
-time_s_at(rb_execution_context_t *ec, VALUE klass, VALUE time, VALUE subsec, VALUE unit, VALUE zone, VALUE nosubsec, VALUE nounit)
+time_s_at(rb_execution_context_t *ec, VALUE klass, VALUE time, VALUE subsec, VALUE unit, VALUE zone)
 {
     VALUE t;
     wideval_t timew;
 
-    if (!RTEST(nosubsec)) {
-        int scale = !RTEST(nounit) ? get_scale(unit) : 1000000;
+    if (subsec) {
+        int scale = get_scale(unit);
         time = num_exact(time);
         t = num_exact(subsec);
         timew = wadd(rb_time_magnify(v2w(time)), wmulquoll(v2w(t), TIME_SCALE, scale));
@@ -2707,6 +2706,12 @@ time_s_at(rb_execution_context_t *ec, VALUE klass, VALUE time, VALUE subsec, VAL
     }
 
     return t;
+}
+
+static VALUE
+time_s_at1(rb_execution_context_t *ec, VALUE klass, VALUE time)
+{
+    return time_s_at(ec, klass, time, Qfalse, ID2SYM(id_microsecond), Qnil);
 }
 
 static const char months[][4] = {
@@ -3677,8 +3682,7 @@ time_utc_p(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    if (TZMODE_UTC_P(tobj)) return Qtrue;
-    return Qfalse;
+    return RBOOL(TZMODE_UTC_P(tobj));
 }
 
 /*
@@ -3758,8 +3762,9 @@ time_zonelocal(VALUE time, VALUE off)
     if (zone_localtime(zone, time)) return time;
 
     if (NIL_P(off = utc_offset_arg(off))) {
-        if (NIL_P(zone = find_timezone(time, zone))) invalid_utc_offset();
-        if (!zone_localtime(zone, time)) invalid_utc_offset();
+        off = zone;
+        if (NIL_P(zone = find_timezone(time, off))) invalid_utc_offset(off);
+        if (!zone_localtime(zone, time)) invalid_utc_offset(off);
         return time;
     }
     else if (off == UTC_ZONE) {
@@ -3923,9 +3928,10 @@ time_getlocaltime(int argc, VALUE *argv, VALUE time)
         }
 
         if (NIL_P(off = utc_offset_arg(off))) {
-            if (NIL_P(zone = find_timezone(time, zone))) invalid_utc_offset();
+            off = zone;
+            if (NIL_P(zone = find_timezone(time, off))) invalid_utc_offset(off);
             time = time_dup(time);
-            if (!zone_localtime(zone, time)) invalid_utc_offset();
+            if (!zone_localtime(zone, time)) invalid_utc_offset(off);
             return time;
         }
         else if (off == UTC_ZONE) {
@@ -4461,7 +4467,7 @@ time_wday(VALUE time)
 }
 
 #define wday_p(n) {\
-    return (time_wday(time) == INT2FIX(n)) ? Qtrue : Qfalse; \
+    return RBOOL(time_wday(time) == INT2FIX(n)); \
 }
 
 /*
@@ -4631,7 +4637,7 @@ time_isdst(VALUE time)
     if (tobj->vtm.isdst == VTM_ISDST_INITVAL) {
         rb_raise(rb_eRuntimeError, "isdst is not set yet");
     }
-    return tobj->vtm.isdst ? Qtrue : Qfalse;
+    return RBOOL(tobj->vtm.isdst);
 }
 
 /*
@@ -4732,7 +4738,7 @@ time_to_a(VALUE time)
 		    tobj->vtm.year,
 		    INT2FIX(tobj->vtm.wday),
 		    INT2FIX(tobj->vtm.yday),
-		    tobj->vtm.isdst?Qtrue:Qfalse,
+		    RBOOL(tobj->vtm.isdst),
 		    time_zone(time));
 }
 

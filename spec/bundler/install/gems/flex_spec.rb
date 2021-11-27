@@ -229,14 +229,27 @@ RSpec.describe "bundle flex_install" do
       G
     end
 
-    it "does something" do
-      expect do
-        bundle "install", :raise_on_error => false
-      end.not_to change { File.read(bundled_app_lock) }
+    it "should work when you install" do
+      bundle "install"
 
-      expect(err).to include("rack = 0.9.1")
-      expect(err).to include("locked at 1.0.0")
-      expect(err).to include("bundle update rack")
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo1)}/
+          specs:
+            rack (0.9.1)
+            rack-obama (1.0)
+              rack
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          rack (= 0.9.1)
+          rack-obama
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
     end
 
     it "should work when you update" do
@@ -259,24 +272,24 @@ RSpec.describe "bundle flex_install" do
         gem "rack"
       G
 
-      lockfile_should_be <<-L
-      GEM
-        remote: #{file_uri_for(gem_repo1)}/
-        specs:
-          rack (1.0.0)
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo1)}/
+          specs:
+            rack (1.0.0)
 
-      GEM
-        remote: #{file_uri_for(gem_repo2)}/
-        specs:
+        GEM
+          remote: #{file_uri_for(gem_repo2)}/
+          specs:
 
-      PLATFORMS
-        #{lockfile_platforms}
+        PLATFORMS
+          #{lockfile_platforms}
 
-      DEPENDENCIES
-        rack
+        DEPENDENCIES
+          rack
 
-      BUNDLED WITH
-         #{Bundler::VERSION}
+        BUNDLED WITH
+           #{Bundler::VERSION}
       L
     end
   end

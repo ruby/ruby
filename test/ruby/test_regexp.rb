@@ -265,6 +265,27 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(re, re.match("foo").regexp)
   end
 
+  def test_match_lambda_multithread
+    bug17507 = "[ruby-core:101901]"
+    str = "a-x-foo-bar-baz-z-b"
+
+    worker = lambda do
+      m = /foo-([A-Za-z0-9_\.]+)-baz/.match(str)
+      assert_equal("bar", m[1], bug17507)
+
+      # These two lines are needed to trigger the bug
+      File.exist? "/tmp"
+      str.gsub(/foo-bar-baz/, "foo-abc-baz")
+    end
+
+    def self. threaded_test(worker)
+      6.times.map {Thread.new {10_000.times {worker.call}}}.each(&:join)
+    end
+
+    # The bug only occurs in a method calling a block/proc/lambda
+    threaded_test(worker)
+  end
+
   def test_source
     bug5484 = '[ruby-core:40364]'
     assert_equal('', //.source)
@@ -471,6 +492,40 @@ class TestRegexp < Test::Unit::TestCase
   def test_match_string
     m = /(?<x>b..)/.match("foobarbaz")
     assert_equal("foobarbaz", m.string)
+  end
+
+  def test_match_matchsubstring
+    m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
+    assert_equal("HX1138", m.match(0))
+    assert_equal("8", m.match(4))
+    assert_nil(m.match(5))
+
+    m = /\A\u3042(.)(.)?(.)\z/.match("\u3042\u3043\u3044")
+    assert_equal("\u3043", m.match(1))
+    assert_nil(m.match(2))
+    assert_equal("\u3044", m.match(3))
+
+    m = /(?<foo>.)(?<n>[^aeiou])?(?<bar>.+)/.match("hoge\u3042")
+    assert_equal("h", m.match(:foo))
+    assert_nil(m.match(:n))
+    assert_equal("oge\u3042", m.match(:bar))
+  end
+
+  def test_match_match_length
+    m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
+    assert_equal(6, m.match_length(0))
+    assert_equal(1, m.match_length(4))
+    assert_nil(m.match_length(5))
+
+    m = /\A\u3042(.)(.)?(.)\z/.match("\u3042\u3043\u3044")
+    assert_equal(1, m.match_length(1))
+    assert_nil(m.match_length(2))
+    assert_equal(1, m.match_length(3))
+
+    m = /(?<foo>.)(?<n>[^aeiou])?(?<bar>.+)/.match("hoge\u3042")
+    assert_equal(1, m.match_length(:foo))
+    assert_nil(m.match_length(:n))
+    assert_equal(4, m.match_length(:bar))
   end
 
   def test_match_inspect
@@ -712,11 +767,16 @@ class TestRegexp < Test::Unit::TestCase
     test = proc {|&blk| "abc".sub("a", ""); blk.call($~) }
 
     bug10877 = '[ruby-core:68209] [Bug #10877]'
+    bug18160 = '[Bug #18160]'
     test.call {|m| assert_raise_with_message(IndexError, /foo/, bug10877) {m["foo"]} }
     key = "\u{3042}"
     [Encoding::UTF_8, Encoding::Shift_JIS, Encoding::EUC_JP].each do |enc|
       idx = key.encode(enc)
-      test.call {|m| assert_raise_with_message(IndexError, /#{idx}/, bug10877) {m[idx]} }
+      pat = /#{idx}/
+      test.call {|m| assert_raise_with_message(IndexError, pat, bug10877) {m[idx]} }
+      test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.offset(idx)} }
+      test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.begin(idx)} }
+      test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.end(idx)} }
     end
     test.call {|m| assert_equal(/a/, m.regexp) }
     test.call {|m| assert_equal("abc", m.string) }

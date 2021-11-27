@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require 'psych/helper'
+require 'delegate'
 
 module Psych
   module Visitors

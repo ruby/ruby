@@ -236,7 +236,7 @@ RSpec.describe "bundle clean" do
     bundle "config set path vendor/bundle"
     bundle "install"
 
-    update_git "foo", :path => lib_path("foo-bar")
+    update_git "foo-bar", :path => lib_path("foo-bar")
     revision2 = revision_for(lib_path("foo-bar"))
 
     bundle "update", :all => true
@@ -261,6 +261,7 @@ RSpec.describe "bundle clean" do
     revision = revision_for(lib_path("rails"))
 
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "activesupport", :git => "#{lib_path("rails")}", :ref => '#{revision}'
     G
 
@@ -625,21 +626,19 @@ RSpec.describe "bundle clean" do
   end
 
   it "when using --force, it doesn't remove default gem binaries" do
-    skip "does not work on ruby 3.0 because it changes the path to look for default gems, tsort is a default gem there, and we can't install it either like we do with fiddle because it doesn't yet exist" unless RUBY_VERSION < "3.0.0"
+    skip "does not work on old rubies because the realworld gems that need to be installed don't support them" if RUBY_VERSION < "2.7.0"
 
     skip "does not work on rubygems versions where `--install_dir` doesn't respect --default" unless Gem::Installer.for_spec(loaded_gemspec, :install_dir => "/foo").default_spec_file == "/foo/specifications/default/bundler-#{Bundler::VERSION}.gemspec" # Since rubygems 3.2.0.rc.2
 
     default_irb_version = ruby "gem 'irb', '< 999999'; require 'irb'; puts IRB::VERSION", :raise_on_error => false
     skip "irb isn't a default gem" if default_irb_version.empty?
 
-    build_repo2 do
-      # simulate executable for default gem
-      build_gem "irb", default_irb_version, :to_system => true, :default => true do |s|
-        s.executables = "irb"
-      end
+    # simulate executable for default gem
+    build_gem "irb", default_irb_version, :to_system => true, :default => true do |s|
+      s.executables = "irb"
     end
 
-    realworld_system_gems "fiddle --version 1.0.0"
+    realworld_system_gems "fiddle --version 1.0.6", "tsort --version 0.1.0", "pathname --version 0.1.0", "set --version 1.0.1"
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}"
@@ -869,6 +868,7 @@ RSpec.describe "bundle clean" do
     expect(very_simple_binary_extensions_dir).to exist
 
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "very_simple_git_binary", :git => "#{lib_path("very_simple_git_binary-1.0")}", :ref => "#{revision}"
     G
 
@@ -878,6 +878,7 @@ RSpec.describe "bundle clean" do
     expect(very_simple_binary_extensions_dir).to exist
 
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
     G
 
     bundle "install"

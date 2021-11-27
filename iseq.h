@@ -74,6 +74,8 @@ ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 			   RUBY_EVENT_END   | \
 			   RUBY_EVENT_CALL  | \
 			   RUBY_EVENT_RETURN| \
+                           RUBY_EVENT_C_CALL| \
+                           RUBY_EVENT_C_RETURN| \
 			   RUBY_EVENT_B_CALL| \
 			   RUBY_EVENT_B_RETURN| \
                            RUBY_EVENT_COVERAGE_LINE| \
@@ -115,6 +117,7 @@ struct iseq_compile_data {
     const rb_compile_option_t *option;
     struct rb_id_table *ivar_cache_table;
     const struct rb_builtin_function *builtin_function_table;
+    const NODE *root_node;
 #if OPT_SUPPORT_JOKE
     st_table *labels_table;
 #endif
@@ -165,6 +168,8 @@ const rb_iseq_t *rb_iseq_load_iseq(VALUE fname);
 unsigned int *rb_iseq_insns_info_decode_positions(const struct rb_iseq_constant_body *body);
 #endif
 
+int rb_vm_insn_addr2opcode(const void *addr);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /* compile.c */
@@ -192,6 +197,7 @@ VALUE rb_iseqw_new(const rb_iseq_t *iseq);
 const rb_iseq_t *rb_iseqw_to_iseq(VALUE iseqw);
 
 VALUE rb_iseq_absolute_path(const rb_iseq_t *iseq); /* obsolete */
+int rb_iseq_from_eval_p(const rb_iseq_t *iseq);
 VALUE rb_iseq_label(const rb_iseq_t *iseq);
 VALUE rb_iseq_base_label(const rb_iseq_t *iseq);
 VALUE rb_iseq_first_lineno(const rb_iseq_t *iseq);

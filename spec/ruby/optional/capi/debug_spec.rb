@@ -34,13 +34,11 @@ describe "C-API Debug function" do
       b.local_variable_get(:a).should == "test"
     end
 
-    ruby_version_is "2.6" do
-      it "matches the locations in rb_debug_inspector_backtrace_locations" do
-        frames = @o.rb_debug_inspector_open(42);
-        frames.each do |_s, _klass, binding, _iseq, backtrace_location|
-          if binding
-            "#{backtrace_location.path}:#{backtrace_location.lineno}".should == "#{binding.source_location[0]}:#{binding.source_location[1]}"
-          end
+    it "matches the locations in rb_debug_inspector_backtrace_locations" do
+      frames = @o.rb_debug_inspector_open(42);
+      frames.each do |_s, _klass, binding, _iseq, backtrace_location|
+        if binding
+          "#{backtrace_location.path}:#{backtrace_location.lineno}".should == "#{binding.source_location[0]}:#{binding.source_location[1]}"
         end
       end
     end

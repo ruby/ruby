@@ -4351,4 +4351,21 @@ class TestKeywordArgumentsSymProcRefinements < Test::Unit::TestCase
     assert_raise(TypeError, bug16603) { p(**42) }
     assert_raise(TypeError, bug16603) { p(k:1, **42) }
   end
+
+  def test_value_omission
+    f = ->(**kwargs) { kwargs }
+    x = 1
+    y = 2
+    assert_equal({x: 1, y: 2}, f.call(x:, y:))
+    assert_equal({x: 1, y: 2, z: 3}, f.call(x:, y:, z: 3))
+    assert_equal({one: 1, two: 2}, f.call(one:, two:))
+  end
+
+  private def one
+    1
+  end
+
+  private def two
+    2
+  end
 end

@@ -132,7 +132,7 @@ rb_thread_local_storage(VALUE thread)
     return rb_ivar_get(thread, idLocals);
 }
 
-static void sleep_hrtime(rb_thread_t *, rb_hrtime_t, unsigned int fl);
+static int sleep_hrtime(rb_thread_t *, rb_hrtime_t, unsigned int fl);
 static void sleep_forever(rb_thread_t *th, unsigned int fl);
 static void rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker);
 static int rb_threadptr_dead(rb_thread_t *th);
@@ -349,8 +349,9 @@ ubf_sigwait(void *ignore)
     rb_thread_wakeup_timer_thread(0);
 }
 
+#include THREAD_IMPL_SRC
+
 #if   defined(_WIN32)
-#include "thread_win32.c"
 
 #define DEBUG_OUT() \
   WaitForSingleObject(&debug_mutex, INFINITE); \
@@ -359,7 +360,6 @@ ubf_sigwait(void *ignore)
   ReleaseMutex(&debug_mutex);
 
 #elif defined(HAVE_PTHREAD_H)
-#include "thread_pthread.c"
 
 #define DEBUG_OUT() \
   pthread_mutex_lock(&debug_mutex); \
@@ -368,8 +368,6 @@ ubf_sigwait(void *ignore)
   fflush(stdout); \
   pthread_mutex_unlock(&debug_mutex);
 
-#else
-#error "unsupported thread type"
 #endif
 
 /*
@@ -632,6 +630,7 @@ thread_cleanup_func_before_exec(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
     th->status = THREAD_KILLED;
+
     // The thread stack doesn't exist in the forked process:
     th->ec->machine.stack_start = th->ec->machine.stack_end = NULL;
 
@@ -688,7 +687,7 @@ rb_vm_proc_local_ep(VALUE proc)
 VALUE rb_vm_invoke_proc_with_self(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
                                   int argc, const VALUE *argv, int kw_splat, VALUE passed_block_handler);
 
-static void
+static VALUE
 thread_do_start_proc(rb_thread_t *th)
 {
     VALUE args = th->invoke_arg.proc.args;
@@ -702,7 +701,6 @@ thread_do_start_proc(rb_thread_t *th)
     th->ec->root_lep = rb_vm_proc_local_ep(procval);
     th->ec->root_svar = Qfalse;
 
-    EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
     vm_check_ints_blocking(th->ec);
 
     if (th->invoke_type == thread_invoke_type_ractor_proc) {
@@ -713,11 +711,12 @@ thread_do_start_proc(rb_thread_t *th)
         rb_ractor_receive_parameters(th->ec, th->ractor, args_len, (VALUE *)args_ptr);
         vm_check_ints_blocking(th->ec);
 
-        // kick thread
-        th->value = rb_vm_invoke_proc_with_self(th->ec, proc, self,
-                                                args_len, args_ptr,
-                                                th->invoke_arg.proc.kw_splat,
-                                                VM_BLOCK_HANDLER_NONE);
+        return rb_vm_invoke_proc_with_self(
+            th->ec, proc, self,
+            args_len, args_ptr,
+            th->invoke_arg.proc.kw_splat,
+            VM_BLOCK_HANDLER_NONE
+        );
     }
     else {
         args_len = RARRAY_LENINT(args);
@@ -733,17 +732,12 @@ thread_do_start_proc(rb_thread_t *th)
 
         vm_check_ints_blocking(th->ec);
 
-        // kick thread
-        th->value = rb_vm_invoke_proc(th->ec, proc,
-                                      args_len, args_ptr,
-                                      th->invoke_arg.proc.kw_splat,
-                                      VM_BLOCK_HANDLER_NONE);
-    }
-
-    EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
-
-    if (th->invoke_type == thread_invoke_type_ractor_proc) {
-        rb_ractor_atexit(th->ec, th->value);
+        return rb_vm_invoke_proc(
+            th->ec, proc,
+            args_len, args_ptr,
+            th->invoke_arg.proc.kw_splat,
+            VM_BLOCK_HANDLER_NONE
+        );
     }
 }
 
@@ -751,28 +745,36 @@ static void
 thread_do_start(rb_thread_t *th)
 {
     native_set_thread_name(th);
+    VALUE result = Qundef;
+
+    EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
 
     switch (th->invoke_type) {
       case thread_invoke_type_proc:
+        result = thread_do_start_proc(th);
+        break;
+
       case thread_invoke_type_ractor_proc:
-        thread_do_start_proc(th);
+        result = thread_do_start_proc(th);
+        rb_ractor_atexit(th->ec, result);
         break;
+
       case thread_invoke_type_func:
-        th->value = (*th->invoke_arg.func.func)(th->invoke_arg.func.arg);
+        result = (*th->invoke_arg.func.func)(th->invoke_arg.func.arg);
         break;
+
       case thread_invoke_type_none:
         rb_bug("unreachable");
     }
 
     rb_fiber_scheduler_set(Qnil);
+
+    th->value = result;
+
+    EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
 }
 
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
-
-// io.c
-VALUE rb_io_prep_stdin(void);
-VALUE rb_io_prep_stdout(void);
-VALUE rb_io_prep_stderr(void);
 
 static int
 thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
@@ -817,6 +819,9 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 
     thread_debug("thread start (get lock): %p\n", (void *)th);
 
+    // Ensure that we are not joinable.
+    VM_ASSERT(th->value == Qundef);
+
     EC_PUSH_TAG(th->ec);
 
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
@@ -857,6 +862,12 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
         th->value = Qnil;
     }
 
+    // The thread is effectively finished and can be joined.
+    VM_ASSERT(th->value != Qundef);
+
+    rb_threadptr_join_list_wakeup(th);
+    rb_threadptr_unlock_all_locking_mutexes(th);
+
     if (th->invoke_type == thread_invoke_type_ractor_proc) {
         rb_thread_terminate_all(th);
         rb_ractor_teardown(th->ec);
@@ -873,9 +884,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
         /* treat with normal error object */
         rb_threadptr_raise(ractor_main_th, 1, &errinfo);
     }
-
-    rb_threadptr_join_list_wakeup(th);
-    rb_threadptr_unlock_all_locking_mutexes(th);
 
     EC_POP_TAG();
 
@@ -982,7 +990,7 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
 
     rb_native_mutex_initialize(&th->interrupt_lock);
 
-    RUBY_DEBUG_LOG("r:%u th:%p", rb_ractor_id(th->ractor), th);
+    RUBY_DEBUG_LOG("r:%u th:%p", rb_ractor_id(th->ractor), (void *)th);
 
     rb_ractor_living_threads_insert(th->ractor, th);
 
@@ -1127,6 +1135,7 @@ struct join_arg {
     struct rb_waiting_list *waiter;
     rb_thread_t *target;
     VALUE timeout;
+    rb_hrtime_t *limit;
 };
 
 static VALUE
@@ -1153,33 +1162,24 @@ remove_from_join_list(VALUE arg)
 
 static rb_hrtime_t *double2hrtime(rb_hrtime_t *, double);
 
+static int
+thread_finished(rb_thread_t *th)
+{
+    return th->status == THREAD_KILLED || th->value != Qundef;
+}
+
 static VALUE
 thread_join_sleep(VALUE arg)
 {
     struct join_arg *p = (struct join_arg *)arg;
     rb_thread_t *target_th = p->target, *th = p->waiter->thread;
-    rb_hrtime_t end = 0, rel = 0, *limit = 0;
-
-    /*
-     * This supports INFINITY and negative values, so we can't use
-     * rb_time_interval right now...
-     */
-    if (p->timeout == Qnil) {
-        /* unlimited */
-    }
-    else if (FIXNUM_P(p->timeout)) {
-        rel = rb_sec2hrtime(NUM2TIMET(p->timeout));
-        limit = &rel;
-    }
-    else {
-        limit = double2hrtime(&rel, rb_num2dbl(p->timeout));
-    }
+    rb_hrtime_t end = 0, *limit = p->limit;
 
     if (limit) {
         end = rb_hrtime_add(*limit, rb_hrtime_now());
     }
 
-    while (target_th->status != THREAD_KILLED) {
+    while (!thread_finished(target_th)) {
         VALUE scheduler = rb_fiber_scheduler_current();
 
         if (scheduler != Qnil) {
@@ -1210,7 +1210,7 @@ thread_join_sleep(VALUE arg)
 }
 
 static VALUE
-thread_join(rb_thread_t *target_th, VALUE timeout)
+thread_join(rb_thread_t *target_th, VALUE timeout, rb_hrtime_t *limit)
 {
     rb_execution_context_t *ec = GET_EC();
     rb_thread_t *th = ec->thread_ptr;
@@ -1238,6 +1238,7 @@ thread_join(rb_thread_t *target_th, VALUE timeout)
         arg.waiter = &waiter;
         arg.target = target_th;
         arg.timeout = timeout;
+        arg.limit = limit;
 
         if (!rb_ensure(thread_join_sleep, (VALUE)&arg, remove_from_join_list, (VALUE)&arg)) {
             return Qnil;
@@ -1316,23 +1317,29 @@ static VALUE
 thread_join_m(int argc, VALUE *argv, VALUE self)
 {
     VALUE timeout = Qnil;
+    rb_hrtime_t rel = 0, *limit = 0;
 
     if (rb_check_arity(argc, 0, 1)) {
         timeout = argv[0];
     }
 
     // Convert the timeout eagerly, so it's always converted and deterministic
-    if (timeout == Qnil) {
+    /*
+     * This supports INFINITY and negative values, so we can't use
+     * rb_time_interval right now...
+     */
+    if (NIL_P(timeout)) {
         /* unlimited */
     }
     else if (FIXNUM_P(timeout)) {
-        /* handled directly in thread_join_sleep() */
+        rel = rb_sec2hrtime(NUM2TIMET(timeout));
+        limit = &rel;
     }
     else {
-        timeout = rb_to_float(timeout);
+        limit = double2hrtime(&rel, rb_num2dbl(timeout));
     }
 
-    return thread_join(rb_thread_ptr(self), timeout);
+    return thread_join(rb_thread_ptr(self), timeout, limit);
 }
 
 /*
@@ -1353,7 +1360,7 @@ static VALUE
 thread_value(VALUE self)
 {
     rb_thread_t *th = rb_thread_ptr(self);
-    thread_join(th, Qnil);
+    thread_join(th, Qnil, 0);
     return th->value;
 }
 
@@ -1479,7 +1486,7 @@ hrtime_update_expire(rb_hrtime_t *timeout, const rb_hrtime_t end)
 }
 COMPILER_WARNING_POP
 
-static void
+static int
 sleep_hrtime(rb_thread_t *th, rb_hrtime_t rel, unsigned int fl)
 {
     enum rb_thread_status prev_status = th->status;
@@ -1495,8 +1502,10 @@ sleep_hrtime(rb_thread_t *th, rb_hrtime_t rel, unsigned int fl)
 	    break;
 	if (hrtime_update_expire(&rel, end))
 	    break;
+        woke = 1;
     }
     th->status = prev_status;
+    return woke;
 }
 
 void
@@ -1659,7 +1668,7 @@ rb_nogvl(void *(*func)(void *), void *data1,
     int saved_errno = 0;
     VALUE ubf_th = Qfalse;
 
-    if (ubf == RUBY_UBF_IO || ubf == RUBY_UBF_PROCESS) {
+    if ((ubf == RUBY_UBF_IO) || (ubf == RUBY_UBF_PROCESS)) {
 	ubf = ubf_select;
 	data2 = th;
     }
@@ -2301,12 +2310,7 @@ rb_thread_pending_interrupt_p(int argc, VALUE *argv, VALUE target_thread)
         if (!rb_obj_is_kind_of(err, rb_cModule)) {
             rb_raise(rb_eTypeError, "class or module required for rescue clause");
         }
-        if (rb_threadptr_pending_interrupt_include_p(target_th, err)) {
-            return Qtrue;
-        }
-        else {
-            return Qfalse;
-        }
+        return RBOOL(rb_threadptr_pending_interrupt_include_p(target_th, err));
     }
     else {
 	return Qtrue;
@@ -2953,7 +2957,7 @@ rb_thread_s_main(VALUE klass)
 static VALUE
 rb_thread_s_abort_exc(VALUE _)
 {
-    return GET_THREAD()->vm->thread_abort_on_exception ? Qtrue : Qfalse;
+    return RBOOL(GET_THREAD()->vm->thread_abort_on_exception);
 }
 
 
@@ -3013,7 +3017,7 @@ rb_thread_s_abort_exc_set(VALUE self, VALUE val)
 static VALUE
 rb_thread_abort_exc(VALUE thread)
 {
-    return rb_thread_ptr(thread)->abort_on_exception ? Qtrue : Qfalse;
+    return RBOOL(rb_thread_ptr(thread)->abort_on_exception);
 }
 
 
@@ -3083,7 +3087,7 @@ rb_thread_abort_exc_set(VALUE thread, VALUE val)
 static VALUE
 rb_thread_s_report_exc(VALUE _)
 {
-    return GET_THREAD()->vm->thread_report_on_exception ? Qtrue : Qfalse;
+    return RBOOL(GET_THREAD()->vm->thread_report_on_exception);
 }
 
 
@@ -3139,7 +3143,7 @@ rb_thread_s_report_exc_set(VALUE self, VALUE val)
 static VALUE
 rb_thread_s_ignore_deadlock(VALUE _)
 {
-    return GET_THREAD()->vm->thread_ignore_deadlock ? Qtrue : Qfalse;
+    return RBOOL(GET_THREAD()->vm->thread_ignore_deadlock);
 }
 
 
@@ -3190,7 +3194,7 @@ rb_thread_s_ignore_deadlock_set(VALUE self, VALUE val)
 static VALUE
 rb_thread_report_exc(VALUE thread)
 {
-    return rb_thread_ptr(thread)->report_on_exception ? Qtrue : Qfalse;
+    return RBOOL(rb_thread_ptr(thread)->report_on_exception);
 }
 
 
@@ -3322,12 +3326,7 @@ rb_thread_status(VALUE thread)
 static VALUE
 rb_thread_alive_p(VALUE thread)
 {
-    if (rb_threadptr_dead(rb_thread_ptr(thread))) {
-	return Qfalse;
-    }
-    else {
-	return Qtrue;
-    }
+    return RBOOL(!thread_finished(rb_thread_ptr(thread)));
 }
 
 /*
@@ -3352,13 +3351,7 @@ rb_thread_stop_p(VALUE thread)
     if (rb_threadptr_dead(th)) {
 	return Qtrue;
     }
-    else if (th->status == THREAD_STOPPED ||
-	     th->status == THREAD_STOPPED_FOREVER) {
-	return Qtrue;
-    }
-    else {
-	return Qfalse;
-    }
+    return RBOOL(th->status == THREAD_STOPPED || th->status == THREAD_STOPPED_FOREVER);
 }
 
 /*
@@ -3461,7 +3454,6 @@ rb_thread_to_s(VALUE thread)
     if ((loc = threadptr_invoke_proc_location(target_th)) != Qnil) {
         rb_str_catf(str, " %"PRIsVALUE":%"PRIsVALUE,
                     RARRAY_AREF(loc, 0), RARRAY_AREF(loc, 1));
-        rb_gc_force_recycle(loc);
     }
     rb_str_catf(str, " %s>", status);
 
@@ -3469,7 +3461,7 @@ rb_thread_to_s(VALUE thread)
 }
 
 /* variables for recursive traversals */
-static ID recursive_key;
+#define recursive_key id__recursive_key__
 
 static VALUE
 threadptr_local_aref(rb_thread_t *th, ID id)
@@ -3752,12 +3744,7 @@ rb_thread_key_p(VALUE self, VALUE key)
     if (!id || local_storage == NULL) {
 	return Qfalse;
     }
-    else if (rb_id_table_lookup(local_storage, id, &val)) {
-	return Qtrue;
-    }
-    else {
-	return Qfalse;
-    }
+    return RBOOL(rb_id_table_lookup(local_storage, id, &val));
 }
 
 static enum rb_id_table_iterator_result
@@ -3866,14 +3853,7 @@ rb_thread_variable_p(VALUE thread, VALUE key)
     }
     locals = rb_thread_local_storage(thread);
 
-    if (rb_hash_lookup(locals, rb_to_symbol(key)) != Qnil) {
-        return Qtrue;
-    }
-    else {
-        return Qfalse;
-    }
-
-    return Qfalse;
+    return RBOOL(rb_hash_lookup(locals, rb_to_symbol(key)) != Qnil);
 }
 
 /*
@@ -4931,9 +4911,7 @@ thgroup_enclosed_p(VALUE group)
     struct thgroup *data;
 
     TypedData_Get_Struct(group, struct thgroup, &thgroup_data_type, data);
-    if (data->enclosed)
-	return Qtrue;
-    return Qfalse;
+    return RBOOL(data->enclosed);
 }
 
 
@@ -5093,7 +5071,7 @@ rb_thread_shield_release(VALUE self)
 {
     VALUE mutex = thread_shield_get_mutex(self);
     rb_mutex_unlock(mutex);
-    return rb_thread_shield_waiting(self) > 0 ? Qtrue : Qfalse;
+    return RBOOL(rb_thread_shield_waiting(self) > 0);
 }
 
 /*
@@ -5105,7 +5083,7 @@ rb_thread_shield_destroy(VALUE self)
     VALUE mutex = thread_shield_get_mutex(self);
     DATA_PTR(self) = 0;
     rb_mutex_unlock(mutex);
-    return rb_thread_shield_waiting(self) > 0 ? Qtrue : Qfalse;
+    return RBOOL(rb_thread_shield_waiting(self) > 0);
 }
 
 static VALUE
@@ -5161,7 +5139,7 @@ recursive_check(VALUE list, VALUE obj, VALUE paired_obj_id)
 #if SIZEOF_LONG == SIZEOF_VOIDP
   #define OBJ_ID_EQL(obj_id, other) ((obj_id) == (other))
 #elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
-  #define OBJ_ID_EQL(obj_id, other) (RB_TYPE_P((obj_id), T_BIGNUM) ? \
+  #define OBJ_ID_EQL(obj_id, other) (RB_BIGNUM_TYPE_P((obj_id)) ? \
     rb_big_eql((obj_id), (other)) : ((obj_id) == (other)))
 #endif
 
@@ -5514,7 +5492,6 @@ Init_Thread(void)
 	rb_define_const(cThGroup, "Default", th->thgroup);
     }
 
-    recursive_key = rb_intern_const("__recursive_key__");
     rb_eThreadError = rb_define_class("ThreadError", rb_eStandardError);
 
     /* init thread core */
@@ -5761,13 +5738,33 @@ void
 rb_set_coverages(VALUE coverages, int mode, VALUE me2counter)
 {
     GET_VM()->coverages = coverages;
+    GET_VM()->me2counter = me2counter;
     GET_VM()->coverage_mode = mode;
+}
+
+void
+rb_resume_coverages(void)
+{
+    int mode = GET_VM()->coverage_mode;
+    VALUE me2counter = GET_VM()->me2counter;
     rb_add_event_hook2((rb_event_hook_func_t) update_line_coverage, RUBY_EVENT_COVERAGE_LINE, Qnil, RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
     if (mode & COVERAGE_TARGET_BRANCHES) {
 	rb_add_event_hook2((rb_event_hook_func_t) update_branch_coverage, RUBY_EVENT_COVERAGE_BRANCH, Qnil, RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
     }
     if (mode & COVERAGE_TARGET_METHODS) {
 	rb_add_event_hook2((rb_event_hook_func_t) update_method_coverage, RUBY_EVENT_CALL, me2counter, RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
+    }
+}
+
+void
+rb_suspend_coverages(void)
+{
+    rb_remove_event_hook((rb_event_hook_func_t) update_line_coverage);
+    if (GET_VM()->coverage_mode & COVERAGE_TARGET_BRANCHES) {
+	rb_remove_event_hook((rb_event_hook_func_t) update_branch_coverage);
+    }
+    if (GET_VM()->coverage_mode & COVERAGE_TARGET_METHODS) {
+	rb_remove_event_hook((rb_event_hook_func_t) update_method_coverage);
     }
 }
 
@@ -5778,13 +5775,6 @@ rb_reset_coverages(void)
     rb_clear_coverages();
     rb_iseq_remove_coverage_all();
     GET_VM()->coverages = Qfalse;
-    rb_remove_event_hook((rb_event_hook_func_t) update_line_coverage);
-    if (GET_VM()->coverage_mode & COVERAGE_TARGET_BRANCHES) {
-	rb_remove_event_hook((rb_event_hook_func_t) update_branch_coverage);
-    }
-    if (GET_VM()->coverage_mode & COVERAGE_TARGET_METHODS) {
-	rb_remove_event_hook((rb_event_hook_func_t) update_method_coverage);
-    }
 }
 
 VALUE

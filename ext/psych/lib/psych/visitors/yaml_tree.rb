@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'psych/tree_builder'
-require 'psych/scalar_scanner'
-require 'psych/class_loader'
+require_relative '../tree_builder'
+require_relative '../scalar_scanner'
+require_relative '../class_loader'
 
 module Psych
   module Visitors
@@ -272,6 +272,8 @@ module Psych
           tag   = 'tag:yaml.org,2002:str'
           plain = false
           quote = false
+        elsif o == 'y' || o == 'n'
+          style = Nodes::Scalar::DOUBLE_QUOTED
         elsif @line_width && o.length > @line_width
           style = Nodes::Scalar::FOLDED
         elsif o =~ /^[^[:word:]][^"]*$/

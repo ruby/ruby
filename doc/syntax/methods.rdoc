@@ -515,8 +515,15 @@ Most frequently the block argument is used to pass a block to another method:
     @items.each(&block)
   end
 
+You are not required to give a name to the block if you will just be passing
+it to another method:
+
+  def each_item(&)
+    @items.each(&)
+  end
+
 If you are only going to call the block and will not otherwise manipulate it
-or send it to another method using <code>yield</code> without an explicit
+or send it to another method, using <code>yield</code> without an explicit
 block parameter is preferred.  This method is equivalent to the first method
 in this section:
 

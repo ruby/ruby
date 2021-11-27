@@ -5,7 +5,7 @@ RSpec.describe Bundler::Plugin::Index do
 
   before do
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-    gemfile ""
+    gemfile "source \"#{file_uri_for(gem_repo1)}\""
     path = lib_path(plugin_name)
     index.register_plugin("new-plugin", path.to_s, [path.join("lib").to_s], commands, sources, hooks)
   end
@@ -98,7 +98,13 @@ RSpec.describe Bundler::Plugin::Index do
       expect(index.hook_plugins("after-bar")).to eq([plugin_name])
     end
 
-    context "that are not registered", :focused do
+    it "is gone after unregistration" do
+      expect(index.index_file.read).to include("after-bar:\n  - \"new-plugin\"\n")
+      index.unregister_plugin(plugin_name)
+      expect(index.index_file.read).to_not include("after-bar:\n  - \n")
+    end
+
+    context "that are not registered" do
       let(:file) { double("index-file") }
 
       before do

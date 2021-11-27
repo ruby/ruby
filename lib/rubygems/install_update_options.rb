@@ -5,8 +5,8 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems'
-require 'rubygems/security_option'
+require_relative '../rubygems'
+require_relative 'security_option'
 
 ##
 # Mixin methods for install and update options for Gem::Commands
@@ -51,7 +51,7 @@ module Gem::InstallUpdateOptions
                'Install gem into the vendor directory.',
                'Only for use by gem repackagers.') do |value, options|
       unless Gem.vendor_dir
-        raise OptionParser::InvalidOption.new 'your platform is not supported'
+        raise Gem::OptionParser::InvalidOption.new 'your platform is not supported'
       end
 
       options[:vendor] = true
@@ -143,7 +143,7 @@ module Gem::InstallUpdateOptions
       unless v
         message = v ? v : "(tried #{Gem::GEM_DEP_FILES.join ', '})"
 
-        raise OptionParser::InvalidArgument,
+        raise Gem::OptionParser::InvalidArgument,
                 "cannot find gem dependencies file #{message}"
       end
 

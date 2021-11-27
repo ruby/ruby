@@ -64,12 +64,12 @@ describe 'TracePoint#inspect' do
 
   it 'returns a String showing the event, method, path and line for a :c_call event' do
     inspect = nil
-    line = nil
-    TracePoint.new(:c_call) { |tp|
+    tracepoint = TracePoint.new(:c_call) { |tp|
       next unless TracePointSpec.target_thread?
       inspect ||= tp.inspect
-    }.enable do
-      line = __LINE__ + 1
+    }
+    line = __LINE__ + 2
+    tracepoint.enable do
       [0, 1].max
     end
 

@@ -7,7 +7,6 @@ c.o: $(hdrdir)/ruby/backward.h
 c.o: $(hdrdir)/ruby/backward/2/assume.h
 c.o: $(hdrdir)/ruby/backward/2/attributes.h
 c.o: $(hdrdir)/ruby/backward/2/bool.h
-c.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 c.o: $(hdrdir)/ruby/backward/2/inttypes.h
 c.o: $(hdrdir)/ruby/backward/2/limits.h
 c.o: $(hdrdir)/ruby/backward/2/long_long.h

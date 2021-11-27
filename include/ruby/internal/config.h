@@ -1,7 +1,6 @@
 #ifndef RBIMPL_CONFIG_H                              /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_CONFIG_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -17,7 +16,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Thin wrapper to ruby/config.h
  */
 #include "ruby/config.h"
@@ -126,6 +125,12 @@
 #if ! defined(HAVE_VA_ARGS_MACRO)
 # undef HAVE___VA_OPT__
 
+#elif defined(__cplusplus)
+# if __cplusplus > 201703L
+#  define HAVE___VA_OPT__
+# else
+#  undef HAVE___VA_OPT__
+# endif
 #else
 # /* Idea taken from: https://stackoverflow.com/a/48045656 */
 # define RBIMPL_TEST3(q, w, e, ...) e
@@ -140,5 +145,9 @@
 # undef RBIMPL_TEST2
 # undef RBIMPL_TEST3
 #endif /* HAVE_VA_ARGS_MACRO */
+
+#ifndef USE_RVARGC
+# define USE_RVARGC 0
+#endif
 
 #endif /* RBIMPL_CONFIG_H */

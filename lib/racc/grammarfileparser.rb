@@ -260,9 +260,9 @@ module Racc
       _, *blocks = *@scanner.epilogue.split(/^----/)
       blocks.each do |block|
         header, *body = block.lines.to_a
-        label0, pathes = *header.sub(/\A-+/, '').split('=', 2)
+        label0, paths = *header.sub(/\A-+/, '').split('=', 2)
         label = canonical_label(label0)
-        (pathes ? pathes.strip.split(' ') : []).each do |path|
+        (paths ? paths.strip.split(' ') : []).each do |path|
           add_user_code label, SourceText.new(File.read(path), path, 1)
         end
         add_user_code label, SourceText.new(body.join(''), @filename, line + 1)

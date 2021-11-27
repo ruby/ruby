@@ -107,7 +107,7 @@
 # For all these reasons, consider not using OpenStruct at all.
 #
 class OpenStruct
-  VERSION = "0.4.0"
+  VERSION = "0.5.0"
 
   #
   # Creates a new OpenStruct object.  By default, the resulting OpenStruct
@@ -221,8 +221,14 @@ class OpenStruct
   #
   def new_ostruct_member!(name) # :nodoc:
     unless @table.key?(name) || is_method_protected!(name)
-      define_singleton_method!(name) { @table[name] }
-      define_singleton_method!("#{name}=") {|x| @table[name] = x}
+      getter_proc = Proc.new { @table[name] }
+      setter_proc = Proc.new {|x| @table[name] = x}
+      if defined?(::Ractor)
+        ::Ractor.make_shareable(getter_proc)
+        ::Ractor.make_shareable(setter_proc)
+      end
+      define_singleton_method!(name, &getter_proc)
+      define_singleton_method!("#{name}=", &setter_proc)
     end
   end
   private :new_ostruct_member!
@@ -308,7 +314,7 @@ class OpenStruct
   # Finds and returns the object in nested objects
   # that is specified by +name+ and +identifiers+.
   # The nested objects may be instances of various classes.
-  # See {Dig Methods}[rdoc-ref:doc/dig_methods.rdoc].
+  # See {Dig Methods}[rdoc-ref:dig_methods.rdoc].
   #
   # Examples:
   #   require "ostruct"

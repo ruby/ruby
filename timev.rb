@@ -93,7 +93,12 @@
 #
 # == What's Here
 #
-# \Class \Time provides methods that are useful for:
+# First, what's elsewhere. \Class \Time:
+#
+# - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
+# - Includes {module Comparable}[Comparable.html#module-Comparable-label-What-27s+Here].
+#
+# Here, class \Time provides methods that are useful for:
 #
 # - {Creating \Time objects}[#class-Time-label-Methods+for+Creating].
 # - {Fetching \Time values}[#class-Time-label-Methods+for+Fetching].
@@ -211,12 +216,12 @@ class Time
   # This is the same as Time.new without arguments.
   #
   #    Time.now               # => 2009-06-24 12:39:54 +0900
-  #    Time.now(in: '+04:00') # => 2021-04-30 01:56:44 +0400
+  #    Time.now(in: '+04:00') # => 2009-06-24 07:39:54 +0400
   #
   # Parameter:
   # :include: doc/time/in.rdoc
   def self.now(in: nil)
-    new(in: __builtin.arg!(:in))
+    new(in: Primitive.arg!(:in))
   end
 
   # _Time_
@@ -225,7 +230,7 @@ class Time
   # and optional keyword argument +in+:
   #
   #   Time.at(Time.new)               # => 2021-04-26 08:52:31.6023486 -0500
-  #   Time.at(Time.new, in: '+09:00') # => 2021-04-26 22:52:32.1480341 +0900
+  #   Time.at(Time.new, in: '+09:00') # => 2021-04-26 22:52:31.6023486 +0900
   #
   # _Seconds_
   #
@@ -262,8 +267,12 @@ class Time
   # :include: doc/time/nsec.rdoc
   # :include: doc/time/in.rdoc
   #
-  def self.at(time, subsec = (nosubsec = true), unit = (nounit = true), in: nil)
-    __builtin.time_s_at(time, subsec, unit, __builtin.arg!(:in), nosubsec, nounit)
+  def self.at(time, subsec = false, unit = :microsecond, in: nil)
+    if Primitive.mandatory_only?
+      Primitive.time_s_at1(time)
+    else
+      Primitive.time_s_at(time, subsec, unit, Primitive.arg!(:in))
+    end
   end
 
   # Returns a new \Time object based the on given arguments.
@@ -287,17 +296,17 @@ class Time
   #
   def initialize(year = (now = true), mon = nil, mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil)
     if zone
-      if __builtin.arg!(:in)
+      if Primitive.arg!(:in)
         raise ArgumentError, "timezone argument given as positional and keyword arguments"
       end
     else
-      zone = __builtin.arg!(:in)
+      zone = Primitive.arg!(:in)
     end
 
     if now
-      return __builtin.time_init_now(zone)
+      return Primitive.time_init_now(zone)
     end
 
-    __builtin.time_init_args(year, mon, mday, hour, min, sec, zone)
+    Primitive.time_init_args(year, mon, mday, hour, min, sec, zone)
   end
 end

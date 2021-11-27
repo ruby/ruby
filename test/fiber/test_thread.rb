@@ -20,6 +20,31 @@ class TestFiberThread < Test::Unit::TestCase
     assert_equal :done, thread.value
   end
 
+  def test_thread_join_implicit
+    sleeping = false
+    finished = false
+
+    thread = Thread.new do
+      scheduler = Scheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        sleeping = true
+        sleep(0.1)
+        finished = true
+      end
+
+      :done
+    end
+
+    Thread.pass until sleeping
+
+    thread.join
+
+    assert_equal :done, thread.value
+    assert finished, "Scheduler thread's task should be finished!"
+  end
+
   def test_thread_join_blocking
     thread = Thread.new do
       scheduler = Scheduler.new
@@ -65,5 +90,19 @@ class TestFiberThread < Test::Unit::TestCase
     assert_raise(RuntimeError) do
       thread.join
     end
+  end
+
+  def test_thread_join_hang
+    thread = Thread.new do
+      scheduler = SleepingUnblockScheduler.new
+
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        Thread.new{sleep(0.01)}.value
+      end
+    end
+
+    thread.join
   end
 end

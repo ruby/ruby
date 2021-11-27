@@ -134,6 +134,12 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([1, 2, 3, 1, 2], @obj.to_a)
   end
 
+  def test_to_a_keywords
+    @obj.singleton_class.remove_method(:each)
+    def @obj.each(foo:) yield foo end
+    assert_equal([1], @obj.to_a(foo: 1))
+  end
+
   def test_to_a_size_symbol
     sym = Object.new
     class << sym
@@ -731,6 +737,9 @@ class TestEnumerable < Test::Unit::TestCase
     ary.clear
     (1..10).each_slice(11) {|a| ary << a}
     assert_equal([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]], ary)
+
+    assert_equal(1..10, (1..10).each_slice(3) { })
+    assert_equal([], [].each_slice(3) { })
   end
 
   def test_each_cons
@@ -750,6 +759,9 @@ class TestEnumerable < Test::Unit::TestCase
     ary.clear
     (1..5).each_cons(6) {|a| ary << a}
     assert_empty(ary)
+
+    assert_equal(1..5, (1..5).each_cons(3) { })
+    assert_equal([], [].each_cons(3) { })
   end
 
   def test_zip

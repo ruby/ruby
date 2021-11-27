@@ -17,14 +17,25 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
- * @brief      Tewaking visibility of C variables/functions.
+ *             extension libraries.  They could be written in C++98.
+ * @brief      Tweaking visibility of C variables/functions.
  */
 #include "ruby/internal/config.h"
 #include "ruby/internal/compiler_is.h"
 
-/* For MinGW, we need __declspec(dllimport) for RUBY_EXTERN on MJIT.
-   mswin's RUBY_EXTERN already has that. See also: win32/Makefile.sub */
+/**
+ * Declaration of externally visible global variables.  Here "externally" means
+ * they should  be visible  from extension  libraries.  Depending  on operating
+ * systems (dynamic linkers,  to be precise), global variables inside  of a DLL
+ * may  or may  not be  visible  form outside  of  that DLL  by default.   This
+ * declaration manually tweaks  that default and ensures  the declared variable
+ * be truly globally visible.
+ *
+ * ```CXX
+ * extern VALUE foo;      // hidden on some OS
+ * RUBY_EXTERN VALUE foo; // ensure visible
+ * ```
+ */
 #undef RUBY_EXTERN
 #if defined(MJIT_HEADER) && defined(_WIN32)
 # define RUBY_EXTERN extern __declspec(dllimport)
@@ -48,6 +59,13 @@
 # define RUBY_FUNC_EXPORTED /* void */
 #endif
 
+/**
+ * @cond INTERNAL_MACRO
+ *
+ * These MJIT related macros are placed here because translate_mjit_header can
+ * need them.  Extension libraries should not touch.
+ */
+
 /* These macros are used for functions which are exported only for MJIT
    and NOT ensured to be exported in future versions. */
 
@@ -70,6 +88,8 @@
 #else
 # define MJIT_STATIC
 #endif
+
+/** @endcond */
 
 /** Shortcut macro equivalent to `RUBY_SYMBOL_EXPORT_BEGIN extern "C" {`.
  * \@shyouhei finds it handy. */

@@ -509,6 +509,30 @@ module TestIRB
       assert_match(%r[/irb\.rb], out)
     end
 
+    def test_show_source_end_finder
+      pend if RUBY_ENGINE == 'truffleruby'
+      eval(code = <<-EOS, binding, __FILE__, __LINE__ + 1)
+        def show_source_test_method
+          unless true
+          end
+        end
+      EOS
+      input = TestInputMethod.new([
+        "show_source 'TestIRB::ExtendCommand#show_source_test_method'\n",
+      ])
+      IRB.init_config(nil)
+      workspace = IRB::WorkSpace.new(self)
+      IRB.conf[:VERBOSE] = false
+      irb = IRB::Irb.new(workspace, input)
+      IRB.conf[:MAIN_CONTEXT] = irb.context
+      irb.context.return_format = "=> %s\n"
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_include(out, code)
+    end
+
     def test_whereami
       input = TestInputMethod.new([
         "whereami\n",

@@ -208,10 +208,6 @@ module Spec
     RSpec::Matchers.define_negated_matcher :not_include_gems, :include_gems
     RSpec::Matchers.alias_matcher :include_gem, :include_gems
 
-    def have_lockfile(expected)
-      read_as(strip_whitespace(expected))
-    end
-
     def plugin_should_be_installed(*names)
       names.each do |name|
         expect(Bundler::Plugin).to be_installed(name)
@@ -224,14 +220,6 @@ module Spec
       names.each do |name|
         expect(Bundler::Plugin).not_to be_installed(name)
       end
-    end
-
-    def lockfile_should_be(expected)
-      expect(bundled_app_lock).to have_lockfile(expected)
-    end
-
-    def gemfile_should_be(expected)
-      expect(bundled_app_gemfile).to read_as(strip_whitespace(expected))
     end
   end
 end

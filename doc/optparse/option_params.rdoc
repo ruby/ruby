@@ -43,7 +43,6 @@ Contents:
   - {Handler Blocks}[#label-Handler+Blocks]
   - {Handler Procs}[#label-Handler+Procs]
   - {Handler Methods}[#label-Handler+Methods]
-- {Terminators}[#label-Terminators]
 
 === Option Names
 
@@ -319,7 +318,7 @@ You can specify argument values in either of two ways:
 ===== Explicit Values in Array
 
 You can specify explicit argument values in an array of strings.
-The argument value must be one of those strings.
+The argument value must be one of those strings, or an unambiguous abbreviation.
 
 File +explicit_array_values.rb+ defines options with explicit argument values.
 
@@ -335,8 +334,12 @@ Executions:
   explicit_array_values.rb:9:in `<main>': missing argument: -x (OptionParser::MissingArgument)
   $ ruby explicit_array_values.rb -x foo
   ["-x", "foo"]
+  $ ruby explicit_array_values.rb -x f
+  ["-x", "foo"]
   $ ruby explicit_array_values.rb -x bar
   ["-x", "bar"]
+  $ ruby explicit_array_values.rb -y ba
+  explicit_array_values.rb:9:in `<main>': ambiguous argument: -y ba (OptionParser::AmbiguousArgument)
   $ ruby explicit_array_values.rb -x baz
   explicit_array_values.rb:9:in `<main>': invalid argument: -x baz (OptionParser::InvalidArgument)
 
@@ -344,8 +347,8 @@ Executions:
 ===== Explicit Values in Hash
 
 You can specify explicit argument values in a hash with string keys.
-The value passed must be one of those keys,
-and the value yielded will be the value for that key.
+The value passed must be one of those keys, or an unambiguous abbreviation;
+the value yielded will be the value for that key.
 
 File +explicit_hash_values.rb+ defines options with explicit argument values.
 
@@ -361,6 +364,8 @@ Executions:
   explicit_hash_values.rb:9:in `<main>': missing argument: -x (OptionParser::MissingArgument)
   $ ruby explicit_hash_values.rb -x foo
   ["-x", 0]
+  $ ruby explicit_hash_values.rb -x f
+  ["-x", 0]
   $ ruby explicit_hash_values.rb -x bar
   ["-x", 1]
   $ ruby explicit_hash_values.rb -x baz
@@ -371,6 +376,8 @@ Executions:
   ["-y", 2]
   $ ruby explicit_hash_values.rb -y bat
   ["-y", 3]
+  $ ruby explicit_hash_values.rb -y ba
+  explicit_hash_values.rb:9:in `<main>': ambiguous argument: -y ba (OptionParser::AmbiguousArgument)
   $ ruby explicit_hash_values.rb -y bam
   ["-y", nil]
 
@@ -500,22 +507,3 @@ Executions:
   ["Handler method for -xxx called with value:", true]
   $ ruby method.rb --yyy FOO
   ["Handler method for -yyy called with value:", "FOO"]
-
-=== Terminators
-
-And finally, the terminator parameter <tt>--</tt> tells the options parser
-to ignore any options farther to the right.
-This can be useful if there are options not meant for the current program.
-
-File +terminator.rb+ defines one option <tt>--my_option</tt>.
-
-  :include: ruby/terminator.rb
-
-The first execution fails because <tt>--nosuch</tt> is not a defined option;
-the second succeeds because <tt>--</tt> causes that option to be ignored:
-
-  $ ruby terminator.rb --my_option FOO --other_option BAR
-  ["FOO", String]
-  terminator.rb:6:in `<main>': invalid option: --other_option (OptionParser::InvalidOption)
-  $ ruby terminator.rb --my_option FOO -- --other_option BAR
-  ["FOO", String]

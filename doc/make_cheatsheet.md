@@ -6,7 +6,7 @@ If you are a user of Ruby, please see README.md.
 ## In-place build
 
 ```
-$ autoconf
+$ ./autogen.sh
 $ ./configure --prefix=$PWD/local
 $ make
 $ make install
@@ -17,7 +17,7 @@ Hello
 ## Out-of-place build
 
 ```
-$ autoconf
+$ ./autogen.sh
 $ mkdir ../ruby-build
 $ cd ../ruby-build
 $ ../ruby-src/configure --prefix=$PWD/local
@@ -100,7 +100,7 @@ $ make test-bundler BUNDLER_SPECS=commands/exec_spec.rb:58
 You need to be able to use gcc (gcov) and lcov visualizer.
 
 ```
-$ autoconf
+$ ./autogen.sh
 $ ./configure --enable-gcov
 $ make
 $ make update-coverage

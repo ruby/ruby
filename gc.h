@@ -6,8 +6,10 @@
 #define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("movq\t%%rsp, %0" : "=r" (*(p)))
 #elif defined(__i386) && defined(__GNUC__)
 #define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("movl\t%%esp, %0" : "=r" (*(p)))
-#elif defined(__powerpc64__) && defined(__GNUC__)
+#elif (defined(__powerpc__) || defined(__powerpc64__)) && defined(__GNUC__) && !defined(_AIX)
 #define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("mr\t%0, %%r1" : "=r" (*(p)))
+#elif (defined(__powerpc__) || defined(__powerpc64__)) && defined(__GNUC__) && defined(_AIX)
+#define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("mr %0,1" : "=r" (*(p)))
 #elif defined(__aarch64__) && defined(__GNUC__)
 #define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("mov\t%0, sp" : "=r" (*(p)))
 #else
@@ -35,7 +37,7 @@ extern int ruby_gc_debug_indent;
 static inline void
 rb_gc_debug_indent(void)
 {
-    printf("%*s", ruby_gc_debug_indent, "");
+    ruby_debug_printf("%*s", ruby_gc_debug_indent, "");
 }
 
 static inline void
@@ -45,7 +47,7 @@ rb_gc_debug_body(const char *mode, const char *msg, int st, void *ptr)
 	ruby_gc_debug_indent--;
     }
     rb_gc_debug_indent();
-    printf("%s: %s %s (%p)\n", mode, st ? "->" : "<-", msg, ptr);
+    ruby_debug_printf("%s: %s %s (%p)\n", mode, st ? "->" : "<-", msg, ptr);
 
     if (st) {
 	ruby_gc_debug_indent++;
@@ -58,7 +60,7 @@ rb_gc_debug_body(const char *mode, const char *msg, int st, void *ptr)
 #define RUBY_MARK_LEAVE(msg) rb_gc_debug_body("mark", (msg), 0, ptr)
 #define RUBY_FREE_ENTER(msg) rb_gc_debug_body("free", (msg), 1, ptr)
 #define RUBY_FREE_LEAVE(msg) rb_gc_debug_body("free", (msg), 0, ptr)
-#define RUBY_GC_INFO         rb_gc_debug_indent(); printf
+#define RUBY_GC_INFO         rb_gc_debug_indent(), ruby_debug_printf
 
 #else
 #define RUBY_MARK_ENTER(msg)
@@ -125,7 +127,6 @@ void rb_objspace_reachable_objects_from_root(void (func)(const char *category, V
 int rb_objspace_markable_object_p(VALUE obj);
 int rb_objspace_internal_object_p(VALUE obj);
 int rb_objspace_marked_object_p(VALUE obj);
-int rb_objspace_garbage_object_p(VALUE obj);
 
 void rb_objspace_each_objects(
     int (*callback)(void *start, void *end, size_t stride, void *data),

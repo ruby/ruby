@@ -16,7 +16,7 @@ module ErrorHighlight
 
       loc = locs.first
       begin
-        node = RubyVM::AbstractSyntaxTree.of(loc, save_script_lines: true)
+        node = RubyVM::AbstractSyntaxTree.of(loc, keep_script_lines: true)
         opts = {}
 
         case self

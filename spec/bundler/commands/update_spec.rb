@@ -66,7 +66,7 @@ RSpec.describe "bundle update" do
     end
 
     it "doesn't delete the Gemfile.lock file if something goes wrong" do
-      install_gemfile ""
+      install_gemfile "source \"#{file_uri_for(gem_repo1)}\""
 
       gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
@@ -96,19 +96,19 @@ RSpec.describe "bundle update" do
     before { bundle "config set update_requires_all_flag true" }
 
     it "errors when passed nothing" do
-      install_gemfile ""
+      install_gemfile "source \"#{file_uri_for(gem_repo1)}\""
       bundle :update, :raise_on_error => false
       expect(err).to eq("To update everything, pass the `--all` flag.")
     end
 
     it "errors when passed --all and another option" do
-      install_gemfile ""
+      install_gemfile "source \"#{file_uri_for(gem_repo1)}\""
       bundle "update --all foo", :raise_on_error => false
       expect(err).to eq("Cannot specify --all along with specific options.")
     end
 
     it "updates everything when passed --all" do
-      install_gemfile ""
+      install_gemfile "source \"#{file_uri_for(gem_repo1)}\""
       bundle "update --all"
       expect(out).to include("Bundle updated!")
     end
@@ -353,6 +353,67 @@ RSpec.describe "bundle update" do
       bundle "update b"
 
       expect(the_bundle).to include_gems("a 1.0", "b 1.0")
+    end
+
+    it "should still downgrade if forced by the Gemfile, when transitive dependencies also need downgrade" do
+      build_repo4 do
+        build_gem "activesupport", "6.1.4.1" do |s|
+          s.add_dependency "tzinfo", "~> 2.0"
+        end
+
+        build_gem "activesupport", "6.0.4.1" do |s|
+          s.add_dependency "tzinfo", "~> 1.1"
+        end
+
+        build_gem "tzinfo", "2.0.4"
+        build_gem "tzinfo", "1.2.9"
+      end
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "activesupport", "~> 6.1.0"
+      G
+
+      expect(the_bundle).to include_gems("activesupport 6.1.4.1", "tzinfo 2.0.4")
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "activesupport", "~> 6.0.0"
+      G
+
+      original_lockfile = lockfile
+
+      expected_lockfile = <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            activesupport (6.0.4.1)
+              tzinfo (~> 1.1)
+            tzinfo (1.2.9)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          activesupport (~> 6.0.0)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "update activesupport"
+      expect(the_bundle).to include_gems("activesupport 6.0.4.1", "tzinfo 1.2.9")
+      expect(lockfile).to eq(expected_lockfile)
+
+      lockfile original_lockfile
+      bundle "update"
+      expect(the_bundle).to include_gems("activesupport 6.0.4.1", "tzinfo 1.2.9")
+      expect(lockfile).to eq(expected_lockfile)
+
+      lockfile original_lockfile
+      bundle "lock --update"
+      expect(the_bundle).to include_gems("activesupport 6.0.4.1", "tzinfo 1.2.9")
+      expect(lockfile).to eq(expected_lockfile)
     end
   end
 
@@ -753,6 +814,7 @@ RSpec.describe "bundle update in more complicated situations" do
     build_git "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
 
@@ -769,6 +831,7 @@ RSpec.describe "bundle update in more complicated situations" do
     build_git "rack"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo2)}"
       gem "rack", :git => '#{lib_path("rack-1.0")}'
     G
 
@@ -922,6 +985,7 @@ RSpec.describe "bundle update --ruby" do
         ::RUBY_VERSION = '2.1.3'
         ::RUBY_PATCHLEVEL = 100
         ruby '~> 2.1.0'
+        source "#{file_uri_for(gem_repo1)}"
     G
   end
 
@@ -930,13 +994,15 @@ RSpec.describe "bundle update --ruby" do
       gemfile <<-G
           ::RUBY_VERSION = '2.1.4'
           ::RUBY_PATCHLEVEL = 222
+          source "#{file_uri_for(gem_repo1)}"
       G
     end
     it "removes the Ruby from the Gemfile.lock" do
       bundle "update --ruby"
 
-      lockfile_should_be <<-L
+      expect(lockfile).to eq <<~L
        GEM
+         remote: #{file_uri_for(gem_repo1)}/
          specs:
 
        PLATFORMS
@@ -956,13 +1022,15 @@ RSpec.describe "bundle update --ruby" do
           ::RUBY_VERSION = '2.1.4'
           ::RUBY_PATCHLEVEL = 222
           ruby '~> 2.1.0'
+          source "#{file_uri_for(gem_repo1)}"
       G
     end
     it "updates the Gemfile.lock with the latest version" do
       bundle "update --ruby"
 
-      lockfile_should_be <<-L
+      expect(lockfile).to eq <<~L
        GEM
+         remote: #{file_uri_for(gem_repo1)}/
          specs:
 
        PLATFORMS
@@ -985,6 +1053,7 @@ RSpec.describe "bundle update --ruby" do
           ::RUBY_VERSION = '2.2.2'
           ::RUBY_PATCHLEVEL = 505
           ruby '~> 2.1.0'
+          source "#{file_uri_for(gem_repo1)}"
       G
     end
     it "shows a helpful error message" do
@@ -1000,13 +1069,15 @@ RSpec.describe "bundle update --ruby" do
           ::RUBY_VERSION = '1.8.3'
           ::RUBY_PATCHLEVEL = 55
           ruby '~> 1.8.0'
+          source "#{file_uri_for(gem_repo1)}"
       G
     end
     it "updates the Gemfile.lock with the latest version" do
       bundle "update --ruby"
 
-      lockfile_should_be <<-L
+      expect(lockfile).to eq <<~L
        GEM
+         remote: #{file_uri_for(gem_repo1)}/
          specs:
 
        PLATFORMS
@@ -1248,7 +1319,7 @@ RSpec.describe "bundle update conservative" do
 
   context "error handling" do
     before do
-      gemfile ""
+      gemfile "source \"#{file_uri_for(gem_repo1)}\""
     end
 
     it "raises if too many flags are provided" do

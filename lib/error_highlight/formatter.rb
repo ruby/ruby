@@ -1,6 +1,6 @@
 module ErrorHighlight
   class DefaultFormatter
-    def message_for(spot)
+    def self.message_for(spot)
       # currently only a one-line code snippet is supported
       if spot[:first_lineno] == spot[:last_lineno]
         indent = spot[:snippet][0...spot[:first_column]].gsub(/[^\t]/, " ")
@@ -14,12 +14,10 @@ module ErrorHighlight
   end
 
   def self.formatter
-    @@formatter
+    Ractor.current[:__error_highlight_formatter__] || DefaultFormatter
   end
 
   def self.formatter=(formatter)
-    @@formatter = formatter
+    Ractor.current[:__error_highlight_formatter__] = formatter
   end
-
-  self.formatter = DefaultFormatter.new
 end

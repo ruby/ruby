@@ -52,11 +52,6 @@
 #include "gc.h"
 #endif
 
-#define HAS_EXTRA_STATES(hash, klass) ( \
-    ((klass = has_extra_methods(rb_obj_class(hash))) != 0) || \
-    FL_TEST((hash), FL_EXIVAR|RHASH_PROC_DEFAULT) || \
-    !NIL_P(RHASH_IFNONE(hash)))
-
 #define SET_DEFAULT(hash, ifnone) ( \
     FL_UNSET_RAW(hash, RHASH_PROC_DEFAULT), \
     RHASH_SET_IFNONE(hash, ifnone))
@@ -71,18 +66,6 @@ copy_default(struct RHash *hash, const struct RHash *hash2)
     hash->basic.flags &= ~RHASH_PROC_DEFAULT;
     hash->basic.flags |= hash2->basic.flags & RHASH_PROC_DEFAULT;
     RHASH_SET_IFNONE(hash, RHASH_IFNONE((VALUE)hash2));
-}
-
-static VALUE
-has_extra_methods(VALUE klass)
-{
-    const VALUE base = rb_cHash;
-    VALUE c = klass;
-    while (c != base) {
-	if (rb_class_has_methods(c)) return klass;
-	c = RCLASS_SUPER(c);
-    }
-    return 0;
 }
 
 static VALUE rb_hash_s_try_convert(VALUE, VALUE);
@@ -137,33 +120,6 @@ hash_recursive(VALUE obj, VALUE arg, int recurse)
 {
     if (recurse) return INT2FIX(0);
     return rb_funcallv(obj, id_hash, 0, 0);
-}
-
-VALUE
-rb_hash(VALUE obj)
-{
-    VALUE hval = rb_check_funcall_basic_kw(obj, id_hash, rb_mKernel, 0, 0, 0);
-
-    if (hval == Qundef) {
-	hval = rb_exec_recursive_outer(hash_recursive, obj, 0);
-    }
-
-    while (!FIXNUM_P(hval)) {
-        if (RB_TYPE_P(hval, T_BIGNUM)) {
-            int sign;
-            unsigned long ul;
-            sign = rb_integer_pack(hval, &ul, 1, sizeof(ul), 0,
-                    INTEGER_PACK_NATIVE_BYTE_ORDER);
-            if (sign < 0) {
-                hval = LONG2FIX(ul | FIXNUM_MIN);
-            }
-            else {
-                hval = LONG2FIX(ul & FIXNUM_MAX);
-            }
-        }
-	hval = rb_to_int(hval);
-    }
-    return hval;
 }
 
 static long rb_objid_hash(st_index_t index);
@@ -233,8 +189,29 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
 static st_index_t
 obj_any_hash(VALUE obj)
 {
-    obj = rb_hash(obj);
-    return FIX2LONG(obj);
+    VALUE hval = rb_check_funcall_basic_kw(obj, id_hash, rb_mKernel, 0, 0, 0);
+
+    if (hval == Qundef) {
+        hval = rb_exec_recursive_outer(hash_recursive, obj, 0);
+    }
+
+    while (!FIXNUM_P(hval)) {
+        if (RB_TYPE_P(hval, T_BIGNUM)) {
+            int sign;
+            unsigned long ul;
+            sign = rb_integer_pack(hval, &ul, 1, sizeof(ul), 0,
+                    INTEGER_PACK_NATIVE_BYTE_ORDER);
+            if (sign < 0) {
+                hval = LONG2FIX(ul | FIXNUM_MIN);
+            }
+            else {
+                hval = LONG2FIX(ul & FIXNUM_MAX);
+            }
+        }
+        hval = rb_to_int(hval);
+    }
+
+    return FIX2LONG(hval);
 }
 
 static st_index_t
@@ -242,6 +219,13 @@ rb_any_hash(VALUE a)
 {
     return any_hash(a, obj_any_hash);
 }
+
+VALUE
+rb_hash(VALUE obj)
+{
+    return LONG2FIX(any_hash(obj, obj_any_hash));
+}
+
 
 /* Here is a hash function for 64-bit key.  It is about 5 times faster
    (2 times faster when uint128 type is absent) on Haswell than
@@ -1283,7 +1267,6 @@ rb_hash_transient_heap_evacuate(VALUE hash, int promote)
         ar_table *old_tab = RHASH_AR_TABLE(hash);
 
         if (UNLIKELY(old_tab == NULL)) {
-            rb_gc_force_recycle(hash);
             return;
         }
         HASH_ASSERT(old_tab != NULL);
@@ -1520,11 +1503,16 @@ rb_hash_foreach(VALUE hash, rb_foreach_func *func, VALUE farg)
 
     if (RHASH_TABLE_EMPTY_P(hash))
         return;
-    hash_iter_lev_inc(hash);
     arg.hash = hash;
     arg.func = (rb_foreach_func *)func;
     arg.arg  = farg;
-    rb_ensure(hash_foreach_call, (VALUE)&arg, hash_foreach_ensure, hash);
+    if (RB_OBJ_FROZEN(hash)) {
+        hash_foreach_call((VALUE)&arg);
+    }
+    else {
+        hash_iter_lev_inc(hash);
+        rb_ensure(hash_foreach_call, (VALUE)&arg, hash_foreach_ensure, hash);
+    }
     hash_verify(hash);
 }
 
@@ -1558,8 +1546,6 @@ rb_hash_new(void)
 {
     return hash_alloc(rb_cHash);
 }
-
-static VALUE rb_hash_compare_by_id(VALUE hash);
 
 static VALUE
 copy_compare_by_id(VALUE hash, VALUE basis)
@@ -1692,7 +1678,7 @@ int
 rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *func, st_data_t arg)
 {
     if (RHASH_AR_TABLE_P(hash)) {
-        int result = ar_update(hash, (st_data_t)key, func, arg);
+        int result = ar_update(hash, key, func, arg);
         if (result == -1) {
             ar_try_convert_table(hash);
         }
@@ -1701,7 +1687,7 @@ rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *func, 
         }
     }
 
-    return st_update(RHASH_ST_TABLE(hash), (st_data_t)key, func, arg);
+    return st_update(RHASH_ST_TABLE(hash), key, func, arg);
 }
 
 static int
@@ -1956,7 +1942,7 @@ static VALUE
 rb_hash_s_ruby2_keywords_hash_p(VALUE dummy, VALUE hash)
 {
     Check_Type(hash, T_HASH);
-    return (RHASH(hash)->basic.flags & RHASH_PASS_AS_KEYWORDS) ? Qtrue : Qfalse;
+    return RBOOL(RHASH(hash)->basic.flags & RHASH_PASS_AS_KEYWORDS);
 }
 
 /*
@@ -2356,7 +2342,7 @@ rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval)
 }
 
 /*
- * delete a specified entry a given key.
+ * delete a specified entry by a given key.
  * if there is the corresponding entry, return a value of the entry.
  * if there is no corresponding entry, return Qundef.
  */
@@ -2608,12 +2594,6 @@ rb_hash_reject(VALUE hash)
     VALUE result;
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    if (RTEST(ruby_verbose)) {
-	VALUE klass;
-	if (HAS_EXTRA_STATES(hash, klass)) {
-	    rb_warn("extra states are no longer copied: %+"PRIsVALUE, hash);
-	}
-    }
     result = hash_dup_with_compare_by_id(hash);
     if (!RHASH_EMPTY_P(hash)) {
 	rb_hash_foreach(result, delete_if_i, result);
@@ -2969,25 +2949,17 @@ rb_hash_replace(VALUE hash, VALUE hash2)
     COPY_DEFAULT(hash, hash2);
 
     if (RHASH_AR_TABLE_P(hash)) {
-        if (RHASH_AR_TABLE_P(hash2)) {
-            ar_clear(hash);
-        }
-        else {
-            ar_free_and_clear_table(hash);
-            RHASH_ST_TABLE_SET(hash, st_init_table_with_size(RHASH_TYPE(hash2), RHASH_SIZE(hash2)));
-        }
+        ar_free_and_clear_table(hash);
     }
     else {
-        if (RHASH_AR_TABLE_P(hash2)) {
-            st_free_table(RHASH_ST_TABLE(hash));
-            RHASH_ST_CLEAR(hash);
-        }
-        else {
-            st_clear(RHASH_ST_TABLE(hash));
-            RHASH_TBL_RAW(hash)->type = RHASH_ST_TABLE(hash2)->type;
-        }
+        st_free_table(RHASH_ST_TABLE(hash));
+        RHASH_ST_CLEAR(hash);
     }
     hash_copy(hash, hash2);
+    if (RHASH_EMPTY_P(hash2) && RHASH_ST_TABLE_P(hash2)) {
+        /* ident hash */
+        RHASH_ST_TABLE_SET(hash, st_init_table_with_size(RHASH_TYPE(hash2), 0));
+    }
 
     rb_gc_writebarrier_remember(hash);
 
@@ -3029,7 +3001,7 @@ rb_hash_size_num(VALUE hash)
 static VALUE
 rb_hash_empty_p(VALUE hash)
 {
-    return RHASH_EMPTY_P(hash) ? Qtrue : Qfalse;
+    return RBOOL(RHASH_EMPTY_P(hash));
 }
 
 static int
@@ -3315,9 +3287,7 @@ rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
             rb_hash_aset(new_keys, new_key, Qnil);
         }
         rb_ary_clear(pairs);
-        rb_gc_force_recycle(pairs);
         rb_hash_clear(new_keys);
-        rb_gc_force_recycle(new_keys);
     }
     return hash;
 }
@@ -3667,12 +3637,7 @@ rb_hash_values(VALUE hash)
 MJIT_FUNC_EXPORTED VALUE
 rb_hash_has_key(VALUE hash, VALUE key)
 {
-    if (hash_stlike_lookup(hash, key, NULL)) {
-        return Qtrue;
-    }
-    else {
-        return Qfalse;
-    }
+    return RBOOL(hash_stlike_lookup(hash, key, NULL));
 }
 
 static int
@@ -4412,7 +4377,7 @@ static st_table *rb_init_identtable_with_size(st_index_t size);
  *    h # => {"x"=>0, "x"=>1}
  */
 
-static VALUE
+VALUE
 rb_hash_compare_by_id(VALUE hash)
 {
     VALUE tmp;
@@ -4431,7 +4396,6 @@ rb_hash_compare_by_id(VALUE hash)
     st_free_table(RHASH_ST_TABLE(hash));
     RHASH_ST_TABLE_SET(hash, identtable);
     RHASH_ST_CLEAR(tmp);
-    rb_gc_force_recycle(tmp);
 
     return hash;
 }
@@ -4446,12 +4410,7 @@ rb_hash_compare_by_id(VALUE hash)
 MJIT_FUNC_EXPORTED VALUE
 rb_hash_compare_by_id_p(VALUE hash)
 {
-    if (RHASH_ST_TABLE_P(hash) && RHASH_ST_TABLE(hash)->type == &identhash) {
-	return Qtrue;
-    }
-    else {
-        return Qfalse;
-    }
+    return RBOOL(RHASH_ST_TABLE_P(hash) && RHASH_ST_TABLE(hash)->type == &identhash);
 }
 
 VALUE
@@ -4459,6 +4418,14 @@ rb_ident_hash_new(void)
 {
     VALUE hash = rb_hash_new();
     RHASH_ST_TABLE_SET(hash, st_init_table(&identhash));
+    return hash;
+}
+
+VALUE
+rb_ident_hash_new_with_size(st_index_t size)
+{
+    VALUE hash = rb_hash_new();
+    RHASH_ST_TABLE_SET(hash, st_init_table_with_size(&identhash, size));
     return hash;
 }
 
@@ -4572,7 +4539,7 @@ rb_hash_any_p(int argc, VALUE *argv, VALUE hash)
  *  Finds and returns the object in nested objects
  *  that is specified by +key+ and +identifiers+.
  *  The nested objects may be instances of various classes.
- *  See {Dig Methods}[rdoc-ref:doc/dig_methods.rdoc].
+ *  See {Dig Methods}[rdoc-ref:dig_methods.rdoc].
  *
  *  Nested Hashes:
  *    h = {foo: {bar: {baz: 2}}}
@@ -6053,8 +6020,7 @@ env_has_key(VALUE env, VALUE key)
     const char *s;
 
     s = env_name(key);
-    if (getenv(s)) return Qtrue;
-    return Qfalse;
+    return RBOOL(getenv(s));
 }
 
 /*
@@ -6219,6 +6185,18 @@ env_to_hash(void)
     }
     FREE_ENVIRON(environ);
     return hash;
+}
+
+VALUE
+rb_envtbl(void)
+{
+    return envtbl;
+}
+
+VALUE
+rb_env_to_hash(void)
+{
+    return env_to_hash();
 }
 
 /*

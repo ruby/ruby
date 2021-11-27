@@ -677,10 +677,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	ANN("format: $[nd_nth]");
 	ANN("example: $&, $`, $', $+");
 	F_CUSTOM1(nd_nth, "variable") {
-	    char name[3];
-	    name[0] = '$';
+	    char name[3] = "$ ";
 	    name[1] = (char)node->nd_nth;
-	    name[2] = '\0';
 	    A(name);
 	}
 	return;
@@ -1019,8 +1017,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 
       case NODE_ARGS:
 	ANN("method parameters");
-	ANN("format: def method_name(.., [nd_opt=some], *[nd_rest], [nd_pid], .., &[nd_body])");
-	ANN("example: def foo(a, b, opt1=1, opt2=2, *rest, y, z, &blk); end");
+	ANN("format: def method_name(.., [nd_ainfo->nd_optargs], *[nd_ainfo->rest_arg], [nd_ainfo->first_post_arg], .., [nd_ainfo->kw_args], **[nd_ainfo->kw_rest_arg], &[nd_ainfo->block_arg])");
+	ANN("example: def foo(a, b, opt1=1, opt2=2, *rest, y, z, kw: 1, **kwrest, &blk); end");
 	F_INT(nd_ainfo->pre_args_num, "count of mandatory (pre-)arguments");
 	F_NODE(nd_ainfo->pre_init, "initialization of (pre-)arguments");
 	F_INT(nd_ainfo->post_args_num, "count of mandatory post-arguments");
@@ -1045,12 +1043,12 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	ANN("new scope");
 	ANN("format: [nd_tbl]: local table, [nd_args]: arguments, [nd_body]: body");
 	F_CUSTOM1(nd_tbl, "local table") {
-	    ID *tbl = node->nd_tbl;
+	    rb_ast_id_table_t *tbl = node->nd_tbl;
 	    int i;
-	    int size = tbl ? (int)*tbl++ : 0;
+	    int size = tbl ? tbl->size : 0;
 	    if (size == 0) A("(empty)");
 	    for (i = 0; i < size; i++) {
-		A_ID(tbl[i]); if (i < size - 1) A(",");
+		A_ID(tbl->ids[i]); if (i < size - 1) A(",");
 	    }
 	}
 	F_NODE(nd_args, "arguments");
@@ -1164,7 +1162,7 @@ typedef struct {
 struct node_buffer_struct {
     node_buffer_list_t unmarkable;
     node_buffer_list_t markable;
-    ID *local_tables;
+    struct rb_ast_local_table_link *local_tables;
     VALUE mark_hash;
 };
 
@@ -1207,15 +1205,22 @@ node_buffer_list_free(node_buffer_list_t * nb)
     }
 }
 
+struct rb_ast_local_table_link {
+    struct rb_ast_local_table_link *next;
+    // struct rb_ast_id_table {
+    int size;
+    ID ids[FLEX_ARY_LEN];
+    // }
+};
+
 static void
 rb_node_buffer_free(node_buffer_t *nb)
 {
     node_buffer_list_free(&nb->unmarkable);
     node_buffer_list_free(&nb->markable);
-    ID * local_table = nb->local_tables;
+    struct rb_ast_local_table_link *local_table = nb->local_tables;
     while (local_table) {
-        unsigned int size = (unsigned int)*local_table;
-        ID * next_table = (ID *)local_table[size + 1];
+        struct rb_ast_local_table_link *next_table = local_table->next;
         xfree(local_table);
         local_table = next_table;
     }
@@ -1279,12 +1284,28 @@ rb_ast_node_type_change(NODE *n, enum node_type type)
     }
 }
 
-void
-rb_ast_add_local_table(rb_ast_t *ast, ID *buf)
+rb_ast_id_table_t *
+rb_ast_new_local_table(rb_ast_t *ast, int size)
 {
-    unsigned int size = (unsigned int)*buf;
-    buf[size + 1] = (ID)ast->node_buffer->local_tables;
-    ast->node_buffer->local_tables = buf;
+    size_t alloc_size = sizeof(struct rb_ast_local_table_link) + size * sizeof(ID);
+    struct rb_ast_local_table_link *link = ruby_xmalloc(alloc_size);
+    link->next = ast->node_buffer->local_tables;
+    ast->node_buffer->local_tables = link;
+    link->size = size;
+
+    return (rb_ast_id_table_t *) &link->size;
+}
+
+rb_ast_id_table_t *
+rb_ast_resize_latest_local_table(rb_ast_t *ast, int size)
+{
+    struct rb_ast_local_table_link *link = ast->node_buffer->local_tables;
+    size_t alloc_size = sizeof(struct rb_ast_local_table_link) + size * sizeof(ID);
+    link = ruby_xrealloc(link, alloc_size);
+    ast->node_buffer->local_tables = link;
+    link->size = size;
+
+    return (rb_ast_id_table_t *) &link->size;
 }
 
 void

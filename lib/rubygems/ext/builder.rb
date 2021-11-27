@@ -24,13 +24,14 @@ class Gem::Ext::Builder
 
     # try to find make program from Ruby configure arguments first
     RbConfig::CONFIG['configure_args'] =~ /with-make-prog\=(\w+)/
-    make_program = ENV['MAKE'] || ENV['make'] || $1
-    unless make_program
-      make_program = (/mswin/ =~ RUBY_PLATFORM) ? 'nmake' : 'make'
+    make_program_name = ENV['MAKE'] || ENV['make'] || $1
+    unless make_program_name
+      make_program_name = (/mswin/ =~ RUBY_PLATFORM) ? 'nmake' : 'make'
     end
-    make_program = Shellwords.split(make_program)
+    make_program = Shellwords.split(make_program_name)
 
-    destdir = 'DESTDIR=%s' % ENV['DESTDIR']
+    # The installation of the bundled gems is failed when DESTDIR is empty in mswin platform.
+    destdir = (/\bnmake/i !~ make_program_name || ENV['DESTDIR'] && ENV['DESTDIR'] != "") ? 'DESTDIR=%s' % ENV['DESTDIR'] : ''
 
     ['clean', '', 'install'].each do |target|
       # Pass DESTDIR via command line to override what's in MAKEFLAGS
@@ -57,6 +58,7 @@ class Gem::Ext::Builder
         p(command)
       end
       results << "current directory: #{dir}"
+      require "shellwords"
       results << command.shelljoin
 
       require "open3"

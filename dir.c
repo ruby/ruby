@@ -112,6 +112,7 @@ char *strchr(char*,char);
 #include "internal/file.h"
 #include "internal/gc.h"
 #include "internal/io.h"
+#include "internal/object.h"
 #include "internal/vm.h"
 #include "ruby/encoding.h"
 #include "ruby/ruby.h"
@@ -989,7 +990,7 @@ chdir_yield(VALUE v)
     dir_chdir(args->new_path);
     args->done = TRUE;
     chdir_blocking++;
-    if (chdir_thread == Qnil)
+    if (NIL_P(chdir_thread))
 	chdir_thread = rb_thread_current();
     return rb_yield(args->new_path);
 }
@@ -1429,7 +1430,7 @@ with_gvl_gc_for_fd(void *ptr)
 {
     int *e = ptr;
 
-    return (void *)(rb_gc_for_fd(*e) ? Qtrue : Qfalse);
+    return (void *)RBOOL(rb_gc_for_fd(*e));
 }
 
 static int
@@ -1438,7 +1439,7 @@ gc_for_fd_with_gvl(int e)
     if (vm_initialized)
 	return (int)(VALUE)rb_thread_call_with_gvl(with_gvl_gc_for_fd, &e);
     else
-	return rb_gc_for_fd(e) ? Qtrue : Qfalse;
+	return RBOOL(rb_gc_for_fd(e));
 }
 
 static void *
@@ -2937,7 +2938,7 @@ dir_glob_option_base(VALUE base)
 static int
 dir_glob_option_sort(VALUE sort)
 {
-    return (sort ? 0 : FNM_GLOB_NOSORT);
+    return (rb_bool_expected(sort, "sort") ? 0 : FNM_GLOB_NOSORT);
 }
 
 static VALUE

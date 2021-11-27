@@ -306,7 +306,7 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
  *   ipttl = sock.getsockopt(:IP, :TTL).int
  *
  *   optval = sock.getsockopt(Socket::IPPROTO_IP, Socket::IP_TTL)
- *   ipttl = optval.unpack("i")[0]
+ *   ipttl = optval.unpack1("i")
  *
  * Option values may be structs. Decoding them can be complex as it involves
  * examining your system headers to determine the correct definition. An

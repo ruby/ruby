@@ -1,7 +1,6 @@
 #ifndef RUBY_H                                       /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_H 1
 /**
- * @file
  * @author     $Author$
  * @date       Sun 10 12:06:15 Jun JST 2007
  * @copyright  2007-2008 Yukihiro Matsumoto

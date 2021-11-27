@@ -236,9 +236,8 @@ getclassvariable
 /* "class variable access from toplevel" warning can be hooked. */
 // attr bool leaf = false; /* has rb_warning() */
 {
-    rb_cref_t * cref = vm_get_cref(GET_EP());
     rb_control_frame_t *cfp = GET_CFP();
-    val = vm_getclassvariable(GET_ISEQ(), cref, cfp, id, (ICVARC)ic);
+    val = vm_getclassvariable(GET_ISEQ(), cfp, id, (ICVARC)ic);
 }
 
 /* Set value of class variable id of klass as val. */
@@ -251,7 +250,7 @@ setclassvariable
 // attr bool leaf = false; /* has rb_warning() */
 {
     vm_ensure_not_refinement_module(GET_SELF());
-    vm_setclassvariable(GET_ISEQ(), vm_get_cref(GET_EP()), GET_CFP(), id,  val, (ICVARC)ic);
+    vm_setclassvariable(GET_ISEQ(), GET_CFP(), id,  val, (ICVARC)ic);
 }
 
 /* Get constant variable id. If klass is Qnil and allow_nil is Qtrue, constants
@@ -382,9 +381,10 @@ concatstrings
     val = rb_str_concat_literals(num, STACK_ADDR_FROM_TOP(num));
 }
 
-/* push the result of to_s. */
+/* Convert the result to string if not already a string.
+   This is used as a backup if to_s does not return a string. */
 DEFINE_INSN
-tostring
+anytostring
 ()
 (VALUE val, VALUE str)
 (VALUE val)
@@ -526,10 +526,12 @@ newhash
 {
     RUBY_DTRACE_CREATE_HOOK(HASH, num);
 
-    val = rb_hash_new_with_size(num / 2);
-
     if (num) {
+        val = rb_hash_new_with_size(num / 2);
         rb_hash_bulk_insert(num, STACK_ADDR_FROM_TOP(num), val);
+    }
+    else {
+        val = rb_hash_new();
     }
 }
 
@@ -660,7 +662,7 @@ defined
      `flag & VM_CHECKMATCH_TYPE_MASK' describe how to check pattern.
       VM_CHECKMATCH_TYPE_WHEN: ignore target and check pattern is truthy.
       VM_CHECKMATCH_TYPE_CASE: check `patten === target'.
-      VM_CHECKMATCH_TYPE_RESCUE: check `pattern.kind_op?(Module) && pattern === target'.
+      VM_CHECKMATCH_TYPE_RESCUE: check `pattern.kind_of?(Module) && pattern === target'.
      if `flag & VM_CHECKMATCH_ARRAY' is not 0, then `patten' is array of patterns.
  */
 DEFINE_INSN
@@ -780,6 +782,21 @@ opt_send_without_block
     }
 }
 
+/* Convert object to string using to_s or equivalent. */
+DEFINE_INSN
+objtostring
+(CALL_DATA cd)
+(VALUE recv)
+(VALUE val)
+// attr bool leaf = false;
+{
+    val = vm_objtostring(GET_ISEQ(), recv, cd);
+
+    if (val == Qundef) {
+        CALL_SIMPLE_METHOD();
+    }
+}
+
 DEFINE_INSN
 opt_str_freeze
 (VALUE str, CALL_DATA cd)
@@ -834,7 +851,7 @@ opt_newarray_max
 // attr bool leaf = false; /* has rb_funcall() */
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
-    val = vm_opt_newarray_max(num, STACK_ADDR_FROM_TOP(num));
+    val = vm_opt_newarray_max(ec, num, STACK_ADDR_FROM_TOP(num));
 }
 
 DEFINE_INSN
@@ -846,7 +863,7 @@ opt_newarray_min
 // attr bool leaf = false; /* has rb_funcall() */
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
-    val = vm_opt_newarray_min(num, STACK_ADDR_FROM_TOP(num));
+    val = vm_opt_newarray_min(ec, num, STACK_ADDR_FROM_TOP(num));
 }
 
 /* super(args) # args.size => num */

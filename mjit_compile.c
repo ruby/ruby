@@ -348,6 +348,7 @@ mjit_compile_body(FILE *f, const rb_iseq_t *iseq, struct compile_status *status)
     fprintf(f, "    static const VALUE *const original_body_iseq = (VALUE *)0x%"PRIxVALUE";\n",
             (VALUE)body->iseq_encoded);
     fprintf(f, "    VALUE cfp_self = reg_cfp->self;\n"); // cache self across the method
+    fprintf(f, "#undef GET_SELF\n");
     fprintf(f, "#define GET_SELF() cfp_self\n");
 
     // Generate merged ivar guards first if needed
@@ -507,6 +508,33 @@ init_ivar_compile_status(const struct rb_iseq_constant_body *body, struct compil
         memset(status.compile_info, 0, sizeof(struct rb_mjit_compile_info)); \
 } while (0)
 
+static bool
+precompile_inlinable_child_iseq(FILE *f, const rb_iseq_t *child_iseq, struct compile_status *status,
+                                const struct rb_callinfo *ci, const struct rb_callcache *cc, unsigned int pos)
+{
+    struct compile_status child_status = { .compiled_iseq = status->compiled_iseq, .compiled_id = status->compiled_id };
+    INIT_COMPILE_STATUS(child_status, child_iseq->body, false);
+    child_status.inline_context = (struct inlined_call_context){
+        .orig_argc = vm_ci_argc(ci),
+        .me = (VALUE)vm_cc_cme(cc),
+        .param_size = child_iseq->body->param.size,
+        .local_size = child_iseq->body->local_table_size
+    };
+    if (child_iseq->body->ci_size > 0 && child_status.cc_entries_index == -1) {
+        return false;
+    }
+    init_ivar_compile_status(child_iseq->body, &child_status);
+
+    fprintf(f, "ALWAYS_INLINE(static VALUE _mjit%d_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq));\n", status->compiled_id, pos);
+    fprintf(f, "static inline VALUE\n_mjit%d_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq)\n{\n", status->compiled_id, pos);
+    fprintf(f, "    const VALUE *orig_pc = reg_cfp->pc;\n");
+    fprintf(f, "    VALUE *orig_sp = reg_cfp->sp;\n");
+    bool success = mjit_compile_body(f, child_iseq, &child_status);
+    fprintf(f, "\n} /* end of _mjit%d_inlined_%d */\n\n", status->compiled_id, pos);
+
+    return success;
+}
+
 // Compile inlinable ISeqs to C code in `f`.  It returns true if it succeeds to compile them.
 static bool
 precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status *status)
@@ -531,28 +559,7 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
                             RSTRING_PTR(rb_iseq_path(child_iseq)), FIX2INT(child_iseq->body->location.first_lineno),
                             RSTRING_PTR(iseq->body->location.label),
                             RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(iseq->body->location.first_lineno));
-
-                struct compile_status child_status = { .compiled_iseq = status->compiled_iseq, .compiled_id = status->compiled_id };
-                INIT_COMPILE_STATUS(child_status, child_iseq->body, false);
-                child_status.inline_context = (struct inlined_call_context){
-                    .orig_argc = vm_ci_argc(ci),
-                    .me = (VALUE)vm_cc_cme(cc),
-                    .param_size = child_iseq->body->param.size,
-                    .local_size = child_iseq->body->local_table_size
-                };
-                if (child_iseq->body->ci_size > 0 && child_status.cc_entries_index == -1) {
-                    return false;
-                }
-                init_ivar_compile_status(child_iseq->body, &child_status);
-
-                fprintf(f, "ALWAYS_INLINE(static VALUE _mjit%d_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq));\n", status->compiled_id, pos);
-                fprintf(f, "static inline VALUE\n_mjit%d_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq)\n{\n", status->compiled_id, pos);
-                fprintf(f, "    const VALUE *orig_pc = reg_cfp->pc;\n");
-                fprintf(f, "    VALUE *orig_sp = reg_cfp->sp;\n");
-                bool success = mjit_compile_body(f, child_iseq, &child_status);
-                fprintf(f, "\n} /* end of _mjit%d_inlined_%d */\n\n", status->compiled_id, pos);
-
-                if (!success)
+                if (!precompile_inlinable_child_iseq(f, child_iseq, status, ci, cc, pos))
                     return false;
             }
         }

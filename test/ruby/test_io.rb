@@ -3847,30 +3847,6 @@ __END__
       end
       end;
     end
-
-    def test_write_no_garbage
-      skip "multiple threads already active" if Thread.list.size > 1
-      res = {}
-      ObjectSpace.count_objects(res) # creates strings on first call
-      [ 'foo'.b, '*' * 24 ].each do |buf|
-        with_pipe do |r, w|
-          GC.disable
-          begin
-            before = ObjectSpace.count_objects(res)[:T_STRING]
-            n = w.write(buf)
-            s = w.syswrite(buf)
-            after = ObjectSpace.count_objects(res)[:T_STRING]
-          ensure
-            GC.enable
-          end
-          assert_equal before, after,
-            "no strings left over after write [ruby-core:78898] [Bug #13085]: #{ before } strings before write -> #{ after } strings after write"
-          assert_not_predicate buf, :frozen?, 'no inadvertent freeze'
-          assert_equal buf.bytesize, n, 'IO#write wrote expected size'
-          assert_equal s, n, 'IO#syswrite wrote expected size'
-        end
-      end
-    end
   end
 
   def test_pread
@@ -3989,6 +3965,18 @@ __END__
       assert_raise(TypeError) {Marshal.dump(r)}
       assert_raise(TypeError) {Marshal.dump(w)}
     }
+  end
+
+  def test_marshal_closed_io
+    bug18077 = '[ruby-core:104927] [Bug #18077]'
+    r, w = IO.pipe
+    r.close; w.close
+    assert_raise(TypeError, bug18077) {Marshal.dump(r)}
+
+    class << r
+      undef_method :closed?
+    end
+    assert_raise(TypeError, bug18077) {Marshal.dump(r)}
   end
 
   def test_stdout_to_closed_pipe

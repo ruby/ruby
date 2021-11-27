@@ -7,8 +7,8 @@
  * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
-#if !defined(_OSSL_PKEY_H_)
-#define _OSSL_PKEY_H_
+#if !defined(OSSL_PKEY_H)
+#define OSSL_PKEY_H
 
 extern VALUE mPKey;
 extern VALUE cPKey;
@@ -34,14 +34,6 @@ extern const rb_data_type_t ossl_evp_pkey_type;
 	rb_raise(rb_eRuntimeError, "PKEY wasn't initialized!");\
     } \
 } while (0)
-
-struct ossl_generate_cb_arg {
-    int yield;
-    int interrupted;
-    int state;
-};
-int ossl_generate_cb_2(int p, int n, BN_GENCB *cb);
-void ossl_generate_cb_stop(void *ptr);
 
 VALUE ossl_pkey_new(EVP_PKEY *);
 void ossl_pkey_check_public_key(const EVP_PKEY *);
@@ -190,35 +182,6 @@ static VALUE ossl_##_keytype##_set_##_group(VALUE self, VALUE v1, VALUE v2) \
 	return self;							\
 }
 
-#define OSSL_PKEY_BN_DEF_SETTER_OLD(_keytype, _type, _group, _name)	\
-/*									\
- *  call-seq:								\
- *     _keytype##.##_name = bn -> bn					\
- */									\
-static VALUE ossl_##_keytype##_set_##_name(VALUE self, VALUE bignum)	\
-{									\
-	_type *obj;							\
-	BIGNUM *bn;							\
-									\
-	rb_warning("#"#_name"= is deprecated; use #set_"#_group);	\
-	Get##_type(self, obj);						\
-	if (NIL_P(bignum)) {						\
-		BN_clear_free(obj->_name);				\
-		obj->_name = NULL;					\
-		return Qnil;						\
-	}								\
-									\
-	bn = GetBNPtr(bignum);						\
-	if (obj->_name == NULL)						\
-		obj->_name = BN_new();					\
-	if (obj->_name == NULL)						\
-		ossl_raise(eBNError, NULL);				\
-	if (BN_copy(obj->_name, bn) == NULL)				\
-		ossl_raise(eBNError, NULL);				\
-	return bignum;							\
-}
-
-#if defined(HAVE_OPAQUE_OPENSSL) /* OpenSSL 1.1.0 */
 #define OSSL_PKEY_BN_DEF3(_keytype, _type, _group, a1, a2, a3)		\
 	OSSL_PKEY_BN_DEF_GETTER3(_keytype, _type, _group, a1, a2, a3)	\
 	OSSL_PKEY_BN_DEF_SETTER3(_keytype, _type, _group, a1, a2, a3)
@@ -230,24 +193,4 @@ static VALUE ossl_##_keytype##_set_##_name(VALUE self, VALUE bignum)	\
 #define DEF_OSSL_PKEY_BN(class, keytype, name)				\
 	rb_define_method((class), #name, ossl_##keytype##_get_##name, 0)
 
-#else
-#define OSSL_PKEY_BN_DEF3(_keytype, _type, _group, a1, a2, a3)		\
-	OSSL_PKEY_BN_DEF_GETTER3(_keytype, _type, _group, a1, a2, a3)	\
-	OSSL_PKEY_BN_DEF_SETTER3(_keytype, _type, _group, a1, a2, a3)	\
-	OSSL_PKEY_BN_DEF_SETTER_OLD(_keytype, _type, _group, a1)	\
-	OSSL_PKEY_BN_DEF_SETTER_OLD(_keytype, _type, _group, a2)	\
-	OSSL_PKEY_BN_DEF_SETTER_OLD(_keytype, _type, _group, a3)
-
-#define OSSL_PKEY_BN_DEF2(_keytype, _type, _group, a1, a2)		\
-	OSSL_PKEY_BN_DEF_GETTER2(_keytype, _type, _group, a1, a2)	\
-	OSSL_PKEY_BN_DEF_SETTER2(_keytype, _type, _group, a1, a2)	\
-	OSSL_PKEY_BN_DEF_SETTER_OLD(_keytype, _type, _group, a1)	\
-	OSSL_PKEY_BN_DEF_SETTER_OLD(_keytype, _type, _group, a2)
-
-#define DEF_OSSL_PKEY_BN(class, keytype, name) do {			\
-	rb_define_method((class), #name, ossl_##keytype##_get_##name, 0);\
-	rb_define_method((class), #name "=", ossl_##keytype##_set_##name, 1);\
-} while (0)
-#endif /* HAVE_OPAQUE_OPENSSL */
-
-#endif /* _OSSL_PKEY_H_ */
+#endif /* OSSL_PKEY_H */

@@ -130,6 +130,27 @@ class OpenSSL::TestBN < OpenSSL::TestCase
     assert_equal(-999, +@e2)
     assert_equal(-999, -@e1)
     assert_equal(+999, -@e2)
+
+    # These methods create new BN instances due to BN mutability
+    # Ensure that the instance isn't the same
+    e1_plus = +@e1
+    e1_minus = -@e1
+    assert_equal(false, @e1.equal?(e1_plus))
+    assert_equal(true, @e1 == e1_plus)
+    assert_equal(false, @e1.equal?(e1_minus))
+  end
+
+  def test_abs
+    assert_equal(@e1, @e2.abs)
+    assert_equal(@e3, @e4.abs)
+    assert_not_equal(@e2, @e2.abs)
+    assert_not_equal(@e4, @e4.abs)
+    assert_equal(false, @e2.abs.negative?)
+    assert_equal(false, @e4.abs.negative?)
+    assert_equal(true, (-@e1.abs).negative?)
+    assert_equal(true, (-@e2.abs).negative?)
+    assert_equal(true, (-@e3.abs).negative?)
+    assert_equal(true, (-@e4.abs).negative?)
   end
 
   def test_mod
@@ -227,6 +248,10 @@ class OpenSSL::TestBN < OpenSSL::TestCase
       r5 = OpenSSL::BN.rand_range(256)
       assert_include(0..255, r5)
     }
+
+    # Aliases
+    assert_include(128..255, OpenSSL::BN.pseudo_rand(8))
+    assert_include(0..255, OpenSSL::BN.pseudo_rand_range(256))
   end
 
   begin
@@ -285,6 +310,29 @@ class OpenSSL::TestBN < OpenSSL::TestCase
   def test_argument_error
     bug15760 = '[ruby-core:92231] [Bug #15760]'
     assert_raise(ArgumentError, bug15760) { OpenSSL::BN.new(nil, 2) }
+  end
+
+  def test_get_flags_and_set_flags
+    e = OpenSSL::BN.new(999)
+
+    assert_equal(0, e.get_flags(OpenSSL::BN::CONSTTIME))
+
+    e.set_flags(OpenSSL::BN::CONSTTIME)
+    assert_equal(OpenSSL::BN::CONSTTIME, e.get_flags(OpenSSL::BN::CONSTTIME))
+
+    b = OpenSSL::BN.new(2)
+    m = OpenSSL::BN.new(99)
+    assert_equal("17", b.mod_exp(e, m).to_s)
+
+    # mod_exp fails when m is even and any argument has CONSTTIME flag
+    m = OpenSSL::BN.new(98)
+    assert_raise(OpenSSL::BNError) do
+      b.mod_exp(e, m)
+    end
+
+    # It looks like flags cannot be removed once enabled
+    e.set_flags(0)
+    assert_equal(4, e.get_flags(OpenSSL::BN::CONSTTIME))
   end
 end
 

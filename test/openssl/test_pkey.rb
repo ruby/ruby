@@ -27,20 +27,16 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
   end
 
   def test_s_generate_parameters
-    # 512 is non-default; 1024 is used if 'dsa_paramgen_bits' is not specified
-    # with OpenSSL 1.1.0.
-    pkey = OpenSSL::PKey.generate_parameters("DSA", {
-      "dsa_paramgen_bits" => 512,
-      "dsa_paramgen_q_bits" => 256,
+    pkey = OpenSSL::PKey.generate_parameters("EC", {
+      "ec_paramgen_curve" => "secp384r1",
     })
-    assert_instance_of OpenSSL::PKey::DSA, pkey
-    assert_equal 512, pkey.p.num_bits
-    assert_equal 256, pkey.q.num_bits
-    assert_equal nil, pkey.priv_key
+    assert_instance_of OpenSSL::PKey::EC, pkey
+    assert_equal "secp384r1", pkey.group.curve_name
+    assert_equal nil, pkey.private_key
 
     # Invalid options are checked
     assert_raise(OpenSSL::PKey::PKeyError) {
-      OpenSSL::PKey.generate_parameters("DSA", "invalid" => "option")
+      OpenSSL::PKey.generate_parameters("EC", "invalid" => "option")
     }
 
     # Parameter generation callback is called
@@ -59,14 +55,13 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
       # DSA key pair cannot be generated without parameters
       OpenSSL::PKey.generate_key("DSA")
     }
-    pkey_params = OpenSSL::PKey.generate_parameters("DSA", {
-      "dsa_paramgen_bits" => 512,
-      "dsa_paramgen_q_bits" => 256,
+    pkey_params = OpenSSL::PKey.generate_parameters("EC", {
+      "ec_paramgen_curve" => "secp384r1",
     })
     pkey = OpenSSL::PKey.generate_key(pkey_params)
-    assert_instance_of OpenSSL::PKey::DSA, pkey
-    assert_equal 512, pkey.p.num_bits
-    assert_not_equal nil, pkey.priv_key
+    assert_instance_of OpenSSL::PKey::EC, pkey
+    assert_equal "secp384r1", pkey.group.curve_name
+    assert_not_equal nil, pkey.private_key
   end
 
   def test_hmac_sign_verify
@@ -168,5 +163,10 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     assert_raise(TypeError) do
       key1.compare?(key4)
     end
+  end
+
+  def test_to_text
+    rsa = Fixtures.pkey("rsa1024")
+    assert_include rsa.to_text, "publicExponent"
   end
 end

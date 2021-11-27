@@ -12,11 +12,9 @@ describe "Range#inspect" do
     (0.5..2.4).inspect.should == "0.5..2.4"
   end
 
-  ruby_version_is "2.6" do
-    it "works for endless ranges" do
-      eval("(1..)").inspect.should ==  "1.."
-      eval("(0.1...)").inspect.should ==  "0.1..."
-    end
+  it "works for endless ranges" do
+    eval("(1..)").inspect.should ==  "1.."
+    eval("(0.1...)").inspect.should ==  "0.1..."
   end
 
   ruby_version_is '2.7' do

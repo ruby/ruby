@@ -436,7 +436,7 @@ WARNING:  Use your OS package manager to uninstall vendor gems
 
   def test_handle_options_vendor_missing
     vendordir(nil) do
-      e = assert_raise OptionParser::InvalidOption do
+      e = assert_raise Gem::OptionParser::InvalidOption do
         @cmd.handle_options %w[--vendor]
       end
 

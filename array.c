@@ -514,13 +514,9 @@ rb_ary_decrement_share(VALUE shared_root)
 {
     if (shared_root) {
         long num = ARY_SHARED_ROOT_REFCNT(shared_root) - 1;
-	if (num == 0) {
-            rb_ary_free(shared_root);
-            rb_gc_force_recycle(shared_root);
-	}
-	else if (num > 0) {
+        if (num > 0) {
             ARY_SET_SHARED_ROOT_REFCNT(shared_root, num);
-	}
+        }
     }
 }
 
@@ -2234,14 +2230,6 @@ rb_ary_set_len(VALUE ary, long len)
     ARY_SET_LEN(ary, len);
 }
 
-/*!
- * expands or shrinks \a ary to \a len elements.
- * expanded region will be filled with Qnil.
- * \param ary  an array
- * \param len  new size
- * \return     \a ary
- * \post       the size of \a ary is \a len.
- */
 VALUE
 rb_ary_resize(VALUE ary, long len)
 {
@@ -2668,9 +2656,7 @@ rb_ary_length(VALUE ary)
 static VALUE
 rb_ary_empty_p(VALUE ary)
 {
-    if (RARRAY_LEN(ary) == 0)
-	return Qtrue;
-    return Qfalse;
+    return RBOOL(RARRAY_LEN(ary) == 0);
 }
 
 VALUE
@@ -3432,89 +3418,8 @@ static VALUE rb_ary_bsearch_index(VALUE ary);
  *    array.bsearch -> new_enumerator
  *
  *  Returns an element from +self+ selected by a binary search.
- *  +self+ should be sorted, but this is not checked.
  *
- *  By using binary search, finds a value from this array which meets
- *  the given condition in <tt>O(log n)</tt> where +n+ is the size of the array.
- *
- *  There are two search modes:
- *  - <b>Find-minimum mode</b>: the block should return +true+ or +false+.
- *  - <b>Find-any mode</b>: the block should return a numeric value.
- *
- *  The block should not mix the modes by and sometimes returning +true+ or +false+
- *  and sometimes returning a numeric value, but this is not checked.
- *
- *  <b>Find-Minimum Mode</b>
- *
- *  In find-minimum mode, the block always returns +true+ or +false+.
- *  The further requirement (though not checked) is that
- *  there are no indexes +i+ and +j+ such that:
- *  - <tt>0 <= i < j <= self.size</tt>.
- *  - The block returns +true+ for <tt>self[i]</tt> and +false+ for <tt>self[j]</tt>.
- *
- *  In find-minimum mode, method bsearch returns the first element for which the block returns true.
- *
- *  Examples:
- *    a = [0, 4, 7, 10, 12]
- *    a.bsearch {|x| x >= 4 } # => 4
- *    a.bsearch {|x| x >= 6 } # => 7
- *    a.bsearch {|x| x >= -1 } # => 0
- *    a.bsearch {|x| x >= 100 } # => nil
- *
- *  Less formally: the block is such that all +false+-evaluating elements
- *  precede all +true+-evaluating elements.
- *
- *  These make sense as blocks in find-minimum mode:
- *    a = [0, 4, 7, 10, 12]
- *    a.map {|x| x >= 4 } # => [false, true, true, true, true]
- *    a.map {|x| x >= 6 } # => [false, false, true, true, true]
- *    a.map {|x| x >= -1 } # => [true, true, true, true, true]
- *    a.map {|x| x >= 100 } # => [false, false, false, false, false]
- *
- *  This would not make sense:
- *    a = [0, 4, 7, 10, 12]
- *    a.map {|x| x == 7 } # => [false, false, true, false, false]
- *
- *  <b>Find-Any Mode</b>
- *
- *  In find-any mode, the block always returns a numeric value.
- *  The further requirement (though not checked) is that
- *  there are no indexes +i+ and +j+ such that:
- *  - <tt>0 <= i < j <= self.size</tt>.
- *  - The block returns a negative value for <tt>self[i]</tt>
- *    and a positive value for <tt>self[j]</tt>.
- *  - The block returns a negative value for <tt>self[i]</tt> and zero <tt>self[j]</tt>.
- *  - The block returns zero for <tt>self[i]</tt> and a positive value for <tt>self[j]</tt>.
- *
- *  In find-any mode, method bsearch returns some element
- *  for which the block returns zero, or +nil+ if no such element is found.
- *
- *  Examples:
- *    a = [0, 4, 7, 10, 12]
- *    a.bsearch {|element| 7 <=> element } # => 7
- *    a.bsearch {|element| -1 <=> element } # => nil
- *    a.bsearch {|element| 5 <=> element } # => nil
- *    a.bsearch {|element| 15 <=> element } # => nil
- *
- *  Less formally: the block is such that:
- *  - All positive-evaluating elements precede all zero-evaluating elements.
- *  - All positive-evaluating elements precede all negative-evaluating elements.
- *  - All zero-evaluating elements precede all negative-evaluating elements.
- *
- *  These make sense as blocks in find-any mode:
- *    a = [0, 4, 7, 10, 12]
- *    a.map {|element| 7 <=> element } # => [1, 1, 0, -1, -1]
- *    a.map {|element| -1 <=> element } # => [-1, -1, -1, -1, -1]
- *    a.map {|element| 5 <=> element } # => [1, 1, -1, -1, -1]
- *    a.map {|element| 15 <=> element } # => [1, 1, 1, 1, 1]
- *
- *  This would not make sense:
- *    a = [0, 4, 7, 10, 12]
- *    a.map {|element| element <=> 7 } # => [-1, -1, 0, 1, 1]
- *
- *  Returns an enumerator if no block given:
- *    a = [0, 4, 7, 10, 12]
- *    a.bsearch # => #<Enumerator: [0, 4, 7, 10, 12]:bsearch>
+ *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
  */
 
 static VALUE
@@ -3557,7 +3462,7 @@ rb_ary_bsearch_index(VALUE ary)
 	    satisfied = 1;
 	    smaller = 1;
 	}
-	else if (v == Qfalse || v == Qnil) {
+	else if (!RTEST(v)) {
 	    smaller = 0;
 	}
 	else if (rb_obj_is_kind_of(v, rb_cNumeric)) {
@@ -4098,7 +4003,7 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
     else if (orig_len < pos) {
         return Qnil;
     }
-    else if (orig_len < pos + len) {
+    if (orig_len < pos + len) {
         len = orig_len - pos;
     }
     if (len == 0) {
@@ -4847,6 +4752,7 @@ ary_append(VALUE x, VALUE y)
     if (n > 0) {
         rb_ary_splice(x, RARRAY_LEN(x), 0, RARRAY_CONST_PTR_TRANSIENT(y), n);
     }
+    RB_GC_GUARD(y);
     return x;
 }
 
@@ -5923,8 +5829,7 @@ ary_min_opt_string(VALUE ary, long i, VALUE vmin)
  *
  *  With an argument +n+ and a block, returns a new \Array with at most +n+ elements,
  *  in ascending order per the block:
- *    [0, 1, 2, 3].min(3) # => [0, 1, 2]
- *    [0, 1, 2, 3].min(6) # => [0, 1, 2, 3]
+ *    ['0', '00', '000'].min(2) {|a, b| a.size <=> b.size } # => ["0", "00"]
  */
 static VALUE
 rb_ary_min(int argc, VALUE *argv, VALUE ary)
@@ -6432,7 +6337,7 @@ rb_ary_shuffle(rb_execution_context_t *ec, VALUE ary, VALUE randgen)
 }
 
 static VALUE
-rb_ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE to_array)
+ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE to_array)
 {
     VALUE result;
     long n, len, i, j, k, idx[10];
@@ -6562,6 +6467,12 @@ rb_ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VA
 }
 
 static VALUE
+ary_sample0(rb_execution_context_t *ec, VALUE ary)
+{
+    return ary_sample(ec, ary, rb_cRandom, Qfalse, Qfalse);
+}
+
+static VALUE
 rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
 {
     long mul;
@@ -6570,7 +6481,7 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
 	n = RARRAY_AREF(args, 0);
     }
     if (RARRAY_LEN(self) == 0) return INT2FIX(0);
-    if (n == Qnil) return DBL2NUM(HUGE_VAL);
+    if (NIL_P(n)) return DBL2NUM(HUGE_VAL);
     mul = NUM2LONG(n);
     if (mul <= 0) return INT2FIX(0);
     n = LONG2FIX(mul);
@@ -7435,7 +7346,7 @@ rb_ary_drop(VALUE ary, VALUE n)
     }
 
     result = rb_ary_subseq(ary, pos, RARRAY_LEN(ary));
-    if (result == Qnil) result = rb_ary_new();
+    if (NIL_P(result)) result = rb_ary_new();
     return result;
 }
 
@@ -7719,7 +7630,7 @@ rb_ary_one_p(int argc, VALUE *argv, VALUE ary)
  *  Finds and returns the object in nested objects
  *  that is specified by +index+ and +identifiers+.
  *  The nested objects may be instances of various classes.
- *  See {Dig Methods}[rdoc-ref:doc/dig_methods.rdoc].
+ *  See {Dig Methods}[rdoc-ref:dig_methods.rdoc].
  *
  *  Examples:
  *    a = [:foo, [:bar, :baz, [:bat, :bam]]]
@@ -7813,7 +7724,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
                 n = 0;
             }
         }
-        else if (RB_TYPE_P(e, T_BIGNUM))
+        else if (RB_BIGNUM_TYPE_P(e))
             v = rb_big_plus(e, v);
         else if (RB_TYPE_P(e, T_RATIONAL)) {
             if (r == Qundef)
@@ -7850,7 +7761,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
                 x = RFLOAT_VALUE(e);
             else if (FIXNUM_P(e))
                 x = FIX2LONG(e);
-            else if (RB_TYPE_P(e, T_BIGNUM))
+            else if (RB_BIGNUM_TYPE_P(e))
                 x = rb_big2dbl(e);
             else if (RB_TYPE_P(e, T_RATIONAL))
                 x = rb_num2dbl(e);
@@ -8335,7 +8246,7 @@ rb_ary_deconstruct(VALUE ary)
  *       - With string argument +field_separator+, a new string that is equivalent to
  *         <tt>join(field_separator)</tt>.
  *  #abbrev:: Returns a hash of unambiguous abbreviations for elements.
- *  #pack:: Packs the the elements into a binary sequence.
+ *  #pack:: Packs the elements into a binary sequence.
  *  #sum:: Returns a sum of elements according to either <tt>+</tt> or a given block.
  */
 
@@ -8384,7 +8295,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "each_index", rb_ary_each_index, 0);
     rb_define_method(rb_cArray, "reverse_each", rb_ary_reverse_each, 0);
     rb_define_method(rb_cArray, "length", rb_ary_length, 0);
-    rb_define_alias(rb_cArray,  "size", "length");
+    rb_define_method(rb_cArray, "size", rb_ary_length, 0);
     rb_define_method(rb_cArray, "empty?", rb_ary_empty_p, 0);
     rb_define_method(rb_cArray, "find_index", rb_ary_index, -1);
     rb_define_method(rb_cArray, "index", rb_ary_index, -1);

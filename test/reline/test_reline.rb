@@ -1,5 +1,6 @@
 require_relative 'helper'
-require "reline"
+require 'reline'
+require 'stringio'
 
 class Reline::Test < Reline::TestCase
   class DummyCallbackObject
@@ -246,29 +247,57 @@ class Reline::Test < Reline::TestCase
   end
 
   def test_insert_text
-    # TODO
+    assert_equal('', Reline.line_buffer)
+    assert_equal(0, Reline.point)
+    Reline.insert_text('abc')
+    assert_equal('abc', Reline.line_buffer)
+    assert_equal(3, Reline.point)
   end
 
-  def test_line_buffer
-    # TODO
+  def test_delete_text
+    assert_equal('', Reline.line_buffer)
+    assert_equal(0, Reline.point)
+    Reline.insert_text('abc')
+    assert_equal('abc', Reline.line_buffer)
+    assert_equal(3, Reline.point)
+    Reline.delete_text()
+    assert_equal('', Reline.line_buffer)
+    assert_equal(0, Reline.point)
+    Reline.insert_text('abc')
+    Reline.delete_text(1)
+    assert_equal('a', Reline.line_buffer)
+    assert_equal(1, Reline.point)
+    Reline.insert_text('defghi')
+    Reline.delete_text(2, 2)
+    assert_equal('adghi', Reline.line_buffer)
+    assert_equal(5, Reline.point)
   end
 
-  def test_point
-    # TODO
-  end
-
-  def test_input=
-    # TODO
+  def test_set_input_and_output
     assert_raise(TypeError) do
       Reline.input = "This is not a file."
     end
-  end
-
-  def test_output=
-    # TODO
     assert_raise(TypeError) do
       Reline.output = "This is not a file."
     end
+
+    input, to_write = IO.pipe
+    to_read, output = IO.pipe
+    unless Reline.__send__(:input=, input)
+      omit "Setting to input is not effective on #{Reline::IOGate}"
+    end
+    Reline.output = output
+
+    to_write.write "a\n"
+    result = Reline.readline
+    to_write.close
+    read_text = to_read.read_nonblock(100)
+    assert_equal('a', result)
+    refute(read_text.empty?)
+  ensure
+    input&.close
+    output&.close
+    to_read&.close
   end
 
   def test_vi_editing_mode
@@ -279,10 +308,6 @@ class Reline::Test < Reline::TestCase
   def test_emacs_editing_mode
     Reline.emacs_editing_mode
     assert_equal(Reline::KeyActor::Emacs, Reline.send(:core).config.editing_mode.class)
-  end
-
-  def test_editing_mode
-    # TODO
   end
 
   def test_readmultiline

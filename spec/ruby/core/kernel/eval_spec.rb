@@ -168,6 +168,12 @@ describe "Kernel#eval" do
       suppress_warning {eval("eval '__FILE__', binding", binding)}.should == __FILE__
       suppress_warning {eval("eval '__FILE__', binding", binding, 'success')}.should == 'success'
     end
+
+    it 'uses the given binding file and line for __FILE__ and __LINE__' do
+      suppress_warning {
+        eval("[__FILE__, __LINE__]", binding).should == [__FILE__, __LINE__]
+      }
+    end
   end
 
   ruby_version_is "3.0" do
@@ -179,6 +185,10 @@ describe "Kernel#eval" do
       eval("eval '__FILE__', binding", binding).should == "(eval)"
       eval("eval '__FILE__', binding", binding, 'success').should == '(eval)'
       eval("eval '__FILE__', binding, 'success'", binding).should == 'success'
+    end
+
+    it 'uses (eval) for __FILE__ and 1 for __LINE__ with a binding argument' do
+      eval("[__FILE__, __LINE__]", binding).should == ["(eval)", 1]
     end
   end
 

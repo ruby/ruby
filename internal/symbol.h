@@ -1,7 +1,6 @@
 #ifndef INTERNAL_SYMBOL_H                                /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_SYMBOL_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -29,6 +28,7 @@ int rb_is_local_name(VALUE name);
 PUREFUNC(int rb_is_const_sym(VALUE sym));
 PUREFUNC(int rb_is_attrset_sym(VALUE sym));
 ID rb_make_internal_id(void);
+ID rb_make_temporary_id(size_t n);
 void rb_gc_free_dsymbol(VALUE);
 
 #if __has_builtin(__builtin_constant_p)

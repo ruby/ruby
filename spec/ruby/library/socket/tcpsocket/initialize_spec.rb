@@ -1,5 +1,10 @@
 require_relative '../spec_helper'
 require_relative '../fixtures/classes'
+require_relative 'shared/new'
+
+describe 'TCPSocket#initialize' do
+  it_behaves_like :tcpsocket_new, :new
+end
 
 describe 'TCPSocket#initialize' do
   SocketSpecs.each_ip_protocol do |family, ip_address|

@@ -54,7 +54,7 @@ describe "Net::HTTP#send_request" do
 
       @methods.each do |method|
         response = @http.send_request(method, "/request/header", "test=test", "referer" => referer)
-        response.body.should include('"referer"=>["' + referer + '"]')
+        response.body.should include('"Referer"=>"' + referer + '"')
       end
     end
   end

@@ -295,8 +295,15 @@ class TestGemUninstaller < Gem::InstallerTestCase
 
     uninstaller = Gem::Uninstaller.new spec.name, :executables => true
 
-    uninstaller.uninstall
-
+    ui = Gem::MockGemUi.new "1\ny\n"
+    use_ui ui do
+      uninstaller.uninstall
+    end
+    expected = "Successfully uninstalled default-2\n" \
+      "There was both a regular copy and a default copy of default-2. The " \
+      "regular copy was successfully uninstalled, but the default copy " \
+      "was left around because default gems can't be removed.\n"
+    assert_equal expected, ui.output
     assert_path_not_exist spec.gem_dir
   end
 

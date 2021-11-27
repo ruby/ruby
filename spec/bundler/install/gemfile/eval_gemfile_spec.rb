@@ -11,12 +11,14 @@ RSpec.describe "bundle install with gemfile that uses eval_gemfile" do
   context "eval-ed Gemfile points to an internal gemspec" do
     before do
       create_file "Gemfile-other", <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gemspec :path => 'gems/gunks'
       G
     end
 
     it "installs the gemspec specified gem" do
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         eval_gemfile 'Gemfile-other'
       G
       expect(out).to include("Resolving dependencies")
@@ -35,6 +37,8 @@ RSpec.describe "bundle install with gemfile that uses eval_gemfile" do
       end
 
       create_file bundled_app("gems/Gemfile"), <<-G
+        source "#{file_uri_for(gem_repo2)}"
+
         gemspec :path => "\#{__dir__}/gunks"
 
         source "#{file_uri_for(gem_repo2)}" do
@@ -62,10 +66,12 @@ RSpec.describe "bundle install with gemfile that uses eval_gemfile" do
     before do
       build_lib("a", :path => bundled_app("gems/a"))
       create_file bundled_app("nested/Gemfile-nested"), <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "a", :path => "../gems/a"
       G
 
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         eval_gemfile "nested/Gemfile-nested"
       G
     end
@@ -89,6 +95,7 @@ RSpec.describe "bundle install with gemfile that uses eval_gemfile" do
 
     it "installs the gemspec specified gem" do
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         eval_gemfile 'other/Gemfile-other'
         gemspec :path => 'gems/gunks'
       G

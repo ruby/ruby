@@ -886,10 +886,15 @@ stat_atimespec(const struct stat *st)
 }
 
 static VALUE
+stat_time(const struct timespec ts)
+{
+    return rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
+}
+
+static VALUE
 stat_atime(const struct stat *st)
 {
-    struct timespec ts = stat_atimespec(st);
-    return rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
+    return stat_time(stat_atimespec(st));
 }
 
 static struct timespec
@@ -912,8 +917,7 @@ stat_mtimespec(const struct stat *st)
 static VALUE
 stat_mtime(const struct stat *st)
 {
-    struct timespec ts = stat_mtimespec(st);
-    return rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
+    return stat_time(stat_mtimespec(st));
 }
 
 static struct timespec
@@ -936,8 +940,7 @@ stat_ctimespec(const struct stat *st)
 static VALUE
 stat_ctime(const struct stat *st)
 {
-    struct timespec ts = stat_ctimespec(st);
-    return rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
+    return stat_time(stat_ctimespec(st));
 }
 
 #define HAVE_STAT_BIRTHTIME
@@ -1448,7 +1451,7 @@ rb_group_member(GETGROUPS_T gid)
     return FALSE;
 #else
     int rv = FALSE;
-    int groups = 16;
+    int groups;
     VALUE v = 0;
     GETGROUPS_T *gary;
     int anum = -1;
@@ -1456,25 +1459,9 @@ rb_group_member(GETGROUPS_T gid)
     if (getgid() == gid || getegid() == gid)
 	return TRUE;
 
-    /*
-     * On Mac OS X (Mountain Lion), NGROUPS is 16. But libc and kernel
-     * accept more larger value.
-     * So we don't trunk NGROUPS anymore.
-     */
-    while (groups <= RB_MAX_GROUPS) {
-	gary = ALLOCV_N(GETGROUPS_T, v, groups);
-	anum = getgroups(groups, gary);
-	if (anum != -1 && anum != groups)
-	    break;
-	groups *= 2;
-	if (v) {
-	    ALLOCV_END(v);
-	    v = 0;
-	}
-    }
-    if (anum == -1)
-	return FALSE;
-
+    groups = getgroups(0, NULL);
+    gary = ALLOCV_N(GETGROUPS_T, v, groups);
+    anum = getgroups(groups, gary);
     while (--anum >= 0) {
 	if (gary[anum] == gid) {
 	    rv = TRUE;
@@ -1830,8 +1817,7 @@ rb_file_exists_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_readable_p(VALUE obj, VALUE fname)
 {
-    if (rb_eaccess(fname, R_OK) < 0) return Qfalse;
-    return Qtrue;
+    return RBOOL(rb_eaccess(fname, R_OK) >= 0);
 }
 
 /*
@@ -1848,8 +1834,7 @@ rb_file_readable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_readable_real_p(VALUE obj, VALUE fname)
 {
-    if (rb_access(fname, R_OK) < 0) return Qfalse;
-    return Qtrue;
+    return RBOOL(rb_access(fname, R_OK) >= 0);
 }
 
 #ifndef S_IRUGO
@@ -1904,8 +1889,7 @@ rb_file_world_readable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_writable_p(VALUE obj, VALUE fname)
 {
-    if (rb_eaccess(fname, W_OK) < 0) return Qfalse;
-    return Qtrue;
+    return RBOOL(rb_eaccess(fname, W_OK) >= 0);
 }
 
 /*
@@ -1922,8 +1906,7 @@ rb_file_writable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_writable_real_p(VALUE obj, VALUE fname)
 {
-    if (rb_access(fname, W_OK) < 0) return Qfalse;
-    return Qtrue;
+    return RBOOL(rb_access(fname, W_OK) >= 0);
 }
 
 /*
@@ -1974,8 +1957,7 @@ rb_file_world_writable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_executable_p(VALUE obj, VALUE fname)
 {
-    if (rb_eaccess(fname, X_OK) < 0) return Qfalse;
-    return Qtrue;
+    return RBOOL(rb_eaccess(fname, X_OK) >= 0);
 }
 
 /*
@@ -1996,8 +1978,7 @@ rb_file_executable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_executable_real_p(VALUE obj, VALUE fname)
 {
-    if (rb_access(fname, X_OK) < 0) return Qfalse;
-    return Qtrue;
+    return RBOOL(rb_access(fname, X_OK) >= 0);
 }
 
 #ifndef S_ISREG
@@ -2022,8 +2003,7 @@ rb_file_file_p(VALUE obj, VALUE fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (S_ISREG(st.st_mode)) return Qtrue;
-    return Qfalse;
+    return RBOOL(S_ISREG(st.st_mode));
 }
 
 /*
@@ -2042,8 +2022,7 @@ rb_file_zero_p(VALUE obj, VALUE fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (st.st_size == 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(st.st_size == 0);
 }
 
 /*
@@ -2083,8 +2062,7 @@ rb_file_owned_p(VALUE obj, VALUE fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (st.st_uid == geteuid()) return Qtrue;
-    return Qfalse;
+    return RBOOL(st.st_uid == geteuid());
 }
 
 static VALUE
@@ -2093,8 +2071,7 @@ rb_file_rowned_p(VALUE obj, VALUE fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (st.st_uid == getuid()) return Qtrue;
-    return Qfalse;
+    return RBOOL(st.st_uid == getuid());
 }
 
 /*
@@ -2127,8 +2104,7 @@ check3rdbyte(VALUE fname, int mode)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (st.st_mode & mode) return Qtrue;
-    return Qfalse;
+    return RBOOL(st.st_mode & mode);
 }
 #endif
 
@@ -2539,20 +2515,28 @@ rb_file_birthtime(VALUE obj)
  *
  */
 
-static VALUE
-rb_file_size(VALUE obj)
+off_t
+rb_file_size(VALUE file)
 {
     rb_io_t *fptr;
     struct stat st;
 
-    GetOpenFile(obj, fptr);
+    RB_IO_POINTER(file, fptr);
     if (fptr->mode & FMODE_WRITABLE) {
-	rb_io_flush_raw(obj, 0);
+        rb_io_flush_raw(file, 0);
     }
+
     if (fstat(fptr->fd, &st) == -1) {
-	rb_sys_fail_path(fptr->pathv);
+        rb_sys_fail_path(fptr->pathv);
     }
-    return OFFT2NUM(st.st_size);
+
+    return st.st_size;
+}
+
+static VALUE
+file_size(VALUE self)
+{
+    return OFFT2NUM(rb_file_size(self));
 }
 
 static int
@@ -3363,7 +3347,6 @@ getcwdofdrv(int drv)
     }
     return drvcwd;
 }
-#endif
 
 static inline int
 not_same_drive(VALUE path, int drive)
@@ -3377,6 +3360,7 @@ not_same_drive(VALUE path, int drive)
 	return has_unc(p);
     }
 }
+#endif
 #endif
 
 static inline char *
@@ -4408,6 +4392,21 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, rb_encoding *origenc, enum 
 
 static VALUE rb_file_join(VALUE ary);
 
+#ifndef HAVE_REALPATH
+static VALUE
+rb_check_realpath_emulate_try(VALUE arg)
+{
+    VALUE *args = (VALUE *)arg;
+    return rb_check_realpath_emulate(args[0], args[1], (rb_encoding *)args[2], RB_REALPATH_CHECK);
+}
+
+static VALUE
+rb_check_realpath_emulate_rescue(VALUE arg, VALUE exc)
+{
+    return Qnil;
+}
+#endif /* HAVE_REALPATH */
+
 static VALUE
 rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum rb_realpath_mode mode)
 {
@@ -4474,7 +4473,18 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
     RB_GC_GUARD(unresolved_path);
     return resolved;
 #else
-    return rb_check_realpath_emulate(basedir, path, origenc, mode);
+    if (mode == RB_REALPATH_CHECK) {
+        VALUE arg[3];
+        arg[0] = basedir;
+        arg[1] = path;
+        arg[2] = (VALUE)origenc;
+
+        return rb_rescue(rb_check_realpath_emulate_try, (VALUE)arg,
+                         rb_check_realpath_emulate_rescue, Qnil);
+    }
+    else {
+        return rb_check_realpath_emulate(basedir, path, origenc, mode);
+    }
 #endif /* HAVE_REALPATH */
 }
 
@@ -5797,11 +5807,11 @@ rb_stat_r(VALUE obj)
 #endif
 #ifdef S_IRUSR
     if (rb_stat_owned(obj))
-	return st->st_mode & S_IRUSR ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IRUSR);
 #endif
 #ifdef S_IRGRP
     if (rb_stat_grpowned(obj))
-	return st->st_mode & S_IRGRP ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IRGRP);
 #endif
 #ifdef S_IROTH
     if (!(st->st_mode & S_IROTH)) return Qfalse;
@@ -5830,11 +5840,11 @@ rb_stat_R(VALUE obj)
 #endif
 #ifdef S_IRUSR
     if (rb_stat_rowned(obj))
-	return st->st_mode & S_IRUSR ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IRUSR);
 #endif
 #ifdef S_IRGRP
     if (rb_group_member(get_stat(obj)->st_gid))
-	return st->st_mode & S_IRGRP ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IRGRP);
 #endif
 #ifdef S_IROTH
     if (!(st->st_mode & S_IROTH)) return Qfalse;
@@ -5890,11 +5900,11 @@ rb_stat_w(VALUE obj)
 #endif
 #ifdef S_IWUSR
     if (rb_stat_owned(obj))
-	return st->st_mode & S_IWUSR ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IWUSR);
 #endif
 #ifdef S_IWGRP
     if (rb_stat_grpowned(obj))
-	return st->st_mode & S_IWGRP ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IWGRP);
 #endif
 #ifdef S_IWOTH
     if (!(st->st_mode & S_IWOTH)) return Qfalse;
@@ -5923,11 +5933,11 @@ rb_stat_W(VALUE obj)
 #endif
 #ifdef S_IWUSR
     if (rb_stat_rowned(obj))
-	return st->st_mode & S_IWUSR ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IWUSR);
 #endif
 #ifdef S_IWGRP
     if (rb_group_member(get_stat(obj)->st_gid))
-	return st->st_mode & S_IWGRP ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IWGRP);
 #endif
 #ifdef S_IWOTH
     if (!(st->st_mode & S_IWOTH)) return Qfalse;
@@ -5982,16 +5992,16 @@ rb_stat_x(VALUE obj)
 
 #ifdef USE_GETEUID
     if (geteuid() == 0) {
-	return st->st_mode & S_IXUGO ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IXUGO);
     }
 #endif
 #ifdef S_IXUSR
     if (rb_stat_owned(obj))
-	return st->st_mode & S_IXUSR ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IXUSR);
 #endif
 #ifdef S_IXGRP
     if (rb_stat_grpowned(obj))
-	return st->st_mode & S_IXGRP ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IXGRP);
 #endif
 #ifdef S_IXOTH
     if (!(st->st_mode & S_IXOTH)) return Qfalse;
@@ -6014,16 +6024,16 @@ rb_stat_X(VALUE obj)
 
 #ifdef USE_GETEUID
     if (getuid() == 0) {
-	return st->st_mode & S_IXUGO ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IXUGO);
     }
 #endif
 #ifdef S_IXUSR
     if (rb_stat_rowned(obj))
-	return st->st_mode & S_IXUSR ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IXUSR);
 #endif
 #ifdef S_IXGRP
     if (rb_group_member(get_stat(obj)->st_gid))
-	return st->st_mode & S_IXGRP ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IXGRP);
 #endif
 #ifdef S_IXOTH
     if (!(st->st_mode & S_IXOTH)) return Qfalse;
@@ -6069,11 +6079,13 @@ rb_stat_z(VALUE obj)
 
 /*
  *  call-seq:
- *     state.size    -> integer
+ *     stat.size?    -> Integer or nil
  *
- *  Returns the size of <i>stat</i> in bytes.
+ *  Returns +nil+ if <i>stat</i> is a zero-length file, the size of
+ *  the file otherwise.
  *
- *     File.stat("testfile").size   #=> 66
+ *     File.stat("testfile").size?   #=> 66
+ *     File.stat("/dev/null").size?  #=> nil
  *
  */
 
@@ -6375,6 +6387,10 @@ is_explicit_relative(const char *path)
 static VALUE
 copy_path_class(VALUE path, VALUE orig)
 {
+    int encidx = rb_enc_get_index(orig);
+    if (encidx == ENCINDEX_ASCII || encidx == ENCINDEX_US_ASCII)
+        encidx = rb_filesystem_encindex();
+    rb_enc_associate_index(path, encidx);
     str_shrink(path);
     RBASIC_SET_CLASS(path, rb_obj_class(orig));
     OBJ_FREEZE(path);
@@ -6645,7 +6661,7 @@ const char ruby_null_device[] =
  *  _Contents_
  *
  *  - ::empty? (aliased as ::zero?):: Returns whether the file at the given path
- *                                   exists and is empty.
+ *                                    exists and is empty.
  *  - ::size:: Returns the size (bytes) of the file at the given path.
  *  - ::size?:: Returns +nil+ if there is no file at the given path,
  *              or if that file is empty; otherwise returns the file size (bytes).
@@ -6772,7 +6788,7 @@ Init_File(void)
     rb_define_method(rb_cFile, "mtime", rb_file_mtime, 0);
     rb_define_method(rb_cFile, "ctime", rb_file_ctime, 0);
     rb_define_method(rb_cFile, "birthtime", rb_file_birthtime, 0);
-    rb_define_method(rb_cFile, "size", rb_file_size, 0);
+    rb_define_method(rb_cFile, "size", file_size, 0);
 
     rb_define_method(rb_cFile, "chmod", rb_file_chmod, 1);
     rb_define_method(rb_cFile, "chown", rb_file_chown, 2);

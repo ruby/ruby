@@ -81,6 +81,8 @@ module Bundler
 
         deps = names.map {|name| Dependency.new name, version }
 
+        Bundler.configure_gem_home_and_path(Plugin.root)
+
         definition = Definition.new(nil, deps, source_list, true)
         install_definition(definition)
       end

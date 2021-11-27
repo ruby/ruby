@@ -140,7 +140,7 @@ Both array and hash patterns support "rest" specification:
   end
   #=> "matched"
 
-In +case+ (but not in <code>=></code> and +in+) expressions, parentheses around both kinds of patterns could be omitted:
+Parentheses around both kinds of patterns could be omitted:
 
   case [1, 2]
   in Integer, Integer
@@ -157,6 +157,12 @@ In +case+ (but not in <code>=></code> and +in+) expressions, parentheses around 
     "not matched"
   end
   #=> "matched"
+
+ [1, 2] => a, b
+ [1, 2] in a, b
+
+ {a: 1, b: 2, c: 3} => a:
+ {a: 1, b: 2, c: 3} in a:
 
 Find pattern is similar to array pattern but it can be used to check if the given object has any elements that match the pattern:
 
@@ -441,7 +447,7 @@ Additionally, when matching custom classes, the expected class can be specified 
 
 == Current feature status
 
-As of Ruby 3.0, one-line pattern matching and find patterns are considered _experimental_: its syntax can change in the future. Every time you use these features in code, a warning will be printed:
+As of Ruby 3.1, find patterns are considered _experimental_: its syntax can change in the future. Every time you use these features in code, a warning will be printed:
 
   [0] => [*, 0, *]
   # warning: Find pattern is experimental, and the behavior may change in future versions of Ruby!

@@ -28,9 +28,10 @@ ruby/spec is known to be tested in these implementations for every commit:
 * [JRuby](https://github.com/jruby/jruby/tree/master/spec/ruby) for both 1.7 and 9.x
 * [TruffleRuby](https://github.com/oracle/truffleruby/tree/master/spec/ruby)
 * [Opal](https://github.com/opal/opal/tree/master/spec)
+* [Artichoke](https://github.com/artichoke/spec/tree/artichoke-vendor)
 
-ruby/spec describes the behavior of Ruby 2.5 and more recent Ruby versions.
-More precisely, every latest stable MRI release should [pass](https://github.com/ruby/spec/actions/workflows/ci.yml) all specs of ruby/spec (2.5.x, 2.6.x, 2.7.x, etc), and those are tested in CI.
+ruby/spec describes the behavior of Ruby 2.6 and more recent Ruby versions.
+More precisely, every latest stable MRI release should [pass](https://github.com/ruby/spec/actions/workflows/ci.yml) all specs of ruby/spec (2.6.x, 2.7.x, 3.0.x, etc), and those are tested in CI.
 
 ### Synchronization with Ruby Implementations
 
@@ -57,6 +58,7 @@ For older specs try these commits:
 * Ruby 2.2.10 - [Suite](https://github.com/ruby/spec/commit/cbaa0e412270c944df0c2532fc500c920dba0e92) using [MSpec](https://github.com/ruby/mspec/commit/d84d7668449e96856c5f6bac8cb1526b6d357ce3)
 * Ruby 2.3.8 - [Suite](https://github.com/ruby/spec/commit/dc733114d8ae66a3368ba3a98422c50147a76ba5) using [MSpec](https://github.com/ruby/mspec/commit/4599bc195fb109f2a482a01c32a7d659518369ea)
 * Ruby 2.4.10 - [Suite](https://github.com/ruby/spec/commit/bce4f2b81d6c31db67cf4d023a0625ceadde59bd) using [MSpec](https://github.com/ruby/mspec/commit/e7eb8aa4c26495b7b461e687d950b96eb08b3ff2)
+* Ruby 2.5.9 - [Suite](https://github.com/ruby/spec/commit/c503335d3d9f6ec6ef24de60a0716c34af69b64f) using [MSpec](https://github.com/ruby/mspec/commit/0091e8a62e954717cd54641f935eaf1403692041)
 
 ### Running the specs
 

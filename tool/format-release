@@ -175,8 +175,10 @@ eom
   post: /en/news/#{date.strftime("%Y/%m/%d")}/ruby-#{ver.tr('.', '-')}-released/
 eom
 
-    if ver.end_with?(".0")
+    if /\.0(?:-\w+)\z/ =~ ver
+      # preview, rc, or first release
       entry <<= <<eom
+  tag: ruby_#{ver.tr('.-', '_')}
   stats:
     files_changed: #{files_changed}
     insertions: #{insertions}

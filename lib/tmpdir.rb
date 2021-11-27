@@ -69,7 +69,7 @@ class Dir
   #
   #  Dir.mktmpdir {|dir|
   #    # use the directory...
-  #    open("#{dir}/foo", "w") { ... }
+  #    open("#{dir}/foo", "w") { something using the file }
   #  }
   #
   # If a block is not given,
@@ -79,7 +79,7 @@ class Dir
   #  dir = Dir.mktmpdir
   #  begin
   #    # use the directory...
-  #    open("#{dir}/foo", "w") { ... }
+  #    open("#{dir}/foo", "w") { something using the file }
   #  ensure
   #    # remove the directory.
   #    FileUtils.remove_entry dir

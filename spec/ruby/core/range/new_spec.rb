@@ -62,24 +62,16 @@ describe "Range.new" do
       end
     end
 
-    ruby_version_is ""..."2.6" do
-      it "does not allow range without right boundary" do
-        -> { Range.new(1, nil) }.should raise_error(ArgumentError, /bad value for range/)
-      end
+    it "allows endless right boundary" do
+      range = Range.new(1, nil)
+      range.end.should == nil
     end
 
-    ruby_version_is "2.6" do
-      it "allows endless right boundary" do
-        range = Range.new(1, nil)
-        range.end.should == nil
-      end
+    it "distinguishes ranges with included and excluded right boundary" do
+      range_exclude = Range.new(1, nil, true)
+      range_include = Range.new(1, nil, false)
 
-      it "distinguishes ranges with included and excluded right boundary" do
-        range_exclude = Range.new(1, nil, true)
-        range_include = Range.new(1, nil, false)
-
-        range_exclude.should_not == range_include
-      end
+      range_exclude.should_not == range_include
     end
   end
 end

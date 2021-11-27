@@ -1,3 +1,4 @@
+#!/usr/bin/env ruby
 # sync upstream github repositories to ruby repository
 
 require 'fileutils'
@@ -72,8 +73,11 @@ REPOSITORIES = {
   pathname: "ruby/pathname",
   digest: "ruby/digest",
   error_highlight: "ruby/error_highlight",
+  un: "ruby/un",
+  win32ole: "ruby/win32ole",
 }
 
+# We usually don't use this. Please consider using #sync_default_gems_with_commits instead.
 def sync_default_gems(gem)
   repo = REPOSITORIES[gem.to_sym]
   puts "Sync #{repo}"
@@ -101,11 +105,26 @@ def sync_default_gems(gem)
     cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/rubocop_gems*"), "tool/bundler")
     cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/standard_gems*"), "tool/bundler")
     rm_rf(%w[spec/bundler/support/artifice/vcr_cassettes])
+    license_files = %w[
+      lib/bundler/vendor/thor/LICENSE.md
+      lib/rubygems/resolver/molinillo/LICENSE
+      lib/bundler/vendor/molinillo/LICENSE
+      lib/bundler/vendor/connection_pool/LICENSE
+      lib/bundler/vendor/net-http-persistent/README.rdoc
+      lib/bundler/vendor/fileutils/LICENSE.txt
+      lib/bundler/vendor/tsort/LICENSE.txt
+      lib/bundler/vendor/uri/LICENSE.txt
+      lib/rubygems/optparse/COPYING
+      lib/rubygems/tsort/LICENSE.txt
+    ]
+    rm_rf license_files
   when "rdoc"
     rm_rf(%w[lib/rdoc lib/rdoc.rb test/rdoc libexec/rdoc libexec/ri])
     cp_r(Dir.glob("#{upstream}/lib/rdoc*"), "lib")
     cp_r("#{upstream}/test/rdoc", "test")
     cp_r("#{upstream}/rdoc.gemspec", "lib/rdoc")
+    cp_r("#{upstream}/Gemfile", "lib/rdoc")
+    cp_r("#{upstream}/Rakefile", "lib/rdoc")
     cp_r("#{upstream}/exe/rdoc", "libexec")
     cp_r("#{upstream}/exe/ri", "libexec")
     parser_files = {
@@ -115,6 +134,7 @@ def sync_default_gems(gem)
       'lib/rdoc/rd/inline_parser.ry' => 'lib/rdoc/rd/inline_parser.rb'
     }
     Dir.chdir(upstream) do
+      `bundle install`
       parser_files.each_value do |dst|
         `bundle exec rake #{dst}`
       end
@@ -124,11 +144,19 @@ def sync_default_gems(gem)
       cp_r("#{upstream}/#{dst}", dst)
     end
     `git checkout lib/rdoc/.document`
+    rm_rf(%w[lib/rdoc/Gemfile lib/rdoc/Rakefile])
   when "reline"
     rm_rf(%w[lib/reline lib/reline.rb test/reline])
     cp_r(Dir.glob("#{upstream}/lib/reline*"), "lib")
     cp_r("#{upstream}/test/reline", "test")
     cp_r("#{upstream}/reline.gemspec", "lib/reline")
+  when "irb"
+    rm_rf(%w[lib/irb lib/irb.rb test/irb])
+    cp_r(Dir.glob("#{upstream}/lib/irb*"), "lib")
+    cp_r("#{upstream}/test/irb", "test")
+    cp_r("#{upstream}/irb.gemspec", "lib/irb")
+    cp_r("#{upstream}/man/irb.1", "man/irb.1")
+    cp_r("#{upstream}/doc/irb", "doc")
   when "json"
     rm_rf(%w[ext/json test/json])
     cp_r("#{upstream}/ext/json/ext", "ext/json")
@@ -304,19 +332,34 @@ def sync_default_gems(gem)
   when "digest"
     rm_rf(%w[ext/digest test/digest])
     cp_r("#{upstream}/ext/digest", "ext")
-    mkdir_p("ext/digest/lib")
+    mkdir_p("ext/digest/lib/digest")
     cp_r("#{upstream}/lib/digest.rb", "ext/digest/lib/")
+    cp_r("#{upstream}/lib/digest/version.rb", "ext/digest/lib/digest/")
+    mkdir_p("ext/digest/sha2/lib")
+    cp_r("#{upstream}/lib/digest/sha2.rb", "ext/digest/sha2/lib")
+    move("ext/digest/lib/digest/sha2", "ext/digest/sha2/lib")
     cp_r("#{upstream}/test/digest", "test")
     cp_r("#{upstream}/digest.gemspec", "ext/digest")
     `git checkout ext/digest/depend ext/digest/*/depend`
   when "set"
     sync_lib gem, upstream
     cp_r("#{upstream}/test", ".")
+  when "optparse"
+    sync_lib gem, upstream
+    rm_rf(%w[doc/optparse])
+    mkdir_p("doc/optparse")
+    cp_r("#{upstream}/doc/optparse", "doc")
   when "error_highlight"
     rm_rf(%w[lib/error_highlight lib/error_highlight.rb test/error_highlight])
     cp_r(Dir.glob("#{upstream}/lib/error_highlight*"), "lib")
     cp_r("#{upstream}/error_highlight.gemspec", "lib/error_highlight")
     cp_r("#{upstream}/test", "test/error_highlight")
+  when "win32ole"
+    sync_lib gem, upstream
+    rm_rf(%w[ext/win32ole/lib])
+    Dir.mkdir(*%w[ext/win32ole/lib])
+    move("lib/win32ole/win32ole.gemspec", "ext/win32ole")
+    move(Dir.glob("lib/win32ole*"), "ext/win32ole/lib")
   else
     sync_lib gem, upstream
   end
@@ -342,6 +385,10 @@ def message_filter(repo, sha)
   }
 end
 
+# NOTE: This method is also used by ruby-commit-hook/bin/update-default-gem.sh
+# @param gem [String] A gem name, also used as a git remote name. REPOSITORIES converts it to the appropriate GitHub repository.
+# @param ranges [Array<String>] "before..after". Note that it will NOT sync "before" (but commits after that).
+# @param edit [TrueClass] Set true if you want to resolve conflicts. Obviously, update-default-gem.sh doesn't use this.
 def sync_default_gems_with_commits(gem, ranges, edit: nil)
   repo = REPOSITORIES[gem.to_sym]
   puts "Sync #{repo} with commit history."
@@ -364,7 +411,7 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
       range = "#{range}~1..#{range}"
     end
 
-    IO.popen(%W"git log --format=%H,%s #{range}") do |f|
+    IO.popen(%W"git log --format=%H,%s #{range} --") do |f|
       f.read.split("\n").reverse.map{|commit| commit.split(',', 2)}
     end
   end
@@ -377,7 +424,7 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
 
   if commits.empty?
     puts "No commits to pick"
-    return
+    return true
   end
 
   puts "Try to pick these commits:"
@@ -452,7 +499,9 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
   unless failed_commits.empty?
     puts "---- failed commits ----"
     puts failed_commits
+    return false
   end
+  return true
 end
 
 def sync_lib(repo, upstream = nil)
@@ -561,9 +610,9 @@ else
   end
   gem = ARGV.shift
   if ARGV[0]
-    sync_default_gems_with_commits(gem, ARGV, edit: edit)
+    exit sync_default_gems_with_commits(gem, ARGV, edit: edit)
   elsif auto
-    sync_default_gems_with_commits(gem, true, edit: edit)
+    exit sync_default_gems_with_commits(gem, true, edit: edit)
   else
     sync_default_gems(gem)
   end

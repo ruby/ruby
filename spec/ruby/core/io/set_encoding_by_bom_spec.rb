@@ -67,5 +67,11 @@ describe "IO#set_encoding_by_bom" do
 
       -> { @io.set_encoding_by_bom }.should raise_error(ArgumentError, 'encoding is set to UTF-8 already')
     end
+
+    it 'returns exception if encoding conversion is already set' do
+      @io.set_encoding(Encoding::UTF_8, Encoding::UTF_16BE)
+
+      -> { @io.set_encoding_by_bom }.should raise_error(ArgumentError, 'encoding conversion is set')
+    end
   end
 end

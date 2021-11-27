@@ -386,38 +386,64 @@ MESSAGE
     end
   end
 
-  def xsystem command, opts = nil
+  def expand_command(commands, envs = libpath_env)
     varpat = /\$\((\w+)\)|\$\{(\w+)\}/
-    if varpat =~ command
-      vars = Hash.new {|h, k| h[k] = ENV[k]}
-      command = command.dup
-      nil while command.gsub!(varpat) {vars[$1||$2]}
+    vars = nil
+    expand = proc do |command|
+      case command
+      when Array
+        command.map(&expand)
+      when String
+        if varpat =~ command
+          vars ||= Hash.new {|h, k| h[k] = ENV[k]}
+          command = command.dup
+          nil while command.gsub!(varpat) {vars[$1||$2]}
+        end
+        command
+      else
+        command
+      end
     end
+    if Array === commands
+      env, *commands = commands if Hash === commands.first
+      envs.merge!(env) if env
+    end
+    return envs, expand[commands]
+  end
+
+  def env_quote(envs)
+    envs.map {|e, v| "#{e}=#{v.quote}"}
+  end
+
+  def xsystem command, opts = nil
+    env, command = expand_command(command)
     Logging::open do
-      puts command.quote
+      puts [env_quote(env), command.quote].join(' ')
       if opts and opts[:werror]
         result = nil
         Logging.postpone do |log|
-          output = IO.popen(libpath_env, command, &:read)
+          output = IO.popen(env, command, &:read)
           result = ($?.success? and File.zero?(log.path))
           output
         end
         result
       else
-        system(libpath_env, command)
+        system(env, *command)
       end
     end
   end
 
   def xpopen command, *mode, &block
+    env, commands = expand_command(command)
+    command = [env_quote(env), command].join(' ')
     Logging::open do
       case mode[0]
-      when nil, /^r/
+      when nil, Hash, /^r/
         puts "#{command} |"
       else
         puts "| #{command}"
       end
-      IO.popen(libpath_env, command, *mode, &block)
+      IO.popen(env, commands, *mode, &block)
     end
   end
 
@@ -447,7 +473,7 @@ EOM
     src.sub!(/[^\n]\z/, "\\&\n")
     count = 0
     begin
-      open(conftest_source, "wb") do |cfile|
+      File.open(conftest_source, "wb") do |cfile|
         cfile.print src
       end
     rescue Errno::EACCES
@@ -771,11 +797,20 @@ int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const
   #             files.
   def try_func(func, libs, headers = nil, opt = "", &b)
     headers = cpp_include(headers)
+    prepare = String.new
     case func
     when /^&/
       decltype = proc {|x|"const volatile void *#{x}"}
     when /\)$/
-      call = func
+      strvars = []
+      call = func.gsub(/""/) {
+        v = "s#{strvars.size + 1}"
+        strvars << v
+        v
+      }
+      unless strvars.empty?
+        prepare << "char " << strvars.map {|v| "#{v}[1024]"}.join(", ") << "; "
+      end
     when nil
       call = ""
     else
@@ -805,26 +840,18 @@ SRC
 extern int t(void);
 #{MAIN_DOES_NOTHING 't'}
 #{"extern void #{call};" if decltype}
-int t(void) { #{call}; return 0; }
+int t(void) { #{prepare}#{call}; return 0; }
 SRC
   end
 
   # You should use +have_var+ rather than +try_var+.
   def try_var(var, headers = nil, opt = "", &b)
     headers = cpp_include(headers)
-    try_compile(<<"SRC", opt, &b) or
+    try_compile(<<"SRC", opt, &b)
 #{headers}
 /*top*/
 extern int t(void);
 #{MAIN_DOES_NOTHING 't'}
-int t(void) { const volatile void *volatile p; p = &(&#{var})[0]; return !p; }
-SRC
-    try_link(<<"SRC", opt, &b)
-#{headers}
-/*top*/
-extern int t(void);
-#{MAIN_DOES_NOTHING 't'}
-extern int #{var};
 int t(void) { const volatile void *volatile p; p = &(&#{var})[0]; return !p; }
 SRC
   end
@@ -1737,7 +1764,7 @@ SRC
     hdr = hdr.join("")
     log_src(hdr, "#{header} is")
     unless (IO.read(header) == hdr rescue false)
-      open(header, "wb") do |hfile|
+      File.open(header, "wb") do |hfile|
         hfile.write(hdr)
       end
     end
@@ -1829,16 +1856,24 @@ SRC
   # invoked with the option and a stripped output string is returned
   # without modifying any of the global values mentioned above.
   def pkg_config(pkg, option=nil)
+    _, ldir = dir_config(pkg)
+    if ldir
+      pkg_config_path = "#{ldir}/pkgconfig"
+      if File.directory?(pkg_config_path)
+        Logging.message("PKG_CONFIG_PATH = %s\n", pkg_config_path)
+        envs = ["PKG_CONFIG_PATH"=>[pkg_config_path, ENV["PKG_CONFIG_PATH"]].compact.join(File::PATH_SEPARATOR)]
+      end
+    end
     if pkgconfig = with_config("#{pkg}-config") and find_executable0(pkgconfig)
       # if and only if package specific config command is given
     elsif ($PKGCONFIG ||=
            (pkgconfig = with_config("pkg-config", ("pkg-config" unless CROSS_COMPILING))) &&
            find_executable0(pkgconfig) && pkgconfig) and
-        xsystem("#{$PKGCONFIG} --exists #{pkg}")
+        xsystem([*envs, $PKGCONFIG, "--exists", pkg])
       # default to pkg-config command
       pkgconfig = $PKGCONFIG
       get = proc {|opt|
-        opt = xpopen("#{$PKGCONFIG} --#{opt} #{pkg}", err:[:child, :out], &:read)
+        opt = xpopen([*envs, $PKGCONFIG, "--#{opt}", pkg], err:[:child, :out], &:read)
         Logging.open {puts opt.each_line.map{|s|"=> #{s.inspect}"}}
         opt.strip if $?.success?
       }
@@ -1849,7 +1884,7 @@ SRC
     end
     if pkgconfig
       get ||= proc {|opt|
-        opt = xpopen("#{pkgconfig} --#{opt}", err:[:child, :out], &:read)
+        opt = xpopen([*envs, pkgconfig, "--#{opt}"], err:[:child, :out], &:read)
         Logging.open {puts opt.each_line.map{|s|"=> #{s.inspect}"}}
         opt.strip if $?.success?
       }
@@ -2349,7 +2384,7 @@ CLEANOBJS     = *.#{$OBJEXT} #{config_string('cleanobjs') {|t| t.gsub(/\$\*/, "$
 " #"
 
     conf = yield(conf) if block_given?
-    mfile = open("Makefile", "wb")
+    mfile = File.open("Makefile", "wb")
     mfile.puts(conf)
     mfile.print "
 all:    #{$extout ? "install" : target ? "$(DLLIB)" : "Makefile"}

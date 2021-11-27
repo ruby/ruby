@@ -123,14 +123,7 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
 
     assert_equal true, req.verify([@cert], store, OpenSSL::OCSP::NOINTERN)
     ret = req.verify([@cert], store)
-    if ret || openssl?(1, 0, 2)
-      assert_equal true, ret
-    else
-      # RT2560; OCSP_request_verify() does not find signer cert from 'certs' when
-      # OCSP_NOINTERN is not specified.
-      # fixed by OpenSSL 1.0.1j, 1.0.2
-      pend "RT2560: ocsp_req_find_signer"
-    end
+    assert_equal true, ret
 
     # not signed
     req = OpenSSL::OCSP::Request.new.add_certid(cid)

@@ -190,7 +190,8 @@ def string2cstr(rstring):
         cptr = int(rstring.GetValueForExpressionPath(".as.heap.ptr").value, 0)
         clen = int(rstring.GetValueForExpressionPath(".as.heap.len").value, 0)
     else:
-        cptr = int(rstring.GetValueForExpressionPath(".as.ary").location, 0)
+        cptr = int(rstring.GetValueForExpressionPath(".as.embed.ary").location, 0)
+        # clen = int(rstring.GetValueForExpressionPath(".as.embed.len").value, 0)
         clen = (flags & RSTRING_EMBED_LEN_MASK) >> RSTRING_EMBED_LEN_SHIFT
     return cptr, clen
 
@@ -287,6 +288,12 @@ def lldb_inspect(debugger, target, result, val):
             append_command_output(debugger, "print *(struct RClass*)%0#x" % val.GetValueAsUnsigned(), result)
         elif flType == RUBY_T_STRING:
             result.write('T_STRING: %s' % flaginfo)
+            encidx = ((flags & RUBY_ENCODING_MASK)>>RUBY_ENCODING_SHIFT)
+            encname = target.FindFirstType("enum ruby_preserved_encindex").GetEnumMembers().GetTypeEnumMemberAtIndex(encidx).GetName()
+            if encname is not None:
+                result.write('[%s] ' % encname[14:])
+            else:
+                result.write('[enc=%d] ' % encidx)
             tRString = target.FindFirstType("struct RString").GetPointerType()
             ptr, len = string2cstr(val.Cast(tRString))
             if len == 0:
@@ -309,7 +316,6 @@ def lldb_inspect(debugger, target, result, val):
             else:
                 len = val.GetValueForExpressionPath("->as.heap.len").GetValueAsSigned()
                 ptr = val.GetValueForExpressionPath("->as.heap.ptr")
-                #print(val.GetValueForExpressionPath("->as.heap"), file=result)
             result.write("T_ARRAY: %slen=%d" % (flaginfo, len))
             if flags & RUBY_FL_USER1:
                 result.write(" (embed)")
@@ -330,9 +336,6 @@ def lldb_inspect(debugger, target, result, val):
         elif flType == RUBY_T_HASH:
             result.write("T_HASH: %s" % flaginfo)
             append_command_output(debugger, "p *(struct RHash *) %0#x" % val.GetValueAsUnsigned(), result)
-        elif flType == RUBY_T_PAYLOAD:
-            result.write("T_PAYLOAD: %s" % flaginfo)
-            append_command_output(debugger, "p *(struct RPayload *) %0#x" % val.GetValueAsUnsigned(), result)
         elif flType == RUBY_T_BIGNUM:
             tRBignum = target.FindFirstType("struct RBignum").GetPointerType()
             val = val.Cast(tRBignum)
@@ -536,14 +539,15 @@ class HeapPageIter:
         self.target = target
         self.start = page.GetChildMemberWithName('start').GetValueAsUnsigned();
         self.num_slots = page.GetChildMemberWithName('total_slots').unsigned
+        self.slot_size = page.GetChildMemberWithName('size_pool').GetChildMemberWithName('slot_size').unsigned
         self.counter = 0
         self.tRBasic = target.FindFirstType("struct RBasic")
         self.tRValue = target.FindFirstType("struct RVALUE")
 
     def is_valid(self):
         heap_page_header_size = self.target.FindFirstType("struct heap_page_header").GetByteSize()
-        rvalue_size = self.tRValue.GetByteSize()
-        heap_page_obj_limit = int((HEAP_PAGE_SIZE - heap_page_header_size) / rvalue_size)
+        rvalue_size = self.slot_size
+        heap_page_obj_limit = int((HEAP_PAGE_SIZE - heap_page_header_size) / self.slot_size)
 
         return (heap_page_obj_limit - 1) <= self.num_slots <= heap_page_obj_limit
 
@@ -552,7 +556,7 @@ class HeapPageIter:
 
     def __next__(self):
         if self.counter < self.num_slots:
-            obj_addr_i = self.start + (self.counter * self.tRValue.GetByteSize())
+            obj_addr_i = self.start + (self.counter * self.slot_size)
             obj_addr = lldb.SBAddress(obj_addr_i, self.target)
             slot_info = (self.counter, obj_addr_i, self.target.CreateValueFromAddress("object", obj_addr, self.tRBasic))
             self.counter += 1

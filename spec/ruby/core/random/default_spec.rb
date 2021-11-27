@@ -1,7 +1,6 @@
 require_relative '../../spec_helper'
 
 describe "Random::DEFAULT" do
-
   it "returns a random number generator" do
     suppress_warning do
       Random::DEFAULT.should respond_to(:rand)

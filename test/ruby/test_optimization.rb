@@ -150,6 +150,64 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_redefine_method('String', '-@', 'assert_nil(-"foo")')
   end
 
+  def test_array_min
+    assert_equal 1, [1, 2, 4].min
+    assert_redefine_method('Array', 'min', 'assert_nil([1, 2, 4].min)')
+    assert_redefine_method('Array', 'min', 'assert_nil([1 + 0, 2, 4].min)')
+  end
+
+  def test_array_max
+    assert_equal 4, [1, 2, 4].max
+    assert_redefine_method('Array', 'max', 'assert_nil([1, 2, 4].max)')
+    assert_redefine_method('Array', 'max', 'assert_nil([1 + 0, 2, 4].max)')
+  end
+
+  def test_trace_optimized_methods
+    bug14870 = "[ruby-core:87638]"
+    expected = [:-@, :max, :min, :+, :-, :*, :/, :%, :==, :<, :<=, :>, :>=, :<<,
+                :&, :|, :[], :[]=, :length, :empty?, :nil?, :succ, :!, :=~]
+    [:c_call, :c_return].each do |type|
+      methods = []
+      tp = TracePoint.new(type) { |tp| methods << tp.method_id }
+      tp.enable do
+        x = "a"; x = -x
+        [1].max
+        [1].min
+        x = 42 + 2
+        x = 42 - 2
+        x = 42 * 2
+        x = 42 / 2
+        x = 42 % 2
+        y = x == 42
+        y = x < 42
+        y = x <= 42
+        y = x > 42
+        y = x >= 42
+        x = x << 1
+        x = x & 1
+        x = x | 1
+        x = []; x[1]
+        x[1] = 2
+        x.length
+        x.empty?
+        x.nil?
+        x = 1; x.succ
+        !x
+        x = 'a'; x =~ /a/
+        x = y
+      end
+      assert_equal(expected, methods, bug14870)
+    end
+
+    methods = []
+    tp = TracePoint.new(:c_call, :c_return) { |tp| methods << tp.method_id }
+    tp.enable do
+      x = 1
+      x != 42
+    end
+    assert_equal([:!=, :==, :==, :!=], methods, bug14870)
+  end
+
   def test_string_freeze_saves_memory
     n = 16384
     data = '.'.freeze
@@ -844,5 +902,35 @@ class TestRubyOptimization < Test::Unit::TestCase
 
       raise  "END"
     end;
+  end
+
+  class Objtostring
+  end
+
+  def test_objtostring
+    assert_raise(NoMethodError){"#{BasicObject.new}"}
+    assert_redefine_method('Symbol', 'to_s', <<-'end')
+      assert_match %r{\A#<Symbol:0x[0-9a-f]+>\z}, "#{:foo}"
+    end
+    assert_redefine_method('NilClass', 'to_s', <<-'end')
+      assert_match %r{\A#<NilClass:0x[0-9a-f]+>\z}, "#{nil}"
+    end
+    assert_redefine_method('TrueClass', 'to_s', <<-'end')
+      assert_match %r{\A#<TrueClass:0x[0-9a-f]+>\z}, "#{true}"
+    end
+    assert_redefine_method('FalseClass', 'to_s', <<-'end')
+      assert_match %r{\A#<FalseClass:0x[0-9a-f]+>\z}, "#{false}"
+    end
+    assert_redefine_method('Integer', 'to_s', <<-'end')
+      (-1..10).each { |i|
+        assert_match %r{\A#<Integer:0x[0-9a-f]+>\z}, "#{i}"
+      }
+    end
+    assert_equal "TestRubyOptimization::Objtostring", "#{Objtostring}"
+    assert_match %r{\A#<Class:0x[0-9a-f]+>\z}, "#{Class.new}"
+    assert_match %r{\A#<Module:0x[0-9a-f]+>\z}, "#{Module.new}"
+    o = Object.new
+    def o.to_s; 1; end
+    assert_match %r{\A#<Object:0x[0-9a-f]+>\z}, "#{o}"
   end
 end

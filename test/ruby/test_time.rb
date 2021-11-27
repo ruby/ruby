@@ -39,6 +39,7 @@ class TestTime < Test::Unit::TestCase
   def test_new
     assert_equal(Time.utc(2000,2,10), Time.new(2000,2,10, 11,0,0, 3600*11))
     assert_equal(Time.utc(2000,2,10), Time.new(2000,2,9, 13,0,0, -3600*11))
+    assert_equal(Time.utc(2000,2,29,23,0,0), Time.new(2000, 3, 1, 0, 0, 0, 3600))
     assert_equal(Time.utc(2000,2,10), Time.new(2000,2,10, 11,0,0, "+11:00"))
     assert_equal(Rational(1,2), Time.new(2000,2,10, 11,0,5.5, "+11:00").subsec)
     bug4090 = '[ruby-dev:42631]'
@@ -110,7 +111,7 @@ class TestTime < Test::Unit::TestCase
       assert_equal(946684800, Time.utc(2000, 1, 1, 0, 0, 0).tv_sec)
 
       # Giveup to try 2nd test because some state is changed.
-      skip if Minitest::Unit.current_repeat_count > 0
+      skip if Test::Unit::Runner.current_repeat_count > 0
 
       assert_equal(0x7fffffff, Time.utc(2038, 1, 19, 3, 14, 7).tv_sec)
       assert_equal(0x80000000, Time.utc(2038, 1, 19, 3, 14, 8).tv_sec)
@@ -238,6 +239,10 @@ class TestTime < Test::Unit::TestCase
     assert_equal(100, Time.at(0, 0.1).nsec)
     assert_equal(10, Time.at(0, 0.01).nsec)
     assert_equal(1, Time.at(0, 0.001).nsec)
+  end
+
+  def test_at_splat
+    assert_equal(Time.at(1, 2), Time.at(*[1, 2]))
   end
 
   def test_at_with_unit
@@ -1168,7 +1173,7 @@ class TestTime < Test::Unit::TestCase
 
   def test_2038
     # Giveup to try 2nd test because some state is changed.
-    skip if Minitest::Unit.current_repeat_count > 0
+    skip if Test::Unit::Runner.current_repeat_count > 0
 
     if no_leap_seconds?
       assert_equal(0x80000000, Time.utc(2038, 1, 19, 3, 14, 8).tv_sec)
@@ -1279,22 +1284,6 @@ class TestTime < Test::Unit::TestCase
     assert_equal("365", t.strftime("%j"))
     t = Time.utc(2017, 1, 1, 1, 0, 0).getlocal("-05:00")
     assert_equal("366", t.strftime("%j"))
-  end
-
-  def test_strftime_no_hidden_garbage
-    skip unless Thread.list.size == 1
-
-    fmt = %w(Y m d).map { |x| "%#{x}" }.join('-') # defeats optimization
-    t = Time.at(0).getutc
-    ObjectSpace.count_objects(res = {}) # creates strings on first call
-    GC.disable
-    before = ObjectSpace.count_objects(res)[:T_STRING]
-    val = t.strftime(fmt)
-    after = ObjectSpace.count_objects(res)[:T_STRING]
-    assert_equal before + 1, after, 'only new string is the created one'
-    assert_equal '1970-01-01', val
-  ensure
-    GC.enable
   end
 
   def test_num_exact_error

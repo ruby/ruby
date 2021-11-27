@@ -261,6 +261,18 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_overwrite_ENV
+    assert_separately([],"#{<<~"begin;"}\n#{<<~"end;"}")
+    BUG = "[ruby-core:105223] [Bug #18164]"
+    begin;
+      $VERBOSE = nil
+      ENV = {}
+      pid = spawn({}, *#{TRUECOMMAND.inspect})
+      ENV.replace({})
+      assert_kind_of(Integer, pid, BUG)
+    end;
+  end
+
   MANDATORY_ENVS = %w[RUBYLIB MJIT_SEARCH_BUILD_DIR]
   case RbConfig::CONFIG['target_os']
   when /linux/
@@ -1720,6 +1732,9 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_no_curdir
+    if /solaris/i =~ RUBY_PLATFORM
+      skip "Temporary skip to avoid CI failures after commit to use realpath on required files"
+    end
     with_tmpchdir {|d|
       Dir.mkdir("vd")
       status = nil
@@ -2530,4 +2545,96 @@ EOS
     end
     assert_empty(Process.waitall)
   end
+
+  def test__fork
+    r, w = IO.pipe
+    pid = Process._fork
+    if pid == 0
+      begin
+        r.close
+        w << "ok: #$$"
+        w.close
+      ensure
+        exit!
+      end
+    else
+      w.close
+      assert_equal("ok: #{pid}", r.read)
+      r.close
+      Process.waitpid(pid)
+    end
+  end if Process.respond_to?(:_fork)
+
+  def test__fork_hook
+    %w(fork Process.fork).each do |method|
+      feature17795 = '[ruby-core:103400] [Feature #17795]'
+      assert_in_out_err([], <<-"end;", [], [], feature17795, timeout: 60) do |r, e|
+        module ForkHook
+          def _fork
+            p :before
+            ret = super
+            p :after
+            ret
+          end
+        end
+
+        Process.singleton_class.prepend(ForkHook)
+
+        pid = #{ method }
+        p pid
+        Process.waitpid(pid) if pid
+      end;
+        assert_equal([], e)
+        assert_equal(":before", r.shift)
+        assert_equal(":after", r.shift)
+        s = r.map {|s| s.chomp }.sort #=> [pid, ":after", "nil"]
+        assert_match(/^\d+$/, s[0]) # pid
+        assert_equal(":after", s[1])
+        assert_equal("nil", s[2])
+      end
+    end
+  end if Process.respond_to?(:_fork)
+
+  def test__fork_hook_popen
+    feature17795 = '[ruby-core:103400] [Feature #17795]'
+    assert_in_out_err([], <<-"end;", %w(:before :after :after foo bar), [], feature17795, timeout: 60)
+      module ForkHook
+        def _fork
+          p :before
+          ret = super
+          p :after
+          ret
+        end
+      end
+
+      Process.singleton_class.prepend(ForkHook)
+
+      IO.popen("-") {|io|
+        if !io
+          puts "foo"
+        else
+          puts io.read + "bar"
+        end
+      }
+    end;
+  end if Process.respond_to?(:_fork)
+
+  def test__fork_wrong_type_hook
+    feature17795 = '[ruby-core:103400] [Feature #17795]'
+    assert_in_out_err([], <<-"end;", ["OK"], [], feature17795, timeout: 60)
+      module ForkHook
+        def _fork
+          "BOO"
+        end
+      end
+
+      Process.singleton_class.prepend(ForkHook)
+
+      begin
+        fork
+      rescue TypeError
+        puts "OK"
+      end
+    end;
+  end if Process.respond_to?(:_fork)
 end

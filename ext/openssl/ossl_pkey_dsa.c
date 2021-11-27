@@ -46,126 +46,39 @@ VALUE eDSAError;
 /*
  * Private
  */
-struct dsa_blocking_gen_arg {
-    DSA *dsa;
-    int size;
-    int *counter;
-    unsigned long *h;
-    BN_GENCB *cb;
-    int result;
-};
-
-static void *
-dsa_blocking_gen(void *arg)
-{
-    struct dsa_blocking_gen_arg *gen = (struct dsa_blocking_gen_arg *)arg;
-    gen->result = DSA_generate_parameters_ex(gen->dsa, gen->size, NULL, 0,
-					     gen->counter, gen->h, gen->cb);
-    return 0;
-}
-
-static DSA *
-dsa_generate(int size)
-{
-    struct ossl_generate_cb_arg cb_arg = { 0 };
-    struct dsa_blocking_gen_arg gen_arg;
-    DSA *dsa = DSA_new();
-    BN_GENCB *cb = BN_GENCB_new();
-    int counter;
-    unsigned long h;
-
-    if (!dsa || !cb) {
-        DSA_free(dsa);
-        BN_GENCB_free(cb);
-        ossl_raise(eDSAError, "malloc failure");
-    }
-
-    if (rb_block_given_p())
-	cb_arg.yield = 1;
-    BN_GENCB_set(cb, ossl_generate_cb_2, &cb_arg);
-    gen_arg.dsa = dsa;
-    gen_arg.size = size;
-    gen_arg.counter = &counter;
-    gen_arg.h = &h;
-    gen_arg.cb = cb;
-    if (cb_arg.yield == 1) {
-	/* we cannot release GVL when callback proc is supplied */
-	dsa_blocking_gen(&gen_arg);
-    } else {
-	/* there's a chance to unblock */
-	rb_thread_call_without_gvl(dsa_blocking_gen, &gen_arg, ossl_generate_cb_stop, &cb_arg);
-    }
-
-    BN_GENCB_free(cb);
-    if (!gen_arg.result) {
-	DSA_free(dsa);
-	if (cb_arg.state) {
-	    /* Clear OpenSSL error queue before re-raising. By the way, the
-	     * documentation of DSA_generate_parameters_ex() says the error code
-	     * can be obtained by ERR_get_error(), but the default
-	     * implementation, dsa_builtin_paramgen() doesn't put any error... */
-	    ossl_clear_error();
-	    rb_jump_tag(cb_arg.state);
-	}
-        ossl_raise(eDSAError, "DSA_generate_parameters_ex");
-    }
-
-    if (!DSA_generate_key(dsa)) {
-        DSA_free(dsa);
-        ossl_raise(eDSAError, "DSA_generate_key");
-    }
-
-    return dsa;
-}
-
-/*
- *  call-seq:
- *    DSA.generate(size) -> dsa
- *
- * Creates a new DSA instance by generating a private/public key pair
- * from scratch.
- *
- * === Parameters
- * * _size_ is an integer representing the desired key size.
- *
- */
-static VALUE
-ossl_dsa_s_generate(VALUE klass, VALUE size)
-{
-    EVP_PKEY *pkey;
-    DSA *dsa;
-    VALUE obj;
-
-    obj = rb_obj_alloc(klass);
-    GetPKey(obj, pkey);
-
-    dsa = dsa_generate(NUM2INT(size));
-    if (!EVP_PKEY_assign_DSA(pkey, dsa)) {
-        DSA_free(dsa);
-        ossl_raise(eDSAError, "EVP_PKEY_assign_DSA");
-    }
-    return obj;
-}
-
 /*
  *  call-seq:
  *    DSA.new -> dsa
- *    DSA.new(size) -> dsa
  *    DSA.new(string [, pass]) -> dsa
+ *    DSA.new(size) -> dsa
  *
  * Creates a new DSA instance by reading an existing key from _string_.
  *
- * === Parameters
- * * _size_ is an integer representing the desired key size.
- * * _string_ contains a DER or PEM encoded key.
- * * _pass_ is a string that contains an optional password.
+ * If called without arguments, creates a new instance with no key components
+ * set. They can be set individually by #set_pqg and #set_key.
  *
- * === Examples
- *  DSA.new -> dsa
- *  DSA.new(1024) -> dsa
- *  DSA.new(File.read('dsa.pem')) -> dsa
- *  DSA.new(File.read('dsa.pem'), 'mypassword') -> dsa
+ * If called with a String, tries to parse as DER or PEM encoding of a \DSA key.
+ * See also OpenSSL::PKey.read which can parse keys of any kinds.
  *
+ * If called with a number, generates random parameters and a key pair. This
+ * form works as an alias of DSA.generate.
+ *
+ * +string+::
+ *   A String that contains a DER or PEM encoded key.
+ * +pass+::
+ *   A String that contains an optional password.
+ * +size+::
+ *   See DSA.generate.
+ *
+ * Examples:
+ *   p OpenSSL::PKey::DSA.new(1024)
+ *   #=> #<OpenSSL::PKey::DSA:0x000055a8d6025bf0 oid=DSA>
+ *
+ *   p OpenSSL::PKey::DSA.new(File.read('dsa.pem'))
+ *   #=> #<OpenSSL::PKey::DSA:0x000055555d6b8110 oid=DSA>
+ *
+ *   p OpenSSL::PKey::DSA.new(File.read('dsa.pem'), 'mypassword')
+ *   #=> #<OpenSSL::PKey::DSA:0x0000556f973c40b8 oid=DSA>
  */
 static VALUE
 ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
@@ -176,14 +89,12 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
     VALUE arg, pass;
 
     GetPKey(self, pkey);
+    /* The DSA.new(size, generator) form is handled by lib/openssl/pkey.rb */
     rb_scan_args(argc, argv, "02", &arg, &pass);
     if (argc == 0) {
         dsa = DSA_new();
         if (!dsa)
             ossl_raise(eDSAError, "DSA_new");
-    }
-    else if (argc == 1 && RB_INTEGER_TYPE_P(arg)) {
-        dsa = dsa_generate(NUM2INT(arg));
     }
     else {
 	pass = ossl_pem_passwd_value(pass);
@@ -354,161 +265,6 @@ ossl_dsa_get_params(VALUE self)
 }
 
 /*
- *  call-seq:
- *    dsa.to_text -> aString
- *
- * Prints all parameters of key to buffer
- * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
- * Don't use :-)) (I's up to you)
- */
-static VALUE
-ossl_dsa_to_text(VALUE self)
-{
-    DSA *dsa;
-    BIO *out;
-    VALUE str;
-
-    GetDSA(self, dsa);
-    if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eDSAError, NULL);
-    }
-    if (!DSA_print(out, dsa, 0)) { /* offset = 0 */
-	BIO_free(out);
-	ossl_raise(eDSAError, NULL);
-    }
-    str = ossl_membio2str(out);
-
-    return str;
-}
-
-/*
- *  call-seq:
- *    dsa.public_key -> aDSA
- *
- * Returns a new DSA instance that carries just the public key information.
- * If the current instance has also private key information, this will no
- * longer be present in the new instance. This feature is helpful for
- * publishing the public key information without leaking any of the private
- * information.
- *
- * === Example
- *  dsa = OpenSSL::PKey::DSA.new(2048) # has public and private information
- *  pub_key = dsa.public_key # has only the public part available
- *  pub_key_der = pub_key.to_der # it's safe to publish this
- *
- *
- */
-static VALUE
-ossl_dsa_to_public_key(VALUE self)
-{
-    EVP_PKEY *pkey, *pkey_new;
-    DSA *dsa;
-    VALUE obj;
-
-    GetPKeyDSA(self, pkey);
-    obj = rb_obj_alloc(rb_obj_class(self));
-    GetPKey(obj, pkey_new);
-
-#define DSAPublicKey_dup(dsa) (DSA *)ASN1_dup( \
-	(i2d_of_void *)i2d_DSAPublicKey, (d2i_of_void *)d2i_DSAPublicKey, (char *)(dsa))
-    dsa = DSAPublicKey_dup(EVP_PKEY_get0_DSA(pkey));
-#undef DSAPublicKey_dup
-    if (!dsa)
-        ossl_raise(eDSAError, "DSAPublicKey_dup");
-    if (!EVP_PKEY_assign_DSA(pkey_new, dsa)) {
-        DSA_free(dsa);
-        ossl_raise(eDSAError, "EVP_PKEY_assign_DSA");
-    }
-    return obj;
-}
-
-/*
- *  call-seq:
- *    dsa.syssign(string) -> aString
- *
- * Computes and returns the DSA signature of _string_, where _string_ is
- * expected to be an already-computed message digest of the original input
- * data. The signature is issued using the private key of this DSA instance.
- *
- * === Parameters
- * * _string_ is a message digest of the original input data to be signed.
- *
- * === Example
- *  dsa = OpenSSL::PKey::DSA.new(2048)
- *  doc = "Sign me"
- *  digest = OpenSSL::Digest.digest('SHA1', doc)
- *  sig = dsa.syssign(digest)
- *
- *
- */
-static VALUE
-ossl_dsa_sign(VALUE self, VALUE data)
-{
-    DSA *dsa;
-    const BIGNUM *dsa_q;
-    unsigned int buf_len;
-    VALUE str;
-
-    GetDSA(self, dsa);
-    DSA_get0_pqg(dsa, NULL, &dsa_q, NULL);
-    if (!dsa_q)
-	ossl_raise(eDSAError, "incomplete DSA");
-    if (!DSA_PRIVATE(self, dsa))
-	ossl_raise(eDSAError, "Private DSA key needed!");
-    StringValue(data);
-    str = rb_str_new(0, DSA_size(dsa));
-    if (!DSA_sign(0, (unsigned char *)RSTRING_PTR(data), RSTRING_LENINT(data),
-		  (unsigned char *)RSTRING_PTR(str),
-		  &buf_len, dsa)) { /* type is ignored (0) */
-	ossl_raise(eDSAError, NULL);
-    }
-    rb_str_set_len(str, buf_len);
-
-    return str;
-}
-
-/*
- *  call-seq:
- *    dsa.sysverify(digest, sig) -> true | false
- *
- * Verifies whether the signature is valid given the message digest input. It
- * does so by validating _sig_ using the public key of this DSA instance.
- *
- * === Parameters
- * * _digest_ is a message digest of the original input data to be signed
- * * _sig_ is a DSA signature value
- *
- * === Example
- *  dsa = OpenSSL::PKey::DSA.new(2048)
- *  doc = "Sign me"
- *  digest = OpenSSL::Digest.digest('SHA1', doc)
- *  sig = dsa.syssign(digest)
- *  puts dsa.sysverify(digest, sig) # => true
- *
- */
-static VALUE
-ossl_dsa_verify(VALUE self, VALUE digest, VALUE sig)
-{
-    DSA *dsa;
-    int ret;
-
-    GetDSA(self, dsa);
-    StringValue(digest);
-    StringValue(sig);
-    /* type is ignored (0) */
-    ret = DSA_verify(0, (unsigned char *)RSTRING_PTR(digest), RSTRING_LENINT(digest),
-		     (unsigned char *)RSTRING_PTR(sig), RSTRING_LENINT(sig), dsa);
-    if (ret < 0) {
-	ossl_raise(eDSAError, NULL);
-    }
-    else if (ret == 1) {
-	return Qtrue;
-    }
-
-    return Qfalse;
-}
-
-/*
  * Document-method: OpenSSL::PKey::DSA#set_pqg
  * call-seq:
  *   dsa.set_pqg(p, q, g) -> self
@@ -553,20 +309,15 @@ Init_ossl_dsa(void)
      */
     cDSA = rb_define_class_under(mPKey, "DSA", cPKey);
 
-    rb_define_singleton_method(cDSA, "generate", ossl_dsa_s_generate, 1);
     rb_define_method(cDSA, "initialize", ossl_dsa_initialize, -1);
     rb_define_method(cDSA, "initialize_copy", ossl_dsa_initialize_copy, 1);
 
     rb_define_method(cDSA, "public?", ossl_dsa_is_public, 0);
     rb_define_method(cDSA, "private?", ossl_dsa_is_private, 0);
-    rb_define_method(cDSA, "to_text", ossl_dsa_to_text, 0);
     rb_define_method(cDSA, "export", ossl_dsa_export, -1);
     rb_define_alias(cDSA, "to_pem", "export");
     rb_define_alias(cDSA, "to_s", "export");
     rb_define_method(cDSA, "to_der", ossl_dsa_to_der, 0);
-    rb_define_method(cDSA, "public_key", ossl_dsa_to_public_key, 0);
-    rb_define_method(cDSA, "syssign", ossl_dsa_sign, 1);
-    rb_define_method(cDSA, "sysverify", ossl_dsa_verify, 2);
 
     DEF_OSSL_PKEY_BN(cDSA, dsa, p);
     DEF_OSSL_PKEY_BN(cDSA, dsa, q);

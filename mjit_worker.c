@@ -788,7 +788,7 @@ static const int c_file_access_mode =
 static bool
 compile_c_to_so(const char *c_file, const char *so_file)
 {
-    const char *files[] = { NULL, NULL, NULL, NULL, NULL, NULL, "-link", libruby_pathflag, NULL };
+    const char *files[] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, "-link", libruby_pathflag, NULL };
     char *p;
 
     // files[0] = "-Fe*.dll"
@@ -824,10 +824,17 @@ compile_c_to_so(const char *c_file, const char *so_file)
     *p = '\0';
 
     // files[5] = "-Fd*.pdb"
-    files[5] = p = alloca(sizeof(char) * (rb_strlen_lit("-Fd") + strlen(pch_file) + 1));
+    // Generate .pdb file in temporary directory instead of cwd.
+    files[5] = p = alloca(sizeof(char) * (rb_strlen_lit("-Fd") + strlen(so_file) - rb_strlen_lit(DLEXT) + rb_strlen_lit(".pdb") + 1));
     p = append_lit(p, "-Fd");
-    p = append_str2(p, pch_file, strlen(pch_file) - rb_strlen_lit(".pch"));
+    p = append_str2(p, so_file, strlen(so_file) - rb_strlen_lit(DLEXT));
     p = append_lit(p, ".pdb");
+    *p = '\0';
+
+    // files[6] = "-Z7"
+    // Put this last to override any debug options that came previously.
+    files[6] = p = alloca(sizeof(char) * rb_strlen_lit("-Z7") + 1);
+    p = append_lit(p, "-Z7");
     *p = '\0';
 
     char **args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,

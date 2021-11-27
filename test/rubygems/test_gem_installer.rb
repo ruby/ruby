@@ -33,6 +33,8 @@ class TestGemInstaller < Gem::InstallerTestCase
 
 require 'rubygems'
 
+Gem.use_gemdeps
+
 version = \">= 0.a\"
 
 str = ARGV.first

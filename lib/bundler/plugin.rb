@@ -13,6 +13,7 @@ module Bundler
     class MalformattedPlugin < PluginError; end
     class UndefinedCommandError < PluginError; end
     class UnknownSourceError < PluginError; end
+    class PluginInstallError < PluginError; end
 
     PLUGIN_FILE_NAME = "plugins.rb".freeze
 
@@ -38,12 +39,11 @@ module Bundler
       specs = Installer.new.install(names, options)
 
       save_plugins names, specs
-    rescue PluginError => e
+    rescue PluginError
       specs_to_delete = specs.select {|k, _v| names.include?(k) && !index.commands.values.include?(k) }
       specs_to_delete.each_value {|spec| Bundler.rm_rf(spec.full_gem_path) }
 
-      names_list = names.map {|name| "`#{name}`" }.join(", ")
-      Bundler.ui.error "Failed to install the following plugins: #{names_list}. The underlying error was: #{e.message}.\n #{e.backtrace.join("\n ")}"
+      raise
     end
 
     # Uninstalls plugins by the given names
@@ -245,10 +245,11 @@ module Bundler
     # @param [Array<String>] names of inferred source plugins that can be ignored
     def save_plugins(plugins, specs, optional_plugins = [])
       plugins.each do |name|
+        next if index.installed?(name)
+
         spec = specs[name]
-        validate_plugin! Pathname.new(spec.full_gem_path)
-        installed = register_plugin(name, spec, optional_plugins.include?(name))
-        Bundler.ui.info "Installed plugin #{name}" if installed
+
+        save_plugin(name, spec, optional_plugins.include?(name))
       end
     end
 
@@ -261,6 +262,22 @@ module Bundler
     def validate_plugin!(plugin_path)
       plugin_file = plugin_path.join(PLUGIN_FILE_NAME)
       raise MalformattedPlugin, "#{PLUGIN_FILE_NAME} was not found in the plugin." unless plugin_file.file?
+    end
+
+    # Validates and registers a plugin.
+    #
+    # @param [String] name the name of the plugin
+    # @param [Specification] spec of installed plugin
+    # @param [Boolean] optional_plugin, removed if there is conflict with any
+    #                     other plugin (used for default source plugins)
+    #
+    # @raise [PluginInstallError] if validation or registration raises any error
+    def save_plugin(name, spec, optional_plugin = false)
+      validate_plugin! Pathname.new(spec.full_gem_path)
+      installed = register_plugin(name, spec, optional_plugin)
+      Bundler.ui.info "Installed plugin #{name}" if installed
+    rescue PluginError => e
+      raise PluginInstallError, "Failed to install plugin `#{spec.name}`, due to #{e.class} (#{e.message})"
     end
 
     # Runs the plugins.rb file in an isolated namespace, records the plugin
@@ -309,6 +326,8 @@ module Bundler
     #
     # @param [String] name of the plugin
     def load_plugin(name)
+      return unless name && !name.empty?
+
       # Need to ensure before this that plugin root where the rest of gems
       # are installed to be on load path to support plugin deps. Currently not
       # done to avoid conflicts

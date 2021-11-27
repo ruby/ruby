@@ -26,6 +26,10 @@ cache:
 
 env:
   global:
+    # The tests skipped in `make test-all`.
+    - TEST_ALL_SKIPPED_TESTS=
+    # The tests executed separately by `make test-all`.
+    - TEST_ALL_SEPARATED_TESTS=
     # Reset timestamps early
     - _=$(touch NEWS && find . -type f -exec touch -r NEWS {} +)
     - CONFIGURE_TTY=no
@@ -38,12 +42,6 @@ env:
     - SETARCH=
     - RUBY_PREFIX=/tmp/ruby-prefix
     - GEMS_FOR_TEST='timezone tzinfo'
-    # The tests skipped in `make test-all`.
-    - TEST_ALL_SKIPPED_TESTS=
-    # Run the separated tests with allowing failures.
-    - RUN_SEPARATED_TESTS=true
-    # The tests executed separately by `make test-all`.
-    - TEST_ALL_SEPARATED_TESTS=
     # https://github.com/travis-ci/travis-build/blob/e411371dda21430a60f61b8f3f57943d2fe4d344/lib/travis/build/bash/travis_apt_get_options.bash#L7
     - travis_apt_get_options='--allow-downgrades --allow-remove-essential --allow-change-held-packages'
     - travis_apt_get_options="-yq --no-install-suggests --no-install-recommends $travis_apt_get_options"
@@ -97,6 +95,9 @@ env:
     compiler: arm-linux-gnueabihf-gcc
     env:
       - SETARCH='setarch linux32 --verbose --32bit'
+      # The "TestReadline#test_interrupt_in_other_thread" started failing on arm32
+      # from https://www.travis-ci.com/github/ruby/ruby/jobs/529005145
+      - TEST_ALL_SKIPPED_TESTS=test_interrupt_in_other_thread
     before_install:
       - sudo dpkg --add-architecture armhf
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
@@ -119,15 +120,20 @@ matrix:
   include:
     # Build every commit (Allowed Failures):
     - <<: *arm32-linux
-    - <<: *arm64-linux
+    # Comment out as the 2nd arm64 pipeline is unstable.
+    # - <<: *arm64-linux
     - <<: *ppc64le-linux
     - <<: *s390x-linux
   allow_failures:
-    # An arm64 job sometimes does not start right now.
-    # https://travis-ci.community/t/11629
+    # We see multiple errors indicating errors on the Travis environment itself in a short while:
+    # https://app.travis-ci.com/github/ruby/ruby/jobs/544382885
+    # https://app.travis-ci.com/github/ruby/ruby/jobs/544361370
+    # It's not a fault of Ruby's arm32 support but just Travis arm32 seems unsable.
     - name: arm32-linux
-    - name: arm64-linux
-    # - name: ppc64le-linux
+    # - name: arm64-linux
+    # We see "Some worker was crashed." in about 40% of recent ppc64le-linux jobs
+    # e.g. https://app.travis-ci.com/github/ruby/ruby/jobs/530959548
+    - name: ppc64le-linux
     # - name: s390x-linux
   fast_finish: true
 
@@ -197,7 +203,7 @@ script:
   # Run the failing tests separately returning ok status to check if it works,
   # visualize them.
   - |
-    if [ "${RUN_SEPARATED_TESTS}" = true -a -n "${TEST_ALL_OPTS_SEPARATED}" ]; then
+    if [ -n "${TEST_ALL_OPTS_SEPARATED}" ]; then
       $SETARCH make -s test-all -o exts TESTOPTS="$JOBS -v --tty=no ${TEST_ALL_OPTS_SEPARATED}" RUBYOPT="-w" || :
     fi
   - $SETARCH make -s test-spec MSPECOPT=-ff # not using `-j` because sometimes `mspec -j` silently dies

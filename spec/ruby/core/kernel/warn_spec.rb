@@ -107,11 +107,9 @@ describe "Kernel#warn" do
       ruby_exe(file, options: "--disable-gems", args: "2>&1").should == "#{file}:2: warning: warn-require-warning\n"
     end
 
-    ruby_version_is "2.6" do
-      it "shows the caller of #require and not #require itself with RubyGems loaded" do
-        file = fixture(__FILE__ , "warn_require_caller.rb")
-        ruby_exe(file, options: "-rrubygems", args: "2>&1").should == "#{file}:2: warning: warn-require-warning\n"
-      end
+    it "shows the caller of #require and not #require itself with RubyGems loaded" do
+      file = fixture(__FILE__ , "warn_require_caller.rb")
+      ruby_exe(file, options: "-rrubygems", args: "2>&1").should == "#{file}:2: warning: warn-require-warning\n"
     end
 
     guard -> { Kernel.instance_method(:tap).source_location } do

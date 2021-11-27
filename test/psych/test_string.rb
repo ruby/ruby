@@ -17,6 +17,19 @@ module Psych
       end
     end
 
+    # 'y' and 'n' are kind of ambiguous.  Syck treated y and n literals in
+    # YAML documents as strings.  But this is not what the YAML 1.1 spec says.
+    # YAML 1.1 says they should be treated as booleans.  When we're dumping
+    # documents, we know it's a string, so adding quotes will eliminate the
+    # "ambiguity" in the emitted document
+    def test_y_is_quoted
+      assert_match(/"y"/, Psych.dump("y"))
+    end
+
+    def test_n_is_quoted
+      assert_match(/"n"/, Psych.dump("n"))
+    end
+
     def test_string_with_newline
       assert_equal "1\n2", Psych.load("--- ! '1\n\n  2'\n")
     end

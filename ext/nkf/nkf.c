@@ -358,7 +358,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
  *
  *  [-MB] MIME encode Base64 stream.
  *
- *  [-MQ] Perfome quoted encoding.
+ *  [-MQ] Perform quoted encoding.
  *
  *  === -l
  *

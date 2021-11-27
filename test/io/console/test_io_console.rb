@@ -7,7 +7,13 @@ rescue LoadError
 end
 
 class TestIO_Console < Test::Unit::TestCase
-  PATHS = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|\.rb|/\w+\.rb)\z") {$`}
+  begin
+    PATHS = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|\.rb|/\w+\.rb)\z") {$`}
+  rescue Encoding::CompatibilityError
+    $stderr.puts "test_io_console.rb debug"
+    $LOADED_FEATURES.each{|path| $stderr.puts [path, path.encoding].inspect}
+    raise
+  end
   PATHS.uniq!
 
   # FreeBSD seems to hang on TTOU when running parallel tests
@@ -375,7 +381,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       if cc = ctrl["intr"]
         assert_ctrl("#{cc.ord}", cc, r, w)
         assert_ctrl("#{cc.ord}", cc, r, w)
-        assert_ctrl("Interrupt", cc, r, w) unless /linux/ =~ RUBY_PLATFORM
+        assert_ctrl("Interrupt", cc, r, w) unless /linux|solaris/ =~ RUBY_PLATFORM
       end
       if cc = ctrl["dsusp"]
         assert_ctrl("#{cc.ord}", cc, r, w)

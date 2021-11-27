@@ -67,10 +67,10 @@
 
 #include "internal.h"
 #include "internal/string.h"
-#include "internal/util.h"
 #include "internal/vm.h"
 #include "ruby/encoding.h"
 #include "ruby/ruby.h"
+#include "ruby/util.h"
 #include "timev.h"
 
 /* defaults: season to taste */
@@ -219,7 +219,7 @@ case_conv(char *s, ptrdiff_t i, int flags)
 static VALUE
 format_value(VALUE val, int base)
 {
-	if (!RB_TYPE_P(val, T_BIGNUM))
+	if (!RB_BIGNUM_TYPE_P(val))
 		val = rb_Integer(val);
 	return rb_big2str(val, base);
 }

@@ -29,8 +29,8 @@ module RubyVM::AbstractSyntaxTree
   #
   #    RubyVM::AbstractSyntaxTree.parse("x = 1 + 2")
   #    # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-1:9>
-  def self.parse string, save_script_lines: false
-    Primitive.ast_s_parse string, save_script_lines
+  def self.parse string, keep_script_lines: false
+    Primitive.ast_s_parse string, keep_script_lines
   end
 
   #  call-seq:
@@ -44,8 +44,8 @@ module RubyVM::AbstractSyntaxTree
   #
   #     RubyVM::AbstractSyntaxTree.parse_file("my-app/app.rb")
   #     # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-31:3>
-  def self.parse_file pathname, save_script_lines: false
-    Primitive.ast_s_parse_file pathname, save_script_lines
+  def self.parse_file pathname, keep_script_lines: false
+    Primitive.ast_s_parse_file pathname, keep_script_lines
   end
 
   #  call-seq:
@@ -63,8 +63,8 @@ module RubyVM::AbstractSyntaxTree
   #
   #     RubyVM::AbstractSyntaxTree.of(method(:hello))
   #     # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-3:3>
-  def self.of body, save_script_lines: false
-    Primitive.ast_s_of body, save_script_lines
+  def self.of body, keep_script_lines: false
+    Primitive.ast_s_of body, keep_script_lines
   end
 
   # RubyVM::AbstractSyntaxTree::Node instances are created by parse methods in

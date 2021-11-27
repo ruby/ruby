@@ -1,0 +1,10 @@
+# Lines starting with '#' are comments.
+# Each line is a file pattern followed by one or more owners.
+# Code owners will be automatically tagged as reviewers when a pull request is opened
+
+# YJIT sources and tests
+yjit* @maximecb @xrxr @tenderlove
+doc/yjit/* @maximecb @xrxr @tenderlove
+bootstraptest/test_yjit* @maximecb @xrxr @tenderlove
+test/ruby/test_yjit* @maximecb @xrxr @tenderlove
+.github/workflows/yjit* @maximecb @xrxr @tenderlove

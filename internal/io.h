@@ -1,7 +1,6 @@
 #ifndef INTERNAL_IO_H                                    /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_IO_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -24,6 +23,10 @@ void rb_io_fptr_finalize_internal(void *ptr);
 #endif
 #define rb_io_fptr_finalize rb_io_fptr_finalize_internal
 VALUE rb_io_popen(VALUE pname, VALUE pmode, VALUE env, VALUE opt);
+
+VALUE rb_io_prep_stdin(void);
+VALUE rb_io_prep_stdout(void);
+VALUE rb_io_prep_stderr(void);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* io.c (export) */

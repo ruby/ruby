@@ -930,6 +930,7 @@ Either installing with `--full-index` or running `bundle update rails` should fi
 
   it "does not duplicate specs in the lockfile when updating and a dependency is not installed" do
     install_gemfile <<-G, :artifice => "compact_index"
+      source "#{file_uri_for(gem_repo1)}"
       source "#{source_uri}" do
         gem "rails"
         gem "activemerchant"

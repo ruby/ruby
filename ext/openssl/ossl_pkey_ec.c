@@ -288,6 +288,7 @@ static VALUE ossl_ec_key_set_private_key(VALUE self, VALUE private_key)
     case 0:
         if (bn == NULL)
             break;
+	/* fallthrough */
     default:
         ossl_raise(eECError, "EC_KEY_set_private_key");
     }
@@ -334,6 +335,7 @@ static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
     case 0:
         if (point == NULL)
             break;
+	/* fallthrough */
     default:
         ossl_raise(eECError, "EC_KEY_set_public_key");
     }
@@ -412,32 +414,6 @@ ossl_ec_key_to_der(VALUE self)
     else
         return ossl_pkey_export_spki(self, 1);
 }
-
-/*
- *  call-seq:
- *     key.to_text   => String
- *
- *  See the OpenSSL documentation for EC_KEY_print()
- */
-static VALUE ossl_ec_key_to_text(VALUE self)
-{
-    EC_KEY *ec;
-    BIO *out;
-    VALUE str;
-
-    GetEC(self, ec);
-    if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eECError, "BIO_new(BIO_s_mem())");
-    }
-    if (!EC_KEY_print(out, ec, 0)) {
-	BIO_free(out);
-	ossl_raise(eECError, "EC_KEY_print");
-    }
-    str = ossl_membio2str(out);
-
-    return str;
-}
-
 /*
  *  call-seq:
  *     key.generate_key!   => self
@@ -464,73 +440,37 @@ static VALUE ossl_ec_key_generate_key(VALUE self)
 }
 
 /*
- *  call-seq:
- *     key.check_key   => true
+ * call-seq:
+ *    key.check_key   => true
  *
- *  Raises an exception if the key is invalid.
+ * Raises an exception if the key is invalid.
  *
- *  See the OpenSSL documentation for EC_KEY_check_key()
+ * See also the man page EVP_PKEY_public_check(3).
  */
 static VALUE ossl_ec_key_check_key(VALUE self)
 {
+#ifdef HAVE_EVP_PKEY_CHECK
+    EVP_PKEY *pkey;
+    EVP_PKEY_CTX *pctx;
+    int ret;
+
+    GetPKey(self, pkey);
+    pctx = EVP_PKEY_CTX_new(pkey, /* engine */NULL);
+    if (!pctx)
+        ossl_raise(eDHError, "EVP_PKEY_CTX_new");
+    ret = EVP_PKEY_public_check(pctx);
+    EVP_PKEY_CTX_free(pctx);
+    if (ret != 1)
+        ossl_raise(eECError, "EVP_PKEY_public_check");
+#else
     EC_KEY *ec;
 
     GetEC(self, ec);
     if (EC_KEY_check_key(ec) != 1)
 	ossl_raise(eECError, "EC_KEY_check_key");
+#endif
 
     return Qtrue;
-}
-
-/*
- *  call-seq:
- *     key.dsa_sign_asn1(data)   => String
- *
- *  See the OpenSSL documentation for ECDSA_sign()
- */
-static VALUE ossl_ec_key_dsa_sign_asn1(VALUE self, VALUE data)
-{
-    EC_KEY *ec;
-    unsigned int buf_len;
-    VALUE str;
-
-    GetEC(self, ec);
-    StringValue(data);
-
-    if (EC_KEY_get0_private_key(ec) == NULL)
-	ossl_raise(eECError, "Private EC key needed!");
-
-    str = rb_str_new(0, ECDSA_size(ec));
-    if (ECDSA_sign(0, (unsigned char *) RSTRING_PTR(data), RSTRING_LENINT(data), (unsigned char *) RSTRING_PTR(str), &buf_len, ec) != 1)
-	ossl_raise(eECError, "ECDSA_sign");
-    rb_str_set_len(str, buf_len);
-
-    return str;
-}
-
-/*
- *  call-seq:
- *     key.dsa_verify_asn1(data, sig)   => true or false
- *
- *  See the OpenSSL documentation for ECDSA_verify()
- */
-static VALUE ossl_ec_key_dsa_verify_asn1(VALUE self, VALUE data, VALUE sig)
-{
-    EC_KEY *ec;
-
-    GetEC(self, ec);
-    StringValue(data);
-    StringValue(sig);
-
-    switch (ECDSA_verify(0, (unsigned char *) RSTRING_PTR(data), RSTRING_LENINT(data), (unsigned char *) RSTRING_PTR(sig), (int)RSTRING_LEN(sig), ec)) {
-    case 1:	return Qtrue;
-    case 0:	return Qfalse;
-    default:	break;
-    }
-
-    ossl_raise(eECError, "ECDSA_verify");
-
-    UNREACHABLE;
 }
 
 /*
@@ -539,7 +479,7 @@ static VALUE ossl_ec_key_dsa_verify_asn1(VALUE self, VALUE data, VALUE sig)
 static void
 ossl_ec_group_free(void *ptr)
 {
-    EC_GROUP_clear_free(ptr);
+    EC_GROUP_free(ptr);
 }
 
 static const rb_data_type_t ossl_ec_group_type = {
@@ -658,8 +598,7 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
         ossl_raise(rb_eArgError, "wrong number of arguments");
     }
 
-    if (group == NULL)
-        ossl_raise(eEC_GROUP, "");
+    ASSUME(group);
     RTYPEDDATA_DATA(self) = group;
 
     return self;
@@ -1313,6 +1252,8 @@ static VALUE ossl_ec_point_is_on_curve(VALUE self)
 /*
  * call-seq:
  *   point.make_affine! => self
+ *
+ * This method is deprecated and should not be used. This is a no-op.
  */
 static VALUE ossl_ec_point_make_affine(VALUE self)
 {
@@ -1322,8 +1263,11 @@ static VALUE ossl_ec_point_make_affine(VALUE self)
     GetECPoint(self, point);
     GetECPointGroup(self, group);
 
+    rb_warn("OpenSSL::PKey::EC::Point#make_affine! is deprecated");
+#if !OSSL_OPENSSL_PREREQ(3, 0, 0)
     if (EC_POINT_make_affine(group, point, ossl_bn_ctx) != 1)
         ossl_raise(cEC_POINT, "EC_POINT_make_affine");
+#endif
 
     return self;
 }
@@ -1594,14 +1538,9 @@ void Init_ossl_ec(void)
     rb_define_alias(cEC, "generate_key", "generate_key!");
     rb_define_method(cEC, "check_key", ossl_ec_key_check_key, 0);
 
-    rb_define_method(cEC, "dsa_sign_asn1", ossl_ec_key_dsa_sign_asn1, 1);
-    rb_define_method(cEC, "dsa_verify_asn1", ossl_ec_key_dsa_verify_asn1, 2);
-/* do_sign/do_verify */
-
     rb_define_method(cEC, "export", ossl_ec_key_export, -1);
     rb_define_alias(cEC, "to_pem", "export");
     rb_define_method(cEC, "to_der", ossl_ec_key_to_der, 0);
-    rb_define_method(cEC, "to_text", ossl_ec_key_to_text, 0);
 
 
     rb_define_alloc_func(cEC_GROUP, ossl_ec_group_alloc);

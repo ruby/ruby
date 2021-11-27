@@ -137,6 +137,22 @@ RSpec.describe "bundle check" do
     expect(exitstatus).to eq(1)
   end
 
+  it "ensures that gems are actually installed and not just cached in applications' cache" do
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "rack"
+    G
+
+    bundle "config set --local path vendor/bundle"
+    bundle :cache
+
+    gem_command "uninstall rack", :env => { "GEM_HOME" => vendored_gems.to_s }
+
+    bundle "check", :raise_on_error => false
+    expect(err).to include("* rack (1.0.0)")
+    expect(exitstatus).to eq(1)
+  end
+
   it "ignores missing gems restricted to other platforms" do
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -316,9 +332,46 @@ RSpec.describe "bundle check" do
     end
   end
 
+  describe "when locked under multiple platforms" do
+    before :each do
+      build_repo4 do
+        build_gem "rack"
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "rack"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            rack (1.0)
+
+        PLATFORMS
+          ruby
+          #{specific_local_platform}
+
+        DEPENDENCIES
+          rack
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    it "shows what is missing with the current Gemfile without duplications" do
+      bundle :check, :raise_on_error => false
+      expect(err).to match(/The following gems are missing/)
+      expect(err).to include("* rack (1.0").once
+    end
+  end
+
   describe "when using only scoped rubygems sources" do
     before do
       gemfile <<~G
+        source "#{file_uri_for(gem_repo2)}"
         source "#{file_uri_for(gem_repo1)}" do
           gem "rack"
         end
@@ -343,6 +396,7 @@ RSpec.describe "bundle check" do
       end
 
       gemfile <<~G
+        source "#{file_uri_for(gem_repo1)}"
         source "#{file_uri_for(gem_repo4)}" do
           gem "depends_on_rack"
         end
@@ -355,6 +409,7 @@ RSpec.describe "bundle check" do
       expect(out).to include("The Gemfile's dependencies are satisfied")
       expect(lockfile).to eq <<~L
         GEM
+          remote: #{file_uri_for(gem_repo1)}/
           specs:
 
         GEM
@@ -378,7 +433,7 @@ RSpec.describe "bundle check" do
 
   describe "BUNDLED WITH" do
     def lock_with(bundler_version = nil)
-      lock = <<-L
+      lock = <<~L
         GEM
           remote: #{file_uri_for(gem_repo1)}/
           specs:
@@ -392,7 +447,7 @@ RSpec.describe "bundle check" do
       L
 
       if bundler_version
-        lock += "\n        BUNDLED WITH\n           #{bundler_version}\n"
+        lock += "\nBUNDLED WITH\n   #{bundler_version}\n"
       end
 
       lock
@@ -411,7 +466,7 @@ RSpec.describe "bundle check" do
       it "does not change the lock" do
         lockfile lock_with(nil)
         bundle :check
-        lockfile_should_be lock_with(nil)
+        expect(lockfile).to eq lock_with(nil)
       end
     end
 
@@ -420,7 +475,7 @@ RSpec.describe "bundle check" do
         lockfile lock_with(Bundler::VERSION.succ)
         bundle :check
         expect(err).to include("the running version of Bundler (#{Bundler::VERSION}) is older than the version that created the lockfile (#{Bundler::VERSION.succ})")
-        lockfile_should_be lock_with(Bundler::VERSION.succ)
+        expect(lockfile).to eq lock_with(Bundler::VERSION.succ)
       end
     end
 
@@ -429,7 +484,7 @@ RSpec.describe "bundle check" do
         system_gems "bundler-1.18.0"
         lockfile lock_with("1.18.0")
         bundle :check
-        lockfile_should_be lock_with("1.18.0")
+        expect(lockfile).to eq lock_with("1.18.0")
       end
     end
   end

@@ -45,11 +45,13 @@ module IRB # :nodoc:
 
     @CONF[:USE_SINGLELINE] = false unless defined?(ReadlineInputMethod)
     @CONF[:USE_COLORIZE] = !ENV['NO_COLOR']
+    @CONF[:USE_AUTOCOMPLETE] = true
     @CONF[:INSPECT_MODE] = true
     @CONF[:USE_TRACER] = false
     @CONF[:USE_LOADER] = false
     @CONF[:IGNORE_SIGINT] = true
     @CONF[:IGNORE_EOF] = false
+    @CONF[:EXTRA_DOC_DIRS] = []
     @CONF[:ECHO] = nil
     @CONF[:ECHO_ON_ASSIGNMENT] = nil
     @CONF[:VERBOSE] = nil
@@ -256,6 +258,9 @@ module IRB # :nodoc:
         @CONF[:USE_MULTILINE] = true
       when "--nomultiline", "--noreidline"
         @CONF[:USE_MULTILINE] = false
+      when /^--extra-doc-dir(?:=(.+))?/
+        opt = $1 || argv.shift
+        @CONF[:EXTRA_DOC_DIRS] << opt
       when "--echo"
         @CONF[:ECHO] = true
       when "--noecho"
@@ -274,6 +279,10 @@ module IRB # :nodoc:
         @CONF[:USE_COLORIZE] = true
       when "--nocolorize"
         @CONF[:USE_COLORIZE] = false
+      when "--autocomplete"
+        @CONF[:USE_AUTOCOMPLETE] = true
+      when "--noautocomplete"
+        @CONF[:USE_AUTOCOMPLETE] = false
       when /^--prompt-mode(?:=(.+))?/, /^--prompt(?:=(.+))?/
         opt = $1 || argv.shift
         prompt_mode = opt.upcase.tr("-", "_").intern

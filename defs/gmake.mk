@@ -6,6 +6,11 @@ override mflags := $(filter-out -j%,$(MFLAGS))
 MSPECOPT += $(if $(filter -j%,$(MFLAGS)),-j)
 nproc = $(subst -j,,$(filter -j%,$(MFLAGS)))
 
+ifeq ($(GITHUB_ACTIONS),true)
+override ACTIONS_GROUP = @echo "\#\#[group]$(@:yes-=)"
+override ACTIONS_ENDGROUP = @echo "\#\#[endgroup]"
+endif
+
 ifneq ($(filter %darwin%,$(arch)),)
 INSTRUBY_ENV += SDKROOT=/
 endif
@@ -101,12 +106,16 @@ yes-test-bundler-parallel: PARALLELRSPECOPTS += $(if $(nproc),-n$(shell expr $(n
 # Cross reference needs to parse all files at once
 love install reinstall: RDOCFLAGS = --force-update
 
+ifneq ($(if $(filter -flto%,$(CFLAGS)),$(subst darwin,,$(arch)),$(arch)),$(arch))
+override EXE_LDFLAGS = $(filter-out -g%,$(LDFLAGS))
+endif
+
 $(srcdir)/missing/des_tables.c: $(srcdir)/missing/crypt.c
 ifeq ($(if $(filter yes,$(CROSS_COMPILING)),,$(CC)),)
 	touch $@
 else
 	@$(ECHO) building make_des_table
-	$(CC) $(INCFLAGS) $(CPPFLAGS) -DDUMP $(LDFLAGS) $(XLDFLAGS) $(LIBS) -omake_des_table $(srcdir)/missing/crypt.c
+	$(CC) $(INCFLAGS) $(CPPFLAGS) -DDUMP $(EXE_LDFLAGS) $(XLDFLAGS) $(LIBS) -omake_des_table $(srcdir)/missing/crypt.c
 	@[ -x ./make_des_table ]
 	@$(ECHO) generating $@
 	$(Q) $(MAKEDIRS) $(@D)
@@ -135,7 +144,7 @@ $(STUBPROGRAM): rubystub.$(OBJEXT) $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SE
 rubystub$(EXEEXT):
 	@rm -f $@
 	$(ECHO) linking $@
-	$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) rubystub.$(OBJEXT) $(EXTOBJS) $(LIBRUBYARG) $(MAINLIBS) $(LIBS) $(EXTLIBS) $(OUTFLAG)$@
+	$(Q) $(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) rubystub.$(OBJEXT) $(EXTOBJS) $(LIBRUBYARG) $(MAINLIBS) $(LIBS) $(EXTLIBS) $(OUTFLAG)$@
 	$(Q) $(POSTLINK)
 	$(if $(STRIP),$(Q) $(STRIP) $@)
 
@@ -224,6 +233,7 @@ define pull-github
 	$(eval GITHUB_MERGE_BASE := $(shell git -C "$(srcdir)" log -1 --format=format:%H))
 	$(eval GITHUB_MERGE_BRANCH := $(shell git -C "$(srcdir)" symbolic-ref --short HEAD))
 	$(eval GITHUB_MERGE_WORKTREE := $(shell mktemp -d "$(srcdir)/gh-$(1)-XXXXXX"))
+	git -C "$(srcdir)" worktree prune
 	git -C "$(srcdir)" worktree add $(notdir $(GITHUB_MERGE_WORKTREE)) "gh-$(1)"
 	git -C "$(GITHUB_MERGE_WORKTREE)" rebase $(GITHUB_MERGE_BRANCH)
 	$(eval COMMIT_GPG_SIGN := $(COMMIT_GPG_SIGN))
@@ -351,8 +361,12 @@ spec/bundler/%: PHONY
 spec/bundler: test-bundler-parallel
 	$(Q)$(NULLCMD)
 
-spec/%: programs exts PHONY
-	$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec-run -B $(srcdir)/spec/default.mspec $(SPECOPTS) $(patsubst %,$(srcdir)/%,$@)
+# workaround to avoid matching non ruby files with "spec/%/" under GNU make 3.81
+spec/%_spec.c spec/%_spec.$(DLEXT):
+	$(empty)
+
+spec/%/ spec/%_spec.rb: programs exts PHONY
+	+$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec-run -B $(srcdir)/spec/default.mspec $(SPECOPTS) $(patsubst %,$(srcdir)/%,$@)
 
 benchmark/%: miniruby$(EXEEXT) update-benchmark-driver PHONY
 	$(Q)$(BASERUBY) -rrubygems -I$(srcdir)/benchmark/lib $(srcdir)/benchmark/benchmark-driver/exe/benchmark-driver \
@@ -391,11 +405,15 @@ update-deps:
 
 # order-only-prerequisites doesn't work for $(RUBYSPEC_CAPIEXT)
 # because the same named directory exists in the source tree.
-$(RUBYSPEC_CAPIEXT)/%.$(DLEXT): $(srcdir)/$(RUBYSPEC_CAPIEXT)/%.c $(srcdir)/$(RUBYSPEC_CAPIEXT)/rubyspec.h $(RUBY_H_INCLUDES) $(LIBRUBY_SO)
+$(RUBYSPEC_CAPIEXT)/%.$(DLEXT): $(srcdir)/$(RUBYSPEC_CAPIEXT)/%.c $(srcdir)/$(RUBYSPEC_CAPIEXT)/rubyspec.h $(RUBY_H_INCLUDES) $(LIBRUBY)
 	$(ECHO) building $@
 	$(Q) $(MAKEDIRS) $(@D)
-	$(Q) $(DLDSHARED) $(XDLDFLAGS) $(XLDFLAGS) $(ARCH_FLAG) $(ARCH_FLAG) $(CFLAGS) $(INCFLAGS) $(CPPFLAGS) $(OUTFLAG)$@ $< $(LIBRUBY_SO)
+	$(Q) $(DLDSHARED) $(XDLDFLAGS) $(XLDFLAGS) $(LDFLAGS) $(INCFLAGS) $(CPPFLAGS) $(OUTFLAG)$@ $< $(LIBRUBYARG)
 	$(Q) $(RMALL) $@.*
 
 rubyspec-capiext: $(patsubst %.c,$(RUBYSPEC_CAPIEXT)/%.$(DLEXT),$(notdir $(wildcard $(srcdir)/$(RUBYSPEC_CAPIEXT)/*.c)))
 	@ $(NULLCMD)
+
+ifeq ($(ENABLE_SHARED),yes)
+exts: rubyspec-capiext
+endif

@@ -21,7 +21,7 @@ import lldb
 import os
 import shlex
 
-class IseqDissassembler:
+class IseqDisassembler:
     TS_VARIABLE = b'.'[0]
     TS_CALLDATA = b'C'[0]
     TS_CDHASH   = b'H'[0]
@@ -219,7 +219,7 @@ class IseqDissassembler:
             print('error getting insn name', error)
 
 def disasm(debugger, command, result, internal_dict):
-    disassembler = IseqDissassembler(debugger, command, result, internal_dict)
+    disassembler = IseqDisassembler(debugger, command, result, internal_dict)
     frame = disassembler.frame
 
     if frame.IsValid():

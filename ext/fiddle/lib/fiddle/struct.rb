@@ -15,25 +15,53 @@ module Fiddle
 
     def self.offsetof(name, members, types) # :nodoc:
       offset = 0
-      index = 0
-      member_index = members.index(name)
+      worklist = name.split('.')
+      this_type = self
+      while search_name = worklist.shift
+        index = 0
+        member_index = members.index(search_name)
 
-      types.each { |type, count = 1|
-        orig_offset = offset
-        if type.respond_to?(:entity_class)
-          align = type.alignment
-          type_size = type.size
-        else
-          align = PackInfo::ALIGN_MAP[type]
-          type_size = PackInfo::SIZE_MAP[type]
+        unless member_index
+          # Possibly a sub-structure
+          member_index = members.index { |member_name, _|
+            member_name == search_name
+          }
+          return unless member_index
         end
-        offset = PackInfo.align(orig_offset, align)
 
-        return offset if index == member_index
+        types.each { |type, count = 1|
+          orig_offset = offset
+          if type.respond_to?(:entity_class)
+            align = type.alignment
+            type_size = type.size
+          else
+            align = PackInfo::ALIGN_MAP[type]
+            type_size = PackInfo::SIZE_MAP[type]
+          end
 
-        offset += (type_size * count)
-        index += 1
-      }
+          # Unions shouldn't advance the offset
+          if this_type.entity_class == CUnionEntity
+            type_size = 0
+          end
+
+          offset = PackInfo.align(orig_offset, align)
+
+          if worklist.empty?
+            return offset if index == member_index
+          else
+            if index == member_index
+              subtype = types[member_index]
+              members = subtype.members
+              types = subtype.types
+              this_type = subtype
+              break
+            end
+          end
+
+          offset += (type_size * count)
+          index += 1
+        }
+      end
       nil
     end
 

@@ -16,31 +16,23 @@ module Test
 
       def message msg = nil, ending = nil, &default
         proc {
-          msg = msg.call.chomp(".") if Proc === msg
-          custom_message = "#{msg}.\n" unless msg.nil? or msg.to_s.empty?
-          "#{custom_message}#{default.call}#{ending || "."}"
+          ending ||= (ending_pattern = /(?<!\.)\z/; ".")
+          ending_pattern ||= /(?<!#{Regexp.quote(ending)})\z/
+          msg = msg.call if Proc === msg
+          ary = [msg, (default.call if default)].compact.reject(&:empty?)
+          ary.map! {|str| str.to_s.sub(ending_pattern, ending) }
+          begin
+            ary.join("\n")
+          rescue Encoding::CompatibilityError
+            ary.map(&:b).join("\n")
+          end
         }
       end
     end
 
     module CoreAssertions
-      if defined?(MiniTest)
-        require_relative 'envutil'
-        # for ruby core testing
-        include MiniTest::Assertions
-
-        # Compatibility hack for assert_raise
-        Test::Unit::AssertionFailedError = MiniTest::Assertion
-      else
-        module MiniTest
-          class Assertion < Exception; end
-          class Skip < Assertion; end
-        end
-
-        require 'pp'
-        require_relative 'envutil'
-        include Test::Unit::Assertions
-      end
+      require_relative 'envutil'
+      require 'pp'
 
       def mu_pp(obj) #:nodoc:
         obj.pretty_inspect.chomp
@@ -117,16 +109,14 @@ module Test
         # TODO: consider choosing some appropriate limit for MJIT and stop skipping this once it does not randomly fail
         pend 'assert_no_memory_leak may consider MJIT memory usage as leak' if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
 
-        require_relative '../../memory_status'
-        raise MiniTest::Skip, "unsupported platform" unless defined?(Memory::Status)
+        require_relative 'memory_status'
+        raise Test::Unit::PendedError, "unsupported platform" unless defined?(Memory::Status)
 
-        token = "\e[7;1m#{$$.to_s}:#{Time.now.strftime('%s.%L')}:#{rand(0x10000).to_s(16)}:\e[m"
-        token_dump = token.dump
-        token_re = Regexp.quote(token)
+        token_dump, token_re = new_test_token
         envs = args.shift if Array === args and Hash === args.first
         args = [
           "--disable=gems",
-          "-r", File.expand_path("../../../memory_status", __FILE__),
+          "-r", File.expand_path("../memory_status", __FILE__),
           *args,
           "-v", "-",
         ]
@@ -182,27 +172,15 @@ module Test
           msg = args.pop
         end
         begin
-          line = __LINE__; yield
-        rescue MiniTest::Skip
+          yield
+        rescue Test::Unit::PendedError, *(Test::Unit::AssertionFailedError if args.empty?)
           raise
-        rescue Exception => e
-          bt = e.backtrace
-          as = e.instance_of?(MiniTest::Assertion)
-          if as
-            ans = /\A#{Regexp.quote(__FILE__)}:#{line}:in /o
-            bt.reject! {|ln| ans =~ ln}
-          end
-          if ((args.empty? && !as) ||
-              args.any? {|a| a.instance_of?(Module) ? e.is_a?(a) : e.class == a })
-            msg = message(msg) {
-              "Exception raised:\n<#{mu_pp(e)}>\n" +
-              "Backtrace:\n" +
-              e.backtrace.map{|frame| "  #{frame}"}.join("\n")
-            }
-            raise MiniTest::Assertion, msg.call, bt
-          else
-            raise
-          end
+        rescue *(args.empty? ? Exception : args) => e
+          msg = message(msg) {
+            "Exception raised:\n<#{mu_pp(e)}>\n""Backtrace:\n" <<
+            Test.filter_backtrace(e.backtrace).map{|frame| "  #{frame}"}.join("\n")
+          }
+          raise Test::Unit::AssertionFailedError, msg.call, e.backtrace
         end
       end
 
@@ -259,11 +237,11 @@ module Test
 
       ABORT_SIGNALS = Signal.list.values_at(*%w"ILL ABRT BUS SEGV TERM")
 
-      def separated_runner(out = nil)
+      def separated_runner(token, out = nil)
         include(*Test::Unit::TestCase.ancestors.select {|c| !c.is_a?(Class) })
         out = out ? IO.new(out, 'w') : STDOUT
         at_exit {
-          out.puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
+          out.puts "#{token}<error>", [Marshal.dump($!)].pack('m'), "#{token}</error>", "#{token}assertions=#{self._assertions}"
         }
         Test::Unit::Runner.class_variable_set(:@@stop_auto_run, true) if defined?(Test::Unit::Runner)
       end
@@ -277,20 +255,22 @@ module Test
         capture_stdout = true
         unless /mswin|mingw/ =~ RUBY_PLATFORM
           capture_stdout = false
-          opt[:out] = MiniTest::Unit.output if defined?(MiniTest::Unit)
+          opt[:out] = Test::Unit::Runner.output if defined?(Test::Unit::Runner)
           res_p, res_c = IO.pipe
           opt[:ios] = [res_c]
         end
+        token_dump, token_re = new_test_token
         src = <<eom
 # -*- coding: #{line += __LINE__; src.encoding}; -*-
 BEGIN {
-  require "test/unit";include Test::Unit::Assertions;require #{(__dir__ + "/core_assertions").dump};include Test::Unit::CoreAssertions
-  separated_runner #{res_c&.fileno}
+  require "test/unit";include Test::Unit::Assertions;include Test::Unit::CoreAssertions;require #{__FILE__.dump}
+  separated_runner #{token_dump}, #{res_c&.fileno || 'nil'}
 }
 #{line -= __LINE__; src}
 eom
         args = args.dup
         args.insert((Hash === args.first ? 1 : 0), "-w", "--disable=gems", *$:.map {|l| "-I#{l}"})
+        args << "--debug" if RUBY_ENGINE == 'jruby' # warning: tracing (e.g. set_trace_func) will not capture all events without --debug flag
         stdout, stderr, status = EnvUtil.invoke_ruby(args, src, capture_stdout, true, **opt)
       ensure
         if res_c
@@ -303,9 +283,9 @@ eom
         raise if $!
         abort = status.coredump? || (status.signaled? && ABORT_SIGNALS.include?(status.termsig))
         assert(!abort, FailDesc[status, nil, stderr])
-        self._assertions += res[/^assertions=(\d+)/, 1].to_i
+        self._assertions += res[/^#{token_re}assertions=(\d+)/, 1].to_i
         begin
-          res = Marshal.load(res.unpack1("m"))
+          res = Marshal.load(res[/^#{token_re}<error>\n\K.*\n(?=#{token_re}<\/error>$)/m].unpack1("m"))
         rescue => marshal_error
           ignore_stderr = nil
           res = nil
@@ -402,8 +382,8 @@ eom
 
         begin
           yield
-        rescue MiniTest::Skip => e
-          return e if exp.include? MiniTest::Skip
+        rescue Test::Unit::PendedError => e
+          return e if exp.include? Test::Unit::PendedError
           raise e
         rescue Exception => e
           expected = exp.any? { |ex|
@@ -478,7 +458,7 @@ eom
         ex
       end
 
-      MINI_DIR = File.join(File.dirname(File.dirname(File.expand_path(__FILE__))), "minitest") #:nodoc:
+      TEST_DIR = File.join(__dir__, "test/unit") #:nodoc:
 
       # :call-seq:
       #   assert(test, [failure_message])
@@ -498,7 +478,7 @@ eom
         when nil
           msgs.shift
         else
-          bt = caller.reject { |s| s.start_with?(MINI_DIR) }
+          bt = caller.reject { |s| s.start_with?(TEST_DIR) }
           raise ArgumentError, "assertion message must be String or Proc, but #{msg.class} was given.", bt
         end unless msgs.empty?
         super
@@ -521,7 +501,7 @@ eom
           return assert obj.respond_to?(meth, *priv), msg
         end
         #get rid of overcounting
-        if caller_locations(1, 1)[0].path.start_with?(MINI_DIR)
+        if caller_locations(1, 1)[0].path.start_with?(TEST_DIR)
           return if obj.respond_to?(meth)
         end
         super(obj, meth, msg)
@@ -544,7 +524,7 @@ eom
           return assert !obj.respond_to?(meth, *priv), msg
         end
         #get rid of overcounting
-        if caller_locations(1, 1)[0].path.start_with?(MINI_DIR)
+        if caller_locations(1, 1)[0].path.start_with?(TEST_DIR)
           return unless obj.respond_to?(meth)
         end
         refute_respond_to(obj, meth, msg)
@@ -624,6 +604,7 @@ eom
       end
 
       class << (AssertFile = Struct.new(:failure_message).new)
+        include Assertions
         include CoreAssertions
         def assert_file_predicate(predicate, *args)
           if /\Anot_/ =~ predicate
@@ -655,7 +636,7 @@ eom
 
         def for(key)
           @count += 1
-          yield
+          yield key
         rescue Exception => e
           @failures[key] = [@count, e]
         end
@@ -714,7 +695,7 @@ eom
           if message
             msg = "#{message}\n#{msg}"
           end
-          raise MiniTest::Assertion, msg
+          raise Test::Unit::AssertionFailedError, msg
         end
       end
 
@@ -736,23 +717,13 @@ eom
       end
       alias all_assertions assert_all_assertions
 
-      def message(msg = nil, *args, &default) # :nodoc:
-        if Proc === msg
-          super(nil, *args) do
-            ary = [msg.call, (default.call if default)].compact.reject(&:empty?)
-            if 1 < ary.length
-              ary[0...-1] = ary[0...-1].map {|str| str.sub(/(?<!\.)\z/, '.') }
-            end
-            begin
-              ary.join("\n")
-            rescue Encoding::CompatibilityError
-              ary.map(&:b).join("\n")
-            end
-          end
-        else
-          super
-        end
+      def assert_all_assertions_foreach(msg = nil, *keys, &block)
+        all = AllFailures.new
+        all.foreach(*keys, &block)
+      ensure
+        assert(all.pass?, message(msg) {all.message.chomp(".")})
       end
+      alias all_assertions_foreach assert_all_assertions_foreach
 
       def diff(exp, act)
         require 'pp'
@@ -768,6 +739,11 @@ eom
           q.flush
         end
         q.output
+      end
+
+      def new_test_token
+        token = "\e[7;1m#{$$.to_s}:#{Time.now.strftime('%s.%L')}:#{rand(0x10000).to_s(16)}:\e[m"
+        return token.dump, Regexp.quote(token)
       end
     end
   end

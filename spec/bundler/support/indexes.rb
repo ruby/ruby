@@ -17,7 +17,7 @@ module Spec
     def resolve(args = [])
       @platforms ||= ["ruby"]
       deps = []
-      default_source = instance_double("Bundler::Source::Rubygems", :specs => @index)
+      default_source = instance_double("Bundler::Source::Rubygems", :specs => @index, :to_err => "locally install gems")
       source_requirements = { :default => default_source }
       @deps.each do |d|
         source_requirements[d.name] = d.source = default_source

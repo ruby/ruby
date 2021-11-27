@@ -56,6 +56,7 @@ static inline void rb_builtin_function_check_arity13(VALUE (*f)(rb_execution_con
 static inline void rb_builtin_function_check_arity14(VALUE (*f)(rb_execution_context_t *ec, VALUE self, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)){}
 static inline void rb_builtin_function_check_arity15(VALUE (*f)(rb_execution_context_t *ec, VALUE self, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)){}
 
+PUREFUNC(VALUE rb_vm_lvar_exposed(rb_execution_context_t *ec, int index));
 VALUE rb_vm_lvar_exposed(rb_execution_context_t *ec, int index);
 
 // __builtin_inline!

@@ -5,13 +5,12 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/command'
-require 'rubygems/installer_uninstaller_utils'
-require 'rubygems/exceptions'
-require 'rubygems/deprecate'
-require 'rubygems/package'
-require 'rubygems/ext'
-require 'rubygems/user_interaction'
+require_relative 'installer_uninstaller_utils'
+require_relative 'exceptions'
+require_relative 'deprecate'
+require_relative 'package'
+require_relative 'ext'
+require_relative 'user_interaction'
 
 ##
 # The installer installs the files contained in the .gem into the Gem.home.
@@ -68,19 +67,28 @@ class Gem::Installer
 
   @path_warning = false
 
-  @install_lock = Thread::Mutex.new
-
   class << self
+    #
+    # Changes in rubygems to lazily loading `rubygems/command` (in order to
+    # lazily load `optparse` as a side effect) affect bundler's custom installer
+    # which uses `Gem::Command` without requiring it (up until bundler 2.2.29).
+    # This hook is to compensate for that missing require.
+    #
+    # TODO: Remove when rubygems no longer supports running on bundler older
+    # than 2.2.29.
+
+    def inherited(klass)
+      if klass.name == "Bundler::RubyGemsGemInstaller"
+        require "rubygems/command"
+      end
+
+      super(klass)
+    end
+
     ##
     # True if we've warned about PATH not including Gem.bindir
 
     attr_accessor :path_warning
-
-    ##
-    # Certain aspects of the install process are not thread-safe. This lock is
-    # used to allow multiple threads to install Gems at the same time.
-
-    attr_reader :install_lock
 
     ##
     # Overrides the executable format.
@@ -326,7 +334,7 @@ class Gem::Installer
 
     say spec.post_install_message if options[:post_install_message] && !spec.post_install_message.nil?
 
-    Gem::Installer.install_lock.synchronize { Gem::Specification.reset }
+    Gem::Specification.reset
 
     run_post_install_hooks
 
@@ -511,7 +519,7 @@ class Gem::Installer
   end
 
   def generate_plugins # :nodoc:
-    latest = Gem::Installer.install_lock.synchronize { Gem::Specification.latest_spec_for(spec.name) }
+    latest = Gem::Specification.latest_spec_for(spec.name)
     return if latest && latest.version > spec.version
 
     ensure_writable_dir @plugins_dir
@@ -676,7 +684,7 @@ class Gem::Installer
     @development         = options[:development]
     @build_root          = options[:build_root]
 
-    @build_args = options[:build_args] || Gem::Command.build_args
+    @build_args = options[:build_args]
 
     unless @build_root.nil?
       @bin_dir = File.join(@build_root, @bin_dir.gsub(/^[a-zA-Z]:/, ''))
@@ -761,7 +769,7 @@ class Gem::Installer
 #
 
 require 'rubygems'
-
+#{gemdeps_load(spec.name)}
 version = "#{Gem::Requirement.default_prerelease}"
 
 str = ARGV.first
@@ -779,6 +787,15 @@ else
 gem #{spec.name.dump}, version
 load Gem.bin_path(#{spec.name.dump}, #{bin_file_name.dump}, version)
 end
+TEXT
+  end
+
+  def gemdeps_load(name)
+    return '' if name == "bundler"
+
+    <<-TEXT
+
+Gem.use_gemdeps
 TEXT
   end
 
@@ -823,7 +840,7 @@ TEXT
   # configure scripts and rakefiles or mkrf_conf files.
 
   def build_extensions
-    builder = Gem::Ext::Builder.new spec, @build_args
+    builder = Gem::Ext::Builder.new spec, build_args
 
     builder.build_extensions
   end
@@ -910,7 +927,7 @@ TEXT
   # extensions.
 
   def write_build_info_file
-    return if @build_args.empty?
+    return if build_args.empty?
 
     build_info_dir = File.join gem_home, 'build_info'
 
@@ -920,7 +937,7 @@ TEXT
     build_info_file = File.join build_info_dir, "#{spec.full_name}.info"
 
     File.open build_info_file, 'w' do |io|
-      @build_args.each do |arg|
+      build_args.each do |arg|
         io.puts arg
       end
     end
@@ -944,5 +961,14 @@ TEXT
     end
 
     raise Gem::FilePermissionError.new(dir) unless File.writable? dir
+  end
+
+  private
+
+  def build_args
+    @build_args ||= begin
+                      require_relative "command"
+                      Gem::Command.build_args
+                    end
   end
 end
