@@ -934,9 +934,9 @@ num_negative_p(VALUE num)
 
 /********************************************************************
  *
- * Document-class: Float
+ *  Document-class: Float
  *
- *  Float objects represent inexact real numbers using the native
+ *  A \Float object represents a sometimes-inexact real number using the native
  *  architecture's double-precision floating point representation.
  *
  *  Floating point has a different arithmetic and is an inexact number.
@@ -945,6 +945,11 @@ num_negative_p(VALUE num)
  *  - https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
  *  - https://github.com/rdp/ruby_tutorials_core/wiki/Ruby-Talk-FAQ#floats_imprecise
  *  - https://en.wikipedia.org/wiki/Floating_point#Accuracy_problems
+ *
+ *  You can create a \Float object explicitly with:
+ *
+ *  - Global method {Float}[Kernel.html#method-i-Float].
+ *  - A {floating-point literal}[doc/syntax/literals_rdoc.html#label-Floating-Point+Literals].
  *
  *  == What's Here
  *
@@ -3471,6 +3476,11 @@ rb_num2ull(VALUE val)
  * Document-class: Integer
  *
  * An \Integer object represents an integer value.
+ *
+ * You can create an \Integer object explicitly with:
+ *
+ * - Global method {Integer}[Kernel.html#method-i-Integer].
+ * - An {integer literal}[doc/syntax/literals_rdoc.html#label-Integer+Literals].
  *
  * An attempt to add a singleton method to an instance of this class
  * causes an exception to be raised.
