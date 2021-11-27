@@ -105,7 +105,8 @@ class DottedFormatter
     end
 
     def load(*)
-      print "#{MSpec.file.delete_prefix(BASE)}: "
+      file = MSpec.file || MSpec.files_array.first
+      print "#{file.delete_prefix(BASE)}: "
       @loaded = true
     end
 
