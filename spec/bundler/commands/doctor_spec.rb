@@ -133,4 +133,14 @@ RSpec.describe "bundle doctor" do
       end
     end
   end
+
+  context "when home contains filesname with special characters" do
+    it "escape filename before command execute" do
+      doctor = Bundler::CLI::Doctor.new({})
+      expect(doctor).to receive(:`).with("/usr/bin/otool -L \\$\\(date\\)\\ \\\"\\'\\\\.bundle").and_return("dummy string")
+      doctor.dylibs_darwin('$(date) "\'\.bundle')
+      expect(doctor).to receive(:`).with("/usr/bin/ldd \\$\\(date\\)\\ \\\"\\'\\\\.bundle").and_return("dummy string")
+      doctor.dylibs_ldd('$(date) "\'\.bundle')
+    end
+  end
 end

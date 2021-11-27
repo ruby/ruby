@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "rbconfig"
+require "shellwords"
 
 module Bundler
   class CLI::Doctor
@@ -22,14 +23,14 @@ module Bundler
     end
 
     def dylibs_darwin(path)
-      output = `/usr/bin/otool -L "#{path}"`.chomp
+      output = `/usr/bin/otool -L #{path.shellescape}`.chomp
       dylibs = output.split("\n")[1..-1].map {|l| l.match(DARWIN_REGEX).captures[0] }.uniq
       # ignore @rpath and friends
       dylibs.reject {|dylib| dylib.start_with? "@" }
     end
 
     def dylibs_ldd(path)
-      output = `/usr/bin/ldd "#{path}"`.chomp
+      output = `/usr/bin/ldd #{path.shellescape}`.chomp
       output.split("\n").map do |l|
         match = l.match(LDD_REGEX)
         next if match.nil?
