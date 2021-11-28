@@ -1011,7 +1011,9 @@ queue_do_pop(VALUE self, struct rb_queue *q, int should_block)
                 .as = {.q = q}
             };
 
-            list_add_tail(queue_waitq(queue_waiter.as.q), &queue_waiter.w.node);
+            struct list_head *waitq = queue_waitq(q);
+
+            list_add_tail(waitq, &queue_waiter.w.node);
             queue_waiter.as.q->num_waiting++;
 
             rb_ensure(queue_sleep, self, queue_sleep_done, (VALUE)&queue_waiter);
