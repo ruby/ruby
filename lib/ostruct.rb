@@ -93,16 +93,16 @@
 #   o.methods = [:foo, :bar]
 #   o.methods # => [:foo, :bar]
 #
-# To help remedy clashes, OpenStruct uses only protected/private methods ending with `!`
-# and defines aliases for builtin public methods by adding a `!`:
+# To help remedy clashes, OpenStruct uses only protected/private methods ending with <code>!</code>
+# and defines aliases for builtin public methods by adding a <code>!</code>:
 #
 #   o = OpenStruct.new(make: 'Bentley', class: :luxury)
 #   o.class # => :luxury
 #   o.class! # => OpenStruct
 #
-# It is recommended (but not enforced) to not use fields ending in `!`;
+# It is recommended (but not enforced) to not use fields ending in <code>!</code>;
 # Note that a subclass' methods may not be overwritten, nor can OpenStruct's own methods
-# ending with `!`.
+# ending with <code>!</code>.
 #
 # For all these reasons, consider not using OpenStruct at all.
 #
@@ -279,7 +279,7 @@ class OpenStruct
   # :call-seq:
   #   ostruct[name]  -> object
   #
-  # Returns the value of an attribute, or `nil` if there is no such attribute.
+  # Returns the value of an attribute, or +nil+ if there is no such attribute.
   #
   #   require "ostruct"
   #   person = OpenStruct.new("name" => "John Smith", "age" => 70)
@@ -452,7 +452,7 @@ class OpenStruct
     update_to_values!(h)
   end
 
-  # Make all public methods (builtin or our own) accessible with `!`:
+  # Make all public methods (builtin or our own) accessible with <code>!</code>:
   instance_methods.each do |method|
     new_name = "#{method}!"
     alias_method new_name, method
