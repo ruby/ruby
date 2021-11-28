@@ -409,6 +409,10 @@ typedef unsigned int  BitStatusType;
 #define IS_REPEAT_INFINITE(n)   ((n) == REPEAT_INFINITE)
 
 /* bitset */
+#if defined(BITSET_SIZE)
+/* Constant defined on FreeBSD, different meaning */
+#undef BITSET_SIZE
+#endif
 #define BITS_PER_BYTE      8
 #define SINGLE_BYTE_SIZE   (1 << BITS_PER_BYTE)
 #define BITS_IN_ROOM       ((int )sizeof(Bits) * BITS_PER_BYTE)
