@@ -12,6 +12,7 @@ autoload :ClassIdUnderAutoload, "#{object_path}/class_id_under_autoload_spec"
 describe :rb_path_to_class, shared: true do
   it "returns a class or module from a scoped String" do
     @s.send(@method, "CApiClassSpecs::A::B").should equal(CApiClassSpecs::A::B)
+    @s.send(@method, "CApiClassSpecs::A::M").should equal(CApiClassSpecs::A::M)
   end
 
   it "resolves autoload constants" do
@@ -27,7 +28,9 @@ describe :rb_path_to_class, shared: true do
   end
 
   it "raises a TypeError if the constant is not a class or module" do
-    -> { @s.send(@method, "CApiClassSpecs::A::C") }.should raise_error(TypeError)
+    -> {
+      @s.send(@method, "CApiClassSpecs::A::C")
+    }.should raise_error(TypeError, 'CApiClassSpecs::A::C does not refer to class/module')
   end
 
   it "raises an ArgumentError even if a constant in the path exists on toplevel" do

@@ -31,16 +31,40 @@ describe "Kernel#clone" do
   describe "with no arguments" do
     it "copies frozen state from the original" do
       o2 = @obj.clone
+      o2.should_not.frozen?
+
       @obj.freeze
       o3 = @obj.clone
-
-      o2.should_not.frozen?
       o3.should.frozen?
     end
 
     it 'copies frozen?' do
       o = ''.freeze.clone
       o.frozen?.should be_true
+    end
+  end
+
+  describe "with freeze: nil" do
+    ruby_version_is ""..."3.0" do
+      it "raises ArgumentError" do
+        -> { @obj.clone(freeze: nil) }.should raise_error(ArgumentError, /unexpected value for freeze: NilClass/)
+      end
+    end
+
+    ruby_version_is "3.0" do
+      it "copies frozen state from the original, like #clone without arguments" do
+        o2 = @obj.clone(freeze: nil)
+        o2.should_not.frozen?
+
+        @obj.freeze
+        o3 = @obj.clone(freeze: nil)
+        o3.should.frozen?
+      end
+
+      it "copies frozen?" do
+        o = "".freeze.clone(freeze: nil)
+        o.frozen?.should be_true
+      end
     end
   end
 
@@ -109,6 +133,14 @@ describe "Kernel#clone" do
         obj = KernelSpecs::Clone.new
         -> { obj.clone(freeze: false) }.should raise_error(ArgumentError, 'wrong number of arguments (given 2, expected 1)')
       end
+    end
+  end
+
+  describe "with freeze: anything else" do
+    it 'raises ArgumentError when passed not true/false/nil' do
+      -> { @obj.clone(freeze: 1) }.should raise_error(ArgumentError, /unexpected value for freeze: Integer/)
+      -> { @obj.clone(freeze: "") }.should raise_error(ArgumentError, /unexpected value for freeze: String/)
+      -> { @obj.clone(freeze: Object.new) }.should raise_error(ArgumentError, /unexpected value for freeze: Object/)
     end
   end
 

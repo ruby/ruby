@@ -743,6 +743,30 @@ describe :array_slice, shared: true do
         @array.send(@method, eval("(-2..-4).step(10)")).should == []
         @array.send(@method, eval("(-2...-4).step(10)")).should == []
       end
+
+      it "has range with bounds outside of array" do
+        # end is equal to array's length
+        @array.send(@method, (0..6).step(1)).should == [0, 1, 2, 3, 4, 5]
+        -> { @array.send(@method, (0..6).step(2)) }.should raise_error(RangeError)
+
+        # end is greater than length with positive steps
+        @array.send(@method, (1..6).step(2)).should == [1, 3, 5]
+        @array.send(@method, (2..7).step(2)).should == [2, 4]
+        -> { @array.send(@method, (2..8).step(2)) }.should raise_error(RangeError)
+
+        # begin is greater than length with negative steps
+        @array.send(@method, (6..1).step(-2)).should == [5, 3, 1]
+        @array.send(@method, (7..2).step(-2)).should == [5, 3]
+        -> { @array.send(@method, (8..2).step(-2)) }.should raise_error(RangeError)
+      end
+
+      it "has endless range with start outside of array's bounds" do
+        @array.send(@method, eval("(6..).step(1)")).should == []
+        @array.send(@method, eval("(7..).step(1)")).should == nil
+
+        @array.send(@method, eval("(6..).step(2)")).should == []
+        -> { @array.send(@method, eval("(7..).step(2)")) }.should raise_error(RangeError)
+      end
     end
   end
 

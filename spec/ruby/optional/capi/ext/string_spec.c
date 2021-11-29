@@ -577,6 +577,14 @@ static VALUE string_spec_rb_str_catf(VALUE self, VALUE mesg) {
   return rb_str_catf(mesg, "fmt %d %d number", 41, 6);
 }
 
+static VALUE string_spec_rb_str_locktmp(VALUE self, VALUE str) {
+  return rb_str_locktmp(str);
+}
+
+static VALUE string_spec_rb_str_unlocktmp(VALUE self, VALUE str) {
+  return rb_str_unlocktmp(str);
+}
+
 void Init_string_spec(void) {
   VALUE cls = rb_define_class("CApiStringSpecs", rb_cObject);
   rb_define_method(cls, "rb_cstr2inum", string_spec_rb_cstr2inum, 2);
@@ -672,6 +680,8 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_utf8_str_new_cstr", string_spec_rb_utf8_str_new_cstr, 0);
   rb_define_method(cls, "rb_str_vcatf", string_spec_rb_str_vcatf, 1);
   rb_define_method(cls, "rb_str_catf", string_spec_rb_str_catf, 1);
+  rb_define_method(cls, "rb_str_locktmp", string_spec_rb_str_locktmp, 1);
+  rb_define_method(cls, "rb_str_unlocktmp", string_spec_rb_str_unlocktmp, 1);
 }
 
 #ifdef __cplusplus

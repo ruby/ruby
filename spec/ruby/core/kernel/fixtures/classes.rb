@@ -281,8 +281,13 @@ module KernelSpecs
       @two = two
     end
 
-    def initialize_copy(other)
+    def initialize_copy(other, **kw)
       ScratchPad.record object_id
+    end
+
+    # define to support calling #clone with optional :freeze keyword argument
+    def initialize_clone(other, **kw)
+      super(other) # to call #initialize_copy
     end
   end
 

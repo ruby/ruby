@@ -7,6 +7,16 @@ describe "GC.stat" do
     stat.keys.should.include?(:count)
   end
 
+  it "updates the given hash values" do
+    hash = { count: "hello", __other__: "world" }
+    stat = GC.stat(hash)
+
+    stat.should be_kind_of(Hash)
+    stat.should equal hash
+    stat[:count].should be_kind_of(Integer)
+    stat[:__other__].should == "world"
+  end
+
   it "the values are all Integer since rb_gc_stat() returns size_t" do
     GC.stat.values.each { |value| value.should be_kind_of(Integer) }
   end
@@ -40,5 +50,13 @@ describe "GC.stat" do
   it "provides some number for total_allocated_objects" do
     GC.stat(:total_allocated_objects).should be_kind_of(Integer)
     GC.stat[:total_allocated_objects].should be_kind_of(Integer)
+  end
+
+  it "raises an error if argument is not nil, a symbol, or a hash" do
+    -> { GC.stat(7) }.should raise_error(TypeError, "non-hash or symbol given")
+  end
+
+  it "raises an error if an unknown key is given" do
+    -> { GC.stat(:foo) }.should raise_error(ArgumentError, "unknown key: foo")
   end
 end

@@ -87,5 +87,8 @@ class CApiClassSpecs
 
     class B
     end
+
+    module M
+    end
   end
 end

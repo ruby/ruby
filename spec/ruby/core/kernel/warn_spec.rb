@@ -212,6 +212,70 @@ describe "Kernel#warn" do
     -> { warn('foo', **h) }.should complain("foo\n")
   end
 
+  ruby_version_is '3.0' do
+    it "calls Warning.warn without keyword arguments if Warning.warn does not accept keyword arguments" do
+      verbose = $VERBOSE
+      $VERBOSE = false
+      class << Warning
+        alias_method :_warn, :warn
+        def warn(message)
+          ScratchPad.record(message)
+        end
+      end
+
+      begin
+        ScratchPad.clear
+        Kernel.warn("Chunky bacon!")
+        ScratchPad.recorded.should == "Chunky bacon!\n"
+
+        Kernel.warn("Deprecated bacon!", category: :deprecated)
+        ScratchPad.recorded.should == "Deprecated bacon!\n"
+      ensure
+        class << Warning
+          remove_method :warn
+          alias_method :warn, :_warn
+          remove_method :_warn
+        end
+        $VERBOSE = verbose
+      end
+    end
+
+    it "calls Warning.warn with category: nil if Warning.warn accepts keyword arguments" do
+      Warning.should_receive(:warn).with("Chunky bacon!\n", category: nil)
+      verbose = $VERBOSE
+      $VERBOSE = false
+      begin
+        Kernel.warn("Chunky bacon!")
+      ensure
+        $VERBOSE = verbose
+      end
+    end
+
+    it "calls Warning.warn with given category keyword converted to a symbol" do
+      Warning.should_receive(:warn).with("Chunky bacon!\n", category: :deprecated)
+      verbose = $VERBOSE
+      $VERBOSE = false
+      begin
+        Kernel.warn("Chunky bacon!", category: 'deprecated')
+      ensure
+        $VERBOSE = verbose
+      end
+    end
+  end
+
+  ruby_version_is ''...'3.0' do
+    it "calls Warning.warn with no keyword arguments" do
+      Warning.should_receive(:warn).with("Chunky bacon!\n")
+      verbose = $VERBOSE
+      $VERBOSE = false
+      begin
+        Kernel.warn("Chunky bacon!")
+      ensure
+        $VERBOSE = verbose
+      end
+    end
+  end
+
   it "does not call Warning.warn if self is the Warning module" do
     # RubyGems redefines Kernel#warn so we need to use a subprocess and disable RubyGems here
     code = <<-RUBY

@@ -94,6 +94,12 @@ ruby_version_is "3.0" do
       }.should raise_error(RuntimeError, 'class variable access from toplevel')
     end
 
+    it "does not raise an error when checking if defined from the toplevel scope" do
+      -> {
+        eval "defined?(@@cvar_toplevel1)"
+      }.should_not raise_error
+    end
+
     it "raises a RuntimeError when a class variable is overtaken in an ancestor class" do
       parent = Class.new()
       subclass = Class.new(parent)

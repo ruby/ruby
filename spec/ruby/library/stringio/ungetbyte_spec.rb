@@ -12,7 +12,7 @@ describe "StringIO#ungetbyte" do
     io.string.should == 'Shis is a simple string.'
   end
 
-  it "ungets a single byte from a string in the middle of a multibyte characte" do
+  it "ungets a single byte from a string in the middle of a multibyte character" do
     str = "\u01a9"
     io = StringIO.new(str)
     b = io.getbyte

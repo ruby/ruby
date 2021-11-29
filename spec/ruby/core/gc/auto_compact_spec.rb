@@ -12,6 +12,11 @@ ruby_version_is "3.0" do
       original = GC.auto_compact
       begin
         GC.auto_compact = !original
+      rescue NotImplementedError # platform does not support autocompact
+        skip
+      end
+
+      begin
         GC.auto_compact.should == !original
       ensure
         GC.auto_compact = original

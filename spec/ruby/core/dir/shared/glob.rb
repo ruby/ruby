@@ -55,12 +55,24 @@ describe :dir_glob, shared: true do
     end
   end
 
+  ruby_version_is "3.0"..."3.1" do
+    it "result is sorted with any non false value of sort:" do
+      result = Dir.send(@method, '*', sort: 0)
+      result.should == result.sort
+
+      result = Dir.send(@method, '*', sort: nil)
+      result.should == result.sort
+
+      result = Dir.send(@method, '*', sort: 'false')
+      result.should == result.sort
+    end
+  end
+
   ruby_version_is "3.1" do
-    it "true or false is expected as sort:" do
-      -> {Dir.send(@method, '*', sort: nil)}.should raise_error ArgumentError, /true or false/
-      -> {Dir.send(@method, '*', sort: 0)}.should raise_error ArgumentError, /true or false/
-      -> {Dir.send(@method, '*', sort: "")}.should raise_error ArgumentError, /true or false/
-      -> {Dir.send(@method, '*', sort: Object.new)}.should raise_error ArgumentError, /true or false/
+    it "raises an ArgumentError if sort: is not true or false" do
+      -> { Dir.send(@method, '*', sort: 0) }.should raise_error ArgumentError, /expected true or false/
+      -> { Dir.send(@method, '*', sort: nil) }.should raise_error ArgumentError, /expected true or false/
+      -> { Dir.send(@method, '*', sort: 'false') }.should raise_error ArgumentError, /expected true or false/
     end
   end
 

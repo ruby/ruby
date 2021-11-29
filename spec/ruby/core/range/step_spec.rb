@@ -481,6 +481,32 @@ describe "Range#step" do
           end
         end
 
+        ruby_version_is "2.7" do
+          context "when begin is not defined and end is numeric" do
+            it "returns an instance of Enumerator::ArithmeticSequence" do
+              eval("(..10)").step.class.should == Enumerator::ArithmeticSequence
+            end
+          end
+        end
+
+        context "when range is endless" do
+          it "returns an instance of Enumerator::ArithmeticSequence when begin is numeric" do
+            (1..).step.class.should == Enumerator::ArithmeticSequence
+          end
+
+          it "returns an instance of Enumerator when begin is not numeric" do
+            ("a"..).step.class.should == Enumerator
+          end
+        end
+
+        ruby_version_is "2.7" do
+          context "when range is beginless and endless" do
+            it "returns an instance of Enumerator" do
+              Range.new(nil, nil).step.class.should == Enumerator
+            end
+          end
+        end
+
         context "when begin and end are not numerics" do
           it "returns an instance of Enumerator" do
             ("a".."z").step.class.should == Enumerator
