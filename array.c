@@ -7845,13 +7845,11 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  You can create an \Array object explicitly with:
  *
- *  - Global method {Array}[Kernel.html#method-i-Array].
- *  - A {array literal}[doc/syntax/literals_rdoc.html#label-Array+Literals].
+ *  - An {array literal}[doc/syntax/literals_rdoc.html#label-Array+Literals].
  *
- *  Many Ruby methods return \Array objects, including:
+ *  You can convert certain objects to Arrays with:
  *
- *  - Instance method +to_a+, available in some Core and Standard Library classes.
- *  - Instance method +to_ary+, available in fewer classes.
+ *  - \Method {Array}[Kernel.html#method-i-Array].
  *
  *  An \Array can contain different types of objects.  For
  *  example, the array below contains an Integer, a String and a Float:

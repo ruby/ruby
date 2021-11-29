@@ -948,12 +948,11 @@ num_negative_p(VALUE num)
  *
  *  You can create a \Float object explicitly with:
  *
- *  - Global method {Float}[Kernel.html#method-i-Float].
  *  - A {floating-point literal}[doc/syntax/literals_rdoc.html#label-Float+Literals].
  *
- *  Many Ruby methods return \Float objects, including:
+ *  You can convert certain objects to Floats with:
  *
- *  - Instance method +to_f+, available in some Core and Standard Library classes.
+ *  - \Method {Float}[Kernel.html#method-i-Float].
  *
  *  == What's Here
  *
@@ -3483,13 +3482,11 @@ rb_num2ull(VALUE val)
  *
  * You can create an \Integer object explicitly with:
  *
- * - Global method {Integer}[Kernel.html#method-i-Integer].
  * - An {integer literal}[doc/syntax/literals_rdoc.html#label-Integer+Literals].
  *
- * Many Ruby methods return \Integer objects, including:
+ * You can convert certain objects to Integers with:
  *
- * - Instance method +to_i+, available in some Core and Standard Library classes.
- * - Instance method +to_int+, available in fewer classes.
+ * - \Method {Integer}[Kernel.html#method-i-Integer].
  *
  * An attempt to add a singleton method to an instance of this class
  * causes an exception to be raised.

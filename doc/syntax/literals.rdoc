@@ -202,8 +202,8 @@ a single codepoint in the script encoding:
 
 === Here Document Literals
 
-If you are writing a large block of text you may use a HereDocument,
-sometines written as HereDoc:
+If you are writing a large block of text you may use a "here document" or
+"heredoc":
 
   expected_result = <<HEREDOC
   This would contain specially formatted text.

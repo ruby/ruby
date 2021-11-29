@@ -2717,12 +2717,11 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
  *
  * You can create a \Rational object explicitly with:
  *
- * - Global method {Rational}[Kernel.html#method-i-Rational].
  * - A {rational literal}[doc/syntax/literals_rdoc.html#label-Rational+Literals].
  *
- * Some Ruby methods return \Rational objects, including:
+ * You can convert certain objects to Rationals with:
  *
- * - Instance method +to_r+, available in some Core and Standard Library classes.
+ * - \Method {Rational}[Kernel.html#method-i-Rational].
  *
  * Examples
  *

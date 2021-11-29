@@ -2269,12 +2269,11 @@ float_arg(VALUE self)
  *
  * You can create a \Complex object explicitly with:
  *
- * - Global method {Complex}[Kernel.html#method-i-Complex].
  * - A {complex literal}[doc/syntax/literals_rdoc.html#label-Complex+Literals].
  *
- * Many Ruby methods return \Complex objects, including:
+ * You can convert certain objects to \Complex objects with:
  *
- * - Instance method +to_f+, available in some Core and Standard Library classes.
+ * - \Method {Complex}[Kernel.html#method-i-Complex].
  *
  * Complex object can be created as literal, and also by using
  * Kernel#Complex, Complex::rect, Complex::polar or to_c method.

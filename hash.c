@@ -6600,13 +6600,11 @@ env_dup(VALUE obj)
  *
  *  You can create a \Hash object explicitly with:
  *
- *  - Global method {Hash}[Kernel.html#method-i-Hash].
  *  - A {hash literal}[doc/syntax/literals_rdoc.html#label-Hash+Literals].
  *
- *  Many Ruby methods return \Hash objects, including:
+ *  You can convert certain objects to Hashes with:
  *
- *  - Instance method +to_i+, available in some Core and Standard Library classes.
- *  - Instance method +to_int+, available in fewer classes.
+ *  - \Method {Hash}[Kernel.html#method-i-Hash].
  *
  *  You can create a \Hash by calling method Hash.new.
  *
