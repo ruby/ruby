@@ -6598,13 +6598,15 @@ env_dup(VALUE obj)
  *
  *  === Creating a \Hash
  *
- *  Here are three ways to create a \Hash:
+ *  You can create a \Hash object explicitly with:
  *
- *  - \Method <tt>Hash.new</tt>
- *  - \Method <tt>Hash[]</tt>
- *  - Literal form: <tt>{}</tt>.
+ *  - Global method {Hash}[Kernel.html#method-i-Hash].
+ *  - A {hash literal}[doc/syntax/literals_rdoc.html#label-Hash+Literals].
  *
- *  ---
+ *  Many Ruby methods return \Hash objects, including:
+ *
+ *  - Instance method +to_i+, available in some Core and Standard Library classes.
+ *  - Instance method +to_int+, available in fewer classes.
  *
  *  You can create a \Hash by calling method Hash.new.
  *
@@ -6613,8 +6615,6 @@ env_dup(VALUE obj)
  *    h = Hash.new
  *    h # => {}
  *    h.class # => Hash
- *
- *  ---
  *
  *  You can create a \Hash by calling method Hash.[].
  *
@@ -6627,8 +6627,6 @@ env_dup(VALUE obj)
  *
  *    h = Hash[foo: 0, bar: 1, baz: 2]
  *    h # => {:foo=>0, :bar=>1, :baz=>2}
- *
- *  ---
  *
  *  You can create a \Hash by using its literal form (curly braces).
  *

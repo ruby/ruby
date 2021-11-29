@@ -2267,6 +2267,15 @@ float_arg(VALUE self)
  * and i is imaginary unit.  Real a equals complex a+0i
  * mathematically.
  *
+ * You can create a \Complex object explicitly with:
+ *
+ * - Global method {Complex}[Kernel.html#method-i-Complex].
+ * - A {complex literal}[doc/syntax/literals_rdoc.html#label-Complex+Literals].
+ *
+ * Many Ruby methods return \Complex objects, including:
+ *
+ * - Instance method +to_f+, available in some Core and Standard Library classes.
+ *
  * Complex object can be created as literal, and also by using
  * Kernel#Complex, Complex::rect, Complex::polar or to_c method.
  *
