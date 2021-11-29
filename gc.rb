@@ -123,13 +123,13 @@ module GC
 
   #  call-seq:
   #     GC.stat -> Hash
-  #     GC.stat(hash) -> hash
+  #     GC.stat(hash) -> Hash
   #     GC.stat(:key) -> Numeric
   #
   #  Returns a Hash containing information about the GC.
   #
-  #  The contents of the hash are implementation specific and may be changed in
-  #  the future.
+  #  The contents of the hash are implementation specific and may change in
+  #  the future without notice.
   #
   #  The hash includes information about internal statistics about GC such as:
   #
@@ -191,7 +191,7 @@ module GC
   #  it is overwritten and returned.
   #  This is intended to avoid probe effect.
   #
-  #  This method is only expected to work on C Ruby.
+  #  This method is only expected to work on CRuby.
   def self.stat hash_or_key = nil
     Primitive.gc_stat hash_or_key
   end
