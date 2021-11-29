@@ -11801,7 +11801,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  You can create a \String object explicitly with:
  *
  *  - A {string literal}[doc/syntax/literals_rdoc.html#label-String+Literals].
- *  - A {HereDoc literal}[doc/syntax/literals_rdoc.html#label-Here+Document+Literals].
+ *  - A {heredoc literal}[doc/syntax/literals_rdoc.html#label-Here+Document+Literals].
  *
  *  You can convert certain objects to Strings with:
  *
