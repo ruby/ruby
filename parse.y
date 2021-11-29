@@ -63,7 +63,7 @@ enum shareability {
 
 struct lex_context {
     unsigned int in_defined: 1;
-    unsigned int in_argdef: 1;
+    unsigned int in_kwarg: 1;
     unsigned int in_def: 1;
     unsigned int in_class: 1;
     BITFIELD(enum shareability, shareable_constant_value, 2);
@@ -1758,13 +1758,13 @@ expr		: command_call
 			SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
 			p->command_start = FALSE;
 			$<ctxt>2 = p->ctxt;
-			p->ctxt.in_argdef = 1;
+			p->ctxt.in_kwarg = 1;
 			$<tbl>$ = push_pvtbl(p);
 		    }
 		  p_top_expr_body
 		    {
 			pop_pvtbl(p, $<tbl>3);
-			p->ctxt.in_argdef = $<ctxt>2.in_argdef;
+			p->ctxt.in_kwarg = $<ctxt>2.in_kwarg;
 		    /*%%%*/
 			$$ = NEW_CASE3($1, NEW_IN($4, 0, 0, &@4), &@$);
 		    /*% %*/
@@ -1776,13 +1776,13 @@ expr		: command_call
 			SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
 			p->command_start = FALSE;
 			$<ctxt>2 = p->ctxt;
-			p->ctxt.in_argdef = 1;
+			p->ctxt.in_kwarg = 1;
 			$<tbl>$ = push_pvtbl(p);
 		    }
 		  p_top_expr_body
 		    {
 			pop_pvtbl(p, $<tbl>3);
-			p->ctxt.in_argdef = $<ctxt>1.in_argdef;
+			p->ctxt.in_kwarg = $<ctxt>1.in_kwarg;
 		    /*%%%*/
 			$$ = NEW_CASE3($1, NEW_IN($4, NEW_TRUE(&@4), NEW_FALSE(&@4), &@4), &@$);
 		    /*% %*/
@@ -4058,7 +4058,7 @@ p_case_body	: keyword_in
 			SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
 			p->command_start = FALSE;
 			$<ctxt>1 = p->ctxt;
-			p->ctxt.in_argdef = 1;
+			p->ctxt.in_kwarg = 1;
 			$<tbl>$ = push_pvtbl(p);
 		    }
 		    {
@@ -4068,7 +4068,7 @@ p_case_body	: keyword_in
 		    {
 			pop_pktbl(p, $<tbl>3);
 			pop_pvtbl(p, $<tbl>2);
-			p->ctxt.in_argdef = $<ctxt>1.in_argdef;
+			p->ctxt.in_kwarg = $<ctxt>1.in_kwarg;
 		    }
 		  compstmt
 		  p_cases
@@ -4242,12 +4242,12 @@ p_expr_basic	: p_value
 		    {
 			$<tbl>$ = push_pktbl(p);
 			$<ctxt>1 = p->ctxt;
-			p->ctxt.in_argdef = 0;
+			p->ctxt.in_kwarg = 0;
 		    }
 		  p_kwargs rbrace
 		    {
 			pop_pktbl(p, $<tbl>2);
-			p->ctxt.in_argdef = $<ctxt>1.in_argdef;
+			p->ctxt.in_kwarg = $<ctxt>1.in_kwarg;
 			$$ = new_hash_pattern(p, Qnone, $3, &@$);
 		    }
 		| tLBRACE rbrace
@@ -5141,12 +5141,12 @@ f_paren_args	: '(' f_args rparen
 f_arglist	: f_paren_args
 		|   {
 			$<ctxt>$ = p->ctxt;
-			p->ctxt.in_argdef = 1;
+			p->ctxt.in_kwarg = 1;
 			SET_LEX_STATE(p->lex.state|EXPR_LABEL); /* force for args */
 		    }
 		  f_args term
 		    {
-			p->ctxt.in_argdef = $<ctxt>1.in_argdef;
+			p->ctxt.in_kwarg = $<ctxt>1.in_kwarg;
 			$$ = $2;
 			SET_LEX_STATE(EXPR_BEG);
 			p->command_start = TRUE;
@@ -9293,7 +9293,7 @@ parser_yylex(struct parser_params *p)
                 dispatch_scan_event(p, tIGNORED_NL);
             }
             fallthru = FALSE;
-	    if (!c && p->ctxt.in_argdef) {
+	    if (!c && p->ctxt.in_kwarg) {
 		goto normal_newline;
 	    }
 	    goto retry;
