@@ -16,6 +16,14 @@
 #include <sys/mman.h>
 #endif
 
+// On Solaris, madvise() is NOT declared for SUS (XPG4v2) or later,
+// but MADV_* macros are defined when __EXTENSIONS__ is defined.
+#if defined(__sun) && defined(HAVE_CADDR_T) && \
+    (defined(MADV_FREE) || defined(MADV_DONTNEED))
+#include <sys/types.h>
+extern int madvise(caddr_t, size_t, int);
+#endif
+
 #include COROUTINE_H
 
 #include "eval_intern.h"

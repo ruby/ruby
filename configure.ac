@@ -1107,6 +1107,7 @@ main()
 		    RUBY_APPEND_OPTIONS(CXXFLAGS, -U_XOPEN_SOURCE)
 		  ])
 		])
+		AC_CHECK_TYPES([caddr_t],[],[],[@%:@include <sys/types.h>])
 		],
 [haiku*], [
 		LIBS="$LIBS" # m lib is include in root
