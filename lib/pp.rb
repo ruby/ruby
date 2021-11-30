@@ -61,6 +61,15 @@ require 'prettyprint'
 # Tanaka Akira <akr@fsij.org>
 
 class PP < PrettyPrint
+  def PP.width_for(out)
+    begin
+      require 'io/console'
+      _, width = out.winsize
+    rescue LoadError, NoMethodError, Errno::ENOTTY
+    end
+    (width || ENV['COLUMNS']&.to_i&.nonzero? || 80) - 1
+  end
+
   # Outputs +obj+ to +out+ in pretty printed format of
   # +width+ columns in width.
   #
@@ -68,7 +77,7 @@ class PP < PrettyPrint
   # If +width+ is omitted, 79 is assumed.
   #
   # PP.pp returns +out+.
-  def PP.pp(obj, out=$>, width=79)
+  def PP.pp(obj, out=$>, width=width_for(out))
     q = PP.new(out, width)
     q.guard_inspect_key {q.pp obj}
     q.flush
