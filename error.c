@@ -34,6 +34,7 @@
 #include "internal/io.h"
 #include "internal/load.h"
 #include "internal/object.h"
+#include "internal/string.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
@@ -1422,8 +1423,15 @@ exc_inspect(VALUE exc)
     str = rb_str_buf_new2("#<");
     klass = rb_class_name(klass);
     rb_str_buf_append(str, klass);
-    rb_str_buf_cat(str, ": ", 2);
-    rb_str_buf_append(str, exc);
+
+    if (RTEST(rb_str_include(exc, rb_str_new2("\n")))) {
+        rb_str_catf(str, ":%+"PRIsVALUE, exc);
+    }
+    else {
+        rb_str_buf_cat(str, ": ", 2);
+        rb_str_buf_append(str, exc);
+    }
+
     rb_str_buf_cat(str, ">", 1);
 
     return str;
