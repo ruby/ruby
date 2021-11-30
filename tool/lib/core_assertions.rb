@@ -33,6 +33,7 @@ module Test
     module CoreAssertions
       require_relative 'envutil'
       require 'pp'
+      require 'io/console'
 
       def mu_pp(obj) #:nodoc:
         obj.pretty_inspect.chomp
