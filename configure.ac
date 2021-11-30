@@ -1110,7 +1110,6 @@ main()
 		AC_CHECK_TYPES([caddr_t],[],[],[@%:@include <sys/types.h>])
 		AC_CACHE_CHECK([whether madvise declaration is needed], rb_cv_madvice_prototype_using_caddr_t,
 		  [RUBY_WERROR_FLAG([AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-		    @%:@if defined(HAVE_CADDR_T) && (defined(MADV_FREE) || defined(MADV_DONTNEED))
 		    @%:@include <sys/unistd.h>
 		    @%:@include <sys/mman.h>
 		    @%:@include <sys/types.h>
