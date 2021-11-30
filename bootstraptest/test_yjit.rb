@@ -2450,10 +2450,10 @@ assert_equal 'ok', %q{
   RubyVM::YJIT.simulate_oom! if defined?(RubyVM::YJIT)
 
   nimai(false)
-} if false  # disabled for now since OOM crashes in the test harness
+}
 
-# block invalidation while out of memory
 assert_equal 'new', %q{
+  # test block invalidation while out of memory
   def foo
     :old
   end
@@ -2472,7 +2472,7 @@ assert_equal 'new', %q{
   end
 
   test
-} if false # disabled for now since OOM crashes in the test harness
+}
 
 assert_equal 'ok', %q{
   # Try to compile new method while OOM
