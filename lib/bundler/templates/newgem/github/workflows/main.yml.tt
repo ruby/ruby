@@ -10,7 +10,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Ruby ${{ matrix.ruby }} 
+    name: Ruby ${{ matrix.ruby }}
     strategy:
       matrix:
         ruby:
