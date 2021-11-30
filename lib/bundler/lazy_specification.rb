@@ -39,7 +39,7 @@ module Bundler
     end
 
     def satisfies?(dependency)
-      effective_requirement = dependency.requirement == Gem::Requirement.default ? Gem::Requirement.default_prerelease : dependency.requirement
+      effective_requirement = dependency.requirement == Gem::Requirement.default ? Gem::Requirement.new(">= 0.A") : dependency.requirement
 
       @name == dependency.name && effective_requirement.satisfied_by?(Gem::Version.new(@version))
     end
