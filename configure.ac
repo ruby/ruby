@@ -3485,7 +3485,13 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_SONAME='lib$(RUBY_SO_NAME).$(SOEXT).$(RUBY_PROGRAM_VERSION)'
 	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
 	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ["${linker_flag}-h${linker_flag:+,}"'$(@F)'])
-	XLDFLAGS="$XLDFLAGS "'-R${libdir}'
+	AS_IF([test "$load_relative" = yes], [
+	    libprefix="'\$\$ORIGIN/../${libdir_basename}'"
+	    LIBRUBY_RPATHFLAGS="-R${libprefix}"
+	    LIBRUBY_RELATIVE=yes
+	], [
+	    LIBRUBY_RPATHFLAGS='-R${libdir}'
+	])
 	],
     [hpux*], [
 	XLDFLAGS="$XLDFLAGS "'-Wl,+s,+b,$(libdir)'
