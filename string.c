@@ -6164,7 +6164,7 @@ rb_str_reverse_bang(VALUE str)
  *     "hello".include? ?h     #=> true
  */
 
-static VALUE
+VALUE
 rb_str_include(VALUE str, VALUE arg)
 {
     long i;
