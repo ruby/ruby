@@ -26,7 +26,7 @@ void print_bytes(codeblock_t* cb)
 {
     for (uint32_t i = 0; i < cb->write_pos; ++i)
     {
-        printf("%02X", (int)cb->mem_block[i]);
+        printf("%02X", (int)*cb_get_ptr(cb, i));
     }
 
     printf("\n");
@@ -59,7 +59,7 @@ void check_bytes(codeblock_t* cb, const char* bytes)
         char* endptr;
         long int byte = strtol(byte_str, &endptr, 16);
 
-        uint8_t cb_byte = cb->mem_block[i];
+        uint8_t cb_byte = *cb_get_ptr(cb, i);
 
         if (cb_byte != byte)
         {
