@@ -5170,7 +5170,6 @@ gc_compact_finish(rb_objspace_t *objspace, rb_size_pool_t *pool, rb_heap_t *heap
         gc_profile_record *record = gc_prof_record(objspace);
         record->moved_objects = objspace->rcompactor.total_moved - record->moved_objects;
     }
-    rb_clear_constant_cache();
     objspace->flags.during_compacting = FALSE;
 }
 
