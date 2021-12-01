@@ -1735,7 +1735,7 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
         ADD_COMMENT(cb, "guard embedded getivar");
         x86opnd_t flags_opnd = member_opnd(REG0, struct RBasic, flags);
         test(cb, flags_opnd, imm_opnd(ROBJECT_EMBED));
-        jit_chain_guard(JCC_JZ, jit, &starting_context, max_chain_depth, side_exit);
+        jit_chain_guard(JCC_JZ, jit, &starting_context, max_chain_depth, COUNTED_EXIT(jit, side_exit, getivar_megamorphic));
 
         // Load the variable
         x86opnd_t ivar_opnd = mem_opnd(64, REG0, offsetof(struct RObject, as.ary) + ivar_index * SIZEOF_VALUE);
@@ -1758,7 +1758,7 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
         ADD_COMMENT(cb, "guard extended getivar");
         x86opnd_t flags_opnd = member_opnd(REG0, struct RBasic, flags);
         test(cb, flags_opnd, imm_opnd(ROBJECT_EMBED));
-        jit_chain_guard(JCC_JNZ, jit, &starting_context, max_chain_depth, side_exit);
+        jit_chain_guard(JCC_JNZ, jit, &starting_context, max_chain_depth, COUNTED_EXIT(jit, side_exit, getivar_megamorphic));
 
         // check that the extended table is big enough
         if (ivar_index >= ROBJECT_EMBED_LEN_MAX + 1) {
