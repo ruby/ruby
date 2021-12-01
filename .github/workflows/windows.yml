@@ -80,6 +80,10 @@ jobs:
       - uses: actions/checkout@v2
         with:
           path: src
+      - uses: actions/cache@v2
+        with:
+          path: src/.downloaded-cache
+          key: downloaded-cache
       - name: setup env
         # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302

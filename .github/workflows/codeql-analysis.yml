@@ -37,6 +37,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
+    - uses: actions/cache@v2
+      with:
+        path: .downloaded-cache
+        key: downloaded-cache
+
     - name: Remove an obsolete rubygems vendored file
       run: sudo rm /usr/lib/ruby/vendor_ruby/rubygems/defaults/operating_system.rb
 

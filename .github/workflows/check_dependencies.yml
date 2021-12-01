@@ -39,6 +39,10 @@ jobs:
           git config --global advice.detachedHead 0
           git config --global init.defaultBranch garbage
       - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: .downloaded-cache
+          key: downloaded-cache
       - run: ./autogen.sh
       - name: Run configure
         run: ./configure -C --disable-install-doc --disable-rubygems --with-gcc 'optflags=-O0' 'debugflags=-save-temps=obj -g'
