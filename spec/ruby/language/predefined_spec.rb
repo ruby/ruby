@@ -1208,13 +1208,24 @@ describe "The predefined global constant" do
   end
 
   describe "STDIN" do
-    it "has the same external encoding as Encoding.default_external" do
-      STDIN.external_encoding.should equal(Encoding.default_external)
-    end
+    platform_is_not :windows do
+      it "has the same external encoding as Encoding.default_external" do
+        STDIN.external_encoding.should equal(Encoding.default_external)
+      end
 
-    it "has the same external encoding as Encoding.default_external when that encoding is changed" do
-      Encoding.default_external = Encoding::ISO_8859_16
-      STDIN.external_encoding.should equal(Encoding::ISO_8859_16)
+      it "has the same external encoding as Encoding.default_external when that encoding is changed" do
+        Encoding.default_external = Encoding::ISO_8859_16
+        STDIN.external_encoding.should equal(Encoding::ISO_8859_16)
+      end
+
+      it "has nil for the internal encoding" do
+        STDIN.internal_encoding.should be_nil
+      end
+
+      it "has nil for the internal encoding despite Encoding.default_internal being changed" do
+        Encoding.default_internal = Encoding::IBM437
+        STDIN.internal_encoding.should be_nil
+      end
     end
 
     it "has the encodings set by #set_encoding" do
@@ -1228,15 +1239,6 @@ describe "The predefined global constant" do
              "Encoding.default_external = Encoding::ISO_8859_16;" \
              "p [STDIN.external_encoding.name, STDIN.internal_encoding.name]"
       ruby_exe(code).chomp.should == %{["IBM775", "IBM866"]}
-    end
-
-    it "has nil for the internal encoding" do
-      STDIN.internal_encoding.should be_nil
-    end
-
-    it "has nil for the internal encoding despite Encoding.default_internal being changed" do
-      Encoding.default_internal = Encoding::IBM437
-      STDIN.internal_encoding.should be_nil
     end
   end
 
