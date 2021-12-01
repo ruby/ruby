@@ -1150,7 +1150,7 @@ yjit_get_code_page(uint32_t cb_bytes_needed, uint32_t ocb_bytes_needed)
     code_page_t *new_code_page = rb_yjit_code_page_unwrap(yjit_cur_code_page);
 
     // Jump to the new code page
-    jmp_ptr(&code_page->cb, new_code_page->cb.mem_block);
+    jmp_ptr(&code_page->cb, cb_get_ptr(&new_code_page->cb, 0));
 
     return yjit_cur_code_page;
 }

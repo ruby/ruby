@@ -554,7 +554,7 @@ yjit_entry_prologue(codeblock_t *cb, const rb_iseq_t *iseq)
 
     const uint32_t old_write_pos = cb->write_pos;
 
-    // Align the current write positon to cache line boundaries
+    // Align the current write position to cache line boundaries
     cb_align_pos(cb, 64);
 
     uint8_t *code_ptr = cb_get_ptr(cb, cb->write_pos);
@@ -639,16 +639,6 @@ static block_t *
 gen_single_block(blockid_t blockid, const ctx_t *start_ctx, rb_execution_context_t *ec)
 {
     RUBY_ASSERT(cb != NULL);
-
-    // Check if there is enough executable memory.
-    // FIXME: This bound isn't enforced and long blocks can potentially use more.
-    enum { MAX_CODE_PER_BLOCK = 1024 };
-    if (cb->write_pos + MAX_CODE_PER_BLOCK >= cb->mem_size) {
-        return NULL;
-    }
-    if (ocb->write_pos + MAX_CODE_PER_BLOCK >= ocb->mem_size) {
-        return NULL;
-    }
 
     // Allocate the new block
     block_t *block = calloc(1, sizeof(block_t));
@@ -777,6 +767,12 @@ gen_single_block(blockid_t blockid, const ctx_t *start_ctx, rb_execution_context
     // We currently can't handle cases where the request is for a block that
     // doesn't go to the next instruction.
     RUBY_ASSERT(!jit.record_boundary_patch_point);
+
+    // If code for the block doesn't fit, free the block and fail.
+    if (cb->dropped_bytes || ocb->dropped_bytes) {
+        yjit_free_block(block);
+        return NULL;
+    }
 
     if (YJIT_DUMP_MODE >= 2) {
         // Dump list of compiled instrutions

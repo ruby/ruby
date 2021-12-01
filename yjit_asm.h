@@ -26,12 +26,13 @@ typedef struct LabelRef
 typedef struct CodeBlock
 {
     // Memory block
-    uint8_t *mem_block;
+    // Users are advised to not use this directly.
+    uint8_t *mem_block_;
 
     // Memory block size
     uint32_t mem_size;
 
-    /// Current writing position
+    // Current writing position
     uint32_t write_pos;
 
     // Table of registered label addresses
@@ -50,14 +51,20 @@ typedef struct CodeBlock
     // Number of references to labels
     uint32_t num_refs;
 
-    // TODO: system for disassembly/comment strings, indexed by position
-
-    // Flag to enable or disable comments
-    bool has_asm;
 
     // Keep track of the current aligned write position.
     // Used for changing protection when writing to the JIT buffer
     uint32_t current_aligned_write_pos;
+
+    // Set if the assembler is unable to output some instructions,
+    // for example, when there is not enough space or when a jump
+    // target is too far away.
+    bool dropped_bytes;
+
+    // Flag to enable or disable comments
+    bool has_asm;
+
+
 } codeblock_t;
 
 // 1 is not aligned so this won't match any pages
@@ -258,8 +265,8 @@ static inline void cb_init(codeblock_t *cb, uint8_t *mem_block, uint32_t mem_siz
 static inline void cb_align_pos(codeblock_t *cb, uint32_t multiple);
 static inline void cb_set_pos(codeblock_t *cb, uint32_t pos);
 static inline void cb_set_write_ptr(codeblock_t *cb, uint8_t *code_ptr);
-static inline uint8_t *cb_get_ptr(codeblock_t *cb, uint32_t index);
-static inline uint8_t *cb_get_write_ptr(codeblock_t *cb);
+static inline uint8_t *cb_get_ptr(const codeblock_t *cb, uint32_t index);
+static inline uint8_t *cb_get_write_ptr(const codeblock_t *cb);
 static inline void cb_write_byte(codeblock_t *cb, uint8_t byte);
 static inline void cb_write_bytes(codeblock_t *cb, uint32_t num_bytes, ...);
 static inline void cb_write_int(codeblock_t *cb, uint64_t val, uint32_t num_bits);
