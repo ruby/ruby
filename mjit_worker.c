@@ -869,6 +869,7 @@ make_pch(void)
     const char *rest_args[] = {
 # ifdef __clang__
         "-emit-pch",
+        "-c",
 # endif
         // -nodefaultlibs is a linker flag, but it may affect cc1 behavior on Gentoo, which should NOT be changed on pch:
         // https://gitweb.gentoo.org/proj/gcc-patches.git/tree/7.3.0/gentoo/13_all_default-ssp-fix.patch
