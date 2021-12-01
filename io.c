@@ -12224,6 +12224,18 @@ rb_stdio_set_default_encoding(void)
 {
     VALUE val = Qnil;
 
+#ifdef _WIN32
+    if (isatty(fileno(stdin))) {
+        rb_encoding *external = rb_locale_encoding();
+        rb_encoding *internal = rb_default_internal_encoding();
+        if (!internal) internal = rb_default_external_encoding();
+        io_encoding_set(RFILE(rb_stdin)->fptr,
+                        rb_enc_from_encoding(external),
+                        rb_enc_from_encoding(internal),
+                        Qnil);
+    }
+    else
+#endif
     rb_io_set_encoding(1, &val, rb_stdin);
     rb_io_set_encoding(1, &val, rb_stdout);
     rb_io_set_encoding(1, &val, rb_stderr);
