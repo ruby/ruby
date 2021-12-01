@@ -132,6 +132,17 @@ assert_equal %q{[:Const]}, %q{
   raise if defined?(Module::Const)
   mod.singleton_class.constants
 }
+assert_equal %q{can't define singleton}, %q{
+  begin
+    123.instance_eval %{
+      Const = 1
+    }
+    "bad"
+  rescue TypeError => e
+    raise "bad" if defined?(Integer::Const)
+    e.message
+  end
+}
 assert_equal %q{top}, %q{
   Const = :top
   class C
