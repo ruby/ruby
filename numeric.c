@@ -5697,9 +5697,9 @@ int_dotimes(VALUE num)
 	VALUE i = INT2FIX(0);
 
 	for (;;) {
-	    if (!RTEST(rb_funcall(i, '<', 1, num))) break;
+            if (!RTEST(int_le(i, num))) break;
 	    rb_yield(i);
-	    i = rb_funcall(i, '+', 1, INT2FIX(1));
+            i = rb_int_plus(i, INT2FIX(1));
 	}
     }
     return num;
