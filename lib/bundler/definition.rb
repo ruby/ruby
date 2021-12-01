@@ -163,10 +163,6 @@ module Bundler
       end
     end
 
-    def multisource_allowed?
-      @multisource_allowed
-    end
-
     def resolve_only_locally!
       @remote = false
       sources.local_only!
@@ -385,8 +381,8 @@ module Bundler
 
       # Check if it is possible that the source is only changed thing
       if (new_deps.empty? && deleted_deps.empty?) && (!new_sources.empty? && !deleted_sources.empty?)
-        new_sources.reject! {|source| (source.path? && source.path.exist?) || equivalent_rubygems_remotes?(source) }
-        deleted_sources.reject! {|source| (source.path? && source.path.exist?) || equivalent_rubygems_remotes?(source) }
+        new_sources.reject! {|source| source.path? && source.path.exist? }
+        deleted_sources.reject! {|source| source.path? && source.path.exist? }
       end
 
       if @locked_sources != gemfile_sources
@@ -718,11 +714,8 @@ module Bundler
           deps << dep
         end
 
-        s.source = (dep && dep.source) || sources.get(s.source) unless multisource_allowed?
+        s.source = (dep && dep.source) || sources.get(s.source) || sources.default_source unless Bundler.frozen_bundle?
 
-        # Don't add a spec to the list if its source is expired. For example,
-        # if you change a Git gem to RubyGems.
-        next if s.source.nil?
         next if @unlock[:sources].include?(s.source.name)
 
         # If the spec is from a path source and it doesn't exist anymore
@@ -857,12 +850,6 @@ module Bundler
         dep = Gem::Dependency.new(name, ">= #{locked_spec.version}")
         DepProxy.get_proxy(dep, locked_spec.platform)
       end
-    end
-
-    def equivalent_rubygems_remotes?(source)
-      return false unless source.is_a?(Source::Rubygems)
-
-      Bundler.settings[:allow_deployment_source_credential_changes] && source.equivalent_remotes?(sources.rubygems_remotes)
     end
 
     def source_map

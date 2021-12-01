@@ -76,6 +76,7 @@ module Bundler
         "#{Bundler.preferred_gemfile_name}.tt" => Bundler.preferred_gemfile_name,
         "lib/newgem.rb.tt" => "lib/#{namespaced_path}.rb",
         "lib/newgem/version.rb.tt" => "lib/#{namespaced_path}/version.rb",
+        "sig/newgem.rbs.tt" => "sig/#{namespaced_path}.rbs",
         "newgem.gemspec.tt" => "#{name}.gemspec",
         "Rakefile.tt" => "Rakefile",
         "README.md.tt" => "README.md",

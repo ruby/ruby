@@ -513,6 +513,7 @@ RSpec.describe "bundle gem" do
       expect(bundled_app("#{gem_name}/Rakefile")).to exist
       expect(bundled_app("#{gem_name}/lib/#{require_path}.rb")).to exist
       expect(bundled_app("#{gem_name}/lib/#{require_path}/version.rb")).to exist
+      expect(bundled_app("#{gem_name}/sig/#{require_path}.rbs")).to exist
       expect(bundled_app("#{gem_name}/.gitignore")).to exist
 
       expect(bundled_app("#{gem_name}/bin/setup")).to exist
@@ -527,6 +528,12 @@ RSpec.describe "bundle gem" do
       bundle "gem #{gem_name}"
 
       expect(bundled_app("#{gem_name}/lib/#{require_path}/version.rb").read).to match(/VERSION = "0.1.0"/)
+    end
+
+    it "declare String type for VERSION constant" do
+      bundle "gem #{gem_name}"
+
+      expect(bundled_app("#{gem_name}/sig/#{require_path}.rbs").read).to match(/VERSION: String/)
     end
 
     context "git config user.{name,email} is set" do

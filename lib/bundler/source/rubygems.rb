@@ -262,10 +262,6 @@ module Bundler
         @remotes.unshift(uri) unless @remotes.include?(uri)
       end
 
-      def equivalent_remotes?(other_remotes)
-        other_remotes.map(&method(:remove_auth)) == @remotes.map(&method(:remove_auth))
-      end
-
       def spec_names
         if @allow_remote && dependency_api_available?
           remote_specs.spec_names
@@ -334,7 +330,11 @@ module Bundler
       end
 
       def credless_remotes
-        remotes.map(&method(:suppress_configured_credentials))
+        if Bundler.settings[:allow_deployment_source_credential_changes]
+          remotes.map(&method(:remove_auth))
+        else
+          remotes.map(&method(:suppress_configured_credentials))
+        end
       end
 
       def remotes_for_spec(spec)

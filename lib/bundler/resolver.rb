@@ -30,10 +30,8 @@ module Bundler
       @resolver = Molinillo::Resolver.new(self, self)
       @search_for = {}
       @base_dg = Molinillo::DependencyGraph.new
-      aggregate_global_source = @source_requirements[:default].is_a?(Source::RubygemsAggregate)
       @base.each do |ls|
         dep = Dependency.new(ls.name, ls.version)
-        ls.source = source_for(ls.name) unless aggregate_global_source
         @base_dg.add_vertex(ls.name, DepProxy.get_proxy(dep, ls.platform), true)
       end
       additional_base_requirements.each {|d| @base_dg.add_vertex(d.name, d) }

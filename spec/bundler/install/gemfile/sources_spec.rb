@@ -1250,8 +1250,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
       G
     end
 
-    it "installs the higher version in the new repo" do
-      expect(the_bundle).to include_gems("rack 1.2")
+    it "conservatively installs the existing locked version" do
+      expect(the_bundle).to include_gems("rack 1.0.0")
     end
   end
 
