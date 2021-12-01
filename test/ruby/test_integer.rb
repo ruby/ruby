@@ -299,6 +299,31 @@ class TestInteger < Test::Unit::TestCase
     end
   end
 
+  def test_times_bignum_redefine_plus_lt
+    assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
+      called = false
+      Integer.class_eval do
+        alias old_plus +
+        undef +
+        define_method(:+){|x| called = true; 1}
+        alias old_lt <
+        undef <
+        define_method(:<){|x| called = true}
+      end
+      big = 2**65
+      big.times{break 0}
+      Integer.class_eval do
+        undef +
+        alias + old_plus
+        undef <
+        alias < old_lt
+      end
+      bug18377 = "[ruby-core:106361]"
+      assert_equal(false, called, bug18377)
+    end;
+  end
+
   def assert_int_equal(expected, result, mesg = nil)
     assert_kind_of(Integer, result, mesg)
     assert_equal(expected, result, mesg)
