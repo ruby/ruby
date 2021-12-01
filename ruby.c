@@ -1884,12 +1884,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
          */
         rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
-#ifdef __OpenBSD__
-    /* Disable yjit on OpenBSD, stops --enable-all from failing with:
-       mmap call failed: Not supported */
-    opt->features.set &= ~FEATURE_BIT(yjit);
-#endif
-
 #if USE_MJIT
     if (opt->features.set & FEATURE_BIT(jit)) {
         opt->mjit.on = TRUE; /* set mjit.on for ruby_show_version() API and check to call mjit_init() */
