@@ -119,6 +119,8 @@ class Ripper
         "#<#{self.class}: #{event}@#{pos[0]}:#{pos[1]}:#{state}: #{tok.inspect}#{": " if message}#{message}>"
       end
 
+      alias to_s inspect
+
       def pretty_print(q)
         q.group(2, "#<#{self.class}:", ">") {
           q.breakable
