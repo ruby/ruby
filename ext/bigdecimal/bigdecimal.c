@@ -481,6 +481,22 @@ BigDecimal_scale(VALUE self)
     return SSIZET2NUM(scale);
 }
 
+/*
+ *  call-seq:
+ *    n_significant_digits -> integer
+ *
+ *  Returns the number of decimal significant digits in +self+.
+ *
+ *    BigDecimal("0").scale         # => 0
+ *    BigDecimal("1").scale         # => 1
+ *    BigDecimal("1.1").scale       # => 2
+ *    BigDecimal("3.1415").scale    # => 5
+ *    BigDecimal("-1e20").precision # => 1
+ *    BigDecimal("1e-20").precision # => 1
+ *    BigDecimal("Infinity").scale  # => 0
+ *    BigDecimal("-Infinity").scale # => 0
+ *    BigDecimal("NaN").scale       # => 0
+ */
 static VALUE
 BigDecimal_n_significant_digits(VALUE self)
 {
