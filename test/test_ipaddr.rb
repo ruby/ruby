@@ -360,6 +360,11 @@ class TC_Operator < Test::Unit::TestCase
 
   end
 
+  def test_native_coerce_mask_addr
+    assert_equal(IPAddr.new("0.0.0.2/255.255.255.255"), IPAddr.new("::2").native)
+    assert_equal(IPAddr.new("0.0.0.2/255.255.255.255").to_range, IPAddr.new("::2").native.to_range)
+  end
+
   def test_loopback?
     assert_equal(true,  IPAddr.new('127.0.0.1').loopback?)
     assert_equal(true,  IPAddr.new('127.127.1.1').loopback?)

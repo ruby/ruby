@@ -510,6 +510,9 @@ class IPAddr
     @addr = addr
     if family[0]
       @family = family[0]
+      if @family == Socket::AF_INET
+        @mask_addr &= IN4MASK
+      end
     end
     return self
   end
