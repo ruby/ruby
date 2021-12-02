@@ -38,6 +38,11 @@ jobs:
           sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison autoconf ruby
         if: ${{ steps.diff.outcome == 'failure' }}
 
+      - uses: actions/cache@v2
+        with:
+          path: .downloaded-cache
+          key: downloaded-cache
+
       - name: Build
         run: |
           ./autogen.sh
