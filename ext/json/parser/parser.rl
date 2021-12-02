@@ -839,6 +839,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
  *
  *  Parses the current JSON text _source_ and returns the complete data
  *  structure as a result.
+ *  It raises JSON::ParseError if fail to parse.
  */
 static VALUE cParser_parse(VALUE self)
 {

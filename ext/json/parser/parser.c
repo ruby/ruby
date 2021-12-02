@@ -2950,6 +2950,7 @@ static const char MAYBE_UNUSED(_JSON_nfa_pop_trans)[] = {
 *
 *  Parses the current JSON text _source_ and returns the complete data
 *  structure as a result.
+*  It raises JSON::ParseError if fail to parse.
 */
 static VALUE cParser_parse(VALUE self)
 {
