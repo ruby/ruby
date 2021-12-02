@@ -173,11 +173,28 @@ rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st)
 
 #define CREF_FL_PUSHED_BY_EVAL IMEMO_FL_USER1
 #define CREF_FL_OMOD_SHARED    IMEMO_FL_USER2
+#define CREF_FL_SINGLETON      IMEMO_FL_USER3
+
+static inline int CREF_SINGLETON(const rb_cref_t *cref);
 
 static inline VALUE
 CREF_CLASS(const rb_cref_t *cref)
 {
-    return cref->klass;
+    if (CREF_SINGLETON(cref)) {
+        return CLASS_OF(cref->klass_or_self);
+    } else {
+        return cref->klass_or_self;
+    }
+}
+
+static inline VALUE
+CREF_CLASS_FOR_DEFINITION(const rb_cref_t *cref)
+{
+    if (CREF_SINGLETON(cref)) {
+        return rb_singleton_class(cref->klass_or_self);
+    } else {
+        return cref->klass_or_self;
+    }
 }
 
 static inline rb_cref_t *
@@ -214,6 +231,18 @@ static inline void
 CREF_PUSHED_BY_EVAL_SET(rb_cref_t *cref)
 {
     cref->flags |= CREF_FL_PUSHED_BY_EVAL;
+}
+
+static inline int
+CREF_SINGLETON(const rb_cref_t *cref)
+{
+    return cref->flags & CREF_FL_SINGLETON;
+}
+
+static inline void
+CREF_SINGLETON_SET(rb_cref_t *cref)
+{
+    cref->flags |= CREF_FL_SINGLETON;
 }
 
 static inline int
