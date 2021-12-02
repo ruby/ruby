@@ -1401,7 +1401,7 @@ gen_setlocal_wc0(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     x86opnd_t flags_opnd = mem_opnd(64, REG0, sizeof(VALUE) * VM_ENV_DATA_INDEX_FLAGS);
     test(cb, flags_opnd, imm_opnd(VM_ENV_FLAG_WB_REQUIRED));
 
-    // Create a size-exit to fall back to the interpreter
+    // Create a side-exit to fall back to the interpreter
     uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
     // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
@@ -1471,7 +1471,7 @@ gen_setlocal_generic(jitstate_t *jit, ctx_t *ctx, uint32_t local_idx, uint32_t l
     x86opnd_t flags_opnd = mem_opnd(64, REG0, sizeof(VALUE) * VM_ENV_DATA_INDEX_FLAGS);
     test(cb, flags_opnd, imm_opnd(VM_ENV_FLAG_WB_REQUIRED));
 
-    // Create a size-exit to fall back to the interpreter
+    // Create a side-exit to fall back to the interpreter
     uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
     // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
@@ -2030,7 +2030,7 @@ gen_fixnum_cmp(jitstate_t *jit, ctx_t *ctx, cmov_fn cmov_op)
     VALUE comptime_b = jit_peek_at_stack(jit, ctx, 0);
 
     if (FIXNUM_P(comptime_a) && FIXNUM_P(comptime_b)) {
-        // Create a size-exit to fall back to the interpreter
+        // Create a side-exit to fall back to the interpreter
         // Note: we generate the side-exit before popping operands from the stack
         uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
@@ -2175,7 +2175,7 @@ gen_opt_eq(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         return YJIT_END_BLOCK;
     }
 
-    // Create a size-exit to fall back to the interpreter
+    // Create a side-exit to fall back to the interpreter
     uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
     if (gen_equality_specialized(jit, ctx, side_exit)) {
@@ -2223,7 +2223,7 @@ gen_opt_aref(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     VALUE comptime_idx = jit_peek_at_stack(jit, ctx, 0);
     VALUE comptime_recv = jit_peek_at_stack(jit, ctx, 1);
 
-    // Create a size-exit to fall back to the interpreter
+    // Create a side-exit to fall back to the interpreter
     uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
     if (CLASS_OF(comptime_recv) == rb_cArray && RB_FIXNUM_P(comptime_idx)) {
@@ -2406,7 +2406,7 @@ gen_opt_and(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     VALUE comptime_b = jit_peek_at_stack(jit, ctx, 0);
 
     if (FIXNUM_P(comptime_a) && FIXNUM_P(comptime_b)) {
-        // Create a size-exit to fall back to the interpreter
+        // Create a side-exit to fall back to the interpreter
         // Note: we generate the side-exit before popping operands from the stack
         uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
@@ -2450,7 +2450,7 @@ gen_opt_or(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     VALUE comptime_b = jit_peek_at_stack(jit, ctx, 0);
 
     if (FIXNUM_P(comptime_a) && FIXNUM_P(comptime_b)) {
-        // Create a size-exit to fall back to the interpreter
+        // Create a side-exit to fall back to the interpreter
         // Note: we generate the side-exit before popping operands from the stack
         uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
@@ -2494,7 +2494,7 @@ gen_opt_minus(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     VALUE comptime_b = jit_peek_at_stack(jit, ctx, 0);
 
     if (FIXNUM_P(comptime_a) && FIXNUM_P(comptime_b)) {
-        // Create a size-exit to fall back to the interpreter
+        // Create a side-exit to fall back to the interpreter
         // Note: we generate the side-exit before popping operands from the stack
         uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
@@ -2540,7 +2540,7 @@ gen_opt_plus(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     VALUE comptime_b = jit_peek_at_stack(jit, ctx, 0);
 
     if (FIXNUM_P(comptime_a) && FIXNUM_P(comptime_b)) {
-        // Create a size-exit to fall back to the interpreter
+        // Create a side-exit to fall back to the interpreter
         // Note: we generate the side-exit before popping operands from the stack
         uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
@@ -3286,7 +3286,7 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
     //print_str(cb, "recv");
     //print_ptr(cb, recv);
 
-    // Create a size-exit to fall back to the interpreter
+    // Create a side-exit to fall back to the interpreter
     uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
     // Check for interrupts
@@ -3658,7 +3658,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     // Number of locals that are not parameters
     const int num_locals = iseq->body->local_table_size - num_params;
 
-    // Create a size-exit to fall back to the interpreter
+    // Create a side-exit to fall back to the interpreter
     uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
     // Check for interrupts
@@ -4371,7 +4371,7 @@ gen_leave(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     // Only the return value should be on the stack
     RUBY_ASSERT(ctx->stack_size == 1);
 
-    // Create a size-exit to fall back to the interpreter
+    // Create a side-exit to fall back to the interpreter
     uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
     // Load environment pointer EP from CFP
