@@ -70,7 +70,10 @@ void
 rb_hook_list_free(rb_hook_list_t *hooks)
 {
     hooks->need_clean = TRUE;
-    clean_hooks(GET_EC(), hooks);
+
+    if (hooks->running == 0) {
+        clean_hooks(GET_EC(), hooks);
+    }
 }
 
 /* ruby_vm_event_flags management */
@@ -196,6 +199,7 @@ clean_hooks(const rb_execution_context_t *ec, rb_hook_list_t *list)
 {
     rb_event_hook_t *hook, **nextp = &list->hooks;
     VM_ASSERT(list->need_clean == TRUE);
+    VM_ASSERT(list->running == 0);
 
     list->events = 0;
     list->need_clean = FALSE;
@@ -217,6 +221,7 @@ clean_hooks(const rb_execution_context_t *ec, rb_hook_list_t *list)
     }
     else {
         /* local events */
+        ruby_xfree(list);
     }
 }
 
@@ -1244,10 +1249,11 @@ disable_local_event_iseq_i(VALUE target, VALUE iseq_p, VALUE tpval)
         rb_hook_list_t *hooks = def->body.bmethod.hooks;
         VM_ASSERT(hooks != NULL);
         rb_hook_list_remove_tracepoint(hooks, tpval);
-        if (hooks->running == 0) {
+
+        if (hooks->events == 0) {
             rb_hook_list_free(def->body.bmethod.hooks);
+            def->body.bmethod.hooks = NULL;
         }
-        def->body.bmethod.hooks = NULL;
     }
     return ST_CONTINUE;
 }
