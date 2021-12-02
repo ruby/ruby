@@ -2123,6 +2123,17 @@ class TestBigDecimal < Test::Unit::TestCase
     end
   end
 
+  def test_precision_scale
+    assert_equal([2, 0], BigDecimal("11.0").precision_scale)
+    assert_equal([2, 1], BigDecimal("1.1").precision_scale)
+    assert_equal([2, 2], BigDecimal("0.11").precision_scale)
+
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
+      assert_equal([0, 0], BigDecimal("Infinity").precision_scale)
+    end
+  end
+
   def test_n_significant_digits_only_integer
     assert_equal(0, BigDecimal(0).n_significant_digits)
     assert_equal(1, BigDecimal(1).n_significant_digits)

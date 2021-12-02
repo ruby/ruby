@@ -483,6 +483,24 @@ BigDecimal_scale(VALUE self)
 
 /*
  *  call-seq:
+ *    precision_scale -> [integer, integer]
+ *
+ *  Returns a 2-length array; the first item is the result of
+ *  BigDecimal#precision and the second one is of BigDecimal#scale.
+ *
+ *  See BigDecimal#precision.
+ *  See BigDecimal#scale.
+ */
+static VALUE
+BigDecimal_precision_scale(VALUE self)
+{
+    ssize_t precision, scale;
+    BigDecimal_count_precision_and_scale(self, &precision, &scale);
+    return rb_assoc_new(SSIZET2NUM(precision), SSIZET2NUM(scale));
+}
+
+/*
+ *  call-seq:
  *    n_significant_digits -> integer
  *
  *  Returns the number of decimal significant digits in +self+.
@@ -4228,6 +4246,7 @@ Init_bigdecimal(void)
     rb_define_method(rb_cBigDecimal, "precs", BigDecimal_prec, 0);
     rb_define_method(rb_cBigDecimal, "precision", BigDecimal_precision, 0);
     rb_define_method(rb_cBigDecimal, "scale", BigDecimal_scale, 0);
+    rb_define_method(rb_cBigDecimal, "precision_scale", BigDecimal_precision_scale, 0);
     rb_define_method(rb_cBigDecimal, "n_significant_digits", BigDecimal_n_significant_digits, 0);
 
     rb_define_method(rb_cBigDecimal, "add", BigDecimal_add2, 2);
