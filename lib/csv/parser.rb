@@ -768,7 +768,10 @@ class CSV
         string = nil
         if @samples.empty? and @input.is_a?(StringIO)
           string = @input.read
-        elsif @samples.size == 1 and @input.respond_to?(:eof?) and @input.eof?
+        elsif @samples.size == 1 and
+              @input != ARGF and
+              @input.respond_to?(:eof?) and
+              @input.eof?
           string = @samples[0]
         end
         if string
