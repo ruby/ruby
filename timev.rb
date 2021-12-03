@@ -275,7 +275,7 @@ class Time
     end
   end
 
-  # Returns a new \Time object based the on given arguments.
+  # Returns a new \Time object based on the given arguments.
   #
   # With no positional arguments, returns the value of Time.now:
   #
