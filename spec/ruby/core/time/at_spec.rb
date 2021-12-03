@@ -83,9 +83,20 @@ describe "Time.at" do
     end
   end
 
+  ruby_version_is '3.1' do
+    describe "passed time String" do
+      it "converts inspect-ed time string" do
+        t = Time.now
+        Time.at(t.inspect).should == t
+      end
+    end
+  end
+
   describe "passed non-Time, non-Numeric" do
-    it "raises a TypeError with a String argument" do
-      -> { Time.at("0") }.should raise_error(TypeError)
+    ruby_version_is ''...'3.1' do
+      it "raises a TypeError with a String argument" do
+        -> { Time.at("0") }.should raise_error(TypeError)
+      end
     end
 
     it "raises a TypeError with a nil argument" do
