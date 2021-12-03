@@ -510,17 +510,19 @@ wmod(wideval_t wx, wideval_t wy)
 }
 
 static VALUE
-num_exact(VALUE v)
+num_exact_check(VALUE v)
 {
     VALUE tmp;
 
     switch (TYPE(v)) {
       case T_FIXNUM:
       case T_BIGNUM:
-        return v;
+        tmp = v;
+        break;
 
       case T_RATIONAL:
-        return rb_rational_canonicalize(v);
+        tmp = rb_rational_canonicalize(v);
+        break;
 
       default:
         if ((tmp = rb_check_funcall(v, idTo_r, 0, NULL)) != Qundef) {
@@ -530,10 +532,11 @@ num_exact(VALUE v)
                 /* FALLTHROUGH */
             }
             else if (RB_INTEGER_TYPE_P(tmp)) {
-                return tmp;
+                break;
             }
             else if (RB_TYPE_P(tmp, T_RATIONAL)) {
-                return rb_rational_canonicalize(tmp);
+                tmp = rb_rational_canonicalize(tmp);
+                break;
             }
         }
         else if (!NIL_P(tmp = rb_check_to_int(v))) {
@@ -542,9 +545,26 @@ num_exact(VALUE v)
 
       case T_NIL:
       case T_STRING:
-	rb_raise(rb_eTypeError, "can't convert %"PRIsVALUE" into an exact number",
-		 rb_obj_class(v));
+        return Qnil;
     }
+    ASSUME(!NIL_P(tmp));
+    return tmp;
+}
+
+NORETURN(static void num_exact_fail(VALUE v));
+static void
+num_exact_fail(VALUE v)
+{
+    rb_raise(rb_eTypeError, "can't convert %"PRIsVALUE" into an exact number",
+             rb_obj_class(v));
+}
+
+static VALUE
+num_exact(VALUE v)
+{
+    VALUE num = num_exact_check(v);
+    if (NIL_P(num)) num_exact_fail(v);
+    return num;
 }
 
 /* time_t */
@@ -2317,13 +2337,12 @@ find_timezone(VALUE time, VALUE zone)
     return rb_check_funcall_default(klass, id_find_timezone, 1, &zone, Qnil);
 }
 
+static VALUE time_init_vtm(VALUE time, struct vtm vtm, VALUE zone);
+
 static VALUE
-time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VALUE mday,
-               VALUE hour, VALUE min, VALUE sec, VALUE subsec, VALUE zone)
+time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VALUE mday, VALUE hour, VALUE min, VALUE sec, VALUE zone)
 {
     struct vtm vtm;
-    VALUE utc = Qnil;
-    struct time_object *tobj;
 
     vtm.wday = VTM_WDAY_INITVAL;
     vtm.yday = 0;
@@ -2343,15 +2362,20 @@ time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VA
         vtm.sec = 0;
         vtm.subsecx = INT2FIX(0);
     }
-    else if (!NIL_P(subsec)) {
-        vtm.sec = obj2ubits(sec, 6);
-        vtm.subsecx = subsec;
-    }
     else {
         VALUE subsecx;
         vtm.sec = obj2subsecx(sec, &subsecx);
         vtm.subsecx = subsecx;
     }
+
+    return time_init_vtm(time, vtm, zone);
+}
+
+static VALUE
+time_init_vtm(VALUE time, struct vtm vtm, VALUE zone)
+{
+    VALUE utc = Qnil;
+    struct time_object *tobj;
 
     vtm.isdst = VTM_ISDST_INITVAL;
     vtm.utc_offset = Qnil;
@@ -2440,9 +2464,8 @@ parse_int(const char *ptr, const char *end, const char **endp, size_t *ndigits, 
 }
 
 static VALUE
-time_init_parse(rb_execution_context_t *ec, VALUE time, VALUE str, VALUE zone, VALUE precision)
+time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, VALUE precision)
 {
-    if (NIL_P(str = rb_check_string_type(str))) return Qnil;
     if (!rb_enc_str_asciicompat_p(str)) {
 	rb_raise(rb_eArgError, "time string should have ASCII compatible encoding");
     }
@@ -2529,14 +2552,19 @@ time_init_parse(rb_execution_context_t *ec, VALUE time, VALUE str, VALUE zone, V
         }
     }
 
-#define non_negative(x) ((x) < 0 ? Qnil : INT2FIX(x))
-    return time_init_args(ec, time, year,
-                          non_negative(mon),
-                          non_negative(mday),
-                          non_negative(hour),
-                          non_negative(min),
-                          non_negative(sec),
-                          subsec, zone);
+    struct vtm vtm = {
+        .wday = VTM_WDAY_INITVAL,
+        .yday = 0,
+        .zone = str_empty,
+        .year = year,
+        .mon  = (mon < 0)  ? 1 : mon,
+        .mday = (mday < 0) ? 1 : mday,
+        .hour = (hour < 0) ? 0 : hour,
+        .min  = (min < 0)  ? 0 : min,
+        .sec  = (sec < 0)  ? 0 : sec,
+        .subsecx = NIL_P(subsec) ? INT2FIX(0) : subsec,
+    };
+    return time_init_vtm(time_s_alloc(klass), vtm, zone);
 }
 
 static void
@@ -2808,7 +2836,7 @@ get_scale(VALUE unit)
 }
 
 static VALUE
-time_s_at(rb_execution_context_t *ec, VALUE klass, VALUE time, VALUE subsec, VALUE unit, VALUE zone)
+time_s_at(rb_execution_context_t *ec, VALUE klass, VALUE time, VALUE subsec, VALUE unit, VALUE zone, VALUE precision)
 {
     VALUE t;
     wideval_t timew;
@@ -2827,9 +2855,15 @@ time_s_at(rb_execution_context_t *ec, VALUE klass, VALUE time, VALUE subsec, VAL
 	GetTimeval(t, tobj2);
         TZMODE_COPY(tobj2, tobj);
     }
-    else {
-        timew = rb_time_magnify(v2w(num_exact(time)));
+    else if (!NIL_P(t = num_exact_check(time))) {
+        timew = rb_time_magnify(v2w(t));
         t = time_new_timew(klass, timew);
+    }
+    else if (RB_TYPE_P(t = time, T_STRING) || !NIL_P(t = rb_check_string_type(t))) {
+        return time_init_parse(ec, klass, t, zone, precision);
+    }
+    else {
+        num_exact_fail(time);
     }
     if (!NIL_P(zone)) {
         time_zonelocal(t, zone);
@@ -2841,7 +2875,7 @@ time_s_at(rb_execution_context_t *ec, VALUE klass, VALUE time, VALUE subsec, VAL
 static VALUE
 time_s_at1(rb_execution_context_t *ec, VALUE klass, VALUE time)
 {
-    return time_s_at(ec, klass, time, Qfalse, ID2SYM(id_microsecond), Qnil);
+    return time_s_at(ec, klass, time, Qfalse, ID2SYM(id_microsecond), Qnil, INT2FIX(9));
 }
 
 static const char months[][4] = {

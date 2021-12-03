@@ -260,18 +260,34 @@ class Time
   #   Time.at(946702800, 500000000, :nsec, in: '+09:00')       # => 2000-01-01 14:00:00.5 +0900
   #   Time.at(946702800, 500000000, :nanosecond, in: '+09:00') # => 2000-01-01 14:00:00.5 +0900
   #
+  # _String_
+  #
+  # This form accepts a string representing a time, and an optional
+  # keyword argument +in+ and +precision+:
+  #
+  #   Time.at('2000-12-31 23:59:59.5')                   # => 2000-12-31 23:59:59.5 -0600
+  #   Time.at('2000-12-31 23:59:59.5 +0900')             # => 2000-12-31 23:59:59.5 +0900
+  #   Time.at('2000-12-31 23:59:59.5', in: '+0900')      # => 2000-12-31 23:59:59.5 +0900
+  #   Time.at('2000-12-31 23:59:59.5')                   # => 2000-12-31 23:59:59.5 -0600
+  #
+  #   Time.at('2000-12-31 23:59:59.56789')               # => 2000-12-31 23:59:59.56789 -0600
+  #   Time.at('2000-12-31 23:59:59.56789', precision: 3) # => 2000-12-31 23:59:59.567 -0600
+  #
   # Parameters:
   # :include: doc/time/sec_i.rdoc
   # :include: doc/time/msec.rdoc
   # :include: doc/time/usec.rdoc
   # :include: doc/time/nsec.rdoc
   # :include: doc/time/in.rdoc
+  # - +precision+: maximum effective digits in sub-second part, default is 9.
+  #   More digits will be truncated, as other operations of \Time.
+  #   Ignored unless the first argument is a string.
   #
-  def self.at(time, subsec = false, unit = :microsecond, in: nil)
+  def self.at(time, subsec = false, unit = :microsecond, in: nil, precision: 9)
     if Primitive.mandatory_only?
       Primitive.time_s_at1(time)
     else
-      Primitive.time_s_at(time, subsec, unit, Primitive.arg!(:in))
+      Primitive.time_s_at(time, subsec, unit, Primitive.arg!(:in), precision)
     end
   end
 
@@ -286,11 +302,6 @@ class Time
   #   Time.new(2000)                                 # => 2000-01-01 00:00:00 -0600
   #   Time.new(2000, 12, 31, 23, 59, 59.5)           # => 2000-12-31 23:59:59.5 -0600
   #   Time.new(2000, 12, 31, 23, 59, 59.5, '+09:00') # => 2000-12-31 23:59:59.5 +0900
-  #   Time.new('2000-12-31 23:59:59.5')              # => 2000-12-31 23:59:59.5 -0600
-  #   Time.new('2000-12-31 23:59:59.5 +0900')        # => 2000-12-31 23:59:59.5 +0900
-  #   Time.new('2000-12-31 23:59:59.5', in: '+0900') # => 2000-12-31 23:59:59.5 +0900
-  #   Time.new('2000-12-31 23:59:59.5')              # => 2000-12-31 23:59:59.5 -0600
-  #   Time.new('2000-12-31 23:59:59.56789', precision: 3) # => 2000-12-31 23:59:59.567 -0600
   #
   # Parameters:
   #
@@ -298,12 +309,8 @@ class Time
   # :include: doc/time/mon-min.rdoc
   # :include: doc/time/sec.rdoc
   # :include: doc/time/zone_and_in.rdoc
-  # - +precision+: maximum effective digits in sub-second part, default is 9.
-  #   More digits will be truncated, as other operations of \Time.
-  #   Ignored unless the first argument is a string.
   #
-  def initialize(year = (now = true), mon = (str = year; nil), mday = nil, hour = nil, min = nil, sec = nil, zone = nil,
-                 in: nil, precision: 9)
+  def initialize(year = (now = true), mon = nil, mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil)
     if zone
       if Primitive.arg!(:in)
         raise ArgumentError, "timezone argument given as positional and keyword arguments"
@@ -316,10 +323,6 @@ class Time
       return Primitive.time_init_now(zone)
     end
 
-    if str and Primitive.time_init_parse(str, zone, precision)
-      return self
-    end
-
-    Primitive.time_init_args(year, mon, mday, hour, min, sec, nil, zone)
+    Primitive.time_init_args(year, mon, mday, hour, min, sec, zone)
   end
 end
