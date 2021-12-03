@@ -793,11 +793,11 @@ class TestClass < Test::Unit::TestCase
 
   def test_subclass_gc
     c = Class.new
-    100000.times do
+    10_000.times do
       cc = Class.new(c)
       100.times { Class.new(cc) }
     end
-    assert(c.subclasses.size <= 100000)
+    assert(c.subclasses.size <= 10_000)
   end
 
   def test_subclass_gc_stress
