@@ -37,6 +37,8 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_new
+    assert_equal(Time.new(2000,1,1,0,0,0), Time.new(2000))
+    assert_equal(Time.new(2000,2,1,0,0,0), Time.new("2000", "Feb"))
     assert_equal(Time.utc(2000,2,10), Time.new(2000,2,10, 11,0,0, 3600*11))
     assert_equal(Time.utc(2000,2,10), Time.new(2000,2,9, 13,0,0, -3600*11))
     assert_equal(Time.utc(2000,2,29,23,0,0), Time.new(2000, 3, 1, 0, 0, 0, 3600))
