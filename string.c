@@ -11891,7 +11891,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  Note that <tt>\\\\</tt> is interpreted as an escape, i.e., a single backslash.
  *
  *  Note also that a string literal consumes backslashes.
- *  See rdoc-ref:syntax/literals.rdoc for details about string literals.
+ *  See {String Literals}[doc/syntax/literals_rdoc.html#label-String+Literals] for details about string literals.
  *
  *  A back-reference is typically preceded by an additional backslash.
  *  For example, if you want to write a back-reference <tt>\&</tt> in
