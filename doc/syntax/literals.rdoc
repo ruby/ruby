@@ -9,10 +9,10 @@ Literals create objects you can use in your program.  Literals include:
 * Arrays
 * Hashes
 * Ranges
-* Regular Expressions
-* Procs
+* Regexps
+* Lambda Procs
 
-== Booleans and nil
+== Boolean and Nil Literals
 
 +nil+ and +false+ are both false values.  +nil+ is sometimes used to indicate
 "no value" or "unknown" but evaluates to +false+ in conditional expressions.
@@ -61,7 +61,7 @@ Examples:
 All these numbers have the same decimal value, 170.  Like integers and floats
 you may use an underscore for readability.
 
-=== Floating-Point Literals
+=== \Float Literals
 
 Floating-point numbers may be written as follows:
 
@@ -72,34 +72,36 @@ Floating-point numbers may be written as follows:
 These numbers have the same value, 12.34.  You may use underscores in floating
 point numbers as well.
 
-=== Rational Numbers
+=== \Rational Literals
 
-Numbers suffixed by +r+ are Rational numbers.
+You can write a Rational number as follows (suffixed +r+):
 
   12r         #=> (12/1)
   12.3r       #=> (123/10)
 
-Rational numbers are exact, whereas Float numbers are inexact.
+A \Rational number is exact, whereas a \Float number may be inexact.
 
   0.1r + 0.2r #=> (3/10)
   0.1 + 0.2   #=> 0.30000000000000004
 
-=== Complex numbers
+=== \Complex Literals
 
-Numbers suffixed by +i+ are Complex (or imaginary) numbers.
+You can write a Complex number as follows (suffixed +i+):
 
   1i          #=> (0+1i)
   1i * 1i     #=> (-1+0i)
 
-Also Rational numbers may be imaginary numbers.
+Also \Rational numbers may be imaginary numbers.
 
   12.3ri      #=> (0+(123/10)*i)
 
-+i+ must be placed after +r+, the opposite is not allowed.
++i+ must be placed after +r+; the opposite is not allowed.
 
-  12.3ir      #=> syntax error
+  12.3ir      #=> Syntax error
 
 == Strings
+
+=== \String Literals
 
 The most common way of writing strings is using <tt>"</tt>:
 
@@ -198,7 +200,7 @@ a single codepoint in the script encoding:
   ?\C-\M-a #=> "\x81", same as above
   ?あ      #=> "あ"
 
-=== Here Documents (heredocs)
+=== Here Document Literals
 
 If you are writing a large block of text you may use a "here document" or
 "heredoc":
@@ -278,7 +280,7 @@ read:
   content for heredoc two
   TWO
 
-== Symbols
+== \Symbol Literals
 
 A Symbol represents a name inside the ruby interpreter.  See Symbol for more
 details on what symbols are and when ruby creates them internally.
@@ -297,7 +299,7 @@ Like strings, a single-quote may be used to disable interpolation:
 When creating a Hash, there is a special syntax for referencing a Symbol as
 well.
 
-== Arrays
+== \Array Literals
 
 An array is created using the objects between <tt>[</tt> and <tt>]</tt>:
 
@@ -310,7 +312,7 @@ You may place expressions inside the array:
 
 See Array for the methods you may use with an array.
 
-== Hashes
+== \Hash Literals
 
 A hash is created using key-value pairs between <tt>{</tt> and <tt>}</tt>:
 
@@ -334,7 +336,7 @@ is equal to
 
 See Hash for the methods you may use with a hash.
 
-== Ranges
+== \Range Literals
 
 A range represents an interval of values.  The range may include or exclude
 its ending value.
@@ -347,7 +349,7 @@ its ending value.
 You may create a range of any object.  See the Range documentation for details
 on the methods you need to implement.
 
-== Regular Expressions
+== \Regexp Literals
 
 A regular expression is created using "/":
 
@@ -365,7 +367,7 @@ characters than a string.
 
 See Regexp for a description of the syntax of regular expressions.
 
-== Procs
+== Lambda Proc Literals
 
 A lambda proc can be created with <tt>-></tt>:
 
@@ -379,13 +381,13 @@ You can require arguments for the proc as follows:
 
 This proc will add one to its argument.
 
-== Percent Strings
+== Percent Literals
 
 Besides <tt>%(...)</tt> which creates a String, the <tt>%</tt> may create
 other types of object.  As with strings, an uppercase letter allows
 interpolation and escaped characters while a lowercase letter disables them.
 
-These are the types of percent strings in ruby:
+These are the types of percent literals:
 
 <tt>%i</tt> :: Array of Symbols
 <tt>%q</tt> :: String

@@ -2715,13 +2715,19 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
  * a/b (b>0), where a is the numerator and b is the denominator.
  * Integer a equals rational a/1 mathematically.
  *
- * In Ruby, you can create rational objects with the Kernel#Rational,
- * to_r, or rationalize methods or by suffixing +r+ to a literal.
- * The return values will be irreducible fractions.
+ * You can create a \Rational object explicitly with:
+ *
+ * - A {rational literal}[doc/syntax/literals_rdoc.html#label-Rational+Literals].
+ *
+ * You can convert certain objects to Rationals with:
+ *
+ * - \Method {Rational}[Kernel.html#method-i-Rational].
+ *
+ * Examples
  *
  *    Rational(1)      #=> (1/1)
  *    Rational(2, 3)   #=> (2/3)
- *    Rational(4, -6)  #=> (-2/3)
+ *    Rational(4, -6)  #=> (-2/3) # Reduced.
  *    3.to_r           #=> (3/1)
  *    2/3r             #=> (2/3)
  *
