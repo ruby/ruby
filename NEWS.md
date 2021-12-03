@@ -434,6 +434,9 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 * Now exceptions raised in finalizers will be printed to `STDERR`, unless
   `$VERBOSE` is `nil`.  [[Feature #17798]]
 
+* `instance_eval` and `instance_exec` now only allocate a singleton class when
+  required, avoiding extra objects and improving performance. [[GH-5146]]
+
 [Bug #4443]:      https://bugs.ruby-lang.org/issues/4443
 [Feature #6210]:  https://bugs.ruby-lang.org/issues/6210
 [Feature #11256]: https://bugs.ruby-lang.org/issues/11256
@@ -475,4 +478,5 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #18273]: https://bugs.ruby-lang.org/issues/18273
 [GH-1509]: https://github.com/ruby/ruby/pull/1509
 [GH-4815]: https://github.com/ruby/ruby/pull/4815
+[GH-5146]: https://github.com/ruby/ruby/pull/5146
 
