@@ -966,7 +966,6 @@ def install_default_gem(dir, srcdir, bindir)
     spec = load_gemspec(src)
     file_collector = RbInstall::Specs::FileCollector.new(src)
     files = file_collector.collect
-    next if files.empty?
     spec.files = files
     spec
   }
