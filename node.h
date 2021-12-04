@@ -193,7 +193,6 @@ typedef struct RNode {
 #define NODE_TYPEMASK  (((VALUE)0x7f)<<NODE_TYPESHIFT)
 
 #define nd_type(n) ((int) (((n)->flags & NODE_TYPEMASK)>>NODE_TYPESHIFT))
-#define nd_type_p(n, t) (nd_type((n)) == (t))
 #define nd_set_type(n,t) \
     rb_node_set_type(n, t)
 #define nd_init_type(n,t) \
@@ -498,6 +497,11 @@ rb_node_set_type(NODE *n, enum node_type t)
     return nd_init_type(n, t);
 }
 
+static inline bool
+nd_type_p(const NODE *n, enum node_type t)
+{
+    return (enum node_type)nd_type(n) == t;
+}
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */
