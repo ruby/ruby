@@ -4364,21 +4364,17 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
 
 /* Compile an array containing the single element represented by node */
 static int
-compile_array_1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped)
+compile_array_1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node)
 {
-    if (popped) {
-        CHECK(COMPILE_(ret, "array element", node, popped));
-        return 1;
-    }
-
     if (static_literal_node_p(node, iseq)) {
         VALUE ary = rb_ary_tmp_new(1);
         rb_ary_push(ary, static_literal_value(node, iseq));
         OBJ_FREEZE(ary);
 
         ADD_INSN1(ret, node, duparray, ary);
-    } else {
-        CHECK(COMPILE_(ret, "array element", node, popped));
+    }
+    else {
+        CHECK(COMPILE_(ret, "array element", node, FALSE));
         ADD_INSN1(ret, node, newarray, INT2FIX(1));
     }
 
@@ -9534,7 +9530,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
 	}
 	else {
 	    CHECK(COMPILE(ret, "argspush head", node->nd_head));
-	    CHECK(compile_array_1(iseq, ret, node->nd_body, popped));
+	    CHECK(compile_array_1(iseq, ret, node->nd_body));
 	    ADD_INSN(ret, node, concatarray);
 	}
 	break;
