@@ -1678,10 +1678,9 @@ class TestGem < Gem::TestCase
   end
 
   BUNDLER_LIB_PATH = File.expand_path $LOAD_PATH.find {|lp| File.file?(File.join(lp, "bundler.rb")) }
-  BUNDLER_FULL_NAME = "bundler-#{Bundler::VERSION}".freeze
 
   def add_bundler_full_name(names)
-    names << BUNDLER_FULL_NAME
+    names << "bundler-#{Bundler::VERSION}".freeze
     names.sort!
     names
   end
