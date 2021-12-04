@@ -804,7 +804,6 @@ class TestGem < Gem::TestCase
 
     assert_equal expected, Gem.find_files("sff/discover").sort
     assert_equal expected, Gem.find_files("sff/**.rb").sort, "[ruby-core:31730]"
-  ensure
     assert_equal cwd, actual_load_path.shift
   end
 
