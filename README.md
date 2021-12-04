@@ -26,7 +26,7 @@ It is simple, straightforward, and extensible.
 *   Dynamic Loading of Object Files (on some architectures)
 *   Highly Portable (works on many Unix-like/POSIX compatible platforms as
     well as Windows, macOS, etc.) cf.
-    https://github.com/ruby/ruby/blob/master/doc/contributing.rdoc#label-Platform+Maintainers
+    https://github.com/ruby/ruby/blob/master/doc/maintainers.rdoc#label-Platform+Maintainers
 
 
 ## How to get Ruby
