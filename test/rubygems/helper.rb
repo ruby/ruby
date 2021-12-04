@@ -16,12 +16,7 @@ begin
 rescue Gem::LoadError
 end
 
-if File.exist?(bundler_gemspec)
-  require_relative "../../bundler/lib/bundler"
-else
-  require "bundler"
-end
-
+require "bundler"
 require "test/unit"
 
 ENV["JARS_SKIP"] = "true" if Gem.java_platform? # avoid unnecessary and noisy `jar-dependencies` post install hook
