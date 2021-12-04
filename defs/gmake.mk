@@ -424,3 +424,5 @@ endif
 
 spec/%/ spec/%_spec.rb: programs exts PHONY
 	+$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec-run -B $(srcdir)/spec/default.mspec $(SPECOPTS) $(patsubst %,$(srcdir)/%,$@)
+
+ruby.pc: $(filter-out ruby.pc,$(ruby_pc))
