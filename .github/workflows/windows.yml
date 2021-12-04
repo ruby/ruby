@@ -64,7 +64,7 @@ jobs:
             ${{ runner.os }}-vcpkg-installed-
       - name: Install libraries with vcpkg
         run: |
-          vcpkg --triplet x64-windows install libffi libyaml readline zlib
+          vcpkg --triplet x64-windows install libffi libyaml openssl readline zlib
       - uses: actions/cache@v2
         with:
           path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
@@ -76,7 +76,6 @@ jobs:
         run: |
           # Using Choco-Install for retries, but it doesn't detect failures properly
           # if you pass multiple package names in a single command.
-          Choco-Install -PackageName openssl
           Choco-Install -PackageName winflexbison3
         shell: pwsh
       - name: git config
@@ -109,11 +108,13 @@ jobs:
           for %%I in (C:\vcpkg\installed\x64-windows\bin\*.dll) do (
             if not %%~nI == readline mklink %%~nxI %%I
           )
+          for %%I in (libcrypto-1_1-x64 libssl-1_1-x64) do (
+            ren c:\Windows\System32\%%I.dll %%I.dll_
+          )
       - name: Configure
         run: >-
           ../src/win32/configure.bat --disable-install-doc
           --with-opt-dir=C:/vcpkg/installed/x64-windows
-          --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
       - run: nmake incs
       - run: nmake extract-extlibs
       - run: nmake
