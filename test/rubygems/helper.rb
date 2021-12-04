@@ -1297,6 +1297,10 @@ Also, a list:
     $LOAD_PATH.find {|p| p == File.dirname($LOADED_FEATURES.find {|f| f.end_with?("/rubygems.rb") }) }
   end
 
+  def bundler_path
+    $LOAD_PATH.find {|p| p == File.dirname($LOADED_FEATURES.find {|f| f.end_with?("/bundler.rb") }) }
+  end
+
   def with_clean_path_to_ruby
     orig_ruby = Gem.ruby
 
