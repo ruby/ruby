@@ -70,6 +70,14 @@ class XrefTestCase < RDoc::TestCase
     @c9_b_c_foo = @c9_b.method_list.first
     @c9_b_i_bar = @c9_b.method_list.last
 
+    @object         = @xref_data.find_module_named 'Object'
+    @c10_class      = @xref_data.find_module_named 'C10'
+    @c10_method     = @object.find_method_named 'C10'
+    @c11_class      = @xref_data.find_module_named 'C11'
+    @c10_c11_class  = @c10_class.find_module_named 'C11'
+    @c10_c11_method = @c10_class.find_method_named 'C11'
+    @c11_method     = @object.find_method_named 'C11'
+
     @m1    = @xref_data.find_module_named 'M1'
     @m1_m  = @m1.method_list.first
 

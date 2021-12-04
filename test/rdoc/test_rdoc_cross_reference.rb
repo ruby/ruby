@@ -88,6 +88,15 @@ class TestRDocCrossReference < XrefTestCase
     assert_ref @c4_c4, 'C4'
   end
 
+  def test_resolve_class_and_method_of_the_same_name
+    assert_ref @c10_class, 'C10'
+    assert_ref @c10_method, '#C10'
+    assert_ref @c11_class, 'C11'
+    assert_ref @c11_method, '#C11'
+    assert_ref @c10_c11_class, 'C10::C11'
+    assert_ref @c10_c11_method, 'C10#C11'
+  end
+
   def test_resolve_class
     assert_ref @c1, 'C1'
     refute_ref 'H1'
