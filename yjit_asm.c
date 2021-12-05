@@ -215,10 +215,11 @@ static uint8_t *alloc_exec_mem(uint32_t mem_size)
 
     cb_init(cb, mem_block, mem_size);
 
-    // Fill the executable memory with INT3 (0xCC) so that
-    // executing uninitialized memory will fault
+    // Fill the executable memory with PUSH DS (0x1E) so that
+    // executing uninitialized memory will fault with #UD in
+    // 64-bit mode.
     cb_mark_all_writeable(cb);
-    memset(mem_block, 0xCC, mem_size);
+    memset(mem_block, 0x1E, mem_size);
     cb_mark_all_executable(cb);
 
     return mem_block;
