@@ -1,7 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'securerandom'
-require 'tempfile'
 
 # This testcase does NOT aim to test cryptographically strongness and randomness.
 class TestSecureRandom < Test::Unit::TestCase
@@ -154,24 +153,6 @@ end
       assert_match(/\A[0-9a-zA-Z]*\z/, an)
       assert_equal(n, an.length)
     end
-  end
-
-  def protect
-    begin
-      yield
-    rescue NotImplementedError
-      # ignore
-    end
-  end
-
-  def remove_feature(basename)
-    $LOADED_FEATURES.delete_if { |path|
-      if File.basename(path) == basename
-        $LOAD_PATH.any? { |dir|
-          File.exist?(File.join(dir, basename))
-        }
-      end
-    }
   end
 
   def assert_in_range(range, result, mesg = nil)
