@@ -476,6 +476,18 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_copy_stream_append_to_nonempty
+    with_srccontent("foobar") {|src, content|
+      preface = 'preface'
+      File.write('dst', preface)
+      File.open('dst', 'ab') do |dst|
+        ret = IO.copy_stream(src, dst)
+        assert_equal(content.bytesize, ret)
+        assert_equal(preface + content, File.read("dst"))
+      end
+    }
+  end
+
   def test_copy_stream_smaller
     with_srccontent {|src, content|
 
