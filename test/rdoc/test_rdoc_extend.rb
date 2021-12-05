@@ -43,7 +43,7 @@ class TestRDocExtend < XrefTestCase
     m1_m2_k0.add_extend e0_m3
 
     assert_equal [e0_m4, e0_m5, e0_m6, e0_m1, e0_m2, e0_m3], m1_m2_k0.extends
-    assert_equal ['Object'], m1_m2_k0.ancestors
+    assert_equal [@object, 'BasicObject'], m1_m2_k0.ancestors
 
     m1_k1 = m1.add_class RDoc::NormalClass, 'Klass1'
 
@@ -60,7 +60,7 @@ class TestRDocExtend < XrefTestCase
     m1_k1.add_extend e1_k0_m4
 
     assert_equal [e1_m1, e1_m2, e1_m3, e1_m4, e1_k0_m4], m1_k1.extends
-    assert_equal ['Object'], m1_k1.ancestors
+    assert_equal [@object, 'BasicObject'], m1_k1.ancestors
 
     m1_k2 = m1.add_class RDoc::NormalClass, 'Klass2'
 
@@ -75,7 +75,7 @@ class TestRDocExtend < XrefTestCase
     m1_k2.add_extend e2_k0_m4
 
     assert_equal [e2_m1, e2_m3, e2_m2, e2_k0_m4], m1_k2.extends
-    assert_equal ['Object'], m1_k2.ancestors
+    assert_equal [@object, 'BasicObject'], m1_k2.ancestors
 
     m1_k3 = m1.add_class RDoc::NormalClass, 'Klass3'
 
@@ -88,7 +88,7 @@ class TestRDocExtend < XrefTestCase
     m1_k3.add_extend e3_m4
 
     assert_equal [e3_m1, e3_m2, e3_m4], m1_k3.extends
-    assert_equal ['Object'], m1_k3.ancestors
+    assert_equal [@object, 'BasicObject'], m1_k3.ancestors
   end
 
 end

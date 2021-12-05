@@ -63,7 +63,7 @@ class TestRDocClassModule < XrefTestCase
   end
 
   def test_ancestors
-    assert_equal [@parent, "Object"], @child.ancestors
+    assert_equal [@parent, @object, "BasicObject"], @child.ancestors
   end
 
   def test_comment_equals
@@ -129,7 +129,7 @@ class TestRDocClassModule < XrefTestCase
   end
 
   def test_each_ancestor
-    assert_equal [@parent], @child.each_ancestor.to_a
+    assert_equal [@parent, @object], @child.each_ancestor.to_a
   end
 
   def test_each_ancestor_cycle
