@@ -51,9 +51,9 @@ Note that each entry is kept to a minimum, see links for details.
     In Ruby before 3.1.0, multiple assignment did not follow this
     evaluation order.  With this code:
 
-      ```ruby
-      foo[0], bar.baz = a, b
-      ```
+    ```ruby
+    foo[0], bar.baz = a, b
+    ```
 
     Versions of Ruby before 3.1.0 would evaluate in the following
     order
