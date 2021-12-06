@@ -752,16 +752,16 @@ class RubyLex
       end
       i += 1
     end
-    start_token.last.nil? ? '' : start_token.last
+    start_token.last.nil? ? nil : start_token.last
   end
 
   def process_literal_type(tokens = @tokens)
     start_token = check_string_literal(tokens)
     return nil if start_token == ""
 
-    case start_token.event
+    case start_token&.event
     when :on_tstring_beg
-      case start_token.tok
+      case start_token&.tok
       when ?"      then ?"
       when /^%.$/  then ?"
       when /^%Q.$/ then ?"
@@ -776,7 +776,7 @@ class RubyLex
     when :on_qsymbols_beg then ?]
     when :on_symbols_beg  then ?]
     when :on_heredoc_beg
-      start_token.tok =~ /<<[-~]?(['"`])[_a-zA-Z0-9]+\1/
+      start_token&.tok =~ /<<[-~]?(['"`])[_a-zA-Z0-9]+\1/
       case $1
       when ?" then ?"
       when ?' then ?'
