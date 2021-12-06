@@ -370,6 +370,9 @@ Excluding feature bug fixes.
 
 * The performance of `Struct` accessors is improved. [[GH-5131]]
 
+* `mandatory_only?` builtin special form to improve performance on
+  builtin methods. [[GH-5112]]
+
 ### JIT
 
 * The default `--jit-max-cache` is changed from 100 to 10000.
@@ -490,5 +493,6 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #18290]: https://bugs.ruby-lang.org/issues/18290
 [GH-1509]: https://github.com/ruby/ruby/pull/1509
 [GH-4815]: https://github.com/ruby/ruby/pull/4815
+[GH-5112]: https://github.com/ruby/ruby/pull/5112
 [GH-5131]: https://github.com/ruby/ruby/pull/5131
 [GH-5146]: https://github.com/ruby/ruby/pull/5146
