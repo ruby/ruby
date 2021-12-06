@@ -67,6 +67,7 @@ class Reline::Config
     @keyseq_timeout = 500
     @test_mode = false
     @autocompletion = false
+    @convert_meta = true if seven_bit_encoding?(Reline::IOGate.encoding)
   end
 
   def reset
@@ -386,5 +387,9 @@ class Reline::Config
       ret << key_notation_to_code($&)
     end
     ret
+  end
+
+  private def seven_bit_encoding?(encoding)
+    encoding == Encoding::US_ASCII
   end
 end

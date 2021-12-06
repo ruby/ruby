@@ -11,12 +11,14 @@ class Reline::Config::Test < Reline::TestCase
       Dir.mkdir(@tmpdir)
     end
     Dir.chdir(@tmpdir)
+    Reline.test_mode
     @config = Reline::Config.new
   end
 
   def teardown
     Dir.chdir(@pwd)
     FileUtils.rm_rf(@tmpdir)
+    Reline.test_reset
     @config.reset
   end
 
@@ -79,6 +81,22 @@ class Reline::Config::Test < Reline::TestCase
     LINES
 
     assert_equal '(Emacs)', @config.instance_variable_get(:@emacs_mode_string)
+  end
+
+  def test_encoding_is_ascii
+    @config.reset
+    Reline::IOGate.reset(encoding: Encoding::US_ASCII)
+    @config = Reline::Config.new
+
+    assert_equal true, @config.convert_meta
+  end
+
+  def test_encoding_is_not_ascii
+    @config.reset
+    Reline::IOGate.reset(encoding: Encoding::UTF_8)
+    @config = Reline::Config.new
+
+    assert_equal nil, @config.convert_meta
   end
 
   def test_comment_line
