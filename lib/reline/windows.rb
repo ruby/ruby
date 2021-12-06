@@ -213,7 +213,28 @@ class Reline::Windows
     [ { control_keys: :SHIFT, virtual_key_code: VK_TAB }, [27, 91, 90] ],
   ]
 
+  @@hsg = nil
+
   def self.process_key_event(repeat_count, virtual_key_code, virtual_scan_code, char_code, control_key_state)
+
+    # high-surrogate
+    if char_code & 0xDC00 == 0xD800
+      @@hsg = char_code
+      return
+    end
+    # low-surrogate
+    if char_code & 0xDC00 == 0xDC00
+      if @@hsg
+        char_code = 0x10000 + (@@hsg - 0xD800) * 0x400 + char_code - 0xDC00
+        @@hsg = nil
+      else
+        # no high-surrogate. ignored.
+        return
+      end
+    else
+      # ignore high-surrogate without low-surrogate if there
+      @@hsg = nil
+    end
 
     key = KeyEventRecord.new(virtual_key_code, char_code, control_key_state)
 
