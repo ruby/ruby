@@ -2,15 +2,31 @@
 
 Literals create objects you can use in your program.  Literals include:
 
-* Booleans and nil
-* Numbers
-* Strings
-* Symbols
-* Arrays
-* Hashes
-* Ranges
-* Regexps
-* Lambda Procs
+* {Boolean and Nil Literals}[#label-Boolean+and+Nil+Literals]
+* {Number Literals}[#label-Number+Literals]
+
+  * {Integer Literals}[#label-Integer+Literals]
+  * {Float Literals}[#label-Float+Literals]
+  * {Rational Literals}[#label-Rational+Literals]
+  * {Complex Literals}[#label-Complex+Literals]
+
+* {String Literals}[#label-String+Literals]
+* {Here Document Literals}[#label-Here+Document+Literals]
+* {Symbol Literals}[#label-Symbol+Literals]
+* {Array Literals}[#label-Array+Literals]
+* {Hash Literals}[#label-Hash+Literals]
+* {Range Literals}[#label-Range+Literals]
+* {Regexp Literals}[#label-Regexp+Literals]
+* {Lambda Proc Literals}[#label-Lambda+Proc+Literals]
+* {Percent Literals}[#label-Percent+Literals]
+
+  * {%q: Non-Interpolable String Literals}[#label-25q-3A+Non-Interpolable+String+Literals]
+  * {% and %Q: Interpolable String Literals}[#label-25+and+-25Q-3A+Interpolable+String+Literals]
+  * {%w and %W: String-Array Literals}[#label-25w+and+-25W-3A+String-Array+Literals]
+  * {%i and %I: Symbol-Array Literals}[#label-25i+and+-25I-3A+Symbol-Array+Literals]
+  * {%r: Regexp Literals}[#label-25r-3A+Regexp+Literals]
+  * {%s: Symbol Literals}[#label-25s-3A+Symbol+Literals]
+  * {%x: Backtick Literals}[#label-25x-3A+Backtick+Literals]
 
 == Boolean and Nil Literals
 
@@ -20,7 +36,7 @@ Literals create objects you can use in your program.  Literals include:
 +true+ is a true value.  All objects except +nil+ and +false+ evaluate to a
 true value in conditional expressions.
 
-== Numbers
+== Number Literals
 
 === \Integer Literals
 
@@ -162,15 +178,6 @@ In addition to disabling interpolation, single-quoted strings also disable all
 escape sequences except for the single-quote (<tt>\'</tt>) and backslash
 (<tt>\\\\</tt>).
 
-You may also create strings using <tt>%</tt>:
-
-  %(1 + 1 is #{1 + 1}) #=> "1 + 1 is 2"
-
-There are two different types of <tt>%</tt> strings <tt>%q(...)</tt> behaves
-like a single-quote string (no interpolation or character escaping), while
-<tt>%Q</tt> behaves as a double-quote string.  See Percent Strings below for
-more discussion of the syntax of percent strings.
-
 Adjacent string literals are automatically concatenated by the interpreter:
 
   "con" "cat" "en" "at" "ion" #=> "concatenation"
@@ -199,6 +206,11 @@ a single codepoint in the script encoding:
   ?\M-\C-a #=> "\x81"
   ?\C-\M-a #=> "\x81", same as above
   ?あ      #=> "あ"
+
+See also:
+
+* {%q: Non-Interpolable String Literals}[#label-25q-3A+Non-Interpolable+String+Literals]
+* {% and %Q: Interpolable String Literals}[#label-25+and+-25Q-3A+Interpolable+String+Literals]
 
 === Here Document Literals
 
@@ -299,6 +311,11 @@ Like strings, a single-quote may be used to disable interpolation:
 When creating a Hash, there is a special syntax for referencing a Symbol as
 well.
 
+See also:
+
+* {%s: Symbol Literals}[#label-25s-3A+Symbol+Literals]
+
+
 == \Array Literals
 
 An array is created using the objects between <tt>[</tt> and <tt>]</tt>:
@@ -309,6 +326,11 @@ You may place expressions inside the array:
 
   [1, 1 + 1, 1 + 2]
   [1, [1 + 1, [1 + 2]]]
+
+See also:
+
+* {%w and %W: String-Array Literals}[#label-25w+and+-25W-3A+String-Array+Literals]
+* {%i and %I: Symbol-Array Literals}[#label-25i+and+-25I-3A+Symbol-Array+Literals]
 
 See Array for the methods you may use with an array.
 
@@ -365,6 +387,10 @@ Interpolation may be used inside regular expressions along with escaped
 characters.  Note that a regular expression may require additional escaped
 characters than a string.
 
+See also:
+
+* {%r: Regexp Literals}[#label-25r-3A+Regexp+Literals]
+
 See Regexp for a description of the syntax of regular expressions.
 
 == Lambda Proc Literals
@@ -383,25 +409,81 @@ This proc will add one to its argument.
 
 == Percent Literals
 
-Besides <tt>%(...)</tt> which creates a String, the <tt>%</tt> may create
-other types of object.  As with strings, an uppercase letter allows
-interpolation and escaped characters while a lowercase letter disables them.
+Each of the literals in described in this section
+may use these paired delimiters:
 
-These are the types of percent literals:
+* <tt>[</tt> and </tt>]</tt>.
+* <tt>(</tt> and </tt>)</tt>.
+* <tt>{</tt> and </tt>}</tt>.
+* <tt><</tt> and </tt>></tt>.
+* Any other character, as both beginning and ending delimiters.
 
-<tt>%i</tt> :: Array of Symbols
-<tt>%q</tt> :: String
-<tt>%r</tt> :: Regular Expression
-<tt>%s</tt> :: Symbol
-<tt>%w</tt> :: Array of Strings
-<tt>%x</tt> :: Backtick (capture subshell result)
+These are demonstrated in the next section.
 
-For the two array forms of percent string, if you wish to include a space in
-one of the array entries you must escape it with a "\\" character:
+=== <tt>%q</tt>: Non-Interpolable String Literals
 
-  %w[one one-hundred\ one]
-  #=> ["one", "one-hundred one"]
+You can write a non-interpolable string with <tt>%q</tt>.
+The created string is the same as if you created it with single quotes:
 
-If you are using "(", "[", "{", "<" you must close it with ")", "]", "}", ">"
-respectively.  You may use most other non-alphanumeric characters for percent
-string delimiters such as "%", "|", "^", etc.
+  %[foo bar baz]        # => "foo bar baz" # Using [].
+  %(foo bar baz)        # => "foo bar baz" # Using ().
+  %{foo bar baz}        # => "foo bar baz" # Using {}.
+  %<foo bar baz>        # => "foo bar baz" # Using <>.
+  %|foo bar baz|        # => "foo bar baz" # Using two |.
+  %:foo bar baz:        # => "foo bar baz" # Using two :.
+  %q(1 + 1 is #{1 + 1}) # => "1 + 1 is \#{1 + 1}" # No interpolation.
+
+=== <tt>% and %Q</tt>: Interpolable String Literals
+
+You can write an interpolable string with <tt>%Q</tt>
+or with its alias <tt>%</tt>:
+
+  %[foo bar baz]       # => "foo bar baz"
+  %(1 + 1 is #{1 + 1}) # => "1 + 1 is 2" # Interpolation.
+
+=== <tt>%w and %W</tt>: String-Array Literals
+
+You can write an array of strings with <tt>%w</tt> (non-interpolable)
+or <tt>%W</tt> (interpolable):
+
+  %w[foo bar baz]       # => ["foo", "bar", "baz"]
+  %w[1 % *]             # => ["1", "%", "*"]
+  # Use backslash to embed spaces in the strings.
+  %w[foo\ bar baz\ bat] # => ["foo bar", "baz bat"]
+  %w(#{1 + 1})          # => ["\#{1", "+", "1}"]
+  %W(#{1 + 1})          # => ["2"]
+
+=== <tt>%i and %I</tt>: Symbol-Array Literals
+
+You can write an array of symbols with <tt>%i</tt> (non-interpolable)
+or <tt>%I</tt> (interpolable):
+
+  %i[foo bar baz]       # => [:foo, :bar, :baz]
+  %i[1 % *]             # => [:"1", :%, :*]
+  # Use backslash to embed spaces in the symbols.
+  %i[foo\ bar baz\ bat] # => [:"foo bar", :"baz bat"]
+  %i(#{1 + 1})          # => [:"\#{1", :+, :"1}"]
+  %I(#{1 + 1})          # => [:"2"]
+
+=== <tt>%s</tt>: Symbol Literals
+
+You can write a symbol with <tt>%s</tt>:
+
+  %s[foo]     # => :foo
+  %s[foo bar] # => :"foo bar"
+
+=== <tt>%r</tt>: Regexp Literals
+
+You can write a regular expression with <tt>%r</tt>:
+
+  r = %r[foo\sbar]   # => /foo\sbar/
+  'foo bar'.match(r) # => #<MatchData "foo bar">
+  r = %r[foo\sbar]i  # => /foo\sbar/i
+  'FOO BAR'.match(r) # => #<MatchData "FOO BAR">
+
+
+=== <tt>%x</tt>: Backtick Literals
+
+You can write and execute a shell command with <tt>%x</tt>:
+
+  %x(echo 1) # => "1\n"
