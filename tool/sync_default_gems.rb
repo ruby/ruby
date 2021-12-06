@@ -380,6 +380,8 @@ def message_filter(repo, sha)
   url = "https://github.com/#{repo}"
   print "[#{repo}] ", log.gsub(/fix +#\d+|\(#\d+\)/i) {
     $&.sub(/#/) {"#{url}/pull/"}
+  }.gsub(%r{(?<![-\[\](){}\w@/])(?:(\w+(?:-\w+)*/\w+(?:-\w+)*)@)?(\h{10,40})\b}) {|c|
+    "https://github.com/#{$1 || repo}/commit/#{$2[0,12]}"
   }.sub(/\s*(?=(?i:\nCo-authored-by:.*)*\Z)/) {
     "\n\n" "#{url}/commit/#{sha[0,10]}\n"
   }
