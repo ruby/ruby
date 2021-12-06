@@ -604,7 +604,7 @@ rb_yjit_constant_state_changed(void)
 // Invalidate the block for the matching opt_getinlinecache so it could regenerate code
 // using the new value in the constant cache.
 void
-rb_yjit_constant_ic_update(const rb_iseq_t *iseq, IC ic)
+rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic)
 {
     if (!rb_yjit_enabled_p()) return;
 
@@ -617,27 +617,40 @@ rb_yjit_constant_ic_update(const rb_iseq_t *iseq, IC ic)
     RB_VM_LOCK_ENTER();
     rb_vm_barrier(); // Stop other ractors since we are going to patch machine code.
     {
-
         const struct rb_iseq_constant_body *const body = iseq->body;
         VALUE *code = body->iseq_encoded;
+        const unsigned get_insn_idx = ic->get_insn_idx;
 
         // This should come from a running iseq, so direct threading translation
         // should have been done
         RUBY_ASSERT(FL_TEST((VALUE)iseq, ISEQ_TRANSLATED));
-        RUBY_ASSERT(ic->get_insn_idx < body->iseq_size);
-        RUBY_ASSERT(rb_vm_insn_addr2insn((const void *)code[ic->get_insn_idx]) == BIN(opt_getinlinecache));
+        RUBY_ASSERT(get_insn_idx < body->iseq_size);
+        RUBY_ASSERT(rb_vm_insn_addr2insn((const void *)code[get_insn_idx]) == BIN(opt_getinlinecache));
 
         // Find the matching opt_getinlinecache and invalidate all the blocks there
         RUBY_ASSERT(insn_op_type(BIN(opt_getinlinecache), 1) == TS_IC);
-        if (ic == (IC)code[ic->get_insn_idx + 1 + 1]) {
-            rb_yjit_block_array_t getinlinecache_blocks = yjit_get_version_array(iseq, ic->get_insn_idx);
-            rb_darray_for(getinlinecache_blocks, i) {
-                block_t *block = rb_darray_get(getinlinecache_blocks, i);
-                invalidate_block_version(block);
+        if (ic == (IC)code[get_insn_idx + 1 + 1]) {
+            rb_yjit_block_array_t getinlinecache_blocks = yjit_get_version_array(iseq, get_insn_idx);
+
+            // Put a bound for loop below to be defensive
+            const int32_t initial_version_count = rb_darray_size(getinlinecache_blocks);
+            for (int32_t iteration=0; iteration<initial_version_count; ++iteration) {
+                getinlinecache_blocks = yjit_get_version_array(iseq, get_insn_idx);
+
+                if (rb_darray_size(getinlinecache_blocks) > 0) {
+                    block_t *block = rb_darray_get(getinlinecache_blocks, 0);
+                    invalidate_block_version(block);
 #if YJIT_STATS
-                yjit_runtime_counters.invalidate_constant_ic_fill++;
+                    yjit_runtime_counters.invalidate_constant_ic_fill++;
 #endif
+                }
+                else {
+                    break;
+                }
             }
+
+            // All versions at get_insn_idx should now be gone
+            RUBY_ASSERT(0 == rb_darray_size(yjit_get_version_array(iseq, get_insn_idx)));
         }
         else {
             RUBY_ASSERT(false && "ic->get_insn_diex not set properly");
