@@ -163,6 +163,16 @@ Outstanding ones only.
     * File.dirname now accepts an optional argument for the level to
       strip path components. [[Feature #12194]]
 
+* GC
+
+    * "GC.measure_total_time = true" enables the measurement of GC.
+      Measurement can introduce overhead. It is enabled by default.
+      GC.measure_total_time returns the current setting.
+      GC.stat[:time] or GC.stat(:time) returns measured time
+      in milli-soconds.
+
+    * GC.total_time returns measured time in nano-seconds.
+
 * Integer
 
     * Integer.try_convert is added. [[Feature #15211]]
