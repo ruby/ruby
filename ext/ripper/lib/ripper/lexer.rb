@@ -64,12 +64,12 @@ class Ripper
 
       def [](index)
         case index
-        when 0
-          warn "Calling `Lexer::State#[0]` is deprecated, please use `Lexer::State#to_int` instead"
+        when 0, :to_int
           @to_int
-        when 1
-          warn "Calling `Lexer::State#[1]` is deprecated, please use `Lexer::State#to_s` instead"
+        when 1, :to_s
           @event
+        else
+          nil
         end
       end
 
@@ -97,21 +97,18 @@ class Ripper
 
       def [](index)
         case index
-        when 0
-          warn "Calling `Lexer::Elem#[0]` is deprecated, please use `Lexer::Elem#pos` instead"
+        when 0, :pos
           @pos
-        when 1
-          warn "Calling `Lexer::Elem#[1]` is deprecated, please use `Lexer::Elem#event` instead"
+        when 1, :event
           @event
-        when 2
-          warn "Calling `Lexer::Elem#[2]` is deprecated, please use `Lexer::Elem#tok` instead"
+        when 2, :tok
           @tok
-        when 3
-          warn "Calling `Lexer::Elem#[3]` is deprecated, please use `Lexer::Elem#state` instead"
+        when 3, :state
           @state
-        when 4
-          warn "Calling `Lexer::Elem#[4]` is deprecated, please use `Lexer::Elem#message` instead"
+        when 4, :message
           @message
+        else
+          nil
         end
       end
 
