@@ -280,6 +280,7 @@ class TC_OpenStruct < Test::Unit::TestCase
     os = OpenStruct.new(method: :foo, hash: 42)
     assert_equal(os.object_id, os.method!(:object_id).call)
     assert_not_equal(42, os.hash!)
+    refute os.methods.include?(:"!~!")
   end
 
   def test_override_subclass
