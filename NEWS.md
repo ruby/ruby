@@ -107,165 +107,165 @@ Outstanding ones only.
 
 * Class
 
-    * Class#descendants, which returns an array of classes
-      directly or indirectly inheriting from the receiver, not
-      including the receiver or singleton classes.
-      [[Feature #14394]]
+    *   Class#descendants, which returns an array of classes
+        directly or indirectly inheriting from the receiver, not
+        including the receiver or singleton classes.
+        [[Feature #14394]]
 
-      ```ruby
-      class A; end
-      class B < A; end
-      class C < B; end
-      A.descendants    #=> [B, C]
-      B.descendants    #=> [C]
-      C.descendants    #=> []
-      ```
+        ```ruby
+        class A; end
+        class B < A; end
+        class C < B; end
+        A.descendants    #=> [B, C]
+        B.descendants    #=> [C]
+        C.descendants    #=> []
+        ```
 
-    * Class#subclasses, which returns an array of classes
-      directly inheriting from the receiver, not
-      including singleton classes.
-      [[Feature #18273]]
+    *   Class#subclasses, which returns an array of classes
+        directly inheriting from the receiver, not
+        including singleton classes.
+        [[Feature #18273]]
 
-      ```ruby
-      class A; end
-      class B < A; end
-      class C < B; end
-      class D < A; end
-      A.subclasses    #=> [D, B]
-      B.subclasses    #=> [C]
-      C.subclasses    #=> []
-      ```
+        ```ruby
+        class A; end
+        class B < A; end
+        class C < B; end
+        class D < A; end
+        A.subclasses    #=> [D, B]
+        B.subclasses    #=> [C]
+        C.subclasses    #=> []
+        ```
 
 * Enumerable
 
-    * Enumerable#compact is added. [[Feature #17312]]
+    *   Enumerable#compact is added. [[Feature #17312]]
 
-    * Enumerable#tally now accepts an optional hash to count. [[Feature #17744]]
+    *   Enumerable#tally now accepts an optional hash to count. [[Feature #17744]]
 
-    * Enumerable#each_cons and each_slice to return a receiver. [[GH-1509]]
+    *   Enumerable#each_cons and each_slice to return a receiver. [[GH-1509]]
 
-      ```ruby
-      [1, 2, 3].each_cons(2){}
-      # 3.0 => nil
-      # 3.1 => [1, 2, 3]
+        ```ruby
+        [1, 2, 3].each_cons(2){}
+        # 3.0 => nil
+        # 3.1 => [1, 2, 3]
 
-      [1, 2, 3].each_slice(2){}
-      # 3.0 => nil
-      # 3.1 => [1, 2, 3]
-      ```
+        [1, 2, 3].each_slice(2){}
+        # 3.0 => nil
+        # 3.1 => [1, 2, 3]
+        ```
 
 * Enumerator::Lazy
 
-    * Enumerator::Lazy#compact is added. [[Feature #17312]]
+    *   Enumerator::Lazy#compact is added. [[Feature #17312]]
 
 * File
 
-    * File.dirname now accepts an optional argument for the level to
-      strip path components. [[Feature #12194]]
+    *   File.dirname now accepts an optional argument for the level to
+        strip path components. [[Feature #12194]]
 
 * GC
 
-    * "GC.measure_total_time = true" enables the measurement of GC.
-      Measurement can introduce overhead. It is enabled by default.
-      GC.measure_total_time returns the current setting.
-      GC.stat[:time] or GC.stat(:time) returns measured time
-      in milli-soconds.
+    *   "GC.measure_total_time = true" enables the measurement of GC.
+        Measurement can introduce overhead. It is enabled by default.
+        GC.measure_total_time returns the current setting.
+        GC.stat[:time] or GC.stat(:time) returns measured time
+        in milli-soconds.
 
-    * GC.total_time returns measured time in nano-seconds.
+    *   GC.total_time returns measured time in nano-seconds.
 
 * Integer
 
-    * Integer.try_convert is added. [[Feature #15211]]
+    *   Integer.try_convert is added. [[Feature #15211]]
 
 * Kernel
 
 
-    * Kernel#load now accepts a module as the second argument,
-      and will load the file using the given module as the top
-      level module. [[Feature #6210]]
+    *   Kernel#load now accepts a module as the second argument,
+        and will load the file using the given module as the top
+        level module. [[Feature #6210]]
 
 * MatchData
 
-    * MatchData#match is added [[Feature #18172]]
+    *   MatchData#match is added [[Feature #18172]]
 
-    * MatchData#match_length is added [[Feature #18172]]
+    *   MatchData#match_length is added [[Feature #18172]]
 
 * Module
 
-    * Module#prepend now modifies the ancestor chain if the receiver
-      already includes the argument. Module#prepend still does not
-      modify the ancestor chain if the receiver has already prepended
-      the argument. [[Bug #17423]]
+    *   Module#prepend now modifies the ancestor chain if the receiver
+        already includes the argument. Module#prepend still does not
+        modify the ancestor chain if the receiver has already prepended
+        the argument. [[Bug #17423]]
 
-    * Module#private, #public, #protected, and #module_function will
-      now return their arguments.  If a single argument is given, it
-      is returned. If no arguments are given, nil is returned.  If
-      multiple arguments are given, they are returned as an array.
-      [[Feature #12495]]
+    *   Module#private, #public, #protected, and #module_function will
+        now return their arguments.  If a single argument is given, it
+        is returned. If no arguments are given, nil is returned.  If
+        multiple arguments are given, they are returned as an array.
+        [[Feature #12495]]
 
 * Process
 
-    * Process.\_fork is added. This is a core method for fork(2).
-      Do not call this method directly; it is called by existing
-      fork methods: Kernel.#fork, Process.fork, and IO.popen("-").
-      Application monitoring libraries can overwride this method to
-      hook fork event. [[Feature #17795]]
+    *   Process.\_fork is added. This is a core method for fork(2).
+        Do not call this method directly; it is called by existing
+        fork methods: Kernel.#fork, Process.fork, and IO.popen("-").
+        Application monitoring libraries can overwride this method to
+        hook fork event. [[Feature #17795]]
 
 * Struct
 
-    * Passing only keyword arguments to Struct#initialize is warned.
-      You need to use a Hash literal to set a Hash to a first member.
-      [[Feature #16806]]
+    *   Passing only keyword arguments to Struct#initialize is warned.
+        You need to use a Hash literal to set a Hash to a first member.
+        [[Feature #16806]]
 
-    * StructClass#keyword_init? is added [[Feature #18008]]
+    *   StructClass#keyword_init? is added [[Feature #18008]]
 
 * String
 
-    * Update Unicode version to 13.0.0 [[Feature #17750]]
-      and Emoji version to 13.0 [[Feature #18029]]
+    *   Update Unicode version to 13.0.0 [[Feature #17750]]
+        and Emoji version to 13.0 [[Feature #18029]]
 
 * Queue
 
-    * Queue#initialize now accepts an Enumerable of initial values.
-      [[Feature #17327]]
+    *   Queue#initialize now accepts an Enumerable of initial values.
+        [[Feature #17327]]
 
 * Thread
 
-    * Thread#native_thread_id is added. [[Feature #17853]]
+    *   Thread#native_thread_id is added. [[Feature #17853]]
 
 * Thread::Backtrace
 
-    * Thread::Backtrace.limit, which returns the value to limit backtrace
-      length set by `--backtrace-limit` command line option, is added.
-      [[Feature #17479]]
+    *   Thread::Backtrace.limit, which returns the value to limit backtrace
+        length set by `--backtrace-limit` command line option, is added.
+        [[Feature #17479]]
 
 * $LOAD_PATH
 
-    * $LOAD_PATH.resolve_feature_path does not raise. [[Feature #16043]]
+    *   $LOAD_PATH.resolve_feature_path does not raise. [[Feature #16043]]
 
 * Fiber Scheduler
 
-    * Add support for `Addrinfo.getaddrinfo` using `address_resolve` hook.
-      [[Feature #17370]]
+    *   Add support for `Addrinfo.getaddrinfo` using `address_resolve` hook.
+        [[Feature #17370]]
 
-    * Introduce non-blocking `Timeout.timeout` using `timeout_after` hook.
-      [[Feature #17470]]
+    *   Introduce non-blocking `Timeout.timeout` using `timeout_after` hook.
+        [[Feature #17470]]
 
-    * Introduce new scheduler hooks `io_read` and `io_write` along with a
-      low level `IO::Buffer` for zero-copy read/write. [[Feature #18020]]
+    *   Introduce new scheduler hooks `io_read` and `io_write` along with a
+        low level `IO::Buffer` for zero-copy read/write. [[Feature #18020]]
 
-    * IO hooks `io_wait`, `io_read`, `io_write`, receive the original IO object
-      where possible. [[Bug #18003]]
+    *   IO hooks `io_wait`, `io_read`, `io_write`, receive the original IO object
+        where possible. [[Bug #18003]]
 
-    * Make `Monitor` fiber-safe. [[Bug #17827]]
+    *   Make `Monitor` fiber-safe. [[Bug #17827]]
 
-    * Replace copy coroutine with pthread implementation. [[Feature #18015]]
+    *   Replace copy coroutine with pthread implementation. [[Feature #18015]]
 
 * Refinement
 
-    * New class which represents a module created by Module#refine.
-      `include` and `prepend` are deprecated, and `import_methods` is added
-      instead. [[Bug #17429]]
+    *   New class which represents a module created by Module#refine.
+        `include` and `prepend` are deprecated, and `import_methods` is added
+        instead. [[Bug #17429]]
 
 ## Stdlib updates
 
