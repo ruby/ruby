@@ -1501,24 +1501,6 @@ gen_setlocal_wc1(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     return gen_setlocal_generic(jit, ctx, idx, 1);
 }
 
-// Check that `self` is a pointer to an object on the GC heap
-static void
-guard_self_is_heap(codeblock_t *cb, x86opnd_t self_opnd, uint8_t *side_exit, ctx_t *ctx)
-{
-
-    // `self` is constant throughout the entire region, so we only need to do this check once.
-    if (!ctx->self_type.is_heap) {
-        ADD_COMMENT(cb, "guard self is heap");
-        RUBY_ASSERT(Qfalse < Qnil);
-        test(cb, self_opnd, imm_opnd(RUBY_IMMEDIATE_MASK));
-        jnz_ptr(cb, side_exit);
-        cmp(cb, self_opnd, imm_opnd(Qnil));
-        jbe_ptr(cb, side_exit);
-
-        ctx->self_type.is_heap = 1;
-    }
-}
-
 static void
 gen_jnz_to_target0(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t shape)
 {
@@ -1808,7 +1790,6 @@ gen_getinstancevariable(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 
     // Guard that the receiver has the same class as the one from compile time.
     mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, self));
-    guard_self_is_heap(cb, REG0, COUNTED_EXIT(jit, side_exit, getivar_se_self_not_heap), ctx);
 
     jit_guard_known_klass(jit, ctx, comptime_val_klass, OPND_SELF, comptime_val, GETIVAR_MAX_DEPTH, side_exit);
 
@@ -2904,7 +2885,11 @@ gen_jump(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 }
 
 /*
-Guard that a stack operand has the same class as known_klass.
+Guard that self or a stack operand has the same class as `known_klass`, using
+`sample_instance` to speculate about the shape of the runtime value.
+FIXNUM and on-heap integers are treated as if they have distinct classes, and
+the guard generated for one will fail for the other.
+
 Recompile as contingency if possible, or take side exit a last resort.
 */
 static bool

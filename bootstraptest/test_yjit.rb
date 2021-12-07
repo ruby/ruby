@@ -1,3 +1,14 @@
+assert_equal '[nil, nil, nil, nil, nil, nil]', %q{
+  [NilClass, TrueClass, FalseClass, Integer, Float, Symbol].each do |klass|
+    klass.class_eval("def foo = @foo")
+  end
+
+  [nil, true, false, 0xFABCAFE, 0.42, :cake].map do |instance|
+    instance.foo
+    instance.foo
+  end
+}
+
 assert_equal '0', %q{
   # This is a regression test for incomplete invalidation from
   # opt_setinlinecache. This test might be brittle, so
