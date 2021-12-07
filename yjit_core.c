@@ -1205,6 +1205,15 @@ block_array_remove(rb_yjit_block_array_t block_array, block_t *block)
     RUBY_ASSERT(false);
 }
 
+// Some runtime checks for integrity of a program location
+static void
+verify_blockid(const blockid_t blockid)
+{
+    const rb_iseq_t *const iseq = blockid.iseq;
+    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
+    RUBY_ASSERT_ALWAYS(blockid.idx < iseq->body->iseq_size);
+}
+
 // Invalidate one specific block version
 static void
 invalidate_block_version(block_t *block)
@@ -1213,6 +1222,8 @@ invalidate_block_version(block_t *block)
 
     // TODO: want to assert that all other ractors are stopped here. Can't patch
     // machine code that some other thread is running.
+
+    verify_blockid(block->blockid);
 
     const rb_iseq_t *iseq = block->blockid.iseq;
 
