@@ -73,6 +73,15 @@ class TestWeakMap < Test::Unit::TestCase
                  @wm.inspect)
   end
 
+  def test_inspect_garbage
+    1000.times do |i|
+      @wm[i] = Object.new
+      @wm.inspect
+    end
+    assert_match(/\A\#<#{@wm.class.name}:[^:]++:(?:\s\d+\s=>\s\#<(?:Object|collected):[^:<>]*+>(?:,|>\z))+/,
+                 @wm.inspect)
+  end
+
   def test_each
     m = __callee__[/test_(.*)/, 1]
     x1 = Object.new
