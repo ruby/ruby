@@ -729,6 +729,7 @@ limit_block_versions(blockid_t blockid, const ctx_t *ctx)
 }
 
 static void yjit_free_block(block_t *block);
+static void block_array_remove(rb_yjit_block_array_t block_array, block_t *block);
 
 // Immediately compile a series of block versions at a starting point and
 // return the starting block.
@@ -810,7 +811,14 @@ gen_block_version(blockid_t blockid, const ctx_t *start_ctx, rb_execution_contex
     else {
         // The batch failed. Free everything in the batch
         for (int block_idx = 0; block_idx < compiled_count; block_idx++) {
-            yjit_free_block(batch[block_idx]);
+            block_t *const to_free = batch[block_idx];
+
+            // Undo add_block_version()
+            rb_yjit_block_array_t versions = yjit_get_version_array(to_free->blockid.iseq, to_free->blockid.idx);
+            block_array_remove(versions, to_free);
+
+            // Deallocate
+            yjit_free_block(to_free);
         }
 
 #if YJIT_STATS
