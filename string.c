@@ -3480,7 +3480,7 @@ rb_str_concat(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *    string.prepend(*other_strings)  -> string
+ *    prepend(*other_strings)  -> string
  *
  *  Prepends each string in +other_strings+ to +self+ and returns +self+:
  *
@@ -3536,7 +3536,7 @@ rb_str_hash_cmp(VALUE str1, VALUE str2)
 
 /*
  * call-seq:
- *   string.hash -> integer
+ *   hash -> integer
  *
  * Returns the integer hash value for +self+.
  * The value is based on the length, content and encoding of +self+.
@@ -5756,9 +5756,9 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 
 /*
  *  call-seq:
- *     str.gsub!(pattern, replacement)   -> self or nil
- *     str.gsub!(pattern) {|match| ... } -> self or nil
- *     str.gsub!(pattern)                -> an_enumerator
+ *     gsub!(pattern, replacement)   -> self or nil
+ *     gsub!(pattern) {|match| ... } -> self or nil
+ *     gsub!(pattern)                -> an_enumerator
  *
  *  Performs the specified substring replacement(s) on +self+;
  *  returns +self+ if any replacement occurred, +nil+ otherwise.
@@ -5804,13 +5804,13 @@ rb_str_gsub(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.replace(other_str)   -> str
+ *    replace(other_string) -> self
  *
- *  Replaces the contents of <i>str</i> with the corresponding
- *  values in <i>other_str</i>.
+ *  Replaces the contents of +self+ with the contents of +other_string+:
  *
- *     s = "hello"         #=> "hello"
- *     s.replace "world"   #=> "world"
+ *    s = 'foo'        # => "foo"
+ *    s.replace('bar') # => "bar"
+ *
  */
 
 VALUE
@@ -5826,12 +5826,13 @@ rb_str_replace(VALUE str, VALUE str2)
 
 /*
  *  call-seq:
- *     string.clear    ->  string
+ *    clear -> self
  *
- *  Makes string empty.
+ *  Removes the contents of +self+:
  *
- *     a = "abcde"
- *     a.clear    #=> ""
+ *    s = 'foo' # => "foo"
+ *    s.clear   # => ""
+ *
  */
 
 static VALUE
@@ -5850,12 +5851,13 @@ rb_str_clear(VALUE str)
 
 /*
  *  call-seq:
- *     string.chr    ->  string
+ *    chr -> string
  *
- *  Returns a one-character string at the beginning of the string.
+ *  Returns a string containing the first character of +self+:
  *
- *     a = "abcde"
- *     a.chr    #=> "a"
+ *    s = 'foo' # => "foo"
+ *    s.chr     # => "f"
+ *
  */
 
 static VALUE
@@ -5866,9 +5868,15 @@ rb_str_chr(VALUE str)
 
 /*
  *  call-seq:
- *     str.getbyte(index)          -> 0 .. 255
+ *    getbyte(index) -> integer
  *
- *  returns the <i>index</i>th byte as an integer.
+ *  Returns the byte at zero-based +index+ as an integer:
+ *
+ *    s = 'abcde'  # => "abcde"
+ *    s.getbyte(0) # => 97
+ *    s.getbyte(1) # => 98
+ *
+ *  Related: String#setbyte.
  */
 static VALUE
 rb_str_getbyte(VALUE str, VALUE index)
@@ -5885,9 +5893,15 @@ rb_str_getbyte(VALUE str, VALUE index)
 
 /*
  *  call-seq:
- *     str.setbyte(index, integer) -> integer
+ *    setbyte(index, integer) -> integer
  *
- *  modifies the <i>index</i>th byte as <i>integer</i>.
+ *  Sets the byte at zero-based +index+ to +integer+; returns +integer+:
+ *
+ *    s = 'abcde'      # => "abcde"
+ *    s.setbyte(0, 98) # => 98
+ *    s                # => "bbcde"
+ *
+ *  Related: String#getbyte.
  */
 static VALUE
 rb_str_setbyte(VALUE str, VALUE index, VALUE value)
@@ -6025,25 +6039,51 @@ str_byte_aref(VALUE str, VALUE indx)
 
 /*
  *  call-seq:
- *     str.byteslice(integer)           -> new_str or nil
- *     str.byteslice(integer, integer)   -> new_str or nil
- *     str.byteslice(range)            -> new_str or nil
+ *    byteslice(index, length = 1) -> string or nil
+ *    byteslice(range)             -> string or nil
  *
- *  Byte Reference---If passed a single Integer, returns a
- *  substring of one byte at that position. If passed two Integer
- *  objects, returns a substring starting at the offset given by the first, and
- *  a length given by the second. If given a Range, a substring containing
- *  bytes at offsets given by the range is returned. In all three cases, if
- *  an offset is negative, it is counted from the end of <i>str</i>. Returns
- *  <code>nil</code> if the initial offset falls outside the string, the length
- *  is negative, or the beginning of the range is greater than the end.
- *  The encoding of the resulted string keeps original encoding.
+ *  Returns a substring of +self+, or +nil+ if the substring cannot be constructed.
  *
- *     "hello".byteslice(1)     #=> "e"
- *     "hello".byteslice(-1)    #=> "o"
- *     "hello".byteslice(1, 2)  #=> "el"
- *     "\x80\u3042".byteslice(1, 3) #=> "\u3042"
- *     "\x03\u3042\xff".byteslice(1..3) #=> "\u3042"
+ *  With the single integer argument +index+ given,
+ *  returns the single character at the given zero-based +index+,
+ *  or +nil+ if +index+ falls outside of +self+:
+ *
+ *    s = '0123456789' # => "0123456789"
+ *    s.byteslice(2)   # => "2"
+ *    s.byteslice(200) # => nil
+ *
+ *  With integer arguments +index+ and +size+ given,
+ *  returns the substring beginning at the given +index+
+ *  of the given +length+ (if possible),
+ *  or +nil+ if +length+ is negative or +index+ falls outside of +self+:
+ *
+ *    s = '0123456789'   # => "0123456789"
+ *    s.byteslice(4, 3)  # => "456"
+ *    s.byteslice(4, 30) # => "456789"
+ *    s.byteslice(4, -1) # => nil
+ *    s.byteslice(40, 2) # => nil
+ *
+ *  In either case above, counts backwards from the end of +self+
+ *  if +index is negative:
+ *
+ *    s = '0123456789'   # => "0123456789"
+ *    s.byteslice(-4)    # => "6"
+ *    s.byteslice(-4, 3) # => "678"
+ *
+ *  With Range argument +range+ given, returns
+ *  <tt>byteslice(range.begin, range.size)</tt>:
+ *
+ *    s = '0123456789'    # => "0123456789"
+ *    s.byteslice(4..6)   # => "456"
+ *    s.byteslice(-6..-4) # => "456"
+ *    s.byteslice(5..2)   # => "" # range.size is zero.
+ *    s.byteslice(40..42) # => nil
+ *
+ *  In all cases, a returned string has the same encoding as +self+:
+ *
+ *    s.encoding              # => #<Encoding:UTF-8>
+ *    s.byteslice(4).encoding # => #<Encoding:UTF-8>
+ *
  */
 
 static VALUE
@@ -6060,11 +6100,12 @@ rb_str_byteslice(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.reverse   -> new_str
+ *    reverse -> string
  *
- *  Returns a new string with the characters from <i>str</i> in reverse order.
+ *  Returns a new string with the characters from +self+ in reverse order.
  *
- *     "stressed".reverse   #=> "desserts"
+ *    'stressed'.reverse # => "desserts"
+ *
  */
 
 static VALUE
@@ -6120,9 +6161,14 @@ rb_str_reverse(VALUE str)
 
 /*
  *  call-seq:
- *     str.reverse!   -> str
+ *    reverse! -> self
  *
- *  Reverses <i>str</i> in place.
+ *  Returns +self+ with its characters reversed:
+ *
+ *    s = 'stressed'
+ *    s.reverse! # => "desserts"
+ *    s          # => "desserts"
+ *
  */
 
 static VALUE
@@ -6154,14 +6200,15 @@ rb_str_reverse_bang(VALUE str)
 
 /*
  *  call-seq:
- *     str.include? other_str   -> true or false
+ *    include? other_string -> true or false
  *
- *  Returns <code>true</code> if <i>str</i> contains the given string or
- *  character.
+ *  Returns +true+ if +self+ contains +other_string+, +false+ otherwise:
  *
- *     "hello".include? "lo"   #=> true
- *     "hello".include? "ol"   #=> false
- *     "hello".include? ?h     #=> true
+ *    s = 'foo'
+ *    s.include?('f')    # => true
+ *    s.include?('fo')   # => true
+ *    s.include?('food') # => false
+ *
  */
 
 static VALUE
