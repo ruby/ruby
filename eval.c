@@ -1526,7 +1526,7 @@ refinement_import_methods_i(ID key, VALUE value, void *data)
     struct refinement_import_methods_arg *arg = (struct refinement_import_methods_arg *)data;
 
     if (me->def->type != VM_METHOD_TYPE_ISEQ) {
-        rb_raise(rb_eArgError, "Can't import method: %"PRIsVALUE"#%"PRIsVALUE, rb_class_path(arg->module), rb_id2str(key));
+        rb_raise(rb_eArgError, "Can't import method which is not defined with Ruby code: %"PRIsVALUE"#%"PRIsVALUE, rb_class_path(arg->module), rb_id2str(key));
     }
     rb_cref_t *new_cref = rb_vm_cref_dup_without_refinements(me->def->body.iseq.cref);
     CREF_REFINEMENTS_SET(new_cref, CREF_REFINEMENTS(arg->cref));

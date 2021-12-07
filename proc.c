@@ -3845,7 +3845,8 @@ proc_ruby2_keywords(VALUE procval)
  *
  *      lambda1 = lambda {|x| x**2 }
  *
- * * Use the Lambda literal syntax (also constructs a proc with lambda semantics):
+ * * Use the {Lambda proc literal}[doc/syntax/literals_rdoc.html#label-Lambda+Proc+Literals] syntax
+ *   (also constructs a proc with lambda semantics):
  *
  *      lambda2 = ->(x) { x**2 }
  *

@@ -497,6 +497,11 @@ rb_node_set_type(NODE *n, enum node_type t)
     return nd_init_type(n, t);
 }
 
+static inline bool
+nd_type_p(const NODE *n, enum node_type t)
+{
+    return (enum node_type)nd_type(n) == t;
+}
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */

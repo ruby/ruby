@@ -107,7 +107,7 @@
 # For all these reasons, consider not using OpenStruct at all.
 #
 class OpenStruct
-  VERSION = "0.5.0"
+  VERSION = "0.5.1"
 
   #
   # Creates a new OpenStruct object.  By default, the resulting OpenStruct
@@ -453,7 +453,12 @@ class OpenStruct
   end
 
   # Make all public methods (builtin or our own) accessible with <code>!</code>:
-  instance_methods.each do |method|
+  give_access = instance_methods
+  # See https://github.com/ruby/ostruct/issues/30
+  give_access -= %i[instance_exec instance_eval eval] if RUBY_ENGINE == 'jruby'
+  give_access.each do |method|
+    next if method.match(/\W$/)
+
     new_name = "#{method}!"
     alias_method new_name, method
   end

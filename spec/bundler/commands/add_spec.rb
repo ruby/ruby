@@ -68,6 +68,18 @@ RSpec.describe "bundle add" do
     end
   end
 
+  describe "with --require" do
+    it "adds the require param for the gem" do
+      bundle "add 'foo' --require=foo/engine"
+      expect(bundled_app_gemfile.read).to match(%r{gem "foo",(?: .*,) :require => "foo\/engine"})
+    end
+
+    it "converts false to a boolean" do
+      bundle "add 'foo' --require=false"
+      expect(bundled_app_gemfile.read).to match(/gem "foo",(?: .*,) :require => false/)
+    end
+  end
+
   describe "with --group" do
     it "adds dependency for the specified group" do
       bundle "add 'foo' --group='development'"

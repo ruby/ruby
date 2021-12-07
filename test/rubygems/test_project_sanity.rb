@@ -13,7 +13,19 @@ class TestProjectSanity < Gem::TestCase
   end
 
   def test_require_rubygems_package
-    err, status = Open3.capture2e(*ruby_with_rubygems_in_load_path, "--disable-gems", "-e", "'require \"rubygems/package\"'")
+    err, status = Open3.capture2e(*ruby_with_rubygems_in_load_path, "--disable-gems", "-e", "require \"rubygems/package\"")
+
+    assert status.success?, err
+  end
+
+  def test_require_and_use_rubygems_version
+    err, status = Open3.capture2e(
+      *ruby_with_rubygems_in_load_path,
+      "--disable-gems",
+      "-rrubygems/version",
+      "-e",
+      "Gem::Version.new('2.7.0.preview1') >= Gem::Version.new(RUBY_VERSION)"
+    )
 
     assert status.success?, err
   end

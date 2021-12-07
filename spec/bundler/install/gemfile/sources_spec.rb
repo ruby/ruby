@@ -1336,8 +1336,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
       G
       expect(err).to eq strip_whitespace(<<-EOS).strip
         Warning: The gem 'rack' was found in multiple relevant sources.
-          * rubygems repository https://gem.repo1/ or installed locally
-          * rubygems repository https://gem.repo4/ or installed locally
+          * rubygems repository https://gem.repo1/
+          * rubygems repository https://gem.repo4/
         You should add this gem to the source block for the source you wish it to be installed from.
       EOS
       expect(last_command).to be_success
@@ -1366,8 +1366,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
       expect(last_command).to be_failure
       expect(err).to eq strip_whitespace(<<-EOS).strip
         The gem 'rack' was found in multiple relevant sources.
-          * rubygems repository https://gem.repo1/ or installed locally
-          * rubygems repository https://gem.repo4/ or installed locally
+          * rubygems repository https://gem.repo1/
+          * rubygems repository https://gem.repo4/
         You must add this gem to the source block for the source you wish it to be installed from.
       EOS
       expect(the_bundle).not_to be_locked

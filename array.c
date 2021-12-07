@@ -7843,13 +7843,20 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  == Creating Arrays
  *
- *  A new array can be created by using the literal constructor
- *  <code>[]</code>.  Arrays can contain different types of objects.  For
+ *  You can create an \Array object explicitly with:
+ *
+ *  - An {array literal}[doc/syntax/literals_rdoc.html#label-Array+Literals].
+ *
+ *  You can convert certain objects to Arrays with:
+ *
+ *  - \Method {Array}[Kernel.html#method-i-Array].
+ *
+ *  An \Array can contain different types of objects.  For
  *  example, the array below contains an Integer, a String and a Float:
  *
  *     ary = [1, "two", 3.0] #=> [1, "two", 3.0]
  *
- *  An array can also be created by explicitly calling Array.new with zero, one
+ *  An array can also be created by calling Array.new with zero, one
  *  (the initial size of the Array) or two arguments (the initial size and a
  *  default object).
  *

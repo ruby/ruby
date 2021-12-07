@@ -1320,6 +1320,14 @@ tick(void)
 #define MEASURE_LINE(expr) expr
 #endif /* USE_TICK_T */
 
+static inline void *
+asan_unpoison_object_temporary(VALUE obj)
+{
+    void *ptr = asan_poisoned_object_p(obj);
+    asan_unpoison_object(obj, false);
+    return ptr;
+}
+
 #define FL_CHECK2(name, x, pred) \
     ((RGENGC_CHECK_MODE && SPECIAL_CONST_P(x)) ? \
      (rb_bug(name": SPECIAL_CONST (%p)", (void *)(x)), 0) : (pred))
@@ -4206,16 +4214,6 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     ATOMIC_SET(finalizing, 0);
 }
 
-PUREFUNC(static inline int is_id_value(rb_objspace_t *objspace, VALUE ptr));
-static inline int
-is_id_value(rb_objspace_t *objspace, VALUE ptr)
-{
-    if (!is_pointer_to_heap(objspace, (void *)ptr)) return FALSE;
-    if (BUILTIN_TYPE(ptr) > T_FIXNUM) return FALSE;
-    if (BUILTIN_TYPE(ptr) == T_ICLASS) return FALSE;
-    return TRUE;
-}
-
 static inline int
 is_swept_object(rb_objspace_t *objspace, VALUE ptr)
 {
@@ -4868,7 +4866,7 @@ unlock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 }
 
 static inline bool
-try_move_in_plane(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page, uintptr_t p, bits_t bits, VALUE dest)
+try_move_plane(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page, uintptr_t p, bits_t bits, VALUE dest)
 {
     if (bits) {
         do {
@@ -4936,7 +4934,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
         bits_t bits = mark_bits[index] & ~pin_bits[index];
 
         bits >>= NUM_IN_PAGE(p);
-        if (try_move_in_plane(objspace, heap, sweep_page, (uintptr_t)p, bits, dest)) return 1;
+        if (try_move_plane(objspace, heap, sweep_page, (uintptr_t)p, bits, dest)) return 1;
 
         if (index == 0) {
             p = cursor->start + (BITS_BITLENGTH - NUM_IN_PAGE(cursor->start));
@@ -4949,7 +4947,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
          * marked, so we iterate using the marking bitmap */
         for (size_t i = index + 1; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
             bits_t bits = mark_bits[i] & ~pin_bits[i];
-            if (try_move_in_plane(objspace, heap, sweep_page, (uintptr_t)p, bits, dest)) return 1;
+            if (try_move_plane(objspace, heap, sweep_page, (uintptr_t)p, bits, dest)) return 1;
             p += BITS_BITLENGTH;
         }
 
@@ -5181,7 +5179,7 @@ struct gc_sweep_context {
 };
 
 static inline void
-gc_fill_swept_page_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bitset, bool *finished_compacting, struct gc_sweep_context *ctx)
+gc_fill_swept_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bitset, bool *finished_compacting, struct gc_sweep_context *ctx)
 {
     struct heap_page * sweep_page = ctx->page;
 
@@ -5258,13 +5256,13 @@ gc_fill_swept_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *s
     /* *Want to move* objects are pinned but not marked. */
     bitset = pin_bits[0] & ~mark_bits[0];
     bitset >>= NUM_IN_PAGE(p); // Skip header / dead space bits
-    gc_fill_swept_page_plane(objspace, heap, (uintptr_t)p, bitset, &finished_compacting, ctx);
+    gc_fill_swept_plane(objspace, heap, (uintptr_t)p, bitset, &finished_compacting, ctx);
     p += ((BITS_BITLENGTH - NUM_IN_PAGE(p)) * sizeof(RVALUE));
 
     for (int i = 1; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
         /* *Want to move* objects are pinned but not marked. */
         bitset = pin_bits[i] & ~mark_bits[i];
-        gc_fill_swept_page_plane(objspace, heap, (uintptr_t)p, bitset, &finished_compacting, ctx);
+        gc_fill_swept_plane(objspace, heap, (uintptr_t)p, bitset, &finished_compacting, ctx);
         p += ((BITS_BITLENGTH) * sizeof(RVALUE));
     }
 
@@ -5274,7 +5272,7 @@ gc_fill_swept_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *s
 }
 
 static inline void
-gc_plane_sweep(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bitset, struct gc_sweep_context *ctx)
+gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bitset, struct gc_sweep_context *ctx)
 {
     struct heap_page * sweep_page = ctx->page;
     short slot_size = sweep_page->slot_size;
@@ -5351,7 +5349,7 @@ gc_plane_sweep(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
 }
 
 static inline void
-gc_page_sweep(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap, struct gc_sweep_context *ctx)
+gc_sweep_page(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap, struct gc_sweep_context *ctx)
 {
     struct heap_page *sweep_page = ctx->page;
 
@@ -5392,14 +5390,14 @@ gc_page_sweep(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
     bitset = ~bits[0];
     bitset >>= NUM_IN_PAGE(p);
     if (bitset) {
-        gc_plane_sweep(objspace, heap, (uintptr_t)p, bitset, ctx);
+        gc_sweep_plane(objspace, heap, (uintptr_t)p, bitset, ctx);
     }
     p += (BITS_BITLENGTH - NUM_IN_PAGE(p));
 
     for (i=1; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
         bitset = ~bits[i];
         if (bitset) {
-            gc_plane_sweep(objspace, heap, (uintptr_t)p, bitset, ctx);
+            gc_sweep_plane(objspace, heap, (uintptr_t)p, bitset, ctx);
         }
         p += BITS_BITLENGTH;
     }
@@ -5421,7 +5419,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
 	record->empty_objects += ctx->empty_slots;
     }
 #endif
-    if (0) fprintf(stderr, "gc_page_sweep(%"PRIdSIZE"): total_slots: %d, freed_slots: %d, empty_slots: %d, final_slots: %d\n",
+    if (0) fprintf(stderr, "gc_sweep_page(%"PRIdSIZE"): total_slots: %d, freed_slots: %d, empty_slots: %d, final_slots: %d\n",
 		   rb_gc_count(),
 		   sweep_page->total_slots,
 		   ctx->freed_slots, ctx->empty_slots, ctx->final_slots);
@@ -5675,7 +5673,7 @@ gc_sweep_step(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
             .freed_slots = 0,
             .empty_slots = 0,
         };
-        gc_page_sweep(objspace, size_pool, heap, &ctx);
+        gc_sweep_page(objspace, size_pool, heap, &ctx);
         int free_slots = ctx.freed_slots + ctx.empty_slots;
 
         heap->sweeping_page = list_next(&heap->pages, sweep_page, page_node);
@@ -6808,7 +6806,7 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
 	}
 	return;
       case imemo_cref:
-	gc_mark(objspace, RANY(obj)->as.imemo.cref.klass);
+	gc_mark(objspace, RANY(obj)->as.imemo.cref.klass_or_self);
 	gc_mark(objspace, (VALUE)RANY(obj)->as.imemo.cref.next);
 	gc_mark(objspace, RANY(obj)->as.imemo.cref.refinements);
 	return;
@@ -7865,7 +7863,7 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
 
 #if GC_ENABLE_INCREMENTAL_MARK
 static inline void
-gc_marks_wb_unprotected_objects_in_plane(rb_objspace_t *objspace, uintptr_t p, bits_t bits)
+gc_marks_wb_unprotected_objects_plane(rb_objspace_t *objspace, uintptr_t p, bits_t bits)
 {
     if (bits) {
         do {
@@ -7894,13 +7892,13 @@ gc_marks_wb_unprotected_objects(rb_objspace_t *objspace, rb_heap_t *heap)
 
         bits_t bits = mark_bits[0] & wbun_bits[0];
         bits >>= NUM_IN_PAGE(p);
-        gc_marks_wb_unprotected_objects_in_plane(objspace, (uintptr_t)p, bits);
+        gc_marks_wb_unprotected_objects_plane(objspace, (uintptr_t)p, bits);
         p += (BITS_BITLENGTH - NUM_IN_PAGE(p));
 
 	for (j=1; j<HEAP_PAGE_BITMAP_LIMIT; j++) {
 	    bits_t bits = mark_bits[j] & wbun_bits[j];
 
-            gc_marks_wb_unprotected_objects_in_plane(objspace, (uintptr_t)p, bits);
+            gc_marks_wb_unprotected_objects_plane(objspace, (uintptr_t)p, bits);
             p += BITS_BITLENGTH;
 	}
     }
@@ -8275,7 +8273,7 @@ rgengc_remembered(rb_objspace_t *objspace, VALUE obj)
 #endif
 
 static inline void
-rgengc_rememberset_mark_in_plane(rb_objspace_t *objspace, uintptr_t p, bits_t bitset)
+rgengc_rememberset_mark_plane(rb_objspace_t *objspace, uintptr_t p, bits_t bitset)
 {
     if (bitset) {
         do {
@@ -8323,12 +8321,12 @@ rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap)
 
             bitset = bits[0];
             bitset >>= NUM_IN_PAGE(p);
-            rgengc_rememberset_mark_in_plane(objspace, (uintptr_t)p, bitset);
+            rgengc_rememberset_mark_plane(objspace, (uintptr_t)p, bitset);
             p += (BITS_BITLENGTH - NUM_IN_PAGE(p));
 
 	    for (j=1; j < HEAP_PAGE_BITMAP_LIMIT; j++) {
 		bitset = bits[j];
-                rgengc_rememberset_mark_in_plane(objspace, (uintptr_t)p, bitset);
+                rgengc_rememberset_mark_plane(objspace, (uintptr_t)p, bitset);
                 p += BITS_BITLENGTH;
 	    }
 	}
@@ -9677,7 +9675,7 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
         }
         break;
       case imemo_cref:
-        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.cref.klass);
+        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.cref.klass_or_self);
         TYPED_UPDATE_IF_MOVED(objspace, struct rb_cref_struct *, RANY(obj)->as.imemo.cref.next);
         UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.cref.refinements);
         break;
@@ -12049,9 +12047,20 @@ wmap_allocate(VALUE klass)
 static int
 wmap_live_p(rb_objspace_t *objspace, VALUE obj)
 {
-    if (!FL_ABLE(obj)) return TRUE;
-    if (!is_id_value(objspace, obj)) return FALSE;
-    if (!is_live_object(objspace, obj)) return FALSE;
+    if (SPECIAL_CONST_P(obj)) return TRUE;
+    if (is_pointer_to_heap(objspace, (void *)obj)) {
+        void *poisoned = asan_unpoison_object_temporary(obj);
+
+        enum ruby_value_type t = BUILTIN_TYPE(obj);
+        int ret = (!(t == T_NONE || t >= T_FIXNUM || t == T_ICLASS) &&
+                   is_live_object(objspace, obj));
+
+        if (poisoned) {
+            asan_poison_object(obj);
+        }
+
+        return ret;
+    }
     return TRUE;
 }
 
@@ -12117,10 +12126,26 @@ struct wmap_iter_arg {
     VALUE value;
 };
 
+static VALUE
+wmap_inspect_append(rb_objspace_t *objspace, VALUE str, VALUE obj)
+{
+    if (SPECIAL_CONST_P(obj)) {
+        return rb_str_append(str, rb_inspect(obj));
+    }
+    else if (wmap_live_p(objspace, obj)) {
+        return rb_str_append(str, rb_any_to_s(obj));
+    }
+    else {
+        return rb_str_catf(str, "#<collected:%p>", (void*)obj);
+    }
+}
+
 static int
 wmap_inspect_i(st_data_t key, st_data_t val, st_data_t arg)
 {
-    VALUE str = (VALUE)arg;
+    struct wmap_iter_arg *argp = (struct wmap_iter_arg *)arg;
+    rb_objspace_t *objspace = argp->objspace;
+    VALUE str = argp->value;
     VALUE k = (VALUE)key, v = (VALUE)val;
 
     if (RSTRING_PTR(str)[0] == '#') {
@@ -12130,11 +12155,9 @@ wmap_inspect_i(st_data_t key, st_data_t val, st_data_t arg)
 	rb_str_cat2(str, ": ");
 	RSTRING_PTR(str)[0] = '#';
     }
-    k = SPECIAL_CONST_P(k) ? rb_inspect(k) : rb_any_to_s(k);
-    rb_str_append(str, k);
+    wmap_inspect_append(objspace, str, k);
     rb_str_cat2(str, " => ");
-    v = SPECIAL_CONST_P(v) ? rb_inspect(v) : rb_any_to_s(v);
-    rb_str_append(str, v);
+    wmap_inspect_append(objspace, str, v);
 
     return ST_CONTINUE;
 }
@@ -12145,11 +12168,14 @@ wmap_inspect(VALUE self)
     VALUE str;
     VALUE c = rb_class_name(CLASS_OF(self));
     struct weakmap *w;
+    struct wmap_iter_arg args;
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
     str = rb_sprintf("-<%"PRIsVALUE":%p", c, (void *)self);
     if (w->wmap2obj) {
-	st_foreach(w->wmap2obj, wmap_inspect_i, str);
+	args.objspace = &rb_objspace;
+	args.value = str;
+	st_foreach(w->wmap2obj, wmap_inspect_i, (st_data_t)&args);
     }
     RSTRING_PTR(str)[0] = '#';
     rb_str_cat2(str, ">");

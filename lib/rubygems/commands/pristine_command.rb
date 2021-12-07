@@ -50,6 +50,11 @@ class Gem::Commands::PristineCommand < Gem::Command
       options[:env_shebang] = value
     end
 
+    add_option('-i', '--install-dir DIR',
+               'Gem repository to get binstubs and plugins installed') do |value, options|
+      options[:install_dir] = File.expand_path(value)
+    end
+
     add_option('-n', '--bindir DIR',
                'Directory where executables are',
                'located') do |value, options|
@@ -163,11 +168,12 @@ extensions will be restored.
         end
 
       bin_dir = options[:bin_dir] if options[:bin_dir]
+      install_dir = options[:install_dir] if options[:install_dir]
 
       installer_options = {
         :wrappers => true,
         :force => true,
-        :install_dir => spec.base_dir,
+        :install_dir => install_dir || spec.base_dir,
         :env_shebang => env_shebang,
         :build_args => spec.build_args,
         :bin_dir => bin_dir,
@@ -177,7 +183,7 @@ extensions will be restored.
         installer = Gem::Installer.for_spec(spec, installer_options)
         installer.generate_bin
       elsif options[:only_plugins]
-        installer = Gem::Installer.for_spec(spec)
+        installer = Gem::Installer.for_spec(spec, installer_options)
         installer.generate_plugins
       else
         installer = Gem::Installer.at(gem, installer_options)

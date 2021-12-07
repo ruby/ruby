@@ -211,15 +211,15 @@ static uint8_t *alloc_exec_mem(uint32_t mem_size)
     }
 
     codeblock_t block;
-    block.current_aligned_write_pos = ALIGNED_WRITE_POSITION_NONE;
-    block.mem_block = mem_block;
-    block.mem_size = mem_size;
+    codeblock_t *cb = &block;
 
-    codeblock_t * cb = &block;
-    // Fill the executable memory with INT3 (0xCC) so that
-    // executing uninitialized memory will fault
+    cb_init(cb, mem_block, mem_size);
+
+    // Fill the executable memory with PUSH DS (0x1E) so that
+    // executing uninitialized memory will fault with #UD in
+    // 64-bit mode.
     cb_mark_all_writeable(cb);
-    memset(mem_block, 0xCC, mem_size);
+    memset(mem_block, 0x1E, mem_size);
     cb_mark_all_executable(cb);
 
     return mem_block;
@@ -233,7 +233,7 @@ static uint8_t *alloc_exec_mem(uint32_t mem_size)
 void cb_init(codeblock_t *cb, uint8_t *mem_block, uint32_t mem_size)
 {
     assert (mem_block);
-    cb->mem_block = mem_block;
+    cb->mem_block_ = mem_block;
     cb->mem_size = mem_size;
     cb->write_pos = 0;
     cb->num_labels = 0;
@@ -241,42 +241,50 @@ void cb_init(codeblock_t *cb, uint8_t *mem_block, uint32_t mem_size)
     cb->current_aligned_write_pos = ALIGNED_WRITE_POSITION_NONE;
 }
 
+// Set the current write position
+void cb_set_pos(codeblock_t *cb, uint32_t pos)
+{
+    // Assert here since while assembler functions do bounds checking, there is
+    // nothing stopping users from taking out an out-of-bounds pointer and
+    // doing bad accesses with it.
+    assert (pos < cb->mem_size);
+    cb->write_pos = pos;
+}
+
 // Align the current write position to a multiple of bytes
 void cb_align_pos(codeblock_t *cb, uint32_t multiple)
 {
     // Compute the pointer modulo the given alignment boundary
-    uint8_t *ptr = &cb->mem_block[cb->write_pos];
+    uint8_t *ptr = cb_get_write_ptr(cb);
     uint8_t *aligned_ptr = align_ptr(ptr, multiple);
+    const uint32_t write_pos = cb->write_pos;
 
     // Pad the pointer by the necessary amount to align it
     ptrdiff_t pad = aligned_ptr - ptr;
-    cb->write_pos += (int32_t)pad;
-}
-
-// Set the current write position
-void cb_set_pos(codeblock_t *cb, uint32_t pos)
-{
-    assert (pos < cb->mem_size);
-    cb->write_pos = pos;
+    cb_set_pos(cb, write_pos + (int32_t)pad);
 }
 
 // Set the current write position from a pointer
 void cb_set_write_ptr(codeblock_t *cb, uint8_t *code_ptr)
 {
-    intptr_t pos = code_ptr - cb->mem_block;
+    intptr_t pos = code_ptr - cb->mem_block_;
     assert (pos < cb->mem_size);
-    cb->write_pos = (uint32_t)pos;
+    cb_set_pos(cb, (uint32_t)pos);
 }
 
 // Get a direct pointer into the executable memory block
-uint8_t *cb_get_ptr(codeblock_t *cb, uint32_t index)
+uint8_t *cb_get_ptr(const codeblock_t *cb, uint32_t index)
 {
-    assert (index < cb->mem_size);
-    return &cb->mem_block[index];
+    if (index < cb->mem_size) {
+        return &cb->mem_block_[index];
+    }
+    else {
+        return NULL;
+    }
 }
 
 // Get a direct pointer to the current write position
-uint8_t *cb_get_write_ptr(codeblock_t *cb)
+uint8_t *cb_get_write_ptr(const codeblock_t *cb)
 {
     return cb_get_ptr(cb, cb->write_pos);
 }
@@ -284,10 +292,15 @@ uint8_t *cb_get_write_ptr(codeblock_t *cb)
 // Write a byte at the current position
 void cb_write_byte(codeblock_t *cb, uint8_t byte)
 {
-    assert (cb->mem_block);
-    assert (cb->write_pos + 1 <= cb->mem_size);
-    cb_mark_position_writeable(cb, cb->write_pos);
-    cb->mem_block[cb->write_pos++] = byte;
+    assert (cb->mem_block_);
+    if (cb->write_pos < cb->mem_size) {
+        cb_mark_position_writeable(cb, cb->write_pos);
+        cb->mem_block_[cb->write_pos] = byte;
+        cb->write_pos++;
+    }
+    else {
+        cb->dropped_bytes = true;
+    }
 }
 
 // Write multiple bytes starting from the current position
@@ -890,14 +903,18 @@ static void cb_write_jcc_ptr(codeblock_t *cb, const char *mnem, uint8_t op0, uin
     cb_write_byte(cb, op1);
 
     // Pointer to the end of this jump instruction
-    uint8_t *end_ptr = &cb->mem_block[cb->write_pos] + 4;
+    uint8_t *end_ptr = cb_get_ptr(cb, cb->write_pos + 4);
 
     // Compute the jump offset
     int64_t rel64 = (int64_t)(dst_ptr - end_ptr);
-    assert (rel64 >= INT32_MIN && rel64 <= INT32_MAX);
-
-    // Write the relative 32-bit jump offset
-    cb_write_int(cb, (int32_t)rel64, 32);
+    if (rel64 >= INT32_MIN && rel64 <= INT32_MAX) {
+        // Write the relative 32-bit jump offset
+        cb_write_int(cb, (int32_t)rel64, 32);
+    }
+    else {
+        // Offset doesn't fit in 4 bytes. Report error.
+        cb->dropped_bytes = true;
+    }
 }
 
 // Encode a conditional move instruction
@@ -971,14 +988,13 @@ void call_ptr(codeblock_t *cb, x86opnd_t scratch_reg, uint8_t *dst_ptr)
     assert (scratch_reg.type == OPND_REG);
 
     // Pointer to the end of this call instruction
-    uint8_t *end_ptr = &cb->mem_block[cb->write_pos] + 5;
+    uint8_t *end_ptr = cb_get_ptr(cb, cb->write_pos + 5);
 
     // Compute the jump offset
     int64_t rel64 = (int64_t)(dst_ptr - end_ptr);
 
     // If the offset fits in 32-bit
-    if (rel64 >= INT32_MIN && rel64 <= INT32_MAX)
-    {
+    if (rel64 >= INT32_MIN && rel64 <= INT32_MAX) {
         call_rel32(cb, (int32_t)rel64);
         return;
     }
@@ -1784,8 +1800,8 @@ void cb_write_lock_prefix(codeblock_t *cb)
 
 void cb_mark_all_writeable(codeblock_t * cb)
 {
-    if (mprotect(cb->mem_block, cb->mem_size, PROT_READ | PROT_WRITE)) {
-        fprintf(stderr, "Couldn't make JIT page (%p) writeable, errno: %s", (void *)cb->mem_block, strerror(errno));
+    if (mprotect(cb->mem_block_, cb->mem_size, PROT_READ | PROT_WRITE)) {
+        fprintf(stderr, "Couldn't make JIT page (%p) writeable, errno: %s", (void *)cb->mem_block_, strerror(errno));
         abort();
     }
 }
@@ -1797,8 +1813,9 @@ void cb_mark_position_writeable(codeblock_t * cb, uint32_t write_pos)
 
     if (cb->current_aligned_write_pos != aligned_position) {
         cb->current_aligned_write_pos = aligned_position;
-        if (mprotect(cb->mem_block + aligned_position, pagesize, PROT_READ | PROT_WRITE)) {
-            fprintf(stderr, "Couldn't make JIT page (%p) writeable, errno: %s", (void *)(cb->mem_block + aligned_position), strerror(errno));
+        void *const page_addr = cb_get_ptr(cb, aligned_position);
+        if (mprotect(page_addr, pagesize, PROT_READ | PROT_WRITE)) {
+            fprintf(stderr, "Couldn't make JIT page (%p) writeable, errno: %s", page_addr, strerror(errno));
             abort();
         }
     }
@@ -1807,8 +1824,8 @@ void cb_mark_position_writeable(codeblock_t * cb, uint32_t write_pos)
 void cb_mark_all_executable(codeblock_t * cb)
 {
     cb->current_aligned_write_pos = ALIGNED_WRITE_POSITION_NONE;
-    if (mprotect(cb->mem_block, cb->mem_size, PROT_READ | PROT_EXEC)) {
-        fprintf(stderr, "Couldn't make JIT page (%p) executable, errno: %s", (void *)cb->mem_block, strerror(errno));
+    if (mprotect(cb->mem_block_, cb->mem_size, PROT_READ | PROT_EXEC)) {
+        fprintf(stderr, "Couldn't make JIT page (%p) executable, errno: %s", (void *)cb->mem_block_, strerror(errno));
         abort();
     }
 }

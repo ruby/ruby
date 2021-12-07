@@ -1363,6 +1363,7 @@ AS_IF([test "x$with_jemalloc" != xno],[
   [-l*], [
     set dummy $with_jemalloc
     LIBS="$2 $LIBS"
+    DLDLIBS="$2${DLDLIBS:+ $DLDLIBS}" # probably needed also in extension libraries
   ])
   AS_CASE(["$with_jemalloc"],
   [*" with mangle"], [
@@ -3353,7 +3354,7 @@ AS_CASE(["$target_os"],
     : ${DLDLIBS=""}
     ],
   [
-    DLDLIBS="$DLDLIBS -lc"
+    DLDLIBS="${DLDLIBS:+$DLDLIBS }-lc"
     ])
 
 AC_ARG_ENABLE(multiarch,
@@ -3898,7 +3899,6 @@ AS_IF([test -n "${LIBS}"], [
     MAINFLAGS=`echo " $MAINLIBS " | sed "s|$libspat"'||;s/^ *//;s/ *$//'`
 ])
 LIBRUBYARG_STATIC="${LIBRUBYARG_STATIC} \$(MAINLIBS)"
-LIBRUBYARG_SHARED="${LIBRUBYARG_SHARED} \$(MAINLIBS)"
 CPPFLAGS="$CPPFLAGS "'$(DEFS)'
 test -z "$CPPFLAGS" || CPPFLAGS="$CPPFLAGS "; CPPFLAGS="$CPPFLAGS"'${cppflags}'
 AS_IF([test -n "${cflags+set}"], [

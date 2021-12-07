@@ -607,7 +607,7 @@ ripper_new_yylval(struct parser_params *p, ID a, VALUE b, VALUE c)
 static inline int
 ripper_is_node_yylval(VALUE n)
 {
-    return RB_TYPE_P(n, T_NODE) && nd_type(RNODE(n)) == NODE_RIPPER;
+    return RB_TYPE_P(n, T_NODE) && nd_type_p(RNODE(n), NODE_RIPPER);
 }
 
 #define value_expr(node) ((void)(node))
@@ -1335,7 +1335,7 @@ program		:  {
 			if ($2 && !compile_for_eval) {
 			    NODE *node = $2;
 			    /* last expression should not be void */
-			    if (nd_type(node) == NODE_BLOCK) {
+			    if (nd_type_p(node, NODE_BLOCK)) {
 				while (node->nd_next) {
 				    node = node->nd_next;
 				}
@@ -1530,7 +1530,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		| stmt modifier_while expr_value
 		    {
 		    /*%%%*/
-			if ($1 && nd_type($1) == NODE_BEGIN) {
+			if ($1 && nd_type_p($1, NODE_BEGIN)) {
 			    $$ = NEW_WHILE(cond(p, $3, &@3), $1->nd_body, 0, &@$);
 			}
 			else {
@@ -1542,7 +1542,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		| stmt modifier_until expr_value
 		    {
 		    /*%%%*/
-			if ($1 && nd_type($1) == NODE_BEGIN) {
+			if ($1 && nd_type_p($1, NODE_BEGIN)) {
 			    $$ = NEW_UNTIL(cond(p, $3, &@3), $1->nd_body, 0, &@$);
 			}
 			else {
@@ -2973,7 +2973,7 @@ primary		: literal
 		| tLPAREN_ARG stmt {SET_LEX_STATE(EXPR_ENDARG);} rparen
 		    {
 		    /*%%%*/
-			if (nd_type($2) == NODE_SELF) $2->nd_state = 0;
+			if (nd_type_p($2, NODE_SELF)) $2->nd_state = 0;
 			$$ = $2;
 		    /*% %*/
 		    /*% ripper: paren!($2) %*/
@@ -2981,7 +2981,7 @@ primary		: literal
 		| tLPAREN compstmt ')'
 		    {
 		    /*%%%*/
-			if (nd_type($2) == NODE_SELF) $2->nd_state = 0;
+			if (nd_type_p($2, NODE_SELF)) $2->nd_state = 0;
 			$$ = $2;
 		    /*% %*/
 		    /*% ripper: paren!($2) %*/
@@ -3835,7 +3835,7 @@ do_block	: k_do_block do_body k_end
 block_call	: command do_block
 		    {
 		    /*%%%*/
-			if (nd_type($1) == NODE_YIELD) {
+			if (nd_type_p($1, NODE_YIELD)) {
 			    compile_error(p, "block given to yield");
 			}
 			else {
@@ -3934,7 +3934,7 @@ method_call	: fcall paren_args
 		| primary_value '[' opt_call_args rbracket
 		    {
 		    /*%%%*/
-			if ($1 && nd_type($1) == NODE_SELF)
+			if ($1 && nd_type_p($1, NODE_SELF))
 			    $$ = NEW_FCALL(tAREF, $3, &@$);
 			else
 			    $$ = NEW_CALL($1, tAREF, $3, &@$);
@@ -4424,7 +4424,7 @@ p_kw_label	: tLABEL
 		    {
 			YYLTYPE loc = code_loc_gen(&@1, &@3);
 		    /*%%%*/
-			if (!$2 || nd_type($2) == NODE_STR) {
+			if (!$2 || nd_type_p($2, NODE_STR)) {
 			    NODE *node = dsym_node(p, $2, &loc);
 			    $$ = SYM2ID(node->nd_lit);
 			}
@@ -4551,7 +4551,7 @@ p_var_ref	: '^' tIDENTIFIER
 		    {
 		    /*%%%*/
 			NODE *n = gettable(p, $2, &@$);
-			if (!(nd_type(n) == NODE_LVAR || nd_type(n) == NODE_DVAR)) {
+			if (!(nd_type_p(n, NODE_LVAR) || nd_type_p(n, NODE_DVAR))) {
 			    compile_error(p, "%"PRIsVALUE": no such local variable", rb_id2str($2));
 			}
 			$$ = n;
@@ -5624,8 +5624,8 @@ assocs		: assoc
 			}
 			else if (tail) {
                             if (assocs->nd_head &&
-                                !tail->nd_head && nd_type(tail->nd_next) == NODE_LIST &&
-                                nd_type(tail->nd_next->nd_head) == NODE_HASH) {
+                                !tail->nd_head && nd_type_p(tail->nd_next, NODE_LIST) &&
+                                nd_type_p(tail->nd_next->nd_head, NODE_HASH)) {
                                 /* DSTAR */
                                 tail = tail->nd_next->nd_head->nd_head;
                             }
@@ -5640,7 +5640,7 @@ assocs		: assoc
 assoc		: arg_value tASSOC arg_value
 		    {
 		    /*%%%*/
-			if (nd_type($1) == NODE_STR) {
+			if (nd_type_p($1, NODE_STR)) {
 			    nd_set_type($1, NODE_LIT);
 			    RB_OBJ_WRITE(p->ast, &$1->nd_lit, rb_fstring($1->nd_lit));
 			}
@@ -5675,7 +5675,7 @@ assoc		: arg_value tASSOC arg_value
 		| tDSTAR arg_value
 		    {
 		    /*%%%*/
-                        if (nd_type($2) == NODE_HASH &&
+                        if (nd_type_p($2, NODE_HASH) &&
                             !($2->nd_head && $2->nd_head->nd_alen)) {
                             static VALUE empty_hash;
                             if (!empty_hash) {
@@ -7643,7 +7643,7 @@ heredoc_dedent(struct parser_params *p, NODE *root)
     if (!root) return root;
 
     prev_node = node = str_node = root;
-    if (nd_type(root) == NODE_LIST) str_node = root->nd_head;
+    if (nd_type_p(root, NODE_LIST)) str_node = root->nd_head;
 
     while (str_node) {
 	VALUE lit = str_node->nd_lit;
@@ -7660,7 +7660,7 @@ heredoc_dedent(struct parser_params *p, NODE *root)
 	    NODE *end = node->nd_end;
 	    node = prev_node->nd_next = node->nd_next;
 	    if (!node) {
-		if (nd_type(prev_node) == NODE_DSTR)
+		if (nd_type_p(prev_node, NODE_DSTR))
 		    nd_set_type(prev_node, NODE_STR);
 		break;
 	    }
@@ -7671,7 +7671,7 @@ heredoc_dedent(struct parser_params *p, NODE *root)
 	str_node = 0;
 	while ((node = (prev_node = node)->nd_next) != 0) {
 	  next_str:
-	    if (nd_type(node) != NODE_LIST) break;
+	    if (!nd_type_p(node, NODE_LIST)) break;
 	    if ((str_node = node->nd_head) != 0) {
 		enum node_type type = nd_type(str_node);
 		if (type == NODE_STR || type == NODE_DSTR) break;
@@ -10058,7 +10058,7 @@ block_append(struct parser_params *p, NODE *head, NODE *tail)
 	break;
     }
 
-    if (nd_type(tail) != NODE_BLOCK) {
+    if (!nd_type_p(tail, NODE_BLOCK)) {
 	tail = NEW_BLOCK(tail, &tail->nd_loc);
 	tail->nd_end = tail;
     }
@@ -10140,7 +10140,7 @@ string_literal_head(enum node_type htype, NODE *head)
     if (htype != NODE_DSTR) return Qfalse;
     if (head->nd_next) {
 	head = head->nd_next->nd_end->nd_head;
-	if (!head || nd_type(head) != NODE_STR) return Qfalse;
+	if (!head || !nd_type_p(head, NODE_STR)) return Qfalse;
     }
     const VALUE lit = head->nd_lit;
     ASSUME(lit != Qfalse);
@@ -10239,7 +10239,7 @@ literal_concat(struct parser_params *p, NODE *head, NODE *tail, const YYLTYPE *l
 static NODE *
 evstr2dstr(struct parser_params *p, NODE *node)
 {
-    if (nd_type(node) == NODE_EVSTR) {
+    if (nd_type_p(node, NODE_EVSTR)) {
 	node = new_dstr(p, node, &node->nd_loc);
     }
     return node;
@@ -10314,7 +10314,7 @@ new_command_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *a
     return ret;
 }
 
-#define nd_once_body(node) (nd_type(node) == NODE_ONCE ? (node)->nd_body : node)
+#define nd_once_body(node) (nd_type_p((node), NODE_ONCE) ? (node)->nd_body : node)
 static NODE*
 match_op(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *op_loc, const YYLTYPE *loc)
 {
@@ -10636,7 +10636,7 @@ check_literal_when(struct parser_params *p, NODE *arg, const YYLTYPE *loc)
 
     lit = rb_node_case_when_optimizable_literal(arg);
     if (lit == Qundef) return;
-    if (nd_type(arg) == NODE_STR) {
+    if (nd_type_p(arg, NODE_STR)) {
 	RB_OBJ_WRITTEN(p->ast, Qnil, arg->nd_lit = lit);
     }
 
@@ -10997,7 +10997,7 @@ aryset(struct parser_params *p, NODE *recv, NODE *idx, const YYLTYPE *loc)
 static void
 block_dup_check(struct parser_params *p, NODE *node1, NODE *node2)
 {
-    if (node2 && node1 && nd_type(node1) == NODE_BLOCK_PASS) {
+    if (node2 && node1 && nd_type_p(node1, NODE_BLOCK_PASS)) {
 	compile_error(p, "both block arg and actual block given");
     }
 }
@@ -11049,7 +11049,7 @@ arg_append(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *loc
 	nd_set_type(node1, NODE_ARGSCAT);
 	return node1;
       case NODE_ARGSCAT:
-        if (nd_type(node1->nd_body) != NODE_LIST) break;
+        if (!nd_type_p(node1->nd_body, NODE_LIST)) break;
         node1->nd_body = list_append(p, node1->nd_body, node2);
         node1->nd_loc.end_pos = node1->nd_body->nd_loc.end_pos;
         return node1;
@@ -11069,13 +11069,13 @@ arg_concat(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *loc
 	    node1->nd_head = NEW_LIST(node2, loc);
 	return node1;
       case NODE_ARGSPUSH:
-	if (nd_type(node2) != NODE_LIST) break;
+	if (!nd_type_p(node2, NODE_LIST)) break;
 	node1->nd_body = list_concat(NEW_LIST(node1->nd_body, loc), node2);
 	nd_set_type(node1, NODE_ARGSCAT);
 	return node1;
       case NODE_ARGSCAT:
-	if (nd_type(node2) != NODE_LIST ||
-	    nd_type(node1->nd_body) != NODE_LIST) break;
+	if (!nd_type_p(node2, NODE_LIST) ||
+	    !nd_type_p(node1->nd_body, NODE_LIST)) break;
 	node1->nd_body = list_concat(node1->nd_body, node2);
 	return node1;
     }
@@ -11096,7 +11096,7 @@ static NODE *
 rest_arg_append(struct parser_params *p, NODE *args, NODE *rest_arg, const YYLTYPE *loc)
 {
     NODE *n1;
-    if ((nd_type(rest_arg) == NODE_LIST) && (n1 = splat_array(args)) != 0) {
+    if ((nd_type_p(rest_arg, NODE_LIST)) && (n1 = splat_array(args)) != 0) {
 	return list_concat(n1, rest_arg);
     }
     return arg_concat(p, args, rest_arg, loc);
@@ -11105,8 +11105,8 @@ rest_arg_append(struct parser_params *p, NODE *args, NODE *rest_arg, const YYLTY
 static NODE *
 splat_array(NODE* node)
 {
-    if (nd_type(node) == NODE_SPLAT) node = node->nd_head;
-    if (nd_type(node) == NODE_LIST) return node;
+    if (nd_type_p(node, NODE_SPLAT)) node = node->nd_head;
+    if (nd_type_p(node, NODE_LIST)) return node;
     return 0;
 }
 
@@ -11141,7 +11141,7 @@ static NODE *
 const_decl_path(struct parser_params *p, NODE **dest)
 {
     NODE *n = *dest;
-    if (nd_type(n) != NODE_CALL) {
+    if (!nd_type_p(n, NODE_CALL)) {
 	const YYLTYPE *loc = &n->nd_loc;
 	VALUE path;
 	if (n->nd_vid) {
@@ -11150,14 +11150,14 @@ const_decl_path(struct parser_params *p, NODE **dest)
 	else {
 	    n = n->nd_else;
 	    path = rb_ary_new();
-	    for (; n && nd_type(n) == NODE_COLON2; n = n->nd_head) {
+	    for (; n && nd_type_p(n, NODE_COLON2); n = n->nd_head) {
 		rb_ary_push(path, rb_id2str(n->nd_mid));
 	    }
-	    if (n && nd_type(n) == NODE_CONST) {
+	    if (n && nd_type_p(n, NODE_CONST)) {
 		// Const::Name
 		rb_ary_push(path, rb_id2str(n->nd_vid));
 	    }
-	    else if (n && nd_type(n) == NODE_COLON3) {
+	    else if (n && nd_type_p(n, NODE_COLON3)) {
 		// ::Const::Name
 		rb_ary_push(path, rb_str_new(0, 0));
 	    }
@@ -11435,7 +11435,7 @@ value_expr_check(struct parser_params *p, NODE *node)
 	    return void_node ? void_node : node;
 
 	  case NODE_CASE3:
-	    if (!node->nd_body || nd_type(node->nd_body) != NODE_IN) {
+	    if (!node->nd_body || !nd_type_p(node->nd_body, NODE_IN)) {
 		compile_error(p, "unexpected node");
 		return NULL;
 	    }
@@ -11591,7 +11591,7 @@ void_stmts(struct parser_params *p, NODE *node)
     NODE *const n = node;
     if (!RTEST(ruby_verbose)) return n;
     if (!node) return n;
-    if (nd_type(node) != NODE_BLOCK) return n;
+    if (!nd_type_p(node, NODE_BLOCK)) return n;
 
     while (node->nd_next) {
 	void_expr(p, node->nd_head);
@@ -11604,7 +11604,7 @@ static NODE *
 remove_begin(NODE *node)
 {
     NODE **n = &node, *n1 = node;
-    while (n1 && nd_type(n1) == NODE_BEGIN && n1->nd_body) {
+    while (n1 && nd_type_p(n1, NODE_BEGIN) && n1->nd_body) {
 	*n = n1 = n1->nd_body;
     }
     return node;
@@ -11614,7 +11614,7 @@ static NODE *
 remove_begin_all(NODE *node)
 {
     NODE **n = &node, *n1 = node;
-    while (n1 && nd_type(n1) == NODE_BEGIN) {
+    while (n1 && nd_type_p(n1, NODE_BEGIN)) {
 	*n = n1 = n1->nd_body;
     }
     return node;
@@ -11791,8 +11791,8 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
       case NODE_DOT3:
 	node->nd_beg = range_op(p, node->nd_beg, loc);
 	node->nd_end = range_op(p, node->nd_end, loc);
-	if (nd_type(node) == NODE_DOT2) nd_set_type(node,NODE_FLIP2);
-	else if (nd_type(node) == NODE_DOT3) nd_set_type(node, NODE_FLIP3);
+	if (nd_type_p(node, NODE_DOT2)) nd_set_type(node,NODE_FLIP2);
+	else if (nd_type_p(node, NODE_DOT3)) nd_set_type(node, NODE_FLIP3);
 	break;
 
       case NODE_DSYM:
@@ -11865,9 +11865,9 @@ logop(struct parser_params *p, ID id, NODE *left, NODE *right,
     enum node_type type = id == idAND || id == idANDOP ? NODE_AND : NODE_OR;
     NODE *op;
     value_expr(left);
-    if (left && (enum node_type)nd_type(left) == type) {
+    if (left && nd_type_p(left, type)) {
 	NODE *node = left, *second;
-	while ((second = node->nd_2nd) != 0 && (enum node_type)nd_type(second) == type) {
+	while ((second = node->nd_2nd) != 0 && nd_type_p(second, type)) {
 	    node = second;
 	}
 	node->nd_2nd = NEW_NODE(type, second, right, 0, loc);
@@ -11883,7 +11883,7 @@ logop(struct parser_params *p, ID id, NODE *left, NODE *right,
 static void
 no_blockarg(struct parser_params *p, NODE *node)
 {
-    if (node && nd_type(node) == NODE_BLOCK_PASS) {
+    if (node && nd_type_p(node, NODE_BLOCK_PASS)) {
 	compile_error(p, "block argument should not be given");
     }
 }
@@ -11893,7 +11893,7 @@ ret_args(struct parser_params *p, NODE *node)
 {
     if (node) {
 	no_blockarg(p, node);
-	if (nd_type(node) == NODE_LIST) {
+	if (nd_type_p(node, NODE_LIST)) {
 	    if (node->nd_next == 0) {
 		node = node->nd_head;
 	    }
@@ -12281,7 +12281,7 @@ remove_duplicate_keys(struct parser_params *p, NODE *hash)
 	st_data_t key = (st_data_t)head;
 	st_data_t data;
 	value->nd_next = 0;
-	if (nd_type(head) == NODE_LIT &&
+	if (nd_type_p(head, NODE_LIT) &&
 	    st_delete(literal_keys, (key = (st_data_t)head->nd_lit, &key), &data)) {
 	    NODE *dup_value = ((NODE *)data)->nd_next;
 	    rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
@@ -12295,7 +12295,7 @@ remove_duplicate_keys(struct parser_params *p, NODE *hash)
 	    }
 	}
 	st_insert(literal_keys, (st_data_t)key, (st_data_t)hash);
-	last_expr = nd_type(head) == NODE_LIT ? value : head;
+	last_expr = nd_type_p(head, NODE_LIT) ? value : head;
 	hash = next;
     }
     st_foreach(literal_keys, append_literal_keys, (st_data_t)&result);
@@ -12417,7 +12417,7 @@ new_ary_op_assign(struct parser_params *p, NODE *ary,
     NODE *asgn;
 
     args = make_list(args, args_loc);
-    if (nd_type(args) == NODE_BLOCK_PASS) {
+    if (nd_type_p(args, NODE_BLOCK_PASS)) {
 	args = NEW_ARGSCAT(args, rhs, loc);
     }
     else {
@@ -13564,7 +13564,7 @@ ripper_validate_object(VALUE self, VALUE x)
       case T_RATIONAL:
 	break;
       case T_NODE:
-	if (nd_type((NODE *)x) != NODE_RIPPER) {
+	if (!nd_type_p((NODE *)x, NODE_RIPPER)) {
 	    rb_raise(rb_eArgError, "NODE given: %p", (void *)x);
 	}
 	x = ((NODE *)x)->nd_rval;
@@ -13653,7 +13653,7 @@ ripper_get_id(VALUE v)
     NODE *nd;
     if (!RB_TYPE_P(v, T_NODE)) return 0;
     nd = (NODE *)v;
-    if (nd_type(nd) != NODE_RIPPER) return 0;
+    if (!nd_type_p(nd, NODE_RIPPER)) return 0;
     return nd->nd_vid;
 }
 
@@ -13664,7 +13664,7 @@ ripper_get_value(VALUE v)
     if (v == Qundef) return Qnil;
     if (!RB_TYPE_P(v, T_NODE)) return v;
     nd = (NODE *)v;
-    if (nd_type(nd) != NODE_RIPPER) return Qnil;
+    if (!nd_type_p(nd, NODE_RIPPER)) return Qnil;
     return nd->nd_rval;
 }
 

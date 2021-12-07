@@ -36,6 +36,18 @@ class TestGemCommandManager < Gem::TestCase
     assert_kind_of Gem::Commands::InstallCommand, command
   end
 
+  def test_find_login_alias_command
+    command = @command_manager.find_command 'login'
+
+    assert_kind_of Gem::Commands::SigninCommand, command
+  end
+
+  def test_find_logout_alias_comamnd
+    command = @command_manager.find_command 'logout'
+
+    assert_kind_of Gem::Commands::SignoutCommand, command
+  end
+
   def test_find_command_ambiguous_exact
     ins_command = Class.new
     Gem::Commands.send :const_set, :InsCommand, ins_command

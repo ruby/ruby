@@ -136,7 +136,7 @@ dump_array(VALUE buf, VALUE indent, int comment, const NODE *node)
     const char *next_indent = default_indent;
     F_LONG(nd_alen, "length");
     F_NODE(nd_head, "element");
-    while (node->nd_next && nd_type(node->nd_next) == NODE_LIST) {
+    while (node->nd_next && nd_type_p(node->nd_next, NODE_LIST)) {
 	node = node->nd_next;
 	F_NODE(nd_head, "element");
     }
@@ -175,7 +175,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	    dump_node(buf, indent, comment, node->nd_head);
 	    D_DEDENT;
 	} while (node->nd_next &&
-		 nd_type(node->nd_next) == NODE_BLOCK &&
+		 nd_type_p(node->nd_next, NODE_BLOCK) &&
 		 (node = node->nd_next, 1));
 	if (node->nd_next) {
 	    LAST_NODE;
@@ -370,7 +370,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
       andor:
 	while (1) {
 	    F_NODE(nd_1st, "left expr");
-	    if (!node->nd_2nd || nd_type(node->nd_2nd) != (int)type)
+	    if (!node->nd_2nd || !nd_type_p(node->nd_2nd, type))
 		break;
 	    node = node->nd_2nd;
 	}

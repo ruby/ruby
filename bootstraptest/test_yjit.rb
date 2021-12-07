@@ -1,3 +1,99 @@
+assert_equal '[nil, nil, nil, nil, nil, nil]', %q{
+  [NilClass, TrueClass, FalseClass, Integer, Float, Symbol].each do |klass|
+    klass.class_eval("def foo = @foo")
+  end
+
+  [nil, true, false, 0xFABCAFE, 0.42, :cake].map do |instance|
+    instance.foo
+    instance.foo
+  end
+}
+
+assert_equal '0', %q{
+  # This is a regression test for incomplete invalidation from
+  # opt_setinlinecache. This test might be brittle, so
+  # feel free to remove it in the future if it's too annoying.
+  # This test assumes --yjit-call-threshold=2.
+  module M
+    Foo = 1
+    def foo
+      Foo
+    end
+
+    def pin_self_type_then_foo
+      _ = @foo
+      foo
+    end
+
+    def only_ints
+      1 + self
+      foo
+    end
+  end
+
+  class Integer
+    include M
+  end
+
+  class Sub
+    include M
+  end
+
+  foo_method = M.instance_method(:foo)
+
+  dbg = ->(message) do
+    return # comment this out to get printouts
+
+    $stderr.puts RubyVM::YJIT.disasm(foo_method)
+    $stderr.puts message
+  end
+
+  2.times { 42.only_ints }
+
+  dbg["There should be two versions of getinlineache"]
+
+  module M
+    remove_const(:Foo)
+  end
+
+  dbg["There should be no getinlinecaches"]
+
+  2.times do
+    42.only_ints
+  rescue NameError => err
+    _ = "caught name error #{err}"
+  end
+
+  dbg["There should be one version of getinlineache"]
+
+  2.times do
+    Sub.new.pin_self_type_then_foo
+  rescue NameError
+    _ = 'second specialization'
+  end
+
+  dbg["There should be two versions of getinlineache"]
+
+  module M
+    Foo = 1
+  end
+
+  dbg["There should still be two versions of getinlineache"]
+
+  42.only_ints
+
+  dbg["There should be no getinlinecaches"]
+
+  # Find name of the first VM instruction in M#foo.
+  insns = RubyVM::InstructionSequence.of(foo_method).to_a
+  if defined?(RubyVM::YJIT.blocks_for) && (insns.last.find { Array === _1 }&.first == :opt_getinlinecache)
+    RubyVM::YJIT.blocks_for(RubyVM::InstructionSequence.of(foo_method))
+      .filter { _1.iseq_start_index == 0 }.count
+  else
+    0 # skip the test
+  end
+}
+
 # Check that frozen objects are respected
 assert_equal 'great', %q{
   class Foo
@@ -2450,10 +2546,10 @@ assert_equal 'ok', %q{
   RubyVM::YJIT.simulate_oom! if defined?(RubyVM::YJIT)
 
   nimai(false)
-} if false  # disabled for now since OOM crashes in the test harness
+}
 
-# block invalidation while out of memory
 assert_equal 'new', %q{
+  # test block invalidation while out of memory
   def foo
     :old
   end
@@ -2472,7 +2568,7 @@ assert_equal 'new', %q{
   end
 
   test
-} if false # disabled for now since OOM crashes in the test harness
+}
 
 assert_equal 'ok', %q{
   # Try to compile new method while OOM

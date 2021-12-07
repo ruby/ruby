@@ -367,11 +367,10 @@ spec/bundler: test-bundler-parallel
 	$(Q)$(NULLCMD)
 
 # workaround to avoid matching non ruby files with "spec/%/" under GNU make 3.81
-spec/%_spec.c spec/%_spec.$(DLEXT):
+spec/%_spec.c:
 	$(empty)
-
-spec/%/ spec/%_spec.rb: programs exts PHONY
-	+$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec-run -B $(srcdir)/spec/default.mspec $(SPECOPTS) $(patsubst %,$(srcdir)/%,$@)
+$(srcdir)/$(RUBYSPEC_CAPIEXT)/rubyspec.h:
+	$(empty)
 
 benchmark/%: miniruby$(EXEEXT) update-benchmark-driver PHONY
 	$(Q)$(BASERUBY) -rrubygems -I$(srcdir)/benchmark/lib $(srcdir)/benchmark/benchmark-driver/exe/benchmark-driver \
@@ -422,3 +421,8 @@ rubyspec-capiext: $(patsubst %.c,$(RUBYSPEC_CAPIEXT)/%.$(DLEXT),$(notdir $(wildc
 ifeq ($(ENABLE_SHARED),yes)
 exts: rubyspec-capiext
 endif
+
+spec/%/ spec/%_spec.rb: programs exts PHONY
+	+$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec-run -B $(srcdir)/spec/default.mspec $(SPECOPTS) $(patsubst %,$(srcdir)/%,$@)
+
+ruby.pc: $(filter-out ruby.pc,$(ruby_pc))

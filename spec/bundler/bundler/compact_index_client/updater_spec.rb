@@ -36,16 +36,6 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
     end
   end
 
-  context "when bundler doesn't have permissions on Dir.tmpdir" do
-    it "Errno::EACCES is raised" do
-      allow(Bundler::Dir).to receive(:mktmpdir) { raise Errno::EACCES }
-
-      expect do
-        updater.update(local_path, remote_path)
-      end.to raise_error(Bundler::PermissionError)
-    end
-  end
-
   context "when receiving non UTF-8 data and default internal encoding set to ASCII" do
     let(:response) { double(:response, :body => "\x8B".b) }
 

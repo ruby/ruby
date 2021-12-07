@@ -6,4 +6,12 @@ case "$0" in
 *) srcdir="";;
 esac
 
-exec ${AUTORECONF:-autoreconf} --install --symlink "$@" ${srcdir:+"$srcdir"}
+symlink='--install --symlink'
+case " $* " in
+    *" -i "*|*" --install "*)
+        # reset to copy missing standard auxiliary files, instead of symlinks
+        symlink=
+        ;;
+esac
+
+exec ${AUTORECONF:-autoreconf} ${symlink} "$@" ${srcdir:+"$srcdir"}

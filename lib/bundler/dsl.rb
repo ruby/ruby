@@ -18,6 +18,8 @@ module Bundler
     VALID_KEYS = %w[group groups git path glob name branch ref tag require submodules
                     platform platforms type source install_if gemfile].freeze
 
+    GITHUB_PULL_REQUEST_URL = %r{\Ahttps://github\.com/([A-Za-z0-9_\-\.]+/[A-Za-z0-9_\-\.]+)/pull/(\d+)\z}.freeze
+
     attr_reader :gemspecs
     attr_accessor :dependencies
 
@@ -275,26 +277,24 @@ module Bundler
 
     def add_git_sources
       git_source(:github) do |repo_name|
-        warn_deprecated_git_source(:github, <<-'RUBY'.strip, 'Change any "reponame" :github sources to "username/reponame".')
-"https://github.com/#{repo_name}.git"
-        RUBY
-        repo_name = "#{repo_name}/#{repo_name}" unless repo_name.include?("/")
-        "https://github.com/#{repo_name}.git"
+        if repo_name =~ GITHUB_PULL_REQUEST_URL
+          {
+            "git" => "https://github.com/#{$1}.git",
+            "branch" => "refs/pull/#{$2}/head",
+            "ref" => nil,
+            "tag" => nil,
+          }
+        else
+          repo_name = "#{repo_name}/#{repo_name}" unless repo_name.include?("/")
+          "https://github.com/#{repo_name}.git"
+        end
       end
 
       git_source(:gist) do |repo_name|
-        warn_deprecated_git_source(:gist, '"https://gist.github.com/#{repo_name}.git"')
-
         "https://gist.github.com/#{repo_name}.git"
       end
 
       git_source(:bitbucket) do |repo_name|
-        warn_deprecated_git_source(:bitbucket, <<-'RUBY'.strip)
-user_name, repo_name = repo_name.split("/")
-repo_name ||= user_name
-"https://#{user_name}@bitbucket.org/#{user_name}/#{repo_name}.git"
-        RUBY
-
         user_name, repo_name = repo_name.split("/")
         repo_name ||= user_name
         "https://#{user_name}@bitbucket.org/#{user_name}/#{repo_name}.git"
@@ -365,7 +365,11 @@ repo_name ||= user_name
 
       git_name = (git_names & opts.keys).last
       if @git_sources[git_name]
-        opts["git"] = @git_sources[git_name].call(opts[git_name])
+        git_opts = @git_sources[git_name].call(opts[git_name])
+        git_opts = { "git" => git_opts } if git_opts.is_a?(String)
+        opts.merge!(git_opts) do |key, _gemfile_value, _git_source_value|
+          raise GemfileError, %(The :#{key} option can't be used with `#{git_name}: #{opts[git_name].inspect}`)
+        end
       end
 
       %w[git path].each do |type|
@@ -473,22 +477,6 @@ repo_name ||= user_name
           "may result in installing unexpected gems. To resolve this warning, use " \
           "a block to indicate which gems should come from the secondary source."
       end
-    end
-
-    def warn_deprecated_git_source(name, replacement, additional_message = nil)
-      additional_message &&= " #{additional_message}"
-      replacement = if replacement.count("\n").zero?
-        "{|repo_name| #{replacement} }"
-      else
-        "do |repo_name|\n#{replacement.to_s.gsub(/^/, "      ")}\n    end"
-      end
-
-      Bundler::SharedHelpers.major_deprecation 3, <<-EOS
-The :#{name} git source is deprecated, and will be removed in the future.#{additional_message} Add this code to the top of your Gemfile to ensure it continues to work:
-
-    git_source(:#{name}) #{replacement}
-
-      EOS
     end
 
     class DSLError < GemfileError

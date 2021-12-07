@@ -6598,13 +6598,13 @@ env_dup(VALUE obj)
  *
  *  === Creating a \Hash
  *
- *  Here are three ways to create a \Hash:
+ *  You can create a \Hash object explicitly with:
  *
- *  - \Method <tt>Hash.new</tt>
- *  - \Method <tt>Hash[]</tt>
- *  - Literal form: <tt>{}</tt>.
+ *  - A {hash literal}[doc/syntax/literals_rdoc.html#label-Hash+Literals].
  *
- *  ---
+ *  You can convert certain objects to Hashes with:
+ *
+ *  - \Method {Hash}[Kernel.html#method-i-Hash].
  *
  *  You can create a \Hash by calling method Hash.new.
  *
@@ -6613,8 +6613,6 @@ env_dup(VALUE obj)
  *    h = Hash.new
  *    h # => {}
  *    h.class # => Hash
- *
- *  ---
  *
  *  You can create a \Hash by calling method Hash.[].
  *
@@ -6627,8 +6625,6 @@ env_dup(VALUE obj)
  *
  *    h = Hash[foo: 0, bar: 1, baz: 2]
  *    h # => {:foo=>0, :bar=>1, :baz=>2}
- *
- *  ---
  *
  *  You can create a \Hash by using its literal form (curly braces).
  *

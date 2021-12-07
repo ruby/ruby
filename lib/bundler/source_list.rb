@@ -106,14 +106,14 @@ module Bundler
     end
 
     def lock_other_sources
-      (path_sources + git_sources + plugin_sources).sort_by(&:to_s)
+      (path_sources + git_sources + plugin_sources).sort_by(&:identifier)
     end
 
     def lock_rubygems_sources
       if merged_gem_lockfile_sections?
         [combine_rubygems_sources]
       else
-        rubygems_sources.sort_by(&:to_s)
+        rubygems_sources.sort_by(&:identifier)
       end
     end
 
@@ -211,7 +211,7 @@ module Bundler
     end
 
     def equivalent_sources?(lock_sources, replacement_sources)
-      lock_sources.sort_by(&:to_s) == replacement_sources.sort_by(&:to_s)
+      lock_sources.sort_by(&:identifier) == replacement_sources.sort_by(&:identifier)
     end
 
     def equivalent_source?(source, other_source)

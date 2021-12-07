@@ -2050,14 +2050,16 @@ range_count(int argc, VALUE *argv, VALUE range)
 /* A \Range object represents a collection of values
  * that are between given begin and end values.
  *
- * A range may be created using a literal:
+ * You can create an \Range object explicitly with:
  *
- *   # Ranges that use '..' to include the given end value.
- *   (1..4).to_a      # => [1, 2, 3, 4]
- *   ('a'..'d').to_a  # => ["a", "b", "c", "d"]
- *   # Ranges that use '...' to exclude the given end value.
- *   (1...4).to_a     # => [1, 2, 3]
- *   ('a'...'d').to_a # => ["a", "b", "c"]
+ * - A {range literal}[doc/syntax/literals_rdoc.html#label-Range+Literals]:
+ *
+ *     # Ranges that use '..' to include the given end value.
+ *     (1..4).to_a      # => [1, 2, 3, 4]
+ *     ('a'..'d').to_a  # => ["a", "b", "c", "d"]
+ *     # Ranges that use '...' to exclude the given end value.
+ *     (1...4).to_a     # => [1, 2, 3]
+ *     ('a'...'d').to_a # => ["a", "b", "c"]
  *
  * A range may be created using method Range.new:
  *

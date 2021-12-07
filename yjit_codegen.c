@@ -554,7 +554,7 @@ yjit_entry_prologue(codeblock_t *cb, const rb_iseq_t *iseq)
 
     const uint32_t old_write_pos = cb->write_pos;
 
-    // Align the current write positon to cache line boundaries
+    // Align the current write position to cache line boundaries
     cb_align_pos(cb, 64);
 
     uint8_t *code_ptr = cb_get_ptr(cb, cb->write_pos);
@@ -639,16 +639,7 @@ static block_t *
 gen_single_block(blockid_t blockid, const ctx_t *start_ctx, rb_execution_context_t *ec)
 {
     RUBY_ASSERT(cb != NULL);
-
-    // Check if there is enough executable memory.
-    // FIXME: This bound isn't enforced and long blocks can potentially use more.
-    enum { MAX_CODE_PER_BLOCK = 1024 };
-    if (cb->write_pos + MAX_CODE_PER_BLOCK >= cb->mem_size) {
-        return NULL;
-    }
-    if (ocb->write_pos + MAX_CODE_PER_BLOCK >= ocb->mem_size) {
-        return NULL;
-    }
+    verify_blockid(blockid);
 
     // Allocate the new block
     block_t *block = calloc(1, sizeof(block_t));
@@ -670,6 +661,7 @@ gen_single_block(blockid_t blockid, const ctx_t *start_ctx, rb_execution_context
     RUBY_ASSERT(!(blockid.idx == 0 && start_ctx->stack_size > 0));
 
     const rb_iseq_t *iseq = block->blockid.iseq;
+    const unsigned int iseq_size = iseq->body->iseq_size;
     uint32_t insn_idx = block->blockid.idx;
     const uint32_t starting_insn_idx = insn_idx;
 
@@ -686,7 +678,7 @@ gen_single_block(blockid_t blockid, const ctx_t *start_ctx, rb_execution_context
     block->start_addr = cb_get_write_ptr(cb);
 
     // For each instruction to compile
-    for (;;) {
+    while (insn_idx < iseq_size) {
         // Get the current pc and opcode
         VALUE *pc = yjit_iseq_pc_at_idx(iseq, insn_idx);
         int opcode = yjit_opcode_at_pc(iseq, pc);
@@ -777,6 +769,12 @@ gen_single_block(blockid_t blockid, const ctx_t *start_ctx, rb_execution_context
     // We currently can't handle cases where the request is for a block that
     // doesn't go to the next instruction.
     RUBY_ASSERT(!jit.record_boundary_patch_point);
+
+    // If code for the block doesn't fit, free the block and fail.
+    if (cb->dropped_bytes || ocb->dropped_bytes) {
+        yjit_free_block(block);
+        return NULL;
+    }
 
     if (YJIT_DUMP_MODE >= 2) {
         // Dump list of compiled instrutions
@@ -1503,24 +1501,6 @@ gen_setlocal_wc1(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     return gen_setlocal_generic(jit, ctx, idx, 1);
 }
 
-// Check that `self` is a pointer to an object on the GC heap
-static void
-guard_self_is_heap(codeblock_t *cb, x86opnd_t self_opnd, uint8_t *side_exit, ctx_t *ctx)
-{
-
-    // `self` is constant throughout the entire region, so we only need to do this check once.
-    if (!ctx->self_type.is_heap) {
-        ADD_COMMENT(cb, "guard self is heap");
-        RUBY_ASSERT(Qfalse < Qnil);
-        test(cb, self_opnd, imm_opnd(RUBY_IMMEDIATE_MASK));
-        jnz_ptr(cb, side_exit);
-        cmp(cb, self_opnd, imm_opnd(Qnil));
-        jbe_ptr(cb, side_exit);
-
-        ctx->self_type.is_heap = 1;
-    }
-}
-
 static void
 gen_jnz_to_target0(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t shape)
 {
@@ -1735,7 +1715,7 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
         ADD_COMMENT(cb, "guard embedded getivar");
         x86opnd_t flags_opnd = member_opnd(REG0, struct RBasic, flags);
         test(cb, flags_opnd, imm_opnd(ROBJECT_EMBED));
-        jit_chain_guard(JCC_JZ, jit, &starting_context, max_chain_depth, side_exit);
+        jit_chain_guard(JCC_JZ, jit, &starting_context, max_chain_depth, COUNTED_EXIT(jit, side_exit, getivar_megamorphic));
 
         // Load the variable
         x86opnd_t ivar_opnd = mem_opnd(64, REG0, offsetof(struct RObject, as.ary) + ivar_index * SIZEOF_VALUE);
@@ -1758,7 +1738,7 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
         ADD_COMMENT(cb, "guard extended getivar");
         x86opnd_t flags_opnd = member_opnd(REG0, struct RBasic, flags);
         test(cb, flags_opnd, imm_opnd(ROBJECT_EMBED));
-        jit_chain_guard(JCC_JNZ, jit, &starting_context, max_chain_depth, side_exit);
+        jit_chain_guard(JCC_JNZ, jit, &starting_context, max_chain_depth, COUNTED_EXIT(jit, side_exit, getivar_megamorphic));
 
         // check that the extended table is big enough
         if (ivar_index >= ROBJECT_EMBED_LEN_MAX + 1) {
@@ -1810,7 +1790,6 @@ gen_getinstancevariable(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 
     // Guard that the receiver has the same class as the one from compile time.
     mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, self));
-    guard_self_is_heap(cb, REG0, COUNTED_EXIT(jit, side_exit, getivar_se_self_not_heap), ctx);
 
     jit_guard_known_klass(jit, ctx, comptime_val_klass, OPND_SELF, comptime_val, GETIVAR_MAX_DEPTH, side_exit);
 
@@ -2906,7 +2885,11 @@ gen_jump(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 }
 
 /*
-Guard that a stack operand has the same class as known_klass.
+Guard that self or a stack operand has the same class as `known_klass`, using
+`sample_instance` to speculate about the shape of the runtime value.
+FIXNUM and on-heap integers are treated as if they have distinct classes, and
+the guard generated for one will fail for the other.
+
 Recompile as contingency if possible, or take side exit a last resort.
 */
 static bool

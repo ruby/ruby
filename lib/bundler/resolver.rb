@@ -270,7 +270,7 @@ module Bundler
                             rescue GemfileNotFound
                               nil
                             end
-          message = String.new("Could not find gem '#{SharedHelpers.pretty_dependency(requirement)}' in #{source.to_err}#{cache_message}.\n")
+          message = String.new("Could not find gem '#{SharedHelpers.pretty_dependency(requirement)}' in #{source}#{cache_message}.\n")
           message << "The source contains the following versions of '#{name}': #{formatted_versions_with_platforms(versions_with_platforms)}" if versions_with_platforms.any?
         end
         raise GemNotFound, message
@@ -369,7 +369,7 @@ module Bundler
             o << if metadata_requirement
               "is not available in #{relevant_source}"
             else
-              "in #{relevant_source.to_err}.\n"
+              "in #{relevant_source}.\n"
             end
           end
         end,

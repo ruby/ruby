@@ -11152,15 +11152,18 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
 /**********************************************************************
  * Document-class: Symbol
  *
- *  Symbol objects represent named identifiers inside the Ruby interpreter. They
- *  are generated using the <code>:name</code> and
- *  <code>:"string"</code> literals syntax, and by the various
- *  <code>to_sym</code> methods. The same Symbol object will be
- *  created for a given name or string for the duration of a program's
- *  execution, regardless of the context or meaning of that name. Thus
- *  if <code>Fred</code> is a constant in one context, a method in
- *  another, and a class in a third, the Symbol <code>:Fred</code>
- *  will be the same object in all three contexts.
+ * Symbol objects represent named identifiers inside the Ruby interpreter.
+ *
+ * You can create a \Symbol object explicitly with:
+ *
+ * - A {symbol literal}[doc/syntax/literals_rdoc.html#label-Symbol+Literals].
+ *
+ * The same Symbol object will be
+ * created for a given name or string for the duration of a program's
+ * execution, regardless of the context or meaning of that name. Thus
+ * if <code>Fred</code> is a constant in one context, a method in
+ * another, and a class in a third, the Symbol <code>:Fred</code>
+ * will be the same object in all three contexts.
  *
  *     module One
  *       class Fred
@@ -11795,6 +11798,15 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  String objects differ from Symbol objects in that Symbol objects are
  *  designed to be used as identifiers, instead of text or data.
  *
+ *  You can create a \String object explicitly with:
+ *
+ *  - A {string literal}[doc/syntax/literals_rdoc.html#label-String+Literals].
+ *  - A {heredoc literal}[doc/syntax/literals_rdoc.html#label-Here+Document+Literals].
+ *
+ *  You can convert certain objects to Strings with:
+ *
+ *  - \Method {String}[Kernel.html#method-i-String].
+ *
  *  Some \String methods modify +self+.
  *  Typically, a method whose name ends with <tt>!</tt> modifies +self+
  *  and returns +self+;
@@ -11879,7 +11891,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  Note that <tt>\\\\</tt> is interpreted as an escape, i.e., a single backslash.
  *
  *  Note also that a string literal consumes backslashes.
- *  See rdoc-ref:syntax/literals.rdoc for details about string literals.
+ *  See {String Literals}[doc/syntax/literals_rdoc.html#label-String+Literals] for details about string literals.
  *
  *  A back-reference is typically preceded by an additional backslash.
  *  For example, if you want to write a back-reference <tt>\&</tt> in

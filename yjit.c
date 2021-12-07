@@ -103,6 +103,7 @@ YJIT_DECLARE_COUNTERS(
 
     getivar_se_self_not_heap,
     getivar_idx_out_of_range,
+    getivar_megamorphic,
 
     setivar_se_self_not_heap,
     setivar_idx_out_of_range,
@@ -186,7 +187,7 @@ void rb_yjit_iseq_mark(const struct rb_iseq_constant_body *body) {}
 void rb_yjit_iseq_update_references(const struct rb_iseq_constant_body *body) {}
 void rb_yjit_iseq_free(const struct rb_iseq_constant_body *body) {}
 void rb_yjit_before_ractor_spawn(void) {}
-void rb_yjit_constant_ic_update(const rb_iseq_t *iseq, IC ic) {}
+void rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic) {}
 void rb_yjit_tracing_invalidate_all(void) {}
 
 #endif // if JIT_ENABLED && PLATFORM_SUPPORTED_P

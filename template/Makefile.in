@@ -318,7 +318,6 @@ $(LIBRUBY_$(LIBRUBY_WITH_EXT)): $(LIBRUBY_SO_UPDATE)
 
 PKG_CONFIG = @PKG_CONFIG@
 ruby_pc = @ruby_pc@
-ruby.pc: $(ruby_pc)
 $(ruby_pc): config.status Makefile
 	$(Q)./config.status --file=-:$(srcdir)/template/ruby.pc.in | \
 	sed -e 's/\$$(\([A-Za-z_][A-Za-z0-9_]*\))/$${\1}/g' \
