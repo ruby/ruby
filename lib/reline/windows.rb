@@ -235,7 +235,11 @@ class Reline::Windows
     num_of_events = 0.chr * 8
     while @@output_buf.empty?
       Reline.core.line_editor.resize
-      next if @@WaitForSingleObject.(@@hConsoleInputHandle, 100) != 0 # max 0.1 sec
+      if @@WaitForSingleObject.(@@hConsoleInputHandle, 100) != 0 # max 0.1 sec
+        # prevent for background consolemode change
+        @@legacy_console = (getconsolemode() & ENABLE_VIRTUAL_TERMINAL_PROCESSING == 0)
+        next
+      end
       next if @@GetNumberOfConsoleInputEvents.(@@hConsoleInputHandle, num_of_events) == 0 or num_of_events.unpack1('L') == 0
       input_record = 0.chr * 18
       read_event = 0.chr * 4
