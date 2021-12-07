@@ -1197,6 +1197,26 @@ begin
       EOC
     end
 
+    def test_bottom
+      start_terminal(10, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("\n\n\n\n\n\n")
+      write("def hoge\n\n\n\n\n\n\nend\C-p\C-p\C-p\C-e")
+      write("  S")
+      close
+      assert_screen(<<~'EOC')
+        prompt> def hoge
+        prompt>
+        prompt>
+        prompt>
+        prompt>   S
+        prompt>   String
+        prompt>   Struct
+        prompt> enSymbol
+                  ScriptError
+                  Signal
+      EOC
+    end
+
     def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content

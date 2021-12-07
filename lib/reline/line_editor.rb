@@ -706,19 +706,18 @@ class Reline::LineEditor
       dialog.scrollbar_pos = nil
     end
     upper_space = @first_line_started_from - @started_from
-    lower_space = @highest_in_all - @first_line_started_from - @started_from - 1
     dialog.column = dialog_render_info.pos.x
     dialog.width += @block_elem_width if dialog.scrollbar_pos
     diff = (dialog.column + dialog.width) - (@screen_size.last)
     if diff > 0
       dialog.column -= diff
     end
-    if (lower_space + @rest_height - dialog_render_info.pos.y) >= height
+    if (@rest_height - dialog_render_info.pos.y) >= height
       dialog.vertical_offset = dialog_render_info.pos.y + 1
     elsif upper_space >= height
       dialog.vertical_offset = dialog_render_info.pos.y - height
     else
-      if (lower_space + @rest_height - dialog_render_info.pos.y) < height
+      if (@rest_height - dialog_render_info.pos.y) < height
         scroll_down(height + dialog_render_info.pos.y)
         move_cursor_up(height + dialog_render_info.pos.y)
       end
