@@ -4237,18 +4237,24 @@ usage_analysis_insn_clear(VALUE self)
   return Qtrue;
 }
 
+static VALUE
+usage_analysis_clear(VALUE self, ID usage_hash)
+{
+    VALUE uh;
+    uh = rb_const_get(rb_cRubyVM, usage_hash);
+    rb_hash_clear(uh);
+
+    return Qtrue;
+}
+
 /* :nodoc: */
 static VALUE
 usage_analysis_operand_clear(VALUE self)
 {
   ID usage_hash;
-  VALUE uh;
 
   CONST_ID(usage_hash, "USAGE_ANALYSIS_INSN");
-  uh = rb_const_get(rb_cRubyVM, usage_hash);
-  rb_hash_clear(uh);
-
-  return Qtrue;
+  return usage_analysis_clear(self, usage_hash);
 }
 
 /* :nodoc: */
@@ -4259,10 +4265,7 @@ usage_analysis_register_clear(VALUE self)
   VALUE uh;
 
   CONST_ID(usage_hash, "USAGE_ANALYSIS_REGS");
-  uh = rb_const_get(rb_cRubyVM, usage_hash);
-  rb_hash_clear(uh);
-
-  return Qtrue;
+  return usage_analysis_clear(self, usage_hash);
 }
 
 #else
