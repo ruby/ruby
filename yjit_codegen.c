@@ -639,6 +639,7 @@ static block_t *
 gen_single_block(blockid_t blockid, const ctx_t *start_ctx, rb_execution_context_t *ec)
 {
     RUBY_ASSERT(cb != NULL);
+    verify_blockid(blockid);
 
     // Allocate the new block
     block_t *block = calloc(1, sizeof(block_t));
@@ -660,6 +661,7 @@ gen_single_block(blockid_t blockid, const ctx_t *start_ctx, rb_execution_context
     RUBY_ASSERT(!(blockid.idx == 0 && start_ctx->stack_size > 0));
 
     const rb_iseq_t *iseq = block->blockid.iseq;
+    const unsigned int iseq_size = iseq->body->iseq_size;
     uint32_t insn_idx = block->blockid.idx;
     const uint32_t starting_insn_idx = insn_idx;
 
@@ -676,7 +678,7 @@ gen_single_block(blockid_t blockid, const ctx_t *start_ctx, rb_execution_context
     block->start_addr = cb_get_write_ptr(cb);
 
     // For each instruction to compile
-    for (;;) {
+    while (insn_idx < iseq_size) {
         // Get the current pc and opcode
         VALUE *pc = yjit_iseq_pc_at_idx(iseq, insn_idx);
         int opcode = yjit_opcode_at_pc(iseq, pc);
