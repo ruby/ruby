@@ -356,6 +356,10 @@ Excluding feature bug fixes.
 
 * `lib/debug.rb` is replaced with `debug.gem`
 
+* `Kernel#pp` in `lib/pp.rb` uses the width of `IO#winsize` by default.
+  This means that the output width is automatically changed depending on
+  your terminal size. [[Feature #12913]]
+
 ## C API updates
 
 * Documented. [[GH-4815]]
