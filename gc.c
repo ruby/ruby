@@ -1320,6 +1320,14 @@ tick(void)
 #define MEASURE_LINE(expr) expr
 #endif /* USE_TICK_T */
 
+static inline void *
+asan_unpoison_object_temporary(VALUE obj)
+{
+    void *ptr = asan_poisoned_object_p(obj);
+    asan_unpoison_object(obj, false);
+    return ptr;
+}
+
 #define FL_CHECK2(name, x, pred) \
     ((RGENGC_CHECK_MODE && SPECIAL_CONST_P(x)) ? \
      (rb_bug(name": SPECIAL_CONST (%p)", (void *)(x)), 0) : (pred))
@@ -4204,16 +4212,6 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     st_free_table(finalizer_table);
     finalizer_table = 0;
     ATOMIC_SET(finalizing, 0);
-}
-
-PUREFUNC(static inline int is_id_value(rb_objspace_t *objspace, VALUE ptr));
-static inline int
-is_id_value(rb_objspace_t *objspace, VALUE ptr)
-{
-    if (!is_pointer_to_heap(objspace, (void *)ptr)) return FALSE;
-    if (BUILTIN_TYPE(ptr) > T_FIXNUM) return FALSE;
-    if (BUILTIN_TYPE(ptr) == T_ICLASS) return FALSE;
-    return TRUE;
 }
 
 static inline int
@@ -12049,9 +12047,20 @@ wmap_allocate(VALUE klass)
 static int
 wmap_live_p(rb_objspace_t *objspace, VALUE obj)
 {
-    if (!FL_ABLE(obj)) return TRUE;
-    if (!is_id_value(objspace, obj)) return FALSE;
-    if (!is_live_object(objspace, obj)) return FALSE;
+    if (SPECIAL_CONST_P(obj)) return TRUE;
+    if (is_pointer_to_heap(objspace, (void *)obj)) {
+        void *poisoned = asan_unpoison_object_temporary(obj);
+
+        enum ruby_value_type t = BUILTIN_TYPE(obj);
+        int ret = (!(t == T_NONE || t >= T_FIXNUM || t == T_ICLASS) &&
+                   is_live_object(objspace, obj));
+
+        if (poisoned) {
+            asan_poison_object(obj);
+        }
+
+        return ret;
+    }
     return TRUE;
 }
 
