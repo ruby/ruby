@@ -5991,6 +5991,7 @@ rb_int_s_isqrt(VALUE self, VALUE num)
     }
 }
 
+/* :nodoc: */
 static VALUE
 int_s_try_convert(VALUE self, VALUE num)
 {
