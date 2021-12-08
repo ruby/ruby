@@ -2575,4 +2575,28 @@ CODE
     }
     assert_equal [__LINE__ - 5, __LINE__ - 4, __LINE__ - 3], lines, 'Bug #17868'
   end
+
+  def test_allow_reentry
+    event_lines = []
+    _l1 = _l2 = _l3 = _l4 = nil
+    TracePoint.new(:line) do |tp|
+      next unless target_thread?
+
+      event_lines << tp.lineno
+      next if (__LINE__ + 2 .. __LINE__ + 4).cover?(tp.lineno)
+      TracePoint.allow_reentry do
+        _a = 1; _l3 = __LINE__
+        _b = 2; _l4 = __LINE__
+      end
+    end.enable do
+      _c = 3; _l1 = __LINE__
+      _d = 4; _l2 = __LINE__
+    end
+
+    assert_equal [_l1, _l3, _l4, _l2, _l3, _l4], event_lines
+
+    assert_raise RuntimeError do
+      TracePoint.allow_reentry{}
+    end
+  end
 end
