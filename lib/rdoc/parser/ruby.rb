@@ -164,15 +164,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
   def initialize(top_level, file_name, content, options, stats)
     super
 
-    if /\t/ =~ content then
-      tab_width = @options.tab_width
-      content = content.split(/\n/).map do |line|
-        1 while line.gsub!(/\t+/) {
-          ' ' * (tab_width*$&.length - $`.length % tab_width)
-        }  && $~
-        line
-      end.join("\n")
-    end
+    content = handle_tab_width(content)
 
     @size = 0
     @token_listeners = nil
