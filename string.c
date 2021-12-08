@@ -6044,27 +6044,21 @@ str_byte_aref(VALUE str, VALUE indx)
  *
  *  Returns a substring of +self+, or +nil+ if the substring cannot be constructed.
  *
- *  With the single integer argument +index+ given,
- *  returns the single character at the given zero-based +index+,
- *  or +nil+ if +index+ falls outside of +self+:
- *
- *    s = '0123456789' # => "0123456789"
- *    s.byteslice(2)   # => "2"
- *    s.byteslice(200) # => nil
- *
- *  With integer arguments +index+ and +size+ given,
+ *  With integer arguments +index+ and +length+ given,
  *  returns the substring beginning at the given +index+
  *  of the given +length+ (if possible),
  *  or +nil+ if +length+ is negative or +index+ falls outside of +self+:
  *
- *    s = '0123456789'   # => "0123456789"
+ *    s = '0123456789' # => "0123456789"
+ *    s.byteslice(2)   # => "2"
+ *    s.byteslice(200) # => nil
  *    s.byteslice(4, 3)  # => "456"
  *    s.byteslice(4, 30) # => "456789"
  *    s.byteslice(4, -1) # => nil
  *    s.byteslice(40, 2) # => nil
  *
  *  In either case above, counts backwards from the end of +self+
- *  if +index is negative:
+ *  if +index+ is negative:
  *
  *    s = '0123456789'   # => "0123456789"
  *    s.byteslice(-4)    # => "6"
