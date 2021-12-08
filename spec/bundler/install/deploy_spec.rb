@@ -258,6 +258,17 @@ RSpec.describe "install in deployment or frozen mode" do
       expect(out).to eq("WIN")
     end
 
+    it "works if a gem is missing, but it's on a different platform, and the Gemfile has no global source", :bundler => "< 3" do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}" do
+          gem "rake", platform: :#{not_local_tag}
+        end
+      G
+
+      bundle :install, :env => { "BUNDLE_FROZEN" => "true" }
+      expect(last_command).to be_success
+    end
+
     it "explodes if a path gem is missing" do
       build_lib "path_gem"
       install_gemfile <<-G
