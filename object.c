@@ -2922,6 +2922,7 @@ static const struct conv_method_tbl {
     M(a),
     M(s),
     M(i),
+    M(f),
     M(r),
 #undef M
 };
