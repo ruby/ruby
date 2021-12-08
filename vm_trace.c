@@ -1517,6 +1517,25 @@ tracepoint_stat_s(rb_execution_context_t *ec, VALUE self)
     return stat;
 }
 
+static VALUE
+disallow_reentry(VALUE val)
+{
+    rb_trace_arg_t *arg = (rb_trace_arg_t *)val;
+    rb_execution_context_t *ec = GET_EC();
+    if (ec->trace_arg != NULL) rb_bug("should be NULL, but %p", (void *)ec->trace_arg);
+    ec->trace_arg = arg;
+    return Qnil;
+}
+
+static VALUE
+tracepoint_allow_reentry(rb_execution_context_t *ec, VALUE self)
+{
+    const rb_trace_arg_t *arg = ec->trace_arg;
+    if (arg == NULL) rb_raise(rb_eRuntimeError, "No need to allow reentrance.");
+    ec->trace_arg = NULL;
+    return rb_ensure(rb_yield, Qnil, disallow_reentry, (VALUE)arg);
+}
+
 #include "trace_point.rbinc"
 
 /* This function is called from inits.c */

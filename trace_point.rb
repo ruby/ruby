@@ -136,6 +136,22 @@ class TracePoint
   end
 
   # call-seq:
+  #   TracePoint.allow_reentry
+  #
+  # In general, while a TracePoint callback is running,
+  # other registered callbacks are not called to avoid
+  # confusion by reentrance.
+  # This method allows the reentrance in a given block.
+  # This method should be used carefully, otherwise the callback
+  # can be easily called infinitely.
+  #
+  # If this method is called when the reentrance is already allowed,
+  # it raises a RuntimeError.
+  def self.allow_reentry
+    Primitive.tracepoint_allow_reentry
+  end
+
+  # call-seq:
   #    trace.enable(target: nil, target_line: nil, target_thread: nil)    -> true or false
   #    trace.enable(target: nil, target_line: nil, target_thread: nil) { block }  -> obj
   #
