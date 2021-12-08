@@ -109,7 +109,7 @@ class RDoc::MethodAttr
     lines.shift if src =~ /\A.*#\ *File/i # remove '# File' comment
     lines.each do |line|
       if line =~ /^ *(?=\S)/
-        n = $&.length
+        n = $~.end(0)
         indent = n if n < indent
         break if n == 0
       end

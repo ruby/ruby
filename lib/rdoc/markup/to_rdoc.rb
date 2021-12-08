@@ -330,31 +330,14 @@ class RDoc::Markup::ToRdoc < RDoc::Markup::Formatter
 
     text_len = 20 if text_len < 20
 
-    re = /^(.{0,#{text_len}})[ \n]/
     next_prefix = ' ' * @indent
 
     prefix = @prefix || next_prefix
     @prefix = nil
 
-    @res << prefix
-
-    while text.length > text_len
-      if text =~ re then
-        @res << $1
-        text.slice!(0, $&.length)
-      else
-        @res << text.slice!(0, text_len)
-      end
-
-      @res << "\n" << next_prefix
-    end
-
-    if text.empty? then
-      @res.pop
-      @res.pop
-    else
-      @res << text
-      @res << "\n"
+    text.scan(/\G(?:([^ \n]{#{text_len}})(?=[^ \n])|(.{1,#{text_len}})(?:[ \n]|\z))/) do
+      @res << prefix << ($1 || $2) << "\n"
+      prefix = next_prefix
     end
   end
 
