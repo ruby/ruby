@@ -190,7 +190,7 @@ assert_equal '[:ok, :ok, :ok]', %q{
 # Ractor.make_shareable issue for locals in proc [Bug #18023]
 assert_equal '[:a, :b, :c, :d, :e]', %q{
   v1, v2, v3, v4, v5 = :a, :b, :c, :d, :e
-  closure = Proc.new { [v1, v2, v3, v4, v5] }
+  closure = Ractor.current.instance_eval{ Proc.new { [v1, v2, v3, v4, v5] } }
 
   Ractor.make_shareable(closure).call
 }
@@ -198,13 +198,15 @@ assert_equal '[:a, :b, :c, :d, :e]', %q{
 # Ractor.make_shareable issue for locals in proc [Bug #18023]
 assert_equal '[:a, :b, :c, :d, :e, :f, :g]', %q{
   a = :a
-  closure = -> {
-    b, c, d = :b, :c, :d
+  closure = Ractor.current.instance_eval do
     -> {
-      e, f, g = :e, :f, :g
-      -> { [a, b, c, d, e, f, g] }
+      b, c, d = :b, :c, :d
+      -> {
+        e, f, g = :e, :f, :g
+        -> { [a, b, c, d, e, f, g] }
+      }.call
     }.call
-  }.call
+  end
 
   Ractor.make_shareable(closure).call
 }
@@ -1276,9 +1278,13 @@ assert_equal 'true', %q{
 # Ractor.make_shareable(a_proc) makes a proc shareable.
 assert_equal 'true', %q{
   a = [1, [2, 3], {a: "4"}]
-  pr = Proc.new do
-    a
+
+  pr = Ractor.current.instance_eval do
+    Proc.new do
+      a
+    end
   end
+
   Ractor.make_shareable(a) # referred value should be shareable
   Ractor.make_shareable(pr)
   Ractor.shareable?(pr)
@@ -1326,10 +1332,12 @@ assert_equal '1', %q{
 # Ractor.make_shareable(a_proc) makes a proc shareable.
 assert_equal 'can not make a Proc shareable because it accesses outer variables (a).', %q{
   a = b = nil
-  pr = Proc.new do
-    c = b # assign to a is okay because c is block local variable
-          # reading b is okay
-    a = b # assign to a is not allowed #=> Ractor::Error
+  pr = Ractor.current.instance_eval do
+    Proc.new do
+      c = b # assign to a is okay because c is block local variable
+      # reading b is okay
+      a = b # assign to a is not allowed #=> Ractor::Error
+    end
   end
 
   begin
