@@ -691,6 +691,8 @@ typedef struct rb_size_pool_struct {
 
     rb_heap_t eden_heap;
     rb_heap_t tomb_heap;
+
+    struct rb_size_pool_struct *next;
 } rb_size_pool_t;
 
 enum gc_mode {
@@ -3444,13 +3446,29 @@ Init_heap(void)
 #endif
 
     heap_add_pages(objspace, &size_pools[0], SIZE_POOL_EDEN_HEAP(&size_pools[0]), gc_params.heap_init_slots / HEAP_PAGE_OBJ_LIMIT);
+    size_pools[0].next = NULL;
+
+    if (SIZE_POOL_COUNT > 1) {
+        size_pools[0].next = &size_pools[1];
+
+        for (int i = 1; i < SIZE_POOL_COUNT; i++) {
+            int next_idx = i + 1;
+            rb_size_pool_t *size_pool = &size_pools[i];
+            int multiple = size_pool->slot_size / sizeof(RVALUE);
+            size_pool->allocatable_pages = gc_params.heap_init_slots * multiple / HEAP_PAGE_OBJ_LIMIT;
+            /* set up the links between pools */
+            if (i == (SIZE_POOL_COUNT - 1)) {
+                /* make sure the last pool points at nothing */
+                size_pool->next = NULL;
+            }
+            else {
+                GC_ASSERT(size_pool != &size_pools[next_idx]);
+                size_pool->next = &size_pools[next_idx];
+            }
+        }
+    }
 
     /* Give other size pools allocatable pages. */
-    for (int i = 1; i < SIZE_POOL_COUNT; i++) {
-        rb_size_pool_t *size_pool = &size_pools[i];
-        int multiple = size_pool->slot_size / sizeof(RVALUE);
-        size_pool->allocatable_pages = gc_params.heap_init_slots * multiple / HEAP_PAGE_OBJ_LIMIT;
-    }
     heap_pages_expand_sorted(objspace);
 
     init_mark_stack(&objspace->mark_stack);
@@ -5337,6 +5355,24 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
     } while (bitset);
 }
 
+static void
+gc_compact_finish_or_next_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
+{
+    rb_size_pool_t *next_pool = size_pool->next;
+    if (next_pool) {
+        GC_ASSERT(next_pool != size_pool);
+
+        gc_report(5, objspace,
+            "sweeping and compact cursor met in pool %p, moving to pool %p\n",
+            (void *)size_pool, (void *)next_pool);
+        gc_sweep_step(objspace, next_pool, SIZE_POOL_EDEN_HEAP(next_pool));
+    }
+    else {
+        gc_report(5, objspace, "Quit compacting, All pools compacted\n");
+        gc_compact_finish(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool));
+    }
+}
+
 static inline void
 gc_sweep_page(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap, struct gc_sweep_context *ctx)
 {
@@ -5351,9 +5387,9 @@ gc_sweep_page(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
 
     if (heap->compact_cursor) {
         if (sweep_page == heap->compact_cursor) {
-            /* The compaction cursor and sweep page met, so we need to quit compacting */
-            gc_report(5, objspace, "Quit compacting, mark and compact cursor met\n");
-            gc_compact_finish(objspace, size_pool, heap);
+            /* The compaction cursor and sweep page met, so we need to pause
+             * here, and compact the rest of the pools */
+            gc_compact_finish_or_next_pool(objspace, size_pool);
         }
         else {
             /* We anticipate filling the page, so NULL out the freelist. */
@@ -5393,7 +5429,7 @@ gc_sweep_page(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
 
     if (heap->compact_cursor) {
         if (gc_fill_swept_page(objspace, heap, sweep_page, ctx)) {
-            gc_compact_finish(objspace, size_pool, heap);
+            gc_compact_finish_or_next_pool(objspace, size_pool);
         }
     }
 
@@ -5724,11 +5760,18 @@ gc_sweep_step(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
 static void
 gc_sweep_rest(rb_objspace_t *objspace)
 {
-    for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-        rb_size_pool_t *size_pool = &size_pools[i];
+    if (objspace->flags.during_compacting) {
+        // start at the first size pool and walk through the pools
+        rb_size_pool_t *size_pool = &size_pools[0];
+        gc_sweep_step(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool));
+    }
+    else {
+        for (int i = 0; i < SIZE_POOL_COUNT; i++) {
+            rb_size_pool_t *size_pool = &size_pools[i];
 
-        while (SIZE_POOL_EDEN_HEAP(size_pool)->sweeping_page) {
-            gc_sweep_step(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool));
+            while (SIZE_POOL_EDEN_HEAP(size_pool)->sweeping_page) {
+                gc_sweep_step(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool));
+            }
         }
     }
 }
