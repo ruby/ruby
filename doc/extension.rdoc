@@ -93,7 +93,9 @@ There are also faster check macros for fixnums and nil.
 The data for type T_NIL, T_FALSE, T_TRUE are nil, false, true
 respectively.  They are singletons for the data type.
 The equivalent C constants are: Qnil, Qfalse, Qtrue.
-Note that Qfalse is false in C also (i.e. 0), but not Qnil.
+RTEST() will return true if a VALUE is neither Qfalse nor Qnil.
+If you need to differentiate Qfalse from Qnil,
+specifically test against Qfalse.
 
 The T_FIXNUM data is a 31bit or 63bit length fixed integer.
 This size depends on the size of long: if long is 32bit then
