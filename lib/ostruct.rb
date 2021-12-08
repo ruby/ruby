@@ -221,11 +221,14 @@ class OpenStruct
   #
   def new_ostruct_member!(name) # :nodoc:
     unless @table.key?(name) || is_method_protected!(name)
-      getter_proc = Proc.new { @table[name] }
-      setter_proc = Proc.new {|x| @table[name] = x}
       if defined?(::Ractor)
+        getter_proc = nil.instance_eval{ Proc.new { @table[name] } }
+        setter_proc = nil.instance_eval{ Proc.new {|x| @table[name] = x} }
         ::Ractor.make_shareable(getter_proc)
         ::Ractor.make_shareable(setter_proc)
+      else
+        getter_proc = Proc.new { @table[name] }
+        setter_proc = Proc.new {|x| @table[name] = x}
       end
       define_singleton_method!(name, &getter_proc)
       define_singleton_method!("#{name}=", &setter_proc)
