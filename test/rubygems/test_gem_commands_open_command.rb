@@ -21,7 +21,7 @@ class TestGemCommandsOpenCommand < Gem::TestCase
 
   def test_execute
     @cmd.options[:args] = %w[foo]
-    @cmd.options[:editor] = "#{Gem.ruby} -eexit --"
+    @cmd.options[:editor] = "#{ruby_with_rubygems_in_load_path} -eexit --"
 
     gem 'foo', '1.0.0'
     spec = gem 'foo', '1.0.1'
