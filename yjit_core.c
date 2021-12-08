@@ -747,15 +747,14 @@ gen_block_version(blockid_t blockid, const ctx_t *start_ctx, rb_execution_contex
 
     // Generate code for the first block
     block = gen_single_block(blockid, start_ctx, ec);
-    batch_success = block && compiled_count < MAX_PER_BATCH;
-
-    if (batch_success) {
+    if (block) {
         // Track the block
         add_block_version(block);
 
         batch[compiled_count] = block;
         compiled_count++;
     }
+    batch_success = block;
 
     // For each successor block to compile
     while (batch_success) {
@@ -780,8 +779,12 @@ gen_block_version(blockid_t blockid, const ctx_t *start_ctx, rb_execution_contex
         // Generate code for the current block using context from the last branch.
         blockid_t requested_id = last_branch->targets[0];
         const ctx_t *requested_ctx = &last_branch->target_ctxs[0];
-        block = gen_single_block(requested_id, requested_ctx, ec);
-        batch_success = block && compiled_count < MAX_PER_BATCH;
+
+        batch_success = compiled_count < MAX_PER_BATCH;
+        if (batch_success) {
+            block = gen_single_block(requested_id, requested_ctx, ec);
+            batch_success = block;
+        }
 
         // If the batch failed, stop
         if (!batch_success) {
