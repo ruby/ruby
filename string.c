@@ -6219,23 +6219,24 @@ rb_str_include(VALUE str, VALUE arg)
 
 /*
  *  call-seq:
- *     str.to_i(base=10)   -> integer
+ *    to_i(base = 10) -> integer
  *
- *  Returns the result of interpreting leading characters in <i>str</i> as an
- *  integer base <i>base</i> (between 2 and 36). Extraneous characters past the
- *  end of a valid number are ignored. If there is not a valid number at the
- *  start of <i>str</i>, <code>0</code> is returned. This method never raises an
- *  exception when <i>base</i> is valid.
+ *  Returns the result of interpreting leading characters in +self+
+ *  as an integer in the given +base+ (which must be in (2..36)):
  *
- *     "12345".to_i             #=> 12345
- *     "99 red balloons".to_i   #=> 99
- *     "0a".to_i                #=> 0
- *     "0a".to_i(16)            #=> 10
- *     "hello".to_i             #=> 0
- *     "1100101".to_i(2)        #=> 101
- *     "1100101".to_i(8)        #=> 294977
- *     "1100101".to_i(10)       #=> 1100101
- *     "1100101".to_i(16)       #=> 17826049
+ *    '123456'.to_i     # => 123456
+ *    '123def'.to_i(16) # => 1195503
+ *
+ *  Characters past a leading valid number (in the given +base+) are ignored:
+ *
+ *    '12.345'.to_i   # => 12
+ *    '12345'.to_i(2) # => 1
+ *
+ *  Returns zero if there is no leading valid number:
+ *
+ *    'abcdef'.to_i # => 0
+ *    '2'.to_i(2)   # => 0
+ *
  */
 
 static VALUE
@@ -6252,16 +6253,21 @@ rb_str_to_i(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.to_f   -> float
+ *    to_f -> float
  *
- *  Returns the result of interpreting leading characters in <i>str</i> as a
- *  floating point number. Extraneous characters past the end of a valid number
- *  are ignored. If there is not a valid number at the start of <i>str</i>,
- *  <code>0.0</code> is returned. This method never raises an exception.
+ *  Returns the result of interpreting leading characters in +self+ as a Float:
  *
- *     "123.45e1".to_f        #=> 1234.5
- *     "45.67 degrees".to_f   #=> 45.67
- *     "thx1138".to_f         #=> 0.0
+ *    '3.14159'.to_f  # => 3.14159
+      '1.234e-2'.to_f # => 0.01234
+ *
+ *  Characters past a leading valid number (in the given +base+) are ignored:
+ *
+ *    '3.14 (pi to two places)'.to_f # => 3.14
+ *
+ *  Returns zero if there is no leading valid number:
+ *
+ *    'abcdef'.to_f # => 0.0
+ *
  */
 
 static VALUE
@@ -6273,12 +6279,13 @@ rb_str_to_f(VALUE str)
 
 /*
  *  call-seq:
- *     str.to_s     -> str
- *     str.to_str   -> str
+ *    to_s -> self or string
  *
- *  Returns +self+.
+ *  Returns +self+ if +self+ is a \String,
+ *  or +self+ converted to a \String if +self+ is a subclass of \String.
  *
- *  If called on a subclass of String, converts the receiver to a String object.
+ *  String#to_str is an alias for String#to_s.
+ *
  */
 
 static VALUE
@@ -6408,15 +6415,17 @@ rb_str_escape(VALUE str)
 }
 
 /*
- * call-seq:
- *   str.inspect   -> string
+ *  call-seq:
+ *    inspect -> string
  *
- * Returns a printable version of _str_, surrounded by quote marks,
- * with special characters escaped.
+ *  Returns a printable version of +self+, enclosed in double-quotes,
+ *  and with special characters escaped:
  *
- *    str = "hello"
- *    str[3] = "\b"
- *    str.inspect       #=> "\"hel\\bo\""
+ *    s = "foo\tbar\tbaz\n"
+ *    # => "foo\tbar\tbaz\n"
+ *    s.inspect
+ *    # => "\"foo\\tbar\\tbaz\\n\""
+ *
  */
 
 VALUE
@@ -6517,18 +6526,17 @@ rb_str_inspect(VALUE str)
 
 /*
  *  call-seq:
- *     str.dump   -> new_str
+ *    dump -> string
  *
- *  Returns a quoted version of the string with all non-printing characters
- *  replaced by <code>\xHH</code> notation and all special characters escaped.
+ *  Returns a printable version of +self+, enclosed in double-quotes,
+ *  with special characters escaped, and with non-printing characters
+ *  replaced by hexadecimal notation:
  *
- *  This method can be used for round-trip: if the resulting +new_str+ is
- *  eval'ed, it will produce the original string.
+ *    "hello \n ''".dump    # => "\"hello \\n ''\""
+ *    "\f\x00\xff\\\"".dump # => "\"\\f\\x00\\xFF\\\\\\\"\""
  *
- *    "hello \n ''".dump     #=> "\"hello \\n ''\""
- *    "\f\x00\xff\\\"".dump  #=> "\"\\f\\x00\\xFF\\\\\\\"\""
+ *  Related: String#undump (inverse of String#dump).
  *
- *  See also String#undump.
  */
 
 VALUE
@@ -6813,12 +6821,17 @@ static VALUE rb_str_is_ascii_only_p(VALUE str);
 
 /*
  *  call-seq:
- *     str.undump   -> new_str
+ *    undump -> string
  *
- *  Returns an unescaped version of the string.
- *  This does the inverse of String#dump.
+ *  Returns an unescaped version of +self+:
  *
- *    "\"hello \\n ''\"".undump #=> "hello \n ''"
+ *    s_orig = "\f\x00\xff\\\""    # => "\f\u0000\xFF\\\""
+ *    s_dumped = s_orig.dump       # => "\"\\f\\x00\\xFF\\\\\\\"\""
+ *    s_undumped = s_dumped.undump # => "\f\u0000\xFF\\\""
+ *    s_undumped == s_orig         # => true
+ *
+ *  Related: String#dump (inverse of String#undump).
+ *
  */
 
 static VALUE
