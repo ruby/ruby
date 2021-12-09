@@ -1938,11 +1938,15 @@ BigDecimal_div2(VALUE self, VALUE b, VALUE n)
         Real *res = NULL;
         Real *av = NULL, *bv = NULL, *cv = NULL;
         size_t mx = ix + VpBaseFig()*2;
+        size_t b_prec = ix;
         size_t pl = VpSetPrecLimit(0);
 
         GUARD_OBJ(cv, VpCreateRbObject(mx + VpBaseFig(), "0", true));
         GUARD_OBJ(av, GetVpValue(self, 1));
-        GUARD_OBJ(bv, GetVpValue(b, 1));
+        if (RB_FLOAT_TYPE_P(b) && b_prec > BIGDECIMAL_DOUBLE_FIGURES) {
+            b_prec = BIGDECIMAL_DOUBLE_FIGURES;
+        }
+        GUARD_OBJ(bv, GetVpValueWithPrec(b, b_prec, 1));
         mx = av->Prec + bv->Prec + 2;
         if (mx <= cv->MaxPrec) mx = cv->MaxPrec + 1;
         GUARD_OBJ(res, VpCreateRbObject((mx * 2  + 2)*VpBaseFig(), "#0", true));
