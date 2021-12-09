@@ -262,23 +262,27 @@ class Reline::Windows
         next
       end
       next if @@GetNumberOfConsoleInputEvents.(@@hConsoleInputHandle, num_of_events) == 0 or num_of_events.unpack1('L') == 0
-      input_record = 0.chr * 18
+      input_records = 0.chr * 20 * 80
       read_event = 0.chr * 4
-      if @@ReadConsoleInputW.(@@hConsoleInputHandle, input_record, 1, read_event) != 0
-        event = input_record[0, 2].unpack1('s*')
-        case event
-        when WINDOW_BUFFER_SIZE_EVENT
-          @@winch_handler.()
-        when KEY_EVENT
-          key_down = input_record[4, 4].unpack1('l*')
-          repeat_count = input_record[8, 2].unpack1('s*')
-          virtual_key_code = input_record[10, 2].unpack1('s*')
-          virtual_scan_code = input_record[12, 2].unpack1('s*')
-          char_code = input_record[14, 2].unpack1('S*')
-          control_key_state = input_record[16, 2].unpack1('S*')
-          is_key_down = key_down.zero? ? false : true
-          if is_key_down
-            process_key_event(repeat_count, virtual_key_code, virtual_scan_code, char_code, control_key_state)
+      if @@ReadConsoleInputW.(@@hConsoleInputHandle, input_records, 80, read_event) != 0
+        read_events = read_event.unpack1('L')
+        0.upto(read_events) do |idx|
+          input_record = input_records[idx * 20, 20]
+          event = input_record[0, 2].unpack1('s*')
+          case event
+          when WINDOW_BUFFER_SIZE_EVENT
+            @@winch_handler.()
+          when KEY_EVENT
+            key_down = input_record[4, 4].unpack1('l*')
+            repeat_count = input_record[8, 2].unpack1('s*')
+            virtual_key_code = input_record[10, 2].unpack1('s*')
+            virtual_scan_code = input_record[12, 2].unpack1('s*')
+            char_code = input_record[14, 2].unpack1('S*')
+            control_key_state = input_record[16, 2].unpack1('S*')
+            is_key_down = key_down.zero? ? false : true
+            if is_key_down
+              process_key_event(repeat_count, virtual_key_code, virtual_scan_code, char_code, control_key_state)
+            end
           end
         end
       end
