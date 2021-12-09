@@ -617,11 +617,13 @@ C言語とRubyの間で情報を共有する方法について解説します．
 Qtrue ::
 Qfalse ::
 
-  真偽値．QfalseはC言語でも偽とみなされます(つまり0)．
+  真偽値．C言語から見た「true」と「false」．
 
 Qnil ::
 
   C言語から見た「nil」．
+
+RTEST(obj)というマクロはobjがQfalseかQnilのとき0を返します．
 
 === CとRubyで共有される大域変数
 
