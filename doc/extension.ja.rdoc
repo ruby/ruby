@@ -623,7 +623,7 @@ Qnil ::
 
   C言語から見た「nil」．
 
-RTEST(obj)というマクロはobjがQfalseとQnilの場合限り0を返します．
+RTEST(obj)というマクロはobjがQfalseかQnilのとき0を返します．
 
 === CとRubyで共有される大域変数
 
