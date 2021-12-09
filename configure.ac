@@ -1930,7 +1930,14 @@ AC_DEFUN([RUBY_REQUIRE_FUNC], [
     AS_IF([test "$ac_cv_func_[]AS_TR_SH($1)" = yes], [],
           [AC_MSG_ERROR($1[() must be supported])])
 ])
-m4_map_args_w([dup dup2], [RUBY_REQUIRE_FUNC(], [)])
+
+# dup and dup2 are always available except for WASI
+AS_CASE(["$target_os"],
+    [wasi*], [],
+    [
+        m4_map_args_w([dup dup2], [RUBY_REQUIRE_FUNC(], [)])
+    ]
+)
 
 AC_REPLACE_FUNCS(acosh)
 AC_REPLACE_FUNCS(cbrt)
