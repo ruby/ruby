@@ -115,6 +115,8 @@ static ID id_half;
  */
 static unsigned short VpGetException(void);
 static void  VpSetException(unsigned short f);
+static void VpCheckException(Real *p, bool always);
+static VALUE VpCheckGetValue(Real *p);
 static void  VpInternalRound(Real *c, size_t ixDigit, DECDIG vPrev, DECDIG v);
 static int   VpLimitRound(Real *c, size_t ixDigit);
 static Real *VpCopy(Real *pv, Real const* const x);
@@ -163,27 +165,6 @@ static inline int
 is_kind_of_BigDecimal(VALUE const v)
 {
     return rb_typeddata_is_kind_of(v, &BigDecimal_data_type);
-}
-
-static void
-VpCheckException(Real *p, bool always)
-{
-    if (VpIsNaN(p)) {
-        VpException(VP_EXCEPTION_NaN, "Computation results in 'NaN' (Not a Number)", always);
-    }
-    else if (VpIsPosInf(p)) {
-        VpException(VP_EXCEPTION_INFINITY, "Computation results in 'Infinity'", always);
-    }
-    else if (VpIsNegInf(p)) {
-        VpException(VP_EXCEPTION_INFINITY, "Computation results in '-Infinity'", always);
-    }
-}
-
-static VALUE
-VpCheckGetValue(Real *p)
-{
-    VpCheckException(p, false);
-    return p->obj;
 }
 
 NORETURN(static void cannot_be_coerced_into_BigDecimal(VALUE, VALUE));
@@ -1656,12 +1637,15 @@ BigDecimal_divide(VALUE self, VALUE r, Real **c, Real **res, Real **div)
 }
 
 /* call-seq:
- *   a / b       -> bigdecimal
- *   quo(value)  -> bigdecimal
+ *   a / b   -> bigdecimal
  *
  * Divide by the specified value.
  *
+ * The result precision will be the precision of the larger operand,
+ * but its minimum is 2*Float::DIG.
+ *
  * See BigDecimal#div.
+ * See BigDecimal#quo.
  */
 static VALUE
 BigDecimal_div(VALUE self, VALUE r)
@@ -1681,6 +1665,45 @@ BigDecimal_div(VALUE self, VALUE r)
         VpInternalRound(c, 0, c->frac[c->Prec-1], (DECDIG)(VpBaseVal() * (DECDIG_DBL)res->frac[0] / div->frac[0]));
     }
     return VpCheckGetValue(c);
+}
+
+static VALUE BigDecimal_round(int argc, VALUE *argv, VALUE self);
+
+/* call-seq:
+ *   quo(value)  -> bigdecimal
+ *   quo(value, digits)  -> bigdecimal
+ *
+ * Divide by the specified value.
+ *
+ * digits:: If specified and less than the number of significant digits of
+ *          the result, the result is rounded to the given number of digits,
+ *          according to the rounding mode indicated by BigDecimal.mode.
+ *
+ *          If digits is 0 or omitted, the result is the same as for the
+ *          / operator.
+ *
+ * See BigDecimal#/.
+ * See BigDecimal#div.
+ */
+static VALUE
+BigDecimal_quo(int argc, VALUE *argv, VALUE self)
+{
+    VALUE value, digits, result;
+    SIGNED_VALUE n = -1;
+
+    argc = rb_scan_args(argc, argv, "11", &value, &digits);
+    if (argc > 1) {
+        n = GetPrecisionInt(digits);
+    }
+
+    if (n > 0) {
+        result = BigDecimal_div2(self, value, digits);
+    }
+    else {
+        result = BigDecimal_div(self, value);
+    }
+
+    return result;
 }
 
 /*
@@ -1964,6 +1987,7 @@ BigDecimal_div2(VALUE self, VALUE b, VALUE n)
   * Document-method: BigDecimal#div
   *
   * call-seq:
+  *   div(value)  -> integer
   *   div(value, digits)  -> bigdecimal or integer
   *
   * Divide by the specified value.
@@ -1977,6 +2001,9 @@ BigDecimal_div2(VALUE self, VALUE b, VALUE n)
   *
   *          If digits is not specified, the result is an integer,
   *          by analogy with Float#div; see also BigDecimal#divmod.
+  *
+  * See BigDecimal#/.
+  * See BigDecimal#quo.
   *
   * Examples:
   *
@@ -4272,7 +4299,7 @@ Init_bigdecimal(void)
     rb_define_method(rb_cBigDecimal, "-@", BigDecimal_neg, 0);
     rb_define_method(rb_cBigDecimal, "*", BigDecimal_mult, 1);
     rb_define_method(rb_cBigDecimal, "/", BigDecimal_div, 1);
-    rb_define_method(rb_cBigDecimal, "quo", BigDecimal_div, 1);
+    rb_define_method(rb_cBigDecimal, "quo", BigDecimal_quo, -1);
     rb_define_method(rb_cBigDecimal, "%", BigDecimal_mod, 1);
     rb_define_method(rb_cBigDecimal, "modulo", BigDecimal_mod, 1);
     rb_define_method(rb_cBigDecimal, "remainder", BigDecimal_remainder, 1);
@@ -4444,6 +4471,27 @@ static void
 VpSetException(unsigned short f)
 {
     bigdecimal_set_thread_local_exception_mode(f);
+}
+
+static void
+VpCheckException(Real *p, bool always)
+{
+    if (VpIsNaN(p)) {
+        VpException(VP_EXCEPTION_NaN, "Computation results in 'NaN' (Not a Number)", always);
+    }
+    else if (VpIsPosInf(p)) {
+        VpException(VP_EXCEPTION_INFINITY, "Computation results in 'Infinity'", always);
+    }
+    else if (VpIsNegInf(p)) {
+        VpException(VP_EXCEPTION_INFINITY, "Computation results in '-Infinity'", always);
+    }
+}
+
+static VALUE
+VpCheckGetValue(Real *p)
+{
+    VpCheckException(p, false);
+    return p->obj;
 }
 
 /*

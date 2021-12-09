@@ -1101,6 +1101,30 @@ class TestBigDecimal < Test::Unit::TestCase
                  x.div(y, 100))
   end
 
+  def test_quo_without_prec
+    x = BigDecimal(5)
+    y = BigDecimal(229)
+    assert_equal(BigDecimal("0.021834061135371179039301310043668122"), x.quo(y))
+  end
+
+  def test_quo_with_prec
+    begin
+      saved_mode = BigDecimal.mode(BigDecimal::ROUND_MODE)
+      BigDecimal.mode(BigDecimal::ROUND_MODE, :half_up)
+
+      x = BigDecimal(5)
+      y = BigDecimal(229)
+      assert_equal(BigDecimal("0.021834061135371179039301310043668122"), x.quo(y, 0))
+      assert_equal(BigDecimal("0.022"), x.quo(y, 2))
+      assert_equal(BigDecimal("0.0218"), x.quo(y, 3))
+      assert_equal(BigDecimal("0.0218341"), x.quo(y, 6))
+      assert_equal(BigDecimal("0.02183406114"), x.quo(y, 10))
+      assert_equal(BigDecimal("0.021834061135371179039301310043668122270742358078603"), x.quo(y, 50))
+    ensure
+      BigDecimal.mode(BigDecimal::ROUND_MODE, saved_mode)
+    end
+  end
+
   def test_abs_bigdecimal
     x = BigDecimal((2**100).to_s)
     assert_equal(1267650600228229401496703205376, x.abs)
