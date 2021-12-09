@@ -1091,6 +1091,16 @@ class TestBigDecimal < Test::Unit::TestCase
     end
   end
 
+  def test_div_bigdecimal_with_float_and_precision
+    x = BigDecimal(5)
+    y = 5.1
+    assert_equal(x.div(BigDecimal(y, 0), 8),
+                 x.div(y, 8))
+
+    assert_equal(x.div(BigDecimal(y, 0), 100),
+                 x.div(y, 100))
+  end
+
   def test_abs_bigdecimal
     x = BigDecimal((2**100).to_s)
     assert_equal(1267650600228229401496703205376, x.abs)
