@@ -1943,6 +1943,9 @@ BigDecimal_div2(VALUE self, VALUE b, VALUE n)
 
         GUARD_OBJ(cv, VpCreateRbObject(mx + VpBaseFig(), "0", true));
         GUARD_OBJ(av, GetVpValue(self, 1));
+        /* TODO: I want to refactor this precision control for a float value later
+         *       by introducing an implicit conversion function instead of
+         *       GetVpValueWithPrec.  */
         if (RB_FLOAT_TYPE_P(b) && b_prec > BIGDECIMAL_DOUBLE_FIGURES) {
             b_prec = BIGDECIMAL_DOUBLE_FIGURES;
         }
