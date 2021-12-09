@@ -360,6 +360,9 @@ def sync_default_gems(gem)
     Dir.mkdir(*%w[ext/win32ole/lib])
     move("lib/win32ole/win32ole.gemspec", "ext/win32ole")
     move(Dir.glob("lib/win32ole*"), "ext/win32ole/lib")
+  when "open3"
+    sync_lib gem, upstream
+    rm_rf("lib/open3/jruby_windows.rb")
   else
     sync_lib gem, upstream
   end
