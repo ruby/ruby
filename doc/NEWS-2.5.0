@@ -466,7 +466,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Compatibility issues (excluding feature bug fixes)
 
-* Socket
+* BasicSocket
 
   * BasicSocket#read_nonblock and BasicSocket#write_nonblock no
     longer set the O_NONBLOCK file description flag as side effect
