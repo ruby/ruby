@@ -285,7 +285,7 @@ Outstanding ones only.
     * Fiddle 1.1.0
     * StringIO 3.0.1
     * IO::Console 0.5.9
-    * IO::Wait 0.2.0
+    * IO::Wait 0.2.1
     * CSV 3.2.1
     * Etc 1.3.0
     * Date 3.2.2
@@ -293,7 +293,7 @@ Outstanding ones only.
     * StringScanner 3.0.1
     * IpAddr 1.2.3
     * Logger 1.4.4
-    * OStruct 0.5.0
+    * OStruct 0.5.2
     * Irb
     * Racc 1.6.0
     * Delegate 0.2.0
