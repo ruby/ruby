@@ -285,7 +285,7 @@ MESSAGE
 
   def split_libs(*strs)
     sep = $mswin ? /\s+/ : /\s+(?=-|\z)/
-    strs.map {|s| s.lstrip.split(sep)}.flatten
+    strs.flat_map {|s| s.lstrip.split(sep)}
   end
 
   def merge_libs(*libs)
@@ -1083,7 +1083,7 @@ SRC
   def find_library(lib, func, *paths, &b)
     dir_config(lib)
     lib = with_config(lib+'lib', lib)
-    paths = paths.collect {|path| path.split(File::PATH_SEPARATOR)}.flatten
+    paths = paths.flat_map {|path| path.split(File::PATH_SEPARATOR)}
     checking_for checking_message(func && func.funcall_style, LIBARG%lib) do
       libpath = $LIBPATH
       libs = append_library($libs, lib)
