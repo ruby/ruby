@@ -318,7 +318,7 @@ usage(const char *name, int help, int highlight, int columns)
     };
     static const struct message dumps[] = {
 	M("insns",                  "", "instruction sequences"),
-	M("insns_without_out",      "", "instruction sequences compiled with no optimization"),
+	M("insns_without_opt",      "", "instruction sequences compiled with no optimization"),
 	M("yydebug",                "", "yydebug of yacc parser generator"),
 	M("parsetree",              "", "AST"),
 	M("parsetree_with_comment", "", "AST with comments"),
