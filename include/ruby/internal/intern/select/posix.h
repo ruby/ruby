@@ -95,11 +95,10 @@ RBIMPL_ATTR_NOALIAS()
  *
  * @param[out]  dst   Target fdset.
  * @param[in]   src   Source fdset.
- * @param[in]   n     Unused parameter.
  * @post        `dst` is a copy of `src`.
  */
 static inline void
-rb_fd_dup(rb_fdset_t *dst, const fd_set *src, int n)
+rb_fd_dup(rb_fdset_t *dst, const fd_set *src)
 {
     *dst = *src;
 }
