@@ -7,7 +7,7 @@ require_relative "rubygems_ext"
 module Bundler
   class Dependency < Gem::Dependency
     attr_reader :autorequire
-    attr_reader :groups, :platforms, :gemfile, :git, :branch
+    attr_reader :groups, :platforms, :gemfile, :git, :github, :branch, :ref
 
     PLATFORM_MAP = {
       :ruby     => Gem::Platform::RUBY,
@@ -82,7 +82,9 @@ module Bundler
       @groups         = Array(options["group"] || :default).map(&:to_sym)
       @source         = options["source"]
       @git            = options["git"]
+      @github         = options["github"]
       @branch         = options["branch"]
+      @ref            = options["ref"]
       @platforms      = Array(options["platforms"])
       @env            = options["env"]
       @should_include = options.fetch("should_include", true)
