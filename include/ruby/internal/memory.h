@@ -284,7 +284,7 @@ typedef uint128_t DSIZE_T;
  * @return      A pointer on stack.
  */
 #define ALLOCA_N(type,n) \
-    RBIMPL_CAST((type *)(!(n) ? NULL : alloca(rbimpl_size_mul_or_raise(sizeof(type), (n)))))
+    RBIMPL_CAST((type *)alloca(rbimpl_size_mul_or_raise(sizeof(type), (n))))
 
 /**
  * Identical to #RB_ALLOCV_N(), except it  implicitly assumes the type of array
@@ -297,7 +297,7 @@ typedef uint128_t DSIZE_T;
  */
 #define RB_ALLOCV(v, n)        \
     ((n) < RUBY_ALLOCV_LIMIT ? \
-     ((v) = 0, !(n) ? NULL : alloca(n)) : \
+     ((v) = 0, alloca(n)) :    \
      rb_alloc_tmp_buffer(&(v), (n)))
 
 /**
@@ -330,7 +330,7 @@ typedef uint128_t DSIZE_T;
 #define RB_ALLOCV_N(type, v, n)                             \
     RBIMPL_CAST((type *)                                     \
         (((size_t)(n) < RUBY_ALLOCV_LIMIT / sizeof(type)) ? \
-         ((v) = 0, !(n) ? NULL : alloca((n) * sizeof(type))) : \
+         ((v) = 0, alloca((n) * sizeof(type))) :            \
          rb_alloc_tmp_buffer2(&(v), (n), sizeof(type))))
 
 /**
