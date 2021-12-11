@@ -1,4 +1,3 @@
-[![Actions Status: macOS](https://github.com/ruby/ruby/workflows/macOS/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"macOS")
 [![Actions Status: MinGW](https://github.com/ruby/ruby/workflows/MinGW/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"MinGW")
 [![Actions Status: MJIT](https://github.com/ruby/ruby/workflows/MJIT/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"MJIT")
 [![Actions Status: Ubuntu](https://github.com/ruby/ruby/workflows/Ubuntu/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Ubuntu")
