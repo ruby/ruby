@@ -1885,9 +1885,11 @@ rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
     if (vm_redefinition_check_method_type(me->def)) {
         if (st_lookup(vm_opt_method_def_table, (st_data_t)me->def, &bop)) {
             int flag = vm_redefinition_check_flag(klass);
-            rb_yjit_bop_redefined(klass, me, (enum ruby_basic_operators)bop);
-	    ruby_vm_redefined_flag[bop] |= flag;
-	}
+            if (flag != 0) {
+                rb_yjit_bop_redefined(klass, me, (enum ruby_basic_operators)bop);
+                ruby_vm_redefined_flag[bop] |= flag;
+            }
+        }
     }
 }
 
