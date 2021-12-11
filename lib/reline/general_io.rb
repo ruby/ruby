@@ -1,4 +1,5 @@
 require 'timeout'
+require 'io/wait'
 
 class Reline::GeneralIO
   def self.reset(encoding: nil)
@@ -36,7 +37,7 @@ class Reline::GeneralIO
     end
     c = nil
     loop do
-      result = select([@@input], [], [], 0.1)
+      result = @@input.wait_readable(0.1)
       next if result.nil?
       c = @@input.read(1)
       break
