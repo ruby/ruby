@@ -175,7 +175,7 @@ static VALUE
 ossl_hmac_digest(VALUE self)
 {
     EVP_MD_CTX *ctx;
-    size_t buf_len;
+    size_t buf_len = EVP_MAX_MD_SIZE;
     VALUE ret;
 
     GetHMAC(self, ctx);
@@ -200,7 +200,7 @@ ossl_hmac_hexdigest(VALUE self)
 {
     EVP_MD_CTX *ctx;
     unsigned char buf[EVP_MAX_MD_SIZE];
-    size_t buf_len;
+    size_t buf_len = EVP_MAX_MD_SIZE;
     VALUE ret;
 
     GetHMAC(self, ctx);
