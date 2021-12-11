@@ -893,14 +893,12 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       end
     end
 
-    begin
-      sock = TCPSocket.new("127.0.0.1", port)
-      sock.puts "abc"
-    ensure
-      sock&.close
-    end
+    sock = TCPSocket.new("127.0.0.1", port)
+    sock << "\x00" * 1024
 
     assert t.join
+  ensure
+    sock&.close
     server.close
   end
 
