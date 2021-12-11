@@ -334,7 +334,7 @@ Outstanding ones only.
     * minitest 5.14.4
     * power_assert 2.0.1
     * rake 13.0.6
-    * test-unit 3.5.1
+    * test-unit 3.5.2
     * rbs 1.8.0
     * typeprof 0.20.4
 *   The following default gems are now bundled gems.
