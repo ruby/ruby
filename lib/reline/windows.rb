@@ -168,6 +168,8 @@ class Reline::Windows
   @@input_buf = []
   @@output_buf = []
 
+  @@output = STDOUT
+
   def self.msys_tty?(io=@@hConsoleInputHandle)
     # check if fd is a pipe
     if @@GetFileType.call(io) != FILE_TYPE_PIPE
@@ -370,13 +372,21 @@ class Reline::Windows
   end
 
   def self.scroll_down(val)
-    return if val.zero?
-    screen_height = get_screen_size.first
-    val = screen_height - 1 if val > (screen_height - 1)
-    scroll_rectangle = [0, val, get_screen_size.last, get_screen_size.first].pack('s4')
-    destination_origin = 0 # y * 65536 + x
-    fill = [' '.ord, 0].pack('SS')
-    @@ScrollConsoleScreenBuffer.call(@@hConsoleHandle, scroll_rectangle, nil, destination_origin, fill)
+    return if val < 0
+
+    csbi = 0.chr * 22
+    @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi)
+    x, y, left, top, screen_height = csbi.unpack 'x4ssx2ssx2s'
+
+    origin_x = x - left + 1
+    origin_y = y - top + 1
+    screen_height += 1
+    val = screen_height if val > screen_height
+    @@output.write [
+      (origin_y != screen_height) ? "\e[#{screen_height};H" : nil,
+      "\n" * val,
+      (origin_y != screen_height or !origin_x.zero?) ? "\e[#{origin_y};#{origin_x}H" : nil
+    ].join
   end
 
   def self.clear_screen
