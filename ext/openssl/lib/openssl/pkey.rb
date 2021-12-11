@@ -47,9 +47,19 @@ module OpenSSL::PKey
     # * _pub_bn_ is a OpenSSL::BN, *not* the DH instance returned by
     #   DH#public_key as that contains the DH parameters only.
     def compute_key(pub_bn)
-      peer = dup
-      peer.set_key(pub_bn, nil)
-      derive(peer)
+      # FIXME: This is constructing an X.509 SubjectPublicKeyInfo and is very
+      # inefficient
+      obj = OpenSSL::ASN1.Sequence([
+        OpenSSL::ASN1.Sequence([
+          OpenSSL::ASN1.ObjectId("dhKeyAgreement"),
+          OpenSSL::ASN1.Sequence([
+            OpenSSL::ASN1.Integer(p),
+            OpenSSL::ASN1.Integer(g),
+          ]),
+        ]),
+        OpenSSL::ASN1.BitString(OpenSSL::ASN1.Integer(pub_bn).to_der),
+      ])
+      derive(OpenSSL::PKey.read(obj.to_der))
     end
 
     # :call-seq:
