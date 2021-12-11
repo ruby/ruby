@@ -3702,13 +3702,13 @@ static VALUE str_casecmp_p(VALUE str1, VALUE str2);
 
 /*
  *  call-seq:
- *    casecmp(other_str) -> -1, 0, 1, or nil
+ *    casecmp(other_string) -> -1, 0, 1, or nil
  *
- *  Compares +self+ and +other_string+, ignoring case, and returning:
+ *  Compares <tt>self.downcase</tt> and <tt>other_string.downcase</tt>; returns:
  *
- *  - -1 if +other_string+ is larger.
+ *  - -1 if <tt>other_string.downcase</tt> is larger.
  *  - 0 if the two are equal.
- *  - 1 if +other_string+ is smaller.
+ *  - 1 if <tt>other_string.downcase</tt> is smaller.
  *  - +nil+ if the two are incomparable.
  *
  *  Examples:
@@ -3719,6 +3719,10 @@ static VALUE str_casecmp_p(VALUE str1, VALUE str2);
  *    'FOO'.casecmp('foo') # => 0
  *    'foo'.casecmp('FOO') # => 0
  *    'foo'.casecmp(1) # => nil
+ *
+ *  See {Case Mapping}[doc/case_mapping_rdoc.html].
+ *
+ *  Related: String#casecmp?.
  *
  */
 
@@ -3805,6 +3809,10 @@ str_casecmp(VALUE str1, VALUE str2)
  *  Returns +nil+ if the two values are incomparable:
  *
  *    'foo'.casecmp?(1) # => nil
+ *
+ *  See {Case Mapping}[doc/case_mapping_rdoc.html].
+ *
+ *  Related: String#casecmp.
  *
  */
 
@@ -7151,13 +7159,21 @@ upcase_single(VALUE str)
 
 /*
  *  call-seq:
- *     str.upcase!              -> str or nil
- *     str.upcase!([options])   -> str or nil
+ *    upcase!(*options) -> self of nil
  *
- *  Upcases the contents of <i>str</i>, returning <code>nil</code> if no changes
- *  were made.
+ *  Upcases the characters in +self+;
+ *  returns +self+ if any changes were made, +nil+ otherwise:
  *
- *  See String#downcase for meaning of +options+ and use with different encodings.
+ *    s = 'Hello World!' # => "Hello World!"
+ *    s.upcase!          # => "HELLO WORLD!"
+ *    s                  # => "HELLO WORLD!"
+ *    s.upcase!          # => nil
+ *
+ *  The casing may be affected by the given +options+;
+ *  see {Case Mapping}[doc/case_mapping_rdoc.html].
+ *
+ *  Related: String#upcase, String#downcase, String#downcase!.
+ *
  */
 
 static VALUE
@@ -7185,15 +7201,18 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.upcase              -> new_str
- *     str.upcase([options])   -> new_str
+ *    upcase(*options) -> string
  *
- *  Returns a copy of <i>str</i> with all lowercase letters replaced with their
- *  uppercase counterparts.
+ *  Returns a string containing the upcased characters in +self+:
  *
- *  See String#downcase for meaning of +options+ and use with different encodings.
+ *     s = 'Hello World!' # => "Hello World!"
+ *     s.downcase         # => "hello world!"
  *
- *     "hEllO".upcase   #=> "HELLO"
+ *  The casing may be affected by the given +options+;
+ *  see {Case Mapping}[doc/case_mapping_rdoc.html].
+ *
+ *  Related: String#upcase!, String#downcase, String#downcase!.
+ *
  */
 
 static VALUE
@@ -7242,13 +7261,21 @@ downcase_single(VALUE str)
 
 /*
  *  call-seq:
- *     str.downcase!             -> str or nil
- *     str.downcase!([options])  -> str or nil
+ *    downcase!(*options) -> self or nil
  *
- *  Downcases the contents of <i>str</i>, returning <code>nil</code> if no
- *  changes were made.
+ *  Downcases the characters in +self+;
+ *  returns +self+ if any changes were made, +nil+ otherwise:
  *
- *  See String#downcase for meaning of +options+ and use with different encodings.
+ *    s = 'Hello World!' # => "Hello World!"
+ *    s.downcase!        # => "hello world!"
+ *    s                  # => "hello world!"
+ *    s.downcase!        # => nil
+ *
+ *  The casing may be affected by the given +options+;
+ *  see {Case Mapping}[doc/case_mapping_rdoc.html].
+ *
+ *  Related: String#downcase, String#upcase, String#upcase!.
+ *
  */
 
 static VALUE
@@ -7276,52 +7303,18 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.downcase              -> new_str
- *     str.downcase([options])   -> new_str
+ *    downcase(*options) -> string
  *
- *  Returns a copy of <i>str</i> with all uppercase letters replaced with their
- *  lowercase counterparts. Which letters exactly are replaced, and by which
- *  other letters, depends on the presence or absence of options, and on the
- *  +encoding+ of the string.
+ *  Returns a string containing the downcased characters in +self+:
  *
- *  The meaning of the +options+ is as follows:
+ *     s = 'Hello World!' # => "Hello World!"
+ *     s.downcase         # => "hello world!"
  *
- *  No option ::
- *    Full Unicode case mapping, suitable for most languages
- *    (see :turkic and :lithuanian options below for exceptions).
- *    Context-dependent case mapping as described in Table 3-14 of the
- *    Unicode standard is currently not supported.
- *  :ascii ::
- *    Only the ASCII region, i.e. the characters ``A'' to ``Z'' and
- *    ``a'' to ``z'', are affected.
- *    This option cannot be combined with any other option.
- *  :turkic ::
- *    Full Unicode case mapping, adapted for Turkic languages
- *    (Turkish, Azerbaijani, ...). This means that upper case I is mapped to
- *    lower case dotless i, and so on.
- *  :lithuanian ::
- *    Currently, just full Unicode case mapping. In the future, full Unicode
- *    case mapping adapted for Lithuanian (keeping the dot on the lower case
- *    i even if there is an accent on top).
- *  :fold ::
- *    Only available on +downcase+ and +downcase!+. Unicode case <b>folding</b>,
- *    which is more far-reaching than Unicode case mapping.
- *    This option currently cannot be combined with any other option
- *    (i.e. there is currently no variant for turkic languages).
+ *  The casing may be affected by the given +options+;
+ *  see {Case Mapping}[doc/case_mapping_rdoc.html].
  *
- *  Please note that several assumptions that are valid for ASCII-only case
- *  conversions do not hold for more general case conversions. For example,
- *  the length of the result may not be the same as the length of the input
- *  (neither in characters nor in bytes), some roundtrip assumptions
- *  (e.g. str.downcase == str.upcase.downcase) may not apply, and Unicode
- *  normalization (i.e. String#unicode_normalize) is not necessarily maintained
- *  by case mapping operations.
+ *  Related: String#downcase!, String#upcase, String#upcase!.
  *
- *  Non-ASCII case mapping/folding is currently supported for UTF-8,
- *  UTF-16BE/LE, UTF-32BE/LE, and ISO-8859-1~16 Strings/Symbols.
- *  This support will be extended to other encodings.
- *
- *     "hEllO".downcase   #=> "hello"
  */
 
 static VALUE
@@ -7352,20 +7345,22 @@ rb_str_downcase(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.capitalize!              -> str or nil
- *     str.capitalize!([options])   -> str or nil
+ *    capitalize!(*options) -> self or nil
  *
- *  Modifies <i>str</i> by converting the first character to uppercase and the
- *  remainder to lowercase. Returns <code>nil</code> if no changes are made.
- *  There is an exception for modern Georgian (mkhedruli/MTAVRULI), where
- *  the result is the same as for String#downcase, to avoid mixed case.
+ *  Upcases the first character in +self+;
+ *  downcases the remaining characters;
+ *  returns +self+ if any changes were made, +nil+ otherwise:
  *
- *  See String#downcase for meaning of +options+ and use with different encodings.
+ *    s = 'hello World!' # => "hello World!"
+ *    s.capitalize!      # => "Hello world!"
+ *    s                  # => "Hello world!"
+ *    s.capitalize!      # => nil
  *
- *     a = "hello"
- *     a.capitalize!   #=> "Hello"
- *     a               #=> "Hello"
- *     a.capitalize!   #=> nil
+ *  The casing may be affected by the given +options+;
+ *  see {Case Mapping}[doc/case_mapping_rdoc.html].
+ *
+ *  Related: String#capitalize.
+ *
  */
 
 static VALUE
@@ -7390,17 +7385,20 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.capitalize              -> new_str
- *     str.capitalize([options])   -> new_str
+ *    capitalize(*options) -> string
  *
- *  Returns a copy of <i>str</i> with the first character converted to uppercase
- *  and the remainder to lowercase.
+ *  Returns a string containing the characters in +self+;
+ *  the first character is upcased;
+ *  the remaining characters are down cased:
  *
- *  See String#downcase for meaning of +options+ and use with different encodings.
+ *     s = 'hello World!' # => "hello World!"
+ *     s.capitalize       # => "Hello world!"
  *
- *     "hello".capitalize    #=> "Hello"
- *     "HELLO".capitalize    #=> "Hello"
- *     "123ABC".capitalize   #=> "123abc"
+ *  The casing may be affected by the given +options+;
+ *  see {Case Mapping}[doc/case_mapping_rdoc.html].
+ *
+ *  Related: String#capitalize!.
+ *
  */
 
 static VALUE
@@ -7426,14 +7424,22 @@ rb_str_capitalize(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.swapcase!              -> str or nil
- *     str.swapcase!([options])   -> str or nil
+ *    swapcase!(*options) -> self or nil
  *
- *  Equivalent to String#swapcase, but modifies the receiver in place,
- *  returning <i>str</i>, or <code>nil</code> if no changes were made.
+ *  Upcases each lowercase character in +self+;
+ *  downcases uppercase character;
+ *  returns +self+ if any changes were made, +nil+ otherwise:
  *
- *  See String#downcase for meaning of +options+ and use with
- *  different encodings.
+ *    s = 'Hello World!' # => "Hello World!"
+ *    s.swapcase!        # => "hELLO wORLD!"
+ *    s                  # => "Hello World!"
+ *    ''.swapcase!       # => nil
+ *
+ *  The casing may be affected by the given +options+;
+ *  see {Case Mapping}[doc/case_mapping_rdoc.html].
+ *
+ *  Related: String#swapcase.
+ *
  */
 
 static VALUE
@@ -7457,16 +7463,20 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.swapcase              -> new_str
- *     str.swapcase([options])   -> new_str
+ *    swapcase(*options) -> string
  *
- *  Returns a copy of <i>str</i> with uppercase alphabetic characters converted
- *  to lowercase and lowercase characters converted to uppercase.
+ *  Returns a string containing the characters in +self+, with cases reversed;
+ *  each uppercase character is downcased;
+ *  each lowercase character is upcased:
  *
- *  See String#downcase for meaning of +options+ and use with different encodings.
+ *     s = 'Hello World!' # => "Hello World!"
+ *     s.swapcase         # => "hELLO wORLD!"
  *
- *     "Hello".swapcase          #=> "hELLO"
- *     "cYbEr_PuNk11".swapcase   #=> "CyBeR_pUnK11"
+ *  The casing may be affected by the given +options+;
+ *  see {Case Mapping}[doc/case_mapping_rdoc.html].
+ *
+ *  Related: String#swapcase!.
+ *
  */
 
 static VALUE
@@ -11502,23 +11512,29 @@ sym_cmp(VALUE sym, VALUE other)
 }
 
 /*
- * call-seq:
- *   sym.casecmp(other_symbol)   -> -1, 0, +1, or nil
+ *  call-seq:
+ *    casecmp(other_symbol) -> -1, 0, 1, or nil
  *
- * Case-insensitive version of Symbol#<=>.
- * Currently, case-insensitivity only works on characters A-Z/a-z,
- * not all of Unicode. This is different from Symbol#casecmp?.
+ *  Case-insensitive version of {Symbol#<=>}[#method-i-3C-3D-3E]:
  *
- *   :aBcDeF.casecmp(:abcde)     #=> 1
- *   :aBcDeF.casecmp(:abcdef)    #=> 0
- *   :aBcDeF.casecmp(:abcdefg)   #=> -1
- *   :abcdef.casecmp(:ABCDEF)    #=> 0
+ *    :aBcDeF.casecmp(:abcde)   # => 1
+ *    :aBcDeF.casecmp(:abcdef)  # => 0
+ *    :aBcDeF.casecmp(:abcdefg) # => -1
+ *    :abcdef.casecmp(:ABCDEF)  # => 0
  *
- * +nil+ is returned if the two symbols have incompatible encodings,
- * or if +other_symbol+ is not a symbol.
+ *  Returns +nil+ if the two symbols have incompatible encodings,
+ *  or if +other_symbol+ is not a symbol:
  *
- *   :foo.casecmp(2)   #=> nil
- *   "\u{e4 f6 fc}".encode("ISO-8859-1").to_sym.casecmp(:"\u{c4 d6 dc}")   #=> nil
+ *    sym = "\u{e4 f6 fc}".encode("ISO-8859-1").to_sym
+ *    other_sym = :"\u{c4 d6 dc}"
+ *    sym.casecmp(other_sym) # => nil
+ *    :foo.casecmp(2)        # => nil
+ *
+ *  Currently, case-insensitivity only works on characters A-Z/a-z,
+ *  not all of Unicode. This is different from Symbol#casecmp?.
+ *
+ *  Related: Symbol#casecmp?.
+ *
  */
 
 static VALUE
@@ -11531,23 +11547,30 @@ sym_casecmp(VALUE sym, VALUE other)
 }
 
 /*
- * call-seq:
- *   sym.casecmp?(other_symbol)   -> true, false, or nil
+ *  call-seq:
+ *    casecmp?(other_symbol) -> true, false, or nil
  *
- * Returns +true+ if +sym+ and +other_symbol+ are equal after
- * Unicode case folding, +false+ if they are not equal.
+ *  Returns +true+ if +sym+ and +other_symbol+ are equal after
+ *  Unicode case folding, +false+ if they are not equal:
  *
- *   :aBcDeF.casecmp?(:abcde)     #=> false
- *   :aBcDeF.casecmp?(:abcdef)    #=> true
- *   :aBcDeF.casecmp?(:abcdefg)   #=> false
- *   :abcdef.casecmp?(:ABCDEF)    #=> true
- *   :"\u{e4 f6 fc}".casecmp?(:"\u{c4 d6 dc}")   #=> true
+ *    :aBcDeF.casecmp?(:abcde)                  # => false
+ *    :aBcDeF.casecmp?(:abcdef)                 # => true
+ *    :aBcDeF.casecmp?(:abcdefg)                # => false
+ *    :abcdef.casecmp?(:ABCDEF)                 # => true
+ *    :"\u{e4 f6 fc}".casecmp?(:"\u{c4 d6 dc}") #=> true
  *
- * +nil+ is returned if the two symbols have incompatible encodings,
- * or if +other_symbol+ is not a symbol.
+ *  Returns +nil+ if the two symbols have incompatible encodings,
+ *  or if +other_symbol+ is not a symbol:
  *
- *   :foo.casecmp?(2)   #=> nil
- *   "\u{e4 f6 fc}".encode("ISO-8859-1").to_sym.casecmp?(:"\u{c4 d6 dc}")   #=> nil
+ *    sym = "\u{e4 f6 fc}".encode("ISO-8859-1").to_sym
+ *    other_sym = :"\u{c4 d6 dc}"
+ *    sym.casecmp?(other_sym) # => nil
+ *    :foo.casecmp?(2)        # => nil
+ *
+ *  See {Case Mapping}[doc/case_mapping_rdoc.html].
+ *
+ *  Related: Symbol#casecmp.
+ *
  */
 
 static VALUE
@@ -11644,11 +11667,13 @@ sym_empty(VALUE sym)
 }
 
 /*
- * call-seq:
- *   sym.upcase              -> symbol
- *   sym.upcase([options])   -> symbol
+ *  call-seq:
+ *    upcase(*options) -> symbol
  *
- * Same as <code>sym.to_s.upcase.intern</code>.
+ *  Equivalent to <tt>sym.to_s.upcase.to_sym</tt>.
+ *
+ *  See String#upcase.
+ *
  */
 
 static VALUE
@@ -11658,11 +11683,15 @@ sym_upcase(int argc, VALUE *argv, VALUE sym)
 }
 
 /*
- * call-seq:
- *   sym.downcase              -> symbol
- *   sym.downcase([options])   -> symbol
+ *  call-seq:
+ *    downcase(*options) -> symbol
  *
- * Same as <code>sym.to_s.downcase.intern</code>.
+ *  Equivalent to <tt>sym.to_s.downcase.to_sym</tt>.
+ *
+ *  See String#downcase.
+ *
+ *  Related: Symbol#upcase.
+ *
  */
 
 static VALUE
@@ -11672,11 +11701,13 @@ sym_downcase(int argc, VALUE *argv, VALUE sym)
 }
 
 /*
- * call-seq:
- *   sym.capitalize              -> symbol
- *   sym.capitalize([options])   -> symbol
+ *  call-seq:
+ *    capitalize(*options) -> symbol
  *
- * Same as <code>sym.to_s.capitalize.intern</code>.
+ *  Equivalent to <tt>sym.to_s.capitalize.to_sym</tt>.
+ *
+ *  See String#capitalize.
+ *
  */
 
 static VALUE
@@ -11686,11 +11717,13 @@ sym_capitalize(int argc, VALUE *argv, VALUE sym)
 }
 
 /*
- * call-seq:
- *   sym.swapcase              -> symbol
- *   sym.swapcase([options])   -> symbol
+ *  call-seq:
+ *    swapcase(*options) -> symbol
  *
- * Same as <code>sym.to_s.swapcase.intern</code>.
+ *  Equivalent to <tt>sym.to_s.swapcase.to_sym</tt>.
+ *
+ *  See String#swapcase.
+ *
  */
 
 static VALUE
