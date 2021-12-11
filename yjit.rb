@@ -1,10 +1,13 @@
-# This module allows for introspection on YJIT, CRuby's experimental in-process
-# just-in-time compiler. This module is for development purposes only;
-# everything in this module is highly implementation specific and comes with no
+# frozen_string_literal: true
+
+# This module allows for introspection of YJIT, CRuby's experimental in-process
+# just-in-time compiler. This module exists only to help develop YJIT, as such,
+# everything in the module is highly implementation specific and comes with no
 # API stability guarantee whatsoever.
 #
-# This module is only defined when YJIT has support for the particular platform
-# on which CRuby is built.
+# This module may not exist if YJIT does not support the particular platform
+# for which CRuby is built. There is also no API stability guarantee as to in
+# what situations this module is defined.
 module RubyVM::YJIT
   if defined?(Disasm)
     def self.disasm(iseq, tty: $stdout && $stdout.tty?)
