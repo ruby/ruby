@@ -390,16 +390,7 @@ class Reline::Windows
   end
 
   def self.clear_screen
-    return unless csbi = get_console_screen_buffer_info
-    buffer_width = csbi[0, 2].unpack1('S')
-    attributes = csbi[8, 2].unpack1('S')
-    _window_left, window_top, _window_right, window_bottom = *csbi[10,8].unpack('S*')
-    fill_length = buffer_width * (window_bottom - window_top + 1)
-    screen_topleft = window_top * 65536
-    written = 0.chr * 4
-    @@FillConsoleOutputCharacter.call(@@hConsoleHandle, 0x20, fill_length, screen_topleft, written)
-    @@FillConsoleOutputAttribute.call(@@hConsoleHandle, attributes, fill_length, screen_topleft, written)
-    @@SetConsoleCursorPosition.call(@@hConsoleHandle, screen_topleft)
+    @@output.write "\e[2J" "\e[H"
   end
 
   def self.set_screen_size(rows, columns)
