@@ -1259,7 +1259,7 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
 	return rb_proc_get_iseq(block->as.proc, is_proc);
       case block_type_ifunc:
 	{
-	    const struct vm_ifunc *ifunc = block->as.captured.code.ifunc;
+            const struct vm_ifunc *ifunc = block->as.captured.code.ifunc;
 	    if (IS_METHOD_PROC_IFUNC(ifunc)) {
 		/* method(:foo).to_proc */
 		if (is_proc) *is_proc = 0;
@@ -2910,6 +2910,69 @@ rb_method_location(VALUE method)
     return method_def_location(rb_method_def(method));
 }
 
+static const rb_method_definition_t *
+vm_proc_method_def(VALUE procval)
+{
+    const rb_proc_t *proc;
+    const struct rb_block *block;
+    const struct vm_ifunc *ifunc;
+
+    GetProcPtr(procval, proc);
+    block = &proc->block;
+
+    if (vm_block_type(block) == block_type_ifunc &&
+        IS_METHOD_PROC_IFUNC(ifunc = block->as.captured.code.ifunc)) {
+        return rb_method_def((VALUE)ifunc->data);
+    }
+    else {
+        return NULL;
+    }
+}
+
+static VALUE
+method_def_parameters(const rb_method_definition_t *def)
+{
+    const rb_iseq_t *iseq;
+    const rb_method_definition_t *bmethod_def;
+
+    switch (def->type) {
+      case VM_METHOD_TYPE_ISEQ:
+        iseq = method_def_iseq(def);
+        return rb_iseq_parameters(iseq, 0);
+      case VM_METHOD_TYPE_BMETHOD:
+        if ((iseq = method_def_iseq(def)) != NULL) {
+            return rb_iseq_parameters(iseq, 0);
+        }
+        else if ((bmethod_def = vm_proc_method_def(def->body.bmethod.proc)) != NULL) {
+            return method_def_parameters(bmethod_def);
+        }
+        break;
+
+      case VM_METHOD_TYPE_ALIAS:
+        return method_def_parameters(def->body.alias.original_me->def);
+
+      case VM_METHOD_TYPE_OPTIMIZED:
+        if (def->body.optimized.type == OPTIMIZED_METHOD_TYPE_STRUCT_ASET) {
+            VALUE param = rb_ary_new_from_args(2, ID2SYM(rb_intern("req")), ID2SYM(rb_intern("_")));
+            return rb_ary_new_from_args(1, param);
+        }
+        break;
+
+      case VM_METHOD_TYPE_CFUNC:
+      case VM_METHOD_TYPE_ATTRSET:
+      case VM_METHOD_TYPE_IVAR:
+      case VM_METHOD_TYPE_ZSUPER:
+      case VM_METHOD_TYPE_UNDEF:
+      case VM_METHOD_TYPE_NOTIMPLEMENTED:
+      case VM_METHOD_TYPE_MISSING:
+      case VM_METHOD_TYPE_REFINED:
+        break;
+    }
+
+    return rb_unnamed_parameters(method_def_aritry(def));
+
+}
+
 /*
  * call-seq:
  *    meth.parameters  -> array
@@ -2932,11 +2995,7 @@ rb_method_location(VALUE method)
 static VALUE
 rb_method_parameters(VALUE method)
 {
-    const rb_iseq_t *iseq = rb_method_iseq(method);
-    if (!iseq) {
-	return rb_unnamed_parameters(method_arity(method));
-    }
-    return rb_iseq_parameters(iseq, 0);
+    return method_def_parameters(rb_method_def(method));
 }
 
 /*
