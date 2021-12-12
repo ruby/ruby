@@ -2637,10 +2637,8 @@ umethod_bind_call(int argc, VALUE *argv, VALUE method)
  * if there is no maximum.
  */
 static int
-rb_method_entry_min_max_arity(const rb_method_entry_t *me, int *max)
+method_def_min_max_arity(const rb_method_definition_t *def, int *max)
 {
-    const rb_method_definition_t *def = me->def;
-
   again:
     if (!def) return *max = 0;
     switch (def->type) {
@@ -2696,15 +2694,21 @@ rb_method_entry_min_max_arity(const rb_method_entry_t *me, int *max)
 	*max = UNLIMITED_ARGUMENTS;
 	return 0;
     }
-    rb_bug("rb_method_entry_min_max_arity: invalid method entry type (%d)", def->type);
+    rb_bug("method_def_min_max_arity: invalid method entry type (%d)", def->type);
     UNREACHABLE_RETURN(Qnil);
+}
+
+static int
+method_def_aritry(const rb_method_definition_t *def)
+{
+    int max, min = method_def_min_max_arity(def, &max);
+    return min == max ? min : -min-1;
 }
 
 int
 rb_method_entry_arity(const rb_method_entry_t *me)
 {
-    int max, min = rb_method_entry_min_max_arity(me, &max);
-    return min == max ? min : -min-1;
+    return method_def_aritry(me->def);
 }
 
 /*
@@ -2786,7 +2790,7 @@ method_min_max_arity(VALUE method, int *max)
     const struct METHOD *data;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    return rb_method_entry_min_max_arity(data->me, max);
+    return method_def_min_max_arity(data->me->def, max);
 }
 
 int
