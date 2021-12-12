@@ -609,8 +609,9 @@ void rb_objspace_call_finalizer(struct rb_objspace *);
 typedef struct rb_hook_list_struct {
     struct rb_event_hook_struct *hooks;
     rb_event_flag_t events;
-    unsigned int need_clean;
     unsigned int running;
+    bool need_clean;
+    bool is_local;
 } rb_hook_list_t;
 
 
