@@ -497,6 +497,21 @@ module TestStruct
     assert_equal(42, x.public_send("a"))
   end
 
+  def test_parameters
+    klass = @Struct.new(:a)
+    assert_equal [], klass.instance_method(:a).parameters
+    # NOTE: :_ may not be a spec.
+    assert_equal [[:req, :_]], klass.instance_method(:a=).parameters
+
+    klass.module_eval do
+      define_method(:b=, &klass.new.method(:a=).to_proc)
+      alias c= a=
+    end
+
+    assert_equal [[:req, :_]], klass.instance_method(:b=).parameters
+    assert_equal [[:req, :_]], klass.instance_method(:c=).parameters
+  end
+
   class TopStruct < Test::Unit::TestCase
     include TestStruct
 
