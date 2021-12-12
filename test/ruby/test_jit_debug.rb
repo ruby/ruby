@@ -11,7 +11,7 @@ class TestJITDebug < TestJIT
 
   def setup
     super
-    # let `#eval_with_jit` use --jit-debug
-    @jit_debug = true
+    # let `#eval_with_jit` use --mjit-debug
+    @mjit_debug = true
   end
 end

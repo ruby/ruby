@@ -42,7 +42,7 @@ module JITSupport
     args << '--disable-yjit'
     args << '--mjit-wait' if wait
     args << '--mjit-save-temps' if save_temps
-    args << '--mjit-debug' if defined?(@jit_debug) && @jit_debug
+    args << '--mjit-debug' if defined?(@mjit_debug) && @mjit_debug
     args << '-e' << script
     base_env = { 'MJIT_SEARCH_BUILD_DIR' => 'true' } # workaround to skip requiring `make install` for `make test-all`
     if preloadenv = RbConfig::CONFIG['PRELOADENV'] and !preloadenv.empty?

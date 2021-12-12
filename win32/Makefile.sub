@@ -1322,14 +1322,14 @@ clean-local::
 	$(Q)$(RM) $(arch_hdrdir)/rb_mjit_header-*.$(OBJEXT)
 
 # Non-mswin environment is not using prebuilt precompiled header because upgrading compiler
-# or changing compiler options may break MJIT so build (currently only by --jit-debug though).
+# or changing compiler options may break MJIT so build (currently only by --mjit-debug though).
 #
 # But mswin is building precompiled header because cl.exe cannot leave macro after preprocess.
 # As a workaround to use macro without installing many source files, it uses precompiled header
 # without sufficient guard for a broken build.
 #
 # TODO: Fix the above issue by including VC version in header name, and create another header
-# for --jit-debug as well.
+# for --mjit-debug as well.
 $(TIMESTAMPDIR)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=).time: probes.h vm.$(OBJEXT)
 	$(ECHO) building $(@F:.time=.pch)
 	$(Q) $(CC) -DMJIT_HEADER $(CFLAGS: -Zi = -Z7 ) $(XCFLAGS:-DRUBY_EXPORT =) -URUBY_EXPORT $(CPPFLAGS) $(srcdir)/vm.c -c -Yc \

@@ -226,9 +226,9 @@ class TestRubyOptions < Test::Unit::TestCase
     return if yjit_force_enabled?
 
     [
-      %w(--version --jit --disable=jit),
-      %w(--version --enable=jit --disable=jit),
-      %w(--version --enable-jit --disable-jit),
+      %w(--version --mjit --disable=mjit),
+      %w(--version --enable=mjit --disable=mjit),
+      %w(--version --enable-mjit --disable-mjit),
     ].each do |args|
       assert_in_out_err([env] + args) do |r, e|
         assert_match(VERSION_PATTERN, r[0])
@@ -239,16 +239,16 @@ class TestRubyOptions < Test::Unit::TestCase
 
     if JITSupport.supported?
       [
-        %w(--version --jit),
-        %w(--version --enable=jit),
-        %w(--version --enable-jit),
+        %w(--version --mjit),
+        %w(--version --enable=mjit),
+        %w(--version --enable-mjit),
       ].each do |args|
         assert_in_out_err([env] + args) do |r, e|
           assert_match(VERSION_PATTERN_WITH_JIT, r[0])
           if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # checking -DMJIT_FORCE_ENABLE
             assert_equal(RUBY_DESCRIPTION, r[0])
           else
-            assert_equal(EnvUtil.invoke_ruby([env, '--jit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
+            assert_equal(EnvUtil.invoke_ruby([env, '--mjit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
           end
           assert_equal([], e)
         end
