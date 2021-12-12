@@ -1233,7 +1233,7 @@ outgoing_ids(VALUE self)
 void
 rb_yjit_init(struct rb_yjit_options *options)
 {
-    if (!PLATFORM_SUPPORTED_P || !JIT_ENABLED) {
+    if (!YJIT_SUPPORTED_P || !JIT_ENABLED) {
         return;
     }
 

@@ -15,6 +15,13 @@
 # define YJIT_STATS RUBY_DEBUG
 #endif
 
+// We generate x86 assembly and rely on mmap(2).
+#if defined(__x86_64__) && !defined(_WIN32)
+# define YJIT_SUPPORTED_P 1
+#else
+# define YJIT_SUPPORTED_P 0
+#endif
+
 struct rb_yjit_options {
     // Enable compilation with YJIT
     bool yjit_enabled;

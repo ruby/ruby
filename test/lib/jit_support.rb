@@ -21,7 +21,7 @@ module JITSupport
   ]
 
   module_function
-  # Run Ruby script with --jit-wait (Synchronous JIT compilation).
+  # Run Ruby script with --mjit-wait (Synchronous JIT compilation).
   # Returns [stdout, stderr]
   def eval_with_jit(env = nil, script, **opts)
     stdout, stderr = nil, nil
@@ -36,13 +36,13 @@ module JITSupport
 
   def eval_with_jit_without_retry(env = nil, script, verbose: 0, min_calls: 5, save_temps: false, max_cache: 1000, wait: true, timeout: JIT_TIMEOUT)
     args = [
-      '--disable-gems', "--jit-verbose=#{verbose}",
-      "--jit-min-calls=#{min_calls}", "--jit-max-cache=#{max_cache}",
+      '--disable-gems', "--mjit-verbose=#{verbose}",
+      "--mjit-min-calls=#{min_calls}", "--mjit-max-cache=#{max_cache}",
     ]
     args << '--disable-yjit'
-    args << '--jit-wait' if wait
-    args << '--jit-save-temps' if save_temps
-    args << '--jit-debug' if defined?(@jit_debug) && @jit_debug
+    args << '--mjit-wait' if wait
+    args << '--mjit-save-temps' if save_temps
+    args << '--mjit-debug' if defined?(@jit_debug) && @jit_debug
     args << '-e' << script
     base_env = { 'MJIT_SEARCH_BUILD_DIR' => 'true' } # workaround to skip requiring `make install` for `make test-all`
     if preloadenv = RbConfig::CONFIG['PRELOADENV'] and !preloadenv.empty?
