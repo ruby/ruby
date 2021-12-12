@@ -768,7 +768,7 @@ str = ARGV.first
 if str
   str = str.b[/\\A_(.*)_\\z/, 1]
   if str and Gem::Version.correct?(str)
-    version = str
+    #{explicit_version_requirement(spec.name)}
     ARGV.shift
   end
 end
@@ -788,6 +788,16 @@ TEXT
     <<-TEXT
 
 Gem.use_gemdeps
+TEXT
+  end
+
+  def explicit_version_requirement(name)
+    code = "version = str"
+    return code unless name == "bundler"
+
+    code += <<-TEXT
+
+    ENV['BUNDLER_VERSION'] = str
 TEXT
   end
 
