@@ -3177,8 +3177,7 @@ primary		: literal
 
 			switch (nd_type($2)) {
 			  case NODE_LASGN:
-			  case NODE_DASGN:
-			  case NODE_DASGN_CURR: /* e.each {|internal_var| a = internal_var; ... } */
+			  case NODE_DASGN: /* e.each {|internal_var| a = internal_var; ... } */
 			    $2->nd_value = internal_var;
 			    id = 0;
 			    m->nd_plen = 1;
@@ -10879,11 +10878,11 @@ assignable0(struct parser_params *p, ID id, const char **err)
 			      NUMPARAM_ID_TO_IDX(id));
 		return -1;
 	    }
-	    if (dvar_curr(p, id)) return NODE_DASGN_CURR;
+	    if (dvar_curr(p, id)) return NODE_DASGN;
 	    if (dvar_defined(p, id)) return NODE_DASGN;
 	    if (local_id(p, id)) return NODE_LASGN;
 	    dyna_var(p, id);
-	    return NODE_DASGN_CURR;
+	    return NODE_DASGN;
 	}
 	else {
 	    if (!local_id(p, id)) local_var(p, id);
@@ -10910,7 +10909,6 @@ assignable(struct parser_params *p, ID id, NODE *val, const YYLTYPE *loc)
     const char *err = 0;
     int node_type = assignable0(p, id, &err);
     switch (node_type) {
-      case NODE_DASGN_CURR: return NEW_DASGN_CURR(id, val, loc);
       case NODE_DASGN: return NEW_DASGN(id, val, loc);
       case NODE_LASGN: return NEW_LASGN(id, val, loc);
       case NODE_GASGN: return NEW_GASGN(id, val, loc);
@@ -11122,7 +11120,6 @@ mark_lvar_used(struct parser_params *p, NODE *rhs)
 	}
 	break;
       case NODE_DASGN:
-      case NODE_DASGN_CURR:
 	if (dvar_defined_ref(p, rhs->nd_vid, &vidp)) {
 	    if (vidp) *vidp |= LVAR_USED;
 	}
@@ -11397,7 +11394,6 @@ node_assign(struct parser_params *p, NODE *lhs, NODE *rhs, struct lex_context ct
       case NODE_IASGN:
       case NODE_LASGN:
       case NODE_DASGN:
-      case NODE_DASGN_CURR:
       case NODE_MASGN:
       case NODE_CVASGN:
 	lhs->nd_value = rhs;
@@ -11477,7 +11473,6 @@ value_expr_check(struct parser_params *p, NODE *node)
 
 	  case NODE_LASGN:
 	  case NODE_DASGN:
-	  case NODE_DASGN_CURR:
 	  case NODE_MASGN:
 	    mark_lvar_used(p, node);
 	    return NULL;
@@ -11713,7 +11708,6 @@ assign_in_cond(struct parser_params *p, NODE *node)
       case NODE_MASGN:
       case NODE_LASGN:
       case NODE_DASGN:
-      case NODE_DASGN_CURR:
       case NODE_GASGN:
       case NODE_IASGN:
 	break;

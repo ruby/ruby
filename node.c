@@ -407,16 +407,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	}
 	return;
       case NODE_DASGN:
-	ANN("dynamic variable assignment (out of current scope)");
+	ANN("dynamic variable assignment");
 	ANN("format: [nd_vid](dvar) = [nd_value]");
 	ANN("example: x = nil; 1.times { x = foo }");
-	F_ID(nd_vid, "local variable");
-	LAST_NODE;
-	F_NODE(nd_value, "rvalue");
-	return;
-      case NODE_DASGN_CURR:
-	ANN("dynamic variable assignment (in current scope)");
-	ANN("format: [nd_vid](current dvar) = [nd_value]");
 	ANN("example: 1.times { x = foo }");
 	F_ID(nd_vid, "local variable");
 	if (NODE_REQUIRED_KEYWORD_P(node)) {
