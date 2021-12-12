@@ -662,6 +662,8 @@ SO_BUSY_POLL    nil     Set the threshold in microseconds for low latency pollin
 SO_MAX_PACING_RATE      nil     Cap the rate computed by transport layer. [bytes per second] (Linux 3.13)
 SO_BPF_EXTENSIONS       nil     Query supported BPF extensions (Linux 3.14)
 SO_SETFIB       nil     Set the associated routing table for the socket (FreeBSD)
+SO_INCOMING_CPU         nil     Receive the cpu attached to the socket (Linux 3.19)
+SO_INCOMING_NAPI_ID     nil     Receive the napi ID attached to a RX queue (Linux 4.12)
 
 SOPRI_INTERACTIVE	nil	Interactive socket priority
 SOPRI_NORMAL	nil	Normal socket priority
