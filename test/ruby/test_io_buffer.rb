@@ -1,5 +1,7 @@
 # frozen_string_literal: false
 
+require 'tempfile'
+
 class TestIOBuffer < Test::Unit::TestCase
   experimental = Warning[:experimental]
   begin
@@ -269,5 +271,57 @@ class TestIOBuffer < Test::Unit::TestCase
     thread.join
 
     input.close
+  end
+
+  def test_read
+    io = Tempfile.new
+    io.write("Hello World")
+    io.seek(0)
+
+    buffer = IO::Buffer.new(128)
+    buffer.read(io, 5)
+
+    assert_equal "Hello", buffer.get_string(0, 5)
+  ensure
+    io.close!
+  end
+
+  def test_write
+    io = Tempfile.new
+
+    buffer = IO::Buffer.new(128)
+    buffer.set_string("Hello")
+    buffer.write(io, 5)
+
+    io.seek(0)
+    assert_equal "Hello", io.read(5)
+  ensure
+    io.close!
+  end
+
+  def test_pread
+    io = Tempfile.new
+    io.write("Hello World")
+    io.seek(0)
+
+    buffer = IO::Buffer.new(128)
+    buffer.pread(io, 5, 6)
+
+    assert_equal "World", buffer.get_string(0, 5)
+  ensure
+    io.close!
+  end
+
+  def test_pwrite
+    io = Tempfile.new
+
+    buffer = IO::Buffer.new(128)
+    buffer.set_string("World")
+    buffer.pwrite(io, 5, 6)
+
+    io.seek(6)
+    assert_equal "World", io.read(5)
+  ensure
+    io.close!
   end
 end

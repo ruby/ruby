@@ -80,6 +80,12 @@ VALUE rb_io_buffer_transfer(VALUE self);
 void rb_io_buffer_resize(VALUE self, size_t size);
 void rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length);
 
+// The length is the minimum required length.
+VALUE rb_io_buffer_read(VALUE self, VALUE io, size_t length);
+VALUE rb_io_buffer_pread(VALUE self, VALUE io, size_t length, off_t offset);
+VALUE rb_io_buffer_write(VALUE self, VALUE io, size_t length);
+VALUE rb_io_buffer_pwrite(VALUE self, VALUE io, size_t length, off_t offset);
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif  /* RUBY_IO_BUFFER_T */
