@@ -1194,8 +1194,8 @@ class TestJIT < Test::Unit::TestCase
     out, err = eval_with_jit(script, verbose: 1, min_calls: min_calls, max_cache: max_cache)
     success_actual = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
     recompile_actual = err.scan(/^#{JIT_RECOMPILE_PREFIX}:/).size
-    # Add --jit-verbose=2 logs for cl.exe because compiler's error message is suppressed
-    # for cl.exe with --jit-verbose=1. See `start_process` in mjit_worker.c.
+    # Add --mjit-verbose=2 logs for cl.exe because compiler's error message is suppressed
+    # for cl.exe with --mjit-verbose=1. See `start_process` in mjit_worker.c.
     if RUBY_PLATFORM.match?(/mswin/) && success_count != success_actual
       out2, err2 = eval_with_jit(script, verbose: 2, min_calls: min_calls, max_cache: max_cache)
     end

@@ -103,7 +103,7 @@ void rb_warning_category_update(unsigned int mask, unsigned int bits);
     SEP \
     X(frozen_string_literal) \
     SEP \
-    X(jit) \
+    X(mjit) \
     SEP \
     X(yjit)
     /* END OF FEATURES */
@@ -218,7 +218,7 @@ enum {
 	& ~FEATURE_BIT(gems)
 #endif
 	& ~FEATURE_BIT(frozen_string_literal)
-        & ~FEATURE_BIT(jit)
+        & ~FEATURE_BIT(mjit)
         & ~FEATURE_BIT(yjit)
 	)
 };
@@ -233,7 +233,7 @@ cmdline_options_init(ruby_cmdline_options_t *opt)
     opt->intern.enc.index = -1;
     opt->features.set = DEFAULT_FEATURES;
 #ifdef MJIT_FORCE_ENABLE /* to use with: ./configure cppflags="-DMJIT_FORCE_ENABLE" */
-    opt->features.set |= FEATURE_BIT(jit);
+    opt->features.set |= FEATURE_BIT(mjit);
 #elif defined(YJIT_FORCE_ENABLE)
     opt->features.set |= FEATURE_BIT(yjit);
 #endif
@@ -289,6 +289,11 @@ usage(const char *name, int help, int highlight, int columns)
     (unsigned short)sizeof(shortopt), \
     (unsigned short)sizeof(longopt), \
 }
+#if YJIT_SUPPORTED_P
+# define PLATFORM_JIT_OPTION "--yjit"
+#else
+# define PLATFORM_JIT_OPTION "--mjit"
+#endif
     static const struct message usage_msg[] = {
 	M("-0[octal]",	   "",			   "specify record separator (\\0, if no argument)"),
 	M("-a",		   "",			   "autosplit mode with -n or -p (splits $_ into $F)"),
@@ -310,8 +315,8 @@ usage(const char *name, int help, int highlight, int columns)
 	M("-w",		   "",			   "turn warnings on for your script"),
 	M("-W[level=2|:category]",   "",	   "set warning level; 0=silence, 1=medium, 2=verbose"),
 	M("-x[directory]", "",			   "strip off text before #!ruby line and perhaps cd to directory"),
-        M("--jit",         "",                     "enable JIT with default options (experimental)"),
-        M("--jit-[option]","",                     "enable JIT with an option (experimental)"),
+        M("--jit",         "",                     "enable JIT for the platform, same as " PLATFORM_JIT_OPTION " (experimental)"),
+        M("--mjit",        "",                     "enable C compiler-based JIT compiler (experimental)"),
         M("--yjit",        "",                     "enable in-process JIT compiler (experimental)"),
 	M("-h",		   "",			   "show this message, --help for more info"),
     };
@@ -319,7 +324,7 @@ usage(const char *name, int help, int highlight, int columns)
 	M("--copyright",                            "", "print the copyright"),
 	M("--dump={insns|parsetree|...}[,...]",     "",
           "dump debug information. see below for available dump list"),
-	M("--enable={jit|rubyopt|...}[,...]", ", --disable={jit|rubyopt|...}[,...]",
+	M("--enable={mjit|rubyopt|...}[,...]", ", --disable={mjit|rubyopt|...}[,...]",
 	  "enable or disable features. see below for available features"),
 	M("--external-encoding=encoding",           ", --internal-encoding=encoding",
 	  "specify the default external or internal character encoding"),
@@ -340,7 +345,7 @@ usage(const char *name, int help, int highlight, int columns)
 	M("did_you_mean", "",   "did_you_mean (default: "DEFAULT_RUBYGEMS_ENABLED")"),
 	M("rubyopt", "",        "RUBYOPT environment variable (default: enabled)"),
 	M("frozen-string-literal", "", "freeze all string literals (default: disabled)"),
-        M("jit", "",            "JIT compiler (default: disabled)"),
+        M("mjit", "",           "C compiler-based JIT compiler (default: disabled)"),
         M("yjit", "",           "in-process JIT compiler (default: disabled)"),
     };
     static const struct message warn_categories[] = {
@@ -348,13 +353,13 @@ usage(const char *name, int help, int highlight, int columns)
         M("experimental", "",     "experimental features"),
     };
     static const struct message mjit_options[] = {
-        M("--jit-warnings",      "", "Enable printing JIT warnings"),
-        M("--jit-debug",         "", "Enable JIT debugging (very slow), or add cflags if specified"),
-        M("--jit-wait",          "", "Wait until JIT compilation finishes every time (for testing)"),
-        M("--jit-save-temps",    "", "Save JIT temporary files in $TMP or /tmp (for testing)"),
-        M("--jit-verbose=num",   "", "Print JIT logs of level num or less to stderr (default: 0)"),
-        M("--jit-max-cache=num", "", "Max number of methods to be JIT-ed in a cache (default: 100)"),
-        M("--jit-min-calls=num", "", "Number of calls to trigger JIT (for testing, default: 10000)"),
+        M("--mjit-warnings",      "", "Enable printing JIT warnings"),
+        M("--mjit-debug",         "", "Enable JIT debugging (very slow), or add cflags if specified"),
+        M("--mjit-wait",          "", "Wait until JIT compilation finishes every time (for testing)"),
+        M("--mjit-save-temps",    "", "Save JIT temporary files in $TMP or /tmp (for testing)"),
+        M("--mjit-verbose=num",   "", "Print JIT logs of level num or less to stderr (default: 0)"),
+        M("--mjit-max-cache=num", "", "Max number of methods to be JIT-ed in a cache (default: 100)"),
+        M("--mjit-min-calls=num", "", "Number of calls to trigger JIT (for testing, default: 10000)"),
     };
     static const struct message yjit_options[] = {
 #if YJIT_STATS
@@ -951,10 +956,10 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
     EACH_FEATURES(SET_FEATURE, ;);
     if (NAME_MATCH_P("all", str, len)) {
         // YJIT and MJIT cannot be enabled at the same time. We enable only YJIT for --enable=all.
-#ifdef MJIT_FORCE_ENABLE
+#if defined(MJIT_FORCE_ENABLE) || !YJIT_SUPPORTED_P
         mask &= ~(FEATURE_BIT(yjit));
 #else
-        mask &= ~(FEATURE_BIT(jit));
+        mask &= ~(FEATURE_BIT(mjit));
 #endif
         goto found;
     }
@@ -1509,10 +1514,19 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		opt->verbose = 1;
 		ruby_verbose = Qtrue;
 	    }
-            else if (strncmp("jit", s, 3) == 0) {
+            else if (strcmp("jit", s) == 0) {
+#if USE_MJIT && YJIT_SUPPORTED_P
+                FEATURE_SET(opt->features, FEATURE_BIT(yjit));
+#elif USE_MJIT && !YJIT_SUPPORTED_P
+                FEATURE_SET(opt->features, FEATURE_BIT(mjit));
+#else
+                rb_warn("Ruby was built without JIT support");
+#endif
+            }
+            else if (strncmp("mjit", s, 4) == 0) {
 #if USE_MJIT
-                FEATURE_SET(opt->features, FEATURE_BIT(jit));
-                setup_mjit_options(s + 3, &opt->mjit);
+                FEATURE_SET(opt->features, FEATURE_BIT(mjit));
+                setup_mjit_options(s + 4, &opt->mjit);
 #else
                 rb_warn("MJIT support is disabled.");
 #endif
@@ -1885,7 +1899,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
 #if USE_MJIT
-    if (opt->features.set & FEATURE_BIT(jit)) {
+    if (opt->features.set & FEATURE_BIT(mjit)) {
         opt->mjit.on = TRUE; /* set mjit.on for ruby_show_version() API and check to call mjit_init() */
     }
 #endif
