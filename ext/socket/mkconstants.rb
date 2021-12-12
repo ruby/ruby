@@ -664,6 +664,8 @@ SO_MAX_PACING_RATE      nil     Cap the rate computed by transport layer. [bytes
 SO_BPF_EXTENSIONS       nil     Query supported BPF extensions (Linux 3.14)
 SO_SETFIB       nil     Set the associated routing table for the socket (FreeBSD)
 SO_RTABLE               nil     Set the routing table for this socket (OpenBSD)
+SO_INCOMING_CPU         nil     Receive the cpu attached to the socket (Linux 3.19)
+SO_INCOMING_NAPI_ID     nil     Receive the napi ID attached to a RX queue (Linux 4.12)
 
 SOPRI_INTERACTIVE	nil	Interactive socket priority
 SOPRI_NORMAL	nil	Normal socket priority
