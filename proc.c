@@ -2684,7 +2684,7 @@ method_def_min_max_arity(const rb_method_definition_t *def, int *max)
             return 0;
           case OPTIMIZED_METHOD_TYPE_STRUCT_ASET:
             *max = 1;
-            return 0;
+            return 1;
 	  default:
 	    break;
 	}
