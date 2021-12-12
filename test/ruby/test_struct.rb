@@ -503,7 +503,7 @@ module TestStruct
     assert_equal 1, klass.instance_method(:a=).arity
 
     klass.module_eval do
-      define_method(:b=, &klass.new.method(:a=).to_proc)
+      define_method(:b=, instance_method(:a=))
       alias c= a=
     end
 
@@ -518,7 +518,7 @@ module TestStruct
     assert_equal [[:req, :_]], klass.instance_method(:a=).parameters
 
     klass.module_eval do
-      define_method(:b=, &klass.new.method(:a=).to_proc)
+      define_method(:b=, instance_method(:a=))
       alias c= a=
     end
 
