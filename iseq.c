@@ -3359,6 +3359,7 @@ iseq_add_local_tracepoint(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, 
     if (n > 0) {
         if (iseq->aux.exec.local_hooks == NULL) {
             ((rb_iseq_t *)iseq)->aux.exec.local_hooks = RB_ZALLOC(rb_hook_list_t);
+            iseq->aux.exec.local_hooks->is_local = true;
         }
         rb_hook_list_connect_tracepoint((VALUE)iseq, iseq->aux.exec.local_hooks, tpval, target_line);
     }
@@ -3413,9 +3414,7 @@ iseq_remove_local_tracepoint(const rb_iseq_t *iseq, VALUE tpval)
         local_events = iseq->aux.exec.local_hooks->events;
 
         if (local_events == 0) {
-            if (iseq->aux.exec.local_hooks->running == 0) {
-                rb_hook_list_free(iseq->aux.exec.local_hooks);
-            }
+            rb_hook_list_free(iseq->aux.exec.local_hooks);
             ((rb_iseq_t *)iseq)->aux.exec.local_hooks = NULL;
         }
 
