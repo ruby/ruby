@@ -173,6 +173,21 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     assert_equal 'hello', File.read(path)
   end
 
+  def test_cache_update_path_with_utf8_internal_encoding
+    with_internal_encoding('UTF-8') do
+      uri = URI 'http://example/file'
+      path = File.join @tempdir, 'file'
+      data = String.new("\xC8").force_encoding(Encoding::BINARY)
+
+      fetcher = util_fuck_with_fetcher data
+
+      written_data = fetcher.cache_update_path uri, path
+
+      assert_equal data, written_data
+      assert_equal data, File.binread(path)
+    end
+  end
+
   def test_cache_update_path_no_update
     uri = URI 'http://example/file'
     path = File.join @tempdir, 'file'

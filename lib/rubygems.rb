@@ -800,7 +800,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   ##
   # Safely write a file in binary mode on all platforms.
   def self.write_binary(path, data)
-    File.open(path, File::RDWR | File::CREAT | File::BINARY | File::LOCK_EX) do |io|
+    File.open(path, File::RDWR | File::CREAT | File::LOCK_EX, binmode: true) do |io|
       io.write data
     end
   rescue *WRITE_BINARY_ERRORS
