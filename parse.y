@@ -4555,14 +4555,14 @@ p_var_ref	: '^' tIDENTIFIER
 			}
 			$$ = n;
 		    /*% %*/
-		    /*% ripper: var_ref!($2) %*/
+		    /*% ripper: pin!(var_ref!($2)) %*/
 		    }
                 | '^' nonlocal_var
 		    {
 		    /*%%%*/
 			if (!($$ = gettable(p, $2, &@$))) $$ = NEW_BEGIN(0, &@$);
 		    /*% %*/
-		    /*% ripper: var_ref!($2) %*/
+		    /*% ripper: pin!(var_ref!($2)) %*/
                     }
 		;
 
@@ -4571,7 +4571,7 @@ p_expr_ref	: '^' tLPAREN expr_value ')'
 		    /*%%%*/
 			$$ = NEW_BEGIN($3, &@$);
 		    /*% %*/
-		    /*% ripper: begin!($3) %*/
+		    /*% ripper: pin!(begin!($3)) %*/
 		    }
 		;
 

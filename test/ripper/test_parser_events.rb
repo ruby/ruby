@@ -1129,6 +1129,38 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal true, thru_parse_error
   end
 
+  def test_pin
+    thru_pin = false
+    tree = parse("case foo; in ^bar; end", :on_pin) { thru_pin = true }
+    assert_equal(true, thru_pin)
+    assert_include(tree, "pin(ref(bar))")
+
+    thru_pin = false
+    tree = parse("case foo; in ^@bar; end", :on_pin) { thru_pin = true }
+    assert_equal(true, thru_pin)
+    assert_include(tree, "pin(ref(@bar))")
+
+    thru_pin = false
+    tree = parse("case foo; in ^@@bar; end", :on_pin) { thru_pin = true }
+    assert_equal(true, thru_pin)
+    assert_include(tree, "pin(ref(@@bar))")
+
+    thru_pin = false
+    tree = parse("case foo; in ^$bar; end", :on_pin) { thru_pin = true }
+    assert_equal(true, thru_pin)
+    assert_include(tree, "pin(ref($bar))")
+
+    thru_pin = false
+    tree = parse("bar = 1; case foo; in ^bar; end", :on_pin) { thru_pin = true }
+    assert_equal(true, thru_pin)
+    assert_include(tree, "pin(ref(bar))")
+
+    thru_pin = false
+    tree = parse("case foo; in ^(bar); end", :on_pin) { thru_pin = true }
+    assert_equal(true, thru_pin)
+    assert_include(tree, "pin(begin(vcall(bar)))")
+  end
+
   def test_qwords_add
     thru_qwords_add = false
     tree = parse('%w[a]', :on_qwords_add) {thru_qwords_add = true}
