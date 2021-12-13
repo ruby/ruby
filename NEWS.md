@@ -197,8 +197,9 @@ Outstanding ones only.
 
 * Method/UnboundMethod
 
-    *   #public?, #private?, #protected? have been added to both
-        Method and UnboundMethod. [[Feature #11689]]
+    *   Method#public?, Method#private?, Method#protected?,
+        UnboundMethod#public?, UnboundMethod#private?,
+        UnboundMethod#protected? have been added. [[Feature #11689]]
 
 * Module
 
