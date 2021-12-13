@@ -267,7 +267,7 @@ Outstanding ones only.
 
     *   TracePoint.allow_reenter is added to allow reenter while TracePoint
         callback.
-        [Feature #15912]
+        [[Feature #15912]]
 
 * $LOAD_PATH
 
