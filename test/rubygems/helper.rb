@@ -1300,6 +1300,15 @@ Also, a list:
     Gem.instance_variable_set :@ruby, orig_ruby
   end
 
+  def with_internal_encoding(encoding)
+    int_enc = Encoding.default_internal
+    silence_warnings { Encoding.default_internal = encoding }
+
+    yield
+  ensure
+    silence_warnings { Encoding.default_internal = int_enc }
+  end
+
   def silence_warnings
     old_verbose, $VERBOSE = $VERBOSE, false
     yield

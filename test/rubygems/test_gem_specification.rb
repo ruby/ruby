@@ -873,24 +873,21 @@ dependencies: []
   end
 
   def test_self_load_utf8_with_ascii_encoding
-    int_enc = Encoding.default_internal
-    silence_warnings { Encoding.default_internal = 'US-ASCII' }
+    with_internal_encoding('US-ASCII') do
+      spec2 = @a2.dup
+      bin = "\u5678".dup
+      spec2.authors = [bin]
+      full_path = spec2.spec_file
+      write_file full_path do |io|
+        io.write spec2.to_ruby_for_cache.force_encoding('BINARY').sub("\\u{5678}", bin.force_encoding('BINARY'))
+      end
 
-    spec2 = @a2.dup
-    bin = "\u5678".dup
-    spec2.authors = [bin]
-    full_path = spec2.spec_file
-    write_file full_path do |io|
-      io.write spec2.to_ruby_for_cache.force_encoding('BINARY').sub("\\u{5678}", bin.force_encoding('BINARY'))
+      spec = Gem::Specification.load full_path
+
+      spec2.files.clear
+
+      assert_equal spec2, spec
     end
-
-    spec = Gem::Specification.load full_path
-
-    spec2.files.clear
-
-    assert_equal spec2, spec
-  ensure
-    silence_warnings { Encoding.default_internal = int_enc }
   end
 
   def test_self_load_legacy_ruby
