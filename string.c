@@ -7159,7 +7159,7 @@ upcase_single(VALUE str)
 
 /*
  *  call-seq:
- *    upcase!(*options) -> self of nil
+ *    upcase!(*options) -> self or nil
  *
  *  Upcases the characters in +self+;
  *  returns +self+ if any changes were made, +nil+ otherwise:
@@ -7206,7 +7206,7 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
  *  Returns a string containing the upcased characters in +self+:
  *
  *     s = 'Hello World!' # => "Hello World!"
- *     s.downcase         # => "hello world!"
+ *     s.upcase           # => "HELLO WORLD!"
  *
  *  The casing may be affected by the given +options+;
  *  see {Case Mapping}[doc/case_mapping_rdoc.html].
@@ -7389,7 +7389,7 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
  *
  *  Returns a string containing the characters in +self+;
  *  the first character is upcased;
- *  the remaining characters are down cased:
+ *  the remaining characters are downcased:
  *
  *     s = 'hello World!' # => "hello World!"
  *     s.capitalize       # => "Hello world!"
