@@ -218,7 +218,7 @@ assert_equal %q{[10, main]}, %q{
 
 %w[break next redo].each do |keyword|
   assert_match %r"Can't escape from eval with #{keyword}\b", %{
-    STDERR.reopen(STDOUT)
+    $stderr = STDOUT
     begin
       eval "0 rescue #{keyword}"
     rescue SyntaxError => e
@@ -228,7 +228,7 @@ assert_equal %q{[10, main]}, %q{
 end
 
 assert_normal_exit %q{
-  STDERR.reopen(STDOUT)
+  $stderr = STDOUT
   class Foo
      def self.add_method
        class_eval("def some-bad-name; puts 'hello' unless @some_variable.some_function(''); end")
