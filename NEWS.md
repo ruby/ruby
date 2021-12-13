@@ -415,6 +415,9 @@ Excluding feature bug fixes.
 * `mandatory_only?` builtin special form to improve performance on
   builtin methods. [[GH-5112]]
 
+* Experimental feature Variable Width Allocation in the garbage collector.
+  [[Feature #18045]] [[Feature #18239]]
+
 ### JIT
 
 * The default `--jit-max-cache` is changed from 100 to 10000.
@@ -558,6 +561,8 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #18229]: https://bugs.ruby-lang.org/issues/18229
 [Feature #18273]: https://bugs.ruby-lang.org/issues/18273
 [Feature #18290]: https://bugs.ruby-lang.org/issues/18290
+[Feature #18045]: https://bugs.ruby-lang.org/issues/18045
+[Feature #18239]: https://bugs.ruby-lang.org/issues/18239
 [GH-1509]: https://github.com/ruby/ruby/pull/1509
 [GH-4815]: https://github.com/ruby/ruby/pull/4815
 [GH-5112]: https://github.com/ruby/ruby/pull/5112
