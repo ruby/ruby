@@ -249,6 +249,12 @@ Outstanding ones only.
         length set by `--backtrace-limit` command line option, is added.
         [[Feature #17479]]
 
+* TracePoint
+
+    *   TracePoint.allow_reenter is added to allow reenter while TracePoint
+        callback.
+        [Feature #15912]
+
 * $LOAD_PATH
 
     *   $LOAD_PATH.resolve_feature_path does not raise. [[Feature #16043]]
@@ -495,6 +501,7 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #14579]: https://bugs.ruby-lang.org/issues/14579
 [Feature #15198]: https://bugs.ruby-lang.org/issues/15198
 [Feature #15211]: https://bugs.ruby-lang.org/issues/15211
+[Feature #15912]: https://bugs.ruby-lang.org/issues/15912
 [Feature #16043]: https://bugs.ruby-lang.org/issues/16043
 [Feature #16806]: https://bugs.ruby-lang.org/issues/16806
 [Feature #17312]: https://bugs.ruby-lang.org/issues/17312
