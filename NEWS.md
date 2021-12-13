@@ -345,6 +345,10 @@ Outstanding ones only.
     * matrix
     * prime
 
+* Coverage measurement nohw supports suspension. You can use `Coverage.suspend`
+  to stop the measurement temporarily, and `Coverage.resume` to restart it.
+  See [[Feature #18176]] in detail.
+
 ## Compatibility issues
 
 Excluding feature bug fixes.
@@ -512,6 +516,7 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #18020]: https://bugs.ruby-lang.org/issues/18020
 [Feature #18029]: https://bugs.ruby-lang.org/issues/18029
 [Feature #18172]: https://bugs.ruby-lang.org/issues/18172
+[Feature #18176]: https://bugs.ruby-lang.org/issues/18176
 [Feature #18229]: https://bugs.ruby-lang.org/issues/18229
 [Feature #18273]: https://bugs.ruby-lang.org/issues/18273
 [Feature #18290]: https://bugs.ruby-lang.org/issues/18290
