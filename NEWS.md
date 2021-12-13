@@ -102,6 +102,10 @@ Note that each entry is kept to a minimum, see links for details.
 
 ## Command line options
 
+* `--disable-gems` is now explicitly declared as "just for debugging".
+  Never use it in any real-world code base.
+  [[Feature #17684]]
+
 ## Core classes updates
 
 Outstanding ones only.
@@ -516,6 +520,7 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #17479]: https://bugs.ruby-lang.org/issues/17479
 [Feature #17490]: https://bugs.ruby-lang.org/issues/17490
 [Feature #17592]: https://bugs.ruby-lang.org/issues/17592
+[Feature #17684]: https://bugs.ruby-lang.org/issues/17684
 [Feature #17724]: https://bugs.ruby-lang.org/issues/17724
 [Feature #17744]: https://bugs.ruby-lang.org/issues/17744
 [Feature #17750]: https://bugs.ruby-lang.org/issues/17750
