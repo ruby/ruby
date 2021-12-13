@@ -193,6 +193,12 @@ Outstanding ones only.
         and will load the file using the given module as the top
         level module. [[Feature #6210]]
 
+* Marshal
+
+    *   Marshal.load now accepts a `freeze: true` option.
+        All returned objects are frozen except for `Class` and
+        `Module` instances. Strings are deduplicated. [[Feature #18148]]
+
 * MatchData
 
     *   MatchData#match is added [[Feature #18172]]
@@ -238,6 +244,11 @@ Outstanding ones only.
 
     *   Update Unicode version to 13.0.0 [[Feature #17750]]
         and Emoji version to 13.0 [[Feature #18029]]
+
+    *   String#unpack and String#unpack1 now accepts an `offset:` keyword
+        argument to start the unpacking after an arbitrary number of bytes
+        have been skipped. If `offset` is outside of the string bounds
+        `ArgumentError` is raised. [[Feature #18254]]
 
 * Queue
 
@@ -563,13 +574,16 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #18020]: https://bugs.ruby-lang.org/issues/18020
 [Feature #18029]: https://bugs.ruby-lang.org/issues/18029
 [Feature #18045]: https://bugs.ruby-lang.org/issues/18045
+[Feature #18148]: https://bugs.ruby-lang.org/issues/18148
 [Feature #18172]: https://bugs.ruby-lang.org/issues/18172
 [Feature #18176]: https://bugs.ruby-lang.org/issues/18176
 [Feature #18190]: https://bugs.ruby-lang.org/issues/18190
 [Feature #18229]: https://bugs.ruby-lang.org/issues/18229
 [Feature #18239]: https://bugs.ruby-lang.org/issues/18239
+[Feature #18254]: https://bugs.ruby-lang.org/issues/18254
 [Feature #18273]: https://bugs.ruby-lang.org/issues/18273
 [Feature #18290]: https://bugs.ruby-lang.org/issues/18290
+
 [GH-1509]: https://github.com/ruby/ruby/pull/1509
 [GH-4815]: https://github.com/ruby/ruby/pull/4815
 [GH-5112]: https://github.com/ruby/ruby/pull/5112
