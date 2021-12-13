@@ -411,7 +411,7 @@ class IPAddr
       raise AddressFamilyError, "unsupported address family"
     end
 
-    return clone.set(begin_addr, @family)..clone.set(end_addr, @family)
+    self.class.new(begin_addr, @family)..self.class.new(end_addr, @family)
   end
 
   # Returns the prefix length in bits for the ipaddr.
@@ -583,6 +583,7 @@ class IPAddr
   # those, such as &, |, include? and ==, accept a string, or a packed
   # in_addr value instead of an IPAddr object.
   def initialize(addr = '::', family = Socket::AF_UNSPEC)
+    @mask_addr = nil
     if !addr.kind_of?(String)
       case family
       when Socket::AF_INET, Socket::AF_INET6

@@ -255,6 +255,28 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal("1:2:3:4:5:6:7:8%ab0", a.to_s)
     assert_raise(IPAddr::InvalidAddressError) { a.zone_id = '%' }
   end
+
+  def test_to_range
+    a1 = IPAddr.new("127.0.0.1")
+    range = a1..a1
+    assert_equal(range, a1.to_range)
+    assert_equal(range, a1.freeze.to_range)
+
+    a2 = IPAddr.new("192.168.0.1/16")
+    range = IPAddr.new("192.168.0.0")..IPAddr.new("192.168.255.255")
+    assert_equal(range, a2.to_range)
+    assert_equal(range, a2.freeze.to_range)
+
+    a3 = IPAddr.new("3ffe:505:2::1")
+    range = a3..a3
+    assert_equal(range, a3.to_range)
+    assert_equal(range, a3.freeze.to_range)
+
+    a4 = IPAddr.new("::ffff/127")
+    range = IPAddr.new("::fffe")..IPAddr.new("::ffff")
+    assert_equal(range, a4.to_range)
+    assert_equal(range, a4.freeze.to_range)
+  end
 end
 
 class TC_Operator < Test::Unit::TestCase
