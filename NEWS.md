@@ -254,6 +254,12 @@ Outstanding ones only.
         length set by `--backtrace-limit` command line option, is added.
         [[Feature #17479]]
 
+* Time
+
+    *   Time.new now accepts optional `in:` keyword argument for the
+        timezone, as well as `Time.at` and `Time.now`, so that is now
+        you can omit minor arguments to `Time.new`. [[Feature #17485]]
+
 * TracePoint
 
     *   TracePoint.allow_reenter is added to allow reenter while TracePoint
@@ -518,6 +524,7 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Bug #17429]:     https://bugs.ruby-lang.org/issues/17429
 [Feature #17470]: https://bugs.ruby-lang.org/issues/17470
 [Feature #17479]: https://bugs.ruby-lang.org/issues/17479
+[Feature #17485]: https://bugs.ruby-lang.org/issues/17485
 [Feature #17490]: https://bugs.ruby-lang.org/issues/17490
 [Feature #17592]: https://bugs.ruby-lang.org/issues/17592
 [Feature #17684]: https://bugs.ruby-lang.org/issues/17684
