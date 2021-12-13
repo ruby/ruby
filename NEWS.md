@@ -503,6 +503,8 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 * Now exceptions raised in finalizers will be printed to `STDERR`, unless
   `$VERBOSE` is `nil`.  [[Feature #17798]]
 
+* `ruby -run -e httpd` displays URLs to access.  [[Feature #17847]]
+
 [Bug #4443]:      https://bugs.ruby-lang.org/issues/4443
 [Feature #6210]:  https://bugs.ruby-lang.org/issues/6210
 [Feature #11256]: https://bugs.ruby-lang.org/issues/11256
@@ -539,6 +541,7 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #17795]: https://bugs.ruby-lang.org/issues/17795
 [Feature #17798]: https://bugs.ruby-lang.org/issues/17798
 [Bug #17827]:     https://bugs.ruby-lang.org/issues/17827
+[Feature #17847]: https://bugs.ruby-lang.org/issues/17847
 [Feature #17853]: https://bugs.ruby-lang.org/issues/17853
 [Bug #18003]:     https://bugs.ruby-lang.org/issues/18003
 [Feature #18008]: https://bugs.ruby-lang.org/issues/18008
