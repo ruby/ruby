@@ -374,6 +374,10 @@ Outstanding ones only.
   to stop the measurement temporarily, and `Coverage.resume` to restart it.
   See [[Feature #18176]] in detail.
 
+* Random::Formatter is moved to random/formatter.rb, so that you can
+  use `Random#hex`, `Random#base64` and so on without SecureRandom.
+  [[Feature #18190]]
+
 ## Compatibility issues
 
 Excluding feature bug fixes.
@@ -550,6 +554,7 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #18029]: https://bugs.ruby-lang.org/issues/18029
 [Feature #18172]: https://bugs.ruby-lang.org/issues/18172
 [Feature #18176]: https://bugs.ruby-lang.org/issues/18176
+[Feature #18190]: https://bugs.ruby-lang.org/issues/18190
 [Feature #18229]: https://bugs.ruby-lang.org/issues/18229
 [Feature #18273]: https://bugs.ruby-lang.org/issues/18273
 [Feature #18290]: https://bugs.ruby-lang.org/issues/18290
