@@ -555,14 +555,14 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #18015]: https://bugs.ruby-lang.org/issues/18015
 [Feature #18020]: https://bugs.ruby-lang.org/issues/18020
 [Feature #18029]: https://bugs.ruby-lang.org/issues/18029
+[Feature #18045]: https://bugs.ruby-lang.org/issues/18045
 [Feature #18172]: https://bugs.ruby-lang.org/issues/18172
 [Feature #18176]: https://bugs.ruby-lang.org/issues/18176
 [Feature #18190]: https://bugs.ruby-lang.org/issues/18190
 [Feature #18229]: https://bugs.ruby-lang.org/issues/18229
+[Feature #18239]: https://bugs.ruby-lang.org/issues/18239
 [Feature #18273]: https://bugs.ruby-lang.org/issues/18273
 [Feature #18290]: https://bugs.ruby-lang.org/issues/18290
-[Feature #18045]: https://bugs.ruby-lang.org/issues/18045
-[Feature #18239]: https://bugs.ruby-lang.org/issues/18239
 [GH-1509]: https://github.com/ruby/ruby/pull/1509
 [GH-4815]: https://github.com/ruby/ruby/pull/4815
 [GH-5112]: https://github.com/ruby/ruby/pull/5112
