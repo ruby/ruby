@@ -433,19 +433,32 @@ See [this blog post](https://shopify.engineering/yjit-just-in-time-compiler-crub
 
 ## error_highlight
 
-A built-in gem, error_highlight, has been introduced.
-It includes fine-grained error location in backtrace:
+A built-in gem called error_highlight has been introduced.
+It shows fine-grained error location in backtrace.
+
+Example: `title = json[:article][:title]`
+
+If `json` is nil, it shows:
 
 ```
 $ ruby test.rb
-test.rb:1:in `<main>': undefined method `time' for 1:Integer (NoMethodError)
+test.rb:2:in `<main>': undefined method `[]' for nil:NilClass (NoMethodError)
 
-1.time {}
- ^^^^^
-Did you mean?  times
+title = json[:article][:title]
+            ^^^^^^^^^^
 ```
 
-This gem is enabled by default.
+If `json[:article]` returns nil, it shows:
+
+```
+$ ruby test.rb
+test.rb:2:in `<main>': undefined method `[]' for nil:NilClass (NoMethodError)
+
+title = json[:article][:title]
+                      ^^^^^^^^
+```
+
+This feature is enabled by default.
 You can disable it by using a command-line option `--disable-error_highlight`.
 See [the repository](https://github.com/ruby/error_highlight) in detail.
 
