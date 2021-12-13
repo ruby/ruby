@@ -1,7 +1,6 @@
 #ifndef INTERNAL_ENCODING_H                              /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_ENCODING_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -12,12 +11,15 @@
 #include "ruby/ruby.h"          /* for ID */
 #include "ruby/encoding.h"      /* for rb_encoding */
 
+#define rb_enc_autoload_p(enc) (!rb_enc_mbmaxlen(enc))
+
 /* encoding.c */
 ID rb_id_encoding(void);
 rb_encoding *rb_enc_get_from_index(int index);
 rb_encoding *rb_enc_check_str(VALUE str1, VALUE str2);
 int rb_encdb_replicate(const char *alias, const char *orig);
 int rb_encdb_alias(const char *alias, const char *orig);
+int rb_enc_autoload(rb_encoding *enc);
 int rb_encdb_dummy(const char *name);
 void rb_encdb_declare(const char *name);
 void rb_enc_set_base(const char *name, const char *orig);

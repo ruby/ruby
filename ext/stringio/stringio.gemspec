@@ -22,12 +22,10 @@ Gem::Specification.new do |s|
   s.extensions = ["ext/stringio/extconf.rb"]
   s.files = ["README.md", "ext/stringio/extconf.rb", "ext/stringio/stringio.c"]
   s.homepage = "https://github.com/ruby/stringio"
-  s.licenses = ["BSD-2-Clause"]
+  s.licenses = ["Ruby", "BSD-2-Clause"]
   s.required_ruby_version = ">= 2.5"
   s.summary = "Pseudo IO on String"
 
   # s.cert_chain  = %w[certs/nobu.pem]
   # s.signing_key = File.expand_path("~/.ssh/gem-private_key.pem") if $0 =~ /gem\z/
-
-  s.add_development_dependency 'rake-compiler'
 end

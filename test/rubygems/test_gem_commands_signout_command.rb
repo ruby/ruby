@@ -1,11 +1,10 @@
 # frozen_string_literal: true
 
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/commands/signout_command'
 require 'rubygems/installer'
 
 class TestGemCommandsSignoutCommand < Gem::TestCase
-
   def setup
     super
     @cmd = Gem::Commands::SignoutCommand.new
@@ -28,5 +27,4 @@ class TestGemCommandsSignoutCommand < Gem::TestCase
 
     assert_match %r{You are not currently signed in}, @sign_out_ui.error
   end
-
 end

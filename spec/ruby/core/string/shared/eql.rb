@@ -21,7 +21,7 @@ describe :string_eql_value, shared: true do
   end
 
   it "considers encoding compatibility" do
-    "hello".force_encoding("utf-8").send(@method, "hello".force_encoding("utf-32le")).should be_false
+    "abcd".force_encoding("utf-8").send(@method, "abcd".force_encoding("utf-32le")).should be_false
   end
 
   it "ignores subclass differences" do

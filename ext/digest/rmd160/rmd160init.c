@@ -3,11 +3,7 @@
 
 #include <ruby/ruby.h>
 #include "../digest.h"
-#if defined(RMD160_USE_OPENSSL)
-#include "rmd160ossl.h"
-#else
 #include "rmd160.h"
-#endif
 
 static const rb_digest_metadata_t rmd160 = {
     RUBY_DIGEST_API_VERSION,
@@ -57,8 +53,5 @@ Init_rmd160(void)
 
     cDigest_RMD160 = rb_define_class_under(mDigest, "RMD160", cDigest_Base);
 
-#undef RUBY_UNTYPED_DATA_WARNING
-#define RUBY_UNTYPED_DATA_WARNING 0
-    rb_iv_set(cDigest_RMD160, "metadata",
-	      Data_Wrap_Struct(0, 0, 0, (void *)&rmd160));
+    rb_iv_set(cDigest_RMD160, "metadata", rb_digest_make_metadata(&rmd160));
 }

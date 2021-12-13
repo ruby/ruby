@@ -1,8 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 
 class TestGemResolverLockSet < Gem::TestCase
-
   def setup
     super
 
@@ -59,5 +58,4 @@ class TestGemResolverLockSet < Gem::TestCase
   def test_prefetch
     assert_respond_to @set, :prefetch
   end
-
 end

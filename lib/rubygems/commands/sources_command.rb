@@ -1,11 +1,10 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/remote_fetcher'
-require 'rubygems/spec_fetcher'
-require 'rubygems/local_remote_options'
+require_relative '../command'
+require_relative '../remote_fetcher'
+require_relative '../spec_fetcher'
+require_relative '../local_remote_options'
 
 class Gem::Commands::SourcesCommand < Gem::Command
-
   include Gem::LocalRemoteOptions
 
   def initialize
@@ -33,6 +32,10 @@ class Gem::Commands::SourcesCommand < Gem::Command
 
     add_option '-u', '--update', 'Update source cache' do |value, options|
       options[:update] = value
+    end
+
+    add_option '-f', '--[no-]force', "Do not show any confirmation prompts and behave as if 'yes' was always answered" do |value, options|
+      options[:force] = value
     end
 
     add_proxy_option
@@ -72,7 +75,7 @@ class Gem::Commands::SourcesCommand < Gem::Command
 Do you want to add this source?
       QUESTION
 
-      terminate_interaction 1 unless ask_yes_no question
+      terminate_interaction 1 unless options[:force] || ask_yes_no(question)
     end
   end
 
@@ -87,7 +90,7 @@ https://rubygems.org is recommended for security over #{uri}
 Do you want to add this insecure source?
       QUESTION
 
-      terminate_interaction 1 unless ask_yes_no question
+      terminate_interaction 1 unless options[:force] || ask_yes_no(question)
     end
   end
 
@@ -220,5 +223,4 @@ To remove a source use the --remove argument:
       say "*** Unable to remove #{desc} source cache ***"
     end
   end
-
 end

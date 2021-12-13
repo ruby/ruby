@@ -17,9 +17,9 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines enum ::ruby_special_consts.
- * @see        Sasada,  K.,  "A   Lighweight  Representation  of  Floting-Point
+ * @see        Sasada,  K.,  "A  Lightweight Representation  of  Floating-Point
  *             Numbers  on  Ruby Interpreter",  in  proceedings  of 10th  JSSST
  *             SIGPPL  Workshop   on  Programming  and   Programming  Languages
  *             (PPL2008), pp. 9-16, 2008.
@@ -31,6 +31,14 @@
 #include "ruby/internal/stdbool.h"
 #include "ruby/internal/value.h"
 
+/**
+ * @private
+ * @warning  Do not touch this macro.
+ * @warning  It is an implementation detail.
+ * @warning  The  value of  this  macro  must match  for  ruby  itself and  all
+ *           extension  libraries, otherwise  serious  memory corruption  shall
+ *           occur.
+ */
 #if defined(USE_FLONUM)
 # /* Take that. */
 #elif SIZEOF_VALUE >= SIZEOF_DOUBLE
@@ -39,27 +47,28 @@
 # define USE_FLONUM 0
 #endif
 
+/** This is an old name of #RB_TEST.  Not sure which name is preferred. */
 #define RTEST           RB_TEST
 
-#define FIXNUM_P        RB_FIXNUM_P
-#define IMMEDIATE_P     RB_IMMEDIATE_P
-#define NIL_P           RB_NIL_P
-#define SPECIAL_CONST_P RB_SPECIAL_CONST_P
-#define STATIC_SYM_P    RB_STATIC_SYM_P
+#define FIXNUM_P        RB_FIXNUM_P            /**< @old{RB_FIXNUM_P} */
+#define IMMEDIATE_P     RB_IMMEDIATE_P         /**< @old{RB_IMMEDIATE_P} */
+#define NIL_P           RB_NIL_P               /**< @old{RB_NIL_P} */
+#define SPECIAL_CONST_P RB_SPECIAL_CONST_P     /**< @old{RB_SPECIAL_CONST_P} */
+#define STATIC_SYM_P    RB_STATIC_SYM_P        /**< @old{RB_STATIC_SYM_P} */
 
-#define Qfalse          RUBY_Qfalse
-#define Qnil            RUBY_Qnil
-#define Qtrue           RUBY_Qtrue
-#define Qundef          RUBY_Qundef
+#define Qfalse          RUBY_Qfalse            /**< @old{RUBY_Qfalse} */
+#define Qnil            RUBY_Qnil              /**< @old{RUBY_Qnil} */
+#define Qtrue           RUBY_Qtrue             /**< @old{RUBY_Qtrue} */
+#define Qundef          RUBY_Qundef            /**< @old{RUBY_Qundef} */
+
+#define FIXNUM_FLAG        RUBY_FIXNUM_FLAG    /**< @old{RUBY_FIXNUM_FLAG} */
+#define FLONUM_FLAG        RUBY_FLONUM_FLAG    /**< @old{RUBY_FLONUM_FLAG} */
+#define FLONUM_MASK        RUBY_FLONUM_MASK    /**< @old{RUBY_FLONUM_MASK} */
+#define FLONUM_P           RB_FLONUM_P         /**< @old{RB_FLONUM_P} */
+#define IMMEDIATE_MASK     RUBY_IMMEDIATE_MASK /**< @old{RUBY_IMMEDIATE_MASK} */
+#define SYMBOL_FLAG        RUBY_SYMBOL_FLAG    /**< @old{RUBY_SYMBOL_FLAG} */
 
 /** @cond INTERNAL_MACRO */
-#define FIXNUM_FLAG        RUBY_FIXNUM_FLAG
-#define FLONUM_FLAG        RUBY_FLONUM_FLAG
-#define FLONUM_MASK        RUBY_FLONUM_MASK
-#define FLONUM_P           RB_FLONUM_P
-#define IMMEDIATE_MASK     RUBY_IMMEDIATE_MASK
-#define SYMBOL_FLAG        RUBY_SYMBOL_FLAG
-
 #define RB_FIXNUM_P        RB_FIXNUM_P
 #define RB_FLONUM_P        RB_FLONUM_P
 #define RB_IMMEDIATE_P     RB_IMMEDIATE_P
@@ -73,7 +82,17 @@
 enum
 RBIMPL_ATTR_ENUM_EXTENSIBILITY(closed)
 ruby_special_consts {
-#if USE_FLONUM
+#if defined(__DOXYGEN__)
+    RUBY_Qfalse,                /**< @see ::rb_cFalseClass */
+    RUBY_Qtrue,                 /**< @see ::rb_cTrueClass */
+    RUBY_Qnil,                  /**< @see ::rb_cNilClass */
+    RUBY_Qundef,                /**< Represents so-called undef. */
+    RUBY_IMMEDIATE_MASK,        /**< Bit mask detecting special consts. */
+    RUBY_FIXNUM_FLAG,           /**< Flag to denote a fixnum. */
+    RUBY_FLONUM_MASK,           /**< Bit mask detecting a flonum. */
+    RUBY_FLONUM_FLAG,           /**< Flag to denote a flonum. */
+    RUBY_SYMBOL_FLAG,           /**< Flag to denote a static symbol. */
+#elif USE_FLONUM
     RUBY_Qfalse         = 0x00, /* ...0000 0000 */
     RUBY_Qtrue          = 0x14, /* ...0001 0100 */
     RUBY_Qnil           = 0x08, /* ...0000 1000 */
@@ -95,15 +114,23 @@ ruby_special_consts {
     RUBY_SYMBOL_FLAG    = 0x0e, /* ...0000 1110 */
 #endif
 
-    RUBY_SPECIAL_SHIFT  = 8 /** Least significant 8 bits are reserved. */
+    RUBY_SPECIAL_SHIFT  = 8 /**< Least significant 8 bits are reserved. */
 };
 
 RBIMPL_ATTR_CONST()
 RBIMPL_ATTR_CONSTEXPR(CXX11)
 RBIMPL_ATTR_ARTIFICIAL()
-/*
- * :NOTE: rbimpl_test HAS to be  `__attribute__((const))` in order for clang to
- * properly deduce `__builtin_assume()`.
+/**
+ * Emulates Ruby's "if" statement.
+ *
+ * @param[in]  obj    An arbitrary ruby object.
+ * @retval     false  `obj` is either ::RUBY_Qfalse or ::RUBY_Qnil.
+ * @retval     true   Anything else.
+ *
+ * @internal
+ *
+ * It HAS to be `__attribute__((const))` in  order for clang to properly deduce
+ * `__builtin_assume()`.
  */
 static inline bool
 RB_TEST(VALUE obj)
@@ -124,6 +151,13 @@ RB_TEST(VALUE obj)
 RBIMPL_ATTR_CONST()
 RBIMPL_ATTR_CONSTEXPR(CXX11)
 RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Checks if the given object is nil.
+ *
+ * @param[in]  obj    An arbitrary ruby object.
+ * @retval     true   `obj` is ::RUBY_Qnil.
+ * @retval     false  Anything else.
+ */
 static inline bool
 RB_NIL_P(VALUE obj)
 {
@@ -133,6 +167,15 @@ RB_NIL_P(VALUE obj)
 RBIMPL_ATTR_CONST()
 RBIMPL_ATTR_CONSTEXPR(CXX11)
 RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Checks if the given object is a so-called Fixnum.
+ *
+ * @param[in]  obj    An arbitrary ruby object.
+ * @retval     true   `obj` is a Fixnum.
+ * @retval     false  Anything else.
+ * @note       Fixnum was  a thing  in the  20th century, but  it is  rather an
+ *             implementation detail today.
+ */
 static inline bool
 RB_FIXNUM_P(VALUE obj)
 {
@@ -142,6 +185,17 @@ RB_FIXNUM_P(VALUE obj)
 RBIMPL_ATTR_CONST()
 RBIMPL_ATTR_CONSTEXPR(CXX14)
 RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Checks if the given object is a static symbol.
+ *
+ * @param[in]  obj    An arbitrary ruby object.
+ * @retval     true   `obj` is a static symbol
+ * @retval     false  Anything else.
+ * @see        RB_DYNAMIC_SYM_P()
+ * @see        RB_SYMBOL_P()
+ * @note       These days  there are static  and dynamic symbols, just  like we
+ *             once had Fixnum/Bignum back in the old days.
+ */
 static inline bool
 RB_STATIC_SYM_P(VALUE obj)
 {
@@ -153,6 +207,16 @@ RB_STATIC_SYM_P(VALUE obj)
 RBIMPL_ATTR_CONST()
 RBIMPL_ATTR_CONSTEXPR(CXX11)
 RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Checks if the given object is a so-called Flonum.
+ *
+ * @param[in]  obj    An arbitrary ruby object.
+ * @retval     true   `obj` is a Flonum.
+ * @retval     false  Anything else.
+ * @see        RB_FLOAT_TYPE_P()
+ * @note       These days there are Flonums and non-Flonum floats, just like we
+ *             once had Fixnum/Bignum back in the old days.
+ */
 static inline bool
 RB_FLONUM_P(VALUE obj)
 {
@@ -166,6 +230,16 @@ RB_FLONUM_P(VALUE obj)
 RBIMPL_ATTR_CONST()
 RBIMPL_ATTR_CONSTEXPR(CXX11)
 RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Checks if  the given  object is  an immediate  i.e. an  object which  has no
+ * corresponding storage inside of the object space.
+ *
+ * @param[in]  obj    An arbitrary ruby object.
+ * @retval     true   `obj` is a Flonum.
+ * @retval     false  Anything else.
+ * @see        RB_FLOAT_TYPE_P()
+ * @note       The concept of "immediate" is purely C specific.
+ */
 static inline bool
 RB_IMMEDIATE_P(VALUE obj)
 {
@@ -175,6 +249,13 @@ RB_IMMEDIATE_P(VALUE obj)
 RBIMPL_ATTR_CONST()
 RBIMPL_ATTR_CONSTEXPR(CXX11)
 RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Checks if the given object is of enum ::ruby_special_consts.
+ *
+ * @param[in]  obj    An arbitrary ruby object.
+ * @retval     true   `obj` is a special constant.
+ * @retval     false  Anything else.
+ */
 static inline bool
 RB_SPECIAL_CONST_P(VALUE obj)
 {
@@ -183,8 +264,18 @@ RB_SPECIAL_CONST_P(VALUE obj)
 
 RBIMPL_ATTR_CONST()
 RBIMPL_ATTR_CONSTEXPR(CXX11)
-/* This  function is  to mimic  old  rb_special_const_p macro  but have  anyone
- * actually used its return value?  Wasn't it just something no one needed? */
+/**
+ * Identical to RB_SPECIAL_CONST_P, except it returns a ::VALUE.
+ *
+ * @param[in]  obj          An arbitrary ruby object.
+ * @retval     RUBY_Qtrue   `obj` is a special constant.
+ * @retval     RUBY_Qfalse  Anything else.
+ *
+ * @internal
+ *
+ * This  function is  to mimic  old  rb_special_const_p macro  but have  anyone
+ * actually used its return value?  Wasn't it just something no one needed?
+ */
 static inline VALUE
 rb_special_const_p(VALUE obj)
 {

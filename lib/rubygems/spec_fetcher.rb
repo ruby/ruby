@@ -1,15 +1,14 @@
 # frozen_string_literal: true
-require 'rubygems/remote_fetcher'
-require 'rubygems/user_interaction'
-require 'rubygems/errors'
-require 'rubygems/text'
-require 'rubygems/name_tuple'
+require_relative 'remote_fetcher'
+require_relative 'user_interaction'
+require_relative 'errors'
+require_relative 'text'
+require_relative 'name_tuple'
 
 ##
 # SpecFetcher handles metadata updates from remote gem repositories.
 
 class Gem::SpecFetcher
-
   include Gem::UserInteraction
   include Gem::Text
 
@@ -99,7 +98,7 @@ class Gem::SpecFetcher
 
       found[source] = specs.select do |tup|
         if dependency.match?(tup)
-          if matching_platform and !Gem::Platform.match(tup.platform)
+          if matching_platform and !Gem::Platform.match_gem?(tup.platform, tup.name)
             pm = (
               rejected_specs[dependency] ||= \
                 Gem::PlatformMismatch.new(tup.name, tup.version))
@@ -122,7 +121,7 @@ class Gem::SpecFetcher
       end
     end
 
-    tuples = tuples.sort_by {|x| x[0] }
+    tuples = tuples.sort_by {|x| x[0].version }
 
     return [tuples, errors]
   end
@@ -259,5 +258,4 @@ class Gem::SpecFetcher
     raise unless gracefully_ignore
     []
   end
-
 end

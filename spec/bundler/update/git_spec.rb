@@ -7,12 +7,13 @@ RSpec.describe "bundle update" do
       update_git "foo", :branch => "omg"
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo-1.0")}", :branch => "omg" do
           gem 'foo'
         end
       G
 
-      update_git "foo", :branch => "omg" do |s|
+      update_git "foo" do |s|
         s.write "lib/foo.rb", "FOO = '1.1'"
       end
 
@@ -28,6 +29,7 @@ RSpec.describe "bundle update" do
       end
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails", :git => "#{file_uri_for(lib_path("rails"))}"
       G
 
@@ -40,12 +42,13 @@ RSpec.describe "bundle update" do
       update_git "foo", :branch => "omg", :path => lib_path("foo")
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo")}", :branch => "omg" do
           gem 'foo'
         end
       G
 
-      update_git "foo", :branch => "omg", :path => lib_path("foo") do |s|
+      update_git "foo", :path => lib_path("foo") do |s|
         s.write "lib/foo.rb", "FOO = '1.1'"
       end
 
@@ -61,6 +64,7 @@ RSpec.describe "bundle update" do
       end
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{file_uri_for(lib_path("foo"))}"
         gem "bar"
       G
@@ -79,12 +83,14 @@ RSpec.describe "bundle update" do
       build_git "foo", :path => lib_path("foo_two")
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", "1.0", :git => "#{file_uri_for(lib_path("foo_one"))}"
       G
 
       FileUtils.rm_rf lib_path("foo_one")
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", "1.0", :git => "#{file_uri_for(lib_path("foo_two"))}"
       G
 
@@ -100,6 +106,7 @@ RSpec.describe "bundle update" do
       update_git "foo", :push => "master"
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'foo', :git => "#{@remote.path}"
       G
 
@@ -108,6 +115,7 @@ RSpec.describe "bundle update" do
       update_git "foo", :push => "fubar"
 
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'foo', :git => "#{@remote.path}", :tag => "fubar"
       G
 
@@ -183,6 +191,7 @@ RSpec.describe "bundle update" do
       build_git "foo", "1.0"
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}"
       G
 
@@ -214,6 +223,7 @@ RSpec.describe "bundle update" do
       build_git "rails", "2.3.2", :path => lib_path("rails")
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails", :git => "#{file_uri_for(lib_path("rails"))}"
       G
 
@@ -283,7 +293,7 @@ RSpec.describe "bundle update" do
       G
     end
 
-    it "the --source flag updates version of gems that were originally pulled in by the source", :bundler => "< 3" do
+    it "the --source flag updates version of gems that were originally pulled in by the source" do
       spec_lines = lib_path("bar/foo.gemspec").read.split("\n")
       spec_lines[5] = "s.version = '2.0'"
 
@@ -295,43 +305,7 @@ RSpec.describe "bundle update" do
 
       bundle "update --source bar"
 
-      lockfile_should_be <<-G
-        GIT
-          remote: #{@git.path}
-          revision: #{ref}
-          specs:
-            foo (2.0)
-
-        GEM
-          remote: #{file_uri_for(gem_repo2)}/
-          specs:
-            rack (1.0.0)
-
-        PLATFORMS
-          #{lockfile_platforms}
-
-        DEPENDENCIES
-          foo!
-          rack
-
-        BUNDLED WITH
-           #{Bundler::VERSION}
-      G
-    end
-
-    it "the --source flag updates version of gems that were originally pulled in by the source", :bundler => "3" do
-      spec_lines = lib_path("bar/foo.gemspec").read.split("\n")
-      spec_lines[5] = "s.version = '2.0'"
-
-      update_git "foo", "2.0", :path => @git.path do |s|
-        s.write "foo.gemspec", spec_lines.join("\n")
-      end
-
-      ref = @git.ref_for "master"
-
-      bundle "update --source bar"
-
-      lockfile_should_be <<-G
+      expect(lockfile).to eq <<~G
         GIT
           remote: #{@git.path}
           revision: #{ref}

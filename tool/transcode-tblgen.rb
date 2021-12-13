@@ -724,7 +724,7 @@ def citrus_decode_mapsrc(ces, csid, mapsrcs)
     path = File.join(*path)
     path << ".src"
     path[path.rindex('/')] = '%'
-    STDERR.puts 'load mapsrc %s' % path if VERBOSE_MODE
+    STDOUT.puts 'load mapsrc %s' % path if VERBOSE_MODE > 1
     open(path, 'rb') do |f|
       f.each_line do |l|
         break if /^BEGIN_MAP/ =~ l
@@ -822,11 +822,11 @@ TRANSCODERS = []
 TRANSCODE_GENERATED_TRANSCODER_CODE = ''.dup
 
 def transcode_tbl_only(from, to, map, valid_encoding=UnspecifiedValidEncoding)
-  if VERBOSE_MODE
+  if VERBOSE_MODE > 1
     if from.empty? || to.empty?
-      STDERR.puts "converter for #{from.empty? ? to : from}"
+      STDOUT.puts "converter for #{from.empty? ? to : from}"
     else
-      STDERR.puts "converter from #{from} to #{to}"
+      STDOUT.puts "converter from #{from} to #{to}"
     end
   end
   id_from = from.tr('^0-9A-Za-z', '_')
@@ -905,7 +905,7 @@ End
 end
 
 def transcode_generate_node(am, name_hint=nil)
-  STDERR.puts "converter for #{name_hint}" if VERBOSE_MODE
+  STDOUT.puts "converter for #{name_hint}" if VERBOSE_MODE > 1
   am.gennode(TRANSCODE_GENERATED_BYTES_CODE, TRANSCODE_GENERATED_WORDS_CODE, name_hint)
   ''
 end
@@ -1018,12 +1018,12 @@ if __FILE__ == $0
   start_time = Time.now
 
   output_filename = nil
-  verbose_mode = false
+  verbose_mode = 0
   force_mode = false
 
   op = OptionParser.new
   op.def_option("--help", "show help message") { puts op; exit 0 }
-  op.def_option("--verbose", "verbose mode") { verbose_mode = true }
+  op.def_option("--verbose", "verbose mode, twice for more verbose") { verbose_mode += 1 }
   op.def_option("--force", "force table generation") { force_mode = true }
   op.def_option("--output=FILE", "specify output file") {|arg| output_filename = arg }
   op.parse!
@@ -1066,14 +1066,14 @@ if __FILE__ == $0
     if old_signature == chk_signature
       now = Time.now
       File.utime(now, now, output_filename)
-      STDERR.puts "already up-to-date: #{output_filename}" if VERBOSE_MODE
+      STDOUT.puts "already up-to-date: #{output_filename}" if VERBOSE_MODE > 0
       exit
     end
   end
 
-  if VERBOSE_MODE
+  if VERBOSE_MODE > 0
     if output_filename
-      STDERR.puts "generating #{output_filename} ..."
+      STDOUT.puts "generating #{output_filename} ..."
     end
   end
 
@@ -1111,7 +1111,7 @@ if __FILE__ == $0
     File.rename(new_filename, output_filename)
     tms = Process.times
     elapsed = Time.now - start_time
-    STDERR.puts "done.  (#{'%.2f' % tms.utime}user #{'%.2f' % tms.stime}system #{'%.2f' % elapsed}elapsed)" if VERBOSE_MODE
+    STDOUT.puts "done.  (#{'%.2f' % tms.utime}user #{'%.2f' % tms.stime}system #{'%.2f' % elapsed}elapsed)" if VERBOSE_MODE > 1
   else
     print result
   end

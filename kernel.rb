@@ -105,7 +105,7 @@ module Kernel
   #     require 'json'
   #
   #     construct_url(arguments).
-  #       then {|url| open(url).read }.
+  #       then {|url| URI(url).read }.
   #       then {|response| JSON.parse(response) }
   #
   #  When called without block, the method returns +Enumerator+,
@@ -138,7 +138,7 @@ module Kernel
   #     require 'json'
   #
   #     construct_url(arguments).
-  #       then {|url| open(url).read }.
+  #       then {|url| URI(url).read }.
   #       then {|response| JSON.parse(response) }
   #
   def yield_self
@@ -169,6 +169,10 @@ module Kernel
   #     Float("123.0_badstring", exception: false)  #=> nil
   #
   def Float(arg, exception: true)
-    Primitive.rb_f_float(arg, exception)
+    if Primitive.mandatory_only?
+      Primitive.rb_f_float1(arg)
+    else
+      Primitive.rb_f_float(arg, exception)
+    end
   end
 end

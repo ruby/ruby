@@ -101,14 +101,6 @@ describe "Enumerable#none?" do
     end
 
     # may raise an exception in future versions
-    ruby_version_is ""..."2.6" do
-      it "ignores block" do
-        @enum2.none?(Integer) { raise }.should == true
-        [1, 2, nil].none?(TrueClass) { raise }.should == true
-        {a: 1}.none?(Hash) { raise }.should == true
-      end
-    end
-
     it "always returns true on empty enumeration" do
       @empty.none?(Integer).should == true
       [].none?(Integer).should == true

@@ -31,13 +31,11 @@ describe :rb_enc_set_index, shared: true do
     result.first.should == result.last
   end
 
-  ruby_version_is "2.6" do
-    it "raises an ArgumentError for a non-encoding capable object" do
-      obj = Object.new
-      -> {
-        result = @s.send(@method, obj, 1)
-      }.should raise_error(ArgumentError, "cannot set encoding on non-encoding capable object")
-    end
+  it "raises an ArgumentError for a non-encoding capable object" do
+    obj = Object.new
+    -> {
+      result = @s.send(@method, obj, 1)
+    }.should raise_error(ArgumentError, "cannot set encoding on non-encoding capable object")
   end
 end
 
@@ -48,13 +46,20 @@ describe "C-API Encoding function" do
     @s = CApiEncodingSpecs.new
   end
 
-  ruby_version_is "2.6" do
-    describe "rb_enc_alias" do
-      it "creates an alias for an existing Encoding" do
-        name = "ZOMGWTFBBQ#{@n += 1}"
-        @s.rb_enc_alias(name, "UTF-8").should >= 0
-        Encoding.find(name).name.should == "UTF-8"
-      end
+  describe "rb_enc_alias" do
+    it "creates an alias for an existing Encoding" do
+      name = "ZOMGWTFBBQ#{@n += 1}"
+      @s.rb_enc_alias(name, "UTF-8").should >= 0
+      Encoding.find(name).name.should == "UTF-8"
+    end
+  end
+
+  describe "rb_enc_codelen" do
+    it "returns the correct length for the given codepoint" do
+      @s.rb_enc_codelen(0x24, Encoding::UTF_8).should == 1
+      @s.rb_enc_codelen(0xA2, Encoding::UTF_8).should == 2
+      @s.rb_enc_codelen(0x20AC, Encoding::UTF_8).should == 3
+      @s.rb_enc_codelen(0x24B62, Encoding::UTF_8).should == 4
     end
   end
 
@@ -127,6 +132,18 @@ describe "C-API Encoding function" do
        @s.rb_enc_mbc_to_codepoint("éa", 2).should == 0x00E9
        @s.rb_enc_mbc_to_codepoint("éa", 1).should == 0xC3
        @s.rb_enc_mbc_to_codepoint("éa", 3).should == 0x00E9
+    end
+  end
+
+  describe "rb_enc_mbcput" do
+    it "writes the correct bytes to the buffer" do
+      @s.rb_enc_mbcput(0x24, Encoding::UTF_8).should == "$"
+      @s.rb_enc_mbcput(0xA2, Encoding::UTF_8).should == "¢"
+      @s.rb_enc_mbcput(0x20AC, Encoding::UTF_8).should == "€"
+      @s.rb_enc_mbcput(0x24B62, Encoding::UTF_8).should == "𤭢"
+
+      @s.rb_enc_mbcput(0x24, Encoding::UTF_16BE).bytes.should == [0, 0x24]
+      @s.rb_enc_mbcput(0x24B62, Encoding::UTF_16LE).bytes.should == [82, 216, 98, 223]
     end
   end
 
@@ -218,11 +235,9 @@ describe "C-API Encoding function" do
       @s.rb_enc_get_index(1).should == -1
     end
 
-    ruby_version_is "2.6" do
-      it "returns -1 for an object without an encoding" do
-        obj = Object.new
-        @s.rb_enc_get_index(obj).should == -1
-      end
+    it "returns -1 for an object without an encoding" do
+      obj = Object.new
+      @s.rb_enc_get_index(obj).should == -1
     end
   end
 
@@ -608,6 +623,23 @@ describe "C-API Encoding function" do
         len = @s.rb_uv_to_utf8(str, num + 1)
         str[0..len-1].should == result
       end
+    end
+  end
+
+  describe "ONIGENC_MBC_CASE_FOLD" do
+    it "returns the correct case fold for the given string" do
+      @s.ONIGENC_MBC_CASE_FOLD("lower").should == ["l", 1]
+      @s.ONIGENC_MBC_CASE_FOLD("Upper").should == ["u", 1]
+    end
+
+    it "works with other encodings" do
+      @s.ONIGENC_MBC_CASE_FOLD("lower".force_encoding("binary")).should == ["l", 1]
+      @s.ONIGENC_MBC_CASE_FOLD("Upper".force_encoding("binary")).should == ["u", 1]
+      @s.ONIGENC_MBC_CASE_FOLD("É").should == ["é", 2]
+
+      str, length = @s.ONIGENC_MBC_CASE_FOLD('$'.encode(Encoding::UTF_16BE))
+      length.should == 2
+      str.bytes.should == [0, 0x24]
     end
   end
 end

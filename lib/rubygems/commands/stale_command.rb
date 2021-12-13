@@ -1,8 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/command'
+require_relative '../command'
 
 class Gem::Commands::StaleCommand < Gem::Command
-
   def initialize
     super('stale', 'List gems along with access times')
   end
@@ -37,5 +36,4 @@ longer using.
       say "#{name} at #{atime.strftime '%c'}"
     end
   end
-
 end

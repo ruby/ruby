@@ -17,7 +17,7 @@ module IRB # :nodoc:
     CYAN      = 36
 
     TOKEN_KEYWORDS = {
-      on_kw: ['nil', 'self', 'true', 'false', '__FILE__', '__LINE__'],
+      on_kw: ['nil', 'self', 'true', 'false', '__FILE__', '__LINE__', '__ENCODING__'],
       on_const: ['ENV'],
     }
     private_constant :TOKEN_KEYWORDS
@@ -60,6 +60,11 @@ module IRB # :nodoc:
         on_words_beg:       [[RED, BOLD],             ALL],
         on_parse_error:     [[RED, REVERSE],          ALL],
         compile_error:      [[RED, REVERSE],          ALL],
+        on_assign_error:    [[RED, REVERSE],          ALL],
+        on_alias_error:     [[RED, REVERSE],          ALL],
+        on_class_name_error:[[RED, REVERSE],          ALL],
+        on_param_error:     [[RED, REVERSE],          ALL],
+        on___end__:         [[GREEN],                 ALL],
       }
     rescue NameError
       # Give up highlighting Ripper-incompatible older Ruby
@@ -67,9 +72,12 @@ module IRB # :nodoc:
     end
     private_constant :TOKEN_SEQ_EXPRS
 
+    ERROR_TOKENS = TOKEN_SEQ_EXPRS.keys.select { |k| k.to_s.end_with?('error') }
+    private_constant :ERROR_TOKENS
+
     class << self
       def colorable?
-        $stdout.tty? && supported? && (/mswin|mingw/ =~ RUBY_PLATFORM || (ENV.key?('TERM') && ENV['TERM'] != 'dumb'))
+        $stdout.tty? && (/mswin|mingw/ =~ RUBY_PLATFORM || (ENV.key?('TERM') && ENV['TERM'] != 'dumb'))
       end
 
       def inspect_colorable?(obj, seen: {}.compare_by_identity)
@@ -93,43 +101,50 @@ module IRB # :nodoc:
         end
       end
 
-      def clear
-        return '' unless colorable?
+      def clear(colorable: colorable?)
+        return '' unless colorable
         "\e[#{CLEAR}m"
       end
 
-      def colorize(text, seq)
-        return text unless colorable?
+      def colorize(text, seq, colorable: colorable?)
+        return text unless colorable
         seq = seq.map { |s| "\e[#{const_get(s)}m" }.join('')
-        "#{seq}#{text}#{clear}"
+        "#{seq}#{text}#{clear(colorable: colorable)}"
       end
 
       # If `complete` is false (code is incomplete), this does not warn compile_error.
       # This option is needed to avoid warning a user when the compile_error is happening
       # because the input is not wrong but just incomplete.
-      def colorize_code(code, complete: true)
-        return code unless colorable?
+      def colorize_code(code, complete: true, ignore_error: false, colorable: colorable?)
+        return code unless colorable
 
         symbol_state = SymbolState.new
         colored = +''
         length = 0
+        end_seen = false
 
         scan(code, allow_last_error: !complete) do |token, str, expr|
+          # IRB::ColorPrinter skips colorizing fragments with any invalid token
+          if ignore_error && ERROR_TOKENS.include?(token)
+            return Reline::Unicode.escape_for_print(code)
+          end
+
           in_symbol = symbol_state.scan_token(token)
           str.each_line do |line|
             line = Reline::Unicode.escape_for_print(line)
             if seq = dispatch_seq(token, expr, line, in_symbol: in_symbol)
               colored << seq.map { |s| "\e[#{s}m" }.join('')
-              colored << line.sub(/\Z/, clear)
+              colored << line.sub(/\Z/, clear(colorable: colorable))
             else
               colored << line
             end
           end
           length += str.bytesize
+          end_seen = true if token == :on___end__
         end
 
         # give up colorizing incomplete Ripper tokens
-        if length != code.bytesize
+        unless end_seen or length == code.bytesize
           return Reline::Unicode.escape_for_print(code)
         end
 
@@ -144,12 +159,6 @@ module IRB # :nodoc:
         block.call
       ensure
         seen.delete(obj)
-      end
-
-      # Ripper::Lexer::Elem#state is supported on Ruby 2.5+
-      def supported?
-        return @supported if defined?(@supported)
-        @supported = Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.5.0')
       end
 
       def scan(code, allow_last_error:)
@@ -181,11 +190,12 @@ module IRB # :nodoc:
             end
           end
         end
+      ensure
         $VERBOSE = verbose
       end
 
       def dispatch_seq(token, expr, str, in_symbol:)
-        if token == :on_parse_error or token == :compile_error
+        if ERROR_TOKENS.include?(token)
           TOKEN_SEQ_EXPRS[token][0]
         elsif in_symbol
           [YELLOW]

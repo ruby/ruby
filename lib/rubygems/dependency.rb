@@ -2,11 +2,7 @@
 ##
 # The Dependency class holds a Gem name and a Gem::Requirement.
 
-require "rubygems/bundler_version_finder"
-require "rubygems/requirement"
-
 class Gem::Dependency
-
   ##
   # Valid dependency types.
   #--
@@ -281,11 +277,11 @@ class Gem::Dependency
       requirement.satisfied_by?(spec.version) && env_req.satisfied_by?(spec.version)
     end.map(&:to_spec)
 
-    Gem::BundlerVersionFinder.filter!(matches) if name == "bundler".freeze && !requirement.specific?
+    Gem::BundlerVersionFinder.filter!(matches) if filters_bundler?
 
     if platform_only
       matches.reject! do |spec|
-        spec.nil? || !Gem::Platform.match(spec.platform)
+        spec.nil? || !Gem::Platform.match_spec?(spec)
       end
     end
 
@@ -297,6 +293,10 @@ class Gem::Dependency
 
   def specific?
     @requirement.specific?
+  end
+
+  def filters_bundler?
+    name == "bundler".freeze && !specific?
   end
 
   def to_specs
@@ -347,5 +347,4 @@ class Gem::Dependency
       :released
     end
   end
-
 end

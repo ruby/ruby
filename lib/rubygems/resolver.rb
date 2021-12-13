@@ -1,8 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/dependency'
-require 'rubygems/exceptions'
-require 'rubygems/util'
-require 'rubygems/util/list'
+require_relative 'dependency'
+require_relative 'exceptions'
+require_relative 'util/list'
 
 ##
 # Given a set of Gem::Dependency objects as +needed+ and a way to query the
@@ -11,8 +10,7 @@ require 'rubygems/util/list'
 # all the requirements.
 
 class Gem::Resolver
-
-  require 'rubygems/resolver/molinillo'
+  require_relative 'resolver/molinillo'
 
   ##
   # If the DEBUG_RESOLVER environment variable is set then debugging mode is
@@ -263,7 +261,12 @@ class Gem::Resolver
   end
 
   def requirement_satisfied_by?(requirement, activated, spec)
-    requirement.matches_spec? spec
+    matches_spec = requirement.matches_spec? spec
+    return matches_spec if @soft_missing
+
+    matches_spec &&
+      spec.spec.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
+      spec.spec.required_rubygems_version.satisfied_by?(Gem.rubygems_version)
   end
 
   def name_for(dependency)
@@ -283,7 +286,7 @@ class Gem::Resolver
         amount_constrained(dependency),
         conflicts[name] ? 0 : 1,
         activated.vertex_named(name).payload ? 0 : search_for(dependency).count,
-        i # for stable sort
+        i, # for stable sort
       ]
     end
   end
@@ -313,33 +316,32 @@ class Gem::Resolver
     end
   end
   private :amount_constrained
-
 end
 
-require 'rubygems/resolver/activation_request'
-require 'rubygems/resolver/conflict'
-require 'rubygems/resolver/dependency_request'
-require 'rubygems/resolver/requirement_list'
-require 'rubygems/resolver/stats'
+require_relative 'resolver/activation_request'
+require_relative 'resolver/conflict'
+require_relative 'resolver/dependency_request'
+require_relative 'resolver/requirement_list'
+require_relative 'resolver/stats'
 
-require 'rubygems/resolver/set'
-require 'rubygems/resolver/api_set'
-require 'rubygems/resolver/composed_set'
-require 'rubygems/resolver/best_set'
-require 'rubygems/resolver/current_set'
-require 'rubygems/resolver/git_set'
-require 'rubygems/resolver/index_set'
-require 'rubygems/resolver/installer_set'
-require 'rubygems/resolver/lock_set'
-require 'rubygems/resolver/vendor_set'
-require 'rubygems/resolver/source_set'
+require_relative 'resolver/set'
+require_relative 'resolver/api_set'
+require_relative 'resolver/composed_set'
+require_relative 'resolver/best_set'
+require_relative 'resolver/current_set'
+require_relative 'resolver/git_set'
+require_relative 'resolver/index_set'
+require_relative 'resolver/installer_set'
+require_relative 'resolver/lock_set'
+require_relative 'resolver/vendor_set'
+require_relative 'resolver/source_set'
 
-require 'rubygems/resolver/specification'
-require 'rubygems/resolver/spec_specification'
-require 'rubygems/resolver/api_specification'
-require 'rubygems/resolver/git_specification'
-require 'rubygems/resolver/index_specification'
-require 'rubygems/resolver/installed_specification'
-require 'rubygems/resolver/local_specification'
-require 'rubygems/resolver/lock_specification'
-require 'rubygems/resolver/vendor_specification'
+require_relative 'resolver/specification'
+require_relative 'resolver/spec_specification'
+require_relative 'resolver/api_specification'
+require_relative 'resolver/git_specification'
+require_relative 'resolver/index_specification'
+require_relative 'resolver/installed_specification'
+require_relative 'resolver/local_specification'
+require_relative 'resolver/lock_specification'
+require_relative 'resolver/vendor_specification'

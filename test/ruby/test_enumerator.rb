@@ -69,18 +69,17 @@ class TestEnumerator < Test::Unit::TestCase
 
   def test_initialize
     assert_equal([1, 2, 3], @obj.to_enum(:foo, 1, 2, 3).to_a)
-    _, err = capture_io do
-      assert_equal([1, 2, 3], Enumerator.new(@obj, :foo, 1, 2, 3).to_a)
-    end
-    assert_match 'Enumerator.new without a block is deprecated', err
+    assert_raise(ArgumentError) {
+      Enumerator.new(@obj, :foo, 1, 2, 3)
+    }
     assert_equal([1, 2, 3], Enumerator.new { |y| i = 0; loop { y << (i += 1) } }.take(3))
     assert_raise(ArgumentError) { Enumerator.new }
 
     enum = @obj.to_enum
     assert_raise(NoMethodError) { enum.each {} }
     enum.freeze
-    assert_raise(FrozenError) {
-      capture_io do
+    assert_raise(ArgumentError) {
+      capture_output do
         # warning: Enumerator.new without a block is deprecated; use Object#to_enum
         enum.__send__(:initialize, @obj, :foo)
       end
@@ -697,6 +696,11 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([0, 1], u.force)
   end
 
+  def test_compact
+    u = [0, 1, nil, 2, 3, nil].to_enum.lazy.compact
+    assert_equal([0, 1, 2, 3], u.force)
+  end
+
   def test_enum_chain_and_plus
     r = 1..5
 
@@ -810,6 +814,28 @@ class TestEnumerator < Test::Unit::TestCase
       ']>',
       e5.inspect
     )
+  end
+
+  def test_chain_with_index
+    assert_equal([[3, 0], [4, 1]], [3].chain([4]).with_index.to_a)
+  end
+
+  def test_lazy_chain
+    ea = (10..).lazy.select(&:even?).take(10)
+    ed = (20..).lazy.select(&:odd?)
+    chain = (ea + ed).select{|x| x % 3 == 0}
+    assert_equal(12, chain.next)
+    assert_equal(18, chain.next)
+    assert_equal(24, chain.next)
+    assert_equal(21, chain.next)
+    assert_equal(27, chain.next)
+    assert_equal(33, chain.next)
+  end
+
+  def test_chain_undef_methods
+    chain = [1].to_enum + [2].to_enum
+    meths = (chain.methods & [:feed, :next, :next_values, :peek, :peek_values])
+    assert_equal(0, meths.size)
   end
 
   def test_produce

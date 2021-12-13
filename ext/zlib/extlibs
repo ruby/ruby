@@ -1,0 +1,8 @@
+ver = 1.2.11
+pkg = zlib-$(ver)
+
+https://zlib.net/$(pkg).tar.gz \
+  md5:1c9f62f0778697a09d36121ead88e08e \
+  sha512:73fd3fff4adeccd4894084c15ddac89890cd10ef105dd5e1835e1e9bbb6a49ff229713bd197d203edfa17c2727700fce65a2a235f07568212d820dca88b528ae \
+  #
+	win32/$(pkg)-mswin.patch -p0

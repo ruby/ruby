@@ -37,11 +37,26 @@ describe "Kernel#taint" do
       v.should_not.tainted?
     end
 
-    it "no raises error on fixnum values" do
+    it "no raises error on integer values" do
       [1].each do |v|
         -> { v.taint }.should_not raise_error(RuntimeError)
         v.should_not.tainted?
       end
+    end
+  end
+
+  ruby_version_is "2.7"..."3.0" do
+    it "is a no-op" do
+      o = Object.new
+      o.taint
+      o.should_not.tainted?
+    end
+
+    it "warns in verbose mode" do
+      -> {
+        obj = mock("tainted")
+        obj.taint
+      }.should complain(/Object#taint is deprecated and will be removed in Ruby 3.2/, verbose: true)
     end
   end
 end

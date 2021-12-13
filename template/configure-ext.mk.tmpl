@@ -1,4 +1,5 @@
 V = 0
+V0 = $(V:0=)
 Q1 = $(V:1=)
 Q = $(Q1:0=@)
 ECHO1 = $(V:1=@:)
@@ -26,7 +27,7 @@ SCRIPT_ARGS = <%=script_args.gsub("#", "\\#")%>
 EXTMK_ARGS = $(SCRIPT_ARGS) --gnumake=$(gnumake) --extflags="$(EXTLDFLAGS)" \
 	   --make-flags="MINIRUBY='$(MINIRUBY)'"
 
-all: exts gems
+all: exts # gems
 exts:
 gems:
 

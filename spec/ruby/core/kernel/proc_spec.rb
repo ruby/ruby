@@ -48,7 +48,7 @@ describe "Kernel#proc" do
     end
   end
 
-  ruby_version_is "2.7"..."2.8" do
+  ruby_version_is "2.7"..."3.0" do
     it "can be created when called with no block" do
       -> {
         some_method { "hello" }
@@ -56,7 +56,7 @@ describe "Kernel#proc" do
     end
   end
 
-  ruby_version_is "2.8" do
+  ruby_version_is "3.0" do
     it "raises an ArgumentError when passed no block" do
       -> {
         some_method { "hello" }

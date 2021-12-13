@@ -20,6 +20,7 @@ static void Init_builtin_prelude(void);
 void
 rb_call_inits(void)
 {
+    CALL(Thread_Mutex);
 #if USE_TRANSIENT_HEAP
     CALL(TransientHeap);
 #endif
@@ -50,6 +51,7 @@ rb_call_inits(void)
     CALL(marshal);
     CALL(Range);
     CALL(IO);
+    CALL(IO_Buffer)
     CALL(Dir);
     CALL(Time);
     CALL(Random);
@@ -60,13 +62,16 @@ rb_call_inits(void)
     CALL(Math);
     CALL(GC);
     CALL(Enumerator);
+    CALL(Ractor);
     CALL(VM);
     CALL(ISeq);
     CALL(Thread);
+    CALL(Fiber_Scheduler);
     CALL(process);
     CALL(Cont);
     CALL(Rational);
     CALL(Complex);
+    CALL(MemoryView);
     CALL(version);
     CALL(vm_trace);
     CALL(vm_stack_canary);
@@ -82,7 +87,8 @@ rb_call_builtin_inits(void)
 {
 #define BUILTIN(n) CALL(builtin_##n)
     BUILTIN(gc);
-    BUILTIN(integer);
+    BUILTIN(ractor);
+    BUILTIN(numeric);
     BUILTIN(io);
     BUILTIN(dir);
     BUILTIN(ast);
@@ -91,6 +97,10 @@ rb_call_builtin_inits(void)
     BUILTIN(warning);
     BUILTIN(array);
     BUILTIN(kernel);
+    BUILTIN(timev);
+    BUILTIN(yjit);
+    BUILTIN(nilclass);
+    BUILTIN(marshal);
     Init_builtin_prelude();
 }
 #undef CALL

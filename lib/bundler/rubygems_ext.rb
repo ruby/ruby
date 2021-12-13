@@ -85,7 +85,11 @@ module Gem
       dependencies - development_dependencies
     end
 
-  private
+    def deleted_gem?
+      !default_gem? && !File.directory?(full_gem_path)
+    end
+
+    private
 
     def dependencies_to_gemfile(dependencies, group = nil)
       gemfile = String.new
@@ -105,7 +109,7 @@ module Gem
   end
 
   class Dependency
-    attr_accessor :source, :groups, :all_sources
+    attr_accessor :source, :groups
 
     alias_method :eql?, :==
 
@@ -116,7 +120,7 @@ module Gem
     end
 
     def to_yaml_properties
-      instance_variables.reject {|p| ["@source", "@groups", "@all_sources"].include?(p.to_s) }
+      instance_variables.reject {|p| ["@source", "@groups"].include?(p.to_s) }
     end
 
     def to_lock
@@ -129,20 +133,99 @@ module Gem
     end
   end
 
+  # comparison is done order independently since rubygems 3.2.0.rc.2
+  unless Gem::Requirement.new("> 1", "< 2") == Gem::Requirement.new("< 2", "> 1")
+    class Requirement
+      module OrderIndependentComparison
+        def ==(other)
+          return unless Gem::Requirement === other
+
+          if _requirements_sorted? && other._requirements_sorted?
+            super
+          else
+            _with_sorted_requirements == other._with_sorted_requirements
+          end
+        end
+
+        protected
+
+        def _requirements_sorted?
+          return @_are_requirements_sorted if defined?(@_are_requirements_sorted)
+          strings = as_list
+          @_are_requirements_sorted = strings == strings.sort
+        end
+
+        def _with_sorted_requirements
+          @_with_sorted_requirements ||= _requirements_sorted? ? self : self.class.new(as_list.sort)
+        end
+      end
+
+      prepend OrderIndependentComparison
+    end
+  end
+
+  if Gem::Requirement.new("~> 2.0").hash == Gem::Requirement.new("~> 2.0.0").hash
+    class Requirement
+      module CorrectHashForLambdaOperator
+        def hash
+          if requirements.any? {|r| r.first == "~>" }
+            requirements.map {|r| r.first == "~>" ? [r[0], r[1].to_s] : r }.sort.hash
+          else
+            super
+          end
+        end
+      end
+
+      prepend CorrectHashForLambdaOperator
+    end
+  end
+
+  require "rubygems/platform"
+
   class Platform
     JAVA  = Gem::Platform.new("java") unless defined?(JAVA)
     MSWIN = Gem::Platform.new("mswin32") unless defined?(MSWIN)
     MSWIN64 = Gem::Platform.new("mswin64") unless defined?(MSWIN64)
     MINGW = Gem::Platform.new("x86-mingw32") unless defined?(MINGW)
     X64_MINGW = Gem::Platform.new("x64-mingw32") unless defined?(X64_MINGW)
+  end
 
-    undef_method :hash if method_defined? :hash
-    def hash
-      @cpu.hash ^ @os.hash ^ @version.hash
+  Platform.singleton_class.module_eval do
+    unless Platform.singleton_methods.include?(:match_spec?)
+      def match_spec?(spec)
+        match_gem?(spec.platform, spec.name)
+      end
+
+      def match_gem?(platform, gem_name)
+        match_platforms?(platform, Gem.platforms)
+      end
+
+      private
+
+      def match_platforms?(platform, platforms)
+        platforms.any? do |local_platform|
+          platform.nil? ||
+            local_platform == platform ||
+            (local_platform != Gem::Platform::RUBY && local_platform =~ platform)
+        end
+      end
+    end
+  end
+
+  require "rubygems/util"
+
+  Util.singleton_class.module_eval do
+    if Util.singleton_methods.include?(:glob_files_in_dir) # since 3.0.0.beta.2
+      remove_method :glob_files_in_dir
     end
 
-    undef_method :eql? if method_defined? :eql?
-    alias_method :eql?, :==
+    def glob_files_in_dir(glob, base_path)
+      if RUBY_VERSION >= "2.5"
+        Dir.glob(glob, :base => base_path).map! {|f| File.expand_path(f, base_path) }
+      else
+        Dir.glob(File.join(base_path.to_s.gsub(/[\[\]]/, '\\\\\\&'), glob)).map! {|f| File.expand_path(f) }
+      end
+    end
   end
 end
 

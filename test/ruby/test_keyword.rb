@@ -2366,6 +2366,11 @@ class TestKeywordArguments < Test::Unit::TestCase
         baz(*args)
       end
 
+      define_method(:block_splat) {|*args| }
+      ruby2_keywords :block_splat, def foo_bar_after_bmethod(*args)
+        bar(*args)
+      end
+
       ruby2_keywords def foo_baz2(*args)
         baz(*args)
         baz(*args)
@@ -2406,12 +2411,29 @@ class TestKeywordArguments < Test::Unit::TestCase
         args
       end
 
+      def empty_method
+      end
+
+      def opt(arg = :opt)
+        arg
+      end
+
       ruby2_keywords def foo_dbar(*args)
         dbar(*args)
       end
 
       ruby2_keywords def foo_dbaz(*args)
         dbaz(*args)
+      end
+
+      ruby2_keywords def clear_last_empty_method(*args)
+        args.last.clear
+        empty_method(*args)
+      end
+
+      ruby2_keywords def clear_last_opt(*args)
+        args.last.clear
+        opt(*args)
       end
 
       define_method(:dbar) do |*args, **kw|
@@ -2501,6 +2523,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h1], o.foo(:foo_baz, 1, :a=>1))
     assert_equal([[1], h1], o.foo_foo_bar(1, :a=>1))
     assert_equal([1, h1], o.foo_foo_baz(1, :a=>1))
+    assert_equal([[1], h1], o.foo_bar_after_bmethod(1, :a=>1))
 
     assert_equal([[1], h1], o.foo(:bar, 1, **h1))
     assert_equal([1, h1], o.foo(:baz, 1, **h1))
@@ -2516,6 +2539,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h1], o.foo(:foo_baz, 1, **h1))
     assert_equal([[1], h1], o.foo_foo_bar(1, **h1))
     assert_equal([1, h1], o.foo_foo_baz(1, **h1))
+    assert_equal([[1], h1], o.foo_bar_after_bmethod(1, **h1))
 
     assert_equal([[h1], {}], o.foo(:bar, h1, **{}))
     assert_equal([h1], o.foo(:baz, h1, **{}))
@@ -2531,6 +2555,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([h1], o.foo(:foo_baz, h1, **{}))
     assert_equal([[h1], {}], o.foo_foo_bar(h1, **{}))
     assert_equal([h1], o.foo_foo_baz(h1, **{}))
+    assert_equal([[h1], {}], o.foo_bar_after_bmethod(h1, **{}))
 
     assert_equal([[1, h1], {}], o.foo(:bar, 1, h1))
     assert_equal([1, h1], o.foo(:baz, 1, h1))
@@ -2540,6 +2565,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h1], o.store_foo(:baz, 1, h1))
     assert_equal([[1, h1], {}], o.foo_bar(1, h1))
     assert_equal([1, h1], o.foo_baz(1, h1))
+    assert_equal([[1, h1], {}], o.foo_bar_after_bmethod(1, h1))
 
     assert_equal([[1, h1, 1], {}], o.foo_mod(:bar, 1, :a=>1))
     assert_equal([1, h1, 1], o.foo_mod(:baz, 1, :a=>1))
@@ -2643,6 +2669,9 @@ class TestKeywordArguments < Test::Unit::TestCase
 
     assert_equal([[1, h1], {}], o.foo(:pass_bar, 1, :a=>1))
     assert_equal([[1, h1], {}], o.foo(:pass_cfunc, 1, :a=>1))
+
+    assert_equal(:opt, o.clear_last_opt(a: 1))
+    assert_nothing_raised(ArgumentError) { o.clear_last_empty_method(a: 1) }
 
     assert_warn(/Skipping set of ruby2_keywords flag for bar \(method accepts keywords or method does not accept argument splat\)/) do
       assert_nil(c.send(:ruby2_keywords, :bar))
@@ -3681,6 +3710,25 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([42, {:bar=>"x"}], b.new.foo(42), bug8236)
   end
 
+  def test_super_with_keyword_kwrest
+    base = Class.new do
+      def foo(**h)
+        h
+      end
+    end
+    a = Class.new(base) do
+      attr_reader :h
+      def foo(a:, b:, **h)
+        @h = h
+        super
+      end
+    end
+
+    o = a.new
+    assert_equal({a: 1, b: 2, c: 3}, o.foo(a: 1, b: 2, c: 3))
+    assert_equal({c: 3}, o.h)
+  end
+
   def test_zsuper_only_named_kwrest
     bug8416 = '[ruby-core:55033] [Bug #8416]'
     base = Class.new do
@@ -3689,11 +3737,15 @@ class TestKeywordArguments < Test::Unit::TestCase
       end
     end
     a = Class.new(base) do
+      attr_reader :h
       def foo(**h)
+        @h = h
         super
       end
     end
-    assert_equal({:bar=>"x"}, a.new.foo(bar: "x"), bug8416)
+    o = a.new
+    assert_equal({:bar=>"x"}, o.foo(bar: "x"), bug8416)
+    assert_equal({:bar=>"x"}, o.h)
   end
 
   def test_zsuper_only_anonymous_kwrest
@@ -4298,5 +4350,22 @@ class TestKeywordArgumentsSymProcRefinements < Test::Unit::TestCase
     bug16603 = '[ruby-core:97047] [Bug #16603]'
     assert_raise(TypeError, bug16603) { p(**42) }
     assert_raise(TypeError, bug16603) { p(k:1, **42) }
+  end
+
+  def test_value_omission
+    f = ->(**kwargs) { kwargs }
+    x = 1
+    y = 2
+    assert_equal({x: 1, y: 2}, f.call(x:, y:))
+    assert_equal({x: 1, y: 2, z: 3}, f.call(x:, y:, z: 3))
+    assert_equal({one: 1, two: 2}, f.call(one:, two:))
+  end
+
+  private def one
+    1
+  end
+
+  private def two
+    2
   end
 end

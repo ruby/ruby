@@ -14,11 +14,9 @@ describe "Kernel#=~" do
     end
   end
 
-  ruby_version_is "2.6" do
-    it "is deprecated" do
-      -> do
-        Object.new =~ /regexp/
-      end.should complain(/deprecated Object#=~ is called on Object/, verbose: true)
-    end
+  it "is deprecated" do
+    -> do
+      Object.new =~ /regexp/
+    end.should complain(/deprecated Object#=~ is called on Object/, verbose: true)
   end
 end

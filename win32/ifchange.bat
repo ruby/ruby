@@ -1,13 +1,16 @@
 @echo off
 :: usage: ifchange target temporary
 
+for %%I in (%0) do set progname=%%~nI
 set timestamp=
 set keepsuffix=
 set empty=
 set color=auto
 :optloop
 for %%I in (%1) do set opt=%%~I
-if "%opt%" == "--timestamp" (
+if "%opt%" == "--" (
+    shift
+) else if "%opt%" == "--timestamp" (
     set timestamp=.
     shift
     goto :optloop
@@ -39,8 +42,18 @@ if "%opt%" == "--timestamp" (
     shift
     echo on
     goto :optloop
+) else if "%opt%" == "--help" (
+    call :help
+    exit /b
+) else if "%opt:~0,2%" == "--" (
+    echo %progname%: unknown option: %1 1>&2
+    exit /b 1
 )
-if "%opt%" == "" goto :end
+
+if "%2" == "" (
+    call :help 1>&2
+    exit /b 1
+)
 
 set dest=%1
 set src=%2
@@ -85,4 +98,17 @@ if "%timestamp%" == "" goto :end
         for %%I in ("%dest%") do set timestamp=%%~dpI.time.%%~nxI
     )
     goto :end > "%timestamp%"
+
+:help
+    for %%I in (
+        "usage: %progname% [options] target new-file"
+        "options:"
+        "   --timestamp[=file] touch timestamp file. (default: prefixed with '.time')"
+        "                      under the directory of the target)"
+        "   --keep[=suffix]    keep old file with suffix. (default: '.old')"
+        "   --empty            assume unchanged if the new file is empty."
+        "   --color[=always|auto|never] colorize output."
+    ) do echo.%%~I
+    goto :eof
+
 :end

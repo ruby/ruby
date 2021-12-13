@@ -61,6 +61,15 @@ require 'prettyprint'
 # Tanaka Akira <akr@fsij.org>
 
 class PP < PrettyPrint
+  def PP.width_for(out)
+    begin
+      require 'io/console'
+      _, width = out.winsize
+    rescue LoadError, NoMethodError, SystemCallError
+    end
+    (width || ENV['COLUMNS']&.to_i&.nonzero? || 80) - 1
+  end
+
   # Outputs +obj+ to +out+ in pretty printed format of
   # +width+ columns in width.
   #
@@ -68,7 +77,7 @@ class PP < PrettyPrint
   # If +width+ is omitted, 79 is assumed.
   #
   # PP.pp returns +out+.
-  def PP.pp(obj, out=$>, width=79)
+  def PP.pp(obj, out=$>, width=width_for(out))
     q = PP.new(out, width)
     q.guard_inspect_key {q.pp obj}
     q.flush
@@ -93,11 +102,25 @@ class PP < PrettyPrint
   end
   # :startdoc:
 
-  @sharing_detection = false
-  class << self
-    # Returns the sharing detection flag as a boolean value.
-    # It is false by default.
-    attr_accessor :sharing_detection
+  if defined? ::Ractor
+    class << self
+      # Returns the sharing detection flag as a boolean value.
+      # It is false (nil) by default.
+      def sharing_detection
+        Ractor.current[:pp_sharing_detection]
+      end
+      # Sets the sharing detection flag to b.
+      def sharing_detection=(b)
+        Ractor.current[:pp_sharing_detection] = b
+      end
+    end
+  else
+    @sharing_detection = false
+    class << self
+      # Returns the sharing detection flag as a boolean value.
+      # It is false by default.
+      attr_accessor :sharing_detection
+    end
   end
 
   module PPMethods
@@ -223,7 +246,7 @@ class PP < PrettyPrint
         else
           sep.call
         end
-        yield(*v, **{})
+        RUBY_VERSION >= "3.0" ? yield(*v, **{}) : yield(*v)
       }
     end
 

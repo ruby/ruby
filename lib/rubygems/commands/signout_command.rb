@@ -1,8 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/command'
+require_relative '../command'
 
 class Gem::Commands::SignoutCommand < Gem::Command
-
   def initialize
     super 'signout', 'Sign out from all the current sessions.'
   end
@@ -29,5 +28,4 @@ class Gem::Commands::SignoutCommand < Gem::Command
       say 'You have successfully signed out from all sessions.'
     end
   end
-
 end

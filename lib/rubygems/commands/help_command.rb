@@ -1,8 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/command'
+require_relative '../command'
 
 class Gem::Commands::HelpCommand < Gem::Command
-
   # :stopdoc:
   EXAMPLES = <<-EOF.freeze
 Some examples of 'gem' usage.
@@ -333,6 +332,8 @@ platform.
     @command_manager.command_names.each do |cmd_name|
       command = @command_manager[cmd_name]
 
+      next if command.deprecated?
+
       summary =
         if command
           command.summary
@@ -370,5 +371,4 @@ platform.
       alert_warning "Unknown command #{command_name}. Try: gem help commands"
     end
   end
-
 end

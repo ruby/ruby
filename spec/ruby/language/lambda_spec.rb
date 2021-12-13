@@ -22,14 +22,12 @@ describe "A lambda literal -> () { }" do
     -> { }.lambda?.should be_true
   end
 
-  ruby_version_is "2.6" do
-    it "may include a rescue clause" do
-      eval('-> do raise ArgumentError; rescue ArgumentError; 7; end').should be_an_instance_of(Proc)
-    end
+  it "may include a rescue clause" do
+    eval('-> do raise ArgumentError; rescue ArgumentError; 7; end').should be_an_instance_of(Proc)
+  end
 
-    it "may include a ensure clause" do
-      eval('-> do 1; ensure; 2; end').should be_an_instance_of(Proc)
-    end
+  it "may include a ensure clause" do
+    eval('-> do 1; ensure; 2; end').should be_an_instance_of(Proc)
   end
 
   it "has its own scope for local variables" do
@@ -179,7 +177,7 @@ describe "A lambda literal -> () { }" do
       result.should == [1, 2, 3, [4, 5], 6, [7, 8], 9, 10, 11, 12]
     end
 
-    ruby_version_is ''...'2.8' do
+    ruby_version_is ''...'3.0' do
       evaluate <<-ruby do
           @a = -> (*, **k) { k }
         ruby
@@ -195,7 +193,7 @@ describe "A lambda literal -> () { }" do
       end
     end
 
-    ruby_version_is '2.8' do
+    ruby_version_is '3.0' do
       evaluate <<-ruby do
           @a = -> (*, **k) { k }
         ruby
@@ -348,7 +346,9 @@ describe "A lambda expression 'lambda { ... }'" do
   end
 
   it "requires a block" do
-    lambda { lambda }.should raise_error(ArgumentError)
+    suppress_warning do
+      lambda { lambda }.should raise_error(ArgumentError)
+    end
   end
 
   it "may include a rescue clause" do
@@ -375,9 +375,11 @@ describe "A lambda expression 'lambda { ... }'" do
     ruby_version_is "2.7" do
       it "raises ArgumentError" do
         implicit_lambda = nil
-        -> {
-          meth { 1 }
-        }.should raise_error(ArgumentError, /tried to create Proc object without a block/)
+        suppress_warning do
+          -> {
+            meth { 1 }
+          }.should raise_error(ArgumentError, /tried to create Proc object without a block/)
+        end
       end
     end
   end
@@ -546,7 +548,7 @@ describe "A lambda expression 'lambda { ... }'" do
       result.should == [1, 2, 3, [4, 5], 6, [7, 8], 9, 10, 11, 12]
     end
 
-    ruby_version_is ''...'2.8' do
+    ruby_version_is ''...'3.0' do
       evaluate <<-ruby do
           @a = lambda { |*, **k| k }
         ruby
@@ -562,7 +564,7 @@ describe "A lambda expression 'lambda { ... }'" do
       end
     end
 
-    ruby_version_is '2.8' do
+    ruby_version_is '3.0' do
       evaluate <<-ruby do
           @a = lambda { |*, **k| k }
         ruby

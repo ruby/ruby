@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/commands/contents_command'
 
 class TestGemCommandsContentsCommand < Gem::TestCase
-
   def setup
     super
 
@@ -51,7 +50,7 @@ class TestGemCommandsContentsCommand < Gem::TestCase
   def test_execute_bad_gem
     @cmd.options[:args] = %w[foo]
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -95,7 +94,7 @@ class TestGemCommandsContentsCommand < Gem::TestCase
   def test_execute_missing_single
     @cmd.options[:args] = %w[foo]
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -111,7 +110,7 @@ class TestGemCommandsContentsCommand < Gem::TestCase
 
     gem 'foo', 1
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -228,7 +227,7 @@ lib/foo.rb
                                         nil, "default/gem.rb")
     default_gem_spec.executables = ["default_command"]
     default_gem_spec.files += ["default_gem.so"]
-    install_default_specs(default_gem_spec)
+    install_default_gems(default_gem_spec)
 
     @cmd.options[:args] = %w[default]
 
@@ -239,7 +238,7 @@ lib/foo.rb
     expected = [
       [RbConfig::CONFIG['bindir'], 'default_command'],
       [RbConfig::CONFIG['rubylibdir'], 'default/gem.rb'],
-      [RbConfig::CONFIG['archdir'], 'default_gem.so']
+      [RbConfig::CONFIG['archdir'], 'default_gem.so'],
     ].sort.map{|a|File.join a }.join "\n"
 
     assert_equal expected, @ui.output.chomp
@@ -268,5 +267,4 @@ lib/foo.rb
     assert_equal Gem::Requirement.new('0.0.2'), @cmd.options[:version]
     assert @cmd.options[:show_install_dir]
   end
-
 end

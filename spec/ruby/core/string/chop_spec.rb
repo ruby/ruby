@@ -61,8 +61,16 @@ describe "String#chop" do
     end
   end
 
-  it "returns subclass instances when called on a subclass" do
-    StringSpecs::MyString.new("hello\n").chop.should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances when called on a subclass" do
+      StringSpecs::MyString.new("hello\n").chop.should be_an_instance_of(StringSpecs::MyString)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns String instances when called on a subclass" do
+      StringSpecs::MyString.new("hello\n").chop.should be_an_instance_of(String)
+    end
   end
 end
 

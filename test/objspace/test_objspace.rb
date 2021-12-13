@@ -29,12 +29,12 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_memsize_of_root_shared_string
-    a = "hello" * 5
+    a = "a" * GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE]
     b = a.dup
     c = nil
     ObjectSpace.each_object(String) {|x| break c = x if x == a and x.frozen?}
     rv_size = GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
-    assert_equal([rv_size, rv_size, 26 + rv_size], [a, b, c].map {|x| ObjectSpace.memsize_of(x)})
+    assert_equal([rv_size, rv_size, a.length + 1 + rv_size], [a, b, c].map {|x| ObjectSpace.memsize_of(x)})
   end
 
   def test_argf_memsize
@@ -107,7 +107,8 @@ class TestObjSpace < Test::Unit::TestCase
 
   def test_memsize_of_iseq
     iseqw = RubyVM::InstructionSequence.compile('def a; a = :b; a; end')
-    base_obj_size = ObjectSpace.memsize_of(Object.new)
+    # Use anonymous class as a basic object size because size of Object.new can be increased
+    base_obj_size = ObjectSpace.memsize_of(Class.new.new)
     assert_operator(ObjectSpace.memsize_of(iseqw), :>, base_obj_size)
   end
 
@@ -164,7 +165,17 @@ class TestObjSpace < Test::Unit::TestCase
     end;
   end
 
+  def test_trace_object_allocations_stop_first
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      require "objspace"
+      # Make sure stopping before the tracepoints are initialized doesn't raise. See [Bug #17020]
+      ObjectSpace.trace_object_allocations_stop
+    end;
+  end
+
   def test_trace_object_allocations
+    ObjectSpace.trace_object_allocations_clear # clear object_table to get rid of erroneous detection for c0
     Class.name
     o0 = Object.new
     ObjectSpace.trace_object_allocations{
@@ -233,6 +244,15 @@ class TestObjSpace < Test::Unit::TestCase
     GC.enable
   end
 
+  def test_trace_object_allocations_gc_stress
+    EnvUtil.under_gc_stress do
+      ObjectSpace.trace_object_allocations{
+        proc{}
+      }
+    end
+    assert true # success
+  end
+
   def test_dump_flags
     info = ObjectSpace.dump("foo".freeze)
     assert_match(/"wb_protected":true, "old":true/, info)
@@ -275,6 +295,11 @@ class TestObjSpace < Test::Unit::TestCase
     JSON.parse(info) if defined?(JSON)
   end
 
+  def test_dump_control_char
+    assert_include(ObjectSpace.dump("\x0f"), '"value":"\u000f"')
+    assert_include(ObjectSpace.dump("\C-?"), '"value":"\u007f"')
+  end
+
   def test_dump_special_consts
     # [ruby-core:69692] [Bug #11291]
     assert_equal('null', ObjectSpace.dump(nil))
@@ -282,6 +307,27 @@ class TestObjSpace < Test::Unit::TestCase
     assert_equal('false', ObjectSpace.dump(false))
     assert_equal('0', ObjectSpace.dump(0))
     assert_equal('{"type":"SYMBOL", "value":"foo"}', ObjectSpace.dump(:foo))
+  end
+
+  def test_dump_singleton_class
+    assert_include(ObjectSpace.dump(Object), '"name":"Object"')
+    assert_include(ObjectSpace.dump(Kernel), '"name":"Kernel"')
+    assert_include(ObjectSpace.dump(Object.new.singleton_class), '"real_class_name":"Object"')
+
+    singleton = Object.new.singleton_class
+    singleton_dump = ObjectSpace.dump(singleton)
+    assert_include(singleton_dump, '"singleton":true')
+    if defined?(JSON)
+      assert_equal(Object, singleton.superclass)
+      superclass_address = JSON.parse(ObjectSpace.dump(Object)).fetch('address')
+      assert_equal(superclass_address, JSON.parse(singleton_dump).fetch('superclass'))
+    end
+  end
+
+  def test_dump_special_floats
+    assert_match(/"value":"NaN"/, ObjectSpace.dump(Float::NAN))
+    assert_match(/"value":"Inf"/, ObjectSpace.dump(Float::INFINITY))
+    assert_match(/"value":"\-Inf"/, ObjectSpace.dump(-Float::INFINITY))
   end
 
   def test_dump_dynamic_symbol
@@ -297,8 +343,9 @@ class TestObjSpace < Test::Unit::TestCase
           ObjectSpace.dump_all(output: :stdout)
         end
 
-        dump_my_heap_please
+        p dump_my_heap_please
       end;
+      assert_equal 'nil', output.pop
       heap = output.find_all { |l|
         obj = JSON.parse(l)
         obj['type'] == "IMEMO" && obj['imemo_type']
@@ -314,10 +361,35 @@ class TestObjSpace < Test::Unit::TestCase
           ObjectSpace.dump_all(output: :stdout, full: true)
         end
 
-        dump_my_heap_please
+        p dump_my_heap_please
       end;
+      assert_equal 'nil', output.pop
       heap = output.find_all { |l| JSON.parse(l)['type'] == "NONE" }
       assert_operator heap.length, :>, 0
+    end
+  end
+
+  def test_dump_all_single_generation
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        def dump_my_heap_please
+          GC.start
+          ObjectSpace.trace_object_allocations_start
+          gc_gen = GC.count
+          puts gc_gen
+          @obj1 = Object.new
+          GC.start
+          @obj2 = Object.new
+          ObjectSpace.dump_all(output: :stdout, since: gc_gen)
+        end
+
+        p dump_my_heap_please
+      end;
+      assert_equal 'nil', output.pop
+      since = output.shift.to_i
+      assert_operator output.size, :>, 0
+      generations = output.map { |l| JSON.parse(l)["generation"] }.uniq.sort
+      assert_equal [since, since + 1], generations
     end
   end
 
@@ -330,8 +402,9 @@ class TestObjSpace < Test::Unit::TestCase
           ObjectSpace.dump_all(output: $stdout)
         end
 
-        dump_my_heap_please
+        p $stdout == dump_my_heap_please
       end;
+      assert_equal 'true', output.pop
       needle = JSON.parse(output.first)
       addr = needle['address']
       found  = output.drop(1).find { |l| JSON.parse(l)['address'] == addr }
@@ -348,13 +421,32 @@ class TestObjSpace < Test::Unit::TestCase
           ObjectSpace.dump_all(output: $stdout)
         end
 
-        dump_my_heap_please
+        p $stdout == dump_my_heap_please
       end;
+      assert_equal 'true', output.pop
       needle = JSON.parse(output.first)
       addr = needle['class']
       found  = output.drop(1).find { |l| JSON.parse(l)['address'] == addr }
       assert found, "object #{addr} should be findable in full heap dump"
     end
+  end
+
+  def test_dump_escapes_method_name
+    method_name = "foo\"bar"
+    klass = Class.new do
+      define_method(method_name) { "TEST STRING" }
+    end
+    ObjectSpace.trace_object_allocations_start
+
+    obj = klass.new.send(method_name)
+
+    dump = ObjectSpace.dump(obj)
+    assert_includes dump, '"method":"foo\"bar"'
+
+    parsed = JSON.parse(dump)
+    assert_equal "foo\"bar", parsed["method"]
+  ensure
+    ObjectSpace.trace_object_allocations_stop
   end
 
   def test_dump_reference_addresses_match_dump_all_addresses
@@ -368,8 +460,9 @@ class TestObjSpace < Test::Unit::TestCase
           ObjectSpace.dump_all(output: $stdout)
         end
 
-        dump_my_heap_please
+        p $stdout == dump_my_heap_please
       end;
+      assert_equal 'true', output.pop
       needle = JSON.parse(output.first)
       addr = needle['address']
       found  = output.drop(1).find { |l| (JSON.parse(l)['references'] || []).include? addr }
@@ -390,8 +483,9 @@ class TestObjSpace < Test::Unit::TestCase
           ObjectSpace.dump_all(output: :stdout)
         end
 
-        dump_my_heap_please
+        p dump_my_heap_please
       end;
+      assert_equal 'nil', output.pop
       assert_match(entry, output.grep(/TEST STRING/).join("\n"))
     end
 
@@ -454,6 +548,20 @@ class TestObjSpace < Test::Unit::TestCase
     assert_operator i, :>, 0
   end
 
+  def test_internal_class_of_on_ast
+    children = ObjectSpace.reachable_objects_from(RubyVM::AbstractSyntaxTree.parse("kadomatsu"))
+    children.each {|child| ObjectSpace.internal_class_of(child).itself} # this used to crash
+  end
+
+  def test_name_error_message
+    begin
+      bar
+    rescue => err
+      _, m = ObjectSpace.reachable_objects_from(err)
+    end
+    assert_equal(m, m.clone)
+  end
+
   def traverse_super_classes klass
     while klass
       klass = ObjectSpace.internal_super_of(klass)
@@ -507,5 +615,21 @@ class TestObjSpace < Test::Unit::TestCase
   def test_anonymous_class_name
     assert_not_include ObjectSpace.dump(Class.new), '"name"'
     assert_not_include ObjectSpace.dump(Module.new), '"name"'
+  end
+
+  def test_objspace_trace
+    assert_in_out_err(%w[-robjspace/trace], "#{<<-"begin;"}\n#{<<-'end;'}") do |out, err|
+      begin;
+        a = "foo"
+        b = "b" + "a" + "r"
+        c = 42
+        p a, b, c
+      end;
+      assert_equal ["objspace/trace is enabled"], err
+      assert_equal 3, out.size
+      assert_equal '"foo" @ -:2', out[0]
+      assert_equal '"bar" @ -:3', out[1]
+      assert_equal '42', out[2]
+    end
   end
 end

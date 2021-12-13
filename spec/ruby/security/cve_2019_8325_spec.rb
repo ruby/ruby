@@ -1,9 +1,9 @@
 require_relative '../spec_helper'
 
-require 'rubygems'
-require 'rubygems/command_manager'
+platform_is_not :darwin do # frequent timeout/hang on macOS
+  require 'rubygems'
+  require 'rubygems/command_manager'
 
-ruby_version_is "2.5.5" do
   describe "CVE-2019-8325 is resisted by" do
     describe "sanitising error message components" do
       it "for the 'while executing' message" do

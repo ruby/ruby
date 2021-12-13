@@ -67,6 +67,18 @@ RSpec.describe "require 'bundler/gem_tasks'" do
     end
   end
 
+  context "rake build when path has brackets", :ruby_repo do
+    before do
+      bracketed_bundled_app = tmp.join("bundled[app")
+      FileUtils.cp_r bundled_app, bracketed_bundled_app
+      bundle "exec rake build", :dir => bracketed_bundled_app
+    end
+
+    it "still runs successfully" do
+      expect(err).to be_empty
+    end
+  end
+
   context "bundle path configured locally" do
     before do
       bundle "config set path vendor/bundle"

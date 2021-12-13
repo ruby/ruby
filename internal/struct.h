@@ -1,7 +1,6 @@
 #ifndef INTERNAL_STRUCT_H                                /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_STRUCT_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -31,7 +30,7 @@ struct RStruct {
     } as;
 };
 
-#define RSTRUCT(obj) (R_CAST(RStruct)(obj))
+#define RSTRUCT(obj) ((struct RStruct *)(obj))
 
 #ifdef RSTRUCT_LEN
 # undef RSTRUCT_LEN

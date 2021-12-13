@@ -32,7 +32,7 @@ module Bundler
     end
     alias_method :attempts, :attempt
 
-  private
+    private
 
     def run(&block)
       @failed = false
@@ -49,7 +49,7 @@ module Bundler
         raise e
       end
       return true unless name
-      Bundler.ui.info "" unless Bundler.ui.debug? # Add new line incase dots preceded this
+      Bundler.ui.info "" unless Bundler.ui.debug? # Add new line in case dots preceded this
       Bundler.ui.warn "Retrying #{name} due to error (#{current_run.next}/#{total_runs}): #{e.class} #{e.message}", Bundler.ui.debug?
     end
 

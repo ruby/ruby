@@ -25,6 +25,7 @@ firstline, predefined = __LINE__+1, %[\
   send
   __send__
   __attached__
+  __recursive_key__
   initialize
   initialize_copy
   initialize_clone
@@ -86,6 +87,7 @@ firstline, predefined = __LINE__+1, %[\
   core#hash_merge_ptr
   core#hash_merge_kwd
   core#raise
+  core#sprintf
 
   -                                                     debug#created_info
 
@@ -138,6 +140,21 @@ class KeywordError < RuntimeError
   end
 end
 
+def id2varname(token, prefix = nil)
+  if /#/ =~ token
+    token = "_#{token.gsub(/\W+/, '_')}"
+  else
+    token = token.sub(/\?/, 'P')
+    token = prefix + token if prefix
+    token.sub!(/\A[a-z]/) {$&.upcase}
+    token.sub!(/\A\$/, "_G_")
+    token.sub!(/\A@@/, "_C_")
+    token.sub!(/\A@/, "_I_")
+    token.gsub!(/\W+/, "")
+  end
+  token
+end
+
 predefined_ids = {}
 preserved_ids = []
 local_ids = []
@@ -153,16 +170,7 @@ predefined.split(/^/).each_with_index do |line, num|
   line.sub!(/\s+#.*/, '')
   name, token = line.split
   next unless name
-  token ||= name
-  if /#/ =~ token
-    token = "_#{token.gsub(/\W+/, '_')}"
-  else
-    token = token.sub(/\?/, 'P').sub(/\A[a-z]/) {$&.upcase}
-    token.sub!(/\A\$/, "_G_")
-    token.sub!(/\A@@/, "_C_")
-    token.sub!(/\A@/, "_I_")
-    token.gsub!(/\W+/, "")
-  end
+  token = id2varname(token || name)
   if name == '-'
     preserved_ids << token
     next

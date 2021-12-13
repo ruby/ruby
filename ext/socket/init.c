@@ -54,20 +54,6 @@ rsock_raise_socket_error(const char *reason, int error)
 #endif
 }
 
-#ifdef _WIN32
-#define is_socket(fd) rb_w32_is_socket(fd)
-#else
-static int
-is_socket(int fd)
-{
-    struct stat sbuf;
-
-    if (fstat(fd, &sbuf) < 0)
-        rb_sys_fail("fstat(2)");
-    return S_ISSOCK(sbuf.st_mode);
-}
-#endif
-
 #if defined __APPLE__
 # define do_write_retry(code) do {ret = code;} while (ret == -1 && errno == EPROTOTYPE)
 #else
@@ -78,10 +64,6 @@ VALUE
 rsock_init_sock(VALUE sock, int fd)
 {
     rb_io_t *fp;
-
-    if (!is_socket(fd) || rb_reserved_fd_p(fd)) {
-	rb_syserr_fail(EBADF, "not a socket file descriptor");
-    }
 
     rb_update_max_fd(fd);
     MakeOpenFile(sock, fp);
@@ -166,7 +148,7 @@ recvfrom_locktmp(VALUE v)
 }
 
 VALUE
-rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
+rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
 {
     rb_io_t *fptr;
     VALUE str;
@@ -177,27 +159,38 @@ rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 
     rb_scan_args(argc, argv, "12", &len, &flg, &str);
 
-    if (flg == Qnil) arg.flags = 0;
-    else             arg.flags = NUM2INT(flg);
+    if (flg == Qnil)
+        arg.flags = 0;
+    else
+        arg.flags = NUM2INT(flg);
+
     buflen = NUM2INT(len);
     str = rsock_strbuf(str, buflen);
 
-    GetOpenFile(sock, fptr);
+    RB_IO_POINTER(socket, fptr);
+
     if (rb_io_read_pending(fptr)) {
-	rb_raise(rb_eIOError, "recv for buffered IO");
+        rb_raise(rb_eIOError, "recv for buffered IO");
     }
+
     arg.fd = fptr->fd;
     arg.alen = (socklen_t)sizeof(arg.buf);
     arg.str = str;
     arg.length = buflen;
 
-    while (rb_io_check_closed(fptr),
-	   rsock_maybe_wait_fd(arg.fd),
-	   (slen = (long)rb_str_locktmp_ensure(str, recvfrom_locktmp,
-	                                       (VALUE)&arg)) < 0) {
-        if (!rb_io_wait_readable(fptr->fd)) {
+    while (true) {
+        rb_io_check_closed(fptr);
+
+#ifdef RSOCK_WAIT_BEFORE_BLOCKING
+        rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
+#endif
+
+        slen = (long)rb_str_locktmp_ensure(str, recvfrom_locktmp, (VALUE)&arg);
+
+        if (slen >= 0) break;
+
+        if (!rb_io_maybe_wait_readable(errno, socket, Qnil))
             rb_sys_fail("recvfrom(2)");
-        }
     }
 
     /* Resize the string to the amount of data received */
@@ -221,7 +214,7 @@ rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
         return rb_assoc_new(str, rsock_unixaddr(&arg.buf.un, arg.alen));
 #endif
       case RECV_SOCKET:
-	return rb_assoc_new(str, rsock_io_socket_addrinfo(sock, &arg.buf.addr, arg.alen));
+	return rb_assoc_new(str, rsock_io_socket_addrinfo(socket, &arg.buf.addr, arg.alen));
       default:
 	rb_bug("rsock_s_recvfrom called with bad value");
     }
@@ -451,7 +444,7 @@ rsock_socket(int domain, int type, int proto)
 
 /* emulate blocking connect behavior on EINTR or non-blocking socket */
 static int
-wait_connectable(int fd)
+wait_connectable(int fd, struct timeval *timeout)
 {
     int sockerr, revents;
     socklen_t sockerrlen;
@@ -488,7 +481,7 @@ wait_connectable(int fd)
      *
      * Note: rb_wait_for_single_fd already retries on EINTR/ERESTART
      */
-    revents = rb_wait_for_single_fd(fd, RB_WAITFD_IN|RB_WAITFD_OUT, NULL);
+    revents = rb_wait_for_single_fd(fd, RB_WAITFD_IN|RB_WAITFD_OUT, timeout);
 
     if (revents < 0)
         return -1;
@@ -503,6 +496,12 @@ wait_connectable(int fd)
        * be defensive in case some platforms set SO_ERROR on the original,
        * interrupted connect()
        */
+
+	/* when the connection timed out, no errno is set and revents is 0. */
+	if (timeout && revents == 0) {
+	    errno = ETIMEDOUT;
+	    return -1;
+	}
       case EINTR:
 #ifdef ERESTART
       case ERESTART:
@@ -550,7 +549,7 @@ socks_connect_blocking(void *data)
 #endif
 
 int
-rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks)
+rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks, struct timeval *timeout)
 {
     int status;
     rb_blocking_function_t *func = connect_blocking;
@@ -574,7 +573,7 @@ rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks)
 #ifdef EINPROGRESS
           case EINPROGRESS:
 #endif
-            return wait_connectable(fd);
+            return wait_connectable(fd, timeout);
         }
     }
     return status;
@@ -676,38 +675,49 @@ accept_blocking(void *data)
 }
 
 VALUE
-rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
+rsock_s_accept(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len)
 {
-    int fd2;
-    int retry = 0;
-    struct accept_arg arg;
+    rb_io_t *fptr = NULL;
+    RB_IO_POINTER(io, fptr);
 
-    arg.fd = fd;
-    arg.sockaddr = sockaddr;
-    arg.len = len;
+    struct accept_arg accept_arg = {
+      .fd = fptr->fd,
+      .sockaddr = sockaddr,
+      .len = len
+    };
+
+    int retry = 0, peer;
+
   retry:
-    rsock_maybe_wait_fd(fd);
-    fd2 = (int)BLOCKING_REGION_FD(accept_blocking, &arg);
-    if (fd2 < 0) {
-	int e = errno;
-	switch (e) {
-	  case EMFILE:
-	  case ENFILE:
-	  case ENOMEM:
-	    if (retry) break;
-	    rb_gc();
-	    retry = 1;
-	    goto retry;
-	  default:
-	    if (!rb_io_wait_readable(fd)) break;
-	    retry = 0;
-	    goto retry;
-	}
-	rb_syserr_fail(e, "accept(2)");
+#ifdef RSOCK_WAIT_BEFORE_BLOCKING
+    rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
+#endif
+    peer = (int)BLOCKING_REGION_FD(accept_blocking, &accept_arg);
+    if (peer < 0) {
+        int error = errno;
+
+        switch (error) {
+          case EMFILE:
+          case ENFILE:
+          case ENOMEM:
+            if (retry) break;
+            rb_gc();
+            retry = 1;
+            goto retry;
+          default:
+            if (!rb_io_maybe_wait_readable(error, io, Qnil)) break;
+            retry = 0;
+            goto retry;
+        }
+
+        rb_syserr_fail(error, "accept(2)");
     }
-    rb_update_max_fd(fd2);
-    if (!klass) return INT2NUM(fd2);
-    return rsock_init_sock(rb_obj_alloc(klass), fd2);
+
+    rb_update_max_fd(peer);
+
+    if (!klass) return INT2NUM(peer);
+
+    return rsock_init_sock(rb_obj_alloc(klass), peer);
 }
 
 int

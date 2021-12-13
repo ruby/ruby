@@ -230,9 +230,17 @@ class TestThread < Test::Unit::TestCase
     assert_equal(t1, t3.value)
 
   ensure
-    t1&.kill
-    t2&.kill
-    t3&.kill
+    t1&.kill&.join
+    t2&.kill&.join
+    t3&.kill&.join
+  end
+
+  def test_join_argument_conversion
+    t = Thread.new {}
+    assert_raise(TypeError) {t.join(:foo)}
+
+    limit = Struct.new(:to_f, :count).new(0.05)
+    assert_same(t, t.join(limit))
   end
 
   { 'FIXNUM_MAX' => RbConfig::LIMITS['FIXNUM_MAX'],
@@ -309,7 +317,7 @@ class TestThread < Test::Unit::TestCase
       s += 1
     end
     Thread.pass until t.stop?
-    sleep 1 if RubyVM::MJIT.enabled? # t.stop? behaves unexpectedly with --jit-wait
+    sleep 1 if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # t.stop? behaves unexpectedly with --jit-wait
     assert_equal(1, s)
     t.wakeup
     Thread.pass while t.alive?
@@ -490,6 +498,19 @@ class TestThread < Test::Unit::TestCase
     end;
   end
 
+  def test_ignore_deadlock
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      skip "can't trap a signal from another process on Windows"
+    end
+    assert_in_out_err([], <<-INPUT, %w(false :sig), [], :signal=>:INT, timeout: 1, timeout_error: nil)
+      p Thread.ignore_deadlock
+      q = Thread::Queue.new
+      trap(:INT){q.push :sig}
+      Thread.ignore_deadlock = true
+      p q.pop
+    INPUT
+  end
+
   def test_status_and_stop_p
     a = ::Thread.new {
       Thread.current.report_on_exception = false
@@ -617,7 +638,7 @@ class TestThread < Test::Unit::TestCase
     Thread.pass until t.stop?
     assert_predicate(t, :alive?)
   ensure
-    t&.kill
+    t&.kill&.join
   end
 
   def test_mutex_deadlock
@@ -718,8 +739,8 @@ class TestThread < Test::Unit::TestCase
 
   def make_handle_interrupt_test_thread1 flag
     r = []
-    ready_q = Queue.new
-    done_q = Queue.new
+    ready_q = Thread::Queue.new
+    done_q = Thread::Queue.new
     th = Thread.new{
       begin
         Thread.handle_interrupt(RuntimeError => flag){
@@ -796,7 +817,7 @@ class TestThread < Test::Unit::TestCase
 
   def test_handle_interrupt_blocking
     r = nil
-    q = Queue.new
+    q = Thread::Queue.new
     e = Class.new(Exception)
     th_s = Thread.current
     th = Thread.start {
@@ -820,7 +841,7 @@ class TestThread < Test::Unit::TestCase
   def test_handle_interrupt_and_io
     assert_in_out_err([], <<-INPUT, %w(ok), [])
       th_waiting = true
-      q = Queue.new
+      q = Thread::Queue.new
 
       t = Thread.new {
         Thread.current.report_on_exception = false
@@ -1106,7 +1127,7 @@ q.pop
       Thread.pass until mutex.locked?
       assert_equal(mutex.owned?, false)
     ensure
-      th&.kill
+      th&.kill&.join
     end
   end
 
@@ -1133,7 +1154,9 @@ q.pop
     env = {}
     env['RUBY_THREAD_VM_STACK_SIZE'] = vm_stack_size.to_s if vm_stack_size
     env['RUBY_THREAD_MACHINE_STACK_SIZE'] = machine_stack_size.to_s if machine_stack_size
-    out, = EnvUtil.invoke_ruby([env, '-e', script], '', true, true)
+    out, err, status = EnvUtil.invoke_ruby([env, '-e', script], '', true, true)
+    assert_not_predicate(status, :signaled?, err)
+
     use_length ? out.length : out
   end
 
@@ -1222,7 +1245,7 @@ q.pop
   end if Process.respond_to?(:fork)
 
   def test_fork_while_locked
-    m = Mutex.new
+    m = Thread::Mutex.new
     thrs = []
     3.times do |i|
       thrs << Thread.new { m.synchronize { Process.waitpid2(fork{})[1] } }
@@ -1255,7 +1278,7 @@ q.pop
 
   def test_fork_while_mutex_locked_by_forker
     skip 'needs fork' unless Process.respond_to?(:fork)
-    m = Mutex.new
+    m = Thread::Mutex.new
     m.synchronize do
       pid = fork do
         exit!(2) unless m.locked?
@@ -1321,11 +1344,32 @@ q.pop
     assert_equal("foo", c.new {Thread.current.name}.value, bug12290)
   end
 
+  def test_thread_native_thread_id
+    skip "don't support native_thread_id" unless Thread.method_defined?(:native_thread_id)
+    assert_instance_of Integer, Thread.main.native_thread_id
+
+    th1 = Thread.start{sleep}
+
+    # newly created thread which doesn't run yet returns nil or integer
+    assert_include [NilClass, Integer], th1.native_thread_id.class
+
+    Thread.pass until th1.stop?
+
+    # After a thread starts (and execute `sleep`), it returns native_thread_id
+    assert_instance_of Integer, th1.native_thread_id
+
+    th1.wakeup
+    Thread.pass while th1.alive?
+
+    # dead thread returns nil
+    assert_nil th1.native_thread_id
+  end
+
   def test_thread_interrupt_for_killed_thread
     opts = { timeout: 5, timeout_error: nil }
 
     # prevent SIGABRT from slow shutdown with MJIT
-    opts[:reprieve] = 3 if RubyVM::MJIT.enabled?
+    opts[:reprieve] = 3 if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
 
     assert_normal_exit(<<-_end, '[Bug #8996]', **opts)
       Thread.report_on_exception = false

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require 'rubygems'
-require 'rubygems/user_interaction'
+require_relative '../rubygems'
+require_relative 'user_interaction'
 
 ##
 # Cleans up after a partially-failed uninstall or for an invalid
@@ -12,7 +12,6 @@ require 'rubygems/user_interaction'
 # removing the bogus specification.
 
 class Gem::Doctor
-
   include Gem::UserInteraction
 
   ##
@@ -129,5 +128,4 @@ class Gem::Doctor
   rescue Errno::ENOENT
     # ignore
   end
-
 end

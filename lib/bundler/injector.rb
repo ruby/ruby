@@ -74,7 +74,7 @@ module Bundler
       end
     end
 
-  private
+    private
 
     def conservative_version(spec)
       version = spec.version
@@ -112,9 +112,12 @@ module Bundler
 
         source = ", :source => \"#{d.source}\"" unless d.source.nil?
         git = ", :git => \"#{d.git}\"" unless d.git.nil?
+        github = ", :github => \"#{d.github}\"" unless d.github.nil?
         branch = ", :branch => \"#{d.branch}\"" unless d.branch.nil?
+        ref = ", :ref => \"#{d.ref}\"" unless d.ref.nil?
+        require_path = ", :require => #{convert_autorequire(d.autorequire)}" unless d.autorequire.nil?
 
-        %(gem #{name}#{requirement}#{group}#{source}#{git}#{branch})
+        %(gem #{name}#{requirement}#{group}#{source}#{git}#{github}#{branch}#{ref}#{require_path})
       end.join("\n")
     end
 
@@ -128,7 +131,7 @@ module Bundler
     # evaluates a gemfile to remove the specified gem
     # from it.
     def remove_deps(gemfile_path)
-      initial_gemfile = IO.readlines(gemfile_path)
+      initial_gemfile = File.readlines(gemfile_path)
 
       Bundler.ui.info "Removing gems from #{gemfile_path}"
 
@@ -179,11 +182,11 @@ module Bundler
     # @param [Pathname] gemfile_path The Gemfile from which to remove dependencies.
     def remove_gems_from_gemfile(gems, gemfile_path)
       patterns = /gem\s+(['"])#{Regexp.union(gems)}\1|gem\s*\((['"])#{Regexp.union(gems)}\2\)/
-
       new_gemfile = []
       multiline_removal = false
-      IO.readlines(gemfile_path).each do |line|
-        if line.match(patterns)
+      File.readlines(gemfile_path).each do |line|
+        match_data = line.match(patterns)
+        if match_data && is_not_within_comment?(line, match_data)
           multiline_removal = line.rstrip.end_with?(",")
           # skip lines which match the regex
           next
@@ -205,6 +208,13 @@ module Bundler
       %w[group source env install_if].each {|block| remove_nested_blocks(new_gemfile, block) }
 
       new_gemfile.join.chomp
+    end
+
+    # @param [String] line          Individual line of gemfile content.
+    # @param [MatchData] match_data Data about Regex match.
+    def is_not_within_comment?(line, match_data)
+      match_start_index = match_data.offset(0).first
+      !line[0..match_start_index].include?("#")
     end
 
     # @param [Array] gemfile       Array of gemfile contents.
@@ -261,6 +271,12 @@ module Bundler
 
     def show_warning(message)
       Bundler.ui.info Bundler.ui.add_color(message, :yellow)
+    end
+
+    def convert_autorequire(autorequire)
+      autorequire = autorequire.first
+      return autorequire if autorequire == "false"
+      autorequire.inspect
     end
   end
 end

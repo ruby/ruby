@@ -2,8 +2,14 @@
 
 RSpec.describe "bundle licenses" do
   before :each do
+    build_repo2 do
+      build_gem "with_license" do |s|
+        s.license = "MIT"
+      end
+    end
+
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "rails"
       gem "with_license"
     G
@@ -18,7 +24,7 @@ RSpec.describe "bundle licenses" do
 
   it "performs an automatic bundle install" do
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "rails"
       gem "with_license"
       gem "foo"

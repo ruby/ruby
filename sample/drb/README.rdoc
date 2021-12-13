@@ -47,7 +47,7 @@
   * drbssl_s.rb
   * drbssl_c.rb
 
-* add DRbProtocl
+* add DRbProtocol
   * http0.rb
   * http0serv.rb
 

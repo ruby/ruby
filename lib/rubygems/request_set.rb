@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'tsort'
+require_relative 'tsort'
 
 ##
 # A RequestSet groups a request to activate a set of dependencies.
@@ -15,8 +15,7 @@ require 'tsort'
 #   #=> ["nokogiri-1.6.0", "mini_portile-0.5.1", "pg-0.17.0"]
 
 class Gem::RequestSet
-
-  include TSort
+  include Gem::TSort
 
   ##
   # Array of gems to install even if already installed
@@ -152,7 +151,7 @@ class Gem::RequestSet
     @prerelease = options[:prerelease]
 
     requests = []
-    download_queue = Queue.new
+    download_queue = Thread::Queue.new
 
     # Create a thread-safe list of gems to download
     sorted_requests.each do |req|
@@ -196,19 +195,8 @@ class Gem::RequestSet
             yield req, installer if block_given?
           end
         rescue Gem::RuntimeRequirementNotMetError => e
-          recent_match = req.spec.set.find_all(req.request).sort_by(&:version).reverse_each.find do |s|
-            s = s.spec
-            s.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
-              s.required_rubygems_version.satisfied_by?(Gem.rubygems_version) &&
-              Gem::Platform.installable?(s)
-          end
-          if recent_match
-            suggestion = "The last version of #{req.request} to support your Ruby & RubyGems was #{recent_match.version}. Try installing it with `gem install #{recent_match.name} -v #{recent_match.version}`"
-            suggestion += " and then running the current command again" unless @always_install.include?(req.spec.spec)
-          else
-            suggestion = "There are no versions of #{req.request} compatible with your Ruby & RubyGems"
-            suggestion += ". Maybe try installing an older version of the gem you're looking for?" unless @always_install.include?(req.spec.spec)
-          end
+          suggestion = "There are no versions of #{req.request} compatible with your Ruby & RubyGems"
+          suggestion += ". Maybe try installing an older version of the gem you're looking for?" unless @always_install.include?(req.spec.spec)
           e.suggestion = suggestion
           raise
         end
@@ -315,7 +303,7 @@ class Gem::RequestSet
       end
     end
 
-    require "rubygems/dependency_installer"
+    require_relative "dependency_installer"
     inst = Gem::DependencyInstaller.new options
     inst.installed_gems.replace specs
 
@@ -471,9 +459,8 @@ class Gem::RequestSet
       yield match
     end
   end
-
 end
 
-require 'rubygems/request_set/gem_dependency_api'
-require 'rubygems/request_set/lockfile'
-require 'rubygems/request_set/lockfile/tokenizer'
+require_relative 'request_set/gem_dependency_api'
+require_relative 'request_set/lockfile'
+require_relative 'request_set/lockfile/tokenizer'

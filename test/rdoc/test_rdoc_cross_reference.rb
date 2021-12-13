@@ -20,7 +20,7 @@ class TestRDocCrossReference < XrefTestCase
   def test_METHOD_REGEXP_STR
     re = /#{RDoc::CrossReference::METHOD_REGEXP_STR}/
 
-    %w'=== [] []= << >>'.each do |x|
+    %w'== === [] []= << >>'.each do |x|
       re =~ x
       assert_equal x, $&
     end
@@ -86,6 +86,15 @@ class TestRDocCrossReference < XrefTestCase
     # A C4 reference inside a C4 class contained within a C4 class should
     # resolve to the inner C4 class.
     assert_ref @c4_c4, 'C4'
+  end
+
+  def test_resolve_class_and_method_of_the_same_name
+    assert_ref @c10_class, 'C10'
+    assert_ref @c10_method, '#C10'
+    assert_ref @c11_class, 'C11'
+    assert_ref @c11_method, '#C11'
+    assert_ref @c10_c11_class, 'C10::C11'
+    assert_ref @c10_c11_method, 'C10#C11'
   end
 
   def test_resolve_class

@@ -207,8 +207,8 @@ module MakeMakefile
         ['RUBYCOMMONDIR', '$(vendordir)$(target_prefix)'],
         ['RUBYLIBDIR',    '$(vendorlibdir)$(target_prefix)'],
         ['RUBYARCHDIR',   '$(vendorarchdir)$(target_prefix)'],
-        ['HDRDIR',        '$(rubyhdrdir)/ruby$(target_prefix)'],
-        ['ARCHHDRDIR',    '$(rubyhdrdir)/$(arch)/ruby$(target_prefix)'],
+        ['HDRDIR',        '$(vendorhdrdir)$(target_prefix)'],
+        ['ARCHHDRDIR',    '$(vendorarchhdrdir)$(target_prefix)'],
       ]
     else
       dirs = [
@@ -216,8 +216,8 @@ module MakeMakefile
         ['RUBYCOMMONDIR', '$(sitedir)$(target_prefix)'],
         ['RUBYLIBDIR',    '$(sitelibdir)$(target_prefix)'],
         ['RUBYARCHDIR',   '$(sitearchdir)$(target_prefix)'],
-        ['HDRDIR',        '$(rubyhdrdir)/ruby$(target_prefix)'],
-        ['ARCHHDRDIR',    '$(rubyhdrdir)/$(arch)/ruby$(target_prefix)'],
+        ['HDRDIR',        '$(sitehdrdir)$(target_prefix)'],
+        ['ARCHHDRDIR',    '$(sitearchhdrdir)$(target_prefix)'],
       ]
     end
     dirs << ['target_prefix', (target_prefix ? "/#{target_prefix}" : "")]
@@ -284,7 +284,8 @@ MESSAGE
   end
 
   def split_libs(*strs)
-    strs.map {|s| s.split(/\s+(?=-|\z)/)}.flatten
+    sep = $mswin ? /\s+/ : /\s+(?=-|\z)/
+    strs.flat_map {|s| s.lstrip.split(sep)}
   end
 
   def merge_libs(*libs)
@@ -385,38 +386,64 @@ MESSAGE
     end
   end
 
-  def xsystem command, opts = nil
+  def expand_command(commands, envs = libpath_env)
     varpat = /\$\((\w+)\)|\$\{(\w+)\}/
-    if varpat =~ command
-      vars = Hash.new {|h, k| h[k] = ENV[k]}
-      command = command.dup
-      nil while command.gsub!(varpat) {vars[$1||$2]}
+    vars = nil
+    expand = proc do |command|
+      case command
+      when Array
+        command.map(&expand)
+      when String
+        if varpat =~ command
+          vars ||= Hash.new {|h, k| h[k] = ENV[k]}
+          command = command.dup
+          nil while command.gsub!(varpat) {vars[$1||$2]}
+        end
+        command
+      else
+        command
+      end
     end
+    if Array === commands
+      env, *commands = commands if Hash === commands.first
+      envs.merge!(env) if env
+    end
+    return envs, expand[commands]
+  end
+
+  def env_quote(envs)
+    envs.map {|e, v| "#{e}=#{v.quote}"}
+  end
+
+  def xsystem command, opts = nil
+    env, command = expand_command(command)
     Logging::open do
-      puts command.quote
+      puts [env_quote(env), command.quote].join(' ')
       if opts and opts[:werror]
         result = nil
         Logging.postpone do |log|
-          output = IO.popen(libpath_env, command, &:read)
+          output = IO.popen(env, command, &:read)
           result = ($?.success? and File.zero?(log.path))
           output
         end
         result
       else
-        system(libpath_env, command)
+        system(env, *command)
       end
     end
   end
 
   def xpopen command, *mode, &block
+    env, commands = expand_command(command)
+    command = [env_quote(env), command].join(' ')
     Logging::open do
       case mode[0]
-      when nil, /^r/
+      when nil, Hash, /^r/
         puts "#{command} |"
       else
         puts "| #{command}"
       end
-      IO.popen(libpath_env, command, *mode, &block)
+      IO.popen(env, commands, *mode, &block)
     end
   end
 
@@ -446,7 +473,7 @@ EOM
     src.sub!(/[^\n]\z/, "\\&\n")
     count = 0
     begin
-      open(conftest_source, "wb") do |cfile|
+      File.open(conftest_source, "wb") do |cfile|
         cfile.print src
       end
     rescue Errno::EACCES
@@ -616,7 +643,7 @@ MSG
     MakeMakefile.rm_f "#{CONFTEST}*"
   end
 
-  alias_method :try_header, (config_string('try_header') || :try_cpp)
+  alias try_header try_compile
 
   def cpp_include(header)
     if header
@@ -770,11 +797,20 @@ int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const
   #             files.
   def try_func(func, libs, headers = nil, opt = "", &b)
     headers = cpp_include(headers)
+    prepare = String.new
     case func
     when /^&/
       decltype = proc {|x|"const volatile void *#{x}"}
     when /\)$/
-      call = func
+      strvars = []
+      call = func.gsub(/""/) {
+        v = "s#{strvars.size + 1}"
+        strvars << v
+        v
+      }
+      unless strvars.empty?
+        prepare << "char " << strvars.map {|v| "#{v}[1024]"}.join(", ") << "; "
+      end
     when nil
       call = ""
     else
@@ -784,7 +820,7 @@ int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const
     if opt and !opt.empty?
       [[:to_str], [:join, " "], [:to_s]].each do |meth, *args|
         if opt.respond_to?(meth)
-          break opt = opt.send(meth, *args)
+          break opt = opt.__send__(meth, *args)
         end
       end
       opt = "#{opt} #{libs}"
@@ -804,7 +840,7 @@ SRC
 extern int t(void);
 #{MAIN_DOES_NOTHING 't'}
 #{"extern void #{call};" if decltype}
-int t(void) { #{call}; return 0; }
+int t(void) { #{prepare}#{call}; return 0; }
 SRC
   end
 
@@ -982,7 +1018,7 @@ SRC
       if noun
         [[:to_str], [:join, ","], [:to_s]].each do |meth, *args|
           if noun.respond_to?(meth)
-            break noun = noun.send(meth, *args)
+            break noun = noun.__send__(meth, *args)
           end
         end
         unless noun.empty?
@@ -1047,7 +1083,7 @@ SRC
   def find_library(lib, func, *paths, &b)
     dir_config(lib)
     lib = with_config(lib+'lib', lib)
-    paths = paths.collect {|path| path.split(File::PATH_SEPARATOR)}.flatten
+    paths = paths.flat_map {|path| path.split(File::PATH_SEPARATOR)}
     checking_for checking_message(func && func.funcall_style, LIBARG%lib) do
       libpath = $LIBPATH
       libs = append_library($libs, lib)
@@ -1728,7 +1764,7 @@ SRC
     hdr = hdr.join("")
     log_src(hdr, "#{header} is")
     unless (IO.read(header) == hdr rescue false)
-      open(header, "wb") do |hfile|
+      File.open(header, "wb") do |hfile|
         hfile.write(hdr)
       end
     end
@@ -1820,16 +1856,24 @@ SRC
   # invoked with the option and a stripped output string is returned
   # without modifying any of the global values mentioned above.
   def pkg_config(pkg, option=nil)
+    _, ldir = dir_config(pkg)
+    if ldir
+      pkg_config_path = "#{ldir}/pkgconfig"
+      if File.directory?(pkg_config_path)
+        Logging.message("PKG_CONFIG_PATH = %s\n", pkg_config_path)
+        envs = ["PKG_CONFIG_PATH"=>[pkg_config_path, ENV["PKG_CONFIG_PATH"]].compact.join(File::PATH_SEPARATOR)]
+      end
+    end
     if pkgconfig = with_config("#{pkg}-config") and find_executable0(pkgconfig)
-      # iff package specific config command is given
+      # if and only if package specific config command is given
     elsif ($PKGCONFIG ||=
            (pkgconfig = with_config("pkg-config", ("pkg-config" unless CROSS_COMPILING))) &&
            find_executable0(pkgconfig) && pkgconfig) and
-        xsystem("#{$PKGCONFIG} --exists #{pkg}")
+        xsystem([*envs, $PKGCONFIG, "--exists", pkg])
       # default to pkg-config command
       pkgconfig = $PKGCONFIG
       get = proc {|opt|
-        opt = xpopen("#{$PKGCONFIG} --#{opt} #{pkg}", err:[:child, :out], &:read)
+        opt = xpopen([*envs, $PKGCONFIG, "--#{opt}", pkg], err:[:child, :out], &:read)
         Logging.open {puts opt.each_line.map{|s|"=> #{s.inspect}"}}
         opt.strip if $?.success?
       }
@@ -1840,7 +1884,7 @@ SRC
     end
     if pkgconfig
       get ||= proc {|opt|
-        opt = xpopen("#{pkgconfig} --#{opt}", err:[:child, :out], &:read)
+        opt = xpopen([*envs, pkgconfig, "--#{opt}"], err:[:child, :out], &:read)
         Logging.open {puts opt.each_line.map{|s|"=> #{s.inspect}"}}
         opt.strip if $?.success?
       }
@@ -1908,7 +1952,7 @@ SRC
         path.sub!(/\A([A-Za-z]):(?=\/)/, '/\1')
         path
       end
-    when 'cygwin'
+    when 'cygwin', 'msys'
       if CONFIG['target_os'] != 'cygwin'
         def mkintpath(path)
           IO.popen(["cygpath", "-u", path], &:read).chomp
@@ -1931,6 +1975,7 @@ SHELL = /bin/sh
 
 # V=0 quiet, V=1 verbose.  other values don't work.
 V = 0
+V0 = $(V:0=)
 Q1 = $(V:1=)
 Q = $(Q1:0=@)
 ECHO1 = $(V:1=@ #{CONFIG['NULLCMD']})
@@ -1942,7 +1987,7 @@ NULLCMD = #{CONFIG['NULLCMD']}
 srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {mkintpath(CONFIG[$1||$2]).unspace}}
 topdir = #{mkintpath(topdir = $extmk ? CONFIG["topdir"] : $topdir).unspace}
 hdrdir = #{(hdrdir = CONFIG["hdrdir"]) == topdir ? "$(topdir)" : mkintpath(hdrdir).unspace}
-arch_hdrdir = #{$arch_hdrdir.quote}
+arch_hdrdir = #{mkintpath($arch_hdrdir).unspace}
 PATH_SEPARATOR = #{CONFIG['PATH_SEPARATOR']}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
 }
@@ -2037,7 +2082,7 @@ RUBY = $(ruby#{sep})
 ruby_headers = #{headers.join(' ')}
 
 RM = #{config_string('RM', &possible_command) || '$(RUBY) -run -e rm -- -f'}
-RM_RF = #{'$(RUBY) -run -e rm -- -rf'}
+RM_RF = #{config_string('RMALL', &possible_command) || '$(RUBY) -run -e rm -- -rf'}
 RMDIRS = #{config_string('RMDIRS', &possible_command) || '$(RUBY) -run -e rmdir -- -p'}
 MAKEDIRS = #{config_string('MAKEDIRS', &possible_command) || '@$(RUBY) -run -e mkdir -- -p'}
 INSTALL = #{config_string('INSTALL', &possible_command) || '@$(RUBY) -run -e install -- -vp'}
@@ -2339,7 +2384,7 @@ CLEANOBJS     = *.#{$OBJEXT} #{config_string('cleanobjs') {|t| t.gsub(/\$\*/, "$
 " #"
 
     conf = yield(conf) if block_given?
-    mfile = open("Makefile", "wb")
+    mfile = File.open("Makefile", "wb")
     mfile.puts(conf)
     mfile.print "
 all:    #{$extout ? "install" : target ? "$(DLLIB)" : "Makefile"}
@@ -2496,7 +2541,7 @@ site-install-rb: install-rb
       mfile.print "$(ECHO) linking static-library $(@#{rsep})\n\t$(Q) "
       mfile.print "$(AR) #{config_string('ARFLAGS') || 'cru '}$@ $(OBJS)"
       config_string('RANLIB') do |ranlib|
-        mfile.print "\n\t-$(Q)#{ranlib} $(@) 2> /dev/null || true"
+        mfile.print "\n\t-$(Q)#{ranlib} $(@)#{$ignore_error}"
       end
     end
     mfile.print "\n\n"
@@ -2762,14 +2807,14 @@ clean-rb-default::
 clean-rb::
 clean-so::
 clean: clean-so clean-static clean-rb-default clean-rb
-\t\t-$(Q)$(RM) $(CLEANLIBS#{sep}) $(CLEANOBJS#{sep}) $(CLEANFILES#{sep}) .*.time
+\t\t-$(Q)$(RM_RF) $(CLEANLIBS#{sep}) $(CLEANOBJS#{sep}) $(CLEANFILES#{sep}) .*.time
 
 distclean-rb-default::
 distclean-rb::
 distclean-so::
 distclean-static::
 distclean: clean distclean-so distclean-static distclean-rb-default distclean-rb
-\t\t-$(Q)$(RM) Makefile $(RUBY_EXTCONF_H) #{CONFTEST}.* mkmf.log
+\t\t-$(Q)$(RM) Makefile $(RUBY_EXTCONF_H) #{CONFTEST}.* mkmf.log#{' exts.mk' if $extmk}
 \t\t-$(Q)$(RM) core ruby$(EXEEXT) *~ $(DISTCLEANFILES#{sep})
 \t\t-$(Q)$(RMDIRS) $(DISTCLEANDIRS#{sep})#{$ignore_error}
 

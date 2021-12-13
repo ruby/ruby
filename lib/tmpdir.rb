@@ -20,14 +20,21 @@ class Dir
 
   def self.tmpdir
     tmp = nil
-    [ENV['TMPDIR'], ENV['TMP'], ENV['TEMP'], @@systmpdir, '/tmp', '.'].each do |dir|
+    ['TMPDIR', 'TMP', 'TEMP', ['system temporary path', @@systmpdir], ['/tmp']*2, ['.']*2].each do |name, dir = ENV[name]|
       next if !dir
       dir = File.expand_path(dir)
-      if stat = File.stat(dir) and stat.directory? and stat.writable? and
-          (!stat.world_writable? or stat.sticky?)
+      stat = File.stat(dir) rescue next
+      case
+      when !stat.directory?
+        warn "#{name} is not a directory: #{dir}"
+      when !stat.writable?
+        warn "#{name} is not writable: #{dir}"
+      when stat.world_writable? && !stat.sticky?
+        warn "#{name} is world-writable: #{dir}"
+      else
         tmp = dir
         break
-      end rescue nil
+      end
     end
     raise ArgumentError, "could not find a temporary directory" unless tmp
     tmp
@@ -62,7 +69,7 @@ class Dir
   #
   #  Dir.mktmpdir {|dir|
   #    # use the directory...
-  #    open("#{dir}/foo", "w") { ... }
+  #    open("#{dir}/foo", "w") { something using the file }
   #  }
   #
   # If a block is not given,
@@ -72,7 +79,7 @@ class Dir
   #  dir = Dir.mktmpdir
   #  begin
   #    # use the directory...
-  #    open("#{dir}/foo", "w") { ... }
+  #    open("#{dir}/foo", "w") { something using the file }
   #  ensure
   #    # remove the directory.
   #    FileUtils.remove_entry dir
@@ -108,7 +115,7 @@ class Dir
       Dir.tmpdir
     end
 
-    UNUSABLE_CHARS = [File::SEPARATOR, File::ALT_SEPARATOR, File::PATH_SEPARATOR, ":"].uniq.join("").freeze
+    UNUSABLE_CHARS = "^,-.0-9A-Z_a-z~"
 
     class << (RANDOM = Random.new)
       MAX = 36**6 # < 0x100000000

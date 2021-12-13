@@ -444,7 +444,6 @@ else
   test_func = "socket(0,0,0)"
   have_library("nsl", 't_open("", 0, (struct t_info *)NULL)', headers) # SunOS
   have_library("socket", "socket(0,0,0)", headers) # SunOS
-  have_library("anl", 'getaddrinfo_a', headers)
 end
 
 if have_func(test_func, headers)
@@ -485,6 +484,9 @@ EOF
   have_func("getpeerucred(0, (ucred_t **)NULL)", headers) # SunOS
 
   have_func_decl = proc do |name, headers|
+    # check if there is a declaration of <name> by trying to declare
+    # both "int <name>(void)" and "void <name>(void)"
+    # (at least one attempt should fail if there is a declaration)
     if !checking_for("declaration of #{name}()") {!%w[int void].all? {|ret| try_compile(<<EOF)}}
 #{cpp_include(headers)}
 #{ret} #{name}(void);
@@ -493,10 +495,10 @@ EOF
     end
   end
   if have_func('if_indextoname(0, "")', headers)
-    have_func_decl["if_indextoname"]
+    have_func_decl["if_indextoname", headers]
   end
   if have_func('if_nametoindex("")', headers)
-    have_func_decl["if_nametoindex"]
+    have_func_decl["if_nametoindex", headers]
   end
 
   have_func("hsterror", headers)
@@ -506,7 +508,6 @@ EOF
   unless have_func("gethostname((char *)0, 0)", headers)
     have_func("uname((struct utsname *)NULL)", headers)
   end
-  have_func("getaddrinfo_a", headers)
 
   ipv6 = false
   default_ipv6 = /haiku/ !~ RUBY_PLATFORM

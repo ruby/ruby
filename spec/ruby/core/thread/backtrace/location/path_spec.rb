@@ -87,6 +87,18 @@ describe 'Thread::Backtrace::Location#path' do
     end
   end
 
+  it 'should be the same path as in #to_s, including for core methods' do
+    # Get the caller_locations from a call made into a core library method
+    locations = [:non_empty].map { caller_locations }[0]
+
+    locations.each do |location|
+      filename = location.to_s[/^(.+):\d+:/, 1]
+      path = location.path
+
+      path.should == filename
+    end
+  end
+
   context "canonicalization" do
     platform_is_not :windows do
       before :each do

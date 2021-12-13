@@ -17,12 +17,11 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines #RBIMPL_HAS_BUILTIN.
  */
 #include "ruby/internal/config.h"
 #include "ruby/internal/compiler_since.h"
-#include "ruby/internal/token_paste.h"
 
 #if defined(__has_builtin)
 # if RBIMPL_COMPILER_IS(Intel)
@@ -47,10 +46,11 @@
 #  * __has_builtin  only  since  GCC  10.   This section  can  be  made  more
 #  * granular. */
 # /* https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66970 */
-# define RBIMPL_HAS_BUILTIN(_) RBIMPL_TOKEN_PASTE(RBIMPL_HAS_BUILTIN_, _)
+# define RBIMPL_HAS_BUILTIN(_) (RBIMPL_HAS_BUILTIN_ ## _)
 # define RBIMPL_HAS_BUILTIN___builtin_add_overflow      RBIMPL_COMPILER_SINCE(GCC, 5, 1, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_alloca            RBIMPL_COMPILER_SINCE(GCC, 0, 0, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_alloca_with_align RBIMPL_COMPILER_SINCE(GCC, 6, 1, 0)
+# define RBIMPL_HAS_BUILTIN___builtin_assume            0
 # /* See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=52624 for bswap16. */
 # define RBIMPL_HAS_BUILTIN___builtin_bswap16           RBIMPL_COMPILER_SINCE(GCC, 4, 8, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_bswap32           RBIMPL_COMPILER_SINCE(GCC, 3, 6, 0)
@@ -68,6 +68,10 @@
 # define RBIMPL_HAS_BUILTIN___builtin_popcount          RBIMPL_COMPILER_SINCE(GCC, 3, 6, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_popcountl         RBIMPL_COMPILER_SINCE(GCC, 3, 6, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_popcountll        RBIMPL_COMPILER_SINCE(GCC, 3, 6, 0)
+# define RBIMPL_HAS_BUILTIN___builtin_rotateleft32      0
+# define RBIMPL_HAS_BUILTIN___builtin_rotateleft64      0
+# define RBIMPL_HAS_BUILTIN___builtin_rotateright32     0
+# define RBIMPL_HAS_BUILTIN___builtin_rotateright64     0
 # define RBIMPL_HAS_BUILTIN___builtin_sub_overflow      RBIMPL_COMPILER_SINCE(GCC, 5, 1, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_unreachable       RBIMPL_COMPILER_SINCE(GCC, 4, 5, 0)
 # /* Note that "0, 0, 0" might be inaccurate. */
@@ -78,9 +82,11 @@
 
 #else
 # /* Take config.h definition when available */
-# define RBIMPL_HAS_BUILTIN(_) (RBIMPL_TOKEN_PASTE(RBIMPL_HAS_BUILTIN_, _)+0)
+# define RBIMPL_HAS_BUILTIN(_) ((RBIMPL_HAS_BUILTIN_ ## _)+0)
 # define RBIMPL_HAS_BUILTIN___builtin_add_overflow      HAVE_BUILTIN___BUILTIN_ADD_OVERFLOW
+# define RBIMPL_HAS_BUILTIN___builtin_alloca            0
 # define RBIMPL_HAS_BUILTIN___builtin_alloca_with_align HAVE_BUILTIN___BUILTIN_ALLOCA_WITH_ALIGN
+# define RBIMPL_HAS_BUILTIN___builtin_assume            0
 # define RBIMPL_HAS_BUILTIN___builtin_assume_aligned    HAVE_BUILTIN___BUILTIN_ASSUME_ALIGNED
 # define RBIMPL_HAS_BUILTIN___builtin_bswap16           HAVE_BUILTIN___BUILTIN_BSWAP16
 # define RBIMPL_HAS_BUILTIN___builtin_bswap32           HAVE_BUILTIN___BUILTIN_BSWAP32
@@ -90,15 +96,23 @@
 # define RBIMPL_HAS_BUILTIN___builtin_clzll             HAVE_BUILTIN___BUILTIN_CLZLL
 # define RBIMPL_HAS_BUILTIN___builtin_constant_p        HAVE_BUILTIN___BUILTIN_CONSTANT_P
 # define RBIMPL_HAS_BUILTIN___builtin_ctz               HAVE_BUILTIN___BUILTIN_CTZ
+# define RBIMPL_HAS_BUILTIN___builtin_ctzl              0
 # define RBIMPL_HAS_BUILTIN___builtin_ctzll             HAVE_BUILTIN___BUILTIN_CTZLL
 # define RBIMPL_HAS_BUILTIN___builtin_expect            HAVE_BUILTIN___BUILTIN_EXPECT
 # define RBIMPL_HAS_BUILTIN___builtin_mul_overflow      HAVE_BUILTIN___BUILTIN_MUL_OVERFLOW
 # define RBIMPL_HAS_BUILTIN___builtin_mul_overflow_p    HAVE_BUILTIN___BUILTIN_MUL_OVERFLOW_P
 # define RBIMPL_HAS_BUILTIN___builtin_popcount          HAVE_BUILTIN___BUILTIN_POPCOUNT
+# define RBIMPL_HAS_BUILTIN___builtin_popcountl         0
+# define RBIMPL_HAS_BUILTIN___builtin_rotateleft32      0
+# define RBIMPL_HAS_BUILTIN___builtin_rotateleft64      0
+# define RBIMPL_HAS_BUILTIN___builtin_rotateright32     0
+# define RBIMPL_HAS_BUILTIN___builtin_rotateright64     0
 # define RBIMPL_HAS_BUILTIN___builtin_popcountll        HAVE_BUILTIN___BUILTIN_POPCOUNTLL
 # define RBIMPL_HAS_BUILTIN___builtin_sub_overflow      HAVE_BUILTIN___BUILTIN_SUB_OVERFLOW
 # if defined(UNREACHABLE)
 #  define RBIMPL_HAS_BUILTIN___builtin_unreachable 1
+# else
+#  define RBIMPL_HAS_BUILTIN___builtin_unreachable 0
 # endif
 #endif
 

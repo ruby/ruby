@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require 'stringio'
-require 'psych/class_loader'
-require 'psych/scalar_scanner'
+require_relative '../class_loader'
+require_relative '../scalar_scanner'
 
 module Psych
   module Nodes

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 class Gem::AvailableSet
-
   include Enumerable
 
   Tuple = Struct.new(:spec, :source)
@@ -74,7 +73,7 @@ class Gem::AvailableSet
   end
 
   def match_platform!
-    @set.reject! {|t| !Gem::Platform.match(t.spec.platform) }
+    @set.reject! {|t| !Gem::Platform.match_spec?(t.spec) }
     @sorted = nil
     self
   end
@@ -162,5 +161,4 @@ class Gem::AvailableSet
   def inject_into_list(dep_list)
     @set.each {|t| dep_list.add t.spec }
   end
-
 end

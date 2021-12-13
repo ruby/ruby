@@ -79,8 +79,14 @@ module URI
     end
 
     @@to_s = Kernel.instance_method(:to_s)
-    def inspect
-      @@to_s.bind_call(self)
+    if @@to_s.respond_to?(:bind_call)
+      def inspect
+        @@to_s.bind_call(self)
+      end
+    else
+      def inspect
+        @@to_s.bind(self).call
+      end
     end
 
     private

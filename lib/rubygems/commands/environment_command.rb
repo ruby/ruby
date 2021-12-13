@@ -1,8 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/command'
+require_relative '../command'
 
 class Gem::Commands::EnvironmentCommand < Gem::Command
-
   def initialize
     super 'environment', 'Display information about the RubyGems environment'
   end
@@ -127,7 +126,7 @@ lib/rubygems/defaults/operating_system.rb
 
     out << "  - RUBYGEMS PLATFORMS:\n"
     Gem.platforms.each do |platform|
-      out << "    - #{platform}\n"
+      out << "     - #{platform}\n"
     end
 
     out << "  - GEM PATHS:\n"
@@ -172,5 +171,4 @@ lib/rubygems/defaults/operating_system.rb
 
     return nil
   end
-
 end

@@ -14,6 +14,9 @@
 #elif defined(__GNUC__)
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
+#elif defined(__SUNPRO_CC)
+#pragma error_messages (off,symdeprecated)
+
 #else
 // :FIXME: improve here for your compiler.
 

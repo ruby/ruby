@@ -72,7 +72,7 @@ module Bundler
         gemfile_specs + dependency_specs
       end
 
-      specs.sort_by(&:name).each do |current_spec|
+      specs.sort_by(&:name).uniq(&:name).each do |current_spec|
         next unless gems.empty? || gems.include?(current_spec.name)
 
         active_spec = retrieve_active_spec(definition, current_spec)
@@ -127,7 +127,7 @@ module Bundler
       end
     end
 
-  private
+    private
 
     def groups_text(group_text, groups)
       "#{group_text}#{groups.split(",").size > 1 ? "s" : ""} \"#{groups}\""
@@ -146,19 +146,16 @@ module Bundler
     end
 
     def retrieve_active_spec(definition, current_spec)
-      return unless current_spec.match_platform(Bundler.local_platform)
+      active_spec = definition.resolve.find_by_name_and_platform(current_spec.name, current_spec.platform)
+      return unless active_spec
 
-      if strict
-        active_spec = definition.find_resolved_spec(current_spec)
-      else
-        active_specs = definition.find_indexed_specs(current_spec)
-        if !current_spec.version.prerelease? && !options[:pre] && active_specs.size > 1
-          active_specs.delete_if {|b| b.respond_to?(:version) && b.version.prerelease? }
-        end
-        active_spec = active_specs.last
+      return active_spec if strict
+
+      active_specs = active_spec.source.specs.search(current_spec.name).select {|spec| spec.match_platform(current_spec.platform) }.sort_by(&:version)
+      if !current_spec.version.prerelease? && !options[:pre] && active_specs.size > 1
+        active_specs.delete_if {|b| b.respond_to?(:version) && b.version.prerelease? }
       end
-
-      active_spec
+      active_specs.last
     end
 
     def print_gems(gems_list)

@@ -82,4 +82,3 @@ module IRB
 
   IRB.initialize_tracer
 end
-

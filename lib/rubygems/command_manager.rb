@@ -5,9 +5,9 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/command'
-require 'rubygems/user_interaction'
-require 'rubygems/text'
+require_relative 'command'
+require_relative 'user_interaction'
+require_relative 'text'
 
 ##
 # The command manager registers and installs all the individual sub-commands
@@ -32,7 +32,6 @@ require 'rubygems/text'
 # See Gem::Command for instructions on writing gem commands.
 
 class Gem::CommandManager
-
   include Gem::Text
   include Gem::UserInteraction
 
@@ -74,7 +73,9 @@ class Gem::CommandManager
   ].freeze
 
   ALIAS_COMMANDS = {
-    'i' => 'install'
+    'i'      => 'install',
+    'login'  => 'signin',
+    'logout' => 'signout',
   }.freeze
 
   ##
@@ -175,8 +176,8 @@ class Gem::CommandManager
     else
       cmd_name = args.shift.downcase
       cmd = find_command cmd_name
-      cmd.invoke_with_build_args args, build_args
       cmd.deprecation_warning if cmd.deprecated?
+      cmd.invoke_with_build_args args, build_args
     end
   end
 
@@ -189,7 +190,7 @@ class Gem::CommandManager
       raise Gem::CommandLineError,
             "Ambiguous command #{cmd_name} matches [#{possibilities.join(', ')}]"
     elsif possibilities.empty?
-      raise Gem::CommandLineError, "Unknown command #{cmd_name}"
+      raise Gem::UnknownCommandError.new(cmd_name)
     end
 
     self[possibilities.first]
@@ -231,5 +232,4 @@ class Gem::CommandManager
       ui.backtrace e
     end
   end
-
 end

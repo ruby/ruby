@@ -3,14 +3,14 @@
 
 Gem::Specification.new do |spec|
   spec.name          = "fcntl"
-  spec.version       = "1.0.0"
+  spec.version       = "1.0.1"
   spec.authors       = ["Yukihiro Matsumoto"]
   spec.email         = ["matz@ruby-lang.org"]
 
   spec.summary       = "Loads constants defined in the OS fcntl.h C header file"
   spec.description   = "Loads constants defined in the OS fcntl.h C header file"
   spec.homepage      = "https://github.com/ruby/fcntl"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.files         = ["ext/fcntl/extconf.rb", "ext/fcntl/fcntl.c"]
   spec.bindir        = "exe"

@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'time'
 
 ##
 # A ChangeLog file parser.
@@ -106,11 +105,29 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
     entries.group_by do |title, _|
       begin
         time = @time_cache[title]
-        (time || Time.parse(title)).strftime '%Y-%m-%d'
+        (time || parse_date(title)).strftime '%Y-%m-%d'
       rescue NoMethodError, ArgumentError
         time, = title.split '  ', 2
-        Time.parse(time).strftime '%Y-%m-%d'
+        parse_date(time).strftime '%Y-%m-%d'
       end
+    end
+  end
+
+  ##
+  # Parse date in ISO-8601, RFC-2822, or default of Git
+
+  def parse_date(date)
+    case date
+    when /\A\s*(\d+)-(\d+)-(\d+)(?:[ T](\d+):(\d+):(\d+) *([-+]\d\d):?(\d\d))?\b/
+      Time.new($1, $2, $3, $4, $5, $6, ("#{$7}:#{$8}" if $7))
+    when /\A\s*\w{3}, +(\d+) (\w{3}) (\d+) (\d+):(\d+):(\d+) *(?:([-+]\d\d):?(\d\d))\b/
+      Time.new($3, $2, $1, $4, $5, $6, ("#{$7}:#{$8}" if $7))
+    when /\A\s*\w{3} (\w{3}) +(\d+) (\d+) (\d+):(\d+):(\d+) *(?:([-+]\d\d):?(\d\d))\b/
+      Time.new($3, $1, $2, $4, $5, $6, ("#{$7}:#{$8}" if $7))
+    when /\A\s*\w{3} (\w{3}) +(\d+) (\d+):(\d+):(\d+) (\d+)\b/
+      Time.new($6, $1, $2, $3, $4, $5)
+    else
+      raise ArgumentError, "bad date: #{date}"
     end
   end
 
@@ -131,6 +148,13 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
 
   def parse_entries
     @time_cache ||= {}
+
+    if /\A((?:.*\n){,3})commit\s/ =~ @content
+      class << self; prepend Git; end
+      parse_info($1)
+      return parse_entries
+    end
+
     entries = []
     entry_name = nil
     entry_body = []
@@ -145,19 +169,10 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
         entry_name = $&
 
         begin
-          time = Time.parse entry_name
+          time = parse_date entry_name
           @time_cache[entry_name] = time
-          # HACK Ruby 1.8 does not raise ArgumentError for Time.parse "Other"
-          entry_name = nil unless entry_name =~ /#{time.year}/
-        rescue NoMethodError
-          # HACK Ruby 2.1.2 and earlier raises NoMethodError if time part is absent
-          entry_name.split '  ', 2
         rescue ArgumentError
-          if /out of range/ =~ $!.message
-            Time.parse(entry_name.split('  ', 2)[0]) rescue entry_name = nil
-          else
-            entry_name = nil
-          end
+          entry_name = nil
         end
 
         entry_body = []
@@ -190,6 +205,7 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
 
   def scan
     @time_cache = {}
+
     entries = parse_entries
     grouped_entries = group_entries entries
 
@@ -200,5 +216,120 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
     @top_level
   end
 
+  module Git
+    def parse_info(info)
+      /^\s*base-url\s*=\s*(.*\S)/ =~ info
+      @base_url = $1
+    end
+
+    def parse_entries
+      entries = []
+
+      @content.scan(/^commit\s+(\h{20})\h*\n((?:.+\n)*)\n((?: {4}.*\n+)*)/) do
+        entry_name, header, entry_body = $1, $2, $3.gsub(/^ {4}/, '')
+        # header = header.scan(/^ *(\S+?): +(.*)/).to_h
+        # date = header["CommitDate"] || header["Date"]
+        date = header[/^ *(?:Author)?Date: +(.*)/, 1]
+        author = header[/^ *Author: +(.*)/, 1]
+        begin
+          time = parse_date(header[/^ *CommitDate: +(.*)/, 1] || date)
+          @time_cache[entry_name] = time
+          author.sub!(/\s*<(.*)>/, '')
+          email = $1
+          entries << [entry_name, [author, email, date, entry_body]]
+        rescue ArgumentError
+        end
+      end
+
+      entries
+    end
+
+    def create_entries entries
+      # git log entries have no strictly itemized style like the old
+      # style, just assume Markdown.
+      entries.map do |commit, entry|
+        LogEntry.new(@base_url, commit, *entry)
+      end
+    end
+
+    LogEntry = Struct.new(:base, :commit, :author, :email, :date, :contents) do
+      HEADING_LEVEL = 3
+
+      def initialize(base, commit, author, email, date, contents)
+        case contents
+        when String
+          contents = RDoc::Markdown.parse(contents).parts.each do |body|
+            case body
+            when RDoc::Markup::Heading
+              body.level += HEADING_LEVEL + 1
+            end
+          end
+          case first = contents[0]
+          when RDoc::Markup::Paragraph
+            contents[0] = RDoc::Markup::Heading.new(HEADING_LEVEL + 1, first.text)
+          end
+        end
+        super
+      end
+
+      def level
+        HEADING_LEVEL
+      end
+
+      def aref
+        "label-#{commit}"
+      end
+
+      def label context = nil
+        aref
+      end
+
+      def text
+        case base
+        when nil
+          "#{date}"
+        when /%s/
+          "{#{date}}[#{base % commit}]"
+        else
+          "{#{date}}[#{base}#{commit}]"
+        end + " {#{author}}[mailto:#{email}]"
+      end
+
+      def accept visitor
+        visitor.accept_heading self
+        begin
+          if visitor.respond_to?(:code_object=)
+            code_object = visitor.code_object
+            visitor.code_object = self
+          end
+          contents.each do |body|
+            body.accept visitor
+          end
+        ensure
+          if visitor.respond_to?(:code_object)
+            visitor.code_object = code_object
+          end
+        end
+      end
+
+      def pretty_print q # :nodoc:
+        q.group(2, '[log_entry: ', ']') do
+          q.text commit
+          q.text ','
+          q.breakable
+          q.group(2, '[date: ', ']') { q.text date }
+          q.text ','
+          q.breakable
+          q.group(2, '[author: ', ']') { q.text author }
+          q.text ','
+          q.breakable
+          q.group(2, '[email: ', ']') { q.text email }
+          q.text ','
+          q.breakable
+          q.pp contents
+        end
+      end
+    end
+  end
 end
 

@@ -133,15 +133,16 @@ class Bundler::Thor
 
   protected
 
-  def assign_result!(option, result)
-    if option.repeatable && option.type == :hash
-      (@assigns[option.human_name] ||= {}).merge!(result)
-    elsif option.repeatable
-      (@assigns[option.human_name] ||= []) << result
-    else
-      @assigns[option.human_name] = result
+    def assign_result!(option, result)
+      if option.repeatable && option.type == :hash
+        (@assigns[option.human_name] ||= {}).merge!(result)
+      elsif option.repeatable
+        (@assigns[option.human_name] ||= []) << result
+      else
+        @assigns[option.human_name] = result
+      end
     end
-  end
+
     # Check if the current value in peek is a registered switch.
     #
     # Two booleans are returned.  The first is true if the current value

@@ -1,11 +1,10 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/local_remote_options'
-require 'rubygems/version_option'
-require 'rubygems/package'
+require_relative '../command'
+require_relative '../local_remote_options'
+require_relative '../version_option'
+require_relative '../package'
 
 class Gem::Commands::SpecificationCommand < Gem::Command
-
   include Gem::LocalRemoteOptions
   include Gem::VersionOption
 
@@ -127,6 +126,12 @@ Specific fields in the specification can be extracted in YAML format:
       terminate_interaction 1
     end
 
+    platform = get_platform_from_requirements(options)
+
+    if platform
+      specs = specs.select{|s| s.platform.to_s == platform }
+    end
+
     unless options[:all]
       specs = [specs.max_by {|s| s.version }]
     end
@@ -143,5 +148,4 @@ Specific fields in the specification can be extracted in YAML format:
       say "\n"
     end
   end
-
 end

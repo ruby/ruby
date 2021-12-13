@@ -22,7 +22,7 @@ class TestAssertion < Test::Unit::TestCase
   end
 
   def test_assert_raise
-    assert_raise(MiniTest::Assertion) do
+    assert_raise(Test::Unit::AssertionFailedError) do
       return_in_assert_raise
     end
   end

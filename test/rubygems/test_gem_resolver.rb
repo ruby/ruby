@@ -1,8 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 
 class TestGemResolver < Gem::TestCase
-
   def setup
     super
 
@@ -77,7 +76,7 @@ class TestGemResolver < Gem::TestCase
 
     assert_same index_set, composed
 
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       @DR.compose_sets nil
     end
 
@@ -267,14 +266,14 @@ class TestGemResolver < Gem::TestCase
 
     res = Gem::Resolver.new [a_dep], Gem::Resolver::IndexSet.new
 
-    e = assert_raises Gem::UnsatisfiableDepedencyError do
+    e = assert_raise Gem::UnsatisfiableDependencyError do
       res.resolve
     end
 
     refute_empty e.errors
   end
 
-  def test_no_overlap_specificly
+  def test_no_overlap_specifically
     a = util_spec "a", '1'
     b = util_spec "b", "1"
 
@@ -446,7 +445,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([ad, bd], s)
 
-    e = assert_raises Gem::DependencyResolutionError do
+    e = assert_raise Gem::DependencyResolutionError do
       r.resolve
     end
 
@@ -470,7 +469,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([ad], set)
 
-    e = assert_raises Gem::UnsatisfiableDepedencyError do
+    e = assert_raise Gem::UnsatisfiableDependencyError do
       r.resolve
     end
 
@@ -487,7 +486,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([ad], set(a1))
 
-    e = assert_raises Gem::UnsatisfiableDepedencyError do
+    e = assert_raise Gem::UnsatisfiableDependencyError do
       r.resolve
     end
 
@@ -500,7 +499,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([ad], set(a1))
 
-    e = assert_raises Gem::UnsatisfiableDepedencyError do
+    e = assert_raise Gem::UnsatisfiableDependencyError do
       r.resolve
     end
 
@@ -517,7 +516,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([ad], set(a1))
 
-    e = assert_raises Gem::UnsatisfiableDepedencyError do
+    e = assert_raise Gem::UnsatisfiableDependencyError do
       r.resolve
     end
 
@@ -540,7 +539,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([ad, bd], s)
 
-    e = assert_raises Gem::DependencyResolutionError do
+    e = assert_raise Gem::DependencyResolutionError do
       r.resolve
     end
 
@@ -612,7 +611,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([d1, d2, d3], s)
 
-    assert_raises Gem::DependencyResolutionError do
+    assert_raise Gem::DependencyResolutionError do
       r.resolve
     end
   end
@@ -630,7 +629,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new [a_dep, b_dep], s
 
-    assert_raises Gem::DependencyResolutionError do
+    assert_raise Gem::DependencyResolutionError do
       r.resolve
     end
   end
@@ -782,12 +781,11 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([ad], set(a1))
 
-    e = assert_raises Gem::UnsatisfiableDepedencyError do
+    e = assert_raise Gem::UnsatisfiableDependencyError do
       r.resolve
     end
 
     assert_match "No match for 'a (= 1)' on this platform. Found: c-p-1",
                  e.message
   end
-
 end

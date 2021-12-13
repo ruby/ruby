@@ -1,7 +1,6 @@
 #ifndef INTERNAL_ARRAY_H                                 /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_ARRAY_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -29,25 +28,25 @@ VALUE rb_ary_tmp_new_fill(long capa);
 VALUE rb_ary_at(VALUE, VALUE);
 size_t rb_ary_memsize(VALUE);
 VALUE rb_to_array_type(VALUE obj);
+VALUE rb_to_array(VALUE obj);
+void rb_ary_cancel_sharing(VALUE ary);
+
 static inline VALUE rb_ary_entry_internal(VALUE ary, long offset);
 static inline bool ARY_PTR_USING_P(VALUE ary);
 static inline void RARY_TRANSIENT_SET(VALUE ary);
 static inline void RARY_TRANSIENT_UNSET(VALUE ary);
-
-RUBY_SYMBOL_EXPORT_BEGIN
-/* array.c (export) */
-void rb_ary_detransient(VALUE a);
-VALUE *rb_ary_ptr_use_start(VALUE ary);
-void rb_ary_ptr_use_end(VALUE ary);
-RUBY_SYMBOL_EXPORT_END
 
 MJIT_SYMBOL_EXPORT_BEGIN
 VALUE rb_ary_tmp_new_from_values(VALUE, long, const VALUE *);
 VALUE rb_check_to_array(VALUE ary);
 VALUE rb_ary_behead(VALUE, long);
 VALUE rb_ary_aref1(VALUE ary, VALUE i);
+
+struct rb_execution_context_struct;
+VALUE rb_ec_ary_new_from_values(struct rb_execution_context_struct *ec, long n, const VALUE *elts);
 MJIT_SYMBOL_EXPORT_END
 
+// YJIT needs this function to never allocate and never raise
 static inline VALUE
 rb_ary_entry_internal(VALUE ary, long offset)
 {
@@ -99,5 +98,16 @@ RARY_TRANSIENT_UNSET(VALUE ary)
         rb_ary_new_from_values(numberof(args_to_new_ary), args_to_new_ary); \
     })
 #endif
+
+#undef RARRAY_AREF
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
+static inline VALUE
+RARRAY_AREF(VALUE ary, long i)
+{
+    RBIMPL_ASSERT_TYPE(ary, RUBY_T_ARRAY);
+
+    return RARRAY_CONST_PTR_TRANSIENT(ary)[i];
+}
 
 #endif /* INTERNAL_ARRAY_H */

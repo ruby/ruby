@@ -4,7 +4,6 @@
 # contained the Dependency.
 
 class Gem::Resolver::DependencyRequest
-
   ##
   # The wrapped Gem::Dependency
 
@@ -29,7 +28,7 @@ class Gem::Resolver::DependencyRequest
     when Gem::Dependency
       @dependency == other
     when Gem::Resolver::DependencyRequest
-      @dependency == other.dependency && @requester == other.requester
+      @dependency == other.dependency
     else
       false
     end
@@ -116,5 +115,4 @@ class Gem::Resolver::DependencyRequest
   def to_s # :nodoc:
     @dependency.to_s
   end
-
 end

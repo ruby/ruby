@@ -188,7 +188,7 @@ RSpec.describe Bundler::Source do
     end
   end
 
-private
+  private
 
   def with_ui(ui)
     old_ui = Bundler.ui

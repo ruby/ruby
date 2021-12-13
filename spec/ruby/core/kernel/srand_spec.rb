@@ -37,7 +37,7 @@ describe "Kernel.srand" do
     srand.should == -17
   end
 
-  it "accepts a Bignum as a seed" do
+  it "accepts an Integer as a seed" do
     srand(0x12345678901234567890)
     srand.should == 0x12345678901234567890
   end

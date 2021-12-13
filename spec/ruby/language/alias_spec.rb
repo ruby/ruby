@@ -218,7 +218,7 @@ describe "The alias keyword" do
     subclass.new.test("testing").should == 4
   end
 
-  it "is not allowed against Fixnum or String instances" do
+  it "is not allowed against Integer or String instances" do
     -> do
       1.instance_eval do
         alias :foo :to_s

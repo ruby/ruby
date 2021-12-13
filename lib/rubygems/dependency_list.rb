@@ -5,8 +5,8 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'tsort'
-require 'rubygems/deprecate'
+require_relative 'tsort'
+require_relative 'deprecate'
 
 ##
 # Gem::DependencyList is used for installing and uninstalling gems in the
@@ -17,11 +17,10 @@ require 'rubygems/deprecate'
 # this class necessary anymore?  Especially #ok?, #why_not_ok?
 
 class Gem::DependencyList
-
   attr_reader :specs
 
   include Enumerable
-  include TSort
+  include Gem::TSort
 
   ##
   # Allows enabling/disabling use of development dependencies
@@ -240,5 +239,4 @@ class Gem::DependencyList
   def active_count(specs, ignored)
     specs.count {|spec| ignored[spec.full_name].nil? }
   end
-
 end

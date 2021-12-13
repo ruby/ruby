@@ -2,6 +2,7 @@
 begin
   require_relative 'helper'
   require 'fiddle/cparser'
+  require 'fiddle/import'
 rescue LoadError
 end
 
@@ -11,53 +12,77 @@ module Fiddle
 
     def test_char_ctype
       assert_equal(TYPE_CHAR, parse_ctype('char'))
+      assert_equal(TYPE_CHAR, parse_ctype('const char'))
       assert_equal(TYPE_CHAR, parse_ctype('signed char'))
+      assert_equal(TYPE_CHAR, parse_ctype('const signed char'))
       assert_equal(-TYPE_CHAR, parse_ctype('unsigned char'))
+      assert_equal(-TYPE_CHAR, parse_ctype('const unsigned char'))
     end
 
     def test_short_ctype
       assert_equal(TYPE_SHORT, parse_ctype('short'))
+      assert_equal(TYPE_SHORT, parse_ctype('const short'))
       assert_equal(TYPE_SHORT, parse_ctype('short int'))
+      assert_equal(TYPE_SHORT, parse_ctype('const short int'))
       assert_equal(TYPE_SHORT, parse_ctype('signed short'))
+      assert_equal(TYPE_SHORT, parse_ctype('const signed short'))
       assert_equal(TYPE_SHORT, parse_ctype('signed short int'))
+      assert_equal(TYPE_SHORT, parse_ctype('const signed short int'))
       assert_equal(-TYPE_SHORT, parse_ctype('unsigned short'))
+      assert_equal(-TYPE_SHORT, parse_ctype('const unsigned short'))
       assert_equal(-TYPE_SHORT, parse_ctype('unsigned short int'))
+      assert_equal(-TYPE_SHORT, parse_ctype('const unsigned short int'))
     end
 
     def test_int_ctype
       assert_equal(TYPE_INT, parse_ctype('int'))
+      assert_equal(TYPE_INT, parse_ctype('const int'))
       assert_equal(TYPE_INT, parse_ctype('signed int'))
+      assert_equal(TYPE_INT, parse_ctype('const signed int'))
       assert_equal(-TYPE_INT, parse_ctype('uint'))
+      assert_equal(-TYPE_INT, parse_ctype('const uint'))
       assert_equal(-TYPE_INT, parse_ctype('unsigned int'))
+      assert_equal(-TYPE_INT, parse_ctype('const unsigned int'))
     end
 
     def test_long_ctype
       assert_equal(TYPE_LONG, parse_ctype('long'))
+      assert_equal(TYPE_LONG, parse_ctype('const long'))
       assert_equal(TYPE_LONG, parse_ctype('long int'))
+      assert_equal(TYPE_LONG, parse_ctype('const long int'))
       assert_equal(TYPE_LONG, parse_ctype('signed long'))
+      assert_equal(TYPE_LONG, parse_ctype('const signed long'))
       assert_equal(TYPE_LONG, parse_ctype('signed long int'))
+      assert_equal(TYPE_LONG, parse_ctype('const signed long int'))
       assert_equal(-TYPE_LONG, parse_ctype('unsigned long'))
+      assert_equal(-TYPE_LONG, parse_ctype('const unsigned long'))
       assert_equal(-TYPE_LONG, parse_ctype('unsigned long int'))
+      assert_equal(-TYPE_LONG, parse_ctype('const unsigned long int'))
     end
 
     def test_size_t_ctype
       assert_equal(TYPE_SIZE_T, parse_ctype("size_t"))
+      assert_equal(TYPE_SIZE_T, parse_ctype("const size_t"))
     end
 
     def test_ssize_t_ctype
       assert_equal(TYPE_SSIZE_T, parse_ctype("ssize_t"))
+      assert_equal(TYPE_SSIZE_T, parse_ctype("const ssize_t"))
     end
 
     def test_ptrdiff_t_ctype
       assert_equal(TYPE_PTRDIFF_T, parse_ctype("ptrdiff_t"))
+      assert_equal(TYPE_PTRDIFF_T, parse_ctype("const ptrdiff_t"))
     end
 
     def test_intptr_t_ctype
       assert_equal(TYPE_INTPTR_T, parse_ctype("intptr_t"))
+      assert_equal(TYPE_INTPTR_T, parse_ctype("const intptr_t"))
     end
 
     def test_uintptr_t_ctype
       assert_equal(TYPE_UINTPTR_T, parse_ctype("uintptr_t"))
+      assert_equal(TYPE_UINTPTR_T, parse_ctype("const uintptr_t"))
     end
 
     def test_undefined_ctype
@@ -65,27 +90,147 @@ module Fiddle
     end
 
     def test_undefined_ctype_with_type_alias
-      assert_equal(-TYPE_LONG, parse_ctype('DWORD', {"DWORD" => "unsigned long"}))
+      assert_equal(-TYPE_LONG,
+                   parse_ctype('DWORD', {"DWORD" => "unsigned long"}))
+      assert_equal(-TYPE_LONG,
+                   parse_ctype('const DWORD', {"DWORD" => "unsigned long"}))
+    end
+
+    def expand_struct_types(types)
+      types.collect do |type|
+        case type
+        when Class
+          [expand_struct_types(type.types)]
+        when Array
+          [expand_struct_types([type[0]])[0][0], type[1]]
+        else
+          type
+        end
+      end
     end
 
     def test_struct_basic
-      assert_equal [[TYPE_INT, TYPE_CHAR], ['i', 'c']], parse_struct_signature(['int i', 'char c'])
+      assert_equal([[TYPE_INT, TYPE_CHAR], ['i', 'c']],
+                   parse_struct_signature(['int i', 'char c']))
+      assert_equal([[TYPE_INT, TYPE_CHAR], ['i', 'c']],
+                   parse_struct_signature(['const int i', 'const char c']))
     end
 
     def test_struct_array
-      assert_equal [[[TYPE_CHAR,80],[TYPE_INT,5]], ['buffer','x']], parse_struct_signature(['char buffer[80]', 'int[5] x'])
+      assert_equal([[[TYPE_CHAR, 80], [TYPE_INT, 5]],
+                    ['buffer', 'x']],
+                   parse_struct_signature(['char buffer[80]',
+                                           'int[5] x']))
+      assert_equal([[[TYPE_CHAR, 80], [TYPE_INT, 5]],
+                    ['buffer', 'x']],
+                   parse_struct_signature(['const char buffer[80]',
+                                           'const int[5] x']))
+    end
+
+    def test_struct_nested_struct
+      types, members = parse_struct_signature([
+                                                'int x',
+                                                {inner: ['int i', 'char c']},
+                                              ])
+      assert_equal([[TYPE_INT, [[TYPE_INT, TYPE_CHAR]]],
+                    ['x', ['inner', ['i', 'c']]]],
+                   [expand_struct_types(types),
+                    members])
+    end
+
+    def test_struct_nested_defined_struct
+      inner = Fiddle::Importer.struct(['int i', 'char c'])
+      assert_equal([[TYPE_INT, inner],
+                    ['x', ['inner', ['i', 'c']]]],
+                   parse_struct_signature([
+                                            'int x',
+                                            {inner: inner},
+                                          ]))
+    end
+
+    def test_struct_double_nested_struct
+      types, members = parse_struct_signature([
+                                                'int x',
+                                                {
+                                                  outer: [
+                                                    'int y',
+                                                    {inner: ['int i', 'char c']},
+                                                  ],
+                                                },
+                                              ])
+      assert_equal([[TYPE_INT, [[TYPE_INT, [[TYPE_INT, TYPE_CHAR]]]]],
+                    ['x', ['outer', ['y', ['inner', ['i', 'c']]]]]],
+                   [expand_struct_types(types),
+                    members])
+    end
+
+    def test_struct_nested_struct_array
+      types, members = parse_struct_signature([
+                                                'int x',
+                                                {
+                                                  'inner[2]' => [
+                                                    'int i',
+                                                    'char c',
+                                                  ],
+                                                },
+                                              ])
+      assert_equal([[TYPE_INT, [[TYPE_INT, TYPE_CHAR], 2]],
+                    ['x', ['inner', ['i', 'c']]]],
+                   [expand_struct_types(types),
+                    members])
+    end
+
+    def test_struct_double_nested_struct_inner_array
+      types, members = parse_struct_signature(outer: [
+                                                'int x',
+                                                {
+                                                  'inner[2]' => [
+                                                    'int i',
+                                                    'char c',
+                                                  ],
+                                                },
+                                              ])
+      assert_equal([[[[TYPE_INT, [[TYPE_INT, TYPE_CHAR], 2]]]],
+                    [['outer', ['x', ['inner', ['i', 'c']]]]]],
+                   [expand_struct_types(types),
+                    members])
+    end
+
+    def test_struct_double_nested_struct_outer_array
+      types, members = parse_struct_signature([
+                                                'int x',
+                                                {
+                                                  'outer[2]' => {
+                                                    inner: [
+                                                      'int i',
+                                                      'char c',
+                                                    ],
+                                                  },
+                                                },
+                                              ])
+      assert_equal([[TYPE_INT, [[[[TYPE_INT, TYPE_CHAR]]], 2]],
+                    ['x', ['outer', [['inner', ['i', 'c']]]]]],
+                   [expand_struct_types(types),
+                    members])
     end
 
     def test_struct_array_str
-      assert_equal [[[TYPE_CHAR,80],[TYPE_INT,5]], ['buffer','x']], parse_struct_signature('char buffer[80], int[5] x')
+      assert_equal([[[TYPE_CHAR, 80], [TYPE_INT, 5]],
+                    ['buffer', 'x']],
+                   parse_struct_signature('char buffer[80], int[5] x'))
+      assert_equal([[[TYPE_CHAR, 80], [TYPE_INT, 5]],
+                    ['buffer', 'x']],
+                   parse_struct_signature('const char buffer[80], const int[5] x'))
     end
 
     def test_struct_function_pointer
-      assert_equal [[TYPE_VOIDP], ['cb']], parse_struct_signature(['void (*cb)(const char*)'])
+      assert_equal([[TYPE_VOIDP], ['cb']],
+                   parse_struct_signature(['void (*cb)(const char*)']))
     end
 
     def test_struct_function_pointer_str
-      assert_equal [[TYPE_VOIDP,TYPE_VOIDP], ['cb', 'data']], parse_struct_signature('void (*cb)(const char*), const char* data')
+      assert_equal([[TYPE_VOIDP, TYPE_VOIDP], ['cb', 'data']],
+                   parse_struct_signature('void (*cb)(const char*), const char* data'))
     end
 
     def test_struct_string
@@ -177,6 +322,18 @@ module Fiddle
       assert_equal 'func', func
       assert_equal TYPE_INT, ret
       assert_equal [TYPE_VOIDP, TYPE_INT, TYPE_INT], args
+    end
+
+    def test_signature_variadic_arguments
+      unless Fiddle.const_defined?("TYPE_VARIADIC")
+        omit "libffi doesn't support variadic arguments"
+      end
+      assert_equal([
+                     "printf",
+                     TYPE_INT,
+                     [TYPE_VOIDP, TYPE_VARIADIC],
+                   ],
+                   parse_signature('int printf(const char *format, ...)'))
     end
 
     def test_signature_return_pointer

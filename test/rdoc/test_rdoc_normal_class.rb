@@ -11,7 +11,7 @@ class TestRDocNormalClass < XrefTestCase
     sub_klass.superclass = klass
     sub_klass.add_include incl
 
-    assert_equal [incl.name, klass, 'Object'], sub_klass.ancestors
+    assert_equal [incl.name, klass, @object, 'BasicObject'], sub_klass.ancestors
   end
 
   def test_ancestors_multilevel
@@ -19,7 +19,7 @@ class TestRDocNormalClass < XrefTestCase
     c2 = @top_level.add_class RDoc::NormalClass, 'Middle', c1.full_name
     c3 = @top_level.add_class RDoc::NormalClass, 'Inner', c2.full_name
 
-    assert_equal [c2, c1, 'Object'], c3.ancestors
+    assert_equal [c2, c1, @object, 'BasicObject'], c3.ancestors
   end
 
   def test_aref

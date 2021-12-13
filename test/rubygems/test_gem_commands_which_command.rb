@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/commands/which_command'
 
 class TestGemCommandsWhichCommand < Gem::TestCase
-
   def setup
     super
     Gem::Specification.reset
@@ -27,7 +26,7 @@ class TestGemCommandsWhichCommand < Gem::TestCase
     @cmd.handle_options %w[directory]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -45,7 +44,7 @@ class TestGemCommandsWhichCommand < Gem::TestCase
     @cmd.handle_options %w[foo_bar missinglib]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -59,7 +58,7 @@ class TestGemCommandsWhichCommand < Gem::TestCase
     @cmd.handle_options %w[missinglib]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -82,5 +81,4 @@ class TestGemCommandsWhichCommand < Gem::TestCase
       FileUtils.touch filename
     end
   end
-
 end

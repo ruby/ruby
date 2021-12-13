@@ -358,7 +358,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
  *
  *  [-MB] MIME encode Base64 stream.
  *
- *  [-MQ] Perfome quoted encoding.
+ *  [-MQ] Perform quoted encoding.
  *
  *  === -l
  *
@@ -458,7 +458,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
  *  with this and -x option, nkf can be used as UTF converter.
  *  (In other words, without this and -x option, nkf doesn't save some characters)
  *
- *  When nkf convert string which related to path, you should use this opion.
+ *  When nkf convert string which related to path, you should use this option.
  *
  *  === --cap-input
  *

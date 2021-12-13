@@ -211,6 +211,31 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
+  def test_of_eval
+    method = self.method(eval("def example_method_#{$$}; end"))
+    assert_raise(ArgumentError) { RubyVM::AbstractSyntaxTree.of(method) }
+
+    method = self.method(eval("def self.example_singleton_method_#{$$}; end"))
+    assert_raise(ArgumentError) { RubyVM::AbstractSyntaxTree.of(method) }
+
+    method = eval("proc{}")
+    assert_raise(ArgumentError) { RubyVM::AbstractSyntaxTree.of(method) }
+
+    method = self.method(eval("singleton_class.define_method(:example_define_method_#{$$}){}"))
+    assert_raise(ArgumentError) { RubyVM::AbstractSyntaxTree.of(method) }
+
+    method = self.method(eval("define_singleton_method(:example_dsm_#{$$}){}"))
+    assert_raise(ArgumentError) { RubyVM::AbstractSyntaxTree.of(method) }
+
+    method = eval("Class.new{def example_method; end}.instance_method(:example_method)")
+    assert_raise(ArgumentError) { RubyVM::AbstractSyntaxTree.of(method) }
+  end
+
+  def test_of_c_method
+    c = Class.new { attr_reader :foo }
+    assert_nil(RubyVM::AbstractSyntaxTree.of(c.instance_method(:foo)))
+  end
+
   def test_scope_local_variables
     node = RubyVM::AbstractSyntaxTree.parse("_x = 0")
     lv, _, body = *node.children
@@ -253,6 +278,19 @@ class TestAst < Test::Unit::TestCase
     mid, defn = body.children
     assert_equal(:a, mid)
     assert_equal(:SCOPE, defn.type)
+    _, args, = defn.children
+    assert_equal(:ARGS, args.type)
+  end
+
+  def test_defn_endless
+    node = RubyVM::AbstractSyntaxTree.parse("def a = nil")
+    _, _, body = *node.children
+    assert_equal(:DEFN, body.type)
+    mid, defn = body.children
+    assert_equal(:a, mid)
+    assert_equal(:SCOPE, defn.type)
+    _, args, = defn.children
+    assert_equal(:ARGS, args.type)
   end
 
   def test_defs
@@ -263,6 +301,20 @@ class TestAst < Test::Unit::TestCase
     assert_equal(:VCALL, recv.type)
     assert_equal(:b, mid)
     assert_equal(:SCOPE, defn.type)
+    _, args, = defn.children
+    assert_equal(:ARGS, args.type)
+  end
+
+  def test_defs_endless
+    node = RubyVM::AbstractSyntaxTree.parse("def a.b = nil")
+    _, _, body = *node.children
+    assert_equal(:DEFS, body.type)
+    recv, mid, defn = body.children
+    assert_equal(:VCALL, recv.type)
+    assert_equal(:b, mid)
+    assert_equal(:SCOPE, defn.type)
+    _, args, = defn.children
+    assert_equal(:ARGS, args.type)
   end
 
   def test_dstr
@@ -344,5 +396,55 @@ class TestAst < Test::Unit::TestCase
     node = RubyVM::AbstractSyntaxTree.parse("proc { |*a| }")
     _, args = *node.children.last.children[1].children
     assert_equal(:a, args.children[rest])
+  end
+
+  def test_keep_script_lines_for_parse
+    node = RubyVM::AbstractSyntaxTree.parse(<<~END, keep_script_lines: true)
+1.times do
+  2.times do
+  end
+end
+__END__
+dummy
+    END
+
+    expected = [
+      "1.times do\n",
+      "  2.times do\n",
+      "  end\n",
+      "end\n",
+      "__END__\n",
+    ]
+    assert_equal(expected, node.script_lines)
+
+    expected =
+      "1.times do\n" +
+      "  2.times do\n" +
+      "  end\n" +
+      "end"
+    assert_equal(expected, node.source)
+
+    expected =
+             "do\n" +
+      "  2.times do\n" +
+      "  end\n" +
+      "end"
+    assert_equal(expected, node.children.last.children.last.source)
+
+    expected =
+        "2.times do\n" +
+      "  end"
+    assert_equal(expected, node.children.last.children.last.children.last.source)
+  end
+
+  def test_keep_script_lines_for_of
+    proc = Proc.new { 1 + 2 }
+    method = self.method(__method__)
+
+    node_proc = RubyVM::AbstractSyntaxTree.of(proc, keep_script_lines: true)
+    node_method = RubyVM::AbstractSyntaxTree.of(method, keep_script_lines: true)
+
+    assert_equal("{ 1 + 2 }", node_proc.source)
+    assert_equal("def test_keep_script_lines_for_of\n", node_method.source.lines.first)
   end
 end

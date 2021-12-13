@@ -1,0 +1,82 @@
+= Dig Methods
+
+Ruby's +dig+ methods are useful for accessing nested data structures.
+
+Consider this data:
+    item = {
+      id: "0001",
+      type: "donut",
+      name: "Cake",
+      ppu: 0.55,
+      batters: {
+        batter: [
+          {id: "1001", type: "Regular"},
+          {id: "1002", type: "Chocolate"},
+          {id: "1003", type: "Blueberry"},
+          {id: "1004", type: "Devil's Food"}
+        ]
+      },
+      topping: [
+        {id: "5001", type: "None"},
+        {id: "5002", type: "Glazed"},
+        {id: "5005", type: "Sugar"},
+        {id: "5007", type: "Powdered Sugar"},
+        {id: "5006", type: "Chocolate with Sprinkles"},
+        {id: "5003", type: "Chocolate"},
+        {id: "5004", type: "Maple"}
+      ]
+    }
+
+Without a +dig+ method, you can write:
+    item[:batters][:batter][1][:type] # => "Chocolate"
+
+With a +dig+ method, you can write:
+    item.dig(:batters, :batter, 1, :type) # => "Chocolate"
+
+Without a +dig+ method, you can write, erroneously
+(raises <tt>NoMethodError (undefined method `[]' for nil:NilClass)</tt>):
+    item[:batters][:BATTER][1][:type]
+
+With a +dig+ method, you can write (still erroneously, but avoiding the exception):
+    item.dig(:batters, :BATTER, 1, :type) # => nil
+
+== Why Is +dig+ Better?
+
+- It has fewer syntactical elements (to get wrong).
+- It reads better.
+- It does not raise an exception if an item is not found.
+
+== How Does +dig+ Work?
+
+The call sequence is:
+  obj.dig(*identifiers)
+
+The +identifiers+ define a "path" into the nested data structures:
+- For each identifier in +identifiers+, calls method \#dig on a receiver
+  with that identifier.
+- The first receiver is +self+.
+- Each successive receiver is the value returned by the previous call to +dig+.
+- The value finally returned is the value returned by the last call to +dig+.
+
+A +dig+ method raises an exception if any receiver does not respond to \#dig:
+  h = { foo: 1 }
+  # Raises TypeError (Integer does not have #dig method):
+  h.dig(:foo, :bar)
+
+== What Else?
+
+The structure above has \Hash objects and \Array objects,
+both of which have instance method +dig+.
+
+Altogether there are six built-in Ruby classes that have method +dig+,
+three in the core classes and three in the standard library.
+
+In the core:
+- Array#dig: the first argument is an \Integer index.
+- Hash#dig: the first argument is a key.
+- Struct#dig: the first argument is a key.
+
+In the standard library:
+- OpenStruct#dig: the first argument is a \String name.
+- CSV::Table#dig: the first argument is an \Integer index or a \String header.
+- CSV::Row#dig: the first argument is an \Integer index or a \String header.

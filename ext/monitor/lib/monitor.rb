@@ -17,7 +17,7 @@
 # structure.
 #
 # You can read more about the general principles on the Wikipedia page for
-# Monitors[http://en.wikipedia.org/wiki/Monitor_%28synchronization%29]
+# Monitors[https://en.wikipedia.org/wiki/Monitor_%28synchronization%29]
 #
 # == Examples
 #

@@ -31,7 +31,7 @@ describe "Kernel#instance_variable_set" do
     -> { dog_at.new.instance_variable_set(:"@", "cat") }.should raise_error(NameError)
   end
 
-  it "raises a TypeError if the instance variable name is a Fixnum" do
+  it "raises a TypeError if the instance variable name is an Integer" do
     -> { "".instance_variable_set(1, 2) }.should raise_error(TypeError)
   end
 

@@ -1,13 +1,13 @@
 Gem::Specification.new do |spec|
   spec.name          = "readline-ext"
-  spec.version       = "0.1.0"
+  spec.version       = "0.1.3"
   spec.authors       = ["Yukihiro Matsumoto"]
   spec.email         = ["matz@ruby-lang.org"]
 
   spec.summary       = %q{Provides an interface for GNU Readline and Edit Line (libedit).}
   spec.description   = %q{Provides an interface for GNU Readline and Edit Line (libedit).}
   spec.homepage      = "https://github.com/ruby/readline-ext"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
   spec.extensions    = %w[ext/readline/extconf.rb]
 
   spec.metadata["homepage_uri"] = spec.homepage

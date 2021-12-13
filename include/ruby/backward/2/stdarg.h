@@ -17,14 +17,18 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines old #_
  *
- * Nobody should  ever use these  macros any  longer.  No konwn  compilers lack
+ * Nobody should  ever use these  macros any  longer.  No known  compilers lack
  * prototypes today.  It's 21st century.  Just forget them.
  */
 
 #undef _
+/**
+ * @deprecated  Nobody practically needs this macro any longer.
+ * @brief       This was a transition path from K&R to ANSI.
+ */
 #ifdef HAVE_PROTOTYPES
 # define _(args) args
 #else
@@ -32,12 +36,30 @@
 #endif
 
 #undef __
+/**
+ * @deprecated  Nobody practically needs this macro any longer.
+ * @brief       This was a transition path from K&R to ANSI.
+ */
 #ifdef HAVE_STDARG_PROTOTYPES
 # define __(args) args
 #else
 # define __(args) ()
 #endif
 
+/**
+ * Functions  declared using  this  macro take  arbitrary arguments,  including
+ * void.
+ *
+ * ```CXX
+ * void func(ANYARGS);
+ * ```
+ *
+ * This  was a  necessary  evil when  there  was no  such  thing like  function
+ * overloading.  But it  is the 21st century today.  People  generally need not
+ * use this.  Just use a granular typed function.
+ *
+ * @see ruby::backward::cxxanyargs
+ */
 #ifdef __cplusplus
 #define ANYARGS ...
 #else

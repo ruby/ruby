@@ -200,6 +200,14 @@ class TestNumeric < Test::Unit::TestCase
     assert_nil(a <=> :foo)
   end
 
+  def test_float_round_ndigits
+    bug14635 = "[ruby-core:86323]"
+    f = 0.5
+    31.times do |i|
+      assert_equal(0.5, f.round(i+1), bug14635 + " (argument: #{i+1})")
+    end
+  end
+
   def test_floor_ceil_round_truncate
     a = Class.new(Numeric) do
       def to_f; 1.5; end
@@ -227,6 +235,15 @@ class TestNumeric < Test::Unit::TestCase
     assert_equal(-1, a.ceil)
     assert_equal(-2, a.round)
     assert_equal(-1, a.truncate)
+  end
+
+  def test_floor_ceil_ndigits
+    bug17183 = "[ruby-core:100090]"
+    f = 291.4
+    31.times do |i|
+      assert_equal(291.4, f.floor(i+1), bug17183)
+      assert_equal(291.4, f.ceil(i+1), bug17183)
+    end
   end
 
   def assert_step(expected, (from, *args), inf: false)
@@ -267,12 +284,7 @@ class TestNumeric < Test::Unit::TestCase
     assert_raise(ArgumentError) { 1.step(10, "1") { } }
     assert_raise(ArgumentError) { 1.step(10, "1").size }
     assert_raise(TypeError) { 1.step(10, nil) { } }
-    assert_nothing_raised { 1.step(10, 0).size }
     assert_nothing_raised { 1.step(10, nil).size }
-    assert_nothing_raised { 1.step(by: 0, to: nil) }
-    assert_nothing_raised { 1.step(by: 0, to: nil).size }
-    assert_nothing_raised { 1.step(by: 0) }
-    assert_nothing_raised { 1.step(by: 0).size }
     assert_nothing_raised { 1.step(by: nil) }
     assert_nothing_raised { 1.step(by: nil).size }
 
@@ -292,6 +304,22 @@ class TestNumeric < Test::Unit::TestCase
     assert_raise(ArgumentError, bug9811) { 1.step(10, 1, by: 11) {} }
     assert_raise(ArgumentError, bug9811) { 1.step(10, 1, by: 11).size }
 
+    feature15573 = "[ruby-core:91324] [Feature #15573]"
+    assert_raise(ArgumentError, feature15573) { 1.step(10, 0) }
+    assert_raise(ArgumentError, feature15573) { 1.step(10, by: 0) }
+    assert_raise(ArgumentError, feature15573) { 1.step(10, 0) { break } }
+    assert_raise(ArgumentError, feature15573) { 1.step(10, by: 0) { break } }
+    assert_raise(ArgumentError, feature15573) { 42.step(by: 0, to: -Float::INFINITY) }
+    assert_raise(ArgumentError, feature15573) { 42.step(by: 0, to: 42.5) }
+    assert_raise(ArgumentError, feature15573) { 4.2.step(by: 0.0) }
+    assert_raise(ArgumentError, feature15573) { 4.2.step(by: -0.0) }
+    assert_raise(ArgumentError, feature15573) { 42.step(by: 0.0, to: 44) }
+    assert_raise(ArgumentError, feature15573) { 42.step(by: 0.0, to: 0) }
+    assert_raise(ArgumentError, feature15573) { 42.step(by: -0.0, to: 44) }
+    assert_raise(ArgumentError, feature15573) { bignum.step(by: 0) }
+    assert_raise(ArgumentError, feature15573) { bignum.step(by: 0.0) }
+    assert_raise(ArgumentError, feature15573) { bignum.step(by: 0, to: bignum+1) }
+    assert_raise(ArgumentError, feature15573) { bignum.step(by: 0, to: 0) }
 
     e = 1.step(10, {by: "1"})
     assert_raise(TypeError) {e.next}
@@ -322,8 +350,6 @@ class TestNumeric < Test::Unit::TestCase
 
     assert_step [], [2, 1, 3]
     assert_step [], [-2, -1, -3]
-    assert_step [3, 3, 3, 3], [3, by: 0], inf: true
-    assert_step [3, 3, 3, 3], [3, by: 0, to: 42], inf: true
     assert_step [10], [10, 1, -bignum]
 
     assert_step [], [1, 0, Float::INFINITY]
@@ -333,19 +359,6 @@ class TestNumeric < Test::Unit::TestCase
     assert_step [10, 11, 12, 13], [10], inf: true
     assert_step [10, 9, 8, 7], [10, by: -1], inf: true
     assert_step [10, 9, 8, 7], [10, by: -1, to: nil], inf: true
-
-    assert_step [42, 42, 42, 42], [42, by: 0, to: -Float::INFINITY], inf: true
-    assert_step [42, 42, 42, 42], [42, by: 0, to: 42.5], inf: true
-    assert_step [4.2, 4.2, 4.2, 4.2], [4.2, by: 0.0], inf: true
-    assert_step [4.2, 4.2, 4.2, 4.2], [4.2, by: -0.0], inf: true
-    assert_step [42.0, 42.0, 42.0, 42.0], [42, by: 0.0, to: 44], inf: true
-    assert_step [42.0, 42.0, 42.0, 42.0], [42, by: 0.0, to: 0], inf: true
-    assert_step [42.0, 42.0, 42.0, 42.0], [42, by: -0.0, to: 44], inf: true
-
-    assert_step [bignum]*4, [bignum, by: 0], inf: true
-    assert_step [bignum]*4, [bignum, by: 0.0], inf: true
-    assert_step [bignum]*4, [bignum, by: 0, to: bignum+1], inf: true
-    assert_step [bignum]*4, [bignum, by: 0, to: 0], inf: true
   end
 
   def test_step_bug15537
@@ -386,6 +399,18 @@ class TestNumeric < Test::Unit::TestCase
       end.new
       assert_raise(ArgumentError) {1.remainder(x)}
     end;
+  end
+
+  def test_remainder_infinity
+    assert_equal(4, 4.remainder(Float::INFINITY))
+    assert_equal(4, 4.remainder(-Float::INFINITY))
+    assert_equal(-4, -4.remainder(Float::INFINITY))
+    assert_equal(-4, -4.remainder(-Float::INFINITY))
+
+    assert_equal(4.2, 4.2.remainder(Float::INFINITY))
+    assert_equal(4.2, 4.2.remainder(-Float::INFINITY))
+    assert_equal(-4.2, -4.2.remainder(Float::INFINITY))
+    assert_equal(-4.2, -4.2.remainder(-Float::INFINITY))
   end
 
   def test_comparison_comparable
@@ -435,6 +460,26 @@ class TestNumeric < Test::Unit::TestCase
     assert_equal(12, 12.pow(1, 10000000001), '[Bug #14259]')
     assert_equal(12, 12.pow(1, 10000000002), '[Bug #14259]')
     assert_equal(17298641040, 12.pow(72387894339363242, 243682743764), '[Bug #14259]')
+
+    integers = [-2, -1, 0, 1, 2, 3, 6, 1234567890123456789]
+    integers.each do |i|
+      assert_equal(0, i.pow(0, 1), '[Bug #17257]')
+      assert_equal(1, i.pow(0, 2))
+      assert_equal(1, i.pow(0, 3))
+      assert_equal(1, i.pow(0, 6))
+      assert_equal(1, i.pow(0, 1234567890123456789))
+
+      assert_equal(0,  i.pow(0, -1))
+      assert_equal(-1, i.pow(0, -2))
+      assert_equal(-2, i.pow(0, -3))
+      assert_equal(-5, i.pow(0, -6))
+      assert_equal(-1234567890123456788, i.pow(0, -1234567890123456789))
+    end
+
+    assert_equal(0,  0.pow(2, 1))
+    assert_equal(0,  0.pow(3, 1))
+    assert_equal(0,  2.pow(3, 1))
+    assert_equal(0, -2.pow(3, 1))
   end
 
 end

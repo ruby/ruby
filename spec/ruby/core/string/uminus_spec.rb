@@ -31,42 +31,19 @@ describe 'String#-@' do
     (-"unfrozen string").should_not equal(-"another unfrozen string")
   end
 
-  ruby_version_is ""..."2.6" do
-    it "does not deduplicate already frozen strings" do
-      dynamic = %w(this string is frozen).join(' ').freeze
+  it "deduplicates frozen strings" do
+    dynamic = %w(this string is frozen).join(' ').freeze
 
-      dynamic.should_not equal("this string is frozen".freeze)
+    dynamic.should_not equal("this string is frozen".freeze)
 
-      (-dynamic).should_not equal("this string is frozen".freeze)
-      (-dynamic).should_not equal(-"this string is frozen".freeze)
-      (-dynamic).should == "this string is frozen"
-    end
-
-    it "does not deduplicate tainted strings" do
-      dynamic = %w(this string is frozen).join(' ')
-      dynamic.taint
-      (-dynamic).should_not equal("this string is frozen".freeze)
-      (-dynamic).should_not equal(-"this string is frozen".freeze)
-      (-dynamic).should == "this string is frozen"
-    end
-
-    it "does not deduplicate strings with additional instance variables" do
-      dynamic = %w(this string is frozen).join(' ')
-      dynamic.instance_variable_set(:@foo, :bar)
-      (-dynamic).should_not equal("this string is frozen".freeze)
-      (-dynamic).should_not equal(-"this string is frozen".freeze)
-      (-dynamic).should == "this string is frozen"
-    end
+    (-dynamic).should equal("this string is frozen".freeze)
+    (-dynamic).should equal(-"this string is frozen".freeze)
   end
 
-  ruby_version_is "2.6" do
-    it "deduplicates frozen strings" do
-      dynamic = %w(this string is frozen).join(' ').freeze
-
-      dynamic.should_not equal("this string is frozen".freeze)
-
-      (-dynamic).should equal("this string is frozen".freeze)
-      (-dynamic).should equal(-"this string is frozen".freeze)
+  ruby_version_is "3.0" do
+    it "interns the provided string if it is frozen" do
+      dynamic = "this string is unique and frozen #{rand}".freeze
+      (-dynamic).should equal(dynamic)
     end
   end
 end

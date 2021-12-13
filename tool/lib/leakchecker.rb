@@ -112,7 +112,7 @@ class LeakChecker
       }
       unless fd_leaked.empty?
         unless @@try_lsof == false
-          @@try_lsof |= system("lsof -p #$$", out: MiniTest::Unit.output)
+          @@try_lsof |= system(*%W[lsof -a -d #{fd_leaked.minmax.uniq.join("-")} -p #$$], out: Test::Unit::Runner.output)
         end
       end
       h.each {|fd, list|
@@ -209,13 +209,28 @@ class LeakChecker
     return leaked
   end
 
-  def find_env
-    ENV.to_h
+  e = ENV["_Ruby_Env_Ignorecase_"], ENV["_RUBY_ENV_IGNORECASE_"]
+  begin
+    ENV["_Ruby_Env_Ignorecase_"] = ENV["_RUBY_ENV_IGNORECASE_"] = nil
+    ENV["_RUBY_ENV_IGNORECASE_"] = "ENV_CASE_TEST"
+    ENV_IGNORECASE = ENV["_Ruby_Env_Ignorecase_"] == "ENV_CASE_TEST"
+  ensure
+    ENV["_Ruby_Env_Ignorecase_"], ENV["_RUBY_ENV_IGNORECASE_"] = e
+  end
+
+  if ENV_IGNORECASE
+    def find_env
+      ENV.to_h {|k, v| [k.upcase, v]}
+    end
+  else
+    def find_env
+      ENV.to_h
+    end
   end
 
   def check_env(test_name)
     old_env = @env_info
-    new_env = ENV.to_h
+    new_env = find_env
     return false if old_env == new_env
     (old_env.keys | new_env.keys).sort.each {|k|
       if old_env.has_key?(k)
@@ -286,7 +301,7 @@ class LeakChecker
   end
 
   def puts(*a)
-    output = MiniTest::Unit.output
+    output = Test::Unit::Runner.output
     if defined?(output.set_encoding)
       output.set_encoding(nil, nil)
     end

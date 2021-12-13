@@ -108,7 +108,7 @@ describe "C-API String function" do
 
     it "returns a string with the given capacity" do
       buf = @s.rb_str_buf_new(256, nil)
-      @s.rb_str_capacity(buf).should == 256
+      @s.rb_str_capacity(buf).should >= 256
     end
 
     it "returns a string that can be appended to" do
@@ -598,6 +598,14 @@ describe "C-API String function" do
       str = "        "
       @s.RSTRING_PTR_short_memcpy(str).should == "Infinity"
     end
+
+    it "allows read() to update the string contents" do
+      filename = fixture(__FILE__, "read.txt")
+      str = ""
+      capacities = @s.RSTRING_PTR_read(str, filename)
+      capacities.should == [30, 53]
+      str.should == "fixture file contents to test read() with RSTRING_PTR"
+    end
   end
 
   describe "RSTRING_LEN" do
@@ -665,25 +673,40 @@ describe "C-API String function" do
     end
   end
 
+  describe "rb_str_modify" do
+    it "raises an error if the string is frozen" do
+      -> { @s.rb_str_modify("frozen".freeze) }.should raise_error(FrozenError)
+    end
+  end
+
   describe "rb_str_modify_expand" do
     it "grows the capacity to bytesize + expand, not changing the bytesize" do
       str = @s.rb_str_buf_new(256, "abcd")
-      @s.rb_str_capacity(str).should == 256
+      @s.rb_str_capacity(str).should >= 256
 
       @s.rb_str_set_len(str, 3)
       str.bytesize.should == 3
       @s.RSTRING_LEN(str).should == 3
-      @s.rb_str_capacity(str).should == 256
+      @s.rb_str_capacity(str).should >= 256
 
       @s.rb_str_modify_expand(str, 4)
       str.bytesize.should == 3
       @s.RSTRING_LEN(str).should == 3
-      @s.rb_str_capacity(str).should == 7
+      @s.rb_str_capacity(str).should >= 7
 
       @s.rb_str_modify_expand(str, 1024)
       str.bytesize.should == 3
       @s.RSTRING_LEN(str).should == 3
-      @s.rb_str_capacity(str).should == 1027
+      @s.rb_str_capacity(str).should >= 1027
+
+      @s.rb_str_modify_expand(str, 1)
+      str.bytesize.should == 3
+      @s.RSTRING_LEN(str).should == 3
+      @s.rb_str_capacity(str).should >= 4
+    end
+
+    it "raises an error if the string is frozen" do
+      -> { @s.rb_str_modify_expand("frozen".freeze, 10) }.should raise_error(FrozenError)
     end
   end
 
@@ -698,6 +721,11 @@ describe "C-API String function" do
 
     it "updates the string's attributes visible in C code" do
       @s.rb_str_resize_RSTRING_LEN("test", 2).should == 2
+    end
+
+    it "copies the existing bytes" do
+      str = "t"
+      @s.rb_str_resize_copy(str).should == "test"
     end
 
     it "increases the size of the string" do
@@ -1027,6 +1055,51 @@ end
       s = 'Result: true.'
       @s.rb_sprintf4(true.class).should == s
     end
+
+    it "truncates a string to a supplied precision if that is shorter than the string" do
+      s = 'Result: Hel.'
+      @s.rb_sprintf5(0, 3, "Hello").should == s
+    end
+
+    it "does not truncates a string to a supplied precision if that is longer than the string" do
+      s = 'Result: Hello.'
+      @s.rb_sprintf5(0, 8, "Hello").should == s
+    end
+
+    it "pads a string to a supplied width if that is longer than the string" do
+      s = 'Result:    Hello.'
+      @s.rb_sprintf5(8, 5, "Hello").should == s
+    end
+
+    it "truncates a VALUE string to a supplied precision if that is shorter than the VALUE string" do
+      s = 'Result: Hel.'
+      @s.rb_sprintf6(0, 3, "Hello").should == s
+    end
+
+    it "does not truncates a VALUE string to a supplied precision if that is longer than the VALUE string" do
+      s = 'Result: Hello.'
+      @s.rb_sprintf6(0, 8, "Hello").should == s
+    end
+
+    it "pads a VALUE string to a supplied width if that is longer than the VALUE string" do
+      s = 'Result:    Hello.'
+      @s.rb_sprintf6(8, 5, "Hello").should == s
+    end
+
+    it "can format a nil VALUE as a pointer and gives the same output as sprintf in C" do
+      res = @s.rb_sprintf7("%p", nil);
+      res[0].should == res[1]
+    end
+
+    it "can format a string VALUE as a pointer and gives the same output as sprintf in C" do
+      res = @s.rb_sprintf7("%p", "Hello")
+      res[0].should == res[1]
+    end
+
+    it "can format a raw number a pointer and gives the same output as sprintf in C" do
+      res = @s.rb_sprintf7("%p", 0x223643);
+      res[0].should == res[1]
+    end
   end
 
   describe "rb_vsprintf" do
@@ -1114,6 +1187,53 @@ end
       str = @s.rb_utf8_str_new_cstr
       str.should == "nokogiri"
       str.encoding.should == Encoding::UTF_8
+    end
+  end
+
+  describe "rb_str_vcatf" do
+    it "appends the message to the string" do
+      @s.rb_str_vcatf("").should == "fmt 42 7 number"
+
+      str = "test "
+      @s.rb_str_vcatf(str)
+      str.should == "test fmt 42 7 number"
+    end
+  end
+
+  describe "rb_str_catf" do
+    it "appends the message to the string" do
+      @s.rb_str_catf("").should == "fmt 41 6 number"
+
+      str = "test "
+      @s.rb_str_catf(str)
+      str.should == "test fmt 41 6 number"
+    end
+  end
+
+  describe "rb_str_locktmp" do
+    it "raises an error when trying to lock an already locked string" do
+      str = "test"
+      @s.rb_str_locktmp(str).should == str
+      -> { @s.rb_str_locktmp(str) }.should raise_error(RuntimeError, 'temporal locking already locked string')
+    end
+
+    it "locks a string so that modifications would raise an error" do
+      str = "test"
+      @s.rb_str_locktmp(str).should == str
+      -> { str.upcase! }.should raise_error(RuntimeError, 'can\'t modify string; temporarily locked')
+    end
+  end
+
+  describe "rb_str_unlocktmp" do
+    it "unlocks a locked string" do
+      str = "test"
+      @s.rb_str_locktmp(str)
+      @s.rb_str_unlocktmp(str).should == str
+      str.upcase!.should == "TEST"
+    end
+
+    it "raises an error when trying to unlock an already unlocked string" do
+      -> { @s.rb_str_unlocktmp("test") }.should raise_error(RuntimeError, 'temporal unlocking already unlocked string')
     end
   end
 end

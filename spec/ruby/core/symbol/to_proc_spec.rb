@@ -12,7 +12,7 @@ describe "Symbol#to_proc" do
     :to_s.to_proc.call(obj).should == "Received #to_s"
   end
 
-  ruby_version_is ""..."2.8" do
+  ruby_version_is ""..."3.0" do
     it "returns a Proc with #lambda? false" do
       pr = :to_s.to_proc
       pr.should_not.lambda?
@@ -29,7 +29,7 @@ describe "Symbol#to_proc" do
     end
   end
 
-  ruby_version_is "2.8" do
+  ruby_version_is "3.0" do
     it "returns a Proc with #lambda? true" do
       pr = :to_s.to_proc
       pr.should.lambda?
@@ -47,7 +47,9 @@ describe "Symbol#to_proc" do
   end
 
   it "raises an ArgumentError when calling #call on the Proc without receiver" do
-    -> { :object_id.to_proc.call }.should raise_error(ArgumentError, "no receiver given")
+    -> {
+      :object_id.to_proc.call
+    }.should raise_error(ArgumentError, /no receiver given|wrong number of arguments \(given 0, expected 1\+\)/)
   end
 
   it "passes along the block passed to Proc#call" do

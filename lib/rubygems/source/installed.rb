@@ -3,7 +3,6 @@
 # Represents an installed gem.  This is used for dependency resolution.
 
 class Gem::Source::Installed < Gem::Source
-
   def initialize # :nodoc:
     @uri = nil
   end
@@ -36,5 +35,4 @@ class Gem::Source::Installed < Gem::Source
   def pretty_print(q) # :nodoc:
     q.text '[Installed]'
   end
-
 end

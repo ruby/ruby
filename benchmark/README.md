@@ -37,7 +37,7 @@ Usage: benchmark-driver [options] RUBY|YAML...
         --bundler                    Install and use gems specified in Gemfile
         --filter REGEXP              Filter out benchmarks with given regexp
         --run-duration SECONDS       Warmup estimates loop_count to run for this duration (default: 3)
-    -v, --verbose                    Verbose mode. Multiple -v options increase visilibity (max: 2)
+    -v, --verbose                    Verbose mode. Multiple -v options increase visibility (max: 2)
 ```
 
 ## make benchmark

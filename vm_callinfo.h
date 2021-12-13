@@ -1,7 +1,6 @@
 #ifndef RUBY_VM_CALLINFO_H                               /*-*-C-*-vi:se ft=c:*/
 #define RUBY_VM_CALLINFO_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -169,8 +168,8 @@ static inline void
 vm_ci_dump(const struct rb_callinfo *ci)
 {
     if (vm_ci_packed_p(ci)) {
-        fprintf(stderr, "packed_ci ID:%s flag:%x argc:%u\n",
-                rb_id2name(vm_ci_mid(ci)), vm_ci_flag(ci), vm_ci_argc(ci));
+        ruby_debug_printf("packed_ci ID:%s flag:%x argc:%u\n",
+                          rb_id2name(vm_ci_mid(ci)), vm_ci_flag(ci), vm_ci_argc(ci));
     }
     else {
         rp(ci);
@@ -205,7 +204,7 @@ vm_ci_new_(ID mid, unsigned int flag, unsigned int argc, const struct rb_callinf
 #endif
 
     const bool debug = 0;
-    if (debug) fprintf(stderr, "%s:%d ", file, line);
+    if (debug) ruby_debug_printf("%s:%d ", file, line);
 
     // TODO: dedup
     const struct rb_callinfo *ci = (const struct rb_callinfo *)
@@ -267,8 +266,7 @@ vm_ci_markable(const struct rb_callinfo *ci)
 typedef VALUE (*vm_call_handler)(
     struct rb_execution_context_struct *ec,
     struct rb_control_frame_struct *cfp,
-    struct rb_calling_info *calling,
-    struct rb_call_data *cd);
+    struct rb_calling_info *calling);
 
 // imemo_callcache
 
@@ -292,6 +290,7 @@ struct rb_callcache {
 };
 
 #define VM_CALLCACHE_UNMARKABLE IMEMO_FL_USER0
+#define VM_CALLCACHE_ON_STACK   IMEMO_FL_USER1
 
 static inline const struct rb_callcache *
 vm_cc_new(VALUE klass,
@@ -307,7 +306,8 @@ vm_cc_new(VALUE klass,
     (struct rb_callcache) {                   \
         .flags = T_IMEMO |                    \
             (imemo_callcache << FL_USHIFT) |  \
-            VM_CALLCACHE_UNMARKABLE,          \
+            VM_CALLCACHE_UNMARKABLE |         \
+            VM_CALLCACHE_ON_STACK,            \
         .klass = clazz,                       \
         .cme_  = cme,                         \
         .call_ = call,                        \
@@ -323,10 +323,21 @@ vm_cc_class_check(const struct rb_callcache *cc, VALUE klass)
     return cc->klass == klass;
 }
 
+static inline int
+vm_cc_markable(const struct rb_callcache *cc)
+{
+    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    return FL_TEST_RAW((VALUE)cc, VM_CALLCACHE_UNMARKABLE) == 0;
+}
+
 static inline const struct rb_callable_method_entry_struct *
 vm_cc_cme(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    VM_ASSERT(cc->call_ == NULL   || // not initialized yet
+              !vm_cc_markable(cc) ||
+              cc->cme_ != NULL);
+
     return cc->cme_;
 }
 
@@ -334,6 +345,7 @@ static inline vm_call_handler
 vm_cc_call(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    VM_ASSERT(cc->call_ != NULL);
     return cc->call_;
 }
 
@@ -351,11 +363,15 @@ vm_cc_cmethod_missing_reason(const struct rb_callcache *cc)
     return cc->aux_.method_missing_reason;
 }
 
-static inline int
-vm_cc_markable(const struct rb_callcache *cc)
+static inline bool
+vm_cc_invalidated_p(const struct rb_callcache *cc)
 {
-    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    return FL_TEST_RAW((VALUE)cc, VM_CALLCACHE_UNMARKABLE) == 0;
+    if (cc->klass && !METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc))) {
+        return false;
+    }
+    else {
+        return true;
+    }
 }
 
 // For MJIT. cc_cme is supposed to have inlined `vm_cc_cme(cc)`.
@@ -372,21 +388,10 @@ vm_cc_valid_p(const struct rb_callcache *cc, const rb_callable_method_entry_t *c
 }
 
 extern const struct rb_callcache *rb_vm_empty_cc(void);
+extern const struct rb_callcache *rb_vm_empty_cc_for_super(void);
 #define vm_cc_empty() rb_vm_empty_cc()
 
-/* callcache: mutete */
-
-static inline void
-vm_cc_cme_set(const struct rb_callcache *cc, const struct rb_callable_method_entry_struct *cme)
-{
-    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    VM_ASSERT(cc != vm_cc_empty());
-    VM_ASSERT(vm_cc_cme(cc) != NULL);
-    VM_ASSERT(vm_cc_cme(cc)->called_id == cme->called_id);
-    VM_ASSERT(!vm_cc_markable(cc)); // only used for vm_eval.c
-
-    *((const struct rb_callable_method_entry_struct **)&cc->cme_) = cme;
-}
+/* callcache: mutate */
 
 static inline void
 vm_cc_call_set(const struct rb_callcache *cc, vm_call_handler call)
@@ -449,6 +454,25 @@ vm_ccs_p(const struct rb_class_cc_entries *ccs)
 {
     return ccs->debug_sig == ~(VALUE)ccs;
 }
+
+static inline bool
+vm_cc_check_cme(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme)
+{
+    if (vm_cc_cme(cc) == cme ||
+        (cme->def->iseq_overload && vm_cc_cme(cc) == cme->def->body.iseq.mandatory_only_cme)) {
+        return true;
+    }
+    else {
+#if 1
+        fprintf(stderr, "iseq_overload:%d mandatory_only_cme:%p eq:%d\n",
+                (int)cme->def->iseq_overload,
+                (void *)cme->def->body.iseq.mandatory_only_cme,
+                vm_cc_cme(cc) == cme->def->body.iseq.mandatory_only_cme);
+#endif
+        return false;
+    }
+}
+
 #endif
 
 // gc.c

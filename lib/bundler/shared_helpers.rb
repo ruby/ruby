@@ -109,19 +109,12 @@ module Bundler
       raise VirtualProtocolError.new
     rescue Errno::ENOSPC
       raise NoSpaceOnDeviceError.new(path, action)
-    rescue *[const_get_safely(:ENOTSUP, Errno)].compact
+    rescue Errno::ENOTSUP
       raise OperationNotSupportedError.new(path, action)
     rescue Errno::EEXIST, Errno::ENOENT
       raise
     rescue SystemCallError => e
       raise GenericSystemCallError.new(e, "There was an error accessing `#{path}`.")
-    end
-
-    def const_get_safely(constant_name, namespace)
-      const_in_namespace = namespace.constants.include?(constant_name.to_s) ||
-        namespace.constants.include?(constant_name.to_sym)
-      return nil unless const_in_namespace
-      namespace.const_get(constant_name)
     end
 
     def major_deprecation(major_version, message, print_caller_location: false)
@@ -150,13 +143,6 @@ module Bundler
       message = "Multiple gemfiles (gems.rb and Gemfile) detected. " \
                 "Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.rb.locked."
       Bundler.ui.warn message
-    end
-
-    def trap(signal, override = false, &block)
-      prior = Signal.trap(signal) do
-        block.call
-        prior.call unless override
-      end
     end
 
     def ensure_same_dependencies(spec, old_deps, new_deps)
@@ -194,11 +180,11 @@ module Bundler
       return @md5_available if defined?(@md5_available)
       @md5_available = begin
         require "openssl"
-        OpenSSL::Digest.digest("MD5", "")
+        ::OpenSSL::Digest.digest("MD5", "")
         true
       rescue LoadError
         true
-      rescue OpenSSL::Digest::DigestError
+      rescue ::OpenSSL::Digest::DigestError
         false
       end
     end
@@ -212,7 +198,7 @@ module Bundler
       filesystem_access(gemfile_path) {|g| File.open(g, "w") {|file| file.puts contents } }
     end
 
-  private
+    private
 
     def validate_bundle_path
       path_separator = Bundler.rubygems.path_separator
@@ -327,12 +313,11 @@ module Bundler
     end
 
     def clean_load_path
-      bundler_lib = bundler_ruby_lib
-
       loaded_gem_paths = Bundler.rubygems.loaded_gem_paths
 
       $LOAD_PATH.reject! do |p|
-        next if resolve_path(p).start_with?(bundler_lib)
+        resolved_path = resolve_path(p)
+        next if $LOADED_FEATURES.any? {|lf| lf.start_with?(resolved_path) }
         loaded_gem_paths.delete(p)
       end
       $LOAD_PATH.uniq!

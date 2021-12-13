@@ -31,7 +31,7 @@
 #
 # To filter what is traced, you can pass any of the following as +events+:
 #
-# +:line+:: execute code on a new line
+# +:line+:: execute an expression or statement on a new line
 # +:class+:: start a class or module definition
 # +:end+:: finish a class or module definition
 # +:call+:: call a Ruby method
@@ -41,6 +41,8 @@
 # +:raise+:: raise an exception
 # +:b_call+:: event hook at block entry
 # +:b_return+:: event hook at block ending
+# +:a_call+:: event hook at all calls (+call+, +b_call+, and +c_call+)
+# +:a_return+:: event hook at all returns (+return+, +b_return+, and +c_return+)
 # +:thread_begin+:: event hook at thread beginning
 # +:thread_end+:: event hook at thread ending
 # +:fiber_switch+:: event hook at fiber switch
@@ -118,13 +120,11 @@ class TracePoint
     Primitive.tracepoint_stat_s
   end
 
-  # Document-method: trace
-  #
   # call-seq:
-  #	TracePoint.trace(*events) { |obj| block }	-> obj
+  #	   TracePoint.trace(*events) { |obj| block }	-> obj
   #
-  #  A convenience method for TracePoint.new, that activates the trace
-  #  automatically.
+  # A convenience method for TracePoint.new, that activates the trace
+  # automatically.
   #
   #	    trace = TracePoint.trace(:call) { |tp| [tp.lineno, tp.event] }
   #	    #=> #<TracePoint:enabled>
@@ -133,6 +133,22 @@ class TracePoint
   #
   def self.trace(*events)
     Primitive.tracepoint_trace_s(events)
+  end
+
+  # call-seq:
+  #   TracePoint.allow_reentry
+  #
+  # In general, while a TracePoint callback is running,
+  # other registered callbacks are not called to avoid
+  # confusion by reentrance.
+  # This method allows the reentrance in a given block.
+  # This method should be used carefully, otherwise the callback
+  # can be easily called infinitely.
+  #
+  # If this method is called when the reentrance is already allowed,
+  # it raises a RuntimeError.
+  def self.allow_reentry
+    Primitive.tracepoint_allow_reentry
   end
 
   # call-seq:
@@ -183,7 +199,7 @@ class TracePoint
   #    t.enable(target: method(:m1))
   #
   #    m1
-  #    # prints #<TracePoint:line@test.rb:4 in `m1'>
+  #    # prints #<TracePoint:line test.rb:4 in `m1'>
   #    m2
   #    # prints nothing
   #
@@ -309,15 +325,21 @@ class TracePoint
     Primitive.tracepoint_attr_defined_class
   end
 
-  # Return the generated binding object from event
+  # Return the generated binding object from event.
+  #
+  # Note that for +c_call+ and +c_return+ events, the binding returned is the
+  # binding of the nearest Ruby method calling the C method, since C methods
+  # themselves do not have bindings.
   def binding
     Primitive.tracepoint_attr_binding
   end
 
   # Return the trace object during event
   #
-  # Same as TracePoint#binding:
-  #	trace.binding.eval('self')
+  # Same as the following, except it returns the correct object (the method
+  # receiver) for +c_call+ and +c_return+ events:
+  #
+  #   trace.binding.eval('self')
   def self
     Primitive.tracepoint_attr_self
   end

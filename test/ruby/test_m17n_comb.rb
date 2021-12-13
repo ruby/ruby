@@ -593,6 +593,21 @@ class TestM17NComb < Test::Unit::TestCase
     }
   end
 
+  def test_str_casecmp?
+    strings = STRINGS.dup
+    strings.push(
+      # prevent wrong single byte optimization
+      "\xC0".force_encoding("ISO-8859-1"),
+      "\xE0".force_encoding("ISO-8859-1"),
+    )
+    combination(strings, strings) {|s1, s2|
+      #puts "#{encdump(s1)}.casecmp(#{encdump(s2)})"
+      next unless s1.valid_encoding? && s2.valid_encoding? && Encoding.compatible?(s1, s2)
+      r = s1.casecmp?(s2)
+      assert_equal(s1.downcase(:fold) == s2.downcase(:fold), r)
+    }
+  end
+
   def test_str_center
     combination(STRINGS, [0,1,2,3,10]) {|s1, width|
       t = s1.center(width)

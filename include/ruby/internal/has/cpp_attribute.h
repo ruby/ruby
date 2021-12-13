@@ -17,15 +17,23 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines #RBIMPL_HAS_CPP_ATTRIBUTE.
  */
 #include "ruby/internal/compiler_is.h"
 #include "ruby/internal/compiler_since.h"
-#include "ruby/internal/token_paste.h"
 
 /** @cond INTERNAL_MACRO */
-#if defined(__has_cpp_attribute)
+#if RBIMPL_COMPILER_IS(SunPro)
+# /* Oracle Developer Studio 12.5's C++  preprocessor is reportedly broken.  We
+#  * could simulate  __has_cpp_attribute like below,  but don't know  the exact
+#  * list of which version supported which attribute.  Just kill everything for
+#  * now.  If you can please :FIXME: */
+# /* https://unicode-org.atlassian.net/browse/ICU-12893 */
+# /* https://github.com/boostorg/config/pull/95 */
+# define RBIMPL_HAS_CPP_ATTRIBUTE0(_) 0
+
+#elif defined(__has_cpp_attribute)
 # define RBIMPL_HAS_CPP_ATTRIBUTE0(_) __has_cpp_attribute(_)
 
 #elif RBIMPL_COMPILER_IS(MSVC)
@@ -33,7 +41,7 @@
 #  * explicitly by a compiler flag).   They also lack __has_cpp_attribute until
 #  * 2019.  However, they do have attributes since 2015 or so. */
 # /* https://docs.microsoft.com/en-us/cpp/overview/visual-cpp-language-conformance */
-# define RBIMPL_HAS_CPP_ATTRIBUTE0(_) RBIMPL_TOKEN_PASTE(RBIMPL_HAS_CPP_ATTRIBUTE_, _)
+# define RBIMPL_HAS_CPP_ATTRIBUTE0(_) (RBIMPL_HAS_CPP_ATTRIBUTE_ ## _)
 # define RBIMPL_HAS_CPP_ATTRIBUTE_noreturn           200809 * RBIMPL_COMPILER_SINCE(MSVC, 19, 00, 0)
 # define RBIMPL_HAS_CPP_ATTRIBUTE_carries_dependency 200809 * RBIMPL_COMPILER_SINCE(MSVC, 19, 00, 0)
 # define RBIMPL_HAS_CPP_ATTRIBUTE_deprecated         201309 * RBIMPL_COMPILER_SINCE(MSVC, 19, 10, 0)
@@ -45,14 +53,14 @@
 # /* Clang  3.6.0  introduced  __has_cpp_attribute.  Prior  to  that  following
 #  * attributes were already there. */
 # /* https://clang.llvm.org/cxx_status.html */
-# define RBIMPL_HAS_CPP_ATTRIBUTE0(_) RBIMPL_TOKEN_PASTE(RBIMPL_HAS_CPP_ATTRIBUTE_, _)
+# define RBIMPL_HAS_CPP_ATTRIBUTE0(_) (RBIMPL_HAS_CPP_ATTRIBUTE_ ## _)
 # define RBIMPL_HAS_CPP_ATTRIBUTE_noreturn           200809 * RBIMPL_COMPILER_SINCE(Clang, 3, 3, 0)
 # define RBIMPL_HAS_CPP_ATTRIBUTE_deprecated         201309 * RBIMPL_COMPILER_SINCE(Clang, 3, 4, 0)
 
 #elif RBIMPL_COMPILER_BEFORE(GCC, 5, 0, 0)
 # /* GCC 5+ have __has_cpp_attribute, while 4.x had following attributes. */
 # /* https://gcc.gnu.org/projects/cxx-status.html */
-# define RBIMPL_HAS_CPP_ATTRIBUTE0(_) RBIMPL_TOKEN_PASTE(RBIMPL_HAS_CPP_ATTRIBUTE_, _)
+# define RBIMPL_HAS_CPP_ATTRIBUTE0(_) (RBIMPL_HAS_CPP_ATTRIBUTE_ ## _)
 # define RBIMPL_HAS_CPP_ATTRIBUTE_noreturn           200809 * RBIMPL_COMPILER_SINCE(GCC, 4, 8, 0)
 # define RBIMPL_HAS_CPP_ATTRIBUTE_deprecated         201309 * RBIMPL_COMPILER_SINCE(GCC, 4, 9, 0)
 
@@ -60,7 +68,6 @@
 # /* :FIXME:
 #  * Candidate compilers to list here:
 #  * - icpc: They have __INTEL_CXX11_MODE__.
-#  * - SunPro: Seems they support C++11.
 #  */
 # define RBIMPL_HAS_CPP_ATTRIBUTE0(_) 0
 #endif

@@ -74,13 +74,26 @@ describe "String#ljust with length, padding" do
     -> { "hello".ljust(10, '') }.should raise_error(ArgumentError)
   end
 
-  it "returns subclass instances when called on subclasses" do
-    StringSpecs::MyString.new("").ljust(10).should be_an_instance_of(StringSpecs::MyString)
-    StringSpecs::MyString.new("foo").ljust(10).should be_an_instance_of(StringSpecs::MyString)
-    StringSpecs::MyString.new("foo").ljust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances when called on subclasses" do
+      StringSpecs::MyString.new("").ljust(10).should be_an_instance_of(StringSpecs::MyString)
+      StringSpecs::MyString.new("foo").ljust(10).should be_an_instance_of(StringSpecs::MyString)
+      StringSpecs::MyString.new("foo").ljust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(StringSpecs::MyString)
 
-    "".ljust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
-    "foo".ljust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
+      "".ljust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
+      "foo".ljust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns String instances when called on subclasses" do
+      StringSpecs::MyString.new("").ljust(10).should be_an_instance_of(String)
+      StringSpecs::MyString.new("foo").ljust(10).should be_an_instance_of(String)
+      StringSpecs::MyString.new("foo").ljust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
+
+      "".ljust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
+      "foo".ljust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
+    end
   end
 
   ruby_version_is ''...'2.7' do

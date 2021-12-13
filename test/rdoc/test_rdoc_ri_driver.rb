@@ -421,6 +421,30 @@ class TestRDocRIDriver < RDoc::TestCase
     assert_equal %w[X Mixin Object Foo], @driver.ancestors_of('Foo::Bar')
   end
 
+  def test_ancestors_of_chained_inclusion
+    # Store represents something like:
+    #
+    #   module X
+    #   end
+    #
+    #   module Y
+    #     include X
+    #   end
+    #
+    #   class Z
+    #     include Y
+    #   end
+    #
+    # Y is not chosen randomly, it has to be after Object in the alphabet
+    # to reproduce https://github.com/ruby/rdoc/issues/814.
+    store = RDoc::RI::Store.new @home_ri
+    store.cache[:ancestors] = { "Z" => ["Object", "Y"], "Y" => ["X"] }
+    store.cache[:modules] = %W[X Y Z]
+    @driver.stores = [store]
+
+    assert_equal %w[X Y Object], @driver.ancestors_of('Z')
+  end
+
   def test_classes
     util_multi_store
 

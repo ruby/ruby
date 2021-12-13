@@ -1,12 +1,13 @@
 Gem::Specification.new do |spec|
   spec.name          = "tempfile"
-  spec.version       = "0.1.0"
-  spec.authors = ["Yukihiro Matsumoto"]
-  spec.email = ["matz@ruby-lang.org"]
+  spec.version       = "0.1.2"
+  spec.authors       = ["Yukihiro Matsumoto"]
+  spec.email         = ["matz@ruby-lang.org"]
 
   spec.summary       = %q{A utility class for managing temporary files.}
   spec.description   = %q{A utility class for managing temporary files.}
   spec.homepage      = "https://github.com/ruby/tempfile"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
   spec.required_ruby_version = Gem::Requirement.new(">= 2.5.0")
 
   spec.metadata["homepage_uri"] = spec.homepage

@@ -1,19 +1,22 @@
-begin
-  require_relative "lib/singleton/version"
-rescue LoadError # Fallback to load version file in ruby core repository
-  require_relative "version"
+# frozen_string_literal: true
+
+name = File.basename(__FILE__, ".gemspec")
+version = ["lib", Array.new(name.count("-")+1, "..").join("/")].find do |dir|
+  break File.foreach(File.join(__dir__, dir, "#{name.tr('-', '/')}.rb")) do |line|
+    /^\s*VERSION\s*=\s*"(.*)"/ =~ line and break $1
+  end rescue nil
 end
 
 Gem::Specification.new do |spec|
-  spec.name          = "singleton"
-  spec.version       = Singleton::VERSION
+  spec.name          = name
+  spec.version       = version
   spec.authors       = ["Yukihiro Matsumoto"]
   spec.email         = ["matz@ruby-lang.org"]
 
   spec.summary       = %q{The Singleton module implements the Singleton pattern.}
   spec.description   = spec.summary
   spec.homepage      = "https://github.com/ruby/singleton"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage

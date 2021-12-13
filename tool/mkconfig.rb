@@ -29,6 +29,7 @@ continued_name = nil
 continued_line = nil
 install_name = nil
 so_name = nil
+platform = nil
 File.foreach "config.status" do |line|
   next if /^#/ =~ line
   name = nil
@@ -87,7 +88,7 @@ File.foreach "config.status" do |line|
       unless $install_name
         $install_name = "ruby"
         val.gsub!(/\$\$/, '$')
-        val.scan(%r[\G[\s;]*(/(?:\\.|[^/])*/)?([sy])(\\?\W)((?:(?!\3)(?:\\.|.))*)\3((?:(?!\3)(?:\\.|.))*)\3([gi]*)]) do
+        val.scan(%r[\G[\s;]*(/(?:\\.|[^/])*+/)?([sy])(\\?\W)((?:(?!\3)(?:\\.|.))*+)\3((?:(?!\3)(?:\\.|.))*+)\3([gi]*)]) do
           |addr, cmd, sep, pat, rep, opt|
           if addr
             Regexp.new(addr[/\A\/(.*)\/\z/, 1]) =~ $install_name or next
@@ -121,9 +122,9 @@ File.foreach "config.status" do |line|
       universal, val = val, 'universal' if universal
     when /^arch$/
       if universal
-        val.sub!(/universal/, %q[#{arch && universal[/(?:\A|\s)#{Regexp.quote(arch)}=(\S+)/, 1] || '\&'}])
+        platform = val.sub(/universal/, %q[#{arch && universal[/(?:\A|\s)#{Regexp.quote(arch)}=(\S+)/, 1] || RUBY_PLATFORM[/\A[^-]*/]}])
       end
-    when /^oldincludedir$/
+    when /^includedir$/
       val = '"$(SDKROOT)"'+val if /darwin/ =~ arch
     end
     v = "  CONFIG[\"#{name}\"] #{eq} #{val}\n"
@@ -268,9 +269,18 @@ print <<EOS if $unicode_emoji_version
   CONFIG["UNICODE_EMOJI_VERSION"] = #{$unicode_emoji_version.dump}
 EOS
 print <<EOS if /darwin/ =~ arch
-  CONFIG["SDKROOT"] = "\#{ENV['SDKROOT']}" # don't run xcrun every time, usually useless.
+  if sdkroot = ENV["SDKROOT"]
+    sdkroot = sdkroot.dup
+  elsif File.exist?(File.join(CONFIG["prefix"], "include")) ||
+        !(sdkroot = (IO.popen(%w[/usr/bin/xcrun --sdk macosx --show-sdk-path], in: IO::NULL, err: IO::NULL, &:read) rescue nil))
+    sdkroot = +""
+  else
+    sdkroot.chomp!
+  end
+  CONFIG["SDKROOT"] = sdkroot
 EOS
 print <<EOS
+  CONFIG["platform"] = #{platform || '"$(arch)"'}
   CONFIG["archdir"] = "$(rubyarchdir)"
   CONFIG["topdir"] = File.dirname(__FILE__)
   # Almost same with CONFIG. MAKEFILE_CONFIG has other variable

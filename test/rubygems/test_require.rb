@@ -1,11 +1,9 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems'
 
 class TestGemRequire < Gem::TestCase
-
   class Latch
-
     def initialize(count = 1)
       @count = count
       @lock  = Monitor.new
@@ -24,17 +22,6 @@ class TestGemRequire < Gem::TestCase
         @cv.wait_while { @count > 0 }
       end
     end
-
-  end
-
-  def setup
-    super
-
-    @old_loaded_features = $LOADED_FEATURES.dup
-    assert_raises LoadError do
-      require 'test_gem_require_a'
-    end
-    $LOADED_FEATURES.replace @old_loaded_features
   end
 
   def assert_require(path)
@@ -91,8 +78,6 @@ class TestGemRequire < Gem::TestCase
     FileUtils.mkdir_p File.dirname c_rb
     File.open(c_rb, 'w') {|f| f.write "class Object; HELLO = 'world' end" }
 
-    lp = $LOAD_PATH.dup
-
     # Pretend to provide a commandline argument that overrides a file in gem b
     $LOAD_PATH.unshift dash_i_arg
 
@@ -101,7 +86,6 @@ class TestGemRequire < Gem::TestCase
     assert_equal "world", ::Object::HELLO
     assert_equal %w[a-1 b-1], loaded_spec_names
   ensure
-    $LOAD_PATH.replace lp
     Object.send :remove_const, :HELLO if Object.const_defined? :HELLO
   end
 
@@ -123,7 +107,7 @@ class TestGemRequire < Gem::TestCase
     c1 = new_default_spec "c", "1", nil, "c/c.rb"
     c2 = new_default_spec "c", "2", nil, "c/c.rb"
 
-    install_default_specs c1, c2, b1, a1
+    install_default_gems c1, c2, b1, a1
 
     dir = Dir.mktmpdir("test_require", @tempdir)
     dash_i_arg = File.join dir, 'lib'
@@ -135,8 +119,6 @@ class TestGemRequire < Gem::TestCase
 
     assert_require 'test_gem_require_a'
 
-    lp = $LOAD_PATH.dup
-
     # Pretend to provide a commandline argument that overrides a file in gem b
     $LOAD_PATH.unshift dash_i_arg
 
@@ -145,27 +127,20 @@ class TestGemRequire < Gem::TestCase
     assert_equal "world", ::Object::HELLO
     assert_equal %w[a-1 b-1], loaded_spec_names
   ensure
-    $LOAD_PATH.replace lp
     Object.send :remove_const, :HELLO if Object.const_defined? :HELLO
   end
 
   def test_dash_i_respects_default_library_extension_priority
-    skip "extensions don't quite work on jruby" if Gem.java_platform?
-    skip "not installed yet" unless RbConfig::TOPDIR
+    pend "extensions don't quite work on jruby" if Gem.java_platform?
+    pend "not installed yet" unless RbConfig::TOPDIR
 
     dash_i_ext_arg = util_install_extension_file('a')
     dash_i_lib_arg = util_install_ruby_file('a')
 
-    lp = $LOAD_PATH.dup
-
-    begin
-      $LOAD_PATH.unshift dash_i_lib_arg
-      $LOAD_PATH.unshift dash_i_ext_arg
-      assert_require 'a'
-      assert_match(/a\.rb$/, $LOADED_FEATURES.last)
-    ensure
-      $LOAD_PATH.replace lp
-    end
+    $LOAD_PATH.unshift dash_i_lib_arg
+    $LOAD_PATH.unshift dash_i_ext_arg
+    assert_require 'a'
+    assert_match(/a\.rb$/, $LOADED_FEATURES.last)
   end
 
   def test_concurrent_require
@@ -248,12 +223,12 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_activate_via_require_respects_loaded_files
-    skip "Not sure what's going on. If another spec creates a 'a' gem before
+    pend "Not sure what's going on. If another spec creates a 'a' gem before
       this test, somehow require will load the benchmark in b, and ignore that the
       stdlib one is already in $LOADED_FEATURES?. Reproducible by running the
       spaceship_specific_file test before this one" if java_platform?
 
-    skip "not installed yet" unless RbConfig::TOPDIR
+    pend "not installed yet" unless RbConfig::TOPDIR
 
     lib_dir = File.expand_path("../../lib", File.dirname(__FILE__))
     rubylibdir = File.realdirpath(RbConfig::CONFIG["rubylibdir"])
@@ -362,7 +337,7 @@ class TestGemRequire < Gem::TestCase
     assert_equal %w[a-1 c-1], loaded_spec_names
     assert_equal ["b (> 0)", "x (> 0)"], unresolved_names
 
-    e = assert_raises(Gem::LoadError) do
+    e = assert_raise(Gem::LoadError) do
       require("ib")
     end
 
@@ -385,7 +360,7 @@ class TestGemRequire < Gem::TestCase
     assert_equal %w[a-1 c-1], loaded_spec_names
     assert_equal ["b (> 0)"], unresolved_names
 
-    e = assert_raises(Gem::LoadError) do
+    e = assert_raise(Gem::LoadError) do
       require("ib")
     end
 
@@ -408,8 +383,8 @@ class TestGemRequire < Gem::TestCase
 
     # Remove an old default gem version directly from disk as if someone ran
     # gem cleanup.
-    FileUtils.rm_rf(File.join @default_dir, "#{b1.full_name}")
-    FileUtils.rm_rf(File.join @default_spec_dir, "#{b1.full_name}.gemspec")
+    FileUtils.rm_rf(File.join @gemhome, "#{b1.full_name}")
+    FileUtils.rm_rf(File.join @gemhome, "specifications", "default", "#{b1.full_name}.gemspec")
 
     # Require gems that have not been removed.
     assert_require 'a/b'
@@ -436,7 +411,7 @@ class TestGemRequire < Gem::TestCase
   def test_default_gem_only
     default_gem_spec = new_default_spec("default", "2.0.0.0",
                                         nil, "default/gem.rb")
-    install_default_specs(default_gem_spec)
+    install_default_gems(default_gem_spec)
     assert_require "default/gem"
     assert_equal %w[default-2.0.0.0], loaded_spec_names
   end
@@ -444,7 +419,7 @@ class TestGemRequire < Gem::TestCase
   def test_default_gem_require_activates_just_once
     default_gem_spec = new_default_spec("default", "2.0.0.0",
                                         nil, "default/gem.rb")
-    install_default_specs(default_gem_spec)
+    install_default_gems(default_gem_spec)
 
     assert_require "default/gem"
 
@@ -469,8 +444,7 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_realworld_default_gem
-    testing_ruby_repo = !ENV["GEM_COMMAND"].nil?
-    skip "this test can't work under ruby-core setup" if testing_ruby_repo || java_platform?
+    omit "this test can't work under ruby-core setup" if testing_ruby_repo?
 
     cmd = <<-RUBY
       $stderr = $stdout
@@ -483,8 +457,7 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_realworld_upgraded_default_gem
-    testing_ruby_repo = !ENV["GEM_COMMAND"].nil?
-    skip "this test can't work under ruby-core setup" if testing_ruby_repo
+    omit "this test can't work under ruby-core setup" if testing_ruby_repo?
 
     newer_json = util_spec("json", "999.99.9", nil, ["lib/json.rb"])
     install_gem newer_json
@@ -509,7 +482,7 @@ class TestGemRequire < Gem::TestCase
   def test_default_gem_and_normal_gem
     default_gem_spec = new_default_spec("default", "2.0.0.0",
                                         nil, "default/gem.rb")
-    install_default_specs(default_gem_spec)
+    install_default_gems(default_gem_spec)
     normal_gem_spec = util_spec("default", "3.0", nil,
                                "lib/default/gem.rb")
     install_specs(normal_gem_spec)
@@ -547,11 +520,11 @@ class TestGemRequire < Gem::TestCase
   def test_default_gem_prerelease
     default_gem_spec = new_default_spec("default", "2.0.0",
                                         nil, "default/gem.rb")
-    install_default_specs(default_gem_spec)
+    install_default_gems(default_gem_spec)
 
     normal_gem_higher_prerelease_spec = util_spec("default", "3.0.0.rc2", nil,
                                                   "lib/default/gem.rb")
-    install_default_specs(normal_gem_higher_prerelease_spec)
+    install_default_gems(normal_gem_higher_prerelease_spec)
 
     assert_require "default/gem"
     assert_equal %w[default-3.0.0.rc2], loaded_spec_names
@@ -568,10 +541,8 @@ class TestGemRequire < Gem::TestCase
   def test_try_activate_error_unlocks_require_monitor
     silence_warnings do
       class << ::Gem
-
         alias old_try_activate try_activate
         def try_activate(*); raise 'raised from try_activate'; end
-
       end
     end
 
@@ -582,9 +553,7 @@ class TestGemRequire < Gem::TestCase
   ensure
     silence_warnings do
       class << ::Gem
-
         alias try_activate old_try_activate
-
       end
     end
     Kernel::RUBYGEMS_ACTIVATION_MONITOR.exit
@@ -593,7 +562,7 @@ class TestGemRequire < Gem::TestCase
   def test_require_when_gem_defined
     default_gem_spec = new_default_spec("default", "2.0.0.0",
                                         nil, "default/gem.rb")
-    install_default_specs(default_gem_spec)
+    install_default_gems(default_gem_spec)
     c = Class.new do
       def self.gem(*args)
         raise "received #gem with #{args.inspect}"
@@ -633,7 +602,7 @@ class TestGemRequire < Gem::TestCase
       b2a = util_spec('bundler', '2.a', nil, "lib/bundler/setup.rb")
       install_specs b1, b2a
 
-      e = assert_raises Gem::MissingSpecVersionError do
+      e = assert_raise Gem::MissingSpecVersionError do
         gem('bundler')
       end
       assert_match "Could not find 'bundler' (55) required by reason.", e.message
@@ -684,9 +653,52 @@ class TestGemRequire < Gem::TestCase
         end
       end
     end
+
+    def test_no_crash_when_overriding_warn_with_warning_module
+      Dir.mktmpdir("warn_test") do |dir|
+        File.write(dir + "/main.rb", "module Warning; def warn(str); super; end; end; warn 'Foo Bar'")
+        _, err = capture_subprocess_io do
+          system(*ruby_with_rubygems_in_load_path, "-w", "--disable=gems", "-C", dir, "main.rb")
+        end
+        assert_match(/Foo Bar\n$/, err)
+        _, err = capture_subprocess_io do
+          system(*ruby_with_rubygems_in_load_path, "-w", "--enable=gems", "-C", dir, "main.rb")
+        end
+        assert_match(/Foo Bar\n$/, err)
+      end
+    end
+
+    def test_expected_backtrace_location_when_inheriting_from_basic_object_and_including_kernel
+      Dir.mktmpdir("warn_test") do |dir|
+        File.write(dir + "/main.rb", "\nrequire 'sub'\n")
+        File.write(dir + "/sub.rb", <<-'RUBY')
+          require 'rubygems'
+          class C < BasicObject
+            include ::Kernel
+            def deprecated
+              warn "This is a deprecated method", uplevel: 2
+            end
+          end
+          C.new.deprecated
+        RUBY
+
+        _, err = capture_subprocess_io do
+          system(*ruby_with_rubygems_in_load_path, "-w", "--disable=gems", "-C", dir, "-I", dir, "main.rb")
+        end
+        assert_match(/main\.rb:2: warning: This is a deprecated method$/, err)
+        _, err = capture_subprocess_io do
+          system(*ruby_with_rubygems_in_load_path, "-w", "--enable=gems", "-C", dir, "-I", dir, "main.rb")
+        end
+        assert_match(/main\.rb:2: warning: This is a deprecated method$/, err)
+      end
+    end
   end
 
   private
+
+  def testing_ruby_repo?
+    !ENV["GEM_COMMAND"].nil?
+  end
 
   def silence_warnings
     old_verbose, $VERBOSE = $VERBOSE, false
@@ -719,12 +731,12 @@ class TestGemRequire < Gem::TestCase
     spec.files += ["extconf.rb", "depend", "#{name}.c"]
 
     so = File.join(spec.gem_dir, "#{name}.#{RbConfig::CONFIG["DLEXT"]}")
-    refute_path_exists so
+    assert_path_not_exist so
 
     path = Gem::Package.build spec
     installer = Gem::Installer.at path
     installer.install
-    assert_path_exists so
+    assert_path_exist so
 
     spec.gem_dir
   end
@@ -740,5 +752,4 @@ class TestGemRequire < Gem::TestCase
 
     dash_i_lib_arg
   end
-
 end

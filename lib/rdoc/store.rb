@@ -723,7 +723,7 @@ class RDoc::Store
 
   def page name
     @text_files_hash.each_value.find do |file|
-      file.page_name == name
+      file.page_name == name or file.base_name == name
     end
   end
 

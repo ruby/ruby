@@ -4,14 +4,13 @@
 require 'date_core'
 
 class Date
+  VERSION = '3.2.2' # :nodoc:
 
   def infinite?
     false
   end
 
   class Infinity < Numeric # :nodoc:
-
-    include Comparable
 
     def initialize(d=1) @d = d <=> 0 end
 
@@ -32,6 +31,8 @@ class Date
     def <=>(other)
       case other
       when Infinity; return d <=> other.d
+      when Float::INFINITY; return d <=> 1
+      when -Float::INFINITY; return d <=> -1
       when Numeric; return d
       else
         begin

@@ -47,7 +47,7 @@ describe "Encoding::Converter.new" do
     conv.replacement.should == "fubar"
   end
 
-  it "calls #to_hash to convert the options argument to a Hash if not a Fixnum" do
+  it "calls #to_hash to convert the options argument to a Hash if not an Integer" do
     opts = mock("encoding converter options")
     opts.should_receive(:to_hash).and_return({ replace: "fubar" })
     conv = Encoding::Converter.new("us-ascii", "utf-8", **opts)
@@ -82,7 +82,7 @@ describe "Encoding::Converter.new" do
     end.should raise_error(TypeError)
   end
 
-  it "raises a TypeError if passed a Fixnum for the replacement object" do
+  it "raises a TypeError if passed an Integer for the replacement object" do
     -> do
       Encoding::Converter.new("us-ascii", "utf-8", replace: 1)
     end.should raise_error(TypeError)

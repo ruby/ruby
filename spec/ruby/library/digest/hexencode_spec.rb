@@ -25,7 +25,7 @@ describe "Digest.hexencode" do
     -> { Digest.hexencode(nil) }.should raise_error(TypeError)
   end
 
-  it "raises a TypeError when passed a Fixnum" do
+  it "raises a TypeError when passed an Integer" do
     -> { Digest.hexencode(9001) }.should raise_error(TypeError)
   end
 end

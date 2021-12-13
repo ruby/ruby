@@ -20,8 +20,8 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-require 'rubygems'
-require 'rubygems/package'
+require_relative '../rubygems'
+require_relative 'package'
 require 'rake/packagetask'
 
 ##
@@ -57,7 +57,6 @@ require 'rake/packagetask'
 #   end
 
 class Gem::PackageTask < Rake::PackageTask
-
   ##
   # Ruby Gem::Specification containing the metadata for this package.  The
   # name, version and package_files are automatically determined from the
@@ -120,5 +119,4 @@ class Gem::PackageTask < Rake::PackageTask
       end
     end
   end
-
 end

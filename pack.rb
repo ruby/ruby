@@ -33,6 +33,16 @@ class Array
   #  the offset, the rest of <i>offsetOfBuffer</i> are overwritten by the result.
   #  If it's shorter, the gap is filled with ``<code>\0</code>''.
   #
+  #     # packed data is appended by default
+  #     [255].pack("C", buffer:"foo".b) #=> "foo\xFF"
+  #
+  #     # "@0" (offset 0) specifies that packed data is filled from beginning.
+  #     # Also, original data after packed data is removed. ("oo" is removed.)
+  #     [255].pack("@0C", buffer:"foo".b) #=> "\xFF"
+  #
+  #     # If the offset is bigger than the original length, \x00 is filled.
+  #     [255].pack("@5C", buffer:"foo".b) #=> "foo\x00\x00\xFF"
+  #
   #  Note that ``buffer:'' option does not guarantee not to allocate memory
   #  in +pack+.  If the capacity of <i>aBufferString</i> is not enough,
   #  +pack+ allocates memory.
@@ -77,14 +87,14 @@ class Array
   #   S> s> S!> s!> | Integer | same as the directives without ">" except
   #   L> l> L!> l!> |         | big endian
   #   I!> i!>       |         | (available since Ruby 1.9.3)
-  #   Q> q> Q!> q!> |         | "S>" is same as "n"
-  #   J> j> J!> j!> |         | "L>" is same as "N"
+  #   Q> q> Q!> q!> |         | "S>" is the same as "n"
+  #   J> j> J!> j!> |         | "L>" is the same as "N"
   #                 |         |
   #   S< s< S!< s!< | Integer | same as the directives without "<" except
   #   L< l< L!< l!< |         | little endian
   #   I!< i!<       |         | (available since Ruby 1.9.3)
-  #   Q< q< Q!< q!< |         | "S<" is same as "v"
-  #   J< j< J!< j!< |         | "L<" is same as "V"
+  #   Q< q< Q!< q!< |         | "S<" is the same as "v"
+  #   J< j< J!< j!< |         | "L<" is the same as "V"
   #                 |         |
   #   n             | Integer | 16-bit unsigned, network (big-endian) byte order
   #   N             | Integer | 32-bit unsigned, network (big-endian) byte order
@@ -138,10 +148,11 @@ end
 class String
   # call-seq:
   #    str.unpack(format)    ->  anArray
+  #    str.unpack(format, offset: anInteger)    ->  anArray
   #
   # Decodes <i>str</i> (which may contain binary data) according to the
-  # format string, returning an array of each value extracted. The
-  # format string consists of a sequence of single-character directives,
+  # format string, returning an array of each value extracted.
+  # The format string consists of a sequence of single-character directives,
   # summarized in the table at the end of this entry.
   # Each directive may be followed
   # by a number, indicating the number of times to repeat with this
@@ -151,7 +162,15 @@ class String
   # exclamation mark (``<code>!</code>'') to use the underlying
   # platform's native size for the specified type; otherwise, it uses a
   # platform-independent consistent size. Spaces are ignored in the
-  # format string. See also String#unpack1,  Array#pack.
+  # format string.
+  #
+  # The keyword <i>offset</i> can be given to start the decoding after skipping
+  # the specified amount of bytes:
+  #   "abc".unpack("C*") # => [97, 98, 99]
+  #   "abc".unpack("C*", offset: 2) # => [99]
+  #   "abc".unpack("C*", offset: 4) # => offset outside of string (ArgumentError)
+  #
+  # See also String#unpack1,  Array#pack.
   #
   #    "abc \0\0abc \0\0".unpack('A6Z6')   #=> ["abc", "abc "]
   #    "abc \0\0".unpack('a3a3')           #=> ["abc", " \000\000"]
@@ -197,14 +216,14 @@ class String
   #  S> s> S!> s!> | Integer | same as the directives without ">" except
   #  L> l> L!> l!> |         | big endian
   #  I!> i!>       |         |
-  #  Q> q> Q!> q!> |         | "S>" is same as "n"
-  #  J> j> J!> j!> |         | "L>" is same as "N"
+  #  Q> q> Q!> q!> |         | "S>" is the same as "n"
+  #  J> j> J!> j!> |         | "L>" is the same as "N"
   #                |         |
   #  S< s< S!< s!< | Integer | same as the directives without "<" except
   #  L< l< L!< l!< |         | little endian
   #  I!< i!<       |         |
-  #  Q< q< Q!< q!< |         | "S<" is same as "v"
-  #  J< j< J!< j!< |         | "L<" is same as "V"
+  #  Q< q< Q!< q!< |         | "S<" is the same as "v"
+  #  J< j< J!< j!< |         | "L<" is the same as "V"
   #                |         |
   #  n             | Integer | 16-bit unsigned, network (big-endian) byte order
   #  N             | Integer | 32-bit unsigned, network (big-endian) byte order
@@ -212,7 +231,7 @@ class String
   #  V             | Integer | 32-bit unsigned, VAX (little-endian) byte order
   #                |         |
   #  U             | Integer | UTF-8 character
-  #  w             | Integer | BER-compressed integer (see Array.pack)
+  #  w             | Integer | BER-compressed integer (see Array#pack)
   #
   #  Float        |         |
   #  Directive    | Returns | Meaning
@@ -253,15 +272,23 @@ class String
   # * J, J! j, and j! are available since Ruby 2.3.
   # * Q_, Q!, q_, and q! are available since Ruby 2.1.
   # * I!<, i!<, I!>, and i!> are available since Ruby 1.9.3.
-  def unpack(fmt)
-    Primitive.pack_unpack(fmt)
+  def unpack(fmt, offset: 0)
+    Primitive.pack_unpack(fmt, offset)
   end
 
   # call-seq:
   #    str.unpack1(format)    ->  obj
+  #    str.unpack1(format, offset: anInteger)    ->  obj
   #
   # Decodes <i>str</i> (which may contain binary data) according to the
   # format string, returning the first value extracted.
+  #
+  # The keyword <i>offset</i> can be given to start the decoding after skipping
+  # the specified amount of bytes:
+  #   "abc".unpack1("C*") # => 97
+  #   "abc".unpack1("C*", offset: 2) # => 99
+  #   "abc".unpack1("C*", offset: 4) # => offset outside of string (ArgumentError)
+  #
   # See also String#unpack, Array#pack.
   #
   # Contrast with String#unpack:
@@ -277,7 +304,7 @@ class String
   #
   # Thus unpack1 is convenient, makes clear the intention and signals
   # the expected return value to those reading the code.
-  def unpack1(fmt)
-    Primitive.pack_unpack1(fmt)
+  def unpack1(fmt, offset: 0)
+    Primitive.pack_unpack1(fmt, offset)
   end
 end

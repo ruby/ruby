@@ -1,15 +1,14 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/request'
 require 'ostruct'
 require 'base64'
 
-unless defined?(OpenSSL::SSL)
+unless Gem::HAVE_OPENSSL
   warn 'Skipping Gem::Request tests.  openssl not found.'
 end
 
 class TestGemRequest < Gem::TestCase
-
   CA_CERT_FILE     = cert_path 'ca'
   CHILD_CERT       = load_cert 'child'
   EXPIRED_CERT     = load_cert 'expired'
@@ -186,7 +185,7 @@ class TestGemRequest < Gem::TestCase
   end
 
   def test_fetch
-    uri = URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}"
+    uri = Gem::Uri.new(URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}")
     response = util_stub_net_http(:body => :junk, :code => 200) do
       @request = make_request(uri, Net::HTTP::Get, nil, nil)
 
@@ -198,31 +197,57 @@ class TestGemRequest < Gem::TestCase
   end
 
   def test_fetch_basic_auth
-    uri = URI.parse "https://user:pass@example.rubygems/specs.#{Gem.marshal_version}"
+    Gem.configuration.verbose = :really
+    uri = Gem::Uri.new(URI.parse "https://user:pass@example.rubygems/specs.#{Gem.marshal_version}")
     conn = util_stub_net_http(:body => :junk, :code => 200) do |c|
-      @request = make_request(uri, Net::HTTP::Get, nil, nil)
-      @request.fetch
+      use_ui @ui do
+        @request = make_request(uri, Net::HTTP::Get, nil, nil)
+        @request.fetch
+      end
       c
     end
 
     auth_header = conn.payload['Authorization']
     assert_equal "Basic #{Base64.encode64('user:pass')}".strip, auth_header
+    assert_includes @ui.output, "GET https://user:REDACTED@example.rubygems/specs.#{Gem.marshal_version}"
   end
 
   def test_fetch_basic_auth_encoded
-    uri = URI.parse "https://user:%7BDEScede%7Dpass@example.rubygems/specs.#{Gem.marshal_version}"
+    Gem.configuration.verbose = :really
+    uri = Gem::Uri.new(URI.parse "https://user:%7BDEScede%7Dpass@example.rubygems/specs.#{Gem.marshal_version}")
+
     conn = util_stub_net_http(:body => :junk, :code => 200) do |c|
-      @request = make_request(uri, Net::HTTP::Get, nil, nil)
-      @request.fetch
+      use_ui @ui do
+        @request = make_request(uri, Net::HTTP::Get, nil, nil)
+        @request.fetch
+      end
       c
     end
 
     auth_header = conn.payload['Authorization']
     assert_equal "Basic #{Base64.encode64('user:{DEScede}pass')}".strip, auth_header
+    assert_includes @ui.output, "GET https://user:REDACTED@example.rubygems/specs.#{Gem.marshal_version}"
+  end
+
+  def test_fetch_basic_oauth_encoded
+    Gem.configuration.verbose = :really
+    uri = Gem::Uri.new(URI.parse "https://%7BDEScede%7Dpass:x-oauth-basic@example.rubygems/specs.#{Gem.marshal_version}")
+
+    conn = util_stub_net_http(:body => :junk, :code => 200) do |c|
+      use_ui @ui do
+        @request = make_request(uri, Net::HTTP::Get, nil, nil)
+        @request.fetch
+      end
+      c
+    end
+
+    auth_header = conn.payload['Authorization']
+    assert_equal "Basic #{Base64.encode64('{DEScede}pass:x-oauth-basic')}".strip, auth_header
+    assert_includes @ui.output, "GET https://REDACTED:x-oauth-basic@example.rubygems/specs.#{Gem.marshal_version}"
   end
 
   def test_fetch_head
-    uri = URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}"
+    uri = Gem::Uri.new(URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}")
     response = util_stub_net_http(:body => '', :code => 200) do |conn|
       @request = make_request(uri, Net::HTTP::Get, nil, nil)
       @request.fetch
@@ -233,7 +258,7 @@ class TestGemRequest < Gem::TestCase
   end
 
   def test_fetch_unmodified
-    uri = URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}"
+    uri = Gem::Uri.new(URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}")
     t = Time.utc(2013, 1, 2, 3, 4, 5)
     conn, response = util_stub_net_http(:body => '', :code => 304) do |c|
       @request = make_request(uri, Net::HTTP::Get, t, nil)
@@ -328,31 +353,37 @@ class TestGemRequest < Gem::TestCase
   end
 
   def test_verify_certificate
-    skip if Gem.java_platform?
+    pend if Gem.java_platform?
+
+    error_number = OpenSSL::X509::V_ERR_OUT_OF_MEM
+
     store = OpenSSL::X509::Store.new
     context = OpenSSL::X509::StoreContext.new store
-    context.error = OpenSSL::X509::V_ERR_OUT_OF_MEM
+    context.error = error_number
 
     use_ui @ui do
       Gem::Request.verify_certificate context
     end
 
-    assert_equal "ERROR:  SSL verification error at depth 0: out of memory (17)\n",
+    assert_equal "ERROR:  SSL verification error at depth 0: out of memory (#{error_number})\n",
                  @ui.error
   end
 
   def test_verify_certificate_extra_message
-    skip if Gem.java_platform?
+    pend if Gem.java_platform?
+
+    error_number = OpenSSL::X509::V_ERR_INVALID_CA
+
     store = OpenSSL::X509::Store.new
     context = OpenSSL::X509::StoreContext.new store
-    context.error = OpenSSL::X509::V_ERR_INVALID_CA
+    context.error = error_number
 
     use_ui @ui do
       Gem::Request.verify_certificate context
     end
 
     expected = <<-ERROR
-ERROR:  SSL verification error at depth 0: invalid CA certificate (24)
+ERROR:  SSL verification error at depth 0: invalid CA certificate (#{error_number})
 ERROR:  Certificate  is an invalid CA certificate
     ERROR
 
@@ -488,7 +519,6 @@ ERROR:  Certificate  is an invalid CA certificate
   end
 
   class Conn
-
     attr_accessor :payload
 
     def new(*args); self; end
@@ -507,7 +537,5 @@ ERROR:  Certificate  is an invalid CA certificate
       self.payload = req
       @response
     end
-
   end
-
-end if defined?(OpenSSL::SSL)
+end if Gem::HAVE_OPENSSL

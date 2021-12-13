@@ -1,0 +1,2 @@
+- +msec+ is the number of milliseconds (Integer, Float, or Rational)
+  in the range <tt>0..1000</tt>.

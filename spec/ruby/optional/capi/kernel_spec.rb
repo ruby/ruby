@@ -238,6 +238,18 @@ describe "C-API Kernel function" do
     end
   end
 
+  describe "rb_yield_values2" do
+    it "yields passed arguments" do
+      ret = nil
+      @s.rb_yield_values2([1, 2]) { |x, y| ret = x + y }
+      ret.should == 3
+    end
+
+    it "returns the result from block evaluation" do
+      @s.rb_yield_values2([1, 2]) { |x, y| x + y }.should == 3
+    end
+  end
+
   describe "rb_yield_splat" do
     it "yields with passed array's contents" do
       ret = nil
@@ -300,6 +312,14 @@ describe "C-API Kernel function" do
       @s.rb_protect_null_status(42) { |x| x + 1 }.should == 43
       @s.rb_protect_null_status(42) { |x| raise }.should == nil
     end
+
+    it "populates errinfo with the captured exception" do
+      proof = []
+      @s.rb_protect_errinfo(77, proof) { |x| raise NameError }.class.should == NameError
+      proof[0].should == 23
+      proof[1].should == nil
+    end
+
   end
 
   describe "rb_eval_string_protect" do
@@ -384,12 +404,20 @@ describe "C-API Kernel function" do
       proc = -> x { x }
       arg_error_proc = -> *_ { raise ArgumentError, '' }
       run_error_proc = -> *_ { raise RuntimeError, '' }
-      type_error_proc = -> *_ { raise TypeError, '' }
+      type_error_proc = -> *_ { raise Exception, 'custom error' }
       @s.rb_rescue2(arg_error_proc, :no_exc, proc, :exc, ArgumentError, RuntimeError).should == :exc
       @s.rb_rescue2(run_error_proc, :no_exc, proc, :exc, ArgumentError, RuntimeError).should == :exc
       -> {
         @s.rb_rescue2(type_error_proc, :no_exc, proc, :exc, ArgumentError, RuntimeError)
-      }.should raise_error(TypeError)
+      }.should raise_error(Exception, 'custom error')
+    end
+
+    ruby_bug "#17305", ""..."2.7" do
+      it "raises TypeError if one of the passed exceptions is not a Module" do
+        -> {
+          @s.rb_rescue2(-> *_ { raise RuntimeError, "foo" }, :no_exc, -> x { x }, :exc, Object.new, 42)
+        }.should raise_error(TypeError, /class or module required/)
+      end
     end
   end
 
@@ -536,20 +564,6 @@ describe "C-API Kernel function" do
       backtrace = @s.rb_make_backtrace
       lines = backtrace.select {|l| l =~ /#{__FILE__}/ }
       lines.should_not be_empty
-    end
-  end
-
-  describe "rb_obj_method" do
-    it "returns the method object for a symbol" do
-      method = @s.rb_obj_method("test", :size)
-      method.owner.should == String
-      method.name.to_sym.should == :size
-    end
-
-    it "returns the method object for a string" do
-      method = @s.rb_obj_method("test", "size")
-      method.owner.should == String
-      method.name.to_sym.should == :size
     end
   end
 

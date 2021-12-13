@@ -62,7 +62,7 @@ describe "C-API Struct function" do
 end
 
 describe "C-API Struct function" do
-  before :each do
+  before :all do
     @s = CApiStructSpecs.new
     @struct = @s.rb_struct_define_under(CApiStructSpecs, "CAPIStructUnder", "a", "b", "c")
   end

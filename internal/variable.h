@@ -1,7 +1,6 @@
 #ifndef INTERNAL_VARIABLE_H                              /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_VARIABLE_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -32,9 +31,11 @@ NORETURN(VALUE rb_mod_const_missing(VALUE,VALUE));
 rb_gvar_getter_t *rb_gvar_getter_function_of(ID);
 rb_gvar_setter_t *rb_gvar_setter_function_of(ID);
 void rb_gvar_readonly_setter(VALUE v, ID id, VALUE *_);
+void rb_gvar_ractor_local(const char *name);
 static inline bool ROBJ_TRANSIENT_P(VALUE obj);
 static inline void ROBJ_TRANSIENT_SET(VALUE obj);
 static inline void ROBJ_TRANSIENT_UNSET(VALUE obj);
+uint32_t rb_obj_ensure_iv_index_mapping(VALUE obj, ID id);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* variable.c (export) */
@@ -43,7 +44,6 @@ void rb_mv_generic_ivar(VALUE src, VALUE dst);
 VALUE rb_const_missing(VALUE klass, VALUE name);
 int rb_class_ivar_set(VALUE klass, ID vid, VALUE value);
 void rb_iv_tbl_copy(VALUE dst, VALUE src);
-void rb_deprecate_constant(VALUE mod, const char *name);
 RUBY_SYMBOL_EXPORT_END
 
 MJIT_SYMBOL_EXPORT_BEGIN
@@ -51,6 +51,7 @@ VALUE rb_gvar_get(ID);
 VALUE rb_gvar_set(ID, VALUE);
 VALUE rb_gvar_defined(ID);
 void rb_const_warn_if_deprecated(const rb_const_entry_t *, VALUE, ID);
+void rb_init_iv_list(VALUE obj);
 MJIT_SYMBOL_EXPORT_END
 
 static inline bool

@@ -52,7 +52,7 @@ def make_cfunc_name inlines, name, lineno
 end
 
 def collect_locals tree
-  type, name, (line, cols) = tree
+  _type, name, (line, _cols) = tree
   if locals = LOCALS_DB[[name, line]]
     locals
   else
@@ -65,7 +65,7 @@ end
 
 def collect_builtin base, tree, name, bs, inlines, locals = nil
   while tree
-    call = recv = sep = mid = args = nil
+    recv = sep = mid = args = nil
     case tree.first
     when :def
       locals = collect_locals(tree[1])
@@ -100,8 +100,9 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
     when :call, :command_call   # CALL
       _, recv, sep, mid, (_, args) = tree
     end
+
     if mid
-      raise "unknown sexp: #{mid.inspect}" unless mid.first == :@ident
+      raise "unknown sexp: #{mid.inspect}" unless %i[@ident @const].include?(mid.first)
       _, mid, (lineno,) = mid
       if recv
         func_name = nil
@@ -126,7 +127,7 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
         args.pop unless (args ||= []).last
         argc = args.size
 
-        if /(.+)\!\z/ =~ func_name
+        if /(.+)[\!\?]\z/ =~ func_name
           case $1
           when 'attr'
             text = inline_text(argc, args.first)
@@ -156,6 +157,14 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
             func_name = nil # required
             inlines[inlines.size] = [lineno, text, nil, nil]
             argc -= 1
+          when 'mandatory_only'
+            func_name = nil
+          when 'arg'
+            argc == 1 or raise "unexpected argument number #{argc}"
+            (arg = args.first)[0] == :symbol_literal or raise "symbol literal expected #{args}"
+            (arg = arg[1])[0] == :symbol or raise "symbol expected #{arg}"
+            (var = arg[1] and var = var[1]) or raise "argument name expected #{arg}"
+            func_name = nil
           end
         end
 
@@ -316,7 +325,7 @@ def mk_builtin_header file
         f.puts %'        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\\n", index);'
         f.puts %'    }'
       end
-      f.puts %'    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == #{cfunc_name} */\\n", (intptr_t)#{cfunc_name});'
+      f.puts %'    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == #{cfunc_name} */\\n", (VALUE)#{cfunc_name});'
       f.puts %'    fprintf(f, "    val = f(ec, self#{argv});\\n");'
       f.puts %'}'
       f.puts
@@ -337,7 +346,7 @@ def mk_builtin_header file
     f.puts
     f.puts "  // arity_check"
     f.puts "COMPILER_WARNING_PUSH"
-    f.puts "#if GCC_VERSION_SINCE(5, 1, 0) || __clang__"
+    f.puts "#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__"
     f.puts "COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)"
     f.puts "#endif"
     bs.each{|func, (argc, cfunc_name)|

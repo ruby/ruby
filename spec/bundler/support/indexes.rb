@@ -17,20 +17,19 @@ module Spec
     def resolve(args = [])
       @platforms ||= ["ruby"]
       deps = []
-      default_source = instance_double("Bundler::Source::Rubygems", :specs => @index)
+      default_source = instance_double("Bundler::Source::Rubygems", :specs => @index, :to_s => "locally install gems")
       source_requirements = { :default => default_source }
       @deps.each do |d|
+        source_requirements[d.name] = d.source = default_source
         @platforms.each do |p|
-          source_requirements[d.name] = d.source = default_source
-          deps << Bundler::DepProxy.new(d, p)
+          deps << Bundler::DepProxy.get_proxy(d, p)
         end
       end
-      source_requirements ||= {}
       args[0] ||= [] # base
       args[1] ||= Bundler::GemVersionPromoter.new # gem_version_promoter
       args[2] ||= [] # additional_base_requirements
       args[3] ||= @platforms # platforms
-      Bundler::Resolver.resolve(deps, @index, source_requirements, *args)
+      Bundler::Resolver.resolve(deps, source_requirements, *args)
     end
 
     def should_resolve_as(specs)

@@ -1,14 +1,10 @@
-require 'base64'
-require 'digest'
-require 'openssl'
+require_relative 'openssl'
 
 ##
 # S3URISigner implements AWS SigV4 for S3 Source to avoid a dependency on the aws-sdk-* gems
 # More on AWS SigV4: https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html
 class Gem::S3URISigner
-
   class ConfigurationError < Gem::Exception
-
     def initialize(message)
       super message
     end
@@ -16,11 +12,9 @@ class Gem::S3URISigner
     def to_s # :nodoc:
       "#{super}"
     end
-
   end
 
   class InstanceProfileError < Gem::Exception
-
     def initialize(message)
       super message
     end
@@ -28,7 +22,6 @@ class Gem::S3URISigner
     def to_s # :nodoc:
       "#{super}"
     end
-
   end
 
   attr_accessor :uri
@@ -93,7 +86,7 @@ class Gem::S3URISigner
       "AWS4-HMAC-SHA256",
       date_time,
       credential_info,
-      Digest::SHA256.hexdigest(canonical_request)
+      OpenSSL::Digest::SHA256.hexdigest(canonical_request),
     ].join("\n")
   end
 
@@ -146,8 +139,8 @@ class Gem::S3URISigner
 
   def ec2_metadata_credentials_json
     require 'net/http'
-    require 'rubygems/request'
-    require 'rubygems/request/connection_pools'
+    require_relative 'request'
+    require_relative 'request/connection_pools'
     require 'json'
 
     iam_info = ec2_metadata_request(EC2_IAM_INFO)
@@ -179,5 +172,4 @@ class Gem::S3URISigner
   BASE64_URI_TRANSLATE = { "+" => "%2B", "/" => "%2F", "=" => "%3D", "\n" => "" }.freeze
   EC2_IAM_INFO = "http://169.254.169.254/latest/meta-data/iam/info".freeze
   EC2_IAM_SECURITY_CREDENTIALS = "http://169.254.169.254/latest/meta-data/iam/security-credentials/".freeze
-
 end

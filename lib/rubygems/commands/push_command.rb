@@ -1,11 +1,10 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/local_remote_options'
-require 'rubygems/gemcutter_utilities'
-require 'rubygems/package'
+require_relative '../command'
+require_relative '../local_remote_options'
+require_relative '../gemcutter_utilities'
+require_relative '../package'
 
 class Gem::Commands::PushCommand < Gem::Command
-
   include Gem::LocalRemoteOptions
   include Gem::GemcutterUtilities
 
@@ -62,7 +61,7 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
               options[:host]
             end
 
-    sign_in @host
+    sign_in @host, scope: get_push_scope
 
     send_gem(gem_name)
   end
@@ -87,12 +86,11 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
   private
 
   def send_push_request(name, args)
-    rubygems_api_request(*args) do |request|
+    rubygems_api_request(*args, scope: get_push_scope) do |request|
       request.body = Gem.read_binary name
       request.add_field "Content-Length", request.body.size
       request.add_field "Content-Type",   "application/octet-stream"
       request.add_field "Authorization",  api_key
-      request.add_field "OTP", options[:otp] if options[:otp]
     end
   end
 
@@ -101,8 +99,11 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
 
     [
       gem_metadata["default_gem_server"],
-      gem_metadata["allowed_push_host"]
+      gem_metadata["allowed_push_host"],
     ]
   end
 
+  def get_push_scope
+    :push_rubygem
+  end
 end

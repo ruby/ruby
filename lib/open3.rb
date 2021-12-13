@@ -29,6 +29,8 @@
 # - Open3.pipeline : run a pipeline and wait for its completion
 #
 
+require 'open3/version'
+
 module Open3
 
   # Open stdin, stdout, and stderr streams and start external executable.
@@ -757,3 +759,6 @@ module Open3
   end
 
 end
+
+# JRuby uses different popen logic on Windows, require it here to reuse wrapper methods above.
+require 'open3/jruby_windows' if RUBY_ENGINE == 'jruby' && JRuby::Util::ON_WINDOWS

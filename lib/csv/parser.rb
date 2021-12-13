@@ -3,6 +3,7 @@
 require "strscan"
 
 require_relative "delete_suffix"
+require_relative "input_record_separator"
 require_relative "match_p"
 require_relative "row"
 require_relative "table"
@@ -479,9 +480,9 @@ class CSV
     begin
       StringScanner.new("x").scan("x")
     rescue TypeError
-      @@string_scanner_scan_accept_string = false
+      STRING_SCANNER_SCAN_ACCEPT_STRING = false
     else
-      @@string_scanner_scan_accept_string = true
+      STRING_SCANNER_SCAN_ACCEPT_STRING = true
     end
 
     def prepare_separators
@@ -505,7 +506,7 @@ class CSV
         @first_column_separators = Regexp.new(@escaped_first_column_separator +
                                               "+".encode(@encoding))
       else
-        if @@string_scanner_scan_accept_string
+        if STRING_SCANNER_SCAN_ACCEPT_STRING
           @column_end = @column_separator
         else
           @column_end = Regexp.new(@escaped_column_separator)
@@ -526,7 +527,7 @@ class CSV
 
       @cr = "\r".encode(@encoding)
       @lf = "\n".encode(@encoding)
-      @cr_or_lf = Regexp.new("[\r\n]".encode(@encoding))
+      @line_end = Regexp.new("\r\n|\n|\r".encode(@encoding))
       @not_line_end = Regexp.new("[^\r\n]+".encode(@encoding))
     end
 
@@ -605,7 +606,7 @@ class CSV
             # do nothing:  ensure will set default
           end
         end
-        separator = $INPUT_RECORD_SEPARATOR if separator == :auto
+        separator = InputRecordSeparator.value if separator == :auto
       end
       separator.to_s.encode(@encoding)
     end
@@ -724,6 +725,8 @@ class CSV
         end
       end
 
+      SCANNER_TEST_CHUNK_SIZE =
+        Integer((ENV["CSV_PARSER_SCANNER_TEST_CHUNK_SIZE"] || "1"), 10)
       def build_scanner
         inputs = @samples.collect do |sample|
           UnoptimizedStringIO.new(sample)
@@ -733,10 +736,9 @@ class CSV
         else
           inputs << @input
         end
-        chunk_size = ENV["CSV_PARSER_SCANNER_TEST_CHUNK_SIZE"] || "1"
         InputsScanner.new(inputs,
                           @encoding,
-                          chunk_size: Integer(chunk_size, 10))
+                          chunk_size: SCANNER_TEST_CHUNK_SIZE)
       end
     else
       def build_scanner
@@ -785,6 +787,7 @@ class CSV
     end
 
     def skip_line?(line)
+      line = line.delete_suffix(@row_separator)
       case @skip_lines
       when String
         line.include?(@skip_lines)
@@ -913,7 +916,7 @@ class CSV
             message = "Any value after quoted field isn't allowed"
             raise MalformedCSVError.new(message, @lineno)
           elsif @unquoted_column_value and
-                (new_line = @scanner.scan(@cr_or_lf))
+                (new_line = @scanner.scan(@line_end))
             ignore_broken_line
             message = "Unquoted fields do not allow new line " +
                       "<#{new_line.inspect}>"
@@ -922,7 +925,7 @@ class CSV
             ignore_broken_line
             message = "Illegal quoting"
             raise MalformedCSVError.new(message, @lineno)
-          elsif (new_line = @scanner.scan(@cr_or_lf))
+          elsif (new_line = @scanner.scan(@line_end))
             ignore_broken_line
             message = "New line must be <#{@row_separator.inspect}> " +
                       "not <#{new_line.inspect}>"
@@ -1088,7 +1091,7 @@ class CSV
 
     def ignore_broken_line
       @scanner.scan_all(@not_line_end)
-      @scanner.scan_all(@cr_or_lf)
+      @scanner.scan_all(@line_end)
       @lineno += 1
     end
 

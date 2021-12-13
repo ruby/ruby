@@ -31,6 +31,9 @@ void rb_transient_heap_start_marking(int full_marking);
 void rb_transient_heap_finish_marking(void);
 void rb_transient_heap_update_references(void);
 
+/* used by ractor.c */
+void rb_transient_heap_evacuate(void);
+
 /* for debug API */
 void rb_transient_heap_dump(void);
 void rb_transient_heap_verify(void);
@@ -49,6 +52,7 @@ void rb_struct_transient_heap_evacuate(VALUE st, int promote);
 #define rb_transient_heap_promote(obj) ((void)0)
 #define rb_transient_heap_start_marking(full_marking) ((void)0)
 #define rb_transient_heap_update_references() ((void)0)
+#define rb_transient_heap_evacuate() ((void)0)
 #define rb_transient_heap_finish_marking() ((void)0)
 #define rb_transient_heap_mark(obj, ptr) ((void)0)
 

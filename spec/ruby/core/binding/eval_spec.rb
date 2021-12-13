@@ -23,7 +23,7 @@ describe "Binding#eval" do
     bind2.local_variables.should == []
   end
 
-  ruby_version_is ""..."2.8" do
+  ruby_version_is ""..."3.0" do
     it "inherits __LINE__ from the enclosing scope" do
       obj = BindingSpecs::Demo.new(1)
       bind = obj.get_binding
@@ -50,7 +50,7 @@ describe "Binding#eval" do
     end
   end
 
-  ruby_version_is "2.8" do
+  ruby_version_is "3.0" do
     it "starts with line 1 if single argument is given" do
       obj = BindingSpecs::Demo.new(1)
       bind = obj.get_binding
@@ -89,19 +89,31 @@ describe "Binding#eval" do
     bind.eval("#foo\n__LINE__", "(test)", 88).should == 89
   end
 
-  ruby_version_is ""..."2.8" do
+  ruby_version_is ""..."3.0" do
     it "inherits __FILE__ from the enclosing scope" do
       obj = BindingSpecs::Demo.new(1)
       bind = obj.get_binding
-      suppress_warning {bind.eval("__FILE__")}.should == obj.get_file_of_binding
+      suppress_warning { bind.eval("__FILE__") }.should == obj.get_file_of_binding
+    end
+
+    it "inherits __LINE__ from the enclosing scope" do
+      obj = BindingSpecs::Demo.new(1)
+      bind, line = obj.get_binding_and_line
+      suppress_warning { bind.eval("__LINE__") }.should == line
     end
   end
 
-  ruby_version_is "2.8" do
-    it "Uses (eval) as __FILE__ if single argument given" do
+  ruby_version_is "3.0" do
+    it "uses (eval) as __FILE__ if single argument given" do
       obj = BindingSpecs::Demo.new(1)
       bind = obj.get_binding
       bind.eval("__FILE__").should == '(eval)'
+    end
+
+    it "uses 1 as __LINE__" do
+      obj = BindingSpecs::Demo.new(1)
+      bind = obj.get_binding
+      suppress_warning { bind.eval("__LINE__") }.should == 1
     end
   end
 

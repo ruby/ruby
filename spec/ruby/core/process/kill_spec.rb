@@ -16,7 +16,7 @@ describe "Process.kill" do
     -> { Process.kill("term", @pid) }.should raise_error(ArgumentError)
   end
 
-  it "raises an ArgumentError if signal is not a Fixnum or String" do
+  it "raises an ArgumentError if signal is not an Integer or String" do
     signal = mock("process kill signal")
     signal.should_not_receive(:to_int)
 

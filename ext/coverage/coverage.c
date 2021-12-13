@@ -11,23 +11,41 @@
 #include "gc.h"
 #include "internal/hash.h"
 #include "internal/thread.h"
+#include "internal/sanitizers.h"
 #include "ruby.h"
 #include "vm_core.h"
 
+static enum {
+    IDLE,
+    SUSPENDED,
+    RUNNING
+} current_state = IDLE;
 static int current_mode;
 static VALUE me2counter = Qnil;
 
 /*
  * call-seq:
- *    Coverage.start  => nil
+ *    Coverage.setup                                              => nil
+ *    Coverage.setup(:all)                                        => nil
+ *    Coverage.setup(lines: bool, branches: bool, methods: bool)  => nil
+ *    Coverage.setup(oneshot_lines: true)                         => nil
  *
- * Enables coverage measurement.
+ * Set up the coverage measurement.
+ *
+ * Note that this method does not start the measurement itself.
+ * Use Coverage.resume to start the measurement.
+ *
+ * You may want to use Coverage.start to setup and then start the measurement.
  */
 static VALUE
-rb_coverage_start(int argc, VALUE *argv, VALUE klass)
+rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
 {
     VALUE coverages, opt;
     int mode;
+
+    if (current_state != IDLE) {
+	rb_raise(rb_eRuntimeError, "coverage measurement is already setup");
+    }
 
     rb_scan_args(argc, argv, "01", &opt);
 
@@ -69,10 +87,57 @@ rb_coverage_start(int argc, VALUE *argv, VALUE klass)
 	current_mode = mode;
 	if (mode == 0) mode = COVERAGE_TARGET_LINES;
 	rb_set_coverages(coverages, mode, me2counter);
+        current_state = SUSPENDED;
     }
     else if (current_mode != mode) {
 	rb_raise(rb_eRuntimeError, "cannot change the measuring target during coverage measurement");
     }
+
+
+    return Qnil;
+}
+
+/*
+ * call-seq:
+ *    Coverage.resume  => nil
+ *
+ * Start/resume the coverage measurement.
+ *
+ * Caveat: Currently, only process-global coverage measurement is supported.
+ * You cannot measure per-thread covearge. If your process has multiple thread,
+ * using Coverage.resume/suspend to capture code coverage executed from only
+ * a limited code block, may yield misleading results.
+ */
+VALUE
+rb_coverage_resume(VALUE klass)
+{
+    if (current_state == IDLE) {
+	rb_raise(rb_eRuntimeError, "coverage measurement is not set up yet");
+    }
+    if (current_state == RUNNING) {
+	rb_raise(rb_eRuntimeError, "coverage measurement is already running");
+    }
+    rb_resume_coverages();
+    current_state = RUNNING;
+    return Qnil;
+}
+
+/*
+ * call-seq:
+ *    Coverage.start                                              => nil
+ *    Coverage.start(:all)                                        => nil
+ *    Coverage.start(lines: bool, branches: bool, methods: bool)  => nil
+ *    Coverage.start(oneshot_lines: true)                         => nil
+ *
+ * Enables the coverage measurement.
+ * See the documentation of Coverage class in detail.
+ * This is equivalent to Coverage.setup and Coverage.resume.
+ */
+static VALUE
+rb_coverage_start(int argc, VALUE *argv, VALUE klass)
+{
+    rb_coverage_setup(argc, argv, klass);
+    rb_coverage_resume(klass);
     return Qnil;
 }
 
@@ -150,6 +215,9 @@ method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
     VALUE ncoverages = *(VALUE*)data, v;
 
     for (v = (VALUE)vstart; v != (VALUE)vend; v += stride) {
+        void *poisoned = asan_poisoned_object_p(v);
+        asan_unpoison_object(v, false);
+
 	if (RB_TYPE_P(v, T_IMEMO) && imemo_type(v) == imemo_ment) {
 	    const rb_method_entry_t *me = (rb_method_entry_t *) v;
 	    VALUE path, first_lineno, first_column, last_lineno, last_column;
@@ -189,6 +257,10 @@ method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
 		rb_hash_aset(methods, key, rcount);
 	    }
 	}
+
+        if (poisoned) {
+            asan_poison_object(v);
+        }
     }
     return 0;
 }
@@ -252,7 +324,8 @@ rb_coverage_peek_result(VALUE klass)
     if (!RTEST(coverages)) {
 	rb_raise(rb_eRuntimeError, "coverage measurement is not enabled");
     }
-    st_foreach(RHASH_TBL(coverages), coverage_peek_result_i, ncoverages);
+    OBJ_WB_UNPROTECT(coverages);
+    st_foreach(RHASH_TBL_RAW(coverages), coverage_peek_result_i, ncoverages);
 
     if (current_mode & COVERAGE_TARGET_METHODS) {
 	rb_objspace_each_objects(method_coverage_i, &ncoverages);
@@ -271,6 +344,24 @@ clear_me2counter_i(VALUE key, VALUE value, VALUE unused)
 }
 
 /*
+ * call-seq:
+ *    Coverage.suspend  => nil
+ *
+ * Suspend the coverage measurement.
+ * You can use Coverage.resume to restart the measurement.
+ */
+VALUE
+rb_coverage_suspend(VALUE klass)
+{
+    if (current_state != RUNNING) {
+	rb_raise(rb_eRuntimeError, "coverage measurement is not running");
+    }
+    rb_suspend_coverages();
+    current_state = SUSPENDED;
+    return Qnil;
+}
+
+/*
  *  call-seq:
  *     Coverage.result(stop: true, clear: true)  => hash
  *
@@ -284,6 +375,10 @@ rb_coverage_result(int argc, VALUE *argv, VALUE klass)
     VALUE ncoverages;
     VALUE opt;
     int stop = 1, clear = 1;
+
+    if (current_state == IDLE) {
+	rb_raise(rb_eRuntimeError, "coverage measurement is not enabled");
+    }
 
     rb_scan_args(argc, argv, "01", &opt);
 
@@ -303,12 +398,33 @@ rb_coverage_result(int argc, VALUE *argv, VALUE klass)
         if (!NIL_P(me2counter)) rb_hash_foreach(me2counter, clear_me2counter_i, Qnil);
     }
     if (stop) {
+        if (current_state == RUNNING) {
+            rb_coverage_suspend(klass);
+        }
         rb_reset_coverages();
         me2counter = Qnil;
+        current_state = IDLE;
     }
     return ncoverages;
 }
 
+
+/*
+ *  call-seq:
+ *     Coverage.state  => :idle, :suspended, :running
+ *
+ * Returns the state of the coverage measurement.
+ */
+static VALUE
+rb_coverage_state(VALUE klass)
+{
+    switch (current_state) {
+        case IDLE: return ID2SYM(rb_intern("idle"));
+        case SUSPENDED: return ID2SYM(rb_intern("suspended"));
+        case RUNNING: return ID2SYM(rb_intern("running"));
+    }
+    return Qnil;
+}
 
 /*
  *  call-seq:
@@ -320,12 +436,14 @@ rb_coverage_result(int argc, VALUE *argv, VALUE klass)
 static VALUE
 rb_coverage_running(VALUE klass)
 {
-    VALUE coverages = rb_get_coverages();
-    return RTEST(coverages) ? Qtrue : Qfalse;
+    return current_state == RUNNING ? Qtrue : Qfalse;
 }
 
 /* Coverage provides coverage measurement feature for Ruby.
  * This feature is experimental, so these APIs may be changed in future.
+ *
+ * Caveat: Currently, only process-global coverage measurement is supported.
+ * You cannot measure per-thread covearge.
  *
  * = Usage
  *
@@ -337,7 +455,7 @@ rb_coverage_running(VALUE klass)
  *    number of line execution by the interpreter. A +nil+ value means
  *    coverage is disabled for this line (lines like +else+ and +end+).
  *
- * = Example
+ * = Examples
  *
  *   [foo.rb]
  *   s = 0
@@ -356,14 +474,128 @@ rb_coverage_running(VALUE klass)
  *   Coverage.start
  *   require "foo.rb"
  *   p Coverage.result  #=> {"foo.rb"=>[1, 1, 10, nil, nil, 1, 1, nil, 0, nil]}
+ *
+ * == Lines Coverage
+ *
+ * If a coverage mode is not explicitly specified when starting coverage, lines
+ * coverage is what will run. It reports the number of line executions for each
+ * line.
+ *
+ *   require "coverage"
+ *   Coverage.start(lines: true)
+ *   require "foo.rb"
+ *   p Coverage.result #=> {"foo.rb"=>{:lines=>[1, 1, 10, nil, nil, 1, 1, nil, 0, nil]}}
+ *
+ * The value of the lines coverage result is an array containing how many times
+ * each line was executed. Order in this array is important. For example, the
+ * first item in this array, at index 0, reports how many times line 1 of this
+ * file was executed while coverage was run (which, in this example, is one
+ * time).
+ *
+ * A +nil+ value means coverage is disabled for this line (lines like +else+
+ * and +end+).
+ *
+ * == Oneshot Lines Coverage
+ *
+ * Oneshot lines coverage tracks and reports on the executed lines while
+ * coverage is running. It will not report how many times a line was executed,
+ * only that it was executed.
+ *
+ *   require "coverage"
+ *   Coverage.start(oneshot_lines: true)
+ *   require "foo.rb"
+ *   p Coverage.result #=> {"foo.rb"=>{:oneshot_lines=>[1, 2, 3, 6, 7]}}
+ *
+ * The value of the oneshot lines coverage result is an array containing the
+ * line numbers that were executed.
+ *
+ * == Branches Coverage
+ *
+ * Branches coverage reports how many times each branch within each conditional
+ * was executed.
+ *
+ *   require "coverage"
+ *   Coverage.start(branches: true)
+ *   require "foo.rb"
+ *   p Coverage.result #=> {"foo.rb"=>{:branches=>{[:if, 0, 6, 0, 10, 3]=>{[:then, 1, 7, 2, 7, 7]=>1, [:else, 2, 9, 2, 9, 7]=>0}}}}
+ *
+ * Each entry within the branches hash is a conditional, the value of which is
+ * another hash where each entry is a branch in that conditional. The values
+ * are the number of times the method was executed, and the keys are identifying
+ * information about the branch.
+ *
+ * The information that makes up each key identifying branches or conditionals
+ * is the following, from left to right:
+ *
+ * 1. A label for the type of branch or conditional.
+ * 2. A unique identifier.
+ * 3. The starting line number it appears on in the file.
+ * 4. The starting column number it appears on in the file.
+ * 5. The ending line number it appears on in the file.
+ * 6. The ending column number it appears on in the file.
+ *
+ * == Methods Coverage
+ *
+ * Methods coverage reports how many times each method was executed.
+ *
+ *   [foo_method.rb]
+ *   class Greeter
+ *     def greet
+ *       "welcome!"
+ *     end
+ *   end
+ *
+ *   def hello
+ *     "Hi"
+ *   end
+ *
+ *   hello()
+ *   Greeter.new.greet()
+ *   [EOF]
+ *
+ *   require "coverage"
+ *   Coverage.start(methods: true)
+ *   require "foo_method.rb"
+ *   p Coverage.result #=> {"foo_method.rb"=>{:methods=>{[Object, :hello, 7, 0, 9, 3]=>1, [Greeter, :greet, 2, 2, 4, 5]=>1}}}
+ *
+ * Each entry within the methods hash represents a method. The values in this
+ * hash are the number of times the method was executed, and the keys are
+ * identifying information about the method.
+ *
+ * The information that makes up each key identifying a method is the following,
+ * from left to right:
+ *
+ * 1. The class.
+ * 2. The method name.
+ * 3. The starting line number the method appears on in the file.
+ * 4. The starting column number the method appears on in the file.
+ * 5. The ending line number the method appears on in the file.
+ * 6. The ending column number the method appears on in the file.
+ *
+ * == All Coverage Modes
+ *
+ * You can also run all modes of coverage simultaneously with this shortcut.
+ * Note that running all coverage modes does not run both lines and oneshot
+ * lines. Those modes cannot be run simultaneously. Lines coverage is run in
+ * this case, because you can still use it to determine whether or not a line
+ * was executed.
+ *
+ *   require "coverage"
+ *   Coverage.start(:all)
+ *   require "foo.rb"
+ *   p Coverage.result #=> {"foo.rb"=>{:lines=>[1, 1, 10, nil, nil, 1, 1, nil, 0, nil], :branches=>{[:if, 0, 6, 0, 10, 3]=>{[:then, 1, 7, 2, 7, 7]=>1, [:else, 2, 9, 2, 9, 7]=>0}}, :methods=>{}}}
  */
 void
 Init_coverage(void)
 {
     VALUE rb_mCoverage = rb_define_module("Coverage");
+    rb_define_module_function(rb_mCoverage, "setup", rb_coverage_setup, -1);
     rb_define_module_function(rb_mCoverage, "start", rb_coverage_start, -1);
+    rb_define_module_function(rb_mCoverage, "resume", rb_coverage_resume, 0);
+    rb_define_module_function(rb_mCoverage, "suspend", rb_coverage_suspend, 0);
     rb_define_module_function(rb_mCoverage, "result", rb_coverage_result, -1);
     rb_define_module_function(rb_mCoverage, "peek_result", rb_coverage_peek_result, 0);
+    rb_define_module_function(rb_mCoverage, "state", rb_coverage_state, 0);
     rb_define_module_function(rb_mCoverage, "running?", rb_coverage_running, 0);
     rb_global_variable(&me2counter);
 }

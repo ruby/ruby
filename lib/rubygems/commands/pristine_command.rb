@@ -1,11 +1,10 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/package'
-require 'rubygems/installer'
-require 'rubygems/version_option'
+require_relative '../command'
+require_relative '../package'
+require_relative '../installer'
+require_relative '../version_option'
 
 class Gem::Commands::PristineCommand < Gem::Command
-
   include Gem::VersionOption
 
   def initialize
@@ -49,6 +48,11 @@ class Gem::Commands::PristineCommand < Gem::Command
                'Rewrite executables with a shebang',
                'of /usr/bin/env') do |value, options|
       options[:env_shebang] = value
+    end
+
+    add_option('-i', '--install-dir DIR',
+               'Gem repository to get binstubs and plugins installed') do |value, options|
+      options[:install_dir] = File.expand_path(value)
     end
 
     add_option('-n', '--bindir DIR',
@@ -139,7 +143,7 @@ extensions will be restored.
       gem = spec.cache_file
 
       unless File.exist? gem or options[:only_executables] or options[:only_plugins]
-        require 'rubygems/remote_fetcher'
+        require_relative '../remote_fetcher'
 
         say "Cached gem for #{spec.full_name} not found, attempting to fetch..."
 
@@ -164,21 +168,22 @@ extensions will be restored.
         end
 
       bin_dir = options[:bin_dir] if options[:bin_dir]
+      install_dir = options[:install_dir] if options[:install_dir]
 
       installer_options = {
         :wrappers => true,
         :force => true,
-        :install_dir => spec.base_dir,
+        :install_dir => install_dir || spec.base_dir,
         :env_shebang => env_shebang,
         :build_args => spec.build_args,
-        :bin_dir => bin_dir
+        :bin_dir => bin_dir,
       }
 
       if options[:only_executables]
         installer = Gem::Installer.for_spec(spec, installer_options)
         installer.generate_bin
       elsif options[:only_plugins]
-        installer = Gem::Installer.for_spec(spec)
+        installer = Gem::Installer.for_spec(spec, installer_options)
         installer.generate_plugins
       else
         installer = Gem::Installer.at(gem, installer_options)
@@ -188,5 +193,4 @@ extensions will be restored.
       say "Restored #{spec.full_name}"
     end
   end
-
 end

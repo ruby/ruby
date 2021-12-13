@@ -1,3 +1,4 @@
+/* -*- mode: c; indent-tabs-mode: t -*- */
 /**********************************************************************
 
   stringio.c -
@@ -11,7 +12,7 @@
 
 **********************************************************************/
 
-#define STRINGIO_VERSION "0.1.3"
+#define STRINGIO_VERSION "3.0.1"
 
 #include "ruby.h"
 #include "ruby/io.h"
@@ -64,7 +65,7 @@ strio_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 		n = strchr(n, '|');
 	    }
 	    e = strchr(++n, ':');
-	    len = e ? e - n : strlen(n);
+	    len = e ? e - n : (long)strlen(n);
 	    if (len > 0 && len <= ENCODING_MAXNAMELEN) {
 		if (e) {
 		    memcpy(encname, n, len);
@@ -599,6 +600,14 @@ strio_closed_write(VALUE self)
     return Qtrue;
 }
 
+static struct StringIO *
+strio_to_read(VALUE self)
+{
+    struct StringIO *ptr = readable(self);
+    if (ptr->pos < RSTRING_LEN(ptr->string)) return ptr;
+    return NULL;
+}
+
 /*
  * call-seq:
  *   strio.eof     -> true or false
@@ -610,8 +619,7 @@ strio_closed_write(VALUE self)
 static VALUE
 strio_eof(VALUE self)
 {
-    struct StringIO *ptr = readable(self);
-    if (ptr->pos < RSTRING_LEN(ptr->string)) return Qfalse;
+    if (strio_to_read(self)) return Qfalse;
     return Qtrue;
 }
 
@@ -821,27 +829,15 @@ strio_get_sync(VALUE self)
 static VALUE
 strio_each_byte(VALUE self)
 {
-    struct StringIO *ptr = readable(self);
+    struct StringIO *ptr;
 
     RETURN_ENUMERATOR(self, 0, 0);
 
-    while (ptr->pos < RSTRING_LEN(ptr->string)) {
+    while ((ptr = strio_to_read(self)) != NULL) {
 	char c = RSTRING_PTR(ptr->string)[ptr->pos++];
 	rb_yield(CHR2FIX(c));
     }
     return self;
-}
-
-/*
- *  This is a deprecated alias for #each_byte.
- */
-static VALUE
-strio_bytes(VALUE self)
-{
-    rb_warn("StringIO#bytes is deprecated; use #each_byte instead");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(self, ID2SYM(rb_intern("each_byte")), 0, 0);
-    return strio_each_byte(self);
 }
 
 /*
@@ -1058,18 +1054,6 @@ strio_each_char(VALUE self)
 }
 
 /*
- *  This is a deprecated alias for #each_char.
- */
-static VALUE
-strio_chars(VALUE self)
-{
-    rb_warn("StringIO#chars is deprecated; use #each_char instead");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(self, ID2SYM(rb_intern("each_char")), 0, 0);
-    return strio_each_char(self);
-}
-
-/*
  * call-seq:
  *   strio.each_codepoint {|c| block }  -> strio
  *   strio.each_codepoint               -> anEnumerator
@@ -1088,29 +1072,13 @@ strio_each_codepoint(VALUE self)
 
     ptr = readable(self);
     enc = get_enc(ptr);
-    for (;;) {
-	if (ptr->pos >= RSTRING_LEN(ptr->string)) {
-	    return self;
-	}
-
+    while ((ptr = strio_to_read(self)) != NULL) {
 	c = rb_enc_codepoint_len(RSTRING_PTR(ptr->string)+ptr->pos,
 				 RSTRING_END(ptr->string), &n, enc);
-	rb_yield(UINT2NUM(c));
 	ptr->pos += n;
+	rb_yield(UINT2NUM(c));
     }
     return self;
-}
-
-/*
- *  This is a deprecated alias for #each_codepoint.
- */
-static VALUE
-strio_codepoints(VALUE self)
-{
-    rb_warn("StringIO#codepoints is deprecated; use #each_codepoint instead");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(self, ID2SYM(rb_intern("each_codepoint")), 0, 0);
-    return strio_each_codepoint(self);
 }
 
 /* Boyer-Moore search: copied from regex.c */
@@ -1361,18 +1329,6 @@ strio_each(int argc, VALUE *argv, VALUE self)
 	rb_yield(line);
     }
     return self;
-}
-
-/*
- *  This is a deprecated alias for #each_line.
- */
-static VALUE
-strio_lines(int argc, VALUE *argv, VALUE self)
-{
-    rb_warn("StringIO#lines is deprecated; use #each_line instead");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(self, ID2SYM(rb_intern("each_line")), argc, argv);
-    return strio_each(argc, argv, self);
 }
 
 /*
@@ -1798,7 +1754,12 @@ void
 Init_stringio(void)
 {
 #undef rb_intern
-    VALUE StringIO = rb_define_class("StringIO", rb_cData);
+
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+  rb_ext_ractor_safe(true);
+#endif
+
+    VALUE StringIO = rb_define_class("StringIO", rb_cObject);
 
     rb_define_const(StringIO, "VERSION", rb_str_new_cstr(STRINGIO_VERSION));
 
@@ -1843,13 +1804,9 @@ Init_stringio(void)
 
     rb_define_method(StringIO, "each", strio_each, -1);
     rb_define_method(StringIO, "each_line", strio_each, -1);
-    rb_define_method(StringIO, "lines", strio_lines, -1);
     rb_define_method(StringIO, "each_byte", strio_each_byte, 0);
-    rb_define_method(StringIO, "bytes", strio_bytes, 0);
     rb_define_method(StringIO, "each_char", strio_each_char, 0);
-    rb_define_method(StringIO, "chars", strio_chars, 0);
     rb_define_method(StringIO, "each_codepoint", strio_each_codepoint, 0);
-    rb_define_method(StringIO, "codepoints", strio_codepoints, 0);
     rb_define_method(StringIO, "getc", strio_getc, 0);
     rb_define_method(StringIO, "ungetc", strio_ungetc, 1);
     rb_define_method(StringIO, "ungetbyte", strio_ungetbyte, 1);

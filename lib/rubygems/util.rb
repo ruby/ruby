@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/deprecate'
+require_relative 'deprecate'
 
 ##
 # This module contains various utility methods as module methods.
@@ -71,11 +71,9 @@ module Gem::Util
   end
 
   class << self
-
     extend Gem::Deprecate
 
     rubygems_deprecate :silent_system
-
   end
 
   ##

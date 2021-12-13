@@ -51,7 +51,7 @@ describe "Module#class_variable_defined?" do
     }.should raise_error(NameError)
   end
 
-  it "converts a non string/symbol/fixnum name to string using to_str" do
+  it "converts a non string/symbol name to string using to_str" do
     c = Class.new { class_variable_set :@@class_var, "test" }
     (o = mock('@@class_var')).should_receive(:to_str).and_return("@@class_var")
     c.class_variable_defined?(o).should == true

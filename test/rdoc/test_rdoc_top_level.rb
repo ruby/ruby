@@ -90,7 +90,7 @@ class TestRDocTopLevel < XrefTestCase
     @top_level.add_method method
 
     object = @store.find_class_named 'Object'
-    assert_equal [method], object.method_list
+    assert_equal [@c10_method, @c11_method, method], object.method_list
     assert_includes object.in_files, @top_level
   end
 
@@ -101,7 +101,7 @@ class TestRDocTopLevel < XrefTestCase
     @top_level.add_method method
 
     object = @store.find_class_named('Object')
-    assert_empty object.method_list
+    assert_equal [@c10_method, @c11_method], object.method_list
     assert_includes object.in_files, @top_level
   end
 
@@ -157,6 +157,9 @@ class TestRDocTopLevel < XrefTestCase
 
   def test_http_url
     assert_equal 'prefix/path/top_level_rb.html', @top_level.http_url('prefix')
+
+    other_level = @store.add_file 'path.other/level.rb'
+    assert_equal 'prefix/path_other/level_rb.html', other_level.http_url('prefix')
   end
 
   def test_last_modified

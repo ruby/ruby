@@ -236,11 +236,22 @@ describe "String#gsub with pattern and replacement" do
     -> { "hello".gsub(/[aeiou]/, nil)           }.should raise_error(TypeError)
   end
 
-  it "returns subclass instances when called on a subclass" do
-    StringSpecs::MyString.new("").gsub(//, "").should be_an_instance_of(StringSpecs::MyString)
-    StringSpecs::MyString.new("").gsub(/foo/, "").should be_an_instance_of(StringSpecs::MyString)
-    StringSpecs::MyString.new("foo").gsub(/foo/, "").should be_an_instance_of(StringSpecs::MyString)
-    StringSpecs::MyString.new("foo").gsub("foo", "").should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances when called on a subclass" do
+      StringSpecs::MyString.new("").gsub(//, "").should be_an_instance_of(StringSpecs::MyString)
+      StringSpecs::MyString.new("").gsub(/foo/, "").should be_an_instance_of(StringSpecs::MyString)
+      StringSpecs::MyString.new("foo").gsub(/foo/, "").should be_an_instance_of(StringSpecs::MyString)
+      StringSpecs::MyString.new("foo").gsub("foo", "").should be_an_instance_of(StringSpecs::MyString)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns String instances when called on a subclass" do
+      StringSpecs::MyString.new("").gsub(//, "").should be_an_instance_of(String)
+      StringSpecs::MyString.new("").gsub(/foo/, "").should be_an_instance_of(String)
+      StringSpecs::MyString.new("foo").gsub(/foo/, "").should be_an_instance_of(String)
+      StringSpecs::MyString.new("foo").gsub("foo", "").should be_an_instance_of(String)
+    end
   end
 
   # Note: $~ cannot be tested because mspec messes with it
@@ -464,6 +475,11 @@ describe "String#gsub with pattern and block" do
     offsets.should == [[1, 2], [4, 5]]
   end
 
+  it "does not set $~ for procs created from methods" do
+    str = "hello"
+    str.gsub("l", &StringSpecs::SpecialVarProcessor.new.method(:process)).should == "he<unset><unset>o"
+  end
+
   it "restores $~ after leaving the block" do
     [/./, "l"].each do |pattern|
       old_md = nil
@@ -575,6 +591,14 @@ describe "String#gsub with pattern and without replacement and block" do
         "abca".gsub(/a/).size.should == nil
       end
     end
+  end
+end
+
+describe "String#gsub with a string pattern" do
+  it "handles multibyte characters" do
+    "é".gsub("é", "â").should == "â"
+    "aé".gsub("é", "â").should == "aâ"
+    "éa".gsub("é", "â").should == "âa"
   end
 end
 

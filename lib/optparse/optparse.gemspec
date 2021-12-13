@@ -1,7 +1,8 @@
+# frozen_string_literal: true
+
 name = File.basename(__FILE__, ".gemspec")
-version = nil
-["lib", ".."].find do |dir|
-  version = File.foreach(File.join(__dir__, dir, "#{name}.rb")) do |line|
+version = ["lib", Array.new(name.count("-")+1, "..").join("/")].find do |dir|
+  break File.foreach(File.join(__dir__, dir, "#{name.tr('-', '/')}.rb")) do |line|
     /^\s*OptionParser::Version\s*=\s*"(.*)"/ =~ line and break $1
   end rescue nil
 end
@@ -16,14 +17,13 @@ Gem::Specification.new do |spec|
   spec.description   = %q{OptionParser is a class for command-line option analysis.}
   spec.homepage      = "https://github.com/ruby/optparse"
   spec.required_ruby_version = Gem::Requirement.new(">= 2.5.0")
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
 
-  spec.files         = Dir.chdir(File.expand_path('..', __FILE__)) do
-    `git ls-files -z`.split("\x0").reject { |f| f.match(%r{\A(?:test|spec|features)/}) }
-  end
+  spec.files         = Dir["{doc,lib,misc}/**/*"] + %w[README.md ChangeLog COPYING]
   spec.bindir        = "exe"
-  spec.executables   = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
+  spec.executables   = []
   spec.require_paths = ["lib"]
 end

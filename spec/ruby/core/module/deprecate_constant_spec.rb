@@ -9,7 +9,6 @@ describe "Module#deprecate_constant" do
     @module::PRIVATE = @value
     @module.private_constant :PRIVATE
     @module.deprecate_constant :PRIVATE
-    @pattern = /deprecated/
   end
 
   describe "when accessing the deprecated module" do
@@ -19,7 +18,7 @@ describe "Module#deprecate_constant" do
       value = nil
       -> {
         value = @module::PUBLIC1
-      }.should complain(@pattern)
+      }.should complain(/warning: constant .+::PUBLIC1 is deprecated/)
       value.should equal(@value)
 
       -> { @module::PRIVATE }.should raise_error(NameError)
@@ -28,16 +27,30 @@ describe "Module#deprecate_constant" do
     it "warns with a message" do
       @module.deprecate_constant :PUBLIC1
 
-      -> { @module::PUBLIC1 }.should complain(@pattern)
-      -> { @module.const_get :PRIVATE }.should complain(@pattern)
+      -> { @module::PUBLIC1 }.should complain(/warning: constant .+::PUBLIC1 is deprecated/)
+      -> { @module.const_get :PRIVATE }.should complain(/warning: constant .+::PRIVATE is deprecated/)
+    end
+
+    ruby_version_is '2.7' do
+      it "does not warn if Warning[:deprecated] is false" do
+        @module.deprecate_constant :PUBLIC1
+
+        deprecated = Warning[:deprecated]
+        begin
+          Warning[:deprecated] = false
+          -> { @module::PUBLIC1 }.should_not complain
+        ensure
+          Warning[:deprecated] = deprecated
+        end
+      end
     end
   end
 
   it "accepts multiple symbols and strings as constant names" do
     @module.deprecate_constant "PUBLIC1", :PUBLIC2
 
-    -> { @module::PUBLIC1 }.should complain(@pattern)
-    -> { @module::PUBLIC2 }.should complain(@pattern)
+    -> { @module::PUBLIC1 }.should complain(/warning: constant .+::PUBLIC1 is deprecated/)
+    -> { @module::PUBLIC2 }.should complain(/warning: constant .+::PUBLIC2 is deprecated/)
   end
 
   it "returns self" do

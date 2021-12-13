@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/gemcutter_utilities'
+require_relative '../command'
+require_relative '../gemcutter_utilities'
 
 class Gem::Commands::SigninCommand < Gem::Command
-
   include Gem::GemcutterUtilities
 
   def initialize
@@ -31,5 +30,4 @@ class Gem::Commands::SigninCommand < Gem::Command
   def execute
     sign_in options[:host]
   end
-
 end

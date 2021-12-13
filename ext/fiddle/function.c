@@ -77,18 +77,6 @@ rb_fiddle_new_function(VALUE address, VALUE arg_types, VALUE ret_type)
     return rb_class_new_instance(3, argv, cFiddleFunction);
 }
 
-static int
-parse_keyword_arg_i(VALUE key, VALUE value, VALUE self)
-{
-    if (key == ID2SYM(rb_intern("name"))) {
-	rb_iv_set(self, "@name", value);
-    } else {
-	rb_raise(rb_eArgError, "unknown keyword: %"PRIsVALUE,
-		 RB_OBJ_STRING(key));
-    }
-    return ST_CONTINUE;
-}
-
 static VALUE
 normalize_argument_types(const char *name,
                          VALUE arg_types,
@@ -106,7 +94,9 @@ normalize_argument_types(const char *name,
     normalized_arg_types = rb_ary_new_capa(n_arg_types);
     for (i = 0; i < n_arg_types; i++) {
         VALUE arg_type = RARRAY_AREF(arg_types, i);
-        int c_arg_type = NUM2INT(arg_type);
+        int c_arg_type;
+        arg_type = rb_fiddle_type_ensure(arg_type);
+        c_arg_type = NUM2INT(arg_type);
         if (c_arg_type == TYPE_VARIADIC) {
             if (i != n_arg_types - 1) {
                 rb_raise(rb_eArgError,
@@ -132,20 +122,46 @@ static VALUE
 initialize(int argc, VALUE argv[], VALUE self)
 {
     ffi_cif * cif;
-    VALUE ptr, arg_types, ret_type, abi, kwds;
+    VALUE ptr, arg_types, ret_type, abi, kwargs;
+    VALUE name = Qnil;
+    VALUE need_gvl = Qfalse;
     int c_ret_type;
     bool is_variadic = false;
     ffi_abi c_ffi_abi;
     void *cfunc;
 
-    rb_scan_args(argc, argv, "31:", &ptr, &arg_types, &ret_type, &abi, &kwds);
+    rb_scan_args(argc, argv, "31:", &ptr, &arg_types, &ret_type, &abi, &kwargs);
     rb_iv_set(self, "@closure", ptr);
+
+    if (!NIL_P(kwargs)) {
+        enum {
+            kw_name,
+            kw_need_gvl,
+            kw_max_,
+        };
+        static ID kw[kw_max_];
+        VALUE args[kw_max_];
+        if (!kw[0]) {
+            kw[kw_name] = rb_intern_const("name");
+            kw[kw_need_gvl] = rb_intern_const("need_gvl");
+        }
+        rb_get_kwargs(kwargs, kw, 0, kw_max_, args);
+        if (args[kw_name] != Qundef) {
+            name = args[kw_name];
+        }
+        if (args[kw_need_gvl] != Qundef) {
+            need_gvl = args[kw_need_gvl];
+        }
+    }
+    rb_iv_set(self, "@name", name);
+    rb_iv_set(self, "@need_gvl", need_gvl);
 
     ptr = rb_Integer(ptr);
     cfunc = NUM2PTR(ptr);
     PTR2NUM(cfunc);
     c_ffi_abi = NIL_P(abi) ? FFI_DEFAULT_ABI : NUM2INT(abi);
     abi = INT2FIX(c_ffi_abi);
+    ret_type = rb_fiddle_type_ensure(ret_type);
     c_ret_type = NUM2INT(ret_type);
     (void)INT2FFI_TYPE(c_ret_type); /* raise */
     ret_type = INT2FIX(c_ret_type);
@@ -166,8 +182,6 @@ initialize(int argc, VALUE argv[], VALUE self)
     rb_iv_set(self, "@return_type", ret_type);
     rb_iv_set(self, "@abi", abi);
     rb_iv_set(self, "@is_variadic", is_variadic ? Qtrue : Qfalse);
-
-    if (!NIL_P(kwds)) rb_hash_foreach(kwds, parse_keyword_arg_i, self);
 
     TypedData_Get_Struct(self, ffi_cif, &function_data_type, cif);
     cif->arg_types = NULL;
@@ -202,11 +216,13 @@ function_call(int argc, VALUE argv[], VALUE self)
     VALUE arg_types;
     VALUE cPointer;
     VALUE is_variadic;
+    VALUE need_gvl;
     int n_arg_types;
     int n_fixed_args = 0;
     int n_call_args = 0;
     int i;
     int i_call;
+    VALUE converted_args = Qnil;
     VALUE alloc_buffer = 0;
 
     cfunc    = rb_iv_get(self, "@ptr");
@@ -214,6 +230,7 @@ function_call(int argc, VALUE argv[], VALUE self)
     arg_types = rb_iv_get(self, "@argument_types");
     cPointer = rb_const_get(mFiddle, rb_intern("Pointer"));
     is_variadic = rb_iv_get(self, "@is_variadic");
+    need_gvl = rb_iv_get(self, "@need_gvl");
 
     n_arg_types = RARRAY_LENINT(arg_types);
     n_fixed_args = n_arg_types;
@@ -255,7 +272,9 @@ function_call(int argc, VALUE argv[], VALUE self)
         arg_types = rb_ary_dup(fixed_arg_types);
         for (i = n_fixed_args; i < argc; i += 2) {
           VALUE arg_type = argv[i];
-          int c_arg_type = NUM2INT(arg_type);
+          int c_arg_type;
+          arg_type = rb_fiddle_type_ensure(arg_type);
+          c_arg_type = NUM2INT(arg_type);
           (void)INT2FFI_TYPE(c_arg_type); /* raise */
           rb_ary_push(arg_types, INT2FIX(c_arg_type));
         }
@@ -313,6 +332,7 @@ function_call(int argc, VALUE argv[], VALUE self)
          i++, i_call++) {
         VALUE arg_type;
         int c_arg_type;
+        VALUE original_src;
         VALUE src;
         arg_type = RARRAY_AREF(arg_types, i_call);
         c_arg_type = FIX2INT(arg_type);
@@ -327,22 +347,46 @@ function_call(int argc, VALUE argv[], VALUE self)
             }
             else if (cPointer != CLASS_OF(src)) {
                 src = rb_funcall(cPointer, rb_intern("[]"), 1, src);
+                if (NIL_P(converted_args)) {
+                    converted_args = rb_ary_new();
+                }
+                rb_ary_push(converted_args, src);
             }
             src = rb_Integer(src);
         }
 
+        original_src = src;
         VALUE2GENERIC(c_arg_type, src, &generic_args[i_call]);
+        if (src != original_src) {
+            if (NIL_P(converted_args)) {
+                converted_args = rb_ary_new();
+            }
+            rb_ary_push(converted_args, src);
+        }
         args.values[i_call] = (void *)&generic_args[i_call];
     }
     args.values[i_call] = NULL;
     args.fn = (void(*)(void))NUM2PTR(cfunc);
 
-    (void)rb_thread_call_without_gvl(nogvl_ffi_call, &args, 0, 0);
+    if (RTEST(need_gvl)) {
+        ffi_call(args.cif, args.fn, &(args.retval), args.values);
+    }
+    else {
+        (void)rb_thread_call_without_gvl(nogvl_ffi_call, &args, 0, 0);
+    }
 
-    rb_funcall(mFiddle, rb_intern("last_error="), 1, INT2NUM(errno));
+    {
+        int errno_keep = errno;
 #if defined(_WIN32)
-    rb_funcall(mFiddle, rb_intern("win32_last_error="), 1, INT2NUM(errno));
+        DWORD error = WSAGetLastError();
+        int socket_error = WSAGetLastError();
+        rb_funcall(mFiddle, rb_intern("win32_last_error="), 1,
+                   ULONG2NUM(error));
+        rb_funcall(mFiddle, rb_intern("win32_last_socket_error="), 1,
+                   INT2NUM(socket_error));
 #endif
+        rb_funcall(mFiddle, rb_intern("last_error="), 1, INT2NUM(errno_keep));
+    }
 
     ALLOCV_END(alloc_buffer);
 
@@ -415,6 +459,10 @@ Init_fiddle_function(void)
      * Caller must ensure the underlying function is called in a
      * thread-safe manner if running in a multi-threaded process.
      *
+     * Note that it is not thread-safe to use this method to
+     * directly or indirectly call many Ruby C-extension APIs unless
+     * you don't pass +need_gvl: true+ to Fiddle::Function#new.
+     *
      * For an example see Fiddle::Function
      *
      */
@@ -422,13 +470,20 @@ Init_fiddle_function(void)
 
     /*
      * Document-method: new
-     * call-seq: new(ptr, args, ret_type, abi = DEFAULT)
+     * call-seq: new(ptr,
+     *               args,
+     *               ret_type,
+     *               abi = DEFAULT,
+     *               name: nil,
+     *               need_gvl: false)
      *
      * Constructs a Function object.
      * * +ptr+ is a referenced function, of a Fiddle::Handle
      * * +args+ is an Array of arguments, passed to the +ptr+ function
      * * +ret_type+ is the return type of the function
      * * +abi+ is the ABI of the function
+     * * +name+ is the name of the function
+     * * +need_gvl+ is whether GVL is needed to call the function
      *
      */
     rb_define_method(cFiddleFunction, "initialize", initialize, -1);

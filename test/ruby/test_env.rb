@@ -22,7 +22,6 @@ class TestEnv < Test::Unit::TestCase
 
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
     @backup = ENV.to_hash
     ENV.delete('test')
     ENV.delete('TEST')
@@ -63,6 +62,46 @@ class TestEnv < Test::Unit::TestCase
     }
   end
 
+  def test_dup
+    assert_raise(TypeError) {
+      ENV.dup
+    }
+  end
+
+  def test_clone
+    warning = /ENV\.clone is deprecated; use ENV\.to_h instead/
+    clone = assert_deprecated_warning(warning) {
+      ENV.clone
+    }
+    assert_same(ENV, clone)
+
+    clone = assert_deprecated_warning(warning) {
+      ENV.clone(freeze: false)
+    }
+    assert_same(ENV, clone)
+
+    clone = assert_deprecated_warning(warning) {
+      ENV.clone(freeze: nil)
+    }
+    assert_same(ENV, clone)
+
+    assert_raise(TypeError) {
+      ENV.clone(freeze: true)
+    }
+    assert_raise(ArgumentError) {
+      ENV.clone(freeze: 1)
+    }
+    assert_raise(ArgumentError) {
+      ENV.clone(foo: false)
+    }
+    assert_raise(ArgumentError) {
+      ENV.clone(1)
+    }
+    assert_raise(ArgumentError) {
+      ENV.clone(1, foo: false)
+    }
+  end
+
   def test_has_value
     val = 'a'
     val.succ! while ENV.has_value?(val) || ENV.has_value?(val.upcase)
@@ -84,7 +123,6 @@ class TestEnv < Test::Unit::TestCase
     ENV['test'] = val[0...-1]
 
     assert_nil(ENV.key(val))
-    assert_nil(ENV.index(val))
     assert_nil(ENV.key(val.upcase))
     ENV['test'] = val
     if IGNORE_CASE
@@ -370,7 +408,8 @@ class TestEnv < Test::Unit::TestCase
       assert_equal("foo", v)
     end
     assert_invalid_env {|var| ENV.assoc(var)}
-    assert_equal(Encoding.find("locale"), v.encoding)
+    encoding = /mswin|mingw/ =~ RUBY_PLATFORM ? Encoding::UTF_8 : Encoding.find("locale")
+    assert_equal(encoding, v.encoding)
   end
 
   def test_has_value2
@@ -464,15 +503,15 @@ class TestEnv < Test::Unit::TestCase
   end
 
   def test_huge_value
-    huge_value = "bar" * 40960
-    ENV["foo"] = "bar"
-    if /mswin/ =~ RUBY_PLATFORM
-      assert_raise(Errno::EINVAL) { ENV["foo"] = huge_value }
-      assert_equal("bar", ENV["foo"])
+    if /mswin|ucrt/ =~ RUBY_PLATFORM
+      # On Windows >= Vista each environment variable can be max 32768 characters
+      huge_value = "bar" * 10900
     else
-      assert_nothing_raised { ENV["foo"] = huge_value }
-      assert_equal(huge_value, ENV["foo"])
+      huge_value = "bar" * 40960
     end
+    ENV["foo"] = "overwritten"
+    assert_nothing_raised { ENV["foo"] = huge_value }
+    assert_equal(huge_value, ENV["foo"])
   end
 
   if /mswin|mingw/ =~ RUBY_PLATFORM
@@ -580,15 +619,13 @@ class TestEnv < Test::Unit::TestCase
       end;
     end
 
-    if Encoding.find("locale") == Encoding::UTF_8
-      def test_utf8
-        text = "testing \u{e5 e1 e2 e4 e3 101 3042}"
-        test = ENV["test"]
-        ENV["test"] = text
-        assert_equal text, ENV["test"]
-      ensure
-        ENV["test"] = test
-      end
+    def test_utf8
+      text = "testing \u{e5 e1 e2 e4 e3 101 3042}"
+      test = ENV["test"]
+      ENV["test"] = text
+      assert_equal text, ENV["test"]
+    ensure
+      ENV["test"] = test
     end
   end
 end

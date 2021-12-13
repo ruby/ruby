@@ -23,6 +23,8 @@
 # Copyright:: (C) 2000  Information-technology Promotion Agency, Japan
 
 module Timeout
+  VERSION = "0.2.0".freeze
+
   # Raised by Timeout.timeout when the block times out.
   class Error < RuntimeError
     attr_reader :thread
@@ -30,6 +32,7 @@ module Timeout
     def self.catch(*args)
       exc = new(*args)
       exc.instance_variable_set(:@thread, Thread.current)
+      exc.instance_variable_set(:@catch_value, exc)
       ::Kernel.catch(exc) {yield exc}
     end
 
@@ -38,11 +41,11 @@ module Timeout
       if self.thread == Thread.current
         bt = caller
         begin
-          throw(self, bt)
+          throw(@catch_value, bt)
         rescue UncaughtThrowError
         end
       end
-      self
+      super
     end
   end
 
@@ -71,12 +74,21 @@ module Timeout
   # ensure to prevent the handling of the exception.  For that reason, this
   # method cannot be relied on to enforce timeouts for untrusted blocks.
   #
+  # If a scheduler is defined, it will be used to handle the timeout by invoking
+  # Scheduler#timeout_after.
+  #
   # Note that this is both a method of module Timeout, so you can <tt>include
   # Timeout</tt> into your classes so they have a #timeout method, as well as
   # a module method, so you can call it directly as Timeout.timeout().
-  def timeout(sec, klass = nil, message = nil)   #:yield: +sec+
+  def timeout(sec, klass = nil, message = nil, &block)   #:yield: +sec+
     return yield(sec) if sec == nil or sec.zero?
+
     message ||= "execution expired".freeze
+
+    if Fiber.respond_to?(:current_scheduler) && (scheduler = Fiber.current_scheduler)&.respond_to?(:timeout_after)
+      return scheduler.timeout_after(sec, klass || Error, message, &block)
+    end
+
     from = "from #{caller_locations(1, 1)[0]}" if $DEBUG
     e = Error
     bl = proc do |exception|
@@ -104,6 +116,7 @@ module Timeout
       begin
         bl.call(klass)
       rescue klass => e
+        message = e.message
         bt = e.backtrace
       end
     else
@@ -117,16 +130,4 @@ module Timeout
   end
 
   module_function :timeout
-end
-
-def timeout(*args, &block)
-  warn "Object##{__method__} is deprecated, use Timeout.timeout instead.", uplevel: 1
-  Timeout.timeout(*args, &block)
-end
-
-# Another name for Timeout::Error, defined for backwards compatibility with
-# earlier versions of timeout.rb.
-TimeoutError = Timeout::Error
-class Object
-  deprecate_constant :TimeoutError
 end

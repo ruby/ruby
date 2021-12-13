@@ -214,17 +214,6 @@ provider ruby {
      Fired at the end of a sweep phase.
   */
   probe gc__sweep__end();
-
-  /*
-     ruby:::method-cache-clear(class, filename, lineno);
-
-     This probe is fired when the method cache is cleared.
-
-     * `class` the name of the class or "global" (a string)
-     * `filename` the file name where the cache is _being cleared_ (a string)
-     * `lineno` the line number where the cache is _being cleared_ (an int)
-  */
-  probe method__cache__clear(const char *class, const char *filename, int lineno);
 };
 
 #pragma D attributes Stable/Evolving/Common provider ruby provider

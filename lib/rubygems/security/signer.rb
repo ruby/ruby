@@ -2,10 +2,9 @@
 ##
 # Basic OpenSSL-based package signing class.
 
-require "rubygems/user_interaction"
+require_relative "../user_interaction"
 
 class Gem::Security::Signer
-
   include Gem::UserInteraction
 
   ##
@@ -35,7 +34,7 @@ class Gem::Security::Signer
   attr_reader :options
 
   DEFAULT_OPTIONS = {
-    expiration_length_days: 365
+    expiration_length_days: 365,
   }.freeze
 
   ##
@@ -81,11 +80,11 @@ class Gem::Security::Signer
       @cert_chain = [default_cert] if File.exist? default_cert
     end
 
-    @digest_algorithm = Gem::Security::DIGEST_ALGORITHM
     @digest_name      = Gem::Security::DIGEST_NAME
+    @digest_algorithm = Gem::Security.create_digest(@digest_name)
 
-    if @key && !@key.is_a?(OpenSSL::PKey::RSA)
-      @key = OpenSSL::PKey::RSA.new(File.read(@key), @passphrase)
+    if @key && !@key.is_a?(OpenSSL::PKey::PKey)
+      @key = OpenSSL::PKey.read(File.read(@key), @passphrase)
     end
 
     if @cert_chain
@@ -178,8 +177,7 @@ class Gem::Security::Signer
     disk_cert = File.read(disk_cert_path) rescue nil
 
     disk_key_path = File.join(Gem.default_key_path)
-    disk_key =
-      OpenSSL::PKey::RSA.new(File.read(disk_key_path), @passphrase) rescue nil
+    disk_key = OpenSSL::PKey.read(File.read(disk_key_path), @passphrase) rescue nil
 
     return unless disk_key
 
@@ -202,5 +200,4 @@ class Gem::Security::Signer
       end
     end
   end
-
 end

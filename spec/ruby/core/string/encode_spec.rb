@@ -19,13 +19,17 @@ describe "String#encode" do
     it "returns a copy when Encoding.default_internal is nil" do
       Encoding.default_internal = nil
       str = "あ"
-      str.encode.should_not equal(str)
+      encoded = str.encode
+      encoded.should_not equal(str)
+      encoded.should == str
     end
 
     it "returns a copy for a ASCII-only String when Encoding.default_internal is nil" do
       Encoding.default_internal = nil
       str = "abc"
-      str.encode.should_not equal(str)
+      encoded = str.encode
+      encoded.should_not equal(str)
+      encoded.should == str
     end
 
     it "encodes an ascii substring of a binary string to UTF-8" do
@@ -39,7 +43,9 @@ describe "String#encode" do
   describe "when passed to encoding" do
     it "returns a copy when passed the same encoding as the String" do
       str = "あ"
-      str.encode(Encoding::UTF_8).should_not equal(str)
+      encoded = str.encode(Encoding::UTF_8)
+      encoded.should_not equal(str)
+      encoded.should == str
     end
 
     it "round trips a String" do
@@ -61,10 +67,52 @@ describe "String#encode" do
       "\rfoo".encode(universal_newline: true).should == "\nfoo"
     end
 
-    it "replaces invalid encoding" do
-      encoded = "ち\xE3\x81\xFF".encode("UTF-16LE", invalid: :replace, replace: "?")
-      encoded.should == "\u3061??".encode("UTF-16LE")
-      encoded.encode("UTF-8").should == "ち??"
+    it "replaces invalid encoding in source with default replacement" do
+      encoded = "ち\xE3\x81\xFF".encode("UTF-16LE", invalid: :replace)
+      encoded.should == "\u3061\ufffd\ufffd".encode("UTF-16LE")
+      encoded.encode("UTF-8").should == "ち\ufffd\ufffd"
+    end
+
+    it "replaces invalid encoding in source with a specified replacement" do
+      encoded = "ち\xE3\x81\xFF".encode("UTF-16LE", invalid: :replace, replace: "foo")
+      encoded.should == "\u3061foofoo".encode("UTF-16LE")
+      encoded.encode("UTF-8").should == "ちfoofoo"
+    end
+
+    it "replaces invalid encoding in source using a specified replacement even when a fallback is given" do
+      encoded = "ち\xE3\x81\xFF".encode("UTF-16LE", invalid: :replace, replace: "foo", fallback: -> c { "bar" })
+      encoded.should == "\u3061foofoo".encode("UTF-16LE")
+      encoded.encode("UTF-8").should == "ちfoofoo"
+    end
+
+    it "replaces undefined encoding in destination with default replacement" do
+      encoded = "B\ufffd".encode(Encoding::US_ASCII, undef: :replace)
+      encoded.should == "B?".encode(Encoding::US_ASCII)
+      encoded.encode("UTF-8").should == "B?"
+    end
+
+    it "replaces undefined encoding in destination with a specified replacement" do
+      encoded = "B\ufffd".encode(Encoding::US_ASCII, undef: :replace, replace: "foo")
+      encoded.should == "Bfoo".encode(Encoding::US_ASCII)
+      encoded.encode("UTF-8").should == "Bfoo"
+    end
+
+    it "replaces undefined encoding in destination with a specified replacement even if a fallback is given" do
+      encoded = "B\ufffd".encode(Encoding::US_ASCII, undef: :replace, replace: "foo", fallback: proc {|x| "bar"})
+      encoded.should == "Bfoo".encode(Encoding::US_ASCII)
+      encoded.encode("UTF-8").should == "Bfoo"
+    end
+
+    it "replaces undefined encoding in destination using a fallback proc" do
+      encoded = "B\ufffd".encode(Encoding::US_ASCII, fallback: proc {|x| "bar"})
+      encoded.should == "Bbar".encode(Encoding::US_ASCII)
+      encoded.encode("UTF-8").should == "Bbar"
+    end
+
+    it "replaces invalid encoding in source using replace even when fallback is given as proc" do
+      encoded = "ち\xE3\x81\xFF".encode("UTF-16LE", invalid: :replace, replace: "foo", fallback: proc {|x| "bar"})
+      encoded.should == "\u3061foofoo".encode("UTF-16LE")
+      encoded.encode("UTF-8").should == "ちfoofoo"
     end
   end
 
@@ -75,6 +123,7 @@ describe "String#encode" do
       encoded = str.encode("utf-8", "utf-8")
 
       encoded.should_not equal(str)
+      encoded.should == str.force_encoding("utf-8")
       encoded.encoding.should == Encoding::UTF_8
     end
 
@@ -87,14 +136,28 @@ describe "String#encode" do
   describe "when passed to, options" do
     it "returns a copy when the destination encoding is the same as the String encoding" do
       str = "あ"
-      str.encode(Encoding::UTF_8, undef: :replace).should_not equal(str)
+      encoded = str.encode(Encoding::UTF_8, undef: :replace)
+      encoded.should_not equal(str)
+      encoded.should == str
     end
   end
 
   describe "when passed to, from, options" do
     it "returns a copy when both encodings are the same" do
       str = "あ"
-      str.encode("utf-8", "utf-8", invalid: :replace).should_not equal(str)
+      encoded = str.encode("utf-8", "utf-8", invalid: :replace)
+      encoded.should_not equal(str)
+      encoded.should == str
+    end
+
+    it "returns a copy in the destination encoding when both encodings are the same" do
+      str = "あ"
+      str.force_encoding("binary")
+      encoded = str.encode("utf-8", "utf-8", invalid: :replace)
+
+      encoded.should_not equal(str)
+      encoded.should == str.force_encoding("utf-8")
+      encoded.encoding.should == Encoding::UTF_8
     end
   end
 end

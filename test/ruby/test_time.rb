@@ -7,7 +7,6 @@ require 'delegate'
 class TestTime < Test::Unit::TestCase
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -38,8 +37,11 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_new
+    assert_equal(Time.new(2000,1,1,0,0,0), Time.new(2000))
+    assert_equal(Time.new(2000,2,1,0,0,0), Time.new("2000", "Feb"))
     assert_equal(Time.utc(2000,2,10), Time.new(2000,2,10, 11,0,0, 3600*11))
     assert_equal(Time.utc(2000,2,10), Time.new(2000,2,9, 13,0,0, -3600*11))
+    assert_equal(Time.utc(2000,2,29,23,0,0), Time.new(2000, 3, 1, 0, 0, 0, 3600))
     assert_equal(Time.utc(2000,2,10), Time.new(2000,2,10, 11,0,0, "+11:00"))
     assert_equal(Rational(1,2), Time.new(2000,2,10, 11,0,5.5, "+11:00").subsec)
     bug4090 = '[ruby-dev:42631]'
@@ -47,6 +49,7 @@ class TestTime < Test::Unit::TestCase
     t = Time.new(*tm, "-12:00")
     assert_equal([2001,2,28,23,59,30,-43200], [t.year, t.month, t.mday, t.hour, t.min, t.sec, t.gmt_offset], bug4090)
     assert_raise(ArgumentError) { Time.new(2000,1,1, 0,0,0, "+01:60") }
+    assert_raise(ArgumentError) { Time.new(2021, 1, 1, "+09:99") }
   end
 
   def test_time_add()
@@ -110,7 +113,7 @@ class TestTime < Test::Unit::TestCase
       assert_equal(946684800, Time.utc(2000, 1, 1, 0, 0, 0).tv_sec)
 
       # Giveup to try 2nd test because some state is changed.
-      skip if Minitest::Unit.current_repeat_count > 0
+      skip if Test::Unit::Runner.current_repeat_count > 0
 
       assert_equal(0x7fffffff, Time.utc(2038, 1, 19, 3, 14, 7).tv_sec)
       assert_equal(0x80000000, Time.utc(2038, 1, 19, 3, 14, 8).tv_sec)
@@ -238,6 +241,10 @@ class TestTime < Test::Unit::TestCase
     assert_equal(100, Time.at(0, 0.1).nsec)
     assert_equal(10, Time.at(0, 0.01).nsec)
     assert_equal(1, Time.at(0, 0.001).nsec)
+  end
+
+  def test_at_splat
+    assert_equal(Time.at(1, 2), Time.at(*[1, 2]))
   end
 
   def test_at_with_unit
@@ -379,6 +386,11 @@ class TestTime < Test::Unit::TestCase
     end
   end
 
+  def test_marshal_broken_month
+    data = "\x04\x08u:\tTime\r\x20\x7c\x1e\xc0\x00\x00\x00\x00"
+    assert_equal(Time.utc(2022, 4, 1), Marshal.load(data))
+  end
+
   def test_marshal_distant_past
     assert_marshal_roundtrip(Time.utc(1890, 1, 1))
     assert_marshal_roundtrip(Time.utc(-4.5e9, 1, 1))
@@ -421,8 +433,10 @@ class TestTime < Test::Unit::TestCase
     def o.to_int; 0; end
     def o.to_r; nil; end
     assert_raise(TypeError) { Time.gm(2000, 1, 1, 0, 0, o, :foo, :foo) }
+    class << o; remove_method(:to_r); end
     def o.to_r; ""; end
     assert_raise(TypeError) { Time.gm(2000, 1, 1, 0, 0, o, :foo, :foo) }
+    class << o; remove_method(:to_r); end
     def o.to_r; Rational(11); end
     assert_equal(11, Time.gm(2000, 1, 1, 0, 0, o).sec)
     o = Object.new
@@ -583,6 +597,10 @@ class TestTime < Test::Unit::TestCase
 
     t2000 = get_t2000.localtime(9*3600) + 1/10r
     assert_equal("2000-01-01 09:00:00.1 +0900", t2000.inspect)
+
+    t2000 = get_t2000
+    assert_equal("2000-01-01 09:12:00 +0912", t2000.localtime(9*3600+12*60).inspect)
+    assert_equal("2000-01-01 09:12:34 +091234", t2000.localtime(9*3600+12*60+34).inspect)
   end
 
   def assert_zone_encoding(time)
@@ -604,13 +622,12 @@ class TestTime < Test::Unit::TestCase
     assert_nil(t.getlocal("+02:00").zone)
   end
 
-  def test_plus_minus_succ
+  def test_plus_minus
     t2000 = get_t2000
     # assert_raise(RangeError) { t2000 + 10000000000 }
     # assert_raise(RangeError)  t2000 - 3094168449 }
     # assert_raise(RangeError) { t2000 + 1200798848 }
     assert_raise(TypeError) { t2000 + Time.now }
-    assert_equal(t2000 + 1, t2000.succ)
   end
 
   def test_plus_type
@@ -713,7 +730,9 @@ class TestTime < Test::Unit::TestCase
     assert_equal("12:00:00 AM", t2000.strftime("%r"))
     assert_equal("Sat 2000-01-01T00:00:00", t2000.strftime("%3a %FT%T"))
 
-    assert_equal("", t2000.strftime(""))
+    assert_warning(/strftime called with empty format string/) do
+      assert_equal("", t2000.strftime(""))
+    end
     assert_equal("foo\0bar\x0000\x0000\x0000", t2000.strftime("foo\0bar\0%H\0%M\0%S"))
     assert_equal("foo" * 1000, t2000.strftime("foo" * 1000))
 
@@ -913,6 +932,17 @@ class TestTime < Test::Unit::TestCase
     assert_equal("+09:00", t.strftime("%:z"))
     assert_equal("+09:00:01", t.strftime("%::z"))
     assert_equal("+09:00:01", t.strftime("%:::z"))
+
+    assert_equal("+0000", t2000.strftime("%z"))
+    assert_equal("-0000", t2000.strftime("%-z"))
+    assert_equal("-00:00", t2000.strftime("%-:z"))
+    assert_equal("-00:00:00", t2000.strftime("%-::z"))
+
+    t = t2000.getlocal("+00:00")
+    assert_equal("+0000", t.strftime("%z"))
+    assert_equal("+0000", t.strftime("%-z"))
+    assert_equal("+00:00", t.strftime("%-:z"))
+    assert_equal("+00:00:00", t.strftime("%-::z"))
   end
 
   def test_strftime_padding
@@ -1069,6 +1099,11 @@ class TestTime < Test::Unit::TestCase
     t2 = (t+0.123456789).ceil(4)
     assert_equal([59,59,23, 31,12,1999, 5,365,false,"UTC"], t2.to_a)
     assert_equal(Rational(1235,10000), t2.subsec)
+
+    time = Time.utc(2016, 4, 23, 0, 0, 0.123456789r)
+    assert_equal(time, time.ceil(9))
+    assert_equal(time, time.ceil(10))
+    assert_equal(time, time.ceil(11))
   end
 
   def test_getlocal_dont_share_eigenclass
@@ -1145,7 +1180,7 @@ class TestTime < Test::Unit::TestCase
 
   def test_2038
     # Giveup to try 2nd test because some state is changed.
-    skip if Minitest::Unit.current_repeat_count > 0
+    skip if Test::Unit::Runner.current_repeat_count > 0
 
     if no_leap_seconds?
       assert_equal(0x80000000, Time.utc(2038, 1, 19, 3, 14, 8).tv_sec)
@@ -1205,6 +1240,30 @@ class TestTime < Test::Unit::TestCase
     }
   end
 
+  def test_getlocal_utc
+    t = Time.gm(2000)
+    assert_equal [00, 00, 00,  1,  1, 2000], (t1 = t.getlocal("UTC")).to_a[0, 6]
+    assert_predicate t1, :utc?
+    assert_equal [00, 00, 00,  1,  1, 2000], (t1 = t.getlocal("-0000")).to_a[0, 6]
+    assert_predicate t1, :utc?
+    assert_equal [00, 00, 00,  1,  1, 2000], (t1 = t.getlocal("+0000")).to_a[0, 6]
+    assert_not_predicate t1, :utc?
+  end
+
+  def test_getlocal_utc_offset
+    t = Time.gm(2000)
+    assert_equal [00, 30, 21, 31, 12, 1999], t.getlocal("-02:30").to_a[0, 6]
+    assert_equal [00, 00,  9,  1,  1, 2000], t.getlocal("+09:00").to_a[0, 6]
+    assert_equal [20, 29, 21, 31, 12, 1999], t.getlocal("-02:30:40").to_a[0, 6]
+    assert_equal [35, 10,  9,  1,  1, 2000], t.getlocal("+09:10:35").to_a[0, 6]
+    assert_equal [00, 30, 21, 31, 12, 1999], t.getlocal("-0230").to_a[0, 6]
+    assert_equal [00, 00,  9,  1,  1, 2000], t.getlocal("+0900").to_a[0, 6]
+    assert_equal [20, 29, 21, 31, 12, 1999], t.getlocal("-023040").to_a[0, 6]
+    assert_equal [35, 10,  9,  1,  1, 2000], t.getlocal("+091035").to_a[0, 6]
+    assert_raise(ArgumentError) {t.getlocal("-02:3040")}
+    assert_raise(ArgumentError) {t.getlocal("+0910:35")}
+  end
+
   def test_getlocal_nil
     now = Time.now
     now2 = nil
@@ -1232,22 +1291,6 @@ class TestTime < Test::Unit::TestCase
     assert_equal("365", t.strftime("%j"))
     t = Time.utc(2017, 1, 1, 1, 0, 0).getlocal("-05:00")
     assert_equal("366", t.strftime("%j"))
-  end
-
-  def test_strftime_no_hidden_garbage
-    skip unless Thread.list.size == 1
-
-    fmt = %w(Y m d).map { |x| "%#{x}" }.join('-') # defeats optimization
-    t = Time.at(0).getutc
-    ObjectSpace.count_objects(res = {}) # creates strings on first call
-    GC.disable
-    before = ObjectSpace.count_objects(res)[:T_STRING]
-    val = t.strftime(fmt)
-    after = ObjectSpace.count_objects(res)[:T_STRING]
-    assert_equal before + 1, after, 'only new string is the created one'
-    assert_equal '1970-01-01', val
-  ensure
-    GC.enable
   end
 
   def test_num_exact_error

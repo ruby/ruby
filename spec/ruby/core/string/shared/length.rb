@@ -36,4 +36,20 @@ describe :string_length, shared: true do
     concat.force_encoding(Encoding::ASCII_8BIT)
     concat.size.should == 4
   end
+
+  it "adds 1 for every invalid byte in UTF-8" do
+    "\xF4\x90\x80\x80".size.should == 4
+    "a\xF4\x90\x80\x80b".size.should == 6
+    "é\xF4\x90\x80\x80è".size.should == 6
+  end
+
+  it "adds 1 (and not 2) for a incomplete surrogate in UTF-16" do
+    "\x00\xd8".force_encoding("UTF-16LE").size.should == 1
+    "\xd8\x00".force_encoding("UTF-16BE").size.should == 1
+  end
+
+  it "adds 1 for a broken sequence in UTF-32" do
+    "\x04\x03\x02\x01".force_encoding("UTF-32LE").size.should == 1
+    "\x01\x02\x03\x04".force_encoding("UTF-32BE").size.should == 1
+  end
 end

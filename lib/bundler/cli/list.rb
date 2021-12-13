@@ -16,7 +16,13 @@ module Bundler
       specs = if @only_group.any? || @without_group.any?
         filtered_specs_by_groups
       else
-        Bundler.load.specs
+        begin
+          Bundler.load.specs
+        rescue GemNotFound => e
+          Bundler.ui.error e.message
+          Bundler.ui.warn "Install missing gems with `bundle install`."
+          exit 1
+        end
       end.reject {|s| s.name == "bundler" }.sort_by(&:name)
 
       return Bundler.ui.info "No gems in the Gemfile" if specs.empty?
@@ -31,7 +37,7 @@ module Bundler
       Bundler.ui.info "Use `bundle info` to print more detailed information about a gem"
     end
 
-  private
+    private
 
     def verify_group_exists(groups)
       (@without_group + @only_group).each do |group|

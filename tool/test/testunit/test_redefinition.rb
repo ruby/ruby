@@ -3,14 +3,9 @@ require 'test/unit'
 
 class TestRedefinition < Test::Unit::TestCase
   def test_redefinition
-    assert_match(/^test\/unit warning: method TestForTestRedefinition#test_redefinition is redefined$/,
-                 redefinition)
-  end
-
-  def redefinition(*args)
-    IO.popen([*@options[:ruby], "#{File.dirname(__FILE__)}/test4test_redefinition.rb", *args],
-                      err: [:child, :out]) {|f|
-      f.read
-    }
+    message = %r[test/unit: method TestForTestRedefinition#test_redefinition is redefined$]
+    assert_raise_with_message(Test::Unit::AssertionFailedError, message) do
+      require_relative("test4test_redefinition.rb")
+    end
   end
 end

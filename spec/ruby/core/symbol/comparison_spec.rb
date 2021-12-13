@@ -40,7 +40,7 @@ describe "Symbol#<=>" do
     (:abc <=> "abc").should be_nil
   end
 
-  it "returns nil if other is a Fixnum" do
+  it "returns nil if other is an Integer" do
     (:abc <=> 1).should be_nil
   end
 

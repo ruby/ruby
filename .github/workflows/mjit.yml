@@ -1,5 +1,20 @@
 name: MJIT
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
 jobs:
   make:
     strategy:
@@ -8,25 +23,29 @@ jobs:
         jit_opts: [ "--jit", "--jit-wait" ]
       fail-fast: false
     runs-on: ubuntu-latest
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
     env:
       TESTOPTS: '-q --tty=no'
-      RUN_OPTS: '--disable-gems ${{ matrix.jit_opts }}'
+      RUN_OPTS: '--disable-gems ${{ matrix.jit_opts }} --jit-debug=-ggdb3'
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     steps:
+      - run: mkdir build
+        working-directory:
       - name: Install libraries
         run: |
           set -x
           sudo apt-get update -q || :
-          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev bison autoconf ruby
+          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison autoconf ruby
       - name: git config
         run: |
           git config --global advice.detachedHead 0
+          git config --global init.defaultBranch garbage
       - uses: actions/checkout@v2
         with:
           path: src
-      - run: ./src/tool/actions-commit-info.sh
-        id: commit_info
+      - uses: actions/cache@v2
+        with:
+          path: src/.downloaded-cache
+          key: downloaded-cache
       - name: Fixed world writable dirs
         run: |
           chmod -v go-w $HOME $HOME/.config
@@ -34,28 +53,30 @@ jobs:
           sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v go-w $d; done' || :
       - name: Set ENV
         run: |
-          echo '::set-env name=JOBS::'-j$((1 + $(nproc --all)))
-      - run: autoconf
+          echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
+      - run: ./autogen.sh
         working-directory: src
-      - run: mkdir build
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc
-        working-directory: build
-      - run: make $JOBS incs
-        working-directory: build
-      - run: make $JOBS
-        working-directory: build
-      - run: sudo make $JOBS -s install
-        working-directory: build
-      - run: make $JOBS -s test RUN_OPTS="$RUN_OPTS"
-        timeout-minutes: 10
-        working-directory: build
-      - run: make $JOBS -s test-all RUN_OPTS="$RUN_OPTS"
-        timeout-minutes: 10
-        working-directory: build
-      - run: make $JOBS -s test-spec RUN_OPTS="$RUN_OPTS"
-        timeout-minutes: 5
-        working-directory: build
+        run: ../src/configure -C --disable-install-doc cppflags=-DVM_CHECK_MODE
+      - run: make incs
+      - run: make
+      - run: sudo make -s install
+      - run: sudo apt-get install gdb # used by test / test-all failure
+      - name: Run test
+        run: |
+          ulimit -c unlimited
+          make -s test RUN_OPTS="$RUN_OPTS"
+        timeout-minutes: 60
+      - name: Run test-all
+        run: |
+          ulimit -c unlimited
+          make -s test-all RUN_OPTS="$RUN_OPTS"
+        timeout-minutes: 60
+      - name: Run test-spec
+        run: |
+          ulimit -c unlimited
+          make -s test-spec RUN_OPTS="$RUN_OPTS"
+        timeout-minutes: 60
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |
@@ -68,4 +89,8 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: failure() && github.event_name == 'push'
+        if: ${{ failure() && github.event_name == 'push' }}
+
+defaults:
+  run:
+    working-directory: build

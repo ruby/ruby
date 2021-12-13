@@ -10,6 +10,7 @@ class TestJIT < Test::Unit::TestCase
   IGNORABLE_PATTERNS = [
     /\AJIT recompile: .+\n\z/,
     /\AJIT inline: .+\n\z/,
+    /\AJIT cancel: .+\n\z/,
     /\ASuccessful MJIT finish\n\z/,
   ]
   MAX_CACHE_PATTERNS = [
@@ -45,17 +46,16 @@ class TestJIT < Test::Unit::TestCase
     # ci.rvm.jp caches its build environment. Clean up temporary files left by SEGV.
     if ENV['RUBY_DEBUG']&.include?('ci')
       Dir.glob("#{ENV.fetch('TMPDIR', '/tmp')}/_ruby_mjit_p*u*.*").each do |file|
-        if File.mtime(file) < Time.now - 60 * 60 * 24
-          puts "test/ruby/test_jit.rb: removing #{file}"
-          File.unlink(file)
-        end
+        puts "test/ruby/test_jit.rb: removing #{file}"
+        File.unlink(file)
       end
     end
 
     # ruby -w -Itest/lib test/ruby/test_jit.rb
     if $VERBOSE
+      pid = $$
       at_exit do
-        unless TestJIT.untested_insns.empty?
+        if pid == $$ && !TestJIT.untested_insns.empty?
           warn "you may want to add tests for following insns, when you have a chance: #{TestJIT.untested_insns.join(' ')}"
         end
       end
@@ -243,16 +243,8 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
-  def test_compile_insn_putstring_concatstrings_tostring
-    assert_compile_once('"a#{}b" + "c"', result_inspect: '"abc"', insns: %i[putstring concatstrings tostring])
-  end
-
-  def test_compile_insn_freezestring
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~'end;'}", stdout: 'true', success_count: 1, insns: %i[freezestring])
-    begin;
-      # frozen_string_literal: true
-      print proc { "#{true}".frozen? }.call
-    end;
+  def test_compile_insn_putstring_concatstrings_objtostring
+    assert_compile_once('"a#{}b" + "c"', result_inspect: '"abc"', insns: %i[putstring concatstrings objtostring])
   end
 
   def test_compile_insn_toregexp
@@ -326,10 +318,6 @@ class TestJIT < Test::Unit::TestCase
 
   def test_compile_insn_swap_topn
     assert_compile_once('{}["true"] = true', result_inspect: 'true', insns: %i[swap topn])
-  end
-
-  def test_compile_insn_reverse
-    assert_compile_once('q, (w, e), r = 1, [2, 3], 4; [q, w, e, r]', result_inspect: '[1, 2, 3, 4]', insns: %i[reverse])
   end
 
   def test_compile_insn_reput
@@ -494,8 +482,8 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
-  def test_compile_insn_checktype
-    assert_compile_once("#{<<~"begin;"}\n#{<<~'end;'}", result_inspect: '"42"', insns: %i[checktype])
+  def test_compile_insn_objtostring
+    assert_compile_once("#{<<~"begin;"}\n#{<<~'end;'}", result_inspect: '"42"', insns: %i[objtostring])
     begin;
       a = '2'
       "4#{a}"
@@ -511,7 +499,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_checkmatch_opt_case_dispatch
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"world"', insns: %i[checkmatch opt_case_dispatch])
+    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"world"', insns: %i[opt_case_dispatch])
     begin;
       case 'hello'
       when 'hello'
@@ -613,13 +601,23 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_opt_invokebuiltin_delegate_leave
-    skip 'ld SEGVs for this' if RUBY_PLATFORM.start_with?("s390x-")
     iseq = eval(EnvUtil.invoke_ruby(['-e', <<~'EOS'], '', true).first)
       p RubyVM::InstructionSequence.of("\x00".method(:unpack)).to_a
     EOS
     insns = collect_insns(iseq)
     mark_tested_insn(:opt_invokebuiltin_delegate_leave, used_insns: insns)
     assert_eval_with_jit('print "\x00".unpack("c")', stdout: '[0]', success_count: 1)
+  end
+
+  def test_compile_insn_checkmatch
+    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"world"', insns: %i[checkmatch])
+    begin;
+      ary = %w(hello good-bye)
+      case 'hello'
+      when *ary
+        'world'
+      end
+    end;
   end
 
   def test_jit_output
@@ -701,17 +699,12 @@ class TestJIT < Test::Unit::TestCase
         assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit#{i}@\(eval\):/, errs[i], debug_info)
       end
 
+      assert_equal("No units can be unloaded -- incremented max-cache-size to 11 for --jit-wait\n", errs[10], debug_info)
+      assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit10@\(eval\):/, errs[11], debug_info)
       # On --jit-wait, when the number of JIT-ed code reaches --jit-max-cache,
       # it should trigger compaction.
-      if RUBY_PLATFORM.match?(/mswin|mingw/) # compaction is not supported on Windows yet
-        assert_equal("Too many JIT code -- 1 units unloaded\n", errs[10], debug_info)
-        assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit10@\(eval\):/, errs[11], debug_info)
-      else
-        assert_equal("Too many JIT code, but skipped unloading units for JIT compaction\n", errs[10], debug_info)
-        assert_equal("No units can be unloaded -- incremented max-cache-size to 11 for --jit-wait\n", errs[11], debug_info)
-        assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit10@\(eval\):/, errs[12], debug_info)
-
-        assert_equal(3, compactions.size, debug_info)
+      unless RUBY_PLATFORM.match?(/mswin|mingw/) # compaction is not supported on Windows yet
+        assert_equal(1, compactions.size, debug_info)
       end
 
       if RUBY_PLATFORM.match?(/mswin/)
@@ -793,6 +786,20 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_inlined_builtin_methods
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '', success_count: 1, min_calls: 2)
+    begin;
+      def test
+        float = 0.0
+        float.abs
+        float.-@
+        float.zero?
+      end
+      test
+      test
+    end;
+  end
+
   def test_inlined_c_method
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aaa", success_count: 2, recompile_count: 1, min_calls: 2)
     begin;
@@ -845,11 +852,9 @@ class TestJIT < Test::Unit::TestCase
         end
       end
 
-      verbose, $VERBOSE = $VERBOSE, false # suppress "instance variable @b not initialized"
       print(Foo.new.bar)
       print(Foo.new.bar)
       print(Foo.new.bar)
-      $VERBOSE = verbose
     end;
   end
 
@@ -872,6 +877,18 @@ class TestJIT < Test::Unit::TestCase
       rescue FrozenError => e
         p e.class
       end
+    end;
+  end
+
+  def test_inlined_getconstant
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '11', success_count: 1, min_calls: 2)
+    begin;
+      FOO = 1
+      def const
+        FOO
+      end
+      print const
+      print const
     end;
   end
 
@@ -1088,6 +1105,30 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_mjit_pause_wait
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '', success_count: 0, min_calls: 1)
+    begin;
+      RubyVM::JIT.pause
+      proc {}.call
+    end;
+  end
+
+  def test_not_cancel_by_tracepoint_class
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", success_count: 1, min_calls: 2)
+    begin;
+      TracePoint.new(:class) {}.enable
+      2.times {}
+    end;
+  end
+
+  def test_cancel_by_tracepoint
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", success_count: 0, min_calls: 2)
+    begin;
+      TracePoint.new(:line) {}.enable
+      2.times {}
+    end;
+  end
+
   def test_caller_locations_without_catch_table
     out, _ = eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", min_calls: 1)
     begin;
@@ -1190,7 +1231,9 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def mark_tested_insn(insn, used_insns:, uplevel: 1)
-    unless used_insns.include?(insn)
+    # Currently, this check emits a false-positive warning against opt_regexpmatch2,
+    # so the insn is excluded explicitly. See https://bugs.ruby-lang.org/issues/18269
+    if !used_insns.include?(insn) && insn != :opt_regexpmatch2
       $stderr.puts
       warn "'#{insn}' insn is not included in the script. Actual insns are: #{used_insns.join(' ')}\n", uplevel: uplevel
     end

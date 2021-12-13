@@ -483,6 +483,53 @@ class TestClass < Test::Unit::TestCase
     assert_equal(:foo, d.foo)
   end
 
+  def test_clone_singleton_class_exists
+    klass = Class.new do
+      def self.bar; :bar; end
+    end
+
+    o = klass.new
+    o.singleton_class
+    clone = o.clone
+
+    assert_empty(o.singleton_class.instance_methods(false))
+    assert_empty(clone.singleton_class.instance_methods(false))
+    assert_empty(o.singleton_class.singleton_class.instance_methods(false))
+    assert_empty(clone.singleton_class.singleton_class.instance_methods(false))
+  end
+
+  def test_clone_when_singleton_class_of_singleton_class_exists
+    klass = Class.new do
+      def self.bar; :bar; end
+    end
+
+    o = klass.new
+    o.singleton_class.singleton_class
+    clone = o.clone
+
+    assert_empty(o.singleton_class.instance_methods(false))
+    assert_empty(clone.singleton_class.instance_methods(false))
+    assert_empty(o.singleton_class.singleton_class.instance_methods(false))
+    assert_empty(clone.singleton_class.singleton_class.instance_methods(false))
+  end
+
+  def test_clone_when_method_exists_on_singleton_class_of_singleton_class
+    klass = Class.new do
+      def self.bar; :bar; end
+    end
+
+    o = klass.new
+    o.singleton_class.singleton_class.define_method(:s2_method) { :s2 }
+    clone = o.clone
+
+    assert_empty(o.singleton_class.instance_methods(false))
+    assert_empty(clone.singleton_class.instance_methods(false))
+    assert_equal(:s2, o.singleton_class.s2_method)
+    assert_equal(:s2, clone.singleton_class.s2_method)
+    assert_equal([:s2_method], o.singleton_class.singleton_class.instance_methods(false))
+    assert_equal([:s2_method], clone.singleton_class.singleton_class.instance_methods(false))
+  end
+
   def test_singleton_class_p
     feature7609 = '[ruby-core:51087] [Feature #7609]'
     assert_predicate(self.singleton_class, :singleton_class?, feature7609)
@@ -682,5 +729,91 @@ class TestClass < Test::Unit::TestCase
       raise if hidden.nil?
     end;
 
+  end
+
+  def test_assign_frozen_class_to_const
+    c = Class.new.freeze
+    assert_same(c, Module.new.module_eval("self::Foo = c"))
+    c = Class.new.freeze
+    assert_same(c, Module.new.const_set(:Foo, c))
+  end
+
+  def test_descendants
+    c = Class.new
+    sc = Class.new(c)
+    ssc = Class.new(sc)
+    [c, sc, ssc].each do |k|
+      k.include Module.new
+      k.new.define_singleton_method(:force_singleton_class){}
+    end
+    assert_equal([sc, ssc], c.descendants)
+    assert_equal([ssc], sc.descendants)
+    assert_equal([], ssc.descendants)
+
+    object_descendants = Object.descendants
+    assert_include(object_descendants, c)
+    assert_include(object_descendants, sc)
+    assert_include(object_descendants, ssc)
+  end
+
+  def test_descendants_gc
+    c = Class.new
+    100000.times { Class.new(c) }
+    assert(c.descendants.size <= 100000)
+  end
+
+  def test_descendants_gc_stress
+    10000.times do
+      c = Class.new
+      100.times { Class.new(c) }
+      assert(c.descendants.size <= 100)
+    end
+  end
+
+  def test_subclasses
+    c = Class.new
+    sc = Class.new(c)
+    ssc = Class.new(sc)
+    [c, sc, ssc].each do |k|
+      k.include Module.new
+      k.new.define_singleton_method(:force_singleton_class){}
+    end
+    assert_equal([sc], c.subclasses)
+    assert_equal([ssc], sc.subclasses)
+    assert_equal([], ssc.subclasses)
+
+    object_subclasses = Object.subclasses
+    assert_include(object_subclasses, c)
+    assert_not_include(object_subclasses, sc)
+    assert_not_include(object_subclasses, ssc)
+    object_subclasses.each do |subclass|
+      assert_equal Object, subclass.superclass, "Expected #{subclass}.superclass to be Object"
+    end
+  end
+
+  def test_subclass_gc
+    c = Class.new
+    10_000.times do
+      cc = Class.new(c)
+      100.times { Class.new(cc) }
+    end
+    assert(c.subclasses.size <= 10_000)
+  end
+
+  def test_subclass_gc_stress
+    10000.times do
+      c = Class.new
+      100.times { Class.new(c) }
+      assert(c.subclasses.size <= 100)
+    end
+  end
+
+  def test_classext_memory_leak
+    assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
+code = proc { Class.new }
+1_000.times(&code)
+PREP
+3_000_000.times(&code)
+CODE
   end
 end

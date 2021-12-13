@@ -327,6 +327,8 @@ module Net   #:nodoc:
   # HTTPInformation::                    1xx
   #   HTTPContinue::                        100
   #   HTTPSwitchProtocol::                  101
+  #   HTTPProcessing::                      102
+  #   HTTPEarlyHints::                      103
   # HTTPSuccess::                        2xx
   #   HTTPOK::                              200
   #   HTTPCreated::                         201
@@ -336,6 +338,7 @@ module Net   #:nodoc:
   #   HTTPResetContent::                    205
   #   HTTPPartialContent::                  206
   #   HTTPMultiStatus::                     207
+  #   HTTPAlreadyReported::                 208
   #   HTTPIMUsed::                          226
   # HTTPRedirection::                    3xx
   #   HTTPMultipleChoices::                 300
@@ -345,6 +348,7 @@ module Net   #:nodoc:
   #   HTTPNotModified::                     304
   #   HTTPUseProxy::                        305
   #   HTTPTemporaryRedirect::               307
+  #   HTTPPermanentRedirect::               308
   # HTTPClientError::                    4xx
   #   HTTPBadRequest::                      400
   #   HTTPUnauthorized::                    401
@@ -364,6 +368,7 @@ module Net   #:nodoc:
   #   HTTPUnsupportedMediaType::            415
   #   HTTPRequestedRangeNotSatisfiable::    416
   #   HTTPExpectationFailed::               417
+  #   HTTPMisdirectedRequest::              421
   #   HTTPUnprocessableEntity::             422
   #   HTTPLocked::                          423
   #   HTTPFailedDependency::                424
@@ -379,7 +384,10 @@ module Net   #:nodoc:
   #   HTTPServiceUnavailable::              503
   #   HTTPGatewayTimeOut::                  504
   #   HTTPVersionNotSupported::             505
+  #   HTTPVariantAlsoNegotiates::           506
   #   HTTPInsufficientStorage::             507
+  #   HTTPLoopDetected::                    508
+  #   HTTPNotExtended::                     510
   #   HTTPNetworkAuthenticationRequired::   511
   #
   # There is also the Net::HTTPBadResponse exception which is raised when
@@ -388,11 +396,11 @@ module Net   #:nodoc:
   class HTTP < Protocol
 
     # :stopdoc:
+    VERSION = "0.2.0"
     Revision = %q$Revision$.split[1]
     HTTPVersion = '1.1'
     begin
       require 'zlib'
-      require 'stringio'  #for our purposes (unpacking gzip) lump these together
       HAVE_ZLIB=true
     rescue LoadError
       HAVE_ZLIB=false
@@ -523,14 +531,13 @@ module Net   #:nodoc:
     #
     #   { "cmd" => "search", "q" => "ruby", "max" => "50" }
     #
-    # This method also does Basic Authentication iff +url+.user exists.
+    # This method also does Basic Authentication if and only if +url+.user exists.
     # But userinfo for authentication is deprecated (RFC3986).
     # So this feature will be removed.
     #
     # Example:
     #
     #   require 'net/http'
-    #   require 'uri'
     #
     #   Net::HTTP.post_form URI('http://www.example.com/search.cgi'),
     #                       { "q" => "ruby", "max" => "50" }
@@ -972,6 +979,12 @@ module Net   #:nodoc:
     private :do_start
 
     def connect
+      if use_ssl?
+        # reference early to load OpenSSL before connecting,
+        # as OpenSSL may take time to load.
+        @ssl_context = OpenSSL::SSL::SSLContext.new
+      end
+
       if proxy? then
         conn_addr = proxy_address
         conn_port = proxy_port
@@ -981,14 +994,13 @@ module Net   #:nodoc:
       end
 
       D "opening connection to #{conn_addr}:#{conn_port}..."
-      s = Timeout.timeout(@open_timeout, Net::OpenTimeout) {
-        begin
-          TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
-        rescue => e
-          raise e, "Failed to open TCP connection to " +
-            "#{conn_addr}:#{conn_port} (#{e.message})"
-        end
-      }
+      begin
+        s = Socket.tcp conn_addr, conn_port, @local_host, @local_port, connect_timeout: @open_timeout
+      rescue => e
+        e = Net::OpenTimeout.new(e) if e.is_a?(Errno::ETIMEDOUT) #for compatibility with previous versions
+        raise e, "Failed to open TCP connection to " +
+          "#{conn_addr}:#{conn_port} (#{e.message})"
+      end
       s.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
       D "opened"
       if use_ssl?
@@ -1019,7 +1031,6 @@ module Net   #:nodoc:
             end
           end
         end
-        @ssl_context = OpenSSL::SSL::SSLContext.new
         @ssl_context.set_params(ssl_parameters)
         @ssl_context.session_cache_mode =
           OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT |
@@ -1044,6 +1055,7 @@ module Net   #:nodoc:
                                write_timeout: @write_timeout,
                                continue_timeout: @continue_timeout,
                                debug_output: @debug_output)
+      @last_communicated = nil
       on_connect
     rescue => exception
       if s
@@ -1179,7 +1191,8 @@ module Net   #:nodoc:
     # The username of the proxy server, if one is configured.
     def proxy_user
       if ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE && @proxy_from_env
-        proxy_uri&.user
+        user = proxy_uri&.user
+        unescape(user) if user
       else
         @proxy_user
       end
@@ -1188,7 +1201,8 @@ module Net   #:nodoc:
     # The password of the proxy server, if one is configured.
     def proxy_pass
       if ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE && @proxy_from_env
-        proxy_uri&.password
+        pass = proxy_uri&.password
+        unescape(pass) if pass
       else
         @proxy_pass
       end
@@ -1198,6 +1212,11 @@ module Net   #:nodoc:
     alias proxyport proxy_port      #:nodoc: obsolete
 
     private
+
+    def unescape(value)
+      require 'cgi/util'
+      CGI.unescape(value)
+    end
 
     # without proxy, obsolete
 

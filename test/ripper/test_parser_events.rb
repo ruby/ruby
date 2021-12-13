@@ -96,7 +96,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def test_alias_error
-    assert_equal '[aliaserr(valias($a,$1))]', parse('alias $a $1')
+    assert_equal '[aliaserr($1)]', parse('alias $a $1')
   end
 
   def test_arglist
@@ -660,11 +660,42 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     }
     assert_equal true, thru_def
     assert_equal '[def(foo,[],bodystmt([void()]))]', parse('def foo ;end')
+    assert_equal '[def(foo,[],bodystmt([void()],rescue(,,[void()])))]', parse('def foo ;rescue; end')
+    assert_equal '[def(foo,[],bodystmt([void()],,,ensure([void()])))]', parse('def foo ;ensure; end')
+  end
 
-    thru_def = false
-    tree = parse('def foo() = 42', :on_def) {thru_def = true}
-    assert_equal true, thru_def
-    assert_equal '[def(foo,[],42)]', tree
+  def test_endless_def
+    events = %i[on_def on_parse_error]
+    thru = nil
+    hook = ->(name, *) {thru[name] = true}
+
+    thru = {}
+    tree = parse('def foo() = 42', events, &hook)
+    assert_equal({on_def: true}, thru)
+    assert_equal '[def(foo,[],bodystmt(42))]', tree
+
+    thru = {}
+    tree = parse('def foo() = 42 rescue 0', events, &hook)
+    assert_equal({on_def: true}, thru)
+    assert_equal '[def(foo,[],bodystmt(rescue_mod(42,0)))]', tree
+
+    thru = {}
+    tree = parse('def foo=() = 42', events, &hook)
+    assert_equal({on_def: true, on_parse_error: true}, thru)
+
+    thru = {}
+    tree = parse('def foo=() = 42 rescue 0', events, &hook)
+    assert_equal({on_def: true, on_parse_error: true}, thru)
+
+    thru = {}
+    tree = parse('def foo() = p 42', events, &hook)
+    assert_equal({on_def: true}, thru)
+    assert_equal '[def(foo,[],bodystmt(command(p,[42])))]', tree
+
+    thru = {}
+    tree = parse('def foo() = p 42 rescue 0', events, &hook)
+    assert_equal({on_def: true}, thru)
+    assert_equal '[def(foo,[],bodystmt(rescue_mod(command(p,[42]),0)))]', tree
   end
 
   def test_defined
@@ -682,11 +713,40 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_parse_error = false
     tree = parse('def foo&.bar; end', :on_parse_error) {thru_parse_error = true}
     assert_equal(true, thru_parse_error)
+  end
 
-    thru_defs = false
-    tree = parse('def foo.bar() = 42', :on_defs) {thru_defs = true}
-    assert_equal true, thru_defs
-    assert_equal '[defs(vcall(foo),.,bar,[],42)]', tree
+  def test_endless_defs
+    events = %i[on_defs on_parse_error]
+    thru = nil
+    hook = ->(name, *) {thru[name] = true}
+
+    thru = {}
+    tree = parse('def foo.bar() = 42', events, &hook)
+    assert_equal({on_defs: true}, thru)
+    assert_equal '[defs(vcall(foo),.,bar,[],bodystmt(42))]', tree
+
+    thru = {}
+    tree = parse('def foo.bar() = 42 rescue 0', events, &hook)
+    assert_equal({on_defs: true}, thru)
+    assert_equal '[defs(vcall(foo),.,bar,[],bodystmt(rescue_mod(42,0)))]', tree
+
+    thru = {}
+    tree = parse('def foo.bar=() = 42', events, &hook)
+    assert_equal({on_defs: true, on_parse_error: true}, thru)
+
+    thru = {}
+    tree = parse('def foo.bar=() = 42 rescue 0', events, &hook)
+    assert_equal({on_defs: true, on_parse_error: true}, thru)
+
+    thru = {}
+    tree = parse('def foo.bar() = p 42', events, &hook)
+    assert_equal({on_defs: true}, thru)
+    assert_equal '[defs(vcall(foo),.,bar,[],bodystmt(command(p,[42])))]', tree
+
+    thru = {}
+    tree = parse('def foo.bar() = p 42 rescue 0', events, &hook)
+    assert_equal({on_defs: true}, thru)
+    assert_equal '[defs(vcall(foo),.,bar,[],bodystmt(rescue_mod(command(p,[42]),0)))]', tree
   end
 
   def test_do_block
@@ -1548,6 +1608,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     fmt, *args = warning("1; #-*- frozen-string-literal: true -*-")
     assert_match(/ignored after any tokens/, fmt)
     assert_equal("frozen_string_literal", args[0])
+  end
+
+  def test_warning_invalid_magic_comment
+    fmt, *args = warning("#-*- frozen-string-literal: nottrue -*-")
+    assert_match(/invalid value/, fmt)
+    assert_equal(%w"frozen_string_literal nottrue", args)
   end
 
   def test_warn_cr_in_middle

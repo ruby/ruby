@@ -1,8 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 
 class TestGemResolverInstalledSpecification < Gem::TestCase
-
   def setup
     super
 
@@ -44,5 +43,4 @@ class TestGemResolverInstalledSpecification < Gem::TestCase
 
     assert b_spec.installable_platform?
   end
-
 end

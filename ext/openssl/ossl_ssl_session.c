@@ -34,43 +34,38 @@ static VALUE ossl_ssl_session_alloc(VALUE klass)
  * Creates a new Session object from an instance of SSLSocket or DER/PEM encoded
  * String.
  */
-static VALUE ossl_ssl_session_initialize(VALUE self, VALUE arg1)
+static VALUE
+ossl_ssl_session_initialize(VALUE self, VALUE arg1)
 {
-	SSL_SESSION *ctx = NULL;
+    SSL_SESSION *ctx;
 
-	if (RDATA(self)->data)
-		ossl_raise(eSSLSession, "SSL Session already initialized");
+    if (RTYPEDDATA_DATA(self))
+        ossl_raise(eSSLSession, "SSL Session already initialized");
 
-	if (rb_obj_is_instance_of(arg1, cSSLSocket)) {
-		SSL *ssl;
+    if (rb_obj_is_instance_of(arg1, cSSLSocket)) {
+        SSL *ssl;
 
-		GetSSL(arg1, ssl);
+        GetSSL(arg1, ssl);
 
-		if ((ctx = SSL_get1_session(ssl)) == NULL)
-			ossl_raise(eSSLSession, "no session available");
-	} else {
-		BIO *in = ossl_obj2bio(&arg1);
+        if ((ctx = SSL_get1_session(ssl)) == NULL)
+            ossl_raise(eSSLSession, "no session available");
+    }
+    else {
+        BIO *in = ossl_obj2bio(&arg1);
 
-		ctx = PEM_read_bio_SSL_SESSION(in, NULL, NULL, NULL);
+        ctx = d2i_SSL_SESSION_bio(in, NULL);
+        if (!ctx) {
+            OSSL_BIO_reset(in);
+            ctx = PEM_read_bio_SSL_SESSION(in, NULL, NULL, NULL);
+        }
+        BIO_free(in);
+        if (!ctx)
+            ossl_raise(rb_eArgError, "unknown type");
+    }
 
-		if (!ctx) {
-		        OSSL_BIO_reset(in);
-			ctx = d2i_SSL_SESSION_bio(in, NULL);
-		}
+    RTYPEDDATA_DATA(self) = ctx;
 
-		BIO_free(in);
-
-		if (!ctx)
-			ossl_raise(rb_eArgError, "unknown type");
-	}
-
-	/* should not happen */
-	if (ctx == NULL)
-		ossl_raise(eSSLSession, "ctx not set - internal error");
-
-	RDATA(self)->data = ctx;
-
-	return self;
+    return self;
 }
 
 static VALUE

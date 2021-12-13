@@ -14,8 +14,10 @@ module Bundler
       def fetch(uri, headers = {}, counter = 0)
         raise HTTPError, "Too many redirects" if counter >= redirect_limit
 
+        filtered_uri = URICredentialsFilter.credential_filtered_uri(uri)
+
         response = request(uri, headers)
-        Bundler.ui.debug("HTTP #{response.code} #{response.message} #{uri}")
+        Bundler.ui.debug("HTTP #{response.code} #{response.message} #{filtered_uri}")
 
         case response
         when Net::HTTPSuccess, Net::HTTPNotModified
@@ -40,7 +42,7 @@ module Bundler
           raise BadAuthenticationError, uri.host if uri.userinfo
           raise AuthenticationRequiredError, uri.host
         when Net::HTTPNotFound
-          raise FallbackError, "Net::HTTPNotFound: #{URICredentialsFilter.credential_filtered_uri(uri)}"
+          raise FallbackError, "Net::HTTPNotFound: #{filtered_uri}"
         else
           raise HTTPError, "#{response.class}#{": #{response.body}" unless response.body.empty?}"
         end
@@ -49,7 +51,9 @@ module Bundler
       def request(uri, headers)
         validate_uri_scheme!(uri)
 
-        Bundler.ui.debug "HTTP GET #{uri}"
+        filtered_uri = URICredentialsFilter.credential_filtered_uri(uri)
+
+        Bundler.ui.debug "HTTP GET #{filtered_uri}"
         req = Net::HTTP::Get.new uri.request_uri, headers
         if uri.user
           user = CGI.unescape(uri.user)
@@ -64,17 +68,16 @@ module Bundler
         raise CertificateFailureError.new(uri)
       rescue *HTTP_ERRORS => e
         Bundler.ui.trace e
-        case e.message
-        when /host down:/, /getaddrinfo: nodename nor servname provided/
+        if e.is_a?(SocketError) || e.message =~ /host down:/
           raise NetworkDownError, "Could not reach host #{uri.host}. Check your network " \
             "connection and try again."
         else
-          raise HTTPError, "Network error while fetching #{URICredentialsFilter.credential_filtered_uri(uri)}" \
+          raise HTTPError, "Network error while fetching #{filtered_uri}" \
             " (#{e})"
         end
       end
 
-    private
+      private
 
       def validate_uri_scheme!(uri)
         return if uri.scheme =~ /\Ahttps?\z/

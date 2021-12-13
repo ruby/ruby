@@ -4,19 +4,18 @@ module Bundler
   class DepProxy
     attr_reader :__platform, :dep
 
+    @proxies = {}
+
+    def self.get_proxy(dep, platform)
+      @proxies[[dep, platform]] ||= new(dep, platform).freeze
+    end
+
     def initialize(dep, platform)
       @dep = dep
       @__platform = platform
     end
 
-    def hash
-      @hash ||= [dep, __platform].hash
-    end
-
-    def ==(other)
-      return false if other.class != self.class
-      dep == other.dep && __platform == other.__platform
-    end
+    private_class_method :new
 
     alias_method :eql?, :==
 
@@ -39,7 +38,15 @@ module Bundler
       s
     end
 
-  private
+    def dup
+      raise NoMethodError.new("DepProxy cannot be duplicated")
+    end
+
+    def clone
+      raise NoMethodError.new("DepProxy cannot be cloned")
+    end
+
+    private
 
     def method_missing(*args, &blk)
       @dep.send(*args, &blk)

@@ -7,7 +7,13 @@ rescue LoadError
 end
 
 class TestIO_Console < Test::Unit::TestCase
-  PATHS = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|/\w+\.rb)\z") {$`}
+  begin
+    PATHS = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|\.rb|/\w+\.rb)\z") {$`}
+  rescue Encoding::CompatibilityError
+    $stderr.puts "test_io_console.rb debug"
+    $LOADED_FEATURES.each{|path| $stderr.puts [path, path.encoding].inspect}
+    raise
+  end
   PATHS.uniq!
 
   # FreeBSD seems to hang on TTOU when running parallel tests
@@ -35,7 +41,7 @@ class TestIO_Console < Test::Unit::TestCase
       Errno.const_get(e) if Errno.const_defined?(e)
     }
     exceptions.compact!
-    skip if exceptions.empty?
+    omit if exceptions.empty?
     File.open(IO::NULL) do |f|
       e = assert_raise(*exceptions) do
         f.echo?
@@ -226,11 +232,20 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 
   def test_getpass
-    skip unless IO.method_defined?("getpass")
+    omit unless IO.method_defined?("getpass")
     run_pty("p IO.console.getpass('> ')") do |r, w|
       assert_equal("> ", r.readpartial(10))
       sleep 0.1
       w.print "asdf\n"
+      sleep 0.1
+      assert_equal("\r\n", r.gets)
+      assert_equal("\"asdf\"", r.gets.chomp)
+    end
+
+    run_pty("p IO.console.getpass('> ')") do |r, w|
+      assert_equal("> ", r.readpartial(10))
+      sleep 0.1
+      w.print "asdf\C-D\C-D"
       sleep 0.1
       assert_equal("\r\n", r.gets)
       assert_equal("\"asdf\"", r.gets.chomp)
@@ -366,7 +381,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       if cc = ctrl["intr"]
         assert_ctrl("#{cc.ord}", cc, r, w)
         assert_ctrl("#{cc.ord}", cc, r, w)
-        assert_ctrl("Interrupt", cc, r, w) unless /linux/ =~ RUBY_PLATFORM
+        assert_ctrl("Interrupt", cc, r, w) unless /linux|solaris/ =~ RUBY_PLATFORM
       end
       if cc = ctrl["dsusp"]
         assert_ctrl("#{cc.ord}", cc, r, w)
@@ -401,7 +416,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   def helper
     m, s = PTY.open
   rescue RuntimeError
-    skip $!
+    omit $!
   else
     yield m, s
   ensure
@@ -410,9 +425,11 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 
   def run_pty(src, n = 1)
+    pend("PTY.spawn cannot control terminal on JRuby") if RUBY_ENGINE == 'jruby'
+
     r, w, pid = PTY.spawn(EnvUtil.rubybin, "-I#{TestIO_Console::PATHS.join(File::PATH_SEPARATOR)}", "-rio/console", "-e", src)
   rescue RuntimeError
-    skip $!
+    omit $!
   else
     if block_given?
       yield r, w, pid
@@ -443,10 +460,14 @@ defined?(IO.console) and TestIO_Console.class_eval do
       s = IO.console.winsize
       assert_nothing_raised(TypeError) {IO.console.winsize = s}
       bug = '[ruby-core:82741] [Bug #13888]'
-      IO.console.winsize = [s[0], s[1]+1]
-      assert_equal([s[0], s[1]+1], IO.console.winsize, bug)
-      IO.console.winsize = s
-      assert_equal(s, IO.console.winsize, bug)
+      begin
+        IO.console.winsize = [s[0], s[1]+1]
+        assert_equal([s[0], s[1]+1], IO.console.winsize, bug)
+      rescue Errno::EINVAL    # Error if run on an actual console.
+      else
+        IO.console.winsize = s
+        assert_equal(s, IO.console.winsize, bug)
+      end
     ensure
       set_winsize_teardown
     end
@@ -466,6 +487,10 @@ defined?(IO.console) and TestIO_Console.class_eval do
       assert(IO.console.sync, "console should be unbuffered")
     ensure
       IO.console(:close)
+    end
+
+    def test_getch_timeout
+      assert_nil(IO.console.getch(intr: true, time: 0.1, min: 0))
     end
   end
 end
@@ -528,14 +553,14 @@ end
 
 TestIO_Console.class_eval do
   def test_stringio_getch
-    assert_separately %w"--disable=gems -rstringio -rio/console", %q{
-      assert_operator(StringIO, :method_defined?, :getch)
+    assert_ruby_status %w"--disable=gems -rstringio -rio/console", %q{
+      abort unless StringIO.method_defined?(:getch)
     }
-    assert_separately %w"--disable=gems -rio/console -rstringio", %q{
-      assert_operator(StringIO, :method_defined?, :getch)
+    assert_ruby_status %w"--disable=gems -rio/console -rstringio", %q{
+      abort unless StringIO.method_defined?(:getch)
     }
-    assert_separately %w"--disable=gems -rstringio", %q{
-      assert_not_operator(StringIO, :method_defined?, :getch)
+    assert_ruby_status %w"--disable=gems -rstringio", %q{
+      abort if StringIO.method_defined?(:getch)
     }
   end
 end

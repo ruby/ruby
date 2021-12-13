@@ -43,6 +43,28 @@ describe "Module#remove_method" do
     x.method_to_remove.should == 1
   end
 
+  it "updates the method implementation" do
+    m_module = Module.new do
+      def foo
+        'm'
+      end
+    end
+
+    a_class = Class.new do
+      include m_module
+
+      def foo
+        'a'
+      end
+    end
+
+    a = a_class.new
+    foo = -> { a.foo }
+    foo.call.should == 'a'
+    a_class.remove_method(:foo)
+    foo.call.should == 'm'
+  end
+
   it "removes multiple methods with 1 call" do
     klass = Class.new do
       def method_to_remove_1; 1; end

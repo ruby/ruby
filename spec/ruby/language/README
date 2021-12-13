@@ -4,7 +4,7 @@ words. These words significantly describe major elements of the language,
 including flow control constructs like 'for' and 'while', conditional
 execution like 'if' and 'unless', exceptional execution control like 'rescue',
 etc. There are also literals for the basic "types" like String, Regexp, Array
-and Fixnum.
+and Integer.
 
 Behavioral specifications describe the behavior of concrete entities. Rather
 than using concepts of computation to organize these spec files, we use

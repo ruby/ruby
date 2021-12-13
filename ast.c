@@ -64,9 +64,8 @@ ast_new_internal(rb_ast_t *ast, const NODE *node)
     return obj;
 }
 
-static VALUE rb_ast_parse_str(VALUE str);
-static VALUE rb_ast_parse_file(VALUE path);
-static VALUE rb_ast_parse_array(VALUE array);
+static VALUE rb_ast_parse_str(VALUE str, VALUE keep_script_lines);
+static VALUE rb_ast_parse_file(VALUE path, VALUE keep_script_lines);
 
 static VALUE
 ast_parse_new(void)
@@ -86,29 +85,31 @@ ast_parse_done(rb_ast_t *ast)
 }
 
 static VALUE
-ast_s_parse(rb_execution_context_t *ec, VALUE module, VALUE str)
+ast_s_parse(rb_execution_context_t *ec, VALUE module, VALUE str, VALUE keep_script_lines)
 {
-    return rb_ast_parse_str(str);
+    return rb_ast_parse_str(str, keep_script_lines);
 }
 
 static VALUE
-rb_ast_parse_str(VALUE str)
+rb_ast_parse_str(VALUE str, VALUE keep_script_lines)
 {
     rb_ast_t *ast = 0;
 
     StringValue(str);
-    ast = rb_parser_compile_string_path(ast_parse_new(), Qnil, str, 1);
+    VALUE vparser = ast_parse_new();
+    if (RTEST(keep_script_lines)) rb_parser_keep_script_lines(vparser);
+    ast = rb_parser_compile_string_path(vparser, Qnil, str, 1);
     return ast_parse_done(ast);
 }
 
 static VALUE
-ast_s_parse_file(rb_execution_context_t *ec, VALUE module, VALUE path)
+ast_s_parse_file(rb_execution_context_t *ec, VALUE module, VALUE path, VALUE keep_script_lines)
 {
-    return rb_ast_parse_file(path);
+    return rb_ast_parse_file(path, keep_script_lines);
 }
 
 static VALUE
-rb_ast_parse_file(VALUE path)
+rb_ast_parse_file(VALUE path, VALUE keep_script_lines)
 {
     VALUE f;
     rb_ast_t *ast = 0;
@@ -117,7 +118,9 @@ rb_ast_parse_file(VALUE path)
     FilePathValue(path);
     f = rb_file_open_str(path, "r");
     rb_funcall(f, rb_intern("set_encoding"), 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
-    ast = rb_parser_compile_file_path(ast_parse_new(), Qnil, f, 1);
+    VALUE vparser = ast_parse_new();
+    if (RTEST(keep_script_lines)) rb_parser_keep_script_lines(vparser);
+    ast = rb_parser_compile_file_path(vparser, Qnil, f, 1);
     rb_io_close(f);
     return ast_parse_done(ast);
 }
@@ -136,12 +139,14 @@ lex_array(VALUE array, int index)
 }
 
 static VALUE
-rb_ast_parse_array(VALUE array)
+rb_ast_parse_array(VALUE array, VALUE keep_script_lines)
 {
     rb_ast_t *ast = 0;
 
     array = rb_check_array_type(array);
-    ast = rb_parser_compile_generic(ast_parse_new(), lex_array, Qnil, array, 1);
+    VALUE vparser = ast_parse_new();
+    if (RTEST(keep_script_lines)) rb_parser_keep_script_lines(vparser);
+    ast = rb_parser_compile_generic(vparser, lex_array, Qnil, array, 1);
     return ast_parse_done(ast);
 }
 
@@ -188,35 +193,45 @@ script_lines(VALUE path)
 }
 
 static VALUE
-ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body)
+ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body, VALUE keep_script_lines)
 {
-    VALUE path, node, lines;
+    VALUE path, node, lines = Qnil;
     int node_id;
-    const rb_iseq_t *iseq = NULL;
 
-    if (rb_obj_is_proc(body)) {
-        iseq = vm_proc_iseq(body);
-
-        if (!rb_obj_is_iseq((VALUE)iseq)) {
-            iseq = NULL;
-        }
+    if (rb_frame_info_p(body)) {
+        rb_frame_info_get(body, &path, &lines, &node_id);
+        if (NIL_P(path) && NIL_P(lines)) return Qnil;
     }
     else {
-        iseq = rb_method_iseq(body);
+        const rb_iseq_t *iseq = NULL;
+
+        if (rb_obj_is_proc(body)) {
+            iseq = vm_proc_iseq(body);
+
+            if (!rb_obj_is_iseq((VALUE)iseq)) return Qnil;
+        }
+        else {
+            iseq = rb_method_iseq(body);
+        }
+        if (!iseq) {
+            return Qnil;
+        }
+        if (rb_iseq_from_eval_p(iseq)) {
+            rb_raise(rb_eArgError, "cannot get AST for method defined in eval");
+        }
+        path = rb_iseq_path(iseq);
+        lines = iseq->body->variable.script_lines;
+        node_id = iseq->body->location.node_id;
     }
 
-    if (!iseq) return Qnil;
-
-    path = rb_iseq_path(iseq);
-    node_id = iseq->body->location.node_id;
-    if (!NIL_P(lines = script_lines(path))) {
-        node = rb_ast_parse_array(lines);
+    if (!NIL_P(lines) || !NIL_P(lines = script_lines(path))) {
+        node = rb_ast_parse_array(lines, keep_script_lines);
     }
     else if (RSTRING_LEN(path) == 2 && memcmp(RSTRING_PTR(path), "-e", 2) == 0) {
-        node = rb_ast_parse_str(rb_e_script);
+        node = rb_ast_parse_str(rb_e_script, keep_script_lines);
     }
     else {
-        node = rb_ast_parse_file(path);
+        node = rb_ast_parse_file(path, keep_script_lines);
     }
 
     return node_find(node, node_id);
@@ -244,6 +259,15 @@ ast_node_type(rb_execution_context_t *ec, VALUE self)
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
 
     return rb_sym_intern_ascii_cstr(node_type_to_str(data->node));
+}
+
+static VALUE
+ast_node_node_id(rb_execution_context_t *ec, VALUE self)
+{
+    struct ASTNodeData *data;
+    TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
+
+    return INT2FIX(nd_node_id(data->node));
 }
 
 #define NEW_CHILD(ast, node) node ? ast_new_internal(ast, node) : Qnil
@@ -274,7 +298,7 @@ dump_block(rb_ast_t *ast, const NODE *node)
     do {
         rb_ary_push(ary, NEW_CHILD(ast, node->nd_head));
     } while (node->nd_next &&
-        nd_type(node->nd_next) == NODE_BLOCK &&
+        nd_type_p(node->nd_next, NODE_BLOCK) &&
         (node = node->nd_next, 1));
     if (node->nd_next) {
         rb_ary_push(ary, NEW_CHILD(ast, node->nd_next));
@@ -289,7 +313,7 @@ dump_array(rb_ast_t *ast, const NODE *node)
     VALUE ary = rb_ary_new();
     rb_ary_push(ary, NEW_CHILD(ast, node->nd_head));
 
-    while (node->nd_next && nd_type(node->nd_next) == NODE_LIST) {
+    while (node->nd_next && nd_type_p(node->nd_next, NODE_LIST)) {
         node = node->nd_next;
         rb_ary_push(ary, NEW_CHILD(ast, node->nd_head));
     }
@@ -346,7 +370,7 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_WHILE:
       case NODE_UNTIL:
         return rb_ary_push(rb_ary_new_from_node_args(ast, 2, node->nd_cond, node->nd_body),
-                           (node->nd_state ? Qtrue : Qfalse));
+                           RBOOL(node->nd_state));
       case NODE_ITER:
       case NODE_FOR:
         return rb_ary_new_from_node_args(ast, 2, node->nd_iter, node->nd_body);
@@ -375,7 +399,7 @@ node_children(rb_ast_t *ast, const NODE *node)
 
             while (1) {
                 rb_ary_push(ary, NEW_CHILD(ast, node->nd_1st));
-                if (!node->nd_2nd || nd_type(node->nd_2nd) != (int)type)
+                if (!node->nd_2nd || !nd_type_p(node->nd_2nd, type))
                     break;
                 node = node->nd_2nd;
             }
@@ -393,7 +417,6 @@ node_children(rb_ast_t *ast, const NODE *node)
         }
       case NODE_LASGN:
       case NODE_DASGN:
-      case NODE_DASGN_CURR:
       case NODE_IASGN:
       case NODE_CVASGN:
       case NODE_GASGN:
@@ -413,7 +436,7 @@ node_children(rb_ast_t *ast, const NODE *node)
                                     NEW_CHILD(ast, node->nd_args->nd_body));
       case NODE_OP_ASGN2:
         return rb_ary_new_from_args(5, NEW_CHILD(ast, node->nd_recv),
-                                    node->nd_next->nd_aid ? Qtrue : Qfalse,
+                                    RBOOL(node->nd_next->nd_aid),
                                     ID2SYM(node->nd_next->nd_vid),
                                     ID2SYM(node->nd_next->nd_mid),
                                     NEW_CHILD(ast, node->nd_value));
@@ -485,9 +508,15 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_DXSTR:
       case NODE_DREGX:
       case NODE_DSYM:
-        return rb_ary_new_from_args(3, node->nd_lit,
-                                    NEW_CHILD(ast, node->nd_next->nd_head),
-                                    NEW_CHILD(ast, node->nd_next->nd_next));
+        {
+            NODE *n = node->nd_next;
+            VALUE head = Qnil, next = Qnil;
+            if (n) {
+                head = NEW_CHILD(ast, n->nd_head);
+                next = NEW_CHILD(ast, n->nd_next);
+            }
+            return rb_ary_new_from_args(3, node->nd_lit, head, next);
+        }
       case NODE_EVSTR:
         return rb_ary_new_from_node_args(ast, 1, node->nd_body);
       case NODE_ARGSCAT:
@@ -570,11 +599,11 @@ node_children(rb_ast_t *ast, const NODE *node)
         }
       case NODE_SCOPE:
         {
-            ID *tbl = node->nd_tbl;
-            int i, size = tbl ? (int)*tbl++ : 0;
+            rb_ast_id_table_t *tbl = node->nd_tbl;
+            int i, size = tbl ? tbl->size : 0;
             VALUE locals = rb_ary_new_capa(size);
             for (i = 0; i < size; i++) {
-                rb_ary_push(locals, var_name(tbl[i]));
+                rb_ary_push(locals, var_name(tbl->ids[i]));
             }
             return rb_ary_new_from_args(3, locals, NEW_CHILD(ast, node->nd_args), NEW_CHILD(ast, node->nd_body));
         }
@@ -680,6 +709,16 @@ ast_node_inspect(rb_execution_context_t *ec, VALUE self)
                 nd_last_lineno(data->node), nd_last_column(data->node));
 
     return str;
+}
+
+static VALUE
+ast_node_script_lines(rb_execution_context_t *ec, VALUE self)
+{
+    struct ASTNodeData *data;
+    TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
+    VALUE ret = data->ast->body.script_lines;
+    if (!RB_TYPE_P(ret, T_ARRAY)) return Qnil;
+    return ret;
 }
 
 #include "ast.rbinc"

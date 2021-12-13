@@ -40,4 +40,19 @@ describe "Integer#+" do
       -> { @bignum + :symbol}.should raise_error(TypeError)
     end
   end
+
+  it "can be redefined" do
+    code = <<~RUBY
+      class Integer
+        alias_method :old_plus, :+
+        def +(other)
+          self - other
+        end
+      end
+      result = 1 + 2
+      Integer.alias_method :+, :old_plus
+      print result
+    RUBY
+    ruby_exe(code).should == "-1"
+  end
 end

@@ -5,8 +5,15 @@ class TestMkmf
   class TestLibs < TestMkmf
     def test_split_libs
       assert_equal(%w[-lfoo -lbar], split_libs("-lfoo -lbar"))
-      assert_equal(%w[-ObjC -framework\ Ruby], split_libs("-ObjC -framework Ruby"), 'Bug #6987')
     end
+
+    def test_split_libs_macos
+      assert_equal(%w[-ObjC -framework\ Ruby], split_libs("-ObjC -framework Ruby"), 'Bug #6987')
+    end if /darwin/ =~ RUBY_PLATFORM
+
+    def test_split_libs_windows
+      assert_equal(%w[zdll.lib libffi.lib], split_libs("zdll.lib libffi.lib"))
+    end if /mswin/ =~ RUBY_PLATFORM
 
     def assert_in_order(array, x, y, mesg = nil)
       mesg = "#{x} must proceed to #{y}#{': ' if mesg}#{mesg}"

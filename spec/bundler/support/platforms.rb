@@ -90,15 +90,15 @@ module Spec
     end
 
     def lockfile_platforms
-      local_platforms.map(&:to_s).sort.join("\n  ")
+      lockfile_platforms_for(local_platforms)
+    end
+
+    def lockfile_platforms_for(platforms)
+      platforms.map(&:to_s).sort.join("\n  ")
     end
 
     def local_platforms
-      if Bundler.feature_flag.specific_platform?
-        [local, specific_local_platform]
-      else
-        [local]
-      end
+      [specific_local_platform]
     end
   end
 end

@@ -31,12 +31,12 @@ class Net::HTTPGenericRequest
 
     @decode_content = false
 
-    if @response_has_body and Net::HTTP::HAVE_ZLIB then
+    if Net::HTTP::HAVE_ZLIB then
       if !initheader ||
          !initheader.keys.any? { |k|
            %w[accept-encoding range].include? k.downcase
          } then
-        @decode_content = true
+        @decode_content = true if @response_has_body
         initheader = initheader ? initheader.dup : {}
         initheader["accept-encoding"] =
           "gzip;q=1.0,deflate;q=0.6,identity;q=0.3"
@@ -143,7 +143,7 @@ class Net::HTTPGenericRequest
     end
 
     if host = self['host']
-      host.sub!(/:.*/s, ''.freeze)
+      host.sub!(/:.*/m, ''.freeze)
     elsif host = @uri.host
     else
      host = addr
@@ -202,9 +202,7 @@ class Net::HTTPGenericRequest
       IO.copy_stream(f, chunker)
       chunker.finish
     else
-      # copy_stream can sendfile() to sock.io unless we use SSL.
-      # If sock.io is an SSLSocket, copy_stream will hit SSL_write()
-      IO.copy_stream(f, sock.io)
+      IO.copy_stream(f, sock)
     end
   end
 

@@ -4,17 +4,17 @@ require 'mspec/runner/mspec'
 require 'mspec/guards'
 require 'mspec/helpers'
 
-describe Object, "#flunk" do
+RSpec.describe Object, "#flunk" do
   before :each do
-    MSpec.stub(:actions)
-    MSpec.stub(:current).and_return(double("spec state").as_null_object)
+    allow(MSpec).to receive(:actions)
+    allow(MSpec).to receive(:current).and_return(double("spec state").as_null_object)
   end
 
   it "raises an SpecExpectationNotMetError unconditionally" do
-    lambda { flunk }.should raise_error(SpecExpectationNotMetError)
+    expect { flunk }.to raise_error(SpecExpectationNotMetError)
   end
 
   it "accepts on argument for an optional message" do
-    lambda {flunk "test"}.should raise_error(SpecExpectationNotMetError)
+    expect {flunk "test"}.to raise_error(SpecExpectationNotMetError)
   end
 end

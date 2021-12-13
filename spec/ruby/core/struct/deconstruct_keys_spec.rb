@@ -43,11 +43,19 @@ ruby_version_is "2.7" do
       s.deconstruct_keys([0]      ).should == {0 => 10}
     end
 
-    it "ignores not existing attribute names" do
+    it "returns an empty hash when there are more keys than attributes" do
       struct = Struct.new(:x, :y)
       s = struct.new(1, 2)
 
-      s.deconstruct_keys([:a, :b, :c]).should == {}
+      s.deconstruct_keys([:x, :y, :a]).should == {}
+    end
+
+    it "returns at first not existing attribute name" do
+      struct = Struct.new(:x, :y)
+      s = struct.new(1, 2)
+
+      s.deconstruct_keys([:a, :x]).should == {}
+      s.deconstruct_keys([:x, :a]).should == {x: 1}
     end
 
     it "accepts nil argument and return all the attributes" do

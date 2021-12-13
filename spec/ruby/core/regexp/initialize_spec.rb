@@ -5,13 +5,13 @@ describe "Regexp#initialize" do
     Regexp.should have_private_method(:initialize)
   end
 
-  ruby_version_is ""..."2.8" do
+  ruby_version_is ""..."3.0" do
     it "raises a SecurityError on a Regexp literal" do
       -> { //.send(:initialize, "") }.should raise_error(SecurityError)
     end
   end
 
-  ruby_version_is "2.8" do
+  ruby_version_is "3.0" do
     it "raises a FrozenError on a Regexp literal" do
       -> { //.send(:initialize, "") }.should raise_error(FrozenError)
     end

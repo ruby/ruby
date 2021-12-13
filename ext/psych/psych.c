@@ -22,6 +22,9 @@ VALUE mPsych;
 
 void Init_psych(void)
 {
+    #ifdef HAVE_RB_EXT_RACTOR_SAFE
+	RB_EXT_RACTOR_SAFE(true);
+    #endif
     mPsych = rb_define_module("Psych");
 
     rb_define_singleton_method(mPsych, "libyaml_version", libyaml_version, 0);

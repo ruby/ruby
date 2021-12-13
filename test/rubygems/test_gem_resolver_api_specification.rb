@@ -1,8 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 
 class TestGemResolverAPISpecification < Gem::TestCase
-
   def test_initialize
     set = Gem::Resolver::APISet.new
     data = {
@@ -40,7 +39,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
 
     rails = specs['rails-3.0.3']
 
-    repo = @gem_repo + 'api/v1/dependencies'
+    repo = @gem_repo + 'info'
 
     set = Gem::Resolver::APISet.new repo
 
@@ -124,7 +123,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
       fetcher.spec 'a', 1
     end
 
-    dep_uri = URI(@gem_repo) + 'api/v1/dependencies'
+    dep_uri = URI(@gem_repo) + 'info'
     set = Gem::Resolver::APISet.new dep_uri
     data = {
       :name         => 'a',
@@ -148,7 +147,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
       end
     end
 
-    dep_uri = URI(@gem_repo) + 'api/v1/dependencies'
+    dep_uri = URI(@gem_repo) + 'info'
     set = Gem::Resolver::APISet.new dep_uri
     data = {
       :name         => 'j',
@@ -164,5 +163,4 @@ class TestGemResolverAPISpecification < Gem::TestCase
     assert_kind_of Gem::Specification, spec
     assert_equal 'j-1-java', spec.full_name
   end
-
 end

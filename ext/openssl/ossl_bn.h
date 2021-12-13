@@ -13,7 +13,8 @@
 extern VALUE cBN;
 extern VALUE eBNError;
 
-extern BN_CTX *ossl_bn_ctx;
+BN_CTX *ossl_bn_ctx_get(void);
+#define ossl_bn_ctx ossl_bn_ctx_get()
 
 #define GetBNPtr(obj) ossl_bn_value_ptr(&(obj))
 

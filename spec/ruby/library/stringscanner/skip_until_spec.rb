@@ -15,4 +15,10 @@ describe "StringScanner#skip_until" do
   it "returns nil if no match was found" do
     @s.skip_until(/d+/).should == nil
   end
+
+  it "raises TypeError if given a String" do
+    -> {
+      @s.skip_until('T')
+    }.should raise_error(TypeError, 'wrong argument type String (expected Regexp)')
+  end
 end

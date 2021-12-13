@@ -4,10 +4,7 @@
 # Represents a gem of name +name+ at +version+ of +platform+. These
 # wrap the data returned from the indexes.
 
-require 'rubygems/platform'
-
 class Gem::NameTuple
-
   def initialize(name, version, platform="ruby")
     @name = name
     @version = version
@@ -62,7 +59,7 @@ class Gem::NameTuple
   # Indicate if this NameTuple matches the current platform.
 
   def match_platform?
-    Gem::Platform.match @platform
+    Gem::Platform.match_gem? @platform, @name
   end
 
   ##
@@ -92,9 +89,8 @@ class Gem::NameTuple
   alias to_s inspect # :nodoc:
 
   def <=>(other)
-    [@name, @version, @platform == Gem::Platform::RUBY ? -1 : 1] <=>
-      [other.name, other.version,
-       other.platform == Gem::Platform::RUBY ? -1 : 1]
+    [@name, @version, Gem::Platform.sort_priority(@platform)] <=>
+      [other.name, other.version, Gem::Platform.sort_priority(other.platform)]
   end
 
   include Comparable
@@ -121,5 +117,4 @@ class Gem::NameTuple
   def hash
     to_a.hash
   end
-
 end

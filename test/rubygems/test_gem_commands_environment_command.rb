@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/commands/environment_command'
 
 class TestGemCommandsEnvironmentCommand < Gem::TestCase
-
   def setup
     super
 
@@ -110,7 +109,7 @@ class TestGemCommandsEnvironmentCommand < Gem::TestCase
   def test_execute_unknown
     @cmd.send :handle_options, %w[unknown]
 
-    assert_raises Gem::CommandLineError do
+    assert_raise Gem::CommandLineError do
       use_ui @ui do
         @cmd.execute
       end
@@ -141,5 +140,4 @@ class TestGemCommandsEnvironmentCommand < Gem::TestCase
     assert_equal "#{Gem.platforms.join File::PATH_SEPARATOR}\n", @ui.output
     assert_equal '', @ui.error
   end
-
 end

@@ -36,6 +36,7 @@ class LeakChecker
     @thread_info = find_threads
     @env_info = find_env
     @argv_info = find_argv
+    @globals_info = find_globals
     @encoding_info = find_encodings
   end
 
@@ -48,9 +49,10 @@ class LeakChecker
     check_process_leak
     check_env
     check_argv
+    check_globals
     check_encodings
     check_tracepoints
-    GC.start if !@leaks.empty?
+    GC.start unless @leaks.empty?
     @leaks.empty?
   end
 
@@ -241,6 +243,19 @@ class LeakChecker
     if new_argv != old_argv
       leak "ARGV changed: #{old_argv.inspect} to #{new_argv.inspect}"
       @argv_info = new_argv
+    end
+  end
+
+  def find_globals
+    { verbose: $VERBOSE, debug: $DEBUG }
+  end
+
+  def check_globals
+    old_globals = @globals_info
+    new_globals = find_globals
+    if new_globals != old_globals
+      leak "Globals changed: #{old_globals.inspect} to #{new_globals.inspect}"
+      @globals_info = new_globals
     end
   end
 

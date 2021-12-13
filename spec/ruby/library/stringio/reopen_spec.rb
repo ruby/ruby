@@ -23,7 +23,7 @@ describe "StringIO#reopen when passed [Object, Integer]" do
     @io.string.should == "reopened, another time"
   end
 
-  ruby_version_is ""..."2.8" do
+  ruby_version_is ""..."3.0" do
     # NOTE: WEIRD!
     it "does not taint self when the passed Object was tainted" do
       @io.reopen("reopened".taint, IO::RDONLY)
@@ -92,7 +92,7 @@ describe "StringIO#reopen when passed [Object, Object]" do
     str.should == ""
   end
 
-  ruby_version_is ""..."2.8" do
+  ruby_version_is ""..."3.0" do
     # NOTE: WEIRD!
     it "does not taint self when the passed Object was tainted" do
       @io.reopen("reopened".taint, "r")
@@ -164,7 +164,7 @@ describe "StringIO#reopen when passed [String]" do
     @io.string.should == "reopened"
   end
 
-  ruby_version_is ""..."2.8" do
+  ruby_version_is ""..."3.0" do
     # NOTE: WEIRD!
     it "does not taint self when the passed Object was tainted" do
       @io.reopen("reopened".taint)

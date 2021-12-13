@@ -23,10 +23,6 @@
 # include <stdlib.h>
 #endif
 
-#ifdef USE_DLN_A_OUT
-char *dln_argv0;
-#endif
-
 #if defined(HAVE_ALLOCA_H)
 #include <alloca.h>
 #endif
@@ -218,7 +214,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 			       dp[1] == '\\' ||
 #endif
 			       dp[1] == '/')) {
-		char *home;
+		const char *home;
 
 		home = getenv("HOME");
 		if (home != NULL) {

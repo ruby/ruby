@@ -36,9 +36,7 @@ class CGIUtilTest < Test::Unit::TestCase
   end
 
   def test_cgi_escape_with_invalid_byte_sequence
-    assert_nothing_raised(ArgumentError) do
-      assert_equal('%C0%3C%3C', CGI.escape("\xC0\<\<".dup.force_encoding("UTF-8")))
-    end
+    assert_equal('%C0%3C%3C', CGI.escape("\xC0\<\<".dup.force_encoding("UTF-8")))
   end
 
   def test_cgi_escape_preserve_encoding
@@ -104,6 +102,23 @@ class CGIUtilTest < Test::Unit::TestCase
     assert_not_predicate CGI.escapeHTML("'&\"><".freeze), :frozen?
     assert_not_predicate CGI.escapeHTML("Ruby".dup),      :frozen?
     assert_not_predicate CGI.escapeHTML("Ruby".freeze),   :frozen?
+  end
+
+  def test_cgi_escape_html_large
+    ulong_max, size_max = RbConfig::LIMITS.values_at("ULONG_MAX", "SIZE_MAX")
+    return unless ulong_max < size_max # Platforms not concerned
+
+    size = (ulong_max / 6 + 1)
+    begin
+      str = '"' * size
+      escaped = CGI.escapeHTML(str)
+    rescue NoMemoryError
+      omit "Not enough memory"
+    rescue => e
+    end
+    assert_raise_with_message(ArgumentError, /overflow/, ->{"length = #{escaped.length}"}) do
+      raise e if e
+    end
   end
 
   def test_cgi_unescapeHTML
@@ -189,5 +204,34 @@ class CGIUtilTest < Test::Unit::TestCase
     assert_equal('&lt;BR&gt;<A HREF="url"></A>', unescapeElement(escapeHTML('<BR><A HREF="url"></A>'), ["A", "IMG"]))
     assert_equal('&lt;BR&gt;<A HREF="url"></A>', unescape_element(escapeHTML('<BR><A HREF="url"></A>'), "A", "IMG"))
     assert_equal('&lt;BR&gt;<A HREF="url"></A>', unescape_element(escapeHTML('<BR><A HREF="url"></A>'), ["A", "IMG"]))
+  end
+end
+
+class CGIUtilPureRubyTest < Test::Unit::TestCase
+  def setup
+    CGI::Escape.module_eval do
+      alias _escapeHTML escapeHTML
+      remove_method :escapeHTML
+      alias _unescapeHTML unescapeHTML
+      remove_method :unescapeHTML
+    end
+  end
+
+  def teardown
+    CGI::Escape.module_eval do
+      alias escapeHTML _escapeHTML
+      remove_method :_escapeHTML
+      alias unescapeHTML _unescapeHTML
+      remove_method :_unescapeHTML
+    end
+  end
+
+  def test_cgi_escapeHTML_with_invalid_byte_sequence
+    assert_equal("&lt;\xA4??&gt;", CGI.escapeHTML(%[<\xA4??>]))
+  end
+
+  def test_cgi_unescapeHTML_with_invalid_byte_sequence
+    input = "\xFF&"
+    assert_equal(input, CGI.unescapeHTML(input))
   end
 end

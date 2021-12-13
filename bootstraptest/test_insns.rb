@@ -86,11 +86,8 @@ tests = [
   [ 'putobject',            %q{ /(?<x>x)/ =~ "x"; x == "x" }, ],
 
   [ 'putspecialobject',         %q{ {//=>true}[//] }, ],
-  [ 'putiseq',                  %q{ -> { true }.() }, ],
   [ 'putstring',                %q{ "true" }, ],
   [ 'tostring / concatstrings', %q{ "#{true}" }, ],
-  [ 'freezestring',             %q{ "#{true}" }, fsl, ],
-  [ 'freezestring',             %q{ "#{true}" }, '-d', fsl, ],
   [ 'toregexp',                 %q{ /#{true}/ =~ "true" && $~ }, ],
   [ 'intern',                   %q{ :"#{true}" }, ],
 
@@ -123,6 +120,7 @@ tests = [
   [ 'dup',     %q{ x = y = true; x }, ],
   [ 'dupn',    %q{ Object::X ||= true }, ],
   [ 'reverse', %q{ q, (w, e), r = 1, [2, 3], 4; e == 3 }, ],
+  [ 'swap',    %q{ !!defined?([[]]) }, ],
   [ 'swap',    <<-'},', ],      # {
     x = [[false, true]]
     for i, j in x               # here
@@ -387,14 +385,13 @@ tests = [
   [ 'opt_empty_p', %q{ ''.empty? }, ],
   [ 'opt_empty_p', %q{ [].empty? }, ],
   [ 'opt_empty_p', %q{ {}.empty? }, ],
-  [ 'opt_empty_p', %q{ Queue.new.empty? }, ],
+  [ 'opt_empty_p', %q{ Thread::Queue.new.empty? }, ],
 
   [ 'opt_succ',  %q{ 1.succ == 2 }, ],
   if defined? $FIXNUM_MAX then
     [ 'opt_succ',%Q{ #{ $FIXNUM_MAX }.succ == #{ $FIXNUM_MAX + 1 } }, ]
   end,
   [ 'opt_succ',  %q{ '1'.succ == '2' }, ],
-  [ 'opt_succ',  %q{ x = Time.at(0); x.succ == Time.at(1) }, ],
 
   [ 'opt_not',  %q{ ! false }, ],
   [ 'opt_neq', <<-'},', ],       # {

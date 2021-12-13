@@ -26,6 +26,7 @@
 #include "internal/imemo.h"
 #include "internal/numeric.h"
 #include "internal/range.h"
+#include "internal/rational.h"
 #include "ruby/ruby.h"
 
 /*
@@ -419,15 +420,31 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *ar
     return enum_obj;
 }
 
+static VALUE
+convert_to_feasible_size_value(VALUE obj)
+{
+    if (NIL_P(obj)) {
+        return obj;
+    }
+    else if (rb_respond_to(obj, id_call)) {
+        return obj;
+    }
+    else if (RB_FLOAT_TYPE_P(obj) && RFLOAT_VALUE(obj) == HUGE_VAL) {
+        return obj;
+    }
+    else {
+        return rb_to_int(obj);
+    }
+}
+
 /*
  * call-seq:
  *   Enumerator.new(size = nil) { |yielder| ... }
- *   Enumerator.new(obj, method = :each, *args)
  *
  * Creates a new Enumerator object, which can be used as an
  * Enumerable.
  *
- * In the first form, iteration is defined by the given block, in
+ * Iteration is defined by the given block, in
  * which a "yielder" object, given as block parameter, can be used to
  * yield a value by calling the +yield+ method (aliased as <code><<</code>):
  *
@@ -444,52 +461,16 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *ar
  * The optional parameter can be used to specify how to calculate the size
  * in a lazy fashion (see Enumerator#size). It can either be a value or
  * a callable object.
- *
- * In the deprecated second form, a generated Enumerator iterates over the
- * given object using the given method with the given arguments passed.
- *
- * Use of this form is discouraged.  Use Object#enum_for or Object#to_enum
- * instead.
- *
- *   e = Enumerator.new(ObjectSpace, :each_object)
- *       #-> ObjectSpace.enum_for(:each_object)
- *
- *   e.select { |obj| obj.is_a?(Class) }  # => array of all classes
- *
  */
 static VALUE
 enumerator_initialize(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE recv, meth = sym_each;
-    VALUE size = Qnil;
-    int kw_splat = 0;
+    VALUE iter = rb_block_proc();
+    VALUE recv = generator_init(generator_allocate(rb_cGenerator), iter);
+    VALUE arg0 = rb_check_arity(argc, 0, 1) ? argv[0] : Qnil;
+    VALUE size = convert_to_feasible_size_value(arg0);
 
-    if (rb_block_given_p()) {
-	rb_check_arity(argc, 0, 1);
-	recv = generator_init(generator_allocate(rb_cGenerator), rb_block_proc());
-	if (argc) {
-            if (NIL_P(argv[0]) || rb_respond_to(argv[0], id_call) ||
-                (RB_TYPE_P(argv[0], T_FLOAT) && RFLOAT_VALUE(argv[0]) == HUGE_VAL)) {
-                size = argv[0];
-            }
-            else {
-                size = rb_to_int(argv[0]);
-            }
-            argc = 0;
-        }
-    }
-    else {
-	rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
-	rb_warn_deprecated("Enumerator.new without a block", "Object#to_enum");
-	recv = *argv++;
-	if (--argc) {
-	    meth = *argv++;
-	    --argc;
-	}
-        kw_splat = rb_keyword_given_p();
-    }
-
-    return enumerator_init(obj, recv, meth, argc, argv, 0, size, kw_splat);
+    return enumerator_init(obj, recv, sym_each, 0, 0, 0, size, false);
 }
 
 /* :nodoc: */
@@ -536,27 +517,25 @@ static VALUE
 lazy_to_enum_i(VALUE self, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, int kw_splat);
 
 VALUE
-rb_enumeratorize_with_size(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn)
+rb_enumeratorize_with_size_kw(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, int kw_splat)
 {
-    /* Similar effect as calling obj.to_enum, i.e. dispatching to either
-       Kernel#to_enum vs Lazy#to_enum */
-    if (RTEST(rb_obj_is_kind_of(obj, rb_cLazy)))
-        return lazy_to_enum_i(obj, meth, argc, argv, size_fn, rb_keyword_given_p());
-    else
-	return enumerator_init(enumerator_allocate(rb_cEnumerator),
-                               obj, meth, argc, argv, size_fn, Qnil, rb_keyword_given_p());
+    VALUE base_class = rb_cEnumerator;
+
+    if (RTEST(rb_obj_is_kind_of(obj, rb_cLazy))) {
+        base_class = rb_cLazy;
+    }
+    else if (RTEST(rb_obj_is_kind_of(obj, rb_cEnumChain))) {
+        obj = enumerator_init(enumerator_allocate(rb_cEnumerator), obj, sym_each, 0, 0, 0, Qnil, false);
+    }
+
+    return enumerator_init(enumerator_allocate(base_class),
+                           obj, meth, argc, argv, size_fn, Qnil, kw_splat);
 }
 
 VALUE
-rb_enumeratorize_with_size_kw(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, int kw_splat)
+rb_enumeratorize_with_size(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn)
 {
-    /* Similar effect as calling obj.to_enum, i.e. dispatching to either
-       Kernel#to_enum vs Lazy#to_enum */
-    if (RTEST(rb_obj_is_kind_of(obj, rb_cLazy)))
-        return lazy_to_enum_i(obj, meth, argc, argv, size_fn, kw_splat);
-    else
-        return enumerator_init(enumerator_allocate(rb_cEnumerator),
-                               obj, meth, argc, argv, size_fn, Qnil, kw_splat);
+    return rb_enumeratorize_with_size_kw(obj, meth, argc, argv, size_fn, rb_keyword_given_p());
 }
 
 static VALUE
@@ -1730,13 +1709,13 @@ lazy_generator_init(VALUE enumerator, VALUE procs)
  *
  *    # This will fetch all URLs before selecting
  *    # necessary data
- *    URLS.map { |u| JSON.parse(open(u).read) }
+ *    URLS.map { |u| JSON.parse(URI.open(u).read) }
  *      .select { |data| data.key?('stats') }
  *      .first(5)
  *
  *    # This will fetch URLs one-by-one, only till
  *    # there is enough data to satisfy the condition
- *    URLS.lazy.map { |u| JSON.parse(open(u).read) }
+ *    URLS.lazy.map { |u| JSON.parse(URI.open(u).read) }
  *      .select { |data| data.key?('stats') }
  *      .first(5)
  *
@@ -2187,7 +2166,8 @@ lazy_flat_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo
         long i;
         LAZY_MEMO_RESET_BREAK(result);
         for (i = 0; i + 1 < RARRAY_LEN(ary); i++) {
-            lazy_yielder_yield(result, proc_index, 1, &RARRAY_AREF(ary, i));
+            const VALUE argv = RARRAY_AREF(ary, i);
+            lazy_yielder_yield(result, proc_index, 1, &argv);
         }
         if (break_p) LAZY_MEMO_SET_BREAK(result);
         if (i >= RARRAY_LEN(ary)) return 0;
@@ -2772,6 +2752,30 @@ lazy_uniq(VALUE obj)
 }
 
 static struct MEMO *
+lazy_compact_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+{
+    if (NIL_P(result->memo_value)) return 0;
+    return result;
+}
+
+static const lazyenum_funcs lazy_compact_funcs = {
+    lazy_compact_proc, 0,
+};
+
+/*
+ *  call-seq:
+ *     lazy.compact                  -> lazy_enumerator
+ *
+ *  Like Enumerable#compact, but chains operation to be lazy-evaluated.
+ */
+
+static VALUE
+lazy_compact(VALUE obj)
+{
+    return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_compact_funcs);
+}
+
+static struct MEMO *
 lazy_with_index_proc(VALUE proc_entry, struct MEMO* result, VALUE memos, long memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
@@ -2796,8 +2800,14 @@ lazy_with_index_proc(VALUE proc_entry, struct MEMO* result, VALUE memos, long me
     return result;
 }
 
+static VALUE
+lazy_with_index_size(VALUE proc, VALUE receiver)
+{
+    return receiver;
+}
+
 static const lazyenum_funcs lazy_with_index_funcs = {
-    lazy_with_index_proc, 0,
+    lazy_with_index_proc, lazy_with_index_size,
 };
 
 /*
@@ -2805,7 +2815,8 @@ static const lazyenum_funcs lazy_with_index_funcs = {
  *   lazy.with_index(offset = 0) {|(*args), idx| block }
  *   lazy.with_index(offset = 0)
  *
- * If a block is given, iterates the given block for each element
+ * If a block is given, returns a lazy enumerator that will
+ * iterate over the given block for each element
  * with an index, which starts from +offset+, and returns a
  * lazy enumerator that yields the same values (without the index).
  *
@@ -3233,6 +3244,21 @@ enum_chain_initialize(VALUE obj, VALUE enums)
     return obj;
 }
 
+static VALUE
+new_enum_chain(VALUE enums)
+{
+    long i;
+    VALUE obj = enum_chain_initialize(enum_chain_allocate(rb_cEnumChain), enums);
+
+    for (i = 0; i < RARRAY_LEN(enums); i++) {
+        if (RTEST(rb_obj_is_kind_of(RARRAY_AREF(enums, i), rb_cLazy))) {
+            return enumerable_lazy(obj);
+        }
+    }
+
+    return obj;
+}
+
 /* :nodoc: */
 static VALUE
 enum_chain_init_copy(VALUE obj, VALUE orig)
@@ -3261,7 +3287,7 @@ enum_chain_total_size(VALUE enums)
     for (i = 0; i < RARRAY_LEN(enums); i++) {
         VALUE size = enum_size(RARRAY_AREF(enums, i));
 
-        if (NIL_P(size) || (RB_TYPE_P(size, T_FLOAT) && isinf(NUM2DBL(size)))) {
+        if (NIL_P(size) || (RB_FLOAT_TYPE_P(size) && isinf(NUM2DBL(size)))) {
             return size;
         }
         if (!RB_INTEGER_TYPE_P(size)) {
@@ -3402,8 +3428,7 @@ enum_chain(int argc, VALUE *argv, VALUE obj)
 {
     VALUE enums = rb_ary_new_from_values(1, &obj);
     rb_ary_cat(enums, argv, argc);
-
-    return enum_chain_initialize(enum_chain_allocate(rb_cEnumChain), enums);
+    return new_enum_chain(enums);
 }
 
 /*
@@ -3419,9 +3444,7 @@ enum_chain(int argc, VALUE *argv, VALUE obj)
 static VALUE
 enumerator_plus(VALUE obj, VALUE eobj)
 {
-    VALUE enums = rb_ary_new_from_args(2, obj, eobj);
-
-    return enum_chain_initialize(enum_chain_allocate(rb_cEnumChain), enums);
+    return new_enum_chain(rb_ary_new_from_args(2, obj, eobj));
 }
 
 /*
@@ -3431,6 +3454,9 @@ enumerator_plus(VALUE obj, VALUE eobj)
  * that is a representation of sequences of numbers with common difference.
  * Instances of this class can be generated by the Range#step and Numeric#step
  * methods.
+ *
+ * The class can be used for slicing Array (see Array#slice) or custom
+ * collections.
  */
 
 VALUE
@@ -3443,7 +3469,7 @@ rb_arith_seq_new(VALUE obj, VALUE meth, int argc, VALUE const *argv,
     rb_ivar_set(aseq, id_begin, beg);
     rb_ivar_set(aseq, id_end, end);
     rb_ivar_set(aseq, id_step, step);
-    rb_ivar_set(aseq, id_exclude_end, excl ? Qtrue : Qfalse);
+    rb_ivar_set(aseq, id_exclude_end, RBOOL(excl));
     return aseq;
 }
 
@@ -3509,15 +3535,51 @@ rb_arithmetic_sequence_extract(VALUE obj, rb_arithmetic_sequence_components_t *c
         component->exclude_end = arith_seq_exclude_end_p(obj);
         return 1;
     }
-    else if (rb_obj_is_kind_of(obj, rb_cRange)) {
-        component->begin = RANGE_BEG(obj);
-        component->end   = RANGE_END(obj);
+    else if (rb_range_values(obj, &component->begin, &component->end, &component->exclude_end)) {
         component->step  = INT2FIX(1);
-        component->exclude_end = RTEST(RANGE_EXCL(obj));
         return 1;
     }
 
     return 0;
+}
+
+VALUE
+rb_arithmetic_sequence_beg_len_step(VALUE obj, long *begp, long *lenp, long *stepp, long len, int err)
+{
+    RBIMPL_NONNULL_ARG(begp);
+    RBIMPL_NONNULL_ARG(lenp);
+    RBIMPL_NONNULL_ARG(stepp);
+
+    rb_arithmetic_sequence_components_t aseq;
+    if (!rb_arithmetic_sequence_extract(obj, &aseq)) {
+        return Qfalse;
+    }
+
+    long step = NIL_P(aseq.step) ? 1 : NUM2LONG(aseq.step);
+    *stepp = step;
+
+    if (step < 0) {
+        VALUE tmp = aseq.begin;
+        aseq.begin = aseq.end;
+        aseq.end = tmp;
+    }
+
+    if (err == 0 && (step < -1 || step > 1)) {
+        if (rb_range_component_beg_len(aseq.begin, aseq.end, aseq.exclude_end, begp, lenp, len, 1) == Qtrue) {
+            if (*begp > len)
+                goto out_of_range;
+            if (*lenp > len)
+                goto out_of_range;
+            return Qtrue;
+        }
+    }
+    else {
+        return rb_range_component_beg_len(aseq.begin, aseq.end, aseq.exclude_end, begp, lenp, len, err);
+    }
+
+  out_of_range:
+    rb_raise(rb_eRangeError, "%+"PRIsVALUE" out of range", obj);
+    return Qnil;
 }
 
 /*
@@ -3664,6 +3726,88 @@ arith_seq_first(int argc, VALUE *argv, VALUE self)
     return rb_call_super(argc, argv);
 }
 
+static inline VALUE
+num_plus(VALUE a, VALUE b)
+{
+    if (RB_INTEGER_TYPE_P(a)) {
+        return rb_int_plus(a, b);
+    }
+    else if (RB_FLOAT_TYPE_P(a)) {
+        return rb_float_plus(a, b);
+    }
+    else if (RB_TYPE_P(a, T_RATIONAL)) {
+        return rb_rational_plus(a, b);
+    }
+    else {
+        return rb_funcallv(a, '+', 1, &b);
+    }
+}
+
+static inline VALUE
+num_minus(VALUE a, VALUE b)
+{
+    if (RB_INTEGER_TYPE_P(a)) {
+        return rb_int_minus(a, b);
+    }
+    else if (RB_FLOAT_TYPE_P(a)) {
+        return rb_float_minus(a, b);
+    }
+    else if (RB_TYPE_P(a, T_RATIONAL)) {
+        return rb_rational_minus(a, b);
+    }
+    else {
+        return rb_funcallv(a, '-', 1, &b);
+    }
+}
+
+static inline VALUE
+num_mul(VALUE a, VALUE b)
+{
+    if (RB_INTEGER_TYPE_P(a)) {
+        return rb_int_mul(a, b);
+    }
+    else if (RB_FLOAT_TYPE_P(a)) {
+        return rb_float_mul(a, b);
+    }
+    else if (RB_TYPE_P(a, T_RATIONAL)) {
+        return rb_rational_mul(a, b);
+    }
+    else {
+        return rb_funcallv(a, '*', 1, &b);
+    }
+}
+
+static inline VALUE
+num_idiv(VALUE a, VALUE b)
+{
+    VALUE q;
+    if (RB_INTEGER_TYPE_P(a)) {
+        q = rb_int_idiv(a, b);
+    }
+    else if (RB_FLOAT_TYPE_P(a)) {
+        q = rb_float_div(a, b);
+    }
+    else if (RB_TYPE_P(a, T_RATIONAL)) {
+        q = rb_rational_div(a, b);
+    }
+    else {
+        q = rb_funcallv(a, idDiv, 1, &b);
+    }
+
+    if (RB_INTEGER_TYPE_P(q)) {
+        return q;
+    }
+    else if (RB_FLOAT_TYPE_P(q)) {
+        return rb_float_floor(q, 0);
+    }
+    else if (RB_TYPE_P(q, T_RATIONAL)) {
+        return rb_rational_floor(q, 0);
+    }
+    else {
+        return rb_funcall(q, rb_intern("floor"), 0);
+    }
+}
+
 /*
  * call-seq:
  *   aseq.last    -> num or nil
@@ -3688,7 +3832,7 @@ arith_seq_last(int argc, VALUE *argv, VALUE self)
     b = arith_seq_begin(self);
     s = arith_seq_step(self);
 
-    len_1 = rb_int_idiv(rb_int_minus(e, b), s);
+    len_1 = num_idiv(num_minus(e, b), s);
     if (rb_num_negative_int_p(len_1)) {
         if (argc == 0) {
             return Qnil;
@@ -3696,9 +3840,9 @@ arith_seq_last(int argc, VALUE *argv, VALUE self)
         return rb_ary_new_capa(0);
     }
 
-    last = rb_int_plus(b, rb_int_mul(s, len_1));
+    last = num_plus(b, num_mul(s, len_1));
     if ((last_is_adjusted = arith_seq_exclude_end_p(self) && rb_equal(last, e))) {
-        last = rb_int_minus(last, s);
+        last = num_minus(last, s);
     }
 
     if (argc == 0) {
@@ -3907,22 +4051,22 @@ arith_seq_each(VALUE self)
         return self;
     }
 
-    len_1 = rb_int_idiv(rb_int_minus(e, c), s);
-    last = rb_int_plus(c, rb_int_mul(s, len_1));
+    len_1 = num_idiv(num_minus(e, c), s);
+    last = num_plus(c, num_mul(s, len_1));
     if (x && rb_equal(last, e)) {
-        last = rb_int_minus(last, s);
+        last = num_minus(last, s);
     }
 
     if (rb_num_negative_int_p(s)) {
         while (NUM_GE(c, last)) {
             rb_yield(c);
-            c = rb_int_plus(c, s);
+            c = num_plus(c, s);
         }
     }
     else {
         while (NUM_GE(last, c)) {
             rb_yield(c);
-            c = rb_int_plus(c, s);
+            c = num_plus(c, s);
         }
     }
 
@@ -3996,10 +4140,11 @@ arith_seq_size(VALUE self)
     return len;
 }
 
+#define sym(name) ID2SYM(rb_intern_const(name))
 void
 InitVM_Enumerator(void)
 {
-    ID id_private = rb_intern("private");
+    ID id_private = rb_intern_const("private");
 
     rb_define_method(rb_mKernel, "to_enum", obj_to_enum, -1);
     rb_define_method(rb_mKernel, "enum_for", obj_to_enum, -1);
@@ -4049,23 +4194,23 @@ InitVM_Enumerator(void)
     rb_define_alias(rb_cLazy, "_enumerable_uniq", "uniq");
     rb_define_private_method(rb_cLazy, "_enumerable_with_index", enumerator_with_index, -1);
 
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_map")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_collect")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_flat_map")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_collect_concat")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_select")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_find_all")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_filter")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_filter_map")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_reject")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_grep")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_grep_v")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_zip")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_take")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_take_while")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_drop")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_drop_while")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_uniq")));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_map"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_collect"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_flat_map"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_collect_concat"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_select"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_find_all"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_filter"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_filter_map"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_reject"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_grep"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_grep_v"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_zip"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_take"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_take_while"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_drop"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_drop_while"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_uniq"));
 
     rb_define_method(rb_cLazy, "initialize", lazy_initialize, -1);
     rb_define_method(rb_cLazy, "to_enum", lazy_to_enum, -1);
@@ -4095,27 +4240,28 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "slice_when", lazy_super, -1);
     rb_define_method(rb_cLazy, "chunk_while", lazy_super, -1);
     rb_define_method(rb_cLazy, "uniq", lazy_uniq, 0);
+    rb_define_method(rb_cLazy, "compact", lazy_compact, 0);
     rb_define_method(rb_cLazy, "with_index", lazy_with_index, -1);
 
     lazy_use_super_method = rb_hash_new_with_size(18);
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("map")), ID2SYM(rb_intern("_enumerable_map")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("collect")), ID2SYM(rb_intern("_enumerable_collect")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("flat_map")), ID2SYM(rb_intern("_enumerable_flat_map")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("collect_concat")), ID2SYM(rb_intern("_enumerable_collect_concat")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("select")), ID2SYM(rb_intern("_enumerable_select")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("find_all")), ID2SYM(rb_intern("_enumerable_find_all")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("filter")), ID2SYM(rb_intern("_enumerable_filter")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("filter_map")), ID2SYM(rb_intern("_enumerable_filter_map")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("reject")), ID2SYM(rb_intern("_enumerable_reject")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("grep")), ID2SYM(rb_intern("_enumerable_grep")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("grep_v")), ID2SYM(rb_intern("_enumerable_grep_v")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("zip")), ID2SYM(rb_intern("_enumerable_zip")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("take")), ID2SYM(rb_intern("_enumerable_take")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("take_while")), ID2SYM(rb_intern("_enumerable_take_while")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("drop")), ID2SYM(rb_intern("_enumerable_drop")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("drop_while")), ID2SYM(rb_intern("_enumerable_drop_while")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("uniq")), ID2SYM(rb_intern("_enumerable_uniq")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("with_index")), ID2SYM(rb_intern("_enumerable_with_index")));
+    rb_hash_aset(lazy_use_super_method, sym("map"), sym("_enumerable_map"));
+    rb_hash_aset(lazy_use_super_method, sym("collect"), sym("_enumerable_collect"));
+    rb_hash_aset(lazy_use_super_method, sym("flat_map"), sym("_enumerable_flat_map"));
+    rb_hash_aset(lazy_use_super_method, sym("collect_concat"), sym("_enumerable_collect_concat"));
+    rb_hash_aset(lazy_use_super_method, sym("select"), sym("_enumerable_select"));
+    rb_hash_aset(lazy_use_super_method, sym("find_all"), sym("_enumerable_find_all"));
+    rb_hash_aset(lazy_use_super_method, sym("filter"), sym("_enumerable_filter"));
+    rb_hash_aset(lazy_use_super_method, sym("filter_map"), sym("_enumerable_filter_map"));
+    rb_hash_aset(lazy_use_super_method, sym("reject"), sym("_enumerable_reject"));
+    rb_hash_aset(lazy_use_super_method, sym("grep"), sym("_enumerable_grep"));
+    rb_hash_aset(lazy_use_super_method, sym("grep_v"), sym("_enumerable_grep_v"));
+    rb_hash_aset(lazy_use_super_method, sym("zip"), sym("_enumerable_zip"));
+    rb_hash_aset(lazy_use_super_method, sym("take"), sym("_enumerable_take"));
+    rb_hash_aset(lazy_use_super_method, sym("take_while"), sym("_enumerable_take_while"));
+    rb_hash_aset(lazy_use_super_method, sym("drop"), sym("_enumerable_drop"));
+    rb_hash_aset(lazy_use_super_method, sym("drop_while"), sym("_enumerable_drop_while"));
+    rb_hash_aset(lazy_use_super_method, sym("uniq"), sym("_enumerable_uniq"));
+    rb_hash_aset(lazy_use_super_method, sym("with_index"), sym("_enumerable_with_index"));
     rb_obj_freeze(lazy_use_super_method);
     rb_gc_register_mark_object(lazy_use_super_method);
 
@@ -4163,6 +4309,11 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cEnumChain, "size", enum_chain_size, 0);
     rb_define_method(rb_cEnumChain, "rewind", enum_chain_rewind, 0);
     rb_define_method(rb_cEnumChain, "inspect", enum_chain_inspect, 0);
+    rb_undef_method(rb_cEnumChain, "feed");
+    rb_undef_method(rb_cEnumChain, "next");
+    rb_undef_method(rb_cEnumChain, "next_values");
+    rb_undef_method(rb_cEnumChain, "peek");
+    rb_undef_method(rb_cEnumChain, "peek_values");
 
     /* ArithmeticSequence */
     rb_cArithSeq = rb_define_class_under(rb_cEnumerator, "ArithmeticSequence", rb_cEnumerator);
@@ -4184,28 +4335,28 @@ InitVM_Enumerator(void)
 
     rb_provide("enumerator.so");	/* for backward compatibility */
 }
+#undef sym
 
-#undef rb_intern
 void
 Init_Enumerator(void)
 {
-    id_rewind = rb_intern("rewind");
-    id_new = rb_intern("new");
-    id_next = rb_intern("next");
-    id_result = rb_intern("result");
-    id_receiver = rb_intern("receiver");
-    id_arguments = rb_intern("arguments");
-    id_memo = rb_intern("memo");
-    id_method = rb_intern("method");
-    id_force = rb_intern("force");
-    id_to_enum = rb_intern("to_enum");
-    id_begin = rb_intern("begin");
-    id_end = rb_intern("end");
-    id_step = rb_intern("step");
-    id_exclude_end = rb_intern("exclude_end");
+    id_rewind = rb_intern_const("rewind");
+    id_new = rb_intern_const("new");
+    id_next = rb_intern_const("next");
+    id_result = rb_intern_const("result");
+    id_receiver = rb_intern_const("receiver");
+    id_arguments = rb_intern_const("arguments");
+    id_memo = rb_intern_const("memo");
+    id_method = rb_intern_const("method");
+    id_force = rb_intern_const("force");
+    id_to_enum = rb_intern_const("to_enum");
+    id_begin = rb_intern_const("begin");
+    id_end = rb_intern_const("end");
+    id_step = rb_intern_const("step");
+    id_exclude_end = rb_intern_const("exclude_end");
     sym_each = ID2SYM(id_each);
-    sym_cycle = ID2SYM(rb_intern("cycle"));
-    sym_yield = ID2SYM(rb_intern("yield"));
+    sym_cycle = ID2SYM(rb_intern_const("cycle"));
+    sym_yield = ID2SYM(rb_intern_const("yield"));
 
     InitVM(Enumerator);
 }

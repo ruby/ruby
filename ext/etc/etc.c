@@ -52,7 +52,7 @@ char *getenv();
 #endif
 char *getlogin();
 
-#define RUBY_ETC_VERSION "1.1.0"
+#define RUBY_ETC_VERSION "1.3.0"
 
 #ifdef HAVE_RB_DEPRECATE_CONSTANT
 void rb_deprecate_constant(VALUE mod, const char *name);
@@ -61,6 +61,23 @@ void rb_deprecate_constant(VALUE mod, const char *name);
 #endif
 
 #include "constdefs.h"
+
+#ifdef HAVE_RUBY_ATOMIC_H
+# include "ruby/atomic.h"
+#else
+typedef int rb_atomic_t;
+# define RUBY_ATOMIC_CAS(var, oldval, newval) \
+    ((var) == (oldval) ? ((var) = (newval), (oldval)) : (var))
+# define RUBY_ATOMIC_EXCHANGE(var, newval) \
+    atomic_exchange(&var, newval)
+static inline rb_atomic_t
+atomic_exchange(volatile rb_atomic_t *var, rb_atomic_t newval)
+{
+    rb_atomic_t oldval = *var;
+    *var = newval;
+    return oldval;
+}
+#endif
 
 /* call-seq:
  *	getlogin	->  String
@@ -240,12 +257,14 @@ etc_getpwnam(VALUE obj, VALUE nam)
 }
 
 #ifdef HAVE_GETPWENT
-static int passwd_blocking = 0;
+static rb_atomic_t passwd_blocking;
 static VALUE
 passwd_ensure(VALUE _)
 {
     endpwent();
-    passwd_blocking = (int)Qfalse;
+    if (RUBY_ATOMIC_EXCHANGE(passwd_blocking, 0) != 1) {
+	rb_raise(rb_eRuntimeError, "unexpected passwd_blocking");
+    }
     return Qnil;
 }
 
@@ -264,10 +283,9 @@ passwd_iterate(VALUE _)
 static void
 each_passwd(void)
 {
-    if (passwd_blocking) {
+    if (RUBY_ATOMIC_CAS(passwd_blocking, 0, 1)) {
 	rb_raise(rb_eRuntimeError, "parallel passwd iteration");
     }
-    passwd_blocking = (int)Qtrue;
     rb_ensure(passwd_iterate, 0, passwd_ensure, 0);
 }
 #endif
@@ -483,12 +501,14 @@ etc_getgrnam(VALUE obj, VALUE nam)
 }
 
 #ifdef HAVE_GETGRENT
-static int group_blocking = 0;
+static rb_atomic_t group_blocking;
 static VALUE
 group_ensure(VALUE _)
 {
     endgrent();
-    group_blocking = (int)Qfalse;
+    if (RUBY_ATOMIC_EXCHANGE(group_blocking, 0) != 1) {
+	rb_raise(rb_eRuntimeError, "unexpected group_blocking");
+    }
     return Qnil;
 }
 
@@ -508,10 +528,9 @@ group_iterate(VALUE _)
 static void
 each_group(void)
 {
-    if (group_blocking) {
+    if (RUBY_ATOMIC_CAS(group_blocking, 0, 1)) {
 	rb_raise(rb_eRuntimeError, "parallel group iteration");
     }
-    group_blocking = (int)Qtrue;
     rb_ensure(group_iterate, 0, group_ensure, 0);
 }
 #endif
@@ -938,10 +957,12 @@ io_pathconf(VALUE io, VALUE arg)
 static int
 etc_nprocessors_affin(void)
 {
-    cpu_set_t *cpuset;
+    cpu_set_t *cpuset, cpuset_buff[1024 / sizeof(cpu_set_t)];
     size_t size;
     int ret;
     int n;
+
+    CPU_ZERO_S(sizeof(cpuset_buff), cpuset_buff);
 
     /*
      * XXX:
@@ -961,13 +982,12 @@ etc_nprocessors_affin(void)
      */
     for (n=64; n <= 16384; n *= 2) {
 	size = CPU_ALLOC_SIZE(n);
-	if (size >= 1024) {
+	if (size >= sizeof(cpuset_buff)) {
 	    cpuset = xcalloc(1, size);
 	    if (!cpuset)
 		return -1;
 	} else {
-	    cpuset = alloca(size);
-	    CPU_ZERO_S(size, cpuset);
+	    cpuset = cpuset_buff;
 	}
 
 	ret = sched_getaffinity(0, size, cpuset);
@@ -976,10 +996,10 @@ etc_nprocessors_affin(void)
 	    ret = CPU_COUNT_S(size, cpuset);
 	}
 
-	if (size >= 1024) {
+	if (size >= sizeof(cpuset_buff)) {
 	    xfree(cpuset);
 	}
-	if (ret > 0) {
+	if (ret > 0 || errno != EINVAL) {
 	    return ret;
 	}
     }
@@ -1076,6 +1096,9 @@ Init_etc(void)
 {
     VALUE mEtc;
 
+    #ifdef HAVE_RB_EXT_RACTOR_SAFE
+	RB_EXT_RACTOR_SAFE(true);
+    #endif
     mEtc = rb_define_module("Etc");
     rb_define_const(mEtc, "VERSION", rb_str_new_cstr(RUBY_ETC_VERSION));
     init_constants(mEtc);
@@ -1180,7 +1203,6 @@ Init_etc(void)
     rb_deprecate_constant(rb_cStruct, "Passwd");
     rb_extend_object(sPasswd, rb_mEnumerable);
     rb_define_singleton_method(sPasswd, "each", etc_each_passwd, 0);
-
 #ifdef HAVE_GETGRENT
     sGroup = rb_struct_define_under(mEtc, "Group", "name",
 #ifdef HAVE_STRUCT_GROUP_GR_PASSWD

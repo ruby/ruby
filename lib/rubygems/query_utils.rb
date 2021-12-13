@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require 'rubygems/local_remote_options'
-require 'rubygems/spec_fetcher'
-require 'rubygems/version_option'
-require 'rubygems/text'
+require_relative 'local_remote_options'
+require_relative 'spec_fetcher'
+require_relative 'version_option'
+require_relative 'text'
 
 module Gem::QueryUtils
 
@@ -55,15 +55,6 @@ module Gem::QueryUtils
 
   def defaults_str # :nodoc:
     "--local --name-matches // --no-details --versions --no-installed"
-  end
-
-  def description # :nodoc:
-    <<-EOF
-The query command is the basis for the list and search commands.
-
-You should really use the list and search commands instead.  This command
-is too hard to use.
-    EOF
   end
 
   def execute

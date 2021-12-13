@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-require "tsort"
-require "set"
+require_relative "vendored_tsort"
 
 module Bundler
   class SpecSet
@@ -12,31 +11,28 @@ module Bundler
       @specs = specs
     end
 
-    def for(dependencies, skip = [], check = false, match_current_platform = false, raise_on_missing = true)
-      handled = Set.new
+    def for(dependencies, check = false, match_current_platform = false)
+      handled = []
       deps = dependencies.dup
       specs = []
-      skip += ["bundler"]
 
       loop do
         break unless dep = deps.shift
-        next if !handled.add?(dep) || skip.include?(dep.name)
+        next if handled.any?{|d| d.name == dep.name && (match_current_platform || d.__platform == dep.__platform) } || dep.name == "bundler"
 
-        if spec = spec_for_dependency(dep, match_current_platform)
-          specs << spec
+        handled << dep
 
-          spec.dependencies.each do |d|
+        specs_for_dep = spec_for_dependency(dep, match_current_platform)
+        if specs_for_dep.any?
+          match_current_platform ? specs += specs_for_dep : specs |= specs_for_dep
+
+          specs_for_dep.first.dependencies.each do |d|
             next if d.type == :development
-            d = DepProxy.new(d, dep.__platform) unless match_current_platform
+            d = DepProxy.get_proxy(d, dep.__platform) unless match_current_platform
             deps << d
           end
         elsif check
           return false
-        elsif raise_on_missing
-          others = lookup[dep.name] if match_current_platform
-          message = "Unable to find a spec satisfying #{dep} in the set. Perhaps the lockfile is corrupted?"
-          message += " Found #{others.join(", ")} that did not match the current platform." if others && !others.empty?
-          raise GemNotFound, message
         end
       end
 
@@ -44,11 +40,7 @@ module Bundler
         specs << spec
       end
 
-      check ? true : SpecSet.new(specs)
-    end
-
-    def valid_for?(deps)
-      self.for(deps, [], true)
+      check ? true : specs
     end
 
     def [](key)
@@ -74,36 +66,33 @@ module Bundler
       lookup.dup
     end
 
-    def materialize(deps, missing_specs = nil)
-      materialized = self.for(deps, [], false, true, !missing_specs).to_a
-      deps = materialized.map(&:name).uniq
+    def materialize(deps)
+      materialized = self.for(deps, false, true)
+
       materialized.map! do |s|
         next s unless s.is_a?(LazySpecification)
-        s.source.dependency_names = deps if s.source.respond_to?(:dependency_names=)
-        spec = s.__materialize__
-        unless spec
-          unless missing_specs
-            raise GemNotFound, "Could not find #{s.full_name} in any of the sources"
-          end
-          missing_specs << s
-        end
-        spec
+        s.source.local!
+        s.__materialize__ || s
       end
-      SpecSet.new(missing_specs ? materialized.compact : materialized)
+      SpecSet.new(materialized)
     end
 
     # Materialize for all the specs in the spec set, regardless of what platform they're for
     # This is in contrast to how for does platform filtering (and specifically different from how `materialize` calls `for` only for the current platform)
     # @return [Array<Gem::Specification>]
     def materialized_for_all_platforms
-      names = @specs.map(&:name).uniq
       @specs.map do |s|
         next s unless s.is_a?(LazySpecification)
-        s.source.dependency_names = names if s.source.respond_to?(:dependency_names=)
+        s.source.local!
+        s.source.remote!
         spec = s.__materialize__
         raise GemNotFound, "Could not find #{s.full_name} in any of the sources" unless spec
         spec
       end
+    end
+
+    def missing_specs
+      @specs.select {|s| s.is_a?(LazySpecification) }
     end
 
     def merge(set)
@@ -147,7 +136,7 @@ module Bundler
       sorted.each(&b)
     end
 
-  private
+    private
 
     def sorted
       rake = @specs.find {|s| s.name == "rake" }
@@ -183,11 +172,7 @@ module Bundler
     def spec_for_dependency(dep, match_current_platform)
       specs_for_platforms = lookup[dep.name]
       if match_current_platform
-        Bundler.rubygems.platforms.reverse_each do |pl|
-          match = GemHelpers.select_best_platform_match(specs_for_platforms, pl)
-          return match if match
-        end
-        nil
+        GemHelpers.select_best_platform_match(specs_for_platforms.select{|s| Gem::Platform.match_spec?(s) }, Bundler.local_platform)
       else
         GemHelpers.select_best_platform_match(specs_for_platforms, dep.__platform)
       end

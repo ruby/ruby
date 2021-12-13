@@ -5,8 +5,8 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems'
-require 'rubygems/security_option'
+require_relative '../rubygems'
+require_relative 'security_option'
 
 ##
 # Mixin methods for install and update options for Gem::Commands
@@ -51,7 +51,7 @@ module Gem::InstallUpdateOptions
                'Install gem into the vendor directory.',
                'Only for use by gem repackagers.') do |value, options|
       unless Gem.vendor_dir
-        raise OptionParser::InvalidOption.new 'your platform is not supported'
+        raise Gem::OptionParser::InvalidOption.new 'your platform is not supported'
       end
 
       options[:vendor] = true
@@ -122,10 +122,10 @@ module Gem::InstallUpdateOptions
       options[:minimal_deps] = true
     end
 
-    add_option(:"Install/Update", "--minimal-deps",
+    add_option(:"Install/Update", "--[no-]minimal-deps",
                 "Don't upgrade any dependencies that already",
                 "meet version requirements") do |value, options|
-      options[:minimal_deps] = true
+      options[:minimal_deps] = value
     end
 
     add_option(:"Install/Update", "--[no-]post-install-message",
@@ -143,7 +143,7 @@ module Gem::InstallUpdateOptions
       unless v
         message = v ? v : "(tried #{Gem::GEM_DEP_FILES.join ', '})"
 
-        raise OptionParser::InvalidArgument,
+        raise Gem::OptionParser::InvalidArgument,
                 "cannot find gem dependencies file #{message}"
       end
 
@@ -181,10 +181,19 @@ module Gem::InstallUpdateOptions
   end
 
   ##
-  # Default options for the gem install command.
+  # Default options for the gem install and update commands.
+
+  def install_update_options
+    {
+      :document => %w[ri],
+    }
+  end
+
+  ##
+  # Default description for the gem install and update commands.
 
   def install_update_defaults_str
-    '--document=rdoc,ri --wrappers'
+    '--document=ri'
   end
 
 end

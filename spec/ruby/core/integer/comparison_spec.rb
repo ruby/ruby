@@ -116,7 +116,7 @@ describe "Integer#<=>" do
     describe "with an Object" do
       before :each do
         @big = bignum_value
-        @num = mock("value for Bignum#<=>")
+        @num = mock("value for Integer#<=>")
       end
 
       it "calls #coerce on other" do

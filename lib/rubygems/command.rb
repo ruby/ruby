@@ -5,7 +5,7 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'optparse'
+require_relative 'optparse'
 require_relative 'requirement'
 require_relative 'user_interaction'
 
@@ -17,10 +17,9 @@ require_relative 'user_interaction'
 # A very good example to look at is Gem::Commands::ContentsCommand
 
 class Gem::Command
-
   include Gem::UserInteraction
 
-  OptionParser.accept Symbol do |value|
+  Gem::OptionParser.accept Symbol do |value|
     value.to_sym
   end
 
@@ -345,7 +344,7 @@ class Gem::Command
   ##
   # Add a command-line option and handler to the command.
   #
-  # See OptionParser#make_switch for an explanation of +opts+.
+  # See Gem::OptionParser#make_switch for an explanation of +opts+.
   #
   # +handler+ will be called with two values, the value of the argument and
   # the options hash.
@@ -355,6 +354,8 @@ class Gem::Command
 
   def add_option(*opts, &handler) # :yields: value, options
     group_name = Symbol === opts.first ? opts.shift : :options
+
+    raise "Do not pass an empty string in opts" if opts.include?("")
 
     @option_groups[group_name] << [opts, handler]
   end
@@ -539,7 +540,7 @@ class Gem::Command
   # command.
 
   def create_option_parser
-    @parser = OptionParser.new
+    @parser = Gem::OptionParser.new
 
     add_parser_options
 
@@ -635,6 +636,7 @@ RubyGems is a package manager for Ruby.
     gem install rake
     gem list --local
     gem build package.gemspec
+    gem push package-0.0.1.gem
     gem help install
 
   Further help:
@@ -652,7 +654,6 @@ RubyGems is a package manager for Ruby.
   HELP
 
   # :startdoc:
-
 end
 
 ##

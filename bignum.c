@@ -36,14 +36,11 @@
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/sanitizers.h"
-#include "internal/util.h"
 #include "internal/variable.h"
 #include "internal/warnings.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby_assert.h"
-
-#define RB_BIGNUM_TYPE_P(x) RB_TYPE_P((x), T_BIGNUM)
 
 const char ruby_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 
@@ -75,7 +72,7 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGIT % SIZEOF_LONG == 0);
 #else
 #   define HOST_BIGENDIAN_P 0
 #endif
-/* (!LSHIFTABLE(d, n) ? 0 : (n)) is same as n but suppress a warning, C4293, by Visual Studio.  */
+/* (!LSHIFTABLE(d, n) ? 0 : (n)) is the same as n but suppress a warning, C4293, by Visual Studio.  */
 #define LSHIFTABLE(d, n) ((n) < sizeof(d) * CHAR_BIT)
 #define LSHIFTX(d, n) (!LSHIFTABLE(d, n) ? 0 : ((d) << (!LSHIFTABLE(d, n) ? 0 : (n))))
 #define CLEAR_LOWBITS(d, numbits) ((d) & LSHIFTX(~((d)*0), (numbits)))
@@ -159,15 +156,11 @@ typedef void (mulfunc_t)(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, c
 static mulfunc_t bary_mul_toom3_start;
 static mulfunc_t bary_mul_karatsuba_start;
 static BDIGIT bigdivrem_single(BDIGIT *qds, const BDIGIT *xds, size_t xn, BDIGIT y);
-static void bary_divmod(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn);
 
-static VALUE bigmul0(VALUE x, VALUE y);
-static void bary_mul_toom3(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn, BDIGIT *wds, size_t wn);
 static VALUE bignew_1(VALUE klass, size_t len, int sign);
 static inline VALUE bigtrunc(VALUE x);
 
 static VALUE bigsq(VALUE x);
-static void bigdivmod(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp);
 static inline VALUE power_cache_get_power(int base, int power_level, size_t *numdigits_ret);
 
 #if SIZEOF_BDIGIT <= SIZEOF_INT
@@ -467,7 +460,6 @@ static int
 bary_2comp(BDIGIT *ds, size_t n)
 {
     size_t i;
-    i = 0;
     for (i = 0; i < n; i++) {
         if (ds[i] != 0) {
             goto non_zero;
@@ -1057,6 +1049,7 @@ integer_unpack_num_bdigits(size_t numwords, size_t wordsize, size_t nails, int *
             size_t num_bdigits1 = integer_unpack_num_bdigits_generic(numwords, wordsize, nails, &nlp_bits1);
             assert(num_bdigits == num_bdigits1);
             assert(*nlp_bits_ret == nlp_bits1);
+            (void)num_bdigits1;
         }
 #endif
     }
@@ -1648,11 +1641,13 @@ rb_big_sq_fast(VALUE x)
 
 /* balancing multiplication by slicing larger argument */
 static void
-bary_mul_balance_with_mulfunc(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn, BDIGIT *wds, size_t wn, mulfunc_t *mulfunc)
+bary_mul_balance_with_mulfunc(BDIGIT *const zds, const size_t zn,
+                              const BDIGIT *const xds, const size_t xn,
+                              const BDIGIT *const yds, const size_t yn,
+                              BDIGIT *wds, size_t wn, mulfunc_t *const mulfunc)
 {
     VALUE work = 0;
-    size_t yn0 = yn;
-    size_t r, n;
+    size_t n;
 
     assert(xn + yn <= zn);
     assert(xn <= yn);
@@ -1660,14 +1655,20 @@ bary_mul_balance_with_mulfunc(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t 
 
     BDIGITS_ZERO(zds, xn);
 
+    if (wn < xn) {
+        const size_t r = (yn % xn) ? (yn % xn) : xn;
+        if ((2 * xn + yn + r) > zn) {
+            wn = xn;
+            wds = ALLOCV_N(BDIGIT, work, wn);
+        }
+    }
+
     n = 0;
-    while (yn > 0) {
-        BDIGIT *tds;
-        size_t tn;
-	r = xn > yn ? yn : xn;
-        tn = xn + r;
+    while (yn > n) {
+        const size_t r = (xn > (yn - n) ? (yn - n) : xn);
+        const size_t tn = (xn + r);
         if (2 * (xn + r) <= zn - n) {
-            tds = zds + n + xn + r;
+            BDIGIT *const tds = zds + n + xn + r;
             mulfunc(tds, tn, xds, xn, yds + n, r, wds, wn);
             BDIGITS_ZERO(zds + n + xn, r);
             bary_add(zds + n, tn,
@@ -1675,21 +1676,25 @@ bary_mul_balance_with_mulfunc(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t 
                      tds, tn);
         }
         else {
+            BDIGIT *const tds = zds + n;
             if (wn < xn) {
+                /* xn is invariant, only once here */
+#if 0
                 wn = xn;
                 wds = ALLOCV_N(BDIGIT, work, wn);
+#else
+                rb_bug("wds is not enough: %" PRIdSIZE " for %" PRIdSIZE, wn, xn);
+#endif
             }
-            tds = zds + n;
             MEMCPY(wds, zds + n, BDIGIT, xn);
             mulfunc(tds, tn, xds, xn, yds + n, r, wds+xn, wn-xn);
             bary_add(zds + n, tn,
                      zds + n, tn,
                      wds, xn);
         }
-	yn -= r;
 	n += r;
     }
-    BDIGITS_ZERO(zds+xn+yn0, zn - (xn+yn0));
+    BDIGITS_ZERO(zds+xn+yn, zn - (xn+yn));
 
     if (work)
         ALLOCV_END(work);
@@ -2006,7 +2011,7 @@ bary_mul_toom3(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGI
     }
 
     /*
-     * ref. http://en.wikipedia.org/wiki/Toom%E2%80%93Cook_multiplication
+     * ref. https://en.wikipedia.org/wiki/Toom%E2%80%93Cook_multiplication
      *
      * x(b) = x0 * b^0 + x1 * b^1 + x2 * b^2
      * y(b) = y0 * b^0 + y1 * b^1 + y2 * b^2
@@ -2359,9 +2364,9 @@ bary_sparse_p(const BDIGIT *ds, size_t n)
 {
     long c = 0;
 
-    if (          ds[rb_genrand_ulong_limited(n / 2) + n / 4]) c++;
-    if (c <= 1 && ds[rb_genrand_ulong_limited(n / 2) + n / 4]) c++;
-    if (c <= 1 && ds[rb_genrand_ulong_limited(n / 2) + n / 4]) c++;
+    if (          ds[2 * n / 5]) c++;
+    if (c <= 1 && ds[    n / 2]) c++;
+    if (c <= 1 && ds[3 * n / 5]) c++;
 
     return (c <= 1) ? 1 : 0;
 }
@@ -3405,6 +3410,7 @@ rb_absint_numwords(VALUE val, size_t word_numbits, size_t *nlz_bits_ret)
             numwords0 = absint_numwords_generic(numbytes, nlz_bits_in_msbyte, word_numbits, &nlz_bits0);
             assert(numwords0 == numwords);
             assert(nlz_bits0 == nlz_bits);
+            (void)numwords0;
         }
 #endif
     }
@@ -3689,10 +3695,10 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
         if (u == 0)
             return LONG2FIX(0);
 	if (0 < sign && POSFIXABLE(u))
-            return LONG2FIX(u);
+            return LONG2FIX((long)u);
 	if (sign < 0 && BDIGIT_MSB(fixbuf[1]) == 0 &&
                 NEGFIXABLE(-(BDIGIT_DBL_SIGNED)u))
-            return LONG2FIX(-(BDIGIT_DBL_SIGNED)u);
+            return LONG2FIX((long)-(BDIGIT_DBL_SIGNED)u);
         val = bignew((long)num_bdigits, 0 <= sign);
         MEMCPY(BDIGITS(val), fixbuf, BDIGIT, num_bdigits);
     }
@@ -4487,14 +4493,14 @@ rb_ll2big(LONG_LONG n)
 VALUE
 rb_ull2inum(unsigned LONG_LONG n)
 {
-    if (POSFIXABLE(n)) return LONG2FIX(n);
+    if (POSFIXABLE(n)) return LONG2FIX((long)n);
     return rb_ull2big(n);
 }
 
 VALUE
 rb_ll2inum(LONG_LONG n)
 {
-    if (FIXABLE(n)) return LONG2FIX(n);
+    if (FIXABLE(n)) return LONG2FIX((long)n);
     return rb_ll2big(n);
 }
 
@@ -5385,7 +5391,7 @@ rb_integer_float_eq(VALUE x, VALUE y)
     double yd = RFLOAT_VALUE(y);
     double yi, yf;
 
-    if (isnan(yd) || isinf(yd))
+    if (!isfinite(yd))
         return Qfalse;
     yf = modf(yd, &yi);
     if (yf != 0)
@@ -5393,18 +5399,14 @@ rb_integer_float_eq(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
 #if SIZEOF_LONG * CHAR_BIT < DBL_MANT_DIG /* assume FLT_RADIX == 2 */
         double xd = (double)FIX2LONG(x);
-        if (xd != yd)
-            return Qfalse;
-        return Qtrue;
+        return RBOOL(xd == yd);
 #else
         long xn, yn;
         if (yi < LONG_MIN || LONG_MAX_as_double <= yi)
             return Qfalse;
         xn = FIX2LONG(x);
         yn = (long)yi;
-        if (xn != yn)
-            return Qfalse;
-        return Qtrue;
+        return RBOOL(xn == yn);
 #endif
     }
     y = rb_dbl2big(yi);
@@ -5474,10 +5476,10 @@ big_op(VALUE x, VALUE y, enum big_op_t op)
     n = FIX2INT(rel);
 
     switch (op) {
-	case big_op_gt: return n >  0 ? Qtrue : Qfalse;
-	case big_op_ge: return n >= 0 ? Qtrue : Qfalse;
-	case big_op_lt: return n <  0 ? Qtrue : Qfalse;
-	case big_op_le: return n <= 0 ? Qtrue : Qfalse;
+	case big_op_gt: return RBOOL(n >  0);
+	case big_op_ge: return RBOOL(n >= 0);
+	case big_op_lt: return RBOOL(n <  0);
+	case big_op_le: return RBOOL(n <= 0);
     }
     return Qundef;
 }
@@ -5512,7 +5514,7 @@ rb_big_le(VALUE x, VALUE y)
  *
  *  Returns <code>true</code> only if <i>obj</i> has the same value
  *  as <i>big</i>. Contrast this with Integer#eql?, which requires
- *  <i>obj</i> to be a Integer.
+ *  <i>obj</i> to be an Integer.
  *
  *     68719476736 == 68719476736.0   #=> true
  */
@@ -5521,7 +5523,7 @@ VALUE
 rb_big_eq(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-	return bignorm(x) == y ? Qtrue : Qfalse;
+	return RBOOL(bignorm(x) == y);
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
     }
@@ -5533,8 +5535,7 @@ rb_big_eq(VALUE x, VALUE y)
     }
     if (BIGNUM_SIGN(x) != BIGNUM_SIGN(y)) return Qfalse;
     if (BIGNUM_LEN(x) != BIGNUM_LEN(y)) return Qfalse;
-    if (MEMCMP(BDIGITS(x),BDIGITS(y),BDIGIT,BIGNUM_LEN(y)) != 0) return Qfalse;
-    return Qtrue;
+    return RBOOL(MEMCMP(BDIGITS(x),BDIGITS(y),BDIGIT,BIGNUM_LEN(y)) == 0);
 }
 
 VALUE
@@ -5543,8 +5544,7 @@ rb_big_eql(VALUE x, VALUE y)
     if (!RB_BIGNUM_TYPE_P(y)) return Qfalse;
     if (BIGNUM_SIGN(x) != BIGNUM_SIGN(y)) return Qfalse;
     if (BIGNUM_LEN(x) != BIGNUM_LEN(y)) return Qfalse;
-    if (MEMCMP(BDIGITS(x),BDIGITS(y),BDIGIT,BIGNUM_LEN(y)) != 0) return Qfalse;
-    return Qtrue;
+    return RBOOL(MEMCMP(BDIGITS(x),BDIGITS(y),BDIGIT,BIGNUM_LEN(y)) == 0);
 }
 
 VALUE
@@ -6827,10 +6827,7 @@ rb_big_bit_length(VALUE big)
 VALUE
 rb_big_odd_p(VALUE num)
 {
-    if (BIGNUM_LEN(num) != 0 && BDIGITS(num)[0] & 1) {
-	return Qtrue;
-    }
-    return Qfalse;
+    return RBOOL(BIGNUM_LEN(num) != 0 && BDIGITS(num)[0] & 1);
 }
 
 VALUE
@@ -6937,8 +6934,6 @@ rb_big_isqrt(VALUE n)
 	    bary_small_rshift(xds, xds, xn, 1, carry);
 	    tn = BIGNUM_LEN(t);
 	}
-	rb_big_realloc(t, 0);
-	rb_gc_force_recycle(t);
     }
     RBASIC_SET_CLASS_RAW(x, rb_cInteger);
     return x;
@@ -7136,6 +7131,7 @@ rb_int_powm(int const argc, VALUE * const argv, VALUE const num)
             long const half_val = (long)HALF_LONG_MSB;
             long const mm = FIX2LONG(m);
             if (!mm) rb_num_zerodiv();
+            if (mm == 1) return INT2FIX(0);
             if (mm <= half_val) {
                 return int_pow_tmp1(rb_int_modulo(a, m), b, mm, nega_flg);
             }
@@ -7145,6 +7141,7 @@ rb_int_powm(int const argc, VALUE * const argv, VALUE const num)
         }
         else {
             if (rb_bigzero_p(m)) rb_num_zerodiv();
+	    if (bignorm(m) == INT2FIX(1)) return INT2FIX(0);
             return int_pow_tmp3(rb_int_modulo(a, m), b, m, nega_flg);
         }
     }

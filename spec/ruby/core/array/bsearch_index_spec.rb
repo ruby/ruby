@@ -77,7 +77,7 @@ describe "Array#bsearch_index" do
         @array.bsearch_index { |x| (-1) * (2**100) }.should be_nil
       end
 
-      it "handles values from Bignum#coerce" do
+      it "handles values from Integer#coerce" do
         [1, 2].should include(@array.bsearch_index { |x| (2**100).coerce((1 - x / 4) * (2**100)).first })
       end
     end

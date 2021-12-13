@@ -190,6 +190,21 @@ INT2NUM() :: 任意の整数からVALUEへ
 INT2NUM()は整数がFIXNUMの範囲に収まらない場合，Bignumに変換
 してくれます(が，少し遅い)．
 
+Cの真偽値をRubyの +true+ または +false+ に変換する
+
+RBOOL() ::
+
+<code>RBOOL(v)</code> は _v_ が非0のとき +Qtrue+ ，それ以外
+の _v_ が0のとき +Qfalse+ を返します．
+
+注意: RBOOLは定義されているのはRuby 3.1以降なので，それより
+古いバージョンをサポートするプログラム中で使いたいときは，以
+下のような定義を追加しておく必要があるでしょう．
+
+    #ifndef RBOOL
+    #define RBOOL(v) ((v) ? Qtrue : Qfalse)
+    #endif
+
 === Rubyのデータを操作する
 
 先程も述べた通り，Rubyの構造体をアクセスする時に内容の更新を
@@ -617,11 +632,13 @@ C言語とRubyの間で情報を共有する方法について解説します．
 Qtrue ::
 Qfalse ::
 
-  真偽値．QfalseはC言語でも偽とみなされます(つまり0)．
+  真偽値．C言語から見た「true」と「false」．
 
 Qnil ::
 
   C言語から見た「nil」．
+
+RTEST(obj)というマクロはobjがQfalseかQnilのとき0を返します．
 
 === CとRubyで共有される大域変数
 
@@ -697,30 +714,28 @@ Cの世界で定義されたデータ(構造体)をRubyのオブジェクトと�
 
 このマクロの戻り値は生成されたオブジェクトを表すVALUE値です．
 
-klassはこのオブジェクトのクラスです．data_typeはこの構造体を
-Rubyが管理するための情報を記述したconst rb_data_type_t型への
-ポインタです．
+klassはこのオブジェクトのクラスです．klassは, Objectクラスか
+ら派生し, 必ずrb_define_alloc_funcかrb_undef_alloc_funcを呼
+び出してallocatorを設定してください．
 
-なお, klassは, Objectや他のクラスではなくData (rb_cData)とい
-う特別なクラスから派生することが推奨されます．
-Dataから派生しない場合には, 必ずrb_undef_alloc_func(klass)
-を呼び出してください．
+data_typeはこの構造体をRubyが管理するための情報を記述した
+const rb_data_type_t型へのポインタです．
 
 rb_data_type_tは次のように定義されています．
 
   typedef struct rb_data_type_struct rb_data_type_t;
 
   struct rb_data_type_struct {
-          const char *wrap_struct_name;
-          struct {
-                  void (*dmark)(void*);
-                  void (*dfree)(void*);
-                  size_t (*dsize)(const void *);
-                  void *reserved[2];
-          } function;
-          const rb_data_type_t *parent;
-          void *data;
-          VALUE flags;
+      const char *wrap_struct_name;
+      struct {
+          void (*dmark)(void*);
+          void (*dfree)(void*);
+          size_t (*dsize)(const void *);
+          void *reserved[2];
+      } function;
+      const rb_data_type_t *parent;
+      void *data;
+      VALUE flags;
   };
 
 wrap_struct_nameはこの構造体を識別する名前です．主に統計情報
@@ -743,8 +758,8 @@ dmarkはガーベージコレクタがオブジェクトへの参照をマーク
 ++
 
 dfreeはこの構造体がもう不要になった時に呼ばれる関数です．こ
-の関数がガーベージコレクタから呼ばれます．これが-1の場合は，
-単純に構造体が解放されます．
+の関数がガーベージコレクタから呼ばれます．これが
+RUBY_DEFAULT_FREEの場合は，単純に構造体が解放されます．
 
 dsizeは構造体が消費しているメモリのバイト数を返す関数です．
 引数として構造体へのポインタが渡されます．実装困難であれば0
@@ -1108,9 +1123,8 @@ lex.c         :: 自動生成
     -> opt*.inc            : 自動生成
     -> vm.inc              : 自動生成
 
-=== 正規表現エンジン (鬼車)
+=== 正規表現エンジン (鬼雲)
 
-  regex.c
   regcomp.c
   regenc.c
   regerror.c
@@ -1828,6 +1842,17 @@ rb_ary_store() などの，適切な API 関数を利用するようにして下
 
 そのほか，対応についての詳細は extension.rdoc の「Appendix D. Generational
 GC」を参照して下さい．
+
+== Appendix E. Ractor サポート
+
+Ruby 3.0 から、Ruby プログラムを並列に実行するための仕組みである Ractor
+が導入されました。適切に並列に実行するためには、Ractor サポートが必要に
+なります。サポートしていないライブラリは、メイン Ractor 以外で実行すると
+エラーになります（Ractor::UnsafeError）。
+
+Ractor をサポートするための詳細は、extension.rdoc の「Appendix F. Ractor
+support」を参照してください。
+
 
 :enddoc: Local variables:
 :enddoc: fill-column: 60

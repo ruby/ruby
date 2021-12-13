@@ -5,5 +5,5 @@ require_relative 'shared/codepoints'
 
 # See redmine #1667
 describe "StringIO#each_codepoint" do
-  it_behaves_like :stringio_codepoints, :codepoints
+  it_behaves_like :stringio_codepoints, :each_codepoint
 end

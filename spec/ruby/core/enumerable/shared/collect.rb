@@ -51,7 +51,20 @@ describe :enumerable_collect, shared: true do
     ScratchPad.recorded.should == [1]
   end
 
-  it "yields 2 arguments for a Hash" do
+  it "yields an Array of 2 elements for a Hash when block arity is 1" do
+    c = Class.new do
+      def register(a)
+        ScratchPad << a
+      end
+    end
+    m = c.new.method(:register)
+
+    ScratchPad.record []
+    { 1 => 'a', 2 => 'b' }.map(&m)
+    ScratchPad.recorded.should == [[1, 'a'], [2, 'b']]
+  end
+
+  it "yields 2 arguments for a Hash when block arity is 2" do
     c = Class.new do
       def register(a, b)
         ScratchPad << [a, b]
@@ -62,6 +75,32 @@ describe :enumerable_collect, shared: true do
     ScratchPad.record []
     { 1 => 'a', 2 => 'b' }.map(&m)
     ScratchPad.recorded.should == [[1, 'a'], [2, 'b']]
+  end
+
+  it "raises an error for a Hash when an arity enforcing block of arity >2 is passed in" do
+    c = Class.new do
+      def register(a, b, c)
+      end
+    end
+    m = c.new.method(:register)
+
+    -> do
+      { 1 => 'a', 2 => 'b' }.map(&m)
+    end.should raise_error(ArgumentError)
+  end
+
+  it "calls the each method on sub-classes" do
+    c = Class.new(Hash) do
+      def each
+        ScratchPad << 'in each'
+        super
+      end
+    end
+    h = c.new
+    h[1] = 'a'
+    ScratchPad.record []
+    h.send(@method) { |k,v| v }
+    ScratchPad.recorded.should == ['in each']
   end
 
   it_should_behave_like :enumerable_enumeratorized_with_origin_size

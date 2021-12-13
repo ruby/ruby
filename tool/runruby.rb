@@ -11,6 +11,8 @@ when ENV['RUNRUBY_USE_GDB'] == 'true'
   debugger = :gdb
 when ENV['RUNRUBY_USE_LLDB'] == 'true'
   debugger = :lldb
+when ENV['RUNRUBY_YJIT_STATS']
+  use_yjit_stat = true
 end
 while arg = ARGV[0]
   break ARGV.shift if arg == '--'
@@ -164,6 +166,9 @@ if debugger
 end
 
 cmd = [runner || ruby]
+if use_yjit_stat
+  cmd << '--yjit-stats'
+end
 cmd.concat(ARGV)
 cmd.unshift(*precommand) unless precommand.empty?
 

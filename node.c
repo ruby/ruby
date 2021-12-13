@@ -26,10 +26,10 @@
 #define A_ID(id) add_id(buf, (id))
 #define A_INT(val) rb_str_catf(buf, "%d", (val))
 #define A_LONG(val) rb_str_catf(buf, "%ld", (val))
-#define A_LIT(lit) AR(rb_inspect(lit))
+#define A_LIT(lit) AR(rb_dump_literal(lit))
 #define A_NODE_HEADER(node, term) \
-    rb_str_catf(buf, "@ %s (line: %d, location: (%d,%d)-(%d,%d))%s"term, \
-		ruby_node_name(nd_type(node)), nd_line(node), \
+    rb_str_catf(buf, "@ %s (id: %d, line: %d, location: (%d,%d)-(%d,%d))%s"term, \
+		ruby_node_name(nd_type(node)), nd_node_id(node), nd_line(node), \
 		nd_first_lineno(node), nd_first_column(node), \
 		nd_last_lineno(node), nd_last_column(node), \
 		(node->flags & NODE_FL_NEWLINE ? "*" : ""))
@@ -79,6 +79,25 @@
 
 #define LAST_NODE (next_indent = "    ")
 
+VALUE
+rb_dump_literal(VALUE lit)
+{
+    if (!RB_SPECIAL_CONST_P(lit)) {
+        VALUE str;
+        switch (RB_BUILTIN_TYPE(lit)) {
+          case T_CLASS: case T_MODULE: case T_ICLASS:
+            str = rb_class_path(lit);
+            if (FL_TEST(lit, FL_SINGLETON)) {
+                str = rb_sprintf("<%"PRIsVALUE">", str);
+            }
+            return str;
+          default:
+            break;
+        }
+    }
+    return rb_inspect(lit);
+}
+
 static void
 add_indent(VALUE buf, VALUE indent)
 {
@@ -117,7 +136,7 @@ dump_array(VALUE buf, VALUE indent, int comment, const NODE *node)
     const char *next_indent = default_indent;
     F_LONG(nd_alen, "length");
     F_NODE(nd_head, "element");
-    while (node->nd_next && nd_type(node->nd_next) == NODE_LIST) {
+    while (node->nd_next && nd_type_p(node->nd_next, NODE_LIST)) {
 	node = node->nd_next;
 	F_NODE(nd_head, "element");
     }
@@ -156,7 +175,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	    dump_node(buf, indent, comment, node->nd_head);
 	    D_DEDENT;
 	} while (node->nd_next &&
-		 nd_type(node->nd_next) == NODE_BLOCK &&
+		 nd_type_p(node->nd_next, NODE_BLOCK) &&
 		 (node = node->nd_next, 1));
 	if (node->nd_next) {
 	    LAST_NODE;
@@ -351,7 +370,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
       andor:
 	while (1) {
 	    F_NODE(nd_1st, "left expr");
-	    if (!node->nd_2nd || nd_type(node->nd_2nd) != (int)type)
+	    if (!node->nd_2nd || !nd_type_p(node->nd_2nd, type))
 		break;
 	    node = node->nd_2nd;
 	}
@@ -388,16 +407,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	}
 	return;
       case NODE_DASGN:
-	ANN("dynamic variable assignment (out of current scope)");
+	ANN("dynamic variable assignment");
 	ANN("format: [nd_vid](dvar) = [nd_value]");
 	ANN("example: x = nil; 1.times { x = foo }");
-	F_ID(nd_vid, "local variable");
-	LAST_NODE;
-	F_NODE(nd_value, "rvalue");
-	return;
-      case NODE_DASGN_CURR:
-	ANN("dynamic variable assignment (in current scope)");
-	ANN("format: [nd_vid](current dvar) = [nd_value]");
 	ANN("example: 1.times { x = foo }");
 	F_ID(nd_vid, "local variable");
 	if (NODE_REQUIRED_KEYWORD_P(node)) {
@@ -658,10 +670,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	ANN("format: $[nd_nth]");
 	ANN("example: $&, $`, $', $+");
 	F_CUSTOM1(nd_nth, "variable") {
-	    char name[3];
-	    name[0] = '$';
+	    char name[3] = "$ ";
 	    name[1] = (char)node->nd_nth;
-	    name[2] = '\0';
 	    A(name);
 	}
 	return;
@@ -741,6 +751,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	ANN("example: :\"foo#{ bar }baz\"");
       dlit:
 	F_LIT(nd_lit, "preceding string");
+	if (!node->nd_next) return;
 	F_NODE(nd_next->nd_head, "interpolation");
 	LAST_NODE;
 	F_NODE(nd_next->nd_next, "tailing strings");
@@ -999,8 +1010,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 
       case NODE_ARGS:
 	ANN("method parameters");
-	ANN("format: def method_name(.., [nd_opt=some], *[nd_rest], [nd_pid], .., &[nd_body])");
-	ANN("example: def foo(a, b, opt1=1, opt2=2, *rest, y, z, &blk); end");
+	ANN("format: def method_name(.., [nd_ainfo->nd_optargs], *[nd_ainfo->rest_arg], [nd_ainfo->first_post_arg], .., [nd_ainfo->kw_args], **[nd_ainfo->kw_rest_arg], &[nd_ainfo->block_arg])");
+	ANN("example: def foo(a, b, opt1=1, opt2=2, *rest, y, z, kw: 1, **kwrest, &blk); end");
 	F_INT(nd_ainfo->pre_args_num, "count of mandatory (pre-)arguments");
 	F_NODE(nd_ainfo->pre_init, "initialization of (pre-)arguments");
 	F_INT(nd_ainfo->post_args_num, "count of mandatory post-arguments");
@@ -1025,12 +1036,12 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	ANN("new scope");
 	ANN("format: [nd_tbl]: local table, [nd_args]: arguments, [nd_body]: body");
 	F_CUSTOM1(nd_tbl, "local table") {
-	    ID *tbl = node->nd_tbl;
+	    rb_ast_id_table_t *tbl = node->nd_tbl;
 	    int i;
-	    int size = tbl ? (int)*tbl++ : 0;
+	    int size = tbl ? tbl->size : 0;
 	    if (size == 0) A("(empty)");
 	    for (i = 0; i < size; i++) {
-		A_ID(tbl[i]); if (i < size - 1) A(",");
+		A_ID(tbl->ids[i]); if (i < size - 1) A(",");
 	    }
 	}
 	F_NODE(nd_args, "arguments");
@@ -1119,7 +1130,7 @@ void
 rb_node_init(NODE *n, enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 {
     n->flags = T_NODE;
-    nd_set_type(n, type);
+    nd_init_type(n, type);
     n->u1.value = a0;
     n->u2.value = a1;
     n->u3.value = a2;
@@ -1144,6 +1155,7 @@ typedef struct {
 struct node_buffer_struct {
     node_buffer_list_t unmarkable;
     node_buffer_list_t markable;
+    struct rb_ast_local_table_link *local_tables;
     VALUE mark_hash;
 };
 
@@ -1169,6 +1181,7 @@ rb_node_buffer_new(void)
     node_buffer_t *nb = ruby_xmalloc(alloc_size);
     init_node_buffer_list(&nb->unmarkable, (node_buffer_elem_t*)&nb[1]);
     init_node_buffer_list(&nb->markable, (node_buffer_elem_t*)((size_t)nb->unmarkable.head + bucket_size));
+    nb->local_tables = 0;
     nb->mark_hash = Qnil;
     return nb;
 }
@@ -1185,11 +1198,25 @@ node_buffer_list_free(node_buffer_list_t * nb)
     }
 }
 
+struct rb_ast_local_table_link {
+    struct rb_ast_local_table_link *next;
+    // struct rb_ast_id_table {
+    int size;
+    ID ids[FLEX_ARY_LEN];
+    // }
+};
+
 static void
 rb_node_buffer_free(node_buffer_t *nb)
 {
     node_buffer_list_free(&nb->unmarkable);
     node_buffer_list_free(&nb->markable);
+    struct rb_ast_local_table_link *local_table = nb->local_tables;
+    while (local_table) {
+        struct rb_ast_local_table_link *next_table = local_table->next;
+        xfree(local_table);
+        local_table = next_table;
+    }
     xfree(nb);
 }
 
@@ -1209,10 +1236,10 @@ ast_newnode_in_bucket(node_buffer_list_t *nb)
     return &nb->head->buf[nb->idx++];
 }
 
-NODE *
-rb_ast_newnode(rb_ast_t *ast, enum node_type type)
+RBIMPL_ATTR_PURE()
+static bool
+nodetype_markable_p(enum node_type type)
 {
-    node_buffer_t *nb = ast->node_buffer;
     switch (type) {
       case NODE_MATCH:
       case NODE_LIT:
@@ -1223,13 +1250,55 @@ rb_ast_newnode(rb_ast_t *ast, enum node_type type)
       case NODE_DREGX:
       case NODE_DSYM:
       case NODE_ARGS:
-      case NODE_SCOPE:
       case NODE_ARYPTN:
       case NODE_FNDPTN:
-        return ast_newnode_in_bucket(&nb->markable);
+        return true;
       default:
-        return ast_newnode_in_bucket(&nb->unmarkable);
+        return false;
     }
+}
+
+NODE *
+rb_ast_newnode(rb_ast_t *ast, enum node_type type)
+{
+    node_buffer_t *nb = ast->node_buffer;
+    node_buffer_list_t *bucket =
+        (nodetype_markable_p(type) ? &nb->markable : &nb->unmarkable);
+    return ast_newnode_in_bucket(bucket);
+}
+
+void
+rb_ast_node_type_change(NODE *n, enum node_type type)
+{
+    enum node_type old_type = nd_type(n);
+    if (nodetype_markable_p(old_type) != nodetype_markable_p(type)) {
+        rb_bug("node type changed: %s -> %s",
+               ruby_node_name(old_type), ruby_node_name(type));
+    }
+}
+
+rb_ast_id_table_t *
+rb_ast_new_local_table(rb_ast_t *ast, int size)
+{
+    size_t alloc_size = sizeof(struct rb_ast_local_table_link) + size * sizeof(ID);
+    struct rb_ast_local_table_link *link = ruby_xmalloc(alloc_size);
+    link->next = ast->node_buffer->local_tables;
+    ast->node_buffer->local_tables = link;
+    link->size = size;
+
+    return (rb_ast_id_table_t *) &link->size;
+}
+
+rb_ast_id_table_t *
+rb_ast_resize_latest_local_table(rb_ast_t *ast, int size)
+{
+    struct rb_ast_local_table_link *link = ast->node_buffer->local_tables;
+    size_t alloc_size = sizeof(struct rb_ast_local_table_link) + size * sizeof(ID);
+    link = ruby_xrealloc(link, alloc_size);
+    ast->node_buffer->local_tables = link;
+    link->size = size;
+
+    return (rb_ast_id_table_t *) &link->size;
 }
 
 void
@@ -1278,27 +1347,6 @@ static void
 mark_ast_value(void *ctx, NODE * node)
 {
     switch (nd_type(node)) {
-      case NODE_SCOPE:
-        {
-            ID *buf = node->nd_tbl;
-            if (buf) {
-                unsigned int size = (unsigned int)*buf;
-                rb_gc_mark_movable((VALUE)buf[size + 1]);
-            }
-            break;
-        }
-      case NODE_ARYPTN:
-        {
-            struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
-            rb_gc_mark_movable(apinfo->imemo);
-            break;
-        }
-      case NODE_FNDPTN:
-        {
-            struct rb_fnd_pattern_info *fpinfo = node->nd_fpinfo;
-            rb_gc_mark_movable(fpinfo->imemo);
-            break;
-        }
       case NODE_ARGS:
         {
             struct rb_args_info *args = node->nd_ainfo;
@@ -1315,6 +1363,10 @@ mark_ast_value(void *ctx, NODE * node)
       case NODE_DSYM:
         rb_gc_mark_movable(node->nd_lit);
         break;
+      case NODE_ARYPTN:
+      case NODE_FNDPTN:
+        rb_gc_mark_movable(node->nd_rval);
+        break;
       default:
         rb_bug("unreachable node %s", ruby_node_name(nd_type(node)));
     }
@@ -1324,33 +1376,13 @@ static void
 update_ast_value(void *ctx, NODE * node)
 {
     switch (nd_type(node)) {
-      case NODE_SCOPE:
-        {
-            ID *buf = node->nd_tbl;
-            if (buf) {
-                unsigned int size = (unsigned int)*buf;
-                buf[size + 1] = rb_gc_location((VALUE)buf[size + 1]);
-            }
-            break;
-        }
-      case NODE_ARYPTN:
-        {
-            struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
-            apinfo->imemo = rb_gc_location(apinfo->imemo);
-            break;
-        }
-      case NODE_FNDPTN:
-        {
-            struct rb_fnd_pattern_info *fpinfo = node->nd_fpinfo;
-            fpinfo->imemo = rb_gc_location(fpinfo->imemo);
-            break;
-        }
       case NODE_ARGS:
         {
             struct rb_args_info *args = node->nd_ainfo;
             args->imemo = rb_gc_location(args->imemo);
             break;
         }
+      case NODE_MATCH:
       case NODE_LIT:
       case NODE_STR:
       case NODE_XSTR:
@@ -1359,6 +1391,10 @@ update_ast_value(void *ctx, NODE * node)
       case NODE_DREGX:
       case NODE_DSYM:
         node->nd_lit = rb_gc_location(node->nd_lit);
+        break;
+      case NODE_ARYPTN:
+      case NODE_FNDPTN:
+        node->nd_rval = rb_gc_location(node->nd_rval);
         break;
       default:
         rb_bug("unreachable");
@@ -1385,6 +1421,7 @@ rb_ast_mark(rb_ast_t *ast)
 
         iterate_node_values(&nb->markable, mark_ast_value, NULL);
     }
+    if (ast->body.script_lines) rb_gc_mark(ast->body.script_lines);
 }
 
 void

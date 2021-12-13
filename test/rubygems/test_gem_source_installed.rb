@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/source'
 
 class TestGemSourceInstalled < Gem::TestCase
-
   def test_spaceship
     a1 = quick_gem 'a', '1'
     util_build_gem a1
@@ -32,5 +31,4 @@ class TestGemSourceInstalled < Gem::TestCase
     assert_equal(1, vendor.<=>(installed), 'vendor <=> installed')
     assert_equal(-1, installed.<=>(vendor), 'installed <=> vendor')
   end
-
 end

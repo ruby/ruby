@@ -101,6 +101,11 @@ class CGICookieTest < Test::Unit::TestCase
     end
   end
 
+  def test_cgi_cookie_parse_not_decode_name
+    cookie_str = "%66oo=baz;foo=bar"
+    cookies = CGI::Cookie.parse(cookie_str)
+    assert_equal({"%66oo" => ["baz"], "foo" => ["bar"]}, cookies)
+  end
 
   def test_cgi_cookie_arrayinterface
     cookie = CGI::Cookie.new('name1', 'a', 'b', 'c')

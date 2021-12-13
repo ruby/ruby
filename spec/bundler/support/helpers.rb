@@ -10,7 +10,7 @@ module Spec
 
     def reset!
       Dir.glob("#{tmp}/{gems/*,*}", File::FNM_DOTMATCH).each do |dir|
-        next if %w[base base_system remote1 gems rubygems . ..].include?(File.basename(dir))
+        next if %w[base base_system remote1 rubocop standard gems rubygems . ..].include?(File.basename(dir))
         FileUtils.rm_rf(dir)
       end
       FileUtils.mkdir_p(home)
@@ -60,7 +60,7 @@ module Spec
     def run(cmd, *args)
       opts = args.last.is_a?(Hash) ? args.pop : {}
       groups = args.map(&:inspect).join(", ")
-      setup = "require '#{lib_dir}/bundler' ; Bundler.ui.silence { Bundler.setup(#{groups}) }"
+      setup = "require '#{entrypoint}' ; Bundler.ui.silence { Bundler.setup(#{groups}) }"
       ruby([setup, cmd].join(" ; "), opts)
     end
 
@@ -87,9 +87,11 @@ module Spec
       env = options.delete(:env) || {}
 
       requires = options.delete(:requires) || []
+      realworld = RSpec.current_example.metadata[:realworld]
+      options[:verbose] = true if options[:verbose].nil? && realworld
 
       artifice = options.delete(:artifice) do
-        if RSpec.current_example.metadata[:realworld]
+        if realworld
           "vcr"
         else
           "fail"
@@ -130,7 +132,7 @@ module Spec
 
     def ruby(ruby, options = {})
       ruby_cmd = build_ruby_cmd
-      escaped_ruby = RUBY_PLATFORM == "java" ? ruby.shellescape.dump : ruby.shellescape
+      escaped_ruby = ruby.shellescape
       sys_exec(%(#{ruby_cmd} -w -e #{escaped_ruby}), options)
     end
 
@@ -218,7 +220,7 @@ module Spec
     end
 
     def all_commands_output
-      return [] if command_executions.empty?
+      return "" if command_executions.empty?
 
       "\n\nCommands:\n#{command_executions.map(&:to_s_verbose).join("\n\n")}"
     end
@@ -275,14 +277,12 @@ module Spec
     def install_gemfile(*args)
       gemfile(*args)
       opts = args.last.is_a?(Hash) ? args.last : {}
-      opts[:retry] ||= 0
       bundle :install, opts
     end
 
     def lock_gemfile(*args)
       gemfile(*args)
       opts = args.last.is_a?(Hash) ? args.last : {}
-      opts[:retry] ||= 0
       bundle :lock, opts
     end
 
@@ -290,26 +290,30 @@ module Spec
       gems = gems.flatten
       options = gems.last.is_a?(Hash) ? gems.pop : {}
       path = options.fetch(:path, system_gem_path)
+      default = options.fetch(:default, false)
       with_gem_path_as(path) do
         gem_repo = options.fetch(:gem_repo, gem_repo1)
         gems.each do |g|
           gem_name = g.to_s
           if gem_name.start_with?("bundler")
             version = gem_name.match(/\Abundler-(?<version>.*)\z/)[:version] if gem_name != "bundler"
-            with_built_bundler(version) {|gem_path| install_gem(gem_path) }
+            with_built_bundler(version) {|gem_path| install_gem(gem_path, default) }
           elsif gem_name =~ %r{\A(?:[a-zA-Z]:)?/.*\.gem\z}
-            install_gem(gem_name)
+            install_gem(gem_name, default)
           else
-            install_gem("#{gem_repo}/gems/#{gem_name}.gem")
+            install_gem("#{gem_repo}/gems/#{gem_name}.gem", default)
           end
         end
       end
     end
 
-    def install_gem(path)
+    def install_gem(path, default = false)
       raise "OMG `#{path}` does not exist!" unless File.exist?(path)
 
-      gem_command "install --no-document --ignore-dependencies '#{path}'"
+      args = "--no-document --ignore-dependencies"
+      args += " --default --install-dir #{system_gem_path}" if default
+
+      gem_command "install #{args} '#{path}'"
     end
 
     def with_built_bundler(version = nil)
@@ -330,12 +334,7 @@ module Spec
 
         replace_version_file(version, dir: build_path) # rubocop:disable Style/HashSyntax
 
-        build_metadata = {
-          :built_at => loaded_gemspec.date.utc.strftime("%Y-%m-%d"),
-          :git_commit_sha => git_commit_sha,
-        }
-
-        replace_build_metadata(build_metadata, dir: build_path) # rubocop:disable Style/HashSyntax
+        Spec::BuildMetadata.write_build_metadata(dir: build_path) # rubocop:disable Style/HashSyntax
 
         gem_command "build #{relative_gemspec}", :dir => build_path
 
@@ -458,20 +457,15 @@ module Spec
     end
 
     def simulate_windows(platform = mswin)
-      old = ENV["BUNDLER_SPEC_WINDOWS"]
-      ENV["BUNDLER_SPEC_WINDOWS"] = "true"
       simulate_platform platform do
         simulate_bundler_version_when_missing_prerelease_default_gem_activation do
           yield
         end
       end
-    ensure
-      ENV["BUNDLER_SPEC_WINDOWS"] = old
     end
 
-    # workaround for missing https://github.com/rubygems/rubygems/commit/929e92d752baad3a08f3ac92eaec162cb96aedd1
     def simulate_bundler_version_when_missing_prerelease_default_gem_activation
-      return yield unless Gem.rubygems_version < Gem::Version.new("3.1.0.pre.1")
+      return yield unless rubygems_version_failing_to_activate_bundler_prereleases
 
       old = ENV["BUNDLER_VERSION"]
       ENV["BUNDLER_VERSION"] = Bundler::VERSION
@@ -480,13 +474,18 @@ module Spec
       ENV["BUNDLER_VERSION"] = old
     end
 
-    # workaround for missing https://github.com/rubygems/rubygems/commit/929e92d752baad3a08f3ac92eaec162cb96aedd1
     def env_for_missing_prerelease_default_gem_activation
-      if Gem.rubygems_version < Gem::Version.new("3.1.0.pre.1")
+      if rubygems_version_failing_to_activate_bundler_prereleases
         { "BUNDLER_VERSION" => Bundler::VERSION }
       else
         {}
       end
+    end
+
+    # versions providing a bundler version finder but not including
+    # https://github.com/rubygems/rubygems/commit/929e92d752baad3a08f3ac92eaec162cb96aedd1
+    def rubygems_version_failing_to_activate_bundler_prereleases
+      Gem.rubygems_version < Gem::Version.new("3.1.0.pre.1") && Gem.rubygems_version >= Gem::Version.new("2.7.0")
     end
 
     def revision_for(path)
@@ -570,7 +569,7 @@ module Spec
       port
     end
 
-  private
+    private
 
     def git_root_dir?
       root.to_s == `git rev-parse --show-toplevel`.chomp

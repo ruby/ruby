@@ -8,7 +8,7 @@ Spec are grouped in 5 separate top-level groups:
 
 * `command_line`: for the ruby executable command-line flags (`-v`, `-e`, etc)
 * `language`: for the language keywords and syntax constructs (`if`, `def`, `A::B`, etc)
-* `core`: for the core methods (`Fixnum#+`, `String#upcase`, no need to require anything)
+* `core`: for the core methods (`Integer#+`, `String#upcase`, no need to require anything)
 * `library`: for the standard libraries methods (`CSV.new`, `YAML.parse`, need to require the stdlib)
 * `optional/capi`: for functions available to the Ruby C-extension API
 
@@ -89,7 +89,7 @@ File.should.equal?(File) # Calls #equal? (tests identity)
 Numeric.should be_ancestor_of(Float) # Float.ancestors.include?(Numeric)
 
 3.14.should.respond_to?(:to_i)
-Fixnum.should have_instance_method(:+)
+Integer.should have_instance_method(:+)
 Array.should have_method(:new)
 ```
 
@@ -136,11 +136,11 @@ Here is a list of the most commonly-used guards:
 #### Version guards
 
 ```ruby
-ruby_version_is ""..."2.6 do
+ruby_version_is ""..."2.6" do
   # Specs for RUBY_VERSION < 2.6
 end
 
-ruby_version_is "2.6 do
+ruby_version_is "2.6" do
   # Specs for RUBY_VERSION >= 2.6
 end
 ```
@@ -178,7 +178,7 @@ First, file a bug at https://bugs.ruby-lang.org/.
 It is better to use a `ruby_version_is` guard if there was a release with the fix.
 
 ```ruby
-ruby_bug '#13669', ''...'2.5' do
+ruby_bug '#13669', ''...'2.7' do
   it "works like this" do
     # Specify the expected behavior here, not the bug
   end

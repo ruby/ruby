@@ -149,8 +149,16 @@
 # For the last example, single-digit versions are automatically extended with
 # a zero to give a sensible result.
 
-class Gem::Version
+# Our code style opens classes directly without opening the intermediate
+# modules. This works because tha main entrypoint `rubygems.rb`, which defines
+# the root `Gem` module, is usually required first. But in this case we want to
+# allow using `Gem::Version` without loading the rest of rubygems, so we
+# explicit define the `Gem` placeholder module first.
+module Gem; end
 
+require_relative "deprecate"
+
+class Gem::Version
   autoload :Requirement, File.expand_path('requirement', __dir__)
 
   include Comparable
@@ -404,5 +412,4 @@ class Gem::Version
     numeric_segments = string_segments.slice!(0, string_start || string_segments.size)
     return numeric_segments, string_segments
   end
-
 end

@@ -1,6 +1,6 @@
 # coding: US-ASCII
 # frozen_string_literal: false
-require_relative 'helper'
+require 'logger'
 require 'tempfile'
 require 'tmpdir'
 
@@ -451,7 +451,7 @@ class TestLogDevice < Test::Unit::TestCase
     end
   ensure
     logdev0.close
-  end unless /mswin|mingw/ =~ RUBY_PLATFORM
+  end unless /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
 
   def test_shifting_midnight
     Dir.mktmpdir do |tmpdir|

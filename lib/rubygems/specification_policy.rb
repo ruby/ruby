@@ -1,7 +1,6 @@
-require 'rubygems/user_interaction'
+require_relative 'user_interaction'
 
 class Gem::SpecificationPolicy
-
   include Gem::UserInteraction
 
   VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/.freeze # :nodoc:
@@ -125,25 +124,26 @@ class Gem::SpecificationPolicy
     end
 
     metadata.each do |key, value|
+      entry = "metadata['#{key}']"
       if !key.kind_of?(String)
         error "metadata keys must be a String"
       end
 
       if key.size > 128
-        error "metadata key too large (#{key.size} > 128)"
+        error "metadata key is too large (#{key.size} > 128)"
       end
 
       if !value.kind_of?(String)
-        error "metadata values must be a String"
+        error "#{entry} value must be a String"
       end
 
       if value.size > 1024
-        error "metadata value too large (#{value.size} > 1024)"
+        error "#{entry} value is too large (#{value.size} > 1024)"
       end
 
       if METADATA_LINK_KEYS.include? key
         if value !~ VALID_URI_PATTERN
-          error "metadata['#{key}'] has invalid link: #{value.inspect}"
+          error "#{entry} has invalid link: #{value.inspect}"
         end
       end
     end
@@ -381,7 +381,7 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
   end
 
   LAZY = '"FIxxxXME" or "TOxxxDO"'.gsub(/xxx/, '')
-  LAZY_PATTERN = /FI XME|TO DO/x.freeze
+  LAZY_PATTERN = /\AFI XME|\ATO DO/x.freeze
   HOMEPAGE_URI_PATTERN = /\A[a-z][a-z\d+.-]*:/i.freeze
 
   def validate_lazy_metadata
@@ -483,5 +483,4 @@ You have specified rake based extension, but rake is not added as dependency. It
   def help_text # :nodoc:
     "See https://guides.rubygems.org/specification-reference/ for help"
   end
-
 end

@@ -1,20 +1,17 @@
 # frozen_string_literal: true
 
 class Gem::Request::ConnectionPools # :nodoc:
-
   @client = Net::HTTP
 
   class << self
-
     attr_accessor :client
-
   end
 
   def initialize(proxy_uri, cert_files)
     @proxy_uri  = proxy_uri
     @cert_files = cert_files
     @pools      = {}
-    @pool_mutex = Mutex.new
+    @pool_mutex = Thread::Mutex.new
   end
 
   def pool_for(uri)
@@ -95,5 +92,4 @@ class Gem::Request::ConnectionPools # :nodoc:
       net_http_args
     end
   end
-
 end

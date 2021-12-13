@@ -102,13 +102,13 @@ describe "C-API Thread function" do
   end
 
   describe "rb_thread_call_without_gvl" do
-    it "runs a C function with the global lock unlocked" do
+    it "runs a C function with the global lock unlocked and can be woken by Thread#wakeup" do
       thr = Thread.new do
         @t.rb_thread_call_without_gvl
       end
 
       # Wait until it's blocking...
-      Thread.pass while thr.status and thr.status != "sleep"
+      Thread.pass until thr.stop?
 
       # The thread status is set to sleep by rb_thread_call_without_gvl(),
       # but the thread might not be in the blocking read(2) yet, so wait a bit.
@@ -121,14 +121,48 @@ describe "C-API Thread function" do
       thr.value.should be_true
     end
 
-    guard -> { platform_is :mingw and ruby_version_is ""..."2.7" } do
+    platform_is_not :windows do
+      it "runs a C function with the global lock unlocked and can be woken by a signal" do
+        # Ruby signal handlers run on the main thread, so we need to reverse roles here and have a thread interrupt us
+        thr = Thread.current
+        thr.should == Thread.main
+
+        going_to_block = false
+        interrupter = Thread.new do
+          # Wait until it's blocking...
+          Thread.pass until going_to_block and thr.stop?
+
+          # The thread status is set to sleep by rb_thread_call_without_gvl(),
+          # but the thread might not be in the blocking read(2) yet, so wait a bit.
+          sleep 0.1
+
+          # Wake it up by sending a signal
+          done = false
+          prev_handler = Signal.trap(:HUP) { done = true }
+          begin
+            Process.kill :HUP, Process.pid
+            sleep 0.001 until done
+          ensure
+            Signal.trap(:HUP, prev_handler)
+          end
+        end
+
+        going_to_block = true
+        # Make sure it stopped and we got a proper value
+        @t.rb_thread_call_without_gvl.should be_true
+
+        interrupter.join
+      end
+    end
+
+    platform_is_not :mingw do
       it "runs a C function with the global lock unlocked and unlocks IO with the generic RUBY_UBF_IO" do
         thr = Thread.new do
           @t.rb_thread_call_without_gvl_with_ubf_io
         end
 
         # Wait until it's blocking...
-        Thread.pass while thr.status and thr.status != "sleep"
+        Thread.pass until thr.stop?
 
         # The thread status is set to sleep by rb_thread_call_without_gvl(),
         # but the thread might not be in the blocking read(2) yet, so wait a bit.

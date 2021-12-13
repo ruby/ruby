@@ -79,4 +79,10 @@ RSpec.describe Bundler::Plugin::API::Source do
       end
     end
   end
+
+  describe "to_s" do
+    it "returns the string with type and uri" do
+      expect(source.to_s).to eq("plugin source for spec_type with uri uri://to/test")
+    end
+  end
 end

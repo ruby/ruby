@@ -330,7 +330,7 @@ rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
  * * Errno::EOPNOTSUPP - the calling +socket+ is listening and cannot be connected
  * * Errno::EPROTOTYPE - the _sockaddr_ has a different type than the socket
  *   bound to the specified peer address
- * * Errno::ETIMEDOUT - the attempt to connect time out before a connection
+ * * Errno::ETIMEDOUT - the attempt to connect timed out before a connection
  *   was made.
  *
  * On unix-based systems if the address family of the calling +socket+ is
@@ -371,7 +371,7 @@ rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
  * * Errno::EHOSTUNREACH - no route to the network is present
  * * Errno::ENOBUFS - no buffer space is available
  * * Errno::ENOTSOCK - the +socket+ argument does not refer to a socket
- * * Errno::ETIMEDOUT - the attempt to connect time out before a connection
+ * * Errno::ETIMEDOUT - the attempt to connect timed out before a connection
  *   was made.
  * * Errno::EWOULDBLOCK - the socket is marked as nonblocking and the
  *   connection cannot be completed immediately
@@ -393,7 +393,7 @@ sock_connect(VALUE sock, VALUE addr)
     addr = rb_str_new4(addr);
     GetOpenFile(sock, fptr);
     fd = fptr->fd;
-    n = rsock_connect(fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr), 0);
+    n = rsock_connect(fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr), 0, NULL);
     if (n < 0) {
 	rsock_sys_fail_raddrinfo_or_sockaddr("connect(2)", addr, rai);
     }
@@ -750,17 +750,14 @@ sock_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str, VALUE ex)
  *
  */
 static VALUE
-sock_accept(VALUE sock)
+sock_accept(VALUE server)
 {
-    rb_io_t *fptr;
-    VALUE sock2;
-    union_sockaddr buf;
-    socklen_t len = (socklen_t)sizeof buf;
+    union_sockaddr buffer;
+    socklen_t length = (socklen_t)sizeof(buffer);
 
-    GetOpenFile(sock, fptr);
-    sock2 = rsock_s_accept(rb_cSocket,fptr->fd,&buf.addr,&len);
+    VALUE peer = rsock_s_accept(rb_cSocket, server, &buffer.addr, &length);
 
-    return rb_assoc_new(sock2, rsock_io_socket_addrinfo(sock2, &buf.addr, len));
+    return rb_assoc_new(peer, rsock_io_socket_addrinfo(peer, &buffer.addr, length));
 }
 
 /* :nodoc: */
@@ -820,17 +817,14 @@ sock_accept_nonblock(VALUE sock, VALUE ex)
  * * Socket#accept
  */
 static VALUE
-sock_sysaccept(VALUE sock)
+sock_sysaccept(VALUE server)
 {
-    rb_io_t *fptr;
-    VALUE sock2;
-    union_sockaddr buf;
-    socklen_t len = (socklen_t)sizeof buf;
+    union_sockaddr buffer;
+    socklen_t length = (socklen_t)sizeof(buffer);
 
-    GetOpenFile(sock, fptr);
-    sock2 = rsock_s_accept(0,fptr->fd,&buf.addr,&len);
+    VALUE peer = rsock_s_accept(0, server, &buffer.addr, &length);
 
-    return rb_assoc_new(sock2, rsock_io_socket_addrinfo(sock2, &buf.addr, len));
+    return rb_assoc_new(peer, rsock_io_socket_addrinfo(peer, &buffer.addr, length));
 }
 
 #ifdef HAVE_GETHOSTNAME
@@ -965,6 +959,7 @@ sock_sockaddr(struct sockaddr *addr, socklen_t len)
 static VALUE
 sock_s_gethostbyname(VALUE obj, VALUE host)
 {
+    rb_warn("Socket.gethostbyname is deprecated; use Addrinfo.getaddrinfo instead.");
     struct rb_addrinfo *res =
 	rsock_addrinfo(host, Qnil, AF_UNSPEC, SOCK_STREAM, AI_CANONNAME);
     return rsock_make_hostent(host, res, sock_sockaddr);
@@ -1003,6 +998,8 @@ sock_s_gethostbyaddr(int argc, VALUE *argv, VALUE _)
     char **pch;
     VALUE ary, names;
     int t = AF_INET;
+
+    rb_warn("Socket.gethostbyaddr is deprecated; use Addrinfo#getnameinfo instead.");
 
     rb_scan_args(argc, argv, "11", &addr, &family);
     StringValue(addr);
@@ -1151,7 +1148,7 @@ sock_s_getservbyport(int argc, VALUE *argv, VALUE _)
  * be one of below.  If _reverse_lookup_ is omitted, the default value is +nil+.
  *
  *   +true+, +:hostname+:  hostname is obtained from numeric address using reverse lookup, which may take a time.
- *   +false+, +:numeric+:  hostname is same as numeric address.
+ *   +false+, +:numeric+:  hostname is the same as numeric address.
  *   +nil+:              obey to the current +do_not_reverse_lookup+ flag.
  *
  * If Addrinfo object is preferred, use Addrinfo.getaddrinfo.
@@ -1181,6 +1178,7 @@ sock_s_getaddrinfo(int argc, VALUE *argv, VALUE _)
     if (NIL_P(revlookup) || !rsock_revlookup_flag(revlookup, &norevlookup)) {
 	norevlookup = rsock_do_not_reverse_lookup;
     }
+
     res = rsock_getaddrinfo(host, port, &hints, 0);
 
     ret = make_addrinfo(res, norevlookup);
@@ -1214,7 +1212,6 @@ static VALUE
 sock_s_getnameinfo(int argc, VALUE *argv, VALUE _)
 {
     VALUE sa, af = Qnil, host = Qnil, port = Qnil, flags, tmp;
-    char *hptr, *pptr;
     char hbuf[1024], pbuf[1024];
     int fl;
     struct rb_addrinfo *res = NULL;
@@ -1275,34 +1272,10 @@ sock_s_getnameinfo(int argc, VALUE *argv, VALUE _)
 	    rb_raise(rb_eArgError, "array size should be 3 or 4, %ld given",
 		     RARRAY_LEN(sa));
 	}
-	/* host */
-	if (NIL_P(host)) {
-	    hptr = NULL;
-	}
-	else {
-	    strncpy(hbuf, StringValueCStr(host), sizeof(hbuf));
-	    hbuf[sizeof(hbuf) - 1] = '\0';
-	    hptr = hbuf;
-	}
-	/* port */
-	if (NIL_P(port)) {
-	    strcpy(pbuf, "0");
-	    pptr = NULL;
-	}
-	else if (FIXNUM_P(port)) {
-	    snprintf(pbuf, sizeof(pbuf), "%ld", NUM2LONG(port));
-	    pptr = pbuf;
-	}
-	else {
-	    strncpy(pbuf, StringValueCStr(port), sizeof(pbuf));
-	    pbuf[sizeof(pbuf) - 1] = '\0';
-	    pptr = pbuf;
-	}
 	hints.ai_socktype = (fl & NI_DGRAM) ? SOCK_DGRAM : SOCK_STREAM;
 	/* af */
         hints.ai_family = NIL_P(af) ? PF_UNSPEC : rsock_family_arg(af);
-	error = rb_getaddrinfo(hptr, pptr, &hints, &res);
-	if (error) goto error_exit_addr;
+	res = rsock_getaddrinfo(host, port, &hints, 0);
 	sap = res->ai->ai_addr;
         salen = res->ai->ai_addrlen;
     }
@@ -1331,12 +1304,6 @@ sock_s_getnameinfo(int argc, VALUE *argv, VALUE _)
 	rb_freeaddrinfo(res);
     }
     return rb_assoc_new(rb_str_new2(hbuf), rb_str_new2(pbuf));
-
-  error_exit_addr:
-    saved_errno = errno;
-    if (res) rb_freeaddrinfo(res);
-    errno = saved_errno;
-    rsock_raise_socket_error("getaddrinfo", error);
 
   error_exit_name:
     saved_errno = errno;
@@ -1890,6 +1857,8 @@ socket_s_ip_address_list(VALUE self)
 void
 Init_socket(void)
 {
+    rb_ext_ractor_safe(true);
+
     rsock_init_basicsocket();
 
     /*

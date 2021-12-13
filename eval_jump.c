@@ -48,7 +48,7 @@ rb_f_at_exit(VALUE _)
 }
 
 struct end_proc_data {
-    void (*func) ();
+    void (*func) (VALUE);
     VALUE data;
     struct end_proc_data *next;
 };

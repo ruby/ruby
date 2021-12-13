@@ -78,6 +78,77 @@ class TestException < Test::Unit::TestCase
     assert(!bad)
   end
 
+  def test_exception_in_ensure_with_next
+    string = "[ruby-core:82936] [Bug #13930]"
+    assert_raise_with_message(RuntimeError, string) do
+      lambda do
+        next
+      rescue
+        assert(false)
+      ensure
+        raise string
+      end.call
+      assert(false)
+    end
+
+    assert_raise_with_message(RuntimeError, string) do
+      flag = true
+      while flag
+        flag = false
+        begin
+          next
+        rescue
+          assert(false)
+        ensure
+          raise string
+        end
+      end
+    end
+
+    iseq = RubyVM::InstructionSequence.compile(<<-RUBY)
+    begin
+      while true
+        break
+      end
+    rescue
+    end
+    RUBY
+
+    assert_equal false, iseq.to_a[13].any?{|(e,_)| e == :throw}
+  end
+
+  def test_exception_in_ensure_with_redo
+    string = "[ruby-core:82936] [Bug #13930]"
+
+    assert_raise_with_message(RuntimeError, string) do
+      i = 0
+      lambda do
+        i += 1
+        redo if i < 2
+      rescue
+        assert(false)
+      ensure
+        raise string
+      end.call
+      assert(false)
+    end
+  end
+
+  def test_exception_in_ensure_with_return
+    @string = "[ruby-core:97104] [Bug #16618]"
+    def self.meow
+      return if true # This if modifier suppresses "warning: statement not reached"
+      assert(false)
+    rescue
+      assert(false)
+    ensure
+      raise @string
+    end
+    assert_raise_with_message(RuntimeError, @string) do
+      meow
+    end
+  end
+
   def test_errinfo_in_debug
     bug9568 = EnvUtil.labeled_class("[ruby-core:61091] [Bug #9568]", RuntimeError) do
       def to_s
@@ -489,6 +560,35 @@ end.join
     end;
   end
 
+  def test_ensure_after_nomemoryerror
+    skip "Forcing NoMemoryError causes problems in some environments"
+    assert_separately([], "$_ = 'a' * 1_000_000_000_000_000_000")
+  rescue NoMemoryError
+    assert_raise(NoMemoryError) do
+      assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+      bug15779 = bug15779 = '[ruby-core:92342]'
+      begin;
+        require 'open-uri'
+
+        begin
+          'a' * 1_000_000_000_000_000_000
+        ensure
+          URI.open('http://www.ruby-lang.org/')
+        end
+      end;
+    end
+  rescue Test::Unit::AssertionFailedError
+    # Possibly compiled with -DRUBY_DEBUG, in which
+    # case rb_bug is used instead of NoMemoryError,
+    # and we cannot test ensure after NoMemoryError.
+  rescue RangeError
+    # MingW can raise RangeError instead of NoMemoryError,
+    # so we cannot test this case.
+  rescue Timeout::Error
+    # Solaris 11 CI times out instead of raising NoMemoryError,
+    # so we cannot test this case.
+  end
+
   def test_equal
     bug5865 = '[ruby-core:41979]'
     assert_equal(RuntimeError.new("a"), RuntimeError.new("a"), bug5865)
@@ -743,7 +843,7 @@ end.join
     bug12741 = '[ruby-core:77222] [Bug #12741]'
 
     x = Thread.current
-    q = Queue.new
+    q = Thread::Queue.new
     y = Thread.start do
       q.pop
       begin
@@ -915,28 +1015,37 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     end
   end
 
-  def capture_warning_warn
+  def capture_warning_warn(category: false)
     verbose = $VERBOSE
     deprecated = Warning[:deprecated]
+    experimental = Warning[:experimental]
     warning = []
 
     ::Warning.class_eval do
       alias_method :warn2, :warn
       remove_method :warn
 
-      define_method(:warn) do |str|
-        warning << str
+      if category
+        define_method(:warn) do |str, category: nil|
+          warning << [str, category]
+        end
+      else
+        define_method(:warn) do |str|
+          warning << str
+        end
       end
     end
 
     $VERBOSE = true
     Warning[:deprecated] = true
+    Warning[:experimental] = true
     yield
 
     return warning
   ensure
     $VERBOSE = verbose
     Warning[:deprecated] = deprecated
+    Warning[:experimental] = experimental
 
     ::Warning.class_eval do
       remove_method :warn
@@ -946,12 +1055,36 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
   end
 
   def test_warning_warn
-    warning = capture_warning_warn {@a}
-    assert_match(/instance variable @a not initialized/, warning[0])
+    warning = capture_warning_warn {$asdfasdsda_test_warning_warn}
+    assert_match(/global variable `\$asdfasdsda_test_warning_warn' not initialized/, warning[0])
 
     assert_equal(["a\nz\n"], capture_warning_warn {warn "a\n", "z"})
     assert_equal([],         capture_warning_warn {warn})
     assert_equal(["\n"],     capture_warning_warn {warn ""})
+  end
+
+  def test_warn_deprecated_backwards_compatibility_category
+    warning = capture_warning_warn { Dir.exists?("non-existent") }
+
+    assert_match(/deprecated/, warning[0])
+  end
+
+  def test_warn_deprecated_category
+    warning = capture_warning_warn(category: true) { Dir.exists?("non-existent") }
+
+    assert_equal :deprecated, warning[0][1]
+  end
+
+  def test_warn_deprecated_to_remove_backwards_compatibility_category
+    warning = capture_warning_warn { Object.new.tainted? }
+
+    assert_match(/deprecated/, warning[0])
+  end
+
+  def test_warn_deprecated_to_remove_category
+    warning = capture_warning_warn(category: true) { Object.new.tainted? }
+
+    assert_equal :deprecated, warning[0][1]
   end
 
   def test_kernel_warn_uplevel
@@ -1007,7 +1140,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
   end
 
   def test_warning_warn_super
-    assert_in_out_err(%[-W0], "#{<<~"{#"}\n#{<<~'};'}", [], /instance variable @a not initialized/)
+    assert_in_out_err(%[-W0], "#{<<~"{#"}\n#{<<~'};'}", [], /global variable `\$asdfiasdofa_test_warning_warn_super' not initialized/)
     {#
       module Warning
         def warn(message)
@@ -1016,7 +1149,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       end
 
       $VERBOSE = true
-      @a
+      $asdfiasdofa_test_warning_warn_super
     };
   end
 
@@ -1025,6 +1158,46 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_raise(ArgumentError) {Warning[:XXXX]}
     assert_include([true, false], Warning[:deprecated])
     assert_include([true, false], Warning[:experimental])
+  end
+
+  def test_warning_category_deprecated
+    warning = EnvUtil.verbose_warning do
+      deprecated = Warning[:deprecated]
+      Warning[:deprecated] = true
+      Warning.warn "deprecated feature", category: :deprecated
+    ensure
+      Warning[:deprecated] = deprecated
+    end
+    assert_equal "deprecated feature", warning
+
+    warning = EnvUtil.verbose_warning do
+      deprecated = Warning[:deprecated]
+      Warning[:deprecated] = false
+      Warning.warn "deprecated feature", category: :deprecated
+    ensure
+      Warning[:deprecated] = deprecated
+    end
+    assert_empty warning
+  end
+
+  def test_warning_category_experimental
+    warning = EnvUtil.verbose_warning do
+      experimental = Warning[:experimental]
+      Warning[:experimental] = true
+      Warning.warn "experimental feature", category: :experimental
+    ensure
+      Warning[:experimental] = experimental
+    end
+    assert_equal "experimental feature", warning
+
+    warning = EnvUtil.verbose_warning do
+      experimental = Warning[:experimental]
+      Warning[:experimental] = false
+      Warning.warn "experimental feature", category: :experimental
+    ensure
+      Warning[:experimental] = experimental
+    end
+    assert_empty warning
   end
 
   def test_undefined_backtrace

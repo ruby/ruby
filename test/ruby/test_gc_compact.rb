@@ -1,8 +1,115 @@
 # frozen_string_literal: true
 require 'test/unit'
 require 'fiddle'
+require 'etc'
+
+if RUBY_PLATFORM =~ /s390x/
+  puts "Currently, it is known that the compaction does not work well on s390x; contribution is welcome https://github.com/ruby/ruby/pull/5077"
+  return
+end
 
 class TestGCCompact < Test::Unit::TestCase
+  module SupportsCompact
+    def setup
+      skip "autocompact not supported on this platform" unless supports_auto_compact?
+      super
+    end
+
+    private
+
+    def supports_auto_compact?
+      return true unless defined?(Etc::SC_PAGE_SIZE)
+
+      begin
+        return GC::INTERNAL_CONSTANTS[:HEAP_PAGE_SIZE] % Etc.sysconf(Etc::SC_PAGE_SIZE) == 0
+      rescue NotImplementedError
+      rescue ArgumentError
+      end
+
+      true
+    end
+  end
+
+  include SupportsCompact
+
+  class AutoCompact < Test::Unit::TestCase
+    include SupportsCompact
+
+    def test_enable_autocompact
+      before = GC.auto_compact
+      GC.auto_compact = true
+      assert GC.auto_compact
+    ensure
+      GC.auto_compact = before
+    end
+
+    def test_disable_autocompact
+      before = GC.auto_compact
+      GC.auto_compact = false
+      refute GC.auto_compact
+    ensure
+      GC.auto_compact = before
+    end
+
+    def test_major_compacts
+      before = GC.auto_compact
+      GC.auto_compact = true
+      compact = GC.stat :compact_count
+      GC.start
+      assert_operator GC.stat(:compact_count), :>, compact
+    ensure
+      GC.auto_compact = before
+    end
+
+    def test_implicit_compaction_does_something
+      before = GC.auto_compact
+      list = []
+      list2 = []
+
+      # Try to make some fragmentation
+      500.times {
+        list << Object.new
+        Object.new
+        Object.new
+      }
+      count = GC.stat :compact_count
+      GC.auto_compact = true
+      n = 1_000_000
+      n.times do
+        break if count < GC.stat(:compact_count)
+        list2 << Object.new
+      end and skip "implicit compaction didn't happen within #{n} objects"
+      compact_stats = GC.latest_compact_info
+      refute_predicate compact_stats[:considered], :empty?
+      refute_predicate compact_stats[:moved], :empty?
+    ensure
+      GC.auto_compact = before
+    end
+  end
+
+  def os_page_size
+    return true unless defined?(Etc::SC_PAGE_SIZE)
+  end
+
+  def setup
+    skip "autocompact not supported on this platform" unless supports_auto_compact?
+    super
+  end
+
+  def test_gc_compact_stats
+    list = []
+
+    # Try to make some fragmentation
+    500.times {
+      list << Object.new
+      Object.new
+      Object.new
+    }
+    compact_stats = GC.compact
+    refute_predicate compact_stats[:considered], :empty?
+    refute_predicate compact_stats[:moved], :empty?
+  end
+
   def memory_location(obj)
     (Fiddle.dlwrap(obj) >> 1)
   end
@@ -43,18 +150,20 @@ class TestGCCompact < Test::Unit::TestCase
     assert_equal hash, list_of_objects.hash
   end
 
-  def walk_ast ast
-    children = ast.children.grep(RubyVM::AbstractSyntaxTree::Node)
-    children.each do |child|
-      assert child.type
-      walk_ast child
-    end
-  end
-
   def test_ast_compacts
-    ast = RubyVM::AbstractSyntaxTree.parse_file __FILE__
-    assert GC.compact
-    walk_ast ast
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      def walk_ast ast
+        children = ast.children.grep(RubyVM::AbstractSyntaxTree::Node)
+        children.each do |child|
+          assert child.type
+          walk_ast child
+        end
+      end
+      ast = RubyVM::AbstractSyntaxTree.parse_file #{__FILE__.dump}
+      assert GC.compact
+      walk_ast ast
+    end;
   end
 
   def test_compact_count

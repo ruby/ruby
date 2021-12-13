@@ -10,6 +10,7 @@
 *.dylib
 *.elc
 *.i
+*.ii
 *.inc
 *.log
 *.o
@@ -128,6 +129,7 @@ lcov*.info
 /ruby-man.rd.gz
 /run.gdb
 /sizes.c
+/static-ruby
 /test.rb
 /test-coverage.dat
 /tmp
@@ -180,6 +182,9 @@ lcov*.info
 /ext/-test-/win32/dln/dlntest.dll
 /ext/-test-/win32/dln/dlntest.exp
 /ext/-test-/win32/dln/dlntest.lib
+
+# /ext/-test-/gems
+/ext/-test-/gems
 
 # /ext/etc/
 /ext/etc/constdefs.h

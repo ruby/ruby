@@ -16,7 +16,7 @@ module IRB
   module ExtendCommand
     class Fork < Nop
       def execute
-        pid = send ExtendCommand.irb_original_method_name("fork")
+        pid = __send__ ExtendCommand.irb_original_method_name("fork")
         unless pid
           class << self
             alias_method :exit, ExtendCommand.irb_original_method_name('exit')
@@ -35,5 +35,3 @@ module IRB
   end
 end
 # :startdoc:
-
-

@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/commands/pristine_command'
 
 class TestGemCommandsPristineCommand < Gem::TestCase
-
   def setup
     super
     common_installer_setup
@@ -156,7 +155,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_path_exists gem_exec
+    assert_path_exist gem_exec
 
     ruby_exec = sprintf Gem.default_exec_format, 'ruby'
 
@@ -357,10 +356,10 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_equal "Restored #{b.full_name}", out.shift
     assert_empty out, out.inspect
 
-    assert_path_exists File.join(@gemhome, "gems", 'a-2')
-    refute_path_exists File.join(gemhome2, "gems", 'a-2')
-    assert_path_exists File.join(gemhome2, "gems", 'b-2')
-    refute_path_exists File.join(@gemhome, "gems", 'b-2')
+    assert_path_exist File.join(@gemhome, "gems", 'a-2')
+    assert_path_not_exist File.join(gemhome2, "gems", 'a-2')
+    assert_path_exist File.join(gemhome2, "gems", 'b-2')
+    assert_path_not_exist File.join(@gemhome, "gems", 'b-2')
   end
 
   def test_execute_missing_cache_gem
@@ -435,21 +434,21 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_empty out, out.inspect
     assert_empty @ui.error
 
-    assert_path_exists File.join(@gemhome, "cache", 'a-1.gem')
-    refute_path_exists File.join(gemhome2, "cache", 'a-2.gem')
-    assert_path_exists File.join(@gemhome, "gems", 'a-1')
-    refute_path_exists File.join(gemhome2, "gems", 'a-1')
+    assert_path_exist File.join(@gemhome, "cache", 'a-1.gem')
+    assert_path_not_exist File.join(gemhome2, "cache", 'a-2.gem')
+    assert_path_exist File.join(@gemhome, "gems", 'a-1')
+    assert_path_not_exist File.join(gemhome2, "gems", 'a-1')
 
-    assert_path_exists File.join(gemhome2, "cache", 'b-1.gem')
-    refute_path_exists File.join(@gemhome, "cache", 'b-2.gem')
-    assert_path_exists File.join(gemhome2, "gems", 'b-1')
-    refute_path_exists File.join(@gemhome, "gems", 'b-1')
+    assert_path_exist File.join(gemhome2, "cache", 'b-1.gem')
+    assert_path_not_exist File.join(@gemhome, "cache", 'b-2.gem')
+    assert_path_exist File.join(gemhome2, "gems", 'b-1')
+    assert_path_not_exist File.join(@gemhome, "gems", 'b-1')
   end
 
   def test_execute_no_gem
     @cmd.options[:args] = %w[]
 
-    e = assert_raises Gem::CommandLineError do
+    e = assert_raise Gem::CommandLineError do
       use_ui @ui do
         @cmd.execute
       end
@@ -569,7 +568,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_equal([
       "Restoring gems to pristine condition...",
       "Cached gem for a-2 not found, attempting to fetch...",
-      "Skipped a-2, it was not found from cache and remote sources"
+      "Skipped a-2, it was not found from cache and remote sources",
     ], @ui.output.split("\n"))
 
     assert_empty @ui.error
@@ -578,7 +577,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   def test_execute_default_gem
     default_gem_spec = new_default_spec("default", "2.0.0.0",
                                         nil, "default/gem.rb")
-    install_default_specs(default_gem_spec)
+    install_default_gems(default_gem_spec)
 
     @cmd.options[:args] = %w[default]
 
@@ -656,5 +655,4 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert @cmd.options[:extensions]
     assert @cmd.options[:extensions_set]
   end
-
 end

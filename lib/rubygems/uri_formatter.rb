@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'cgi'
 
 ##
 # The UriFormatter handles URIs from user-input and escaping.
@@ -9,7 +8,6 @@ require 'cgi'
 #   p uf.normalize #=> 'http://example.com'
 
 class Gem::UriFormatter
-
   ##
   # The URI to be formatted.
 
@@ -19,6 +17,8 @@ class Gem::UriFormatter
   # Creates a new URI formatter for +uri+.
 
   def initialize(uri)
+    require 'cgi'
+
     @uri = uri
   end
 
@@ -44,5 +44,4 @@ class Gem::UriFormatter
     return unless @uri
     CGI.unescape @uri
   end
-
 end

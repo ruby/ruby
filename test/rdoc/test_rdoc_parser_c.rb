@@ -1600,6 +1600,39 @@ Init_IO(void) {
     assert_equal "Method Comment!   ", read_method.comment.text
     assert_equal "rb_io_s_read", read_method.c_function
     assert read_method.singleton
+    assert_nil read_method.section.title
+  end
+
+  def test_define_method_with_category
+    content = <<-EOF
+/* :category: Awesome Methods
+   Method Comment!
+ */
+static VALUE
+rb_io_s_read(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
+{
+}
+
+void
+Init_IO(void) {
+    /*
+     * a comment for class Foo on rb_define_class
+     */
+    VALUE rb_cIO = rb_define_class("IO", rb_cObject);
+    rb_define_singleton_method(rb_cIO, "read", rb_io_s_read, -1);
+}
+    EOF
+
+    klass = util_get_class content, 'rb_cIO'
+    read_method = klass.method_list.first
+    assert_equal "read", read_method.name
+    assert_equal "Method Comment!", read_method.comment.text.strip
+    assert_equal "rb_io_s_read", read_method.c_function
+    assert read_method.singleton
+    assert_equal "Awesome Methods", read_method.section.title
   end
 
   def test_define_method_dynamically
@@ -1928,6 +1961,39 @@ void d(void) {
 
     assert_equal %w[A A::B A::B::C],
                  @store.all_classes_and_modules.map { |m| m.full_name }.sort
+  end
+
+  def test_markup_format_default
+    content = <<-EOF
+void Init_Blah(void) {
+  cBlah = rb_define_class("Blah", rb_cObject);
+
+  /*
+   * This should be interpreted in the default format.
+   */
+  rb_attr(cBlah, rb_intern("default_format"), 1, 1, Qfalse);
+}
+    EOF
+
+    klass = util_get_class content, 'cBlah'
+    assert_equal("rdoc", klass.attributes.find {|a| a.name == "default_format"}.comment.format)
+  end
+
+  def test_markup_format_override
+    content = <<-EOF
+void Init_Blah(void) {
+  cBlah = rb_define_class("Blah", rb_cObject);
+
+  /*
+   * This should be interpreted in the default format.
+   */
+  rb_attr(cBlah, rb_intern("default_format"), 1, 1, Qfalse);
+}
+    EOF
+
+    @options.markup = "markdown"
+    klass = util_get_class content, 'cBlah'
+    assert_equal("markdown", klass.attributes.find {|a| a.name == "default_format"}.comment.format)
   end
 
   def util_get_class content, name = nil

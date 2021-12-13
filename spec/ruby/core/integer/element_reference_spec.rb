@@ -131,16 +131,10 @@ describe "Integer#[]" do
           0b000001[-3, 4].should == 0b1000
         end
 
-        it "ignores negative upper boundary" do
-          0b101001101[1..-1].should == 0b10100110
-          0b101001101[1..-2].should == 0b10100110
-          0b101001101[1..-3].should == 0b10100110
-        end
-
         it "ignores upper boundary smaller than lower boundary" do
           0b101001101[4..1].should == 0b10100
           0b101001101[4..2].should == 0b10100
-          0b101001101[4..3].should == 0b10100
+          0b101001101[-4..-5].should == 0b1010011010000
         end
 
         it "raises FloatDomainError if any boundary is infinity" do

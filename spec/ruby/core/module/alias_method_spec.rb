@@ -85,8 +85,19 @@ describe "Module#alias_method" do
     Module.should have_public_instance_method(:alias_method, false)
   end
 
-  it "returns self" do
-    @class.send(:alias_method, :checking_return_value, :public_one).should equal(@class)
+  describe "returned value" do
+    ruby_version_is ""..."3.0" do
+      it "returns self" do
+        @class.send(:alias_method, :checking_return_value, :public_one).should equal(@class)
+      end
+    end
+
+    ruby_version_is "3.0" do
+      it "returns symbol of the defined method name" do
+        @class.send(:alias_method, :checking_return_value, :public_one).should equal(:checking_return_value)
+        @class.send(:alias_method, 'checking_return_value', :public_one).should equal(:checking_return_value)
+      end
+    end
   end
 
   it "works in module" do
