@@ -416,7 +416,8 @@ Excluding feature bug fixes.
   builtin methods. [[GH-5112]]
 
 * Experimental feature Variable Width Allocation in the garbage collector.
-  [[Feature #18045]] [[Feature #18239]]
+  This feature is turned off by default and can be enabled by compiling Ruby
+  with flag `USE_RVARGC=1` set. [[Feature #18045]] [[Feature #18239]]
 
 ### JIT
 
