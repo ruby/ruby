@@ -71,7 +71,7 @@ module Random::Formatter
   #   prng.hex #=> "eb693ec8252cd630102fd0d0fb7c3485"
   #   prng.hex #=> "91dc3bfb4de5b11d029d376634589b61"
   def hex(n=nil)
-    random_bytes(n).unpack("H*")[0]
+    random_bytes(n).unpack1("H*")
   end
 
   # Random::Formatter#base64 generates a random base64 string.

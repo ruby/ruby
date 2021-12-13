@@ -27,9 +27,9 @@ module Random::Formatter
     end
 
     def test_base64
-      assert_equal(16, @it.base64.unpack('m*')[0].size)
+      assert_equal(16, @it.base64.unpack1('m*').size)
       17.times do |idx|
-        assert_equal(idx, @it.base64(idx).unpack('m*')[0].size)
+        assert_equal(idx, @it.base64(idx).unpack1('m*').size)
       end
     end
 
