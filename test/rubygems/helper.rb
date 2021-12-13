@@ -1300,6 +1300,13 @@ Also, a list:
     Gem.instance_variable_set :@ruby, orig_ruby
   end
 
+  def silence_warnings
+    old_verbose, $VERBOSE = $VERBOSE, false
+    yield
+  ensure
+    $VERBOSE = old_verbose
+  end
+
   class << self
     # :nodoc:
     ##

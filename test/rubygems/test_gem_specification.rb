@@ -3745,11 +3745,4 @@ end
       end
     end
   end
-
-  def silence_warnings
-    old_verbose, $VERBOSE = $VERBOSE, false
-    yield
-  ensure
-    $VERBOSE = old_verbose
-  end
 end

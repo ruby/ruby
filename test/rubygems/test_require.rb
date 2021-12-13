@@ -700,13 +700,6 @@ class TestGemRequire < Gem::TestCase
     !ENV["GEM_COMMAND"].nil?
   end
 
-  def silence_warnings
-    old_verbose, $VERBOSE = $VERBOSE, false
-    yield
-  ensure
-    $VERBOSE = old_verbose
-  end
-
   def util_install_extension_file(name)
     spec = quick_gem name
     util_build_gem spec
