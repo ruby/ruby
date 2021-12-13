@@ -720,7 +720,7 @@ reflect_op_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
  *  then the first element of collection is used as the initial value
  *  of <i>memo</i>.
  * 
- *  In the case when an <i>initial</i> value is set the result collection will have a size 
+ *  In the case when an <i>initial</i> value is set the result collection will have a size
  *  bigger by one than <i>enum</i> size otherwise the size will be equal to the size of <i>enum</i>.
  *
  *
