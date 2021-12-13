@@ -1533,10 +1533,12 @@ rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd)
 
 /*
  * call-seq:
- *   prng.random_number      -> float
- *   prng.random_number(max) -> number
- *   prng.rand               -> float
- *   prng.rand(max)          -> number
+ *   prng.random_number        -> float
+ *   prng.random_number(max)   -> number
+ *   prng.random_number(range) -> number
+ *   prng.rand                 -> float
+ *   prng.rand(max)            -> number
+ *   prng.rand(range)          -> number
  *
  * Generates formatted random number from raw random bytes.
  * See Random#rand.
@@ -1641,6 +1643,7 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
  * call-seq:
  *   Random.rand -> float
  *   Random.rand(max) -> number
+ *   Random.rand(range) -> number
  */
 
 static VALUE
@@ -1807,7 +1810,16 @@ InitVM_Random(void)
     rb_define_private_method(CLASS_OF(rb_cRandom), "left", random_s_left, 0);
 
     {
-	/* Format raw random number as Random does */
+	/*
+         * Generate a random number in the given range as Random does
+         *
+         *   prng.random_number       #=> 0.5816771641321361
+         *   prng.random_number(1000) #=> 485
+         *   prng.random_number(1..6) #=> 3
+         *   prng.rand                #=> 0.5816771641321361
+         *   prng.rand(1000)          #=> 485
+         *   prng.rand(1..6)          #=> 3
+         */
 	VALUE m = rb_define_module_under(rb_cRandom, "Formatter");
 	rb_include_module(base, m);
 	rb_extend_object(base, m);

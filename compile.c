@@ -4928,7 +4928,6 @@ compile_massign_opt(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	    MEMORY(ln->nd_vid);
 	    break;
 	  case NODE_DASGN:
-	  case NODE_DASGN_CURR:
 	  case NODE_IASGN:
 	  case NODE_CVASGN:
 	    MEMORY(ln->nd_vid);
@@ -5322,7 +5321,6 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
       case NODE_MASGN:
       case NODE_LASGN:
       case NODE_DASGN:
-      case NODE_DASGN_CURR:
       case NODE_GASGN:
       case NODE_IASGN:
       case NODE_CDECL:
@@ -6592,8 +6590,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         ADD_INSNL(ret, line_node, jump, matched);
         break;
       }
-      case NODE_DASGN:
-      case NODE_DASGN_CURR: {
+      case NODE_DASGN: {
         int idx, lv, ls;
         ID id = node->nd_vid;
 
@@ -6609,7 +6606,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         }
 
         if (idx < 0) {
-            COMPILE_ERROR(ERROR_ARGS "NODE_DASGN(_CURR): unknown id (%"PRIsVALUE")",
+            COMPILE_ERROR(ERROR_ARGS "NODE_DASGN: unknown id (%"PRIsVALUE")",
                           rb_id2str(id));
             return COMPILE_NG;
         }
@@ -9199,8 +9196,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
 	ADD_SETLOCAL(ret, node, idx, get_lvar_level(iseq));
 	break;
       }
-      case NODE_DASGN:
-      case NODE_DASGN_CURR:{
+      case NODE_DASGN: {
 	int idx, lv, ls;
 	ID id = node->nd_vid;
 	CHECK(COMPILE(ret, "dvalue", node->nd_value));
@@ -9213,7 +9209,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
 	idx = get_dyna_var_idx(iseq, id, &lv, &ls);
 
 	if (idx < 0) {
-	    COMPILE_ERROR(ERROR_ARGS "NODE_DASGN(_CURR): unknown id (%"PRIsVALUE")",
+	    COMPILE_ERROR(ERROR_ARGS "NODE_DASGN: unknown id (%"PRIsVALUE")",
 			  rb_id2str(id));
 	    goto ng;
 	}

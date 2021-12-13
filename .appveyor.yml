@@ -10,6 +10,11 @@ shallow_clone: true
 clone_depth: 10
 platform:
   - x64
+skip_commits:
+  files:
+    - doc/*
+    - '**/*.md'
+    - '**/*.rdoc'
 environment:
   ruby_version: "24-%Platform%"
   zlib_version: "1.2.11"

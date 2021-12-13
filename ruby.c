@@ -143,13 +143,15 @@ enum feature_flag_bits {
     X(parsetree_with_comment) \
     SEP \
     X(insns) \
+    SEP \
+    X(insns_without_opt) \
     /* END OF DUMPS */
 enum dump_flag_bits {
     dump_version_v,
     EACH_DUMPS(DEFINE_DUMP, COMMA),
     dump_exit_bits = (DUMP_BIT(yydebug) | DUMP_BIT(syntax) |
 		      DUMP_BIT(parsetree) | DUMP_BIT(parsetree_with_comment) |
-		      DUMP_BIT(insns))
+		      DUMP_BIT(insns) | DUMP_BIT(insns_without_opt))
 };
 
 typedef struct ruby_cmdline_options ruby_cmdline_options_t;
@@ -335,6 +337,7 @@ usage(const char *name, int help, int highlight, int columns)
     };
     static const struct message dumps[] = {
 	M("insns",                  "", "instruction sequences"),
+	M("insns_without_opt",      "", "instruction sequences compiled with no optimization"),
 	M("yydebug",                "", "yydebug of yacc parser generator"),
 	M("parsetree",              "", "AST"),
 	M("parsetree_with_comment", "", "AST with comments"),
@@ -2183,11 +2186,11 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         GetBindingPtr(rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING")),
                       toplevel_binding);
         const struct rb_block *base_block = toplevel_context(toplevel_binding);
-	iseq = rb_iseq_new_main(&ast->body, opt->script_name, path, vm_block_iseq(base_block));
+	iseq = rb_iseq_new_main(&ast->body, opt->script_name, path, vm_block_iseq(base_block), !(dump & DUMP_BIT(insns_without_opt)));
 	rb_ast_dispose(ast);
     }
 
-    if (dump & DUMP_BIT(insns)) {
+    if (dump & (DUMP_BIT(insns) | DUMP_BIT(insns_without_opt))) {
 	rb_io_write(rb_stdout, rb_iseq_disasm((const rb_iseq_t *)iseq));
 	rb_io_flush(rb_stdout);
 	dump &= ~DUMP_BIT(insns);

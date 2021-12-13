@@ -497,6 +497,35 @@ module TestStruct
     assert_equal(42, x.public_send("a"))
   end
 
+  def test_arity
+    klass = @Struct.new(:a)
+    assert_equal 0, klass.instance_method(:a).arity
+    assert_equal 1, klass.instance_method(:a=).arity
+
+    klass.module_eval do
+      define_method(:b=, instance_method(:a=))
+      alias c= a=
+    end
+
+    assert_equal 1, klass.instance_method(:b=).arity
+    assert_equal 1, klass.instance_method(:c=).arity
+  end
+
+  def test_parameters
+    klass = @Struct.new(:a)
+    assert_equal [], klass.instance_method(:a).parameters
+    # NOTE: :_ may not be a spec.
+    assert_equal [[:req, :_]], klass.instance_method(:a=).parameters
+
+    klass.module_eval do
+      define_method(:b=, instance_method(:a=))
+      alias c= a=
+    end
+
+    assert_equal [[:req, :_]], klass.instance_method(:b=).parameters
+    assert_equal [[:req, :_]], klass.instance_method(:c=).parameters
+  end
+
   class TopStruct < Test::Unit::TestCase
     include TestStruct
 

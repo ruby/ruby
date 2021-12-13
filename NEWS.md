@@ -95,7 +95,16 @@ Note that each entry is kept to a minimum, see links for details.
     if ivars refer to shareable objects.
     [[Feature #17592]]
 
+*   A command syntax is allowed in endless method definition, i.e.,
+    you can now write `def foo = puts "Hello"`.
+    Note that `private def foo = puts "Hello"` does not parse.
+    [[Feature #17398]]
+
 ## Command line options
+
+* `--disable-gems` is now explicitly declared as "just for debugging".
+  Never use it in any real-world code base.
+  [[Feature #17684]]
 
 ## Core classes updates
 
@@ -192,8 +201,9 @@ Outstanding ones only.
 
 * Method/UnboundMethod
 
-    *   #public?, #private?, #protected have been added to both
-        Method and UnboundMethod. [[Feature #11689]]
+    *   Method#public?, Method#private?, Method#protected?,
+        UnboundMethod#public?, UnboundMethod#private?,
+        UnboundMethod#protected? have been added. [[Feature #11689]]
 
 * Module
 
@@ -243,6 +253,21 @@ Outstanding ones only.
     *   Thread::Backtrace.limit, which returns the value to limit backtrace
         length set by `--backtrace-limit` command line option, is added.
         [[Feature #17479]]
+
+* Time
+
+    *   Time.new now accepts optional `in:` keyword argument for the
+        timezone, as well as `Time.at` and `Time.now`, so that is now
+        you can omit minor arguments to `Time.new`. [[Feature #17485]]
+
+    *   Time#strftime supports RFC 3339 UTC for unknown offset local
+        time, `-0000`, as `%-z`. [[Feature #17544]]
+
+* TracePoint
+
+    *   TracePoint.allow_reenter is added to allow reenter while TracePoint
+        callback.
+        [[Feature #15912]]
 
 * $LOAD_PATH
 
@@ -345,6 +370,14 @@ Outstanding ones only.
     * matrix
     * prime
 
+* Coverage measurement nohw supports suspension. You can use `Coverage.suspend`
+  to stop the measurement temporarily, and `Coverage.resume` to restart it.
+  See [[Feature #18176]] in detail.
+
+* Random::Formatter is moved to random/formatter.rb, so that you can
+  use `Random#hex`, `Random#base64` and so on without SecureRandom.
+  [[Feature #18190]]
+
 ## Compatibility issues
 
 Excluding feature bug fixes.
@@ -381,6 +414,10 @@ Excluding feature bug fixes.
 
 * `mandatory_only?` builtin special form to improve performance on
   builtin methods. [[GH-5112]]
+
+* Experimental feature Variable Width Allocation in the garbage collector.
+  This feature is turned off by default and can be enabled by compiling Ruby
+  with flag `USE_RVARGC=1` set. [[Feature #18045]] [[Feature #18239]]
 
 ## JIT
 
@@ -438,19 +475,32 @@ See [this blog post](https://shopify.engineering/yjit-just-in-time-compiler-crub
 
 ## error_highlight
 
-A built-in gem, error_highlight, has been introduced.
-It includes fine-grained error location in backtrace:
+A built-in gem called error_highlight has been introduced.
+It shows fine-grained error location in backtrace.
+
+Example: `title = json[:article][:title]`
+
+If `json` is nil, it shows:
 
 ```
 $ ruby test.rb
-test.rb:1:in `<main>': undefined method `time' for 1:Integer (NoMethodError)
+test.rb:2:in `<main>': undefined method `[]' for nil:NilClass (NoMethodError)
 
-1.time {}
- ^^^^^
-Did you mean?  times
+title = json[:article][:title]
+            ^^^^^^^^^^
 ```
 
-This gem is enabled by default.
+If `json[:article]` returns nil, it shows:
+
+```
+$ ruby test.rb
+test.rb:2:in `<main>': undefined method `[]' for nil:NilClass (NoMethodError)
+
+title = json[:article][:title]
+                      ^^^^^^^^
+```
+
+This feature is enabled by default.
 You can disable it by using a command-line option `--disable-error_highlight`.
 See [the repository](https://github.com/ruby/error_highlight) in detail.
 
@@ -466,6 +516,8 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 * Now exceptions raised in finalizers will be printed to `STDERR`, unless
   `$VERBOSE` is `nil`.  [[Feature #17798]]
 
+* `ruby -run -e httpd` displays URLs to access.  [[Feature #17847]]
+
 [Bug #4443]:      https://bugs.ruby-lang.org/issues/4443
 [Feature #6210]:  https://bugs.ruby-lang.org/issues/6210
 [Feature #11256]: https://bugs.ruby-lang.org/issues/11256
@@ -478,18 +530,23 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #14579]: https://bugs.ruby-lang.org/issues/14579
 [Feature #15198]: https://bugs.ruby-lang.org/issues/15198
 [Feature #15211]: https://bugs.ruby-lang.org/issues/15211
+[Feature #15912]: https://bugs.ruby-lang.org/issues/15912
 [Feature #16043]: https://bugs.ruby-lang.org/issues/16043
 [Feature #16806]: https://bugs.ruby-lang.org/issues/16806
 [Feature #17312]: https://bugs.ruby-lang.org/issues/17312
 [Feature #17327]: https://bugs.ruby-lang.org/issues/17327
 [Feature #17370]: https://bugs.ruby-lang.org/issues/17370
+[Feature #17398]: https://bugs.ruby-lang.org/issues/17398
 [Feature #17411]: https://bugs.ruby-lang.org/issues/17411
 [Bug #17423]:     https://bugs.ruby-lang.org/issues/17423
 [Bug #17429]:     https://bugs.ruby-lang.org/issues/17429
 [Feature #17470]: https://bugs.ruby-lang.org/issues/17470
 [Feature #17479]: https://bugs.ruby-lang.org/issues/17479
+[Feature #17485]: https://bugs.ruby-lang.org/issues/17485
 [Feature #17490]: https://bugs.ruby-lang.org/issues/17490
+[Feature #17544]: https://bugs.ruby-lang.org/issues/17544
 [Feature #17592]: https://bugs.ruby-lang.org/issues/17592
+[Feature #17684]: https://bugs.ruby-lang.org/issues/17684
 [Feature #17724]: https://bugs.ruby-lang.org/issues/17724
 [Feature #17744]: https://bugs.ruby-lang.org/issues/17744
 [Feature #17750]: https://bugs.ruby-lang.org/issues/17750
@@ -497,14 +554,19 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #17795]: https://bugs.ruby-lang.org/issues/17795
 [Feature #17798]: https://bugs.ruby-lang.org/issues/17798
 [Bug #17827]:     https://bugs.ruby-lang.org/issues/17827
+[Feature #17847]: https://bugs.ruby-lang.org/issues/17847
 [Feature #17853]: https://bugs.ruby-lang.org/issues/17853
 [Bug #18003]:     https://bugs.ruby-lang.org/issues/18003
 [Feature #18008]: https://bugs.ruby-lang.org/issues/18008
 [Feature #18015]: https://bugs.ruby-lang.org/issues/18015
 [Feature #18020]: https://bugs.ruby-lang.org/issues/18020
 [Feature #18029]: https://bugs.ruby-lang.org/issues/18029
+[Feature #18045]: https://bugs.ruby-lang.org/issues/18045
 [Feature #18172]: https://bugs.ruby-lang.org/issues/18172
+[Feature #18176]: https://bugs.ruby-lang.org/issues/18176
+[Feature #18190]: https://bugs.ruby-lang.org/issues/18190
 [Feature #18229]: https://bugs.ruby-lang.org/issues/18229
+[Feature #18239]: https://bugs.ruby-lang.org/issues/18239
 [Feature #18273]: https://bugs.ruby-lang.org/issues/18273
 [Feature #18290]: https://bugs.ruby-lang.org/issues/18290
 [GH-1509]: https://github.com/ruby/ruby/pull/1509

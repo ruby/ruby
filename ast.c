@@ -417,7 +417,6 @@ node_children(rb_ast_t *ast, const NODE *node)
         }
       case NODE_LASGN:
       case NODE_DASGN:
-      case NODE_DASGN_CURR:
       case NODE_IASGN:
       case NODE_CVASGN:
       case NODE_GASGN:
