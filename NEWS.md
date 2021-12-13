@@ -95,6 +95,11 @@ Note that each entry is kept to a minimum, see links for details.
     if ivars refer to shareable objects.
     [[Feature #17592]]
 
+*   A command syntax is allowed in endless method definition, i.e.,
+    you can now write `def foo = puts "Hello"`.
+    Note that `private def foo = puts "Hello"` does not parse.
+    [[Feature #17398]]
+
 ## Command line options
 
 ## Core classes updates
@@ -495,6 +500,7 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #17312]: https://bugs.ruby-lang.org/issues/17312
 [Feature #17327]: https://bugs.ruby-lang.org/issues/17327
 [Feature #17370]: https://bugs.ruby-lang.org/issues/17370
+[Feature #17398]: https://bugs.ruby-lang.org/issues/17398
 [Feature #17411]: https://bugs.ruby-lang.org/issues/17411
 [Bug #17423]:     https://bugs.ruby-lang.org/issues/17423
 [Bug #17429]:     https://bugs.ruby-lang.org/issues/17429
