@@ -260,6 +260,9 @@ Outstanding ones only.
         timezone, as well as `Time.at` and `Time.now`, so that is now
         you can omit minor arguments to `Time.new`. [[Feature #17485]]
 
+    *   Time#strftime supports RFC 3339 UTC for unknown offset local
+        time, `-0000`, as `%-z`. [[Feature #17544]]
+
 * TracePoint
 
     *   TracePoint.allow_reenter is added to allow reenter while TracePoint
@@ -526,6 +529,7 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #17479]: https://bugs.ruby-lang.org/issues/17479
 [Feature #17485]: https://bugs.ruby-lang.org/issues/17485
 [Feature #17490]: https://bugs.ruby-lang.org/issues/17490
+[Feature #17544]: https://bugs.ruby-lang.org/issues/17544
 [Feature #17592]: https://bugs.ruby-lang.org/issues/17592
 [Feature #17684]: https://bugs.ruby-lang.org/issues/17684
 [Feature #17724]: https://bugs.ruby-lang.org/issues/17724
