@@ -15,7 +15,7 @@ if inc = arg['i']
     scan(/rb_define_global_const\("(RUBY_\w+)",[^;]*?\bMK(?:INT|STR)\(([^()]*)\)/m) do |n, v|
     version[n] = src.value(v)
   end
-  arg['RUBY_DESCRIPTION_WITH_JIT'] = src.value('description_with_jit')
+  arg['RUBY_DESCRIPTION_WITH_MJIT'] = src.value('description_with_mjit')
 end
 %>baseruby="<%=arg['BASERUBY']%>"
 _\

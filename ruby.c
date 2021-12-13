@@ -954,6 +954,14 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
 #define SET_FEATURE(bit) \
     if (NAME_MATCH_P(#bit, str, len)) {set |= mask = FEATURE_BIT(bit); FEATURE_FOUND;}
     EACH_FEATURES(SET_FEATURE, ;);
+    if (NAME_MATCH_P("jit", str, len)) { // This allows you to cancel --jit
+#if defined(MJIT_FORCE_ENABLE) || !YJIT_SUPPORTED_P
+        set |= mask = FEATURE_BIT(mjit);
+#else
+        set |= mask = FEATURE_BIT(yjit);
+#endif
+        goto found;
+    }
     if (NAME_MATCH_P("all", str, len)) {
         // YJIT and MJIT cannot be enabled at the same time. We enable only YJIT for --enable=all.
 #if defined(MJIT_FORCE_ENABLE) || !YJIT_SUPPORTED_P
@@ -1515,12 +1523,12 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		ruby_verbose = Qtrue;
 	    }
             else if (strcmp("jit", s) == 0) {
-#if USE_MJIT && YJIT_SUPPORTED_P
-                FEATURE_SET(opt->features, FEATURE_BIT(yjit));
-#elif USE_MJIT && !YJIT_SUPPORTED_P
+#if !USE_MJIT
+                rb_warn("Ruby was built without JIT support");
+#elif defined(MJIT_FORCE_ENABLE) || !YJIT_SUPPORTED_P
                 FEATURE_SET(opt->features, FEATURE_BIT(mjit));
 #else
-                rb_warn("Ruby was built without JIT support");
+                FEATURE_SET(opt->features, FEATURE_BIT(yjit));
 #endif
             }
             else if (strncmp("mjit", s, 4) == 0) {

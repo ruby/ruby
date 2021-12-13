@@ -42,7 +42,7 @@ const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
 const int ruby_patchlevel = RUBY_PATCHLEVEL;
 const char ruby_description[] = RUBY_DESCRIPTION_WITH("");
-static const char ruby_description_with_jit[] = RUBY_DESCRIPTION_WITH(" +JIT");
+static const char ruby_description_with_mjit[] = RUBY_DESCRIPTION_WITH(" +MJIT");
 static const char ruby_description_with_yjit[] = RUBY_DESCRIPTION_WITH(" +YJIT");
 const char ruby_copyright[] = RUBY_COPYRIGHT;
 const char ruby_engine[] = "ruby";
@@ -104,7 +104,7 @@ Init_ruby_description(void)
     VALUE description;
 
     if (MJIT_OPTS_ON) {
-        description = MKSTR(description_with_jit);
+        description = MKSTR(description_with_mjit);
     }
     else if (rb_yjit_enabled_p()) {
         description = MKSTR(description_with_yjit);
@@ -123,7 +123,7 @@ void
 ruby_show_version(void)
 {
     if (MJIT_OPTS_ON) {
-        PRINT(description_with_jit);
+        PRINT(description_with_mjit);
     }
     else if (rb_yjit_enabled_p()) {
         PRINT(description_with_yjit);

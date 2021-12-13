@@ -11,7 +11,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
   NO_JIT_DESCRIPTION =
     if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # checking -DMJIT_FORCE_ENABLE
-      RUBY_DESCRIPTION.sub(/\+JIT /, '')
+      RUBY_DESCRIPTION.sub(/\+MJIT /, '')
     elsif yjit_enabled? # checking -DYJIT_FORCE_ENABLE
       RUBY_DESCRIPTION.sub(/\+YJIT /, '')
     else
@@ -137,7 +137,7 @@ class TestRubyOptions < Test::Unit::TestCase
   VERSION_PATTERN_WITH_JIT =
     case RUBY_ENGINE
     when 'ruby'
-      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+JIT \[#{q[RUBY_PLATFORM]}\]$/
+      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+MJIT \[#{q[RUBY_PLATFORM]}\]$/
     else
       VERSION_PATTERN
     end
@@ -229,6 +229,11 @@ class TestRubyOptions < Test::Unit::TestCase
       %w(--version --mjit --disable=mjit),
       %w(--version --enable=mjit --disable=mjit),
       %w(--version --enable-mjit --disable-mjit),
+      *([
+        %w(--version --jit --disable=jit),
+        %w(--version --enable=jit --disable=jit),
+        %w(--version --enable-jit --disable-jit),
+      ] unless RUBY_PLATFORM.start_with?('x86_64-') && RUBY_PLATFORM !~ /mswin|mingw|msys/),
     ].each do |args|
       assert_in_out_err([env] + args) do |r, e|
         assert_match(VERSION_PATTERN, r[0])
@@ -242,6 +247,11 @@ class TestRubyOptions < Test::Unit::TestCase
         %w(--version --mjit),
         %w(--version --enable=mjit),
         %w(--version --enable-mjit),
+        *([
+          %w(--version --jit),
+          %w(--version --enable=jit),
+          %w(--version --enable-jit),
+        ] unless RUBY_PLATFORM.start_with?('x86_64-') && RUBY_PLATFORM !~ /mswin|mingw|msys/),
       ].each do |args|
         assert_in_out_err([env] + args) do |r, e|
           assert_match(VERSION_PATTERN_WITH_JIT, r[0])
