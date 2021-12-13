@@ -382,7 +382,12 @@ Excluding feature bug fixes.
 * `mandatory_only?` builtin special form to improve performance on
   builtin methods. [[GH-5112]]
 
-### JIT
+## JIT
+
+* Rename Ruby 3.0's `--jit` to `--mjit`, and alias `--jit` to `--yjit`
+  on non-Windows x86-64 platforms and to `--mjit` on others.
+
+### MJIT
 
 * The default `--mjit-max-cache` is changed from 100 to 10000.
 
