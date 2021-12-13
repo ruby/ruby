@@ -734,7 +734,7 @@ EOS
         end
       end
     end;
-  end  
+  end
 
   def test_with_index_size
     assert_equal(3, Enumerator::Lazy.new([1, 2, 3], 3){|y, v| y << v}.with_index.size)
