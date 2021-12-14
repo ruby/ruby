@@ -54,7 +54,7 @@ end
 alias ln_dir_safe ln_safe
 
 case RUBY_PLATFORM
-when /linux/, /darwin/, /solaris/
+when /linux|darwin|solaris/
   def ln_exe(src, dest)
     ln(src, dest, force: true)
   end
