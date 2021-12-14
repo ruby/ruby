@@ -28,29 +28,24 @@ In Symbol:
 
 By default, all of these methods use full Unicode case mapping,
 which is suitable for most languages.
-
-The Unicode case mapping is specified in:
-
-- {Unicode UTR#21: Case Mappings}[https://www.unicode.org/reports/tr21/tr21-5.html]
-- {Unicode Latin Case Chart}[https://www.unicode.org/charts/case].
+See {Unicode Latin Case Chart}[https://www.unicode.org/charts/case].
 
 Non-ASCII case mapping and folding are supported for UTF-8,
 UTF-16BE/LE, UTF-32BE/LE, and ISO-8859-1~16 Strings/Symbols.
-This support will be extended to other encodings.
 
 Context-dependent case mapping as described in
 {Table 3-17 of the Unicode standard}[https://www.unicode.org/versions/Unicode13.0.0/ch03.pdf]
 is currently not supported.
 
-In most cases, the upper and lower cases for a character are the same size.
-There are exceptions (see +:fold+ below):
+In most cases, case conversions of a string have the same number of characters.
+There are exceptions (see also +:fold+ below):
 
   s = "\u00DF" # => "ß"
   s.upcase     # => "SS"
   s = "\u0149" # => "ŉ"
   s.upcase     # => "ʼN"
 
-Case mapping may also depend on locale (see +:turkic+ below):
+Case mapping may also depend on locale (see also +:turkic+ below):
 
   s = "\u0049"        # => "I"
   s.downcase          # => "i" # Dot above.
@@ -65,7 +60,7 @@ Case changes may not be reversible:
 Case changing methods may not maintain Unicode normalization.
 See String#unicode_normalize).
 
-=== User-Specified Case Mapping
+=== Options for Case Mapping
 
 Except for +casecmp+ and +casecmp?+,
 each of the case-mapping methods listed above
@@ -80,19 +75,19 @@ The arguments may be:
 The options:
 
 - +:ascii+:
-  Letters-only mapping:
+  ASCII-only mapping:
   uppercase letters ('A'..'Z') are mapped to lowercase letters ('a'..'z);
   other characters are not changed
 
-    s = "foo \u00DF bar" # => "foo ß bar"
-    s.upcase             # => "FOO SS BAR"
-    s.upcase :ascii      # => "FOO ß BAR"
+    s = "Foo \u00D8 \u00F8 Bar" # => "Foo Ø ø Bar"
+    s.upcase                    # => "FOO Ø Ø BAR"
+    s.downcase                  # => "foo ø ø bar"
+    s.upcase(:ascii)            # => "FOO Ø ø BAR"
+    s.downcase(:ascii)          # => "foo Ø ø bar"
 
 - +:turkic+:
-  Full Unicode case mapping, adapted for
-  {Turkic languages}[https://en.wikipedia.org/wiki/List_of_Turkic_languages];
-  uppercase dotless +I+, for example, is mapped to lowercase dotless +i+.
-  See {Unicode Turkish Alphabet}[https://unicode-table.com/en/alphabets/turkish/].
+  Full Unicode case mapping, adapted for the Turkic languages
+  that distinguish dotted and dotless I, for example Turkish and Azeri.
 
     s = 'Türkiye'       # => "Türkiye"
     s.upcase            # => "TÜRKIYE"
@@ -103,14 +98,7 @@ The options:
     s.downcase(:turkic) # => "türkıye" # No dot above.
 
 - +:lithuanian+:
-  Full Unicode case mapping,
-  not yet adapted for the Lithuanian language.
-
-    'i'.upcase                # => "I"
-    'i'.upcase(:lithuanian)   # => "I"
-
-    'İ'.downcase              # => "i̇"
-    'İ'.downcase(:lithuanian) # => "i̇"
+  Not yet implemented.
 
 - +:fold+ (available only for String#downcase, String#downcase!,
   and Symbol#downcase):
