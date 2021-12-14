@@ -2553,6 +2553,10 @@ rb_autoload_load(VALUE mod, ID id)
     src = rb_sourcefile();
     if (src && loading && strcmp(src, loading) == 0) return Qfalse;
 
+    if (UNLIKELY(!rb_ractor_main_p())) {
+        rb_raise(rb_eRactorUnsafeError, "require by autoload on non-main Ractor is not supported (%s)", rb_id2name(id));
+    }
+
     if ((ce = rb_const_lookup(mod, id))) {
         flag = ce->flag & (CONST_DEPRECATED | CONST_VISIBILITY_MASK);
     }
