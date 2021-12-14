@@ -165,10 +165,8 @@ enum lex_state_e {
 #define IS_lex_state_all(ls)	IS_lex_state_all_for(p->lex.state, (ls))
 
 # define SET_LEX_STATE(ls) \
-    (p->lex.state = \
-     (p->debug ? \
-      rb_parser_trace_lex_state(p, p->lex.state, (ls), __LINE__) : \
-      (enum lex_state_e)(ls)))
+    parser_set_lex_state(p, ls, __LINE__)
+static inline enum lex_state_e parser_set_lex_state(struct parser_params *p, enum lex_state_e ls, int line);
 
 typedef VALUE stack_type;
 
@@ -10694,6 +10692,14 @@ new_regexp(struct parser_params *p, VALUE re, VALUE opt, const YYLTYPE *loc)
 }
 #endif /* !RIPPER */
 
+static inline enum lex_state_e
+parser_set_lex_state(struct parser_params *p, enum lex_state_e ls, int line)
+{
+    if (p->debug) {
+	ls = rb_parser_trace_lex_state(p, p->lex.state, ls, line);
+    }
+    return p->lex.state = ls;
+}
 
 #ifndef RIPPER
 static const char rb_parser_lex_state_names[][8] = {
