@@ -264,28 +264,16 @@ module Bundler
         else
           source = source_for(name)
           specs = source.specs.search(name)
-          versions_with_platforms = specs.map {|s| [s.version, s.platform] }
           cache_message = begin
                               " or in gems cached in #{Bundler.settings.app_cache_path}" if Bundler.app_cache.exist?
                             rescue GemfileNotFound
                               nil
                             end
           message = String.new("Could not find gem '#{SharedHelpers.pretty_dependency(requirement)}' in #{source}#{cache_message}.\n")
-          message << "The source contains the following versions of '#{name}': #{formatted_versions_with_platforms(versions_with_platforms)}" if versions_with_platforms.any?
+          message << "The source contains the following gems matching '#{name}': #{specs.map(&:full_name).join(", ")}" if specs.any?
         end
         raise GemNotFound, message
       end
-    end
-
-    def formatted_versions_with_platforms(versions_with_platforms)
-      version_platform_strs = versions_with_platforms.map do |vwp|
-        version = vwp.first
-        platform = vwp.last
-        version_platform_str = String.new(version.to_s)
-        version_platform_str << " #{platform}" unless platform.nil? || platform == Gem::Platform::RUBY
-        version_platform_str
-      end
-      version_platform_strs.join(", ")
     end
 
     def version_conflict_message(e)
