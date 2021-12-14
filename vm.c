@@ -1863,8 +1863,13 @@ rb_vm_check_optimizable_mid(VALUE mid)
 }
 
 static int
-vm_redefinition_check_method_type(const rb_method_definition_t *def)
+vm_redefinition_check_method_type(const rb_method_entry_t *me)
 {
+    if (me->called_id != me->def->original_id) {
+        return FALSE;
+    }
+
+    const rb_method_definition_t *def = me->def;
     switch (def->type) {
       case VM_METHOD_TYPE_CFUNC:
       case VM_METHOD_TYPE_OPTIMIZED:
@@ -1882,7 +1887,7 @@ rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
             RB_TYPE_P(RBASIC_CLASS(klass), T_CLASS)) {
        klass = RBASIC_CLASS(klass);
     }
-    if (vm_redefinition_check_method_type(me->def)) {
+    if (vm_redefinition_check_method_type(me)) {
         if (st_lookup(vm_opt_method_def_table, (st_data_t)me->def, &bop)) {
             int flag = vm_redefinition_check_flag(klass);
             if (flag != 0) {
@@ -1917,7 +1922,7 @@ add_opt_method(VALUE klass, ID mid, VALUE bop)
 {
     const rb_method_entry_t *me = rb_method_entry_at(klass, mid);
 
-    if (me && vm_redefinition_check_method_type(me->def)) {
+    if (me && vm_redefinition_check_method_type(me)) {
 	st_insert(vm_opt_method_def_table, (st_data_t)me->def, (st_data_t)bop);
 	st_insert(vm_opt_mid_table, (st_data_t)mid, (st_data_t)Qtrue);
     }
