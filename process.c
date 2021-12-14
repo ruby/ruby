@@ -4349,8 +4349,8 @@ rb_call_proc__fork(void)
  *     Process._fork   -> integer
  *
  *  An internal API for fork. Do not call this method directly.
- *  Currently, this is called via <tt>Kernel.#fork</tt>, +Process.fork+, and
- *  +popen+ with <tt>"-"</tt>.
+ *  Currently, this is called via Kernel#fork, Process.fork, and
+ *  IO.popen with <tt>"-"</tt>.
  *
  *  This method is not for casual code but for application monitoring
  *  libraries. You can add custom code before and after fork events
