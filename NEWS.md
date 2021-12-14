@@ -360,7 +360,7 @@ Outstanding ones only.
     * power_assert 2.0.1
     * rake 13.0.6
     * test-unit 3.5.2
-    * rbs 1.8.0
+    * rbs 1.8.1
     * typeprof 0.20.4
 *   The following default gems are now bundled gems.
     * net-ftp
