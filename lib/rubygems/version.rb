@@ -149,13 +149,6 @@
 # For the last example, single-digit versions are automatically extended with
 # a zero to give a sensible result.
 
-# Our code style opens classes directly without opening the intermediate
-# modules. This works because tha main entrypoint `rubygems.rb`, which defines
-# the root `Gem` module, is usually required first. But in this case we want to
-# allow using `Gem::Version` without loading the rest of rubygems, so we
-# explicit define the `Gem` placeholder module first.
-module Gem; end
-
 require_relative "deprecate"
 
 class Gem::Version

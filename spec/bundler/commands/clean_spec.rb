@@ -638,7 +638,7 @@ RSpec.describe "bundle clean" do
       s.executables = "irb"
     end
 
-    realworld_system_gems "fiddle --version 1.0.6", "tsort --version 0.1.0", "pathname --version 0.1.0", "set --version 1.0.1"
+    realworld_system_gems "fiddle --version 1.0.8", "tsort --version 0.1.0", "pathname --version 0.1.0", "set --version 1.0.1"
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}"

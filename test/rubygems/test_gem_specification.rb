@@ -944,7 +944,7 @@ dependencies: []
   end
 
   def test_self_outdated_and_latest_remotes
-    specs = spec_fetcher do |fetcher|
+    spec_fetcher do |fetcher|
       fetcher.download 'a', 4
       fetcher.download 'b', 3
 
@@ -953,8 +953,8 @@ dependencies: []
     end
 
     expected = [
-      [specs['a-3.a'], v(4)],
-      [specs['b-2'],   v(3)],
+      [Gem::Specification.stubs.find {|s| s.full_name == 'a-3.a' }, v(4)],
+      [Gem::Specification.stubs.find {|s| s.full_name == 'b-2' }, v(3)],
     ]
 
     assert_equal expected, Gem::Specification.outdated_and_latest_version.to_a

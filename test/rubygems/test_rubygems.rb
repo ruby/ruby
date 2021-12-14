@@ -22,6 +22,29 @@ class GemTest < Gem::TestCase
     "the problem and ask for help."
   end
 
+  def test_operating_system_customizing_default_dir
+    pend "does not apply to truffleruby" if RUBY_ENGINE == 'truffleruby'
+    pend "loads a custom defaults/jruby file that gets in the middle" if RUBY_ENGINE == 'jruby'
+
+    # On a non existing default dir, there should be no gems
+
+    path = util_install_operating_system_rb <<-RUBY
+      module Gem
+        def self.default_dir
+          File.expand_path("foo")
+        end
+      end
+    RUBY
+
+    output = Gem::Util.popen(
+      *ruby_with_rubygems_and_fake_operating_system_in_load_path(path),
+      '-e',
+      "require \"rubygems\"; puts Gem::Specification.stubs.map(&:full_name)",
+      {:err => [:child, :out]}
+    ).strip
+    assert_empty output
+  end
+
   private
 
   def util_install_operating_system_rb(content)
