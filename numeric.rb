@@ -237,7 +237,7 @@ end
 #
 #  Otherwise if +object+ responds to <tt>:to_int</tt>,
 #  calls <tt>object.to_int</tt> and returns the result.
-#    Integer.try_convert("1") # => 1
+#    Integer.try_convert(1.25) # => 1
 #
 #  Returns +nil+ if +object+ does not respond to <tt>:to_int</tt>
 #    Integer.try_convert([]) # => nil
