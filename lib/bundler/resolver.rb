@@ -134,6 +134,7 @@ module Bundler
           end
           nested.reduce([]) do |groups, (version, specs)|
             next groups if locked_requirement && !locked_requirement.satisfied_by?(version)
+            next groups unless specs.any? {|spec| spec.match_platform(platform) }
 
             specs_by_platform = Hash.new do |current_specs, current_platform|
               current_specs[current_platform] = select_best_platform_match(specs, current_platform)
@@ -145,7 +146,7 @@ module Bundler
             next groups if @resolving_only_for_ruby
 
             spec_group = SpecGroup.create_for(specs_by_platform, @platforms, platform)
-            groups << spec_group if spec_group
+            groups << spec_group
 
             groups
           end
