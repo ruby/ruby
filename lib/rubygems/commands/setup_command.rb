@@ -12,8 +12,6 @@ class Gem::Commands::SetupCommand < Gem::Command
   ENV_PATHS = %w[/usr/bin/env /bin/env].freeze
 
   def initialize
-    require 'tmpdir'
-
     super 'setup', 'Install RubyGems',
           :format_executable => false, :document => %w[ri],
           :force => true,
@@ -252,6 +250,8 @@ By default, this RubyGems will install gem as:
 
       Dir.chdir path do
         bin_file = "gem"
+
+        require 'tmpdir'
 
         dest_file = target_bin_path(bin_dir, bin_file)
         bin_tmp_file = File.join Dir.tmpdir, "#{bin_file}.#{$$}"
