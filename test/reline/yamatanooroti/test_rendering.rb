@@ -1197,7 +1197,7 @@ begin
       EOC
     end
 
-    def test_bottom
+    def test_scroll_at_bottom_for_dialog
       start_terminal(10, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write("\n\n\n\n\n\n")
       write("def hoge\n\n\n\n\n\n\nend\C-p\C-p\C-p\C-e")
