@@ -1535,12 +1535,7 @@ refinement_import_methods_i(ID key, VALUE value, void *data)
 }
 
 /*
- *  call-seq:
- *     import_methods(module, ...)    -> self
- *
- *  Imports methods from modules. Unlike Module#include,
- *  Refinement#import_methods copies methods and adds them into the refinement,
- *  so the refinement is activated in the imported methods.
+ * Note: docs for the method are in class.c
  */
 
 static VALUE
