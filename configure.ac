@@ -3732,12 +3732,15 @@ AC_SUBST(INSTALLDOC)
 
 AC_ARG_ENABLE(jit-support,
         AS_HELP_STRING([--disable-jit-support], [disable JIT features]),
-        [MJIT_SUPPORT=$enableval
-         AS_IF([test x"$enable_jit_support" = "xyes"],
-                 [AC_DEFINE(USE_MJIT, 1)],
-                 [AC_DEFINE(USE_MJIT, 0)])],
-        [MJIT_SUPPORT=yes
-         AC_DEFINE(USE_MJIT, 1)])
+        [MJIT_SUPPORT=$enableval],
+        # Enable mjit by default except for WASI
+        [AS_IF([test x"$target_os" != "xwasi"],
+		[MJIT_SUPPORT=yes],
+		[MJIT_SUPPORT=no ])])
+
+AS_IF([test x"$MJIT_SUPPORT" = "xyes"],
+	[AC_DEFINE(USE_MJIT, 1)],
+	[AC_DEFINE(USE_MJIT, 0)])
 
 AC_SUBST(MJIT_SUPPORT)
 
