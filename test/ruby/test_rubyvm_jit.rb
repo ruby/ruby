@@ -20,13 +20,13 @@ class TestRubyVMJIT < Test::Unit::TestCase
         eval("def mjit#{i}; end; mjit#{i}")
         i += 1
       end
-      print RubyVM::JIT.pause
-      print RubyVM::JIT.pause
+      print RubyVM::MJIT.pause
+      print RubyVM::MJIT.pause
       while i < 10
         eval("def mjit#{i}; end; mjit#{i}")
         i += 1
       end
-      print RubyVM::JIT.pause # no JIT here
+      print RubyVM::MJIT.pause # no JIT here
     EOS
     assert_equal('truefalsefalse', out)
     assert_equal(
@@ -39,7 +39,7 @@ class TestRubyVMJIT < Test::Unit::TestCase
     out, err = eval_with_jit(<<~'EOS', verbose: 1, min_calls: 1, wait: false)
       def a() end; a
       def b() end; b
-      RubyVM::JIT.pause
+      RubyVM::MJIT.pause
     EOS
     assert_equal(
       2, err.scan(/#{JITSupport::JIT_SUCCESS_PREFIX}/).size,
@@ -58,7 +58,7 @@ class TestRubyVMJIT < Test::Unit::TestCase
         eval("def mjit#{i}; end; mjit#{i}")
         i += 1
       end
-      print RubyVM::JIT.pause
+      print RubyVM::MJIT.pause
     EOS
     assert_equal('true', out)
   end
@@ -70,8 +70,8 @@ class TestRubyVMJIT < Test::Unit::TestCase
         eval("def mjit#{i}; end; mjit#{i}")
         i += 1
       end
-      print RubyVM::JIT.pause(wait: false)
-      print RubyVM::JIT.pause(wait: false)
+      print RubyVM::MJIT.pause(wait: false)
+      print RubyVM::MJIT.pause(wait: false)
     EOS
     assert_equal('truefalse', out)
     assert_equal(true, err.scan(/#{JITSupport::JIT_SUCCESS_PREFIX}/).size < 10)
@@ -79,11 +79,11 @@ class TestRubyVMJIT < Test::Unit::TestCase
 
   def test_resume
     out, err = eval_with_jit(<<~'EOS', verbose: 1, min_calls: 1, wait: false)
-      print RubyVM::JIT.resume
-      print RubyVM::JIT.pause
-      print RubyVM::JIT.resume
-      print RubyVM::JIT.resume
-      print RubyVM::JIT.pause
+      print RubyVM::MJIT.resume
+      print RubyVM::MJIT.pause
+      print RubyVM::MJIT.resume
+      print RubyVM::MJIT.resume
+      print RubyVM::MJIT.pause
     EOS
     assert_equal('falsetruetruefalsetrue', out)
     assert_equal(0, err.scan(/#{JITSupport::JIT_SUCCESS_PREFIX}/).size)

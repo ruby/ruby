@@ -135,7 +135,7 @@ class BenchmarkDriver::Runner::MjitExec
           nil
         end
         % end
-        RubyVM::JIT.pause if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
+        RubyVM::MJIT.pause if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
 
         def vm
           t = Process.clock_gettime(Process::CLOCK_MONOTONIC)
@@ -172,7 +172,7 @@ class BenchmarkDriver::Runner::MjitExec
         a<%= i %>
         a<%= i %> # --jit-min-calls=2
         % end
-        RubyVM::JIT.pause if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
+        RubyVM::MJIT.pause if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
 
         def vm
           t = Process.clock_gettime(Process::CLOCK_MONOTONIC)
@@ -228,7 +228,7 @@ class BenchmarkDriver::Runner::MjitExec
 
         jit
         jit
-        RubyVM::JIT.pause if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
+        RubyVM::MJIT.pause if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
         File.write(<%= result.dump %>, jit)
       EOS
     end

@@ -216,7 +216,7 @@ module DRbCore
   def test_06_timeout
     omit if RUBY_PLATFORM.include?("armv7l-linux")
     omit if RUBY_PLATFORM.include?("sparc-solaris2.10")
-    omit if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # expecting a certain delay is difficult for --jit-wait CI
+    omit if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # expecting a certain delay is difficult for --jit-wait CI
     Timeout.timeout(60) do
       ten = Onecky.new(10)
       assert_raise(Timeout::Error) do

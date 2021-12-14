@@ -23,7 +23,7 @@ describe "IO#flush" do
     # For instance, MJIT creates a worker before @r.close with fork(), @r.close happens,
     # and the MJIT worker keeps the pipe open until the worker execve().
     # TODO: consider acquiring GVL from MJIT worker.
-    guard_not -> { defined?(RubyVM::JIT) && RubyVM::JIT.enabled? } do
+    guard_not -> { defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? } do
       it "raises Errno::EPIPE if sync=false and the read end is closed" do
         @w.sync = false
         @w.write "foo"

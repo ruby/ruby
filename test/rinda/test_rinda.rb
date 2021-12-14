@@ -402,7 +402,7 @@ module TupleSpaceTestModule
   end
 
   def test_cancel_02
-    skip 'this test is unstable with --jit-wait' if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
+    skip 'this test is unstable with --jit-wait' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
     entry = @ts.write([:removeme, 1])
     assert_equal([[:removeme, 1]], @ts.read_all([nil, nil]))
     entry.cancel
@@ -662,7 +662,7 @@ class TestRingServer < Test::Unit::TestCase
   end
 
   def test_do_reply_local
-    skip 'timeout-based test becomes unstable with --jit-wait' if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
+    skip 'timeout-based test becomes unstable with --jit-wait' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
     with_timeout(30) {_test_do_reply_local}
   end
 

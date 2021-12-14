@@ -437,8 +437,6 @@ Excluding feature bug fixes.
 * `--mjit-verbose` and `--mjit-warning` output "JIT cancel" when JIT-ed
   code is disabled because TracePoint or GC.compact is used.
 
-* `RubyVM::MJIT` is renamed to `RubyVM::JIT`. [[Feature #17490]]
-
 ### YJIT: New experimental in-process JIT compiler
 
 New JIT compiler available as an experimental feature. [[Feature #18229]]
