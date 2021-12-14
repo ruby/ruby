@@ -11,7 +11,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
   NO_JIT_DESCRIPTION =
     if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # checking -DMJIT_FORCE_ENABLE
-      RUBY_DESCRIPTION.sub(/\+JIT /, '')
+      RUBY_DESCRIPTION.sub(/\+MJIT /, '')
     elsif yjit_enabled? # checking -DYJIT_FORCE_ENABLE
       RUBY_DESCRIPTION.sub(/\+YJIT /, '')
     else
@@ -137,7 +137,7 @@ class TestRubyOptions < Test::Unit::TestCase
   VERSION_PATTERN_WITH_JIT =
     case RUBY_ENGINE
     when 'ruby'
-      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+JIT \[#{q[RUBY_PLATFORM]}\]$/
+      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+MJIT \[#{q[RUBY_PLATFORM]}\]$/
     else
       VERSION_PATTERN
     end
@@ -226,9 +226,14 @@ class TestRubyOptions < Test::Unit::TestCase
     return if yjit_force_enabled?
 
     [
-      %w(--version --jit --disable=jit),
-      %w(--version --enable=jit --disable=jit),
-      %w(--version --enable-jit --disable-jit),
+      %w(--version --mjit --disable=mjit),
+      %w(--version --enable=mjit --disable=mjit),
+      %w(--version --enable-mjit --disable-mjit),
+      *([
+        %w(--version --jit --disable=jit),
+        %w(--version --enable=jit --disable=jit),
+        %w(--version --enable-jit --disable-jit),
+      ] unless RUBY_PLATFORM.start_with?('x86_64-') && RUBY_PLATFORM !~ /mswin|mingw|msys/),
     ].each do |args|
       assert_in_out_err([env] + args) do |r, e|
         assert_match(VERSION_PATTERN, r[0])
@@ -239,16 +244,21 @@ class TestRubyOptions < Test::Unit::TestCase
 
     if JITSupport.supported?
       [
-        %w(--version --jit),
-        %w(--version --enable=jit),
-        %w(--version --enable-jit),
+        %w(--version --mjit),
+        %w(--version --enable=mjit),
+        %w(--version --enable-mjit),
+        *([
+          %w(--version --jit),
+          %w(--version --enable=jit),
+          %w(--version --enable-jit),
+        ] unless RUBY_PLATFORM.start_with?('x86_64-') && RUBY_PLATFORM !~ /mswin|mingw|msys/),
       ].each do |args|
         assert_in_out_err([env] + args) do |r, e|
           assert_match(VERSION_PATTERN_WITH_JIT, r[0])
           if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # checking -DMJIT_FORCE_ENABLE
             assert_equal(RUBY_DESCRIPTION, r[0])
           else
-            assert_equal(EnvUtil.invoke_ruby([env, '--jit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
+            assert_equal(EnvUtil.invoke_ruby([env, '--mjit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
           end
           assert_equal([], e)
         end
@@ -1113,7 +1123,7 @@ class TestRubyOptions < Test::Unit::TestCase
     # mswin uses prebuilt precompiled header. Thus it does not show a pch compilation log to check "-O0 -O1".
     if JITSupport.supported? && !RUBY_PLATFORM.match?(/mswin/)
       env = { 'MJIT_SEARCH_BUILD_DIR' => 'true' }
-      assert_in_out_err([env, "--disable-yjit", "--jit-debug=-O0 -O1", "--jit-verbose=2", "" ], "", [], /-O0 -O1/)
+      assert_in_out_err([env, "--disable-yjit", "--mjit-debug=-O0 -O1", "--mjit-verbose=2", "" ], "", [], /-O0 -O1/)
     end
   end
 

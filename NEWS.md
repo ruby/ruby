@@ -419,9 +419,14 @@ Excluding feature bug fixes.
   This feature is turned off by default and can be enabled by compiling Ruby
   with flag `USE_RVARGC=1` set. [[Feature #18045]] [[Feature #18239]]
 
-### JIT
+## JIT
 
-* The default `--jit-max-cache` is changed from 100 to 10000.
+* Rename Ruby 3.0's `--jit` to `--mjit`, and alias `--jit` to `--yjit`
+  on non-Windows x86-64 platforms and to `--mjit` on others.
+
+### MJIT
+
+* The default `--mjit-max-cache` is changed from 100 to 10000.
 
 * JIT-ed code is no longer cancelled when a TracePoint for class events
   is enabled.
@@ -429,7 +434,7 @@ Excluding feature bug fixes.
 * The JIT compiler no longer skips compilation of methods longer than
   1000 instructions.
 
-* `--jit-verbose` and `--jit-warning` output "JIT cancel" when JIT-ed
+* `--mjit-verbose` and `--mjit-warning` output "JIT cancel" when JIT-ed
   code is disabled because TracePoint or GC.compact is used.
 
 * `RubyVM::MJIT` is renamed to `RubyVM::JIT`. [[Feature #17490]]

@@ -20,17 +20,11 @@
 # define YJIT_DUMP_MODE 0
 #endif
 
-#if defined(__x86_64__) && !defined(_WIN32)
-# define PLATFORM_SUPPORTED_P 1
-#else
-# define PLATFORM_SUPPORTED_P 0
-#endif
-
 // USE_MJIT comes from configure options
 #define JIT_ENABLED USE_MJIT
 
 // Check if we need to include YJIT in the build
-#if JIT_ENABLED && PLATFORM_SUPPORTED_P
+#if JIT_ENABLED && YJIT_SUPPORTED_P
 
 #include "yjit_asm.c"
 
@@ -165,7 +159,7 @@ static uint32_t yjit_codepage_frozen_bytes = 0;
 #include "yjit_codegen.c"
 
 #else
-// !JIT_ENABLED || !PLATFORM_SUPPORTED_P
+// !JIT_ENABLED || !YJIT_SUPPORTED_P
 // In these builds, YJIT could never be turned on. Provide dummy
 // implementations for YJIT functions exposed to the rest of the code base.
 // See yjit.h.
@@ -190,4 +184,4 @@ void rb_yjit_before_ractor_spawn(void) {}
 void rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic) {}
 void rb_yjit_tracing_invalidate_all(void) {}
 
-#endif // if JIT_ENABLED && PLATFORM_SUPPORTED_P
+#endif // if JIT_ENABLED && YJIT_SUPPORTED_P

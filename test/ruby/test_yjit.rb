@@ -21,6 +21,15 @@ class TestYJIT < Test::Unit::TestCase
       %w(--version --disable=yjit --yjit),
       %w(--version --disable=yjit --enable-yjit),
       %w(--version --disable=yjit --enable=yjit),
+      *([
+        %w(--version --jit),
+        %w(--version --disable-jit --jit),
+        %w(--version --disable-jit --enable-jit),
+        %w(--version --disable-jit --enable=jit),
+        %w(--version --disable=jit --yjit),
+        %w(--version --disable=jit --enable-jit),
+        %w(--version --disable=jit --enable=jit),
+      ] if RUBY_PLATFORM.start_with?('x86_64-') && RUBY_PLATFORM !~ /mswin|mingw|msys/),
     ].each do |version_args|
       assert_in_out_err(version_args) do |stdout, stderr|
         assert_equal(RUBY_DESCRIPTION, stdout.first)

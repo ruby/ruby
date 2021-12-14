@@ -249,7 +249,7 @@ static char *tmp_dir;
 static const char *cc_path;
 // Used C compiler flags.
 static const char **cc_common_args;
-// Used C compiler flags added by --jit-debug=...
+// Used C compiler flags added by --mjit-debug=...
 static char **cc_added_args;
 // Name of the precompiled header file.
 static char *pch_file;
@@ -686,7 +686,7 @@ remove_so_file(const char *so_file, struct rb_mjit_unit *unit)
 #endif
 }
 
-// Print _mjitX, but make a human-readable funcname when --jit-debug is used
+// Print _mjitX, but make a human-readable funcname when --mjit-debug is used
 static void
 sprint_funcname(char *funcname, const struct rb_mjit_unit *unit)
 {
