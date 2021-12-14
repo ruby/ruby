@@ -45,6 +45,7 @@
 #include "transient_heap.h"
 #include "ruby/thread_native.h"
 #include "ruby/ractor.h"
+#include "vm_sync.h"
 
 #ifndef HASH_DEBUG
 #define HASH_DEBUG 0
@@ -4810,16 +4811,8 @@ extern char **environ;
 #define ENVNMATCH(s1, s2, n) (memcmp((s1), (s2), (n)) == 0)
 #endif
 
-static rb_nativethread_lock_t env_lock;
-
-static const char*
-getenv_with_lock(const char *name)
-{
-    rb_native_mutex_lock(&env_lock);
-    char *result = getenv(name);
-    rb_native_mutex_unlock(&env_lock);
-    return result;
-}
+#define ENV_LOCK()   RB_VM_LOCK_ENTER()
+#define ENV_UNLOCK() RB_VM_LOCK_LEAVE()
 
 static inline rb_encoding *
 env_encoding(void)
@@ -4841,12 +4834,6 @@ env_enc_str_new(const char *ptr, long len, rb_encoding *enc)
 }
 
 static VALUE
-env_enc_str_new_cstr(const char *ptr, rb_encoding *enc)
-{
-    return env_enc_str_new(ptr, strlen(ptr), enc);
-}
-
-static VALUE
 env_str_new(const char *ptr, long len)
 {
     return env_enc_str_new(ptr, len, env_encoding());
@@ -4859,13 +4846,34 @@ env_str_new2(const char *ptr)
     return env_str_new(ptr, strlen(ptr));
 }
 
-static const char TZ_ENV[] = "TZ";
-
 static VALUE
-env_name_new(const char *name, const char *ptr)
+getenv_with_lock(const char *name)
 {
-    return env_enc_str_new_cstr(ptr, env_encoding());
+    VALUE ret;
+    ENV_LOCK();
+    {
+        const char *val = getenv(name);
+        ret = env_str_new2(val);
+    }
+    ENV_UNLOCK();
+    return ret;
 }
+
+static bool
+has_env_with_lock(const char *name)
+{
+    const char *val;
+
+    ENV_LOCK();
+    {
+        val = getenv(name);
+    }
+    ENV_UNLOCK();
+
+    return val ? true : false;
+}
+
+static const char TZ_ENV[] = "TZ";
 
 static void *
 get_env_cstr(
@@ -4919,17 +4927,13 @@ static VALUE
 env_delete(VALUE name)
 {
     const char *nam = env_name(name);
-    const char *val = getenv_with_lock(nam);
-
     reset_by_modified_env(nam);
+    VALUE val = getenv_with_lock(nam);
 
-    if (val) {
-	VALUE value = env_str_new2(val);
-
-	ruby_setenv(nam, 0);
-	return value;
+    if (!NIL_P(val)) {
+        ruby_setenv(nam, 0);
     }
-    return Qnil;
+    return val;
 }
 
 /*
@@ -4982,14 +4986,9 @@ env_delete_m(VALUE obj, VALUE name)
 static VALUE
 rb_f_getenv(VALUE obj, VALUE name)
 {
-    const char *nam, *env;
-
-    nam = env_name(name);
-    env = getenv_with_lock(nam);
-    if (env) {
-	return env_name_new(nam, env);
-    }
-    return Qnil;
+    const char *nam = env_name(name);
+    VALUE env = getenv_with_lock(nam);
+    return env;
 }
 
 /*
@@ -5022,7 +5021,8 @@ env_fetch(int argc, VALUE *argv, VALUE _)
 {
     VALUE key;
     long block_given;
-    const char *nam, *env;
+    const char *nam;
+    VALUE env;
 
     rb_check_arity(argc, 1, 2);
     key = argv[0];
@@ -5032,14 +5032,15 @@ env_fetch(int argc, VALUE *argv, VALUE _)
     }
     nam = env_name(key);
     env = getenv_with_lock(nam);
-    if (!env) {
+
+    if (NIL_P(env)) {
 	if (block_given) return rb_yield(key);
 	if (argc == 1) {
 	    rb_key_err_raise(rb_sprintf("key not found: \"%"PRIsVALUE"\"", key), envtbl, key);
 	}
 	return argv[1];
     }
-    return env_name_new(nam, env);
+    return env;
 }
 
 int
@@ -5064,17 +5065,17 @@ in_origenv(const char *str)
 static int
 envix(const char *nam)
 {
+    // should be locked
+
     register int i, len = strlen(nam);
     char **env;
 
-    rb_native_mutex_lock(&env_lock);
     env = GET_ENVIRON(environ);
     for (i = 0; env[i]; i++) {
 	if (ENVNMATCH(env[i],nam,len) && env[i][len] == '=')
 	    break;			/* memcmp must come first to avoid */
     }					/* potential SEGV's */
     FREE_ENVIRON(environ);
-    rb_native_mutex_unlock(&env_lock);
     return i;
 }
 #endif
@@ -5175,13 +5176,17 @@ ruby_setenv(const char *name, const char *value)
 	wname[len-1] = L'=';
 #endif
     }
-    rb_native_mutex_lock(&env_lock);
+
+    ENV_LOCK();
+    {
 #ifndef HAVE__WPUTENV_S
-    failed = _wputenv(wname);
+        failed = _wputenv(wname);
 #else
-    failed = _wputenv_s(wname, wvalue);
+        failed = _wputenv_s(wname, wvalue);
 #endif
-    rb_native_mutex_unlock(&env_lock);
+    }
+    ENV_UNLOCK();
+
     ALLOCV_END(buf);
     /* even if putenv() failed, clean up and try to delete the
      * variable from the system area. */
@@ -5196,21 +5201,31 @@ ruby_setenv(const char *name, const char *value)
     }
 #elif defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
     if (value) {
-        rb_native_mutex_lock(&env_lock);
-	bool setenv_fail = setenv(name, value, 1);
-	rb_native_mutex_unlock(&env_lock);
-	if (setenv_fail)
-	    rb_sys_fail_str(rb_sprintf("setenv(%s)", name));
+        int ret;
+        ENV_LOCK();
+        {
+            ret = setenv(name, value, 1);
+        }
+        ENV_UNLOCK();
+
+        if (ret) rb_sys_fail_str(rb_sprintf("setenv(%s)", name));
     }
     else {
 #ifdef VOID_UNSETENV
-	unsetenv(name);
+        ENV_LOCK();
+        {
+            unsetenv(name);
+        }
+        ENV_UNLOCK();
 #else
-        rb_native_mutex_lock(&env_lock);
-	bool unsetenv_fail = unsetenv(name);
-	rb_native_mutex_unlock(&env_lock);
-	if (unsetenv_fail)
-	    rb_sys_fail_str(rb_sprintf("unsetenv(%s)", name));
+        int ret;
+        ENV_LOCK();
+        {
+            ret = unsetenv(name);
+        }
+        ENV_UNLOCK();
+
+        if (ret) rb_sys_fail_str(rb_sprintf("unsetenv(%s)", name));
 #endif
     }
 #elif defined __sun
@@ -5218,76 +5233,91 @@ ruby_setenv(const char *name, const char *value)
     /* The below code was tested on Solaris 10 by:
          % ./configure ac_cv_func_setenv=no ac_cv_func_unsetenv=no
     */
-    rb_native_mutex_lock(&env_lock);
     size_t len, mem_size;
     char **env_ptr, *str, *mem_ptr;
 
     check_envname(name);
     len = strlen(name);
     if (value) {
-	mem_size = len + strlen(value) + 2;
-	mem_ptr = malloc(mem_size);
-	if (mem_ptr == NULL)
-	    rb_sys_fail_str(rb_sprintf("malloc("PRIuSIZE")", mem_size));
-	snprintf(mem_ptr, mem_size, "%s=%s", name, value);
+        mem_size = len + strlen(value) + 2;
+        mem_ptr = malloc(mem_size);
+        if (mem_ptr == NULL)
+          rb_sys_fail_str(rb_sprintf("malloc("PRIuSIZE")", mem_size));
+        snprintf(mem_ptr, mem_size, "%s=%s", name, value);
     }
-    for (env_ptr = GET_ENVIRON(environ); (str = *env_ptr) != 0; ++env_ptr) {
-	if (!strncmp(str, name, len) && str[len] == '=') {
-	    if (!in_origenv(str)) free(str);
-	    while ((env_ptr[0] = env_ptr[1]) != 0) env_ptr++;
-	    break;
-	}
+
+    ENV_LOCK();
+    {
+        for (env_ptr = GET_ENVIRON(environ); (str = *env_ptr) != 0; ++env_ptr) {
+            if (!strncmp(str, name, len) && str[len] == '=') {
+                if (!in_origenv(str)) free(str);
+                while ((env_ptr[0] = env_ptr[1]) != 0) env_ptr++;
+                break;
+            }
+        }
     }
+    ENV_UNLOCK();
+
     if (value) {
-	bool putenv_fail = putenv(mem_ptr);
-	rb_native_mutex_unlock(&env_lock);
-	if (putenv_fail) {
+        int ret;
+        ENV_LOCK();
+        {
+            ret = putenv(mem_ptr);
+        }
+        ENV_UNLOCK();
+
+        if (ret) {
 	    free(mem_ptr);
-	    rb_sys_fail_str(rb_sprintf("putenv(%s)", name));
-	}
-    }
-    else {
-	rb_native_mutex_unlock(&env_lock);
+            rb_sys_fail_str(rb_sprintf("putenv(%s)", name));
+        }
     }
 #else  /* WIN32 */
     size_t len;
     int i;
 
-    i=envix(name);		        /* where does it go? */
+    ENV_LOCK();
+    {
+        i = envix(name);		/* where does it go? */
 
-    if (environ == origenviron) {	/* need we copy environment? */
-	int j;
-	int max;
-	char **tmpenv;
+        if (environ == origenviron) {	/* need we copy environment? */
+            int j;
+            int max;
+            char **tmpenv;
 
-	for (max = i; environ[max]; max++) ;
-	tmpenv = ALLOC_N(char*, max+2);
-	for (j=0; j<max; j++)		/* copy environment */
-	    tmpenv[j] = ruby_strdup(environ[j]);
-	tmpenv[max] = 0;
-	environ = tmpenv;		/* tell exec where it is now */
+            for (max = i; environ[max]; max++) ;
+            tmpenv = ALLOC_N(char*, max+2);
+            for (j=0; j<max; j++)		/* copy environment */
+              tmpenv[j] = ruby_strdup(environ[j]);
+            tmpenv[max] = 0;
+            environ = tmpenv;		/* tell exec where it is now */
+        }
+
+        if (environ[i]) {
+            char **envp = origenviron;
+            while (*envp && *envp != environ[i]) envp++;
+            if (!*envp)
+              xfree(environ[i]);
+            if (!value) {
+                while (environ[i]) {
+                    environ[i] = environ[i+1];
+                    i++;
+                }
+                goto finish;
+            }
+        }
+        else {			/* does not exist yet */
+            if (!value) goto finish;
+            REALLOC_N(environ, char*, i+2);	/* just expand it a bit */
+            environ[i+1] = 0;	/* make sure it's null terminated */
+        }
+
+        len = strlen(name) + strlen(value) + 2;
+        environ[i] = ALLOC_N(char, len);
+        snprintf(environ[i],len,"%s=%s",name,value); /* all that work just for this */
+
+      finish:;
     }
-    if (environ[i]) {
-	char **envp = origenviron;
-	while (*envp && *envp != environ[i]) envp++;
-	if (!*envp)
-	    xfree(environ[i]);
-	if (!value) {
-	    while (environ[i]) {
-		environ[i] = environ[i+1];
-		i++;
-	    }
-	    return;
-	}
-    }
-    else {			/* does not exist yet */
-	if (!value) return;
-	REALLOC_N(environ, char*, i+2);	/* just expand it a bit */
-	environ[i+1] = 0;	/* make sure it's null terminated */
-    }
-    len = strlen(name) + strlen(value) + 2;
-    environ[i] = ALLOC_N(char, len);
-    snprintf(environ[i],len,"%s=%s",name,value); /* all that work just for this */
+    ENV_UNLOCK();
 #endif /* WIN32 */
 }
 
@@ -5368,53 +5398,29 @@ env_aset(VALUE nm, VALUE val)
     return val;
 }
 
-static int
-env_entry_count(void)
-{
-    int i;
-    char **env;
-    env = GET_ENVIRON(environ);
-    for (i=0; env[i]; i++)
-	;
-    FREE_ENVIRON(environ);
-    return i;
-}
-
-static void
-copy_env_pairs(const char **arr, int size)
-{
-    char **env;
-    env = GET_ENVIRON(environ);
-    for (int i = 0; i < size; i++) {
-	const char *p = *env;
-	arr[i] = p;
-	env++;
-    }
-    FREE_ENVIRON(environ);
-}
-
 static VALUE
 env_keys(int raw)
 {
-    VALUE ary;
     rb_encoding *enc = raw ? 0 : rb_locale_encoding();
+    VALUE ary = rb_ary_new();
 
-    ary = rb_ary_new();
-    rb_native_mutex_lock(&env_lock);
-    int pair_count = env_entry_count();
-    const char *env_pairs[pair_count];
-    copy_env_pairs(env_pairs, pair_count);
-    rb_native_mutex_unlock(&env_lock);
-
-    for (int current_pair = 0; current_pair < pair_count; current_pair++) {
-	const char *p = env_pairs[current_pair];
-	char *s = strchr(p, '=');
-	if (s) {
-            size_t l = s - p;
-            VALUE e = raw ? rb_utf8_str_new(p, l) : env_enc_str_new(p, l, enc);
-            rb_ary_push(ary, e);
-	}
+    ENV_LOCK();
+    {
+        char **env = GET_ENVIRON(environ);
+        while (*env) {
+            char *s = strchr(*env, '=');
+            if (s) {
+                const char *p = *env;
+                size_t l = s - p;
+                VALUE e = raw ? rb_utf8_str_new(p, l) : env_enc_str_new(p, l, enc);
+                rb_ary_push(ary, e);
+            }
+            env++;
+        }
+        FREE_ENVIRON(environ);
     }
+    ENV_UNLOCK();
+
     return ary;
 }
 
@@ -5443,15 +5449,18 @@ rb_env_size(VALUE ehash, VALUE args, VALUE eobj)
     char **env;
     long cnt = 0;
 
-    rb_native_mutex_lock(&env_lock);
-    env = GET_ENVIRON(environ);
-    for (; *env ; ++env) {
-	if (strchr(*env, '=')) {
-	    cnt++;
-	}
+    ENV_LOCK();
+    {
+        env = GET_ENVIRON(environ);
+        for (; *env ; ++env) {
+            if (strchr(*env, '=')) {
+                cnt++;
+            }
+        }
+        FREE_ENVIRON(environ);
     }
-    FREE_ENVIRON(environ);
-    rb_native_mutex_unlock(&env_lock);
+    ENV_UNLOCK();
+
     return LONG2FIX(cnt);
 }
 
@@ -5489,22 +5498,23 @@ env_each_key(VALUE ehash)
 static VALUE
 env_values(void)
 {
-    VALUE ary;
+    VALUE ary = rb_ary_new();
 
-    ary = rb_ary_new();
-    rb_native_mutex_lock(&env_lock);
-    int pair_count = env_entry_count();
-    const char *env_pairs[pair_count];
-    copy_env_pairs(env_pairs, pair_count);
-    rb_native_mutex_unlock(&env_lock);
+    ENV_LOCK();
+    {
+        char **env = GET_ENVIRON(environ);
 
-    for (int current_pair = 0; current_pair < pair_count; current_pair++) {
-	const char *p = env_pairs[current_pair];
-	char *s = strchr(p, '=');
-	if (s) {
-	    rb_ary_push(ary, env_str_new2(s+1));
-	}
+        while (*env) {
+            char *s = strchr(*env, '=');
+            if (s) {
+                rb_ary_push(ary, env_str_new2(s+1));
+            }
+            env++;
+        }
+        FREE_ENVIRON(environ);
     }
+    ENV_UNLOCK();
+
     return ary;
 }
 
@@ -5578,29 +5588,30 @@ env_each_value(VALUE ehash)
 static VALUE
 env_each_pair(VALUE ehash)
 {
-    VALUE ary;
     long i;
 
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
 
-    ary = rb_ary_new();
-    rb_native_mutex_lock(&env_lock);
-    int pair_count = env_entry_count();
-    const char *env_pairs[pair_count];
-    copy_env_pairs(env_pairs, pair_count);
-    rb_native_mutex_unlock(&env_lock);
+    VALUE ary = rb_ary_new();
 
-    for (int current_pair = 0; current_pair < pair_count; current_pair++) {
-	const char *p = env_pairs[current_pair];
-	char *s = strchr(p, '=');
-	if (s) {
-	    rb_ary_push(ary, env_str_new(p, s-p));
-	    rb_ary_push(ary, env_str_new2(s+1));
-	}
+    ENV_LOCK();
+    {
+        char **env = GET_ENVIRON(environ);
+
+        while (*env) {
+            char *s = strchr(*env, '=');
+            if (s) {
+                rb_ary_push(ary, env_str_new(*env, s-*env));
+                rb_ary_push(ary, env_str_new2(s+1));
+            }
+            env++;
+        }
+        FREE_ENVIRON(environ);
     }
+    ENV_UNLOCK();
 
     if (rb_block_pair_yield_optimizable()) {
-	for (i=0; i<RARRAY_LEN(ary); i+=2) {
+        for (i=0; i<RARRAY_LEN(ary); i+=2) {
 	    rb_yield_values(2, RARRAY_AREF(ary, i), RARRAY_AREF(ary, i+1));
 	}
     }
@@ -5609,6 +5620,7 @@ env_each_pair(VALUE ehash)
 	    rb_yield(rb_assoc_new(RARRAY_AREF(ary, i), RARRAY_AREF(ary, i+1)));
 	}
     }
+
     return ehash;
 }
 
@@ -5937,30 +5949,31 @@ env_to_s(VALUE _)
 static VALUE
 env_inspect(VALUE _)
 {
-    VALUE str, i;
+    VALUE i;
+    VALUE str = rb_str_buf_new2("{");
 
-    str = rb_str_buf_new2("{");
-    rb_native_mutex_lock(&env_lock);
-    int pair_count = env_entry_count();
-    const char *env_pairs[pair_count];
-    copy_env_pairs(env_pairs, pair_count);
-    rb_native_mutex_unlock(&env_lock);
+    ENV_LOCK();
+    {
+        char **env = GET_ENVIRON(environ);
+        while (*env) {
+            char *s = strchr(*env, '=');
 
-    for (int current_pair = 0; current_pair < pair_count; current_pair++) {
-	const char *p = env_pairs[current_pair];
-	char *s = strchr(p, '=');
-
-	if (current_pair != 0) {
-	    rb_str_buf_cat2(str, ", ");
-	}
-	if (s) {
-	    rb_str_buf_cat2(str, "\"");
-	    rb_str_buf_cat(str, p, s-p);
-	    rb_str_buf_cat2(str, "\"=>");
-	    i = rb_inspect(rb_str_new2(s+1));
-	    rb_str_buf_append(str, i);
-	}
+            if (env != environ) {
+                rb_str_buf_cat2(str, ", ");
+            }
+            if (s) {
+                rb_str_buf_cat2(str, "\"");
+                rb_str_buf_cat(str, *env, s-*env);
+                rb_str_buf_cat2(str, "\"=>");
+                i = rb_inspect(rb_str_new2(s+1));
+                rb_str_buf_append(str, i);
+            }
+            env++;
+        }
+        FREE_ENVIRON(environ);
     }
+    ENV_UNLOCK();
+
     rb_str_buf_cat2(str, "}");
 
     return str;
@@ -5978,23 +5991,23 @@ env_inspect(VALUE _)
 static VALUE
 env_to_a(VALUE _)
 {
-    VALUE ary;
+    VALUE ary = rb_ary_new();
 
-    ary = rb_ary_new();
-    rb_native_mutex_lock(&env_lock);
-    int pair_count = env_entry_count();
-    const char *env_pairs[pair_count];
-    copy_env_pairs(env_pairs, pair_count);
-    rb_native_mutex_unlock(&env_lock);
-
-    for (int current_pair = 0; current_pair < pair_count; current_pair++) {
-	const char *p = env_pairs[current_pair];
-	char *s = strchr(p, '=');
-	if (s) {
-	    rb_ary_push(ary, rb_assoc_new(env_str_new(p, s-p),
-					  env_str_new2(s+1)));
-	}
+    ENV_LOCK();
+    {
+        char **env = GET_ENVIRON(environ);
+        while (*env) {
+            char *s = strchr(*env, '=');
+            if (s) {
+                rb_ary_push(ary, rb_assoc_new(env_str_new(*env, s-*env),
+                                              env_str_new2(s+1)));
+            }
+            env++;
+        }
+        FREE_ENVIRON(environ);
     }
+    ENV_UNLOCK();
+
     return ary;
 }
 
@@ -6012,6 +6025,22 @@ env_none(VALUE _)
     return Qnil;
 }
 
+static int
+env_size_with_lock(void)
+{
+    int i;
+
+    ENV_LOCK();
+    {
+        char **env = GET_ENVIRON(environ);
+        for (i=0; env[i]; i++);
+        FREE_ENVIRON(environ);
+    }
+    ENV_UNLOCK();
+
+    return i;
+}
+
 /*
  * call-seq:
  *   ENV.length -> an_integer
@@ -6025,10 +6054,7 @@ env_none(VALUE _)
 static VALUE
 env_size(VALUE _)
 {
-    rb_native_mutex_lock(&env_lock);
-    int i = env_entry_count();
-    rb_native_mutex_unlock(&env_lock);
-    return INT2FIX(i);
+    return INT2FIX(env_size_with_lock());
 }
 
 /*
@@ -6044,18 +6070,19 @@ env_size(VALUE _)
 static VALUE
 env_empty_p(VALUE _)
 {
-    char **env;
+    bool empty = true;
 
-    rb_native_mutex_lock(&env_lock);
-    env = GET_ENVIRON(environ);
-    if (env[0] == 0) {
+    ENV_LOCK();
+    {
+        char **env = GET_ENVIRON(environ);
+        if (env[0] != 0) {
+            empty = false;
+        }
 	FREE_ENVIRON(environ);
-	rb_native_mutex_unlock(&env_lock);
-	return Qtrue;
     }
-    FREE_ENVIRON(environ);
-    rb_native_mutex_unlock(&env_lock);
-    return Qfalse;
+    ENV_UNLOCK();
+
+    return RBOOL(empty);
 }
 
 /*
@@ -6086,10 +6113,8 @@ env_empty_p(VALUE _)
 static VALUE
 env_has_key(VALUE env, VALUE key)
 {
-    const char *s;
-
-    s = env_name(key);
-    return RBOOL(getenv_with_lock(s));
+    const char *s = env_name(key);
+    return RBOOL(has_env_with_lock(s));
 }
 
 /*
@@ -6115,12 +6140,15 @@ env_has_key(VALUE env, VALUE key)
 static VALUE
 env_assoc(VALUE env, VALUE key)
 {
-    const char *s, *e;
+    const char *s = env_name(key);
+    VALUE e = getenv_with_lock(s);
 
-    s = env_name(key);
-    e = getenv_with_lock(s);
-    if (e) return rb_assoc_new(key, env_str_new2(e));
-    return Qnil;
+    if (!NIL_P(e)) {
+        return rb_assoc_new(key, e);
+    }
+    else {
+        return Qnil;
+    }
 }
 
 /*
@@ -6138,27 +6166,30 @@ env_assoc(VALUE env, VALUE key)
 static VALUE
 env_has_value(VALUE dmy, VALUE obj)
 {
-    char **env;
-
     obj = rb_check_string_type(obj);
     if (NIL_P(obj)) return Qnil;
-    rb_native_mutex_lock(&env_lock);
-    env = GET_ENVIRON(environ);
-    while (*env) {
-	char *s = strchr(*env, '=');
-	if (s++) {
-	    long len = strlen(s);
-	    if (RSTRING_LEN(obj) == len && strncmp(s, RSTRING_PTR(obj), len) == 0) {
-		FREE_ENVIRON(environ);
-		rb_native_mutex_unlock(&env_lock);
-		return Qtrue;
-	    }
-	}
-	env++;
+
+    VALUE ret = Qfalse;
+
+    ENV_LOCK();
+    {
+        char **env = GET_ENVIRON(environ);
+        while (*env) {
+            char *s = strchr(*env, '=');
+            if (s++) {
+                long len = strlen(s);
+                if (RSTRING_LEN(obj) == len && strncmp(s, RSTRING_PTR(obj), len) == 0) {
+                    ret = Qtrue;
+                    break;
+                }
+            }
+            env++;
+        }
+        FREE_ENVIRON(environ);
     }
-    FREE_ENVIRON(environ);
-    rb_native_mutex_unlock(&env_lock);
-    return Qfalse;
+    ENV_UNLOCK();
+
+    return ret;
 }
 
 /*
@@ -6178,29 +6209,32 @@ env_has_value(VALUE dmy, VALUE obj)
 static VALUE
 env_rassoc(VALUE dmy, VALUE obj)
 {
-    char **env;
-
     obj = rb_check_string_type(obj);
     if (NIL_P(obj)) return Qnil;
-    rb_native_mutex_lock(&env_lock);
-    env = GET_ENVIRON(environ);
-    while (*env) {
-	const char *p = *env;
-	char *s = strchr(p, '=');
-	if (s++) {
-	    long len = strlen(s);
-	    if (RSTRING_LEN(obj) == len && strncmp(s, RSTRING_PTR(obj), len) == 0) {
-	    	FREE_ENVIRON(environ);
-		rb_native_mutex_unlock(&env_lock);
-                VALUE result = rb_assoc_new(rb_str_new(p, s-p-1), obj);
-		return result;
-	    }
-	}
-	env++;
+
+    VALUE result = Qnil;
+
+    ENV_LOCK();
+    {
+        char **env = GET_ENVIRON(environ);
+
+        while (*env) {
+            const char *p = *env;
+            char *s = strchr(p, '=');
+            if (s++) {
+                long len = strlen(s);
+                if (RSTRING_LEN(obj) == len && strncmp(s, RSTRING_PTR(obj), len) == 0) {
+                    result = rb_assoc_new(rb_str_new(p, s-p-1), obj);
+                    break;
+                }
+            }
+            env++;
+        }
+        FREE_ENVIRON(environ);
     }
-    FREE_ENVIRON(environ);
-    rb_native_mutex_unlock(&env_lock);
-    return Qnil;
+    ENV_UNLOCK();
+
+    return result;
 }
 
 /*
@@ -6222,49 +6256,50 @@ env_rassoc(VALUE dmy, VALUE obj)
 static VALUE
 env_key(VALUE dmy, VALUE value)
 {
-    VALUE str;
-
     SafeStringValue(value);
-    rb_native_mutex_lock(&env_lock);
-    int pair_count = env_entry_count();
-    const char *env_pairs[pair_count];
-    copy_env_pairs(env_pairs, pair_count);
-    rb_native_mutex_unlock(&env_lock);
+    VALUE str = Qnil;
 
-    for (int current_pair = 0; current_pair < pair_count; current_pair++) {
-	const char *p = env_pairs[current_pair];
-	char *s = strchr(p, '=');
-	if (s++) {
-	    long len = strlen(s);
-	    if (RSTRING_LEN(value) == len && strncmp(s, RSTRING_PTR(value), len) == 0) {
-		str = env_str_new(p, s-p-1);
-		return str;
-	    }
-	}
+    ENV_LOCK();
+    {
+        char **env = GET_ENVIRON(environ);
+        while (*env) {
+            char *s = strchr(*env, '=');
+            if (s++) {
+                long len = strlen(s);
+                if (RSTRING_LEN(value) == len && strncmp(s, RSTRING_PTR(value), len) == 0) {
+                    str = env_str_new(*env, s-*env-1);
+                    break;
+                }
+            }
+            env++;
+        }
+        FREE_ENVIRON(environ);
     }
-    return Qnil;
+    ENV_UNLOCK();
+
+    return str;
 }
 
 static VALUE
 env_to_hash(void)
 {
-    VALUE hash;
+    VALUE hash = rb_hash_new();
 
-    hash = rb_hash_new();
-    rb_native_mutex_lock(&env_lock);
-    int pair_count = env_entry_count();
-    const char *env_pairs[pair_count];
-    copy_env_pairs(env_pairs, pair_count);
-    rb_native_mutex_unlock(&env_lock);
-
-    for (int current_pair = 0; current_pair < pair_count; current_pair++) {
-	const char *p = env_pairs[current_pair];
-	char *s = strchr(p, '=');
-	if (s) {
-	    rb_hash_aset(hash, env_str_new(p, s-p),
-			       env_str_new2(s+1));
+    ENV_LOCK();
+    {
+        char **env = GET_ENVIRON(environ);
+        while (*env) {
+            char *s = strchr(*env, '=');
+            if (s) {
+                rb_hash_aset(hash, env_str_new(*env, s-*env),
+                             env_str_new2(s+1));
+            }
+            env++;
 	}
+        FREE_ENVIRON(environ);
     }
+    ENV_UNLOCK();
+
     return hash;
 }
 
@@ -6400,26 +6435,29 @@ env_freeze(VALUE self)
 static VALUE
 env_shift(VALUE _)
 {
-    char **env;
     VALUE result = Qnil;
+    VALUE key = Qnil;
 
-    rb_native_mutex_lock(&env_lock);
-    env = GET_ENVIRON(environ);
-    if (*env) {
-	const char *p = *env;
-	rb_native_mutex_unlock(&env_lock);
-	char *s = strchr(p, '=');
-	if (s) {
-	    VALUE key = env_str_new(p, s-p);
-	    VALUE val = env_str_new2(getenv_with_lock(RSTRING_PTR(key)));
-            env_delete(key);
-	    result = rb_assoc_new(key, val);
-	}
-	rb_native_mutex_lock(&env_lock);
+    ENV_LOCK();
+    {
+        char **env = GET_ENVIRON(environ);
+        if (*env) {
+            const char *p = *env;
+            char *s = strchr(p, '=');
+            if (s) {
+                key = env_str_new(p, s-p);
+                VALUE val = env_str_new2(getenv(RSTRING_PTR(key)));
+                result = rb_assoc_new(key, val);
+            }
+        }
+        FREE_ENVIRON(environ);
+    }
+    ENV_UNLOCK();
+
+    if (!NIL_P(key)) {
+        env_delete(key);
     }
 
-    FREE_ENVIRON(environ);
-    rb_native_mutex_unlock(&env_lock);
     return result;
 }
 
