@@ -1366,7 +1366,7 @@ class TestEnv < Test::Unit::TestCase
         Ractor.yield ENV["foo"]
       end
 
-      if /mswin/ =~ RUBY_PLATFORM
+      if /mswin|ucrt/ =~ RUBY_PLATFORM
         #{str_for_assert_raise_on_yielded_exception_class(Errno::EINVAL, "r")}
         result = r.take
         assert_equal("bar", result)
