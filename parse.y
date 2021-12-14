@@ -3724,7 +3724,7 @@ block_param_def	: '|' opt_bv_decl '|'
 
 opt_bv_decl	: opt_nl
 		    {
-		      $$ = 0;
+			$$ = 0;
 		    }
 		| opt_nl ';' bv_decls opt_nl
 		    {
