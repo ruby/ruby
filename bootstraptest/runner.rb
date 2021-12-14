@@ -383,7 +383,7 @@ def assert_normal_exit(testsrc, *rest, timeout: nil, **opt)
 end
 
 def assert_finish(timeout_seconds, testsrc, message = '')
-  if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # for --jit-wait
+  if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # for --jit-wait
     timeout_seconds *= 3
   end
   newtest

@@ -99,7 +99,7 @@ describe :io_write, shared: true do
     # For instance, MJIT creates a worker before @r.close with fork(), @r.close happens,
     # and the MJIT worker keeps the pipe open until the worker execve().
     # TODO: consider acquiring GVL from MJIT worker.
-    guard_not -> { defined?(RubyVM::JIT) && RubyVM::JIT.enabled? } do
+    guard_not -> { defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? } do
       it "raises Errno::EPIPE if the read end is closed and does not die from SIGPIPE" do
         @r.close
         -> { @w.send(@method, "foo") }.should raise_error(Errno::EPIPE, /Broken pipe/)

@@ -3261,13 +3261,13 @@ core_hash_merge_kwd(VALUE hash, VALUE kw)
 
 /* Returns true if JIT is enabled */
 static VALUE
-jit_enabled_p(VALUE _)
+mjit_enabled_p(VALUE _)
 {
     return RBOOL(mjit_enabled);
 }
 
 static VALUE
-jit_pause_m(int argc, VALUE *argv, RB_UNUSED_VAR(VALUE self))
+mjit_pause_m(int argc, VALUE *argv, RB_UNUSED_VAR(VALUE self))
 {
     VALUE options = Qnil;
     VALUE wait = Qtrue;
@@ -3284,7 +3284,7 @@ jit_pause_m(int argc, VALUE *argv, RB_UNUSED_VAR(VALUE self))
 }
 
 static VALUE
-jit_resume_m(VALUE _)
+mjit_resume_m(VALUE _)
 {
     return mjit_resume();
 }
@@ -3421,7 +3421,6 @@ Init_VM(void)
     VALUE opts;
     VALUE klass;
     VALUE fcore;
-    VALUE jit;
 
     /*
      * Document-class: RubyVM
@@ -3470,17 +3469,17 @@ Init_VM(void)
     rb_gc_register_mark_object(fcore);
     rb_mRubyVMFrozenCore = fcore;
 
-    /* ::RubyVM::JIT
+    /* ::RubyVM::MJIT
      * Provides access to the Method JIT compiler of MRI.
      * Of course, this module is MRI specific.
      */
-    jit = rb_define_module_under(rb_cRubyVM, "JIT");
-    rb_define_singleton_method(jit, "enabled?", jit_enabled_p, 0);
-    rb_define_singleton_method(jit, "pause", jit_pause_m, -1);
-    rb_define_singleton_method(jit, "resume", jit_resume_m, 0);
-    /* RubyVM::MJIT for short-term backward compatibility */
-    rb_const_set(rb_cRubyVM, rb_intern("MJIT"), jit);
-    rb_deprecate_constant(rb_cRubyVM, "MJIT");
+    VALUE mjit = rb_define_module_under(rb_cRubyVM, "MJIT");
+    rb_define_singleton_method(mjit, "enabled?", mjit_enabled_p, 0);
+    rb_define_singleton_method(mjit, "pause", mjit_pause_m, -1);
+    rb_define_singleton_method(mjit, "resume", mjit_resume_m, 0);
+    /* RubyVM::JIT for short-term backward compatibility */
+    rb_const_set(rb_cRubyVM, rb_intern("JIT"), mjit);
+    rb_deprecate_constant(rb_cRubyVM, "JIT");
 
     /*
      * Document-class: Thread

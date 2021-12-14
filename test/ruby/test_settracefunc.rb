@@ -2106,7 +2106,7 @@ CODE
     Thread.pass until t.status == 'sleep'
     # When MJIT thread exists, t.status becomes 'sleep' even if it does not reach m2t_q.pop.
     # This sleep forces it to reach m2t_q.pop for --jit-wait.
-    sleep 1 if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
+    sleep 1 if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
 
     t.add_trace_func proc{|ev, file, line, *args|
       if file == __FILE__
