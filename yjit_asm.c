@@ -1343,7 +1343,10 @@ void mov(codeblock_t *cb, x86opnd_t dst, x86opnd_t src)
             else
                 cb_write_rm(cb, dst.num_bits == 16, dst.num_bits == 64, NO_OPND, dst, 0, 1, 0xC7);
 
-            cb_write_int(cb, src.as.imm, (dst.num_bits > 32)? 32:dst.num_bits);
+            const uint32_t output_num_bits = (dst.num_bits > 32u) ? 32u : dst.num_bits;
+            // assert that we can write whole immediate without loss of infomation
+            assert (sig_imm_size(src.as.imm) <= output_num_bits);
+            cb_write_int(cb, src.as.imm, output_num_bits);
         }
 
         else
