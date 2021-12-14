@@ -518,6 +518,9 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 
 * `ruby -run -e httpd` displays URLs to access.  [[Feature #17847]]
 
+* Add `ruby -run -e colorize` to colorize Ruby code using
+  `IRB::Color.colorize_code`.
+
 [Bug #4443]:      https://bugs.ruby-lang.org/issues/4443
 [Feature #6210]:  https://bugs.ruby-lang.org/issues/6210
 [Feature #11256]: https://bugs.ruby-lang.org/issues/11256
