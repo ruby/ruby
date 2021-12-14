@@ -211,6 +211,17 @@ assert_equal '[:a, :b, :c, :d, :e, :f, :g]', %q{
   Ractor.make_shareable(closure).call
 }
 
+# Now autoload in non-main Ractor is not supported
+assert_equal 'ok', %q{
+  autoload :Foo, 'foo.rb'
+  r = Ractor.new do
+    p Foo
+  rescue Ractor::UnsafeError
+    :ok
+  end
+  r.take
+}
+
 ###
 ###
 # Ractor still has several memory corruption so skip huge number of tests
