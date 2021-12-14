@@ -700,6 +700,58 @@ boot_defclass(const char *name, VALUE super)
     return obj;
 }
 
+/***********************************************************************
+ *
+ * Document-class: Refinement
+ *
+ *  Refinement is a class of the +self+ (current context) inside +refine+
+ *  statement. It allows to import methods from other modules, see #import_methods.
+ */
+
+#if 0 /* for RDoc */
+/*
+ * Document-method: Refinement#import_methods
+ *
+ *  call-seq:
+ *     import_methods(module, ...)    -> self
+ *
+ *  Imports methods from modules. Unlike Module#include,
+ *  Refinement#import_methods copies methods and adds them into the refinement,
+ *  so the refinement is activated in the imported methods.
+ *
+ *  Note that due to method copying, only methods defined in Ruby code can be imported.
+ *
+ *     module StrUtils
+ *       def indent(level)
+ *         ' ' * level + self
+ *       end
+ *     end
+ *
+ *     module M
+ *       refine String do
+ *         import_methods StrUtils
+ *       end
+ *     end
+ *
+ *     using M
+ *     "foo".indent(3)
+ *     #=> "   foo"
+ *
+ *     module M
+ *       refine String do
+ *         import_methods Enumerable
+ *         # Can't import method which is not defined with Ruby code: Enumerable#drop
+ *       end
+ *     end
+ *
+ */
+
+static VALUE
+refinement_import_methods(int argc, VALUE *argv, VALUE refinement)
+{
+}
+# endif
+
 void
 Init_class_hierarchy(void)
 {
@@ -713,6 +765,11 @@ Init_class_hierarchy(void)
     rb_cModule = boot_defclass("Module", rb_cObject);
     rb_cClass =  boot_defclass("Class",  rb_cModule);
     rb_cRefinement =  boot_defclass("Refinement",  rb_cModule);
+
+#if 0 /* for RDoc */
+    // we pretend it to be public, otherwise RDoc will ignore it
+    rb_define_method(rb_cRefinement, "import_methods", refinement_import_methods, -1);
+#endif
 
     rb_const_set(rb_cObject, rb_intern_const("BasicObject"), rb_cBasicObject);
     RBASIC_SET_CLASS(rb_cClass, rb_cClass);
