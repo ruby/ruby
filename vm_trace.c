@@ -78,9 +78,9 @@ rb_hook_list_free(rb_hook_list_t *hooks)
 void rb_clear_attr_ccs(void);
 
 static void
-update_global_event_hook(rb_event_flag_t vm_events)
+update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events)
 {
-    rb_event_flag_t new_iseq_events = vm_events & ISEQ_TRACE_EVENTS;
+    rb_event_flag_t new_iseq_events = new_events & ISEQ_TRACE_EVENTS;
     rb_event_flag_t enabled_iseq_events = ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS;
 
     if (new_iseq_events & ~enabled_iseq_events) {
@@ -95,14 +95,18 @@ update_global_event_hook(rb_event_flag_t vm_events)
 	rb_iseq_trace_set_all(new_iseq_events | enabled_iseq_events);
     }
     else {
-        rb_clear_attr_ccs();
+        // if c_call or c_return is activated:
+        if (((prev_events & RUBY_EVENT_C_CALL)   == 0 && (new_events & RUBY_EVENT_C_CALL)) ||
+            ((prev_events & RUBY_EVENT_C_RETURN) == 0 && (new_events & RUBY_EVENT_C_RETURN))) {
+            rb_clear_attr_ccs();
+        }
     }
 
-    ruby_vm_event_flags = vm_events;
-    ruby_vm_event_enabled_global_flags |= vm_events;
-    rb_objspace_set_event_hook(vm_events);
+    ruby_vm_event_flags = new_events;
+    ruby_vm_event_enabled_global_flags |= new_events;
+    rb_objspace_set_event_hook(new_events);
 
-    if (vm_events & RUBY_EVENT_TRACEPOINT_ALL) {
+    if (new_events & RUBY_EVENT_TRACEPOINT_ALL) {
         // Invalidate all code if listening for any TracePoint event.
         // Internal events fire inside C routines so don't need special handling.
         // Do this last so other ractors see updated vm events when they wake up.
@@ -137,13 +141,14 @@ alloc_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data, 
 static void
 hook_list_connect(VALUE list_owner, rb_hook_list_t *list, rb_event_hook_t *hook, int global_p)
 {
+    rb_event_flag_t prev_events = list->events;
     hook->next = list->hooks;
     list->hooks = hook;
     list->events |= hook->events;
 
     if (global_p) {
         /* global hooks are root objects at GC mark. */
-        update_global_event_hook(list->events);
+        update_global_event_hook(prev_events, list->events);
     }
     else {
         RB_OBJ_WRITTEN(list_owner, Qundef, hook->data);
@@ -196,7 +201,7 @@ clean_hooks(const rb_execution_context_t *ec, rb_hook_list_t *list)
 {
     rb_event_hook_t *hook, **nextp = &list->hooks;
     VM_ASSERT(list->need_clean == TRUE);
-
+    rb_event_flag_t prev_events = list->events;
     list->events = 0;
     list->need_clean = FALSE;
 
@@ -213,7 +218,7 @@ clean_hooks(const rb_execution_context_t *ec, rb_hook_list_t *list)
 
     if (list == rb_ec_ractor_hooks(ec)) {
         /* global events */
-        update_global_event_hook(list->events);
+        update_global_event_hook(prev_events, list->events);
     }
     else {
         /* local events */
