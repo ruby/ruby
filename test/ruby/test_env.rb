@@ -1360,19 +1360,20 @@ class TestEnv < Test::Unit::TestCase
   def test_huge_value_in_ractor
     assert_ractor(<<-"end;")
       huge_value = "bar" * 40960
-      r = Ractor.new do |v|
+      r = Ractor.new huge_value do |v|
         ENV["foo"] = "bar"
         #{str_for_yielding_exception_class("ENV['foo'] = v ")}
         Ractor.yield ENV["foo"]
       end
+
       if /mswin/ =~ RUBY_PLATFORM
         #{str_for_assert_raise_on_yielded_exception_class(Errno::EINVAL, "r")}
-        huge_value, result = r.take
+        result = r.take
         assert_equal("bar", result)
       else
         exception_class = r.take
         assert_equal(NilClass, exception_class)
-        huge_value, result = r.take
+        result = r.take
         assert_equal(huge_value, result)
       end
     end;
