@@ -264,13 +264,23 @@ module Bundler
         else
           source = source_for(name)
           specs = source.specs.search(name)
+          matching_part = name
+          requirement_label = SharedHelpers.pretty_dependency(requirement)
           cache_message = begin
                               " or in gems cached in #{Bundler.settings.app_cache_path}" if Bundler.app_cache.exist?
                             rescue GemfileNotFound
                               nil
                             end
-          message = String.new("Could not find gem '#{SharedHelpers.pretty_dependency(requirement)}' in #{source}#{cache_message}.\n")
-          message << "The source contains the following gems matching '#{name}': #{specs.map(&:full_name).join(", ")}" if specs.any?
+          specs_matching_requirement = specs.select {| spec| requirement.matches_spec?(spec) }
+
+          if specs_matching_requirement.any?
+            specs = specs_matching_requirement
+            matching_part = requirement_label
+            requirement_label = "#{requirement_label} #{requirement.__platform}"
+          end
+
+          message = String.new("Could not find gem '#{requirement_label}' in #{source}#{cache_message}.\n")
+          message << "The source contains the following gems matching '#{matching_part}': #{specs.map(&:full_name).join(", ")}" if specs.any?
         end
         raise GemNotFound, message
       end
