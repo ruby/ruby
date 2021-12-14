@@ -3,7 +3,7 @@
 
 # == Random number formatter.
 #
-# Formats generated random numbers in many manors.
+# Formats generated random numbers in many manners.
 #
 # === Examples
 #
