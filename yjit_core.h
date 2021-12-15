@@ -196,7 +196,8 @@ typedef struct yjit_branch_entry
     uint8_t *end_addr;
 
     // Context right after the branch instruction
-    ctx_t src_ctx;
+    // Unused for now.
+    // ctx_t src_ctx;
 
     // Branch target blocks and their contexts
     blockid_t targets[2];
