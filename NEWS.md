@@ -1,13 +1,13 @@
 # NEWS for Ruby 3.1.0
 
-This document is a list of user visible feature changes
+This document is a list of user-visible feature changes
 since the **3.0.0** release, except for bug fixes.
 
 Note that each entry is kept to a minimum, see links for details.
 
 ## Language changes
 
-*   The block argument can be now be anonymous, if the block will
+*   The block argument can now be anonymous if the block will
     only be passed to another method. [[Feature #11256]]
 
     ```ruby
@@ -65,9 +65,9 @@ Note that each entry is kept to a minimum, see links for details.
     5. `bar`
     6. `baz=` called on the result of `bar`
 
-    Starting in Ruby 3.1.0, evaluation order is now consistent with
-    single assignment, with the left hand side being evaluated before
-    the right hand side:
+    Starting in Ruby 3.1.0, the evaluation order is now consistent with
+    single assignment, with the left-hand side being evaluated before
+    the right-hand side:
 
     1. `foo`
     2. `bar`
@@ -91,11 +91,11 @@ Note that each entry is kept to a minimum, see links for details.
     variable or method name even if it's a pseudo variable name such as
     `self`.
 
-*   non main-Ractors can get instance variables (ivars) of classes/modules
+*   Non main-Ractors can get instance variables (ivars) of classes/modules
     if ivars refer to shareable objects.
     [[Feature #17592]]
 
-*   A command syntax is allowed in endless method definition, i.e.,
+*   A command syntax is allowed in endless method definitions, i.e.,
     you can now write `def foo = puts "Hello"`.
     Note that `private def foo = puts "Hello"` does not parse.
     [[Feature #17398]]
@@ -103,12 +103,12 @@ Note that each entry is kept to a minimum, see links for details.
 ## Command line options
 
 * `--disable-gems` is now explicitly declared as "just for debugging".
-  Never use it in any real-world code base.
+  Never use it in any real-world codebase.
   [[Feature #17684]]
 
 ## Core classes updates
 
-Outstanding ones only.
+Note: We're only listing outstanding class updates.
 
 * Array
 
@@ -190,8 +190,8 @@ Outstanding ones only.
 
 
     *   Kernel#load now accepts a module as the second argument,
-        and will load the file using the given module as the top
-        level module. [[Feature #6210]]
+        and will load the file using the given module as the
+        top-level module. [[Feature #6210]]
 
 * Marshal
 
@@ -229,8 +229,8 @@ Outstanding ones only.
     *   Process.\_fork is added. This is a core method for fork(2).
         Do not call this method directly; it is called by existing
         fork methods: Kernel.#fork, Process.fork, and IO.popen("-").
-        Application monitoring libraries can overwride this method to
-        hook fork event. [[Feature #17795]]
+        Application monitoring libraries can overwrite this method to
+        hook fork events. [[Feature #17795]]
 
 * Struct
 
@@ -245,7 +245,7 @@ Outstanding ones only.
     *   Update Unicode version to 13.0.0 [[Feature #17750]]
         and Emoji version to 13.0 [[Feature #18029]]
 
-    *   String#unpack and String#unpack1 now accepts an `offset:` keyword
+    *   String#unpack and String#unpack1 now accept an `offset:` keyword
         argument to start the unpacking after an arbitrary number of bytes
         have been skipped. If `offset` is outside of the string bounds
         `ArgumentError` is raised. [[Feature #18254]]
@@ -403,12 +403,12 @@ Outstanding ones only.
   See [[Feature #18176]] in detail.
 
 * Random::Formatter is moved to random/formatter.rb, so that you can
-  use `Random#hex`, `Random#base64` and so on without SecureRandom.
+  use `Random#hex`, `Random#base64`, and so on without SecureRandom.
   [[Feature #18190]]
 
 ## Compatibility issues
 
-Excluding feature bug fixes.
+Note: Excluding feature bug fixes.
 
 * `rb_io_wait_readable`, `rb_io_wait_writable` and `rb_wait_for_single_fd` are
   deprecated in favour of `rb_io_maybe_wait_readable`,
@@ -492,8 +492,8 @@ See [this blog post](https://shopify.engineering/yjit-just-in-time-compiler-crub
 ## Debugger
 
 * A new debugger [debug.gem](https://github.com/ruby/debug) is bundled.
-  debug.gem is fast debugger implementation and it provides many features
-  like remote debugging, colorful REPL, IDE (VSCode) integration and more.
+  debug.gem is a fast debugger implementation, and it provides many features
+  like remote debugging, colorful REPL, IDE (VSCode) integration, and more.
   It replaces `lib/debug.rb` standard library.
 
 * `rdbg` command is also installed into `bin/` directory to start and control
@@ -502,7 +502,7 @@ See [this blog post](https://shopify.engineering/yjit-just-in-time-compiler-crub
 ## error_highlight
 
 A built-in gem called error_highlight has been introduced.
-It shows fine-grained error location in backtrace.
+It shows fine-grained error locations in the backtrace.
 
 Example: `title = json[:article][:title]`
 
@@ -536,7 +536,7 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
   allocation. Just by requiring this file, tracing is started *immediately*.
   Just by `Kernel#p`, you can investigate where an object was created.
   Note that just requiring this file brings a large performance overhead.
-  This is only for debugging purpose. Do not use this in production.
+  This is only for debugging purposes. Do not use this in production.
   [[Feature #17762]]
 
 * Now exceptions raised in finalizers will be printed to `STDERR`, unless
