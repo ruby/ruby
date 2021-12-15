@@ -838,14 +838,26 @@ queue_closed_result(VALUE self, struct rb_queue *q)
 /*
  * Document-method: Queue::new
  *
- * Creates a new queue instance, optionally using the contents of an Enumerable
+ * call-seq:
+ *   Thread::Queue.new -> empty_queue
+ *   Thread::Queue.new(enumerable) -> queue
+ *
+ * Creates a new queue instance, optionally using the contents of an +enumerable+
  * for its initial state.
  *
- *  Example:
+ * Example:
  *
  *    	q = Thread::Queue.new
- *    	q = Thread::Queue.new([a, b, c])
- *    	q = Thread::Queue.new(items)
+ *      #=> #<Thread::Queue:0x00007ff7501110d0>
+ *      q.empty?
+ *      #=> true
+ *
+ *    	q = Thread::Queue.new([1, 2, 3])
+ *    	#=> #<Thread::Queue:0x00007ff7500ec500>
+ *      q.empty?
+ *      #=> false
+ *      q.pop
+ *      #=> 1
  */
 
 static VALUE
