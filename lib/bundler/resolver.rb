@@ -287,7 +287,12 @@ module Bundler
       end
 
       message = String.new("Could not find gem '#{requirement_label}'#{extra_message} in #{source}#{cache_message}.\n")
-      message << "The source contains the following gems matching '#{matching_part}': #{specs.map(&:full_name).join(", ")}" if specs.any?
+
+      if specs.any?
+        message << "\nThe source contains the following gems matching '#{matching_part}':\n"
+        message << specs.map {|s| "  * #{s.full_name}" }.join("\n")
+      end
+
       message
     end
 

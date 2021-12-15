@@ -867,7 +867,10 @@ RSpec.describe "bundle exec" do
       let(:expected) { "" }
       let(:expected_err) { <<-EOS.strip }
 Could not find gem 'rack (= 2)' in locally installed gems.
-The source contains the following gems matching 'rack': rack-0.9.1, rack-1.0.0
+
+The source contains the following gems matching 'rack':
+  * rack-0.9.1
+  * rack-1.0.0
 Run `bundle install` to install missing gems.
       EOS
 
@@ -894,7 +897,9 @@ Run `bundle install` to install missing gems.
       let(:expected) { "" }
       let(:expected_err) { <<-EOS.strip }
 Could not find gem 'rack (= 2)' in locally installed gems.
-The source contains the following gems matching 'rack': rack-1.0.0
+
+The source contains the following gems matching 'rack':
+  * rack-1.0.0
 Run `bundle install` to install missing gems.
       EOS
 

@@ -89,7 +89,7 @@ RSpec.describe "bundle install with git sources" do
         gem "foo", "1.1", :git => "#{lib_path("foo-1.0")}"
       G
 
-      expect(err).to include("The source contains the following gems matching 'foo': foo-1.0")
+      expect(err).to include("The source contains the following gems matching 'foo':\n  * foo-1.0")
     end
 
     it "complains with version and platform if pinned specs don't exist in the git repo" do
@@ -106,7 +106,7 @@ RSpec.describe "bundle install with git sources" do
         end
       G
 
-      expect(err).to include("The source contains the following gems matching 'only_java': only_java-1.0-java")
+      expect(err).to include("The source contains the following gems matching 'only_java':\n  * only_java-1.0-java")
     end
 
     it "complains with multiple versions and platforms if pinned specs don't exist in the git repo" do
@@ -128,7 +128,7 @@ RSpec.describe "bundle install with git sources" do
         end
       G
 
-      expect(err).to include("The source contains the following gems matching 'only_java': only_java-1.0-java, only_java-1.1-java")
+      expect(err).to include("The source contains the following gems matching 'only_java':\n  * only_java-1.0-java\n  * only_java-1.1-java")
     end
 
     it "still works after moving the application directory" do
