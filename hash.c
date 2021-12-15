@@ -5242,7 +5242,7 @@ ruby_setenv(const char *name, const char *value)
         mem_size = len + strlen(value) + 2;
         mem_ptr = malloc(mem_size);
         if (mem_ptr == NULL)
-          rb_sys_fail_str(rb_sprintf("malloc("PRIuSIZE")", mem_size));
+            rb_sys_fail_str(rb_sprintf("malloc("PRIuSIZE")", mem_size));
         snprintf(mem_ptr, mem_size, "%s=%s", name, value);
     }
 
@@ -5287,7 +5287,7 @@ ruby_setenv(const char *name, const char *value)
             for (max = i; environ[max]; max++) ;
             tmpenv = ALLOC_N(char*, max+2);
             for (j=0; j<max; j++)		/* copy environment */
-              tmpenv[j] = ruby_strdup(environ[j]);
+                tmpenv[j] = ruby_strdup(environ[j]);
             tmpenv[max] = 0;
             environ = tmpenv;		/* tell exec where it is now */
         }
@@ -5296,7 +5296,7 @@ ruby_setenv(const char *name, const char *value)
             char **envp = origenviron;
             while (*envp && *envp != environ[i]) envp++;
             if (!*envp)
-              xfree(environ[i]);
+                xfree(environ[i]);
             if (!value) {
                 while (environ[i]) {
                     environ[i] = environ[i+1];
