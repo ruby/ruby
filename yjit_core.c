@@ -658,7 +658,7 @@ make_branch_entry(block_t *block, const ctx_t *src_ctx, branchgen_fn gen_fn)
     branch_t *branch = calloc(1, sizeof(branch_t));
 
     branch->block = block;
-    branch->src_ctx = *src_ctx;
+    (void)src_ctx; // Unused for now
     branch->gen_fn = gen_fn;
     branch->shape = SHAPE_DEFAULT;
 
