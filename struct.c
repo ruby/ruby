@@ -187,6 +187,17 @@ struct_member_pos(VALUE s, VALUE name)
     }
 }
 
+/*
+ *  call-seq:
+ *    StructClass::members -> array_of_symbols
+ *
+ *  Returns the member names of the Struct decendant as an array:
+ *
+ *     Customer = Struct.new(:name, :address, :zip)
+ *     Customer.members # => [:name, :address, :zip]
+ *
+ */
+
 static VALUE
 rb_struct_s_members_m(VALUE klass)
 {
@@ -285,12 +296,14 @@ rb_struct_s_inspect(VALUE klass)
     return inspect;
 }
 
+#if 0 /* for RDoc */
+
 /*
  * call-seq:
- *   StructClass.keyword_init? -> true or false
+ *   StructClass::keyword_init? -> true or falsy value
  *
- * Returns true if the class was initialized with +keyword_init: true+.
- * Otherwise returns false.
+ * Returns +true+ if the class was initialized with <tt>keyword_init: true</tt>.
+ * Otherwise returns +nil+ or +false+.
  *
  * Examples:
  *   Foo = Struct.new(:a)
@@ -300,6 +313,11 @@ rb_struct_s_inspect(VALUE klass)
  *   Baz = Struct.new(:a, keyword_init: false)
  *   Baz.keyword_init? # => false
  */
+static VALUE
+rb_struct_s_keyword_init_p(VALUE obj)
+{
+}
+#endif
 
 #define rb_struct_s_keyword_init_p rb_struct_s_keyword_init
 
@@ -1601,6 +1619,10 @@ InitVM_Struct(void)
 
     rb_undef_alloc_func(rb_cStruct);
     rb_define_singleton_method(rb_cStruct, "new", rb_struct_s_def, -1);
+#if 0 /* for RDoc */
+    rb_define_singleton_method(rb_cStruct, "keyword_init?", rb_struct_s_keyword_init_p, 0);
+    rb_define_singleton_method(rb_cStruct, "members", rb_struct_s_members_m, 0);
+#endif
 
     rb_define_method(rb_cStruct, "initialize", rb_struct_initialize_m, -1);
     rb_define_method(rb_cStruct, "initialize_copy", rb_struct_init_copy, 1);
