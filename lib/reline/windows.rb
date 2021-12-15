@@ -329,8 +329,8 @@ class Reline::Windows
     unless csbi = get_console_screen_buffer_info
       return Reline::CursorPos.new(0, 0)
     end
-    x = csbi[4, 2].unpack1('s*')
-    y = csbi[6, 2].unpack1('s*')
+    x = csbi[4, 2].unpack1('s')
+    y = csbi[6, 2].unpack1('s')
     Reline::CursorPos.new(x, y)
   end
 
