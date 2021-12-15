@@ -360,7 +360,7 @@ Outstanding ones only.
     * rdoc 6.3.2
     * readline 0.0.2
     * readline-ext 0.1.3
-    * reline 0.1.2
+    * reline 0.2.8.pre.11
     * resolv 0.2.1
     * resolv-replace 0.1.0
     * rinda 0.1.1
@@ -384,7 +384,7 @@ Outstanding ones only.
     * yaml 0.2.0
     * zlib 2.1.1
 *   The following bundled gems are updated.
-    * minitest 5.14.4
+    * minitest 5.15.0
     * power_assert 2.0.1
     * rake 13.0.6
     * test-unit 3.5.2
