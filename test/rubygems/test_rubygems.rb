@@ -25,6 +25,7 @@ class GemTest < Gem::TestCase
   def test_operating_system_customizing_default_dir
     pend "does not apply to truffleruby" if RUBY_ENGINE == 'truffleruby'
     pend "loads a custom defaults/jruby file that gets in the middle" if RUBY_ENGINE == 'jruby'
+    pend if RUBY_PLATFORM =~ /s390x/
 
     # On a non existing default dir, there should be no gems
 
