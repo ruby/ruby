@@ -312,60 +312,77 @@ Outstanding ones only.
 
 *   The following default gem are updated.
     * RubyGems
-    * Bundler
-    * RDoc 6.3.2
-    * ReLine
-    * JSON 2.6.1
-    * Psych 4.0.2
-    * FileUtils 1.6.0
-    * Fiddle 1.1.0
-    * StringIO 3.0.1
-    * IO::Console 0.5.9
-    * IO::Wait 0.2.1
-    * CSV 3.2.1
-    * Etc 1.3.0
-    * Date 3.2.2
-    * Zlib 2.1.1
-    * StringScanner 3.0.1
-    * IpAddr 1.2.3
-    * Logger 1.4.4
-    * OStruct 0.5.2
-    * Irb
-    * Racc 1.6.0
-    * Delegate 0.2.0
-    * Benchmark 0.2.0
-    * CGI 0.3.1
-    * Readline(C-ext) 0.1.3
-    * Timeout 0.2.0
-    * YAML 0.2.0
-    * URI 0.11.0
-    * OpenSSL
-    * DidYouMean
-    * Weakref 0.1.1
-    * Tempfile 0.1.2
-    * TmpDir 0.1.2
-    * English 0.7.1
-    * Net::Protocol 0.1.2
-    * Net::Http 0.2.0
-    * BigDecimal
-    * OptionParser 0.2.0
-    * Set 1.0.2
-    * Find 0.1.1
-    * Rinda 0.1.1
-    * Erb 2.2.3
-    * NKF 0.1.1
-    * Base64 0.1.1
-    * OpenUri 0.2.0
-    * SecureRandom 0.1.1
-    * Resolv 0.2.1
-    * Resolv::Replace 0.1.0
-    * Time 0.2.0
-    * PP 0.2.1
-    * Prettyprint 0.1.1
-    * Drb 2.1.0
-    * Pathname 0.2.0
-    * Digest 3.1.0.pre3
-    * Un 0.2.0
+    * abbrev 0.1.0
+    * base64 0.1.1
+    * benchmark 0.2.0
+    * bigdecimal 3.1.0.dev
+    * bundler 2.3.0.dev
+    * cgi 0.3.1
+    * csv 3.2.1
+    * date 3.2.2
+    * delegate 0.2.0
+    * did_you_mean 1.6.0.pre.alpha
+    * digest 3.1.0.pre3
+    * drb 2.1.0
+    * english 0.7.1
+    * erb 2.2.3
+    * error_highlight 0.2.0
+    * etc 1.3.0
+    * fcntl 1.0.1
+    * fiddle 1.1.0
+    * fileutils 1.6.0
+    * find 0.1.1
+    * forwardable 1.3.2
+    * getoptlong 0.1.1
+    * io-console 0.5.9
+    * io-nonblock 0.1.0
+    * io-wait 0.2.1
+    * ipaddr 1.2.3
+    * irb 1.3.8.pre.11
+    * json 2.6.1
+    * logger 1.4.4
+    * mutex_m 0.1.1
+    * net-http 0.2.0
+    * net-protocol 0.1.2
+    * nkf 0.1.1
+    * observer 0.1.1
+    * open-uri 0.2.0
+    * open3 0.1.1
+    * openssl 3.0.0.pre
+    * optparse 0.2.0
+    * ostruct 0.5.2
+    * pathname 0.2.0
+    * pp 0.2.1
+    * prettyprint 0.1.1
+    * pstore 0.1.1
+    * psych 4.0.2
+    * racc 1.6.0
+    * rdoc 6.3.2
+    * readline 0.0.2
+    * readline-ext 0.1.3
+    * reline 0.1.2
+    * resolv 0.2.1
+    * resolv-replace 0.1.0
+    * rinda 0.1.1
+    * ruby2_keywords 0.0.5
+    * securerandom 0.1.1
+    * set 1.0.2
+    * shellwords 0.1.0
+    * singleton 0.1.1
+    * stringio 3.0.1
+    * strscan 3.0.1
+    * syslog 0.1.0
+    * tempfile 0.1.2
+    * time 0.2.0
+    * timeout 0.2.0
+    * tmpdir 0.1.2
+    * tsort 0.1.0
+    * un 0.2.0
+    * uri 0.11.0
+    * weakref 0.1.1
+    * win32ole 1.8.8
+    * yaml 0.2.0
+    * zlib 2.1.1
 *   The following bundled gems are updated.
     * minitest 5.14.4
     * power_assert 2.0.1
