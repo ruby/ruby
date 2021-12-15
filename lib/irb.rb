@@ -62,6 +62,7 @@ require_relative "irb/easter-egg"
 #     -W[level=2]       Same as `ruby -W`
 #     --context-mode n  Set n[0-4] to method to create Binding Object,
 #                       when new workspace was created
+#     --extra-doc-dir   Add an extra doc dir for the doc dialog
 #     --echo            Show result (default)
 #     --noecho          Don't show result
 #     --echo-on-assignment
