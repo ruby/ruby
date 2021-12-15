@@ -22,3 +22,30 @@ jobs:
             git grep -l -F -e $header -e HAVE_`echo $header | tr a-z./ A-Z__` -- . > /dev/null || echo $header
           done | grep -F .
         working-directory: include
+      - name: Maintain updated default gem list
+        run: |
+          news = File.read("NEWS.md")
+          gems = Dir.glob("{ext,lib}/**/*.gemspec").map {|f|
+            spec = Gem::Specification.load(f)
+            [spec.name, spec.version]
+          }.sort
+          news.sub!(/^\*\s+The following default gem are updated\.\K(\n\s+\*\s+)((?i:RubyGems))(?:\1.*)*/) do
+            ["", $2, gems.map {|*spec| spec.join(" ")}].join($1)
+          end or exit
+          File.write("NEWS.md", news)
+        shell: ruby {0}
+      - name: Check diffs
+        id: diff
+        run: |
+          git diff --no-ext-diff --ignore-submodules --exit-code NEWS.md
+        continue-on-error: true
+      - name: Commit
+        run: |
+          git pull --ff-only origin ${GITHUB_REF#refs/heads/}
+          git commit --message="Update stdlib version at ${GITHUB_SHA:0:30} [ci skip]" NEWS.md
+          git push origin ${GITHUB_REF#refs/heads/}
+        env:
+          EMAIL: svn-admin@ruby-lang.org
+          GIT_AUTHOR_NAME: git
+          GIT_COMMITTER_NAME: git
+        if: ${{ steps.diff.outcome == 'failure' }}
