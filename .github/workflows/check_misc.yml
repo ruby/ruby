@@ -25,6 +25,7 @@ jobs:
       - name: Maintain updated default gem list
         run: |
           news = File.read("NEWS.md")
+          $:.unshift "lib"
           gems = Dir.glob("{ext,lib}/**/*.gemspec").map {|f|
             spec = Gem::Specification.load(f)
             [spec.name, spec.version]
