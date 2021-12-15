@@ -1,3 +1,18 @@
+assert_equal '18374962167983112447', %q{
+  # regression test for incorrectly discarding 32 bits of a pointer when it
+  # comes to default values.
+  def large_literal_default(n: 0xff00_fabcafe0_00ff)
+    n
+  end
+
+  def call_graph_root
+    large_literal_default
+  end
+
+  call_graph_root
+  call_graph_root
+}
+
 assert_normal_exit %q{
   # regression test for a leak caught by an asert on --yjit-call-threshold=2
   Foo = 1

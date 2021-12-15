@@ -3698,7 +3698,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
 
         // This struct represents the metadata about the callee-specified
         // keyword parameters.
-        const struct rb_iseq_param_keyword *keyword = iseq->body->param.keyword;
+        const struct rb_iseq_param_keyword *const keyword = iseq->body->param.keyword;
 
         ADD_COMMENT(cb, "keyword args");
 
@@ -3748,7 +3748,9 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
                     default_value = Qnil;
                 }
 
-                mov(cb, default_arg, imm_opnd(default_value));
+                // GC might move default_value.
+                jit_mov_gc_ptr(jit, cb, REG0, default_value);
+                mov(cb, default_arg, REG0);
 
                 caller_kwargs[kwarg_idx++] = callee_kwarg;
             }
