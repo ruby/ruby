@@ -360,7 +360,7 @@ Outstanding ones only.
     * rdoc 6.3.2
     * readline 0.0.2
     * readline-ext 0.1.3
-    * reline 0.2.8.pre.11
+    * reline 0.1.2
     * resolv 0.2.1
     * resolv-replace 0.1.0
     * rinda 0.1.1
