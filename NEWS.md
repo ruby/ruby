@@ -555,7 +555,6 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #17470]: https://bugs.ruby-lang.org/issues/17470
 [Feature #17479]: https://bugs.ruby-lang.org/issues/17479
 [Feature #17485]: https://bugs.ruby-lang.org/issues/17485
-[Feature #17490]: https://bugs.ruby-lang.org/issues/17490
 [Feature #17544]: https://bugs.ruby-lang.org/issues/17544
 [Feature #17592]: https://bugs.ruby-lang.org/issues/17592
 [Feature #17684]: https://bugs.ruby-lang.org/issues/17684
