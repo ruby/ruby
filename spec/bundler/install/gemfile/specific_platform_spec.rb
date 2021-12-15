@@ -302,6 +302,27 @@ RSpec.describe "bundle install with specific platforms" do
     expect(err).to include("The source contains the following gems matching 'sorbet-static (= 0.5.6433)': sorbet-static-0.5.6433-universal-darwin-20, sorbet-static-0.5.6433-x86_64-linux")
   end
 
+  it "does not resolve if the current platform does not match any of available platform specific variants for a transitive dependency" do
+    build_repo2 do
+      build_gem("sorbet", "0.5.6433") {|s| s.add_dependency "sorbet-static", "= 0.5.6433" }
+      build_gem("sorbet-static", "0.5.6433") {|s| s.platform = "x86_64-linux" }
+      build_gem("sorbet-static", "0.5.6433") {|s| s.platform = "universal-darwin-20" }
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo2)}"
+
+      gem "sorbet", "0.5.6433"
+    G
+
+    simulate_platform "arm64-darwin-21" do
+      bundle "install", :raise_on_error => false
+    end
+
+    expect(err).to include("Could not find gem 'sorbet-static (= 0.5.6433) arm64-darwin-21', which is required by gem 'sorbet (= 0.5.6433)', in rubygems repository #{file_uri_for(gem_repo2)}/ or installed locally.")
+    expect(err).to include("The source contains the following gems matching 'sorbet-static (= 0.5.6433)': sorbet-static-0.5.6433-universal-darwin-20, sorbet-static-0.5.6433-x86_64-linux")
+  end
+
   private
 
   def setup_multiplatform_gem
