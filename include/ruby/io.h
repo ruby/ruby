@@ -35,7 +35,12 @@
 #    undef revents
 #  endif
 #  define RB_WAITFD_IN  POLLIN
-#  define RB_WAITFD_PRI POLLPRI
+#  if defined(__wasi__) && !defined(POLLPRI)
+//   wasi-libc doesn't have POLLPRI and 0x002 is already reserved for POLLOUT, so use 0x003
+#    define RB_WAITFD_PRI 0x003
+#  else
+#    define RB_WAITFD_PRI POLLPRI
+#  endif
 #  define RB_WAITFD_OUT POLLOUT
 #else
 #  define RB_WAITFD_IN  0x001
