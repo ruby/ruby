@@ -1,7 +1,9 @@
 
-lib = File.expand_path('../lib', __FILE__)
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'reline/version'
+begin
+  require_relative 'lib/reline/version'
+rescue LoadError
+  require_relative 'version'
+end
 
 Gem::Specification.new do |spec|
   spec.name          = 'reline'
