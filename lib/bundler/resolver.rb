@@ -360,8 +360,7 @@ module Bundler
             o << SharedHelpers.pretty_dependency(conflict.requirement)
             o << "'" unless metadata_requirement
             if conflict.requirement_trees.first.size > 1
-              o << ", which is required by "
-              o << "gem '#{SharedHelpers.pretty_dependency(conflict.requirement_trees.first[-2])}',"
+              o << ", which is required by gem '#{SharedHelpers.pretty_dependency(conflict.requirement_trees.first[-2])}',"
             end
             o << " "
 
