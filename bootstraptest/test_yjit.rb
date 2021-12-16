@@ -2234,6 +2234,14 @@ assert_equal '[:ok]', %q{
   5.times.map { kwargs() rescue :ok }.uniq
 }
 
+assert_equal '[:ok]', %q{
+  def kwargs(a:, b: nil)
+    value
+  end
+
+  5.times.map { kwargs(b: 123) rescue :ok }.uniq
+}
+
 assert_equal '[[1, 2]]', %q{
   def kwargs(left:, right:)
     [left, right]
