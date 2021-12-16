@@ -13,15 +13,13 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
       # FIPS-selftest failure on some environment, so skip for now.
       next if ["Oakley", "X25519"].any? { |n| curve_name.start_with?(n) }
 
-      key = OpenSSL::PKey::EC.new(curve_name)
-      key.generate_key!
-
+      key = OpenSSL::PKey::EC.generate(curve_name)
       assert_predicate key, :private?
       assert_predicate key, :public?
       assert_nothing_raised { key.check_key }
     end
 
-    key1 = OpenSSL::PKey::EC.new("prime256v1").generate_key!
+    key1 = OpenSSL::PKey::EC.generate("prime256v1")
 
     key2 = OpenSSL::PKey::EC.new
     key2.group = key1.group
@@ -51,6 +49,13 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     ec = OpenSSL::PKey::EC.generate("prime256v1")
     assert_equal(true, ec.private?)
   end
+
+  def test_generate_key
+    ec = OpenSSL::PKey::EC.new("prime256v1")
+    assert_equal false, ec.private?
+    ec.generate_key!
+    assert_equal true, ec.private?
+  end if !openssl?(3, 0, 0)
 
   def test_marshal
     key = Fixtures.pkey("p256")
@@ -136,7 +141,7 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   end
 
   def test_dsa_sign_asn1_FIPS186_3
-    key = OpenSSL::PKey::EC.new("prime256v1").generate_key!
+    key = OpenSSL::PKey::EC.generate("prime256v1")
     size = key.group.order.num_bits / 8 + 1
     dgst = (1..size).to_a.pack('C*')
     sig = key.dsa_sign_asn1(dgst)
@@ -145,8 +150,8 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   end
 
   def test_dh_compute_key
-    key_a = OpenSSL::PKey::EC.new("prime256v1").generate_key!
-    key_b = OpenSSL::PKey::EC.new(key_a.group).generate_key!
+    key_a = OpenSSL::PKey::EC.generate("prime256v1")
+    key_b = OpenSSL::PKey::EC.generate(key_a.group)
 
     pub_a = key_a.public_key
     pub_b = key_b.public_key
@@ -276,7 +281,7 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
 
   def test_ec_point
     group = OpenSSL::PKey::EC::Group.new("prime256v1")
-    key = OpenSSL::PKey::EC.new(group).generate_key!
+    key = OpenSSL::PKey::EC.generate(group)
     point = key.public_key
 
     point2 = OpenSSL::PKey::EC::Point.new(group, point.to_bn)

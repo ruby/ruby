@@ -441,6 +441,9 @@ ossl_ec_key_to_der(VALUE self)
  */
 static VALUE ossl_ec_key_generate_key(VALUE self)
 {
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+    rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
+#else
     EC_KEY *ec;
 
     GetEC(self, ec);
@@ -448,6 +451,7 @@ static VALUE ossl_ec_key_generate_key(VALUE self)
 	ossl_raise(eECError, "EC_KEY_generate_key");
 
     return self;
+#endif
 }
 
 /*
