@@ -3440,25 +3440,6 @@ gen_return_branch(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t s
     }
 }
 
-// Returns whether the iseq only needs positional (lead) argument setup.
-static bool
-iseq_lead_only_arg_setup_p(const rb_iseq_t *iseq)
-{
-    // When iseq->body->local_iseq == iseq, setup_parameters_complex()
-    // doesn't do anything to setup the block parameter.
-    bool takes_block = iseq->body->param.flags.has_block;
-    return (!takes_block || iseq->body->local_iseq == iseq) &&
-        iseq->body->param.flags.has_opt          == false &&
-        iseq->body->param.flags.has_rest         == false &&
-        iseq->body->param.flags.has_post         == false &&
-        iseq->body->param.flags.has_kw           == false &&
-        iseq->body->param.flags.has_kwrest       == false &&
-        iseq->body->param.flags.accepts_no_kwarg == false;
-}
-
-bool rb_iseq_only_optparam_p(const rb_iseq_t *iseq);
-bool rb_iseq_only_kwparam_p(const rb_iseq_t *iseq);
-
 // If true, the iseq is leaf and it can be replaced by a single C call.
 static bool
 rb_leaf_invokebuiltin_iseq_p(const rb_iseq_t *iseq)
@@ -3482,6 +3463,20 @@ rb_leaf_builtin_function(const rb_iseq_t *iseq)
     return (const struct rb_builtin_function *)iseq->body->iseq_encoded[1];
 }
 
+static bool
+iseq_supported_args_p(const rb_iseq_t *iseq)
+{
+    // supports has_opt
+    // supports has_kw
+    // supports accepts_no_kwarg
+    bool takes_block = iseq->body->param.flags.has_block;
+    return (!takes_block || iseq->body->local_iseq == iseq) &&
+        iseq->body->param.flags.has_rest         == false &&
+        iseq->body->param.flags.has_post         == false &&
+        iseq->body->param.flags.has_kwrest       == false;
+}
+
+
 static codegen_status_t
 gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, int32_t argc)
 {
@@ -3492,7 +3487,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     // specified at the call site. We need to keep track of the fact that this
     // value is present on the stack in order to properly set up the callee's
     // stack pointer.
-    bool doing_kw_call = false;
+    bool doing_kw_call = iseq->body->param.flags.has_kw;
 
     if (vm_ci_flag(ci) & VM_CALL_TAILCALL) {
         // We can't handle tailcalls
@@ -3500,65 +3495,68 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
         return YJIT_CANT_COMPILE;
     }
 
+    if (!iseq_supported_args_p(iseq)) {
+        GEN_COUNTER_INC(cb, send_iseq_complex_callee);
+        return YJIT_CANT_COMPILE;
+    }
+
+    // If we have keyword arguments being passed to a callee that only takes
+    // positionals, then we need to allocate a hash. For now we're going to
+    // call that too complex and bail.
+    if ((vm_ci_flag(ci) & VM_CALL_KWARG) && !iseq->body->param.flags.has_kw) {
+        GEN_COUNTER_INC(cb, send_iseq_complex_callee);
+        return YJIT_CANT_COMPILE;
+    }
+
+    // If we have a method accepting no kwargs (**nil), exit if we have passed
+    // it any kwargs.
+    if ((vm_ci_flag(ci) & VM_CALL_KWARG) && iseq->body->param.flags.accepts_no_kwarg) {
+        GEN_COUNTER_INC(cb, send_iseq_complex_callee);
+        return YJIT_CANT_COMPILE;
+    }
+
     // Arity handling and optional parameter setup
     int num_params = iseq->body->param.size;
+
+    // Remove blockarg if sent via ENV
+    if (iseq->body->param.flags.has_block && iseq->body->local_iseq == iseq) {
+        num_params--;
+    }
+
     uint32_t start_pc_offset = 0;
 
-    if (iseq_lead_only_arg_setup_p(iseq)) {
-        // If we have keyword arguments being passed to a callee that only takes
-        // positionals, then we need to allocate a hash. For now we're going to
-        // call that too complex and bail.
-        if (vm_ci_flag(ci) & VM_CALL_KWARG) {
-            GEN_COUNTER_INC(cb, send_iseq_complex_callee);
-            return YJIT_CANT_COMPILE;
-        }
+    const int required_num = iseq->body->param.lead_num;
 
-        num_params = iseq->body->param.lead_num;
+    // This struct represents the metadata about the caller-specified
+    // keyword arguments.
+    const struct rb_callinfo_kwarg *kw_arg = vm_ci_kwarg(ci);
+    const int kw_arg_num = kw_arg ? kw_arg->keyword_len : 0;
 
-        if (num_params != argc) {
-            GEN_COUNTER_INC(cb, send_iseq_arity_error);
-            return YJIT_CANT_COMPILE;
-        }
+    const int opts_filled = argc - required_num - kw_arg_num;
+    const int opt_num = iseq->body->param.opt_num;
+    const int opts_missing = opt_num - opts_filled;
+
+    if (opts_filled < 0 || opts_filled > opt_num) {
+        GEN_COUNTER_INC(cb, send_iseq_arity_error);
+        return YJIT_CANT_COMPILE;
     }
-    else if (rb_iseq_only_optparam_p(iseq)) {
-        // If we have keyword arguments being passed to a callee that only takes
-        // positionals and optionals, then we need to allocate a hash. For now
-        // we're going to call that too complex and bail.
-        if (vm_ci_flag(ci) & VM_CALL_KWARG) {
-            GEN_COUNTER_INC(cb, send_iseq_complex_callee);
-            return YJIT_CANT_COMPILE;
-        }
 
-        // These are iseqs with 0 or more required parameters followed by 1
-        // or more optional parameters.
-        // We follow the logic of vm_call_iseq_setup_normal_opt_start()
-        // and these are the preconditions required for using that fast path.
-        RUBY_ASSERT(vm_ci_markable(ci) && ((vm_ci_flag(ci) &
-                        (VM_CALL_KW_SPLAT | VM_CALL_KWARG | VM_CALL_ARGS_SPLAT)) == 0));
+    // If we have unfilled optional arguments and keyword arguments then we
+    // would need to move adjust the arguments location to account for that.
+    // For now we aren't handling this case.
+    if (doing_kw_call && opts_missing > 0) {
+        GEN_COUNTER_INC(cb, send_iseq_complex_callee);
+        return YJIT_CANT_COMPILE;
+    }
 
-        const int required_num = iseq->body->param.lead_num;
-        const int opts_filled = argc - required_num;
-        const int opt_num = iseq->body->param.opt_num;
-
-        if (opts_filled < 0 || opts_filled > opt_num) {
-            GEN_COUNTER_INC(cb, send_iseq_arity_error);
-            return YJIT_CANT_COMPILE;
-        }
-
+    if (opt_num > 0) {
         num_params -= opt_num - opts_filled;
         start_pc_offset = (uint32_t)iseq->body->param.opt_table[opts_filled];
     }
-    else if (rb_iseq_only_kwparam_p(iseq)) {
-        const int lead_num = iseq->body->param.lead_num;
 
-        doing_kw_call = true;
-
+    if (doing_kw_call) {
         // Here we're calling a method with keyword arguments and specifying
         // keyword arguments at this call site.
-
-        // This struct represents the metadata about the caller-specified
-        // keyword arguments.
-        const struct rb_callinfo_kwarg *kw_arg = vm_ci_kwarg(ci);
 
         // This struct represents the metadata about the callee-specified
         // keyword parameters.
@@ -3572,13 +3570,8 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
             return YJIT_CANT_COMPILE;
         }
 
+        // Check that the kwargs being passed are valid
         if (vm_ci_flag(ci) & VM_CALL_KWARG) {
-            // Check that the size of non-keyword arguments matches
-            if (lead_num != argc - kw_arg->keyword_len) {
-                GEN_COUNTER_INC(cb, send_iseq_complex_callee);
-                return YJIT_CANT_COMPILE;
-            }
-
             // This is the list of keyword arguments that the callee specified
             // in its initial declaration.
             const ID *callee_kwargs = keyword->table;
@@ -3612,30 +3605,11 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
                     return YJIT_CANT_COMPILE;
                 }
             }
-        }
-        else if (argc == lead_num) {
-            // Here we are calling a method that accepts keyword arguments
-            // (optional or required) but we're not passing any keyword
-            // arguments at this call site
-
-            if (keyword->required_num != 0) {
-                // If any of the keywords are required this is a mismatch
-                GEN_COUNTER_INC(cb, send_iseq_kwargs_mismatch);
-                return YJIT_CANT_COMPILE;
-            }
-
-            doing_kw_call = true;
-        }
-        else {
-            GEN_COUNTER_INC(cb, send_iseq_complex_callee);
+        } else if (keyword->required_num != 0) {
+            // No keywords provided so if any are required this is a mismatch
+            GEN_COUNTER_INC(cb, send_iseq_kwargs_mismatch);
             return YJIT_CANT_COMPILE;
         }
-    }
-    else {
-        // Only handle iseqs that have simple parameter setup.
-        // See vm_callee_setup_arg().
-        GEN_COUNTER_INC(cb, send_iseq_complex_callee);
-        return YJIT_CANT_COMPILE;
     }
 
     // Number of locals that are not parameters

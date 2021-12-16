@@ -506,6 +506,17 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_optarg_and_kwarg
+    assert_no_exits(<<~'RUBY')
+      def opt_and_kwarg(a, b=nil, c: nil)
+      end
+
+      2.times do
+        opt_and_kwarg(1, 2, c: 3)
+      end
+    RUBY
+  end
+
   def test_ctx_different_mappings
     # regression test simplified from URI::Generic#hostname=
     assert_compiles(<<~'RUBY', frozen_string_literal: true)
