@@ -10835,14 +10835,9 @@ rb_parser_fatal(struct parser_params *p, const char *fmt, ...)
     p->debug = TRUE;
 }
 
-YYLTYPE *
-rb_parser_set_location_from_strterm_heredoc(struct parser_params *p, rb_strterm_heredoc_t *here, YYLTYPE *yylloc)
+static YYLTYPE *
+rb_parser_set_pos(YYLTYPE *yylloc, int sourceline, int beg_pos, int end_pos)
 {
-    int sourceline = here->sourceline;
-    int beg_pos = (int)here->offset - here->quote
-	- (rb_strlen_lit("<<-") - !(here->func & STR_FUNC_INDENT));
-    int end_pos = (int)here->offset + here->length + here->quote;
-
     yylloc->beg_pos.lineno = sourceline;
     yylloc->beg_pos.column = beg_pos;
     yylloc->end_pos.lineno = sourceline;
@@ -10851,23 +10846,32 @@ rb_parser_set_location_from_strterm_heredoc(struct parser_params *p, rb_strterm_
 }
 
 YYLTYPE *
+rb_parser_set_location_from_strterm_heredoc(struct parser_params *p, rb_strterm_heredoc_t *here, YYLTYPE *yylloc)
+{
+    int sourceline = here->sourceline;
+    int beg_pos = (int)here->offset - here->quote
+	- (rb_strlen_lit("<<-") - !(here->func & STR_FUNC_INDENT));
+    int end_pos = (int)here->offset + here->length + here->quote;
+
+    return rb_parser_set_pos(yylloc, sourceline, beg_pos, end_pos);
+}
+
+YYLTYPE *
 rb_parser_set_location_of_none(struct parser_params *p, YYLTYPE *yylloc)
 {
-    yylloc->beg_pos.lineno = p->ruby_sourceline;
-    yylloc->beg_pos.column = (int)(p->lex.ptok - p->lex.pbeg);
-    yylloc->end_pos.lineno = p->ruby_sourceline;
-    yylloc->end_pos.column = (int)(p->lex.ptok - p->lex.pbeg);
-    return yylloc;
+    int sourceline = p->ruby_sourceline;
+    int beg_pos = (int)(p->lex.ptok - p->lex.pbeg);
+    int end_pos = (int)(p->lex.ptok - p->lex.pbeg);
+    return rb_parser_set_pos(yylloc, sourceline, beg_pos, end_pos);
 }
 
 YYLTYPE *
 rb_parser_set_location(struct parser_params *p, YYLTYPE *yylloc)
 {
-    yylloc->beg_pos.lineno = p->ruby_sourceline;
-    yylloc->beg_pos.column = (int)(p->lex.ptok - p->lex.pbeg);
-    yylloc->end_pos.lineno = p->ruby_sourceline;
-    yylloc->end_pos.column = (int)(p->lex.pcur - p->lex.pbeg);
-    return yylloc;
+    int sourceline = p->ruby_sourceline;
+    int beg_pos = (int)(p->lex.ptok - p->lex.pbeg);
+    int end_pos = (int)(p->lex.pcur - p->lex.pbeg);
+    return rb_parser_set_pos(yylloc, sourceline, beg_pos, end_pos);
 }
 #endif /* !RIPPER */
 
