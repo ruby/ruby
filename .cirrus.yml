@@ -40,6 +40,7 @@ task:
     # tests to fail.
     # https://github.com/rubygems/rubygems/issues/4921
     - echo "GNUMAKEFLAGS=-s -j$((1 + $CIRRUS_CPU))" >> $CIRRUS_ENV
+    - echo $CIRRUS_CHANGE_TITLE
   print_env_script:
     - echo "GNUMAKEFLAGS=$GNUMAKEFLAGS"
   # Arm containers are executed in AWS's EKS, and it's not yet supporting IPv6
