@@ -2226,6 +2226,14 @@ assert_equal '[1]', %q{
   5.times.map { kwargs(value: 1) }.uniq
 }
 
+assert_equal '[:ok]', %q{
+  def kwargs(value:)
+    value
+  end
+
+  5.times.map { kwargs() rescue :ok }.uniq
+}
+
 assert_equal '[[1, 2]]', %q{
   def kwargs(left:, right:)
     [left, right]
@@ -2246,6 +2254,24 @@ assert_equal '[[1, 2]]', %q{
 
   5.times.map { kwargs(1, kwarg: 2) }.uniq
 }
+
+# optional and keyword args
+assert_equal '[[1, 2, 3]]', %q{
+  def opt_and_kwargs(a, b=2, c: nil)
+    [a,b,c]
+  end
+
+  5.times.map { opt_and_kwargs(1, c: 3) }.uniq
+}
+
+assert_equal '[[1, 2, 3]]', %q{
+  def opt_and_kwargs(a, b=nil, c: nil)
+    [a,b,c]
+  end
+
+  5.times.map { opt_and_kwargs(1, 2, c: 3) }.uniq
+}
+
 
 # leading and keyword arguments are swapped into the right order
 assert_equal '[[1, 2, 3, 4, 5, 6]]', %q{
