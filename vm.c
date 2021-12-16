@@ -3484,9 +3484,6 @@ Init_VM(void)
     rb_define_singleton_method(mjit, "enabled?", mjit_enabled_p, 0);
     rb_define_singleton_method(mjit, "pause", mjit_pause_m, -1);
     rb_define_singleton_method(mjit, "resume", mjit_resume_m, 0);
-    /* RubyVM::JIT for short-term backward compatibility */
-    rb_const_set(rb_cRubyVM, rb_intern("JIT"), mjit);
-    rb_deprecate_constant(rb_cRubyVM, "JIT");
 
     /*
      * Document-class: Thread
