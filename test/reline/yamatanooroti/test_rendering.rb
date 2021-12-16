@@ -1217,6 +1217,17 @@ begin
       EOC
     end
 
+    def test_clear_dialog_in_pasting
+      start_terminal(10, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("S")
+      write("tring ")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> String
+      EOC
+    end
+
     def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content

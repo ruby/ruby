@@ -651,6 +651,7 @@ class Reline::LineEditor
 
   private def render_each_dialog(dialog, cursor_column)
     if @in_pasting
+      clear_each_dialog(dialog)
       dialog.contents = nil
       dialog.trap_key = nil
       return
