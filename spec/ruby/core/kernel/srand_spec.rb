@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-describe "Kernel.srand" do
+describe "Kernel#srand" do
   it "is a private method" do
     Kernel.should have_private_instance_method(:srand)
   end
@@ -60,6 +60,6 @@ describe "Kernel.srand" do
   end
 end
 
-describe "Kernel#srand" do
+describe "Kernel.srand" do
   it "needs to be reviewed for spec completeness"
 end

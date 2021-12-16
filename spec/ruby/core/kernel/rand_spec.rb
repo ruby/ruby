@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-describe "Kernel.rand" do
+describe "Kernel#rand" do
   it "is a private method" do
     Kernel.should have_private_instance_method(:rand)
   end
@@ -192,6 +192,6 @@ describe "Kernel.rand" do
   end
 end
 
-describe "Kernel#rand" do
+describe "Kernel.rand" do
   it "needs to be reviewed for spec completeness"
 end
