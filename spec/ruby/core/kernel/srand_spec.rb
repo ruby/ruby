@@ -12,7 +12,7 @@ describe "Kernel.srand" do
   end
 
   it "returns the previous seed value on the first call" do
-    ruby_exe('p srand(10)', options: '--disable-gems').chomp.should =~ /\A\d+\z/
+    ruby_exe('print srand(10)', options: '--disable-gems').should =~ /\A\d+\z/
   end
 
   it "seeds the RNG correctly and repeatably" do

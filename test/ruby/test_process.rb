@@ -208,39 +208,39 @@ class TestProcess < Test::Unit::TestCase
 
     n = max
     IO.popen([RUBY, "-e",
-             "p Process.getrlimit(:CORE)", :rlimit_core=>n]) {|io|
-      assert_equal("[#{n}, #{n}]\n", io.read)
+             "puts Process.getrlimit(:CORE)", :rlimit_core=>n]) {|io|
+      assert_equal("#{n}\n#{n}\n", io.read)
     }
 
     n = 0
     IO.popen([RUBY, "-e",
-             "p Process.getrlimit(:CORE)", :rlimit_core=>n]) {|io|
-      assert_equal("[#{n}, #{n}]\n", io.read)
+             "puts Process.getrlimit(:CORE)", :rlimit_core=>n]) {|io|
+      assert_equal("#{n}\n#{n}\n", io.read)
     }
 
     n = max
     IO.popen([RUBY, "-e",
-             "p Process.getrlimit(:CORE)", :rlimit_core=>[n]]) {|io|
-      assert_equal("[#{n}, #{n}]", io.read.chomp)
+             "puts Process.getrlimit(:CORE)", :rlimit_core=>[n]]) {|io|
+      assert_equal("#{n}\n#{n}\n", io.read)
     }
 
     m, n = 0, max
     IO.popen([RUBY, "-e",
-             "p Process.getrlimit(:CORE)", :rlimit_core=>[m,n]]) {|io|
-      assert_equal("[#{m}, #{n}]", io.read.chomp)
+             "puts Process.getrlimit(:CORE)", :rlimit_core=>[m,n]]) {|io|
+      assert_equal("#{m}\n#{n}\n", io.read)
     }
 
     m, n = 0, 0
     IO.popen([RUBY, "-e",
-             "p Process.getrlimit(:CORE)", :rlimit_core=>[m,n]]) {|io|
-      assert_equal("[#{m}, #{n}]", io.read.chomp)
+             "puts Process.getrlimit(:CORE)", :rlimit_core=>[m,n]]) {|io|
+      assert_equal("#{m}\n#{n}\n", io.read)
     }
 
     n = max
     IO.popen([RUBY, "-e",
-      "p Process.getrlimit(:CORE), Process.getrlimit(:CPU)",
+      "puts Process.getrlimit(:CORE), Process.getrlimit(:CPU)",
       :rlimit_core=>n, :rlimit_cpu=>3600]) {|io|
-      assert_equal("[#{n}, #{n}]\n[3600, 3600]", io.read.chomp)
+      assert_equal("#{n}\n#{n}\n""3600\n3600\n", io.read)
     }
 
     assert_raise(ArgumentError) do

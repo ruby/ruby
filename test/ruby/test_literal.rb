@@ -26,7 +26,7 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal '5', 0b101.inspect
     assert_instance_of Integer, 0b101
     assert_raise(SyntaxError) { eval("0b") }
-    assert_equal '123456789012345678901234567890', 123456789012345678901234567890.inspect
+    assert_equal '123456789012345678901234567890', 123456789012345678901234567890.to_s
     assert_instance_of Integer, 123456789012345678901234567890
     assert_instance_of Float, 1.3
     assert_equal '2', eval("0x00+2").inspect
