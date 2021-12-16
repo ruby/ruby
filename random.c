@@ -1469,6 +1469,7 @@ static VALUE rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd);
  * call-seq:
  *   prng.rand -> float
  *   prng.rand(max) -> number
+ *   prng.rand(range) -> number
  *
  * When +max+ is an Integer, +rand+ returns a random integer greater than
  * or equal to zero and less than +max+. Unlike Kernel.rand, when +max+
@@ -1482,8 +1483,8 @@ static VALUE rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd);
  *
  *   prng.rand(1.5)       # => 1.4600282860034115
  *
- * When +max+ is a Range, +rand+ returns a random number where
- * range.member?(number) == true.
+ * When +range+ is a Range, +rand+ returns a random number where
+ * <code>range.member?(number) == true</code>.
  *
  *   prng.rand(5..9)      # => one of [5, 6, 7, 8, 9]
  *   prng.rand(5...9)     # => one of [5, 6, 7, 8]
@@ -1644,6 +1645,9 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
  *   Random.rand -> float
  *   Random.rand(max) -> number
  *   Random.rand(range) -> number
+ *
+ * Generates a random number by the default PRNG.
+ * See Random#rand.
  */
 
 static VALUE
