@@ -6028,12 +6028,12 @@ env_none(VALUE _)
 static int
 env_size_with_lock(void)
 {
-    int i;
+    int i = 0;
 
     ENV_LOCK();
     {
         char **env = GET_ENVIRON(environ);
-        for (i=0; env[i]; i++);
+        while (env[i]) i++;
         FREE_ENVIRON(environ);
     }
     ENV_UNLOCK();
