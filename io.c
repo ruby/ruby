@@ -1141,11 +1141,7 @@ rb_read_internal(rb_io_t *fptr, void *buf, size_t count)
         VALUE result = rb_fiber_scheduler_io_read_memory(scheduler, fptr->self, buf, count, 1);
 
         if (result != Qundef) {
-          ssize_t length = RB_NUM2SSIZE(result);
-
-          if (length < 0) rb_sys_fail_path(fptr->pathv);
-
-          return length;
+          return NUM2SIZET(result);
         }
     }
 
@@ -1168,11 +1164,7 @@ rb_write_internal(rb_io_t *fptr, const void *buf, size_t count)
         VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, buf, count, count);
 
         if (result != Qundef) {
-          ssize_t length = RB_NUM2SSIZE(result);
-
-          if (length < 0) rb_sys_fail_path(fptr->pathv);
-
-          return length;
+          return NUM2SIZET(result);
         }
     }
 
@@ -1659,11 +1651,7 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
         VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, ptr, len, len);
 
         if (result != Qundef) {
-          ssize_t length = RB_NUM2SSIZE(result);
-
-          if (length < 0) rb_sys_fail_path(fptr->pathv);
-
-          return length;
+          return NUM2SIZET(result);
         }
     }
 
@@ -3066,7 +3054,7 @@ read_internal_call(VALUE arg)
         VALUE result = rb_fiber_scheduler_io_read_memory(scheduler, iis->fptr->self, iis->buf, iis->capa, 1);
 
         if (result != Qundef) {
-          return (VALUE)RB_NUM2SSIZE(result);
+          return (VALUE)NUM2SIZET(result);
         }
     }
 
