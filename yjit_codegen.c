@@ -3562,6 +3562,8 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
         // keyword parameters.
         const struct rb_iseq_param_keyword *keyword = iseq->body->param.keyword;
 
+        int required_kwargs_filled = 0;
+
         if (keyword->num > 30) {
             // We have so many keywords that (1 << num) encoded as a FIXNUM
             // (which shifts it left one more) no longer fits inside a 32-bit
@@ -3604,9 +3606,16 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
                     GEN_COUNTER_INC(cb, send_iseq_kwargs_mismatch);
                     return YJIT_CANT_COMPILE;
                 }
+
+                // Keep a count to ensure all required kwargs are specified
+                if (callee_idx < keyword->required_num) {
+                    required_kwargs_filled++;
+                }
             }
-        } else if (keyword->required_num != 0) {
-            // No keywords provided so if any are required this is a mismatch
+        }
+
+        RUBY_ASSERT(required_kwargs_filled <= keyword->required_num);
+        if (required_kwargs_filled != keyword->required_num) {
             GEN_COUNTER_INC(cb, send_iseq_kwargs_mismatch);
             return YJIT_CANT_COMPILE;
         }
