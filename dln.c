@@ -200,13 +200,11 @@ dln_strerror(char *message, size_t size)
     return message;
 }
 #define dln_strerror() dln_strerror(message, sizeof message)
-#elif ! defined _AIX
+#elif defined USE_DLN_DLOPEN
 static const char *
 dln_strerror(void)
 {
-#ifdef USE_DLN_DLOPEN
     return (char*)dlerror();
-#endif
 }
 #endif
 
@@ -305,7 +303,7 @@ dln_load(const char *file)
 #if (defined _WIN32 || defined USE_DLN_DLOPEN) && defined RUBY_EXPORT
     static const char incompatible[] = "incompatible library version";
 #endif
-#if !defined(_AIX) && !defined(NeXT)
+#if defined _WIN32 || defined USE_DLN_DLOPEN
     const char *error = 0;
 #endif
 
@@ -495,7 +493,7 @@ dln_load(const char *file)
 #endif
 
 #endif
-#if !defined(_AIX) && !defined(NeXT)
+#if defined(_WIN32) || defined(USE_DLN_DLOPEN)
   failed:
     dln_loaderror("%s - %s", error, file);
 #endif
