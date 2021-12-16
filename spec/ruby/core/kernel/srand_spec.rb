@@ -11,7 +11,7 @@ describe "Kernel.srand" do
     srand(20).should == 10
   end
 
-  it "returns the previous seed value on the first call" do
+  it "returns the system-initialized seed value on the first call" do
     ruby_exe('print srand(10)', options: '--disable-gems').should =~ /\A\d+\z/
   end
 
