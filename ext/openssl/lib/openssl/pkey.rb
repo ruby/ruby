@@ -259,9 +259,14 @@ module OpenSSL::PKey
     # This method is provided for backwards compatibility, and calls #derive
     # internally.
     def dh_compute_key(pubkey)
-      peer = OpenSSL::PKey::EC.new(group)
-      peer.public_key = pubkey
-      derive(peer)
+      obj = OpenSSL::ASN1.Sequence([
+        OpenSSL::ASN1.Sequence([
+          OpenSSL::ASN1.ObjectId("id-ecPublicKey"),
+          group.to_der,
+        ]),
+        OpenSSL::ASN1.BitString(pubkey.to_octet_string(:uncompressed)),
+      ])
+      derive(OpenSSL::PKey.read(obj.to_der))
     end
   end
 
