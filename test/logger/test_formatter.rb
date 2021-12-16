@@ -1,6 +1,6 @@
 # coding: US-ASCII
 # frozen_string_literal: false
-require_relative 'helper'
+require 'logger'
 
 class TestFormatter < Test::Unit::TestCase
   def test_call
