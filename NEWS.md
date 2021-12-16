@@ -311,8 +311,7 @@ Note: We're only listing outstanding class updates.
 ## Stdlib updates
 
 *   The following default gem are updated.
-    * RubyGems
-    * abbrev 0.1.0
+    * RubyGems 3.3.0.dev
     * base64 0.1.1
     * benchmark 0.2.0
     * bigdecimal 3.1.0.dev
@@ -320,11 +319,9 @@ Note: We're only listing outstanding class updates.
     * cgi 0.3.1
     * csv 3.2.1
     * date 3.2.2
-    * delegate 0.2.0
     * did_you_mean 1.6.0.pre.alpha
     * digest 3.1.0.pre3
     * drb 2.1.0
-    * english 0.7.1
     * erb 2.2.3
     * error_highlight 0.2.0
     * etc 1.3.0
@@ -332,55 +329,40 @@ Note: We're only listing outstanding class updates.
     * fiddle 1.1.0
     * fileutils 1.6.0
     * find 0.1.1
-    * forwardable 1.3.2
-    * getoptlong 0.1.1
     * io-console 0.5.9
-    * io-nonblock 0.1.0
     * io-wait 0.2.1
     * ipaddr 1.2.3
     * irb 1.3.8.pre.11
     * json 2.6.1
     * logger 1.4.4
-    * mutex_m 0.1.1
     * net-http 0.2.0
     * net-protocol 0.1.2
     * nkf 0.1.1
-    * observer 0.1.1
     * open-uri 0.2.0
-    * open3 0.1.1
     * openssl 3.0.0.pre
     * optparse 0.2.0
     * ostruct 0.5.2
     * pathname 0.2.0
     * pp 0.2.1
     * prettyprint 0.1.1
-    * pstore 0.1.1
     * psych 4.0.2
     * racc 1.6.0
     * rdoc 6.3.2
-    * readline 0.0.2
     * readline-ext 0.1.3
     * reline 0.2.8.pre.11
     * resolv 0.2.1
-    * resolv-replace 0.1.0
     * rinda 0.1.1
     * ruby2_keywords 0.0.5
     * securerandom 0.1.1
     * set 1.0.2
-    * shellwords 0.1.0
-    * singleton 0.1.1
     * stringio 3.0.1
     * strscan 3.0.1
-    * syslog 0.1.0
     * tempfile 0.1.2
     * time 0.2.0
     * timeout 0.2.0
     * tmpdir 0.1.2
-    * tsort 0.1.0
     * un 0.2.0
     * uri 0.11.0
-    * weakref 0.1.1
-    * win32ole 1.8.8
     * yaml 0.2.0
     * zlib 2.1.1
 *   The following bundled gems are updated.
