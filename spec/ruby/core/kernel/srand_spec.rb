@@ -2,6 +2,14 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "Kernel#srand" do
+  before :each do
+    @seed = srand
+  end
+
+  after :each do
+    srand(@seed)
+  end
+
   it "is a private method" do
     Kernel.should have_private_instance_method(:srand)
   end
