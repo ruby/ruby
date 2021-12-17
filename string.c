@@ -11303,14 +11303,14 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
  *            matches a given Regexp; +nil+ otherwise.
  * - #match?:: Returns +true+ if symbol
  *             matches a given Regexp; +false+ otherwise.
- * - #length, #size:: Returns the size of symbol.
+ * - #length, #size:: Returns the number of characters in symbol.
  * - #start_with?:: Returns +true+ if symbol starts with
  *                  any of the given strings.
  *
  * === Methods for Comparing
  *
  * - {#<=>}[#method-i-3C-3D-3E]:: Returns -1, 0, or 1 as a given symbol is smaller than, equal to, or larger than symbol.
- * - {#==, #===}[#method-i-3D-3D]:: Returns +true+ if a given string
+ * - {#==, #===}[#method-i-3D-3D]:: Returns +true+ if a given symbol
  *                                  has the same content and encoding.
  * - #casecmp:: Ignoring case, returns -1, 0, or 1 as a given
  *              symbol is smaller than, equal to, or larger than symbol.
@@ -11322,12 +11322,11 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
  * - #capitalize:: Returns symbol with the first character upcased
  *                 and all other characters downcased.
  * - #downcase:: Returns symbol with all characters downcased.
- * - #inspect:: Returns the representation of +self+ as a symbol literal.
- * - #name:: Returns the frozen string symbol.
- * - #succ, #next:: Returns the string that is the successor to symbol.
+ * - #inspect:: Returns the string representation of +self+ as a symbol literal.
+ * - #name:: Returns the frozen string corresponding to symbol.
+ * - #succ, #next:: Returns the symbol that is the successor to symbol.
  * - #swapcase:: Returns symbol with all upcase characters downcased
  *               and all downcase characters upcased.
- * - #upcase:: Returns symbol with all characters upcased.
  * - #to_proc:: Returns a Proc object which responds to the method named by symbol.
  * - #to_s, #id2name:: Returns the string corresponding to +self+.
  * - #to_sym, #intern:: Returns +self+.
