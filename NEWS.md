@@ -466,6 +466,12 @@ See [this blog post](https://shopify.engineering/yjit-just-in-time-compiler-crub
 
 ### RBS
 
+* rbs collection has been introduced to manage gems’ RBSs. doc
+* Many signatures for built-in and standard libraries have been added/updated.
+* It includes many bug fixes and performance improvements too.
+
+See the [CHANGELOG.md](https://github.com/ruby/rbs/blob/master/CHANGELOG.md) for more information.
+
 ### TypeProf
 
 * [Experimental IDE support](https://github.com/ruby/typeprof/blob/master/doc/ide.md) has been implemented.
