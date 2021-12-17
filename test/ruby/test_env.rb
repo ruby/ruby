@@ -1434,6 +1434,36 @@ class TestEnv < Test::Unit::TestCase
     end;
   end
 
+  def test_ivar_in_env_should_not_be_access_from_non_main_ractors
+    assert_ractor <<~RUBY
+    ENV.instance_eval{ @a = "hello" }
+    assert_equal "hello", ENV.instance_variable_get(:@a)
+
+    r_get =  Ractor.new do
+      ENV.instance_variable_get(:@a)
+    rescue Ractor::IsolationError => e
+      e
+    end
+    assert_equal Ractor::IsolationError, r_get.take.class
+
+    r_get =  Ractor.new do
+      ENV.instance_eval{ @a }
+    rescue Ractor::IsolationError => e
+      e
+    end
+
+    assert_equal Ractor::IsolationError, r_get.take.class
+
+    r_set = Ractor.new do
+      ENV.instance_eval{ @b = "hello" }
+    rescue Ractor::IsolationError => e
+      e
+    end
+
+    assert_equal Ractor::IsolationError, r_set.take.class
+    RUBY
+  end
+
   if RUBY_PLATFORM =~ /bccwin|mswin|mingw/
     def test_memory_leak_aset
       bug9977 = '[ruby-dev:48323] [Bug #9977]'
