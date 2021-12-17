@@ -23,9 +23,15 @@ jobs:
           done | grep -F .
         working-directory: include
 
-      - name: Download default gems list
+      - uses: actions/cache@v2
+        with:
+          path: .downloaded-cache
+          key: downloaded-cache
+
+      - name: Download previous gems list
         run: |
-          curl -O https://stdgems.org/default_gems.json
+          curl -o .downloaded-cache/default_gems.json https://stdgems.org/default_gems.json
+          ln -s .downloaded-cache/default_gems.json .
 
       - name: Make default gems list
         run: |
@@ -38,41 +44,46 @@ jobs:
             spec = Gem::Specification.load(f)
             "#{spec.name} #{spec.version}"
           end.sort
-          File.open("stdlibs", "w") do |f|
+          File.open("gems/default_gems", "w") do |f|
             f.puts "RubyGems #{rgver}"
             f.puts gems
           end
         shell: ruby --disable=gems {0}
 
-      - name: Maintain updated default gems list in NEWS
+      - name: Maintain updated gems list in NEWS
         run: |
           require 'json'
           news = File.read("NEWS.md")
           prev = news[/since the \*+(\d+\.\d+\.\d+)\*+/, 1]
           prevs = [prev, prev.sub(/\.\d+\z/, '')]
-          last = JSON.parse(File.read("default_gems.json"))['gems'].filter_map do |g|
-            v = g['versions'].values_at(*prevs).compact.first
-            g = g['gem']
-            g == 'RubyGems' if g == 'rubygems'
-            "#{g} #{v}" if v
+          %W[default].each do |type|
+            last = JSON.parse(File.read("#{type}_gems.json"))['gems'].filter_map do |g|
+              v = g['versions'].values_at(*prevs).compact.first
+              g = g['gem']
+              g = 'RubyGems' if g == 'rubygems'
+              [g, v] if v
+            end.to_h
+            changed = File.foreach("gems/#{type}_gems").filter_map do |l|
+              next if l.start_with?("#")
+              g, v = l.split(" ", 3)
+              [g, v] unless last[g] == v
+            end
+            news.sub!(/^\*\s+The following #{type} gems? are updated\.(\n\s+\*\s+)\K.*(?:\1.*)*/) do
+              changed.map {|g, v|"#{g} #{v}"}.join($1)
+            end or exit
+            File.write("NEWS.md", news)
           end
-          new = File.readlines('stdlibs', chomp: true).grep_v(/^#/)
-          gems = new - last
-          news.sub!(/^\*\s+The following default gems? are updated\.\K(\n\s+\*\s+).*(?:\1.*)*/) do
-            ["", gems].join($1)
-          end or exit
-          File.write("NEWS.md", news)
         shell: ruby {0}
 
       - name: Check diffs
         id: diff
         run: |
-          git diff --no-ext-diff --ignore-submodules --exit-code NEWS.md
+          git diff --color --no-ext-diff --ignore-submodules --exit-code NEWS.md
         continue-on-error: true
       - name: Commit
         run: |
           git pull --ff-only origin ${GITHUB_REF#refs/heads/}
-          git commit --message="Update stdlib version at ${GITHUB_SHA:0:30} [ci skip]" NEWS.md
+          git commit --message="Update default gems list at ${GITHUB_SHA:0:30} [ci skip]" NEWS.md
           git push origin ${GITHUB_REF#refs/heads/}
         env:
           EMAIL: svn-admin@ruby-lang.org
