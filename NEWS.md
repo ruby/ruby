@@ -380,7 +380,7 @@ Note: We're only listing outstanding class updates.
     * net-smtp 0.3.1
     * matrix 0.4.2
     * prime 0.1.2
-    * debug 1.3.4
+    * debug 1.4.0
 
 * Coverage measurement now supports suspension. You can use `Coverage.suspend`
   to stop the measurement temporarily, and `Coverage.resume` to restart it.
