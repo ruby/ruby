@@ -310,6 +310,21 @@ class Reline::Test < Reline::TestCase
     assert_equal(Reline::KeyActor::Emacs, Reline.send(:core).config.editing_mode.class)
   end
 
+  def test_add_dialog_proc
+    p = proc {}
+    Reline.add_dialog_proc(:test_proc, p)
+
+    l = lambda {}
+    Reline.add_dialog_proc(:test_lambda, l)
+
+    assert_raise(ArgumentError) { Reline.add_dialog_proc(:error, 42) }
+    assert_raise(ArgumentError) { Reline.add_dialog_proc(:error, 'hoge') }
+    assert_raise(ArgumentError) { Reline.add_dialog_proc('error', proc {} ) }
+
+    dummy = DummyCallbackObject.new
+    Reline.add_dialog_proc(:dummy, dummy)
+  end
+
   def test_readmultiline
     # readmultiline is module function
     assert_include(Reline.methods, :readmultiline)
