@@ -7312,6 +7312,85 @@ Init_Hash(void)
      * so most example snippets begin by resetting the contents of ENV:
      * - ENV.replace replaces ENV with a new collection of entries.
      * - ENV.clear empties ENV.
+     *
+     * == What's Here
+     *
+     * First, what's elsewhere. \Class \ENV:
+     *
+     * - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
+     *
+     * Here, class \ENV provides methods that are useful for:
+     *
+     * - {Querying}[#class-ENV-label-Methods+for+Querying]
+     * - {Assigning}[#class-ENV-label-Methods+for+Assigning]
+     * - {Deleting}[#class-ENV-label-Methods+for+Deleting]
+     * - {Iterating}[#class-ENV-label-Methods+for+Iterating]
+     * - {Converting}[#class-ENV-label-Methods+for+Converting]
+     * - {And more ....}[#class-ENV-label-More+Methods]
+     *
+     * === Methods for Querying
+     *
+     * - ::[]:: Returns the value for the given environment variable name if it exists:
+     * - ::empty?:: Returns whether \ENV is empty.
+     * - ::has_value?, ::value?:: Returns whether the given value is in \ENV.
+     * - ::include?, ::has_key?, ::key?, ::member?:: Returns whether the given name
+                                                     is in \ENV.
+     * - ::key:: Returns the name of the first entry with the given value.
+     * - ::size, ::length:: Returns the number of entries.
+     * - ::value?:: Returns whether any entry has the given value.
+     *
+     * === Methods for Assigning
+     *
+     * - ::[]=, ::store:: Creates, updates, or deletes the named environment variable.
+     * - ::clear:: Removes every environment variable; returns \ENV:
+     * - ::update, ::merge!:: Adds to \ENV each key/value pair in the given hash.
+     * - ::replace:: Replaces the entire content of the \ENV
+     *               with the name/value pairs in the given hash.
+     *
+     * === Methods for Deleting
+     *
+     * - ::delete:: Deletes the named environment variable name if it exists.
+     * - ::delete_if:: Deletes entries selected by the block.
+     * - ::keep_if:: Deletes entries not selected by the block.
+     * - ::reject!:: Similar to #delete_if, but returns +nil+ if no change was made.
+     * - ::select!, ::filter!:: Deletes entries selected by the block.
+     * - ::shift:: Removes and returns the first entry.
+     *
+     * === Methods for Iterating
+     *
+     * - ::each, ::each_pair:: Calls the block with each name/value pair.
+     * - ::each_key:: Calls the block with each name.
+     * - ::each_value:: Calls the block with each value.
+     *
+     * === Methods for Converting
+     *
+     * - ::assoc:: Returns a 2-element array containing the name and value
+     *             of the named environment variable if it exists:
+     * - ::clone:: Returns \ENV (and issues a warning).
+     * - ::except:: Returns a hash of all name/value pairs except those given.
+     * - ::fetch:: Returns the value for the given name.
+     * - ::inspect:: Returns the contents of \ENV as a string.
+     * - ::invert:: Returns a hash whose keys are the ENV values,
+                    and whose values are the corresponding ENV names.
+     * - ::keys:: Returns an array of all names.
+     * - ::rassoc:: Returns the name and value of the first found entry
+     *              that has the given value.
+     * - ::reject:: Returns a hash of those entries not rejected by the block.
+     * - ::select, ::filter:: Returns a hash of name/value pairs selected by the block.
+     * - ::slice:: Returns a hash of the given names and their corresponding values.
+     * - ::to_a:: Returns the entries as an array of 2-element Arrays.
+     * - ::to_h:: Returns a hash of entries selected by the block.
+     * - ::to_hash:: Returns a hash of all entries.
+     * - ::to_s:: Returns the string <tt>'ENV'</tt>.
+     * - ::values:: Returns all values as an array.
+     * - ::values_at:: Returns an array of the values for the given name.
+     *
+     * === More Methods
+     *
+     * - ::dup:: Raises an exception.
+     * - ::freeze:: Raises an exception.
+     * - ::rehash:: Returns +nil+, without modifying \ENV.
+     *
      */
 
     /*
