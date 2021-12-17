@@ -4500,6 +4500,25 @@ gen_toregexp(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 }
 
 static codegen_status_t
+gen_intern(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
+{
+    // Save the PC and SP because we might allocate
+    jit_prepare_routine_call(jit, ctx, REG0);
+
+    x86opnd_t str = ctx_stack_pop(ctx, 1);
+
+    mov(cb, C_ARG_REGS[0], str);
+
+    call_ptr(cb, REG0, (void *)&rb_str_intern);
+
+    // Push the return value
+    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
+    mov(cb, stack_ret, RAX);
+
+    return YJIT_KEEP_COMPILING;
+}
+
+static codegen_status_t
 gen_getspecial(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
     // This takes two arguments, key and type
@@ -5010,6 +5029,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(anytostring), gen_anytostring);
     yjit_reg_op(BIN(objtostring), gen_objtostring);
     yjit_reg_op(BIN(toregexp), gen_toregexp);
+    yjit_reg_op(BIN(intern), gen_intern);
     yjit_reg_op(BIN(getspecial), gen_getspecial);
     yjit_reg_op(BIN(getclassvariable), gen_getclassvariable);
     yjit_reg_op(BIN(setclassvariable), gen_setclassvariable);
