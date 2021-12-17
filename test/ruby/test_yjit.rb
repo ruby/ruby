@@ -256,6 +256,11 @@ class TestYJIT < Test::Unit::TestCase
     assert_no_exits('/#{true}/')
   end
 
+  def test_compile_dynamic_symbol
+    assert_compiles(':"#{"foo"}"', insns: %i[intern])
+    assert_compiles('s = "bar"; :"foo#{s}"', insns: %i[intern])
+  end
+
   def test_getlocal_with_level
     assert_compiles(<<~RUBY, insns: %i[getlocal opt_plus], result: [[7]])
       def foo(foo, bar)
