@@ -6657,7 +6657,7 @@ const rb_data_type_t env_data_type = {
     "ENV",
     {
         NULL,
-        RUBY_DEFAULT_FREE,
+        NULL,
         NULL,
         NULL,
     },
