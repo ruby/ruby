@@ -11290,48 +11290,48 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
  *
  * - ::all_symbols:: Returns an array of the symbols currently in Ruby's symbol table.
  * - {#=~}[#method-i-3D~]:: Returns the index of the first substring
- *                          in <tt>self.to_s</tt> that matches a given Regexp
+ *                          in symbol that matches a given Regexp
  *                          or other object; returns +nil+ if no match is found.
- * - #[], #slice :: Returns a substring of <tt>self.to_s</tt>
+ * - #[], #slice :: Returns a substring of symbol
  *                  determined by a given index, start/length, or range, or string.
  * - #empty?:: Returns +true+ if +self.length+ is zero; +false+ otherwise.
  * - #encoding:: Returns the Encoding object that represents the encoding
- *               of <tt>self.to_s</tt>.
- * - #end_with?:: Returns +true+ if <tt>self.to_s</tt> ends with
+ *               of symbol.
+ * - #end_with?:: Returns +true+ if symbol ends with
  *                any of the given strings.
- * - #match:: Returns a MatchData object if <tt>self.to_s</tt>
+ * - #match:: Returns a MatchData object if symbol
  *            matches a given Regexp; +nil+ otherwise.
- * - #match?:: Returns +true+ if <tt>self.to_s</tt>
+ * - #match?:: Returns +true+ if symbol
  *             matches a given Regexp; +false+ otherwise.
- * - #length, #size:: Returns the size of <tt>self.to_s</tt>.
- * - #start_with?:: Returns +true+ if <tt>self.to_s</tt> starts with
+ * - #length, #size:: Returns the size of symbol.
+ * - #start_with?:: Returns +true+ if symbol starts with
  *                  any of the given strings.
  *
  * === Methods for Comparing
  *
- * - {#<=>}[#method-i-3C-3D-3E]:: Returns -1, 0, or 1 as a given other string is smaller than, equal to, or larger than <tt>self.to_s</tt>.
+ * - {#<=>}[#method-i-3C-3D-3E]:: Returns -1, 0, or 1 as a given symbol is smaller than, equal to, or larger than symbol.
  * - {#==, #===}[#method-i-3D-3D]:: Returns +true+ if a given string
- *                                  has the same content as <tt>self.to_s</tt>.
+ *                                  has the same content and encoding.
  * - #casecmp:: Ignoring case, returns -1, 0, or 1 as a given
- *              other string is smaller than, equal to, or larger than <tt>self.to_s</tt>.
- * - #casecmp?:: Returns +true+ if <tt>self.to_s</tt> is equal to a given string
+ *              symbol is smaller than, equal to, or larger than symbol.
+ * - #casecmp?:: Returns +true+ if symbol is equal to a given symbol
  *               after Unicode case folding; +false+ otherwise.
  *
  * === Methods for Converting
  *
- * - #capitalize:: Returns <tt>self.to_s</tt> with the first character upcased
+ * - #capitalize:: Returns symbol with the first character upcased
  *                 and all other characters downcased.
- * - #downcase:: Returns <tt>self.to_s</tt> with all characters downcased.
+ * - #downcase:: Returns symbol with all characters downcased.
  * - #inspect:: Returns the representation of +self+ as a symbol literal.
- * - #name:: Returns the frozen string <tt>self.to_s</tt>.
- * - #succ, #next:: Returns the string that is the successor to <tt>self.to_s</tt>.
- * - #swapcase:: Returns <tt>self.to_s</tt> with all upcase characters downcased
+ * - #name:: Returns the frozen string symbol.
+ * - #succ, #next:: Returns the string that is the successor to symbol.
+ * - #swapcase:: Returns symbol with all upcase characters downcased
  *               and all downcase characters upcased.
- * - #upcase:: Returns <tt>self.to_s</tt> with all characters upcased.
- * - #to_proc:: Returns a Proc object which responds to the method given by sym.
- * - #to_s, #id2name:: Returns the name or string corresponding to +self+.
+ * - #upcase:: Returns symbol with all characters upcased.
+ * - #to_proc:: Returns a Proc object which responds to the method named by symbol.
+ * - #to_s, #id2name:: Returns the string corresponding to +self+.
  * - #to_sym, #intern:: Returns +self+.
- * - #upcase:: Returns <tt>self.to_s</tt> with all characters upcased.
+ * - #upcase:: Returns symbol with all characters upcased.
  *
  */
 
