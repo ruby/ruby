@@ -6653,7 +6653,7 @@ env_dup(VALUE obj)
     rb_raise(rb_eTypeError, "Cannot dup ENV, use ENV.to_h to get a copy of ENV as a hash");
 }
 
-const rb_data_type_t env_data_type = {
+static const rb_data_type_t env_data_type = {
     "ENV",
     {
         NULL,
