@@ -380,7 +380,7 @@ Note: We're only listing outstanding class updates.
     * matrix
     * prime
 
-* Coverage measurement nohw supports suspension. You can use `Coverage.suspend`
+* Coverage measurement now supports suspension. You can use `Coverage.suspend`
   to stop the measurement temporarily, and `Coverage.resume` to restart it.
   See [[Feature #18176]] in detail.
 
