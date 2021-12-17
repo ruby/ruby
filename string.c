@@ -11273,6 +11273,66 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
  * Symbol objects represent identifiers, while String objects
  * represent text or data.
  *
+ * == What's Here
+ *
+ * First, what's elsewhere. \Class \Symbol:
+ *
+ * - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
+ * - Includes {module Comparable}[Comparable.html#module-Comparable-label-What-27s+Here].
+ *
+ * Here, class \Symbol provides methods that are useful for:
+ *
+ * - {Querying}[#class-Symbol-label-Methods+for+Querying]
+ * - {Comparing}[#class-Symbol-label-Methods+for+Comparing]
+ * - {Converting}[#class-Symbol-label-Methods+for+Converting]
+ *
+ * === Methods for Querying
+ *
+ * - ::all_symbols:: Returns an array of the symbols currently in Ruby's symbol table.
+ * - {#=~}[#method-i-3D~]:: Returns the index of the first substring
+ *                          in <tt>self.to_s</tt> that matches a given Regexp
+ *                          or other object; returns +nil+ if no match is found.
+ * - #[], #slice :: Returns a substring of <tt>self.to_s</tt>
+ *                  determined by a given index, start/length, or range, or string.
+ * - #empty?:: Returns +true+ if +self.length+ is zero; +false+ otherwise.
+ * - #encoding:: Returns the Encoding object that represents the encoding
+ *               of <tt>self.to_s</tt>.
+ * - #end_with?:: Returns +true+ if <tt>self.to_s</tt> ends with
+ *                any of the given strings.
+ * - #match:: Returns a MatchData object if <tt>self.to_s</tt>
+ *            matches a given Regexp; +nil+ otherwise.
+ * - #match?:: Returns +true+ if <tt>self.to_s</tt>
+ *             matches a given Regexp; +false+ otherwise.
+ * - #length, #size:: Returns the size of <tt>self.to_s</tt>.
+ * - #start_with?:: Returns +true+ if <tt>self.to_s</tt> starts with
+ *                  any of the given strings.
+ *
+ * === Methods for Comparing
+ *
+ * - {#<=>}[#method-i-3C-3D-3E]:: Returns -1, 0, or 1 as a given other string is smaller than, equal to, or larger than <tt>self.to_s</tt>.
+ * - {#==, #===}[#method-i-3D-3D]:: Returns +true+ if a given string
+ *                                  has the same content as <tt>self.to_s</tt>.
+ * - #casecmp:: Ignoring case, returns -1, 0, or 1 as a given
+ *              other string is smaller than, equal to, or larger than <tt>self.to_s</tt>.
+ * - #casecmp?:: Returns +true+ if <tt>self.to_s</tt> is equal to a given string
+ *               after Unicode case folding; +false+ otherwise.
+ *
+ * === Methods for Converting
+ *
+ * - #capitalize:: Returns <tt>self.to_s</tt> with the first character upcased
+ *                 and all other characters downcased.
+ * - #downcase:: Returns <tt>self.to_s</tt> with all characters downcased.
+ * - #inspect:: Returns the representation of +self+ as a symbol literal.
+ * - #name:: Returns the frozen string <tt>self.to_s</tt>.
+ * - #succ, #next:: Returns the string that is the successor to <tt>self.to_s</tt>.
+ * - #swapcase:: Returns <tt>self.to_s</tt> with all upcase characters downcased
+ *               and all downcase characters upcased.
+ * - #upcase:: Returns <tt>self.to_s</tt> with all characters upcased.
+ * - #to_proc:: Returns a Proc object which responds to the method given by sym.
+ * - #to_s, #id2name:: Returns the name or string corresponding to +self+.
+ * - #to_sym, #intern:: Returns +self+.
+ * - #upcase:: Returns <tt>self.to_s</tt> with all characters upcased.
+ *
  */
 
 
