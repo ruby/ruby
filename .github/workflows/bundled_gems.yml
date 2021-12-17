@@ -1,12 +1,20 @@
 name: bundled_gems
 
 on:
+  push:
+    paths:
+      - '.github/workflows/bundled_gems.yml'
+      - 'gems/bundled_gems'
+  pull_request:
+    paths-ignore:
+      - '.github/workflows/bundled_gems.yml'
+      - 'gems/bundled_gems'
   schedule:
     - cron: '45 6 * * *'
 
 jobs:
   update:
-    if: ${{ github.repository == 'ruby/ruby' }}
+    if: ${{ github.event_name != 'schedule' || github.repository == 'ruby/ruby' }}
     name: update ${{ github.workflow }}
     runs-on: ubuntu-latest
     steps:
@@ -18,17 +26,58 @@ jobs:
       - name: Set ENV
         run: |
           echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
+          echo "TODAY=$(date +%F)" >> $GITHUB_ENV
 
       - uses: actions/checkout@v2
 
-      - name: Update ${{ github.workflow }}
+      - uses: actions/cache@v2
+        with:
+          path: .downloaded-cache
+          key: downloaded-cache
+
+      - name: Download previous gems list
         run: |
-          ruby -i~ tool/update-bundled_gems.rb gems/${{ github.workflow }}
+          curl -o .downloaded-cache/bundled_gems.json https://stdgems.org/bundled_gems.json
+          ln -s .downloaded-cache/bundled_gems.json .
+
+      - name: Update bundled gems list
+        run: |
+          ruby -i~ tool/update-bundled_gems.rb gems/bundled_gems
+
+      - name: Maintain updated gems list in NEWS
+        run: |
+          require 'json'
+          news = File.read("NEWS.md")
+          prev = news[/since the \*+(\d+\.\d+\.\d+)\*+/, 1]
+          prevs = [prev, prev.sub(/\.\d+\z/, '')]
+          %W[bundled].each do |type|
+            last = JSON.parse(File.read("#{type}_gems.json"))['gems'].filter_map do |g|
+              v = g['versions'].values_at(*prevs).compact.first
+              g = g['gem']
+              g = 'RubyGems' if g == 'rubygems'
+              [g, v] if v
+            end.to_h
+            changed = File.foreach("gems/#{type}_gems").filter_map do |l|
+              next if l.start_with?("#")
+              g, v = l.split(" ", 3)
+              [g, v] unless last[g] == v
+            end
+            changed, added = changed.partition {|g, _| last[g]}
+            news.sub!(/^\*\s+The following #{type} gems? are updated\.(\n\s+\*\s+)\K.*(?:\1.*)*/) do
+              changed.map {|g, v|"#{g} #{v}"}.join($1)
+            end or exit
+            news.sub!(/^\*\s+The following default gems are now bundled.*(\n\s+\*\s+)\K.*(?:\1.*)*/) do
+              added.map {|g, v|"#{g} #{v}"}.join($1)
+            end if added
+            File.write("NEWS.md", news)
+          end
+        shell: ruby {0}
 
       - name: Check diffs
         id: diff
         run: |
-          git diff --no-ext-diff --ignore-submodules --exit-code
+          git add -- NEWS.md
+          git diff --no-ext-diff --ignore-submodules --quiet -- gems/bundled_gems
         continue-on-error: true
 
       - name: Install libraries
@@ -37,11 +86,6 @@ jobs:
           sudo apt-get update -q || :
           sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison autoconf ruby
         if: ${{ steps.diff.outcome == 'failure' }}
-
-      - uses: actions/cache@v2
-        with:
-          path: .downloaded-cache
-          key: downloaded-cache
 
       - name: Build
         run: |
@@ -53,19 +97,26 @@ jobs:
       - name: Test bundled gems
         run: |
           make -s test-bundled-gems
+          git add -- gems/bundled_gems
         timeout-minutes: 30
         env:
           RUBY_TESTOPTS: "-q --tty=no"
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ""
         if: ${{ steps.diff.outcome == 'failure' }}
 
+      - name: Show diffs
+        id: show
+        run: |
+          git diff --cached --color --no-ext-diff --ignore-submodules --exit-code --
+        continue-on-error: true
+
       - name: Commit
         run: |
           git pull --ff-only origin ${GITHUB_REF#refs/heads/}
-          git commit --message="Update ${{ github.workflow }} at $(date +%F)" gems/$file
+          git commit --message="Update bundled gems list at ${TODAY}"
           git push origin ${GITHUB_REF#refs/heads/}
         env:
           EMAIL: svn-admin@ruby-lang.org
           GIT_AUTHOR_NAME: git
           GIT_COMMITTER_NAME: git
-        if: ${{ steps.diff.outcome == 'failure' }}
+        if: ${{ steps.show.outcome == 'failure' }}
