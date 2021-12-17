@@ -11273,6 +11273,65 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
  * Symbol objects represent identifiers, while String objects
  * represent text or data.
  *
+ * == What's Here
+ *
+ * First, what's elsewhere. \Class \Symbol:
+ *
+ * - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
+ * - Includes {module Comparable}[Comparable.html#module-Comparable-label-What-27s+Here].
+ *
+ * Here, class \Symbol provides methods that are useful for:
+ *
+ * - {Querying}[#class-Symbol-label-Methods+for+Querying]
+ * - {Comparing}[#class-Symbol-label-Methods+for+Comparing]
+ * - {Converting}[#class-Symbol-label-Methods+for+Converting]
+ *
+ * === Methods for Querying
+ *
+ * - ::all_symbols:: Returns an array of the symbols currently in Ruby's symbol table.
+ * - {#=~}[#method-i-3D~]:: Returns the index of the first substring
+ *                          in symbol that matches a given Regexp
+ *                          or other object; returns +nil+ if no match is found.
+ * - #[], #slice :: Returns a substring of symbol
+ *                  determined by a given index, start/length, or range, or string.
+ * - #empty?:: Returns +true+ if +self.length+ is zero; +false+ otherwise.
+ * - #encoding:: Returns the Encoding object that represents the encoding
+ *               of symbol.
+ * - #end_with?:: Returns +true+ if symbol ends with
+ *                any of the given strings.
+ * - #match:: Returns a MatchData object if symbol
+ *            matches a given Regexp; +nil+ otherwise.
+ * - #match?:: Returns +true+ if symbol
+ *             matches a given Regexp; +false+ otherwise.
+ * - #length, #size:: Returns the number of characters in symbol.
+ * - #start_with?:: Returns +true+ if symbol starts with
+ *                  any of the given strings.
+ *
+ * === Methods for Comparing
+ *
+ * - {#<=>}[#method-i-3C-3D-3E]:: Returns -1, 0, or 1 as a given symbol is smaller than, equal to, or larger than symbol.
+ * - {#==, #===}[#method-i-3D-3D]:: Returns +true+ if a given symbol
+ *                                  has the same content and encoding.
+ * - #casecmp:: Ignoring case, returns -1, 0, or 1 as a given
+ *              symbol is smaller than, equal to, or larger than symbol.
+ * - #casecmp?:: Returns +true+ if symbol is equal to a given symbol
+ *               after Unicode case folding; +false+ otherwise.
+ *
+ * === Methods for Converting
+ *
+ * - #capitalize:: Returns symbol with the first character upcased
+ *                 and all other characters downcased.
+ * - #downcase:: Returns symbol with all characters downcased.
+ * - #inspect:: Returns the string representation of +self+ as a symbol literal.
+ * - #name:: Returns the frozen string corresponding to symbol.
+ * - #succ, #next:: Returns the symbol that is the successor to symbol.
+ * - #swapcase:: Returns symbol with all upcase characters downcased
+ *               and all downcase characters upcased.
+ * - #to_proc:: Returns a Proc object which responds to the method named by symbol.
+ * - #to_s, #id2name:: Returns the string corresponding to +self+.
+ * - #to_sym, #intern:: Returns +self+.
+ * - #upcase:: Returns symbol with all characters upcased.
+ *
  */
 
 
