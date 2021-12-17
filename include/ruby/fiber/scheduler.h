@@ -25,7 +25,23 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 struct timeval;
 
-// You should consider this to be an opaque type.
+/**
+ * Wrap a `ssize_t` and `int errno` into a single `VALUE`. This interface should
+ * be used to safely capture results from system calls  like `read` and `write`.
+ *
+ * You should use `rb_fiber_scheduler_io_result_apply` to unpack the result of
+ * this value and update `int errno`.
+ *
+ * You should not directly try to interpret the result value as it is considered
+ * an opaque representation. However, the general representation is an integer
+ * in the range of `[-int errno, size_t size]`. Linux generally restricts the
+ * result of system calls like `read` and `write` to `<= 2^31` which means this
+ * will typically fit within a single FIXNUM.
+ *
+ * @param[in]  result   The result of the system call.
+ * @param[in]  error    The value of `errno`.
+ * @return              A `VALUE` which contains the result and/or errno.
+ */
 static inline VALUE
 rb_fiber_scheduler_io_result(ssize_t result, int error) {
     if (result == -1) {
@@ -35,6 +51,17 @@ rb_fiber_scheduler_io_result(ssize_t result, int error) {
     }
 }
 
+/**
+ * Apply an io result to the local thread, returning the value of the orginal
+ * system call that created it and updating `int errno`.
+ *
+ * You should not directly try to interpret the result value as it is considered
+ * an opaque representation.
+ *
+ * @param[in]  result   The `VALUE` which contains an errno and/or result size.
+ * @post                Updates `int errno` with the value if negative.
+ * @return              The original result of the system call.
+ */
 static inline ssize_t
 rb_fiber_scheduler_io_result_apply(VALUE result) {
     if (RB_FIXNUM_P(result) && RB_NUM2INT(result) < 0) {
