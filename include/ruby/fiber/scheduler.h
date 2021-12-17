@@ -11,16 +11,39 @@
  */
 #include "ruby/internal/config.h"
 
+#include <errno.h>
+
 #ifdef STDC_HEADERS
 #include <stddef.h> /* size_t */
 #endif
 
 #include "ruby/ruby.h"
 #include "ruby/internal/dllexport.h"
+#include "ruby/internal/arithmetic.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 struct timeval;
+
+// You should consider this to be an opaque type.
+static inline VALUE
+rb_fiber_scheduler_io_result(ssize_t result, int error) {
+    if (result == -1) {
+        return RB_INT2NUM(-error);
+    } else {
+        return RB_SIZE2NUM(result);
+    }
+}
+
+static inline ssize_t
+rb_fiber_scheduler_io_result_apply(VALUE result) {
+    if (RB_FIXNUM_P(result) && RB_NUM2INT(result) < 0) {
+        errno = -RB_NUM2INT(result);
+        return -1;
+    } else {
+        return RB_NUM2SIZE(result);
+    }
+}
 
 /**
  * Queries the  current scheduler of  the current  thread that is  calling this
@@ -195,7 +218,7 @@ VALUE rb_fiber_scheduler_io_wait_writable(VALUE scheduler, VALUE io);
  * @param[out]  buffer       Return buffer.
  * @param[in]   length       Requested number of bytes to read.
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#io_read`.
- * @return      otherwise    What `scheduler.io_read` returns.
+ * @return      otherwise    What `scheduler.io_read` returns `[-errno, size]`.
  */
 VALUE rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t length);
 
@@ -207,7 +230,7 @@ VALUE rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t
  * @param[in]   buffer       What to write.
  * @param[in]   length       Number of bytes to write.
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#io_write`.
- * @return      otherwise    What `scheduler.io_write` returns.
+ * @return      otherwise    What `scheduler.io_write` returns `[-errno, size]`.
  */
 VALUE rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t length);
 
