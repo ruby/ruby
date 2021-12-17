@@ -2922,6 +2922,8 @@ rb_fiber_pool_initialize(int argc, VALUE* argv, VALUE self)
  *  * #io_wait, #io_read, and #io_write
  *  * #process_wait
  *  * #kernel_sleep
+ *  * #timeout_after
+ *  * #address_resolve
  *  * #block and #unblock
  *  * (the list is expanded as Ruby developers make more methods having non-blocking calls)
  *
@@ -3083,6 +3085,41 @@ rb_fiber_scheduler_interface_kernel_sleep(VALUE self)
 }
 
 /*
+ *  Document-method: SchedulerInterface#address_resolve
+ *  call-seq: address_resolve(hostname) -> array_of_stings or nil
+ *
+ *  Invoked by Socket::getaddrinfo and is expected to provide hostname resolution
+ *  in a non-blocking way.
+ *
+ *  The method is expected to return an array of strings corresponding to ip
+ *  addresses the +hostname+ is resolved to, or +nil+ if it can not be resolved.
+ *
+ *  The method support should be considered _experimental_.
+ */
+static VALUE
+rb_fiber_scheduler_interface_address_resolve(VALUE self)
+{
+}
+
+/*
+ *  Document-method: SchedulerInterface#address_resolve
+ *  call-seq: timeout_after(duration, exception_class, *exception_args, &block) -> obj
+ *
+ *  Invoked by Timeout.timeout to perform execution time control in a non-blocking way.
+ *
+ *  The method is expected to execute a +block+, and if its execution takes longer
+ *  than +duration+, to raise +exception_class+ constructed with +exception_args+.
+ *
+ *  If the block is executed successfully, its result should be returned.
+ *
+ *  The method support should be considered _experimental_.
+ */
+static VALUE
+rb_fiber_scheduler_interface_timeout_after(VALUE self)
+{
+}
+
+/*
  *  Document-method: SchedulerInterface#block
  *  call-seq: block(blocker, timeout = nil)
  *
@@ -3198,6 +3235,8 @@ Init_Cont(void)
     rb_define_method(rb_cFiberScheduler, "io_read", rb_fiber_scheduler_interface_io_read, 0);
     rb_define_method(rb_cFiberScheduler, "io_write", rb_fiber_scheduler_interface_io_write, 0);
     rb_define_method(rb_cFiberScheduler, "kernel_sleep", rb_fiber_scheduler_interface_kernel_sleep, 0);
+    rb_define_method(rb_cFiberScheduler, "address_resolve", rb_fiber_scheduler_interface_address_resolve, 0);
+    rb_define_method(rb_cFiberScheduler, "timeout_after", rb_fiber_scheduler_interface_timeout_after, 0);
     rb_define_method(rb_cFiberScheduler, "block", rb_fiber_scheduler_interface_block, 0);
     rb_define_method(rb_cFiberScheduler, "unblock", rb_fiber_scheduler_interface_unblock, 0);
     rb_define_method(rb_cFiberScheduler, "fiber", rb_fiber_scheduler_interface_fiber, 0);
