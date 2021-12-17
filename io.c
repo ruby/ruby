@@ -1165,14 +1165,10 @@ rb_write_internal(rb_io_t *fptr, const void *buf, size_t count)
 {
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, buf, count, count);
+        VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, buf, count, 0);
 
         if (result != Qundef) {
-            ssize_t length = rb_fiber_scheduler_io_result_apply(result);
-
-            if (length < 0) rb_sys_fail_path(fptr->pathv);
-
-            return length;
+            return rb_fiber_scheduler_io_result_apply(result);
         }
     }
 
@@ -1182,33 +1178,34 @@ rb_write_internal(rb_io_t *fptr, const void *buf, size_t count)
         .capa = count
     };
 
-    return (ssize_t)rb_thread_io_blocking_region(internal_write_func, &iis, fptr->fd);
-}
-
-static ssize_t
-rb_write_internal2(rb_io_t *fptr, const void *buf, size_t count)
-{
-    struct io_internal_write_struct iis = {
-        .fd = fptr->fd,
-        .buf = buf,
-        .capa = count
-    };
-
-    return (ssize_t)rb_thread_call_without_gvl2(internal_write_func2, &iis,
-						RUBY_UBF_IO, NULL);
+    if (fptr->write_lock && rb_mutex_owned_p(fptr->write_lock))
+        return (ssize_t)rb_thread_call_without_gvl2(internal_write_func2, &iis, RUBY_UBF_IO, NULL);
+    else
+        return (ssize_t)rb_thread_io_blocking_region(internal_write_func, &iis, fptr->fd);
 }
 
 #ifdef HAVE_WRITEV
 static ssize_t
-rb_writev_internal(int fd, const struct iovec *iov, int iovcnt)
+rb_writev_internal(rb_io_t *fptr, const struct iovec *iov, int iovcnt)
 {
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        for (int i = 0; i < iovcnt; i += 1) {
+            VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, iov[i].iov_base, iov[i].iov_len, 0);
+
+            if (result != Qundef) {
+                return rb_fiber_scheduler_io_result_apply(result);
+            }
+        }
+    }
+
     struct io_internal_writev_struct iis = {
-        .fd = fd,
+        .fd = fptr->fd,
         .iov = iov,
         .iovcnt = iovcnt,
     };
 
-    return (ssize_t)rb_thread_io_blocking_region(internal_writev_func, &iis, fd);
+    return (ssize_t)rb_thread_io_blocking_region(internal_writev_func, &iis, fptr->fd);
 }
 #endif
 
@@ -1592,7 +1589,7 @@ io_binwrite_string(VALUE arg)
 	iov[1].iov_base = (char *)p->ptr;
 	iov[1].iov_len = p->length;
 
-	r = rb_writev_internal(fptr->fd, iov, 2);
+	r = rb_writev_internal(fptr, iov, 2);
 
         if (r < 0)
             return r;
@@ -1654,56 +1651,49 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
 
     if ((n = len) <= 0) return n;
 
-    VALUE scheduler = rb_fiber_scheduler_current();
-    if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, ptr, len, len);
-
-        if (result != Qundef) {
-            ssize_t length = rb_fiber_scheduler_io_result_apply(result);
-
-            if (length < 0) rb_sys_fail_path(fptr->pathv);
-
-            return length;
-        }
-    }
-
     if (fptr->wbuf.ptr == NULL && !(!nosync && (fptr->mode & FMODE_SYNC))) {
         fptr->wbuf.off = 0;
         fptr->wbuf.len = 0;
         fptr->wbuf.capa = IO_WBUF_CAPA_MIN;
         fptr->wbuf.ptr = ALLOC_N(char, fptr->wbuf.capa);
         fptr->write_lock = rb_mutex_new();
-	rb_mutex_allow_trap(fptr->write_lock, 1);
+        rb_mutex_allow_trap(fptr->write_lock, 1);
     }
+
     if ((!nosync && (fptr->mode & (FMODE_SYNC|FMODE_TTY))) ||
         (fptr->wbuf.ptr && fptr->wbuf.capa <= fptr->wbuf.len + len)) {
-	struct binwrite_arg arg;
+        struct binwrite_arg arg;
 
-	arg.fptr = fptr;
-	arg.str = str;
+        arg.fptr = fptr;
+        arg.str = str;
       retry:
-	arg.ptr = ptr + offset;
-	arg.length = n;
-	if (fptr->write_lock) {
+        arg.ptr = ptr + offset;
+        arg.length = n;
+
+        if (fptr->write_lock) {
             r = rb_mutex_synchronize(fptr->write_lock, io_binwrite_string, (VALUE)&arg);
-	}
-	else {
-	    r = io_binwrite_string((VALUE)&arg);
-	}
-	/* xxx: other threads may modify given string. */
+        }
+        else {
+            r = io_binwrite_string((VALUE)&arg);
+        }
+
+        /* xxx: other threads may modify given string. */
         if (r == n) return len;
         if (0 <= r) {
             offset += r;
             n -= r;
             errno = EAGAIN;
-	}
-	if (r == -2L)
-	    return -1L;
+        }
+
+        if (r == -2L)
+            return -1L;
         if (rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
             rb_io_check_closed(fptr);
-	    if (offset < len)
-		goto retry;
+
+            if (offset < len)
+                goto retry;
         }
+
         return -1L;
     }
 
@@ -1712,8 +1702,10 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
             MEMMOVE(fptr->wbuf.ptr, fptr->wbuf.ptr+fptr->wbuf.off, char, fptr->wbuf.len);
         fptr->wbuf.off = 0;
     }
+
     MEMMOVE(fptr->wbuf.ptr+fptr->wbuf.off+fptr->wbuf.len, ptr+offset, char, len);
     fptr->wbuf.len += (int)len;
+
     return len;
 }
 
@@ -1853,7 +1845,7 @@ static VALUE
 call_writev_internal(VALUE arg)
 {
     struct binwritev_arg *p = (struct binwritev_arg *)arg;
-    return rb_writev_internal(p->fptr->fd, p->iov, p->iovcnt);
+    return rb_writev_internal(p->fptr, p->iov, p->iovcnt);
 }
 
 static long
@@ -1906,7 +1898,7 @@ io_binwritev(struct iovec *iov, int iovcnt, rb_io_t *fptr)
 	r = rb_mutex_synchronize(fptr->write_lock, call_writev_internal, (VALUE)&arg);
     }
     else {
-	r = rb_writev_internal(fptr->fd, iov, iovcnt);
+	r = rb_writev_internal(fptr, iov, iovcnt);
     }
 
     if (r >= 0) {
@@ -4763,10 +4755,7 @@ finish_writeconv(rb_io_t *fptr, int noalloc)
             res = rb_econv_convert(fptr->writeconv, NULL, NULL, &dp, de, 0);
             while (dp-ds) {
               retry:
-                if (fptr->write_lock && rb_mutex_owned_p(fptr->write_lock))
-                    r = rb_write_internal2(fptr, ds, dp-ds);
-                else
-                    r = rb_write_internal(fptr, ds, dp-ds);
+                r = rb_write_internal(fptr, ds, dp-ds);
                 if (r == dp-ds)
                     break;
                 if (0 <= r) {
