@@ -370,15 +370,17 @@ Note: We're only listing outstanding class updates.
     * power_assert 2.0.1
     * rake 13.0.6
     * test-unit 3.5.2
+    * rexml 3.2.5
     * rbs 1.8.1
     * typeprof 0.20.4
 *   The following default gems are now bundled gems.
-    * net-ftp
-    * net-imap
-    * net-pop
-    * net-smtp
-    * matrix
-    * prime
+    * net-ftp 0.1.3
+    * net-imap 0.2.2
+    * net-pop 0.1.1
+    * net-smtp 0.3.1
+    * matrix 0.4.2
+    * prime 0.1.2
+    * debug 1.3.4
 
 * Coverage measurement now supports suspension. You can use `Coverage.suspend`
   to stop the measurement temporarily, and `Coverage.resume` to restart it.
