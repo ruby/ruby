@@ -178,7 +178,7 @@ Note: We're only listing outstanding class updates.
         Measurement can introduce overhead. It is enabled by default.
         GC.measure_total_time returns the current setting.
         GC.stat[:time] or GC.stat(:time) returns measured time
-        in milli-soconds.
+        in milli-seconds.
 
     *   GC.total_time returns measured time in nano-seconds.
 
