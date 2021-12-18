@@ -6,7 +6,7 @@ on:
       - '.github/workflows/bundled_gems.yml'
       - 'gems/bundled_gems'
   pull_request:
-    paths-ignore:
+    paths:
       - '.github/workflows/bundled_gems.yml'
       - 'gems/bundled_gems'
   schedule:
