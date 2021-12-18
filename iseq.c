@@ -1194,6 +1194,14 @@ rb_iseq_code_location(const rb_iseq_t *iseq, int *beg_pos_lineno, int *beg_pos_c
     if (end_pos_column) *end_pos_column = loc->end_pos.column;
 }
 
+static VALUE iseq_type_sym(enum iseq_type type);
+
+VALUE
+rb_iseq_type(const rb_iseq_t *iseq)
+{
+    return iseq_type_sym(iseq->body->type);
+}
+
 VALUE
 rb_iseq_coverage(const rb_iseq_t *iseq)
 {
@@ -2713,6 +2721,46 @@ static const rb_data_type_t label_wrapper = {
 };
 
 static VALUE
+iseq_type_sym(enum iseq_type type)
+{
+    DECL_SYMBOL(top);
+    DECL_SYMBOL(method);
+    DECL_SYMBOL(block);
+    DECL_SYMBOL(class);
+    DECL_SYMBOL(rescue);
+    DECL_SYMBOL(ensure);
+    DECL_SYMBOL(eval);
+    DECL_SYMBOL(main);
+    DECL_SYMBOL(plain);
+
+    if (sym_top == 0) {
+        INIT_SYMBOL(top);
+        INIT_SYMBOL(method);
+        INIT_SYMBOL(block);
+        INIT_SYMBOL(class);
+        INIT_SYMBOL(rescue);
+        INIT_SYMBOL(ensure);
+        INIT_SYMBOL(eval);
+        INIT_SYMBOL(main);
+        INIT_SYMBOL(plain);
+    }
+
+    switch (type) {
+      case ISEQ_TYPE_TOP:    return sym_top;
+      case ISEQ_TYPE_METHOD: return sym_method;
+      case ISEQ_TYPE_BLOCK:  return sym_block;
+      case ISEQ_TYPE_CLASS:  return sym_class;
+      case ISEQ_TYPE_RESCUE: return sym_rescue;
+      case ISEQ_TYPE_ENSURE: return sym_ensure;
+      case ISEQ_TYPE_EVAL:   return sym_eval;
+      case ISEQ_TYPE_MAIN:   return sym_main;
+      case ISEQ_TYPE_PLAIN:  return sym_plain;
+    };
+
+    rb_bug("unsupported iseq type: %d", (int)type);
+}
+
+static VALUE
 iseq_data_to_ary(const rb_iseq_t *iseq)
 {
     unsigned int i;
@@ -2736,45 +2784,15 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     struct st_table *labels_table = st_init_numtable();
     VALUE labels_wrapper = TypedData_Wrap_Struct(0, &label_wrapper, labels_table);
 
-    DECL_SYMBOL(top);
-    DECL_SYMBOL(method);
-    DECL_SYMBOL(block);
-    DECL_SYMBOL(class);
-    DECL_SYMBOL(rescue);
-    DECL_SYMBOL(ensure);
-    DECL_SYMBOL(eval);
-    DECL_SYMBOL(main);
-    DECL_SYMBOL(plain);
-
-    if (sym_top == 0) {
-	int i;
-	for (i=0; i<numberof(insn_syms); i++) {
+    if (insn_syms[0] == 0) {
+        int i;
+        for (i=0; i<numberof(insn_syms); i++) {
             insn_syms[i] = rb_intern(insn_name(i));
-	}
-	INIT_SYMBOL(top);
-	INIT_SYMBOL(method);
-	INIT_SYMBOL(block);
-	INIT_SYMBOL(class);
-	INIT_SYMBOL(rescue);
-	INIT_SYMBOL(ensure);
-	INIT_SYMBOL(eval);
-	INIT_SYMBOL(main);
-	INIT_SYMBOL(plain);
+        }
     }
 
     /* type */
-    switch (iseq_body->type) {
-      case ISEQ_TYPE_TOP:    type = sym_top;    break;
-      case ISEQ_TYPE_METHOD: type = sym_method; break;
-      case ISEQ_TYPE_BLOCK:  type = sym_block;  break;
-      case ISEQ_TYPE_CLASS:  type = sym_class;  break;
-      case ISEQ_TYPE_RESCUE: type = sym_rescue; break;
-      case ISEQ_TYPE_ENSURE: type = sym_ensure; break;
-      case ISEQ_TYPE_EVAL:   type = sym_eval;   break;
-      case ISEQ_TYPE_MAIN:   type = sym_main;   break;
-      case ISEQ_TYPE_PLAIN:  type = sym_plain;  break;
-      default: rb_bug("unsupported iseq type: %d", (int)iseq_body->type);
-    };
+    type = iseq_type_sym(iseq_body->type);
 
     /* locals */
     for (i=0; i<iseq_body->local_table_size; i++) {
@@ -3787,7 +3805,6 @@ Init_ISeq(void)
     rb_define_method(rb_cISeq, "to_binary", iseqw_to_binary, -1);
     rb_define_singleton_method(rb_cISeq, "load_from_binary", iseqw_s_load_from_binary, 1);
     rb_define_singleton_method(rb_cISeq, "load_from_binary_extra_data", iseqw_s_load_from_binary_extra_data, 1);
-
 
     /* location APIs */
     rb_define_method(rb_cISeq, "path", iseqw_path, 0);
