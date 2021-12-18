@@ -140,4 +140,36 @@ class TestFiberIO < Test::Unit::TestCase
     server.close
     th.join
   end
+
+  def test_read_write_blocking
+    skip "UNIXSocket is not defined!" unless defined?(UNIXSocket)
+
+    i, o = UNIXSocket.pair
+    i.nonblock = false
+    o.nonblock = false
+
+    message = nil
+
+    thread = Thread.new do
+      # This scheduler provides non-blocking `io_read`/`io_write`:
+      scheduler = IOBufferScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        message = i.read(20)
+        i.close
+      end
+
+      Fiber.schedule do
+        o.write("Hello World")
+        o.close
+      end
+    end
+
+    thread.join
+
+    assert_equal MESSAGE, message
+    assert_predicate(i, :closed?)
+    assert_predicate(o, :closed?)
+  end
 end

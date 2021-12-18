@@ -192,6 +192,9 @@ class Scheduler
     end
 
     Fiber.yield
+  ensure
+    @readable.delete(io)
+    @writable.delete(io)
   end
 
   # Used for Kernel#sleep and Thread::Mutex#sleep
@@ -254,6 +257,85 @@ class Scheduler
     Thread.new do
       Addrinfo.getaddrinfo(hostname, nil).map(&:ip_address).uniq
     end.value
+  end
+end
+
+class IOBufferScheduler < Scheduler
+  EAGAIN = Errno::EAGAIN::Errno
+
+  def io_read(io, buffer, length)
+    offset = 0
+
+    while true
+      maximum_size = buffer.size - offset
+      result = blocking{io.read_nonblock(maximum_size, exception: false)}
+
+      # blocking{pp read: maximum_size, result: result, length: length}
+
+      case result
+      when :wait_readable
+        if length > 0
+          self.io_wait(io, IO::READABLE, nil)
+        else
+          return -EAGAIN
+        end
+      when :wait_writable
+        if length > 0
+          self.io_wait(io, IO::WRITABLE, nil)
+        else
+          return -EAGAIN
+        end
+      else
+        break unless result
+
+        buffer.copy(result, offset)
+
+        size = result.bytesize
+        offset += size
+        break if size >= length
+        length -= size
+      end
+    end
+
+    return offset
+  end
+
+  def io_write(io, buffer, length)
+    offset = 0
+
+    while true
+      maximum_size = buffer.size - offset
+
+      chunk = buffer.to_str(offset, maximum_size)
+      result = blocking{io.write_nonblock(chunk, exception: false)}
+
+      # blocking{pp write: maximum_size, result: result, length: length}
+
+      case result
+      when :wait_readable
+        if length > 0
+          self.io_wait(io, IO::READABLE, nil)
+        else
+          return -EAGAIN
+        end
+      when :wait_writable
+        if length > 0
+          self.io_wait(io, IO::WRITABLE, nil)
+        else
+          return -EAGAIN
+        end
+      else
+        offset += result
+        break if result >= length
+        length -= result
+      end
+    end
+
+    return offset
+  end
+
+  def blocking(&block)
+    Fiber.new(blocking: true, &block).resume
   end
 end
 

@@ -11,16 +11,66 @@
  */
 #include "ruby/internal/config.h"
 
+#include <errno.h>
+
 #ifdef STDC_HEADERS
 #include <stddef.h> /* size_t */
 #endif
 
 #include "ruby/ruby.h"
 #include "ruby/internal/dllexport.h"
+#include "ruby/internal/arithmetic.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 struct timeval;
+
+/**
+ * Wrap a `ssize_t` and `int errno` into a single `VALUE`. This interface should
+ * be used to safely capture results from system calls  like `read` and `write`.
+ *
+ * You should use `rb_fiber_scheduler_io_result_apply` to unpack the result of
+ * this value and update `int errno`.
+ *
+ * You should not directly try to interpret the result value as it is considered
+ * an opaque representation. However, the general representation is an integer
+ * in the range of `[-int errno, size_t size]`. Linux generally restricts the
+ * result of system calls like `read` and `write` to `<= 2^31` which means this
+ * will typically fit within a single FIXNUM.
+ *
+ * @param[in]  result   The result of the system call.
+ * @param[in]  error    The value of `errno`.
+ * @return              A `VALUE` which contains the result and/or errno.
+ */
+static inline VALUE
+rb_fiber_scheduler_io_result(ssize_t result, int error) {
+    if (result == -1) {
+        return RB_INT2NUM(-error);
+    } else {
+        return RB_SIZE2NUM(result);
+    }
+}
+
+/**
+ * Apply an io result to the local thread, returning the value of the orginal
+ * system call that created it and updating `int errno`.
+ *
+ * You should not directly try to interpret the result value as it is considered
+ * an opaque representation.
+ *
+ * @param[in]  result   The `VALUE` which contains an errno and/or result size.
+ * @post                Updates `int errno` with the value if negative.
+ * @return              The original result of the system call.
+ */
+static inline ssize_t
+rb_fiber_scheduler_io_result_apply(VALUE result) {
+    if (RB_FIXNUM_P(result) && RB_NUM2INT(result) < 0) {
+        errno = -RB_NUM2INT(result);
+        return -1;
+    } else {
+        return RB_NUM2SIZE(result);
+    }
+}
 
 /**
  * Queries the  current scheduler of  the current  thread that is  calling this
@@ -195,7 +245,7 @@ VALUE rb_fiber_scheduler_io_wait_writable(VALUE scheduler, VALUE io);
  * @param[out]  buffer       Return buffer.
  * @param[in]   length       Requested number of bytes to read.
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#io_read`.
- * @return      otherwise    What `scheduler.io_read` returns.
+ * @return      otherwise    What `scheduler.io_read` returns `[-errno, size]`.
  */
 VALUE rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t length);
 
@@ -207,7 +257,7 @@ VALUE rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t
  * @param[in]   buffer       What to write.
  * @param[in]   length       Number of bytes to write.
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#io_write`.
- * @return      otherwise    What `scheduler.io_write` returns.
+ * @return      otherwise    What `scheduler.io_write` returns `[-errno, size]`.
  */
 VALUE rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t length);
 
