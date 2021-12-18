@@ -1194,12 +1194,12 @@ rb_iseq_code_location(const rb_iseq_t *iseq, int *beg_pos_lineno, int *beg_pos_c
     if (end_pos_column) *end_pos_column = loc->end_pos.column;
 }
 
-static VALUE iseq_type_sym(enum iseq_type type);
+static ID iseq_type_id(enum iseq_type type);
 
 VALUE
 rb_iseq_type(const rb_iseq_t *iseq)
 {
-    return iseq_type_sym(iseq->body->type);
+    return ID2SYM(iseq_type_id(iseq->body->type));
 }
 
 VALUE
@@ -2675,12 +2675,6 @@ ruby_node_name(int node)
     }
 }
 
-#define DECL_SYMBOL(name) \
-  static ID sym_##name
-
-#define INIT_SYMBOL(name) \
-  sym_##name = rb_intern(#name)
-
 static VALUE
 register_label(struct st_table *table, unsigned long idx)
 {
@@ -2720,41 +2714,47 @@ static const rb_data_type_t label_wrapper = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-static VALUE
-iseq_type_sym(enum iseq_type type)
-{
-    DECL_SYMBOL(top);
-    DECL_SYMBOL(method);
-    DECL_SYMBOL(block);
-    DECL_SYMBOL(class);
-    DECL_SYMBOL(rescue);
-    DECL_SYMBOL(ensure);
-    DECL_SYMBOL(eval);
-    DECL_SYMBOL(main);
-    DECL_SYMBOL(plain);
+#define DECL_ID(name) \
+  static ID id_##name
 
-    if (sym_top == 0) {
-        INIT_SYMBOL(top);
-        INIT_SYMBOL(method);
-        INIT_SYMBOL(block);
-        INIT_SYMBOL(class);
-        INIT_SYMBOL(rescue);
-        INIT_SYMBOL(ensure);
-        INIT_SYMBOL(eval);
-        INIT_SYMBOL(main);
-        INIT_SYMBOL(plain);
+#define INIT_ID(name) \
+  id_##name = rb_intern(#name)
+
+static VALUE
+iseq_type_id(enum iseq_type type)
+{
+    DECL_ID(top);
+    DECL_ID(method);
+    DECL_ID(block);
+    DECL_ID(class);
+    DECL_ID(rescue);
+    DECL_ID(ensure);
+    DECL_ID(eval);
+    DECL_ID(main);
+    DECL_ID(plain);
+
+    if (id_top == 0) {
+        INIT_ID(top);
+        INIT_ID(method);
+        INIT_ID(block);
+        INIT_ID(class);
+        INIT_ID(rescue);
+        INIT_ID(ensure);
+        INIT_ID(eval);
+        INIT_ID(main);
+        INIT_ID(plain);
     }
 
     switch (type) {
-      case ISEQ_TYPE_TOP:    return sym_top;
-      case ISEQ_TYPE_METHOD: return sym_method;
-      case ISEQ_TYPE_BLOCK:  return sym_block;
-      case ISEQ_TYPE_CLASS:  return sym_class;
-      case ISEQ_TYPE_RESCUE: return sym_rescue;
-      case ISEQ_TYPE_ENSURE: return sym_ensure;
-      case ISEQ_TYPE_EVAL:   return sym_eval;
-      case ISEQ_TYPE_MAIN:   return sym_main;
-      case ISEQ_TYPE_PLAIN:  return sym_plain;
+      case ISEQ_TYPE_TOP:    return id_top;
+      case ISEQ_TYPE_METHOD: return id_method;
+      case ISEQ_TYPE_BLOCK:  return id_block;
+      case ISEQ_TYPE_CLASS:  return id_class;
+      case ISEQ_TYPE_RESCUE: return id_rescue;
+      case ISEQ_TYPE_ENSURE: return id_ensure;
+      case ISEQ_TYPE_EVAL:   return id_eval;
+      case ISEQ_TYPE_MAIN:   return id_main;
+      case ISEQ_TYPE_PLAIN:  return id_plain;
     };
 
     rb_bug("unsupported iseq type: %d", (int)type);
@@ -2792,7 +2792,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     }
 
     /* type */
-    type = iseq_type_sym(iseq_body->type);
+    type = iseq_type_id(iseq_body->type);
 
     /* locals */
     for (i=0; i<iseq_body->local_table_size; i++) {
