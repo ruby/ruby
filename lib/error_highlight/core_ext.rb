@@ -29,7 +29,9 @@ module ErrorHighlight
 
         spot = ErrorHighlight.spot(node, **opts)
 
-      rescue SystemCallError, SyntaxError, ArgumentError
+      rescue SyntaxError
+      rescue SystemCallError # file not found or something
+      rescue ArgumentError   # eval'ed code
       end
 
       if spot
