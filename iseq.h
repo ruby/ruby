@@ -198,6 +198,7 @@ const rb_iseq_t *rb_iseqw_to_iseq(VALUE iseqw);
 
 VALUE rb_iseq_absolute_path(const rb_iseq_t *iseq); /* obsolete */
 int rb_iseq_from_eval_p(const rb_iseq_t *iseq);
+VALUE rb_iseq_type(const rb_iseq_t *iseq);
 VALUE rb_iseq_label(const rb_iseq_t *iseq);
 VALUE rb_iseq_base_label(const rb_iseq_t *iseq);
 VALUE rb_iseq_first_lineno(const rb_iseq_t *iseq);
