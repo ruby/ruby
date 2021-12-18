@@ -15,6 +15,7 @@
 
 VALUE rb_cIOBuffer;
 size_t RUBY_IO_BUFFER_PAGE_SIZE;
+size_t RUBY_IO_BUFFER_DEFAULT_SIZE;
 
 #ifdef _WIN32
 #else
@@ -347,14 +348,20 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
 VALUE
 rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
 {
-    if (argc < 1 || argc > 2) {
-        rb_error_arity(argc, 1, 2);
+    if (argc < 0 || argc > 2) {
+        rb_error_arity(argc, 0, 2);
     }
 
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
-    size_t size = RB_NUM2SIZE(argv[0]);
+    size_t size;
+
+    if (argc > 0) {
+        size = RB_NUM2SIZE(argv[0]);
+    } else {
+        size = RUBY_IO_BUFFER_DEFAULT_SIZE;
+    }
 
     enum rb_io_buffer_flags flags = 0;
     if (argc >= 2) {
@@ -1068,6 +1075,30 @@ io_buffer_clear(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+static
+size_t io_buffer_default_size(size_t page_size) {
+    // Platform agnostic default size, based on emperical performance observation:
+    const size_t platform_agnostic_default_size = 64*1024;
+
+    // Allow user to specify custom default buffer size:
+    const char *default_size = getenv("RUBY_IO_BUFFER_DEFAULT_SIZE");
+    if (default_size) {
+        // For the purpose of setting a default size, 2^31 is an acceptable maximum:
+        int value = atoi(default_size);
+
+        // assuming sizeof(int) <= sizeof(size_t)
+        if (value > 0) {
+            return value;
+        }
+    }
+
+    if (platform_agnostic_default_size < page_size) {
+        return page_size;
+    }
+
+    return platform_agnostic_default_size;
+}
+
 void
 Init_IO_Buffer(void)
 {
@@ -1084,8 +1115,11 @@ Init_IO_Buffer(void)
     RUBY_IO_BUFFER_PAGE_SIZE = sysconf(_SC_PAGESIZE);
 #endif
 
-    // Efficient sicing of mapped buffers:
+    RUBY_IO_BUFFER_DEFAULT_SIZE = io_buffer_default_size(RUBY_IO_BUFFER_PAGE_SIZE);
+
+    // Efficient sizing of mapped buffers:
     rb_define_const(rb_cIOBuffer, "PAGE_SIZE", SIZET2NUM(RUBY_IO_BUFFER_PAGE_SIZE));
+    rb_define_const(rb_cIOBuffer, "DEFAULT_SIZE", SIZET2NUM(RUBY_IO_BUFFER_DEFAULT_SIZE));
 
     rb_define_singleton_method(rb_cIOBuffer, "map", io_buffer_map, -1);
 

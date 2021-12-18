@@ -23,6 +23,7 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 RUBY_EXTERN VALUE rb_cIOBuffer;
 RUBY_EXTERN size_t RUBY_IO_BUFFER_PAGE_SIZE;
+RUBY_EXTERN size_t RUBY_IO_BUFFER_DEFAULT_SIZE;
 
 enum rb_io_buffer_flags {
     // The memory in the buffer is owned by someone else.
