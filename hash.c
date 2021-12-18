@@ -7318,6 +7318,7 @@ Init_Hash(void)
      * First, what's elsewhere. \Class \ENV:
      *
      * - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
+     * - Extends {module Enumerable}[Enumerable.html#module-Enumerable-label-What-27s+Here],
      *
      * Here, class \ENV provides methods that are useful for:
      *
