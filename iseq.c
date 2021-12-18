@@ -263,6 +263,7 @@ rb_iseq_update_references(rb_iseq_t *iseq)
 
         body->variable.coverage = rb_gc_location(body->variable.coverage);
         body->variable.pc2branchindex = rb_gc_location(body->variable.pc2branchindex);
+        body->variable.script_lines = rb_gc_location(body->variable.script_lines);
         body->location.label = rb_gc_location(body->location.label);
         body->location.base_label = rb_gc_location(body->location.base_label);
         body->location.pathobj = rb_gc_location(body->location.pathobj);
