@@ -9,6 +9,10 @@ class TestIOBuffer < Test::Unit::TestCase
     Warning[:experimental] = experimental
   end
 
+  def test_default_size
+    assert_equal IO::Buffer::DEFAULT_SIZE, IO::Buffer.new.size
+  end
+
   def assert_negative(value)
     assert(value < 0, "Expected #{value} to be negative!")
   end
