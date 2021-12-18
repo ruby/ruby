@@ -28,7 +28,7 @@ jobs:
           #   vcvars: '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"'
       fail-fast: false
     runs-on: ${{ matrix.os }}
-    if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') }}
+    if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     name: VisualStudio ${{ matrix.vs }}
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}

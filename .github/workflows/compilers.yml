@@ -188,7 +188,7 @@ jobs:
     container:
       image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || 'clang-14' }}
       options: --user root
-    if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') }}
+    if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
       - run: id
         working-directory:
