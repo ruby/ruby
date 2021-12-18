@@ -226,6 +226,9 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_proc_and_method_under_eval
+    keep_script_lines_back = RubyVM.keep_script_lines
+    RubyVM.keep_script_lines = false
+
     method = self.method(eval("def example_method_#{$$}; end"))
     assert_raise(ArgumentError) { RubyVM::AbstractSyntaxTree.of(method) }
 
@@ -246,18 +249,76 @@ class TestAst < Test::Unit::TestCase
 
     method = eval("Class.new{def example_method; end}.instance_method(:example_method)")
     assert_raise(ArgumentError) { RubyVM::AbstractSyntaxTree.of(method) }
+
+  ensure
+    RubyVM.keep_script_lines = keep_script_lines_back
+  end
+
+  def test_of_proc_and_method_under_eval_with_keep_script_lines
+    keep_script_lines_back = RubyVM.keep_script_lines
+    RubyVM.keep_script_lines = true
+
+    method = self.method(eval("def example_method_#{$$}; end"))
+    assert_instance_of(RubyVM::AbstractSyntaxTree::Node, RubyVM::AbstractSyntaxTree.of(method))
+
+    method = self.method(eval("def self.example_singleton_method_#{$$}; end"))
+    assert_instance_of(RubyVM::AbstractSyntaxTree::Node, RubyVM::AbstractSyntaxTree.of(method))
+
+    method = eval("proc{}")
+    assert_instance_of(RubyVM::AbstractSyntaxTree::Node, RubyVM::AbstractSyntaxTree.of(method))
+
+    method = self.method(eval("singleton_class.define_method(:example_define_method_#{$$}){}"))
+    assert_instance_of(RubyVM::AbstractSyntaxTree::Node, RubyVM::AbstractSyntaxTree.of(method))
+
+    method = self.method(eval("define_singleton_method(:example_dsm_#{$$}){}"))
+    assert_instance_of(RubyVM::AbstractSyntaxTree::Node, RubyVM::AbstractSyntaxTree.of(method))
+
+    method = eval("Class.new{def example_method; end}.instance_method(:example_method)")
+    assert_instance_of(RubyVM::AbstractSyntaxTree::Node, RubyVM::AbstractSyntaxTree.of(method))
+
+    method = eval("Class.new{def example_method; end}.instance_method(:example_method)")
+    assert_instance_of(RubyVM::AbstractSyntaxTree::Node, RubyVM::AbstractSyntaxTree.of(method))
+
+  ensure
+    RubyVM.keep_script_lines = keep_script_lines_back
   end
 
   def test_of_backtrace_location_under_eval
+    keep_script_lines_back = RubyVM.keep_script_lines
+    RubyVM.keep_script_lines = false
+
     m = Module.new do
       eval(<<-END, nil, __FILE__, __LINE__)
         def self.sample_backtrace_location
-          [caller_locations(0).first, __LINE__]
+          caller_locations(0).first
         end
       END
     end
-    backtrace_location, lineno = m.sample_backtrace_location
-    assert_raise(ArgumentError) {  RubyVM::AbstractSyntaxTree.of(backtrace_location) }
+    backtrace_location = m.sample_backtrace_location
+    assert_raise(ArgumentError) { RubyVM::AbstractSyntaxTree.of(backtrace_location) }
+
+  ensure
+    RubyVM.keep_script_lines = keep_script_lines_back
+  end
+
+  def test_of_backtrace_location_under_eval_with_keep_script_lines
+    keep_script_lines_back = RubyVM.keep_script_lines
+    RubyVM.keep_script_lines = true
+
+    m = Module.new do
+      eval(<<-END, nil, __FILE__, __LINE__)
+        def self.sample_backtrace_location
+          caller_locations(0).first
+        end
+      END
+    end
+    backtrace_location = m.sample_backtrace_location
+    node = RubyVM::AbstractSyntaxTree.of(backtrace_location)
+    assert_instance_of(RubyVM::AbstractSyntaxTree::Node, node)
+    assert_equal(2, node.first_lineno)
+
+  ensure
+    RubyVM.keep_script_lines = keep_script_lines_back
   end
 
   def test_of_c_method

@@ -222,11 +222,11 @@ ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body, VALUE keep_script
     if (!iseq) {
         return Qnil;
     }
-    if (rb_iseq_from_eval_p(iseq)) {
+    lines = iseq->body->variable.script_lines;
+    if (NIL_P(lines) && rb_iseq_from_eval_p(iseq)) {
         rb_raise(rb_eArgError, "cannot get AST for method defined in eval");
     }
     path = rb_iseq_path(iseq);
-    lines = iseq->body->variable.script_lines;
 
     if (!NIL_P(lines) || !NIL_P(lines = script_lines(path))) {
         node = rb_ast_parse_array(lines, keep_script_lines);
