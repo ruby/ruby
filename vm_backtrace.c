@@ -333,18 +333,23 @@ location_node_id(rb_backtrace_location_t *loc)
 }
 #endif
 
-void
-rb_frame_info_get(VALUE obj, VALUE *path, VALUE *script_lines, int *node_id)
+int
+rb_get_node_id_from_frame_info(VALUE obj)
 {
 #ifdef USE_ISEQ_NODE_ID
     rb_backtrace_location_t *loc = location_ptr(obj);
-    const rb_iseq_t *iseq = location_iseq(loc);
-    *path = iseq ? rb_iseq_path(iseq) : Qnil;
-    *script_lines = iseq ? iseq->body->variable.script_lines : Qnil;
-    *node_id = location_node_id(loc);
+    return location_node_id(loc);
 #else
-    *path = Qnil;
+    return -1;
 #endif
+}
+
+const rb_iseq_t *
+rb_get_iseq_from_frame_info(VALUE obj)
+{
+    rb_backtrace_location_t *loc = location_ptr(obj);
+    const rb_iseq_t *iseq = location_iseq(loc);
+    return iseq;
 }
 
 static VALUE

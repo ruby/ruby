@@ -185,7 +185,7 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
-  def test_of
+  def test_of_proc_and_method
     proc = Proc.new { 1 + 2 }
     method = self.method(__method__)
 
@@ -194,7 +194,6 @@ class TestAst < Test::Unit::TestCase
 
     assert_instance_of(RubyVM::AbstractSyntaxTree::Node, node_proc)
     assert_instance_of(RubyVM::AbstractSyntaxTree::Node, node_method)
-    assert_raise(TypeError) { RubyVM::AbstractSyntaxTree.of("1 + 2") }
 
     Tempfile.create(%w"test_of .rb") do |tmp|
       tmp.print "#{<<-"begin;"}\n#{<<-'end;'}"
@@ -211,7 +210,22 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
-  def test_of_eval
+  def sample_backtrace_location
+    [caller_locations(0).first, __LINE__]
+  end
+
+  def test_of_backtrace_location
+    backtrace_location, lineno = sample_backtrace_location
+    node = RubyVM::AbstractSyntaxTree.of(backtrace_location)
+    assert_instance_of(RubyVM::AbstractSyntaxTree::Node, node)
+    assert_equal(lineno, node.first_lineno)
+  end
+
+  def test_of_error
+    assert_raise(TypeError) { RubyVM::AbstractSyntaxTree.of("1 + 2") }
+  end
+
+  def test_of_proc_and_method_under_eval
     method = self.method(eval("def example_method_#{$$}; end"))
     assert_raise(ArgumentError) { RubyVM::AbstractSyntaxTree.of(method) }
 
@@ -229,6 +243,21 @@ class TestAst < Test::Unit::TestCase
 
     method = eval("Class.new{def example_method; end}.instance_method(:example_method)")
     assert_raise(ArgumentError) { RubyVM::AbstractSyntaxTree.of(method) }
+
+    method = eval("Class.new{def example_method; end}.instance_method(:example_method)")
+    assert_raise(ArgumentError) { RubyVM::AbstractSyntaxTree.of(method) }
+  end
+
+  def test_of_backtrace_location_under_eval
+    m = Module.new do
+      eval(<<-END, nil, __FILE__, __LINE__)
+        def self.sample_backtrace_location
+          [caller_locations(0).first, __LINE__]
+        end
+      END
+    end
+    backtrace_location, lineno = m.sample_backtrace_location
+    assert_raise(ArgumentError) {  RubyVM::AbstractSyntaxTree.of(backtrace_location) }
   end
 
   def test_of_c_method
