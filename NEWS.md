@@ -34,6 +34,16 @@ Note that each entry is kept to a minimum, see links for details.
 
 *   One-line pattern matching is no longer experimental.
 
+*   Parentheses can be omitted in one-line pattern matching.
+    [[Feature #16182]]
+
+    ```ruby
+    [0, 1] => _, x
+    {y: 2} => y:
+    x #=> 1
+    y #=> 2
+    ```
+
 *   Multiple assignment evaluation order has been made consistent with
     single assignment evaluation order.  With single assignment, Ruby
     uses a left-to-right evaluation order.  With this code:
@@ -552,6 +562,7 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #15912]: https://bugs.ruby-lang.org/issues/15912
 [Feature #16043]: https://bugs.ruby-lang.org/issues/16043
 [Feature #16806]: https://bugs.ruby-lang.org/issues/16806
+[Feature #16182]: https://bugs.ruby-lang.org/issues/16182
 [Feature #17312]: https://bugs.ruby-lang.org/issues/17312
 [Feature #17327]: https://bugs.ruby-lang.org/issues/17327
 [Feature #17370]: https://bugs.ruby-lang.org/issues/17370
