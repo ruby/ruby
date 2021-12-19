@@ -101,17 +101,21 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
-  def test_resize
-    buffer = IO::Buffer.new(1024, IO::Buffer::MAPPED)
-    buffer.resize(2048, 0)
+  def test_resize_mapped
+    buffer = IO::Buffer.new
+
+    buffer.resize(2048)
     assert_equal 2048, buffer.size
+
+    buffer.resize(4096)
+    assert_equal 4096, buffer.size
   end
 
   def test_resize_preserve
     message = "Hello World"
-    buffer = IO::Buffer.new(1024, IO::Buffer::MAPPED)
+    buffer = IO::Buffer.new(1024)
     buffer.copy(message, 0)
-    buffer.resize(2048, 1024)
+    buffer.resize(2048)
     assert_equal message, buffer.to_str(0, message.bytesize)
   end
 
@@ -159,7 +163,7 @@ class TestIOBuffer < Test::Unit::TestCase
     buffer = IO::Buffer.new(128, IO::Buffer::INTERNAL|IO::Buffer::LOCKED)
 
     assert_raise RuntimeError do
-      buffer.resize(256, 0)
+      buffer.resize(256)
     end
 
     assert_equal 128, buffer.size

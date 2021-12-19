@@ -255,6 +255,7 @@ rb_fiber_scheduler_io_read_memory(VALUE scheduler, VALUE io, void *base, size_t 
 
     VALUE result = rb_fiber_scheduler_io_read(scheduler, io, buffer, length);
 
+    rb_io_buffer_unlock(buffer);
     rb_io_buffer_free(buffer);
 
     return result;
@@ -267,6 +268,7 @@ rb_fiber_scheduler_io_write_memory(VALUE scheduler, VALUE io, const void *base, 
 
     VALUE result = rb_fiber_scheduler_io_write(scheduler, io, buffer, length);
 
+    rb_io_buffer_unlock(buffer);
     rb_io_buffer_free(buffer);
 
     return result;
