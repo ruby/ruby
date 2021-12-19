@@ -9,10 +9,6 @@ class TestIOBuffer < Test::Unit::TestCase
     Warning[:experimental] = experimental
   end
 
-  def test_default_size
-    assert_equal IO::Buffer::DEFAULT_SIZE, IO::Buffer.new.size
-  end
-
   def assert_negative(value)
     assert(value < 0, "Expected #{value} to be negative!")
   end
@@ -38,6 +34,10 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal 8, IO::Buffer::NETWORK_ENDIAN
 
     assert_include [IO::Buffer::LITTLE_ENDIAN, IO::Buffer::BIG_ENDIAN], IO::Buffer::HOST_ENDIAN
+  end
+
+  def test_default_size
+    assert_equal IO::Buffer::DEFAULT_SIZE, IO::Buffer.new.size
   end
 
   def test_new_internal
@@ -72,6 +72,12 @@ class TestIOBuffer < Test::Unit::TestCase
   def test_file_mapped
     buffer = File.open(__FILE__) {|file| IO::Buffer.map(file)}
     assert_include buffer.to_str, "Hello World"
+  end
+
+  def test_file_mapped_invalid
+    assert_raise ArgumentError do
+      IO::Buffer.map("foobar")
+    end
   end
 
   def test_string_mapped

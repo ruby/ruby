@@ -322,6 +322,9 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
     }
 
     VALUE io = argv[0];
+    if (!RB_TYPE_P(io, T_FILE)) {
+        rb_raise(rb_eArgError, "Must be file/io!");
+    }
 
     size_t size;
     if (argc >= 2) {
