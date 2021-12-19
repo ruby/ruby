@@ -13675,7 +13675,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  The numerous encoding names are available in array <tt>Encoding.name_list</tt>:
  *
  *    Encoding.name_list.size    # => 175
-      Encoding.name_list.take(3) # => ["ASCII-8BIT", "UTF-8", "US-ASCII"]
+ *    Encoding.name_list.take(3) # => ["ASCII-8BIT", "UTF-8", "US-ASCII"]
  *
  *  == Encodings
  *
