@@ -13672,7 +13672,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    f.external_encoding # => #<Encoding:UTF-16 (dummy)>
  *    f.internal_encoding # => #<Encoding:UTF-16>
  *
- *  The numerous encoding names are available in array <tt>Encoding.name_list</tt>:
+ *  The numerous encoding names are available in array Encoding.name_list:
  *
  *    Encoding.name_list.size    # => 175
  *    Encoding.name_list.take(3) # => ["ASCII-8BIT", "UTF-8", "US-ASCII"]
