@@ -279,7 +279,12 @@ rb_io_buffer_type_for(VALUE klass, VALUE string)
 
     rb_str_locktmp(string);
 
-    io_buffer_initialize(data, RSTRING_PTR(string), RSTRING_LEN(string), RB_IO_BUFFER_EXTERNAL, string);
+    enum rb_io_buffer_flags flags = RB_IO_BUFFER_EXTERNAL;
+
+    if (RB_OBJ_FROZEN(string))
+        flags |= RB_IO_BUFFER_IMMUTABLE;
+
+    io_buffer_initialize(data, RSTRING_PTR(string), RSTRING_LEN(string), flags, string);
 
     return instance;
 }
