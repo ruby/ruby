@@ -71,7 +71,10 @@ class TestIOBuffer < Test::Unit::TestCase
 
   def test_file_mapped
     buffer = File.open(__FILE__) {|file| IO::Buffer.map(file)}
-    assert_include buffer.get_string, "Hello World"
+    contents = buffer.get_string
+
+    assert_include contents, "Hello World"
+    assert_equal Encoding::BINARY, contents.encoding
   end
 
   def test_file_mapped_invalid
