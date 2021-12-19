@@ -1125,7 +1125,7 @@ io_buffer_get_string(int argc, VALUE *argv, VALUE self)
 
     size_t offset = 0;
     size_t length = data->size;
-    rb_encoding *encoding = NULL;
+    rb_encoding *encoding = rb_ascii8bit_encoding();
 
     if (argc >= 1) {
         offset = NUM2SIZET(argv[0]);
