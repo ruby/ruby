@@ -2518,19 +2518,23 @@ rb_file_birthtime(VALUE obj)
 off_t
 rb_file_size(VALUE file)
 {
-    rb_io_t *fptr;
-    struct stat st;
+    if (RB_TYPE_P(file, T_FILE)) {
+        rb_io_t *fptr;
+        struct stat st;
 
-    RB_IO_POINTER(file, fptr);
-    if (fptr->mode & FMODE_WRITABLE) {
-        rb_io_flush_raw(file, 0);
+        RB_IO_POINTER(file, fptr);
+        if (fptr->mode & FMODE_WRITABLE) {
+            rb_io_flush_raw(file, 0);
+        }
+
+        if (fstat(fptr->fd, &st) == -1) {
+            rb_sys_fail_path(fptr->pathv);
+        }
+
+        return st.st_size;
+    } else {
+        return NUM2OFFT(rb_funcall(file, idSize, 0));
     }
-
-    if (fstat(fptr->fd, &st) == -1) {
-        rb_sys_fail_path(fptr->pathv);
-    }
-
-    return st.st_size;
 }
 
 static VALUE

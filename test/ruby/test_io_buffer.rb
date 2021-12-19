@@ -60,11 +60,11 @@ class TestIOBuffer < Test::Unit::TestCase
     buffer = IO::Buffer.new(128, IO::Buffer::INTERNAL|IO::Buffer::IMMUTABLE)
     assert buffer.immutable?
 
-    assert_raise RuntimeError do
+    assert_raise IO::Buffer::MutationError do
       buffer.copy("", 0)
     end
 
-    assert_raise RuntimeError do
+    assert_raise IO::Buffer::MutationError do
       buffer.copy("!", 1)
     end
   end
@@ -75,7 +75,7 @@ class TestIOBuffer < Test::Unit::TestCase
   end
 
   def test_file_mapped_invalid
-    assert_raise ArgumentError do
+    assert_raise NoMethodError do
       IO::Buffer.map("foobar")
     end
   end
@@ -163,8 +163,7 @@ class TestIOBuffer < Test::Unit::TestCase
   def test_slice_bounds
     buffer = IO::Buffer.new(128)
 
-    # What is best exception class?
-    assert_raise RuntimeError do
+    assert_raise ArgumentError do
       buffer.slice(128, 10)
     end
 
@@ -176,13 +175,13 @@ class TestIOBuffer < Test::Unit::TestCase
   def test_locked
     buffer = IO::Buffer.new(128, IO::Buffer::INTERNAL|IO::Buffer::LOCKED)
 
-    assert_raise RuntimeError do
+    assert_raise IO::Buffer::LockedError do
       buffer.resize(256)
     end
 
     assert_equal 128, buffer.size
 
-    assert_raise RuntimeError do
+    assert_raise IO::Buffer::LockedError do
       buffer.free
     end
 
@@ -203,7 +202,7 @@ class TestIOBuffer < Test::Unit::TestCase
 
     # (4) scheduler returns
     # (5) rb_write_internal invalidate the buffer object
-    assert_raise RuntimeError do
+    assert_raise IO::Buffer::LockedError do
       buffer.free
     end
 

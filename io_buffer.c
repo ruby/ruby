@@ -14,6 +14,11 @@
 #include "internal/error.h"
 
 VALUE rb_cIOBuffer;
+VALUE rb_eIOBufferLockedError;
+VALUE rb_eIOBufferAllocationError;
+VALUE rb_eIOBufferMutationError;
+VALUE rb_eIOBufferInvalidatedError;
+
 size_t RUBY_IO_BUFFER_PAGE_SIZE;
 size_t RUBY_IO_BUFFER_DEFAULT_SIZE;
 
@@ -163,7 +168,7 @@ io_buffer_initialize(struct rb_io_buffer *data, void *base, size_t size, enum rb
     }
 
     if (!data->base) {
-        rb_raise(rb_eRuntimeError, "Could not allocate buffer!");
+        rb_raise(rb_eIOBufferAllocationError, "Could not allocate buffer!");
     }
 
     data->source = source;
@@ -327,9 +332,6 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
     }
 
     VALUE io = argv[0];
-    if (!RB_TYPE_P(io, T_FILE)) {
-        rb_raise(rb_eArgError, "Must be file/io!");
-    }
 
     size_t size;
     if (argc >= 2) {
@@ -622,7 +624,7 @@ rb_io_buffer_lock(VALUE self)
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
     if (data->flags & RB_IO_BUFFER_LOCKED) {
-        rb_raise(rb_eRuntimeError, "Buffer already locked!");
+        rb_raise(rb_eIOBufferLockedError, "Buffer already locked!");
     }
 
     data->flags |= RB_IO_BUFFER_LOCKED;
@@ -637,7 +639,7 @@ rb_io_buffer_unlock(VALUE self)
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
     if (!(data->flags & RB_IO_BUFFER_LOCKED)) {
-        rb_raise(rb_eRuntimeError, "Buffer not locked!");
+        rb_raise(rb_eIOBufferLockedError, "Buffer not locked!");
     }
 
     data->flags &= ~RB_IO_BUFFER_LOCKED;
@@ -652,7 +654,7 @@ rb_io_buffer_locked(VALUE self)
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
     if (data->flags & RB_IO_BUFFER_LOCKED) {
-        rb_raise(rb_eRuntimeError, "Buffer already locked!");
+        rb_raise(rb_eIOBufferLockedError, "Buffer already locked!");
     }
 
     data->flags |= RB_IO_BUFFER_LOCKED;
@@ -671,7 +673,7 @@ rb_io_buffer_free(VALUE self)
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
     if (data->flags & RB_IO_BUFFER_LOCKED) {
-        rb_raise(rb_eRuntimeError, "Buffer is locked!");
+        rb_raise(rb_eIOBufferLockedError, "Buffer is locked!");
     }
 
     io_buffer_free(data);
@@ -683,7 +685,7 @@ static inline void
 rb_io_buffer_validate(struct rb_io_buffer *data, size_t offset, size_t length)
 {
     if (offset + length > data->size) {
-        rb_raise(rb_eRuntimeError, "Specified offset + length exceeds source size!");
+        rb_raise(rb_eArgError, "Specified offset + length exceeds source size!");
     }
 }
 
@@ -751,11 +753,11 @@ rb_io_buffer_get_mutable(VALUE self, void **base, size_t *size)
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
     if (data->flags & RB_IO_BUFFER_IMMUTABLE) {
-        rb_raise(rb_eRuntimeError, "Buffer is immutable!");
+        rb_raise(rb_eIOBufferMutationError, "Buffer is immutable!");
     }
 
     if (!io_buffer_validate(data)) {
-        rb_raise(rb_eRuntimeError, "Buffer has been invalidated!");
+        rb_raise(rb_eIOBufferInvalidatedError, "Buffer has been invalidated!");
     }
 
     if (data && data->base) {
@@ -765,7 +767,7 @@ rb_io_buffer_get_mutable(VALUE self, void **base, size_t *size)
         return;
     }
 
-    rb_raise(rb_eRuntimeError, "Buffer is not allocated!");
+    rb_raise(rb_eIOBufferAllocationError, "Buffer is not allocated!");
 }
 
 void
@@ -775,7 +777,7 @@ rb_io_buffer_get_immutable(VALUE self, const void **base, size_t *size)
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
     if (!io_buffer_validate(data)) {
-        rb_raise(rb_eRuntimeError, "Buffer has been invalidated!");
+        rb_raise(rb_eIOBufferInvalidatedError, "Buffer has been invalidated!");
     }
 
     if (data && data->base) {
@@ -785,7 +787,7 @@ rb_io_buffer_get_immutable(VALUE self, const void **base, size_t *size)
         return;
     }
 
-    rb_raise(rb_eRuntimeError, "Buffer is not allocated!");
+    rb_raise(rb_eIOBufferAllocationError, "Buffer is not allocated!");
 }
 
 size_t
@@ -798,7 +800,7 @@ rb_io_buffer_copy(VALUE self, VALUE source, size_t offset)
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
     if (data->flags & RB_IO_BUFFER_IMMUTABLE) {
-        rb_raise(rb_eRuntimeError, "Buffer is immutable!");
+        rb_raise(rb_eIOBufferMutationError, "Buffer is immutable!");
     }
 
     if (RB_TYPE_P(source, T_STRING)) {
@@ -830,7 +832,7 @@ rb_io_buffer_transfer(VALUE self)
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
     if (data->flags & RB_IO_BUFFER_LOCKED) {
-        rb_raise(rb_eRuntimeError, "Cannot transfer ownership of locked buffer!");
+        rb_raise(rb_eIOBufferLockedError, "Cannot transfer ownership of locked buffer!");
     }
 
     VALUE instance = rb_io_buffer_type_allocate(rb_class_of(self));
@@ -877,7 +879,7 @@ rb_io_buffer_resize(VALUE self, size_t size)
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
     if (data->flags & RB_IO_BUFFER_LOCKED) {
-        rb_raise(rb_eRuntimeError, "Cannot resize locked buffer!");
+        rb_raise(rb_eIOBufferLockedError, "Cannot resize locked buffer!");
     }
 
     if (data->base == NULL) {
@@ -886,7 +888,7 @@ rb_io_buffer_resize(VALUE self, size_t size)
     }
 
     if (io_buffer_external_p(data->flags)) {
-        rb_raise(rb_eRuntimeError, "Cannot resize external buffer!");
+        rb_raise(rb_eIOBufferMutationError, "Cannot resize external buffer!");
     }
 
 #ifdef MREMAP_MAYMOVE
@@ -956,7 +958,7 @@ static void
 io_buffer_validate_type(size_t size, size_t offset)
 {
     if (offset > size) {
-        rb_raise(rb_eRuntimeError, "Type extends beyond end of buffer!");
+        rb_raise(rb_eArgError, "Type extends beyond end of buffer!");
     }
 }
 
@@ -1151,7 +1153,7 @@ rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length)
     rb_io_buffer_get_mutable(self, &base, &size);
 
     if (offset + length > size) {
-        rb_raise(rb_eRuntimeError, "Offset + length out of bounds!");
+        rb_raise(rb_eArgError, "The given offset + length out of bounds!");
     }
 
     memset((char*)base + offset, value, length);
@@ -1215,6 +1217,10 @@ void
 Init_IO_Buffer(void)
 {
     rb_cIOBuffer = rb_define_class_under(rb_cIO, "Buffer", rb_cObject);
+    rb_eIOBufferLockedError = rb_define_class_under(rb_cIOBuffer, "LockedError", rb_eRuntimeError);
+    rb_eIOBufferAllocationError = rb_define_class_under(rb_cIOBuffer, "AllocationError", rb_eRuntimeError);
+    rb_eIOBufferMutationError = rb_define_class_under(rb_cIOBuffer, "MutationError", rb_eRuntimeError);
+    rb_eIOBufferInvalidatedError = rb_define_class_under(rb_cIOBuffer, "InvalidatedError", rb_eRuntimeError);
 
     rb_define_alloc_func(rb_cIOBuffer, rb_io_buffer_type_allocate);
     rb_define_singleton_method(rb_cIOBuffer, "for", rb_io_buffer_type_for, 1);
