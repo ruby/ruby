@@ -13602,7 +13602,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - +File::RDWR+: Open for reading and writing.
  *  - +File::APPEND+: Open for appending only.
  *  - +File::CREAT+: Create file if it does not exist.
- *  - +File::EXCL+: Raise an exception if +File::CREAT+  is given and the file exists.
+ *  - +File::EXCL+: Raise an exception if +File::CREAT+ is given and the file exists.
  *
  *  Examples:
  *
