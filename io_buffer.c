@@ -147,8 +147,6 @@ io_buffer_experimental(void)
 static void
 io_buffer_initialize(struct rb_io_buffer *data, void *base, size_t size, enum rb_io_buffer_flags flags, VALUE source)
 {
-    io_buffer_experimental();
-
     data->flags = flags;
     data->size = size;
 
@@ -169,6 +167,17 @@ io_buffer_initialize(struct rb_io_buffer *data, void *base, size_t size, enum rb
     }
 
     data->source = source;
+}
+
+static void
+io_buffer_zero(struct rb_io_buffer *data)
+{
+    data->base = NULL;
+    data->size = 0;
+#if defined(_WIN32)
+    data->mapping = NULL;
+#endif
+    data->source = Qnil;
 }
 
 static int
@@ -195,6 +204,8 @@ io_buffer_free(struct rb_io_buffer *data)
             data->mapping = NULL;
         }
 #endif
+
+        data->size = 0;
 
         return 1;
     }
@@ -249,10 +260,7 @@ rb_io_buffer_type_allocate(VALUE self)
     struct rb_io_buffer *data = NULL;
     VALUE instance = TypedData_Make_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
-    data->base = NULL;
-    data->size = 0;
-    data->flags = 0;
-    data->source = Qnil;
+    io_buffer_zero(data);
 
     return instance;
 }
@@ -260,6 +268,8 @@ rb_io_buffer_type_allocate(VALUE self)
 VALUE
 rb_io_buffer_type_for(VALUE klass, VALUE string)
 {
+    io_buffer_experimental();
+
     StringValue(string);
 
     VALUE instance = rb_io_buffer_type_allocate(klass);
@@ -282,7 +292,7 @@ rb_io_buffer_new(void *base, size_t size, enum rb_io_buffer_flags flags)
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(instance, struct rb_io_buffer, &rb_io_buffer_type, data);
 
-    io_buffer_initialize(data, base, size, 0, Qnil);
+    io_buffer_initialize(data, base, size, flags, Qnil);
 
     return instance;
 }
@@ -290,6 +300,8 @@ rb_io_buffer_new(void *base, size_t size, enum rb_io_buffer_flags flags)
 VALUE
 rb_io_buffer_map(VALUE io, size_t size, off_t offset, enum rb_io_buffer_flags flags)
 {
+    io_buffer_experimental();
+
     VALUE instance = rb_io_buffer_type_allocate(rb_cIOBuffer);
 
     struct rb_io_buffer *data = NULL;
@@ -345,9 +357,22 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
     return rb_io_buffer_map(io, size, offset, flags);
 }
 
+// Compute the optimal allocation flags for a buffer of the given size.
+static inline enum rb_io_buffer_flags
+io_flags_for_size(size_t size)
+{
+    if (size > RUBY_IO_BUFFER_PAGE_SIZE) {
+        return RB_IO_BUFFER_MAPPED;
+    }
+
+    return RB_IO_BUFFER_INTERNAL;
+}
+
 VALUE
 rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
 {
+    io_buffer_experimental();
+
     if (argc < 0 || argc > 2) {
         rb_error_arity(argc, 0, 2);
     }
@@ -368,12 +393,7 @@ rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
         flags = RB_NUM2UINT(argv[1]);
     }
     else {
-        if (size > RUBY_IO_BUFFER_PAGE_SIZE) {
-            flags |= RB_IO_BUFFER_MAPPED;
-        }
-        else {
-            flags |= RB_IO_BUFFER_INTERNAL;
-        }
+        flags |= io_flags_for_size(size);
     }
 
     io_buffer_initialize(data, NULL, size, flags, Qnil);
@@ -432,6 +452,10 @@ rb_io_buffer_to_s(VALUE self)
 
     rb_str_append(result, rb_class_name(CLASS_OF(self)));
     rb_str_catf(result, " %p+%"PRIdSIZE, data->base, data->size);
+
+    if (data->base == NULL) {
+        rb_str_cat2(result, " NULL");
+    }
 
     if (data->flags & RB_IO_BUFFER_INTERNAL) {
         rb_str_cat2(result, " INTERNAL");
@@ -505,7 +529,10 @@ rb_io_buffer_inspect(VALUE self)
     VALUE result = rb_io_buffer_to_s(self);
 
     if (io_buffer_validate(data)) {
-        io_buffer_hexdump(result, 16, data->base, data->size);
+        // Limit the maximum size genearted by inspect.
+        if (data->size <= 256) {
+            io_buffer_hexdump(result, 16, data->base, data->size);
+        }
     }
 
     return result;
@@ -518,6 +545,15 @@ rb_io_buffer_size(VALUE self)
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
     return SIZET2NUM(data->size);
+}
+
+static VALUE
+rb_io_buffer_null_p(VALUE self)
+{
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    return data->base ? Qfalse : Qtrue;
 }
 
 static VALUE
@@ -563,6 +599,12 @@ rb_io_buffer_immutable_p(VALUE self)
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
     return data->flags & RB_IO_BUFFER_IMMUTABLE ? Qtrue : Qfalse;
+}
+
+static int
+io_buffer_external_p(enum rb_io_buffer_flags flags)
+{
+    return !(flags & (RB_IO_BUFFER_INTERNAL | RB_IO_BUFFER_MAPPED));
 }
 
 VALUE
@@ -773,43 +815,113 @@ io_buffer_copy(VALUE self, VALUE source, VALUE offset)
     return RB_SIZE2NUM(size);
 }
 
-static int
-io_buffer_external_p(enum rb_io_buffer_flags flags)
+VALUE
+rb_io_buffer_transfer(VALUE self)
 {
-    return !(flags & (RB_IO_BUFFER_INTERNAL | RB_IO_BUFFER_MAPPED));
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    if (data->flags & RB_IO_BUFFER_LOCKED) {
+        rb_raise(rb_eRuntimeError, "Cannot transfer ownership of locked buffer!");
+    }
+
+    VALUE instance = rb_io_buffer_type_allocate(rb_class_of(self));
+    struct rb_io_buffer *transferred;
+    TypedData_Get_Struct(instance, struct rb_io_buffer, &rb_io_buffer_type, transferred);
+
+    *transferred = *data;
+    io_buffer_zero(data);
+
+    return instance;
+}
+
+static void
+io_buffer_resize_clear(struct rb_io_buffer *data, void* base, size_t size)
+{
+    if (size > data->size) {
+        memset((unsigned char*)base+data->size, 0, size - data->size);
+    }
+}
+
+static void
+io_buffer_resize_copy(struct rb_io_buffer *data, size_t size)
+{
+    // Slow path:
+    struct rb_io_buffer resized;
+    io_buffer_initialize(&resized, NULL, size, io_flags_for_size(size), Qnil);
+
+    if (data->base) {
+        size_t preserve = data->size;
+        if (preserve > size) preserve = size;
+        memcpy(resized.base, data->base, preserve);
+
+        io_buffer_resize_clear(data, resized.base, size);
+    }
+
+    io_buffer_free(data);
+    *data = resized;
 }
 
 void
-rb_io_buffer_resize(VALUE self, size_t size, size_t preserve)
+rb_io_buffer_resize(VALUE self, size_t size)
 {
-    struct rb_io_buffer *data = NULL, updated;
+    struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
-
-    if (preserve > data->size) {
-        rb_raise(rb_eRuntimeError, "Preservation size bigger than buffer size!");
-    }
-
-    if (preserve > size) {
-        rb_raise(rb_eRuntimeError, "Preservation size bigger than destination size!");
-    }
 
     if (data->flags & RB_IO_BUFFER_LOCKED) {
         rb_raise(rb_eRuntimeError, "Cannot resize locked buffer!");
     }
 
-    // By virtue of this passing, we don't need to do any further validation on the buffer:
+    if (data->base == NULL) {
+        io_buffer_initialize(data, NULL, size, io_flags_for_size(size), Qnil);
+        return;
+    }
+
     if (io_buffer_external_p(data->flags)) {
         rb_raise(rb_eRuntimeError, "Cannot resize external buffer!");
     }
 
-    io_buffer_initialize(&updated, NULL, size, data->flags, data->source);
+#ifdef MREMAP_MAYMOVE
+    if (data->flags & RB_IO_BUFFER_MAPPED) {
+        void *base = mremap(data->base, data->size, size, MREMAP_MAYMOVE);
 
-    if (data->base && preserve > 0) {
-        memcpy(updated.base, data->base, preserve);
+        if (base == MAP_FAILED) {
+            rb_sys_fail("rb_io_buffer_resize:mremap");
+        }
+
+        io_buffer_resize_clear(data, base, size);
+
+        data->base = base;
+        data->size = size;
+
+        return;
+    }
+#endif
+
+    if (data->flags & RB_IO_BUFFER_INTERNAL) {
+        void *base = realloc(data->base, size);
+
+        if (!base) {
+            rb_sys_fail("rb_io_buffer_resize:realloc");
+        }
+
+        io_buffer_resize_clear(data, base, size);
+
+        data->base = base;
+        data->size = size;
+
+        return;
     }
 
-    io_buffer_free(data);
-    *data = updated;
+    io_buffer_resize_copy(data, size);
+}
+
+static VALUE
+io_buffer_resize(VALUE self, VALUE size)
+{
+    rb_io_buffer_resize(self, NUM2SIZET(size));
+
+    return self;
 }
 
 static VALUE
@@ -830,14 +942,6 @@ rb_io_buffer_compare(VALUE self, VALUE other)
     }
 
     return RB_INT2NUM(memcmp(ptr1, ptr2, size1));
-}
-
-static VALUE
-io_buffer_resize(VALUE self, VALUE size, VALUE preserve)
-{
-    rb_io_buffer_resize(self, NUM2SIZET(size), NUM2SIZET(preserve));
-
-    return self;
 }
 
 static void
@@ -1129,6 +1233,9 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "to_s", rb_io_buffer_to_s, 0);
     rb_define_method(rb_cIOBuffer, "size", rb_io_buffer_size, 0);
 
+    // Ownership:
+    rb_define_method(rb_cIOBuffer, "transfer", rb_io_buffer_transfer, 0);
+
     // Flags:
     rb_define_const(rb_cIOBuffer, "EXTERNAL", RB_INT2NUM(RB_IO_BUFFER_EXTERNAL));
     rb_define_const(rb_cIOBuffer, "INTERNAL", RB_INT2NUM(RB_IO_BUFFER_INTERNAL));
@@ -1143,6 +1250,7 @@ Init_IO_Buffer(void)
     rb_define_const(rb_cIOBuffer, "HOST_ENDIAN", RB_INT2NUM(RB_IO_BUFFER_HOST_ENDIAN));
     rb_define_const(rb_cIOBuffer, "NETWORK_ENDIAN", RB_INT2NUM(RB_IO_BUFFER_NETWORK_ENDIAN));
 
+    rb_define_method(rb_cIOBuffer, "null?", rb_io_buffer_null_p, 0);
     rb_define_method(rb_cIOBuffer, "external?", rb_io_buffer_external_p, 0);
     rb_define_method(rb_cIOBuffer, "internal?", rb_io_buffer_internal_p, 0);
     rb_define_method(rb_cIOBuffer, "mapped?", rb_io_buffer_mapped_p, 0);
@@ -1159,7 +1267,7 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "to_str", rb_io_buffer_to_str, -1);
     rb_define_method(rb_cIOBuffer, "copy", io_buffer_copy, 2);
     rb_define_method(rb_cIOBuffer, "<=>", rb_io_buffer_compare, 1);
-    rb_define_method(rb_cIOBuffer, "resize", io_buffer_resize, 2);
+    rb_define_method(rb_cIOBuffer, "resize", io_buffer_resize, 1);
     rb_define_method(rb_cIOBuffer, "clear", io_buffer_clear, -1);
     rb_define_method(rb_cIOBuffer, "free", rb_io_buffer_free, 0);
 
