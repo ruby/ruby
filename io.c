@@ -13639,7 +13639,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  - <tt>'t'</tt>: Text data; sets the default external encoding to +Encoding::UTF_8+;
  *    on Windows, enables conversion between EOL and CRLF.
- *  - <tt>'b'</tt>: Binary data; sets the default external encoding to Encoding::ASCII_8BIT;
+ *  - <tt>'b'</tt>: Binary data; sets the default external encoding to +Encoding::ASCII_8BIT+;
  *    on Windows, suppresses conversion between EOL and CRLF.
  *
  *  If neither is given, the stream defaults to text data.
