@@ -18,14 +18,14 @@ class TestIOBuffer < Test::Unit::TestCase
   end
 
   def test_flags
-    assert_equal 0, IO::Buffer::EXTERNAL
-    assert_equal 1, IO::Buffer::INTERNAL
-    assert_equal 2, IO::Buffer::MAPPED
+    assert_equal 1, IO::Buffer::EXTERNAL
+    assert_equal 2, IO::Buffer::INTERNAL
+    assert_equal 4, IO::Buffer::MAPPED
 
-    assert_equal 16, IO::Buffer::LOCKED
-    assert_equal 32, IO::Buffer::PRIVATE
+    assert_equal 32, IO::Buffer::LOCKED
+    assert_equal 64, IO::Buffer::PRIVATE
 
-    assert_equal 64, IO::Buffer::IMMUTABLE
+    assert_equal 128, IO::Buffer::IMMUTABLE
   end
 
   def test_endian
