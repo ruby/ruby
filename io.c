@@ -13637,7 +13637,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  Either of the following may be suffixed to any of the above:
  *
- *  - <tt>'t'</tt>: Text data; sets the default external encoding to Encoding::UTF_8;
+ *  - <tt>'t'</tt>: Text data; sets the default external encoding to +Encoding::UTF_8+;
  *    on Windows, enables conversion between EOL and CRLF.
  *  - <tt>'b'</tt>: Binary data; sets the default external encoding to Encoding::ASCII_8BIT;
  *    on Windows, suppresses conversion between EOL and CRLF.
