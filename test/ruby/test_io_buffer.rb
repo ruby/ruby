@@ -201,6 +201,42 @@ class TestIOBuffer < Test::Unit::TestCase
     chunk = buffer.get_string(0, message.bytesize, Encoding::BINARY)
     assert_equal Encoding::BINARY, chunk.encoding
   end
+
+  # We check that values are correctly round tripped.
+  RANGES = {
+    :U8 => [0, 2**8-1],
+    :S8 => [-2**7, 0, 2**7-1],
+
+    :U16 => [0, 2**16-1],
+    :S16 => [-2**15, 0, 2**15-1],
+    :u16 => [0, 2**16-1],
+    :s16 => [-2**15, 0, 2**15-1],
+
+    :U32 => [0, 2**32-1],
+    :S32 => [-2**31, 0, 2**31-1],
+    :u32 => [0, 2**32-1],
+    :s32 => [-2**31, 0, 2**31-1],
+
+    :U64 => [0, 2**64-1],
+    :S64 => [-2**63, 0, 2**63-1],
+    :u64 => [0, 2**64-1],
+    :s64 => [-2**63, 0, 2**63-1],
+
+    :F32 => [-1.0, 0.0, 0.5, 1.0, 128.0],
+    :F64 => [-1.0, 0.0, 0.5, 1.0, 128.0],
+  }
+
+  def test_get_set
+    buffer = IO::Buffer.new(128)
+
+    RANGES.each do |type, values|
+      values.each do |value|
+        buffer.set(type, 0, value)
+        assert_equal value, buffer.get(type, 0), "Converting #{value} as #{type}."
+      end
+    end
+  end
+
   def test_invalidation
     input, output = IO.pipe
 
