@@ -6701,6 +6701,14 @@ static const rb_data_type_t env_data_type = {
  *    # Raises SyntaxError (syntax error, unexpected ':', expecting =>):
  *    h = {0: 'zero'}
  *
+ *  Hash value can be omitted, meaning that value will be fetched from the context
+ *  by the name of the key:
+ *
+ *    x = 0
+ *    y = 100
+ *    h = {x:, y:}
+ *    h # => {:x=>0, :y=>100}
+ *
  *  === Common Uses
  *
  *  You can use a \Hash to give names to objects:

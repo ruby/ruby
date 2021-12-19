@@ -210,6 +210,24 @@ definition.  If a keyword argument is given that the method did not list,
 and the method definition does not accept arbitrary keyword arguments, an
 ArgumentError will be raised.
 
+Keyword argument value can be omitted, meaning the value will be be fetched
+from the context by the name of the key
+
+  keyword1 = 'some value'
+  my_method(positional1, keyword1:)
+  # ...is the same as
+  my_method(positional1, keyword1: keyword1)
+
+Be aware that when method parenthesis are omitted, too, the parsing order might
+be unexpected:
+
+  my_method positional1, keyword1:
+
+  some_other_expression
+
+  # ...is actually parsed as
+  my_method(positional1, keyword1: some_other_expression)
+
 === Block Argument
 
 The block argument sends a closure from the calling scope to the method.

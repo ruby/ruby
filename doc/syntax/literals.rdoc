@@ -356,6 +356,14 @@ is equal to
 
   { :"a 1" => 1, :"b 2" => 2 }
 
+Hash values can be omitted, meaning that value will be fetched from the context
+by the name of the key:
+
+  x = 100
+  y = 200
+  h = { x:, y: }
+  #=> {:x=>100, :y=>200}
+
 See Hash for the methods you may use with a hash.
 
 == \Range Literals
