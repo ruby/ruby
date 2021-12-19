@@ -239,7 +239,7 @@ module Bundler
       current  = File.expand_path(SharedHelpers.pwd).tap{|x| x.untaint if RUBY_VERSION < "2.7" }
 
       until !File.directory?(current) || current == previous
-        if ENV["BUNDLE_SPEC_RUN"]
+        if ENV["BUNDLER_SPEC_RUN"]
           # avoid stepping above the tmp directory when testing
           gemspec = if ENV["GEM_COMMAND"]
             # for Ruby Core
