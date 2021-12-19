@@ -13560,6 +13560,259 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    rows, columns = $stdout.winsize
  *    puts "Your screen is #{columns} wide and #{rows} tall"
  *
+ *  == Example Files
+ *
+ *  Many examples here use these filenames and their corresponding files:
+ *
+ *  - <tt>t.txt</tt>: A text-only file that is assumed to exist via:
+ *
+ *      text = <<~EOT
+ *        This is line one.
+ *        This is the second line.
+ *        This is the third line.
+ *      EOT
+ *      File.write('t.txt', text)
+ *
+ *  - <tt>t.dat</tt>: A data file that is assumed to exist via:
+ *
+ *      data = "\u9990\u9991\u9992\u9993\u9994"
+ *      f = File.open('t.dat', 'wb:UTF-16')
+ *      f.write(data)
+ *      f.close
+ *
+ *  - <tt>t.tmp</tt>: A file that is assumed _not_ to exist.
+ *
+ *  == Modes
+ *
+ *  A number of \IO method calls must or may specify a _mode_ for the stream;
+ *  the mode determines how stream is to be accessible, including:
+ *
+ *  - Whether the stream is to be read-only, write-only, or read-write.
+ *  - Whether the stream is positioned at its beginning or its end.
+ *  - Whether the stream treats data as text-only or binary.
+ *  - The external and internal encodings.
+ *
+ *  === Mode Specified as an \Integer
+ *
+ *  When +mode+ is an integer it must be one or more (combined by bitwise OR (<tt>|</tt>)
+ *  of the modes defined in File::Constants:
+ *
+ *  - +File::RDONLY+: Open for reading only.
+ *  - +File::WRONLY+: Open for writing only.
+ *  - +File::RDWR+: Open for reading and writing.
+ *  - +File::APPEND+: Open for appending only.
+ *  - +File::CREAT+: Create file if it does not exist.
+ *  - +File::EXCL+: Raise an exception if +File::CREAT+ is given and the file exists.
+ *
+ *  Examples:
+ *
+ *    File.new('t.txt', File::RDONLY)
+ *    File.new('t.tmp', File::RDWR | File::CREAT | File::EXCL)
+ *
+ *  Note: Method IO#set_encoding does not allow the mode to be specified as an integer.
+ *
+ *  === Mode Specified As a \String
+ *
+ *  When +mode+ is a string it must begin with one of the following:
+ *
+ *  - <tt>'r'</tt>: Read-only stream, positioned at the beginning;
+ *    the stream cannot be changed to writable.
+ *  - <tt>'w'</tt>: Write-only stream, positioned at the beginning;
+ *    the stream cannot be changed to readable.
+ *  - <tt>'a'</tt>: Write-only stream, positioned at the end;
+ *    every write appends to the end;
+ *    the stream cannot be changed to readable.
+ *  - <tt>'r+'</tt>: Read-write stream, positioned at the beginning.
+ *  - <tt>'w+'</tt>: Read-write stream, positioned at the end.
+ *  - <tt>'a+'</tt>: Read-write stream, positioned at the end.
+ *
+ *  For a writable file stream (that is, any except read-only),
+ *  the file is truncated to zero if it exists,
+ *  and is created if it does not exist.
+ *
+ *  Examples:
+ *
+ *    File.open('t.txt', 'r')
+ *    File.open('t.tmp', 'w')
+ *
+ *  Either of the following may be suffixed to any of the above:
+ *
+ *  - <tt>'t'</tt>: Text data; sets the default external encoding to +Encoding::UTF_8+;
+ *    on Windows, enables conversion between EOL and CRLF.
+ *  - <tt>'b'</tt>: Binary data; sets the default external encoding to +Encoding::ASCII_8BIT+;
+ *    on Windows, suppresses conversion between EOL and CRLF.
+ *
+ *  If neither is given, the stream defaults to text data.
+ *
+ *  Examples:
+ *
+ *    File.open('t.txt', 'rt')
+ *    File.open('t.dat', 'rb')
+ *
+ *  The following may be suffixed to any writable mode above:
+ *
+ *  - <tt>'x'</tt>: Creates the file if it does not exist;
+ *    raises an exception if the file exists.
+ *
+ *  Example:
+ *
+ *    File.open('t.tmp', 'wx')
+ *
+ *  Finally, the mode string may specify encodings --
+ *  either external encoding only or both external and internal encodings --
+ *  by appending one or both encoding names, separated by colons:
+ *
+ *    f = File.new('t.dat', 'rb')
+ *    f.external_encoding # => #<Encoding:ASCII-8BIT>
+ *    f.internal_encoding # => nil
+ *    f = File.new('t.dat', 'rb:UTF-16')
+ *    f.external_encoding # => #<Encoding:UTF-16 (dummy)>
+ *    f.internal_encoding # => nil
+ *    f = File.new('t.dat', 'rb:UTF-16:UTF-16')
+ *    f.external_encoding # => #<Encoding:UTF-16 (dummy)>
+ *    f.internal_encoding # => #<Encoding:UTF-16>
+ *
+ *  The numerous encoding names are available in array Encoding.name_list:
+ *
+ *    Encoding.name_list.size    # => 175
+ *    Encoding.name_list.take(3) # => ["ASCII-8BIT", "UTF-8", "US-ASCII"]
+ *
+ *  == Encodings
+ *
+ *  When the external encoding is set,
+ *  strings read are tagged by that encoding
+ *  when reading, and strings written are converted to that
+ *  encoding when writing.
+ *
+ *  When both external and internal encodings are set,
+ *  strings read are converted from external to internal encoding,
+ *  and strings written are converted from internal to external encoding.
+ *  For further details about transcoding input and output, see Encoding.
+ *
+ *  If the external encoding is <tt>'BOM|UTF-8'</tt>, <tt>'BOM|UTF-16LE'</tt>
+ *  or <tt>'BOM|UTF16-BE'</tt>, Ruby checks for
+ *  a Unicode BOM in the input document to help determine the encoding.  For
+ *  UTF-16 encodings the file open mode must be binary.
+ *  If the BOM is found, it is stripped and the external encoding from the BOM is used.
+ *
+ *  Note that the BOM-style encoding option is case insensitive,
+ *  so 'bom|utf-8' is also valid.)
+ *
+ *  == Open Options
+ *
+ *  A number of \IO methods accept an optional parameter +opts+,
+ *  which determines how a new stream is to be opened:
+ *
+ *  - +:mode+: Stream mode.
+ *  - +:flags+: \Integer file open flags;
+ *    If +mode+ is also given, the two are bitwise-ORed.
+ *  - +:external_encoding+: External encoding for the stream.
+ *  - +:internal_encoding+: Internal encoding for the stream.
+ *    <tt>'-'</tt> is a synonym for the default internal encoding.
+ *    If the value is +nil+ no conversion occurs.
+ *  - +:encoding+: Specifies external and internal encodings as <tt>'extern:intern'</tt>.
+ *  - +:textmode+: If a truthy value, specifies the mode as text-only, binary otherwise.
+ *  - +:binmode+: If a truthy value, specifies the mode as binary, text-only otherwise.
+ *  - +:autoclose+: If a truthy value, specifies that the +fd+ will close
+ *    when the stream closes; otherwise it remains open.
+ *
+ *  Also available are the options offered in String#encode,
+ *  which may control conversion between external internal encoding.
+ *
+ *  == Position
+ *
+ *  An \IO stream has a _position_, which is the non-negative integer offset
+ *  in the stream where the next read or write will occur.
+ *
+ *  A new stream is initially positioned:
+ *
+ *  - At the beginning (position +0+)
+ *    if its mode is <tt>'r'</tt>, <tt>'w'</tt>, or <tt>'r+'</tt>.
+ *  - At the end (position <tt>self.size</tt>)
+ *    if its mode is <tt>'a'</tt>, <tt>'w+'</tt>, or <tt>'a+'</tt>.
+ *
+ *  Methods to query the position:
+ *
+ *  - IO#tell and its alias IO#pos return the position for an open stream.
+ *  - IO#eof? and its alias IO#eof return whether the position is at the end
+ *    of a readable stream.
+ *
+ *  Reading from a stream usually changes its position:
+ *
+ *    f = File.open('t.txt')
+ *    f.tell     # => 0
+ *    f.readline # => "This is line one.\n"
+ *    f.tell     # => 19
+ *    f.readline # => "This is the second line.\n"
+ *    f.tell     # => 45
+ *    f.eof?     # => false
+ *    f.readline # => "Here's the third line.\n"
+ *    f.eof?     # => true
+ *
+ *
+ *  Writing to a stream usually changes its position:
+ *
+ *    f = File.open('t.tmp', 'w')
+ *    f.tell         # => 0
+ *    f.write('foo') # => 3
+ *    f.tell         # => 3
+ *    f.write('bar') # => 3
+ *    f.tell         # => 6
+ *
+ *
+ *  Iterating over a stream usually changes its position:
+ *
+ *    f = File.open('t.txt')
+ *    f.each do |line|
+ *      p "position=#{f.pos} eof?=#{f.eof?} line=#{line}"
+ *    end
+ *
+ *  Output:
+ *
+ *    "position=19 eof?=false line=This is line one.\n"
+ *    "position=45 eof?=false line=This is the second line.\n"
+ *    "position=70 eof?=true line=This is the third line.\n"
+ *
+ *  The position may also be changed by certain other methods:
+ *
+ *  - IO#pos= and IO#seek change the position to a specified offset.
+ *  - IO#rewind changes the position to the beginning.
+ *
+ *  == Line Number
+ *
+ *  A readable \IO stream has a _line_ _number_,
+ *  which is the non-negative integer line number
+ *  in the stream where the next read will occur.
+ *
+ *  A new stream is initially has line number +0+.
+ *
+ *  \Method IO#lineno returns the line number.
+ *
+ *  Reading lines from a stream usually changes its line number:
+ *
+ *    f = File.open('t.txt', 'r')
+ *    f.lineno   # => 0
+ *    f.readline # => "This is line one.\n"
+ *    f.lineno   # => 1
+ *    f.readline # => "This is the second line.\n"
+ *    f.lineno   # => 2
+ *    f.readline # => "Here's the third line.\n"
+ *    f.lineno   # => 3
+ *    f.eof?     # => true
+ *
+ *  Iterating over lines in a stream usually changes its line number:
+ *
+ *       f = File.open('t.txt')
+ *       f.each_line do |line|
+ *         p "position=#{f.pos} eof?=#{f.eof?} line=#{line}"
+ *       end
+ *
+ *  Output:
+ *
+ *   "position=19 eof?=false line=This is line one.\n"
+ *   "position=45 eof?=false line=This is the second line.\n"
+ *   "position=70 eof?=true line=This is the third line.\n"
+ *
  *  == What's Here
  *
  *  First, what's elsewhere. \Class \IO:
