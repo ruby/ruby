@@ -13622,9 +13622,9 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - <tt>'a'</tt>: Write-only stream, positioned at the end;
  *    every write appends to the end;
  *    the stream cannot be changed to readable.
- *  - <tt>r+'</tt>: Read-write stream, positioned at the beginning.
- *  - <tt>w+'</tt>: Read-write stream, positioned at the end.
- *  - <tt>a+'</tt>: Read-write stream, positioned at the end.
+ *  - <tt>'r+'</tt>: Read-write stream, positioned at the beginning.
+ *  - <tt>'w+'</tt>: Read-write stream, positioned at the end.
+ *  - <tt>'a+'</tt>: Read-write stream, positioned at the end.
  *
  *  For a writable file stream (that is, any except read-only),
  *  the file is truncated to zero if it exists,
