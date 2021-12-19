@@ -71,7 +71,7 @@ class TestIOBuffer < Test::Unit::TestCase
 
   def test_file_mapped
     buffer = File.open(__FILE__) {|file| IO::Buffer.map(file)}
-    assert_include buffer.to_str, "Hello World"
+    assert_include buffer.get_string, "Hello World"
   end
 
   def test_file_mapped_invalid
@@ -130,7 +130,7 @@ class TestIOBuffer < Test::Unit::TestCase
     buffer = IO::Buffer.new(1024)
     buffer.copy(message, 0)
     buffer.resize(2048)
-    assert_equal message, buffer.to_str(0, message.bytesize)
+    assert_equal message, buffer.get_string(0, message.bytesize)
   end
 
   def test_compare_same_size
@@ -157,7 +157,7 @@ class TestIOBuffer < Test::Unit::TestCase
     buffer = IO::Buffer.new(128)
     slice = buffer.slice(8, 32)
     slice.copy("Hello World", 0)
-    assert_equal("Hello World", buffer.to_str(8, 11))
+    assert_equal("Hello World", buffer.get_string(8, 11))
   end
 
   def test_slice_bounds
@@ -188,6 +188,19 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal 128, buffer.size
   end
 
+  def test_get_string
+    message = "Hello World 🤓"
+
+    buffer = IO::Buffer.new(128)
+    buffer.copy(message, 0)
+
+    chunk = buffer.get_string(0, message.bytesize, Encoding::UTF_8)
+    assert_equal message, chunk
+    assert_equal Encoding::UTF_8, chunk.encoding
+
+    chunk = buffer.get_string(0, message.bytesize, Encoding::BINARY)
+    assert_equal Encoding::BINARY, chunk.encoding
+  end
   def test_invalidation
     input, output = IO.pipe
 

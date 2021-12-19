@@ -717,35 +717,6 @@ rb_io_buffer_slice(VALUE self, VALUE _offset, VALUE _length)
     return instance;
 }
 
-VALUE
-rb_io_buffer_to_str(int argc, VALUE *argv, VALUE self)
-{
-    struct rb_io_buffer *data = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
-
-    size_t offset = 0;
-    size_t length = data->size;
-
-    if (argc == 0) {
-        // Defaults.
-    }
-    else if (argc == 1) {
-        offset = NUM2SIZET(argv[0]);
-        length = data->size - offset;
-    }
-    else if (argc == 2) {
-        offset = NUM2SIZET(argv[0]);
-        length = NUM2SIZET(argv[1]);
-    }
-    else {
-        rb_error_arity(argc, 0, 2);
-    }
-
-    rb_io_buffer_validate(data, offset, length);
-
-    return rb_usascii_str_new((char*)data->base + offset, length);
-}
-
 void
 rb_io_buffer_get_mutable(VALUE self, void **base, size_t *size)
 {
@@ -1144,6 +1115,37 @@ io_buffer_set(VALUE self, VALUE type, VALUE _offset, VALUE value)
     return SIZET2NUM(offset);
 }
 
+static VALUE
+io_buffer_get_string(int argc, VALUE *argv, VALUE self)
+{
+    if (argc > 3) rb_error_arity(argc, 0, 3);
+
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    size_t offset = 0;
+    size_t length = data->size;
+    rb_encoding *encoding = NULL;
+
+    if (argc >= 1) {
+        offset = NUM2SIZET(argv[0]);
+    }
+
+    if (argc >= 2 && !RB_NIL_P(argv[1])) {
+        length = NUM2SIZET(argv[1]);
+    } else {
+        length = data->size - offset;
+    }
+
+    if (argc >= 3) {
+        encoding = rb_find_encoding(argv[2]);
+    }
+
+    rb_io_buffer_validate(data, offset, length);
+
+    return rb_enc_str_new((char*)data->base + offset, length, encoding);
+}
+
 void
 rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length)
 {
@@ -1278,7 +1280,6 @@ Init_IO_Buffer(void)
 
     // Manipulation:
     rb_define_method(rb_cIOBuffer, "slice", rb_io_buffer_slice, 2);
-    rb_define_method(rb_cIOBuffer, "to_str", rb_io_buffer_to_str, -1);
     rb_define_method(rb_cIOBuffer, "copy", io_buffer_copy, 2);
     rb_define_method(rb_cIOBuffer, "<=>", rb_io_buffer_compare, 1);
     rb_define_method(rb_cIOBuffer, "resize", io_buffer_resize, 1);
@@ -1298,4 +1299,5 @@ Init_IO_Buffer(void)
     // Data access:
     rb_define_method(rb_cIOBuffer, "get", io_buffer_get, 2);
     rb_define_method(rb_cIOBuffer, "set", io_buffer_set, 3);
+    rb_define_method(rb_cIOBuffer, "get_string", io_buffer_get_string, -1);
 }
