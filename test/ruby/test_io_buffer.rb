@@ -83,6 +83,7 @@ class TestIOBuffer < Test::Unit::TestCase
   def test_string_mapped
     string = "Hello World"
     buffer = IO::Buffer.for(string)
+    refute buffer.immutable?
 
     # Cannot modify string as it's locked by the buffer:
     assert_raise RuntimeError do
@@ -97,6 +98,13 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal "hello World", string
     string[0] = "H"
     assert_equal "Hello World", string
+  end
+
+  def test_string_mapped_frozen
+    string = "Hello World".freeze
+    buffer = IO::Buffer.for(string)
+
+    assert buffer.immutable?
   end
 
   def test_non_string
