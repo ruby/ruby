@@ -4081,7 +4081,6 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
     return str_rindex(str, sub, s, pos, enc);
 }
 
-
 /*
  *  call-seq:
  *    rindex(substring, offset = self.length) -> integer or nil
@@ -4102,6 +4101,23 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
  *    'foo'.rindex(/o/) # => 2
  *    'foo'.rindex(/oo/) # => 1
  *    'foo'.rindex(/ooo/) # => nil
+ *
+ *  The _last_ match means starting at the possible last position, not
+ *  the last of longest matches.
+ *
+ *    'foo'.rindex(/o+/) # => 2
+ *    $~ #=> #<MatchData "o">
+ *
+ *  To get the last longest match, needs to combine with negative
+ *  lookbehind.
+ *
+ *    'foo'.rindex(/(?<!o)o+/) # => 1
+ *    $~ #=> #<MatchData "oo">
+ *
+ *  Or String#index with negative lookforward.
+ *
+ *    'foo'.index(/o+(?!.*o)/) # => 1
+ *    $~ #=> #<MatchData "oo">
  *
  *  \Integer argument +offset+, if given and non-negative, specifies the maximum starting position in the
  *   string to _end_ the search:
@@ -10395,6 +10411,20 @@ rb_str_partition(VALUE str, VALUE sep)
  *     "hello".rpartition("l")         #=> ["hel", "l", "o"]
  *     "hello".rpartition("x")         #=> ["", "", "hello"]
  *     "hello".rpartition(/.l/)        #=> ["he", "ll", "o"]
+ *
+ *  The match from the end means starting at the possible last position, not
+ *  the last of longest matches.
+ *
+ *     "hello".rpartition(/l+/)        #=> ["hel", "l", "o"]
+ *
+ *  To partition at the last longest match, needs to combine with
+ *  negative lookbehind.
+ *
+ *     "hello".rpartition(/(?<!l)l+/)  #=> ["he", "ll", "o"]
+ *
+ *  Or String#partition with negative lookforward.
+ *
+ *     "hello".partition(/l+(?!.*l)/)  #=> ["he", "ll", "o"]
  */
 
 static VALUE
