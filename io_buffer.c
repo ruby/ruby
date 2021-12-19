@@ -83,6 +83,9 @@ io_buffer_map_file(struct rb_io_buffer *data, int descriptor, size_t size, off_t
     if (flags & RB_IO_BUFFER_PRIVATE) {
         access |= FILE_MAP_COPY;
         data->flags |= RB_IO_BUFFER_PRIVATE;
+    } else {
+        // This buffer refers to external data.
+        data->flags |= RB_IO_BUFFER_EXTERNAL;
     }
 
     void *base = MapViewOfFile(mapping, access, (DWORD)(offset >> 32), (DWORD)(offset & 0xFFFFFFFF), size);
@@ -107,6 +110,8 @@ io_buffer_map_file(struct rb_io_buffer *data, int descriptor, size_t size, off_t
         data->flags |= RB_IO_BUFFER_PRIVATE;
     }
     else {
+        // This buffer refers to external data.
+        data->flags |= RB_IO_BUFFER_EXTERNAL;
         access |= MAP_SHARED;
     }
 
@@ -572,7 +577,7 @@ rb_io_buffer_external_p(VALUE self)
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
-    return data->flags & (RB_IO_BUFFER_INTERNAL | RB_IO_BUFFER_MAPPED) ? Qfalse : Qtrue;
+    return data->flags & RB_IO_BUFFER_EXTERNAL ? Qtrue : Qfalse;
 }
 
 static VALUE
@@ -609,12 +614,6 @@ rb_io_buffer_immutable_p(VALUE self)
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
     return data->flags & RB_IO_BUFFER_IMMUTABLE ? Qtrue : Qfalse;
-}
-
-static int
-io_buffer_external_p(enum rb_io_buffer_flags flags)
-{
-    return !(flags & (RB_IO_BUFFER_INTERNAL | RB_IO_BUFFER_MAPPED));
 }
 
 VALUE
@@ -858,7 +857,7 @@ rb_io_buffer_resize(VALUE self, size_t size)
         return;
     }
 
-    if (io_buffer_external_p(data->flags)) {
+    if (data->flags & RB_IO_BUFFER_EXTERNAL) {
         rb_raise(rb_eIOBufferMutationError, "Cannot resize external buffer!");
     }
 
