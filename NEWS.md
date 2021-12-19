@@ -561,8 +561,8 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #15211]: https://bugs.ruby-lang.org/issues/15211
 [Feature #15912]: https://bugs.ruby-lang.org/issues/15912
 [Feature #16043]: https://bugs.ruby-lang.org/issues/16043
-[Feature #16806]: https://bugs.ruby-lang.org/issues/16806
 [Feature #16182]: https://bugs.ruby-lang.org/issues/16182
+[Feature #16806]: https://bugs.ruby-lang.org/issues/16806
 [Feature #17312]: https://bugs.ruby-lang.org/issues/17312
 [Feature #17327]: https://bugs.ruby-lang.org/issues/17327
 [Feature #17370]: https://bugs.ruby-lang.org/issues/17370
