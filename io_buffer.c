@@ -265,6 +265,28 @@ rb_io_buffer_type_allocate(VALUE self)
     return instance;
 }
 
+/*
+ *  call-seq: IO::Buffer.for(string) -> io_buffer
+ *
+ *  Creates read-write IO::Buffer from string's memory. The buffer remains associated
+ *  with the string, and writing to a buffer will reflect on string's content.
+ *
+ *  Note that as IO::Buffer is a low-level mechanism for efficient I/O operations, it
+ *  will ignore the string being frozen.
+ *
+ *    str = 'test'
+ *    buf = IO::Buffer.for(str)
+ *    buf.external? #=> true
+ *
+ *    buf.to_str(0, 1)
+ *    # => "t"
+ *    buf.copy("b", 0)
+ *    str
+ *    #=> "best"
+ *
+ *    buf.resize(100, 0)
+ *    # in `resize': Cannot resize external buffer! (RuntimeError)
+ */
 VALUE
 rb_io_buffer_type_for(VALUE klass, VALUE string)
 {
@@ -314,6 +336,40 @@ rb_io_buffer_map(VALUE io, size_t size, off_t offset, enum rb_io_buffer_flags fl
     return instance;
 }
 
+/*
+ *  call-seq: IO::Buffer.map(file_io, [size, [offset, [flags]]]) -> io_buffer
+ *
+ *  Create an IO::Buffer for reading from +file_io+ by memory-mapping the file.
+ *  +file_io+ should be a +File+ instance, opened for reading.
+ *
+ *  Optional +size+ and +offset+ of mapping can be specified.
+ *
+ *  By default, the buffer would be immutable (read only); to create a writable
+ *  mapping, you need to open a file in read-write mode, and explicitly pass
+ *  +flags+ argument without IO::Buffer::IMMUTABLE.
+ *
+ *     File.write('test.txt', 'test')
+ *
+ *     buf = IO::Buffer.map(File.open('test.txt'))
+ *     #=> #<IO::Buffer 0x00007fc3d7c43000+4 MAPPED IMMUTABLE>
+ *
+ *     buf.immutable?   #=> true
+ *
+ *     buf.to_str
+ *     # => "test"
+ *
+ *     buf.copy('b', 0)
+ *     # `copy': Buffer is immutable! (RuntimeError)
+ *
+ *     # create mutable mapping: length 4 bytes, offset 0, flags 0 (no IMMUTABLE)
+ *     buf = IO::Buffer.map(File.open('test.txt', 'r+'), 4, 0, 0)
+ *     buf.copy('b', 0)
+ *     # => 1
+ *
+ *     # Check it
+ *     File.read('test.text')
+ *     # => "best"
+ */
 static VALUE
 io_buffer_map(int argc, VALUE *argv, VALUE klass)
 {
@@ -368,6 +424,32 @@ io_flags_for_size(size_t size)
     return RB_IO_BUFFER_INTERNAL;
 }
 
+/*
+ *  call-seq: IO::Buffer.new(size, [flags]) -> io_buffer
+ *
+ *  Create a new empty IO::Buffer of +size+ bytes, filled with 0s.
+ *  By default, the buffer will be _internal_: directly allocated chunk
+ *  of the memory. But if the requested +size+ is more than OS-specific
+ *  IO::Bufer::PAGE_SIZE, the buffer would be allocated using the
+ *  virtual memory mechanism (anonymous +mmap+ on Unix, +VirtualAlloc+
+ *  on Windows). The behavior can be forced by passing IO::Buffer::MAPPED
+ *  as a second parameter.
+ *
+ *  Examples
+ *
+ *    buf = IO::Buffer.new(4)
+ *    # =>
+ *    #  #<IO::Buffer 0x000055b34497ea10+4 INTERNAL>
+ *    #  0x00000000  00 00 00 00                                     ....
+ *
+ *    buf.to_str(0, 1) # => "\x00"
+ *
+ *    buf.copy("test", 0)
+ *    buf
+ *    #  =>
+ *    # #<IO::Buffer 0x000055b34497ea10+4 INTERNAL>
+ *    # 0x00000000  74 65 73 74                                     test
+ */
 VALUE
 rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -442,6 +524,15 @@ io_buffer_validate(struct rb_io_buffer *data)
     }
 }
 
+/*
+ *  call-seq: to_s -> string
+ *
+ *  Short representation of the buffer.
+ *
+ *    puts IO::Buffer.new(4) # uses to_s internally
+ *    # #<IO::Buffer 0x000055769f41b1a0+4 INTERNAL>
+ *
+ */
 VALUE
 rb_io_buffer_to_s(VALUE self)
 {
@@ -538,6 +629,13 @@ rb_io_buffer_inspect(VALUE self)
     return result;
 }
 
+/*
+ *  call-seq: size -> integer
+ *
+ *  Returns the size of the buffer that was explicitly set (on creation with ::new
+ *  or on #resize), or deduced on buffer's creation from string or file.
+ *
+ */
 VALUE
 rb_io_buffer_size(VALUE self)
 {
@@ -547,6 +645,11 @@ rb_io_buffer_size(VALUE self)
     return SIZET2NUM(data->size);
 }
 
+/*
+ *  call-seq: null? -> true or false
+ *
+ *  If the buffer was freed with #free.
+ */
 static VALUE
 rb_io_buffer_null_p(VALUE self)
 {
@@ -556,6 +659,13 @@ rb_io_buffer_null_p(VALUE self)
     return data->base ? Qfalse : Qtrue;
 }
 
+/*
+ *  call-seq: external? -> true or false
+ *
+ *  If the buffer is _external_, meaning it is created from the string via
+ *  ::for, and associated with this string. External buffer can't be resized.
+ *
+ */
 static VALUE
 rb_io_buffer_external_p(VALUE self)
 {
@@ -565,6 +675,14 @@ rb_io_buffer_external_p(VALUE self)
     return data->flags & (RB_IO_BUFFER_INTERNAL | RB_IO_BUFFER_MAPPED) ? Qfalse : Qtrue;
 }
 
+/*
+ *  call-seq: internal? -> true or false
+ *
+ *  If the buffer is _internal_, meaning it is not assocated with file or
+ *  string (created with ::new), and it was not requested to be mapped on
+ *  creation. See ::new for details.
+ *
+ */
 static VALUE
 rb_io_buffer_internal_p(VALUE self)
 {
@@ -574,6 +692,15 @@ rb_io_buffer_internal_p(VALUE self)
     return data->flags & RB_IO_BUFFER_INTERNAL ? Qtrue : Qfalse;
 }
 
+/*
+ *  call-seq: mapped? -> true or false
+ *
+ *  If the buffer is _mapped_: either it is created with ::map, and maps to
+ *  some file contents, or it is created by ::new with the IO::Buffer::MAPPED flag.
+ *  From the Ruby layer's point of view, there is no behavior differences specific
+ *  for mapped buffers.
+ *
+ */
 static VALUE
 rb_io_buffer_mapped_p(VALUE self)
 {
@@ -583,6 +710,13 @@ rb_io_buffer_mapped_p(VALUE self)
     return data->flags & RB_IO_BUFFER_MAPPED ? Qtrue : Qfalse;
 }
 
+/*
+ *  call-seq: locked? -> true or false
+ *
+ *  If the buffer is locked (is inside #locked block execution). Locked buffer can't
+ *  be resized or freed, and another lock can't be acquired on it.
+ *
+ */
 static VALUE
 rb_io_buffer_locked_p(VALUE self)
 {
@@ -592,6 +726,15 @@ rb_io_buffer_locked_p(VALUE self)
     return data->flags & RB_IO_BUFFER_LOCKED ? Qtrue : Qfalse;
 }
 
+/*
+ *  call-seq: immutable? -> true or false
+ *
+ *  If the buffer is immutable (read only). Immutable buffers are created from
+ *  files by ::map, see its docs for details of creation of mutable and immutable
+ *  buffers (file mappings). The only operations possible with immutable buffer
+ *  are those not attempting to change its content, e.g. #get, #to_str and similar.
+ *
+ */
 static VALUE
 rb_io_buffer_immutable_p(VALUE self)
 {
@@ -637,6 +780,30 @@ rb_io_buffer_unlock(VALUE self)
     return self;
 }
 
+/*
+ *  call-seq: locked { ... }
+ *
+ *  Allows to process a buffer in exclusive way, for thread-safety. While the block
+ *  is performed, the buffer is considered locked, and no other code can enter
+ *  the lock. Also, locked buffer can't be changed with #resize or #free.
+ *
+ *    buf = IO::Buffer.new(4)
+ *    buf.locked? #=> false
+ *
+ *    buf.locked do
+ *      buf.set(:U8, 1, 111) # success
+ *
+ *      # Not available from inside the lock, or from another thread on the locked buffer
+ *      # All of it would raise
+ *      #   Buffer is locked! (RuntimeError)
+ *      buf.locked { }
+ *      buf.resize(3, 0)
+ *      buf.free
+ *    end
+ *
+ *    # buffer is unlocked again
+ *    buf.free # sucess
+ */
 VALUE
 rb_io_buffer_locked(VALUE self)
 {
@@ -656,6 +823,27 @@ rb_io_buffer_locked(VALUE self)
     return result;
 }
 
+/*
+ *  call-seq: free -> self
+ *
+ *  Free buffer. This means:
+ *  * for a buffer mapped from file: unmap
+ *  * for a buffer created from scratch: free memory
+ *  * for a buffer created from string: undo the association
+ *
+ *  After the buffer is freed, no further operations can't be performed on it.
+ *
+ *     buf = IO::Buffer.for('test')
+ *     buf.free
+ *     # => #<IO::Buffer 0x0000000000000000+4 SLICE INVALID>
+ *     buf.get(:U8, 0)
+ *     # in `get': Buffer has been invalidated! (RuntimeError)
+ *     buf.to_str
+ *     # => ""
+ *     buf.null?
+ *     # => true
+ *
+ */
 VALUE
 rb_io_buffer_free(VALUE self)
 {
@@ -679,6 +867,45 @@ rb_io_buffer_validate(struct rb_io_buffer *data, size_t offset, size_t length)
     }
 }
 
+/*
+ *  call-seq: slice(offset, length) -> io_buffer
+ *
+ *  Produce another IO::Buffer which is a slice (or view into) the current one
+ *  starting at +offset+ bytes and going for +length+ bytes.
+ *
+ *  The slicing happens without copying of memory, and the slice keeps being
+ *  associated with the original buffer's source (string, or file), if any.
+ *
+ *  Raises RuntimeError if the <tt>offset+length<tt> is out of the current
+ *  buffer's bounds.
+ *
+ *     str = 'test'
+ *     buf = IO::Buffer.for(str)
+ *
+ *     slice = buf.slice(1, 2)
+ *     # =>
+ *     #  #<IO::Buffer 0x00007fc3d34ebc49+2 SLICE>
+ *     #  0x00000000  65 73                                           es
+ *
+ *     # Put "o" into 0s position of the slice
+ *     slice.copy('o', 0)
+ *     slice
+ *     # =>
+ *     #  #<IO::Buffer 0x00007fc3d34ebc49+2 SLICE>
+ *     #  0x00000000  6f 73                                           os
+ *
+ *
+ *     # it is also visible at position 1 of the original buffer
+ *     buf
+ *     # =>
+ *     #  #<IO::Buffer 0x00007fc3d31e2d80+4 SLICE>
+ *     #  0x00000000  74 6f 73 74                                     tost
+ *
+ *     # ...and original string
+ *     str
+ *     # => tost
+ *
+ */
 VALUE
 rb_io_buffer_slice(VALUE self, VALUE _offset, VALUE _length)
 {
@@ -707,6 +934,20 @@ rb_io_buffer_slice(VALUE self, VALUE _offset, VALUE _length)
     return instance;
 }
 
+/*
+ *  call-seq: to_str([offset, [length]]) -> string
+ *
+ *  Read a chunk or all of the buffer into a string.
+ *
+ *     buf = IO::Buffer.for('test')
+ *     buf.to_str
+ *     #=> "test"
+ *     buf.to_str(2)
+ *     #=> "st"
+ *     buf.to_str(2, 1)
+ *     #=> "s"
+ *
+ */
 VALUE
 rb_io_buffer_to_str(int argc, VALUE *argv, VALUE self)
 {
@@ -807,6 +1048,62 @@ rb_io_buffer_copy(VALUE self, VALUE source, size_t offset)
     return source_size;
 }
 
+/*
+ *  call-seq:
+ *    copy(string, offset) -> size
+ *    copy(io_buffer, offset) -> size
+ *
+ *  Efficiently copy data from source (String or another IO::Buffer) into the buffer,
+ *  at +offset+ using OS memory-copying mechanisms.
+ *
+ *    buf = IO::Buffer.new(32)
+ *    #  =>
+ *    # #<IO::Buffer 0x0000555f5ca22520+32 INTERNAL>
+ *    # 0x00000000  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ................
+ *    # 0x00000010  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ................  *
+ *
+ *    buf.copy("test", 8)
+ *    # => 4 -- size of data copied
+ *    buf
+ *    #  =>
+ *    # #<IO::Buffer 0x0000555f5cf8fe40+32 INTERNAL>
+ *    # 0x00000000  00 00 00 00 00 00 00 00 74 65 73 74 00 00 00 00 ........test....
+ *    # 0x00000010  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ................ *
+ *
+ *  #copy can be used to put data into strings associated with buffer:
+ *
+ *    str = "data:    "
+ *    # => "data:    "
+ *    buf = IO::Buffer.for(str)
+ *    buf.copy("test", 5)
+ *    # => 4
+ *    str
+ *    # => "data:test"
+ *
+ *  Attempt to copy into an immutable buffer will fail:
+ *
+ *    File.write('test.txt', 'test')
+ *    buf = IO::Buffer.map(File.open('test.txt'))
+ *    buf.copy("test", 8)
+ *    # in `copy': Buffer is immutable! (RuntimeError)
+ *
+ *  See ::map for details of creation of mutable file mappings, this will
+ *  work:
+ *
+ *    buf = IO::Buffer.map(File.open('test.txt', 'r+'), 4, 0, 0)
+ *    buf.copy("boom", 0)
+ *    # => 4
+ *    File.read('test.txt')
+ *    # => "boom"
+ *
+ *  Attempt to copy the data which will need place outside of buffer's
+ *  bounds will fail:
+ *
+ *    buf = IO::Buffer.new(2)
+ *    buf.copy('test', 0)
+ *    # in `copy': Specified offset + length exceeds source size! (RuntimeError)
+ *
+ */
 static VALUE
 io_buffer_copy(VALUE self, VALUE source, VALUE offset)
 {
@@ -815,6 +1112,24 @@ io_buffer_copy(VALUE self, VALUE source, VALUE offset)
     return RB_SIZE2NUM(size);
 }
 
+/*
+ *  call-seq: transfer -> new_io_buffer
+ *
+ *  Transfers ownership to a new buffer, deallocating the current one.
+ *
+ *     buf = IO::Buffer.new('test')
+ *     other = buf.transfer
+ *     other
+ *     #  =>
+ *     # #<IO::Buffer 0x00007f136a15f7b0+4 SLICE>
+ *     # 0x00000000  74 65 73 74                                     test
+ *     buf
+ *     #  =>
+ *     # #<IO::Buffer 0x0000000000000000+0 NULL>
+ *     buf.null?
+ *     # => true
+ *
+ */
 VALUE
 rb_io_buffer_transfer(VALUE self)
 {
@@ -916,6 +1231,25 @@ rb_io_buffer_resize(VALUE self, size_t size)
     io_buffer_resize_copy(data, size);
 }
 
+/*
+ *  call-seq: resize(new_size) -> self
+ *
+ *  Resizes a buffer to a +new_size+ bytes, preserving its content.
+ *  Depending on the old and new size, the memory area associated with
+ *  the buffer might be either extended, or rellocated at different
+ *  address with content being copied.
+ *
+ *    buf = IO::Buffer.new(4)
+ *    buf.copy("test", 0)
+ *    buf.resize(8) # resize to 8 bytes
+ *    #  =>
+ *    # #<IO::Buffer 0x0000555f5d1a1630+8 INTERNAL>
+ *    # 0x00000000  74 65 73 74 00 00 00 00                         test....
+ *
+ *  External buffer (created with ::for), and locked buffer
+ *  can not be resized.
+ *
+ */
 static VALUE
 io_buffer_resize(VALUE self, VALUE size)
 {
@@ -924,6 +1258,11 @@ io_buffer_resize(VALUE self, VALUE size)
     return self;
 }
 
+/*
+ * call-seq: <=>(other) -> true or false
+ *
+ * Buffers are compared by size and exact contents of the memory they are pointing two.
+ */
 static VALUE
 rb_io_buffer_compare(VALUE self, VALUE other)
 {
@@ -1077,6 +1416,39 @@ rb_io_buffer_get(const void* base, size_t size, ID type, size_t offset)
     rb_raise(rb_eArgError, "Invalid type name!");
 }
 
+/*
+ *  call-seq: get(type, offset) -> numeric
+ *
+ *  Read from buffer a value of +type+ at +offset+. +type+ should be one
+ *  of symbols:
+ *
+ *  * +:U8+: unsigned integer, 1 byte
+ *  * +:S8+: signed integer, 1 byte
+ *  * +:u16+: unsigned integer, 2 bytes, little-endian
+ *  * +:U16+: unsigned integer, 2 bytes, big-endian
+ *  * +:s16+: signed integer, 2 bytes, little-endian
+ *  * +:S16+: signed integer, 2 bytes, big-endian
+ *  * +:u32+: unsigned integer, 4 bytes, little-endian
+ *  * +:U32+: unsigned integer, 4 bytes, big-endian
+ *  * +:s32+: signed integer, 4 bytes, little-endian
+ *  * +:S32+: signed integer, 4 bytes, big-endian
+ *  * +:u64+: unsigned integer, 8 bytes, little-endian
+ *  * +:U64+: unsigned integer, 8 bytes, big-endian
+ *  * +:s64+: signed integer, 8 bytes, little-endian
+ *  * +:S64+: signed integer, 8 bytes, big-endian
+ *  * +:f32+: float, 4 bytes, little-endian
+ *  * +:F32+: float, 4 bytes, big-endian
+ *  * +:f64+: double, 8 bytes, little-endian
+ *  * +:F64+: double, 8 bytes, big-endian
+ *
+ *  Example:
+ *
+ *    str = [1.5].pack('f')
+ *    # => "\x00\x00\xC0?"
+ *    IO::Buffer.for(str).get(:f32, 0)
+ *    # => 1.5
+ *
+ */
 static VALUE
 io_buffer_get(VALUE self, VALUE type, VALUE _offset)
 {
@@ -1120,6 +1492,33 @@ rb_io_buffer_set(const void* base, size_t size, ID type, size_t offset, VALUE va
     rb_raise(rb_eArgError, "Invalid type name!");
 }
 
+/*
+ *  call-seq: set(type, offset, value) -> offset
+ *
+ *  Write to a buffer a +value+ of +type+ at +offset+. +type+ should be one of symbols described in
+ *  #get docs.
+ *
+ *    buf = IO::Buffer.new(8)
+ *    #  =>
+ *    # #<IO::Buffer 0x0000555f5c9a2d50+8 INTERNAL>
+ *    # 0x00000000  00 00 00 00 00 00 00 00
+ *    buf.set(:U8, 1, 111)
+ *    # => 1
+ *    buf
+ *    #  =>
+ *    # #<IO::Buffer 0x0000555f5c9a2d50+8 INTERNAL>
+ *    # 0x00000000  00 6f 00 00 00 00 00 00                         .o......
+ *
+ *  Note that if the +type+ is integer and +value+ is Float, the implicit truncation is performed:
+ *
+ *    buf = IO::Buffer.new(8)
+ *    buf.set(:U32, 0, 2.5)
+ *    buf
+ *    #   =>
+ *    #  #<IO::Buffer 0x0000555f5c9a2d50+8 INTERNAL>
+ *    #  0x00000000  00 00 00 02 00 00 00 00
+ *    #                       ^^ the same as if we'd pass just integer 2
+ */
 static VALUE
 io_buffer_set(VALUE self, VALUE type, VALUE _offset, VALUE value)
 {
@@ -1149,6 +1548,37 @@ rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length)
     memset((char*)base + offset, value, length);
 }
 
+/*
+ * call-seq: clear(value = 0, [offset, length]) -> self
+ *
+ * Fill buffer with +value+, starting with +offset+ and going for +length+ bytes.
+ *
+ *    buf = IO::Buffer.for('test')
+ *    # =>
+ *    #   <IO::Buffer 0x00007fca40087c38+4 SLICE>
+ *    #   0x00000000  74 65 73 74         test
+ *
+ *    buf.clear
+ *    # =>
+ *    #   <IO::Buffer 0x00007fca40087c38+4 SLICE>
+ *    #   0x00000000  00 00 00 00         ....
+ *
+ *    buf.clear(1) # fill with 1
+ *    # =>
+ *    #   <IO::Buffer 0x00007fca40087c38+4 SLICE>
+ *    #   0x00000000  01 01 01 01         ....
+ *
+ *    buf.clear(2, 1, 2) # fill with 2, starting from offset 1, for 2 bytes
+ *    # =>
+ *    #   <IO::Buffer 0x00007fca40087c38+4 SLICE>
+ *    #   0x00000000  01 02 02 01         ....
+ *
+ * By default, fills entire buffer. Note that if +offset+ is provided, +length+
+ * *should* be provided.
+ *
+ *    buf.clear(2, 1) # fill with 2, starting from offset 1?
+ *    # `clear': Offset + length out of bounds! (RuntimeError)
+ */
 static VALUE
 io_buffer_clear(int argc, VALUE *argv, VALUE self)
 {
@@ -1203,6 +1633,89 @@ size_t io_buffer_default_size(size_t page_size) {
     return platform_agnostic_default_size;
 }
 
+/*
+ *  Document-class: IO::Buffer
+ *
+ *  IO::Buffer is a low-level efficient buffer for input/output. There are three
+ *  ways of using buffer:
+ *
+ *  * Create an empty one with ::new, fill it with data using #copy or #set,
+ *    get data with #to_str;
+ *  * Create a buffer mapped to some string with ::for, then it could be used
+ *    both for reading with #to_str or #get, and writing (writing will change
+ *    the source string, too)
+ *  * Create a buffer mapped to some file with ::map, then it could be used for
+ *    reading and writing.
+ *
+ *  Interaction with string and file memory is performed by efficient low-level
+ *  C mechanisms like `memcpy`.
+ *
+ *  The class is meant to be an utility for implementing more high-level mechanisms
+ *  like Fiber::SchedulerInterface#io_read and Fiber::SchedulerInterface#io_write.
+ *
+ *  <b>Examples of usage:</b>
+ *
+ *  Empty buffer:
+ *
+ *    buf = IO::Buffer.new(8)  # create empty 8-byte buffer
+ *    #  =>
+ *    # #<IO::Buffer 0x0000555f5d1a5c50+8 INTERNAL>
+ *    # ...
+ *    buf
+ *    #  =>
+ *    # <IO::Buffer 0x0000555f5d156ab0+8 INTERNAL>
+ *    # 0x00000000  00 00 00 00 00 00 00 00
+ *    buf.copy('test', 2) # put there bytes of the "test" string, starting from offset 2
+ *    # => 4
+ *    buf.to_str  # get the result
+ *    # => "\x00\x00test\x00\x00"
+ *
+ *  \Buffer from string:
+ *
+ *    str = 'data'
+ *    buf = IO::Buffer.new(str)
+ *    #  =>
+ *    # #<IO::Buffer 0x00007f3f02be9b18+4 SLICE>
+ *    # ...
+ *    buf
+ *    #  =>
+ *    # #<IO::Buffer 0x00007f3f02be9b18+4 SLICE>
+ *    # 0x00000000  64 61 74 61                                     data
+ *
+ *    buf.to_str(2)  # read content starting from offset 2
+ *    # => "ta"
+ *    buf.copy('---', 1) # write content, starting from offset 1
+ *    # => 3
+ *    buf
+ *    #  =>
+ *    # #<IO::Buffer 0x00007f3f02be9b18+4 SLICE>
+ *    # 0x00000000  64 2d 2d 2d                                     d---
+ *    str  # original string changed, too
+ *    # => "d---"
+ *
+ *  \Buffer from file:
+ *
+ *    File.write('test.txt', 'test data')
+ *    # => 9
+ *    buf = IO::Buffer.map(File.open('test.txt'))
+ *    #  =>
+ *    # #<IO::Buffer 0x00007f3f0768c000+9 MAPPED IMMUTABLE>
+ *    # ...
+ *    buf.to_str(5, 2) # read 2 bytes, starting from offset 5
+ *    # => "da"
+ *    buf.copy('---', 1) # attempt to write
+ *    # in `copy': Buffer is immutable! (RuntimeError)
+ *
+ *    # To create writable file-mapped buffer
+ *    # Open file for read-write, pass size, offset, and flags=0
+ *    buf = IO::Buffer.map(File.open('test.txt', 'r+'), 9, 0, 0)
+ *    buf.copy('---', 1)
+ *    # => 3 -- bytes written
+ *    File.read('test.txt')
+ *    # => "t--- data"
+ *
+ *  <b>The class is experimental.</b>
+ */
 void
 Init_IO_Buffer(void)
 {
