@@ -151,33 +151,6 @@ class Reline::LineEditor
     @screen_size = Reline::IOGate.get_screen_size
     @screen_height = @screen_size.first
     reset_variables(prompt, encoding: encoding)
-    @old_trap = Signal.trap('INT') {
-      clear_dialog
-      if @scroll_partial_screen
-        move_cursor_down(@screen_height - (@line_index - @scroll_partial_screen) - 1)
-      else
-        move_cursor_down(@highest_in_all - @line_index - 1)
-      end
-      Reline::IOGate.move_cursor_column(0)
-      scroll_down(1)
-      case @old_trap
-      when 'DEFAULT', 'SYSTEM_DEFAULT'
-        raise Interrupt
-      when 'IGNORE'
-        # Do nothing
-      when 'EXIT'
-        exit
-      else
-        @old_trap.call
-      end
-    }
-    begin
-      @old_tstp_trap = Signal.trap('TSTP') {
-        Reline::IOGate.ungetc("\C-z".ord)
-        @old_tstp_trap.call if @old_tstp_trap.respond_to?(:call)
-      }
-    rescue ArgumentError
-    end
     Reline::IOGate.set_winch_handler do
       @resized = true
     end
@@ -241,6 +214,36 @@ class Reline::LineEditor
       Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
       @highest_in_this = calculate_height_by_width(prompt_width + @cursor_max)
       @rerender_all = true
+    end
+  end
+
+  def set_signal_handlers
+    @old_trap = Signal.trap('INT') {
+      clear_dialog
+      if @scroll_partial_screen
+        move_cursor_down(@screen_height - (@line_index - @scroll_partial_screen) - 1)
+      else
+        move_cursor_down(@highest_in_all - @line_index - 1)
+      end
+      Reline::IOGate.move_cursor_column(0)
+      scroll_down(1)
+      case @old_trap
+      when 'DEFAULT', 'SYSTEM_DEFAULT'
+        raise Interrupt
+      when 'IGNORE'
+        # Do nothing
+      when 'EXIT'
+        exit
+      else
+        @old_trap.call
+      end
+    }
+    begin
+      @old_tstp_trap = Signal.trap('TSTP') {
+        Reline::IOGate.ungetc("\C-z".ord)
+        @old_tstp_trap.call if @old_tstp_trap.respond_to?(:call)
+      }
+    rescue ArgumentError
     end
   end
 

@@ -290,6 +290,7 @@ module Reline
 
       may_req_ambiguous_char_width
       line_editor.reset(prompt, encoding: Reline::IOGate.encoding)
+      line_editor.set_signal_handlers
       if multiline
         line_editor.multiline_on
         if block_given?
