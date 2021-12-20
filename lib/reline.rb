@@ -161,6 +161,12 @@ module Reline
       @dialog_proc_list << [name_sym, p, context]
     end
 
+    def dialog_proc(name_sym)
+      dialog = @dialog_proc_list.find { |d| d[0] == name_sym }
+      dialog.nil? ? nil : dialog[1]
+      #@dialog_proc_list[name_sym]
+    end
+
     def input=(val)
       raise TypeError unless val.respond_to?(:getc) or val.nil?
       if val.respond_to?(:getc)
@@ -516,6 +522,7 @@ module Reline
   def_single_delegators :core, :last_incremental_search
   def_single_delegators :core, :last_incremental_search=
   def_single_delegators :core, :add_dialog_proc
+  def_single_delegators :core, :dialog_proc
   def_single_delegators :core, :autocompletion, :autocompletion=
 
   def_single_delegators :core, :readmultiline
