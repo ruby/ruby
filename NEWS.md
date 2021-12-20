@@ -379,7 +379,7 @@ Note: We're only listing outstanding class updates.
     * minitest 5.15.0
     * power_assert 2.0.1
     * rake 13.0.6
-    * test-unit 3.5.2
+    * test-unit 3.5.3
     * rexml 3.2.5
     * rbs 1.8.1
     * typeprof 0.20.4
