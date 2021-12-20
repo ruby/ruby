@@ -364,7 +364,9 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "throws a warning if a gem is added twice in Gemfile without version requirements" do
-      install_gemfile <<-G, :raise_on_error => false
+      build_repo2
+
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "rack"
         gem "rack"
@@ -376,7 +378,9 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "throws a warning if a gem is added twice in Gemfile with same versions" do
-      install_gemfile <<-G, :raise_on_error => false
+      build_repo2
+
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "rack", "1.0"
         gem "rack", "1.0"
