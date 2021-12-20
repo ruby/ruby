@@ -168,6 +168,8 @@ class Reline::Windows
   @@input_buf = []
   @@output_buf = []
 
+  @@output = STDOUT
+
   def self.msys_tty?(io = @@hConsoleInputHandle)
     # check if fd is a pipe
     if @@GetFileType.call(io) != FILE_TYPE_PIPE
@@ -313,6 +315,18 @@ class Reline::Windows
   end
 
   def self.get_console_screen_buffer_info
+    # CONSOLE_SCREEN_BUFFER_INFO
+    # [ 0,2] dwSize.X
+    # [ 2,2] dwSize.Y
+    # [ 4,2] dwCursorPositions.X
+    # [ 6,2] dwCursorPositions.Y
+    # [ 8,2] wAttributes
+    # [10,2] srWindow.Left
+    # [12,2] srWindow.Top
+    # [14,2] srWindow.Right
+    # [16,2] srWindow.Bottom
+    # [18,2] dwMaximumWindowSize.X
+    # [20,2] dwMaximumWindowSize.Y
     csbi = 0.chr * 22
     return if @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi) == 0
     csbi
@@ -370,26 +384,45 @@ class Reline::Windows
   end
 
   def self.scroll_down(val)
-    return if val.zero?
-    screen_height = get_screen_size.first
-    val = screen_height - 1 if val > (screen_height - 1)
-    scroll_rectangle = [0, val, get_screen_size.last, get_screen_size.first].pack('s4')
-    destination_origin = 0 # y * 65536 + x
-    fill = [' '.ord, 0].pack('SS')
-    @@ScrollConsoleScreenBuffer.call(@@hConsoleHandle, scroll_rectangle, nil, destination_origin, fill)
+    return if val < 0
+    return unless csbi = get_console_screen_buffer_info
+    buffer_width, x, y, buffer_lines, attributes, window_left, window_top, window_bottom = csbi.unpack('ssssSssx2s')
+    screen_height = window_bottom - window_top + 1
+    val = screen_height if val > screen_height
+
+    if @@legacy_console || window_left != 0
+      # unless ENABLE_VIRTUAL_TERMINAL,
+      # if srWindow.Left != 0 then it's conhost.exe hosted console
+      # and puts "\n" causes horizontal scroll. its glitch.
+      # FYI irb write from culumn 1, so this gives no gain.
+      scroll_rectangle = [0, val, buffer_width, buffer_lines - val].pack('s4')
+      destination_origin = 0 # y * 65536 + x
+      fill = [' '.ord, attributes].pack('SS')
+      @@ScrollConsoleScreenBuffer.call(@@hConsoleHandle, scroll_rectangle, nil, destination_origin, fill)
+    else
+      origin_x = x + 1
+      origin_y = y - window_top + 1
+      @@output.write [
+        (origin_y != screen_height) ? "\e[#{screen_height};H" : nil,
+        "\n" * val,
+        (origin_y != screen_height or !x.zero?) ? "\e[#{origin_y};#{origin_x}H" : nil
+      ].join
+    end
   end
 
   def self.clear_screen
-    return unless csbi = get_console_screen_buffer_info
-    buffer_width = csbi[0, 2].unpack1('S')
-    attributes = csbi[8, 2].unpack1('S')
-    _window_left, window_top, _window_right, window_bottom = *csbi[10, 8].unpack('S*')
-    fill_length = buffer_width * (window_bottom - window_top + 1)
-    screen_topleft = window_top * 65536
-    written = 0.chr * 4
-    @@FillConsoleOutputCharacter.call(@@hConsoleHandle, 0x20, fill_length, screen_topleft, written)
-    @@FillConsoleOutputAttribute.call(@@hConsoleHandle, attributes, fill_length, screen_topleft, written)
-    @@SetConsoleCursorPosition.call(@@hConsoleHandle, screen_topleft)
+    if @@legacy_console
+      return unless csbi = get_console_screen_buffer_info
+      buffer_width, _buffer_lines, attributes, window_top, window_bottom = csbi.unpack('ss@8S@12sx2s')
+      fill_length = buffer_width * (window_bottom - window_top + 1)
+      screen_topleft = window_top * 65536
+      written = 0.chr * 4
+      @@FillConsoleOutputCharacter.call(@@hConsoleHandle, 0x20, fill_length, screen_topleft, written)
+      @@FillConsoleOutputAttribute.call(@@hConsoleHandle, attributes, fill_length, screen_topleft, written)
+      @@SetConsoleCursorPosition.call(@@hConsoleHandle, screen_topleft)
+    else
+      @@output.write "\e[2J" "\e[H"
+    end
   end
 
   def self.set_screen_size(rows, columns)

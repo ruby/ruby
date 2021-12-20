@@ -47,9 +47,19 @@ module OpenSSL::PKey
     # * _pub_bn_ is a OpenSSL::BN, *not* the DH instance returned by
     #   DH#public_key as that contains the DH parameters only.
     def compute_key(pub_bn)
-      peer = dup
-      peer.set_key(pub_bn, nil)
-      derive(peer)
+      # FIXME: This is constructing an X.509 SubjectPublicKeyInfo and is very
+      # inefficient
+      obj = OpenSSL::ASN1.Sequence([
+        OpenSSL::ASN1.Sequence([
+          OpenSSL::ASN1.ObjectId("dhKeyAgreement"),
+          OpenSSL::ASN1.Sequence([
+            OpenSSL::ASN1.Integer(p),
+            OpenSSL::ASN1.Integer(g),
+          ]),
+        ]),
+        OpenSSL::ASN1.BitString(OpenSSL::ASN1.Integer(pub_bn).to_der),
+      ])
+      derive(OpenSSL::PKey.read(obj.to_der))
     end
 
     # :call-seq:
@@ -61,14 +71,29 @@ module OpenSSL::PKey
     # called first in order to generate the per-session keys before performing
     # the actual key exchange.
     #
+    # <b>Deprecated in version 3.0</b>. This method is incompatible with
+    # OpenSSL 3.0.0 or later.
+    #
     # See also OpenSSL::PKey.generate_key.
     #
     # Example:
-    #   dh = OpenSSL::PKey::DH.new(2048)
-    #   public_key = dh.public_key #contains no private/public key yet
-    #   public_key.generate_key!
-    #   puts public_key.private? # => true
+    #   # DEPRECATED USAGE: This will not work on OpenSSL 3.0 or later
+    #   dh0 = OpenSSL::PKey::DH.new(2048)
+    #   dh = dh0.public_key # #public_key only copies the DH parameters (contrary to the name)
+    #   dh.generate_key!
+    #   puts dh.private? # => true
+    #   puts dh0.pub_key == dh.pub_key #=> false
+    #
+    #   # With OpenSSL::PKey.generate_key
+    #   dh0 = OpenSSL::PKey::DH.new(2048)
+    #   dh = OpenSSL::PKey.generate_key(dh0)
+    #   puts dh0.pub_key == dh.pub_key #=> false
     def generate_key!
+      if OpenSSL::OPENSSL_VERSION_NUMBER >= 0x30000000
+        raise DHError, "OpenSSL::PKey::DH is immutable on OpenSSL 3.0; " \
+        "use OpenSSL::PKey.generate_key instead"
+      end
+
       unless priv_key
         tmp = OpenSSL::PKey.generate_key(self)
         set_key(tmp.pub_key, tmp.priv_key)
@@ -249,9 +274,14 @@ module OpenSSL::PKey
     # This method is provided for backwards compatibility, and calls #derive
     # internally.
     def dh_compute_key(pubkey)
-      peer = OpenSSL::PKey::EC.new(group)
-      peer.public_key = pubkey
-      derive(peer)
+      obj = OpenSSL::ASN1.Sequence([
+        OpenSSL::ASN1.Sequence([
+          OpenSSL::ASN1.ObjectId("id-ecPublicKey"),
+          group.to_der,
+        ]),
+        OpenSSL::ASN1.BitString(pubkey.to_octet_string(:uncompressed)),
+      ])
+      derive(OpenSSL::PKey.read(obj.to_der))
     end
   end
 

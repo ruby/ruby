@@ -893,14 +893,12 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       end
     end
 
-    begin
-      sock = TCPSocket.new("127.0.0.1", port)
-      sock.puts "abc"
-    ensure
-      sock&.close
-    end
+    sock = TCPSocket.new("127.0.0.1", port)
+    sock << "\x00" * 1024
 
     assert t.join
+  ensure
+    sock&.close
     server.close
   end
 
@@ -1211,46 +1209,51 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_options_disable_versions
-    # Note: Use of these OP_* flags has been deprecated since OpenSSL 1.1.0.
+    # It's recommended to use SSLContext#{min,max}_version= instead in real
+    # applications. The purpose of this test case is to check that SSL options
+    # are properly propagated to OpenSSL library.
     supported = check_supported_protocol_versions
-
-    if supported.include?(OpenSSL::SSL::TLS1_1_VERSION) &&
-        supported.include?(OpenSSL::SSL::TLS1_2_VERSION)
-      # Server disables ~ TLS 1.1
-      ctx_proc = proc { |ctx|
-        ctx.options |= OpenSSL::SSL::OP_NO_SSLv2 | OpenSSL::SSL::OP_NO_SSLv3 |
-          OpenSSL::SSL::OP_NO_TLSv1 | OpenSSL::SSL::OP_NO_TLSv1_1
-      }
-      start_server(ctx_proc: ctx_proc, ignore_listener_error: true) { |port|
-        # Client only supports TLS 1.1
-        ctx1 = OpenSSL::SSL::SSLContext.new
-        ctx1.min_version = ctx1.max_version = OpenSSL::SSL::TLS1_1_VERSION
-        assert_handshake_error { server_connect(port, ctx1) { } }
-
-        # Client only supports TLS 1.2
-        ctx2 = OpenSSL::SSL::SSLContext.new
-        ctx2.min_version = ctx2.max_version = OpenSSL::SSL::TLS1_2_VERSION
-        assert_nothing_raised { server_connect(port, ctx2) { } }
-      }
-
-      # Server only supports TLS 1.1
-      ctx_proc = proc { |ctx|
-        ctx.min_version = ctx.max_version = OpenSSL::SSL::TLS1_1_VERSION
-      }
-      start_server(ctx_proc: ctx_proc, ignore_listener_error: true) { |port|
-        # Client disables TLS 1.1
-        ctx1 = OpenSSL::SSL::SSLContext.new
-        ctx1.options |= OpenSSL::SSL::OP_NO_TLSv1_1
-        assert_handshake_error { server_connect(port, ctx1) { } }
-
-        # Client disables TLS 1.2
-        ctx2 = OpenSSL::SSL::SSLContext.new
-        ctx2.options |= OpenSSL::SSL::OP_NO_TLSv1_2
-        assert_nothing_raised { server_connect(port, ctx2) { } }
-      }
-    else
-      pend "TLS 1.1 and TLS 1.2 must be supported; skipping"
+    if !defined?(OpenSSL::SSL::TLS1_3_VERSION) ||
+        !supported.include?(OpenSSL::SSL::TLS1_2_VERSION) ||
+        !supported.include?(OpenSSL::SSL::TLS1_3_VERSION) ||
+        !defined?(OpenSSL::SSL::OP_NO_TLSv1_3) # LibreSSL < 3.4
+      pend "this test case requires both TLS 1.2 and TLS 1.3 to be supported " \
+        "and enabled by default"
     end
+
+    # Server disables TLS 1.2 and earlier
+    ctx_proc = proc { |ctx|
+      ctx.options |= OpenSSL::SSL::OP_NO_SSLv2 | OpenSSL::SSL::OP_NO_SSLv3 |
+        OpenSSL::SSL::OP_NO_TLSv1 | OpenSSL::SSL::OP_NO_TLSv1_1 |
+        OpenSSL::SSL::OP_NO_TLSv1_2
+    }
+    start_server(ctx_proc: ctx_proc, ignore_listener_error: true) { |port|
+      # Client only supports TLS 1.2
+      ctx1 = OpenSSL::SSL::SSLContext.new
+      ctx1.min_version = ctx1.max_version = OpenSSL::SSL::TLS1_2_VERSION
+      assert_handshake_error { server_connect(port, ctx1) { } }
+
+      # Client only supports TLS 1.3
+      ctx2 = OpenSSL::SSL::SSLContext.new
+      ctx2.min_version = ctx2.max_version = OpenSSL::SSL::TLS1_3_VERSION
+      assert_nothing_raised { server_connect(port, ctx2) { } }
+    }
+
+    # Server only supports TLS 1.2
+    ctx_proc = proc { |ctx|
+      ctx.min_version = ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+    }
+    start_server(ctx_proc: ctx_proc, ignore_listener_error: true) { |port|
+      # Client doesn't support TLS 1.2
+      ctx1 = OpenSSL::SSL::SSLContext.new
+      ctx1.options |= OpenSSL::SSL::OP_NO_TLSv1_2
+      assert_handshake_error { server_connect(port, ctx1) { } }
+
+      # Client supports TLS 1.2 by default
+      ctx2 = OpenSSL::SSL::SSLContext.new
+      ctx2.options |= OpenSSL::SSL::OP_NO_TLSv1_3
+      assert_nothing_raised { server_connect(port, ctx2) { } }
+    }
   end
 
   def test_ssl_methods_constant

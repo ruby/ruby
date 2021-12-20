@@ -13,21 +13,23 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
       # FIPS-selftest failure on some environment, so skip for now.
       next if ["Oakley", "X25519"].any? { |n| curve_name.start_with?(n) }
 
-      key = OpenSSL::PKey::EC.new(curve_name)
-      key.generate_key!
-
+      key = OpenSSL::PKey::EC.generate(curve_name)
       assert_predicate key, :private?
       assert_predicate key, :public?
       assert_nothing_raised { key.check_key }
     end
 
-    key1 = OpenSSL::PKey::EC.new("prime256v1").generate_key!
+    key1 = OpenSSL::PKey::EC.generate("prime256v1")
 
-    key2 = OpenSSL::PKey::EC.new
-    key2.group = key1.group
-    key2.private_key = key1.private_key
-    key2.public_key = key1.public_key
-    assert_equal key1.to_der, key2.to_der
+    # PKey is immutable in OpenSSL >= 3.0; constructing an empty EC object is
+    # deprecated
+    if !openssl?(3, 0, 0)
+      key2 = OpenSSL::PKey::EC.new
+      key2.group = key1.group
+      key2.private_key = key1.private_key
+      key2.public_key = key1.public_key
+      assert_equal key1.to_der, key2.to_der
+    end
 
     key3 = OpenSSL::PKey::EC.new(key1)
     assert_equal key1.to_der, key3.to_der
@@ -37,10 +39,14 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
 
     key5 = key1.dup
     assert_equal key1.to_der, key5.to_der
-    key_tmp = OpenSSL::PKey::EC.new("prime256v1").generate_key!
-    key5.private_key = key_tmp.private_key
-    key5.public_key = key_tmp.public_key
-    assert_not_equal key1.to_der, key5.to_der
+
+    # PKey is immutable in OpenSSL >= 3.0; EC object should not be modified
+    if !openssl?(3, 0, 0)
+      key_tmp = OpenSSL::PKey::EC.generate("prime256v1")
+      key5.private_key = key_tmp.private_key
+      key5.public_key = key_tmp.public_key
+      assert_not_equal key1.to_der, key5.to_der
+    end
   end
 
   def test_generate
@@ -52,6 +58,13 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal(true, ec.private?)
   end
 
+  def test_generate_key
+    ec = OpenSSL::PKey::EC.new("prime256v1")
+    assert_equal false, ec.private?
+    ec.generate_key!
+    assert_equal true, ec.private?
+  end if !openssl?(3, 0, 0)
+
   def test_marshal
     key = Fixtures.pkey("p256")
     deserialized = Marshal.load(Marshal.dump(key))
@@ -60,22 +73,26 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   end
 
   def test_check_key
-    key = OpenSSL::PKey::EC.new("prime256v1").generate_key!
-    assert_equal(true, key.check_key)
-    assert_equal(true, key.private?)
-    assert_equal(true, key.public?)
-    key2 = OpenSSL::PKey::EC.new(key.group)
-    assert_equal(false, key2.private?)
-    assert_equal(false, key2.public?)
-    key2.public_key = key.public_key
-    assert_equal(false, key2.private?)
-    assert_equal(true, key2.public?)
-    key2.private_key = key.private_key
+    key0 = Fixtures.pkey("p256")
+    assert_equal(true, key0.check_key)
+    assert_equal(true, key0.private?)
+    assert_equal(true, key0.public?)
+
+    key1 = OpenSSL::PKey.read(key0.public_to_der)
+    assert_equal(true, key1.check_key)
+    assert_equal(false, key1.private?)
+    assert_equal(true, key1.public?)
+
+    key2 = OpenSSL::PKey.read(key0.private_to_der)
     assert_equal(true, key2.private?)
     assert_equal(true, key2.public?)
     assert_equal(true, key2.check_key)
-    key2.private_key += 1
-    assert_raise(OpenSSL::PKey::ECError) { key2.check_key }
+
+    # EC#private_key= is deprecated in 3.0 and won't work on OpenSSL 3.0
+    if !openssl?(3, 0, 0)
+      key2.private_key += 1
+      assert_raise(OpenSSL::PKey::ECError) { key2.check_key }
+    end
   end
 
   def test_sign_verify
@@ -107,7 +124,7 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal [zIUT].pack("H*"), a.derive(b)
 
     assert_equal a.derive(b), a.dh_compute_key(b.public_key)
-  end
+  end if !openssl?(3, 0, 0) # TODO: Test it without using #private_key=
 
   def test_sign_verify_raw
     key = Fixtures.pkey("p256")
@@ -136,7 +153,7 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   end
 
   def test_dsa_sign_asn1_FIPS186_3
-    key = OpenSSL::PKey::EC.new("prime256v1").generate_key!
+    key = OpenSSL::PKey::EC.generate("prime256v1")
     size = key.group.order.num_bits / 8 + 1
     dgst = (1..size).to_a.pack('C*')
     sig = key.dsa_sign_asn1(dgst)
@@ -145,8 +162,8 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   end
 
   def test_dh_compute_key
-    key_a = OpenSSL::PKey::EC.new("prime256v1").generate_key!
-    key_b = OpenSSL::PKey::EC.new(key_a.group).generate_key!
+    key_a = OpenSSL::PKey::EC.generate("prime256v1")
+    key_b = OpenSSL::PKey::EC.generate(key_a.group)
 
     pub_a = key_a.public_key
     pub_b = key_b.public_key
@@ -276,7 +293,7 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
 
   def test_ec_point
     group = OpenSSL::PKey::EC::Group.new("prime256v1")
-    key = OpenSSL::PKey::EC.new(group).generate_key!
+    key = OpenSSL::PKey::EC.generate(group)
     point = key.public_key
 
     point2 = OpenSSL::PKey::EC::Point.new(group, point.to_bn)

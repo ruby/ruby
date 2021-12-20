@@ -425,27 +425,27 @@ E
 
   describe "subcommands" do
     it "list" do
-      bundle "config list"
-      expect(out).to eq "Settings are listed in order of priority. The top value will be used.\nspec_run\nSet via BUNDLE_SPEC_RUN: \"true\""
+      bundle "config list", :env => { "BUNDLE_FOO" => "bar" }
+      expect(out).to eq "Settings are listed in order of priority. The top value will be used.\nfoo\nSet via BUNDLE_FOO: \"bar\""
 
-      bundle "config list", :parseable => true
-      expect(out).to eq "spec_run=true"
+      bundle "config list", :env => { "BUNDLE_FOO" => "bar" }, :parseable => true
+      expect(out).to eq "foo=bar"
     end
 
     it "list with credentials" do
       bundle "config list", :env => { "BUNDLE_GEMS__MYSERVER__COM" => "user:password" }
-      expect(out).to eq "Settings are listed in order of priority. The top value will be used.\ngems.myserver.com\nSet via BUNDLE_GEMS__MYSERVER__COM: \"user:[REDACTED]\"\n\nspec_run\nSet via BUNDLE_SPEC_RUN: \"true\""
+      expect(out).to eq "Settings are listed in order of priority. The top value will be used.\ngems.myserver.com\nSet via BUNDLE_GEMS__MYSERVER__COM: \"user:[REDACTED]\""
 
       bundle "config list", :parseable => true, :env => { "BUNDLE_GEMS__MYSERVER__COM" => "user:password" }
-      expect(out).to eq "gems.myserver.com=user:password\nspec_run=true"
+      expect(out).to eq "gems.myserver.com=user:password"
     end
 
     it "list with API token credentials" do
       bundle "config list", :env => { "BUNDLE_GEMS__MYSERVER__COM" => "api_token:x-oauth-basic" }
-      expect(out).to eq "Settings are listed in order of priority. The top value will be used.\ngems.myserver.com\nSet via BUNDLE_GEMS__MYSERVER__COM: \"[REDACTED]:x-oauth-basic\"\n\nspec_run\nSet via BUNDLE_SPEC_RUN: \"true\""
+      expect(out).to eq "Settings are listed in order of priority. The top value will be used.\ngems.myserver.com\nSet via BUNDLE_GEMS__MYSERVER__COM: \"[REDACTED]:x-oauth-basic\""
 
       bundle "config list", :parseable => true, :env => { "BUNDLE_GEMS__MYSERVER__COM" => "api_token:x-oauth-basic" }
-      expect(out).to eq "gems.myserver.com=api_token:x-oauth-basic\nspec_run=true"
+      expect(out).to eq "gems.myserver.com=api_token:x-oauth-basic"
     end
 
     it "get" do

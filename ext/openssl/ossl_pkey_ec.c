@@ -109,13 +109,16 @@ ossl_ec_key_s_generate(VALUE klass, VALUE arg)
     VALUE obj;
 
     obj = rb_obj_alloc(klass);
-    GetPKey(obj, pkey);
 
     ec = ec_key_new_from_group(arg);
-    if (!EVP_PKEY_assign_EC_KEY(pkey, ec)) {
+    pkey = EVP_PKEY_new();
+    if (!pkey || EVP_PKEY_assign_EC_KEY(pkey, ec) != 1) {
+        EVP_PKEY_free(pkey);
         EC_KEY_free(ec);
         ossl_raise(eECError, "EVP_PKEY_assign_EC_KEY");
     }
+    RTYPEDDATA_DATA(obj) = pkey;
+
     if (!EC_KEY_generate_key(ec))
 	ossl_raise(eECError, "EC_KEY_generate_key");
 
@@ -136,75 +139,83 @@ ossl_ec_key_s_generate(VALUE klass, VALUE arg)
 static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
-    EC_KEY *ec = NULL;
+    EC_KEY *ec;
+    BIO *in;
     VALUE arg, pass;
+    int type;
 
-    GetPKey(self, pkey);
-    if (EVP_PKEY_base_id(pkey) != EVP_PKEY_NONE)
-        ossl_raise(eECError, "EC_KEY already initialized");
+    TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
+    if (pkey)
+        rb_raise(rb_eTypeError, "pkey already initialized");
 
     rb_scan_args(argc, argv, "02", &arg, &pass);
-
     if (NIL_P(arg)) {
         if (!(ec = EC_KEY_new()))
-	    ossl_raise(eECError, NULL);
-    } else if (rb_obj_is_kind_of(arg, cEC)) {
-	EC_KEY *other_ec = NULL;
-
-	GetEC(arg, other_ec);
-	if (!(ec = EC_KEY_dup(other_ec)))
-	    ossl_raise(eECError, NULL);
-    } else if (rb_obj_is_kind_of(arg, cEC_GROUP)) {
-	ec = ec_key_new_from_group(arg);
-    } else {
-        BIO *in = ossl_obj2bio(&arg);
-        EVP_PKEY *tmp;
-        pass = ossl_pem_passwd_value(pass);
-        tmp = ossl_pkey_read_generic(in, pass);
-        if (tmp) {
-            if (EVP_PKEY_base_id(tmp) != EVP_PKEY_EC)
-                rb_raise(eECError, "incorrect pkey type: %s",
-                         OBJ_nid2sn(EVP_PKEY_base_id(tmp)));
-            ec = EVP_PKEY_get1_EC_KEY(tmp);
-            EVP_PKEY_free(tmp);
-        }
-	BIO_free(in);
-
-	if (!ec) {
-	    ossl_clear_error();
-	    ec = ec_key_new_from_group(arg);
-	}
+            ossl_raise(eECError, "EC_KEY_new");
+        goto legacy;
+    }
+    else if (rb_obj_is_kind_of(arg, cEC_GROUP)) {
+        ec = ec_key_new_from_group(arg);
+        goto legacy;
     }
 
-    if (!EVP_PKEY_assign_EC_KEY(pkey, ec)) {
-	EC_KEY_free(ec);
-	ossl_raise(eECError, "EVP_PKEY_assign_EC_KEY");
+    pass = ossl_pem_passwd_value(pass);
+    arg = ossl_to_der_if_possible(arg);
+    in = ossl_obj2bio(&arg);
+
+    pkey = ossl_pkey_read_generic(in, pass);
+    BIO_free(in);
+    if (!pkey) {
+        ossl_clear_error();
+        ec = ec_key_new_from_group(arg);
+        goto legacy;
     }
 
+    type = EVP_PKEY_base_id(pkey);
+    if (type != EVP_PKEY_EC) {
+        EVP_PKEY_free(pkey);
+        rb_raise(eDSAError, "incorrect pkey type: %s", OBJ_nid2sn(type));
+    }
+    RTYPEDDATA_DATA(self) = pkey;
+    return self;
+
+  legacy:
+    pkey = EVP_PKEY_new();
+    if (!pkey || EVP_PKEY_assign_EC_KEY(pkey, ec) != 1) {
+        EVP_PKEY_free(pkey);
+        EC_KEY_free(ec);
+        ossl_raise(eECError, "EVP_PKEY_assign_EC_KEY");
+    }
+    RTYPEDDATA_DATA(self) = pkey;
     return self;
 }
 
+#ifndef HAVE_EVP_PKEY_DUP
 static VALUE
 ossl_ec_key_initialize_copy(VALUE self, VALUE other)
 {
     EVP_PKEY *pkey;
     EC_KEY *ec, *ec_new;
 
-    GetPKey(self, pkey);
-    if (EVP_PKEY_base_id(pkey) != EVP_PKEY_NONE)
-	ossl_raise(eECError, "EC already initialized");
+    TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
+    if (pkey)
+        rb_raise(rb_eTypeError, "pkey already initialized");
     GetEC(other, ec);
 
     ec_new = EC_KEY_dup(ec);
     if (!ec_new)
 	ossl_raise(eECError, "EC_KEY_dup");
-    if (!EVP_PKEY_assign_EC_KEY(pkey, ec_new)) {
-	EC_KEY_free(ec_new);
-	ossl_raise(eECError, "EVP_PKEY_assign_EC_KEY");
+
+    pkey = EVP_PKEY_new();
+    if (!pkey || EVP_PKEY_assign_EC_KEY(pkey, ec_new) != 1) {
+        EC_KEY_free(ec_new);
+        ossl_raise(eECError, "EVP_PKEY_assign_EC_KEY");
     }
+    RTYPEDDATA_DATA(self) = pkey;
 
     return self;
 }
+#endif
 
 /*
  * call-seq:
@@ -237,6 +248,9 @@ ossl_ec_key_get_group(VALUE self)
 static VALUE
 ossl_ec_key_set_group(VALUE self, VALUE group_v)
 {
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+    rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
+#else
     EC_KEY *ec;
     EC_GROUP *group;
 
@@ -247,6 +261,7 @@ ossl_ec_key_set_group(VALUE self, VALUE group_v)
         ossl_raise(eECError, "EC_KEY_set_group");
 
     return group_v;
+#endif
 }
 
 /*
@@ -275,6 +290,9 @@ static VALUE ossl_ec_key_get_private_key(VALUE self)
  */
 static VALUE ossl_ec_key_set_private_key(VALUE self, VALUE private_key)
 {
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+    rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
+#else
     EC_KEY *ec;
     BIGNUM *bn = NULL;
 
@@ -294,6 +312,7 @@ static VALUE ossl_ec_key_set_private_key(VALUE self, VALUE private_key)
     }
 
     return private_key;
+#endif
 }
 
 /*
@@ -322,6 +341,9 @@ static VALUE ossl_ec_key_get_public_key(VALUE self)
  */
 static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
 {
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+    rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
+#else
     EC_KEY *ec;
     EC_POINT *point = NULL;
 
@@ -341,6 +363,7 @@ static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
     }
 
     return public_key;
+#endif
 }
 
 /*
@@ -430,6 +453,9 @@ ossl_ec_key_to_der(VALUE self)
  */
 static VALUE ossl_ec_key_generate_key(VALUE self)
 {
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+    rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
+#else
     EC_KEY *ec;
 
     GetEC(self, ec);
@@ -437,6 +463,7 @@ static VALUE ossl_ec_key_generate_key(VALUE self)
 	ossl_raise(eECError, "EC_KEY_generate_key");
 
     return self;
+#endif
 }
 
 /*
@@ -1514,8 +1541,9 @@ void Init_ossl_ec(void)
 
     rb_define_singleton_method(cEC, "generate", ossl_ec_key_s_generate, 1);
     rb_define_method(cEC, "initialize", ossl_ec_key_initialize, -1);
+#ifndef HAVE_EVP_PKEY_DUP
     rb_define_method(cEC, "initialize_copy", ossl_ec_key_initialize_copy, 1);
-/* copy/dup/cmp */
+#endif
 
     rb_define_method(cEC, "group", ossl_ec_key_get_group, 0);
     rb_define_method(cEC, "group=", ossl_ec_key_set_group, 1);

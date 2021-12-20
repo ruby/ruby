@@ -71,7 +71,8 @@ RSpec.configure do |config|
 
     require_relative "support/rubygems_ext"
     Spec::Rubygems.test_setup
-    ENV["BUNDLE_SPEC_RUN"] = "true"
+    ENV["BUNDLER_SPEC_RUN"] = "true"
+    ENV["BUNDLER_NO_OLD_RUBYGEMS_WARNING"] = "true"
     ENV["BUNDLE_USER_CONFIG"] = ENV["BUNDLE_USER_CACHE"] = ENV["BUNDLE_USER_PLUGIN"] = nil
     ENV["RUBYGEMS_GEMDEPS"] = nil
     ENV["XDG_CONFIG_HOME"] = nil

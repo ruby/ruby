@@ -9,7 +9,8 @@
  */
 #include "ossl.h"
 
-#if !defined(OPENSSL_NO_ENGINE)
+#ifdef OSSL_USE_ENGINE
+# include <openssl/engine.h>
 
 #define NewEngine(klass) \
     TypedData_Wrap_Struct((klass), &ossl_engine_type, 0)

@@ -113,7 +113,12 @@ jobs:
       - name: Commit
         run: |
           git pull --ff-only origin ${GITHUB_REF#refs/heads/}
-          git commit --message="Update bundled gems list at ${TODAY}"
+          message="Update bundled gems list at "
+          if [ ${{ steps.diff.outcome }} = success ]; then
+            git commit --message="${message}${GITHUB_SHA:0:30} [ci skip]"
+          else
+            git commit --message="${message}${TODAY}"
+          fi
           git push origin ${GITHUB_REF#refs/heads/}
         env:
           EMAIL: svn-admin@ruby-lang.org

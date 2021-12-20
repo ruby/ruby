@@ -13093,13 +13093,14 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
 
         if (is_pointer_to_heap(&rb_objspace, (void *)obj)) {
-            APPENDF((BUFF_ARGS, "%p [%d%s%s%s%s%s] %s ",
+            APPENDF((BUFF_ARGS, "%p [%d%s%s%s%s%s%s] %s ",
                      (void *)obj, age,
                      C(RVALUE_UNCOLLECTIBLE_BITMAP(obj),  "L"),
                      C(RVALUE_MARK_BITMAP(obj),           "M"),
                      C(RVALUE_PIN_BITMAP(obj),            "P"),
                      C(RVALUE_MARKING_BITMAP(obj),        "R"),
                      C(RVALUE_WB_UNPROTECTED_BITMAP(obj), "U"),
+                     C(rb_objspace_garbage_object_p(obj), "G"),
                      obj_type_name(obj)));
         }
         else {

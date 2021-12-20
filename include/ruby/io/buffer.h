@@ -27,20 +27,24 @@ RUBY_EXTERN size_t RUBY_IO_BUFFER_DEFAULT_SIZE;
 
 enum rb_io_buffer_flags {
     // The memory in the buffer is owned by someone else.
-    RB_IO_BUFFER_EXTERNAL = 0,
+    // More specifically, it means that someone else owns the buffer and we shouldn't try to resize it.
+    RB_IO_BUFFER_EXTERNAL = 1,
     // The memory in the buffer is allocated internally.
-    RB_IO_BUFFER_INTERNAL = 1,
+    RB_IO_BUFFER_INTERNAL = 2,
     // The memory in the buffer is mapped.
-    RB_IO_BUFFER_MAPPED = 2,
+    // A non-private mapping is marked as external.
+    RB_IO_BUFFER_MAPPED = 4,
 
     // The buffer is locked and cannot be resized.
-    RB_IO_BUFFER_LOCKED = 16,
+    // More specifically, it means we can't change the base address or size.
+    // A buffer is typically locked before a system call that uses the data.
+    RB_IO_BUFFER_LOCKED = 32,
 
     // The buffer mapping is private and will not impact other processes or the underlying file.
-    RB_IO_BUFFER_PRIVATE = 32,
+    RB_IO_BUFFER_PRIVATE = 64,
 
     // The buffer is read-only and cannot be modified.
-    RB_IO_BUFFER_IMMUTABLE = 64
+    RB_IO_BUFFER_READONLY = 128
 };
 
 enum rb_io_buffer_endian {
@@ -67,10 +71,11 @@ VALUE rb_io_buffer_lock(VALUE self);
 VALUE rb_io_buffer_unlock(VALUE self);
 VALUE rb_io_buffer_free(VALUE self);
 
-void rb_io_buffer_get_mutable(VALUE self, void **base, size_t *size);
-void rb_io_buffer_get_immutable(VALUE self, const void **base, size_t *size);
+int rb_io_buffer_readonly_p(VALUE self);
 
-size_t rb_io_buffer_copy(VALUE self, VALUE source, size_t offset);
+void rb_io_buffer_get(VALUE self, void **base, size_t *size);
+void rb_io_buffer_get_readonly(VALUE self, const void **base, size_t *size);
+
 VALUE rb_io_buffer_transfer(VALUE self);
 void rb_io_buffer_resize(VALUE self, size_t size);
 void rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length);

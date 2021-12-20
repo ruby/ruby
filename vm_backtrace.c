@@ -782,6 +782,56 @@ backtrace_load_data(VALUE self, VALUE str)
     return self;
 }
 
+/*
+ *  call-seq: Threade::Backtrace::limit -> integer
+ *
+ *  Returns maximum backtrace length set by <tt>--backtrace-limit</tt>
+ *  command-line option. The defalt is <tt>-1</tt> which means unlimited
+ *  backtraces. If the value is zero or positive, the error backtraces,
+ *  produced by Exception#full_message, are abbreviated and the extra lines
+ *  are replaced by <tt>... 3 levels... </tt>
+ *
+ *    $ ruby -r net/http -e "p Thread::Backtrace.limit; Net::HTTP.get(URI('http://wrong.address'))"
+ *    - 1
+ *    .../lib/ruby/3.1.0/socket.rb:227:in `getaddrinfo': Failed to open TCP connection to wrong.address:80 (getaddrinfo: Name or service not known) (SocketError)
+ *        from .../lib/ruby/3.1.0/socket.rb:227:in `foreach'
+ *        from .../lib/ruby/3.1.0/socket.rb:632:in `tcp'
+ *        from .../lib/ruby/3.1.0/net/http.rb:998:in `connect'
+ *        from .../lib/ruby/3.1.0/net/http.rb:976:in `do_start'
+ *        from .../lib/ruby/3.1.0/net/http.rb:965:in `start'
+ *        from .../lib/ruby/3.1.0/net/http.rb:627:in `start'
+ *        from .../lib/ruby/3.1.0/net/http.rb:503:in `get_response'
+ *        from .../lib/ruby/3.1.0/net/http.rb:474:in `get'
+ *    .../lib/ruby/3.1.0/socket.rb:227:in `getaddrinfo': getaddrinfo: Name or service not known (SocketError)
+ *        from .../lib/ruby/3.1.0/socket.rb:227:in `foreach'
+ *        from .../lib/ruby/3.1.0/socket.rb:632:in `tcp'
+ *        from .../lib/ruby/3.1.0/net/http.rb:998:in `connect'
+ *        from .../lib/ruby/3.1.0/net/http.rb:976:in `do_start'
+ *        from .../lib/ruby/3.1.0/net/http.rb:965:in `start'
+ *        from .../lib/ruby/3.1.0/net/http.rb:627:in `start'
+ *        from .../lib/ruby/3.1.0/net/http.rb:503:in `get_response'
+ *        from .../lib/ruby/3.1.0/net/http.rb:474:in `get'
+ *        from -e:1:in `<main>'
+ *
+ *    $ ruby --backtrace-limit 2 -r net/http -e "p Thread::Backtrace.limit; Net::HTTP.get(URI('http://wrong.address'))"
+ *    2
+ *    .../lib/ruby/3.1.0/socket.rb:227:in `getaddrinfo': Failed to open TCP connection to wrong.address:80 (getaddrinfo: Name or service not known) (SocketError)
+ *        from .../lib/ruby/3.1.0/socket.rb:227:in `foreach'
+ *        from .../lib/ruby/3.1.0/socket.rb:632:in `tcp'
+ *         ... 7 levels...
+ *    .../lib/ruby/3.1.0/socket.rb:227:in `getaddrinfo': getaddrinfo: Name or service not known (SocketError)
+ *        from .../lib/ruby/3.1.0/socket.rb:227:in `foreach'
+ *        from .../lib/ruby/3.1.0/socket.rb:632:in `tcp'
+ *         ... 7 levels...
+ *
+ *    $ ruby --backtrace-limit 0 -r net/http -e "p Thread::Backtrace.limit; Net::HTTP.get(URI('http://wrong.address'))"
+ *    0
+ *    .../lib/ruby/3.1.0/socket.rb:227:in `getaddrinfo': Failed to open TCP connection to wrong.address:80 (getaddrinfo: Name or service not known) (SocketError)
+ *         ... 9 levels...
+ *    .../lib/ruby/3.1.0/socket.rb:227:in `getaddrinfo': getaddrinfo: Name or service not known (SocketError)
+ *         ... 9 levels...
+ *
+ */
 static VALUE
 backtrace_limit(VALUE self)
 {
@@ -1194,7 +1244,11 @@ rb_f_caller_locations(int argc, VALUE *argv, VALUE _)
 void
 Init_vm_backtrace(void)
 {
-    /* :nodoc: */
+    /*
+     *  An internal representation of the backtrace. The user will never interact with
+     *  objects of this class directly, but class methods can be used to get backtrace
+     *  settings of the current session.
+     */
     rb_cBacktrace = rb_define_class_under(rb_cThread, "Backtrace", rb_cObject);
     rb_define_alloc_func(rb_cBacktrace, backtrace_alloc);
     rb_undef_method(CLASS_OF(rb_cBacktrace), "new");

@@ -142,9 +142,9 @@ class Reline::Test < Reline::TestCase
 
     # assert_equal(nil, Reline.completion_proc)
 
-    p = proc {}
-    Reline.completion_proc = p
-    assert_equal(p, Reline.completion_proc)
+    dummy_proc = proc {}
+    Reline.completion_proc = dummy_proc
+    assert_equal(dummy_proc, Reline.completion_proc)
 
     l = lambda {}
     Reline.completion_proc = l
@@ -161,9 +161,9 @@ class Reline::Test < Reline::TestCase
   def test_output_modifier_proc
     assert_equal(nil, Reline.output_modifier_proc)
 
-    p = proc {}
-    Reline.output_modifier_proc = p
-    assert_equal(p, Reline.output_modifier_proc)
+    dummy_proc = proc {}
+    Reline.output_modifier_proc = dummy_proc
+    assert_equal(dummy_proc, Reline.output_modifier_proc)
 
     l = lambda {}
     Reline.output_modifier_proc = l
@@ -180,9 +180,9 @@ class Reline::Test < Reline::TestCase
   def test_prompt_proc
     assert_equal(nil, Reline.prompt_proc)
 
-    p = proc {}
-    Reline.prompt_proc = p
-    assert_equal(p, Reline.prompt_proc)
+    dummy_proc = proc {}
+    Reline.prompt_proc = dummy_proc
+    assert_equal(dummy_proc, Reline.prompt_proc)
 
     l = lambda {}
     Reline.prompt_proc = l
@@ -199,9 +199,9 @@ class Reline::Test < Reline::TestCase
   def test_auto_indent_proc
     assert_equal(nil, Reline.auto_indent_proc)
 
-    p = proc {}
-    Reline.auto_indent_proc = p
-    assert_equal(p, Reline.auto_indent_proc)
+    dummy_proc = proc {}
+    Reline.auto_indent_proc = dummy_proc
+    assert_equal(dummy_proc, Reline.auto_indent_proc)
 
     l = lambda {}
     Reline.auto_indent_proc = l
@@ -218,9 +218,9 @@ class Reline::Test < Reline::TestCase
   def test_pre_input_hook
     assert_equal(nil, Reline.pre_input_hook)
 
-    p = proc {}
-    Reline.pre_input_hook = p
-    assert_equal(p, Reline.pre_input_hook)
+    dummy_proc = proc {}
+    Reline.pre_input_hook = dummy_proc
+    assert_equal(dummy_proc, Reline.pre_input_hook)
 
     l = lambda {}
     Reline.pre_input_hook = l
@@ -230,9 +230,9 @@ class Reline::Test < Reline::TestCase
   def test_dig_perfect_match_proc
     assert_equal(nil, Reline.dig_perfect_match_proc)
 
-    p = proc {}
-    Reline.dig_perfect_match_proc = p
-    assert_equal(p, Reline.dig_perfect_match_proc)
+    dummy_proc = proc {}
+    Reline.dig_perfect_match_proc = dummy_proc
+    assert_equal(dummy_proc, Reline.dig_perfect_match_proc)
 
     l = lambda {}
     Reline.dig_perfect_match_proc = l
@@ -308,6 +308,48 @@ class Reline::Test < Reline::TestCase
   def test_emacs_editing_mode
     Reline.emacs_editing_mode
     assert_equal(Reline::KeyActor::Emacs, Reline.send(:core).config.editing_mode.class)
+  end
+
+  def test_add_dialog_proc
+    dummy_proc = proc {}
+    Reline.add_dialog_proc(:test_proc, dummy_proc)
+    d = Reline.dialog_proc(:test_proc)
+    assert_equal(dummy_proc, d.dialog_proc)
+
+    dummy_proc_2 = proc {}
+    Reline.add_dialog_proc(:test_proc, dummy_proc_2)
+    d = Reline.dialog_proc(:test_proc)
+    assert_equal(dummy_proc_2, d.dialog_proc)
+
+    l = lambda {}
+    Reline.add_dialog_proc(:test_lambda, l)
+    d = Reline.dialog_proc(:test_lambda)
+    assert_equal(l, d.dialog_proc)
+
+    assert_equal(nil, Reline.dialog_proc(:test_nothing))
+
+    assert_raise(ArgumentError) { Reline.add_dialog_proc(:error, 42) }
+    assert_raise(ArgumentError) { Reline.add_dialog_proc(:error, 'hoge') }
+    assert_raise(ArgumentError) { Reline.add_dialog_proc('error', proc {} ) }
+
+    dummy = DummyCallbackObject.new
+    Reline.add_dialog_proc(:dummy, dummy)
+    d = Reline.dialog_proc(:dummy)
+    assert_equal(dummy, d.dialog_proc)
+  end
+
+  def test_add_dialog_proc_with_context
+    dummy_proc = proc {}
+    array = Array.new
+    Reline.add_dialog_proc(:test_proc, dummy_proc, array)
+    d = Reline.dialog_proc(:test_proc)
+    assert_equal(dummy_proc, d.dialog_proc)
+    assert_equal(array, d.context)
+
+    Reline.add_dialog_proc(:test_proc, dummy_proc, nil)
+    d = Reline.dialog_proc(:test_proc)
+    assert_equal(dummy_proc, d.dialog_proc)
+    assert_equal(nil, d.context)
   end
 
   def test_readmultiline

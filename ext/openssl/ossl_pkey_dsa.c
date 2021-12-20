@@ -83,72 +83,91 @@ VALUE eDSAError;
 static VALUE
 ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 {
-    EVP_PKEY *pkey, *tmp;
-    DSA *dsa = NULL;
-    BIO *in;
+    EVP_PKEY *pkey;
+    DSA *dsa;
+    BIO *in = NULL;
     VALUE arg, pass;
+    int type;
 
-    GetPKey(self, pkey);
+    TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
+    if (pkey)
+        rb_raise(rb_eTypeError, "pkey already initialized");
+
     /* The DSA.new(size, generator) form is handled by lib/openssl/pkey.rb */
     rb_scan_args(argc, argv, "02", &arg, &pass);
     if (argc == 0) {
         dsa = DSA_new();
         if (!dsa)
             ossl_raise(eDSAError, "DSA_new");
-    }
-    else {
-	pass = ossl_pem_passwd_value(pass);
-	arg = ossl_to_der_if_possible(arg);
-	in = ossl_obj2bio(&arg);
-
-        tmp = ossl_pkey_read_generic(in, pass);
-        if (tmp) {
-            if (EVP_PKEY_base_id(tmp) != EVP_PKEY_DSA)
-                rb_raise(eDSAError, "incorrect pkey type: %s",
-                         OBJ_nid2sn(EVP_PKEY_base_id(tmp)));
-            dsa = EVP_PKEY_get1_DSA(tmp);
-            EVP_PKEY_free(tmp);
-        }
-	if (!dsa) {
-	    OSSL_BIO_reset(in);
-#define PEM_read_bio_DSAPublicKey(bp,x,cb,u) (DSA *)PEM_ASN1_read_bio( \
-	(d2i_of_void *)d2i_DSAPublicKey, PEM_STRING_DSA_PUBLIC, (bp), (void **)(x), (cb), (u))
-	    dsa = PEM_read_bio_DSAPublicKey(in, NULL, NULL, NULL);
-#undef PEM_read_bio_DSAPublicKey
-	}
-	BIO_free(in);
-	if (!dsa) {
-	    ossl_clear_error();
-	    ossl_raise(eDSAError, "Neither PUB key nor PRIV key");
-	}
-    }
-    if (!EVP_PKEY_assign_DSA(pkey, dsa)) {
-	DSA_free(dsa);
-	ossl_raise(eDSAError, NULL);
+        goto legacy;
     }
 
+    pass = ossl_pem_passwd_value(pass);
+    arg = ossl_to_der_if_possible(arg);
+    in = ossl_obj2bio(&arg);
+
+    /* DER-encoded DSAPublicKey format isn't supported by the generic routine */
+    dsa = (DSA *)PEM_ASN1_read_bio((d2i_of_void *)d2i_DSAPublicKey,
+                                   PEM_STRING_DSA_PUBLIC,
+                                   in, NULL, NULL, NULL);
+    if (dsa)
+        goto legacy;
+    OSSL_BIO_reset(in);
+
+    pkey = ossl_pkey_read_generic(in, pass);
+    BIO_free(in);
+    if (!pkey)
+        ossl_raise(eDSAError, "Neither PUB key nor PRIV key");
+
+    type = EVP_PKEY_base_id(pkey);
+    if (type != EVP_PKEY_DSA) {
+        EVP_PKEY_free(pkey);
+        rb_raise(eDSAError, "incorrect pkey type: %s", OBJ_nid2sn(type));
+    }
+    RTYPEDDATA_DATA(self) = pkey;
+    return self;
+
+  legacy:
+    BIO_free(in);
+    pkey = EVP_PKEY_new();
+    if (!pkey || EVP_PKEY_assign_DSA(pkey, dsa) != 1) {
+        EVP_PKEY_free(pkey);
+        DSA_free(dsa);
+        ossl_raise(eDSAError, "EVP_PKEY_assign_DSA");
+    }
+    RTYPEDDATA_DATA(self) = pkey;
     return self;
 }
 
+#ifndef HAVE_EVP_PKEY_DUP
 static VALUE
 ossl_dsa_initialize_copy(VALUE self, VALUE other)
 {
     EVP_PKEY *pkey;
     DSA *dsa, *dsa_new;
 
-    GetPKey(self, pkey);
-    if (EVP_PKEY_base_id(pkey) != EVP_PKEY_NONE)
-	ossl_raise(eDSAError, "DSA already initialized");
+    TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
+    if (pkey)
+        rb_raise(rb_eTypeError, "pkey already initialized");
     GetDSA(other, dsa);
 
-    dsa_new = ASN1_dup((i2d_of_void *)i2d_DSAPrivateKey, (d2i_of_void *)d2i_DSAPrivateKey, (char *)dsa);
+    dsa_new = (DSA *)ASN1_dup((i2d_of_void *)i2d_DSAPrivateKey,
+                              (d2i_of_void *)d2i_DSAPrivateKey,
+                              (char *)dsa);
     if (!dsa_new)
 	ossl_raise(eDSAError, "ASN1_dup");
 
-    EVP_PKEY_assign_DSA(pkey, dsa_new);
+    pkey = EVP_PKEY_new();
+    if (!pkey || EVP_PKEY_assign_DSA(pkey, dsa_new) != 1) {
+        EVP_PKEY_free(pkey);
+        DSA_free(dsa_new);
+        ossl_raise(eDSAError, "EVP_PKEY_assign_DSA");
+    }
+    RTYPEDDATA_DATA(self) = pkey;
 
     return self;
 }
+#endif
 
 /*
  *  call-seq:
@@ -310,7 +329,9 @@ Init_ossl_dsa(void)
     cDSA = rb_define_class_under(mPKey, "DSA", cPKey);
 
     rb_define_method(cDSA, "initialize", ossl_dsa_initialize, -1);
+#ifndef HAVE_EVP_PKEY_DUP
     rb_define_method(cDSA, "initialize_copy", ossl_dsa_initialize_copy, 1);
+#endif
 
     rb_define_method(cDSA, "public?", ossl_dsa_is_public, 0);
     rb_define_method(cDSA, "private?", ossl_dsa_is_private, 0);

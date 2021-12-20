@@ -76,73 +76,93 @@ VALUE eRSAError;
 static VALUE
 ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 {
-    EVP_PKEY *pkey, *tmp;
-    RSA *rsa = NULL;
-    BIO *in;
+    EVP_PKEY *pkey;
+    RSA *rsa;
+    BIO *in = NULL;
     VALUE arg, pass;
+    int type;
 
-    GetPKey(self, pkey);
+    TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
+    if (pkey)
+        rb_raise(rb_eTypeError, "pkey already initialized");
+
     /* The RSA.new(size, generator) form is handled by lib/openssl/pkey.rb */
     rb_scan_args(argc, argv, "02", &arg, &pass);
     if (argc == 0) {
 	rsa = RSA_new();
         if (!rsa)
             ossl_raise(eRSAError, "RSA_new");
-    }
-    else {
-	pass = ossl_pem_passwd_value(pass);
-	arg = ossl_to_der_if_possible(arg);
-	in = ossl_obj2bio(&arg);
-
-        tmp = ossl_pkey_read_generic(in, pass);
-        if (tmp) {
-            if (EVP_PKEY_base_id(tmp) != EVP_PKEY_RSA)
-                rb_raise(eRSAError, "incorrect pkey type: %s",
-                         OBJ_nid2sn(EVP_PKEY_base_id(tmp)));
-            rsa = EVP_PKEY_get1_RSA(tmp);
-            EVP_PKEY_free(tmp);
-        }
-	if (!rsa) {
-	    OSSL_BIO_reset(in);
-	    rsa = PEM_read_bio_RSAPublicKey(in, NULL, NULL, NULL);
-	}
-	if (!rsa) {
-	    OSSL_BIO_reset(in);
-	    rsa = d2i_RSAPublicKey_bio(in, NULL);
-	}
-	BIO_free(in);
-	if (!rsa) {
-            ossl_clear_error();
-	    ossl_raise(eRSAError, "Neither PUB key nor PRIV key");
-	}
-    }
-    if (!EVP_PKEY_assign_RSA(pkey, rsa)) {
-	RSA_free(rsa);
-	ossl_raise(eRSAError, "EVP_PKEY_assign_RSA");
+        goto legacy;
     }
 
+    pass = ossl_pem_passwd_value(pass);
+    arg = ossl_to_der_if_possible(arg);
+    in = ossl_obj2bio(&arg);
+
+    /* First try RSAPublicKey format */
+    rsa = d2i_RSAPublicKey_bio(in, NULL);
+    if (rsa)
+        goto legacy;
+    OSSL_BIO_reset(in);
+    rsa = PEM_read_bio_RSAPublicKey(in, NULL, NULL, NULL);
+    if (rsa)
+        goto legacy;
+    OSSL_BIO_reset(in);
+
+    /* Use the generic routine */
+    pkey = ossl_pkey_read_generic(in, pass);
+    BIO_free(in);
+    if (!pkey)
+        ossl_raise(eRSAError, "Neither PUB key nor PRIV key");
+
+    type = EVP_PKEY_base_id(pkey);
+    if (type != EVP_PKEY_RSA) {
+        EVP_PKEY_free(pkey);
+        rb_raise(eRSAError, "incorrect pkey type: %s", OBJ_nid2sn(type));
+    }
+    RTYPEDDATA_DATA(self) = pkey;
+    return self;
+
+  legacy:
+    BIO_free(in);
+    pkey = EVP_PKEY_new();
+    if (!pkey || EVP_PKEY_assign_RSA(pkey, rsa) != 1) {
+        EVP_PKEY_free(pkey);
+        RSA_free(rsa);
+        ossl_raise(eRSAError, "EVP_PKEY_assign_RSA");
+    }
+    RTYPEDDATA_DATA(self) = pkey;
     return self;
 }
 
+#ifndef HAVE_EVP_PKEY_DUP
 static VALUE
 ossl_rsa_initialize_copy(VALUE self, VALUE other)
 {
     EVP_PKEY *pkey;
     RSA *rsa, *rsa_new;
 
-    GetPKey(self, pkey);
-    if (EVP_PKEY_base_id(pkey) != EVP_PKEY_NONE)
-	ossl_raise(eRSAError, "RSA already initialized");
+    TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
+    if (pkey)
+        rb_raise(rb_eTypeError, "pkey already initialized");
     GetRSA(other, rsa);
 
-    rsa_new = ASN1_dup((i2d_of_void *)i2d_RSAPrivateKey, (d2i_of_void *)d2i_RSAPrivateKey, (char *)rsa);
+    rsa_new = (RSA *)ASN1_dup((i2d_of_void *)i2d_RSAPrivateKey,
+                              (d2i_of_void *)d2i_RSAPrivateKey,
+                              (char *)rsa);
     if (!rsa_new)
 	ossl_raise(eRSAError, "ASN1_dup");
 
-    EVP_PKEY_assign_RSA(pkey, rsa_new);
+    pkey = EVP_PKEY_new();
+    if (!pkey || EVP_PKEY_assign_RSA(pkey, rsa_new) != 1) {
+        RSA_free(rsa_new);
+        ossl_raise(eRSAError, "EVP_PKEY_assign_RSA");
+    }
+    RTYPEDDATA_DATA(self) = pkey;
 
     return self;
 }
+#endif
 
 /*
  * call-seq:
@@ -517,7 +537,9 @@ Init_ossl_rsa(void)
     cRSA = rb_define_class_under(mPKey, "RSA", cPKey);
 
     rb_define_method(cRSA, "initialize", ossl_rsa_initialize, -1);
+#ifndef HAVE_EVP_PKEY_DUP
     rb_define_method(cRSA, "initialize_copy", ossl_rsa_initialize_copy, 1);
+#endif
 
     rb_define_method(cRSA, "public?", ossl_rsa_is_public, 0);
     rb_define_method(cRSA, "private?", ossl_rsa_is_private, 0);

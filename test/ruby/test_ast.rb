@@ -258,25 +258,25 @@ class TestAst < Test::Unit::TestCase
     keep_script_lines_back = RubyVM.keep_script_lines
     RubyVM.keep_script_lines = true
 
-    method = self.method(eval("def example_method_#{$$}; end"))
+    method = self.method(eval("def example_method_#{$$}_with_keep_script_lines; end"))
     assert_instance_of(RubyVM::AbstractSyntaxTree::Node, RubyVM::AbstractSyntaxTree.of(method))
 
-    method = self.method(eval("def self.example_singleton_method_#{$$}; end"))
+    method = self.method(eval("def self.example_singleton_method_#{$$}_with_keep_script_lines; end"))
     assert_instance_of(RubyVM::AbstractSyntaxTree::Node, RubyVM::AbstractSyntaxTree.of(method))
 
     method = eval("proc{}")
     assert_instance_of(RubyVM::AbstractSyntaxTree::Node, RubyVM::AbstractSyntaxTree.of(method))
 
-    method = self.method(eval("singleton_class.define_method(:example_define_method_#{$$}){}"))
+    method = self.method(eval("singleton_class.define_method(:example_define_method_#{$$}_with_keep_script_lines){}"))
     assert_instance_of(RubyVM::AbstractSyntaxTree::Node, RubyVM::AbstractSyntaxTree.of(method))
 
-    method = self.method(eval("define_singleton_method(:example_dsm_#{$$}){}"))
+    method = self.method(eval("define_singleton_method(:example_dsm_#{$$}_with_keep_script_lines){}"))
     assert_instance_of(RubyVM::AbstractSyntaxTree::Node, RubyVM::AbstractSyntaxTree.of(method))
 
-    method = eval("Class.new{def example_method; end}.instance_method(:example_method)")
+    method = eval("Class.new{def example_method_with_keep_script_lines; end}.instance_method(:example_method_with_keep_script_lines)")
     assert_instance_of(RubyVM::AbstractSyntaxTree::Node, RubyVM::AbstractSyntaxTree.of(method))
 
-    method = eval("Class.new{def example_method; end}.instance_method(:example_method)")
+    method = eval("Class.new{def example_method_with_keep_script_lines; end}.instance_method(:example_method_with_keep_script_lines)")
     assert_instance_of(RubyVM::AbstractSyntaxTree::Node, RubyVM::AbstractSyntaxTree.of(method))
 
   ensure

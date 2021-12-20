@@ -208,8 +208,12 @@ fWLOqqkzFeRrYMDzUpl36XktY6Yq8EJYlW9pCMmBVNy/dQ==
     key = Fixtures.pkey("dsa1024")
     key2 = key.dup
     assert_equal key.params, key2.params
-    key2.set_pqg(key2.p + 1, key2.q, key2.g)
-    assert_not_equal key.params, key2.params
+
+    # PKey is immutable in OpenSSL >= 3.0
+    if !openssl?(3, 0, 0)
+      key2.set_pqg(key2.p + 1, key2.q, key2.g)
+      assert_not_equal key.params, key2.params
+    end
   end
 
   def test_marshal

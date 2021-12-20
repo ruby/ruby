@@ -15,19 +15,10 @@ extern VALUE cPKey;
 extern VALUE ePKeyError;
 extern const rb_data_type_t ossl_evp_pkey_type;
 
-#define OSSL_PKEY_SET_PRIVATE(obj) rb_iv_set((obj), "private", Qtrue)
-#define OSSL_PKEY_SET_PUBLIC(obj)  rb_iv_set((obj), "private", Qfalse)
-#define OSSL_PKEY_IS_PRIVATE(obj)  (rb_iv_get((obj), "private") == Qtrue)
+/* For ENGINE */
+#define OSSL_PKEY_SET_PRIVATE(obj) rb_ivar_set((obj), rb_intern("private"), Qtrue)
+#define OSSL_PKEY_IS_PRIVATE(obj)  (rb_attr_get((obj), rb_intern("private")) == Qtrue)
 
-#define NewPKey(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_evp_pkey_type, 0)
-#define SetPKey(obj, pkey) do { \
-    if (!(pkey)) { \
-	rb_raise(rb_eRuntimeError, "PKEY wasn't initialized!"); \
-    } \
-    RTYPEDDATA_DATA(obj) = (pkey); \
-    OSSL_PKEY_SET_PUBLIC(obj); \
-} while (0)
 #define GetPKey(obj, pkey) do {\
     TypedData_Get_Struct((obj), EVP_PKEY, &ossl_evp_pkey_type, (pkey)); \
     if (!(pkey)) { \
@@ -35,6 +26,7 @@ extern const rb_data_type_t ossl_evp_pkey_type;
     } \
 } while (0)
 
+/* Takes ownership of the EVP_PKEY */
 VALUE ossl_pkey_new(EVP_PKEY *);
 void ossl_pkey_check_public_key(const EVP_PKEY *);
 EVP_PKEY *ossl_pkey_read_generic(BIO *, VALUE);
@@ -124,6 +116,7 @@ static VALUE ossl_##_keytype##_get_##_name(VALUE self)			\
 	OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, a2,			\
 		_type##_get0_##_group(obj, NULL, &bn))
 
+#if !OSSL_OPENSSL_PREREQ(3, 0, 0)
 #define OSSL_PKEY_BN_DEF_SETTER3(_keytype, _type, _group, a1, a2, a3)	\
 /*									\
  *  call-seq:								\
@@ -181,6 +174,21 @@ static VALUE ossl_##_keytype##_set_##_group(VALUE self, VALUE v1, VALUE v2) \
 	}								\
 	return self;							\
 }
+#else
+#define OSSL_PKEY_BN_DEF_SETTER3(_keytype, _type, _group, a1, a2, a3)	\
+static VALUE ossl_##_keytype##_set_##_group(VALUE self, VALUE v1, VALUE v2, VALUE v3) \
+{									\
+        rb_raise(ePKeyError,						\
+                 #_keytype"#set_"#_group"= is incompatible with OpenSSL 3.0"); \
+}
+
+#define OSSL_PKEY_BN_DEF_SETTER2(_keytype, _type, _group, a1, a2)	\
+static VALUE ossl_##_keytype##_set_##_group(VALUE self, VALUE v1, VALUE v2) \
+{									\
+        rb_raise(ePKeyError,						\
+                 #_keytype"#set_"#_group"= is incompatible with OpenSSL 3.0"); \
+}
+#endif
 
 #define OSSL_PKEY_BN_DEF3(_keytype, _type, _group, a1, a2, a3)		\
 	OSSL_PKEY_BN_DEF_GETTER3(_keytype, _type, _group, a1, a2, a3)	\

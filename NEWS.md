@@ -126,20 +126,6 @@ Note: We're only listing outstanding class updates.
 
 * Class
 
-    *   Class#descendants, which returns an array of classes
-        directly or indirectly inheriting from the receiver, not
-        including the receiver or singleton classes.
-        [[Feature #14394]]
-
-        ```ruby
-        class A; end
-        class B < A; end
-        class C < B; end
-        A.descendants    #=> [B, C]
-        B.descendants    #=> [C]
-        C.descendants    #=> []
-        ```
-
     *   Class#subclasses, which returns an array of classes
         directly inheriting from the receiver, not
         including singleton classes.
@@ -344,7 +330,7 @@ Note: We're only listing outstanding class updates.
     * ipaddr 1.2.3
     * irb 1.3.8.pre.11
     * json 2.6.1
-    * logger 1.4.4
+    * logger 1.5.0
     * net-http 0.2.0
     * net-protocol 0.1.2
     * nkf 0.1.1
@@ -353,9 +339,9 @@ Note: We're only listing outstanding class updates.
     * optparse 0.2.0
     * ostruct 0.5.2
     * pathname 0.2.0
-    * pp 0.2.1
+    * pp 0.3.0
     * prettyprint 0.1.1
-    * psych 4.0.2
+    * psych 4.0.3
     * racc 1.6.0
     * rdoc 6.3.2
     * readline-ext 0.1.3
@@ -379,10 +365,10 @@ Note: We're only listing outstanding class updates.
     * minitest 5.15.0
     * power_assert 2.0.1
     * rake 13.0.6
-    * test-unit 3.5.2
+    * test-unit 3.5.3
     * rexml 3.2.5
     * rbs 1.8.1
-    * typeprof 0.20.4
+    * typeprof 0.21.0
 *   The following default gems are now bundled gems.
     * net-ftp 0.1.3
     * net-imap 0.2.2
@@ -555,7 +541,6 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Feature #12495]: https://bugs.ruby-lang.org/issues/12495
 [Feature #12913]: https://bugs.ruby-lang.org/issues/12913
 [Feature #14256]: https://bugs.ruby-lang.org/issues/14256
-[Feature #14394]: https://bugs.ruby-lang.org/issues/14394
 [Feature #14579]: https://bugs.ruby-lang.org/issues/14579
 [Feature #15198]: https://bugs.ruby-lang.org/issues/15198
 [Feature #15211]: https://bugs.ruby-lang.org/issues/15211
