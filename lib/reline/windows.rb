@@ -413,7 +413,7 @@ class Reline::Windows
   def self.clear_screen
     if @@legacy_console
       return unless csbi = get_console_screen_buffer_info
-      buffer_width, buffer_lines, attributes, window_top, window_bottom = csbi.unpack('ss@8S@12sx2s')
+      buffer_width, _buffer_lines, attributes, window_top, window_bottom = csbi.unpack('ss@8S@12sx2s')
       fill_length = buffer_width * (window_bottom - window_top + 1)
       screen_topleft = window_top * 65536
       written = 0.chr * 4
