@@ -1180,9 +1180,11 @@ io_buffer_clear(int argc, VALUE *argv, VALUE self)
         offset = NUM2SIZET(argv[1]);
     }
 
-    size_t length = data->size;
+    size_t length;
     if (argc >= 3) {
         length = NUM2SIZET(argv[2]);
+    } else {
+        length = data->size - offset;
     }
 
     rb_io_buffer_clear(self, value, offset, length);
