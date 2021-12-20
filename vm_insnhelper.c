@@ -1766,7 +1766,7 @@ vm_ccs_verify(struct rb_class_cc_entries *ccs, ID mid, VALUE klass)
 
 #ifndef MJIT_HEADER
 
-static const rb_callable_method_entry_t *overloaded_cme(const rb_callable_method_entry_t *cme);
+static const rb_callable_method_entry_t *check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_callinfo * const ci);
 
 static const struct rb_callcache *
 vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
@@ -1780,7 +1780,6 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
         if (rb_id_table_lookup(cc_tbl, mid, &ccs_data)) {
             ccs = (struct rb_class_cc_entries *)ccs_data;
             const int ccs_len = ccs->len;
-            VM_ASSERT(vm_ccs_verify(ccs, mid, klass));
 
             if (UNLIKELY(METHOD_ENTRY_INVALIDATED(ccs->cme))) {
                 rb_vm_ccs_free(ccs);
@@ -1788,6 +1787,8 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
                 ccs = NULL;
             }
             else {
+                VM_ASSERT(vm_ccs_verify(ccs, mid, klass));
+
                 for (int i=0; i<ccs_len; i++) {
                     const struct rb_callinfo  *ccs_ci = ccs->entries[i].ci;
                     const struct rb_callcache *ccs_cc = ccs->entries[i].cc;
@@ -1852,15 +1853,8 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
         }
     }
 
-    if (cme->def->iseq_overload &&
-        (vm_ci_flag(ci) & (VM_CALL_ARGS_SIMPLE)) &&
-        (int)vm_ci_argc(ci) == method_entry_iseqptr(cme)->body->param.lead_num
-    ) {
-        // use alternative
-        cme = overloaded_cme(cme);
-        METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
-        // rp(cme);
-    }
+    cme = check_overloaded_cme(cme, ci);
+
     const struct rb_callcache *cc = vm_cc_new(klass, cme, vm_call_general);
     vm_ccs_push(klass, ccs, ci, cc);
 

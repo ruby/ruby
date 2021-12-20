@@ -725,4 +725,21 @@ class TestISeq < Test::Unit::TestCase
       assert_equal at0, Time.public_send(:at, 0, 0)
     RUBY
   end
+
+  def test_mandatory_only_redef
+    assert_separately ['-W0'], <<~RUBY
+      r = Ractor.new{
+        Float(10)
+        module Kernel
+          undef Float
+          def Float(n)
+            :new
+          end
+        end
+        GC.start
+        Float(30)
+      }
+      assert_equal :new, r.take
+    RUBY
+  end
 end

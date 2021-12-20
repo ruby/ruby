@@ -6363,6 +6363,8 @@ rb_mark_hash(st_table *tbl)
     mark_st(&rb_objspace, tbl);
 }
 
+const rb_callable_method_entry_t *rb_vm_lookup_overloaded_cme(const rb_callable_method_entry_t *cme);
+
 static void
 mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
 {
@@ -6376,7 +6378,13 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
           case VM_METHOD_TYPE_ISEQ:
             if (def->body.iseq.iseqptr) gc_mark(objspace, (VALUE)def->body.iseq.iseqptr);
             gc_mark(objspace, (VALUE)def->body.iseq.cref);
-            if (def->body.iseq.mandatory_only_cme) gc_mark(objspace, (VALUE)def->body.iseq.mandatory_only_cme);
+            if (def->iseq_overload && me->defined_class) { // cme
+                const rb_callable_method_entry_t *monly_cme = rb_vm_lookup_overloaded_cme((const rb_callable_method_entry_t *)me);
+                if (monly_cme) {
+                    gc_mark(objspace, (VALUE)monly_cme);
+                    gc_mark_and_pin(objspace, (VALUE)me);
+                }
+            }
             break;
 	  case VM_METHOD_TYPE_ATTRSET:
 	  case VM_METHOD_TYPE_IVAR:
@@ -9599,9 +9607,6 @@ gc_ref_update_method_entry(rb_objspace_t *objspace, rb_method_entry_t *me)
                 TYPED_UPDATE_IF_MOVED(objspace, rb_iseq_t *, def->body.iseq.iseqptr);
             }
             TYPED_UPDATE_IF_MOVED(objspace, rb_cref_t *, def->body.iseq.cref);
-            if (def->body.iseq.mandatory_only_cme) {
-                TYPED_UPDATE_IF_MOVED(objspace, rb_callable_method_entry_t *, def->body.iseq.mandatory_only_cme);
-            }
             break;
           case VM_METHOD_TYPE_ATTRSET:
           case VM_METHOD_TYPE_IVAR:
@@ -10108,6 +10113,9 @@ gc_ref_update(void *vstart, void *vend, size_t stride, rb_objspace_t * objspace,
 extern rb_symbols_t ruby_global_symbols;
 #define global_symbols ruby_global_symbols
 
+
+st_table *rb_vm_overloaded_cme_table(void);
+
 static void
 gc_update_references(rb_objspace_t *objspace)
 {
@@ -10143,6 +10151,7 @@ gc_update_references(rb_objspace_t *objspace)
     gc_update_table_refs(objspace, objspace->id_to_obj_tbl);
     gc_update_table_refs(objspace, global_symbols.str_sym);
     gc_update_table_refs(objspace, finalizer_table);
+    gc_update_table_refs(objspace, rb_vm_overloaded_cme_table());
 }
 
 static VALUE
