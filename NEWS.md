@@ -353,7 +353,7 @@ Note: We're only listing outstanding class updates.
     * optparse 0.2.0
     * ostruct 0.5.2
     * pathname 0.2.0
-    * pp 0.2.1
+    * pp 0.3.0
     * prettyprint 0.1.1
     * psych 4.0.2
     * racc 1.6.0
