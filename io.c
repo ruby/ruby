@@ -3203,66 +3203,83 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
 
 /*
  *  call-seq:
- *     ios.readpartial(maxlen)              -> string
- *     ios.readpartial(maxlen, outbuf)      -> outbuf
+ *    readpartial(maxlen)             -> new_string
+ *    readpartial(maxlen, out_string) -> out_string
  *
- *  Reads at most <i>maxlen</i> bytes from the I/O stream.
- *  It blocks only if <em>ios</em> has no data immediately available.
- *  It doesn't block if some data available.
+ *  Reads up to +maxlen+ bytes from the stream.
  *
- *  If the optional _outbuf_ argument is present,
- *  it must reference a String, which will receive the data.
- *  The _outbuf_ will contain only the received data after the method call
- *  even if it is not empty at the beginning.
+ *  With the single non-negative integer argument +maxlen+ given,
+ *  returns a new string with +maxlen+ bytes from the stream, if available,
+ *  or all available bytes otherwise:
  *
- *  It raises EOFError on end of file.
+ *    f = File.new('t.txt')
+ *    f.readpartial(30) # => "This is line one.\nThis is the"
+ *    f.readpartial(30) # => " second line.\nThis is the thi"
+ *    f.readpartial(30) # => "rd line.\n"
+ *    f.eof             # => true
+ *    f.readpartial(30) # Raises EOFError.
  *
- *  readpartial is designed for streams such as pipe, socket, tty, etc.
- *  It blocks only when no data immediately available.
- *  This means that it blocks only when following all conditions hold.
- *  * the byte buffer in the IO object is empty.
- *  * the content of the stream is empty.
- *  * the stream is not reached to EOF.
+ *  With integer argument +maxlen+ and string argument +out_string+ given,
+ *  returns +out_string+ with +maxlen+ bytes from the stream, if available,
+ *  or all available bytes otherwise;
+ *  if any bytes are read, they replace the content of +out_string+:
  *
- *  When readpartial blocks, it waits data or EOF on the stream.
- *  If some data is reached, readpartial returns with the data.
- *  If EOF is reached, readpartial raises EOFError.
+ *    f = File.new('t.txt')
+ *    s = 'foo'
+ *    f.readpartial(30, s) # => "This is line one.\nThis is the"
+ *    s = 'bar'
+ *    f.readpartial(0, s)  # => "bar"
  *
- *  When readpartial doesn't blocks, it returns or raises immediately.
- *  If the byte buffer is not empty, it returns the data in the buffer.
- *  Otherwise if the stream has some content,
- *  it returns the data in the stream.
- *  Otherwise if the stream is reached to EOF, it raises EOFError.
+ *  This method is useful for a stream such as a pipe, a socket, or a tty.
+ *  It blocks only when no data is immediately available.
+ *  This means that it blocks only when _all_ of the following are true:
  *
- *     r, w = IO.pipe           #               buffer          pipe content
- *     w << "abc"               #               ""              "abc".
- *     r.readpartial(4096)      #=> "abc"       ""              ""
- *     r.readpartial(4096)      # blocks because buffer and pipe is empty.
+ *  - The byte buffer in the stream is empty.
+ *  - The content of the stream is empty.
+ *  - The stream is not at EOF.
  *
- *     r, w = IO.pipe           #               buffer          pipe content
- *     w << "abc"               #               ""              "abc"
- *     w.close                  #               ""              "abc" EOF
- *     r.readpartial(4096)      #=> "abc"       ""              EOF
- *     r.readpartial(4096)      # raises EOFError
+ *  When blocked, the method waits for either more data or EOF on the stream:
  *
- *     r, w = IO.pipe           #               buffer          pipe content
- *     w << "abc\ndef\n"        #               ""              "abc\ndef\n"
- *     r.gets                   #=> "abc\n"     "def\n"         ""
- *     w << "ghi\n"             #               "def\n"         "ghi\n"
- *     r.readpartial(4096)      #=> "def\n"     ""              "ghi\n"
- *     r.readpartial(4096)      #=> "ghi\n"     ""              ""
+ *  - If more data is read, the method returns the data.
+ *  - If EOF is reached, the method raises EOFError.
  *
- *  Note that readpartial behaves similar to sysread.
- *  The differences are:
- *  * If the byte buffer is not empty, read from the byte buffer
+ *  When not blocked, the method responds immediately:
+ *
+ *  - If the byte buffer is not empty, it returns the data in the buffer.
+ *  - Otherwise if the stream has some content, it returns the data in the stream.
+ *  - Otherwise if the stream is reached to EOF, it raises EOFError.
+ *
+ *  Note that this method is similar to sysread. The differences are:
+ *
+ *  - If the byte buffer is not empty, read from the byte buffer
  *    instead of "sysread for buffered IO (IOError)".
- *  * It doesn't cause Errno::EWOULDBLOCK and Errno::EINTR.  When
+ *  - It doesn't cause Errno::EWOULDBLOCK and Errno::EINTR.  When
  *    readpartial meets EWOULDBLOCK and EINTR by read system call,
- *    readpartial retry the system call.
+ *    readpartial retries the system call.
  *
- *  The latter means that readpartial is nonblocking-flag insensitive.
+ *  The latter means that readpartial is non-blocking-flag insensitive.
  *  It blocks on the situation IO#sysread causes Errno::EWOULDBLOCK as
  *  if the fd is blocking mode.
+ *
+ *  Examples:
+ *
+ *     r, w = IO.pipe           #               Buffer Content    Pipe Content
+ *     w << 'abc'               #               ""                "abc".
+ *     r.readpartial(4096)      # => "abc"      ""                ""
+ *     r.readpartial(4096)      # Blocks because buffer and pipe is empty.
+ *
+ *     r, w = IO.pipe           #               Buffer Content    Pipe Content
+ *     w << 'abc'               #               ""                "abc"
+ *     w.close                  #               ""                "abc" EOF
+ *     r.readpartial(4096)      # => "abc"      ""                 EOF
+ *     r.readpartial(4096)      # raises EOFError
+ *
+ *     r, w = IO.pipe           #               Buffer Content    Pipe Content
+ *     w << "abc\ndef\n"        #               ""                "abc\ndef\n"
+ *     r.gets                   # => "abc\n"    "def\n"           ""
+ *     w << "ghi\n"             #               "def\n"           "ghi\n"
+ *     r.readpartial(4096)      # => "def\n"    ""                "ghi\n"
+ *     r.readpartial(4096)      # => "ghi\n"    ""                ""
  *
  */
 
@@ -3377,69 +3394,68 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
 
 /*
  *  call-seq:
- *     ios.read([length [, outbuf]])    -> string, outbuf, or nil
+ *    read(maxlen = nil)             -> new_string or nil
+ *    read(maxlen = nil, out_string) -> out_string or nil
  *
- *  Reads _length_ bytes from the I/O stream.
+ *  Reads (in binary mode) up to +maxlen+ bytes from the stream.
  *
- *  _length_ must be a non-negative integer or +nil+.
+ *  If +maxlen+ is +nil+, reads the entire stream and returns the content as a string;
+ *  encoding conversion is applied, if applicable:
  *
- *  If _length_ is a positive integer, +read+ tries to read
- *  _length_ bytes without any conversion (binary mode).
- *  It returns +nil+ if an EOF is encountered before anything can be read.
- *  Fewer than _length_ bytes are returned if an EOF is encountered during
- *  the read.
- *  In the case of an integer _length_, the resulting string is always
- *  in ASCII-8BIT encoding.
+ *    f = File.new('t.txt')
+ *    f.read # => "This is line one.\nThis is the second line.\nThis is the third line.\n"
+ *    f.eof  # => true
+ *    f.read # => ""
  *
- *  If _length_ is omitted or is +nil+, it reads until EOF
- *  and the encoding conversion is applied, if applicable.
- *  A string is returned even if EOF is encountered before any data is read.
+ *  If +maxlen+ is zero, returns an empty string:
  *
- *  If _length_ is zero, it returns an empty string (<code>""</code>).
+ *    f = File.new('t.txt')
+ *    f.read(0) # => ""
  *
- *  If the optional _outbuf_ argument is present,
- *  it must reference a String, which will receive the data.
- *  The _outbuf_ will contain only the received data after the method call
- *  even if it is not empty at the beginning.
+ *  If +maxlen+ is positive and the stream has unread data,
+ *  returns a new string with +maxlen+ bytes from the stream, if available,
+ *  or all available bytes otherwise;
+ *  the returned string has ASCII-8BIT encoding:
  *
- *  When this method is called at end of file, it returns +nil+
- *  or <code>""</code>, depending on _length_:
- *  +read+, <code>read(nil)</code>, and <code>read(0)</code> return
- *  <code>""</code>,
- *  <code>read(<i>positive_integer</i>)</code> returns +nil+.
  *
- *     f = File.new("testfile")
- *     f.read(16)   #=> "This is line one"
+ *  Returns +nil+ if +maxlen+ is positive and the stream has no unread data:
  *
- *     # read whole file
- *     open("file") do |f|
- *       data = f.read   # This returns a string even if the file is empty.
- *       # ...
- *     end
+ *  With integer argument +maxlen+ and string argument +out_string+ given,
+ *  returns +out_string+ with +maxlen+ bytes from the stream, if available,
+ *  or all available bytes otherwise;
+ *  if any bytes are read, they replace the content of +out_string+:
  *
- *     # iterate over fixed length records
- *     open("fixed-record-file") do |f|
- *       while record = f.read(256)
- *         # ...
- *       end
- *     end
+ *    f = File.new('t.txt')
+ *    s = 'foo'
+ *    f.read(30, s) # => "This is line one.\r\nThis is the"
+ *    s             # => "This is line one.\r\nThis is the"
+ *    f.read(30, s) # => " second line.\r\nThis is the thi"
+ *    s             # => " second line.\r\nThis is the thi"
+ *    f.read(30, s) # => "rd line.\r\n"
+ *    s             # => "rd line.\r\n"
+ *    f.eof         # => true
+ *    f.read(30, s) # => nil
+ *    s             # => ""
  *
- *     # iterate over variable length records,
- *     # each record is prefixed by its 32-bit length
- *     open("variable-record-file") do |f|
- *       while len = f.read(4)
- *         len = len.unpack1("N")     # 32-bit length
- *         record = f.read(len)       # This returns a string even if len is 0.
- *       end
- *     end
+ *  More examples:
+ *
+ *    # Read empty file (returns empty string).
+ *    File.write('t.tmp', '')
+ *    f = File.new('t.tmp')
+ *    f.read # => ""
+ *
+ *    # Read entire non-empty file.
+ *    f = File.new('t.txt')
+ *    f.read # => "This is line one.\nThis is the second line.\nThis is the third line.\n"
  *
  *  Note that this method behaves like the fread() function in C.
  *  This means it retries to invoke read(2) system calls to read data
- *  with the specified length (or until EOF).
- *  This behavior is preserved even if <i>ios</i> is in non-blocking mode.
- *  (This method is non-blocking flag insensitive as other methods.)
+ *  with the specified maxlen (or until EOF).
+ *  This behavior is preserved even if the stream is in non-blocking mode.
+ *  (This method is non-blocking-flag insensitive as other methods.)
  *  If you need the behavior like a single read(2) system call,
  *  consider #readpartial, #read_nonblock, and #sysread.
+ *
  */
 
 static VALUE
@@ -3925,9 +3941,14 @@ rb_io_gets_internal(VALUE io)
 
 /*
  *  call-seq:
- *     ios.gets(sep=$/ [, getline_args])     -> string or nil
- *     ios.gets(limit [, getline_args])      -> string or nil
- *     ios.gets(sep, limit [, getline_args]) -> string or nil
+ *    gets(sep = $/, getline_args = {})   -> string or nil
+ *    gets(limit, getline_args = {})      -> string or nil
+ *    gets(sep, limit, getline_args = {}) -> string or nil
+ *
+ *  Reads and returns the next line read from the stream,
+ *  or +nil+ if none available.
+ *
+ *  With no arguments given,
  *
  *  Reads the next ``line'' from the I/O stream; lines are separated by
  *  <i>sep</i>. A separator of +nil+ reads the entire
