@@ -87,10 +87,11 @@ module Bundler
         @platforms = @locked_platforms.dup
         @locked_bundler_version = @locked_gems.bundler_version
         @locked_ruby_version = @locked_gems.ruby_version
+        @originally_locked_specs = SpecSet.new(@locked_gems.specs)
 
         if unlock != true
           @locked_deps    = @locked_gems.dependencies
-          @locked_specs   = SpecSet.new(@locked_gems.specs)
+          @locked_specs   = @originally_locked_specs
           @locked_sources = @locked_gems.sources
         else
           @unlock         = {}
@@ -691,13 +692,16 @@ module Bundler
     def converge_specs(specs)
       deps = []
       converged = []
+
+      @dependencies.each do |dep|
+        if specs[dep].any? {|s| s.satisfies?(dep) && (!dep.source || s.source.include?(dep.source)) }
+          deps << dep
+        end
+      end
+
       specs.each do |s|
         # Replace the locked dependency's source with the equivalent source from the Gemfile
         dep = @dependencies.find {|d| s.satisfies?(d) }
-
-        if dep && (!dep.source || s.source.include?(dep.source))
-          deps << dep
-        end
 
         s.source = (dep && dep.source) || sources.get(s.source) || sources.default_source unless Bundler.frozen_bundle?
 
@@ -830,7 +834,7 @@ module Bundler
 
     def additional_base_requirements_for_resolve
       return [] unless @locked_gems && unlocking? && !sources.expired_sources?(@locked_gems.sources)
-      converge_specs(@locked_gems.specs).map do |locked_spec|
+      converge_specs(@originally_locked_specs).map do |locked_spec|
         name = locked_spec.name
         dep = Gem::Dependency.new(name, ">= #{locked_spec.version}")
         DepProxy.get_proxy(dep, locked_spec.platform)
