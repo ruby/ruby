@@ -69,8 +69,8 @@ io_buffer_map_file(struct rb_io_buffer *data, int descriptor, size_t size, off_t
 
     DWORD protect = PAGE_READONLY, access = FILE_MAP_READ;
 
-    if (flags & RB_IO_BUFFER_IMMUTABLE) {
-        data->flags |= RB_IO_BUFFER_IMMUTABLE;
+    if (flags & RB_IO_BUFFER_READONLY) {
+        data->flags |= RB_IO_BUFFER_READONLY;
     }
     else {
         protect = PAGE_READWRITE;
@@ -99,8 +99,8 @@ io_buffer_map_file(struct rb_io_buffer *data, int descriptor, size_t size, off_t
 #else
     int protect = PROT_READ, access = 0;
 
-    if (flags & RB_IO_BUFFER_IMMUTABLE) {
-        data->flags |= RB_IO_BUFFER_IMMUTABLE;
+    if (flags & RB_IO_BUFFER_READONLY) {
+        data->flags |= RB_IO_BUFFER_READONLY;
     }
     else {
         protect |= PROT_WRITE;
@@ -292,7 +292,7 @@ rb_io_buffer_type_for(VALUE klass, VALUE string)
     enum rb_io_buffer_flags flags = RB_IO_BUFFER_EXTERNAL;
 
     if (RB_OBJ_FROZEN(string))
-        flags |= RB_IO_BUFFER_IMMUTABLE;
+        flags |= RB_IO_BUFFER_READONLY;
 
     io_buffer_initialize(data, RSTRING_PTR(string), RSTRING_LEN(string), flags, string);
 
@@ -364,7 +364,7 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
         offset = NUM2OFFT(argv[2]);
     }
 
-    enum rb_io_buffer_flags flags = RB_IO_BUFFER_IMMUTABLE;
+    enum rb_io_buffer_flags flags = RB_IO_BUFFER_READONLY;
     if (argc >= 4) {
         flags = RB_NUM2UINT(argv[3]);
     }
@@ -426,7 +426,7 @@ io_buffer_validate_slice(VALUE source, void *base, size_t size)
         RSTRING_GETMEM(source, source_base, source_size);
     }
     else {
-        rb_io_buffer_get_immutable(source, &source_base, &source_size);
+        rb_io_buffer_get_readonly(source, &source_base, &source_size);
     }
 
     // Source is invalid:
@@ -484,8 +484,8 @@ rb_io_buffer_to_s(VALUE self)
         rb_str_cat2(result, " LOCKED");
     }
 
-    if (data->flags & RB_IO_BUFFER_IMMUTABLE) {
-        rb_str_cat2(result, " IMMUTABLE");
+    if (data->flags & RB_IO_BUFFER_READONLY) {
+        rb_str_cat2(result, " READONLY");
     }
 
     if (data->source != Qnil) {
@@ -572,6 +572,15 @@ rb_io_buffer_null_p(VALUE self)
 }
 
 static VALUE
+rb_io_buffer_empty_p(VALUE self)
+{
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    return data->size ? Qtrue : Qfalse;
+}
+
+static VALUE
 rb_io_buffer_external_p(VALUE self)
 {
     struct rb_io_buffer *data = NULL;
@@ -607,13 +616,19 @@ rb_io_buffer_locked_p(VALUE self)
     return data->flags & RB_IO_BUFFER_LOCKED ? Qtrue : Qfalse;
 }
 
-static VALUE
-rb_io_buffer_immutable_p(VALUE self)
+int
+rb_io_buffer_readonly_p(VALUE self)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
-    return data->flags & RB_IO_BUFFER_IMMUTABLE ? Qtrue : Qfalse;
+    return data->flags & RB_IO_BUFFER_READONLY;
+}
+
+static VALUE
+io_buffer_readonly_p(VALUE self)
+{
+    return rb_io_buffer_readonly_p(self) ? Qtrue : Qfalse;
 }
 
 VALUE
@@ -717,10 +732,10 @@ rb_io_buffer_slice(VALUE self, VALUE _offset, VALUE _length)
 }
 
 static void
-io_buffer_get_mutable(struct rb_io_buffer *data, void **base, size_t *size)
+io_buffer_get(struct rb_io_buffer *data, void **base, size_t *size)
 {
-    if (data->flags & RB_IO_BUFFER_IMMUTABLE) {
-        rb_raise(rb_eIOBufferMutationError, "Buffer is immutable!");
+    if (data->flags & RB_IO_BUFFER_READONLY) {
+        rb_raise(rb_eIOBufferMutationError, "Buffer is not writable!");
     }
 
     if (!io_buffer_validate(data)) {
@@ -738,16 +753,16 @@ io_buffer_get_mutable(struct rb_io_buffer *data, void **base, size_t *size)
 }
 
 void
-rb_io_buffer_get_mutable(VALUE self, void **base, size_t *size)
+rb_io_buffer_get(VALUE self, void **base, size_t *size)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
-    io_buffer_get_mutable(data, base, size);
+    io_buffer_get(data, base, size);
 }
 
 void
-rb_io_buffer_get_immutable(VALUE self, const void **base, size_t *size)
+rb_io_buffer_get_readonly(VALUE self, const void **base, size_t *size)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -881,8 +896,8 @@ rb_io_buffer_compare(VALUE self, VALUE other)
     const void *ptr1, *ptr2;
     size_t size1, size2;
 
-    rb_io_buffer_get_immutable(self, &ptr1, &size1);
-    rb_io_buffer_get_immutable(other, &ptr2, &size2);
+    rb_io_buffer_get_readonly(self, &ptr1, &size1);
+    rb_io_buffer_get_readonly(other, &ptr2, &size2);
 
     if (size1 < size2) {
         return RB_INT2NUM(-1);
@@ -1035,7 +1050,7 @@ io_buffer_get_value(VALUE self, VALUE type, VALUE _offset)
     size_t size;
     size_t offset = NUM2SIZET(_offset);
 
-    rb_io_buffer_get_immutable(self, &base, &size);
+    rb_io_buffer_get_readonly(self, &base, &size);
 
     return rb_io_buffer_get_value(base, size, RB_SYM2ID(type), offset);
 }
@@ -1078,7 +1093,7 @@ io_buffer_set_value(VALUE self, VALUE type, VALUE _offset, VALUE value)
     size_t size;
     size_t offset = NUM2SIZET(_offset);
 
-    rb_io_buffer_get_mutable(self, &base, &size);
+    rb_io_buffer_get(self, &base, &size);
 
     rb_io_buffer_set_value(base, size, RB_SYM2ID(type), offset, value);
 
@@ -1090,7 +1105,7 @@ io_buffer_memcpy(struct rb_io_buffer *data, size_t offset, const void *source_ba
 {
     void *base;
     size_t size;
-    io_buffer_get_mutable(data, &base, &size);
+    io_buffer_get(data, &base, &size);
 
     rb_io_buffer_validate(data, offset, length);
 
@@ -1153,7 +1168,7 @@ io_buffer_copy(int argc, VALUE *argv, VALUE self)
     const void *source_base;
     size_t source_size;
 
-    rb_io_buffer_get_immutable(source, &source_base, &source_size);
+    rb_io_buffer_get_readonly(source, &source_base, &source_size);
 
     return io_buffer_copy_from(data, source_base, source_size, argc-1, argv+1);
 }
@@ -1213,7 +1228,7 @@ rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length)
     void *base;
     size_t size;
 
-    rb_io_buffer_get_mutable(self, &base, &size);
+    rb_io_buffer_get(self, &base, &size);
 
     if (offset + length > size) {
         rb_raise(rb_eArgError, "The given offset + length out of bounds!");
@@ -1319,7 +1334,7 @@ Init_IO_Buffer(void)
     rb_define_const(rb_cIOBuffer, "MAPPED", RB_INT2NUM(RB_IO_BUFFER_MAPPED));
     rb_define_const(rb_cIOBuffer, "LOCKED", RB_INT2NUM(RB_IO_BUFFER_LOCKED));
     rb_define_const(rb_cIOBuffer, "PRIVATE", RB_INT2NUM(RB_IO_BUFFER_PRIVATE));
-    rb_define_const(rb_cIOBuffer, "IMMUTABLE", RB_INT2NUM(RB_IO_BUFFER_IMMUTABLE));
+    rb_define_const(rb_cIOBuffer, "READONLY", RB_INT2NUM(RB_IO_BUFFER_READONLY));
 
     // Endian:
     rb_define_const(rb_cIOBuffer, "LITTLE_ENDIAN", RB_INT2NUM(RB_IO_BUFFER_LITTLE_ENDIAN));
@@ -1328,11 +1343,12 @@ Init_IO_Buffer(void)
     rb_define_const(rb_cIOBuffer, "NETWORK_ENDIAN", RB_INT2NUM(RB_IO_BUFFER_NETWORK_ENDIAN));
 
     rb_define_method(rb_cIOBuffer, "null?", rb_io_buffer_null_p, 0);
+    rb_define_method(rb_cIOBuffer, "empty?", rb_io_buffer_empty_p, 0);
     rb_define_method(rb_cIOBuffer, "external?", rb_io_buffer_external_p, 0);
     rb_define_method(rb_cIOBuffer, "internal?", rb_io_buffer_internal_p, 0);
     rb_define_method(rb_cIOBuffer, "mapped?", rb_io_buffer_mapped_p, 0);
     rb_define_method(rb_cIOBuffer, "locked?", rb_io_buffer_locked_p, 0);
-    rb_define_method(rb_cIOBuffer, "immutable?", rb_io_buffer_immutable_p, 0);
+    rb_define_method(rb_cIOBuffer, "readonly?", io_buffer_readonly_p, 0);
 
     // Locking to prevent changes while using pointer:
     // rb_define_method(rb_cIOBuffer, "lock", rb_io_buffer_lock, 0);

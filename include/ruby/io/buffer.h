@@ -44,7 +44,7 @@ enum rb_io_buffer_flags {
     RB_IO_BUFFER_PRIVATE = 64,
 
     // The buffer is read-only and cannot be modified.
-    RB_IO_BUFFER_IMMUTABLE = 128
+    RB_IO_BUFFER_READONLY = 128
 };
 
 enum rb_io_buffer_endian {
@@ -71,8 +71,10 @@ VALUE rb_io_buffer_lock(VALUE self);
 VALUE rb_io_buffer_unlock(VALUE self);
 VALUE rb_io_buffer_free(VALUE self);
 
-void rb_io_buffer_get_mutable(VALUE self, void **base, size_t *size);
-void rb_io_buffer_get_immutable(VALUE self, const void **base, size_t *size);
+int rb_io_buffer_readonly_p(VALUE self);
+
+void rb_io_buffer_get(VALUE self, void **base, size_t *size);
+void rb_io_buffer_get_readonly(VALUE self, const void **base, size_t *size);
 
 VALUE rb_io_buffer_transfer(VALUE self);
 void rb_io_buffer_resize(VALUE self, size_t size);
