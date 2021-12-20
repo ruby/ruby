@@ -355,7 +355,7 @@ Note: We're only listing outstanding class updates.
     * pathname 0.2.0
     * pp 0.3.0
     * prettyprint 0.1.1
-    * psych 4.0.2
+    * psych 4.0.3
     * racc 1.6.0
     * rdoc 6.3.2
     * readline-ext 0.1.3
