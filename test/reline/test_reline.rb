@@ -313,11 +313,13 @@ class Reline::Test < Reline::TestCase
   def test_add_dialog_proc
     p = proc {}
     Reline.add_dialog_proc(:test_proc, p)
-    assert_equal(p, Reline.dialog_proc(:test_proc))
+    d = Reline.dialog_proc(:test_proc)
+    assert_equal(p, d.dialog_proc)
 
     l = lambda {}
     Reline.add_dialog_proc(:test_lambda, l)
-    assert_equal(l, Reline.dialog_proc(:test_lambda))
+    d = Reline.dialog_proc(:test_lambda)
+    assert_equal(l, d.dialog_proc)
 
     assert_equal(nil, Reline.dialog_proc(:test_nothing))
 
@@ -327,7 +329,8 @@ class Reline::Test < Reline::TestCase
 
     dummy = DummyCallbackObject.new
     Reline.add_dialog_proc(:dummy, dummy)
-    assert_equal(dummy, Reline.dialog_proc(:dummy))
+    d = Reline.dialog_proc(:dummy)
+    assert_equal(dummy, d.dialog_proc)
   end
 
   def test_readmultiline

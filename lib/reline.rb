@@ -60,7 +60,7 @@ module Reline
 
     def initialize
       self.output = STDOUT
-      @dialog_proc_list = []
+      @dialog_proc_list = {}
       yield self
       @completion_quote_character = nil
       @bracketed_paste_finished = false
@@ -155,16 +155,15 @@ module Reline
       @dig_perfect_match_proc = p
     end
 
+    DialogProc = Struct.new(:dialog_proc, :context)
     def add_dialog_proc(name_sym, p, context = nil)
       raise ArgumentError unless p.respond_to?(:call) or p.nil?
       raise ArgumentError unless name_sym.instance_of?(Symbol)
-      @dialog_proc_list << [name_sym, p, context]
+      @dialog_proc_list[name_sym] = DialogProc.new(p, context)
     end
 
     def dialog_proc(name_sym)
-      dialog = @dialog_proc_list.find { |d| d[0] == name_sym }
-      dialog.nil? ? nil : dialog[1]
-      #@dialog_proc_list[name_sym]
+      @dialog_proc_list[name_sym]
     end
 
     def input=(val)
@@ -307,9 +306,8 @@ module Reline
       line_editor.auto_indent_proc = auto_indent_proc
       line_editor.dig_perfect_match_proc = dig_perfect_match_proc
       line_editor.pre_input_hook = pre_input_hook
-      @dialog_proc_list.each do |d|
-        name_sym, dialog_proc, context = d
-        line_editor.add_dialog_proc(name_sym, dialog_proc, context)
+      @dialog_proc_list.each_pair do |name_sym, d|
+        line_editor.add_dialog_proc(name_sym, d.dialog_proc, d.context)
       end
 
       unless config.test_mode

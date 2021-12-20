@@ -634,8 +634,12 @@ class Reline::LineEditor
   end
 
   def add_dialog_proc(name, p, context = nil)
-    return if @dialogs.any? { |d| d.name == name }
-    @dialogs << Dialog.new(name, @config, DialogProcScope.new(self, @config, p, context))
+    dialog = Dialog.new(name, @config, DialogProcScope.new(self, @config, p, context))
+    if index = @dialogs.find_index { |d| d.name == name }
+      @dialogs[index] = dialog
+    else
+      @dialogs << dialog
+    end
   end
 
   DIALOG_DEFAULT_HEIGHT = 20
