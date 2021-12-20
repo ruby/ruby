@@ -149,6 +149,8 @@ invalidate_negative_cache(ID mid)
 static rb_method_entry_t *rb_method_entry_alloc(ID called_id, VALUE owner, VALUE defined_class, const rb_method_definition_t *def);
 const rb_method_entry_t * rb_method_entry_clone(const rb_method_entry_t *src_me);
 static const rb_callable_method_entry_t *complemented_callable_method_entry(VALUE klass, ID id);
+static const rb_callable_method_entry_t *lookup_overloaded_cme(const rb_callable_method_entry_t *cme);
+static void delete_overloaded_cme(const rb_callable_method_entry_t *cme);
 
 static void
 clear_method_cache_by_id_in_class(VALUE klass, ID mid)
@@ -156,6 +158,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
     VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
     if (rb_objspace_garbage_object_p(klass)) return;
 
+    RB_VM_LOCK_ENTER();
     if (LIKELY(RCLASS_SUBCLASSES(klass) == NULL)) {
         // no subclasses
         // check only current class
@@ -209,8 +212,12 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                 vm_cme_invalidate((rb_callable_method_entry_t *)cme);
                 RB_DEBUG_COUNTER_INC(cc_invalidate_tree_cme);
 
-                if (cme->def->iseq_overload && cme->def->body.iseq.mandatory_only_cme) {
-                    vm_cme_invalidate((rb_callable_method_entry_t *)cme->def->body.iseq.mandatory_only_cme);
+                if (cme->def->iseq_overload) {
+                    rb_callable_method_entry_t *monly_cme = (rb_callable_method_entry_t *)lookup_overloaded_cme(cme);
+                    if (monly_cme) {
+                        vm_cme_invalidate(monly_cme);
+                        delete_overloaded_cme(monly_cme);
+                    }
                 }
             }
 
@@ -230,6 +237,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
             invalidate_negative_cache(mid);
         }
     }
+    RB_VM_LOCK_LEAVE();
 
     rb_yjit_method_lookup_change(klass, mid);
 }
@@ -388,6 +396,9 @@ rb_method_definition_release(rb_method_definition_t *def, int complemented)
 void
 rb_free_method_entry(const rb_method_entry_t *me)
 {
+    if (me->def && me->def->iseq_overload) {
+        delete_overloaded_cme((const rb_callable_method_entry_t *)me);
+    }
     rb_method_definition_release(me->def, METHOD_ENTRY_COMPLEMENTED(me));
 }
 
@@ -548,7 +559,6 @@ method_definition_reset(const rb_method_entry_t *me)
       case VM_METHOD_TYPE_ISEQ:
 	RB_OBJ_WRITTEN(me, Qundef, def->body.iseq.iseqptr);
 	RB_OBJ_WRITTEN(me, Qundef, def->body.iseq.cref);
-        RB_OBJ_WRITTEN(me, Qundef, def->body.iseq.mandatory_only_cme);
         break;
       case VM_METHOD_TYPE_ATTRSET:
       case VM_METHOD_TYPE_IVAR:
@@ -911,19 +921,96 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     return me;
 }
 
-static const rb_callable_method_entry_t *
-overloaded_cme(const rb_callable_method_entry_t *cme)
+static rb_method_entry_t *rb_method_entry_alloc(ID called_id, VALUE owner, VALUE defined_class, const rb_method_definition_t *def);
+static st_table *overloaded_cme_table;
+
+st_table *
+rb_vm_overloaded_cme_table(void)
 {
-    VM_ASSERT(cme->def->iseq_overload);
-    VM_ASSERT(cme->def->type == VM_METHOD_TYPE_ISEQ);
-    VM_ASSERT(cme->def->body.iseq.iseqptr != NULL);
+    return overloaded_cme_table;
+}
 
-    const rb_callable_method_entry_t *monly_cme = cme->def->body.iseq.mandatory_only_cme;
+#if VM_CHECK_MODE > 0
+static int
+vm_dump_overloaded_cme_table(st_data_t key, st_data_t val, st_data_t dmy)
+{
+    fprintf(stderr, "key: "); rp(key);
+    fprintf(stderr, "val: "); rp(val);
+    return ST_CONTINUE;
+}
 
-    if (monly_cme && !METHOD_ENTRY_INVALIDATED(monly_cme)) {
-        // ok
+void
+rb_vm_dump_overloaded_cme_table(void)
+{
+    fprintf(stderr, "== rb_vm_dump_overloaded_cme_table\n");
+    st_foreach(overloaded_cme_table, vm_dump_overloaded_cme_table, 0);
+}
+#endif
+
+static int
+lookup_overloaded_cme_i(st_data_t *key, st_data_t *value, st_data_t data, int existing)
+{
+    if (existing) {
+        const rb_callable_method_entry_t *cme = (const rb_callable_method_entry_t *)*key;
+        const rb_callable_method_entry_t *monly_cme = (const rb_callable_method_entry_t *)*value;
+        const rb_callable_method_entry_t **ptr = (const rb_callable_method_entry_t **)data;
+
+        if (rb_objspace_garbage_object_p((VALUE)cme) ||
+            rb_objspace_garbage_object_p((VALUE)monly_cme) ||
+            METHOD_ENTRY_INVALIDATED(cme) ||
+            METHOD_ENTRY_INVALIDATED(monly_cme)) {
+
+            *ptr = NULL;
+            return ST_DELETE;
+        }
+        else {
+            *ptr = monly_cme;
+        }
+    }
+
+    return ST_STOP;
+}
+
+static const rb_callable_method_entry_t *
+lookup_overloaded_cme(const rb_callable_method_entry_t *cme)
+{
+    ASSERT_vm_locking();
+
+    const rb_callable_method_entry_t *monly_cme = NULL;
+    st_update(overloaded_cme_table, (st_data_t)cme, lookup_overloaded_cme_i, (st_data_t)&monly_cme);
+
+    if (monly_cme) {
+        return monly_cme;
     }
     else {
+        return NULL;
+    }
+}
+
+// used by gc.c
+MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
+rb_vm_lookup_overloaded_cme(const rb_callable_method_entry_t *cme)
+{
+    return lookup_overloaded_cme(cme);
+}
+
+static void
+delete_overloaded_cme(const rb_callable_method_entry_t *cme)
+{
+    ASSERT_vm_locking();
+    st_delete(overloaded_cme_table, (st_data_t *)&cme, NULL);
+}
+
+static const rb_callable_method_entry_t *
+get_overloaded_cme(const rb_callable_method_entry_t *cme)
+{
+    const rb_callable_method_entry_t *monly_cme = lookup_overloaded_cme(cme);
+
+    if (monly_cme) {
+        return monly_cme;
+    }
+    else {
+        // create
         rb_method_definition_t *def = rb_method_definition_create(VM_METHOD_TYPE_ISEQ, cme->def->original_id);
         def->body.iseq.cref = cme->def->body.iseq.cref;
         def->body.iseq.iseqptr = cme->def->body.iseq.iseqptr->body->mandatory_only_iseq;
@@ -932,12 +1019,30 @@ overloaded_cme(const rb_callable_method_entry_t *cme)
                                                       cme->owner,
                                                       cme->defined_class,
                                                       def);
+
+        ASSERT_vm_locking();
+        st_insert(overloaded_cme_table, (st_data_t)cme, (st_data_t)me);
+
         METHOD_ENTRY_VISI_SET(me, METHOD_ENTRY_VISI(cme));
-        RB_OBJ_WRITE(cme, &cme->def->body.iseq.mandatory_only_cme, me);
-        monly_cme = (rb_callable_method_entry_t *)me;
+        return (rb_callable_method_entry_t *)me;
+    }
+}
+
+static const rb_callable_method_entry_t *
+check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_callinfo * const ci)
+{
+    if (UNLIKELY(cme->def->iseq_overload) &&
+        (vm_ci_flag(ci) & (VM_CALL_ARGS_SIMPLE)) &&
+        (int)vm_ci_argc(ci) == method_entry_iseqptr(cme)->body->param.lead_num) {
+        VM_ASSERT(cme->def->type == VM_METHOD_TYPE_ISEQ); // iseq_overload is marked only on ISEQ methods
+
+        cme = get_overloaded_cme(cme);
+
+        VM_ASSERT(cme != NULL);
+        METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
     }
 
-    return monly_cme;
+    return cme;
 }
 
 #define CALL_METHOD_HOOK(klass, hook, mid) do {		\
@@ -2723,7 +2828,7 @@ obj_respond_to_missing(VALUE obj, VALUE mid, VALUE priv)
 void
 Init_Method(void)
 {
-    //
+    overloaded_cme_table = st_init_numtable();
 }
 
 void
