@@ -36,6 +36,9 @@ class TestFiberIOBuffer < Test::Unit::TestCase
     assert_equal MESSAGE, message
     assert_predicate(i, :closed?)
     assert_predicate(o, :closed?)
+  ensure
+    i&.close
+    o&.close
   end
 
   def test_timeout_after
@@ -67,6 +70,9 @@ class TestFiberIOBuffer < Test::Unit::TestCase
 
     assert_nil message
     assert_kind_of Timeout::Error, error
+  ensure
+    i&.close
+    o&.close
   end
 
   def test_read_nonblock
@@ -89,7 +95,9 @@ class TestFiberIOBuffer < Test::Unit::TestCase
     thread.join
 
     assert_equal :wait_readable, message
-    o.close
+  ensure
+    i&.close
+    o&.close
   end
 
   def test_write_nonblock
@@ -110,5 +118,8 @@ class TestFiberIOBuffer < Test::Unit::TestCase
     thread.join
 
     assert_equal MESSAGE, i.read
+  ensure
+    i&.close
+    o&.close
   end
 end
