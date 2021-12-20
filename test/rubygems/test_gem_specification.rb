@@ -147,6 +147,7 @@ end
   end
 
   def test_find_in_unresolved_tree_is_not_exponentiental
+    pend "currently slower in CI on TruffleRuby" if RUBY_ENGINE == 'truffleruby'
     num_of_pkg = 7
     num_of_version_per_pkg = 3
     packages = (0..num_of_pkg).map do |pkgi|
