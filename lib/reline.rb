@@ -290,7 +290,6 @@ module Reline
 
       may_req_ambiguous_char_width
       line_editor.reset(prompt, encoding: Reline::IOGate.encoding)
-      line_editor.set_signal_handlers
       if multiline
         line_editor.multiline_on
         if block_given?
@@ -320,6 +319,7 @@ module Reline
       line_editor.rerender
 
       begin
+        line_editor.set_signal_handlers
         prev_pasting_state = false
         loop do
           prev_pasting_state = Reline::IOGate.in_pasting?
@@ -348,6 +348,11 @@ module Reline
         line_editor.finalize
         Reline::IOGate.deprep(otio)
         raise e
+      rescue Exception
+        # Including Interrupt
+        line_editor.finalize
+        Reline::IOGate.deprep(otio)
+        raise
       end
 
       line_editor.finalize

@@ -235,7 +235,7 @@ class Reline::LineEditor
       when 'EXIT'
         exit
       else
-        @old_trap.call
+        @old_trap.call if @old_trap.respond_to?(:call)
       end
     }
     begin
