@@ -340,8 +340,6 @@ class Reline::ANSI
   end
 
   def self.deprep(otio)
-    int_handle = Signal.trap('INT', 'IGNORE')
-    Signal.trap('INT', int_handle)
     Signal.trap('WINCH', @@old_winch_handler) if @@old_winch_handler
   end
 end
