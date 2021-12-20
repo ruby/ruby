@@ -3941,9 +3941,9 @@ rb_io_gets_internal(VALUE io)
 
 /*
  *  call-seq:
- *     ios.gets(sep = $/, getline_args = {})   -> string or nil
- *     ios.gets(limit, getline_args = {})      -> string or nil
- *     ios.gets(sep, limit, getline_args = {}) -> string or nil
+ *     ios.gets(sep=$/ [, getline_args])     -> string or nil
+ *     ios.gets(limit [, getline_args])      -> string or nil
+ *     ios.gets(sep, limit [, getline_args]) -> string or nil
  *
  *  Reads the next ``line'' from the I/O stream; lines are separated by
  *  <i>sep</i>. A separator of +nil+ reads the entire
