@@ -204,7 +204,7 @@ module TestIRB
         \.irbrc\spath: .+\n
         RUBY_PLATFORM: .+\n
         LANG\senv:\sja_JP\.UTF-8\n
-        LC_ALL\s env:\sen_US\.UTF-8\n
+        LC_ALL\senv:\sen_US\.UTF-8\n
         East\sAsian\sAmbiguous\sWidth:\s\d\n
       }x
       assert_match expected, irb.context.main.irb_info.to_s
