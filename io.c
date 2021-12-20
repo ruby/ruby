@@ -2651,7 +2651,7 @@ rb_io_descriptor(VALUE io)
 
 /*
  *  call-seq:
- *    pid -> integer
+ *    pid -> integer or nil
  *
  *  Returns the process ID of a child process associated with the stream,
  *  which will have been set by IO#popen, or +nil+ if the stream was not
