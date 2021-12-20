@@ -1069,7 +1069,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     gems.each do |gem|
       package = Gem::Package.new(gem)
       inst = RbInstall::GemInstaller.new(package, options)
-      inst.spec.extension_dir = with_destdir(inst.spec.extension_dir)
+      inst.spec.extension_dir = "#{extensions_dir}/#{inst.spec.full_name}"
       begin
         Gem::DefaultUserInteraction.use_ui(silent) {inst.install}
       rescue Gem::InstallError
