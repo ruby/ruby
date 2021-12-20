@@ -2027,8 +2027,8 @@ io_writev(int argc, const VALUE *argv, VALUE io)
  *  returns the total number bytes written;
  *  each of +objects+ that is not a string is converted via method +to_s+:
  *
- *    $stdout.write('Hello', ', ', 'World!') # => 13
- *    $stdout.write('foo', :bar, 2) # => 7
+ *    $stdout.write('Hello', ', ', 'World!', "\n") # => 14
+ *    $stdout.write('foo', :bar, 2, "\n")          # => 8
  *
  *  Output:
  *
@@ -2081,8 +2081,8 @@ rb_io_writev(VALUE io, int argc, const VALUE *argv)
  *  returns +self+;
  *  if +object+ is not a string, it is converted via method +to_s+:
  *
- *    $stdout << 'Hello' << ', ' << 'World!'
- *    $stdout << 'foo' << :bar << 2
+ *    $stdout << 'Hello' << ', ' << 'World!' << "\n"
+ *    $stdout << 'foo' << :bar << 2 << "\n"
  *
  *  Output:
  *
