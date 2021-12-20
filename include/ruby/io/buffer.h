@@ -74,7 +74,6 @@ VALUE rb_io_buffer_free(VALUE self);
 void rb_io_buffer_get_mutable(VALUE self, void **base, size_t *size);
 void rb_io_buffer_get_immutable(VALUE self, const void **base, size_t *size);
 
-size_t rb_io_buffer_copy(VALUE self, VALUE source, size_t offset);
 VALUE rb_io_buffer_transfer(VALUE self);
 void rb_io_buffer_resize(VALUE self, size_t size);
 void rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length);

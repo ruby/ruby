@@ -61,11 +61,11 @@ class TestIOBuffer < Test::Unit::TestCase
     assert buffer.immutable?
 
     assert_raise IO::Buffer::MutationError do
-      buffer.copy("", 0)
+      buffer.set_string("")
     end
 
     assert_raise IO::Buffer::MutationError do
-      buffer.copy("!", 1)
+      buffer.set_string("!", 1)
     end
   end
 
@@ -93,7 +93,7 @@ class TestIOBuffer < Test::Unit::TestCase
       string[0] = "h"
     end
 
-    buffer.set(:U8, 0, "h".ord)
+    buffer.set_value(:U8, 0, "h".ord)
 
     # Buffer releases it's ownership of the string:
     buffer.free
@@ -131,7 +131,7 @@ class TestIOBuffer < Test::Unit::TestCase
   def test_resize_preserve
     message = "Hello World"
     buffer = IO::Buffer.new(1024)
-    buffer.copy(message, 0)
+    buffer.set_string(message)
     buffer.resize(2048)
     assert_equal message, buffer.get_string(0, message.bytesize)
   end
@@ -141,8 +141,8 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal buffer1, buffer1
 
     buffer2 = IO::Buffer.new(1)
-    buffer1.set(:U8, 0, 0x10)
-    buffer2.set(:U8, 0, 0x20)
+    buffer1.set_value(:U8, 0, 0x10)
+    buffer2.set_value(:U8, 0, 0x20)
 
     assert_negative buffer1 <=> buffer2
     assert_positive buffer2 <=> buffer1
@@ -159,7 +159,7 @@ class TestIOBuffer < Test::Unit::TestCase
   def test_slice
     buffer = IO::Buffer.new(128)
     slice = buffer.slice(8, 32)
-    slice.copy("Hello World", 0)
+    slice.set_string("Hello World")
     assert_equal("Hello World", buffer.get_string(8, 11))
   end
 
@@ -195,7 +195,7 @@ class TestIOBuffer < Test::Unit::TestCase
     message = "Hello World 🤓"
 
     buffer = IO::Buffer.new(128)
-    buffer.copy(message, 0)
+    buffer.set_string(message)
 
     chunk = buffer.get_string(0, message.bytesize, Encoding::UTF_8)
     assert_equal message, chunk
@@ -229,15 +229,20 @@ class TestIOBuffer < Test::Unit::TestCase
     :F64 => [-1.0, 0.0, 0.5, 1.0, 128.0],
   }
 
-  def test_get_set
+  def test_get_set_primitives
     buffer = IO::Buffer.new(128)
 
     RANGES.each do |type, values|
       values.each do |value|
-        buffer.set(type, 0, value)
-        assert_equal value, buffer.get(type, 0), "Converting #{value} as #{type}."
+        buffer.set_value(type, 0, value)
+        assert_equal value, buffer.get_value(type, 0), "Converting #{value} as #{type}."
       end
     end
+  end
+
+  def test_clear
+    buffer = IO::Buffer.new(16)
+    buffer.set_string("Hello World!")
   end
 
   def test_invalidation

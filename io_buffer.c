@@ -716,12 +716,9 @@ rb_io_buffer_slice(VALUE self, VALUE _offset, VALUE _length)
     return instance;
 }
 
-void
-rb_io_buffer_get_mutable(VALUE self, void **base, size_t *size)
+static void
+io_buffer_get_mutable(struct rb_io_buffer *data, void **base, size_t *size)
 {
-    struct rb_io_buffer *data = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
-
     if (data->flags & RB_IO_BUFFER_IMMUTABLE) {
         rb_raise(rb_eIOBufferMutationError, "Buffer is immutable!");
     }
@@ -738,6 +735,15 @@ rb_io_buffer_get_mutable(VALUE self, void **base, size_t *size)
     }
 
     rb_raise(rb_eIOBufferAllocationError, "Buffer is not allocated!");
+}
+
+void
+rb_io_buffer_get_mutable(VALUE self, void **base, size_t *size)
+{
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    io_buffer_get_mutable(data, base, size);
 }
 
 void
@@ -758,41 +764,6 @@ rb_io_buffer_get_immutable(VALUE self, const void **base, size_t *size)
     }
 
     rb_raise(rb_eIOBufferAllocationError, "Buffer is not allocated!");
-}
-
-size_t
-rb_io_buffer_copy(VALUE self, VALUE source, size_t offset)
-{
-    const void *source_base = NULL;
-    size_t source_size = 0;
-
-    struct rb_io_buffer *data = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
-
-    if (data->flags & RB_IO_BUFFER_IMMUTABLE) {
-        rb_raise(rb_eIOBufferMutationError, "Buffer is immutable!");
-    }
-
-    if (RB_TYPE_P(source, T_STRING)) {
-        RSTRING_GETMEM(source, source_base, source_size);
-    }
-    else {
-        rb_io_buffer_get_immutable(source, &source_base, &source_size);
-    }
-
-    rb_io_buffer_validate(data, offset, source_size);
-
-    memcpy((char*)data->base + offset, source_base, source_size);
-
-    return source_size;
-}
-
-static VALUE
-io_buffer_copy(VALUE self, VALUE source, VALUE offset)
-{
-    size_t size = rb_io_buffer_copy(self, source, NUM2SIZET(offset));
-
-    return RB_SIZE2NUM(size);
 }
 
 VALUE
@@ -1027,7 +998,7 @@ DECLARE_TYPE(F64, double, RB_IO_BUFFER_BIG_ENDIAN, DBL2NUM, NUM2DBL, ruby_swapf6
 #undef DECLARE_TYPE
 
 VALUE
-rb_io_buffer_get(const void* base, size_t size, ID type, size_t offset)
+rb_io_buffer_get_value(const void* base, size_t size, ID type, size_t offset)
 {
 #define READ_TYPE(name) if (type == RB_IO_BUFFER_TYPE_##name) return io_buffer_read_##name(base, size, &offset);
     READ_TYPE(U8)
@@ -1058,7 +1029,7 @@ rb_io_buffer_get(const void* base, size_t size, ID type, size_t offset)
 }
 
 static VALUE
-io_buffer_get(VALUE self, VALUE type, VALUE _offset)
+io_buffer_get_value(VALUE self, VALUE type, VALUE _offset)
 {
     const void *base;
     size_t size;
@@ -1066,11 +1037,11 @@ io_buffer_get(VALUE self, VALUE type, VALUE _offset)
 
     rb_io_buffer_get_immutable(self, &base, &size);
 
-    return rb_io_buffer_get(base, size, RB_SYM2ID(type), offset);
+    return rb_io_buffer_get_value(base, size, RB_SYM2ID(type), offset);
 }
 
 void
-rb_io_buffer_set(const void* base, size_t size, ID type, size_t offset, VALUE value)
+rb_io_buffer_set_value(const void* base, size_t size, ID type, size_t offset, VALUE value)
 {
 #define WRITE_TYPE(name) if (type == RB_IO_BUFFER_TYPE_##name) {io_buffer_write_##name(base, size, &offset, value); return;}
     WRITE_TYPE(U8)
@@ -1101,7 +1072,7 @@ rb_io_buffer_set(const void* base, size_t size, ID type, size_t offset, VALUE va
 }
 
 static VALUE
-io_buffer_set(VALUE self, VALUE type, VALUE _offset, VALUE value)
+io_buffer_set_value(VALUE self, VALUE type, VALUE _offset, VALUE value)
 {
     void *base;
     size_t size;
@@ -1109,11 +1080,85 @@ io_buffer_set(VALUE self, VALUE type, VALUE _offset, VALUE value)
 
     rb_io_buffer_get_mutable(self, &base, &size);
 
-    rb_io_buffer_set(base, size, RB_SYM2ID(type), offset, value);
+    rb_io_buffer_set_value(base, size, RB_SYM2ID(type), offset, value);
 
     return SIZET2NUM(offset);
 }
 
+static void
+io_buffer_memcpy(struct rb_io_buffer *data, size_t offset, const void *source_base, size_t source_offset, size_t source_size, size_t length)
+{
+    void *base;
+    size_t size;
+    io_buffer_get_mutable(data, &base, &size);
+
+    rb_io_buffer_validate(data, offset, length);
+
+    if (source_offset + length > source_size) {
+        rb_raise(rb_eArgError, "The computed source range exceeds the size of the source!");
+    }
+
+    memcpy((unsigned char*)base+offset, (unsigned char*)source_base+source_offset, length);
+}
+
+// (offset, length, source_offset) -> length
+static VALUE
+io_buffer_copy_from(struct rb_io_buffer *data, const void *source_base, size_t source_size, int argc, VALUE *argv)
+{
+    size_t offset;
+    size_t length;
+    size_t source_offset;
+
+    // The offset we copy into the buffer:
+    if (argc >= 1) {
+        offset = NUM2SIZET(argv[0]);
+    } else {
+        offset = 0;
+    }
+
+    // The offset we start from within the string:
+    if (argc >= 3) {
+        source_offset = NUM2SIZET(argv[2]);
+
+        if (source_offset > source_size) {
+            rb_raise(rb_eArgError, "The given source offset is bigger than the source itself!");
+        }
+    } else {
+        source_offset = 0;
+    }
+
+    // The length we are going to copy:
+    if (argc >= 2 && !RB_NIL_P(argv[1])) {
+        length = NUM2SIZET(argv[1]);
+    } else {
+        // Default to the source offset -> source size:
+        length = source_size - source_offset;
+    }
+
+    io_buffer_memcpy(data, offset, source_base, source_offset, source_size, length);
+
+    return SIZET2NUM(length);
+}
+
+// (string_or_buffer, offset, length, source_offset)
+static VALUE
+io_buffer_copy(int argc, VALUE *argv, VALUE self)
+{
+    if (argc < 1 || argc > 4) rb_error_arity(argc, 1, 4);
+
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    VALUE source = argv[0];
+    const void *source_base;
+    size_t source_size;
+
+    rb_io_buffer_get_immutable(source, &source_base, &source_size);
+
+    return io_buffer_copy_from(data, source_base, source_size, argc-1, argv+1);
+}
+
+// buffer.get_string(offset, length, encoding)
 static VALUE
 io_buffer_get_string(int argc, VALUE *argv, VALUE self)
 {
@@ -1145,6 +1190,23 @@ io_buffer_get_string(int argc, VALUE *argv, VALUE self)
     return rb_enc_str_new((char*)data->base + offset, length, encoding);
 }
 
+// (string_or_to_str, offset, length, source_offset)
+static VALUE
+io_buffer_set_string(int argc, VALUE *argv, VALUE self)
+{
+    if (argc < 1 || argc > 4) rb_error_arity(argc, 1, 4);
+
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    VALUE string = rb_str_to_str(argv[0]);
+
+    const void *source_base = RSTRING_PTR(string);
+    size_t source_size = RSTRING_LEN(string);
+
+    return io_buffer_copy_from(data, source_base, source_size, argc-1, argv+1);
+}
+
 void
 rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length)
 {
@@ -1163,12 +1225,10 @@ rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length)
 static VALUE
 io_buffer_clear(int argc, VALUE *argv, VALUE self)
 {
+    if (argc > 3) rb_error_arity(argc, 0, 3);
+
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
-
-    if (argc > 3) {
-        rb_error_arity(argc, 0, 3);
-    }
 
     uint8_t value = 0;
     if (argc >= 1) {
@@ -1281,7 +1341,6 @@ Init_IO_Buffer(void)
 
     // Manipulation:
     rb_define_method(rb_cIOBuffer, "slice", rb_io_buffer_slice, 2);
-    rb_define_method(rb_cIOBuffer, "copy", io_buffer_copy, 2);
     rb_define_method(rb_cIOBuffer, "<=>", rb_io_buffer_compare, 1);
     rb_define_method(rb_cIOBuffer, "resize", io_buffer_resize, 1);
     rb_define_method(rb_cIOBuffer, "clear", io_buffer_clear, -1);
@@ -1298,7 +1357,11 @@ Init_IO_Buffer(void)
 #undef DEFINE_TYPE
 
     // Data access:
-    rb_define_method(rb_cIOBuffer, "get", io_buffer_get, 2);
-    rb_define_method(rb_cIOBuffer, "set", io_buffer_set, 3);
+    rb_define_method(rb_cIOBuffer, "get_value", io_buffer_get_value, 2);
+    rb_define_method(rb_cIOBuffer, "set_value", io_buffer_set_value, 3);
+
+    rb_define_method(rb_cIOBuffer, "copy", io_buffer_copy, -1);
+
     rb_define_method(rb_cIOBuffer, "get_string", io_buffer_get_string, -1);
+    rb_define_method(rb_cIOBuffer, "set_string", io_buffer_set_string, -1);
 }
