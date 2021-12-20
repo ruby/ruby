@@ -344,7 +344,7 @@ Note: We're only listing outstanding class updates.
     * ipaddr 1.2.3
     * irb 1.3.8.pre.11
     * json 2.6.1
-    * logger 1.4.4
+    * logger 1.5.0
     * net-http 0.2.0
     * net-protocol 0.1.2
     * nkf 0.1.1
