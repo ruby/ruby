@@ -25,7 +25,7 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal 32, IO::Buffer::LOCKED
     assert_equal 64, IO::Buffer::PRIVATE
 
-    assert_equal 128, IO::Buffer::IMMUTABLE
+    assert_equal 128, IO::Buffer::READONLY
   end
 
   def test_endian
@@ -56,9 +56,9 @@ class TestIOBuffer < Test::Unit::TestCase
     assert buffer.mapped?
   end
 
-  def test_new_immutable
-    buffer = IO::Buffer.new(128, IO::Buffer::INTERNAL|IO::Buffer::IMMUTABLE)
-    assert buffer.immutable?
+  def test_new_readonly
+    buffer = IO::Buffer.new(128, IO::Buffer::INTERNAL|IO::Buffer::READONLY)
+    assert buffer.readonly?
 
     assert_raise IO::Buffer::MutationError do
       buffer.set_string("")
@@ -86,7 +86,7 @@ class TestIOBuffer < Test::Unit::TestCase
   def test_string_mapped
     string = "Hello World"
     buffer = IO::Buffer.for(string)
-    refute buffer.immutable?
+    refute buffer.readonly?
 
     # Cannot modify string as it's locked by the buffer:
     assert_raise RuntimeError do
@@ -107,7 +107,7 @@ class TestIOBuffer < Test::Unit::TestCase
     string = "Hello World".freeze
     buffer = IO::Buffer.for(string)
 
-    assert buffer.immutable?
+    assert buffer.readonly?
   end
 
   def test_non_string
