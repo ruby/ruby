@@ -338,6 +338,20 @@ class Reline::Test < Reline::TestCase
     assert_equal(dummy, d.dialog_proc)
   end
 
+  def test_add_dialog_proc_with_context
+    dummy_proc = proc {}
+    array = Array.new
+    Reline.add_dialog_proc(:test_proc, dummy_proc, array)
+    d = Reline.dialog_proc(:test_proc)
+    assert_equal(dummy_proc, d.dialog_proc)
+    assert_equal(array, d.context)
+
+    Reline.add_dialog_proc(:test_proc, dummy_proc, nil)
+    d = Reline.dialog_proc(:test_proc)
+    assert_equal(dummy_proc, d.dialog_proc)
+    assert_equal(nil, d.context)
+  end
+
   def test_readmultiline
     # readmultiline is module function
     assert_include(Reline.methods, :readmultiline)
