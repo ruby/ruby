@@ -1429,31 +1429,6 @@ class_descendants(VALUE klass, bool immediate_only)
 
 /*
  *  call-seq:
- *     descendants -> array
- *
- *  Returns an array of classes where the receiver is one of
- *  the ancestors of the class, excluding the receiver and
- *  singleton classes. The order of the returned array is not
- *  defined.
- *
- *     class A; end
- *     class B < A; end
- *     class C < B; end
- *
- *     A.descendants        #=> [B, C]
- *     B.descendants        #=> [C]
- *     C.descendants        #=> []
- */
-
-VALUE
-rb_class_descendants(VALUE klass)
-{
-    return class_descendants(klass, false);
-}
-
-
-/*
- *  call-seq:
  *     subclasses -> array
  *
  *  Returns an array of classes where the receiver is the
