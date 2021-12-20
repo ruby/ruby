@@ -3103,16 +3103,31 @@ rb_fiber_scheduler_interface_address_resolve(VALUE self)
 
 /*
  *  Document-method: SchedulerInterface#address_resolve
- *  call-seq: timeout_after(duration, exception_class, *exception_args, &block) -> obj
+ *  call-seq: timeout_after(duration, exception_class, *exception_arguments, &block) -> result of block
  *
- *  Invoked by Timeout.timeout to perform execution time control in a non-blocking way.
+ *  Limit the execution time of a given +block+ to the given +duration+ if
+ *  possible. When a non-blocking operation causes the +block+'s execution time
+ *  to exceed the specified +duration+, that non-blocking operation should be
+ *  interrupted by raising the specified +exception_class+ constructed with the
+ *  given +exception_arguments+.
  *
- *  The method is expected to execute a +block+, and if its execution takes longer
- *  than +duration+, to raise +exception_class+ constructed with +exception_args+.
+ *  General execution timeouts are often considered risky. This implementation
+ *  will only interrupt non-blocking operations. This is by design because it's
+ *  expected that non-blocking operations can fail for a variety of
+ *  unpredictable reasons, so applications should already be robust in handling
+ *  these conditions.
  *
- *  If the block is executed successfully, its result should be returned.
+ *  However, as a result of this design, if the +block+ does not invoke any
+ *  non-blocking operations, it will be impossible to interrupt it. If you
+ *  desire to provide predictable points for timeouts, consider adding
+ *  +sleep(0)+.
  *
- *  The method support should be considered _experimental_.
+ *  This hook is invoked by Timeout.timeout and can also be invoked directly by
+ *  the scheduler.
+ *
+ *  If the block is executed successfully, its result will be returned.
+ *
+ *  The exception will typically be raised using Fiber#raise.
  */
 static VALUE
 rb_fiber_scheduler_interface_timeout_after(VALUE self)
