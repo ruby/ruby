@@ -288,7 +288,7 @@ class IOBufferScheduler < Scheduler
       else
         break unless result
 
-        buffer.copy(result, offset)
+        buffer.set_string(result, offset)
 
         size = result.bytesize
         offset += size
@@ -306,7 +306,7 @@ class IOBufferScheduler < Scheduler
     while true
       maximum_size = buffer.size - offset
 
-      chunk = buffer.to_str(offset, maximum_size)
+      chunk = buffer.get_string(offset, maximum_size)
       result = blocking{io.write_nonblock(chunk, exception: false)}
 
       # blocking{pp write: maximum_size, result: result, length: length}
