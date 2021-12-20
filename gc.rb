@@ -257,13 +257,12 @@ module GC
     Primitive.gc_verify_compaction_references(double_heap, toward == :empty)
   end
 
-  # :nodoc:
   # call-seq:
   #     GC.using_rvargc? -> true or false
   #
   # Returns true if using experimental feature Variable Width Allocation, false
   # otherwise.
-  def self.using_rvargc?
+  def self.using_rvargc? # :nodoc:
     GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] > 1
   end
 
@@ -272,8 +271,8 @@ module GC
   #    GC.measure_total_time = true/false
   #
   # Enable to measure GC time.
-  # You can get the result with `GC.stat(:time)`.
-  # Note that the GC time measurement can introduce the performance regression.
+  # You can get the result with <tt>GC.stat(:time)</tt>.
+  # Note that GC time measurement can cause some performance overhead.
   def self.measure_total_time=(flag)
     Primitive.cstmt! %{
       rb_objspace.flags.measure_gc = RTEST(flag) ? TRUE : FALSE;
@@ -284,7 +283,7 @@ module GC
   # call-seq:
   #    GC.measure_total_time -> true/false
   #
-  # Return measure_total_time flag (default: true).
+  # Return measure_total_time flag (default: +true+).
   # Note that measurement can affect the application performance.
   def self.measure_total_time
     Primitive.cexpr! %{
