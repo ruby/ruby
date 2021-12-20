@@ -2459,8 +2459,9 @@ rb_io_eof(VALUE io)
  *  call-seq:
  *    sync -> true or false
  *
- *  Returns the value of the most recent call to IO#sync=,
- *  or +false+ if the method has not been called; see IO#sync=:
+ *  Returns the current sync mode of the stream.
+ *  When sync mode is true, all output is immediately flushed to the underlying
+ *  operating system and is not buffered by Ruby internally. See also #fsync.
  *
  *    f = File.open('t.tmp', 'w')
  *    f.sync # => false
@@ -2653,7 +2654,8 @@ rb_io_descriptor(VALUE io)
  *    pid -> integer
  *
  *  Returns the process ID of a child process associated with the stream,
- *  which will have been set by IO#popen:
+ *  which will have been set by IO#popen, or +nil+ if the stream was not
+ *  created by IO#popen:
  *
  *    pipe = IO.popen("-")
  *    if pipe
