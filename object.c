@@ -4660,7 +4660,6 @@ InitVM_Object(void)
     rb_define_method(rb_cClass, "new", rb_class_new_instance_pass_kw, -1);
     rb_define_method(rb_cClass, "initialize", rb_class_initialize, -1);
     rb_define_method(rb_cClass, "superclass", rb_class_superclass, 0);
-    rb_define_method(rb_cClass, "descendants", rb_class_descendants, 0); /* in class.c */
     rb_define_method(rb_cClass, "subclasses", rb_class_subclasses, 0); /* in class.c */
     rb_define_alloc_func(rb_cClass, rb_class_s_alloc);
     rb_undef_method(rb_cClass, "extend_object");
