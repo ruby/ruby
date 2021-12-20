@@ -316,6 +316,11 @@ class Reline::Test < Reline::TestCase
     d = Reline.dialog_proc(:test_proc)
     assert_equal(dummy_proc, d.dialog_proc)
 
+    dummy_proc_2 = proc {}
+    Reline.add_dialog_proc(:test_proc, dummy_proc_2)
+    d = Reline.dialog_proc(:test_proc)
+    assert_equal(dummy_proc_2, d.dialog_proc)
+
     l = lambda {}
     Reline.add_dialog_proc(:test_lambda, l)
     d = Reline.dialog_proc(:test_lambda)
