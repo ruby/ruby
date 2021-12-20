@@ -2457,15 +2457,16 @@ rb_io_eof(VALUE io)
 
 /*
  *  call-seq:
- *     ios.sync    -> true or false
+ *    sync -> true or false
  *
- *  Returns the current ``sync mode'' of <em>ios</em>. When sync mode is
- *  true, all output is immediately flushed to the underlying operating
- *  system and is not buffered by Ruby internally. See also
- *  IO#fsync.
+ *  Returns the value of the most recent call to IO#sync=,
+ *  or +false+ if the method has not been called; see IO#sync=:
  *
- *     f = File.new("testfile")
- *     f.sync   #=> false
+ *    f = File.open('t.tmp', 'w')
+ *    f.sync # => false
+ *    f.sync = true
+ *    f.sync # => true
+ *
  */
 
 static VALUE
@@ -2482,15 +2483,26 @@ rb_io_sync(VALUE io)
 
 /*
  *  call-seq:
- *     ios.sync = boolean   -> boolean
+ *    sync = boolean -> boolean
  *
- *  Sets the ``sync mode'' to <code>true</code> or <code>false</code>.
- *  When sync mode is true, all output is immediately flushed to the
- *  underlying operating system and is not buffered internally. Returns
- *  the new state. See also IO#fsync.
+ *  Sets the _sync_ _mode_ for the stream to the given value;
+ *  returns the given value.
  *
- *     f = File.new("testfile")
- *     f.sync = true
+ *  Values for the sync mode:
+ *
+ *  - +true+: All output is immediately flushed to the
+ *    underlying operating system and is not buffered internally.
+ *  - +false+: Output may be buffered internally.
+ *
+ *  Example;
+ *
+ *    f = File.open('t.tmp', 'w')
+ *    f.sync # => false
+ *    f.sync = true
+ *    f.sync # => true
+ *
+ *  Related: IO#fsync.
+ *
  */
 
 static VALUE
@@ -2511,15 +2523,20 @@ rb_io_set_sync(VALUE io, VALUE sync)
 
 /*
  *  call-seq:
- *     ios.fsync   -> 0 or nil
+ *    fsync -> 0
  *
- *  Immediately writes all buffered data in <em>ios</em> to disk.
- *  Note that #fsync differs from using IO#sync=. The latter ensures
- *  that data is flushed from Ruby's buffers, but does not guarantee
- *  that the underlying operating system actually writes it to disk.
+ *  Immediately writes to disk all data buffered in the stream,
+ *  via the operating system's <tt>fsync(2)</tt>.
+
+ *  Note this difference:
  *
- *  NotImplementedError is raised
- *  if the underlying operating system does not support <em>fsync(2)</em>.
+ *  - IO#sync=: Ensures that data is flushed from the stream's internal buffers,
+ *    but does not guarantee that the operating system actually writes the data to disk.
+ *  - IO#fsync: Ensures both that data is flushed from internal buffers,
+ *    and that data is written to disk.
+ *
+ *  Raises an exception if the operating system does not support <tt>fsync(2)</tt>.
+ *
  */
 
 static VALUE
@@ -2562,13 +2579,13 @@ nogvl_fdatasync(void *ptr)
 
 /*
  *  call-seq:
- *     ios.fdatasync   -> 0 or nil
+ *    fdatasync -> 0
  *
- *  Immediately writes all buffered data in <em>ios</em> to disk.
+ *  Immediately writes to disk all data buffered in the stream,
+ *  via the operating system's: <tt>fdatasync(2)</tt>, if supported,
+ *  otherwise via <tt>fsync(2)</tt>, if supported;
+ *  otherwise raises an exception.
  *
- *  If the underlying operating system does not support <em>fdatasync(2)</em>,
- *  IO#fsync is called instead (which might raise a
- *  NotImplementedError).
  */
 
 static VALUE
@@ -2594,14 +2611,17 @@ rb_io_fdatasync(VALUE io)
 
 /*
  *  call-seq:
- *     ios.fileno    -> integer
- *     ios.to_i      -> integer
+ *    fileno -> integer
  *
- *  Returns an integer representing the numeric file descriptor for
- *  <em>ios</em>.
+ *  Returns the integer file descriptor for the stream:
  *
- *     $stdin.fileno    #=> 0
- *     $stdout.fileno   #=> 1
+ *    $stdin.fileno             # => 0
+ *    $stdout.fileno            # => 1
+ *    $stderr.fileno            # => 2
+ *    File.open('t.txt').fileno # => 10
+ *
+ *  IO#to_i is an alias for IO#fileno.
+ *
  */
 
 static VALUE
@@ -2630,22 +2650,23 @@ rb_io_descriptor(VALUE io)
 
 /*
  *  call-seq:
- *     ios.pid    -> integer
+ *    pid -> integer
  *
- *  Returns the process ID of a child process associated with
- *  <em>ios</em>. This will be set by IO.popen.
+ *  Returns the process ID of a child process associated with the stream,
+ *  which will have been set by IO#popen:
  *
- *     pipe = IO.popen("-")
- *     if pipe
- *       $stderr.puts "In parent, child pid is #{pipe.pid}"
- *     else
- *       $stderr.puts "In child, pid is #{$$}"
- *     end
+ *    pipe = IO.popen("-")
+ *    if pipe
+ *      $stderr.puts "In parent, child pid is #{pipe.pid}"
+ *    else
+ *      $stderr.puts "In child, pid is #{$$}"
+ *    end
  *
- *  <em>produces:</em>
+ *  Output:
  *
- *     In child, pid is 26209
- *     In parent, child pid is 26209
+ *    In child, pid is 26209
+ *    In parent, child pid is 26209
+ *
  */
 
 static VALUE
@@ -2661,10 +2682,14 @@ rb_io_pid(VALUE io)
 
 
 /*
- * call-seq:
- *   ios.inspect   -> string
+ *  call-seq:
+ *    inspect -> string
  *
- * Return a string describing this IO object.
+ *  Returns a string representation of +self+:
+ *
+ *    f = File.open('t.txt')
+ *    f.inspect # => "#<File:t.txt>"
+ *
  */
 
 static VALUE
@@ -2698,9 +2723,10 @@ rb_io_inspect(VALUE obj)
 
 /*
  *  call-seq:
- *     ios.to_io  -> ios
+ *    to_io -> self
  *
- *  Returns <em>ios</em>.
+ *  Returns +self+.
+ *
  */
 
 static VALUE
