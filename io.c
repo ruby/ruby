@@ -838,19 +838,14 @@ rb_io_set_write_io(VALUE io, VALUE w)
 
 /*
  *  call-seq:
- *     IO.try_convert(obj)  -> io or nil
+ *    IO.try_convert(object) -> new_io or nil
  *
- *  Try to convert <i>obj</i> into an IO, using to_io method.
- *  Returns converted IO or +nil+ if <i>obj</i> cannot be converted
- *  for any reason.
+ *  Attempts to convert +object+ into an \IO object via method +to_io+;
+ *  returns the new \IO object if successful, or +nil+ otherwise:
  *
- *     IO.try_convert(STDOUT)     #=> STDOUT
- *     IO.try_convert("STDOUT")   #=> nil
- *
- *     require 'zlib'
- *     f = open("/tmp/zz.gz")       #=> #<File:/tmp/zz.gz>
- *     z = Zlib::GzipReader.open(f) #=> #<Zlib::GzipReader:0x81d8744>
- *     IO.try_convert(z)            #=> #<File:/tmp/zz.gz>
+ *    IO.try_convert(STDOUT)   # => #<IO:<STDOUT>>
+ *    IO.try_convert(ARGF)     # => #<IO:<STDIN>>
+ *    IO.try_convert('STDOUT') # => nil
  *
  */
 static VALUE
@@ -2025,20 +2020,21 @@ io_writev(int argc, const VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     ios.write(string, ...)    -> integer
+ *    write(*objects) -> integer
  *
- *  Writes the given strings to <em>ios</em>. The stream must be opened
- *  for writing. Arguments that are not a string will be converted
- *  to a string using <code>to_s</code>. Returns the number of bytes
- *  written in total.
+ *  Writes each of the given +objects+ to +self+,
+ *  which must be opened for writing (see {Modes}[#class-IO-label-Modes]);
+ *  returns the total number bytes written;
+ *  each of +objects+ that is not a string is converted via method +to_s+:
  *
- *     count = $stdout.write("This is", " a test\n")
- *     puts "That was #{count} bytes of data"
+ *    $stdout.write('Hello', ', ', 'World!', "\n") # => 14
+ *    $stdout.write('foo', :bar, 2, "\n")          # => 8
  *
- *  <em>produces:</em>
+ *  Output:
  *
- *     This is a test
- *     That was 15 bytes of data
+ *    Hello, World!
+ *    foobar2
+ *
  */
 
 static VALUE
@@ -2078,17 +2074,21 @@ rb_io_writev(VALUE io, int argc, const VALUE *argv)
 
 /*
  *  call-seq:
- *     ios << obj     -> ios
+ *    self << object -> self
  *
- *  String Output---Writes <i>obj</i> to <em>ios</em>.
- *  <i>obj</i> will be converted to a string using
- *  <code>to_s</code>.
+ *  Writes the given +object+ to +self+,
+ *  which must be opened for writing (see {Modes}[#class-IO-label-Modes]);
+ *  returns +self+;
+ *  if +object+ is not a string, it is converted via method +to_s+:
  *
- *     $stdout << "Hello " << "world!\n"
+ *    $stdout << 'Hello' << ', ' << 'World!' << "\n"
+ *    $stdout << 'foo' << :bar << 2 << "\n"
  *
- *  <em>produces:</em>
+ *  Output:
  *
- *     Hello world!
+ *    Hello, World!
+ *    foobar2
+ *
  */
 
 
@@ -2138,18 +2138,14 @@ rb_io_flush_raw(VALUE io, int sync)
 
 /*
  *  call-seq:
- *     ios.flush    -> ios
+ *    flush -> self
  *
- *  Flushes any buffered data within <em>ios</em> to the underlying
- *  operating system (note that this is Ruby internal buffering only;
- *  the OS may buffer the data as well).
+ *  Flushes data buffered in +self+ to the operating system
+ *  (but does not necessarily flush data buffered in the operating system):
  *
- *     $stdout.print "no newline"
- *     $stdout.flush
+ *    $stdout.print 'no newline' # Not necessarily flushed.
+ *    $stdout.flush              # Flushed.
  *
- *  <em>produces:</em>
- *
- *     no newline
  */
 
 VALUE
@@ -2160,15 +2156,20 @@ rb_io_flush(VALUE io)
 
 /*
  *  call-seq:
- *     ios.pos     -> integer
- *     ios.tell    -> integer
+ *    tell -> integer
  *
- *  Returns the current offset (in bytes) of <em>ios</em>.
+ *  Returns the current position (in bytes) in +self+
+ *  (see {Position}[#class-IO-label-Position]):
  *
- *     f = File.new("testfile")
- *     f.pos    #=> 0
- *     f.gets   #=> "This is line one\n"
- *     f.pos    #=> 17
+ *    f = File.new('t.txt')
+ *    f.tell     # => 0
+ *    f.readline # => "This is line one.\n"
+ *    f.tell     # => 19
+ *
+ *  Related: IO#pos=, IO#seek.
+ *
+ *  IO#pos is an alias for IO#tell.
+ *
  */
 
 static VALUE
@@ -2220,23 +2221,46 @@ interpret_seek_whence(VALUE vwhence)
 
 /*
  *  call-seq:
- *     ios.seek(amount, whence=IO::SEEK_SET)  -> 0
+ *    seek(offset, whence = IO::SEEK_SET) -> 0
  *
- *  Seeks to a given offset <i>anInteger</i> in the stream according to
- *  the value of <i>whence</i>:
+ *  Seeks to the position given by integer +offset+
+ *  (see {Position}[#class-IO-label-Position])
+ *  and constant +whence+, which is one of:
  *
- *    :CUR or IO::SEEK_CUR  | Seeks to _amount_ plus current position
- *    ----------------------+--------------------------------------------------
- *    :END or IO::SEEK_END  | Seeks to _amount_ plus end of stream (you
- *                          | probably want a negative value for _amount_)
- *    ----------------------+--------------------------------------------------
- *    :SET or IO::SEEK_SET  | Seeks to the absolute location given by _amount_
+ *  - +:CUR+ or <tt>IO::SEEK_CUR</tt>:
+ *    Repositions the stream to its current position plus the given +offset+:
  *
- *  Example:
+ *      f = File.open('t.txt')
+ *      f.tell            # => 0
+ *      f.seek(20, :CUR)  # => 0
+ *      f.tell            # => 20
+ *      f.seek(-10, :CUR) # => 0
+ *      f.tell            # => 10
  *
- *     f = File.new("testfile")
- *     f.seek(-13, IO::SEEK_END)   #=> 0
- *     f.readline                  #=> "And so on...\n"
+ *  - +:END+ or <tt>IO::SEEK_END</tt>:
+ *    Repositions the stream to its end plus the given +offset+:
+ *
+ *      f = File.open('t.txt')
+ *      f.tell            # => 0
+ *      f.seek(0, :END)   # => 0  # Repositions to stream end.
+ *      f.tell            # => 70
+ *      f.seek(-20, :END) # => 0
+ *      f.tell            # => 50
+ *      f.seek(-40, :END) # => 0
+ *      f.tell            # => 30
+ *
+ *  - +:SET+ or <tt>IO:SEEK_SET</tt>:
+ *    Repositions the stream to the given +offset+:
+ *
+ *      f = File.open('t.txt')
+ *      f.tell            # => 0
+ *      f.seek(20, :SET) # => 0
+ *      f.tell           # => 20
+ *      f.seek(40, :SET) # => 0
+ *      f.tell           # => 40
+ *
+ *  Related: IO#pos=, IO#tell.
+ *
  */
 
 static VALUE
@@ -2254,15 +2278,18 @@ rb_io_seek_m(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     ios.pos = integer    -> integer
+ *    pos = new_position -> new_position
  *
- *  Seeks to the given position (in bytes) in <em>ios</em>.
- *  It is not guaranteed that seeking to the right position when <em>ios</em>
- *  is textmode.
+ *  Seeks to the given +new_position+ (in bytes);
+ *  see {Position}[#class-IO-label-Position]:
  *
- *     f = File.new("testfile")
- *     f.pos = 17
- *     f.gets   #=> "This is line two\n"
+ *    f = File.open('t.txt')
+ *    f.tell     # => 0
+ *    f.pos = 20 # => 20
+ *    f.tell     # => 20
+ *
+ *  Related: IO#seek, IO#tell.
+ *
  */
 
 static VALUE
@@ -2283,18 +2310,25 @@ static void clear_readconv(rb_io_t *fptr);
 
 /*
  *  call-seq:
- *     ios.rewind    -> 0
+ *    rewind -> 0
  *
- *  Positions <em>ios</em> to the beginning of input, resetting
- *  #lineno to zero.
+ *  Repositions the stream to its beginning,
+ *  setting both the position and the line number to zero;
+ *  see {Position}[#class-IO-label-Position]
+ *  and {Line Number}[#class-IO-label-Line+Number]:
  *
- *     f = File.new("testfile")
- *     f.readline   #=> "This is line one\n"
- *     f.rewind     #=> 0
- *     f.lineno     #=> 0
- *     f.readline   #=> "This is line one\n"
+ *    f = File.open('t.txt')
+ *    f.tell     # => 0
+ *    f.lineno   # => 0
+ *    f.readline # => "This is line one.\n"
+ *    f.tell     # => 19
+ *    f.lineno   # => 1
+ *    f.rewind   # => 0
+ *    f.tell     # => 0
+ *    f.lineno   # => 0
  *
- *  Note that it cannot be used with streams such as pipes, ttys, and sockets.
+ *  Note that this method cannot be used with streams such as pipes, ttys, and sockets.
+ *
  */
 
 static VALUE
@@ -2367,35 +2401,39 @@ io_fillbuf(rb_io_t *fptr)
 
 /*
  *  call-seq:
- *     ios.eof     -> true or false
- *     ios.eof?    -> true or false
+ *    eof -> true or false
  *
- *  Returns true if <em>ios</em> is at end of file that means
- *  there are no more data to read.
- *  The stream must be opened for reading or an IOError will be
- *  raised.
+ *  Returns +true+ if the stream is positioned at its end, +false+ otherwise;
+ *  see {Position}[#class-IO-label-Position]:
  *
- *     f = File.new("testfile")
- *     dummy = f.readlines
- *     f.eof   #=> true
+ *    f = File.open('t.txt')
+ *    f.eof           # => false
+ *    f.seek(0, :END) # => 0
+ *    f.eof           # => true
  *
- *  If <em>ios</em> is a stream such as pipe or socket, IO#eof?
- *  blocks until the other end sends some data or closes it.
+ *  Raises an exception unless the stream is opened for reading;
+ *  see {Mode}[#class-IO-label-Mode].
  *
- *     r, w = IO.pipe
- *     Thread.new { sleep 1; w.close }
- *     r.eof?  #=> true after 1 second blocking
+ *  If +self+ is a stream such as pipe or socket, this method
+ *  blocks until the other end sends some data or closes it:
  *
- *     r, w = IO.pipe
- *     Thread.new { sleep 1; w.puts "a" }
- *     r.eof?  #=> false after 1 second blocking
+ *    r, w = IO.pipe
+ *    Thread.new { sleep 1; w.close }
+ *    r.eof? # => true # After 1-second wait.
  *
- *     r, w = IO.pipe
- *     r.eof?  # blocks forever
+ *    r, w = IO.pipe
+ *    Thread.new { sleep 1; w.puts "a" }
+ *    r.eof?  # => false # After 1-second wait.
  *
- *  Note that IO#eof? reads data to the input byte buffer.  So
+ *    r, w = IO.pipe
+ *    r.eof?  # blocks forever
+ *
+ *  Note that this method reads data to the input byte buffer.  So
  *  IO#sysread may not behave as you intend with IO#eof?, unless you
  *  call IO#rewind first (which is not available for some streams).
+ *
+ *  I#eof? is an alias for IO#eof.
+ *
  */
 
 VALUE
@@ -13722,7 +13760,11 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  == Position
  *
  *  An \IO stream has a _position_, which is the non-negative integer offset
- *  in the stream where the next read or write will occur.
+ *  (in bytes) in the stream where the next read or write will occur.
+ *
+ *  Note that a text stream may have multi-byte characters,
+ *  so a text stream whose position is +n+ (_bytes_) may not have +n+ _characters_
+ *  preceding the current position -- there may be fewer.
  *
  *  A new stream is initially positioned:
  *
