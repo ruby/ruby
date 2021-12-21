@@ -1,7 +1,7 @@
 require_relative '../helper'
 
 class NameErrorExtensionTest < Test::Unit::TestCase
-  SPELL_CHECKERS = DidYouMean.spell_checkers
+  SPELL_CHECKERS = DidYouMean::SPELL_CHECKERS
 
   class TestSpellChecker
     def initialize(*); end
@@ -9,14 +9,13 @@ class NameErrorExtensionTest < Test::Unit::TestCase
   end
 
   def setup
-    @original_spell_checker = DidYouMean.spell_checkers['NameError']
-    DidYouMean.correct_error(NameError, TestSpellChecker)
+    @org, SPELL_CHECKERS['NameError'] = SPELL_CHECKERS['NameError'], TestSpellChecker
 
     @error = assert_raise(NameError){ doesnt_exist }
   end
 
   def teardown
-    DidYouMean.correct_error(NameError, @original_spell_checker)
+    SPELL_CHECKERS['NameError'] = @org
   end
 
   def test_message

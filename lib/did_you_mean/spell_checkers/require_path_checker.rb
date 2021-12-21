@@ -9,10 +9,7 @@ module DidYouMean
     attr_reader :path
 
     INITIAL_LOAD_PATH = $LOAD_PATH.dup.freeze
-    Ractor.make_shareable(INITIAL_LOAD_PATH) if defined?(Ractor)
-
-    ENV_SPECIFIC_EXT = ".#{RbConfig::CONFIG["DLEXT"]}"
-    Ractor.make_shareable(ENV_SPECIFIC_EXT) if defined?(Ractor)
+    ENV_SPECIFIC_EXT  = ".#{RbConfig::CONFIG["DLEXT"]}"
 
     private_constant :INITIAL_LOAD_PATH, :ENV_SPECIFIC_EXT
 
