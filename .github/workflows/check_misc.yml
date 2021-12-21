@@ -30,6 +30,7 @@ jobs:
 
       - name: Download previous gems list
         run: |
+          mkdir -p .downloaded-cache
           curl -o .downloaded-cache/default_gems.json https://stdgems.org/default_gems.json
           ln -s .downloaded-cache/default_gems.json .
 
