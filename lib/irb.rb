@@ -824,17 +824,20 @@ module IRB
           diff_size = output_width - Reline::Unicode.calculate_width(first_line, true)
           if diff_size.positive? and output_width > winwidth
             lines, _ = Reline::Unicode.split_by_width(first_line, winwidth - diff_size - 3)
-            str = "%s...\e[0m" % lines.first
+            str = "%s..." % lines.first
+            str += "\e[0m" if @context.use_colorize
             multiline_p = false
           else
-            str = str.gsub(/(\A.*?\n).*/m, "\\1...\e[0m")
+            str = str.gsub(/(\A.*?\n).*/m, "\\1...")
+            str += "\e[0m" if @context.use_colorize
           end
         else
           output_width = Reline::Unicode.calculate_width(@context.return_format % str, true)
           diff_size = output_width - Reline::Unicode.calculate_width(str, true)
           if diff_size.positive? and output_width > winwidth
             lines, _ = Reline::Unicode.split_by_width(str, winwidth - diff_size - 3)
-            str = "%s...\e[0m" % lines.first
+            str = "%s..." % lines.first
+            str += "\e[0m" if @context.use_colorize
           end
         end
       end

@@ -259,6 +259,7 @@ module TestIRB
     end
 
     def test_omit_on_assignment
+      IRB.conf[:USE_COLORIZE] = false
       input = TestInputMethod.new([
         "a = [1] * 100\n",
         "a\n",
@@ -322,6 +323,7 @@ module TestIRB
     end
 
     def test_omit_multiline_on_assignment
+      IRB.conf[:USE_COLORIZE] = false
       input = TestInputMethod.new([
         "class A; def inspect; ([?* * 1000] * 3).join(%{\\n}); end; end; a = A.new\n",
         "a\n"
@@ -347,7 +349,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      assert_equal("=> #{value_first_line[0..(input.winsize.last - 9)]}...\e[0m\n=> \n#{value}\n", out)
+      assert_equal("=> #{value_first_line[0..(input.winsize.last - 9)]}...\n=> \n#{value}\n", out)
       irb.context.evaluate('A.remove_method(:inspect)', 0)
 
       input.reset
@@ -395,6 +397,7 @@ module TestIRB
       # Default
       IRB.conf[:ECHO] = nil
       IRB.conf[:ECHO_ON_ASSIGNMENT] = nil
+      IRB.conf[:USE_COLORIZE] = false
       input = TestInputMethod.new()
       irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
 
@@ -422,6 +425,7 @@ module TestIRB
       def main.inspect
         "abc\ndef"
       end
+      IRB.conf[:USE_COLORIZE] = false
       input = TestInputMethod.new([
         "self"
       ])
