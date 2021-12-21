@@ -891,6 +891,20 @@ rb_io_buffer_unlock(VALUE self)
     return self;
 }
 
+int
+rb_io_buffer_try_unlock(VALUE self)
+{
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    if (data->flags & RB_IO_BUFFER_LOCKED) {
+        data->flags &= ~RB_IO_BUFFER_LOCKED;
+        return 1;
+    }
+
+    return 0;
+}
+
 /*
  *  call-seq: locked { ... }
  *
