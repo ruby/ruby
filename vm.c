@@ -1182,7 +1182,9 @@ rb_proc_ractor_make_shareable(VALUE self)
         if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
 
         if (!rb_ractor_shareable_p(vm_block_self(&proc->block))) {
-            rb_raise(rb_eRactorIsolationError, "Proc's self is not shareable");
+            rb_raise(rb_eRactorIsolationError,
+                     "Proc's self is not shareable: %" PRIsVALUE,
+                     self);
         }
 
         VALUE read_only_variables = Qfalse;
