@@ -174,9 +174,9 @@ Note: We're only listing outstanding class updates.
         Measurement can introduce overhead. It is enabled by default.
         GC.measure_total_time returns the current setting.
         GC.stat[:time] or GC.stat(:time) returns measured time
-        in milli-seconds.
+        in milli-seconds. [[[Feature #10917]]]
 
-    *   GC.total_time returns measured time in nano-seconds.
+    *   GC.total_time returns measured time in nano-seconds. [[[Feature #10917]]]
 
 * Integer
 
@@ -539,6 +539,7 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 
 [Bug #4443]:      https://bugs.ruby-lang.org/issues/4443
 [Feature #6210]:  https://bugs.ruby-lang.org/issues/6210
+[Feature #10917]: https://bugs.ruby-lang.org/issues/10917
 [Feature #11256]: https://bugs.ruby-lang.org/issues/11256
 [Feature #11689]: https://bugs.ruby-lang.org/issues/11689
 [Feature #12194]: https://bugs.ruby-lang.org/issues/12194
