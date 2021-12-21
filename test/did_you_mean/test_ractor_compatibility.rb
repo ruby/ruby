@@ -1,6 +1,6 @@
-return if not DidYouMean::TestHelper.ractor_compatible?
-
 require_relative './helper'
+
+return if not DidYouMean::TestHelper.ractor_compatible?
 
 class RactorCompatibilityTest < Test::Unit::TestCase
   include DidYouMean::TestHelper
