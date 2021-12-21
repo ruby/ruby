@@ -3086,15 +3086,35 @@ rb_fiber_scheduler_interface_kernel_sleep(VALUE self)
 
 /*
  *  Document-method: SchedulerInterface#address_resolve
- *  call-seq: address_resolve(hostname) -> array_of_stings or nil
+ *  call-seq: address_resolve(hostname) -> array_of_strings or nil
  *
- *  Invoked by Socket::getaddrinfo and is expected to provide hostname resolution
- *  in a non-blocking way.
+ *  Invoked by any method that performs a non-reverse DNS lookup. The most
+ *  notable method is Addrinfo.getaddrinfo, but there are many other.
  *
  *  The method is expected to return an array of strings corresponding to ip
  *  addresses the +hostname+ is resolved to, or +nil+ if it can not be resolved.
  *
- *  The method support should be considered _experimental_.
+ *  Fairly exhaustive list of all possible call-sites:
+ *
+ *  - Addrinfo.getaddrinfo
+ *  - Addrinfo.tcp
+ *  - Addrinfo.udp
+ *  - Addrinfo.ip
+ *  - Addrinfo.new
+ *  - Addrinfo.marshal_load
+ *  - SOCKSSocket.new
+ *  - TCPServer.new
+ *  - TCPSocket.new
+ *  - IPSocket.getaddress
+ *  - TCPSocket.gethostbyname
+ *  - UDPSocket#connect
+ *  - UDPSocket#bind
+ *  - UDPSocket#send
+ *  - Socket.getaddrinfo
+ *  - Socket.gethostbyname
+ *  - Socket.pack_sockaddr_in
+ *  - Socket.sockaddr_in
+ *  - Socket.unpack_sockaddr_in
  */
 static VALUE
 rb_fiber_scheduler_interface_address_resolve(VALUE self)
@@ -3102,28 +3122,28 @@ rb_fiber_scheduler_interface_address_resolve(VALUE self)
 }
 
 /*
- *  Document-method: SchedulerInterface#address_resolve
+ *  Document-method: SchedulerInterface#timeout_after
  *  call-seq: timeout_after(duration, exception_class, *exception_arguments, &block) -> result of block
  *
- *  Limit the execution time of a given +block+ to the given +duration+ if
- *  possible. When a non-blocking operation causes the +block+'s execution time
- *  to exceed the specified +duration+, that non-blocking operation should be
- *  interrupted by raising the specified +exception_class+ constructed with the
- *  given +exception_arguments+.
+ *  Invoked by Timeout.timeout to execute the given +block+ within the given
+ *  +duration+. It can also be invoked directly by the scheduler or user code.
+ *
+ *  Attempt to limit the execution time of a given +block+ to the given
+ *  +duration+ if possible. When a non-blocking operation causes the +block+'s
+ *  execution time to exceed the specified +duration+, that non-blocking
+ *  operation should be interrupted by raising the specified +exception_class+
+ *  constructed with the given +exception_arguments+.
  *
  *  General execution timeouts are often considered risky. This implementation
  *  will only interrupt non-blocking operations. This is by design because it's
  *  expected that non-blocking operations can fail for a variety of
  *  unpredictable reasons, so applications should already be robust in handling
- *  these conditions.
+ *  these conditions and by implication timeouts.
  *
  *  However, as a result of this design, if the +block+ does not invoke any
  *  non-blocking operations, it will be impossible to interrupt it. If you
  *  desire to provide predictable points for timeouts, consider adding
  *  +sleep(0)+.
- *
- *  This hook is invoked by Timeout.timeout and can also be invoked directly by
- *  the scheduler.
  *
  *  If the block is executed successfully, its result will be returned.
  *
