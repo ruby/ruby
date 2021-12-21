@@ -26,7 +26,7 @@ module DidYouMean
     end
 
     def spell_checker
-      SPELL_CHECKERS[self.class.to_s].new(self)
+      DidYouMean.spell_checkers[self.class.to_s].new(self)
     end
   end
 end

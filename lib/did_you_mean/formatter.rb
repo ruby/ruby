@@ -26,7 +26,7 @@ module DidYouMean
     #
     #   # => nil
     #
-    def message_for(corrections)
+    def self.message_for(corrections)
       corrections.empty? ? "" : "\nDid you mean?  #{corrections.join("\n               ")}"
     end
   end

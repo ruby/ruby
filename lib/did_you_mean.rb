@@ -86,11 +86,24 @@ require_relative 'did_you_mean/tree_spell_checker'
 #
 module DidYouMean
   # Map of error types and spell checker objects.
-  SPELL_CHECKERS = Hash.new(NullChecker)
+  @spell_checkers = Hash.new(NullChecker)
+
+  # Returns a sharable hash map of error types and spell checker objects.
+  def self.spell_checkers
+    @spell_checkers
+  end
 
   # Adds +DidYouMean+ functionality to an error using a given spell checker
   def self.correct_error(error_class, spell_checker)
-    SPELL_CHECKERS[error_class.name] = spell_checker
+    if defined?(Ractor)
+      new_mapping = { **@spell_checkers, error_class.name => spell_checker }
+      new_mapping.default = NullChecker
+
+      @spell_checkers = Ractor.make_shareable(new_mapping)
+    else
+      spell_checkers[error_class.name] = spell_checker
+    end
+
     error_class.prepend(Correctable) unless error_class < Correctable
   end
 
@@ -100,15 +113,23 @@ module DidYouMean
   correct_error LoadError, RequirePathChecker if RUBY_VERSION >= '2.8.0'
   correct_error NoMatchingPatternKeyError, PatternKeyNameChecker if defined?(::NoMatchingPatternKeyError)
 
+  # TODO: Remove on 3.3:
+  SPELL_CHECKERS = @spell_checkers
+  deprecate_constant :SPELL_CHECKERS
+
   # Returns the currently set formatter. By default, it is set to +DidYouMean::Formatter+.
   def self.formatter
-    @formatter
+    if defined?(Reactor)
+      Ractor.current[:__did_you_mean_formatter__] || Formatter
+    else
+      Formatter
+    end
   end
 
   # Updates the primary formatter used to format the suggestions.
   def self.formatter=(formatter)
-    @formatter = formatter
+    if defined?(Reactor)
+      Ractor.current[:__did_you_mean_formatter__] = formatter
+    end
   end
-
-  @formatter = Formatter.new
 end
