@@ -186,11 +186,25 @@ RSpec.describe "bundle binstubs <gem>" do
 
           before do
             lockfile lockfile.gsub(/BUNDLED WITH\n   .*$/m, "BUNDLED WITH\n   55.0")
+
+            update_repo2 do
+              with_built_bundler("55.0") {|gem_path| FileUtils.mv(gem_path, gem_repo2("gems")) }
+            end
           end
 
-          it "runs the available version of bundler when the version is older and the same major" do
-            sys_exec "bin/bundle install"
+          it "installs and runs the exact version of bundler", :rubygems => ">= 3.3.0.dev" do
+            sys_exec "bin/bundle install --verbose", :env => { "BUNDLER_SPEC_GEM_SOURCES" => file_uri_for(gem_repo2).to_s, "RUBYOPT" => "-r#{spec_dir}/support/hax.rb" }
             expect(exitstatus).not_to eq(42)
+            expect(out).to include("Bundler 55.1 is running, but your lockfile was generated with 55.0. Installing Bundler 55.0 and restarting using that version.")
+            expect(out).to include("Using bundler 55.0")
+            expect(err).not_to include("Activating bundler (~> 55.0) failed:")
+          end
+
+          it "runs the available version of bundler", :rubygems => "< 3.3.0.dev" do
+            sys_exec "bin/bundle install --verbose"
+            expect(exitstatus).not_to eq(42)
+            expect(out).not_to include("Bundler 55.1 is running, but your lockfile was generated with 55.0. Installing Bundler 55.0 and restarting using that version.")
+            expect(out).to include("Using bundler 55.1")
             expect(err).not_to include("Activating bundler (~> 55.0) failed:")
           end
         end

@@ -66,6 +66,7 @@ module Bundler
   autoload :RubyDsl,                File.expand_path("bundler/ruby_dsl", __dir__)
   autoload :RubyVersion,            File.expand_path("bundler/ruby_version", __dir__)
   autoload :Runtime,                File.expand_path("bundler/runtime", __dir__)
+  autoload :SelfManager,            File.expand_path("bundler/self_manager", __dir__)
   autoload :Settings,               File.expand_path("bundler/settings", __dir__)
   autoload :SharedHelpers,          File.expand_path("bundler/shared_helpers", __dir__)
   autoload :Source,                 File.expand_path("bundler/source", __dir__)
@@ -641,6 +642,13 @@ EOF
       configure_gem_path
       configure_gem_home(path)
       Bundler.rubygems.clear_paths
+    end
+
+    def self_manager
+      @self_manager ||= begin
+                          require_relative "bundler/self_manager"
+                          Bundler::SelfManager.new
+                        end
     end
 
     private

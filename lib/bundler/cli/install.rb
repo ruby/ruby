@@ -12,6 +12,8 @@ module Bundler
 
       warn_if_root
 
+      Bundler.self_manager.install_locked_bundler_and_restart_with_it_if_needed
+
       Bundler::SharedHelpers.set_env "RB_USER_INSTALL", "1" if Bundler::FREEBSD
 
       # Disable color in deployment mode
