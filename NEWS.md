@@ -406,6 +406,10 @@ Note: Excluding feature bug fixes.
   This means that the output width is automatically changed depending on
   your terminal size. [[Feature #12913]]
 
+* Psych 4.0 changes `Psych.load` as `safe_load` by the default.
+  You may need to use Psych 3.3.2 for migrating to this behavior.
+  [[Bug #17866]]
+
 ## C API updates
 
 * Documented. [[GH-4815]]
@@ -570,6 +574,7 @@ See [the repository](https://github.com/ruby/error_highlight) in detail.
 [Bug #17827]:     https://bugs.ruby-lang.org/issues/17827
 [Feature #17847]: https://bugs.ruby-lang.org/issues/17847
 [Feature #17853]: https://bugs.ruby-lang.org/issues/17853
+[Bug #17866]:     https://bugs.ruby-lang.org/issues/17866
 [Bug #18003]:     https://bugs.ruby-lang.org/issues/18003
 [Feature #18008]: https://bugs.ruby-lang.org/issues/18008
 [Feature #18015]: https://bugs.ruby-lang.org/issues/18015
