@@ -2030,6 +2030,7 @@ class Reline::LineEditor
     @byte_pointer += bytesize
     last_mbchar = @line.byteslice((@byte_pointer - bytesize - last_byte_size), last_byte_size)
     if last_byte_size != 0 and (last_mbchar + str).grapheme_clusters.size == 1
+      # combined char
       width = 0
     end
     @cursor += width
