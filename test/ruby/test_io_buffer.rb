@@ -60,11 +60,11 @@ class TestIOBuffer < Test::Unit::TestCase
     buffer = IO::Buffer.new(128, IO::Buffer::INTERNAL|IO::Buffer::READONLY)
     assert buffer.readonly?
 
-    assert_raise IO::Buffer::MutationError do
+    assert_raise IO::Buffer::AccessError do
       buffer.set_string("")
     end
 
-    assert_raise IO::Buffer::MutationError do
+    assert_raise IO::Buffer::AccessError do
       buffer.set_string("!", 1)
     end
   end
