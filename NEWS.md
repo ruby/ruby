@@ -272,7 +272,7 @@ Note: We're only listing outstanding class updates.
 
 * TracePoint
 
-    *   TracePoint.allow_reenter is added to allow reenter while TracePoint
+    *   TracePoint.allow_reentry is added to allow reenter while TracePoint
         callback.
         [[Feature #15912]]
 
