@@ -288,7 +288,9 @@ command to remove old versions.
 
     installed_gems = Gem::Specification.find_all_by_name 'rubygems-update', requirement
     installed_gems = update_gem('rubygems-update', version) if installed_gems.empty?
-    version        = installed_gems.first.version
+    return if installed_gems.empty?
+
+    version = installed_gems.first.version
 
     install_rubygems version
   end
