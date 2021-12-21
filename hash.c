@@ -5242,7 +5242,7 @@ ruby_setenv(const char *name, const char *value)
         mem_size = len + strlen(value) + 2;
         mem_ptr = malloc(mem_size);
         if (mem_ptr == NULL)
-            rb_sys_fail_str(rb_sprintf("malloc("PRIuSIZE")", mem_size));
+            rb_sys_fail_str(rb_sprintf("malloc(%"PRIuSIZE")", mem_size));
         snprintf(mem_ptr, mem_size, "%s=%s", name, value);
     }
 
