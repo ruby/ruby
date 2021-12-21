@@ -714,6 +714,7 @@ typedef struct rb_vm_struct {
     int builtin_inline_index;
 
     struct rb_id_table *negative_cme_table;
+    st_table *overloaded_cme_table; // cme -> overloaded_cme
 
 #ifndef VM_GLOBAL_CC_CACHE_TABLE_SIZE
 #define VM_GLOBAL_CC_CACHE_TABLE_SIZE 1023
