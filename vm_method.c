@@ -150,7 +150,7 @@ static rb_method_entry_t *rb_method_entry_alloc(ID called_id, VALUE owner, VALUE
 const rb_method_entry_t * rb_method_entry_clone(const rb_method_entry_t *src_me);
 static const rb_callable_method_entry_t *complemented_callable_method_entry(VALUE klass, ID id);
 static const rb_callable_method_entry_t *lookup_overloaded_cme(const rb_callable_method_entry_t *cme);
-static void delete_overloaded_cme(const rb_callable_method_entry_t *cme);
+
 
 static void
 clear_method_cache_by_id_in_class(VALUE klass, ID mid)
@@ -216,7 +216,6 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                     rb_callable_method_entry_t *monly_cme = (rb_callable_method_entry_t *)lookup_overloaded_cme(cme);
                     if (monly_cme) {
                         vm_cme_invalidate(monly_cme);
-                        delete_overloaded_cme(monly_cme);
                     }
                 }
             }
@@ -392,6 +391,8 @@ rb_method_definition_release(rb_method_definition_t *def, int complemented)
 	}
     }
 }
+
+static void delete_overloaded_cme(const rb_callable_method_entry_t *cme);
 
 void
 rb_free_method_entry(const rb_method_entry_t *me)
@@ -922,12 +923,12 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 }
 
 static rb_method_entry_t *rb_method_entry_alloc(ID called_id, VALUE owner, VALUE defined_class, const rb_method_definition_t *def);
-static st_table *overloaded_cme_table;
 
-st_table *
-rb_vm_overloaded_cme_table(void)
+static st_table *
+overloaded_cme_table(void)
 {
-    return overloaded_cme_table;
+    VM_ASSERT(GET_VM()->overloaded_cme_table != NULL);
+    return GET_VM()->overloaded_cme_table;
 }
 
 #if VM_CHECK_MODE > 0
@@ -943,7 +944,7 @@ void
 rb_vm_dump_overloaded_cme_table(void)
 {
     fprintf(stderr, "== rb_vm_dump_overloaded_cme_table\n");
-    st_foreach(overloaded_cme_table, vm_dump_overloaded_cme_table, 0);
+    st_foreach(overloaded_cme_table(), vm_dump_overloaded_cme_table, 0);
 }
 #endif
 
@@ -956,10 +957,7 @@ lookup_overloaded_cme_i(st_data_t *key, st_data_t *value, st_data_t data, int ex
         const rb_callable_method_entry_t **ptr = (const rb_callable_method_entry_t **)data;
 
         if (rb_objspace_garbage_object_p((VALUE)cme) ||
-            rb_objspace_garbage_object_p((VALUE)monly_cme) ||
-            METHOD_ENTRY_INVALIDATED(cme) ||
-            METHOD_ENTRY_INVALIDATED(monly_cme)) {
-
+            rb_objspace_garbage_object_p((VALUE)monly_cme)) {
             *ptr = NULL;
             return ST_DELETE;
         }
@@ -977,14 +975,8 @@ lookup_overloaded_cme(const rb_callable_method_entry_t *cme)
     ASSERT_vm_locking();
 
     const rb_callable_method_entry_t *monly_cme = NULL;
-    st_update(overloaded_cme_table, (st_data_t)cme, lookup_overloaded_cme_i, (st_data_t)&monly_cme);
-
-    if (monly_cme) {
-        return monly_cme;
-    }
-    else {
-        return NULL;
-    }
+    st_update(overloaded_cme_table(), (st_data_t)cme, lookup_overloaded_cme_i, (st_data_t)&monly_cme);
+    return monly_cme;
 }
 
 // used by gc.c
@@ -998,7 +990,7 @@ static void
 delete_overloaded_cme(const rb_callable_method_entry_t *cme)
 {
     ASSERT_vm_locking();
-    st_delete(overloaded_cme_table, (st_data_t *)&cme, NULL);
+    st_delete(overloaded_cme_table(), (st_data_t *)&cme, NULL);
 }
 
 static const rb_callable_method_entry_t *
@@ -1006,7 +998,7 @@ get_overloaded_cme(const rb_callable_method_entry_t *cme)
 {
     const rb_callable_method_entry_t *monly_cme = lookup_overloaded_cme(cme);
 
-    if (monly_cme) {
+    if (monly_cme && !METHOD_ENTRY_INVALIDATED(monly_cme)) {
         return monly_cme;
     }
     else {
@@ -1021,7 +1013,7 @@ get_overloaded_cme(const rb_callable_method_entry_t *cme)
                                                       def);
 
         ASSERT_vm_locking();
-        st_insert(overloaded_cme_table, (st_data_t)cme, (st_data_t)me);
+        st_insert(overloaded_cme_table(), (st_data_t)cme, (st_data_t)me);
 
         METHOD_ENTRY_VISI_SET(me, METHOD_ENTRY_VISI(cme));
         return (rb_callable_method_entry_t *)me;
@@ -2828,7 +2820,7 @@ obj_respond_to_missing(VALUE obj, VALUE mid, VALUE priv)
 void
 Init_Method(void)
 {
-    overloaded_cme_table = st_init_numtable();
+    //
 }
 
 void
