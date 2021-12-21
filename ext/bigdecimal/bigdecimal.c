@@ -256,7 +256,7 @@ GetVpValue(VALUE v, int must)
 }
 
 /* call-seq:
- *   BigDecimal.double_fig
+ *   BigDecimal.double_fig -> integer
  *
  *  Returns the number of digits a Float object is allowed to have;
  *  the result is system-dependent:
@@ -524,7 +524,7 @@ BigDecimal_n_significant_digits(VALUE self)
 
 /*
  *  call-seq:
- *    hash  -> integer
+ *    hash -> integer
  *
  *  Returns the integer hash value for +self+.
  *
@@ -555,7 +555,7 @@ BigDecimal_hash(VALUE self)
 
 /*
  *  call-seq:
- *    _dump
+ *    _dump -> string
  *
  *  Returns a string representing the marshalling of +self+.
  *  See module Marshal.
@@ -1236,12 +1236,17 @@ BigDecimal_uplus(VALUE self)
 
  /*
   *  call-seq:
-  *    self + value -> new_bigdecimal
+  *    self + value -> bigdecimal
   *
-  *  Returns the sum of +self+ and +value+:
+  *  Returns the \BigDecimal sum of +self+ and +value+:
   *
   *    b = BigDecimal('111111.111') # => 0.111111111e6
-  *    b + 1                        # => 0.111112111e6
+  *    b + 2                        # => 0.111113111e6
+  *    b + 2.0                      # => 0.111113111e6
+  *    b + Rational(2, 1)           # => 0.111113111e6
+  *    b + Complex(2, 0)            # => (0.111113111e6+0i)
+  *
+  *  See the {Note About Precision}[BigDecimal.html#class-BigDecimal-label-A+Note+About+Precision].
   *
   */
 
@@ -1286,21 +1291,18 @@ BigDecimal_add(VALUE self, VALUE r)
     return VpCheckGetValue(c);
 }
 
- /* call-seq:
-  * a - b   -> bigdecimal
+ /*  call-seq:
+  *    self - value -> bigdecimal
   *
-  * Subtract the specified value.
+  *  Returns the \BigDecimal difference of +self+ and +value+:
   *
-  * e.g.
-  *   c = a - b
+  *    b = BigDecimal('333333.333') # => 0.333333333e6
+  *    b - 2                        # => 0.333331333e6
+  *    b - 2.0                      # => 0.333331333e6
+  *    b - Rational(2, 1)           # => 0.333331333e6
+  *    b - Complex(2, 0)            # => (0.333331333e6+0i)
   *
-  * The precision of the result value depends on the type of +b+.
-  *
-  * If +b+ is a Float, the precision of the result is Float::DIG+1.
-  *
-  * If +b+ is a BigDecimal, the precision of the result is +b+'s precision of
-  * internal representation from platform. So, it's return value is platform
-  * dependent.
+  *  See the {Note About Precision}[BigDecimal.html#class-BigDecimal-label-A+Note+About+Precision].
   *
   */
 static VALUE
@@ -1479,12 +1481,19 @@ BigDecimal_eq(VALUE self, VALUE r)
     return BigDecimalCmp(self, r, '=');
 }
 
-/* call-seq:
- * a < b
+/*  call-seq:
+ *    self < other -> true or false
  *
- * Returns true if a is less than b.
+ *  Returns +true+ if +self+ is less than +other+, +false+ otherwise:
  *
- * Values may be coerced to perform the comparison (see ==, BigDecimal#coerce).
+ *    b = BigDecimal('1.5') # => 0.15e1
+ *    b < 2                 # => true
+ *    b < 2.0               # => true
+ *    b < Rational(2, 1)    # => true
+ *    b < 1.5               # => false
+ *
+ *  Raises an exception if the comparison cannot be made.
+ *
  */
 static VALUE
 BigDecimal_lt(VALUE self, VALUE r)
@@ -1492,12 +1501,20 @@ BigDecimal_lt(VALUE self, VALUE r)
     return BigDecimalCmp(self, r, '<');
 }
 
-/* call-seq:
- * a <= b
+/*  call-seq:
+ *    self <= other -> true or false
  *
- * Returns true if a is less than or equal to b.
+ *  Returns +true+ if +self+ is less or equal to than +other+, +false+ otherwise:
  *
- * Values may be coerced to perform the comparison (see ==, BigDecimal#coerce).
+ *    b = BigDecimal('1.5') # => 0.15e1
+ *    b <= 2                # => true
+ *    b <= 2.0              # => true
+ *    b <= Rational(2, 1)   # => true
+ *    b <= 1.5              # => true
+ *    b < 1                 # => false
+ *
+ *  Raises an exception if the comparison cannot be made.
+ *
  */
 static VALUE
 BigDecimal_le(VALUE self, VALUE r)
@@ -1505,12 +1522,19 @@ BigDecimal_le(VALUE self, VALUE r)
     return BigDecimalCmp(self, r, 'L');
 }
 
-/* call-seq:
- * a > b
+/*  call-seq:
+ *    self > other -> true or false
  *
- * Returns true if a is greater than b.
+ *  Returns +true+ if +self+ is greater than +other+, +false+ otherwise:
  *
- * Values may be coerced to perform the comparison (see ==, BigDecimal#coerce).
+ *    b = BigDecimal('1.5')
+ *    b > 1              # => true
+ *    b > 1.0            # => true
+ *    b > Rational(1, 1) # => true
+ *    b > 2              # => false
+ *
+ *  Raises an exception if the comparison cannot be made.
+ *
  */
 static VALUE
 BigDecimal_gt(VALUE self, VALUE r)
@@ -1518,12 +1542,20 @@ BigDecimal_gt(VALUE self, VALUE r)
     return BigDecimalCmp(self, r, '>');
 }
 
-/* call-seq:
- * a >= b
+/*  call-seq:
+ *    self >= other -> true or false
  *
- * Returns true if a is greater than or equal to b.
+ *  Returns +true+ if +self+ is greater than or equal to +other+, +false+ otherwise:
  *
- * Values may be coerced to perform the comparison (see ==, BigDecimal#coerce)
+ *    b = BigDecimal('1.5')
+ *    b >= 1              # => true
+ *    b >= 1.0            # => true
+ *    b >= Rational(1, 1) # => true
+ *    b >= 1.5            # => true
+ *    b > 2               # => false
+ *
+ *  Raises an exception if the comparison cannot be made.
+ *
  */
 static VALUE
 BigDecimal_ge(VALUE self, VALUE r)
@@ -1533,11 +1565,14 @@ BigDecimal_ge(VALUE self, VALUE r)
 
 /*
  *  call-seq:
- *     -big_decimal  ->  big_decimal
+ *    -self -> bigdecimal
  *
- *  Return the negation of self.
+ *  Returns the \BigDecimal negation of self:
  *
- *    -BigDecimal('5')  #=> -0.5e1
+ *    b0 = BigDecimal('1.5')
+ *    b1 = -b0 # => -0.15e1
+ *    b2 = -b1 # => 0.15e1
+ *
  */
 
 static VALUE
@@ -1551,21 +1586,6 @@ BigDecimal_neg(VALUE self)
     return VpCheckGetValue(c);
 }
 
- /*
-  * Document-method: BigDecimal#mult
-  *
-  * call-seq: mult(value, digits)
-  *
-  * Multiply by the specified value.
-  *
-  * e.g.
-  *   c = a.mult(b,n)
-  *   c = a * b
-  *
-  * digits:: If specified and less than the number of significant digits of the
-  *          result, the result is rounded to that number of digits, according
-  *          to BigDecimal.mode.
-  */
 static VALUE
 BigDecimal_mult(VALUE self, VALUE r)
 {
@@ -2032,7 +2052,7 @@ BigDecimal_div3(int argc, VALUE *argv, VALUE self)
   *  call-seq:
   *    add(value, ndigits) -> new_bigdecimal
   *
-  *  Returns the sum of +self+ and +value+
+  *  Returns the \BigDecimal sum of +self+ and +value+
   *  with a precision of +ndigits+ decimal digits.
   *
   *  When +ndigits+ is less than the number of significant digits
@@ -2043,15 +2063,13 @@ BigDecimal_div3(int argc, VALUE *argv, VALUE self)
   *
   *    # Set the rounding mode.
   *    BigDecimal.mode(BigDecimal::ROUND_MODE, :half_up)
-  *    BigDecimal('111111.111').add(1, 0) # => 0.111112111e6
-  *    BigDecimal('111111.111').add(1, 2) # => 0.11e6
-  *    BigDecimal('111111.111').add(1, 3) # => 0.111e6
-  *    BigDecimal('111111.111').add(1, 4) # => 0.1111e6
-  *    BigDecimal('111111.111').add(1, 5) # => 0.11111e6
-  *    BigDecimal('111111.111').add(1, 6) # => 0.111112e6
-  *    BigDecimal('111111.111').add(1, 7) # => 0.1111121e6
-  *    BigDecimal('111111.111').add(1, 8) # => 0.11111211e6
-  *    BigDecimal('111111.111').add(1, 9) # => 0.111112111e6
+  *    b = BigDecimal('111111.111')
+  *    b.add(1, 0)               # => 0.111112111e6
+  *    b.add(1, 3)               # => 0.111e6
+  *    b.add(1, 6)               # => 0.111112e6
+  *    b.add(1, 15)              # => 0.111112111e6
+  *    b.add(1.0, 15)            # => 0.111112111e6
+  *    b.add(Rational(1, 1), 15) # => 0.111112111e6
   *
   */
 
@@ -2102,6 +2120,31 @@ BigDecimal_sub2(VALUE self, VALUE b, VALUE n)
     }
 }
 
+ /*
+  *  call-seq:
+  *    mult(other, ndigits) -> bigdecimal
+  *
+  *  Returns the \BigDecimal product of +self+ and +value+
+  *  with a precision of +ndigits+ decimal digits.
+  *
+  *  When +ndigits+ is less than the number of significant digits
+  *  in the sum, the sum is rounded to that number of digits,
+  *  according to the current rounding mode; see BigDecimal.mode.
+  *
+  *  Examples:
+  *
+  *    # Set the rounding mode.
+  *    BigDecimal.mode(BigDecimal::ROUND_MODE, :half_up)
+  *    b = BigDecimal('555555.555')
+  *    b.mult(3, 0)              # => 0.1666666665e7
+  *    b.mult(3, 3)              # => 0.167e7
+  *    b.mult(3, 6)              # => 0.166667e7
+  *    b.mult(3, 15)             # => 0.1666666665e7
+  *    b.mult(3.0, 0)            # => 0.1666666665e7
+  *    b.mult(Rational(3, 1), 0) # => 0.1666666665e7
+  *    b.mult(Complex(3, 0), 0)  # => (0.1666666665e7+0.0i)
+  *
+  */
 
 static VALUE
 BigDecimal_mult2(VALUE self, VALUE b, VALUE n)
@@ -2122,12 +2165,13 @@ BigDecimal_mult2(VALUE self, VALUE b, VALUE n)
 
 /*
  *  call-seq:
- *     big_decimal.abs  ->  big_decimal
+ *    abs -> bigdecimal
  *
- *  Returns the absolute value, as a BigDecimal.
+ *  Returns the \BigDecimal absolute value of +self+:
  *
- *     BigDecimal('5').abs  #=> 0.5e1
- *     BigDecimal('-3').abs #=> 0.3e1
+ *    BigDecimal('5').abs  # => 0.5e1
+ *    BigDecimal('-3').abs # => 0.3e1
+ *
  */
 
 static VALUE
@@ -2973,12 +3017,18 @@ BigDecimal_power(int argc, VALUE*argv, VALUE self)
     return VpCheckGetValue(y);
 }
 
-/* call-seq:
- *   a ** n  -> bigdecimal
+/*  call-seq:
+ *    self ** other -> bigdecimal
  *
- * Returns the value raised to the power of n.
+ *  Returns the \BigDecimal value of +self+ raised to power +other+:
  *
- * See BigDecimal#power.
+ *    b = BigDecimal('3.14')
+ *    b ** 2              # => 0.98596e1
+ *    b ** 2.0            # => 0.98596e1
+ *    b ** Rational(2, 1) # => 0.98596e1
+ *
+ *  Related: BigDecimal#power.
+ *
  */
 static VALUE
 BigDecimal_power_op(VALUE self, VALUE exp)
@@ -3426,50 +3476,49 @@ rb_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
     return rb_str_convert_to_BigDecimal(str, digs, raise_exception);
 }
 
-/* call-seq:
- *   BigDecimal(arg, exception: true)
- *   BigDecimal(arg, digits, exception: true)
+/*  call-seq:
+ *    BigDecimal(value, exception: true) -> bigdecimal
+ *    BigDecimal(value, ndigits, exception: true) -> bigdecimal
  *
- * Returns <i>arg</i> converted to a BigDecimal.  Numeric types are converted
- * directly.  Other types except for String are first converted to String
- * by <code>to_str</code>.  Strings can be converted when it has appropriate
- * forms of decimal numbers.  Exceptions can be suppressed by passing
- * <code>exception: false</code>.
+ *   Returns the \BigDecimal converted from +value+
+ *   with a precision of +ndigits+ decimal digits.
  *
- * When <i>arg</i> is a Float and <i>digits</i> is <code>0</code>, the number
- * of digits is determined by the algorithm of <code>dtoa</code> function
- * written by David M. Gay.  That algorithm is based on "How to Print Floating-
- * Point Numbers Accurately" by Guy L. Steele, Jr. and Jon L. White [Proc. ACM
- * SIGPLAN '90, pp. 112-126].
+ *   When +ndigits+ is less than the number of significant digits
+ *   in the value, the result is rounded to that number of digits,
+ *   according to the current rounding mode; see BigDecimal.mode.
  *
- * arg:: The value converted to a BigDecimal.
+ *  Returns +value+ converted to a \BigDecimal, depending on the type of +value+:
  *
- *       If it is a String, spaces are ignored and unrecognized characters
- *       terminate the value.
+ *  - Integer, Float, Rational, Complex, or BigDecimal: converted directly:
  *
- * digits:: The number of significant digits, as an Integer. If omitted,
- *          the number of significant digits is determined from <i>arg</i>.
+ *      # Integer, Complex, or BigDecimal value does not require ndigits; ignored if given.
+ *      BigDecimal(2)                     # => 0.2e1
+ *      BigDecimal(Complex(2, 0))         # => 0.2e1
+ *      BigDecimal(BigDecimal(2))         # => 0.2e1
+ *      # Float or Rational value requires ndigits.
+ *      BigDecimal(2.0, 0)                # => 0.2e1
+ *      BigDecimal(Rational(2, 1), 0)     # => 0.2e1
  *
- *          The actual number of significant digits used in computation is
- *          usually larger than the specified number.
+ *  - String: converted by parsing if it contains an integer or floating-point literal;
+ *    leading and trailing whitespace is ignored:
  *
- * exception:: Whether an exception should be raised on invalid arguments.
- *             +true+ by default, if passed +false+, just returns +nil+
- *             for invalid.
+ *      # String does not require ndigits; ignored if given.
+ *      BigDecimal('2')     # => 0.2e1
+ *      BigDecimal('2.0')   # => 0.2e1
+ *      BigDecimal('0.2e1') # => 0.2e1
+ *      BigDecimal(' 2.0 ') # => 0.2e1
  *
+ *  - Other type that responds to method <tt>:to_str</tt>:
+ *    first converted to a string, then converted to a \BigDecimal, as above.
  *
- * ==== Exceptions
+ *  - Other type:
  *
- * TypeError:: If the +initial+ type is neither Integer, Float,
- *             Rational, nor BigDecimal, this exception is raised.
+ *    - Raises an exception if keyword argument +exception+ is +true+.
+ *    - Returns +nil+ if keyword argument +exception+ is +true+.
  *
- * TypeError:: If the +digits+ is not an Integer, this exception is raised.
+ *  Raises an exception if +value+ evaluates to a Float
+ *  and +digits+ is larger than Float::DIG + 1.
  *
- * ArgumentError:: If +initial+ is a Float, and the +digits+ is larger than
- *                 Float::DIG + 1, this exception is raised.
- *
- * ArgumentError:: If the +initial+ is a Float or Rational, and the +digits+
- *                 value is omitted, this exception is raised.
  */
 static VALUE
 f_BigDecimal(int argc, VALUE *argv, VALUE self)
@@ -4018,6 +4067,18 @@ BigDecimal_negative_zero(void)
  *	(BigDecimal("1.2") - BigDecimal("1.0")) == BigDecimal("0.2") #=> true
  *
  *	(1.2 - 1.0) == 0.2 #=> false
+ *
+ * == A Note About Precision
+ *
+ * For a calculation using a \BigDecimal and another +value+,
+ * the precision of the result depends on the type of +value+:
+ *
+ * - If +value+ is a \Float,
+ *   the precision is Float::DIG + 1.
+ * - If +value+ is a \Rational, the precision is larger than Float::DIG + 1.
+ * - If +value+ is a \BigDecimal, the precision is +value+'s precision in the
+ *   internal representation, which is platform-dependent.
+ * - If +value+ is other object, the precision is determined by the result of +BigDecimal(value)+.
  *
  * == Special features of accurate decimal arithmetic
  *
