@@ -3297,7 +3297,7 @@ AS_IF([test x"${exec_prefix}" != xNONE], [
     RUBY_EXEC_PREFIX=$ac_default_prefix
 ])
 pat=`echo "${RUBY_EXEC_PREFIX}" | tr -c '\012' .`'\(.*\)'
-for var in bindir libdir rubylibprefix; do
+for var in bindir includedir libdir rubylibprefix; do
     eval val='"$'$var'"'
     AS_CASE(["$val"], ["${RUBY_EXEC_PREFIX}"*], [val='${exec_prefix}'"`expr \"$val\" : \"$pat\"`"])
     eval $var='"$val"'
