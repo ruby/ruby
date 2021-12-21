@@ -136,7 +136,9 @@ matrix:
     # We see "Some worker was crashed." in about 40% of recent ppc64le-linux jobs
     # e.g. https://app.travis-ci.com/github/ruby/ruby/jobs/530959548
     - name: ppc64le-linux
-    # - name: s390x-linux
+    # Tentatively disable, because often hungs up **after** all tests
+    # have finished successfully and saving caches.
+    - name: s390x-linux
   fast_finish: true
 
 before_script:
