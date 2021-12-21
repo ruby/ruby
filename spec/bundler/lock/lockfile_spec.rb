@@ -39,7 +39,7 @@ RSpec.describe "the lockfile format" do
     G
   end
 
-  it "updates the lockfile's bundler version if current ver. is newer" do
+  it "updates the lockfile's bundler version if current ver. is newer, and version was forced through BUNDLER_VERSION" do
     system_gems "bundler-1.8.2"
 
     lockfile <<-L
@@ -64,11 +64,14 @@ RSpec.describe "the lockfile format" do
          1.8.2
     L
 
-    install_gemfile <<-G, :env => { "BUNDLER_VERSION" => Bundler::VERSION }
+    install_gemfile <<-G, :verbose => true, :env => { "BUNDLER_VERSION" => Bundler::VERSION }
       source "#{file_uri_for(gem_repo2)}"
 
       gem "rack"
     G
+
+    expect(out).not_to include("Bundler #{Bundler::VERSION} is running, but your lockfile was generated with 1.8.2.")
+    expect(out).to include("Using bundler #{Bundler::VERSION}")
 
     expect(lockfile).to eq <<~G
       GEM
@@ -87,8 +90,12 @@ RSpec.describe "the lockfile format" do
     G
   end
 
-  it "does not update the lockfile's bundler version if nothing changed during bundle install" do
+  it "does not update the lockfile's bundler version if nothing changed during bundle install, but uses the locked version", :rubygems => ">= 3.3.0.a" do
     version = "#{Bundler::VERSION.split(".").first}.0.0.a"
+
+    update_repo2 do
+      with_built_bundler(version) {|gem_path| FileUtils.mv(gem_path, gem_repo2("gems")) }
+    end
 
     lockfile <<-L
       GEM
@@ -106,11 +113,14 @@ RSpec.describe "the lockfile format" do
          #{version}
     L
 
-    install_gemfile <<-G
+    install_gemfile <<-G, :verbose => true, :env => { "BUNDLER_SPEC_GEM_SOURCES" => file_uri_for(gem_repo2).to_s }
       source "#{file_uri_for(gem_repo2)}"
 
       gem "rack"
     G
+
+    expect(out).to include("Bundler #{Bundler::VERSION} is running, but your lockfile was generated with #{version}.")
+    expect(out).to include("Using bundler #{version}")
 
     expect(lockfile).to eq <<~G
       GEM
@@ -129,7 +139,56 @@ RSpec.describe "the lockfile format" do
     G
   end
 
-  it "updates the lockfile's bundler version if not present" do
+  it "does not update the lockfile's bundler version if nothing changed during bundle install, and uses the latest version", :rubygems => "< 3.3.0.a" do
+    version = "#{Bundler::VERSION.split(".").first}.0.0.a"
+
+    update_repo2 do
+      with_built_bundler(version) {|gem_path| FileUtils.mv(gem_path, gem_repo2("gems")) }
+    end
+
+    lockfile <<-L
+      GEM
+        remote: #{file_uri_for(gem_repo2)}/
+        specs:
+          rack (1.0.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        rack
+
+      BUNDLED WITH
+         #{version}
+    L
+
+    install_gemfile <<-G, :verbose => true, :env => { "BUNDLER_SPEC_GEM_SOURCES" => file_uri_for(gem_repo2).to_s }
+      source "#{file_uri_for(gem_repo2)}"
+
+      gem "rack"
+    G
+
+    expect(out).not_to include("Bundler #{Bundler::VERSION} is running, but your lockfile was generated with #{version}.")
+    expect(out).to include("Using bundler #{Bundler::VERSION}")
+
+    expect(lockfile).to eq <<~G
+      GEM
+        remote: #{file_uri_for(gem_repo2)}/
+        specs:
+          rack (1.0.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        rack
+
+      BUNDLED WITH
+         #{version}
+    G
+  end
+
+  it "adds the BUNDLED WITH section if not present" do
     lockfile <<-L
       GEM
         remote: #{file_uri_for(gem_repo2)}/
@@ -163,152 +222,6 @@ RSpec.describe "the lockfile format" do
 
       BUNDLED WITH
          #{Bundler::VERSION}
-    G
-  end
-
-  it "warns if the current version is older than lockfile's bundler version, and locked version is a final release" do
-    current_version = "999.998.999"
-    system_gems "bundler-#{current_version}"
-    newer_minor = "999.999.0"
-
-    lockfile <<-L
-      GEM
-        remote: #{file_uri_for(gem_repo2)}/
-        specs:
-          rack (1.0.0)
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        rack
-
-      BUNDLED WITH
-         #{newer_minor}
-    L
-
-    install_gemfile <<-G, :env => { "BUNDLER_VERSION" => current_version }
-      source "#{file_uri_for(gem_repo2)}"
-
-      gem "rack"
-    G
-
-    warning_message = "the running version of Bundler (#{current_version}) is older " \
-                      "than the version that created the lockfile (#{newer_minor}). " \
-                      "We suggest you to upgrade to the version that created the " \
-                      "lockfile by running `gem install bundler:#{newer_minor}`."
-    expect(err).to include warning_message
-
-    expect(lockfile).to eq <<~G
-      GEM
-        remote: #{file_uri_for(gem_repo2)}/
-        specs:
-          rack (1.0.0)
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        rack
-
-      BUNDLED WITH
-         #{newer_minor}
-    G
-  end
-
-  it "warns if the current version is older than lockfile's bundler version, and locked version is a prerelease" do
-    current_version = "999.998.999"
-    system_gems "bundler-#{current_version}"
-    newer_minor = "999.999.0.pre1"
-
-    lockfile <<-L
-      GEM
-        remote: #{file_uri_for(gem_repo2)}/
-        specs:
-          rack (1.0.0)
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        rack
-
-      BUNDLED WITH
-         #{newer_minor}
-    L
-
-    install_gemfile <<-G, :env => { "BUNDLER_VERSION" => current_version }
-      source "#{file_uri_for(gem_repo2)}"
-
-      gem "rack"
-    G
-
-    warning_message = "the running version of Bundler (#{current_version}) is older " \
-                      "than the version that created the lockfile (#{newer_minor}). " \
-                      "We suggest you to upgrade to the version that created the " \
-                      "lockfile by running `gem install bundler:#{newer_minor} --pre`."
-    expect(err).to include warning_message
-
-    expect(lockfile).to eq <<~G
-      GEM
-        remote: #{file_uri_for(gem_repo2)}/
-        specs:
-          rack (1.0.0)
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        rack
-
-      BUNDLED WITH
-         #{newer_minor}
-    G
-  end
-
-  it "doesn't warn if the current version is older than lockfile's bundler version, and locked version is a dev version" do
-    current_version = "999.998.999"
-    system_gems "bundler-#{current_version}"
-    newer_minor = "999.999.0.dev"
-
-    lockfile <<-L
-      GEM
-        remote: #{file_uri_for(gem_repo2)}/
-        specs:
-          rack (1.0.0)
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        rack
-
-      BUNDLED WITH
-         #{newer_minor}
-    L
-
-    install_gemfile <<-G, :env => { "BUNDLER_VERSION" => current_version }
-      source "#{file_uri_for(gem_repo2)}"
-
-      gem "rack"
-    G
-
-    expect(err).to be_empty
-
-    expect(lockfile).to eq <<~G
-      GEM
-        remote: #{file_uri_for(gem_repo2)}/
-        specs:
-          rack (1.0.0)
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        rack
-
-      BUNDLED WITH
-         #{newer_minor}
     G
   end
 

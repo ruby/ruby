@@ -46,6 +46,16 @@ module Bundler
       attributes
     end
 
+    def self.bundled_with
+      lockfile = Bundler.default_lockfile
+      return unless lockfile.file?
+
+      lockfile_contents = Bundler.read_file(lockfile)
+      return unless lockfile_contents.include?(BUNDLED)
+
+      lockfile_contents.split(BUNDLED).last.strip
+    end
+
     def initialize(lockfile)
       @platforms    = []
       @sources      = []
@@ -77,23 +87,10 @@ module Bundler
         end
       end
       @specs = @specs.values.sort_by(&:identifier)
-      warn_for_outdated_bundler_version
     rescue ArgumentError => e
       Bundler.ui.debug(e)
       raise LockfileError, "Your lockfile is unreadable. Run `rm #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)}` " \
         "and then `bundle install` to generate a new lockfile."
-    end
-
-    def warn_for_outdated_bundler_version
-      return unless bundler_version
-      return if bundler_version.segments.last == "dev"
-      prerelease_text = bundler_version.prerelease? ? " --pre" : ""
-      current_version = Gem::Version.create(Bundler::VERSION)
-      return unless current_version < bundler_version
-      Bundler.ui.warn "Warning: the running version of Bundler (#{current_version}) is older " \
-           "than the version that created the lockfile (#{bundler_version}). We suggest you to " \
-           "upgrade to the version that created the lockfile by running `gem install " \
-           "bundler:#{bundler_version}#{prerelease_text}`.\n"
     end
 
     private

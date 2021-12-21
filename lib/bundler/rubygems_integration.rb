@@ -12,25 +12,21 @@ module Bundler
       EXT_LOCK = Monitor.new
     end
 
-    def self.version
-      @version ||= Gem::Version.new(Gem::VERSION)
-    end
-
-    def self.provides?(req_str)
-      Gem::Requirement.new(req_str).satisfied_by?(version)
-    end
-
     def initialize
       @replaced_methods = {}
       backport_ext_builder_monitor
     end
 
     def version
-      self.class.version
+      @version ||= Gem.rubygems_version
     end
 
     def provides?(req_str)
-      self.class.provides?(req_str)
+      Gem::Requirement.new(req_str).satisfied_by?(version)
+    end
+
+    def supports_bundler_trampolining?
+      provides?(">= 3.3.0.a")
     end
 
     def build_args
@@ -140,19 +136,6 @@ module Bundler
       else
         path
       end
-    end
-
-    def sources=(val)
-      # Gem.configuration creates a new Gem::ConfigFile, which by default will read ~/.gemrc
-      # If that file exists, its settings (including sources) will overwrite the values we
-      # are about to set here. In order to avoid that, we force memoizing the config file now.
-      configuration
-
-      Gem.sources = val
-    end
-
-    def sources
-      Gem.sources
     end
 
     def gem_dir
@@ -586,6 +569,10 @@ module Bundler
         remove_const(:CHDIR_MUTEX) if const_defined?(:CHDIR_MUTEX)
         const_set(:CHDIR_MUTEX, const_get(:CHDIR_MONITOR))
       end
+    end
+
+    def find_bundler(version)
+      find_name("bundler").find {|s| s.version.to_s == version }
     end
 
     def find_name(name)

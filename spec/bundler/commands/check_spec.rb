@@ -471,10 +471,10 @@ RSpec.describe "bundle check" do
     end
 
     context "is newer" do
-      it "does not change the lock but warns" do
+      it "does not change the lock and does not warn" do
         lockfile lock_with(Bundler::VERSION.succ)
         bundle :check
-        expect(err).to include("the running version of Bundler (#{Bundler::VERSION}) is older than the version that created the lockfile (#{Bundler::VERSION.succ})")
+        expect(err).to be_empty
         expect(lockfile).to eq lock_with(Bundler::VERSION.succ)
       end
     end

@@ -21,7 +21,7 @@ module Bundler
         elsif options[:local_git]
           install_local_git(names, version, options)
         else
-          sources = options[:source] || Bundler.rubygems.sources
+          sources = options[:source] || Gem.sources
           install_rubygems(names, version, sources)
         end
       end

@@ -61,6 +61,8 @@ module Bundler
         Bundler.reset_settings_and_root!
       end
 
+      Bundler.self_manager.restart_with_locked_bundler_if_needed
+
       Bundler.settings.set_command_option_if_given :retry, options[:retry]
 
       current_cmd = args.last[:current_command].name

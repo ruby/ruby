@@ -168,7 +168,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
         nokogiri
 
       BUNDLED WITH
-        2.1.4
+        #{Bundler::VERSION}
     G
 
     bundle "install"
