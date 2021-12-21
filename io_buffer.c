@@ -278,8 +278,9 @@ rb_io_buffer_type_allocate(VALUE self)
 /*
  *  call-seq: IO::Buffer.for(string) -> io_buffer
  *
- *  Creates a IO::Buffer from string's memory. The buffer remains associated
- *  with the string, and writing to a buffer will update the string's contents.
+ *  Creates a IO::Buffer from the given string's memory. The buffer remains
+ *  associated with the string, and writing to a buffer will update the string's
+ *  contents.
  *
  *  If the string is frozen, it will create a read-only buffer which cannot be
  *  modified.
@@ -395,7 +396,7 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
     VALUE io = argv[0];
 
     size_t size;
-    if (argc >= 2) {
+    if (argc >= 2 && !RB_NIL_P(argv[1])) {
         size = RB_NUM2SIZE(argv[1]);
     }
     else {
@@ -561,6 +562,10 @@ rb_io_buffer_to_s(VALUE self)
 
     if (data->base == NULL) {
         rb_str_cat2(result, " NULL");
+    }
+
+    if (data->flags & RB_IO_BUFFER_EXTERNAL) {
+        rb_str_cat2(result, " EXTERNAL");
     }
 
     if (data->flags & RB_IO_BUFFER_INTERNAL) {

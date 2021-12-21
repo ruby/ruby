@@ -70,7 +70,7 @@ class TestIOBuffer < Test::Unit::TestCase
   end
 
   def test_file_mapped
-    buffer = File.open(__FILE__) {|file| IO::Buffer.map(file)}
+    buffer = File.open(__FILE__) {|file| IO::Buffer.map(file, nil, 0, IO::Buffer::READONLY)}
     contents = buffer.get_string
 
     assert_include contents, "Hello World"
