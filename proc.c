@@ -2699,7 +2699,7 @@ method_def_min_max_arity(const rb_method_definition_t *def, int *max)
 }
 
 static int
-method_def_aritry(const rb_method_definition_t *def)
+method_def_arity(const rb_method_definition_t *def)
 {
     int max, min = method_def_min_max_arity(def, &max);
     return min == max ? min : -min-1;
@@ -2708,7 +2708,7 @@ method_def_aritry(const rb_method_definition_t *def)
 int
 rb_method_entry_arity(const rb_method_entry_t *me)
 {
-    return method_def_aritry(me->def);
+    return method_def_arity(me->def);
 }
 
 /*
@@ -2969,7 +2969,7 @@ method_def_parameters(const rb_method_definition_t *def)
         break;
     }
 
-    return rb_unnamed_parameters(method_def_aritry(def));
+    return rb_unnamed_parameters(method_def_arity(def));
 
 }
 
