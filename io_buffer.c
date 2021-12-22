@@ -1928,12 +1928,15 @@ rb_io_buffer_pread(VALUE self, VALUE io, size_t length, off_t offset)
     // This emulation is not thread safe, but the GVL means it's unlikely to be a problem.
     off_t current_offset = lseek(descriptor, 0, SEEK_CUR);
     if (current_offset == (off_t)-1)
-        return rb_fiber_scheduler_io_result(-1, EINVAL);
+        return rb_fiber_scheduler_io_result(-1, errno);
+
+    if (lseek(descriptor, offset, SEEK_SET) == (off_t)-1)
+        return rb_fiber_scheduler_io_result(-1, errno);
 
     ssize_t result = read(descriptor, base, size);
 
-    if (lseek(descriptor, 0, SEEK_SET) == (off_t)-1)
-        return rb_fiber_scheduler_io_result(-1, EINVAL);
+    if (lseek(descriptor, current_offset, SEEK_SET) == (off_t)-1)
+        return rb_fiber_scheduler_io_result(-1, errno);
 #endif
 
     return rb_fiber_scheduler_io_result(result, errno);
@@ -2008,12 +2011,15 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, size_t length, off_t offset)
     // This emulation is not thread safe, but the GVL means it's unlikely to be a problem.
     off_t current_offset = lseek(descriptor, 0, SEEK_CUR);
     if (current_offset == (off_t)-1)
-        return rb_fiber_scheduler_io_result(-1, EINVAL);
+        return rb_fiber_scheduler_io_result(-1, errno);
+
+    if (lseek(descriptor, offset, SEEK_SET) == (off_t)-1)
+        return rb_fiber_scheduler_io_result(-1, errno);
 
     ssize_t result = write(descriptor, base, length);
 
-    if (lseek(descriptor, 0, SEEK_SET) == (off_t)-1)
-        return rb_fiber_scheduler_io_result(-1, EINVAL);
+    if (lseek(descriptor, current_offset, SEEK_SET) == (off_t)-1)
+        return rb_fiber_scheduler_io_result(-1, errno);
 #endif
 
     return rb_fiber_scheduler_io_result(result, errno);
