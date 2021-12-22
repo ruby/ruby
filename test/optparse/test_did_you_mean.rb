@@ -13,11 +13,7 @@ class TestOptionParser::DidYouMean < TestOptionParser
     @opt.def_option("--bar", Integer) { |v| @bar = v }
     @opt.def_option("--baz", Integer) { |v| @baz = v }
     @formatter = ::DidYouMean.formatter
-    case @formatter
-    when ::DidYouMean::PlainFormatter
-    else
-      ::DidYouMean.formatter = ::DidYouMean::PlainFormatter.new
-    end
+    ::DidYouMean.formatter = ::DidYouMean::Formatter
   end
 
   def teardown
