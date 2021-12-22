@@ -30,6 +30,7 @@ cparse.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 cparse.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 cparse.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 cparse.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+cparse.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 cparse.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 cparse.o: $(hdrdir)/ruby/internal/assume.h
 cparse.o: $(hdrdir)/ruby/internal/attr/alloc_size.h

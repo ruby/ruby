@@ -1786,6 +1786,7 @@ array.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 array.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 array.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 array.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+array.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 array.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 array.$(OBJEXT): {$(VPATH)}internal/assume.h
 array.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -1981,6 +1982,7 @@ ast.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 ast.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 ast.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 ast.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+ast.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 ast.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 ast.$(OBJEXT): {$(VPATH)}internal/assume.h
 ast.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -2178,6 +2180,7 @@ bignum.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 bignum.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 bignum.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 bignum.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+bignum.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 bignum.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 bignum.$(OBJEXT): {$(VPATH)}internal/assume.h
 bignum.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -2356,6 +2359,7 @@ builtin.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 builtin.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 builtin.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 builtin.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+builtin.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 builtin.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 builtin.$(OBJEXT): {$(VPATH)}internal/assume.h
 builtin.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -2548,6 +2552,7 @@ class.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 class.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 class.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 class.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+class.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 class.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 class.$(OBJEXT): {$(VPATH)}internal/assume.h
 class.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -2734,6 +2739,7 @@ compar.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 compar.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 compar.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 compar.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+compar.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 compar.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 compar.$(OBJEXT): {$(VPATH)}internal/assume.h
 compar.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -2945,6 +2951,7 @@ compile.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 compile.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 compile.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 compile.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+compile.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 compile.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 compile.$(OBJEXT): {$(VPATH)}internal/assume.h
 compile.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -3148,6 +3155,7 @@ complex.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 complex.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 complex.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 complex.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+complex.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 complex.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 complex.$(OBJEXT): {$(VPATH)}internal/assume.h
 complex.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -3331,6 +3339,7 @@ cont.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 cont.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 cont.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 cont.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+cont.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 cont.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 cont.$(OBJEXT): {$(VPATH)}internal/assume.h
 cont.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -3524,6 +3533,7 @@ debug.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 debug.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 debug.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 debug.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+debug.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 debug.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 debug.$(OBJEXT): {$(VPATH)}internal/assume.h
 debug.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -3708,6 +3718,7 @@ debug_counter.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+debug_counter.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/assume.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -3888,6 +3899,7 @@ dir.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 dir.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 dir.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 dir.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+dir.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 dir.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 dir.$(OBJEXT): {$(VPATH)}internal/assume.h
 dir.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -4063,6 +4075,7 @@ dln.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 dln.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 dln.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 dln.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+dln.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 dln.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 dln.$(OBJEXT): {$(VPATH)}internal/assume.h
 dln.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -4220,6 +4233,7 @@ dln_find.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+dln_find.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/assume.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -4376,6 +4390,7 @@ dmydln.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+dmydln.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/assume.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -5381,6 +5396,7 @@ encoding.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 encoding.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 encoding.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 encoding.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+encoding.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 encoding.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 encoding.$(OBJEXT): {$(VPATH)}internal/assume.h
 encoding.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -5578,6 +5594,7 @@ enum.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 enum.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 enum.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 enum.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+enum.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 enum.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 enum.$(OBJEXT): {$(VPATH)}internal/assume.h
 enum.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -5771,6 +5788,7 @@ enumerator.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+enumerator.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/assume.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -5971,6 +5989,7 @@ error.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 error.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 error.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 error.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+error.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 error.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 error.$(OBJEXT): {$(VPATH)}internal/assume.h
 error.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -6186,6 +6205,7 @@ eval.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 eval.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 eval.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 eval.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+eval.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 eval.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 eval.$(OBJEXT): {$(VPATH)}internal/assume.h
 eval.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -6412,6 +6432,7 @@ file.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 file.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 file.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 file.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+file.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 file.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 file.$(OBJEXT): {$(VPATH)}internal/assume.h
 file.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -6630,6 +6651,7 @@ gc.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 gc.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 gc.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 gc.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+gc.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 gc.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 gc.$(OBJEXT): {$(VPATH)}internal/assume.h
 gc.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -6845,6 +6867,7 @@ goruby.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 goruby.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 goruby.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 goruby.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+goruby.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 goruby.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 goruby.$(OBJEXT): {$(VPATH)}internal/assume.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -7036,6 +7059,7 @@ hash.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 hash.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 hash.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 hash.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+hash.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 hash.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 hash.$(OBJEXT): {$(VPATH)}internal/assume.h
 hash.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -7219,6 +7243,7 @@ inits.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 inits.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 inits.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 inits.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+inits.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 inits.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 inits.$(OBJEXT): {$(VPATH)}internal/assume.h
 inits.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -7414,6 +7439,7 @@ io.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 io.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 io.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 io.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+io.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 io.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 io.$(OBJEXT): {$(VPATH)}internal/assume.h
 io.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -7603,6 +7629,7 @@ io_buffer.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+io_buffer.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/assume.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -7812,6 +7839,7 @@ iseq.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 iseq.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 iseq.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 iseq.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+iseq.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 iseq.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 iseq.$(OBJEXT): {$(VPATH)}internal/assume.h
 iseq.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -8024,6 +8052,7 @@ load.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 load.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 load.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 load.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+load.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 load.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 load.$(OBJEXT): {$(VPATH)}internal/assume.h
 load.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -8205,6 +8234,7 @@ loadpath.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+loadpath.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/assume.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -8365,6 +8395,7 @@ localeinit.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+localeinit.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/assume.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -8534,6 +8565,7 @@ main.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 main.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 main.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 main.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+main.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 main.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 main.$(OBJEXT): {$(VPATH)}internal/assume.h
 main.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -8714,6 +8746,7 @@ marshal.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 marshal.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 marshal.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 marshal.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+marshal.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 marshal.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 marshal.$(OBJEXT): {$(VPATH)}internal/assume.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -8898,6 +8931,7 @@ math.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 math.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 math.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 math.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+math.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 math.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 math.$(OBJEXT): {$(VPATH)}internal/assume.h
 math.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -9060,6 +9094,7 @@ memory_view.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+memory_view.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/assume.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -9244,6 +9279,7 @@ miniinit.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+miniinit.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/assume.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -9469,6 +9505,7 @@ mjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 mjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 mjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 mjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+mjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 mjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 mjit.$(OBJEXT): {$(VPATH)}internal/assume.h
 mjit.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -9684,6 +9721,7 @@ mjit_compile.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 mjit_compile.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 mjit_compile.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 mjit_compile.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+mjit_compile.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 mjit_compile.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 mjit_compile.$(OBJEXT): {$(VPATH)}internal/assume.h
 mjit_compile.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -9876,6 +9914,7 @@ node.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 node.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 node.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 node.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+node.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 node.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 node.$(OBJEXT): {$(VPATH)}internal/assume.h
 node.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -10067,6 +10106,7 @@ numeric.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 numeric.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 numeric.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 numeric.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+numeric.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 numeric.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 numeric.$(OBJEXT): {$(VPATH)}internal/assume.h
 numeric.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -10265,6 +10305,7 @@ object.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 object.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 object.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 object.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+object.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 object.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 object.$(OBJEXT): {$(VPATH)}internal/assume.h
 object.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -10452,6 +10493,7 @@ pack.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 pack.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 pack.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 pack.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+pack.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 pack.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 pack.$(OBJEXT): {$(VPATH)}internal/assume.h
 pack.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -10652,6 +10694,7 @@ parse.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 parse.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 parse.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 parse.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+parse.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 parse.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 parse.$(OBJEXT): {$(VPATH)}internal/assume.h
 parse.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -10860,6 +10903,7 @@ proc.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 proc.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 proc.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 proc.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+proc.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 proc.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 proc.$(OBJEXT): {$(VPATH)}internal/assume.h
 proc.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -11076,6 +11120,7 @@ process.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 process.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 process.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 process.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+process.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 process.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 process.$(OBJEXT): {$(VPATH)}internal/assume.h
 process.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -11290,6 +11335,7 @@ ractor.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 ractor.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 ractor.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 ractor.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+ractor.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 ractor.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 ractor.$(OBJEXT): {$(VPATH)}internal/assume.h
 ractor.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -11493,6 +11539,7 @@ random.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 random.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 random.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 random.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+random.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 random.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 random.$(OBJEXT): {$(VPATH)}internal/assume.h
 random.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -11677,6 +11724,7 @@ range.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 range.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 range.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 range.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+range.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 range.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 range.$(OBJEXT): {$(VPATH)}internal/assume.h
 range.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -11863,6 +11911,7 @@ rational.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 rational.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 rational.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 rational.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+rational.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 rational.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 rational.$(OBJEXT): {$(VPATH)}internal/assume.h
 rational.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -12036,6 +12085,7 @@ re.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 re.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 re.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 re.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+re.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 re.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 re.$(OBJEXT): {$(VPATH)}internal/assume.h
 re.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -12209,6 +12259,7 @@ regcomp.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+regcomp.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/assume.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -12369,6 +12420,7 @@ regenc.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 regenc.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 regenc.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 regenc.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+regenc.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 regenc.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 regenc.$(OBJEXT): {$(VPATH)}internal/assume.h
 regenc.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -12528,6 +12580,7 @@ regerror.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 regerror.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 regerror.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 regerror.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+regerror.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 regerror.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 regerror.$(OBJEXT): {$(VPATH)}internal/assume.h
 regerror.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -12687,6 +12740,7 @@ regexec.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 regexec.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 regexec.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 regexec.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+regexec.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 regexec.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 regexec.$(OBJEXT): {$(VPATH)}internal/assume.h
 regexec.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -12846,6 +12900,7 @@ regparse.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 regparse.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 regparse.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 regparse.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+regparse.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 regparse.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 regparse.$(OBJEXT): {$(VPATH)}internal/assume.h
 regparse.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -13006,6 +13061,7 @@ regsyntax.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+regsyntax.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/assume.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -13215,6 +13271,7 @@ ruby.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 ruby.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 ruby.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 ruby.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+ruby.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 ruby.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 ruby.$(OBJEXT): {$(VPATH)}internal/assume.h
 ruby.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -13415,6 +13472,7 @@ scheduler.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+scheduler.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/assume.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -13593,6 +13651,7 @@ setproctitle.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+setproctitle.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/assume.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -13776,6 +13835,7 @@ signal.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 signal.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 signal.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 signal.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+signal.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 signal.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 signal.$(OBJEXT): {$(VPATH)}internal/assume.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -13976,6 +14036,7 @@ sprintf.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+sprintf.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/assume.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -14156,6 +14217,7 @@ st.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 st.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 st.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 st.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+st.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 st.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 st.$(OBJEXT): {$(VPATH)}internal/assume.h
 st.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -14320,6 +14382,7 @@ strftime.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 strftime.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 strftime.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 strftime.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+strftime.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 strftime.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 strftime.$(OBJEXT): {$(VPATH)}internal/assume.h
 strftime.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -14519,6 +14582,7 @@ string.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 string.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 string.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 string.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+string.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 string.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 string.$(OBJEXT): {$(VPATH)}internal/assume.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -14754,6 +14818,7 @@ struct.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 struct.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 struct.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 struct.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+struct.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 struct.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 struct.$(OBJEXT): {$(VPATH)}internal/assume.h
 struct.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -14951,6 +15016,7 @@ symbol.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 symbol.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 symbol.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 symbol.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+symbol.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 symbol.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 symbol.$(OBJEXT): {$(VPATH)}internal/assume.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -15162,6 +15228,7 @@ thread.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 thread.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 thread.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 thread.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+thread.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 thread.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 thread.$(OBJEXT): {$(VPATH)}internal/assume.h
 thread.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -15372,6 +15439,7 @@ time.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 time.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 time.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 time.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+time.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 time.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 time.$(OBJEXT): {$(VPATH)}internal/assume.h
 time.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -15558,6 +15626,7 @@ transcode.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 transcode.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 transcode.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 transcode.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+transcode.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 transcode.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 transcode.$(OBJEXT): {$(VPATH)}internal/assume.h
 transcode.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -15741,6 +15810,7 @@ transient_heap.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+transient_heap.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/assume.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -15909,6 +15979,7 @@ util.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 util.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 util.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 util.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+util.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 util.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 util.$(OBJEXT): {$(VPATH)}internal/assume.h
 util.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -16098,6 +16169,7 @@ variable.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 variable.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 variable.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 variable.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+variable.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 variable.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 variable.$(OBJEXT): {$(VPATH)}internal/assume.h
 variable.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -16302,6 +16374,7 @@ version.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 version.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 version.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 version.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+version.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 version.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 version.$(OBJEXT): {$(VPATH)}internal/assume.h
 version.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -16520,6 +16593,7 @@ vm.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 vm.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 vm.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 vm.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+vm.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 vm.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 vm.$(OBJEXT): {$(VPATH)}internal/assume.h
 vm.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -16740,6 +16814,7 @@ vm_backtrace.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+vm_backtrace.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/assume.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -16938,6 +17013,7 @@ vm_dump.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+vm_dump.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/assume.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -17127,6 +17203,7 @@ vm_sync.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+vm_sync.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/assume.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -17320,6 +17397,7 @@ vm_trace.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+vm_trace.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/assume.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
@@ -17535,6 +17613,7 @@ yjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
 yjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
 yjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
 yjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+yjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/time_t.h
 yjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
 yjit.$(OBJEXT): {$(VPATH)}internal/assume.h
 yjit.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h

@@ -30,6 +30,7 @@ readline.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 readline.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 readline.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 readline.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+readline.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 readline.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 readline.o: $(hdrdir)/ruby/internal/assume.h
 readline.o: $(hdrdir)/ruby/internal/attr/alloc_size.h

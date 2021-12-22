@@ -24,18 +24,22 @@
 #include "ruby/internal/arithmetic/long.h"
 
 /** Converts a C's `uid_t` into an instance of ::rb_cInteger. */
-#ifndef UIDT2NUM
-# define UIDT2NUM RB_LONG2NUM
+#ifndef RB_UIDT2NUM
+# define RB_UIDT2NUM RB_LONG2NUM
 #endif
 
 /** Converts an instance of ::rb_cNumeric into C's `uid_t`. */
-#ifndef NUM2UIDT
-# define NUM2UIDT RB_NUM2LONG
+#ifndef RB_NUM2UIDT
+# define RB_NUM2UIDT RB_NUM2LONG
 #endif
 
 /** A rb_sprintf() format prefix to be used for a `uid_t` parameter. */
-#ifndef PRI_UIDT_PREFIX
-# define PRI_UIDT_PREFIX PRI_LONG_PREFIX
+#ifndef RB_PRI_UIDT_PREFIX
+# define RB_PRI_UIDT_PREFIX PRI_LONG_PREFIX
 #endif
+
+#define UIDT2NUM RB_UIDT2NUM
+#define NUM2UIDT RB_NUM2UIDT
+#define PRI_UIDT_PREFIX RB_PRI_UIDT_PREFIX
 
 #endif /* RBIMPL_ARITHMETIC_UID_T_H */

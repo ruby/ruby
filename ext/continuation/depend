@@ -29,6 +29,7 @@ continuation.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 continuation.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 continuation.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 continuation.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+continuation.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 continuation.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 continuation.o: $(hdrdir)/ruby/internal/assume.h
 continuation.o: $(hdrdir)/ruby/internal/attr/alloc_size.h

@@ -2317,7 +2317,7 @@ main()
 	rb_cv_negative_time_t=no,
 	rb_cv_negative_time_t=yes)])
 AS_IF([test "$rb_cv_negative_time_t" = yes], [
-  AC_DEFINE(NEGATIVE_TIME_T)
+  AC_DEFINE(RB_NEGATIVE_TIME_T)
 ])
 
 # [ruby-dev:40910] overflow of time on FreeBSD

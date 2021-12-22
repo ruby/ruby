@@ -30,6 +30,7 @@ object_tracing.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 object_tracing.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 object_tracing.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 object_tracing.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+object_tracing.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 object_tracing.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 object_tracing.o: $(hdrdir)/ruby/internal/assume.h
 object_tracing.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -192,6 +193,7 @@ objspace.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 objspace.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 objspace.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 objspace.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+objspace.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 objspace.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 objspace.o: $(hdrdir)/ruby/internal/assume.h
 objspace.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -385,6 +387,7 @@ objspace_dump.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 objspace_dump.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 objspace_dump.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 objspace_dump.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+objspace_dump.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 objspace_dump.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 objspace_dump.o: $(hdrdir)/ruby/internal/assume.h
 objspace_dump.o: $(hdrdir)/ruby/internal/attr/alloc_size.h

@@ -557,7 +557,7 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
     RUBY_VM_CHECK_INTS_BLOCKING(GET_EC());
     if (!woken) return Qnil;
     time_t end = time(0) - beg;
-    return TIMET2NUM(end);
+    return RB_TIMET2NUM(end);
 }
 
 /*

@@ -31,6 +31,7 @@ date_core.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 date_core.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 date_core.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 date_core.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+date_core.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 date_core.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 date_core.o: $(hdrdir)/ruby/internal/assume.h
 date_core.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -204,6 +205,7 @@ date_parse.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 date_parse.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 date_parse.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 date_parse.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+date_parse.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 date_parse.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 date_parse.o: $(hdrdir)/ruby/internal/assume.h
 date_parse.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -378,6 +380,7 @@ date_strftime.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 date_strftime.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 date_strftime.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 date_strftime.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+date_strftime.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 date_strftime.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 date_strftime.o: $(hdrdir)/ruby/internal/assume.h
 date_strftime.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -539,6 +542,7 @@ date_strptime.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 date_strptime.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 date_strptime.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 date_strptime.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+date_strptime.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 date_strptime.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 date_strptime.o: $(hdrdir)/ruby/internal/assume.h
 date_strptime.o: $(hdrdir)/ruby/internal/attr/alloc_size.h

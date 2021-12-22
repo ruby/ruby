@@ -44,6 +44,7 @@ limits.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 limits.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 limits.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 limits.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+limits.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 limits.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 limits.o: $(hdrdir)/ruby/internal/assume.h
 limits.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -202,6 +203,7 @@ sizes.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 sizes.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 sizes.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 sizes.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+sizes.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 sizes.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 sizes.o: $(hdrdir)/ruby/internal/assume.h
 sizes.o: $(hdrdir)/ruby/internal/attr/alloc_size.h

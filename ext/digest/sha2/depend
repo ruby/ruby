@@ -33,6 +33,7 @@ sha2.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 sha2.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 sha2.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 sha2.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+sha2.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 sha2.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 sha2.o: $(hdrdir)/ruby/internal/assume.h
 sha2.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -194,6 +195,7 @@ sha2init.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 sha2init.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 sha2init.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 sha2init.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+sha2init.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 sha2init.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 sha2init.o: $(hdrdir)/ruby/internal/assume.h
 sha2init.o: $(hdrdir)/ruby/internal/attr/alloc_size.h

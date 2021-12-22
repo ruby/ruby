@@ -33,6 +33,7 @@ rmd160.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 rmd160.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 rmd160.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 rmd160.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+rmd160.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 rmd160.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 rmd160.o: $(hdrdir)/ruby/internal/assume.h
 rmd160.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -194,6 +195,7 @@ rmd160init.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 rmd160init.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 rmd160init.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 rmd160init.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+rmd160init.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 rmd160init.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 rmd160init.o: $(hdrdir)/ruby/internal/assume.h
 rmd160init.o: $(hdrdir)/ruby/internal/attr/alloc_size.h

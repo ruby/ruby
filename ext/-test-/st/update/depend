@@ -30,6 +30,7 @@ update.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 update.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 update.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 update.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+update.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 update.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 update.o: $(hdrdir)/ruby/internal/assume.h
 update.o: $(hdrdir)/ruby/internal/attr/alloc_size.h

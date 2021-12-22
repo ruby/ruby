@@ -28,39 +28,44 @@
 
 #if defined(__DOXYGEN__)
 # /** Converts a C's `size_t` into an instance of ::rb_cInteger. */
-# define RB_SIZE2NUM RB_ULONG2NUM
+# define RB_SIZET2NUM RB_ULONG2NUM
 # /** Converts a C's `ssize_t` into an instance of ::rb_cInteger. */
-# define RB_SSIZE2NUM RB_LONG2NUM
+# define RB_SSIZET2NUM RB_LONG2NUM
 #elif SIZEOF_SIZE_T == SIZEOF_LONG_LONG
-# define RB_SIZE2NUM RB_ULL2NUM
-# define RB_SSIZE2NUM RB_LL2NUM
+# define RB_SIZET2NUM RB_ULL2NUM
+# define RB_SSIZET2NUM RB_LL2NUM
 #elif SIZEOF_SIZE_T == SIZEOF_LONG
-# define RB_SIZE2NUM RB_ULONG2NUM
-# define RB_SSIZE2NUM RB_LONG2NUM
+# define RB_SIZET2NUM RB_ULONG2NUM
+# define RB_SSIZET2NUM RB_LONG2NUM
 #else
-# define RB_SIZE2NUM RB_UINT2NUM
-# define RB_SSIZE2NUM RB_INT2NUM
+# define RB_SIZET2NUM RB_UINT2NUM
+# define RB_SSIZET2NUM RB_INT2NUM
 #endif
 
 #if defined(__DOXYGEN__)
 # /** Converts an instance of ::rb_cInteger into C's `size_t`. */
-# define RB_NUM2SIZE RB_NUM2ULONG
+# define RB_NUM2SIZET RB_NUM2ULONG
 # /** Converts an instance of ::rb_cInteger into C's `ssize_t`. */
-# define RB_NUM2SSIZE RB_NUM2LONG
+# define RB_NUM2SSIZET RB_NUM2LONG
 #elif SIZEOF_SIZE_T == SIZEOF_LONG_LONG
-# define RB_NUM2SIZE RB_NUM2ULL
-# define RB_NUM2SSIZE RB_NUM2LL
+# define RB_NUM2SIZET RB_NUM2ULL
+# define RB_NUM2SSIZET RB_NUM2LL
 #elif SIZEOF_SIZE_T == SIZEOF_LONG
-# define RB_NUM2SIZE RB_NUM2ULONG
-# define RB_NUM2SSIZE RB_NUM2LONG
+# define RB_NUM2SIZET RB_NUM2ULONG
+# define RB_NUM2SSIZET RB_NUM2LONG
 #else
-# define RB_NUM2SIZE RB_NUM2UINT
-# define RB_NUM2SSIZE RB_NUM2INT
+# define RB_NUM2SIZET RB_NUM2UINT
+# define RB_NUM2SSIZET RB_NUM2INT
 #endif
 
-#define NUM2SIZET RB_NUM2SIZE   /**< @old{RB_NUM2SIZE} */
-#define SIZET2NUM RB_SIZE2NUM   /**< @old{RB_SIZE2NUM} */
-#define NUM2SSIZET RB_NUM2SSIZE /**< @old{RB_NUM2SSIZE} */
-#define SSIZET2NUM RB_SSIZE2NUM /**< @old{RB_SSIZE2NUM} */
+#define RB_NUM2SIZE RB_NUM2SIZET   /**< @old{RB_NUM2SIZET} */
+#define RB_SIZE2NUM RB_SIZET2NUM   /**< @old{RB_SIZET2NUM} */
+#define RB_NUM2SSIZE RB_NUM2SSIZET /**< @old{RB_NUM2SSIZET} */
+#define RB_SSIZE2NUM RB_SSIZET2NUM /**< @old{RB_SSIZET2NUM} */
+
+#define NUM2SIZET RB_NUM2SIZET   /**< @old{RB_NUM2SIZET} */
+#define SIZET2NUM RB_SIZET2NUM   /**< @old{RB_SIZET2NUM} */
+#define NUM2SSIZET RB_NUM2SSIZET /**< @old{RB_NUM2SSIZET} */
+#define SSIZET2NUM RB_SSIZET2NUM /**< @old{RB_SSIZET2NUM} */
 
 #endif /* RBIMPL_ARITHMETIC_SIZE_T_H */
