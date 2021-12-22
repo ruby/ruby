@@ -8,6 +8,7 @@ module DidYouMean
 
     NAMES_TO_EXCLUDE = { 'foo' => [:fork, :for] }
     NAMES_TO_EXCLUDE.default = []
+    Ractor.make_shareable(NAMES_TO_EXCLUDE) if defined?(Ractor)
 
     # +VariableNameChecker::RB_RESERVED_WORDS+ is the list of all reserved
     # words in Ruby. They could be declared like methods are, and a typo would
@@ -61,6 +62,8 @@ module DidYouMean
       __FILE__
       __ENCODING__
     )
+
+    Ractor.make_shareable(RB_RESERVED_WORDS) if defined?(Ractor)
 
     def initialize(exception)
       @name       = exception.name.to_s.tr("@", "")
