@@ -8,6 +8,7 @@
 
 #include "ruby/io.h"
 #include "ruby/io/buffer.h"
+#include "ruby/fiber/scheduler.h"
 
 #include "internal.h"
 #include "internal/string.h"
@@ -1864,6 +1865,172 @@ size_t io_buffer_default_size(size_t page_size) {
     return platform_agnostic_default_size;
 }
 
+VALUE
+rb_io_buffer_read(VALUE self, VALUE io, size_t length)
+{
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        VALUE result = rb_fiber_scheduler_io_read(scheduler, io, self, length);
+
+        if (result != Qundef) {
+            return result;
+        }
+    }
+
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    io_buffer_validate_range(data, 0, length);
+
+    int descriptor = rb_io_descriptor(io);
+
+    void * base;
+    size_t size;
+    io_buffer_get_bytes_for_writing(data, &base, &size);
+
+    ssize_t result = read(descriptor, base, size);
+
+    return rb_fiber_scheduler_io_result(result, errno);
+}
+
+static VALUE
+io_buffer_read(VALUE self, VALUE io, VALUE length)
+{
+    return rb_io_buffer_read(self, io, RB_NUM2SIZE(length));
+}
+
+VALUE
+rb_io_buffer_pread(VALUE self, VALUE io, size_t length, off_t offset)
+{
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        VALUE result = rb_fiber_scheduler_io_pread(scheduler, io, self, length, offset);
+
+        if (result != Qundef) {
+            return result;
+        }
+    }
+
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    io_buffer_validate_range(data, 0, length);
+
+    int descriptor = rb_io_descriptor(io);
+
+    void * base;
+    size_t size;
+    io_buffer_get_bytes_for_writing(data, &base, &size);
+
+#if defined(HAVE_PREAD)
+    ssize_t result = pread(descriptor, base, size, offset);
+#else
+    // This emulation is not thread safe, but the GVL means it's unlikely to be a problem.
+    off_t current_offset = lseek(descriptor, 0, SEEK_CUR);
+    if (current_offset == (off_t)-1)
+        return rb_fiber_scheduler_io_result(-1, errno);
+
+    if (lseek(descriptor, offset, SEEK_SET) == (off_t)-1)
+        return rb_fiber_scheduler_io_result(-1, errno);
+
+    ssize_t result = read(descriptor, base, size);
+
+    if (lseek(descriptor, current_offset, SEEK_SET) == (off_t)-1)
+        return rb_fiber_scheduler_io_result(-1, errno);
+#endif
+
+    return rb_fiber_scheduler_io_result(result, errno);
+}
+
+static VALUE
+io_buffer_pread(VALUE self, VALUE io, VALUE length, VALUE offset)
+{
+    return rb_io_buffer_pread(self, io, RB_NUM2SIZE(length), NUM2OFFT(offset));
+}
+
+VALUE
+rb_io_buffer_write(VALUE self, VALUE io, size_t length)
+{
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        VALUE result = rb_fiber_scheduler_io_write(scheduler, io, self, length);
+
+        if (result != Qundef) {
+            return result;
+        }
+    }
+
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    io_buffer_validate_range(data, 0, length);
+
+    int descriptor = rb_io_descriptor(io);
+
+    const void * base;
+    size_t size;
+    io_buffer_get_bytes_for_reading(data, &base, &size);
+
+    ssize_t result = write(descriptor, base, length);
+
+    return rb_fiber_scheduler_io_result(result, errno);
+}
+
+static VALUE
+io_buffer_write(VALUE self, VALUE io, VALUE length)
+{
+    return rb_io_buffer_write(self, io, RB_NUM2SIZE(length));
+}
+
+VALUE
+rb_io_buffer_pwrite(VALUE self, VALUE io, size_t length, off_t offset)
+{
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        VALUE result = rb_fiber_scheduler_io_pwrite(scheduler, io, self, length, OFFT2NUM(offset));
+
+        if (result != Qundef) {
+            return result;
+        }
+    }
+
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    io_buffer_validate_range(data, 0, length);
+
+    int descriptor = rb_io_descriptor(io);
+
+    const void * base;
+    size_t size;
+    io_buffer_get_bytes_for_reading(data, &base, &size);
+
+#if defined(HAVE_PWRITE)
+    ssize_t result = pwrite(descriptor, base, length, offset);
+#else
+    // This emulation is not thread safe, but the GVL means it's unlikely to be a problem.
+    off_t current_offset = lseek(descriptor, 0, SEEK_CUR);
+    if (current_offset == (off_t)-1)
+        return rb_fiber_scheduler_io_result(-1, errno);
+
+    if (lseek(descriptor, offset, SEEK_SET) == (off_t)-1)
+        return rb_fiber_scheduler_io_result(-1, errno);
+
+    ssize_t result = write(descriptor, base, length);
+
+    if (lseek(descriptor, current_offset, SEEK_SET) == (off_t)-1)
+        return rb_fiber_scheduler_io_result(-1, errno);
+#endif
+
+    return rb_fiber_scheduler_io_result(result, errno);
+}
+
+static VALUE
+io_buffer_pwrite(VALUE self, VALUE io, VALUE length, VALUE offset)
+{
+    return rb_io_buffer_pwrite(self, io, RB_NUM2SIZE(length), NUM2OFFT(offset));
+}
+
 /*
  *  Document-class: IO::Buffer
  *
@@ -2038,4 +2205,10 @@ Init_IO_Buffer(void)
 
     rb_define_method(rb_cIOBuffer, "get_string", io_buffer_get_string, -1);
     rb_define_method(rb_cIOBuffer, "set_string", io_buffer_set_string, -1);
+
+    // IO operations:
+    rb_define_method(rb_cIOBuffer, "read", io_buffer_read, 2);
+    rb_define_method(rb_cIOBuffer, "pread", io_buffer_pread, 3);
+    rb_define_method(rb_cIOBuffer, "write", io_buffer_write, 2);
+    rb_define_method(rb_cIOBuffer, "pwrite", io_buffer_pwrite, 3);
 }
