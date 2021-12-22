@@ -13859,7 +13859,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  == Getline Options
  *
- *  A number of \IO methods accept an optional keyword arguments
+ *  A number of \IO methods accept optional keyword arguments
  *  that determine how a stream is to be treated:
  *
  *  - +:chomp+: If +true+, line separators are omitted; default is  +false+.
