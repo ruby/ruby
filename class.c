@@ -201,7 +201,10 @@ class_alloc(VALUE flags, VALUE klass)
     alloc_size += sizeof(rb_classext_t);
 #endif
 
-    RVARGC_NEWOBJ_OF(obj, struct RClass, klass, (flags & T_MASK) | FL_PROMOTED1 /* start from age == 2 */ | (RGENGC_WB_PROTECTED_CLASS ? FL_WB_PROTECTED : 0), alloc_size);
+    flags &= T_MASK;
+    flags |= FL_PROMOTED1 /* start from age == 2 */;
+    if (RGENGC_WB_PROTECTED_CLASS) flags |= FL_WB_PROTECTED;
+    RVARGC_NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size);
 
 #if USE_RVARGC
     memset(RCLASS_EXT(obj), 0, sizeof(rb_classext_t));
