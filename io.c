@@ -3207,11 +3207,12 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
  *    readpartial(maxlen, out_string) -> out_string
  *
  *  Reads up to +maxlen+ bytes from the stream;
- *  returns a string (either a new string or the given +out_string+):
+ *  returns a string (either a new string or the given +out_string+)
+ *  that has ASCII-8BIT encoding, and:
  *
- *  - Containing +maxlen+ bytes from the stream, if available.
- *  - Otherwise containing all available bytes, if any available.
- *  - Otherwise as an empty string.
+ *  - Contais +maxlen+ bytes from the stream, if available.
+ *  - Otherwise contains all available bytes, if any available.
+ *  - Otherwise is an empty string.
  *
  *  With the single non-negative integer argument +maxlen+ given,
  *  returns a new string:
@@ -3408,9 +3409,10 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
  *  - Otherwise reads +maxlen+ bytes, if available.
  *  - Otherwise reads all bytes.
  *
- *  Returns an ASCII-8BIT-encoded string
- *  (either a new string or the given +out_string+)
+ *  Returns a string (either a new string or the given +out_string+)
  *  containing the bytes read.
+ *  If +maxlen+ is +nil+, the returned string retains its encoding;
+ *  otherwise, the returned string has ASCII-8BIT encoding.
  *
  *  <b> Without Argument +out_string+</b>
  *
