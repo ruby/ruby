@@ -3206,11 +3206,15 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
  *    readpartial(maxlen)             -> string
  *    readpartial(maxlen, out_string) -> out_string
  *
- *  Reads up to +maxlen+ bytes from the stream.
+ *  Reads up to +maxlen+ bytes from the stream;
+ *  returns a string (either a new string or the given +out_string+):
+ *
+ *  - Containing +maxlen+ bytes from the stream, if available.
+ *  - Otherwise containing all available bytes, if any available.
+ *  - Otherwise as an empty string.
  *
  *  With the single non-negative integer argument +maxlen+ given,
- *  returns a new string with +maxlen+ bytes from the stream, if available,
- *  or all available bytes otherwise:
+ *  returns a new string:
  *
  *    f = File.new('t.txt')
  *    f.readpartial(30) # => "This is line one.\nThis is the"
@@ -3219,19 +3223,14 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
  *    f.eof             # => true
  *    f.readpartial(30) # Raises EOFError.
  *
- *  With integer argument +maxlen+ and string argument +out_string+ given,
- *  returns +out_string+ with +maxlen+ bytes from the stream, if available,
- *  or all available bytes otherwise;
- *  if any bytes are read, they replace the content of +out_string+:
+ *  With both argument +maxlen+ and string argument +out_string+ given,
+ *  returns modified +out_string+:
  *
  *    f = File.new('t.txt')
  *    s = 'foo'
  *    f.readpartial(30, s) # => "This is line one.\nThis is the"
  *    s = 'bar'
- *    f.readpartial(0, s)  # => "bar"
- *
- *  If no bytes are read, +out_string+ becomes an empty string,
- *  unless +maxlen+ is zero, in which case +out_string+ is not modified.
+ *    f.readpartial(0, s)  # => ""
  *
  *  This method is useful for a stream such as a pipe, a socket, or a tty.
  *  It blocks only when no data is immediately available.
@@ -3403,60 +3402,50 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
  *    read(maxlen = nil)             -> string or nil
  *    read(maxlen = nil, out_string) -> out_string or nil
  *
- *  Reads (in binary mode) up to +maxlen+ bytes from the stream.
+ *  Reads bytes from the stream (in binary mode):
  *
- *  If +maxlen+ is +nil+, reads the entire stream and returns the content as a string;
- *  encoding conversion is applied, if applicable.
+ *  - If +maxlen+ is +nil+, reads all bytes.
+ *  - Otherwise reads +maxlen+ bytes, if available.
+ *  - Otherwise reads all bytes.
+ *
+ *  Returns an ASCII-8BIT-encoded string
+ *  (either a new string or the given +out_string+)
+ *  containing the bytes read.
+ *
+ *  <b> Without Argument +out_string+</b>
+ *
+ *  When argument +out_string+ is omitted,
+ *  the returned value is a new string:
  *
  *    f = File.new('t.txt')
- *    f.read # => "This is line one.\nThis is the second line.\nThis is the third line.\n"
- *    f.eof  # => true
- *    f.read # => ""
- *
- *  If +maxlen+ is positive and the stream has unread data,
- *  returns a new string with +maxlen+ bytes from the stream, if available,
- *  or all available bytes otherwise;
- *  the returned string has ASCII-8BIT encoding:
- *
- *    f = File.new('t.txt')
- *    f.read(30) # => "This is line one.\r\nThis is the"
- *    f.read(30) # => " second line.\r\nThis is the thi"
- *    f.read(30) # => "rd line.\r\n"
- *
- *  Returns +nil+ if +maxlen+ is positive and the stream has no unread data:
- *
- *    # Stream was emptied by reads above.
- *    f.read(30) # => nil
+ *    f.read
+ *    # => "This is line one.\nThis is the second line.\nThis is the third line.\n"
+ *    f.rewind
+ *    f.read(40)      # => "This is line one.\r\nThis is the second li"
+ *    f.read(40)      # => "ne.\r\nThis is the third line.\r\n"
+ *    f.read(40)      # => nil
  *
  *  If +maxlen+ is zero, returns an empty string.
  *
- *  With integer argument +maxlen+ and string argument +out_string+ given,
- *  returns +out_string+ with +maxlen+ bytes from the stream, if available,
- *  or all available bytes otherwise;
- *  if no bytes are read, +out_string+ becomes an empty string:
+ *  <b> With Argument +out_string+</b>
+ *
+ *  When argument +out_string+ is given,
+ *  the returned value is +out_string+, whose content is replaced:
  *
  *    f = File.new('t.txt')
- *    s = 'foo'
- *    f.read(30, s) # => "This is line one.\r\nThis is the"
- *    s             # => "This is line one.\r\nThis is the"
- *    f.read(30, s) # => " second line.\r\nThis is the thi"
- *    s             # => " second line.\r\nThis is the thi"
- *    f.read(30, s) # => "rd line.\r\n"
- *    s             # => "rd line.\r\n"
- *    f.eof         # => true
- *    f.read(30, s) # => nil
- *    s             # => ""
- *
- *  More examples:
- *
- *    # Read empty file (returns empty string).
- *    File.write('t.tmp', '')
- *    f = File.new('t.tmp')
- *    f.read # => ""
- *
- *    # Read entire non-empty file.
- *    f = File.new('t.txt')
- *    f.read # => "This is line one.\nThis is the second line.\nThis is the third line.\n"
+ *    s = 'foo'      # => "foo"
+ *    f.read(nil, s) # => "This is line one.\nThis is the second line.\nThis is the third line.\n"
+ *    s              # => "This is line one.\nThis is the second line.\nThis is the third line.\n"
+ *    f.rewind
+ *    s = 'bar'
+ *    f.read(40, s)  # => "This is line one.\r\nThis is the second li"
+ *    s              # => "This is line one.\r\nThis is the second li"
+ *    s = 'baz'
+ *    f.read(40, s)  # => "ne.\r\nThis is the third line.\r\n"
+ *    s              # => "ne.\r\nThis is the third line.\r\n"
+ *    s = 'bat'
+ *    f.read(40, s)  # => nil
+ *    s              # => ""
  *
  *  Note that this method behaves like the fread() function in C.
  *  This means it retries to invoke read(2) system calls to read data
