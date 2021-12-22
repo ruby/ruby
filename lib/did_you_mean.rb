@@ -139,7 +139,7 @@ module DidYouMean
 
   # Returns the currently set formatter. By default, it is set to +DidYouMean::Formatter+.
   def self.formatter
-    if defined?(Reactor)
+    if defined?(Ractor)
       Ractor.current[:__did_you_mean_formatter__] || Formatter
     else
       Formatter
@@ -148,7 +148,7 @@ module DidYouMean
 
   # Updates the primary formatter used to format the suggestions.
   def self.formatter=(formatter)
-    if defined?(Reactor)
+    if defined?(Ractor)
       Ractor.current[:__did_you_mean_formatter__] = formatter
     end
   end
