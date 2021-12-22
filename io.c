@@ -3203,7 +3203,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
 
 /*
  *  call-seq:
- *    readpartial(maxlen)             -> new_string
+ *    readpartial(maxlen)             -> string
  *    readpartial(maxlen, out_string) -> out_string
  *
  *  Reads up to +maxlen+ bytes from the stream.
@@ -3229,6 +3229,9 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
  *    f.readpartial(30, s) # => "This is line one.\nThis is the"
  *    s = 'bar'
  *    f.readpartial(0, s)  # => "bar"
+ *
+ *  If no bytes are read, +out_string+ becomes an empty string,
+ *  unless +maxlen+ is zero, in which case +out_string+ is not modified.
  *
  *  This method is useful for a stream such as a pipe, a socket, or a tty.
  *  It blocks only when no data is immediately available.
@@ -3397,7 +3400,7 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
 
 /*
  *  call-seq:
- *    read(maxlen = nil)             -> new_string or nil
+ *    read(maxlen = nil)             -> string or nil
  *    read(maxlen = nil, out_string) -> out_string or nil
  *
  *  Reads (in binary mode) up to +maxlen+ bytes from the stream.
@@ -3409,11 +3412,6 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
  *    f.read # => "This is line one.\nThis is the second line.\nThis is the third line.\n"
  *    f.eof  # => true
  *    f.read # => ""
- *
- *  If +maxlen+ is zero, returns an empty string:
- *
- *    f = File.new('t.txt')
- *    f.read(0) # => ""
  *
  *  If +maxlen+ is positive and the stream has unread data,
  *  returns a new string with +maxlen+ bytes from the stream, if available,
@@ -3430,10 +3428,12 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
  *    # Stream was emptied by reads above.
  *    f.read(30) # => nil
  *
+ *  If +maxlen+ is zero, returns an empty string.
+ *
  *  With integer argument +maxlen+ and string argument +out_string+ given,
  *  returns +out_string+ with +maxlen+ bytes from the stream, if available,
  *  or all available bytes otherwise;
- *  if any bytes are read, they replace the content of +out_string+:
+ *  if no bytes are read, +out_string+ becomes an empty string:
  *
  *    f = File.new('t.txt')
  *    s = 'foo'
