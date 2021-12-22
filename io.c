@@ -3408,6 +3408,11 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
  *  If +maxlen+ is +nil+, reads the entire stream and returns the content as a string;
  *  encoding conversion is applied, if applicable.
  *
+ *    f = File.new('t.txt')
+ *    f.read # => "This is line one.\nThis is the second line.\nThis is the third line.\n"
+ *    f.eof  # => true
+ *    f.read # => ""
+ *
  *  If +maxlen+ is positive and the stream has unread data,
  *  returns a new string with +maxlen+ bytes from the stream, if available,
  *  or all available bytes otherwise;
