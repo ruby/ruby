@@ -3210,7 +3210,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
  *  returns a string (either a new string or the given +out_string+)
  *  that has ASCII-8BIT encoding, and:
  *
- *  - Contais +maxlen+ bytes from the stream, if available.
+ *  - Contains +maxlen+ bytes from the stream, if available.
  *  - Otherwise contains all available bytes, if any available.
  *  - Otherwise is an empty string.
  *
@@ -3411,10 +3411,17 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
  *
  *  Returns a string (either a new string or the given +out_string+)
  *  containing the bytes read.
- *  If +maxlen+ is +nil+, the returned string retains its encoding;
- *  otherwise, the returned string has ASCII-8BIT encoding.
  *
- *  <b> Without Argument +out_string+</b>
+ *  The encoding of the string depends on both +maxLen+ and +out_string+:
+ *
+ *  - +maxlen+ is +nil+: uses internal encoding of +self+
+ *    (regardless of whether +out_string+ was given).
+ *  - +maxlen+ not +nil+:
+ *
+ *    - +out_string+ given: encoding of +out_string+ not modified.
+ *    - +out_string+ not given: ASCII-8BIT is used.
+ *
+ *  <b>Without Argument +out_string+</b>
  *
  *  When argument +out_string+ is omitted,
  *  the returned value is a new string:
