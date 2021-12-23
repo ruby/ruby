@@ -2029,9 +2029,16 @@ class Reline::LineEditor
     last_byte_size = Reline::Unicode.get_prev_mbchar_size(@line, @byte_pointer)
     @byte_pointer += bytesize
     last_mbchar = @line.byteslice((@byte_pointer - bytesize - last_byte_size), last_byte_size)
-    if last_byte_size != 0 and (last_mbchar + str).grapheme_clusters.size == 1
+    combined_char = last_mbchar + str
+    if last_byte_size != 0 and combined_char.grapheme_clusters.size == 1
       # combined char
-      width = 0
+      last_mbchar_width = Reline::Unicode.get_mbchar_width(last_mbchar)
+      combined_char_width = Reline::Unicode.get_mbchar_width(combined_char)
+      if combined_char_width > last_mbchar_width
+        width = combined_char_width - last_mbchar_width
+      else
+        width = 0
+      end
     end
     @cursor += width
     @cursor_max += width
