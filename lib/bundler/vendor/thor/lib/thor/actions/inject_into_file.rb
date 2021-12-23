@@ -106,12 +106,14 @@ class Bundler::Thor
       # Adds the content to the file.
       #
       def replace!(regexp, string, force)
-        return if pretend?
         content = File.read(destination)
-        if force || !content.include?(replacement)
+        before, after = content.split(regexp, 2)
+        snippet = (behavior == :after ? after : before).to_s
+
+        if force || !snippet.include?(replacement)
           success = content.gsub!(regexp, string)
 
-          File.open(destination, "wb") { |file| file.write(content) }
+          File.open(destination, "wb") { |file| file.write(content) } unless pretend?
           success
         end
       end

@@ -67,7 +67,7 @@ module Bundler
     def build_extensions
       extension_cache_path = options[:bundler_extension_cache_path]
       unless extension_cache_path && extension_dir = spec.extension_dir
-        require "shellwords" # compensate missing require in rubygems before version 3.2.25
+        require "shellwords" unless Bundler.rubygems.provides?(">= 3.2.25")
         return super
       end
 

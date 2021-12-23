@@ -259,7 +259,7 @@ module Spec
       @_build_path = "#{path}/gems"
       @_build_repo = File.basename(path)
       yield
-      with_gem_path_as Path.base_system_gems do
+      with_gem_path_as Path.base_system_gem_path do
         gem_command :generate_index, :dir => path
       end
     ensure

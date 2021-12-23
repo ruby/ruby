@@ -39,10 +39,13 @@ module Bundler
       configured_gem_home = ENV["GEM_HOME"]
       configured_gem_path = ENV["GEM_PATH"]
 
+      cmd = [$PROGRAM_NAME, *ARGV]
+      cmd.unshift(Gem.ruby) unless File.executable?($PROGRAM_NAME)
+
       Bundler.with_original_env do
         Kernel.exec(
           { "GEM_HOME" => configured_gem_home, "GEM_PATH" => configured_gem_path, "BUNDLER_VERSION" => lockfile_version },
-          $PROGRAM_NAME, *ARGV
+          *cmd
         )
       end
     end

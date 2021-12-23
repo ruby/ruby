@@ -48,30 +48,31 @@ class TestGemBundlerVersionFinder < Gem::TestCase
   end
 
   def test_bundler_version_with_lockfile
-    bvf.stub(:lockfile_contents, [nil, ""]) do
+    bvf.stub(:lockfile_contents, "") do
       assert_nil bvf.bundler_version
     end
-    bvf.stub(:lockfile_contents, [nil, "\n\nBUNDLED WITH\n   1.1.1.1\n"]) do
+    bvf.stub(:lockfile_contents, "\n\nBUNDLED WITH\n   1.1.1.1\n") do
       assert_equal v("1.1.1.1"), bvf.bundler_version
     end
-    bvf.stub(:lockfile_contents, [nil, "\n\nBUNDLED WITH\n   fjdkslfjdkslfjsldk\n"]) do
+    bvf.stub(:lockfile_contents, "\n\nBUNDLED WITH\n   fjdkslfjdkslfjsldk\n") do
       assert_nil bvf.bundler_version
     end
   end
 
-  def test_bundler_version_with_reason
-    assert_nil bvf.bundler_version_with_reason
-    bvf.stub(:lockfile_contents, [nil, "\n\nBUNDLED WITH\n   1.1.1.1\n"]) do
-      assert_equal ["1.1.1.1", "your lockfile"], bvf.bundler_version_with_reason
+  def test_bundler_version
+    assert_nil bvf.bundler_version
+    bvf.stub(:lockfile_contents, "\n\nBUNDLED WITH\n   1.1.1.1\n") do
+      assert_equal "1.1.1.1", bvf.bundler_version.to_s
 
       $0 = "bundle"
       ARGV.replace %w[update --bundler]
-      assert_nil bvf.bundler_version_with_reason
+      assert_nil bvf.bundler_version
+
       ARGV.replace %w[update --bundler=1.1.1.2]
-      assert_equal ["1.1.1.2", "`bundle update --bundler`"], bvf.bundler_version_with_reason
+      assert_equal "1.1.1.2",  bvf.bundler_version.to_s
 
       ENV["BUNDLER_VERSION"] = "1.1.1.3"
-      assert_equal ["1.1.1.3", "`$BUNDLER_VERSION`"], bvf.bundler_version_with_reason
+      assert_equal "1.1.1.3", bvf.bundler_version.to_s
     end
   end
 
@@ -90,57 +91,35 @@ class TestGemBundlerVersionFinder < Gem::TestCase
       Dir.chdir(orig_dir)
     end
 
-    assert_nil bvf.bundler_version_with_reason
+    assert_nil bvf.bundler_version
   end
 
-  def test_compatible
-    assert bvf.compatible?(util_spec("foo"))
-    assert bvf.compatible?(util_spec("bundler", 1.1))
-
-    bvf.stub(:bundler_version, v("1.1.1.1")) do
-      assert bvf.compatible?(util_spec("foo"))
-      assert bvf.compatible?(util_spec("bundler", "1.1.1.1"))
-      assert bvf.compatible?(util_spec("bundler", "1.1.1.a"))
-      assert bvf.compatible?(util_spec("bundler", "1.999"))
-      refute bvf.compatible?(util_spec("bundler", "2.999"))
-    end
-
-    bvf.stub(:bundler_version, v("2.1.1.1")) do
-      assert bvf.compatible?(util_spec("foo"))
-      assert bvf.compatible?(util_spec("bundler", "2.1.1.1"))
-      assert bvf.compatible?(util_spec("bundler", "2.1.1.a"))
-      assert bvf.compatible?(util_spec("bundler", "2.999"))
-      refute bvf.compatible?(util_spec("bundler", "1.999"))
-      refute bvf.compatible?(util_spec("bundler", "3.0.0"))
-    end
-  end
-
-  def test_filter
+  def test_prioritize
     versions = %w[1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3 3.a 3.0 3.1.1]
     specs = versions.map {|v| util_spec("bundler", v) }
 
-    assert_equal %w[1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3 3.a 3.0 3.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
+    assert_equal %w[1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3 3.a 3.0 3.1.1], util_prioritize_specs(specs)
 
     bvf.stub(:bundler_version, v("2.1.1.1")) do
-      assert_equal %w[2 2.a 2.0 2.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
+      assert_equal %w[1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3 3.a 3.0 3.1.1], util_prioritize_specs(specs)
     end
     bvf.stub(:bundler_version, v("1.1.1.1")) do
-      assert_equal %w[1 1.0 1.0.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
+      assert_equal %w[1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3 3.a 3.0 3.1.1], util_prioritize_specs(specs)
     end
     bvf.stub(:bundler_version, v("1")) do
-      assert_equal %w[1 1.0 1.0.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
+      assert_equal %w[1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3 3.a 3.0 3.1.1], util_prioritize_specs(specs)
     end
     bvf.stub(:bundler_version, v("2.a")) do
-      assert_equal %w[2.a 2 2.0 2.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
+      assert_equal %w[2.a 1 1.0 1.0.1.1 2 2.0 2.1.1 3 3.a 3.0 3.1.1], util_prioritize_specs(specs)
     end
     bvf.stub(:bundler_version, v("3")) do
-      assert_equal %w[3 3.a 3.0 3.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
+      assert_equal %w[3 1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3.a 3.0 3.1.1], util_prioritize_specs(specs)
     end
   end
 
-  def util_filter_specs(specs)
+  def util_prioritize_specs(specs)
     specs = specs.dup
-    bvf.filter!(specs)
-    specs
+    bvf.prioritize!(specs)
+    specs.map(&:version).map(&:to_s)
   end
 end
