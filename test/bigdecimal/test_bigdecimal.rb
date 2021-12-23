@@ -1047,11 +1047,13 @@ class TestBigDecimal < Test::Unit::TestCase
     a = BigDecimal('2e55')
     b = BigDecimal('1.23456789e10')
     q, r = a.divmod(b)
-    assert_equal((a/b), q)
+    assert_equal((a/b).round(0, :down), q)
+    assert_equal((a - q*b), r)
 
     b = BigDecimal('-1.23456789e10')
     q, r = a.divmod(b)
-    assert_equal((a/b), q)
+    assert_equal((a/b).round(0, :down) - 1, q)
+    assert_equal((a - q*b), r)
   end
 
   def test_divmod_error
