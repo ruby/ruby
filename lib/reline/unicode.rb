@@ -79,6 +79,8 @@ class Reline::Unicode
 
   require 'reline/unicode/east_asian_width'
 
+  HalfwidthDakutenHandakuten = /[\u{FF9E}\u{FF9F}]/
+
   MBCharWidthRE = /
     (?<width_2_1>
       [#{ EscapedChars.map {|c| "\\x%02x" % c.ord }.join }] (?# ^ + char, such as ^M, ^H, ^[, ...)
@@ -93,6 +95,12 @@ class Reline::Unicode
       #{ EastAsianWidth::TYPE_H }
     | #{ EastAsianWidth::TYPE_NA }
     | #{ EastAsianWidth::TYPE_N }
+    )(?!#{ HalfwidthDakutenHandakuten })
+  | (?<width_2_3>
+      (?: #{ EastAsianWidth::TYPE_H }
+        | #{ EastAsianWidth::TYPE_NA }
+        | #{ EastAsianWidth::TYPE_N })
+      #{ HalfwidthDakutenHandakuten }
     )
   | (?<ambiguous_width>
       #{EastAsianWidth::TYPE_A}
@@ -109,7 +117,7 @@ class Reline::Unicode
     m = mbchar.encode(Encoding::UTF_8).match(MBCharWidthRE)
     case
     when m.nil? then 1 # TODO should be U+FFFD � REPLACEMENT CHARACTER
-    when m[:width_2_1], m[:width_2_2] then 2
+    when m[:width_2_1], m[:width_2_2], m[:width_2_3] then 2
     when m[:width_3] then 3
     when m[:width_0] then 0
     when m[:width_1] then 1
