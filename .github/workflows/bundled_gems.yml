@@ -37,8 +37,10 @@ jobs:
 
       - name: Download previous gems list
         run: |
-          curl -o .downloaded-cache/bundled_gems.json https://stdgems.org/bundled_gems.json
-          ln -s .downloaded-cache/bundled_gems.json .
+          data=bundled_gems.json
+          mkdir -p .downloaded-cache
+          ln -s .downloaded-cache/$data .
+          curl -O -R -z ./$data https://stdgems.org/$data
 
       - name: Update bundled gems list
         run: |
