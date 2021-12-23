@@ -310,7 +310,7 @@ Note: We're only listing outstanding class updates.
     * RubyGems 3.3.1
     * base64 0.1.1
     * benchmark 0.2.0
-    * bigdecimal 3.1.0.dev
+    * bigdecimal 3.1.1
     * bundler 2.3.1
     * cgi 0.3.1
     * csv 3.2.1
