@@ -2306,6 +2306,22 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line('abcd')
   end
 
+  def test_halfwidth_kana_width_dakuten
+    input_keys('ｶﾞｷﾞｹﾞｺﾞ')
+    assert_byte_pointer_size('ｶﾞｷﾞｹﾞｺﾞ')
+    assert_cursor(8)
+    assert_cursor_max(8)
+    input_keys("\C-b\C-b", false)
+    assert_byte_pointer_size('ｶﾞｷﾞ')
+    assert_cursor(4)
+    assert_cursor_max(8)
+    input_keys('ｸﾞ', false)
+    assert_byte_pointer_size('ｶﾞｷﾞｸﾞ')
+    assert_cursor(6)
+    assert_cursor_max(10)
+    assert_line('ｶﾞｷﾞｸﾞｹﾞｺﾞ')
+  end
+
   def test_input_unknown_char
     input_keys('͸') # U+0378 (unassigned)
     assert_line('͸')
