@@ -319,7 +319,7 @@ Note: We're only listing outstanding class updates.
     * digest 3.1.0.pre3
     * drb 2.1.0
     * erb 2.2.3
-    * error_highlight 0.2.0
+    * error_highlight 0.3.0
     * etc 1.3.0
     * fcntl 1.0.1
     * fiddle 1.1.0
