@@ -33,7 +33,9 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: .downloaded-cache
-          key: downloaded-cache
+          key: downloaded-cache-${{ github.sha }}
+          restore-keys: |
+            downloaded-cache
 
       - name: Download previous gems list
         run: |
