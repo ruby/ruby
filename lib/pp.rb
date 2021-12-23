@@ -61,6 +61,16 @@ require 'prettyprint'
 # Tanaka Akira <akr@fsij.org>
 
 class PP < PrettyPrint
+  # Returns the usable width for +out+.
+  # As the width of +out+:
+  # 1. If +out+ is assigned to a tty device, its width is used.
+  # 2. Otherwise, or it could not get the value, the +COLUMN+
+  #    environment variable is assumed to be set to the width.
+  # 3. If +COLUMN+ is not set to a non-zero number, 80 is assumed.
+  #
+  # And finally, returns the above width value - 1.
+  # * This -1 is for Windows command prompt, which moves the cursor to
+  #   the next line if it reaches the last column.
   def PP.width_for(out)
     begin
       require 'io/console'
@@ -74,7 +84,8 @@ class PP < PrettyPrint
   # +width+ columns in width.
   #
   # If +out+ is omitted, <code>$></code> is assumed.
-  # If +width+ is omitted, 79 is assumed.
+  # If +width+ is omitted, the width of +out+ is assumed (see
+  # width_for).
   #
   # PP.pp returns +out+.
   def PP.pp(obj, out=$>, width=width_for(out))
