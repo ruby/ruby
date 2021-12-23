@@ -368,7 +368,7 @@ Note: We're only listing outstanding class updates.
     * test-unit 3.5.3
     * rexml 3.2.5
     * rbs 1.8.1
-    * typeprof 0.21.0
+    * typeprof 0.21.1
 *   The following default gems are now bundled gems.
     * net-ftp 0.1.3
     * net-imap 0.2.2
