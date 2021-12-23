@@ -979,12 +979,13 @@ lookup_overloaded_cme(const rb_callable_method_entry_t *cme)
     return monly_cme;
 }
 
-// used by gc.c
+#if VM_CHECK_MODE > 0
 MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
 rb_vm_lookup_overloaded_cme(const rb_callable_method_entry_t *cme)
 {
     return lookup_overloaded_cme(cme);
 }
+#endif
 
 static void
 delete_overloaded_cme(const rb_callable_method_entry_t *cme)

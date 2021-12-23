@@ -6363,8 +6363,6 @@ rb_mark_hash(st_table *tbl)
     mark_st(&rb_objspace, tbl);
 }
 
-const rb_callable_method_entry_t *rb_vm_lookup_overloaded_cme(const rb_callable_method_entry_t *cme);
-
 static void
 mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
 {
@@ -6378,10 +6376,11 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
           case VM_METHOD_TYPE_ISEQ:
             if (def->body.iseq.iseqptr) gc_mark(objspace, (VALUE)def->body.iseq.iseqptr);
             gc_mark(objspace, (VALUE)def->body.iseq.cref);
-            if (def->iseq_overload && me->defined_class) { // cme
-                if (rb_vm_lookup_overloaded_cme((const rb_callable_method_entry_t *)me)) {
-                    gc_mark_and_pin(objspace, (VALUE)me);
-                }
+
+            if (def->iseq_overload && me->defined_class) {
+                // it can be a key of "overloaded_cme" table
+                // so it should be pinned.
+                gc_mark_and_pin(objspace, (VALUE)me);
             }
             break;
 	  case VM_METHOD_TYPE_ATTRSET:
