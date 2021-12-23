@@ -424,6 +424,8 @@ module Gem::Security
   # Gets the right public key from a PKey instance
 
   def self.get_public_key(key)
+    # Ruby 3.0 (Ruby/OpenSSL 2.2) or later
+    return OpenSSL::PKey.read(key.public_to_der) if key.respond_to?(:public_to_der)
     return key.public_key unless key.is_a?(OpenSSL::PKey::EC)
 
     ec_key = OpenSSL::PKey::EC.new(key.group.curve_name)
@@ -490,9 +492,13 @@ module Gem::Security
       when 'rsa'
         OpenSSL::PKey::RSA.new(RSA_DSA_KEY_LENGTH)
       when 'ec'
-        domain_key = OpenSSL::PKey::EC.new(EC_NAME)
-        domain_key.generate_key
-        domain_key
+        if RUBY_VERSION >= "2.4.0"
+          OpenSSL::PKey::EC.generate(EC_NAME)
+        else
+          domain_key = OpenSSL::PKey::EC.new(EC_NAME)
+          domain_key.generate_key
+          domain_key
+        end
       else
         raise Gem::Security::Exception,
         "#{algorithm} algorithm not found. RSA, DSA, and EC algorithms are supported."
@@ -527,7 +533,7 @@ module Gem::Security
     raise Gem::Security::Exception,
           "incorrect signing key for re-signing " +
           "#{expired_certificate.subject}" unless
-      expired_certificate.public_key.to_pem == get_public_key(private_key).to_pem
+      expired_certificate.check_private_key(private_key)
 
     unless expired_certificate.subject.to_s ==
            expired_certificate.issuer.to_s

@@ -8,7 +8,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.3.0".freeze
+  VERSION = "3.3.1".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -272,9 +272,6 @@ module Gem
 
     unless spec = specs.first
       msg = "can't find gem #{dep} with executable #{exec_name}"
-      if dep.filters_bundler? && bundler_message = Gem::BundlerVersionFinder.missing_version_message
-        msg = bundler_message
-      end
       raise Gem::GemNotFoundException, msg
     end
 

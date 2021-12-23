@@ -146,6 +146,10 @@ module Spec
       bundled_app("Gemfile.lock")
     end
 
+    def base_system_gem_path
+      scoped_gem_path(base_system_gems)
+    end
+
     def base_system_gems
       tmp.join("gems/base")
     end

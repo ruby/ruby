@@ -2,7 +2,7 @@
 
 require_relative "endpoint"
 
-$LOAD_PATH.unshift Dir[Spec::Path.base_system_gems.join("gems/compact_index*/lib")].first.to_s
+$LOAD_PATH.unshift Dir[Spec::Path.base_system_gem_path.join("gems/compact_index*/lib")].first.to_s
 require "compact_index"
 
 class CompactIndexAPI < Endpoint
