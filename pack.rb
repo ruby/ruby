@@ -164,12 +164,6 @@ class String
   # platform-independent consistent size. Spaces are ignored in the
   # format string.
   #
-  # The keyword <i>offset</i> can be given to start the decoding after skipping
-  # the specified amount of bytes:
-  #   "abc".unpack("C*") # => [97, 98, 99]
-  #   "abc".unpack("C*", offset: 2) # => [99]
-  #   "abc".unpack("C*", offset: 4) # => offset outside of string (ArgumentError)
-  #
   # See also String#unpack1,  Array#pack.
   #
   #    "abc \0\0abc \0\0".unpack('A6Z6')   #=> ["abc", "abc "]
@@ -267,6 +261,12 @@ class String
   #  X            | ---     | skip backward one byte
   #  x            | ---     | skip forward one byte
   #
+  # The keyword <i>offset</i> can be given to start the decoding after skipping
+  # the specified amount of bytes:
+  #   "abc".unpack("C*") # => [97, 98, 99]
+  #   "abc".unpack("C*", offset: 2) # => [99]
+  #   "abc".unpack("C*", offset: 4) # => offset outside of string (ArgumentError)
+  #
   # HISTORY
   #
   # * J, J! j, and j! are available since Ruby 2.3.
@@ -283,12 +283,6 @@ class String
   # Decodes <i>str</i> (which may contain binary data) according to the
   # format string, returning the first value extracted.
   #
-  # The keyword <i>offset</i> can be given to start the decoding after skipping
-  # the specified amount of bytes:
-  #   "abc".unpack1("C*") # => 97
-  #   "abc".unpack1("C*", offset: 2) # => 99
-  #   "abc".unpack1("C*", offset: 4) # => offset outside of string (ArgumentError)
-  #
   # See also String#unpack, Array#pack.
   #
   # Contrast with String#unpack:
@@ -299,11 +293,18 @@ class String
   # In that case data would be lost but often it's the case that the array
   # only holds one value, especially when unpacking binary data. For instance:
   #
-  # "\xff\x00\x00\x00".unpack("l")         #=>  [255]
-  # "\xff\x00\x00\x00".unpack1("l")        #=>  255
+  #    "\xff\x00\x00\x00".unpack("l")         #=>  [255]
+  #    "\xff\x00\x00\x00".unpack1("l")        #=>  255
   #
   # Thus unpack1 is convenient, makes clear the intention and signals
   # the expected return value to those reading the code.
+  #
+  # The keyword <i>offset</i> can be given to start the decoding after skipping
+  # the specified amount of bytes:
+  #   "abc".unpack1("C*") # => 97
+  #   "abc".unpack1("C*", offset: 2) # => 99
+  #   "abc".unpack1("C*", offset: 4) # => offset outside of string (ArgumentError)
+  #
   def unpack1(fmt, offset: 0)
     Primitive.pack_unpack1(fmt, offset)
   end
