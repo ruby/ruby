@@ -3957,35 +3957,76 @@ rb_io_gets_internal(VALUE io)
 
 /*
  *  call-seq:
- *     ios.gets(sep=$/ [, getline_args])     -> string or nil
- *     ios.gets(limit [, getline_args])      -> string or nil
- *     ios.gets(sep, limit [, getline_args]) -> string or nil
+ *    gets(sep = $/, **getline_opts)   -> string or nil
+ *    gets(limit, **getline_opts)      -> string or nil
+ *    gets(sep, limit, **getline_opts) -> string or nil
  *
- *  Reads the next ``line'' from the I/O stream; lines are separated by
- *  <i>sep</i>. A separator of +nil+ reads the entire
- *  contents, and a zero-length separator reads the input a paragraph at
- *  a time (two successive newlines in the input separate paragraphs).
- *  The stream must be opened for reading or an IOError will be raised.
- *  The line read in will be returned and also assigned to
- *  <code>$_</code>. Returns +nil+ if called at end of file.  If the
- *  first argument is an integer, or optional second argument is given,
- *  the returning string would not be longer than the given value in
- *  bytes.
+ *  Reads and returns data from the stream;
+ *  assigns the return value to <tt>$_</tt>.
  *
- *     File.new("testfile").gets   #=> "This is line one\n"
- *     $_                          #=> "This is line one\n"
+ *  With no arguments given, returns the next line
+ *  as determined by line separator <tt>$/</tt>, or +nil+ if none:
  *
- *     File.new("testfile").gets(4)#=> "This"
+ *    f = File.open('t.txt')
+ *    f.gets # => "This is line one.\n"
+ *    $_     # => "This is line one.\n"
+ *    f.gets # => "This is the second line.\n"
+ *    f.gets # => "This is the third line.\n"
+ *    f.gets # => nil
  *
- *  If IO contains multibyte characters byte then <code>gets(1)</code>
- *  returns character entirely:
+ *  With string argument +sep+ given, but not argument +limit+,
+ *  returns the next line as determined by line separator +sep+,
+ *  or +nil+ if none:
  *
- *     # Russian characters take 2 bytes
- *     File.write("testfile", "\u{442 435 441 442}")
- *     File.open("testfile") {|f|f.gets(1)} #=> "\u0442"
- *     File.open("testfile") {|f|f.gets(2)} #=> "\u0442"
- *     File.open("testfile") {|f|f.gets(3)} #=> "\u0442\u0435"
- *     File.open("testfile") {|f|f.gets(4)} #=> "\u0442\u0435"
+ *    f = File.open('t.txt')
+ *    f.gets(' is') # => "This is"
+ *    f.gets(' is') # => " line one.\nThis is"
+ *    f.gets(' is') # => " the second line.\nThis is"
+ *    f.gets(' is') # => " the third line.\n"
+ *    f.gets(' is') # => nil
+ *
+ *  Note two special values for +sep+:
+ *
+ *  - +nil+: The entire stream is read and returned.
+ *  - <tt>''</tt> (empty string): The next "paragraph" is read and returned,
+ *    the paragraph separator being two successive line separators.
+ *
+ *  With integer argument +limit+ given,
+ *  returns up to <tt>limit+1</tt> bytes:
+ *
+ *    # Text with 1-byte characters.
+ *    File.open('t.txt') {|f| f.gets(1) } # => "T"
+ *    File.open('t.txt') {|f| f.gets(2) } # => "Th"
+ *    File.open('t.txt') {|f| f.gets(3) } # => "Thi"
+ *    File.open('t.txt') {|f| f.gets(4) } # => "This"
+ *    # No more than one line.
+ *    File.open('t.txt') {|f| f.gets(17) } # => "This is line one."
+ *    File.open('t.txt') {|f| f.gets(18) } # => "This is line one.\n"
+ *    File.open('t.txt') {|f| f.gets(19) } # => "This is line one.\n"
+ *
+ *    # Text with 2-byte characters, which will not be split.
+ *    File.open('t.rus') {|f| f.gets(1).size } # => 1
+ *    File.open('t.rus') {|f| f.gets(2).size } # => 1
+ *    File.open('t.rus') {|f| f.gets(3).size } # => 2
+ *    File.open('t.rus') {|f| f.gets(4).size } # => 2
+ *
+ *  With arguments +sep+ and +limit+,
+ *  combines the two behaviors above:
+ *
+ *  - Returns the next line as determined by line separator +sep+,
+ *    or +nil+ if none.
+ *  - But returns no more than <tt>limit+1</tt> bytes.
+ *
+ *  For all forms above, trailing optional keyword arguments may be given;
+ *  see {Getline Options}[#class-IO-label-Getline+Options]:
+ *
+ *    f = File.open('t.txt')
+ *    # Chomp the lines.
+ *    f.gets(chomp: true) # => "This is line one."
+ *    f.gets(chomp: true) # => "This is the second line."
+ *    f.gets(chomp: true) # => "This is the third line."
+ *    f.gets(chomp: true) # => nil
+ *
  */
 
 static VALUE
@@ -13673,6 +13714,10 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *      f.write(data)
  *      f.close
  *
+ *  - <tt>t.rus</tt>: A Russian-language text file that is assumed to exist via:
+ *
+ *      File.write('t.rus', "\u{442 435 441 442}")
+ *
  *  - <tt>t.tmp</tt>: A file that is assumed _not_ to exist.
  *
  *  == Modes
@@ -13811,6 +13856,13 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  Also available are the options offered in String#encode,
  *  which may control conversion between external internal encoding.
+ *
+ *  == Getline Options
+ *
+ *  A number of \IO methods accept optional keyword arguments
+ *  that determine how a stream is to be treated:
+ *
+ *  - +:chomp+: If +true+, line separators are omitted; default is  +false+.
  *
  *  == Position
  *
