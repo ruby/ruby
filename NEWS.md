@@ -368,7 +368,7 @@ Note: We're only listing outstanding class updates.
     * rake 13.0.6
     * test-unit 3.5.3
     * rexml 3.2.5
-    * rbs 1.8.1
+    * rbs 2.0.0
     * typeprof 0.21.1
 *   The following default gems are now bundled gems.
     * net-ftp 0.1.3
@@ -469,8 +469,37 @@ See [this blog post](https://shopify.engineering/yjit-just-in-time-compiler-crub
 
 ### RBS
 
+*   Generics type parameters can be bounded ([PR](https://github.com/ruby/rbs/pull/844)).
+
+    ```rbs
+    # `T` must be compatible with the `_Output` interface.
+    # `PrettyPrint[String]` is ok, but `PrettyPrint[Integer]` is a type error.
+    class PrettyPrint[T < _Output]
+      interface _Output
+        def <<: (String) -> void
+      end
+
+      attr_reader output: T
+
+      def initialize: (T output) -> void
+    end
+    ```
+
+*   Type aliases can be generic. ([PR](https://github.com/ruby/rbs/pull/823))
+
+    ```rbs
+    # Defines a generic type `list`.
+    type list[T] = [ T, list[T] ]
+                 | nil
+
+    type str_list = list[String]
+    type int_list = list[Integer]
+    ```
+
 * [rbs collection](https://github.com/ruby/rbs/blob/master/docs/collection.md) has been introduced to manage gems’ RBSs.
+
 * Many signatures for built-in and standard libraries have been added/updated.
+
 * It includes many bug fixes and performance improvements too.
 
 See the [CHANGELOG.md](https://github.com/ruby/rbs/blob/master/CHANGELOG.md) for more information.
