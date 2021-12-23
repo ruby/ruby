@@ -307,11 +307,11 @@ Note: We're only listing outstanding class updates.
 ## Stdlib updates
 
 *   The following default gem are updated.
-    * RubyGems 3.3.0
+    * RubyGems 3.3.1
     * base64 0.1.1
     * benchmark 0.2.0
     * bigdecimal 3.1.0.dev
-    * bundler 2.3.0
+    * bundler 2.3.1
     * cgi 0.3.1
     * csv 3.2.1
     * date 3.2.2
