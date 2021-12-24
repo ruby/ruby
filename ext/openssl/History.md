@@ -1,3 +1,105 @@
+Version 3.0.0
+=============
+
+Compatibility notes
+-------------------
+
+* OpenSSL 1.0.1 and Ruby 2.3-2.5 are no longer supported.
+  [[GitHub #396]](https://github.com/ruby/openssl/pull/396)
+  [[GitHub #466]](https://github.com/ruby/openssl/pull/466)
+
+* OpenSSL 3.0 support is added. It is the first major version bump from OpenSSL
+  1.1 and contains incompatible changes that affect Ruby/OpenSSL.
+  Note that OpenSSL 3.0 support is preliminary and not all features are
+  currently available:
+  [[GitHub #369]](https://github.com/ruby/openssl/issues/369)
+
+  - Deprecate the ability to modify `OpenSSL::PKey::PKey` instances. OpenSSL 3.0
+    made EVP_PKEY structure immutable, and hence the following methods are not
+    available when Ruby/OpenSSL is linked against OpenSSL 3.0.
+    [[GitHub #480]](https://github.com/ruby/openssl/pull/480)
+
+    - `OpenSSL::PKey::RSA#set_key`, `#set_factors`, `#set_crt_params`
+    - `OpenSSL::PKey::DSA#set_pqg`, `#set_key`
+    - `OpenSSL::PKey::DH#set_pqg`, `#set_key`, `#generate_key!`
+    - `OpenSSL::PKey::EC#private_key=`, `#public_key=`, `#group=`, `#generate_key!`
+
+  - Deprecate `OpenSSL::Engine`. The ENGINE API has been deprecated in OpenSSL 3.0
+    in favor of the new "provider" concept and will be removed in a future
+    version.
+    [[GitHub #481]](https://github.com/ruby/openssl/pull/481)
+
+* `OpenSSL::SSL::SSLContext#tmp_ecdh_callback` has been removed. It has been
+  deprecated since v2.0.0 because it is incompatible with modern OpenSSL
+  versions.
+  [[GitHub #394]](https://github.com/ruby/openssl/pull/394)
+
+* `OpenSSL::SSL::SSLSocket#read` and `#write` now raise `OpenSSL::SSL::SSLError`
+  if called before a TLS connection is established. Historically, they
+  read/wrote unencrypted data to the underlying socket directly in that case.
+  [[GitHub #9]](https://github.com/ruby/openssl/issues/9)
+  [[GitHub #469]](https://github.com/ruby/openssl/pull/469)
+
+
+Notable changes
+---------------
+
+* Enhance OpenSSL::PKey's common interface.
+  [[GitHub #370]](https://github.com/ruby/openssl/issues/370)
+
+  - Key deserialization: Enhance `OpenSSL::PKey.read` to handle PEM encoding of
+    DH parameters, which used to be only deserialized by `OpenSSL::PKey::DH.new`.
+    [[GitHub #328]](https://github.com/ruby/openssl/issues/328)
+  - Key generation: Add `OpenSSL::PKey.generate_parameters` and
+    `OpenSSL::PKey.generate_key`.
+    [[GitHub #329]](https://github.com/ruby/openssl/issues/329)
+  - Public key signing: Enhance `OpenSSL::PKey::PKey#sign` and `#verify` to use
+    the new EVP_DigestSign() family to enable PureEdDSA support on OpenSSL 1.1.1
+    or later. They also now take optional algorithm-specific parameters for more
+    control.
+    [[GitHub #329]](https://github.com/ruby/openssl/issues/329)
+  - Low-level public key signing and verification: Add
+    `OpenSSL::PKey::PKey#sign_raw`, `#verify_raw`, and `#verify_recover`.
+    [[GitHub #382]](https://github.com/ruby/openssl/issues/382)
+  - Public key encryption: Add `OpenSSL::PKey::PKey#encrypt` and `#decrypt`.
+    [[GitHub #382]](https://github.com/ruby/openssl/issues/382)
+  - Key agreement: Add `OpenSSL::PKey::PKey#derive`.
+    [[GitHub #329]](https://github.com/ruby/openssl/issues/329)
+  - Key comparison: Add `OpenSSL::PKey::PKey#compare?` to conveniently check
+    that two keys have common parameters and a public key.
+    [[GitHub #383]](https://github.com/ruby/openssl/issues/383)
+
+* Add `OpenSSL::BN#set_flags` and `#get_flags`. This can be used in combination
+  with `OpenSSL::BN::CONSTTIME` to force constant-time computation.
+  [[GitHub #417]](https://github.com/ruby/openssl/issues/417)
+
+* Add `OpenSSL::BN#abs` to get the absolute value of the BIGNUM.
+  [[GitHub #430]](https://github.com/ruby/openssl/issues/430)
+
+* Add `OpenSSL::SSL::SSLSocket#getbyte`.
+  [[GitHub #438]](https://github.com/ruby/openssl/issues/438)
+
+* Add `OpenSSL::SSL::SSLContext#tmp_dh=`.
+  [[GitHub #459]](https://github.com/ruby/openssl/pull/459)
+
+* Add `OpenSSL::X509::Certificate.load` to load a PEM-encoded and concatenated
+  list of X.509 certificates at once.
+  [[GitHub #441]](https://github.com/ruby/openssl/pull/441)
+
+* Change `OpenSSL::X509::Certificate.new` to attempt to deserialize the given
+  string first as DER encoding first and then as PEM encoding to ensure the
+  round-trip consistency.
+  [[GitHub #442]](https://github.com/ruby/openssl/pull/442)
+
+* Update various part of the code base to use the modern API. No breaking
+  changes are intended with this. This includes:
+
+  - `OpenSSL::HMAC` uses the EVP API.
+    [[GitHub #371]](https://github.com/ruby/openssl/issues/371)
+  - `OpenSSL::Config` uses native OpenSSL API to parse config files.
+    [[GitHub #342]](https://github.com/ruby/openssl/issues/342)
+
+
 Version 2.2.1
 =============
 
