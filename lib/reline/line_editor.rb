@@ -93,7 +93,7 @@ class Reline::LineEditor
     mode_string
   end
 
-  private def check_multiline_prompt(buffer, prompt)
+  private def check_multiline_prompt(buffer)
     if @vi_arg
       prompt = "(arg: #{@vi_arg}) "
       @rerender_all = true
@@ -190,7 +190,7 @@ class Reline::LineEditor
     else
       back = 0
       new_buffer = whole_lines
-      prompt, prompt_width, prompt_list = check_multiline_prompt(new_buffer, prompt)
+      prompt, prompt_width, prompt_list = check_multiline_prompt(new_buffer)
       new_buffer.each_with_index do |line, index|
         prompt_width = calculate_width(prompt_list[index], true) if @prompt_proc
         width = prompt_width + calculate_width(line)
@@ -438,7 +438,7 @@ class Reline::LineEditor
       show_menu
       @menu_info = nil
     end
-    prompt, prompt_width, prompt_list = check_multiline_prompt(whole_lines, prompt)
+    prompt, prompt_width, prompt_list = check_multiline_prompt(whole_lines)
     if @cleared
       clear_screen_buffer(prompt, prompt_list, prompt_width)
       @cleared = false
@@ -449,7 +449,7 @@ class Reline::LineEditor
       Reline::IOGate.move_cursor_up(@first_line_started_from + @started_from - @scroll_partial_screen)
       Reline::IOGate.move_cursor_column(0)
       @scroll_partial_screen = nil
-      prompt, prompt_width, prompt_list = check_multiline_prompt(whole_lines, prompt)
+      prompt, prompt_width, prompt_list = check_multiline_prompt(whole_lines)
       if @previous_line_index
         new_lines = whole_lines(index: @previous_line_index, line: @line)
       else
@@ -495,7 +495,7 @@ class Reline::LineEditor
         end
         line = modify_lines(new_lines)[@line_index]
         clear_dialog
-        prompt, prompt_width, prompt_list = check_multiline_prompt(new_lines, prompt)
+        prompt, prompt_width, prompt_list = check_multiline_prompt(new_lines)
         render_partial(prompt, prompt_width, line, @first_line_started_from)
         move_cursor_down(@highest_in_all - (@first_line_started_from + @highest_in_this - 1) - 1)
         scroll_down(1)
@@ -504,7 +504,7 @@ class Reline::LineEditor
       else
         if not rendered and not @in_pasting
           line = modify_lines(whole_lines)[@line_index]
-          prompt, prompt_width, prompt_list = check_multiline_prompt(whole_lines, prompt)
+          prompt, prompt_width, prompt_list = check_multiline_prompt(whole_lines)
           render_partial(prompt, prompt_width, line, @first_line_started_from)
         end
         render_dialog((prompt_width + @cursor) % @screen_size.last)
@@ -783,7 +783,7 @@ class Reline::LineEditor
 
   private def reset_dialog(dialog, old_dialog)
     return if dialog.lines_backup.nil? or old_dialog.contents.nil?
-    prompt, prompt_width, prompt_list = check_multiline_prompt(dialog.lines_backup[:lines], prompt)
+    prompt, prompt_width, prompt_list = check_multiline_prompt(dialog.lines_backup[:lines])
     visual_lines = []
     visual_start = nil
     dialog.lines_backup[:lines].each_with_index { |l, i|
@@ -886,7 +886,7 @@ class Reline::LineEditor
   private def clear_each_dialog(dialog)
     dialog.trap_key = nil
     return unless dialog.contents
-    prompt, prompt_width, prompt_list = check_multiline_prompt(dialog.lines_backup[:lines], prompt)
+    prompt, prompt_width, prompt_list = check_multiline_prompt(dialog.lines_backup[:lines])
     visual_lines = []
     visual_lines_under_dialog = []
     visual_start = nil
@@ -971,7 +971,7 @@ class Reline::LineEditor
   end
 
   def just_move_cursor
-    prompt, prompt_width, prompt_list = check_multiline_prompt(@buffer_of_lines, prompt)
+    prompt, prompt_width, prompt_list = check_multiline_prompt(@buffer_of_lines)
     move_cursor_up(@started_from)
     new_first_line_started_from =
       if @line_index.zero?
@@ -1008,7 +1008,7 @@ class Reline::LineEditor
     else
       new_lines = whole_lines
     end
-    prompt, prompt_width, prompt_list = check_multiline_prompt(new_lines, prompt)
+    prompt, prompt_width, prompt_list = check_multiline_prompt(new_lines)
     all_height = calculate_height_by_lines(new_lines, prompt_list || prompt)
     diff = all_height - @highest_in_all
     move_cursor_down(@highest_in_all - @first_line_started_from - @started_from - 1)
@@ -1055,7 +1055,7 @@ class Reline::LineEditor
     Reline::IOGate.move_cursor_column(0)
     back = 0
     new_buffer = whole_lines
-    prompt, prompt_width, prompt_list = check_multiline_prompt(new_buffer, prompt)
+    prompt, prompt_width, prompt_list = check_multiline_prompt(new_buffer)
     new_buffer.each_with_index do |line, index|
       prompt_width = calculate_width(prompt_list[index], true) if @prompt_proc
       width = prompt_width + calculate_width(line)
