@@ -344,7 +344,8 @@ Note: We're only listing outstanding class updates.
     * psych 4.0.3
     * racc 1.6.0
     * rdoc 6.4.0
-    * readline-ext 0.1.3
+    * readline 0.0.3
+    * readline-ext 0.1.4
     * reline 0.2.8.pre.11
     * resolv 0.2.1
     * rinda 0.1.1
