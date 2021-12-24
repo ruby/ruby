@@ -166,6 +166,7 @@ class CSV
       end
 
       def keep_start
+        adjust_last_keep
         @keeps.push([@scanner.pos, nil])
       end
 
@@ -196,7 +197,17 @@ class CSV
       end
 
       def keep_drop
-        @keeps.pop
+        _, buffer = @keeps.pop
+        return unless buffer
+
+        last_keep = @keeps.last
+        return unless last_keep
+
+        if last_keep[1]
+          last_keep[1] << buffer
+        else
+          last_keep[1] = buffer
+        end
       end
 
       def rest
@@ -204,24 +215,30 @@ class CSV
       end
 
       private
+      def adjust_last_keep
+        keep = @keeps.last
+        return if keep.nil?
+
+        keep_start = keep[0]
+        return if @scanner.pos == keep_start
+
+        string = @scanner.string
+        keep_data = string.byteslice(keep_start, @scanner.pos - keep_start)
+        if keep_data
+          keep_buffer = keep[1]
+          if keep_buffer
+            keep_buffer << keep_data
+          else
+            keep[1] = keep_data.dup
+          end
+        end
+        keep[0] = 0
+      end
+
       def read_chunk
         return false if @last_scanner
 
-        unless @keeps.empty?
-          keep = @keeps.last
-          keep_start = keep[0]
-          string = @scanner.string
-          keep_data = string.byteslice(keep_start, @scanner.pos - keep_start)
-          if keep_data
-            keep_buffer = keep[1]
-            if keep_buffer
-              keep_buffer << keep_data
-            else
-              keep[1] = keep_data.dup
-            end
-          end
-          keep[0] = 0
-        end
+        adjust_last_keep
 
         input = @inputs.first
         case input
@@ -728,28 +745,26 @@ class CSV
       sample[0, 128].index(@quote_character)
     end
 
-    SCANNER_TEST = (ENV["CSV_PARSER_SCANNER_TEST"] == "yes")
-    if SCANNER_TEST
-      class UnoptimizedStringIO
-        def initialize(string)
-          @io = StringIO.new(string, "rb:#{string.encoding}")
-        end
-
-        def gets(*args)
-          @io.gets(*args)
-        end
-
-        def each_line(*args, &block)
-          @io.each_line(*args, &block)
-        end
-
-        def eof?
-          @io.eof?
-        end
+    class UnoptimizedStringIO # :nodoc:
+      def initialize(string)
+        @io = StringIO.new(string, "rb:#{string.encoding}")
       end
 
-      SCANNER_TEST_CHUNK_SIZE =
-        Integer((ENV["CSV_PARSER_SCANNER_TEST_CHUNK_SIZE"] || "1"), 10)
+      def gets(*args)
+        @io.gets(*args)
+      end
+
+      def each_line(*args, &block)
+        @io.each_line(*args, &block)
+      end
+
+      def eof?
+        @io.eof?
+      end
+    end
+
+    SCANNER_TEST = (ENV["CSV_PARSER_SCANNER_TEST"] == "yes")
+    if SCANNER_TEST
       def build_scanner
         inputs = @samples.collect do |sample|
           UnoptimizedStringIO.new(sample)
@@ -759,9 +774,11 @@ class CSV
         else
           inputs << @input
         end
+        chunk_size =
+          Integer((ENV["CSV_PARSER_SCANNER_TEST_CHUNK_SIZE"] || "1"), 10)
         InputsScanner.new(inputs,
                           @encoding,
-                          chunk_size: SCANNER_TEST_CHUNK_SIZE)
+                          chunk_size: chunk_size)
       end
     else
       def build_scanner
