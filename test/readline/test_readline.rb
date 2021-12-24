@@ -537,8 +537,9 @@ module BasetestReadline
           break if log.include?('input> ')
         end
         log << "** SIGINT **"
+        sleep 0.5
         Process.kill(:INT, pid)
-        sleep 0.1
+        sleep 0.5
         loop do
           c = _out.read(1)
           log << c if c
