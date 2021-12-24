@@ -205,7 +205,7 @@ VALUE rb_fiber_scheduler_unblock(VALUE scheduler, VALUE blocker, VALUE fiber);
  * this for instance switches to another fiber etc.
  *
  * The  "events" here  is a  Ruby level  integer, which  is an  OR-ed value  of
- * `IO::READABLE`, `IO::WRITable`, and `IO::PRIORITY`.
+ * `IO::READABLE`, `IO::WRITABLE`, and `IO::PRIORITY`.
  *
  * @param[in]  scheduler  Target scheduler.
  * @param[in]  io         An io object to wait.
