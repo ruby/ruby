@@ -117,6 +117,9 @@ module Test
             filter = nil
           elsif negative.empty? and positive.size == 1 and pos_pat !~ positive[0]
             filter = positive[0]
+            unless /\A[A-Z]\w*(?:::[A-Z]\w*)*#/ =~ filter
+              filter = /##{Regexp.quote(filter)}\z/
+            end
           else
             filter = Regexp.union(*positive.map! {|s| Regexp.new(s[pos_pat, 1] || "\\A#{Regexp.quote(s)}\\z")})
           end
