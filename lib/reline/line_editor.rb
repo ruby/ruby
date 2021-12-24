@@ -121,7 +121,7 @@ class Reline::LineEditor
       if use_cached_prompt_list
         prompt_list = @cached_prompt_list
       else
-        prompt_list = @cached_prompt_list = @prompt_proc.(buffer)
+        prompt_list = @cached_prompt_list = @prompt_proc.(buffer).map { |pr| pr.gsub("\n", "\\n") }
         @prompt_cache_time = Time.now.to_f
       end
       prompt_list.map!{ prompt } if @vi_arg or @searching_prompt

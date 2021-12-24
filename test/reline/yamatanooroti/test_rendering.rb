@@ -1241,6 +1241,18 @@ begin
       EOC
     end
 
+    def test_dynamic_prompt_with_newline
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dynamic-prompt-with-newline}, startup_message: 'Multiline REPL.')
+      write("def hoge\n  3\nend")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        [0000\n]> def hoge
+        [0001\n]>   3
+        [0001\n]> end
+      EOC
+    end
+
     def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
