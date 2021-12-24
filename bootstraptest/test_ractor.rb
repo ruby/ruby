@@ -1101,6 +1101,28 @@ assert_equal 'can not access class variables from non-main Ractors', %q{
   end
 }
 
+# also cached cvar in shareable-objects are not allowed to access from non-main Ractor
+assert_equal 'can not access class variables from non-main Ractors', %q{
+  class C
+    @@cv = 'str'
+    def self.cv
+      @@cv
+    end
+  end
+
+  C.cv # cache
+
+  r = Ractor.new do
+    C.cv
+  end
+
+  begin
+    r.take
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
 # Getting non-shareable objects via constants by other Ractors is not allowed
 assert_equal 'can not access non-shareable objects in constant C::CONST by non-main Ractor.', %q{
   class C
