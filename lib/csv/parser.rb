@@ -85,9 +85,10 @@ class CSV
     # If there is no more data (eos? = true), it returns "".
     #
     class InputsScanner
-      def initialize(inputs, encoding, chunk_size: 8192)
+      def initialize(inputs, encoding, row_separator, chunk_size: 8192)
         @inputs = inputs.dup
         @encoding = encoding
+        @row_separator = row_separator
         @chunk_size = chunk_size
         @last_scanner = @inputs.empty?
         @keeps = []
@@ -250,7 +251,7 @@ class CSV
           @last_scanner = @inputs.empty?
           true
         else
-          chunk = input.gets(nil, @chunk_size)
+          chunk = input.gets(@row_separator, @chunk_size)
           if chunk
             raise InvalidEncoding unless chunk.valid_encoding?
             @scanner = StringScanner.new(chunk)
@@ -778,6 +779,7 @@ class CSV
           Integer((ENV["CSV_PARSER_SCANNER_TEST_CHUNK_SIZE"] || "1"), 10)
         InputsScanner.new(inputs,
                           @encoding,
+                          @row_separator,
                           chunk_size: chunk_size)
       end
     else
@@ -807,7 +809,7 @@ class CSV
             StringIO.new(sample)
           end
           inputs << @input
-          InputsScanner.new(inputs, @encoding)
+          InputsScanner.new(inputs, @encoding, @row_separator)
         end
       end
     end
