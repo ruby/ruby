@@ -1618,7 +1618,7 @@ BigDecimal_divide(VALUE self, VALUE r, Real **c, Real **res, Real **div)
 /* For c = self.div(r): with round operation */
 {
     ENTER(5);
-    Real *a, *b, *d;
+    Real *a, *b;
     ssize_t a_prec, b_prec;
     size_t mx;
 
