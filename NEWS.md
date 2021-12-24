@@ -313,7 +313,7 @@ Note: We're only listing outstanding class updates.
     * bigdecimal 3.1.1
     * bundler 2.3.2
     * cgi 0.3.1
-    * csv 3.2.1
+    * csv 3.2.2
     * date 3.2.2
     * did_you_mean 1.6.0.pre.alpha
     * digest 3.1.0.pre3
