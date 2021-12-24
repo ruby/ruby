@@ -462,7 +462,8 @@ See [this blog post](https://shopify.engineering/yjit-just-in-time-compiler-crub
 
 * Disabled by default, use `--yjit` command-line option to enable YJIT.
 
-* Performance improvements on most real-world software, up to 22% on railsbench, 39% on liquid-render.
+* Performance improvements on benchmarks based on real-world software,
+  up to 22% on railsbench, 39% on liquid-render.
 
 * Fast warm-up times.
 
