@@ -4,6 +4,10 @@ module DidYouMean
   module TestHelper
     class << self
       attr_reader :root
+
+      def ractor_compatible?
+        defined?(Ractor) && RUBY_VERSION >= "3.1.0"
+      end
     end
 
     if File.file?(File.expand_path('../lib/did_you_mean.rb', __dir__))
