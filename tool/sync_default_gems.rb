@@ -381,8 +381,8 @@ def message_filter(repo, sha)
   log = STDIN.read
   log.delete!("\r")
   url = "https://github.com/#{repo}"
-  print "[#{repo}] ", log.gsub(/fix +#\d+|\(#\d+\)/i) {
-    $&.sub(/#/) {"#{url}/pull/"}
+  print "[#{repo}] ", log.gsub(/\b(?i:fix) +\K#(?=\d+\b)|\(\K#(?=\d+\))/) {
+    "#{url}/pull/"
   }.gsub(%r{(?<![-\[\](){}\w@/])(?:(\w+(?:-\w+)*/\w+(?:-\w+)*)@)?(\h{10,40})\b}) {|c|
     "https://github.com/#{$1 || repo}/commit/#{$2[0,12]}"
   }.sub(/\s*(?=(?i:\nCo-authored-by:.*)*\Z)/) {
