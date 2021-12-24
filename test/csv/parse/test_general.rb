@@ -14,7 +14,7 @@ require_relative "../helper"
 class TestCSVParseGeneral < Test::Unit::TestCase
   extend DifferentOFS
 
-  BIG_DATA = "123456789\n" * 1024
+  BIG_DATA = "123456789\n" * 512
 
   def test_mastering_regex_example
     ex = %Q{Ten Thousand,10000, 2710 ,,"10,000","It's ""10 Grand"", baby",10K}
