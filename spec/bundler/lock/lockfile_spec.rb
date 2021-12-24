@@ -2,15 +2,7 @@
 
 RSpec.describe "the lockfile format" do
   before do
-    build_repo2 do
-      # Capistrano did this (at least until version 2.5.10)
-      # RubyGems 2.2 doesn't allow the specifying of a dependency twice
-      # See https://github.com/rubygems/rubygems/commit/03dbac93a3396a80db258d9bc63500333c25bd2f
-      build_gem "double_deps", "1.0", :skip_validation => true do |s|
-        s.add_dependency "net-ssh", ">= 1.0.0"
-        s.add_dependency "net-ssh"
-      end
-    end
+    build_repo2
   end
 
   it "generates a simple lockfile for a single source, gem" do
@@ -759,6 +751,16 @@ RSpec.describe "the lockfile format" do
   end
 
   it "orders dependencies by version" do
+    update_repo2 do
+      # Capistrano did this (at least until version 2.5.10)
+      # RubyGems 2.2 doesn't allow the specifying of a dependency twice
+      # See https://github.com/rubygems/rubygems/commit/03dbac93a3396a80db258d9bc63500333c25bd2f
+      build_gem "double_deps", "1.0", :skip_validation => true do |s|
+        s.add_dependency "net-ssh", ">= 1.0.0"
+        s.add_dependency "net-ssh"
+      end
+    end
+
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}/"
       gem 'double_deps'
