@@ -45,6 +45,29 @@ RSpec.describe "Self management", :rubygems => ">= 3.3.0.dev" do
       bundle "config set --local path vendor/bundle"
       bundle "install", :env => { "BUNDLER_SPEC_GEM_SOURCES" => file_uri_for(gem_repo2).to_s }
       expect(out).to include("Bundler #{Bundler::VERSION} is running, but your lockfile was generated with #{next_minor}. Installing Bundler #{next_minor} and restarting using that version.")
+      expect(vendored_gems("gems/bundler-#{next_minor}")).to exist
+
+      # It does not uninstall the locked bundler
+      bundle "clean"
+      expect(out).to be_empty
+
+      # App now uses locked version
+      bundle "-v"
+      expect(out).to end_with(next_minor[0] == "2" ? "Bundler version #{next_minor}" : next_minor)
+
+      # Subsequent installs use the locked version without reinstalling
+      bundle "install --verbose"
+      expect(out).to include("Using bundler #{next_minor}")
+      expect(out).not_to include("Bundler #{Bundler::VERSION} is running, but your lockfile was generated with #{next_minor}. Installing Bundler #{next_minor} and restarting using that version.")
+    end
+
+    it "installs locked version when using deployment option and uses it" do
+      lockfile_bundled_with(next_minor)
+
+      bundle "config set --local deployment true"
+      bundle "install", :env => { "BUNDLER_SPEC_GEM_SOURCES" => file_uri_for(gem_repo2).to_s }
+      expect(out).to include("Bundler #{Bundler::VERSION} is running, but your lockfile was generated with #{next_minor}. Installing Bundler #{next_minor} and restarting using that version.")
+      expect(vendored_gems("gems/bundler-#{next_minor}")).to exist
 
       # It does not uninstall the locked bundler
       bundle "clean"
