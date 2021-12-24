@@ -85,9 +85,13 @@ class Reline::TestCase < Test::Unit::TestCase
   def assert_byte_pointer_size(expected)
     expected = convert_str(expected)
     byte_pointer = @line_editor.instance_variable_get(:@byte_pointer)
+    chunk = @line_editor.line.byteslice(0, byte_pointer)
     assert_equal(
       expected.bytesize, byte_pointer,
-      "<#{expected.inspect}> expected but was\n<#{@line_editor.line.byteslice(0, byte_pointer).inspect}>")
+      <<~EOM)
+        <#{expected.inspect} (#{expected.encoding.inspect})> expected but was
+        <#{chunk.inspect} (#{chunk.encoding.inspect})> in <Terminal #{Reline::GeneralIO.encoding.inspect}>
+      EOM
   end
 
   def assert_cursor(expected)
