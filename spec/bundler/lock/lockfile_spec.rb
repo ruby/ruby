@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 RSpec.describe "the lockfile format" do
-  include Bundler::GemHelpers
-
   before do
     build_repo2 do
       # Capistrano did this (at least until version 2.5.10)
