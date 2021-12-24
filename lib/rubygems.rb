@@ -788,7 +788,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   def self.open_with_flock(path, flags, &block)
     File.open(path, flags) do |io|
-      unless java_platform?
+      if !java_platform? && !solaris_platform?
         begin
           io.flock(File::LOCK_EX)
         rescue Errno::ENOSYS, Errno::ENOTSUP
@@ -1013,6 +1013,13 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   def self.java_platform?
     RUBY_PLATFORM == "java"
+  end
+
+  ##
+  # Is this platform Solaris?
+
+  def self.solaris_platform?
+    RUBY_PLATFORM =~ /solaris/
   end
 
   ##
