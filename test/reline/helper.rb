@@ -77,6 +77,13 @@ class Reline::TestCase < Test::Unit::TestCase
     end
   end
 
+  def input_raw_keys(input, convert = true)
+    input = convert_str(input) if convert
+    input.bytes.each do |b|
+      @line_editor.input_key(Reline::Key.new(b, b, false))
+    end
+  end
+
   def assert_line(expected)
     expected = convert_str(expected)
     assert_equal(expected, @line_editor.line)

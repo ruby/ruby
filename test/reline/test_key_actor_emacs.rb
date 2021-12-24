@@ -2307,7 +2307,7 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
   end
 
   def test_halfwidth_kana_width_dakuten
-    input_keys('ｶﾞｷﾞｹﾞｺﾞ')
+    input_raw_keys('ｶﾞｷﾞｹﾞｺﾞ')
     assert_byte_pointer_size('ｶﾞｷﾞｹﾞｺﾞ')
     assert_cursor(8)
     assert_cursor_max(8)
@@ -2315,7 +2315,7 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_byte_pointer_size('ｶﾞｷﾞ')
     assert_cursor(4)
     assert_cursor_max(8)
-    input_keys('ｸﾞ', false)
+    input_raw_keys('ｸﾞ', false)
     assert_byte_pointer_size('ｶﾞｷﾞｸﾞ')
     assert_cursor(6)
     assert_cursor_max(10)
