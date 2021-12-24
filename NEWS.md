@@ -316,7 +316,7 @@ Note: We're only listing outstanding class updates.
     * csv 3.2.2
     * date 3.2.2
     * did_you_mean 1.6.0.pre.alpha
-    * digest 3.1.0.pre3
+    * digest 3.1.0
     * drb 2.1.0
     * erb 2.2.3
     * error_highlight 0.3.0
