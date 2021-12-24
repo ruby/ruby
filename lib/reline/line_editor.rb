@@ -260,7 +260,7 @@ class Reline::LineEditor
   end
 
   def reset_variables(prompt = '', encoding:)
-    @prompt = prompt
+    @prompt = prompt.gsub("\n", "\\n")
     @mark_pointer = nil
     @encoding = encoding
     @is_multiline = false
