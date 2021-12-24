@@ -556,7 +556,7 @@ console_getch(int argc, VALUE *argv, VALUE io)
 	    if (!(w & RB_WAITFD_IN)) return Qnil;
 # else
 	    VALUE result = rb_io_wait(io, RUBY_IO_READABLE, timeout);
-	    if (result == Qfalse) return Qnil;
+	    if (!RTEST(result)) return Qnil;
 # endif
 	}
 	else if (optp->vtime) {
