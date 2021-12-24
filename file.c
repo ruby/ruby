@@ -2532,7 +2532,8 @@ rb_file_size(VALUE file)
         }
 
         return st.st_size;
-    } else {
+    }
+    else {
         return NUM2OFFT(rb_funcall(file, idSize, 0));
     }
 }

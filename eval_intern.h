@@ -182,7 +182,8 @@ CREF_CLASS(const rb_cref_t *cref)
 {
     if (CREF_SINGLETON(cref)) {
         return CLASS_OF(cref->klass_or_self);
-    } else {
+    }
+    else {
         return cref->klass_or_self;
     }
 }
@@ -192,7 +193,8 @@ CREF_CLASS_FOR_DEFINITION(const rb_cref_t *cref)
 {
     if (CREF_SINGLETON(cref)) {
         return rb_singleton_class(cref->klass_or_self);
-    } else {
+    }
+    else {
         return cref->klass_or_self;
     }
 }

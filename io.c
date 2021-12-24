@@ -1325,7 +1325,8 @@ rb_io_wait(VALUE io, VALUE events, VALUE timeout)
 
     if (ready) {
         return RB_INT2NUM(ready);
-    } else {
+    }
+    else {
         return Qfalse;
     }
 }
@@ -1493,7 +1494,8 @@ rb_io_maybe_wait_readable(int error, VALUE io, VALUE timeout)
 
     if (RTEST(result)) {
         return RB_NUM2INT(result);
-    } else {
+    }
+    else {
         return 0;
     }
 }
@@ -1505,7 +1507,8 @@ rb_io_maybe_wait_writable(int error, VALUE io, VALUE timeout)
 
     if (RTEST(result)) {
         return RB_NUM2INT(result);
-    } else {
+    }
+    else {
         return 0;
     }
 }
