@@ -503,8 +503,8 @@ module BasetestReadline
       $stdout.sync = true
       require 'readline'
       require 'helper'
-      puts "Readline::VERSION is \#{Readline::VERSION}."
       #{use}
+      puts "Readline::VERSION is \#{Readline::VERSION}."
       Readline.input = STDIN
       # 0. Send SIGINT to this script.
       begin
