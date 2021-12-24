@@ -567,6 +567,7 @@ module BasetestReadline
         assert interrupt_suppressed, "Should handle SIGINT correctly but raised interrupt.\nLog: #{log}\n----"
       end
     rescue Timeout::Error => e
+      Process.kill(:KILL, pid)
       assert false, "Timed out to handle SIGINT!\nLog: #{log}\nBacktrace:\n#{e.full_message(highlight: false)}\n----"
     ensure
       status = nil
