@@ -335,7 +335,7 @@ Note: We're only listing outstanding class updates.
     * net-protocol 0.1.2
     * nkf 0.1.1
     * open-uri 0.2.0
-    * openssl 3.0.0.pre
+    * openssl 3.0.0
     * optparse 0.2.0
     * ostruct 0.5.2
     * pathname 0.2.0
