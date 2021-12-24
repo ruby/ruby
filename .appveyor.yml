@@ -30,7 +30,7 @@ environment:
       ssl: OpenSSL-v111
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GEMS_FOR_TEST: ""
-  RELINE_TEST_ENCODING: "Windows-31J"
+  RELINE_TEST_ENCODING: "UTF-8"
 for:
 -
   matrix:
