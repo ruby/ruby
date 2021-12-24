@@ -500,15 +500,15 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 
 #if defined(_WIN32)
 #define WAIT_FD_IN_WIN32(fptr) \
-    (rb_w32_io_cancelable_p((fptr)->fd) ? 0 : RB_NUM2INT(rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_READABLE), Qnil)))
+    (rb_w32_io_cancelable_p((fptr)->fd) ? Qnil : rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_READABLE), Qnil))
 #else
 #define WAIT_FD_IN_WIN32(fptr)
 #endif
 
 #define READ_CHECK(fptr) do {\
     if (!READ_DATA_PENDING(fptr)) {\
-	WAIT_FD_IN_WIN32(fptr);\
-	rb_io_check_closed(fptr);\
+        WAIT_FD_IN_WIN32(fptr);\
+        rb_io_check_closed(fptr);\
     }\
 } while(0)
 
@@ -1323,10 +1323,9 @@ rb_io_wait(VALUE io, VALUE events, VALUE timeout)
     // Not sure if this is necessary:
     rb_io_check_closed(fptr);
 
-    if (ready > 0) {
+    if (ready) {
         return RB_INT2NUM(ready);
-    }
-    else {
+    } else {
         return Qfalse;
     }
 }
@@ -1490,13 +1489,25 @@ rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout)
 int
 rb_io_maybe_wait_readable(int error, VALUE io, VALUE timeout)
 {
-    return RB_NUM2INT(rb_io_maybe_wait(error, io, RB_INT2NUM(RUBY_IO_READABLE), timeout));
+    VALUE result = rb_io_maybe_wait(error, io, RB_INT2NUM(RUBY_IO_READABLE), timeout);
+
+    if (RTEST(result)) {
+        return RB_NUM2INT(result);
+    } else {
+        return 0;
+    }
 }
 
 int
 rb_io_maybe_wait_writable(int error, VALUE io, VALUE timeout)
 {
-    return RB_NUM2INT(rb_io_maybe_wait(error, io, RB_INT2NUM(RUBY_IO_WRITABLE), timeout));
+    VALUE result = rb_io_maybe_wait(error, io, RB_INT2NUM(RUBY_IO_WRITABLE), timeout);
+
+    if (RTEST(result)) {
+        return RB_NUM2INT(result);
+    } else {
+        return 0;
+    }
 }
 
 static void
