@@ -1482,7 +1482,7 @@ rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout)
 
       default:
         // Non-specific error, no event is ready:
-        return RB_INT2NUM(0);
+        return Qfalse;
     }
 }
 
