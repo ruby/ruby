@@ -220,12 +220,12 @@ class Reline::Windows
   def self.process_key_event(repeat_count, virtual_key_code, virtual_scan_code, char_code, control_key_state)
 
     # high-surrogate
-    if char_code & 0xDC00 == 0xD800
+    if 0xD800 <= char_code and char_code <= 0xDBFF
       @@hsg = char_code
       return
     end
     # low-surrogate
-    if char_code & 0xDC00 == 0xDC00
+    if 0xDC00 <= char_code and char_code <= 0xDFFF
       if @@hsg
         char_code = 0x10000 + (@@hsg - 0xD800) * 0x400 + char_code - 0xDC00
         @@hsg = nil
