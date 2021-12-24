@@ -568,6 +568,7 @@ module BasetestReadline
       end
     rescue Timeout::Error => e
       Process.kill(:KILL, pid)
+      log << "\nKilled by timeout"
       assert false, "Timed out to handle SIGINT!\nLog: #{log}\nBacktrace:\n#{e.full_message(highlight: false)}\n----"
     ensure
       status = nil
@@ -576,6 +577,7 @@ module BasetestReadline
           status = Process.wait2(pid).last
         end
       rescue Timeout::Error => e
+        log << "\nKilled by timeout to wait2"
         Process.kill(:KILL, pid)
         assert false, "Timed out to wait for terminating a process in a test of SIGINT!\nLog: #{log}\nBacktrace:\n#{e.full_message(highlight: false)}\n----"
       end
