@@ -570,8 +570,16 @@ module BasetestReadline
     rescue Timeout::Error => e
       assert false, "Timed out to handle SIGINT!\nLog: #{log}\nBacktrace:\n#{e.full_message(highlight: false)}\n----"
     ensure
-      status = Process.wait2(pid).last
-      assert status.success?, "Unknown failure with exit status #{status}\nLog: #{log}\n----"
+      status = nil
+      begin
+        Timeout.timeout(TIMEOUT) do
+          status = Process.wait2(pid).last
+        end
+      rescue Timeout::Error => e
+        Process.kill(:KILL, pid)
+        assert false, "Timed out to wait for terminating a process in a test of SIGINT!\nLog: #{log}\nBacktrace:\n#{e.full_message(highlight: false)}\n----"
+      end
+      assert status&.success?, "Unknown failure with exit status #{status.inspect}\nLog: #{log}\n----"
     end
 
     assert log.include?('INT'), "Interrupt was handled correctly."
