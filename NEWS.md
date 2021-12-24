@@ -467,7 +467,7 @@ See [this blog post](https://shopify.engineering/yjit-just-in-time-compiler-crub
 
 * Fast warm-up times.
 
-* Limited to macOS & Linux on x86-64 platforms for now.
+* Limited to Unix-like x86-64 platforms for now.
 
 ## Static analysis
 
