@@ -24,10 +24,14 @@ class Gem::UnknownCommandError < Gem::Exception
     return if defined?(@attached)
 
     if defined?(DidYouMean::SPELL_CHECKERS) && defined?(DidYouMean::Correctable)
-      DidYouMean::SPELL_CHECKERS['Gem::UnknownCommandError'] =
-        Gem::UnknownCommandSpellChecker
+      if DidYouMean.respond_to?(:correct_error)
+        DidYouMean.correct_error(Gem::UnknownCommandError, Gem::UnknownCommandSpellChecker)
+      else
+        DidYouMean::SPELL_CHECKERS['Gem::UnknownCommandError'] =
+          Gem::UnknownCommandSpellChecker
 
-      prepend DidYouMean::Correctable
+        prepend DidYouMean::Correctable
+      end
     end
 
     @attached = true

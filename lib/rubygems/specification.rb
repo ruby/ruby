@@ -1116,7 +1116,7 @@ class Gem::Specification < Gem::BasicSpecification
     file = file.dup.tap(&Gem::UNTAINT)
     return unless File.file?(file)
 
-    code = File.read file, :mode => 'r:UTF-8:-'
+    code = Gem.open_with_flock(file, 'r:UTF-8:-', &:read)
 
     code.tap(&Gem::UNTAINT)
 

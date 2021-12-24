@@ -782,6 +782,39 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_match "1 gem installed", @ui.output
   end
 
+  def test_execute_remote_truncates_existing_gemspecs
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 1
+    end
+
+    @cmd.options[:domain] = :remote
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal %w[a-1], @cmd.installed_specs.map {|spec| spec.full_name }
+    assert_match "1 gem installed", @ui.output
+
+    a1_gemspec = File.join(@gemhome, 'specifications', "a-1.gemspec")
+
+    initial_a1_gemspec_content = File.read(a1_gemspec)
+    modified_a1_gemspec_content = initial_a1_gemspec_content + "\n  # AAAAAAA\n"
+    File.write(a1_gemspec, modified_a1_gemspec_content)
+
+    use_ui @ui do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal initial_a1_gemspec_content, File.read(a1_gemspec)
+  end
+
   def test_execute_remote_ignores_files
     specs = spec_fetcher do |fetcher|
       fetcher.gem 'a', 1

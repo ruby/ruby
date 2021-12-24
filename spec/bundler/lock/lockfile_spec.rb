@@ -225,7 +225,7 @@ RSpec.describe "the lockfile format" do
     G
   end
 
-  it "warns when updating bundler major version" do
+  it "update the bundler major version just fine" do
     current_version = Bundler::VERSION
     older_major = previous_major(current_version)
 
@@ -253,10 +253,7 @@ RSpec.describe "the lockfile format" do
       gem "rack"
     G
 
-    expect(err).to include(
-      "Warning: the lockfile is being updated to Bundler " \
-      "#{current_version.split(".").first}, after which you will be unable to return to Bundler #{older_major.split(".").first}."
-    )
+    expect(err).to be_empty
 
     expect(lockfile).to eq <<~G
       GEM

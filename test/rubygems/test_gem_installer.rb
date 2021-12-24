@@ -288,33 +288,6 @@ gem 'other', version
                  "(SyntaxError)", e.message
   end
 
-  def test_ensure_no_race_conditions_between_installing_and_loading_gemspecs
-    a, a_gem = util_gem 'a', 2
-
-    Gem::Installer.at(a_gem).install
-
-    t1 = Thread.new do
-      5.times do
-        Gem::Installer.at(a_gem).install
-        sleep 0.1
-      end
-    end
-
-    t2 = Thread.new do
-      _, err = capture_output do
-        20.times do
-          Gem::Specification.load(a.spec_file)
-          Gem::Specification.send(:clear_load_cache)
-        end
-      end
-
-      assert_empty err
-    end
-
-    t1.join
-    t2.join
-  end
-
   def test_ensure_loadable_spec_security_policy
     pend 'openssl is missing' unless Gem::HAVE_OPENSSL
 
