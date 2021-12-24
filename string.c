@@ -3454,9 +3454,9 @@ rb_str_eql(VALUE str1, VALUE str2)
  *    string <=> other_string -> -1, 0, 1, or nil
  *
  *  Compares +self+ and +other_string+, returning:
- *  - -1 if +other_string+ is smaller.
+ *  - -1 if +other_string+ is larger.
  *  - 0 if the two are equal.
- *  - 1 if +other_string+ is larger.
+ *  - 1 if +other_string+ is smaller.
  *  - +nil+ if the two are incomparable.
  *
  *  Examples:
@@ -3488,9 +3488,9 @@ static VALUE str_casecmp_p(VALUE str1, VALUE str2);
  *    str.casecmp(other_str) -> -1, 0, 1, or nil
  *
  *  Compares +self+ and +other_string+, ignoring case, and returning:
- *  - -1 if +other_string+ is smaller.
+ *  - -1 if +other_string+ is larger.
  *  - 0 if the two are equal.
- *  - 1 if +other_string+ is larger.
+ *  - 1 if +other_string+ is smaller.
  *  - +nil+ if the two are incomparable.
  *
  *  Examples:
