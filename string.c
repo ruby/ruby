@@ -3155,13 +3155,13 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
 
 /*
  *  call-seq:
- *     string.concat(*objects) -> new_string
+ *     string.concat(*objects) -> string
  *
- *  Returns a new \String containing the concatenation
- *  of +self+ and all objects in +objects+:
+ *  Concatenates each object in +objects+ to +self+ and returns +self+:
  *
  *    s = 'foo'
  *    s.concat('bar', 'baz') # => "foobarbaz"
+ *    s                      # => "foobarbaz"
  *
  *  For each given object +object+ that is an \Integer,
  *  the value is considered a codepoint and converted to a character before concatenation:
@@ -3193,12 +3193,13 @@ rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    string << object -> str
+ *    string << object -> string
  *
- *  Returns a new \String containing the concatenation
- *  of +self+ and +object+:
+ *  Concatenates +object+ to +self+ and returns +self+:
+ *
  *    s = 'foo'
  *    s << 'bar' # => "foobar"
+ *    s          # => "foobar"
  *
  *  If +object+ is an \Integer,
  *  the value is considered a codepoint and converted to a character before concatenation:
@@ -3273,12 +3274,12 @@ rb_str_concat(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *    string.prepend(*other_strings)  -> str
+ *    string.prepend(*other_strings)  -> string
  *
- *  Returns a new \String containing the concatenation
- *  of all given +other_strings+ and +self+:
+ *  Prepends each string in +other_strings+ to +self+ and returns +self+:
  *    s = 'foo'
  *    s.prepend('bar', 'baz') # => "barbazfoo"
+ *    s                       # => "barbazfoo"
  *
  *  Related: String#concat.
  */
