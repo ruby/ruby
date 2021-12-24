@@ -292,10 +292,7 @@ module Bundler
         locked_major = @locked_bundler_version.segments.first
         current_major = Gem::Version.create(Bundler::VERSION).segments.first
 
-        if updating_major = locked_major < current_major
-          Bundler.ui.warn "Warning: the lockfile is being updated to Bundler #{current_major}, " \
-                          "after which you will be unable to return to Bundler #{locked_major}."
-        end
+        updating_major = locked_major < current_major
       end
 
       preserve_unknown_sections ||= !updating_major && (Bundler.frozen_bundle? || !(unlocking? || @unlocking_bundler))
