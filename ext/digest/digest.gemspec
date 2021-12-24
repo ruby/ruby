@@ -1,12 +1,12 @@
 # coding: utf-8
 # frozen_string_literal: true
 
-version_module = Module.new do
-  version_rb = File.join(__dir__, "lib/digest/version.rb")
-  module_eval(File.read(version_rb), version_rb)
-end
-
 Gem::Specification.new do |spec|
+  version_module = Module.new do
+    version_rb = File.join(__dir__, "lib/digest/version.rb")
+    module_eval(File.read(version_rb), version_rb)
+  end
+
   spec.name          = "digest"
   spec.version       = version_module::Digest::VERSION
   spec.authors       = ["Akinori MUSHA"]
