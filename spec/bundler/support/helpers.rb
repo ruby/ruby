@@ -88,7 +88,6 @@ module Spec
 
       requires = options.delete(:requires) || []
       realworld = RSpec.current_example.metadata[:realworld]
-      options[:verbose] = true if options[:verbose].nil? && realworld
 
       artifice = options.delete(:artifice) do
         if realworld
