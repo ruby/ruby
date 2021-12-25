@@ -328,7 +328,7 @@ Note: We're only listing outstanding class updates.
     * io-console 0.5.9
     * io-wait 0.2.1
     * ipaddr 1.2.3
-    * irb 1.4.0
+    * irb 1.4.1
     * json 2.6.1
     * logger 1.5.0
     * net-http 0.2.0
