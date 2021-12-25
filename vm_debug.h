@@ -101,7 +101,7 @@ bool ruby_debug_log_filter(const char *func_name);
 // You can use this macro for temporary usage (you should not commit it).
 #define _RUBY_DEBUG_LOG(...) ruby_debug_log(__FILE__, __LINE__, RUBY_FUNCTION_NAME_STRING, "" __VA_ARGS__)
 
-#if USE_RUBY_DEBUG_LOG
+#if defined(USE_RUBY_DEBUG_LOG) && USE_RUBY_DEBUG_LOG
 # define RUBY_DEBUG_LOG_ENABLED(func_name) \
     (ruby_debug_log_mode && ruby_debug_log_filter(func_name))
 
