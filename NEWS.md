@@ -567,6 +567,12 @@ This feature is enabled by default.
 You can disable it by using a command-line option `--disable-error_highlight`.
 See [the repository](https://github.com/ruby/error_highlight) in detail.
 
+## IRB Autocomplete and Document Display
+
+The IRB now has an autocomplete feature, where you can just type in the code, and the completion candidates dialog will appear. You can use Tab and Shift+Tab to move up and down.
+
+If documents are installed when you select a completion candidate, the documentation dialog will appear next to the completion candidates dialog, showing part of the content. You can read the full document by pressing Alt+d.
+
 ## Miscellaneous changes
 
 * lib/objspace/trace.rb is added, which is a tool for tracing the object
