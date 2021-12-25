@@ -276,9 +276,13 @@ Note: We're only listing outstanding class updates.
         integers more strictly now.
 
         ```ruby
-        Time.new(2021, 12, 25, "+07:00")
-        #=> invalid value for Integer(): "+07:00" (ArgumentError)
+        Time.new(2021, 12, 25, "+07:30")
+        #=> invalid value for Integer(): "+07:30" (ArgumentError)
         ```
+
+        Ruby 3.0 or earlier returned probably unexpected result
+        `2021-12-25 07:00:00`, not `2021-12-25 07:30:00` nor
+        `2021-12-25 00:00:00 +07:30`.
 
     *   Time#strftime supports RFC 3339 UTC for unknown offset local
         time, `-0000`, as `%-z`. [[Feature #17544]]
