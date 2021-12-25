@@ -346,7 +346,7 @@ Note: We're only listing outstanding class updates.
     * rdoc 6.4.0
     * readline 0.0.3
     * readline-ext 0.1.4
-    * reline 0.2.8.pre.11
+    * reline 0.3.0
     * resolv 0.2.1
     * rinda 0.1.1
     * ruby2_keywords 0.0.5
