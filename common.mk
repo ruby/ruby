@@ -1320,9 +1320,8 @@ up::
 yes::
 no::
 
-EXTRACT_EXTLIBS = extract-extlibs
 after-update:: $(REVISION_H)
-after-update:: $(EXTRACT_EXTLIBS)
+after-update:: extract-extlibs
 after-update:: extract-gems
 
 update-remote:: update-src update-download
