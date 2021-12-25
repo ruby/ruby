@@ -342,7 +342,7 @@ Note: We're only listing outstanding class updates.
     * fiddle 1.1.0
     * fileutils 1.6.0
     * find 0.1.1
-    * io-console 0.5.9
+    * io-console 0.5.10
     * io-wait 0.2.1
     * ipaddr 1.2.3
     * irb 1.4.1
