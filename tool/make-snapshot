@@ -24,7 +24,6 @@ $packages ||= nil
 $digests ||= nil
 $tooldir = File.expand_path("..", __FILE__)
 $unicode_version = nil if ($unicode_version ||= nil) == ""
-$extlibs ||= "no"
 $colorize = Colorize.new
 
 def usage
@@ -464,7 +463,7 @@ def package(vcs, rev, destdir, tmp = nil)
       end
       vars.delete("UNICODE_FILES") # for stable branches
       vars["UNICODE_VERSION"] = $unicode_version if $unicode_version
-      vars["EXTRACT_EXTLIBS"] = "no" if $extlibs == "no"
+      vars["EXTRACT_EXTLIBS"] = ""
       args = vars.dup
       mk.gsub!(/@([A-Za-z_]\w*)@/) {args.delete($1); vars[$1] || ENV[$1]}
       mk << commonmk.gsub(/\{\$([^(){}]*)[^{}]*\}/, "").sub(/^revision\.tmp::$/, '\& Makefile')
