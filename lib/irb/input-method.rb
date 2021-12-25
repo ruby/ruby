@@ -319,7 +319,8 @@ module IRB
       alt_d = [
         [Reline::Key.new(nil, 0xE4, true)], # Normal Alt+d.
         [27, 100], # Normal Alt+d when convert-meta isn't used.
-        [195, 164] # The "ä" that appears when Alt+d is pressed on xterm.
+        [195, 164], # The "ä" that appears when Alt+d is pressed on xterm.
+        [226, 136, 130] # The "∂" that appears when Alt+d in pressed on iTerm2.
       ]
 
       if just_cursor_moving and completion_journey_data.nil?
