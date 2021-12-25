@@ -267,6 +267,19 @@ Note: We're only listing outstanding class updates.
         timezone, as well as `Time.at` and `Time.now`, so that is now
         you can omit minor arguments to `Time.new`. [[Feature #17485]]
 
+        ```ruby
+        Time.new(2021, 12, 25, in: "+07:00")
+        #=> 2021-12-25 00:00:00 +0700
+        ```
+
+        At the same time, time component strings are converted to
+        integers more strictly now.
+
+        ```ruby
+        Time.new(2021, 12, 25, "+07:00")
+        #=> invalid value for Integer(): "+07:00" (ArgumentError)
+        ```
+
     *   Time#strftime supports RFC 3339 UTC for unknown offset local
         time, `-0000`, as `%-z`. [[Feature #17544]]
 
