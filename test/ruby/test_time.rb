@@ -49,7 +49,10 @@ class TestTime < Test::Unit::TestCase
     t = Time.new(*tm, "-12:00")
     assert_equal([2001,2,28,23,59,30,-43200], [t.year, t.month, t.mday, t.hour, t.min, t.sec, t.gmt_offset], bug4090)
     assert_raise(ArgumentError) { Time.new(2000,1,1, 0,0,0, "+01:60") }
-    assert_raise(ArgumentError) { Time.new(2021, 1, 1, "+09:99") }
+    msg = /invalid value for Integer/
+    assert_raise_with_message(ArgumentError, msg) { Time.new(2021, 1, 1, "+09:99") }
+    assert_raise_with_message(ArgumentError, msg) { Time.new(2021, 1, "+09:99") }
+    assert_raise_with_message(ArgumentError, msg) { Time.new(2021, "+09:99") }
   end
 
   def test_time_add()
