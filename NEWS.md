@@ -246,11 +246,6 @@ Note: We're only listing outstanding class updates.
         have been skipped. If `offset` is outside of the string bounds
         `ArgumentError` is raised. [[Feature #18254]]
 
-* Queue
-
-    *   Queue#initialize now accepts an Enumerable of initial values.
-        [[Feature #17327]]
-
 * Thread
 
     *   Thread#native_thread_id is added. [[Feature #17853]]
@@ -260,6 +255,11 @@ Note: We're only listing outstanding class updates.
     *   Thread::Backtrace.limit, which returns the value to limit backtrace
         length set by `--backtrace-limit` command line option, is added.
         [[Feature #17479]]
+
+* Thread::Queue
+
+    *   Thread::Queue.new now accepts an Enumerable of initial values.
+        [[Feature #17327]]
 
 * Time
 
