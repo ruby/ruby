@@ -31,6 +31,10 @@ void ruby_set_debug_option(const char *str);
 
 RUBY_SYMBOL_EXPORT_END
 
+#ifndef RUBY_DEVEL
+# define RUBY_DEVEL 0
+#endif
+
 #if RUBY_DEVEL
 #ifndef USE_RUBY_DEBUG_LOG
 #define USE_RUBY_DEBUG_LOG 0
