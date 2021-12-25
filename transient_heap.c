@@ -748,7 +748,7 @@ transient_heap_block_evacuate(struct transient_heap* theap, struct transient_hea
     }
 }
 
-#if USE_RUBY_DEBUG_LOG
+#if defined(USE_RUBY_DEBUG_LOG) && USE_RUBY_DEBUG_LOG
 static const char *
 transient_heap_status_cstr(enum transient_heap_status status)
 {
