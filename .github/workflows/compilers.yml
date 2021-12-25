@@ -94,8 +94,8 @@ jobs:
             shared: '--disable-shared'
             # check: true
 
-          - { key: default_cc, name: clang-12,  value: clang-14 -O2 -fsplit-machine-functions',  container: clang-14 }
-          - { key: default_cc, name: clang-12,  value: clang-13 -O2 -fsplit-machine-functions',  container: clang-13 }
+          - { key: default_cc, name: clang-14,  value: clang-14 -O2 -fsplit-machine-functions',  container: clang-14 }
+          - { key: default_cc, name: clang-13,  value: clang-13 -O2 -fsplit-machine-functions',  container: clang-13 }
           - { key: default_cc, name: clang-12,  value: clang-12 -O2 -fsplit-machine-functions',  container: clang-12 }
 
           - { key: crosshost, name: aarch64-linux-gnu,     value: aarch64-linux-gnu, container: crossbuild-essential-arm64 }
