@@ -1843,7 +1843,7 @@ io_buffer_clear(int argc, VALUE *argv, VALUE self)
 
 static
 size_t io_buffer_default_size(size_t page_size) {
-    // Platform agnostic default size, based on emperical performance observation:
+    // Platform agnostic default size, based on empirical performance observation:
     const size_t platform_agnostic_default_size = 64*1024;
 
     // Allow user to specify custom default buffer size:

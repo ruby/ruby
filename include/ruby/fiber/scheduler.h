@@ -52,7 +52,7 @@ rb_fiber_scheduler_io_result(ssize_t result, int error) {
 }
 
 /**
- * Apply an io result to the local thread, returning the value of the orginal
+ * Apply an io result to the local thread, returning the value of the original
  * system call that created it and updating `int errno`.
  *
  * You should not directly try to interpret the result value as it is considered

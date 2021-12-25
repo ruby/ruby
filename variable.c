@@ -1499,7 +1499,7 @@ rb_init_iv_list(VALUE obj)
     init_iv_list(obj, len, newsize, index_tbl);
 }
 
-// Retreive or create the id-to-index mapping for a given object and an
+// Retrieve or create the id-to-index mapping for a given object and an
 // instance variable name.
 static struct ivar_update
 obj_ensure_iv_index_mapping(VALUE obj, ID id)

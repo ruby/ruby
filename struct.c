@@ -191,7 +191,7 @@ struct_member_pos(VALUE s, VALUE name)
  *  call-seq:
  *    StructClass::members -> array_of_symbols
  *
- *  Returns the member names of the Struct decendant as an array:
+ *  Returns the member names of the Struct descendant as an array:
  *
  *     Customer = Struct.new(:name, :address, :zip)
  *     Customer.members # => [:name, :address, :zip]

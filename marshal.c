@@ -1456,7 +1456,7 @@ symname_equal(VALUE sym, const char *name, size_t nlen)
 }
 
 #define BUILD_ASSERT_POSITIVE(n) \
-    /* make 0 negative to workaround the "zero size array" GCC extention, */ \
+    /* make 0 negative to workaround the "zero size array" GCC extension, */ \
     ((sizeof(char [2*(ssize_t)(n)-1])+1)/2) /* assuming no overflow */
 #define symname_equal_lit(sym, sym_name) \
     symname_equal(sym, sym_name, BUILD_ASSERT_POSITIVE(rb_strlen_lit(sym_name)))

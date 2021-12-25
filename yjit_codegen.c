@@ -1731,7 +1731,7 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
         mov(cb, out_opnd, REG1);
     }
     else {
-        // Compile time value is *not* embeded.
+        // Compile time value is *not* embedded.
 
         // Guard that value is *not* embedded
         // See ROBJECT_IVPTR() from include/ruby/internal/core/robject.h
@@ -2274,7 +2274,7 @@ gen_opt_aref(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 
         call_ptr(cb, REG0, (void *)rb_hash_aref);
 
-        // Pop the key and the reciever
+        // Pop the key and the receiver
         (void)ctx_stack_pop(ctx, 2);
 
         // Push the return value onto the stack
@@ -2682,7 +2682,7 @@ gen_opt_case_dispatch(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     // Normally this instruction would lookup the key in a hash and jump to an
     // offset based on that.
     // Instead we can take the fallback case and continue with the next
-    // instruciton.
+    // instruction.
     // We'd hope that our jitted code will be sufficiently fast without the
     // hash lookup, at least for small hashes, but it's worth revisiting this
     // assumption in the future.
@@ -2982,7 +2982,7 @@ jit_guard_known_klass(jitstate_t *jit, ctx_t *ctx, VALUE known_klass, insn_opnd_
         // Note that in case the sample instance has a singleton class that
         // doesn't attach to the sample instance, it means the sample instance
         // has an empty singleton class that hasn't been materialized yet. In
-        // this case, comparing against the sample instance doesn't gurantee
+        // this case, comparing against the sample instance doesn't guarantee
         // that its singleton class is empty, so we can't avoid the memory
         // access. As an example, `Object.new.singleton_class` is an object in
         // this situation.
@@ -4697,9 +4697,9 @@ gen_opt_getinlinecache(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     return YJIT_END_BLOCK;
 }
 
-// Push the explict block parameter onto the temporary stack. Part of the
+// Push the explicit block parameter onto the temporary stack. Part of the
 // interpreter's scheme for avoiding Proc allocations when delegating
-// explict block parameters.
+// explicit block parameters.
 static codegen_status_t
 gen_getblockparamproxy(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
