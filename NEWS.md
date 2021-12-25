@@ -201,7 +201,7 @@ Note: We're only listing outstanding class updates.
 
     *   MatchData#match_length is added [[Feature #18172]]
 
-* Method/UnboundMethod
+* Method / UnboundMethod
 
     *   Method#public?, Method#private?, Method#protected?,
         UnboundMethod#public?, UnboundMethod#private?,
