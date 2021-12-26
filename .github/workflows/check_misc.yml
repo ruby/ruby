@@ -72,9 +72,10 @@ jobs:
               g, v = l.split(" ", 3)
               [g, v] unless last[g] == v
             end
-            news.sub!(/^\*\s+The following #{type} gems? are updated\.(\n\s+\*\s+)\K.*(?:\1.*)*/) do
-              changed.map {|g, v|"#{g} #{v}"}.join($1)
-            end or exit
+            news.sub!(/^\*( +)The following #{type} gems? are updated\.\n\K(?: \1\* .*\n)*/) do
+              mark = "#{$1} * "
+              changed.map {|g, v|"#{mark}#{g} #{v}\n"}.join("")
+            end or next
             File.write("NEWS.md", news)
           end
         shell: ruby {0}
