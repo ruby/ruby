@@ -69,7 +69,12 @@ module Bundler
         SharedHelpers.in_bundle? &&
         lockfile_version &&
         !lockfile_version.end_with?(".dev") &&
-        lockfile_version != current_version
+        lockfile_version != current_version &&
+        !updating?
+    end
+
+    def updating?
+      "update".start_with?(ARGV.first || " ") && ARGV[1..-1].any? {|a| a.start_with?("--bundler") }
     end
 
     def installed?

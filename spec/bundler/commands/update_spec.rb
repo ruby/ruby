@@ -1130,6 +1130,41 @@ RSpec.describe "bundle update --bundler" do
 
     expect(the_bundle.locked_gems.bundler_version).to eq v(Bundler::VERSION)
   end
+
+  it "updates the bundler version in the lockfile without re-resolving if the locked version is already installed" do
+    system_gems "bundler-2.3.3"
+
+    build_repo4 do
+      build_gem "rack", "1.0"
+    end
+
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "rack"
+    G
+    lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, "2.3.3")
+
+    bundle :update, :bundler => true, :artifice => "vcr", :verbose => true
+    expect(out).to include("Using bundler #{Bundler::VERSION}")
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          rack (1.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        rack
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    expect(the_bundle).to include_gem "rack 1.0"
+  end
 end
 
 # these specs are slow and focus on integration and therefore are not exhaustive. unit specs elsewhere handle that.
