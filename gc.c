@@ -2730,10 +2730,7 @@ rb_data_object_check(VALUE klass)
 {
     if (klass != rb_cObject && (rb_get_alloc_func(klass) == rb_class_allocate_instance)) {
         rb_undef_alloc_func(klass);
-#if RUBY_VERSION_SINCE(3, 2)
-        RBIMPL_TODO("enable the warning at this release");
         rb_warn("undefining the allocator of T_DATA class %"PRIsVALUE, klass);
-#endif
     }
 }
 

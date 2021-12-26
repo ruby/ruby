@@ -369,30 +369,6 @@ rb_data_object_alloc(VALUE klass, void *data, RUBY_DATA_FUNC dmark, RUBY_DATA_FU
     return rb_data_object_wrap(klass, data, dmark, dfree);
 }
 
-RBIMPL_ATTR_DEPRECATED(("by: rb_cObject.  Will be removed in 3.1."))
-RBIMPL_ATTR_PURE()
-/**
- * @private
- *
- * @deprecated  There  once was  a variable  called rb_cData,  which no  longer
- *              exists  today.  This  function is  a function  because we  want
- *              warnings for the usages.
- */
-static inline VALUE
-rb_cData(void)
-{
-    return rb_cObject;
-}
-
-/**
- * @private
- *
- * @deprecated  This macro once was a thing in the old days, but makes no sense
- *              any  longer today.   Exists  here  for backwards  compatibility
- *              only.  You can safely forget about it.
- */
-#define rb_cData rb_cData()
-
 /** @cond INTERNAL_MACRO */
 #define rb_data_object_wrap_0 rb_data_object_wrap
 #define rb_data_object_wrap_1 rb_data_object_wrap_warning
