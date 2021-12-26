@@ -243,28 +243,30 @@ describe "Module#refine" do
       result.should == "foo from singleton class"
     end
 
-    it "looks in the included modules for builtin methods" do
-      result = ruby_exe(<<-RUBY)
-        a = Module.new do
-          def /(other) quo(other) end
-        end
-
-        refinement = Module.new do
-          refine Integer do
-            include a
+    ruby_version_is ""..."3.2" do
+      it "looks in the included modules for builtin methods" do
+          result = ruby_exe(<<-RUBY)
+          a = Module.new do
+            def /(other) quo(other) end
           end
-        end
 
-        result = nil
-        Module.new do
-          using refinement
-          result = 1 / 2
-        end
+          refinement = Module.new do
+            refine Integer do
+              include a
+            end
+          end
 
-        print result.class
-      RUBY
+          result = nil
+          Module.new do
+            using refinement
+            result = 1 / 2
+          end
 
-      result.should == 'Rational'
+          print result.class
+        RUBY
+
+        result.should == 'Rational'
+      end
     end
 
     it "looks in later included modules of the refined module first" do

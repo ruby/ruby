@@ -754,134 +754,30 @@ class TestRefinement < Test::Unit::TestCase
     $VERBOSE = verbose
   end
 
-  module IncludeIntoRefinement
-    class C
-      def bar
-        return "C#bar"
-      end
-
-      def baz
-        return "C#baz"
-      end
-    end
-
-    module Mixin
-      def foo
-        return "Mixin#foo"
-      end
-
-      def bar
-        return super << " Mixin#bar"
-      end
-
-      def baz
-        return super << " Mixin#baz"
-      end
-    end
-
-    module M
-      refine C do
-        TestRefinement.suppress_verbose do
-          include Mixin
-        end
-
-        def baz
-          return super << " M#baz"
-        end
-      end
-    end
-  end
-
-  eval <<-EOF, Sandbox::BINDING
-    using TestRefinement::IncludeIntoRefinement::M
-
-    module TestRefinement::IncludeIntoRefinement::User
-      def self.invoke_foo_on(x)
-        x.foo
-      end
-
-      def self.invoke_bar_on(x)
-        x.bar
-      end
-
-      def self.invoke_baz_on(x)
-        x.baz
-      end
-    end
-  EOF
-
   def test_include_into_refinement
-    x = IncludeIntoRefinement::C.new
-    assert_equal("Mixin#foo", IncludeIntoRefinement::User.invoke_foo_on(x))
-    assert_equal("C#bar Mixin#bar",
-                 IncludeIntoRefinement::User.invoke_bar_on(x))
-    assert_equal("C#baz Mixin#baz M#baz",
-                 IncludeIntoRefinement::User.invoke_baz_on(x))
-  end
+    assert_raise(TypeError) do
+      c = Class.new
+      mixin = Module.new
 
-  module PrependIntoRefinement
-    class C
-      def bar
-        return "C#bar"
-      end
-
-      def baz
-        return "C#baz"
-      end
-    end
-
-    module Mixin
-      def foo
-        return "Mixin#foo"
-      end
-
-      def bar
-        return super << " Mixin#bar"
-      end
-
-      def baz
-        return super << " Mixin#baz"
-      end
-    end
-
-    module M
-      refine C do
-        TestRefinement.suppress_verbose do
-          prepend Mixin
-        end
-
-        def baz
-          return super << " M#baz"
+      Module.new do
+        refine c do
+          include mixin
         end
       end
     end
   end
-
-  eval <<-EOF, Sandbox::BINDING
-    using TestRefinement::PrependIntoRefinement::M
-
-    module TestRefinement::PrependIntoRefinement::User
-      def self.invoke_foo_on(x)
-        x.foo
-      end
-
-      def self.invoke_bar_on(x)
-        x.bar
-      end
-
-      def self.invoke_baz_on(x)
-        x.baz
-      end
-    end
-  EOF
 
   def test_prepend_into_refinement
-    x = PrependIntoRefinement::C.new
-    assert_equal("Mixin#foo", PrependIntoRefinement::User.invoke_foo_on(x))
-    assert_equal("C#bar Mixin#bar",
-                 PrependIntoRefinement::User.invoke_bar_on(x))
-    assert_equal("C#baz M#baz Mixin#baz",
-                 PrependIntoRefinement::User.invoke_baz_on(x))
+    assert_raise(TypeError) do
+      c = Class.new
+      mixin = Module.new
+
+      Module.new do
+        refine c do
+          prepend mixin
+        end
+      end
+    end
   end
 
   PrependAfterRefine_CODE = <<-EOC
@@ -2626,28 +2522,8 @@ class TestRefinement < Test::Unit::TestCase
       end
     end
 
-    module D
-      refine A do
-        TestRefinement.suppress_verbose do
-          include B
-        end
-
-        def foo
-          "refined"
-        end
-      end
-    end
-
     module UsingC
       using C
-
-      def self.call_bar
-        A.new.bar
-      end
-    end
-
-    module UsingD
-      using D
 
       def self.call_bar
         A.new.bar
@@ -2657,7 +2533,6 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_import_methods
     assert_equal("refined:bar", TestImport::UsingC.call_bar)
-    assert_equal("original:bar", TestImport::UsingD.call_bar)
 
     assert_raise(ArgumentError) do
       Module.new do

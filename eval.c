@@ -1129,7 +1129,7 @@ rb_mod_include(int argc, VALUE *argv, VALUE module)
     CONST_ID(id_included, "included");
 
     if (FL_TEST(module, RMODULE_IS_REFINEMENT)) {
-        rb_warn_deprecated_to_remove_at(3.2, "Refinement#include", NULL);
+        rb_raise(rb_eTypeError, "Refinement#include has been removed");
     }
 
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
@@ -1179,7 +1179,7 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
     ID id_prepend_features, id_prepended;
 
     if (FL_TEST(module, RMODULE_IS_REFINEMENT)) {
-        rb_warn_deprecated_to_remove_at(3.2, "Refinement#prepend", NULL);
+        rb_raise(rb_eTypeError, "Refinement#prepend has been removed");
     }
 
     CONST_ID(id_prepend_features, "prepend_features");
