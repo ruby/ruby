@@ -115,7 +115,7 @@ describe "Literal Regexps" do
     /foo.(?<=\d)/.match("fooA foo1").to_a.should == ["foo1"]
   end
 
-  ruby_bug "#13671", ""..."3.2" do # https://bugs.ruby-lang.org/issues/13671
+  ruby_bug "#13671", ""..."3.3" do # https://bugs.ruby-lang.org/issues/13671
     it "handles a lookbehind with ss characters" do
       r =  Regexp.new("(?<!dss)", Regexp::IGNORECASE)
       r.should =~ "✨"
