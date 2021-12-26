@@ -3393,19 +3393,6 @@ rb_check_frozen(VALUE obj)
 }
 
 void
-rb_error_untrusted(VALUE obj)
-{
-    rb_warn_deprecated_to_remove_at(3.2, "rb_error_untrusted", NULL);
-}
-
-#undef rb_check_trusted
-void
-rb_check_trusted(VALUE obj)
-{
-    rb_warn_deprecated_to_remove_at(3.2, "rb_check_trusted", NULL);
-}
-
-void
 rb_check_copyable(VALUE obj, VALUE orig)
 {
     if (!FL_ABLE(obj)) return;

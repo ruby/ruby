@@ -22,6 +22,10 @@
    (RUBY_VERSION_MAJOR == (major) && RUBY_VERSION_MINOR < (minor)) || \
    (RUBY_VERSION_MAJOR == (major) && RUBY_VERSION_MINOR == (minor) && RUBY_VERSION_TEENY < (teeny)))
 
+#if RUBY_VERSION_MAJOR > 3 || (RUBY_VERSION_MAJOR == 3 && RUBY_VERSION_MINOR >= 2)
+#define RUBY_VERSION_IS_3_2
+#endif
+
 #if RUBY_VERSION_MAJOR > 3 || (RUBY_VERSION_MAJOR == 3 && RUBY_VERSION_MINOR >= 1)
 #define RUBY_VERSION_IS_3_1
 #endif

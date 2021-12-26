@@ -1102,98 +1102,6 @@ rb_obj_dummy1(VALUE _x, VALUE _y)
 
 /*
  *  call-seq:
- *     obj.tainted?    -> false
- *
- *  Returns false.  This method is deprecated and will be removed in Ruby 3.2.
- */
-
-VALUE
-rb_obj_tainted(VALUE obj)
-{
-    rb_warn_deprecated_to_remove_at(3.2, "Object#tainted?", NULL);
-    return Qfalse;
-}
-
-/*
- *  call-seq:
- *     obj.taint -> obj
- *
- *  Returns object. This method is deprecated and will be removed in Ruby 3.2.
- */
-
-VALUE
-rb_obj_taint(VALUE obj)
-{
-    rb_warn_deprecated_to_remove_at(3.2, "Object#taint", NULL);
-    return obj;
-}
-
-
-/*
- *  call-seq:
- *     obj.untaint    -> obj
- *
- *  Returns object. This method is deprecated and will be removed in Ruby 3.2.
- */
-
-VALUE
-rb_obj_untaint(VALUE obj)
-{
-    rb_warn_deprecated_to_remove_at(3.2, "Object#untaint", NULL);
-    return obj;
-}
-
-/*
- *  call-seq:
- *     obj.untrusted?    -> false
- *
- *  Returns false.  This method is deprecated and will be removed in Ruby 3.2.
- */
-
-VALUE
-rb_obj_untrusted(VALUE obj)
-{
-    rb_warn_deprecated_to_remove_at(3.2, "Object#untrusted?", NULL);
-    return Qfalse;
-}
-
-/*
- *  call-seq:
- *     obj.untrust -> obj
- *
- *  Returns object. This method is deprecated and will be removed in Ruby 3.2.
- */
-
-VALUE
-rb_obj_untrust(VALUE obj)
-{
-    rb_warn_deprecated_to_remove_at(3.2, "Object#untrust", NULL);
-    return obj;
-}
-
-
-/*
- *  call-seq:
- *     obj.trust    -> obj
- *
- *  Returns object. This method is deprecated and will be removed in Ruby 3.2.
- */
-
-VALUE
-rb_obj_trust(VALUE obj)
-{
-    rb_warn_deprecated_to_remove_at(3.2, "Object#trust", NULL);
-    return obj;
-}
-
-void
-rb_obj_infect(VALUE victim, VALUE carrier)
-{
-    rb_warn_deprecated_to_remove_at(3.2, "rb_obj_infect", NULL);
-}
-
-/*
- *  call-seq:
  *     obj.freeze    -> obj
  *
  *  Prevents further modifications to <i>obj</i>. A
@@ -4549,12 +4457,6 @@ InitVM_Object(void)
     rb_define_method(rb_mKernel, "initialize_dup", rb_obj_init_dup_clone, 1);
     rb_define_method(rb_mKernel, "initialize_clone", rb_obj_init_clone, -1);
 
-    rb_define_method(rb_mKernel, "taint", rb_obj_taint, 0);
-    rb_define_method(rb_mKernel, "tainted?", rb_obj_tainted, 0);
-    rb_define_method(rb_mKernel, "untaint", rb_obj_untaint, 0);
-    rb_define_method(rb_mKernel, "untrust", rb_obj_untrust, 0);
-    rb_define_method(rb_mKernel, "untrusted?", rb_obj_untrusted, 0);
-    rb_define_method(rb_mKernel, "trust", rb_obj_trust, 0);
     rb_define_method(rb_mKernel, "freeze", rb_obj_freeze, 0);
 
     rb_define_method(rb_mKernel, "to_s", rb_any_to_s, 0);

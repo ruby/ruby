@@ -161,9 +161,11 @@ static VALUE object_specs_rb_obj_method(VALUE self, VALUE obj, VALUE method) {
 # endif
 #endif
 
+#ifndef RUBY_VERSION_IS_3_2
 static VALUE object_spec_rb_obj_taint(VALUE self, VALUE obj) {
   return rb_obj_taint(obj);
 }
+#endif
 
 #if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
 # pragma GCC diagnostic pop
@@ -448,7 +450,9 @@ void Init_object_spec(void) {
   rb_define_method(cls, "rb_obj_is_kind_of", so_kind_of, 2);
   rb_define_method(cls, "rb_obj_method_arity", object_specs_rb_obj_method_arity, 2);
   rb_define_method(cls, "rb_obj_method", object_specs_rb_obj_method, 2);
+#ifndef RUBY_VERSION_IS_3_2
   rb_define_method(cls, "rb_obj_taint", object_spec_rb_obj_taint, 1);
+#endif
   rb_define_method(cls, "rb_require", so_require, 0);
   rb_define_method(cls, "rb_respond_to", so_respond_to, 2);
   rb_define_method(cls, "rb_method_boundp", object_spec_rb_method_boundp, 3);

@@ -451,12 +451,6 @@ enum {
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 /**
- * @deprecated  Does nothing.  This method is deprecated and will be removed in
- *              Ruby 3.2.
- */
-void rb_obj_infect(VALUE victim, VALUE carrier);
-
-/**
  * This is an  implementation detail of #RB_OBJ_FREEZE().  People  don't use it
  * directly.
  *

@@ -38,8 +38,6 @@
 #define rb_exc_new3             rb_exc_new_str  /**< @old{rb_exc_new_str} */
 
 /** @cond INTERNAL_MACRO */
-#define rb_check_trusted        rb_check_trusted
-#define rb_check_trusted_inline rb_check_trusted
 #define rb_check_arity          rb_check_arity
 /** @endcond */
 

@@ -63,7 +63,6 @@
 #undef rb_utf8_str_new
 #undef rb_enc_str_new
 #undef rb_str_new_cstr
-#undef rb_tainted_str_new_cstr
 #undef rb_usascii_str_new_cstr
 #undef rb_utf8_str_new_cstr
 #undef rb_enc_str_new_cstr
@@ -1034,20 +1033,6 @@ VALUE
 rb_enc_str_new_static(const char *ptr, long len, rb_encoding *enc)
 {
     return str_new_static(rb_cString, ptr, len, rb_enc_to_index(enc));
-}
-
-VALUE
-rb_tainted_str_new(const char *ptr, long len)
-{
-    rb_warn_deprecated_to_remove_at(3.2, "rb_tainted_str_new", NULL);
-    return rb_str_new(ptr, len);
-}
-
-VALUE
-rb_tainted_str_new_cstr(const char *ptr)
-{
-    rb_warn_deprecated_to_remove_at(3.2, "rb_tainted_str_new_cstr", NULL);
-    return rb_str_new_cstr(ptr);
 }
 
 static VALUE str_cat_conv_enc_opts(VALUE newstr, long ofs, const char *ptr, long len,

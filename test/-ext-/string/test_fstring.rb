@@ -57,18 +57,4 @@ class Test_String_Fstring < Test::Unit::TestCase
     str.freeze
     assert_fstring(str) {|s| assert_instance_of(S, s)}
   end
-
-  def test_shared_string_safety
-    _unused = -('a' * 30).force_encoding(Encoding::ASCII)
-    begin
-      verbose_back, $VERBOSE = $VERBOSE, nil
-      str = ('a' * 30).force_encoding(Encoding::ASCII).taint
-    ensure
-      $VERBOSE = verbose_back
-    end
-    frozen_str = Bug::String.rb_str_new_frozen(str)
-    assert_fstring(frozen_str) {|s| assert_equal(str, s)}
-    GC.start
-    assert_equal('a' * 30, str, "[Bug #16151]")
-  end
 end

@@ -288,15 +288,6 @@ int rb_path_check(const char *path);
 /* hash.c */
 
 /**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @return      0 always.
- */
-int rb_env_path_tainted(void);
-
-/**
  * Destructively removes every environment variables of the running process.
  *
  * @return  The `ENV` object.

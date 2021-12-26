@@ -1075,18 +1075,6 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_equal :deprecated, warning[0][1]
   end
 
-  def test_warn_deprecated_to_remove_backwards_compatibility_category
-    warning = capture_warning_warn { Object.new.tainted? }
-
-    assert_match(/deprecated/, warning[0])
-  end
-
-  def test_warn_deprecated_to_remove_category
-    warning = capture_warning_warn(category: true) { Object.new.tainted? }
-
-    assert_equal :deprecated, warning[0][1]
-  end
-
   def test_kernel_warn_uplevel
     warning = capture_warning_warn {warn("test warning", uplevel: 0)}
     assert_equal("#{__FILE__}:#{__LINE__-1}: warning: test warning\n", warning[0])

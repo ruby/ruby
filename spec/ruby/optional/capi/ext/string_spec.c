@@ -261,6 +261,7 @@ VALUE string_spec_rb_str_new5(VALUE self, VALUE str, VALUE ptr, VALUE len) {
 # endif
 #endif
 
+#ifndef RUBY_VERSION_IS_3_2
 VALUE string_spec_rb_tainted_str_new(VALUE self, VALUE str, VALUE len) {
   return rb_tainted_str_new(RSTRING_PTR(str), FIX2INT(len));
 }
@@ -268,6 +269,7 @@ VALUE string_spec_rb_tainted_str_new(VALUE self, VALUE str, VALUE len) {
 VALUE string_spec_rb_tainted_str_new2(VALUE self, VALUE str) {
   return rb_tainted_str_new2(RSTRING_PTR(str));
 }
+#endif
 
 #if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
 # pragma GCC diagnostic pop
@@ -629,8 +631,10 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_str_new3", string_spec_rb_str_new3, 1);
   rb_define_method(cls, "rb_str_new4", string_spec_rb_str_new4, 1);
   rb_define_method(cls, "rb_str_new5", string_spec_rb_str_new5, 3);
+#ifndef RUBY_VERSION_IS_3_2
   rb_define_method(cls, "rb_tainted_str_new", string_spec_rb_tainted_str_new, 2);
   rb_define_method(cls, "rb_tainted_str_new2", string_spec_rb_tainted_str_new2, 1);
+#endif
   rb_define_method(cls, "rb_str_plus", string_spec_rb_str_plus, 2);
   rb_define_method(cls, "rb_str_times", string_spec_rb_str_times, 2);
   rb_define_method(cls, "rb_str_modify_expand", string_spec_rb_str_modify_expand, 2);

@@ -123,37 +123,6 @@ VALUE rb_str_new_frozen(VALUE str);
 VALUE rb_str_new_with_class(VALUE obj, const char *ptr, long len);
 
 /**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]  ptr             A C string.
- * @exception  rb_eNoMemError  Failed to allocate memory.
- * @exception  rb_eArgError    `ptr` is a null pointer.
- * @return     An  instance  of  ::rb_cString,   of  "binary"  encoding,  whose
- *             contents are verbatim copy of `ptr`.
- * @pre        `ptr` must not be a null pointer.
- */
-VALUE rb_tainted_str_new_cstr(const char *ptr);
-
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]  ptr             A memory region of `len` bytes length.
- * @param[in]  len             Length  of `ptr`,  in bytes,  not including  the
- *                             terminating NUL character.
- * @exception  rb_eNoMemError  Failed to allocate `len+1` bytes.
- * @exception  rb_eArgError    `len` is negative.
- * @return     An  instance   of  ::rb_cString,  of  `len`   bytes  length,  of
- *             "binary" encoding, whose contents are verbatim copy of `ptr`.
- * @pre        At  least  `len` bytes  of  continuous  memory region  shall  be
- *             accessible via `ptr`.
- */
-VALUE rb_tainted_str_new(const char *ptr, long len);
-
-/**
  * Identical  to  rb_str_new(),  except  it  generates  a  string  of  "default
  * external" encoding.
  *
@@ -1398,22 +1367,6 @@ rbimpl_str_new_cstr(const char *str)
     return rb_str_new_static(str, len);
 }
 
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @private
- *
- * This is an implementation detail.  Don't bother.
- *
- * @param[in]  str  A C string literal.
- * @return     Corresponding Ruby string.
- */
-static inline VALUE
-rbimpl_tainted_str_new_cstr(const char *str)
-{
-    long len = rbimpl_strlen(str);
-    return rb_tainted_str_new(str, len);
-}
-
 RBIMPL_ATTR_NONNULL(())
 /**
  * @private
@@ -1600,22 +1553,6 @@ rbimpl_exc_new_cstr(VALUE exc, const char *str)
       rb_utf8_str_new) ((str), (len)))
 
 /**
- * @deprecated  This macro once was a thing in the old days, but makes no sense
- *              any  longer today.   Exists  here  for backwards  compatibility
- *              only.  You can safely forget about it.
- *
- * @param[in]  str             A C string.
- * @exception  rb_eNoMemError  Failed to allocate memory.
- * @return     An  instance  of  ::rb_cString,   of  "binary"  encoding,  whose
- *             contents are verbatim copy of `str`.
- * @pre        `str` must not be a null pointer.
- */
-#define rb_tainted_str_new_cstr(str)            \
-    ((RBIMPL_CONSTANT_P(str)      ?             \
-      rbimpl_tainted_str_new_cstr :             \
-      rb_tainted_str_new_cstr) (str))
-
-/**
  * Identical to  #rb_str_new_cstr, except it  generates a string of  "US ASCII"
  * encoding.    It   can   also   be   seen   as   a   routine   Identical   to
  * #rb_usascii_str_new, except it assumes the passed  pointer is a pointer to a
@@ -1739,7 +1676,6 @@ rbimpl_exc_new_cstr(VALUE exc, const char *str)
 #define rb_str_new3 rb_str_new_shared                /**< @old{rb_str_new_shared} */
 #define rb_str_new4 rb_str_new_frozen                /**< @old{rb_str_new_frozen} */
 #define rb_str_new5 rb_str_new_with_class            /**< @old{rb_str_new_with_class} */
-#define rb_tainted_str_new2 rb_tainted_str_new_cstr  /**< @old{rb_tainted_str_new_cstr} */
 #define rb_str_buf_new2 rb_str_buf_new_cstr          /**< @old{rb_str_buf_new_cstr} */
 #define rb_usascii_str_new2 rb_usascii_str_new_cstr  /**< @old{rb_usascii_str_new_cstr} */
 #define rb_str_buf_cat rb_str_cat                    /**< @alias{rb_str_cat} */

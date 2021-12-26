@@ -5043,13 +5043,6 @@ env_fetch(int argc, VALUE *argv, VALUE _)
     return env;
 }
 
-int
-rb_env_path_tainted(void)
-{
-    rb_warn_deprecated_to_remove_at(3.2, "rb_env_path_tainted", NULL);
-    return 0;
-}
-
 #if defined(_WIN32) || (defined(HAVE_SETENV) && defined(HAVE_UNSETENV))
 #elif defined __sun
 static int
