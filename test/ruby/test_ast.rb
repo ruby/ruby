@@ -537,4 +537,9 @@ dummy
     assert_equal("{ 1 + 2 }", node_proc.source)
     assert_equal("def test_keep_script_lines_for_of\n", node_method.source.lines.first)
   end
+
+  def test_e_option
+    assert_in_out_err(["-e", "def foo; end; pp RubyVM::AbstractSyntaxTree.of(method(:foo)).type"],
+                      "", [":SCOPE"], [])
+  end
 end
