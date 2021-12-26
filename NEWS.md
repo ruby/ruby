@@ -16,18 +16,6 @@ Note: We're only listing outstanding class updates.
 ## Stdlib updates
 
 *   The following default gem are updated.
-    * RubyGems 3.3.3
-    * bigdecimal 3.1.1
-    * bundler 2.3.3
-    * csv 3.2.2
-    * did_you_mean 1.6.1
-    * error_highlight 0.3.0
-    * io-console 0.5.10
-    * irb 1.4.1
-    * rdoc 6.4.0
-    * readline 0.0.3
-    * readline-ext 0.1.4
-    * reline 0.3.0
 *   The following bundled gems are updated.
     * minitest 5.15.0
     * power_assert 2.0.1
