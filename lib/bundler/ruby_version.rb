@@ -103,7 +103,7 @@ module Bundler
 
     def self.system
       ruby_engine = RUBY_ENGINE.dup
-      ruby_version = ENV.fetch("BUNDLER_SPEC_RUBY_VERSION") { RUBY_VERSION }.dup
+      ruby_version = RUBY_VERSION.dup
       ruby_engine_version = RUBY_ENGINE_VERSION.dup
       patchlevel = RUBY_PATCHLEVEL.to_s
 
