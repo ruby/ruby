@@ -1919,10 +1919,10 @@ class TestRefinement < Test::Unit::TestCase
     m = Module.new do
       r = refine(String) {def test;:ok end}
     end
-    assert_raise_with_message(ArgumentError, /refinement/, bug) do
+    assert_raise_with_message(TypeError, /refinement/, bug) do
       m.module_eval {include r}
     end
-    assert_raise_with_message(ArgumentError, /refinement/, bug) do
+    assert_raise_with_message(TypeError, /refinement/, bug) do
       m.module_eval {prepend r}
     end
   end
