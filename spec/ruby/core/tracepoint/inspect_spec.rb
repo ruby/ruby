@@ -98,7 +98,7 @@ describe 'TracePoint#inspect' do
     TracePoint.new(:thread_begin) { |tp|
       next unless Thread.current == thread
       inspect ||= tp.inspect
-    }.enable do
+    }.enable(target_thread: nil) do
       thread = Thread.new {}
       thread_inspection = thread.inspect
       thread.join
@@ -114,7 +114,7 @@ describe 'TracePoint#inspect' do
     TracePoint.new(:thread_end) { |tp|
       next unless Thread.current == thread
       inspect ||= tp.inspect
-    }.enable do
+    }.enable(target_thread: nil) do
       thread = Thread.new {}
       thread_inspection = thread.inspect
       thread.join
