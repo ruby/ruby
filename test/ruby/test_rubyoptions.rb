@@ -137,7 +137,7 @@ class TestRubyOptions < Test::Unit::TestCase
   VERSION_PATTERN_WITH_JIT =
     case RUBY_ENGINE
     when 'ruby'
-      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+[YM]JIT \[#{q[RUBY_PLATFORM]}\]$/
+      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+MJIT \[#{q[RUBY_PLATFORM]}\]$/
     else
       VERSION_PATTERN
     end
@@ -255,10 +255,10 @@ class TestRubyOptions < Test::Unit::TestCase
       ].each do |args|
         assert_in_out_err([env] + args) do |r, e|
           assert_match(VERSION_PATTERN_WITH_JIT, r[0])
-          if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE
+          if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? && !self.class.yjit_enabled? # checking -D(M|Y)JIT_FORCE_ENABLE
             assert_equal(RUBY_DESCRIPTION, r[0])
           else
-            assert_equal(EnvUtil.invoke_ruby([env, '--mjit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
+            assert_equal(EnvUtil.invoke_ruby([env, '--disable-yjit', '--mjit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
           end
           assert_equal([], e)
         end
