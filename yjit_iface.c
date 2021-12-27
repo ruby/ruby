@@ -1277,6 +1277,7 @@ rb_yjit_init(struct rb_yjit_options *options)
 
     // YJIT::Block (block version, code block)
     cYjitBlock = rb_define_class_under(mYjit, "Block", rb_cObject);
+    rb_undef_alloc_func(cYjitBlock);
     rb_define_method(cYjitBlock, "address", block_address, 0);
     rb_define_method(cYjitBlock, "id", block_id, 0);
     rb_define_method(cYjitBlock, "code", block_code, 0);
