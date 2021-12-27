@@ -26,7 +26,7 @@ describe "Marshal.dump with Float" do
   end
 
   it "represents a Float greater than 1" do
-    Marshal.dump(42.666666667).should == "\x04\bf\x1142.666666667"
+    Marshal.dump(42.666666667).should == "\x04\bf\x1142.666666667000000"
   end
 
   it "represents a Float much greater than 1" do
