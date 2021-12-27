@@ -812,8 +812,19 @@ extern int rb_w32_munmap(void *, size_t);
 extern int rb_w32_mprotect(void *, size_t, int);
 
 #define mmap(a, l, p, f, d, o) rb_w32_mmap(a, l, p, f, d, o)
-#define munmap(a, l) rb_w32_munmap(a. l)
-#define mprotect(a, l, p) 0
+#define munmap(a, l) rb_w32_munmap(a, l)
+
+static inline int
+mprotect(void *addr, size_t len, int prot)
+{
+    if (prot | PROT_EXEC) {
+        if (!FlushInstructionCache(GetCurrentProcess(), addr, len)) {
+            errno = rb_w32_map_errno(GetLastError());
+            return -1;
+        }
+    }
+    return 0;
+}
 
 #if defined(__cplusplus)
 #if 0
