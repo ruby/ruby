@@ -386,7 +386,7 @@ class Reline::Windows
   def self.scroll_down(val)
     return if val < 0
     return unless csbi = get_console_screen_buffer_info
-    buffer_width, x, y, buffer_lines, attributes, window_left, window_top, window_bottom = csbi.unpack('ssssSssx2s')
+    buffer_width, buffer_lines, x, y, attributes, window_left, window_top, window_bottom = csbi.unpack('ssssSssx2s')
     screen_height = window_bottom - window_top + 1
     val = screen_height if val > screen_height
 
