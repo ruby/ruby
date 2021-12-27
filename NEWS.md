@@ -16,6 +16,8 @@ Note: We're only listing outstanding class updates.
 ## Stdlib updates
 
 *   The following default gem are updated.
+    * RubyGems 3.4.0.dev
+    * bundler 2.4.0.dev
 *   The following bundled gems are updated.
 *   The following default gems are now bundled gems.
 
