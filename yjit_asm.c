@@ -149,11 +149,10 @@ static uint8_t *align_ptr(uint8_t *ptr, uint32_t multiple)
 // Allocate a block of executable memory
 static uint8_t *alloc_exec_mem(uint32_t mem_size)
 {
-#ifndef _WIN32
     uint8_t *mem_block;
 
     // On Linux
-    #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
+#if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
         // Align the requested address to page size
         uint32_t page_size = (uint32_t)sysconf(_SC_PAGESIZE);
         uint8_t *req_addr = align_ptr((uint8_t*)&alloc_exec_mem, page_size);
@@ -179,7 +178,7 @@ static uint8_t *alloc_exec_mem(uint32_t mem_size)
         } while (req_addr < (uint8_t*)&alloc_exec_mem + INT32_MAX);
 
     // On MacOS and other platforms
-    #else
+#else
         // Try to map a chunk of memory as executable
         mem_block = (uint8_t*)mmap(
             (void*)alloc_exec_mem,
@@ -189,7 +188,7 @@ static uint8_t *alloc_exec_mem(uint32_t mem_size)
             -1,
             0
         );
-    #endif
+#endif
 
     // Fallback
     if (mem_block == MAP_FAILED) {
@@ -223,10 +222,6 @@ static uint8_t *alloc_exec_mem(uint32_t mem_size)
     cb_mark_all_executable(cb);
 
     return mem_block;
-#else
-    // Windows not supported for now
-    return NULL;
-#endif
 }
 
 // Initialize a code block object
@@ -1811,7 +1806,11 @@ void cb_mark_all_writeable(codeblock_t * cb)
 
 void cb_mark_position_writeable(codeblock_t * cb, uint32_t write_pos)
 {
+#ifdef _WIN32
+    uint32_t pagesize = 0x1000; // 4KB
+#else
     uint32_t pagesize = (uint32_t)sysconf(_SC_PAGESIZE);
+#endif
     uint32_t aligned_position = (write_pos / pagesize) * pagesize;
 
     if (cb->current_aligned_write_pos != aligned_position) {

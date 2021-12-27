@@ -796,6 +796,25 @@ double rb_w32_pow(double x, double y);
 #define pow rb_w32_pow
 #endif
 
+// mmap tiny emulation
+#define MAP_FAILED	((void *)-1)
+
+#define PROT_READ	0x01
+#define PROT_WRITE	0x02
+#define PROT_EXEC	0x04
+
+#define MAP_PRIVATE	0x0002
+#define MAP_ANON	0x1000
+#define MAP_ANONYMOUS	MAP_ANON
+
+extern void *rb_w32_mmap(void *, size_t, int, int, int, off_t);
+extern int rb_w32_munmap(void *, size_t);
+extern int rb_w32_mprotect(void *, size_t, int);
+
+#define mmap(a, l, p, f, d, o) rb_w32_mmap(a, l, p, f, d, o)
+#define munmap(a, l) rb_w32_munmap(a. l)
+#define mprotect(a, l, p) 0
+
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */

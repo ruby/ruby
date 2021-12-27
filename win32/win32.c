@@ -8204,3 +8204,34 @@ VALUE (*const rb_f_notimplement_)(int, const VALUE *, VALUE, VALUE) = rb_f_notim
 #if RUBY_MSVCRT_VERSION < 120
 #include "missing/nextafter.c"
 #endif
+
+void *
+rb_w32_mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset)
+{
+    void *ptr;
+
+    if (fd > 0 || offset) {
+        /* not supported */
+        errno = EINVAL;
+        return MAP_FAILED;
+    }
+
+    ptr = VirtualAlloc(addr, len, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+    if (!ptr) {
+        errno = rb_w32_map_errno(GetLastError());
+        return MAP_FAILED;
+    }
+
+    return ptr;
+}
+
+int
+rb_w32_munmap(void *addr, size_t len)
+{
+    if (!VirtualFree(addr, 0, MEM_RELEASE)) {
+        errno = rb_w32_map_errno(GetLastError());
+        return -1;
+    }
+
+    return 0;
+}
