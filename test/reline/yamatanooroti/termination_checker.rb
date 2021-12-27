@@ -4,7 +4,7 @@ require 'irb/ruby-lex'
 class TerminationChecker < RubyLex
   def terminated?(code)
     code.gsub!(/\n*$/, '').concat("\n")
-    @tokens = Ripper.lex(code)
+    @tokens = self.class.ripper_lex_without_warning(code)
     continue = process_continue
     code_block_open = check_code_block(code)
     indent = process_nesting_level
