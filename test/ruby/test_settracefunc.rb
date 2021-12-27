@@ -717,25 +717,30 @@ CODE
   def test_tracepoint_enable
     ary = []
     args = nil
-    trace = TracePoint.new(:call){|tp|
-      next if !target_thread?
-      ary << tp.method_id
-    }
-    foo
-    trace.enable{|*a|
-      args = a
+    begin
+      trace = TracePoint.new(:call){|tp|
+        next if !target_thread?
+        ary << tp.method_id
+      }
       foo
-    }
-    foo
-    assert_equal([:foo], ary)
-    assert_equal([], args)
+      trace.enable(target_thread: nil){|*a|
+        args = a
+        foo
+      }
+      foo
+      assert_equal([:foo], ary)
+      assert_equal([], args)
+    ensure
+      trace&.disable
+    end
 
     trace = TracePoint.new{}
     begin
       assert_equal(false, trace.enable)
       assert_equal(true, trace.enable)
-      trace.enable{}
-      assert_equal(true, trace.enable)
+      trace.enable(target_thread: nil){}
+      trace.disable
+      assert_equal(false, trace.enable)
     ensure
       trace.disable
     end
@@ -967,7 +972,7 @@ CODE
                  tp.defined_class, #=> nil,
                  tp.self.class # tp.self return creating/ending thread
                  ]
-    }.enable{
+    }.enable(target_thread: nil){
       created_thread = Thread.new{thread_self = self}
       created_thread.join
     }
@@ -2229,7 +2234,7 @@ CODE
     # global TP and targeted TP
     ex = assert_raise(ArgumentError) do
       tp = TracePoint.new(:line){}
-      tp.enable{
+      tp.enable(target_thread: nil){
         tp.enable(target: code2){}
       }
     end
@@ -2275,7 +2280,7 @@ CODE
         events << :___
       end
     end
-    assert_equal [:tp1, :tp1, :tp1, :tp1, :tp2, :tp1, :___], events
+    assert_equal [:tp1, :tp1, :tp1, :tp1, :tp1, :tp2, :tp1, :___], events
 
     # success with two tracepoints (targeting/global)
     events = []

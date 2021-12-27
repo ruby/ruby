@@ -153,7 +153,7 @@ class TracePoint
 
   # call-seq:
   #    trace.enable(target: nil, target_line: nil, target_thread: nil)    -> true or false
-  #    trace.enable(target: nil, target_line: nil, target_thread: nil) { block }  -> obj
+  #    trace.enable(target: nil, target_line: nil, target_thread: Thread.current) { block }  -> obj
   #
   # Activates the trace.
   #
@@ -168,14 +168,15 @@ class TracePoint
   #                   #   trace is still enabled
   #
   # If a block is given, the trace will only be enabled within the scope of the
-  # block.
+  # block. If target and target_line are both nil, then target_thread will default
+  # to the current thread if a block is given.
   #
   #    trace.enabled?
   #    #=> false
   #
   #    trace.enable do
   #      trace.enabled?
-  #      # only enabled for this block
+  #      # only enabled for this block and thread
   #    end
   #
   #    trace.enabled?
@@ -208,7 +209,7 @@ class TracePoint
   #    trace.enable { p tp.lineno }
   #    #=> RuntimeError: access from outside
   #
-  def enable(target: nil, target_line: nil, target_thread: nil)
+  def enable(target: nil, target_line: nil, target_thread: (Thread.current if target.nil? && target_line.nil? && defined?(yield)))
     Primitive.tracepoint_enable_m(target, target_line, target_thread)
   end
 
