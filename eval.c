@@ -1133,8 +1133,12 @@ rb_mod_include(int argc, VALUE *argv, VALUE module)
     }
 
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
-    for (i = 0; i < argc; i++)
+    for (i = 0; i < argc; i++) {
 	Check_Type(argv[i], T_MODULE);
+        if (FL_TEST(argv[i], RMODULE_IS_REFINEMENT)) {
+            rb_raise(rb_eTypeError, "Cannot include refinement");
+        }
+    }
     while (argc--) {
 	rb_funcall(argv[argc], id_append_features, 1, module);
 	rb_funcall(argv[argc], id_included, 1, module);
@@ -1186,8 +1190,12 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
     CONST_ID(id_prepended, "prepended");
 
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
-    for (i = 0; i < argc; i++)
+    for (i = 0; i < argc; i++) {
 	Check_Type(argv[i], T_MODULE);
+        if (FL_TEST(argv[i], RMODULE_IS_REFINEMENT)) {
+            rb_raise(rb_eTypeError, "Cannot prepend refinement");
+        }
+    }
     while (argc--) {
 	rb_funcall(argv[argc], id_prepend_features, 1, module);
 	rb_funcall(argv[argc], id_prepended, 1, module);
@@ -1741,8 +1749,12 @@ rb_obj_extend(int argc, VALUE *argv, VALUE obj)
     CONST_ID(id_extended, "extended");
 
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
-    for (i = 0; i < argc; i++)
+    for (i = 0; i < argc; i++) {
 	Check_Type(argv[i], T_MODULE);
+        if (FL_TEST(argv[i], RMODULE_IS_REFINEMENT)) {
+            rb_raise(rb_eTypeError, "Cannot extend object with refinement");
+        }
+    }
     while (argc--) {
 	rb_funcall(argv[argc], id_extend_object, 1, obj);
 	rb_funcall(argv[argc], id_extended, 1, obj);
@@ -2041,6 +2053,9 @@ Init_eval(void)
     rb_undef_method(rb_cClass, "refine");
     rb_define_private_method(rb_cRefinement, "import_methods", refinement_import_methods, -1);
     rb_define_method(rb_cRefinement, "refined_class", rb_refinement_module_get_refined_class, 0);
+    rb_undef_method(rb_cRefinement, "append_features");
+    rb_undef_method(rb_cRefinement, "prepend_features");
+    rb_undef_method(rb_cRefinement, "extend_object");
 
     rb_undef_method(rb_cClass, "module_function");
 
