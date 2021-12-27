@@ -1048,14 +1048,14 @@ class TestHash < Test::Unit::TestCase
     h = @cls.new {|hh, k| :foo }
     h[1] = 2
     assert_equal([1, 2], h.shift)
-    assert_equal(:foo, h.shift)
-    assert_equal(:foo, h.shift)
+    assert_nil(h.shift)
+    assert_nil(h.shift)
 
     h = @cls.new(:foo)
     h[1] = 2
     assert_equal([1, 2], h.shift)
-    assert_equal(:foo, h.shift)
-    assert_equal(:foo, h.shift)
+    assert_nil(h.shift)
+    assert_nil(h.shift)
 
     h =@cls[1=>2]
     h.each { assert_equal([1, 2], h.shift) }
@@ -1066,7 +1066,7 @@ class TestHash < Test::Unit::TestCase
     def h.default(k = nil)
       super.upcase
     end
-    assert_equal("FOO", h.shift)
+    assert_nil(h.shift)
   end
 
   def test_reject_bang2
