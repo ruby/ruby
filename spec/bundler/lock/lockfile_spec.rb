@@ -80,12 +80,8 @@ RSpec.describe "the lockfile format" do
     G
   end
 
-  it "does not update the lockfile's bundler version if nothing changed during bundle install, but uses the locked version", :rubygems => ">= 3.3.0.a" do
-    version = "#{Bundler::VERSION.split(".").first}.0.0.a"
-
-    update_repo2 do
-      with_built_bundler(version) {|gem_path| FileUtils.mv(gem_path, gem_repo2("gems")) }
-    end
+  it "does not update the lockfile's bundler version if nothing changed during bundle install, but uses the locked version", :rubygems => ">= 3.3.0.a", :realworld => true do
+    version = "2.3.0"
 
     lockfile <<-L
       GEM
@@ -103,7 +99,7 @@ RSpec.describe "the lockfile format" do
          #{version}
     L
 
-    install_gemfile <<-G, :verbose => true, :env => { "BUNDLER_SPEC_GEM_SOURCES" => file_uri_for(gem_repo2).to_s }
+    install_gemfile <<-G, :verbose => true, :artifice => "vcr"
       source "#{file_uri_for(gem_repo2)}"
 
       gem "rack"
@@ -132,10 +128,6 @@ RSpec.describe "the lockfile format" do
   it "does not update the lockfile's bundler version if nothing changed during bundle install, and uses the latest version", :rubygems => "< 3.3.0.a" do
     version = "#{Bundler::VERSION.split(".").first}.0.0.a"
 
-    update_repo2 do
-      with_built_bundler(version) {|gem_path| FileUtils.mv(gem_path, gem_repo2("gems")) }
-    end
-
     lockfile <<-L
       GEM
         remote: #{file_uri_for(gem_repo2)}/
@@ -152,7 +144,7 @@ RSpec.describe "the lockfile format" do
          #{version}
     L
 
-    install_gemfile <<-G, :verbose => true, :env => { "BUNDLER_SPEC_GEM_SOURCES" => file_uri_for(gem_repo2).to_s }
+    install_gemfile <<-G, :verbose => true
       source "#{file_uri_for(gem_repo2)}"
 
       gem "rack"
