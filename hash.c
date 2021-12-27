@@ -2445,7 +2445,7 @@ shift_i_safe(VALUE key, VALUE value, VALUE arg)
 
 /*
  *  call-seq:
- *    hash.shift -> [key, value] or default_value
+ *    hash.shift -> [key, value] or nil
  *
  *  Removes the first hash entry
  *  (see {Entry Order}[#class-Hash-label-Entry+Order]);
@@ -2454,8 +2454,7 @@ shift_i_safe(VALUE key, VALUE value, VALUE arg)
  *    h.shift # => [:foo, 0]
  *    h # => {:bar=>1, :baz=>2}
  *
- *  Returns the default value if the hash is empty
- *  (see {Default Values}[#class-Hash-label-Default+Values]).
+ *  Returns nil if the hash is empty.
  */
 
 static VALUE
@@ -2494,7 +2493,7 @@ rb_hash_shift(VALUE hash)
 	    }
 	}
     }
-    return rb_hash_default_value(hash, Qnil);
+    return Qnil;
 }
 
 static int

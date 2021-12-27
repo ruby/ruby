@@ -51,6 +51,11 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* Hash
+    * Hash#shift now always returns nil if the hash is
+      empty, instead of returning the default value or
+      calling the default proc. [[Bug #16908]]
+
 * Module
     * Module.used_refinements has been added. [[Feature #14332]]
     * Module#refinements has been added. [[Feature #12737]]
@@ -137,6 +142,7 @@ The following deprecated APIs are removed.
 [Feature #15231]: https://bugs.ruby-lang.org/issues/15231
 [Bug #15928]:     https://bugs.ruby-lang.org/issues/15928
 [Feature #16131]: https://bugs.ruby-lang.org/issues/16131
+[Bug #16908]:     https://bugs.ruby-lang.org/issues/16908
 [Feature #17351]: https://bugs.ruby-lang.org/issues/17351
 [Feature #17391]: https://bugs.ruby-lang.org/issues/17391
 [Bug #17545]:     https://bugs.ruby-lang.org/issues/17545
