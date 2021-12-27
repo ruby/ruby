@@ -2280,7 +2280,7 @@ CODE
         events << :___
       end
     end
-    assert_equal [:tp1, :tp1, :tp1, :tp1, :tp1, :tp2, :tp1, :___], events
+    assert_equal [:tp1, :tp1, :tp1, :tp1, :tp2, :tp1, :___], events
 
     # success with two tracepoints (targeting/global)
     events = []

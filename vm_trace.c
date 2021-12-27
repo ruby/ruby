@@ -34,6 +34,8 @@
 
 #include "builtin.h"
 
+static VALUE sym_default;
+
 /* (1) trace mechanisms */
 
 typedef struct rb_event_hook_struct {
@@ -1327,6 +1329,15 @@ tracepoint_enable_m(rb_execution_context_t *ec, VALUE tpval, VALUE target, VALUE
     rb_tp_t *tp = tpptr(tpval);
     int previous_tracing = tp->tracing;
 
+    if (target_thread == sym_default) {
+        if (rb_block_given_p() && NIL_P(target) && NIL_P(target_line)) {
+            target_thread = rb_thread_current();
+        }
+        else {
+            target_thread = Qnil;
+        }
+    }
+
     /* check target_thread */
     if (RTEST(target_thread)) {
         if (tp->target_th) {
@@ -1556,6 +1567,8 @@ tracepoint_allow_reentry(rb_execution_context_t *ec, VALUE self)
 void
 Init_vm_trace(void)
 {
+    sym_default = ID2SYM(rb_intern_const("default"));
+
     /* trace_func */
     rb_define_global_function("set_trace_func", set_trace_func, 1);
     rb_define_method(rb_cThread, "set_trace_func", thread_set_trace_func_m, 1);
