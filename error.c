@@ -1121,7 +1121,7 @@ static VALUE rb_eNOERROR;
 
 ID ruby_static_id_cause;
 #define id_cause ruby_static_id_cause
-static ID id_message, id_backtrace;
+static ID id_message, id_additional_message, id_backtrace;
 static ID id_key, id_matchee, id_args, id_Errno, id_errno, id_i_path;
 static ID id_receiver, id_recv, id_iseq, id_local_variables;
 static ID id_private_call_p, id_top, id_bottom;
@@ -1223,12 +1223,22 @@ exc_to_s(VALUE exc)
 }
 
 /* FIXME: Include eval_error.c */
-void rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlight, VALUE reverse);
+void rb_error_write(VALUE errinfo, VALUE emesg, VALUE eamesg, VALUE errat, VALUE str, VALUE highlight, VALUE reverse);
 
 VALUE
 rb_get_message(VALUE exc)
 {
     VALUE e = rb_check_funcall(exc, id_message, 0, 0);
+    if (e == Qundef) return Qnil;
+    if (!RB_TYPE_P(e, T_STRING)) e = rb_check_string_type(e);
+    return e;
+}
+
+VALUE
+rb_get_additional_message(VALUE exc, VALUE opt)
+{
+    if (NIL_P(opt)) opt = rb_hash_new();
+    VALUE e = rb_check_funcall_kw(exc, id_additional_message, 1, &opt, 1);
     if (e == Qundef) return Qnil;
     if (!RB_TYPE_P(e, T_STRING)) e = rb_check_string_type(e);
     return e;
@@ -1267,7 +1277,7 @@ exc_s_to_tty_p(VALUE self)
 static VALUE
 exc_full_message(int argc, VALUE *argv, VALUE exc)
 {
-    VALUE opt, str, emesg, errat;
+    VALUE opt, str, emesg, eamesg, errat;
     enum {kw_highlight, kw_order, kw_max_};
     static ID kw[kw_max_];
     VALUE args[kw_max_] = {Qnil, Qnil};
@@ -1304,8 +1314,9 @@ exc_full_message(int argc, VALUE *argv, VALUE exc)
     str = rb_str_new2("");
     errat = rb_get_backtrace(exc);
     emesg = rb_get_message(exc);
+    eamesg = rb_get_additional_message(exc, opt);
 
-    rb_error_write(exc, emesg, errat, str, args[kw_highlight], args[kw_order]);
+    rb_error_write(exc, emesg, eamesg, errat, str, args[kw_highlight], args[kw_order]);
     return str;
 }
 
@@ -1321,6 +1332,20 @@ static VALUE
 exc_message(VALUE exc)
 {
     return rb_funcallv(exc, idTo_s, 0, 0);
+}
+
+/*
+ * call-seq:
+ *   exception.additional_message(highlight: bool, **opt)   ->  string
+ *
+ * Returns the result of invoking <code>exception.to_s</code>.
+ * Normally this returns the exception's message or name.
+ */
+
+static VALUE
+exc_additional_message(int argc, VALUE *argv, VALUE exc)
+{
+    return rb_str_new_cstr("");
 }
 
 /*
@@ -2879,6 +2904,7 @@ Init_Exception(void)
     rb_define_method(rb_eException, "==", exc_equal, 1);
     rb_define_method(rb_eException, "to_s", exc_to_s, 0);
     rb_define_method(rb_eException, "message", exc_message, 0);
+    rb_define_method(rb_eException, "additional_message", exc_additional_message, -1);
     rb_define_method(rb_eException, "full_message", exc_full_message, -1);
     rb_define_method(rb_eException, "inspect", exc_inspect, 0);
     rb_define_method(rb_eException, "backtrace", exc_backtrace, 0);
@@ -2966,6 +2992,7 @@ Init_Exception(void)
 
     id_cause = rb_intern_const("cause");
     id_message = rb_intern_const("message");
+    id_additional_message = rb_intern_const("additional_message");
     id_backtrace = rb_intern_const("backtrace");
     id_key = rb_intern_const("key");
     id_matchee = rb_intern_const("matchee");

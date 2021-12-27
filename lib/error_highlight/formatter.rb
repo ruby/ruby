@@ -6,7 +6,7 @@ module ErrorHighlight
         indent = spot[:snippet][0...spot[:first_column]].gsub(/[^\t]/, " ")
         marker = indent + "^" * (spot[:last_column] - spot[:first_column])
 
-        "\n\n#{ spot[:snippet] }#{ marker }"
+        "\n#{ spot[:snippet] }#{ marker }"
       else
         ""
       end

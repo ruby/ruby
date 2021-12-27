@@ -128,7 +128,7 @@ static const char bold[] = CSI_BEGIN"1"CSI_SGR;
 static const char reset[] = CSI_BEGIN""CSI_SGR;
 
 static void
-print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VALUE str, int highlight)
+print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, VALUE eamesg, const VALUE str, int highlight)
 {
     const char *einfo = "";
     long elen = 0;
@@ -223,6 +223,29 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 	    else if (!epath) {
 		write_warn2(str, "\n", 1);
 	    }
+            if (!NIL_P(eamesg)) {
+                const char *ptr = RSTRING_PTR(eamesg), *p;
+                long len = RSTRING_LEN(eamesg);
+                for (;;) {
+                    p = memchr(ptr, '\n', len);
+                    if (p == NULL) break;
+                    write_warn(str, "| ");
+                    if (NIL_P(str)) {
+                        rb_write_error2(ptr, p - ptr);
+                    }
+                    else {
+                        rb_str_cat(str, ptr, len);
+                    }
+                    write_warn(str, "\n");
+                    len -= p + 1 - ptr;
+                    ptr = p + 1;
+                }
+                if (len > 0) {
+                    write_warn(str, "| ");
+                    write_warn(str, ptr);
+                    write_warn(str, "\n");
+                }
+            }
 	}
     }
 }
@@ -275,6 +298,7 @@ print_backtrace(const VALUE eclass, const VALUE errat, const VALUE str, int reve
 }
 
 VALUE rb_get_message(VALUE exc);
+VALUE rb_get_additional_message(VALUE exc, VALUE opt);
 
 static int
 shown_cause_p(VALUE cause, VALUE *shown_causes)
@@ -297,13 +321,14 @@ show_cause(VALUE errinfo, VALUE str, VALUE highlight, VALUE reverse, long backtr
         volatile VALUE eclass = CLASS_OF(cause);
         VALUE errat = rb_get_backtrace(cause);
         VALUE emesg = rb_get_message(cause);
+        VALUE eamesg = rb_get_additional_message(cause, Qnil); // TODO: delegate opt
         if (reverse) {
             show_cause(cause, str, highlight, reverse, backtrace_limit, shown_causes);
             print_backtrace(eclass, errat, str, TRUE, backtrace_limit);
-            print_errinfo(eclass, errat, emesg, str, highlight!=0);
+            print_errinfo(eclass, errat, emesg, eamesg, str, highlight!=0);
         }
         else {
-            print_errinfo(eclass, errat, emesg, str, highlight!=0);
+            print_errinfo(eclass, errat, emesg, eamesg, str, highlight!=0);
             print_backtrace(eclass, errat, str, FALSE, backtrace_limit);
             show_cause(cause, str, highlight, reverse, backtrace_limit, shown_causes);
         }
@@ -311,7 +336,7 @@ show_cause(VALUE errinfo, VALUE str, VALUE highlight, VALUE reverse, long backtr
 }
 
 void
-rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlight, VALUE reverse)
+rb_error_write(VALUE errinfo, VALUE emesg, VALUE eamesg, VALUE errat, VALUE str, VALUE highlight, VALUE reverse)
 {
     volatile VALUE eclass;
     VALUE shown_causes = 0;
@@ -348,10 +373,10 @@ rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlig
 	write_warn2(str, msg, len);
         show_cause(errinfo, str, highlight, reverse, backtrace_limit, &shown_causes);
 	print_backtrace(eclass, errat, str, TRUE, backtrace_limit);
-	print_errinfo(eclass, errat, emesg, str, highlight!=0);
+	print_errinfo(eclass, errat, emesg, eamesg, str, highlight!=0);
     }
     else {
-	print_errinfo(eclass, errat, emesg, str, highlight!=0);
+	print_errinfo(eclass, errat, emesg, eamesg, str, highlight!=0);
 	print_backtrace(eclass, errat, str, FALSE, backtrace_limit);
         show_cause(errinfo, str, highlight, reverse, backtrace_limit, &shown_causes);
     }
@@ -363,6 +388,7 @@ rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
     volatile uint8_t raised_flag = ec->raised_flag;
     volatile VALUE errat = Qundef;
     volatile VALUE emesg = Qundef;
+    volatile VALUE eamesg = Qnil;
     volatile bool written = false;
 
     if (NIL_P(errinfo))
@@ -376,11 +402,12 @@ rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
     if (emesg == Qundef) {
 	emesg = Qnil;
 	emesg = rb_get_message(errinfo);
+	eamesg = rb_get_additional_message(errinfo, Qnil); // TODO: create keywords for additional_message
     }
 
     if (!written) {
         written = true;
-        rb_error_write(errinfo, emesg, errat, Qnil, Qnil, Qfalse);
+        rb_error_write(errinfo, emesg, eamesg, errat, Qnil, Qnil, Qfalse);
     }
 
     EC_POP_TAG();

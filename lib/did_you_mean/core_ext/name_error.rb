@@ -11,7 +11,7 @@ module DidYouMean
       meth.call
     end
 
-    def to_s
+    def additional_message
       msg = super.dup
       suggestion = DidYouMean.formatter.message_for(corrections)
 

@@ -8,7 +8,7 @@ module ErrorHighlight
     SKIP_TO_S_FOR_SUPER_LOOKUP = true
     private_constant :SKIP_TO_S_FOR_SUPER_LOOKUP
 
-    def to_s
+    def additional_message(**_opt)
       msg = super.dup
 
       locs = backtrace_locations
