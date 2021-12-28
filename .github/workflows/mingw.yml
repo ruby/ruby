@@ -48,7 +48,7 @@ jobs:
           cat <<EOS
           {
             "ci": "GitHub Actions",
-            "env": "${{ github.workflow }} ${{ matrix.msystem }} / ${{ matrix.include.test_task }}",
+            "env": "${{ github.workflow }} ${{ matrix.msystem }} / ${{ join(matrix.test_task) }}",
             "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
             "commit": "${{ github.sha }}",
             "branch": "${{ github.ref }}",
