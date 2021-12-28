@@ -15,8 +15,8 @@
 # define YJIT_STATS RUBY_DEBUG
 #endif
 
-// We generate x86 assembly and rely on mmap(2).
-#if defined(__x86_64__) || defined(_WIN64)
+// We generate x86 assembly
+#if defined(__x86_64__)
 # define YJIT_SUPPORTED_P 1
 #else
 # define YJIT_SUPPORTED_P 0
