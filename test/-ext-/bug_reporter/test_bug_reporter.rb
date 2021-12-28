@@ -4,7 +4,7 @@ require 'tmpdir'
 
 class TestBugReporter < Test::Unit::TestCase
   def test_bug_reporter_add
-    skip if ENV['RUBY_ON_BUG']
+    omit if ENV['RUBY_ON_BUG']
 
     description = RUBY_DESCRIPTION
     description = description.sub(/\+MJIT /, '') if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
