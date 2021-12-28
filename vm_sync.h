@@ -4,7 +4,7 @@
 #include "vm_debug.h"
 #include "debug_counter.h"
 
-#if defined(USE_RUBY_DEBUG_LOG) && USE_RUBY_DEBUG_LOG
+#if USE_RUBY_DEBUG_LOG
 #define LOCATION_ARGS const char *file, int line
 #define LOCATION_PARAMS file, line
 #define APPEND_LOCATION_ARGS , const char *file, int line

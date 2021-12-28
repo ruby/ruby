@@ -748,7 +748,7 @@ transient_heap_block_evacuate(struct transient_heap* theap, struct transient_hea
     }
 }
 
-#if defined(USE_RUBY_DEBUG_LOG) && USE_RUBY_DEBUG_LOG
+#if USE_RUBY_DEBUG_LOG
 static const char *
 transient_heap_status_cstr(enum transient_heap_status status)
 {
@@ -964,8 +964,6 @@ void
 rb_transient_heap_finish_marking(void)
 {
     ASSERT_vm_locking();
-    RUBY_DEBUG_LOG("");
-
     struct transient_heap* theap = transient_heap_get();
 
     RUBY_DEBUG_LOG("objects:%d, marked:%d",
