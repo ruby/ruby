@@ -14918,7 +14918,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # RawLine = (< (!"\r" !"\n" .)* @Newline > | < .+ > @Eof) { text }
+  # RawLine = (< /[^\r\n]*/ @Newline > | < .+ > @Eof) { text }
   def _RawLine
 
     _save = self.pos
@@ -14930,36 +14930,7 @@ class RDoc::Markdown
 
         _save2 = self.pos
         while true # sequence
-          while true
-
-            _save4 = self.pos
-            while true # sequence
-              _save5 = self.pos
-              _tmp = match_string("\r")
-              _tmp = _tmp ? nil : true
-              self.pos = _save5
-              unless _tmp
-                self.pos = _save4
-                break
-              end
-              _save6 = self.pos
-              _tmp = match_string("\n")
-              _tmp = _tmp ? nil : true
-              self.pos = _save6
-              unless _tmp
-                self.pos = _save4
-                break
-              end
-              _tmp = get_byte
-              unless _tmp
-                self.pos = _save4
-              end
-              break
-            end # end sequence
-
-            break unless _tmp
-          end
-          _tmp = true
+          _tmp = scan(/\G(?-mix:[^\r\n]*)/)
           unless _tmp
             self.pos = _save2
             break
@@ -14977,10 +14948,10 @@ class RDoc::Markdown
         break if _tmp
         self.pos = _save1
 
-        _save7 = self.pos
+        _save3 = self.pos
         while true # sequence
           _text_start = self.pos
-          _save8 = self.pos
+          _save4 = self.pos
           _tmp = get_byte
           if _tmp
             while true
@@ -14989,18 +14960,18 @@ class RDoc::Markdown
             end
             _tmp = true
           else
-            self.pos = _save8
+            self.pos = _save4
           end
           if _tmp
             text = get_text(_text_start)
           end
           unless _tmp
-            self.pos = _save7
+            self.pos = _save3
             break
           end
           _tmp = _Eof()
           unless _tmp
-            self.pos = _save7
+            self.pos = _save3
           end
           break
         end # end sequence
@@ -16661,7 +16632,7 @@ class RDoc::Markdown
   Rules[:_OptionallyIndentedLine] = rule_info("OptionallyIndentedLine", "Indent? Line")
   Rules[:_StartList] = rule_info("StartList", "&. { [] }")
   Rules[:_Line] = rule_info("Line", "@RawLine:a { a }")
-  Rules[:_RawLine] = rule_info("RawLine", "(< (!\"\\r\" !\"\\n\" .)* @Newline > | < .+ > @Eof) { text }")
+  Rules[:_RawLine] = rule_info("RawLine", "(< /[^\\r\\n]*/ @Newline > | < .+ > @Eof) { text }")
   Rules[:_SkipBlock] = rule_info("SkipBlock", "(HtmlBlock | (!\"\#\" !SetextBottom1 !SetextBottom2 !@BlankLine @RawLine)+ @BlankLine* | @BlankLine+ | @RawLine)")
   Rules[:_ExtendedSpecialChar] = rule_info("ExtendedSpecialChar", "&{ notes? } \"^\"")
   Rules[:_NoteReference] = rule_info("NoteReference", "&{ notes? } RawNoteReference:ref { note_for ref }")
