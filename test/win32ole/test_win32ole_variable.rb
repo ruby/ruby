@@ -16,6 +16,10 @@ if defined?(WIN32OLE_VARIABLE)
       @var2 = variables.find {|v| v.name == 'UILevel'}
     end
 
+    def test_initialize
+      assert_raise(TypeError) {WIN32OLE_VARIABLE.new}
+    end
+
     def test_name
       assert_equal('ssfDESKTOP', @var1.name)
     end
