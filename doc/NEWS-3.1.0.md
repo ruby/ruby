@@ -517,17 +517,17 @@ See [this blog post](https://shopify.engineering/yjit-just-in-time-compiler-crub
     type int_list = list[Integer]
     ```
 
-* [rbs collection](https://github.com/ruby/rbs/blob/master/docs/collection.md) has been introduced to manage gems’ RBSs.
+* [rbs collection](https://github.com/ruby/rbs/blob/cdd6a3a896001e25bd1feda3eab7f470bae935c1/docs/collection.md) has been introduced to manage gems’ RBSs.
 
 * Many signatures for built-in and standard libraries have been added/updated.
 
 * It includes many bug fixes and performance improvements too.
 
-See the [CHANGELOG.md](https://github.com/ruby/rbs/blob/master/CHANGELOG.md) for more information.
+See the [CHANGELOG.md](https://github.com/ruby/rbs/blob/cdd6a3a896001e25bd1feda3eab7f470bae935c1/CHANGELOG.md) for more information.
 
 ### TypeProf
 
-* [Experimental IDE support](https://github.com/ruby/typeprof/blob/master/doc/ide.md) has been implemented.
+* [Experimental IDE support](https://github.com/ruby/typeprof/blob/ca15c5dae9bd62668463165f8409bd66ce7de223/doc/ide.md) has been implemented.
 * Many bug fixes and performance improvements since Ruby 3.0.0.
 
 ## Debugger
