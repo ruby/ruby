@@ -35,7 +35,7 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
       rescue Test::Unit::AssertionFailedError
         s.close
         if /aix/ =~ RUBY_PLATFORM
-          skip "Known bug in getsockopt(2) on AIX"
+          omit "Known bug in getsockopt(2) on AIX"
         end
         raise $!
       end

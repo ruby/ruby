@@ -588,7 +588,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
 	      assert(ai.ipv4? || ai.send(meth), "ai=#{addr_exp}; ai.ipv4? || .#{meth}")
             rescue Test::Unit::AssertionFailedError
               if /aix/ =~ RUBY_PLATFORM
-                skip "Known bug in IN6_IS_ADDR_V4COMPAT and IN6_IS_ADDR_V4MAPPED on AIX"
+                omit "Known bug in IN6_IS_ADDR_V4COMPAT and IN6_IS_ADDR_V4MAPPED on AIX"
               end
               raise $!
             end

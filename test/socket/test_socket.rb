@@ -343,7 +343,7 @@ class TestSocket < Test::Unit::TestCase
     begin
       ifaddrs = Socket.getifaddrs
     rescue NotImplementedError
-      skip "Socket.getifaddrs not implemented"
+      omit "Socket.getifaddrs not implemented"
     end
 
     ifconfig = nil
@@ -437,10 +437,10 @@ class TestSocket < Test::Unit::TestCase
         }
       rescue NotImplementedError, Errno::ENOSYS
         skipped = true
-        skip "need sendmsg and recvmsg: #{$!}"
+        omit "need sendmsg and recvmsg: #{$!}"
       rescue RuntimeError
         skipped = true
-        skip "UDP server is no response: #{$!}"
+        omit "UDP server is no response: #{$!}"
       ensure
         if th
           if skipped
