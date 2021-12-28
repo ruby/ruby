@@ -43,7 +43,9 @@ describe "The --enable and --disable flags" do
     ruby_exe("p 'foo'.frozen?", options: "--disable-frozen-string-literal").chomp.should == "false"
   end
 
-  platform_is_not :darwin do # frequently hangs for >60s on GitHub Actions macos-latest
+  # frequently hangs for >60s on GitHub Actions macos-latest
+  # MinGW's YJIT support seems broken
+  platform_is_not :darwin, :mingw do
     it "can be used with all for enable" do
       e = "p [defined?(Gem), defined?(DidYouMean), $VERBOSE, 'foo'.frozen?]"
       env = {'RUBYOPT' => '-w'}
