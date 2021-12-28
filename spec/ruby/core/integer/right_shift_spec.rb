@@ -56,13 +56,13 @@ describe "Integer#>> (with n >> m)" do
       (3 >> bignum_value).should == 0
     end
 
-    it "returns an Bignum == fixnum_max * 2 when fixnum_max >> -1 and n > 0" do
+    it "returns a Bignum == fixnum_max * 2 when fixnum_max >> -1 and n > 0" do
       result = fixnum_max >> -1
       result.should be_an_instance_of(Integer)
       result.should == fixnum_max * 2
     end
 
-    it "returns an Bignum == fixnum_min * 2 when fixnum_min >> -1 and n < 0" do
+    it "returns a Bignum == fixnum_min * 2 when fixnum_min >> -1 and n < 0" do
       result = fixnum_min >> -1
       result.should be_an_instance_of(Integer)
       result.should == fixnum_min * 2
