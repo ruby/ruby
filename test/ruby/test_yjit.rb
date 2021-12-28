@@ -29,7 +29,7 @@ class TestYJIT < Test::Unit::TestCase
         %w(--version --disable=jit --yjit),
         %w(--version --disable=jit --enable-jit),
         %w(--version --disable=jit --enable=jit),
-      ] if RUBY_PLATFORM.start_with?('x86_64-') && RUBY_PLATFORM !~ /mswin|mingw|msys/),
+      ] if JITSupport.yjit_supported?),
     ].each do |version_args|
       assert_in_out_err(version_args) do |stdout, stderr|
         assert_equal(RUBY_DESCRIPTION, stdout.first)

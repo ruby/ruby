@@ -62,6 +62,10 @@ module JITSupport
     end && !appveyor_pdb_corrupted? && !PENDING_RUBYCI_NICKNAMES.include?(ENV['RUBYCI_NICKNAME'])
   end
 
+  def yjit_supported?
+    RUBY_PLATFORM.match?(/^x86_64|mswin64|mingw64/)
+  end
+
   # AppVeyor's Visual Studio 2013 / 2015 are known to spuriously generate broken pch / pdb, like:
   # error C2859: c:\projects\ruby\x64-mswin_120\include\ruby-2.8.0\x64-mswin64_120\rb_mjit_header-2.8.0.pdb
   # is not the pdb file that was used when this precompiled header was created, recreate the precompiled header.

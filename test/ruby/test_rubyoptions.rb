@@ -233,7 +233,7 @@ class TestRubyOptions < Test::Unit::TestCase
         %w(--version --jit --disable=jit),
         %w(--version --enable=jit --disable=jit),
         %w(--version --enable-jit --disable-jit),
-      ] unless /^x86_64|mswin64/ =~ RUBY_PLATFORM),
+      ] unless JITSupport.yjit_supported?),
     ].each do |args|
       assert_in_out_err([env] + args) do |r, e|
         assert_match(VERSION_PATTERN, r[0])
@@ -251,7 +251,7 @@ class TestRubyOptions < Test::Unit::TestCase
           %w(--version --jit),
           %w(--version --enable=jit),
           %w(--version --enable-jit),
-        ] unless /^x86_64|mswin64/ =~ RUBY_PLATFORM),
+        ] unless JITSupport.yjit_supported?),
       ].each do |args|
         assert_in_out_err([env] + args) do |r, e|
           assert_match(VERSION_PATTERN_WITH_JIT, r[0])
