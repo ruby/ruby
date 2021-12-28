@@ -111,6 +111,10 @@ size_t rb_gc_obj_slot_size(VALUE obj);
 bool rb_gc_size_allocatable_p(size_t size);
 int rb_objspace_garbage_object_p(VALUE obj);
 
+VALUE rb_wmap_allocate(VALUE klass);
+VALUE rb_wmap_set(VALUE wmap, VALUE key, VALUE value);
+VALUE rb_wmap_lookup(VALUE wmap, VALUE key);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 /* gc.c (export) */
 const char *rb_objspace_data_type_name(VALUE obj);
