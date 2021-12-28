@@ -31,19 +31,8 @@ void ruby_set_debug_option(const char *str);
 
 RUBY_SYMBOL_EXPORT_END
 
-#ifndef RUBY_DEVEL
-# define RUBY_DEVEL 0
-#endif
-
-#if RUBY_DEVEL
 #ifndef USE_RUBY_DEBUG_LOG
 #define USE_RUBY_DEBUG_LOG 0
-#endif
-#else
-// disable on !RUBY_DEVEL
-#ifdef USE_RUBY_DEBUG_LOG
-#undef USE_RUBY_DEBUG_LOG
-#endif
 #endif
 
 /* RUBY_DEBUG_LOG: Logging debug information mechanism
@@ -101,7 +90,7 @@ bool ruby_debug_log_filter(const char *func_name);
 // You can use this macro for temporary usage (you should not commit it).
 #define _RUBY_DEBUG_LOG(...) ruby_debug_log(__FILE__, __LINE__, RUBY_FUNCTION_NAME_STRING, "" __VA_ARGS__)
 
-#if defined(USE_RUBY_DEBUG_LOG) && USE_RUBY_DEBUG_LOG
+#if USE_RUBY_DEBUG_LOG
 # define RUBY_DEBUG_LOG_ENABLED(func_name) \
     (ruby_debug_log_mode && ruby_debug_log_filter(func_name))
 
@@ -115,7 +104,7 @@ bool ruby_debug_log_filter(const char *func_name);
         ruby_debug_log(file, line, RUBY_FUNCTION_NAME_STRING, "" __VA_ARGS__); \
 } while (0)
 
-#else
+#else // USE_RUBY_DEBUG_LOG
 // do nothing
 #define RUBY_DEBUG_LOG(...)
 #define RUBY_DEBUG_LOG2(file, line, ...)

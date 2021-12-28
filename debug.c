@@ -248,11 +248,7 @@ set_debug_option(const char *str, int len, void *arg)
     }
 }
 
-#ifdef USE_RUBY_DEBUG_LOG
-STATIC_ASSERT(USE_RUBY_DEBUG_LOG, USE_RUBY_DEBUG_LOG ? RUBY_DEVEL : 1);
-#endif
-
-#if RUBY_DEVEL
+#if USE_RUBY_DEBUG_LOG
 static void setup_debug_log(void);
 #else
 #define setup_debug_log()
@@ -265,7 +261,7 @@ ruby_set_debug_option(const char *str)
     setup_debug_log();
 }
 
-#if RUBY_DEVEL
+#if USE_RUBY_DEBUG_LOG
 
 // RUBY_DEBUG_LOG features
 // See vm_debug.h comments for details.
@@ -511,4 +507,4 @@ ruby_debug_log_dump(const char *fname, unsigned int n)
         fclose(fp);
     }
 }
-#endif // #if RUBY_DEVEL
+#endif // #if USE_RUBY_DEBUG_LOG
