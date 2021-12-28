@@ -48,14 +48,14 @@ jobs:
           cat <<EOS
           {
             "ci": "GitHub Actions",
-            "env": "${{ github.workflow }} / ${{ matrix.test_task }}",
+            "env": "${{ github.workflow }} / ${{ matrix.test_task[0] }}",
             "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
             "commit": "${{ github.sha }}",
             "branch": "${{ github.ref }}",
           }
           EOS
+      - uses: hmarr/debug-action@v2
 
 defaults:
   run:
-    working-directory: build
     shell: sh
