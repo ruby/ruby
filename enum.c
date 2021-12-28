@@ -663,7 +663,7 @@ reflect_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 
             return Qnil;
         }
-        
+
         rb_ary_push(memo->v1, memo->v2);
     }
 
@@ -719,7 +719,7 @@ reflect_op_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
  *  If you do not explicitly specify an <i>initial</i> value for <i>memo</i>,
  *  then the first element of collection is used as the initial value
  *  of <i>memo</i>.
- * 
+ *
  *  In the case when an <i>initial</i> value is set the result collection will have a size
  *  bigger by one than <i>enum</i> size otherwise the size will be equal to the size of <i>enum</i>.
  *
