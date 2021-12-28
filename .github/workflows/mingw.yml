@@ -37,10 +37,10 @@ jobs:
         include:
           - msystem: "MINGW64"
             base_ruby: 2.6
-            test_task: [ "check" ] # to make job names consistent
+            test_task: "check" # to make job names consistent
           - msystem: "UCRT64"
             base_ruby: head
-            test_task: [ "check" ] # to make job names consistent
+            test_task: "check" # to make job names consistent
       fail-fast: false
     if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
@@ -133,7 +133,7 @@ jobs:
           payload: |
             {
               "ci": "GitHub Actions",
-              "env": "${{ github.workflow }} ${{ matrix.msystem }} / ${{ join(matrix.test_task) }}",
+              "env": "${{ github.workflow }} ${{ matrix.msystem }} / ${{ matrix.test_task }}",
               "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "commit": "${{ github.sha }}",
               "branch": "${{ github.ref }}".split('/').reverse()[0]
