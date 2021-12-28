@@ -133,7 +133,7 @@ jobs:
           payload: |
             {
               "ci": "GitHub Actions",
-              "env": "${{ github.workflow }} / ${{ matrix.test_task }}",
+              "env": "${{ github.workflow }} ${{ matrix.msystem }} / ${{ join(matrix.test_task) }}",
               "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "commit": "${{ github.sha }}",
               "branch": "${{ github.ref }}".split('/').reverse()[0]
