@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'envutil'
 require 'tmpdir'
+require_relative '../lib/jit_support'
 
 return unless defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
 
