@@ -63,7 +63,7 @@ module JITSupport
   end
 
   def yjit_supported?
-    RUBY_PLATFORM.match?(/^x86_64|mswin64|x86-mingw32/)
+    RUBY_PLATFORM.match?(/^x86_64|mswin64|^x64-mingw/)
   end
 
   # AppVeyor's Visual Studio 2013 / 2015 are known to spuriously generate broken pch / pdb, like:
