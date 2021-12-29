@@ -90,6 +90,10 @@ extern VALUE rb_scheduler_timeout(struct timeval *timeout);
 #define sys_fail_fptr(fptr) rb_sys_fail_str((fptr)->pathv)
 
 #ifndef HAVE_RB_F_SEND
+#ifndef RB_PASS_CALLED_KEYWORDS
+# define rb_funcallv_kw(recv, mid, arg, argv, kw_splat) rb_funcallv(recv, mid, arg, argv)
+#endif
+
 static ID id___send__;
 
 static VALUE
@@ -104,7 +108,7 @@ rb_f_send(int argc, VALUE *argv, VALUE recv)
     else {
 	vid = id___send__;
     }
-    return rb_funcallv(recv, vid, argc, argv);
+    return rb_funcallv_kw(recv, vid, argc, argv, RB_PASS_CALLED_KEYWORDS);
 }
 #endif
 
