@@ -3460,7 +3460,7 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
  *  When argument +out_string+ is given,
  *  the returned value is +out_string+, whose content is replaced:
  *
- *    f = File.ne   w('t.txt')
+ *    f = File.new('t.txt')
  *    s = 'foo'      # => "foo"
  *    f.read(nil, s) # => "First line\nSecond line\n\nFourth line\nFifth line\n"
  *    s              # => "First line\nSecond line\n\nFourth line\nFifth line\n"
@@ -3995,10 +3995,10 @@ rb_io_gets_internal(VALUE io)
  *  see {Line Separator}[#class-IO-label-Line+Separator]:
  *
  *    f = File.new('t.txt')
- *    f.gets('l')    # => "First l"
- *    f.gets('li')   # => "ine\nSecond li"
- *    f.gets('lin')  # => "ne\n\nFourth lin"
- *    f.gets         # => "e\n"
+ *    f.gets('l')   # => "First l"
+ *    f.gets('li')  # => "ine\nSecond li"
+ *    f.gets('lin') # => "ne\n\nFourth lin"
+ *    f.gets        # => "e\n"
  *
  *  The two special values for +sep+ are honored:
  *
@@ -4025,9 +4025,9 @@ rb_io_gets_internal(VALUE io)
  *    # Chomp the lines.
  *    f.gets(chomp: true) # => "First line"
  *    f.gets(chomp: true) # => "Second line"
- *    f.gets(chomp: true)# => ""
- *    f.gets(chomp: true)  # => "Fourth line"
- *    f.gets(chomp: true)      # => "Fifth line"
+ *    f.gets(chomp: true) # => ""
+ *    f.gets(chomp: true) # => "Fourth line"
+ *    f.gets(chomp: true) # => "Fifth line"
  *    f.gets(chomp: true) # => nil
  *
  */
@@ -13969,20 +13969,20 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  You can specify a different line separator:
  *
  *    f = File.new('t.txt')
- *    f.gets('l')    # => "First l"
- *    f.gets('li')   # => "ine\nSecond li"
- *    f.gets('lin')  # => "ne\n\nFourth lin"
- *    f.gets         # => "e\n"
+ *    f.gets('l')   # => "First l"
+ *    f.gets('li')  # => "ine\nSecond li"
+ *    f.gets('lin') # => "ne\n\nFourth lin"
+ *    f.gets        # => "e\n"
  *
  *  There are two special line separators:
  *
- *  - +nil+:  The entire stream is read into a single string:
+ *  - +nil+: The entire stream is read into a single string:
  *
  *      f = File.new('t.txt')
  *      f.gets(nil) # => "First line\nSecond line\n\nFourth line\nFifth line\n"
  *
- *  - <tt>''</tt> (the empty string): the next "paragraph" is read,
- *    paragraphs being separated by two consecutive line separators:
+ *  - <tt>''</tt> (the empty string): The next "paragraph" is read
+ *    (paragraphs being separated by two consecutive line separators):
  *
  *      f = File.new('t.txt')
  *      f.gets('') # => "First line\nSecond line\n\n"
