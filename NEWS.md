@@ -20,6 +20,7 @@ Note: We're only listing outstanding class updates.
     * bundler 2.4.0.dev
     * io-console 0.5.11
 *   The following bundled gems are updated.
+    * typeprof 0.21.2
 *   The following default gems are now bundled gems.
 
 ## Compatibility issues
