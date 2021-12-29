@@ -847,8 +847,15 @@ typedef struct rb_objspace {
 } rb_objspace_t;
 
 
+#if defined(__APPLE__) && defined(__LP64__) && !defined(HEAP_PAGE_ALIGN_LOG)
+/* for slow mmap: 64KiB */
+#define HEAP_PAGE_ALIGN_LOG 16
+#endif
+
+#ifndef HEAP_PAGE_ALIGN_LOG
 /* default tiny heap size: 16KB */
 #define HEAP_PAGE_ALIGN_LOG 14
+#endif
 #define CEILDIV(i, mod) (((i) + (mod) - 1)/(mod))
 enum {
     HEAP_PAGE_ALIGN = (1UL << HEAP_PAGE_ALIGN_LOG),
