@@ -8264,7 +8264,7 @@ rb_w32_mprotect(void *addr, size_t len, int prot)
         return -1;
     }
 */
-    if (prot | PROT_EXEC) {
+    if (prot & PROT_EXEC) {
         if (!FlushInstructionCache(GetCurrentProcess(), addr, len)) {
             errno = rb_w32_map_errno(GetLastError());
             return -1;
