@@ -736,15 +736,11 @@ rb_io_buffer_null_p(VALUE self)
 }
 
 /*
- *  call-seq: external? -> true or false
+ *  call-seq: empty? -> true or false
  *
- *  If the buffer is _external_, meaning it references from memory which is not
- *  allocated or mapped by the buffer itself.
- *
- *  A buffer created using ::for has an external reference to the string's
- *  memory.
- *
- * External buffer can't be resized.
+ *  If the buffer has 0 size: it is created by ::new with size 0, or with ::for
+ *  from an empty string. (Note that empty files can't be mapped, so the buffer
+ *  created with ::map will never be empty.)
  *
  */
 static VALUE
@@ -756,6 +752,18 @@ rb_io_buffer_empty_p(VALUE self)
     return RBOOL(data->size == 0);
 }
 
+/*
+ *  call-seq: external? -> true or false
+ *
+ *  The buffer is _external_ if it references the memory which is not
+ *  allocated or mapped by the buffer itself.
+ *
+ *  A buffer created using ::for has an external reference to the string's
+ *  memory.
+ *
+ *  External buffer can't be resized.
+ *
+ */
 static VALUE
 rb_io_buffer_external_p(VALUE self)
 {
@@ -838,15 +846,6 @@ rb_io_buffer_locked_p(VALUE self)
     return RBOOL(data->flags & RB_IO_BUFFER_LOCKED);
 }
 
-/*
- *  call-seq: readonly? -> true or false
- *
- *  If the buffer is _read only_, meaning the buffer cannot be modified using
- *  #set_value, #set_string or #copy and similar.
- *
- *  Frozen strings and read-only files create read-only buffers.
- *
- */
 int
 rb_io_buffer_readonly_p(VALUE self)
 {
@@ -856,6 +855,15 @@ rb_io_buffer_readonly_p(VALUE self)
     return data->flags & RB_IO_BUFFER_READONLY;
 }
 
+/*
+ *  call-seq: readonly? -> true or false
+ *
+ *  If the buffer is <i>read only</i>, meaning the buffer cannot be modified using
+ *  #set_value, #set_string or #copy and similar.
+ *
+ *  Frozen strings and read-only files create read-only buffers.
+ *
+ */
 static VALUE
 io_buffer_readonly_p(VALUE self)
 {
@@ -926,7 +934,7 @@ rb_io_buffer_try_unlock(VALUE self)
  *    Fiber.schedule do
  *      # in `locked': Buffer already locked! (IO::Buffer::LockedError)
  *      buffer.locked do
- *        buffer.set_string(...)
+ *        buffer.set_string("test", 0)
  *      end
  *    end
  *
@@ -1667,7 +1675,7 @@ io_buffer_copy_from(struct rb_io_buffer *data, const void *source_base, size_t s
  *  work:
  *
  *    buffer = IO::Buffer.map(File.open('test.txt', 'r+'))
- *    buffer.copy("boom", 0)
+ *    buffer.copy(IO::Buffer.for("boom"), 0)
  *    # => 4
  *    File.read('test.txt')
  *    # => "boom"
@@ -1676,7 +1684,7 @@ io_buffer_copy_from(struct rb_io_buffer *data, const void *source_base, size_t s
  *  bounds will fail:
  *
  *    buffer = IO::Buffer.new(2)
- *    buffer.copy('test', 0)
+ *    buffer.copy(IO::Buffer.for('test'), 0)
  *    # in `copy': Specified offset+length exceeds source size! (ArgumentError)
  *
  */
@@ -1711,6 +1719,12 @@ io_buffer_copy(int argc, VALUE *argv, VALUE self)
  *     # => "st"
  *     buffer.get_string(2, 1)
  *     # => "s"
+ *
+ *     buffer = IO::Buffer.for('Руби')
+ *     buffer.get_string(2).then { [_1, _1.encoding] }
+ *     # => ["\xD1\x83\xD0\xB1\xD0\xB8", #<Encoding:ASCII-8BIT>]
+ *     buffer.get_string(2, nil, 'UTF-8').then { [_1, _1.encoding] }
+ *     # => ["уби", #<Encoding:UTF-8>]
  *
  */
 static VALUE
@@ -1748,6 +1762,29 @@ io_buffer_get_string(int argc, VALUE *argv, VALUE self)
     return rb_enc_str_new((const char*)base + offset, length, encoding);
 }
 
+/*
+ *  call-seq: set_string(string, [offset, [length, [source_offset]]]) -> size
+ *
+ *  Efficiently copy data from a source String into the buffer,
+ *  at +offset+ using +memcpy+.
+ *
+ *    buf = IO::Buffer.new(8)
+ *    # =>
+ *    # #<IO::Buffer 0x0000557412714a20+8 INTERNAL>
+ *    # 0x00000000  00 00 00 00 00 00 00 00                         ........
+ *
+ *    # set data starting from offset 1, take 2 bytes starting from string's
+ *    # second
+ *    buf.set_string('test', 1, 2, 1)
+ *    # => 2
+ *    buf
+ *    # =>
+ *    # #<IO::Buffer 0x0000557412714a20+8 INTERNAL>
+ *    # 0x00000000  00 65 73 00 00 00 00 00                         .es.....
+ *
+ *  See also #copy for examples of how buffer writing might be used for changing
+ *  associated strings and files.
+ */
 static VALUE
 io_buffer_set_string(int argc, VALUE *argv, VALUE self)
 {
