@@ -5317,7 +5317,7 @@ rb_big2dbl(VALUE x)
     double d = big2dbl(x);
 
     if (isinf(d)) {
-	rb_warning("Bignum out of Float range");
+	rb_warning("Integer out of Float range");
 	if (d < 0.0)
 	    d = -HUGE_VAL;
 	else
