@@ -18,6 +18,7 @@ Note: We're only listing outstanding class updates.
 *   The following default gem are updated.
     * RubyGems 3.4.0.dev
     * bundler 2.4.0.dev
+    * io-console 0.5.11
 *   The following bundled gems are updated.
 *   The following default gems are now bundled gems.
 
