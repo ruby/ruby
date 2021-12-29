@@ -10148,6 +10148,7 @@ linux_iocparm_len(ioctl_req_t cmd)
 }
 #endif
 
+#ifdef HAVE_IOCTL
 static long
 ioctl_narg_len(ioctl_req_t cmd)
 {
@@ -10169,6 +10170,7 @@ ioctl_narg_len(ioctl_req_t cmd)
 
     return len;
 }
+#endif
 
 #ifdef HAVE_FCNTL
 #ifdef __linux__
