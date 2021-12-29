@@ -1198,9 +1198,6 @@ undefined method `time' for 1:Integer
   def test_simulate_funcallv_from_embedded_ruby
     assert_error_message(NoMethodError, <<~END) do
 undefined method `foo' for nil:NilClass
-
-      nil.foo + 1
-         ^^^^
     END
 
       nil.foo + 1

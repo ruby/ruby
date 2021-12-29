@@ -15,6 +15,7 @@ module ErrorHighlight
       return msg unless locs
 
       loc = locs.first
+      return msg unless loc
       begin
         node = RubyVM::AbstractSyntaxTree.of(loc, keep_script_lines: true)
         opts = {}
