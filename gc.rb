@@ -136,6 +136,8 @@ module GC
   #  [count]
   #    The total number of garbage collections ran since application start
   #    (count includes both minor and major garbage collections)
+  #  [time]
+  #    The total time spent in garbage collections (in milliseconds)
   #  [heap_allocated_pages]
   #    The total number of `:heap_eden_pages` + `:heap_tomb_pages`
   #  [heap_sorted_length]
@@ -173,6 +175,13 @@ module GC
   #    The total number of minor garbage collections run since process start
   #  [major_gc_count]
   #    The total number of major garbage collections run since process start
+  #  [compact_count]
+  #    The total number of compactions run since process start
+  #  [read_barrier_faults]
+  #    The total number of times the read barrier was triggered during
+  #    compaction
+  #  [total_moved_objects]
+  #    The total number of objects compaction has moved
   #  [remembered_wb_unprotected_objects]
   #    The total number of objects without write barriers
   #  [remembered_wb_unprotected_objects_limit]
