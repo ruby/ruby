@@ -90,6 +90,10 @@ extern VALUE rb_scheduler_timeout(struct timeval *timeout);
 #define sys_fail_fptr(fptr) rb_sys_fail_str((fptr)->pathv)
 
 #ifndef HAVE_RB_F_SEND
+#ifndef RB_PASS_CALLED_KEYWORDS
+# define rb_funcallv_kw(recv, mid, arg, argv, kw_splat) rb_funcallv(recv, mid, arg, argv)
+#endif
+
 static ID id___send__;
 
 static VALUE
@@ -104,7 +108,7 @@ rb_f_send(int argc, VALUE *argv, VALUE recv)
     else {
 	vid = id___send__;
     }
-    return rb_funcallv(recv, vid, argc, argv);
+    return rb_funcallv_kw(recv, vid, argc, argv, RB_PASS_CALLED_KEYWORDS);
 }
 #endif
 
@@ -555,7 +559,7 @@ console_getch(int argc, VALUE *argv, VALUE io)
 	    if (w < 0) rb_eof_error();
 	    if (!(w & RB_WAITFD_IN)) return Qnil;
 # else
-	    VALUE result = rb_io_wait(io, RUBY_IO_READABLE, timeout);
+	    VALUE result = rb_io_wait(io, RB_INT2NUM(RUBY_IO_READABLE), timeout);
 	    if (!RTEST(result)) return Qnil;
 # endif
 	}
