@@ -376,6 +376,11 @@ install?(:local, :arch, :bin, :'bin-arch') do
   if rubyw_install_name and !rubyw_install_name.empty?
     install rubyw_install_name+exeext, bindir, :mode => $prog_mode, :strip => $strip
   end
+  # emcc produces ruby and ruby.wasm, the first is a JavaScript file of runtime support
+  # to load and execute the second .wasm file. Both are required to execute ruby
+  if RUBY_PLATFORM =~ /emscripten/ and File.exist? ruby_install_name+".wasm"
+    install ruby_install_name+".wasm", bindir, :mode => $prog_mode, :strip => $strip
+  end
   if File.exist? goruby_install_name+exeext
     install goruby_install_name+exeext, bindir, :mode => $prog_mode, :strip => $strip
   end
