@@ -137,7 +137,7 @@ class Reline::Test < Reline::TestCase
   end
 
   def test_completion_proc
-    skip unless Reline.completion_proc == nil
+    omit unless Reline.completion_proc == nil
     # Another test can set Reline.completion_proc
 
     # assert_equal(nil, Reline.completion_proc)
