@@ -84,8 +84,7 @@ module IRB
     #
     # See IO#eof? for more information.
     def eof?
-      rs, = IO.select([@stdin], [], [], 0.00001)
-      if rs and rs[0]
+      if @stdin.wait_readable(0.00001)
         c = @stdin.getc
         result = c.nil? ? true : false
         @stdin.ungetc(c) unless c.nil?
