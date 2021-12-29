@@ -40,7 +40,7 @@ class TestGraphemeBreaksFromFile < Test::Unit::TestCase
 
   def test_data_files_available
     unless TestGraphemeBreaksFromFile.file_available?
-      skip "Unicode data file GraphemeBreakTest not available in #{UNICODE_DATA_PATH}."
+      omit "Unicode data file GraphemeBreakTest not available in #{UNICODE_DATA_PATH}."
     end
   end
 end

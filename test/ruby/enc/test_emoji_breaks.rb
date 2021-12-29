@@ -68,7 +68,7 @@ class TestEmojiBreaks < Test::Unit::TestCase
   def test_data_files_available
     assert_equal 4, EMOJI_DATA_FILES.size # debugging test
     unless TestEmojiBreaks.data_files_available?
-      skip "Emoji data files not available in #{EMOJI_DATA_PATH}."
+      omit "Emoji data files not available in #{EMOJI_DATA_PATH}."
     end
   end
 end
