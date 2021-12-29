@@ -1319,7 +1319,7 @@ invalidate_block_version(block_t *block)
         regenerate_branch(cb, branch);
 
         if (target_next && branch->end_addr > block->end_addr) {
-            fprintf(stderr, "branch_block_idx=%u block_idx=%u over=%ld block_size=%ld\n",
+            fprintf(stderr, "branch_block_idx=%u block_idx=%u over=%td block_size=%td\n",
                 branch->block->blockid.idx,
                 block->blockid.idx,
                 branch->end_addr - block->end_addr,
