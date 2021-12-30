@@ -2175,10 +2175,10 @@ rb_io_flush(VALUE io)
  *  Returns the current position (in bytes) in +self+
  *  (see {Position}[#class-IO-label-Position]):
  *
- *    f = File.new('t.txt')
- *    f.tell     # => 0
- *    f.readline # => "This is line one.\n"
- *    f.tell     # => 19
+ *    f = File.open('t.txt')
+ *    f.tell # => 0
+ *    f.gets # => "First line\n"
+ *    f.tell # => 12
  *
  *  Related: IO#pos=, IO#seek.
  *
@@ -2257,11 +2257,11 @@ interpret_seek_whence(VALUE vwhence)
  *      f = File.open('t.txt')
  *      f.tell            # => 0
  *      f.seek(0, :END)   # => 0  # Repositions to stream end.
- *      f.tell            # => 70
+ *      f.tell            # => 52
  *      f.seek(-20, :END) # => 0
- *      f.tell            # => 50
+ *      f.tell            # => 32
  *      f.seek(-40, :END) # => 0
- *      f.tell            # => 30
+ *      f.tell            # => 12
  *
  *  - +:SET+ or <tt>IO:SEEK_SET</tt>:
  *    Repositions the stream to the given +offset+:
@@ -2334,8 +2334,8 @@ static void clear_readconv(rb_io_t *fptr);
  *    f = File.open('t.txt')
  *    f.tell     # => 0
  *    f.lineno   # => 0
- *    f.readline # => "This is line one.\n"
- *    f.tell     # => 19
+ *    f.gets     # => "First line\n"
+ *    f.tell     # => 12
  *    f.lineno   # => 1
  *    f.rewind   # => 0
  *    f.tell     # => 0
@@ -3237,18 +3237,17 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
  *  returns a new string:
  *
  *    f = File.new('t.txt')
- *    f.readpartial(30) # => "This is line one.\nThis is the"
- *    f.readpartial(30) # => " second line.\nThis is the thi"
- *    f.readpartial(30) # => "rd line.\n"
- *    f.eof             # => true
- *    f.readpartial(30) # Raises EOFError.
+ *    f.readpartial(20) # => "First line\nSecond l"
+ *    f.readpartial(20) # => "ine\n\nFourth line\n"
+ *    f.readpartial(20) # => "Fifth line\n"
+ *    f.readpartial(20) # Raises EOFError.
  *
  *  With both argument +maxlen+ and string argument +out_string+ given,
  *  returns modified +out_string+:
  *
  *    f = File.new('t.txt')
  *    s = 'foo'
- *    f.readpartial(30, s) # => "This is line one.\nThis is the"
+ *    f.readpartial(20, s) # => "First line\nSecond l"
  *    s = 'bar'
  *    f.readpartial(0, s)  # => ""
  *
@@ -3448,11 +3447,11 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
  *
  *    f = File.new('t.txt')
  *    f.read
- *    # => "This is line one.\nThis is the second line.\nThis is the third line.\n"
+ *    # => "First line\nSecond line\n\nFourth line\nFifth line\n"
  *    f.rewind
- *    f.read(40)      # => "This is line one.\r\nThis is the second li"
- *    f.read(40)      # => "ne.\r\nThis is the third line.\r\n"
- *    f.read(40)      # => nil
+ *    f.read(30) # => "First line\r\nSecond line\r\n\r\nFou"
+ *    f.read(30) # => "rth line\r\nFifth line\r\n"
+ *    f.read(30) # => nil
  *
  *  If +maxlen+ is zero, returns an empty string.
  *
@@ -3463,17 +3462,17 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
  *
  *    f = File.new('t.txt')
  *    s = 'foo'      # => "foo"
- *    f.read(nil, s) # => "This is line one.\nThis is the second line.\nThis is the third line.\n"
- *    s              # => "This is line one.\nThis is the second line.\nThis is the third line.\n"
+ *    f.read(nil, s) # => "First line\nSecond line\n\nFourth line\nFifth line\n"
+ *    s              # => "First line\nSecond line\n\nFourth line\nFifth line\n"
  *    f.rewind
  *    s = 'bar'
- *    f.read(40, s)  # => "This is line one.\r\nThis is the second li"
- *    s              # => "This is line one.\r\nThis is the second li"
+ *    f.read(30, s)  # => "First line\r\nSecond line\r\n\r\nFou"
+ *    s              # => "First line\r\nSecond line\r\n\r\nFou"
  *    s = 'baz'
- *    f.read(40, s)  # => "ne.\r\nThis is the third line.\r\n"
- *    s              # => "ne.\r\nThis is the third line.\r\n"
+ *    f.read(30, s)  # => "rth line\r\nFifth line\r\n"
+ *    s              # => "rth line\r\nFifth line\r\n"
  *    s = 'bat'
- *    f.read(40, s)  # => nil
+ *    f.read(30, s)  # => nil
  *    s              # => ""
  *
  *  Note that this method behaves like the fread() function in C.
@@ -3975,70 +3974,60 @@ rb_io_gets_internal(VALUE io)
  *    gets(limit, **getline_opts)      -> string or nil
  *    gets(sep, limit, **getline_opts) -> string or nil
  *
- *  Reads and returns data from the stream;
+ *  Reads and returns a line from the stream
+ *  (see {Lines}[#class-IO-label-Lines])
  *  assigns the return value to <tt>$_</tt>.
  *
  *  With no arguments given, returns the next line
  *  as determined by line separator <tt>$/</tt>, or +nil+ if none:
  *
  *    f = File.open('t.txt')
- *    f.gets # => "This is line one.\n"
- *    $_     # => "This is line one.\n"
- *    f.gets # => "This is the second line.\n"
- *    f.gets # => "This is the third line.\n"
+ *    f.gets # => "First line\n"
+ *    $_     # => "First line\n"
+ *    f.gets # => "\n"
+ *    f.gets # => "Fourth line\n"
+ *    f.gets # => "Fifth line\n"
  *    f.gets # => nil
  *
- *  With string argument +sep+ given, but not argument +limit+,
+ *  With only string argument +sep+ given,
  *  returns the next line as determined by line separator +sep+,
- *  or +nil+ if none:
+ *  or +nil+ if none;
+ *  see {Line Separator}[#class-IO-label-Line+Separator]:
  *
- *    f = File.open('t.txt')
- *    f.gets(' is') # => "This is"
- *    f.gets(' is') # => " line one.\nThis is"
- *    f.gets(' is') # => " the second line.\nThis is"
- *    f.gets(' is') # => " the third line.\n"
- *    f.gets(' is') # => nil
+ *    f = File.new('t.txt')
+ *    f.gets('l')   # => "First l"
+ *    f.gets('li')  # => "ine\nSecond li"
+ *    f.gets('lin') # => "ne\n\nFourth lin"
+ *    f.gets        # => "e\n"
  *
- *  Note two special values for +sep+:
+ *  The two special values for +sep+ are honored:
  *
- *  - +nil+: The entire stream is read and returned.
- *  - <tt>''</tt> (empty string): The next "paragraph" is read and returned,
- *    the paragraph separator being two successive line separators.
+ *    f = File.new('t.txt')
+ *    # Get all.
+ *    f.gets(nil) # => "First line\nSecond line\n\nFourth line\nFifth line\n"
+ *    f.rewind
+ *    # Get paragraph (up to two line separators).
+ *    f.gets('')  # => "First line\nSecond line\n\n"
  *
- *  With integer argument +limit+ given,
- *  returns up to <tt>limit+1</tt> bytes:
+ *  With only integer argument +limit+ given,
+ *  returns up to <tt>limit+1</tt> bytes;
+ *  see {Line Limit}}[#class-IO-label-Line+Limit]:
  *
- *    # Text with 1-byte characters.
- *    File.open('t.txt') {|f| f.gets(1) } # => "T"
- *    File.open('t.txt') {|f| f.gets(2) } # => "Th"
- *    File.open('t.txt') {|f| f.gets(3) } # => "Thi"
- *    File.open('t.txt') {|f| f.gets(4) } # => "This"
  *    # No more than one line.
- *    File.open('t.txt') {|f| f.gets(17) } # => "This is line one."
- *    File.open('t.txt') {|f| f.gets(18) } # => "This is line one.\n"
- *    File.open('t.txt') {|f| f.gets(19) } # => "This is line one.\n"
- *
- *    # Text with 2-byte characters, which will not be split.
- *    File.open('t.rus') {|f| f.gets(1).size } # => 1
- *    File.open('t.rus') {|f| f.gets(2).size } # => 1
- *    File.open('t.rus') {|f| f.gets(3).size } # => 2
- *    File.open('t.rus') {|f| f.gets(4).size } # => 2
- *
- *  With arguments +sep+ and +limit+,
- *  combines the two behaviors above:
- *
- *  - Returns the next line as determined by line separator +sep+,
- *    or +nil+ if none.
- *  - But returns no more than <tt>limit+1</tt> bytes.
+ *    File.open('t.txt') {|f| f.gets(10) } # => "First line"
+ *    File.open('t.txt') {|f| f.gets(11) } # => "First line\n"
+ *    File.open('t.txt') {|f| f.gets(12) } # => "First line\n"
  *
  *  For all forms above, trailing optional keyword arguments may be given;
  *  see {Getline Options}[#class-IO-label-Getline+Options]:
  *
  *    f = File.open('t.txt')
  *    # Chomp the lines.
- *    f.gets(chomp: true) # => "This is line one."
- *    f.gets(chomp: true) # => "This is the second line."
- *    f.gets(chomp: true) # => "This is the third line."
+ *    f.gets(chomp: true) # => "First line"
+ *    f.gets(chomp: true) # => "Second line"
+ *    f.gets(chomp: true) # => ""
+ *    f.gets(chomp: true) # => "Fourth line"
+ *    f.gets(chomp: true) # => "Fifth line"
  *    f.gets(chomp: true) # => nil
  *
  */
@@ -13717,9 +13706,11 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - <tt>t.txt</tt>: A text-only file that is assumed to exist via:
  *
  *      text = <<~EOT
- *        This is line one.
- *        This is the second line.
- *        This is the third line.
+ *        First line
+ *        Second line
+ *
+ *        Fourth line
+ *        Fifth line
  *      EOT
  *      File.write('t.txt', text)
  *
@@ -13854,8 +13845,8 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  == Open Options
  *
- *  A number of \IO methods accept an optional parameter +opts+,
- *  which determines how a new stream is to be opened:
+ *  A number of \IO methods accept optional keyword arguments
+ *  that determine how a new stream is to be opened:
  *
  *  - +:mode+: Stream mode.
  *  - +:flags+: \Integer file open flags;
@@ -13943,7 +13934,95 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - IO#pos= and IO#seek change the position to a specified offset.
  *  - IO#rewind changes the position to the beginning.
  *
- *  == Line Number
+ *  == Lines
+ *
+ *  Some reader methods in \IO are line-oriented;
+ *  such a method reads one or more lines,
+ *  which are separated by an implicit or explicit line separator.
+ *
+ *  These methods include:
+ *
+ *  - IO::foreach.
+ *  - IO#each.
+ *  - IO#gets.
+ *  - IO#readline.
+ *  - IO#readlines.
+ *
+ *  Each of these methods may be called with:
+ *
+ *  - An optional line separator, +sep+.
+ *  - An optional line-size limit, +limit+.
+ *  - Both +sep+ and +limit+.
+ *
+ *  === Line Separator
+ *
+ *  The default line separator is the given by the global variable <tt>$/</tt>,
+ *  whose value is often <tt>"\n"</tt>.
+ *  The line to be read next is all data from the current position
+ *  to the next line separator:
+ *
+ *    f = File.open('t.txt')
+ *    f.gets # => "First line\n"
+ *    f.gets # => "Second line\n"
+ *    f.gets # => "\n"
+ *    f.gets # => "Fourth line\n"
+ *    f.gets # => "Fifth line\n"
+ *
+ *  You can specify a different line separator:
+ *
+ *    f = File.new('t.txt')
+ *    f.gets('l')   # => "First l"
+ *    f.gets('li')  # => "ine\nSecond li"
+ *    f.gets('lin') # => "ne\n\nFourth lin"
+ *    f.gets        # => "e\n"
+ *
+ *  There are two special line separators:
+ *
+ *  - +nil+: The entire stream is read into a single string:
+ *
+ *      f = File.new('t.txt')
+ *      f.gets(nil) # => "First line\nSecond line\n\nFourth line\nFifth line\n"
+ *
+ *  - <tt>''</tt> (the empty string): The next "paragraph" is read
+ *    (paragraphs being separated by two consecutive line separators):
+ *
+ *      f = File.new('t.txt')
+ *      f.gets('') # => "First line\nSecond line\n\n"
+ *      f.gets('') # => "Fourth line\nFifth line\n"
+ *
+ *  === Line Limit
+ *
+ *  The line to be read may be further defined by an optional argument +limit+,
+ *  which specifies that the line may not be (much) longer than the given limit;
+ *  a multi-byte character will not be split, and so a line may be slightly longer
+ *  than the given limit.
+ *
+ *  If +limit+ is not given, the line is determined only by +sep+.
+ *
+ *    # Text with 1-byte characters.
+ *    File.open('t.txt') {|f| f.gets(1) }  # => "F"
+ *    File.open('t.txt') {|f| f.gets(2) }  # => "Fi"
+ *    File.open('t.txt') {|f| f.gets(3) }  # => "Fir"
+ *    File.open('t.txt') {|f| f.gets(4) }  # => "Firs"
+ *    # No more than one line.
+ *    File.open('t.txt') {|f| f.gets(10) } # => "First line"
+ *    File.open('t.txt') {|f| f.gets(11) } # => "First line\n"
+ *    File.open('t.txt') {|f| f.gets(12) } # => "First line\n"
+ *
+ *    # Text with 2-byte characters, which will not be split.
+ *    File.open('t.rus') {|f| f.gets(1).size } # => 1
+ *    File.open('t.rus') {|f| f.gets(2).size } # => 1
+ *    File.open('t.rus') {|f| f.gets(3).size } # => 2
+ *    File.open('t.rus') {|f| f.gets(4).size } # => 2
+ *
+ *  With arguments +sep+ and +limit+,
+ *  combines the two behaviors:
+ *
+ *  - Returns the next line as determined by line separator +sep+,
+ *    or +nil+ if none.
+ *  - But returns no more bytes than are allowed by the limit.
+ *
+ *  === Line Number
  *
  *  A readable \IO stream has a _line_ _number_,
  *  which is the non-negative integer line number
