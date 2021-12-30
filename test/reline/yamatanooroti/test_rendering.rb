@@ -121,6 +121,7 @@ begin
     end
 
     def test_finish_autowrapped_line_in_the_middle_of_multilines
+      omit if RUBY_VERSION < '2.7'
       start_terminal(30, 16, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("<<~EOM\n  ABCDEFG\nEOM\n")
       close
