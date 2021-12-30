@@ -136,7 +136,7 @@ class TracePoint
   end
 
   # call-seq:
-  #   TracePoint.allow_reentry
+  #   TracePoint.allow_reentry { block }
   #
   # In general, while a TracePoint callback is running,
   # other registered callbacks are not called to avoid
@@ -147,6 +147,55 @@ class TracePoint
   #
   # If this method is called when the reentrance is already allowed,
   # it raises a RuntimeError.
+  #
+  # <b>Example:</b>
+  #
+  #   # Without reentry
+  #   # ---------------
+  #
+  #   line_handler = TracePoint.new(:line) do |tp|
+  #     next if tp.path != __FILE__ # only work in this file
+  #     puts "Line handler"
+  #     binding.eval("class C; end")
+  #   end.enable
+  #
+  #   class_handler = TracePoint.new(:class) do |tp|
+  #     puts "Class handler"
+  #   end.enable
+  #
+  #   class B
+  #   end
+  #
+  #   # This script will print "Class handler" only once: when inside :line
+  #   # handler, all other handlers are ignored
+  #
+  #
+  #   # With reentry
+  #   # ------------
+  #
+  #   line_handler = TracePoint.new(:line) do |tp|
+  #     next if tp.path != __FILE__ # only work in this file
+  #     next if (__LINE__..__LINE__+3).cover?(tp.lineno) # don't be invoked from itself
+  #     puts "Line handler"
+  #     TracePoint.allow_reentry { binding.eval("class C; end") }
+  #   end.enable
+  #
+  #   class_handler = TracePoint.new(:class) do |tp|
+  #     puts "Class handler"
+  #   end.enable
+  #
+  #   class B
+  #   end
+  #
+  #   # This wil print "Class handler" twice: inside allow_reentry block in :line
+  #   # handler, other handlers are enabled.
+  #
+  # Note that the example shows the principal effect of the method, but its
+  # practical usage is for debugging libraries that sometimes require other libraries
+  # hooks to not be affected by debugger being inside trace point handling. Precautions
+  # should be taken against infinite recursion in this case (note that we needed to filter
+  # out calls by itself from :line handler, otherwise it will call itself infinitely).
+  #
   def self.allow_reentry
     Primitive.tracepoint_allow_reentry
   end
