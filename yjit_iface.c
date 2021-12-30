@@ -1180,8 +1180,7 @@ rb_yjit_call_threshold(void)
     return rb_yjit_opts.call_threshold;
 }
 
-/* assume sizeof(void*) == sizeof(size_t) */
-# define PTR2NUM(x)   (SSIZET2NUM((ssize_t)(x)))
+# define PTR2NUM(x)   (rb_int2inum((intptr_t)(void *)(x)))
 
 /**
  *  call-seq: block.id -> unique_id
