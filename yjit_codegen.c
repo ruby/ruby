@@ -3671,7 +3671,10 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     if (doing_kw_call) {
         // Here we're calling a method with keyword arguments and specifying
         // keyword arguments at this call site.
-        const int lead_num = iseq->body->param.lead_num;
+
+        // Number of positional arguments the callee expects before the first
+        // keyword argument
+        const int args_before_kw = required_num + opt_num;
 
         // This struct represents the metadata about the caller-specified
         // keyword arguments.
@@ -3761,7 +3764,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
                 if (callee_kwarg == caller_kwargs[swap_idx]) {
                     // First we're going to generate the code that is going
                     // to perform the actual swapping at runtime.
-                    stack_swap(ctx, cb, argc - 1 - swap_idx - lead_num, argc - 1 - kwarg_idx - lead_num, REG1, REG0);
+                    stack_swap(ctx, cb, argc - 1 - swap_idx - args_before_kw, argc - 1 - kwarg_idx - args_before_kw, REG1, REG0);
 
                     // Next we're going to do some bookkeeping on our end so
                     // that we know the order that the arguments are
