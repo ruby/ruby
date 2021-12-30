@@ -13991,8 +13991,11 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  === Line Limit
  *
  *  The line to be read may be further defined by an optional argument +limit+,
- *  which specifies that the line may not be longer than the given limit;
- *  if +limit+ is not given, the line is determined only by +sep+.
+ *  which specifies that the line may not be (much) longer than the given limit;
+ *  a multi-byte character will not be split, and so a line may be slightly longer
+ *  than the given limit.
+ *
+ *  If +limit+ is not given, the line is determined only by +sep+.
  *
  *    # Text with 1-byte characters.
  *    File.open('t.txt') {|f| f.gets(1) }  # => "F"
@@ -14015,7 +14018,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  - Returns the next line as determined by line separator +sep+,
  *    or +nil+ if none.
- *  - But returns no more than <tt>limit+1</tt> bytes.
+ *  - But returns no more bytes than are allowed by the limit.
  *
  *  === Line Number
  *
