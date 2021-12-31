@@ -44,6 +44,13 @@ Note: Excluding feature bug fixes.
 
 ## C API updates
 
+### Removed C APIs
+
+The following deprecated APIs are removed.
+
+* `rb_cData` variable.
+* "taintedness" and "trustedness" functions.
+
 ## Implementation improvements
 
 ## JIT
