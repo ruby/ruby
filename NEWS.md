@@ -40,6 +40,13 @@ Note: We're only listing outstanding class updates.
 
 Note: Excluding feature bug fixes.
 
+### Removed methods
+
+The following deprecated methods are removed.
+
+* `Dir.exists?`
+* `File.exists?`
+
 ## Stdlib compatibility issues
 
 ## C API updates
