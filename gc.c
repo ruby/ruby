@@ -3360,11 +3360,17 @@ make_zombie(rb_objspace_t *objspace, VALUE obj, void (*dfree)(void *), void *dat
     heap_pages_final_slots++;
 }
 
+static void
+io_fptr_finalize(void *fptr)
+{
+    rb_io_fptr_finalize((struct rb_io *)fptr);
+}
+
 static inline void
 make_io_zombie(rb_objspace_t *objspace, VALUE obj)
 {
     rb_io_t *fptr = RANY(obj)->as.file.fptr;
-    make_zombie(objspace, obj, rb_io_fptr_finalize_internal, fptr);
+    make_zombie(objspace, obj, io_fptr_finalize, fptr);
 }
 
 static void

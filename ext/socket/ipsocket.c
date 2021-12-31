@@ -60,21 +60,20 @@ init_inetsock_internal(VALUE v)
         tv = &tv_storage;
     }
 
-    arg->remote.res = rsock_addrinfo(arg->remote.host, arg->remote.serv,
-                                     family, SOCK_STREAM,
-                                     (type == INET_SERVER) ? AI_PASSIVE : 0);
-
+    arg->remote.res = rsock_addrinfo(arg->remote.host, arg->remote.serv, family, SOCK_STREAM, (type == INET_SERVER) ? AI_PASSIVE : 0);
 
     /*
      * Maybe also accept a local address
      */
 
     if (type != INET_SERVER && (!NIL_P(arg->local.host) || !NIL_P(arg->local.serv))) {
-        arg->local.res = rsock_addrinfo(arg->local.host, arg->local.serv,
-                                        family, SOCK_STREAM, 0);
+        arg->local.res = rsock_addrinfo(arg->local.host, arg->local.serv, family, SOCK_STREAM, 0);
     }
 
     arg->fd = fd = -1;
+
+    VALUE io = Qnil;
+
     for (res = arg->remote.res->ai; res; res = res->ai_next) {
 #if !defined(INET6) && defined(AF_INET6)
         if (res->ai_family == AF_INET6)
@@ -94,19 +93,26 @@ init_inetsock_internal(VALUE v)
                 lres = arg->local.res->ai;
             }
         }
-        status = rsock_socket(res->ai_family,res->ai_socktype,res->ai_protocol);
+
+        status = rsock_socket(res->ai_family, res->ai_socktype, res->ai_protocol);
         syscall = "socket(2)";
         fd = status;
+
         if (fd < 0) {
             error = errno;
             continue;
         }
+
         arg->fd = fd;
+
+        VALUE io = rsock_init_sock(arg->sock, fd);
+        struct rb_io *fptr;
+        RB_IO_POINTER(io, fptr);
+
         if (type == INET_SERVER) {
 #if !defined(_WIN32) && !defined(__CYGWIN__)
             status = 1;
-            setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
-                       (char*)&status, (socklen_t)sizeof(status));
+            setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char*)&status, (socklen_t)sizeof(status));
 #endif
             status = bind(fd, res->ai_addr, res->ai_addrlen);
             syscall = "bind(2)";
@@ -124,20 +130,21 @@ init_inetsock_internal(VALUE v)
             }
 
             if (status >= 0) {
-                status = rsock_connect(fd, res->ai_addr, res->ai_addrlen,
-                                       (type == INET_SOCKS), tv);
+                status = rsock_connect(io, res->ai_addr, res->ai_addrlen, (type == INET_SOCKS), tv);
                 syscall = "connect(2)";
             }
         }
 
         if (status < 0) {
             error = errno;
-            close(fd);
+            rb_io_close(io);
             arg->fd = fd = -1;
             continue;
-        } else
+        } else {
             break;
+        }
     }
+
     if (status < 0) {
         VALUE host, port;
 
@@ -158,19 +165,17 @@ init_inetsock_internal(VALUE v)
         status = listen(fd, SOMAXCONN);
         if (status < 0) {
             error = errno;
-            close(fd);
+            rb_io_close(io);
             rb_syserr_fail(error, "listen(2)");
         }
     }
 
     /* create new instance */
-    return rsock_init_sock(arg->sock, fd);
+    return io;
 }
 
 VALUE
-rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv,
-                    VALUE local_host, VALUE local_serv, int type,
-                    VALUE resolv_timeout, VALUE connect_timeout)
+rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type, VALUE resolv_timeout, VALUE connect_timeout)
 {
     struct inetsock_arg arg;
     arg.sock = sock;
@@ -225,9 +230,8 @@ ip_inspect(VALUE sock)
     union_sockaddr addr;
     socklen_t len = (socklen_t)sizeof addr;
     ID id;
-    if (fptr && fptr->fd >= 0 &&
-        getsockname(fptr->fd, &addr.addr, &len) >= 0 &&
-        (id = rsock_intern_family(addr.addr.sa_family)) != 0) {
+
+    if (fptr && fptr->fd >= 0 && getsockname(fptr->fd, &addr.addr, &len) >= 0 && (id = rsock_intern_family(addr.addr.sa_family)) != 0) {
         VALUE family = rb_id2str(id);
         char hbuf[1024], pbuf[1024];
         long slen = RSTRING_LEN(str);
@@ -236,8 +240,7 @@ ip_inspect(VALUE sock)
         str = rb_str_subseq(str, 0, slen);
         rb_str_cat_cstr(str, ", ");
         rb_str_append(str, family);
-        if (!rb_getnameinfo(&addr.addr, len, hbuf, sizeof(hbuf),
-                            pbuf, sizeof(pbuf), NI_NUMERICHOST | NI_NUMERICSERV)) {
+        if (!rb_getnameinfo(&addr.addr, len, hbuf, sizeof(hbuf), pbuf, sizeof(pbuf), NI_NUMERICHOST | NI_NUMERICSERV)) {
             rb_str_cat_cstr(str, ", ");
             rb_str_cat_cstr(str, hbuf);
             rb_str_cat_cstr(str, ", ");
@@ -274,16 +277,13 @@ ip_inspect(VALUE sock)
 static VALUE
 ip_addr(int argc, VALUE *argv, VALUE sock)
 {
-    rb_io_t *fptr;
     union_sockaddr addr;
     socklen_t len = (socklen_t)sizeof addr;
     int norevlookup;
 
-    GetOpenFile(sock, fptr);
-
     if (argc < 1 || !rsock_revlookup_flag(argv[0], &norevlookup))
-        norevlookup = fptr->mode & FMODE_NOREVLOOKUP;
-    if (getsockname(fptr->fd, &addr.addr, &len) < 0)
+        norevlookup = rb_io_mode(sock) & FMODE_NOREVLOOKUP;
+    if (getsockname(rb_io_descriptor(sock), &addr.addr, &len) < 0)
         rb_sys_fail("getsockname(2)");
     return rsock_ipaddr(&addr.addr, len, norevlookup);
 }
@@ -315,16 +315,13 @@ ip_addr(int argc, VALUE *argv, VALUE sock)
 static VALUE
 ip_peeraddr(int argc, VALUE *argv, VALUE sock)
 {
-    rb_io_t *fptr;
     union_sockaddr addr;
     socklen_t len = (socklen_t)sizeof addr;
     int norevlookup;
 
-    GetOpenFile(sock, fptr);
-
     if (argc < 1 || !rsock_revlookup_flag(argv[0], &norevlookup))
-        norevlookup = fptr->mode & FMODE_NOREVLOOKUP;
-    if (getpeername(fptr->fd, &addr.addr, &len) < 0)
+        norevlookup = rb_io_mode(sock) & FMODE_NOREVLOOKUP;
+    if (getpeername(rb_io_descriptor(sock), &addr.addr, &len) < 0)
         rb_sys_fail("getpeername(2)");
     return rsock_ipaddr(&addr.addr, len, norevlookup);
 }
