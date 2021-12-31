@@ -1914,7 +1914,7 @@ noname_disable_map(Node** plink, GroupNumRemap* map, int* counter)
 }
 
 static int
-renumber_node_backref(Node* node, GroupNumRemap* map)
+renumber_node_backref(Node* node, GroupNumRemap* map, const int num_mem)
 {
   int i, pos, n, old_num;
   int *backs;
@@ -1930,6 +1930,7 @@ renumber_node_backref(Node* node, GroupNumRemap* map)
     backs = bn->back_dynamic;
 
   for (i = 0, pos = 0; i < old_num; i++) {
+    if (backs[i] > num_mem)  return ONIGERR_INVALID_BACKREF;
     n = map[backs[i]].new_val;
     if (n > 0) {
       backs[pos] = n;
@@ -1942,7 +1943,7 @@ renumber_node_backref(Node* node, GroupNumRemap* map)
 }
 
 static int
-renumber_by_map(Node* node, GroupNumRemap* map)
+renumber_by_map(Node* node, GroupNumRemap* map, const int num_mem)
 {
   int r = 0;
 
@@ -1950,28 +1951,30 @@ renumber_by_map(Node* node, GroupNumRemap* map)
   case NT_LIST:
   case NT_ALT:
     do {
-      r = renumber_by_map(NCAR(node), map);
+      r = renumber_by_map(NCAR(node), map, num_mem);
     } while (r == 0 && IS_NOT_NULL(node = NCDR(node)));
     break;
   case NT_QTFR:
-    r = renumber_by_map(NQTFR(node)->target, map);
+    r = renumber_by_map(NQTFR(node)->target, map, num_mem);
     break;
   case NT_ENCLOSE:
     {
       EncloseNode* en = NENCLOSE(node);
-      if (en->type == ENCLOSE_CONDITION)
+      if (en->type == ENCLOSE_CONDITION) {
+	if (en->regnum > num_mem)  return ONIGERR_INVALID_BACKREF;
 	en->regnum = map[en->regnum].new_val;
-      r = renumber_by_map(en->target, map);
+      }
+      r = renumber_by_map(en->target, map, num_mem);
     }
     break;
 
   case NT_BREF:
-    r = renumber_node_backref(node, map);
+    r = renumber_node_backref(node, map, num_mem);
     break;
 
   case NT_ANCHOR:
     if (NANCHOR(node)->target)
-      r = renumber_by_map(NANCHOR(node)->target, map);
+      r = renumber_by_map(NANCHOR(node)->target, map, num_mem);
     break;
 
   default:
@@ -2033,7 +2036,7 @@ disable_noname_group_capture(Node** root, regex_t* reg, ScanEnv* env)
   r = noname_disable_map(root, map, &counter);
   if (r != 0) return r;
 
-  r = renumber_by_map(*root, map);
+  r = renumber_by_map(*root, map, env->num_mem);
   if (r != 0) return r;
 
   for (i = 1, pos = 1; i <= env->num_mem; i++) {

@@ -1293,6 +1293,12 @@ class TestRegexp < Test::Unit::TestCase
     assert_nil($1)
   end
 
+  def test_backref_overrun
+    assert_raise_with_message(SyntaxError, /invalid backref number/) do
+      eval(%["".match(/(())(?<X>)((?(90000)))/)])
+    end
+  end
+
   # This assertion is for porting x2() tests in testpy.py of Onigmo.
   def assert_match_at(re, str, positions, msg = nil)
     re = Regexp.new(re) unless re.is_a?(Regexp)
