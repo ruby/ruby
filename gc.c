@@ -10516,10 +10516,26 @@ struct wmap_iter_arg {
     VALUE value;
 };
 
+static VALUE
+wmap_inspect_append(rb_objspace_t *objspace, VALUE str, VALUE obj)
+{
+    if (SPECIAL_CONST_P(obj)) {
+        return rb_str_append(str, rb_inspect(obj));
+    }
+    else if (wmap_live_p(objspace, obj)) {
+        return rb_str_append(str, rb_any_to_s(obj));
+    }
+    else {
+        return rb_str_catf(str, "#<collected:%p>", (void*)obj);
+    }
+}
+
 static int
 wmap_inspect_i(st_data_t key, st_data_t val, st_data_t arg)
 {
-    VALUE str = (VALUE)arg;
+    struct wmap_iter_arg *argp = (struct wmap_iter_arg *)arg;
+    rb_objspace_t *objspace = argp->objspace;
+    VALUE str = argp->value;
     VALUE k = (VALUE)key, v = (VALUE)val;
 
     if (RSTRING_PTR(str)[0] == '#') {
@@ -10529,11 +10545,9 @@ wmap_inspect_i(st_data_t key, st_data_t val, st_data_t arg)
 	rb_str_cat2(str, ": ");
 	RSTRING_PTR(str)[0] = '#';
     }
-    k = SPECIAL_CONST_P(k) ? rb_inspect(k) : rb_any_to_s(k);
-    rb_str_append(str, k);
+    wmap_inspect_append(objspace, str, k);
     rb_str_cat2(str, " => ");
-    v = SPECIAL_CONST_P(v) ? rb_inspect(v) : rb_any_to_s(v);
-    rb_str_append(str, v);
+    wmap_inspect_append(objspace, str, v);
 
     return ST_CONTINUE;
 }
@@ -10544,11 +10558,14 @@ wmap_inspect(VALUE self)
     VALUE str;
     VALUE c = rb_class_name(CLASS_OF(self));
     struct weakmap *w;
+    struct wmap_iter_arg args;
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
     str = rb_sprintf("-<%"PRIsVALUE":%p", c, (void *)self);
     if (w->wmap2obj) {
-	st_foreach(w->wmap2obj, wmap_inspect_i, str);
+	args.objspace = &rb_objspace;
+	args.value = str;
+	st_foreach(w->wmap2obj, wmap_inspect_i, (st_data_t)&args);
     }
     RSTRING_PTR(str)[0] = '#';
     rb_str_cat2(str, ">");
