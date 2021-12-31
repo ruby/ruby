@@ -1675,6 +1675,8 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
         .th = rb_ec_thread_ptr(ec)
     };
 
+    errno = 0;
+
     RB_VM_LOCK_ENTER();
     {
         ccan_list_add(&rb_ec_vm_ptr(ec)->waiting_fds, &waiting_fd.wfd_node);
@@ -1705,6 +1707,11 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
     }
     /* TODO: check func() */
     RUBY_VM_CHECK_INTS_BLOCKING(ec);
+
+    // If the error was a timeout, we raise a specific exception for that:
+    if (saved_errno == ETIMEDOUT) {
+        rb_raise(rb_eIOTimeoutError, "Blocking operation timed out!");
+    }
 
     errno = saved_errno;
 
