@@ -3970,9 +3970,9 @@ rb_io_gets_internal(VALUE io)
 
 /*
  *  call-seq:
- *    gets(sep = $/, **getline_opts)   -> string or nil
- *    gets(limit, **getline_opts)      -> string or nil
- *    gets(sep, limit, **getline_opts) -> string or nil
+ *    gets(sep = $/, **line_opts)   -> string or nil
+ *    gets(limit, **line_opts)      -> string or nil
+ *    gets(sep, limit, **line_opts) -> string or nil
  *
  *  Reads and returns a line from the stream
  *  (see {Lines}[#class-IO-label-Lines])
@@ -4010,7 +4010,7 @@ rb_io_gets_internal(VALUE io)
  *    f.gets('')  # => "First line\nSecond line\n\n"
  *
  *  With only integer argument +limit+ given,
- *  returns up to <tt>limit+1</tt> bytes;
+ *  limits the number of bytes in the line;
  *  see {Line Limit}}[#class-IO-label-Line+Limit]:
  *
  *    # No more than one line.
@@ -4019,7 +4019,7 @@ rb_io_gets_internal(VALUE io)
  *    File.open('t.txt') {|f| f.gets(12) } # => "First line\n"
  *
  *  For all forms above, trailing optional keyword arguments may be given;
- *  see {Getline Options}[#class-IO-label-Getline+Options]:
+ *  see {Line Options}[#class-IO-label-Line+Options]:
  *
  *    f = File.open('t.txt')
  *    # Chomp the lines.
@@ -4045,24 +4045,11 @@ rb_io_gets_m(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     ios.lineno    -> integer
+ *    lineno -> integer
  *
- *  Returns the current line number in <em>ios</em>.  The stream must be
- *  opened for reading. #lineno counts the number of times #gets is called
- *  rather than the number of newlines encountered.  The two values will
- *  differ if #gets is called with a separator other than newline.
+ *  Returns the current line number for the stream.
+ *  See {Line Number}[#class-IO-label-Line+Number].
  *
- *  Methods that use <code>$/</code> like #each, #lines and #readline will
- *  also increment #lineno.
- *
- *  See also the <code>$.</code> variable.
- *
- *     f = File.new("testfile")
- *     f.lineno   #=> 0
- *     f.gets     #=> "This is line one\n"
- *     f.lineno   #=> 1
- *     f.gets     #=> "This is line two\n"
- *     f.lineno   #=> 2
  */
 
 static VALUE
@@ -4077,19 +4064,11 @@ rb_io_lineno(VALUE io)
 
 /*
  *  call-seq:
- *     ios.lineno = integer    -> integer
+ *    lineno = integer -> integer
  *
- *  Manually sets the current line number to the given value.
- *  <code>$.</code> is updated only on the next read.
+ *  Sets and returns the line number for the stream.
+ *  See {Line Number}[#class-IO-label-Line+Number].
  *
- *     f = File.new("testfile")
- *     f.gets                     #=> "This is line one\n"
- *     $.                         #=> 1
- *     f.lineno = 1000
- *     f.lineno                   #=> 1000
- *     $.                         #=> 1         # lineno of last read
- *     f.gets                     #=> "This is line two\n"
- *     $.                         #=> 1001      # lineno of last read
  */
 
 static VALUE
@@ -4105,11 +4084,12 @@ rb_io_set_lineno(VALUE io, VALUE lineno)
 
 /*
  *  call-seq:
- *     ios.readline(sep=$/ [, getline_args])     -> string
- *     ios.readline(limit [, getline_args])      -> string
- *     ios.readline(sep, limit [, getline_args]) -> string
+ *    readline(sep = $/, **line_opts)   -> string
+ *    readline(limit, **line_opts)      -> string
+ *    readline(sep, limit, **line_opts) -> string
  *
- *  Reads a line as with IO#gets, but raises an EOFError on end of file.
+ *  Reads a line as with IO#gets, but raises EOFError if already at end-of-file.
+ *
  */
 
 static VALUE
@@ -4127,26 +4107,57 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
 
 /*
  *  call-seq:
- *     ios.readlines(sep=$/ [, getline_args])     -> array
- *     ios.readlines(limit [, getline_args])      -> array
- *     ios.readlines(sep, limit [, getline_args]) -> array
+ *    readlines(sep = $/, **line_opts)   -> array
+ *    readlines(limit, **line_ops)       -> array
+ *    readlines(sep, limit, **line_opts) -> array
  *
- *  Reads all of the lines in <em>ios</em>, and returns them in
- *  an array. Lines are separated by the optional <i>sep</i>. If
- *  <i>sep</i> is +nil+, the rest of the stream is returned
- *  as a single record.
- *  If the first argument is an integer, or an
- *  optional second argument is given, the returning string would not be
- *  longer than the given value in bytes. The stream must be opened for
- *  reading or an IOError will be raised.
+ *  Reads and returns all remaining line from the stream
+ *  (see {Lines}[#class-IO-label-Lines]);
+ *  does not modify <tt>$_</tt>.
  *
- *     f = File.new("testfile")
- *     f.readlines[0]   #=> "This is line one\n"
+ *  With no arguments given, returns lines
+ *  as determined by line separator <tt>$/</tt>, or +nil+ if none:
  *
- *     f = File.new("testfile", chomp: true)
- *     f.readlines[0]   #=> "This is line one"
+ *    f = File.new('t.txt')
+ *    f.readlines
+ *    # => ["First line\n", "Second line\n", "\n", "Fourth line\n", "Fifth line\n"]
+ *    f.readlines # => []
  *
- *  See IO.readlines for details about getline_args.
+ *  With only string argument +sep+ given,
+ *  returns the next line as determined by line separator +sep+,
+ *  or +nil+ if none;
+ *  see {Line Separator}[#class-IO-label-Line+Separator]:
+ *
+ *    f = File.new('t.txt')
+ *    f.readlines('li')
+ *    # => ["First li", "ne\nSecond li", "ne\n\nFourth li", "ne\nFifth li", "ne\n"]
+ *
+ *  The two special values for +sep+ are honored:
+ *
+ *    f = File.new('t.txt')
+ *    # Get all into one string.
+ *    f.readlines(nil)
+ *    # => ["First line\nSecond line\n\nFourth line\nFifth line\n"]
+ *    # Get paragraphs (up to two line separators).
+ *    f.rewind
+ *    f.readlines('')
+ *    # => ["First line\nSecond line\n\n", "Fourth line\nFifth line\n"]
+ *
+ *  With only integer argument +limit+ given,
+ *  limits the number of bytes in each line;
+ *  see {Line Limit}}[#class-IO-label-Line+Limit]:
+ *
+ *    f = File.new('t.txt')
+ *    f.readlines(8)
+ *    # => ["First li", "ne\n", "Second l", "ine\n", "\n", "Fourth l", "ine\n", "Fifth li", "ne\n"]
+ *
+ *  For all forms above, trailing optional keyword arguments may be given;
+ *  see {Line Options}[#class-IO-label-Line+Options]:
+ *
+ *    f = File.new('t.txt')
+ *    f.readlines(chomp: true)
+ *    # => ["First line", "Second line", "", "Fourth line", "Fifth line"]
+ *
  */
 
 static VALUE
@@ -4174,33 +4185,101 @@ io_readlines(const struct getline_arg *arg, VALUE io)
 
 /*
  *  call-seq:
- *     ios.each(sep=$/ [, getline_args])          {|line| block } -> ios
- *     ios.each(limit [, getline_args])           {|line| block } -> ios
- *     ios.each(sep, limit [, getline_args])      {|line| block } -> ios
- *     ios.each(...)                             -> an_enumerator
+ *    each_line(sep = $/, **line_opts) {|line| ... }   -> self
+ *    each_line(limit, **line_opts) {|line| ... }      -> self
+ *    each_line(sep, limit, **line_opts) {|line| ... } -> self
+ *    each_line                                   -> enumerator
  *
- *     ios.each_line(sep=$/ [, getline_args])     {|line| block } -> ios
- *     ios.each_line(limit [, getline_args])      {|line| block } -> ios
- *     ios.each_line(sep, limit [, getline_args]) {|line| block } -> ios
- *     ios.each_line(...)                        -> an_enumerator
+ *  Calls the block with each remaining line read from the stream;
+ *  does nothing if already at end-of-file;
+ *  returns +self+.
  *
- *  Executes the block for every line in <em>ios</em>, where lines are
- *  separated by <i>sep</i>. <em>ios</em> must be opened for
- *  reading or an IOError will be raised.
+ *  With no arguments given, reads lines
+ *  as determined by line separator <tt>$/</tt>:
  *
- *  If no block is given, an enumerator is returned instead.
+ *    f = File.new('t.txt')
+ *    f.each_line {|line| p line }
+ *    f.each_line {|line| fail 'Cannot happen' }
  *
- *     f = File.new("testfile")
- *     f.each {|line| puts "#{f.lineno}: #{line}" }
+ *  Output:
  *
- *  <em>produces:</em>
+ *    "First line\n"
+ *    "Second line\n"
+ *    "\n"
+ *    "Fourth line\n"
+ *    "Fifth line\n"
  *
- *     1: This is line one
- *     2: This is line two
- *     3: This is line three
- *     4: And so on...
+ *  With only string argument +sep+ given,
+ *  reads lines as determined by line separator +sep+;
+ *  see {Line Separator}[#class-IO-label-Line+Separator]:
  *
- *  See IO.readlines for details about getline_args.
+ *    f = File.new('t.txt')
+ *    f.each_line('li') {|line| p line }
+ *
+ *  Output:
+ *
+ *    "First li"
+ *    "ne\nSecond li"
+ *    "ne\n\nFourth li"
+ *    "ne\nFifth li"
+ *    "ne\n"
+ *
+ *  The two special values for +sep+ are honored:
+ *
+ *    f = File.new('t.txt')
+ *    # Get all into one string.
+ *    f.each_line(nil) {|line| p line }
+ *
+ *  Output:
+ *
+ *    "First line\nSecond line\n\nFourth line\nFifth line\n"
+ *
+ *    f.rewind
+ *    # Get paragraphs (up to two line separators).
+ *    f.each_line('') {|line| p line }
+ *
+ *  Output:
+ *
+ *    "First line\nSecond line\n\n"
+ *    "Fourth line\nFifth line\n"
+ *
+ *  With only integer argument +limit+ given,
+ *  limits the number of bytes in each line;
+ *  see {Line Limit}}[#class-IO-label-Line+Limit]:
+ *
+ *    f = File.new('t.txt')
+ *    f.each_line(8) {|line| p line }
+ *
+ *  Output:
+ *
+ *    "First li"
+ *    "ne\n"
+ *    "Second l"
+ *    "ine\n"
+ *    "\n"
+ *    "Fourth l"
+ *    "ine\n"
+ *    "Fifth li"
+ *    "ne\n"
+ *
+ *  For all forms above, trailing optional keyword arguments may be given;
+ *  see {Line Options}[#class-IO-label-Line+Options]:
+ *
+ *    f = File.new('t.txt')
+ *    f.each_line(chomp: true) {|line| p line }
+ *
+ *  Output:
+ *
+ *    "First line"
+ *    "Second line"
+ *    ""
+ *    "Fourth line"
+ *    "Fifth line"
+ *
+ *  Returns an Enumerator if no block is given.
+ *
+ *  IO#each is an alias for IO#each_line.
+ *
  */
 
 static VALUE
@@ -4221,19 +4300,20 @@ rb_io_each_line(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     ios.each_byte {|byte| block }  -> ios
- *     ios.each_byte                  -> an_enumerator
+ *    each_byte {|byte| ... } -> self
+ *    each_byte               -> enumerator
  *
- *  Calls the given block once for each byte (0..255) in <em>ios</em>,
- *  passing the byte as an argument. The stream must be opened for
- *  reading or an IOError will be raised.
+ *  Calls the given block with each byte (0..255) in the stream; returns +self+:
  *
- *  If no block is given, an enumerator is returned instead.
+ *    f = File.new('t.rus')
+ *    a = []
+ *    f.each_byte {|b| a << b }
+ *    a # => [209, 130, 208, 181, 209, 129, 209, 130]
  *
- *     f = File.new("testfile")
- *     checksum = 0
- *     f.each_byte {|x| checksum ^= x }   #=> #<File:testfile>
- *     checksum                           #=> 12
+ *  Returns an Enumerator if no block is given.
+ *
+ *  Related: IO#each_char, IO#each_codepoint.
+ *
  */
 
 static VALUE
@@ -4366,17 +4446,20 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
 
 /*
  *  call-seq:
- *     ios.each_char {|c| block }  -> ios
- *     ios.each_char               -> an_enumerator
+ *    each_char {|c| ... } -> self
+ *    each_char            -> enumerator
  *
- *  Calls the given block once for each character in <em>ios</em>,
- *  passing the character as an argument. The stream must be opened for
- *  reading or an IOError will be raised.
+ *  Calls the given block with each character in the stream; returns +self+:
  *
- *  If no block is given, an enumerator is returned instead.
+ *    f = File.new('t.rus')
+ *    a = []
+ *    f.each_char {|c| a << c.ord }
+ *    a # => [1090, 1077, 1089, 1090]
  *
- *     f = File.new("testfile")
- *     f.each_char {|c| print c, ' ' }   #=> #<File:testfile>
+ *  Returns an Enumerator if no block is given.
+ *
+ *  Related: IO#each_byte, IO#each_codepoint.
+ *
  */
 
 static VALUE
@@ -4400,14 +4483,19 @@ rb_io_each_char(VALUE io)
 
 /*
  *  call-seq:
- *     ios.each_codepoint {|c| block }  -> ios
- *     ios.each_codepoint               -> an_enumerator
+ *    each_codepoint {|c| ... } -> self
+ *    each_codepoint            -> enumerator
  *
- *  Passes the Integer ordinal of each character in <i>ios</i>,
- *  passing the codepoint as an argument. The stream must be opened for
- *  reading or an IOError will be raised.
+ *  Calls the given block with each codepoint in the stream; returns +self+:
  *
- *  If no block is given, an enumerator is returned instead.
+ *    f = File.new('t.rus')
+ *    a = []
+ *    f.each_codepoint {|c| a << c }
+ *    a # => [1090, 1077, 1089, 1090]
+ *
+ *  Returns an Enumerator if no block is given.
+ *
+ *  Related: IO#each_byte, IO#each_char.
  *
  */
 
@@ -13864,12 +13952,12 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  Also available are the options offered in String#encode,
  *  which may control conversion between external internal encoding.
  *
- *  == Getline Options
+ *  == Line Options
  *
  *  A number of \IO methods accept optional keyword arguments
- *  that determine how a stream is to be treated:
+ *  that determine how lines in a stream is to be treated:
  *
- *  - +:chomp+: If +true+, line separators are omitted; default is  +false+.
+ *  - +:chomp+: If +true+, line separators are omitted; default is +false+.
  *
  *  == Position
  *
