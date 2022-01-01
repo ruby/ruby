@@ -1816,9 +1816,6 @@ InitVM_Random(void)
     rb_define_method(rb_cRandom, "seed", random_get_seed, 0);
 #endif
 
-    rb_define_const(rb_cRandom, "DEFAULT", rb_cRandom);
-    rb_deprecate_constant(rb_cRandom, "DEFAULT");
-
     rb_define_singleton_method(rb_cRandom, "srand", rb_f_srand, -1);
     rb_define_singleton_method(rb_cRandom, "rand", random_s_rand, -1);
     rb_define_singleton_method(rb_cRandom, "bytes", random_s_bytes, 1);
