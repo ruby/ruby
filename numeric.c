@@ -825,20 +825,20 @@ num_zero_p(VALUE num)
     return rb_equal(num, INT2FIX(0));
 }
 
-static VALUE
+static bool
 int_zero_p(VALUE num)
 {
     if (FIXNUM_P(num)) {
-        return RBOOL(FIXNUM_ZERO_P(num));
+        return FIXNUM_ZERO_P(num);
     }
     assert(RB_BIGNUM_TYPE_P(num));
-    return RBOOL(rb_bigzero_p(num));
+    return rb_bigzero_p(num);
 }
 
 VALUE
 rb_int_zero_p(VALUE num)
 {
-    return int_zero_p(num);
+    return RBOOL(int_zero_p(num));
 }
 
 /*
@@ -3687,7 +3687,7 @@ static VALUE
 int_nobits_p(VALUE num, VALUE mask)
 {
     mask = rb_to_int(mask);
-    return int_zero_p(rb_int_and(num, mask));
+    return RBOOL(int_zero_p(rb_int_and(num, mask)));
 }
 
 /*
@@ -5238,7 +5238,7 @@ int_aref1(VALUE num, VALUE arg)
             if (!RTEST(num_negative_p(end))) {
                 if (!excl) end = rb_int_plus(end, INT2FIX(1));
                 VALUE mask = generate_mask(end);
-                if (RTEST(int_zero_p(rb_int_and(num, mask)))) {
+                if (int_zero_p(rb_int_and(num, mask))) {
                     return INT2FIX(0);
                 }
                 else {
