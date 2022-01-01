@@ -102,6 +102,7 @@ jobs:
           RUBY_TESTOPTS: "-q --tty=no"
           TESTS: ${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ""
+          PRECHECK_BUNDLED_GEMS: "no"
       - name: make skipped tests
         run: |
           $SETARCH make -s test-all TESTS=`echo "$TESTS" | sed 's| |$/ -n/|g;s|^|-n/|;s|$|$$/|'`
