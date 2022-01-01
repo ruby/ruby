@@ -2054,8 +2054,6 @@ rb_mod_attr_reader(int argc, VALUE *argv, VALUE klass)
 /**
  *  call-seq:
  *    attr(name, ...) -> array
- *    attr(name, true) -> array
- *    attr(name, false) -> array
  *
  *  The first form is equivalent to #attr_reader.
  *  The second form is equivalent to <code>attr_accessor(name)</code> but deprecated.
@@ -2069,16 +2067,6 @@ rb_mod_attr_reader(int argc, VALUE *argv, VALUE klass)
 VALUE
 rb_mod_attr(int argc, VALUE *argv, VALUE klass)
 {
-    if (argc == 2 && (argv[1] == Qtrue || argv[1] == Qfalse)) {
-	ID id = id_for_attr(klass, argv[0]);
-	VALUE names = rb_ary_new();
-
-	rb_category_warning(RB_WARN_CATEGORY_DEPRECATED, "optional boolean argument is obsoleted");
-	rb_attr(klass, id, 1, RTEST(argv[1]), TRUE);
-	rb_ary_push(names, ID2SYM(id));
-	if (argv[1] == Qtrue) rb_ary_push(names, ID2SYM(rb_id_attrset(id)));
-	return names;
-    }
     return rb_mod_attr_reader(argc, argv, klass);
 }
 
