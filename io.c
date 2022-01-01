@@ -1133,14 +1133,10 @@ rb_read_internal(rb_io_t *fptr, void *buf, size_t count)
 {
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_read_memory(scheduler, fptr->self, buf, count, count);
+        VALUE result = rb_fiber_scheduler_io_read_memory(scheduler, fptr->self, buf, count, 0);
 
         if (result != Qundef) {
-            ssize_t length = rb_fiber_scheduler_io_result_apply(result);
-
-            if (length < 0) rb_sys_fail_path(fptr->pathv);
-
-            return length;
+            return rb_fiber_scheduler_io_result_apply(result);
         }
     }
 
