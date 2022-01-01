@@ -75,11 +75,11 @@ module Reline::Terminfo
     @tiparm = Fiddle::Function.new(curses_dl['tparm'], [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VARIADIC], Fiddle::TYPE_VOIDP)
   end
   begin
-    #extern 'char *tigetflag(char *str, ...)'
+    #extern 'int tigetflag(char *str)'
     @tigetflag = Fiddle::Function.new(curses_dl['tigetflag'], [Fiddle::TYPE_VOIDP], Fiddle::TYPE_INT)
   rescue Fiddle::DLError
     # OpenBSD lacks tigetflag
-    #extern 'char *tgetflag(char *str, ...)'
+    #extern 'int tgetflag(char *str)'
     @tigetflag = Fiddle::Function.new(curses_dl['tgetflag'], [Fiddle::TYPE_VOIDP], Fiddle::TYPE_INT)
   end
   # TODO: add int tigetnum(char *capname)
