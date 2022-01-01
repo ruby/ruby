@@ -3657,7 +3657,7 @@ static VALUE
 int_anybits_p(VALUE num, VALUE mask)
 {
     mask = rb_to_int(mask);
-    return int_zero_p(rb_int_and(num, mask)) ? Qfalse : Qtrue;
+    return RBOOL(!int_zero_p(rb_int_and(num, mask)));
 }
 
 /*

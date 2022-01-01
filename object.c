@@ -204,7 +204,7 @@ VALUE rb_obj_hash(VALUE obj);
 MJIT_FUNC_EXPORTED VALUE
 rb_obj_not(VALUE obj)
 {
-    return RTEST(obj) ? Qfalse : Qtrue;
+    return RBOOL(!RTEST(obj));
 }
 
 /**
@@ -221,7 +221,7 @@ MJIT_FUNC_EXPORTED VALUE
 rb_obj_not_equal(VALUE obj1, VALUE obj2)
 {
     VALUE result = rb_funcall(obj1, id_eq, 1, obj2);
-    return RTEST(result) ? Qfalse : Qtrue;
+    return rb_obj_not(result);
 }
 
 VALUE
@@ -1295,7 +1295,7 @@ true_or(VALUE obj, VALUE obj2)
 static VALUE
 true_xor(VALUE obj, VALUE obj2)
 {
-    return RTEST(obj2)?Qfalse:Qtrue;
+    return rb_obj_not(obj2);
 }
 
 
@@ -1426,7 +1426,7 @@ static VALUE
 rb_obj_not_match(VALUE obj1, VALUE obj2)
 {
     VALUE result = rb_funcall(obj1, id_match, 1, obj2);
-    return RTEST(result) ? Qfalse : Qtrue;
+    return rb_obj_not(result);
 }
 
 

@@ -8933,7 +8933,7 @@ rb_io_autoclose_p(VALUE io)
 {
     rb_io_t *fptr = RFILE(io)->fptr;
     rb_io_check_closed(fptr);
-    return (fptr->mode & FMODE_PREP) ? Qfalse : Qtrue;
+    return RBOOL(!(fptr->mode & FMODE_PREP));
 }
 
 /*

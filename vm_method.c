@@ -2678,7 +2678,7 @@ basic_obj_respond_to(rb_execution_context_t *ec, VALUE obj, ID id, int pub)
 	return FALSE;
       case 0:
 	ret = basic_obj_respond_to_missing(ec, klass, obj, ID2SYM(id),
-					   pub ? Qfalse : Qtrue);
+					   RBOOL(!pub));
 	return RTEST(ret) && ret != Qundef;
       default:
 	return TRUE;

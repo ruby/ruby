@@ -2483,7 +2483,7 @@ rb_fiber_reset_root_local_storage(rb_thread_t *th)
 VALUE
 rb_fiber_alive_p(VALUE fiber_value)
 {
-    return FIBER_TERMINATED_P(fiber_ptr(fiber_value)) ? Qfalse : Qtrue;
+    return RBOOL(!FIBER_TERMINATED_P(fiber_ptr(fiber_value)));
 }
 
 /*

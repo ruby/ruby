@@ -3323,7 +3323,7 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
 	    al.dirattr = ATTR_DIR_ENTRYCOUNT;
 	    if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), 0) == 0) {
 		if (attrbuf[0] >= 2 * sizeof(u_int32_t))
-		    return attrbuf[1] ? Qfalse : Qtrue;
+		    return RBOOL(attrbuf[1] == 0);
 		if (false_on_notdir) return Qfalse;
 	    }
 	    rb_sys_fail_path(orig);

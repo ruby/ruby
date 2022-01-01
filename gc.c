@@ -8600,7 +8600,7 @@ rb_copy_wb_protected_attribute(VALUE dest, VALUE obj)
 VALUE
 rb_obj_rgengc_writebarrier_protected_p(VALUE obj)
 {
-    return RVALUE_WB_UNPROTECTED(obj) ? Qfalse : Qtrue;
+    return RBOOL(!RVALUE_WB_UNPROTECTED(obj));
 }
 
 VALUE
@@ -12343,7 +12343,7 @@ wmap_aref(VALUE self, VALUE key)
 static VALUE
 wmap_has_key(VALUE self, VALUE key)
 {
-    return wmap_lookup(self, key) == Qundef ? Qfalse : Qtrue;
+    return RBOOL(wmap_lookup(self, key) != Qundef);
 }
 
 /* Returns the number of referenced objects */

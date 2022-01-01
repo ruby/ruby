@@ -1604,7 +1604,7 @@ respond_to_missing_p(VALUE klass, VALUE obj, VALUE sym, int scope)
 
     if (obj == Qundef) return 0;
     if (rb_method_basic_definition_p(klass, rmiss)) return 0;
-    return RTEST(rb_funcall(obj, rmiss, 2, sym, scope ? Qfalse : Qtrue));
+    return RTEST(rb_funcall(obj, rmiss, 2, sym, RBOOL(!scope)));
 }
 
 

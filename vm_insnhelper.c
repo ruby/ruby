@@ -5205,7 +5205,7 @@ vm_opt_neq(const rb_iseq_t *iseq, CALL_DATA cd, CALL_DATA cd_eq, VALUE recv, VAL
         VALUE val = opt_equality(iseq, recv, obj, cd_eq);
 
 	if (val != Qundef) {
-	    return RTEST(val) ? Qfalse : Qtrue;
+	    return RBOOL(!RTEST(val));
 	}
     }
 
@@ -5538,7 +5538,7 @@ static VALUE
 vm_opt_not(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv)
 {
     if (vm_method_cfunc_is(iseq, cd, recv, rb_obj_not)) {
-	return RTEST(recv) ? Qfalse : Qtrue;
+	return RBOOL(!RTEST(recv));
     }
     else {
 	return Qundef;
