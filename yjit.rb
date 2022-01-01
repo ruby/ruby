@@ -149,7 +149,7 @@ module RubyVM::YJIT
   end
 
   def self.enabled?
-    Primitive.cexpr! 'rb_yjit_enabled_p() ? Qtrue : Qfalse'
+    Primitive.cexpr! 'RBOOL(rb_yjit_enabled_p())'
   end
 
   def self.simulate_oom!

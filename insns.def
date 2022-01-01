@@ -693,7 +693,7 @@ checktype
 (VALUE val)
 (VALUE ret)
 {
-    ret = (TYPE(val) == (int)type) ? Qtrue : Qfalse;
+    ret = RBOOL(TYPE(val) == (int)type);
 }
 
 /**********************************************************/
