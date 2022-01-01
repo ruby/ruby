@@ -38,9 +38,6 @@ class Reline::Terminfo::Test < Reline::TestCase
 
   def test_tigetflag_with_error
     assert_raise(Reline::Terminfo::TerminfoError) { Reline::Terminfo.tigetflag('cuu') }
-  end
-
-  def test_tigetflag_with_error_unknwon
     assert_raise(Reline::Terminfo::TerminfoError) { Reline::Terminfo.tigetflag('unknown') }
   end
 end if Reline::Terminfo.enabled?
