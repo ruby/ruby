@@ -29,4 +29,18 @@ class Reline::Terminfo::Test < Reline::TestCase
   rescue Reline::Terminfo::TerminfoError => e
     omit e.message
   end
+
+  def test_tigetflag
+    assert_instance_of Integer, Reline::Terminfo.tigetflag('xenl')
+  rescue Reline::Terminfo::TerminfoError => e
+    omit e.message
+  end
+
+  def test_tigetflag_with_error
+    assert_raise(Reline::Terminfo::TerminfoError) { Reline::Terminfo.tigetflag('cuu') }
+  end
+
+  def test_tigetflag_with_error_unknwon
+    assert_raise(Reline::Terminfo::TerminfoError) { Reline::Terminfo.tigetflag('unknown') }
+  end
 end if Reline::Terminfo.enabled?

@@ -74,7 +74,15 @@ module Reline::Terminfo
     #extern 'char *tparm(const char *str, ...)'
     @tiparm = Fiddle::Function.new(curses_dl['tparm'], [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VARIADIC], Fiddle::TYPE_VOIDP)
   end
-  # TODO: add int tigetflag(char *capname) and int tigetnum(char *capname)
+  begin
+    #extern 'char *tigetflag(const char *str, ...)'
+    @tigetflag = Fiddle::Function.new(curses_dl['tigetflag'], [Fiddle::TYPE_VOIDP], Fiddle::TYPE_INT)
+  rescue Fiddle::DLError
+    # OpenBSD lacks tigetflag
+    #extern 'char *tgetflag(const char *str, ...)'
+    @tigetflag = Fiddle::Function.new(curses_dl['tgetflag'], [Fiddle::TYPE_VOIDP], Fiddle::TYPE_INT)
+  end
+  # TODO: add int tigetnum(char *capname)
 
   def self.setupterm(term, fildes)
     errret_int = String.new("\x00" * 8, encoding: 'ASCII-8BIT')
@@ -120,6 +128,17 @@ module Reline::Terminfo
       new_args << Fiddle::TYPE_INT << a
     end
     @tiparm.(str, *new_args).to_s
+  end
+
+  def self.tigetflag(capname)
+    flag = @tigetflag.(capname).to_i
+    case flag
+    when -1
+      raise TerminfoError, "not boolean capability: #{capname}"
+    when 0
+      raise TerminfoError, "can't find capability: #{capname}"
+    end
+    flag
   end
 
   def self.enabled?
