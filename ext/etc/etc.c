@@ -1158,8 +1158,7 @@ Init_etc(void)
 #endif
 				      NULL);
 #if 0
-    /* Define-const: Passwd
-     *
+    /*
      * Passwd is a Struct that contains the following members:
      *
      * name::
@@ -1197,12 +1196,13 @@ Init_etc(void)
      * expire::
      *	    account expiration time(integer) must be compiled with +HAVE_STRUCT_PASSWD_PW_EXPIRE+
      */
-    rb_define_const(mEtc, "Passwd", sPasswd);
+    sPasswd = rb_define_class_under(mEtc, "Passwd", rb_cStruct);
 #endif
     rb_define_const(rb_cStruct, "Passwd", sPasswd); /* deprecated name */
     rb_deprecate_constant(rb_cStruct, "Passwd");
     rb_extend_object(sPasswd, rb_mEnumerable);
     rb_define_singleton_method(sPasswd, "each", etc_each_passwd, 0);
+
 #ifdef HAVE_GETGRENT
     sGroup = rb_struct_define_under(mEtc, "Group", "name",
 #ifdef HAVE_STRUCT_GROUP_GR_PASSWD
@@ -1211,8 +1211,7 @@ Init_etc(void)
 				    "gid", "mem", NULL);
 
 #if 0
-    /* Define-const: Group
-     *
+    /*
      * Group is a Struct that is only available when compiled with +HAVE_GETGRENT+.
      *
      * The struct contains the following members:
@@ -1232,7 +1231,7 @@ Init_etc(void)
      *	    is an Array of Strings containing the short login names of the
      *	    members of the group.
      */
-    rb_define_const(mEtc, "Group", sGroup);
+    sGroup = rb_define_class_under(mEtc, "Group", rb_cStruct);
 #endif
     rb_define_const(rb_cStruct, "Group", sGroup); /* deprecated name */
     rb_deprecate_constant(rb_cStruct, "Group");
