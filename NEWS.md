@@ -32,6 +32,7 @@ Note: We're only listing outstanding class updates.
     * RubyGems 3.4.0.dev
     * bundler 2.4.0.dev
     * io-console 0.5.11
+    * reline 0.3.1
 *   The following bundled gems are updated.
     * typeprof 0.21.2
 *   The following default gems are now bundled gems.
