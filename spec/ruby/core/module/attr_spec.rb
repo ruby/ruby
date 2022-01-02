@@ -144,10 +144,10 @@ describe "Module#attr" do
         Class.new { attr :foo, true }
       }.should complain(/boolean argument is obsoleted/, verbose: true)
     end
+  end
 
-    it "is a public method" do
-      Module.should have_public_instance_method(:attr, false)
-    end
+  it "is a public method" do
+    Module.should have_public_instance_method(:attr, false)
   end
 
   ruby_version_is ""..."3.0" do
