@@ -12,6 +12,10 @@ class Reline::Terminfo::Test < Reline::TestCase
     omit e.message
   end
 
+  def test_tigetstr_with_error
+    assert_raise(Reline::Terminfo::TerminfoError) { Reline::Terminfo.tigetstr('unknown') }
+  end
+
   def test_tiparm
     assert Reline::Terminfo.tigetstr('khome').tiparm
   rescue Reline::Terminfo::TerminfoError => e
