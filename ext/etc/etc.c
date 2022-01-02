@@ -52,7 +52,7 @@ char *getenv();
 #endif
 char *getlogin();
 
-#define RUBY_ETC_VERSION "1.3.1"
+#define RUBY_ETC_VERSION "1.4.0"
 
 #ifdef HAVE_RB_DEPRECATE_CONSTANT
 void rb_deprecate_constant(VALUE mod, const char *name);
