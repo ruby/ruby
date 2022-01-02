@@ -1219,11 +1219,10 @@ Init_etc(void)
      * name::
      *	    contains the name of the group as a String.
      * passwd::
-     *	    contains the encrypted password as a String. An 'x' is
+     *	    contains the encrypted password as a String. An <code>'x'</code> is
      *	    returned if password access to the group is not available; an empty
      *	    string is returned if no password is needed to obtain membership of
      *	    the group.
-     *
      *	    Must be compiled with +HAVE_STRUCT_GROUP_GR_PASSWD+.
      * gid::
      *	    contains the group's numeric ID as an integer.
