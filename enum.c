@@ -2961,11 +2961,11 @@ enum_each_slice_size(VALUE obj, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *    each_slice(n) { ... }  ->  self
+ *    each_slice(n) { ... }  ->  nil
  *    each_slice(n)          ->  enumerator
  *
  *  Calls the block with each successive disjoint +n+-tuple of elements;
- *  returns +self+:
+ *  returns +nil+:
  *
  *    a = []
  *    (1..10).each_slice(3) {|tuple| a.push(tuple) }
