@@ -1711,7 +1711,6 @@ io_buffer_copy(int argc, VALUE *argv, VALUE self)
  *  Read a chunk or all of the buffer into a string, in the specified
  *  +encoding+. If no encoding is provided +Encoding::BINARY+ is used.
  *
- *
  *     buffer = IO::Buffer.for('test')
  *     buffer.get_string
  *     # => "test"
@@ -1719,12 +1718,6 @@ io_buffer_copy(int argc, VALUE *argv, VALUE self)
  *     # => "st"
  *     buffer.get_string(2, 1)
  *     # => "s"
- *
- *     buffer = IO::Buffer.for('Руби')
- *     buffer.get_string(2).then { [_1, _1.encoding] }
- *     # => ["\xD1\x83\xD0\xB1\xD0\xB8", #<Encoding:ASCII-8BIT>]
- *     buffer.get_string(2, nil, 'UTF-8').then { [_1, _1.encoding] }
- *     # => ["уби", #<Encoding:UTF-8>]
  *
  */
 static VALUE
