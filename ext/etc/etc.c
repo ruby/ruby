@@ -1198,8 +1198,6 @@ Init_etc(void)
      */
     sPasswd = rb_define_class_under(mEtc, "Passwd", rb_cStruct);
 #endif
-    rb_define_const(rb_cStruct, "Passwd", sPasswd); /* deprecated name */
-    rb_deprecate_constant(rb_cStruct, "Passwd");
     rb_extend_object(sPasswd, rb_mEnumerable);
     rb_define_singleton_method(sPasswd, "each", etc_each_passwd, 0);
 
@@ -1232,8 +1230,6 @@ Init_etc(void)
      */
     sGroup = rb_define_class_under(mEtc, "Group", rb_cStruct);
 #endif
-    rb_define_const(rb_cStruct, "Group", sGroup); /* deprecated name */
-    rb_deprecate_constant(rb_cStruct, "Group");
     rb_extend_object(sGroup, rb_mEnumerable);
     rb_define_singleton_method(sGroup, "each", etc_each_group, 0);
 #endif
