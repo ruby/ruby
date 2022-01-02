@@ -14,6 +14,7 @@ class Reline::Terminfo::Test < Reline::TestCase
 
   def test_tigetstr_with_error
     assert_raise(Reline::Terminfo::TerminfoError) { Reline::Terminfo.tigetstr('unknown') }
+    assert_raise(Reline::Terminfo::TerminfoError) { Reline::Terminfo.tigetstr(nil) }
   end
 
   def test_tiparm
@@ -43,6 +44,7 @@ class Reline::Terminfo::Test < Reline::TestCase
   def test_tigetflag_with_error
     assert_raise(Reline::Terminfo::TerminfoError) { Reline::Terminfo.tigetflag('cuu') }
     assert_raise(Reline::Terminfo::TerminfoError) { Reline::Terminfo.tigetflag('unknown') }
+    assert_raise(Reline::Terminfo::TerminfoError) { Reline::Terminfo.tigetflag(nil) }
   end
 
   def test_tigetnum
@@ -54,5 +56,6 @@ class Reline::Terminfo::Test < Reline::TestCase
   def test_tigetnum_with_error
     assert_raise(Reline::Terminfo::TerminfoError) { Reline::Terminfo.tigetnum('cuu') }
     assert_raise(Reline::Terminfo::TerminfoError) { Reline::Terminfo.tigetnum('unknown') }
+    assert_raise(Reline::Terminfo::TerminfoError) { Reline::Terminfo.tigetnum(nil) }
   end
 end if Reline::Terminfo.enabled?

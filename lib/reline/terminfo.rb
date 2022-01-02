@@ -121,6 +121,7 @@ module Reline::Terminfo
   end
 
   def self.tigetstr(capname)
+    raise TerminfoError, "capname is not String: #{capname.inspect}" unless capname.is_a?(String)
     capability = @tigetstr.(capname)
     case capability.to_i
     when 0, -1
@@ -138,6 +139,7 @@ module Reline::Terminfo
   end
 
   def self.tigetflag(capname)
+    raise TerminfoError, "capname is not String: #{capname.inspect}" unless capname.is_a?(String)
     flag = @tigetflag.(capname).to_i
     case flag
     when -1
@@ -149,6 +151,7 @@ module Reline::Terminfo
   end
 
   def self.tigetnum(capname)
+    raise TerminfoError, "capname is not String: #{capname.inspect}" unless capname.is_a?(String)
     num = @tigetnum.(capname).to_i
     case num
     when -2
