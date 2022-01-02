@@ -364,19 +364,7 @@ class Reline::Test < Reline::TestCase
     assert_include(Reline.private_instance_methods, :readline)
   end
 
-  def test_inner_readline
-    # TODO in Reline::Core
-  end
-
   def test_read_io
-    # TODO in Reline::Core
-  end
-
-  def test_read_escaped_key
-    # TODO in Reline::Core
-  end
-
-  def test_may_req_ambiguous_char_width
     # TODO in Reline::Core
   end
 
