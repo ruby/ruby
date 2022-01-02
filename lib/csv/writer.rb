@@ -92,7 +92,7 @@ class CSV
         @use_headers = true
       else
         @headers = nil
-        @use_headers = false
+        @use_headers = true
       end
       return unless @headers
 
