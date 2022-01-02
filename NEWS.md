@@ -43,6 +43,12 @@ Note: Excluding feature bug fixes.
 
 ### Removed methods
 
+The following deprecated constant is removed.
+
+* `Random::DEFAULT`
+* `Struct::Group`
+* `Struct::Passwd`
+
 The following deprecated methods are removed.
 
 * `Dir.exists?`
