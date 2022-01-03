@@ -109,7 +109,7 @@ module Bundler
       require "digest/sha2"
       checksum = ::Digest::SHA512.file(built_gem_path).hexdigest
       target = File.join(base, "checksums", file_name)
-      File.write(target, checksum)
+      File.write(target, checksum + "\n")
       Bundler.ui.confirm "#{name} #{version} checksum written to checksums/#{file_name}."
     end
 

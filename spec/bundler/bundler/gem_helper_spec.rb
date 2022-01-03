@@ -172,7 +172,7 @@ RSpec.describe Bundler::GemHelper do
       it "calculates SHA512 of the content" do
         subject.build_checksum(Pathname(IO::NULL))
         sha_path = app_path.join("checksums", "#{File.basename(IO::NULL)}.sha512")
-        expect(File.read(sha_path)).to eql(Digest::SHA512.hexdigest(""))
+        expect(File.read(sha_path).chomp).to eql(Digest::SHA512.hexdigest(""))
       end
 
       context "when build was successful" do
