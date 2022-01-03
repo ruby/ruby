@@ -1308,11 +1308,26 @@ gen_get_ep(codeblock_t *cb, x86opnd_t reg, uint32_t level)
     }
 }
 
-// Compute the index of a local variable from its slot index
+// Compute the local table index of a variable from its index relative to the
+// environment object.
 static uint32_t
 slot_to_local_idx(const rb_iseq_t *iseq, int32_t slot_idx)
 {
-    // Convoluted rules from local_var_name() in iseq.c
+    // Layout illustration
+    // This is an array of VALUE
+    //                                           | VM_ENV_DATA_SIZE |
+    //                                           v                  v
+    // low addr <+-------+-------+-------+-------+------------------+
+    //           |local 0|local 1|  ...  |local n|       ....       |
+    //           +-------+-------+-------+-------+------------------+
+    //           ^       ^                       ^                  ^
+    //           +-------+---local_table_size----+         cfp->ep--+
+    //                   |                                          |
+    //                   +------------------slot_idx----------------+
+    //
+    // See usages of local_var_name() from iseq.c for similar calculation.
+
+    // FIXME: unsigned to signed cast below can truncate
     int32_t local_table_size = iseq->body->local_table_size;
     int32_t op = slot_idx - VM_ENV_DATA_SIZE;
     int32_t local_idx = local_idx = local_table_size - op - 1;
@@ -1324,6 +1339,8 @@ static codegen_status_t
 gen_getlocal_wc0(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
     // Compute the offset from BP to the local
+    // TODO: Type is lindex_t in interpter. The following cast can truncate.
+    //       Not in the mood to dance around signed multiplication UB at the moment...
     int32_t slot_idx = (int32_t)jit_get_arg(jit, 0);
     const int32_t offs = -(SIZEOF_VALUE * slot_idx);
     uint32_t local_idx = slot_to_local_idx(jit->iseq, slot_idx);
@@ -4401,7 +4418,7 @@ gen_setglobal(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     ID gid = jit_get_arg(jit, 0);
 
     // Save the PC and SP because we might make a Ruby call for
-    // Kernel#set_trace_var
+    // Kernel#trace_var
     jit_prepare_routine_call(jit, ctx, REG0);
 
     mov(cb, C_ARG_REGS[0], imm_opnd(gid));
@@ -4418,8 +4435,7 @@ gen_setglobal(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 static codegen_status_t
 gen_anytostring(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
-    // Save the PC and SP because we might make a Ruby call for
-    // Kernel#set_trace_var
+    // Might allocate in rb_obj_as_string_result().
     jit_prepare_routine_call(jit, ctx, REG0);
 
     x86opnd_t str = ctx_stack_pop(ctx, 1);
