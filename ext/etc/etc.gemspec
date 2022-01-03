@@ -22,7 +22,7 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/ruby/etc"
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
-  changelogs = Dir.glob("logs/ChangeLog-*[^~]", base: __dir__)
+  changelogs = Dir.glob("logs/ChangeLog-[1-9]*[^~]", base: __dir__)
   spec.files         = %w[
     LICENSE.txt
     README.md
