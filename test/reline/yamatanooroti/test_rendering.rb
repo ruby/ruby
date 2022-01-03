@@ -948,7 +948,7 @@ begin
 
     def test_dialog_with_fullwidth_chars
       ENV['RELINE_TEST_PROMPT'] = '> '
-      start_terminal(30, 5, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog fullwidth,scrollkey,scrollbar}, startup_message: 'Multiline REPL.')
+      start_terminal(20, 5, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog fullwidth,scrollkey,scrollbar}, startup_message: 'Multiline REPL.')
       6.times{ write('j') }
       close
       assert_screen(<<~'EOC')
@@ -965,7 +965,7 @@ begin
 
     def test_dialog_with_fullwidth_chars_split
       ENV['RELINE_TEST_PROMPT'] = '> '
-      start_terminal(30, 6, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog fullwidth,scrollkey,scrollbar}, startup_message: 'Multiline REPL.')
+      start_terminal(20, 6, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog fullwidth,scrollkey,scrollbar}, startup_message: 'Multiline REPL.')
       6.times{ write('j') }
       close
       assert_screen(<<~'EOC')
