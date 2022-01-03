@@ -1330,7 +1330,7 @@ slot_to_local_idx(const rb_iseq_t *iseq, int32_t slot_idx)
     // FIXME: unsigned to signed cast below can truncate
     int32_t local_table_size = iseq->body->local_table_size;
     int32_t op = slot_idx - VM_ENV_DATA_SIZE;
-    int32_t local_idx = local_idx = local_table_size - op - 1;
+    int32_t local_idx = local_table_size - op - 1;
     RUBY_ASSERT(local_idx >= 0 && local_idx < local_table_size);
     return (uint32_t)local_idx;
 }
