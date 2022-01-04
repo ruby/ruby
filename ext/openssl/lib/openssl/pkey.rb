@@ -167,8 +167,16 @@ module OpenSSL::PKey
       # +size+::
       #   The desired key size in bits.
       def generate(size, &blk)
+        # FIPS 186-4 specifies four (L,N) pairs: (1024,160), (2048,224),
+        # (2048,256), and (3072,256).
+        #
+        # q size is derived here with compatibility with
+        # DSA_generator_parameters_ex() which previous versions of ruby/openssl
+        # used to call.
+        qsize = size >= 2048 ? 256 : 160
         dsaparams = OpenSSL::PKey.generate_parameters("DSA", {
           "dsa_paramgen_bits" => size,
+          "dsa_paramgen_q_bits" => qsize,
         }, &blk)
         OpenSSL::PKey.generate_key(dsaparams)
       end
