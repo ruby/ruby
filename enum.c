@@ -4777,26 +4777,42 @@ enum_compact(VALUE obj)
  *   [1, 2]
  *   nil
  *
- * == \Enumerable in Ruby Core Classes
- * Some Ruby classes include \Enumerable:
+ * == \Enumerable in Ruby Classes
+ *
+ * These Ruby core classes include (or extend) \Enumerable:
+ *
+ * - ARGF
  * - Array
  * - Dir
+ * - Enumerator
+ * - ENV (extends)
  * - Hash
  * - IO
  * - Range
- * - Set
  * - Struct
+ *
+ * These Ruby standard library classes include \Enumerable:
+ *
+ * - CSV
+ * - CSV::Table
+ * - CSV::Row
+ * - Set
+ *
  * Virtually all methods in \Enumerable call method +#each+ in the including class:
+ *
  * - <tt>Hash#each</tt> yields the next key-value pair as a 2-element \Array.
  * - <tt>Struct#each</tt> yields the next name-value pair as a 2-element \Array.
  * - For the other classes above, +#each+ yields the next object from the collection.
  *
  * == About the Examples
+ *
  * The example code snippets for the \Enumerable methods:
+ *
  * - Always show the use of one or more \Array-like classes (often \Array itself).
  * - Sometimes show the use of a \Hash-like class.
  *   For some methods, though, the usage would not make sense,
  *   and so it is not shown.  Example: #tally would find exactly one of each \Hash entry.
+ *
  */
 
 void
