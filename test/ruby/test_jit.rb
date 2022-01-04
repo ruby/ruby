@@ -64,7 +64,7 @@ class TestJIT < Test::Unit::TestCase
 
   def setup
     unless JITSupport.supported?
-      skip 'JIT seems not supported on this platform'
+      omit 'JIT seems not supported on this platform'
     end
     self.class.setup
   end
@@ -321,7 +321,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_reput
-    skip "write test"
+    omit "write test"
   end
 
   def test_compile_insn_setn
@@ -352,11 +352,11 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_tracecoverage
-    skip "write test"
+    omit "write test"
   end
 
   def test_compile_insn_defineclass
-    skip "support this in mjit_compile (low priority)"
+    omit "support this in mjit_compile (low priority)"
   end
 
   def test_compile_insn_send
@@ -709,7 +709,7 @@ class TestJIT < Test::Unit::TestCase
 
       if RUBY_PLATFORM.match?(/mswin/)
         # "Permission Denied" error is preventing to remove so file on AppVeyor/RubyCI.
-        skip 'Removing so file is randomly failing on AppVeyor/RubyCI mswin due to Permission Denied.'
+        omit 'Removing so file is randomly failing on AppVeyor/RubyCI mswin due to Permission Denied.'
       else
         # verify .c files are deleted on unload_units
         assert_send([Dir, :empty?, dir], debug_info)
@@ -996,7 +996,7 @@ class TestJIT < Test::Unit::TestCase
 
   def test_clean_so
     if RUBY_PLATFORM.match?(/mswin/)
-      skip 'Removing so file is randomly failing on AppVeyor/RubyCI mswin due to Permission Denied.'
+      omit 'Removing so file is randomly failing on AppVeyor/RubyCI mswin due to Permission Denied.'
     end
     Dir.mktmpdir("jit_test_clean_so_") do |dir|
       code = "x = 0; 10.times {|i|x+=i}"
@@ -1010,7 +1010,7 @@ class TestJIT < Test::Unit::TestCase
   def test_clean_objects_on_exec
     if /mswin|mingw/ =~ RUBY_PLATFORM
       # TODO: check call stack and close handle of code which is not on stack, and remove objects on best-effort basis
-      skip 'Removing so file being used does not work on Windows'
+      omit 'Removing so file being used does not work on Windows'
     end
     Dir.mktmpdir("jit_test_clean_objects_on_exec_") do |dir|
       eval_with_jit({"TMPDIR"=>dir}, "#{<<~"begin;"}\n#{<<~"end;"}", min_calls: 1)

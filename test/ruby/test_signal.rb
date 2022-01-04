@@ -323,7 +323,7 @@ class TestSignal < Test::Unit::TestCase
   end
 
   def test_sigchld_ignore
-    skip 'no SIGCHLD' unless Signal.list['CHLD']
+    omit 'no SIGCHLD' unless Signal.list['CHLD']
     old = trap(:CHLD, 'IGNORE')
     cmd = [ EnvUtil.rubybin, '--disable=gems', '-e' ]
     assert(system(*cmd, 'exit!(0)'), 'no ECHILD')

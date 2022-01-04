@@ -500,7 +500,7 @@ class TestThread < Test::Unit::TestCase
 
   def test_ignore_deadlock
     if /mswin|mingw/ =~ RUBY_PLATFORM
-      skip "can't trap a signal from another process on Windows"
+      omit "can't trap a signal from another process on Windows"
     end
     assert_in_out_err([], <<-INPUT, %w(false :sig), [], :signal=>:INT, timeout: 1, timeout_error: nil)
       p Thread.ignore_deadlock
@@ -731,7 +731,7 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_no_valid_cfp
-    skip 'with win32ole, cannot run this testcase because win32ole redefines Thread#initialize' if defined?(WIN32OLE)
+    omit 'with win32ole, cannot run this testcase because win32ole redefines Thread#initialize' if defined?(WIN32OLE)
     bug5083 = '[ruby-dev:44208]'
     assert_equal([], Thread.new(&Module.method(:nesting)).value, bug5083)
     assert_instance_of(Thread, Thread.new(:to_s, &Class.new.method(:undef_method)).join, bug5083)
@@ -1256,7 +1256,7 @@ q.pop
   end if Process.respond_to?(:fork)
 
   def test_fork_while_parent_locked
-    skip 'needs fork' unless Process.respond_to?(:fork)
+    omit 'needs fork' unless Process.respond_to?(:fork)
     m = Thread::Mutex.new
     nr = 1
     thrs = []
@@ -1277,7 +1277,7 @@ q.pop
   end
 
   def test_fork_while_mutex_locked_by_forker
-    skip 'needs fork' unless Process.respond_to?(:fork)
+    omit 'needs fork' unless Process.respond_to?(:fork)
     m = Thread::Mutex.new
     m.synchronize do
       pid = fork do
@@ -1345,7 +1345,7 @@ q.pop
   end
 
   def test_thread_native_thread_id
-    skip "don't support native_thread_id" unless Thread.method_defined?(:native_thread_id)
+    omit "don't support native_thread_id" unless Thread.method_defined?(:native_thread_id)
     assert_instance_of Integer, Thread.main.native_thread_id
 
     th1 = Thread.start{sleep}
@@ -1384,7 +1384,7 @@ q.pop
 
   def test_signal_at_join
     if /mswin|mingw/ =~ RUBY_PLATFORM
-      skip "can't trap a signal from another process on Windows"
+      omit "can't trap a signal from another process on Windows"
       # opt = {new_pgroup: true}
     end
     assert_separately([], "#{<<~"{#"}\n#{<<~'};'}", timeout: 120)

@@ -640,7 +640,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_birthtime
-    skip if RUBY_PLATFORM =~ /android/
+    omit if RUBY_PLATFORM =~ /android/
     [regular_file, utf8_file].each do |file|
       t1 = File.birthtime(file)
       t2 = File.open(file) {|f| f.birthtime}
@@ -773,7 +773,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     def test_readlink_junction
       base = File.basename(nofile)
       err = IO.popen(%W"cmd.exe /c mklink /j #{base} .", chdir: @dir, err: %i[child out], &:read)
-      skip err unless $?.success?
+      omit err unless $?.success?
       assert_equal(@dir, File.readlink(nofile))
     end
 
@@ -1119,7 +1119,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_expand_path_for_existent_username
     user = ENV['USER']
-    skip "ENV['USER'] is not set" unless user
+    omit "ENV['USER'] is not set" unless user
     assert_equal(ENV['HOME'], File.expand_path("~#{user}"))
   end unless DRIVE
 

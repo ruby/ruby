@@ -9,7 +9,7 @@ class TestRubyVMJIT < Test::Unit::TestCase
 
   def setup
     unless JITSupport.supported?
-      skip 'JIT seems not supported on this platform'
+      omit 'JIT seems not supported on this platform'
     end
   end
 

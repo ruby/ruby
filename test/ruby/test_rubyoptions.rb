@@ -674,7 +674,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_set_program_name
-    skip "platform dependent feature" unless defined?(PSCMD) and PSCMD
+    omit "platform dependent feature" unless defined?(PSCMD) and PSCMD
 
     with_tmpchdir do
       write_file("test-script", "$0 = 'hello world'; /test-script/ =~ Process.argv0 or $0 = 'Process.argv0 changed!'; sleep 60")
@@ -697,7 +697,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_setproctitle
-    skip "platform dependent feature" unless defined?(PSCMD) and PSCMD
+    omit "platform dependent feature" unless defined?(PSCMD) and PSCMD
 
     assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
     {#
@@ -772,7 +772,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def assert_segv(args, message=nil)
-    skip if ENV['RUBY_ON_BUG']
+    omit if ENV['RUBY_ON_BUG']
 
     test_stdin = ""
     opt = SEGVTest::ExecOptions.dup
@@ -857,7 +857,7 @@ class TestRubyOptions < Test::Unit::TestCase
           Process.wait pid
         }
       rescue RuntimeError
-        skip $!
+        omit $!
       end
     }
     assert_equal("", result, '[ruby-dev:37798]')
@@ -907,7 +907,7 @@ class TestRubyOptions < Test::Unit::TestCase
                name = c.chr(Encoding::UTF_8)
                expected = name.encode("locale") rescue nil
              }
-        skip "can't make locale name"
+        omit "can't make locale name"
       end
       name << ".rb"
       expected << ".rb"
@@ -1115,7 +1115,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_null_script
-    skip "#{IO::NULL} is not a character device" unless File.chardev?(IO::NULL)
+    omit "#{IO::NULL} is not a character device" unless File.chardev?(IO::NULL)
     assert_in_out_err([IO::NULL], success: true)
   end
 

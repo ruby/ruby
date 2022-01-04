@@ -18,7 +18,7 @@ class TestRequireLib < Test::Unit::TestCase
         begin
           require #{lib.dump}
         rescue Exception
-          skip $!
+          omit $!
         end
         assert_equal n, Thread.list.size
       end;

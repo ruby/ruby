@@ -112,7 +112,7 @@ class TestTimeTZ < Test::Unit::TestCase
     t = with_tz("America/Los_Angeles") {
       Time.local(2000, 1, 1)
     }
-    skip "force_tz_test is false on this environment" unless t
+    omit "force_tz_test is false on this environment" unless t
     z1 = t.zone
     z2 = with_tz(tz="Asia/Singapore") {
       t.localtime.zone

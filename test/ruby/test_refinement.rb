@@ -225,7 +225,7 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
   def test_method_should_use_refinements
-    skip if Test::Unit::Runner.current_repeat_count > 0
+    omit if Test::Unit::Runner.current_repeat_count > 0
 
     foo = Foo.new
     assert_raise(NameError) { foo.method(:z) }
@@ -248,7 +248,7 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
   def test_instance_method_should_use_refinements
-    skip if Test::Unit::Runner.current_repeat_count > 0
+    omit if Test::Unit::Runner.current_repeat_count > 0
 
     foo = Foo.new
     assert_raise(NameError) { Foo.instance_method(:z) }
@@ -819,7 +819,7 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_prepend_after_refine_wb_miss
     if /\A(arm|mips)/ =~ RUBY_PLATFORM
-      skip "too slow cpu"
+      omit "too slow cpu"
     end
     assert_normal_exit %Q{
       GC.stress = true

@@ -11,7 +11,7 @@ end
 class TestGCCompact < Test::Unit::TestCase
   module SupportsCompact
     def setup
-      skip "autocompact not supported on this platform" unless supports_auto_compact?
+      omit "autocompact not supported on this platform" unless supports_auto_compact?
       super
     end
 
@@ -78,7 +78,7 @@ class TestGCCompact < Test::Unit::TestCase
       n.times do
         break if count < GC.stat(:compact_count)
         list2 << Object.new
-      end and skip "implicit compaction didn't happen within #{n} objects"
+      end and omit "implicit compaction didn't happen within #{n} objects"
       compact_stats = GC.latest_compact_info
       refute_predicate compact_stats[:considered], :empty?
       refute_predicate compact_stats[:moved], :empty?
@@ -92,7 +92,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def setup
-    skip "autocompact not supported on this platform" unless supports_auto_compact?
+    omit "autocompact not supported on this platform" unless supports_auto_compact?
     super
   end
 

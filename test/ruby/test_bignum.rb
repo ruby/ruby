@@ -644,7 +644,7 @@ class TestBignum < Test::Unit::TestCase
     thread.raise
     thread.join
     time = Time.now - time
-    skip "too fast cpu" if end_flag
+    omit "too fast cpu" if end_flag
     assert_operator(time, :<, 10)
   end
 
@@ -675,7 +675,7 @@ class TestBignum < Test::Unit::TestCase
           return
         end
       end
-      skip "cannot create suitable test case"
+      omit "cannot create suitable test case"
     ensure
       Signal.trap(:INT, oldtrap) if oldtrap
     end

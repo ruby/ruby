@@ -3270,7 +3270,7 @@ class TestArray < Test::Unit::TestCase
       end
     EOS
     rescue Timeout::Error => e
-      skip e.message
+      omit e.message
     end
   end
 

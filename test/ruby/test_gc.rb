@@ -54,7 +54,7 @@ class TestGc < Test::Unit::TestCase
 
   def test_start_full_mark
     return unless use_rgengc?
-    skip 'stress' if GC.stress
+    omit 'stress' if GC.stress
 
     3.times { GC.start } # full mark and next time it should be minor mark
     GC.start(full_mark: false)
@@ -65,7 +65,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_start_immediate_sweep
-    skip 'stress' if GC.stress
+    omit 'stress' if GC.stress
 
     GC.start(immediate_sweep: false)
     assert_equal false, GC.latest_gc_info(:immediate_sweep)
@@ -117,7 +117,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_stat_single
-    skip 'stress' if GC.stress
+    omit 'stress' if GC.stress
 
     stat = GC.stat
     assert_equal stat[:count], GC.stat(:count)
@@ -125,7 +125,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_stat_constraints
-    skip 'stress' if GC.stress
+    omit 'stress' if GC.stress
 
     stat = GC.stat
     assert_equal stat[:total_allocated_pages], stat[:heap_allocated_pages] + stat[:total_freed_pages]
@@ -140,7 +140,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_latest_gc_info
-    skip 'stress' if GC.stress
+    omit 'stress' if GC.stress
 
     assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom'
     GC.start
@@ -280,7 +280,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_profiler_clear
-    skip "for now"
+    omit "for now"
     assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom', timeout: 30
     GC::Profiler.enable
 

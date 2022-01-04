@@ -539,7 +539,7 @@ class TestISeq < Test::Unit::TestCase
     bin = assert_nothing_raised(mesg) do
       iseq.to_binary
     rescue RuntimeError => e
-      skip e.message if /compile with coverage/ =~ e.message
+      omit e.message if /compile with coverage/ =~ e.message
       raise
     end
     10.times do

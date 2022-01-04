@@ -2371,7 +2371,7 @@ CODE
     }
     assert_equal [], events, 'script_compiled event should not be invoked on compile error'
 
-    skip "TODO: test for requires"
+    omit "TODO: test for requires"
 
     events.clear
     tp.enable{

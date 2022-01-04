@@ -116,7 +116,7 @@ class TestTime < Test::Unit::TestCase
       assert_equal(946684800, Time.utc(2000, 1, 1, 0, 0, 0).tv_sec)
 
       # Giveup to try 2nd test because some state is changed.
-      skip if Test::Unit::Runner.current_repeat_count > 0
+      omit if Test::Unit::Runner.current_repeat_count > 0
 
       assert_equal(0x7fffffff, Time.utc(2038, 1, 19, 3, 14, 7).tv_sec)
       assert_equal(0x80000000, Time.utc(2038, 1, 19, 3, 14, 8).tv_sec)
@@ -1183,7 +1183,7 @@ class TestTime < Test::Unit::TestCase
 
   def test_2038
     # Giveup to try 2nd test because some state is changed.
-    skip if Test::Unit::Runner.current_repeat_count > 0
+    omit if Test::Unit::Runner.current_repeat_count > 0
 
     if no_leap_seconds?
       assert_equal(0x80000000, Time.utc(2038, 1, 19, 3, 14, 8).tv_sec)
@@ -1308,8 +1308,8 @@ class TestTime < Test::Unit::TestCase
 
   def test_memsize
     # Time objects are common in some code, try to keep them small
-    skip "Time object size test" if /^(?:i.?86|x86_64)-linux/ !~ RUBY_PLATFORM
-    skip "GC is in debug" if GC::INTERNAL_CONSTANTS[:DEBUG]
+    omit "Time object size test" if /^(?:i.?86|x86_64)-linux/ !~ RUBY_PLATFORM
+    omit "GC is in debug" if GC::INTERNAL_CONSTANTS[:DEBUG]
     require 'objspace'
     t = Time.at(0)
     size = GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
@@ -1323,6 +1323,6 @@ class TestTime < Test::Unit::TestCase
     end
     assert_equal expect, ObjectSpace.memsize_of(t)
   rescue LoadError => e
-    skip "failed to load objspace: #{e.message}"
+    omit "failed to load objspace: #{e.message}"
   end
 end

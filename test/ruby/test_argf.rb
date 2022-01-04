@@ -257,13 +257,13 @@ class TestArgf < Test::Unit::TestCase
 
   def test_inplace_nonascii
     ext = Encoding.default_external or
-      skip "no default external encoding"
+      omit "no default external encoding"
     t = nil
     ["\u{3042}", "\u{e9}"].any? do |n|
       t = make_tempfile(n.encode(ext))
     rescue Encoding::UndefinedConversionError
     end
-    t or skip "no name to test"
+    t or omit "no name to test"
     assert_in_out_err(["-i.bak", "-", t.path],
                       "#{<<~"{#"}\n#{<<~'};'}")
     {#

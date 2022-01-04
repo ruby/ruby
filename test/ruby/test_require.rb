@@ -93,7 +93,7 @@ class TestRequire < Test::Unit::TestCase
       begin
         require_path = File.join(tmp, dir, 'foo.rb').encode(encoding)
       rescue
-        skip "cannot convert path encoding to #{encoding}"
+        omit "cannot convert path encoding to #{encoding}"
       end
       Dir.mkdir(File.dirname(require_path))
       open(require_path, "wb") {|f| f.puts '$:.push __FILE__'}
@@ -175,7 +175,7 @@ class TestRequire < Test::Unit::TestCase
       t.close
 
       path = File.expand_path(t.path).sub(/\A(\w):/, '//127.0.0.1/\1$')
-      skip "local drive #$1: is not shared" unless File.exist?(path)
+      omit "local drive #$1: is not shared" unless File.exist?(path)
       args = ['--disable-gems', "-I#{File.dirname(path)}"]
       assert_in_out_err(args, "#{<<~"END;"}", [path], [])
       begin
@@ -460,7 +460,7 @@ class TestRequire < Test::Unit::TestCase
           result = IO.popen([EnvUtil.rubybin, "b/tst.rb"], &:read)
           assert_equal("a/lib.rb\n", result, "[ruby-dev:40040]")
         rescue NotImplementedError, Errno::EACCES
-          skip "File.symlink is not implemented"
+          omit "File.symlink is not implemented"
         end
       }
     }
@@ -486,7 +486,7 @@ class TestRequire < Test::Unit::TestCase
           result = IO.popen([EnvUtil.rubybin, "c.rb"], &:read)
           assert_equal("1", result, "bug17885 [ruby-core:104010]")
         rescue NotImplementedError, Errno::EACCES
-          skip "File.symlink is not implemented"
+          omit "File.symlink is not implemented"
         end
       }
     }
@@ -850,7 +850,7 @@ class TestRequire < Test::Unit::TestCase
   end if File.respond_to?(:mkfifo)
 
   def test_loading_fifo_fd_leak
-    skip if RUBY_PLATFORM =~ /android/ # https://rubyci.org/logs/rubyci.s3.amazonaws.com/android29-x86_64/ruby-master/log/20200419T124100Z.fail.html.gz
+    omit if RUBY_PLATFORM =~ /android/ # https://rubyci.org/logs/rubyci.s3.amazonaws.com/android29-x86_64/ruby-master/log/20200419T124100Z.fail.html.gz
 
     Tempfile.create(%w'fifo .rb') {|f|
       f.close
@@ -911,7 +911,7 @@ class TestRequire < Test::Unit::TestCase
       begin
         File.symlink "real", File.join(tmp, "symlink")
       rescue NotImplementedError, Errno::EACCES
-        skip "File.symlink is not implemented"
+        omit "File.symlink is not implemented"
       end
       File.write(File.join(tmp, "real/test_symlink_load_path.rb"), "print __FILE__")
       result = IO.popen([EnvUtil.rubybin, "-I#{tmp}/symlink", "-e", "require 'test_symlink_load_path.rb'"], &:read)

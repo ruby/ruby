@@ -34,7 +34,7 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_many_fibers
-    skip 'This is unstable on GitHub Actions --jit-wait. TODO: debug it' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+    omit 'This is unstable on GitHub Actions --jit-wait. TODO: debug it' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
     max = 1000
     assert_equal(max, max.times{
       Fiber.new{}
@@ -381,7 +381,7 @@ class TestFiber < Test::Unit::TestCase
 
 
   def test_fork_from_fiber
-    skip 'fork not supported' unless Process.respond_to?(:fork)
+    omit 'fork not supported' unless Process.respond_to?(:fork)
     pid = nil
     bug5700 = '[ruby-core:41456]'
     assert_nothing_raised(bug5700) do
