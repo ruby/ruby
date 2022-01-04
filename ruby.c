@@ -2062,7 +2062,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         for (long i = loaded_before_enc; i < RARRAY_LEN(loaded_features); ++i) {
 	    VALUE path = RARRAY_AREF(loaded_features, i);
             if (!(path = copy_str(path, IF_UTF8_PATH(uenc, lenc), true))) continue;
-            modified = true;
+            if (!modified) {
+                rb_ary_modify(loaded_features);
+                modified = true;
+            }
 	    RARRAY_ASET(loaded_features, i, path);
         }
         if (modified) {
