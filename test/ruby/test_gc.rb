@@ -139,6 +139,72 @@ class TestGc < Test::Unit::TestCase
     end
   end
 
+  def test_stat_heap
+    skip 'stress' if GC.stress
+
+    stat_heap = {}
+    stat = {}
+    # Initialize to prevent GC in future calls
+    GC.stat_heap(0, stat_heap)
+    GC.stat(stat)
+
+    GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
+      GC.stat_heap(i, stat_heap)
+      GC.stat(stat)
+
+      assert_equal GC::INTERNAL_CONSTANTS[:RVALUE_SIZE] * (2**i), stat_heap[:slot_size]
+      assert_operator stat_heap[:heap_allocatable_pages], :<=, stat[:heap_allocatable_pages]
+      assert_operator stat_heap[:heap_eden_pages], :<=, stat[:heap_eden_pages]
+      assert_operator stat_heap[:heap_eden_slots], :>=, 0
+      assert_operator stat_heap[:heap_tomb_pages], :<=, stat[:heap_tomb_pages]
+      assert_operator stat_heap[:heap_tomb_slots], :>=, 0
+    end
+
+    GC.stat_heap(0, stat_heap)
+    assert_equal stat_heap[:slot_size], GC.stat_heap(0, :slot_size)
+    assert_equal stat_heap[:slot_size], GC.stat_heap(0)[:slot_size]
+
+    assert_raise(ArgumentError) { GC.stat_heap(-1) }
+    assert_raise(ArgumentError) { GC.stat_heap(GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT]) }
+  end
+
+  def test_stat_heap_all
+    stat_heap_all = {}
+    stat_heap = {}
+
+    2.times do
+      GC.stat_heap(0, stat_heap)
+      GC.stat_heap(nil, stat_heap_all)
+    end
+
+    GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
+      GC.stat_heap(i, stat_heap)
+
+      assert_equal stat_heap, stat_heap_all[i]
+    end
+
+    assert_raise(TypeError) { GC.stat_heap(nil, :slot_size) }
+  end
+
+  def test_stat_heap_constraints
+    skip 'stress' if GC.stress
+
+    stat = GC.stat
+    stat_heap = GC.stat_heap
+    GC.stat(stat)
+    GC.stat_heap(nil, stat_heap)
+
+    stat_heap_sum = Hash.new(0)
+    stat_heap.values.each do |hash|
+      hash.each { |k, v| stat_heap_sum[k] += v }
+    end
+
+    assert_equal stat[:heap_allocatable_pages], stat_heap_sum[:heap_allocatable_pages]
+    assert_equal stat[:heap_eden_pages], stat_heap_sum[:heap_eden_pages]
+    assert_equal stat[:heap_tomb_pages], stat_heap_sum[:heap_tomb_pages]
+    assert_equal stat[:heap_available_slots], stat_heap_sum[:heap_eden_slots] + stat_heap_sum[:heap_tomb_slots]
+  end
+
   def test_latest_gc_info
     omit 'stress' if GC.stress
 
