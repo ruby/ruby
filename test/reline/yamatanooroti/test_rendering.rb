@@ -1254,6 +1254,23 @@ begin
       EOC
     end
 
+    def test_clear_dialog_when_just_move_cursor_at_last_line
+      start_terminal(10, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("class A\n  3\nend\n")
+      write("\C-p\C-p\C-p\C-e\C-hS")
+      write("\C-n")
+      write("1")
+      close
+      assert_screen(<<~'EOC')
+        prompt>   3
+        prompt> end
+        => 3
+        prompt> class S
+        prompt>   31
+        prompt> end
+      EOC
+    end
+
     def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content

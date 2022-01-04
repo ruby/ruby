@@ -470,8 +470,12 @@ class Reline::LineEditor
       @add_newline_to_end_of_buffer = false
     else
       if @just_cursor_moving and not @rerender_all
+        @dialogs.each do |dialog|
+          clear_each_dialog(dialog)
+          dialog.contents = nil
+          dialog.trap_key = nil
+        end
         rendered = just_move_cursor
-        render_dialog((prompt_width + @cursor) % @screen_size.last)
         @just_cursor_moving = false
         return
       elsif @previous_line_index or new_highest_in_this != @highest_in_this
