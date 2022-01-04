@@ -1409,7 +1409,7 @@ class TestMethod < Test::Unit::TestCase
     # use_symbol = Object.instance_methods[0].is_a?(Symbol)
     nummodule = nummethod = 0
     mods = []
-    ObjectSpace.each_object(Module) {|m| mods << m if Symbol === m.name }
+    ObjectSpace.each_object(Module) {|m| mods << m if String === m.name }
     mods = mods.sort_by {|m| m.name }
     mods.each {|mod|
       nummodule += 1
