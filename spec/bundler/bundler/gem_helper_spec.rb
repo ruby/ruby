@@ -66,6 +66,10 @@ RSpec.describe Bundler::GemHelper do
       mock_confirm_message message
     end
 
+    def sha512_hexdigest(path)
+      Digest::SHA512.file(path).hexdigest
+    end
+
     subject! { Bundler::GemHelper.new(app_path) }
     let(:app_version) { "0.1.0" }
     let(:app_gem_dir) { app_path.join("pkg") }
@@ -183,6 +187,7 @@ RSpec.describe Bundler::GemHelper do
           mock_checksum_message app_name, app_version
           subject.build_checksum
           expect(app_sha_path).to exist
+          expect(File.read(app_sha_path).chomp).to eql(sha512_hexdigest(app_gem_path))
         end
       end
       context "when building in the current working directory" do
@@ -193,6 +198,7 @@ RSpec.describe Bundler::GemHelper do
             Bundler::GemHelper.new.build_checksum
           end
           expect(app_sha_path).to exist
+          expect(File.read(app_sha_path).chomp).to eql(sha512_hexdigest(app_gem_path))
         end
       end
       context "when building in a location relative to the current working directory" do
@@ -203,6 +209,7 @@ RSpec.describe Bundler::GemHelper do
             Bundler::GemHelper.new(File.basename(app_path)).build_checksum
           end
           expect(app_sha_path).to exist
+          expect(File.read(app_sha_path).chomp).to eql(sha512_hexdigest(app_gem_path))
         end
       end
     end
