@@ -205,6 +205,40 @@ module GC
     Primitive.gc_stat hash_or_key
   end
 
+  # call-seq:
+  #    GC.stat_heap -> Hash
+  #    GC.stat_heap(nil, hash) -> Hash
+  #    GC.stat_heap(heap_name) -> Hash
+  #    GC.stat_heap(heap_name, hash) -> Hash
+  #    GC.stat_heap(heap_name, :key) -> Numeric
+  #
+  # Returns information for memory pools in the GC.
+  #
+  # If the first optional argument, +heap_name+, is passed in and not +nil+, it
+  # returns a +Hash+ containing information about the particular memory pool.
+  # Otherwise, it will return a +Hash+ with memory pool names as keys and
+  # a +Hash+ containing information about the memory pool as values.
+  #
+  # If the second optional argument, +hash_or_key+, is given as +Hash+, it will
+  # be overwritten and returned. This is intended to avoid the probe effect.
+  #
+  # If both optional arguments are passed in and the second optional argument is
+  # a symbol, it will return a +Numeric+ of the value for the particular memory
+  # pool.
+  #
+  # On CRuby, +heap_name+ is of the type +Integer+ but may be of type +String+
+  # on other implementations.
+  #
+  # The contents of the hash are implementation specific and may change in
+  # the future without notice.
+  #
+  # If the optional argument, hash, is given, it is overwritten and returned.
+  #
+  # This method is only expected to work on CRuby.
+  def self.stat_heap heap_name = nil, hash_or_key = nil
+    Primitive.gc_stat_heap heap_name, hash_or_key
+  end
+
   #  call-seq:
   #     GC.latest_gc_info -> {:gc_by=>:newobj}
   #     GC.latest_gc_info(hash) -> hash
