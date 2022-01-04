@@ -292,6 +292,8 @@ module Bundler
       "Prefer updating only to next minor version"
     method_option "major", :type => :boolean, :banner =>
       "Prefer updating to next major version (default)"
+    method_option "pre", :type => :boolean, :banner =>
+      "If updating, allow consideration of prerelease gems"
     method_option "strict", :type => :boolean, :banner =>
       "Do not allow any gem to be updated past latest --patch | --minor | --major"
     method_option "conservative", :type => :boolean, :banner =>
@@ -668,6 +670,8 @@ module Bundler
       "If updating, prefer updating only to next minor version"
     method_option "major", :type => :boolean, :banner =>
       "If updating, prefer updating to next major version (default)"
+    method_option "pre", :type => :boolean, :banner =>
+      "If updating, allow consideration of prerelease gems"
     method_option "strict", :type => :boolean, :banner =>
       "If updating, do not allow any gem to be updated past latest --patch | --minor | --major"
     method_option "conservative", :type => :boolean, :banner =>

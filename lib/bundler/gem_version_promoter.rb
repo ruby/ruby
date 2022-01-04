@@ -8,6 +8,7 @@ module Bundler
   # to the resolution engine to select the best version.
   class GemVersionPromoter
     attr_reader :level
+    attr_accessor :pre
 
     # By default, strict is false, meaning every available version of a gem
     # is returned from sort_versions. The order gives preference to the
@@ -28,6 +29,7 @@ module Bundler
     def initialize
       @level = :major
       @strict = false
+      @pre = false
     end
 
     # @param value [Symbol] One of three Symbols: :major, :minor or :patch.
@@ -66,6 +68,11 @@ module Bundler
       level == :minor
     end
 
+    # @return [bool] Convenience method for testing value of pre variable.
+    def pre?
+      pre == true
+    end
+
     private
 
     def filter_dep_specs(specs, package)
@@ -86,7 +93,7 @@ module Bundler
       locked_version = package.locked_version
 
       result = specs.sort do |a, b|
-        unless locked_version && package.prerelease_specified?
+        unless locked_version && (package.prerelease_specified? || pre?)
           a_pre = a.prerelease?
           b_pre = b.prerelease?
 
