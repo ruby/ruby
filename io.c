@@ -4018,6 +4018,13 @@ rb_io_gets_internal(VALUE io)
  *    File.open('t.txt') {|f| f.gets(11) } # => "First line\n"
  *    File.open('t.txt') {|f| f.gets(12) } # => "First line\n"
  *
+ *  With arguments +sep+ and +limit+ given,
+ *  combines the two behaviors:
+ *
+ *  - Returns the next line as determined by line separator +sep+,
+ *    or +nil+ if none.
+ *  - But returns no more bytes than are allowed by the limit.
+ *
  *  For all forms above, trailing optional keyword arguments may be given;
  *  see {Line Options}[#class-IO-label-Line+Options]:
  *
@@ -4124,7 +4131,7 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *    f.readlines # => []
  *
  *  With only string argument +sep+ given,
- *  returns the next line as determined by line separator +sep+,
+ *  returns lines as determined by line separator +sep+,
  *  or +nil+ if none;
  *  see {Line Separator}[#class-IO-label-Line+Separator]:
  *
@@ -4150,6 +4157,12 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *    f = File.new('t.txt')
  *    f.readlines(8)
  *    # => ["First li", "ne\n", "Second l", "ine\n", "\n", "Fourth l", "ine\n", "Fifth li", "ne\n"]
+ *
+ *  With arguments +sep+ and +limit+ given,
+ *  combines the two behaviors:
+ *
+ *  - Returns lines as determined by line separator +sep+.
+ *  - But returns no more bytes in a line than are allowed by the limit.
  *
  *  For all forms above, trailing optional keyword arguments may be given;
  *  see {Line Options}[#class-IO-label-Line+Options]:
@@ -4261,6 +4274,12 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *    "ine\n"
  *    "Fifth li"
  *    "ne\n"
+ *
+ *  With arguments +sep+ and +limit+ given,
+ *  combines the two behaviors:
+ *
+ *  - Calls with the next line as determined by line separator +sep+.
+ *  - But returns no more bytes than are allowed by the limit.
  *
  *  For all forms above, trailing optional keyword arguments may be given;
  *  see {Line Options}[#class-IO-label-Line+Options]:
@@ -13955,7 +13974,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  == Line Options
  *
  *  A number of \IO methods accept optional keyword arguments
- *  that determine how lines in a stream is to be treated:
+ *  that determine how lines in a stream are to be treated:
  *
  *  - +:chomp+: If +true+, line separators are omitted; default is +false+.
  *
@@ -14031,6 +14050,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  These methods include:
  *
  *  - IO::foreach.
+ *  - IO::readlines.
  *  - IO#each.
  *  - IO#gets.
  *  - IO#readline.
@@ -14103,7 +14123,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    File.open('t.rus') {|f| f.gets(3).size } # => 2
  *    File.open('t.rus') {|f| f.gets(4).size } # => 2
  *
- *  With arguments +sep+ and +limit+,
+ *  With arguments +sep+ and +limit+ given,
  *  combines the two behaviors:
  *
  *  - Returns the next line as determined by line separator +sep+,
