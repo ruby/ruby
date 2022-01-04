@@ -28,6 +28,8 @@ class TestResolvAddr < Test::Unit::TestCase
     assert_match(Resolv::IPv6::Regex, "FE80:2:3:4:5:6:7:8%EM1", bug17112)
     assert_match(Resolv::IPv6::Regex, "FE80::20D:3AFF:FE7D:9760%ETH0", bug17112)
     assert_match(Resolv::IPv6::Regex, "FE80::1%EM1", bug17112)
+    assert_match(Resolv::IPv6::Regex, "fe80::42:b0ff:fe93:c2f3%br-326bf571f36a", bug17112)
+    assert_match(Resolv::IPv6::Regex, "fe80::1%br-326bf571f36a", bug17112)
   end
 
   def test_valid_socket_ip_address_list
