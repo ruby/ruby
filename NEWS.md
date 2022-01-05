@@ -28,6 +28,10 @@ Note: We're only listing outstanding class updates.
 
 * Module
     * Module.used_refinements has been added. [[Feature #14332]]
+    * Module#refinements has been added. [[Feature #12737]]
+
+* Refinement
+    * Refinement#refined_class has been added. [[Feature #12737]]
 
 ## Stdlib updates
 
