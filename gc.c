@@ -2851,8 +2851,6 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
 
     page = heap_page_for_ptr(objspace, (uintptr_t)ptr);
     if (page) {
-        GC_ASSERT(page == GET_HEAP_PAGE(ptr));
-
         RB_DEBUG_COUNTER_INC(gc_isptr_maybe);
         if (page->flags.in_tomb) {
             return FALSE;
