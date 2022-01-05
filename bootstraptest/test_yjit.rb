@@ -2766,3 +2766,23 @@ assert_equal 'ok', %q{
   foo(s) rescue :ok
   foo(s) rescue :ok
 }
+
+# File.join is a cfunc accepting variable arguments as a Ruby array (argc = -2)
+assert_equal 'foo/bar', %q{
+  def foo
+    File.join("foo", "bar")
+  end
+
+  foo
+  foo
+}
+
+# File.join is a cfunc accepting variable arguments as a Ruby array (argc = -2)
+assert_equal '', %q{
+  def foo
+    File.join()
+  end
+
+  foo
+  foo
+}
