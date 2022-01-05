@@ -61,6 +61,7 @@ The following deprecated methods are removed.
 
 * `Dir.exists?`
 * `File.exists?`
+* `Kernel#=~` [[Feature #15231]]
 
 ## Stdlib compatibility issues
 
@@ -95,4 +96,5 @@ The following deprecated APIs are removed.
 
 ## Miscellaneous changes
 
+[Feature #15231]: https://bugs.ruby-lang.org/issues/15231
 [Feature #18351]: https://bugs.ruby-lang.org/issues/18351
