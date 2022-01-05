@@ -3383,23 +3383,13 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
         call_ptr(cb, REG0, (void *)&check_cfunc_dispatch);
     }
 
-    // Copy SP into RAX because REG_SP will get overwritten
-    lea(cb, RAX, ctx_sp_opnd(ctx, 0));
-
-    // Pop the C function arguments from the stack (in the caller)
-    ctx_stack_pop(ctx, argc + 1);
-
-    // Write interpreter SP into CFP.
-    // Needed in case the callee yields to the block.
-    jit_save_sp(jit, ctx);
-
     // Non-variadic method
     if (cfunc->argc >= 0) {
         // Copy the arguments from the stack to the C argument registers
         // self is the 0th argument and is at index argc from the stack top
         for (int32_t i = 0; i < argc + 1; ++i)
         {
-            x86opnd_t stack_opnd = mem_opnd(64, RAX, -(argc + 1 - i) * SIZEOF_VALUE);
+            x86opnd_t stack_opnd = ctx_stack_opnd(ctx, argc - i);
             x86opnd_t c_arg_reg = C_ARG_REGS[i];
             mov(cb, c_arg_reg, stack_opnd);
         }
@@ -3409,9 +3399,16 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
         // The method gets a pointer to the first argument
         // rb_f_puts(int argc, VALUE *argv, VALUE recv)
         mov(cb, C_ARG_REGS[0], imm_opnd(argc));
-        lea(cb, C_ARG_REGS[1], mem_opnd(64, RAX, -(argc) * SIZEOF_VALUE));
-        mov(cb, C_ARG_REGS[2], mem_opnd(64, RAX, -(argc + 1) * SIZEOF_VALUE));
+        lea(cb, C_ARG_REGS[1], ctx_stack_opnd(ctx, argc - 1));
+        mov(cb, C_ARG_REGS[2], ctx_stack_opnd(ctx, argc));
     }
+
+    // Pop the C function arguments from the stack (in the caller)
+    ctx_stack_pop(ctx, argc + 1);
+
+    // Write interpreter SP into CFP.
+    // Needed in case the callee yields to the block.
+    jit_save_sp(jit, ctx);
 
     // Call the C function
     // VALUE ret = (cfunc->func)(recv, argv[0], argv[1]);
