@@ -53,14 +53,14 @@ Note: Excluding feature bug fixes.
 
 The following deprecated constant is removed.
 
-* `Random::DEFAULT`
+* `Random::DEFAULT` [[Feature #17351]]
 * `Struct::Group`
 * `Struct::Passwd`
 
 The following deprecated methods are removed.
 
-* `Dir.exists?`
-* `File.exists?`
+* `Dir.exists?` [[Feature #17391]]
+* `File.exists?` [[Feature #17391]]
 * `Kernel#=~` [[Feature #15231]]
 
 ## Stdlib compatibility issues
@@ -97,4 +97,6 @@ The following deprecated APIs are removed.
 ## Miscellaneous changes
 
 [Feature #15231]: https://bugs.ruby-lang.org/issues/15231
+[Feature #17351]: https://bugs.ruby-lang.org/issues/17351
+[Feature #17391]: https://bugs.ruby-lang.org/issues/17391
 [Feature #18351]: https://bugs.ruby-lang.org/issues/18351
