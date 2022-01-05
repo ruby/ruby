@@ -69,7 +69,6 @@ YJIT_DECLARE_COUNTERS(
     send_missing_method,
     send_bmethod,
     send_refined_method,
-    send_cfunc_ruby_array_varg,
     send_cfunc_argc_mismatch,
     send_cfunc_toomany_args,
     send_cfunc_tracing,

@@ -3244,12 +3244,6 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
 {
     const rb_method_cfunc_t *cfunc = UNALIGNED_MEMBER_PTR(cme->def, body.cfunc);
 
-    // If the function expects a Ruby array of arguments
-    if (cfunc->argc < 0 && cfunc->argc != -1) {
-        GEN_COUNTER_INC(cb, send_cfunc_ruby_array_varg);
-        return YJIT_CANT_COMPILE;
-    }
-
     // If the argument count doesn't match
     if (cfunc->argc >= 0 && cfunc->argc != argc) {
         GEN_COUNTER_INC(cb, send_cfunc_argc_mismatch);
@@ -3401,6 +3395,28 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
         mov(cb, C_ARG_REGS[0], imm_opnd(argc));
         lea(cb, C_ARG_REGS[1], ctx_stack_opnd(ctx, argc - 1));
         mov(cb, C_ARG_REGS[2], ctx_stack_opnd(ctx, argc));
+    }
+    // Variadic method with Ruby array
+    if (cfunc->argc == -2) {
+        // Create a Ruby array from the arguments.
+        //
+        // This follows similar behaviour to vm_call_cfunc_with_frame() and
+        // call_cfunc_m2(). We use rb_ec_ary_new_from_values() instead of
+        // rb_ary_new4() since we have REG_EC available.
+        //
+        // Before getting here we will have set the new CFP in the EC, and the
+        // stack at CFP's SP will contain the values we are inserting into the
+        // Array, so they will be properly marked if we hit a GC.
+
+        // rb_ec_ary_new_from_values(rb_execution_context_t *ec, long n, const VLAUE *elts)
+        mov(cb, C_ARG_REGS[0], REG_EC);
+        mov(cb, C_ARG_REGS[1], imm_opnd(argc));
+        lea(cb, C_ARG_REGS[2], ctx_stack_opnd(ctx, argc - 1));
+        call_ptr(cb, REG0, (void *)rb_ec_ary_new_from_values);
+
+        // rb_file_s_join(VALUE recv, VALUE args)
+        mov(cb, C_ARG_REGS[0], ctx_stack_opnd(ctx, argc));
+        mov(cb, C_ARG_REGS[1], RAX);
     }
 
     // Pop the C function arguments from the stack (in the caller)
