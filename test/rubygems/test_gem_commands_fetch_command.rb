@@ -242,7 +242,7 @@ ERROR:  Possible alternatives: foo
     end
 
     @cmd.options[:args] = %w[foo:2]
-    @cmd.options[:suggest_alternate] = true
+    @cmd.options[:suggest_alternate] = false
 
     use_ui @ui do
       @cmd.execute

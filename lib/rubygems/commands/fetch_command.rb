@@ -8,7 +8,12 @@ class Gem::Commands::FetchCommand < Gem::Command
   include Gem::VersionOption
 
   def initialize
-    super 'fetch', 'Download a gem and place it in the current directory'
+    defaults = {
+      :suggest_alternate => true,
+      :version           => Gem::Requirement.default,
+    }
+
+    super 'fetch', 'Download a gem and place it in the current directory', defaults
 
     add_bulk_threshold_option
     add_proxy_option
@@ -20,7 +25,7 @@ class Gem::Commands::FetchCommand < Gem::Command
     add_prerelease_option
 
     add_option '--[no-]suggestions', 'Suggest alternates when gems are not found' do |value, options|
-      options[:suggest_alternate] = true
+      options[:suggest_alternate] = value
     end
   end
 
@@ -47,7 +52,7 @@ then repackaging it.
   end
 
   def check_version # :nodoc:
-    if options[:version] and options[:version] != Gem::Requirement.default and
+    if options[:version] != Gem::Requirement.default and
          get_all_gem_names.size > 1
       alert_error "Can't use --version with multiple gems. You can specify multiple gems with" \
                   " version requirements using `gem fetch 'my_gem:1.0.0' 'my_other_gem:~>2.0.0'`"
@@ -66,7 +71,7 @@ then repackaging it.
       gem_version ||= version
       dep = Gem::Dependency.new gem_name, gem_version
       dep.prerelease = options[:prerelease]
-      suppress_suggestions = options[:suggest_alternate]
+      suppress_suggestions = !options[:suggest_alternate]
 
       specs_and_sources, errors =
         Gem::SpecFetcher.fetcher.spec_for_dependency dep
