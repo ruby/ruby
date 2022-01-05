@@ -1766,11 +1766,9 @@ class TestRefinement < Test::Unit::TestCase
   def test_refined_class
     refinements = Module.new {
       refine Integer do
-        int_refinement = self
       end
 
       refine String do
-        str_refinement = self
       end
     }.refinements
     assert_equal(Integer, refinements[0].refined_class)
