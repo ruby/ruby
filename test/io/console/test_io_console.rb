@@ -488,7 +488,9 @@ defined?(IO.console) and TestIO_Console.class_eval do
     end
 
     def test_console_kw
-      assert_kind_of(IO, IO.console(:clone, freeze: true))
+      io = IO.console(:clone, freeze: true)
+      io.close
+      assert_kind_of(IO, io)
     end
 
     def test_sync
