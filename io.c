@@ -4620,14 +4620,18 @@ rb_io_each_codepoint(VALUE io)
 
 /*
  *  call-seq:
- *     ios.getc   -> string or nil
+ *    getc -> character or nil
  *
- *  Reads a one-character string from <em>ios</em>. Returns
- *  +nil+ if called at end of file.
+ *  Reads and returns the next 1-character string from the stream;
+ *  returns +nil+ if already at end-of-file:
  *
- *     f = File.new("testfile")
- *     f.getc   #=> "h"
- *     f.getc   #=> "e"
+ *    f = File.open('t.txt')
+ *    f.getc     # => "F"
+ *    f = File.open('t.rus')
+ *    f.getc.ord # => 1090
+ *
+ *  Related:  IO#readchar (may raise EOFError).
+ *
  */
 
 static VALUE
@@ -4646,14 +4650,18 @@ rb_io_getc(VALUE io)
 
 /*
  *  call-seq:
- *     ios.readchar   -> string
+ *    readchar -> string
  *
- *  Reads a one-character string from <em>ios</em>. Raises an
- *  EOFError on end of file.
+ *  Reads and returns the next 1-character string from the stream;
+ *  raises EOFError if already at end-of-file:
  *
- *     f = File.new("testfile")
- *     f.readchar   #=> "h"
- *     f.readchar   #=> "e"
+ *    f = File.open('t.txt')
+ *    f.readchar     # => "F"
+ *    f = File.open('t.rus')
+ *    f.readchar.ord # => 1090
+ *
+ *  Related:  IO#getc (will not raise EOFError).
+ *
  */
 
 static VALUE
@@ -4669,14 +4677,18 @@ rb_io_readchar(VALUE io)
 
 /*
  *  call-seq:
- *     ios.getbyte   -> integer or nil
+ *    getbyte -> integer or nil
  *
- *  Gets the next 8-bit byte (0..255) from <em>ios</em>. Returns
- *  +nil+ if called at end of file.
+ *  Reads and returns the next byte (in range 0..255) from the stream;
+ *  returns +nil+ if already at end-of-file:
  *
- *     f = File.new("testfile")
- *     f.getbyte   #=> 84
- *     f.getbyte   #=> 104
+ *    f = File.open('t.txt')
+ *    f.getbyte # => 70
+ *    f = File.open('t.rus')
+ *    f.getbyte # => 209
+ *
+ *  Related: IO#readbyte (may raise EOFError).
+ *
  */
 
 VALUE
@@ -4707,10 +4719,18 @@ rb_io_getbyte(VALUE io)
 
 /*
  *  call-seq:
- *     ios.readbyte   -> integer
+ *    readbyte -> integer
  *
- *  Reads a byte as with IO#getbyte, but raises an EOFError on end of
- *  file.
+ *  Reads and returns the next byte (in range 0..255) from the stream;
+ *  raises EOFError if already at end-of-file:
+ *
+ *    f = File.open('t.txt')
+ *    f.readbyte # => 70
+ *    f = File.open('t.rus')
+ *    f.readbyte # => 209
+ *
+ *  Related: IO#getbyte (will not raise EOFError).
+ *
  */
 
 static VALUE
@@ -4726,38 +4746,37 @@ rb_io_readbyte(VALUE io)
 
 /*
  *  call-seq:
- *     ios.ungetbyte(string)   -> nil
- *     ios.ungetbyte(integer)  -> nil
+ *    ungetbyte(integer) -> nil
+ *    ungetbyte(string)  -> nil
  *
- *  Pushes back bytes (passed as a parameter) onto <em>ios</em>,
- *  such that a subsequent buffered read will return it.
- *  It is only guaranteed to support a single byte, and only if ungetbyte
- *  or ungetc has not already been called on <em>ios</em> since the previous
- *  read of at least a single byte from <em>ios</em>.
- *  However, it can support additional bytes if there is space in the
- *  internal buffer to allow for it.
+ *  Pushes back ("unshifts") the given data onto the stream's buffer,
+ *  placing the data so that it is next to be read; returns +nil+.
  *
- *     f = File.new("testfile")   #=> #<File:testfile>
- *     b = f.getbyte              #=> 0x38
- *     f.ungetbyte(b)             #=> nil
- *     f.getbyte                  #=> 0x38
+ *  Note that:
  *
- *  If given an integer, only uses the lower 8 bits of the integer as the byte
- *  to push.
+ *  - Calling the method hs no effect with unbuffered reads (such as IO#sysread).
+ *  - Calling #rewind on the stream discards the pushed-back data.
  *
- *     f = File.new("testfile")   #=> #<File:testfile>
- *     f.ungetbyte(0x102)         #=> nil
- *     f.getbyte                  #=> 0x2
+ *  When argument +integer+ is given, uses only its low-order byte:
  *
- *  Calling this method prepends to the existing buffer, even if the method
- *  has already been called previously:
+ *    File.write('t.tmp', '012')
+ *    f = File.open('t.tmp')
+ *    f.ungetbyte(0x41)   # => nil
+ *    f.read              # => "A012"
+ *    f.rewind
+ *    f.ungetbyte(0x4243) # => nil
+ *    f.read              # => "C012"
  *
- *     f = File.new("testfile")   #=> #<File:testfile>
- *     f.ungetbyte("ab")          #=> nil
- *     f.ungetbyte("cd")          #=> nil
- *     f.read(5)                  #=> "cdab8"
+ *  When argument +string+ is given, uses all bytes:
  *
- *  Has no effect with unbuffered reads (such as IO#sysread).
+ *    File.write('t.tmp', '012')
+ *    f = File.open('t.tmp')
+ *    f.ungetbyte('A')    # => nil
+ *    f.read              # => "A012"
+ *    f.rewind
+ *    f.ungetbyte('BCDE') # => nil
+ *    f.read              # => "BCDE012"
+ *
  */
 
 VALUE
