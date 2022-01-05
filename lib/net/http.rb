@@ -132,7 +132,7 @@ module Net   #:nodoc:
   #   puts res.class.name # => 'HTTPOK'
   #
   #   # Body
-  #   puts res.body if res.response_body_permitted?
+  #   puts res.body
   #
   # === Following Redirection
   #
