@@ -1510,6 +1510,57 @@ rb_mod_s_used_modules(VALUE _)
     return rb_funcall(ary, rb_intern("uniq"), 0);
 }
 
+static int
+used_refinements_i(VALUE _, VALUE mod, VALUE ary)
+{
+    while (FL_TEST(rb_class_of(mod), RMODULE_IS_REFINEMENT)) {
+        rb_ary_push(ary, rb_class_of(mod));
+	mod = RCLASS_SUPER(mod);
+    }
+    return ST_CONTINUE;
+}
+
+/*
+ *  call-seq:
+ *     used_refinements -> array
+ *
+ *  Returns an array of all modules used in the current scope. The ordering
+ *  of modules in the resulting array is not defined.
+ *
+ *     module A
+ *       refine Object do
+ *       end
+ *     end
+ *
+ *     module B
+ *       refine Object do
+ *       end
+ *     end
+ *
+ *     using A
+ *     using B
+ *     p Module.used_refinements
+ *
+ *  <em>produces:</em>
+ *
+ *     [#<refinement:Object@B>, #<refinement:Object@A>]
+ */
+static VALUE
+rb_mod_s_used_refinements(VALUE _)
+{
+    const rb_cref_t *cref = rb_vm_cref();
+    VALUE ary = rb_ary_new();
+
+    while (cref) {
+	if (!NIL_P(CREF_REFINEMENTS(cref))) {
+	    rb_hash_foreach(CREF_REFINEMENTS(cref), used_refinements_i, ary);
+	}
+	cref = CREF_NEXT(cref);
+    }
+
+    return ary;
+}
+
 struct refinement_import_methods_arg {
     rb_cref_t *cref;
     VALUE refinement;
@@ -1944,6 +1995,8 @@ Init_eval(void)
     rb_define_private_method(rb_cModule, "using", mod_using, 1);
     rb_define_singleton_method(rb_cModule, "used_modules",
 			       rb_mod_s_used_modules, 0);
+    rb_define_singleton_method(rb_cModule, "used_refinements",
+                               rb_mod_s_used_refinements, 0);
     rb_undef_method(rb_cClass, "refine");
     rb_define_private_method(rb_cRefinement, "import_methods", refinement_import_methods, -1);
 

@@ -26,6 +26,9 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* Module
+    * Module.used_refinements has been added. [[Feature #14332]]
+
 ## Stdlib updates
 
 *   The following default gem are updated.

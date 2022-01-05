@@ -1687,6 +1687,8 @@ class TestRefinement < Test::Unit::TestCase
       refine Object do
         def in_ref_a
         end
+
+        RefA.const_set(:REF, self)
       end
     end
 
@@ -1694,6 +1696,8 @@ class TestRefinement < Test::Unit::TestCase
       refine Object do
         def in_ref_b
         end
+
+        RefB.const_set(:REF, self)
       end
     end
 
@@ -1703,23 +1707,28 @@ class TestRefinement < Test::Unit::TestCase
       refine Object do
         def in_ref_c
         end
+
+        RefC.const_set(:REF, self)
       end
     end
 
     module Foo
       using RefB
       USED_MODS = Module.used_modules
+      USED_REFS = Module.used_refinements
     end
 
     module Bar
       using RefC
       USED_MODS = Module.used_modules
+      USED_REFS = Module.used_refinements
     end
 
     module Combined
       using RefA
       using RefB
       USED_MODS = Module.used_modules
+      USED_REFS = Module.used_refinements
     end
   end
 
@@ -1729,6 +1738,14 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal [ref::RefB], ref::Foo::USED_MODS
     assert_equal [ref::RefC], ref::Bar::USED_MODS
     assert_equal [ref::RefB, ref::RefA], ref::Combined::USED_MODS
+  end
+
+  def test_used_refinements
+    ref = VisibleRefinements
+    assert_equal [], Module.used_refinements
+    assert_equal [ref::RefB::REF], ref::Foo::USED_REFS
+    assert_equal [ref::RefC::REF], ref::Bar::USED_REFS
+    assert_equal [ref::RefB::REF, ref::RefA::REF], ref::Combined::USED_REFS
   end
 
   def test_warn_setconst_in_refinmenet
