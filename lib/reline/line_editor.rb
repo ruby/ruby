@@ -466,6 +466,11 @@ class Reline::LineEditor
     new_highest_in_this = calculate_height_by_width(prompt_width + calculate_width(@line.nil? ? '' : @line))
     rendered = false
     if @add_newline_to_end_of_buffer
+      @dialogs.each do |dialog|
+        clear_each_dialog(dialog)
+        dialog.contents = nil
+        dialog.trap_key = nil
+      end
       rerender_added_newline(prompt, prompt_width)
       @add_newline_to_end_of_buffer = false
     else
