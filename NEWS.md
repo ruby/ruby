@@ -42,6 +42,7 @@ Note: We're only listing outstanding class updates.
     * io-console 0.5.11
     * reline 0.3.1
 *   The following bundled gems are updated.
+    * net-imap 0.2.3
     * typeprof 0.21.2
 *   The following default gems are now bundled gems.
 
