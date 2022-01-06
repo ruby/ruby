@@ -13114,6 +13114,8 @@ parser_append_options(struct parser_params *p, NODE *node)
     }
 
     if (p->do_loop) {
+	NODE *irs = NEW_LIST(NEW_GVAR(rb_intern("$/"), LOC), LOC);
+
 	if (p->do_split) {
 	    ID ifs = rb_intern("$;");
 	    ID fields = rb_intern("$F");
@@ -13130,7 +13132,7 @@ parser_append_options(struct parser_params *p, NODE *node)
 	    node = block_append(p, chomp, node);
 	}
 
-	node = NEW_WHILE(NEW_VCALL(idGets, LOC), node, 1, LOC);
+	node = NEW_WHILE(NEW_FCALL(idGets, irs, LOC), node, 1, LOC);
     }
 
     return node;
