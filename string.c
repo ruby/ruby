@@ -1419,9 +1419,10 @@ str_new_frozen_buffer(VALUE klass, VALUE orig, int copy_encoding)
     VALUE str;
 
     long len = RSTRING_LEN(orig);
+    int termlen = copy_encoding ? TERM_LEN(orig) : 1;
 
-    if (STR_EMBED_P(orig) || STR_EMBEDDABLE_P(len, 1)) {
-        str = str_new(klass, RSTRING_PTR(orig), len);
+    if (STR_EMBED_P(orig) || STR_EMBEDDABLE_P(len, termlen)) {
+        str = str_new0(klass, RSTRING_PTR(orig), len, termlen);
         assert(STR_EMBED_P(str));
     }
     else {
