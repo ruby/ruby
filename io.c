@@ -4804,34 +4804,40 @@ rb_io_ungetbyte(VALUE io, VALUE b)
 
 /*
  *  call-seq:
- *     ios.ungetc(integer)  -> nil
- *     ios.ungetc(string)   -> nil
+ *    ungetc(integer) -> nil
+ *    ungetc(string)  -> nil
  *
- *  Pushes back characters (passed as a parameter) onto <em>ios</em>,
- *  such that a subsequent buffered read will return it.
- *  It is only guaranteed to support a single byte, and only if ungetbyte
- *  or ungetc has not already been called on <em>ios</em> since the previous
- *  read of at least a single byte from <em>ios</em>.
- *  However, it can support additional bytes if there is space in the
- *  internal buffer to allow for it.
+ *  Pushes back ("unshifts") the given data onto the stream's buffer,
+ *  placing the data so that it is next to be read; returns +nil+.
  *
- *     f = File.new("testfile")   #=> #<File:testfile>
- *     c = f.getc                 #=> "8"
- *     f.ungetc(c)                #=> nil
- *     f.getc                     #=> "8"
+ *  Note that:
  *
- *  If given an integer, the integer must represent a valid codepoint in the
- *  external encoding of <em>ios</em>.
+ *  - Calling the method hs no effect with unbuffered reads (such as IO#sysread).
+ *  - Calling #rewind on the stream discards the pushed-back data.
  *
- *  Calling this method prepends to the existing buffer, even if the method
- *  has already been called previously:
+ *  When argument +integer+ is given, interprets the integer as a character:
  *
- *     f = File.new("testfile")   #=> #<File:testfile>
- *     f.ungetc("ab")             #=> nil
- *     f.ungetc("cd")             #=> nil
- *     f.read(5)                  #=> "cdab8"
+ *    File.write('t.tmp', '012')
+ *    f = File.open('t.tmp')
+ *    f.ungetc(0x41)     # => nil
+ *    f.read             # => "A012"
+ *    f.rewind
+ *    f.ungetc(0x0442)   # => nil
+ *    f.getc.ord         # => 1090
  *
- *  Has no effect with unbuffered reads (such as IO#sysread).
+ *  When argument +string+ is given, uses all characters:
+ *
+ *    File.write('t.tmp', '012')
+ *    f = File.open('t.tmp')
+ *    f.ungetc('A')      # => nil
+ *    f.read      # => "A012"
+ *    f.rewind
+ *    f.ungetc("\u0442\u0435\u0441\u0442") # => nil
+ *    f.getc.ord      # => 1090
+ *    f.getc.ord      # => 1077
+ *    f.getc.ord      # => 1089
+ *    f.getc.ord      # => 1090
+ *
  */
 
 VALUE
@@ -4880,14 +4886,16 @@ rb_io_ungetc(VALUE io, VALUE c)
 
 /*
  *  call-seq:
- *     ios.isatty   -> true or false
- *     ios.tty?     -> true or false
+ *    isatty -> true or false
  *
- *  Returns <code>true</code> if <em>ios</em> is associated with a
- *  terminal device (tty), <code>false</code> otherwise.
+ *  Returns +true+ if the stream is associated with a terminal device (tty),
+ *  +false+ otherwise:
  *
- *     File.new("testfile").isatty   #=> false
- *     File.new("/dev/tty").isatty   #=> true
+ *     File.new('t.txt').isatty    #=> false
+ *     File.new('/dev/tty').isatty #=> true
+ *
+ *  IO#tty? is an alias for IO#isatty.
+ *
  */
 
 static VALUE
@@ -4902,16 +4910,15 @@ rb_io_isatty(VALUE io)
 #if defined(HAVE_FCNTL) && defined(F_GETFD) && defined(F_SETFD) && defined(FD_CLOEXEC)
 /*
  *  call-seq:
- *     ios.close_on_exec?   -> true or false
+ *    close_on_exec? -> true or false
  *
- *  Returns <code>true</code> if <em>ios</em> will be closed on exec.
+ *  Returns +true+ if the stream will be closed on exec, +false+ otherwise:
  *
- *     f = open("/dev/null")
- *     f.close_on_exec?                 #=> false
- *     f.close_on_exec = true
- *     f.close_on_exec?                 #=> true
- *     f.close_on_exec = false
- *     f.close_on_exec?                 #=> false
+ *    f = File.open('t.txt')
+ *    f.close_on_exec? # => true
+ *    f.close_on_exec = false
+ *    f.close_on_exec? # => false
+ *
  */
 
 static VALUE
