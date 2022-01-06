@@ -191,8 +191,7 @@ def string2cstr(rstring):
         clen = int(rstring.GetValueForExpressionPath(".as.heap.len").value, 0)
     else:
         cptr = int(rstring.GetValueForExpressionPath(".as.embed.ary").location, 0)
-        # clen = int(rstring.GetValueForExpressionPath(".as.embed.len").value, 0)
-        clen = (flags & RSTRING_EMBED_LEN_MASK) >> RSTRING_EMBED_LEN_SHIFT
+        clen = int(rstring.GetValueForExpressionPath(".as.embed.len").value, 0)
     return cptr, clen
 
 def output_string(debugger, result, rstring):
