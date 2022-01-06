@@ -526,7 +526,7 @@ class TestModule < Test::Unit::TestCase
         super
       end
     end.new
-    assert_equal(true, m < Enumerable)
+    assert_operator(m, :<, Enumerable)
   end
 
   def test_prepend_self
