@@ -575,10 +575,7 @@ static NODE *symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol)
 
 static NODE *match_op(struct parser_params*,NODE*,NODE*,const YYLTYPE*,const YYLTYPE*);
 
-static rb_ast_id_table_t *local_tbl(struct parser_params*);
-
 static VALUE reg_compile(struct parser_params*, VALUE, int);
-static void reg_fragment_setenc(struct parser_params*, VALUE, int);
 static int reg_fragment_check(struct parser_params*, VALUE, int);
 static NODE *reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *loc);
 
@@ -689,8 +686,6 @@ static int dyna_in_block(struct parser_params*);
 static int dvar_defined(struct parser_params*, ID);
 static int dvar_defined_ref(struct parser_params*, ID, ID**);
 static int dvar_curr(struct parser_params*,ID);
-
-static int lvar_defined(struct parser_params*, ID);
 
 static NODE *numparam_push(struct parser_params *p);
 static void numparam_pop(struct parser_params *p, NODE *prev_inner);
@@ -5799,11 +5794,7 @@ none		: /* none */
 # undef yylval
 # define yylval  (*p->lval)
 
-static int regx_options(struct parser_params*);
-static int tokadd_string(struct parser_params*,int,int,int,long*,rb_encoding**,rb_encoding**);
 static void tokaddmbc(struct parser_params *p, int c, rb_encoding *enc);
-static enum yytokentype parse_string(struct parser_params*,rb_strterm_literal_t*);
-static enum yytokentype here_document(struct parser_params*,rb_strterm_heredoc_t*);
 
 #ifndef RIPPER
 # define set_yylval_node(x) {				\
@@ -11246,8 +11237,6 @@ ensure_shareable_node(struct parser_params *p, NODE **dest, NODE *value, const Y
     args = list_append(p, args, const_decl_path(p, dest));
     return NEW_CALL(fcore, rb_intern("ensure_shareable"), args, loc);
 }
-
-static int is_static_content(NODE *node);
 
 static VALUE
 shareable_literal_value(NODE *node)
