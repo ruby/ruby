@@ -523,6 +523,13 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_cfunc_kwarg
+    assert_no_exits('{}.store(:value, foo: 123)')
+    assert_no_exits('{}.store(:value, foo: 123, bar: 456, baz: 789)')
+    assert_no_exits('{}.merge(foo: 123)')
+    assert_no_exits('{}.merge(foo: 123, bar: 456, baz: 789)')
+  end
+
   def test_ctx_different_mappings
     # regression test simplified from URI::Generic#hostname=
     assert_compiles(<<~'RUBY', frozen_string_literal: true)
