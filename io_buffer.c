@@ -1239,7 +1239,7 @@ rb_io_buffer_resize(VALUE self, size_t size)
         rb_raise(rb_eIOBufferAccessError, "Cannot resize external buffer!");
     }
 
-#ifdef MREMAP_MAYMOVE
+#if defined(HAVE_MREMAP) && defined(MREMAP_MAYMOVE)
     if (data->flags & RB_IO_BUFFER_MAPPED) {
         void *base = mremap(data->base, data->size, size, MREMAP_MAYMOVE);
 
