@@ -519,6 +519,16 @@ class TestModule < Test::Unit::TestCase
     assert_raise(ArgumentError) { Module.new { include } }
   end
 
+  def test_include_before_initialize
+    m = Class.new(Module) do
+      def initialize(...)
+        include Enumerable
+        super
+      end
+    end.new
+    assert_equal(true, m < Enumerable)
+  end
+
   def test_prepend_self
     m = Module.new
     assert_equal([m], m.ancestors)
