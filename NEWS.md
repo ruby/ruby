@@ -64,6 +64,10 @@ The following deprecated methods are removed.
 * `Dir.exists?` [[Feature #17391]]
 * `File.exists?` [[Feature #17391]]
 * `Kernel#=~` [[Feature #15231]]
+* `Kernel#taint`, `Kernel#untaint`, `Kernel#tainted?`
+  [[Feature #16131]]
+* `Kernel#trust`, `Kernel#untrust`, `Kernel#untrusted?`
+  [[Feature #16131]]
 
 ## Stdlib compatibility issues
 
@@ -74,7 +78,7 @@ The following deprecated methods are removed.
 The following deprecated APIs are removed.
 
 * `rb_cData` variable.
-* "taintedness" and "trustedness" functions.
+* "taintedness" and "trustedness" functions. [[Feature #16131]]
 
 ## Implementation improvements
 
@@ -99,6 +103,7 @@ The following deprecated APIs are removed.
 ## Miscellaneous changes
 
 [Feature #15231]: https://bugs.ruby-lang.org/issues/15231
+[Feature #16131]: https://bugs.ruby-lang.org/issues/16131
 [Feature #17351]: https://bugs.ruby-lang.org/issues/17351
 [Feature #17391]: https://bugs.ruby-lang.org/issues/17391
 [Feature #18351]: https://bugs.ruby-lang.org/issues/18351
