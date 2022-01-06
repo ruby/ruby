@@ -49,13 +49,15 @@ Note: We're only listing outstanding class updates.
 
 Note: Excluding feature bug fixes.
 
-### Removed methods
+### Removed constants
 
 The following deprecated constant is removed.
 
 * `Random::DEFAULT` [[Feature #17351]]
 * `Struct::Group`
 * `Struct::Passwd`
+
+### Removed methods
 
 The following deprecated methods are removed.
 
