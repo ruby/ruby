@@ -147,7 +147,7 @@
 #endif /* HAVE_VA_ARGS_MACRO */
 
 #ifndef USE_RVARGC
-# define USE_RVARGC 1
+# define USE_RVARGC 0
 #endif
 
 #endif /* RBIMPL_CONFIG_H */
