@@ -80,13 +80,13 @@ describe "Proc#parameters" do
     -> x {}.parameters.should == [[:req, :x]]
   end
 
-  ruby_version_is '3.1' do
+  ruby_version_is '3.2' do
     it "adds * rest arg for \"star\" argument" do
       -> x, * {}.parameters.should == [[:req, :x], [:rest, :*]]
     end
   end
 
-  ruby_version_is ''...'3.1' do
+  ruby_version_is ''...'3.2' do
     it "adds nameless rest arg for \"star\" argument" do
       -> x, * {}.parameters.should == [[:req, :x], [:rest]]
     end
