@@ -406,7 +406,6 @@ rb_module_check_initializable(VALUE mod)
     if (!RMODULE_UNINITIALIZED(mod)) {
         rb_raise(rb_eTypeError, "already initialized module");
     }
-    RB_OBJ_WRITE(mod, &RCLASS(mod)->super, 0);
 }
 
 /* :nodoc: */
