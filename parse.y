@@ -13127,9 +13127,9 @@ parser_append_options(struct parser_params *p, NODE *node)
 	    node = block_append(p, split, node);
 	}
 	if (p->do_chomp) {
-	    NODE *chomp = NEW_CALL(NEW_GVAR(idLASTLINE, LOC),
-				   rb_intern("chomp!"), 0, LOC);
-	    node = block_append(p, chomp, node);
+	    NODE *chomp = NEW_LIT(ID2SYM(rb_intern("chomp")), LOC);
+	    chomp = list_append(p, NEW_LIST(chomp, LOC), NEW_TRUE(LOC));
+	    irs = list_append(p, irs, NEW_HASH(chomp, LOC));
 	}
 
 	node = NEW_WHILE(NEW_FCALL(idGets, irs, LOC), node, 1, LOC);
