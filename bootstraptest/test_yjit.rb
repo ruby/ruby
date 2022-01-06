@@ -2462,6 +2462,57 @@ assert_equal '[[1, 2, 3, 4]]', %q{
   5.times.map { foo(specified: 2, required: 1) }.uniq
 }
 
+# cfunc kwargs
+assert_equal '{:foo=>123}', %q{
+  def foo(bar)
+    bar.store(:value, foo: 123)
+    bar[:value]
+  end
+
+  foo({})
+  foo({})
+}
+
+# cfunc kwargs
+assert_equal '{:foo=>123}', %q{
+  def foo(bar)
+    bar.replace(foo: 123)
+  end
+
+  foo({})
+  foo({})
+}
+
+# cfunc kwargs
+assert_equal '{:foo=>123, :bar=>456}', %q{
+  def foo(bar)
+    bar.replace(foo: 123, bar: 456)
+  end
+
+  foo({})
+  foo({})
+}
+
+# variadic cfunc kwargs
+assert_equal '{:foo=>123}', %q{
+  def foo(bar)
+    bar.merge(foo: 123)
+  end
+
+  foo({})
+  foo({})
+}
+
+# optimized cfunc kwargs
+assert_equal 'false', %q{
+  def foo
+    :foo.eql?(foo: :foo)
+  end
+
+  foo
+  foo
+}
+
 # attr_reader on frozen object
 assert_equal 'false', %q{
   class Foo
