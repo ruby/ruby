@@ -9464,7 +9464,7 @@ chompped_length(VALUE str, VALUE rs)
 /*!
  * Returns the separator for arguments of rb_str_chomp.
  *
- * @return returns rb_ps ($/) as default, the default value of rb_ps ($/) is "\n".
+ * @return returns rb_rs ($/) as default, the default value of rb_rs ($/) is "\n".
  */
 static VALUE
 chomp_rs(int argc, const VALUE *argv)
