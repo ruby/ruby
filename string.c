@@ -3189,6 +3189,7 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
             if (RSTRING_LEN(str) == 0) {
                 rb_str_buf_cat(str, ptr, len);
                 ENCODING_CODERANGE_SET(str, ptr_encindex, ptr_cr);
+                rb_str_change_terminator_length(str, rb_enc_mbminlen(str_enc), rb_enc_mbminlen(ptr_enc));
                 return str;
             }
             goto incompatible;
