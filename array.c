@@ -3035,7 +3035,7 @@ rb_ary_to_ary_m(VALUE ary)
 static VALUE
 ary_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(recv, ary))
 {
-    argc = (int)RARRAY_LEN(ary);
+    argc = RARRAY_LENINT(ary);
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     VALUE method = rb_to_symbol(RARRAY_AREF(ary, 0));
     VALUE rest = rb_ary_subseq(ary, 1, argc);
