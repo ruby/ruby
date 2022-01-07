@@ -97,6 +97,8 @@ class TestString < Test::Unit::TestCase
   end
 
   def test_initialize_memory_leak
+    return unless @cls == String
+
     assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
 code = proc {('x'*100000).__send__(:initialize, '')}
 1_000.times(&code)
@@ -107,6 +109,8 @@ CODE
 
   # Bug #18154
   def test_initialize_nofree_memory_leak
+    return unless @cls == String
+
     assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
 code = proc {0.to_s.__send__(:initialize, capacity: 10000)}
 1_000.times(&code)
@@ -1764,6 +1768,8 @@ CODE
   end
 
   def test_fs
+    return unless @cls == String
+
     assert_raise_with_message(TypeError, /\$;/) {
       $; = []
     }
@@ -2419,6 +2425,8 @@ CODE
   class S2 < String
   end
   def test_str_new4
+    return unless @cls == String
+
     s = (0..54).to_a.join # length = 100
     s2 = S2.new(s[10,90])
     s3 = s2[10,80]
@@ -2621,10 +2629,13 @@ CODE
     assert_equal([S("abcdb"), S("c"), S("e")], S("abcdbce").rpartition(/b\Kc/))
   end
 
-  def test_setter
+  def test_fs_setter
+    return unless @cls == String
+
     assert_raise(TypeError) { $/ = 1 }
     name = "\u{5206 884c}"
-    assert_separately([], <<-"end;") #    do
+    assert_separately([], "#{<<~"do;"}\n#{<<~"end;"}")
+    do;
       alias $#{name} $/
       assert_raise_with_message(TypeError, /\\$#{name}/) { $#{name} = 1 }
     end;
@@ -3127,6 +3138,8 @@ CODE
   end
 
   def test_eq_tilde_can_be_overridden
+    return unless @cls == String
+
     assert_separately([], <<-RUBY)
       class String
         undef =~
@@ -3154,6 +3167,7 @@ CODE
 
   def test_LSHIFT_neary_long_max
     return unless @cls == String
+
     assert_ruby_status([], <<-'end;', '[ruby-core:61886] [Bug #9709]', timeout: 20)
       begin
         a = "a" * 0x4000_0000
@@ -3188,6 +3202,8 @@ CODE
   end
 
   def test_uminus_frozen
+    return unless @cls == String
+
     # embedded
     str1 = ("foobar" * 3).freeze
     str2 = ("foobar" * 3).freeze
