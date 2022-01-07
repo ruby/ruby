@@ -466,20 +466,12 @@ class Reline::LineEditor
     new_highest_in_this = calculate_height_by_width(prompt_width + calculate_width(@line.nil? ? '' : @line))
     rendered = false
     if @add_newline_to_end_of_buffer
-      @dialogs.each do |dialog|
-        clear_each_dialog(dialog)
-        dialog.contents = nil
-        dialog.trap_key = nil
-      end
+      clear_dialog_with_content
       rerender_added_newline(prompt, prompt_width)
       @add_newline_to_end_of_buffer = false
     else
       if @just_cursor_moving and not @rerender_all
-        @dialogs.each do |dialog|
-          clear_each_dialog(dialog)
-          dialog.contents = nil
-          dialog.trap_key = nil
-        end
+        clear_dialog_with_content
         rendered = just_move_cursor
         @just_cursor_moving = false
         return
@@ -889,6 +881,14 @@ class Reline::LineEditor
   private def clear_dialog
     @dialogs.each do |dialog|
       clear_each_dialog(dialog)
+    end
+  end
+
+  private def clear_dialog_with_content
+    @dialogs.each do |dialog|
+      clear_each_dialog(dialog)
+      dialog.contents = nil
+      dialog.trap_key = nil
     end
   end
 
