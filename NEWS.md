@@ -52,7 +52,7 @@ Note: Excluding feature bug fixes.
 
 ### Removed constants
 
-The following deprecated constant is removed.
+The following deprecated constants are removed.
 
 * `Random::DEFAULT` [[Feature #17351]]
 * `Struct::Group`
