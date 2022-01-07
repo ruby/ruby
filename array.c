@@ -3015,6 +3015,40 @@ rb_ary_to_ary_m(VALUE ary)
     return ary;
 }
 
+
+/*
+ *  call-seq:
+ *    array.to_proc -> proc
+ *
+ *  Returns a new \Proc object where the first element is the method and the rest are the arguments:
+ *     arr = [:+, 1]
+ *     proc = arr.to_proc
+ *     proc.class # => Proc
+ *     proc.call(2) # => 3
+ *     [1, 2, 3].map(&proc) # => [2, 3, 4]
+ *
+ *  If the +array+ is empty, raises ArgumentError.
+ *  If the first element of the +array+ is not a Symbol or a String, raises TypeError.
+ */
+
+
+static VALUE
+ary_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(recv, ary))
+{
+    argc = (int)RARRAY_LEN(ary);
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+    VALUE method = rb_to_symbol(RARRAY_AREF(ary, 0));
+    VALUE rest = rb_ary_subseq(ary, 1, argc);
+    return rb_funcallv(recv, SYM2ID(method), argc - 1, RARRAY_PTR(rest));
+}
+
+static VALUE
+rb_ary_to_proc(VALUE ary)
+{
+    return rb_func_lambda_new(ary_proc_call, ary, 1, 1);
+}
+
+
 static void
 ary_reverse(VALUE *p1, VALUE *p2)
 {
@@ -8618,6 +8652,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "to_a", rb_ary_to_a, 0);
     rb_define_method(rb_cArray, "to_h", rb_ary_to_h, 0);
     rb_define_method(rb_cArray, "to_ary", rb_ary_to_ary_m, 0);
+    rb_define_method(rb_cArray, "to_proc", rb_ary_to_proc, 0);
 
     rb_define_method(rb_cArray, "==", rb_ary_equal, 1);
     rb_define_method(rb_cArray, "eql?", rb_ary_eql, 1);
