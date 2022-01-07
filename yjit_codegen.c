@@ -184,6 +184,10 @@ jit_prepare_routine_call(jitstate_t *jit, ctx_t *ctx, x86opnd_t scratch_reg)
     jit->record_boundary_patch_point = true;
     jit_save_pc(jit, scratch_reg);
     jit_save_sp(jit, ctx);
+
+    // In case the routine calls Ruby methods, it can set local variables
+    // through Kernel#binding and other means.
+    ctx_clear_local_types(ctx);
 }
 
 // Record the current codeblock write position for rewriting into a jump into
