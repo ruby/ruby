@@ -280,7 +280,7 @@ struct RString {
         /** Embedded contents. */
         struct {
 #if USE_RVARGC
-            short len;
+            unsigned short len;
             /* This is a length 1 array because:
              *   1. GCC has a bug that does not optimize C flexible array members
              *      (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=102452)
