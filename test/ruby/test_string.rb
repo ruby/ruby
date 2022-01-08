@@ -2657,7 +2657,10 @@ CODE
   end
 
   def test_gsub_enumerator
-    assert_normal_exit %q{"abc".gsub(/./).next}, "[ruby-dev:34828]"
+    e = S("abc").gsub(/./)
+    assert_equal("a", e.next, "[ruby-dev:34828]")
+    assert_equal("b", e.next)
+    assert_equal("c", e.next)
   end
 
   def test_clear_nonasciicompat
