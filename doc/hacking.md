@@ -81,5 +81,5 @@ make test-all TESTS=../test/fiber/test_io.rb
 RubySpec is a project to write a complete, executable specification for the Ruby programming language.
 
 ``` shell
-make test-all test-rubyspec
+make test-rubyspec
 ```
