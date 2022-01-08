@@ -3038,8 +3038,7 @@ ary_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(recv, ary))
     argc = RARRAY_LENINT(ary);
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     VALUE method = rb_to_symbol(RARRAY_AREF(ary, 0));
-    VALUE rest = rb_ary_subseq(ary, 1, argc);
-    return rb_funcallv(recv, SYM2ID(method), argc - 1, RARRAY_PTR(rest));
+    return rb_funcallv(recv, SYM2ID(method), argc - 1, RARRAY_PTR(ary) + 1);
 }
 
 static VALUE
