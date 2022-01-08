@@ -6,6 +6,8 @@ require "timeout"
 require "open3"
 
 module BasetestReadline
+  RUBY = EnvUtil.rubybin
+
   INPUTRC = "INPUTRC"
   TERM = "TERM"
   SAVED_ENV = %w[COLUMNS LINES]
@@ -839,7 +841,7 @@ module BasetestReadline
       loader = "use_lib_reline"
     end
     if loader
-      res, exit_status = Open3.capture2e("ruby -I#{__dir__} -Ilib -rhelper -e '#{loader}; Readline.readline(%{y or n?})'", stdin_data: "y\n")
+      res, exit_status = Open3.capture2e("#{RUBY} -I#{__dir__} -Ilib -rhelper -e '#{loader}; Readline.readline(%{y or n?})'", stdin_data: "y\n")
       assert exit_status.success?, "It should work fine without tty, but it failed.\nError output:\n#{res}"
     end
   end
