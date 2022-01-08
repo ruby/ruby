@@ -92,9 +92,9 @@ module Reline::Terminfo
   end
 
   def self.setupterm(term, fildes)
-    errret_int = String.new("\x00" * 8, encoding: 'ASCII-8BIT')
+    errret_int = Fiddle::Pointer.malloc(Fiddle::SIZEOF_INT)
     ret = @setupterm.(term, fildes, errret_int)
-    errret = errret_int.unpack1('i')
+    errret = errret_int[0, Fiddle::SIZEOF_INT].unpack1('i')
     case ret
     when 0 # OK
       0
