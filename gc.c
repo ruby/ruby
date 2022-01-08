@@ -2483,6 +2483,7 @@ rb_objspace_set_event_hook(const rb_event_flag_t event)
 static void
 gc_event_hook_body(rb_execution_context_t *ec, rb_objspace_t *objspace, const rb_event_flag_t event, VALUE data)
 {
+    if (UNLIKELY(!ec->cfp)) return;
     const VALUE *pc = ec->cfp->pc;
     if (pc && VM_FRAME_RUBYFRAME_P(ec->cfp)) {
         /* increment PC because source line is calculated with PC-1 */
