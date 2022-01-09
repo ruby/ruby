@@ -225,7 +225,7 @@ class Gem::Specification < Gem::BasicSpecification
   attr_reader :version
 
   ##
-  # A short summary of this gem's description.  Displayed in `gem list -d`.
+  # A short summary of this gem's description.  Displayed in <tt>gem list -d</tt>.
   #
   # The #description should be more detailed than the summary.
   #
@@ -271,7 +271,7 @@ class Gem::Specification < Gem::BasicSpecification
   # A list of authors for this gem.
   #
   # Alternatively, a single author can be specified by assigning a string to
-  # `spec.author`
+  # +spec.author+
   #
   # Usage:
   #
