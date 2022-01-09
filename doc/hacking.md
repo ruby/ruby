@@ -54,6 +54,14 @@ make run
 
 If you want more of the standard library, you can use `runruby` instead of `run`.
 
+## Running Tests
+
+You can run the following tests at once:
+
+``` shell
+make check
+```
+
 ### Run Bootstrap Tests
 
 There are a set of tests in `bootstraptest/` which cover most basic features of the core Ruby language.
