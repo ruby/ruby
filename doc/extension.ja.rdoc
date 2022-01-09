@@ -190,21 +190,6 @@ INT2NUM() :: 任意の整数からVALUEへ
 INT2NUM()は整数がFIXNUMの範囲に収まらない場合，Bignumに変換
 してくれます(が，少し遅い)．
 
-Cの真偽値をRubyの +true+ または +false+ に変換する
-
-RBOOL() ::
-
-<code>RBOOL(v)</code> は _v_ が非0のとき +Qtrue+ ，それ以外
-の _v_ が0のとき +Qfalse+ を返します．
-
-注意: RBOOLは定義されているのはRuby 3.1以降なので，それより
-古いバージョンをサポートするプログラム中で使いたいときは，以
-下のような定義を追加しておく必要があるでしょう．
-
-    #ifndef RBOOL
-    #define RBOOL(v) ((v) ? Qtrue : Qfalse)
-    #endif
-
 === Rubyのデータを操作する
 
 先程も述べた通り，Rubyの構造体をアクセスする時に内容の更新を

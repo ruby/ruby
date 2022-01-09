@@ -169,21 +169,6 @@ INT2NUM() :: for arbitrary sized integers.
 INT2NUM() converts an integer into a Bignum if it is out of the FIXNUM
 range, but is a bit slower.
 
-To convert C boolean to Ruby +true+ or +false+ :
-
-RBOOL() ::
-
-<code>RBOOL(v)</code> returns +Qtrue+ if _v_ is not 0, or +Qfalse+
-otherwisze _v_ is 0.
-
-Notice: RBOOL is defined since Ruby 3.1, if you want to use it in a
-program which supports older versions, the fallback definition will be
-needed, like as the following.
-
-    #ifndef RBOOL
-    #define RBOOL(v) ((v) ? Qtrue : Qfalse)
-    #endif
-
 === Manipulating Ruby Data
 
 As I already mentioned, it is not recommended to modify an object's
