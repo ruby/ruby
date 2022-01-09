@@ -767,6 +767,7 @@ begin
       omit if Reline::IOGate.win?
       cmd = %Q{ruby -e 'print(%Q{abc def \\e\\r})' | ruby -I#{@pwd}/lib -rreline -e 'p Reline.readline(%{> })'}
       start_terminal(40, 50, ['bash', '-c', cmd])
+      sleep 1
       close
       assert_screen(<<~'EOC')
         > abc def
