@@ -5749,7 +5749,7 @@ pread_internal_call(VALUE arg)
  *  - Bypasses any user space buffering in the stream.
  *
  *  Because this method does not disturb the stream's state
- *  (its position, in particular), multiple threads and processes
+ *  (its position, in particular), +pread+ allows multiple threads and processes
  *  to use the same \IO object for reading at various offsets.
  *
  *    f = File.open('t.txt')
@@ -5824,7 +5824,7 @@ internal_pwrite_func(void *ptr)
  *  - Bypasses any user space buffering in the stream.
  *
  *  Because this method does not disturb the stream's state
- *  (its position, in particular), multiple threads and processes
+ *  (its position, in particular), +pwrite+ allows multiple threads and processes
  *  to use the same \IO object for writing at various offsets.
  *
  *    f = File.open('t.tmp', 'w+')
