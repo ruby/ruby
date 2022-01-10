@@ -93,10 +93,11 @@ You can run specific tests by specifying their path:
 make test-all TESTS=../test/fiber/test_io.rb
 ```
 
-### Run RubySpec Tests
+### Run Ruby Spec Suite Tests
 
-RubySpec is  a project to  write a complete,  executable specification
-for the Ruby programming language.
+The [Ruby Spec Suite](https://github.com/ruby/spec/) is a test suite
+that aims to provide an executable description for the behavior of the
+language.
 
 ``` shell
 make test-spec
