@@ -36,8 +36,21 @@ class TimeoutAction
             elapsed = now - @started
             if elapsed > @timeout
               STDERR.puts "\n#{@current_state.description}"
+              STDERR.puts "Example took longer than the configured timeout of #{@timeout}s"
               STDERR.flush
-              abort "Example took longer than the configured timeout of #{@timeout}s"
+
+              if RUBY_ENGINE == 'truffleruby'
+                STDERR.puts 'Java stacktraces:'
+                Process.kill :SIGQUIT, Process.pid
+                sleep 1
+
+                if defined?(Truffle::Debug.show_backtraces)
+                  STDERR.puts "\nRuby backtraces:"
+                  Truffle::Debug.show_backtraces
+                end
+              end
+
+              exit 2
             end
           end
         end

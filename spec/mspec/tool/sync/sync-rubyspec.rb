@@ -20,7 +20,7 @@ IMPLS = {
 
 MSPEC = ARGV.delete('--mspec')
 
-CHECK_LAST_MERGE = ENV['CHECK_LAST_MERGE'] != 'false'
+CHECK_LAST_MERGE = !MSPEC && ENV['CHECK_LAST_MERGE'] != 'false'
 TEST_MASTER = ENV['TEST_MASTER'] != 'false'
 
 MSPEC_REPO = File.expand_path("../../..", __FILE__)
