@@ -106,7 +106,7 @@ module Bundler
         when "minitest"
           templates.merge!(
             "test/minitest/test_helper.rb.tt" => "test/test_helper.rb",
-            "test/minitest/test_newgem.rb.tt" => "test/test_#{namespaced_path}.rb"
+            "test/minitest/test_newgem.rb.tt" => "test/test_#{underscored_name}.rb"
           )
           config[:test_task] = :test
         when "test-unit"
