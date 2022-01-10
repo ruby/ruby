@@ -2178,10 +2178,11 @@ because g_called global variable should be synchronized by other
 ractor's threads. To avoid such data-race, some synchronization should
 be used. Check include/ruby/thread_native.h and include/ruby/atomic.h.
 
-On the Ractor mechanism, most of objects given by the method parameters
-or the receiver are isolated by Ractor's boundary, it is easy to make
-thread-safe code than usual thread-programming in general. For example,
-we don't need to lock an array object to access the element of it.
+With Ractors, all objects given as method parameters and the receiver (self)
+are guaranteed to be from the current Ractor or to be shareable. As a
+consequence, it is easier to make code ractor-safe than to make code generally
+thread-safe. For example, we don't need to lock an array object to access the
+element of it.
 
 (3) Check the thread-safety of any used library
 
