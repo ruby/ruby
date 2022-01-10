@@ -4951,7 +4951,7 @@ rb_io_close_on_exec_p(VALUE io)
 #if defined(HAVE_FCNTL) && defined(F_GETFD) && defined(F_SETFD) && defined(FD_CLOEXEC)
 /*
  *  call-seq:
- *    close_on_exec = bool -> true or false
+ *    self.close_on_exec = bool -> true or false
  *
  *  Sets a close-on-exec flag.
  *
@@ -13739,8 +13739,8 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  represents an input/output stream in the underlying operating system.
  *  \Class \IO is the basis for input and output in Ruby.
  *
- *  \Class File is the only class in the Ruby core that derives from \IO.
- *  Some classes in the Ruby standard library also derive from \IO;
+ *  \Class File is the only class in the Ruby core that is a subclass of \IO.
+ *  Some classes in the Ruby standard library are also subclasses of \IO;
  *  these include TCPSocket and UDPSocket.
  *
  *  The global constant ARGF (also accessible as <tt>$<</tt>)
@@ -13784,7 +13784,6 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  Extension <tt>io/console</tt> provides numerous methods
  *  for interacting with the console;
  *  requiring it adds numerous methods to class \IO.
- *  See {io/console}[https://ruby-doc.org/stdlib/libdoc/io/console/rdoc].
  *
  *  == Example Files
  *
