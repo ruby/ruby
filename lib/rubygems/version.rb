@@ -341,9 +341,11 @@ class Gem::Version
   # Compares this version with +other+ returning -1, 0, or 1 if the
   # other version is larger, the same, or smaller than this
   # one. Attempts to compare to something that's not a
-  # <tt>Gem::Version</tt> return +nil+.
+  # <tt>Gem::Version</tt> or a valid version String return +nil+.
 
   def <=>(other)
+    return self <=> self.class.new(other) if (String === other) && self.class.correct?(other)
+
     return unless Gem::Version === other
     return 0 if @version == other._version || canonical_segments == other.canonical_segments
 
