@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 
-ruby_version_is ""..."3.1" do
-  describe "Fixnum" do
+describe "Fixnum" do
+  ruby_version_is ""..."3.2" do
     it "is unified into Integer" do
       suppress_warning do
         Fixnum.should equal(Integer)
@@ -13,7 +13,15 @@ ruby_version_is ""..."3.1" do
     end
   end
 
-  describe "Bignum" do
+  ruby_version_is "3.2" do
+    it "is no longer defined" do
+      Object.should_not.const_defined?(:Fixnum)
+    end
+  end
+end
+
+describe "Bignum" do
+  ruby_version_is ""..."3.2" do
     it "is unified into Integer" do
       suppress_warning do
         Bignum.should equal(Integer)
@@ -22,6 +30,12 @@ ruby_version_is ""..."3.1" do
 
     it "is deprecated" do
       -> { Bignum }.should complain(/constant ::Bignum is deprecated/)
+    end
+  end
+
+  ruby_version_is "3.2" do
+    it "is no longer defined" do
+      Object.should_not.const_defined?(:Bignum)
     end
   end
 end

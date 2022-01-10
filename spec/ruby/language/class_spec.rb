@@ -17,6 +17,19 @@ describe "The class keyword" do
     eval "class ClassSpecsKeywordWithoutSemicolon end"
     ClassSpecsKeywordWithoutSemicolon.should be_an_instance_of(Class)
   end
+
+  it "can redefine a class when called from a block" do
+    ClassSpecs::DEFINE_CLASS.call
+    A.should be_an_instance_of(Class)
+
+    Object.send(:remove_const, :A)
+    defined?(A).should be_nil
+
+    ClassSpecs::DEFINE_CLASS.call
+    A.should be_an_instance_of(Class)
+  ensure
+    Object.send(:remove_const, :A) if defined?(::A)
+  end
 end
 
 describe "A class definition" do

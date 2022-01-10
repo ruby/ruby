@@ -256,7 +256,6 @@ describe :numeric_step, :shared => true do
   end
 
   describe "when no block is given" do
-    step_enum_class = Enumerator
     step_enum_class = Enumerator::ArithmeticSequence
 
     ruby_version_is ""..."3.0" do

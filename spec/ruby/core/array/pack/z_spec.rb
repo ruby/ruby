@@ -12,6 +12,16 @@ describe "Array#pack with format 'Z'" do
   it_behaves_like :array_pack_string, 'Z'
   it_behaves_like :array_pack_taint, 'Z'
 
+  it "calls #to_str to convert an Object to a String" do
+    obj = mock("pack Z string")
+    obj.should_receive(:to_str).and_return("``abcdef")
+    [obj].pack("Z*").should == "``abcdef\x00"
+  end
+
+  it "will not implicitly convert a number to a string" do
+    -> { [0].pack('Z') }.should raise_error(TypeError)
+  end
+
   it "adds all the bytes and appends a NULL byte when passed the '*' modifier" do
     ["abc"].pack("Z*").should == "abc\x00"
   end

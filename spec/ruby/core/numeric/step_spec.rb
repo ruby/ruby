@@ -21,7 +21,6 @@ describe "Numeric#step" do
     it_behaves_like :numeric_step, :step
 
     describe "when no block is given" do
-      step_enum_class = Enumerator
       step_enum_class = Enumerator::ArithmeticSequence
 
       ruby_version_is ""..."3.0" do
@@ -61,7 +60,6 @@ describe "Numeric#step" do
         end
       end
     end
-
   end
 
   describe 'with keyword arguments' do

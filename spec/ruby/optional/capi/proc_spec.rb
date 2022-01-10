@@ -7,6 +7,8 @@ describe "C-API Proc function" do
   before :each do
     @p = CApiProcSpecs.new
     @prc = @p.rb_proc_new
+    @prc2 = @p.rb_proc_new_argv_n
+    @prc3 = @p.rb_proc_new_argc
   end
 
   describe "rb_proc_new" do
@@ -15,6 +17,7 @@ describe "C-API Proc function" do
     end
 
     it "calls the C function wrapped by the Proc instance when sent #call" do
+      @p.rb_proc_new_arg.call().should == nil
       @prc.call(:foo_bar).should == ":foo_bar"
       @prc.call([:foo, :bar]).should == "[:foo, :bar]"
     end
@@ -22,6 +25,30 @@ describe "C-API Proc function" do
     it "calls the C function wrapped by the Proc instance when sent #[]" do
       @prc[:foo_bar].should == ":foo_bar"
       @prc[[:foo, :bar]].should == "[:foo, :bar]"
+    end
+
+    it "calls the C function with the arg count in argc" do
+      @prc3.call().should == 0
+      @prc3.call(:foo).should == 1
+      @prc3.call(:foo, :bar).should == 2
+    end
+
+    it "calls the C function with arguments in argv" do
+      @prc2.call(1, :foo).should == :foo
+      @prc2.call(2, :foo, :bar).should == :bar
+      -> { @prc2.call(3, :foo, :bar) }.should raise_error(ArgumentError)
+    end
+
+    it "calls the C function with the block passed in blockarg" do
+      a_block = :foo.to_proc
+      @p.rb_proc_new_blockarg.call(&a_block).should == a_block
+      @p.rb_proc_new_blockarg.call().should == nil
+    end
+
+    it "calls the C function and yields to the block passed in blockarg" do
+      @p.rb_proc_new_block_given_p.call() do
+      end.should == false
+      @p.rb_proc_new_block_given_p.call().should == false
     end
 
     it "returns a Proc instance correctly described in #inspect without source location" do

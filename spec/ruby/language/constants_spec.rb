@@ -718,3 +718,17 @@ describe 'Allowed characters' do
     eval("mod::ἍBB").should == 1
   end
 end
+
+describe 'Assignment' do
+  context 'dynamic assignment' do
+    it 'raises SyntaxError' do
+      -> do
+        eval <<-CODE
+          def test
+            B = 1
+          end
+        CODE
+      end.should raise_error(SyntaxError, /dynamic constant assignment/)
+    end
+  end
+end

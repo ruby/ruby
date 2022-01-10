@@ -1297,6 +1297,65 @@ ruby_version_is "2.7" do
           a
         RUBY
       end
+
+      it "supports pinning instance variables" do
+        eval(<<~RUBY).should == true
+          @a = /a/
+          case 'abc'
+          in ^@a
+            true
+          end
+        RUBY
+      end
+
+      it "supports pinning class variables" do
+        result = nil
+        Module.new do
+          result = module_eval(<<~RUBY)
+            @@a = 0..10
+
+            case 2
+            in ^@@a
+              true
+            end
+          RUBY
+        end
+
+        result.should == true
+      end
+
+      it "supports pinning global variables" do
+        eval(<<~RUBY).should == true
+          $a = /a/
+          case 'abc'
+          in ^$a
+            true
+          end
+        RUBY
+      end
+
+      it "supports pinning expressions" do
+        eval(<<~RUBY).should == true
+          case 'abc'
+            in ^(/a/)
+            true
+          end
+        RUBY
+
+        eval(<<~RUBY).should == true
+          case {name: '2.6', released_at: Time.new(2018, 12, 25)}
+            in {released_at: ^(Time.new(2010)..Time.new(2020))}
+            true
+          end
+        RUBY
+
+        eval(<<~RUBY).should == true
+          case 0
+          in ^(0+0)
+            true
+          end
+        RUBY
+      end
     end
   end
 end

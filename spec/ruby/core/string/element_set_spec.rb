@@ -141,6 +141,12 @@ describe "String#[]= with Integer index" do
     str.encoding.should equal(Encoding::BINARY)
   end
 
+  it "updates the string to a compatible encoding" do
+    str = "  "
+    str[1] = [0xB9].pack("C*")
+    str.encoding.should == Encoding::ASCII_8BIT
+  end
+
   it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
     str = "あれ"
     rep = "が".encode Encoding::EUC_JP

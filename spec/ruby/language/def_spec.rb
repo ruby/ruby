@@ -213,7 +213,7 @@ describe "An instance method with a default argument" do
   end
 
   ruby_version_is '2.7' do
-    it "raises a syntaxError an existing method with the same name as the local variable" do
+    it "raises a SyntaxError when there is an existing method with the same name as the local variable" do
       def bar
         1
       end

@@ -532,6 +532,27 @@ describe "Module#include" do
       B.foo.should == 'n'
     end
   end
+
+  it "overrides a previous super method call" do
+    c1 = Class.new do
+      def foo
+        [:c1]
+      end
+    end
+    c2 = Class.new(c1) do
+      def foo
+        [:c2] + super
+      end
+    end
+    c2.new.foo.should == [:c2, :c1]
+    m = Module.new do
+      def foo
+        [:m1]
+      end
+    end
+    c2.include(m)
+    c2.new.foo.should == [:c2, :m1]
+  end
 end
 
 describe "Module#include?" do

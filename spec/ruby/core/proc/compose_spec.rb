@@ -61,9 +61,17 @@ describe "Proc#<<" do
         g = proc { |x| x + x }
         lambda_proc = -> x { x }
 
+        # lambda << proc
         (f << g).is_a?(Proc).should == true
         (f << g).should_not.lambda?
+
+        # lambda << lambda
+        (f << lambda_proc).is_a?(Proc).should == true
         (f << lambda_proc).should.lambda?
+
+        # proc << lambda
+        (g << f).is_a?(Proc).should == true
+        (g << f).should.lambda?
       end
     end
 

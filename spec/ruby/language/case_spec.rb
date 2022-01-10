@@ -156,6 +156,15 @@ describe "The 'case'-construct" do
     end.should == "foo"
   end
 
+  it "tests an empty array" do
+    case []
+    when []
+      'foo'
+    else
+      'bar'
+    end.should == 'foo'
+  end
+
   it "expands arrays to lists of values" do
     case 'z'
     when *['a', 'b', 'c', 'd']

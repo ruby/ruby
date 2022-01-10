@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 
-ruby_version_is ''...'3.2' do
-  describe "Kernel#=~" do
+describe "Kernel#=~" do
+  ruby_version_is ''...'3.2' do
     it "returns nil matching any object" do
       o = Object.new
 
@@ -19,6 +19,12 @@ ruby_version_is ''...'3.2' do
       -> do
         Object.new =~ /regexp/
       end.should complain(/deprecated Object#=~ is called on Object/, verbose: true)
+    end
+  end
+
+  ruby_version_is '3.2' do
+    it "is no longer defined" do
+      Object.new.should_not.respond_to?(:=~)
     end
   end
 end
