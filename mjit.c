@@ -19,6 +19,7 @@
 #include "id_table.h"
 #include "internal.h"
 #include "internal/class.h"
+#include "internal/cmdlineopt.h"
 #include "internal/cont.h"
 #include "internal/file.h"
 #include "internal/hash.h"
@@ -691,6 +692,63 @@ split_flags(const char *flags)
     ret[i] = NULL;
     return ret;
 }
+
+#define opt_match_noarg(s, l, name) \
+    opt_match(s, l, name) && (*(s) ? (rb_warn("argument to --mjit-" name " is ignored"), 1) : 1)
+#define opt_match_arg(s, l, name) \
+    opt_match(s, l, name) && (*(s) ? 1 : (rb_raise(rb_eRuntimeError, "--mjit-" name " needs an argument"), 0))
+
+void
+mjit_setup_options(const char *s, struct mjit_options *mjit_opt)
+{
+    const size_t l = strlen(s);
+    if (l == 0) {
+        return;
+    }
+    else if (opt_match_noarg(s, l, "warnings")) {
+        mjit_opt->warnings = 1;
+    }
+    else if (opt_match(s, l, "debug")) {
+        if (*s)
+            mjit_opt->debug_flags = strdup(s + 1);
+        else
+            mjit_opt->debug = 1;
+    }
+    else if (opt_match_noarg(s, l, "wait")) {
+        mjit_opt->wait = 1;
+    }
+    else if (opt_match_noarg(s, l, "save-temps")) {
+        mjit_opt->save_temps = 1;
+    }
+    else if (opt_match(s, l, "verbose")) {
+        mjit_opt->verbose = *s ? atoi(s + 1) : 1;
+    }
+    else if (opt_match_arg(s, l, "max-cache")) {
+        mjit_opt->max_cache_size = atoi(s + 1);
+    }
+    else if (opt_match_arg(s, l, "min-calls")) {
+        mjit_opt->min_calls = atoi(s + 1);
+    }
+    else {
+        rb_raise(rb_eRuntimeError,
+                 "invalid MJIT option `%s' (--help will show valid MJIT options)", s);
+    }
+}
+
+#define M(shortopt, longopt, desc) RUBY_OPT_MESSAGE(shortopt, longopt, desc)
+const struct ruby_opt_message mjit_option_messages[] = {
+    M("--mjit-warnings",      "", "Enable printing JIT warnings"),
+    M("--mjit-debug",         "", "Enable JIT debugging (very slow), or add cflags if specified"),
+    M("--mjit-wait",          "", "Wait until JIT compilation finishes every time (for testing)"),
+    M("--mjit-save-temps",    "", "Save JIT temporary files in $TMP or /tmp (for testing)"),
+    M("--mjit-verbose=num",   "", "Print JIT logs of level num or less to stderr (default: 0)"),
+    M("--mjit-max-cache=num", "", "Max number of methods to be JIT-ed in a cache (default: "
+      STRINGIZE(DEFAULT_MAX_CACHE_SIZE) ")"),
+    M("--mjit-min-calls=num", "", "Number of calls to trigger JIT (for testing, default: "
+      STRINGIZE(DEFAULT_MIN_CALLS_TO_ADD) ")"),
+    {0}
+};
+#undef M
 
 // Initialize MJIT.  Start a thread creating the precompiled header and
 // processing ISeqs.  The function should be called first for using MJIT.
