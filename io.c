@@ -5738,25 +5738,30 @@ pread_internal_call(VALUE arg)
 
 /*
  *  call-seq:
- *     ios.pread(maxlen, offset[, outbuf])    -> string
+ *    pread(maxlen, offset)             -> string
+ *    pread(maxlen, offset, out_string) -> string
  *
- *  Reads <i>maxlen</i> bytes from <em>ios</em> using the pread system call
- *  and returns them as a string without modifying the underlying
- *  descriptor offset.  This is advantageous compared to combining IO#seek
- *  and IO#read in that it is atomic, allowing multiple threads/process to
- *  share the same IO object for reading the file at various locations.
- *  This bypasses any userspace buffering of the IO layer.
- *  If the optional <i>outbuf</i> argument is present, it must
- *  reference a String, which will receive the data.
- *  Raises SystemCallError on error, EOFError at end of file and
- *  NotImplementedError if platform does not implement the system call.
+ *  Behaves like IO#readpartial, except that it:
  *
- *     File.write("testfile", "This is line one\nThis is line two\n")
- *     File.open("testfile") do |f|
- *       p f.read           # => "This is line one\nThis is line two\n"
- *       p f.pread(12, 0)   # => "This is line"
- *       p f.pread(9, 8)    # => "line one\n"
- *     end
+ *  - Reads at the given +offset+ (in bytes).
+ *  - Disregards, and does not modify, the stream's position
+ *    (see {Position}[#class-IO-label-Position]).
+ *  - Bypasses any user space buffering in the stream.
+ *
+ *  Because this method does not disturb the stream's state
+ *  (its position, in particular), +pread+ allows multiple threads and processes
+ *  to use the same \IO object for reading at various offsets.
+ *
+ *    f = File.open('t.txt')
+ *    f.read # => "First line\nSecond line\n\nFourth line\nFifth line\n"
+ *    f.pos  # => 52
+ *    # Read 12 bytes at offset 0.
+ *    f.pread(12, 0) # => "First line\n"
+ *    # Read 9 bytes at offset 8.
+ *    f.pread(9, 8)  # => "ne\nSecon"
+ *
+ *  Not available on some platforms.
+ *
  */
 static VALUE
 rb_io_pread(int argc, VALUE *argv, VALUE io)
@@ -5809,22 +5814,27 @@ internal_pwrite_func(void *ptr)
 
 /*
  *  call-seq:
- *     ios.pwrite(string, offset)    -> integer
+ *    pwrite(object, offset) -> integer
  *
- *  Writes the given string to <em>ios</em> at <i>offset</i> using pwrite()
- *  system call.  This is advantageous to combining IO#seek and IO#write
- *  in that it is atomic, allowing multiple threads/process to share the
- *  same IO object for reading the file at various locations.
- *  This bypasses any userspace buffering of the IO layer.
- *  Returns the number of bytes written.
- *  Raises SystemCallError on error and NotImplementedError
- *  if platform does not implement the system call.
+ *  Behaves like IO#write, except that it:
  *
- *     File.open("out", "w") do |f|
- *       f.pwrite("ABCDEF", 3)   #=> 6
- *     end
+ *  - Writes at the given +offset+ (in bytes).
+ *  - Disregards, and does not modify, the stream's position
+ *    (see {Position}[#class-IO-label-Position]).
+ *  - Bypasses any user space buffering in the stream.
  *
- *     File.read("out")          #=> "\u0000\u0000\u0000ABCDEF"
+ *  Because this method does not disturb the stream's state
+ *  (its position, in particular), +pwrite+ allows multiple threads and processes
+ *  to use the same \IO object for writing at various offsets.
+ *
+ *    f = File.open('t.tmp', 'w+')
+ *    # Write 6 bytes at offset 3.
+ *    f.pwrite('ABCDEF', 3) # => 6
+ *    f.rewind
+ *    f.read # => "\u0000\u0000\u0000ABCDEF"
+ *
+ *  Not available on some platforms.
+ *
  */
 static VALUE
 rb_io_pwrite(VALUE io, VALUE str, VALUE offset)
@@ -5917,14 +5927,13 @@ rb_io_ascii8bit_binmode(VALUE io)
 
 /*
  *  call-seq:
- *     ios.binmode    -> ios
+ *    binmode -> self
  *
- *  Puts <em>ios</em> into binary mode.
- *  Once a stream is in binary mode, it cannot be reset to nonbinary mode.
+ *  Sets the stream's data mode as binary
+ *  (see {Data Mode}[#class-IO-label-Data+Mode]).
  *
- *  - newline conversion disabled
- *  - encoding conversion disabled
- *  - content is treated as ASCII-8BIT
+ *  A stream's data mode may not be changed from binary to text.
+ *
  */
 
 static VALUE
@@ -5942,9 +5951,11 @@ rb_io_binmode_m(VALUE io)
 
 /*
  *  call-seq:
- *     ios.binmode?    -> true or false
+ *    binmode? -> true or false
  *
- *  Returns <code>true</code> if <em>ios</em> is binmode.
+ *  Returns +true+ if the stream is on binary mode, +false+ otherwise.
+ *  See {Data Mode}[#class-IO-label-Data+Mode].
+ *
  */
 static VALUE
 rb_io_binmode_p(VALUE io)
