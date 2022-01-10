@@ -5575,15 +5575,13 @@ rb_io_close_write(VALUE io)
 
 /*
  *  call-seq:
- *     ios.sysseek(offset, whence=IO::SEEK_SET)   -> integer
+ *    sysseek(offset, whence = IO::SEEK_SET) -> integer
  *
- *  Seeks to a given <i>offset</i> in the stream according to the value
- *  of <i>whence</i> (see IO#seek for values of <i>whence</i>). Returns
- *  the new offset into the file.
+ *  Behaves like IO#seek, except that it:
  *
- *     f = File.new("testfile")
- *     f.sysseek(-13, IO::SEEK_END)   #=> 53
- *     f.sysread(10)                  #=> "And so on."
+ *  - Uses low-level system functions.
+ *  - Returns the new position.
+ *
  */
 
 static VALUE
@@ -5615,15 +5613,19 @@ rb_io_sysseek(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     ios.syswrite(string)   -> integer
+ *    syswrite(object) -> integer
  *
- *  Writes the given string to <em>ios</em> using a low-level write.
- *  Returns the number of bytes written. Do not mix with other methods
- *  that write to <em>ios</em> or you may get unpredictable results.
- *  Raises SystemCallError on error.
+ *  Writes the given +object+ to self, which must be opened for writing (see Modes);
+ *  returns the number bytes written.
+ *  If +object+ is not a string is converted via method to_s:
  *
- *     f = File.new("out", "w")
- *     f.syswrite("ABCDEF")   #=> 6
+ *    f = File.new('t.tmp', 'w')
+ *    f.syswrite('foo') # => 3
+ *    f.syswrite(30)    # => 2
+ *    f.syswrite(:foo)  # => 3
+ *
+ *  This methods should not be used with other stream-writer methods.
+ *
  */
 
 static VALUE
@@ -5656,21 +5658,13 @@ rb_io_syswrite(VALUE io, VALUE str)
 
 /*
  *  call-seq:
- *     ios.sysread(maxlen[, outbuf])    -> string
+ *    sysread(maxlen)             -> string
+ *    sysread(maxlen, out_string) -> string
  *
- *  Reads <i>maxlen</i> bytes from <em>ios</em> using a low-level
- *  read and returns them as a string.  Do not mix with other methods
- *  that read from <em>ios</em> or you may get unpredictable results.
+ *  Behaves like IO#readpartial, except that it uses low-level system functions.
  *
- *  If the optional _outbuf_ argument is present,
- *  it must reference a String, which will receive the data.
- *  The _outbuf_ will contain only the received data after the method call
- *  even if it is not empty at the beginning.
+ *  This method should not be used with other stream-reader methods.
  *
- *  Raises SystemCallError on error and EOFError at end of file.
- *
- *     f = File.new("testfile")
- *     f.sysread(16)   #=> "This is line one"
  */
 
 static VALUE
