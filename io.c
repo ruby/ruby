@@ -4971,7 +4971,7 @@ rb_io_close_on_exec_p(VALUE io)
 #if defined(HAVE_FCNTL) && defined(F_GETFD) && defined(F_SETFD) && defined(FD_CLOEXEC)
 /*
  *  call-seq:
- *     ios.close_on_exec = bool    -> true or false
+ *    self.close_on_exec = bool -> true or false
  *
  *  Sets a close-on-exec flag.
  *
@@ -5382,17 +5382,14 @@ rb_io_close(VALUE io)
 
 /*
  *  call-seq:
- *     ios.close   -> nil
+ *    close -> nil
  *
- *  Closes <em>ios</em> and flushes any pending writes to the operating
- *  system. The stream is unavailable for any further data operations;
- *  an IOError is raised if such an attempt is made. I/O streams are
- *  automatically closed when they are claimed by the garbage collector.
+ *  Closes the stream, if it is open, after flushing any buffered writes
+ *  to the operating system; does nothing if the stream is already closed.
+ *  A stream is automatically closed when claimed by the garbage collector.
  *
- *  If <em>ios</em> is opened by IO.popen, #close sets
- *  <code>$?</code>.
+ *  If the stream was opened by IO.popen, #close sets global variable <tt>$?</tt>.
  *
- *  Calling this method on closed IO object is just ignored since Ruby 2.3.
  */
 
 static VALUE
@@ -5438,20 +5435,20 @@ io_close(VALUE io)
 
 /*
  *  call-seq:
- *     ios.closed?    -> true or false
+ *    closed? -> true or false
  *
- *  Returns <code>true</code> if <em>ios</em> is completely closed (for
- *  duplex streams, both reader and writer), <code>false</code>
- *  otherwise.
+ *  Returns +true+ if the stream is closed for both reading and writing,
+ *  +false+ otherwise:
  *
- *     f = File.new("testfile")
- *     f.close         #=> nil
- *     f.closed?       #=> true
- *     f = IO.popen("/bin/sh","r+")
- *     f.close_write   #=> nil
- *     f.closed?       #=> false
- *     f.close_read    #=> nil
- *     f.closed?       #=> true
+ *    f = File.new('t.txt')
+ *    f.close        # => nil
+ *    f.closed?      # => true
+ *    f = IO.popen('/bin/sh','r+')
+ *    f.close_write  # => nil
+ *    f.closed?      # => false
+ *    f.close_read   # => nil
+ *    f.closed?      # => true
+ *
  */
 
 
@@ -5476,22 +5473,17 @@ rb_io_closed(VALUE io)
 
 /*
  *  call-seq:
- *     ios.close_read    -> nil
+ *    close_read -> nil
  *
- *  Closes the read end of a duplex I/O stream (i.e., one that contains
- *  both a read and a write stream, such as a pipe). Will raise an
- *  IOError if the stream is not duplexed.
+ *  Closes the read end of a duplexed stream (i.e., one that is both readable
+ *  and writable, such as a pipe); does nothing if already closed:
  *
- *     f = IO.popen("/bin/sh","r+")
- *     f.close_read
- *     f.readlines
+ *    f = IO.popen('/bin/sh','r+')
+ *    f.close_read
+ *    f.readlines # Raises IOError
  *
- *  <em>produces:</em>
+ *  Raises an exception if the stream is not duplexed.
  *
- *     prog.rb:3:in `readlines': not opened for reading (IOError)
- *     	from prog.rb:3
- *
- *  Calling this method on closed IO object is just ignored since Ruby 2.3.
  */
 
 static VALUE
@@ -5537,23 +5529,15 @@ rb_io_close_read(VALUE io)
 
 /*
  *  call-seq:
- *     ios.close_write   -> nil
+ *    close_write -> nil
  *
- *  Closes the write end of a duplex I/O stream (i.e., one that contains
- *  both a read and a write stream, such as a pipe). Will raise an
- *  IOError if the stream is not duplexed.
+ *  Closes the write end of a duplexed stream (i.e., one that is both readable
+ *  and writable, such as a pipe); does nothing if already closed:
  *
- *     f = IO.popen("/bin/sh","r+")
- *     f.close_write
- *     f.print "nowhere"
+ *    f = IO.popen('/bin/sh', 'r+')
+ *    f.close_write
+ *    f.print 'nowhere' # Raises IOError.
  *
- *  <em>produces:</em>
- *
- *     prog.rb:3:in `write': not opened for writing (IOError)
- *     	from prog.rb:3:in `print'
- *     	from prog.rb:3
- *
- *  Calling this method on closed IO object is just ignored since Ruby 2.3.
  */
 
 static VALUE
@@ -13771,82 +13755,55 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  */
 
 /*
- *  The IO class is the basis for all input and output in Ruby.
- *  An I/O stream may be <em>duplexed</em> (that is, bidirectional), and
- *  so may use more than one native operating system stream.
+ *  An instance of class \IO (commonly called a _stream_)
+ *  represents an input/output stream in the underlying operating system.
+ *  \Class \IO is the basis for input and output in Ruby.
  *
- *  Many of the examples in this section use the File class, the only standard
- *  subclass of IO. The two classes are closely associated.  Like the File
- *  class, the Socket library subclasses from IO (such as TCPSocket or
- *  UDPSocket).
+ *  \Class File is the only class in the Ruby core that is a subclass of \IO.
+ *  Some classes in the Ruby standard library are also subclasses of \IO;
+ *  these include TCPSocket and UDPSocket.
  *
- *  The Kernel#open method can create an IO (or File) object for these types
- *  of arguments:
+ *  The global constant ARGF (also accessible as <tt>$<</tt>)
+ *  provides an IO-like stream that allows access to all file paths
+ *  found in ARGV (or found in STDIN if ARGV is empty).
+ *  Note that ARGF is not itself a subclass of \IO.
  *
- *  * A plain string represents a filename suitable for the underlying
- *    operating system.
+ *  Important objects based on \IO include:
  *
- *  * A string starting with <code>"|"</code> indicates a subprocess.
- *    The remainder of the string following the <code>"|"</code> is
- *    invoked as a process with appropriate input/output channels
- *    connected to it.
+ *  - $stdin.
+ *  - $stdout.
+ *  - $stderr.
+ *  - Instances of class File.
  *
- *  * A string equal to <code>"|-"</code> will create another Ruby
- *    instance as a subprocess.
+ *  An instance of \IO may be created using:
  *
- *  The IO may be opened with different file modes (read-only, write-only) and
- *  encodings for proper conversion.  See IO.new for these options.  See
- *  Kernel#open for details of the various command formats described above.
+ *  - IO.new: returns a new \IO object for the given integer file descriptor.
+ *  - IO.open: passes a new \IO object to the given block.
+ *  - IO.popen: returns a new \IO object that is connected to the $stdin and $stdout
+ *    of a newly-launched subprocess.
+ *  - Kernel#open: Returns a new \IO object connected to a given source:
+ *    stream, file, or subprocess.
  *
- *  IO.popen, the Open3 library, or  Process#spawn may also be used to
- *  communicate with subprocesses through an IO.
+ *  A \IO stream has:
  *
- *  Ruby will convert pathnames between different operating system
- *  conventions if possible.  For instance, on a Windows system the
- *  filename <code>"/gumby/ruby/test.rb"</code> will be opened as
- *  <code>"\gumby\ruby\test.rb"</code>.  When specifying a Windows-style
- *  filename in a Ruby string, remember to escape the backslashes:
+ *  - A read/write mode, which may be read-only, write-only, or read/write;
+ *    see {Read/Write Mode}[#class-IO-label-Read-2FWrite+Mode].
+ *  - A data mode, which may be text-only or binary;
+ *    see {Data Mode}[#class-IO-label-Data+Mode].
+ *  - A position, which determines where in the stream the next
+ *    read or write is to occur;
+ *    see {Position}[#class-IO-label-Position].
+ *  - A line number, which is a special, line-oriented, "position"
+ *    (different from the position mentioned above);
+ *    see {Line Number}[#class-IO-label-Line+Number].
+ *  - Internal and external encodings;
+ *    see {Encodings}[#class-IO-label-Encodings].
  *
- *    "C:\\gumby\\ruby\\test.rb"
+ *  == Extension <tt>io/console</tt>
  *
- *  Our examples here will use the Unix-style forward slashes;
- *  File::ALT_SEPARATOR can be used to get the platform-specific separator
- *  character.
- *
- *  The global constant ARGF (also accessible as <code>$<</code>) provides an
- *  IO-like stream which allows access to all files mentioned on the
- *  command line (or STDIN if no files are mentioned). ARGF#path and its alias
- *  ARGF#filename are provided to access the name of the file currently being
- *  read.
- *
- *  == io/console
- *
- *  The io/console extension provides methods for interacting with the
- *  console.  The console can be accessed from IO.console or the standard
- *  input/output/error IO objects.
- *
- *  Requiring io/console adds the following methods:
- *
- *  * IO::console
- *  * IO#raw
- *  * IO#raw!
- *  * IO#cooked
- *  * IO#cooked!
- *  * IO#getch
- *  * IO#echo=
- *  * IO#echo?
- *  * IO#noecho
- *  * IO#winsize
- *  * IO#winsize=
- *  * IO#iflush
- *  * IO#ioflush
- *  * IO#oflush
- *
- *  Example:
- *
- *    require 'io/console'
- *    rows, columns = $stdout.winsize
- *    puts "Your screen is #{columns} wide and #{rows} tall"
+ *  Extension <tt>io/console</tt> provides numerous methods
+ *  for interacting with the console;
+ *  requiring it adds numerous methods to class \IO.
  *
  *  == Example Files
  *
@@ -13886,7 +13843,9 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - Whether the stream treats data as text-only or binary.
  *  - The external and internal encodings.
  *
- *  === Mode Specified as an \Integer
+ *  === Read/Write Mode
+
+ *  ==== Read/Write Mode Specified as an \Integer
  *
  *  When +mode+ is an integer it must be one or more (combined by bitwise OR (<tt>|</tt>)
  *  of the modes defined in File::Constants:
@@ -13905,7 +13864,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  Note: Method IO#set_encoding does not allow the mode to be specified as an integer.
  *
- *  === Mode Specified As a \String
+ *  ==== Read/Write Mode Specified As a \String
  *
  *  When +mode+ is a string it must begin with one of the following:
  *
@@ -13929,7 +13888,9 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    File.open('t.txt', 'r')
  *    File.open('t.tmp', 'w')
  *
- *  Either of the following may be suffixed to any of the above:
+ *  === Data Mode
+ *
+ *  Either of the following may be suffixed to any of the string read/write modes above:
  *
  *  - <tt>'t'</tt>: Text data; sets the default external encoding to +Encoding::UTF_8+;
  *    on Windows, enables conversion between EOL and CRLF.
@@ -13943,7 +13904,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    File.open('t.txt', 'rt')
  *    File.open('t.dat', 'rb')
  *
- *  The following may be suffixed to any writable mode above:
+ *  The following may be suffixed to any writable string mode above:
  *
  *  - <tt>'x'</tt>: Creates the file if it does not exist;
  *    raises an exception if the file exists.
@@ -13952,7 +13913,9 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *    File.open('t.tmp', 'wx')
  *
- *  Finally, the mode string may specify encodings --
+ *  == Encodings
+ *
+ *  Any of the string modes above may specify encodings --
  *  either external encoding only or both external and internal encodings --
  *  by appending one or both encoding names, separated by colons:
  *
@@ -13970,8 +13933,6 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *    Encoding.name_list.size    # => 175
  *    Encoding.name_list.take(3) # => ["ASCII-8BIT", "UTF-8", "US-ASCII"]
- *
- *  == Encodings
  *
  *  When the external encoding is set,
  *  strings read are tagged by that encoding
