@@ -1084,20 +1084,15 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen
 #define yjit_opt_match_arg(s, l, name) \
     opt_match(s, l, name) && (*(s) && *(s+1) ? 1 : (rb_raise(rb_eRuntimeError, "--yjit-" name " needs an argument"), 0))
 
-static bool
+#if YJIT_SUPPORTED_P
+static void
 setup_yjit_options(const char *s, struct rb_yjit_options *yjit_opt)
 {
-    const char prefix[] = "yjit-";
-    if (strncmp(prefix, s, sizeof(prefix)-1) != 0) {
-        return false;
-    }
-    s += sizeof(prefix)-1;
     const size_t l = strlen(s);
     if (l == 0) {
-        return false;
+        return;
     }
-
-    if (yjit_opt_match_arg(s, l, "exec-mem-size")) {
+    else if (yjit_opt_match_arg(s, l, "exec-mem-size")) {
         yjit_opt->exec_mem_size = atoi(s + 1);
     }
     else if (yjit_opt_match_arg(s, l, "call-threshold")) {
@@ -1119,16 +1114,17 @@ setup_yjit_options(const char *s, struct rb_yjit_options *yjit_opt)
         rb_raise(rb_eRuntimeError,
                  "invalid yjit option `%s' (--help will show valid yjit options)", s);
     }
-    return true;
 }
+#endif
 
 #if USE_MJIT
 static void
 setup_mjit_options(const char *s, struct mjit_options *mjit_opt)
 {
-    if (*s != '-') return;
-    const size_t l = strlen(++s);
-    if (*s == 0) return;
+    const size_t l = strlen(s);
+    if (l == 0) {
+        return;
+    }
     else if (opt_match_noarg(s, l, "warnings")) {
         mjit_opt->warnings = 1;
     }
@@ -1537,17 +1533,18 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
                 FEATURE_SET(opt->features, FEATURE_BIT(yjit));
 #endif
             }
-            else if (strncmp("mjit", s, 4) == 0) {
+            else if (is_option_with_optarg("mjit", '-', true, false, false)) {
 #if USE_MJIT
                 FEATURE_SET(opt->features, FEATURE_BIT(mjit));
-                setup_mjit_options(s + 4, &opt->mjit);
+                setup_mjit_options(s, &opt->mjit);
 #else
                 rb_warn("MJIT support is disabled.");
 #endif
             }
-            else if (strcmp("yjit", s) == 0 || setup_yjit_options(s, &opt->yjit)) {
+            else if (is_option_with_optarg("yjit", '-', true, false, false)) {
 #if USE_MJIT
                 FEATURE_SET(opt->features, FEATURE_BIT(yjit));
+                setup_yjit_options(s, &opt->yjit);
 #else
                 rb_warn("Ruby was built without JIT support");
 #endif
