@@ -781,7 +781,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   def self.open_with_flock(path, flags, &block)
     File.open(path, flags) do |io|
-      if !java_platform? && !solaris_platform?
+      if !java_platform? && win_platform?
         begin
           io.flock(File::LOCK_EX)
         rescue Errno::ENOSYS, Errno::ENOTSUP
