@@ -8,7 +8,7 @@ class TestFiberIOBuffer < Test::Unit::TestCase
   MESSAGE = "Hello World"
 
   def test_read_write_blocking
-    skip "UNIXSocket is not defined!" unless defined?(UNIXSocket)
+    omit "UNIXSocket is not defined!" unless defined?(UNIXSocket)
 
     i, o = UNIXSocket.pair
     i.nonblock = false
@@ -42,7 +42,7 @@ class TestFiberIOBuffer < Test::Unit::TestCase
   end
 
   def test_timeout_after
-    skip "UNIXSocket is not defined!" unless defined?(UNIXSocket)
+    omit "UNIXSocket is not defined!" unless defined?(UNIXSocket)
 
     i, o = UNIXSocket.pair
     i.nonblock = false
@@ -76,7 +76,7 @@ class TestFiberIOBuffer < Test::Unit::TestCase
   end
 
   def test_read_nonblock
-    skip "UNIXSocket is not defined!" unless defined?(UNIXSocket)
+    omit "UNIXSocket is not defined!" unless defined?(UNIXSocket)
 
     i, o = UNIXSocket.pair
 
@@ -101,7 +101,7 @@ class TestFiberIOBuffer < Test::Unit::TestCase
   end
 
   def test_write_nonblock
-    skip "UNIXSocket is not defined!" unless defined?(UNIXSocket)
+    omit "UNIXSocket is not defined!" unless defined?(UNIXSocket)
 
     i, o = UNIXSocket.pair
 

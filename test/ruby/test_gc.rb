@@ -140,7 +140,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_stat_heap
-    skip 'stress' if GC.stress
+    omit 'stress' if GC.stress
 
     stat_heap = {}
     stat = {}
@@ -187,7 +187,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_stat_heap_constraints
-    skip 'stress' if GC.stress
+    omit 'stress' if GC.stress
 
     stat = GC.stat
     stat_heap = GC.stat_heap

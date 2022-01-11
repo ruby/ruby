@@ -6,14 +6,14 @@ class TestFiberIO < Test::Unit::TestCase
   MESSAGE = "Hello World"
 
   def test_read
-    skip "UNIXSocket is not defined!" unless defined?(UNIXSocket)
+    omit "UNIXSocket is not defined!" unless defined?(UNIXSocket)
 
     i, o = UNIXSocket.pair
 
     unless i.nonblock? && o.nonblock?
       i.close
       o.close
-      skip "I/O is not non-blocking!"
+      omit "I/O is not non-blocking!"
     end
 
     message = nil
@@ -41,7 +41,7 @@ class TestFiberIO < Test::Unit::TestCase
   end
 
   def test_heavy_read
-    skip unless defined?(UNIXSocket)
+    omit unless defined?(UNIXSocket)
 
     16.times.map do
       Thread.new do
@@ -64,14 +64,14 @@ class TestFiberIO < Test::Unit::TestCase
   end
 
   def test_epipe_on_read
-    skip "UNIXSocket is not defined!" unless defined?(UNIXSocket)
+    omit "UNIXSocket is not defined!" unless defined?(UNIXSocket)
 
     i, o = UNIXSocket.pair
 
     unless i.nonblock? && o.nonblock?
       i.close
       o.close
-      skip "I/O is not non-blocking!"
+      omit "I/O is not non-blocking!"
     end
 
     error = nil
@@ -142,7 +142,7 @@ class TestFiberIO < Test::Unit::TestCase
   end
 
   def test_read_write_blocking
-    skip "UNIXSocket is not defined!" unless defined?(UNIXSocket)
+    omit "UNIXSocket is not defined!" unless defined?(UNIXSocket)
 
     i, o = UNIXSocket.pair
     i.nonblock = false
