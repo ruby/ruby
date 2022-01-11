@@ -7366,6 +7366,31 @@ static VALUE popen_finish(VALUE port, VALUE klass);
 
 /*
  *  call-seq:
+ *    IO.popen(env = {}, cmd, mode = 'r', **open_opts) -> io
+ *    IO.popen(env = {}, cmd, mode = 'r', **open_opts) {|io| ... } -> object
+ *
+ *  Executes the given command +cmd+ as a subprocess
+ *  whose $stdin and $stdout are connected to a new strean +io+.
+ *
+ *  The optional hash argument +env+ specifies name/value pairs that are to be added
+ *  to the environment variables for the subprocess:
+ *
+ *    IO.popen({'FOO' => 'bar'}, 'ruby', 'r+') do |pipe|
+ *      pipe.puts 'puts ENV["FOO"]'
+ *      pipe.close_write
+ *      pipe.gets
+ *    end => "bar\n"
+ *
+ *  Argument +cmd+ is one of:
+ *
+ *  - The string <tt>'-'</tt>: Forks a new instance of Ruby as a subprocess.
+ *  - Any other string: Passes the string to a shell as a command.
+ *  - An array of strings:
+ *
+ *
+ *
+ *
+ *
  *     IO.popen([env,] cmd, mode="r" [, opt])               -> io
  *     IO.popen([env,] cmd, mode="r" [, opt]) {|io| block } -> obj
  *
