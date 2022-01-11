@@ -14019,18 +14019,3 @@ ruby_xrealloc2(void *ptr, size_t n, size_t new_size)
 #endif
     return ruby_xrealloc2_body(ptr, n, new_size);
 }
-
-#ifdef USE_THIRD_PARTY_HEAP
-void __attribute__((visibility("default")))
-rb_mmtk_referent_objects(void *object, void *closure, void *callback) {
-    // Not implemented.
-}
-void __attribute__((visibility("default")))
-rb_mmtk_roots(void (*callback)(void **root)) {
-    // Not implemented.
-}
-void __attribute__((visibility("default")))
-rb_mmtk_stacks(void (*callback)(void *stack, size_t size)) {
-    // Not implemented.
-}
-#endif USE_THIRD_PARTY_HEAP

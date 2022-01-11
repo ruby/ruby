@@ -80,13 +80,6 @@ extern void mmtk_add_phantom_candidate(void* ref, void* referent);
 extern void mmtk_harness_begin(void *tls);
 extern void mmtk_harness_end();
 
-/**
- * VM introspection callbacks (defined in C)
- */
-extern void rb_mmtk_referent_objects(void *object, void *closure, void *callback);
-extern void rb_mmtk_roots(void (*callback)(void **root));
-extern void rb_mmtk_stacks(void (*callback)(void *stack, size_t size));
-
 #ifdef __cplusplus
 }
 #endif
