@@ -166,7 +166,7 @@ irb(main):001:0> RubyVM::YJIT.runtime_stats
 => {:inline_code_size=>331945, :outlined_code_size=>272980}
 ```
 
-These are the size in bytes of generated inlined code and generated outlined code. If the combined sizes for generated code are very close to the total YJIT exec-mem-size (see above,) YJIT will stop generating code and in some cases may crash. Try to make sure you have enough exec-mem-size for the program you're running. By default YJIT will allocate 268,435,456 bytes (256 MiB) of space for generated inlined and outlined code.
+These are the size in bytes of generated inlined code and generated outlined code. If the combined sizes for generated code are very close to the total YJIT exec-mem-size (see above), YJIT will stop generating code once the limit is reached. Try to make sure you have enough exec-mem-size for the program you're running. By default YJIT will allocate 268,435,456 bytes (256 MiB) of space for generated inlined and outlined code.
 
 ### Other Statistics
 
