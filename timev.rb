@@ -221,7 +221,7 @@ class Time
   # Parameter:
   # :include: doc/time/in.rdoc
   def self.now(in: nil)
-    new(in: Primitive.arg!(:in))
+    Primitive.time_s_now(Primitive.arg!(:in))
   end
 
   # _Time_
