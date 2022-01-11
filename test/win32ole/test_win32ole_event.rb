@@ -136,7 +136,7 @@ if defined?(WIN32OLE_EVENT)
         @wmi.ExecNotificationQueryAsync(@sws, @sql)
       rescue => e
         if /OLE error code:80041008 in SWbemServicesEx/ =~ e.message
-          skip "No administrator privilege?"
+          omit "No administrator privilege?"
         end
         raise
       end
