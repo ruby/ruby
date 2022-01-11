@@ -121,6 +121,8 @@ class TestRubyOptions < Test::Unit::TestCase
 
     assert_in_out_err(["--disable-gems", "--debug", "-e", "p $DEBUG"],
                       "", %w(true), [])
+
+    assert_in_out_err(["--disable-gems", "--debug-", "-e", "p $DEBUG"], "", %w(), /invalid option --debug-/)
   end
 
   q = Regexp.method(:quote)
