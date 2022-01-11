@@ -1542,7 +1542,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 #endif
             }
             else if (is_option_with_optarg("yjit", '-', true, false, false)) {
-#if USE_MJIT
+#if YJIT_SUPPORTED_P
                 FEATURE_SET(opt->features, FEATURE_BIT(yjit));
                 setup_yjit_options(s, &opt->yjit);
 #else
@@ -1921,7 +1921,9 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
             exit(1);
         }
 #endif
+#if YJIT_SUPPORTED_P
         rb_yjit_init(&opt->yjit);
+#endif
     }
     if (opt->dump & (DUMP_BIT(version) | DUMP_BIT(version_v))) {
 #if USE_MJIT
