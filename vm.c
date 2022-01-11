@@ -2731,15 +2731,63 @@ ruby_vm_destruct(rb_vm_t *vm)
     return 0;
 }
 
+size_t rb_vm_memsize_waiting_list(struct list_head *waiting_list); // process.c
+size_t rb_vm_memsize_waiting_fds(struct list_head *waiting_fds); // thread.c
+size_t rb_vm_memsize_postponed_job_buffer(); // vm_trace.c
+size_t rb_vm_memsize_workqueue(struct list_head *workqueue); // vm_trace.c
+
+// Used for VM memsize reporting. Returns the size of the at_exit list by
+// looping through the linked list and adding up the size of the structs.
+static size_t
+vm_memsize_at_exit_list(rb_at_exit_list *at_exit)
+{
+    size_t size = 0;
+
+    while (at_exit) {
+        size += sizeof(rb_at_exit_list);
+        at_exit = at_exit->next;
+    }
+
+    return size;
+}
+
+// Used for VM memsize reporting. Returns the size of the builtin function
+// table if it has been defined.
+static size_t
+vm_memsize_builtin_function_table(const struct rb_builtin_function *builtin_function_table)
+{
+    return builtin_function_table == NULL ? 0 : sizeof(struct rb_builtin_function);
+}
+
+// Reports the memsize of the VM struct object and the structs that are
+// associated with it.
 static size_t
 vm_memsize(const void *ptr)
 {
-    size_t size = sizeof(rb_vm_t);
+    rb_vm_t *vm = GET_VM();
+
+    return (
+        sizeof(rb_vm_t) +
+        rb_vm_memsize_waiting_list(&vm->waiting_pids) +
+        rb_vm_memsize_waiting_list(&vm->waiting_grps) +
+        rb_vm_memsize_waiting_fds(&vm->waiting_fds) +
+        rb_st_memsize(vm->loaded_features_index) +
+        rb_st_memsize(vm->loading_table) +
+        rb_st_memsize(vm->ensure_rollback_table) +
+        rb_vm_memsize_postponed_job_buffer() +
+        rb_vm_memsize_workqueue(&vm->workqueue) +
+        rb_st_memsize(vm->defined_module_hash) +
+        vm_memsize_at_exit_list(vm->at_exit) +
+        rb_st_memsize(vm->frozen_strings) +
+        vm_memsize_builtin_function_table(vm->builtin_function_table) +
+        rb_id_table_memsize(vm->negative_cme_table) +
+        rb_st_memsize(vm->overloaded_cme_table)
+    );
 
     // TODO
-    // size += vmobj->ractor_num * sizeof(rb_ractor_t);
-
-    return size;
+    // struct { struct list_head set; } ractor;
+    // void *main_altstack; #ifdef USE_SIGALTSTACK
+    // struct rb_objspace *objspace;
 }
 
 static const rb_data_type_t vm_data_type = {

@@ -1090,6 +1090,21 @@ waitpid_signal(struct waitpid_state *w)
     return FALSE;
 }
 
+// Used for VM memsize reporting. Returns the size of a list of waitpid_state
+// structs. Defined here because the struct definition lives here as well.
+size_t
+rb_vm_memsize_waiting_list(struct list_head *waiting_list)
+{
+    struct waitpid_state *waitpid = 0;
+    size_t size = 0;
+
+    list_for_each(waiting_list, waitpid, wnode) {
+        size += sizeof(struct waitpid_state);
+    }
+
+    return size;
+}
+
 /*
  * When a thread is done using sigwait_fd and there are other threads
  * sleeping on waitpid, we must kick one of the threads out of
