@@ -394,6 +394,11 @@ install?(:local, :arch, :lib, :'lib-arch') do
 
   install lib, libdir, :mode => $prog_mode, :strip => $strip unless lib == arc
   install arc, libdir, :mode => $data_mode unless CONFIG["INSTALL_STATIC_LIBRARY"] == "no"
+  # Copy third party heap libraries
+  Dir.glob("libmmtk_ruby.*").each do |filename|
+    FileUtils.cp(filename, libdir)
+  end
+
   if dll == lib and dll != arc
     for link in CONFIG["LIBRUBY_ALIASES"].split - [File.basename(dll)]
       ln_sf(dll, File.join(libdir, link))

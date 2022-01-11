@@ -170,7 +170,11 @@ static const struct st_hash_type type_strcasehash = {
 #define malloc ruby_xmalloc
 #define calloc ruby_xcalloc
 #define realloc ruby_xrealloc
+#ifdef USE_THIRD_PARTY_HEAP
+#define free(x) while(0){}
+#else
 #define free ruby_xfree
+#endif
 #endif
 
 #define EQUAL(tab,x,y) ((x) == (y) || (*(tab)->type->compare)((x),(y)) == 0)

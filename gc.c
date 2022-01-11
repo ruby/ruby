@@ -32,6 +32,10 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#ifdef USE_THIRD_PARTY_HEAP
+#include "mmtk.h"
+#endif
+
 /* MALLOC_HEADERS_BEGIN */
 #ifndef HAVE_MALLOC_USABLE_SIZE
 # ifdef _WIN32
@@ -700,6 +704,8 @@ enum gc_mode {
 };
 
 typedef struct rb_objspace {
+    // TODO: clean up this structure and remove everything that we don't need anymore
+    // (or at least hide it behind a compiler flag)
     struct {
 	size_t limit;
 	size_t increase;
@@ -843,6 +849,12 @@ typedef struct rb_objspace {
 
 #if GC_DEBUG_STRESS_TO_CLASS
     VALUE stress_to_class;
+#endif
+
+#ifdef USE_THIRD_PARTY_HEAP
+    void* mutator;
+    VALUE last_finalizers; // RZombie objects which will be used to finalize IO
+                           // etc just before VM shutdown
 #endif
 } rb_objspace_t;
 
@@ -1342,17 +1354,32 @@ asan_unpoison_object_temporary(VALUE obj)
 #define FL_SET2(x,f)   FL_CHECK2("FL_SET2",   x, RBASIC(x)->flags |= (f))
 #define FL_UNSET2(x,f) FL_CHECK2("FL_UNSET2", x, RBASIC(x)->flags &= ~(f))
 
+// Comment for easy location 
+#ifdef USE_THIRD_PARTY_HEAP
+#define RVALUE_MARK_BITMAP(obj)           0
+#define RVALUE_PIN_BITMAP(obj)            0
+#define RVALUE_PAGE_MARKED(page, obj)     0
+#else
 #define RVALUE_MARK_BITMAP(obj)           MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), (obj))
 #define RVALUE_PIN_BITMAP(obj)            MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), (obj))
 #define RVALUE_PAGE_MARKED(page, obj)     MARKED_IN_BITMAP((page)->mark_bits, (obj))
+#endif
 
+#ifndef USE_THIRD_PARTY_HEAP
 #define RVALUE_WB_UNPROTECTED_BITMAP(obj) MARKED_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), (obj))
 #define RVALUE_UNCOLLECTIBLE_BITMAP(obj)  MARKED_IN_BITMAP(GET_HEAP_UNCOLLECTIBLE_BITS(obj), (obj))
 #define RVALUE_MARKING_BITMAP(obj)        MARKED_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), (obj))
-
 #define RVALUE_PAGE_WB_UNPROTECTED(page, obj) MARKED_IN_BITMAP((page)->wb_unprotected_bits, (obj))
 #define RVALUE_PAGE_UNCOLLECTIBLE(page, obj)  MARKED_IN_BITMAP((page)->uncollectible_bits, (obj))
 #define RVALUE_PAGE_MARKING(page, obj)        MARKED_IN_BITMAP((page)->marking_bits, (obj))
+#else
+#define RVALUE_WB_UNPROTECTED_BITMAP(obj) 0
+#define RVALUE_UNCOLLECTIBLE_BITMAP(obj)  0
+#define RVALUE_MARKING_BITMAP(obj)        0
+#define RVALUE_PAGE_WB_UNPROTECTED(page, obj) 0
+#define RVALUE_PAGE_UNCOLLECTIBLE(page, obj)  0
+#define RVALUE_PAGE_MARKING(page, obj)        0
+#endif
 
 #define RVALUE_OLD_AGE   3
 #define RVALUE_AGE_SHIFT 5 /* FL_PROMOTED0 bit */
@@ -1382,6 +1409,7 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
             err++;
         }
         else if (!is_pointer_to_heap(objspace, (void *)obj)) {
+#ifndef USE_THIRD_PARTY_HEAP
             /* check if it is in tomb_pages */
             struct heap_page *page = NULL;
             for (int i = 0; i < SIZE_POOL_COUNT; i++) {
@@ -1396,6 +1424,7 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
                     }
                 }
             }
+#endif
             bp();
             fprintf(stderr, "check_rvalue_consistency: %p is not a Ruby object.\n", (void *)obj);
             err++;
@@ -1403,6 +1432,8 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
             ;
         }
         else {
+#ifndef USE_THIRD_PARTY_HEAP
+            // TODO remove these
             const int wb_unprotected_bit = RVALUE_WB_UNPROTECTED_BITMAP(obj) != 0;
             const int uncollectible_bit = RVALUE_UNCOLLECTIBLE_BITMAP(obj) != 0;
             const int mark_bit = RVALUE_MARK_BITMAP(obj) != 0;
@@ -1413,6 +1444,7 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
                 fprintf(stderr, "check_rvalue_consistency: %s is in tomb page.\n", obj_info(obj));
                 err++;
             }
+#endif
             if (BUILTIN_TYPE(obj) == T_NONE) {
                 fprintf(stderr, "check_rvalue_consistency: %s is T_NONE.\n", obj_info(obj));
                 err++;
@@ -1424,6 +1456,7 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
 
             obj_memsize_of((VALUE)obj, FALSE);
 
+#ifndef USE_THIRD_PARTY_HEAP
             /* check generation
              *
              * OLD == age == 3 && old-bitmap && mark-bit (except incremental marking)
@@ -1464,6 +1497,7 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
                     err++;
                 }
             }
+#endif
         }
     }
     RB_VM_LOCK_LEAVE_NO_BARRIER();
@@ -1737,6 +1771,22 @@ rb_objspace_alloc(void)
 
     dont_gc_on();
 
+#ifdef USE_THIRD_PARTY_HEAP
+    const char *envval;
+    long heap_size;
+    if ((envval = getenv("THIRD_PARTY_HEAP_LIMIT")) != 0) {
+	    heap_size = atol(envval);
+    } else {
+        heap_size = gc_params.heap_init_slots * sizeof(RVALUE);
+    }
+
+    // Note: this limit is currently broken for NoGC, but we still attempt to
+    // initialise it properly regardless.
+    // See https://github.com/mmtk/mmtk-core/issues/214
+    mmtk_gc_init(heap_size);
+    objspace->mutator = mmtk_bind_mutator(10); // TODO replace with pointer to start of TLS
+#endif
+
     return objspace;
 }
 
@@ -1746,6 +1796,7 @@ static void heap_page_free(rb_objspace_t *objspace, struct heap_page *page);
 void
 rb_objspace_free(rb_objspace_t *objspace)
 {
+    // TODO fix for MMTk?
     if (is_lazy_sweeping(objspace))
 	rb_bug("lazy sweeping underway when freeing object space");
 
@@ -1964,12 +2015,14 @@ heap_page_allocate(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
     size_t stride = size_pool->slot_size;
     unsigned int limit = (unsigned int)((HEAP_PAGE_SIZE - sizeof(struct heap_page_header)))/(int)stride;
 
+    // TODO - stop this from running when third party heap activated
     /* assign heap_page body (contains heap_page_header and RVALUEs) */
     page_body = (struct heap_page_body *)rb_aligned_malloc(HEAP_PAGE_ALIGN, HEAP_PAGE_SIZE);
     if (page_body == 0) {
 	rb_memerror();
     }
 
+    // TODO also stop this from running
     /* assign heap_page entry */
     page = calloc1(sizeof(struct heap_page));
     if (page == 0) {
@@ -2276,10 +2329,12 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
     RB_VM_LOCK_LEAVE_NO_BARRIER();
 #endif
 
+#ifndef USE_THIRD_PARTY_HEAP
     if (UNLIKELY(wb_protected == FALSE)) {
         ASSERT_vm_locking();
         MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
     }
+#endif
 
     // TODO: make it atomic, or ractor local
     objspace->total_allocated_objects++;
@@ -2518,6 +2573,10 @@ newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr, size_t a
 {
     VALUE obj;
     rb_objspace_t *objspace = &rb_objspace;
+#ifdef USE_THIRD_PARTY_HEAP
+    obj = (VALUE) mmtk_alloc(objspace->mutator, sizeof(RVALUE), 8, 0, 0); // Default allocation semantics
+    return newobj_init(klass, flags, wb_protected, objspace, obj);
+#endif
 
     RB_DEBUG_COUNTER_INC(obj_newobj);
     (void)RB_DEBUG_COUNTER_INC_IF(obj_newobj_wb_unprotected, !wb_protected);
@@ -2838,6 +2897,9 @@ PUREFUNC(static inline int is_pointer_to_heap(rb_objspace_t *objspace, void *ptr
 static inline int
 is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
 {
+#ifdef USE_THIRD_PARTY_HEAP
+    return mmtk_is_mapped_address(ptr);
+#endif
     register RVALUE *p = RANY(ptr);
     register struct heap_page *page;
 
@@ -3041,6 +3103,22 @@ make_io_zombie(rb_objspace_t *objspace, VALUE obj)
     rb_io_t *fptr = RANY(obj)->as.file.fptr;
     make_zombie(objspace, obj, rb_io_fptr_finalize_internal, fptr);
 }
+
+#ifdef USE_THIRD_PARTY_HEAP
+// Used to add a finaliser to flush out the IO at the end of the program
+void
+make_last_io_zombie(VALUE obj)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    // TODO: This might be GCed if we're not careful?
+    struct RZombie *zombie = ALLOC(struct RZombie);
+    zombie->basic.flags = T_ZOMBIE;
+    zombie->dfree = (void (*)(void*))rb_io_fptr_finalize;
+    zombie->data = RANY(obj)->as.file.fptr;
+    zombie->next = objspace->last_finalizers;
+    objspace->last_finalizers = (VALUE)zombie;
+}
+#endif
 
 static void
 obj_free_object_id(rb_objspace_t *objspace, VALUE obj)
@@ -3464,6 +3542,7 @@ Init_heap(void)
     objspace->id_to_obj_tbl = st_init_table(&object_id_hash_type);
     objspace->obj_to_id_tbl = st_init_numtable();
 
+#ifndef USE_THIRD_PARTY_HEAP
 #if RGENGC_ESTIMATE_OLDMALLOC
     objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
 #endif
@@ -3479,6 +3558,7 @@ Init_heap(void)
     heap_pages_expand_sorted(objspace);
 
     init_mark_stack(&objspace->mark_stack);
+#endif
 
     objspace->profile.invoke_time = getrusage_time();
     finalizer_table = st_init_numtable();
@@ -4051,15 +4131,20 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
 {
     while (zombie) {
         VALUE next_zombie;
-        struct heap_page *page;
         asan_unpoison_object(zombie, false);
         next_zombie = RZOMBIE(zombie)->next;
+#ifndef USE_THIRD_PARTY_HEAP
+        struct heap_page *page;
         page = GET_HEAP_PAGE(zombie);
+#endif
 
 	run_final(objspace, zombie);
 
         RB_VM_LOCK_ENTER();
         {
+#ifndef USE_THIRD_PARTY_HEAP
+            // TODO: will probably need to re-enable this section when we
+            // implement object/ID bijective mappings
             GC_ASSERT(BUILTIN_TYPE(zombie) == T_ZOMBIE);
             if (FL_TEST(zombie, FL_SEEN_OBJ_ID)) {
                 obj_free_object_id(objspace, zombie);
@@ -4072,6 +4157,7 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
             page->final_slots--;
             page->free_slots++;
             heap_page_add_freeobj(objspace, page, zombie);
+#endif
             objspace->profile.total_freed_objects++;
         }
         RB_VM_LOCK_LEAVE();
@@ -4219,9 +4305,28 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 
     gc_exit(objspace, gc_enter_event_finalizer, &lock_lev);
 
+#ifdef USE_THIRD_PARTY_HEAP
+    /*
+    TODO before merging third-party-heap
+    Currently the finalisation process runs whenever slots that are zombies are recycled
+    But, because GC features will be refactored away under MMTk, we want this to be
+    handled separately. (we no longer have access to heap pages)
+    For now, we will brute force a finalisation, but this can be done better
+    I'm doing this by creating a linked list of all of the things that need finalising, 
+    but there are a few issues with this.
+        - When files are closed, they need to be removed from the linked list
+        - RData objects don't get finalised
+        - Are all types of IO included in this?
+    Note: to reproduce this issue, you need to be running a program not pointing to a TTY.
+    e.g. piping to a file. To emulate this behaviour whilst using debugging tools, add this to io.c:
+        #define isatty(x) 0
+    */
+    finalize_list(objspace, objspace->last_finalizers);
+#else
     if (heap_pages_deferred_final) {
 	finalize_list(objspace, heap_pages_deferred_final);
     }
+#endif
 
     st_free_table(finalizer_table);
     finalizer_table = 0;
@@ -4495,6 +4600,7 @@ rb_obj_id(VALUE obj)
      *  40 if 64-bit
      */
 
+    // TODO I need to make this work?
     return rb_find_object_id(obj, cached_object_id);
 }
 
@@ -4814,6 +4920,9 @@ count_objects(int argc, VALUE *argv, VALUE os)
 static size_t
 objspace_available_slots(rb_objspace_t *objspace)
 {
+#ifdef USE_THIRD_PARTY_HEAP
+    return mmtk_total_bytes();
+#else
     size_t total_slots = 0;
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
@@ -4821,6 +4930,7 @@ objspace_available_slots(rb_objspace_t *objspace)
         total_slots += SIZE_POOL_TOMB_HEAP(size_pool)->total_slots;
     }
     return total_slots;
+#endif
 }
 
 static size_t
@@ -4832,7 +4942,11 @@ objspace_live_slots(rb_objspace_t *objspace)
 static size_t
 objspace_free_slots(rb_objspace_t *objspace)
 {
+#ifdef USE_THIRD_PARTY_HEAP
+    return mmtk_free_bytes();
+#else
     return objspace_available_slots(objspace) - objspace_live_slots(objspace) - heap_pages_final_slots;
+#endif
 }
 
 static void
@@ -7721,6 +7835,9 @@ gc_verify_internal_consistency_m(VALUE dummy)
 static void
 gc_verify_internal_consistency_(rb_objspace_t *objspace)
 {
+#ifdef USE_THIRD_PARTY_HEAP
+    return;
+#endif
     struct verify_internal_consistency_struct data = {0};
 
     data.objspace = objspace;
@@ -8378,6 +8495,7 @@ rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t *heap)
 }
 
 /* RGENGC: APIs */
+// TODO: Go through all of the below and disable things that need to be disabled?
 
 NOINLINE(static void gc_writebarrier_generational(VALUE a, VALUE b, rb_objspace_t *objspace));
 
@@ -8503,6 +8621,13 @@ rb_gc_writebarrier(VALUE a, VALUE b)
     return;
 }
 
+#ifdef USE_THIRD_PARTY_HEAP
+void
+rb_gc_writebarrier_unprotect(VALUE obj)
+{
+    return;
+}
+#else
 void
 rb_gc_writebarrier_unprotect(VALUE obj)
 {
@@ -8536,6 +8661,7 @@ rb_gc_writebarrier_unprotect(VALUE obj)
 	MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
     }
 }
+#endif
 
 /*
  * remember `obj' if needed.
@@ -11368,6 +11494,9 @@ rb_aligned_free(void *ptr, size_t size)
 static inline size_t
 objspace_malloc_size(rb_objspace_t *objspace, void *ptr, size_t hint)
 {
+#ifdef USE_THIRD_PARTY_HEAP
+    return hint;
+#endif
 #ifdef HAVE_MALLOC_USABLE_SIZE
     return malloc_usable_size(ptr);
 #else
@@ -11589,8 +11718,15 @@ objspace_xmalloc0(rb_objspace_t *objspace, size_t size)
     void *mem;
 
     size = objspace_malloc_prepare(objspace, size);
+#ifdef USE_THIRD_PARTY_HEAP
+    mem = mmtk_alloc(objspace->mutator, size, 8, 0, 0); // Default allocation semantics
+#else
     TRY_WITH_GC(size, mem = malloc(size));
+#endif
     RB_DEBUG_COUNTER_INC(heap_xmalloc);
+#ifdef USE_THIRD_PARTY_HEAP
+    return mem;
+#endif
     return objspace_malloc_fixup(objspace, mem, size);
 }
 
@@ -11660,7 +11796,33 @@ objspace_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t ol
 #endif
 
     old_size = objspace_malloc_size(objspace, ptr, old_size);
+#ifdef USE_THIRD_PARTY_HEAP
+    old_size = new_size; // TODO: remove this hack.
+    // When reallocating an array from heap to heap (i.e. not just promoting from embedded),
+    // the following stack trace occurs:
+    //
+    // #0  objspace_xrealloc (objspace=0x555555b5b180, ptr=0x200002ba070, new_size=296, old_size=0) at gc.c:10017
+    // #1  0x00005555556308dc in ruby_sized_xrealloc2 (ptr=0x200002ba070, n=37, size=8, old_n=0) at gc.c:10251
+    // #2  0x0000555555630910 in ruby_xrealloc2_body (ptr=0x200002ba070, n=37, size=8) at gc.c:10257
+    // #3  0x0000555555634376 in ruby_xrealloc2 (ptr=0x200002ba070, n=37, new_size=8) at gc.c:12126
+    // #4  0x000055555557c43c in ary_heap_realloc (ary=2199026114632, new_capa=37) at array.c:362
+    // #5  0x000055555557c53a in ary_resize_capa (ary=2199026114632, capacity=37) at array.c:439
+    // #6  0x000055555557c774 in ary_double_capa (ary=2199026114632, min=21) at array.c:485
+    // #7  0x000055555557cec8 in ary_ensure_room_for_push (ary=2199026114632, add_len=1) at array.c:630
+    // #8  0x000055555557e40a in rb_ary_cat (ary=2199026114632, argv=0x20000000080, len=1) at array.c:1211
+    // #9  0x000055555557e4c6 in rb_ary_push_m (argc=1, argv=0x20000000080, ary=2199026114632) at array.c:1237
+    // #10 0x00005555557da531 in call_cfunc_m1 (recv=2199026114632, argc=1, argv=0x20000000080, func=0x55555557e49a <rb_ary_push_m>) at vm_insnhelper.c:2336
+    // ...etc
+    //
+    // For some weird reason, ruby_xrealloc_body says old size is zero?!?!?!
+    // How on earth did this work?
+    // For now, we just changed the old size, however this hack may be vulnerable if we need to
+    // reallocate something to a smaller chunk of memory. FIXME!
+    mem = mmtk_alloc(objspace->mutator, new_size, 8, 0, 0);
+    memcpy(mem, ptr, (old_size < new_size ? old_size : new_size));
+#else
     TRY_WITH_GC(new_size, mem = realloc(ptr, new_size));
+#endif
     new_size = objspace_malloc_size(objspace, mem, new_size);
 
 #if CALC_EXACT_MALLOC_SIZE
@@ -11735,6 +11897,12 @@ rb_malloc_info_show_results(void)
 static void
 objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
 {
+#ifdef USE_THIRD_PARTY_HEAP
+    if (mmtk_is_mapped_address(ptr)) {
+        return; // Don't try and free() MMTk managed memory
+    } // Otherwise continue (the memory was allocated before MMTk was initialised)
+#endif
+
     if (!ptr) {
         /*
          * ISO/IEC 9899 says "If ptr is a null pointer, no action occurs" since
@@ -11842,7 +12010,12 @@ objspace_xcalloc(rb_objspace_t *objspace, size_t size)
     void *mem;
 
     size = objspace_malloc_prepare(objspace, size);
+#ifdef USE_THIRD_PARTY_HEAP
+    mem = mmtk_alloc(objspace->mutator, size, 8, 0, 0);
+    memset(mem, 0, size);
+#else
     TRY_WITH_GC(size, mem = calloc1(size));
+#endif
     return objspace_malloc_fixup(objspace, mem, size);
 }
 
@@ -13846,3 +14019,18 @@ ruby_xrealloc2(void *ptr, size_t n, size_t new_size)
 #endif
     return ruby_xrealloc2_body(ptr, n, new_size);
 }
+
+#ifdef USE_THIRD_PARTY_HEAP
+void __attribute__((visibility("default")))
+rb_mmtk_referent_objects(void *object, void *closure, void *callback) {
+    // Not implemented.
+}
+void __attribute__((visibility("default")))
+rb_mmtk_roots(void (*callback)(void **root)) {
+    // Not implemented.
+}
+void __attribute__((visibility("default")))
+rb_mmtk_stacks(void (*callback)(void *stack, size_t size)) {
+    // Not implemented.
+}
+#endif USE_THIRD_PARTY_HEAP
