@@ -80,6 +80,9 @@ extern void mmtk_add_phantom_candidate(void* ref, void* referent);
 extern void mmtk_harness_begin(void *tls);
 extern void mmtk_harness_end();
 
+extern void mmtk_register_finalizable(void *reff);
+extern void* mmtk_poll_finalizable(bool include_live);
+
 #ifdef __cplusplus
 }
 #endif

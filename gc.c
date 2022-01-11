@@ -2302,6 +2302,26 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
     p->as.basic.flags = flags;
     *((VALUE *)&p->as.basic.klass) = klass;
 
+    //fprintf(stdout, "newobj_init: %p, %s\n", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
+ 
+#ifdef USE_THIRD_PARTY_HEAP
+    switch (RB_BUILTIN_TYPE(obj)) {
+      case T_DATA:
+      case T_FILE:
+        mmtk_register_finalizable((void*)obj);
+        // VALUE klass = CLASS_OF(obj);
+        // fprintf(stderr, "Object registered for finalization: %p: %s %s\n",
+        //     (void*)obj,
+        //     rb_type_str(RB_BUILTIN_TYPE(obj)),
+        //     klass==0?"(null)":rb_class2name(klass)
+        //     );
+        break;
+      default:
+        break; // Do nothing.
+    }
+#endif // USE_THIRD_PARTY_HEAP
+
+
 #if RACTOR_CHECK_MODE
     rb_ractor_setup_belonging(obj);
 #endif
@@ -3085,16 +3105,32 @@ rb_cc_table_free(VALUE klass)
 static inline void
 make_zombie(rb_objspace_t *objspace, VALUE obj, void (*dfree)(void *), void *data)
 {
+#ifdef USE_THIRD_PARTY_HEAP
+    // Zombies are for deferred jobs of cleaning up non-GC resources. It is not
+    // necessry to manage zombies with GC, although there is no problem using GC,
+    // either.
+    //
+    // We will eventually eliminate object resurrection. When that happens,
+    // obj will have been recycled.
+    //
+    // Changing the shape (class) of an object may also introduce race between
+    // mutators and the GC.
+    struct RZombie *zombie = (struct RZombie*)xmalloc(sizeof(struct RZombie));
+#else
     struct RZombie *zombie = RZOMBIE(obj);
+#endif // USE_THIRD_PARTY_HEAP
     zombie->basic.flags = T_ZOMBIE | (zombie->basic.flags & FL_SEEN_OBJ_ID);
     zombie->dfree = dfree;
     zombie->data = data;
     zombie->next = heap_pages_deferred_final;
     heap_pages_deferred_final = (VALUE)zombie;
 
+    // With MMTk, we decouple deferred jobs from memory management.
+#ifndef USE_THIRD_PARTY_HEAP
     struct heap_page *page = GET_HEAP_PAGE(obj);
     page->final_slots++;
     heap_pages_final_slots++;
+#endif // USE_THIRD_PARTY_HEAP
 }
 
 static inline void
@@ -3103,22 +3139,6 @@ make_io_zombie(rb_objspace_t *objspace, VALUE obj)
     rb_io_t *fptr = RANY(obj)->as.file.fptr;
     make_zombie(objspace, obj, rb_io_fptr_finalize_internal, fptr);
 }
-
-#ifdef USE_THIRD_PARTY_HEAP
-// Used to add a finaliser to flush out the IO at the end of the program
-void
-make_last_io_zombie(VALUE obj)
-{
-    rb_objspace_t *objspace = &rb_objspace;
-    // TODO: This might be GCed if we're not careful?
-    struct RZombie *zombie = ALLOC(struct RZombie);
-    zombie->basic.flags = T_ZOMBIE;
-    zombie->dfree = (void (*)(void*))rb_io_fptr_finalize;
-    zombie->data = RANY(obj)->as.file.fptr;
-    zombie->next = objspace->last_finalizers;
-    objspace->last_finalizers = (VALUE)zombie;
-}
-#endif
 
 static void
 obj_free_object_id(rb_objspace_t *objspace, VALUE obj)
@@ -4162,6 +4182,11 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
         }
         RB_VM_LOCK_LEAVE();
 
+#ifdef USE_THIRD_PARTY_HEAP
+        // When using MMTk, we allocated zombie with xmalloc.  It needs to be freed here.
+        xfree((void*)zombie);
+#endif // USE_THIRD_PARTY_HEAP
+
         zombie = next_zombie;
     }
 }
@@ -4306,27 +4331,40 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     gc_exit(objspace, gc_enter_event_finalizer, &lock_lev);
 
 #ifdef USE_THIRD_PARTY_HEAP
-    /*
-    TODO before merging third-party-heap
-    Currently the finalisation process runs whenever slots that are zombies are recycled
-    But, because GC features will be refactored away under MMTk, we want this to be
-    handled separately. (we no longer have access to heap pages)
-    For now, we will brute force a finalisation, but this can be done better
-    I'm doing this by creating a linked list of all of the things that need finalising, 
-    but there are a few issues with this.
-        - When files are closed, they need to be removed from the linked list
-        - RData objects don't get finalised
-        - Are all types of IO included in this?
-    Note: to reproduce this issue, you need to be running a program not pointing to a TTY.
-    e.g. piping to a file. To emulate this behaviour whilst using debugging tools, add this to io.c:
-        #define isatty(x) 0
-    */
-    finalize_list(objspace, objspace->last_finalizers);
-#else
+    void *resurrected;
+    while ((resurrected = mmtk_poll_finalizable(true)) != NULL) {
+        VALUE obj = (VALUE)resurrected;
+        // VALUE klass = CLASS_OF(obj);
+        // fprintf(stderr, "Resurrected for obj_free: %p: %s %s\n",
+        //     resurrected,
+        //     rb_type_str(RB_BUILTIN_TYPE(obj)),
+        //     klass==0?"(null)":rb_class2name(klass)
+        //     );
+        if (rb_obj_is_thread(obj)) {
+            // fprintf(stderr, "Skipped thread: %p: %s\n", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            continue;
+        }
+        if (rb_obj_is_mutex(obj)) {
+            // fprintf(stderr, "Skipped mutex: %p: %s\n", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            continue;
+        }
+        if (rb_obj_is_fiber(obj)) {
+            // fprintf(stderr, "Skipped fiber: %p: %s\n", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            continue;
+        }
+        if (rb_obj_is_main_ractor(obj)) {
+            // fprintf(stderr, "Skipped main ractor: %p: %s\n", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            continue;
+        }
+        obj_free(objspace, obj);
+        // fprintf(stderr, "Object freed: %p: %s\n", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+    }
+#endif
+
     if (heap_pages_deferred_final) {
 	finalize_list(objspace, heap_pages_deferred_final);
     }
-#endif
+
 
     st_free_table(finalizer_table);
     finalizer_table = 0;
