@@ -759,11 +759,11 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Safely read a file in binary mode on all platforms.
 
   def self.read_binary(path)
-    open_with_flock(path, 'rb+') do |io|
+    open_file(path, 'rb+') do |io|
       io.read
     end
   rescue Errno::EACCES, Errno::EROFS
-    open_with_flock(path, 'rb') do |io|
+    open_file(path, 'rb') do |io|
       io.read
     end
   end
@@ -771,15 +771,15 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   ##
   # Safely write a file in binary mode on all platforms.
   def self.write_binary(path, data)
-    open_with_flock(path, 'wb') do |io|
+    open_file(path, 'wb') do |io|
       io.write data
     end
   end
 
   ##
-  # Open a file with given flags, and protect access with flock
+  # Open a file with given flags, and on Windows protect access with flock
 
-  def self.open_with_flock(path, flags, &block)
+  def self.open_file(path, flags, &block)
     File.open(path, flags) do |io|
       if !java_platform? && win_platform?
         begin
