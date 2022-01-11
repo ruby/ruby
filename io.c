@@ -7366,11 +7366,20 @@ static VALUE popen_finish(VALUE port, VALUE klass);
 
 /*
  *  call-seq:
- *    IO.popen(env = {}, cmd, mode = 'r', **open_opts) -> io
- *    IO.popen(env = {}, cmd, mode = 'r', **open_opts) {|io| ... } -> object
+ *    IO.popen(env = {}, cmd, mode = 'r', **opts) -> io
+ *    IO.popen(env = {}, cmd, mode = 'r', **opts) {|io| ... } -> object
  *
  *  Executes the given command +cmd+ as a subprocess
  *  whose $stdin and $stdout are connected to a new strean +io+.
+ *
+ *  Argument +cmd+ is one of the following (each detailed below):
+ *
+ *  - The string <tt>'-'</tt>: Forks a new instance of Ruby as a subprocess.
+ *  - Any other string: Passes the string to a shell as a command.
+ *  - An array of strings: Runs a Ruby subprocess with the array as its ARGV.
+ *
+ *  Optional argument +mode+ may be any valid \IO mode.
+ *  See {Modes}[#class-IO-label-Modes].
  *
  *  The optional hash argument +env+ specifies name/value pairs that are to be added
  *  to the environment variables for the subprocess:
@@ -7381,45 +7390,63 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *      pipe.gets
  *    end => "bar\n"
  *
- *  Argument +cmd+ is one of:
+ *  The optional keyword arguments +opts+ may be {\IO open options}[#class-IO-label-Open+Options]
+ *  and options for Kernel#spawn.
  *
- *  - The string <tt>'-'</tt>: Forks a new instance of Ruby as a subprocess.
- *  - Any other string: Passes the string to a shell as a command.
- *  - An array of strings:
+ *  <b>Forked Process</b>
  *
+ *  Example:
  *
+ *    IO.popen('-') do |pipe|
+ *      if pipe
+ *        $stderr.puts "In parent, child pid is #{pipe.pid}\n"
+ *      else
+ *        $stderr.puts "In child, pid is #{$$}\n"
+ *      end
+ *    end
  *
+ *  Output:
  *
+ *    In parent, child pid is 26253
+ *    In child, pid is 26253
  *
- *     IO.popen([env,] cmd, mode="r" [, opt])               -> io
- *     IO.popen([env,] cmd, mode="r" [, opt]) {|io| block } -> obj
+ *  <b>Shell Subprocess</b>
  *
- *  Runs the specified command as a subprocess; the subprocess's
- *  standard input and output will be connected to the returned
- *  IO object.
+ *  Example:
  *
- *  The PID of the started process can be obtained by IO#pid method.
+ *    IO.popen('uname') do |pipe|
+ *      pipe.readlines
+ *    end
  *
- *  _cmd_ is a string or an array as follows.
+ *  Output:
  *
- *    cmd:
- *      "-"                                      : fork
- *      commandline                              : command line string which is passed to a shell
- *      [env, cmdname, arg1, ..., opts]          : command name and zero or more arguments (no shell)
- *      [env, [cmdname, argv0], arg1, ..., opts] : command name, argv[0] and zero or more arguments (no shell)
- *    (env and opts are optional.)
+ *    ["Linux\n"]
  *
- *  If _cmd_ is a +String+ ``<code>-</code>'',
- *  then a new instance of Ruby is started as the subprocess.
+ *  Another example:
  *
- *  If <i>cmd</i> is an +Array+ of +String+,
- *  then it will be used as the subprocess's +argv+ bypassing a shell.
- *  The array can contain a hash at first for environments and
- *  a hash at last for options similar to #spawn.
+ *    IO.popen('/bin/sh', 'r+') do |pipe|
+ *      pipe.puts('ls')
+ *      pipe.close_write
+ *      $stderr.puts pipe.readlines.size
+ *    end
  *
- *  The default mode for the new file object is ``r'',
- *  but <i>mode</i> may be set to any of the modes listed in the description for class IO.
- *  The last argument <i>opt</i> qualifies <i>mode</i>.
+ *  Output:
+ *
+ *    213
+ *
+ *  <b>Ruby Subprocess</b>
+ *
+ *  Example:
+ *
+ *    IO.popen(['du', '..', '.']) do |pipe|
+ *      $stderr.puts pipe.readlines.size
+ *    end
+ *
+ *  Output:
+ *
+ *    1111
+ *
+ *  <b>More Examples</b>
  *
  *    # set IO encoding
  *    IO.popen("nkf -e filename", :external_encoding=>"EUC-JP") {|nkf_io|
@@ -7437,22 +7464,6 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *      ls_result_with_error = ls_io.read
  *    }
  *
- *  Raises exceptions which IO.pipe and Kernel.spawn raise.
- *
- *  If a block is given, Ruby will run the command as a child connected
- *  to Ruby with a pipe. Ruby's end of the pipe will be passed as a
- *  parameter to the block.
- *  At the end of block, Ruby closes the pipe and sets <code>$?</code>.
- *  In this case IO.popen returns the value of the block.
- *
- *  If a block is given with a _cmd_ of ``<code>-</code>'',
- *  the block will be run in two separate processes: once in the parent,
- *  and once in a child. The parent process will be passed the pipe
- *  object as a parameter to the block, the child version of the block
- *  will be passed +nil+, and the child's standard in and
- *  standard out will be connected to the parent through the pipe. Not
- *  available on all platforms.
- *
  *     f = IO.popen("uname")
  *     p f.readlines
  *     f.close
@@ -7464,7 +7475,7 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *       f.puts "bar"; f.close_write; puts f.gets
  *     }
  *
- *  <em>produces:</em>
+ *  Output (from last section):
  *
  *     ["Linux\n"]
  *     Parent is 21346
@@ -7473,6 +7484,9 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *     21352 is here, f is nil
  *     #<Process::Status: pid 21352 exit 0>
  *     <foo>bar;zot;
+ *
+ *  Raises exceptions which IO.pipe and Kernel.spawn raise.
+ *
  */
 
 static VALUE
