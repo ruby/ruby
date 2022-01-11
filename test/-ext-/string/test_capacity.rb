@@ -66,7 +66,7 @@ class Test_StringCapacity < Test::Unit::TestCase
 
   def embed_header_size
     if GC.using_rvargc?
-      2 * RbConfig::SIZEOF['void*'] + RbConfig::SIZEOF['short']
+      2 * RbConfig::SIZEOF['void*'] + RbConfig::SIZEOF['long']
     else
       2 * RbConfig::SIZEOF['void*']
     end
