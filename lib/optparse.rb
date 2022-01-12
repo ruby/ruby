@@ -50,7 +50,7 @@
 #
 # === New to \OptionParser?
 #
-# See the {Tutorial}[./doc/optparse/tutorial_rdoc.html].
+# See the {Tutorial}[optparse/tutorial.rdoc].
 #
 # === Introduction
 #
@@ -420,7 +420,7 @@
 # === Further documentation
 #
 # The above examples, along with the accompanying
-# {Tutorial}[./doc/optparse/tutorial_rdoc.html],
+# {Tutorial}[optparse/tutorial.rdoc],
 # should be enough to learn how to use this class.
 # If you have any questions, file a ticket at http://bugs.ruby-lang.org.
 #
