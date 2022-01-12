@@ -320,15 +320,19 @@ usage(const char *name, int help, int highlight, int columns)
 	M("-W[level=2|:category]",   "",	   "set warning level; 0=silence, 1=medium, 2=verbose"),
 	M("-x[directory]", "",			   "strip off text before #!ruby line and perhaps cd to directory"),
         M("--jit",         "",                     "enable JIT for the platform, same as " PLATFORM_JIT_OPTION " (experimental)"),
+#if USE_MJIT
         M("--mjit",        "",                     "enable C compiler-based JIT compiler (experimental)"),
+#endif
+#if YJIT_SUPPORTED_P
         M("--yjit",        "",                     "enable in-process JIT compiler (experimental)"),
+#endif
 	M("-h",		   "",			   "show this message, --help for more info"),
     };
     static const struct message help_msg[] = {
 	M("--copyright",                            "", "print the copyright"),
 	M("--dump={insns|parsetree|...}[,...]",     "",
           "dump debug information. see below for available dump list"),
-	M("--enable={mjit|rubyopt|...}[,...]", ", --disable={mjit|rubyopt|...}[,...]",
+	M("--enable={jit|rubyopt|...}[,...]", ", --disable={jit|rubyopt|...}[,...]",
 	  "enable or disable features. see below for available features"),
 	M("--external-encoding=encoding",           ", --internal-encoding=encoding",
 	  "specify the default external or internal character encoding"),
@@ -350,13 +354,18 @@ usage(const char *name, int help, int highlight, int columns)
 	M("did_you_mean", "",   "did_you_mean (default: "DEFAULT_RUBYGEMS_ENABLED")"),
 	M("rubyopt", "",        "RUBYOPT environment variable (default: enabled)"),
 	M("frozen-string-literal", "", "freeze all string literals (default: disabled)"),
+#if USE_MJIT
         M("mjit", "",           "C compiler-based JIT compiler (default: disabled)"),
+#endif
+#if YJIT_SUPPORTED_P
         M("yjit", "",           "in-process JIT compiler (default: disabled)"),
+#endif
     };
     static const struct message warn_categories[] = {
         M("deprecated", "",       "deprecated features"),
         M("experimental", "",     "experimental features"),
     };
+#if USE_MJIT
     static const struct message mjit_options[] = {
         M("--mjit-warnings",      "", "Enable printing JIT warnings"),
         M("--mjit-debug",         "", "Enable JIT debugging (very slow), or add cflags if specified"),
@@ -366,6 +375,8 @@ usage(const char *name, int help, int highlight, int columns)
         M("--mjit-max-cache=num", "", "Max number of methods to be JIT-ed in a cache (default: 10000)"),
         M("--mjit-min-calls=num", "", "Number of calls to trigger JIT (for testing, default: 10000)"),
     };
+#endif
+#if YJIT_SUPPORTED_P
     static const struct message yjit_options[] = {
 #if YJIT_STATS
         M("--yjit-stats",              "", "Enable collecting YJIT statistics"),
@@ -375,6 +386,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("--yjit-max-versions=num",   "", "Maximum number of versions per basic block (default: 4)"),
         M("--yjit-greedy-versioning",  "", "Greedy versioning mode (default: disabled)"),
     };
+#endif
     int i;
     const char *sb = highlight ? esc_standout+1 : esc_none;
     const char *se = highlight ? esc_reset : esc_none;
@@ -401,12 +413,16 @@ usage(const char *name, int help, int highlight, int columns)
     printf("%s""Warning categories:%s\n", sb, se);
     for (i = 0; i < numberof(warn_categories); ++i)
 	SHOW(warn_categories[i]);
+#if USE_MJIT
     printf("%s""MJIT options (experimental):%s\n", sb, se);
     for (i = 0; i < numberof(mjit_options); ++i)
 	SHOW(mjit_options[i]);
+#endif
+#if YJIT_SUPPORTED_P
     printf("%s""YJIT options (experimental):%s\n", sb, se);
     for (i = 0; i < numberof(yjit_options); ++i)
         SHOW(yjit_options[i]);
+#endif
 }
 
 #define rubylib_path_new rb_str_new
