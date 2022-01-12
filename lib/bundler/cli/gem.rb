@@ -104,9 +104,17 @@ module Bundler
           )
           config[:test_task] = :spec
         when "minitest"
+          # Generate path for minitest target file (FileList["test/**/test_*.rb"])
+          #   foo     => test/test_foo.rb
+          #   foo-bar => test/foo/test_bar.rb
+          #   foo_bar => test/test_foo_bar.rb
+          paths = namespaced_path.rpartition("/")
+          paths[2] = "test_#{paths[2]}"
+          minitest_namespaced_path = paths.join("")
+
           templates.merge!(
             "test/minitest/test_helper.rb.tt" => "test/test_helper.rb",
-            "test/minitest/test_newgem.rb.tt" => "test/test_#{underscored_name}.rb"
+            "test/minitest/test_newgem.rb.tt" => "test/#{minitest_namespaced_path}.rb"
           )
           config[:test_task] = :test
         when "test-unit"
