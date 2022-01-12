@@ -2918,7 +2918,7 @@ static inline int
 is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
 {
 #ifdef USE_THIRD_PARTY_HEAP
-    return mmtk_is_mapped_address(ptr);
+    return mmtk_is_mapped_object(ptr);
 #endif
     register RVALUE *p = RANY(ptr);
     register struct heap_page *page;
@@ -3582,6 +3582,8 @@ Init_heap(void)
 
     objspace->profile.invoke_time = getrusage_time();
     finalizer_table = st_init_numtable();
+
+    mmtk_initialize_collection(NULL);
 }
 
 void
@@ -11936,7 +11938,7 @@ static void
 objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
 {
 #ifdef USE_THIRD_PARTY_HEAP
-    if (mmtk_is_mapped_address(ptr)) {
+    if (mmtk_is_mapped_object(ptr)) {
         return; // Don't try and free() MMTk managed memory
     } // Otherwise continue (the memory was allocated before MMTk was initialised)
 #endif

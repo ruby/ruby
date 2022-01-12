@@ -12,6 +12,12 @@ typedef void* MMTk_Mutator;
 typedef void* MMTk_TraceLocal;
 
 /**
+ * Initialization
+ */
+extern void mmtk_initialize_collection(void *tls);
+extern void mmtk_enable_collection();
+
+/**
  * Allocation
  */
 extern MMTk_Mutator mmtk_bind_mutator(void *tls);
