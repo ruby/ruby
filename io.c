@@ -7370,16 +7370,28 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *    IO.popen(env = {}, cmd, mode = 'r', **opts) {|io| ... } -> object
  *
  *  Executes the given command +cmd+ as a subprocess
- *  whose $stdin and $stdout are connected to a new strean +io+.
+ *  whose $stdin and $stdout are connected to a new stream +io+.
  *
- *  Argument +cmd+ is one of the following (each detailed below):
+ *  If no block is given, returns the new stream,
+ *  which depending on given +mode+ may be open for reading, writing, or both.
+ *  The stream should be explicitly closed (eventually) to avoid resource leaks.
  *
- *  - The string <tt>'-'</tt>: Forks a new instance of Ruby as a subprocess.
- *  - Any other string: Passes the string to a shell as a command.
- *  - An array of strings: Runs a Ruby subprocess with the array as its ARGV.
+ *  If a block is given, the stream is passed to the block
+ *  (again, open for reading, writing, or both);
+ *  when the block exits, the stream is closed,
+ *  and the block's value is assigned to global variable <tt>$?</tt> and returned.
  *
  *  Optional argument +mode+ may be any valid \IO mode.
  *  See {Modes}[#class-IO-label-Modes].
+ *
+ *  Required argument +cmd+ determines which of the following occurs:
+ *
+ *  - The process forks.
+ *  - A specified program runs in a shell.
+ *  - A specified program runs with specified arguments.
+ *  - A specified program runs with specified arguments and a specified +argv0+.
+ *
+ *  Each of these is detailed below.
  *
  *  The optional hash argument +env+ specifies name/value pairs that are to be added
  *  to the environment variables for the subprocess:
@@ -7393,10 +7405,9 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *  The optional keyword arguments +opts+ may be {\IO open options}[#class-IO-label-Open+Options]
  *  and options for Kernel#spawn.
  *
- *  <b>Forked Process</b>
+ *  <b>Forked \Process</b>
  *
- *  Example:
- *
+ *  When argument +cmd+ is the 1-character string <tt>'-'</tt>, causes the process to fork:
  *    IO.popen('-') do |pipe|
  *      if pipe
  *        $stderr.puts "In parent, child pid is #{pipe.pid}\n"
@@ -7410,9 +7421,12 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *    In parent, child pid is 26253
  *    In child, pid is 26253
  *
+ *  Note that this is not supported on all platforms.
+ *
  *  <b>Shell Subprocess</b>
  *
- *  Example:
+ *  When argument +cmd+ is a single string (but not <tt>'-'</tt>),
+ *  the program named +cmd+ is run as a shell command:
  *
  *    IO.popen('uname') do |pipe|
  *      pipe.readlines
@@ -7434,9 +7448,10 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *
  *    213
  *
- *  <b>Ruby Subprocess</b>
+ *  <b>Program Subprocess</b>
  *
- *  Example:
+ *  When argument +cmd+ is an array of strings,
+ *  the program named <tt>cmd[0]</tt> is run with all elements of +cmd+ as its arguments:
  *
  *    IO.popen(['du', '..', '.']) do |pipe|
  *      $stderr.puts pipe.readlines.size
@@ -7446,23 +7461,35 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *
  *    1111
  *
- *  <b>More Examples</b>
+ *  <b>Program Subprocess with <tt>argv0</tt></b>
  *
- *    # set IO encoding
+ *  When argument +cmd+ is an array whose first element is a 2-element string array
+ *  and whose remaining elements (if any) are strings:
+ *
+ *  - <tt>cmd[0][0]</tt> (the first string in the nested array) is the name of a program that is run.
+ *  - <tt>cmd[0][1]</tt> (the second string in the nested array) is set as the program's <tt>argv[0]</tt>.
+ *  - <tt>cmd[1..-1] (the strings in the outer array) are the program's arguments.
+ *
+ *  Example (sets <tt>$0</tt> to 'foo'):
+ *
+ *    IO.popen([['/bin/sh', 'foo'], '-c', 'echo $0']).read # => "foo\n"
+ *
+ *  <b>Some Special Examples</b>
+ *
+ *    # Set IO encoding.
  *    IO.popen("nkf -e filename", :external_encoding=>"EUC-JP") {|nkf_io|
  *      euc_jp_string = nkf_io.read
  *    }
  *
- *    # merge standard output and standard error using
- *    # spawn option.  See the document of Kernel.spawn.
- *    IO.popen(["ls", "/", :err=>[:child, :out]]) {|ls_io|
- *      ls_result_with_error = ls_io.read
- *    }
+ *    # Merge standard output and standard error using Kernel#spawn option. See Kernel#spawn.
+ *    IO.popen(["ls", "/", :err=>[:child, :out]]) do |io|
+ *      ls_result_with_error = io.read
+ *    end
  *
- *    # spawn options can be mixed with IO options
- *    IO.popen(["ls", "/"], :err=>[:child, :out]) {|ls_io|
- *      ls_result_with_error = ls_io.read
- *    }
+ *    # Use mixture of spawn options and IO options.
+ *    IO.popen(["ls", "/"], :err=>[:child, :out]) do |io|
+ *      ls_result_with_error = io.read
+ *    end
  *
  *     f = IO.popen("uname")
  *     p f.readlines
@@ -7485,7 +7512,7 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *     #<Process::Status: pid 21352 exit 0>
  *     <foo>bar;zot;
  *
- *  Raises exceptions which IO.pipe and Kernel.spawn raise.
+ *  Raises exceptions that IO.pipe and Kernel.spawn raise.
  *
  */
 
