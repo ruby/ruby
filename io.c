@@ -7366,67 +7366,130 @@ static VALUE popen_finish(VALUE port, VALUE klass);
 
 /*
  *  call-seq:
- *     IO.popen([env,] cmd, mode="r" [, opt])               -> io
- *     IO.popen([env,] cmd, mode="r" [, opt]) {|io| block } -> obj
+ *    IO.popen(env = {}, cmd, mode = 'r', **opts) -> io
+ *    IO.popen(env = {}, cmd, mode = 'r', **opts) {|io| ... } -> object
  *
- *  Runs the specified command as a subprocess; the subprocess's
- *  standard input and output will be connected to the returned
- *  IO object.
+ *  Executes the given command +cmd+ as a subprocess
+ *  whose $stdin and $stdout are connected to a new stream +io+.
  *
- *  The PID of the started process can be obtained by IO#pid method.
+ *  If no block is given, returns the new stream,
+ *  which depending on given +mode+ may be open for reading, writing, or both.
+ *  The stream should be explicitly closed (eventually) to avoid resource leaks.
  *
- *  _cmd_ is a string or an array as follows.
+ *  If a block is given, the stream is passed to the block
+ *  (again, open for reading, writing, or both);
+ *  when the block exits, the stream is closed,
+ *  and the block's value is assigned to global variable <tt>$?</tt> and returned.
  *
- *    cmd:
- *      "-"                                      : fork
- *      commandline                              : command line string which is passed to a shell
- *      [env, cmdname, arg1, ..., opts]          : command name and zero or more arguments (no shell)
- *      [env, [cmdname, argv0], arg1, ..., opts] : command name, argv[0] and zero or more arguments (no shell)
- *    (env and opts are optional.)
+ *  Optional argument +mode+ may be any valid \IO mode.
+ *  See {Modes}[#class-IO-label-Modes].
  *
- *  If _cmd_ is a +String+ ``<code>-</code>'',
- *  then a new instance of Ruby is started as the subprocess.
+ *  Required argument +cmd+ determines which of the following occurs:
  *
- *  If <i>cmd</i> is an +Array+ of +String+,
- *  then it will be used as the subprocess's +argv+ bypassing a shell.
- *  The array can contain a hash at first for environments and
- *  a hash at last for options similar to #spawn.
+ *  - The process forks.
+ *  - A specified program runs in a shell.
+ *  - A specified program runs with specified arguments.
+ *  - A specified program runs with specified arguments and a specified +argv0+.
  *
- *  The default mode for the new file object is ``r'',
- *  but <i>mode</i> may be set to any of the modes listed in the description for class IO.
- *  The last argument <i>opt</i> qualifies <i>mode</i>.
+ *  Each of these is detailed below.
  *
- *    # set IO encoding
+ *  The optional hash argument +env+ specifies name/value pairs that are to be added
+ *  to the environment variables for the subprocess:
+ *
+ *    IO.popen({'FOO' => 'bar'}, 'ruby', 'r+') do |pipe|
+ *      pipe.puts 'puts ENV["FOO"]'
+ *      pipe.close_write
+ *      pipe.gets
+ *    end => "bar\n"
+ *
+ *  The optional keyword arguments +opts+ may be {\IO open options}[#class-IO-label-Open+Options]
+ *  and options for Kernel#spawn.
+ *
+ *  <b>Forked \Process</b>
+ *
+ *  When argument +cmd+ is the 1-character string <tt>'-'</tt>, causes the process to fork:
+ *    IO.popen('-') do |pipe|
+ *      if pipe
+ *        $stderr.puts "In parent, child pid is #{pipe.pid}\n"
+ *      else
+ *        $stderr.puts "In child, pid is #{$$}\n"
+ *      end
+ *    end
+ *
+ *  Output:
+ *
+ *    In parent, child pid is 26253
+ *    In child, pid is 26253
+ *
+ *  Note that this is not supported on all platforms.
+ *
+ *  <b>Shell Subprocess</b>
+ *
+ *  When argument +cmd+ is a single string (but not <tt>'-'</tt>),
+ *  the program named +cmd+ is run as a shell command:
+ *
+ *    IO.popen('uname') do |pipe|
+ *      pipe.readlines
+ *    end
+ *
+ *  Output:
+ *
+ *    ["Linux\n"]
+ *
+ *  Another example:
+ *
+ *    IO.popen('/bin/sh', 'r+') do |pipe|
+ *      pipe.puts('ls')
+ *      pipe.close_write
+ *      $stderr.puts pipe.readlines.size
+ *    end
+ *
+ *  Output:
+ *
+ *    213
+ *
+ *  <b>Program Subprocess</b>
+ *
+ *  When argument +cmd+ is an array of strings,
+ *  the program named <tt>cmd[0]</tt> is run with all elements of +cmd+ as its arguments:
+ *
+ *    IO.popen(['du', '..', '.']) do |pipe|
+ *      $stderr.puts pipe.readlines.size
+ *    end
+ *
+ *  Output:
+ *
+ *    1111
+ *
+ *  <b>Program Subprocess with <tt>argv0</tt></b>
+ *
+ *  When argument +cmd+ is an array whose first element is a 2-element string array
+ *  and whose remaining elements (if any) are strings:
+ *
+ *  - <tt>cmd[0][0]</tt> (the first string in the nested array) is the name of a program that is run.
+ *  - <tt>cmd[0][1]</tt> (the second string in the nested array) is set as the program's <tt>argv[0]</tt>.
+ *  - <tt>cmd[1..-1] (the strings in the outer array) are the program's arguments.
+ *
+ *  Example (sets <tt>$0</tt> to 'foo'):
+ *
+ *    IO.popen([['/bin/sh', 'foo'], '-c', 'echo $0']).read # => "foo\n"
+ *
+ *  <b>Some Special Examples</b>
+ *
+ *    # Set IO encoding.
  *    IO.popen("nkf -e filename", :external_encoding=>"EUC-JP") {|nkf_io|
  *      euc_jp_string = nkf_io.read
  *    }
  *
- *    # merge standard output and standard error using
- *    # spawn option.  See the document of Kernel.spawn.
- *    IO.popen(["ls", "/", :err=>[:child, :out]]) {|ls_io|
- *      ls_result_with_error = ls_io.read
- *    }
+ *    # Merge standard output and standard error using Kernel#spawn option. See Kernel#spawn.
+ *    IO.popen(["ls", "/", :err=>[:child, :out]]) do |io|
+ *      ls_result_with_error = io.read
+ *    end
  *
- *    # spawn options can be mixed with IO options
- *    IO.popen(["ls", "/"], :err=>[:child, :out]) {|ls_io|
- *      ls_result_with_error = ls_io.read
- *    }
- *
- *  Raises exceptions which IO.pipe and Kernel.spawn raise.
- *
- *  If a block is given, Ruby will run the command as a child connected
- *  to Ruby with a pipe. Ruby's end of the pipe will be passed as a
- *  parameter to the block.
- *  At the end of block, Ruby closes the pipe and sets <code>$?</code>.
- *  In this case IO.popen returns the value of the block.
- *
- *  If a block is given with a _cmd_ of ``<code>-</code>'',
- *  the block will be run in two separate processes: once in the parent,
- *  and once in a child. The parent process will be passed the pipe
- *  object as a parameter to the block, the child version of the block
- *  will be passed +nil+, and the child's standard in and
- *  standard out will be connected to the parent through the pipe. Not
- *  available on all platforms.
+ *    # Use mixture of spawn options and IO options.
+ *    IO.popen(["ls", "/"], :err=>[:child, :out]) do |io|
+ *      ls_result_with_error = io.read
+ *    end
  *
  *     f = IO.popen("uname")
  *     p f.readlines
@@ -7439,7 +7502,7 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *       f.puts "bar"; f.close_write; puts f.gets
  *     }
  *
- *  <em>produces:</em>
+ *  Output (from last section):
  *
  *     ["Linux\n"]
  *     Parent is 21346
@@ -7448,6 +7511,9 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *     21352 is here, f is nil
  *     #<Process::Status: pid 21352 exit 0>
  *     <foo>bar;zot;
+ *
+ *  Raises exceptions that IO.pipe and Kernel.spawn raise.
+ *
  */
 
 static VALUE
