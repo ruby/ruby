@@ -12,8 +12,10 @@ class TestOptionParser::DidYouMean < TestOptionParser
     @opt.def_option("--foo", Integer) { |v| @foo = v }
     @opt.def_option("--bar", Integer) { |v| @bar = v }
     @opt.def_option("--baz", Integer) { |v| @baz = v }
-    unless ::DidYouMean::Formatter.respond_to?(:message_for)
-      @formatter = ::DidYouMean.formatter
+    @formatter = ::DidYouMean.formatter
+    if ::DidYouMean.const_defined?(:Formatter)
+      ::DidYouMean.formatter = ::DidYouMean::Formatter
+    else
       case @formatter
       when ::DidYouMean::PlainFormatter
       else
@@ -23,9 +25,7 @@ class TestOptionParser::DidYouMean < TestOptionParser
   end
 
   def teardown
-    unless ::DidYouMean::Formatter.respond_to?(:message_for)
-      ::DidYouMean.formatter = @formatter
-    end
+    ::DidYouMean.formatter = @formatter
   end
 
   def test_no_suggestion
