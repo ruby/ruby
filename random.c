@@ -1803,6 +1803,9 @@ rb_reset_random_seed(void)
  * PRNGs are currently implemented as a modified Mersenne Twister with a period
  * of 2**19937-1.  As this algorithm is _not_ for cryptographical use, you must
  * use SecureRandom for security purpose, instead of this PRNG.
+ *
+ * See also Random::Formatter module that adds convenience methods to generate
+ * various forms of random data.
  */
 
 void
