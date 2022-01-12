@@ -476,6 +476,7 @@ class Reline::LineEditor
         @just_cursor_moving = false
         return
       elsif @previous_line_index or new_highest_in_this != @highest_in_this
+        clear_dialog_with_content
         rerender_changed_current_line
         @previous_line_index = nil
         rendered = true

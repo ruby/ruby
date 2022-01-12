@@ -1289,6 +1289,27 @@ begin
       EOC
     end
 
+    def test_insert_newline_in_the_middle_of_buffer_just_after_dialog
+      start_terminal(10, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("class A\n  def a\n    3\n  end\nend")
+      write("\n")
+      write("\C-p\C-p\C-p\C-p\C-p\C-e\C-hS")
+      write("\M-\x0D")
+      write("  3")
+      close
+      assert_screen(<<~'EOC')
+        prompt>   end
+        prompt> end
+        => :a
+        prompt> class S
+        prompt>   3
+        prompt>   def a
+        prompt>     3
+        prompt>   end
+        prompt> end
+      EOC
+    end
+
     def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
