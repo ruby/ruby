@@ -105,7 +105,7 @@ void rb_warning_category_update(unsigned int mask, unsigned int bits);
     SEP \
     X(mjit) \
     SEP \
-    X(yjit)
+    X(yjit) \
     /* END OF FEATURES */
 #define EACH_DEBUG_FEATURES(X, SEP) \
     X(frozen_string_literal) \
@@ -116,6 +116,11 @@ void rb_warning_category_update(unsigned int mask, unsigned int bits);
 enum feature_flag_bits {
     EACH_FEATURES(DEFINE_FEATURE, COMMA),
     feature_debug_flag_first,
+#if defined(MJIT_FORCE_ENABLE) || !YJIT_SUPPORTED_P
+    DEFINE_FEATURE(jit) = feature_mjit,
+#else
+    DEFINE_FEATURE(jit) = feature_yjit,
+#endif
     feature_debug_flag_begin = feature_debug_flag_first - 1,
     EACH_DEBUG_FEATURES(DEFINE_DEBUG_FEATURE, COMMA),
     feature_flag_count
@@ -976,20 +981,12 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
     if (NAME_MATCH_P(#bit, str, len)) {set |= mask = FEATURE_BIT(bit); FEATURE_FOUND;}
     EACH_FEATURES(SET_FEATURE, ;);
     if (NAME_MATCH_P("jit", str, len)) { // This allows you to cancel --jit
-#if defined(MJIT_FORCE_ENABLE) || !YJIT_SUPPORTED_P
-        set |= mask = FEATURE_BIT(mjit);
-#else
-        set |= mask = FEATURE_BIT(yjit);
-#endif
+        set |= mask = FEATURE_BIT(jit);
         goto found;
     }
     if (NAME_MATCH_P("all", str, len)) {
-        // YJIT and MJIT cannot be enabled at the same time. We enable only YJIT for --enable=all.
-#if defined(MJIT_FORCE_ENABLE) || !YJIT_SUPPORTED_P
-        mask &= ~(FEATURE_BIT(yjit));
-#else
-        mask &= ~(FEATURE_BIT(mjit));
-#endif
+        // YJIT and MJIT cannot be enabled at the same time. We enable only one for --enable=all.
+        mask &= ~(FEATURE_BIT(yjit) | FEATURE_BIT(mjit)) | FEATURE_BIT(jit);
         goto found;
     }
 #if AMBIGUOUS_FEATURE_NAMES
@@ -1543,10 +1540,8 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
             else if (strcmp("jit", s) == 0) {
 #if !USE_MJIT
                 rb_warn("Ruby was built without JIT support");
-#elif defined(MJIT_FORCE_ENABLE) || !YJIT_SUPPORTED_P
-                FEATURE_SET(opt->features, FEATURE_BIT(mjit));
 #else
-                FEATURE_SET(opt->features, FEATURE_BIT(yjit));
+                FEATURE_SET(opt->features, FEATURE_BIT(jit));
 #endif
             }
             else if (is_option_with_optarg("mjit", '-', true, false, false)) {
