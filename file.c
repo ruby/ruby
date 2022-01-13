@@ -6549,7 +6549,7 @@ const char ruby_null_device[] =
  *  (plain, directory, pipe, socket, etc.) and various other special features.
  *
  *  On non-Posix operating systems, permissions may include only read-only or read-write,
- *  in whici case, the remaining permission will resemble typical values.
+ *  in which case, the remaining permission will resemble typical values.
  *  On Windows, for instance, the default permissions are <code>0644</code>;
  *  The only change that can be made is to make the file
  *  read-only, which is reported as <code>0444</code>.
@@ -6558,9 +6558,14 @@ const char ruby_null_device[] =
  *  (as opposed to merely creating a \File object),
  *  permissions may be specified:
  *
+ *    File.new('t.tmp', File::CREAT, 0644)
+ *    File.new('t.tmp', File::CREAT, 0444)
  *
  *  Permissions may also be changed:
  *
+ *    f = File.new('t.tmp', File::CREAT, 0444)
+ *    f.chmod(0644)
+ *    f.chmod(0444)
  *
  *  == \File Constants
  *

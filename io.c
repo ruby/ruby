@@ -9055,22 +9055,33 @@ rb_io_set_encoding_by_bom(VALUE io)
  *  Opens the file at the given +path+ according to the given +mode+;
  *  creates and returns a new \File object for that file.
  *
- *  Arguments:
- *
- *  - +path+ must be a valid file path.
- *  - +mode+: see {\IO Modes}[#class-IO-label-Modes].
- *  - +perm+: see {File Permissions}[#class-File-label-Permissions].
- *  - +opts+: see {IO Open Options}[#class-IO-label-Open+Options].
- *
  *  The new \File object is buffered mode (or non-sync mode), unless
  *  +filename+ is a tty.
  *  See IO#flush, IO#fsync, IO#fdatasync, and IO#sync=.
  *
- *  === Examples
+ *  Argument +path+ must be a valid file path:
  *
- *    f = File.new("testfile", "r")
- *    f = File.new("newfile",  "w+")
- *    f = File.new("newfile", File::CREAT|File::TRUNC|File::RDWR, 0644)
+ *    File.new('/etc/fstab')
+ *    File.new('t.txt')
+ *
+ *  Optional argument +mode+ (defaults to 'r') must specify a valid mode
+ *  see {\IO Modes}[#class-IO-label-Modes]:
+ *
+ *    File.new('t.tmp', 'w')
+ *    File.new('t.tmp', File::RDONLY)
+ *
+ *  Optional argument +perm+ (defaults to 0666) must specify valid permissions
+ *  see {File Permissions}[#class-File-label-Permissions]:
+ *
+ *    File.new('t.tmp', File::CREAT, 0644)
+ *    File.new('t.tmp', File::CREAT, 0444)
+ *
+ *  Optional argument +opts+ must specify valid open options
+ *  see {IO Open Options}[#class-IO-label-Open+Options]:
+ *
+ *    File.new('t.tmp', autoclose: true)
+ *    File.new('t.tmp', internal_encoding: nil)
+ *
  */
 
 static VALUE
