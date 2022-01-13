@@ -7635,8 +7635,8 @@ rb_open_file(int argc, const VALUE *argv, VALUE io)
  *  Document-method: File::open
  *
  *  call-seq:
- *    File.open(path, mode = 'r', perm, **opts]) -> file
- *    File.open(path, mode = 'r', perm, **opts]) {|f| ... } -> object
+ *    File.open(path, mode = 'r', perm = 0666, **opts]) -> file
+ *    File.open(path, mode = 'r', perm = 0666, **opts]) {|f| ... } -> object
  *
  *  Creates a new \File object, via File.new with the given arguments.
  *
