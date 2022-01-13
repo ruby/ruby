@@ -1310,6 +1310,29 @@ begin
       EOC
     end
 
+    def test_incremental_search_on_not_last_line
+      start_terminal(10, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("def abc\nend\n")
+      write("def def\nend\n")
+      write("\C-p\C-p\C-e")
+      write("\C-r")
+      write("a")
+      write("\n\n")
+      close
+      assert_screen(<<~'EOC')
+        prompt> def abc
+        prompt> end
+        => :abc
+        prompt> def def
+        prompt> end
+        => :def
+        prompt> def abc
+        prompt> end
+        => :abc
+        prompt>
+      EOC
+    end
+
     def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content

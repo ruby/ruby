@@ -2233,6 +2233,8 @@ class Reline::LineEditor
             @buffer_of_lines = [String.new(encoding: @encoding)] if @buffer_of_lines.empty?
             @line_index = @buffer_of_lines.size - 1
             @line = @buffer_of_lines.last
+            @byte_pointer = @line.bytesize
+            @cursor = @cursor_max = calculate_width(@line)
             @rerender_all = true
             @searching_prompt = "(%s)`%s'" % [prompt_name, search_word]
           else
