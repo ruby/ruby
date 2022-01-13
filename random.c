@@ -1622,7 +1622,7 @@ rand_mt_equal(VALUE self, VALUE other)
  *   rand(100)   #=> 12
  *
  * When +max+ is a Range, +rand+ returns a random number where
- * range.member?(number) == true.
+ * <code>range.member?(number) == true</code>.
  *
  * Negative or floating point values for +max+ are allowed, but may give
  * surprising results.
