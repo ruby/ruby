@@ -23,7 +23,7 @@ environment:
     - build: vs
       vs: 120
       ssl: OpenSSL
-      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GEMS_FOR_TEST: ""
     - build: vs
       vs: 140
@@ -31,6 +31,8 @@ environment:
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GEMS_FOR_TEST: ""
   RELINE_TEST_ENCODING: "UTF-8"
+cache:
+  - c:\Tools\vcpkg\installed\
 for:
 -
   matrix:
@@ -42,6 +44,12 @@ for:
     - SET BITS=%Platform:x86=32%
     - SET BITS=%BITS:x=%
     - SET OPENSSL_DIR=C:\%ssl%-Win%BITS%
+    - cd C:\Tools\vcpkg
+    - git pull -q
+    - .\bootstrap-vcpkg.bat
+    - cd %APPVEYOR_BUILD_FOLDER%
+    - vcpkg --triplet %Platform%-windows install libffi libyaml readline zlib
+    - set PATH=c:\Tools\vcpkg\installed\%Platform%-windows\bin;%PATH%
     - CALL SET vcvars=%%^VS%VS%COMNTOOLS^%%..\..\VC\vcvarsall.bat
     - SET vcvars
     - '"%vcvars%" %Platform:x64=amd64%'
@@ -72,7 +80,7 @@ for:
     - cd %Platform%-mswin_%vs%
     - >-
       ..\win32\configure.bat
-      --with-opt-dir=/usr/local
+      --with-opt-dir="/usr/local;c:/Tools/vcpkg/installed/%Platform%-windows"
       --with-openssl-dir=%OPENSSL_DIR:\=/%
     - nmake -l
     - nmake install-nodoc
