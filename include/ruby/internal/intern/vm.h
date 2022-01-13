@@ -247,7 +247,7 @@ void rb_undef_alloc_func(VALUE klass);
  *
  * @internal
  *
- * Who cares?  @shyouhei fins no practical usage of the return value.  Maybe we
+ * Who cares?  @shyouhei finds no practical usage of the return value.  Maybe we
  * need KonMari.
  */
 rb_alloc_func_t rb_get_alloc_func(VALUE klass);
