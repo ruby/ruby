@@ -55,7 +55,7 @@ if "%1" == "--help" goto :help
   if "%opt:~0,1%" == "-" (
     echo>>confargs.tmp  %1 \
     set witharg=
-  ) else if "%witharg" == "" (
+  ) else if "%witharg%" == "" (
     echo>>confargs.tmp  %1 \
   ) else (
     echo>>confargs.tmp ,%1\
