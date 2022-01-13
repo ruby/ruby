@@ -931,7 +931,7 @@ gen_newarray(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     // Save the PC and SP because we are allocating
     jit_prepare_routine_call(jit, ctx, REG0);
 
-    x86opnd_t values_ptr = ctx_sp_opnd(ctx, -(sizeof(VALUE) * (uint32_t)n));
+    x86opnd_t values_ptr = ctx_sp_opnd(ctx, -(int32_t)(sizeof(VALUE) * (uint32_t)n));
 
     // call rb_ec_ary_new_from_values(struct rb_execution_context_struct *ec, long n, const VALUE *elts);
     mov(cb, C_ARG_REGS[0], REG_EC);
@@ -1369,7 +1369,7 @@ gen_getlocal_generic(ctx_t *ctx, uint32_t local_idx, uint32_t level)
 
     // Load the local from the block
     // val = *(vm_get_ep(GET_EP(), level) - idx);
-    const int32_t offs = -(SIZEOF_VALUE * local_idx);
+    const int32_t offs = -(int32_t)(SIZEOF_VALUE * local_idx);
     mov(cb, REG0, mem_opnd(64, REG0, offs));
 
     // Write the local at SP
@@ -1501,7 +1501,7 @@ gen_setlocal_generic(jitstate_t *jit, ctx_t *ctx, uint32_t local_idx, uint32_t l
     mov(cb, REG1, stack_top);
 
     // Write the value at the environment pointer
-    const int32_t offs = -(SIZEOF_VALUE * local_idx);
+    const int32_t offs = -(int32_t)(SIZEOF_VALUE * local_idx);
     mov(cb, mem_opnd(64, REG0, offs), REG1);
 
     return YJIT_KEEP_COMPILING;
@@ -1952,7 +1952,7 @@ gen_concatstrings(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     // Save the PC and SP because we are allocating
     jit_prepare_routine_call(jit, ctx, REG0);
 
-    x86opnd_t values_ptr = ctx_sp_opnd(ctx, -(sizeof(VALUE) * (uint32_t)n));
+    x86opnd_t values_ptr = ctx_sp_opnd(ctx, -(int32_t)(sizeof(VALUE) * (uint32_t)n));
 
     // call rb_str_concat_literals(long n, const VALUE *strings);
     mov(cb, C_ARG_REGS[0], imm_opnd(n));
@@ -4536,7 +4536,7 @@ gen_toregexp(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     // raise an exception.
     jit_prepare_routine_call(jit, ctx, REG0);
 
-    x86opnd_t values_ptr = ctx_sp_opnd(ctx, -(sizeof(VALUE) * (uint32_t)cnt));
+    x86opnd_t values_ptr = ctx_sp_opnd(ctx, -(int32_t)(sizeof(VALUE) * (uint32_t)cnt));
     ctx_stack_pop(ctx, cnt);
 
     mov(cb, C_ARG_REGS[0], imm_opnd(0));
@@ -4866,7 +4866,7 @@ gen_opt_invokebuiltin_delegate(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 
     // Copy arguments from locals
     for (int32_t i = 0; i < bf->argc; i++) {
-        const int32_t offs = -jit->iseq->body->local_table_size - VM_ENV_DATA_SIZE + 1 + start_index + i;
+        const int32_t offs = start_index + i - jit->iseq->body->local_table_size - VM_ENV_DATA_SIZE + 1;
         x86opnd_t local_opnd = mem_opnd(64, REG0, offs * SIZEOF_VALUE);
         x86opnd_t c_arg_reg = C_ARG_REGS[i + 2];
         mov(cb, c_arg_reg, local_opnd);
