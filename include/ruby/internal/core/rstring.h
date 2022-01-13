@@ -426,13 +426,14 @@ RSTRING_EMBED_LEN(VALUE str)
     RBIMPL_ASSERT_OR_ASSUME(! RB_FL_ANY_RAW(str, RSTRING_NOEMBED));
 
 #if USE_RVARGC
-    short f = RSTRING(str)->as.embed.len;
+    long f = RSTRING(str)->as.embed.len;
+    return f;
 #else
     VALUE f = RBASIC(str)->flags;
     f &= RSTRING_EMBED_LEN_MASK;
     f >>= RSTRING_EMBED_LEN_SHIFT;
-#endif
     return RBIMPL_CAST((long)f);
+#endif
 }
 
 RBIMPL_WARNING_PUSH()
