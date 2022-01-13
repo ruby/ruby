@@ -1088,7 +1088,7 @@ or the PAGER environment variable.
 
     loop do
       name = if defined? Readline then
-               Readline.readline ">> "
+               Readline.readline ">> ", true
              else
                print ">> "
                $stdin.gets
