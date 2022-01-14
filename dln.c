@@ -74,15 +74,6 @@ void *xrealloc();
 char *getenv();
 #endif
 
-#ifdef __APPLE__
-# if defined(HAVE_DLOPEN)
-   /* Mac OS X with dlopen (10.3 or later) */
-#  define MACOSX_DLOPEN
-# else
-#  define MACOSX_DYLD
-# endif
-#endif
-
 #ifndef dln_loaderror
 static void
 dln_loaderror(const char *format, ...)
@@ -95,12 +86,12 @@ dln_loaderror(const char *format, ...)
 }
 #endif
 
-#if defined(HAVE_DLOPEN) && !defined(_AIX) && !defined(MACOSX_DYLD) && !defined(_UNICOSMP)
+#if defined(HAVE_DLOPEN) && !defined(_AIX) && !defined(_UNICOSMP)
 /* dynamic load with dlopen() */
 # define USE_DLN_DLOPEN
 #endif
 
-#if defined(__hp9000s300) || ((defined(__NetBSD__) || defined(__FreeBSD__) || defined(__OpenBSD__)) && !defined(__ELF__)) || defined(NeXT) || defined(MACOSX_DYLD)
+#if defined(__hp9000s300) || ((defined(__NetBSD__) || defined(__FreeBSD__) || defined(__OpenBSD__)) && !defined(__ELF__)) || defined(NeXT)
 # define EXTERNAL_PREFIX "_"
 #else
 # define EXTERNAL_PREFIX ""
@@ -167,10 +158,6 @@ static const char funcname_prefix[sizeof(FUNCNAME_PREFIX) - 1] = FUNCNAME_PREFIX
 #ifndef NSLINKMODULE_OPTION_BINDNOW
 #define NSLINKMODULE_OPTION_BINDNOW 1
 #endif
-#endif
-#else
-#ifdef MACOSX_DYLD
-#include <mach-o/dyld.h>
 #endif
 #endif
 
@@ -448,45 +435,6 @@ dln_load(const char *file)
 	return (void*)init_fct;
     }
 #endif /* _AIX */
-
-#if defined(MACOSX_DYLD)
-#define DLN_DEFINED
-/*----------------------------------------------------
-   By SHIROYAMA Takayuki Psi@fortune.nest.or.jp
-
-   Special Thanks...
-    Yu tomoak-i@is.aist-nara.ac.jp,
-    Mi hisho@tasihara.nest.or.jp,
-    sunshine@sunshineco.com,
-    and... Miss ARAI Akino(^^;)
- ----------------------------------------------------*/
-    {
-	int dyld_result;
-	NSObjectFileImage obj_file; /* handle, but not use it */
-	/* "file" is module file name .
-	   "buf" is pointer to initial function name with "_" . */
-
-	void (*init_fct)(void);
-
-
-	dyld_result = NSCreateObjectFileImageFromFile(file, &obj_file);
-
-	if (dyld_result != NSObjectFileImageSuccess) {
-	    dln_loaderror("Failed to load %.200s", file);
-	}
-
-	NSLinkModule(obj_file, file, NSLINKMODULE_OPTION_BINDNOW);
-
-	/* lookup the initial function */
-	if (!NSIsSymbolNameDefined(buf)) {
-	    dln_loaderror("Failed to lookup Init function %.200s",file);
-	}
-	init_fct = NSAddressOfSymbol(NSLookupAndBindSymbol(buf));
-	(*init_fct)();
-
-	return (void*)init_fct;
-    }
-#endif
 
 #ifndef DLN_DEFINED
     dln_notimplement();
