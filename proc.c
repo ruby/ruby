@@ -40,6 +40,7 @@ struct METHOD {
     const VALUE iclass;
     const rb_method_entry_t * const me;
     /* for bound methods, `me' should be rb_callable_method_entry_t * */
+    rb_method_visibility_t visibility;
 };
 
 VALUE rb_cUnboundMethod;
@@ -1626,6 +1627,7 @@ mnew_missing(VALUE klass, VALUE obj, ID id, VALUE mclass)
     me = rb_method_entry_create(id, klass, METHOD_VISI_UNDEF, def);
 
     RB_OBJ_WRITE(method, &data->me, me);
+    data->visibility = METHOD_ENTRY_VISI(me);
 
     return method;
 }
@@ -1683,6 +1685,7 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
     RB_OBJ_WRITE(method, &data->klass, klass);
     RB_OBJ_WRITE(method, &data->iclass, iclass);
     RB_OBJ_WRITE(method, &data->me, me);
+    data->visibility = visi;
 
     return method;
 }
@@ -1780,6 +1783,7 @@ method_eq(VALUE method, VALUE other)
 
     if (!rb_method_entry_eq(m1->me, m2->me) ||
 	klass1 != klass2 ||
+        m1->visibility != m2->visibility ||
 	m1->klass != m2->klass ||
 	m1->recv != m2->recv) {
 	return Qfalse;
@@ -1833,6 +1837,7 @@ method_unbind(VALUE obj)
     RB_OBJ_WRITE(method, &data->klass, orig->klass);
     RB_OBJ_WRITE(method, &data->iclass, orig->iclass);
     RB_OBJ_WRITE(method, &data->me, rb_method_entry_clone(orig->me));
+    data->visibility = orig->visibility;
 
     return method;
 }
@@ -2340,6 +2345,7 @@ method_clone(VALUE self)
     RB_OBJ_WRITE(clone, &data->klass, orig->klass);
     RB_OBJ_WRITE(clone, &data->iclass, orig->iclass);
     RB_OBJ_WRITE(clone, &data->me, rb_method_entry_clone(orig->me));
+    data->visibility = orig->visibility;
     return clone;
 }
 
@@ -2590,6 +2596,7 @@ umethod_bind(VALUE method, VALUE recv)
     RB_OBJ_WRITE(method, &bound->klass, klass);
     RB_OBJ_WRITE(method, &bound->iclass, iclass);
     RB_OBJ_WRITE(method, &bound->me, me);
+    bound->visibility = data->visibility;
 
     return method;
 }
@@ -2625,7 +2632,7 @@ umethod_bind_call(int argc, VALUE *argv, VALUE method)
         VALUE methclass, klass, iclass;
         const rb_method_entry_t *me;
         convert_umethod_to_method_components(data, recv, &methclass, &klass, &iclass, &me);
-        struct METHOD bound = { recv, klass, 0, me };
+        struct METHOD bound = { recv, klass, 0, me, METHOD_ENTRY_VISI(me) };
 
         return call_method_data(ec, &bound, argc, argv, passed_procval, RB_PASS_CALLED_KEYWORDS);
     }
@@ -3314,7 +3321,7 @@ method_public_p(VALUE method)
 {
     const struct METHOD *data;
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    return RBOOL(METHOD_ENTRY_VISI(data->me) == METHOD_VISI_PUBLIC);
+    return RBOOL(data->visibility == METHOD_VISI_PUBLIC);
 }
 
 /*
@@ -3329,7 +3336,7 @@ method_protected_p(VALUE method)
 {
     const struct METHOD *data;
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    return RBOOL(METHOD_ENTRY_VISI(data->me) == METHOD_VISI_PROTECTED);
+    return RBOOL(data->visibility == METHOD_VISI_PROTECTED);
 }
 
 /*
@@ -3344,7 +3351,7 @@ method_private_p(VALUE method)
 {
     const struct METHOD *data;
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    return RBOOL(METHOD_ENTRY_VISI(data->me) == METHOD_VISI_PRIVATE);
+    return RBOOL(data->visibility == METHOD_VISI_PRIVATE);
 }
 
 /*
