@@ -7651,15 +7651,16 @@ rb_open_file(int argc, const VALUE *argv, VALUE io)
  *  Document-method: IO::open
  *
  *  call-seq:
- *     IO.open(fd, mode="r" [, opt])                -> io
- *     IO.open(fd, mode="r" [, opt]) {|io| block }  -> obj
+ *    IO.open(fd, mode = 'r', **opts])             -> io
+ *    IO.open(fd, mode = 'r', **opts]) {|io| ... } -> object
  *
- *  With no associated block, IO.open is a synonym for IO.new.  If
- *  the optional code block is given, it will be passed +io+ as an argument,
- *  and the IO object will automatically be closed when the block terminates.
- *  In this instance, IO.open returns the value of the block.
+ *  Creates a new \IO object, via IO.new with the given arguments.
  *
- *  See IO.new for a description of the +fd+, +mode+ and +opt+ parameters.
+ *  With no block given, returns the \IO object.
+ *
+ *  With a block given, calls the block with the \IO object
+ *  and returns the block's value.
+ *
  */
 
 static VALUE
@@ -7676,12 +7677,20 @@ rb_io_s_open(int argc, VALUE *argv, VALUE klass)
 
 /*
  *  call-seq:
- *     IO.sysopen(path, [mode, [perm]])  -> integer
+ *    IO.sysopen(path, mode = 'r', perm = 0666) -> integer
  *
- *  Opens the given path, returning the underlying file descriptor as a
- *  Integer.
+ *  Opens the file at the given path with the given mode and permissions;
+ *  returns the integer file descriptor.
  *
- *     IO.sysopen("testfile")   #=> 3
+ *  If the file is to be readable, it must exist;
+ *  if the file is to be writable and does not exist,
+ *  it is created with the given permissions:
+ *
+ *    File.write('t.tmp', '')  # => 0
+ *    IO.sysopen('t.tmp')      # => 8
+ *    IO.sysopen('t.tmp', 'w') # => 9
+ *
+ *
  */
 
 static VALUE
@@ -7728,101 +7737,100 @@ check_pipe_command(VALUE filename_or_command)
 
 /*
  *  call-seq:
- *     open(path [, mode [, perm]] [, opt])                -> io or nil
- *     open(path [, mode [, perm]] [, opt]) {|io| block }  -> obj
+ *    open(path, mode = 'r', perm = 0666, **opts)             -> io or nil
+ *    open(path, mode = 'r', perm = 0666, **opts) {|io| ... } -> obj
  *
  *  Creates an IO object connected to the given stream, file, or subprocess.
  *
- *  If +path+ does not start with a pipe character (<code>|</code>), treat it
- *  as the name of a file to open using the specified mode (defaulting to
- *  "r").
+ *  Required string argument +path+ determines which of the following occurs:
  *
- *  The +mode+ is either a string or an integer.  If it is an integer, it
- *  must be bitwise-or of open(2) flags, such as File::RDWR or File::EXCL.  If
- *  it is a string, it is either "fmode", "fmode:ext_enc", or
- *  "fmode:ext_enc:int_enc".
+ *  - The file at the specified +path+ is opened.
+ *  - The process forks.
+ *  - A subprocess is created.
  *
- *  See the documentation of IO.new for full documentation of the +mode+ string
- *  directives.
+ *  Each of these is detailed below.
  *
- *  If a file is being created, its initial permissions may be set using the
- *  +perm+ parameter.  See File.new and the open(2) and chmod(2) man pages for
- *  a description of permissions.
+ *  <b>File Opened</b>
+
+ *  If +path+ does _not_ start with a pipe character (<tt>'|'</tt>),
+ *  a file stream is opened with <tt>File.open(path, mode, perm, opts)</tt>.
  *
- *  If a block is specified, it will be invoked with the IO object as a
- *  parameter, and the IO will be automatically closed when the block
- *  terminates.  The call returns the value of the block.
+ *  With no block given, file stream is returned:
  *
- *  If +path+ starts with a pipe character (<code>"|"</code>), a subprocess is
- *  created, connected to the caller by a pair of pipes.  The returned IO
- *  object may be used to write to the standard input and read from the
- *  standard output of this subprocess.
+ *    open('t.txt') # => #<File:t.txt>
  *
- *  If the command following the pipe is a single minus sign
- *  (<code>"|-"</code>), Ruby forks, and this subprocess is connected to the
- *  parent.  If the command is not <code>"-"</code>, the subprocess runs the
- *  command.  Note that the command may be processed by shell if it contains
+ *  With a block given, calls the block with the open file stream,
+ *  then closes the stream:
+ *
+ *    open('t.txt') {|f| p f } # => #<File:t.txt (closed)>
+ *
+ *  Output:
+ *
+ *    #<File:t.txt>
+ *
+ *  See File.open for details.
+ *
+ *  <b>Process Forked</b>
+ *
+ *  If +path+ is the 2-character string <tt>'|-'</tt>, the process forks
+ *  and the child process is connected to the parent.
+ *
+ *  With no block given:
+ *
+ *    io = open('|-')
+ *    if io
+ *      $stderr.puts "In parent, child pid is #{io.pid}."
+ *    else
+ *      $stderr.puts "In child, pid is #{$$}."
+ *    end
+ *
+ *  Output:
+ *
+ *    In parent, child pid is 27903.
+ *    In child, pid is 27903.
+ *
+ *  With a block given:
+ *
+ *    open('|-') do |io|
+ *      if io
+ *        $stderr.puts "In parent, child pid is #{io.pid}."
+ *      else
+ *        $stderr.puts "In child, pid is #{$$}."
+ *      end
+ *    end
+ *
+ *  Output:
+ *
+ *    In parent, child pid is 28427.
+ *    In child, pid is 28427.
+ *
+ *  <b>Subprocess Created</b>
+ *
+ *  If +path+ is <tt>'|command'</tt> (<tt>'command' != '-'</tt>),
+ *  a new subprocess runs the command; its open stream is returned.
+ *  Note that the command may be processed by shell if it contains
  *  shell metacharacters.
  *
- *  When the subprocess is Ruby (opened via <code>"|-"</code>), the +open+
- *  call returns +nil+.  If a block is associated with the open call, that
- *  block will run twice --- once in the parent and once in the child.
+ *  With no block given:
  *
- *  The block parameter will be an IO object in the parent and +nil+ in the
- *  child. The parent's +IO+ object will be connected to the child's $stdin
- *  and $stdout.  The subprocess will be terminated at the end of the block.
+ *    io = open('|echo "Hi!"') # => #<IO:fd 12>
+ *    print io.gets
+ *    io.close
  *
- *  === Examples
+ *  Output:
  *
- *  Reading from "testfile":
+ *    "Hi!"
  *
- *     open("testfile") do |f|
- *       print f.gets
- *     end
+ *  With a block given, calls the block with the stream, then closes the stream:
  *
- *  Produces:
+ *    open('|echo "Hi!"') do |io|
+ *      print io.gets
+ *    end
  *
- *     This is line one
+ *  Output:
  *
- *  Open a subprocess and read its output:
+ *    "Hi!"
  *
- *     cmd = open("|date")
- *     print cmd.gets
- *     cmd.close
- *
- *  Produces:
- *
- *     Wed Apr  9 08:56:31 CDT 2003
- *
- *  Open a subprocess running the same Ruby program:
- *
- *     f = open("|-", "w+")
- *     if f.nil?
- *       puts "in Child"
- *       exit
- *     else
- *       puts "Got: #{f.gets}"
- *     end
- *
- *  Produces:
- *
- *     Got: in Child
- *
- *  Open a subprocess using a block to receive the IO object:
- *
- *     open "|-" do |f|
- *       if f then
- *         # parent process
- *         puts "Got: #{f.gets}"
- *       else
- *         # child process
- *         puts "in Child"
- *       end
- *     end
- *
- *  Produces:
- *
- *     Got: in Child
  */
 
 static VALUE
@@ -8312,14 +8320,14 @@ rb_io_putc(VALUE io, VALUE ch)
 
 /*
  *  call-seq:
- *     putc(int)   -> int
+ *    putc(int) -> int
  *
  *  Equivalent to:
  *
  *    $stdout.putc(int)
  *
- *  Refer to the documentation for IO#putc for important information regarding
- *  multi-byte characters.
+ *  See IO#putc for important information regarding multi-byte characters.
+ *
  */
 
 static VALUE
@@ -8370,29 +8378,48 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
 
 /*
  *  call-seq:
- *     ios.puts(obj, ...)    -> nil
+ *    puts(*objects) -> nil
+ *    puts           -> newline
  *
- *  Writes the given object(s) to <em>ios</em>.
- *  Writes a newline after any that do not already end
- *  with a newline sequence. Returns +nil+.
+ *  Writes the given +objects+ to the stream, which must be open for writing;
+ *  returns +nil+.\
+ *  Writes a newline after each that does not already end with a newline sequence.
+ *  If called without arguments, writes a newline.
  *
- *  The stream must be opened for writing.
- *  If called with an array argument, writes each element on a new line.
- *  Each given object that isn't a string or array will be converted
- *  by calling its +to_s+ method.
- *  If called without arguments, outputs a single newline.
+ *  Note that each added newline is the character <tt>"\n"<//tt>,
+ *  not the output record separator (<tt>$\\</tt>).
  *
- *     $stdout.puts("this", "is", ["a", "test"])
+ *  Treatment for each object:
  *
- *  <em>produces:</em>
+ *  - \String: writes the string.
+ *  - Neither string nor array: writes <tt>object.to_s</tt>.
+ *  - \Array: writes each element of the array; arrays may be nested.
  *
- *     this
- *     is
- *     a
- *     test
+ *  To keep these examples brief, we define this helper method:
  *
- *  Note that +puts+ always uses newlines and is not affected
- *  by the output record separator (<code>$\\</code>).
+ *    def show(*objects)
+ *      # Puts objects to file.
+ *      f = File.new('t.tmp', 'w+')
+ *      f.puts(objects)
+ *      # Return file content.
+ *      f.rewind
+ *      p f.read
+ *    end
+ *
+ *    # Strings without newlines.
+ *    show('foo', 'bar', 'baz')     # => "foo\nbar\nbaz\n"
+ *    # Strings, some with newlines.
+ *    show("foo\n", 'bar', "baz\n") # => "foo\nbar\nbaz\n"
+ *
+ *    # Neither strings nor arrays:
+ *    show(0, 0.0, Rational(0, 1), Complex(9, 0), :zero)
+ *    # => "0\n0.0\n0/1\n9+0i\nzero\n"
+ *
+ *    # Array of strings.
+ *    show(['foo', "bar\n", 'baz']) # => "foo\nbar\nbaz\n"
+ *    # Nested arrays.
+ *    show([[[0, 1], 2, 3], 4, 5])  # => "0\n1\n2\n3\n4\n5\n"
+ *
  */
 
 VALUE
@@ -8430,11 +8457,11 @@ rb_io_puts(int argc, const VALUE *argv, VALUE out)
 
 /*
  *  call-seq:
- *     puts(obj, ...)    -> nil
+ *    puts(*objects)    -> nil
  *
  *  Equivalent to
  *
- *      $stdout.puts(obj, ...)
+ *     $stdout.puts(objects)
  */
 
 static VALUE
@@ -8490,11 +8517,31 @@ rb_p_result(int argc, const VALUE *argv)
 
 /*
  *  call-seq:
- *     p(obj)              -> obj
- *     p(obj1, obj2, ...)  -> [obj, ...]
- *     p()                 -> nil
+ *    p(object)   -> obj
+ *    p(*objects) -> array of objects
+ *    p           -> nil
  *
- *  For each object, directly writes _obj_.+inspect+ followed by a
+ *  For each object +obj+, executes:
+ *
+ *    $stdout.write(obj.inspect, "\n")
+ *
+ *  With one object given, returns the object;
+ *  with multiple objects given, returns an array containing the objects;
+ *  with no object given, returns +nil+.
+ *
+ *  Examples:
+ *
+ *    r = Range.new(0, 4)
+ *    p r                 # => 0..4
+ *    p [r, r, r]         # => [0..4, 0..4, 0..4]
+ *    p                   # => nil
+ *
+ *  Output:
+ *
+ *     0..4
+ *     [0..4, 0..4, 0..4]
+
+  directly writes _obj_.+inspect+ followed by a
  *  newline to the program's standard output.
  *
  *     S = Struct.new(:name, :state)
@@ -8519,26 +8566,19 @@ rb_f_p(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     obj.display(port=$>)    -> nil
+ *    display(port = $>) -> nil
  *
- *  Prints <i>obj</i> on the given port (default <code>$></code>).
- *  Equivalent to:
- *
- *     def display(port=$>)
- *       port.write self
- *       nil
- *     end
- *
- *  For example:
+ *  Writes +self+ on the given port:
  *
  *     1.display
  *     "cat".display
  *     [ 4, 5, 6 ].display
  *     puts
  *
- *  <em>produces:</em>
+ *  Output:
  *
  *     1cat[4, 5, 6]
+ *
  */
 
 static VALUE
