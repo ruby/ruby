@@ -60,7 +60,7 @@ jobs:
           path: src/.downloaded-cache
           key: downloaded-cache
       - name: Set up Ruby & MSYS2
-        uses: MSP-Greg/ruby-setup-ruby@db14f2dde9ceeaa8acbcd31884475a7ce97ae9d3
+        uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.base_ruby }}
       - name: set env
@@ -71,6 +71,8 @@ jobs:
       - name: where check
         run: |
           # show where
+          mv /c/Windows/System32/libcrypto-1_1-x64.dll /c/Windows/System32/libcrypto-1_1-x64.dll_
+          mv /c/Windows/System32/libssl-1_1-x64.dll    /c/Windows/System32/libssl-1_1-x64.dll_
           result=true
           for e in gcc.exe ragel.exe make.exe bison.exe libcrypto-1_1-x64.dll libssl-1_1-x64.dll; do
             echo '##['group']'$'\033[93m'$e$'\033[m'
