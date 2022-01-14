@@ -1627,9 +1627,12 @@ module DRb
       end
 
       def perform
-        @result = nil
-        @succ = false
-        setup_message
+        begin
+          setup_message
+        ensure
+          @result = nil
+          @succ = false
+        end
 
         if @block
           @result = perform_with_block
