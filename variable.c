@@ -3106,8 +3106,8 @@ static void
 const_added(VALUE klass, ID const_name)
 {
     if (GET_VM()->running) {
-      VALUE name = ID2SYM(const_name);
-      rb_funcallv(klass, idConst_added, 1, &name);
+        VALUE name = ID2SYM(const_name);
+        rb_funcallv(klass, idConst_added, 1, &name);
     }
 }
 
