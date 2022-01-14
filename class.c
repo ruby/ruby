@@ -208,6 +208,9 @@ class_alloc(VALUE flags, VALUE klass)
 
 #if USE_RVARGC
     memset(RCLASS_EXT(obj), 0, sizeof(rb_classext_t));
+# if SIZEOF_SERIAL_T != SIZEOF_VALUE
+    RCLASS(obj)->class_serial_ptr = ZALLOC(rb_serial_t);
+# endif
 #else
     obj->ptr = ZALLOC(rb_classext_t);
 #endif

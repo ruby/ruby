@@ -3132,6 +3132,10 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         rb_class_remove_subclass_head(obj);
 	rb_class_remove_from_module_subclasses(obj);
 	rb_class_remove_from_super_subclasses(obj);
+#if SIZEOF_SERIAL_T != SIZEOF_VALUE && USE_RVARGC
+        xfree(RCLASS(obj)->class_serial_ptr);
+#endif
+
 #if !USE_RVARGC
 	if (RCLASS_EXT(obj))
             xfree(RCLASS_EXT(obj));
