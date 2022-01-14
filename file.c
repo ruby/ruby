@@ -6511,36 +6511,67 @@ const char ruby_null_device[] =
     ;
 
 /*
- *  A File is an abstraction of any file object accessible by the
- *  program and is closely associated with class IO.  File includes
- *  the methods of module FileTest as class methods, allowing you to
- *  write (for example) <code>File.exist?("foo")</code>.
+ *  A \File object is a representation of a file in the underlying platform.
  *
- *  In the description of File methods,
- *  <em>permission bits</em> are a platform-specific
- *  set of bits that indicate permissions of a file. On Unix-based
- *  systems, permissions are viewed as a set of three octets, for the
- *  owner, the group, and the rest of the world. For each of these
- *  entities, permissions may be set to read, write, or execute the
- *  file:
+ *  \Class \File extends module FileTest, supporting such singleton methods
+ *  as <tt>File.exist?</tt>.
  *
- *  The permission bits <code>0644</code> (in octal) would thus be
- *  interpreted as read/write for owner, and read-only for group and
- *  other. Higher-order bits may also be used to indicate the type of
- *  file (plain, directory, pipe, socket, and so on) and various other
- *  special features. If the permissions are for a directory, the
- *  meaning of the execute bit changes; when set the directory can be
- *  searched.
+ *  == \File Permissions
  *
- *  On non-Posix operating systems, there may be only the ability to
- *  make a file read-only or read-write. In this case, the remaining
- *  permission bits will be synthesized to resemble typical values. For
- *  instance, on Windows NT the default permission bits are
- *  <code>0644</code>, which means read/write for owner, read-only for
- *  all others. The only change that can be made is to make the file
+ *  A \File object has _permissions_, an octal integer representing
+ *  the permissions of an actual file in the underlying platform.
+ *
+ *  Note that file permissions are quite different from the _mode_
+ *  of a file stream (\File object).
+ *  See {IO Modes}[#class-IO-label-Modes].
+ *
+ *  In a \File object, the permissions are available thus,
+ *  where method +mode+, despite its name, returns permissions:
+ *
+ *    f = File.new('t.txt')
+ *    f.lstat.mode.to_s(8) # => "100644"
+ *
+ *  On a Unix-based operating system,
+ *  the three low-order octal digits represent the permissions
+ *  for owner (6), group (4), and world (4).
+ *  The triplet of bits in each octal digit represent, respectively,
+ *  read, write, and execute permissions.
+ *
+ *  Permissions <tt>0644</tt> thus represent read-write access for owner
+ *  and read-only access for group and world.
+ *  See man pages {open(2)}[https://www.unix.com/man-page/bsd/2/open]
+ *  and {chmod(2)}[https://www.unix.com/man-page/bsd/2/chmod].
+ *
+ *  For a directory, the meaning of the execute bit changes:
+ *  when set, the directory can be searched.
+ *
+ *  Higher-order bits in permissions may indicate the type of file
+ *  (plain, directory, pipe, socket, etc.) and various other special features.
+ *
+ *  On non-Posix operating systems, permissions may include only read-only or read-write,
+ *  in which case, the remaining permission will resemble typical values.
+ *  On Windows, for instance, the default permissions are <code>0644</code>;
+ *  The only change that can be made is to make the file
  *  read-only, which is reported as <code>0444</code>.
  *
- *  Various constants for the methods in File can be found in File::Constants.
+ *  For a method that actually creates a file in the underlying platform
+ *  (as opposed to merely creating a \File object),
+ *  permissions may be specified:
+ *
+ *    File.new('t.tmp', File::CREAT, 0644)
+ *    File.new('t.tmp', File::CREAT, 0444)
+ *
+ *  Permissions may also be changed:
+ *
+ *    f = File.new('t.tmp', File::CREAT, 0444)
+ *    f.chmod(0644)
+ *    f.chmod(0444)
+ *
+ *  == \File Constants
+ *
+ *  Various constants for use in \File and \IO methods
+ *  may be found in module File::Constants;
+ *  an array of their names is returned by <tt>File::Constants.constants</tt>.
  *
  *  == What's Here
  *

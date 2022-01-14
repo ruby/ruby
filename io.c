@@ -7631,26 +7631,20 @@ rb_open_file(int argc, const VALUE *argv, VALUE io)
     return io;
 }
 
-
 /*
  *  Document-method: File::open
  *
  *  call-seq:
- *     File.open(filename, mode="r" [, opt])                 -> file
- *     File.open(filename [, mode [, perm]] [, opt])         -> file
- *     File.open(filename, mode="r" [, opt]) {|file| block } -> obj
- *     File.open(filename [, mode [, perm]] [, opt]) {|file| block } -> obj
+ *    File.open(path, mode = 'r', perm = 0666, **opts]) -> file
+ *    File.open(path, mode = 'r', perm = 0666, **opts]) {|f| ... } -> object
  *
- *  With no associated block, File.open is a synonym for
- *  File.new. If the optional code block is given, it will
- *  be passed the opened +file+ as an argument and the File object will
- *  automatically be closed when the block terminates.  The value of the block
- *  will be returned from File.open.
+ *  Creates a new \File object, via File.new with the given arguments.
  *
- *  If a file is being created, its initial permissions may be set using the
- *  +perm+ parameter.  See File.new for further discussion.
+ *  With no block given, returns the \File object.
  *
- *  See IO.new for a description of the +mode+ and +opt+ parameters.
+ *  With a block given, calls the block with the \File object
+ *  and returns the block's value.
+ *
  */
 
 /*
@@ -9056,27 +9050,38 @@ rb_io_set_encoding_by_bom(VALUE io)
 
 /*
  *  call-seq:
- *     File.new(filename, mode="r" [, opt])            -> file
- *     File.new(filename [, mode [, perm]] [, opt])    -> file
+ *    File.new(path, mode = 'r', perm = 0666, **opts) -> file
  *
- *  Opens the file named by +filename+ according to the given +mode+ and
- *  returns a new File object.
+ *  Opens the file at the given +path+ according to the given +mode+;
+ *  creates and returns a new \File object for that file.
  *
- *  See IO.new for a description of +mode+ and +opt+.
- *
- *  If a file is being created, permission bits may be given in +perm+.  These
- *  mode and permission bits are platform dependent; on Unix systems, see
- *  open(2) and chmod(2) man pages for details.
- *
- *  The new File object is buffered mode (or non-sync mode), unless
+ *  The new \File object is buffered mode (or non-sync mode), unless
  *  +filename+ is a tty.
- *  See IO#flush, IO#fsync, IO#fdatasync, and IO#sync= about sync mode.
+ *  See IO#flush, IO#fsync, IO#fdatasync, and IO#sync=.
  *
- *  === Examples
+ *  Argument +path+ must be a valid file path:
  *
- *    f = File.new("testfile", "r")
- *    f = File.new("newfile",  "w+")
- *    f = File.new("newfile", File::CREAT|File::TRUNC|File::RDWR, 0644)
+ *    File.new('/etc/fstab')
+ *    File.new('t.txt')
+ *
+ *  Optional argument +mode+ (defaults to 'r') must specify a valid mode
+ *  see {\IO Modes}[#class-IO-label-Modes]:
+ *
+ *    File.new('t.tmp', 'w')
+ *    File.new('t.tmp', File::RDONLY)
+ *
+ *  Optional argument +perm+ (defaults to 0666) must specify valid permissions
+ *  see {File Permissions}[#class-File-label-Permissions]:
+ *
+ *    File.new('t.tmp', File::CREAT, 0644)
+ *    File.new('t.tmp', File::CREAT, 0444)
+ *
+ *  Optional argument +opts+ must specify valid open options
+ *  see {IO Open Options}[#class-IO-label-Open+Options]:
+ *
+ *    File.new('t.tmp', autoclose: true)
+ *    File.new('t.tmp', internal_encoding: nil)
+ *
  */
 
 static VALUE
