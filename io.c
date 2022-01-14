@@ -8379,7 +8379,7 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
 /*
  *  call-seq:
  *    puts(*objects) -> nil
- *    puts           -> newline
+ *    puts           -> nil
  *
  *  Writes the given +objects+ to the stream, which must be open for writing;
  *  returns +nil+.\
@@ -8540,17 +8540,7 @@ rb_p_result(int argc, const VALUE *argv)
  *
  *     0..4
  *     [0..4, 0..4, 0..4]
-
-  directly writes _obj_.+inspect+ followed by a
- *  newline to the program's standard output.
  *
- *     S = Struct.new(:name, :state)
- *     s = S['dave', 'TX']
- *     p s
- *
- *  <em>produces:</em>
- *
- *     #<S name="dave", state="TX">
  */
 
 static VALUE
