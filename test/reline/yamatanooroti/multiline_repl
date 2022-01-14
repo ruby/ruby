@@ -1,5 +1,9 @@
 #!/usr/bin/env ruby
 
+
+require 'bundler'
+Bundler.require
+
 require 'reline'
 require 'optparse'
 require_relative 'termination_checker'
