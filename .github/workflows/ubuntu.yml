@@ -26,16 +26,15 @@ jobs:
         configure: ["", "cppflags=-DRUBY_DEBUG"]
         include:
           - test_task: "check"
-            os: ubuntu-20.04
             configure: "--host=i686-$OSTYPE"
+          - test_task: "check"
+            configure: "--enable-shared --enable-load-relative"
           - test_task: "test-all TESTS=--repeat-count=2"
-            os: ubuntu-20.04
-            configure: ""
       fail-fast: false
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
       RUBY_DEBUG: ci
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os || 'ubuntu-20.04' }}
     if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
       - run: mkdir build
