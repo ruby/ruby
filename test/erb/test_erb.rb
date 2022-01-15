@@ -24,29 +24,6 @@ class TestERB < Test::Unit::TestCase
     assert_match(/\Atest filename:1\b/, e.backtrace[0])
   end
 
-  # [deprecated] This will be removed later
-  def test_without_filename_with_safe_level
-    erb = EnvUtil.suppress_warning do
-      ERB.new("<% raise ::TestERB::MyError %>", 1)
-    end
-    e = assert_raise(MyError) {
-      erb.result
-    }
-    assert_match(/\A\(erb\):1\b/, e.backtrace[0])
-  end
-
-  # [deprecated] This will be removed later
-  def test_with_filename_and_safe_level
-    erb = EnvUtil.suppress_warning do
-      ERB.new("<% raise ::TestERB::MyError %>", 1)
-    end
-    erb.filename = "test filename"
-    e = assert_raise(MyError) {
-      erb.result
-    }
-    assert_match(/\Atest filename:1\b/, e.backtrace[0])
-  end
-
   def test_with_filename_lineno
     erb = ERB.new("<% raise ::TestERB::MyError %>")
     erb.filename = "test filename"
@@ -98,25 +75,16 @@ class TestERBCore < Test::Unit::TestCase
   end
 
   def test_core
-    # [deprecated] Fix initializer later
-    EnvUtil.suppress_warning do
-      _test_core(nil)
-      _test_core(0)
-      _test_core(1)
-    end
-  end
-
-  def _test_core(safe)
     erb = @erb.new("hello")
     assert_equal("hello", erb.result)
 
-    erb = @erb.new("hello", safe, 0)
+    erb = @erb.new("hello", trim_mode: 0)
     assert_equal("hello", erb.result)
 
-    erb = @erb.new("hello", safe, 1)
+    erb = @erb.new("hello", trim_mode: 1)
     assert_equal("hello", erb.result)
 
-    erb = @erb.new("hello", safe, 2)
+    erb = @erb.new("hello", trim_mode: 2)
     assert_equal("hello", erb.result)
 
     src = <<EOS
@@ -144,9 +112,9 @@ EOS
 EOS
     erb = @erb.new(src)
     assert_equal(ans, erb.result)
-    erb = @erb.new(src, safe, 0)
+    erb = @erb.new(src, trim_mode: 0)
     assert_equal(ans, erb.result)
-    erb = @erb.new(src, safe, '')
+    erb = EnvUtil.suppress_warning { @erb.new(src, trim_mode: '') }
     assert_equal(ans, erb.result)
 
     ans = <<EOS
@@ -157,9 +125,9 @@ EOS
 * 1% n=0
 * 2
 EOS
-    erb = @erb.new(src, safe, 1)
+    erb = @erb.new(src, trim_mode: 1)
     assert_equal(ans.chomp, erb.result)
-    erb = @erb.new(src, safe, '>')
+    erb = @erb.new(src, trim_mode: '>')
     assert_equal(ans.chomp, erb.result)
 
     ans  = <<EOS
@@ -173,9 +141,9 @@ EOS
 * 2
 EOS
 
-    erb = @erb.new(src, safe, 2)
+    erb = @erb.new(src, trim_mode: 2)
     assert_equal(ans, erb.result)
-    erb = @erb.new(src, safe, '<>')
+    erb = @erb.new(src, trim_mode: '<>')
     assert_equal(ans, erb.result)
 
     ans = <<EOS
@@ -189,7 +157,7 @@ EOS
 * 0
 
 EOS
-    erb = @erb.new(src, safe, '%')
+    erb = @erb.new(src, trim_mode: '%')
     assert_equal(ans, erb.result)
 
     ans = <<EOS
@@ -197,7 +165,7 @@ EOS
 = hello
 * 0* 0* 0
 EOS
-    erb = @erb.new(src, safe, '%>')
+    erb = @erb.new(src, trim_mode: '%>')
     assert_equal(ans.chomp, erb.result)
 
     ans = <<EOS
@@ -207,7 +175,7 @@ EOS
 * 0
 * 0
 EOS
-    erb = @erb.new(src, safe, '%<>')
+    erb = @erb.new(src, trim_mode: '%<>')
     assert_equal(ans, erb.result)
   end
 
@@ -658,27 +626,6 @@ EOS
   def test_half_working_comment_backward_compatibility
     assert_nothing_raised do
       @erb.new("<% # comment %>\n").result
-    end
-  end
-
-  # [deprecated] These interfaces will be removed later
-  def test_deprecated_interface_warnings
-    [nil, 0, 1, 2].each do |safe|
-      assert_warn(/2nd argument of ERB.new is deprecated/) do
-        ERB.new('', safe)
-      end
-    end
-
-    [nil, '', '%', '%<>'].each do |trim|
-      assert_warn(/3rd argument of ERB.new is deprecated/) do
-        ERB.new('', nil, trim)
-      end
-    end
-
-    [nil, '_erbout', '_hamlout'].each do |eoutvar|
-      assert_warn(/4th argument of ERB.new is deprecated/) do
-        ERB.new('', nil, nil, eoutvar)
-      end
     end
   end
 
