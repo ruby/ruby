@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "Module#const_added" do
-  ruby_version_is "3.1" do
+  ruby_version_is "3.2" do
     it "is a private instance method" do
       Module.should have_private_instance_method(:const_added)
     end
