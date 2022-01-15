@@ -5013,6 +5013,14 @@ gc_unprotect_pages(rb_objspace_t *objspace, rb_heap_t *heap)
 static void gc_update_references(rb_objspace_t * objspace);
 static void invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page);
 
+#if !defined(__wasi__)
+// read barrier for pages containing MOVED objects
+# define GC_ENABLE_READ_SIGNAL_BARRIER 1
+#else
+# define GC_ENABLE_READ_SIGNAL_BARRIER 0
+#endif
+
+#if GC_ENABLE_READ_SIGNAL_BARRIER
 static void
 read_barrier_handler(uintptr_t address)
 {
@@ -5121,6 +5129,8 @@ install_handlers(void)
 }
 #endif
 
+#endif // GC_ENABLE_READ_SIGNAL_BARRIER
+
 static void
 revert_stack_objects(VALUE stack_obj, void *ctx)
 {
@@ -5167,7 +5177,9 @@ gc_compact_finish(rb_objspace_t *objspace, rb_size_pool_t *pool, rb_heap_t *heap
         gc_unprotect_pages(objspace, heap);
     }
 
+#if GC_ENABLE_READ_SIGNAL_BARRIER
     uninstall_handlers();
+#endif
 
     /* The mutator is allowed to run during incremental sweeping. T_MOVED
      * objects can get pushed on the stack and when the compaction process
@@ -5889,7 +5901,9 @@ gc_compact_start(rb_objspace_t *objspace)
     memset(objspace->rcompactor.moved_count_table, 0, T_MASK * sizeof(size_t));
 
     /* Set up read barrier for pages containing MOVED objects */
+#if GC_ENABLE_READ_SIGNAL_BARRIER
     install_handlers();
+#endif
 }
 
 static void
