@@ -14,10 +14,10 @@ typedef struct ruby_cmdline_options {
     VALUE script_name;
     VALUE e_script;
     struct {
-	struct {
-	    VALUE name;
-	    int index;
-	} enc;
+        struct {
+            VALUE name;
+            int index;
+        } enc;
     } src, ext, intern;
     VALUE req_list;
     ruby_features_t features;
