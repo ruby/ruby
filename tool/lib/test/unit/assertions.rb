@@ -513,11 +513,9 @@ module Test
       end
       alias omit pend
 
-      # TODO: Removed this and enabled to raise NoMethodError with skip
-      alias skip pend
-      # def skip(msg = nil, bt = caller)
-      #   raise NoMethodError, "use omit or pend", caller
-      # end
+      def skip(msg = nil, bt = caller)
+        raise NoMethodError, "use omit or pend", caller
+      end
 
       ##
       # Was this testcase skipped? Meant for #teardown.
