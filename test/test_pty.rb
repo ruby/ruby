@@ -75,9 +75,9 @@ class TestPTY < Test::Unit::TestCase
     assert_equal(2, ret.length)
     assert_equal(IO, ret[0].class)
     assert_equal(File, ret[1].class)
-    _, slave = ret
-    assert(slave.tty?)
-    assert(File.chardev?(slave.path))
+    _, worker = ret
+    assert(worker.tty?)
+    assert(File.chardev?(worker.path))
   ensure
     if ret
       ret[0].close
@@ -94,9 +94,9 @@ class TestPTY < Test::Unit::TestCase
       assert_equal(2, ret.length)
       assert_equal(IO, ret[0].class)
       assert_equal(File, ret[1].class)
-      _, slave = ret
-      assert(slave.tty?)
-      assert(File.chardev?(slave.path))
+      _, worker = ret
+      assert(worker.tty?)
+      assert(File.chardev?(worker.path))
       x
     }
   rescue RuntimeError
@@ -108,37 +108,37 @@ class TestPTY < Test::Unit::TestCase
   end
 
   def test_close_in_block
-    PTY.open {|master, slave|
-      slave.close
-      master.close
-      assert(slave.closed?)
-      assert(master.closed?)
+    PTY.open {|controller, worker|
+      worker.close
+      controller.close
+      assert(worker.closed?)
+      assert(controller.closed?)
     }
   rescue RuntimeError
     omit $!
   else
     assert_nothing_raised {
-      PTY.open {|master, slave|
-        slave.close
-        master.close
+      PTY.open {|controller, worker|
+        worker.close
+        controller.close
       }
     }
   end
 
   def test_open
-    PTY.open {|master, slave|
-      slave.puts "foo"
-      assert_equal("foo", master.gets.chomp)
-      master.puts "bar"
-      assert_equal("bar", slave.gets.chomp)
+    PTY.open {|controller, worker|
+      worker.puts "foo"
+      assert_equal("foo", controller.gets.chomp)
+      controller.puts "bar"
+      assert_equal("bar", worker.gets.chomp)
     }
   rescue RuntimeError
     omit $!
   end
 
   def test_stat_slave
-    PTY.open {|master, slave|
-      s =  File.stat(slave.path)
+    PTY.open {|controller, worker|
+      s =  File.stat(worker.path)
       assert_equal(Process.uid, s.uid)
       assert_equal(0600, s.mode & 0777)
     }
@@ -147,22 +147,22 @@ class TestPTY < Test::Unit::TestCase
   end
 
   def test_close_master
-    PTY.open {|master, slave|
-      master.close
-      assert_raise(EOFError) { slave.readpartial(10) }
+    PTY.open {|controller, worker|
+      controller.close
+      assert_raise(EOFError) { worker.readpartial(10) }
     }
   rescue RuntimeError
     omit $!
   end
 
   def test_close_slave
-    PTY.open {|master, slave|
-      slave.close
+    PTY.open {|controller, worker|
+      worker.close
       # This exception is platform dependent.
       assert_raise(
         EOFError,       # FreeBSD
         Errno::EIO      # GNU/Linux
-      ) { master.readpartial(10) }
+      ) { controller.readpartial(10) }
     }
   rescue RuntimeError
     omit $!
@@ -219,9 +219,9 @@ class TestPTY < Test::Unit::TestCase
   end
 
   def test_cloexec
-    PTY.open {|m, s|
-      assert(m.close_on_exec?)
-      assert(s.close_on_exec?)
+    PTY.open {|controller, worker|
+      assert(controller.close_on_exec?)
+      assert(worker.close_on_exec?)
     }
     PTY.spawn(RUBY, '-e', '') {|r, w, pid|
       begin

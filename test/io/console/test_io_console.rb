@@ -55,45 +55,45 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   Bug6116 = '[ruby-dev:45309]'
 
   def test_raw
-    helper {|m, s|
-      s.print "abc\n"
-      assert_equal("abc\r\n", m.gets)
-      assert_send([s, :echo?])
-      s.raw {
-        assert_not_send([s, :echo?], Bug6116)
-        s.print "def\n"
-        assert_equal("def\n", m.gets)
+    helper {|controller, worker|
+      worker.print "abc\n"
+      assert_equal("abc\r\n", controller.gets)
+      assert_send([worker, :echo?])
+      worker.raw {
+        assert_not_send([worker, :echo?], Bug6116)
+        worker.print "def\n"
+        assert_equal("def\n", controller.gets)
       }
-      assert_send([s, :echo?])
-      s.print "ghi\n"
-      assert_equal("ghi\r\n", m.gets)
+      assert_send([worker, :echo?])
+      worker.print "ghi\n"
+      assert_equal("ghi\r\n", controller.gets)
     }
   end
 
   def test_raw_minchar
     q = Thread::Queue.new
-    helper {|m, s|
+    helper {|controller, worker|
       len = 0
-      assert_equal([nil, 0], [s.getch(min: 0), len])
+      assert_equal([nil, 0], [worker.getch(min: 0), len])
       main = Thread.current
       go = false
       th = Thread.start {
         q.pop
         sleep 0.01 until main.stop?
         len += 1
-        m.print("a")
-        m.flush
+        controller.print("a")
+        controller.flush
         sleep 0.01 until go and main.stop?
         len += 10
-        m.print("1234567890")
-        m.flush
+        controller.print("1234567890")
+        controller.flush
       }
       begin
         sleep 0.1
         q.push(1)
-        assert_equal(["a", 1], [s.getch(min: 1), len])
+        assert_equal(["a", 1], [worker.getch(min: 1), len])
         go = true
-        assert_equal(["1", 11], [s.getch, len])
+        assert_equal(["1", 11], [worker.getch, len])
       ensure
         th.join
       end
@@ -101,18 +101,18 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 
   def test_raw_timeout
-    helper {|m, s|
+    helper {|controller, worker|
       len = 0
-      assert_equal([nil, 0], [s.getch(min: 0, time: 0.1), len])
+      assert_equal([nil, 0], [worker.getch(min: 0, time: 0.1), len])
       main = Thread.current
       th = Thread.start {
         sleep 0.01 until main.stop?
         len += 2
-        m.print("ab")
+        controller.print("ab")
       }
       begin
-        assert_equal(["a", 2], [s.getch(min: 1, time: 1), len])
-        assert_equal(["b", 2], [s.getch(time: 1), len])
+        assert_equal(["a", 2], [worker.getch(min: 1, time: 1), len])
+        assert_equal(["b", 2], [worker.getch(time: 1), len])
       ensure
         th.join
       end
@@ -120,114 +120,114 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 
   def test_raw!
-    helper {|m, s|
-      s.raw!
-      s.print "foo\n"
-      assert_equal("foo\n", m.gets)
+    helper {|controller, worker|
+      worker.raw!
+      worker.print "foo\n"
+      assert_equal("foo\n", controller.gets)
     }
   end
 
   def test_cooked
-    helper {|m, s|
-      assert_send([s, :echo?])
-      s.raw {
-        s.print "abc\n"
-        assert_equal("abc\n", m.gets)
-        assert_not_send([s, :echo?], Bug6116)
-        s.cooked {
-          assert_send([s, :echo?])
-          s.print "def\n"
-          assert_equal("def\r\n", m.gets)
+    helper {|controller, worker|
+      assert_send([worker, :echo?])
+      worker.raw {
+        worker.print "abc\n"
+        assert_equal("abc\n", controller.gets)
+        assert_not_send([worker, :echo?], Bug6116)
+        worker.cooked {
+          assert_send([worker, :echo?])
+          worker.print "def\n"
+          assert_equal("def\r\n", controller.gets)
         }
-        assert_not_send([s, :echo?], Bug6116)
+        assert_not_send([worker, :echo?], Bug6116)
       }
-      assert_send([s, :echo?])
-      s.print "ghi\n"
-      assert_equal("ghi\r\n", m.gets)
+      assert_send([worker, :echo?])
+      worker.print "ghi\n"
+      assert_equal("ghi\r\n", controller.gets)
     }
   end
 
   def test_echo
-    helper {|m, s|
-      assert_send([s, :echo?])
-      m.print "a"
-      assert_equal("a", m.readpartial(10))
+    helper {|controller, worker|
+      assert_send([worker, :echo?])
+      controller.print "a"
+      assert_equal("a", controller.readpartial(10))
     }
   end
 
   def test_noecho
-    helper {|m, s|
-      s.noecho {
-	assert_not_send([s, :echo?])
-	m.print "a"
+    helper {|controller, worker|
+      worker.noecho {
+	assert_not_send([worker, :echo?])
+	controller.print "a"
 	sleep 0.1
       }
-      m.print "b"
-      assert_equal("b", m.readpartial(10))
+      controller.print "b"
+      assert_equal("b", controller.readpartial(10))
     }
   end
 
   def test_noecho2
-    helper {|m, s|
-      assert_send([s, :echo?])
-      m.print "a\n"
+    helper {|controller, worker|
+      assert_send([worker, :echo?])
+      controller.print "a\n"
       sleep 0.1
-      s.print "b\n"
+      worker.print "b\n"
       sleep 0.1
-      assert_equal("a\r\nb\r\n", m.gets + m.gets)
-      assert_equal("a\n", s.gets)
-      s.noecho {
-        assert_not_send([s, :echo?])
-        m.print "a\n"
-        s.print "b\n"
-        assert_equal("b\r\n", m.gets)
-        assert_equal("a\n", s.gets)
+      assert_equal("a\r\nb\r\n", controller.gets + controller.gets)
+      assert_equal("a\n", worker.gets)
+      worker.noecho {
+        assert_not_send([worker, :echo?])
+        controller.print "a\n"
+        worker.print "b\n"
+        assert_equal("b\r\n", controller.gets)
+        assert_equal("a\n", worker.gets)
       }
-      assert_send([s, :echo?])
-      m.print "a\n"
+      assert_send([worker, :echo?])
+      controller.print "a\n"
       sleep 0.1
-      s.print "b\n"
+      worker.print "b\n"
       sleep 0.1
-      assert_equal("a\r\nb\r\n", m.gets + m.gets)
-      assert_equal("a\n", s.gets)
+      assert_equal("a\r\nb\r\n", controller.gets + controller.gets)
+      assert_equal("a\n", worker.gets)
     }
   end
 
   def test_setecho
-    helper {|m, s|
-      assert_send([s, :echo?])
-      s.echo = false
-      m.print "a"
+    helper {|controller, worker|
+      assert_send([worker, :echo?])
+      worker.echo = false
+      controller.print "a"
       sleep 0.1
-      s.echo = true
-      m.print "b"
-      assert_equal("b", m.readpartial(10))
+      worker.echo = true
+      controller.print "b"
+      assert_equal("b", controller.readpartial(10))
     }
   end
 
   def test_setecho2
-    helper {|m, s|
-      assert_send([s, :echo?])
-      m.print "a\n"
+    helper {|controller, worker|
+      assert_send([worker, :echo?])
+      controller.print "a\n"
       sleep 0.1
-      s.print "b\n"
+      worker.print "b\n"
       sleep 0.1
-      assert_equal("a\r\nb\r\n", m.gets + m.gets)
-      assert_equal("a\n", s.gets)
-      s.echo = false
-      assert_not_send([s, :echo?])
-      m.print "a\n"
-      s.print "b\n"
-      assert_equal("b\r\n", m.gets)
-      assert_equal("a\n", s.gets)
-      s.echo = true
-      assert_send([s, :echo?])
-      m.print "a\n"
+      assert_equal("a\r\nb\r\n", controller.gets + controller.gets)
+      assert_equal("a\n", worker.gets)
+      worker.echo = false
+      assert_not_send([worker, :echo?])
+      controller.print "a\n"
+      worker.print "b\n"
+      assert_equal("b\r\n", controller.gets)
+      assert_equal("a\n", worker.gets)
+      worker.echo = true
+      assert_send([worker, :echo?])
+      controller.print "a\n"
       sleep 0.1
-      s.print "b\n"
+      worker.print "b\n"
       sleep 0.1
-      assert_equal("a\r\nb\r\n", m.gets + m.gets)
-      assert_equal("a\n", s.gets)
+      assert_equal("a\r\nb\r\n", controller.gets + controller.gets)
+      assert_equal("a\n", worker.gets)
     }
   end
 
@@ -253,59 +253,59 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 
   def test_iflush
-    helper {|m, s|
-      m.print "a"
-      s.iflush
-      m.print "b\n"
-      m.flush
-      assert_equal("b\n", s.gets)
+    helper {|controller, worker|
+      controller.print "a"
+      worker.iflush
+      controller.print "b\n"
+      controller.flush
+      assert_equal("b\n", worker.gets)
     }
   end
 
   def test_oflush
-    helper {|m, s|
-      s.print "a"
-      s.oflush # oflush may be issued after "a" is already sent.
-      s.print "b"
-      s.flush
+    helper {|controller, worker|
+      worker.print "a"
+      worker.oflush # oflush may be issued after "a" is already sent.
+      worker.print "b"
+      worker.flush
       sleep 0.1
-      assert_include(["b", "ab"], m.readpartial(10))
+      assert_include(["b", "ab"], controller.readpartial(10))
     }
   end
 
   def test_ioflush
-    helper {|m, s|
-      m.print "a"
-      s.ioflush
-      m.print "b\n"
-      m.flush
-      assert_equal("b\n", s.gets)
+    helper {|controller, worker|
+      controller.print "a"
+      worker.ioflush
+      controller.print "b\n"
+      controller.flush
+      assert_equal("b\n", worker.gets)
     }
   end
 
   def test_ioflush2
-    helper {|m, s|
-      s.print "a"
-      s.ioflush # ioflush may be issued after "a" is already sent.
-      s.print "b"
-      s.flush
+    helper {|controller, worker|
+      worker.print "a"
+      worker.ioflush # ioflush may be issued after "a" is already sent.
+      worker.print "b"
+      worker.flush
       sleep 0.1
-      assert_include(["b", "ab"], m.readpartial(10))
+      assert_include(["b", "ab"], controller.readpartial(10))
     }
   end
 
   def test_winsize
-    helper {|m, s|
+    helper {|controller, worker|
       begin
-        assert_equal([0, 0], s.winsize)
+        assert_equal([0, 0], worker.winsize)
       rescue Errno::EINVAL # OpenSolaris 2009.06 TIOCGWINSZ causes Errno::EINVAL before TIOCSWINSZ.
       else
-        assert_equal([80, 25], s.winsize = [80, 25])
-        assert_equal([80, 25], s.winsize)
-        #assert_equal([80, 25], m.winsize)
-        assert_equal([100, 40], m.winsize = [100, 40])
-        #assert_equal([100, 40], s.winsize)
-        assert_equal([100, 40], m.winsize)
+        assert_equal([80, 25], worker.winsize = [80, 25])
+        assert_equal([80, 25], worker.winsize)
+        #assert_equal([80, 25], controller.winsize)
+        assert_equal([100, 40], controller.winsize = [100, 40])
+        #assert_equal([100, 40], worker.winsize)
+        assert_equal([100, 40], controller.winsize)
       end
     }
   end
@@ -418,14 +418,14 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
 
   private
   def helper
-    m, s = PTY.open
+    controller, worker = PTY.open
   rescue RuntimeError
     omit $!
   else
-    yield m, s
+    yield controller, worker
   ensure
-    m.close if m
-    s.close if s
+    controller.close if controller
+    worker.close if worker
   end
 
   def run_pty(src, n = 1)
