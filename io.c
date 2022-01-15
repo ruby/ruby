@@ -7996,19 +7996,31 @@ rb_freopen(VALUE fname, const char *mode, FILE *fp)
 
 /*
  *  call-seq:
- *     ios.reopen(other_IO)             -> ios
- *     ios.reopen(path, mode [, opt])   -> ios
+ *    reopen(other_io)                 -> self
+ *    reopen(path, mode = 'r', **opts) -> self
  *
- *  Reassociates <em>ios</em> with the I/O stream given in
- *  <i>other_IO</i> or to a new stream opened on <i>path</i>. This may
- *  dynamically change the actual class of this stream.
- *  The +mode+ and +opt+ parameters accept the same values as IO.open.
+ *  Reassociates the stream with another stream,
+ *  which may be of a different class.
  *
- *     f1 = File.new("testfile")
- *     f2 = File.new("testfile")
- *     f2.readlines[0]   #=> "This is line one\n"
- *     f2.reopen(f1)     #=> #<File:testfile>
- *     f2.readlines[0]   #=> "This is line one\n"
+ *  With argument +other_io+ given, reassociates with that stream:
+ *
+ *    f = File.new('t.txt') # => #<File:t.txt>
+ *    f.reopen($stdout)     # => #<IO:<STDOUT>>
+ *    f.puts('foo')
+ *
+ *  Output:
+ *
+ *    foo
+ *
+ *  With argument +path+ given, opens a new stream to that file path
+ *  (see IO.open):
+ *
+ *    f = File.open('t.txt') # => #<File:t.txt>
+ *    f.reopen('t.tmp', 'w') # => #<File:t.tmp>
+ *    f.write('foo')         # => 3
+ *    f.close                # => nil
+ *    File.new('t.tmp').read # => "foo"
+ *
  */
 
 static VALUE
@@ -8144,10 +8156,10 @@ rb_io_init_copy(VALUE dest, VALUE io)
 
 /*
  *  call-seq:
- *     ios.printf(format_string [, obj, ...])   -> nil
+ *    printf(format_string, *objects) -> nil
  *
- *  Formats and writes to <em>ios</em>, converting parameters under
- *  control of the format string. See Kernel#sprintf for details.
+ *  Formats and writes +objects+ to the stream.
+ *  See Kernel#sprintf for formatting details.
  */
 
 VALUE
@@ -8159,13 +8171,12 @@ rb_io_printf(int argc, const VALUE *argv, VALUE out)
 
 /*
  *  call-seq:
- *     printf(io, string [, obj ... ])    -> nil
- *     printf(string [, obj ... ])        -> nil
+ *    printf(string, *objects)     -> nil
  *
  *  Equivalent to:
- *     io.write(sprintf(string, obj, ...))
- *  or
- *     $stdout.write(sprintf(string, obj, ...))
+ *
+ *    io.write(sprintf(string, objects))
+ *
  */
 
 static VALUE
@@ -8199,26 +8210,57 @@ deprecated_str_setter(VALUE val, ID id, VALUE *var)
 
 /*
  *  call-seq:
- *     ios.print               -> nil
- *     ios.print(obj, ...)     -> nil
+ *    print(*objects) -> nil
+ *    print           -> nil
  *
- *  Writes the given object(s) to <em>ios</em>. Returns +nil+.
+ *  Writes to the stream; returns +nil+.
+ *  Appends the output record separator <tt>$OUTPUT_RECORD_SEPARATOR</tt>
+ *  <tt>$\\</tt>) is not +nil+.
  *
- *  The stream must be opened for writing.
- *  Each given object that isn't a string will be converted by calling
- *  its <code>to_s</code> method.
- *  When called without arguments, prints the contents of <code>$_</code>.
+ *  With argument +objects+ given, for each object:
  *
- *  If the output field separator (<code>$,</code>) is not +nil+,
- *  it is inserted between objects.
- *  If the output record separator (<code>$\\</code>) is not +nil+,
- *  it is appended to the output.
+ *  - Converts via its method +to_s+ if not a string.
+ *  - Writes to the stream.
+ *  - If not the last object, writes the output field separator
+ *    <tt>$OUTPUT_FIELD_SEPARATOR</tt> (<tt>$,</tt> if it is not +nil+.
  *
- *     $stdout.print("This is ", 100, " percent.\n")
+ *  With default separators:
  *
- *  <em>produces:</em>
+ *    f = File.open('t.tmp', 'w+')
+ *    objects = [0, 0.0, Rational(0, 1), Complex(0, 0), :zero, 'zero']
+ *    p $\
+ *    p $,
+ *    f.print(*objects)
+ *    f.rewind
+ *    p f.read
  *
- *     This is 100 percent.
+ *  Output:
+ *
+ *    nil
+ *    nil
+ *    "00.00/10+0izerozero"
+ *
+ *  With specified separators:
+ *
+ *    $\ = "\n"
+ *    $, = ','
+ *    f.rewind
+ *    f.print(*objects)
+ *    f.rewind
+ *    p f.read
+ *
+ *  Output:
+ *
+ *    "0,0.0,0/1,0+0i,zero,zero\n"
+ *
+ *  With no argument given, writes the content of <tt>$_</tt>:
+ *
+ *    f = File.open('t.tmp', 'w+')
+ *    $_ = 'foo'
+ *    f.print
+ *    f.rewind
+ *    f.read # => "foo"
+ *
  */
 
 VALUE
@@ -8251,25 +8293,10 @@ rb_io_print(int argc, const VALUE *argv, VALUE out)
 
 /*
  *  call-seq:
- *     print(obj, ...)    -> nil
+ *    print(*objects)    -> nil
  *
- *  Prints each object in turn to <code>$stdout</code>. If the output
- *  field separator (<code>$,</code>) is not +nil+, its
- *  contents will appear between each field. If the output record
- *  separator (<code>$\\</code>) is not +nil+, it will be
- *  appended to the output. If no arguments are given, prints
- *  <code>$_</code>. Objects that aren't strings will be converted by
- *  calling their <code>to_s</code> method.
- *
- *     print "cat", [1,2,3], 99, "\n"
- *     $, = ", "
- *     $\ = "\n"
- *     print "cat", [1,2,3], 99
- *
- *  <em>produces:</em>
- *
- *     cat12399
- *     cat, 1, 2, 3, 99
+ *  Equivalent to <tt>$stdout.print(objects)</tt>.
+ *  See IO#print.
  */
 
 static VALUE
@@ -8281,19 +8308,21 @@ rb_f_print(int argc, const VALUE *argv, VALUE _)
 
 /*
  *  call-seq:
- *     ios.putc(obj)    -> obj
+ *    putc(object) -> object
  *
- *  If <i>obj</i> is Numeric, write the character whose code is the
- *  least-significant byte of <i>obj</i>.  If <i>obj</i> is String,
- *  write the first character of <i>obj</i> to <em>ios</em>.  Otherwise,
- *  raise TypeError.
+ *  Writes a character to the stream.
  *
- *     $stdout.putc "A"
- *     $stdout.putc 65
+ *  If +object+ is numeric, writes the character whose code is the
+ *  least significant byte;
+ *  if +object+ is a string, writes the first character:
  *
- *  <em>produces:</em>
+ *    $stdout.putc "A"
+ *    $stdout.putc 65
+ *
+ *  Output:
  *
  *     AA
+ *
  */
 
 static VALUE
@@ -8828,155 +8857,28 @@ rb_io_make_open_file(VALUE obj)
 
 /*
  *  call-seq:
- *     IO.new(fd [, mode] [, opt])   -> io
+ *    IO.new(fd, mode = 'r', **opts) -> io
  *
- *  Returns a new IO object (a stream) for the given integer file descriptor
- *  +fd+ and +mode+ string.  +opt+ may be used to specify parts of +mode+ in a
- *  more readable fashion.  See also IO.sysopen and IO.for_fd.
+ *  Returns a new \IO object (a stream) for the given arguments.
  *
- *  IO.new is called by various File and IO opening methods such as IO::open,
- *  Kernel#open, and File::open.
+ *  Argument +fd+ must be a valid file descriptor (integer):
  *
- *  === Open Mode
+ *    path = 't.tmp'
+ *    fd = IO.sysopen(path) # => 3
+ *    IO.new(fd)            # => #<IO:fd 3>
  *
- *  When +mode+ is an integer it must be combination of the modes defined in
- *  File::Constants (+File::RDONLY+, <code>File::WRONLY|File::CREAT</code>).
- *  See the open(2) man page for more information.
+ *  Optional argument +mode+ (defaults to 'r') must specify a valid mode
+ *  see {\IO Modes}[#class-IO-label-Modes]:
  *
- *  When +mode+ is a string it must be in one of the following forms:
+ *    IO.new(fd, 'w')         # => #<IO:fd 3>
+ *    IO.new(fd, File::WRONLY) # => #<IO:fd 3>
  *
- *    fmode
- *    fmode ":" ext_enc
- *    fmode ":" ext_enc ":" int_enc
- *    fmode ":" "BOM|UTF-*"
+ *  Optional argument +opts+ must specify valid open options
+ *  see {IO Open Options}[#class-IO-label-Open+Options]:
  *
- *  +fmode+ is an IO open mode string, +ext_enc+ is the external encoding for
- *  the IO and +int_enc+ is the internal encoding.
+ *    IO.new(fd, internal_encoding: nil) # => #<IO:fd 3>
+ *    IO.new(fd, autoclose: true)        # => #<IO:fd 3>
  *
- *  ==== IO Open Mode
- *
- *  Ruby allows the following open modes:
- *
- *  	"r"  Read-only, starts at beginning of file  (default mode).
- *
- *  	"r+" Read-write, starts at beginning of file.
- *
- *  	"w"  Write-only, truncates existing file
- *  	     to zero length or creates a new file for writing.
- *
- *  	"w+" Read-write, truncates existing file to zero length
- *  	     or creates a new file for reading and writing.
- *
- *  	"a"  Write-only, each write call appends data at end of file.
- *  	     Creates a new file for writing if file does not exist.
- *
- *  	"a+" Read-write, each write call appends data at end of file.
- *	     Creates a new file for reading and writing if file does
- *	     not exist.
- *
- *  The following modes must be used separately, and along with one or more of
- *  the modes seen above.
- *
- *  	"b"  Binary file mode
- *  	     Suppresses EOL <-> CRLF conversion on Windows. And
- *  	     sets external encoding to ASCII-8BIT unless explicitly
- *  	     specified.
- *
- *  	"t"  Text file mode
- *
- *  The exclusive access mode ("x") can be used together with "w" to ensure
- *  the file is created. Errno::EEXIST is raised when it already exists.
- *  It may not be supported with all kinds of streams (e.g. pipes).
- *
- *  When the open mode of original IO is read only, the mode cannot be
- *  changed to be writable.  Similarly, the open mode cannot be changed from
- *  write only to readable.
- *
- *  When such a change is attempted the error is raised in different locations
- *  according to the platform.
- *
- *  === IO Encoding
- *
- *  When +ext_enc+ is specified, strings read will be tagged by the encoding
- *  when reading, and strings output will be converted to the specified
- *  encoding when writing.
- *
- *  When +ext_enc+ and +int_enc+ are specified read strings will be converted
- *  from +ext_enc+ to +int_enc+ upon input, and written strings will be
- *  converted from +int_enc+ to +ext_enc+ upon output.  See Encoding for
- *  further details of transcoding on input and output.
- *
- *  If "BOM|UTF-8", "BOM|UTF-16LE" or "BOM|UTF16-BE" are used, Ruby checks for
- *  a Unicode BOM in the input document to help determine the encoding.  For
- *  UTF-16 encodings the file open mode must be binary.  When present, the BOM
- *  is stripped and the external encoding from the BOM is used.  When the BOM
- *  is missing the given Unicode encoding is used as +ext_enc+.  (The BOM-set
- *  encoding option is case insensitive, so "bom|utf-8" is also valid.)
- *
- *  === Options
- *
- *  +opt+ can be used instead of +mode+ for improved readability.  The
- *  following keys are supported:
- *
- *  :mode ::
- *    Same as +mode+ parameter
- *
- *  :flags ::
- *    Specifies file open flags as integer.
- *    If +mode+ parameter is given, this parameter will be bitwise-ORed.
- *
- *  :\external_encoding ::
- *    External encoding for the IO.
- *
- *  :\internal_encoding ::
- *    Internal encoding for the IO.  "-" is a synonym for the default internal
- *    encoding.
- *
- *    If the value is +nil+ no conversion occurs.
- *
- *  :encoding ::
- *    Specifies external and internal encodings as "extern:intern".
- *
- *  :textmode ::
- *    If the value is truth value, same as "t" in argument +mode+.
- *
- *  :binmode ::
- *    If the value is truth value, same as "b" in argument +mode+.
- *
- *  :autoclose ::
- *    If the value is +false+, the +fd+ will be kept open after this IO
- *    instance gets finalized.
- *
- *  Also, +opt+ can have same keys in String#encode for controlling conversion
- *  between the external encoding and the internal encoding.
- *
- *  === Example 1
- *
- *    fd = IO.sysopen("/dev/tty", "w")
- *    a = IO.new(fd,"w")
- *    $stderr.puts "Hello"
- *    a.puts "World"
- *
- *  Produces:
- *
- *    Hello
- *    World
- *
- *  === Example 2
- *
- *    require 'fcntl'
- *
- *    fd = STDERR.fcntl(Fcntl::F_DUPFD)
- *    io = IO.new(fd, mode: 'w:UTF-16LE', cr_newline: true)
- *    io.puts "Hello, World!"
- *
- *    fd = STDERR.fcntl(Fcntl::F_DUPFD)
- *    io = IO.new(fd, mode: 'w', cr_newline: true,
- *                external_encoding: Encoding::UTF_16LE)
- *    io.puts "Hello, World!"
- *
- *  Both of above print "Hello, World!" in UTF-16LE to standard error output
- *  with converting EOL generated by #puts to CR.
  */
 
 static VALUE
@@ -9041,20 +8943,23 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     ios.set_encoding_by_bom   -> encoding or nil
+ *    set_encoding_by_bom -> encoding or nil
  *
- *  Checks if +ios+ starts with a BOM, and then consumes it and sets
- *  the external encoding.  Returns the result encoding if found, or
- *  nil.  If +ios+ is not binmode or its encoding has been set
- *  already, an exception will be raised.
+ *  If the stream begins with a BOM, consumes the BOM
+ *  and sets the external encoding accordingly;
+ *  returns the result encoding if found, or +nil+ otherwise:
  *
- *    File.write("bom.txt", "\u{FEFF}abc")
- *    ios = File.open("bom.txt", "rb")
- *    ios.set_encoding_by_bom    #=>  #<Encoding:UTF-8>
+ *   File.write('t.tmp', "\u{FEFF}abc")
+ *   io = File.open('t.tmp', 'rb')
+ *   io.set_encoding_by_bom # => #<Encoding:UTF-8>
  *
- *    File.write("nobom.txt", "abc")
- *    ios = File.open("nobom.txt", "rb")
- *    ios.set_encoding_by_bom    #=>  nil
+ *   File.write('t.tmp', 'abc')
+ *   io = File.open('t.tmp', 'rb')
+ *   io.set_encoding_by_bom # => nil
+ *
+ *  Raises an exception if the stream is not binmode
+ *  or its encoding has already been set.
+ *
  */
 
 static VALUE
@@ -9148,7 +9053,7 @@ rb_io_s_new(int argc, VALUE *argv, VALUE klass)
 
 /*
  *  call-seq:
- *     IO.for_fd(fd, mode [, opt])    -> io
+ *    IO.for_fd(fd, mode = 'r', **opts) -> io
  *
  *  Synonym for IO.new.
  *
