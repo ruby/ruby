@@ -271,6 +271,14 @@ ensure
   end
 end
 
+def target_platform
+  if @ruby
+    `#{@ruby} --disable-gems -e 'print RUBY_PLATFORM'`
+  else
+    RUBY_PLATFORM
+  end
+end
+
 def show_limit(testsrc, opt = '', **argh)
   result = get_result_string(testsrc, opt, **argh)
   if @tty and @verbose
