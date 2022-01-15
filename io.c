@@ -11161,7 +11161,7 @@ io_s_foreach(VALUE v)
  *
  *  If +name+ starts with a pipe character (<code>"|"</code>) and the receiver
  *  is the IO class, a subprocess is created in the same way as Kernel#open,
- *  and its output is returned.
+ *  and each line in its output is yielded.
  *  Consider to use File.foreach to disable the behavior of subprocess invocation.
  *
  *     File.foreach("testfile") {|x| print "GOT ", x }
@@ -11220,7 +11220,7 @@ io_s_readlines(VALUE v)
  *
  *  If +name+ starts with a pipe character (<code>"|"</code>) and the receiver
  *  is the IO class, a subprocess is created in the same way as Kernel#open,
- *  and its output is returned.
+ *  and each line in its output is yielded.
  *  Consider to use File.readlines to disable the behavior of subprocess invocation.
  *
  *     a = File.readlines("testfile")
@@ -11481,7 +11481,7 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *
  *  If +name+ starts with a pipe character (<code>"|"</code>) and the receiver
  *  is the IO class, a subprocess is created in the same way as Kernel#open,
- *  and its output is returned.
+ *  and its output is printed to the standard output.
  *  Consider to use File.write to disable the behavior of subprocess invocation.
  *
  *    File.write("testfile", "0123456789", 20)  #=> 10
@@ -11539,7 +11539,7 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
  *
  *  If +name+ starts with a pipe character (<code>"|"</code>) and the receiver
  *  is the IO class, a subprocess is created in the same way as Kernel#open,
- *  and its output is returned.
+ *  and its output is printed to the standard output.
  *  Consider to use File.binwrite to disable the behavior of subprocess invocation.
  *
  *  See also IO.read for details about +name+ and open_args.
