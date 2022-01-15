@@ -8,6 +8,7 @@ wasmoptflags = @wasmoptflags@
 
 WASM_OBJS  = $(wasmdir)/machine_core.o $(wasmdir)/machine.o $(wasmdir)/setjmp.o $(wasmdir)/setjmp_core.o $(wasmdir)/fiber.o $(wasmdir)/runtime.o
 
+wasm/missing.$(OBJEXT): $(wasmdir)/missing.c $(PLATFORM_D)
 wasm/fiber.$(OBJEXT): $(wasmdir)/fiber.c $(wasmdir)/fiber.h $(wasmdir)/asyncify.h $(PLATFORM_D)
 wasm/machine.$(OBJEXT): $(wasmdir)/machine.c $(srcdir)/wasm/machine.h $(wasmdir)/asyncify.h $(PLATFORM_D)
 wasm/setjmp.$(OBJEXT): $(wasmdir)/setjmp.c $(wasmdir)/setjmp.h $(wasmdir)/machine.h $(wasmdir)/asyncify.h $(PLATFORM_D)
