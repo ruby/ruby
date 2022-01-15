@@ -106,6 +106,10 @@ The following deprecated methods are removed.
 
 ## Stdlib compatibility issues
 
+* ERB
+    * `ERB.new` no longer takes more than one positional arguments
+      [[Feature #14256]]
+
 ## C API updates
 
 ### Removed C APIs
@@ -138,6 +142,7 @@ The following deprecated APIs are removed.
 ## Miscellaneous changes
 
 [Feature #12737]: https://bugs.ruby-lang.org/issues/12737
+[Feature #14256]: https://bugs.ruby-lang.org/issues/14256
 [Feature #14332]: https://bugs.ruby-lang.org/issues/14332
 [Feature #15231]: https://bugs.ruby-lang.org/issues/15231
 [Bug #15928]:     https://bugs.ruby-lang.org/issues/15928
