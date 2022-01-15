@@ -724,7 +724,7 @@ class ERB
       frozen = nil
       s.scan(re) do
         comment = $+
-        comment = $1 if comment[/-\*-\s*(.*?)\s*-*-$/]
+        comment = $1 if comment[/-\*-\s*([^\s].*?)\s*-*-$/]
         case comment
         when %r"coding\s*[=:]\s*([[:alnum:]\-_]+)"
           enc = Encoding.find($1.sub(/-(?:mac|dos|unix)/i, ''))
