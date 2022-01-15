@@ -340,7 +340,7 @@ rb_thread_s_debug_set(VALUE self, VALUE val)
 # define PRI_THREAD_ID "p"
 #endif
 
-NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *stack_start));
+MAYBE_UNUSED(NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *stack_start)));
 void ruby_sigchld_handler(rb_vm_t *); /* signal.c */
 
 static void

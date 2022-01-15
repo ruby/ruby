@@ -8,6 +8,9 @@ AC_ARG_WITH(thread,
         [mingw*], [
             THREAD_MODEL=win32
         ],
+        [wasi*], [
+            THREAD_MODEL=none
+        ],
         [
             AS_IF([test "$rb_with_pthread" = "yes"], [
                 THREAD_MODEL=pthread
@@ -19,6 +22,7 @@ AC_ARG_WITH(thread,
 AS_CASE(["$THREAD_MODEL"],
 [pthread], [AC_CHECK_HEADERS(pthread.h)],
 [win32],   [],
+[none],    [],
 [""],      [AC_MSG_ERROR(thread model is missing)],
            [AC_MSG_ERROR(unknown thread model $THREAD_MODEL)])
 
