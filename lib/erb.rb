@@ -808,20 +808,7 @@ class ERB
   #  Chicken Fried Steak -- 9.95
   #  A well messages pattie, breaded and fried.
   #
-  def initialize(str, safe_level=NOT_GIVEN, legacy_trim_mode=NOT_GIVEN, legacy_eoutvar=NOT_GIVEN, trim_mode: nil, eoutvar: '_erbout')
-    # Complex initializer for $SAFE deprecation at [Feature #14256]. Use keyword arguments to pass trim_mode or eoutvar.
-    if safe_level != NOT_GIVEN
-      warn 'Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.', uplevel: 1
-    end
-    if legacy_trim_mode != NOT_GIVEN
-      warn 'Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.', uplevel: 1
-      trim_mode = legacy_trim_mode
-    end
-    if legacy_eoutvar != NOT_GIVEN
-      warn 'Passing eoutvar with the 4th argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, eoutvar: ...) instead.', uplevel: 1
-      eoutvar = legacy_eoutvar
-    end
-
+  def initialize(str, trim_mode: nil, eoutvar: '_erbout')
     compiler = make_compiler(trim_mode)
     set_eoutvar(compiler, eoutvar)
     @src, @encoding, @frozen_string = *compiler.compile(str)
