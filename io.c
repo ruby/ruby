@@ -133,6 +133,7 @@
 #include "internal/variable.h"
 #include "ruby/io.h"
 #include "ruby/io/buffer.h"
+#include "ruby/missing.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby_atomic.h"
