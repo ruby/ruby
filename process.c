@@ -6723,12 +6723,7 @@ p_sys_setresgid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 static VALUE
 p_sys_issetugid(VALUE obj)
 {
-    if (issetugid()) {
-	return Qtrue;
-    }
-    else {
-	return Qfalse;
-    }
+    return RBOOL(issetugid());
 }
 #else
 #define p_sys_issetugid rb_f_notimplement
