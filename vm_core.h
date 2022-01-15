@@ -62,7 +62,11 @@
 #define VM_UNREACHABLE(func) UNREACHABLE
 #endif
 
-#include <setjmp.h>
+#if defined(__wasm__) && !defined(__EMSCRIPTEN__)
+# include "wasm/setjmp.h"
+#else
+# include <setjmp.h>
+#endif
 
 #include "ruby/internal/stdbool.h"
 #include "ccan/list/list.h"

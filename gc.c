@@ -28,7 +28,11 @@
 #include <sys/mman.h>
 #endif
 
-#include <setjmp.h>
+#if defined(__wasm__) && !defined(__EMSCRIPTEN__)
+# include "wasm/setjmp.h"
+#else
+# include <setjmp.h>
+#endif
 #include <stdarg.h>
 #include <stdio.h>
 
