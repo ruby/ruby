@@ -1,0 +1,9 @@
+#!/bin/sh
+# A Clang wrapper script to fake the clang linker driver.
+# Clang linker automatically uses wasm-opt with -O if it found.
+# However optimization before asyncify causes misoptimization,
+# so wrap clang to insert our fake wasm-opt, which does nothing, in PATH.
+
+src_dir="$(cd "$(dirname "$0")/../wasm" && pwd)"
+export PATH="$src_dir:$PATH"
+exec "$@"
