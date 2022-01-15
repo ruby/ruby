@@ -2624,6 +2624,9 @@ AS_CASE([$coroutine_type], [yes|''], [
         [*-emscripten*], [
             coroutine_type=emscripten
         ],
+        [*-wasi*], [
+            coroutine_type=asyncify
+        ],
         [
             AC_CHECK_FUNCS([getcontext swapcontext makecontext],
                 [coroutine_type=ucontext],
