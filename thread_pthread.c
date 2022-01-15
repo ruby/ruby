@@ -47,6 +47,13 @@
 #  define USE_EVENTFD (0)
 #endif
 
+#define DEBUG_OUT() \
+  pthread_mutex_lock(&debug_mutex); \
+  printf(POSITION_FORMAT"%"PRI_THREAD_ID" - %s" POSITION_ARGS, \
+	 fill_thread_id_string(pthread_self(), thread_id_string), buf);	\
+  fflush(stdout); \
+  pthread_mutex_unlock(&debug_mutex);
+
 #if defined(SIGVTALRM) && !defined(__CYGWIN__) && !defined(__EMSCRIPTEN__)
 #  define USE_UBF_LIST 1
 #endif
