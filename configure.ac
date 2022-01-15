@@ -4270,8 +4270,7 @@ AS_MESSAGE([$PACKAGE library version = $ruby_version])
 AS_IF([test x"$CC_WRAPPER" != x], [
     CC='$(CC_WRAPPER) '"${CC@%:@$CC_WRAPPER }"
     CPP='$(CC_WRAPPER) '"${CPP@%:@$CC_WRAPPER }"
-    CC_WRAPPER='$(rubyarchdir)/darwin-cc'
-    XCC_WRAPPER='$(top_srcdir)/tool/darwin-cc'
+    XCC_WRAPPER="$CC_WRAPPER"
 ])
 AC_SUBST(CC_WRAPPER, '')
 AC_SUBST(XCC_WRAPPER)
