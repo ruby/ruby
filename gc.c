@@ -30,6 +30,7 @@
 
 #if defined(__wasm__) && !defined(__EMSCRIPTEN__)
 # include "wasm/setjmp.h"
+# include "wasm/machine.h"
 #else
 # include <setjmp.h>
 #endif
@@ -6504,7 +6505,45 @@ mark_const_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
 static void each_stack_location(rb_objspace_t *objspace, const rb_execution_context_t *ec,
                                  const VALUE *stack_start, const VALUE *stack_end, void (*cb)(rb_objspace_t *, VALUE));
 
-#ifndef __EMSCRIPTEN__
+#if defined(__wasm__)
+
+
+static VALUE *rb_stack_range_tmp[2];
+
+static void
+rb_mark_locations(void *begin, void *end)
+{
+    rb_stack_range_tmp[0] = begin;
+    rb_stack_range_tmp[1] = end;
+}
+
+# if defined(__EMSCRIPTEN__)
+
+static void
+mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec)
+{
+    emscripten_scan_stack(rb_mark_locations);
+    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe);
+
+    emscripten_scan_registers(rb_mark_locations);
+    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe);
+}
+# else // use Asyncify version
+
+static void
+mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec)
+{
+    rb_wasm_scan_stack(rb_mark_locations);
+    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe);
+
+    rb_wasm_scan_locals(rb_mark_locations);
+    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe);
+}
+
+# endif
+
+#else // !defined(__wasm__)
+
 static void
 mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec)
 {
@@ -6528,26 +6567,6 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec
     each_location(objspace, save_regs_gc_mark.v, numberof(save_regs_gc_mark.v), gc_mark_maybe);
 
     each_stack_location(objspace, ec, stack_start, stack_end, gc_mark_maybe);
-}
-#else
-
-static VALUE *rb_emscripten_stack_range_tmp[2];
-
-static void
-rb_emscripten_mark_locations(void *begin, void *end)
-{
-    rb_emscripten_stack_range_tmp[0] = begin;
-    rb_emscripten_stack_range_tmp[1] = end;
-}
-
-static void
-mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec)
-{
-    emscripten_scan_stack(rb_emscripten_mark_locations);
-    each_stack_location(objspace, ec, rb_emscripten_stack_range_tmp[0], rb_emscripten_stack_range_tmp[1], gc_mark_maybe);
-
-    emscripten_scan_registers(rb_emscripten_mark_locations);
-    each_stack_location(objspace, ec, rb_emscripten_stack_range_tmp[0], rb_emscripten_stack_range_tmp[1], gc_mark_maybe);
 }
 #endif
 
