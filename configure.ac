@@ -42,6 +42,7 @@ m4_include([tool/m4/ruby_try_cflags.m4])dnl
 m4_include([tool/m4/ruby_try_cxxflags.m4])dnl
 m4_include([tool/m4/ruby_try_ldflags.m4])dnl
 m4_include([tool/m4/ruby_universal_arch.m4])dnl
+m4_include([tool/m4/ruby_wasm_tools.m4])dnl
 m4_include([tool/m4/ruby_werror_flag.m4])dnl
 
 AC_ARG_VAR([cflags], [additional CFLAGS (ignored when CFLAGS is given)])dnl
@@ -136,6 +137,9 @@ AS_IF([test ! -z "$ac_cv_prog_CC" -a ! -z "$CC" -a "$CC" != "$ac_cv_prog_CC"], [
   AC_MSG_ERROR(cached CC is different -- throw away $cache_file
 (it is also a good idea to do 'make clean' before compiling))
 ])
+
+RUBY_WASM_TOOLS
+
 AS_CASE(["${build_os}"],
 [linux*|cygwin*|msys*], [
     # Naruse prefers GCC on Linux
@@ -401,6 +405,15 @@ AS_CASE(["$build_os"],
 	CC="$CC_WRAPPER $CC"
     ])
     rm -fr conftest*
+  ])
+AS_CASE(["$target_os"],
+  [wasi*], [
+    # Clang linker automatically uses wasm-opt with -O if it found.
+    # https://github.com/llvm/llvm-project/blob/812828984c10857a4cd260eb638c52a4411f9143/clang/lib/Driver/ToolChains/WebAssembly.cpp#L95-L118
+    # However optimization before asyncify causes misoptimization,
+    # so wrap clang to insert our fake wasm-opt, which does nothing, in PATH.
+    CC_WRAPPER=`cd -P "${tooldir}" && pwd`/wasm-clangw
+    CC="$CC_WRAPPER $CC"
   ])
 
 cc_version=
@@ -1218,6 +1231,7 @@ main()
 [wasi*],[	LIBS="-lm -lwasi-emulated-mman -lwasi-emulated-signal -lwasi-emulated-getpid -lwasi-emulated-process-clocks $LIBS"
 		RUBY_APPEND_OPTIONS(CFLAGS, -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_GETPID -D_WASI_EMULATED_PROCESS_CLOCKS)
 		RUBY_APPEND_OPTIONS(CPPFLAGS, -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_GETPID -D_WASI_EMULATED_PROCESS_CLOCKS)
+		POSTLINK="\$(WASMOPT) --asyncify \$(wasmoptflags) --pass-arg=asyncify-ignore-imports -o \$@ \$@${POSTLINK:+; $POSTLINK}"
 		]
 [	LIBS="-lm $LIBS"])
 : ${ORIG_LIBS=$LIBS}
@@ -3790,6 +3804,16 @@ AS_CASE(["$target_os"],
 	    LIBRUBY='lib$(RUBY_SO_NAME).a'
 	    LIBRUBYARG='-l$(RUBY_SO_NAME)'
 	])
+	],
+    [wasi*], [
+        FIRSTMAKEFILE=GNUmakefile:wasm/GNUmakefile.in
+        AC_LIBOBJ([wasm/runtime])
+        AC_LIBOBJ([wasm/fiber])
+        AC_LIBOBJ([wasm/machine])
+        AC_LIBOBJ([wasm/setjmp])
+        AC_LIBOBJ([wasm/machine_core])
+        AC_LIBOBJ([wasm/setjmp_core])
+        PLATFORM_DIR=wasm
 ])
 
 MINIOBJS="$MINIDLNOBJ"
