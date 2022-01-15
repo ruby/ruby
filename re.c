@@ -3297,10 +3297,7 @@ rb_reg_eqq(VALUE re, VALUE str)
 	return Qfalse;
     }
     start = rb_reg_search(re, str, 0, 0);
-    if (start < 0) {
-	return Qfalse;
-    }
-    return Qtrue;
+    return RBOOL(start >= 0);
 }
 
 
