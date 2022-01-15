@@ -8379,7 +8379,6 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
 /*
  *  call-seq:
  *    puts(*objects) -> nil
- *    puts           -> nil
  *
  *  Writes the given +objects+ to the stream, which must be open for writing;
  *  returns +nil+.\
