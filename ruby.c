@@ -2323,14 +2323,15 @@ open_load_file(VALUE fname_v, int *xflag)
 	int fd;
 	/* open(2) may block if fname is point to FIFO and it's empty. Let's
 	   use O_NONBLOCK. */
-#if defined O_NONBLOCK && HAVE_FCNTL && !(O_NONBLOCK & O_ACCMODE)
+	const int MODE_TO_LOAD = O_RDONLY | (
+#if defined O_NONBLOCK && HAVE_FCNTL
 	/* TODO: fix conflicting O_NONBLOCK in ruby/win32.h */
-# define MODE_TO_LOAD (O_RDONLY | O_NONBLOCK)
-#elif defined O_NDELAY && HAVE_FCNTL && !(O_NDELAY & O_ACCMODE)
-# define MODE_TO_LOAD (O_RDONLY | O_NDELAY)
-#else
-# define MODE_TO_LOAD (O_RDONLY)
+	    !(O_NONBLOCK & O_ACCMODE) ? O_NONBLOCK :
 #endif
+#if defined O_NDELAY && HAVE_FCNTL
+            !(O_NDELAY & O_ACCMODE) ? O_NDELAY :
+#endif
+            0);
 	int mode = MODE_TO_LOAD;
 #if defined DOSISH || defined __CYGWIN__
 # define isdirsep(x) ((x) == '/' || (x) == '\\')
