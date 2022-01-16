@@ -29,6 +29,8 @@ jobs:
             configure: "--host=i686-$OSTYPE"
           - test_task: "check"
             configure: "--enable-shared --enable-load-relative"
+            skipped_tests: "TestGem#test_.*_from_binstubs.*"
+            continue-on-skipped_tests: true
           - test_task: "test-all TESTS=--repeat-count=2"
       fail-fast: false
     env:
