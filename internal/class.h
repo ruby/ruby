@@ -86,7 +86,7 @@ typedef struct rb_subclass_entry rb_subclass_entry_t;
 typedef struct rb_classext_struct rb_classext_t;
 
 #if USE_RVARGC
-#  define RCLASS_EXT(c) ((rb_classext_t *)((char *)c + sizeof(struct RClass)))
+#  define RCLASS_EXT(c) ((rb_classext_t *)((char *)(c) + sizeof(struct RClass)))
 #else
 #  define RCLASS_EXT(c) (RCLASS(c)->ptr)
 #endif
