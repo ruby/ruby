@@ -4,10 +4,10 @@ require 'test/unit'
 class TestHideSkip < Test::Unit::TestCase
   def test_hideskip
     assert_not_match(/^ *1\) Skipped/, hideskip)
-    assert_match(/^ *1\) Skipped/, hideskip("--show-skip"))
+    assert_match(/^ *1\) Skipped.*^ *2\) Skipped/m, hideskip("--show-skip"))
     output = hideskip("--hide-skip")
     output.gsub!(/Successful MJIT finish\n/, '') if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
-    assert_match(/assertions\/s.\n+1 tests, 0 assertions, 0 failures, 0 errors, 1 skips/, output)
+    assert_match(/assertions\/s.\n+2 tests, 0 assertions, 0 failures, 0 errors, 2 skips/, output)
   end
 
   private
