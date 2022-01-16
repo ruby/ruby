@@ -8171,11 +8171,32 @@ rb_io_printf(int argc, const VALUE *argv, VALUE out)
 
 /*
  *  call-seq:
- *    printf(string, *objects)     -> nil
+ *    printf(io = $stdout, string, *objects) -> nil
+ *    printf                                 -> nil
  *
  *  Equivalent to:
  *
- *    io.write(sprintf(string, objects))
+ *    io.write(sprintf(string, *objects))
+ *
+ *  With the single argument +string+, formats +objects+ into the string,
+ *  then writes the formatted string to $stdout:
+ *
+ *    printf('%4.4d %10s %2.2f', 24, 24, 24.0)
+ *
+ *  Output (on $stdout):
+ *
+ *    0024         24 24.00#
+ *
+ *  With arguments +io+ and +string, formats +objects+ into the string,
+ *  then writes the formatted string to +io+:
+ *
+ *    printf($stderr, '%4.4d %10s %2.2f', 24, 24, 24.0)
+ *
+ *  Output (on $stderr):
+ *
+ *    0024         24 24.00# => nil
+ *
+ *  With no arguments, does nothing.
  *
  */
 
@@ -8211,7 +8232,6 @@ deprecated_str_setter(VALUE val, ID id, VALUE *var)
 /*
  *  call-seq:
  *    print(*objects) -> nil
- *    print           -> nil
  *
  *  Writes to the stream; returns +nil+.
  *  Appends the output record separator <tt>$OUTPUT_RECORD_SEPARATOR</tt>
@@ -8295,7 +8315,7 @@ rb_io_print(int argc, const VALUE *argv, VALUE out)
  *  call-seq:
  *    print(*objects)    -> nil
  *
- *  Equivalent to <tt>$stdout.print(objects)</tt>.
+ *  Equivalent to <tt>$stdout.print(*objects)</tt>.
  *  See IO#print.
  */
 
@@ -8312,7 +8332,8 @@ rb_f_print(int argc, const VALUE *argv, VALUE _)
  *
  *  Writes a character to the stream.
  *
- *  If +object+ is numeric, writes the character whose code is the
+ *  If +object+ is numeric, converts to integer if necessary,
+ *  then writes the character whose code is the
  *  least significant byte;
  *  if +object+ is a string, writes the first character:
  *
