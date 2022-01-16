@@ -6,6 +6,6 @@
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 
-require "irb"
+require_relative '../lib/irb'
 
 IRB.start(__FILE__)
