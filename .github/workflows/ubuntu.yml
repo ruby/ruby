@@ -110,6 +110,7 @@ jobs:
           RUBY_TESTOPTS: "-v --tty=no"
           TESTS: ${{ matrix.skipped_tests }}
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests != '' }}
+        continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |
