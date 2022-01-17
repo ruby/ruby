@@ -95,7 +95,7 @@ class Reline::Windows
   end
 
   VK_RETURN = 0x0D
-  VK_MENU = 0x12
+  VK_MENU = 0x12 # ALT key
   VK_LMENU = 0xA4
   VK_CONTROL = 0x11
   VK_SHIFT = 0x10
