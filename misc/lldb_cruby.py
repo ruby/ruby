@@ -285,6 +285,9 @@ def lldb_inspect(debugger, target, result, val):
         elif flType == RUBY_T_CLASS or flType == RUBY_T_MODULE or flType == RUBY_T_ICLASS:
             result.write('T_%s: %s' % ('CLASS' if flType == RUBY_T_CLASS else 'MODULE' if flType == RUBY_T_MODULE else 'ICLASS', flaginfo))
             append_command_output(debugger, "print *(struct RClass*)%0#x" % val.GetValueAsUnsigned(), result)
+            tRClass = target.FindFirstType("struct RClass")
+            if not val.Cast(tRClass).GetChildMemberWithName("ptr").IsValid():
+                append_command_output(debugger, "print *(struct rb_classext_struct*)%0#x" % (val.GetValueAsUnsigned() + tRClass.GetByteSize()), result)
         elif flType == RUBY_T_STRING:
             result.write('T_STRING: %s' % flaginfo)
             encidx = ((flags & RUBY_ENCODING_MASK)>>RUBY_ENCODING_SHIFT)
