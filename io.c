@@ -7635,8 +7635,8 @@ rb_open_file(int argc, const VALUE *argv, VALUE io)
  *  Document-method: File::open
  *
  *  call-seq:
- *    File.open(path, mode = 'r', perm = 0666, **opts]) -> file
- *    File.open(path, mode = 'r', perm = 0666, **opts]) {|f| ... } -> object
+ *    File.open(path, mode = 'r', perm = 0666, **opts) -> file
+ *    File.open(path, mode = 'r', perm = 0666, **opts) {|f| ... } -> object
  *
  *  Creates a new \File object, via File.new with the given arguments.
  *
@@ -7651,8 +7651,8 @@ rb_open_file(int argc, const VALUE *argv, VALUE io)
  *  Document-method: IO::open
  *
  *  call-seq:
- *    IO.open(fd, mode = 'r', **opts])             -> io
- *    IO.open(fd, mode = 'r', **opts]) {|io| ... } -> object
+ *    IO.open(fd, mode = 'r', **opts)             -> io
+ *    IO.open(fd, mode = 'r', **opts) {|io| ... } -> object
  *
  *  Creates a new \IO object, via IO.new with the given arguments.
  *
@@ -8170,8 +8170,7 @@ rb_io_printf(int argc, const VALUE *argv, VALUE out)
 /*
  *  call-seq:
  *    printf(string, *objects)               -> nil
- *    printf(io = $stdout, string, *objects) -> nil
- *    printf                                 -> nil
+ *    printf(io, string, *objects) -> nil
  *
  *  Equivalent to:
  *
@@ -8232,9 +8231,9 @@ deprecated_str_setter(VALUE val, ID id, VALUE *var)
  *  call-seq:
  *    print(*objects) -> nil
  *
- *  Writes to the stream; returns +nil+.
+ *  Writes the given objects to the stream; returns +nil+.
  *  Appends the output record separator <tt>$OUTPUT_RECORD_SEPARATOR</tt>
- *  <tt>$\\</tt>) is not +nil+.
+ *  <tt>$\\</tt>), if it is not +nil+.
  *
  *  With argument +objects+ given, for each object:
  *
@@ -8247,8 +8246,8 @@ deprecated_str_setter(VALUE val, ID id, VALUE *var)
  *
  *    f = File.open('t.tmp', 'w+')
  *    objects = [0, 0.0, Rational(0, 1), Complex(0, 0), :zero, 'zero']
- *    p $\
- *    p $,
+ *    p $OUTPUT_RECORD_SEPARATOR
+ *    p $OUTPUT_FIELD_SEPARATOR
  *    f.print(*objects)
  *    f.rewind
  *    p f.read
@@ -8272,13 +8271,12 @@ deprecated_str_setter(VALUE val, ID id, VALUE *var)
  *
  *    "0,0.0,0/1,0+0i,zero,zero\n"
  *
- *  With no argument given, writes the content of <tt>$_</tt>:
+ *  With no argument given, writes the content of <tt>$_</tt>
+ *  (which is usually the most recent user input):
  *
  *    f = File.open('t.tmp', 'w+')
- *    $_ = 'foo'
+ *    gets # Sets $_ to the most recent user input.
  *    f.print
- *    f.rewind
- *    f.read # => "foo"
  *
  */
 
@@ -8312,10 +8310,51 @@ rb_io_print(int argc, const VALUE *argv, VALUE out)
 
 /*
  *  call-seq:
- *    print(*objects)    -> nil
+ *    print(*objects) -> nil
  *
- *  Equivalent to <tt>$stdout.print(*objects)</tt>.
- *  See IO#print.
+ *  Equivalent to <tt>$stdout.print(*objects)</tt>,
+ *  this method is the straightforward way to write to <tt>$stdout</tt>.
+ *
+ *  Writes the given objects to <tt>$stdout</tt>; returns +nil+.
+ *  Appends the output record separator <tt>$OUTPUT_RECORD_SEPARATOR</tt>
+ *  <tt>$\\</tt>), if it is not +nil+.
+ *
+ *  With argument +objects+ given, for each object:
+ *
+ *  - Converts via its method +to_s+ if not a string.
+ *  - Writes to <tt>stdout</tt>.
+ *  - If not the last object, writes the output field separator
+ *    <tt>$OUTPUT_FIELD_SEPARATOR</tt> (<tt>$,</tt> if it is not +nil+.
+ *
+ *  With default separators:
+ *
+ *    objects = [0, 0.0, Rational(0, 1), Complex(0, 0), :zero, 'zero']
+ *    $OUTPUT_RECORD_SEPARATOR
+ *    $OUTPUT_FIELD_SEPARATOR
+ *    print(*objects)
+ *
+ *  Output:
+ *
+ *    nil
+ *    nil
+ *    00.00/10+0izerozero
+ *
+ *  With specified separators:
+ *
+ *    $OUTPUT_RECORD_SEPARATOR = "\n"
+ *    $OUTPUT_FIELD_SEPARATOR = ','
+ *    print(*objects)
+ *
+ *  Output:
+ *
+ *    0,0.0,0/1,0+0i,zero,zero
+ *
+ *  With no argument given, writes the content of <tt>$_</tt>
+ *  (which is usually the most recent user input):
+ *
+ *    gets  # Sets $_ to the most recent user input.
+ *    print # Prints $_.
+ *
  */
 
 static VALUE
@@ -8879,7 +8918,11 @@ rb_io_make_open_file(VALUE obj)
  *  call-seq:
  *    IO.new(fd, mode = 'r', **opts) -> io
  *
- *  Returns a new \IO object (a stream) for the given arguments.
+ *  Creates and returns a new \IO object (file stream) from a file descriptor.
+ *
+ *  \IO.new may be useful for interaction with low-level libraries.
+ *  For higher-level interactions, it may be simpler to create
+ *  the file stream using File.open.
  *
  *  Argument +fd+ must be a valid file descriptor (integer):
  *
@@ -8965,8 +9008,9 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
  *  call-seq:
  *    set_encoding_by_bom -> encoding or nil
  *
- *  If the stream begins with a BOM, consumes the BOM
- *  and sets the external encoding accordingly;
+ *  If the stream begins with a BOM
+ *  ({byte order marker}[https://en.wikipedia.org/wiki/Byte_order_mark],
+ *  consumes the BOM and sets the external encoding accordingly;
  *  returns the result encoding if found, or +nil+ otherwise:
  *
  *   File.write('t.tmp', "\u{FEFF}abc")
