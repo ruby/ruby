@@ -8171,6 +8171,7 @@ rb_io_printf(int argc, const VALUE *argv, VALUE out)
 
 /*
  *  call-seq:
+ *    printf(string, *objects)               -> nil
  *    printf(io = $stdout, string, *objects) -> nil
  *    printf                                 -> nil
  *
