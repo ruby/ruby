@@ -135,10 +135,10 @@ class Gem::FakeFetcher
   def download(spec, source_uri, install_dir = Gem.dir)
     name = File.basename spec.cache_file
     path = if Dir.pwd == install_dir # see fetch_command
-             install_dir
-           else
-             File.join install_dir, "cache"
-           end
+      install_dir
+    else
+      File.join install_dir, "cache"
+    end
 
     path = File.join path, name
 

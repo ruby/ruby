@@ -398,10 +398,10 @@ class Gem::Command
         version_to_expire = deprecation["rg_version_to_expire"]
 
         deprecate_option_msg = if version_to_expire
-                                 "The \"#{option}\" option has been deprecated and will be removed in Rubygems #{version_to_expire}."
-                               else
-                                 "The \"#{option}\" option has been deprecated and will be removed in future versions of Rubygems."
-                               end
+          "The \"#{option}\" option has been deprecated and will be removed in Rubygems #{version_to_expire}."
+        else
+          "The \"#{option}\" option has been deprecated and will be removed in future versions of Rubygems."
+        end
 
         extra_msg = deprecation["extra_msg"]
 

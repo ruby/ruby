@@ -233,10 +233,10 @@ command to remove old versions.
     up_ver = gems_to_update.first.version
 
     target = if update_latest
-               up_ver
-             else
-               version
-             end
+      up_ver
+    else
+      version
+    end
 
     return target, requirement
   end

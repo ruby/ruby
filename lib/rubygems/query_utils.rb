@@ -150,12 +150,12 @@ module Gem::QueryUtils
     fetcher = Gem::SpecFetcher.fetcher
 
     spec_tuples = if name.respond_to?(:source) && name.source.empty?
-                    fetcher.detect(specs_type) { true }
-                  else
-                    fetcher.detect(specs_type) do |name_tuple|
-                      name === name_tuple.name
-                    end
-                  end
+      fetcher.detect(specs_type) { true }
+    else
+      fetcher.detect(specs_type) do |name_tuple|
+        name === name_tuple.name
+      end
+    end
 
     output_query_results(spec_tuples)
   end
