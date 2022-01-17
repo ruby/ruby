@@ -162,14 +162,6 @@ use with other commands.
     response
   end
 
-  def remote_specs(dependency) # :nodoc:
-    fetcher = Gem::SpecFetcher.fetcher
-
-    ss, _ = fetcher.spec_for_dependency dependency
-
-    ss.map {|s,o| s }
-  end
-
   def reverse_dependencies(specs) # :nodoc:
     reverse = Hash.new {|h, k| h[k] = [] }
 
