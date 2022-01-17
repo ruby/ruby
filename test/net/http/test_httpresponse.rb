@@ -78,7 +78,7 @@ EOS
 
   def test_read_body_block_mod
     # http://ci.rvm.jp/results/trunk-mjit-wait@silicon-docker/3019353
-    if defined?(RubyVM::MJIT) ? RubyVM::MJIT.enabled? : defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+    if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
       omit 'too unstable with --jit-wait, and extending read_timeout did not help it'
     end
     IO.pipe do |r, w|
