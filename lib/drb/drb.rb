@@ -1721,7 +1721,7 @@ module DRb
           client_uri = client.uri
           @exported_uri << client_uri unless @exported_uri.include?(client_uri)
         end
-        last_invoke_method = nil
+        _last_invoke_method = nil
         loop do
           begin
             succ = false
@@ -1734,7 +1734,7 @@ module DRb
           rescue Exception => e
             error_print(e) if verbose
           ensure
-            last_invoke_method = invoke_method
+            _last_invoke_method = invoke_method
             client.close unless succ
             if Thread.current['DRb']['stop_service']
               shutdown
