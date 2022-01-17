@@ -101,6 +101,10 @@ module Bundler
       source_list_for(source).find {|s| equivalent_source?(source, s) }
     end
 
+    def get_with_fallback(source)
+      get(source) || default_source
+    end
+
     def lock_sources
       lock_other_sources + lock_rubygems_sources
     end
