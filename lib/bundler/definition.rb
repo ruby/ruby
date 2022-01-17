@@ -747,9 +747,6 @@ module Bundler
 
         next if @unlock[:sources].include?(s.source.name)
 
-        # If the spec is from a path source and it doesn't exist anymore
-        # then we unlock it.
-
         # Path sources have special logic
         if s.source.instance_of?(Source::Path) || s.source.instance_of?(Source::Gemspec)
           new_specs = begin
