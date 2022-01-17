@@ -8001,25 +8001,23 @@ rb_freopen(VALUE fname, const char *mode, FILE *fp)
  *
  *  Reassociates the stream with another stream,
  *  which may be of a different class.
+ *  This method may be used to redirect an existing stream
+ *  to a new destination.
  *
  *  With argument +other_io+ given, reassociates with that stream:
  *
- *    f = File.new('t.txt') # => #<File:t.txt>
- *    f.reopen($stdout)     # => #<IO:<STDOUT>>
- *    f.puts('foo')
+ *    # Redirect $stdin from a file.
+ *    f = File.open('t.txt')
+ *    $stdin.reopen(f)
  *
- *  Output:
+ *    # Redirect $stdout to a file.
+ *    f = File.open('t.tmp', 'w')
+ *    $stdout.reopen(f)
  *
- *    foo
+ *  With argument +path+ given, reassociates with a new stream to that file path:
  *
- *  With argument +path+ given, opens a new stream to that file path
- *  (see IO.open):
- *
- *    f = File.open('t.txt') # => #<File:t.txt>
- *    f.reopen('t.tmp', 'w') # => #<File:t.tmp>
- *    f.write('foo')         # => 3
- *    f.close                # => nil
- *    File.new('t.tmp').read # => "foo"
+ *    $stdin.reopen('t.txt')
+ *    $stdout.reopen('t.tmp', 'w')
  *
  */
 
