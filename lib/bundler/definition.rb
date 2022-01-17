@@ -740,9 +740,9 @@ module Bundler
       end
 
       specs.each do |s|
-        # Replace the locked dependency's source with the equivalent source from the Gemfile
         dep = @dependencies.find {|d| s.satisfies?(d) }
 
+        # Replace the locked dependency's source with the equivalent source from the Gemfile
         s.source = (dep && dep.source) || sources.get_with_fallback(s.source)
 
         next if @unlock[:sources].include?(s.source.name)
