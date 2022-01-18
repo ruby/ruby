@@ -57,5 +57,12 @@ class TestMkmf
       actual = pkg_config("test1", "cflags").shellsplit.sort
       assert_equal(expected, actual, MKMFLOG)
     end
+
+    def test_pkgconfig_with_multiple_options
+      pend("skipping because pkg-config is not installed") unless PKG_CONFIG
+      expected = ["-L#{@fixtures_lib_dir}", "-ltest1-public", "-ltest1-private"].sort
+      actual = pkg_config("test1", "libs", "static").shellsplit.sort
+      assert_equal(expected, actual, MKMFLOG)
+    end
   end
 end
