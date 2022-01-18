@@ -246,7 +246,7 @@ class OpenStruct
       if owner.class == ::Class
         owner < ::OpenStruct
       else
-        self.class.ancestors.any? do |mod|
+        self.class!.ancestors.any? do |mod|
           return false if mod == ::OpenStruct
           mod == owner
         end
