@@ -9649,8 +9649,7 @@ static VALUE argf_readline(int, VALUE *, VALUE);
  *    readline(limit)      -> string
  *    readline(sep, limit) -> string
  *
- *  Equivalent to method Kernel#gets, except that this method
- *  raises an exception when already at end-of-file.
+ *  Equivalent to method Kernel#gets.
  *
  */
 
@@ -9705,7 +9704,52 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *    readlines(sep, limit) -> array
  *
  *  Returns an array containing the lines returned by calling
- *  <tt>Kernel.gets(sep)</tt> until the end of file.
+ *  Kernel#gets until the end-of-file is reached.
+ *
+ *  With only string argument +sep+ given,
+ *  returns the remaining lines as determined by line separator +sep+,
+ *  or +nil+ if none;
+ *  see {Line Separator}[#class-IO-label-Line+Separator]:
+ *
+ *    f = File.new('t.txt')
+ *    f.readlines
+ *    # => ["First line\n", "Second line\n", "\n", "Fourth line\n", "Fifth line\n"]
+ *    f.rewind
+ *    f.readlines('li')
+ *    # => ["First li", "ne\nSecond li", "ne\n\nFourth li", "ne\nFifth li", "ne\n"]
+ *
+ *  The two special values for +sep+ are honored:
+ *
+ *    f = File.new('t.txt')
+ *    # Get all.
+ *    f.gets(nil) # => "First line\nSecond line\n\nFourth line\nFifth line\n"
+ *    f.rewind
+ *    # Get paragraph (up to two line separators).
+ *    f.readlines('')
+ *    # => ["First line\nSecond line\n\n", "Fourth line\nFifth line\n"]
+ *
+ *
+ *  With only integer argument +limit+ given,
+ *  limits the number of bytes in the line;
+ *  see {Line Limit}}[#class-IO-label-Line+Limit]:
+ *
+ *    # No more than one line.
+ *    f = File.open('t.txt')
+ *    f.readlines(10)
+ *    # => ["First line", "\n", "Second lin", "e\n", "\n", "Fourth lin", "e\n", "Fifth line", "\n"]
+ *    f.rewind
+ *    f.readlines(11)
+ *    # => ["First line\n", "Second line", "\n", "\n", "Fourth line", "\n", "Fifth line\n"]
+ *    f.rewind
+ *    f.readlines(12)
+ *    # => ["First line\n", "Second line\n", "\n", "Fourth line\n", "Fifth line\n"]
+ *
+ *  With arguments +sep+ and +limit+ given,
+ *  combines the two behaviors:
+ *
+ *  - Returns the remaining lies as determined by line separator +sep+,
+ *    or +nil+ if none.
+ *  - But returns no more bytes in a line than are allowed by the limit.
  *
  */
 
@@ -9763,11 +9807,12 @@ argf_readlines(int argc, VALUE *argv, VALUE argf)
  *    `cmd` -> string
  *
  *  Returns the <tt>$stdout</tt> output fromm running +cmd+ in a subshell;
- *  sets globel variable <tt>$?</tt> to the integer process status:
+ *  sets global variable <tt>$?</tt> to the process status:
  *
  *    `date`                 # => "Wed Apr  9 08:56:30 CDT 2003\n"
  *    `echo oops && exit 99` # => "oops\n"
  *    $?                     # => #<Process::Status: pid 17088 exit 99>
+ *    $?.status              # => 99>
  *
  *  The built-in syntax <tt>%x{...}</tt> uses this method.
  *
@@ -10062,6 +10107,7 @@ advice_arg_check(VALUE advice)
  *    advise(advice, offset = 0, len = 0) -> nil
  *
  *  Announces an intention to access data from the current file in a specific pattern.
+ *  The effect of the call is platform-dependent.
  *
  *  Has no effect  on a platform that does not support system call
  *  {posix_fadvise(2)}[https://linux.die.net/man/2/posix_fadvise].
@@ -10114,14 +10160,16 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
  *  call-seq:
  *    IO.select(read_ios, write_ios = [], error_ios = [], timeout = nil) -> array or nil
  *
- *  Calls system call {select(2)}[https://linux.die.net/man/2/select].
+ *  Invokes system call {select(2)}[https://linux.die.net/man/2/select],
+ *  which the given I/O objects.
+ *  The effect of the call is platform-dependent.
  *
  *  Each of the arguments +read_ios+, +write_ios+, and +error_ios+
  *  is an array of IO objects.
  *
  *  Argument +timeout+ is an integer timeout interval in seconds.
  *
- *  The method monitors the given \IO objects in all three arrays,
+ *  The method monitors the \IO objects given in all three arrays,
  *  waiting for some to be ready;
  *  returns a 3-element array whose elements are:
  *
@@ -10586,14 +10634,14 @@ rb_ioctl(VALUE io, VALUE req, VALUE arg)
  *    ioctl(integer_cmd, argument) -> integer
  *
  *  Calls system call {ioctl(2)}[https://linux.die.net/man/2/ioctl].
+ *  Not implemented on all platforms.
  *
  *  Issues a low-level command to an I/O device.
+ *  The arguments and returned value are platform-dependent.
+ *  The effect of the call is platform-dependent.
  *
  *  If argument +argument+ is an integer, it is passed directly;
  *  if it is a string, it is interpreted as a binary sequence of bytes.
- *
- *  Arguments +integer_cmd+ and +argument+, as well as the returned value,
- *  are platform-dependent.
  *
  */
 
@@ -10672,15 +10720,15 @@ rb_fcntl(VALUE io, VALUE req, VALUE arg)
  *  call-seq:
  *    fcntl(integer_cmd, arg) -> integer
  *
- *  Calls system call {fcntl(2)}[https://linux.die.net/man/2/fcntl].
+ *  Invokes system call {fcntl(2)}[https://linux.die.net/man/2/fcntl].
+ *  Not implemented on all platforms.
  *
  *  Issues a low-level command to an I/O device.
+ *  The arguments and returned value are platform-dependent.
+ *  The effect of the call is platform-dependent.
  *
  *  If argument +argument+ is an integer, it is passed directly;
  *  if it is a string, it is interpreted as a binary sequence of bytes.
- *
- *  Arguments +integer_cmd+ and +argument+, as well as the returned value,
- *  are platform-dependent.
  *
  */
 
@@ -10699,15 +10747,15 @@ rb_io_fcntl(int argc, VALUE *argv, VALUE io)
 #if defined(HAVE_SYSCALL) || defined(HAVE___SYSCALL)
 /*
  *  call-seq:
- *    syscall(integer_callno *arguments)   -> integer
+ *    syscall(integer_callno, *arguments)   -> integer
  *
- *  Calls system call {syscall(2)}[https://linux.die.net/man/2/syscall].
+ *  Invokes system call {syscall(2)}[https://linux.die.net/man/2/syscall].
+ *  Not implemented on all platforms.
  *
- *  Invokes a system call.
- *
- *  Calls the operating system function identified by +integer+callno+;
- *  returns the result of the function or raises SystemCallError if
- *  it failed.
+ *  Calls the operating system function identified by +integer_callno+;
+ *  returns the result of the function or raises SystemCallError if it failed.
+ *  The effect of the call is platform-dependent.
+ *  The arguments and returned value are platform-dependent.
  *
  *  For each of +arguments+: if it is an integer, it is passed directly;
  *  if it is a string, it is interpreted as a binary sequence of bytes.
@@ -10918,10 +10966,12 @@ pipe_pair_close(VALUE rw)
 
 /*
  *  call-seq:
- *    IO.pipe(enc_string = 'UTF-8', **opts) -> [read_io, write_io]
- *    IO.pipe(enc_string = 'UTF-8', **opts) {|read_io, write_io] ...} -> object
- *    IO.pipe(int_enc = Encoding::UTF_8, ext_enc = nil, **opts) -> [read_io, write_io]
- *    IO.pipe(int_enc = Encoding::UTF_8, ext_enc = nil, **opts) {|read_io, write_io] ...} -> object
+ *    IO.pipe(**opts) -> [read_io, write_io]
+ *    IO.pipe(enc, **opts) -> [read_io, write_io]
+ *    IO.pipe(ext_enc, int_enc, **opts) -> [read_io, write_io]
+ *    IO.pipe(**opts) {|read_io, write_io] ...} -> object
+ *    IO.pipe(enc, **opts) {|read_io, write_io] ...} -> object
+ *    IO.pipe(ext_enc, int_enc, **opts) {|read_io, write_io] ...} -> object
  *
  *  Creates a pair of pipe endpoints, +read_io+ and +write_io+,
  *  connected to each other.
@@ -10941,12 +10991,12 @@ pipe_pair_close(VALUE rw)
  *
  *  An array of encoding classes is returned by Encoding.list.
  *
- *  The string read from +read_io+ is tagged with the internal encoding;
- *  if an external encoding is also specified, the string is converted
+ *  The string read from +read_io+ is tagged with the external encoding;
+ *  if an internal encoding is also specified, the string is converted
  *  to, and tagged with, that encoding.
  *
- *  If the external encoding and the internal encoding is specified,
- *  optional hash argument specify the conversion option.
+ *  If any encoding is specified,
+ *  optional hash arguments specify the conversion option.
  *
  *  Optional argument +opts+ must specify valid open options
  *  (see {IO Open Options}[#class-IO-label-Open+Options])
