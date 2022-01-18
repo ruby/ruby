@@ -10059,10 +10059,10 @@ advice_arg_check(VALUE advice)
 
 /*
  *  call-seq:
- *    ios.advise(advice, offset = 0, len = 0) -> nil
+ *    advise(advice, offset = 0, len = 0) -> nil
  *
  *  Announces an intention to access data from the current file in a specific pattern.
-
+ *
  *  Has no effect  on a platform that does not support system call
  *  {posix_fadvise(2)}[https://linux.die.net/man/2/posix_fadvise].
  *
