@@ -8233,14 +8233,14 @@ deprecated_str_setter(VALUE val, ID id, VALUE *var)
  *
  *  Writes the given objects to the stream; returns +nil+.
  *  Appends the output record separator <tt>$OUTPUT_RECORD_SEPARATOR</tt>
- *  <tt>$\\</tt>), if it is not +nil+.
+ *  (<tt>$\\</tt>), if it is not +nil+.
  *
  *  With argument +objects+ given, for each object:
  *
  *  - Converts via its method +to_s+ if not a string.
  *  - Writes to the stream.
  *  - If not the last object, writes the output field separator
- *    <tt>$OUTPUT_FIELD_SEPARATOR</tt> (<tt>$,</tt> if it is not +nil+.
+ *    <tt>$OUTPUT_FIELD_SEPARATOR</tt> (<tt>$,</tt>) if it is not +nil+.
  *
  *  With default separators:
  *
@@ -9009,7 +9009,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
  *    set_encoding_by_bom -> encoding or nil
  *
  *  If the stream begins with a BOM
- *  ({byte order marker}[https://en.wikipedia.org/wiki/Byte_order_mark],
+ *  ({byte order marker}[https://en.wikipedia.org/wiki/Byte_order_mark]),
  *  consumes the BOM and sets the external encoding accordingly;
  *  returns the result encoding if found, or +nil+ otherwise:
  *
