@@ -22,10 +22,6 @@
 # include <sys/cygwin.h>
 #endif
 
-#ifdef __hpux
-# include <sys/pstat.h>
-#endif
-
 #if defined(LOAD_RELATIVE) && defined(HAVE_DLADDR)
 # include <dlfcn.h>
 #endif

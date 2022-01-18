@@ -3945,8 +3945,6 @@ rb_thread_priority_set(VALUE thread, VALUE prio)
  * - OpenBSD 2.0 (src/sys/kern/sys_generic.c:1.4)
  *   select(2) documents how to allocate fd_set dynamically.
  *   http://www.openbsd.org/cgi-bin/man.cgi?query=select&manpath=OpenBSD+4.4
- * - HP-UX documents how to allocate fd_set dynamically.
- *   http://docs.hp.com/en/B2355-60105/select.2.html
  * - Solaris 8 has select_large_fdset
  * - Mac OS X 10.7 (Lion)
  *   select(2) returns EINVAL if nfds is greater than FD_SET_SIZE and

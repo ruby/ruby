@@ -6806,7 +6806,6 @@ proc_setgid(VALUE obj, VALUE id)
  * Darwin (Mac OS X)		   16
  * Sun Solaris 7,8,9,10		   16
  * Sun Solaris 11 / OpenSolaris	 1024
- * HP-UX			   20
  * Windows			 1015
  */
 static int _maxgroups = -1;

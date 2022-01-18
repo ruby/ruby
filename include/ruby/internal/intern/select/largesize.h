@@ -35,9 +35,6 @@
  *   `select(2)` documents how to allocate fd_set dynamically.
  *   http://www.openbsd.org/cgi-bin/man.cgi?query=select&manpath=OpenBSD+4.4
  *
- * - HP-UX documents how to allocate fd_set dynamically.
- *   http://docs.hp.com/en/B2355-60105/select.2.html
- *
  * - Solaris 8 has `select_large_fdset`
  *
  * - Mac OS X 10.7 (Lion)
