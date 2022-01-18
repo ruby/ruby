@@ -9645,12 +9645,13 @@ static VALUE argf_readline(int, VALUE *, VALUE);
 
 /*
  *  call-seq:
- *     readline(sep=$/)     -> string
- *     readline(limit)      -> string
- *     readline(sep, limit) -> string
+ *    readline(sep = $/)   -> string
+ *    readline(limit)      -> string
+ *    readline(sep, limit) -> string
  *
- *  Equivalent to Kernel::gets, except
- *  +readline+ raises +EOFError+ at end of file.
+ *  Equivalent to method Kernel#gets, except that this method
+ *  raises an exception when already at end-of-file.
+ *
  */
 
 static VALUE
@@ -9699,12 +9700,13 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
 
 /*
  *  call-seq:
- *     readlines(sep=$/)     -> array
- *     readlines(limit)      -> array
- *     readlines(sep, limit) -> array
+ *    readlines(sep = $/)   -> array
+ *    readlines(limit)      -> array
+ *    readlines(sep, limit) -> array
  *
  *  Returns an array containing the lines returned by calling
- *  <code>Kernel.gets(<i>sep</i>)</code> until the end of file.
+ *  <tt>Kernel.gets(sep)</tt> until the end of file.
+ *
  */
 
 static VALUE
@@ -9758,16 +9760,17 @@ argf_readlines(int argc, VALUE *argv, VALUE argf)
 
 /*
  *  call-seq:
- *     `cmd`    -> string
+ *    `cmd` -> string
  *
- *  Returns the standard output of running _cmd_ in a subshell.
- *  The built-in syntax <code>%x{...}</code> uses
- *  this method. Sets <code>$?</code> to the process status.
+ *  Returns the <tt>$stdout</tt> output fromm running +cmd+ in a subshell;
+ *  sets globel variable <tt>$?</tt> to the integer process status:
  *
- *     `date`                   #=> "Wed Apr  9 08:56:30 CDT 2003\n"
- *     `ls testdir`.split[1]    #=> "main.rb"
- *     `echo oops && exit 99`   #=> "oops\n"
- *     $?.exitstatus            #=> 99
+ *    `date`                 # => "Wed Apr  9 08:56:30 CDT 2003\n"
+ *    `echo oops && exit 99` # => "oops\n"
+ *    $?                     # => #<Process::Status: pid 17088 exit 99>
+ *
+ *  The built-in syntax <tt>%x{...}</tt> uses this method.
+ *
  */
 
 static VALUE
@@ -10056,45 +10059,32 @@ advice_arg_check(VALUE advice)
 
 /*
  *  call-seq:
- *     ios.advise(advice, offset=0, len=0) -> nil
+ *    ios.advise(advice, offset = 0, len = 0) -> nil
  *
- *  Announce an intention to access data from the current file in a
- *  specific pattern. On platforms that do not support the
- *  <em>posix_fadvise(2)</em> system call, this method is a no-op.
+ *  Announces an intention to access data from the current file in a specific pattern.
+
+ *  Has no effect  on a platform that does not support system call
+ *  {posix_fadvise(2)}[https://linux.die.net/man/2/posix_fadvise].
  *
- *  _advice_ is one of the following symbols:
+ *  The relevant data is specified by:
  *
- *  :normal::     No advice to give; the default assumption for an open file.
- *  :sequential:: The data will be accessed sequentially
- *                with lower offsets read before higher ones.
- *  :random::     The data will be accessed in random order.
- *  :willneed::   The data will be accessed in the near future.
- *  :dontneed::   The data will not be accessed in the near future.
- *  :noreuse::    The data will only be accessed once.
+ *  - +offset+: The offset of the first byte of data.
+ *  - +len+: The number of bytes to be accessed;
+ *    if +len+ is zero, or is larger than the number of bytes remaining,
+ *    all remaining bytes will be accessed.
  *
- *  The semantics of a piece of advice are platform-dependent. See
- *  <em>man 2 posix_fadvise</em> for details.
+ *  Argument +advice+ is one of the following symbols:
  *
- *  "data" means the region of the current file that begins at
- *  _offset_ and extends for _len_ bytes. If _len_ is 0, the region
- *  ends at the last byte of the file. By default, both _offset_ and
- *  _len_ are 0, meaning that the advice applies to the entire file.
+ *  - +:normal+: The application has no advice to give
+ *    about its access pattern for the specified data.
+ *    If no advice is given for an open file, this is the default assumption.
+ *  - +:sequential+: The application expects to access the specified data sequentially
+ *    (with lower offsets read before higher ones).
+ *  - +:random+: The specified data will be accessed in random order.
+ *  - +:noreuse+: The specified data will be accessed only once.
+ *  - +:willneed+: The specified data will be accessed in the near future.
+ *  - +:dontneed+: The specified data will not be accessed in the near future.
  *
- *  If an error occurs, one of the following exceptions will be raised:
- *
- *  IOError:: The IO stream is closed.
- *  Errno::EBADF::
- *    The file descriptor of the current file is invalid.
- *  Errno::EINVAL:: An invalid value for _advice_ was given.
- *  Errno::ESPIPE::
- *    The file descriptor of the current file refers to a FIFO or
- *    pipe. (Linux raises Errno::EINVAL in this case).
- *  TypeError::
- *    Either _advice_ was not a Symbol, or one of the
- *    other arguments was not an Integer.
- *  RangeError:: One of the arguments given was too big/small.
- *
- *  This list is not exhaustive; other Errno:: exceptions are also possible.
  */
 static VALUE
 rb_io_advise(int argc, VALUE *argv, VALUE io)
@@ -10122,15 +10112,24 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     IO.select(read_array [, write_array [, error_array [, timeout]]]) -> array or nil
+ *    IO.select(read_ios, write_ios = [], error_ios = [], timeout = nil) -> array or nil
  *
- *  Calls select(2) system call.
- *  It monitors given arrays of IO objects, waits until one or more of
- *  IO objects are ready for reading, are ready for writing, and have
- *  pending exceptions respectively, and returns an array that contains
- *  arrays of those IO objects.  It will return +nil+ if optional
- *  <i>timeout</i> value is given and no IO object is ready in
- *  <i>timeout</i> seconds.
+ *  Calls system call {select(2)}[https://linux.die.net/man/2/select].
+ *
+ *  Each of the arguments +read_ios+, +write_ios+, and +error_ios+
+ *  is an array of IO objects.
+ *
+ *  Argument +timeout+ is an integer timeout interval in seconds.
+ *
+ *  The method monitors the given \IO objects in all three arrays,
+ *  waiting for some to be ready;
+ *  returns a 3-element array whose elements are:
+ *
+ *  - An array of the objects in +read_ios+ that are ready for reading.
+ *  - An array of the objects in +write_ios+ that are ready for writing.
+ *  - An array of the objects in +error_ios+ have pending exceptions.
+ *
+ *  If no object becomes ready within the given +timeout+, +nil+ is returned.
  *
  *  IO.select peeks the buffer of IO objects for testing readability.
  *  If the IO buffer is not empty, IO.select immediately notifies
@@ -10224,9 +10223,9 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
  *    end
  *
  *  === Parameters
- *  read_array:: an array of IO objects that wait until ready for read
- *  write_array:: an array of IO objects that wait until ready for write
- *  error_array:: an array of IO objects that wait for exceptions
+ *  read_ios:: an array of IO objects that wait until ready for read
+ *  write_ios:: an array of IO objects that wait until ready for write
+ *  error_ios:: an array of IO objects that wait for exceptions
  *  timeout:: a numeric value in second
  *
  *  === Example
@@ -10584,14 +10583,18 @@ rb_ioctl(VALUE io, VALUE req, VALUE arg)
 
 /*
  *  call-seq:
- *     ios.ioctl(integer_cmd, arg)    -> integer
+ *    ioctl(integer_cmd, argument) -> integer
  *
- *  Provides a mechanism for issuing low-level commands to control or
- *  query I/O devices. Arguments and results are platform dependent. If
- *  <i>arg</i> is a number, its value is passed directly. If it is a
- *  string, it is interpreted as a binary sequence of bytes. On Unix
- *  platforms, see <code>ioctl(2)</code> for details. Not implemented on
- *  all platforms.
+ *  Calls system call {ioctl(2)}[https://linux.die.net/man/2/ioctl].
+ *
+ *  Issues a low-level command to an I/O device.
+ *
+ *  If argument +argument+ is an integer, it is passed directly;
+ *  if it is a string, it is interpreted as a binary sequence of bytes.
+ *
+ *  Arguments +integer_cmd+ and +argument+, as well as the returned value,
+ *  are platform-dependent.
+ *
  */
 
 static VALUE
@@ -10667,15 +10670,18 @@ rb_fcntl(VALUE io, VALUE req, VALUE arg)
 
 /*
  *  call-seq:
- *     ios.fcntl(integer_cmd, arg)    -> integer
+ *    fcntl(integer_cmd, arg) -> integer
  *
- *  Provides a mechanism for issuing low-level commands to control or
- *  query file-oriented I/O streams. Arguments and results are platform
- *  dependent. If <i>arg</i> is a number, its value is passed
- *  directly. If it is a string, it is interpreted as a binary sequence
- *  of bytes (Array#pack might be a useful way to build this string). On
- *  Unix platforms, see <code>fcntl(2)</code> for details.  Not
- *  implemented on all platforms.
+ *  Calls system call {fcntl(2)}[https://linux.die.net/man/2/fcntl].
+ *
+ *  Issues a low-level command to an I/O device.
+ *
+ *  If argument +argument+ is an integer, it is passed directly;
+ *  if it is a string, it is interpreted as a binary sequence of bytes.
+ *
+ *  Arguments +integer_cmd+ and +argument+, as well as the returned value,
+ *  are platform-dependent.
+ *
  */
 
 static VALUE
@@ -10693,34 +10699,24 @@ rb_io_fcntl(int argc, VALUE *argv, VALUE io)
 #if defined(HAVE_SYSCALL) || defined(HAVE___SYSCALL)
 /*
  *  call-seq:
- *     syscall(num [, args...])   -> integer
+ *    syscall(integer_callno *arguments)   -> integer
  *
- *  Calls the operating system function identified by _num_ and
+ *  Calls system call {syscall(2)}[https://linux.die.net/man/2/syscall].
+ *
+ *  Invokes a system call.
+ *
+ *  Calls the operating system function identified by +integer+callno+;
  *  returns the result of the function or raises SystemCallError if
  *  it failed.
  *
- *  Arguments for the function can follow _num_. They must be either
- *  +String+ objects or +Integer+ objects. A +String+ object is passed
- *  as a pointer to the byte sequence. An +Integer+ object is passed
- *  as an integer whose bit size is the same as a pointer.
- *  Up to nine parameters may be passed.
+ *  For each of +arguments+: if it is an integer, it is passed directly;
+ *  if it is a string, it is interpreted as a binary sequence of bytes.
+ *  There may be as many as nine such arguments.
  *
- *  The function identified by _num_ is system
- *  dependent. On some Unix systems, the numbers may be obtained from a
- *  header file called <code>syscall.h</code>.
+ *  Arguments +integer_callno+ and +argument+, as well as the returned value,
+ *  are platform-dependent.
  *
- *     syscall 4, 1, "hello\n", 6   # '4' is write(2) on our box
- *
- *  <em>produces:</em>
- *
- *     hello
- *
- *  Calling +syscall+ on a platform which does not have any way to
- *  an arbitrary system function just fails with NotImplementedError.
- *
- *  *Note:*
- *  +syscall+ is essentially unsafe and unportable.
- *  Feel free to shoot your foot.
+ *  Note: Method +syscall+ is essentially unsafe and unportable.
  *  The DL (Fiddle) library is preferred for safer and a bit
  *  more portable programming.
  */
@@ -10922,62 +10918,82 @@ pipe_pair_close(VALUE rw)
 
 /*
  *  call-seq:
- *     IO.pipe                             ->  [read_io, write_io]
- *     IO.pipe(ext_enc)                    ->  [read_io, write_io]
- *     IO.pipe("ext_enc:int_enc" [, opt])  ->  [read_io, write_io]
- *     IO.pipe(ext_enc, int_enc [, opt])   ->  [read_io, write_io]
+ *    IO.pipe(enc_string = 'UTF-8', **opts) -> [read_io, write_io]
+ *    IO.pipe(enc_string = 'UTF-8', **opts) {|read_io, write_io] ...} -> object
+ *    IO.pipe(int_enc = Encoding::UTF_8, ext_enc = nil, **opts) -> [read_io, write_io]
+ *    IO.pipe(int_enc = Encoding::UTF_8, ext_enc = nil, **opts) {|read_io, write_io] ...} -> object
  *
- *     IO.pipe(...) {|read_io, write_io| ... }
+ *  Creates a pair of pipe endpoints, +read_io+ and +write_io+,
+ *  connected to each other.
  *
- *  Creates a pair of pipe endpoints (connected to each other) and
- *  returns them as a two-element array of IO objects:
- *  <code>[</code> <i>read_io</i>, <i>write_io</i> <code>]</code>.
+ *  If argument +enc_string+ is given, it must be a string containing one of:
  *
- *  If a block is given, the block is called and
- *  returns the value of the block.
- *  <i>read_io</i> and <i>write_io</i> are sent to the block as arguments.
- *  If read_io and write_io are not closed when the block exits, they are closed.
- *  i.e. closing read_io and/or write_io doesn't cause an error.
+ *  - The name of the encoding to be used as the internal encoding.
+ *  - The colon-separated names of two encodings to be used as the internal
+ *    and external encodings.
  *
- *  Not available on all platforms.
+ *  An array of the encoding names is returned by method Encoding.name_list.
  *
- *  If an encoding (encoding name or encoding object) is specified as an optional argument,
- *  read string from pipe is tagged with the encoding specified.
- *  If the argument is a colon separated two encoding names "A:B",
- *  the read string is converted from encoding A (external encoding)
- *  to encoding B (internal encoding), then tagged with B.
- *  If two optional arguments are specified, those must be
- *  encoding objects or encoding names,
- *  and the first one is the external encoding,
- *  and the second one is the internal encoding.
+ *  If argument +int_enc+ is given, it must be an encoding object
+ *  that specifies the internal encoding to be used;
+ *  if argument +ext_enc+ is also given, it must be an encoding object
+ *  that specifies the external encoding to be used.
+ *
+ *  An array of encoding classes is returned by Encoding.list.
+ *
+ *  The string read from +read_io+ is tagged with the internal encoding;
+ *  if an external encoding is also specified, the string is converted
+ *  to, and tagged with, that encoding.
+ *
  *  If the external encoding and the internal encoding is specified,
  *  optional hash argument specify the conversion option.
+ *
+ *  Optional argument +opts+ must specify valid open options
+ *  (see {IO Open Options}[#class-IO-label-Open+Options])
+ *  and/or valid encoding options (see String#encode).
+ *
+ *  With no block given, returns the two endpoints in an array:
+ *
+ *    IO.pipe # => [#<IO:fd 4>, #<IO:fd 5>]
+ *
+ *  With a block given, calls the block with the two endpoints;
+ *  closes both endpoints and returns the value of the block:
+ *
+ *    IO.pipe {|read_io, write_io| p read_io; p write_io }
+ *
+ *  Output:
+ *
+ *    #<IO:fd 6>
+ *    #<IO:fd 7>
+ *
+ *  Not available on all platforms.
  *
  *  In the example below, the two processes close the ends of the pipe
  *  that they are not using. This is not just a cosmetic nicety. The
  *  read end of a pipe will not generate an end of file condition if
  *  there are any writers with the pipe still open. In the case of the
- *  parent process, the <code>rd.read</code> will never return if it
- *  does not first issue a <code>wr.close</code>.
+ *  parent process, the <tt>rd.read</tt> will never return if it
+ *  does not first issue a <tt>wr.close</tt>:
  *
- *     rd, wr = IO.pipe
+ *    rd, wr = IO.pipe
  *
- *     if fork
- *       wr.close
- *       puts "Parent got: <#{rd.read}>"
- *       rd.close
- *       Process.wait
- *     else
- *       rd.close
- *       puts "Sending message to parent"
- *       wr.write "Hi Dad"
- *       wr.close
- *     end
+ *    if fork
+ *      wr.close
+ *      puts "Parent got: <#{rd.read}>"
+ *      rd.close
+ *      Process.wait
+ *    else
+ *      rd.close
+ *      puts 'Sending message to parent'
+ *      wr.write "Hi Dad"
+ *      wr.close
+ *    end
  *
  *  <em>produces:</em>
  *
  *     Sending message to parent
  *     Parent got: <Hi Dad>
+ *
  */
 
 static VALUE
