@@ -1529,7 +1529,7 @@ rsock_sockaddr_obj(struct sockaddr *addr, socklen_t len)
 
 #endif
 
-#if defined(HAVE_GETIFADDRS) || (defined(SIOCGLIFCONF) && defined(SIOCGLIFNUM) && !defined(__hpux)) || defined(SIOCGIFCONF) ||  defined(_WIN32)
+#if defined(HAVE_GETIFADDRS) || (defined(SIOCGLIFCONF) && defined(SIOCGLIFNUM)) || defined(SIOCGIFCONF) ||  defined(_WIN32)
 /*
  * call-seq:
  *   Socket.ip_address_list => array
@@ -1590,9 +1590,8 @@ socket_s_ip_address_list(VALUE self)
     freeifaddrs(ifp);
 
     return list;
-#elif defined(SIOCGLIFCONF) && defined(SIOCGLIFNUM) && !defined(__hpux)
+#elif defined(SIOCGLIFCONF) && defined(SIOCGLIFNUM)
     /* Solaris if_tcp(7P) */
-    /* HP-UX has SIOCGLIFCONF too.  But it uses different struct */
     int fd = -1;
     int ret;
     struct lifnum ln;

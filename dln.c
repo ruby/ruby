@@ -139,11 +139,6 @@ static const char funcname_prefix[sizeof(FUNCNAME_PREFIX) - 1] = FUNCNAME_PREFIX
 # include <dlfcn.h>
 #endif
 
-#ifdef __hpux
-#include <errno.h>
-#include "dl.h"
-#endif
-
 #if defined(_AIX)
 #include <ctype.h>	/* for isdigit()	*/
 #include <errno.h>	/* for global errno	*/
@@ -392,32 +387,6 @@ dln_load(const char *file)
 	return handle;
     }
 #endif /* USE_DLN_DLOPEN */
-
-#ifdef __hpux
-#define DLN_DEFINED
-    {
-	shl_t lib = NULL;
-	int flags;
-	void (*init_fct)(void);
-
-	flags = BIND_DEFERRED;
-	lib = shl_load(file, flags, 0);
-	if (lib == NULL) {
-	    extern int errno;
-	    dln_loaderror("%s - %s", strerror(errno), file);
-	}
-	shl_findsym(&lib, buf, TYPE_PROCEDURE, (void*)&init_fct);
-	if (init_fct == NULL) {
-	    shl_findsym(&lib, buf, TYPE_UNDEFINED, (void*)&init_fct);
-	    if (init_fct == NULL) {
-		errno = ENOSYM;
-		dln_loaderror("%s - %s", strerror(ENOSYM), file);
-	    }
-	}
-	(*init_fct)();
-	return (void*)lib;
-    }
-#endif /* hpux */
 
 #if defined(_AIX)
 #define DLN_DEFINED

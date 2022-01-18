@@ -579,7 +579,6 @@ RUBY_WERROR_FLAG([
 rpathflag=''
 AS_IF([test x"${RPATHFLAG}" = x], [
     AS_CASE(["$target_os"],
-	[hpux*], [AS_IF([test "$rb_cv_prog_gnu_ld" = no], [rpathflag='+b '])],
 	[aix*], [rpathflag='-blibpath:'],
 	[for rpathflag in -R "-rpath "; do
 	    AS_CASE("$rpathflag",
@@ -1068,8 +1067,6 @@ main()
 		])
 		cleanlibs='$(TARGET_SO).dSYM'
 		],
-[hpux*], [	LIBS="-lm $LIBS"
-		ac_cv_c_inline=no],
 [solaris*], [	LIBS="-lm $LIBS"
 		ac_cv_func_vfork=no
 		AC_MSG_CHECKING(whether _XOPEN_SOURCE is already given)
@@ -1241,7 +1238,6 @@ AS_IF([test -n "${rb_there_is_in_fact_no_gplusplus_but_autoconf_is_cheating_us}"
 
 AC_CHECK_LIB(crypt, crypt)      # glibc (GNU/Linux, GNU/Hurd, GNU/kFreeBSD)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
-AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
 AC_CHECK_LIB(socket, shutdown)  # SunOS/Solaris
 
 if pkg-config --exists capstone; then
@@ -1939,7 +1935,6 @@ AC_DEFINE(HAVE_ISFINITE)        # C99; backward compatibility
 # for missing/setproctitle.c
 AS_CASE(["$target_os"],
 [aix* | k*bsd*-gnu | kopensolaris*-gnu | linux* | darwin*], [AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)],
-[hpux*], [AC_DEFINE(SPT_TYPE,SPT_PSTAT) ],
 [])
 AC_CHECK_HEADERS(sys/pstat.h)
 
@@ -2918,7 +2913,6 @@ STATIC=
       RUBY_APPEND_OPTION(CCDLFLAGS, -fPIC)])
   ], [
     AS_CASE(["$target_os"],
-	[hpux*],          [CCDLFLAGS="$CCDLFLAGS +Z"],
 	[solaris*|irix*], [CCDLFLAGS="$CCDLFLAGS -KPIC"],
 	[sunos*],         [CCDLFLAGS="$CCDLFLAGS -PIC"],
 	[esix*|uxpds*],   [CCDLFLAGS="$CCDLFLAGS -KPIC"],
@@ -2933,11 +2927,6 @@ STATIC=
        [enable_rpath=$enableval], [enable_rpath="$rb_cv_binary_elf"])
 
   AS_CASE(["$target_os"],
-	[hpux*], [	DLDFLAGS="$DLDFLAGS -E"
-			: ${LDSHARED='$(LD) -b'}
-			XLDFLAGS="$XLDFLAGS -Wl,-E"
-			: ${LIBPATHENV=SHLIB_PATH}
-			rb_cv_dlopen=yes],
 	[solaris*], [	AS_IF([test "$GCC" = yes], [
 			    : ${LDSHARED='$(CC) -shared'}
 			    AS_IF([test "$rb_cv_prog_gnu_ld" = yes], [
@@ -3185,8 +3174,6 @@ AS_IF([test x$with_valgrind != xno],
 
 : "dlext & soext" && {
   AS_CASE(["$target_os"],
-    [hpux*], [
-	DLEXT=sl],
     [darwin*], [
 	SOEXT=dylib
 	DLEXT=bundle],
@@ -3494,10 +3481,6 @@ AS_CASE("$enable_shared", [yes], [
 	    LIBRUBY_RPATHFLAGS='-R${libdir}'
 	])
 	],
-    [hpux*], [
-	XLDFLAGS="$XLDFLAGS "'-Wl,+s,+b,$(libdir)'
-	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
-	],
     [aix*], [
 	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ["${linker_flag}-bnoentry" "$XLDFLAGS" "$LDFLAGS_OPTDIR"])
 	LIBRUBYARG_SHARED='-L${libdir} -l${RUBY_SO_NAME}'
@@ -3802,12 +3785,6 @@ AS_CASE(["$target_os"],
 	    LIBRUBY_SO=dummy
 	    LIBRUBY='lib$(RUBY_SO_NAME).a'
 	    LIBRUBYARG='-l$(RUBY_SO_NAME)'
-	])
-	],
-    [hpux*], [
-	AS_CASE(["$YACC"],[*yacc*], [
-	    XCFLAGS="$XCFLAGS -DYYMAXDEPTH=300"
-	    YACC="$YACC -Nl40000 -Nm40000"
 	])
 ])
 
