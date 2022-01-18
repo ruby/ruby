@@ -146,4 +146,5 @@ The following deprecated APIs are removed.
 [Feature #17351]: https://bugs.ruby-lang.org/issues/17351
 [Feature #17391]: https://bugs.ruby-lang.org/issues/17391
 [Bug #17545]:     https://bugs.ruby-lang.org/issues/17545
+[Feature #17881]: https://bugs.ruby-lang.org/issues/17881
 [Feature #18351]: https://bugs.ruby-lang.org/issues/18351
