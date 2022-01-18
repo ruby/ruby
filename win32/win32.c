@@ -4871,7 +4871,7 @@ rb_w32_ulchown(const char *path, int owner, int group)
 
 /* License: Ruby's */
 int
-kill(int pid, int sig)
+kill(rb_pid_t pid, int sig)
 {
     int ret = 0;
     DWORD err;
