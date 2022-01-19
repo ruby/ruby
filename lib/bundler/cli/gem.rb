@@ -38,6 +38,7 @@ module Bundler
       namespaced_path = name.tr("-", "/")
       constant_name = name.gsub(/-[_-]*(?![_-]|$)/) { "::" }.gsub(/([_-]+|(::)|^)(.|$)/) { $2.to_s + $3.upcase }
       constant_array = constant_name.split("::")
+      minitest_constant_name = constant_array.clone.tap {|a| a[-1] = "Test#{a[-1]}" }.join("::") # Foo::Bar => Foo::TestBar
 
       use_git = Bundler.git_present? && options[:git]
 
@@ -69,6 +70,7 @@ module Bundler
         :git              => use_git,
         :github_username  => github_username.empty? ? "[USERNAME]" : github_username,
         :required_ruby_version => required_ruby_version,
+        :minitest_constant_name => minitest_constant_name,
       }
       ensure_safe_gem_name(name, constant_array)
 

@@ -1369,7 +1369,7 @@ RSpec.describe "bundle gem" do
 
     let(:minitest_test_file_path) { "test/test/test_gem.rb" }
 
-    let(:minitest_test_class_name) { "class TestTestGem < Minitest::Test" }
+    let(:minitest_test_class_name) { "class Test::TestGem < Minitest::Test" }
 
     it "nests constants so they work" do
       bundle "gem #{gem_name}"
