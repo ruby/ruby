@@ -179,7 +179,7 @@ RSpec.describe "bundle install from an existing gemspec" do
       gemspec :path => '#{tmp.join("foo")}'
     G
 
-    bundle "update --bundler", :verbose => true
+    bundle "update --bundler", :artifice => "compact_index", :verbose => true
     expect(the_bundle).to include_gems "foo 1.0", "platform_specific 1.0 JAVA"
   end
 

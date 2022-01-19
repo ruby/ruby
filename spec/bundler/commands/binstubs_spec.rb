@@ -182,7 +182,7 @@ RSpec.describe "bundle binstubs <gem>" do
         end
 
         context "and the version is older and the same major" do
-          let(:system_bundler_version) { "2.3.1" }
+          let(:system_bundler_version) { "2.3.3" }
 
           before do
             lockfile lockfile.gsub(/BUNDLED WITH\n   .*$/m, "BUNDLED WITH\n   2.3.0")
@@ -191,7 +191,7 @@ RSpec.describe "bundle binstubs <gem>" do
           it "installs and runs the exact version of bundler", :rubygems => ">= 3.3.0.dev" do
             sys_exec "bin/bundle install --verbose", :artifice => "vcr"
             expect(exitstatus).not_to eq(42)
-            expect(out).to include("Bundler 2.3.1 is running, but your lockfile was generated with 2.3.0. Installing Bundler 2.3.0 and restarting using that version.")
+            expect(out).to include("Bundler 2.3.3 is running, but your lockfile was generated with 2.3.0. Installing Bundler 2.3.0 and restarting using that version.")
             expect(out).to include("Using bundler 2.3.0")
             expect(err).not_to include("Activating bundler (~> 2.3.0) failed:")
           end
@@ -199,8 +199,8 @@ RSpec.describe "bundle binstubs <gem>" do
           it "runs the available version of bundler", :rubygems => "< 3.3.0.dev" do
             sys_exec "bin/bundle install --verbose"
             expect(exitstatus).not_to eq(42)
-            expect(out).not_to include("Bundler 2.3.1 is running, but your lockfile was generated with 2.3.0. Installing Bundler 2.3.0 and restarting using that version.")
-            expect(out).to include("Using bundler 2.3.1")
+            expect(out).not_to include("Bundler 2.3.3 is running, but your lockfile was generated with 2.3.0. Installing Bundler 2.3.0 and restarting using that version.")
+            expect(out).to include("Using bundler 2.3.3")
             expect(err).not_to include("Activating bundler (~> 2.3.0) failed:")
           end
         end

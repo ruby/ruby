@@ -57,16 +57,6 @@ module Bundler
         gem_info
       end
 
-      def fetch_spec(spec)
-        spec -= [nil, "ruby", ""]
-        contents = compact_index_client.spec(*spec)
-        return nil if contents.nil?
-        contents.unshift(spec.first)
-        contents[3].map! {|d| Gem::Dependency.new(*d) }
-        EndpointSpecification.new(*contents)
-      end
-      compact_index_request :fetch_spec
-
       def available?
         unless SharedHelpers.md5_available?
           Bundler.ui.debug("FIPS mode is enabled, bundler can't use the CompactIndex API")
