@@ -111,7 +111,7 @@ rb_wasm_handle_jmp_unwind(void)
 {
     RB_WASM_DEBUG_LOG("[%s] _rb_wasm_active_jmpbuf = %p\n", __func__, _rb_wasm_active_jmpbuf);
     if (!_rb_wasm_active_jmpbuf) {
-	return NULL;
+        return NULL;
     }
 
     switch (_rb_wasm_active_jmpbuf->state) {
