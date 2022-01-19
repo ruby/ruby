@@ -13351,7 +13351,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
             else {
                 if (STR_EMBED_P(obj)) APPENDF((BUFF_ARGS, " [embed]"));
 
-                APPENDF((BUFF_ARGS, " len: %ld, capa: %ld", RSTRING_LEN(obj), rb_str_capacity(obj)));
+                APPENDF((BUFF_ARGS, " len: %ld, capa: %" PRIdSIZE, RSTRING_LEN(obj), rb_str_capacity(obj)));
             }
             APPENDF((BUFF_ARGS, " \"%.*s\"", str_len_no_raise(obj), RSTRING_PTR(obj)));
 	    break;
