@@ -9649,7 +9649,16 @@ static VALUE argf_readline(int, VALUE *, VALUE);
  *    readline(limit)      -> string
  *    readline(sep, limit) -> string
  *
- *  Equivalent to method Kernel#gets.
+ *  Equivalent to method Kernel#gets:
+ *
+ *    File.write('try_gets.rb', 'puts gets; puts gets')
+ *    # Reads and writes first record, writes nil on second try.
+ *    `echo "test" | ruby try_gets.rb` # => "\"test\" \n\n"
+ *
+ *    File.write('try_readline.rb', 'puts readline; puts readline')
+ *    # Reads and writes first record, raises EOFError on second try.
+ *    `echo "test" | ruby try_readline.rb` # => "\"test\" \n"
+ *    # Raised `readline': end of file reached (EOFError)
  *
  */
 
