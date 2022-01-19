@@ -95,7 +95,7 @@ module Bundler
 
       def metadata_dependencies(platform)
         spec = @specs[platform].first
-        return [] unless spec.is_a?(Gem::Specification)
+        return [] if spec.is_a?(LazySpecification)
         dependencies = []
         if !spec.required_ruby_version.nil? && !spec.required_ruby_version.none?
           dependencies << DepProxy.get_proxy(Gem::Dependency.new("Ruby\0", spec.required_ruby_version), platform)

@@ -310,14 +310,6 @@ module Bundler
       end
     end
 
-    def locked_bundler_version
-      if @locked_bundler_version && @locked_bundler_version < Gem::Version.new(Bundler::VERSION)
-        new_version = Bundler::VERSION
-      end
-
-      new_version || @locked_bundler_version || Bundler::VERSION
-    end
-
     def locked_ruby_version
       return unless ruby_version
       if @unlock[:ruby] || !@locked_ruby_version

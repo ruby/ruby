@@ -1279,10 +1279,10 @@ class Gem::Specification < Gem::BasicSpecification
       raise TypeError, "invalid Gem::Specification format #{array.inspect}"
     end
 
-    # Cleanup any YAML::PrivateType. They only show up for an old bug
+    # Cleanup any Psych::PrivateType. They only show up for an old bug
     # where nil => null, so just convert them to nil based on the type.
 
-    array.map! {|e| e.kind_of?(YAML::PrivateType) ? nil : e }
+    array.map! {|e| e.kind_of?(Psych::PrivateType) ? nil : e }
 
     spec.instance_variable_set :@rubygems_version,          array[0]
     # spec version

@@ -76,15 +76,6 @@ module Bundler
         end
       end
 
-      def specific_dependency(name, version, platform)
-        pattern = [version, platform].compact.join("-")
-        return nil if pattern.empty?
-
-        gem_lines = info_path(name).read
-        gem_line = gem_lines[/^#{Regexp.escape(pattern)}\b.*/, 0]
-        gem_line ? parse_gem(gem_line) : nil
-      end
-
       private
 
       def lines(path)

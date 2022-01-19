@@ -21,32 +21,6 @@ module Bundler
           raise HTTPError, "Could not fetch specs from #{display_uri} due to underlying error <#{e.message}>"
         end
       end
-
-      def fetch_spec(spec)
-        spec -= [nil, "ruby", ""]
-        spec_file_name = "#{spec.join "-"}.gemspec"
-
-        uri = Bundler::URI.parse("#{remote_uri}#{Gem::MARSHAL_SPEC_DIR}#{spec_file_name}.rz")
-        if uri.scheme == "file"
-          path = Bundler.rubygems.correct_for_windows_path(uri.path)
-          Bundler.load_marshal Bundler.rubygems.inflate(Gem.read_binary(path))
-        elsif cached_spec_path = gemspec_cached_path(spec_file_name)
-          Bundler.load_gemspec(cached_spec_path)
-        else
-          Bundler.load_marshal Bundler.rubygems.inflate(downloader.fetch(uri).body)
-        end
-      rescue MarshalError
-        raise HTTPError, "Gemspec #{spec} contained invalid data.\n" \
-          "Your network or your gem server is probably having issues right now."
-      end
-
-      private
-
-      # cached gem specification path, if one exists
-      def gemspec_cached_path(spec_file_name)
-        paths = Bundler.rubygems.spec_cache_dirs.map {|dir| File.join(dir, spec_file_name) }
-        paths.find {|path| File.file? path }
-      end
     end
   end
 end
