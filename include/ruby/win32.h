@@ -653,6 +653,8 @@ extern char *rb_w32_strerror(int);
 #undef setsockopt
 #define setsockopt(s, v, n, o, l) rb_w32_setsockopt(s, v, n, o, l)
 
+#undef HAVE_SHUTDOWN
+#define HAVE_SHUTDOWN 1
 #undef shutdown
 #define shutdown(s, h)		rb_w32_shutdown(s, h)
 
