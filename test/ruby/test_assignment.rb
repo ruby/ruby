@@ -724,8 +724,7 @@ class TestAssignment < Test::Unit::TestCase
     end
 
     assert_raise(RuntimeError) do
-      m = 1
-      eval('m::C = raise("bar")')
+      eval('m = 1; m::C = raise("bar")')
     end
   end
 end
