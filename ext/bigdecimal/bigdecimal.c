@@ -1647,18 +1647,16 @@ BigDecimal_divide(VALUE self, VALUE r, Real **c, Real **res, Real **div)
     SAVE(b);
     *div = b;
 
-    mx = (a->Prec > b->Prec) ? a->Prec : b->Prec;
-    mx *= BASE_FIG;
-
     BigDecimal_count_precision_and_scale(self, &a_prec, NULL);
     BigDecimal_count_precision_and_scale(rr, &b_prec, NULL);
     mx = (a_prec > b_prec) ? a_prec : b_prec;
+    mx *= 2;
 
     if (2*BIGDECIMAL_DOUBLE_FIGURES > mx)
         mx = 2*BIGDECIMAL_DOUBLE_FIGURES;
 
     GUARD_OBJ((*c), VpCreateRbObject(mx + 2*BASE_FIG, "#0", true));
-    GUARD_OBJ((*res), VpCreateRbObject(mx*2 + 2*BASE_FIG, "#0", true));
+    GUARD_OBJ((*res), VpCreateRbObject((mx + 1)*2 + 2*BASE_FIG, "#0", true));
     VpDivd(*c, *res, a, b);
 
     return Qnil;
@@ -1808,6 +1806,8 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
     BigDecimal_count_precision_and_scale(rr, &b_prec, NULL);
 
     mx = (a_prec > b_prec) ? a_prec : b_prec;
+    mx *= 2;
+
     if (2*BIGDECIMAL_DOUBLE_FIGURES > mx)
         mx = 2*BIGDECIMAL_DOUBLE_FIGURES;
 
@@ -5931,18 +5931,17 @@ VpDivd(Real *c, Real *r, Real *a, Real *b)
     word_c = c->MaxPrec;
     word_r = r->MaxPrec;
 
-    ind_c = 0;
-    ind_r = 1;
-
     if (word_a >= word_r) goto space_error;
 
+    ind_r = 1;
     r->frac[0] = 0;
     while (ind_r <= word_a) {
 	r->frac[ind_r] = a->frac[ind_r - 1];
 	++ind_r;
     }
-
     while (ind_r < word_r) r->frac[ind_r++] = 0;
+
+    ind_c = 0;
     while (ind_c < word_c) c->frac[ind_c++] = 0;
 
     /* initial procedure */
