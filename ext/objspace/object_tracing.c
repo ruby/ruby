@@ -106,6 +106,7 @@ newobj_i(VALUE tpval, void *data)
     info->class_path = class_path_cstr;
     info->generation = rb_gc_count();
     st_insert(arg->object_table, (st_data_t)obj, (st_data_t)info);
+    RB_GC_GUARD(obj);
 }
 
 static void
