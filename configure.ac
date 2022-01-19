@@ -1158,6 +1158,7 @@ main()
 		ac_cv_func_lchown=yes
 		ac_cv_func_link=yes
 		ac_cv_func_readlink=yes
+		ac_cv_func_shutdown=yes
 		ac_cv_func_symlink=yes
 		ac_cv_lib_crypt_crypt=no
 		ac_cv_func_getpgrp_void=no
