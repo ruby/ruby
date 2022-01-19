@@ -1235,7 +1235,7 @@ main()
 		# wasi-libc's sys/socket.h is not compatible with -std=gnu99,
 		# so re-declare shutdown in include/ruby/missing.h
 		ac_cv_func_shutdown=no
-		]
+		],
 [	LIBS="-lm $LIBS"])
 : ${ORIG_LIBS=$LIBS}
 
