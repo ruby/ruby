@@ -279,28 +279,19 @@ dln_incompatible_library_p(void *handle)
 COMPILER_WARNING_POP
 #endif
 
-void*
-dln_load(const char *file)
+#if defined(_WIN32) || defined(USE_DLN_DLOPEN)
+static void *
+dln_open(const char *file)
 {
-#if (defined _WIN32 || defined USE_DLN_DLOPEN) && defined RUBY_EXPORT
     static const char incompatible[] = "incompatible library version";
-#endif
-#if defined _WIN32 || defined USE_DLN_DLOPEN
-    const char *error = 0;
-#endif
+    const char *error = NULL;
+    void *handle;
 
-#if defined _WIN32
-    HINSTANCE handle;
-    WCHAR *winfile;
+#if defined(_WIN32)
     char message[1024];
-    void (*init_fct)(void);
-    char *buf;
-
-    /* Load the file as an object one */
-    init_funcname(&buf, file);
 
     /* Convert the file path to wide char */
-    winfile = rb_w32_mbstr_to_wstr(CP_UTF8, file, -1, NULL);
+    WCHAR *winfile = rb_w32_mbstr_to_wstr(CP_UTF8, file, -1, NULL);
     if (!winfile) {
 	dln_memerror();
     }
@@ -314,82 +305,104 @@ dln_load(const char *file)
 	goto failed;
     }
 
-#if defined _WIN32 && defined RUBY_EXPORT
+# if defined(RUBY_EXPORT)
     if (!rb_w32_check_imported(handle, rb_libruby_handle())) {
 	FreeLibrary(handle);
 	error = incompatible;
 	goto failed;
     }
-#endif
+# endif
 
-    if ((init_fct = (void(*)(void))GetProcAddress(handle, buf)) == NULL) {
-	dln_loaderror("%s - %s\n%s", dln_strerror(), buf, file);
+#elif defined(USE_DLN_DLOPEN)
+
+# ifndef RTLD_LAZY
+#  define RTLD_LAZY 1
+# endif
+# ifdef __INTERIX
+#  undef RTLD_GLOBAL
+# endif
+# ifndef RTLD_GLOBAL
+#  define RTLD_GLOBAL 0
+# endif
+
+    /* Load file */
+    handle = dlopen(file, RTLD_LAZY|RTLD_GLOBAL);
+    if (handle == NULL) {
+        error = dln_strerror();
+        goto failed;
     }
 
-    /* Call the init code */
-    (*init_fct)();
-    return handle;
-#else
-    char *buf;
-    /* Load the file as an object one */
-    init_funcname(&buf, file);
-    translit_separator(file);
-
-#ifdef USE_DLN_DLOPEN
-#define DLN_DEFINED
-    {
-	void *handle;
-	void (*init_fct)(void);
-
-#ifndef RTLD_LAZY
-# define RTLD_LAZY 1
-#endif
-#ifdef __INTERIX
-# undef RTLD_GLOBAL
-#endif
-#ifndef RTLD_GLOBAL
-# define RTLD_GLOBAL 0
-#endif
-
-	/* Load file */
-	if ((handle = (void*)dlopen(file, RTLD_LAZY|RTLD_GLOBAL)) == NULL) {
-	    error = dln_strerror();
-	    goto failed;
-	}
-# if defined RUBY_EXPORT
+# if defined(RUBY_EXPORT)
 	{
 	    if (dln_incompatible_library_p(handle)) {
-
-#   if defined __APPLE__ && \
+#  if defined(__APPLE__) && \
     defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
     (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_11)
 		/* dlclose() segfaults */
 		rb_fatal("%s - %s", incompatible, file);
-#   else
+#  else
 		dlclose(handle);
 		error = incompatible;
 		goto failed;
-#   endif
+#  endif
 	    }
 	}
 # endif
+#endif
 
-	init_fct = (void(*)(void))(VALUE)dlsym(handle, buf);
-	if (init_fct == NULL) {
-	    const size_t errlen = strlen(error = dln_strerror()) + 1;
-	    error = memcpy(ALLOCA_N(char, errlen), error, errlen);
-	    dlclose(handle);
-	    goto failed;
-	}
-	/* Call the init code */
-	(*init_fct)();
+    return handle;
 
-	return handle;
+  failed:
+    dln_loaderror("%s - %s", error, file);
+}
+
+static void *
+dln_sym(void *handle, const char *symbol)
+{
+    void *func;
+    const char *error;
+
+#if defined(_WIN32)
+    char message[1024];
+
+    func = GetProcAddress(handle, symbol);
+    if (func == NULL) {
+        error = dln_strerror();
+        goto failed;
     }
-#endif /* USE_DLN_DLOPEN */
 
-#if defined(_AIX)
-#define DLN_DEFINED
+#elif defined(USE_DLN_DLOPEN)
+    func = dlsym(handle, symbol);
+    if (func == NULL) {
+        const size_t errlen = strlen(error = dln_strerror()) + 1;
+        error = memcpy(ALLOCA_N(char, errlen), error, errlen);
+        goto failed;
+    }
+#endif
+
+    return func;
+
+  failed:
+    dln_loaderror("%s - %s", error, symbol);
+}
+#endif
+
+void *
+dln_load(const char *file)
+{
+#if defined(_WIN32) || defined(USE_DLN_DLOPEN)
+    void *handle = dln_open(file);
+
+    char *init_fct_name;
+    init_funcname(&init_fct_name, file);
+    void (*init_fct)(void) = (void(*)(void))dln_sym(handle, init_fct_name);
+
+    /* Call the init code */
+    (*init_fct)();
+
+    return handle;
+
+#elif defined(_AIX)
     {
 	void (*init_fct)(void);
 
@@ -403,16 +416,8 @@ dln_load(const char *file)
 	(*init_fct)();
 	return (void*)init_fct;
     }
-#endif /* _AIX */
-
-#ifndef DLN_DEFINED
+#else
     dln_notimplement();
-#endif
-
-#endif
-#if defined(_WIN32) || defined(USE_DLN_DLOPEN)
-  failed:
-    dln_loaderror("%s - %s", error, file);
 #endif
 
     return 0;			/* dummy return */
