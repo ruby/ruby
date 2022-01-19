@@ -973,7 +973,7 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_raise_with_message(FloatDomainError, "Computation results in '-Infinity'") { BigDecimal("-1") / 0 }
   end
 
-  def test_dev_precision
+  def test_div_precision
     bug13754 = '[ruby-core:82107] [Bug #13754]'
     a = BigDecimal('101')
     b = BigDecimal('0.9163472602589686')
