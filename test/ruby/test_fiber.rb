@@ -407,6 +407,11 @@ class TestFiber < Test::Unit::TestCase
     pid, status = Process.waitpid2(pid)
     assert_not_predicate(status, :signaled?, bug5700)
     assert_predicate(status, :success?, bug5700)
+
+    pid = Fiber.new {fork}.resume
+    pid, status = Process.waitpid2(pid)
+    assert_not_predicate(status, :signaled?)
+    assert_predicate(status, :success?)
   end
 
   def test_exit_in_fiber
