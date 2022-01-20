@@ -5851,3 +5851,21 @@ rb_uninterruptible(VALUE (*b_proc)(VALUE), VALUE data)
     RUBY_VM_CHECK_INTS(cur_th->ec);
     return ret;
 }
+
+#ifdef USE_THIRD_PARTY_HEAP
+
+static inline rb_thread_t*
+rb_mmtk_coordinator_thread(void)
+{
+    return (rb_thread_t*)0x9cc7; // GC Coordinator Thread
+}
+void rb_stop_all_mutators_for_gc(void *gvl)
+{
+    gvl_acquire((rb_global_vm_lock_t *)gvl, rb_mmtk_coordinator_thread());
+}
+void rb_start_all_mutators_after_gc(void *gvl)
+{
+    gvl_release((rb_global_vm_lock_t *)gvl);
+
+}
+#endif // USE_THIRD_PARTY_HEAP

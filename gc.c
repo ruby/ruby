@@ -34,6 +34,8 @@
 
 #ifdef USE_THIRD_PARTY_HEAP
 #include "mmtk.h"
+
+RubyUpcalls ruby_upcalls;
 #endif
 
 /* MALLOC_HEADERS_BEGIN */
@@ -1783,10 +1785,7 @@ rb_objspace_alloc(void)
     // Note: this limit is currently broken for NoGC, but we still attempt to
     // initialise it properly regardless.
     // See https://github.com/mmtk/mmtk-core/issues/214
-    mmtk_gc_init(heap_size);
-    objspace->mutator = mmtk_bind_mutator(10); // TODO replace with pointer to start of TLS
-
-    mmtk_initialize_collection(NULL);
+    mmtk_init_binding(heap_size, &ruby_upcalls);
 #endif
 
     return objspace;
@@ -14012,3 +14011,82 @@ ruby_xrealloc2(void *ptr, size_t n, size_t new_size)
 #endif
     return ruby_xrealloc2_body(ptr, n, new_size);
 }
+
+#ifdef USE_THIRD_PARTY_HEAP
+void
+rb_gc_init_collection(void)
+{
+    mmtk_initialize_collection((void*)GET_THREAD());
+    rb_objspace.mutator = mmtk_bind_mutator((void*)GET_THREAD()); // TODO replace with pointer to start of TLS
+}
+
+typedef struct rb_mmtk_worker_thread {
+    rb_ractor_t *ractor;
+} rb_mmtk_worker_thread_t;
+
+MMTk_VMWorkerThread
+rb_mmtk_init_gc_worker_thread(MMTk_VMThread tls)
+{
+    RUBY_ASSERT(rb_native_thread_p());
+    rb_thread_t *main_thread = (rb_thread_t*)tls;
+
+    rb_mmtk_worker_thread_t *worker_thread = (rb_mmtk_worker_thread_t*)malloc(sizeof(rb_mmtk_worker_thread_t));
+    worker_thread->ractor = main_thread->ractor;
+
+    return (MMTk_VMWorkerThread)worker_thread;
+}
+
+
+void
+rb_mmtk_stop_the_world(MMTk_VMWorkerThread tls)
+{
+    // At this moment, we only support single-threaded execution.
+    // Just ensure there is only one ractor running.
+    if (rb_multi_ractor_p()) {
+	fprintf(stderr, "Stop-the-world is not implememted for multiple ractors.\n");
+	abort();
+    }
+
+    rb_mmtk_worker_thread_t *worker_thread = (rb_mmtk_worker_thread_t*)tls;
+    rb_ractor_t *ractor = worker_thread->ractor;
+    rb_stop_all_mutators_for_gc(rb_ractor_gvl(ractor));
+}
+
+void
+rb_mmtk_resume_mutators(MMTk_VMWorkerThread tls)
+{
+    // At this moment, we only support single-threaded execution.
+    // Just ensure there is only one ractor running.
+    if (rb_multi_ractor_p()) {
+	fprintf(stderr, "Stop-the-world is not implememted for multiple ractors.\n");
+	abort();
+    }
+
+    rb_mmtk_worker_thread_t *worker_thread = (rb_mmtk_worker_thread_t*)tls;
+    rb_ractor_t *ractor = worker_thread->ractor;
+    rb_start_all_mutators_after_gc(rb_ractor_gvl(ractor));
+}
+
+void*
+rb_mmtk_block_for_gc_internal(void *data)
+{
+    fprintf(stderr, "This thread triggered GC, and is blocking itself for GC.  This is not implemented yet.\n");
+    abort();
+    return NULL;
+}
+
+void
+rb_mmtk_block_for_gc(MMTk_VMMutatorThread tls)
+{
+    RUBY_ASSERT(rb_native_thread_p());
+
+    rb_thread_call_without_gvl(rb_mmtk_block_for_gc_internal, NULL, NULL, NULL);
+}
+
+RubyUpcalls ruby_upcalls = {
+    rb_mmtk_init_gc_worker_thread,
+    rb_mmtk_stop_the_world,
+    rb_mmtk_resume_mutators,
+    rb_mmtk_block_for_gc,
+};
+#endif

@@ -118,6 +118,10 @@ VALUE rb_gc_disable_no_rest(void);
 
 struct rb_thread_struct;
 
+#ifdef USE_THIRD_PARTY_HEAP
+void rb_gc_init_collection();
+#endif // USE_THIRD_PARTY_HEAP
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /* exports for objspace module */

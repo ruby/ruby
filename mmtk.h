@@ -11,9 +11,21 @@ extern "C" {
 typedef void* MMTk_Mutator;
 typedef void* MMTk_TraceLocal;
 
+typedef void* MMTk_VMThread;
+typedef void* MMTk_VMWorkerThread;
+typedef void* MMTk_VMMutatorThread;
+
+typedef struct {
+    MMTk_VMWorkerThread (*init_gc_worker_thread)(MMTk_VMThread main_tls);
+    void (*stop_the_world)(MMTk_VMWorkerThread tls);
+    void (*resume_mutators)(MMTk_VMWorkerThread tls);
+    void (*blokc_for_gc)(MMTk_VMMutatorThread tls);
+} RubyUpcalls;
+
 /**
  * Initialization
  */
+extern void mmtk_init_binding(size_t heap_size, RubyUpcalls *ruby_upcalls);
 extern void mmtk_initialize_collection(void *tls);
 extern void mmtk_enable_collection();
 
@@ -58,7 +70,6 @@ extern void* mmtk_trace_retain_referent(MMTk_TraceLocal trace_local, void* obj);
 /**
  * Misc
  */
-extern void mmtk_gc_init(size_t heap_size);
 extern bool mmtk_will_never_move(void* object);
 extern bool mmtk_process(char* name, char* value);
 extern void mmtk_scan_region();

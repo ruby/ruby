@@ -3818,6 +3818,10 @@ Init_BareVM(void)
     rb_native_mutex_initialize(&vm->ractor.sync.lock);
     rb_native_cond_initialize(&vm->ractor.sync.barrier_cond);
     rb_native_cond_initialize(&vm->ractor.sync.terminate_cond);
+
+#ifdef USE_THIRD_PARTY_HEAP
+    rb_gc_init_collection();
+#endif // USE_THIRD_PARTY_HEAP
 }
 
 void
