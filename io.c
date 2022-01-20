@@ -4340,10 +4340,10 @@ rb_io_each_line(int argc, VALUE *argv, VALUE io)
  *
  *  Calls the given block with each byte (0..255) in the stream; returns +self+:
  *
- *    f = File.new('t.uk')
+ *    f = File.new('t.rus')
  *    a = []
  *    f.each_byte {|b| a << b }
- *    a # => [209, 130, 208, 181, 208, 186, 209, 129, 209, 130]
+ *    a # => [209, 130, 208, 181, 209, 129, 209, 130]
  *
  *  Returns an Enumerator if no block is given.
  *
@@ -4486,10 +4486,10 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
  *
  *  Calls the given block with each character in the stream; returns +self+:
  *
- *    f = File.new('t.uk')
+ *    f = File.new('t.rus')
  *    a = []
  *    f.each_char {|c| a << c.ord }
- *    a # => [1090, 1077, 1082, 1089, 1090]
+ *    a # => [1090, 1077, 1089, 1090]
  *
  *  Returns an Enumerator if no block is given.
  *
@@ -4523,10 +4523,10 @@ rb_io_each_char(VALUE io)
  *
  *  Calls the given block with each codepoint in the stream; returns +self+:
  *
- *    f = File.new('t.uk')
+ *    f = File.new('t.rus')
  *    a = []
  *    f.each_codepoint {|c| a << c }
- *    a # => [1090, 1077, 1082, 1089, 1090]
+ *    a # => [1090, 1077, 1089, 1090]
  *
  *  Returns an Enumerator if no block is given.
  *
@@ -4647,7 +4647,7 @@ rb_io_each_codepoint(VALUE io)
  *
  *    f = File.open('t.txt')
  *    f.getc     # => "F"
- *    f = File.open('t.uk')
+ *    f = File.open('t.rus')
  *    f.getc.ord # => 1090
  *
  *  Related:  IO#readchar (may raise EOFError).
@@ -4677,7 +4677,7 @@ rb_io_getc(VALUE io)
  *
  *    f = File.open('t.txt')
  *    f.readchar     # => "F"
- *    f = File.open('t.uk')
+ *    f = File.open('t.rus')
  *    f.readchar.ord # => 1090
  *
  *  Related:  IO#getc (will not raise EOFError).
@@ -4704,7 +4704,7 @@ rb_io_readchar(VALUE io)
  *
  *    f = File.open('t.txt')
  *    f.getbyte # => 70
- *    f = File.open('t.uk')
+ *    f = File.open('t.rus')
  *    f.getbyte # => 209
  *
  *  Related: IO#readbyte (may raise EOFError).
@@ -4746,7 +4746,7 @@ rb_io_getbyte(VALUE io)
  *
  *    f = File.open('t.txt')
  *    f.readbyte # => 70
- *    f = File.open('t.uk')
+ *    f = File.open('t.rus')
  *    f.readbyte # => 209
  *
  *  Related: IO#getbyte (will not raise EOFError).
@@ -13979,9 +13979,9 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *      f.write(data)
  *      f.close
  *
- *  - <tt>t.uk</tt>: A Ukrainian-language text file that is assumed to exist via:
+ *  - <tt>t.rus</tt>: A Russian-language text file that is assumed to exist via:
  *
- *      File.write('t.uk', "\u{442 435 43A 441 442}")
+ *      File.write('t.rus', "\u{442 435 441 442}")
  *
  *  - <tt>t.tmp</tt>: A file that is assumed _not_ to exist.
  *
@@ -14273,10 +14273,10 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    File.open('t.txt') {|f| f.gets(12) } # => "First line\n"
  *
  *    # Text with 2-byte characters, which will not be split.
- *    File.open('t.uk') {|f| f.gets(1).size } # => 1
- *    File.open('t.uk') {|f| f.gets(2).size } # => 1
- *    File.open('t.uk') {|f| f.gets(3).size } # => 2
- *    File.open('t.uk') {|f| f.gets(4).size } # => 2
+ *    File.open('r.rus') {|f| f.gets(1).size } # => 1
+ *    File.open('r.rus') {|f| f.gets(2).size } # => 1
+ *    File.open('r.rus') {|f| f.gets(3).size } # => 2
+ *    File.open('r.rus') {|f| f.gets(4).size } # => 2
  *
  *  With arguments +sep+ and +limit+ given,
  *  combines the two behaviors:
