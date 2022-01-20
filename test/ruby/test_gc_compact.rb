@@ -18,6 +18,7 @@ class TestGCCompact < Test::Unit::TestCase
     private
 
     def supports_auto_compact?
+      return false if /wasm/ =~ RUBY_PLATFORM
       return true unless defined?(Etc::SC_PAGE_SIZE)
 
       begin
