@@ -9727,6 +9727,9 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *    f.readlines('li')
  *    # => ["First li", "ne\nSecond li", "ne\n\nFourth li", "ne\nFifth li", "ne\n"]
  *
+ *    File.write('try_readlines.rb', 'puts readlines')
+ *    `echo "test" | ruby try_readlines.rb` # => "\"test\" \n"
+ *
  *  The two special values for +sep+ are honored:
  *
  *    f = File.new('t.txt')
