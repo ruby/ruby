@@ -5014,14 +5014,13 @@ gc_unprotect_pages(rb_objspace_t *objspace, rb_heap_t *heap)
 static void gc_update_references(rb_objspace_t * objspace);
 static void invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page);
 
-#if !defined(__wasi__)
-// read barrier for pages containing MOVED objects
-# define GC_ENABLE_READ_SIGNAL_BARRIER 1
+#if defined(__wasi__) /* WebAssembly doesn't support signals */
+# define GC_COMPACTION_SUPPORTED 0
 #else
-# define GC_ENABLE_READ_SIGNAL_BARRIER 0
+# define GC_COMPACTION_SUPPORTED 1
 #endif
 
-#if GC_ENABLE_READ_SIGNAL_BARRIER
+#if GC_COMPACTION_SUPPORTED
 static void
 read_barrier_handler(uintptr_t address)
 {
@@ -5042,8 +5041,21 @@ read_barrier_handler(uintptr_t address)
     }
     RB_VM_LOCK_LEAVE();
 }
+#endif
 
-#if defined(_WIN32)
+#if !GC_COMPACTION_SUPPORTED
+static void
+uninstall_handlers(void)
+{
+    /* no-op */
+}
+
+static void
+install_handlers(void)
+{
+    /* no-op */
+}
+#elif defined(_WIN32)
 static LPTOP_LEVEL_EXCEPTION_FILTER old_handler;
 typedef void (*signal_handler)(int);
 static signal_handler old_sigsegv_handler;
@@ -5130,8 +5142,6 @@ install_handlers(void)
 }
 #endif
 
-#endif // GC_ENABLE_READ_SIGNAL_BARRIER
-
 static void
 revert_stack_objects(VALUE stack_obj, void *ctx)
 {
@@ -5178,9 +5188,7 @@ gc_compact_finish(rb_objspace_t *objspace, rb_size_pool_t *pool, rb_heap_t *heap
         gc_unprotect_pages(objspace, heap);
     }
 
-#if GC_ENABLE_READ_SIGNAL_BARRIER
     uninstall_handlers();
-#endif
 
     /* The mutator is allowed to run during incremental sweeping. T_MOVED
      * objects can get pushed on the stack and when the compaction process
@@ -5902,9 +5910,7 @@ gc_compact_start(rb_objspace_t *objspace)
     memset(objspace->rcompactor.moved_count_table, 0, T_MASK * sizeof(size_t));
 
     /* Set up read barrier for pages containing MOVED objects */
-#if GC_ENABLE_READ_SIGNAL_BARRIER
     install_handlers();
-#endif
 }
 
 static void
@@ -9324,6 +9330,10 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
         }
 #endif
 
+#if !GC_COMPACTION_SUPPORTED
+        rb_raise(rb_eNotImpError, "Compaction isn't available on this platform");
+#endif
+
         reason |= GPR_FLAG_COMPACT;
     }
     else {
@@ -10919,6 +10929,10 @@ gc_set_auto_compact(rb_execution_context_t *ec, VALUE _, VALUE v)
     if (!USE_MMAP_ALIGNED_ALLOC) {
         rb_raise(rb_eNotImpError, "Automatic compaction isn't available on this platform");
     }
+#endif
+
+#if !GC_COMPACTION_SUPPORTED
+    rb_raise(rb_eNotImpError, "Automatic compaction isn't available on this platform");
 #endif
 
     ruby_enable_autocompact = RTEST(v);
