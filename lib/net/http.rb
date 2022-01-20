@@ -20,7 +20,7 @@
 # See Net::HTTP for an overview and examples.
 #
 
-require_relative 'protocol'
+require 'net/protocol'
 require 'uri'
 autoload :OpenSSL, 'openssl'
 
