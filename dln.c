@@ -104,6 +104,7 @@ dln_loaderror(const char *format, ...)
 #define isdirsep(x) ((x) == '/')
 #endif
 
+#if defined(_WIN32) || defined(USE_DLN_DLOPEN)
 static size_t
 init_funcname_len(const char **file)
 {
@@ -134,6 +135,7 @@ static const char funcname_prefix[sizeof(FUNCNAME_PREFIX) - 1] = FUNCNAME_PREFIX
     tmp[plen+flen] = '\0';\
     *(buf) = tmp;\
 } while (0)
+#endif
 
 #ifdef USE_DLN_DLOPEN
 # include <dlfcn.h>
