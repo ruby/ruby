@@ -3102,6 +3102,15 @@ set_namespace_path(VALUE named_namespace, VALUE namespace_path)
     RB_VM_LOCK_LEAVE();
 }
 
+static void
+const_added(VALUE klass, ID const_name)
+{
+    if (GET_VM()->running) {
+        VALUE name = ID2SYM(const_name);
+        rb_funcallv(klass, idConst_added, 1, &name);
+    }
+}
+
 void
 rb_const_set(VALUE klass, ID id, VALUE val)
 {
@@ -3166,6 +3175,7 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 	    }
 	}
     }
+    const_added(klass, id);
 }
 
 static struct autoload_data_i *

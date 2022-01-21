@@ -423,7 +423,7 @@ class TestException < Test::Unit::TestCase
   end
 
   def test_thread_signal_location
-    skip
+    # pend('TODO: a known bug [Bug #14474]')
     _, stderr, _ = EnvUtil.invoke_ruby(%w"--disable-gems -d", <<-RUBY, false, true)
 Thread.start do
   Thread.current.report_on_exception = false

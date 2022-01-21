@@ -358,12 +358,10 @@ module Bundler
             o << "\n"
             o << %(Running `bundle update` will rebuild your snapshot from scratch, using only\n)
             o << %(the gems in your Gemfile, which may resolve the conflict.\n)
-          elsif !conflict.existing
+          elsif !conflict.existing && !name.end_with?("\0")
             o << "\n"
 
             relevant_source = conflict.requirement.source || source_for(name)
-
-            metadata_requirement = name.end_with?("\0")
 
             extra_message = if conflict.requirement_trees.first.size > 1
               ", which is required by gem '#{SharedHelpers.pretty_dependency(conflict.requirement_trees.first[-2])}',"
@@ -371,11 +369,7 @@ module Bundler
               ""
             end
 
-            if metadata_requirement
-              o << "#{SharedHelpers.pretty_dependency(conflict.requirement)}#{extra_message} is not available in #{relevant_source}"
-            else
-              o << gem_not_found_message(name, conflict.requirement, relevant_source, extra_message)
-            end
+            o << gem_not_found_message(name, conflict.requirement, relevant_source, extra_message)
           end
         end,
         :version_for_spec => lambda {|spec| spec.version },

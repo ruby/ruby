@@ -389,14 +389,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 	c"0",c"1",c"2",c"3",c"4",c"5",c"6",c"7", \
 	c"8",c"9",c"a",c"b",c"c",c"d",c"e",c"f"
 
-#if defined(__hpux)
-    static const char MasterDevice[] = "/dev/ptym/pty%s";
-    static const char SlaveDevice[] =  "/dev/pty/tty%s";
-    static const char deviceNo[][3] = {
-	HEX1("p"), HEX1("q"), HEX1("r"), HEX1("s"),
-	HEX1("t"), HEX1("u"), HEX1("v"), HEX1("w"),
-    };
-#elif defined(_IBMESA)  /* AIX/ESA */
+#if defined(_IBMESA)  /* AIX/ESA */
     static const char MasterDevice[] = "/dev/ptyp%s";
     static const char SlaveDevice[] = "/dev/ttyp%s";
     static const char deviceNo[][3] = {

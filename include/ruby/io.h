@@ -35,7 +35,11 @@
 #    undef revents
 #  endif
 #  define RB_WAITFD_IN  POLLIN
-#  define RB_WAITFD_PRI POLLPRI
+#  if defined(POLLPRI)
+#    define RB_WAITFD_PRI POLLPRI
+#  else
+#    define RB_WAITFD_PRI 0
+#  endif
 #  define RB_WAITFD_OUT POLLOUT
 #else
 #  define RB_WAITFD_IN  0x001

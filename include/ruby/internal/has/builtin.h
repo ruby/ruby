@@ -53,8 +53,10 @@
 # define RBIMPL_HAS_BUILTIN___builtin_assume            0
 # /* See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=52624 for bswap16. */
 # define RBIMPL_HAS_BUILTIN___builtin_bswap16           RBIMPL_COMPILER_SINCE(GCC, 4, 8, 0)
+#ifndef __OpenBSD__
 # define RBIMPL_HAS_BUILTIN___builtin_bswap32           RBIMPL_COMPILER_SINCE(GCC, 3, 6, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_bswap64           RBIMPL_COMPILER_SINCE(GCC, 3, 6, 0)
+#endif
 # define RBIMPL_HAS_BUILTIN___builtin_clz               RBIMPL_COMPILER_SINCE(GCC, 3, 6, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_clzl              RBIMPL_COMPILER_SINCE(GCC, 3, 6, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_clzll             RBIMPL_COMPILER_SINCE(GCC, 3, 6, 0)

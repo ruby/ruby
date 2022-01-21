@@ -767,6 +767,7 @@ begin
       omit if Reline::IOGate.win?
       cmd = %Q{ruby -e 'print(%Q{abc def \\e\\r})' | ruby -I#{@pwd}/lib -rreline -e 'p Reline.readline(%{> })'}
       start_terminal(40, 50, ['bash', '-c', cmd])
+      sleep 1
       close
       assert_screen(<<~'EOC')
         > abc def
@@ -1268,6 +1269,67 @@ begin
         prompt> class S
         prompt>   31
         prompt> end
+      EOC
+    end
+
+    def test_clear_dialog_when_adding_new_line_to_end_of_buffer
+      start_terminal(10, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("class A\n  def a\n    3\n  end\nend")
+      write("\n")
+      write("class S")
+      write("\n")
+      write("  3")
+      close
+      assert_screen(<<~'EOC')
+        prompt>   end
+        prompt> end
+        => :a
+        prompt> class S
+        prompt>   3
+      EOC
+    end
+
+    def test_insert_newline_in_the_middle_of_buffer_just_after_dialog
+      start_terminal(10, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("class A\n  def a\n    3\n  end\nend")
+      write("\n")
+      write("\C-p\C-p\C-p\C-p\C-p\C-e\C-hS")
+      write("\M-\x0D")
+      write("  3")
+      close
+      assert_screen(<<~'EOC')
+        prompt>   end
+        prompt> end
+        => :a
+        prompt> class S
+        prompt>   3
+        prompt>   def a
+        prompt>     3
+        prompt>   end
+        prompt> end
+      EOC
+    end
+
+    def test_incremental_search_on_not_last_line
+      start_terminal(10, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("def abc\nend\n")
+      write("def def\nend\n")
+      write("\C-p\C-p\C-e")
+      write("\C-r")
+      write("a")
+      write("\n\n")
+      close
+      assert_screen(<<~'EOC')
+        prompt> def abc
+        prompt> end
+        => :abc
+        prompt> def def
+        prompt> end
+        => :def
+        prompt> def abc
+        prompt> end
+        => :abc
+        prompt>
       EOC
     end
 

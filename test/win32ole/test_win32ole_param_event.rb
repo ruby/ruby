@@ -23,7 +23,7 @@ if defined?(WIN32OLE_PARAM)
       end
     else
       def test_dummy_for_skip_message
-        skip 'ActiveX Data Object Library and MS XML not found'
+        omit 'ActiveX Data Object Library and MS XML not found'
       end
     end
   end

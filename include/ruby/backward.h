@@ -13,6 +13,9 @@
 
 #define RBIMPL_ATTR_DEPRECATED_SINCE(ver) RBIMPL_ATTR_DEPRECATED(("since " #ver))
 #define RBIMPL_ATTR_DEPRECATED_INTERNAL(ver) RBIMPL_ATTR_DEPRECATED(("since "#ver", also internal"))
+#define RBIMPL_ATTR_DEPRECATED_INTERNAL_ONLY() RBIMPL_ATTR_DEPRECATED(("only for internal use"))
+
+RBIMPL_ATTR_DEPRECATED_INTERNAL_ONLY() void rb_clear_constant_cache(void);
 
 /* from version.c */
 #if defined(RUBY_SHOW_COPYRIGHT_TO_DIE) && !!(RUBY_SHOW_COPYRIGHT_TO_DIE+0)

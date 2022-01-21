@@ -73,12 +73,6 @@ module Bundler
       end.flatten(1)
     end
 
-    def spec(name, version, platform = nil)
-      Bundler::CompactIndexClient.debug { "spec(name = #{name}, version = #{version}, platform = #{platform})" }
-      update_info(name)
-      @cache.specific_dependency(name, version, platform)
-    end
-
     def update_and_parse_checksums!
       Bundler::CompactIndexClient.debug { "update_and_parse_checksums!" }
       return @info_checksums_by_name if @parsed_checksums

@@ -466,19 +466,17 @@ class Reline::LineEditor
     new_highest_in_this = calculate_height_by_width(prompt_width + calculate_width(@line.nil? ? '' : @line))
     rendered = false
     if @add_newline_to_end_of_buffer
+      clear_dialog_with_content
       rerender_added_newline(prompt, prompt_width)
       @add_newline_to_end_of_buffer = false
     else
       if @just_cursor_moving and not @rerender_all
-        @dialogs.each do |dialog|
-          clear_each_dialog(dialog)
-          dialog.contents = nil
-          dialog.trap_key = nil
-        end
+        clear_dialog_with_content
         rendered = just_move_cursor
         @just_cursor_moving = false
         return
       elsif @previous_line_index or new_highest_in_this != @highest_in_this
+        clear_dialog_with_content
         rerender_changed_current_line
         @previous_line_index = nil
         rendered = true
@@ -884,6 +882,14 @@ class Reline::LineEditor
   private def clear_dialog
     @dialogs.each do |dialog|
       clear_each_dialog(dialog)
+    end
+  end
+
+  private def clear_dialog_with_content
+    @dialogs.each do |dialog|
+      clear_each_dialog(dialog)
+      dialog.contents = nil
+      dialog.trap_key = nil
     end
   end
 
@@ -2227,6 +2233,8 @@ class Reline::LineEditor
             @buffer_of_lines = [String.new(encoding: @encoding)] if @buffer_of_lines.empty?
             @line_index = @buffer_of_lines.size - 1
             @line = @buffer_of_lines.last
+            @byte_pointer = @line.bytesize
+            @cursor = @cursor_max = calculate_width(@line)
             @rerender_all = true
             @searching_prompt = "(%s)`%s'" % [prompt_name, search_word]
           else

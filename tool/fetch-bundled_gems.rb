@@ -19,6 +19,10 @@ else
   puts "retrieving #{n} ..."
   system(*%W"git clone #{u} #{n}") or abort
 end
+if r
+  puts "fetching #{r} ..."
+  system("git", "fetch", "origin", r, chdir: n) or abort
+end
 c = r || "v#{v}"
 checkout = %w"git -c advice.detachedHead=false checkout"
 puts "checking out #{c} (v=#{v}, r=#{r}) ..."

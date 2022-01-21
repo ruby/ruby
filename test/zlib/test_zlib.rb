@@ -812,11 +812,11 @@ if defined? Zlib
           gz1.close
         end
       rescue Errno::EINVAL
-        skip 'O_TMPFILE not supported (EINVAL)'
+        omit 'O_TMPFILE not supported (EINVAL)'
       rescue Errno::EISDIR
-        skip 'O_TMPFILE not supported (EISDIR)'
+        omit 'O_TMPFILE not supported (EISDIR)'
       rescue Errno::EOPNOTSUPP
-        skip 'O_TMPFILE not supported (EOPNOTSUPP)'
+        omit 'O_TMPFILE not supported (EOPNOTSUPP)'
       end
     end
   end
@@ -1324,10 +1324,10 @@ if defined? Zlib
       begin
         assert_equal(0x02820145, Zlib.adler32_combine(one, two, 1))
       rescue NotImplementedError
-        skip "adler32_combine is not implemented"
+        omit "adler32_combine is not implemented"
       rescue Test::Unit::AssertionFailedError
         if /aix/ =~ RUBY_PLATFORM
-          skip "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
+          omit "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
         end
         raise $!
       end
@@ -1359,10 +1359,10 @@ if defined? Zlib
       begin
         assert_equal(0x8c736521, Zlib.crc32_combine(one, two, 1))
       rescue NotImplementedError
-        skip "crc32_combine is not implemented"
+        omit "crc32_combine is not implemented"
       rescue Test::Unit::AssertionFailedError
         if /aix/ =~ RUBY_PLATFORM
-          skip "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
+          omit "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
         end
         raise $!
       end

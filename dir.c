@@ -1992,7 +1992,11 @@ rb_glob_error(const char *path, VALUE a, const void *enc, int error)
     struct glob_error_args args;
     VALUE (*errfunc)(VALUE) = glob_func_error;
 
-    if (error == EACCES) {
+    switch (error) {
+      case EACCES:
+#ifdef ENOTCAPABLE
+      case ENOTCAPABLE:
+#endif
 	errfunc = glob_func_warning;
     }
     args.path = path;

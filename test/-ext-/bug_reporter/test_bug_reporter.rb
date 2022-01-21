@@ -19,9 +19,10 @@ class TestBugReporter < Test::Unit::TestCase
     ]
     tmpdir = Dir.mktmpdir
 
+    no_core = "Process.setrlimit(Process::RLIMIT_CORE, 0); " if defined?(Process.setrlimit) && defined?(Process::RLIMIT_CORE)
     args = ["--disable-gems", "-r-test-/bug_reporter",
             "-C", tmpdir]
-    stdin = "register_sample_bug_reporter(12345); Process.kill :SEGV, $$"
+    stdin = "#{no_core}register_sample_bug_reporter(12345); Process.kill :SEGV, $$"
     assert_in_out_err(args, stdin, [], expected_stderr, encoding: "ASCII-8BIT")
   ensure
     FileUtils.rm_rf(tmpdir) if tmpdir

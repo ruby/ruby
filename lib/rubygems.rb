@@ -606,17 +606,10 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   def self.load_yaml
     return if @yaml_loaded
 
-    begin
-      # Try requiring the gem version *or* stdlib version of psych.
-      require 'psych'
-    rescue ::LoadError
-      # If we can't load psych, that's fine, go on.
-    else
-      require_relative 'rubygems/psych_additions'
-      require_relative 'rubygems/psych_tree'
-    end
+    require 'psych'
+    require_relative 'rubygems/psych_additions'
+    require_relative 'rubygems/psych_tree'
 
-    require 'yaml'
     require_relative 'rubygems/safe_yaml'
 
     @yaml_loaded = true
@@ -766,11 +759,11 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Safely read a file in binary mode on all platforms.
 
   def self.read_binary(path)
-    open_with_flock(path, 'rb+') do |io|
+    open_file(path, 'rb+') do |io|
       io.read
     end
   rescue Errno::EACCES, Errno::EROFS
-    open_with_flock(path, 'rb') do |io|
+    open_file(path, 'rb') do |io|
       io.read
     end
   end
@@ -778,17 +771,17 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   ##
   # Safely write a file in binary mode on all platforms.
   def self.write_binary(path, data)
-    open_with_flock(path, 'wb') do |io|
+    open_file(path, 'wb') do |io|
       io.write data
     end
   end
 
   ##
-  # Open a file with given flags, and protect access with flock
+  # Open a file with given flags, and on Windows protect access with flock
 
-  def self.open_with_flock(path, flags, &block)
+  def self.open_file(path, flags, &block)
     File.open(path, flags) do |io|
-      if !java_platform? && !solaris_platform?
+      if !java_platform? && win_platform?
         begin
           io.flock(File::LOCK_EX)
         rescue Errno::ENOSYS, Errno::ENOTSUP

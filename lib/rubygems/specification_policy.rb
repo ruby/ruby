@@ -199,17 +199,17 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
         base = segments.first 2
 
         recommendation = if (op == '>' || op == '>=') && segments == [0]
-                           "  use a bounded requirement, such as '~> x.y'"
-                         else
-                           bugfix = if op == '>'
-                                      ", '> #{dep_version}'"
-                                    elsif op == '>=' and base != segments
-                                      ", '>= #{dep_version}'"
-                                    end
+          "  use a bounded requirement, such as '~> x.y'"
+        else
+          bugfix = if op == '>'
+            ", '> #{dep_version}'"
+          elsif op == '>=' and base != segments
+            ", '>= #{dep_version}'"
+          end
 
-                           "  if #{dep.name} is semantically versioned, use:\n" \
-                           "    add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join '.'}'#{bugfix}"
-                         end
+          "  if #{dep.name} is semantically versioned, use:\n" \
+          "    add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join '.'}'#{bugfix}"
+        end
 
         warning_messages << ["open-ended dependency on #{dep} is not recommended", recommendation].join("\n") + "\n"
       end
@@ -332,11 +332,11 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   def validate_array_attribute(field)
     val = @specification.send(field)
     klass = case field
-            when :dependencies then
-              Gem::Dependency
-            else
-              String
-            end
+    when :dependencies then
+      Gem::Dependency
+    else
+      String
+    end
 
     unless Array === val and val.all? {|x| x.kind_of?(klass) }
       error "#{field} must be an Array of #{klass}"

@@ -410,7 +410,7 @@ from the default \String to an instance of another class.
 There are a number of built-in converters.
 You can also define custom converters.
 
-See {Argument Converters}[./argument_converters_rdoc.html].
+See {Argument Converters}[./argument_converters.rdoc].
 
 === Descriptions
 

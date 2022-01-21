@@ -26,16 +26,17 @@ jobs:
         configure: ["", "cppflags=-DRUBY_DEBUG"]
         include:
           - test_task: "check"
-            os: ubuntu-20.04
             configure: "--host=i686-$OSTYPE"
+          - test_task: "check"
+            configure: "--enable-shared --enable-load-relative"
+            skipped_tests: "TestGem#test_.*_from_binstubs.*"
+            continue-on-skipped_tests: true
           - test_task: "test-all TESTS=--repeat-count=2"
-            os: ubuntu-20.04
-            configure: ""
       fail-fast: false
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
       RUBY_DEBUG: ci
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os || 'ubuntu-20.04' }}
     if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
       - run: mkdir build
@@ -96,20 +97,22 @@ jobs:
         if: ${{ matrix.test_task == 'check' }}
       - name: make ${{ matrix.test_task }}
         run: |
-          $SETARCH make -s ${{ matrix.test_task }} ${TESTS:+TESTS=`echo "$TESTS" | sed 's| |$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}
+          $SETARCH make -s ${{ matrix.test_task }} ${TESTS:+TESTS=`echo "$TESTS" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}
         timeout-minutes: 40
         env:
           RUBY_TESTOPTS: "-q --tty=no"
           TESTS: ${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ""
+          PRECHECK_BUNDLED_GEMS: "no"
       - name: make skipped tests
         run: |
-          $SETARCH make -s test-all TESTS=`echo "$TESTS" | sed 's| |$/ -n/|g;s|^|-n/|;s|$|$$/|'`
+          $SETARCH make -s test-all TESTS=`echo "$TESTS" | sed 's| |$$/ -n/|g;s|^|-n/|;s|$|$$/|'`
         env:
           GNUMAKEFLAGS: ""
           RUBY_TESTOPTS: "-v --tty=no"
           TESTS: ${{ matrix.skipped_tests }}
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests != '' }}
+        continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |

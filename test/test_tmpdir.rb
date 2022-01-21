@@ -12,7 +12,7 @@ class TestTmpdir < Test::Unit::TestCase
   end
 
   def test_world_writable
-    skip "no meaning on this platform" if /mswin|mingw/ =~ RUBY_PLATFORM
+    omit "no meaning on this platform" if /mswin|mingw/ =~ RUBY_PLATFORM
     Dir.mktmpdir do |tmpdir|
       # ToDo: fix for parallel test
       envs = %w[TMPDIR TMP TEMP]

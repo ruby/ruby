@@ -4319,21 +4319,13 @@ p_args		: p_expr
 			$$ = new_array_pattern_tail(p, pre_args, 0, 0, Qnone, &@$);
 		    %*/
 		    }
-		| p_args_head tSTAR tIDENTIFIER
+		| p_args_head p_rest
 		    {
-			$$ = new_array_pattern_tail(p, $1, 1, $3, Qnone, &@$);
+			$$ = new_array_pattern_tail(p, $1, 1, $2, Qnone, &@$);
 		    }
-		| p_args_head tSTAR tIDENTIFIER ',' p_args_post
+		| p_args_head p_rest ',' p_args_post
 		    {
-			$$ = new_array_pattern_tail(p, $1, 1, $3, $5, &@$);
-		    }
-		| p_args_head tSTAR
-		    {
-			$$ = new_array_pattern_tail(p, $1, 1, 0, Qnone, &@$);
-		    }
-		| p_args_head tSTAR ',' p_args_post
-		    {
-			$$ = new_array_pattern_tail(p, $1, 1, 0, $4, &@$);
+			$$ = new_array_pattern_tail(p, $1, 1, $2, $4, &@$);
 		    }
 		| p_args_tail
 		;

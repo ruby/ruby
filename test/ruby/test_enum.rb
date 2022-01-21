@@ -461,6 +461,17 @@ class TestEnumerable < Test::Unit::TestCase
       empty.first
       empty.block.call
     end;
+
+    bug18475 = '[ruby-dev:107059]'
+    assert_in_out_err([], <<-'end;', [], /unexpected break/, bug18475)
+      e = Enumerator.new do |g|
+        Thread.new do
+          g << 1
+        end.join
+      end
+
+      e.first
+    end;
   end
 
   def test_sort

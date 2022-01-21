@@ -133,6 +133,7 @@
 #include "internal/variable.h"
 #include "ruby/io.h"
 #include "ruby/io/buffer.h"
+#include "ruby/missing.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby_atomic.h"
@@ -7366,67 +7367,130 @@ static VALUE popen_finish(VALUE port, VALUE klass);
 
 /*
  *  call-seq:
- *     IO.popen([env,] cmd, mode="r" [, opt])               -> io
- *     IO.popen([env,] cmd, mode="r" [, opt]) {|io| block } -> obj
+ *    IO.popen(env = {}, cmd, mode = 'r', **opts) -> io
+ *    IO.popen(env = {}, cmd, mode = 'r', **opts) {|io| ... } -> object
  *
- *  Runs the specified command as a subprocess; the subprocess's
- *  standard input and output will be connected to the returned
- *  IO object.
+ *  Executes the given command +cmd+ as a subprocess
+ *  whose $stdin and $stdout are connected to a new stream +io+.
  *
- *  The PID of the started process can be obtained by IO#pid method.
+ *  If no block is given, returns the new stream,
+ *  which depending on given +mode+ may be open for reading, writing, or both.
+ *  The stream should be explicitly closed (eventually) to avoid resource leaks.
  *
- *  _cmd_ is a string or an array as follows.
+ *  If a block is given, the stream is passed to the block
+ *  (again, open for reading, writing, or both);
+ *  when the block exits, the stream is closed,
+ *  and the block's value is assigned to global variable <tt>$?</tt> and returned.
  *
- *    cmd:
- *      "-"                                      : fork
- *      commandline                              : command line string which is passed to a shell
- *      [env, cmdname, arg1, ..., opts]          : command name and zero or more arguments (no shell)
- *      [env, [cmdname, argv0], arg1, ..., opts] : command name, argv[0] and zero or more arguments (no shell)
- *    (env and opts are optional.)
+ *  Optional argument +mode+ may be any valid \IO mode.
+ *  See {Modes}[#class-IO-label-Modes].
  *
- *  If _cmd_ is a +String+ ``<code>-</code>'',
- *  then a new instance of Ruby is started as the subprocess.
+ *  Required argument +cmd+ determines which of the following occurs:
  *
- *  If <i>cmd</i> is an +Array+ of +String+,
- *  then it will be used as the subprocess's +argv+ bypassing a shell.
- *  The array can contain a hash at first for environments and
- *  a hash at last for options similar to #spawn.
+ *  - The process forks.
+ *  - A specified program runs in a shell.
+ *  - A specified program runs with specified arguments.
+ *  - A specified program runs with specified arguments and a specified +argv0+.
  *
- *  The default mode for the new file object is ``r'',
- *  but <i>mode</i> may be set to any of the modes listed in the description for class IO.
- *  The last argument <i>opt</i> qualifies <i>mode</i>.
+ *  Each of these is detailed below.
  *
- *    # set IO encoding
+ *  The optional hash argument +env+ specifies name/value pairs that are to be added
+ *  to the environment variables for the subprocess:
+ *
+ *    IO.popen({'FOO' => 'bar'}, 'ruby', 'r+') do |pipe|
+ *      pipe.puts 'puts ENV["FOO"]'
+ *      pipe.close_write
+ *      pipe.gets
+ *    end => "bar\n"
+ *
+ *  The optional keyword arguments +opts+ may be {\IO open options}[#class-IO-label-Open+Options]
+ *  and options for Kernel#spawn.
+ *
+ *  <b>Forked \Process</b>
+ *
+ *  When argument +cmd+ is the 1-character string <tt>'-'</tt>, causes the process to fork:
+ *    IO.popen('-') do |pipe|
+ *      if pipe
+ *        $stderr.puts "In parent, child pid is #{pipe.pid}\n"
+ *      else
+ *        $stderr.puts "In child, pid is #{$$}\n"
+ *      end
+ *    end
+ *
+ *  Output:
+ *
+ *    In parent, child pid is 26253
+ *    In child, pid is 26253
+ *
+ *  Note that this is not supported on all platforms.
+ *
+ *  <b>Shell Subprocess</b>
+ *
+ *  When argument +cmd+ is a single string (but not <tt>'-'</tt>),
+ *  the program named +cmd+ is run as a shell command:
+ *
+ *    IO.popen('uname') do |pipe|
+ *      pipe.readlines
+ *    end
+ *
+ *  Output:
+ *
+ *    ["Linux\n"]
+ *
+ *  Another example:
+ *
+ *    IO.popen('/bin/sh', 'r+') do |pipe|
+ *      pipe.puts('ls')
+ *      pipe.close_write
+ *      $stderr.puts pipe.readlines.size
+ *    end
+ *
+ *  Output:
+ *
+ *    213
+ *
+ *  <b>Program Subprocess</b>
+ *
+ *  When argument +cmd+ is an array of strings,
+ *  the program named <tt>cmd[0]</tt> is run with all elements of +cmd+ as its arguments:
+ *
+ *    IO.popen(['du', '..', '.']) do |pipe|
+ *      $stderr.puts pipe.readlines.size
+ *    end
+ *
+ *  Output:
+ *
+ *    1111
+ *
+ *  <b>Program Subprocess with <tt>argv0</tt></b>
+ *
+ *  When argument +cmd+ is an array whose first element is a 2-element string array
+ *  and whose remaining elements (if any) are strings:
+ *
+ *  - <tt>cmd[0][0]</tt> (the first string in the nested array) is the name of a program that is run.
+ *  - <tt>cmd[0][1]</tt> (the second string in the nested array) is set as the program's <tt>argv[0]</tt>.
+ *  - <tt>cmd[1..-1] (the strings in the outer array) are the program's arguments.
+ *
+ *  Example (sets <tt>$0</tt> to 'foo'):
+ *
+ *    IO.popen([['/bin/sh', 'foo'], '-c', 'echo $0']).read # => "foo\n"
+ *
+ *  <b>Some Special Examples</b>
+ *
+ *    # Set IO encoding.
  *    IO.popen("nkf -e filename", :external_encoding=>"EUC-JP") {|nkf_io|
  *      euc_jp_string = nkf_io.read
  *    }
  *
- *    # merge standard output and standard error using
- *    # spawn option.  See the document of Kernel.spawn.
- *    IO.popen(["ls", "/", :err=>[:child, :out]]) {|ls_io|
- *      ls_result_with_error = ls_io.read
- *    }
+ *    # Merge standard output and standard error using Kernel#spawn option. See Kernel#spawn.
+ *    IO.popen(["ls", "/", :err=>[:child, :out]]) do |io|
+ *      ls_result_with_error = io.read
+ *    end
  *
- *    # spawn options can be mixed with IO options
- *    IO.popen(["ls", "/"], :err=>[:child, :out]) {|ls_io|
- *      ls_result_with_error = ls_io.read
- *    }
- *
- *  Raises exceptions which IO.pipe and Kernel.spawn raise.
- *
- *  If a block is given, Ruby will run the command as a child connected
- *  to Ruby with a pipe. Ruby's end of the pipe will be passed as a
- *  parameter to the block.
- *  At the end of block, Ruby closes the pipe and sets <code>$?</code>.
- *  In this case IO.popen returns the value of the block.
- *
- *  If a block is given with a _cmd_ of ``<code>-</code>'',
- *  the block will be run in two separate processes: once in the parent,
- *  and once in a child. The parent process will be passed the pipe
- *  object as a parameter to the block, the child version of the block
- *  will be passed +nil+, and the child's standard in and
- *  standard out will be connected to the parent through the pipe. Not
- *  available on all platforms.
+ *    # Use mixture of spawn options and IO options.
+ *    IO.popen(["ls", "/"], :err=>[:child, :out]) do |io|
+ *      ls_result_with_error = io.read
+ *    end
  *
  *     f = IO.popen("uname")
  *     p f.readlines
@@ -7439,7 +7503,7 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *       f.puts "bar"; f.close_write; puts f.gets
  *     }
  *
- *  <em>produces:</em>
+ *  Output (from last section):
  *
  *     ["Linux\n"]
  *     Parent is 21346
@@ -7448,6 +7512,9 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *     21352 is here, f is nil
  *     #<Process::Status: pid 21352 exit 0>
  *     <foo>bar;zot;
+ *
+ *  Raises exceptions that IO.pipe and Kernel.spawn raise.
+ *
  */
 
 static VALUE
@@ -7565,41 +7632,36 @@ rb_open_file(int argc, const VALUE *argv, VALUE io)
     return io;
 }
 
-
 /*
  *  Document-method: File::open
  *
  *  call-seq:
- *     File.open(filename, mode="r" [, opt])                 -> file
- *     File.open(filename [, mode [, perm]] [, opt])         -> file
- *     File.open(filename, mode="r" [, opt]) {|file| block } -> obj
- *     File.open(filename [, mode [, perm]] [, opt]) {|file| block } -> obj
+ *    File.open(path, mode = 'r', perm = 0666, **opts) -> file
+ *    File.open(path, mode = 'r', perm = 0666, **opts) {|f| ... } -> object
  *
- *  With no associated block, File.open is a synonym for
- *  File.new. If the optional code block is given, it will
- *  be passed the opened +file+ as an argument and the File object will
- *  automatically be closed when the block terminates.  The value of the block
- *  will be returned from File.open.
+ *  Creates a new \File object, via File.new with the given arguments.
  *
- *  If a file is being created, its initial permissions may be set using the
- *  +perm+ parameter.  See File.new for further discussion.
+ *  With no block given, returns the \File object.
  *
- *  See IO.new for a description of the +mode+ and +opt+ parameters.
+ *  With a block given, calls the block with the \File object
+ *  and returns the block's value.
+ *
  */
 
 /*
  *  Document-method: IO::open
  *
  *  call-seq:
- *     IO.open(fd, mode="r" [, opt])                -> io
- *     IO.open(fd, mode="r" [, opt]) {|io| block }  -> obj
+ *    IO.open(fd, mode = 'r', **opts)             -> io
+ *    IO.open(fd, mode = 'r', **opts) {|io| ... } -> object
  *
- *  With no associated block, IO.open is a synonym for IO.new.  If
- *  the optional code block is given, it will be passed +io+ as an argument,
- *  and the IO object will automatically be closed when the block terminates.
- *  In this instance, IO.open returns the value of the block.
+ *  Creates a new \IO object, via IO.new with the given arguments.
  *
- *  See IO.new for a description of the +fd+, +mode+ and +opt+ parameters.
+ *  With no block given, returns the \IO object.
+ *
+ *  With a block given, calls the block with the \IO object
+ *  and returns the block's value.
+ *
  */
 
 static VALUE
@@ -7616,12 +7678,20 @@ rb_io_s_open(int argc, VALUE *argv, VALUE klass)
 
 /*
  *  call-seq:
- *     IO.sysopen(path, [mode, [perm]])  -> integer
+ *    IO.sysopen(path, mode = 'r', perm = 0666) -> integer
  *
- *  Opens the given path, returning the underlying file descriptor as a
- *  Integer.
+ *  Opens the file at the given path with the given mode and permissions;
+ *  returns the integer file descriptor.
  *
- *     IO.sysopen("testfile")   #=> 3
+ *  If the file is to be readable, it must exist;
+ *  if the file is to be writable and does not exist,
+ *  it is created with the given permissions:
+ *
+ *    File.write('t.tmp', '')  # => 0
+ *    IO.sysopen('t.tmp')      # => 8
+ *    IO.sysopen('t.tmp', 'w') # => 9
+ *
+ *
  */
 
 static VALUE
@@ -7668,101 +7738,100 @@ check_pipe_command(VALUE filename_or_command)
 
 /*
  *  call-seq:
- *     open(path [, mode [, perm]] [, opt])                -> io or nil
- *     open(path [, mode [, perm]] [, opt]) {|io| block }  -> obj
+ *    open(path, mode = 'r', perm = 0666, **opts)             -> io or nil
+ *    open(path, mode = 'r', perm = 0666, **opts) {|io| ... } -> obj
  *
  *  Creates an IO object connected to the given stream, file, or subprocess.
  *
- *  If +path+ does not start with a pipe character (<code>|</code>), treat it
- *  as the name of a file to open using the specified mode (defaulting to
- *  "r").
+ *  Required string argument +path+ determines which of the following occurs:
  *
- *  The +mode+ is either a string or an integer.  If it is an integer, it
- *  must be bitwise-or of open(2) flags, such as File::RDWR or File::EXCL.  If
- *  it is a string, it is either "fmode", "fmode:ext_enc", or
- *  "fmode:ext_enc:int_enc".
+ *  - The file at the specified +path+ is opened.
+ *  - The process forks.
+ *  - A subprocess is created.
  *
- *  See the documentation of IO.new for full documentation of the +mode+ string
- *  directives.
+ *  Each of these is detailed below.
  *
- *  If a file is being created, its initial permissions may be set using the
- *  +perm+ parameter.  See File.new and the open(2) and chmod(2) man pages for
- *  a description of permissions.
+ *  <b>File Opened</b>
+
+ *  If +path+ does _not_ start with a pipe character (<tt>'|'</tt>),
+ *  a file stream is opened with <tt>File.open(path, mode, perm, opts)</tt>.
  *
- *  If a block is specified, it will be invoked with the IO object as a
- *  parameter, and the IO will be automatically closed when the block
- *  terminates.  The call returns the value of the block.
+ *  With no block given, file stream is returned:
  *
- *  If +path+ starts with a pipe character (<code>"|"</code>), a subprocess is
- *  created, connected to the caller by a pair of pipes.  The returned IO
- *  object may be used to write to the standard input and read from the
- *  standard output of this subprocess.
+ *    open('t.txt') # => #<File:t.txt>
  *
- *  If the command following the pipe is a single minus sign
- *  (<code>"|-"</code>), Ruby forks, and this subprocess is connected to the
- *  parent.  If the command is not <code>"-"</code>, the subprocess runs the
- *  command.  Note that the command may be processed by shell if it contains
+ *  With a block given, calls the block with the open file stream,
+ *  then closes the stream:
+ *
+ *    open('t.txt') {|f| p f } # => #<File:t.txt (closed)>
+ *
+ *  Output:
+ *
+ *    #<File:t.txt>
+ *
+ *  See File.open for details.
+ *
+ *  <b>Process Forked</b>
+ *
+ *  If +path+ is the 2-character string <tt>'|-'</tt>, the process forks
+ *  and the child process is connected to the parent.
+ *
+ *  With no block given:
+ *
+ *    io = open('|-')
+ *    if io
+ *      $stderr.puts "In parent, child pid is #{io.pid}."
+ *    else
+ *      $stderr.puts "In child, pid is #{$$}."
+ *    end
+ *
+ *  Output:
+ *
+ *    In parent, child pid is 27903.
+ *    In child, pid is 27903.
+ *
+ *  With a block given:
+ *
+ *    open('|-') do |io|
+ *      if io
+ *        $stderr.puts "In parent, child pid is #{io.pid}."
+ *      else
+ *        $stderr.puts "In child, pid is #{$$}."
+ *      end
+ *    end
+ *
+ *  Output:
+ *
+ *    In parent, child pid is 28427.
+ *    In child, pid is 28427.
+ *
+ *  <b>Subprocess Created</b>
+ *
+ *  If +path+ is <tt>'|command'</tt> (<tt>'command' != '-'</tt>),
+ *  a new subprocess runs the command; its open stream is returned.
+ *  Note that the command may be processed by shell if it contains
  *  shell metacharacters.
  *
- *  When the subprocess is Ruby (opened via <code>"|-"</code>), the +open+
- *  call returns +nil+.  If a block is associated with the open call, that
- *  block will run twice --- once in the parent and once in the child.
+ *  With no block given:
  *
- *  The block parameter will be an IO object in the parent and +nil+ in the
- *  child. The parent's +IO+ object will be connected to the child's $stdin
- *  and $stdout.  The subprocess will be terminated at the end of the block.
+ *    io = open('|echo "Hi!"') # => #<IO:fd 12>
+ *    print io.gets
+ *    io.close
  *
- *  === Examples
+ *  Output:
  *
- *  Reading from "testfile":
+ *    "Hi!"
  *
- *     open("testfile") do |f|
- *       print f.gets
- *     end
+ *  With a block given, calls the block with the stream, then closes the stream:
  *
- *  Produces:
+ *    open('|echo "Hi!"') do |io|
+ *      print io.gets
+ *    end
  *
- *     This is line one
+ *  Output:
  *
- *  Open a subprocess and read its output:
+ *    "Hi!"
  *
- *     cmd = open("|date")
- *     print cmd.gets
- *     cmd.close
- *
- *  Produces:
- *
- *     Wed Apr  9 08:56:31 CDT 2003
- *
- *  Open a subprocess running the same Ruby program:
- *
- *     f = open("|-", "w+")
- *     if f.nil?
- *       puts "in Child"
- *       exit
- *     else
- *       puts "Got: #{f.gets}"
- *     end
- *
- *  Produces:
- *
- *     Got: in Child
- *
- *  Open a subprocess using a block to receive the IO object:
- *
- *     open "|-" do |f|
- *       if f then
- *         # parent process
- *         puts "Got: #{f.gets}"
- *       else
- *         # child process
- *         puts "in Child"
- *       end
- *     end
- *
- *  Produces:
- *
- *     Got: in Child
  */
 
 static VALUE
@@ -7928,19 +7997,29 @@ rb_freopen(VALUE fname, const char *mode, FILE *fp)
 
 /*
  *  call-seq:
- *     ios.reopen(other_IO)             -> ios
- *     ios.reopen(path, mode [, opt])   -> ios
+ *    reopen(other_io)                 -> self
+ *    reopen(path, mode = 'r', **opts) -> self
  *
- *  Reassociates <em>ios</em> with the I/O stream given in
- *  <i>other_IO</i> or to a new stream opened on <i>path</i>. This may
- *  dynamically change the actual class of this stream.
- *  The +mode+ and +opt+ parameters accept the same values as IO.open.
+ *  Reassociates the stream with another stream,
+ *  which may be of a different class.
+ *  This method may be used to redirect an existing stream
+ *  to a new destination.
  *
- *     f1 = File.new("testfile")
- *     f2 = File.new("testfile")
- *     f2.readlines[0]   #=> "This is line one\n"
- *     f2.reopen(f1)     #=> #<File:testfile>
- *     f2.readlines[0]   #=> "This is line one\n"
+ *  With argument +other_io+ given, reassociates with that stream:
+ *
+ *    # Redirect $stdin from a file.
+ *    f = File.open('t.txt')
+ *    $stdin.reopen(f)
+ *
+ *    # Redirect $stdout to a file.
+ *    f = File.open('t.tmp', 'w')
+ *    $stdout.reopen(f)
+ *
+ *  With argument +path+ given, reassociates with a new stream to that file path:
+ *
+ *    $stdin.reopen('t.txt')
+ *    $stdout.reopen('t.tmp', 'w')
+ *
  */
 
 static VALUE
@@ -8076,10 +8155,10 @@ rb_io_init_copy(VALUE dest, VALUE io)
 
 /*
  *  call-seq:
- *     ios.printf(format_string [, obj, ...])   -> nil
+ *    printf(format_string, *objects) -> nil
  *
- *  Formats and writes to <em>ios</em>, converting parameters under
- *  control of the format string. See Kernel#sprintf for details.
+ *  Formats and writes +objects+ to the stream.
+ *  See Kernel#sprintf for formatting details.
  */
 
 VALUE
@@ -8091,13 +8170,33 @@ rb_io_printf(int argc, const VALUE *argv, VALUE out)
 
 /*
  *  call-seq:
- *     printf(io, string [, obj ... ])    -> nil
- *     printf(string [, obj ... ])        -> nil
+ *    printf(string, *objects)               -> nil
+ *    printf(io, string, *objects) -> nil
  *
  *  Equivalent to:
- *     io.write(sprintf(string, obj, ...))
- *  or
- *     $stdout.write(sprintf(string, obj, ...))
+ *
+ *    io.write(sprintf(string, *objects))
+ *
+ *  With the single argument +string+, formats +objects+ into the string,
+ *  then writes the formatted string to $stdout:
+ *
+ *    printf('%4.4d %10s %2.2f', 24, 24, 24.0)
+ *
+ *  Output (on $stdout):
+ *
+ *    0024         24 24.00#
+ *
+ *  With arguments +io+ and +string, formats +objects+ into the string,
+ *  then writes the formatted string to +io+:
+ *
+ *    printf($stderr, '%4.4d %10s %2.2f', 24, 24, 24.0)
+ *
+ *  Output (on $stderr):
+ *
+ *    0024         24 24.00# => nil
+ *
+ *  With no arguments, does nothing.
+ *
  */
 
 static VALUE
@@ -8131,26 +8230,55 @@ deprecated_str_setter(VALUE val, ID id, VALUE *var)
 
 /*
  *  call-seq:
- *     ios.print               -> nil
- *     ios.print(obj, ...)     -> nil
+ *    print(*objects) -> nil
  *
- *  Writes the given object(s) to <em>ios</em>. Returns +nil+.
+ *  Writes the given objects to the stream; returns +nil+.
+ *  Appends the output record separator <tt>$OUTPUT_RECORD_SEPARATOR</tt>
+ *  (<tt>$\\</tt>), if it is not +nil+.
  *
- *  The stream must be opened for writing.
- *  Each given object that isn't a string will be converted by calling
- *  its <code>to_s</code> method.
- *  When called without arguments, prints the contents of <code>$_</code>.
+ *  With argument +objects+ given, for each object:
  *
- *  If the output field separator (<code>$,</code>) is not +nil+,
- *  it is inserted between objects.
- *  If the output record separator (<code>$\\</code>) is not +nil+,
- *  it is appended to the output.
+ *  - Converts via its method +to_s+ if not a string.
+ *  - Writes to the stream.
+ *  - If not the last object, writes the output field separator
+ *    <tt>$OUTPUT_FIELD_SEPARATOR</tt> (<tt>$,</tt>) if it is not +nil+.
  *
- *     $stdout.print("This is ", 100, " percent.\n")
+ *  With default separators:
  *
- *  <em>produces:</em>
+ *    f = File.open('t.tmp', 'w+')
+ *    objects = [0, 0.0, Rational(0, 1), Complex(0, 0), :zero, 'zero']
+ *    p $OUTPUT_RECORD_SEPARATOR
+ *    p $OUTPUT_FIELD_SEPARATOR
+ *    f.print(*objects)
+ *    f.rewind
+ *    p f.read
  *
- *     This is 100 percent.
+ *  Output:
+ *
+ *    nil
+ *    nil
+ *    "00.00/10+0izerozero"
+ *
+ *  With specified separators:
+ *
+ *    $\ = "\n"
+ *    $, = ','
+ *    f.rewind
+ *    f.print(*objects)
+ *    f.rewind
+ *    p f.read
+ *
+ *  Output:
+ *
+ *    "0,0.0,0/1,0+0i,zero,zero\n"
+ *
+ *  With no argument given, writes the content of <tt>$_</tt>
+ *  (which is usually the most recent user input):
+ *
+ *    f = File.open('t.tmp', 'w+')
+ *    gets # Sets $_ to the most recent user input.
+ *    f.print
+ *
  */
 
 VALUE
@@ -8183,25 +8311,51 @@ rb_io_print(int argc, const VALUE *argv, VALUE out)
 
 /*
  *  call-seq:
- *     print(obj, ...)    -> nil
+ *    print(*objects) -> nil
  *
- *  Prints each object in turn to <code>$stdout</code>. If the output
- *  field separator (<code>$,</code>) is not +nil+, its
- *  contents will appear between each field. If the output record
- *  separator (<code>$\\</code>) is not +nil+, it will be
- *  appended to the output. If no arguments are given, prints
- *  <code>$_</code>. Objects that aren't strings will be converted by
- *  calling their <code>to_s</code> method.
+ *  Equivalent to <tt>$stdout.print(*objects)</tt>,
+ *  this method is the straightforward way to write to <tt>$stdout</tt>.
  *
- *     print "cat", [1,2,3], 99, "\n"
- *     $, = ", "
- *     $\ = "\n"
- *     print "cat", [1,2,3], 99
+ *  Writes the given objects to <tt>$stdout</tt>; returns +nil+.
+ *  Appends the output record separator <tt>$OUTPUT_RECORD_SEPARATOR</tt>
+ *  <tt>$\\</tt>), if it is not +nil+.
  *
- *  <em>produces:</em>
+ *  With argument +objects+ given, for each object:
  *
- *     cat12399
- *     cat, 1, 2, 3, 99
+ *  - Converts via its method +to_s+ if not a string.
+ *  - Writes to <tt>stdout</tt>.
+ *  - If not the last object, writes the output field separator
+ *    <tt>$OUTPUT_FIELD_SEPARATOR</tt> (<tt>$,</tt> if it is not +nil+.
+ *
+ *  With default separators:
+ *
+ *    objects = [0, 0.0, Rational(0, 1), Complex(0, 0), :zero, 'zero']
+ *    $OUTPUT_RECORD_SEPARATOR
+ *    $OUTPUT_FIELD_SEPARATOR
+ *    print(*objects)
+ *
+ *  Output:
+ *
+ *    nil
+ *    nil
+ *    00.00/10+0izerozero
+ *
+ *  With specified separators:
+ *
+ *    $OUTPUT_RECORD_SEPARATOR = "\n"
+ *    $OUTPUT_FIELD_SEPARATOR = ','
+ *    print(*objects)
+ *
+ *  Output:
+ *
+ *    0,0.0,0/1,0+0i,zero,zero
+ *
+ *  With no argument given, writes the content of <tt>$_</tt>
+ *  (which is usually the most recent user input):
+ *
+ *    gets  # Sets $_ to the most recent user input.
+ *    print # Prints $_.
+ *
  */
 
 static VALUE
@@ -8213,19 +8367,22 @@ rb_f_print(int argc, const VALUE *argv, VALUE _)
 
 /*
  *  call-seq:
- *     ios.putc(obj)    -> obj
+ *    putc(object) -> object
  *
- *  If <i>obj</i> is Numeric, write the character whose code is the
- *  least-significant byte of <i>obj</i>.  If <i>obj</i> is String,
- *  write the first character of <i>obj</i> to <em>ios</em>.  Otherwise,
- *  raise TypeError.
+ *  Writes a character to the stream.
  *
- *     $stdout.putc "A"
- *     $stdout.putc 65
+ *  If +object+ is numeric, converts to integer if necessary,
+ *  then writes the character whose code is the
+ *  least significant byte;
+ *  if +object+ is a string, writes the first character:
  *
- *  <em>produces:</em>
+ *    $stdout.putc "A"
+ *    $stdout.putc 65
+ *
+ *  Output:
  *
  *     AA
+ *
  */
 
 static VALUE
@@ -8252,14 +8409,14 @@ rb_io_putc(VALUE io, VALUE ch)
 
 /*
  *  call-seq:
- *     putc(int)   -> int
+ *    putc(int) -> int
  *
  *  Equivalent to:
  *
  *    $stdout.putc(int)
  *
- *  Refer to the documentation for IO#putc for important information regarding
- *  multi-byte characters.
+ *  See IO#putc for important information regarding multi-byte characters.
+ *
  */
 
 static VALUE
@@ -8310,29 +8467,47 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
 
 /*
  *  call-seq:
- *     ios.puts(obj, ...)    -> nil
+ *    puts(*objects) -> nil
  *
- *  Writes the given object(s) to <em>ios</em>.
- *  Writes a newline after any that do not already end
- *  with a newline sequence. Returns +nil+.
+ *  Writes the given +objects+ to the stream, which must be open for writing;
+ *  returns +nil+.\
+ *  Writes a newline after each that does not already end with a newline sequence.
+ *  If called without arguments, writes a newline.
  *
- *  The stream must be opened for writing.
- *  If called with an array argument, writes each element on a new line.
- *  Each given object that isn't a string or array will be converted
- *  by calling its +to_s+ method.
- *  If called without arguments, outputs a single newline.
+ *  Note that each added newline is the character <tt>"\n"<//tt>,
+ *  not the output record separator (<tt>$\\</tt>).
  *
- *     $stdout.puts("this", "is", ["a", "test"])
+ *  Treatment for each object:
  *
- *  <em>produces:</em>
+ *  - \String: writes the string.
+ *  - Neither string nor array: writes <tt>object.to_s</tt>.
+ *  - \Array: writes each element of the array; arrays may be nested.
  *
- *     this
- *     is
- *     a
- *     test
+ *  To keep these examples brief, we define this helper method:
  *
- *  Note that +puts+ always uses newlines and is not affected
- *  by the output record separator (<code>$\\</code>).
+ *    def show(*objects)
+ *      # Puts objects to file.
+ *      f = File.new('t.tmp', 'w+')
+ *      f.puts(objects)
+ *      # Return file content.
+ *      f.rewind
+ *      p f.read
+ *    end
+ *
+ *    # Strings without newlines.
+ *    show('foo', 'bar', 'baz')     # => "foo\nbar\nbaz\n"
+ *    # Strings, some with newlines.
+ *    show("foo\n", 'bar', "baz\n") # => "foo\nbar\nbaz\n"
+ *
+ *    # Neither strings nor arrays:
+ *    show(0, 0.0, Rational(0, 1), Complex(9, 0), :zero)
+ *    # => "0\n0.0\n0/1\n9+0i\nzero\n"
+ *
+ *    # Array of strings.
+ *    show(['foo', "bar\n", 'baz']) # => "foo\nbar\nbaz\n"
+ *    # Nested arrays.
+ *    show([[[0, 1], 2, 3], 4, 5])  # => "0\n1\n2\n3\n4\n5\n"
+ *
  */
 
 VALUE
@@ -8370,11 +8545,11 @@ rb_io_puts(int argc, const VALUE *argv, VALUE out)
 
 /*
  *  call-seq:
- *     puts(obj, ...)    -> nil
+ *    puts(*objects)    -> nil
  *
  *  Equivalent to
  *
- *      $stdout.puts(obj, ...)
+ *     $stdout.puts(objects)
  */
 
 static VALUE
@@ -8430,20 +8605,30 @@ rb_p_result(int argc, const VALUE *argv)
 
 /*
  *  call-seq:
- *     p(obj)              -> obj
- *     p(obj1, obj2, ...)  -> [obj, ...]
- *     p()                 -> nil
+ *    p(object)   -> obj
+ *    p(*objects) -> array of objects
+ *    p           -> nil
  *
- *  For each object, directly writes _obj_.+inspect+ followed by a
- *  newline to the program's standard output.
+ *  For each object +obj+, executes:
  *
- *     S = Struct.new(:name, :state)
- *     s = S['dave', 'TX']
- *     p s
+ *    $stdout.write(obj.inspect, "\n")
  *
- *  <em>produces:</em>
+ *  With one object given, returns the object;
+ *  with multiple objects given, returns an array containing the objects;
+ *  with no object given, returns +nil+.
  *
- *     #<S name="dave", state="TX">
+ *  Examples:
+ *
+ *    r = Range.new(0, 4)
+ *    p r                 # => 0..4
+ *    p [r, r, r]         # => [0..4, 0..4, 0..4]
+ *    p                   # => nil
+ *
+ *  Output:
+ *
+ *     0..4
+ *     [0..4, 0..4, 0..4]
+ *
  */
 
 static VALUE
@@ -8459,26 +8644,19 @@ rb_f_p(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     obj.display(port=$>)    -> nil
+ *    display(port = $>) -> nil
  *
- *  Prints <i>obj</i> on the given port (default <code>$></code>).
- *  Equivalent to:
- *
- *     def display(port=$>)
- *       port.write self
- *       nil
- *     end
- *
- *  For example:
+ *  Writes +self+ on the given port:
  *
  *     1.display
  *     "cat".display
  *     [ 4, 5, 6 ].display
  *     puts
  *
- *  <em>produces:</em>
+ *  Output:
  *
  *     1cat[4, 5, 6]
+ *
  */
 
 static VALUE
@@ -8739,155 +8917,32 @@ rb_io_make_open_file(VALUE obj)
 
 /*
  *  call-seq:
- *     IO.new(fd [, mode] [, opt])   -> io
+ *    IO.new(fd, mode = 'r', **opts) -> io
  *
- *  Returns a new IO object (a stream) for the given integer file descriptor
- *  +fd+ and +mode+ string.  +opt+ may be used to specify parts of +mode+ in a
- *  more readable fashion.  See also IO.sysopen and IO.for_fd.
+ *  Creates and returns a new \IO object (file stream) from a file descriptor.
  *
- *  IO.new is called by various File and IO opening methods such as IO::open,
- *  Kernel#open, and File::open.
+ *  \IO.new may be useful for interaction with low-level libraries.
+ *  For higher-level interactions, it may be simpler to create
+ *  the file stream using File.open.
  *
- *  === Open Mode
+ *  Argument +fd+ must be a valid file descriptor (integer):
  *
- *  When +mode+ is an integer it must be combination of the modes defined in
- *  File::Constants (+File::RDONLY+, <code>File::WRONLY|File::CREAT</code>).
- *  See the open(2) man page for more information.
+ *    path = 't.tmp'
+ *    fd = IO.sysopen(path) # => 3
+ *    IO.new(fd)            # => #<IO:fd 3>
  *
- *  When +mode+ is a string it must be in one of the following forms:
+ *  Optional argument +mode+ (defaults to 'r') must specify a valid mode
+ *  see {\IO Modes}[#class-IO-label-Modes]:
  *
- *    fmode
- *    fmode ":" ext_enc
- *    fmode ":" ext_enc ":" int_enc
- *    fmode ":" "BOM|UTF-*"
+ *    IO.new(fd, 'w')         # => #<IO:fd 3>
+ *    IO.new(fd, File::WRONLY) # => #<IO:fd 3>
  *
- *  +fmode+ is an IO open mode string, +ext_enc+ is the external encoding for
- *  the IO and +int_enc+ is the internal encoding.
+ *  Optional argument +opts+ must specify valid open options
+ *  see {IO Open Options}[#class-IO-label-Open+Options]:
  *
- *  ==== IO Open Mode
+ *    IO.new(fd, internal_encoding: nil) # => #<IO:fd 3>
+ *    IO.new(fd, autoclose: true)        # => #<IO:fd 3>
  *
- *  Ruby allows the following open modes:
- *
- *  	"r"  Read-only, starts at beginning of file  (default mode).
- *
- *  	"r+" Read-write, starts at beginning of file.
- *
- *  	"w"  Write-only, truncates existing file
- *  	     to zero length or creates a new file for writing.
- *
- *  	"w+" Read-write, truncates existing file to zero length
- *  	     or creates a new file for reading and writing.
- *
- *  	"a"  Write-only, each write call appends data at end of file.
- *  	     Creates a new file for writing if file does not exist.
- *
- *  	"a+" Read-write, each write call appends data at end of file.
- *	     Creates a new file for reading and writing if file does
- *	     not exist.
- *
- *  The following modes must be used separately, and along with one or more of
- *  the modes seen above.
- *
- *  	"b"  Binary file mode
- *  	     Suppresses EOL <-> CRLF conversion on Windows. And
- *  	     sets external encoding to ASCII-8BIT unless explicitly
- *  	     specified.
- *
- *  	"t"  Text file mode
- *
- *  The exclusive access mode ("x") can be used together with "w" to ensure
- *  the file is created. Errno::EEXIST is raised when it already exists.
- *  It may not be supported with all kinds of streams (e.g. pipes).
- *
- *  When the open mode of original IO is read only, the mode cannot be
- *  changed to be writable.  Similarly, the open mode cannot be changed from
- *  write only to readable.
- *
- *  When such a change is attempted the error is raised in different locations
- *  according to the platform.
- *
- *  === IO Encoding
- *
- *  When +ext_enc+ is specified, strings read will be tagged by the encoding
- *  when reading, and strings output will be converted to the specified
- *  encoding when writing.
- *
- *  When +ext_enc+ and +int_enc+ are specified read strings will be converted
- *  from +ext_enc+ to +int_enc+ upon input, and written strings will be
- *  converted from +int_enc+ to +ext_enc+ upon output.  See Encoding for
- *  further details of transcoding on input and output.
- *
- *  If "BOM|UTF-8", "BOM|UTF-16LE" or "BOM|UTF16-BE" are used, Ruby checks for
- *  a Unicode BOM in the input document to help determine the encoding.  For
- *  UTF-16 encodings the file open mode must be binary.  When present, the BOM
- *  is stripped and the external encoding from the BOM is used.  When the BOM
- *  is missing the given Unicode encoding is used as +ext_enc+.  (The BOM-set
- *  encoding option is case insensitive, so "bom|utf-8" is also valid.)
- *
- *  === Options
- *
- *  +opt+ can be used instead of +mode+ for improved readability.  The
- *  following keys are supported:
- *
- *  :mode ::
- *    Same as +mode+ parameter
- *
- *  :flags ::
- *    Specifies file open flags as integer.
- *    If +mode+ parameter is given, this parameter will be bitwise-ORed.
- *
- *  :\external_encoding ::
- *    External encoding for the IO.
- *
- *  :\internal_encoding ::
- *    Internal encoding for the IO.  "-" is a synonym for the default internal
- *    encoding.
- *
- *    If the value is +nil+ no conversion occurs.
- *
- *  :encoding ::
- *    Specifies external and internal encodings as "extern:intern".
- *
- *  :textmode ::
- *    If the value is truth value, same as "t" in argument +mode+.
- *
- *  :binmode ::
- *    If the value is truth value, same as "b" in argument +mode+.
- *
- *  :autoclose ::
- *    If the value is +false+, the +fd+ will be kept open after this IO
- *    instance gets finalized.
- *
- *  Also, +opt+ can have same keys in String#encode for controlling conversion
- *  between the external encoding and the internal encoding.
- *
- *  === Example 1
- *
- *    fd = IO.sysopen("/dev/tty", "w")
- *    a = IO.new(fd,"w")
- *    $stderr.puts "Hello"
- *    a.puts "World"
- *
- *  Produces:
- *
- *    Hello
- *    World
- *
- *  === Example 2
- *
- *    require 'fcntl'
- *
- *    fd = STDERR.fcntl(Fcntl::F_DUPFD)
- *    io = IO.new(fd, mode: 'w:UTF-16LE', cr_newline: true)
- *    io.puts "Hello, World!"
- *
- *    fd = STDERR.fcntl(Fcntl::F_DUPFD)
- *    io = IO.new(fd, mode: 'w', cr_newline: true,
- *                external_encoding: Encoding::UTF_16LE)
- *    io.puts "Hello, World!"
- *
- *  Both of above print "Hello, World!" in UTF-16LE to standard error output
- *  with converting EOL generated by #puts to CR.
  */
 
 static VALUE
@@ -8952,20 +9007,24 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     ios.set_encoding_by_bom   -> encoding or nil
+ *    set_encoding_by_bom -> encoding or nil
  *
- *  Checks if +ios+ starts with a BOM, and then consumes it and sets
- *  the external encoding.  Returns the result encoding if found, or
- *  nil.  If +ios+ is not binmode or its encoding has been set
- *  already, an exception will be raised.
+ *  If the stream begins with a BOM
+ *  ({byte order marker}[https://en.wikipedia.org/wiki/Byte_order_mark]),
+ *  consumes the BOM and sets the external encoding accordingly;
+ *  returns the result encoding if found, or +nil+ otherwise:
  *
- *    File.write("bom.txt", "\u{FEFF}abc")
- *    ios = File.open("bom.txt", "rb")
- *    ios.set_encoding_by_bom    #=>  #<Encoding:UTF-8>
+ *   File.write('t.tmp', "\u{FEFF}abc")
+ *   io = File.open('t.tmp', 'rb')
+ *   io.set_encoding_by_bom # => #<Encoding:UTF-8>
  *
- *    File.write("nobom.txt", "abc")
- *    ios = File.open("nobom.txt", "rb")
- *    ios.set_encoding_by_bom    #=>  nil
+ *   File.write('t.tmp', 'abc')
+ *   io = File.open('t.tmp', 'rb')
+ *   io.set_encoding_by_bom # => nil
+ *
+ *  Raises an exception if the stream is not binmode
+ *  or its encoding has already been set.
+ *
  */
 
 static VALUE
@@ -8990,27 +9049,38 @@ rb_io_set_encoding_by_bom(VALUE io)
 
 /*
  *  call-seq:
- *     File.new(filename, mode="r" [, opt])            -> file
- *     File.new(filename [, mode [, perm]] [, opt])    -> file
+ *    File.new(path, mode = 'r', perm = 0666, **opts) -> file
  *
- *  Opens the file named by +filename+ according to the given +mode+ and
- *  returns a new File object.
+ *  Opens the file at the given +path+ according to the given +mode+;
+ *  creates and returns a new \File object for that file.
  *
- *  See IO.new for a description of +mode+ and +opt+.
- *
- *  If a file is being created, permission bits may be given in +perm+.  These
- *  mode and permission bits are platform dependent; on Unix systems, see
- *  open(2) and chmod(2) man pages for details.
- *
- *  The new File object is buffered mode (or non-sync mode), unless
+ *  The new \File object is buffered mode (or non-sync mode), unless
  *  +filename+ is a tty.
- *  See IO#flush, IO#fsync, IO#fdatasync, and IO#sync= about sync mode.
+ *  See IO#flush, IO#fsync, IO#fdatasync, and IO#sync=.
  *
- *  === Examples
+ *  Argument +path+ must be a valid file path:
  *
- *    f = File.new("testfile", "r")
- *    f = File.new("newfile",  "w+")
- *    f = File.new("newfile", File::CREAT|File::TRUNC|File::RDWR, 0644)
+ *    File.new('/etc/fstab')
+ *    File.new('t.txt')
+ *
+ *  Optional argument +mode+ (defaults to 'r') must specify a valid mode
+ *  see {\IO Modes}[#class-IO-label-Modes]:
+ *
+ *    File.new('t.tmp', 'w')
+ *    File.new('t.tmp', File::RDONLY)
+ *
+ *  Optional argument +perm+ (defaults to 0666) must specify valid permissions
+ *  see {File Permissions}[#class-File-label-Permissions]:
+ *
+ *    File.new('t.tmp', File::CREAT, 0644)
+ *    File.new('t.tmp', File::CREAT, 0444)
+ *
+ *  Optional argument +opts+ must specify valid open options
+ *  see {IO Open Options}[#class-IO-label-Open+Options]:
+ *
+ *    File.new('t.tmp', autoclose: true)
+ *    File.new('t.tmp', internal_encoding: nil)
+ *
  */
 
 static VALUE
@@ -9048,7 +9118,7 @@ rb_io_s_new(int argc, VALUE *argv, VALUE klass)
 
 /*
  *  call-seq:
- *     IO.for_fd(fd, mode [, opt])    -> io
+ *    IO.for_fd(fd, mode = 'r', **opts) -> io
  *
  *  Synonym for IO.new.
  *
@@ -11061,7 +11131,7 @@ io_s_foreach(VALUE v)
  *
  *  If +name+ starts with a pipe character (<code>"|"</code>) and the receiver
  *  is the IO class, a subprocess is created in the same way as Kernel#open,
- *  and its output is returned.
+ *  and each line in its output is yielded.
  *  Consider to use File.foreach to disable the behavior of subprocess invocation.
  *
  *     File.foreach("testfile") {|x| print "GOT ", x }
@@ -11120,7 +11190,7 @@ io_s_readlines(VALUE v)
  *
  *  If +name+ starts with a pipe character (<code>"|"</code>) and the receiver
  *  is the IO class, a subprocess is created in the same way as Kernel#open,
- *  and its output is returned.
+ *  and each line in its output is yielded.
  *  Consider to use File.readlines to disable the behavior of subprocess invocation.
  *
  *     a = File.readlines("testfile")
@@ -11381,7 +11451,7 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *
  *  If +name+ starts with a pipe character (<code>"|"</code>) and the receiver
  *  is the IO class, a subprocess is created in the same way as Kernel#open,
- *  and its output is returned.
+ *  and its output is printed to the standard output.
  *  Consider to use File.write to disable the behavior of subprocess invocation.
  *
  *    File.write("testfile", "0123456789", 20)  #=> 10
@@ -11439,7 +11509,7 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
  *
  *  If +name+ starts with a pipe character (<code>"|"</code>) and the receiver
  *  is the IO class, a subprocess is created in the same way as Kernel#open,
- *  and its output is returned.
+ *  and its output is printed to the standard output.
  *  Consider to use File.binwrite to disable the behavior of subprocess invocation.
  *
  *  See also IO.read for details about +name+ and open_args.

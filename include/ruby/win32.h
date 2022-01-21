@@ -155,10 +155,14 @@ typedef int clockid_t;
 #define read(f, b, s)		rb_w32_read(f, b, s)
 #define write(f, b, s)		rb_w32_write(f, b, s)
 #define getpid()		rb_w32_getpid()
+#undef HAVE_GETPPID
+#define HAVE_GETPPID 1
 #define getppid()		rb_w32_getppid()
 #define sleep(x)		rb_w32_Sleep((x)*1000)
 #define Sleep(msec)		(void)rb_w32_Sleep(msec)
 
+#undef HAVE_EXECV
+#define HAVE_EXECV 1
 #undef execv
 #define execv(path,argv)	rb_w32_uaspawn(P_OVERLAY,path,argv)
 #undef isatty
@@ -309,7 +313,9 @@ extern rb_pid_t wait(int *);
 extern rb_pid_t rb_w32_uspawn(int, const char *, const char*);
 extern rb_pid_t rb_w32_uaspawn(int, const char *, char *const *);
 extern rb_pid_t rb_w32_uaspawn_flags(int, const char *, char *const *, DWORD);
-extern int kill(int, int);
+#undef HAVE_KILL
+#define HAVE_KILL 1
+extern int kill(rb_pid_t, int);
 extern int fcntl(int, int, ...);
 extern int rb_w32_set_nonblock(int);
 extern rb_pid_t rb_w32_getpid(void);
@@ -647,6 +653,8 @@ extern char *rb_w32_strerror(int);
 #undef setsockopt
 #define setsockopt(s, v, n, o, l) rb_w32_setsockopt(s, v, n, o, l)
 
+#undef HAVE_SHUTDOWN
+#define HAVE_SHUTDOWN 1
 #undef shutdown
 #define shutdown(s, h)		rb_w32_shutdown(s, h)
 

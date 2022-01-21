@@ -54,10 +54,10 @@ class Gem::Commands::SetupCommand < Gem::Command
                'List the documentation types you wish to',
                'generate.  For example: rdoc,ri' do |value, options|
       options[:document] = case value
-                           when nil   then %w[rdoc ri]
-                           when false then []
-                           else            value
-                           end
+      when nil   then %w[rdoc ri]
+      when false then []
+      else            value
+      end
     end
 
     add_option '--[no-]rdoc',
@@ -666,10 +666,10 @@ abort "#{deprecation_message}"
 
   def target_bin_path(bin_dir, bin_file)
     bin_file_formatted = if options[:format_executable]
-                           Gem.default_exec_format % bin_file
-                         else
-                           bin_file
-                         end
+      Gem.default_exec_format % bin_file
+    else
+      bin_file
+    end
     File.join bin_dir, bin_file_formatted
   end
 

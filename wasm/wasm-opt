@@ -1,0 +1,36 @@
+#!/bin/sh
+# A fake wasm-opt, which does nothing at all
+# See also: tool/wasm-clangw
+
+set -e
+input=
+output=
+while [ $# -ne 0 ]; do
+  case "$1" in
+    -o)
+      shift
+      output=$1
+  ;;
+    -*)
+      # ignore other options
+  ;;
+    *)
+      input=$1
+  ;;
+  esac
+  shift
+done
+
+if [ -z "$input" ]; then
+  echo "missing input binary"
+  exit 1
+fi
+
+if [ -z "$output" ]; then
+  echo "missing output binary"
+  exit 1
+fi
+
+if [ "$input" != "$output" ]; then
+  cp "$input" "$output"
+fi

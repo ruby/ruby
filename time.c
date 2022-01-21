@@ -1932,6 +1932,13 @@ time_init_now(rb_execution_context_t *ec, VALUE time, VALUE zone)
 }
 
 static VALUE
+time_s_now(rb_execution_context_t *ec, VALUE klass, VALUE zone)
+{
+    VALUE t = time_s_alloc(klass);
+    return time_init_now(ec, t, zone);
+}
+
+static VALUE
 time_set_utc_offset(VALUE time, VALUE off)
 {
     struct time_object *tobj;

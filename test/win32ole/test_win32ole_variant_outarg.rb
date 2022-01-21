@@ -42,7 +42,7 @@ if defined?(WIN32OLE_VARIANT)
 
       def test_variant_ref_and_argv
         if !ado_csv_installed?
-          skip("ActiveX Data Object Library not found")
+          omit("ActiveX Data Object Library not found")
         end
         sql = "INSERT INTO data.csv VALUES (5, 'E')"
         @db.execute(sql, -1)

@@ -2464,7 +2464,7 @@ class Resolv
     Regex_8HexLinkLocal = /\A
       [Ff][Ee]80
       (?::[0-9A-Fa-f]{1,4}){7}
-      %[0-9A-Za-z]+
+      %[-0-9A-Za-z._~]+
       \z/x
 
     ##
@@ -2478,7 +2478,7 @@ class Resolv
         |
         :((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)
       )?
-      :[0-9A-Fa-f]{1,4}%[0-9A-Za-z.]+
+      :[0-9A-Fa-f]{1,4}%[-0-9A-Za-z._~]+
       \z/x
 
     ##

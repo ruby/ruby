@@ -72,7 +72,7 @@ class TestResolvDNS < Test::Unit::TestCase
     begin
       OpenSSL
     rescue LoadError
-      skip 'autoload problem. see [ruby-dev:45021][Bug #5786]'
+      omit 'autoload problem. see [ruby-dev:45021][Bug #5786]'
     end if defined?(OpenSSL)
 
     with_udp('127.0.0.1', 0) {|u|
@@ -161,7 +161,7 @@ class TestResolvDNS < Test::Unit::TestCase
     begin
       OpenSSL
     rescue LoadError
-      skip 'autoload problem. see [ruby-dev:45021][Bug #5786]'
+      omit 'autoload problem. see [ruby-dev:45021][Bug #5786]'
     end if defined?(OpenSSL)
 
     with_udp('127.0.0.1', 0) {|u|
@@ -297,7 +297,7 @@ class TestResolvDNS < Test::Unit::TestCase
   end
 
   def test_no_server
-    skip if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # not working from the beginning
+    omit if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # not working from the beginning
     u = UDPSocket.new
     u.bind("127.0.0.1", 0)
     _, port, _, host = u.addr
@@ -314,7 +314,7 @@ class TestResolvDNS < Test::Unit::TestCase
     rescue Timeout::Error
       if RUBY_PLATFORM.match?(/mingw/)
         # cannot repo locally
-        skip 'Timeout Error on MinGW CI'
+        omit 'Timeout Error on MinGW CI'
       else
         raise Timeout::Error
       end

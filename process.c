@@ -6723,12 +6723,7 @@ p_sys_setresgid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 static VALUE
 p_sys_issetugid(VALUE obj)
 {
-    if (issetugid()) {
-	return Qtrue;
-    }
-    else {
-	return Qfalse;
-    }
+    return RBOOL(issetugid());
 }
 #else
 #define p_sys_issetugid rb_f_notimplement
@@ -6811,7 +6806,6 @@ proc_setgid(VALUE obj, VALUE id)
  * Darwin (Mac OS X)		   16
  * Sun Solaris 7,8,9,10		   16
  * Sun Solaris 11 / OpenSolaris	 1024
- * HP-UX			   20
  * Windows			 1015
  */
 static int _maxgroups = -1;
@@ -6858,6 +6852,7 @@ maxgroups(void)
  *  - the result is sorted
  *  - the result includes effective GIDs
  *  - the result does not include duplicated GIDs
+ *  - the result size does not exceed the value of Process.maxgroups
  *
  *  You can make sure to get a sorted unique GID list of
  *  the current process by this expression:
@@ -6952,10 +6947,10 @@ proc_setgroups(VALUE obj, VALUE ary)
  *
  *  Initializes the supplemental group access list by reading the
  *  system group database and using all groups of which the given user
- *  is a member. The group with the specified <em>gid</em> is also
- *  added to the list. Returns the resulting Array of the
- *  gids of all the groups in the supplementary group access list. Not
- *  available on all platforms.
+ *  is a member. The group with the specified _gid_ is also added to
+ *  the list. Returns the resulting Array of the GIDs of all the
+ *  groups in the supplementary group access list. Not available on
+ *  all platforms.
  *
  *     Process.groups   #=> [0, 1, 2, 3, 4, 6, 10, 11, 20, 26, 27]
  *     Process.initgroups( "mgranger", 30 )   #=> [30, 6, 10, 11]
@@ -6980,7 +6975,7 @@ proc_initgroups(VALUE obj, VALUE uname, VALUE base_grp)
  *  call-seq:
  *     Process.maxgroups   -> integer
  *
- *  Returns the maximum number of gids allowed in the supplemental
+ *  Returns the maximum number of GIDs allowed in the supplemental
  *  group access list.
  *
  *     Process.maxgroups   #=> 32
@@ -7000,7 +6995,7 @@ proc_getmaxgroups(VALUE obj)
  *  call-seq:
  *     Process.maxgroups= integer   -> integer
  *
- *  Sets the maximum number of gids allowed in the supplemental group
+ *  Sets the maximum number of GIDs allowed in the supplemental group
  *  access list.
  */
 

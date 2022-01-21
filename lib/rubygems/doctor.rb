@@ -117,11 +117,11 @@ class Gem::Doctor
       type = File.directory?(child) ? 'directory' : 'file'
 
       action = if @dry_run
-                 'Extra'
-               else
-                 FileUtils.rm_r(child)
-                 'Removed'
-               end
+        'Extra'
+      else
+        FileUtils.rm_r(child)
+        'Removed'
+      end
 
       say "#{action} #{type} #{sub_directory}/#{File.basename(child)}"
     end

@@ -357,6 +357,16 @@ See also Warning in {Core classes updates}[#label-Core+classes+updates+-28outsta
       can be directly passed to another method as a block
       argument.  [Feature #15618]
 
+    * Added Enumerator::Lazy#with_index be lazy
+      Previously, Enumerator::Lazy#with_index was not defined, so it
+      picked up the default implementation from Enumerator, which was
+      not lazy.  [Bug #7877]
+
+        ("a"..).lazy.with_index(1) { |it, index| puts "#{index}:#{it}" }.take(3).force
+        # => 1:a
+        #    2:b
+        #    3:c
+
 [Fiber]
 
   [New method]

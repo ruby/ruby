@@ -55,7 +55,7 @@ struct rb_classext_struct {
      * included. Hopefully that makes sense.
      */
     struct rb_subclass_entry *module_subclass_entry;
-#if SIZEOF_SERIAL_T != SIZEOF_VALUE /* otherwise class_serial is in struct RClass */
+#if SIZEOF_SERIAL_T != SIZEOF_VALUE && !USE_RVARGC /* otherwise class_serial is in struct RClass */
     rb_serial_t class_serial;
 #endif
     const VALUE origin_;
@@ -76,6 +76,9 @@ struct RClass {
 #else
     /* Class serial does not fit into struct RClass. Place m_tbl instead. */
     struct rb_id_table *m_tbl;
+# if USE_RVARGC
+    rb_serial_t *class_serial_ptr;
+# endif
 #endif
 };
 
@@ -83,7 +86,7 @@ typedef struct rb_subclass_entry rb_subclass_entry_t;
 typedef struct rb_classext_struct rb_classext_t;
 
 #if USE_RVARGC
-#  define RCLASS_EXT(c) ((rb_classext_t *)((char *)c + sizeof(struct RClass)))
+#  define RCLASS_EXT(c) ((rb_classext_t *)((char *)(c) + sizeof(struct RClass)))
 #else
 #  define RCLASS_EXT(c) (RCLASS(c)->ptr)
 #endif
@@ -103,7 +106,11 @@ typedef struct rb_classext_struct rb_classext_t;
 #if SIZEOF_SERIAL_T == SIZEOF_VALUE
 # define RCLASS_SERIAL(c) (RCLASS(c)->class_serial)
 #else
-# define RCLASS_SERIAL(c) (RCLASS_EXT(c)->class_serial)
+# if USE_RVARGC
+#  define RCLASS_SERIAL(c) (*RCLASS(c)->class_serial_ptr)
+# else
+#  define RCLASS_SERIAL(c) (RCLASS_EXT(c)->class_serial)
+# endif
 #endif
 #define RCLASS_INCLUDER(c) (RCLASS_EXT(c)->includer)
 #define RCLASS_SUBCLASS_ENTRY(c) (RCLASS_EXT(c)->subclass_entry)

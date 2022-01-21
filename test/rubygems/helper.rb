@@ -339,10 +339,10 @@ class Gem::TestCase < Test::Unit::TestCase
     ENV["GEM_SPEC_CACHE"] = File.join @tempdir, 'spec_cache'
 
     @orig_ruby = if ENV['RUBY']
-                   ruby = Gem.ruby
-                   Gem.ruby = ENV['RUBY']
-                   ruby
-                 end
+      ruby = Gem.ruby
+      Gem.ruby = ENV['RUBY']
+      ruby
+    end
 
     @git = ENV['GIT'] || (win_platform? ? 'git.exe' : 'git')
 
@@ -685,10 +685,10 @@ class Gem::TestCase < Test::Unit::TestCase
   # Load a YAML string, the psych 3 way
 
   def load_yaml(yaml)
-    if YAML.respond_to?(:unsafe_load)
-      YAML.unsafe_load(yaml)
+    if Psych.respond_to?(:unsafe_load)
+      Psych.unsafe_load(yaml)
     else
-      YAML.load(yaml)
+      Psych.load(yaml)
     end
   end
 
@@ -696,10 +696,10 @@ class Gem::TestCase < Test::Unit::TestCase
   # Load a YAML file, the psych 3 way
 
   def load_yaml_file(file)
-    if YAML.respond_to?(:unsafe_load_file)
-      YAML.unsafe_load_file(file)
+    if Psych.respond_to?(:unsafe_load_file)
+      Psych.unsafe_load_file(file)
     else
-      YAML.load_file(file)
+      Psych.load_file(file)
     end
   end
 

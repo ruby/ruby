@@ -340,7 +340,7 @@ rb_thread_s_debug_set(VALUE self, VALUE val)
 # define PRI_THREAD_ID "p"
 #endif
 
-NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *stack_start));
+MAYBE_UNUSED(NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *stack_start)));
 void ruby_sigchld_handler(rb_vm_t *); /* signal.c */
 
 static void
@@ -350,25 +350,6 @@ ubf_sigwait(void *ignore)
 }
 
 #include THREAD_IMPL_SRC
-
-#if   defined(_WIN32)
-
-#define DEBUG_OUT() \
-  WaitForSingleObject(&debug_mutex, INFINITE); \
-  printf(POSITION_FORMAT"%#lx - %s" POSITION_ARGS, GetCurrentThreadId(), buf); \
-  fflush(stdout); \
-  ReleaseMutex(&debug_mutex);
-
-#elif defined(HAVE_PTHREAD_H)
-
-#define DEBUG_OUT() \
-  pthread_mutex_lock(&debug_mutex); \
-  printf(POSITION_FORMAT"%"PRI_THREAD_ID" - %s" POSITION_ARGS, \
-	 fill_thread_id_string(pthread_self(), thread_id_string), buf);	\
-  fflush(stdout); \
-  pthread_mutex_unlock(&debug_mutex);
-
-#endif
 
 /*
  * TODO: somebody with win32 knowledge should be able to get rid of
@@ -829,6 +810,9 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     }
     else {
         errinfo = th->ec->errinfo;
+
+        VALUE exc = rb_vm_make_jump_tag_but_local_jump(state, Qundef);
+        if (!NIL_P(exc)) errinfo = exc;
 
         if (state == TAG_FATAL) {
             if (th->invoke_type == thread_invoke_type_ractor_proc) {
@@ -3942,8 +3926,6 @@ rb_thread_priority_set(VALUE thread, VALUE prio)
  * - OpenBSD 2.0 (src/sys/kern/sys_generic.c:1.4)
  *   select(2) documents how to allocate fd_set dynamically.
  *   http://www.openbsd.org/cgi-bin/man.cgi?query=select&manpath=OpenBSD+4.4
- * - HP-UX documents how to allocate fd_set dynamically.
- *   http://docs.hp.com/en/B2355-60105/select.2.html
  * - Solaris 8 has select_large_fdset
  * - Mac OS X 10.7 (Lion)
  *   select(2) returns EINVAL if nfds is greater than FD_SET_SIZE and

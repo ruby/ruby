@@ -54,14 +54,14 @@ module Gem::QueryUtils
   end
 
   def defaults_str # :nodoc:
-    "--local --name-matches // --no-details --versions --no-installed"
+    "--local --no-details --versions --no-installed"
   end
 
   def execute
-    gem_names = Array(options[:name])
-
-    if !args.empty?
-      gem_names = options[:exact] ? args.map{|arg| /\A#{Regexp.escape(arg)}\Z/ } : args.map{|arg| /#{arg}/i }
+    gem_names = if args.empty?
+      [options[:name]]
+    else
+      options[:exact] ? args.map{|arg| /\A#{Regexp.escape(arg)}\Z/ } : args.map{|arg| /#{arg}/i }
     end
 
     terminate_interaction(check_installed_gems(gem_names)) if check_installed_gems?
@@ -96,7 +96,7 @@ module Gem::QueryUtils
   end
 
   def gem_name?
-    !options[:name].source.empty?
+    !options[:name].nil?
   end
 
   def prerelease
@@ -129,12 +129,10 @@ module Gem::QueryUtils
     display_header("LOCAL")
 
     specs = Gem::Specification.find_all do |s|
-      s.name =~ name and req =~ s.version
-    end
+      name_matches = name ? s.name =~ name : true
+      version_matches = show_prereleases? || !s.version.prerelease?
 
-    dep = Gem::Deprecate.skip_during { Gem::Dependency.new name, req }
-    specs.select! do |s|
-      dep.match?(s.name, s.version, show_prereleases?)
+      name_matches and version_matches
     end
 
     spec_tuples = specs.map do |spec|
@@ -149,13 +147,13 @@ module Gem::QueryUtils
 
     fetcher = Gem::SpecFetcher.fetcher
 
-    spec_tuples = if name.respond_to?(:source) && name.source.empty?
-                    fetcher.detect(specs_type) { true }
-                  else
-                    fetcher.detect(specs_type) do |name_tuple|
-                      name === name_tuple.name
-                    end
-                  end
+    spec_tuples = if name.nil?
+      fetcher.detect(specs_type) { true }
+    else
+      fetcher.detect(specs_type) do |name_tuple|
+        name === name_tuple.name
+      end
+    end
 
     output_query_results(spec_tuples)
   end

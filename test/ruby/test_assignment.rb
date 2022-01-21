@@ -139,6 +139,104 @@ class TestAssignment < Test::Unit::TestCase
     order.clear
   end
 
+  def test_massign_const_order
+    order = []
+
+    test_mod_class = Class.new(Module) do
+      define_method(:x1){order << :x1; self}
+      define_method(:y1){order << :y1; self}
+      define_method(:x2){order << :x2; self}
+      define_method(:x3){order << :x3; self}
+      define_method(:x4){order << :x4; self}
+      define_method(:[]){|*args| order << [:[], *args]; self}
+      define_method(:r1){order << :r1; :r1}
+      define_method(:r2){order << :r2; :r2}
+
+      define_method(:constant_values) do
+        h = {}
+        constants.each do |sym|
+          h[sym] = const_get(sym)
+        end
+        h
+      end
+
+      define_singleton_method(:run) do |code|
+        m = new
+        m.instance_eval(code)
+        ret = [order.dup, m.constant_values]
+        order.clear
+        ret
+      end
+    end
+
+    ord, constants = test_mod_class.run(
+      "x1.y1::A, x2[1, 2, 3]::B, self[4]::C = r1, 6, r2"
+    )
+    assert_equal([:x1, :y1, :x2, [:[], 1, 2, 3], [:[], 4], :r1, :r2], ord)
+    assert_equal({:A=>:r1, :B=>6, :C=>:r2}, constants)
+
+    ord, constants = test_mod_class.run(
+      "x1.y1::A, *x2[1, 2, 3]::B, self[4]::C = r1, 6, 7, r2"
+    )
+    assert_equal([:x1, :y1, :x2, [:[], 1, 2, 3], [:[], 4], :r1, :r2], ord)
+    assert_equal({:A=>:r1, :B=>[6, 7], :C=>:r2}, constants)
+
+    ord, constants = test_mod_class.run(
+      "x1.y1::A, *x2[1, 2, 3]::B, x3[4]::C = r1, 6, 7, r2"
+    )
+    assert_equal([:x1, :y1, :x2, [:[], 1, 2, 3], :x3, [:[], 4], :r1, :r2], ord)
+    assert_equal({:A=>:r1, :B=>[6, 7], :C=>:r2}, constants)
+
+
+    ord, constants = test_mod_class.run(
+      "x1.y1::A, *x2[1, 2, 3]::B, x3[4]::C, x4::D = r1, 6, 7, r2, 8"
+    )
+    assert_equal([:x1, :y1, :x2, [:[], 1, 2, 3], :x3, [:[], 4], :x4, :r1, :r2], ord)
+    assert_equal({:A=>:r1, :B=>[6, 7], :C=>:r2, :D=>8}, constants)
+
+    ord, constants = test_mod_class.run(
+      "(x1.y1::A, x2::B), _a = [r1, r2], 7"
+    )
+    assert_equal([:x1, :y1, :x2, :r1, :r2], ord)
+    assert_equal({:A=>:r1, :B=>:r2}, constants)
+
+    ord, constants = test_mod_class.run(
+      "(x1.y1::A, x1::B), *x2[1, 2, 3]::C = [r1, 5], 6, 7, r2, 8"
+    )
+    assert_equal([:x1, :y1, :x1, :x2, [:[], 1, 2, 3], :r1, :r2], ord)
+    assert_equal({:A=>:r1, :B=>5, :C=>[6, 7, :r2, 8]}, constants)
+
+    ord, constants = test_mod_class.run(
+      "*x2[1, 2, 3]::A, (x3[4]::B, x4::C) = 6, 7, [r2, 8]"
+    )
+    assert_equal([:x2, [:[], 1, 2, 3], :x3, [:[], 4], :x4, :r2], ord)
+    assert_equal({:A=>[6, 7], :B=>:r2, :C=>8}, constants)
+
+    ord, constants = test_mod_class.run(
+      "(x1.y1::A, x1::B), *x2[1, 2, 3]::C, x3[4]::D, x4::E = [r1, 5], 6, 7, r2, 8"
+    )
+    assert_equal([:x1, :y1, :x1, :x2, [:[], 1, 2, 3], :x3, [:[], 4], :x4, :r1, :r2], ord)
+    assert_equal({:A=>:r1, :B=>5, :C=>[6, 7], :D=>:r2, :E=>8}, constants)
+
+    ord, constants = test_mod_class.run(
+      "(x1.y1::A, x1::B), *x2[1, 2, 3]::C, (x3[4]::D, x4::E) = [r1, 5], 6, 7, [r2, 8]"
+    )
+    assert_equal([:x1, :y1, :x1, :x2, [:[], 1, 2, 3], :x3, [:[], 4], :x4, :r1, :r2], ord)
+    assert_equal({:A=>:r1, :B=>5, :C=>[6, 7], :D=>:r2, :E=>8}, constants)
+
+    ord, constants = test_mod_class.run(
+      "((x1.y1::A, x1::B), _a), *x2[1, 2, 3]::C, ((x3[4]::D, x4::E), _b) = [[r1, 5], 10], 6, 7, [[r2, 8], 11]"
+    )
+    assert_equal([:x1, :y1, :x1, :x2, [:[], 1, 2, 3], :x3, [:[], 4], :x4, :r1, :r2], ord)
+    assert_equal({:A=>:r1, :B=>5, :C=>[6, 7], :D=>:r2, :E=>8}, constants)
+
+    ord, constants = test_mod_class.run(
+      "((x1.y1::A, x1::B), _a), *x2[1, 2, 3]::C, ((*x3[4]::D, x4::E), _b) = [[r1, 5], 10], 6, 7, [[r2, 8], 11]"
+    )
+    assert_equal([:x1, :y1, :x1, :x2, [:[], 1, 2, 3], :x3, [:[], 4], :x4, :r1, :r2], ord)
+    assert_equal({:A=>:r1, :B=>5, :C=>[6, 7], :D=>[:r2], :E=>8}, constants)
+  end
+
   def test_massign_splat
     a,b,*c = *[]; assert_equal([nil,nil,[]], [a,b,c])
     a,b,*c = *[1]; assert_equal([1,nil,[]], [a,b,c])
@@ -618,6 +716,16 @@ class TestAssignment < Test::Unit::TestCase
   def test_massign_in_cond
     result = eval("if (a, b = MyObj.new); [a, b]; end", nil, __FILE__, __LINE__)
     assert_equal [[1,2],[3,4]], result
+  end
+
+  def test_const_assign_order
+    assert_raise(RuntimeError) do
+      eval('raise("recv")::C = raise(ArgumentError, "bar")')
+    end
+
+    assert_raise(RuntimeError) do
+      eval('m = 1; m::C = raise("bar")')
+    end
   end
 end
 

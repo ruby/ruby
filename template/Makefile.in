@@ -392,7 +392,6 @@ all-incs: probes.h
 # * with gperf v.s. without gperf
 # * committers may have various versions of gperf
 # * ./configure v.s. ../ruby/configure
-# * GNU make v.s. HP-UX make	# HP-UX make invokes the action if lex.c and keywords has same mtime.
 # * svn checkout generate a file with mtime as current time
 # * ext4 and XFS has a mtime with fractional part
 lex.c: defs/keywords

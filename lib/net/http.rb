@@ -993,7 +993,7 @@ module Net   #:nodoc:
         conn_port = port
       end
 
-      D "opening connection to #{conn_addr}:#{conn_port}..."
+      debug "opening connection to #{conn_addr}:#{conn_port}..."
       begin
         s = Socket.tcp conn_addr, conn_port, @local_host, @local_port, connect_timeout: @open_timeout
       rescue => e
@@ -1002,7 +1002,7 @@ module Net   #:nodoc:
           "#{conn_addr}:#{conn_port} (#{e.message})"
       end
       s.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
-      D "opened"
+      debug "opened"
       if use_ssl?
         if proxy?
           plain_sock = BufferedIO.new(s, read_timeout: @read_timeout,
@@ -1036,7 +1036,7 @@ module Net   #:nodoc:
           OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT |
           OpenSSL::SSL::SSLContext::SESSION_CACHE_NO_INTERNAL_STORE
         @ssl_context.session_new_cb = proc {|sock, sess| @ssl_session = sess }
-        D "starting SSL for #{conn_addr}:#{conn_port}..."
+        debug "starting SSL for #{conn_addr}:#{conn_port}..."
         s = OpenSSL::SSL::SSLSocket.new(s, @ssl_context)
         s.sync_close = true
         # Server Name Indication (SNI) RFC 3546
@@ -1049,7 +1049,7 @@ module Net   #:nodoc:
         if (@ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE) && @ssl_context.verify_hostname
           s.post_connection_check(@address)
         end
-        D "SSL established, protocol: #{s.ssl_version}, cipher: #{s.cipher[0]}"
+        debug "SSL established, protocol: #{s.ssl_version}, cipher: #{s.cipher[0]}"
       end
       @socket = BufferedIO.new(s, read_timeout: @read_timeout,
                                write_timeout: @write_timeout,
@@ -1059,7 +1059,7 @@ module Net   #:nodoc:
       on_connect
     rescue => exception
       if s
-        D "Conn close because of connect error #{exception}"
+        debug "Conn close because of connect error #{exception}"
         s.close
       end
       raise
@@ -1593,10 +1593,10 @@ module Net   #:nodoc:
         if count < max_retries && IDEMPOTENT_METHODS_.include?(req.method)
           count += 1
           @socket.close if @socket
-          D "Conn close because of error #{exception}, and retry"
+          debug "Conn close because of error #{exception}, and retry"
           retry
         end
-        D "Conn close because of error #{exception}"
+        debug "Conn close because of error #{exception}"
         @socket.close if @socket
         raise
       end
@@ -1604,7 +1604,7 @@ module Net   #:nodoc:
       end_transport req, res
       res
     rescue => exception
-      D "Conn close because of error #{exception}"
+      debug "Conn close because of error #{exception}"
       @socket.close if @socket
       raise exception
     end
@@ -1614,11 +1614,11 @@ module Net   #:nodoc:
         connect
       elsif @last_communicated
         if @last_communicated + @keep_alive_timeout < Process.clock_gettime(Process::CLOCK_MONOTONIC)
-          D 'Conn close because of keep_alive_timeout'
+          debug 'Conn close because of keep_alive_timeout'
           @socket.close
           connect
         elsif @socket.io.to_io.wait_readable(0) && @socket.eof?
-          D "Conn close because of EOF"
+          debug "Conn close because of EOF"
           @socket.close
           connect
         end
@@ -1636,15 +1636,15 @@ module Net   #:nodoc:
       @curr_http_version = res.http_version
       @last_communicated = nil
       if @socket.closed?
-        D 'Conn socket closed'
+        debug 'Conn socket closed'
       elsif not res.body and @close_on_empty_response
-        D 'Conn close'
+        debug 'Conn close'
         @socket.close
       elsif keep_alive?(req, res)
-        D 'Conn keep-alive'
+        debug 'Conn keep-alive'
         @last_communicated = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       else
-        D 'Conn close'
+        debug 'Conn close'
         @socket.close
       end
     end
@@ -1699,11 +1699,14 @@ module Net   #:nodoc:
       default_port == port ? addr : "#{addr}:#{port}"
     end
 
-    def D(msg)
+    # Adds a message to debugging output
+    def debug(msg)
       return unless @debug_output
       @debug_output << msg
       @debug_output << "\n"
     end
+
+    alias_method :D, :debug
   end
 
 end

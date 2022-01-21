@@ -137,7 +137,7 @@ class TestNetHTTPS < Test::Unit::TestCase
   def test_session_reuse
     # FIXME: The new_session_cb is known broken for clients in OpenSSL 1.1.0h.
     # See https://github.com/openssl/openssl/pull/5967 for details.
-    skip if OpenSSL::OPENSSL_LIBRARY_VERSION =~ /OpenSSL 1.1.0h/
+    omit if OpenSSL::OPENSSL_LIBRARY_VERSION.include?('OpenSSL 1.1.0h')
 
     http = Net::HTTP.new(HOST, config("port"))
     http.use_ssl = true
@@ -164,7 +164,7 @@ class TestNetHTTPS < Test::Unit::TestCase
 
   def test_session_reuse_but_expire
     # FIXME: The new_session_cb is known broken for clients in OpenSSL 1.1.0h.
-    skip if OpenSSL::OPENSSL_LIBRARY_VERSION =~ /OpenSSL 1.1.0h/
+    omit if OpenSSL::OPENSSL_LIBRARY_VERSION.include?('OpenSSL 1.1.0h')
 
     http = Net::HTTP.new(HOST, config("port"))
     http.use_ssl = true

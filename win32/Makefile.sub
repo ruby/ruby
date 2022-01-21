@@ -850,6 +850,24 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_TZNAME 1
 #define HAVE_DAYLIGHT 1
 #define HAVE_GMTIME_R 1
+#define HAVE_CHMOD 1
+#define HAVE_CHOWN 1
+#define HAVE_DUP 1
+#define HAVE_EXECL 1
+#define HAVE_EXECLE 1
+#define HAVE_EXECV 1
+#define HAVE_EXECVE 1
+#define HAVE_GETEGID 1
+#define HAVE_GETEUID 1
+#define HAVE_GETGID 1
+#define HAVE_GETUID 1
+#define HAVE_PCLOSE 1
+#define HAVE_PIPE 1
+#define HAVE_POPEN 1
+#define HAVE_SHUTDOWN 1
+#define HAVE_SYSTEM 1
+#define HAVE_TZSET 1
+#define HAVE_UMASK 1
 !if $(RT_VER) > 120
 #define HAVE_QSORT_S
 !endif

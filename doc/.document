@@ -2,3 +2,4 @@
 *.rdoc
 NEWS-*
 syntax
+optparse

@@ -28,7 +28,12 @@
 #include <sys/mman.h>
 #endif
 
-#include <setjmp.h>
+#if defined(__wasm__) && !defined(__EMSCRIPTEN__)
+# include "wasm/setjmp.h"
+# include "wasm/machine.h"
+#else
+# include <setjmp.h>
+#endif
 #include <stdarg.h>
 #include <stdio.h>
 
@@ -3231,6 +3236,10 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         rb_class_remove_subclass_head(obj);
 	rb_class_remove_from_module_subclasses(obj);
 	rb_class_remove_from_super_subclasses(obj);
+#if SIZEOF_SERIAL_T != SIZEOF_VALUE && USE_RVARGC
+        xfree(RCLASS(obj)->class_serial_ptr);
+#endif
+
 #if !USE_RVARGC
 	if (RCLASS_EXT(obj))
             xfree(RCLASS_EXT(obj));
@@ -5158,6 +5167,14 @@ gc_unprotect_pages(rb_objspace_t *objspace, rb_heap_t *heap)
 static void gc_update_references(rb_objspace_t * objspace);
 static void invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page);
 
+#if !defined(__wasi__)
+// read barrier for pages containing MOVED objects
+# define GC_ENABLE_READ_SIGNAL_BARRIER 1
+#else
+# define GC_ENABLE_READ_SIGNAL_BARRIER 0
+#endif
+
+#if GC_ENABLE_READ_SIGNAL_BARRIER
 static void
 read_barrier_handler(uintptr_t address)
 {
@@ -5266,6 +5283,8 @@ install_handlers(void)
 }
 #endif
 
+#endif // GC_ENABLE_READ_SIGNAL_BARRIER
+
 static void
 revert_stack_objects(VALUE stack_obj, void *ctx)
 {
@@ -5312,7 +5331,9 @@ gc_compact_finish(rb_objspace_t *objspace, rb_size_pool_t *pool, rb_heap_t *heap
         gc_unprotect_pages(objspace, heap);
     }
 
+#if GC_ENABLE_READ_SIGNAL_BARRIER
     uninstall_handlers();
+#endif
 
     /* The mutator is allowed to run during incremental sweeping. T_MOVED
      * objects can get pushed on the stack and when the compaction process
@@ -6034,7 +6055,9 @@ gc_compact_start(rb_objspace_t *objspace)
     memset(objspace->rcompactor.moved_count_table, 0, T_MASK * sizeof(size_t));
 
     /* Set up read barrier for pages containing MOVED objects */
+#if GC_ENABLE_READ_SIGNAL_BARRIER
     install_handlers();
+#endif
 }
 
 static void
@@ -6635,7 +6658,45 @@ mark_const_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
 static void each_stack_location(rb_objspace_t *objspace, const rb_execution_context_t *ec,
                                  const VALUE *stack_start, const VALUE *stack_end, void (*cb)(rb_objspace_t *, VALUE));
 
-#ifndef __EMSCRIPTEN__
+#if defined(__wasm__)
+
+
+static VALUE *rb_stack_range_tmp[2];
+
+static void
+rb_mark_locations(void *begin, void *end)
+{
+    rb_stack_range_tmp[0] = begin;
+    rb_stack_range_tmp[1] = end;
+}
+
+# if defined(__EMSCRIPTEN__)
+
+static void
+mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec)
+{
+    emscripten_scan_stack(rb_mark_locations);
+    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe);
+
+    emscripten_scan_registers(rb_mark_locations);
+    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe);
+}
+# else // use Asyncify version
+
+static void
+mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec)
+{
+    rb_wasm_scan_stack(rb_mark_locations);
+    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe);
+
+    rb_wasm_scan_locals(rb_mark_locations);
+    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe);
+}
+
+# endif
+
+#else // !defined(__wasm__)
+
 static void
 mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec)
 {
@@ -6659,26 +6720,6 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec
     each_location(objspace, save_regs_gc_mark.v, numberof(save_regs_gc_mark.v), gc_mark_maybe);
 
     each_stack_location(objspace, ec, stack_start, stack_end, gc_mark_maybe);
-}
-#else
-
-static VALUE *rb_emscripten_stack_range_tmp[2];
-
-static void
-rb_emscripten_mark_locations(void *begin, void *end)
-{
-    rb_emscripten_stack_range_tmp[0] = begin;
-    rb_emscripten_stack_range_tmp[1] = end;
-}
-
-static void
-mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec)
-{
-    emscripten_scan_stack(rb_emscripten_mark_locations);
-    each_stack_location(objspace, ec, rb_emscripten_stack_range_tmp[0], rb_emscripten_stack_range_tmp[1], gc_mark_maybe);
-
-    emscripten_scan_registers(rb_emscripten_mark_locations);
-    each_stack_location(objspace, ec, rb_emscripten_stack_range_tmp[0], rb_emscripten_stack_range_tmp[1], gc_mark_maybe);
 }
 #endif
 
@@ -13475,7 +13516,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
             else {
                 if (STR_EMBED_P(obj)) APPENDF((BUFF_ARGS, " [embed]"));
 
-                APPENDF((BUFF_ARGS, " len: %ld, capa: %ld", RSTRING_LEN(obj), rb_str_capacity(obj)));
+                APPENDF((BUFF_ARGS, " len: %ld, capa: %" PRIdSIZE, RSTRING_LEN(obj), rb_str_capacity(obj)));
             }
             APPENDF((BUFF_ARGS, " \"%.*s\"", str_len_no_raise(obj), RSTRING_PTR(obj)));
 	    break;
