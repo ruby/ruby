@@ -14027,7 +14027,6 @@ typedef struct rb_mmtk_worker_thread {
 MMTk_VMWorkerThread
 rb_mmtk_init_gc_worker_thread(MMTk_VMThread tls)
 {
-    RUBY_ASSERT(rb_native_thread_p());
     rb_thread_t *main_thread = (rb_thread_t*)tls;
 
     rb_mmtk_worker_thread_t *worker_thread = (rb_mmtk_worker_thread_t*)malloc(sizeof(rb_mmtk_worker_thread_t));
@@ -14078,7 +14077,7 @@ rb_mmtk_block_for_gc_internal(void *data)
 void
 rb_mmtk_block_for_gc(MMTk_VMMutatorThread tls)
 {
-    RUBY_ASSERT(rb_native_thread_p());
+    RUBY_ASSERT(ruby_native_thread_p());
 
     rb_thread_call_without_gvl(rb_mmtk_block_for_gc_internal, NULL, NULL, NULL);
 }
