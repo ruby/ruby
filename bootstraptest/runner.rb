@@ -187,8 +187,10 @@ def exec_test(pathes)
   @width = pathes.map {|path| File.basename(path).size}.max + 2
   pathes.each do |path|
     @basename = File.basename(path)
-    $stderr.printf("%s%-*s ", erase(@quiet), @width, @basename)
-    $stderr.flush
+    unless @quiet
+      $stderr.printf("%s%-*s ", erase(@quiet), @width, @basename)
+      $stderr.flush
+    end
     @columns = @width + 1
     $stderr.puts if @verbose
     count = @count
@@ -198,14 +200,14 @@ def exec_test(pathes)
       if @error == error
         msg = "PASS #{@count-count}"
         @columns += msg.size - 1
-        $stderr.print "#{@progress_bs}#{@passed}#{msg}#{@reset}"
+        $stderr.print "#{@progress_bs}#{@passed}#{msg}#{@reset}" unless @quiet
       else
         msg = "FAIL #{@error-error}/#{@count-count}"
         $stderr.print "#{@progress_bs}#{@failed}#{msg}#{@reset}"
         @columns = 0
       end
     end
-    $stderr.puts unless @quiet and @tty and @error == error
+    $stderr.puts if !@quiet and (@tty or @error == error)
   end
   $stderr.print(erase) if @quiet
   @errbuf.each do |msg|
@@ -213,9 +215,13 @@ def exec_test(pathes)
   end
   if @error == 0
     if @count == 0
-      $stderr.puts "No tests, no problem"
+      $stderr.puts "No tests, no problem" unless @quiet
     else
-      $stderr.puts "#{@passed}PASS#{@reset} all #{@count} tests"
+      if @quiet
+        $stdout.puts "#{@passed}PASS#{@reset} all #{@count} tests"
+      else
+        $stderr.puts "#{@passed}PASS#{@reset} all #{@count} tests"
+      end
     end
     exit true
   else
@@ -225,7 +231,9 @@ def exec_test(pathes)
 end
 
 def show_progress(message = '')
-  if @verbose
+  if @quiet
+    # do nothing
+  elsif @verbose
     $stderr.print "\##{@count} #{@location} "
   elsif @tty
     $stderr.print "#{@progress_bs}#{@progress[@count % @progress.size]}"
@@ -234,7 +242,9 @@ def show_progress(message = '')
   faildesc, errout = with_stderr {yield}
   t = Time.now - t if @verbose
   if !faildesc
-    if @tty
+    if @quiet
+      # do nothing
+    elsif @tty
       $stderr.print "#{@progress_bs}#{@progress[@count % @progress.size]}"
     elsif @verbose
       $stderr.printf(". %.3f\n", t)
