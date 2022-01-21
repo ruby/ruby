@@ -1234,21 +1234,23 @@ rb_vm_make_binding(const rb_execution_context_t *ec, const rb_control_frame_t *s
 	rb_raise(rb_eRuntimeError, "Can't create Binding Object on top of Fiber.");
     }
 
-    while (1) {
-	envval = vm_make_env_object(ec, cfp);
-	if (cfp == ruby_level_cfp) {
-	    break;
-	}
-	cfp = rb_vm_get_binding_creatable_next_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
-    }
-
+    envval = vm_make_env_object(ec, cfp);
     bindval = rb_binding_alloc(rb_cBinding);
     GetBindingPtr(bindval, bind);
     vm_bind_update_env(bindval, bind, envval);
-    RB_OBJ_WRITE(bindval, &bind->block.as.captured.self, cfp->self);
-    RB_OBJ_WRITE(bindval, &bind->block.as.captured.code.iseq, cfp->iseq);
-    RB_OBJ_WRITE(bindval, &bind->pathobj, ruby_level_cfp->iseq->body->location.pathobj);
-    bind->first_lineno = rb_vm_get_sourceline(ruby_level_cfp);
+
+    if (cfp == ruby_level_cfp) {
+        RB_OBJ_WRITE(bindval, &bind->block.as.captured.self, cfp->self);
+        RB_OBJ_WRITE(bindval, &bind->block.as.captured.code.iseq, cfp->iseq);
+        RB_OBJ_WRITE(bindval, &bind->pathobj, ruby_level_cfp->iseq->body->location.pathobj);
+        bind->first_lineno = rb_vm_get_sourceline(ruby_level_cfp);
+    } else {
+         /* C-level binding, store local variables in plain hash */
+         VALUE hash = rb_hash_new();
+         RHASH_SET_IFNONE(hash, Qundef);
+         rb_obj_hide(hash);
+         RB_OBJ_WRITE(bindval, &bind->pathobj, hash);
+    }
 
     return bindval;
 }
@@ -1257,19 +1259,24 @@ const VALUE *
 rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const ID *dynvars)
 {
     VALUE envval, pathobj = bind->pathobj;
-    VALUE path = pathobj_path(pathobj);
-    VALUE realpath = pathobj_realpath(pathobj);
-    const struct rb_block *base_block;
+    VALUE path = 0;
+    VALUE realpath = 0;
+    const struct rb_block *base_block = NULL;
     const rb_env_t *env;
     rb_execution_context_t *ec = GET_EC();
-    const rb_iseq_t *base_iseq, *iseq;
+    const rb_iseq_t *base_iseq = NULL, *iseq = NULL;
     rb_ast_body_t ast;
     NODE tmp_node;
 
     if (dyncount < 0) return 0;
 
-    base_block = &bind->block;
-    base_iseq = vm_block_iseq(base_block);
+    if (bind->block.as.symbol) {
+        path = pathobj_path(pathobj);
+        realpath = pathobj_realpath(pathobj);
+
+        base_block = &bind->block;
+        base_iseq = vm_block_iseq(base_block);
+    }
 
     VALUE idtmp = 0;
     rb_ast_id_table_t *dyns = ALLOCV(idtmp, sizeof(rb_ast_id_table_t) + dyncount * sizeof(ID));
@@ -1291,9 +1298,13 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     tmp_node.nd_tbl = 0; /* reset table */
     ALLOCV_END(idtmp);
 
-    vm_set_eval_stack(ec, iseq, 0, base_block);
+    if (base_block) {
+        vm_set_eval_stack(ec, iseq, 0, base_block);
+    }
     vm_bind_update_env(bindval, bind, envval = vm_make_env_object(ec, ec->cfp));
-    rb_vm_pop_frame(ec);
+    if (base_block) {
+        rb_vm_pop_frame(ec);
+    }
 
     env = (const rb_env_t *)envval;
     return env->env;

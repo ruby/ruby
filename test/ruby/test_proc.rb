@@ -445,6 +445,32 @@ class TestProc < Test::Unit::TestCase
     assert_equal(@@line_of_source_location_test, lineno, 'Bug #2427')
   end
 
+  def test_binding_lookup_frame
+    pr = ->(bndg) do
+      was = bndg.local_variable_get(:my_var) rescue $!
+      bndg.local_variable_set(:my_var, 42)
+      [was, bndg]
+    end
+    define_singleton_method(:binding!, method(:binding).to_proc >> pr)
+
+    my_var = 1
+
+    prev_var, bind = binding!
+    assert_kind_of(NameError, prev_var)
+    assert_equal(1, my_var)
+
+    assert_equal([:my_var], bind.local_variables)
+    assert_equal(42, bind.local_variable_get(:my_var))
+    assert_equal(false, bind.local_variable_defined?(:foo))
+    assert_equal(3, bind.local_variable_set(:foo, 3))
+    assert_equal(true, bind.local_variable_defined?(:foo))
+    assert_equal(nil, bind.source_location)
+    assert_equal(3, bind.clone.local_variable_get(:foo))
+    assert_equal(3, bind.dup.local_variable_get(:foo))
+    assert_raise(RuntimeError) { bind.receiver }
+    assert_raise(RuntimeError) { bind.eval('') }
+  end
+
   def test_proc_lambda
     assert_raise(ArgumentError) { proc }
     assert_raise(ArgumentError) { assert_warn(/deprecated/) {lambda} }

@@ -15,6 +15,7 @@
 #include "internal/class.h"
 #include "internal/error.h"
 #include "internal/eval.h"
+#include "internal/hash.h"
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/symbol.h"
@@ -31,6 +32,8 @@
 
 #define UPDATE_TYPED_REFERENCE(_type, _ref) *(_type*)&_ref = (_type)rb_gc_location((VALUE)_ref)
 #define UPDATE_REFERENCE(_ref) UPDATE_TYPED_REFERENCE(VALUE, _ref)
+
+#define C_LEVEL_BINDING_P(bind) (!bind->block.as.symbol)
 
 const rb_cref_t *rb_vm_cref_in_context(VALUE self, VALUE cbase);
 
@@ -311,7 +314,9 @@ binding_mark(void *ptr)
     rb_binding_t *bind = ptr;
 
     RUBY_MARK_ENTER("binding");
-    block_mark(&bind->block);
+    if (!C_LEVEL_BINDING_P(bind)) {
+        block_mark(&bind->block);
+    }
     rb_gc_mark_movable(bind->pathobj);
     RUBY_MARK_LEAVE("binding");
 }
@@ -321,7 +326,9 @@ binding_compact(void *ptr)
 {
     rb_binding_t *bind = ptr;
 
-    block_compact((struct rb_block *)&bind->block);
+    if (!C_LEVEL_BINDING_P(bind)) {
+        block_compact((struct rb_block *)&bind->block);
+    }
     UPDATE_REFERENCE(bind->pathobj);
 }
 
@@ -363,7 +370,8 @@ binding_dup(VALUE self)
     rb_binding_t *src, *dst;
     GetBindingPtr(self, src);
     GetBindingPtr(bindval, dst);
-    rb_vm_block_copy(bindval, &dst->block, &src->block);
+    if (!C_LEVEL_BINDING_P(src))
+       rb_vm_block_copy(bindval, &dst->block, &src->block);
     RB_OBJ_WRITE(bindval, &dst->pathobj, src->pathobj);
     dst->first_lineno = src->first_lineno;
     return bindval;
@@ -427,9 +435,12 @@ static VALUE
 bind_eval(int argc, VALUE *argv, VALUE bindval)
 {
     VALUE args[4];
+    const rb_binding_t *bind;
 
     rb_scan_args(argc, argv, "12", &args[0], &args[2], &args[3]);
     args[1] = bindval;
+    GetBindingPtr(bindval, bind);
+    if (C_LEVEL_BINDING_P(bind)) rb_raise(rb_eRuntimeError, "Cannot use eval with C-level binding");
     return rb_f_eval(argc+1, args, Qnil /* self will be searched in eval */);
 }
 
@@ -527,6 +538,7 @@ bind_local_variables(VALUE bindval)
     const rb_env_t *env;
 
     GetBindingPtr(bindval, bind);
+    if (C_LEVEL_BINDING_P(bind)) return rb_hash_keys(bind->pathobj);
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
     return rb_vm_env_local_variables(env);
 }
@@ -559,10 +571,15 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
     if (!lid) goto undefined;
 
     GetBindingPtr(bindval, bind);
-
-    env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
-    if ((ptr = get_local_variable_ptr(&env, lid)) != NULL) {
-        return *ptr;
+    if (C_LEVEL_BINDING_P(bind)) {
+        VALUE val = rb_hash_aref(bind->pathobj, sym);
+        if (val != Qundef) return val;
+    }
+    else {
+        env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
+        if ((ptr = get_local_variable_ptr(&env, lid)) != NULL) {
+            return *ptr;
+        }
     }
 
     sym = ID2SYM(lid);
@@ -608,6 +625,10 @@ bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
     if (!lid) lid = rb_intern_str(sym);
 
     GetBindingPtr(bindval, bind);
+    if (C_LEVEL_BINDING_P(bind)) {
+        return rb_hash_aset(bind->pathobj, sym, val);
+    }
+
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
     if ((ptr = get_local_variable_ptr(&env, lid)) == NULL) {
 	/* not found. create new env */
@@ -651,6 +672,8 @@ bind_local_variable_defined_p(VALUE bindval, VALUE sym)
     if (!lid) return Qfalse;
 
     GetBindingPtr(bindval, bind);
+    if (C_LEVEL_BINDING_P(bind))
+        return RBOOL(rb_hash_aref(bind->pathobj, sym) != Qundef);
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
     return RBOOL(get_local_variable_ptr(&env, lid));
 }
@@ -666,6 +689,7 @@ bind_receiver(VALUE bindval)
 {
     const rb_binding_t *bind;
     GetBindingPtr(bindval, bind);
+    if (C_LEVEL_BINDING_P(bind)) rb_raise(rb_eRuntimeError, "C-level binding doesn't have receiver");
     return vm_block_self(&bind->block);
 }
 
@@ -681,6 +705,7 @@ bind_location(VALUE bindval)
     VALUE loc[2];
     const rb_binding_t *bind;
     GetBindingPtr(bindval, bind);
+    if (C_LEVEL_BINDING_P(bind)) return Qnil;
     loc[0] = pathobj_path(bind->pathobj);
     loc[1] = INT2FIX(bind->first_lineno);
 

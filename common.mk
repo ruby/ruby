@@ -10820,6 +10820,7 @@ proc.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 proc.$(OBJEXT): $(top_srcdir)/internal/error.h
 proc.$(OBJEXT): $(top_srcdir)/internal/eval.h
 proc.$(OBJEXT): $(top_srcdir)/internal/gc.h
+proc.$(OBJEXT): $(top_srcdir)/internal/hash.h
 proc.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 proc.$(OBJEXT): $(top_srcdir)/internal/object.h
 proc.$(OBJEXT): $(top_srcdir)/internal/proc.h
