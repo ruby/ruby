@@ -3,15 +3,7 @@ dnl
 dnl Autoconf 2.67 fails to detect `-Werror=old-style-definition` due
 dnl to the old style definition of `main`.
 m4_version_prereq([2.70], [], [
-m4_define([AC_LANG_PROGRAM(C)],
-[$1
-int
-main (void)
-{
-$2
-  ;
-  return 0;
-}])
+m4_defun([AC_LANG_PROGRAM(C)], m4_bpatsubst(m4_defn([AC_LANG_PROGRAM(C)]), [main ()], [main (void)]))
 ])dnl
 dnl
 AC_DEFUN([RUBY_TRY_CFLAGS], [
