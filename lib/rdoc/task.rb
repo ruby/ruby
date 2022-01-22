@@ -71,7 +71,7 @@ require 'rake/tasklib'
 #   require 'rdoc/task'
 #
 #   RDoc::Task.new :rdoc_dev do |rdoc|
-#     rdoc.main = "README.doc"
+#     rdoc.main = "README.rdoc"
 #     rdoc.rdoc_files.include("README.rdoc", "lib/**/*.rb")
 #     rdoc.options << "--all"
 #   end
