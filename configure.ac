@@ -641,7 +641,7 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
     ])
     for wflag in \
 		 -Werror=deprecated-declarations \
-		 -Werror=division-by-zero \
+		 -Werror=division-by-zero -Werror=div-by-zero \
 		 -Werror=duplicated-cond \
 		 -Werror=implicit-function-declaration \
 		 -Werror=implicit-int \
