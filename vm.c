@@ -2733,7 +2733,7 @@ ruby_vm_destruct(rb_vm_t *vm)
 
 size_t rb_vm_memsize_waiting_list(struct list_head *waiting_list); // process.c
 size_t rb_vm_memsize_waiting_fds(struct list_head *waiting_fds); // thread.c
-size_t rb_vm_memsize_postponed_job_buffer(); // vm_trace.c
+size_t rb_vm_memsize_postponed_job_buffer(void); // vm_trace.c
 size_t rb_vm_memsize_workqueue(struct list_head *workqueue); // vm_trace.c
 
 // Used for VM memsize reporting. Returns the size of the at_exit list by

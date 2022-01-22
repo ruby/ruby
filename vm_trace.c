@@ -1596,7 +1596,7 @@ rb_vm_memsize_workqueue(struct list_head *workqueue)
 // Used for VM memsize reporting. Returns the total size of the postponed job
 // buffer that was allocated at initialization.
 size_t
-rb_vm_memsize_postponed_job_buffer()
+rb_vm_memsize_postponed_job_buffer(void)
 {
     return sizeof(rb_postponed_job_t) * MAX_POSTPONED_JOB;
 }
