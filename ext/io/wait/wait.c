@@ -77,6 +77,8 @@ wait_for_single_fd(rb_io_t *fptr, int events, struct timeval *tv)
  *
  * Returns number of bytes that can be read without blocking.
  * Returns zero if no information available.
+ *
+ * You must require 'io/wait' to use this method.
  */
 
 static VALUE
@@ -122,6 +124,8 @@ io_wait_event(VALUE io, int event, VALUE timeout)
  *   io.ready? -> true or false
  *
  * Returns +true+ if input available without blocking, or +false+.
+ *
+ * You must require 'io/wait' to use this method.
  */
 
 static VALUE
@@ -154,6 +158,8 @@ io_ready_p(VALUE io)
  * Waits until IO is readable and returns +true+, or
  * +false+ when times out.
  * Returns +true+ immediately when buffered data is available.
+ *
+ * You must require 'io/wait' to use this method.
  */
 
 static VALUE
@@ -193,6 +199,8 @@ io_wait_readable(int argc, VALUE *argv, VALUE io)
  *
  * Waits until IO is writable and returns +true+ or
  * +false+ when times out.
+ *
+ * You must require 'io/wait' to use this method.
  */
 static VALUE
 io_wait_writable(int argc, VALUE *argv, VALUE io)
@@ -228,6 +236,8 @@ io_wait_writable(int argc, VALUE *argv, VALUE io)
  *
  * Waits until IO is priority and returns +true+ or
  * +false+ when times out.
+ *
+ * You must require 'io/wait' to use this method.
  */
 static VALUE
 io_wait_priority(int argc, VALUE *argv, VALUE io)
@@ -295,6 +305,8 @@ wait_mode_sym(VALUE mode)
  *
  * Optional parameter +mode+ is one of +:read+, +:write+, or
  * +:read_write+.
+ *
+ * You must require 'io/wait' to use this method.
  */
 
 static VALUE
