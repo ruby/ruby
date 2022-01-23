@@ -13728,6 +13728,8 @@ rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
 
 #include "gc.rbinc"
 
+#include "drop_at_exit.c"
+
 void
 Init_GC(void)
 {
