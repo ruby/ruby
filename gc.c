@@ -4959,12 +4959,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
         bits >>= NUM_IN_PAGE(p) % BITS_BITLENGTH;
         if (try_move_plane(objspace, heap, sweep_page, (uintptr_t)p, bits, dest)) return 1;
 
-        if (index == 0) {
-            p = cursor->start + (BITS_BITLENGTH - NUM_IN_PAGE(cursor->start));
-        }
-        else {
-            p = cursor->start + (BITS_BITLENGTH - NUM_IN_PAGE(cursor->start)) + (BITS_BITLENGTH * index);
-        }
+        p = cursor->start + (BITS_BITLENGTH - NUM_IN_PAGE(cursor->start)) + (BITS_BITLENGTH * index);
 
         /* Find an object to move and move it. Movable objects must be
          * marked, so we iterate using the marking bitmap */
