@@ -125,7 +125,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     assert_match "remove_owner [y/N]", key_name_ui.output
     assert_match "access_webhooks [y/N]", key_name_ui.output
     assert_match "show_dashboard [y/N]", key_name_ui.output
-    assert_match "Would you like to enable MFA for this key? [y/N]", key_name_ui.output
+    assert_match "Would you like to enable MFA for this key? [Y/n]", key_name_ui.output
     assert_equal "name=test-key&push_rubygem=true&mfa=true", fetcher.last_request.body
 
     credentials = load_yaml_file Gem.configuration.credentials_path
@@ -152,7 +152,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     assert_match "remove_owner [y/N]", key_name_ui.output
     assert_match "access_webhooks [y/N]", key_name_ui.output
     assert_match "show_dashboard [y/N]", key_name_ui.output
-    assert_match "Would you like to enable MFA for this key? [y/N]", key_name_ui.output
+    assert_match "Would you like to enable MFA for this key? [Y/n]", key_name_ui.output
     assert_equal "name=test-key&push_rubygem=true&mfa=true", fetcher.last_request.body
 
     credentials = load_yaml_file Gem.configuration.credentials_path

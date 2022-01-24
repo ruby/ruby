@@ -273,8 +273,8 @@ module Gem::GemcutterUtilities
     mfa_level = get_user_mfa_level(email, password)
     params = {}
     if mfa_level == "ui_only" || mfa_level == "ui_and_gem_signin"
-      selected = ask "Would you like to enable MFA for this key? [y/N]"
-      params["mfa"] = true if selected =~ /^[yY](es)?$/
+      selected = ask "Would you like to enable MFA for this key? [Y/n]"
+      params["mfa"] = true unless selected =~ /^[nN](o)?$/
     end
     params
   end
