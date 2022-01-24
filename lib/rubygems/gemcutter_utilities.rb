@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require_relative 'remote_fetcher'
 require_relative 'text'
+require 'json'
 
 ##
 # Utility methods for using the RubyGems API.
@@ -163,12 +164,13 @@ module Gem::GemcutterUtilities
 
     key_name     = get_key_name(scope)
     scope_params = get_scope_params(scope)
+    mfa_params   = get_mfa_params(email, password)
 
     response = rubygems_api_request(:post, "api/v1/api_key",
                                     sign_in_host, scope: scope) do |request|
       request.basic_auth email, password
       request["OTP"] = otp if otp
-      request.body = URI.encode_www_form({ name: key_name }.merge(scope_params))
+      request.body = URI.encode_www_form({ name: key_name }.merge(scope_params, mfa_params))
     end
 
     with_response response do |resp|
@@ -265,6 +267,27 @@ module Gem::GemcutterUtilities
     end
 
     scope_params
+  end
+
+  def get_mfa_params(email, password)
+    mfa_level = get_user_mfa_level(email, password)
+    params = {}
+    if mfa_level == "ui_only" || mfa_level == "ui_and_gem_sign"
+      selected = ask "Would you like to enable MFA for this key? [y/N]"
+      params["mfa"] = true if selected =~ /^[yY](es)?$/
+    elsif mfa_level == "ui_and_api"
+      params["mfa"] = true
+    end
+    params
+  end
+
+  def get_user_mfa_level(email, password)
+    response = rubygems_api_request(:get, "api/v1/profile") do |request|
+      request.basic_auth email, password
+    end
+    with_response response do |resp|
+      JSON.parse(resp.body)["mfa"]
+    end
   end
 
   def get_key_name(scope)
