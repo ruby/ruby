@@ -227,9 +227,9 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def util_sign_in(response, host = nil, args = [], extra_input = '')
-    email    = 'you@example.com'
-    password = 'secret'
-    profile_response =[{"mfa" => "disabled"}.to_json, 200, 'OK']
+    email            = 'you@example.com'
+    password         = 'secret'
+    profile_response = [{"mfa" => "disabled"}.to_json, 200, 'OK']
 
     if host
       ENV['RUBYGEMS_HOST'] = host
