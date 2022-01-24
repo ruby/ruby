@@ -71,6 +71,7 @@ Note: We're only listing outstanding class updates.
 
 *   The following default gem are updated.
     * RubyGems 3.4.0.dev
+    * bigdecimal 3.1.2
     * bundler 2.4.0.dev
     * etc 1.4.0
     * io-console 0.5.11
