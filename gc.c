@@ -4956,7 +4956,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
 
         bits_t bits = mark_bits[index] & ~pin_bits[index];
 
-        bits >>= NUM_IN_PAGE(p);
+        bits >>= NUM_IN_PAGE(p) % BITS_BITLENGTH;
         if (try_move_plane(objspace, heap, sweep_page, (uintptr_t)p, bits, dest)) return 1;
 
         if (index == 0) {
