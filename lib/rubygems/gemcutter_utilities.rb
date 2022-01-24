@@ -165,12 +165,14 @@ module Gem::GemcutterUtilities
     key_name     = get_key_name(scope)
     scope_params = get_scope_params(scope)
     mfa_params   = get_mfa_params(email, password)
+    all_params   = scope_params.merge(mfa_params)
+
 
     response = rubygems_api_request(:post, "api/v1/api_key",
                                     sign_in_host, scope: scope) do |request|
       request.basic_auth email, password
       request["OTP"] = otp if otp
-      request.body = URI.encode_www_form({ name: key_name }.merge(scope_params, mfa_params))
+      request.body = URI.encode_www_form({ name: key_name }.merge(all_params))
     end
 
     with_response response do |resp|
