@@ -121,9 +121,10 @@ io_wait_event(VALUE io, int event, VALUE timeout)
 
 /*
  * call-seq:
- *   io.ready? -> true or false
+ *   io.ready? -> truthy or falsy
  *
- * Returns +true+ if input available without blocking, or +false+.
+ * Returns a truthy value if input available without blocking, or a
+ * falsy value.
  *
  * You must require 'io/wait' to use this method.
  */
@@ -152,12 +153,12 @@ io_ready_p(VALUE io)
 
 /*
  * call-seq:
- *   io.wait_readable          -> true or false
- *   io.wait_readable(timeout) -> true or false
+ *   io.wait_readable          -> truthy or falsy
+ *   io.wait_readable(timeout) -> truthy or falsy
  *
- * Waits until IO is readable and returns +true+, or
- * +false+ when times out.
- * Returns +true+ immediately when buffered data is available.
+ * Waits until IO is readable and returns a truthy value, or a falsy
+ * value when times out.  Returns a truthy value immediately when
+ * buffered data is available.
  *
  * You must require 'io/wait' to use this method.
  */
@@ -194,11 +195,11 @@ io_wait_readable(int argc, VALUE *argv, VALUE io)
 
 /*
  * call-seq:
- *   io.wait_writable          -> true or false
- *   io.wait_writable(timeout) -> true or false
+ *   io.wait_writable          -> truthy or falsy
+ *   io.wait_writable(timeout) -> truthy or falsy
  *
- * Waits until IO is writable and returns +true+ or
- * +false+ when times out.
+ * Waits until IO is writable and returns a truthy value or a falsy
+ * value when times out.
  *
  * You must require 'io/wait' to use this method.
  */
@@ -231,11 +232,11 @@ io_wait_writable(int argc, VALUE *argv, VALUE io)
 #ifdef HAVE_RB_IO_WAIT
 /*
  * call-seq:
- *   io.wait_priority          -> true or false
- *   io.wait_priority(timeout) -> true or false
+ *   io.wait_priority          -> truthy or falsy
+ *   io.wait_priority(timeout) -> truthy or falsy
  *
- * Waits until IO is priority and returns +true+ or
- * +false+ when times out.
+ * Waits until IO is priority and returns a truthy value or a falsy
+ * value when times out.
  *
  * You must require 'io/wait' to use this method.
  */
@@ -292,16 +293,16 @@ wait_mode_sym(VALUE mode)
 
 /*
  * call-seq:
- *   io.wait(events, timeout) -> event mask or false.
- *   io.wait(timeout = nil, mode = :read) -> event mask or false.
+ *   io.wait(events, timeout) -> truthy or falsy
+ *   io.wait(timeout = nil, mode = :read) -> truthy or falsy.
  *
  * Waits until the IO becomes ready for the specified events and returns the
- * subset of events that become ready, or +false+ when times out.
+ * subset of events that become ready, or a falsy value when times out.
  *
  * The events can be a bit mask of +IO::READABLE+, +IO::WRITABLE+ or
  * +IO::PRIORITY+.
  *
- * Returns +true+ immediately when buffered data is available.
+ * Returns a truthy value immediately when buffered data is available.
  *
  * Optional parameter +mode+ is one of +:read+, +:write+, or
  * +:read_write+.
