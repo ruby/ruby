@@ -167,7 +167,6 @@ module Gem::GemcutterUtilities
     mfa_params   = get_mfa_params(email, password)
     all_params   = scope_params.merge(mfa_params)
 
-
     response = rubygems_api_request(:post, "api/v1/api_key",
                                     sign_in_host, scope: scope) do |request|
       request.basic_auth email, password
