@@ -1008,7 +1008,6 @@ rb_dump_machine_register(const ucontext_t *ctx)
 void
 rb_vm_bugreport(const void *ctx)
 {
-#if RUBY_DEVEL
     const char *cmd = getenv("RUBY_ON_BUG");
     if (cmd) {
         char buf[0x100];
@@ -1018,7 +1017,6 @@ rb_vm_bugreport(const void *ctx)
             snprintf(buf, sizeof(buf), "Launching RUBY_ON_BUG command failed.");
         }
     }
-#endif
 
 #ifdef __linux__
 # define PROC_MAPS_NAME "/proc/self/maps"
