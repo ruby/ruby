@@ -199,6 +199,9 @@ module Test
         @help = "\n" + orig_args.map { |s|
           "  " + (s =~ /[\s|&<>$()]/ ? s.inspect : s)
         }.join("\n")
+
+        @failed_output = options[:stderr_on_failure] ? $stderr : $stdout
+
         @options = options
       end
 
@@ -1004,7 +1007,7 @@ module Test
           end
           first, msg = msg.split(/$/, 2)
           first = sprintf("%3d) %s", @report_count += 1, first)
-          $stdout.print(sep, @colorize.decorate(first, color), msg, "\n")
+          @failed_output.print(sep, @colorize.decorate(first, color), msg, "\n")
           sep = nil
         end
         report.clear
@@ -1105,6 +1108,9 @@ module Test
         end
         parser.on '-x', '--exclude REGEXP', 'Exclude test files on pattern.' do |pattern|
           (options[:reject] ||= []) << pattern
+        end
+        parser.on '--stderr-on-failure', 'Use stderr to print failure messages' do
+          options[:stderr_on_failure] = true
         end
       end
 
