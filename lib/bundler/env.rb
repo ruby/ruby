@@ -71,7 +71,7 @@ module Bundler
     def self.ruby_version
       str = String.new(RUBY_VERSION)
       str << "p#{RUBY_PATCHLEVEL}" if defined? RUBY_PATCHLEVEL
-      str << " (#{RUBY_RELEASE_DATE} revision #{RUBY_REVISION}) [#{RUBY_PLATFORM}]"
+      str << " (#{RUBY_RELEASE_DATE} revision #{RUBY_REVISION}) [#{Gem::Platform.local}]"
     end
 
     def self.git_version
