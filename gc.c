@@ -2437,6 +2437,9 @@ size_pool_slot_size(unsigned char pool_id)
 bool
 rb_gc_size_allocatable_p(size_t size)
 {
+#ifdef USE_THIRD_PARTY_HEAP
+    return true;
+#endif // USE_THIRD_PARTY_HEAP
     return size <= size_pool_slot_size(SIZE_POOL_COUNT - 1);
 }
 
@@ -2600,7 +2603,12 @@ newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr, size_t a
     VALUE obj;
     rb_objspace_t *objspace = &rb_objspace;
 #ifdef USE_THIRD_PARTY_HEAP
-    obj = (VALUE) mmtk_alloc(objspace->mutator, sizeof(RVALUE), 8, 0, 0); // Default allocation semantics
+    const size_t MMTK_ALIGNMENT = 8;
+    size_t mmtk_alloc_size = (alloc_size + MMTK_ALIGNMENT - 1) & ~(MMTK_ALIGNMENT - 1);
+    RUBY_ASSERT(mmtk_alloc_size >= alloc_size);
+    RUBY_ASSERT(mmtk_alloc_size < alloc_size + MMTK_ALIGNMENT);
+    RUBY_ASSERT(mmtk_alloc_size % MMTK_ALIGNMENT == 0);
+    obj = (VALUE) mmtk_alloc(objspace->mutator, mmtk_alloc_size, MMTK_ALIGNMENT, 0, 0); // Default allocation semantics
     return newobj_init(klass, flags, wb_protected, objspace, obj);
 #endif
 

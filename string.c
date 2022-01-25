@@ -215,7 +215,11 @@ static inline long
 str_embed_capa(VALUE str)
 {
 #if USE_RVARGC
+#ifdef USE_THIRD_PARTY_HEAP
+    return RSTRING(str)->as.embed.capa;
+#else // USE_THIRD_PARTY_HEAP
     return rb_gc_obj_slot_size(str) - offsetof(struct RString, as.embed.ary);
+#endif // USE_THIRD_PARTY_HEAP
 #else
     return RSTRING_EMBED_LEN_MAX + 1;
 #endif
@@ -231,6 +235,9 @@ static inline bool
 STR_EMBEDDABLE_P(long len, long termlen)
 {
 #if USE_RVARGC
+#ifdef USE_THIRD_PARTY_HEAP
+    return len + termlen <= RSTRING_EMBED_CAPA_MAX;
+#endif
     return rb_gc_size_allocatable_p(str_embed_size(len + termlen));
 #else
     return len <= RSTRING_EMBED_LEN_MAX + 1 - termlen;
@@ -854,7 +861,21 @@ str_alloc_embed(VALUE klass, size_t capa)
 #if !USE_RVARGC
     assert(size <= sizeof(struct RString));
 #endif
+#if USE_RVARGC && defined(USE_THIRD_PARTY_HEAP)
+    // Must allocate at least sizeof(struct RString) bytes even we need less initially.
+    // Strings may be resized, and will use RString::as::heap.
+    if (size < sizeof(struct RString)) {
+	size_t diff_size = sizeof(struct RString) - size;
+	size += diff_size;
+	capa += diff_size;
+    }
+    assert(size <= RSTRING_EMBED_CAPA_MAX);
+    VALUE str = str_alloc(klass, size);
+    RSTRING(str)->as.embed.capa = capa;
+    return str;
+#else
     return str_alloc(klass, size);
+#endif
 }
 
 static inline VALUE
@@ -1698,7 +1719,21 @@ ec_str_alloc_embed(struct rb_execution_context_struct *ec, VALUE klass, size_t c
 #if !USE_RVARGC
     assert(size <= sizeof(struct RString));
 #endif
+#if USE_RVARGC && defined(USE_THIRD_PARTY_HEAP)
+    // Must allocate at least sizeof(struct RString) bytes even we need less initially.
+    // Strings may be resized, and will use RString::as::heap.
+    if (size < sizeof(struct RString)) {
+	size_t diff_size = sizeof(struct RString) - size;
+	size += diff_size;
+	capa += diff_size;
+    }
+    assert(size <= RSTRING_EMBED_CAPA_MAX);
+    VALUE str = ec_str_alloc(ec, klass, size);
+    RSTRING(str)->as.embed.capa = capa;
+    return str;
+#else
     return ec_str_alloc(ec, klass, size);
+#endif
 }
 
 static inline VALUE
