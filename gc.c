@@ -2413,11 +2413,13 @@ static inline void heap_add_freepage(rb_heap_t *heap, struct heap_page *page);
 static struct heap_page *heap_next_freepage(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap);
 static inline void ractor_set_cache(rb_ractor_t *cr, struct heap_page *page, size_t size_pool_idx);
 
+#ifndef USE_THIRD_PARTY_HEAP
 size_t
 rb_gc_obj_slot_size(VALUE obj)
 {
     return GET_HEAP_PAGE(obj)->slot_size;
 }
+#endif // USE_THIRD_PARTY_HEAP
 
 static inline size_t
 size_pool_slot_size(unsigned char pool_id)
