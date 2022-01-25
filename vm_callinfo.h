@@ -353,7 +353,14 @@ static inline unsigned int
 vm_cc_attr_index(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    return cc->aux_.attr_index;
+    return cc->aux_.attr_index - 1;
+}
+
+static inline bool
+vm_cc_attr_index_p(const struct rb_callcache *cc)
+{
+    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    return cc->aux_.attr_index > 0;
 }
 
 static inline unsigned int
@@ -406,7 +413,15 @@ vm_cc_attr_index_set(const struct rb_callcache *cc, int index)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc != vm_cc_empty());
-    *(int *)&cc->aux_.attr_index = index;
+    *(int *)&cc->aux_.attr_index = index + 1;
+}
+
+static inline void
+vm_cc_attr_index_initialize(const struct rb_callcache *cc)
+{
+    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    VM_ASSERT(cc != vm_cc_empty());
+    *(int *)&cc->aux_.attr_index = 0;
 }
 
 static inline void
