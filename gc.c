@@ -3394,9 +3394,13 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
           case imemo_parser_strterm:
             RB_DEBUG_COUNTER_INC(obj_imemo_parser_strterm);
             break;
-          case imemo_callinfo:
+          case imemo_callinfo: {
+            struct rb_callinfo *ci = (struct rb_callinfo *)obj;
+            struct rb_callinfo_kwarg *kwarg = (struct rb_callinfo_kwarg *)ci->kwarg;
+            ruby_xfree(kwarg);
             RB_DEBUG_COUNTER_INC(obj_imemo_callinfo);
             break;
+          }
           case imemo_callcache:
             RB_DEBUG_COUNTER_INC(obj_imemo_callcache);
             break;
