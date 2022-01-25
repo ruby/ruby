@@ -15,10 +15,6 @@ module Bundler
     def install_locked_bundler_and_restart_with_it_if_needed
       return unless needs_switching?
 
-      Bundler.ui.info \
-        "Bundler #{current_version} is running, but your lockfile was generated with #{lockfile_version}. " \
-        "Installing Bundler #{lockfile_version} and restarting using that version."
-
       install_and_restart_with_locked_bundler
     end
 
@@ -26,13 +22,30 @@ module Bundler
 
     def install_and_restart_with_locked_bundler
       bundler_dep = Gem::Dependency.new("bundler", lockfile_version)
+      spec = fetch_spec_for(bundler_dep)
+      return if spec.nil?
 
-      Gem.install(bundler_dep)
+      Bundler.ui.info \
+        "Bundler #{current_version} is running, but your lockfile was generated with #{lockfile_version}. " \
+        "Installing Bundler #{lockfile_version} and restarting using that version."
+
+      spec.source.install(spec)
     rescue StandardError => e
       Bundler.ui.trace e
       Bundler.ui.warn "There was an error installing the locked bundler version (#{lockfile_version}), rerun with the `--verbose` flag for more details. Going on using bundler #{current_version}."
     else
       restart_with_locked_bundler
+    end
+
+    def fetch_spec_for(bundler_dep)
+      source = Bundler::Source::Rubygems.new("remotes" => "https://rubygems.org")
+      source.remote!
+      source.add_dependency_names("bundler")
+      spec = source.specs.search(bundler_dep).first
+      if spec.nil?
+        Bundler.ui.warn "Your lockfile is locked to a version of bundler (#{lockfile_version}) that doesn't exist at https://rubygems.org/. Going on using #{current_version}"
+      end
+      spec
     end
 
     def restart_with_locked_bundler
@@ -56,7 +69,12 @@ module Bundler
         SharedHelpers.in_bundle? &&
         lockfile_version &&
         !lockfile_version.end_with?(".dev") &&
-        lockfile_version != current_version
+        lockfile_version != current_version &&
+        !updating?
+    end
+
+    def updating?
+      "update".start_with?(ARGV.first || " ") && ARGV[1..-1].any? {|a| a.start_with?("--bundler") }
     end
 
     def installed?

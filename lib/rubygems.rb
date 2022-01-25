@@ -8,7 +8,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.3.3".freeze
+  VERSION = "3.3.4".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -1316,6 +1316,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   autoload :Source,             File.expand_path('rubygems/source', __dir__)
   autoload :SourceList,         File.expand_path('rubygems/source_list', __dir__)
   autoload :SpecFetcher,        File.expand_path('rubygems/spec_fetcher', __dir__)
+  autoload :SpecificationPolicy, File.expand_path('rubygems/specification_policy', __dir__)
   autoload :Util,               File.expand_path('rubygems/util', __dir__)
   autoload :Version,            File.expand_path('rubygems/version', __dir__)
 end
