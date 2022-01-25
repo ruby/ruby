@@ -9790,7 +9790,7 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
 }
 
 static enum rb_id_table_iterator_result
-check_id_table_move(ID id, VALUE value, void *data)
+check_id_table_move(VALUE value, void *data)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)data;
 
@@ -9835,7 +9835,7 @@ rb_gc_location(VALUE value)
 }
 
 static enum rb_id_table_iterator_result
-update_id_table(ID *key, VALUE * value, void *data, int existing)
+update_id_table(VALUE *value, void *data, int existing)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)data;
 
@@ -9850,12 +9850,12 @@ static void
 update_m_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
 {
     if (tbl) {
-        rb_id_table_foreach_with_replace(tbl, check_id_table_move, update_id_table, objspace);
+        rb_id_table_foreach_values_with_replace(tbl, check_id_table_move, update_id_table, objspace);
     }
 }
 
 static enum rb_id_table_iterator_result
-update_cc_tbl_i(ID id, VALUE ccs_ptr, void *data)
+update_cc_tbl_i(VALUE ccs_ptr, void *data)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)data;
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
@@ -9883,12 +9883,12 @@ update_cc_tbl(rb_objspace_t *objspace, VALUE klass)
 {
     struct rb_id_table *tbl = RCLASS_CC_TBL(klass);
     if (tbl) {
-        rb_id_table_foreach_with_replace(tbl, update_cc_tbl_i, 0, objspace);
+        rb_id_table_foreach_values_with_replace(tbl, update_cc_tbl_i, 0, objspace);
     }
 }
 
 static enum rb_id_table_iterator_result
-update_cvc_tbl_i(ID id, VALUE cvc_entry, void *data)
+update_cvc_tbl_i(VALUE cvc_entry, void *data)
 {
     struct rb_cvar_class_tbl_entry *entry;
 
@@ -9904,7 +9904,7 @@ update_cvc_tbl(rb_objspace_t *objspace, VALUE klass)
 {
     struct rb_id_table *tbl = RCLASS_CVC_TBL(klass);
     if (tbl) {
-        rb_id_table_foreach_with_replace(tbl, update_cvc_tbl_i, 0, objspace);
+        rb_id_table_foreach_values_with_replace(tbl, update_cvc_tbl_i, 0, objspace);
     }
 }
 
