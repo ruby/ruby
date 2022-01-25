@@ -9883,7 +9883,7 @@ update_cc_tbl(rb_objspace_t *objspace, VALUE klass)
 {
     struct rb_id_table *tbl = RCLASS_CC_TBL(klass);
     if (tbl) {
-        rb_id_table_foreach_values_with_replace(tbl, update_cc_tbl_i, 0, objspace);
+        rb_id_table_foreach_values(tbl, update_cc_tbl_i, objspace);
     }
 }
 
@@ -9904,7 +9904,7 @@ update_cvc_tbl(rb_objspace_t *objspace, VALUE klass)
 {
     struct rb_id_table *tbl = RCLASS_CVC_TBL(klass);
     if (tbl) {
-        rb_id_table_foreach_values_with_replace(tbl, update_cvc_tbl_i, 0, objspace);
+        rb_id_table_foreach_values(tbl, update_cvc_tbl_i, objspace);
     }
 }
 
