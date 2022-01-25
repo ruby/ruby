@@ -317,7 +317,8 @@ rb_id_table_foreach_values_with_replace(struct rb_id_table *tbl, rb_id_table_for
                 ret = (*replace)(&val, data, TRUE);
                 tbl->items[i].val = val;
             }
-            else if (ret == ID_TABLE_STOP)
+
+            if (ret == ID_TABLE_STOP)
                 return;
         }
     }
