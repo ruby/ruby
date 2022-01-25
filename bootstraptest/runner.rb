@@ -213,15 +213,14 @@ def exec_test(pathes)
   @errbuf.each do |msg|
     $stderr.puts msg
   end
+
+  out = @quiet ? $stdout : $stderr
+
   if @error == 0
     if @count == 0
-      $stderr.puts "No tests, no problem" unless @quiet
+      out.puts "No tests, no problem" unless @quiet
     else
-      if @quiet
-        $stdout.puts "#{@passed}PASS#{@reset} all #{@count} tests"
-      else
-        $stderr.puts "#{@passed}PASS#{@reset} all #{@count} tests"
-      end
+      out.puts "#{@passed}PASS#{@reset} all #{@count} tests"
     end
     exit true
   else
