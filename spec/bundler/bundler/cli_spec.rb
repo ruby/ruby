@@ -170,7 +170,7 @@ RSpec.describe "bundle executable" do
         bundle "fail", :env => { "BUNDLER_VERSION" => bundler_version }, :raise_on_error => false
         expect(err).to start_with(<<-EOS.strip)
 The latest bundler is #{latest_version}, but you are currently running #{bundler_version}.
-To install the latest version, run `gem install bundler`
+To update to the most recent version, run `bundle update --bundler`
         EOS
       end
 
@@ -195,7 +195,7 @@ To install the latest version, run `gem install bundler`
           bundle "fail", :env => { "BUNDLER_VERSION" => bundler_version }, :raise_on_error => false
           expect(err).to start_with(<<-EOS.strip)
 The latest bundler is #{latest_version}, but you are currently running #{bundler_version}.
-To install the latest version, run `gem install bundler --pre`
+To update to the most recent version, run `bundle update --bundler`
           EOS
         end
       end

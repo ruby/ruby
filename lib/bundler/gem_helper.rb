@@ -107,9 +107,9 @@ module Bundler
       SharedHelpers.filesystem_access(File.join(base, "checksums")) {|p| FileUtils.mkdir_p(p) }
       file_name = "#{File.basename(built_gem_path)}.sha512"
       require "digest/sha2"
-      checksum = ::Digest::SHA512.new.hexdigest(built_gem_path.to_s)
+      checksum = ::Digest::SHA512.file(built_gem_path).hexdigest
       target = File.join(base, "checksums", file_name)
-      File.write(target, checksum)
+      File.write(target, checksum + "\n")
       Bundler.ui.confirm "#{name} #{version} checksum written to checksums/#{file_name}."
     end
 

@@ -402,17 +402,6 @@ RSpec.describe "gemcutter's dependency API" do
     expect(the_bundle).to include_gems "back_deps 1.0"
   end
 
-  it "uses the endpoint if all sources support it" do
-    gemfile <<-G
-      source "#{source_uri}"
-
-      gem 'foo'
-    G
-
-    bundle :install, :artifice => "endpoint_api_missing"
-    expect(the_bundle).to include_gems "foo 1.0"
-  end
-
   it "fetches again when more dependencies are found in subsequent sources using deployment mode", :bundler => "< 3" do
     build_repo2 do
       build_gem "back_deps" do |s|

@@ -230,7 +230,7 @@ class Gem::Package
 
     tar.add_file_signed 'checksums.yaml.gz', 0444, @signer do |io|
       gzip_to io do |gz_io|
-        YAML.dump checksums_by_algorithm, gz_io
+        Psych.dump checksums_by_algorithm, gz_io
       end
     end
   end

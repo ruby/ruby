@@ -190,9 +190,6 @@ class Gem::StubSpecification < Gem::BasicSpecification
               end
 
     @spec ||= Gem::Specification.load(loaded_from)
-    @spec.ignored = @ignored if @spec
-
-    @spec
   end
 
   ##

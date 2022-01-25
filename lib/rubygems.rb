@@ -8,7 +8,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.3.4".freeze
+  VERSION = "3.3.5".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -606,17 +606,10 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   def self.load_yaml
     return if @yaml_loaded
 
-    begin
-      # Try requiring the gem version *or* stdlib version of psych.
-      require 'psych'
-    rescue ::LoadError
-      # If we can't load psych, that's fine, go on.
-    else
-      require_relative 'rubygems/psych_additions'
-      require_relative 'rubygems/psych_tree'
-    end
+    require 'psych'
+    require_relative 'rubygems/psych_additions'
+    require_relative 'rubygems/psych_tree'
 
-    require 'yaml'
     require_relative 'rubygems/safe_yaml'
 
     @yaml_loaded = true

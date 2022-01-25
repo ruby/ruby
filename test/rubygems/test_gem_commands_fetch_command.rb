@@ -157,4 +157,101 @@ class TestGemCommandsFetchCommand < Gem::TestCase
     assert_path_exist(File.join(@tempdir, a1.file_name),
                        "#{a1.full_name} not fetched")
   end
+
+  def test_execute_version_specified_by_colon
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'a', 1
+    end
+
+    @cmd.options[:args] = %w[a:1]
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    a1 = specs['a-1']
+
+    assert_path_exist(File.join(@tempdir, a1.file_name),
+                       "#{a1.full_name} not fetched")
+  end
+
+  def test_execute_two_version
+    @cmd.options[:args] = %w[a b]
+    @cmd.options[:version] = Gem::Requirement.new '1'
+
+    use_ui @ui do
+      assert_raise Gem::MockGemUi::TermError, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    msg = "ERROR:  Can't use --version with multiple gems. You can specify multiple gems with" \
+      " version requirements using `gem fetch 'my_gem:1.0.0' 'my_other_gem:~>2.0.0'`"
+
+    assert_empty @ui.output
+    assert_equal msg, @ui.error.chomp
+  end
+
+  def test_execute_two_version_specified_by_colon
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'a', 1
+      fetcher.gem 'b', 1
+    end
+
+    @cmd.options[:args] = %w[a:1 b:1]
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    a1 = specs['a-1']
+    b1 = specs['b-1']
+
+    assert_path_exist(File.join(@tempdir, a1.file_name),
+                       "#{a1.full_name} not fetched")
+    assert_path_exist(File.join(@tempdir, b1.file_name),
+                       "#{b1.full_name} not fetched")
+  end
+
+  def test_execute_version_nonexistent
+    spec_fetcher do |fetcher|
+      fetcher.spec 'foo', 1
+    end
+
+    @cmd.options[:args] = %w[foo:2]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EXPECTED
+ERROR:  Could not find a valid gem 'foo' (2) in any repository
+ERROR:  Possible alternatives: foo
+    EXPECTED
+
+    assert_equal expected, @ui.error
+  end
+
+  def test_execute_nonexistent_hint_disabled
+    spec_fetcher do |fetcher|
+      fetcher.spec 'foo', 1
+    end
+
+    @cmd.options[:args] = %w[foo:2]
+    @cmd.options[:suggest_alternate] = false
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EXPECTED
+ERROR:  Could not find a valid gem 'foo' (2) in any repository
+    EXPECTED
+
+    assert_equal expected, @ui.error
+  end
 end
