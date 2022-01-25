@@ -274,14 +274,12 @@ rb_id_table_foreach_with_replace(struct rb_id_table *tbl, rb_id_table_foreach_fu
 
     for (i=0; i<capa; i++) {
         if (ITEM_KEY_ISSET(tbl, i)) {
-            const id_key_t key = ITEM_GET_KEY(tbl, i);
-            ID id = key2id(key);
-            enum rb_id_table_iterator_result ret = (*func)(id, tbl->items[i].val, data);
-            assert(key != 0);
+            enum rb_id_table_iterator_result ret = (*func)((ID)0, tbl->items[i].val, data);
+            assert(ITEM_GET_KEY(tbl, i));
 
             if (ret == ID_TABLE_REPLACE) {
                 VALUE val = tbl->items[i].val;
-                ret = (*replace)(&id, &val, data, TRUE);
+                ret = (*replace)(NULL, &val, data, TRUE);
                 tbl->items[i].val = val;
             }
             else if (ret == ID_TABLE_STOP)
