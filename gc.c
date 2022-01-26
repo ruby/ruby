@@ -2372,11 +2372,17 @@ ractor_cached_free_region(rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_
 
     if (p) {
         VALUE obj = (VALUE)p;
+        MAYBE_UNUSED(const size_t) stride = size_pool_slot_size(size_pool_idx);
         cache->freelist = p->as.free.next;
+#if USE_RVARGC
+        asan_unpoison_memory_region(p, stride, true);
+#else
         asan_unpoison_object(obj, true);
+#endif
 #if RGENGC_CHECK_MODE
+        GC_ASSERT(cache->using_page.slot_size == (short)stride);
         // zero clear
-        MEMZERO((char *)obj, char, size_pool_slot_size(size_pool_idx));
+        MEMZERO((char *)obj, char, stride);
 #endif
         return obj;
     }
