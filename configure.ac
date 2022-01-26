@@ -1262,12 +1262,12 @@ AC_CHECK_LIB(crypt, crypt)      # glibc (GNU/Linux, GNU/Hurd, GNU/kFreeBSD)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(socket, shutdown)  # SunOS/Solaris
 
-if pkg-config --exists capstone; then
-   CAPSTONE_CFLAGS=`pkg-config --cflags capstone`
-   CAPSTONE_LIB_L=`pkg-config --libs-only-L capstone`
+AS_IF([test -n "${PKG_CONFIG}" && ${PKG_CONFIG} --exists capstone], [
+   CAPSTONE_CFLAGS=`${PKG_CONFIG} --cflags capstone`
+   CAPSTONE_LIB_L=`${PKG_CONFIG} --libs-only-L capstone`
    LDFLAGS="$LDFLAGS $CAPSTONE_LIB_L"
    CFLAGS="$CFLAGS $CAPSTONE_CFLAGS"
-fi
+])
 
 AC_CHECK_LIB(capstone, cs_open) # Capstone disassembler for debugging YJIT
 
