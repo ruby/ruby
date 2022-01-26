@@ -757,6 +757,26 @@ rb_obj_is_instance_of(VALUE obj, VALUE c)
     return RBOOL(rb_obj_class(obj) == c);
 }
 
+// Returns whether c is a proper (c != cl) subclass of cl
+// Both c and cl must be T_CLASS
+static VALUE
+class_search_class_ancestor(VALUE cl, VALUE c)
+{
+    RUBY_ASSERT(RB_TYPE_P(c, T_CLASS));
+    RUBY_ASSERT(RB_TYPE_P(cl, T_CLASS));
+
+    size_t c_depth = RCLASS_SUPERCLASS_DEPTH(c);
+    size_t cl_depth = RCLASS_SUPERCLASS_DEPTH(cl);
+    VALUE *classes = RCLASS_SUPERCLASSES(cl);
+
+    // If c's inheritance chain is longer, it cannot be an ancestor
+    // We are checking for a proper subclass so don't check if they are equal
+    if (cl_depth <= c_depth)
+        return Qfalse;
+
+    // Otherwise check that c is in cl's inheritance chain
+    return RBOOL(classes[c_depth] == c);
+}
 
 /*
  *  call-seq:
@@ -791,21 +811,34 @@ rb_obj_is_kind_of(VALUE obj, VALUE c)
 {
     VALUE cl = CLASS_OF(obj);
 
-    RUBY_ASSERT(cl);
+    RUBY_ASSERT(RB_TYPE_P(cl, T_CLASS));
+
+    // Fastest path: If the object's class is an exact match we know `c` is a
+    // class without checking type and can return immediately.
+    if (cl == c) return Qtrue;
+
+    // Fast path: Both are T_CLASS
+    if (LIKELY(RB_TYPE_P(c, T_CLASS))) {
+        return class_search_class_ancestor(cl, c);
+    }
 
     // Note: YJIT needs this function to never allocate and never raise when
     // `c` is a class or a module.
     c = class_or_module_required(c);
-    return RBOOL(class_search_ancestor(cl, RCLASS_ORIGIN(c)));
+    c = RCLASS_ORIGIN(c);
+
+    // Slow path: check each ancestor in the linked list and its method table
+    return RBOOL(class_search_ancestor(cl, c));
 }
+
 
 static VALUE
 class_search_ancestor(VALUE cl, VALUE c)
 {
     while (cl) {
-	if (cl == c || RCLASS_M_TBL(cl) == RCLASS_M_TBL(c))
-	    return cl;
-	cl = RCLASS_SUPER(cl);
+        if (cl == c || RCLASS_M_TBL(cl) == RCLASS_M_TBL(c))
+            return cl;
+        cl = RCLASS_SUPER(cl);
     }
     return 0;
 }

@@ -260,6 +260,63 @@ rb_class_boot(VALUE super)
 }
 
 void
+rb_class_remove_superclasses(VALUE klass)
+{
+    if (!RB_TYPE_P(klass, T_CLASS))
+        return;
+
+    if (RCLASS_SUPERCLASSES(klass))
+        xfree(RCLASS_SUPERCLASSES(klass));
+
+    RCLASS_SUPERCLASSES(klass) = NULL;
+    RCLASS_SUPERCLASS_DEPTH(klass) = 0;
+}
+
+void
+rb_class_update_superclasses(VALUE klass)
+{
+    VALUE super = RCLASS_SUPER(klass);
+
+    if (!RB_TYPE_P(klass, T_CLASS)) return;
+    if (super == Qundef) return;
+
+    // If the superclass array is already built
+    if (RCLASS_SUPERCLASSES(klass))
+        return;
+
+    // find the proper superclass
+    while (super != Qfalse && !RB_TYPE_P(super, T_CLASS)) {
+        super = RCLASS_SUPER(super);
+    }
+
+    // For BasicObject and uninitialized classes, depth=0 and ary=NULL
+    if (super == Qfalse)
+        return;
+
+    // Sometimes superclasses are set before the full ancestry tree is built
+    // This happens during metaclass construction
+    if (super != rb_cBasicObject && !RCLASS_SUPERCLASS_DEPTH(super)) {
+        rb_class_update_superclasses(super);
+
+        // If it is still unset we need to try later
+        if (!RCLASS_SUPERCLASS_DEPTH(super))
+            return;
+    }
+
+    size_t parent_num = RCLASS_SUPERCLASS_DEPTH(super);
+    size_t num = parent_num + 1;
+
+    VALUE *superclasses = xmalloc(sizeof(VALUE) * num);
+    superclasses[parent_num] = super;
+    if (parent_num > 0) {
+        memcpy(superclasses, RCLASS_SUPERCLASSES(super), sizeof(VALUE) * parent_num);
+    }
+
+    RCLASS_SUPERCLASSES(klass) = superclasses;
+    RCLASS_SUPERCLASS_DEPTH(klass) = num;
+}
+
+void
 rb_check_inheritable(VALUE super)
 {
     if (!RB_TYPE_P(super, T_CLASS)) {
@@ -666,6 +723,9 @@ make_metaclass(VALUE klass)
     super = RCLASS_SUPER(klass);
     while (RB_TYPE_P(super, T_ICLASS)) super = RCLASS_SUPER(super);
     RCLASS_SET_SUPER(metaclass, super ? ENSURE_EIGENCLASS(super) : rb_cClass);
+
+    // Full class ancestry may not have been filled until we reach here.
+    rb_class_update_superclasses(METACLASS_OF(metaclass));
 
     return metaclass;
 }

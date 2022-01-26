@@ -47,6 +47,8 @@ struct rb_classext_struct {
     struct rb_id_table *callable_m_tbl;
     struct rb_id_table *cc_tbl; /* ID -> [[ci, cc1], cc2, ...] */
     struct rb_id_table *cvc_tbl;
+    size_t superclass_depth;
+    VALUE *superclasses;
     struct rb_subclass_entry *subclasses;
     struct rb_subclass_entry *subclass_entry;
     /**
@@ -117,6 +119,8 @@ typedef struct rb_classext_struct rb_classext_t;
 #define RCLASS_MODULE_SUBCLASS_ENTRY(c) (RCLASS_EXT(c)->module_subclass_entry)
 #define RCLASS_ALLOCATOR(c) (RCLASS_EXT(c)->allocator)
 #define RCLASS_SUBCLASSES(c) (RCLASS_EXT(c)->subclasses)
+#define RCLASS_SUPERCLASS_DEPTH(c) (RCLASS_EXT(c)->superclass_depth)
+#define RCLASS_SUPERCLASSES(c) (RCLASS_EXT(c)->superclasses)
 
 #define RICLASS_IS_ORIGIN FL_USER5
 #define RCLASS_CLONED     FL_USER6
@@ -125,6 +129,8 @@ typedef struct rb_classext_struct rb_classext_t;
 /* class.c */
 void rb_class_subclass_add(VALUE super, VALUE klass);
 void rb_class_remove_from_super_subclasses(VALUE);
+void rb_class_update_superclasses(VALUE);
+void rb_class_remove_superclasses(VALUE);
 void rb_class_remove_subclass_head(VALUE);
 int rb_singleton_class_internal_p(VALUE sklass);
 VALUE rb_class_boot(VALUE);
@@ -197,6 +203,7 @@ RCLASS_SET_SUPER(VALUE klass, VALUE super)
         rb_class_subclass_add(super, klass);
     }
     RB_OBJ_WRITE(klass, &RCLASS(klass)->super, super);
+    rb_class_update_superclasses(klass);
     return super;
 }
 
