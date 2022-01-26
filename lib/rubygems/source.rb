@@ -81,12 +81,12 @@ class Gem::Source
     return Gem::Resolver::IndexSet.new self if 'file' == uri.scheme
 
     fetch_uri = if uri.host == "rubygems.org"
-                  index_uri = uri.dup
-                  index_uri.host = "index.rubygems.org"
-                  index_uri
-                else
-                  uri
-                end
+      index_uri = uri.dup
+      index_uri.host = "index.rubygems.org"
+      index_uri
+    else
+      uri
+    end
 
     bundler_api_uri = enforce_trailing_slash(fetch_uri)
 

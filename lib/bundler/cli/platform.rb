@@ -23,7 +23,7 @@ module Bundler
           output << "No ruby version specified"
         end
       else
-        output << "Your platform is: #{RUBY_PLATFORM}"
+        output << "Your platform is: #{Gem::Platform.local}"
         output << "Your app has gems that work on these platforms:\n#{platforms.join("\n")}"
 
         if ruby_version

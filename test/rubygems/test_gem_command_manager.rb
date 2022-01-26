@@ -252,7 +252,7 @@ class TestGemCommandManager < Gem::TestCase
     Gem::Deprecate.skip_during do
       @command_manager.process_args %w[query]
     end
-    assert_equal(//, check_options[:name])
+    assert_nil(check_options[:name])
     assert_equal :local, check_options[:domain]
     assert_equal false, check_options[:details]
 

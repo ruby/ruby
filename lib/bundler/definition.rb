@@ -265,7 +265,7 @@ module Bundler
         else
           # Run a resolve against the locally available gems
           Bundler.ui.debug("Found changes from the lockfile, re-resolving dependencies because #{change_reason}")
-          expanded_dependencies = expand_dependencies(dependencies + metadata_dependencies, @remote)
+          expanded_dependencies = expand_dependencies(dependencies + metadata_dependencies, true)
           Resolver.resolve(expanded_dependencies, source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms)
         end
       end
@@ -495,6 +495,7 @@ module Bundler
 
     def current_ruby_platform_locked?
       return false unless generic_local_platform == Gem::Platform::RUBY
+      return false if Bundler.settings[:force_ruby_platform] && !@platforms.include?(Gem::Platform::RUBY)
 
       current_platform_locked?
     end

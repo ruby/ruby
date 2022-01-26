@@ -339,10 +339,10 @@ class Gem::TestCase < Test::Unit::TestCase
     ENV["GEM_SPEC_CACHE"] = File.join @tempdir, 'spec_cache'
 
     @orig_ruby = if ENV['RUBY']
-                   ruby = Gem.ruby
-                   Gem.ruby = ENV['RUBY']
-                   ruby
-                 end
+      ruby = Gem.ruby
+      Gem.ruby = ENV['RUBY']
+      ruby
+    end
 
     @git = ENV['GIT'] || (win_platform? ? 'git.exe' : 'git')
 

@@ -101,8 +101,6 @@ RSpec.describe "bundle install with install-time dependencies" do
   end
 
   it "installs gems with a dependency with no type" do
-    skip "incorrect data check error" if Gem.win_platform?
-
     build_repo2
 
     path = "#{gem_repo2}/#{Gem::MARSHAL_SPEC_DIR}/actionpack-2.3.2.gemspec.rz"
@@ -110,7 +108,7 @@ RSpec.describe "bundle install with install-time dependencies" do
     spec.dependencies.each do |d|
       d.instance_variable_set(:@type, :fail)
     end
-    File.open(path, "w") do |f|
+    File.open(path, "wb") do |f|
       f.write Gem.deflate(Marshal.dump(spec))
     end
 

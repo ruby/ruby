@@ -201,8 +201,8 @@ class Gem::Installer
   #
   # If +@force+ is set +filename+ is overwritten.
   #
-  # If +filename+ exists and is a RubyGems wrapper for different gem the user
-  # is consulted.
+  # If +filename+ exists and it is a RubyGems wrapper for a different gem, then
+  # the user is consulted.
   #
   # If +filename+ exists and +@bin_dir+ is Gem.default_bindir (/usr/local) the
   # user is consulted.
@@ -220,7 +220,17 @@ class Gem::Installer
     existing = nil
 
     File.open generated_bin, 'rb' do |io|
-      next unless io.gets =~ /^#!/ # shebang
+      line = io.gets
+      shebang = /^#!.*ruby/
+
+      if load_relative_enabled?
+        until line.nil? || line =~ shebang do
+          line = io.gets
+        end
+      end
+
+      next unless line =~ shebang
+
       io.gets # blankline
 
       # TODO detect a specially formatted comment instead of trying
@@ -585,7 +595,6 @@ class Gem::Installer
   #
 
   def shebang(bin_file_name)
-    ruby_name = RbConfig::CONFIG['ruby_install_name'] if @env_shebang
     path = File.join gem_dir, spec.bindir, bin_file_name
     first_line = File.open(path, "rb") {|file| file.gets } || ""
 
@@ -598,7 +607,7 @@ class Gem::Installer
 
     if which = Gem.configuration[:custom_shebang]
       # replace bin_file_name with "ruby" to avoid endless loops
-      which = which.gsub(/ #{bin_file_name}$/," #{RbConfig::CONFIG['ruby_install_name']}")
+      which = which.gsub(/ #{bin_file_name}$/," #{ruby_install_name}")
 
       which = which.gsub(/\$(\w+)/) do
         case $1
@@ -614,14 +623,12 @@ class Gem::Installer
       end
 
       "#!#{which}"
-    elsif not ruby_name
-      "#!#{Gem.ruby}#{opts}"
-    elsif opts
-      "#!/bin/sh\n'exec' #{ruby_name.dump} '-x' \"$0\" \"$@\"\n#{shebang}"
-    else
+    elsif @env_shebang
       # Create a plain shebang line.
       @env_path ||= ENV_PATHS.find {|env_path| File.executable? env_path }
-      "#!#{@env_path} #{ruby_name}"
+      "#!#{@env_path} #{ruby_install_name}"
+    else
+      "#{bash_prolog_script}#!#{Gem.ruby}#{opts}"
     end
   end
 
@@ -805,7 +812,6 @@ TEXT
   # return the stub script text used to launch the true Ruby script
 
   def windows_stub_script(bindir, bin_file_name)
-    rb_config = RbConfig::CONFIG
     rb_topdir = RbConfig::TOPDIR || File.dirname(rb_config["bindir"])
 
     # get ruby executable file name from RbConfig
@@ -972,5 +978,38 @@ TEXT
                       require_relative "command"
                       Gem::Command.build_args
                     end
+  end
+
+  def rb_config
+    RbConfig::CONFIG
+  end
+
+  def ruby_install_name
+    rb_config["ruby_install_name"]
+  end
+
+  def load_relative_enabled?
+    rb_config["LIBRUBY_RELATIVE"] == 'yes'
+  end
+
+  def bash_prolog_script
+    if load_relative_enabled?
+      script = +<<~EOS
+        bindir="${0%/*}"
+      EOS
+
+      script << %Q(exec "$bindir/#{ruby_install_name}" "-x" "$0" "$@"\n)
+
+      <<~EOS
+        #!/bin/sh
+        # -*- ruby -*-
+        _=_\\
+        =begin
+        #{script.chomp}
+        =end
+      EOS
+    else
+      ""
+    end
   end
 end

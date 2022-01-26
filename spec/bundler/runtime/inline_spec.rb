@@ -309,7 +309,7 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "skips platform warnings" do
-    simulate_platform "ruby"
+    bundle "config set --local force_ruby_platform true"
 
     script <<-RUBY
       gemfile(true) do

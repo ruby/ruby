@@ -86,13 +86,13 @@ RSpec.describe "bundle install across platforms" do
     expect(the_bundle).to include_gems "nokogiri 1.4.2 JAVA", "weakling 0.0.3"
 
     simulate_new_machine
-
-    simulate_platform "ruby"
+    bundle "config set --local force_ruby_platform true"
     bundle "install"
 
     expect(the_bundle).to include_gems "nokogiri 1.4.2"
     expect(the_bundle).not_to include_gems "weakling"
 
+    simulate_new_machine
     simulate_platform "java"
     bundle "install"
 
@@ -453,7 +453,7 @@ RSpec.describe "bundle install with platform conditionals" do
   end
 
   it "does not attempt to install gems from :rbx when using --local" do
-    simulate_platform "ruby"
+    bundle "config set --local force_ruby_platform true"
 
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -465,7 +465,7 @@ RSpec.describe "bundle install with platform conditionals" do
   end
 
   it "does not attempt to install gems from other rubies when using --local" do
-    simulate_platform "ruby"
+    bundle "config set --local force_ruby_platform true"
     other_ruby_version_tag = RUBY_VERSION =~ /^1\.8/ ? :ruby_19 : :ruby_18
 
     gemfile <<-G
@@ -478,7 +478,7 @@ RSpec.describe "bundle install with platform conditionals" do
   end
 
   it "does not print a warning when a dependency is unused on a platform different from the current one" do
-    simulate_platform "ruby"
+    bundle "config set --local force_ruby_platform true"
 
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"

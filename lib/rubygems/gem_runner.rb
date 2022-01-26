@@ -42,11 +42,11 @@ class Gem::GemRunner
     cmd.command_names.each do |command_name|
       config_args = Gem.configuration[command_name]
       config_args = case config_args
-                    when String
-                      config_args.split ' '
-                    else
-                      Array(config_args)
-                    end
+      when String
+        config_args.split ' '
+      else
+        Array(config_args)
+      end
       Gem::Command.add_specific_extra_args command_name, config_args
     end
 

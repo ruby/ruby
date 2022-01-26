@@ -162,15 +162,15 @@ class Gem::Specification < Gem::BasicSpecification
 
   @@default_value.each do |k,v|
     INITIALIZE_CODE_FOR_DEFAULTS[k] = case v
-                                      when [], {}, true, false, nil, Numeric, Symbol
-                                        v.inspect
-                                      when String
-                                        v.dump
-                                      when Numeric
-                                        "default_value(:#{k})"
-                                      else
-                                        "default_value(:#{k}).dup"
-                                      end
+    when [], {}, true, false, nil, Numeric, Symbol
+      v.inspect
+    when String
+      v.dump
+    when Numeric
+      "default_value(:#{k})"
+    else
+      "default_value(:#{k}).dup"
+    end
   end
 
   @@attributes = @@default_value.keys.sort_by {|s| s.to_s }
@@ -1115,7 +1115,7 @@ class Gem::Specification < Gem::BasicSpecification
     file = file.dup.tap(&Gem::UNTAINT)
     return unless File.file?(file)
 
-    code = Gem.open_with_flock(file, 'r:UTF-8:-', &:read)
+    code = Gem.open_file(file, 'r:UTF-8:-', &:read)
 
     code.tap(&Gem::UNTAINT)
 
@@ -1268,12 +1268,12 @@ class Gem::Specification < Gem::BasicSpecification
     current_version = CURRENT_SPECIFICATION_VERSION
 
     field_count = if spec.specification_version > current_version
-                    spec.instance_variable_set :@specification_version,
-                                               current_version
-                    MARSHAL_FIELDS[current_version]
-                  else
-                    MARSHAL_FIELDS[spec.specification_version]
-                  end
+      spec.instance_variable_set :@specification_version,
+                                 current_version
+      MARSHAL_FIELDS[current_version]
+    else
+      MARSHAL_FIELDS[spec.specification_version]
+    end
 
     if array.size < field_count
       raise TypeError, "invalid Gem::Specification format #{array.inspect}"
@@ -1473,10 +1473,10 @@ class Gem::Specification < Gem::BasicSpecification
 
   def add_dependency_with_type(dependency, type, requirements)
     requirements = if requirements.empty?
-                     Gem::Requirement.default
-                   else
-                     requirements.flatten
-                   end
+      Gem::Requirement.default
+    else
+      requirements.flatten
+    end
 
     unless dependency.respond_to?(:name) &&
            dependency.respond_to?(:requirement)
@@ -1684,18 +1684,18 @@ class Gem::Specification < Gem::BasicSpecification
     # This is the cleanest, most-readable, faster-than-using-Date
     # way to do it.
     @date = case date
-            when String then
-              if DateTimeFormat =~ date
-                Time.utc($1.to_i, $2.to_i, $3.to_i)
-              else
-                raise(Gem::InvalidSpecificationException,
-                      "invalid date format in specification: #{date.inspect}")
-              end
-            when Time, DateLike then
-              Time.utc(date.year, date.month, date.day)
-            else
-              TODAY
-            end
+    when String then
+      if DateTimeFormat =~ date
+        Time.utc($1.to_i, $2.to_i, $3.to_i)
+      else
+        raise(Gem::InvalidSpecificationException,
+              "invalid date format in specification: #{date.inspect}")
+      end
+    when Time, DateLike then
+      Time.utc(date.year, date.month, date.day)
+    else
+      TODAY
+    end
   end
 
   ##
@@ -1801,13 +1801,13 @@ class Gem::Specification < Gem::BasicSpecification
     coder.add 'name', @name
     coder.add 'version', @version
     platform = case @original_platform
-               when nil, '' then
-                 'ruby'
-               when String then
-                 @original_platform
-               else
-                 @original_platform.to_s
-               end
+    when nil, '' then
+      'ruby'
+    when String then
+      @original_platform
+    else
+      @original_platform.to_s
+    end
     coder.add 'platform', platform
 
     attributes = @@attributes.map(&:to_s) - %w[name version platform]
@@ -2024,10 +2024,10 @@ class Gem::Specification < Gem::BasicSpecification
   def base_dir
     return Gem.dir unless loaded_from
     @base_dir ||= if default_gem?
-                    File.dirname File.dirname File.dirname loaded_from
-                  else
-                    File.dirname File.dirname loaded_from
-                  end
+      File.dirname File.dirname File.dirname loaded_from
+    else
+      File.dirname File.dirname loaded_from
+    end
   end
 
   ##
@@ -2654,9 +2654,9 @@ class Gem::Specification < Gem::BasicSpecification
       default = self.default_value attribute
 
       value = case default
-              when Time, Numeric, Symbol, true, false, nil then default
-              else default.dup
-              end
+      when Time, Numeric, Symbol, true, false, nil then default
+      else default.dup
+      end
 
       instance_variable_set "@#{attribute}", value
     end

@@ -92,9 +92,7 @@ RSpec.describe "bundle install with git sources" do
       expect(err).to include("The source contains the following gems matching 'foo':\n  * foo-1.0")
     end
 
-    it "complains with version and platform if pinned specs don't exist in the git repo" do
-      simulate_platform "java"
-
+    it "complains with version and platform if pinned specs don't exist in the git repo", :jruby do
       build_git "only_java" do |s|
         s.platform = "java"
       end
@@ -109,9 +107,7 @@ RSpec.describe "bundle install with git sources" do
       expect(err).to include("The source contains the following gems matching 'only_java':\n  * only_java-1.0-java")
     end
 
-    it "complains with multiple versions and platforms if pinned specs don't exist in the git repo" do
-      simulate_platform "java"
-
+    it "complains with multiple versions and platforms if pinned specs don't exist in the git repo", :jruby do
       build_git "only_java", "1.0" do |s|
         s.platform = "java"
       end
@@ -418,9 +414,6 @@ RSpec.describe "bundle install with git sources" do
 
   describe "when specifying local override" do
     it "uses the local repository instead of checking a new one out" do
-      # We don't generate it because we actually don't need it
-      # build_git "rack", "0.8"
-
       build_git "rack", "0.8", :path => lib_path("local-rack") do |s|
         s.write "lib/rack.rb", "puts :LOCAL"
       end

@@ -2,6 +2,7 @@
 
 require "rbconfig"
 require "shellwords"
+require "fiddle"
 
 module Bundler
   class CLI::Doctor
@@ -71,7 +72,14 @@ module Bundler
 
       definition.specs.each do |spec|
         bundles_for_gem(spec).each do |bundle|
-          bad_paths = dylibs(bundle).select {|f| !File.exist?(f) }
+          bad_paths = dylibs(bundle).select do |f|
+            begin
+              Fiddle.dlopen(f)
+              false
+            rescue Fiddle::DLError
+              true
+            end
+          end
           if bad_paths.any?
             broken_links[spec] ||= []
             broken_links[spec].concat(bad_paths)
