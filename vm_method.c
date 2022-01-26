@@ -1086,7 +1086,12 @@ method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me,
 		 rb_method_visibility_t visi, VALUE defined_class)
 {
     rb_method_entry_t *newme = rb_method_entry_make(klass, mid, defined_class, visi,
-						    me->def->type, method_definition_addref(me->def), 0, NULL);
+						    me->def->type, me->def, 0, NULL);
+    if (newme != me) {
+        // increase alias_count only if new method is created.
+        // skip cases like `alias foo foo` that are no-op.
+        method_definition_addref(me->def);
+    }
     method_added(klass, mid);
     return newme;
 }
