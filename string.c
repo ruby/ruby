@@ -899,6 +899,7 @@ str_new0(VALUE klass, const char *ptr, long len, int termlen)
             rb_xmalloc_mul_add_mul(sizeof(char), len, sizeof(char), termlen);
 	STR_SET_NOEMBED(str);
     }
+    asan_unpoison_memory_region(RSTRING_PTR(str), len + termlen, true);
     if (ptr) {
 	memcpy(RSTRING_PTR(str), ptr, len);
     }
