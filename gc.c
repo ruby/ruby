@@ -2380,7 +2380,7 @@ ractor_cached_free_region(rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_
         asan_unpoison_object(obj, true);
 #endif
 #if RGENGC_CHECK_MODE
-        GC_ASSERT(cache->using_page.slot_size == (short)stride);
+        GC_ASSERT(cache->using_page->slot_size == (short)stride);
         // zero clear
         MEMZERO((char *)obj, char, stride);
 #endif
