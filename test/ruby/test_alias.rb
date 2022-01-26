@@ -253,4 +253,15 @@ class TestAlias < Test::Unit::TestCase
     assert_equal(:foo, k.instance_method(:bar).original_name)
     assert_equal(:foo, name)
   end
+
+  def test_alias_suppressing_redefinition
+    assert_in_out_err(%w[-w], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class A
+        def foo; end
+        alias foo foo
+        def foo; end
+      end
+    end;
+  end
 end
