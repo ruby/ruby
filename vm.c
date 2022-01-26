@@ -2697,6 +2697,15 @@ ruby_vm_destruct(rb_vm_t *vm)
 {
     RUBY_FREE_ENTER("vm");
 
+    rb_thread_t *th = vm->ractor.main_thread;
+    xfree(th->ec->vm_stack);
+
+    void rb_cleanup_at_exit(void);
+    rb_cleanup_at_exit();
+    RUBY_FREE_LEAVE("vm");
+    return 0;
+
+
     if (vm) {
 	rb_thread_t *th = vm->ractor.main_thread;
 	struct rb_objspace *objspace = vm->objspace;
