@@ -110,8 +110,8 @@ class MSpecMain < MSpecScript
     if config[:multi]
       exit multi_exec(argv)
     else
-      $stderr.puts "$ #{argv.join(' ')}"
-      $stderr.flush
+      $stdout.puts "$ #{argv.join(' ')}"
+      $stdout.flush
       exec(*argv, close_others: false)
     end
   end
