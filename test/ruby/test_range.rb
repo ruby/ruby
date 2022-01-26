@@ -496,6 +496,143 @@ class TestRange < Test::Unit::TestCase
     assert_equal([0, 1, 2, 3, 4], result)
   end
 
+  def test_reverse_each
+    a = []
+    (1..3).reverse_each {|x| a << x }
+    assert_equal([3, 2, 1], a)
+
+    a = []
+    (1...3).reverse_each {|x| a << x }
+    assert_equal([2, 1], a)
+
+    fmax = RbConfig::LIMITS['FIXNUM_MAX']
+    fmin = RbConfig::LIMITS['FIXNUM_MIN']
+
+    a = []
+    (fmax+1..fmax+3).reverse_each {|x| a << x }
+    assert_equal([fmax+3, fmax+2, fmax+1], a)
+
+    a = []
+    (fmax+1...fmax+3).reverse_each {|x| a << x }
+    assert_equal([fmax+2, fmax+1], a)
+
+    a = []
+    (fmax-1..fmax+1).reverse_each {|x| a << x }
+    assert_equal([fmax+1, fmax, fmax-1], a)
+
+    a = []
+    (fmax-1...fmax+1).reverse_each {|x| a << x }
+    assert_equal([fmax, fmax-1], a)
+
+    a = []
+    (fmin-1..fmin+1).reverse_each{|x| a << x }
+    assert_equal([fmin+1, fmin, fmin-1], a)
+
+    a = []
+    (fmin-1...fmin+1).reverse_each{|x| a << x }
+    assert_equal([fmin, fmin-1], a)
+
+    a = []
+    (fmin-3..fmin-1).reverse_each{|x| a << x }
+    assert_equal([fmin-1, fmin-2, fmin-3], a)
+
+    a = []
+    (fmin-3...fmin-1).reverse_each{|x| a << x }
+    assert_equal([fmin-2, fmin-3], a)
+
+    a = []
+    ("a".."c").reverse_each {|x| a << x }
+    assert_equal(["c", "b", "a"], a)
+  end
+
+  def test_reverse_each_for_beginless_range
+    fmax = RbConfig::LIMITS['FIXNUM_MAX']
+    fmin = RbConfig::LIMITS['FIXNUM_MIN']
+
+    a = []
+    (..3).reverse_each {|x| a << x; break if x <= 0 }
+    assert_equal([3, 2, 1, 0], a)
+
+    a = []
+    (...3).reverse_each {|x| a << x; break if x <= 0 }
+    assert_equal([2, 1, 0], a)
+
+    a = []
+    (..fmax+1).reverse_each {|x| a << x; break if x <= fmax-1 }
+    assert_equal([fmax+1, fmax, fmax-1], a)
+
+    a = []
+    (...fmax+1).reverse_each {|x| a << x; break if x <= fmax-1 }
+    assert_equal([fmax, fmax-1], a)
+
+    a = []
+    (..fmin+1).reverse_each {|x| a << x; break if x <= fmin-1 }
+    assert_equal([fmin+1, fmin, fmin-1], a)
+
+    a = []
+    (...fmin+1).reverse_each {|x| a << x; break if x <= fmin-1 }
+    assert_equal([fmin, fmin-1], a)
+
+    a = []
+    (..fmin-1).reverse_each {|x| a << x; break if x <= fmin-3 }
+    assert_equal([fmin-1, fmin-2, fmin-3], a)
+
+    a = []
+    (...fmin-1).reverse_each {|x| a << x; break if x <= fmin-3 }
+    assert_equal([fmin-2, fmin-3], a)
+  end
+
+  def test_reverse_each_for_single_point_range
+    fmin = RbConfig::LIMITS['FIXNUM_MIN']
+    fmax = RbConfig::LIMITS['FIXNUM_MAX']
+
+    values = [fmin*2, fmin-1, fmin, 0, fmax, fmax+1, fmax*2]
+
+    values.each do |b|
+      r = b..b
+      a = []
+      r.reverse_each {|x| a << x }
+      assert_equal([b], a, "failed on #{r}")
+
+      r = b...b+1
+      a = []
+      r.reverse_each {|x| a << x }
+      assert_equal([b], a, "failed on #{r}")
+    end
+  end
+
+  def test_reverse_each_for_empty_range
+    fmin = RbConfig::LIMITS['FIXNUM_MIN']
+    fmax = RbConfig::LIMITS['FIXNUM_MAX']
+
+    values = [fmin*2, fmin-1, fmin, 0, fmax, fmax+1, fmax*2]
+
+    values.each do |b|
+      r = b..b-1
+      a = []
+      r.reverse_each {|x| a << x }
+      assert_equal([], a, "failed on #{r}")
+    end
+
+    values.repeated_permutation(2).to_a.product([true, false]).each do |(b, e), excl|
+      next unless b > e || (b == e && excl)
+
+      r = Range.new(b, e, excl)
+      a = []
+      r.reverse_each {|x| a << x }
+      assert_equal([], a, "failed on #{r}")
+    end
+  end
+
+  def test_reverse_each_with_no_block
+    enum = (1..5).reverse_each
+    assert_equal 5, enum.size
+
+    a = []
+    enum.each {|x| a << x }
+    assert_equal [5, 4, 3, 2, 1], a
+  end
+
   def test_begin_end
     assert_equal(0, (0..1).begin)
     assert_equal(1, (0..1).end)
