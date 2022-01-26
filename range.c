@@ -994,6 +994,132 @@ range_each(VALUE range)
     return range;
 }
 
+RBIMPL_ATTR_NORETURN()
+static void
+range_reverse_each_bignum_beginless(VALUE end)
+{
+    for (;; end = rb_big_minus(end, INT2FIX(1))) {
+        rb_yield(end);
+    }
+    UNREACHABLE;
+}
+
+RBIMPL_ATTR_NORETURN()
+static VALUE
+range_reverse_each_fixnum_beginless(VALUE end)
+{
+    for (long i = FIX2LONG(end); FIXABLE(i); i--) {
+        rb_yield(LONG2FIX(i));
+    }
+
+    range_reverse_each_bignum_beginless(LONG2NUM(RUBY_FIXNUM_MIN - 1));
+    UNREACHABLE;
+}
+
+static VALUE
+range_reverse_each_fixnum_loop(VALUE beg, VALUE end, VALUE range)
+{
+    long lim = FIX2LONG(beg);
+    for (long i = FIX2LONG(end); i >= lim; i--) {
+        rb_yield(LONG2FIX(i));
+    }
+    return range;
+}
+
+/*
+ *  call-seq:
+ *    reverse_each {|element| ... } -> self
+ *    reverse_each                  -> an_enumerator
+ *
+ *  With a block given, passes each element of +self+ to the block in reverse order:
+ *
+ *    a = []
+ *    (1..4).reverse_each {|element| a.push(element) } # => 1..4
+ *    a # => [4, 3, 2, 1]
+ *
+ *    a = []
+ *    (1...4).reverse_each {|element| a.push(element) } # => 1...4
+ *    a # => [3, 2, 1]
+ *
+ *  With no block given, returns an enumerator.
+ *
+ */
+
+static VALUE
+range_reverse_each(VALUE range)
+{
+    VALUE beg, end;
+    long i;
+
+    RETURN_SIZED_ENUMERATOR(range, 0, 0, range_enum_size);
+
+    beg = RANGE_BEG(range);
+    end = RANGE_END(range);
+
+#define DECREMENT_END_IF_EXCL(end, range) \
+    do { \
+        if (EXCL(range)) { \
+            end = rb_int_minus(end, INT2FIX(1)); \
+        } \
+    } while (0)
+
+    if (NIL_P(beg) && FIXNUM_P(end)) {
+        DECREMENT_END_IF_EXCL(end, range);
+        range_reverse_each_fixnum_beginless(end);
+    }
+    else if (FIXNUM_P(beg) && FIXNUM_P(end)) { /* fixnums are special */
+        DECREMENT_END_IF_EXCL(end, range);
+        return range_reverse_each_fixnum_loop(beg, end, range);
+    }
+    else if ((NIL_P(beg) || RB_INTEGER_TYPE_P(beg)) && RB_INTEGER_TYPE_P(end)) {
+        DECREMENT_END_IF_EXCL(end, range);
+
+        if (FIXNUM_P(beg) && FIXNUM_P(end)) {
+            return range_reverse_each_fixnum_loop(beg, end, range);
+        }
+
+	if (SPECIAL_CONST_P(beg) || RBIGNUM_NEGATIVE_P(beg)) { /* beg <= FIXNUM_MAX */
+            if (!FIXNUM_P(end)) {
+                if (RBIGNUM_POSITIVE_P(end)) {
+                    do {
+                        rb_yield(end);
+                    } while (!FIXNUM_P(end = rb_big_minus(end, INT2FIX(1))));
+                    if (NIL_P(beg)) range_reverse_each_fixnum_beginless(end);
+                    if (FIXNUM_P(beg)) return range_reverse_each_fixnum_loop(beg, end, range);
+                }
+                else {
+                    if (NIL_P(beg)) range_reverse_each_bignum_beginless(end);
+                    if (FIXNUM_P(beg)) return range;
+                }
+            }
+            if (FIXNUM_P(end)) {
+                i = FIX2LONG(end);
+                do {
+                    rb_yield(LONG2FIX(i));
+                } while (POSFIXABLE(--i));
+                end = LONG2NUM(i);
+            }
+	    ASSUME(!FIXNUM_P(end));
+	    ASSUME(!SPECIAL_CONST_P(beg));
+        }
+	if (!FIXNUM_P(end) && RBIGNUM_SIGN(beg) == RBIGNUM_SIGN(end)) {
+            VALUE c;
+            while ((c = rb_big_cmp(beg, end)) != INT2FIX(1)) {
+                rb_yield(end);
+                if (c == INT2FIX(0)) break;
+                end = rb_big_minus(end, INT2FIX(1));
+            }
+	}
+    }
+    else {
+        return rb_call_super(0, NULL);
+    }
+
+#undef DECREMENT_END_IF_EXCL
+
+    return range;
+}
+
 /*
  *  call-seq:
  *    self.begin -> object
@@ -2285,6 +2411,7 @@ Init_Range(void)
     rb_define_method(rb_cRange, "each", range_each, 0);
     rb_define_method(rb_cRange, "step", range_step, -1);
     rb_define_method(rb_cRange, "%", range_percent_step, 1);
+    rb_define_method(rb_cRange, "reverse_each", range_reverse_each, 0);
     rb_define_method(rb_cRange, "bsearch", range_bsearch, 0);
     rb_define_method(rb_cRange, "begin", range_begin, 0);
     rb_define_method(rb_cRange, "end", range_end, 0);

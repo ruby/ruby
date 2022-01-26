@@ -456,6 +456,71 @@ class TestRange < Test::Unit::TestCase
     assert_equal(["a", "b", "c"], a)
   end
 
+  def test_reverse_each
+    a = []
+    (1..3).reverse_each {|x| a << x }
+    assert_equal([3, 2, 1], a)
+
+    a = []
+    (1...3).reverse_each {|x| a << x }
+    assert_equal([2, 1], a)
+
+    a = []
+    (3..1).reverse_each {|x| a << x }
+    assert_equal([], a)
+
+    a = []
+    (3...1).reverse_each {|x| a << x }
+    assert_equal([], a)
+
+    fixnum_max = RbConfig::LIMITS['FIXNUM_MAX']
+    fixnum_min = RbConfig::LIMITS['FIXNUM_MIN']
+
+    a = []
+    (fixnum_max-1..fixnum_max+1).reverse_each {|x| a << x }
+    assert_equal([fixnum_max+1, fixnum_max, fixnum_max-1], a)
+
+    a = []
+    (fixnum_max-1..fixnum_max).reverse_each {|x| a << x }
+    assert_equal([fixnum_max, fixnum_max-1], a)
+
+    a = []
+    (fixnum_max-1...fixnum_max+1).reverse_each {|x| a << x }
+    assert_equal([fixnum_max, fixnum_max-1], a)
+
+    a = []
+    (fixnum_max+1..fixnum_max+3).reverse_each {|x| a << x }
+    assert_equal([fixnum_max+3, fixnum_max+2, fixnum_max+1], a)
+
+    a = []
+    (0..fixnum_min-1).reverse_each {|x| a << x }
+    assert_equal([], a)
+
+    a = []
+    (fixnum_max+3..fixnum_max+1).reverse_each {|x| a << x }
+    assert_equal([], a)
+
+    a = []
+    (fixnum_max+1..0).reverse_each {|x| a << x }
+    assert_equal([], a)
+
+    a = []
+    (fixnum_max+1..fixnum_min-1).reverse_each {|x| a << x }
+    assert_equal([], a)
+
+    a = []
+    (..3).reverse_each {|x| a << x; break if x <= 0 }
+    assert_equal([3, 2, 1, 0], a)
+
+    a = []
+    (...3).reverse_each {|x| a << x; break if x <= 0 }
+    assert_equal([2, 1, 0], a)
+
+    a = []
+    ("a".."c").reverse_each {|x| a << x }
+    assert_equal(["c", "b", "a"], a)
+  end
+
   def test_begin_end
     assert_equal(0, (0..1).begin)
     assert_equal(1, (0..1).end)
