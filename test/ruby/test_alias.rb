@@ -264,4 +264,22 @@ class TestAlias < Test::Unit::TestCase
       end
     end;
   end
+
+  def test_alias_memory_leak
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true)
+    begin;
+      class A
+        500.times do
+          1000.times do |i|
+            define_method(:"foo_#{i}") {}
+
+            alias :"foo_#{i}" :"foo_#{i}"
+
+            remove_method :"foo_#{i}"
+          end
+          GC.start
+        end
+      end
+    end;
+  end
 end
