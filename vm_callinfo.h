@@ -179,7 +179,7 @@ vm_ci_dump(const struct rb_callinfo *ci)
 #define vm_ci_new(mid, flag, argc, kwarg) vm_ci_new_(mid, flag, argc, kwarg, __FILE__, __LINE__)
 #define vm_ci_new_runtime(mid, flag, argc, kwarg) vm_ci_new_runtime_(mid, flag, argc, kwarg, __FILE__, __LINE__)
 
-#/* This is passed to STATIC_ASSERT.  Cannot be an inline function. */
+/* This is passed to STATIC_ASSERT.  Cannot be an inline function. */
 #define VM_CI_EMBEDDABLE_P(mid, flag, argc, kwarg) \
     (((mid ) & ~CI_EMBED_ID_MASK)   ? false :      \
      ((flag) & ~CI_EMBED_FLAG_MASK) ? false :      \
