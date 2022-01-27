@@ -10116,6 +10116,25 @@ advice_arg_check(VALUE advice)
  *
  *  The arguments and results are platform-dependent.
  *
+ *  The relevant data is specified by:
+ *
+ *  - +offset+: The offset of the first byte of data.
+ *  - +len+: The number of bytes to be accessed;
+ *    if +len+ is zero, or is larger than the number of bytes remaining,
+ *    all remaining bytes will be accessed.
+ *
+ *  Argument +advice+ is one of the following symbols:
+ *
+ *  - +:normal+: The application has no advice to give
+ *    about its access pattern for the specified data.
+ *    If no advice is given for an open file, this is the default assumption.
+ *  - +:sequential+: The application expects to access the specified data sequentially
+ *    (with lower offsets read before higher ones).
+ *  - +:random+: The specified data will be accessed in random order.
+ *  - +:noreuse+: The specified data will be accessed only once.
+ *  - +:willneed+: The specified data will be accessed in the near future.
+ *  - +:dontneed+: The specified data will not be accessed in the near future.
+ *
  *  Not implemented on all platforms.
  *
  */
@@ -10153,6 +10172,142 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
  *  becomes ready for some class of I/O operation.
  *
  *  Not implemented on all platforms.
+ *
+ *  Each of the arguments +read_ios+, +write_ios+, and +error_ios+
+ *  is an array of IO objects.
+ *
+ *  Argument +timeout+ is an integer timeout interval in seconds.
+ *
+ *  The method monitors the \IO objects given in all three arrays,
+ *  waiting for some to be ready;
+ *  returns a 3-element array whose elements are:
+ *
+ *  - An array of the objects in +read_ios+ that are ready for reading.
+ *  - An array of the objects in +write_ios+ that are ready for writing.
+ *  - An array of the objects in +error_ios+ have pending exceptions.
+ *
+ *  If no object becomes ready within the given +timeout+, +nil+ is returned.
+ *
+ *  \IO.select peeks the buffer of \IO objects for testing readability.
+ *  If the \IO buffer is not empty, \IO.select immediately notifies
+ *  readability.  This "peek" only happens for \IO objects.  It does not
+ *  happen for IO-like objects such as OpenSSL::SSL::SSLSocket.
+ *
+ *  The best way to use \IO.select is invoking it after non-blocking
+ *  methods such as #read_nonblock, #write_nonblock, etc.  The methods
+ *  raise an exception which is extended by IO::WaitReadable or
+ *  IO::WaitWritable.  The modules notify how the caller should wait
+ *  with \IO.select.  If IO::WaitReadable is raised, the caller should
+ *  wait for reading.  If IO::WaitWritable is raised, the caller should
+ *  wait for writing.
+ *
+ *  So, blocking read (#readpartial) can be emulated using
+ *  #read_nonblock and \IO.select as follows:
+ *
+ *    begin
+ *      result = io_like.read_nonblock(maxlen)
+ *    rescue IO::WaitReadable
+ *      IO.select([io_like])
+ *      retry
+ *    rescue IO::WaitWritable
+ *      IO.select(nil, [io_like])
+ *      retry
+ *    end
+ *
+ *  Especially, the combination of non-blocking methods and \IO.select is
+ *  preferred for IO like objects such as OpenSSL::SSL::SSLSocket.  It
+ *  has #to_io method to return underlying IO object.  IO.select calls
+ *  #to_io to obtain the file descriptor to wait.
+ *
+ *  This means that readability notified by \IO.select doesn't mean
+ *  readability from OpenSSL::SSL::SSLSocket object.
+ *
+ *  The most likely situation is that OpenSSL::SSL::SSLSocket buffers
+ *  some data.  \IO.select doesn't see the buffer.  So \IO.select can
+ *  block when OpenSSL::SSL::SSLSocket#readpartial doesn't block.
+ *
+ *  However, several more complicated situations exist.
+ *
+ *  SSL is a protocol which is sequence of records.
+ *  The record consists of multiple bytes.
+ *  So, the remote side of SSL sends a partial record, IO.select
+ *  notifies readability but OpenSSL::SSL::SSLSocket cannot decrypt a
+ *  byte and OpenSSL::SSL::SSLSocket#readpartial will block.
+ *
+ *  Also, the remote side can request SSL renegotiation which forces
+ *  the local SSL engine to write some data.
+ *  This means OpenSSL::SSL::SSLSocket#readpartial may invoke #write
+ *  system call and it can block.
+ *  In such a situation, OpenSSL::SSL::SSLSocket#read_nonblock raises
+ *  IO::WaitWritable instead of blocking.
+ *  So, the caller should wait for ready for writability as above
+ *  example.
+ *
+ *  The combination of non-blocking methods and \IO.select is also useful
+ *  for streams such as tty, pipe socket socket when multiple processes
+ *  read from a stream.
+ *
+ *  Finally, Linux kernel developers don't guarantee that
+ *  readability of select(2) means readability of following read(2) even
+ *  for a single process;
+ *  see {select(2)}[https://linux.die.net/man/2/select]
+ *
+ *  Invoking \IO.select before IO#readpartial works well as usual.
+ *  However it is not the best way to use \IO.select.
+ *
+ *  The writability notified by select(2) doesn't show
+ *  how many bytes are writable.
+ *  IO#write method blocks until given whole string is written.
+ *  So, <tt>IO#write(two or more bytes)</tt> can block after
+ *  writability is notified by \IO.select.  IO#write_nonblock is required
+ *  to avoid the blocking.
+ *
+ *  Blocking write (#write) can be emulated using #write_nonblock and
+ *  IO.select as follows: IO::WaitReadable should also be rescued for
+ *  SSL renegotiation in OpenSSL::SSL::SSLSocket.
+ *
+ *    while 0 < string.bytesize
+ *      begin
+ *        written = io_like.write_nonblock(string)
+ *      rescue IO::WaitReadable
+ *        IO.select([io_like])
+ *        retry
+ *      rescue IO::WaitWritable
+ *        IO.select(nil, [io_like])
+ *        retry
+ *      end
+ *      string = string.byteslice(written..-1)
+ *    end
+ *
+ *  Example:
+ *
+ *      rp, wp = IO.pipe
+ *      mesg = "ping "
+ *      100.times {
+ *        # IO.select follows IO#read.  Not the best way to use IO.select.
+ *        rs, ws, = IO.select([rp], [wp])
+ *        if r = rs[0]
+ *          ret = r.read(5)
+ *          print ret
+ *          case ret
+ *          when /ping/
+ *            mesg = "pong\n"
+ *          when /pong/
+ *            mesg = "ping "
+ *          end
+ *        end
+ *        if w = ws[0]
+ *          w.write(mesg)
+ *        end
+ *      }
+ *
+ *  Output:
+ *
+ *      ping pong
+ *      ping pong
+ *      ping pong
+ *      (snipped)
+ *      ping
  *
  */
 
@@ -10485,6 +10640,13 @@ rb_ioctl(VALUE io, VALUE req, VALUE arg)
  *  Invokes Posix system call {ioctl(2)}[https://linux.die.net/man/2/ioctl],
  *  which issues a low-level command to an I/O device.
  *
+ *  Issues a low-level command to an I/O device.
+ *  The arguments and returned value are platform-dependent.
+ *  The effect of the call is platform-dependent.
+ *
+ *  If argument +argument+ is an integer, it is passed directly;
+ *  if it is a string, it is interpreted as a binary sequence of bytes.
+ *
  *  Not implemented on all platforms.
  *
  */
@@ -10596,6 +10758,22 @@ rb_io_fcntl(int argc, VALUE *argv, VALUE io)
  *
  *  Invokes Posix system call {syscall(2)}[https://linux.die.net/man/2/syscall],
  *  which calls a specified function.
+ *
+ *  Calls the operating system function identified by +integer_callno+;
+ *  returns the result of the function or raises SystemCallError if it failed.
+ *  The effect of the call is platform-dependent.
+ *  The arguments and returned value are platform-dependent.
+ *
+ *  For each of +arguments+: if it is an integer, it is passed directly;
+ *  if it is a string, it is interpreted as a binary sequence of bytes.
+ *  There may be as many as nine such arguments.
+ *
+ *  Arguments +integer_callno+ and +argument+, as well as the returned value,
+ *  are platform-dependent.
+ *
+ *  Note: Method +syscall+ is essentially unsafe and unportable.
+ *  The DL (Fiddle) library is preferred for safer and a bit
+ *  more portable programming.
  *
  *  Not implemented on all platforms.
  *
