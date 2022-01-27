@@ -1212,6 +1212,9 @@ parse_iso2(VALUE str, VALUE hash)
     return 1;
 }
 
+#define JISX0301_ERA_INITIALS "mtshr"
+#define JISX0301_DEFAULT_ERA 'H' /* obsolete */
+
 static int
 gengo(int c)
 {
@@ -1222,6 +1225,7 @@ gengo(int c)
       case 'T': case 't': e = 1911; break;
       case 'S': case 's': e = 1925; break;
       case 'H': case 'h': e = 1988; break;
+      case 'R': case 'r': e = 2018; break;
       default:  e = 0; break;
     }
     return e;
@@ -1252,11 +1256,11 @@ parse_jis(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 #ifndef TIGHT_PARSER
-	"\\b([mtsh])(\\d+)\\.(\\d+)\\.(\\d+)"
+        "\\b([" JISX0301_ERA_INITIALS "])(\\d+)\\.(\\d+)\\.(\\d+)"
 #else
 	BOS
 	FPW_COM FPT_COM
-	"([mtsh])(\\d+)\\.(\\d+)\\.(\\d+)"
+        "([" JISX0301_ERA_INITIALS "])(\\d+)\\.(\\d+)\\.(\\d+)"
 	TEE_FPT COM_FPW
 	EOS
 #endif
@@ -2954,7 +2958,7 @@ jisx0301_cb(VALUE m, VALUE hash)
 	    s[i] = rb_reg_nth_match(i, m);
     }
 
-    ep = gengo(NIL_P(s[1]) ? 'h' : *RSTRING_PTR(s[1]));
+    ep = gengo(NIL_P(s[1]) ? JISX0301_DEFAULT_ERA : *RSTRING_PTR(s[1]));
     set_hash("year", f_add(str2num(s[2]), INT2FIX(ep)));
     set_hash("mon", str2num(s[3]));
     set_hash("mday", str2num(s[4]));
@@ -2979,7 +2983,7 @@ static int
 jisx0301(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
-	"\\A\\s*([mtsh])?(\\d{2})\\.(\\d{2})\\.(\\d{2})"
+        "\\A\\s*([" JISX0301_ERA_INITIALS "])?(\\d{2})\\.(\\d{2})\\.(\\d{2})"
 	"(?:t"
 	"(?:(\\d{2}):(\\d{2})(?::(\\d{2})(?:[,.](\\d*))?)?"
 	"(z|[-+]\\d{2}(?::?\\d{2})?)?)?)?\\s*\\z";
