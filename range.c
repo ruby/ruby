@@ -1133,6 +1133,11 @@ range_reverse_each(VALUE range)
     VALUE end = RANGE_END(range);
     int excl = EXCL(range);
 
+    if (NIL_P(end)) {
+        rb_raise(rb_eTypeError, "can't iterate from %s",
+                 rb_obj_classname(end));
+    }
+
     if (FIXNUM_P(beg) && FIXNUM_P(end)) {
         if (excl) {
             if (end == LONG2FIX(FIXNUM_MIN)) return range;
