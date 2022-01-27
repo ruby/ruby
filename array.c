@@ -2493,6 +2493,7 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
  *  Allows the array to be modified during iteration:
  *    a = [:foo, 'bar', 2]
  *    a.each {|element| puts element; a.clear if element.to_s.start_with?('b') }
+ *  Mutating the array while it is being iterated is discouraged as it can result in confusing behavior.
  *
  *  Output:
  *    foo
@@ -2544,6 +2545,7 @@ rb_ary_each(VALUE ary)
  *  Allows the array to be modified during iteration:
  *    a = [:foo, 'bar', 2]
  *    a.each_index {|index| puts index; a.clear if index > 0 }
+ *  Mutating the array while it is being iterated is discouraged as it can result in confusing behavior.
  *
  *  Output:
  *    0
@@ -2595,6 +2597,7 @@ rb_ary_each_index(VALUE ary)
  *  Allows the array to be modified during iteration:
  *    a = [:foo, 'bar', 2]
  *    a.reverse_each {|element| puts element; a.clear if element.to_s.start_with?('b') }
+ *  Mutating the array while it is being iterated is discouraged as it can result in confusing behavior.
  *
  *  Output:
  *    2
