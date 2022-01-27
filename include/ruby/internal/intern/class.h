@@ -377,6 +377,22 @@ void rb_define_singleton_method(VALUE obj, const char *mid, VALUE(*func)(ANYARGS
  */
 VALUE rb_singleton_class(VALUE obj);
 
+/**
+ * Finds the singleton class of the passed object if it has one..
+ *
+ * @param[out]  obj            Arbitrary ruby object.
+ * @return      An instance of ::rb_cClass or ::RUBY_Qnil.
+ * @post        `obj` has its singleton class, which is the return value.
+ * @post        In case `obj` is a class, the returned singleton class also has
+ *              its own  singleton class  in order to  keep consistency  of the
+ *              inheritance structure of metaclasses.
+ * @note        ::RUBY_Qnil is returned  if `obj` does  not have a singleton class.
+ * @note        The  singleton  classes   for  ::RUBY_Qnil,  ::RUBY_Qtrue,  and
+ *              ::RUBY_Qfalse   are    ::rb_cNilClass,   ::rb_cTrueClass,   and
+ *              ::rb_cFalseClass respectively.
+ */
+VALUE rb_singleton_class_get(VALUE obj);
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RBIMPL_INTERN_CLASS_H */
