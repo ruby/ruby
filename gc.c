@@ -7649,16 +7649,18 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
 static int
 gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
 {
-    int i;
     unsigned int has_remembered_shady = FALSE;
     unsigned int has_remembered_old = FALSE;
     int remembered_old_objects = 0;
     int free_objects = 0;
     int zombie_objects = 0;
-    int stride = page->slot_size / sizeof(RVALUE);
 
-    for (i=0; i<page->total_slots; i+=stride) {
-	VALUE val = (VALUE)&page->start[i];
+    short slot_size = page->slot_size;
+    uintptr_t start = (uintptr_t)page->start;
+    uintptr_t end = start + page->total_slots * slot_size;
+
+    for (uintptr_t ptr = start; ptr < end; ptr += slot_size) {
+        VALUE val = (VALUE)ptr;
         void *poisoned = asan_poisoned_object_p(val);
         asan_unpoison_object(val, false);
 
@@ -7681,8 +7683,8 @@ gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
     if (!is_incremental_marking(objspace) &&
 	page->flags.has_remembered_objects == FALSE && has_remembered_old == TRUE) {
 
-	for (i=0; i<page->total_slots; i++) {
-	    VALUE val = (VALUE)&page->start[i];
+        for (uintptr_t ptr = start; ptr < end; ptr += slot_size) {
+            VALUE val = (VALUE)ptr;
 	    if (RVALUE_PAGE_MARKING(page, val)) {
 		fprintf(stderr, "marking -> %s\n", obj_info(val));
 	    }
