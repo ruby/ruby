@@ -1284,7 +1284,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
 VALUE
 rb_ivar_get(VALUE obj, ID id)
 {
-    VALUE iv = rb_ivar_lookup(obj, id, Qnil);
+    VALUE iv = rb_attr_get(obj, id);
     RB_DEBUG_COUNTER_INC(ivar_get_base);
     return iv;
 }
