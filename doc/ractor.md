@@ -179,7 +179,7 @@ end
 Communication between Ractors is achieved by sending and receiving messages. There are two ways to communicate with each other.
 
 * (1) Message sending/receiving
-  * (1-1) push type send/receive (sender knows receiver). similar to the Actor model.
+  * (1-1) push type send/receive (sender knows receiver). Similar to the Actor model.
   * (1-2) pull type yield/take (receiver knows sender).
 * (2) Using shareable container objects
   * Ractor::TVar gem ([ko1/ractor-tvar](https://github.com/ko1/ractor-tvar))
