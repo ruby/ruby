@@ -6,7 +6,7 @@ describe :rational_divmod_rat, shared: true do
     Rational(7, 4).divmod(Rational(-1, 2)).should eql([-4, Rational(-1, 4)])
     Rational(0, 4).divmod(Rational(4, 3)).should eql([0, Rational(0, 1)])
 
-    Rational(bignum_value, 4).divmod(Rational(4, 3)).should eql([1729382256910270464, Rational(0, 1)])
+    Rational(bignum_value, 4).divmod(Rational(4, 3)).should eql([3458764513820540928, Rational(0, 1)])
   end
 
   it "raises a ZeroDivisionError when passed a Rational with a numerator of 0" do
@@ -19,7 +19,7 @@ describe :rational_divmod_int, shared: true do
     Rational(7, 4).divmod(2).should eql([0, Rational(7, 4)])
     Rational(7, 4).divmod(-2).should eql([-1, Rational(-1, 4)])
 
-    Rational(bignum_value, 4).divmod(3).should == [768614336404564650, Rational(2, 1)]
+    Rational(bignum_value, 4).divmod(3).should eql([1537228672809129301, Rational(1, 1)])
   end
 
   it "raises a ZeroDivisionError when passed 0" do

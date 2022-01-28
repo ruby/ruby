@@ -11,8 +11,8 @@ describe :integer_abs, shared: true do
 
   context "bignum" do
     it "returns the absolute bignum value" do
-      bignum_value(39).send(@method).should == 9223372036854775847
-      (-bignum_value(18)).send(@method).should == 9223372036854775826
+      bignum_value(39).send(@method).should == 18446744073709551655
+      (-bignum_value(18)).send(@method).should == 18446744073709551634
     end
   end
 end

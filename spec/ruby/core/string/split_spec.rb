@@ -224,6 +224,17 @@ describe "String#split with String" do
       end
     end
   end
+
+  it "returns an empty array when whitespace is split on whitespace" do
+    " ".split(" ").should == []
+    " \n ".split(" ").should == []
+    "  ".split(" ").should == []
+    " \t ".split(" ").should == []
+  end
+
+  it "doesn't split on non-ascii whitespace" do
+    "a\u{2008}b".split(" ").should == ["a\u{2008}b"]
+  end
 end
 
 describe "String#split with Regexp" do

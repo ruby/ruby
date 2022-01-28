@@ -1,11 +1,11 @@
 require_relative '../spec_helper'
 
-require 'yaml'
-require 'rubygems'
-require 'rubygems/safe_yaml'
-require 'rubygems/commands/owner_command'
+guard_not -> { platform_is :darwin and ENV['GITHUB_ACTIONS'] } do # frequent timeout/hang on macOS in GitHub Actions
+  require 'yaml'
+  require 'rubygems'
+  require 'rubygems/safe_yaml'
+  require 'rubygems/commands/owner_command'
 
-platform_is_not :darwin do # frequent timeout/hang on macOS
   describe "CVE-2019-8322 is resisted by" do
     it "sanitising owner names" do
       command = Gem::Commands::OwnerCommand.new

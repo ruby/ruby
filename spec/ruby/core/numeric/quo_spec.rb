@@ -20,7 +20,7 @@ describe "Numeric#quo" do
     -> { 10.quo(0) }.should raise_error(ZeroDivisionError)
     -> { -10.quo(0) }.should raise_error(ZeroDivisionError)
     -> { bignum_value.quo(0) }.should raise_error(ZeroDivisionError)
-    -> { -bignum_value.quo(0) }.should raise_error(ZeroDivisionError)
+    -> { (-bignum_value).quo(0) }.should raise_error(ZeroDivisionError)
   end
 
   it "calls #to_r to convert the object to a Rational" do

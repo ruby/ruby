@@ -91,7 +91,6 @@ describe "Enumerable#one?" do
       pattern.yielded.should == [[0], [1], [2], [-1]]
     end
 
-    # may raise an exception in future versions
     it "always returns false on empty enumeration" do
       @empty.one?(Integer).should == false
       [].one?(Integer).should == false

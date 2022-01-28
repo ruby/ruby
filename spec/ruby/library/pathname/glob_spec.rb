@@ -55,3 +55,40 @@ describe 'Pathname.glob' do
     end
   end
 end
+
+
+describe 'Pathname#glob' do
+  before :all  do
+    @dir = tmp('pathname_glob') + '/'
+    @file_1 = @dir + 'lib/ipaddr.rb'
+    @file_2 = @dir + 'lib/irb.rb'
+    @file_3 = @dir + 'lib/.hidden.rb'
+
+    touch @file_1
+    touch @file_2
+    touch @file_3
+  end
+
+  after :all do
+    rm_r @dir[0...-1]
+  end
+
+  it 'returns [] for no match' do
+    Pathname.new(@dir).glob('lib/*.js').should == []
+  end
+
+  it 'returns matching file paths' do
+    Pathname.new(@dir).glob('lib/*i*.rb').sort.should == [Pathname.new(@file_1), Pathname.new(@file_2)].sort
+  end
+
+  it 'yields matching file paths to block' do
+    ary = []
+    Pathname.new(@dir).glob('lib/*i*.rb') { |p| ary << p }.should be_nil
+    ary.sort.should == [Pathname.new(@file_1), Pathname.new(@file_2)].sort
+  end
+
+  it 'returns matching file paths when a flag is provided' do
+    expected = [Pathname.new(@file_1), Pathname.new(@file_2), Pathname.new(@file_3)].sort
+    Pathname.new(@dir).glob('lib/*i*.rb', File::FNM_DOTMATCH).sort.should == expected
+  end
+end

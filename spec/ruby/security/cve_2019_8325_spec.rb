@@ -1,6 +1,6 @@
 require_relative '../spec_helper'
 
-platform_is_not :darwin do # frequent timeout/hang on macOS
+guard_not -> { platform_is :darwin and ENV['GITHUB_ACTIONS'] } do # frequent timeout/hang on macOS in GitHub Actions
   require 'rubygems'
   require 'rubygems/command_manager'
 

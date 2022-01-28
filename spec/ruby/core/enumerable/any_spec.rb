@@ -145,7 +145,6 @@ describe "Enumerable#any?" do
       pattern.yielded.should == [[0], [1], [2]]
     end
 
-    # may raise an exception in future versions
     it "always returns false on empty enumeration" do
       @empty.any?(Integer).should == false
       [].any?(Integer).should == false

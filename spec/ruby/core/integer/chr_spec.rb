@@ -11,7 +11,11 @@ describe "Integer#chr without argument" do
 
   it "raises a RangeError is self is less than 0" do
     -> { -1.chr }.should raise_error(RangeError)
-    -> { -bignum_value.chr }.should raise_error(RangeError)
+    -> { (-bignum_value).chr }.should raise_error(RangeError)
+  end
+
+  it "raises a RangeError if self is too large" do
+    -> { 2206368128.chr(Encoding::UTF_8) }.should raise_error(RangeError)
   end
 
   describe "when Encoding.default_internal is nil" do
@@ -162,7 +166,7 @@ describe "Integer#chr with an encoding argument" do
   # http://redmine.ruby-lang.org/issues/4869
   it "raises a RangeError is self is less than 0" do
     -> { -1.chr(Encoding::UTF_8) }.should raise_error(RangeError)
-    -> { -bignum_value.chr(Encoding::EUC_JP) }.should raise_error(RangeError)
+    -> { (-bignum_value).chr(Encoding::EUC_JP) }.should raise_error(RangeError)
   end
 
   it "raises a RangeError if self is too large" do

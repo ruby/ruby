@@ -46,16 +46,16 @@ describe "Integer#divmod" do
     # assert(0 < b ? (0 <= r && r < b) : (b < r && r <= 0))
     # So, r is always between 0 and b.
     it "returns an Array containing quotient and modulus obtained from dividing self by the given argument" do
-      @bignum.divmod(4).should == [2305843009213693965, 3]
-      @bignum.divmod(13).should == [709490156681136604, 11]
+      @bignum.divmod(4).should == [4611686018427387917, 3]
+      @bignum.divmod(13).should == [1418980313362273205, 6]
 
-      @bignum.divmod(4.5).should == [2049638230412172288, 3.5]
+      @bignum.divmod(4.5).should == [4099276460824344576, 2.5]
 
       not_supported_on :opal do
-        @bignum.divmod(4.0).should == [2305843009213693952, 0.0]
-        @bignum.divmod(13.0).should == [709490156681136640, 8.0]
+        @bignum.divmod(4.0).should == [4611686018427387904, 0.0]
+        @bignum.divmod(13.0).should == [1418980313362273280, 3.0]
 
-        @bignum.divmod(2.0).should == [4611686018427387904, 0.0]
+        @bignum.divmod(2.0).should == [9223372036854775808, 0.0]
       end
 
       @bignum.divmod(bignum_value).should == [1, 55]
