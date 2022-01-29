@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-# -*- coding: utf-8 -*-
+#
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
