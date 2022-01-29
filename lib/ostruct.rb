@@ -356,14 +356,14 @@ class OpenStruct
   #
   #   person.delete_field('number') { 8675_309 } # => 8675309
   #
-  def delete_field(name)
+  def delete_field(name, &block)
     sym = name.to_sym
     begin
       singleton_class.remove_method(sym, "#{sym}=")
     rescue NameError
     end
     @table.delete(sym) do
-      return yield if block_given!
+      return yield if block
       raise! NameError.new("no field `#{sym}' in #{self}", sym)
     end
   end
@@ -467,6 +467,11 @@ class OpenStruct
   end
   # Other builtin private methods we use:
   alias_method :raise!, :raise
-  alias_method :block_given!, :block_given?
-  private :raise!, :block_given!
+  private :raise!
+
+  # See https://github.com/ruby/ostruct/issues/40
+  if RUBY_ENGINE != 'jruby'
+    alias_method :block_given!, :block_given?
+    private :block_given!
+  end
 end
