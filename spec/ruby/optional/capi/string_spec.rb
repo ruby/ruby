@@ -378,6 +378,14 @@ describe "C-API String function" do
     it_behaves_like :string_times, :rb_str_times, -> str, times { @s.rb_str_times(str, times) }
   end
 
+  describe "rb_str_buf_append" do
+    it "concatenates a string to another string" do
+      str = "Your house "
+      @s.rb_str_buf_append(str, "is on fire?").should.equal?(str)
+      str.should == "Your house is on fire?"
+    end
+  end
+
   describe "rb_str_buf_cat" do
     it "concatenates a C string to a ruby string" do
       @s.rb_str_buf_cat("Your house is on fire").should == "Your house is on fire?"

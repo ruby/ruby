@@ -167,7 +167,7 @@ if libffi_version
   libffi_version = libffi_version.gsub(/-rc\d+/, '')
   libffi_version = (libffi_version.split('.').map(&:to_i) + [0,0])[0,3]
   $defs.push(%{-DRUBY_LIBFFI_MODVERSION=#{ '%d%03d%03d' % libffi_version }})
-  warn "libffi_version: #{libffi_version.join('.')}"
+  puts "libffi_version: #{libffi_version.join('.')}"
 end
 
 case

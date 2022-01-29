@@ -235,7 +235,7 @@ module IRB # :nodoc:
           alias_method to, from
         }
       else
-        print "irb: warn: can't alias #{to} from #{from}.\n"
+        Kernel.print "irb: warn: can't alias #{to} from #{from}.\n"
       end
     end
 

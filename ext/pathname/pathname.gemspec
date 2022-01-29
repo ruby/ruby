@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Representation of the name of a file or directory on the filesystem}
   spec.description   = %q{Representation of the name of a file or directory on the filesystem}
   spec.homepage      = "https://github.com/ruby/pathname"
-  spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
+  spec.required_ruby_version = Gem::Requirement.new(">= 2.7.0")
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.metadata["homepage_uri"] = spec.homepage

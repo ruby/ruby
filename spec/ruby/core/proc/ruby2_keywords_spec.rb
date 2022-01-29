@@ -10,6 +10,22 @@ ruby_version_is "2.7" do
       Hash.ruby2_keywords_hash?(last).should == true
     end
 
+    it "applies to the underlying method and applies across duplication" do
+      f1 = -> *a { a.last }
+      f1.ruby2_keywords
+      f2 = f1.dup
+
+      Hash.ruby2_keywords_hash?(f1.call(1, 2, a: "a")).should == true
+      Hash.ruby2_keywords_hash?(f2.call(1, 2, a: "a")).should == true
+
+      f3 = -> *a { a.last }
+      f4 = f3.dup
+      f3.ruby2_keywords
+
+      Hash.ruby2_keywords_hash?(f3.call(1, 2, a: "a")).should == true
+      Hash.ruby2_keywords_hash?(f4.call(1, 2, a: "a")).should == true
+    end
+
     ruby_version_is "2.7" ... "3.0" do
       it "fixes delegation warnings when calling a method accepting keywords" do
         obj = Object.new

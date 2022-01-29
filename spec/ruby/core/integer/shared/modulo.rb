@@ -48,11 +48,11 @@ describe :integer_modulo, shared: true do
     end
 
     it "returns the modulus obtained from dividing self by the given argument" do
-      @bignum.send(@method, 5).should == 3
-      @bignum.send(@method, -5).should == -2
-      @bignum.send(@method, -100).should == -92
-      @bignum.send(@method, 2.22).should be_close(0.780180180180252, TOLERANCE)
-      @bignum.send(@method, bignum_value(10)).should == 9223372036854775808
+      @bignum.send(@method, 5).should == 1
+      @bignum.send(@method, -5).should == -4
+      @bignum.send(@method, -100).should == -84
+      @bignum.send(@method, 2.22).should be_close(1.5603603603605034, TOLERANCE)
+      @bignum.send(@method, bignum_value(10)).should == 18446744073709551616
     end
 
     it "raises a ZeroDivisionError when the given argument is 0" do

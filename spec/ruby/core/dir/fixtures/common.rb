@@ -94,6 +94,7 @@ module DirSpecs
           special/こんにちは.txt
           special/\a
         ]
+        @mock_dir_files << "special/_\u{1f60e}.erb"
       end
     end
 

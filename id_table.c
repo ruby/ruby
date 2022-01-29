@@ -268,27 +268,6 @@ rb_id_table_delete(struct rb_id_table *tbl, ID id)
 }
 
 void
-rb_id_table_foreach_with_replace(struct rb_id_table *tbl, rb_id_table_foreach_func_t *func, rb_id_table_update_callback_func_t *replace, void *data)
-{
-    int i, capa = tbl->capa;
-
-    for (i=0; i<capa; i++) {
-        if (ITEM_KEY_ISSET(tbl, i)) {
-            enum rb_id_table_iterator_result ret = (*func)((ID)0, tbl->items[i].val, data);
-            assert(ITEM_GET_KEY(tbl, i));
-
-            if (ret == ID_TABLE_REPLACE) {
-                VALUE val = tbl->items[i].val;
-                ret = (*replace)(NULL, &val, data, TRUE);
-                tbl->items[i].val = val;
-            }
-            else if (ret == ID_TABLE_STOP)
-                return;
-        }
-    }
-}
-
-void
 rb_id_table_foreach(struct rb_id_table *tbl, rb_id_table_foreach_func_t *func, void *data)
 {
     int i, capa = tbl->capa;
@@ -323,3 +302,25 @@ rb_id_table_foreach_values(struct rb_id_table *tbl, rb_id_table_foreach_values_f
 	}
     }
 }
+
+void
+rb_id_table_foreach_values_with_replace(struct rb_id_table *tbl, rb_id_table_foreach_values_func_t *func, rb_id_table_update_value_callback_func_t *replace, void *data)
+{
+    int i, capa = tbl->capa;
+
+    for (i = 0; i < capa; i++) {
+        if (ITEM_KEY_ISSET(tbl, i)) {
+            enum rb_id_table_iterator_result ret = (*func)(tbl->items[i].val, data);
+
+            if (ret == ID_TABLE_REPLACE) {
+                VALUE val = tbl->items[i].val;
+                ret = (*replace)(&val, data, TRUE);
+                tbl->items[i].val = val;
+            }
+
+            if (ret == ID_TABLE_STOP)
+                return;
+        }
+    }
+}
+

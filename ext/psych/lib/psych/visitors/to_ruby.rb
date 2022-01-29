@@ -12,9 +12,9 @@ module Psych
     ###
     # This class walks a YAML AST, converting each node to Ruby
     class ToRuby < Psych::Visitors::Visitor
-      def self.create(symbolize_names: false, freeze: false)
+      def self.create(symbolize_names: false, freeze: false, strict_integer: false)
         class_loader = ClassLoader.new
-        scanner      = ScalarScanner.new class_loader
+        scanner      = ScalarScanner.new class_loader, strict_integer: strict_integer
         new(scanner, class_loader, symbolize_names: symbolize_names, freeze: freeze)
       end
 

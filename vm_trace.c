@@ -1578,6 +1578,29 @@ struct rb_workqueue_job {
     rb_postponed_job_t job;
 };
 
+// Used for VM memsize reporting. Returns the size of a list of rb_workqueue_job
+// structs. Defined here because the struct definition lives here as well.
+size_t
+rb_vm_memsize_workqueue(struct list_head *workqueue)
+{
+    struct rb_workqueue_job *work = 0;
+    size_t size = 0;
+
+    list_for_each(workqueue, work, jnode) {
+        size += sizeof(struct rb_workqueue_job);
+    }
+
+    return size;
+}
+
+// Used for VM memsize reporting. Returns the total size of the postponed job
+// buffer that was allocated at initialization.
+size_t
+rb_vm_memsize_postponed_job_buffer(void)
+{
+    return sizeof(rb_postponed_job_t) * MAX_POSTPONED_JOB;
+}
+
 void
 Init_vm_postponed_job(void)
 {

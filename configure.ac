@@ -641,7 +641,7 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
     ])
     for wflag in \
 		 -Werror=deprecated-declarations \
-		 -Werror=division-by-zero \
+		 -Werror=division-by-zero -Werror=div-by-zero \
 		 -Werror=duplicated-cond \
 		 -Werror=implicit-function-declaration \
 		 -Werror=implicit-int \
@@ -1149,6 +1149,7 @@ main()
 		ac_cv_header_sys_time_h=no
 		ac_cv_header_sys_times_h=no
 		ac_cv_header_sys_socket_h=no
+		ac_cv_func_execv=yes
 		ac_cv_func_lstat=yes
 		ac_cv_func_times=yes
 		ac_cv_func_waitpid=yes
@@ -1262,12 +1263,12 @@ AC_CHECK_LIB(crypt, crypt)      # glibc (GNU/Linux, GNU/Hurd, GNU/kFreeBSD)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(socket, shutdown)  # SunOS/Solaris
 
-if pkg-config --exists capstone; then
-   CAPSTONE_CFLAGS=`pkg-config --cflags capstone`
-   CAPSTONE_LIB_L=`pkg-config --libs-only-L capstone`
+AS_IF([test -n "${PKG_CONFIG}" && ${PKG_CONFIG} --exists capstone], [
+   CAPSTONE_CFLAGS=`${PKG_CONFIG} --cflags capstone`
+   CAPSTONE_LIB_L=`${PKG_CONFIG} --libs-only-L capstone`
    LDFLAGS="$LDFLAGS $CAPSTONE_LIB_L"
    CFLAGS="$CFLAGS $CAPSTONE_CFLAGS"
-fi
+])
 
 AC_CHECK_LIB(capstone, cs_open) # Capstone disassembler for debugging YJIT
 
@@ -1998,6 +1999,7 @@ AC_CHECK_FUNCS(endgrent)
 AC_CHECK_FUNCS(eventfd)
 AC_CHECK_FUNCS(execl)
 AC_CHECK_FUNCS(execle)
+AC_CHECK_FUNCS(execv)
 AC_CHECK_FUNCS(execve)
 AC_CHECK_FUNCS(explicit_memset)
 AC_CHECK_FUNCS(fcopyfile)

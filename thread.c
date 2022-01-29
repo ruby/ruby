@@ -5575,6 +5575,21 @@ rb_check_deadlock(rb_ractor_t *r)
     }
 }
 
+// Used for VM memsize reporting. Returns the size of a list of waiting_fd
+// structs. Defined here because the struct definition lives here as well.
+size_t
+rb_vm_memsize_waiting_fds(struct list_head *waiting_fds)
+{
+    struct waiting_fd *waitfd = 0;
+    size_t size = 0;
+
+    list_for_each(waiting_fds, waitfd, wfd_node) {
+        size += sizeof(struct waiting_fd);
+    }
+
+    return size;
+}
+
 static void
 update_line_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
 {

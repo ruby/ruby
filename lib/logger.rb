@@ -11,6 +11,7 @@
 # A simple system for logging messages.  See Logger for more documentation.
 
 require 'monitor'
+require 'rbconfig'
 
 require_relative 'logger/version'
 require_relative 'logger/formatter'

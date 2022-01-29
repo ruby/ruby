@@ -3,9 +3,17 @@
 begin
   require 'psych'
 rescue LoadError
-  warn "It seems your ruby installation is missing psych (for YAML output).\n" \
-    "To eliminate this warning, please install libyaml and reinstall your ruby.\n",
-    uplevel: 1
+  case RUBY_ENGINE
+  when 'jruby'
+    warn "The Psych YAML extension failed to load.\n" \
+      "Check your env for conflicting versions of SnakeYAML\n" \
+      "See https://github.com/jruby/jruby/wiki/FAQs#why-does-the-psych-yaml-extension-fail-to-load-in-my-environment",
+         uplevel: 1
+  else
+    warn "It seems your ruby installation is missing psych (for YAML output).\n" \
+      "To eliminate this warning, please install libyaml and reinstall your ruby.\n",
+         uplevel: 1
+  end
   raise
 end
 

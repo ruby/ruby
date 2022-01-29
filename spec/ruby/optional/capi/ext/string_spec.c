@@ -87,6 +87,10 @@ VALUE string_spec_rb_str_tmp_new_klass(VALUE self, VALUE len) {
   return RBASIC_CLASS(rb_str_tmp_new(NUM2LONG(len)));
 }
 
+VALUE string_spec_rb_str_buf_append(VALUE self, VALUE str, VALUE two) {
+  return rb_str_buf_append(str, two);
+}
+
 VALUE string_spec_rb_str_buf_cat(VALUE self, VALUE str) {
   const char *question_mark = "?";
   rb_str_buf_cat(str, question_mark, strlen(question_mark));
@@ -599,6 +603,7 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_str_buf_new2", string_spec_rb_str_buf_new2, 0);
   rb_define_method(cls, "rb_str_tmp_new", string_spec_rb_str_tmp_new, 1);
   rb_define_method(cls, "rb_str_tmp_new_klass", string_spec_rb_str_tmp_new_klass, 1);
+  rb_define_method(cls, "rb_str_buf_append", string_spec_rb_str_buf_append, 2);
   rb_define_method(cls, "rb_str_buf_cat", string_spec_rb_str_buf_cat, 1);
   rb_define_method(cls, "rb_enc_str_buf_cat", string_spec_rb_enc_str_buf_cat, 3);
   rb_define_method(cls, "rb_str_cat", string_spec_rb_str_cat, 1);

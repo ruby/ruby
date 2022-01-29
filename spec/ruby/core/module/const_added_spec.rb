@@ -29,7 +29,7 @@ describe "Module#const_added" do
       ScratchPad.recorded.should == [:TEST]
     end
 
-    it "is called when a new constant is assigned on self throught const_set" do
+    it "is called when a new constant is assigned on self through const_set" do
       ScratchPad.record []
 
       mod = Module.new do

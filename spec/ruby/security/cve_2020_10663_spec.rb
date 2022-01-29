@@ -22,7 +22,7 @@ guard -> {
   JSON.const_defined?(:Pure) or
   version_is(JSON::VERSION, '2.3.0')
 } do
-  platform_is_not :darwin do # frequent timeout/hang on macOS
+  guard_not -> { platform_is :darwin and ENV['GITHUB_ACTIONS'] } do # frequent timeout/hang on macOS in GitHub Actions
     describe "CVE-2020-10663 is resisted by" do
       it "only creating custom objects if passed create_additions: true or using JSON.load" do
         obj = JSONSpecs::MyClass.new("bar")

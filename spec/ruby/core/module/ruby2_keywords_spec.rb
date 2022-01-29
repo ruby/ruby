@@ -15,6 +15,32 @@ ruby_version_is "2.7" do
       Hash.ruby2_keywords_hash?(last).should == true
     end
 
+    it "applies to the underlying method and applies across aliasing" do
+      obj = Object.new
+
+      obj.singleton_class.class_exec do
+        def foo(*a) a.last end
+        alias_method :bar, :foo
+        ruby2_keywords :foo
+
+        def baz(*a) a.last end
+        ruby2_keywords :baz
+        alias_method :bob, :baz
+      end
+
+      last = obj.foo(1, 2, a: "a")
+      Hash.ruby2_keywords_hash?(last).should == true
+
+      last = obj.bar(1, 2, a: "a")
+      Hash.ruby2_keywords_hash?(last).should == true
+
+      last = obj.baz(1, 2, a: "a")
+      Hash.ruby2_keywords_hash?(last).should == true
+
+      last = obj.bob(1, 2, a: "a")
+      Hash.ruby2_keywords_hash?(last).should == true
+    end
+
     ruby_version_is "2.7" ... "3.0" do
       it "fixes delegation warnings when calling a method accepting keywords" do
         obj = Object.new

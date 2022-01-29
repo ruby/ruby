@@ -2453,11 +2453,17 @@ ractor_cached_free_region(rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_
 
     if (p) {
         VALUE obj = (VALUE)p;
+        MAYBE_UNUSED(const size_t) stride = size_pool_slot_size(size_pool_idx);
         cache->freelist = p->as.free.next;
+#if USE_RVARGC
+        asan_unpoison_memory_region(p, stride, true);
+#else
         asan_unpoison_object(obj, true);
+#endif
 #if RGENGC_CHECK_MODE
+        GC_ASSERT(cache->using_page->slot_size == (short)stride);
         // zero clear
-        MEMZERO((char *)obj, char, size_pool_slot_size(size_pool_idx));
+        MEMZERO((char *)obj, char, stride);
 #endif
         return obj;
     }
@@ -5119,15 +5125,10 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
 
         bits_t bits = mark_bits[index] & ~pin_bits[index];
 
-        bits >>= NUM_IN_PAGE(p);
+        bits >>= NUM_IN_PAGE(p) % BITS_BITLENGTH;
         if (try_move_plane(objspace, heap, sweep_page, (uintptr_t)p, bits, dest)) return 1;
 
-        if (index == 0) {
-            p = cursor->start + (BITS_BITLENGTH - NUM_IN_PAGE(cursor->start));
-        }
-        else {
-            p = cursor->start + (BITS_BITLENGTH - NUM_IN_PAGE(cursor->start)) + (BITS_BITLENGTH * index);
-        }
+        p = cursor->start + (BITS_BITLENGTH - NUM_IN_PAGE(cursor->start)) + (BITS_BITLENGTH * index);
 
         /* Find an object to move and move it. Movable objects must be
          * marked, so we iterate using the marking bitmap */
@@ -5177,14 +5178,13 @@ gc_unprotect_pages(rb_objspace_t *objspace, rb_heap_t *heap)
 static void gc_update_references(rb_objspace_t * objspace);
 static void invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page);
 
-#if !defined(__wasi__)
-// read barrier for pages containing MOVED objects
-# define GC_ENABLE_READ_SIGNAL_BARRIER 1
+#if defined(__wasi__) /* WebAssembly doesn't support signals */
+# define GC_COMPACTION_SUPPORTED 0
 #else
-# define GC_ENABLE_READ_SIGNAL_BARRIER 0
+# define GC_COMPACTION_SUPPORTED 1
 #endif
 
-#if GC_ENABLE_READ_SIGNAL_BARRIER
+#if GC_COMPACTION_SUPPORTED
 static void
 read_barrier_handler(uintptr_t address)
 {
@@ -5205,8 +5205,21 @@ read_barrier_handler(uintptr_t address)
     }
     RB_VM_LOCK_LEAVE();
 }
+#endif
 
-#if defined(_WIN32)
+#if !GC_COMPACTION_SUPPORTED
+static void
+uninstall_handlers(void)
+{
+    /* no-op */
+}
+
+static void
+install_handlers(void)
+{
+    /* no-op */
+}
+#elif defined(_WIN32)
 static LPTOP_LEVEL_EXCEPTION_FILTER old_handler;
 typedef void (*signal_handler)(int);
 static signal_handler old_sigsegv_handler;
@@ -5293,8 +5306,6 @@ install_handlers(void)
 }
 #endif
 
-#endif // GC_ENABLE_READ_SIGNAL_BARRIER
-
 static void
 revert_stack_objects(VALUE stack_obj, void *ctx)
 {
@@ -5341,9 +5352,7 @@ gc_compact_finish(rb_objspace_t *objspace, rb_size_pool_t *pool, rb_heap_t *heap
         gc_unprotect_pages(objspace, heap);
     }
 
-#if GC_ENABLE_READ_SIGNAL_BARRIER
     uninstall_handlers();
-#endif
 
     /* The mutator is allowed to run during incremental sweeping. T_MOVED
      * objects can get pushed on the stack and when the compaction process
@@ -6065,9 +6074,7 @@ gc_compact_start(rb_objspace_t *objspace)
     memset(objspace->rcompactor.moved_count_table, 0, T_MASK * sizeof(size_t));
 
     /* Set up read barrier for pages containing MOVED objects */
-#if GC_ENABLE_READ_SIGNAL_BARRIER
     install_handlers();
-#endif
 }
 
 static void
@@ -9499,6 +9506,10 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
         }
 #endif
 
+#if !GC_COMPACTION_SUPPORTED
+        rb_raise(rb_eNotImpError, "Compaction isn't available on this platform");
+#endif
+
         reason |= GPR_FLAG_COMPACT;
     }
     else {
@@ -9960,7 +9971,7 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
 }
 
 static enum rb_id_table_iterator_result
-check_id_table_move(ID id, VALUE value, void *data)
+check_id_table_move(VALUE value, void *data)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)data;
 
@@ -10005,7 +10016,7 @@ rb_gc_location(VALUE value)
 }
 
 static enum rb_id_table_iterator_result
-update_id_table(ID *key, VALUE * value, void *data, int existing)
+update_id_table(VALUE *value, void *data, int existing)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)data;
 
@@ -10020,12 +10031,12 @@ static void
 update_m_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
 {
     if (tbl) {
-        rb_id_table_foreach_with_replace(tbl, check_id_table_move, update_id_table, objspace);
+        rb_id_table_foreach_values_with_replace(tbl, check_id_table_move, update_id_table, objspace);
     }
 }
 
 static enum rb_id_table_iterator_result
-update_cc_tbl_i(ID id, VALUE ccs_ptr, void *data)
+update_cc_tbl_i(VALUE ccs_ptr, void *data)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)data;
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
@@ -10053,12 +10064,12 @@ update_cc_tbl(rb_objspace_t *objspace, VALUE klass)
 {
     struct rb_id_table *tbl = RCLASS_CC_TBL(klass);
     if (tbl) {
-        rb_id_table_foreach_with_replace(tbl, update_cc_tbl_i, 0, objspace);
+        rb_id_table_foreach_values(tbl, update_cc_tbl_i, objspace);
     }
 }
 
 static enum rb_id_table_iterator_result
-update_cvc_tbl_i(ID id, VALUE cvc_entry, void *data)
+update_cvc_tbl_i(VALUE cvc_entry, void *data)
 {
     struct rb_cvar_class_tbl_entry *entry;
 
@@ -10074,7 +10085,7 @@ update_cvc_tbl(rb_objspace_t *objspace, VALUE klass)
 {
     struct rb_id_table *tbl = RCLASS_CVC_TBL(klass);
     if (tbl) {
-        rb_id_table_foreach_with_replace(tbl, update_cvc_tbl_i, 0, objspace);
+        rb_id_table_foreach_values(tbl, update_cvc_tbl_i, objspace);
     }
 }
 
@@ -11094,6 +11105,10 @@ gc_set_auto_compact(rb_execution_context_t *ec, VALUE _, VALUE v)
     if (!USE_MMAP_ALIGNED_ALLOC) {
         rb_raise(rb_eNotImpError, "Automatic compaction isn't available on this platform");
     }
+#endif
+
+#if !GC_COMPACTION_SUPPORTED
+    rb_raise(rb_eNotImpError, "Automatic compaction isn't available on this platform");
 #endif
 
     ruby_enable_autocompact = RTEST(v);

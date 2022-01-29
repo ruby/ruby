@@ -95,7 +95,7 @@ class Reline::Windows
   end
 
   VK_RETURN = 0x0D
-  VK_MENU = 0x12
+  VK_MENU = 0x12 # ALT key
   VK_LMENU = 0xA4
   VK_CONTROL = 0x11
   VK_SHIFT = 0x10
@@ -249,7 +249,7 @@ class Reline::Windows
     # no char, only control keys
     return if key.char_code == 0 and key.control_keys.any?
 
-    @@output_buf.push("\e".ord) if key.control_keys.include?(:ALT)
+    @@output_buf.push("\e".ord) if key.control_keys.include?(:ALT) and !key.control_keys.include?(:CTRL)
 
     @@output_buf.concat(key.char.bytes)
   end

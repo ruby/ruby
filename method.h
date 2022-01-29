@@ -181,6 +181,7 @@ struct rb_method_definition_struct {
     unsigned int iseq_overload: 1;
     int alias_count : 27;
     int complemented_count : 28;
+    unsigned int no_redef_warning: 1;
 
     union {
         rb_method_iseq_t iseq;

@@ -100,7 +100,6 @@ describe "Enumerable#none?" do
       pattern.yielded.should == [[0], [1], [2], [-1]]
     end
 
-    # may raise an exception in future versions
     it "always returns true on empty enumeration" do
       @empty.none?(Integer).should == true
       [].none?(Integer).should == true

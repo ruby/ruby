@@ -73,7 +73,6 @@ describe "Hash#transform_keys!" do
     @hash.should == { 'a' => 1, 'b' => 2, 'c' => 3, 'd' => 4 }
   end
 
-  # https://bugs.ruby-lang.org/issues/14380
   it "prevents conflicts between new keys and old ones" do
     @hash.transform_keys!(&:succ)
     @hash.should == { b: 1, c: 2, d: 3, e: 4 }

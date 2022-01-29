@@ -435,6 +435,7 @@ class TestLogDevice < Test::Unit::TestCase
 
         logdev1.write(message)
         assert_file.identical?(log, logdev1.dev)
+        # NOTE: below assertion fails in JRuby 9.3 and TruffleRuby
         assert_file.identical?(log + ".0", logdev2.dev)
 
         logdev2.write(message)
@@ -451,7 +452,7 @@ class TestLogDevice < Test::Unit::TestCase
     end
   ensure
     logdev0.close
-  end unless /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
+  end unless /mswin|mingw|cygwin/ =~ RbConfig::CONFIG['host_os']
 
   def test_shifting_midnight
     Dir.mktmpdir do |tmpdir|

@@ -17,7 +17,7 @@ RSpec.describe "bundle platform" do
 
       bundle "platform"
       expect(out).to eq(<<-G.chomp)
-Your platform is: #{RUBY_PLATFORM}
+Your platform is: #{Gem::Platform.local}
 
 Your app has gems that work on these platforms:
 #{bundle_platform_platforms_string}
@@ -40,7 +40,7 @@ G
 
       bundle "platform"
       expect(out).to eq(<<-G.chomp)
-Your platform is: #{RUBY_PLATFORM}
+Your platform is: #{Gem::Platform.local}
 
 Your app has gems that work on these platforms:
 #{bundle_platform_platforms_string}
@@ -61,7 +61,7 @@ G
 
       bundle "platform"
       expect(out).to eq(<<-G.chomp)
-Your platform is: #{RUBY_PLATFORM}
+Your platform is: #{Gem::Platform.local}
 
 Your app has gems that work on these platforms:
 #{bundle_platform_platforms_string}
@@ -81,7 +81,7 @@ G
 
       bundle "platform"
       expect(out).to eq(<<-G.chomp)
-Your platform is: #{RUBY_PLATFORM}
+Your platform is: #{Gem::Platform.local}
 
 Your app has gems that work on these platforms:
 #{bundle_platform_platforms_string}

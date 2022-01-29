@@ -20,7 +20,7 @@ class Test_StrSetLen < Test::Unit::TestCase
 
   def test_shared
     assert_raise(RuntimeError) {
-      assert_equal("abc", @s1.set_len(3))
+      @s1.set_len(3)
     }
   end
 
