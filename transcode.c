@@ -3503,7 +3503,7 @@ static VALUE
 ecov_get_encoding(rb_encoding *encoding){
     if (!encoding)
         return Qnil;
-    return rb_enc_from_encoding(encoding);  
+    return rb_enc_from_encoding(encoding);
 }
 
 /*
