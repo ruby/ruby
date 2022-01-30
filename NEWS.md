@@ -68,7 +68,7 @@ Note: We're only listing outstanding class updates.
     * Refinement#refined_class has been added. [[Feature #12737]]
 
 * Struct
-    * A Struct class can also be initialized with keyboard arguments
+    * A Struct class can also be initialized with keyword arguments
       without `keyword_init: true` on `Struct.new` [[Feature #16806]]
 
 ## Stdlib updates
