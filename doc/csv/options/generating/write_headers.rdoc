@@ -19,7 +19,7 @@ Without +write_headers+:
 
 With +write_headers+":
   CSV.open(file_path,'w',
-      :write_headers=> true,
+      :write_headers => true,
       :headers => ['Name','Value']
     ) do |csv|
       csv << ['foo', '0']
