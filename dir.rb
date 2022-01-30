@@ -200,7 +200,7 @@ class Dir
   #    Dir.glob("*.[^r]*")                 #=> ["config.h"]
   #    Dir.glob("*.{rb,h}")                #=> ["main.rb", "config.h"]
   #    Dir.glob("*")                       #=> ["config.h", "main.rb"]
-  #    Dir.glob("*", File::FNM_DOTMATCH)   #=> [".", "..", "config.h", "main.rb"]
+  #    Dir.glob("*", File::FNM_DOTMATCH)   #=> [".", "config.h", "main.rb"]
   #    Dir.glob(["*.rb", "*.h"])           #=> ["main.rb", "config.h"]
   #
   #    Dir.glob("**/*.rb")                 #=> ["main.rb",
