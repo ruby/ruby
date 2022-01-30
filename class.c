@@ -913,6 +913,7 @@ rb_module_s_alloc(VALUE klass)
     VALUE mod = class_alloc(T_MODULE, klass);
     RCLASS_M_TBL_INIT(mod);
     FL_SET(mod, RMODULE_ALLOCATED_BUT_NOT_INITIALIZED);
+    RB_OBJ_WRITE(mod, &RCLASS(mod)->super, 0);
     return mod;
 }
 

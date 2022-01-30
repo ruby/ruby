@@ -1800,7 +1800,6 @@ static VALUE rb_mod_initialize_exec(VALUE module);
 static VALUE
 rb_mod_initialize(VALUE module)
 {
-    rb_module_check_initializable(module);
     return rb_mod_initialize_exec(module);
 }
 
