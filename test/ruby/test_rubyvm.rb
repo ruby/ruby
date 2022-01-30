@@ -34,6 +34,8 @@ class TestRubyVM < Test::Unit::TestCase
   end
 
   def test_keep_script_lines
+    pend if ENV['RUBY_ISEQ_DUMP_DEBUG'] # TODO
+
     prev_conf = RubyVM.keep_script_lines
 
     # keep
