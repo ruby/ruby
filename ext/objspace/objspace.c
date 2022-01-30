@@ -61,14 +61,7 @@ total_i(VALUE v, void *ptr)
 {
     struct total_data *data = (struct total_data *)ptr;
 
-    switch (BUILTIN_TYPE(v)) {
-      case T_NONE:
-      case T_IMEMO:
-      case T_ICLASS:
-      case T_NODE:
-      case T_ZOMBIE:
-          return;
-      default:
+    if (!rb_objspace_internal_object_p(v)) {
           if (data->klass == 0 || rb_obj_is_kind_of(v, data->klass)) {
               data->total += rb_obj_memsize_of(v);
           }
