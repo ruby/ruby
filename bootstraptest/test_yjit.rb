@@ -2280,6 +2280,22 @@ assert_equal '[[1, 2, 3]]', %q{
   5.times.map { opt_and_kwargs(1, 2, c: 3) }.uniq
 }
 
+# Bug #18453
+assert_equal '[[1, nil, 2]]', %q{
+  def opt_and_kwargs(a = {}, b: nil, c: nil)
+    [a, b, c]
+  end
+
+  5.times.map { opt_and_kwargs(1, c: 2) }.uniq
+}
+
+assert_equal '[[{}, nil, 1]]', %q{
+  def opt_and_kwargs(a = {}, b: nil, c: nil)
+    [a, b, c]
+  end
+
+  5.times.map { opt_and_kwargs(c: 1) }.uniq
+}
 
 # leading and keyword arguments are swapped into the right order
 assert_equal '[[1, 2, 3, 4, 5, 6]]', %q{
