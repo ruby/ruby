@@ -361,7 +361,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("--mjit-wait",          "", "Wait until JIT compilation finishes every time (for testing)"),
         M("--mjit-save-temps",    "", "Save JIT temporary files in $TMP or /tmp (for testing)"),
         M("--mjit-verbose=num",   "", "Print JIT logs of level num or less to stderr (default: 0)"),
-        M("--mjit-max-cache=num", "", "Max number of methods to be JIT-ed in a cache (default: 100)"),
+        M("--mjit-max-cache=num", "", "Max number of methods to be JIT-ed in a cache (default: 10000)"),
         M("--mjit-min-calls=num", "", "Number of calls to trigger JIT (for testing, default: 10000)"),
     };
     static const struct message yjit_options[] = {
