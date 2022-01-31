@@ -283,7 +283,7 @@ VALUE rb_make_exception(int argc, const VALUE *argv);
 
 NORETURN(void rb_method_name_error(VALUE, VALUE));
 
-void rb_fiber_start(rb_fiber_t*);
+NORETURN(void rb_fiber_start(rb_fiber_t*));
 
 NORETURN(void rb_print_undef(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_print_undef_str(VALUE, VALUE));
