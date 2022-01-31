@@ -1412,7 +1412,12 @@ yes-test-bundler-precheck: main
 no-test-bundler-prepare: no-test-bundler-precheck
 yes-test-bundler-prepare: yes-test-bundler-precheck
 	$(ACTIONS_GROUP)
-	$(XRUBY) -C $(srcdir) -Ilib -e 'ENV["GEM_HOME"] = File.expand_path(".bundle"); ENV["BUNDLE_APP_CONFIG"] = File.expand_path(".bundle"); ENV["BUNDLE_PATH__SYSTEM"] = "true"; ENV["BUNDLE_WITHOUT"] = "lint doc"; load "spec/bundler/support/bundle.rb"' -- install --gemfile=tool/bundler/dev_gems.rb
+	$(XRUBY) -C $(srcdir) -Ilib \
+		-e 'ENV["GEM_HOME"] = File.expand_path(".bundle")' \
+		-e 'ENV["BUNDLE_APP_CONFIG"] = File.expand_path(".bundle")' \
+		-e 'ENV["BUNDLE_PATH__SYSTEM"] = "true"' \
+		-e 'ENV["BUNDLE_WITHOUT"] = "lint doc"' \
+		-e 'load "spec/bundler/support/bundle.rb"' -- install --gemfile=tool/bundler/dev_gems.rb
 	$(ACTIONS_ENDGROUP)
 
 RSPECOPTS =
