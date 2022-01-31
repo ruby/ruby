@@ -1053,8 +1053,7 @@ rb_include_module(VALUE klass, VALUE module)
     if (RB_TYPE_P(klass, T_MODULE)) {
         rb_subclass_entry_t *iclass = RCLASS_SUBCLASSES(klass);
         // skip the placeholder subclass entry at the head of the list
-        if (iclass && iclass->next) {
-            RUBY_ASSERT(!iclass->klass);
+        if (iclass && !iclass->klass) {
             iclass = iclass->next;
         }
 
