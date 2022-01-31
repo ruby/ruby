@@ -19,16 +19,6 @@ module Gem
       @local = new(ENV["BUNDLER_SPEC_PLATFORM"])
     end
     @platforms = [Gem::Platform::RUBY, Gem::Platform.local]
-
-    if ENV["BUNDLER_SPEC_PLATFORM"] == "ruby"
-      class << self
-        remove_method :finish_resolve
-
-        def finish_resolve
-          []
-        end
-      end
-    end
   end
 
   if ENV["BUNDLER_SPEC_GEM_SOURCES"]

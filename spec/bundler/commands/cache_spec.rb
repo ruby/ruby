@@ -403,14 +403,14 @@ RSpec.describe "bundle install with gem sources" do
 
       simulate_new_machine
 
-      simulate_platform "ruby" do
-        install_gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
-          gem "platform_specific"
-        G
-        run "require 'platform_specific' ; puts PLATFORM_SPECIFIC"
-        expect(out).to eq("1.0.0 RUBY")
-      end
+      bundle "config set --local force_ruby_platform true"
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "platform_specific"
+      G
+      run "require 'platform_specific' ; puts PLATFORM_SPECIFIC"
+      expect(out).to eq("1.0.0 RUBY")
     end
 
     it "does not update the cache if --no-cache is passed" do
