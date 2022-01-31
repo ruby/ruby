@@ -270,6 +270,8 @@ class MSpecOptions
         config[:formatter] = UnitdiffFormatter
       when 'm', 'summary'
         config[:formatter] = SummaryFormatter
+      when 'stderrsummary'
+        config[:formatter] = StderrSummaryFormatter
       when 'a', '*', 'spin'
         config[:formatter] = SpinnerFormatter
       when 't', 'method'

@@ -19,9 +19,9 @@ class BaseFormatter
     @count = 0 # For subclasses
 
     if out.nil?
-      @out = $stdout
+      @result_out = @out = $stdout
     else
-      @out = File.open out, "w"
+      @result_out = @out = File.open out, "w"
     end
   end
 
@@ -115,9 +115,9 @@ class BaseFormatter
 
   def print_exception(exc, count)
     outcome = exc.failure? ? "FAILED" : "ERROR"
-    print "\n#{count})\n#{exc.description} #{outcome}\n"
-    print exc.message, "\n"
-    print exc.backtrace, "\n"
+    @result_out.print "\n#{count})\n#{exc.description} #{outcome}\n"
+    @result_out.print exc.message, "\n"
+    @result_out.print exc.backtrace, "\n"
   end
 
   # A convenience method to allow printing to different outputs.
