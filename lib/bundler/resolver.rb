@@ -249,10 +249,11 @@ module Bundler
     end
 
     def verify_gemfile_dependencies_are_found!(requirements)
-      requirements.each do |requirement|
+      requirements.map! do |requirement|
         name = requirement.name
-        next if name == "bundler"
-        next unless search_for(requirement).empty?
+        next requirement if name == "bundler"
+        next requirement unless search_for(requirement).empty?
+        next unless requirement.current_platform?
 
         if (base = @base[name]) && !base.empty?
           version = base.first.version
@@ -266,7 +267,7 @@ module Bundler
           message = gem_not_found_message(name, requirement, source_for(name))
         end
         raise GemNotFound, message
-      end
+      end.compact!
     end
 
     def gem_not_found_message(name, requirement, source, extra_message = "")

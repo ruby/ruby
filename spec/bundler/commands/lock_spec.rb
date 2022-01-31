@@ -337,7 +337,8 @@ RSpec.describe "bundle lock" do
          #{Bundler::VERSION}
     G
 
-    simulate_platform(rb) { bundle :lock }
+    bundle "config set --local force_ruby_platform true"
+    bundle :lock
 
     expect(lockfile).to eq <<~G
       GEM
@@ -507,6 +508,11 @@ RSpec.describe "bundle lock" do
 
       build_gem "raygun-apm", "1.0.78" do |s|
         s.platform = "x64-mingw32"
+        s.required_ruby_version = "< #{next_minor}.dev"
+      end
+
+      build_gem "raygun-apm", "1.0.78" do |s|
+        s.platform = "x64-mingw-ucrt"
         s.required_ruby_version = "< #{next_minor}.dev"
       end
     end
