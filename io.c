@@ -11435,9 +11435,8 @@ seek_before_access(VALUE argp)
  *    IO.read('| cat t.txt')
  *    # => "First line\nSecond line\n\nThird line\nFourth line\n"
  *
- *  With only argument +path+ given, parses lines from the file at the given +path+,
- *  as determined by the default line separator,
- *  and returns those lines in an array:
+ *  With only argument +path+ given, reaas and returns the entire content
+ *  of the file at the given path:
  *
  *    IO.read('t.txt')
  *    # => "First line\nSecond line\n\nThird line\nFourth line\n"
