@@ -11416,11 +11416,11 @@ seek_before_access(VALUE argp)
 
 /*
  *  call-seq:
- *     IO.read(command, length = nil, offset = 0, **opts) -> string
- *     IO.read(path, length = nil, offset = 0, **opts)    -> string
+ *     IO.read(command, length = nil, offset = 0, **opts) -> string or nil
+ *     IO.read(path, length = nil, offset = 0, **opts)    -> string or nil
  *
  *  Opens the stream, reads and returns some or all of its content,
- *  and closes the stream.
+ *  and closes the stream; returns +nil+ if no bytes were read.
  *
  *  The first argument must be a string;
  *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
@@ -11435,7 +11435,7 @@ seek_before_access(VALUE argp)
  *    IO.read('| cat t.txt')
  *    # => "First line\nSecond line\n\nThird line\nFourth line\n"
  *
- *  With only argument +path+ given, reaas and returns the entire content
+ *  With only argument +path+ given, reads and returns the entire content
  *  of the file at the given path:
  *
  *    IO.read('t.txt')
@@ -11446,11 +11446,14 @@ seek_before_access(VALUE argp)
  *  With argument +length+, returns +length+ characters if available:
  *
  *    IO.read('t.txt', 7) # => "First l"
+ *    IO.read('t.txt', 700)
+ *    # => "First line\r\nSecond line\r\n\r\nFourth line\r\nFifth line\r\n"
  *
  *  With arguments +length+ and +offset+, returns +length+ characters
  *  if available, beginning at the given +offset+:
  *
- *    IO.read('t.txt', 10, 2) # => "rst line\nS"
+ *    IO.read('t.txt', 10, 2)   # => "rst line\nS"
+ *    IO.read('t.txt', 10, 200) # => nil
  *
  *  The optional keyword arguments +opts+ may be open options;
  *  see {\IO Open Options}[#class-IO-label-Open+Options]
@@ -11484,12 +11487,12 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     IO.binread(command, length = nil, offset = 0) -> string
- *     IO.binread(path, length = nil, offset = 0)    -> string
+ *     IO.binread(command, length = nil, offset = 0) -> string or nil
+ *     IO.binread(path, length = nil, offset = 0)    -> string or nil
  *
  *  Opens the stream in binary mode (mode <tt>'rb:ASCII-8BIT'</tt>),
  *  reads and returns some or all of its content,
- *  and closes the stream.
+ *  and closes the stream; returns +nil+ if no bytes were read.
  *
  *  The first argument must be a string;
  *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
@@ -11520,8 +11523,8 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
  *  With arguments +length+ and +offset+, returns +length+ characters
  *  if available, beginning at the given +offset+:
  *
- *    IO.binread('t.rus', 5, 2)
- *    # => "\xD0\xB5\xD1\x81\xD1"
+ *    IO.binread('t.rus', 5, 2)   # => "\xD0\xB5\xD1\x81\xD1"
+ *    IO.binread('t.rus', 5, 200) # => nil
  *
  *  The optional keyword arguments +opts+ may be open options;
  *  see {\IO Open Options}[#class-IO-label-Open+Options]
