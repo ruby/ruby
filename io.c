@@ -11191,38 +11191,98 @@ io_s_foreach(VALUE v)
 
 /*
  *  call-seq:
- *     IO.foreach(name, sep=$/ [, getline_args, open_args]) {|line| block }     -> nil
- *     IO.foreach(name, limit [, getline_args, open_args]) {|line| block }      -> nil
- *     IO.foreach(name, sep, limit [, getline_args, open_args]) {|line| block } -> nil
- *     IO.foreach(...)                                            -> an_enumerator
- *     File.foreach(name, sep=$/ [, getline_args, open_args]) {|line| block }     -> nil
- *     File.foreach(name, limit [, getline_args, open_args]) {|line| block }      -> nil
- *     File.foreach(name, sep, limit [, getline_args, open_args]) {|line| block } -> nil
- *     File.foreach(...)                                            -> an_enumerator
+ *    IO.foreach(command, sep = $/, **opts) {|line| block }    -> nil
+ *    IO.foreach(command, limit, **opts) {|line| block }       -> nil
+ *    IO.foreach(command, sep, limit, **opts) {|line| block }  -> nil
+ *    IO.foreach(path, sep = $/, **opts) {|line| block }       -> nil
+ *    IO.foreach(path, limit, **opts) {|line| block }          -> nil
+ *    IO.foreach(path, sep, limit, **opts) {|line| block }     -> nil
+ *    IO.foreach(...)                                          -> an_enumerator
  *
- *  Executes the block for every line in the named I/O port, where lines
- *  are separated by <em>sep</em>.
+ *  Calls the block with each successive line read from the stream.
  *
- *  If no block is given, an enumerator is returned instead.
+ *  The first argument must be a string;
+ *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
  *
- *  If +name+ starts with a pipe character (<code>"|"</code>) and the receiver
- *  is the IO class, a subprocess is created in the same way as Kernel#open,
- *  and each line in its output is yielded.
- *  Consider to use File.foreach to disable the behavior of subprocess invocation.
+ *  - If so (and if +self+ is an instance of \IO),
+ *    the rest of the string is a command to be executed as a subprocess.
+ *  - Otherwise, the string is the path to a file.
  *
- *     File.foreach("testfile") {|x| print "GOT ", x }
- *     IO.foreach("| cat testfile") {|x| print "GOT ", x }
+ *  With only argument +command+ given, executes the command in a shell,
+ *  parses its $stdout into lines, as determined by the default line separator,
+ *  and calls the block with each successive line:
  *
- *  <em>produces:</em>
+ *    File.foreach('| cat t.txt') {|line| p line }
  *
- *     GOT This is line one
- *     GOT This is line two
- *     GOT This is line three
- *     GOT And so on...
+ *  Output:
  *
- *  If the last argument is a hash, it's the keyword argument to open.
- *  See IO.readlines for details about getline_args.
- *  And see also IO.read for details about open_args.
+ *    "First line\n"
+ *    "Second line\n"
+ *    "\n"
+ *    "Third line\n"
+ *    "Fourth line\n"
+ *
+ *  With only argument +path+ given, parses lines from the file at the given +path+,
+ *  as determined by the default line separator,
+ *  and calls the block with each successive line:
+ *
+ *    File.foreach('t.txt') {|line| p line }
+ *
+ *  Output: the same as above.
+ *
+ *  For both forms, command and path, the remaining arguments are the same.
+ *
+ *  With argument +sep+ given, parses lines as determined by that line separator
+ *  (see {IO Line Separator}[#class-IO-label-Line+Separator]):
+ *
+ *    File.foreach('t.txt', 'li') {|line| p line }
+ *
+ *  Output:
+ *
+ *    "First li"
+ *    "ne\nSecond li"
+ *    "ne\n\nThird li"
+ *    "ne\nFourth li"
+ *    "ne\n"
+ *
+ *  Each paragraph:
+ *
+ *    File.foreach('t.txt', '') {|paragraph| p paragraph }
+ *
+ *  Output:
+ *
+ *   "First line\nSecond line\n\n"
+ *   "Third line\nFourth line\n"
+ *
+ *  With argument +limit+ given, parses lines as determined by the default
+ *  line separator and the given line-length limit
+ *  (see {IO Line Limit}[#class-IO-label-Line+Limit]):
+ *
+ *    File.foreach('t.txt', 7) {|line| p line }
+ *
+ *  Output:
+ *
+ *    "First l"
+ *    "ine\n"
+ *    "Second "
+ *    "line\n"
+ *    "\n"
+ *    "Third l"
+ *    "ine\n"
+ *    "Fourth l"
+ *    "line\n"
+ *
+ *  With arguments +sep+ and  +limit+ given,
+ *  parses lines as determined by the given
+ *  line separator and the given line-length limit
+ *  (see {IO Line Separator and Line Limit}[#class-IO-label-Line+Separator+and+Line+Limit]):
+ *
+ *  Optional argument +opts+ specifies open options
+ *  (see {IO Open Options}[#class-IO-label-Open+Options])
+ *  and/or valid line options
+ *  (see {IO Line Options}[#class-IO-label-Line+Options])
+ *
+ *  Returns an Enumerator if no block is given.
  *
  */
 
@@ -11253,42 +11313,68 @@ io_s_readlines(VALUE v)
 
 /*
  *  call-seq:
- *     IO.readlines(name, sep=$/ [, getline_args, open_args])     -> array
- *     IO.readlines(name, limit [, getline_args, open_args])      -> array
- *     IO.readlines(name, sep, limit [, getline_args, open_args]) -> array
- *     File.readlines(name, sep=$/ [, getline_args, open_args])     -> array
- *     File.readlines(name, limit [, getline_args, open_args])      -> array
- *     File.readlines(name, sep, limit [, getline_args, open_args]) -> array
+ *     IO.readlines(command, sep = $/, **opts)     -> array
+ *     IO.readlines(command, limit, **opts)      -> array
+ *     IO.readlines(command, sep, limit, **opts) -> array
+ *     IO.readlines(path, sep = $/, **opts)     -> array
+ *     IO.readlines(path, limit, **opts)      -> array
+ *     IO.readlines(path, sep, limit, **opts) -> array
  *
- *  Reads the entire file specified by <i>name</i> as individual
- *  lines, and returns those lines in an array. Lines are separated by
- *  <i>sep</i>.
+ *  Returns an array of all lines read from the stream.
  *
- *  If +name+ starts with a pipe character (<code>"|"</code>) and the receiver
- *  is the IO class, a subprocess is created in the same way as Kernel#open,
- *  and each line in its output is yielded.
- *  Consider to use File.readlines to disable the behavior of subprocess invocation.
+ *  The first argument must be a string;
+ *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
  *
- *     a = File.readlines("testfile")
- *     a[0]   #=> "This is line one\n"
+ *  - If so (and if +self+ is an instance of \IO),
+ *    the rest of the string is a command to be executed as a subprocess.
+ *  - Otherwise, the string is the path to a file.
  *
- *     b = File.readlines("testfile", chomp: true)
- *     b[0]   #=> "This is line one"
+ *  With only argument +command+ given, executes the command in a shell,
+ *  parses its $stdout into lines, as determined by the default line separator,
+ *  and returns those lines in an array:
  *
- *     IO.readlines("|ls -a")     #=> [".\n", "..\n", ...]
+ *    IO.readlines('| cat t.txt')
+ *    # => ["First line\n", "Second line\n", "\n", "Third line\n", "Fourth line\n"]
  *
- *  If the last argument is a hash, it's the keyword argument to open.
+ *  With only argument +path+ given, parses lines from the file at the given +path+,
+ *  as determined by the default line separator,
+ *  and returns those lines in an array:
  *
- *  === Options for getline
+ *    IO.readlines('t.txt')
+ *    # => ["First line\n", "Second line\n", "\n", "Third line\n", "Fourth line\n"]
  *
- *  The options hash accepts the following keys:
+ *  For both forms, command and path, the remaining arguments are the same.
  *
- *  :chomp::
- *    When the optional +chomp+ keyword argument has a true value,
- *    <code>\n</code>, <code>\r</code>, and <code>\r\n</code>
- *    will be removed from the end of each line.
+ *  With argument +sep+ given, parses lines as determined by that line separator
+ *  (see {IO Line Separator}[#class-IO-label-Line+Separator]):
  *
- *  See also IO.read for details about +name+ and open_args.
+ *    # Ordinary separator.
+ *    IO.readlines('t.txt', 'li')
+ *    # =>["First li", "ne\nSecond li", "ne\n\nThird li", "ne\nFourth li", "ne\n"]
+ *    # Get-paragraphs separator.
+ *    IO.readlines('t.txt', '')
+ *    # => ["First line\nSecond line\n\n", "Third line\nFourth line\n"]
+ *    # Get-all separator.
+ *    IO.readlines('t.txt', nil)
+ *    # => ["First line\nSecond line\n\nThird line\nFourth line\n"]
+ *
+ *  With argument +limit+ given, parses lines as determined by the default
+ *  line separator and the given line-length limit
+ *  (see {IO Line Limit}[#class-IO-label-Line+Limit]):
+ *
+ *    IO.readlines('t.txt', 7)
+ *    # => ["First l", "ine\n", "Second ", "line\n", "\n", "Third l", "ine\n", "Fourth ", "line\n"]
+ *
+ *  With arguments +sep+ and  +limit+ given,
+ *  parses lines as determined by the given
+ *  line separator and the given line-length limit
+ *  (see {IO Line Separator and Line Limit}[#class-IO-label-Line+Separator+and+Line+Limit]):
+ *
+ *  Optional argument +opts+ specifies open options
+ *  (see {IO Open Options}[#class-IO-label-Open+Options])
+ *  and/or valid line options
+ *  (see {IO Line Options}[#class-IO-label-Line+Options])
+ *
  */
 
 static VALUE
@@ -11330,48 +11416,46 @@ seek_before_access(VALUE argp)
 
 /*
  *  call-seq:
- *     IO.read(name, [length [, offset]] [, opt])   -> string
- *     File.read(name, [length [, offset]] [, opt]) -> string
+ *     IO.read(command, length = nil, offset = 0, **opts) -> string
+ *     IO.read(path, length = nil, offset = 0, **opts)    -> string
  *
- *  Opens the file, optionally seeks to the given +offset+, then returns
- *  +length+ bytes (defaulting to the rest of the file).  #read ensures
- *  the file is closed before returning.
+ *  Opens the stream, reads and returns some or all of its content,
+ *  and closes the stream.
  *
- *  If +name+ starts with a pipe character (<code>"|"</code>) and the receiver
- *  is the IO class, a subprocess is created in the same way as Kernel#open,
- *  and its output is returned.
- *  Consider to use File.read to disable the behavior of subprocess invocation.
+ *  The first argument must be a string;
+ *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
  *
- *  === Options
+ *  - If so (and if +self+ is an instance of \IO),
+ *    the rest of the string is a command to be executed as a subprocess.
+ *  - Otherwise, the string is the path to a file.
  *
- *  The options hash accepts the following keys:
+ *  With only argument +command+ given, executes the command in a shell,
+ *  returns its entire $stdout:
  *
- *  :encoding::
- *    string or encoding
+ *    IO.read('| cat t.txt')
+ *    # => "First line\nSecond line\n\nThird line\nFourth line\n"
  *
- *    Specifies the encoding of the read string.  +:encoding+ will be ignored
- *    if +length+ is specified.  See Encoding.aliases for possible encodings.
+ *  With only argument +path+ given, parses lines from the file at the given +path+,
+ *  as determined by the default line separator,
+ *  and returns those lines in an array:
  *
- *  :mode::
- *    string or integer
+ *    IO.read('t.txt')
+ *    # => "First line\nSecond line\n\nThird line\nFourth line\n"
  *
- *    Specifies the <i>mode</i> argument for open().  It must start
- *    with an "r", otherwise it will cause an error.
- *    See IO.new for the list of possible modes.
+ *  For both forms, command and path, the remaining arguments are the same.
  *
- *  :open_args::
- *    array
+ *  With argument +length+, returns +length+ characters if available:
  *
- *    Specifies arguments for open() as an array.  This key can not be used
- *    in combination with either +:encoding+ or +:mode+.
+ *    IO.read('t.txt', 7) # => "First l"
  *
- *  Examples:
+ *  With arguments +length+ and +offset+, returns +length+ characters
+ *  if available, beginning at the given +offset+:
  *
- *    File.read("testfile")            #=> "This is line one\nThis is line two\nThis is line three\nAnd so on...\n"
- *    File.read("testfile", 20)        #=> "This is line one\nThi"
- *    File.read("testfile", 20, 10)    #=> "ne one\nThis is line "
- *    File.read("binfile", mode: "rb") #=> "\xF7\x00\x00\x0E\x12"
- *    IO.read("|ls -a")                #=> ".\n..\n"...
+ *    IO.read('t.txt', 10, 2) # => "rst line\nS"
+ *
+ *  The optional keyword arguments +opts+ may be open options;
+ *  see {\IO Open Options}[#class-IO-label-Open+Options]
+ *
  */
 
 static VALUE
@@ -11401,25 +11485,48 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     IO.binread(name, [length [, offset]])   -> string
- *     File.binread(name, [length [, offset]]) -> string
+ *     IO.binread(command, length = nil, offset = 0) -> string
+ *     IO.binread(path, length = nil, offset = 0)    -> string
  *
- *  Opens the file, optionally seeks to the given <i>offset</i>, then
- *  returns <i>length</i> bytes (defaulting to the rest of the file).
- *  #binread ensures the file is closed before returning.  The open mode
- *  would be <code>"rb:ASCII-8BIT"</code>.
+ *  Opens the stream in binary mode (mode <tt>'rb:ASCII-8BIT'</tt>),
+ *  reads and returns some or all of its content,
+ *  and closes the stream.
  *
- *  If +name+ starts with a pipe character (<code>"|"</code>) and the receiver
- *  is the IO class, a subprocess is created in the same way as Kernel#open,
- *  and its output is returned.
- *  Consider to use File.binread to disable the behavior of subprocess invocation.
+ *  The first argument must be a string;
+ *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
  *
- *     File.binread("testfile")           #=> "This is line one\nThis is line two\nThis is line three\nAnd so on...\n"
- *     File.binread("testfile", 20)       #=> "This is line one\nThi"
- *     File.binread("testfile", 20, 10)   #=> "ne one\nThis is line "
- *     IO.binread("| cat testfile")       #=> "This is line one\nThis is line two\nThis is line three\nAnd so on...\n"
+ *  - If so (and if +self+ is an instance of \IO),
+ *    the rest of the string is a command to be executed as a subprocess.
+ *  - Otherwise, the string is the path to a file.
  *
- *  See also IO.read for details about +name+ and open_args.
+ *  With only argument +command+ given, executes the command in a shell,
+ *  returns its entire $stdout:
+ *
+ *    IO.binread('| cat t.rus')
+ *    # => "\xD1\x82\xD0\xB5\xD1\x81\xD1\x82"
+ *
+ *  With only argument +path+ given, returns the entire content
+ *  of the file at the given +path+:
+ *
+ *    IO.binread("t.rus")
+ *    # => "\xD1\x82\xD0\xB5\xD1\x81\xD1\x82"
+ *
+ *  For both forms, command and path, the remaining arguments are the same.
+ *
+ *  With argument +length+, returns +length+ characters if available:
+ *
+ *    IO.binread('t.rus', 5)
+ *    # => "\xD1\x82\xD0\xB5\xD1"
+ *
+ *  With arguments +length+ and +offset+, returns +length+ characters
+ *  if available, beginning at the given +offset+:
+ *
+ *    IO.binread('t.rus', 5, 2)
+ *    # => "\xD0\xB5\xD1\x81\xD1"
+ *
+ *  The optional keyword arguments +opts+ may be open options;
+ *  see {\IO Open Options}[#class-IO-label-Open+Options]
+ *
  */
 
 static VALUE
