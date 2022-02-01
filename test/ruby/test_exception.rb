@@ -991,11 +991,12 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     end
     assert_not_nil(e)
     assert_include(e.message, "\0")
-    assert_in_out_err([], src, [], [], *args, **opts) do |_, err,|
-      err.each do |e|
-        assert_not_include(e, "\0")
-      end
-    end
+    # Disabled by [Feature #18367]
+    #assert_in_out_err([], src, [], [], *args, **opts) do |_, err,|
+    #  err.each do |e|
+    #    assert_not_include(e, "\0")
+    #  end
+    #end
     e
   end
 
