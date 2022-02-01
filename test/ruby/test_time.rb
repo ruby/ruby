@@ -1312,15 +1312,17 @@ class TestTime < Test::Unit::TestCase
     omit "GC is in debug" if GC::INTERNAL_CONSTANTS[:DEBUG]
     require 'objspace'
     t = Time.at(0)
-    size = GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
-    case size
-    when 20 then expect = 50
-    when 24 then expect = 54
-    when 40 then expect = 86
-    when 48 then expect = 94
-    else
-      flunk "Unsupported RVALUE_SIZE=#{size}, update test_memsize"
-    end
+    sizeof_timew =
+      if RbConfig::SIZEOF.key?("uint64_t") && RbConfig::SIZEOF["long"] * 2 <= RbConfig::SIZEOF["uint64_t"]
+        RbConfig::SIZEOF["uint64_t"]
+      else
+        RbConfig::SIZEOF["void*"] # Same size as VALUE
+      end
+    expect =
+      GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] +
+        sizeof_timew +
+        RbConfig::SIZEOF["void*"] * 4 + 5 + # vtm
+        1 # tzmode, tm_got
     assert_equal expect, ObjectSpace.memsize_of(t)
   rescue LoadError => e
     omit "failed to load objspace: #{e.message}"

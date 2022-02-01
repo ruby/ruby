@@ -33,7 +33,7 @@ class TestObjSpace < Test::Unit::TestCase
     b = a.dup
     c = nil
     ObjectSpace.each_object(String) {|x| break c = x if x == a and x.frozen?}
-    rv_size = GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
+    rv_size = GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
     assert_equal([rv_size, rv_size, a.length + 1 + rv_size], [a, b, c].map {|x| ObjectSpace.memsize_of(x)})
   end
 
