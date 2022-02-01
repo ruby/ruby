@@ -1247,6 +1247,60 @@ exc_s_to_tty_p(VALUE self)
     return RBOOL(rb_stderr_tty_p());
 }
 
+static VALUE
+check_highlight_keyword(VALUE opt)
+{
+    VALUE highlight = Qnil;
+
+    if (!NIL_P(opt)) {
+        static VALUE kw_highlight;
+        if (!kw_highlight) kw_highlight = ID2SYM(rb_intern_const("highlight"));
+
+        highlight = rb_hash_aref(opt, kw_highlight);
+
+        switch (highlight) {
+          default:
+            rb_bool_expected(highlight, "highlight");
+            UNREACHABLE;
+          case Qundef: highlight = Qnil; break;
+          case Qtrue: case Qfalse: case Qnil: break;
+        }
+    }
+
+    if (NIL_P(highlight)) {
+	highlight = rb_stderr_tty_p() ? Qtrue : Qfalse;
+    }
+
+    return highlight;
+}
+
+static VALUE
+check_order_keyword(VALUE opt)
+{
+    VALUE order = Qnil;
+
+    if (!NIL_P(opt)) {
+        static VALUE kw_order;
+        if (!kw_order) kw_order = ID2SYM(rb_intern_const("order"));
+
+        order = rb_hash_aref(opt, kw_order);
+
+        if (order != Qnil) {
+            ID id = rb_check_id(&order);
+            if (id == id_bottom) order = Qtrue;
+            else if (id == id_top) order = Qfalse;
+            else {
+                rb_raise(rb_eArgError, "expected :top or :bottom as "
+                        "order: %+"PRIsVALUE, order);
+            }
+        }
+    }
+
+    if (NIL_P(order)) order = Qfalse;
+
+    return order;
+}
+
 /*
  * call-seq:
  *   exception.full_message(highlight: bool, order: [:top or :bottom]) ->  string
@@ -1269,44 +1323,18 @@ static VALUE
 exc_full_message(int argc, VALUE *argv, VALUE exc)
 {
     VALUE opt, str, emesg, errat;
-    enum {kw_highlight, kw_order, kw_max_};
-    static ID kw[kw_max_];
-    VALUE args[kw_max_] = {Qnil, Qnil};
+    VALUE highlight, order;
 
     rb_scan_args(argc, argv, "0:", &opt);
-    if (!NIL_P(opt)) {
-	if (!kw[0]) {
-#define INIT_KW(n) kw[kw_##n] = rb_intern_const(#n)
-	    INIT_KW(highlight);
-	    INIT_KW(order);
-#undef INIT_KW
-	}
-	rb_get_kwargs(opt, kw, 0, kw_max_, args);
-	switch (args[kw_highlight]) {
-	  default:
-            rb_bool_expected(args[kw_highlight], "highlight");
-	    UNREACHABLE;
-	  case Qundef: args[kw_highlight] = Qnil; break;
-	  case Qtrue: case Qfalse: case Qnil: break;
-	}
-	if (args[kw_order] == Qundef) {
-	    args[kw_order] = Qnil;
-	}
-	else {
-	    ID id = rb_check_id(&args[kw_order]);
-	    if (id == id_bottom) args[kw_order] = Qtrue;
-	    else if (id == id_top) args[kw_order] = Qfalse;
-	    else {
-		rb_raise(rb_eArgError, "expected :top or :bottom as "
-			 "order: %+"PRIsVALUE, args[kw_order]);
-	    }
-	}
-    }
+
+    highlight = check_highlight_keyword(opt);
+    order = check_order_keyword(opt);
+
     str = rb_str_new2("");
     errat = rb_get_backtrace(exc);
     emesg = rb_get_message(exc);
 
-    rb_error_write(exc, emesg, errat, str, args[kw_highlight], args[kw_order]);
+    rb_error_write(exc, emesg, errat, str, highlight, order);
     return str;
 }
 
