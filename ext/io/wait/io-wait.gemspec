@@ -16,7 +16,7 @@ Gem::Specification.new do |spec|
 
   spec.files         = Dir.chdir(File.expand_path('..', __FILE__)) do
     `git ls-files -z`.split("\x0").reject do |f|
-      f.match(%r{\A(?:test|spec|features)/|\A\.(?:git|travis)})
+      (f == __FILE__) || f.match(%r{\A(?:(?:bin|test|spec|features|rakelib)/|\.(?:git|travis|circleci)|appveyor|Rakefile)})
     end
   end
   spec.extensions    = %w[ext/io/wait/extconf.rb]
