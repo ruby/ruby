@@ -3500,7 +3500,7 @@ check_econv(VALUE self)
 }
 
 static VALUE
-ecov_get_encoding(rb_encoding *encoding)
+econv_get_encoding(rb_encoding *encoding)
 {
     if (!encoding)
         return Qnil;
