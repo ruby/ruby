@@ -185,9 +185,24 @@ module Gem::InstallUpdateOptions
   # Default options for the gem install and update commands.
 
   def install_update_options
-    {
+    default_options = {
       :document => %w[ri],
     }
+
+    # If Gem.paths.home exists, but we can't write to it,
+    # fall back to a user installation.
+    if File.exist?(Gem.paths.home) && !File.writable?(Gem.paths.home)
+      default_options[:user_install] = true
+
+      alert_warning "The default GEM_HOME (#{Gem.paths.home}) is not" \
+                    " writable, so rubygems is falling back to installing" \
+                    " under your home folder. To get rid of this warning" \
+                    " permanently either fix your GEM_HOME folder permissions" \
+                    " or add the following to your ~/.gemrc file:\n" \
+                    "    gem: --user-install"
+    end
+
+    default_options
   end
 
   ##

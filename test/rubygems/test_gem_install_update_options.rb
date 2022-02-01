@@ -159,6 +159,33 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
     FileUtils.chmod 0o755, @gemhome
   end
 
+  def test_auto_user_install_unless_gem_home_writable
+    if Process.uid.zero?
+      pend("test_auto_user_install_unless_gem_home_writable test skipped in root privilege")
+      return
+    end
+
+    @spec = quick_gem "a" do |spec|
+      util_make_exec spec
+    end
+
+    util_build_gem @spec
+    @gem = @spec.cache_file
+
+    @cmd.handle_options %w[]
+
+    refute @cmd.options[:user_install]
+
+    FileUtils.chmod 0755, @userhome
+    FileUtils.chmod 0000, @gemhome
+
+    Gem.use_paths @gemhome, @userhome
+
+    @cmd.install_update_options.include?(:user_install)
+  ensure
+    FileUtils.chmod 0755, @gemhome
+  end
+
   def test_vendor
     vendordir(File.join(@tempdir, "vendor")) do
       @cmd.handle_options %w[--vendor]
