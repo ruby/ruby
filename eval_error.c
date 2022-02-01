@@ -89,24 +89,20 @@ static const char reset[] = CSI_BEGIN""CSI_SGR;
 static void
 print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VALUE str, int highlight)
 {
-    const char *einfo = "";
     long elen = 0;
     VALUE mesg;
 
-    if (emesg != Qundef) {
-	if (NIL_P(errat) || RARRAY_LEN(errat) == 0 ||
-	    NIL_P(mesg = RARRAY_AREF(errat, 0))) {
-	    error_pos(str);
-	}
-	else {
-	    write_warn_str(str, mesg);
-	    write_warn(str, ": ");
-	}
+    if (NIL_P(errat) || RARRAY_LEN(errat) == 0 ||
+        NIL_P(mesg = RARRAY_AREF(errat, 0))) {
+        error_pos(str);
+    }
+    else {
+        write_warn_str(str, mesg);
+        write_warn(str, ": ");
+    }
 
-	if (!NIL_P(emesg)) {
-	    einfo = RSTRING_PTR(emesg);
-            elen = RSTRING_LEN(emesg);
-	}
+    if (!NIL_P(emesg)) {
+        elen = RSTRING_LEN(emesg);
     }
 
     if (eclass == rb_eRuntimeError && elen == 0) {
@@ -124,6 +120,39 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 	    write_warn_str(str, epath);
 	    if (highlight) write_warn(str, reset);
 	    write_warn(str, "\n");
+	}
+	else {
+	    write_warn_str(str, emesg);
+	    write_warn(str, "\n");
+        }
+    }
+}
+
+VALUE
+rb_decorate_message(const VALUE eclass, const VALUE emesg, int highlight)
+{
+    const char *einfo = "";
+    long elen = 0;
+
+    VALUE str = rb_str_new2("");
+
+    if (!NIL_P(emesg)) {
+        einfo = RSTRING_PTR(emesg);
+        elen = RSTRING_LEN(emesg);
+    }
+    if (eclass == rb_eRuntimeError && elen == 0) {
+	if (highlight) write_warn(str, underline);
+	write_warn(str, "unhandled exception");
+	if (highlight) write_warn(str, reset);
+    }
+    else {
+	VALUE epath;
+
+	epath = rb_class_name(eclass);
+	if (elen == 0) {
+	    if (highlight) write_warn(str, underline);
+	    write_warn_str(str, epath);
+	    if (highlight) write_warn(str, reset);
 	}
 	else {
             /* emesg is a String instance */
@@ -149,25 +178,24 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 		}
 		write_warn2(str, ")", 1);
 		if (highlight) write_warn(str, reset);
-		write_warn2(str, "\n", 1);
 	    }
 	    if (tail && einfo+elen > tail) {
 		if (!highlight) {
+                    write_warn2(str, "\n", 1);
                     write_warn2(str, tail, einfo+elen-tail);
-		    if (einfo[elen-1] != '\n') write_warn2(str, "\n", 1);
 		}
 		else {
 		    elen -= tail - einfo;
 		    einfo = tail;
                     write_warn2(str, "\n", 1);
 		    while (elen > 0) {
+                        write_warn2(str, "\n", 1);
 			tail = memchr(einfo, '\n', elen);
 			if (!tail || tail > einfo) {
 			    write_warn(str, bold);
                             write_warn2(str, einfo, tail ? tail-einfo : elen);
 			    write_warn(str, reset);
 			    if (!tail) {
-				write_warn2(str, "\n", 1);
 				break;
 			    }
 			}
@@ -180,11 +208,10 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 		    }
 		}
 	    }
-	    else if (!epath) {
-		write_warn2(str, "\n", 1);
-	    }
 	}
     }
+
+    return str;
 }
 
 static void
@@ -257,6 +284,7 @@ show_cause(VALUE errinfo, VALUE str, VALUE highlight, VALUE reverse, long backtr
         volatile VALUE eclass = CLASS_OF(cause);
         VALUE errat = rb_get_backtrace(cause);
         VALUE emesg = rb_get_message(cause);
+        emesg = rb_decorate_message(eclass, emesg, RTEST(highlight));
         if (reverse) {
             show_cause(cause, str, highlight, reverse, backtrace_limit, shown_causes);
             print_backtrace(eclass, errat, str, TRUE, backtrace_limit);
@@ -284,6 +312,7 @@ rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlig
 	errat = Qnil;
     }
     eclass = CLASS_OF(errinfo);
+    emesg = rb_decorate_message(eclass, emesg, RTEST(highlight));
     if (reverse) {
 	static const char traceback[] = "Traceback "
 	    "(most recent call last):\n";
