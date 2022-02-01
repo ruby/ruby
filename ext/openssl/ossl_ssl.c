@@ -959,6 +959,29 @@ ossl_sslctx_get_ciphers(VALUE self)
     return ary;
 }
 
+static VALUE
+build_cipher_string(VALUE v)
+{
+    VALUE str, elem;
+    int i;
+
+    if (RB_TYPE_P(v, T_ARRAY)) {
+        str = rb_str_new(0, 0);
+        for (i = 0; i < RARRAY_LEN(v); i++) {
+            elem = rb_ary_entry(v, i);
+            if (RB_TYPE_P(elem, T_ARRAY)) elem = rb_ary_entry(elem, 0);
+            elem = rb_String(elem);
+            rb_str_append(str, elem);
+            if (i < RARRAY_LEN(v)-1) rb_str_cat2(str, ":");
+        }
+    } else {
+        str = v;
+        StringValue(str);
+    }
+
+    return str;
+}
+
 /*
  * call-seq:
  *    ctx.ciphers = "cipher1:cipher2:..."
@@ -973,33 +996,49 @@ static VALUE
 ossl_sslctx_set_ciphers(VALUE self, VALUE v)
 {
     SSL_CTX *ctx;
-    VALUE str, elem;
-    int i;
+    VALUE str;
 
     rb_check_frozen(self);
     if (NIL_P(v))
-	return v;
-    else if (RB_TYPE_P(v, T_ARRAY)) {
-        str = rb_str_new(0, 0);
-        for (i = 0; i < RARRAY_LEN(v); i++) {
-            elem = rb_ary_entry(v, i);
-            if (RB_TYPE_P(elem, T_ARRAY)) elem = rb_ary_entry(elem, 0);
-            elem = rb_String(elem);
-            rb_str_append(str, elem);
-            if (i < RARRAY_LEN(v)-1) rb_str_cat2(str, ":");
-        }
-    } else {
-        str = v;
-        StringValue(str);
-    }
+        return v;
+
+    str = build_cipher_string(v);
 
     GetSSLCTX(self, ctx);
-    if (!SSL_CTX_set_cipher_list(ctx, StringValueCStr(str))) {
+    if (!SSL_CTX_set_cipher_list(ctx, StringValueCStr(str)))
         ossl_raise(eSSLError, "SSL_CTX_set_cipher_list");
-    }
 
     return v;
 }
+
+#ifdef HAVE_SSL_CTX_SET_CIPHERSUITES
+/*
+ * call-seq:
+ *    ctx.ciphersuites = "cipher1:cipher2:..."
+ *    ctx.ciphersuites = [name, ...]
+ *    ctx.ciphersuites = [[name, version, bits, alg_bits], ...]
+ *
+ * Sets the list of available TLSv1.3 cipher suites for this context.
+ */
+static VALUE
+ossl_sslctx_set_ciphersuites(VALUE self, VALUE v)
+{
+    SSL_CTX *ctx;
+    VALUE str;
+
+    rb_check_frozen(self);
+    if (NIL_P(v))
+        return v;
+
+    str = build_cipher_string(v);
+
+    GetSSLCTX(self, ctx);
+    if (!SSL_CTX_set_ciphersuites(ctx, StringValueCStr(str)))
+        ossl_raise(eSSLError, "SSL_CTX_set_ciphersuites");
+
+    return v;
+}
+#endif
 
 #ifndef OPENSSL_NO_DH
 /*
@@ -2703,6 +2742,9 @@ Init_ossl_ssl(void)
 			     ossl_sslctx_set_minmax_proto_version, 2);
     rb_define_method(cSSLContext, "ciphers",     ossl_sslctx_get_ciphers, 0);
     rb_define_method(cSSLContext, "ciphers=",    ossl_sslctx_set_ciphers, 1);
+#ifdef HAVE_SSL_CTX_SET_CIPHERSUITES
+    rb_define_method(cSSLContext, "ciphersuites=", ossl_sslctx_set_ciphersuites, 1);
+#endif
 #ifndef OPENSSL_NO_DH
     rb_define_method(cSSLContext, "tmp_dh=", ossl_sslctx_set_tmp_dh, 1);
 #endif

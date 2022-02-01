@@ -169,6 +169,7 @@ have_func("SSL_CTX_set_post_handshake_auth")
 
 # added in 1.1.1
 have_func("EVP_PKEY_check")
+have_func("SSL_CTX_set_ciphersuites")
 
 # added in 3.0.0
 openssl_3 =
