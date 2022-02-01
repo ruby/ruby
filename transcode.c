@@ -3517,7 +3517,7 @@ static VALUE
 econv_source_encoding(VALUE self)
 {
     rb_econv_t *ec = check_econv(self);
-    return ecov_get_encoding(ec->source_encoding);
+    return econv_get_encoding(ec->source_encoding);
 }
 
 /*
@@ -3530,7 +3530,7 @@ static VALUE
 econv_destination_encoding(VALUE self)
 {
     rb_econv_t *ec = check_econv(self);
-    return ecov_get_encoding(ec->destination_encoding);
+    return econv_get_encoding(ec->destination_encoding);
 }
 
 /*
