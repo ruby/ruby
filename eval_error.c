@@ -200,6 +200,7 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 		else {
 		    elen -= tail - einfo;
 		    einfo = tail;
+                    write_warn2(str, "\n", 1);
 		    while (elen > 0) {
 			tail = memchr(einfo, '\n', elen);
 			if (!tail || tail > einfo) {
@@ -300,10 +301,10 @@ show_cause(VALUE errinfo, VALUE str, VALUE highlight, VALUE reverse, long backtr
         if (reverse) {
             show_cause(cause, str, highlight, reverse, backtrace_limit, shown_causes);
             print_backtrace(eclass, errat, str, TRUE, backtrace_limit);
-            print_errinfo(eclass, errat, emesg, str, highlight!=0);
+            print_errinfo(eclass, errat, emesg, str, RTEST(highlight));
         }
         else {
-            print_errinfo(eclass, errat, emesg, str, highlight!=0);
+            print_errinfo(eclass, errat, emesg, str, RTEST(highlight));
             print_backtrace(eclass, errat, str, FALSE, backtrace_limit);
             show_cause(cause, str, highlight, reverse, backtrace_limit, shown_causes);
         }
@@ -324,11 +325,6 @@ rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlig
 	errat = Qnil;
     }
     eclass = CLASS_OF(errinfo);
-    if (NIL_P(reverse)) reverse = Qfalse;
-    if (NIL_P(highlight)) {
-	VALUE tty = (VALUE)rb_stderr_tty_p();
-	if (NIL_P(highlight)) highlight = tty;
-    }
     if (reverse) {
 	static const char traceback[] = "Traceback "
 	    "(most recent call last):\n";
@@ -336,7 +332,7 @@ rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlig
 	char buff[sizeof(traceback)+sizeof(bold)+sizeof(reset)-2], *p = buff;
 	const char *msg = traceback;
 	long len = sizeof(traceback) - 1;
-	if (highlight) {
+	if (RTEST(highlight)) {
 #define APPEND(s, l) (memcpy(p, s, l), p += (l))
 	    APPEND(bold, sizeof(bold)-1);
 	    APPEND(traceback, bold_part);
@@ -348,10 +344,10 @@ rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlig
 	write_warn2(str, msg, len);
         show_cause(errinfo, str, highlight, reverse, backtrace_limit, &shown_causes);
 	print_backtrace(eclass, errat, str, TRUE, backtrace_limit);
-	print_errinfo(eclass, errat, emesg, str, highlight!=0);
+	print_errinfo(eclass, errat, emesg, str, RTEST(highlight));
     }
     else {
-	print_errinfo(eclass, errat, emesg, str, highlight!=0);
+	print_errinfo(eclass, errat, emesg, str, RTEST(highlight));
 	print_backtrace(eclass, errat, str, FALSE, backtrace_limit);
         show_cause(errinfo, str, highlight, reverse, backtrace_limit, &shown_causes);
     }
@@ -380,7 +376,8 @@ rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
 
     if (!written) {
         written = true;
-        rb_error_write(errinfo, emesg, errat, Qnil, Qnil, Qfalse);
+        VALUE highlight = rb_stderr_tty_p() ? Qtrue : Qfalse;
+        rb_error_write(errinfo, emesg, errat, Qnil, highlight, Qfalse);
     }
 
     EC_POP_TAG();
