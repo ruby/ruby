@@ -136,6 +136,8 @@ void rb_objspace_each_objects_without_setup(
     int (*callback)(void *, void *, size_t, void *),
     void *data);
 
+size_t rb_gc_obj_slot_size(VALUE obj);
+
 RUBY_SYMBOL_EXPORT_END
 
 #endif /* RUBY_GC_H */
