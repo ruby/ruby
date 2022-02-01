@@ -431,6 +431,27 @@ class TestObjSpace < Test::Unit::TestCase
     end
   end
 
+  def test_dump_objects_dumps_page_slot_sizes
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        def dump_my_heap_please
+          ObjectSpace.dump_all(output: $stdout)
+        end
+
+        p $stdout == dump_my_heap_please
+      end;
+      assert_equal 'true', output.pop
+      assert(output.count > 1)
+      output.each { |l|
+        obj = JSON.parse(l)
+        next if obj["type"] == "ROOT"
+
+        assert(obj["slot_size"] != nil)
+        assert(obj["slot_size"] % GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] == 0)
+      }
+    end
+  end
+
   def test_dump_escapes_method_name
     method_name = "foo\"bar"
     klass = Class.new do
@@ -447,6 +468,13 @@ class TestObjSpace < Test::Unit::TestCase
     assert_equal "foo\"bar", parsed["method"]
   ensure
     ObjectSpace.trace_object_allocations_stop
+  end
+
+  def test_dump_includes_slot_size
+    str = "TEST"
+    dump = ObjectSpace.dump(str)
+
+    assert_includes dump, "\"slot_size\":#{GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]}"
   end
 
   def test_dump_reference_addresses_match_dump_all_addresses
