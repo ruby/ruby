@@ -872,9 +872,9 @@ class TestFileExhaustive < Test::Unit::TestCase
     bug9934 = '[ruby-core:63114] [Bug #9934]'
     require "objspace"
     path = File.expand_path("/foo")
-    assert_operator(ObjectSpace.memsize_of(path), :<=, path.bytesize + GC::INTERNAL_CONSTANTS[:RVALUE_SIZE], bug9934)
+    assert_operator(ObjectSpace.memsize_of(path), :<=, path.bytesize + GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE], bug9934)
     path = File.expand_path("/a"*25)
-    assert_equal(path.bytesize+1 + GC::INTERNAL_CONSTANTS[:RVALUE_SIZE], ObjectSpace.memsize_of(path), bug9934)
+    assert_equal(path.bytesize + 1 + GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE], ObjectSpace.memsize_of(path), bug9934)
   end
 
   def test_expand_path_encoding
