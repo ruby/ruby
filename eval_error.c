@@ -261,7 +261,7 @@ print_backtrace(const VALUE eclass, const VALUE errat, const VALUE str, int reve
     }
 }
 
-VALUE rb_get_message(VALUE exc);
+VALUE rb_get_detailed_message(VALUE exc, VALUE opt);
 
 static int
 shown_cause_p(VALUE cause, VALUE *shown_causes)
@@ -276,30 +276,29 @@ shown_cause_p(VALUE cause, VALUE *shown_causes)
 }
 
 static void
-show_cause(VALUE errinfo, VALUE str, VALUE highlight, VALUE reverse, long backtrace_limit, VALUE *shown_causes)
+show_cause(VALUE errinfo, VALUE str, VALUE opt, VALUE highlight, VALUE reverse, long backtrace_limit, VALUE *shown_causes)
 {
     VALUE cause = rb_attr_get(errinfo, id_cause);
     if (!NIL_P(cause) && rb_obj_is_kind_of(cause, rb_eException) &&
         !shown_cause_p(cause, shown_causes)) {
         volatile VALUE eclass = CLASS_OF(cause);
         VALUE errat = rb_get_backtrace(cause);
-        VALUE emesg = rb_get_message(cause);
-        emesg = rb_decorate_message(eclass, emesg, RTEST(highlight));
+        VALUE emesg = rb_get_detailed_message(cause, opt);
         if (reverse) {
-            show_cause(cause, str, highlight, reverse, backtrace_limit, shown_causes);
+            show_cause(cause, str, opt, highlight, reverse, backtrace_limit, shown_causes);
             print_backtrace(eclass, errat, str, TRUE, backtrace_limit);
             print_errinfo(eclass, errat, emesg, str, RTEST(highlight));
         }
         else {
             print_errinfo(eclass, errat, emesg, str, RTEST(highlight));
             print_backtrace(eclass, errat, str, FALSE, backtrace_limit);
-            show_cause(cause, str, highlight, reverse, backtrace_limit, shown_causes);
+            show_cause(cause, str, opt, highlight, reverse, backtrace_limit, shown_causes);
         }
     }
 }
 
 void
-rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlight, VALUE reverse)
+rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE opt, VALUE highlight, VALUE reverse)
 {
     volatile VALUE eclass;
     VALUE shown_causes = 0;
@@ -312,7 +311,6 @@ rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlig
 	errat = Qnil;
     }
     eclass = CLASS_OF(errinfo);
-    emesg = rb_decorate_message(eclass, emesg, RTEST(highlight));
     if (reverse) {
 	static const char traceback[] = "Traceback "
 	    "(most recent call last):\n";
@@ -330,14 +328,14 @@ rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlig
 	    len = p - (msg = buff);
 	}
 	write_warn2(str, msg, len);
-        show_cause(errinfo, str, highlight, reverse, backtrace_limit, &shown_causes);
+        show_cause(errinfo, str, opt, highlight, reverse, backtrace_limit, &shown_causes);
 	print_backtrace(eclass, errat, str, TRUE, backtrace_limit);
 	print_errinfo(eclass, errat, emesg, str, RTEST(highlight));
     }
     else {
 	print_errinfo(eclass, errat, emesg, str, RTEST(highlight));
 	print_backtrace(eclass, errat, str, FALSE, backtrace_limit);
-        show_cause(errinfo, str, highlight, reverse, backtrace_limit, &shown_causes);
+        show_cause(errinfo, str, opt, highlight, reverse, backtrace_limit, &shown_causes);
     }
 }
 
@@ -349,6 +347,10 @@ rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
     volatile VALUE emesg = Qundef;
     volatile bool written = false;
 
+    VALUE opt = rb_hash_new();
+    VALUE highlight = rb_stderr_tty_p() ? Qtrue : Qfalse;
+    rb_hash_aset(opt, ID2SYM(rb_intern_const("highlight")), highlight);
+
     if (NIL_P(errinfo))
 	return;
     rb_ec_raised_clear(ec);
@@ -359,13 +361,12 @@ rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
     }
     if (emesg == Qundef) {
 	emesg = Qnil;
-	emesg = rb_get_message(errinfo);
+	emesg = rb_get_detailed_message(errinfo, opt);
     }
 
     if (!written) {
         written = true;
-        VALUE highlight = rb_stderr_tty_p() ? Qtrue : Qfalse;
-        rb_error_write(errinfo, emesg, errat, Qnil, highlight, Qfalse);
+        rb_error_write(errinfo, emesg, errat, Qnil, opt, highlight, Qfalse);
     }
 
     EC_POP_TAG();
