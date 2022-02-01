@@ -407,6 +407,10 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       assert_equal(["true"], run_pty("IO.console(:close); p IO.console(:tty?)"))
     end
 
+    def test_console_kw
+      assert_equal(["File"], run_pty("IO.console.close; p IO.console(:clone, freeze: true).class"))
+    end
+
     def test_sync
       assert_equal(["true"], run_pty("p IO.console.sync"))
     end
@@ -481,6 +485,12 @@ defined?(IO.console) and TestIO_Console.class_eval do
       assert(IO.console(:tty?))
     ensure
       IO.console(:close)
+    end
+
+    def test_console_kw
+      io = IO.console(:clone, freeze: true)
+      io.close
+      assert_kind_of(IO, io)
     end
 
     def test_sync
