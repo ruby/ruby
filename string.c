@@ -2960,7 +2960,7 @@ rb_str_freeze(VALUE str)
  *
  * Returns +self+ if +self+ is not frozen.
  *
- * Otherwise. returns <tt>self.dup</tt>, which is not frozen.
+ * Otherwise returns <tt>self.dup</tt>, which is not frozen.
  */
 static VALUE
 str_uplus(VALUE str)
