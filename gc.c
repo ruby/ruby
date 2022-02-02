@@ -2662,6 +2662,7 @@ rb_imemo_name(enum imemo_type type)
         IMEMO_NAME(callinfo);
         IMEMO_NAME(callcache);
         IMEMO_NAME(constcache);
+        IMEMO_NAME(iv_index_tbl_entry);
 #undef IMEMO_NAME
     }
     return "unknown";
@@ -2906,17 +2907,9 @@ rb_free_const_table(struct rb_id_table *tbl)
     rb_id_table_free(tbl);
 }
 
-static int
-free_iv_index_tbl_free_i(st_data_t key, st_data_t value, st_data_t data)
-{
-    xfree((void *)value);
-    return ST_CONTINUE;
-}
-
 static void
 iv_index_tbl_free(struct st_table *tbl)
 {
-    st_foreach(tbl, free_iv_index_tbl_free_i, 0);
     st_free_table(tbl);
 }
 
@@ -3422,6 +3415,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             break;
           case imemo_constcache:
             RB_DEBUG_COUNTER_INC(obj_imemo_constcache);
+          case imemo_iv_index_tbl_entry:
+            RB_DEBUG_COUNTER_INC(obj_imemo_iv_index_tbl_entry);
             break;
 	}
 	return TRUE;
@@ -4577,7 +4572,6 @@ obj_memsize_of(VALUE obj, int use_all_types)
 		size += rb_id_table_memsize(RCLASS_CVC_TBL(obj));
 	    }
 	    if (RCLASS_IV_INDEX_TBL(obj)) {
-                // TODO: more correct value
 		size += st_memsize(RCLASS_IV_INDEX_TBL(obj));
 	    }
             if (RCLASS_EXT(obj)->iv_tbl) {
@@ -6937,6 +6931,15 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
             gc_mark(objspace, (VALUE)vm_cc_cme(cc));
         }
         return;
+      case imemo_iv_index_tbl_entry:
+        {
+            const struct rb_iv_index_tbl_entry *idx = (struct rb_iv_index_tbl_entry *)obj;
+            if (RB_TYPE_P(idx->class_value, T_NONE)) {
+                rb_bug("!! %u", idx->index);
+            }
+            gc_mark(objspace, idx->class_value);
+        }
+        return;
       case imemo_constcache:
         {
             const struct iseq_inline_constant_cache_entry *ice = (struct iseq_inline_constant_cache_entry *)obj;
@@ -6996,6 +6999,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	if (!RCLASS_EXT(obj)) break;
 
         mark_m_tbl(objspace, RCLASS_M_TBL(obj));
+        mark_tbl(objspace, RCLASS_IV_INDEX_TBL(obj));
         cc_table_mark(objspace, obj);
         mark_tbl_no_pin(objspace, RCLASS_IV_TBL(obj));
 	mark_const_tbl(objspace, RCLASS_CONST_TBL(obj));
@@ -9801,12 +9805,15 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
             UPDATE_IF_MOVED(objspace, ice->value);
         }
         break;
+      case imemo_iv_index_tbl_entry:
+        {
+            const struct rb_iv_index_tbl_entry *idx = (struct rb_iv_index_tbl_entry *)obj;
+            UPDATE_IF_MOVED(objspace, idx->class_value);
+        }
+        break;
       case imemo_parser_strterm:
       case imemo_tmpbuf:
       case imemo_callinfo:
-        break;
-      default:
-        rb_bug("not reachable %d", imemo_type(obj));
         break;
     }
 }
@@ -9963,26 +9970,12 @@ update_subclass_entries(rb_objspace_t *objspace, rb_subclass_entry_t *entry)
     }
 }
 
-static int
-update_iv_index_tbl_i(st_data_t key, st_data_t value, st_data_t arg)
-{
-    rb_objspace_t *objspace = (rb_objspace_t *)arg;
-    struct rb_iv_index_tbl_entry *ent = (struct rb_iv_index_tbl_entry *)value;
-    UPDATE_IF_MOVED(objspace, ent->class_value);
-    return ST_CONTINUE;
-}
-
 static void
 update_class_ext(rb_objspace_t *objspace, rb_classext_t *ext)
 {
     UPDATE_IF_MOVED(objspace, ext->origin_);
     UPDATE_IF_MOVED(objspace, ext->refined_class);
     update_subclass_entries(objspace, ext->subclasses);
-
-    // ext->iv_index_tbl
-    if (ext->iv_index_tbl) {
-        st_foreach(ext->iv_index_tbl, update_iv_index_tbl_i, (st_data_t)objspace);
-    }
 }
 
 static void

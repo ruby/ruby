@@ -25,10 +25,14 @@ struct rb_subclass_entry {
     struct rb_subclass_entry *prev;
 };
 
+// imemo_iv_index_tbl_entry
 struct rb_iv_index_tbl_entry {
-    uint32_t index;
-    rb_serial_t class_serial;
-    VALUE class_value;
+    VALUE flags;
+    VALUE class_value;        // v0
+    rb_serial_t class_serial; // v1
+    uint32_t index;           // v2
+                              // v2.5
+                              // v3
 };
 
 struct rb_cvar_class_tbl_entry {

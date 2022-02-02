@@ -321,6 +321,7 @@ RB_DEBUG_COUNTER(obj_imemo_parser_strterm)
 RB_DEBUG_COUNTER(obj_imemo_callinfo)
 RB_DEBUG_COUNTER(obj_imemo_callcache)
 RB_DEBUG_COUNTER(obj_imemo_constcache)
+RB_DEBUG_COUNTER(obj_imemo_iv_index_tbl_entry)
 
 /* ar_table */
 RB_DEBUG_COUNTER(artable_hint_hit)

@@ -1377,11 +1377,10 @@ iv_index_tbl_extend(struct ivar_update *ivup, ID id, VALUE klass)
     if (ivup->u.iv_index_tbl->num_entries >= INT_MAX) {
 	rb_raise(rb_eArgError, "too many instance variables");
     }
-    ent = ALLOC(struct rb_iv_index_tbl_entry);
+    ent = (struct rb_iv_index_tbl_entry *)rb_imemo_new(imemo_iv_index_tbl_entry, RCLASS_SERIAL(klass), 0, 0, klass);
     ent->index = ivup->index = (uint32_t)ivup->u.iv_index_tbl->num_entries;
-    ent->class_value = klass;
-    ent->class_serial = RCLASS_SERIAL(klass);
     st_add_direct(ivup->u.iv_index_tbl, (st_data_t)id, (st_data_t)ent);
+    RB_OBJ_WRITTEN(klass, Qundef, ent);
     ivup->iv_extended = 1;
 }
 

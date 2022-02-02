@@ -650,6 +650,7 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
         imemo_type_ids[11] = rb_intern("imemo_callinfo");
         imemo_type_ids[12] = rb_intern("imemo_callcache");
         imemo_type_ids[13] = rb_intern("imemo_constcache");
+        imemo_type_ids[14] = rb_intern("imemo_iv_index_tbl_entry");
     }
 
     each_object_with_flags(count_imemo_objects_i, (void *)hash);
