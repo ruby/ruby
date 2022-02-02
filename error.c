@@ -1263,7 +1263,7 @@ exc_s_to_tty_p(VALUE self)
 }
 
 static VALUE
-check_highlight_keyword(VALUE opt)
+check_highlight_keyword(VALUE opt, int auto_tty_detect)
 {
     VALUE highlight = Qnil;
 
@@ -1283,7 +1283,12 @@ check_highlight_keyword(VALUE opt)
     }
 
     if (NIL_P(highlight)) {
-	highlight = rb_stderr_tty_p() ? Qtrue : Qfalse;
+        if (auto_tty_detect) {
+            highlight = rb_stderr_tty_p() ? Qtrue : Qfalse;
+        }
+        else {
+            highlight = Qfalse;
+        }
     }
 
     return highlight;
@@ -1342,7 +1347,7 @@ exc_full_message(int argc, VALUE *argv, VALUE exc)
 
     rb_scan_args(argc, argv, "0:", &opt);
 
-    highlight = check_highlight_keyword(opt);
+    highlight = check_highlight_keyword(opt, 1);
     order = check_order_keyword(opt);
 
     str = rb_str_new2("");
@@ -1392,11 +1397,11 @@ exc_detailed_message(int argc, VALUE *argv, VALUE exc)
 
     rb_scan_args(argc, argv, "0:", &opt);
 
-    VALUE highlight = check_highlight_keyword(opt);
+    VALUE highlight = check_highlight_keyword(opt, 0);
 
     extern VALUE rb_decorate_message(const VALUE eclass, const VALUE emesg, int highlight);
 
-    return rb_decorate_message(CLASS_OF(exc), rb_get_message(exc), highlight);
+    return rb_decorate_message(CLASS_OF(exc), rb_get_message(exc), RTEST(highlight));
 }
 
 /*
