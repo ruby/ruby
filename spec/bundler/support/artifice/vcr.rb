@@ -69,7 +69,7 @@ class BundlerVCRHTTP < Net::HTTP
     end
 
     def file_name_for_key(key)
-      key.join("/").gsub(/[\:*?"<>|]/, "-")
+      File.join(*key).gsub(/[\:*?"<>|]/, "-")
     end
 
     def request_pair_paths

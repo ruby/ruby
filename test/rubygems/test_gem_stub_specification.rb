@@ -180,22 +180,6 @@ class TestStubSpecification < Gem::TestCase
     assert bar.to_spec
   end
 
-  def test_to_spec_activated
-    assert @foo.to_spec.is_a?(Gem::Specification)
-    assert_equal "foo", @foo.to_spec.name
-    refute @foo.to_spec.instance_variable_get :@ignored
-  end
-
-  def test_to_spec_missing_extensions
-    stub = stub_with_extension
-
-    capture_output do
-      stub.contains_requirable_file? 'nonexistent'
-    end
-
-    assert stub.to_spec.instance_variable_get :@ignored
-  end
-
   def stub_with_version
     spec = File.join @gemhome, 'specifications', 'stub_e-2.gemspec'
     File.open spec, 'w' do |io|

@@ -5,9 +5,10 @@ RSpec.describe Bundler::EndpointSpecification do
   let(:version)      { "1.0.0" }
   let(:platform)     { Gem::Platform::RUBY }
   let(:dependencies) { [] }
+  let(:spec_fetcher) { double(:spec_fetcher) }
   let(:metadata)     { nil }
 
-  subject(:spec) { described_class.new(name, version, platform, dependencies, metadata) }
+  subject(:spec) { described_class.new(name, version, platform, spec_fetcher, dependencies, metadata) }
 
   describe "#build_dependency" do
     let(:name)           { "foo" }
@@ -48,7 +49,9 @@ RSpec.describe Bundler::EndpointSpecification do
   end
 
   it "supports equality comparison" do
-    other_spec = described_class.new("bar", version, platform, dependencies, metadata)
+    remote_spec = double(:remote_spec, :required_ruby_version => nil, :required_rubygems_version => nil)
+    allow(spec_fetcher).to receive(:fetch_spec).and_return(remote_spec)
+    other_spec = described_class.new("bar", version, platform, spec_fetcher, dependencies, metadata)
     expect(spec).to eql(spec)
     expect(spec).to_not eql(other_spec)
   end

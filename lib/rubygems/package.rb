@@ -146,12 +146,12 @@ class Gem::Package
 
   def self.new(gem, security_policy = nil)
     gem = if gem.is_a?(Gem::Package::Source)
-            gem
-          elsif gem.respond_to? :read
-            Gem::Package::IOSource.new gem
-          else
-            Gem::Package::FileSource.new gem
-          end
+      gem
+    elsif gem.respond_to? :read
+      Gem::Package::IOSource.new gem
+    else
+      Gem::Package::FileSource.new gem
+    end
 
     return super unless Gem::Package == self
     return super unless gem.present?
@@ -230,7 +230,7 @@ class Gem::Package
 
     tar.add_file_signed 'checksums.yaml.gz', 0444, @signer do |io|
       gzip_to io do |gz_io|
-        YAML.dump checksums_by_algorithm, gz_io
+        Psych.dump checksums_by_algorithm, gz_io
       end
     end
   end
@@ -353,10 +353,10 @@ EOM
 
   def digest(entry) # :nodoc:
     algorithms = if @checksums
-                   @checksums.keys
-                 else
-                   [Gem::Security::DIGEST_NAME].compact
-                 end
+      @checksums.keys
+    else
+      [Gem::Security::DIGEST_NAME].compact
+    end
 
     algorithms.each do |algorithm|
       digester = Gem::Security.create_digest(algorithm)

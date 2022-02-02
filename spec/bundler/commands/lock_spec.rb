@@ -337,7 +337,8 @@ RSpec.describe "bundle lock" do
          #{Bundler::VERSION}
     G
 
-    simulate_platform(rb) { bundle :lock }
+    bundle "config set --local force_ruby_platform true"
+    bundle :lock
 
     expect(lockfile).to eq <<~G
       GEM

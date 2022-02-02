@@ -76,21 +76,21 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
 
     newest = found.last
 
+    unless newest
+      exc = Gem::UnsatisfiableDependencyError.new request
+      exc.errors = errors
+
+      raise exc
+    end
+
     unless @force
       found_matching_metadata = found.reverse.find do |spec|
         metadata_satisfied?(spec)
       end
 
       if found_matching_metadata.nil?
-        if newest
-          ensure_required_ruby_version_met(newest.spec)
-          ensure_required_rubygems_version_met(newest.spec)
-        else
-          exc = Gem::UnsatisfiableDependencyError.new request
-          exc.errors = errors
-
-          raise exc
-        end
+        ensure_required_ruby_version_met(newest.spec)
+        ensure_required_rubygems_version_met(newest.spec)
       else
         newest = found_matching_metadata
       end

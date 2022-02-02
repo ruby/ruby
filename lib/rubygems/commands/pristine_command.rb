@@ -98,20 +98,20 @@ extensions will be restored.
 
   def execute
     specs = if options[:all]
-              Gem::Specification.map
+      Gem::Specification.map
 
-            # `--extensions` must be explicitly given to pristine only gems
-            # with extensions.
-            elsif options[:extensions_set] and
+    # `--extensions` must be explicitly given to pristine only gems
+    # with extensions.
+    elsif options[:extensions_set] and
                   options[:extensions] and options[:args].empty?
-              Gem::Specification.select do |spec|
-                spec.extensions and not spec.extensions.empty?
-              end
-            else
-              get_all_gem_names.sort.map do |gem_name|
-                Gem::Specification.find_all_by_name(gem_name, options[:version]).reverse
-              end.flatten
-            end
+      Gem::Specification.select do |spec|
+        spec.extensions and not spec.extensions.empty?
+      end
+    else
+      get_all_gem_names.sort.map do |gem_name|
+        Gem::Specification.find_all_by_name(gem_name, options[:version]).reverse
+      end.flatten
+    end
 
     specs = specs.select{|spec| RUBY_ENGINE == spec.platform || Gem::Platform.local === spec.platform || spec.platform == Gem::Platform::RUBY }
 

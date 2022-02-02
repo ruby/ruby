@@ -249,10 +249,11 @@ module Bundler
     end
 
     def verify_gemfile_dependencies_are_found!(requirements)
-      requirements.each do |requirement|
+      requirements.map! do |requirement|
         name = requirement.name
-        next if name == "bundler"
-        next unless search_for(requirement).empty?
+        next requirement if name == "bundler"
+        next requirement unless search_for(requirement).empty?
+        next unless requirement.current_platform?
 
         if (base = @base[name]) && !base.empty?
           version = base.first.version
@@ -266,7 +267,7 @@ module Bundler
           message = gem_not_found_message(name, requirement, source_for(name))
         end
         raise GemNotFound, message
-      end
+      end.compact!
     end
 
     def gem_not_found_message(name, requirement, source, extra_message = "")
@@ -358,12 +359,10 @@ module Bundler
             o << "\n"
             o << %(Running `bundle update` will rebuild your snapshot from scratch, using only\n)
             o << %(the gems in your Gemfile, which may resolve the conflict.\n)
-          elsif !conflict.existing
+          elsif !conflict.existing && !name.end_with?("\0")
             o << "\n"
 
             relevant_source = conflict.requirement.source || source_for(name)
-
-            metadata_requirement = name.end_with?("\0")
 
             extra_message = if conflict.requirement_trees.first.size > 1
               ", which is required by gem '#{SharedHelpers.pretty_dependency(conflict.requirement_trees.first[-2])}',"
@@ -371,11 +370,7 @@ module Bundler
               ""
             end
 
-            if metadata_requirement
-              o << "#{SharedHelpers.pretty_dependency(conflict.requirement)}#{extra_message} is not available in #{relevant_source}"
-            else
-              o << gem_not_found_message(name, conflict.requirement, relevant_source, extra_message)
-            end
+            o << gem_not_found_message(name, conflict.requirement, relevant_source, extra_message)
           end
         end,
         :version_for_spec => lambda {|spec| spec.version },

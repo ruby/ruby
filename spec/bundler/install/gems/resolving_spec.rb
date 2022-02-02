@@ -101,8 +101,6 @@ RSpec.describe "bundle install with install-time dependencies" do
   end
 
   it "installs gems with a dependency with no type" do
-    skip "incorrect data check error" if Gem.win_platform?
-
     build_repo2
 
     path = "#{gem_repo2}/#{Gem::MARSHAL_SPEC_DIR}/actionpack-2.3.2.gemspec.rz"
@@ -110,7 +108,7 @@ RSpec.describe "bundle install with install-time dependencies" do
     spec.dependencies.each do |d|
       d.instance_variable_set(:@type, :fail)
     end
-    File.open(path, "w") do |f|
+    File.open(path, "wb") do |f|
       f.write Gem.deflate(Marshal.dump(spec))
     end
 
@@ -226,6 +224,27 @@ RSpec.describe "bundle install with install-time dependencies" do
         expect(the_bundle).to include_gems("rack 1.2")
       end
 
+      it "installs the older version when using servers not implementing the compact index API" do
+        build_repo2 do
+          build_gem "rack", "1.2" do |s|
+            s.executables = "rackup"
+          end
+
+          build_gem "rack", "9001.0.0" do |s|
+            s.required_ruby_version = "> 9000"
+          end
+        end
+
+        install_gemfile <<-G, :artifice => "endpoint", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+          ruby "#{RUBY_VERSION}"
+          source "http://localgemserver.test/"
+          gem 'rack'
+        G
+
+        expect(out).to_not include("rack-9001.0.0 requires ruby version > 9000")
+        expect(the_bundle).to include_gems("rack 1.2")
+      end
+
       it "installs the older version under rate limiting conditions" do
         build_repo4 do
           build_gem "rack", "9001.0.0" do |s|
@@ -286,8 +305,6 @@ RSpec.describe "bundle install with install-time dependencies" do
 
       shared_examples_for "ruby version conflicts" do
         it "raises an error during resolution" do
-          skip "ruby requirement includes platform and it shouldn't" if Gem.win_platform?
-
           install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }, :raise_on_error => false
             source "http://localgemserver.test/"
             ruby #{ruby_requirement}
@@ -303,8 +320,6 @@ RSpec.describe "bundle install with install-time dependencies" do
 
                 require_ruby was resolved to 1.0, which depends on
                   Ruby\0 (> 9000)
-
-            Ruby\0 (> 9000), which is required by gem 'require_ruby', is not available in the local ruby installation
           E
           expect(err).to end_with(nice_error)
         end
@@ -343,7 +358,15 @@ RSpec.describe "bundle install with install-time dependencies" do
       G
 
       expect(err).to_not include("Gem::InstallError: require_rubygems requires RubyGems version > 9000")
-      expect(err).to include("require_rubygems-1.0 requires rubygems version > 9000, which is incompatible with the current version, #{Gem::VERSION}")
+      nice_error = strip_whitespace(<<-E).strip
+        Bundler found conflicting requirements for the RubyGems\0 version:
+          In Gemfile:
+            RubyGems\0 (= #{Gem::VERSION})
+
+            require_rubygems was resolved to 1.0, which depends on
+              RubyGems\0 (> 9000)
+      E
+      expect(err).to end_with(nice_error)
     end
   end
 end

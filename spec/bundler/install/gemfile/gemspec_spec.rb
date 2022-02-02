@@ -179,7 +179,7 @@ RSpec.describe "bundle install from an existing gemspec" do
       gemspec :path => '#{tmp.join("foo")}'
     G
 
-    bundle "update --bundler", :verbose => true
+    bundle "update --bundler", :artifice => "compact_index", :verbose => true
     expect(the_bundle).to include_gems "foo 1.0", "platform_specific 1.0 JAVA"
   end
 
@@ -429,13 +429,16 @@ RSpec.describe "bundle install from an existing gemspec" do
           gemspec
         G
 
-        simulate_platform("ruby") { bundle "install" }
+        bundle "config set --local force_ruby_platform true"
+        bundle "install"
+
+        simulate_new_machine
         simulate_platform("jruby") { bundle "install" }
       end
 
       context "on ruby" do
         before do
-          simulate_platform("ruby")
+          bundle "config set --local force_ruby_platform true"
           bundle :install
         end
 
@@ -546,7 +549,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     end
 
     it "installs the ruby platform gemspec" do
-      simulate_platform "ruby"
+      bundle "config set --local force_ruby_platform true"
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
@@ -557,7 +560,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     end
 
     it "installs the ruby platform gemspec and skips dev deps with `without development` configured" do
-      simulate_platform "ruby"
+      bundle "config set --local force_ruby_platform true"
 
       bundle "config set --local without development"
       install_gemfile <<-G
@@ -620,6 +623,66 @@ RSpec.describe "bundle install from an existing gemspec" do
       bundle "update"
 
       expect(lockfile).to eq initial_lockfile
+    end
+  end
+
+  context "with multiple locked platforms" do
+    before do
+      build_lib("activeadmin", :path => tmp.join("activeadmin")) do |s|
+        s.version = "2.9.0"
+        s.add_dependency "railties", ">= 5.2", "< 6.2"
+      end
+
+      build_repo4 do
+        build_gem "railties", "6.1.4"
+
+        build_gem "jruby-openssl", "0.10.7" do |s|
+          s.platform = "java"
+        end
+      end
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gemspec :path => "../activeadmin"
+        gem "jruby-openssl", :platform => :jruby
+      G
+
+      bundle "lock --add-platform java"
+    end
+
+    it "does not remove the platform specific specs from the lockfile when re-resolving due to gemspec changes" do
+      expect(lockfile).to eq <<~L
+        PATH
+          remote: ../activeadmin
+          specs:
+            activeadmin (2.9.0)
+              railties (>= 5.2, < 6.2)
+
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            jruby-openssl (0.10.7-java)
+            railties (6.1.4)
+
+        PLATFORMS
+          #{lockfile_platforms_for(["java"] + local_platforms)}
+
+        DEPENDENCIES
+          activeadmin!
+          jruby-openssl
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      gemspec = tmp.join("activeadmin/activeadmin.gemspec")
+      File.write(gemspec, File.read(gemspec).sub(">= 5.2", ">= 6.0"))
+
+      previous_lockfile = lockfile
+
+      bundle "install --local"
+
+      expect(lockfile).to eq(previous_lockfile.sub(">= 5.2", ">= 6.0"))
     end
   end
 end

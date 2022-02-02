@@ -48,12 +48,14 @@ RSpec.describe "bundle remove" do
 
       context "when gem is specified in multiple lines" do
         it "shows success for removed gem" do
+          build_git "rack"
+
           gemfile <<-G
             source '#{file_uri_for(gem_repo1)}'
 
             gem 'git'
             gem 'rack',
-                git: 'https://github.com/rack/rack',
+                git: "#{lib_path("rack-1.0")}",
                 branch: 'master'
             gem 'nokogiri'
           G

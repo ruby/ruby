@@ -88,7 +88,6 @@ module Spec
 
       requires = options.delete(:requires) || []
       realworld = RSpec.current_example.metadata[:realworld]
-      options[:verbose] = true if options[:verbose].nil? && realworld
 
       artifice = options.delete(:artifice) do
         if realworld
@@ -446,15 +445,6 @@ module Spec
       yield if block_given?
     ensure
       ENV["BUNDLER_SPEC_PLATFORM"] = old if block_given?
-    end
-
-    def simulate_ruby_version(version)
-      return if version == RUBY_VERSION
-      old = ENV["BUNDLER_SPEC_RUBY_VERSION"]
-      ENV["BUNDLER_SPEC_RUBY_VERSION"] = version
-      yield if block_given?
-    ensure
-      ENV["BUNDLER_SPEC_RUBY_VERSION"] = old if block_given?
     end
 
     def simulate_windows(platform = mswin)

@@ -1,18 +1,8 @@
 # frozen_string_literal: true
 
 RSpec.describe "the lockfile format" do
-  include Bundler::GemHelpers
-
   before do
-    build_repo2 do
-      # Capistrano did this (at least until version 2.5.10)
-      # RubyGems 2.2 doesn't allow the specifying of a dependency twice
-      # See https://github.com/rubygems/rubygems/commit/03dbac93a3396a80db258d9bc63500333c25bd2f
-      build_gem "double_deps", "1.0", :skip_validation => true do |s|
-        s.add_dependency "net-ssh", ">= 1.0.0"
-        s.add_dependency "net-ssh"
-      end
-    end
+    build_repo2
   end
 
   it "generates a simple lockfile for a single source, gem" do
@@ -90,12 +80,8 @@ RSpec.describe "the lockfile format" do
     G
   end
 
-  it "does not update the lockfile's bundler version if nothing changed during bundle install, but uses the locked version", :rubygems => ">= 3.3.0.a" do
-    version = "#{Bundler::VERSION.split(".").first}.0.0.a"
-
-    update_repo2 do
-      with_built_bundler(version) {|gem_path| FileUtils.mv(gem_path, gem_repo2("gems")) }
-    end
+  it "does not update the lockfile's bundler version if nothing changed during bundle install, but uses the locked version", :rubygems => ">= 3.3.0.a", :realworld => true do
+    version = "2.3.0"
 
     lockfile <<-L
       GEM
@@ -113,7 +99,7 @@ RSpec.describe "the lockfile format" do
          #{version}
     L
 
-    install_gemfile <<-G, :verbose => true, :env => { "BUNDLER_SPEC_GEM_SOURCES" => file_uri_for(gem_repo2).to_s }
+    install_gemfile <<-G, :verbose => true, :artifice => "vcr"
       source "#{file_uri_for(gem_repo2)}"
 
       gem "rack"
@@ -142,10 +128,6 @@ RSpec.describe "the lockfile format" do
   it "does not update the lockfile's bundler version if nothing changed during bundle install, and uses the latest version", :rubygems => "< 3.3.0.a" do
     version = "#{Bundler::VERSION.split(".").first}.0.0.a"
 
-    update_repo2 do
-      with_built_bundler(version) {|gem_path| FileUtils.mv(gem_path, gem_repo2("gems")) }
-    end
-
     lockfile <<-L
       GEM
         remote: #{file_uri_for(gem_repo2)}/
@@ -162,7 +144,7 @@ RSpec.describe "the lockfile format" do
          #{version}
     L
 
-    install_gemfile <<-G, :verbose => true, :env => { "BUNDLER_SPEC_GEM_SOURCES" => file_uri_for(gem_repo2).to_s }
+    install_gemfile <<-G, :verbose => true
       source "#{file_uri_for(gem_repo2)}"
 
       gem "rack"
@@ -761,6 +743,16 @@ RSpec.describe "the lockfile format" do
   end
 
   it "orders dependencies by version" do
+    update_repo2 do
+      # Capistrano did this (at least until version 2.5.10)
+      # RubyGems 2.2 doesn't allow the specifying of a dependency twice
+      # See https://github.com/rubygems/rubygems/commit/03dbac93a3396a80db258d9bc63500333c25bd2f
+      build_gem "double_deps", "1.0", :skip_validation => true do |s|
+        s.add_dependency "net-ssh", ">= 1.0.0"
+        s.add_dependency "net-ssh"
+      end
+    end
+
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}/"
       gem 'double_deps'

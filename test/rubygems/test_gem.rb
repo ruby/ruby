@@ -2022,6 +2022,8 @@ You may need to `bundle install` to install missing gems
     ENV['SOURCE_DATE_EPOCH'] = old_epoch
   end
 
+  private
+
   def ruby_install_name(name)
     with_clean_path_to_ruby do
       orig_RUBY_INSTALL_NAME = RbConfig::CONFIG['ruby_install_name']

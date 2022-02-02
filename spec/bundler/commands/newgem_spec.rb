@@ -28,6 +28,10 @@ RSpec.describe "bundle gem" do
 
   let(:require_path) { "mygem" }
 
+  let(:minitest_test_file_path) { "test/test_mygem.rb" }
+
+  let(:minitest_test_class_name) { "class TestMygem < Minitest::Test" }
+
   before do
     sys_exec("git config --global user.name 'Bundler User'")
     sys_exec("git config --global user.email user@example.com")
@@ -702,7 +706,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "builds spec skeleton" do
-        expect(bundled_app("#{gem_name}/test/test_#{require_path}.rb")).to exist
+        expect(bundled_app("#{gem_name}/#{minitest_test_file_path}")).to exist
         expect(bundled_app("#{gem_name}/test/test_helper.rb")).to exist
       end
     end
@@ -722,7 +726,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "builds spec skeleton" do
-        expect(bundled_app("#{gem_name}/test/test_#{require_path}.rb")).to exist
+        expect(bundled_app("#{gem_name}/#{minitest_test_file_path}")).to exist
         expect(bundled_app("#{gem_name}/test/test_helper.rb")).to exist
       end
 
@@ -731,11 +735,15 @@ RSpec.describe "bundle gem" do
       end
 
       it "requires 'test_helper'" do
-        expect(bundled_app("#{gem_name}/test/test_#{require_path}.rb").read).to include(%(require "test_helper"))
+        expect(bundled_app("#{gem_name}/#{minitest_test_file_path}").read).to include(%(require "test_helper"))
+      end
+
+      it "defines valid test class name" do
+        expect(bundled_app("#{gem_name}/#{minitest_test_file_path}").read).to include(minitest_test_class_name)
       end
 
       it "creates a default test which fails" do
-        expect(bundled_app("#{gem_name}/test/test_#{require_path}.rb").read).to include("assert false")
+        expect(bundled_app("#{gem_name}/#{minitest_test_file_path}").read).to include("assert false")
       end
     end
 
@@ -1300,6 +1308,10 @@ RSpec.describe "bundle gem" do
 
     let(:require_relative_path) { "test_gem" }
 
+    let(:minitest_test_file_path) { "test/test_test_gem.rb" }
+
+    let(:minitest_test_class_name) { "class TestTestGem < Minitest::Test" }
+
     let(:flags) { nil }
 
     it "does not nest constants" do
@@ -1354,6 +1366,10 @@ RSpec.describe "bundle gem" do
     let(:require_path) { "test/gem" }
 
     let(:require_relative_path) { "gem" }
+
+    let(:minitest_test_file_path) { "test/test/test_gem.rb" }
+
+    let(:minitest_test_class_name) { "class Test::TestGem < Minitest::Test" }
 
     it "nests constants so they work" do
       bundle "gem #{gem_name}"
