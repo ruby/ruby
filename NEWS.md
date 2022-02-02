@@ -83,6 +83,7 @@ Note: We're only listing outstanding class updates.
     * reline 0.3.1
 *   The following bundled gems are updated.
     * net-imap 0.2.3
+    * rbs 2.1.0
     * typeprof 0.21.2
 *   The following default gems are now bundled gems.
 
