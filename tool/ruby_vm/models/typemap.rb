@@ -16,6 +16,7 @@ RubyVM::Typemap = {
   "CDHASH"         => %w[H TS_CDHASH],
   "IC"             => %w[K TS_IC],
   "IVC"            => %w[A TS_IVC],
+  "ICVARC"         => %w[J TS_ICVARC],
   "ID"             => %w[I TS_ID],
   "ISE"            => %w[T TS_ISE],
   "ISEQ"           => %w[S TS_ISEQ],
