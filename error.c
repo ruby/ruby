@@ -1350,6 +1350,13 @@ exc_full_message(int argc, VALUE *argv, VALUE exc)
     highlight = check_highlight_keyword(opt, 1);
     order = check_order_keyword(opt);
 
+    {
+        static VALUE kw_highlight;
+        if (!kw_highlight) kw_highlight = ID2SYM(rb_intern_const("highlight"));
+        if (NIL_P(opt)) opt = rb_hash_new();
+        rb_hash_aset(opt, kw_highlight, highlight);
+    }
+
     str = rb_str_new2("");
     errat = rb_get_backtrace(exc);
     emesg = rb_get_detailed_message(exc, opt);
