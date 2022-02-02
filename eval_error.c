@@ -189,7 +189,6 @@ rb_decorate_message(const VALUE eclass, const VALUE emesg, int highlight)
 		    einfo = tail;
                     write_warn2(str, "\n", 1);
 		    while (elen > 0) {
-                        write_warn2(str, "\n", 1);
 			tail = memchr(einfo, '\n', elen);
 			if (!tail || tail > einfo) {
 			    write_warn(str, bold);
