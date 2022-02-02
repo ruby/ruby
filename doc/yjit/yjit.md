@@ -89,7 +89,7 @@ make -j16 install
 Typically configure will choose default C compiler. To specify the C compiler, use
 ```
 # Choosing a specific c compiler
-export CC=/path/to/my/choosen/c/compiler
+export CC=/path/to/my/chosen/c/compiler
 ```
 before running `./configure`.
 
