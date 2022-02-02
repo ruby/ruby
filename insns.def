@@ -230,27 +230,27 @@ setinstancevariable
 /* Get value of class variable id of klass as val. */
 DEFINE_INSN
 getclassvariable
-(ID id, IVC ic)
+(ID id, ICVARC ic)
 ()
 (VALUE val)
 /* "class variable access from toplevel" warning can be hooked. */
 // attr bool leaf = false; /* has rb_warning() */
 {
     rb_control_frame_t *cfp = GET_CFP();
-    val = vm_getclassvariable(GET_ISEQ(), cfp, id, (ICVARC)ic);
+    val = vm_getclassvariable(GET_ISEQ(), cfp, id, ic);
 }
 
 /* Set value of class variable id of klass as val. */
 DEFINE_INSN
 setclassvariable
-(ID id, IVC ic)
+(ID id, ICVARC ic)
 (VALUE val)
 ()
 /* "class variable access from toplevel" warning can be hooked. */
 // attr bool leaf = false; /* has rb_warning() */
 {
     vm_ensure_not_refinement_module(GET_SELF());
-    vm_setclassvariable(GET_ISEQ(), GET_CFP(), id,  val, (ICVARC)ic);
+    vm_setclassvariable(GET_ISEQ(), GET_CFP(), id,  val, ic);
 }
 
 /* Get constant variable id. If klass is Qnil and allow_nil is Qtrue, constants
