@@ -2204,11 +2204,12 @@ heap_prepare(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap
 {
     GC_ASSERT(heap->free_pages == NULL);
 
-    if (is_lazy_sweeping(objspace)) {
-	gc_sweep_continue(objspace, size_pool, heap);
-    }
-    else if (is_incremental_marking(objspace)) {
+    if (is_incremental_marking(objspace)) {
 	gc_marks_continue(objspace, size_pool, heap);
+    }
+
+    if (heap->free_pages == NULL && is_lazy_sweeping(objspace)) {
+        gc_sweep_continue(objspace, size_pool, heap);
     }
 
     if (heap->free_pages == NULL &&
