@@ -385,11 +385,11 @@ Note: We're only listing outstanding class updates.
     * rake 13.0.6
     * test-unit 3.5.3
     * rexml 3.2.5
-    * rbs 2.0.0
-    * typeprof 0.21.1
+    * rbs 2.1.0
+    * typeprof 0.21.2
 *   The following default gems are now bundled gems.
     * net-ftp 0.1.3
-    * net-imap 0.2.2
+    * net-imap 0.2.3
     * net-pop 0.1.1
     * net-smtp 0.3.1
     * matrix 0.4.2
