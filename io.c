@@ -11449,7 +11449,7 @@ seek_before_access(VALUE argp)
  *    IO.read('t.txt', 700)
  *    # => "First line\r\nSecond line\r\n\r\nFourth line\r\nFifth line\r\n"
  *
- *  With arguments +length+ and +offset+, returns +length+ characters
+ *  With arguments +length+ and +offset+, returns +length+ bytes
  *  if available, beginning at the given +offset+:
  *
  *    IO.read('t.txt', 10, 2)   # => "rst line\nS"
@@ -11520,7 +11520,7 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
  *    IO.binread('t.rus', 5)
  *    # => "\xD1\x82\xD0\xB5\xD1"
  *
- *  With arguments +length+ and +offset+, returns +length+ characters
+ *  With arguments +length+ and +offset+, returns +length+ bytes
  *  if available, beginning at the given +offset+:
  *
  *    IO.binread('t.rus', 5, 2)   # => "\xD0\xB5\xD1\x81\xD1"
