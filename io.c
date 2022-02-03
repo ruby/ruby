@@ -11204,7 +11204,7 @@ io_s_foreach(VALUE v)
  *  The first argument must be a string;
  *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
  *
- *  - If so (and if +self+ is an instance of \IO),
+ *  - If so (and if +self+ is \IO),
  *    the rest of the string is a command to be executed as a subprocess.
  *  - Otherwise, the string is the path to a file.
  *
@@ -11212,7 +11212,7 @@ io_s_foreach(VALUE v)
  *  parses its $stdout into lines, as determined by the default line separator,
  *  and calls the block with each successive line:
  *
- *    File.foreach('| cat t.txt') {|line| p line }
+ *    IO.foreach('| cat t.txt') {|line| p line }
  *
  *  Output:
  *
@@ -11325,7 +11325,7 @@ io_s_readlines(VALUE v)
  *  The first argument must be a string;
  *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
  *
- *  - If so (and if +self+ is an instance of \IO),
+ *  - If so (and if +self+ is \IO),
  *    the rest of the string is a command to be executed as a subprocess.
  *  - Otherwise, the string is the path to a file.
  *
@@ -11425,7 +11425,7 @@ seek_before_access(VALUE argp)
  *  The first argument must be a string;
  *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
  *
- *  - If so (and if +self+ is an instance of \IO),
+ *  - If so (and if +self+ is \IO),
  *    the rest of the string is a command to be executed as a subprocess.
  *  - Otherwise, the string is the path to a file.
  *
@@ -11443,7 +11443,7 @@ seek_before_access(VALUE argp)
  *
  *  For both forms, command and path, the remaining arguments are the same.
  *
- *  With argument +length+, returns +length+ characters if available:
+ *  With argument +length+, returns +length+ bytes if available:
  *
  *    IO.read('t.txt', 7) # => "First l"
  *    IO.read('t.txt', 700)
@@ -11497,7 +11497,7 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
  *  The first argument must be a string;
  *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
  *
- *  - If so (and if +self+ is an instance of \IO),
+ *  - If so (and if +self+ is \IO),
  *    the rest of the string is a command to be executed as a subprocess.
  *  - Otherwise, the string is the path to a file.
  *
@@ -11515,7 +11515,7 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
  *
  *  For both forms, command and path, the remaining arguments are the same.
  *
- *  With argument +length+, returns +length+ characters if available:
+ *  With argument +length+, returns +length+ bytes if available:
  *
  *    IO.binread('t.rus', 5)
  *    # => "\xD1\x82\xD0\xB5\xD1"
