@@ -689,6 +689,9 @@ typedef struct rb_size_pool_struct {
 
     size_t allocatable_pages;
 
+    /* Basic statistics */
+    size_t total_allocated_pages;
+
 #if USE_RVARGC
     /* Sweeping statistics */
     size_t freed_slots;
@@ -716,6 +719,7 @@ typedef struct rb_objspace {
 	size_t allocated_size;
 	size_t allocations;
 #endif
+
     } malloc_params;
 
     struct {
@@ -805,7 +809,6 @@ typedef struct rb_objspace {
 	/* basic statistics */
 	size_t count;
 	size_t total_freed_objects;
-	size_t total_allocated_pages;
 	size_t total_freed_pages;
         uint64_t total_time_ns;
         struct timespec start_time;
@@ -1067,6 +1070,17 @@ heap_allocatable_slots(rb_objspace_t *objspace)
         rb_size_pool_t *size_pool = &size_pools[i];
         int slot_size_multiple = size_pool->slot_size / BASE_SLOT_SIZE;
         count += size_pool->allocatable_pages * HEAP_PAGE_OBJ_LIMIT / slot_size_multiple;
+    }
+    return count;
+}
+
+static inline size_t
+total_allocated_pages(rb_objspace_t *objspace)
+{
+    size_t count = 0;
+    for (int i = 0; i < SIZE_POOL_COUNT; i++) {
+        rb_size_pool_t *size_pool = &size_pools[i];
+        count += size_pool->total_allocated_pages;
     }
     return count;
 }
@@ -2042,7 +2056,7 @@ heap_page_allocate(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
     GC_ASSERT(heap_eden_total_pages(objspace) + heap_tomb_total_pages(objspace) == heap_allocated_pages - 1);
     GC_ASSERT(heap_allocated_pages <= heap_pages_sorted_length);
 
-    objspace->profile.total_allocated_pages++;
+    size_pool->total_allocated_pages++;
 
     if (heap_allocated_pages > heap_pages_sorted_length) {
 	rb_bug("heap_page_allocate: allocated(%"PRIdSIZE") > sorted(%"PRIdSIZE")",
@@ -10655,7 +10669,7 @@ gc_stat_internal(VALUE hash_or_sym)
     SET(heap_marked_slots, objspace->marked_slots);
     SET(heap_eden_pages, heap_eden_total_pages(objspace));
     SET(heap_tomb_pages, heap_tomb_total_pages(objspace));
-    SET(total_allocated_pages, objspace->profile.total_allocated_pages);
+    SET(total_allocated_pages, total_allocated_pages(objspace));
     SET(total_freed_pages, objspace->profile.total_freed_pages);
     SET(total_allocated_objects, objspace->total_allocated_objects);
     SET(total_freed_objects, objspace->profile.total_freed_objects);
@@ -10745,6 +10759,7 @@ enum gc_stat_heap_sym {
     gc_stat_heap_sym_heap_eden_slots,
     gc_stat_heap_sym_heap_tomb_pages,
     gc_stat_heap_sym_heap_tomb_slots,
+    gc_stat_heap_sym_total_allocated_pages,
     gc_stat_heap_sym_last
 };
 
@@ -10761,6 +10776,7 @@ setup_gc_stat_heap_symbols(void)
         S(heap_eden_slots);
         S(heap_tomb_pages);
         S(heap_tomb_slots);
+        S(total_allocated_pages);
 #undef S
     }
 }
@@ -10801,6 +10817,7 @@ gc_stat_heap_internal(int size_pool_idx, VALUE hash_or_sym)
     SET(heap_eden_slots, SIZE_POOL_EDEN_HEAP(size_pool)->total_slots);
     SET(heap_tomb_pages, SIZE_POOL_TOMB_HEAP(size_pool)->total_pages);
     SET(heap_tomb_slots, SIZE_POOL_TOMB_HEAP(size_pool)->total_slots);
+    SET(total_allocated_pages, size_pool->total_allocated_pages);
 #undef SET
 
     if (!NIL_P(key)) { /* matched key should return above */
