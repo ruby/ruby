@@ -405,6 +405,7 @@ much like POSIX bracket classes.
 * <tt>/\p{Blank}/</tt> - Space or tab
 * <tt>/\p{Cntrl}/</tt> - Control character
 * <tt>/\p{Digit}/</tt> - Digit
+* <tt>/\p{Emoji}/</tt> - Unicode emoji
 * <tt>/\p{Graph}/</tt> - Non-blank character (excludes spaces, control
   characters, and similar)
 * <tt>/\p{Lower}/</tt> - Lowercase alphabetical character
