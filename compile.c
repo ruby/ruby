@@ -9901,7 +9901,7 @@ insn_data_to_s_detail(INSN *iobj)
 		break;
 	      case TS_IC:	/* inline cache */
 	      case TS_IVC:	/* inline ivar cache */
-          case TS_ICVARC: /* inline cvar cache */
+	      case TS_ICVARC:   /* inline cvar cache */
 	      case TS_ISE:	/* inline storage entry */
 		rb_str_catf(str, "<ic:%d>", FIX2INT(OPERAND_AT(iobj, j)));
 		break;
