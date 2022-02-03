@@ -691,6 +691,7 @@ typedef struct rb_size_pool_struct {
 
     /* Basic statistics */
     size_t total_allocated_pages;
+    size_t total_freed_pages;
 
 #if USE_RVARGC
     /* Sweeping statistics */
@@ -809,7 +810,6 @@ typedef struct rb_objspace {
 	/* basic statistics */
 	size_t count;
 	size_t total_freed_objects;
-	size_t total_freed_pages;
         uint64_t total_time_ns;
         struct timespec start_time;
     } profile;
@@ -1081,6 +1081,17 @@ total_allocated_pages(rb_objspace_t *objspace)
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
         count += size_pool->total_allocated_pages;
+    }
+    return count;
+}
+
+static inline size_t
+total_freed_pages(rb_objspace_t *objspace)
+{
+    size_t count = 0;
+    for (int i = 0; i < SIZE_POOL_COUNT; i++) {
+        rb_size_pool_t *size_pool = &size_pools[i];
+        count += size_pool->total_freed_pages;
     }
     return count;
 }
@@ -1937,7 +1948,7 @@ static void
 heap_page_free(rb_objspace_t *objspace, struct heap_page *page)
 {
     heap_allocated_pages--;
-    objspace->profile.total_freed_pages++;
+    page->size_pool->total_freed_pages++;
     rb_aligned_free(GET_PAGE_BODY(page->start), HEAP_PAGE_SIZE);
     free(page);
 }
@@ -10670,7 +10681,7 @@ gc_stat_internal(VALUE hash_or_sym)
     SET(heap_eden_pages, heap_eden_total_pages(objspace));
     SET(heap_tomb_pages, heap_tomb_total_pages(objspace));
     SET(total_allocated_pages, total_allocated_pages(objspace));
-    SET(total_freed_pages, objspace->profile.total_freed_pages);
+    SET(total_freed_pages, total_freed_pages(objspace));
     SET(total_allocated_objects, objspace->total_allocated_objects);
     SET(total_freed_objects, objspace->profile.total_freed_objects);
     SET(malloc_increase_bytes, malloc_increase);
@@ -10760,6 +10771,7 @@ enum gc_stat_heap_sym {
     gc_stat_heap_sym_heap_tomb_pages,
     gc_stat_heap_sym_heap_tomb_slots,
     gc_stat_heap_sym_total_allocated_pages,
+    gc_stat_heap_sym_total_freed_pages,
     gc_stat_heap_sym_last
 };
 
@@ -10777,6 +10789,7 @@ setup_gc_stat_heap_symbols(void)
         S(heap_tomb_pages);
         S(heap_tomb_slots);
         S(total_allocated_pages);
+        S(total_freed_pages);
 #undef S
     }
 }
@@ -10818,6 +10831,7 @@ gc_stat_heap_internal(int size_pool_idx, VALUE hash_or_sym)
     SET(heap_tomb_pages, SIZE_POOL_TOMB_HEAP(size_pool)->total_pages);
     SET(heap_tomb_slots, SIZE_POOL_TOMB_HEAP(size_pool)->total_slots);
     SET(total_allocated_pages, size_pool->total_allocated_pages);
+    SET(total_freed_pages, size_pool->total_freed_pages);
 #undef SET
 
     if (!NIL_P(key)) { /* matched key should return above */
