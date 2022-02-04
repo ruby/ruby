@@ -11602,7 +11602,7 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *  - Otherwise, the string is the path to a file.
  *
  *  With argument +command+ given, executes the command in a shell,
- *  passes +string+ through standard input, writes its output to $stdout,
+ *  passes +data+ through standard input, writes its output to $stdout,
  *  and returns the length of the given +data+:
  *
  *    IO.write('| cat t.txt', 'abd') # => 3
@@ -11657,7 +11657,7 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
  *    IO.binwrite(path, string, offset = 0)    -> integer
  *
  *  Behaves like IO.write, except that the stream is opened in binary mode
- *  with ASCII-8BIT encoding).
+ *  with ASCII-8BIT encoding.
  *
  */
 
@@ -12682,7 +12682,7 @@ rb_io_external_encoding(VALUE io)
 
 /*
  *  call-seq:
- *    internal_encoding -> encoding or nil0
+ *    internal_encoding -> encoding or nil
  *
  *  Returns the Encoding object that represents the encoding of the internal string,
  *  if conversion is specified,
