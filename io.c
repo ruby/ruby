@@ -11605,17 +11605,11 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *  passes +data+ through standard input, writes its output to $stdout,
  *  and returns the length of the given +data+:
  *
- *    IO.write('| cat t.txt -', 'abc') # => 3
+ *    IO.write('| cat', 'Hello World!') # => 12
  *
- *  The output has five lines from <tt>t.txt</tt> (third line empty)
- *  and one more line, +abc+, from $stdin):
+ *  Output:
  *
- *    First line
- *    Second line
- *
- *    Third line
- *    Fourth line
- *    abc
+ *    Hello World!
  *
  *  With argument +path+ given, writes the given +data+ to the file
  *  at that path:
