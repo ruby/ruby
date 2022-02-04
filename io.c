@@ -11602,7 +11602,8 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *  - Otherwise, the string is the path to a file.
  *
  *  With argument +command+ given, executes the command in a shell,
- *  writes its output to $stdout, and returns the length of the given +data+:
+ *  passes +string+ through standard input, writes its output to $stdout,
+ *  and returns the length of the given +data+:
  *
  *    IO.write('| cat t.txt', 'abd') # => 3
  *
