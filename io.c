@@ -12599,15 +12599,13 @@ copy_stream_finalize(VALUE arg)
  *  If only arguments +src+ and +dst+ are given,
  *  the entire source stream is copied:
  *
- *    # File to file.
+ *    # Paths.
  *    IO.copy_stream('t.txt', 't.tmp')  # => 47
  *
- *    # IO to IO.
- *    src_fd = IO.sysopen('t.txt', 'r') # => 6
- *    src_io = IO.new(src_fd)           # => #<IO:fd 6>
- *    dst_fd = IO.sysopen('t.tmp', 'w') # => 7
- *    dst_io = IO.new(dst_fd)           # => #<IO:fd 7>
- *    IO.copy_stream(src_io, dst_io)    # => 47
+ *    # IOs (recall that a File is also an IO).
+ *    src_io = File.open('t.txt', 'r') # => #<File:t.txt>
+ *    dst_io = File.open('t.tmp', 'w') # => #<File:t.tmp>
+ *    IO.copy_stream(src_io, dst_io)   # => 47
  *
  *  With argument +src_length+ a non-negative integer,
  *  no more than that many bytes are copied:
