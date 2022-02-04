@@ -11416,8 +11416,8 @@ seek_before_access(VALUE argp)
 
 /*
  *  call-seq:
- *     IO.read(command, length = nil, offset = 0) -> string or nil
- *     IO.read(path, length = nil, offset = 0)    -> string or nil
+ *     IO.read(command, length = nil, offset = 0, **opts) -> string or nil
+ *     IO.read(path, length = nil, offset = 0, **opts)    -> string or nil
  *
  *  Opens the stream, reads and returns some or all of its content,
  *  and closes the stream; returns +nil+ if no bytes were read.
@@ -11455,6 +11455,9 @@ seek_before_access(VALUE argp)
  *    IO.read('t.txt', 10, 2)   # => "rst line\nS"
  *    IO.read('t.txt', 10, 200) # => nil
  *
+ *  The optional keyword arguments +opts+ may be open options;
+ *  see {\IO Open Options}[#class-IO-label-Open+Options]
+ *
  */
 
 static VALUE
@@ -11488,7 +11491,7 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
  *     IO.binread(path, length = nil, offset = 0)    -> string or nil
  *
  *  Behaves like IO.read, except that the stream is opened in binary mode
- *  (mode <tt>'rb:ASCII-8BIT'</tt>).
+ *  with ASCII-8BIT encoding.
  *
  */
 
@@ -11585,10 +11588,10 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
 
 /*
  *  call-seq:
- *    IO.write(command, string)             -> integer
- *    IO.write(path, string, offset = 0)    -> integer
+ *    IO.write(command, data, **opts)             -> integer
+ *    IO.write(path, data, offset = 0, **opts)    -> integer
  *
- *  Opens the stream, writes the given +string+ to it,
+ *  Opens the stream, writes the given +data+ to it,
  *  and closes the stream; returns the number of bytes written.
  *
  *  The first argument must be a string;
@@ -11599,11 +11602,11 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *  - Otherwise, the string is the path to a file.
  *
  *  With argument +command+ given, executes the command in a shell,
- *  writes its output to $stdout, and returns the length of the given +string+:
+ *  writes its output to $stdout, and returns the length of the given +data+:
  *
  *    IO.write('| cat t.txt', 'abd') # => 3
  *
- *  Output:
+ *  Output (the third line is blank):
  *
  *    First line
  *    Second line
@@ -11611,7 +11614,7 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *    Third line
  *    Fourth line
  *
- *  With argument +path+ given, writes the given +string+ to the file
+ *  With argument +path+ given, writes the given +data+ to the file
  *  at that path:
  *
  *    IO.write('t.tmp', 'abc')    # => 3
@@ -11630,10 +11633,14 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *    IO.write('t.tmp', '012', 2) # => 3
  *    File.read('t.tmp')          # => "ab012f"
  *
- *  If +offset+ is outside the file content, the file is partly filled:
+ *  If +offset+ is outside the file content,
+ *  the file is padded with null characters <tt>"\u0000"</tt>:
  *
  *    IO.write('t.tmp', 'xyz', 10) # => 3
  *    File.read('t.tmp')           # => "ab012f\u0000\u0000\u0000\u0000xyz"
+ *
+ *  The optional keyword arguments +opts+ may be open options;
+ *  see {\IO Open Options}[#class-IO-label-Open+Options]
  *
  */
 
@@ -11649,7 +11656,7 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
  *    IO.binwrite(path, string, offset = 0)    -> integer
  *
  *  Behaves like IO.write, except that the stream is opened in binary mode
- *  (mode <tt>'wb:ASCII-8BIT'</tt>).
+ *  with ASCII-8BIT encoding).
  *
  */
 
@@ -12568,21 +12575,19 @@ copy_stream_finalize(VALUE arg)
  *    IO.copy_stream(src, dst, src_length = nil, src_offset = 0) -> integer
  *
  *  Copies from the given +src+ to the given +dst+,
- *  returning the number of bytes copied:
+ *  returning the number of bytes copied.
  *
- *  - The given +src+ must be one of these:
+ *  - The given +src+ must be one of the following:
  *
  *    - The path to a readable file, from which source data is to be read.
  *    - An \IO-like object, opened for reading and capable of responding
- *      to method +:readpartial+ or method +:read+;
- *      the position of the stream is not disturbed (see IO#pos).
+ *      to method +:readpartial+ or method +:read+.
  *
- *  - The given +dst+ must be one of these:
+ *  - The given +dst+ must be one of the following:
  *
  *    - The path to a writable file, to which data is to be written.
  *    - An \IO-like object, opened for writing and capable of responding
- *      to method +:write+;
- *      the position of the stream is not disturbed (see IO#pos).
+ *      to method +:write+.
  *
  *  The examples here use file <tt>t.txt</tt> as source:
  *
