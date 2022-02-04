@@ -11416,8 +11416,8 @@ seek_before_access(VALUE argp)
 
 /*
  *  call-seq:
- *     IO.read(command, length = nil, offset = 0, **opts) -> string or nil
- *     IO.read(path, length = nil, offset = 0, **opts)    -> string or nil
+ *     IO.read(command, length = nil, offset = 0) -> string or nil
+ *     IO.read(path, length = nil, offset = 0)    -> string or nil
  *
  *  Opens the stream, reads and returns some or all of its content,
  *  and closes the stream; returns +nil+ if no bytes were read.
@@ -11455,9 +11455,6 @@ seek_before_access(VALUE argp)
  *    IO.read('t.txt', 10, 2)   # => "rst line\nS"
  *    IO.read('t.txt', 10, 200) # => nil
  *
- *  The optional keyword arguments +opts+ may be open options;
- *  see {\IO Open Options}[#class-IO-label-Open+Options]
- *
  */
 
 static VALUE
@@ -11490,44 +11487,8 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
  *     IO.binread(command, length = nil, offset = 0) -> string or nil
  *     IO.binread(path, length = nil, offset = 0)    -> string or nil
  *
- *  Opens the stream in binary mode (mode <tt>'rb:ASCII-8BIT'</tt>),
- *  reads and returns some or all of its content,
- *  and closes the stream; returns +nil+ if no bytes were read.
- *
- *  The first argument must be a string;
- *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
- *
- *  - If so (and if +self+ is \IO),
- *    the rest of the string is a command to be executed as a subprocess.
- *  - Otherwise, the string is the path to a file.
- *
- *  With only argument +command+ given, executes the command in a shell,
- *  returns its entire $stdout:
- *
- *    IO.binread('| cat t.rus')
- *    # => "\xD1\x82\xD0\xB5\xD1\x81\xD1\x82"
- *
- *  With only argument +path+ given, returns the entire content
- *  of the file at the given +path+:
- *
- *    IO.binread("t.rus")
- *    # => "\xD1\x82\xD0\xB5\xD1\x81\xD1\x82"
- *
- *  For both forms, command and path, the remaining arguments are the same.
- *
- *  With argument +length+, returns +length+ bytes if available:
- *
- *    IO.binread('t.rus', 5)
- *    # => "\xD1\x82\xD0\xB5\xD1"
- *
- *  With arguments +length+ and +offset+, returns +length+ bytes
- *  if available, beginning at the given +offset+:
- *
- *    IO.binread('t.rus', 5, 2)   # => "\xD0\xB5\xD1\x81\xD1"
- *    IO.binread('t.rus', 5, 200) # => nil
- *
- *  The optional keyword arguments +opts+ may be open options;
- *  see {\IO Open Options}[#class-IO-label-Open+Options]
+ *  Behaves like IO.read, except that the stream is opened in binary mode
+ *  (mode <tt>'rb:ASCII-8BIT'</tt>).
  *
  */
 
@@ -11624,56 +11585,56 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
 
 /*
  *  call-seq:
- *     IO.write(name, string [, offset])           -> integer
- *     IO.write(name, string [, offset] [, opt])   -> integer
- *     File.write(name, string [, offset])         -> integer
- *     File.write(name, string [, offset] [, opt]) -> integer
+ *    IO.write(command, string)             -> integer
+ *    IO.write(path, string, offset = 0)    -> integer
  *
- *  Opens the file, optionally seeks to the given <i>offset</i>, writes
- *  <i>string</i>, then returns the length written.  #write ensures the
- *  file is closed before returning.  If <i>offset</i> is not given in
- *  write mode, the file is truncated.  Otherwise, it is not truncated.
+ *  Opens the stream, writes the given +string+ to it,
+ *  and closes the stream; returns the number of bytes written.
  *
- *  If +name+ starts with a pipe character (<code>"|"</code>) and the receiver
- *  is the IO class, a subprocess is created in the same way as Kernel#open,
- *  and its output is printed to the standard output.
- *  Consider to use File.write to disable the behavior of subprocess invocation.
+ *  The first argument must be a string;
+ *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
  *
- *    File.write("testfile", "0123456789", 20)  #=> 10
- *    # File could contain:  "This is line one\nThi0123456789two\nThis is line three\nAnd so on...\n"
- *    File.write("testfile", "0123456789")      #=> 10
- *    # File would now read: "0123456789"
- *    IO.write("|tr a-z A-Z", "abc")            #=> 3
- *    # Prints "ABC" to the standard output
+ *  - If so (and if +self+ is an instance of \IO),
+ *    the rest of the string is a command to be executed as a subprocess.
+ *  - Otherwise, the string is the path to a file.
  *
- *  If the last argument is a hash, it specifies options for the internal
- *  open().  It accepts the following keys:
+ *  With argument +command+ given, executes the command in a shell,
+ *  writes its output to $stdout, and returns the length of the given +string+:
  *
- *  :encoding::
- *    string or encoding
+ *    IO.write('| cat t.txt', 'abd') # => 3
  *
- *    Specifies the encoding of the read string.
- *    See Encoding.aliases for possible encodings.
+ *  Output:
  *
- *  :mode::
- *    string or integer
+ *    First line
+ *    Second line
  *
- *    Specifies the <i>mode</i> argument for open().  It must start
- *    with "w", "a", or "r+", otherwise it will cause an error.
- *    See IO.new for the list of possible modes.
+ *    Third line
+ *    Fourth line
  *
- *  :perm::
- *    integer
+ *  With argument +path+ given, writes the given +string+ to the file
+ *  at that path:
  *
- *    Specifies the <i>perm</i> argument for open().
+ *    IO.write('t.tmp', 'abc')    # => 3
+ *    File.read('t.tmp')          # => "abc"
  *
- *  :open_args::
- *    array
+ *  If +offset+ is zero (the default), the file is overwritten:
  *
- *    Specifies arguments for open() as an array.
- *    This key can not be used in combination with other keys.
+ *    IO.write('t.tmp', 'A')      # => 1
+ *    File.read('t.tmp')          # => "A"
  *
- *  See also IO.read for details about +name+ and open_args.
+ *  If +offset+ in within the file content, the file is partly overwritten:
+ *
+ *    IO.write('t.tmp', 'abcdef') # => 3
+ *    File.read('t.tmp')          # => "abcdef"
+ *    # Offset within content.
+ *    IO.write('t.tmp', '012', 2) # => 3
+ *    File.read('t.tmp')          # => "ab012f"
+ *
+ *  If +offset+ is outside the file content, the file is partly filled:
+ *
+ *    IO.write('t.tmp', 'xyz', 10) # => 3
+ *    File.read('t.tmp')           # => "ab012f\u0000\u0000\u0000\u0000xyz"
+ *
  */
 
 static VALUE
@@ -11684,20 +11645,12 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     IO.binwrite(name, string, [offset])               -> integer
- *     IO.binwrite(name, string, [offset], open_args)    -> integer
- *     File.binwrite(name, string, [offset])             -> integer
- *     File.binwrite(name, string, [offset], open_args)  -> integer
+ *    IO.binwrite(command, string, offset = 0) -> integer
+ *    IO.binwrite(path, string, offset = 0)    -> integer
  *
- *  Same as IO.write except opening the file in binary mode and
- *  ASCII-8BIT encoding (<code>"wb:ASCII-8BIT"</code>).
+ *  Behaves like IO.write, except that the stream is opened in binary mode
+ *  (mode <tt>'wb:ASCII-8BIT'</tt>).
  *
- *  If +name+ starts with a pipe character (<code>"|"</code>) and the receiver
- *  is the IO class, a subprocess is created in the same way as Kernel#open,
- *  and its output is printed to the standard output.
- *  Consider to use File.binwrite to disable the behavior of subprocess invocation.
- *
- *  See also IO.read for details about +name+ and open_args.
  */
 
 static VALUE
@@ -12612,34 +12565,55 @@ copy_stream_finalize(VALUE arg)
 
 /*
  *  call-seq:
- *     IO.copy_stream(src, dst)
- *     IO.copy_stream(src, dst, copy_length)
- *     IO.copy_stream(src, dst, copy_length, src_offset)
+ *    IO.copy_stream(src, dst, src_length = nil, src_offset = 0) -> integer
  *
- *  IO.copy_stream copies <i>src</i> to <i>dst</i>.
- *  <i>src</i> and <i>dst</i> is either a filename or an IO-like object.
- *  IO-like object for <i>src</i> should have #readpartial or #read
- *  method.  IO-like object for <i>dst</i> should have #write method.
- *  (Specialized mechanisms, such as sendfile system call, may be used
- *  on appropriate situation.)
+ *  Copies from the given +src+ to the given +dst+,
+ *  returning the number of bytes copied:
  *
- *  This method returns the number of bytes copied.
+ *  - The given +src+ must be one of these:
  *
- *  If optional arguments are not given,
- *  the start position of the copy is
- *  the beginning of the filename or
- *  the current file offset of the IO.
- *  The end position of the copy is the end of file.
+ *    - The path to a readable file, from which source data is to be read.
+ *    - An \IO-like object, opened for reading and capable of responding
+ *      to method +:readpartial+ or method +:read+;
+ *      the position of the stream is not disturbed (see IO#pos).
  *
- *  If <i>copy_length</i> is given,
- *  No more than <i>copy_length</i> bytes are copied.
+ *  - The given +dst+ must be one of these:
  *
- *  If <i>src_offset</i> is given,
- *  it specifies the start position of the copy.
+ *    - The path to a writable file, to which data is to be written.
+ *    - An \IO-like object, opened for writing and capable of responding
+ *      to method +:write+;
+ *      the position of the stream is not disturbed (see IO#pos).
  *
- *  When <i>src_offset</i> is specified and
- *  <i>src</i> is an IO,
- *  IO.copy_stream doesn't move the current file offset.
+ *  The examples here use file <tt>t.txt</tt> as source:
+ *
+ *    File.read('t.txt')
+ *    # => "First line\nSecond line\n\nThird line\nFourth line\n"
+ *    File.read('t.txt').size # => 47
+ *
+ *  If only arguments +src+ and +dst+ are given,
+ *  the entire source stream is copied:
+ *
+ *    # File to file.
+ *    IO.copy_stream('t.txt', 't.tmp')  # => 47
+ *
+ *    # IO to IO.
+ *    src_fd = IO.sysopen('t.txt', 'r') # => 6
+ *    src_io = IO.new(src_fd)           # => #<IO:fd 6>
+ *    dst_fd = IO.sysopen('t.tmp', 'w') # => 7
+ *    dst_io = IO.new(dst_fd)           # => #<IO:fd 7>
+ *    IO.copy_stream(src_io, dst_io)    # => 47
+ *
+ *  With argument +src_length+ a non-negative integer,
+ *  no more than that many bytes are copied:
+ *
+ *    IO.copy_stream('t.txt', 't.tmp', 10) # => 10
+ *    File.read('t.tmp')                   # => "First line"
+ *
+ *  With argument +src_offset+ also given,
+ *  the source stream is read beginning at that offset:
+ *
+ *    IO.copy_stream('t.txt', 't.tmp', 11, 11) # => 11
+ *    IO.read('t.tmp')                         # => "Second line"
  *
  */
 static VALUE
@@ -12675,10 +12649,13 @@ rb_io_s_copy_stream(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     io.external_encoding   -> encoding
+ *    external_encoding -> encoding or nil
  *
- *  Returns the Encoding object that represents the encoding of the file.
- *  If _io_ is in write mode and no encoding is specified, returns +nil+.
+ *  Returns the Encoding object that represents the encoding of the stream,
+ *  or +nil+ if the stream is in write mode and no encoding is specified.
+ *
+ *  See {Encodings}[#class-IO-label-Encodings].
+ *
  */
 
 static VALUE
@@ -12699,10 +12676,14 @@ rb_io_external_encoding(VALUE io)
 
 /*
  *  call-seq:
- *     io.internal_encoding   -> encoding
+ *    internal_encoding -> encoding or nil0
  *
- *  Returns the Encoding of the internal string if conversion is
- *  specified.  Otherwise returns +nil+.
+ *  Returns the Encoding object that represents the encoding of the internal string,
+ *  if conversion is specified,
+ *  or +nil+ otherwise.
+ *
+ *  See {Encodings}[#class-IO-label-Encodings].
+ *
  */
 
 static VALUE
@@ -12716,21 +12697,26 @@ rb_io_internal_encoding(VALUE io)
 
 /*
  *  call-seq:
- *     io.set_encoding(ext_enc)                -> io
- *     io.set_encoding("ext_enc:int_enc")      -> io
- *     io.set_encoding(ext_enc, int_enc)       -> io
- *     io.set_encoding("ext_enc:int_enc", opt) -> io
- *     io.set_encoding(ext_enc, int_enc, opt)  -> io
+ *    set_encoding(ext_enc)                   -> self
+ *    set_encoding(ext_enc, int_enc, **opts)  -> self
+ *    set_encoding('ext_enc:int_enc', **opts) -> self
  *
- *  If single argument is specified, read string from io is tagged
- *  with the encoding specified.  If encoding is a colon separated two
- *  encoding names "A:B", the read string is converted from encoding A
- *  (external encoding) to encoding B (internal encoding), then tagged
- *  with B.  If two arguments are specified, those must be encoding
- *  objects or encoding names, and the first one is the external encoding, and the
- *  second one is the internal encoding.
- *  If the external encoding and the internal encoding is specified,
- *  optional hash argument specify the conversion option.
+ *  See {Encodings}[#class-IO-label-Encodings].
+ *
+ *  Argument +ext_enc+, if given, must be an Encoding object;
+ *  it is assigned as the encoding for the stream.
+ *
+ *  Argument +int_enc+, if given, must be an Encoding object;
+ *  it is assigned as the encoding for the internal string.
+ *
+ *  Argument <tt>'ext_enc:int_enc'</tt>, if given, is a string
+ *  containing two colon-separated encoding names;
+ *  corresponding Encoding objects are assigned as the external
+ *  and internal encodings for the stream.
+ *
+ *  The optional keyword arguments +opts+ may be encoding options;
+ *  see String#encode.
+ *
  */
 
 static VALUE
