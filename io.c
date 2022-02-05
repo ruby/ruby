@@ -7755,7 +7755,7 @@ check_pipe_command(VALUE filename_or_command)
  *  <b>File Opened</b>
 
  *  If +path+ does _not_ start with a pipe character (<tt>'|'</tt>),
- *  a file stream is opened with <tt>File.open(path, mode, perm, open_opts)</tt>.
+ *  a file stream is opened with <tt>File.open(path, mode, perm, **open_opts)</tt>.
  *
  *  With no block given, file stream is returned:
  *
@@ -9715,7 +9715,7 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *
  *  Returns an array containing the lines returned by calling
  *  Kernel#gets until the end-of-file is reached;
- *  (see {Lines}[#class-IO-label-Lines]).
+ *  (see {Lines}[IO.html#class-IO-label-Lines]).
  *
  *  With only string argument +sep+ given,
  *  returns the remaining lines as determined by line separator +sep+,
