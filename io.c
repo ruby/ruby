@@ -3992,7 +3992,7 @@ rb_io_gets_internal(VALUE io)
  *    gets(sep, limit, **line_opts) -> string or nil
  *
  *  Reads and returns a line from the stream
- *  (see {Lines}[#class-IO-label-Lines])
+ *  (see {Lines}[#class-IO-label-Lines]);
  *  assigns the return value to <tt>$_</tt>.
  *
  *  With no arguments given, returns the next line
@@ -4220,7 +4220,8 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *    each_line(sep, limit, **line_opts) {|line| ... } -> self
  *    each_line                                   -> enumerator
  *
- *  Calls the block with each remaining line read from the stream;
+ *  Calls the block with each remaining line read from the stream
+ *  (see {Lines}[#class-IO-label-Lines]);
  *  does nothing if already at end-of-file;
  *  returns +self+.
  *
@@ -7636,8 +7637,8 @@ rb_open_file(int argc, const VALUE *argv, VALUE io)
  *  Document-method: File::open
  *
  *  call-seq:
- *    File.open(path, mode = 'r', perm = 0666, **opts) -> file
- *    File.open(path, mode = 'r', perm = 0666, **opts) {|f| ... } -> object
+ *    File.open(path, mode = 'r', perm = 0666, **open_opts) -> file
+ *    File.open(path, mode = 'r', perm = 0666, **open_opts) {|f| ... } -> object
  *
  *  Creates a new \File object, via File.new with the given arguments.
  *
@@ -7652,8 +7653,8 @@ rb_open_file(int argc, const VALUE *argv, VALUE io)
  *  Document-method: IO::open
  *
  *  call-seq:
- *    IO.open(fd, mode = 'r', **opts)             -> io
- *    IO.open(fd, mode = 'r', **opts) {|io| ... } -> object
+ *    IO.open(fd, mode = 'r', **open_opts)             -> io
+ *    IO.open(fd, mode = 'r', **open_opts) {|io| ... } -> object
  *
  *  Creates a new \IO object, via IO.new with the given arguments.
  *
@@ -7738,8 +7739,8 @@ check_pipe_command(VALUE filename_or_command)
 
 /*
  *  call-seq:
- *    open(path, mode = 'r', perm = 0666, **opts)             -> io or nil
- *    open(path, mode = 'r', perm = 0666, **opts) {|io| ... } -> obj
+ *    open(path, mode = 'r', perm = 0666, **open_opts)             -> io or nil
+ *    open(path, mode = 'r', perm = 0666, **open_opts) {|io| ... } -> obj
  *
  *  Creates an IO object connected to the given stream, file, or subprocess.
  *
@@ -7754,7 +7755,7 @@ check_pipe_command(VALUE filename_or_command)
  *  <b>File Opened</b>
 
  *  If +path+ does _not_ start with a pipe character (<tt>'|'</tt>),
- *  a file stream is opened with <tt>File.open(path, mode, perm, opts)</tt>.
+ *  a file stream is opened with <tt>File.open(path, mode, perm, open_opts)</tt>.
  *
  *  With no block given, file stream is returned:
  *
@@ -7998,7 +7999,7 @@ rb_freopen(VALUE fname, const char *mode, FILE *fp)
 /*
  *  call-seq:
  *    reopen(other_io)                 -> self
- *    reopen(path, mode = 'r', **opts) -> self
+ *    reopen(path, mode = 'r', **open_opts) -> self
  *
  *  Reassociates the stream with another stream,
  *  which may be of a different class.
@@ -8019,6 +8020,9 @@ rb_freopen(VALUE fname, const char *mode, FILE *fp)
  *
  *    $stdin.reopen('t.txt')
  *    $stdout.reopen('t.tmp', 'w')
+ *
+ *  The optional keyword arguments +open_opts+ may be open options;
+ *  see {\IO Open Options}[#class-IO-label-Open+Options]
  *
  */
 
@@ -8917,7 +8921,7 @@ rb_io_make_open_file(VALUE obj)
 
 /*
  *  call-seq:
- *    IO.new(fd, mode = 'r', **opts) -> io
+ *    IO.new(fd, mode = 'r', **open_opts) -> io
  *
  *  Creates and returns a new \IO object (file stream) from a file descriptor.
  *
@@ -8937,7 +8941,7 @@ rb_io_make_open_file(VALUE obj)
  *    IO.new(fd, 'w')         # => #<IO:fd 3>
  *    IO.new(fd, File::WRONLY) # => #<IO:fd 3>
  *
- *  Optional argument +opts+ must specify valid open options
+ *  Optional argument +open_opts+ must specify valid open options
  *  see {IO Open Options}[#class-IO-label-Open+Options]:
  *
  *    IO.new(fd, internal_encoding: nil) # => #<IO:fd 3>
@@ -9049,7 +9053,7 @@ rb_io_set_encoding_by_bom(VALUE io)
 
 /*
  *  call-seq:
- *    File.new(path, mode = 'r', perm = 0666, **opts) -> file
+ *    File.new(path, mode = 'r', perm = 0666, **open_opts) -> file
  *
  *  Opens the file at the given +path+ according to the given +mode+;
  *  creates and returns a new \File object for that file.
@@ -9075,7 +9079,7 @@ rb_io_set_encoding_by_bom(VALUE io)
  *    File.new('t.tmp', File::CREAT, 0644)
  *    File.new('t.tmp', File::CREAT, 0444)
  *
- *  Optional argument +opts+ must specify valid open options
+ *  Optional argument +open_opts+ must specify valid open options
  *  see {IO Open Options}[#class-IO-label-Open+Options]:
  *
  *    File.new('t.tmp', autoclose: true)
@@ -9118,7 +9122,7 @@ rb_io_s_new(int argc, VALUE *argv, VALUE klass)
 
 /*
  *  call-seq:
- *    IO.for_fd(fd, mode = 'r', **opts) -> io
+ *    IO.for_fd(fd, mode = 'r', **open_opts) -> io
  *
  *  Synonym for IO.new.
  *
@@ -9710,7 +9714,8 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *    readlines(sep, limit, **line_opts) -> array
  *
  *  Returns an array containing the lines returned by calling
- *  Kernel#gets until the end-of-file is reached.
+ *  Kernel#gets until the end-of-file is reached;
+ *  (see {Lines}[#class-IO-label-Lines]).
  *
  *  With only string argument +sep+ given,
  *  returns the remaining lines as determined by line separator +sep+,
@@ -11416,8 +11421,8 @@ seek_before_access(VALUE argp)
 
 /*
  *  call-seq:
- *     IO.read(command, length = nil, offset = 0, **opts) -> string or nil
- *     IO.read(path, length = nil, offset = 0, **opts)    -> string or nil
+ *     IO.read(command, length = nil, offset = 0, **open_opts) -> string or nil
+ *     IO.read(path, length = nil, offset = 0, **open_opts)    -> string or nil
  *
  *  Opens the stream, reads and returns some or all of its content,
  *  and closes the stream; returns +nil+ if no bytes were read.
@@ -11455,7 +11460,7 @@ seek_before_access(VALUE argp)
  *    IO.read('t.txt', 10, 2)   # => "rst line\nS"
  *    IO.read('t.txt', 10, 200) # => nil
  *
- *  The optional keyword arguments +opts+ may be open options;
+ *  The optional keyword arguments +open_opts+ may be open options;
  *  see {\IO Open Options}[#class-IO-label-Open+Options]
  *
  */
@@ -11588,8 +11593,8 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
 
 /*
  *  call-seq:
- *    IO.write(command, data, **opts)             -> integer
- *    IO.write(path, data, offset = 0, **opts)    -> integer
+ *    IO.write(command, data, **open_opts)             -> integer
+ *    IO.write(path, data, offset = 0, **open_opts)    -> integer
  *
  *  Opens the stream, writes the given +data+ to it,
  *  and closes the stream; returns the number of bytes written.
@@ -11636,7 +11641,7 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *    IO.write('t.tmp', 'xyz', 10) # => 3
  *    File.read('t.tmp')           # => "ab012f\u0000\u0000\u0000\u0000xyz"
  *
- *  The optional keyword arguments +opts+ may be open options;
+ *  The optional keyword arguments +open_opts+ may be open options;
  *  see {\IO Open Options}[#class-IO-label-Open+Options]
  *
  */
@@ -12698,8 +12703,8 @@ rb_io_internal_encoding(VALUE io)
 /*
  *  call-seq:
  *    set_encoding(ext_enc)                   -> self
- *    set_encoding(ext_enc, int_enc, **opts)  -> self
- *    set_encoding('ext_enc:int_enc', **opts) -> self
+ *    set_encoding(ext_enc, int_enc, **enc_opts)  -> self
+ *    set_encoding('ext_enc:int_enc', **enc_opts) -> self
  *
  *  See {Encodings}[#class-IO-label-Encodings].
  *
@@ -12714,7 +12719,7 @@ rb_io_internal_encoding(VALUE io)
  *  corresponding Encoding objects are assigned as the external
  *  and internal encodings for the stream.
  *
- *  The optional keyword arguments +opts+ may be encoding options;
+ *  The optional keyword arguments +enc_opts+ may be encoding options;
  *  see String#encode.
  *
  */
