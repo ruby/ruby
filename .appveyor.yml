@@ -70,7 +70,11 @@ for:
   build_script:
     - cd %APPVEYOR_BUILD_FOLDER%
     - cd %Platform%-mswin_%vs%
-    - ..\win32\configure.bat --without-ext=+,dbm,gdbm,readline --with-opt-dir=/usr/local --with-openssl-dir=%OPENSSL_DIR:\=/%
+    - >-
+      ..\win32\configure.bat
+      --without-ext=+,dbm,gdbm,readline
+      --with-opt-dir=/usr/local
+      --with-openssl-dir=%OPENSSL_DIR:\=/%
     - nmake -l
     - nmake install-nodoc
     - \usr\bin\ruby -v -e "p :locale => Encoding.find('locale'), :filesystem => Encoding.find('filesystem')"
@@ -80,9 +84,27 @@ for:
     - set /a JOBS=%NUMBER_OF_PROCESSORS%
     - nmake -l "TESTOPTS=-v -q" btest
     - nmake -l "TESTOPTS=-v -q" test-basic
-    - nmake -l "TESTOPTS=-v --timeout-scale=3.0 --excludes=../test/excludes/_appveyor -j%JOBS% --exclude readline --exclude win32ole --exclude test_bignum --exclude test_syntax --exclude test_open-uri --exclude test_bundled_ca" test-all
+    - >-
+      nmake -l "TESTOPTS=-v --timeout-scale=3.0
+      --excludes=../test/excludes/_appveyor -j%JOBS%
+      --exclude readline
+      --exclude win32ole
+      --exclude test_bignum
+      --exclude test_syntax
+      --exclude test_open-uri
+      --exclude test_bundled_ca
+      " test-all
     # separately execute tests without -j which may crash worker with -j.
-    - nmake -l "TESTOPTS=-v --timeout-scale=3.0 --excludes=../test/excludes/_appveyor" test-all TESTS="../test/win32ole ../test/ruby/test_bignum.rb ../test/ruby/test_syntax.rb ../test/open-uri/test_open-uri.rb ../test/rubygems/test_bundled_ca.rb"
+    - >-
+      nmake -l
+      "TESTOPTS=-v --timeout-scale=3.0 --excludes=../test/excludes/_appveyor"
+      TESTS="
+      ../test/win32ole
+      ../test/ruby/test_bignum.rb
+      ../test/ruby/test_syntax.rb
+      ../test/open-uri/test_open-uri.rb
+      ../test/rubygems/test_bundled_ca.rb
+      " test-all
     - nmake -l test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
 notifications:
   - provider: Webhook

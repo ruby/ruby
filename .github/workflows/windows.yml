@@ -98,8 +98,11 @@ jobs:
           C:\msys64\usr\bin\comm -13 old.env new.env >> %GITHUB_ENV%
           del *.env
       - name: Configure
-        run: |
-          ../src/win32/configure.bat --disable-install-doc --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
+        run: >-
+          ../src/win32/configure.bat --disable-install-doc
+          --enable-bundled-libffi
+          --with-opt-dir=C:/vcpkg/installed/x64-windows
+          --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
       - run: nmake incs
       - run: nmake extract-extlibs
       - run: nmake
