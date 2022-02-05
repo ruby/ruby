@@ -9068,19 +9068,19 @@ rb_io_set_encoding_by_bom(VALUE io)
  *    File.new('t.txt')
  *
  *  Optional argument +mode+ (defaults to 'r') must specify a valid mode
- *  see {\IO Modes}[#class-IO-label-Modes]:
+ *  see {\IO Modes}[rdoc-ref:IO@Modes]:
  *
  *    File.new('t.tmp', 'w')
  *    File.new('t.tmp', File::RDONLY)
  *
  *  Optional argument +perm+ (defaults to 0666) must specify valid permissions
- *  see {File Permissions}[#class-File-label-Permissions]:
+ *  see {File Permissions}[rdoc-ref:IO@File+Permissions]:
  *
  *    File.new('t.tmp', File::CREAT, 0644)
  *    File.new('t.tmp', File::CREAT, 0444)
  *
  *  Optional argument +open_opts+ must specify valid open options
- *  see {IO Open Options}[#class-IO-label-Open+Options]:
+ *  see {IO Open Options}[rdoc-ref:IO@Open+Options]:
  *
  *    File.new('t.tmp', autoclose: true)
  *    File.new('t.tmp', internal_encoding: nil)
@@ -14238,7 +14238,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - Kernel#readlines
  *  - IO.foreach
  *  - IO.readlines
- *  - IO#eachline
+ *  - IO#each_line
  *  - IO#gets
  *  - IO#readline
  *  - IO#readlines
