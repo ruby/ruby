@@ -5502,7 +5502,7 @@ rb_pat_search(VALUE pat, VALUE str, long pos, int set_backref_str)
  *  Returns +self+ with only the first occurrence
  *  (not all occurrences) of the given +pattern+ replaced.
  *
- *  See {Substitution Methods}[#class-String-label-Substitution+Methods].
+ *  See {Substitution Methods}[rdoc-ref:String@Substitution+Methods].
  *
  *  Related: String#sub, String#gsub, String#gsub!.
  *
@@ -5625,7 +5625,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *  Returns a copy of +self+ with only the first occurrence
  *  (not all occurrences) of the given +pattern+ replaced.
  *
- *  See {Substitution Methods}[#class-String-label-Substitution+Methods].
+ *  See {Substitution Methods}[rdoc-ref:String@Substitution+Methods].
  *
  *  Related: String#sub!, String#gsub, String#gsub!.
  *
@@ -5771,7 +5771,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
  *  Performs the specified substring replacement(s) on +self+;
  *  returns +self+ if any replacement occurred, +nil+ otherwise.
  *
- *  See {Substitution Methods}[#class-String-label-Substitution+Methods].
+ *  See {Substitution Methods}[rdoc-ref:String@Substitution+Methods].
  *
  *  Returns an Enumerator if no +replacement+ and no block given.
  *
@@ -5795,7 +5795,7 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *
  *  Returns a copy of +self+ with all occurrences of the given +pattern+ replaced.
  *
- *  See {Substitution Methods}[#class-String-label-Substitution+Methods].
+ *  See {Substitution Methods}[rdoc-ref:String@Substitution+Methods].
  *
  *  Returns an Enumerator if no +replacement+ and no block given.
  *
@@ -11296,9 +11296,9 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
  *
  * Here, class \Symbol provides methods that are useful for:
  *
- * - {Querying}[#class-Symbol-label-Methods+for+Querying]
- * - {Comparing}[#class-Symbol-label-Methods+for+Comparing]
- * - {Converting}[#class-Symbol-label-Methods+for+Converting]
+ * - {Querying}[rdoc-ref:Symbol@Methods+for+Querying]
+ * - {Comparing}[rdoc-ref:Symbol@Methods+for+Comparing]
+ * - {Converting}[rdoc-ref:Symbol@Methods+for+Converting]
  *
  * === Methods for Querying
  *
@@ -12100,14 +12100,14 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  Here, class \String provides methods that are useful for:
  *
- *  - {Creating a String}[#class-String-label-Methods+for+Creating+a+String]
- *  - {Frozen/Unfrozen Strings}[#class-String-label-Methods+for+a+Frozen-2FUnfrozen+String]
- *  - {Querying}[#class-String-label-Methods+for+Querying]
- *  - {Comparing}[#class-String-label-Methods+for+Comparing]
- *  - {Modifying a String}[#class-String-label-Methods+for+Modifying+a+String]
- *  - {Converting to New String}[#class-String-label-Methods+for+Converting+to+New+String]
- *  - {Converting to Non-String}[#class-String-label-Methods+for+Converting+to+Non--5CString]
- *  - {Iterating}[#class-String-label-Methods+for+Iterating]
+ *  - {Creating a String}[rdoc-ref:String@Methods+for+Creating+a+String]
+ *  - {Frozen/Unfrozen Strings}[rdoc-ref:String@Methods+for+a+Frozen-2FUnfrozen+String]
+ *  - {Querying}[rdoc-ref:String@Methods+for+Querying]
+ *  - {Comparing}[rdoc-ref:String@Methods+for+Comparing]
+ *  - {Modifying a String}[rdoc-ref:String@Methods+for+Modifying+a+String]
+ *  - {Converting to New String}[rdoc-ref:String@Methods+for+Converting+to+New+String]
+ *  - {Converting to Non-String}[rdoc-ref:String@Methods+for+Converting+to+Non--5CString]
+ *  - {Iterating}[rdoc-ref:String@Methods+for+Iterating]
  *
  *  === Methods for Creating a \String
  *

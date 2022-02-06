@@ -1775,7 +1775,7 @@ set_proc_default(VALUE hash, VALUE proc)
  *  Returns a new empty \Hash object.
  *
  *  The initial default value and initial default proc for the new hash
- *  depend on which form above was used. See {Default Values}[#class-Hash-label-Default+Values].
+ *  depend on which form above was used. See {Default Values}[rdoc-ref:Hash@Default+Values].
  *
  *  If neither an argument nor a block given,
  *  initializes both the default value and the default proc to <tt>nil</tt>:
@@ -2008,7 +2008,7 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
  *
  *  The hash table becomes invalid if the hash value of a key
  *  has changed after the entry was created.
- *  See {Modifying an Active Hash Key}[#class-Hash-label-Modifying+an+Active+Hash+Key].
+ *  See {Modifying an Active Hash Key}[rdoc-ref:Hash@Modifying+an+Active+Hash+Key].
  */
 
 VALUE
@@ -2092,7 +2092,7 @@ rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
  *    h[:foo] # => 0
  *
  *  If +key+ is not found, returns a default value
- *  (see {Default Values}[#class-Hash-label-Default+Values]):
+ *  (see {Default Values}[rdoc-ref:Hash@Default+Values]):
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h[:nosuch] # => nil
  */
@@ -2201,7 +2201,7 @@ rb_hash_fetch(VALUE hash, VALUE key)
  *
  *  Returns the default value for the given +key+.
  *  The returned value will be determined either by the default proc or by the default value.
- *  See {Default Values}[#class-Hash-label-Default+Values].
+ *  See {Default Values}[rdoc-ref:Hash@Default+Values].
  *
  *  With no argument, returns the current default value:
  *    h = {}
@@ -2238,7 +2238,7 @@ rb_hash_default(int argc, VALUE *argv, VALUE hash)
  *    h.default = false # => false
  *    h.default # => false
  *
- *  See {Default Values}[#class-Hash-label-Default+Values].
+ *  See {Default Values}[rdoc-ref:Hash@Default+Values].
  */
 
 static VALUE
@@ -2254,7 +2254,7 @@ rb_hash_set_default(VALUE hash, VALUE ifnone)
  *    hash.default_proc -> proc or nil
  *
  *  Returns the default proc for +self+
- *  (see {Default Values}[#class-Hash-label-Default+Values]):
+ *  (see {Default Values}[rdoc-ref:Hash@Default+Values]):
  *    h = {}
  *    h.default_proc # => nil
  *    h.default_proc = proc {|hash, key| "Default value for #{key}" }
@@ -2275,7 +2275,7 @@ rb_hash_default_proc(VALUE hash)
  *    hash.default_proc = proc -> proc
  *
  *  Sets the default proc for +self+ to +proc+:
- *  (see {Default Values}[#class-Hash-label-Default+Values]):
+ *  (see {Default Values}[rdoc-ref:Hash@Default+Values]):
  *    h = {}
  *    h.default_proc # => nil
  *    h.default_proc = proc { |hash, key| "Default value for #{key}" }
@@ -2322,7 +2322,7 @@ key_i(VALUE key, VALUE value, VALUE arg)
  *    hash.key(value) -> key or nil
  *
  *  Returns the key for the first-found entry with the given +value+
- *  (see {Entry Order}[#class-Hash-label-Entry+Order]):
+ *  (see {Entry Order}[rdoc-ref:Hash@Entry+Order]):
  *    h = {foo: 0, bar: 2, baz: 2}
  *    h.key(0) # => :foo
  *    h.key(2) # => :bar
@@ -2458,7 +2458,7 @@ shift_i_safe(VALUE key, VALUE value, VALUE arg)
  *    hash.shift -> [key, value] or nil
  *
  *  Removes the first hash entry
- *  (see {Entry Order}[#class-Hash-label-Entry+Order]);
+ *  (see {Entry Order}[rdoc-ref:Hash@Entry+Order]);
  *  returns a 2-element \Array containing the removed key and value:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.shift # => [:foo, 0]
@@ -2680,7 +2680,7 @@ rb_hash_except(int argc, VALUE *argv, VALUE hash)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.values_at(:baz, :foo) # => [2, 0]
  *
- *  The {default values}[#class-Hash-label-Default+Values] are returned
+ *  The {default values}[rdoc-ref:Hash@Default+Values] are returned
  *  for any keys that are not found:
  *    h.values_at(:hello, :foo) # => [nil, 0]
  */
@@ -2902,7 +2902,7 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
  *
  *  If the given +key+ exists, replaces its value with the given +value+;
  *  the ordering is not affected
- *  (see {Entry Order}[#class-Hash-label-Entry+Order]):
+ *  (see {Entry Order}[rdoc-ref:Hash@Entry+Order]):
  *    h = {foo: 0, bar: 1}
  *    h[:foo] = 2 # => 2
  *    h.store(:bar, 3) # => 3
@@ -2910,7 +2910,7 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
  *
  *  If +key+ does not exist, adds the +key+ and +value+;
  *  the new entry is last in the order
- *  (see {Entry Order}[#class-Hash-label-Entry+Order]):
+ *  (see {Entry Order}[rdoc-ref:Hash@Entry+Order]):
  *    h = {foo: 0, bar: 1}
  *    h[:baz] = 2 # => 2
  *    h.store(:bat, 3) # => 3
@@ -3872,7 +3872,7 @@ rb_hash_invert_i(VALUE key, VALUE value, VALUE hash)
  *    h1 # => {0=>:foo, 1=>:bar, 2=>:baz}
  *
  *  Overwrites any repeated new keys:
- *  (see {Entry Order}[#class-Hash-label-Entry+Order]):
+ *  (see {Entry Order}[rdoc-ref:Hash@Entry+Order]):
  *    h = {foo: 0, bar: 0, baz: 0}
  *    h.invert # => {0=>:baz}
  */
@@ -4202,7 +4202,7 @@ rassoc_i(VALUE key, VALUE val, VALUE arg)
  *
  *  Returns a new 2-element \Array consisting of the key and value
  *  of the first-found entry whose value is <tt>==</tt> to value
- *  (see {Entry Order}[#class-Hash-label-Entry+Order]):
+ *  (see {Entry Order}[rdoc-ref:Hash@Entry+Order]):
  *    h = {foo: 0, bar: 1, baz: 1}
  *    h.rassoc(1) # => [:bar, 1]
  *
@@ -4564,7 +4564,7 @@ rb_hash_any_p(int argc, VALUE *argv, VALUE hash)
  *    h = {foo: {bar: [:a, :b, :c]}}
  *    h.dig(:foo, :bar, 2) # => :c
  *
- *  This method will use the {default values}[#class-Hash-label-Default+Values]
+ *  This method will use the {default values}[rdoc-ref:Hash@Default+Values]
  *  for keys that are not present:
  *    h = {foo: {bar: [:a, :b, :c]}}
  *    h.dig(:hello) # => nil
@@ -4968,7 +4968,7 @@ env_delete(VALUE name)
  *   ENV.delete('foo') { |name| raise 'ignored' } # => "0"
  *
  * Raises an exception if +name+ is invalid.
- * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
+ * See {Invalid Names and Values}[rdoc-ref:ENV@Invalid+Names+and+Values].
  */
 static VALUE
 env_delete_m(VALUE obj, VALUE name)
@@ -4990,7 +4990,7 @@ env_delete_m(VALUE obj, VALUE name)
  * Returns +nil+ if the named variable does not exist.
  *
  * Raises an exception if +name+ is invalid.
- * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
+ * See {Invalid Names and Values}[rdoc-ref:ENV@Invalid+Names+and+Values].
  */
 static VALUE
 rb_f_getenv(VALUE obj, VALUE name)
@@ -5023,7 +5023,7 @@ rb_f_getenv(VALUE obj, VALUE name)
  * and neither default value nor block is given:
  *   ENV.fetch('foo') # Raises KeyError (key not found: "foo")
  * Raises an exception if +name+ is invalid.
- * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
+ * See {Invalid Names and Values}[rdoc-ref:ENV@Invalid+Names+and+Values].
  */
 static VALUE
 env_fetch(int argc, VALUE *argv, VALUE _)
@@ -5338,7 +5338,7 @@ ruby_unsetenv(const char *name)
  *
  * Creates, updates, or deletes the named environment variable, returning the value.
  * Both +name+ and +value+ may be instances of String.
- * See {Valid Names and Values}[#class-ENV-label-Valid+Names+and+Values].
+ * See {Valid Names and Values}[rdoc-ref:ENV@Valid+Names+and+Values].
  *
  * - If the named environment variable does not exist:
  *   - If +value+ is +nil+, does nothing.
@@ -5371,7 +5371,7 @@ ruby_unsetenv(const char *name)
  *       ENV.include?('bar') # => false
  *
  * Raises an exception if +name+ or +value+ is invalid.
- * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
+ * See {Invalid Names and Values}[rdoc-ref:ENV@Invalid+Names+and+Values].
  */
 static VALUE
 env_aset_m(VALUE obj, VALUE nm, VALUE val)
@@ -5434,7 +5434,7 @@ env_keys(int raw)
  *   ENV.replace('foo' => '0', 'bar' => '1')
  *   ENV.keys # => ['bar', 'foo']
  * The order of the names is OS-dependent.
- * See {About Ordering}[#class-ENV-label-About+Ordering].
+ * See {About Ordering}[rdoc-ref:ENV@About+Ordering].
  *
  * Returns the empty Array if ENV is empty.
  */
@@ -5528,7 +5528,7 @@ env_values(void)
  *   ENV.replace('foo' => '0', 'bar' => '1')
  *   ENV.values # => ['1', '0']
  * The order of the values is OS-dependent.
- * See {About Ordering}[#class-ENV-label-About+Ordering].
+ * See {About Ordering}[rdoc-ref:ENV@About+Ordering].
  *
  * Returns the empty Array if ENV is empty.
  */
@@ -5715,7 +5715,7 @@ env_delete_if(VALUE ehash)
  * Returns an empty \Array if no names given.
  *
  * Raises an exception if any name is invalid.
- * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
+ * See {Invalid Names and Values}[rdoc-ref:ENV@Invalid+Names+and+Values].
  */
 static VALUE
 env_values_at(int argc, VALUE *argv, VALUE _)
@@ -5871,7 +5871,7 @@ env_keep_if(VALUE ehash)
  *   ENV.slice('foo', 'baz') # => {"foo"=>"0", "baz"=>"2"}
  *   ENV.slice('baz', 'foo') # => {"baz"=>"2", "foo"=>"0"}
  * Raises an exception if any of the +names+ is invalid
- * (see {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values]):
+ * (see {Invalid Names and Values}[rdoc-ref:ENV@Invalid+Names+and+Values]):
  *   ENV.slice('foo', 'bar', :bat) # Raises TypeError (no implicit conversion of Symbol into String)
  */
 static VALUE
@@ -6204,7 +6204,7 @@ env_has_value(VALUE dmy, VALUE obj)
  *   ENV.replace('foo' => '0', 'bar' => '0')
  *   ENV.rassoc('0') # => ["bar", "0"]
  * The order in which environment variables are examined is OS-dependent.
- * See {About Ordering}[#class-ENV-label-About+Ordering].
+ * See {About Ordering}[rdoc-ref:ENV@About+Ordering].
  *
  * Returns +nil+ if there is no such environment variable.
  */
@@ -6247,13 +6247,13 @@ env_rassoc(VALUE dmy, VALUE obj)
  *   ENV.replace('foo' => '0', 'bar' => '0')
  *   ENV.key('0') # => "foo"
  * The order in which environment variables are examined is OS-dependent.
- * See {About Ordering}[#class-ENV-label-About+Ordering].
+ * See {About Ordering}[rdoc-ref:ENV@About+Ordering].
  *
  * Returns +nil+ if there is no such value.
  *
  * Raises an exception if +value+ is invalid:
  *   ENV.key(Object.new) # raises TypeError (no implicit conversion of Object into String)
- * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
+ * See {Invalid Names and Values}[rdoc-ref:ENV@Invalid+Names+and+Values].
  */
 static VALUE
 env_key(VALUE dmy, VALUE value)
@@ -6430,7 +6430,7 @@ env_freeze(VALUE self)
  *   ENV.shift # => ['bar', '1']
  *   ENV.to_hash # => {'foo' => '0'}
  * Exactly which environment variable is "first" is OS-dependent.
- * See {About Ordering}[#class-ENV-label-About+Ordering].
+ * See {About Ordering}[rdoc-ref:ENV@About+Ordering].
  *
  * Returns +nil+ if the environment is empty.
  */
@@ -6476,7 +6476,7 @@ env_shift(VALUE _)
  *   ENV.invert # => {"0"=>"foo"}
  * Note that the order of the ENV processing is OS-dependent,
  * which means that the order of overwriting is also OS-dependent.
- * See {About Ordering}[#class-ENV-label-About+Ordering].
+ * See {About Ordering}[rdoc-ref:ENV@About+Ordering].
  */
 static VALUE
 env_invert(VALUE _)
@@ -6526,7 +6526,7 @@ env_replace_i(VALUE key, VALUE val, VALUE keys)
  *   ENV.to_hash # => {"bar"=>"1", "foo"=>"0"}
  *
  * Raises an exception if a name or value is invalid
- * (see {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values]):
+ * (see {Invalid Names and Values}[rdoc-ref:ENV@Invalid+Names+and+Values]):
  *   ENV.replace('foo' => '0', :bar => '1') # Raises TypeError (no implicit conversion of Symbol into String)
  *   ENV.replace('foo' => '0', 'bar' => 1) # Raises TypeError (no implicit conversion of Integer into String)
  *   ENV.to_hash # => {"bar"=>"1", "foo"=>"0"}
@@ -6588,14 +6588,14 @@ env_update_block_i(VALUE key, VALUE val, VALUE _)
  * the block's return value becomes the new name:
  *   ENV.merge!('foo' => '5') { |name, env_val, hash_val | env_val + hash_val } # => {"bar"=>"1", "foo"=>"45"}
  * Raises an exception if a name or value is invalid
- * (see {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values]);
+ * (see {Invalid Names and Values}[rdoc-ref:ENV@Invalid+Names+and+Values]);
  *   ENV.replace('foo' => '0', 'bar' => '1')
  *   ENV.merge!('foo' => '6', :bar => '7', 'baz' => '9') # Raises TypeError (no implicit conversion of Symbol into String)
  *   ENV # => {"bar"=>"1", "foo"=>"6"}
  *   ENV.merge!('foo' => '7', 'bar' => 8, 'baz' => '9') # Raises TypeError (no implicit conversion of Integer into String)
  *   ENV # => {"bar"=>"1", "foo"=>"7"}
  * Raises an exception if the block returns an invalid name:
- * (see {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values]):
+ * (see {Invalid Names and Values}[rdoc-ref:ENV@Invalid+Names+and+Values]):
  *   ENV.merge!('bat' => '8', 'foo' => '9') { |name, env_val, hash_val | 10 } # Raises TypeError (no implicit conversion of Integer into String)
  *   ENV # => {"bar"=>"1", "bat"=>"8", "foo"=>"7"}
  *
@@ -7020,17 +7020,17 @@ static const rb_data_type_t env_data_type = {
  *
  *  Here, class \Hash provides methods that are useful for:
  *
- *  - {Creating a Hash}[#class-Hash-label-Methods+for+Creating+a+Hash]
- *  - {Setting Hash State}[#class-Hash-label-Methods+for+Setting+Hash+State]
- *  - {Querying}[#class-Hash-label-Methods+for+Querying]
- *  - {Comparing}[#class-Hash-label-Methods+for+Comparing]
- *  - {Fetching}[#class-Hash-label-Methods+for+Fetching]
- *  - {Assigning}[#class-Hash-label-Methods+for+Assigning]
- *  - {Deleting}[#class-Hash-label-Methods+for+Deleting]
- *  - {Iterating}[#class-Hash-label-Methods+for+Iterating]
- *  - {Converting}[#class-Hash-label-Methods+for+Converting]
- *  - {Transforming Keys and Values}[#class-Hash-label-Methods+for+Transforming+Keys+and+Values]
- *  - {And more....}[#class-Hash-label-Other+Methods]
+ *  - {Creating a Hash}[rdoc-ref:Hash@Methods+for+Creating+a+Hash]
+ *  - {Setting Hash State}[rdoc-ref:Hash@Methods+for+Setting+Hash+State]
+ *  - {Querying}[rdoc-ref:Hash@Methods+for+Querying]
+ *  - {Comparing}[rdoc-ref:Hash@Methods+for+Comparing]
+ *  - {Fetching}[rdoc-ref:Hash@Methods+for+Fetching]
+ *  - {Assigning}[rdoc-ref:Hash@Methods+for+Assigning]
+ *  - {Deleting}[rdoc-ref:Hash@Methods+for+Deleting]
+ *  - {Iterating}[rdoc-ref:Hash@Methods+for+Iterating]
+ *  - {Converting}[rdoc-ref:Hash@Methods+for+Converting]
+ *  - {Transforming Keys and Values}[rdoc-ref:Hash@Methods+for+Transforming+Keys+and+Values]
+ *  - {And more....}[rdoc-ref:Hash@Other+Methods]
  *
  *  \Class \Hash also includes methods from module Enumerable.
  *
@@ -7332,12 +7332,12 @@ Init_Hash(void)
      *
      * Here, class \ENV provides methods that are useful for:
      *
-     * - {Querying}[#class-ENV-label-Methods+for+Querying]
-     * - {Assigning}[#class-ENV-label-Methods+for+Assigning]
-     * - {Deleting}[#class-ENV-label-Methods+for+Deleting]
-     * - {Iterating}[#class-ENV-label-Methods+for+Iterating]
-     * - {Converting}[#class-ENV-label-Methods+for+Converting]
-     * - {And more ....}[#class-ENV-label-More+Methods]
+     * - {Querying}[rdoc-ref:ENV@Methods+for+Querying]
+     * - {Assigning}[rdoc-ref:ENV@Methods+for+Assigning]
+     * - {Deleting}[rdoc-ref:ENV@Methods+for+Deleting]
+     * - {Iterating}[rdoc-ref:ENV@Methods+for+Iterating]
+     * - {Converting}[rdoc-ref:ENV@Methods+for+Converting]
+     * - {And more ....}[rdoc-ref:ENV@More+Methods]
      *
      * === Methods for Querying
      *

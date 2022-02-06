@@ -8086,16 +8086,16 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  Here, class \Array provides methods that are useful for:
  *
- *  - {Creating an Array}[#class-Array-label-Methods+for+Creating+an+Array]
- *  - {Querying}[#class-Array-label-Methods+for+Querying]
- *  - {Comparing}[#class-Array-label-Methods+for+Comparing]
- *  - {Fetching}[#class-Array-label-Methods+for+Fetching]
- *  - {Assigning}[#class-Array-label-Methods+for+Assigning]
- *  - {Deleting}[#class-Array-label-Methods+for+Deleting]
- *  - {Combining}[#class-Array-label-Methods+for+Combining]
- *  - {Iterating}[#class-Array-label-Methods+for+Iterating]
- *  - {Converting}[#class-Array-label-Methods+for+Converting]
- *  - {And more....}[#class-Array-label-Other+Methods]
+ *  - {Creating an Array}[rdoc-ref:Array@Methods+for+Creating+an+Array]
+ *  - {Querying}[rdoc-ref:Array@Methods+for+Querying]
+ *  - {Comparing}[rdoc-ref:Array@Methods+for+Comparing]
+ *  - {Fetching}[rdoc-ref:Array@Methods+for+Fetching]
+ *  - {Assigning}[rdoc-ref:Array@Methods+for+Assigning]
+ *  - {Deleting}[rdoc-ref:Array@Methods+for+Deleting]
+ *  - {Combining}[rdoc-ref:Array@Methods+for+Combining]
+ *  - {Iterating}[rdoc-ref:Array@Methods+for+Iterating]
+ *  - {Converting}[rdoc-ref:Array@Methods+for+Converting]
+ *  - {And more....}[rdoc-ref:Array@Other+Methods]
  *
  *  === Methods for Creating an Array
  *

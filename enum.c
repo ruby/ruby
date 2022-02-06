@@ -4650,12 +4650,12 @@ enum_compact(VALUE obj)
  * == What's Here
  *
  * \Module \Enumerable provides methods that are useful to a collection class for:
- * - {Querying}[#module-Enumerable-label-Methods+for+Querying]
- * - {Fetching}[#module-Enumerable-label-Methods+for+Fetching]
- * - {Searching}[#module-Enumerable-label-Methods+for+Searching]
- * - {Sorting}[#module-Enumerable-label-Methods+for+Sorting]
- * - {Iterating}[#module-Enumerable-label-Methods+for+Iterating]
- * - {And more....}[#module-Enumerable-label-Other+Methods]
+ * - {Querying}[rdoc-ref:Enumerable@Methods+for+Querying]
+ * - {Fetching}[rdoc-ref:Enumerable@Methods+for+Fetching]
+ * - {Searching}[rdoc-ref:Enumerable@Methods+for+Searching]
+ * - {Sorting}[rdoc-ref:Enumerable@Methods+for+Sorting]
+ * - {Iterating}[rdoc-ref:Enumerable@Methods+for+Iterating]
+ * - {And more....}[rdoc-ref:Enumerable@Other+Methods]
  *
  * === Methods for Querying
  *

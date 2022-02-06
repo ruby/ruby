@@ -2213,11 +2213,11 @@ range_count(int argc, VALUE *argv, VALUE range)
  *
  * Here, class \Range provides methods that are useful for:
  *
- * - {Creating a Range}[#class-Range-label-Methods+for+Creating+a+Range]
- * - {Querying}[#class-Range-label-Methods+for+Querying]
- * - {Comparing}[#class-Range-label-Methods+for+Comparing]
- * - {Iterating}[#class-Range-label-Methods+for+Iterating]
- * - {Converting}[#class-Range-label-Methods+for+Converting]
+ * - {Creating a Range}[rdoc-ref:Range@Methods+for+Creating+a+Range]
+ * - {Querying}[rdoc-ref:Range@Methods+for+Querying]
+ * - {Comparing}[rdoc-ref:Range@Methods+for+Comparing]
+ * - {Iterating}[rdoc-ref:Range@Methods+for+Iterating]
+ * - {Converting}[rdoc-ref:Range@Methods+for+Converting]
  *
  * === Methods for Creating a \Range
  *

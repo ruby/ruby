@@ -962,9 +962,9 @@ num_negative_p(VALUE num)
  *
  *  Here, class \Float provides methods for:
  *
- *  - {Querying}[#class-Float-label-Querying]
- *  - {Comparing}[#class-Float-label-Comparing]
- *  - {Converting}[#class-Float-label-Converting]
+ *  - {Querying}[rdoc-ref:Float@Querying]
+ *  - {Comparing}[rdoc-ref:Float@Comparing]
+ *  - {Converting}[rdoc-ref:Float@Converting]
  *
  *  === Querying
  *
@@ -3499,10 +3499,10 @@ rb_num2ull(VALUE val)
  *
  * Here, class \Integer provides methods for:
  *
- * - {Querying}[#class-Integer-label-Querying]
- * - {Comparing}[#class-Integer-label-Comparing]
- * - {Converting}[#class-Integer-label-Converting]
- * - {Other}[#class-Integer-label-Other]
+ * - {Querying}[rdoc-ref:Integer@Querying]
+ * - {Comparing}[rdoc-ref:Integer@Comparing]
+ * - {Converting}[rdoc-ref:Integer@Converting]
+ * - {Other}[rdoc-ref:Integer@Other]
  *
  * === Querying
  *
@@ -6104,10 +6104,10 @@ int_s_try_convert(VALUE self, VALUE num)
  *
  * Here, class \Numeric provides methods for:
  *
- * - {Querying}[#class-Numeric-label-Querying]
- * - {Comparing}[#class-Numeric-label-Comparing]
- * - {Converting}[#class-Numeric-label-Converting]
- * - {Other}[#class-Numeric-label-Other]
+ * - {Querying}[rdoc-ref:Numeric@Querying]
+ * - {Comparing}[rdoc-ref:Numeric@Comparing]
+ * - {Converting}[rdoc-ref:Numeric@Converting]
+ * - {Other}[rdoc-ref:Numeric@Other]
  *
  * === Querying
  *

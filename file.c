@@ -6584,10 +6584,10 @@ const char ruby_null_device[] =
  *
  *  Here, class \File provides methods that are useful for:
  *
- *  - {Creating}[#class-File-label-Creating]
- *  - {Querying}[#class-File-label-Querying]
- *  - {Settings}[#class-File-label-Settings]
- *  - {Other}[#class-File-label-Other]
+ *  - {Creating}[rdoc-ref:File@Creating]
+ *  - {Querying}[rdoc-ref:File@Querying]
+ *  - {Settings}[rdoc-ref:File@Settings]
+ *  - {Other}[rdoc-ref:File@Other]
  *
  *  === Creating
  *
