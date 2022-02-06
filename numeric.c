@@ -958,7 +958,7 @@ num_negative_p(VALUE num)
  *
  *  First, what's elsewhere. \Class \Float:
  *
- *  - Inherits from {class Numeric}[Numeric.html#class-Numeric-label-What-27s+Here].
+ *  - Inherits from {class Numeric}[rdoc-ref:Numeric@What-27s+Here].
  *
  *  Here, class \Float provides methods for:
  *
@@ -3495,7 +3495,7 @@ rb_num2ull(VALUE val)
  *
  * First, what's elsewhere. \Class \Integer:
  *
- * - Inherits from {class Numeric}[Numeric.html#class-Numeric-label-What-27s+Here].
+ * - Inherits from {class Numeric}[rdoc-ref:Numeric@What-27s+Here].
  *
  * Here, class \Integer provides methods for:
  *
@@ -6099,8 +6099,8 @@ int_s_try_convert(VALUE self, VALUE num)
  *
  * First, what's elsewhere. \Class \Numeric:
  *
- * - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
- * - Includes {module Comparable}[Comparable.html#module-Comparable-label-What-27s+Here].
+ * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
+ * - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
  *
  * Here, class \Numeric provides methods for:
  *

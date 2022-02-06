@@ -4162,8 +4162,8 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *
  *  First, what's elsewhere. \Class \Object:
  *
- *  - Inherits from {class BasicObject}[BasicObject.html#class-BasicObject-label-What-27s+Here].
- *  - Includes {module Kernel}[Kernel.html#module-Kernel-label-What-27s+Here].
+ *  - Inherits from {class BasicObject}[rdoc-ref:BasicObject@What-27s+Here].
+ *  - Includes {module Kernel}[rdoc-ref:Kernel@What-27s+Here].
  *
  *  Here, class \Object provides methods for:
  *

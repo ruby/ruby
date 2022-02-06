@@ -6577,9 +6577,9 @@ const char ruby_null_device[] =
  *
  *  First, what's elsewhere. \Class \File:
  *
- *  - Inherits from {class IO}[IO.html#class-IO-label-What-27s+Here],
+ *  - Inherits from {class IO}[rdoc-ref:IO@What-27s+Here],
  *    in particular, methods for creating, reading, and writing files
- *  - Includes {module FileTest}[FileTest.html#module-FileTest-label-What-27s+Here].
+ *  - Includes {module FileTest}[rdoc-ref:FileTest@What-27s+Here].
  *    which provides dozens of additional methods.
  *
  *  Here, class \File provides methods that are useful for:

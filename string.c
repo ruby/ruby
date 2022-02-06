@@ -11291,8 +11291,8 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
  *
  * First, what's elsewhere. \Class \Symbol:
  *
- * - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
- * - Includes {module Comparable}[Comparable.html#module-Comparable-label-What-27s+Here].
+ * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
+ * - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
  *
  * Here, class \Symbol provides methods that are useful for:
  *
@@ -12095,8 +12095,8 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  First, what's elsewhere. \Class \String:
  *
- *  - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
- *  - Includes {module Comparable}[Comparable.html#module-Comparable-label-What-27s+Here].
+ *  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
+ *  - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
  *
  *  Here, class \String provides methods that are useful for:
  *
