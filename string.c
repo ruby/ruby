@@ -1830,7 +1830,7 @@ rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str)
  *    s.encoding # => #<Encoding:UTF-8>
  *
  *  Literal strings like <tt>""</tt> or here-documents always use
- *  {script encoding}[Encoding.html#class-Encoding-label-Script+encoding], unlike String.new.
+ *  Encoding@Script+encoding, unlike String.new.
  *
  *  With keyword +encoding+, returns a copy of +str+
  *  with the specified encoding:
@@ -4182,8 +4182,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
  *    'foo' =~ /o/ # => 1
  *    'foo' =~ /x/ # => nil
  *
- *  Note: also updates
- *  {Regexp-related global variables}[Regexp.html#class-Regexp-label-Special+global+variables].
+ *  Note: also updates Regexp@Special+global+variables.
  *
  *  If the given +object+ is not a \Regexp, returns the value
  *  returned by <tt>object =~ self</tt>.
@@ -4225,8 +4224,7 @@ static VALUE get_pat(VALUE);
  *
  *  Returns a \Matchdata object (or +nil+) based on +self+ and the given +pattern+.
  *
- *  Note: also updates
- *  {Regexp-related global variables}[Regexp.html#class-Regexp-label-Special+global+variables].
+ *  Note: also updates Regexp@Special+global+variables.
  *
  *  - Computes +regexp+ by converting +pattern+ (if not already a \Regexp).
  *      regexp = Regexp.new(pattern)
@@ -4275,8 +4273,7 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
  *
  *  Returns +true+ or +false+ based on whether a match is found for +self+ and +pattern+.
  *
- *  Note: does not update
- *  {Regexp-related global variables}[Regexp.html#class-Regexp-label-Special+global+variables].
+ *  Note: does not update Regexp@Special+global+variables.
  *
  *  Computes +regexp+ by converting +pattern+ (if not already a \Regexp).
  *    regexp = Regexp.new(pattern)
@@ -5018,7 +5015,7 @@ rb_str_aref(VALUE str, VALUE indx)
  *  If argument +capture+ is given and not <tt>0</tt>,
  *  it should be either an \Integer capture group index or a \String or \Symbol capture group name;
  *  the method call returns only the specified capture
- *  (see {Regexp Capturing}[Regexp.html#class-Regexp-label-Capturing]):
+ *  (see Regexp@Capturing):
  *
  *    s = 'hello there'
  *    s[/[aeiou](.)\1/, 1] # => "l"
