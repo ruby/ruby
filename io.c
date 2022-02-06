@@ -9740,7 +9740,7 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *
  *  With only integer argument +limit+ given,
  *  limits the number of bytes in the line;
- *  see {Line Limit}}[rdoc-ref:IO@Line+Limit]:
+ *  see {Line Limit}[rdoc-ref:IO@Line+Limit]:
  *
  *    $cat t.txt | ruby -e "p readlines 10"
  *    ["First line", "\n", "Second lin", "e\n", "\n", "Fourth lin", "e\n", "Fifth line", "\n"]
