@@ -1562,8 +1562,8 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
  *
  *  First, what's elsewhere. \Class \Struct:
  *
- *  - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
- *  - Includes {module Enumerable}[Enumerable.html#module-Enumerable-label-What-27s+Here],
+ *  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
+ *  - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
  *    which provides dozens of additional methods.
  *
  *  Here, class \Struct provides methods that are useful for:

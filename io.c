@@ -9715,12 +9715,12 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *
  *  Returns an array containing the lines returned by calling
  *  Kernel#gets until the end-of-file is reached;
- *  (see {Lines}[IO.html#class-IO-label-Lines]).
+ *  (see {Lines}[rdoc-ref:IO@Lines]).
  *
  *  With only string argument +sep+ given,
  *  returns the remaining lines as determined by line separator +sep+,
  *  or +nil+ if none;
- *  see {Line Separator}[IO.html#class-IO-label-Line+Separator].\:
+ *  see {Line Separator}[rdoc-ref:IO@Line+Separator].\:
  *
  *    # Default separator.
  *    $ cat t.txt | ruby -e "p readlines"
@@ -9740,7 +9740,7 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *
  *  With only integer argument +limit+ given,
  *  limits the number of bytes in the line;
- *  see {Line Limit}}[IO.html#class-IO-label-Line+Limit]:
+ *  see {Line Limit}}[rdoc-ref:IO@Line+Limit]:
  *
  *    $cat t.txt | ruby -e "p readlines 10"
  *    ["First line", "\n", "Second lin", "e\n", "\n", "Fourth lin", "e\n", "Fifth line", "\n"]
@@ -9752,10 +9752,10 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *    ["First line\n", "Second line\n", "\n", "Fourth line\n", "Fifth line\n"]
  *
  *  With arguments +sep+ and +limit+ given, combines the two behaviors;
- *  see {Line Separator and Line Limit}[IO.html#class-IO-label-Line+Separator+and+Line+Limit].
+ *  see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit].
  *
  *  For all forms above, trailing optional keyword arguments may be given;
- *  see {Line Options}[IO.html#class-IO-label-Line+Options]:
+ *  see {Line Options}[rdoc-ref:IO@Line+Options]:
  *
  *    $ cat t.txt | ruby -e "p readlines(chomp: true)"
  *    ["First line", "Second line", "", "Fourth line", "Fifth line"]
@@ -14376,8 +14376,8 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  First, what's elsewhere. \Class \IO:
  *
- *  - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
- *  - Includes {module Enumerable}[Enumerable.html#module-Enumerable-label-What-27s+Here],
+ *  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
+ *  - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
  *    which provides dozens of additional methods.
  *
  *  Here, class \IO provides methods that are useful for:
