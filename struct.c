@@ -1169,7 +1169,7 @@ invalid_struct_pos(VALUE s, VALUE idx)
  *
  *  With integer argument +n+ given, returns <tt>self.values[n]</tt>
  *  if +n+ is in range;
- *  see {Array Indexes}[Array.html#class-Array-label-Array+Indexes]:
+ *  see Array@Array+Indexes:
  *
  *    joe[2]  # => 12345
  *    joe[-2] # => "123 Maple, Anytown NC"
@@ -1205,7 +1205,7 @@ rb_struct_aref(VALUE s, VALUE idx)
  *
  *  With integer argument +n+ given, assigns the given +value+
  *  to the +n+-th member if +n+ is in range;
- *  see {Array Indexes}[Array.html#class-Array-label-Array+Indexes]:
+ *  see Array@Array+Indexes:
  *
  *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
  *    joe[2] = 54321           # => 54321
@@ -1267,7 +1267,7 @@ struct_entry(VALUE s, long n)
  *    joe.values_at(0, -3)   # => ["Joe Smith", "Joe Smith"]
  *
  *  Raises IndexError if any of +integers+ is out of range;
- *  see {Array Indexes}[Array.html#class-Array-label-Array+Indexes].
+ *  see Array@Array+Indexes.
  *
  *  With integer range argument +integer_range+ given,
  *  returns an array containing each value given by the elements of the range;
@@ -1280,7 +1280,7 @@ struct_entry(VALUE s, long n)
  *    joe.values_at(1..4) # => ["123 Maple, Anytown NC", 12345, nil, nil]
  *
  *  Raises RangeError if any element of the range is negative and out of range;
- *  see {Array Indexes}[Array.html#class-Array-label-Array+Indexes].
+ *  see Array@Array+Indexes.
  *
  */
 
