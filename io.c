@@ -9720,7 +9720,7 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *  With only string argument +sep+ given,
  *  returns the remaining lines as determined by line separator +sep+,
  *  or +nil+ if none;
- *  see {Line Separator}[rdoc-ref:IO@Line+Separator].\:
+ *  see {Line Separator}[rdoc-ref:IO@Line+Separator]:
  *
  *    # Default separator.
  *    $ cat t.txt | ruby -e "p readlines"
