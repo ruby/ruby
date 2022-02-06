@@ -106,7 +106,9 @@ jobs:
           del *.env
       - name: link libraries
         run: |
-          for %%I in (libffi yaml) do mklink %%I.dll C:\vcpkg\installed\x64-windows\bin\%%I.dll
+          for %%I in (C:\vcpkg\installed\x64-windows\bin\*.dll) do (
+            if not %%~nI == readline mklink %%~nxI %%I
+          )
       - name: Configure
         run: >-
           ../src/win32/configure.bat --disable-install-doc
