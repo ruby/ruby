@@ -72,7 +72,6 @@ for:
     - cd %Platform%-mswin_%vs%
     - >-
       ..\win32\configure.bat
-      --without-ext=+,readline
       --with-opt-dir=/usr/local
       --with-openssl-dir=%OPENSSL_DIR:\=/%
     - nmake -l
@@ -87,7 +86,6 @@ for:
     - >-
       nmake -l "TESTOPTS=-v --timeout-scale=3.0
       --excludes=../test/excludes/_appveyor -j%JOBS%
-      --exclude readline
       --exclude win32ole
       --exclude test_bignum
       --exclude test_syntax
