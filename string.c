@@ -11965,7 +11965,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  You can convert certain objects to Strings with:
  *
- *  - \Method {String}[Kernel.html#method-i-String].
+ *  - \Method #String.
  *
  *  Some \String methods modify +self+.
  *  Typically, a method whose name ends with <tt>!</tt> modifies +self+

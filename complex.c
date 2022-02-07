@@ -2273,7 +2273,7 @@ float_arg(VALUE self)
  *
  * You can convert certain objects to \Complex objects with:
  *
- * - \Method {Complex}[Kernel.html#method-i-Complex].
+ * - \Method #Complex.
  *
  * Complex object can be created as literal, and also by using
  * Kernel#Complex, Complex::rect, Complex::polar or to_c method.

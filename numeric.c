@@ -952,7 +952,7 @@ num_negative_p(VALUE num)
  *
  *  You can convert certain objects to Floats with:
  *
- *  - \Method {Float}[Kernel.html#method-i-Float].
+ *  - \Method #Float.
  *
  *  == What's Here
  *
@@ -3486,7 +3486,7 @@ rb_num2ull(VALUE val)
  *
  * You can convert certain objects to Integers with:
  *
- * - \Method {Integer}[Kernel.html#method-i-Integer].
+ * - \Method #Integer.
  *
  * An attempt to add a singleton method to an instance of this class
  * causes an exception to be raised.
