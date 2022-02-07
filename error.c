@@ -77,6 +77,7 @@ static ID id_category;
 static ID id_deprecated;
 static ID id_experimental;
 static VALUE sym_category;
+static VALUE sym_highlight;
 static struct {
     st_table *id2enum, *enum2id;
 } warning_categories;
@@ -1268,10 +1269,7 @@ check_highlight_keyword(VALUE opt, int auto_tty_detect)
     VALUE highlight = Qnil;
 
     if (!NIL_P(opt)) {
-        static VALUE kw_highlight;
-        if (!kw_highlight) kw_highlight = ID2SYM(rb_intern_const("highlight"));
-
-        highlight = rb_hash_aref(opt, kw_highlight);
+        highlight = rb_hash_aref(opt, sym_highlight);
 
         switch (highlight) {
           default:
@@ -1351,10 +1349,8 @@ exc_full_message(int argc, VALUE *argv, VALUE exc)
     order = check_order_keyword(opt);
 
     {
-        static VALUE kw_highlight;
-        if (!kw_highlight) kw_highlight = ID2SYM(rb_intern_const("highlight"));
         if (NIL_P(opt)) opt = rb_hash_new();
-        rb_hash_aset(opt, kw_highlight, highlight);
+        rb_hash_aset(opt, sym_highlight, highlight);
     }
 
     str = rb_str_new2("");
@@ -3076,6 +3072,7 @@ Init_Exception(void)
     id_recv = rb_make_internal_id();
 
     sym_category = ID2SYM(id_category);
+    sym_highlight = ID2SYM(rb_intern_const("highlight"));
 
     warning_categories.id2enum = rb_init_identtable();
     st_add_direct(warning_categories.id2enum, id_deprecated, RB_WARN_CATEGORY_DEPRECATED);
