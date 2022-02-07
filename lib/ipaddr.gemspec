@@ -3,9 +3,13 @@
 lib = File.expand_path("../lib", __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
+version = File.foreach(File.expand_path("ipaddr.rb", lib)).find do |line|
+  /^\s*VERSION\s*=\s*["'](.*)["']/ =~ line and break $1
+end
+
 Gem::Specification.new do |spec|
   spec.name          = "ipaddr"
-  spec.version       = "1.2.3"
+  spec.version       = version
   spec.authors       = ["Akinori MUSHA", "Hajimu UMEMOTO"]
   spec.email         = ["knu@idaemons.org", "ume@mahoroba.org"]
 
