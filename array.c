@@ -7845,7 +7845,7 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  You can create an \Array object explicitly with:
  *
- *  - An {array literal}[doc/syntax/literals_rdoc.html#label-Array+Literals].
+ *  - An {array literal}[rdoc-ref:syntax/literals.rdoc@Array+Literals].
  *
  *  You can convert certain objects to Arrays with:
  *

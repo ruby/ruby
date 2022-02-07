@@ -2052,7 +2052,7 @@ range_count(int argc, VALUE *argv, VALUE range)
  *
  * You can create an \Range object explicitly with:
  *
- * - A {range literal}[doc/syntax/literals_rdoc.html#label-Range+Literals]:
+ * - A {range literal}[rdoc-ref:syntax/literals.rdoc@Range+Literals]:
  *
  *     # Ranges that use '..' to include the given end value.
  *     (1..4).to_a      # => [1, 2, 3, 4]

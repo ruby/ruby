@@ -2717,7 +2717,7 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
  *
  * You can create a \Rational object explicitly with:
  *
- * - A {rational literal}[doc/syntax/literals_rdoc.html#label-Rational+Literals].
+ * - A {rational literal}[rdoc-ref:syntax/literals.rdoc@Rational+Literals].
  *
  * You can convert certain objects to Rationals with:
  *

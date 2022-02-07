@@ -11234,7 +11234,7 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
  *
  * You can create a \Symbol object explicitly with:
  *
- * - A {symbol literal}[doc/syntax/literals_rdoc.html#label-Symbol+Literals].
+ * - A {symbol literal}[rdoc-ref:syntax/literals.rdoc@Symbol+Literals].
  *
  * The same Symbol object will be
  * created for a given name or string for the duration of a program's
@@ -11960,8 +11960,8 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  You can create a \String object explicitly with:
  *
- *  - A {string literal}[doc/syntax/literals_rdoc.html#label-String+Literals].
- *  - A {heredoc literal}[doc/syntax/literals_rdoc.html#label-Here+Document+Literals].
+ *  - A {string literal}[rdoc-ref:syntax/literals.rdoc@String+Literals].
+ *  - A {heredoc literal}[rdoc-ref:syntax/literals.rdoc@Here+Document+Literals].
  *
  *  You can convert certain objects to Strings with:
  *
@@ -12051,7 +12051,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  Note that <tt>\\\\</tt> is interpreted as an escape, i.e., a single backslash.
  *
  *  Note also that a string literal consumes backslashes.
- *  See {String Literals}[doc/syntax/literals_rdoc.html#label-String+Literals] for details about string literals.
+ *  See {String Literals}[rdoc-ref:syntax/literals.rdoc@String+Literals] for details about string literals.
  *
  *  A back-reference is typically preceded by an additional backslash.
  *  For example, if you want to write a back-reference <tt>\&</tt> in

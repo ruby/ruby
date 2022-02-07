@@ -2269,7 +2269,7 @@ float_arg(VALUE self)
  *
  * You can create a \Complex object explicitly with:
  *
- * - A {complex literal}[doc/syntax/literals_rdoc.html#label-Complex+Literals].
+ * - A {complex literal}[rdoc-ref:syntax/literals.rdoc@Complex+Literals].
  *
  * You can convert certain objects to \Complex objects with:
  *

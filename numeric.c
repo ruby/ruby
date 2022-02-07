@@ -948,7 +948,7 @@ num_negative_p(VALUE num)
  *
  *  You can create a \Float object explicitly with:
  *
- *  - A {floating-point literal}[doc/syntax/literals_rdoc.html#label-Float+Literals].
+ *  - A {floating-point literal}[rdoc-ref:syntax/literals.rdoc@Float+Literals].
  *
  *  You can convert certain objects to Floats with:
  *
@@ -3482,7 +3482,7 @@ rb_num2ull(VALUE val)
  *
  * You can create an \Integer object explicitly with:
  *
- * - An {integer literal}[doc/syntax/literals_rdoc.html#label-Integer+Literals].
+ * - An {integer literal}[rdoc-ref:syntax/literals.rdoc@Integer+Literals].
  *
  * You can convert certain objects to Integers with:
  *

@@ -6746,7 +6746,7 @@ static const rb_data_type_t env_data_type = {
  *
  *  You can create a \Hash object explicitly with:
  *
- *  - A {hash literal}[doc/syntax/literals_rdoc.html#label-Hash+Literals].
+ *  - A {hash literal}[rdoc-ref:syntax/literals.rdoc@Hash+Literals].
  *
  *  You can convert certain objects to Hashes with:
  *
