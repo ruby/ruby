@@ -133,6 +133,10 @@
 #define rb_jmp_buf rb_jmpbuf_t
 #undef rb_data_object_wrap
 
+#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+#define MAP_ANONYMOUS MAP_ANON
+#endif
+
 static inline struct rbimpl_size_mul_overflow_tag
 size_add_overflow(size_t x, size_t y)
 {
