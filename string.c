@@ -4188,7 +4188,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
  *  returned by <tt>object =~ self</tt>.
  *
  *  Note that <tt>string =~ regexp</tt> is different from <tt>regexp =~ string</tt>
- *  (see {Regexp#=~}[https://ruby-doc.org/core-2.7.1/Regexp.html#method-i-3D-7E]):
+ *  (see {Regexp#=~}[Regexp.html#method-i-3D~]):
  *
  *    number= nil
  *    "no. 9" =~ /(?<number>\d+)/

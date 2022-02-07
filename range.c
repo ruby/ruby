@@ -2168,7 +2168,7 @@ range_count(int argc, VALUE *argv, VALUE range)
  *
  * A user-defined class that is to be used in a range
  * must implement instance <tt><=></tt>;
- * see {Integer#<=>}[Integer.html#label-method-i-3C-3D-3E].
+ * see {Integer#<=>}[Integer.html#method-i-3C-3D-3E].
  * To make iteration available, it must also implement
  * instance method +succ+; see Integer#succ.
  *
