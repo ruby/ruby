@@ -7849,7 +7849,7 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  You can convert certain objects to Arrays with:
  *
- *  - \Method {Array}[Kernel.html#method-i-Array].
+ *  - \Method #Array.
  *
  *  An \Array can contain different types of objects.  For
  *  example, the array below contains an Integer, a String and a Float:
