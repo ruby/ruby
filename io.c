@@ -2048,7 +2048,7 @@ io_writev(int argc, const VALUE *argv, VALUE io)
  *    write(*objects) -> integer
  *
  *  Writes each of the given +objects+ to +self+,
- *  which must be opened for writing (see {Modes}[rdoc-ref:IO@Modes]);
+ *  which must be opened for writing (see IO@Modes);
  *  returns the total number bytes written;
  *  each of +objects+ that is not a string is converted via method +to_s+:
  *
@@ -2108,7 +2108,7 @@ rb_io_writev(VALUE io, int argc, const VALUE *argv)
  *    self << object -> self
  *
  *  Writes the given +object+ to +self+,
- *  which must be opened for writing (see {Modes}[rdoc-ref:IO@Modes]);
+ *  which must be opened for writing (see IO@Modes);
  *  returns +self+;
  *  if +object+ is not a string, it is converted via method +to_s+:
  *
@@ -7384,7 +7384,7 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *  and the block's value is assigned to global variable <tt>$?</tt> and returned.
  *
  *  Optional argument +mode+ may be any valid \IO mode.
- *  See {Modes}[rdoc-ref:IO@Modes].
+ *  See IO@Modes.
  *
  *  Required argument +cmd+ determines which of the following occurs:
  *
@@ -8936,7 +8936,7 @@ rb_io_make_open_file(VALUE obj)
  *    IO.new(fd)            # => #<IO:fd 3>
  *
  *  Optional argument +mode+ (defaults to 'r') must specify a valid mode
- *  see {\IO Modes}[rdoc-ref:IO@Modes]:
+ *  see IO@Modes:
  *
  *    IO.new(fd, 'w')         # => #<IO:fd 3>
  *    IO.new(fd, File::WRONLY) # => #<IO:fd 3>
@@ -9068,7 +9068,7 @@ rb_io_set_encoding_by_bom(VALUE io)
  *    File.new('t.txt')
  *
  *  Optional argument +mode+ (defaults to 'r') must specify a valid mode
- *  see {\IO Modes}[rdoc-ref:IO@Modes]:
+ *  see IO@Modes:
  *
  *    File.new('t.tmp', 'w')
  *    File.new('t.tmp', File::RDONLY)

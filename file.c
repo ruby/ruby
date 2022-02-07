@@ -6523,7 +6523,7 @@ const char ruby_null_device[] =
  *
  *  Note that file permissions are quite different from the _mode_
  *  of a file stream (\File object).
- *  See {IO Modes}[rdoc-ref:IO@Modes].
+ *  See IO@Modes.
  *
  *  In a \File object, the permissions are available thus,
  *  where method +mode+, despite its name, returns permissions:
