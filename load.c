@@ -201,6 +201,19 @@ is_rbext_path(VALUE feature_path)
     return IS_RBEXT(RSTRING_PTR(feature_path) + len - rbext_len);
 }
 
+struct feature_index {
+    long index;
+    struct list_node node;
+};
+
+static struct feature_index *
+alloc_feature_index(long index)
+{
+    struct feature_index *feature_index = ruby_xmalloc(sizeof(struct feature_index));
+    feature_index->index = index;
+    return feature_index;
+}
+
 static void
 features_index_add_single(rb_vm_t *vm, const char* str, size_t len, VALUE offset, bool rb)
 {
@@ -220,40 +233,46 @@ features_index_add_single(rb_vm_t *vm, const char* str, size_t len, VALUE offset
     else if (FIXNUM_P(this_feature_index)) {
 	VALUE loaded_features = get_loaded_features(vm);
 	VALUE this_feature_path = RARRAY_AREF(loaded_features, FIX2LONG(this_feature_index));
-	VALUE feature_indexes[2];
-	int top = (rb && !is_rbext_path(this_feature_path)) ? 1 : 0;
-	feature_indexes[top^0] = this_feature_index;
-	feature_indexes[top^1] = offset;
-	this_feature_index = (VALUE)xcalloc(1, sizeof(struct RArray));
-	RBASIC(this_feature_index)->flags = T_ARRAY; /* fake VALUE, do not mark/sweep */
-	rb_ary_cat(this_feature_index, feature_indexes, numberof(feature_indexes));
-	st_insert(features_index, short_feature_key, (st_data_t)this_feature_index);
+
+        struct list_head *feature_index_head = xmalloc(sizeof(struct list_head));
+        list_head_init(feature_index_head);
+        if (rb && !is_rbext_path(this_feature_path)) {
+            list_add_tail(feature_index_head, &alloc_feature_index(FIX2LONG(offset))->node);
+            list_add_tail(feature_index_head, &alloc_feature_index(FIX2LONG(this_feature_index))->node);
+        }
+        else {
+            list_add_tail(feature_index_head, &alloc_feature_index(FIX2LONG(this_feature_index))->node);
+            list_add_tail(feature_index_head, &alloc_feature_index(FIX2LONG(offset))->node);
+        }
+
+        // assert feature_index_head does not look like a special const
+        assert(!SPECIAL_CONST_P((VALUE)feature_index_head));
+
+        st_insert(features_index, short_feature_key, (st_data_t)feature_index_head);
     }
     else {
-        long pos = -1;
+        bool added = false;
 
-	Check_Type(this_feature_index, T_ARRAY);
+        struct list_head *feature_index_head = (struct list_head *)this_feature_index;
+
         if (rb) {
             VALUE loaded_features = get_loaded_features(vm);
-            for (long i = 0; i < RARRAY_LEN(this_feature_index); ++i) {
-                VALUE idx = RARRAY_AREF(this_feature_index, i);
-                VALUE this_feature_path = RARRAY_AREF(loaded_features, FIX2LONG(idx));
+
+            struct feature_index *feature_index;
+            list_for_each(feature_index_head, feature_index, node) {
+                VALUE this_feature_path = RARRAY_AREF(loaded_features, feature_index->index);
                 Check_Type(this_feature_path, T_STRING);
                 if (!is_rbext_path(this_feature_path)) {
-                    /* as this_feature_index is a fake VALUE, `push` (which
-                     * doesn't wb_unprotect like as rb_ary_splice) first,
-                     * then rotate partially. */
-                    pos = i;
+                    list_add_before(feature_index_head, &feature_index->node,
+                                    &alloc_feature_index(FIX2LONG(offset))->node);
+                    added = true;
                     break;
                 }
             }
         }
-	rb_ary_push(this_feature_index, offset);
-        if (pos >= 0) {
-            VALUE *ptr = (VALUE *)RARRAY_CONST_PTR_TRANSIENT(this_feature_index);
-            long len = RARRAY_LEN(this_feature_index);
-            MEMMOVE(ptr + pos, ptr + pos + 1, VALUE, len - pos - 1);
-            ptr[pos] = offset;
+
+        if (!added) {
+            list_add_tail(feature_index_head, &alloc_feature_index(FIX2LONG(offset))->node);
         }
     }
 }
@@ -309,8 +328,14 @@ loaded_features_index_clear_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     VALUE obj = (VALUE)val;
     if (!SPECIAL_CONST_P(obj)) {
-	rb_ary_free(obj);
-	ruby_sized_xfree((void *)obj, sizeof(struct RArray));
+        struct list_head *feature_index_head = (struct list_head *)val;
+
+        struct feature_index *feature_index;
+        while ((feature_index = list_pop(feature_index_head, struct feature_index, node)) != NULL) {
+            ruby_sized_xfree(feature_index, sizeof(struct feature_index));
+        }
+
+        ruby_sized_xfree(feature_index_head, sizeof(struct list_head));
     }
     return ST_DELETE;
 }
@@ -480,18 +505,28 @@ rb_feature_p(rb_vm_t *vm, const char *feature, const char *ext, int rb, int expa
        as any distractors, so we may ignore all other entries in `features`.
      */
     if (st_lookup(features_index, key, &data) && !NIL_P(this_feature_index = (VALUE)data)) {
+        struct feature_index *feature_index;
+
 	for (i = 0; ; i++) {
-	    VALUE entry;
-	    long index;
-	    if (RB_TYPE_P(this_feature_index, T_ARRAY)) {
-		if (i >= RARRAY_LEN(this_feature_index)) break;
-		entry = RARRAY_AREF(this_feature_index, i);
-	    }
-	    else {
-		if (i > 0) break;
-		entry = this_feature_index;
-	    }
-	    index = FIX2LONG(entry);
+            long index;
+            if (FIXNUM_P(this_feature_index)) {
+                if (i > 0) break;
+                index = FIX2LONG(this_feature_index);
+            }
+            else {
+                struct list_head *feature_index_head = (struct list_head *)this_feature_index;
+                if (i == 0) { // Initialize feature_index
+                    feature_index = list_top(feature_index_head, struct feature_index, node);
+                }
+                else { // Next feature_index
+                    feature_index = list_next(feature_index_head, feature_index, node);
+                }
+
+                // If reached the end of linked list
+                if (feature_index == NULL) break;
+
+                index = feature_index->index;
+            }
 
 	    v = RARRAY_AREF(features, index);
 	    f = StringValuePtr(v);
