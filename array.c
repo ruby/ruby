@@ -1342,7 +1342,7 @@ rb_ary_cat(VALUE ary, const VALUE *argv, long len)
  *    a1 = a.push([:baz, :bat], [:bam, :bad])
  *    a1 # => [:foo, "bar", 2, [:baz, :bat], [:bam, :bad]]
  *
- *  Array#append is an alias for \Array#push.
+ *  Array#append is an alias for Array#push.
  *
  *  Related: #pop, #shift, #unshift.
  */
@@ -1783,7 +1783,7 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[4..-1] # => nil
  *
  *  When a single Enumerator::ArithmeticSequence argument +aseq+ is given,
- *  returns an Array of elements corresponding to the indexes produced by
+ *  returns an \Array of elements corresponding to the indexes produced by
  *  the sequence.
  *    a = ['--', 'data1', '--', 'data2', '--', 'data3']
  *    a[(1..).step(2)] # => ["data1", "data2", "data3"]
@@ -4039,7 +4039,7 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
  *
  *  When the only arguments are Integers +start+ and +length+,
  *  removes +length+ elements from +self+ beginning at offset  +start+;
- *  returns the deleted objects in a new Array:
+ *  returns the deleted objects in a new \Array:
  *    a = [:foo, 'bar', 2]
  *    a.slice!(0, 2) # => [:foo, "bar"]
  *    a # => [2]
@@ -7299,7 +7299,7 @@ rb_ary_take(VALUE obj, VALUE n)
  *
  *  With a block given, calls the block with each successive element of +self+;
  *  stops if the block returns +false+ or +nil+;
- *  returns a new Array containing those elements for which the block returned a truthy value:
+ *  returns a new \Array containing those elements for which the block returned a truthy value:
  *    a = [0, 1, 2, 3, 4, 5]
  *    a.take_while {|element| element < 3 } # => [0, 1, 2]
  *    a.take_while {|element| true } # => [0, 1, 2, 3, 4, 5]
@@ -7360,7 +7360,7 @@ rb_ary_drop(VALUE ary, VALUE n)
  *
  *  With a block given, calls the block with each successive element of +self+;
  *  stops if the block returns +false+ or +nil+;
- *  returns a new Array _omitting_ those elements for which the block returned a truthy value:
+ *  returns a new \Array _omitting_ those elements for which the block returned a truthy value:
  *    a = [0, 1, 2, 3, 4, 5]
  *    a.drop_while {|element| element < 3 } # => [3, 4, 5]
  *
@@ -7857,7 +7857,7 @@ rb_ary_deconstruct(VALUE ary)
  *     ary = [1, "two", 3.0] #=> [1, "two", 3.0]
  *
  *  An array can also be created by calling Array.new with zero, one
- *  (the initial size of the Array) or two arguments (the initial size and a
+ *  (the initial size of the \Array) or two arguments (the initial size and a
  *  default object).
  *
  *     ary = Array.new    #=> []
@@ -7889,7 +7889,7 @@ rb_ary_deconstruct(VALUE ary)
  *  == Example Usage
  *
  *  In addition to the methods it mixes in through the Enumerable module, the
- *  Array class has proprietary methods for accessing, searching and otherwise
+ *  \Array class has proprietary methods for accessing, searching and otherwise
  *  manipulating arrays.
  *
  *  Some of the more common ones are illustrated below.
@@ -7937,7 +7937,7 @@ rb_ary_deconstruct(VALUE ary)
  *
  *     arr.drop(3) #=> [4, 5, 6]
  *
- *  == Obtaining Information about an Array
+ *  == Obtaining Information about an \Array
  *
  *  Arrays keep track of their own length at all times.  To query an array
  *  about the number of elements it contains, use #length, #count or #size.
@@ -7975,7 +7975,7 @@ rb_ary_deconstruct(VALUE ary)
  *     arr.insert(3, 'orange', 'pear', 'grapefruit')
  *     #=> [0, 1, 2, "orange", "pear", "grapefruit", "apple", 3, 4, 5, 6]
  *
- *  == Removing Items from an Array
+ *  == Removing Items from an \Array
  *
  *  The method #pop removes the last element in an array and returns it:
  *
@@ -8017,9 +8017,9 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  == Iterating over Arrays
  *
- *  Like all classes that include the Enumerable module, Array has an each
+ *  Like all classes that include the Enumerable module, \Array has an each
  *  method, which defines what elements should be iterated over and how.  In
- *  case of Array's #each, all elements in the Array instance are yielded to
+ *  case of Array's #each, all elements in the \Array instance are yielded to
  *  the supplied block in sequence.
  *
  *  Note that this operation leaves the array unchanged.
@@ -8045,7 +8045,8 @@ rb_ary_deconstruct(VALUE ary)
  *     arr.map! {|a| a**2}   #=> [1, 4, 9, 16, 25]
  *     arr                   #=> [1, 4, 9, 16, 25]
  *
- *  == Selecting Items from an Array
+ *
+ *  == Selecting Items from an \Array
  *
  *  Elements can be selected from an array according to criteria defined in a
  *  block.  The selection can happen in a destructive or a non-destructive
@@ -8097,7 +8098,7 @@ rb_ary_deconstruct(VALUE ary)
  *  - {Converting}[rdoc-ref:Array@Methods+for+Converting]
  *  - {And more....}[rdoc-ref:Array@Other+Methods]
  *
- *  === Methods for Creating an Array
+ *  === Methods for Creating an \Array
  *
  *  ::[]:: Returns a new array populated with given objects.
  *  ::new:: Returns a new array.
