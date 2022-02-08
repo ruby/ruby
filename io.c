@@ -7374,7 +7374,7 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *  Executes the given command +cmd+ as a subprocess
  *  whose $stdin and $stdout are connected to a new stream +io+.
  *
- *  This method has potential security vulnerabilities;
+ *  This method has potential security vulnerabilities if called with untrusted input;
  *  see {Command Injection}[doc/command_injection_rdoc.html].
  *
  *  If no block is given, returns the new stream,
@@ -9821,7 +9821,7 @@ argf_readlines(int argc, VALUE *argv, VALUE argf)
  *  Returns the <tt>$stdout</tt> output from running +command+ in a subshell;
  *  sets global variable <tt>$?</tt> to the process status.
  *
- *  This method has potential security vulnerabilities;
+ *  This method has potential security vulnerabilities if called with untrusted input;
  *  see {Command Injection}[doc/command_injection_rdoc.html].
  *
  *  Examples:
@@ -11214,8 +11214,8 @@ io_s_foreach(VALUE v)
  *
  *  Calls the block with each successive line read from the stream.
  *
- *  When called from class \IO (but not from subclass \File),
- *  this method has potential security vulnerabilities;
+ *  When called from class \IO (but not subclasses of \IO),
+ *  this method has potential security vulnerabilities if called with untrusted input;
  *  see {Command Injection}[doc/command_injection_rdoc.html].
  *
  *  The first argument must be a string that is one of the following:
@@ -11328,8 +11328,8 @@ io_s_readlines(VALUE v)
  *
  *  Returns an array of all lines read from the stream.
  *
- *  When called from class \IO (but not from subclass \File),
- *  this method has potential security vulnerabilities;
+ *  When called from class \IO (but not subclasses of \IO),
+ *  this method has potential security vulnerabilities if called with untrusted input;
  *  see {Command Injection}[doc/command_injection_rdoc.html].
  *
  *  The first argument must be a string;
@@ -11432,8 +11432,8 @@ seek_before_access(VALUE argp)
  *  Opens the stream, reads and returns some or all of its content,
  *  and closes the stream; returns +nil+ if no bytes were read.
  *
- *  When called from class \IO (but not from subclass \File),
- *  this method has potential security vulnerabilities;
+ *  When called from class \IO (but not subclasses of \IO),
+ *  this method has potential security vulnerabilities if called with untrusted input;
  *  see {Command Injection}[doc/command_injection_rdoc.html].
  *
  *  The first argument must be a string;
@@ -11507,8 +11507,8 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
  *  Behaves like IO.read, except that the stream is opened in binary mode
  *  with ASCII-8BIT encoding.
  *
- *  When called from class \IO (but not from subclass \File),
- *  this method has potential security vulnerabilities;
+ *  When called from class \IO (but not subclasses of \IO),
+ *  this method has potential security vulnerabilities if called with untrusted input;
  *  see {Command Injection}[doc/command_injection_rdoc.html].
  *
  */
@@ -11612,8 +11612,8 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *  Opens the stream, writes the given +data+ to it,
  *  and closes the stream; returns the number of bytes written.
  *
- *  When called from class \IO (but not from subclass \File),
- *  this method has potential security vulnerabilities;
+ *  When called from class \IO (but not subclasses of \IO),
+ *  this method has potential security vulnerabilities if called with untrusted input;
  *  see {Command Injection}[doc/command_injection_rdoc.html].
  *
  *  The first argument must be a string;
@@ -11677,8 +11677,8 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
  *  Behaves like IO.write, except that the stream is opened in binary mode
  *  with ASCII-8BIT encoding.
  *
- *  When called from class \IO (but not from subclass \File),
- *  this method has potential security vulnerabilities;
+ *  When called from class \IO (but not subclasses of \IO),
+ *  this method has potential security vulnerabilities if called with untrusted input;
  *  see {Command Injection}[doc/command_injection_rdoc.html].
  *
  */
