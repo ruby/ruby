@@ -1,9 +1,17 @@
 # frozen_string_literal: true
 # coding: utf-8
-lib = File.expand_path("../lib", __FILE__)
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
-version = File.foreach(File.expand_path("ipaddr.rb", lib)).find do |line|
+if File.exist?(File.expand_path("ipaddr.gemspec"))
+  lib = File.expand_path("../lib", __FILE__)
+  $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+
+  file = File.expand_path("ipaddr.rb", lib)
+else
+  # for ruby-core
+  file = File.expand_path("../ipaddr.rb", __FILE__)
+end
+
+version = File.foreach(file).find do |line|
   /^\s*VERSION\s*=\s*["'](.*)["']/ =~ line and break $1
 end
 
