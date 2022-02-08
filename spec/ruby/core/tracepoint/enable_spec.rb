@@ -58,7 +58,7 @@ describe 'TracePoint#enable' do
     end
 
     ruby_version_is '3.2' do
-      it 'enables the trace object for any thread' do
+      it 'enables the trace object only for the current thread' do
         threads = []
         trace = TracePoint.new(:line) do |tp|
           # Runs on purpose on any Thread
