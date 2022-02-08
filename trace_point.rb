@@ -168,7 +168,7 @@ class TracePoint
   #                   #   trace is still enabled
   #
   # If a block is given, the trace will only be enabled during the block call.
-  # block. If target and target_line are both nil, then target_thread will default
+  # If target and target_line are both nil, then target_thread will default
   # to the current thread if a block is given.
   #
   #    trace.enabled?
