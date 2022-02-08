@@ -167,7 +167,7 @@ class TracePoint
   #   trace.enable    #=> true (previous state)
   #                   #   trace is still enabled
   #
-  # If a block is given, the trace will only be enabled within the scope of the
+  # If a block is given, the trace will only be enabled during the block call.
   # block. If target and target_line are both nil, then target_thread will default
   # to the current thread if a block is given.
   #
