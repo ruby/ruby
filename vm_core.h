@@ -1088,6 +1088,10 @@ typedef struct rb_thread_struct {
 #ifdef USE_SIGALTSTACK
     void *altstack;
 #endif
+
+#ifdef USE_THIRD_PARTY_HEAP
+    void* mutator;
+#endif // USE_THIRD_PARTY_HEAP
 } rb_thread_t;
 
 typedef enum {

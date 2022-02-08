@@ -20,6 +20,8 @@ typedef struct {
     void (*stop_the_world)(MMTk_VMWorkerThread tls);
     void (*resume_mutators)(MMTk_VMWorkerThread tls);
     void (*blokc_for_gc)(MMTk_VMMutatorThread tls);
+    void (*reset_mutator_iterator)(void);
+    MMTk_Mutator (*get_next_mutator)(void);
 } RubyUpcalls;
 
 /**
@@ -32,7 +34,7 @@ extern void mmtk_enable_collection();
 /**
  * Allocation
  */
-extern MMTk_Mutator mmtk_bind_mutator(void *tls);
+extern MMTk_Mutator mmtk_bind_mutator(MMTk_VMMutatorThread tls);
 extern void mmtk_destroy_mutator(MMTk_Mutator mutator);
 
 extern void* mmtk_alloc(MMTk_Mutator mutator, size_t size,

@@ -857,12 +857,6 @@ typedef struct rb_objspace {
 #if GC_DEBUG_STRESS_TO_CLASS
     VALUE stress_to_class;
 #endif
-
-#ifdef USE_THIRD_PARTY_HEAP
-    void* mutator;
-    VALUE last_finalizers; // RZombie objects which will be used to finalize IO
-                           // etc just before VM shutdown
-#endif
 } rb_objspace_t;
 
 
@@ -2616,7 +2610,7 @@ newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr, size_t a
     RUBY_ASSERT(mmtk_alloc_size >= alloc_size);
     RUBY_ASSERT(mmtk_alloc_size < alloc_size + MMTK_ALIGNMENT);
     RUBY_ASSERT(mmtk_alloc_size % MMTK_ALIGNMENT == 0);
-    obj = (VALUE) mmtk_alloc(objspace->mutator, mmtk_alloc_size, MMTK_ALIGNMENT, 0, 0); // Default allocation semantics
+    obj = (VALUE) mmtk_alloc(GET_THREAD()->mutator, mmtk_alloc_size, MMTK_ALIGNMENT, 0, 0); // Default allocation semantics
     return newobj_init(klass, flags, wb_protected, objspace, obj);
 #endif
 
@@ -14079,18 +14073,47 @@ ruby_xrealloc2(void *ptr, size_t n, size_t new_size)
 }
 
 #ifdef USE_THIRD_PARTY_HEAP
-void
-rb_gc_init_collection(void)
-{
-    mmtk_initialize_collection((void*)GET_THREAD());
-    rb_objspace.mutator = mmtk_bind_mutator((void*)GET_THREAD()); // TODO replace with pointer to start of TLS
-}
+
+struct RubyMMTKGlobal {
+    pthread_mutex_t mutex;
+    pthread_cond_t cond_world_started;
+    size_t start_the_world_count;
+} rb_mmtk_global = {
+    .mutex = PTHREAD_MUTEX_INITIALIZER,
+    .cond_world_started = PTHREAD_COND_INITIALIZER,
+    .start_the_world_count = 0,
+};
 
 typedef struct rb_mmtk_worker_thread {
     rb_ractor_t *ractor;
 } rb_mmtk_worker_thread_t;
 
-MMTk_VMWorkerThread
+static void
+rb_mmtk_use_mmtk_global(void (*func)(void *), void* arg)
+{
+    int err;
+    if ((err = pthread_mutex_lock(&rb_mmtk_global.mutex)) != 0) {
+	fprintf(stderr, "ERROR: cannot lock rb_mmtk_global.mutex: %s", strerror(err));
+	abort();
+    }
+
+    func(arg);
+
+    if ((err = pthread_mutex_unlock(&rb_mmtk_global.mutex)) != 0) {
+	fprintf(stderr, "ERROR: cannot release rb_mmtk_global.mutex: %s", strerror(err));
+	abort();
+    }
+}
+
+void
+rb_gc_init_collection(void)
+{
+    rb_thread_t *cur_thread = GET_THREAD();
+    mmtk_initialize_collection((void*)cur_thread);
+    cur_thread->mutator = mmtk_bind_mutator((MMTk_VMMutatorThread)cur_thread);
+}
+
+static MMTk_VMWorkerThread
 rb_mmtk_init_gc_worker_thread(MMTk_VMThread tls)
 {
     rb_thread_t *main_thread = (rb_thread_t*)tls;
@@ -14101,8 +14124,7 @@ rb_mmtk_init_gc_worker_thread(MMTk_VMThread tls)
     return (MMTk_VMWorkerThread)worker_thread;
 }
 
-
-void
+static void
 rb_mmtk_stop_the_world(MMTk_VMWorkerThread tls)
 {
     // At this moment, we only support single-threaded execution.
@@ -14117,7 +14139,15 @@ rb_mmtk_stop_the_world(MMTk_VMWorkerThread tls)
     rb_stop_all_mutators_for_gc(rb_ractor_gvl(ractor));
 }
 
-void
+static void
+rb_mmtk_increment_start_the_world_count(void *unused)
+{
+    (void)unused;
+    rb_mmtk_global.start_the_world_count++;
+    pthread_cond_broadcast(&rb_mmtk_global.cond_world_started);
+}
+
+static void
 rb_mmtk_resume_mutators(MMTk_VMWorkerThread tls)
 {
     // At this moment, we only support single-threaded execution.
@@ -14127,25 +14157,69 @@ rb_mmtk_resume_mutators(MMTk_VMWorkerThread tls)
 	abort();
     }
 
+    rb_mmtk_use_mmtk_global(rb_mmtk_increment_start_the_world_count, NULL);
+
     rb_mmtk_worker_thread_t *worker_thread = (rb_mmtk_worker_thread_t*)tls;
     rb_ractor_t *ractor = worker_thread->ractor;
     rb_start_all_mutators_after_gc(rb_ractor_gvl(ractor));
 }
 
-void*
-rb_mmtk_block_for_gc_internal(void *data)
+struct block_for_gc_ctx {
+    size_t my_count;
+    MMTk_VMMutatorThread tls;
+};
+
+static void
+rb_mmtk_wait_for_gc_end(void *param)
 {
-    fprintf(stderr, "This thread triggered GC, and is blocking itself for GC.  This is not implemented yet.\n");
-    abort();
+    struct block_for_gc_ctx *ctx = param;
+    rb_thread_t *cur_thread = ctx->tls;
+    RUBY_ASSERT(cur_thread == GET_THREAD());
+    while (rb_mmtk_global.start_the_world_count < ctx->my_count + 1) {
+	pthread_cond_wait(&rb_mmtk_global.cond_world_started, &rb_mmtk_global.mutex);
+    }
+}
+
+static void*
+rb_mmtk_block_for_gc_internal(void *param)
+{
+    struct block_for_gc_ctx *ctx = param;
+    rb_mmtk_use_mmtk_global(rb_mmtk_wait_for_gc_end, ctx);
     return NULL;
 }
 
-void
+static void
+rb_mmtk_get_start_the_world_count(void *param)
+{
+    size_t *my_count = (size_t*)param;
+    *my_count = rb_mmtk_global.start_the_world_count;
+}
+
+static void
 rb_mmtk_block_for_gc(MMTk_VMMutatorThread tls)
 {
     RUBY_ASSERT(ruby_native_thread_p());
 
-    rb_thread_call_without_gvl(rb_mmtk_block_for_gc_internal, NULL, NULL, NULL);
+    struct block_for_gc_ctx ctx;
+    rb_mmtk_use_mmtk_global(rb_mmtk_get_start_the_world_count, &ctx.my_count);
+
+    ctx.tls = tls;
+    rb_thread_call_without_gvl(rb_mmtk_block_for_gc_internal, &ctx, NULL, NULL);
+}
+
+static void
+rb_mmtk_reset_mutator_iterator(void)
+{
+    fprintf(stderr, "Not implemented: %s\n", __FUNCTION__);
+    abort();
+}
+
+static MMTk_Mutator
+rb_mmtk_get_next_mutator(void)
+{
+    fprintf(stderr, "Not implemented: %s\n", __FUNCTION__);
+    abort();
+    return NULL;
 }
 
 RubyUpcalls ruby_upcalls = {
@@ -14153,5 +14227,8 @@ RubyUpcalls ruby_upcalls = {
     rb_mmtk_stop_the_world,
     rb_mmtk_resume_mutators,
     rb_mmtk_block_for_gc,
+    rb_mmtk_reset_mutator_iterator,
+    rb_mmtk_get_next_mutator,
 };
+
 #endif
