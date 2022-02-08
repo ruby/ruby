@@ -638,7 +638,12 @@ RSpec.describe "bundle clean" do
       s.executables = "irb"
     end
 
-    realworld_system_gems "fiddle --version 1.0.8", "tsort --version 0.1.0", "pathname --version 0.1.0", "set --version 1.0.1"
+    if Gem.win_platform? && RUBY_VERSION < "3.1.0"
+      default_fiddle_version = ruby "require 'fiddle'; puts Gem.loaded_specs['fiddle'].version"
+      realworld_system_gems "fiddle --version #{default_fiddle_version}"
+    end
+
+    realworld_system_gems "tsort --version 0.1.0", "pathname --version 0.1.0", "set --version 1.0.1"
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}"

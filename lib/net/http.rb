@@ -22,6 +22,7 @@
 
 require 'net/protocol'
 require 'uri'
+require 'resolv'
 autoload :OpenSSL, 'openssl'
 
 module Net   #:nodoc:
@@ -1036,17 +1037,34 @@ module Net   #:nodoc:
           OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT |
           OpenSSL::SSL::SSLContext::SESSION_CACHE_NO_INTERNAL_STORE
         @ssl_context.session_new_cb = proc {|sock, sess| @ssl_session = sess }
+
+        # Still do the post_connection_check below even if connecting
+        # to IP address
+        verify_hostname = @ssl_context.verify_hostname
+
+        # Server Name Indication (SNI) RFC 3546/6066
+        case @address
+        when Resolv::IPv4::Regex, Resolv::IPv6::Regex
+          # don't set SNI, as IP addresses in SNI is not valid
+          # per RFC 6066, section 3.
+
+          # Avoid openssl warning
+          @ssl_context.verify_hostname = false
+        else
+          ssl_host_address = @address
+        end
+
         debug "starting SSL for #{conn_addr}:#{conn_port}..."
         s = OpenSSL::SSL::SSLSocket.new(s, @ssl_context)
         s.sync_close = true
-        # Server Name Indication (SNI) RFC 3546
-        s.hostname = @address if s.respond_to? :hostname=
+        s.hostname = ssl_host_address if s.respond_to?(:hostname=) && ssl_host_address
+
         if @ssl_session and
            Process.clock_gettime(Process::CLOCK_REALTIME) < @ssl_session.time.to_f + @ssl_session.timeout
           s.session = @ssl_session
         end
         ssl_socket_connect(s, @open_timeout)
-        if (@ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE) && @ssl_context.verify_hostname
+        if (@ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE) && verify_hostname
           s.post_connection_check(@address)
         end
         debug "SSL established, protocol: #{s.ssl_version}, cipher: #{s.cipher[0]}"

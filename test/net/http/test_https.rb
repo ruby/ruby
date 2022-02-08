@@ -255,7 +255,7 @@ class TestNetHTTPS < Test::Unit::TestCase
     ex = assert_raise(OpenSSL::SSL::SSLError){
       http.request_get("/") {|res| }
     }
-    re_msg = /certificate verify failed|hostname \"#{HOST_IP}\" does not match|ssl3 ext invalid servername/
+    re_msg = /certificate verify failed|hostname \"#{HOST_IP}\" does not match/
     assert_match(re_msg, ex.message)
   end
 

@@ -30,7 +30,7 @@ module Spec
     end
 
     def test_gemfile
-      @test_gemfile ||= source_root.join("tool/bundler/test_gems.rb")
+      @test_gemfile ||= tool_dir.join("test_gems.rb")
     end
 
     def rubocop_gemfile
@@ -42,7 +42,7 @@ module Spec
     end
 
     def dev_gemfile
-      @dev_gemfile ||= git_root.join("dev_gems.rb")
+      @dev_gemfile ||= tool_dir.join("dev_gems.rb")
     end
 
     def bindir
@@ -294,7 +294,7 @@ module Spec
       else
         "rubocop_gems"
       end
-      source_root.join("tool/bundler/#{filename}.rb")
+      tool_dir.join("#{filename}.rb")
     end
 
     def standard_gemfile_basename
@@ -305,7 +305,11 @@ module Spec
       else
         "standard_gems"
       end
-      source_root.join("tool/bundler/#{filename}.rb")
+      tool_dir.join("#{filename}.rb")
+    end
+
+    def tool_dir
+      source_root.join("tool/bundler")
     end
 
     extend self

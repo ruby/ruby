@@ -10,7 +10,7 @@ show_limit %q{
     puts "Fiber count: #{fibers.count} (#{error})"
     break
   end while true
-} unless @quiet
+}
 
 assert_equal %q{ok}, %q{
   Fiber.new{

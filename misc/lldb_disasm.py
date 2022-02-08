@@ -27,6 +27,7 @@ class IseqDisassembler:
     TS_CDHASH   = b'H'[0]
     TS_IC       = b'K'[0]
     TS_IVC      = b'A'[0]
+    TS_ICVARC   = b'J'[0]
     TS_ID       = b'I'[0]
     TS_ISE      = b'T'[0]
     TS_ISEQ     = b'S'[0]
@@ -48,6 +49,7 @@ class IseqDisassembler:
             TS_ISE: "(iseq_inline_storage_entry *)%0#x",
             TS_ID: "ID: %0#x",
             TS_IVC: "(struct iseq_inline_iv_cache_entry *)%0#x",
+            TS_ICVARC: "(struct iseq_inline_cvar_cache_entry *)%0#x",
             TS_IC: "(struct iseq_inline_cache_entry *)%0#x",
             TS_CDHASH: "CDHASH (VALUE)%0#x",
             TS_CALLDATA: "(struct rb_call_data *)%0#x",

@@ -67,6 +67,10 @@ Note: We're only listing outstanding class updates.
 * Refinement
     * Refinement#refined_class has been added. [[Feature #12737]]
 
+* Struct
+    * A Struct class can also be initialized with keyword arguments
+      without `keyword_init: true` on `Struct.new` [[Feature #16806]]
+
 ## Stdlib updates
 
 *   The following default gem are updated.
@@ -75,9 +79,11 @@ Note: We're only listing outstanding class updates.
     * bundler 2.4.0.dev
     * etc 1.4.0
     * io-console 0.5.11
+    * io-wait 0.2.2
     * reline 0.3.1
 *   The following bundled gems are updated.
     * net-imap 0.2.3
+    * rbs 2.1.0
     * typeprof 0.21.2
 *   The following default gems are now bundled gems.
 
@@ -145,6 +151,7 @@ The following deprecated APIs are removed.
 [Feature #15231]: https://bugs.ruby-lang.org/issues/15231
 [Bug #15928]:     https://bugs.ruby-lang.org/issues/15928
 [Feature #16131]: https://bugs.ruby-lang.org/issues/16131
+[Feature #16806]: https://bugs.ruby-lang.org/issues/16806
 [Bug #16908]:     https://bugs.ruby-lang.org/issues/16908
 [Feature #17351]: https://bugs.ruby-lang.org/issues/17351
 [Feature #17391]: https://bugs.ruby-lang.org/issues/17391

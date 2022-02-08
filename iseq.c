@@ -196,6 +196,7 @@ iseq_extract_values(VALUE *code, size_t pos, iseq_value_itr_t * func, void *data
             }
             break;
           case TS_IVC:
+          case TS_ICVARC:
             {
                 IVC ivc = (IVC)code[pos + op_no + 1];
                 if (ivc->entry) {
@@ -2060,6 +2061,7 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 
       case TS_IC:
       case TS_IVC:
+      case TS_ICVARC:
       case TS_ISE:
 	ret = rb_sprintf("<is:%"PRIdPTRDIFF">", (union iseq_inline_storage_entry *)op - iseq->body->is_entries);
 	break;
@@ -2893,6 +2895,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 		break;
 	      case TS_IC:
               case TS_IVC:
+              case TS_ICVARC:
 	      case TS_ISE:
 		{
 		    union iseq_inline_storage_entry *is = (union iseq_inline_storage_entry *)*seq;

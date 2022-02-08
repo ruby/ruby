@@ -55,9 +55,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-
             ${{ runner.os }}-vcpkg-download-
+      - uses: actions/cache@v2
+        with:
+          path: C:\vcpkg\installed
+          key: ${{ runner.os }}-vcpkg-installed-${{ matrix.os }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-installed-${{ matrix.os }}-
+            ${{ runner.os }}-vcpkg-installed-
       - name: Install libraries with vcpkg
         run: |
-          vcpkg --triplet x64-windows install readline zlib
+          vcpkg --triplet x64-windows install libffi libyaml readline zlib
       - uses: actions/cache@v2
         with:
           path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
@@ -97,9 +104,16 @@ jobs:
           set | C:\msys64\usr\bin\sort > new.env
           C:\msys64\usr\bin\comm -13 old.env new.env >> %GITHUB_ENV%
           del *.env
-      - name: Configure
+      - name: link libraries
         run: |
-          ../src/win32/configure.bat --disable-install-doc --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
+          for %%I in (C:\vcpkg\installed\x64-windows\bin\*.dll) do (
+            if not %%~nI == readline mklink %%~nxI %%I
+          )
+      - name: Configure
+        run: >-
+          ../src/win32/configure.bat --disable-install-doc
+          --with-opt-dir=C:/vcpkg/installed/x64-windows
+          --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
       - run: nmake incs
       - run: nmake extract-extlibs
       - run: nmake

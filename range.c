@@ -2052,7 +2052,7 @@ range_count(int argc, VALUE *argv, VALUE range)
  *
  * You can create an \Range object explicitly with:
  *
- * - A {range literal}[doc/syntax/literals_rdoc.html#label-Range+Literals]:
+ * - A {range literal}[rdoc-ref:syntax/literals.rdoc@Range+Literals]:
  *
  *     # Ranges that use '..' to include the given end value.
  *     (1..4).to_a      # => [1, 2, 3, 4]
@@ -2168,7 +2168,7 @@ range_count(int argc, VALUE *argv, VALUE range)
  *
  * A user-defined class that is to be used in a range
  * must implement instance <tt><=></tt>;
- * see {Integer#<=>}[Integer.html#label-method-i-3C-3D-3E].
+ * see {Integer#<=>}[Integer.html#method-i-3C-3D-3E].
  * To make iteration available, it must also implement
  * instance method +succ+; see Integer#succ.
  *
@@ -2207,17 +2207,17 @@ range_count(int argc, VALUE *argv, VALUE range)
  *
  * First, what's elsewhere. \Class \Range:
  *
- * - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
- * - Includes {module Enumerable}[Enumerable.html#module-Enumerable-label-What-27s+Here],
+ * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
+ * - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
  *   which provides dozens of additional methods.
  *
  * Here, class \Range provides methods that are useful for:
  *
- * - {Creating a Range}[#class-Range-label-Methods+for+Creating+a+Range]
- * - {Querying}[#class-Range-label-Methods+for+Querying]
- * - {Comparing}[#class-Range-label-Methods+for+Comparing]
- * - {Iterating}[#class-Range-label-Methods+for+Iterating]
- * - {Converting}[#class-Range-label-Methods+for+Converting]
+ * - {Creating a Range}[rdoc-ref:Range@Methods+for+Creating+a+Range]
+ * - {Querying}[rdoc-ref:Range@Methods+for+Querying]
+ * - {Comparing}[rdoc-ref:Range@Methods+for+Comparing]
+ * - {Iterating}[rdoc-ref:Range@Methods+for+Iterating]
+ * - {Converting}[rdoc-ref:Range@Methods+for+Converting]
  *
  * === Methods for Creating a \Range
  *

@@ -7845,11 +7845,11 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  You can create an \Array object explicitly with:
  *
- *  - An {array literal}[doc/syntax/literals_rdoc.html#label-Array+Literals].
+ *  - An {array literal}[rdoc-ref:syntax/literals.rdoc@Array+Literals].
  *
  *  You can convert certain objects to Arrays with:
  *
- *  - \Method {Array}[Kernel.html#method-i-Array].
+ *  - \Method #Array.
  *
  *  An \Array can contain different types of objects.  For
  *  example, the array below contains an Integer, a String and a Float:
@@ -8080,22 +8080,22 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  First, what's elsewhere. \Class \Array:
  *
- *  - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
- *  - Includes {module Enumerable}[Enumerable.html#module-Enumerable-label-What-27s+Here],
+ *  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
+ *  - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
  *    which provides dozens of additional methods.
  *
  *  Here, class \Array provides methods that are useful for:
  *
- *  - {Creating an Array}[#class-Array-label-Methods+for+Creating+an+Array]
- *  - {Querying}[#class-Array-label-Methods+for+Querying]
- *  - {Comparing}[#class-Array-label-Methods+for+Comparing]
- *  - {Fetching}[#class-Array-label-Methods+for+Fetching]
- *  - {Assigning}[#class-Array-label-Methods+for+Assigning]
- *  - {Deleting}[#class-Array-label-Methods+for+Deleting]
- *  - {Combining}[#class-Array-label-Methods+for+Combining]
- *  - {Iterating}[#class-Array-label-Methods+for+Iterating]
- *  - {Converting}[#class-Array-label-Methods+for+Converting]
- *  - {And more....}[#class-Array-label-Other+Methods]
+ *  - {Creating an Array}[rdoc-ref:Array@Methods+for+Creating+an+Array]
+ *  - {Querying}[rdoc-ref:Array@Methods+for+Querying]
+ *  - {Comparing}[rdoc-ref:Array@Methods+for+Comparing]
+ *  - {Fetching}[rdoc-ref:Array@Methods+for+Fetching]
+ *  - {Assigning}[rdoc-ref:Array@Methods+for+Assigning]
+ *  - {Deleting}[rdoc-ref:Array@Methods+for+Deleting]
+ *  - {Combining}[rdoc-ref:Array@Methods+for+Combining]
+ *  - {Iterating}[rdoc-ref:Array@Methods+for+Iterating]
+ *  - {Converting}[rdoc-ref:Array@Methods+for+Converting]
+ *  - {And more....}[rdoc-ref:Array@Other+Methods]
  *
  *  === Methods for Creating an Array
  *

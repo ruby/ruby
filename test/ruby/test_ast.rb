@@ -255,6 +255,8 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_proc_and_method_under_eval_with_keep_script_lines
+    pend if ENV['RUBY_ISEQ_DUMP_DEBUG'] # TODO
+
     keep_script_lines_back = RubyVM.keep_script_lines
     RubyVM.keep_script_lines = true
 
@@ -302,6 +304,8 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_backtrace_location_under_eval_with_keep_script_lines
+    pend if ENV['RUBY_ISEQ_DUMP_DEBUG'] # TODO
+
     keep_script_lines_back = RubyVM.keep_script_lines
     RubyVM.keep_script_lines = true
 

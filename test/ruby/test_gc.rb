@@ -152,12 +152,14 @@ class TestGc < Test::Unit::TestCase
       GC.stat_heap(i, stat_heap)
       GC.stat(stat)
 
-      assert_equal GC::INTERNAL_CONSTANTS[:RVALUE_SIZE] * (2**i), stat_heap[:slot_size]
+      assert_equal GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] * (2**i), stat_heap[:slot_size]
       assert_operator stat_heap[:heap_allocatable_pages], :<=, stat[:heap_allocatable_pages]
       assert_operator stat_heap[:heap_eden_pages], :<=, stat[:heap_eden_pages]
       assert_operator stat_heap[:heap_eden_slots], :>=, 0
       assert_operator stat_heap[:heap_tomb_pages], :<=, stat[:heap_tomb_pages]
       assert_operator stat_heap[:heap_tomb_slots], :>=, 0
+      assert_operator stat_heap[:total_allocated_pages], :>=, 0
+      assert_operator stat_heap[:total_freed_pages], :>=, 0
     end
 
     GC.stat_heap(0, stat_heap)
@@ -203,6 +205,8 @@ class TestGc < Test::Unit::TestCase
     assert_equal stat[:heap_eden_pages], stat_heap_sum[:heap_eden_pages]
     assert_equal stat[:heap_tomb_pages], stat_heap_sum[:heap_tomb_pages]
     assert_equal stat[:heap_available_slots], stat_heap_sum[:heap_eden_slots] + stat_heap_sum[:heap_tomb_slots]
+    assert_equal stat[:total_allocated_pages], stat_heap_sum[:total_allocated_pages]
+    assert_equal stat[:total_freed_pages], stat_heap_sum[:total_freed_pages]
   end
 
   def test_latest_gc_info

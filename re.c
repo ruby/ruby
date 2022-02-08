@@ -4081,7 +4081,7 @@ re_warn(const char *s)
  *
  *  You can create a \Regexp object explicitly with:
  *
- *  - A {regexp literal}[doc/syntax/literals_rdoc.html#label-Regexp+Literals].
+ *  - A {regexp literal}[rdoc-ref:syntax/literals.rdoc@Regexp+Literals].
  *
  *  :include: doc/regexp.rdoc
  */

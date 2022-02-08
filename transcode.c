@@ -3499,6 +3499,14 @@ check_econv(VALUE self)
     return ec;
 }
 
+static VALUE
+econv_get_encoding(rb_encoding *encoding)
+{
+    if (!encoding)
+        return Qnil;
+    return rb_enc_from_encoding(encoding);
+}
+
 /*
  * call-seq:
  *   ec.source_encoding -> encoding
@@ -3509,9 +3517,7 @@ static VALUE
 econv_source_encoding(VALUE self)
 {
     rb_econv_t *ec = check_econv(self);
-    if (!ec->source_encoding)
-        return Qnil;
-    return rb_enc_from_encoding(ec->source_encoding);
+    return econv_get_encoding(ec->source_encoding);
 }
 
 /*
@@ -3524,9 +3530,7 @@ static VALUE
 econv_destination_encoding(VALUE self)
 {
     rb_econv_t *ec = check_econv(self);
-    if (!ec->destination_encoding)
-        return Qnil;
-    return rb_enc_from_encoding(ec->destination_encoding);
+    return econv_get_encoding(ec->destination_encoding);
 }
 
 /*

@@ -4162,14 +4162,14 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *
  *  First, what's elsewhere. \Class \Object:
  *
- *  - Inherits from {class BasicObject}[BasicObject.html#class-BasicObject-label-What-27s+Here].
- *  - Includes {module Kernel}[Kernel.html#module-Kernel-label-What-27s+Here].
+ *  - Inherits from {class BasicObject}[rdoc-ref:BasicObject@What-27s+Here].
+ *  - Includes {module Kernel}[rdoc-ref:Kernel@What-27s+Here].
  *
  *  Here, class \Object provides methods for:
  *
- *  - {Querying}[#class-Object-label-Querying]
- *  - {Instance Variables}[#class-Object-label-Instance+Variables]
- *  - {Other}[#class-Object-label-Other]
+ *  - {Querying}[rdoc-ref:Object@Querying]
+ *  - {Instance Variables}[rdoc-ref:Object@Instance+Variables]
+ *  - {Other}[rdoc-ref:Object@Other]
  *
  *  === Querying
  *
@@ -4304,18 +4304,18 @@ InitVM_Object(void)
      *
      * \Module \Kernel provides methods that are useful for:
      *
-     * - {Converting}[#module-Kernel-label-Converting]
-     * - {Querying}[#module-Kernel-label-Querying]
-     * - {Exiting}[#module-Kernel-label-Exiting]
-     * - {Exceptions}[#module-Kernel-label-Exceptions]
-     * - {IO}[#module-Kernel-label-IO]
-     * - {Procs}[#module-Kernel-label-Procs]
-     * - {Tracing}[#module-Kernel-label-Tracing]
-     * - {Subprocesses}[#module-Kernel-label-Subprocesses]
-     * - {Loading}[#module-Kernel-label-Loading]
-     * - {Yielding}[#module-Kernel-label-Yielding]
-     * - {Random Values}[#module-Kernel-label-Random+Values]
-     * - {Other}[#module-Kernel-label-Other]
+     * - {Converting}[rdoc-ref:Kernel@Converting]
+     * - {Querying}[rdoc-ref:Kernel@Querying]
+     * - {Exiting}[rdoc-ref:Kernel@Exiting]
+     * - {Exceptions}[rdoc-ref:Kernel@Exceptions]
+     * - {IO}[rdoc-ref:Kernel@IO]
+     * - {Procs}[rdoc-ref:Kernel@Procs]
+     * - {Tracing}[rdoc-ref:Kernel@Tracing]
+     * - {Subprocesses}[rdoc-ref:Kernel@Subprocesses]
+     * - {Loading}[rdoc-ref:Kernel@Loading]
+     * - {Yielding}[rdoc-ref:Kernel@Yielding]
+     * - {Random Values}[rdoc-ref:Kernel@Random+Values]
+     * - {Other}[rdoc-ref:Kernel@Other]
      *
      * === Converting
      *

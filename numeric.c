@@ -948,23 +948,23 @@ num_negative_p(VALUE num)
  *
  *  You can create a \Float object explicitly with:
  *
- *  - A {floating-point literal}[doc/syntax/literals_rdoc.html#label-Float+Literals].
+ *  - A {floating-point literal}[rdoc-ref:syntax/literals.rdoc@Float+Literals].
  *
  *  You can convert certain objects to Floats with:
  *
- *  - \Method {Float}[Kernel.html#method-i-Float].
+ *  - \Method #Float.
  *
  *  == What's Here
  *
  *  First, what's elsewhere. \Class \Float:
  *
- *  - Inherits from {class Numeric}[Numeric.html#class-Numeric-label-What-27s+Here].
+ *  - Inherits from {class Numeric}[rdoc-ref:Numeric@What-27s+Here].
  *
  *  Here, class \Float provides methods for:
  *
- *  - {Querying}[#class-Float-label-Querying]
- *  - {Comparing}[#class-Float-label-Comparing]
- *  - {Converting}[#class-Float-label-Converting]
+ *  - {Querying}[rdoc-ref:Float@Querying]
+ *  - {Comparing}[rdoc-ref:Float@Comparing]
+ *  - {Converting}[rdoc-ref:Float@Converting]
  *
  *  === Querying
  *
@@ -3482,11 +3482,11 @@ rb_num2ull(VALUE val)
  *
  * You can create an \Integer object explicitly with:
  *
- * - An {integer literal}[doc/syntax/literals_rdoc.html#label-Integer+Literals].
+ * - An {integer literal}[rdoc-ref:syntax/literals.rdoc@Integer+Literals].
  *
  * You can convert certain objects to Integers with:
  *
- * - \Method {Integer}[Kernel.html#method-i-Integer].
+ * - \Method #Integer.
  *
  * An attempt to add a singleton method to an instance of this class
  * causes an exception to be raised.
@@ -3495,14 +3495,14 @@ rb_num2ull(VALUE val)
  *
  * First, what's elsewhere. \Class \Integer:
  *
- * - Inherits from {class Numeric}[Numeric.html#class-Numeric-label-What-27s+Here].
+ * - Inherits from {class Numeric}[rdoc-ref:Numeric@What-27s+Here].
  *
  * Here, class \Integer provides methods for:
  *
- * - {Querying}[#class-Integer-label-Querying]
- * - {Comparing}[#class-Integer-label-Comparing]
- * - {Converting}[#class-Integer-label-Converting]
- * - {Other}[#class-Integer-label-Other]
+ * - {Querying}[rdoc-ref:Integer@Querying]
+ * - {Comparing}[rdoc-ref:Integer@Comparing]
+ * - {Converting}[rdoc-ref:Integer@Converting]
+ * - {Other}[rdoc-ref:Integer@Other]
  *
  * === Querying
  *
@@ -6099,15 +6099,15 @@ int_s_try_convert(VALUE self, VALUE num)
  *
  * First, what's elsewhere. \Class \Numeric:
  *
- * - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
- * - Includes {module Comparable}[Comparable.html#module-Comparable-label-What-27s+Here].
+ * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
+ * - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
  *
  * Here, class \Numeric provides methods for:
  *
- * - {Querying}[#class-Numeric-label-Querying]
- * - {Comparing}[#class-Numeric-label-Comparing]
- * - {Converting}[#class-Numeric-label-Converting]
- * - {Other}[#class-Numeric-label-Other]
+ * - {Querying}[rdoc-ref:Numeric@Querying]
+ * - {Comparing}[rdoc-ref:Numeric@Comparing]
+ * - {Converting}[rdoc-ref:Numeric@Converting]
+ * - {Other}[rdoc-ref:Numeric@Other]
  *
  * === Querying
  *
