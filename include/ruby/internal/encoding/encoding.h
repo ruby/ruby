@@ -375,8 +375,8 @@ rb_encoding *rb_enc_check(VALUE str1,VALUE str2);
 VALUE rb_enc_associate_index(VALUE obj, int encindex);
 
 /**
- * Identical to rb_enc_associate(), except it  takes an encoding itself instead
- * of its index.
+ * Identical to  rb_enc_associate_index(), except  it takes an  encoding itself
+ * instead of its index.
  *
  * @param[out]  obj                Object in question.
  * @param[in]   enc                An encoding.
