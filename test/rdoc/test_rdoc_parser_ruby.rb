@@ -4345,4 +4345,17 @@ end
     assert_equal 'Hello', meth.comment.text
   end
 
+  def test_parenthesized_cdecl
+    util_parser <<-RUBY
+module DidYouMean
+  class << (NameErrorCheckers = Object.new)
+  end
+end
+    RUBY
+
+    @parser.scan
+
+    refute_predicate @store.find_class_or_module('DidYouMean'), :nil?
+    refute_predicate @store.find_class_or_module('DidYouMean::NameErrorCheckers'), :nil?
+  end
 end
