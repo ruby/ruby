@@ -114,8 +114,6 @@ module Bundler
 
     def same_deps(spec, exemplary_spec)
       same_runtime_deps = spec.dependencies.sort == exemplary_spec.dependencies.sort
-      return same_runtime_deps unless spec.is_a?(Gem::Specification) && exemplary_spec.is_a?(Gem::Specification)
-
       same_metadata_deps = spec.required_ruby_version == exemplary_spec.required_ruby_version && spec.required_rubygems_version == exemplary_spec.required_rubygems_version
       same_runtime_deps && same_metadata_deps
     end
