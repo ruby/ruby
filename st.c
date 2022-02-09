@@ -1363,7 +1363,6 @@ st_shift(st_table *tab, st_data_t *key, st_data_t *value)
 	    return 1;
 	}
     }
-    tab->entries_start = tab->entries_bound = 0;
     if (value != 0) *value = 0;
     return 0;
 }
