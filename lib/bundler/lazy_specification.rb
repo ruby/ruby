@@ -8,12 +8,14 @@ module Bundler
     include ForcePlatform
 
     attr_reader :name, :version, :platform
-    attr_accessor :source, :remote, :force_ruby_platform, :dependencies
+    attr_accessor :source, :remote, :force_ruby_platform, :dependencies, :required_ruby_version, :required_rubygems_version
 
     def initialize(name, version, platform, source = nil)
       @name          = name
       @version       = version
       @dependencies  = []
+      @required_ruby_version = Gem::Requirement.default
+      @required_rubygems_version = Gem::Requirement.default
       @platform      = platform || Gem::Platform::RUBY
       @source        = source
       @force_ruby_platform = default_force_ruby_platform

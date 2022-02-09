@@ -28,6 +28,8 @@ module Bundler
           lazy_spec = LazySpecification.new(name, version, s.platform, source)
           lazy_spec.force_ruby_platform = force_ruby_platform
           lazy_spec.dependencies = s.dependencies
+          lazy_spec.required_ruby_version = s.required_ruby_version
+          lazy_spec.required_rubygems_version = s.required_rubygems_version
           lazy_spec
         end
       end
@@ -64,8 +66,6 @@ module Bundler
       end
 
       def metadata_dependencies(spec)
-        return [] if spec.is_a?(LazySpecification)
-
         [
           metadata_dependency("Ruby", spec.required_ruby_version),
           metadata_dependency("RubyGems", spec.required_rubygems_version),
