@@ -2,7 +2,9 @@
 require_relative 'xref_test_case'
 
 class TestRDocCrossReference < XrefTestCase
-  OPERATOR_METHODS = %w'== === != =~ !~ < > <= >= <=> [] []= << >> -@ +@ ! - + * / % ** !@ ` | & ^ ~'
+  EXAMPLE_METHODS = %w'== === != =~ !~ < > <= >= <=> [] []= << >>
+    -@ +@ ! - + * / % ** !@ ` | & ^ ~ __id__
+  '
 
   def setup
     super
@@ -21,7 +23,7 @@ class TestRDocCrossReference < XrefTestCase
   def test_METHOD_REGEXP_STR
     re = /\A(?:#{RDoc::CrossReference::METHOD_REGEXP_STR})\z/
 
-    OPERATOR_METHODS.each do |x|
+    EXAMPLE_METHODS.each do |x|
       re =~ x
       assert_equal x, $&
     end
@@ -170,7 +172,7 @@ class TestRDocCrossReference < XrefTestCase
     assert_ref page, 'README'
   end
 
-  def assert_resolve_oeprator(x)
+  def assert_resolve_method(x)
     @c1.methods_hash.clear
 
     i_op = RDoc::AnyMethod.new nil, x
@@ -189,9 +191,9 @@ class TestRDocCrossReference < XrefTestCase
     assert_ref c_op, "C1::#{x}"
   end
 
-  OPERATOR_METHODS.each do |x|
-    define_method("test_resolve_operator:#{x}") do
-      assert_resolve_oeprator(x)
+  EXAMPLE_METHODS.each do |x|
+    define_method("test_resolve_method:#{x}") do
+      assert_resolve_method(x)
     end
   end
 
