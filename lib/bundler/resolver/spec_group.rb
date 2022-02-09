@@ -27,7 +27,7 @@ module Bundler
         @specs.map do |s|
           lazy_spec = LazySpecification.new(name, version, s.platform, source)
           lazy_spec.force_ruby_platform = force_ruby_platform
-          lazy_spec.dependencies.replace s.dependencies
+          lazy_spec.dependencies = s.dependencies
           lazy_spec
         end
       end

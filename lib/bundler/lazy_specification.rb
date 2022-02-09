@@ -7,8 +7,8 @@ module Bundler
     include MatchPlatform
     include ForcePlatform
 
-    attr_reader :name, :version, :dependencies, :platform
-    attr_accessor :source, :remote, :force_ruby_platform
+    attr_reader :name, :version, :platform
+    attr_accessor :source, :remote, :force_ruby_platform, :dependencies
 
     def initialize(name, version, platform, source = nil)
       @name          = name
