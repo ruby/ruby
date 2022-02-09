@@ -2,7 +2,7 @@
 require File.expand_path '../xref_test_case', __FILE__
 
 class TestRDocCrossReference < XrefTestCase
-  OPERATOR_METHODS = %w'== === != =~ !~ < > <= >= <=> [] []= << >> -@ +@ ! - + * / % ** !@'
+  OPERATOR_METHODS = %w'== === != =~ !~ < > <= >= <=> [] []= << >> -@ +@ ! - + * / % ** !@ `'
 
   def setup
     super
