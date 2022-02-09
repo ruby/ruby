@@ -712,7 +712,7 @@ iow_internal_object_id(VALUE self)
 
 struct rof_data {
     VALUE refs;
-    VALUE internals;
+    VALUE values;
 };
 
 static void
@@ -723,11 +723,15 @@ reachable_object_from_i(VALUE obj, void *data_ptr)
     VALUE val = obj;
 
     if (rb_objspace_markable_object_p(obj)) {
-	if (rb_objspace_internal_object_p(obj)) {
-	    val = iow_newobj(obj);
-	    rb_ary_push(data->internals, val);
-	}
-	rb_hash_aset(data->refs, key, val);
+        if (NIL_P(rb_hash_lookup(data->refs, key))) {
+            rb_hash_aset(data->refs, key, Qtrue);
+
+            if (rb_objspace_internal_object_p(obj)) {
+                val = iow_newobj(obj);
+            }
+
+            rb_ary_push(data->values, val);
+        }
     }
 }
 
@@ -785,21 +789,21 @@ static VALUE
 reachable_objects_from(VALUE self, VALUE obj)
 {
     if (rb_objspace_markable_object_p(obj)) {
-	struct rof_data data;
+        struct rof_data data;
 
-	if (rb_typeddata_is_kind_of(obj, &iow_data_type)) {
-	    obj = (VALUE)DATA_PTR(obj);
-	}
+        if (rb_typeddata_is_kind_of(obj, &iow_data_type)) {
+            obj = (VALUE)DATA_PTR(obj);
+        }
 
-	data.refs = rb_ident_hash_new();
-	data.internals = rb_ary_new();
+        data.refs = rb_obj_hide(rb_ident_hash_new());
+        data.values = rb_ary_new();
 
-	rb_objspace_reachable_objects_from(obj, reachable_object_from_i, &data);
+        rb_objspace_reachable_objects_from(obj, reachable_object_from_i, &data);
 
-        return rb_funcall(data.refs, rb_intern("values"), 0);
+        return data.values;
     }
     else {
-	return Qnil;
+        return Qnil;
     }
 }
 

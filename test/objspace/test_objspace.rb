@@ -140,6 +140,18 @@ class TestObjSpace < Test::Unit::TestCase
     end;
   end
 
+  def test_reachable_objects_during_iteration
+    opts = %w[--disable-gem --disable=frozen-string-literal -robjspace]
+    assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
+    begin;
+      ObjectSpace.each_object{|o|
+        o.inspect
+        ObjectSpace.reachable_objects_from(Class)
+      }
+    end;
+  end
+
+
   def test_reachable_objects_from_root
     root_objects = ObjectSpace.reachable_objects_from_root
 
