@@ -5474,7 +5474,7 @@ kwrest_mark	: tPOW
 		| tDSTAR
 		;
 
-f_no_kwarg	: kwrest_mark keyword_nil
+f_no_kwarg	: p_kwnorest
 		    {
 		    /*%%%*/
 		    /*% %*/
