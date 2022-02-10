@@ -80,6 +80,7 @@ Note: We're only listing outstanding class updates.
     * etc 1.4.0
     * io-console 0.5.11
     * io-wait 0.2.2
+    * ipaddr 1.2.4
     * reline 0.3.1
 *   The following bundled gems are updated.
     * net-imap 0.2.3
