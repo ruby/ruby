@@ -32,7 +32,7 @@ begin
 rescue Gem::LoadError
 end unless defined?(Rake)
 
-require 'rdoc'
+require_relative '../rdoc'
 require 'rake'
 require 'rake/tasklib'
 

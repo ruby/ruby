@@ -1261,6 +1261,6 @@ class RDoc::Context < RDoc::CodeObject
     klass
   end
 
-  autoload :Section, 'rdoc/context/section'
+  autoload :Section, "#{__dir__}/context/section"
 
 end

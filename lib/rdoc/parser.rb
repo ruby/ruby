@@ -263,8 +263,8 @@ class RDoc::Parser
     @preprocess.options = @options
   end
 
-  autoload :RubyTools, 'rdoc/parser/ruby_tools'
-  autoload :Text,      'rdoc/parser/text'
+  autoload :RubyTools, "#{__dir__}/parser/ruby_tools"
+  autoload :Text,      "#{__dir__}/parser/text"
 
 end
 

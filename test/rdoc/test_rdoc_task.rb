@@ -171,4 +171,3 @@ class TestRDocTask < RDoc::TestCase
   end
 
 end if defined?(Rake::Task)
-
