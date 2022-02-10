@@ -151,9 +151,7 @@ rb_darray_ensure_space(void *ptr_to_ary, size_t header_size, size_t element_size
     }
 
     // Calculate new buffer size
-    size_t current_buffer_size = rb_darray_buffer_size(current_capa, header_size, element_size);
     size_t new_buffer_size = rb_darray_buffer_size(new_capa, header_size, element_size);
-    if (new_buffer_size <= current_buffer_size) return 0;
 
     rb_darray_meta_t *doubled_ary = realloc(meta, new_buffer_size);
     if (!doubled_ary) return 0;
