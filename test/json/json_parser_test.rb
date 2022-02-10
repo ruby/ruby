@@ -274,6 +274,14 @@ EOT
     json = <<EOT
 {
   "key1":"value1"  /* multi line
+                    // nested eol comment
+                    /* legal nested multi line comment start sequence */
+}
+EOT
+    assert_equal({ "key1" => "value1" }, parse(json))
+    json = <<EOT
+{
+  "key1":"value1"  /* multi line
                    // nested eol comment
                    closed multi comment */
                    and again, throw an Error */
