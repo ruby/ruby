@@ -104,18 +104,6 @@ module Bundler
       obj.to_s
     end
 
-    def configuration
-      require_relative "psyched_yaml"
-      Gem.configuration
-    rescue Gem::SystemExitException, LoadError => e
-      Bundler.ui.error "#{e.class}: #{e.message}"
-      Bundler.ui.trace e
-      raise
-    rescue ::Psych::SyntaxError => e
-      raise YamlSyntaxError.new(e, "Your RubyGems configuration, which is " \
-        "usually located in ~/.gemrc, contains invalid YAML syntax.")
-    end
-
     def ruby_engine
       Gem.ruby_engine
     end
@@ -217,7 +205,7 @@ module Bundler
 
     def spec_from_gem(path, policy = nil)
       require "rubygems/security"
-      require_relative "psyched_yaml"
+      require "psych"
       gem_from_path(path, security_policies[policy]).spec
     rescue Exception, Gem::Exception, Gem::Security::Exception => e # rubocop:disable Lint/RescueException
       if e.is_a?(Gem::Security::Exception) ||
@@ -522,7 +510,7 @@ module Bundler
 
     def gem_remote_fetcher
       require "rubygems/remote_fetcher"
-      proxy = configuration[:http_proxy]
+      proxy = Gem.configuration[:http_proxy]
       Gem::RemoteFetcher.new(proxy)
     end
 

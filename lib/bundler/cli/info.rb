@@ -73,13 +73,22 @@ module Bundler
       gem_info << "\tBug Tracker: #{metadata["bug_tracker_uri"]}\n" if metadata.key?("bug_tracker_uri")
       gem_info << "\tMailing List: #{metadata["mailing_list_uri"]}\n" if metadata.key?("mailing_list_uri")
       gem_info << "\tPath: #{spec.full_gem_path}\n"
-      gem_info << "\tDefault Gem: yes" if spec.respond_to?(:default_gem?) && spec.default_gem?
+      gem_info << "\tDefault Gem: yes\n" if spec.respond_to?(:default_gem?) && spec.default_gem?
+      gem_info << "\tReverse Dependencies: \n\t\t#{gem_dependencies.join("\n\t\t")}" if gem_dependencies.any?
 
       if name != "bundler" && spec.deleted_gem?
         return Bundler.ui.warn "The gem #{name} has been deleted. Gemspec information is still available though:\n#{gem_info}"
       end
 
       Bundler.ui.info gem_info
+    end
+
+    def gem_dependencies
+      @gem_dependencies ||= Bundler.definition.specs.map do |spec|
+        dependency = spec.dependencies.find {|dep| dep.name == gem_name }
+        next unless dependency
+        "#{spec.name} (#{spec.version}) depends on #{gem_name} (#{dependency.requirements_list.join(", ")})"
+      end.compact.sort
     end
   end
 end

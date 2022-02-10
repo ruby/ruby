@@ -21,6 +21,7 @@ RSpec.describe "bundle info" do
         source "#{file_uri_for(gem_repo2)}"
         gem "rails"
         gem "has_metadata"
+        gem "thin"
       G
     end
 
@@ -121,6 +122,30 @@ RSpec.describe "bundle info" do
 
       it "excludes the homepage field from the output" do
         expect(out).to_not include("Homepage:")
+      end
+    end
+
+    context "when gem has a reverse dependency on any version" do
+      it "prints the details" do
+        bundle "info rack"
+
+        expect(out).to include("Reverse Dependencies: \n\t\tthin (1.0) depends on rack (>= 0)")
+      end
+    end
+
+    context "when gem has a reverse dependency on a specific version" do
+      it "prints the details" do
+        bundle "info actionpack"
+
+        expect(out).to include("Reverse Dependencies: \n\t\trails (2.3.2) depends on actionpack (= 2.3.2)")
+      end
+    end
+
+    context "when gem has no reverse dependencies" do
+      it "excludes the reverse dependencies field from the output" do
+        bundle "info rails"
+
+        expect(out).not_to include("Reverse Dependencies:")
       end
     end
   end

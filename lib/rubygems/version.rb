@@ -1,4 +1,7 @@
 # frozen_string_literal: true
+
+require_relative "deprecate"
+
 ##
 # The Version class processes string versions into comparable
 # values. A version string should normally be a series of numbers
@@ -148,8 +151,6 @@
 #
 # For the last example, single-digit versions are automatically extended with
 # a zero to give a sensible result.
-
-require_relative "deprecate"
 
 class Gem::Version
   autoload :Requirement, File.expand_path('requirement', __dir__)

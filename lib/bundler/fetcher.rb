@@ -240,7 +240,7 @@ module Bundler
         raise SSLError if needs_ssl && !defined?(OpenSSL::SSL)
 
         con = PersistentHTTP.new :name => "bundler", :proxy => :ENV
-        if gem_proxy = Bundler.rubygems.configuration[:http_proxy]
+        if gem_proxy = Gem.configuration[:http_proxy]
           con.proxy = Bundler::URI.parse(gem_proxy) if gem_proxy != :no_proxy
         end
 
@@ -251,8 +251,8 @@ module Bundler
         end
 
         ssl_client_cert = Bundler.settings[:ssl_client_cert] ||
-          (Bundler.rubygems.configuration.ssl_client_cert if
-            Bundler.rubygems.configuration.respond_to?(:ssl_client_cert))
+          (Gem.configuration.ssl_client_cert if
+            Gem.configuration.respond_to?(:ssl_client_cert))
         if ssl_client_cert
           pem = File.read(ssl_client_cert)
           con.cert = OpenSSL::X509::Certificate.new(pem)
@@ -283,8 +283,8 @@ module Bundler
     def bundler_cert_store
       store = OpenSSL::X509::Store.new
       ssl_ca_cert = Bundler.settings[:ssl_ca_cert] ||
-        (Bundler.rubygems.configuration.ssl_ca_cert if
-          Bundler.rubygems.configuration.respond_to?(:ssl_ca_cert))
+        (Gem.configuration.ssl_ca_cert if
+          Gem.configuration.respond_to?(:ssl_ca_cert))
       if ssl_ca_cert
         if File.directory? ssl_ca_cert
           store.add_path ssl_ca_cert
