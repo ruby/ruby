@@ -5001,7 +5001,7 @@ recursive_eql(VALUE ary1, VALUE ary2, int recur)
  *
  *  Otherwise, returns +false+.
  *
- *  This method is different from method {Array#==}[#method-i-3D-3D],
+ *  This method is different from method Array#==,
  *  which compares using method <tt>Object#==</tt>.
  */
 
@@ -8119,10 +8119,11 @@ rb_ary_deconstruct(VALUE ary)
  *  #hash:: Returns the integer hash code.
  *
  *  === Methods for Comparing
- *  {#<=>}[#method-i-3C-3D-3E]:: Returns -1, 0, or 1
- *                               as +self+ is less than, equal to, or greater than a given object.
- *  {#==}[#method-i-3D-3D]:: Returns whether each element in +self+ is <tt>==</tt> to the
- *                           corresponding element in a given object.
+
+ *  #<=>:: Returns -1, 0, or 1 as +self+ is less than, equal to, or greater than a given
+ *         object.
+ *  #==:: Returns whether each element in +self+ is <tt>==</tt> to the corresponding element
+ *        in a given object.
  *  #eql?:: Returns whether each element in +self+ is <tt>eql?</tt> to the corresponding
  *          element in a given object.
 
@@ -8202,13 +8203,13 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  === Methods for Combining
  *
- *  {#&}[#method-i-26]:: Returns an array containing elements found both in +self+ and a given array.
+ *  #&:: Returns an array containing elements found both in +self+ and a given array.
  *  #intersection:: Returns an array containing elements found both in +self+
  *                  and in each given array.
  *  #+:: Returns an array containing all elements of +self+ followed by all elements of a given array.
  *  #-:: Returns an array containiing all elements of +self+ that are not found in a given array.
- *  {#|}[#method-i-7C]:: Returns an array containing all elements of +self+ and all elements of a given array,
- *                       duplicates removed.
+ *  #|:: Returns an array containing all elements of +self+ and all elements of a given array,
+ *       duplicates removed.
  *  #union:: Returns an array containing all elements of +self+ and all elements of given arrays,
  *           duplicates removed.
  *  #difference:: Returns an array containing all elements of +self+ that are not found

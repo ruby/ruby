@@ -14432,7 +14432,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - ::binwrite:: Writes the given string to the file at the given filepath,
  *                 in binary mode.
  *  - ::write:: Writes the given string to +self+.
- *  - {::<<}[#method-i-3C-3C]:: Appends the given string to +self+.
+ *  - ::<<:: Appends the given string to +self+.
  *  - #print:: Prints last read line or given objects to +self+.
  *  - #printf:: Writes to +self+ based on the given format string and objects.
  *  - #putc:: Writes a character to +self+.

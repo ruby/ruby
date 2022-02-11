@@ -2171,7 +2171,7 @@ range_count(int argc, VALUE *argv, VALUE range)
  *
  * A user-defined class that is to be used in a range
  * must implement instance <tt><=></tt>;
- * see {Integer#<=>}[Integer.html#method-i-3C-3D-3E].
+ * see Integer#<=>.
  * To make iteration available, it must also implement
  * instance method +succ+; see Integer#succ.
  *
@@ -2243,8 +2243,7 @@ range_count(int argc, VALUE *argv, VALUE range)
  *
  * === Methods for Comparing
  *
- * - {#==}[#method-i-3D-3D]:: Returns whether a given object is equal to +self+
- *                            (uses #==).
+ * - #==:: Returns whether a given object is equal to +self+ (uses #==).
  * - #===:: Returns whether the given object is between the begin and end values.
  * - #cover?:: Returns whether a given object is within +self+.
  * - #eql?:: Returns whether a given object is equal to +self+ (uses #eql?).

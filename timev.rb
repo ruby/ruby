@@ -117,8 +117,7 @@
 # - ::at: Returns a new time based on seconds since epoch.
 # - ::now: Returns a new time based on the current system time.
 # - #+ (plus): Returns a new time increased by the given number of seconds.
-# - {-}[#method-i-2D] (minus): Returns a new time
-#                              decreased by the given number of seconds.
+# - #- (minus): Returns a new time decreased by the given number of seconds.
 #
 # === Methods for Fetching
 #
@@ -158,7 +157,7 @@
 #
 # === Methods for Comparing
 #
-# - {#<=>}[#method-i-3C-3D-3E]: Compares +self+ to another time.
+# - #<=>: Compares +self+ to another time.
 # - #eql?: Returns whether the time is equal to another time.
 #
 # === Methods for Converting

@@ -4188,7 +4188,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
  *  returned by <tt>object =~ self</tt>.
  *
  *  Note that <tt>string =~ regexp</tt> is different from <tt>regexp =~ string</tt>
- *  (see {Regexp#=~}[Regexp.html#method-i-3D~]):
+ *  (see Regexp#=~):
  *
  *    number= nil
  *    "no. 9" =~ /(?<number>\d+)/
@@ -11323,9 +11323,10 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
  *
  * === Methods for Comparing
  *
- * - {#<=>}[#method-i-3C-3D-3E]:: Returns -1, 0, or 1 as a given symbol is smaller than, equal to, or larger than symbol.
- * - {#==, #===}[#method-i-3D-3D]:: Returns +true+ if a given symbol
- *                                  has the same content and encoding.
+ * - #<=>:: Returns -1, 0, or 1 as a given symbol is smaller than, equal to,
+ *          or larger than symbol.
+ * - #==, #===:: Returns +true+ if a given symbol has the same content and
+ *               encoding.
  * - #casecmp:: Ignoring case, returns -1, 0, or 1 as a given
  *              symbol is smaller than, equal to, or larger than symbol.
  * - #casecmp?:: Returns +true+ if symbol is equal to a given symbol
@@ -12116,10 +12117,10 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  === Methods for a Frozen/Unfrozen String
  *
- *  - {#+string}[#method-i-2B-40]:: Returns a string that is not frozen:
- *                                  +self+, if not frozen; +self.dup+ otherwise.
- *  - {#-string}[#method-i-2D-40]:: Returns a string that is frozen:
- *                                  +self+, if already frozen; +self.freeze+ otherwise.
+ *  - #+string:: Returns a string that is not frozen: +self+, if not frozen;
+ *               +self.dup+ otherwise.
+ *  - #-string:: Returns a string that is frozen: +self+, if already frozen;
+ *               +self.freeze+ otherwise.
  *  - #freeze:: Freezes +self+, if not already frozen; returns +self+.
  *
  *  === Methods for Querying
@@ -12160,9 +12161,10 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  === Methods for Comparing
  *
- *  - {#==, #===}[#method-i-3D-3D]:: Returns +true+ if a given other string has the same content as +self+.
+ *  - #==, #===:: Returns +true+ if a given other string has the same content as +self+.
  *  - #eql?:: Returns +true+ if the content is the same as the given other string.
- *  - {#<=>}[#method-i-3C-3D-3E]:: Returns -1, 0, or 1 as a given other string is smaller than, equal to, or larger than +self+.
+ *  - #<=>:: Returns -1, 0, or 1 as a given other string is smaller than,
+ *           equal to, or larger than +self+.
  *  - #casecmp:: Ignoring case, returns -1, 0, or 1 as a given
  *               other string is smaller than, equal to, or larger than +self+.
  *  - #casecmp?:: Returns +true+ if the string is equal to a given string after Unicode case folding;
