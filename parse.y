@@ -5740,9 +5740,7 @@ operation	: tIDENTIFIER
 		| tFID
 		;
 
-operation2	: tIDENTIFIER
-		| tCONSTANT
-		| tFID
+operation2	: operation
 		| op
 		;
 
