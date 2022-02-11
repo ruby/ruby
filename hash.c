@@ -7089,7 +7089,7 @@ static const rb_data_type_t env_data_type = {
  *  #[]=, #store:: Associates a given key with a given value.
  *  #merge:: Returns the hash formed by merging each given hash into a copy of +self+.
  *  #merge!, #update:: Merges each given hash into +self+.
- *  #replace:: Replaces the entire contents of +self+ with the contents of a givan hash.
+ *  #replace:: Replaces the entire contents of +self+ with the contents of a given hash.
  *
  *  ==== Methods for Deleting
  *
