@@ -7230,13 +7230,13 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
 
 	/* put it on the result array */
 	if (NIL_P(result)) {
-	    FL_SET(t0, FL_USER5);
+            FL_SET(t0, RARRAY_SHARED_ROOT_FLAG);
 	    rb_yield(subarray);
-	    if (! FL_TEST(t0, FL_USER5)) {
+            if (!FL_TEST(t0, RARRAY_SHARED_ROOT_FLAG)) {
 		rb_raise(rb_eRuntimeError, "product reentered");
 	    }
 	    else {
-		FL_UNSET(t0, FL_USER5);
+                FL_UNSET(t0, RARRAY_SHARED_ROOT_FLAG);
 	    }
 	}
 	else {
