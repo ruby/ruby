@@ -265,7 +265,7 @@ class TestException < Test::Unit::TestCase
 
       v = assert_throw(:extdep, bug18562) do
         require t.path
-      rescue rescue_all => e
+      rescue rescue_all
         assert(false, "should not reach here")
       end
 
