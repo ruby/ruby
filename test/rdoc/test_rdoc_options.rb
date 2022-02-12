@@ -56,6 +56,8 @@ class TestRDocOptions < RDoc::TestCase
   end
 
   def test_to_yaml
+    RDoc.load_yaml
+
     coder = YAML.load(@options.to_yaml)
 
     encoding = 'UTF-8'
@@ -87,6 +89,8 @@ class TestRDocOptions < RDoc::TestCase
   end
 
   def test_to_yaml_trim_paths
+    RDoc.load_yaml
+
     subdir = nil
     coder = nil
 
