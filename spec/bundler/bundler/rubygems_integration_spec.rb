@@ -54,7 +54,7 @@ RSpec.describe Bundler::RubygemsIntegration do
 
     it "successfully downloads gem with retries" do
       expect(Bundler.rubygems).to receive(:gem_remote_fetcher).and_return(fetcher)
-      expect(fetcher).to receive(:headers=).with("X-Gemfile-Source" => "https://foo.bar")
+      expect(fetcher).to receive(:headers=).with({ "X-Gemfile-Source" => "https://foo.bar" })
       expect(Bundler::Retry).to receive(:new).with("download gem from #{uri}/").
         and_return(bundler_retry)
       expect(bundler_retry).to receive(:attempts).and_yield
@@ -76,7 +76,7 @@ RSpec.describe Bundler::RubygemsIntegration do
 
       it "sets the 'X-Gemfile-Source' header containing the original source" do
         expect(Bundler.rubygems).to receive(:gem_remote_fetcher).twice.and_return(fetcher)
-        expect(fetcher).to receive(:headers=).with("X-Gemfile-Source" => "http://zombo.com").twice
+        expect(fetcher).to receive(:headers=).with({ "X-Gemfile-Source" => "http://zombo.com" }).twice
         expect(fetcher).to receive(:fetch_path).with(uri + "specs.4.8.gz").and_return(specs_response)
         expect(fetcher).to receive(:fetch_path).with(uri + "prerelease_specs.4.8.gz").and_return(prerelease_specs_response)
         result = Bundler.rubygems.fetch_all_remote_specs(remote_with_mirror)
