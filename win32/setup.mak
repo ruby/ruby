@@ -123,13 +123,6 @@ int main(void) {FILE *volatile f = stdin; return 0;}
 
 -headers-: nul
 
-check-psapi.h: nul
-	($(CC) -MD <<conftest.c psapi.lib -link && echo>>$(MAKEFILE) HAVE_PSAPI_H=1) & $(WIN32DIR:/=\)\rm.bat conftest.*
-#include <windows.h>
-#include <psapi.h>
-int main(void) {return (EnumProcesses(NULL,0,NULL) ? 0 : 1);}
-<<
-
 -version-: nul verconf.mk
 
 verconf.mk: nul
