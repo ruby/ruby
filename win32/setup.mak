@@ -123,6 +123,55 @@ int main(void) {FILE *volatile f = stdin; return 0;}
 
 -headers-: nul
 
+-headers-: vs2022-fp-bug
+
+# Check the bug reported at:
+# https://developercommunity.visualstudio.com/t/With-__assume-isnan-after-isinf/1515649
+# https://developercommunity.visualstudio.com/t/Prev-Issue---with-__assume-isnan-/1597317
+vs2022-fp-bug:
+	@echo checking for $(@:-= )
+	@echo <<$@.c > NUL
+/* compile with -O2 */
+#include <math.h>
+#include <float.h>
+
+#define value_finite(d) 'f'
+#define value_infinity() 'i'
+#define value_nan() 'n'
+
+#ifdef NO_ASSUME
+# define ASSUME_TRUE() (void)0
+#else
+# define ASSUME_TRUE() __assume(1)
+#endif
+
+static int
+check_value(double value)
+{
+    if (isinf(value)) {
+        return value_infinity();
+    }
+    else if (isnan(value)) {
+        return value_nan();
+    }
+
+    ASSUME_TRUE();
+    return value_finite(value);
+}
+
+int
+main(void)
+{
+    int c = check_value(nan(""));
+    printf("NaN=>%c\n", c);
+    return c != value_nan();
+}
+<<
+	@( \
+	  ($(CC) -O2 -DNO_ASSUME $@.c && .\$@ && $(CC) -O2 $@.c) && \
+	  (.\$@ || echo>>$(MAKEFILE) VS2022_FP_BUG=1) \
+	) & $(WIN32DIR:/=\)\rm.bat $@.*
+
 -version-: nul verconf.mk
 
 verconf.mk: nul
