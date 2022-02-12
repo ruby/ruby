@@ -843,7 +843,7 @@ rdoc_include:
     end
   end
 
-  def load_options_no_file
+  def test_load_options_no_file
     temp_dir do
       options = RDoc::Options.load_options
 
