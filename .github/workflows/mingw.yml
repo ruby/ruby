@@ -36,7 +36,7 @@ jobs:
         with:
           path: src
       - name: Set up Ruby & MSYS2
-        uses: MSP-Greg/setup-ruby-pkgs@v1
+        uses: ruby/setup-ruby@v1
         with:
           ruby-version: 2.6
           mingw: _upgrade_ gdbm gmp libffi libyaml openssl ragel readline
@@ -44,6 +44,8 @@ jobs:
       - name: where check
         run: |
           # show where
+          mv /c/Windows/System32/libcrypto-1_1-x64.dll /c/Windows/System32/libcrypto-1_1-x64.dll_
+          mv /c/Windows/System32/libssl-1_1-x64.dll    /c/Windows/System32/libssl-1_1-x64.dll_
           Write-Host
           $where = 'gcc.exe', 'ragel.exe', 'make.exe', 'bison.exe', 'libcrypto-1_1-x64.dll', 'libssl-1_1-x64.dll'
           foreach ($e in $where) {
