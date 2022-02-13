@@ -6,7 +6,8 @@ on: [push, pull_request]
 #
 jobs:
   make:
-    runs-on: windows-2019
+    runs-on: windows-2022
+    name: ${{ github.workflow }} (${{ matrix.msystem }})
     env:
       MSYSTEM: MINGW64
       MSYSTEM_PREFIX: /mingw64
