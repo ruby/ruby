@@ -50,13 +50,12 @@ jobs:
             if ($rslt.contains($e)) { Write-Host $rslt }
             else { Write-Host "`nCan't find $e" }
           }
-      - name: misc setup, autoreconf
+
+      - name: autogen
         run: |
-          mkdir install
-          mkdir temp
-          cd src
-          sh -c "autoreconf -fi"
-        working-directory:
+          ./autogen.sh
+        working-directory: src
+        shell: sh
 
       - name: configure
         run: |
@@ -66,7 +65,7 @@ jobs:
           [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
           $config_args = "--build=$env:CHOST --host=$env:CHOST --target=$env:CHOST"
           Write-Host $config_args
-          sh -c "../src/configure --disable-install-doc --prefix=/install $config_args"
+          sh -c "../src/configure --disable-install-doc --prefix=/. $config_args"
           # Write-Host "-------------------------------------- config.log"
           # Get-Content ./config.log | foreach {Write-Output $_}
 
@@ -92,7 +91,7 @@ jobs:
           $PSDefaultParameterValues['*:Encoding'] = 'utf8'
           [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
           [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
-          make DESTDIR=.. install-nodoc
+          make DESTDIR=../install install-nodoc
 
       - name: test
         timeout-minutes: 5
