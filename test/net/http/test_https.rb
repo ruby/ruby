@@ -143,6 +143,11 @@ class TestNetHTTPS < Test::Unit::TestCase
     # See https://github.com/openssl/openssl/pull/5967 for details.
     skip if OpenSSL::OPENSSL_LIBRARY_VERSION =~ /OpenSSL 1.1.0h/
 
+    # FIXME: GitHub Actions for MinGW failed. Maybe it's because of OpenSSL on MiNGW
+    if /mingw/ =~ RUBY_PLATFORM
+      skip "Skip net/https test using openssl on MinGW"
+    end
+
     http = Net::HTTP.new("localhost", config("port"))
     http.use_ssl = true
     http.cert_store = TEST_STORE
