@@ -3775,7 +3775,7 @@ rb_enc_uint_chr(unsigned int code, rb_encoding *enc)
  *  represented by the value of +self+, according to the given +encoding+.
  *
  *    65.chr                   # => "A"
- *    0..chr                   # => "\x00"
+ *    0.chr                    # => "\x00"
  *    255.chr                  # => "\xFF"
  *    string = 255.chr(Encoding::UTF_8)
  *    string.encoding          # => Encoding::UTF_8
