@@ -157,9 +157,9 @@ RSpec.describe "bundle lock" do
       gem "rack_middleware", :group => "test"
     G
     bundle "config set without test"
-    bundle "config set path .bundle"
+    bundle "config set path vendor/bundle"
     bundle "lock"
-    expect(bundled_app(".bundle")).not_to exist
+    expect(bundled_app("vendor/bundle")).not_to exist
   end
 
   # see update_spec for more coverage on same options. logic is shared so it's not necessary
@@ -508,6 +508,11 @@ RSpec.describe "bundle lock" do
 
       build_gem "raygun-apm", "1.0.78" do |s|
         s.platform = "x64-mingw32"
+        s.required_ruby_version = "< #{next_minor}.dev"
+      end
+
+      build_gem "raygun-apm", "1.0.78" do |s|
+        s.platform = "x64-mingw-ucrt"
         s.required_ruby_version = "< #{next_minor}.dev"
       end
     end

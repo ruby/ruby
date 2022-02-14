@@ -199,7 +199,7 @@ module Spec
         command_execution.exitstatus = if status.exited?
           status.exitstatus
         elsif status.signaled?
-          128 + status.termsig
+          exit_status_for_signal(status.termsig)
         end
       end
 
@@ -225,7 +225,7 @@ module Spec
     end
 
     def config(config = nil, path = bundled_app(".bundle/config"))
-      return YAML.load_file(path) unless config
+      return Psych.load_file(path) unless config
       FileUtils.mkdir_p(File.dirname(path))
       File.open(path, "w") do |f|
         f.puts config.to_yaml
@@ -237,33 +237,31 @@ module Spec
       config(config, home(".bundle/config"))
     end
 
-    def create_file(*args)
-      path = bundled_app(args.shift)
-      path = args.shift if args.first.is_a?(Pathname)
-      str  = args.shift || ""
+    def create_file(path, contents = "")
+      path = Pathname.new(path).expand_path(bundled_app) unless path.is_a?(Pathname)
       path.dirname.mkpath
       File.open(path.to_s, "w") do |f|
-        f.puts strip_whitespace(str)
+        f.puts strip_whitespace(contents)
       end
     end
 
     def gemfile(*args)
-      contents = args.shift
+      contents = args.pop
 
       if contents.nil?
         File.open(bundled_app_gemfile, "r", &:read)
       else
-        create_file("Gemfile", contents, *args)
+        create_file(args.pop || "Gemfile", contents)
       end
     end
 
     def lockfile(*args)
-      contents = args.shift
+      contents = args.pop
 
       if contents.nil?
         File.open(bundled_app_lock, "r", &:read)
       else
-        create_file("Gemfile.lock", contents, *args)
+        create_file(args.pop || "Gemfile.lock", contents)
       end
     end
 
@@ -274,8 +272,8 @@ module Spec
     end
 
     def install_gemfile(*args)
+      opts = args.last.is_a?(Hash) ? args.pop : {}
       gemfile(*args)
-      opts = args.last.is_a?(Hash) ? args.last : {}
       bundle :install, opts
     end
 
@@ -558,6 +556,11 @@ module Spec
         false
       end
       port
+    end
+
+    def exit_status_for_signal(signal_number)
+      # For details see: https://en.wikipedia.org/wiki/Exit_status#Shell_and_scripts
+      128 + signal_number
     end
 
     private

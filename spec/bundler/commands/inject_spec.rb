@@ -99,7 +99,7 @@ Usage: "bundle inject GEM VERSION"
 
     it "restores frozen afterwards" do
       bundle "inject 'rack-obama' '> 0'"
-      config = YAML.load(bundled_app(".bundle/config").read)
+      config = Psych.load(bundled_app(".bundle/config").read)
       expect(config["BUNDLE_DEPLOYMENT"] || config["BUNDLE_FROZEN"]).to eq("true")
     end
 
