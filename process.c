@@ -4756,7 +4756,7 @@ rb_spawn(int argc, const VALUE *argv)
  *  _command..._ is one of following forms.
  *
  *  This method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[doc/command_injection_rdoc.html].
+ *  see {Command Injection}[command_injection.rdoc].
  *
  *  [<code>commandline</code>]
  *    command line string which is passed to the standard shell
