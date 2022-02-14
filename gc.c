@@ -5722,10 +5722,6 @@ gc_sweep_finish(rb_objspace_t *objspace)
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END_SWEEP, 0);
     gc_mode_transition(objspace, gc_mode_none);
-
-#if RGENGC_CHECK_MODE >= 2
-    gc_verify_internal_consistency(objspace);
-#endif
 }
 
 static int
@@ -9340,6 +9336,14 @@ gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_l
     mjit_gc_exit_hook();
     gc_exit_clock(objspace, event);
     RB_VM_LOCK_LEAVE_LEV(lock_lev);
+
+#if RGENGC_CHECK_MODE >= 2
+    if (event == gc_enter_event_sweep_continue && gc_mode(objspace) == gc_mode_none) {
+        GC_ASSERT(!during_gc);
+        // sweep finished
+        gc_verify_internal_consistency(objspace);
+    }
+#endif
 }
 
 static void *
@@ -11226,19 +11230,23 @@ rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-    if (during_gc) rb_bug("rb_objspace_reachable_objects_from() is not supported while during_gc == true");
+    RB_VM_LOCK_ENTER();
+    {
+        if (during_gc) rb_bug("rb_objspace_reachable_objects_from() is not supported while during_gc == true");
 
-    if (is_markable_object(objspace, obj)) {
-        rb_ractor_t *cr = GET_RACTOR();
-        struct gc_mark_func_data_struct mfd = {
-            .mark_func = func,
-            .data = data,
-        }, *prev_mfd = cr->mfd;
+        if (is_markable_object(objspace, obj)) {
+            rb_ractor_t *cr = GET_RACTOR();
+            struct gc_mark_func_data_struct mfd = {
+                .mark_func = func,
+                .data = data,
+            }, *prev_mfd = cr->mfd;
 
-        cr->mfd = &mfd;
-	gc_mark_children(objspace, obj);
-        cr->mfd = prev_mfd;
+            cr->mfd = &mfd;
+            gc_mark_children(objspace, obj);
+            cr->mfd = prev_mfd;
+        }
     }
+    RB_VM_LOCK_LEAVE();
 }
 
 struct root_objects_data {
