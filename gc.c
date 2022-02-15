@@ -12033,6 +12033,13 @@ rb_xmalloc_mul_add(size_t x, size_t y, size_t z) /* x * y + z */
 }
 
 void *
+rb_xcalloc_mul_add(size_t x, size_t y, size_t z) /* x * y + z */
+{
+    size_t w = size_mul_add_or_raise(x, y, z, rb_eArgError);
+    return ruby_xcalloc(w, 1);
+}
+
+void *
 rb_xrealloc_mul_add(const void *p, size_t x, size_t y, size_t z) /* x * y + z */
 {
     size_t w = size_mul_add_or_raise(x, y, z, rb_eArgError);

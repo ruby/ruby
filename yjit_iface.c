@@ -633,8 +633,8 @@ rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic)
             rb_yjit_block_array_t getinlinecache_blocks = yjit_get_version_array(iseq, get_insn_idx);
 
             // Put a bound for loop below to be defensive
-            const int32_t initial_version_count = rb_darray_size(getinlinecache_blocks);
-            for (int32_t iteration=0; iteration<initial_version_count; ++iteration) {
+            const size_t initial_version_count = rb_darray_size(getinlinecache_blocks);
+            for (size_t iteration=0; iteration<initial_version_count; ++iteration) {
                 getinlinecache_blocks = yjit_get_version_array(iseq, get_insn_idx);
 
                 if (rb_darray_size(getinlinecache_blocks) > 0) {

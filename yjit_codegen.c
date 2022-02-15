@@ -97,9 +97,7 @@ jit_mov_gc_ptr(jitstate_t *jit, codeblock_t *cb, x86opnd_t reg, VALUE ptr)
     uint32_t ptr_offset = cb->write_pos - sizeof(VALUE);
 
     if (!SPECIAL_CONST_P(ptr)) {
-        if (!rb_darray_append(&jit->block->gc_object_offsets, ptr_offset)) {
-            rb_bug("allocation failed");
-        }
+        rb_darray_append(&jit->block->gc_object_offsets, ptr_offset);
     }
 }
 
@@ -196,7 +194,7 @@ static void
 record_global_inval_patch(const codeblock_t *cb, uint32_t outline_block_target_pos)
 {
     struct codepage_patch patch_point = { cb->write_pos, outline_block_target_pos };
-    if (!rb_darray_append(&global_inval_patches, patch_point)) rb_bug("allocation failed");
+    rb_darray_append(&global_inval_patches, patch_point);
 }
 
 static bool jit_guard_known_klass(jitstate_t *jit, ctx_t *ctx, VALUE known_klass, insn_opnd_t insn_opnd, VALUE sample_instance, const int max_chain_depth, uint8_t *side_exit);
