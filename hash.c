@@ -1673,8 +1673,7 @@ struct update_arg {
     st_data_t arg;
     st_update_callback_func *func;
     VALUE hash;
-    VALUE key;
-    VALUE value;
+    VALUE updated_key;
 };
 
 typedef int (*tbl_update_func)(st_data_t *, st_data_t *, st_data_t, int);
@@ -1709,8 +1708,7 @@ tbl_update_modify(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
       case ST_CONTINUE:
         if (!existing || *key != old_key || *val != old_value) {
             rb_hash_modify(hash);
-            p->key = *key;
-            p->value = *val;
+            p->updated_key = *key;
         }
         break;
       case ST_DELETE:
@@ -1729,15 +1727,15 @@ tbl_update(VALUE hash, VALUE key, tbl_update_func func, st_data_t optional_arg)
         .arg = optional_arg,
         .func = func,
         .hash = hash,
-        .key  = key,
-        .value = (VALUE)optional_arg,
+        .updated_key = Qfalse,
     };
 
     int ret = rb_hash_stlike_update(hash, key, tbl_update_modify, (st_data_t)&arg);
 
-    /* write barrier */
-    RB_OBJ_WRITTEN(hash, Qundef, arg.key);
-    RB_OBJ_WRITTEN(hash, Qundef, arg.value);
+    if (arg.updated_key) {
+        RB_OBJ_WRITTEN(hash, Qundef, arg.updated_key);
+        RB_OBJ_WRITTEN(hash, Qundef, optional_arg);
+    }
 
     return ret;
 }
