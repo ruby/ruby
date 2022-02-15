@@ -40,6 +40,7 @@ struct lex_context;
 #include "internal/parse.h"
 #include "internal/rational.h"
 #include "internal/re.h"
+#include "internal/string.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
@@ -6578,7 +6579,7 @@ parser_str_new(const char *ptr, long len, rb_encoding *enc, int func, rb_encodin
 
     str = rb_enc_str_new(ptr, len, enc);
     if (!(func & STR_FUNC_REGEXP) && rb_enc_asciicompat(enc)) {
-	if (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT) {
+	if (is_ascii_string(str)) {
 	}
 	else if (enc0 == rb_usascii_encoding() && enc != rb_utf8_encoding()) {
 	    rb_enc_associate(str, rb_ascii8bit_encoding());

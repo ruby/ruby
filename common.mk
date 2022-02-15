@@ -8887,6 +8887,7 @@ marshal.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 marshal.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 marshal.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 marshal.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+marshal.$(OBJEXT): {$(VPATH)}internal/string.h
 marshal.$(OBJEXT): {$(VPATH)}internal/symbol.h
 marshal.$(OBJEXT): {$(VPATH)}internal/value.h
 marshal.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -10837,6 +10838,7 @@ parse.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 parse.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 parse.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 parse.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+parse.$(OBJEXT): {$(VPATH)}internal/string.h
 parse.$(OBJEXT): {$(VPATH)}internal/symbol.h
 parse.$(OBJEXT): {$(VPATH)}internal/value.h
 parse.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -14734,6 +14736,7 @@ string.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 string.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 string.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 string.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+string.$(OBJEXT): {$(VPATH)}internal/string.h
 string.$(OBJEXT): {$(VPATH)}internal/symbol.h
 string.$(OBJEXT): {$(VPATH)}internal/value.h
 string.$(OBJEXT): {$(VPATH)}internal/value_type.h
@@ -15777,6 +15780,7 @@ transcode.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 transcode.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 transcode.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 transcode.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+transcode.$(OBJEXT): {$(VPATH)}internal/string.h
 transcode.$(OBJEXT): {$(VPATH)}internal/symbol.h
 transcode.$(OBJEXT): {$(VPATH)}internal/value.h
 transcode.$(OBJEXT): {$(VPATH)}internal/value_type.h

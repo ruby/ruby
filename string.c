@@ -792,7 +792,7 @@ rb_enc_str_asciionly_p(VALUE str)
 
     if (!rb_enc_asciicompat(enc))
         return FALSE;
-    else if (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT)
+    else if (is_ascii_string(str))
         return TRUE;
     return FALSE;
 }
@@ -3468,7 +3468,7 @@ st_index_t
 rb_str_hash(VALUE str)
 {
     int e = ENCODING_GET(str);
-    if (e && rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT) {
+    if (e && is_ascii_string(str)) {
 	e = 0;
     }
     return rb_memhash((const void *)RSTRING_PTR(str), RSTRING_LEN(str)) ^ e;

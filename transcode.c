@@ -2721,7 +2721,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
             return NIL_P(arg2) ? -1 : dencidx;
         }
         if (senc && denc && rb_enc_asciicompat(senc) && rb_enc_asciicompat(denc)) {
-            if (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT) {
+            if (is_ascii_string(str)) {
                 return dencidx;
             }
         }
