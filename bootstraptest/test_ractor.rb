@@ -1543,6 +1543,22 @@ assert_equal "ok", %q{
   "ok"
 }
 
+# Regression test for
+# Assertion Failed: ractor.c:1312:ractor_select:cr->sync.wait.taken_basket.type == basket_type_none
+assert_equal "ok", %q{
+   workers = (0...8).map do
+     Ractor.new do
+       loop do
+         10.times.map { Object.new }
+         Ractor.yield Time.now
+       end
+     end
+   end
+
+   1_000.times { idle_worker, tmp_reporter = Ractor.select(*workers) }
+   "ok"
+}
+
 assert_equal "ok", %q{
   def foo(*); ->{ super }; end
   begin
