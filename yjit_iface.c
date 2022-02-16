@@ -37,7 +37,7 @@ extern st_table *rb_encoded_insn_data;
 struct rb_yjit_options rb_yjit_opts;
 
 // Size of code pages to allocate
-#define CODE_PAGE_SIZE 16 * 1024
+#define CODE_PAGE_SIZE (16 * 1024)
 
 // How many code pages to allocate at once
 #define PAGES_PER_ALLOC 512
