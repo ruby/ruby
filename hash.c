@@ -1732,7 +1732,7 @@ tbl_update(VALUE hash, VALUE key, tbl_update_func func, st_data_t optional_arg)
         .hash = hash,
         .updated_key = Qundef,
 #if RUBY_DEBUG > 0
-        .val = optional_arg;
+        .val = optional_arg,
 #endif
     };
 
