@@ -30,6 +30,7 @@ iseq_load.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 iseq_load.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 iseq_load.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 iseq_load.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+iseq_load.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 iseq_load.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 iseq_load.o: $(hdrdir)/ruby/internal/assume.h
 iseq_load.o: $(hdrdir)/ruby/internal/attr/alloc_size.h

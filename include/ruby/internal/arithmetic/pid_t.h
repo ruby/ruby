@@ -24,18 +24,22 @@
 #include "ruby/internal/arithmetic/long.h"
 
 /** Converts a C's `pid_t` into an instance of ::rb_cInteger. */
-#ifndef PIDT2NUM
-# define PIDT2NUM RB_LONG2NUM
+#ifndef RB_PIDT2NUM
+# define RB_PIDT2NUM RB_LONG2NUM
 #endif
 
 /** Converts an instance of ::rb_cNumeric into C's `pid_t`. */
-#ifndef NUM2PIDT
-# define NUM2PIDT RB_NUM2LONG
+#ifndef RB_NUM2PIDT
+# define RB_NUM2PIDT RB_NUM2LONG
 #endif
 
 /** A rb_sprintf() format prefix to be used for a `pid_t` parameter. */
-#ifndef PRI_PIDT_PREFIX
-# define PRI_PIDT_PREFIX PRI_LONG_PREFIX
+#ifndef RB_PRI_PIDT_PREFIX
+# define RB_PRI_PIDT_PREFIX PRI_LONG_PREFIX
 #endif
+
+#define PIDT2NUM RB_PIDT2NUM /**< @old{RB_PIDT2NUM} */
+#define NUM2PIDT RB_NUM2PIDT /**< @old{RB_NUM2PIDT} */
+#define PRI_PIDT_PREFIX RB_PRI_PIDT_PREFIX
 
 #endif /* RBIMPL_ARITHMETIC_PID_T_H */

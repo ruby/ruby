@@ -5,7 +5,7 @@ AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
 		  [n="patsubst([$1],["],[\\"])"],
 		  [n="patsubst([$2],["],[\\"])"],
 		  [$4])
-    AC_CACHE_CHECK([for convertible type of [$1]], rb_cv_[$1]_convertible, [
+    AC_CACHE_CHECK([for Per type of [$1]], rb_cv_[$1]_convertible, [
 	u= t=
 	AS_CASE(["$n "],
 	  [*" signed "*], [ ],
@@ -50,9 +50,9 @@ AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
     ])
     AS_CASE("${rb_cv_[$1]_convertible}", [U*], [u=+1], [u=-1])
     AC_DEFINE_UNQUOTED(rb_[$1], $n)
-    AC_DEFINE_UNQUOTED([SIGNEDNESS_OF_]AS_TR_CPP($1), $u)
-    AC_DEFINE_UNQUOTED([$3]2NUM[(v)], [${rb_cv_[$1]_convertible}2NUM(v)])
-    AC_DEFINE_UNQUOTED(NUM2[$3][(v)], [NUM2${rb_cv_[$1]_convertible}(v)])
-    AC_DEFINE_UNQUOTED(PRI_[$3]_PREFIX,
+    AC_DEFINE_UNQUOTED(RB_[SIGNEDNESS_OF_]AS_TR_CPP($1), $u)
+    AC_DEFINE_UNQUOTED(RB_[$3]2NUM[(v)], [RB_${rb_cv_[$1]_convertible}2NUM(v)])
+    AC_DEFINE_UNQUOTED(RB_NUM2[$3][(v)], [RB_NUM2${rb_cv_[$1]_convertible}(v)])
+    AC_DEFINE_UNQUOTED(RB_PRI_[$3]_PREFIX,
 	[PRI_`echo ${rb_cv_[$1]_convertible} | sed ['s/^U//']`_PREFIX])
 ])dnl

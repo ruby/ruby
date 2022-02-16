@@ -35,6 +35,7 @@ ossl.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl.o: $(hdrdir)/ruby/internal/assume.h
 ossl.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -228,6 +229,7 @@ ossl_asn1.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_asn1.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/assume.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -421,6 +423,7 @@ ossl_bio.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_bio.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_bio.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_bio.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_bio.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_bio.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_bio.o: $(hdrdir)/ruby/internal/assume.h
 ossl_bio.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -614,6 +617,7 @@ ossl_bn.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_bn.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_bn.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_bn.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_bn.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_bn.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_bn.o: $(hdrdir)/ruby/internal/assume.h
 ossl_bn.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -808,6 +812,7 @@ ossl_cipher.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_cipher.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/assume.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -1001,6 +1006,7 @@ ossl_config.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_config.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_config.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_config.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_config.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_config.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_config.o: $(hdrdir)/ruby/internal/assume.h
 ossl_config.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -1194,6 +1200,7 @@ ossl_digest.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_digest.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_digest.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_digest.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_digest.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_digest.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_digest.o: $(hdrdir)/ruby/internal/assume.h
 ossl_digest.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -1387,6 +1394,7 @@ ossl_engine.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_engine.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_engine.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_engine.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_engine.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_engine.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_engine.o: $(hdrdir)/ruby/internal/assume.h
 ossl_engine.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -1580,6 +1588,7 @@ ossl_hmac.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_hmac.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/assume.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -1773,6 +1782,7 @@ ossl_kdf.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_kdf.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/assume.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -1966,6 +1976,7 @@ ossl_ns_spki.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_ns_spki.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/assume.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -2159,6 +2170,7 @@ ossl_ocsp.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_ocsp.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/assume.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -2352,6 +2364,7 @@ ossl_pkcs12.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_pkcs12.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/assume.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -2545,6 +2558,7 @@ ossl_pkcs7.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_pkcs7.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/assume.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -2738,6 +2752,7 @@ ossl_pkey.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_pkey.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/assume.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -2931,6 +2946,7 @@ ossl_pkey_dh.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_pkey_dh.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/assume.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -3124,6 +3140,7 @@ ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/assume.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -3317,6 +3334,7 @@ ossl_pkey_ec.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_pkey_ec.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/assume.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -3510,6 +3528,7 @@ ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/assume.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -3703,6 +3722,7 @@ ossl_rand.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_rand.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_rand.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_rand.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_rand.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_rand.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_rand.o: $(hdrdir)/ruby/internal/assume.h
 ossl_rand.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -3896,6 +3916,7 @@ ossl_ssl.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_ssl.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/assume.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -4089,6 +4110,7 @@ ossl_ssl_session.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_ssl_session.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/assume.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -4282,6 +4304,7 @@ ossl_ts.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_ts.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_ts.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_ts.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_ts.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_ts.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_ts.o: $(hdrdir)/ruby/internal/assume.h
 ossl_ts.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -4475,6 +4498,7 @@ ossl_x509.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_x509.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_x509.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_x509.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_x509.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_x509.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_x509.o: $(hdrdir)/ruby/internal/assume.h
 ossl_x509.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -4668,6 +4692,7 @@ ossl_x509attr.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_x509attr.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/assume.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -4861,6 +4886,7 @@ ossl_x509cert.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_x509cert.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/assume.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -5054,6 +5080,7 @@ ossl_x509crl.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_x509crl.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/assume.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -5247,6 +5274,7 @@ ossl_x509ext.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_x509ext.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/assume.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -5440,6 +5468,7 @@ ossl_x509name.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_x509name.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/assume.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -5633,6 +5662,7 @@ ossl_x509req.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_x509req.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/assume.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -5826,6 +5856,7 @@ ossl_x509revoked.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_x509revoked.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/assume.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -6019,6 +6050,7 @@ ossl_x509store.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ossl_x509store.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/assume.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/attr/alloc_size.h

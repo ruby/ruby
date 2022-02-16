@@ -29,6 +29,7 @@ dataerror.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 dataerror.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 dataerror.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 dataerror.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+dataerror.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 dataerror.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 dataerror.o: $(hdrdir)/ruby/internal/assume.h
 dataerror.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -189,6 +190,7 @@ enc_raise.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 enc_raise.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 enc_raise.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 enc_raise.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+enc_raise.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 enc_raise.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 enc_raise.o: $(hdrdir)/ruby/internal/assume.h
 enc_raise.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -359,6 +361,7 @@ ensured.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ensured.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ensured.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ensured.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ensured.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ensured.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ensured.o: $(hdrdir)/ruby/internal/assume.h
 ensured.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -518,6 +521,7 @@ init.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+init.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 init.o: $(hdrdir)/ruby/internal/assume.h
 init.o: $(hdrdir)/ruby/internal/attr/alloc_size.h

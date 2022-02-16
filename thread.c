@@ -1316,7 +1316,7 @@ thread_join_m(int argc, VALUE *argv, VALUE self)
         /* unlimited */
     }
     else if (FIXNUM_P(timeout)) {
-        rel = rb_sec2hrtime(NUM2TIMET(timeout));
+        rel = rb_sec2hrtime(RB_NUM2TIMET(timeout));
         limit = &rel;
     }
     else {

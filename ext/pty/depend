@@ -31,6 +31,7 @@ pty.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 pty.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 pty.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 pty.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+pty.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 pty.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 pty.o: $(hdrdir)/ruby/internal/assume.h
 pty.o: $(hdrdir)/ruby/internal/attr/alloc_size.h

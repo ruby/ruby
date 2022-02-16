@@ -27,36 +27,40 @@
 #include "ruby/backward/2/long_long.h"
 
 /** Converts a C's `off_t` into an instance of ::rb_cInteger. */
-#ifdef OFFT2NUM
+#ifdef RB_OFFT2NUM
 # /* take that. */
 #elif SIZEOF_OFF_T == SIZEOF_LONG_LONG
-# define OFFT2NUM RB_LL2NUM
+# define RB_OFFT2NUM RB_LL2NUM
 #elif SIZEOF_OFF_T == SIZEOF_LONG
-# define OFFT2NUM RB_LONG2NUM
+# define RB_OFFT2NUM RB_LONG2NUM
 #else
-# define OFFT2NUM RB_INT2NUM
+# define RB_OFFT2NUM RB_INT2NUM
 #endif
 
 /** Converts an instance of ::rb_cNumeric into C's `off_t`. */
-#ifdef NUM2OFFT
+#ifdef RB_NUM2OFFT
 # /* take that. */
 #elif SIZEOF_OFF_T == SIZEOF_LONG_LONG
-# define NUM2OFFT RB_NUM2LL
+# define RB_NUM2OFFT RB_NUM2LL
 #elif SIZEOF_OFF_T == SIZEOF_LONG
-# define NUM2OFFT RB_NUM2LONG
+# define RB_NUM2OFFT RB_NUM2LONG
 #else
-# define NUM2OFFT RB_NUM2INT
+# define RB_NUM2OFFT RB_NUM2INT
 #endif
 
 /** A rb_sprintf() format prefix to be used for an `off_t` parameter. */
-#ifdef PRI_OFFT_PREFIX
+#ifdef RB_PRI_OFFT_PREFIX
 # /* take that. */
 #elif SIZEOF_OFF_T == SIZEOF_LONG_LONG
-# define PRI_OFFT_PREFIX PRI_LL_PREFIX
+# define RB_PRI_OFFT_PREFIX PRI_LL_PREFIX
 #elif SIZEOF_OFF_T == SIZEOF_LONG
-# define PRI_OFFT_PREFIX PRI_LONG_PREFIX
+# define RB_PRI_OFFT_PREFIX PRI_LONG_PREFIX
 #else
-# define PRI_OFFT_PREFIX PRI_INT_PREFIX
+# define RB_PRI_OFFT_PREFIX PRI_INT_PREFIX
 #endif
+
+#define OFFT2NUM RB_OFFT2NUM /**< @old{RB_OFFT2NUM} */
+#define NUM2OFFT RB_NUM2OFFT /**< @old{RB_NUM2OFFT} */
+#define PRI_OFFT_PREFIX RB_PRI_OFFT_PREFIX /**< @old{RB_PRI_OFFT_PREFIX} */
 
 #endif /* RBIMPL_ARITHMETIC_OFF_T_H */

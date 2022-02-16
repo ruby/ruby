@@ -31,6 +31,7 @@ escape.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 escape.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 escape.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 escape.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+escape.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 escape.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 escape.o: $(hdrdir)/ruby/internal/assume.h
 escape.o: $(hdrdir)/ruby/internal/attr/alloc_size.h

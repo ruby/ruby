@@ -554,14 +554,14 @@ rb_stat_cmp(VALUE self, VALUE other)
 
 #define ST2UINT(val) ((val) & ~(~1UL << (sizeof(val) * CHAR_BIT - 1)))
 
-#ifndef NUM2DEVT
-# define NUM2DEVT(v) NUM2UINT(v)
+#ifndef RB_NUM2DEVT
+# define RB_NUM2DEVT(v) RB_NUM2UINT(v)
 #endif
-#ifndef DEVT2NUM
-# define DEVT2NUM(v) UINT2NUM(v)
+#ifndef RB_DEVT2NUM
+# define RB_DEVT2NUM(v) RB_UINT2NUM(v)
 #endif
-#ifndef PRI_DEVT_PREFIX
-# define PRI_DEVT_PREFIX ""
+#ifndef RB_PRI_DEVT_PREFIX
+# define RB_PRI_DEVT_PREFIX ""
 #endif
 
 /*
@@ -578,11 +578,11 @@ static VALUE
 rb_stat_dev(VALUE self)
 {
 #if SIZEOF_STRUCT_STAT_ST_DEV <= SIZEOF_DEV_T
-    return DEVT2NUM(get_stat(self)->st_dev);
+    return RB_DEVT2NUM(get_stat(self)->st_dev);
 #elif SIZEOF_STRUCT_STAT_ST_DEV <= SIZEOF_LONG
-    return ULONG2NUM(get_stat(self)->st_dev);
+    return RB_ULONG2NUM(get_stat(self)->st_dev);
 #else
-    return ULL2NUM(get_stat(self)->st_dev);
+    return RB_ULL2NUM(get_stat(self)->st_dev);
 #endif
 }
 
@@ -754,11 +754,11 @@ rb_stat_rdev(VALUE self)
 {
 #ifdef HAVE_STRUCT_STAT_ST_RDEV
 # if SIZEOF_STRUCT_STAT_ST_RDEV <= SIZEOF_DEV_T
-    return DEVT2NUM(get_stat(self)->st_rdev);
+    return RB_DEVT2NUM(get_stat(self)->st_rdev);
 # elif SIZEOF_STRUCT_STAT_ST_RDEV <= SIZEOF_LONG
-    return ULONG2NUM(get_stat(self)->st_rdev);
+    return RB_ULONG2NUM(get_stat(self)->st_rdev);
 # else
-    return ULL2NUM(get_stat(self)->st_rdev);
+    return RB_ULL2NUM(get_stat(self)->st_rdev);
 # endif
 #else
     return Qnil;
@@ -1109,7 +1109,7 @@ rb_stat_inspect(VALUE self)
 	    rb_str_catf(str, "0%lo", (unsigned long)NUM2ULONG(v));
 	}
 	else if (i == 0 || i == 6) { /* dev/rdev */
-	    rb_str_catf(str, "0x%"PRI_DEVT_PREFIX"x", NUM2DEVT(v));
+	    rb_str_catf(str, "0x%"RB_PRI_DEVT_PREFIX"x", RB_NUM2DEVT(v));
 	}
 	else {
 	    rb_str_append(str, rb_inspect(v));

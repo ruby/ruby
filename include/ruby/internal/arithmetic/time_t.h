@@ -1,5 +1,5 @@
-#ifndef RBIMPL_ARITHMETIC_MODE_T_H                   /*-*-C++-*-vi:se ft=cpp:*/
-#define RBIMPL_ARITHMETIC_MODE_T_H
+#ifndef RBIMPL_ARITHMETIC_TIME_T_H                    /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_ARITHMETIC_TIME_T_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -18,28 +18,27 @@
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
  *             extension libraries.  They could be written in C++98.
- * @brief      Arithmetic conversion between C's `mode_t` and Ruby's.
+ * @brief      Arithmetic conversion between C's `uid_t` and Ruby's.
  */
 #include "ruby/internal/config.h"
-#include "ruby/internal/arithmetic/int.h"
+#include "ruby/internal/arithmetic/long.h"
 
-/** Converts a C's `mode_t` into an instance of ::rb_cInteger. */
-#ifndef RB_NUM2MODET
-# define RB_NUM2MODET RB_NUM2INT
+/** Converts a C's `time_t` into an instance of ::rb_cInteger. */
+#ifndef RB_TIMET2NUM
+# define RB_TIMET2NUM RB_LONG2NUM
 #endif
 
-/** Converts an instance of ::rb_cNumeric into C's `mode_t`. */
-#ifndef RB_MODET2NUM
-# define RB_MODET2NUM RB_INT2NUM
+/** Converts an instance of ::rb_cNumeric into C's `time_t`. */
+#ifndef RB_NUM2TIMET
+# define RB_NUM2TIMET RB_NUM2LONG
 #endif
 
-/** A rb_sprintf() format prefix to be used for a `mode_t` parameter. */
-#ifndef RB_PRI_MODET_PREFIX
-# define RB_PRI_MODET_PREFIX PRI_INT_PREFIX
+/** A rb_sprintf() format prefix to be used for a `time_t` parameter. */
+#ifndef RB_PRI_TIMET_PREFIX
+# define RB_PRI_TIMET_PREFIX PRI_TIMET_PREFIX
 #endif
 
-#define NUM2MODET RB_NUM2MODET /**< @old{RB_NUM2MODET} */
-#define MODET2NUM RB_MODET2NUM /**< @old{RB_MODET2NUM} */
-#define PRI_MODET_PREFIX RB_PRI_MODET_PREFIX /**< @old{RB_PRI_MODET_PREFIX} */
+#define TIMET2NUM RB_TIMET2NUM
+#define NUM2TIMET RB_NUM2TIMET
 
-#endif /* RBIMPL_ARITHMETIC_MODE_T_H */
+#endif /* RBIMPL_ARITHMETIC_TIME_T_H */

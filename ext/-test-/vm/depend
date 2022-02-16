@@ -29,6 +29,7 @@ at_exit.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 at_exit.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 at_exit.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 at_exit.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+at_exit.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 at_exit.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 at_exit.o: $(hdrdir)/ruby/internal/assume.h
 at_exit.o: $(hdrdir)/ruby/internal/attr/alloc_size.h

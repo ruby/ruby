@@ -5195,7 +5195,7 @@ rb_f_sleep(int argc, VALUE *argv, VALUE _)
 
     time_t end = time(0) - beg;
 
-    return TIMET2NUM(end);
+    return RB_TIMET2NUM(end);
 }
 
 
@@ -8457,7 +8457,7 @@ rb_clock_gettime(int argc, VALUE *argv, VALUE _)
 #if defined(HAVE_CLOCK_GETTIME)
         struct timespec ts;
         clockid_t c;
-        c = NUM2CLOCKID(clk_id);
+        c = RB_NUM2CLOCKID(clk_id);
         ret = clock_gettime(c, &ts);
         if (ret == -1)
             rb_sys_fail("clock_gettime");
@@ -8598,7 +8598,7 @@ rb_clock_getres(int argc, VALUE *argv, VALUE _)
     else {
 #if defined(HAVE_CLOCK_GETRES)
         struct timespec ts;
-        clockid_t c = NUM2CLOCKID(clk_id);
+        clockid_t c = RB_NUM2CLOCKID(clk_id);
         int ret = clock_getres(c, &ts);
         if (ret == -1)
             rb_sys_fail("clock_getres");
@@ -8951,108 +8951,108 @@ InitVM_process(void)
 
 #ifdef CLOCK_REALTIME
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_REALTIME", CLOCKID2NUM(CLOCK_REALTIME));
+    rb_define_const(rb_mProcess, "CLOCK_REALTIME", RB_CLOCKID2NUM(CLOCK_REALTIME));
 #elif defined(RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME)
     /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_REALTIME", RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME);
 #endif
 #ifdef CLOCK_MONOTONIC
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", CLOCKID2NUM(CLOCK_MONOTONIC));
+    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", RB_CLOCKID2NUM(CLOCK_MONOTONIC));
 #elif defined(RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC)
     /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC);
 #endif
 #ifdef CLOCK_PROCESS_CPUTIME_ID
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", CLOCKID2NUM(CLOCK_PROCESS_CPUTIME_ID));
+    rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", RB_CLOCKID2NUM(CLOCK_PROCESS_CPUTIME_ID));
 #elif defined(RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID)
     /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID);
 #endif
 #ifdef CLOCK_THREAD_CPUTIME_ID
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_THREAD_CPUTIME_ID", CLOCKID2NUM(CLOCK_THREAD_CPUTIME_ID));
+    rb_define_const(rb_mProcess, "CLOCK_THREAD_CPUTIME_ID", RB_CLOCKID2NUM(CLOCK_THREAD_CPUTIME_ID));
 #endif
 #ifdef CLOCK_VIRTUAL
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_VIRTUAL", CLOCKID2NUM(CLOCK_VIRTUAL));
+    rb_define_const(rb_mProcess, "CLOCK_VIRTUAL", RB_CLOCKID2NUM(CLOCK_VIRTUAL));
 #endif
 #ifdef CLOCK_PROF
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_PROF", CLOCKID2NUM(CLOCK_PROF));
+    rb_define_const(rb_mProcess, "CLOCK_PROF", RB_CLOCKID2NUM(CLOCK_PROF));
 #endif
 #ifdef CLOCK_REALTIME_FAST
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_REALTIME_FAST", CLOCKID2NUM(CLOCK_REALTIME_FAST));
+    rb_define_const(rb_mProcess, "CLOCK_REALTIME_FAST", RB_CLOCKID2NUM(CLOCK_REALTIME_FAST));
 #endif
 #ifdef CLOCK_REALTIME_PRECISE
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_REALTIME_PRECISE", CLOCKID2NUM(CLOCK_REALTIME_PRECISE));
+    rb_define_const(rb_mProcess, "CLOCK_REALTIME_PRECISE", RB_CLOCKID2NUM(CLOCK_REALTIME_PRECISE));
 #endif
 #ifdef CLOCK_REALTIME_COARSE
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_REALTIME_COARSE", CLOCKID2NUM(CLOCK_REALTIME_COARSE));
+    rb_define_const(rb_mProcess, "CLOCK_REALTIME_COARSE", RB_CLOCKID2NUM(CLOCK_REALTIME_COARSE));
 #endif
 #ifdef CLOCK_REALTIME_ALARM
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_REALTIME_ALARM", CLOCKID2NUM(CLOCK_REALTIME_ALARM));
+    rb_define_const(rb_mProcess, "CLOCK_REALTIME_ALARM", RB_CLOCKID2NUM(CLOCK_REALTIME_ALARM));
 #endif
 #ifdef CLOCK_MONOTONIC_FAST
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_FAST", CLOCKID2NUM(CLOCK_MONOTONIC_FAST));
+    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_FAST", RB_CLOCKID2NUM(CLOCK_MONOTONIC_FAST));
 #endif
 #ifdef CLOCK_MONOTONIC_PRECISE
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_PRECISE", CLOCKID2NUM(CLOCK_MONOTONIC_PRECISE));
+    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_PRECISE", RB_CLOCKID2NUM(CLOCK_MONOTONIC_PRECISE));
 #endif
 #ifdef CLOCK_MONOTONIC_RAW
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_RAW", CLOCKID2NUM(CLOCK_MONOTONIC_RAW));
+    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_RAW", RB_CLOCKID2NUM(CLOCK_MONOTONIC_RAW));
 #endif
 #ifdef CLOCK_MONOTONIC_RAW_APPROX
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_RAW_APPROX", CLOCKID2NUM(CLOCK_MONOTONIC_RAW_APPROX));
+    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_RAW_APPROX", RB_CLOCKID2NUM(CLOCK_MONOTONIC_RAW_APPROX));
 #endif
 #ifdef CLOCK_MONOTONIC_COARSE
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_COARSE", CLOCKID2NUM(CLOCK_MONOTONIC_COARSE));
+    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_COARSE", RB_CLOCKID2NUM(CLOCK_MONOTONIC_COARSE));
 #endif
 #ifdef CLOCK_BOOTTIME
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_BOOTTIME", CLOCKID2NUM(CLOCK_BOOTTIME));
+    rb_define_const(rb_mProcess, "CLOCK_BOOTTIME", RB_CLOCKID2NUM(CLOCK_BOOTTIME));
 #endif
 #ifdef CLOCK_BOOTTIME_ALARM
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_BOOTTIME_ALARM", CLOCKID2NUM(CLOCK_BOOTTIME_ALARM));
+    rb_define_const(rb_mProcess, "CLOCK_BOOTTIME_ALARM", RB_CLOCKID2NUM(CLOCK_BOOTTIME_ALARM));
 #endif
 #ifdef CLOCK_UPTIME
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_UPTIME", CLOCKID2NUM(CLOCK_UPTIME));
+    rb_define_const(rb_mProcess, "CLOCK_UPTIME", RB_CLOCKID2NUM(CLOCK_UPTIME));
 #endif
 #ifdef CLOCK_UPTIME_FAST
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_UPTIME_FAST", CLOCKID2NUM(CLOCK_UPTIME_FAST));
+    rb_define_const(rb_mProcess, "CLOCK_UPTIME_FAST", RB_CLOCKID2NUM(CLOCK_UPTIME_FAST));
 #endif
 #ifdef CLOCK_UPTIME_PRECISE
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_UPTIME_PRECISE", CLOCKID2NUM(CLOCK_UPTIME_PRECISE));
+    rb_define_const(rb_mProcess, "CLOCK_UPTIME_PRECISE", RB_CLOCKID2NUM(CLOCK_UPTIME_PRECISE));
 #endif
 #ifdef CLOCK_UPTIME_RAW
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_UPTIME_RAW", CLOCKID2NUM(CLOCK_UPTIME_RAW));
+    rb_define_const(rb_mProcess, "CLOCK_UPTIME_RAW", RB_CLOCKID2NUM(CLOCK_UPTIME_RAW));
 #endif
 #ifdef CLOCK_UPTIME_RAW_APPROX
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_UPTIME_RAW_APPROX", CLOCKID2NUM(CLOCK_UPTIME_RAW_APPROX));
+    rb_define_const(rb_mProcess, "CLOCK_UPTIME_RAW_APPROX", RB_CLOCKID2NUM(CLOCK_UPTIME_RAW_APPROX));
 #endif
 #ifdef CLOCK_SECOND
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_SECOND", CLOCKID2NUM(CLOCK_SECOND));
+    rb_define_const(rb_mProcess, "CLOCK_SECOND", RB_CLOCKID2NUM(CLOCK_SECOND));
 #endif
 #ifdef CLOCK_TAI
     /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_TAI", CLOCKID2NUM(CLOCK_TAI));
+    rb_define_const(rb_mProcess, "CLOCK_TAI", RB_CLOCKID2NUM(CLOCK_TAI));
 #endif
     rb_define_module_function(rb_mProcess, "clock_gettime", rb_clock_gettime, -1);
     rb_define_module_function(rb_mProcess, "clock_getres", rb_clock_getres, -1);

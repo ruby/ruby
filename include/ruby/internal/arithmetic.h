@@ -34,5 +34,6 @@
 #include "ruby/internal/arithmetic/short.h"
 #include "ruby/internal/arithmetic/size_t.h"
 #include "ruby/internal/arithmetic/st_data_t.h"
+#include "ruby/internal/arithmetic/time_t.h"
 #include "ruby/internal/arithmetic/uid_t.h"
 #endif /* RBIMPL_ARITHMETIC_H */

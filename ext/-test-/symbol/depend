@@ -30,6 +30,7 @@ init.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+init.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 init.o: $(hdrdir)/ruby/internal/assume.h
 init.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -189,6 +190,7 @@ type.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 type.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 type.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 type.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+type.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 type.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 type.o: $(hdrdir)/ruby/internal/assume.h
 type.o: $(hdrdir)/ruby/internal/attr/alloc_size.h

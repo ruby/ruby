@@ -211,6 +211,7 @@ enc/ascii.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/ascii.$(OBJEXT): internal/arithmetic/short.h
 enc/ascii.$(OBJEXT): internal/arithmetic/size_t.h
 enc/ascii.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/ascii.$(OBJEXT): internal/arithmetic/time_t.h
 enc/ascii.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/ascii.$(OBJEXT): internal/assume.h
 enc/ascii.$(OBJEXT): internal/attr/alloc_size.h
@@ -437,6 +438,7 @@ enc/cesu_8.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/cesu_8.$(OBJEXT): internal/arithmetic/short.h
 enc/cesu_8.$(OBJEXT): internal/arithmetic/size_t.h
 enc/cesu_8.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/cesu_8.$(OBJEXT): internal/arithmetic/time_t.h
 enc/cesu_8.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/cesu_8.$(OBJEXT): internal/assume.h
 enc/cesu_8.$(OBJEXT): internal/attr/alloc_size.h
@@ -718,6 +720,7 @@ enc/encdb.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/encdb.$(OBJEXT): internal/arithmetic/short.h
 enc/encdb.$(OBJEXT): internal/arithmetic/size_t.h
 enc/encdb.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/encdb.$(OBJEXT): internal/arithmetic/time_t.h
 enc/encdb.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/encdb.$(OBJEXT): internal/assume.h
 enc/encdb.$(OBJEXT): internal/attr/alloc_size.h
@@ -2222,6 +2225,7 @@ enc/trans/big5.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/trans/big5.$(OBJEXT): internal/arithmetic/short.h
 enc/trans/big5.$(OBJEXT): internal/arithmetic/size_t.h
 enc/trans/big5.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/trans/big5.$(OBJEXT): internal/arithmetic/time_t.h
 enc/trans/big5.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/trans/big5.$(OBJEXT): internal/assume.h
 enc/trans/big5.$(OBJEXT): internal/attr/alloc_size.h
@@ -2380,6 +2384,7 @@ enc/trans/cesu_8.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/trans/cesu_8.$(OBJEXT): internal/arithmetic/short.h
 enc/trans/cesu_8.$(OBJEXT): internal/arithmetic/size_t.h
 enc/trans/cesu_8.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/trans/cesu_8.$(OBJEXT): internal/arithmetic/time_t.h
 enc/trans/cesu_8.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/trans/cesu_8.$(OBJEXT): internal/assume.h
 enc/trans/cesu_8.$(OBJEXT): internal/attr/alloc_size.h
@@ -2538,6 +2543,7 @@ enc/trans/chinese.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/trans/chinese.$(OBJEXT): internal/arithmetic/short.h
 enc/trans/chinese.$(OBJEXT): internal/arithmetic/size_t.h
 enc/trans/chinese.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/trans/chinese.$(OBJEXT): internal/arithmetic/time_t.h
 enc/trans/chinese.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/trans/chinese.$(OBJEXT): internal/assume.h
 enc/trans/chinese.$(OBJEXT): internal/attr/alloc_size.h
@@ -2696,6 +2702,7 @@ enc/trans/ebcdic.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/trans/ebcdic.$(OBJEXT): internal/arithmetic/short.h
 enc/trans/ebcdic.$(OBJEXT): internal/arithmetic/size_t.h
 enc/trans/ebcdic.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/trans/ebcdic.$(OBJEXT): internal/arithmetic/time_t.h
 enc/trans/ebcdic.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/trans/ebcdic.$(OBJEXT): internal/assume.h
 enc/trans/ebcdic.$(OBJEXT): internal/attr/alloc_size.h
@@ -2854,6 +2861,7 @@ enc/trans/emoji.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/trans/emoji.$(OBJEXT): internal/arithmetic/short.h
 enc/trans/emoji.$(OBJEXT): internal/arithmetic/size_t.h
 enc/trans/emoji.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/trans/emoji.$(OBJEXT): internal/arithmetic/time_t.h
 enc/trans/emoji.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/trans/emoji.$(OBJEXT): internal/assume.h
 enc/trans/emoji.$(OBJEXT): internal/attr/alloc_size.h
@@ -3012,6 +3020,7 @@ enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/arithmetic/short.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/arithmetic/size_t.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/arithmetic/time_t.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/assume.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/attr/alloc_size.h
@@ -3170,6 +3179,7 @@ enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/arithmetic/short.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/arithmetic/size_t.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/arithmetic/time_t.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/assume.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/attr/alloc_size.h
@@ -3328,6 +3338,7 @@ enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/arithmetic/short.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/arithmetic/size_t.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/arithmetic/time_t.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/assume.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/attr/alloc_size.h
@@ -3486,6 +3497,7 @@ enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/arithmetic/short.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/arithmetic/size_t.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/arithmetic/time_t.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/assume.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/attr/alloc_size.h
@@ -3644,6 +3656,7 @@ enc/trans/escape.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/trans/escape.$(OBJEXT): internal/arithmetic/short.h
 enc/trans/escape.$(OBJEXT): internal/arithmetic/size_t.h
 enc/trans/escape.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/trans/escape.$(OBJEXT): internal/arithmetic/time_t.h
 enc/trans/escape.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/trans/escape.$(OBJEXT): internal/assume.h
 enc/trans/escape.$(OBJEXT): internal/attr/alloc_size.h
@@ -3802,6 +3815,7 @@ enc/trans/gb18030.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/trans/gb18030.$(OBJEXT): internal/arithmetic/short.h
 enc/trans/gb18030.$(OBJEXT): internal/arithmetic/size_t.h
 enc/trans/gb18030.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/trans/gb18030.$(OBJEXT): internal/arithmetic/time_t.h
 enc/trans/gb18030.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/trans/gb18030.$(OBJEXT): internal/assume.h
 enc/trans/gb18030.$(OBJEXT): internal/attr/alloc_size.h
@@ -3960,6 +3974,7 @@ enc/trans/gbk.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/trans/gbk.$(OBJEXT): internal/arithmetic/short.h
 enc/trans/gbk.$(OBJEXT): internal/arithmetic/size_t.h
 enc/trans/gbk.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/trans/gbk.$(OBJEXT): internal/arithmetic/time_t.h
 enc/trans/gbk.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/trans/gbk.$(OBJEXT): internal/assume.h
 enc/trans/gbk.$(OBJEXT): internal/attr/alloc_size.h
@@ -4118,6 +4133,7 @@ enc/trans/iso2022.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/trans/iso2022.$(OBJEXT): internal/arithmetic/short.h
 enc/trans/iso2022.$(OBJEXT): internal/arithmetic/size_t.h
 enc/trans/iso2022.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/trans/iso2022.$(OBJEXT): internal/arithmetic/time_t.h
 enc/trans/iso2022.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/trans/iso2022.$(OBJEXT): internal/assume.h
 enc/trans/iso2022.$(OBJEXT): internal/attr/alloc_size.h
@@ -4276,6 +4292,7 @@ enc/trans/japanese.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/trans/japanese.$(OBJEXT): internal/arithmetic/short.h
 enc/trans/japanese.$(OBJEXT): internal/arithmetic/size_t.h
 enc/trans/japanese.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/trans/japanese.$(OBJEXT): internal/arithmetic/time_t.h
 enc/trans/japanese.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/trans/japanese.$(OBJEXT): internal/assume.h
 enc/trans/japanese.$(OBJEXT): internal/attr/alloc_size.h
@@ -4434,6 +4451,7 @@ enc/trans/japanese_euc.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/trans/japanese_euc.$(OBJEXT): internal/arithmetic/short.h
 enc/trans/japanese_euc.$(OBJEXT): internal/arithmetic/size_t.h
 enc/trans/japanese_euc.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/trans/japanese_euc.$(OBJEXT): internal/arithmetic/time_t.h
 enc/trans/japanese_euc.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/trans/japanese_euc.$(OBJEXT): internal/assume.h
 enc/trans/japanese_euc.$(OBJEXT): internal/attr/alloc_size.h
@@ -4592,6 +4610,7 @@ enc/trans/japanese_sjis.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/arithmetic/short.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/arithmetic/size_t.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/trans/japanese_sjis.$(OBJEXT): internal/arithmetic/time_t.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/assume.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/attr/alloc_size.h
@@ -4750,6 +4769,7 @@ enc/trans/korean.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/trans/korean.$(OBJEXT): internal/arithmetic/short.h
 enc/trans/korean.$(OBJEXT): internal/arithmetic/size_t.h
 enc/trans/korean.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/trans/korean.$(OBJEXT): internal/arithmetic/time_t.h
 enc/trans/korean.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/trans/korean.$(OBJEXT): internal/assume.h
 enc/trans/korean.$(OBJEXT): internal/attr/alloc_size.h
@@ -4907,6 +4927,7 @@ enc/trans/newline.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/trans/newline.$(OBJEXT): internal/arithmetic/short.h
 enc/trans/newline.$(OBJEXT): internal/arithmetic/size_t.h
 enc/trans/newline.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/trans/newline.$(OBJEXT): internal/arithmetic/time_t.h
 enc/trans/newline.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/trans/newline.$(OBJEXT): internal/assume.h
 enc/trans/newline.$(OBJEXT): internal/attr/alloc_size.h
@@ -5065,6 +5086,7 @@ enc/trans/single_byte.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/trans/single_byte.$(OBJEXT): internal/arithmetic/short.h
 enc/trans/single_byte.$(OBJEXT): internal/arithmetic/size_t.h
 enc/trans/single_byte.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/trans/single_byte.$(OBJEXT): internal/arithmetic/time_t.h
 enc/trans/single_byte.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/trans/single_byte.$(OBJEXT): internal/assume.h
 enc/trans/single_byte.$(OBJEXT): internal/attr/alloc_size.h
@@ -5225,6 +5247,7 @@ enc/trans/utf8_mac.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/trans/utf8_mac.$(OBJEXT): internal/arithmetic/short.h
 enc/trans/utf8_mac.$(OBJEXT): internal/arithmetic/size_t.h
 enc/trans/utf8_mac.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/trans/utf8_mac.$(OBJEXT): internal/arithmetic/time_t.h
 enc/trans/utf8_mac.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/trans/utf8_mac.$(OBJEXT): internal/assume.h
 enc/trans/utf8_mac.$(OBJEXT): internal/attr/alloc_size.h
@@ -5383,6 +5406,7 @@ enc/trans/utf_16_32.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/trans/utf_16_32.$(OBJEXT): internal/arithmetic/short.h
 enc/trans/utf_16_32.$(OBJEXT): internal/arithmetic/size_t.h
 enc/trans/utf_16_32.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/trans/utf_16_32.$(OBJEXT): internal/arithmetic/time_t.h
 enc/trans/utf_16_32.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/trans/utf_16_32.$(OBJEXT): internal/assume.h
 enc/trans/utf_16_32.$(OBJEXT): internal/attr/alloc_size.h
@@ -5543,6 +5567,7 @@ enc/unicode.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/unicode.$(OBJEXT): internal/arithmetic/short.h
 enc/unicode.$(OBJEXT): internal/arithmetic/size_t.h
 enc/unicode.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/unicode.$(OBJEXT): internal/arithmetic/time_t.h
 enc/unicode.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/unicode.$(OBJEXT): internal/assume.h
 enc/unicode.$(OBJEXT): internal/attr/alloc_size.h
@@ -5703,6 +5728,7 @@ enc/us_ascii.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/us_ascii.$(OBJEXT): internal/arithmetic/short.h
 enc/us_ascii.$(OBJEXT): internal/arithmetic/size_t.h
 enc/us_ascii.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/us_ascii.$(OBJEXT): internal/arithmetic/time_t.h
 enc/us_ascii.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/us_ascii.$(OBJEXT): internal/assume.h
 enc/us_ascii.$(OBJEXT): internal/attr/alloc_size.h
@@ -6097,6 +6123,7 @@ enc/utf_8.$(OBJEXT): internal/arithmetic/pid_t.h
 enc/utf_8.$(OBJEXT): internal/arithmetic/short.h
 enc/utf_8.$(OBJEXT): internal/arithmetic/size_t.h
 enc/utf_8.$(OBJEXT): internal/arithmetic/st_data_t.h
+enc/utf_8.$(OBJEXT): internal/arithmetic/time_t.h
 enc/utf_8.$(OBJEXT): internal/arithmetic/uid_t.h
 enc/utf_8.$(OBJEXT): internal/assume.h
 enc/utf_8.$(OBJEXT): internal/attr/alloc_size.h

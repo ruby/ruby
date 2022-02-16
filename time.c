@@ -617,7 +617,7 @@ timet2wv(time_t t)
         }
     }
 #endif
-    return v2w(TIMET2NUM(t));
+    return v2w(RB_TIMET2NUM(t));
 }
 #define TIMET2WV(t) timet2wv(t)
 
@@ -640,7 +640,7 @@ wv2timet(wideval_t w)
         return (time_t)wi;
     }
 #endif
-    return NUM2TIMET(w2v(w));
+    return RB_NUM2TIMET(w2v(w));
 }
 #define WV2TIMET(t) wv2timet(t)
 
@@ -1419,7 +1419,7 @@ guess_local_offset(struct vtm *vtm_utc, int *isdst_ret, VALUE *zone_ret)
         int isdst = 0;
         zone = rb_fstring_lit("UTC");
 
-# if defined(NEGATIVE_TIME_T)
+# if defined(RB_NEGATIVE_TIME_T)
 #  if SIZEOF_TIME_T <= 4
     /* 1901-12-13 20:45:52 UTC : The oldest time in 32-bit signed time_t. */
 #   define THE_TIME_OLD_ENOUGH ((time_t)0x80000000)
@@ -1460,7 +1460,7 @@ guess_local_offset(struct vtm *vtm_utc, int *isdst_ret, VALUE *zone_ret)
         vtm2.year = INT2FIX(compat_common_month_table[vtm_utc->mon-1][wday]);
 
     timev = w2v(rb_time_unmagnify(timegmw(&vtm2)));
-    t = NUM2TIMET(timev);
+    t = RB_NUM2TIMET(timev);
     zone = str_utc;
     if (localtime_with_gmtoff_zone(&t, &tm, &gmtoff, &zone)) {
         if (isdst_ret)
@@ -1675,8 +1675,8 @@ timew_out_of_timet_range(wideval_t timew)
     }
 #endif
     timexv = w2v(timew);
-    if (lt(timexv, mulv(INT2FIX(TIME_SCALE), TIMET2NUM(TIMET_MIN))) ||
-        le(mulv(INT2FIX(TIME_SCALE), addv(TIMET2NUM(TIMET_MAX), INT2FIX(1))), timexv))
+    if (lt(timexv, mulv(INT2FIX(TIME_SCALE), RB_TIMET2NUM(TIMET_MIN))) ||
+        le(mulv(INT2FIX(TIME_SCALE), addv(RB_TIMET2NUM(TIMET_MAX), INT2FIX(1))), timexv))
         return 1;
     return 0;
 }
@@ -2439,7 +2439,7 @@ subsec_normalize(time_t *secp, long *subsecp, const long maxsubsec)
 	subsec -= sec2 * maxsubsec;
 	sec += sec2;
     }
-#ifndef NEGATIVE_TIME_T
+#ifndef RB_NEGATIVE_TIME_T
     if (sec < 0)
 	rb_raise(rb_eArgError, "time must be positive");
 #endif
@@ -2545,7 +2545,7 @@ time_timespec(VALUE num, int interval)
     const char *const tstr = interval ? "time interval" : "time";
     VALUE i, f, ary;
 
-#ifndef NEGATIVE_TIME_T
+#ifndef RB_NEGATIVE_TIME_T
 # define arg_range_check(v) \
     (((v) < 0) ? \
      rb_raise(rb_eArgError, "%s must not be negative", tstr) : \
@@ -2558,7 +2558,7 @@ time_timespec(VALUE num, int interval)
 #endif
 
     if (FIXNUM_P(num)) {
-	t.tv_sec = NUM2TIMET(num);
+	t.tv_sec = RB_NUM2TIMET(num);
         arg_range_check(t.tv_sec);
 	t.tv_nsec = 0;
     }
@@ -2587,7 +2587,7 @@ time_timespec(VALUE num, int interval)
 	}
     }
     else if (RB_BIGNUM_TYPE_P(num)) {
-	t.tv_sec = NUM2TIMET(num);
+	t.tv_sec = RB_NUM2TIMET(num);
         arg_range_check(t.tv_sec);
 	t.tv_nsec = 0;
     }
@@ -2597,7 +2597,7 @@ time_timespec(VALUE num, int interval)
 	if (ary != Qundef && !NIL_P(ary = rb_check_array_type(ary))) {
             i = rb_ary_entry(ary, 0);
             f = rb_ary_entry(ary, 1);
-            t.tv_sec = NUM2TIMET(i);
+            t.tv_sec = RB_NUM2TIMET(i);
             arg_range_check(t.tv_sec);
             f = rb_funcall(f, '*', 1, INT2FIX(1000000000));
             t.tv_nsec = NUM2LONG(f);

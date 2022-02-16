@@ -30,6 +30,7 @@ gc_hook.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 gc_hook.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 gc_hook.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 gc_hook.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+gc_hook.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 gc_hook.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 gc_hook.o: $(hdrdir)/ruby/internal/assume.h
 gc_hook.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -189,6 +190,7 @@ tracepoint.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 tracepoint.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 tracepoint.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 tracepoint.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+tracepoint.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 tracepoint.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 tracepoint.o: $(hdrdir)/ruby/internal/assume.h
 tracepoint.o: $(hdrdir)/ruby/internal/attr/alloc_size.h

@@ -12,10 +12,10 @@
 #include "internal/bits.h"      /* for SIGNED_INTEGER_MAX */
 #include "ruby/ruby.h"          /* for VALUE */
 
-#if SIGNEDNESS_OF_TIME_T < 0    /* signed */
+#if RB_SIGNEDNESS_OF_TIME_T < 0    /* signed */
 # define TIMET_MAX SIGNED_INTEGER_MAX(time_t)
 # define TIMET_MIN SIGNED_INTEGER_MIN(time_t)
-#elif SIGNEDNESS_OF_TIME_T > 0  /* unsigned */
+#elif RB_SIGNEDNESS_OF_TIME_T > 0  /* unsigned */
 # define TIMET_MAX UNSIGNED_INTEGER_MAX(time_t)
 # define TIMET_MIN ((time_t)0)
 #endif

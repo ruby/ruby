@@ -32,6 +32,7 @@ capacity.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 capacity.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 capacity.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 capacity.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+capacity.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 capacity.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 capacity.o: $(hdrdir)/ruby/internal/assume.h
 capacity.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -204,6 +205,7 @@ coderange.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 coderange.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 coderange.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 coderange.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+coderange.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 coderange.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 coderange.o: $(hdrdir)/ruby/internal/assume.h
 coderange.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -375,6 +377,7 @@ cstr.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 cstr.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 cstr.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 cstr.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+cstr.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 cstr.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 cstr.o: $(hdrdir)/ruby/internal/assume.h
 cstr.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -548,6 +551,7 @@ ellipsize.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 ellipsize.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 ellipsize.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 ellipsize.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+ellipsize.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 ellipsize.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 ellipsize.o: $(hdrdir)/ruby/internal/assume.h
 ellipsize.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -708,6 +712,7 @@ enc_associate.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 enc_associate.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 enc_associate.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 enc_associate.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+enc_associate.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 enc_associate.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 enc_associate.o: $(hdrdir)/ruby/internal/assume.h
 enc_associate.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -878,6 +883,7 @@ enc_str_buf_cat.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+enc_str_buf_cat.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/assume.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -1049,6 +1055,7 @@ fstring.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 fstring.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 fstring.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 fstring.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+fstring.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 fstring.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 fstring.o: $(hdrdir)/ruby/internal/assume.h
 fstring.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -1219,6 +1226,7 @@ init.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+init.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 init.o: $(hdrdir)/ruby/internal/assume.h
 init.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -1378,6 +1386,7 @@ modify.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 modify.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 modify.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 modify.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+modify.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 modify.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 modify.o: $(hdrdir)/ruby/internal/assume.h
 modify.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -1538,6 +1547,7 @@ new.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 new.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 new.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 new.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+new.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 new.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 new.o: $(hdrdir)/ruby/internal/assume.h
 new.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -1708,6 +1718,7 @@ nofree.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 nofree.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 nofree.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 nofree.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+nofree.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 nofree.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 nofree.o: $(hdrdir)/ruby/internal/assume.h
 nofree.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -1867,6 +1878,7 @@ normalize.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 normalize.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 normalize.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 normalize.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+normalize.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 normalize.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 normalize.o: $(hdrdir)/ruby/internal/assume.h
 normalize.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -2039,6 +2051,7 @@ qsort.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 qsort.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 qsort.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 qsort.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+qsort.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 qsort.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 qsort.o: $(hdrdir)/ruby/internal/assume.h
 qsort.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -2210,6 +2223,7 @@ rb_interned_str.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+rb_interned_str.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/assume.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -2369,6 +2383,7 @@ rb_str_dup.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+rb_str_dup.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/assume.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/attr/alloc_size.h
@@ -2528,6 +2543,7 @@ set_len.o: $(hdrdir)/ruby/internal/arithmetic/pid_t.h
 set_len.o: $(hdrdir)/ruby/internal/arithmetic/short.h
 set_len.o: $(hdrdir)/ruby/internal/arithmetic/size_t.h
 set_len.o: $(hdrdir)/ruby/internal/arithmetic/st_data_t.h
+set_len.o: $(hdrdir)/ruby/internal/arithmetic/time_t.h
 set_len.o: $(hdrdir)/ruby/internal/arithmetic/uid_t.h
 set_len.o: $(hdrdir)/ruby/internal/assume.h
 set_len.o: $(hdrdir)/ruby/internal/attr/alloc_size.h

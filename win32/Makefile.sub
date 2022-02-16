@@ -657,19 +657,19 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 #define SIZEOF_FLOAT 4
 #define SIZEOF_DOUBLE 8
-#define SIGNEDNESS_OF_TIME_T -1
-#define NEGATIVE_TIME_T 1
+#define RB_SIGNEDNESS_OF_TIME_T -1
+#define RB_NEGATIVE_TIME_T 1
 !if $(RT_VER) >= 80
 #define SIZEOF_TIME_T 8
-#define TIMET2NUM(v) LL2NUM(v)
-#define NUM2TIMET(v) NUM2LL(v)
+#define RB_TIMET2NUM(v) LL2NUM(v)
+#define RB_NUM2TIMET(v) NUM2LL(v)
 !else
 #define SIZEOF_TIME_T 4
-#define TIMET2NUM(v) LONG2NUM(v)
-#define NUM2TIMET(v) NUM2LONG(v)
+#define RB_TIMET2NUM(v) LONG2NUM(v)
+#define RB_NUM2TIMET(v) NUM2LONG(v)
 !endif
-#define CLOCKID2NUM(v) INT2NUM(v)
-#define NUM2CLOCKID(v) NUM2INT(v)
+#define RB_CLOCKID2NUM(v) INT2NUM(v)
+#define RB_NUM2CLOCKID(v) NUM2INT(v)
 #define SIZEOF_CLOCK_T 4
 #define SIZEOF_RLIM_T 0
 !if "$(ARCH)" == "x64"
@@ -786,7 +786,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define PRI_PTR_PREFIX PRI_INT_PREFIX
 !endif
 #define PRI_LL_PREFIX "I64"
-#define PRI_PIDT_PREFIX PRI_INT_PREFIX
+#define RB_PRI_PIDT_PREFIX PRI_INT_PREFIX
 #define GETGROUPS_T int
 #define TYPEOF_TIMEVAL_TV_SEC long
 !if $(RT_VER) >= 120
