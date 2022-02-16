@@ -92,6 +92,26 @@ class TestOpenURISSL
     }
   end
 
+  def test_validation_ssl_version
+    with_https {|srv, dr, url|
+      setup_validation(srv, dr)
+      URI.open("#{url}/data", :ssl_verify_mode => OpenSSL::SSL::VERIFY_NONE, :ssl_version => :TLSv1_2) {|f|
+        assert_equal("200", f.status[0])
+        assert_equal("ddd", f.read)
+      }
+    }
+  end
+
+  def test_validate_bad_ssl_version_silently
+    with_https {|srv, dr, url|
+      setup_validation(srv, dr)
+      URI.open("#{url}/data", :ssl_verify_mode => OpenSSL::SSL::VERIFY_NONE, :ssl_version => :TLS_no_such_version) {|f|
+        assert_equal("200", f.status[0])
+        assert_equal("ddd", f.read)
+      }
+    }
+  end
+
   def test_validation_failure
     unless /mswin|mingw/ =~ RUBY_PLATFORM
       # on Windows, Errno::ECONNRESET will be raised, and it'll be eaten by
@@ -104,16 +124,6 @@ class TestOpenURISSL
     with_https(log_tester) {|srv, dr, url, server_thread, server_log|
       setup_validation(srv, dr)
       assert_raise(OpenSSL::SSL::SSLError) { URI.open("#{url}/data") {} }
-    }
-  end
-
-  def test_validation_ssl_version
-    with_https {|srv, dr, url|
-      setup_validation(srv, dr)
-      URI.open("#{url}/data", :ssl_verify_mode => OpenSSL::SSL::VERIFY_NONE, :ssl_version => :TLSv1_2) {|f|
-        assert_equal("200", f.status[0])
-        assert_equal("ddd", f.read)
-      }
     }
   end
 
