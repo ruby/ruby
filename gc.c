@@ -12428,15 +12428,24 @@ wmap_inspect(VALUE self)
     return str;
 }
 
+static inline bool
+wmap_live_entry_p(rb_objspace_t *objspace, st_data_t key, st_data_t val)
+{
+    return wmap_live_p(objspace, (VALUE)key) && wmap_live_p(objspace, (VALUE)val);
+}
+
 static int
 wmap_each_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)arg;
-    VALUE obj = (VALUE)val;
-    if (wmap_live_p(objspace, obj)) {
-	rb_yield_values(2, (VALUE)key, obj);
+
+    if (wmap_live_entry_p(objspace, key, val)) {
+        rb_yield_values(2, (VALUE)key, (VALUE)val);
+        return ST_CONTINUE;
     }
-    return ST_CONTINUE;
+    else {
+        return ST_DELETE;
+    }
 }
 
 /* Iterates over keys and objects in a weakly referenced object */
@@ -12455,11 +12464,14 @@ static int
 wmap_each_key_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)arg;
-    VALUE obj = (VALUE)val;
-    if (wmap_live_p(objspace, obj)) {
-	rb_yield((VALUE)key);
+
+    if (wmap_live_entry_p(objspace, key, val)) {
+        rb_yield((VALUE)key);
+        return ST_CONTINUE;
     }
-    return ST_CONTINUE;
+    else {
+        return ST_DELETE;
+    }
 }
 
 /* Iterates over keys and objects in a weakly referenced object */
@@ -12478,11 +12490,14 @@ static int
 wmap_each_value_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)arg;
-    VALUE obj = (VALUE)val;
-    if (wmap_live_p(objspace, obj)) {
-	rb_yield(obj);
+
+    if (wmap_live_entry_p(objspace, key, val)) {
+        rb_yield((VALUE)val);
+        return ST_CONTINUE;
     }
-    return ST_CONTINUE;
+    else {
+        return ST_DELETE;
+    }
 }
 
 /* Iterates over keys and objects in a weakly referenced object */
@@ -12503,11 +12518,14 @@ wmap_keys_i(st_data_t key, st_data_t val, st_data_t arg)
     struct wmap_iter_arg *argp = (struct wmap_iter_arg *)arg;
     rb_objspace_t *objspace = argp->objspace;
     VALUE ary = argp->value;
-    VALUE obj = (VALUE)val;
-    if (wmap_live_p(objspace, obj)) {
-	rb_ary_push(ary, (VALUE)key);
+
+    if (wmap_live_entry_p(objspace, key, val)) {
+        rb_ary_push(ary, (VALUE)key);
+        return ST_CONTINUE;
     }
-    return ST_CONTINUE;
+    else {
+        return ST_DELETE;
+    }
 }
 
 /* Iterates over keys and objects in a weakly referenced object */
@@ -12530,11 +12548,14 @@ wmap_values_i(st_data_t key, st_data_t val, st_data_t arg)
     struct wmap_iter_arg *argp = (struct wmap_iter_arg *)arg;
     rb_objspace_t *objspace = argp->objspace;
     VALUE ary = argp->value;
-    VALUE obj = (VALUE)val;
-    if (wmap_live_p(objspace, obj)) {
-	rb_ary_push(ary, obj);
+
+    if (wmap_live_entry_p(objspace, key, val)) {
+        rb_ary_push(ary, (VALUE)val);
+        return ST_CONTINUE;
     }
-    return ST_CONTINUE;
+    else {
+        return ST_DELETE;
+    }
 }
 
 /* Iterates over values and objects in a weakly referenced object */
@@ -12599,6 +12620,7 @@ wmap_lookup(VALUE self, VALUE key)
     VALUE obj;
     struct weakmap *w;
     rb_objspace_t *objspace = &rb_objspace;
+    GC_ASSERT(wmap_live_p(objspace, key));
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
     if (!st_lookup(w->wmap2obj, (st_data_t)key, &data)) return Qundef;
