@@ -1674,6 +1674,9 @@ struct update_arg {
     st_update_callback_func *func;
     VALUE hash;
     VALUE updated_key;
+#if RUBY_DEBUG > 0
+    VALUE val;
+#endif
 };
 
 typedef int (*tbl_update_func)(st_data_t *, st_data_t *, st_data_t, int);
@@ -1727,12 +1730,16 @@ tbl_update(VALUE hash, VALUE key, tbl_update_func func, st_data_t optional_arg)
         .arg = optional_arg,
         .func = func,
         .hash = hash,
-        .updated_key = Qfalse,
+        .updated_key = Qundef,
+#if RUBY_DEBUG > 0
+        .val = optional_arg;
+#endif
     };
 
     int ret = rb_hash_stlike_update(hash, key, tbl_update_modify, (st_data_t)&arg);
 
-    if (arg.updated_key) {
+    if (arg.updated_key != Qundef) {
+        RUBY_ASSERT(arg.val == optional_arg);
         RB_OBJ_WRITTEN(hash, Qundef, arg.updated_key);
         RB_OBJ_WRITTEN(hash, Qundef, optional_arg);
     }
