@@ -72,8 +72,11 @@ module SecureRandom
       ret
     end
 
-    ret = Random.urandom(1)
-    if ret.nil?
+    begin
+      # Check if Random.urandom is available
+      Random.urandom(1)
+      alias gen_random gen_random_urandom
+    rescue RuntimeError
       begin
         require 'openssl'
       rescue NoMethodError
@@ -81,8 +84,6 @@ module SecureRandom
       else
         alias gen_random gen_random_openssl
       end
-    else
-      alias gen_random gen_random_urandom
     end
 
     public :gen_random
