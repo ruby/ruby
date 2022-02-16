@@ -1472,8 +1472,9 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
                 rb_backtrace_length_limit = n;
             }
 	    else {
+                VALUE opt = rb_str_escape(rb_str_new2(s - 2));
 		rb_raise(rb_eRuntimeError,
-			 "invalid option --%s  (-h will show valid options)", s);
+			 "invalid option %"PRIsVALUE"  (-h will show valid options)", opt);
 	    }
 	    break;
 
@@ -1483,9 +1484,12 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 
 	  default:
 	    {
+                char str[3] = "-?";
+                str[1] = *s;
+                VALUE opt = rb_str_escape(rb_str_new2(str));
                 rb_raise(rb_eRuntimeError,
-			"invalid option -%c  (-h will show valid options)",
-                        (int)(unsigned char)*s);
+			"invalid option %"PRIsVALUE"  (-h will show valid options)",
+                        opt);
 	    }
 	    goto switch_end;
 

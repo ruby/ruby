@@ -80,33 +80,38 @@ error_print(rb_execution_context_t *ec)
 }
 
 static void
-write_warnq(VALUE out, VALUE str, const char *ptr, long len)
+write_warnq(VALUE out, VALUE str, const char *ptr, long len, int need_escape)
 {
     if (NIL_P(out)) {
         const char *beg = ptr;
         const long olen = len;
-        for (; len > 0; --len, ++ptr) {
-            unsigned char c = *ptr;
-            switch (c) {
-              case '\n': case '\t': continue;
-            }
-            if (rb_iscntrl(c)) {
-                char buf[5];
-                const char *cc = 0;
-                if (ptr > beg) rb_write_error2(beg, ptr - beg);
-                beg = ptr + 1;
-                cc = ruby_escaped_char(c);
-                if (cc) {
-                    rb_write_error2(cc, strlen(cc));
+        if (need_escape) {
+            for (; len > 0; --len, ++ptr) {
+                unsigned char c = *ptr;
+                switch (c) {
+                    case '\n': case '\t': continue;
                 }
-                else {
-                    rb_write_error2(buf, snprintf(buf, sizeof(buf), "\\x%02X", c));
+                if (rb_iscntrl(c)) {
+                    char buf[5];
+                    const char *cc = 0;
+                    if (ptr > beg) rb_write_error2(beg, ptr - beg);
+                    beg = ptr + 1;
+                    cc = ruby_escaped_char(c);
+                    if (cc) {
+                        rb_write_error2(cc, strlen(cc));
+                    }
+                    else {
+                        rb_write_error2(buf, snprintf(buf, sizeof(buf), "\\x%02X", c));
+                    }
+                }
+                else if (c == '\\') {
+                    rb_write_error2(beg, ptr - beg + 1);
+                    beg = ptr;
                 }
             }
-            else if (c == '\\') {
-                rb_write_error2(beg, ptr - beg + 1);
-                beg = ptr;
-            }
+        }
+        else {
+            ptr += len;
         }
         if (ptr > beg) {
             if (beg == RSTRING_PTR(str) && olen == RSTRING_LEN(str))
@@ -133,8 +138,24 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
     const char *einfo = "";
     long elen = 0;
     VALUE mesg;
+    int need_escape = 0;
 
     if (emesg != Qundef) {
+	if (!NIL_P(emesg)) {
+	    einfo = RSTRING_PTR(emesg);
+            elen = RSTRING_LEN(emesg);
+            const char *ptr = einfo;
+            for (; ptr < einfo + elen; ++ptr) {
+                if (rb_iscntrl(*ptr) && *ptr != '\n' && *ptr != '\r') {
+                    need_escape = 1;
+                    break;
+                }
+            }
+            if (need_escape) {
+                rb_warn("this error message is currently escaped because it includes control characters, but this will not be escaped in Ruby 3.3");
+            }
+	}
+
 	if (NIL_P(errat) || RARRAY_LEN(errat) == 0 ||
 	    NIL_P(mesg = RARRAY_AREF(errat, 0))) {
 	    error_pos(str);
@@ -142,11 +163,6 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 	else {
 	    write_warn_str(str, mesg);
 	    write_warn(str, ": ");
-	}
-
-	if (!NIL_P(emesg)) {
-	    einfo = RSTRING_PTR(emesg);
-            elen = RSTRING_LEN(emesg);
 	}
     }
 
@@ -174,11 +190,11 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 	    if (RSTRING_PTR(epath)[0] == '#')
 		epath = 0;
 	    if ((tail = memchr(einfo, '\n', elen)) != 0) {
-                write_warnq(str, emesg, einfo, tail - einfo);
+                write_warnq(str, emesg, einfo, tail - einfo, need_escape);
 		tail++;		/* skip newline */
 	    }
 	    else {
-                write_warnq(str, emesg, einfo, elen);
+                write_warnq(str, emesg, einfo, elen, need_escape);
 	    }
 	    if (epath) {
 		write_warn(str, " (");
@@ -194,7 +210,7 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 	    }
 	    if (tail && einfo+elen > tail) {
 		if (!highlight) {
-                    write_warnq(str, emesg, tail, einfo+elen-tail);
+                    write_warnq(str, emesg, tail, einfo+elen-tail, need_escape);
 		    if (einfo[elen-1] != '\n') write_warn2(str, "\n", 1);
 		}
 		else {
@@ -204,7 +220,7 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 			tail = memchr(einfo, '\n', elen);
 			if (!tail || tail > einfo) {
 			    write_warn(str, bold);
-                            write_warnq(str, emesg, einfo, tail ? tail-einfo : elen);
+                            write_warnq(str, emesg, einfo, tail ? tail-einfo : elen, need_escape);
 			    write_warn(str, reset);
 			    if (!tail) {
 				write_warn2(str, "\n", 1);
@@ -214,7 +230,7 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 			elen -= tail - einfo;
 			einfo = tail;
 			do ++tail; while (tail < einfo+elen && *tail == '\n');
-                        write_warnq(str, emesg, einfo, tail-einfo);
+                        write_warnq(str, emesg, einfo, tail-einfo, need_escape);
 			elen -= tail - einfo;
 			einfo = tail;
 		    }
