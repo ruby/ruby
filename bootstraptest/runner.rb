@@ -130,6 +130,8 @@ def main
       true
     when /\A(-v|--v(erbose))\z/
       BT.verbose = true
+      BT.quiet = false
+      true
     when /\A(-h|--h(elp)?)\z/
       puts(<<-End)
 Usage: #{File.basename($0, '.*')} --ruby=PATH [--sets=NAME,NAME,...]
