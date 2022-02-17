@@ -1314,6 +1314,7 @@ ruby_version_is "2.7" do
 
     it "returns what will be loaded without actual loading, .so file" do
       require 'rbconfig'
+      skip "no dynamically loadable standard extension" if RbConfig::CONFIG["EXTSTATIC"] == "static"
 
       extension, path = $LOAD_PATH.resolve_feature_path('etc')
       extension.should == :so
