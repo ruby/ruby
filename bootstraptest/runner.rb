@@ -74,6 +74,7 @@ BT = Struct.new(:ruby,
                 :reset,
                 :columns,
                 :width,
+                :platform,
                 ).new
 
 BT_STATE = Struct.new(:count, :error).new
@@ -184,6 +185,8 @@ End
   else
     BT.passed = BT.failed = BT.reset = ""
   end
+  target_version = `#{BT.ruby} -v`.chomp
+  BT.platform = target_version[/\[(.*)\]\z/, 1]
   unless quiet
     puts $start_time
     if defined?(RUBY_DESCRIPTION)
@@ -193,7 +196,7 @@ End
     else
       puts "Driver is ruby #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}) [#{RUBY_PLATFORM}]"
     end
-    puts "Target is #{`#{BT.ruby} -v`.chomp}"
+    puts "Target is #{target_version}"
     puts
     $stdout.flush
   end
@@ -334,11 +337,7 @@ def exec_test(pathes)
 end
 
 def target_platform
-  if BT.ruby
-    `#{BT.ruby} --disable-gems -e 'print RUBY_PLATFORM'`
-  else
-    RUBY_PLATFORM
-  end
+  BT.platform or RUBY_PLATFORM
 end
 
 class Assertion < Struct.new(:src, :path, :lineno, :proc)
