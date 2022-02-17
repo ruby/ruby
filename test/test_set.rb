@@ -838,3 +838,42 @@ class TC_Enumerable < Test::Unit::TestCase
     assert_not_same set, set.to_set { |o| o }
   end
 end
+
+class TC_Set_Builtin < Test::Unit::TestCase
+  private def should_omit?
+    Gem::Version.new(RUBY_VERSION) < Gem::Version.new('3.2.0') ||
+      !File.exist?(File.expand_path('../prelude.rb', __dir__))
+  end
+
+  def test_Set
+    omit "skipping the test for the builtin Set" if should_omit?
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_nothing_raised do
+        set = Set.new([1, 2])
+        assert_equal('Set', set.class.name)
+      end
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_nothing_raised do
+        set = Set[1, 2]
+        assert_equal('Set', set.class.name)
+      end
+    end;
+  end
+
+  def test_to_set
+    omit "skipping the test for the builtin Enumerable#to_set" if should_omit?
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_nothing_raised do
+        set = [1, 2].to_set
+        assert_equal('Set', set.class.name)
+      end
+    end;
+  end
+end
