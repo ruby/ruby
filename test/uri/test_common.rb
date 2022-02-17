@@ -42,17 +42,17 @@ class TestCommon < Test::Unit::TestCase
   end
 
   def test_register_scheme
-    assert_equal(["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO", "WS"].sort, URI.scheme_list.keys.sort)
+    assert_equal(["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO", "WS", "WSS"].sort, URI.scheme_list.keys.sort)
 
     foobar = Class.new(URI::Generic)
     URI.register_scheme 'FOOBAR', foobar
     begin
-      assert_equal(["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO", "WS", "FOOBAR"].sort, URI.scheme_list.keys.sort)
+      assert_equal(["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO", "WS", "WSS", "FOOBAR"].sort, URI.scheme_list.keys.sort)
     ensure
       URI.const_get(:Schemes).send(:remove_const, :FOOBAR)
     end
 
-    assert_equal(["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO", "WS"].sort, URI.scheme_list.keys.sort)
+    assert_equal(["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO", "WS", "WSS"].sort, URI.scheme_list.keys.sort)
   end
 
   def test_regexp
