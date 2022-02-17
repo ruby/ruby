@@ -1235,15 +1235,12 @@ rb_vm_make_binding(const rb_execution_context_t *ec, const rb_control_frame_t *s
     if (cfp == 0 || ruby_level_cfp == 0) {
 	rb_raise(rb_eRuntimeError, "Can't create Binding Object on top of Fiber.");
     }
-
-    while (1) {
-	envval = vm_make_env_object(ec, cfp);
-	if (cfp == ruby_level_cfp) {
-	    break;
-	}
-	cfp = rb_vm_get_binding_creatable_next_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
+    if (!VM_FRAME_RUBYFRAME_P(src_cfp) &&
+        !VM_FRAME_RUBYFRAME_P(RUBY_VM_PREVIOUS_CONTROL_FRAME(src_cfp))) {
+        rb_raise(rb_eRuntimeError, "Cannot create Binding object for non-Ruby caller");
     }
 
+    envval = vm_make_env_object(ec, cfp);
     bindval = rb_binding_alloc(rb_cBinding);
     GetBindingPtr(bindval, bind);
     vm_bind_update_env(bindval, bind, envval);
