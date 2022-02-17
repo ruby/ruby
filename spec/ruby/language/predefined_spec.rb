@@ -741,19 +741,21 @@ describe "Predefined global $_" do
     $_.should == match
   end
 
-  it "is Thread-local" do
-    $_ = nil
-    running = false
+  platform_is_not :wasi do
+    it "is Thread-local" do
+      $_ = nil
+      running = false
 
-    thr = Thread.new do
-      $_ = "last line"
-      running = true
+      thr = Thread.new do
+        $_ = "last line"
+        running = true
+      end
+
+      Thread.pass until running
+      $_.should be_nil
+
+      thr.join
     end
-
-    Thread.pass until running
-    $_.should be_nil
-
-    thr.join
   end
 
   it "can be assigned any value" do
@@ -891,9 +893,11 @@ describe "Global variable $?" do
     }.should raise_error(NameError)
   end
 
-  it "is thread-local" do
-    system(ruby_cmd('exit 0'))
-    Thread.new { $?.should be_nil }.join
+  platform_is_not :wasi do
+    it "is thread-local" do
+      system(ruby_cmd('exit 0'))
+      Thread.new { $?.should be_nil }.join
+    end
   end
 end
 

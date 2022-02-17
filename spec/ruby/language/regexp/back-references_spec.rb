@@ -22,20 +22,22 @@ describe "Regexps with back-references" do
     $10.should == "0"
   end
 
-  it "will not clobber capture variables across threads" do
-    cap1, cap2, cap3 = nil
-    "foo" =~ /(o+)/
-    cap1 = [$~.to_a, $1]
-    Thread.new do
-      cap2 = [$~.to_a, $1]
-      "bar" =~ /(a)/
-      cap3 = [$~.to_a, $1]
-    end.join
-    cap4 = [$~.to_a, $1]
-    cap1.should == [["oo", "oo"], "oo"]
-    cap2.should == [[], nil]
-    cap3.should == [["a", "a"], "a"]
-    cap4.should == [["oo", "oo"], "oo"]
+  platform_is_not :wasi do
+    it "will not clobber capture variables across threads" do
+      cap1, cap2, cap3 = nil
+      "foo" =~ /(o+)/
+      cap1 = [$~.to_a, $1]
+      Thread.new do
+        cap2 = [$~.to_a, $1]
+        "bar" =~ /(a)/
+        cap3 = [$~.to_a, $1]
+      end.join
+      cap4 = [$~.to_a, $1]
+      cap1.should == [["oo", "oo"], "oo"]
+      cap2.should == [[], nil]
+      cap3.should == [["a", "a"], "a"]
+      cap4.should == [["oo", "oo"], "oo"]
+    end
   end
 
   it "supports \<n> (backreference to previous group match)" do

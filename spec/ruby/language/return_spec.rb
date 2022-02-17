@@ -22,16 +22,18 @@ describe "The return keyword" do
     r().should be_nil
   end
 
-  describe "in a Thread" do
-    it "raises a LocalJumpError if used to exit a thread" do
-      t = Thread.new {
-        begin
-          return
-        rescue LocalJumpError => e
-          e
-        end
-      }
-      t.value.should be_an_instance_of(LocalJumpError)
+  platform_is_not :wasi do
+    describe "in a Thread" do
+      it "raises a LocalJumpError if used to exit a thread" do
+        t = Thread.new {
+          begin
+            return
+          rescue LocalJumpError => e
+            e
+          end
+        }
+        t.value.should be_an_instance_of(LocalJumpError)
+      end
     end
   end
 

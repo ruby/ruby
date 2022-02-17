@@ -68,14 +68,16 @@ describe "The throw keyword" do
     -> { catch(:different) { throw :test, 5 } }.should raise_error(ArgumentError)
   end
 
-  it "raises an UncaughtThrowError if used to exit a thread" do
-    catch(:what) do
-      t = Thread.new {
-        -> {
-          throw :what
-        }.should raise_error(UncaughtThrowError)
-      }
-      t.join
+  platform_is_not :wasi do
+    it "raises an UncaughtThrowError if used to exit a thread" do
+      catch(:what) do
+        t = Thread.new {
+          -> {
+            throw :what
+          }.should raise_error(UncaughtThrowError)
+        }
+        t.join
+      end
     end
   end
 end

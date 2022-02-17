@@ -79,16 +79,18 @@ describe "The break statement in a captured block" do
     end
   end
 
-  describe "from another thread" do
-    it "raises a LocalJumpError when getting the value from another thread" do
-      thread_with_break = Thread.new do
-        begin
-          break :break
-        rescue LocalJumpError => e
-          e
+  platform_is_not :wasi do
+    describe "from another thread" do
+      it "raises a LocalJumpError when getting the value from another thread" do
+        thread_with_break = Thread.new do
+          begin
+            break :break
+          rescue LocalJumpError => e
+            e
+          end
         end
+        thread_with_break.value.should be_an_instance_of(LocalJumpError)
       end
-      thread_with_break.value.should be_an_instance_of(LocalJumpError)
     end
   end
 end
