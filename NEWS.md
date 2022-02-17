@@ -67,6 +67,10 @@ Note: We're only listing outstanding class updates.
 * Refinement
     * Refinement#refined_class has been added. [[Feature #12737]]
 
+* Set
+    * Set is now available as a builtin class without the need for `require "set"`. [[Feature #16989]]
+      It is currently autoloaded via the `Set` constant or a call to `Enumerable#to_set`.
+
 * Struct
     * A Struct class can also be initialized with keyword arguments
       without `keyword_init: true` on `Struct.new` [[Feature #16806]]
@@ -154,6 +158,7 @@ The following deprecated APIs are removed.
 [Feature #16131]: https://bugs.ruby-lang.org/issues/16131
 [Feature #16806]: https://bugs.ruby-lang.org/issues/16806
 [Bug #16908]:     https://bugs.ruby-lang.org/issues/16908
+[Feature #16989]: https://bugs.ruby-lang.org/issues/16989
 [Feature #17351]: https://bugs.ruby-lang.org/issues/17351
 [Feature #17391]: https://bugs.ruby-lang.org/issues/17391
 [Bug #17545]:     https://bugs.ruby-lang.org/issues/17545
