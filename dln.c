@@ -269,16 +269,31 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
 #ifdef USE_DLN_DLOPEN
 # include "ruby/internal/stdbool.h"
 # include "internal/warnings.h"
+static bool
+dln_incompatible_func(void *handle, const char *funcname, void *const fp, const char **libname)
+{
+    Dl_info dli;
+    void *ex = dlsym(handle, funcname);
+    if (!ex) return false;
+    if (ex == fp) return false;
+    if (dladdr(ex, &dli)) {
+	*libname = dli.dli_fname;
+    }
+    return true;
+}
+
 COMPILER_WARNING_PUSH
 #if defined(__clang__) || GCC_VERSION_SINCE(4, 2, 0)
 COMPILER_WARNING_IGNORED(-Wpedantic)
 #endif
 static bool
-dln_incompatible_library_p(void *handle)
+dln_incompatible_library_p(void *handle, const char **libname)
 {
-    void *ex = dlsym(handle, EXTERNAL_PREFIX"ruby_xmalloc");
-    void *const fp = (void *)ruby_xmalloc;
-    return ex && ex != fp;
+#define check_func(func) \
+    if (dln_incompatible_func(handle, EXTERNAL_PREFIX #func, (void *)&func, libname)) \
+	return true
+    check_func(ruby_xmalloc);
+    return false;
 }
 COMPILER_WARNING_POP
 #endif
@@ -356,13 +371,20 @@ dln_open(const char *file)
 
 # if defined(RUBY_EXPORT)
     {
-	if (dln_incompatible_library_p(handle)) {
+	const char *libruby_name = NULL;
+	if (dln_incompatible_library_p(handle, &libruby_name)) {
 	    if (dln_disable_dlclose()) {
 		/* dlclose() segfaults */
+		if (libruby_name) {
+		    dln_fatalerror("linked to incompatible %s - %s", libruby_name, file);
+		}
 		dln_fatalerror("%s - %s", incompatible, file);
 	    }
 	    else {
 		dlclose(handle);
+		if (libruby_name) {
+		    dln_loaderror("linked to incompatible %s - %s", libruby_name, file);
+		}
 		error = incompatible;
 		goto failed;
 	    }
