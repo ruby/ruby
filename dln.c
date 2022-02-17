@@ -15,11 +15,13 @@
 #define dln_memerror rb_memerror
 #define dln_exit rb_exit
 #define dln_loaderror rb_loaderror
+#define dln_fatalerror rb_fatal
 #else
 #define dln_notimplement --->>> dln not implemented <<<---
 #define dln_memerror abort
 #define dln_exit exit
 static void dln_loaderror(const char *format, ...);
+#define dln_fatalerror dln_loaderror
 #endif
 #include "dln.h"
 #include "internal.h"
@@ -281,6 +283,24 @@ dln_incompatible_library_p(void *handle)
 COMPILER_WARNING_POP
 #endif
 
+#if defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
+    (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_11)
+# include <sys/sysctl.h>
+
+static bool
+dln_disable_dlclose(void)
+{
+    int mib[] = {CTL_KERN, KERN_OSREV};
+    int32_t rev;
+    size_t size = sizeof(rev);
+    if (sysctl(mib, numberof(mib), &rev, &size, NULL, 0)) return true;
+    if (rev < MAC_OS_X_VERSION_10_11) return true;
+    return false;
+}
+#else
+# define dln_disable_dlclose() false
+#endif
+
 #if defined(_WIN32) || defined(USE_DLN_DLOPEN)
 static void *
 dln_open(const char *file)
@@ -335,20 +355,19 @@ dln_open(const char *file)
     }
 
 # if defined(RUBY_EXPORT)
-	{
-	    if (dln_incompatible_library_p(handle)) {
-#  if defined(__APPLE__) && \
-    defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
-    (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_11)
+    {
+	if (dln_incompatible_library_p(handle)) {
+	    if (dln_disable_dlclose()) {
 		/* dlclose() segfaults */
-		rb_fatal("%s - %s", incompatible, file);
-#  else
+		dln_fatalerror("%s - %s", incompatible, file);
+	    }
+	    else {
 		dlclose(handle);
 		error = incompatible;
 		goto failed;
-#  endif
 	    }
 	}
+    }
 # endif
 #endif
 
