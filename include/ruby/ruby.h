@@ -23,6 +23,7 @@
 #include <stdarg.h>
 
 #include "defines.h"
+#include "ruby/internal/abi.h"
 #include "ruby/internal/anyargs.h"
 #include "ruby/internal/arithmetic.h"
 #include "ruby/internal/core.h"

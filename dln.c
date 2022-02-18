@@ -426,11 +426,28 @@ dln_sym(void *handle, const char *symbol)
 }
 #endif
 
+#if RUBY_DLN_CHECK_ABI
+static bool
+abi_check_enabled_p(void)
+{
+    const char *val = getenv("RUBY_ABI_CHECK");
+    return val == NULL || !(val[0] == '0' && val[1] == '\0');
+}
+#endif
+
 void *
 dln_load(const char *file)
 {
 #if defined(_WIN32) || defined(USE_DLN_DLOPEN)
     void *handle = dln_open(file);
+
+#if RUBY_DLN_CHECK_ABI
+    unsigned long long (*abi_version_fct)(void) = (unsigned long long(*)(void))dln_sym(handle, "ruby_abi_version");
+    unsigned long long binary_abi_version = (*abi_version_fct)();
+    if (binary_abi_version != ruby_abi_version() && abi_check_enabled_p()) {
+        dln_loaderror("ABI version of binary is incompatible with this Ruby. Try rebuilding this binary.");
+    }
+#endif
 
     char *init_fct_name;
     init_funcname(&init_fct_name, file);
