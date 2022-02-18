@@ -323,6 +323,22 @@ static ID id_unsetenv_others, id_chdir, id_umask, id_close_others;
 static ID id_nanosecond, id_microsecond, id_millisecond, id_second;
 static ID id_float_microsecond, id_float_millisecond, id_float_second;
 static ID id_GETTIMEOFDAY_BASED_CLOCK_REALTIME, id_TIME_BASED_CLOCK_REALTIME;
+#ifdef CLOCK_REALTIME
+static ID id_CLOCK_REALTIME;
+# define RUBY_CLOCK_REALTIME ID2SYM(id_CLOCK_REALTIME)
+#endif
+#ifdef CLOCK_MONOTONIC
+static ID id_CLOCK_MONOTONIC;
+# define RUBY_CLOCK_MONOTONIC ID2SYM(id_CLOCK_MONOTONIC)
+#endif
+#ifdef CLOCK_PROCESS_CPUTIME_ID
+static ID id_CLOCK_PROCESS_CPUTIME_ID;
+# define RUBY_CLOCK_PROCESS_CPUTIME_ID ID2SYM(id_CLOCK_PROCESS_CPUTIME_ID)
+#endif
+#ifdef CLOCK_THREAD_CPUTIME_ID
+static ID id_CLOCK_THREAD_CPUTIME_ID;
+# define RUBY_CLOCK_THREAD_CPUTIME_ID ID2SYM(id_CLOCK_THREAD_CPUTIME_ID)
+#endif
 #ifdef HAVE_TIMES
 static ID id_TIMES_BASED_CLOCK_MONOTONIC;
 static ID id_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID;
@@ -333,6 +349,7 @@ static ID id_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID;
 static ID id_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID;
 #ifdef __APPLE__
 static ID id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC;
+# define RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC ID2SYM(id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC)
 #endif
 static ID id_hertz;
 
@@ -8191,6 +8208,13 @@ ruby_real_ms_time(void)
 }
 #endif
 
+#if defined(NUM2CLOCKID)
+# define NUMERIC_CLOCKID 1
+#else
+# define NUMERIC_CLOCKID 0
+# define NUM2CLOCKID(x) 0
+#endif
+
 /*
  *  call-seq:
  *     Process.clock_gettime(clock_id [, unit])   -> number
@@ -8331,8 +8355,37 @@ rb_clock_gettime(int argc, VALUE *argv, VALUE _)
 
     VALUE unit = (rb_check_arity(argc, 1, 2) == 2) ? argv[1] : Qnil;
     VALUE clk_id = argv[0];
+    clockid_t c;
 
     if (SYMBOL_P(clk_id)) {
+#ifdef CLOCK_REALTIME
+        if (clk_id == RUBY_CLOCK_REALTIME) {
+            c = CLOCK_REALTIME;
+            goto gettime;
+        }
+#endif
+
+#ifdef CLOCK_MONOTONIC
+        if (clk_id == RUBY_CLOCK_MONOTONIC) {
+            c = CLOCK_MONOTONIC;
+            goto gettime;
+        }
+#endif
+
+#ifdef CLOCK_PROCESS_CPUTIME_ID
+        if (clk_id == RUBY_CLOCK_PROCESS_CPUTIME_ID) {
+            c = CLOCK_PROCESS_CPUTIME_ID;
+            goto gettime;
+        }
+#endif
+
+#ifdef CLOCK_THREAD_CPUTIME_ID
+        if (clk_id == RUBY_CLOCK_THREAD_CPUTIME_ID) {
+            c = CLOCK_THREAD_CPUTIME_ID;
+            goto gettime;
+        }
+#endif
+
         /*
          * Non-clock_gettime clocks are provided by symbol clk_id.
          */
@@ -8443,7 +8496,6 @@ rb_clock_gettime(int argc, VALUE *argv, VALUE _)
         }
 
 #ifdef __APPLE__
-#define RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC ID2SYM(id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC)
         if (clk_id == RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC) {
 	    const mach_timebase_info_data_t *info = get_mach_timebase_info();
             uint64_t t = mach_absolute_time();
@@ -8456,11 +8508,11 @@ rb_clock_gettime(int argc, VALUE *argv, VALUE _)
         }
 #endif
     }
-    else {
+    else if (NUMERIC_CLOCKID) {
 #if defined(HAVE_CLOCK_GETTIME)
         struct timespec ts;
-        clockid_t c;
         c = NUM2CLOCKID(clk_id);
+      gettime:
         ret = clock_gettime(c, &ts);
         if (ret == -1)
             rb_sys_fail("clock_gettime");
@@ -8522,16 +8574,47 @@ rb_clock_gettime(int argc, VALUE *argv, VALUE _)
 static VALUE
 rb_clock_getres(int argc, VALUE *argv, VALUE _)
 {
+    int ret;
+
     struct timetick tt;
     timetick_int_t numerators[2];
     timetick_int_t denominators[2];
     int num_numerators = 0;
     int num_denominators = 0;
+    clockid_t c;
 
     VALUE unit = (rb_check_arity(argc, 1, 2) == 2) ? argv[1] : Qnil;
     VALUE clk_id = argv[0];
 
     if (SYMBOL_P(clk_id)) {
+#ifdef CLOCK_REALTIME
+        if (clk_id == RUBY_CLOCK_REALTIME) {
+            c = CLOCK_REALTIME;
+            goto getres;
+        }
+#endif
+
+#ifdef CLOCK_MONOTONIC
+        if (clk_id == RUBY_CLOCK_MONOTONIC) {
+            c = CLOCK_MONOTONIC;
+            goto getres;
+        }
+#endif
+
+#ifdef CLOCK_PROCESS_CPUTIME_ID
+        if (clk_id == RUBY_CLOCK_PROCESS_CPUTIME_ID) {
+            c = CLOCK_PROCESS_CPUTIME_ID;
+            goto getres;
+        }
+#endif
+
+#ifdef CLOCK_THREAD_CPUTIME_ID
+        if (clk_id == RUBY_CLOCK_THREAD_CPUTIME_ID) {
+            c = CLOCK_THREAD_CPUTIME_ID;
+            goto getres;
+        }
+#endif
+
 #ifdef RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME
         if (clk_id == RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME) {
             tt.giga_count = 0;
@@ -8598,11 +8681,12 @@ rb_clock_getres(int argc, VALUE *argv, VALUE _)
         }
 #endif
     }
-    else {
+    else if (NUMERIC_CLOCKID) {
 #if defined(HAVE_CLOCK_GETRES)
         struct timespec ts;
-        clockid_t c = NUM2CLOCKID(clk_id);
-        int ret = clock_getres(c, &ts);
+        c = NUM2CLOCKID(clk_id);
+      getres:
+        ret = clock_getres(c, &ts);
         if (ret == -1)
             rb_sys_fail("clock_getres");
         tt.count = (int32_t)ts.tv_nsec;
@@ -8952,31 +9036,49 @@ InitVM_process(void)
 
     rb_define_module_function(rb_mProcess, "times", rb_proc_times, 0);
 
-#ifdef CLOCK_REALTIME
+#if defined(RUBY_CLOCK_REALTIME)
+#elif defined(RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME)
+# define RUBY_CLOCK_REALTIME RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME
+#elif defined(RUBY_TIME_BASED_CLOCK_REALTIME)
+# define RUBY_CLOCK_REALTIME RUBY_TIME_BASED_CLOCK_REALTIME
+#endif
+#if defined(CLOCK_REALTIME) && defined(CLOCKID2NUM)
     /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_REALTIME", CLOCKID2NUM(CLOCK_REALTIME));
-#elif defined(RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME)
-    /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_REALTIME", RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME);
+#elif defined(RUBY_CLOCK_REALTIME)
+    rb_define_const(rb_mProcess, "CLOCK_REALTIME", RUBY_CLOCK_REALTIME);
 #endif
-#ifdef CLOCK_MONOTONIC
+
+#if defined(RUBY_CLOCK_MONOTONIC)
+#elif defined(RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC)
+# define RUBY_CLOCK_MONOTONIC RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC
+#endif
+#if defined(CLOCK_MONOTONIC) && defined(CLOCKID2NUM)
     /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", CLOCKID2NUM(CLOCK_MONOTONIC));
-#elif defined(RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC)
-    /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC);
+#elif defined(RUBY_CLOCK_MONOTONIC)
+    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", RUBY_CLOCK_MONOTONIC);
 #endif
-#ifdef CLOCK_PROCESS_CPUTIME_ID
+
+#if defined(RUBY_CLOCK_PROCESS_CPUTIME_ID)
+#elif defined(RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID)
+# define RUBY_CLOCK_PROCESS_CPUTIME_ID RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID
+#endif
+#if defined(CLOCK_PROCESS_CPUTIME_ID) && defined(CLOCKID2NUM)
     /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", CLOCKID2NUM(CLOCK_PROCESS_CPUTIME_ID));
-#elif defined(RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID)
-    /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID);
+#elif defined(RUBY_CLOCK_PROCESS_CPUTIME_ID)
+    rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", RUBY_CLOCK_PROCESS_CPUTIME_ID);
 #endif
-#ifdef CLOCK_THREAD_CPUTIME_ID
+
+#if defined(CLOCK_THREAD_CPUTIME_ID) && defined(CLOCKID2NUM)
     /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_THREAD_CPUTIME_ID", CLOCKID2NUM(CLOCK_THREAD_CPUTIME_ID));
+#elif defined(RUBY_CLOCK_THREAD_CPUTIME_ID)
+    rb_define_const(rb_mProcess, "CLOCK_THREAD_CPUTIME_ID", RUBY_CLOCK_THREAD_CPUTIME_ID);
 #endif
+
+#ifdef CLOCKID2NUM
 #ifdef CLOCK_VIRTUAL
     /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_VIRTUAL", CLOCKID2NUM(CLOCK_VIRTUAL));
@@ -9056,6 +9158,7 @@ InitVM_process(void)
 #ifdef CLOCK_TAI
     /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_TAI", CLOCKID2NUM(CLOCK_TAI));
+#endif
 #endif
     rb_define_module_function(rb_mProcess, "clock_gettime", rb_clock_gettime, -1);
     rb_define_module_function(rb_mProcess, "clock_getres", rb_clock_getres, -1);
@@ -9151,6 +9254,18 @@ Init_process(void)
     define_id(float_second);
     define_id(GETTIMEOFDAY_BASED_CLOCK_REALTIME);
     define_id(TIME_BASED_CLOCK_REALTIME);
+#ifdef CLOCK_REALTIME
+    define_id(CLOCK_REALTIME);
+#endif
+#ifdef CLOCK_MONOTONIC
+    define_id(CLOCK_MONOTONIC);
+#endif
+#ifdef CLOCK_PROCESS_CPUTIME_ID
+    define_id(CLOCK_PROCESS_CPUTIME_ID);
+#endif
+#ifdef CLOCK_THREAD_CPUTIME_ID
+    define_id(CLOCK_THREAD_CPUTIME_ID);
+#endif
 #ifdef HAVE_TIMES
     define_id(TIMES_BASED_CLOCK_MONOTONIC);
     define_id(TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID);
