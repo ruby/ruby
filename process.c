@@ -4755,6 +4755,9 @@ rb_spawn(int argc, const VALUE *argv)
  *  Executes _command..._ in a subshell.
  *  _command..._ is one of following forms.
  *
+ *  This method has potential security vulnerabilities if called with untrusted input;
+ *  see {Command Injection}[command_injection.rdoc].
+ *
  *  [<code>commandline</code>]
  *    command line string which is passed to the standard shell
  *  [<code>cmdname, arg1, ...</code>]

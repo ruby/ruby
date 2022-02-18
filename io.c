@@ -7374,6 +7374,9 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *  Executes the given command +cmd+ as a subprocess
  *  whose $stdin and $stdout are connected to a new stream +io+.
  *
+ *  This method has potential security vulnerabilities if called with untrusted input;
+ *  see {Command Injection}[command_injection.rdoc].
+ *
  *  If no block is given, returns the new stream,
  *  which depending on given +mode+ may be open for reading, writing, or both.
  *  The stream should be explicitly closed (eventually) to avoid resource leaks.
@@ -9813,10 +9816,15 @@ argf_readlines(int argc, VALUE *argv, VALUE argf)
 
 /*
  *  call-seq:
- *    `cmd` -> string
+ *    `command` -> string
  *
- *  Returns the <tt>$stdout</tt> output fromm running +cmd+ in a subshell;
- *  sets global variable <tt>$?</tt> to the process status:
+ *  Returns the <tt>$stdout</tt> output from running +command+ in a subshell;
+ *  sets global variable <tt>$?</tt> to the process status.
+ *
+ *  This method has potential security vulnerabilities if called with untrusted input;
+ *  see {Command Injection}[command_injection.rdoc].
+ *
+ *  Examples:
  *
  *    $ `date`                 # => "Wed Apr  9 08:56:30 CDT 2003\n"
  *    $ `echo oops && exit 99` # => "oops\n"
@@ -11196,36 +11204,29 @@ io_s_foreach(VALUE v)
 
 /*
  *  call-seq:
- *    IO.foreach(command, sep = $/, **opts) {|line| block }    -> nil
- *    IO.foreach(command, limit, **opts) {|line| block }       -> nil
- *    IO.foreach(command, sep, limit, **opts) {|line| block }  -> nil
  *    IO.foreach(path, sep = $/, **opts) {|line| block }       -> nil
  *    IO.foreach(path, limit, **opts) {|line| block }          -> nil
  *    IO.foreach(path, sep, limit, **opts) {|line| block }     -> nil
+ *    IO.foreach(command, sep = $/, **opts) {|line| block }    -> nil
+ *    IO.foreach(command, limit, **opts) {|line| block }       -> nil
+ *    IO.foreach(command, sep, limit, **opts) {|line| block }  -> nil
  *    IO.foreach(...)                                          -> an_enumerator
  *
  *  Calls the block with each successive line read from the stream.
  *
- *  The first argument must be a string;
- *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
+ *  When called from class \IO (but not subclasses of \IO),
+ *  this method has potential security vulnerabilities if called with untrusted input;
+ *  see {Command Injection}[command_injection.rdoc].
  *
- *  - If so (and if +self+ is \IO),
+ *  The first argument must be a string that is one of the following:
+ *
+ *  - Path: if +self+ is a subclass of \IO (\File, for example),
+ *    or if the string _does_ _not_ start with the pipe character (<tt>'|'</tt>),
+ *    the string is the path to a file.
+ *  - Command: if +self+ is the class \IO,
+ *    and if the string starts with the pipe character,
  *    the rest of the string is a command to be executed as a subprocess.
- *  - Otherwise, the string is the path to a file.
- *
- *  With only argument +command+ given, executes the command in a shell,
- *  parses its $stdout into lines, as determined by the default line separator,
- *  and calls the block with each successive line:
- *
- *    IO.foreach('| cat t.txt') {|line| p line }
- *
- *  Output:
- *
- *    "First line\n"
- *    "Second line\n"
- *    "\n"
- *    "Third line\n"
- *    "Fourth line\n"
+ *    See the {Note on Security}[@Note+on+Security].
  *
  *  With only argument +path+ given, parses lines from the file at the given +path+,
  *  as determined by the default line separator,
@@ -11327,6 +11328,10 @@ io_s_readlines(VALUE v)
  *
  *  Returns an array of all lines read from the stream.
  *
+ *  When called from class \IO (but not subclasses of \IO),
+ *  this method has potential security vulnerabilities if called with untrusted input;
+ *  see {Command Injection}[command_injection.rdoc].
+ *
  *  The first argument must be a string;
  *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
  *
@@ -11427,6 +11432,10 @@ seek_before_access(VALUE argp)
  *  Opens the stream, reads and returns some or all of its content,
  *  and closes the stream; returns +nil+ if no bytes were read.
  *
+ *  When called from class \IO (but not subclasses of \IO),
+ *  this method has potential security vulnerabilities if called with untrusted input;
+ *  see {Command Injection}[command_injection.rdoc].
+ *
  *  The first argument must be a string;
  *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
  *
@@ -11497,6 +11506,10 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
  *
  *  Behaves like IO.read, except that the stream is opened in binary mode
  *  with ASCII-8BIT encoding.
+ *
+ *  When called from class \IO (but not subclasses of \IO),
+ *  this method has potential security vulnerabilities if called with untrusted input;
+ *  see {Command Injection}[command_injection.rdoc].
  *
  */
 
@@ -11599,10 +11612,14 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *  Opens the stream, writes the given +data+ to it,
  *  and closes the stream; returns the number of bytes written.
  *
+ *  When called from class \IO (but not subclasses of \IO),
+ *  this method has potential security vulnerabilities if called with untrusted input;
+ *  see {Command Injection}[command_injection.rdoc].
+ *
  *  The first argument must be a string;
  *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
  *
- *  - If so (and if +self+ is an instance of \IO),
+ *  - If so (and if +self+ is \IO),
  *    the rest of the string is a command to be executed as a subprocess.
  *  - Otherwise, the string is the path to a file.
  *
@@ -11659,6 +11676,10 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
  *
  *  Behaves like IO.write, except that the stream is opened in binary mode
  *  with ASCII-8BIT encoding.
+ *
+ *  When called from class \IO (but not subclasses of \IO),
+ *  this method has potential security vulnerabilities if called with untrusted input;
+ *  see {Command Injection}[command_injection.rdoc].
  *
  */
 
