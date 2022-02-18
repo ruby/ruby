@@ -4,7 +4,7 @@ require "yaml"
 
 lang = ARGV.shift
 unless lang
-  abort "usage: #$1 {en,ja} | pbcopy"
+  abort "usage: #$1 {en,ja,release.md} | pbcopy"
 end
 
 # Confirm current directory is www.ruby-lang.org's working directory
@@ -16,10 +16,15 @@ def confirm_w_r_l_o_wd
 end
 confirm_w_r_l_o_wd
 
-releases = YAML.load_file('_data/releases.yml')
+releases = YAML.safe_load_file('_data/releases.yml', permitted_classes: [Date])
 
-url = "https://hackmd.io/@naruse/ruby-relnote-#{lang}/download"
-src = URI(url).read
+case lang
+when "en", "ja"
+  url = "https://hackmd.io/@naruse/ruby-relnote-#{lang}/download"
+  src = URI(url).read
+else # the path of the Release note in markdown is given
+  src = File.read(lang)
+end
 src.gsub!(/[ \t]+$/, "")
 src.sub!(/(?<!\n)\z/, "\n")
 src.sub!(/^breaks: false\n/, '')
