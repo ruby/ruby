@@ -3244,7 +3244,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
  *  Its encoding is:
  *
  *  - The unchanged encoding of +out_string+, if +out_string+ is given.
- *  - ASCII-8BIT, otherwise.
+ *  - BINARY, otherwise.
  *
  *  - Contains +maxlen+ bytes from the stream, if available.
  *  - Otherwise contains all available bytes, if any available.
@@ -3455,7 +3455,7 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
  *  - +maxlen+ not +nil+:
  *
  *    - +out_string+ given: encoding of +out_string+ not modified.
- *    - +out_string+ not given: ASCII-8BIT is used.
+ *    - +out_string+ not given: BINARY is used.
  *
  *  <b>Without Argument +out_string+</b>
  *
@@ -6192,7 +6192,7 @@ rb_io_ext_int_to_encs(rb_encoding *ext, rb_encoding *intern, rb_encoding **enc, 
 	default_ext = 1;
     }
     if (ext == rb_ascii8bit_encoding()) {
-	/* If external is ASCII-8BIT, no transcoding */
+	/* If external is BINARY, no transcoding */
 	intern = NULL;
     }
     else if (intern == NULL) {
@@ -11530,7 +11530,7 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
  *     IO.binread(path, length = nil, offset = 0)    -> string or nil
  *
  *  Behaves like IO.read, except that the stream is opened in binary mode
- *  with ASCII-8BIT encoding.
+ *  with BINARY encoding.
  *
  *  When called from class \IO (but not subclasses of \IO),
  *  this method has potential security vulnerabilities if called with untrusted input;
@@ -11702,7 +11702,7 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
  *    IO.binwrite(path, string, offset = 0)    -> integer
  *
  *  Behaves like IO.write, except that the stream is opened in binary mode
- *  with ASCII-8BIT encoding.
+ *  with BINARY encoding.
  *
  *  When called from class \IO (but not subclasses of \IO),
  *  this method has potential security vulnerabilities if called with untrusted input;
@@ -13088,7 +13088,7 @@ argf_eof(VALUE argf)
  *  Fewer than _length_ bytes are returned if an EOF is encountered during
  *  the read.
  *  In the case of an integer _length_, the resulting string is always
- *  in ASCII-8BIT encoding.
+ *  in BINARY encoding.
  *
  *  If _length_ is omitted or is +nil+, it reads until EOF
  *  and the encoding conversion is applied, if applicable.
@@ -13673,7 +13673,7 @@ argf_file(VALUE argf)
  *
  *  *  Newline conversion is disabled.
  *  *  Encoding conversion is disabled.
- *  *  Content is treated as ASCII-8BIT.
+ *  *  Content is treated as BINARY.
  */
 static VALUE
 argf_binmode_m(VALUE argf)
@@ -14219,7 +14219,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  by appending one or both encoding names, separated by colons:
  *
  *    f = File.new('t.dat', 'rb')
- *    f.external_encoding # => #<Encoding:ASCII-8BIT>
+ *    f.external_encoding # => #<Encoding:BINARY>
  *    f.internal_encoding # => nil
  *    f = File.new('t.dat', 'rb:UTF-16')
  *    f.external_encoding # => #<Encoding:UTF-16 (dummy)>
@@ -14231,7 +14231,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  The numerous encoding names are available in array Encoding.name_list:
  *
  *    Encoding.name_list.size    # => 175
- *    Encoding.name_list.take(3) # => ["ASCII-8BIT", "UTF-8", "US-ASCII"]
+ *    Encoding.name_list.take(3) # => ["BINARY", "UTF-8", "US-ASCII"]
  *
  *  When the external encoding is set,
  *  strings read are tagged by that encoding

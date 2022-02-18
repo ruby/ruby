@@ -41,10 +41,10 @@ int rb_encdb_alias(const char *alias, const char *orig);
 void
 Init_enc(void)
 {
-    rb_encdb_declare("ASCII-8BIT");
+    rb_encdb_declare("BINARY");
     rb_encdb_declare("US-ASCII");
     rb_encdb_declare("UTF-8");
-    rb_encdb_alias("BINARY", "ASCII-8BIT");
+    rb_encdb_alias("ASCII-8BIT", "BINARY");
     rb_encdb_alias("ASCII", "US-ASCII");
 }
 

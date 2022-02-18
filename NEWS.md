@@ -54,6 +54,10 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* Encoding
+   * Encoding::ASCII_8BIT was renamed to Encoding::BINARY.
+     Encoding::ASCII_8BIT is now an alias for Encoding::BINARY. [[Feature #18576]]
+
 * Hash
     * Hash#shift now always returns nil if the hash is
       empty, instead of returning the default value or
@@ -104,6 +108,12 @@ Note: We're only listing outstanding class updates.
 ## Compatibility issues
 
 Note: Excluding feature bug fixes.
+
+### Renamed `Encoding::ASCII_8BIT`
+
+* The old name is an alias of the new one, however code checking the encoding name may break:
+ `string.encoding.name == "ASCII-8BIT"`. It's best to compare the `Encoding` directly:
+ `string.encoding == Encoding::BINARY`. [[Feature #18576]]
 
 ### Removed constants
 

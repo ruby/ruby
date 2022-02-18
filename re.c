@@ -2862,7 +2862,7 @@ rb_reg_preprocess_dregexp(VALUE ary, int options)
 	if (options & ARG_ENCODING_NONE &&
 		src_enc != ascii8bit) {
 	    if (str_coderange(str) != ENC_CODERANGE_7BIT)
-		rb_raise(rb_eRegexpError, "/.../n has a non escaped non ASCII character in non ASCII-8BIT script");
+		rb_raise(rb_eRegexpError, "/.../n has a non escaped non ASCII character in non BINARY script");
 	    else
 		src_enc = ascii8bit;
 	}
@@ -2973,7 +2973,7 @@ rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err,
         rb_encoding *ascii8bit = rb_ascii8bit_encoding();
         if (enc != ascii8bit) {
             if (str_coderange(str) != ENC_CODERANGE_7BIT) {
-                errcpy(err, "/.../n has a non escaped non ASCII character in non ASCII-8BIT script");
+                errcpy(err, "/.../n has a non escaped non ASCII character in non BINARY script");
                 return -1;
             }
             enc = ascii8bit;

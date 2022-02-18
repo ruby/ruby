@@ -17,14 +17,28 @@ describe "Encoding.aliases" do
     end
   end
 
-  it "has alias names as its keys" do
-    Encoding.aliases.key?('BINARY').should be_true
-    Encoding.aliases.key?('ASCII').should be_true
+  ruby_version_is '3.2' do
+    it "has alias names as its keys" do
+      Encoding.aliases.key?('ASCII-8BIT').should be_true
+      Encoding.aliases.key?('ASCII').should be_true
+    end
+
+    it "has the names of the aliased encoding as its values" do
+      Encoding.aliases['ASCII-8BIT'].should == 'BINARY'
+      Encoding.aliases['ASCII'].should == 'US-ASCII'
+    end
   end
 
-  it "has the names of the aliased encoding as its values" do
-    Encoding.aliases['BINARY'].should == 'ASCII-8BIT'
-    Encoding.aliases['ASCII'].should == 'US-ASCII'
+  ruby_version_is ''..'3.1' do
+    it "has alias names as its keys" do
+      Encoding.aliases.key?('BINARY').should be_true
+      Encoding.aliases.key?('ASCII').should be_true
+    end
+
+    it "has the names of the aliased encoding as its values" do
+      Encoding.aliases['BINARY'].should == 'ASCII-8BIT'
+      Encoding.aliases['ASCII'].should == 'US-ASCII'
+    end
   end
 
   it "has an 'external' key with the external default encoding as its value" do

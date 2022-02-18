@@ -836,9 +836,9 @@ int rb_enc_unicode_p(rb_encoding *enc);
 
 RBIMPL_ATTR_RETURNS_NONNULL()
 /**
- * Queries the encoding that represents ASCII-8BIT a.k.a. binary.
+ * Queries the encoding that represents BINARY a.k.a. ASCII-8BIT.
  *
- * @return  The encoding that represents ASCII-8BIT.
+ * @return  The encoding that represents BINARY.
  *
  * @internal
  *
@@ -919,7 +919,7 @@ RBIMPL_ATTR_CONST()
  * Identical to rb_ascii8bit_encoding(), except it returns the encoding's index
  * instead of the encoding itself.
  *
- * @return  The index of encoding of ASCII-8BIT.
+ * @return  The index of encoding of BINARY a.k.a ASCII-8BIT.
  *
  * @internal
  *

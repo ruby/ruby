@@ -1299,7 +1299,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		    enc_name = "UTF-8";
 		    break;
 		  case 'N': case 'n': case 'A': case 'a':
-		    enc_name = "ASCII-8BIT";
+		    enc_name = "BINARY";
 		    break;
 		}
 		if (enc_name) {
@@ -2096,7 +2096,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 		path = str_conv_enc(path, uenc, lenc);
 	    }
 #endif
-	    if (!ENCODING_GET(path)) { /* ASCII-8BIT */
+	    if (!ENCODING_GET(path)) { /* BINARY */
 		rb_enc_copy(path, opt->script_name);
 	    }
 	}

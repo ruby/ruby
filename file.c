@@ -186,7 +186,7 @@ file_path_convert(VALUE name)
 	(fs_encidx = rb_filesystem_encindex()) != fname_encidx &&
 	rb_default_internal_encoding() &&
 	!rb_enc_str_asciionly_p(name)) {
-	/* Don't call rb_filesystem_encoding() before US-ASCII and ASCII-8BIT */
+	/* Don't call rb_filesystem_encoding() before US-ASCII and BINARY */
 	/* fs_encoding should be ascii compatible */
 	rb_encoding *fname_encoding = rb_enc_from_index(fname_encidx);
 	rb_encoding *fs_encoding = rb_enc_from_index(fs_encidx);

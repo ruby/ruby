@@ -636,7 +636,7 @@ coderange_scan(const char *p, long len, rb_encoding *enc)
     const char *e = p + len;
 
     if (rb_enc_to_index(enc) == rb_ascii8bit_encindex()) {
-        /* enc is ASCII-8BIT.  ASCII-8BIT string never be broken. */
+        /* enc is BINARY.  BINARY string never be broken. */
         p = search_nonascii(p, e);
         return p ? ENC_CODERANGE_VALID : ENC_CODERANGE_7BIT;
     }
@@ -672,7 +672,7 @@ rb_str_coderange_scan_restartable(const char *s, const char *e, rb_encoding *enc
 	return e - s;
 
     if (rb_enc_to_index(enc) == rb_ascii8bit_encindex()) {
-	/* enc is ASCII-8BIT.  ASCII-8BIT string never be broken. */
+	/* enc is BINARY.  BINARY string never be broken. */
 	if (*cr == ENC_CODERANGE_VALID) return e - s;
 	p = search_nonascii(p, e);
         *cr = p ? ENC_CODERANGE_VALID : ENC_CODERANGE_7BIT;
@@ -1180,7 +1180,7 @@ rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *eenc)
         return rb_enc_str_new(ptr, len, eenc);
     }
 
-    /* ASCII-8BIT case, no conversion */
+    /* BINARY case, no conversion */
     if ((eidx == rb_ascii8bit_encindex()) ||
 	(eidx == rb_usascii_encindex() && search_nonascii(ptr, ptr + len))) {
         return rb_str_new(ptr, len);
@@ -1809,6 +1809,52 @@ rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str)
     RUBY_DTRACE_CREATE_HOOK(STRING, RSTRING_LEN(str));
     return ec_str_duplicate(ec, rb_cString, str);
 }
+
+/*
+ *  call-seq:
+ *    String.new(string = '') -> new_string
+ *    String.new(string = '', encoding: encoding) -> new_string
+ *    String.new(string = '', capacity: size) -> new_string
+ *
+ *  Returns a new \String that is a copy of +string+.
+ *
+ *  With no arguments, returns the empty string with the Encoding <tt>BINARY</tt>:
+ *    s = String.new
+ *    s # => ""
+ *    s.encoding # => #<Encoding:BINARY>
+ *
+ *  With the single \String argument +string+, returns a copy of +string+
+ *  with the same encoding as +string+:
+ *    s = String.new("Que veut dire \u{e7}a?")
+ *    s # => "Que veut dire \u{e7}a?"
+ *    s.encoding # => #<Encoding:UTF-8>
+ *
+ *  Literal strings like <tt>""</tt> or here-documents always use
+ *  Encoding@Script+encoding, unlike String.new.
+ *
+ *  With keyword +encoding+, returns a copy of +str+
+ *  with the specified encoding:
+ *    s = String.new(encoding: 'ASCII')
+ *    s.encoding # => #<Encoding:US-ASCII>
+ *    s = String.new('foo', encoding: 'ASCII')
+ *    s.encoding # => #<Encoding:US-ASCII>
+ *
+ *  Note that these are equivalent:
+ *    s0 = String.new('foo', encoding: 'ASCII')
+ *    s1 = 'foo'.force_encoding('ASCII')
+ *    s0.encoding == s1.encoding # => true
+ *
+ *  With keyword +capacity+, returns a copy of +str+;
+ *  the given +capacity+ may set the size of the internal buffer,
+ *  which may affect performance:
+ *    String.new(capacity: 1) # => ""
+ *    String.new(capacity: 4096) # => ""
+ *
+ *  The +string+, +encoding+, and +capacity+ arguments may all be used together:
+ *
+ *    String.new('hello', encoding: 'UTF-8', capacity: 25)
+ *
+ */
 
 static VALUE
 rb_str_init(int argc, VALUE *argv, VALUE str)
@@ -3378,7 +3424,7 @@ rb_str_concat(VALUE str1, VALUE str2)
 
     encidx = rb_enc_to_index(enc);
     if (encidx == ENCINDEX_ASCII || encidx == ENCINDEX_US_ASCII) {
-	/* US-ASCII automatically extended to ASCII-8BIT */
+	/* US-ASCII automatically extended to BINARY */
 	char buf[1];
 	buf[0] = (char)code;
 	if (code > 0xFF) {
@@ -10924,14 +10970,15 @@ rb_str_force_encoding(VALUE str, VALUE enc)
  *    s = "\x99"
  *    s.encoding   # => #<Encoding:UTF-8>
  *    t = s.b      # => "\x99"
- *    t.encoding   # => #<Encoding:ASCII-8BIT>
+ *    t.encoding   # => #<Encoding:BINARY>
  *
  *    s = "\u4095"
  *    s.encoding   # => #<Encoding:UTF-8>
  *    s.bytes      # => [228, 130, 149]
  *    t = s.b      # => "\xE4\x82\x95"
- *    t.encoding   # => #<Encoding:ASCII-8BIT>
+ *    t.encoding   # => #<Encoding:BINARY>
  *
+ *  Returns a copied string whose encoding is BINARY (a.k.a ASCII-8BIT).
  */
 
 static VALUE
@@ -12475,7 +12522,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  _Encoding_
  *
- *  - #b:: Returns a copy of +self+ with ASCII-8BIT encoding.
+ *  - #b:: Returns a copy of +self+ with BINARY encoding.
  *  - #scrub:: Returns a copy of +self+ with each invalid byte replaced with a given character.
  *  - #unicode_normalize:: Returns a copy of +self+ with each character Unicode-normalized.
  *  - #encode:: Returns a copy of +self+ with all characters transcoded from one given encoding into another.

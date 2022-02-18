@@ -788,7 +788,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 	rb_enc_set_index(res, rb_utf8_encindex());
 	break;
       default:
-	/* do nothing, keep ASCII-8BIT */
+	/* do nothing, keep BINARY */
 	break;
     }
     return res;
