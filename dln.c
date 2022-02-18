@@ -72,10 +72,6 @@ void *xrealloc();
 # include <unistd.h>
 #endif
 
-#ifndef _WIN32
-char *getenv();
-#endif
-
 #ifndef dln_loaderror
 static void
 dln_loaderror(const char *format, ...)
