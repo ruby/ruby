@@ -14,6 +14,7 @@ rb_fatal.o: $(hdrdir)/ruby/backward/2/stdalign.h
 rb_fatal.o: $(hdrdir)/ruby/backward/2/stdarg.h
 rb_fatal.o: $(hdrdir)/ruby/defines.h
 rb_fatal.o: $(hdrdir)/ruby/intern.h
+rb_fatal.o: $(hdrdir)/ruby/internal/abi.h
 rb_fatal.o: $(hdrdir)/ruby/internal/anyargs.h
 rb_fatal.o: $(hdrdir)/ruby/internal/arithmetic.h
 rb_fatal.o: $(hdrdir)/ruby/internal/arithmetic/char.h

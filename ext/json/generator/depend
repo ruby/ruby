@@ -18,6 +18,7 @@ generator.o: $(hdrdir)/ruby/backward/2/stdarg.h
 generator.o: $(hdrdir)/ruby/defines.h
 generator.o: $(hdrdir)/ruby/encoding.h
 generator.o: $(hdrdir)/ruby/intern.h
+generator.o: $(hdrdir)/ruby/internal/abi.h
 generator.o: $(hdrdir)/ruby/internal/anyargs.h
 generator.o: $(hdrdir)/ruby/internal/arithmetic.h
 generator.o: $(hdrdir)/ruby/internal/arithmetic/char.h

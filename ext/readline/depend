@@ -14,6 +14,7 @@ readline.o: $(hdrdir)/ruby/backward/2/stdarg.h
 readline.o: $(hdrdir)/ruby/defines.h
 readline.o: $(hdrdir)/ruby/encoding.h
 readline.o: $(hdrdir)/ruby/intern.h
+readline.o: $(hdrdir)/ruby/internal/abi.h
 readline.o: $(hdrdir)/ruby/internal/anyargs.h
 readline.o: $(hdrdir)/ruby/internal/arithmetic.h
 readline.o: $(hdrdir)/ruby/internal/arithmetic/char.h

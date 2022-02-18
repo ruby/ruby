@@ -14,6 +14,7 @@ cparse.o: $(hdrdir)/ruby/backward/2/stdalign.h
 cparse.o: $(hdrdir)/ruby/backward/2/stdarg.h
 cparse.o: $(hdrdir)/ruby/defines.h
 cparse.o: $(hdrdir)/ruby/intern.h
+cparse.o: $(hdrdir)/ruby/internal/abi.h
 cparse.o: $(hdrdir)/ruby/internal/anyargs.h
 cparse.o: $(hdrdir)/ruby/internal/arithmetic.h
 cparse.o: $(hdrdir)/ruby/internal/arithmetic/char.h

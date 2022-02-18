@@ -13,6 +13,7 @@ class2name.o: $(hdrdir)/ruby/backward/2/stdalign.h
 class2name.o: $(hdrdir)/ruby/backward/2/stdarg.h
 class2name.o: $(hdrdir)/ruby/defines.h
 class2name.o: $(hdrdir)/ruby/intern.h
+class2name.o: $(hdrdir)/ruby/internal/abi.h
 class2name.o: $(hdrdir)/ruby/internal/anyargs.h
 class2name.o: $(hdrdir)/ruby/internal/arithmetic.h
 class2name.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -172,6 +173,7 @@ init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 init.o: $(hdrdir)/ruby/defines.h
 init.o: $(hdrdir)/ruby/intern.h
+init.o: $(hdrdir)/ruby/internal/abi.h
 init.o: $(hdrdir)/ruby/internal/anyargs.h
 init.o: $(hdrdir)/ruby/internal/arithmetic.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/char.h

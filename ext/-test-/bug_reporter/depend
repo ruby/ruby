@@ -14,6 +14,7 @@ bug_reporter.o: $(hdrdir)/ruby/backward/2/stdalign.h
 bug_reporter.o: $(hdrdir)/ruby/backward/2/stdarg.h
 bug_reporter.o: $(hdrdir)/ruby/defines.h
 bug_reporter.o: $(hdrdir)/ruby/intern.h
+bug_reporter.o: $(hdrdir)/ruby/internal/abi.h
 bug_reporter.o: $(hdrdir)/ruby/internal/anyargs.h
 bug_reporter.o: $(hdrdir)/ruby/internal/arithmetic.h
 bug_reporter.o: $(hdrdir)/ruby/internal/arithmetic/char.h

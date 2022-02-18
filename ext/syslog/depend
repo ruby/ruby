@@ -13,6 +13,7 @@ syslog.o: $(hdrdir)/ruby/backward/2/stdalign.h
 syslog.o: $(hdrdir)/ruby/backward/2/stdarg.h
 syslog.o: $(hdrdir)/ruby/defines.h
 syslog.o: $(hdrdir)/ruby/intern.h
+syslog.o: $(hdrdir)/ruby/internal/abi.h
 syslog.o: $(hdrdir)/ruby/internal/anyargs.h
 syslog.o: $(hdrdir)/ruby/internal/arithmetic.h
 syslog.o: $(hdrdir)/ruby/internal/arithmetic/char.h

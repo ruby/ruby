@@ -18,6 +18,7 @@ nkf.o: $(hdrdir)/ruby/backward/2/stdarg.h
 nkf.o: $(hdrdir)/ruby/defines.h
 nkf.o: $(hdrdir)/ruby/encoding.h
 nkf.o: $(hdrdir)/ruby/intern.h
+nkf.o: $(hdrdir)/ruby/internal/abi.h
 nkf.o: $(hdrdir)/ruby/internal/anyargs.h
 nkf.o: $(hdrdir)/ruby/internal/arithmetic.h
 nkf.o: $(hdrdir)/ruby/internal/arithmetic/char.h

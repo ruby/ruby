@@ -67,6 +67,7 @@ closure.o: $(hdrdir)/ruby/backward/2/stdalign.h
 closure.o: $(hdrdir)/ruby/backward/2/stdarg.h
 closure.o: $(hdrdir)/ruby/defines.h
 closure.o: $(hdrdir)/ruby/intern.h
+closure.o: $(hdrdir)/ruby/internal/abi.h
 closure.o: $(hdrdir)/ruby/internal/anyargs.h
 closure.o: $(hdrdir)/ruby/internal/arithmetic.h
 closure.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -231,6 +232,7 @@ conversions.o: $(hdrdir)/ruby/backward/2/stdalign.h
 conversions.o: $(hdrdir)/ruby/backward/2/stdarg.h
 conversions.o: $(hdrdir)/ruby/defines.h
 conversions.o: $(hdrdir)/ruby/intern.h
+conversions.o: $(hdrdir)/ruby/internal/abi.h
 conversions.o: $(hdrdir)/ruby/internal/anyargs.h
 conversions.o: $(hdrdir)/ruby/internal/arithmetic.h
 conversions.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -394,6 +396,7 @@ fiddle.o: $(hdrdir)/ruby/backward/2/stdalign.h
 fiddle.o: $(hdrdir)/ruby/backward/2/stdarg.h
 fiddle.o: $(hdrdir)/ruby/defines.h
 fiddle.o: $(hdrdir)/ruby/intern.h
+fiddle.o: $(hdrdir)/ruby/internal/abi.h
 fiddle.o: $(hdrdir)/ruby/internal/anyargs.h
 fiddle.o: $(hdrdir)/ruby/internal/arithmetic.h
 fiddle.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -557,6 +560,7 @@ function.o: $(hdrdir)/ruby/backward/2/stdalign.h
 function.o: $(hdrdir)/ruby/backward/2/stdarg.h
 function.o: $(hdrdir)/ruby/defines.h
 function.o: $(hdrdir)/ruby/intern.h
+function.o: $(hdrdir)/ruby/internal/abi.h
 function.o: $(hdrdir)/ruby/internal/anyargs.h
 function.o: $(hdrdir)/ruby/internal/arithmetic.h
 function.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -721,6 +725,7 @@ handle.o: $(hdrdir)/ruby/backward/2/stdalign.h
 handle.o: $(hdrdir)/ruby/backward/2/stdarg.h
 handle.o: $(hdrdir)/ruby/defines.h
 handle.o: $(hdrdir)/ruby/intern.h
+handle.o: $(hdrdir)/ruby/internal/abi.h
 handle.o: $(hdrdir)/ruby/internal/anyargs.h
 handle.o: $(hdrdir)/ruby/internal/arithmetic.h
 handle.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -885,6 +890,7 @@ memory_view.o: $(hdrdir)/ruby/backward/2/stdarg.h
 memory_view.o: $(hdrdir)/ruby/defines.h
 memory_view.o: $(hdrdir)/ruby/encoding.h
 memory_view.o: $(hdrdir)/ruby/intern.h
+memory_view.o: $(hdrdir)/ruby/internal/abi.h
 memory_view.o: $(hdrdir)/ruby/internal/anyargs.h
 memory_view.o: $(hdrdir)/ruby/internal/arithmetic.h
 memory_view.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -1060,6 +1066,7 @@ pinned.o: $(hdrdir)/ruby/backward/2/stdalign.h
 pinned.o: $(hdrdir)/ruby/backward/2/stdarg.h
 pinned.o: $(hdrdir)/ruby/defines.h
 pinned.o: $(hdrdir)/ruby/intern.h
+pinned.o: $(hdrdir)/ruby/internal/abi.h
 pinned.o: $(hdrdir)/ruby/internal/anyargs.h
 pinned.o: $(hdrdir)/ruby/internal/arithmetic.h
 pinned.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -1224,6 +1231,7 @@ pointer.o: $(hdrdir)/ruby/backward/2/stdarg.h
 pointer.o: $(hdrdir)/ruby/defines.h
 pointer.o: $(hdrdir)/ruby/encoding.h
 pointer.o: $(hdrdir)/ruby/intern.h
+pointer.o: $(hdrdir)/ruby/internal/abi.h
 pointer.o: $(hdrdir)/ruby/internal/anyargs.h
 pointer.o: $(hdrdir)/ruby/internal/arithmetic.h
 pointer.o: $(hdrdir)/ruby/internal/arithmetic/char.h

@@ -28,6 +28,7 @@ limits.o: $(hdrdir)/ruby/backward/2/stdalign.h
 limits.o: $(hdrdir)/ruby/backward/2/stdarg.h
 limits.o: $(hdrdir)/ruby/defines.h
 limits.o: $(hdrdir)/ruby/intern.h
+limits.o: $(hdrdir)/ruby/internal/abi.h
 limits.o: $(hdrdir)/ruby/internal/anyargs.h
 limits.o: $(hdrdir)/ruby/internal/arithmetic.h
 limits.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -186,6 +187,7 @@ sizes.o: $(hdrdir)/ruby/backward/2/stdalign.h
 sizes.o: $(hdrdir)/ruby/backward/2/stdarg.h
 sizes.o: $(hdrdir)/ruby/defines.h
 sizes.o: $(hdrdir)/ruby/intern.h
+sizes.o: $(hdrdir)/ruby/internal/abi.h
 sizes.o: $(hdrdir)/ruby/internal/anyargs.h
 sizes.o: $(hdrdir)/ruby/internal/arithmetic.h
 sizes.o: $(hdrdir)/ruby/internal/arithmetic/char.h

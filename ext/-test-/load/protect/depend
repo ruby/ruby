@@ -14,6 +14,7 @@ protect.o: $(hdrdir)/ruby/backward/2/stdalign.h
 protect.o: $(hdrdir)/ruby/backward/2/stdarg.h
 protect.o: $(hdrdir)/ruby/defines.h
 protect.o: $(hdrdir)/ruby/intern.h
+protect.o: $(hdrdir)/ruby/internal/abi.h
 protect.o: $(hdrdir)/ruby/internal/anyargs.h
 protect.o: $(hdrdir)/ruby/internal/arithmetic.h
 protect.o: $(hdrdir)/ruby/internal/arithmetic/char.h

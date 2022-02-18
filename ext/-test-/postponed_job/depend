@@ -15,6 +15,7 @@ postponed_job.o: $(hdrdir)/ruby/backward/2/stdarg.h
 postponed_job.o: $(hdrdir)/ruby/debug.h
 postponed_job.o: $(hdrdir)/ruby/defines.h
 postponed_job.o: $(hdrdir)/ruby/intern.h
+postponed_job.o: $(hdrdir)/ruby/internal/abi.h
 postponed_job.o: $(hdrdir)/ruby/internal/anyargs.h
 postponed_job.o: $(hdrdir)/ruby/internal/arithmetic.h
 postponed_job.o: $(hdrdir)/ruby/internal/arithmetic/char.h

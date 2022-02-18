@@ -14,6 +14,7 @@ recursion.o: $(hdrdir)/ruby/backward/2/stdalign.h
 recursion.o: $(hdrdir)/ruby/backward/2/stdarg.h
 recursion.o: $(hdrdir)/ruby/defines.h
 recursion.o: $(hdrdir)/ruby/intern.h
+recursion.o: $(hdrdir)/ruby/internal/abi.h
 recursion.o: $(hdrdir)/ruby/internal/anyargs.h
 recursion.o: $(hdrdir)/ruby/internal/arithmetic.h
 recursion.o: $(hdrdir)/ruby/internal/arithmetic/char.h

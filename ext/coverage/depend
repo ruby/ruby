@@ -16,6 +16,7 @@ coverage.o: $(hdrdir)/ruby/backward/2/stdalign.h
 coverage.o: $(hdrdir)/ruby/backward/2/stdarg.h
 coverage.o: $(hdrdir)/ruby/defines.h
 coverage.o: $(hdrdir)/ruby/intern.h
+coverage.o: $(hdrdir)/ruby/internal/abi.h
 coverage.o: $(hdrdir)/ruby/internal/anyargs.h
 coverage.o: $(hdrdir)/ruby/internal/arithmetic.h
 coverage.o: $(hdrdir)/ruby/internal/arithmetic/char.h

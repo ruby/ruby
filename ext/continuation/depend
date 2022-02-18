@@ -13,6 +13,7 @@ continuation.o: $(hdrdir)/ruby/backward/2/stdalign.h
 continuation.o: $(hdrdir)/ruby/backward/2/stdarg.h
 continuation.o: $(hdrdir)/ruby/defines.h
 continuation.o: $(hdrdir)/ruby/intern.h
+continuation.o: $(hdrdir)/ruby/internal/abi.h
 continuation.o: $(hdrdir)/ruby/internal/anyargs.h
 continuation.o: $(hdrdir)/ruby/internal/arithmetic.h
 continuation.o: $(hdrdir)/ruby/internal/arithmetic/char.h
