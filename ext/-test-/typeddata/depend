@@ -14,6 +14,7 @@ typeddata.o: $(hdrdir)/ruby/backward/2/stdalign.h
 typeddata.o: $(hdrdir)/ruby/backward/2/stdarg.h
 typeddata.o: $(hdrdir)/ruby/defines.h
 typeddata.o: $(hdrdir)/ruby/intern.h
+typeddata.o: $(hdrdir)/ruby/internal/abi.h
 typeddata.o: $(hdrdir)/ruby/internal/anyargs.h
 typeddata.o: $(hdrdir)/ruby/internal/arithmetic.h
 typeddata.o: $(hdrdir)/ruby/internal/arithmetic/char.h

@@ -14,6 +14,7 @@ init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 init.o: $(hdrdir)/ruby/defines.h
 init.o: $(hdrdir)/ruby/intern.h
+init.o: $(hdrdir)/ruby/internal/abi.h
 init.o: $(hdrdir)/ruby/internal/anyargs.h
 init.o: $(hdrdir)/ruby/internal/arithmetic.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -174,6 +175,7 @@ leap_second.o: $(hdrdir)/ruby/backward/2/stdalign.h
 leap_second.o: $(hdrdir)/ruby/backward/2/stdarg.h
 leap_second.o: $(hdrdir)/ruby/defines.h
 leap_second.o: $(hdrdir)/ruby/intern.h
+leap_second.o: $(hdrdir)/ruby/internal/abi.h
 leap_second.o: $(hdrdir)/ruby/internal/anyargs.h
 leap_second.o: $(hdrdir)/ruby/internal/arithmetic.h
 leap_second.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -337,6 +339,7 @@ new.o: $(hdrdir)/ruby/backward/2/stdalign.h
 new.o: $(hdrdir)/ruby/backward/2/stdarg.h
 new.o: $(hdrdir)/ruby/defines.h
 new.o: $(hdrdir)/ruby/intern.h
+new.o: $(hdrdir)/ruby/internal/abi.h
 new.o: $(hdrdir)/ruby/internal/anyargs.h
 new.o: $(hdrdir)/ruby/internal/arithmetic.h
 new.o: $(hdrdir)/ruby/internal/arithmetic/char.h

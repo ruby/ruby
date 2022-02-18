@@ -17,6 +17,7 @@ rmd160.o: $(hdrdir)/ruby/backward/2/stdalign.h
 rmd160.o: $(hdrdir)/ruby/backward/2/stdarg.h
 rmd160.o: $(hdrdir)/ruby/defines.h
 rmd160.o: $(hdrdir)/ruby/intern.h
+rmd160.o: $(hdrdir)/ruby/internal/abi.h
 rmd160.o: $(hdrdir)/ruby/internal/anyargs.h
 rmd160.o: $(hdrdir)/ruby/internal/arithmetic.h
 rmd160.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -178,6 +179,7 @@ rmd160init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 rmd160init.o: $(hdrdir)/ruby/defines.h
 rmd160init.o: $(hdrdir)/ruby/intern.h
+rmd160init.o: $(hdrdir)/ruby/internal/abi.h
 rmd160init.o: $(hdrdir)/ruby/internal/anyargs.h
 rmd160init.o: $(hdrdir)/ruby/internal/arithmetic.h
 rmd160init.o: $(hdrdir)/ruby/internal/arithmetic/char.h

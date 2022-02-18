@@ -14,6 +14,7 @@ digest.o: $(hdrdir)/ruby/backward/2/stdalign.h
 digest.o: $(hdrdir)/ruby/backward/2/stdarg.h
 digest.o: $(hdrdir)/ruby/defines.h
 digest.o: $(hdrdir)/ruby/intern.h
+digest.o: $(hdrdir)/ruby/internal/abi.h
 digest.o: $(hdrdir)/ruby/internal/anyargs.h
 digest.o: $(hdrdir)/ruby/internal/arithmetic.h
 digest.o: $(hdrdir)/ruby/internal/arithmetic/char.h

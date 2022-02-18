@@ -14,6 +14,7 @@ duplicate.o: $(hdrdir)/ruby/backward/2/stdalign.h
 duplicate.o: $(hdrdir)/ruby/backward/2/stdarg.h
 duplicate.o: $(hdrdir)/ruby/defines.h
 duplicate.o: $(hdrdir)/ruby/intern.h
+duplicate.o: $(hdrdir)/ruby/internal/abi.h
 duplicate.o: $(hdrdir)/ruby/internal/anyargs.h
 duplicate.o: $(hdrdir)/ruby/internal/arithmetic.h
 duplicate.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -173,6 +174,7 @@ init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 init.o: $(hdrdir)/ruby/defines.h
 init.o: $(hdrdir)/ruby/intern.h
+init.o: $(hdrdir)/ruby/internal/abi.h
 init.o: $(hdrdir)/ruby/internal/anyargs.h
 init.o: $(hdrdir)/ruby/internal/arithmetic.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -332,6 +334,7 @@ len.o: $(hdrdir)/ruby/backward/2/stdalign.h
 len.o: $(hdrdir)/ruby/backward/2/stdarg.h
 len.o: $(hdrdir)/ruby/defines.h
 len.o: $(hdrdir)/ruby/intern.h
+len.o: $(hdrdir)/ruby/internal/abi.h
 len.o: $(hdrdir)/ruby/internal/anyargs.h
 len.o: $(hdrdir)/ruby/internal/arithmetic.h
 len.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -491,6 +494,7 @@ member.o: $(hdrdir)/ruby/backward/2/stdalign.h
 member.o: $(hdrdir)/ruby/backward/2/stdarg.h
 member.o: $(hdrdir)/ruby/defines.h
 member.o: $(hdrdir)/ruby/intern.h
+member.o: $(hdrdir)/ruby/internal/abi.h
 member.o: $(hdrdir)/ruby/internal/anyargs.h
 member.o: $(hdrdir)/ruby/internal/arithmetic.h
 member.o: $(hdrdir)/ruby/internal/arithmetic/char.h

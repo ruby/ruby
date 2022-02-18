@@ -14,6 +14,7 @@ usrmarshal.o: $(hdrdir)/ruby/backward/2/stdalign.h
 usrmarshal.o: $(hdrdir)/ruby/backward/2/stdarg.h
 usrmarshal.o: $(hdrdir)/ruby/defines.h
 usrmarshal.o: $(hdrdir)/ruby/intern.h
+usrmarshal.o: $(hdrdir)/ruby/internal/abi.h
 usrmarshal.o: $(hdrdir)/ruby/internal/anyargs.h
 usrmarshal.o: $(hdrdir)/ruby/internal/arithmetic.h
 usrmarshal.o: $(hdrdir)/ruby/internal/arithmetic/char.h

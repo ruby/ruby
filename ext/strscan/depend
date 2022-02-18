@@ -14,6 +14,7 @@ strscan.o: $(hdrdir)/ruby/backward/2/stdarg.h
 strscan.o: $(hdrdir)/ruby/defines.h
 strscan.o: $(hdrdir)/ruby/encoding.h
 strscan.o: $(hdrdir)/ruby/intern.h
+strscan.o: $(hdrdir)/ruby/internal/abi.h
 strscan.o: $(hdrdir)/ruby/internal/anyargs.h
 strscan.o: $(hdrdir)/ruby/internal/arithmetic.h
 strscan.o: $(hdrdir)/ruby/internal/arithmetic/char.h

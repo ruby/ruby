@@ -13,6 +13,7 @@ call_without_gvl.o: $(hdrdir)/ruby/backward/2/stdalign.h
 call_without_gvl.o: $(hdrdir)/ruby/backward/2/stdarg.h
 call_without_gvl.o: $(hdrdir)/ruby/defines.h
 call_without_gvl.o: $(hdrdir)/ruby/intern.h
+call_without_gvl.o: $(hdrdir)/ruby/internal/abi.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/anyargs.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/arithmetic.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/arithmetic/char.h

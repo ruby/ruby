@@ -14,6 +14,7 @@ update.o: $(hdrdir)/ruby/backward/2/stdalign.h
 update.o: $(hdrdir)/ruby/backward/2/stdarg.h
 update.o: $(hdrdir)/ruby/defines.h
 update.o: $(hdrdir)/ruby/intern.h
+update.o: $(hdrdir)/ruby/internal/abi.h
 update.o: $(hdrdir)/ruby/internal/anyargs.h
 update.o: $(hdrdir)/ruby/internal/arithmetic.h
 update.o: $(hdrdir)/ruby/internal/arithmetic/char.h

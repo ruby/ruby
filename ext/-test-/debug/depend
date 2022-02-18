@@ -14,6 +14,7 @@ init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 init.o: $(hdrdir)/ruby/defines.h
 init.o: $(hdrdir)/ruby/intern.h
+init.o: $(hdrdir)/ruby/internal/abi.h
 init.o: $(hdrdir)/ruby/internal/anyargs.h
 init.o: $(hdrdir)/ruby/internal/arithmetic.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -173,6 +174,7 @@ inspector.o: $(hdrdir)/ruby/backward/2/stdarg.h
 inspector.o: $(hdrdir)/ruby/debug.h
 inspector.o: $(hdrdir)/ruby/defines.h
 inspector.o: $(hdrdir)/ruby/intern.h
+inspector.o: $(hdrdir)/ruby/internal/abi.h
 inspector.o: $(hdrdir)/ruby/internal/anyargs.h
 inspector.o: $(hdrdir)/ruby/internal/arithmetic.h
 inspector.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -332,6 +334,7 @@ profile_frames.o: $(hdrdir)/ruby/backward/2/stdarg.h
 profile_frames.o: $(hdrdir)/ruby/debug.h
 profile_frames.o: $(hdrdir)/ruby/defines.h
 profile_frames.o: $(hdrdir)/ruby/intern.h
+profile_frames.o: $(hdrdir)/ruby/internal/abi.h
 profile_frames.o: $(hdrdir)/ruby/internal/anyargs.h
 profile_frames.o: $(hdrdir)/ruby/internal/arithmetic.h
 profile_frames.o: $(hdrdir)/ruby/internal/arithmetic/char.h
