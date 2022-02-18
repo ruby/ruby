@@ -51,6 +51,8 @@
 # undef ONIG_ESCAPE_UCHAR_COLLISION
 #endif
 
+#include "ruby.h"
+
 #ifdef RUBY
 # include "ruby/onigmo.h"
 #else
