@@ -3333,12 +3333,12 @@ CODE
     assert_equal(6, S("こんにちは").byteindex(/にち./))
 
     assert_equal(0, S("にんにちは").byteindex(?に, 0))
-    assert_equal(6, S("にんにちは").byteindex(?に, 1))
-    assert_equal(6, S("にんにちは").byteindex(?に, 5))
+    assert_raise(IndexError) { S("にんにちは").byteindex(?に, 1) }
+    assert_raise(IndexError) { S("にんにちは").byteindex(?に, 5) }
     assert_equal(6, S("にんにちは").byteindex(?に, 6))
     assert_equal(6, S("にんにちは").byteindex(S("に"), 6))
     assert_equal(6, S("にんにちは").byteindex(/に./, 6))
-    assert_nil(S("にんにちは").byteindex(?に, 7))
+    assert_raise(IndexError) { S("にんにちは").byteindex(?に, 7) }
   end
 
   def test_byterindex
@@ -3380,13 +3380,13 @@ CODE
     assert_equal(18, S("にちは、こんにちは").byterindex(S("にちは")))
     assert_equal(18, S("にちは、こんにちは").byterindex(/にち./))
 
-    assert_equal(18, S("にちは、こんにちは").byterindex(S("にちは"), 19))
-    assert_equal(18, S("にちは、こんにちは").byterindex(S("にちは"), -2))
+    assert_raise(IndexError) { S("にちは、こんにちは").byterindex(S("にちは"), 19) }
+    assert_raise(IndexError) { S("にちは、こんにちは").byterindex(S("にちは"), -2) }
     assert_equal(18, S("にちは、こんにちは").byterindex(S("にちは"), 18))
     assert_equal(18, S("にちは、こんにちは").byterindex(S("にちは"), -3))
-    assert_equal(0, S("にちは、こんにちは").byterindex(S("にちは"), 17))
-    assert_equal(18, S("にちは、こんにちは").byterindex(S("にちは"), -4))
-    assert_equal(0, S("にちは、こんにちは").byterindex(S("にちは"), 1))
+    assert_raise(IndexError) { S("にちは、こんにちは").byterindex(S("にちは"), 17) }
+    assert_raise(IndexError) { S("にちは、こんにちは").byterindex(S("にちは"), -4) }
+    assert_raise(IndexError) { S("にちは、こんにちは").byterindex(S("にちは"), 1) }
     assert_equal(0, S("にちは、こんにちは").byterindex(S("にちは"), 0))
 
     assert_equal(0, S("こんにちは").byterindex(S("こんにちは")))

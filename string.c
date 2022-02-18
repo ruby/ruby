@@ -3979,6 +3979,20 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
     return LONG2NUM(pos);
 }
 
+/* whether given pos is valid character boundary or not
+ * Note that in this function, "character" means a code point
+ * (Unicode scalar value), not a grapheme cluster.
+ */
+static bool
+str_check_byte_pos(VALUE str, long pos)
+{
+    const char *s = RSTRING_PTR(str);
+    const char *e = RSTRING_END(str);
+    const char *p = s + pos;
+    const char *pp = rb_enc_left_char_head(s, p, e, rb_enc_get(str));
+    return p == pp;
+}
+
 /*
  *  call-seq:
  *    byteindex(substring, offset = 0) -> integer or nil
@@ -4014,6 +4028,9 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
  *    'foo'.byteindex('o', -3) # => 1
  *    'foo'.byteindex('o', -4) # => nil
  *
+ *  If +offset+ does not land on character (codepoint) boundary, +IndexError+ is
+ *  raised.
+ *
  *  Related: String#index, String#byterindex.
  */
 
@@ -4038,6 +4055,11 @@ rb_str_byteindex_m(int argc, VALUE *argv, VALUE str)
             }
             return Qnil;
         }
+    }
+
+    if (!str_check_byte_pos(str, pos)) {
+        rb_raise(rb_eIndexError,
+                 "offset %ld does not land on character boundary", pos);
     }
 
     if (RB_TYPE_P(sub, T_REGEXP)) {
@@ -4337,6 +4359,9 @@ rb_str_byterindex(VALUE str, VALUE sub, long pos)
  *    'foo'.byterindex('o', -3) # => nil
  *    'foo'.byterindex('o', -4) # => nil
  *
+ *  If +offset+ does not land on character (codepoint) boundary, +IndexError+ is
+ *  raised.
+ *
  *  Related: String#byteindex.
  */
 
@@ -4364,6 +4389,11 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
         pos = len;
     }
 
+    if (!str_check_byte_pos(str, pos)) {
+        rb_raise(rb_eIndexError,
+                 "offset %ld does not land on character boundary", pos);
+    }
+
     if (RB_TYPE_P(sub, T_REGEXP)) {
         if (rb_reg_search(sub, str, pos, 1) >= 0) {
             VALUE match = rb_backref_get();
@@ -4374,7 +4404,6 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
     }
     else {
         StringValue(sub);
-        /* TODO: Dont' use rb_str_sublen() */
         pos = rb_str_byterindex(str, sub, pos);
         if (pos >= 0) return LONG2NUM(pos);
     }
