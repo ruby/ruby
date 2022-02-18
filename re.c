@@ -1230,8 +1230,8 @@ match_offset(VALUE match, VALUE n)
 	return rb_assoc_new(Qnil, Qnil);
 
     update_char_offset(match);
-    return rb_assoc_new(INT2FIX(RMATCH(match)->rmatch->char_offset[i].beg),
-			INT2FIX(RMATCH(match)->rmatch->char_offset[i].end));
+    return rb_assoc_new(LONG2NUM(RMATCH(match)->rmatch->char_offset[i].beg),
+                        LONG2NUM(RMATCH(match)->rmatch->char_offset[i].end));
 }
 
 
@@ -1265,7 +1265,7 @@ match_begin(VALUE match, VALUE n)
 	return Qnil;
 
     update_char_offset(match);
-    return INT2FIX(RMATCH(match)->rmatch->char_offset[i].beg);
+    return LONG2NUM(RMATCH(match)->rmatch->char_offset[i].beg);
 }
 
 
@@ -1299,7 +1299,7 @@ match_end(VALUE match, VALUE n)
 	return Qnil;
 
     update_char_offset(match);
-    return INT2FIX(RMATCH(match)->rmatch->char_offset[i].end);
+    return LONG2NUM(RMATCH(match)->rmatch->char_offset[i].end);
 }
 
 /*
