@@ -1263,7 +1263,7 @@ match_byteoffset(VALUE match, VALUE n)
 
     if (BEG(i) < 0)
         return rb_assoc_new(Qnil, Qnil);
-    return rb_assoc_new(INT2FIX(BEG(i)), INT2FIX(END(i)));
+    return rb_assoc_new(LONG2NUM(BEG(i)), LONG2NUM(END(i)));
 }
 
 
