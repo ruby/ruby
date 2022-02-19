@@ -45,6 +45,9 @@ Note that each entry is kept to a minimum, see links for details.
 
   [[Bug #15928]]
 
+* Find pattern is no longer experimental.
+  [[Feature #18585]]
+
 ## Command line options
 
 ## Core classes updates
@@ -164,3 +167,4 @@ The following deprecated APIs are removed.
 [Bug #17545]:     https://bugs.ruby-lang.org/issues/17545
 [Feature #17881]: https://bugs.ruby-lang.org/issues/17881
 [Feature #18351]: https://bugs.ruby-lang.org/issues/18351
+[Feature #18585]: https://bugs.ruby-lang.org/issues/18585
