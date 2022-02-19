@@ -1095,6 +1095,12 @@ loop:
                                RB_NOGVL_UBF_ASYNC_SAFE);
 #endif
 
+    /* retry if no exception is thrown */
+    if (err == Z_OK && args.interrupt) {
+       args.interrupt = 0;
+       goto loop;
+    }
+
     if (flush != Z_FINISH && err == Z_BUF_ERROR
 	    && z->stream.avail_out > 0) {
 	z->flags |= ZSTREAM_FLAG_IN_STREAM;
