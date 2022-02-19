@@ -817,18 +817,32 @@ rb_obj_is_kind_of(VALUE obj, VALUE c)
     // class without checking type and can return immediately.
     if (cl == c) return Qtrue;
 
-    // Fast path: Both are T_CLASS
-    if (LIKELY(RB_TYPE_P(c, T_CLASS))) {
-        return class_search_class_ancestor(cl, c);
-    }
-
     // Note: YJIT needs this function to never allocate and never raise when
     // `c` is a class or a module.
-    c = class_or_module_required(c);
-    c = RCLASS_ORIGIN(c);
 
-    // Slow path: check each ancestor in the linked list and its method table
-    return RBOOL(class_search_ancestor(cl, c));
+    if (LIKELY(RB_TYPE_P(c, T_CLASS))) {
+        // Fast path: Both are T_CLASS
+        return class_search_class_ancestor(cl, c);
+    } else if (RB_TYPE_P(c, T_ICLASS)) {
+        // First check if we inherit the includer
+        // If we do we can return true immediately
+        VALUE includer = RCLASS_INCLUDER(c);
+        RUBY_ASSERT(RB_TYPE_P(includer, T_CLASS));
+        if (cl == includer) return Qtrue;
+
+        if(class_search_class_ancestor(cl, includer))
+            return Qtrue;
+
+        // We don't include the ICLASS directly, but must check if we inherit
+        // the module via another include
+        return RBOOL(class_search_ancestor(cl, RCLASS_ORIGIN(c)));
+    } else if (RB_TYPE_P(c, T_MODULE)) {
+        // Slow path: check each ancestor in the linked list and its method table
+        return RBOOL(class_search_ancestor(cl, RCLASS_ORIGIN(c)));
+    } else {
+        rb_raise(rb_eTypeError, "class or module required");
+        UNREACHABLE_RETURN(Qfalse);
+    }
 }
 
 
