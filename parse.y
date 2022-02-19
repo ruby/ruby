@@ -4425,7 +4425,7 @@ p_kw		: p_kw_label p_expr
 		    {
 			error_duplicate_pattern_key(p, get_id($1), &@1);
 		    /*%%%*/
-			$$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@$), &@$), $2);
+			$$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@1), &@$), $2);
 		    /*% %*/
 		    /*% ripper: rb_ary_new_from_args(2, get_value($1), get_value($2)) %*/
 		    }
