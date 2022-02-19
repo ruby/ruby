@@ -546,6 +546,7 @@ struct zstream {
     unsigned long flags;
     VALUE buf;
     VALUE input;
+    VALUE mutex;
     z_stream stream;
     const struct zstream_funcs {
 	int (*reset)(z_streamp);
@@ -621,6 +622,7 @@ zstream_init(struct zstream *z, const struct zstream_funcs *func)
     z->flags = 0;
     z->buf = Qnil;
     z->input = Qnil;
+    z->mutex = rb_mutex_new();
     z->stream.zalloc = zlib_mem_alloc;
     z->stream.zfree = zlib_mem_free;
     z->stream.opaque = Z_NULL;
@@ -652,7 +654,9 @@ zstream_expand_buffer(struct zstream *z)
 	        rb_obj_reveal(z->buf, rb_cString);
             }
 
+            rb_mutex_unlock(z->mutex);
 	    rb_protect(rb_yield, z->buf, &state);
+            rb_mutex_lock(z->mutex);
 
             if (ZSTREAM_REUSE_BUFFER_P(z)) {
                 rb_str_modify(z->buf);
@@ -1054,7 +1058,7 @@ zstream_unblock_func(void *ptr)
 }
 
 static void
-zstream_run(struct zstream *z, Bytef *src, long len, int flush)
+zstream_run0(struct zstream *z, Bytef *src, long len, int flush)
 {
     struct zstream_run_args args;
     int err;
@@ -1138,6 +1142,32 @@ loop:
 	rb_jump_tag(args.jump_state);
 }
 
+struct zstream_run_synchronized_args {
+    struct zstream *z;
+    Bytef *src;
+    long len;
+    int flush;
+};
+
+static VALUE
+zstream_run_synchronized(VALUE value_arg)
+{
+    struct zstream_run_synchronized_args *run_args = (struct zstream_run_synchronized_args *)value_arg;
+    zstream_run0(run_args->z, run_args->src, run_args->len, run_args->flush);
+    return Qnil;
+}
+
+static void
+zstream_run(struct zstream *z, Bytef *src, long len, int flush)
+{
+    struct zstream_run_synchronized_args run_args;
+    run_args.z = z;
+    run_args.src = src;
+    run_args.len = len;
+    run_args.flush = flush;
+    rb_mutex_synchronize(z->mutex, zstream_run_synchronized, (VALUE)&run_args);
+}
+
 static VALUE
 zstream_sync(struct zstream *z, Bytef *src, long len)
 {
@@ -1183,6 +1213,7 @@ zstream_mark(void *p)
     struct zstream *z = p;
     rb_gc_mark(z->buf);
     rb_gc_mark(z->input);
+    rb_gc_mark(z->mutex);
 }
 
 static void
