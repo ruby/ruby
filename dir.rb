@@ -11,17 +11,17 @@
 #
 # First, what's elsewhere. \Class \Dir:
 #
-# - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
-# - Includes {module Enumerable}[Enumerable.html#module-Enumerable-label-What-27s+Here],
+# - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
+# - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
 #   which provides dozens of additional methods.
 #
 # Here, class \Dir provides methods that are useful for:
 #
-# - {Reading}[#class-Dir-label-Reading]
-# - {Setting}[#class-Dir-label-Setting]
-# - {Querying}[#class-Dir-label-Querying]
-# - {Iterating}[#class-Dir-label-Iterating]
-# - {Other}[#class-Dir-label-Other]
+# - {Reading}[rdoc-ref:Dir@Reading]
+# - {Setting}[rdoc-ref:Dir@Setting]
+# - {Querying}[rdoc-ref:Dir@Querying]
+# - {Iterating}[rdoc-ref:Dir@Iterating]
+# - {Other}[rdoc-ref:Dir@Other]
 #
 # === Reading
 #
