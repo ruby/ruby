@@ -3979,18 +3979,123 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
     return LONG2NUM(pos);
 }
 
+/* whether given pos is valid character boundary or not
+ * Note that in this function, "character" means a code point
+ * (Unicode scalar value), not a grapheme cluster.
+ */
+static bool
+str_check_byte_pos(VALUE str, long pos)
+{
+    const char *s = RSTRING_PTR(str);
+    const char *e = RSTRING_END(str);
+    const char *p = s + pos;
+    const char *pp = rb_enc_left_char_head(s, p, e, rb_enc_get(str));
+    return p == pp;
+}
+
+/*
+ *  call-seq:
+ *    byteindex(substring, offset = 0) -> integer or nil
+ *    byteindex(regexp, offset = 0) -> integer or nil
+ *
+ *  Returns the \Integer byte-based index of the first occurrence of the given +substring+,
+ *  or +nil+ if none found:
+ *
+ *    'foo'.byteindex('f') # => 0
+ *    'foo'.byteindex('o') # => 1
+ *    'foo'.byteindex('oo') # => 1
+ *    'foo'.byteindex('ooo') # => nil
+ *
+ *  Returns the \Integer byte-based index of the first match for the given \Regexp +regexp+,
+ *  or +nil+ if none found:
+ *
+ *    'foo'.byteindex(/f/) # => 0
+ *    'foo'.byteindex(/o/) # => 1
+ *    'foo'.byteindex(/oo/) # => 1
+ *    'foo'.byteindex(/ooo/) # => nil
+ *
+ *  \Integer argument +offset+, if given, specifies the byte-based position in the
+ *  string to begin the search:
+ *
+ *    'foo'.byteindex('o', 1) # => 1
+ *    'foo'.byteindex('o', 2) # => 2
+ *    'foo'.byteindex('o', 3) # => nil
+ *
+ *  If +offset+ is negative, counts backward from the end of +self+:
+ *
+ *    'foo'.byteindex('o', -1) # => 2
+ *    'foo'.byteindex('o', -2) # => 1
+ *    'foo'.byteindex('o', -3) # => 1
+ *    'foo'.byteindex('o', -4) # => nil
+ *
+ *  If +offset+ does not land on character (codepoint) boundary, +IndexError+ is
+ *  raised.
+ *
+ *  Related: String#index, String#byterindex.
+ */
+
+static VALUE
+rb_str_byteindex_m(int argc, VALUE *argv, VALUE str)
+{
+    VALUE sub;
+    VALUE initpos;
+    long pos;
+
+    if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
+        pos = NUM2LONG(initpos);
+    }
+    else {
+        pos = 0;
+    }
+    if (pos < 0) {
+        pos += RSTRING_LEN(str);
+        if (pos < 0) {
+            if (RB_TYPE_P(sub, T_REGEXP)) {
+                rb_backref_set(Qnil);
+            }
+            return Qnil;
+        }
+    }
+
+    if (!str_check_byte_pos(str, pos)) {
+        rb_raise(rb_eIndexError,
+                 "offset %ld does not land on character boundary", pos);
+    }
+
+    if (RB_TYPE_P(sub, T_REGEXP)) {
+        if (pos > RSTRING_LEN(str))
+            return Qnil;
+        if (rb_reg_search(sub, str, pos, 0) < 0) {
+            return Qnil;
+        }
+        else {
+            VALUE match = rb_backref_get();
+            struct re_registers *regs = RMATCH_REGS(match);
+            pos = BEG(0);
+            return LONG2NUM(pos);
+        }
+    }
+    else {
+        StringValue(sub);
+        pos = rb_strseq_index(str, sub, pos, 1);
+    }
+
+    if (pos == -1) return Qnil;
+    return LONG2NUM(pos);
+}
+
 #ifdef HAVE_MEMRCHR
 static long
-str_rindex(VALUE str, VALUE sub, const char *s, long pos, rb_encoding *enc)
+str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
 {
     char *hit, *adjusted;
     int c;
     long slen, searchlen;
     char *sbeg, *e, *t;
 
-    slen = RSTRING_LEN(sub);
-    if (slen == 0) return pos;
     sbeg = RSTRING_PTR(str);
+    slen = RSTRING_LEN(sub);
+    if (slen == 0) return s - sbeg;
     e = RSTRING_END(str);
     t = RSTRING_PTR(sub);
     c = *t & 0xff;
@@ -4005,7 +4110,7 @@ str_rindex(VALUE str, VALUE sub, const char *s, long pos, rb_encoding *enc)
 	    continue;
 	}
 	if (memcmp(hit, t, slen) == 0)
-	    return rb_str_sublen(str, hit - sbeg);
+	    return hit - sbeg;
 	searchlen = adjusted - sbeg;
     } while (searchlen > 0);
 
@@ -4013,7 +4118,7 @@ str_rindex(VALUE str, VALUE sub, const char *s, long pos, rb_encoding *enc)
 }
 #else
 static long
-str_rindex(VALUE str, VALUE sub, const char *s, long pos, rb_encoding *enc)
+str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
 {
     long slen;
     char *sbeg, *e, *t;
@@ -4025,10 +4130,9 @@ str_rindex(VALUE str, VALUE sub, const char *s, long pos, rb_encoding *enc)
 
     while (s) {
 	if (memcmp(s, t, slen) == 0) {
-	    return pos;
+	    return s - sbeg;
 	}
-	if (pos == 0) break;
-	pos--;
+        if (s <= sbeg) break;
 	s = rb_enc_prev_char(sbeg, s, e, enc);
     }
 
@@ -4065,7 +4169,7 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
     }
 
     s = str_nth(sbeg, RSTRING_END(str), pos, enc, singlebyte);
-    return str_rindex(str, sub, s, pos, enc);
+    return rb_str_sublen(str, str_rindex(str, sub, s, enc));
 }
 
 /*
@@ -4166,6 +4270,142 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
         StringValue(sub);
 	pos = rb_str_rindex(str, sub, pos);
 	if (pos >= 0) return LONG2NUM(pos);
+    }
+    return Qnil;
+}
+
+static long
+rb_str_byterindex(VALUE str, VALUE sub, long pos)
+{
+    long len, slen;
+    char *sbeg, *s;
+    rb_encoding *enc;
+
+    enc = rb_enc_check(str, sub);
+    if (is_broken_string(sub)) return -1;
+    len = RSTRING_LEN(str);
+    slen = RSTRING_LEN(sub);
+
+    /* substring longer than string */
+    if (len < slen) return -1;
+    if (len - pos < slen) pos = len - slen;
+    if (len == 0) return pos;
+
+    sbeg = RSTRING_PTR(str);
+
+    if (pos == 0) {
+        if (memcmp(sbeg, RSTRING_PTR(sub), RSTRING_LEN(sub)) == 0)
+            return 0;
+        else
+            return -1;
+    }
+
+    s = sbeg + pos;
+    return str_rindex(str, sub, s, enc);
+}
+
+
+/*
+ *  call-seq:
+ *    byterindex(substring, offset = self.length) -> integer or nil
+ *    byterindex(regexp, offset = self.length) -> integer or nil
+ *
+ *  Returns the \Integer byte-based index of the _last_ occurrence of the given +substring+,
+ *  or +nil+ if none found:
+ *
+ *    'foo'.byterindex('f') # => 0
+ *    'foo'.byterindex('o') # => 2
+ *    'foo'.byterindex('oo') # => 1
+ *    'foo'.byterindex('ooo') # => nil
+ *
+ *  Returns the \Integer byte-based index of the _last_ match for the given \Regexp +regexp+,
+ *  or +nil+ if none found:
+ *
+ *    'foo'.byterindex(/f/) # => 0
+ *    'foo'.byterindex(/o/) # => 2
+ *    'foo'.byterindex(/oo/) # => 1
+ *    'foo'.byterindex(/ooo/) # => nil
+ *
+ *  The _last_ match means starting at the possible last position, not
+ *  the last of longest matches.
+ *
+ *    'foo'.byterindex(/o+/) # => 2
+ *    $~ #=> #<MatchData "o">
+ *
+ *  To get the last longest match, needs to combine with negative
+ *  lookbehind.
+ *
+ *    'foo'.byterindex(/(?<!o)o+/) # => 1
+ *    $~ #=> #<MatchData "oo">
+ *
+ *  Or String#byteindex with negative lookforward.
+ *
+ *    'foo'.byteindex(/o+(?!.*o)/) # => 1
+ *    $~ #=> #<MatchData "oo">
+ *
+ *  \Integer argument +offset+, if given and non-negative, specifies the maximum starting byte-based position in the
+ *   string to _end_ the search:
+ *
+ *    'foo'.byterindex('o', 0) # => nil
+ *    'foo'.byterindex('o', 1) # => 1
+ *    'foo'.byterindex('o', 2) # => 2
+ *    'foo'.byterindex('o', 3) # => 2
+ *
+ *  If +offset+ is a negative \Integer, the maximum starting position in the
+ *  string to _end_ the search is the sum of the string's length and +offset+:
+ *
+ *    'foo'.byterindex('o', -1) # => 2
+ *    'foo'.byterindex('o', -2) # => 1
+ *    'foo'.byterindex('o', -3) # => nil
+ *    'foo'.byterindex('o', -4) # => nil
+ *
+ *  If +offset+ does not land on character (codepoint) boundary, +IndexError+ is
+ *  raised.
+ *
+ *  Related: String#byteindex.
+ */
+
+static VALUE
+rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
+{
+    VALUE sub;
+    VALUE vpos;
+    long pos, len = RSTRING_LEN(str);
+
+    if (rb_scan_args(argc, argv, "11", &sub, &vpos) == 2) {
+        pos = NUM2LONG(vpos);
+        if (pos < 0) {
+            pos += len;
+            if (pos < 0) {
+                if (RB_TYPE_P(sub, T_REGEXP)) {
+                    rb_backref_set(Qnil);
+                }
+                return Qnil;
+            }
+        }
+        if (pos > len) pos = len;
+    }
+    else {
+        pos = len;
+    }
+
+    if (!str_check_byte_pos(str, pos)) {
+        rb_raise(rb_eIndexError,
+                 "offset %ld does not land on character boundary", pos);
+    }
+
+    if (RB_TYPE_P(sub, T_REGEXP)) {
+        if (rb_reg_search(sub, str, pos, 1) >= 0) {
+            VALUE match = rb_backref_get();
+            struct re_registers *regs = RMATCH_REGS(match);
+            pos = BEG(0);
+            return LONG2NUM(pos);
+        }
+    }
+    else {
+        StringValue(sub);
+        pos = rb_str_byterindex(str, sub, pos);
+        if (pos >= 0) return LONG2NUM(pos);
     }
     return Qnil;
 }
@@ -12382,7 +12622,9 @@ Init_String(void)
     rb_define_method(rb_cString, "next!", rb_str_succ_bang, 0);
     rb_define_method(rb_cString, "upto", rb_str_upto, -1);
     rb_define_method(rb_cString, "index", rb_str_index_m, -1);
+    rb_define_method(rb_cString, "byteindex", rb_str_byteindex_m, -1);
     rb_define_method(rb_cString, "rindex", rb_str_rindex_m, -1);
+    rb_define_method(rb_cString, "byterindex", rb_str_byterindex_m, -1);
     rb_define_method(rb_cString, "replace", rb_str_replace, 1);
     rb_define_method(rb_cString, "clear", rb_str_clear, 0);
     rb_define_method(rb_cString, "chr", rb_str_chr, 0);
