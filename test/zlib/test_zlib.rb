@@ -538,30 +538,36 @@ if defined? Zlib
     end
 
     def test_recursive_deflate
+      original_gc_stress = GC.stress
+      GC.stress = true
       zd = Zlib::Deflate.new
 
       s = SecureRandom.random_bytes(1024**2)
-      assert_raise(Zlib::BufError) do
+      assert_raise(Zlib::InProgressError) do
         zd.deflate(s) do
           zd.deflate(s)
         end
       end
     ensure
+      GC.stress = original_gc_stress
       zd&.finish
       zd&.close
     end
 
     def test_recursive_inflate
+      original_gc_stress = GC.stress
+      GC.stress = true
       zi = Zlib::Inflate.new
 
       s = Zlib.deflate(SecureRandom.random_bytes(1024**2))
 
-      assert_raise(Zlib::DataError) do
+      assert_raise(Zlib::InProgressError) do
         zi.inflate(s) do
           zi.inflate(s)
         end
       end
     ensure
+      GC.stress = original_gc_stress
       zi&.close
     end
   end
