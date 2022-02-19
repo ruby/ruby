@@ -56,6 +56,9 @@ Note: We're only listing outstanding class updates.
       empty, instead of returning the default value or
       calling the default proc. [[Bug #16908]]
 
+* MatchData
+    * MatchData#byteoffset has been added. [[Feature #13110]]
+
 * Module
     * Module.used_refinements has been added. [[Feature #14332]]
     * Module#refinements has been added. [[Feature #12737]]
@@ -70,6 +73,9 @@ Note: We're only listing outstanding class updates.
 * Set
     * Set is now available as a builtin class without the need for `require "set"`. [[Feature #16989]]
       It is currently autoloaded via the `Set` constant or a call to `Enumerable#to_set`.
+
+* String
+    * String#byteindex and String#byterindex have been added. [[Feature #13110]]
 
 * Struct
     * A Struct class can also be initialized with keyword arguments
