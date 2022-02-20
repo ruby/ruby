@@ -170,9 +170,6 @@ it changes only the way the content is to be interpreted:
   s                         # => "R\xC3\xA9sum\xC3\xA9"
   s.force_encoding('UTF-8') # => "Résumé"
 
-The actual content of a string may also be altered;
-see {Transcoding a String}[#label-Transcoding+a+String].
-
 Here are a couple of useful query methods:
 
   s = "abc".force_encoding("UTF-8")         # => "abc"
@@ -326,36 +323,6 @@ followed by a colon, space and the Encoding name or alias:
 
   # encoding: ISO-8859-1
   __ENCODING__ #=> #<Encoding:ISO-8859-1>
-
-=== Transcoding
-
-_Transcoding_ is the process of revising the content of a string or stream
-by changing its encoding.
-
-==== Transcoding a \String
-
-Each of these methods transcodes a string:
-
-String#encode :: Transcodes a string into a new string
-                 according to a given destination encoding,
-                 a given or default source encoding, and encoding options.
-
-String#encode! :: Like String#encode,
-                  but transcodes the string in place.
-
-String#b :: Transcodes a string into a new string whose encoding is ASCII-8BIT.
-
-String#scrub :: Transcodes a string into a new string
-                by replacing invalid byte sequences
-                with a given or default replacement string.
-
-String#scrub! :: Like String#scrub, but transcodes the string in place.
-
-String#unicode_normalize :: Transcodes a string into a new string
-                            according to Unicode normalization:
-
-String#unicode_normalize! :: Like String#unicode_normalize,
-                             but transcodes the string in place.
 
 === \Encoding Options
 
