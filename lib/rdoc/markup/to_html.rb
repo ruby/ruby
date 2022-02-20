@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'cgi'
+require 'cgi/util'
 
 ##
 # Outputs RDoc markup as HTML.

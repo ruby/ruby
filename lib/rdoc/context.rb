@@ -1,6 +1,4 @@
 # frozen_string_literal: true
-require 'cgi'
-
 ##
 # A Context is something that can hold modules, classes, methods, attributes,
 # aliases, requires, and includes. Classes, modules, and files are all
