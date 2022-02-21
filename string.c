@@ -268,9 +268,9 @@ void
 rb_debug_rstring_null_ptr(const char *func)
 {
     fprintf(stderr, "%s is returning NULL!! "
-            "SIGSEGV is highly expected to follow immediately. "
+            "SIGSEGV is highly expected to follow immediately.\n"
             "If you could reproduce, attach your debugger here, "
-            "and look at the passed string.",
+            "and look at the passed string.\n",
 	    func);
 }
 
