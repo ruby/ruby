@@ -143,32 +143,16 @@ rb_iseq_free(const rb_iseq_t *iseq)
     RUBY_FREE_LEAVE("iseq");
 }
 
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-static VALUE
-rb_vm_insn_addr2insn2(const void *addr)
-{
-    return (VALUE)rb_vm_insn_addr2insn(addr);
-}
-#endif
-
-static VALUE
-rb_vm_insn_null_translator(const void *addr)
-{
-    return (VALUE)addr;
-}
-
 typedef VALUE iseq_value_itr_t(void *ctx, VALUE obj);
-typedef VALUE rb_vm_insns_translator_t(const void *addr);
 
-static int
-iseq_extract_values(VALUE *code, size_t pos, iseq_value_itr_t * func, void *data, rb_vm_insns_translator_t * translator)
+void
+iseq_extract_values(VALUE insn, VALUE *code, size_t pos, iseq_value_itr_t * func, void *data)
 {
-    VALUE insn = translator((void *)code[pos]);
     int len = insn_len(insn);
     int op_no;
     const char *types = insn_op_types(insn);
 
-    for (op_no = 0; types[op_no]; op_no++) {
+    for (op_no = 0; op_no + 1 < len; op_no++) {
 	char type = types[op_no];
 	switch (type) {
           case TS_CDHASH:
@@ -225,28 +209,22 @@ iseq_extract_values(VALUE *code, size_t pos, iseq_value_itr_t * func, void *data
             break;
 	}
     }
-
-    return len;
 }
 
 static void
 rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data)
 {
-    unsigned int size;
-    VALUE *code;
-    size_t n;
-    rb_vm_insns_translator_t *const translator =
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-        (FL_TEST((VALUE)iseq, ISEQ_TRANSLATED)) ? rb_vm_insn_addr2insn2 :
-#endif
-        rb_vm_insn_null_translator;
     const struct rb_iseq_constant_body *const body = iseq->body;
 
-    size = body->iseq_size;
-    code = body->iseq_encoded;
+    VALUE *code = body->iseq_encoded;
+    size_t pc = 0;
 
-    for (n = 0; n < size;) {
-	n += iseq_extract_values(code, n, func, data, translator);
+    size_t size = body->original_insns.size;
+    for (size_t n = 0; n < size; n++) {
+        VALUE insn = body->original_insns.insns[n];
+	iseq_extract_values(insn, code, pc, func, data);
+
+        pc += insn_len(insn);
     }
 }
 
@@ -293,7 +271,9 @@ rb_iseq_update_references(rb_iseq_t *iseq)
                 size_t n = 0;
                 const unsigned int size = body->iseq_size;
                 while (n < size) {
-                    n += iseq_extract_values(original_iseq, n, update_each_insn_value, NULL, rb_vm_insn_null_translator);
+                    VALUE insn = original_iseq[n];
+                    iseq_extract_values(insn, original_iseq, n, update_each_insn_value, NULL);
+                    n += insn_len(insn);
                 }
             }
         }
