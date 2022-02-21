@@ -70,7 +70,9 @@ RDOCOUT       = $(EXTOUT)/rdoc
 HTMLOUT       = $(EXTOUT)/html
 CAPIOUT       = doc/capi
 INSTALL_DOC_OPTS = --rdoc-output="$(RDOCOUT)" --html-output="$(HTMLOUT)"
-RDOC_GEN_OPTS = --page-dir "$(srcdir)/doc" --no-force-update
+RDOC_GEN_OPTS = --page-dir "$(srcdir)/doc" --no-force-update \
+	--title "Documentation for Ruby $(RUBY_API_VERSION)" \
+	--main README.md
 
 INITOBJS      = dmyext.$(OBJEXT) dmyenc.$(OBJEXT)
 NORMALMAINOBJ = main.$(OBJEXT)
