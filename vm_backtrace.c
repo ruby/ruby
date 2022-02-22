@@ -590,7 +590,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
     ptrdiff_t size;
     rb_backtrace_t *bt;
     VALUE btobj = backtrace_alloc(rb_cBacktrace);
-    rb_backtrace_location_t *loc;
+    rb_backtrace_location_t *loc = NULL;
     unsigned long cfunc_counter = 0;
     GetCoreDataFromValue(btobj, rb_backtrace_t, bt);
 
