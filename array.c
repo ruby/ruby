@@ -1422,30 +1422,14 @@ rb_ary_shift(VALUE ary)
     VALUE top;
     long len = RARRAY_LEN(ary);
 
-    rb_ary_modify_check(ary);
-    if (len == 0) return Qnil;
+    if (len == 0) {
+        rb_ary_modify_check(ary);
+        return Qnil;
+    }
+
     top = RARRAY_AREF(ary, 0);
-    if (!ARY_SHARED_P(ary)) {
-	if (len < ARY_DEFAULT_SIZE) {
-            RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
-		MEMMOVE(ptr, ptr+1, VALUE, len-1);
-	    }); /* WB: no new reference */
-            ARY_INCREASE_LEN(ary, -1);
-            ary_verify(ary);
-	    return top;
-	}
-        assert(!ARY_EMBED_P(ary)); /* ARY_EMBED_LEN_MAX < ARY_DEFAULT_SIZE */
 
-	ARY_SET(ary, 0, Qnil);
-	ary_make_shared(ary);
-    }
-    else if (ARY_SHARED_ROOT_OCCUPIED(ARY_SHARED_ROOT(ary))) {
-        RARRAY_PTR_USE_TRANSIENT(ary, ptr, ptr[0] = Qnil);
-    }
-    ARY_INCREASE_PTR(ary, 1);		/* shift ptr */
-    ARY_INCREASE_LEN(ary, -1);
-
-    ary_verify(ary);
+    rb_ary_behead(ary, 1);
 
     return top;
 }
@@ -1498,48 +1482,37 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
     return result;
 }
 
-static VALUE
-behead_shared(VALUE ary, long n)
-{
-    assert(ARY_SHARED_P(ary));
-    rb_ary_modify_check(ary);
-    if (ARY_SHARED_ROOT_OCCUPIED(ARY_SHARED_ROOT(ary))) {
-        ary_mem_clear(ary, 0, n);
-    }
-    ARY_INCREASE_PTR(ary, n);
-    ARY_INCREASE_LEN(ary, -n);
-    ary_verify(ary);
-    return ary;
-}
-
-static VALUE
-behead_transient(VALUE ary, long n)
-{
-    rb_ary_modify_check(ary);
-    RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
-        MEMMOVE(ptr, ptr+n, VALUE, RARRAY_LEN(ary)-n);
-    }); /* WB: no new reference */
-    ARY_INCREASE_LEN(ary, -n);
-    ary_verify(ary);
-    return ary;
-}
-
 MJIT_FUNC_EXPORTED VALUE
 rb_ary_behead(VALUE ary, long n)
 {
     if (n <= 0) {
         return ary;
     }
-    else if (ARY_SHARED_P(ary)) {
-        return behead_shared(ary, n);
-    }
-    else if (RARRAY_LEN(ary) >= ARY_DEFAULT_SIZE) {
+
+    rb_ary_modify_check(ary);
+
+    if (RB_UNLIKELY(!ARY_SHARED_P(ary))) {
+        if (RARRAY_LEN(ary) < ARY_DEFAULT_SIZE) {
+            RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
+                MEMMOVE(ptr, ptr + n, VALUE, RARRAY_LEN(ary) - n);
+            }); /* WB: no new reference */
+            ARY_INCREASE_LEN(ary, -n);
+            ary_verify(ary);
+            return ary;
+        }
+
+        ary_mem_clear(ary, 0, n);
         ary_make_shared(ary);
-        return behead_shared(ary, n);
     }
-    else {
-        return behead_transient(ary, n);
+    else if (ARY_SHARED_ROOT_OCCUPIED(ARY_SHARED_ROOT(ary))) {
+        ary_mem_clear(ary, 0, n);
     }
+
+    ARY_INCREASE_PTR(ary, n);
+    ARY_INCREASE_LEN(ary, -n);
+    ary_verify(ary);
+
+    return ary;
 }
 
 static VALUE
