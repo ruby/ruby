@@ -229,15 +229,6 @@ end
   print "  CONFIG[#{v.dump}] = #{(versions[v]||vars[v]).dump}\n"
 end
 
-# Get the ABI version
-File.foreach(File.join(srcdir, "include/ruby/internal/abi.h")) do |l|
-  m = /^\s*#\s*define\s+RUBY_ABI_VERSION\s+(\d+)/.match(l)
-  if m
-    print "  CONFIG[\"ruby_abi_version\"] = \"#{m[1]}\"\n"
-    break
-  end
-end
-
 dest = drive ? %r'= "(?!\$[\(\{])(?i:[a-z]:)' : %r'= "(?!\$[\(\{])'
 v_disabled = {}
 v_others.collect! do |x|
