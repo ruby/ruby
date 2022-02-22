@@ -6298,6 +6298,76 @@ rb_str_byteslice(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
+ *    bytesplice(index, length, str) -> string
+ *    bytesplice(range, str)         -> string
+ *
+ *  Replaces some or all of the content of +self+ with +str+, and returns +str+.
+ *  The portion of the string affected is determined using
+ *  the same criteria as String#byteslice, except that +length+ cannot be omitted.
+ *  If the replacement string is not the same length as the text it is replacing,
+ *  the string will be adjusted accordingly.
+ *  The form that take an Integer will raise an IndexError if the value is out
+ *  of range; the Range form will raise a RangeError.
+ *  If the beginning or ending offset does not land on character (codepoint)
+ *  boundary, an IndexError will be raised.
+ */
+
+static VALUE
+rb_str_bytesplice(int argc, VALUE *argv, VALUE str)
+{
+    long beg, end, len, slen;
+    VALUE val;
+    rb_encoding *enc;
+    int cr;
+
+    rb_check_arity(argc, 2, 3);
+    if (argc == 2) {
+        if (!rb_range_beg_len(argv[0], &beg, &len, RSTRING_LEN(str), 2)) {
+            rb_raise(rb_eTypeError, "wrong argument type %s (expected Range)",
+                     rb_builtin_class_name(argv[0]));
+        }
+        val = argv[1];
+    }
+    else {
+        beg = NUM2LONG(argv[0]);
+        len = NUM2LONG(argv[1]);
+        val = argv[2];
+    }
+    if (len < 0) rb_raise(rb_eIndexError, "negative length %ld", len);
+    slen = RSTRING_LEN(str);
+    if ((slen < beg) || ((beg < 0) && (beg + slen < 0))) {
+        rb_raise(rb_eIndexError, "index %ld out of string", beg);
+    }
+    if (beg < 0) {
+        beg += slen;
+    }
+    assert(beg >= 0);
+    assert(beg <= slen);
+    if (len > slen - beg) {
+        len = slen - beg;
+    }
+    end = beg + len;
+    if (!str_check_byte_pos(str, beg)) {
+        rb_raise(rb_eIndexError,
+                 "offset %ld does not land on character boundary", beg);
+    }
+    if (!str_check_byte_pos(str, end)) {
+        rb_raise(rb_eIndexError,
+                 "offset %ld does not land on character boundary", end);
+    }
+    StringValue(val);
+    enc = rb_enc_check(str, val);
+    str_modify_keep_cr(str);
+    rb_str_splice_0(str, beg, len, val);
+    rb_enc_associate(str, enc);
+    cr = ENC_CODERANGE_AND(ENC_CODERANGE(str), ENC_CODERANGE(val));
+    if (cr != ENC_CODERANGE_BROKEN)
+        ENC_CODERANGE_SET(str, cr);
+    return val;
+}
+
+/*
+ *  call-seq:
  *    reverse -> string
  *
  *  Returns a new string with the characters from +self+ in reverse order.
@@ -12560,6 +12630,7 @@ Init_String(void)
     rb_define_method(rb_cString, "getbyte", rb_str_getbyte, 1);
     rb_define_method(rb_cString, "setbyte", rb_str_setbyte, 2);
     rb_define_method(rb_cString, "byteslice", rb_str_byteslice, -1);
+    rb_define_method(rb_cString, "bytesplice", rb_str_bytesplice, -1);
     rb_define_method(rb_cString, "scrub", str_scrub, -1);
     rb_define_method(rb_cString, "scrub!", str_scrub_bang, -1);
     rb_define_method(rb_cString, "freeze", rb_str_freeze, 0);
