@@ -10586,7 +10586,7 @@ rb_str_center(int argc, VALUE *argv, VALUE str)
  *  Searches <i>sep</i> or pattern (<i>regexp</i>) in the string
  *  and returns the part before it, the match, and the part
  *  after it.
- *  If it is not found, returns two empty strings and <i>str</i>.
+ *  If it is not found, returns <i>str</i> and two empty strings.
  *
  *     "hello".partition("l")         #=> ["he", "l", "lo"]
  *     "hello".partition("x")         #=> ["hello", "", ""]
