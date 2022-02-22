@@ -731,7 +731,7 @@ rb_iseq_compile_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_callback
 
     (*ifunc->func)(iseq, ret, ifunc->data);
 
-    NODE dummy_line_node = generate_dummy_line_node(ISEQ_COMPILE_DATA(iseq)->last_line, -1);
+    NODE dummy_line_node = generate_dummy_line_node(ISEQ_LAST_LINE(iseq), -1);
     ADD_INSN(ret, &dummy_line_node, leave);
 
     CHECK(iseq_setup_insn(iseq, ret));
@@ -843,7 +843,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 	ADD_INSN1(ret, &dummy_line_node, throw, INT2FIX(0) /* continue throw */ );
     }
     else {
-        NODE dummy_line_node = generate_dummy_line_node(ISEQ_COMPILE_DATA(iseq)->last_line, -1);
+        NODE dummy_line_node = generate_dummy_line_node(ISEQ_LAST_LINE(iseq), -1);
 	ADD_INSN(ret, &dummy_line_node, leave);
     }
 
@@ -9101,7 +9101,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *node, int poppe
 {
     if (node == 0) {
         if (!popped) {
-            int lineno = ISEQ_COMPILE_DATA(iseq)->last_line;
+            int lineno = ISEQ_LAST_LINE(iseq);
             if (lineno == 0) lineno = FIX2INT(rb_iseq_first_lineno(iseq));
             debugs("node: NODE_NIL(implicit)\n");
             NODE dummy_line_node = generate_dummy_line_node(lineno, -1);
@@ -9119,7 +9119,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
     const enum node_type type = nd_type(node);
     struct rb_iseq_constant_body *const body = iseq->body;
 
-    if (ISEQ_COMPILE_DATA(iseq)->last_line == line) {
+    if (ISEQ_LAST_LINE(iseq) == line) {
 	/* ignore */
     }
     else {
