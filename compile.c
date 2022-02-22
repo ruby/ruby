@@ -1408,13 +1408,13 @@ update_catch_except_flags(struct rb_iseq_constant_body *body)
     /* This assumes that a block has parent_iseq which may catch an exception from the block, and that
        BREAK/NEXT/REDO catch table entries are used only when `throw` insn is used in the block. */
     pos = 0;
-    while (pos < body->iseq_size) {
-        insn = rb_vm_insn_decode(body->iseq_encoded[pos]);
+    while (pos < body->original_insns.size) {
+        insn = body->original_insns.insns[pos];
         if (insn == BIN(throw)) {
             set_catch_except_p(body);
             break;
         }
-        pos += insn_len(insn);
+        pos++;
     }
 
     if (ct == NULL)
