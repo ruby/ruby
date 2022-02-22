@@ -281,7 +281,7 @@ module Gem::GemcutterUtilities
   end
 
   def get_user_mfa_level(email, password)
-    response = rubygems_api_request(:get, "api/v1/profile") do |request|
+    response = rubygems_api_request(:get, "api/v1/profile/me") do |request|
       request.basic_auth email, password
     end
     with_response response do |resp|

@@ -446,7 +446,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
       ["", 200, "OK"],
     ]
 
-    @fetcher.data["#{@host}/api/v1/profile"] = [
+    @fetcher.data["#{@host}/api/v1/profile/me"] = [
       [response_profile, 200, "OK"],
     ]
 

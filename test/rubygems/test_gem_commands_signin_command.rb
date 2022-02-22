@@ -172,7 +172,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     ENV['RUBYGEMS_HOST']       = host || Gem::DEFAULT_HOST
     data_key                   = "#{ENV['RUBYGEMS_HOST']}/api/v1/api_key"
     fetcher.data[data_key]     = response
-    profile                    = "#{ENV['RUBYGEMS_HOST']}/api/v1/profile"
+    profile                    = "#{ENV['RUBYGEMS_HOST']}/api/v1/profile/me"
     fetcher.data[profile]      = profile_response
     Gem::RemoteFetcher.fetcher = fetcher
 
