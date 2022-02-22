@@ -461,7 +461,7 @@ rb_zlib_adler32(int argc, VALUE *argv, VALUE klass)
  *
  * call-seq: Zlib.adler32_combine(adler1, adler2, len2)
  *
- * Combine two Adler-32 check values in to one.  +alder1+ is the first Adler-32
+ * Combine two Adler-32 check values in to one.  +adler1+ is the first Adler-32
  * value, +adler2+ is the second Adler-32 value.  +len2+ is the length of the
  * string used to generate +adler2+.
  *
