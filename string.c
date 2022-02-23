@@ -6123,6 +6123,7 @@ rb_str_chr(VALUE str)
  *    s = 'abcde'  # => "abcde"
  *    s.getbyte(0) # => 97
  *    s.getbyte(1) # => 98
+ *    s.getbyte(5) # => nil
  *
  *  Related: String#setbyte.
  */
