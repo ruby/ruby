@@ -6332,9 +6332,9 @@ static VALUE
 rb_str_byteslice(int argc, VALUE *argv, VALUE str)
 {
     if (argc == 2) {
-	long beg = NUM2LONG(argv[0]);
-	long end = NUM2LONG(argv[1]);
-	return str_byte_substr(str, beg, end, TRUE);
+        long beg = NUM2LONG(argv[0]);
+        long len = NUM2LONG(argv[1]);
+        return str_byte_substr(str, beg, len, TRUE);
     }
     rb_check_arity(argc, 1, 2);
     return str_byte_aref(str, argv[0]);
