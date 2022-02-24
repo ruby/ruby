@@ -889,14 +889,17 @@ rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
     {
 	unsigned int i;
+	unsigned int pc = 0;
 
-	for (i = 0; i < iseq->body->iseq_size; /* */ ) {
-	    const void *addr = (const void *)original_code[i];
-	    const int insn = rb_vm_insn_addr2insn(addr);
+        RUBY_ASSERT(iseq->body->original_insns.insns);
 
-	    original_code[i] = insn;
-	    i += insn_len(insn);
+	for (i = 0; i < iseq->body->original_insns.size; i++) {
+	    const int insn = iseq->body->original_insns.insns[i];
+	    original_code[pc] = insn;
+	    pc += insn_len(insn);
 	}
+
+        RUBY_ASSERT(pc == iseq->body->iseq_size);
     }
 #endif
     return original_code;
