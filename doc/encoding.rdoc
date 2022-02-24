@@ -142,13 +142,10 @@ The default encoding for a string literal is the script encoding
 
   's'.encoding # => #<Encoding:UTF-8>
 
-The default encoding for a string created with method String.new is ASCII-8BIT
-if no argument is given, UTF-8 otherwise:
+The default encoding for a string created with method String.new is:
 
-  s = String.new        # => ""
-  s.encoding            # => #<Encoding:ASCII-8BIT>
-  s = String.new('foo') # => "foo"
-  s.encoding            # => #<Encoding:UTF-8>
+- For a \String object argument, the encoding of that string.
+- For a string literal, the script encoding (see Encoding@Script+encoding).
 
 In either case, any encoding may be specified:
 
@@ -187,14 +184,13 @@ Here are a couple of useful query methods:
 
 === \Symbol and \Regexp Encodings
 
-The string stored in a Symbol or Regexp object also has an encoding.
-which is returned, respectively, by methods Symbol#encoding or Regexp#encoding;
-the default encoding for these, however, is US-ASCII, not UTF-8:
+The string stored in a Symbol or Regexp object also has an encoding;
+the encoding may be retrieved by method Symbol#encoding or Regexp#encoding.
 
-  sym = :foo   # => :foo
-  sym.encoding # => #<Encoding:US-ASCII>
-  re = /foo/   # => /foo/
-  re.encoding  # => #<Encoding:US-ASCII>
+The default encoding for these, however, is:
+
+- US-ASCII, if all characters are US-ASCII.
+- The script encoding, otherwise (see Encoding@Script+encoding).
 
 === Filesystem \Encoding
 
@@ -226,26 +222,11 @@ those characters become a string whose encoding is set to the external encoding.
 
 The default external encoding is:
 
-- UTF-8 for a text stream:
-
-    # File.
-    f = File.open('t.txt', 'rt')
-    f.external_encoding  # => #<Encoding:UTF-8>
-
-    # IO.
-    fd = IO.sysopen('t.txt', 'rt')
-    io = IO.new(fd)
-    io.external_encoding # => #<Encoding:UTF-8>
-
-- ASCII-8BIT for a binary stream:
+- UTF-8 for a text stream.
+- ASCII-8BIT for a binary stream.
 
     f = File.open('t.rus', 'rb')
     f.external_encoding  # => #<Encoding:ASCII-8BIT>
-
-    # IO.
-    fd = IO.sysopen('t.rus', 'rb')
-    io = IO.new(fd)
-    io.external_encoding # => #<Encoding:UTF-8>
 
 The external encoding may be set by the open option +external_encoding+:
 
@@ -253,23 +234,12 @@ The external encoding may be set by the open option +external_encoding+:
   f = File.open('t.txt', external_encoding: 'ASCII-8BIT')
   f.external_encoding                               # => #<Encoding:ASCII-8BIT>
 
-  # IO.
-  fd = IO.sysopen('t.txt')
-  io = IO.new(fd, external_encoding: 'ASCII-8BIT')
-  io.external_encoding # => #<Encoding:ASCII-8BIT>
-
 The external encoding may also set by method #set_encoding:
 
   # File.
   f = File.open('t.txt')
   f.set_encoding('ASCII-8BIT')
   f.external_encoding  # => #<Encoding:ASCII-8BIT>
-
-  # IO.
-  fd = IO.sysopen('t.txt')
-  io = IO.new(fd)
-  io.set_encoding('ASCII-8BIT')
-  io.external_encoding # => #<Encoding:ASCII-8BIT>
 
 ==== Internal \Encoding
 
@@ -283,21 +253,11 @@ The default internal encoding is +nil+ (no conversion):
   f = File.open('t.txt')
   f.internal_encoding # => nil
 
-  # IO.
-  fd = IO.sysopen('t.txt')
-  io = IO.new(fd)
-  io.internal_encoding # => nil
-
 The internal encoding may set by the open option +internal_encoding+:
 
   # File.
   f = File.open('t.txt', internal_encoding: 'ASCII-8BIT')
   f.internal_encoding  # => #<Encoding:ASCII-8BIT>
-
-  # IO.
-  fd = IO.sysopen('t.txt')
-  io = IO.new(fd, internal_encoding: 'ASCII-8BIT')
-  io.internal_encoding # => #<Encoding:ASCII-8BIT>
 
 The internal encoding may also set by method #set_encoding:
 
@@ -306,12 +266,6 @@ The internal encoding may also set by method #set_encoding:
   f.set_encoding('UTF-8', 'ASCII-8BIT')
   f.internal_encoding  # => #<Encoding:ASCII-8BIT>
 
-  # IO.
-  fd = IO.sysopen('t.txt')
-  io = IO.new(fd)
-  io.set_encoding('UTF-8', 'ASCII-8BIT')
-  io.internal_encoding # => #<Encoding:ASCII-8BIT>
-
 === Script \Encoding
 
 A Ruby script has a script encoding, which may be retrieved by:
@@ -319,7 +273,7 @@ A Ruby script has a script encoding, which may be retrieved by:
   __ENCODING__ # => #<Encoding:UTF-8>
 
 The default script encoding is UTF-8;
-a Ruby source file may set its script encodingwith a magic comment
+a Ruby source file may set its script encoding with a magic comment
 on the first line of the file (or second line, if there is a shebang on the first).
 The comment must contain the word +coding+ or +encoding+,
 followed by a colon, space and the Encoding name or alias:
@@ -342,8 +296,6 @@ String#encode :: Transcodes a string into a new string
 
 String#encode! :: Like String#encode,
                   but transcodes the string in place.
-
-String#b :: Transcodes a string into a new string whose encoding is ASCII-8BIT.
 
 String#scrub :: Transcodes a string into a new string
                 by replacing invalid byte sequences
