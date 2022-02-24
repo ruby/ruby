@@ -247,12 +247,7 @@ If not +nil+, the internal encoding specifies that the characters read
 from the stream are to be converted to characters in the internal encoding;
 those characters become a string whose encoding is set to the internal encoding.
 
-The default internal encoding is +nil+ (no conversion):
-
-  # File.
-  f = File.open('t.txt')
-  f.internal_encoding # => nil
-
+The default internal encoding is +nil+ (no conversion).
 The internal encoding may set by the open option +internal_encoding+:
 
   # File.
