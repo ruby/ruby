@@ -146,7 +146,7 @@ jit_peek_at_local(jitstate_t *jit, ctx_t *ctx, int n)
 }
 
 // Save the incremented PC on the CFP
-// This is necessary when calleees can raise or allocate
+// This is necessary when callees can raise or allocate
 static void
 jit_save_pc(jitstate_t *jit, x86opnd_t scratch_reg)
 {
