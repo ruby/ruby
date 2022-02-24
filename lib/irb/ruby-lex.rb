@@ -776,13 +776,8 @@ class RubyLex
     when :on_qsymbols_beg then ?]
     when :on_symbols_beg  then ?]
     when :on_heredoc_beg
-      start_token&.tok =~ /<<[-~]?(['"`])[_a-zA-Z0-9]+\1/
-      case $1
-      when ?" then ?"
-      when ?' then ?'
-      when ?` then ?`
-      else         ?"
-      end
+      start_token&.tok =~ /<<[-~]?(['"`])\w+\1/
+      $1 || ?"
     else
       nil
     end
