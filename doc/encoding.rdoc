@@ -230,13 +230,11 @@ The default external encoding is:
 
 The external encoding may be set by the open option +external_encoding+:
 
-  # File.
   f = File.open('t.txt', external_encoding: 'ASCII-8BIT')
   f.external_encoding                               # => #<Encoding:ASCII-8BIT>
 
 The external encoding may also set by method #set_encoding:
 
-  # File.
   f = File.open('t.txt')
   f.set_encoding('ASCII-8BIT')
   f.external_encoding  # => #<Encoding:ASCII-8BIT>
@@ -250,13 +248,11 @@ those characters become a string whose encoding is set to the internal encoding.
 The default internal encoding is +nil+ (no conversion).
 The internal encoding may set by the open option +internal_encoding+:
 
-  # File.
   f = File.open('t.txt', internal_encoding: 'ASCII-8BIT')
   f.internal_encoding  # => #<Encoding:ASCII-8BIT>
 
 The internal encoding may also set by method #set_encoding:
 
-  # File.
   f = File.open('t.txt')
   f.set_encoding('UTF-8', 'ASCII-8BIT')
   f.internal_encoding  # => #<Encoding:ASCII-8BIT>
