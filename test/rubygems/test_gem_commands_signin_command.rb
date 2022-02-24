@@ -196,7 +196,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   def util_capture(ui_stub = nil, host = nil, api_key = nil, fetcher = Gem::FakeFetcher.new, mfa_level = "disabled")
     api_key        ||= 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
     response         = [api_key, 200, 'OK']
-    profile_response = [{"mfa" => mfa_level}.to_json, 200, 'OK']
+    profile_response = [ "mfa: #{mfa_level}\n" , 200, 'OK']
     email            = 'you@example.com'
     password         = 'secret'
 
@@ -204,7 +204,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     ENV['RUBYGEMS_HOST']       = host || Gem::DEFAULT_HOST
     data_key                   = "#{ENV['RUBYGEMS_HOST']}/api/v1/api_key"
     fetcher.data[data_key]     = response
-    profile                    = "#{ENV['RUBYGEMS_HOST']}/api/v1/profile/me"
+    profile                    = "#{ENV['RUBYGEMS_HOST']}/api/v1/profile/me.yaml"
     fetcher.data[profile]      = profile_response
     Gem::RemoteFetcher.fetcher = fetcher
 

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 require_relative 'remote_fetcher'
 require_relative 'text'
-require 'json'
 
 ##
 # Utility methods for using the RubyGems API.
@@ -283,11 +282,12 @@ module Gem::GemcutterUtilities
   end
 
   def get_user_mfa_level(email, password)
-    response = rubygems_api_request(:get, "api/v1/profile/me") do |request|
+    response = rubygems_api_request(:get, "api/v1/profile/me.yaml") do |request|
       request.basic_auth email, password
     end
     with_response response do |resp|
-      JSON.parse(resp.body)["mfa"]
+      body = Gem::SafeYAML.load clean_text(resp.body)
+      body["mfa"]
     end
   end
 
