@@ -271,6 +271,8 @@ module Gem::GemcutterUtilities
   end
 
   def get_mfa_params(email, password)
+    return {} unless self.host == Gem::DEFAULT_HOST
+
     mfa_level = get_user_mfa_level(email, password)
     params = {}
     if mfa_level == "ui_only" || mfa_level == "ui_and_gem_signin"

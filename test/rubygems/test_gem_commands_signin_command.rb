@@ -159,6 +159,38 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     assert_equal api_key, credentials[:rubygems_api_key]
   end
 
+  def test_execute_on_gemserver_without_profile_me_endpoint
+    host = 'http://some-gemcutter-compatible-host.org'
+
+    email     = 'you@example.com'
+    password  = 'secret'
+    api_key   = '1234'
+    fetcher   = Gem::RemoteFetcher.fetcher
+
+    key_name_ui = Gem::MockGemUi.new "#{email}\n#{password}\ntest-key\n\ny\n\n\n\n\n\ny"
+
+    # Set the expected response for the Web-API supplied
+    ENV['RUBYGEMS_HOST']       = host
+    data_key                   = "#{ENV['RUBYGEMS_HOST']}/api/v1/api_key"
+    fetcher.data[data_key]     = [api_key, 200, 'OK']
+
+    use_ui key_name_ui do
+      @cmd.execute
+    end
+
+    user = ENV["USER"] || ENV["USERNAME"]
+
+    assert_match "API Key name [#{Socket.gethostname}-#{user}", key_name_ui.output
+    assert_match "index_rubygems [y/N]", key_name_ui.output
+    assert_match "push_rubygem [y/N]", key_name_ui.output
+    assert_match "yank_rubygem [y/N]", key_name_ui.output
+    assert_match "add_owner [y/N]", key_name_ui.output
+    assert_match "remove_owner [y/N]", key_name_ui.output
+    assert_match "access_webhooks [y/N]", key_name_ui.output
+    assert_match "show_dashboard [y/N]", key_name_ui.output
+    assert_equal "name=test-key&push_rubygem=true", fetcher.last_request.body
+  end
+
   # Utility method to capture IO/UI within the block passed
 
   def util_capture(ui_stub = nil, host = nil, api_key = nil, fetcher = Gem::FakeFetcher.new, mfa_level = "disabled")

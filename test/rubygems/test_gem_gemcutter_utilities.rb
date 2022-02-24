@@ -239,7 +239,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
 
     @fetcher = Gem::FakeFetcher.new
     @fetcher.data["#{host}/api/v1/api_key"] = response
-    @fetcher.data["#{host}/api/v1/profile"] = profile_response
+    @fetcher.data["#{host}/api/v1/profile/me"] = profile_response
     Gem::RemoteFetcher.fetcher = @fetcher
 
     @sign_in_ui = Gem::MockGemUi.new("#{email}\n#{password}\n\n\n\n\n\n\n\n\n" + extra_input)
