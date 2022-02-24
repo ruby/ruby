@@ -902,6 +902,27 @@ rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
     return original_code;
 }
 
+static void
+record_original_instructions(rb_iseq_t *iseq)
+{
+    unsigned int code_index = 0;
+    unsigned int insn_index = 0;
+    uint8_t *insns = ALLOC_N(uint8_t, iseq->body->iseq_size);
+    VALUE *encoded = iseq->body->iseq_encoded;
+
+    while (code_index < iseq->body->iseq_size) {
+        VALUE insn = encoded[code_index];
+        insns[insn_index++] = insn;
+        code_index += insn_len(insn);
+    }
+    RUBY_ASSERT(code_index == iseq->body->iseq_size);
+
+    REALLOC_N(insns, uint8_t, insn_index);
+
+    iseq->body->original_insns.insns = insns;
+    iseq->body->original_insns.size = insn_index;
+}
+
 /*********************************************/
 /* definition of data structure for compiler */
 /*********************************************/
@@ -1494,6 +1515,9 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
     debugs("[compile step 4.3 (set_optargs_table)] \n");
     if (!iseq_set_optargs_table(iseq)) return COMPILE_NG;
+
+    debugs("[compile step 4.4 (record_original_instructions)] \n");
+    record_original_instructions(iseq);
 
     debugs("[compile step 5 (iseq_translate_threaded_code)] \n");
     if (!rb_iseq_translate_threaded_code(iseq)) return COMPILE_NG;
@@ -11914,6 +11938,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     rb_iseq_insns_info_encode_positions(iseq);
 #endif
 
+    record_original_instructions(iseq);
     rb_iseq_translate_threaded_code(iseq);
 
 #if IBF_ISEQ_ENABLE_LOCAL_BUFFER

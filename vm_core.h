@@ -452,6 +452,11 @@ struct rb_iseq_constant_body {
 #endif
     } insns_info;
 
+    struct {
+        uint8_t *insns;
+        unsigned int size;
+    } original_insns;
+
     const ID *local_table;		/* must free */
 
     /* catch table */
