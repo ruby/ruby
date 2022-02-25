@@ -4346,6 +4346,7 @@ get_limit(VALUE opt)
 static void
 check_limit(VALUE str, VALUE opt)
 {
+    size_t slen, limit;
     if (NIL_P(str)) return;
     if (SYMBOL_P(str)) {
 	rb_category_warn(RB_WARN_CATEGORY_DEPRECATED,
@@ -4354,8 +4355,8 @@ check_limit(VALUE str, VALUE opt)
     }
 
     StringValue(str);
-    size_t slen = RSTRING_LEN(str);
-    size_t limit = get_limit(opt);
+    slen = RSTRING_LEN(str);
+    limit = get_limit(opt);
     if (slen > limit) {
 	rb_raise(rb_eArgError,
 		 "string length (%"PRI_SIZE_PREFIX"u) exceeds the limit %"PRI_SIZE_PREFIX"u", slen, limit);
@@ -4453,11 +4454,11 @@ date_s_parse(int argc, VALUE *argv, VALUE klass)
 
     {
         int argc2 = 2;
-	VALUE argv2[3];
+	VALUE argv2[3], hash;
         argv2[0] = str;
         argv2[1] = comp;
         if (!NIL_P(opt)) argv2[argc2++] = opt;
-	VALUE hash = date_s__parse(argc2, argv2, klass);
+	hash = date_s__parse(argc2, argv2, klass);
 	return d_new_by_frags(klass, hash, sg);
     }
 }
@@ -4522,10 +4523,10 @@ date_s_iso8601(int argc, VALUE *argv, VALUE klass)
 
     {
         int argc2 = 1;
-        VALUE argv2[2];
+        VALUE argv2[2], hash;
         argv2[0] = str;
         if (!NIL_P(opt)) argv2[argc2++] = opt;
-	VALUE hash = date_s__iso8601(argc2, argv2, klass);
+	hash = date_s__iso8601(argc2, argv2, klass);
 	return d_new_by_frags(klass, hash, sg);
     }
 }
@@ -4581,10 +4582,10 @@ date_s_rfc3339(int argc, VALUE *argv, VALUE klass)
 
     {
         int argc2 = 1;
-        VALUE argv2[2];
+        VALUE argv2[2], hash;
         argv2[0] = str;
         if (!NIL_P(opt)) argv2[argc2++] = opt;
-	VALUE hash = date_s__rfc3339(argc2, argv2, klass);
+	hash = date_s__rfc3339(argc2, argv2, klass);
 	return d_new_by_frags(klass, hash, sg);
     }
 }
@@ -4640,10 +4641,10 @@ date_s_xmlschema(int argc, VALUE *argv, VALUE klass)
 
     {
         int argc2 = 1;
-        VALUE argv2[2];
+        VALUE argv2[2], hash;
         argv2[0] = str;
         if (!NIL_P(opt)) argv2[argc2++] = opt;
-	VALUE hash = date_s__xmlschema(argc2, argv2, klass);
+	hash = date_s__xmlschema(argc2, argv2, klass);
 	return d_new_by_frags(klass, hash, sg);
     }
 }
@@ -4701,10 +4702,10 @@ date_s_rfc2822(int argc, VALUE *argv, VALUE klass)
 
     {
         int argc2 = 1;
-        VALUE argv2[2];
+        VALUE argv2[2], hash;
         argv2[0] = str;
         if (!NIL_P(opt)) argv2[argc2++] = opt;
-	VALUE hash = date_s__rfc2822(argc2, argv2, klass);
+	hash = date_s__rfc2822(argc2, argv2, klass);
 	return d_new_by_frags(klass, hash, sg);
     }
 }
@@ -4760,10 +4761,10 @@ date_s_httpdate(int argc, VALUE *argv, VALUE klass)
 
     {
         int argc2 = 1;
-        VALUE argv2[2];
+        VALUE argv2[2], hash;
         argv2[0] = str;
         if (!NIL_P(opt)) argv2[argc2++] = opt;
-	VALUE hash = date_s__httpdate(argc2, argv2, klass);
+	hash = date_s__httpdate(argc2, argv2, klass);
 	return d_new_by_frags(klass, hash, sg);
     }
 }
@@ -4823,10 +4824,10 @@ date_s_jisx0301(int argc, VALUE *argv, VALUE klass)
 
     {
         int argc2 = 1;
-        VALUE argv2[2];
+        VALUE argv2[2], hash;
         argv2[0] = str;
         if (!NIL_P(opt)) argv2[argc2++] = opt;
-	VALUE hash = date_s__jisx0301(argc2, argv2, klass);
+	hash = date_s__jisx0301(argc2, argv2, klass);
 	return d_new_by_frags(klass, hash, sg);
     }
 }
@@ -8208,12 +8209,12 @@ datetime_s_parse(int argc, VALUE *argv, VALUE klass)
 
     {
         int argc2 = 2;
-        VALUE argv2[3];
+        VALUE argv2[3], hash;
         argv2[0] = str;
         argv2[1] = comp;
         argv2[2] = opt;
         if (!NIL_P(opt)) argc2++;
-	VALUE hash = date_s__parse(argc2, argv2, klass);
+	hash = date_s__parse(argc2, argv2, klass);
 	return dt_new_by_frags(klass, hash, sg);
     }
 }
@@ -8253,11 +8254,11 @@ datetime_s_iso8601(int argc, VALUE *argv, VALUE klass)
 
     {
         int argc2 = 1;
-        VALUE argv2[2];
+        VALUE argv2[2], hash;
         argv2[0] = str;
         argv2[1] = opt;
         if (!NIL_P(opt)) argc2--;
-	VALUE hash = date_s__iso8601(argc2, argv2, klass);
+	hash = date_s__iso8601(argc2, argv2, klass);
 	return dt_new_by_frags(klass, hash, sg);
     }
 }
@@ -8293,11 +8294,11 @@ datetime_s_rfc3339(int argc, VALUE *argv, VALUE klass)
 
     {
         int argc2 = 1;
-        VALUE argv2[2];
+        VALUE argv2[2], hash;
         argv2[0] = str;
         argv2[1] = opt;
         if (!NIL_P(opt)) argc2++;
-	VALUE hash = date_s__rfc3339(argc2, argv2, klass);
+	hash = date_s__rfc3339(argc2, argv2, klass);
 	return dt_new_by_frags(klass, hash, sg);
     }
 }
@@ -8333,11 +8334,11 @@ datetime_s_xmlschema(int argc, VALUE *argv, VALUE klass)
 
     {
         int argc2 = 1;
-        VALUE argv2[2];
+        VALUE argv2[2], hash;
         argv2[0] = str;
         argv2[1] = opt;
         if (!NIL_P(opt)) argc2++;
-	VALUE hash = date_s__xmlschema(argc2, argv2, klass);
+	hash = date_s__xmlschema(argc2, argv2, klass);
 	return dt_new_by_frags(klass, hash, sg);
     }
 }
@@ -8374,11 +8375,11 @@ datetime_s_rfc2822(int argc, VALUE *argv, VALUE klass)
 
     {
         int argc2 = 1;
-        VALUE argv2[2];
+        VALUE argv2[2], hash;
         argv2[0] = str;
         argv2[1] = opt;
         if (!NIL_P(opt)) argc2++;
-	VALUE hash = date_s__rfc2822(argc2, argv2, klass);
+	hash = date_s__rfc2822(argc2, argv2, klass);
 	return dt_new_by_frags(klass, hash, sg);
     }
 }
@@ -8414,11 +8415,11 @@ datetime_s_httpdate(int argc, VALUE *argv, VALUE klass)
 
     {
         int argc2 = 1;
-        VALUE argv2[2];
+        VALUE argv2[2], hash;
         argv2[0] = str;
         argv2[1] = opt;
         if (!NIL_P(opt)) argc2++;
-	VALUE hash = date_s__httpdate(argc2, argv2, klass);
+	hash = date_s__httpdate(argc2, argv2, klass);
 	return dt_new_by_frags(klass, hash, sg);
     }
 }
@@ -8459,11 +8460,11 @@ datetime_s_jisx0301(int argc, VALUE *argv, VALUE klass)
 
     {
         int argc2 = 1;
-        VALUE argv2[2];
+        VALUE argv2[2], hash;
         argv2[0] = str;
         argv2[1] = opt;
         if (!NIL_P(opt)) argc2++;
-	VALUE hash = date_s__jisx0301(argc2, argv2, klass);
+	hash = date_s__jisx0301(argc2, argv2, klass);
 	return dt_new_by_frags(klass, hash, sg);
     }
 }
