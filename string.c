@@ -6670,7 +6670,6 @@ rb_str_escape(VALUE str)
  *  and with special characters escaped:
  *
  *    s = "foo\tbar\tbaz\n"
- *    # => "foo\tbar\tbaz\n"
  *    s.inspect
  *    # => "\"foo\\tbar\\tbaz\\n\""
  *
@@ -10963,9 +10962,22 @@ rb_str_force_encoding(VALUE str, VALUE enc)
 
 /*
  *  call-seq:
- *     str.b   -> str
+ *    b -> string
  *
- *  Returns a copied string whose encoding is ASCII-8BIT.
+ *  Returns a copy of +self+ with that has ASCII-8BIT encoding;
+ *  the contents (bytes) of +self+ are not modified:
+ *
+ *    s = "\x99"
+ *    s.encoding   # => #<Encoding:UTF-8>
+ *    t = s.b      # => "\x99"
+ *    t.encoding   # => #<Encoding:ASCII-8BIT>
+ *
+ *    s = "\u4095"
+ *    s.encoding   # => #<Encoding:UTF-8>
+ *    s.bytes      # => [228, 130, 149]
+ *    t = s.b      # => "\xE4\x82\x95"
+ *    t.encoding   # => #<Encoding:ASCII-8BIT>
+ *
  */
 
 static VALUE
@@ -11341,17 +11353,38 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 
 /*
  *  call-seq:
- *    str.scrub -> new_str
- *    str.scrub(repl) -> new_str
- *    str.scrub{|bytes|} -> new_str
+ *    scrub(replacement_string = default_replacement) -> string
+ *    scrub{|bytes| ... } -> string
  *
- *  If the string is invalid byte sequence then replace invalid bytes with given replacement
- *  character, else returns self.
- *  If block is given, replace invalid bytes with returned value of the block.
+ *  Returns a copy of self with each invalid byte sequence replaced
+ *  by a replacement string.
  *
- *     "abc\u3042\x81".scrub #=> "abc\u3042\uFFFD"
- *     "abc\u3042\x81".scrub("*") #=> "abc\u3042*"
- *     "abc\u3042\xE3\x80".scrub{|bytes| '<'+bytes.unpack1('H*')+'>' } #=> "abc\u3042<e380>"
+ *  With no block given and no argument, replaces each invalid sequence
+ *  with the default replacement string
+ *  (<tt>"\uFFFD"</tt> for a Unicode encoding, <tt>'?'</tt> otherwise):
+ *
+ *    "\uFFFD".bytes # => [239, 191, 189]
+ *    s = "foo\x81\x81bar"
+ *    s.bytes
+ *    # => [102, 111, 111, 129, 129, 98, 97, 114]
+ *    s.scrub.bytes
+ *    # => [102, 111, 111, 239, 191, 189, 239, 191, 189, 98, 97, 114]
+ *
+ *  With no block given and argument +replacement_string+ given,
+ *  replaces each invalid sequence with that string:
+ *
+ *    "foo\x81\x81bar".scrub('xyzzy') # => "fooxyzzyxyzzybar"
+ *
+ *  With a block given, replaces each invalid sequence with the value
+ *  of the block:
+ *
+ *    "foo\x81\x81bar".scrub {|bytes| p bytes; 'XYZZY' } # => "fooXYZZYXYZZYbar"
+ *
+ *  Output:
+ *
+ *    "\x81"
+ *    "\x81"
+ *
  */
 static VALUE
 str_scrub(int argc, VALUE *argv, VALUE str)
@@ -11363,17 +11396,12 @@ str_scrub(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    str.scrub! -> str
- *    str.scrub!(repl) -> str
- *    str.scrub!{|bytes|} -> str
+ *    scrub! -> self
+ *    scrub!(replacement_string = default_replacement) -> self
+ *    scrub!{|bytes|} -> self
  *
- *  If the string is invalid byte sequence then replace invalid bytes with given replacement
- *  character, else returns self.
- *  If block is given, replace invalid bytes with returned value of the block.
+ *  Like String#scrub, except that any replacements are made in +self+.
  *
- *     "abc\u3042\x81".scrub! #=> "abc\u3042\uFFFD"
- *     "abc\u3042\x81".scrub!("*") #=> "abc\u3042*"
- *     "abc\u3042\xE3\x80".scrub!{|bytes| '<'+bytes.unpack1('H*')+'>' } #=> "abc\u3042<e380>"
  */
 static VALUE
 str_scrub_bang(int argc, VALUE *argv, VALUE str)
@@ -11405,25 +11433,36 @@ unicode_normalize_common(int argc, VALUE *argv, VALUE str, ID id)
 
 /*
  *  call-seq:
- *    str.unicode_normalize(form=:nfc)
+ *    unicode_normalize(form = :nfc) -> string
  *
- *  Unicode Normalization---Returns a normalized form of +str+,
- *  using Unicode normalizations NFC, NFD, NFKC, or NFKD.
- *  The normalization form used is determined by +form+, which can
- *  be any of the four values +:nfc+, +:nfd+, +:nfkc+, or +:nfkd+.
- *  The default is +:nfc+.
+ *  Returns a copy of +self+ with
+ *  {Unicode normalization}[https://unicode.org/reports/tr15] applied.
  *
- *  If the string is not in a Unicode Encoding, then an Exception is raised.
- *  In this context, 'Unicode Encoding' means any of UTF-8, UTF-16BE/LE,
- *  and UTF-32BE/LE, as well as GB18030, UCS_2BE, and UCS_4BE.
- *  Anything other than UTF-8 is implemented by converting to UTF-8,
- *  which makes it slower than UTF-8.
+ *  Argument +form+ must be one of the following symbols
+ *  (see {Unicode normalization forms}[https://unicode.org/reports/tr15/#Norm_Forms]):
  *
- *    "a\u0300".unicode_normalize        #=> "\u00E0"
- *    "a\u0300".unicode_normalize(:nfc)  #=> "\u00E0"
- *    "\u00E0".unicode_normalize(:nfd)   #=> "a\u0300"
- *    "\xE0".force_encoding('ISO-8859-1').unicode_normalize(:nfd)
- *                                       #=> Encoding::CompatibilityError raised
+ *  - +:nfc+: Canonical decomposition, followed by canonical composition.
+ *  - +:nfd+: Canonical decomposition.
+ *  - +:nfkc+: Compatibility decomposition, followed by canonical composition.
+ *  - +:nfkd+: Compatibility decomposition.
+ *
+ *  +self+ must have encoding UTF-8 or one of the other supported encodings:
+ *
+ *    UnicodeNormalize::UNICODE_ENCODINGS
+ *    # =>
+ *    [#<Encoding:UTF-16BE (autoload)>,
+ *     #<Encoding:UTF-16LE>,
+ *     #<Encoding:UTF-32BE (autoload)>,
+ *     #<Encoding:UTF-32LE (autoload)>,
+ *     #<Encoding:GB18030 (autoload)>,
+ *     #<Encoding:UTF-16BE (autoload)>,
+ *     #<Encoding:UTF-32BE (autoload)>]
+ *
+ *  Examples:
+ *
+ *    "a\u0300".unicode_normalize      # => "a"
+ *    "\u00E0".unicode_normalize(:nfd) # => "a "
+ *
  */
 static VALUE
 rb_str_unicode_normalize(int argc, VALUE *argv, VALUE str)
@@ -11433,10 +11472,11 @@ rb_str_unicode_normalize(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    str.unicode_normalize!(form=:nfc)
+ *    unicode_normalize!(form = :nfc) -> self
  *
- *  Destructive version of String#unicode_normalize, doing Unicode
- *  normalization in place.
+ *  Like String#unicode_normalize, except that the normalization
+ *  is performed on +self+.
+ *
  */
 static VALUE
 rb_str_unicode_normalize_bang(int argc, VALUE *argv, VALUE str)

@@ -8943,6 +8943,13 @@ rb_io_make_open_file(VALUE obj)
  *    fd = IO.sysopen(path) # => 3
  *    IO.new(fd)            # => #<IO:fd 3>
  *
+ *  The new \IO object does not inherit encoding
+ *  (because the integer file descriptor does not have an encoding):
+ *
+ *    fd = IO.sysopen('t.rus', 'rb')
+ *    io = IO.new(fd)
+ *    io.external_encoding # => #<Encoding:UTF-8> # Not ASCII-8BIT.
+ *
  *  Optional argument +mode+ (defaults to 'r') must specify a valid mode
  *  see IO@Modes:
  *
