@@ -6670,7 +6670,6 @@ rb_str_escape(VALUE str)
  *  and with special characters escaped:
  *
  *    s = "foo\tbar\tbaz\n"
- *    # => "foo\tbar\tbaz\n"
  *    s.inspect
  *    # => "\"foo\\tbar\\tbaz\\n\""
  *
@@ -10968,12 +10967,12 @@ rb_str_force_encoding(VALUE str, VALUE enc)
  *  Returns a copy of +self+ with that has ASCII-8BIT encoding;
  *  the contents (bytes) of +self+ are not modified:
  *
- *    s = "\x99"   # => "\x99"
+ *    s = "\x99"
  *    s.encoding   # => #<Encoding:UTF-8>
  *    t = s.b      # => "\x99"
  *    t.encoding   # => #<Encoding:ASCII-8BIT>
  *
- *    s = "\u4095" # => "䂕"
+ *    s = "\u4095"
  *    s.encoding   # => #<Encoding:UTF-8>
  *    s.bytes      # => [228, 130, 149]
  *    t = s.b      # => "\xE4\x82\x95"
@@ -11354,18 +11353,22 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 
 /*
  *  call-seq:
- *    scrub(replacement_string = default_replacement) -> string or self
- *    scrub{|bytes| ... } -> string or self
+ *    scrub(replacement_string = default_replacement) -> string
+ *    scrub{|bytes| ... } -> string
  *
  *  Returns a copy of self with each invalid byte sequence replaced
- *  by a replacement string; returns +self+ if nothing there were
- *  no invalid byte sequences.
+ *  by a replacement string.
  *
  *  With no block given and no argument, replaces each invalid sequence
  *  with the default replacement string
- *  (<tt>"\uFFFD"</tt> ("�") for a Unicode encoding, <tt>'?'</tt> otherwise):
+ *  (<tt>"\uFFFD"</tt> for a Unicode encoding, <tt>'?'</tt> otherwise):
  *
- *    "foo\x81\x81bar".scrub # => "foo��bar"
+ *    "\uFFFD".bytes # => [239, 191, 189]
+ *    s = "foo\x81\x81bar"
+ *    s.bytes
+ *    # => [102, 111, 111, 129, 129, 98, 97, 114]
+ *    s.scrub.bytes
+ *    # => [102, 111, 111, 239, 191, 189, 239, 191, 189, 98, 97, 114]
  *
  *  With no block given and argument +replacement_string+ given,
  *  replaces each invalid sequence with that string:
@@ -11375,7 +11378,12 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
  *  With a block given, replaces each invalid sequence with the value
  *  of the block:
  *
- *    "foo\x81\x81bar".scrub {|bytes| 'XYZZY' } # => "fooXYZZYXYZZYbar"
+ *    "foo\x81\x81bar".scrub {|bytes| p bytes; 'XYZZY' } # => "fooXYZZYXYZZYbar"
+ *
+ *  Output:
+ *
+ *    "\x81"
+ *    "\x81"
  *
  */
 static VALUE
@@ -11388,7 +11396,7 @@ str_scrub(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    scrub! -> str
+ *    scrub! -> self
  *    scrub!(replacement_string = default_replacement) -> self
  *    scrub!{|bytes|} -> self
  *

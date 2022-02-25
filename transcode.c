@@ -2801,8 +2801,8 @@ str_encode_associate(VALUE str, int encidx)
 
 /*
  *  call-seq:
- *    encode!(dst_encoding = Encoding.default_internal, **enc_opts) -> string
- *    encode!(dst_encoding, src_encoding, **enc_opts)   -> string
+ *    encode!(dst_encoding = Encoding.default_internal, **enc_opts) -> self
+ *    encode!(dst_encoding, src_encoding, **enc_opts)   -> self
  *
  *  Like #encode, but applies encoding changes to +self+; returns +self+.
  *
