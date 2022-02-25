@@ -592,14 +592,14 @@ eom
 
       def assert_deprecated_warning(mesg = /deprecated/)
         assert_warning(mesg) do
-          Warning[:deprecated] = true
+          Warning[:deprecated] = true if Warning.respond_to?(:[]=)
           yield
         end
       end
 
       def assert_deprecated_warn(mesg = /deprecated/)
         assert_warn(mesg) do
-          Warning[:deprecated] = true
+          Warning[:deprecated] = true if Warning.respond_to?(:[]=)
           yield
         end
       end
