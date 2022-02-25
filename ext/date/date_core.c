@@ -4339,11 +4339,19 @@ get_limit(VALUE opt)
     return 128;
 }
 
+#ifndef HAVE_RB_CATEGORY_WARN
+#define rb_category_warn(category, fmt) rb_warn(fmt)
+#endif
+
 static void
 check_limit(VALUE str, VALUE opt)
 {
     if (NIL_P(str)) return;
-    if (SYMBOL_P(str)) str = rb_sym2str(str);
+    if (SYMBOL_P(str)) {
+	rb_category_warn(RB_WARN_CATEGORY_DEPRECATED,
+			 "The ability to parse Symbol is an unintentional bug and is deprecated");
+	str = rb_sym2str(str);
+    }
 
     StringValue(str);
     size_t slen = RSTRING_LEN(str);
