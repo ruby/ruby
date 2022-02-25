@@ -67,7 +67,7 @@ describe "Date#parse" do
 
   it "raises a TypeError trying to parse non-String-like object" do
     -> { Date.parse(1) }.should raise_error(TypeError)
-    -> { Date.parse(:invalid) }.should raise_error(TypeError)
+    -> { Date.parse([]) }.should raise_error(TypeError)
   end
 
   it "coerces using to_str" do
