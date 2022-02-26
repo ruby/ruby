@@ -274,8 +274,14 @@ followed by a colon, space and the Encoding name or alias:
 
 === Transcoding
 
-_Transcoding_ is the process of revising the content of a string or stream
-by changing its encoding.
+_Transcoding_ is the process changing a sequence of characters
+from one encoding to another.
+
+As far as possible, the characters remain the same,
+but the bytes that represent them may change.
+
+The handling for characters that cannot be represented in the destination encoding
+may be specified by @Encoding+Options.
 
 ==== Transcoding a \String
 
