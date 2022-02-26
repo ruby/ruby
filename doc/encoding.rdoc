@@ -281,7 +281,7 @@ As far as possible, the characters remain the same,
 but the bytes that represent them may change.
 
 The handling for characters that cannot be represented in the destination encoding
-may be specified by {Encoding Options}[#label-Encoding+Options].
+may be specified by @Encoding+Options.
 
 ==== Transcoding a \String
 
