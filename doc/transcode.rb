@@ -45,6 +45,6 @@ class String
   # see {Encoding Options}[rdoc-ref:encoding.rdoc@Encoding+Options].
   def encode(dst_encoding = Encoding.default_internal, **enc_opts)
     # Pseudo code
-    Builtin.str_transcode!(...)
+    Primitive.str_encode(...)
   end
 end
