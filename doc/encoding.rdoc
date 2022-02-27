@@ -274,7 +274,7 @@ followed by a colon, space and the Encoding name or alias:
 
 === Transcoding
 
-_Transcoding_ is the process changing a sequence of characters
+_Transcoding_ is the process of changing a sequence of characters
 from one encoding to another.
 
 As far as possible, the characters remain the same,
