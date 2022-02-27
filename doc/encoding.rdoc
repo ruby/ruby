@@ -272,7 +272,7 @@ For an \IO or \File object, the internal encoding may be set by:
 
 For an \IO, \File, \ARGF, or \StringIO object, the internal encoding may be set by:
 
-- \Methods +set_encoding+ or (except for \StringIO) +set_encoding_by_bom+.
+- \Method +set_encoding+.
 
 === Script \Encoding
 
