@@ -241,6 +241,10 @@ For an \IO or \File object, the external encoding may be set by:
 - Open options +external_encoding+ or +encoding+, when the object is created;
   see {Open Options}[rdoc-ref:IO@Open+Options].
 
+For an \IO, \File, \ARGV, or \StringIO object, the external encoding may be set by:
+
+- \Methods +set_encoding+ or (except for \StringIO) +set_encoding_by_bom+.
+
 ==== Internal \Encoding
 
 The internal encoding, which is an \Encoding object or +nil+,
@@ -259,6 +263,10 @@ For an \IO or \File object, the internal encoding may be set by:
 
 - Open options +internal_encoding+ or +encoding+, when the object is created;
   see {Open Options}[rdoc-ref:IO@Open+Options].
+
+For an \IO, \File, \ARGV, or \StringIO object, the internal encoding may be set by:
+
+- \Methods +set_encoding+ or (except for \StringIO) +set_encoding_by_bom+.
 
 === Script \Encoding
 
