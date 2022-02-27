@@ -3187,7 +3187,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         rb_class_remove_subclass_head(obj);
 	rb_class_remove_from_module_subclasses(obj);
 	rb_class_remove_from_super_subclasses(obj);
-	rb_class_remove_superclasses(obj);
+        if (FL_TEST_RAW(obj, RCLASS_SUPERCLASSES_INCLUDE_SELF)) {
+            xfree(RCLASS_SUPERCLASSES(obj));
+        }
 #if SIZEOF_SERIAL_T != SIZEOF_VALUE && USE_RVARGC
         xfree(RCLASS(obj)->class_serial_ptr);
 #endif
@@ -4620,7 +4622,9 @@ obj_memsize_of(VALUE obj, int use_all_types)
             if (RCLASS_CC_TBL(obj)) {
                 size += cc_table_memsize(RCLASS_CC_TBL(obj));
             }
-            size += RCLASS_SUPERCLASS_DEPTH(obj) * sizeof(VALUE);
+            if (FL_TEST_RAW(obj, RCLASS_SUPERCLASSES_INCLUDE_SELF)) {
+                size += (RCLASS_SUPERCLASS_DEPTH(obj) + 1) * sizeof(VALUE);
+            }
 #if !USE_RVARGC
 	    size += sizeof(rb_classext_t);
 #endif
@@ -10037,8 +10041,10 @@ update_class_ext(rb_objspace_t *objspace, rb_classext_t *ext)
 static void
 update_superclasses(rb_objspace_t *objspace, VALUE obj)
 {
-    for (size_t i = 0; i < RCLASS_SUPERCLASS_DEPTH(obj); i++) {
-        UPDATE_IF_MOVED(objspace, RCLASS_SUPERCLASSES(obj)[i]);
+    if (FL_TEST_RAW(obj, RCLASS_SUPERCLASSES_INCLUDE_SELF)) {
+        for (size_t i = 0; i < RCLASS_SUPERCLASS_DEPTH(obj) + 1; i++) {
+            UPDATE_IF_MOVED(objspace, RCLASS_SUPERCLASSES(obj)[i]);
+        }
     }
 }
 
