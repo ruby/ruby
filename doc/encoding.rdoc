@@ -205,57 +205,74 @@ other than from the filesystem:
 
   Encoding.find('locale') # => #<Encoding:IBM437>
 
-=== \IO Encodings
+=== Stream Encodings
 
-An IO object (an input/output stream), and by inheritance a File object,
-has at least one, and sometimes two, encodings:
+Certain stream objects can have two encodings; these objects include instances of:
 
-- Its _external_ _encoding_ identifies the encoding of the stream.
-- Its _internal_ _encoding_, if not +nil+, specifies the encoding
+- IO.
+- File.
+- ARGF.
+- StringIO.
+
+The two encodings are:
+
+- An _external_ _encoding_, which identifies the encoding of the stream.
+- An _internal_ _encoding_, which (if not +nil+) specifies the encoding
   to be used for the string constructed from the stream.
 
 ==== External \Encoding
 
-Bytes read from the stream are decoded into characters via the external encoding;
-by default (that is, if the internal encoding is +nil),
-those characters become a string whose encoding is set to the external encoding.
+The external encoding, which is an \Encoding object, specifies how bytes read
+from the stream are to be interpreted as characters.
 
 The default external encoding is:
 
 - UTF-8 for a text stream.
 - ASCII-8BIT for a binary stream.
 
-    f = File.open('t.rus', 'rb')
-    f.external_encoding  # => #<Encoding:ASCII-8BIT>
+The default external encoding is returned by method Encoding.default_external,
+and may be set by:
 
-The external encoding may be set by the open option +external_encoding+:
+- Ruby command-line options <tt>--external_encoding</tt> or <tt>-E</tt>.
 
-  f = File.open('t.txt', external_encoding: 'ASCII-8BIT')
-  f.external_encoding                               # => #<Encoding:ASCII-8BIT>
+You can also set the default external encoding using method Encoding.default_external=,
+but doing so may cause problems; strings created before and after the change
+may have a different encodings.
 
-The external encoding may also set by method #set_encoding:
+For an \IO or \File object, the external encoding may be set by:
 
-  f = File.open('t.txt')
-  f.set_encoding('ASCII-8BIT')
-  f.external_encoding  # => #<Encoding:ASCII-8BIT>
+- Open options +external_encoding+ or +encoding+, when the object is created;
+  see {Open Options}[rdoc-ref:IO@Open+Options].
+
+For an \IO, \File, \ARGF, or \StringIO object, the external encoding may be set by:
+
+- \Methods +set_encoding+ or (except for \ARGF) +set_encoding_by_bom+.
 
 ==== Internal \Encoding
 
-If not +nil+, the internal encoding specifies that the characters read
-from the stream are to be converted to characters in the internal encoding;
+The internal encoding, which is an \Encoding object or +nil+,
+specifies how characters read from the stream
+are to be converted to characters in the internal encoding;
 those characters become a string whose encoding is set to the internal encoding.
 
 The default internal encoding is +nil+ (no conversion).
-The internal encoding may set by the open option +internal_encoding+:
+It is returned by method Encoding.default_internal,
+and may be set by:
 
-  f = File.open('t.txt', internal_encoding: 'ASCII-8BIT')
-  f.internal_encoding  # => #<Encoding:ASCII-8BIT>
+- Ruby command-line options <tt>--internal_encoding</tt> or <tt>-E</tt>.
 
-The internal encoding may also set by method #set_encoding:
+You can also set the default internal encoding using method Encoding.default_internal=,
+but doing so may cause problems; strings created before and after the change
+may have a different encodings.
 
-  f = File.open('t.txt')
-  f.set_encoding('UTF-8', 'ASCII-8BIT')
-  f.internal_encoding  # => #<Encoding:ASCII-8BIT>
+For an \IO or \File object, the internal encoding may be set by:
+
+- Open options +internal_encoding+ or +encoding+, when the object is created;
+  see {Open Options}[rdoc-ref:IO@Open+Options].
+
+For an \IO, \File, \ARGF, or \StringIO object, the internal encoding may be set by:
+
+- \Method +set_encoding+.
 
 === Script \Encoding
 
