@@ -233,8 +233,11 @@ The default external encoding is:
 The default external encoding is returned by method Encoding.default_external,
 and may be set by:
 
-- \Method Encoding.default_external=.
 - Ruby command-line options <tt>--external_encoding</tt> or <tt>-E</tt>.
+
+You can also set the default external encoding using method Encoding.default_external=,
+but doing so may cause problems; strings created before and after the change
+may have a different encodings.
 
 For an \IO or \File object, the external encoding may be set by:
 
@@ -256,8 +259,11 @@ The default internal encoding is +nil+ (no conversion).
 It is returned by method Encoding.default_internal,
 and may be set by:
 
-- \Method Encoding.default_internal=.
 - Ruby command-line options <tt>--internal_encoding</tt> or <tt>-E</tt>.
+
+You can also set the default internal encoding using method Encoding.default_internal=,
+but doing so may cause problems; strings created before and after the change
+may have a different encodings.
 
 For an \IO or \File object, the internal encoding may be set by:
 
