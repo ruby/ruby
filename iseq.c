@@ -259,6 +259,10 @@ update_each_insn_value(void *ctx, VALUE obj)
 void
 rb_iseq_update_references(rb_iseq_t *iseq)
 {
+    if (iseq->wrapper) {
+        iseq->wrapper = rb_gc_location(iseq->wrapper);
+    }
+
     if (iseq->body) {
         struct rb_iseq_constant_body *body = iseq->body;
 
@@ -341,7 +345,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 {
     RUBY_MARK_ENTER("iseq");
 
-    RUBY_MARK_UNLESS_NULL(iseq->wrapper);
+    RUBY_MARK_MOVABLE_UNLESS_NULL(iseq->wrapper);
 
     if (iseq->body) {
 	const struct rb_iseq_constant_body *const body = iseq->body;
@@ -1236,21 +1240,34 @@ rb_iseq_remove_coverage_all(void)
 
 /* define wrapper class methods (RubyVM::InstructionSequence) */
 
+struct iseqw {
+    rb_iseq_t * iseq;
+};
+
 static void
 iseqw_mark(void *ptr)
 {
-    rb_gc_mark((VALUE)ptr);
+    struct iseqw *w = (struct iseqw *)ptr;
+    rb_gc_mark_movable((VALUE)w->iseq);
 }
 
 static size_t
 iseqw_memsize(const void *ptr)
 {
-    return rb_iseq_memsize((const rb_iseq_t *)ptr);
+    struct iseqw *w = (struct iseqw *)ptr;
+    return rb_iseq_memsize((const rb_iseq_t *)w->iseq);
+}
+
+static void
+iseqw_compact(void *ptr)
+{
+    struct iseqw *w = (struct iseqw *)ptr;
+    w->iseq = (rb_iseq_t *)rb_gc_location((VALUE)w->iseq);
 }
 
 static const rb_data_type_t iseqw_data_type = {
     "T_IMEMO/iseq",
-    {iseqw_mark, NULL, iseqw_memsize,},
+    {iseqw_mark, xfree, iseqw_memsize, iseqw_compact},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
 };
 
@@ -1261,10 +1278,13 @@ iseqw_new(const rb_iseq_t *iseq)
         return iseq->wrapper;
     }
     else {
-        union { const rb_iseq_t *in; void *out; } deconst;
+        union { const rb_iseq_t *in; rb_iseq_t *out; } deconst;
         VALUE obj;
+        struct iseqw *w;
+
         deconst.in = iseq;
-        obj = TypedData_Wrap_Struct(rb_cISeq, &iseqw_data_type, deconst.out);
+        obj = TypedData_Make_Struct(rb_cISeq, struct iseqw, &iseqw_data_type, w);
+        w->iseq = deconst.out;
         RB_OBJ_WRITTEN(obj, Qundef, iseq);
 
         /* cache a wrapper object */
@@ -1456,7 +1476,10 @@ iseqw_s_compile_option_get(VALUE self)
 static const rb_iseq_t *
 iseqw_check(VALUE iseqw)
 {
-    rb_iseq_t *iseq = DATA_PTR(iseqw);
+    struct iseqw *w;
+    rb_iseq_t *iseq;
+    TypedData_Get_Struct(iseqw, struct iseqw, &iseqw_data_type, w);
+    iseq = w->iseq;
 
     if (!iseq->body) {
 	rb_ibf_load_iseq_complete(iseq);
