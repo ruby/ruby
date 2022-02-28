@@ -95,6 +95,7 @@ Note: We're only listing outstanding class updates.
     * io-wait 0.2.2
     * ipaddr 1.2.4
     * reline 0.3.1
+    * securerandom 0.2.0
 *   The following bundled gems are updated.
     * net-imap 0.2.3
     * rbs 2.2.2
