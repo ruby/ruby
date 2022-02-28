@@ -277,7 +277,7 @@ For an \IO, \File, \ARGF, or \StringIO object, the internal encoding may be set 
 ==== Stream \Encoding Example
 
 This example writes a string to a file, encoding it as ISO-8859-1,
-then reads the file into a new , encoding it as UTF-8:
+then reads the file into a new string, encoding it as UTF-8:
 
   s = "R\u00E9sum\u00E9"
   path = 't.tmp'
