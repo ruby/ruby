@@ -4,14 +4,12 @@ require "pathname"
 
 require "rubygems/specification"
 
-# Possible use in Gem::Specification#source below and require
-# shouldn't be deferred.
-require "rubygems/source"
-
 require_relative "match_platform"
 
 module Gem
   class Specification
+    include ::Bundler::MatchPlatform
+
     attr_accessor :remote, :location, :relative_loaded_from
 
     remove_method :source
@@ -80,6 +78,17 @@ module Gem
       end
       gemfile
     end
+
+    # Backfill missing YAML require when not defined. Fixed since 3.1.0.pre1.
+    module YamlBackfiller
+      def to_yaml(opts = {})
+        Gem.load_yaml unless defined?(::YAML)
+
+        super(opts)
+      end
+    end
+
+    prepend YamlBackfiller
 
     def nondevelopment_dependencies
       dependencies - development_dependencies
@@ -226,11 +235,5 @@ module Gem
         Dir.glob(File.join(base_path.to_s.gsub(/[\[\]]/, '\\\\\\&'), glob)).map! {|f| File.expand_path(f) }
       end
     end
-  end
-end
-
-module Gem
-  class Specification
-    include ::Bundler::MatchPlatform
   end
 end

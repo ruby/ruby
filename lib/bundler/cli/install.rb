@@ -135,32 +135,13 @@ module Bundler
     end
 
     def normalize_groups
-      options[:with] &&= options[:with].join(":").tr(" ", ":").split(":")
-      options[:without] &&= options[:without].join(":").tr(" ", ":").split(":")
-
       check_for_group_conflicts_in_cli_options
 
-      Bundler.settings.set_command_option :with, nil if options[:with] == []
-      Bundler.settings.set_command_option :without, nil if options[:without] == []
-
-      with = options.fetch(:with, [])
-      with |= Bundler.settings[:with].map(&:to_s)
-      with -= options[:without] if options[:without]
-
-      without = options.fetch(:without, [])
-      without |= Bundler.settings[:without].map(&:to_s)
-      without -= options[:with] if options[:with]
-
-      options[:with]    = with
-      options[:without] = without
-
-      unless Bundler.settings[:without] == options[:without] && Bundler.settings[:with] == options[:with]
-        # need to nil them out first to get around validation for backwards compatibility
-        Bundler.settings.set_command_option :without, nil
-        Bundler.settings.set_command_option :with,    nil
-        Bundler.settings.set_command_option :without, options[:without] - options[:with]
-        Bundler.settings.set_command_option :with,    options[:with]
-      end
+      # need to nil them out first to get around validation for backwards compatibility
+      Bundler.settings.set_command_option :without, nil
+      Bundler.settings.set_command_option :with,    nil
+      Bundler.settings.set_command_option :without, options[:without]
+      Bundler.settings.set_command_option :with,    options[:with]
     end
 
     def normalize_settings
@@ -184,7 +165,7 @@ module Bundler
 
       Bundler.settings.set_command_option_if_given :clean, options["clean"]
 
-      normalize_groups
+      normalize_groups if options[:without] || options[:with]
 
       options[:force] = options[:redownload]
     end

@@ -367,7 +367,7 @@ module Bundler
 
     def to_array(value)
       return [] unless value
-      value.split(":").map(&:to_sym)
+      value.tr(" ", ":").split(":").map(&:to_sym)
     end
 
     def array_to_s(array)
