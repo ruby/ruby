@@ -177,7 +177,7 @@ static const struct st_hash_type type_strcasehash = {
 #define PTR_EQUAL(tab, ptr, hash_val, key_) \
     ((ptr)->hash == (hash_val) && EQUAL((tab), (key_), (ptr)->key))
 
-/* As PRT_EQUAL only its result is returned in RES.  REBUILT_P is set
+/* As PTR_EQUAL only its result is returned in RES.  REBUILT_P is set
    up to TRUE if the table is rebuilt during the comparison.  */
 #define DO_PTR_EQUAL_CHECK(tab, ptr, hash_val, key, res, rebuilt_p) \
     do {							    \
