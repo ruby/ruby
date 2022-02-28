@@ -157,9 +157,9 @@ RSpec.describe "bundle lock" do
       gem "rack_middleware", :group => "test"
     G
     bundle "config set without test"
-    bundle "config set path .bundle"
+    bundle "config set path vendor/bundle"
     bundle "lock"
-    expect(bundled_app(".bundle")).not_to exist
+    expect(bundled_app("vendor/bundle")).not_to exist
   end
 
   # see update_spec for more coverage on same options. logic is shared so it's not necessary

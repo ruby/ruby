@@ -291,7 +291,7 @@ RSpec.describe "bundle exec" do
       end
     end
 
-    bundle "config set path.system true"
+    bundle "config set --global path.system true"
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -775,9 +775,7 @@ RSpec.describe "bundle exec" do
       end
       let(:expected_err) { "" }
       let(:exit_code) do
-        # signal mask 128 + plus signal 15 -> TERM
-        # this is specified by C99
-        128 + 15
+        exit_status_for_signal(Signal.list["TERM"])
       end
 
       it "runs" do
