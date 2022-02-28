@@ -207,7 +207,7 @@ describe "Kernel#require_relative with a relative path" do
       $LOADED_FEATURES.should include(@abs_path)
     end
 
-    platform_is_not :windows do
+    platform_is_not :windows, :wasi do
       describe "with symlinks" do
         before :each do
           @symlink_to_code_dir = tmp("codesymlink")
