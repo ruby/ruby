@@ -307,6 +307,28 @@ class TestObjSpace < Test::Unit::TestCase
     JSON.parse(info) if defined?(JSON)
   end
 
+  def test_dump_array
+    # Empty array
+    info = ObjectSpace.dump([])
+    assert_include(info, '"length":0, "embedded":true')
+    assert_not_include(info, '"shared":true')
+
+    # Non-embed array
+    arr = (1..10).to_a
+    info = ObjectSpace.dump(arr)
+    assert_include(info, '"length":10')
+    assert_not_include(info, '"embedded":true')
+    assert_not_include(info, '"shared":true')
+
+    # Shared array
+    arr1 = (1..10).to_a
+    arr = []
+    arr.replace(arr1)
+    info = ObjectSpace.dump(arr)
+    assert_include(info, '"length":10, "shared":true')
+    assert_not_include(info, '"embedded":true')
+  end
+
   def test_dump_control_char
     assert_include(ObjectSpace.dump("\x0f"), '"value":"\u000f"')
     assert_include(ObjectSpace.dump("\C-?"), '"value":"\u007f"')

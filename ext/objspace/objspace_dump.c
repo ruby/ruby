@@ -419,7 +419,7 @@ dump_object(VALUE obj, struct dump_config *dc)
         dump_append_ld(dc, RARRAY_LEN(obj));
         if (RARRAY_LEN(obj) > 0 && FL_TEST(obj, ELTS_SHARED))
             dump_append(dc, ", \"shared\":true");
-        if (RARRAY_LEN(obj) > 0 && FL_TEST(obj, RARRAY_EMBED_FLAG))
+        if (FL_TEST(obj, RARRAY_EMBED_FLAG))
             dump_append(dc, ", \"embedded\":true");
         break;
 
