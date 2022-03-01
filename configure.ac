@@ -169,38 +169,42 @@ AC_ARG_VAR([STRIP],    [Strip command])
 # We don't want to bother things like `ccache gcc`, `clang -shared-libgcc`, ...
 set rb_dummy ${CC}
 rb_CC=$2
+AC_DEFUN([RUBY_CHECK_PROG_FOR_CC], [
+    rb_prog=`echo "${rb_CC}" | sed "$2"`
+    AC_CHECK_PROG([$1], [$rb_prog], [$rb_prog])
+])
 AS_CASE(["/${rb_CC} "],
 [*@<:@\ /@:>@"cc "*], [
     # Don't try g++/clang++ when CC=cc
-    AC_CHECK_TOOLS([CXX],    [cl.exe CC c++])
+    AC_CHECK_PROGS([CXX],    [cl.exe CC c++])
 ],
 [*icc*],              [
     # Intel C++ has interprocedural optimizations.  It tends to come with its
     # own linker etc.
-    AC_CHECK_TOOL([AR],      [`echo "${rb_CC}" | sed s/icc/xiar/`])
-    AC_CHECK_TOOL([CXX],     [`echo "${rb_CC}" | sed s/icc/icpc/`])
-    AC_CHECK_TOOL([LD],      [`echo "${rb_CC}" | sed s/icc/xild/`])
+    RUBY_CHECK_PROG_FOR_CC([AR],      [s/icc/xiar/])
+    RUBY_CHECK_PROG_FOR_CC([CXX],     [s/icc/icpc/])
+    RUBY_CHECK_PROG_FOR_CC([LD],      [s/icc/xild/])
 ],
 [*gcc*],              [
-    # Dito for GCC.
-    AC_CHECK_TOOL([LD],      [`echo "${rb_CC}" | sed s/gcc/ld/`])
-    AC_CHECK_TOOL([AR],      [`echo "${rb_CC}" | sed s/gcc/gcc-ar/`])
-    AC_CHECK_TOOL([CXX],     [`echo "${rb_CC}" | sed s/gcc/g++/`])
-    AC_CHECK_TOOL([NM],      [`echo "${rb_CC}" | sed s/gcc/gcc-nm/`])
-    AC_CHECK_TOOL([RANLIB],  [`echo "${rb_CC}" | sed s/gcc/gcc-ranlib/`])
+    # Ditto for GCC.
+    RUBY_CHECK_PROG_FOR_CC([LD],      [s/gcc/ld/])
+    RUBY_CHECK_PROG_FOR_CC([AR],      [s/gcc/gcc-ar/])
+    RUBY_CHECK_PROG_FOR_CC([CXX],     [s/gcc/g++/])
+    RUBY_CHECK_PROG_FOR_CC([NM],      [s/gcc/gcc-nm/])
+    RUBY_CHECK_PROG_FOR_CC([RANLIB],  [s/gcc/gcc-ranlib/])
 ],
 [*clang*],            [
-    # Dito for LLVM.  Note however that llvm-as is a LLVM-IR to LLVM bitcode
+    # Ditto for LLVM.  Note however that llvm-as is a LLVM-IR to LLVM bitcode
     # assembler that does not target your machine native binary.
     : ${LD:="${CC}"}         # ... try -fuse-ld=lld ?
-    AC_CHECK_TOOL([AR],      [`echo "${rb_CC}" | sed s/clang/llvm-ar/`])
-#   AC_CHECK_TOOL([AS],      [`echo "${rb_CC}" | sed s/clang/llvm-as/`])
-    AC_CHECK_TOOL([CXX],     [`echo "${rb_CC}" | sed s/clang/clang++/`])
-    AC_CHECK_TOOL([NM],      [`echo "${rb_CC}" | sed s/clang/llvm-nm/`])
-    AC_CHECK_TOOL([OBJCOPY], [`echo "${rb_CC}" | sed s/clang/llvm-objcopy/`])
-    AC_CHECK_TOOL([OBJDUMP], [`echo "${rb_CC}" | sed s/clang/llvm-objdump/`])
-    AC_CHECK_TOOL([RANLIB],  [`echo "${rb_CC}" | sed s/clang/llvm-ranlib/`])
-    AC_CHECK_TOOL([STRIP],   [`echo "${rb_CC}" | sed s/clang/llvm-strip/`])
+    RUBY_CHECK_PROG_FOR_CC([AR],      [s/clang/llvm-ar/])
+#   RUBY_CHECK_PROG_FOR_CC([AS],      [s/clang/llvm-as/])
+    RUBY_CHECK_PROG_FOR_CC([CXX],     [s/clang/clang++/])
+    RUBY_CHECK_PROG_FOR_CC([NM],      [s/clang/llvm-nm/])
+    RUBY_CHECK_PROG_FOR_CC([OBJCOPY], [s/clang/llvm-objcopy/])
+    RUBY_CHECK_PROG_FOR_CC([OBJDUMP], [s/clang/llvm-objdump/])
+    RUBY_CHECK_PROG_FOR_CC([RANLIB],  [s/clang/llvm-ranlib/])
+    RUBY_CHECK_PROG_FOR_CC([STRIP],   [s/clang/llvm-strip/])
 ])
 AS_UNSET(rb_CC)
 AS_UNSET(rb_dummy)
@@ -1673,7 +1677,19 @@ AS_IF([test "$GCC" = yes], [
     ])
     ])
     AS_IF([test "$rb_cv_func___builtin_unreachable" = yes], [
-	AC_DEFINE_UNQUOTED(UNREACHABLE, [__builtin_unreachable()])
+	AC_DEFINE(HAVE___BUILTIN_UNREACHABLE)
+    ])
+
+    AC_CACHE_CHECK(for __assume, rb_cv_func___assume,
+    [RUBY_WERROR_FLAG([
+        AC_LINK_IFELSE([AC_LANG_PROGRAM([[]],
+            [[__assume(1);]])],
+            [rb_cv_func___assume=yes],
+            [rb_cv_func___assume=no])
+    ])
+    ])
+    AS_IF([test "$rb_cv_func___assume" = yes], [
+	AC_DEFINE(HAVE___ASSUME)
     ])
 }
 

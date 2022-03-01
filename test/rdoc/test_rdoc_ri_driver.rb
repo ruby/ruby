@@ -32,8 +32,8 @@ class TestRDocRIDriver < RDoc::TestCase
   end
 
   def teardown
-    ENV['RI'] = @orig_ri
-    FileUtils.rm_rf @tmpdir
+    defined?(@orig_ri) and ENV['RI'] = @orig_ri
+    defined?(@tmpdir) and FileUtils.rm_rf @tmpdir
 
     super
   end

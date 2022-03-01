@@ -41,6 +41,7 @@ module MJITHeader
   IGNORED_FUNCTIONS = [
     'rb_vm_search_method_slowpath', # This increases the time to compile when inlined. So we use it as external function.
     'rb_equal_opt', # Not used from VM and not compilable
+    'ruby_abi_version',
   ]
 
   ALWAYS_INLINED_FUNCTIONS = [

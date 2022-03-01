@@ -13,6 +13,7 @@ thread_fd.o: $(hdrdir)/ruby/backward/2/stdalign.h
 thread_fd.o: $(hdrdir)/ruby/backward/2/stdarg.h
 thread_fd.o: $(hdrdir)/ruby/defines.h
 thread_fd.o: $(hdrdir)/ruby/intern.h
+thread_fd.o: $(hdrdir)/ruby/internal/abi.h
 thread_fd.o: $(hdrdir)/ruby/internal/anyargs.h
 thread_fd.o: $(hdrdir)/ruby/internal/arithmetic.h
 thread_fd.o: $(hdrdir)/ruby/internal/arithmetic/char.h

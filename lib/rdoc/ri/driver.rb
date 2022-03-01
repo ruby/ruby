@@ -12,7 +12,7 @@ begin
 rescue LoadError
 end
 
-require 'rdoc'
+require_relative '../../rdoc'
 
 ##
 # For RubyGems backwards compatibility

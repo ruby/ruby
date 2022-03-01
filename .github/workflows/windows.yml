@@ -21,19 +21,15 @@ jobs:
       matrix:
         include:
           - vs: 2019
-            os: windows-2019
-            vcvars: '"C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"'
-          # - vs: 2022
-          #   os: windows-2022
-          #   vcvars: '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"'
+          - vs: 2022
       fail-fast: false
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
     if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     name: VisualStudio ${{ matrix.vs }}
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
-      VCVARS: ${{ matrix.vcvars }}
       PATCH: C:\msys64\usr\bin\patch.exe
+      OS_VER: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
     steps:
       - run: md build
         working-directory:
@@ -43,7 +39,7 @@ jobs:
           update: true
           install: >-
             patch
-        if: ${{ matrix.os != 'windows-2019' }}
+        if: ${{ env.OS_VER != 'windows-2019' }}
       - name: patch path
         shell: msys2 {0}
         run: echo PATCH=$(cygpath -wa $(command -v patch)) >> $GITHUB_ENV
@@ -51,9 +47,9 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: C:\vcpkg\downloads
-          key: ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-${{ github.sha }}
+          key: ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-
+            ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-
             ${{ runner.os }}-vcpkg-download-
       - uses: actions/cache@v2
         with:
@@ -64,19 +60,18 @@ jobs:
             ${{ runner.os }}-vcpkg-installed-
       - name: Install libraries with vcpkg
         run: |
-          vcpkg --triplet x64-windows install libffi libyaml readline zlib
+          vcpkg --triplet x64-windows install libffi libyaml openssl readline zlib
       - uses: actions/cache@v2
         with:
           path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
-          key: ${{ runner.os }}-chocolatey-${{ matrix.os }}-${{ github.sha }}
+          key: ${{ runner.os }}-chocolatey-${{ env.OS_VER }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-chocolatey-${{ matrix.os }}-
+            ${{ runner.os }}-chocolatey-${{ env.OS_VER }}-
             ${{ runner.os }}-chocolatey-
       - name: Install libraries with chocolatey
         run: |
           # Using Choco-Install for retries, but it doesn't detect failures properly
           # if you pass multiple package names in a single command.
-          Choco-Install -PackageName openssl
           Choco-Install -PackageName winflexbison3
         shell: pwsh
       - name: git config
@@ -96,6 +91,12 @@ jobs:
         # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
         run: |
+          set VS=${{ matrix.vs }}
+          set VCVARS=${{ matrix.vcvars }}
+          if not "%VCVARS%" == "" goto :vcset
+            set VCVARS="C:\Program Files (x86)\Microsoft Visual Studio\%VS%\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+            if not exist %VCVARS% set VCVARS="C:\Program Files\Microsoft Visual Studio\%VS%\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          :vcset
           set | C:\msys64\usr\bin\sort > old.env
           call %VCVARS%
           set TMP=%USERPROFILE%\AppData\Local\Temp
@@ -109,11 +110,13 @@ jobs:
           for %%I in (C:\vcpkg\installed\x64-windows\bin\*.dll) do (
             if not %%~nI == readline mklink %%~nxI %%I
           )
+          for %%I in (libcrypto-1_1-x64 libssl-1_1-x64) do (
+            ren c:\Windows\System32\%%I.dll %%I.dll_
+          )
       - name: Configure
         run: >-
           ../src/win32/configure.bat --disable-install-doc
           --with-opt-dir=C:/vcpkg/installed/x64-windows
-          --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
       - run: nmake incs
       - run: nmake extract-extlibs
       - run: nmake

@@ -1587,8 +1587,8 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
  *
  *  === Methods for Comparing
  *
- *  {#==}[#method-i-3D-3D]:: Returns whether a given object is equal to +self+,
- *                           using <tt>==</tt> to compare member values.
+ *  #==:: Returns whether a given object is equal to +self+, using <tt>==</tt>
+ *        to compare member values.
  *  #eql?:: Returns whether a given object is equal to +self+,
  *          using <tt>eql?</tt> to compare member values.
  *

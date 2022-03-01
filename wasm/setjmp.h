@@ -58,4 +58,38 @@ typedef rb_wasm_jmp_buf jmp_buf;
 #define setjmp(env) rb_wasm_setjmp(env)
 #define longjmp(env, payload) rb_wasm_longjmp(env, payload)
 
+
+typedef void (*rb_wasm_try_catch_func_t)(void *ctx);
+
+struct rb_wasm_try_catch {
+    rb_wasm_try_catch_func_t try_f;
+    rb_wasm_try_catch_func_t catch_f;
+    void *context;
+    int state;
+};
+
+//
+// Lightweight try-catch API without unwinding to root frame.
+//
+
+void
+rb_wasm_try_catch_init(struct rb_wasm_try_catch *try_catch,
+                       rb_wasm_try_catch_func_t try_f,
+                       rb_wasm_try_catch_func_t catch_f,
+                       void *context);
+
+// Run, catch longjmp thrown by run, and re-catch longjmp thrown by catch, ...
+//
+// 1. run try_f of try_catch struct
+// 2. catch longjmps with the given target jmp_buf or exit
+// 3. run catch_f if not NULL, otherwise exit
+// 4. catch longjmps with the given target jmp_buf or exit
+// 5. repeat from step 3
+//
+// NOTICE: This API assumes that all longjmp targeting the given jmp_buf are NOT called
+// after the function that called this function has exited.
+//
+void
+rb_wasm_try_catch_loop_run(struct rb_wasm_try_catch *try_catch, rb_wasm_jmp_buf *target);
+
 #endif

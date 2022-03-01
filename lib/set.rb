@@ -854,7 +854,7 @@ module Enumerable
   # Needs to `require "set"` to use this method.
   def to_set(klass = Set, *args, &block)
     klass.new(self, *args, &block)
-  end
+  end unless method_defined?(:to_set)
 end
 
 autoload :SortedSet, "#{__dir__}/set/sorted_set"

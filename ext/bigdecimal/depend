@@ -15,6 +15,7 @@ bigdecimal.o: $(hdrdir)/ruby/backward/2/stdalign.h
 bigdecimal.o: $(hdrdir)/ruby/backward/2/stdarg.h
 bigdecimal.o: $(hdrdir)/ruby/defines.h
 bigdecimal.o: $(hdrdir)/ruby/intern.h
+bigdecimal.o: $(hdrdir)/ruby/internal/abi.h
 bigdecimal.o: $(hdrdir)/ruby/internal/anyargs.h
 bigdecimal.o: $(hdrdir)/ruby/internal/arithmetic.h
 bigdecimal.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -180,6 +181,7 @@ missing.o: $(hdrdir)/ruby/backward/2/stdalign.h
 missing.o: $(hdrdir)/ruby/backward/2/stdarg.h
 missing.o: $(hdrdir)/ruby/defines.h
 missing.o: $(hdrdir)/ruby/intern.h
+missing.o: $(hdrdir)/ruby/internal/abi.h
 missing.o: $(hdrdir)/ruby/internal/anyargs.h
 missing.o: $(hdrdir)/ruby/internal/arithmetic.h
 missing.o: $(hdrdir)/ruby/internal/arithmetic/char.h

@@ -558,9 +558,8 @@ add_block_version(block_t *block)
         if ((unsigned)casted != body->iseq_size) {
             rb_bug("iseq too large");
         }
-        if (!rb_darray_make(&body->yjit_blocks, casted)) {
-            rb_bug("allocation failed");
-        }
+
+        rb_darray_make(&body->yjit_blocks, casted);
 
 #if YJIT_STATS
         // First block compiled for this iseq
@@ -568,13 +567,11 @@ add_block_version(block_t *block)
 #endif
     }
 
-    RUBY_ASSERT((int32_t)blockid.idx < rb_darray_size(body->yjit_blocks));
+    RUBY_ASSERT(blockid.idx < rb_darray_size(body->yjit_blocks));
     rb_yjit_block_array_t *block_array_ref = rb_darray_ref(body->yjit_blocks, blockid.idx);
 
     // Add the new block
-    if (!rb_darray_append(block_array_ref, block)) {
-        rb_bug("allocation failed");
-    }
+    rb_darray_append(block_array_ref, block);
 
     {
         // By writing the new block to the iseq, the iseq now

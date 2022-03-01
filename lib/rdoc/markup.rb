@@ -822,46 +822,45 @@ https://github.com/ruby/rdoc/issues
     document.accept formatter
   end
 
-  autoload :Parser,                'rdoc/markup/parser'
-  autoload :PreProcess,            'rdoc/markup/pre_process'
+  autoload :Parser,                "#{__dir__}/markup/parser"
+  autoload :PreProcess,            "#{__dir__}/markup/pre_process"
 
   # Inline markup classes
-  autoload :AttrChanger,           'rdoc/markup/attr_changer'
-  autoload :AttrSpan,              'rdoc/markup/attr_span'
-  autoload :Attributes,            'rdoc/markup/attributes'
-  autoload :AttributeManager,      'rdoc/markup/attribute_manager'
-  autoload :RegexpHandling,        'rdoc/markup/regexp_handling'
+  autoload :AttrChanger,           "#{__dir__}/markup/attr_changer"
+  autoload :AttrSpan,              "#{__dir__}/markup/attr_span"
+  autoload :Attributes,            "#{__dir__}/markup/attributes"
+  autoload :AttributeManager,      "#{__dir__}/markup/attribute_manager"
+  autoload :RegexpHandling,        "#{__dir__}/markup/regexp_handling"
 
   # RDoc::Markup AST
-  autoload :BlankLine,             'rdoc/markup/blank_line'
-  autoload :BlockQuote,            'rdoc/markup/block_quote'
-  autoload :Document,              'rdoc/markup/document'
-  autoload :HardBreak,             'rdoc/markup/hard_break'
-  autoload :Heading,               'rdoc/markup/heading'
-  autoload :Include,               'rdoc/markup/include'
-  autoload :IndentedParagraph,     'rdoc/markup/indented_paragraph'
-  autoload :List,                  'rdoc/markup/list'
-  autoload :ListItem,              'rdoc/markup/list_item'
-  autoload :Paragraph,             'rdoc/markup/paragraph'
-  autoload :Table,                 'rdoc/markup/table'
-  autoload :Raw,                   'rdoc/markup/raw'
-  autoload :Rule,                  'rdoc/markup/rule'
-  autoload :Verbatim,              'rdoc/markup/verbatim'
+  autoload :BlankLine,             "#{__dir__}/markup/blank_line"
+  autoload :BlockQuote,            "#{__dir__}/markup/block_quote"
+  autoload :Document,              "#{__dir__}/markup/document"
+  autoload :HardBreak,             "#{__dir__}/markup/hard_break"
+  autoload :Heading,               "#{__dir__}/markup/heading"
+  autoload :Include,               "#{__dir__}/markup/include"
+  autoload :IndentedParagraph,     "#{__dir__}/markup/indented_paragraph"
+  autoload :List,                  "#{__dir__}/markup/list"
+  autoload :ListItem,              "#{__dir__}/markup/list_item"
+  autoload :Paragraph,             "#{__dir__}/markup/paragraph"
+  autoload :Table,                 "#{__dir__}/markup/table"
+  autoload :Raw,                   "#{__dir__}/markup/raw"
+  autoload :Rule,                  "#{__dir__}/markup/rule"
+  autoload :Verbatim,              "#{__dir__}/markup/verbatim"
 
   # Formatters
-  autoload :Formatter,             'rdoc/markup/formatter'
+  autoload :Formatter,             "#{__dir__}/markup/formatter"
 
-  autoload :ToAnsi,                'rdoc/markup/to_ansi'
-  autoload :ToBs,                  'rdoc/markup/to_bs'
-  autoload :ToHtml,                'rdoc/markup/to_html'
-  autoload :ToHtmlCrossref,        'rdoc/markup/to_html_crossref'
-  autoload :ToHtmlSnippet,         'rdoc/markup/to_html_snippet'
-  autoload :ToLabel,               'rdoc/markup/to_label'
-  autoload :ToMarkdown,            'rdoc/markup/to_markdown'
-  autoload :ToRdoc,                'rdoc/markup/to_rdoc'
-  autoload :ToTableOfContents,     'rdoc/markup/to_table_of_contents'
-  autoload :ToTest,                'rdoc/markup/to_test'
-  autoload :ToTtOnly,              'rdoc/markup/to_tt_only'
+  autoload :ToAnsi,                "#{__dir__}/markup/to_ansi"
+  autoload :ToBs,                  "#{__dir__}/markup/to_bs"
+  autoload :ToHtml,                "#{__dir__}/markup/to_html"
+  autoload :ToHtmlCrossref,        "#{__dir__}/markup/to_html_crossref"
+  autoload :ToHtmlSnippet,         "#{__dir__}/markup/to_html_snippet"
+  autoload :ToLabel,               "#{__dir__}/markup/to_label"
+  autoload :ToMarkdown,            "#{__dir__}/markup/to_markdown"
+  autoload :ToRdoc,                "#{__dir__}/markup/to_rdoc"
+  autoload :ToTableOfContents,     "#{__dir__}/markup/to_table_of_contents"
+  autoload :ToTest,                "#{__dir__}/markup/to_test"
+  autoload :ToTtOnly,              "#{__dir__}/markup/to_tt_only"
 
 end
-

@@ -14,6 +14,7 @@ path_to_class.o: $(hdrdir)/ruby/backward/2/stdalign.h
 path_to_class.o: $(hdrdir)/ruby/backward/2/stdarg.h
 path_to_class.o: $(hdrdir)/ruby/defines.h
 path_to_class.o: $(hdrdir)/ruby/intern.h
+path_to_class.o: $(hdrdir)/ruby/internal/abi.h
 path_to_class.o: $(hdrdir)/ruby/internal/anyargs.h
 path_to_class.o: $(hdrdir)/ruby/internal/arithmetic.h
 path_to_class.o: $(hdrdir)/ruby/internal/arithmetic/char.h

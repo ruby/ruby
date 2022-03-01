@@ -2196,6 +2196,85 @@ static inline VALUE
 vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
                          VALUE errinfo, VALUE *initial);
 
+// for non-Emscripten Wasm build, use vm_exec with optimized setjmp for runtime performance
+#if defined(__wasm__) && !defined(__EMSCRIPTEN__)
+
+struct rb_vm_exec_context {
+    rb_execution_context_t *ec;
+    struct rb_vm_tag *tag;
+    VALUE initial;
+    VALUE result;
+    enum ruby_tag_type state;
+    bool mjit_enable_p;
+};
+
+static void
+vm_exec_enter_vm_loop(rb_execution_context_t *ec, struct rb_vm_exec_context *ctx,
+                      struct rb_vm_tag *_tag, bool skip_first_ex_handle) {
+    if (skip_first_ex_handle) {
+        goto vm_loop_start;
+    }
+
+    ctx->result = ec->errinfo;
+    rb_ec_raised_reset(ec, RAISED_STACKOVERFLOW | RAISED_NOMEMORY);
+    while ((ctx->result = vm_exec_handle_exception(ec, ctx->state, ctx->result, &ctx->initial)) == Qundef) {
+        /* caught a jump, exec the handler */
+        ctx->result = vm_exec_core(ec, ctx->initial);
+    vm_loop_start:
+        VM_ASSERT(ec->tag == _tag);
+        /* when caught `throw`, `tag.state` is set. */
+        if ((ctx->state = _tag->state) == TAG_NONE) break;
+        _tag->state = TAG_NONE;
+    }
+}
+
+static void
+vm_exec_bottom_main(void *context)
+{
+    struct rb_vm_exec_context *ctx = (struct rb_vm_exec_context *)context;
+
+    ctx->state = TAG_NONE;
+    if (!ctx->mjit_enable_p || (ctx->result = mjit_exec(ctx->ec)) == Qundef) {
+        ctx->result = vm_exec_core(ctx->ec, ctx->initial);
+    }
+    vm_exec_enter_vm_loop(ctx->ec, ctx, ctx->tag, true);
+}
+
+static void
+vm_exec_bottom_rescue(void *context)
+{
+    struct rb_vm_exec_context *ctx = (struct rb_vm_exec_context *)context;
+    ctx->state = rb_ec_tag_state(ctx->ec);
+    vm_exec_enter_vm_loop(ctx->ec, ctx, ctx->tag, false);
+}
+
+VALUE
+vm_exec(rb_execution_context_t *ec, bool mjit_enable_p)
+{
+    struct rb_vm_exec_context ctx = {
+        .ec = ec,
+        .initial = 0, .result = Qundef,
+        .mjit_enable_p = mjit_enable_p,
+    };
+    struct rb_wasm_try_catch try_catch;
+
+    EC_PUSH_TAG(ec);
+
+    _tag.retval = Qnil;
+    ctx.tag = &_tag;
+
+    EC_REPUSH_TAG();
+
+    rb_wasm_try_catch_init(&try_catch, vm_exec_bottom_main, vm_exec_bottom_rescue, &ctx);
+
+    rb_wasm_try_catch_loop_run(&try_catch, &_tag.buf);
+
+    EC_POP_TAG();
+    return ctx.result;
+}
+
+#else
+
 VALUE
 vm_exec(rb_execution_context_t *ec, bool mjit_enable_p)
 {
@@ -2228,6 +2307,7 @@ vm_exec(rb_execution_context_t *ec, bool mjit_enable_p)
     EC_POP_TAG();
     return result;
 }
+#endif
 
 static inline VALUE
 vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,

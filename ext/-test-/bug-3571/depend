@@ -14,6 +14,7 @@ bug.o: $(hdrdir)/ruby/backward/2/stdalign.h
 bug.o: $(hdrdir)/ruby/backward/2/stdarg.h
 bug.o: $(hdrdir)/ruby/defines.h
 bug.o: $(hdrdir)/ruby/intern.h
+bug.o: $(hdrdir)/ruby/internal/abi.h
 bug.o: $(hdrdir)/ruby/internal/anyargs.h
 bug.o: $(hdrdir)/ruby/internal/arithmetic.h
 bug.o: $(hdrdir)/ruby/internal/arithmetic/char.h

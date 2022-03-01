@@ -275,9 +275,9 @@ void
 rb_debug_rstring_null_ptr(const char *func)
 {
     fprintf(stderr, "%s is returning NULL!! "
-            "SIGSEGV is highly expected to follow immediately. "
+            "SIGSEGV is highly expected to follow immediately.\n"
             "If you could reproduce, attach your debugger here, "
-            "and look at the passed string.",
+            "and look at the passed string.\n",
 	    func);
 }
 
@@ -1844,52 +1844,6 @@ rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str)
     RUBY_DTRACE_CREATE_HOOK(STRING, RSTRING_LEN(str));
     return ec_str_duplicate(ec, rb_cString, str);
 }
-
-/*
- *  call-seq:
- *    String.new(string = '') -> new_string
- *    String.new(string = '', encoding: encoding) -> new_string
- *    String.new(string = '', capacity: size) -> new_string
- *
- *  Returns a new \String that is a copy of +string+.
- *
- *  With no arguments, returns the empty string with the Encoding <tt>ASCII-8BIT</tt>:
- *    s = String.new
- *    s # => ""
- *    s.encoding # => #<Encoding:ASCII-8BIT>
- *
- *  With the single \String argument +string+, returns a copy of +string+
- *  with the same encoding as +string+:
- *    s = String.new("Que veut dire \u{e7}a?")
- *    s # => "Que veut dire \u{e7}a?"
- *    s.encoding # => #<Encoding:UTF-8>
- *
- *  Literal strings like <tt>""</tt> or here-documents always use
- *  Encoding@Script+encoding, unlike String.new.
- *
- *  With keyword +encoding+, returns a copy of +str+
- *  with the specified encoding:
- *    s = String.new(encoding: 'ASCII')
- *    s.encoding # => #<Encoding:US-ASCII>
- *    s = String.new('foo', encoding: 'ASCII')
- *    s.encoding # => #<Encoding:US-ASCII>
- *
- *  Note that these are equivalent:
- *    s0 = String.new('foo', encoding: 'ASCII')
- *    s1 = 'foo'.force_encoding('ASCII')
- *    s0.encoding == s1.encoding # => true
- *
- *  With keyword +capacity+, returns a copy of +str+;
- *  the given +capacity+ may set the size of the internal buffer,
- *  which may affect performance:
- *    String.new(capacity: 1) # => ""
- *    String.new(capacity: 4096) # => ""
- *
- *  The +string+, +encoding+, and +capacity+ arguments may all be used together:
- *
- *    String.new('hello', encoding: 'UTF-8', capacity: 25)
- *
- */
 
 static VALUE
 rb_str_init(int argc, VALUE *argv, VALUE str)
@@ -3742,7 +3696,7 @@ static VALUE str_casecmp_p(VALUE str1, VALUE str2);
  *    'foo'.casecmp('FOO') # => 0
  *    'foo'.casecmp(1) # => nil
  *
- *  See {Case Mapping}[rdoc-ref:case_mapping.rdoc].
+ *  See {Case Mapping}[case_mapping.rdoc].
  *
  *  Related: String#casecmp?.
  *
@@ -3832,7 +3786,7 @@ str_casecmp(VALUE str1, VALUE str2)
  *
  *    'foo'.casecmp?(1) # => nil
  *
- *  See {Case Mapping}[rdoc-ref:case_mapping.rdoc].
+ *  See {Case Mapping}[case_mapping.rdoc].
  *
  *  Related: String#casecmp.
  *
@@ -4014,18 +3968,123 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
     return LONG2NUM(pos);
 }
 
+/* whether given pos is valid character boundary or not
+ * Note that in this function, "character" means a code point
+ * (Unicode scalar value), not a grapheme cluster.
+ */
+static bool
+str_check_byte_pos(VALUE str, long pos)
+{
+    const char *s = RSTRING_PTR(str);
+    const char *e = RSTRING_END(str);
+    const char *p = s + pos;
+    const char *pp = rb_enc_left_char_head(s, p, e, rb_enc_get(str));
+    return p == pp;
+}
+
+/*
+ *  call-seq:
+ *    byteindex(substring, offset = 0) -> integer or nil
+ *    byteindex(regexp, offset = 0) -> integer or nil
+ *
+ *  Returns the \Integer byte-based index of the first occurrence of the given +substring+,
+ *  or +nil+ if none found:
+ *
+ *    'foo'.byteindex('f') # => 0
+ *    'foo'.byteindex('o') # => 1
+ *    'foo'.byteindex('oo') # => 1
+ *    'foo'.byteindex('ooo') # => nil
+ *
+ *  Returns the \Integer byte-based index of the first match for the given \Regexp +regexp+,
+ *  or +nil+ if none found:
+ *
+ *    'foo'.byteindex(/f/) # => 0
+ *    'foo'.byteindex(/o/) # => 1
+ *    'foo'.byteindex(/oo/) # => 1
+ *    'foo'.byteindex(/ooo/) # => nil
+ *
+ *  \Integer argument +offset+, if given, specifies the byte-based position in the
+ *  string to begin the search:
+ *
+ *    'foo'.byteindex('o', 1) # => 1
+ *    'foo'.byteindex('o', 2) # => 2
+ *    'foo'.byteindex('o', 3) # => nil
+ *
+ *  If +offset+ is negative, counts backward from the end of +self+:
+ *
+ *    'foo'.byteindex('o', -1) # => 2
+ *    'foo'.byteindex('o', -2) # => 1
+ *    'foo'.byteindex('o', -3) # => 1
+ *    'foo'.byteindex('o', -4) # => nil
+ *
+ *  If +offset+ does not land on character (codepoint) boundary, +IndexError+ is
+ *  raised.
+ *
+ *  Related: String#index, String#byterindex.
+ */
+
+static VALUE
+rb_str_byteindex_m(int argc, VALUE *argv, VALUE str)
+{
+    VALUE sub;
+    VALUE initpos;
+    long pos;
+
+    if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
+        pos = NUM2LONG(initpos);
+    }
+    else {
+        pos = 0;
+    }
+    if (pos < 0) {
+        pos += RSTRING_LEN(str);
+        if (pos < 0) {
+            if (RB_TYPE_P(sub, T_REGEXP)) {
+                rb_backref_set(Qnil);
+            }
+            return Qnil;
+        }
+    }
+
+    if (!str_check_byte_pos(str, pos)) {
+        rb_raise(rb_eIndexError,
+                 "offset %ld does not land on character boundary", pos);
+    }
+
+    if (RB_TYPE_P(sub, T_REGEXP)) {
+        if (pos > RSTRING_LEN(str))
+            return Qnil;
+        if (rb_reg_search(sub, str, pos, 0) < 0) {
+            return Qnil;
+        }
+        else {
+            VALUE match = rb_backref_get();
+            struct re_registers *regs = RMATCH_REGS(match);
+            pos = BEG(0);
+            return LONG2NUM(pos);
+        }
+    }
+    else {
+        StringValue(sub);
+        pos = rb_strseq_index(str, sub, pos, 1);
+    }
+
+    if (pos == -1) return Qnil;
+    return LONG2NUM(pos);
+}
+
 #ifdef HAVE_MEMRCHR
 static long
-str_rindex(VALUE str, VALUE sub, const char *s, long pos, rb_encoding *enc)
+str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
 {
     char *hit, *adjusted;
     int c;
     long slen, searchlen;
     char *sbeg, *e, *t;
 
-    slen = RSTRING_LEN(sub);
-    if (slen == 0) return pos;
     sbeg = RSTRING_PTR(str);
+    slen = RSTRING_LEN(sub);
+    if (slen == 0) return s - sbeg;
     e = RSTRING_END(str);
     t = RSTRING_PTR(sub);
     c = *t & 0xff;
@@ -4040,7 +4099,7 @@ str_rindex(VALUE str, VALUE sub, const char *s, long pos, rb_encoding *enc)
 	    continue;
 	}
 	if (memcmp(hit, t, slen) == 0)
-	    return rb_str_sublen(str, hit - sbeg);
+	    return hit - sbeg;
 	searchlen = adjusted - sbeg;
     } while (searchlen > 0);
 
@@ -4048,7 +4107,7 @@ str_rindex(VALUE str, VALUE sub, const char *s, long pos, rb_encoding *enc)
 }
 #else
 static long
-str_rindex(VALUE str, VALUE sub, const char *s, long pos, rb_encoding *enc)
+str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
 {
     long slen;
     char *sbeg, *e, *t;
@@ -4060,10 +4119,9 @@ str_rindex(VALUE str, VALUE sub, const char *s, long pos, rb_encoding *enc)
 
     while (s) {
 	if (memcmp(s, t, slen) == 0) {
-	    return pos;
+	    return s - sbeg;
 	}
-	if (pos == 0) break;
-	pos--;
+        if (s <= sbeg) break;
 	s = rb_enc_prev_char(sbeg, s, e, enc);
     }
 
@@ -4100,7 +4158,7 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
     }
 
     s = str_nth(sbeg, RSTRING_END(str), pos, enc, singlebyte);
-    return str_rindex(str, sub, s, pos, enc);
+    return rb_str_sublen(str, str_rindex(str, sub, s, enc));
 }
 
 /*
@@ -4205,6 +4263,142 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
     return Qnil;
 }
 
+static long
+rb_str_byterindex(VALUE str, VALUE sub, long pos)
+{
+    long len, slen;
+    char *sbeg, *s;
+    rb_encoding *enc;
+
+    enc = rb_enc_check(str, sub);
+    if (is_broken_string(sub)) return -1;
+    len = RSTRING_LEN(str);
+    slen = RSTRING_LEN(sub);
+
+    /* substring longer than string */
+    if (len < slen) return -1;
+    if (len - pos < slen) pos = len - slen;
+    if (len == 0) return pos;
+
+    sbeg = RSTRING_PTR(str);
+
+    if (pos == 0) {
+        if (memcmp(sbeg, RSTRING_PTR(sub), RSTRING_LEN(sub)) == 0)
+            return 0;
+        else
+            return -1;
+    }
+
+    s = sbeg + pos;
+    return str_rindex(str, sub, s, enc);
+}
+
+
+/*
+ *  call-seq:
+ *    byterindex(substring, offset = self.length) -> integer or nil
+ *    byterindex(regexp, offset = self.length) -> integer or nil
+ *
+ *  Returns the \Integer byte-based index of the _last_ occurrence of the given +substring+,
+ *  or +nil+ if none found:
+ *
+ *    'foo'.byterindex('f') # => 0
+ *    'foo'.byterindex('o') # => 2
+ *    'foo'.byterindex('oo') # => 1
+ *    'foo'.byterindex('ooo') # => nil
+ *
+ *  Returns the \Integer byte-based index of the _last_ match for the given \Regexp +regexp+,
+ *  or +nil+ if none found:
+ *
+ *    'foo'.byterindex(/f/) # => 0
+ *    'foo'.byterindex(/o/) # => 2
+ *    'foo'.byterindex(/oo/) # => 1
+ *    'foo'.byterindex(/ooo/) # => nil
+ *
+ *  The _last_ match means starting at the possible last position, not
+ *  the last of longest matches.
+ *
+ *    'foo'.byterindex(/o+/) # => 2
+ *    $~ #=> #<MatchData "o">
+ *
+ *  To get the last longest match, needs to combine with negative
+ *  lookbehind.
+ *
+ *    'foo'.byterindex(/(?<!o)o+/) # => 1
+ *    $~ #=> #<MatchData "oo">
+ *
+ *  Or String#byteindex with negative lookforward.
+ *
+ *    'foo'.byteindex(/o+(?!.*o)/) # => 1
+ *    $~ #=> #<MatchData "oo">
+ *
+ *  \Integer argument +offset+, if given and non-negative, specifies the maximum starting byte-based position in the
+ *   string to _end_ the search:
+ *
+ *    'foo'.byterindex('o', 0) # => nil
+ *    'foo'.byterindex('o', 1) # => 1
+ *    'foo'.byterindex('o', 2) # => 2
+ *    'foo'.byterindex('o', 3) # => 2
+ *
+ *  If +offset+ is a negative \Integer, the maximum starting position in the
+ *  string to _end_ the search is the sum of the string's length and +offset+:
+ *
+ *    'foo'.byterindex('o', -1) # => 2
+ *    'foo'.byterindex('o', -2) # => 1
+ *    'foo'.byterindex('o', -3) # => nil
+ *    'foo'.byterindex('o', -4) # => nil
+ *
+ *  If +offset+ does not land on character (codepoint) boundary, +IndexError+ is
+ *  raised.
+ *
+ *  Related: String#byteindex.
+ */
+
+static VALUE
+rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
+{
+    VALUE sub;
+    VALUE vpos;
+    long pos, len = RSTRING_LEN(str);
+
+    if (rb_scan_args(argc, argv, "11", &sub, &vpos) == 2) {
+        pos = NUM2LONG(vpos);
+        if (pos < 0) {
+            pos += len;
+            if (pos < 0) {
+                if (RB_TYPE_P(sub, T_REGEXP)) {
+                    rb_backref_set(Qnil);
+                }
+                return Qnil;
+            }
+        }
+        if (pos > len) pos = len;
+    }
+    else {
+        pos = len;
+    }
+
+    if (!str_check_byte_pos(str, pos)) {
+        rb_raise(rb_eIndexError,
+                 "offset %ld does not land on character boundary", pos);
+    }
+
+    if (RB_TYPE_P(sub, T_REGEXP)) {
+        if (rb_reg_search(sub, str, pos, 1) >= 0) {
+            VALUE match = rb_backref_get();
+            struct re_registers *regs = RMATCH_REGS(match);
+            pos = BEG(0);
+            return LONG2NUM(pos);
+        }
+    }
+    else {
+        StringValue(sub);
+        pos = rb_str_byterindex(str, sub, pos);
+        if (pos >= 0) return LONG2NUM(pos);
+    }
+    return Qnil;
+}
+
 /*
  *  call-seq:
  *    string =~ regexp -> integer or nil
@@ -4223,7 +4417,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
  *  returned by <tt>object =~ self</tt>.
  *
  *  Note that <tt>string =~ regexp</tt> is different from <tt>regexp =~ string</tt>
- *  (see {Regexp#=~}[Regexp.html#method-i-3D~]):
+ *  (see Regexp#=~):
  *
  *    number= nil
  *    "no. 9" =~ /(?<number>\d+)/
@@ -5911,13 +6105,14 @@ rb_str_chr(VALUE str)
 
 /*
  *  call-seq:
- *    getbyte(index) -> integer
+ *    getbyte(index) -> integer or nil
  *
- *  Returns the byte at zero-based +index+ as an integer:
+ *  Returns the byte at zero-based +index+ as an integer, or +nil+ if +index+ is out of range:
  *
- *    s = 'abcde'  # => "abcde"
- *    s.getbyte(0) # => 97
- *    s.getbyte(1) # => 98
+ *    s = 'abcde'   # => "abcde"
+ *    s.getbyte(0)  # => 97
+ *    s.getbyte(-1) # => 101
+ *    s.getbyte(5)  # => nil
  *
  *  Related: String#setbyte.
  */
@@ -6127,9 +6322,9 @@ static VALUE
 rb_str_byteslice(int argc, VALUE *argv, VALUE str)
 {
     if (argc == 2) {
-	long beg = NUM2LONG(argv[0]);
-	long end = NUM2LONG(argv[1]);
-	return str_byte_substr(str, beg, end, TRUE);
+        long beg = NUM2LONG(argv[0]);
+        long len = NUM2LONG(argv[1]);
+        return str_byte_substr(str, beg, len, TRUE);
     }
     rb_check_arity(argc, 1, 2);
     return str_byte_aref(str, argv[0]);
@@ -6465,7 +6660,6 @@ rb_str_escape(VALUE str)
  *  and with special characters escaped:
  *
  *    s = "foo\tbar\tbaz\n"
- *    # => "foo\tbar\tbaz\n"
  *    s.inspect
  *    # => "\"foo\\tbar\\tbaz\\n\""
  *
@@ -7205,7 +7399,7 @@ upcase_single(VALUE str)
  *    s.upcase!          # => nil
  *
  *  The casing may be affected by the given +options+;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
+ *  see {Case Mapping}[case_mapping.rdoc].
  *
  *  Related: String#upcase, String#downcase, String#downcase!.
  *
@@ -7244,7 +7438,7 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
  *     s.upcase           # => "HELLO WORLD!"
  *
  *  The casing may be affected by the given +options+;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
+ *  see {Case Mapping}[case_mapping.rdoc].
  *
  *  Related: String#upcase!, String#downcase, String#downcase!.
  *
@@ -7307,7 +7501,7 @@ downcase_single(VALUE str)
  *    s.downcase!        # => nil
  *
  *  The casing may be affected by the given +options+;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
+ *  see {Case Mapping}[case_mapping.rdoc].
  *
  *  Related: String#downcase, String#upcase, String#upcase!.
  *
@@ -7346,7 +7540,7 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
  *     s.downcase         # => "hello world!"
  *
  *  The casing may be affected by the given +options+;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
+ *  see {Case Mapping}[case_mapping.rdoc].
  *
  *  Related: String#downcase!, String#upcase, String#upcase!.
  *
@@ -7392,7 +7586,7 @@ rb_str_downcase(int argc, VALUE *argv, VALUE str)
  *    s.capitalize!      # => nil
  *
  *  The casing may be affected by the given +options+;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
+ *  see {Case Mapping}[case_mapping.rdoc].
  *
  *  Related: String#capitalize.
  *
@@ -7430,7 +7624,7 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
  *     s.capitalize       # => "Hello world!"
  *
  *  The casing may be affected by the given +options+;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
+ *  see {Case Mapping}[case_mapping.rdoc].
  *
  *  Related: String#capitalize!.
  *
@@ -7471,7 +7665,7 @@ rb_str_capitalize(int argc, VALUE *argv, VALUE str)
  *    ''.swapcase!       # => nil
  *
  *  The casing may be affected by the given +options+;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
+ *  see {Case Mapping}[case_mapping.rdoc].
  *
  *  Related: String#swapcase.
  *
@@ -7508,7 +7702,7 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
  *     s.swapcase         # => "hELLO wORLD!"
  *
  *  The casing may be affected by the given +options+;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
+ *  see {Case Mapping}[case_mapping.rdoc].
  *
  *  Related: String#swapcase!.
  *
@@ -10758,9 +10952,22 @@ rb_str_force_encoding(VALUE str, VALUE enc)
 
 /*
  *  call-seq:
- *     str.b   -> str
+ *    b -> string
  *
- *  Returns a copied string whose encoding is ASCII-8BIT.
+ *  Returns a copy of +self+ with that has ASCII-8BIT encoding;
+ *  the contents (bytes) of +self+ are not modified:
+ *
+ *    s = "\x99"
+ *    s.encoding   # => #<Encoding:UTF-8>
+ *    t = s.b      # => "\x99"
+ *    t.encoding   # => #<Encoding:ASCII-8BIT>
+ *
+ *    s = "\u4095"
+ *    s.encoding   # => #<Encoding:UTF-8>
+ *    s.bytes      # => [228, 130, 149]
+ *    t = s.b      # => "\xE4\x82\x95"
+ *    t.encoding   # => #<Encoding:ASCII-8BIT>
+ *
  */
 
 static VALUE
@@ -11136,17 +11343,38 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 
 /*
  *  call-seq:
- *    str.scrub -> new_str
- *    str.scrub(repl) -> new_str
- *    str.scrub{|bytes|} -> new_str
+ *    scrub(replacement_string = default_replacement) -> string
+ *    scrub{|bytes| ... } -> string
  *
- *  If the string is invalid byte sequence then replace invalid bytes with given replacement
- *  character, else returns self.
- *  If block is given, replace invalid bytes with returned value of the block.
+ *  Returns a copy of self with each invalid byte sequence replaced
+ *  by a replacement string.
  *
- *     "abc\u3042\x81".scrub #=> "abc\u3042\uFFFD"
- *     "abc\u3042\x81".scrub("*") #=> "abc\u3042*"
- *     "abc\u3042\xE3\x80".scrub{|bytes| '<'+bytes.unpack1('H*')+'>' } #=> "abc\u3042<e380>"
+ *  With no block given and no argument, replaces each invalid sequence
+ *  with the default replacement string
+ *  (<tt>"\uFFFD"</tt> for a Unicode encoding, <tt>'?'</tt> otherwise):
+ *
+ *    "\uFFFD".bytes # => [239, 191, 189]
+ *    s = "foo\x81\x81bar"
+ *    s.bytes
+ *    # => [102, 111, 111, 129, 129, 98, 97, 114]
+ *    s.scrub.bytes
+ *    # => [102, 111, 111, 239, 191, 189, 239, 191, 189, 98, 97, 114]
+ *
+ *  With no block given and argument +replacement_string+ given,
+ *  replaces each invalid sequence with that string:
+ *
+ *    "foo\x81\x81bar".scrub('xyzzy') # => "fooxyzzyxyzzybar"
+ *
+ *  With a block given, replaces each invalid sequence with the value
+ *  of the block:
+ *
+ *    "foo\x81\x81bar".scrub {|bytes| p bytes; 'XYZZY' } # => "fooXYZZYXYZZYbar"
+ *
+ *  Output:
+ *
+ *    "\x81"
+ *    "\x81"
+ *
  */
 static VALUE
 str_scrub(int argc, VALUE *argv, VALUE str)
@@ -11158,17 +11386,12 @@ str_scrub(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    str.scrub! -> str
- *    str.scrub!(repl) -> str
- *    str.scrub!{|bytes|} -> str
+ *    scrub! -> self
+ *    scrub!(replacement_string = default_replacement) -> self
+ *    scrub!{|bytes|} -> self
  *
- *  If the string is invalid byte sequence then replace invalid bytes with given replacement
- *  character, else returns self.
- *  If block is given, replace invalid bytes with returned value of the block.
+ *  Like String#scrub, except that any replacements are made in +self+.
  *
- *     "abc\u3042\x81".scrub! #=> "abc\u3042\uFFFD"
- *     "abc\u3042\x81".scrub!("*") #=> "abc\u3042*"
- *     "abc\u3042\xE3\x80".scrub!{|bytes| '<'+bytes.unpack1('H*')+'>' } #=> "abc\u3042<e380>"
  */
 static VALUE
 str_scrub_bang(int argc, VALUE *argv, VALUE str)
@@ -11200,25 +11423,36 @@ unicode_normalize_common(int argc, VALUE *argv, VALUE str, ID id)
 
 /*
  *  call-seq:
- *    str.unicode_normalize(form=:nfc)
+ *    unicode_normalize(form = :nfc) -> string
  *
- *  Unicode Normalization---Returns a normalized form of +str+,
- *  using Unicode normalizations NFC, NFD, NFKC, or NFKD.
- *  The normalization form used is determined by +form+, which can
- *  be any of the four values +:nfc+, +:nfd+, +:nfkc+, or +:nfkd+.
- *  The default is +:nfc+.
+ *  Returns a copy of +self+ with
+ *  {Unicode normalization}[https://unicode.org/reports/tr15] applied.
  *
- *  If the string is not in a Unicode Encoding, then an Exception is raised.
- *  In this context, 'Unicode Encoding' means any of UTF-8, UTF-16BE/LE,
- *  and UTF-32BE/LE, as well as GB18030, UCS_2BE, and UCS_4BE.
- *  Anything other than UTF-8 is implemented by converting to UTF-8,
- *  which makes it slower than UTF-8.
+ *  Argument +form+ must be one of the following symbols
+ *  (see {Unicode normalization forms}[https://unicode.org/reports/tr15/#Norm_Forms]):
  *
- *    "a\u0300".unicode_normalize        #=> "\u00E0"
- *    "a\u0300".unicode_normalize(:nfc)  #=> "\u00E0"
- *    "\u00E0".unicode_normalize(:nfd)   #=> "a\u0300"
- *    "\xE0".force_encoding('ISO-8859-1').unicode_normalize(:nfd)
- *                                       #=> Encoding::CompatibilityError raised
+ *  - +:nfc+: Canonical decomposition, followed by canonical composition.
+ *  - +:nfd+: Canonical decomposition.
+ *  - +:nfkc+: Compatibility decomposition, followed by canonical composition.
+ *  - +:nfkd+: Compatibility decomposition.
+ *
+ *  +self+ must have encoding UTF-8 or one of the other supported encodings:
+ *
+ *    UnicodeNormalize::UNICODE_ENCODINGS
+ *    # =>
+ *    [#<Encoding:UTF-16BE (autoload)>,
+ *     #<Encoding:UTF-16LE>,
+ *     #<Encoding:UTF-32BE (autoload)>,
+ *     #<Encoding:UTF-32LE (autoload)>,
+ *     #<Encoding:GB18030 (autoload)>,
+ *     #<Encoding:UTF-16BE (autoload)>,
+ *     #<Encoding:UTF-32BE (autoload)>]
+ *
+ *  Examples:
+ *
+ *    "a\u0300".unicode_normalize      # => "a"
+ *    "\u00E0".unicode_normalize(:nfd) # => "a "
+ *
  */
 static VALUE
 rb_str_unicode_normalize(int argc, VALUE *argv, VALUE str)
@@ -11228,10 +11462,11 @@ rb_str_unicode_normalize(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    str.unicode_normalize!(form=:nfc)
+ *    unicode_normalize!(form = :nfc) -> self
  *
- *  Destructive version of String#unicode_normalize, doing Unicode
- *  normalization in place.
+ *  Like String#unicode_normalize, except that the normalization
+ *  is performed on +self+.
+ *
  */
 static VALUE
 rb_str_unicode_normalize_bang(int argc, VALUE *argv, VALUE str)
@@ -11358,9 +11593,10 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
  *
  * === Methods for Comparing
  *
- * - {#<=>}[#method-i-3C-3D-3E]:: Returns -1, 0, or 1 as a given symbol is smaller than, equal to, or larger than symbol.
- * - {#==, #===}[#method-i-3D-3D]:: Returns +true+ if a given symbol
- *                                  has the same content and encoding.
+ * - #<=>:: Returns -1, 0, or 1 as a given symbol is smaller than, equal to,
+ *          or larger than symbol.
+ * - #==, #===:: Returns +true+ if a given symbol has the same content and
+ *               encoding.
  * - #casecmp:: Ignoring case, returns -1, 0, or 1 as a given
  *              symbol is smaller than, equal to, or larger than symbol.
  * - #casecmp?:: Returns +true+ if symbol is equal to a given symbol
@@ -11675,7 +11911,7 @@ sym_casecmp(VALUE sym, VALUE other)
  *    sym.casecmp?(other_sym) # => nil
  *    :foo.casecmp?(2)        # => nil
  *
- *  See {Case Mapping}[rdoc-ref:case_mapping.rdoc].
+ *  See {Case Mapping}[case_mapping.rdoc].
  *
  *  Related: Symbol#casecmp.
  *
@@ -12151,10 +12387,10 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  === Methods for a Frozen/Unfrozen String
  *
- *  - {#+string}[#method-i-2B-40]:: Returns a string that is not frozen:
- *                                  +self+, if not frozen; +self.dup+ otherwise.
- *  - {#-string}[#method-i-2D-40]:: Returns a string that is frozen:
- *                                  +self+, if already frozen; +self.freeze+ otherwise.
+ *  - #+string:: Returns a string that is not frozen: +self+, if not frozen;
+ *               +self.dup+ otherwise.
+ *  - #-string:: Returns a string that is frozen: +self+, if already frozen;
+ *               +self.freeze+ otherwise.
  *  - #freeze:: Freezes +self+, if not already frozen; returns +self+.
  *
  *  === Methods for Querying
@@ -12195,9 +12431,10 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  === Methods for Comparing
  *
- *  - {#==, #===}[#method-i-3D-3D]:: Returns +true+ if a given other string has the same content as +self+.
+ *  - #==, #===:: Returns +true+ if a given other string has the same content as +self+.
  *  - #eql?:: Returns +true+ if the content is the same as the given other string.
- *  - {#<=>}[#method-i-3C-3D-3E]:: Returns -1, 0, or 1 as a given other string is smaller than, equal to, or larger than +self+.
+ *  - #<=>:: Returns -1, 0, or 1 as a given other string is smaller than,
+ *           equal to, or larger than +self+.
  *  - #casecmp:: Ignoring case, returns -1, 0, or 1 as a given
  *               other string is smaller than, equal to, or larger than +self+.
  *  - #casecmp?:: Returns +true+ if the string is equal to a given string after Unicode case folding;
@@ -12415,7 +12652,9 @@ Init_String(void)
     rb_define_method(rb_cString, "next!", rb_str_succ_bang, 0);
     rb_define_method(rb_cString, "upto", rb_str_upto, -1);
     rb_define_method(rb_cString, "index", rb_str_index_m, -1);
+    rb_define_method(rb_cString, "byteindex", rb_str_byteindex_m, -1);
     rb_define_method(rb_cString, "rindex", rb_str_rindex_m, -1);
+    rb_define_method(rb_cString, "byterindex", rb_str_byterindex_m, -1);
     rb_define_method(rb_cString, "replace", rb_str_replace, 1);
     rb_define_method(rb_cString, "clear", rb_str_clear, 0);
     rb_define_method(rb_cString, "chr", rb_str_chr, 0);

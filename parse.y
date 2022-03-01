@@ -4356,9 +4356,6 @@ p_args_tail	: p_rest
 p_find		: p_rest ',' p_args_post ',' p_rest
 		    {
 			$$ = new_find_pattern_tail(p, $1, $3, $5, &@$);
-
-			if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL))
-			    rb_warn0L_experimental(nd_line($$), "Find pattern is experimental, and the behavior may change in future versions of Ruby!");
 		    }
 		;
 
@@ -4425,7 +4422,7 @@ p_kw		: p_kw_label p_expr
 		    {
 			error_duplicate_pattern_key(p, get_id($1), &@1);
 		    /*%%%*/
-			$$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@$), &@$), $2);
+			$$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@1), &@$), $2);
 		    /*% %*/
 		    /*% ripper: rb_ary_new_from_args(2, get_value($1), get_value($2)) %*/
 		    }
@@ -5474,7 +5471,7 @@ kwrest_mark	: tPOW
 		| tDSTAR
 		;
 
-f_no_kwarg	: kwrest_mark keyword_nil
+f_no_kwarg	: p_kwnorest
 		    {
 		    /*%%%*/
 		    /*% %*/
@@ -5740,9 +5737,7 @@ operation	: tIDENTIFIER
 		| tFID
 		;
 
-operation2	: tIDENTIFIER
-		| tCONSTANT
-		| tFID
+operation2	: operation
 		| op
 		;
 

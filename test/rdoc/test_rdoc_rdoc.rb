@@ -254,6 +254,7 @@ class TestRDocRDoc < RDoc::TestCase
     top_level = nil
     temp_dir do |dir|
       @rdoc.options.parse %W[--root #{test_path}]
+      @rdoc.options.finish
 
       File.open 'include.txt', 'w' do |io|
         io.puts ':include: test.txt'

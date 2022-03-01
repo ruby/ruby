@@ -99,6 +99,7 @@ RUBY_ATTR_MALLOC void *rb_aligned_malloc(size_t, size_t) RUBY_ATTR_ALLOC_SIZE((2
 size_t rb_size_mul_or_raise(size_t, size_t, VALUE); /* used in compile.c */
 size_t rb_size_mul_add_or_raise(size_t, size_t, size_t, VALUE); /* used in iseq.h */
 RUBY_ATTR_MALLOC void *rb_xmalloc_mul_add(size_t, size_t, size_t);
+RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add(size_t, size_t, size_t);
 void *rb_xrealloc_mul_add(const void *, size_t, size_t, size_t);
 RUBY_ATTR_MALLOC void *rb_xmalloc_mul_add_mul(size_t, size_t, size_t, size_t);
 RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add_mul(size_t, size_t, size_t, size_t);

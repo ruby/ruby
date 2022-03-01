@@ -1230,8 +1230,40 @@ match_offset(VALUE match, VALUE n)
 	return rb_assoc_new(Qnil, Qnil);
 
     update_char_offset(match);
-    return rb_assoc_new(INT2FIX(RMATCH(match)->rmatch->char_offset[i].beg),
-			INT2FIX(RMATCH(match)->rmatch->char_offset[i].end));
+    return rb_assoc_new(LONG2NUM(RMATCH(match)->rmatch->char_offset[i].beg),
+                        LONG2NUM(RMATCH(match)->rmatch->char_offset[i].end));
+}
+
+/*
+ *  call-seq:
+ *     mtch.byteoffset(n)   -> array
+ *
+ *  Returns a two-element array containing the beginning and ending byte-based offsets of
+ *  the <em>n</em>th match.
+ *  <em>n</em> can be a string or symbol to reference a named capture.
+ *
+ *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
+ *     m.byteoffset(0)      #=> [1, 7]
+ *     m.byteoffset(4)      #=> [6, 7]
+ *
+ *     m = /(?<foo>.)(.)(?<bar>.)/.match("hoge")
+ *     p m.byteoffset(:foo) #=> [0, 1]
+ *     p m.byteoffset(:bar) #=> [2, 3]
+ *
+ */
+
+static VALUE
+match_byteoffset(VALUE match, VALUE n)
+{
+    int i = match_backref_number(match, n);
+    struct re_registers *regs = RMATCH_REGS(match);
+
+    match_check(match);
+    backref_number_check(regs, i);
+
+    if (BEG(i) < 0)
+        return rb_assoc_new(Qnil, Qnil);
+    return rb_assoc_new(LONG2NUM(BEG(i)), LONG2NUM(END(i)));
 }
 
 
@@ -1265,7 +1297,7 @@ match_begin(VALUE match, VALUE n)
 	return Qnil;
 
     update_char_offset(match);
-    return INT2FIX(RMATCH(match)->rmatch->char_offset[i].beg);
+    return LONG2NUM(RMATCH(match)->rmatch->char_offset[i].beg);
 }
 
 
@@ -1299,7 +1331,7 @@ match_end(VALUE match, VALUE n)
 	return Qnil;
 
     update_char_offset(match);
-    return INT2FIX(RMATCH(match)->rmatch->char_offset[i].end);
+    return LONG2NUM(RMATCH(match)->rmatch->char_offset[i].end);
 }
 
 /*
@@ -4162,6 +4194,7 @@ Init_Regexp(void)
     rb_define_method(rb_cMatch, "size", match_size, 0);
     rb_define_method(rb_cMatch, "length", match_size, 0);
     rb_define_method(rb_cMatch, "offset", match_offset, 1);
+    rb_define_method(rb_cMatch, "byteoffset", match_byteoffset, 1);
     rb_define_method(rb_cMatch, "begin", match_begin, 1);
     rb_define_method(rb_cMatch, "end", match_end, 1);
     rb_define_method(rb_cMatch, "match", match_nth, 1);

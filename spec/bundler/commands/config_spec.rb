@@ -43,6 +43,12 @@ RSpec.describe ".bundle/config" do
       G
     end
 
+    it "is local by default" do
+      bundle "config set foo bar"
+      expect(bundled_app(".bundle/config")).to exist
+      expect(home(".bundle/config")).not_to exist
+    end
+
     it "can be moved with an environment variable" do
       ENV["BUNDLE_APP_CONFIG"] = tmp("foo/bar").to_s
       bundle "config set --local path vendor/bundle"
@@ -67,6 +73,12 @@ RSpec.describe ".bundle/config" do
   end
 
   describe "location without a gemfile" do
+    it "is global by default" do
+      bundle "config set foo bar"
+      expect(bundled_app(".bundle/config")).not_to exist
+      expect(home(".bundle/config")).to exist
+    end
+
     it "works with an absolute path" do
       ENV["BUNDLE_APP_CONFIG"] = tmp("foo/bar").to_s
       bundle "config set --local path vendor/bundle"
@@ -359,7 +371,7 @@ E
 
     it "doesn't return quotes around values" do
       bundle "config set foo '1'"
-      run "puts Bundler.settings.send(:global_config_file).read"
+      run "puts Bundler.settings.send(:local_config_file).read"
       expect(out).to include('"1"')
       run "puts Bundler.settings[:foo]"
       expect(out).to eq("1")

@@ -295,92 +295,82 @@ class RDoc::Parser::C < RDoc::Parser
 
     @content.scan(
       %r(
+        (?<open>\s*\(\s*) {0}
+        (?<close>\s*\)\s*) {0}
+        (?<name>\s*"(?<class_name>\w+)") {0}
+        (?<parent>\s*(?:
+          (?<parent_name>[\w\*\s\(\)\.\->]+) |
+          rb_path2class\s*\(\s*"(?<path>[\w:]+)"\s*\)
+        )) {0}
+        (?<under>\w+) {0}
+
         (?<var_name>[\w\.]+)\s* =
         \s*rb_(?:
           define_(?:
-            class(?: # rb_define_class(class_name_1, parent_name_1)
-              \s*\(
-                \s*"(?<class_name_1>\w+)",
-                \s*(?<parent_name_1>\w+)\s*
-              \)
-            |
-              _under\s*\( # rb_define_class_under(class_under, class_name2, parent_name2...)
-                \s* (?<class_under>\w+),
-                \s* "(?<class_name_2>\w+)",
-                \s*
-                (?:
-                  (?<parent_name_2>[\w\*\s\(\)\.\->]+) |
-                  rb_path2class\("(?<path>[\w:]+)"\)
-                )
+            class(?: # rb_define_class(name, parent_name)
+              \(\s*
+                \g<name>,
+                \g<parent>
               \s*\)
+            |
+              _under\g<open> # rb_define_class_under(under, name, parent_name...)
+                \g<under>,
+                \g<name>,
+                \g<parent>
+              \g<close>
             )
           |
-            module(?: # rb_define_module(module_name_1)
-              \s*\(
-                \s*"(?<module_name_1>\w+)"\s*
-              \)
+            (?<module>)
+            module(?: # rb_define_module(name)
+              \g<open>
+                \g<name>
+              \g<close>
             |
-              _under\s*\( # rb_define_module_under(module_under, module_name_2)
-                \s*(?<module_under>\w+),
-                \s*"(?<module_name_2>\w+)"
-              \s*\)
+              _under\g<open> # rb_define_module_under(under, name)
+                \g<under>,
+                \g<name>
+              \g<close>
             )
           )
       |
-        struct_define_without_accessor\s*\( # rb_struct_define_without_accessor(class_name_3, parent_name_3, ...)
-          \s*"(?<class_name_3>\w+)",
-          \s*(?<parent_name_3>\w+),
-          \s*\w+,        # Allocation function
-          (?:\s*"\w+",)* # Attributes
-          \s*NULL
-        \)
+        (?<attributes>(?:\s*"\w+",)*\s*NULL\s*) {0}
+        struct_define(?:
+          \g<open> # rb_struct_define(name, ...)
+            \g<name>,
+        |
+          _under\g<open> # rb_struct_define_under(under, name, ...)
+            \g<under>,
+            \g<name>,
+        |
+          _without_accessor(?:
+            \g<open> # rb_struct_define_without_accessor(name, parent_name, ...)
+          |
+            _under\g<open> # rb_struct_define_without_accessor_under(under, name, parent_name, ...)
+              \g<under>,
+          )
+            \g<name>,
+            \g<parent>,
+            \s*\w+,        # Allocation function
+        )
+          \g<attributes>
+        \g<close>
       |
-        singleton_class\s*\( # rb_singleton_class(target_class_name)
-          \s*(?<target_class_name>\w+)
-        \)
+        singleton_class\g<open> # rb_singleton_class(target_class_name)
+          (?<target_class_name>\w+)
+        \g<close>
         )
       )mx
     ) do
-      class_name = $~[:class_name_1]
-      type = :class
-      if class_name
-        # rb_define_class(class_name_1, parent_name_1)
-        parent_name = $~[:parent_name_1]
-        #under = nil
-      else
-        class_name = $~[:class_name_2]
-        if class_name
-          # rb_define_class_under(class_under, class_name2, parent_name2...)
-          parent_name = $~[:parent_name_2] || $~[:path]
-          under = $~[:class_under]
-        else
-          class_name = $~[:class_name_3]
-          if class_name
-            # rb_struct_define_without_accessor(class_name_3, parent_name_3, ...)
-            parent_name = $~[:parent_name_3]
-            #under = nil
-          else
-            type = :module
-            class_name = $~[:module_name_1]
-            #parent_name = nil
-            if class_name
-              # rb_define_module(module_name_1)
-              #under = nil
-            else
-              class_name = $~[:module_name_2]
-              if class_name
-                # rb_define_module_under(module_under, module_name_1)
-                under = $~[:module_under]
-              else
-                # rb_singleton_class(target_class_name)
-                target_class_name = $~[:target_class_name]
-                handle_singleton $~[:var_name], target_class_name
-                next
-              end
-            end
-          end
-        end
+      if target_class_name = $~[:target_class_name]
+        # rb_singleton_class(target_class_name)
+        handle_singleton $~[:var_name], target_class_name
+        next
       end
+
+      type = $~[:module] ? :module : :class
+      class_name = $~[:class_name]
+      parent_name = $~[:parent_name] || $~[:path]
+      under = $~[:under]
 
       handle_class_module($~[:var_name], type, class_name, parent_name, under)
     end
@@ -1025,7 +1015,8 @@ class RDoc::Parser::C < RDoc::Parser
                           elsif p_count == -1 then # argc, argv
                             rb_scan_args body
                           else
-                            "(#{(1..p_count).map { |i| "p#{i}" }.join ', '})"
+                            args = (1..p_count).map { |i| "p#{i}" }
+                            "(#{args.join ', '})"
                           end
 
 

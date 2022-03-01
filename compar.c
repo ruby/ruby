@@ -288,13 +288,11 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
  *
  *  \Module \Comparable provides these methods, all of which use method <tt><=></tt>:
  *
- *  - {<}[#method-i-3C]:: Returns whether +self+ is less than the given object.
- *  - {<=}[#method-i-3C-3D]:: Returns whether +self+ is less than or equal to
- *                            the given object.
- *  - {==}[#method-i-3D-3D]:: Returns whether +self+ is equal to the given object.
- *  - {>}[#method-i-3E]:: Returns whether +self+ is greater than or equal to
- *                        the given object.
- *  - {>=}[#method-i-3E-3D]:: Returns whether +self+ is greater than the given object.
+ *  - #<:: Returns whether +self+ is less than the given object.
+ *  - #<=:: Returns whether +self+ is less than or equal to the given object.
+ *  - #==:: Returns whether +self+ is equal to the given object.
+ *  - #>:: Returns whether +self+ is greater than or equal to the given object.
+ *  - #>=:: Returns whether +self+ is greater than the given object.
  *  - #between? Returns +true+ if +self+ is between two given objects.
  *  - #clamp:: For given objects +min+ and +max+, or range <tt>(min..max)</tt>, returns:
  *    - +min+ if <tt>(self <=> min) < 0</tt>.

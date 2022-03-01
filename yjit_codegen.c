@@ -97,9 +97,7 @@ jit_mov_gc_ptr(jitstate_t *jit, codeblock_t *cb, x86opnd_t reg, VALUE ptr)
     uint32_t ptr_offset = cb->write_pos - sizeof(VALUE);
 
     if (!SPECIAL_CONST_P(ptr)) {
-        if (!rb_darray_append(&jit->block->gc_object_offsets, ptr_offset)) {
-            rb_bug("allocation failed");
-        }
+        rb_darray_append(&jit->block->gc_object_offsets, ptr_offset);
     }
 }
 
@@ -148,7 +146,7 @@ jit_peek_at_local(jitstate_t *jit, ctx_t *ctx, int n)
 }
 
 // Save the incremented PC on the CFP
-// This is necessary when calleees can raise or allocate
+// This is necessary when callees can raise or allocate
 static void
 jit_save_pc(jitstate_t *jit, x86opnd_t scratch_reg)
 {
@@ -196,7 +194,7 @@ static void
 record_global_inval_patch(const codeblock_t *cb, uint32_t outline_block_target_pos)
 {
     struct codepage_patch patch_point = { cb->write_pos, outline_block_target_pos };
-    if (!rb_darray_append(&global_inval_patches, patch_point)) rb_bug("allocation failed");
+    rb_darray_append(&global_inval_patches, patch_point);
 }
 
 static bool jit_guard_known_klass(jitstate_t *jit, ctx_t *ctx, VALUE known_klass, insn_opnd_t insn_opnd, VALUE sample_instance, const int max_chain_depth, uint8_t *side_exit);
@@ -3704,7 +3702,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
 
     const struct rb_builtin_function *leaf_builtin = rb_leaf_builtin_function(iseq);
 
-    if (leaf_builtin && !block && leaf_builtin->argc + 1 <= NUM_C_ARG_REGS) {
+    if (leaf_builtin && !block && leaf_builtin->argc + 1 /* for self */ + 1 /* for ec */ <= NUM_C_ARG_REGS) {
         ADD_COMMENT(cb, "inlined leaf builtin");
 
         // Call the builtin func (ec, recv, arg1, arg2, ...)

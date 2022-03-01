@@ -19,7 +19,7 @@ class RDoc::CrossReference
   #
   # See CLASS_REGEXP_STR
 
-  METHOD_REGEXP_STR = '([A-Za-z]\w*[!?=]?|%|===?|\[\]=?|<<|>>|\+@|-@|-|\+|\*)(?:\([\w.+*/=<>-]*\))?'
+  METHOD_REGEXP_STR = '([A-Za-z]\w*[!?=]?|%|=(?:==?|~)|![=~]|\[\]=?|<(?:<|=>?)?|>[>=]?|[-+!]@?|\*\*?|[/%`|&^~])(?:\([\w.+*/=<>-]*\))?'
 
   ##
   # Regular expressions matching text that should potentially have

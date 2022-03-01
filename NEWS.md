@@ -45,6 +45,9 @@ Note that each entry is kept to a minimum, see links for details.
 
   [[Bug #15928]]
 
+* Find pattern is no longer experimental.
+  [[Feature #18585]]
+
 ## Command line options
 
 ## Core classes updates
@@ -56,6 +59,9 @@ Note: We're only listing outstanding class updates.
       empty, instead of returning the default value or
       calling the default proc. [[Bug #16908]]
 
+* MatchData
+    * MatchData#byteoffset has been added. [[Feature #13110]]
+
 * Module
     * Module.used_refinements has been added. [[Feature #14332]]
     * Module#refinements has been added. [[Feature #12737]]
@@ -66,6 +72,13 @@ Note: We're only listing outstanding class updates.
 
 * Refinement
     * Refinement#refined_class has been added. [[Feature #12737]]
+
+* Set
+    * Set is now available as a builtin class without the need for `require "set"`. [[Feature #16989]]
+      It is currently autoloaded via the `Set` constant or a call to `Enumerable#to_set`.
+
+* String
+    * String#byteindex and String#byterindex have been added. [[Feature #13110]]
 
 * Struct
     * A Struct class can also be initialized with keyword arguments
@@ -80,10 +93,12 @@ Note: We're only listing outstanding class updates.
     * etc 1.4.0
     * io-console 0.5.11
     * io-wait 0.2.2
+    * ipaddr 1.2.4
     * reline 0.3.1
+    * securerandom 0.2.0
 *   The following bundled gems are updated.
     * net-imap 0.2.3
-    * rbs 2.1.0
+    * rbs 2.2.2
     * typeprof 0.21.2
 *   The following default gems are now bundled gems.
 
@@ -147,14 +162,17 @@ The following deprecated APIs are removed.
 
 [Feature #12005]: https://bugs.ruby-lang.org/issues/12005
 [Feature #12737]: https://bugs.ruby-lang.org/issues/12737
+[Feature #13110]: https://bugs.ruby-lang.org/issues/13110
 [Feature #14332]: https://bugs.ruby-lang.org/issues/14332
 [Feature #15231]: https://bugs.ruby-lang.org/issues/15231
 [Bug #15928]:     https://bugs.ruby-lang.org/issues/15928
 [Feature #16131]: https://bugs.ruby-lang.org/issues/16131
 [Feature #16806]: https://bugs.ruby-lang.org/issues/16806
 [Bug #16908]:     https://bugs.ruby-lang.org/issues/16908
+[Feature #16989]: https://bugs.ruby-lang.org/issues/16989
 [Feature #17351]: https://bugs.ruby-lang.org/issues/17351
 [Feature #17391]: https://bugs.ruby-lang.org/issues/17391
 [Bug #17545]:     https://bugs.ruby-lang.org/issues/17545
 [Feature #17881]: https://bugs.ruby-lang.org/issues/17881
 [Feature #18351]: https://bugs.ruby-lang.org/issues/18351
+[Feature #18585]: https://bugs.ruby-lang.org/issues/18585

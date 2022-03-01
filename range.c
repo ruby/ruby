@@ -1792,6 +1792,9 @@ range_include_internal(VALUE range, VALUE val, int string_use_cover)
         else if (NIL_P(beg)) {
 	    VALUE r = rb_funcall(val, id_cmp, 1, end);
 	    if (NIL_P(r)) return Qfalse;
+            if (RANGE_EXCL(range)) {
+                return RBOOL(rb_cmpint(r, val, end) < 0);
+            }
             return RBOOL(rb_cmpint(r, val, end) <= 0);
         }
 	else if (NIL_P(end)) {
@@ -2168,7 +2171,7 @@ range_count(int argc, VALUE *argv, VALUE range)
  *
  * A user-defined class that is to be used in a range
  * must implement instance <tt><=></tt>;
- * see {Integer#<=>}[Integer.html#method-i-3C-3D-3E].
+ * see Integer#<=>.
  * To make iteration available, it must also implement
  * instance method +succ+; see Integer#succ.
  *
@@ -2240,8 +2243,7 @@ range_count(int argc, VALUE *argv, VALUE range)
  *
  * === Methods for Comparing
  *
- * - {#==}[#method-i-3D-3D]:: Returns whether a given object is equal to +self+
- *                            (uses #==).
+ * - #==:: Returns whether a given object is equal to +self+ (uses #==).
  * - #===:: Returns whether the given object is between the begin and end values.
  * - #cover?:: Returns whether a given object is within +self+.
  * - #eql?:: Returns whether a given object is equal to +self+ (uses #eql?).

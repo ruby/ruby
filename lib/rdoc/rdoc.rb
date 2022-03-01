@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rdoc'
+require_relative '../rdoc'
 
 require 'find'
 require 'fileutils'
@@ -440,11 +440,11 @@ The internal error was:
 
     if RDoc::Options === options then
       @options = options
-      @options.finish
     else
       @options = RDoc::Options.load_options
       @options.parse options
     end
+    @options.finish
 
     if @options.pipe then
       handle_pipe

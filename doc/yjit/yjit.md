@@ -47,7 +47,7 @@ YJIT is a work in progress and as such may not yet be mature enough for mission-
 - Currently supports only macOS and Linux.
 - Currently supports only x86-64 CPUs.
 
-Because there is no GC for generated code yet, your software could run out of executable memory if it is large enough. You can change how much executable memory is allocated using [YJIT's command-line options](https://github.com/Shopify/yjit#command-line-options).
+Because there is no GC for generated code yet, your software could run out of executable memory if it is large enough. You can change how much executable memory is allocated using [YJIT's command-line options](#command-line-options).
 
 ## Installation
 

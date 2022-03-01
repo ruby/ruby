@@ -757,6 +757,26 @@ rb_obj_is_instance_of(VALUE obj, VALUE c)
     return RBOOL(rb_obj_class(obj) == c);
 }
 
+// Returns whether c is a proper (c != cl) subclass of cl
+// Both c and cl must be T_CLASS
+static VALUE
+class_search_class_ancestor(VALUE cl, VALUE c)
+{
+    RUBY_ASSERT(RB_TYPE_P(c, T_CLASS));
+    RUBY_ASSERT(RB_TYPE_P(cl, T_CLASS));
+
+    size_t c_depth = RCLASS_SUPERCLASS_DEPTH(c);
+    size_t cl_depth = RCLASS_SUPERCLASS_DEPTH(cl);
+    VALUE *classes = RCLASS_SUPERCLASSES(cl);
+
+    // If c's inheritance chain is longer, it cannot be an ancestor
+    // We are checking for a proper subclass so don't check if they are equal
+    if (cl_depth <= c_depth)
+        return Qfalse;
+
+    // Otherwise check that c is in cl's inheritance chain
+    return RBOOL(classes[c_depth] == c);
+}
 
 /*
  *  call-seq:
@@ -791,19 +811,34 @@ rb_obj_is_kind_of(VALUE obj, VALUE c)
 {
     VALUE cl = CLASS_OF(obj);
 
+    RUBY_ASSERT(RB_TYPE_P(cl, T_CLASS));
+
+    // Fastest path: If the object's class is an exact match we know `c` is a
+    // class without checking type and can return immediately.
+    if (cl == c) return Qtrue;
+
+    // Fast path: Both are T_CLASS
+    if (LIKELY(RB_TYPE_P(c, T_CLASS))) {
+        return class_search_class_ancestor(cl, c);
+    }
+
     // Note: YJIT needs this function to never allocate and never raise when
     // `c` is a class or a module.
     c = class_or_module_required(c);
-    return RBOOL(class_search_ancestor(cl, RCLASS_ORIGIN(c)));
+    c = RCLASS_ORIGIN(c);
+
+    // Slow path: check each ancestor in the linked list and its method table
+    return RBOOL(class_search_ancestor(cl, c));
 }
+
 
 static VALUE
 class_search_ancestor(VALUE cl, VALUE c)
 {
     while (cl) {
-	if (cl == c || RCLASS_M_TBL(cl) == RCLASS_M_TBL(c))
-	    return cl;
-	cl = RCLASS_SUPER(cl);
+        if (cl == c || RCLASS_M_TBL(cl) == RCLASS_M_TBL(c))
+            return cl;
+        cl = RCLASS_SUPER(cl);
     }
     return 0;
 }
@@ -4119,11 +4154,9 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *  These are the methods defined for \BasicObject:
  *
  *  - ::new:: Returns a new \BasicObject instance.
- *  - {!}[#method-i-21]:: Returns the boolean negation of +self+: +true+ or +false+.
- *  - {!=}[#method-i-21-3D]:: Returns whether +self+ and the given object
- *                            are _not_ equal.
- *  - {==}[#method-i-3D-3D]:: Returns whether +self+ and the given object
- *                            are equivalent.
+ *  - #!:: Returns the boolean negation of +self+: +true+ or +false+.
+ *  - #!=:: Returns whether +self+ and the given object are _not_ equal.
+ *  - #==:: Returns whether +self+ and the given object are equivalent.
  *  - {__id__}[#method-i-__id__]:: Returns the integer object identifier for +self+.
  *  - {__send__}[#method-i-__send__]:: Calls the method identified by the given symbol.
  *  - #equal?:: Returns whether +self+ and the given object are the same object.
@@ -4173,11 +4206,10 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *
  *  === Querying
  *
- *  - {!~}[#method-i-21~]:: Returns +true+ if +self+ does not match the given object,
- *                          otherwise +false+.
- *  - {<=>}[#method-i-3C-3D-3E]:: Returns 0 if +self+ and the given object +object+
- *                                are the same object, or if
- *                                <tt>self == object</tt>; otherwise returns +nil+.
+ *  - #!~:: Returns +true+ if +self+ does not match the given object,
+ *          otherwise +false+.
+ *  - #<=>:: Returns 0 if +self+ and the given object +object+ are the same
+ *           object, or if <tt>self == object</tt>; otherwise returns +nil+.
  *  - #===:: Implements case equality, effectively the same as calling #==.
  *  - #eql?:: Implements hash equality, effectively the same as calling #==.
  *  - #kind_of? (aliased as #is_a?):: Returns whether given argument is an ancestor
@@ -4319,14 +4351,13 @@ InitVM_Object(void)
      *
      * === Converting
      *
-     * - {#Array}[#method-i-Array]:: Returns an Array based on the given argument.
-     * - {#Complex}[#method-i-Complex]:: Returns a Complex based on the given arguments.
-     * - {#Float}[#method-i-Float]:: Returns a Float based on the given arguments.
-     * - {#Hash}[#method-i-Hash]:: Returns a Hash based on the given argument.
-     * - {#Integer}[#method-i-Integer]:: Returns an Integer based on the given arguments.
-     * - {#Rational}[#method-i-Rational]:: Returns a Rational
-     *                                     based on the given arguments.
-     * - {#String}[#method-i-String]:: Returns a String based on the given argument.
+     * - #Array:: Returns an Array based on the given argument.
+     * - #Complex:: Returns a Complex based on the given arguments.
+     * - #Float:: Returns a Float based on the given arguments.
+     * - #Hash:: Returns a Hash based on the given argument.
+     * - #Integer:: Returns an Integer based on the given arguments.
+     * - #Rational:: Returns a Rational based on the given arguments.
+     * - #String:: Returns a String based on the given argument.
      *
      * === Querying
      *
@@ -4393,7 +4424,7 @@ InitVM_Object(void)
      *
      * === Subprocesses
      *
-     * - #`cmd`:: Returns the standard output of running +cmd+ in a subshell.
+     * - #`command`:: Returns the standard output of running +command+ in a subshell.
      * - #exec:: Replaces current process with a new process.
      * - #fork:: Forks the current process into two processes.
      * - #spawn:: Executes the given command and returns its pid without waiting

@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 require 'test/unit'
 
-experimental, Warning[:experimental] = Warning[:experimental], false # suppress "warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!"
-eval "\n#{<<~'END_of_GUARD'}", binding, __FILE__, __LINE__
 class TestPatternMatching < Test::Unit::TestCase
   class NullFormatter
     def message_for(corrections)
@@ -1550,22 +1548,6 @@ END
     assert_equal false, (1 in 2)
   end
 
-  def assert_experimental_warning(code)
-    w = Warning[:experimental]
-
-    Warning[:experimental] = false
-    assert_warn('') {eval(code)}
-
-    Warning[:experimental] = true
-    assert_warn(/is experimental/) {eval(code)}
-  ensure
-    Warning[:experimental] = w
-  end
-
-  def test_experimental_warning
-    assert_experimental_warning("case [0]; in [*, 0, *]; end")
-  end
-
   ################################################################
 
   def test_single_pattern_error_value_pattern
@@ -1693,5 +1675,3 @@ END
     end
   end
 end
-END_of_GUARD
-Warning[:experimental] = experimental

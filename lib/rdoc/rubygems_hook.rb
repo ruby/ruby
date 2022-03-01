@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require 'rubygems/user_interaction'
 require 'fileutils'
-require 'rdoc'
+require_relative '../rdoc'
 
 ##
 # Gem::RDoc provides methods to generate RDoc and ri data for installed gems

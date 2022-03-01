@@ -352,7 +352,7 @@ RSpec.describe "major deprecations" do
       G
 
       expect(warnings).to include(
-        "Multiple gemfiles (gems.rb and Gemfile) detected. Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.rb.locked."
+        "Multiple gemfiles (gems.rb and Gemfile) detected. Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.locked."
       )
 
       expect(the_bundle).not_to include_gem "rack 1.0"
@@ -512,7 +512,7 @@ RSpec.describe "major deprecations" do
 
     it "should print a single deprecation warning" do
       expect(warnings).to include(
-        "Multiple gemfiles (gems.rb and Gemfile) detected. Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.rb.locked."
+        "Multiple gemfiles (gems.rb and Gemfile) detected. Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.locked."
       )
     end
   end

@@ -13,6 +13,7 @@ resize.o: $(hdrdir)/ruby/backward/2/stdalign.h
 resize.o: $(hdrdir)/ruby/backward/2/stdarg.h
 resize.o: $(hdrdir)/ruby/defines.h
 resize.o: $(hdrdir)/ruby/intern.h
+resize.o: $(hdrdir)/ruby/internal/abi.h
 resize.o: $(hdrdir)/ruby/internal/anyargs.h
 resize.o: $(hdrdir)/ruby/internal/arithmetic.h
 resize.o: $(hdrdir)/ruby/internal/arithmetic/char.h

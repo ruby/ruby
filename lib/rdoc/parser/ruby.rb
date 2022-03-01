@@ -400,6 +400,29 @@ class RDoc::Parser::Ruby < RDoc::Parser
   end
 
   ##
+  # Skip opening parentheses and yield the block.
+  # Skip closing parentheses too when exists.
+
+  def skip_parentheses(&block)
+    left_tk = peek_tk
+
+    if :on_lparen == left_tk[:kind]
+      get_tk
+
+      ret = skip_parentheses(&block)
+
+      right_tk = peek_tk
+      if :on_rparen == right_tk[:kind]
+        get_tk
+      end
+
+      ret
+    else
+      yield
+    end
+  end
+
+  ##
   # Return a superclass, which can be either a constant of an expression
 
   def get_class_specification
@@ -833,7 +856,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       cls = parse_class_regular container, declaration_context, single,
         name_t, given_name, comment
     elsif name_t[:kind] == :on_op && name_t[:text] == '<<'
-      case name = get_class_specification
+      case name = skip_parentheses { get_class_specification }
       when 'self', container.name
         read_documentation_modifiers cls, RDoc::CLASS_MODIFIERS
         parse_statements container, SINGLE

@@ -14,6 +14,7 @@ internal_ivar.o: $(hdrdir)/ruby/backward/2/stdalign.h
 internal_ivar.o: $(hdrdir)/ruby/backward/2/stdarg.h
 internal_ivar.o: $(hdrdir)/ruby/defines.h
 internal_ivar.o: $(hdrdir)/ruby/intern.h
+internal_ivar.o: $(hdrdir)/ruby/internal/abi.h
 internal_ivar.o: $(hdrdir)/ruby/internal/anyargs.h
 internal_ivar.o: $(hdrdir)/ruby/internal/arithmetic.h
 internal_ivar.o: $(hdrdir)/ruby/internal/arithmetic/char.h

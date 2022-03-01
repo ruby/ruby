@@ -265,7 +265,7 @@ class TestException < Test::Unit::TestCase
 
       v = assert_throw(:extdep, bug18562) do
         require t.path
-      rescue rescue_all => e
+      rescue rescue_all
         assert(false, "should not reach here")
       end
 
@@ -991,11 +991,12 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     end
     assert_not_nil(e)
     assert_include(e.message, "\0")
-    assert_in_out_err([], src, [], [], *args, **opts) do |_, err,|
-      err.each do |e|
-        assert_not_include(e, "\0")
-      end
-    end
+    # Disabled by [Feature #18367]
+    #assert_in_out_err([], src, [], [], *args, **opts) do |_, err,|
+    #  err.each do |e|
+    #    assert_not_include(e, "\0")
+    #  end
+    #end
     e
   end
 
@@ -1419,5 +1420,34 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
         Object.new.foo
       end
     end;
+  end
+
+  def test_detailed_message
+    e = RuntimeError.new("message")
+    assert_equal("message (RuntimeError)", e.detailed_message)
+    assert_equal("\e[1mmessage (\e[1;4mRuntimeError\e[m\e[1m)\e[m", e.detailed_message(highlight: true))
+
+    e = RuntimeError.new("foo\nbar\nbaz")
+    assert_equal("foo (RuntimeError)\nbar\nbaz", e.detailed_message)
+    assert_equal("\e[1mfoo (\e[1;4mRuntimeError\e[m\e[1m)\e[m\n\e[1mbar\e[m\n\e[1mbaz\e[m", e.detailed_message(highlight: true))
+
+    e = RuntimeError.new("")
+    assert_equal("unhandled exception", e.detailed_message)
+    assert_equal("\e[1;4munhandled exception\e[m", e.detailed_message(highlight: true))
+
+    e = RuntimeError.new
+    assert_equal("RuntimeError (RuntimeError)", e.detailed_message)
+    assert_equal("\e[1mRuntimeError (\e[1;4mRuntimeError\e[m\e[1m)\e[m", e.detailed_message(highlight: true))
+  end
+
+  def test_full_message_with_custom_detailed_message
+    e = RuntimeError.new("message")
+    opt_ = nil
+    e.define_singleton_method(:detailed_message) do |**opt|
+      opt_ = opt
+      "BOO!"
+    end
+    assert_match("BOO!", e.full_message.lines.first)
+    assert_equal({ highlight: Exception.to_tty? }, opt_)
   end
 end

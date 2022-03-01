@@ -15,6 +15,7 @@ escape.o: $(hdrdir)/ruby/backward/2/stdarg.h
 escape.o: $(hdrdir)/ruby/defines.h
 escape.o: $(hdrdir)/ruby/encoding.h
 escape.o: $(hdrdir)/ruby/intern.h
+escape.o: $(hdrdir)/ruby/internal/abi.h
 escape.o: $(hdrdir)/ruby/internal/anyargs.h
 escape.o: $(hdrdir)/ruby/internal/arithmetic.h
 escape.o: $(hdrdir)/ruby/internal/arithmetic/char.h

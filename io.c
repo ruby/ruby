@@ -4042,8 +4042,8 @@ rb_io_gets_internal(VALUE io)
  *    or +nil+ if none.
  *  - But returns no more bytes than are allowed by the limit.
  *
- *  For all forms above, trailing optional keyword arguments may be given;
- *  see {Line Options}[rdoc-ref:IO@Line+Options]:
+ *  For all forms above, optional keyword arguments +line_opts+ specify
+ *  {Line Options}[rdoc-ref:IO@Line+Options]:
  *
  *    f = File.open('t.txt')
  *    # Chomp the lines.
@@ -4181,8 +4181,8 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *  - Returns lines as determined by line separator +sep+.
  *  - But returns no more bytes in a line than are allowed by the limit.
  *
- *  For all forms above, trailing optional keyword arguments may be given;
- *  see {Line Options}[rdoc-ref:IO@Line+Options]:
+ *  For all forms above, optional keyword arguments +line_opts+ specify
+ *  {Line Options}[rdoc-ref:IO@Line+Options]:
  *
  *    f = File.new('t.txt')
  *    f.readlines(chomp: true)
@@ -4299,8 +4299,8 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *  - Calls with the next line as determined by line separator +sep+.
  *  - But returns no more bytes than are allowed by the limit.
  *
- *  For all forms above, trailing optional keyword arguments may be given;
- *  see {Line Options}[rdoc-ref:IO@Line+Options]:
+ *  For all forms above, optional keyword arguments +line_opts+ specify
+ *  {Line Options}[rdoc-ref:IO@Line+Options]:
  *
  *    f = File.new('t.txt')
  *    f.each_line(chomp: true) {|line| p line }
@@ -7374,6 +7374,9 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *  Executes the given command +cmd+ as a subprocess
  *  whose $stdin and $stdout are connected to a new stream +io+.
  *
+ *  This method has potential security vulnerabilities if called with untrusted input;
+ *  see {Command Injection}[command_injection.rdoc].
+ *
  *  If no block is given, returns the new stream,
  *  which depending on given +mode+ may be open for reading, writing, or both.
  *  The stream should be explicitly closed (eventually) to avoid resource leaks.
@@ -7404,8 +7407,11 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *      pipe.gets
  *    end => "bar\n"
  *
- *  The optional keyword arguments +opts+ may be {\IO open options}[rdoc-ref:IO@Open+Options]
- *  and options for Kernel#spawn.
+ *  Optional keyword arguments +opts+ specify:
+ *
+ *  - {Open options}[rdoc-ref:IO@Open+Options].
+ *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - Options for Kernel#spawn.
  *
  *  <b>Forked \Process</b>
  *
@@ -7637,8 +7643,8 @@ rb_open_file(int argc, const VALUE *argv, VALUE io)
  *  Document-method: File::open
  *
  *  call-seq:
- *    File.open(path, mode = 'r', perm = 0666, **open_opts) -> file
- *    File.open(path, mode = 'r', perm = 0666, **open_opts) {|f| ... } -> object
+ *    File.open(path, mode = 'r', perm = 0666, **opts) -> file
+ *    File.open(path, mode = 'r', perm = 0666, **opts) {|f| ... } -> object
  *
  *  Creates a new \File object, via File.new with the given arguments.
  *
@@ -7653,8 +7659,8 @@ rb_open_file(int argc, const VALUE *argv, VALUE io)
  *  Document-method: IO::open
  *
  *  call-seq:
- *    IO.open(fd, mode = 'r', **open_opts)             -> io
- *    IO.open(fd, mode = 'r', **open_opts) {|io| ... } -> object
+ *    IO.open(fd, mode = 'r', **opts)             -> io
+ *    IO.open(fd, mode = 'r', **opts) {|io| ... } -> object
  *
  *  Creates a new \IO object, via IO.new with the given arguments.
  *
@@ -7739,8 +7745,8 @@ check_pipe_command(VALUE filename_or_command)
 
 /*
  *  call-seq:
- *    open(path, mode = 'r', perm = 0666, **open_opts)             -> io or nil
- *    open(path, mode = 'r', perm = 0666, **open_opts) {|io| ... } -> obj
+ *    open(path, mode = 'r', perm = 0666, **opts)             -> io or nil
+ *    open(path, mode = 'r', perm = 0666, **opts) {|io| ... } -> obj
  *
  *  Creates an IO object connected to the given stream, file, or subprocess.
  *
@@ -7755,7 +7761,7 @@ check_pipe_command(VALUE filename_or_command)
  *  <b>File Opened</b>
 
  *  If +path+ does _not_ start with a pipe character (<tt>'|'</tt>),
- *  a file stream is opened with <tt>File.open(path, mode, perm, **open_opts)</tt>.
+ *  a file stream is opened with <tt>File.open(path, mode, perm, **opts)</tt>.
  *
  *  With no block given, file stream is returned:
  *
@@ -7999,7 +8005,7 @@ rb_freopen(VALUE fname, const char *mode, FILE *fp)
 /*
  *  call-seq:
  *    reopen(other_io)                 -> self
- *    reopen(path, mode = 'r', **open_opts) -> self
+ *    reopen(path, mode = 'r', **opts) -> self
  *
  *  Reassociates the stream with another stream,
  *  which may be of a different class.
@@ -8021,8 +8027,10 @@ rb_freopen(VALUE fname, const char *mode, FILE *fp)
  *    $stdin.reopen('t.txt')
  *    $stdout.reopen('t.tmp', 'w')
  *
- *  The optional keyword arguments +open_opts+ may be open options;
- *  see {\IO Open Options}[rdoc-ref:IO@Open+Options]
+ *  Optional keyword arguments +opts+ specify:
+ *
+ *  - {Open Options}[rdoc-ref:IO@Open+Options].
+ *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
  *
  */
 
@@ -8921,7 +8929,7 @@ rb_io_make_open_file(VALUE obj)
 
 /*
  *  call-seq:
- *    IO.new(fd, mode = 'r', **open_opts) -> io
+ *    IO.new(fd, mode = 'r', **opts) -> io
  *
  *  Creates and returns a new \IO object (file stream) from a file descriptor.
  *
@@ -8935,14 +8943,25 @@ rb_io_make_open_file(VALUE obj)
  *    fd = IO.sysopen(path) # => 3
  *    IO.new(fd)            # => #<IO:fd 3>
  *
+ *  The new \IO object does not inherit encoding
+ *  (because the integer file descriptor does not have an encoding):
+ *
+ *    fd = IO.sysopen('t.rus', 'rb')
+ *    io = IO.new(fd)
+ *    io.external_encoding # => #<Encoding:UTF-8> # Not ASCII-8BIT.
+ *
  *  Optional argument +mode+ (defaults to 'r') must specify a valid mode
  *  see IO@Modes:
  *
  *    IO.new(fd, 'w')         # => #<IO:fd 3>
  *    IO.new(fd, File::WRONLY) # => #<IO:fd 3>
  *
- *  Optional argument +open_opts+ must specify valid open options
- *  see {IO Open Options}[rdoc-ref:IO@Open+Options]:
+ *  Optional keyword arguments +opts+ specify:
+ *
+ *  - {Open Options}[rdoc-ref:IO@Open+Options].
+ *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *
+ *  Examples:
  *
  *    IO.new(fd, internal_encoding: nil) # => #<IO:fd 3>
  *    IO.new(fd, autoclose: true)        # => #<IO:fd 3>
@@ -9053,7 +9072,7 @@ rb_io_set_encoding_by_bom(VALUE io)
 
 /*
  *  call-seq:
- *    File.new(path, mode = 'r', perm = 0666, **open_opts) -> file
+ *    File.new(path, mode = 'r', perm = 0666, **opts) -> file
  *
  *  Opens the file at the given +path+ according to the given +mode+;
  *  creates and returns a new \File object for that file.
@@ -9079,8 +9098,12 @@ rb_io_set_encoding_by_bom(VALUE io)
  *    File.new('t.tmp', File::CREAT, 0644)
  *    File.new('t.tmp', File::CREAT, 0444)
  *
- *  Optional argument +open_opts+ must specify valid open options
- *  see {IO Open Options}[rdoc-ref:IO@Open+Options]:
+ *  Optional keyword arguments +opts+ specify:
+ *
+ *  - {Open Options}[rdoc-ref:IO@Open+Options].
+ *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *
+ *  Examples:
  *
  *    File.new('t.tmp', autoclose: true)
  *    File.new('t.tmp', internal_encoding: nil)
@@ -9122,7 +9145,7 @@ rb_io_s_new(int argc, VALUE *argv, VALUE klass)
 
 /*
  *  call-seq:
- *    IO.for_fd(fd, mode = 'r', **open_opts) -> io
+ *    IO.for_fd(fd, mode = 'r', **opts) -> io
  *
  *  Synonym for IO.new.
  *
@@ -9754,8 +9777,12 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *  With arguments +sep+ and +limit+ given, combines the two behaviors;
  *  see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit].
  *
- *  For all forms above, trailing optional keyword arguments may be given;
- *  see {Line Options}[rdoc-ref:IO@Line+Options]:
+ *  For all forms above, optional keyword arguments specify:
+ *
+ *  - {Line Options}[rdoc-ref:IO@Line+Options].
+ *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *
+ *  Examples:
  *
  *    $ cat t.txt | ruby -e "p readlines(chomp: true)"
  *    ["First line", "Second line", "", "Fourth line", "Fifth line"]
@@ -9813,10 +9840,15 @@ argf_readlines(int argc, VALUE *argv, VALUE argf)
 
 /*
  *  call-seq:
- *    `cmd` -> string
+ *    `command` -> string
  *
- *  Returns the <tt>$stdout</tt> output fromm running +cmd+ in a subshell;
- *  sets global variable <tt>$?</tt> to the process status:
+ *  Returns the <tt>$stdout</tt> output from running +command+ in a subshell;
+ *  sets global variable <tt>$?</tt> to the process status.
+ *
+ *  This method has potential security vulnerabilities if called with untrusted input;
+ *  see {Command Injection}[command_injection.rdoc].
+ *
+ *  Examples:
  *
  *    $ `date`                 # => "Wed Apr  9 08:56:30 CDT 2003\n"
  *    $ `echo oops && exit 99` # => "oops\n"
@@ -10994,18 +11026,14 @@ pipe_pair_close(VALUE rw)
  *
  *  If argument +enc_string+ is given, it must be a string containing one of:
  *
- *  - The name of the encoding to be used as the internal encoding.
- *  - The colon-separated names of two encodings to be used as the internal
- *    and external encodings.
- *
- *  You can view an array of the encoding names by calling method Encoding.name_list.
+ *  - The name of the encoding to be used as the external encoding.
+ *  - The colon-separated names of two encodings to be used as the external
+ *    and internal encodings.
  *
  *  If argument +int_enc+ is given, it must be an Encoding object
  *  or encoding name string that specifies the internal encoding to be used;
  *  if argument +ext_enc+ is also given, it must be an Encoding object
  *  or encoding name string that specifies the external encoding to be used.
- *
- *  You can view an array of encoding classes by calling method Encoding.list.
  *
  *  The string read from +read_io+ is tagged with the external encoding;
  *  if an internal encoding is also specified, the string is converted
@@ -11014,9 +11042,10 @@ pipe_pair_close(VALUE rw)
  *  If any encoding is specified,
  *  optional hash arguments specify the conversion option.
  *
- *  Optional argument +opts+ must specify valid open options
- *  (see {IO Open Options}[rdoc-ref:IO@Open+Options])
- *  and/or valid encoding options (see String#encode).
+ *  Optional keyword arguments +opts+ specify:
+ *
+ *  - {Open Options}[rdoc-ref:IO@Open+Options].
+ *  - {Encoding Options}[rdoc-ref:encoding.rdoc@Encoding+Options].
  *
  *  With no block given, returns the two endpoints in an array:
  *
@@ -11196,36 +11225,29 @@ io_s_foreach(VALUE v)
 
 /*
  *  call-seq:
- *    IO.foreach(command, sep = $/, **opts) {|line| block }    -> nil
- *    IO.foreach(command, limit, **opts) {|line| block }       -> nil
- *    IO.foreach(command, sep, limit, **opts) {|line| block }  -> nil
  *    IO.foreach(path, sep = $/, **opts) {|line| block }       -> nil
  *    IO.foreach(path, limit, **opts) {|line| block }          -> nil
  *    IO.foreach(path, sep, limit, **opts) {|line| block }     -> nil
+ *    IO.foreach(command, sep = $/, **opts) {|line| block }    -> nil
+ *    IO.foreach(command, limit, **opts) {|line| block }       -> nil
+ *    IO.foreach(command, sep, limit, **opts) {|line| block }  -> nil
  *    IO.foreach(...)                                          -> an_enumerator
  *
  *  Calls the block with each successive line read from the stream.
  *
- *  The first argument must be a string;
- *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
+ *  When called from class \IO (but not subclasses of \IO),
+ *  this method has potential security vulnerabilities if called with untrusted input;
+ *  see {Command Injection}[command_injection.rdoc].
  *
- *  - If so (and if +self+ is \IO),
+ *  The first argument must be a string that is one of the following:
+ *
+ *  - Path: if +self+ is a subclass of \IO (\File, for example),
+ *    or if the string _does_ _not_ start with the pipe character (<tt>'|'</tt>),
+ *    the string is the path to a file.
+ *  - Command: if +self+ is the class \IO,
+ *    and if the string starts with the pipe character,
  *    the rest of the string is a command to be executed as a subprocess.
- *  - Otherwise, the string is the path to a file.
- *
- *  With only argument +command+ given, executes the command in a shell,
- *  parses its $stdout into lines, as determined by the default line separator,
- *  and calls the block with each successive line:
- *
- *    IO.foreach('| cat t.txt') {|line| p line }
- *
- *  Output:
- *
- *    "First line\n"
- *    "Second line\n"
- *    "\n"
- *    "Third line\n"
- *    "Fourth line\n"
+ *    See the {Note on Security}[@Note+on+Security].
  *
  *  With only argument +path+ given, parses lines from the file at the given +path+,
  *  as determined by the default line separator,
@@ -11238,7 +11260,7 @@ io_s_foreach(VALUE v)
  *  For both forms, command and path, the remaining arguments are the same.
  *
  *  With argument +sep+ given, parses lines as determined by that line separator
- *  (see {IO Line Separator}[rdoc-ref:IO@Line+Separator]):
+ *  (see {Line Separator}[rdoc-ref:IO@Line+Separator]):
  *
  *    File.foreach('t.txt', 'li') {|line| p line }
  *
@@ -11261,7 +11283,7 @@ io_s_foreach(VALUE v)
  *
  *  With argument +limit+ given, parses lines as determined by the default
  *  line separator and the given line-length limit
- *  (see {IO Line Limit}[rdoc-ref:IO@Line+Limit]):
+ *  (see {Line Limit}[rdoc-ref:IO@Line+Limit]):
  *
  *    File.foreach('t.txt', 7) {|line| p line }
  *
@@ -11280,12 +11302,13 @@ io_s_foreach(VALUE v)
  *  With arguments +sep+ and  +limit+ given,
  *  parses lines as determined by the given
  *  line separator and the given line-length limit
- *  (see {IO Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]):
+ *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]):
  *
- *  Optional argument +opts+ specifies open options
- *  (see {IO Open Options}[rdoc-ref:IO@Open+Options])
- *  and/or valid line options
- *  (see {IO Line Options}[rdoc-ref:IO@Line+Options])
+ *  Optional keyword arguments +opts+ specify:
+ *
+ *  - {Open Options}[rdoc-ref:IO@Open+Options].
+ *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Line Options}[rdoc-ref:IO@Line+Options].
  *
  *  Returns an Enumerator if no block is given.
  *
@@ -11327,6 +11350,10 @@ io_s_readlines(VALUE v)
  *
  *  Returns an array of all lines read from the stream.
  *
+ *  When called from class \IO (but not subclasses of \IO),
+ *  this method has potential security vulnerabilities if called with untrusted input;
+ *  see {Command Injection}[command_injection.rdoc].
+ *
  *  The first argument must be a string;
  *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
  *
@@ -11351,7 +11378,7 @@ io_s_readlines(VALUE v)
  *  For both forms, command and path, the remaining arguments are the same.
  *
  *  With argument +sep+ given, parses lines as determined by that line separator
- *  (see {IO Line Separator}[rdoc-ref:IO@Line+Separator]):
+ *  (see {Line Separator}[rdoc-ref:IO@Line+Separator]):
  *
  *    # Ordinary separator.
  *    IO.readlines('t.txt', 'li')
@@ -11365,7 +11392,7 @@ io_s_readlines(VALUE v)
  *
  *  With argument +limit+ given, parses lines as determined by the default
  *  line separator and the given line-length limit
- *  (see {IO Line Limit}[rdoc-ref:IO@Line+Limit]):
+ *  (see {Line Limit}[rdoc-ref:IO@Line+Limit]):
  *
  *    IO.readlines('t.txt', 7)
  *    # => ["First l", "ine\n", "Second ", "line\n", "\n", "Third l", "ine\n", "Fourth ", "line\n"]
@@ -11373,12 +11400,13 @@ io_s_readlines(VALUE v)
  *  With arguments +sep+ and  +limit+ given,
  *  parses lines as determined by the given
  *  line separator and the given line-length limit
- *  (see {IO Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]):
+ *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]):
  *
- *  Optional argument +opts+ specifies open options
- *  (see {IO Open Options}[rdoc-ref:IO@Open+Options])
- *  and/or valid line options
- *  (see {IO Line Options}[rdoc-ref:IO@Line+Options])
+ *  Optional keyword arguments +opts+ specify:
+ *
+ *  - {Open Options}[rdoc-ref:IO@Open+Options].
+ *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Line Options}[rdoc-ref:IO@Line+Options].
  *
  */
 
@@ -11421,11 +11449,15 @@ seek_before_access(VALUE argp)
 
 /*
  *  call-seq:
- *     IO.read(command, length = nil, offset = 0, **open_opts) -> string or nil
- *     IO.read(path, length = nil, offset = 0, **open_opts)    -> string or nil
+ *     IO.read(command, length = nil, offset = 0, **opts) -> string or nil
+ *     IO.read(path, length = nil, offset = 0, **opts)    -> string or nil
  *
  *  Opens the stream, reads and returns some or all of its content,
  *  and closes the stream; returns +nil+ if no bytes were read.
+ *
+ *  When called from class \IO (but not subclasses of \IO),
+ *  this method has potential security vulnerabilities if called with untrusted input;
+ *  see {Command Injection}[command_injection.rdoc].
  *
  *  The first argument must be a string;
  *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
@@ -11460,8 +11492,10 @@ seek_before_access(VALUE argp)
  *    IO.read('t.txt', 10, 2)   # => "rst line\nS"
  *    IO.read('t.txt', 10, 200) # => nil
  *
- *  The optional keyword arguments +open_opts+ may be open options;
- *  see {\IO Open Options}[rdoc-ref:IO@Open+Options]
+ *  Optional keyword arguments +opts+ specify:
+ *
+ *  - {Open Options}[rdoc-ref:IO@Open+Options].
+ *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
  *
  */
 
@@ -11497,6 +11531,10 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
  *
  *  Behaves like IO.read, except that the stream is opened in binary mode
  *  with ASCII-8BIT encoding.
+ *
+ *  When called from class \IO (but not subclasses of \IO),
+ *  this method has potential security vulnerabilities if called with untrusted input;
+ *  see {Command Injection}[command_injection.rdoc].
  *
  */
 
@@ -11593,16 +11631,20 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
 
 /*
  *  call-seq:
- *    IO.write(command, data, **open_opts)             -> integer
- *    IO.write(path, data, offset = 0, **open_opts)    -> integer
+ *    IO.write(command, data, **opts)             -> integer
+ *    IO.write(path, data, offset = 0, **opts)    -> integer
  *
  *  Opens the stream, writes the given +data+ to it,
  *  and closes the stream; returns the number of bytes written.
  *
+ *  When called from class \IO (but not subclasses of \IO),
+ *  this method has potential security vulnerabilities if called with untrusted input;
+ *  see {Command Injection}[command_injection.rdoc].
+ *
  *  The first argument must be a string;
  *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
  *
- *  - If so (and if +self+ is an instance of \IO),
+ *  - If so (and if +self+ is \IO),
  *    the rest of the string is a command to be executed as a subprocess.
  *  - Otherwise, the string is the path to a file.
  *
@@ -11641,8 +11683,10 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *    IO.write('t.tmp', 'xyz', 10) # => 3
  *    File.read('t.tmp')           # => "ab012f\u0000\u0000\u0000\u0000xyz"
  *
- *  The optional keyword arguments +open_opts+ may be open options;
- *  see {\IO Open Options}[rdoc-ref:IO@Open+Options]
+ *  Optional keyword arguments +opts+ specify:
+ *
+ *  - {Open Options}[rdoc-ref:IO@Open+Options].
+ *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
  *
  */
 
@@ -11659,6 +11703,10 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
  *
  *  Behaves like IO.write, except that the stream is opened in binary mode
  *  with ASCII-8BIT encoding.
+ *
+ *  When called from class \IO (but not subclasses of \IO),
+ *  this method has potential security vulnerabilities if called with untrusted input;
+ *  see {Command Injection}[command_injection.rdoc].
  *
  */
 
@@ -12719,8 +12767,8 @@ rb_io_internal_encoding(VALUE io)
  *  corresponding Encoding objects are assigned as the external
  *  and internal encodings for the stream.
  *
- *  The optional keyword arguments +enc_opts+ may be encoding options;
- *  see String#encode.
+ *  Optional keyword arguments +enc_opts+ specify
+ *  {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
  *
  */
 
@@ -14432,7 +14480,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - ::binwrite:: Writes the given string to the file at the given filepath,
  *                 in binary mode.
  *  - ::write:: Writes the given string to +self+.
- *  - {::<<}[#method-i-3C-3C]:: Appends the given string to +self+.
+ *  - ::<<:: Appends the given string to +self+.
  *  - #print:: Prints last read line or given objects to +self+.
  *  - #printf:: Writes to +self+ based on the given format string and objects.
  *  - #putc:: Writes a character to +self+.

@@ -14,6 +14,7 @@ core_ext.o: $(hdrdir)/ruby/backward/2/stdalign.h
 core_ext.o: $(hdrdir)/ruby/backward/2/stdarg.h
 core_ext.o: $(hdrdir)/ruby/defines.h
 core_ext.o: $(hdrdir)/ruby/intern.h
+core_ext.o: $(hdrdir)/ruby/internal/abi.h
 core_ext.o: $(hdrdir)/ruby/internal/anyargs.h
 core_ext.o: $(hdrdir)/ruby/internal/arithmetic.h
 core_ext.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -181,6 +182,7 @@ init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 init.o: $(hdrdir)/ruby/defines.h
 init.o: $(hdrdir)/ruby/intern.h
+init.o: $(hdrdir)/ruby/internal/abi.h
 init.o: $(hdrdir)/ruby/internal/anyargs.h
 init.o: $(hdrdir)/ruby/internal/arithmetic.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -340,6 +342,7 @@ my_integer.o: $(hdrdir)/ruby/backward/2/stdalign.h
 my_integer.o: $(hdrdir)/ruby/backward/2/stdarg.h
 my_integer.o: $(hdrdir)/ruby/defines.h
 my_integer.o: $(hdrdir)/ruby/intern.h
+my_integer.o: $(hdrdir)/ruby/internal/abi.h
 my_integer.o: $(hdrdir)/ruby/internal/anyargs.h
 my_integer.o: $(hdrdir)/ruby/internal/arithmetic.h
 my_integer.o: $(hdrdir)/ruby/internal/arithmetic/char.h

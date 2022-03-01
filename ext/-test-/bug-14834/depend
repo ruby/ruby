@@ -14,6 +14,7 @@ bug-14384.o: $(hdrdir)/ruby/backward/2/stdarg.h
 bug-14384.o: $(hdrdir)/ruby/debug.h
 bug-14384.o: $(hdrdir)/ruby/defines.h
 bug-14384.o: $(hdrdir)/ruby/intern.h
+bug-14384.o: $(hdrdir)/ruby/internal/abi.h
 bug-14384.o: $(hdrdir)/ruby/internal/anyargs.h
 bug-14384.o: $(hdrdir)/ruby/internal/arithmetic.h
 bug-14384.o: $(hdrdir)/ruby/internal/arithmetic/char.h

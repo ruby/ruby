@@ -921,7 +921,7 @@ end
       @parser.parse_class @top_level, RDoc::Parser::Ruby::NORMAL, tk, @comment
     end
     err = stds[1]
-    assert_match(/Expected class name or '<<'\. Got/, err)
+    assert_match(/Expected class name or '<<\'\. Got/, err)
   end
 
   def test_parse_syntax_error_code
@@ -4345,4 +4345,17 @@ end
     assert_equal 'Hello', meth.comment.text
   end
 
+  def test_parenthesized_cdecl
+    util_parser <<-RUBY
+module DidYouMean
+  class << (NameErrorCheckers = Object.new)
+  end
+end
+    RUBY
+
+    @parser.scan
+
+    refute_predicate @store.find_class_or_module('DidYouMean'), :nil?
+    refute_predicate @store.find_class_or_module('DidYouMean::NameErrorCheckers'), :nil?
+  end
 end

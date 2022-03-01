@@ -1823,6 +1823,7 @@ rb_objspace_alloc(void)
 }
 
 static void free_stack_chunks(mark_stack_t *);
+static void mark_stack_free_cache(mark_stack_t *);
 static void heap_page_free(rb_objspace_t *objspace, struct heap_page *page);
 
 void
@@ -1863,7 +1864,10 @@ rb_objspace_free(rb_objspace_t *objspace)
     }
     st_free_table(objspace->id_to_obj_tbl);
     st_free_table(objspace->obj_to_id_tbl);
+
     free_stack_chunks(&objspace->mark_stack);
+    mark_stack_free_cache(&objspace->mark_stack);
+
     free(objspace);
 }
 
@@ -3295,6 +3299,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         rb_class_remove_subclass_head(obj);
 	rb_class_remove_from_module_subclasses(obj);
 	rb_class_remove_from_super_subclasses(obj);
+	rb_class_remove_superclasses(obj);
 #if SIZEOF_SERIAL_T != SIZEOF_VALUE && USE_RVARGC
         xfree(RCLASS(obj)->class_serial_ptr);
 #endif
@@ -4773,6 +4778,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
             if (RCLASS_CC_TBL(obj)) {
                 size += cc_table_memsize(RCLASS_CC_TBL(obj));
             }
+            size += RCLASS_SUPERCLASS_DEPTH(obj) * sizeof(VALUE);
 #if !USE_RVARGC
 	    size += sizeof(rb_classext_t);
 #endif
@@ -5884,10 +5890,6 @@ gc_sweep_finish(rb_objspace_t *objspace)
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END_SWEEP, 0);
     gc_mode_transition(objspace, gc_mode_none);
-
-#if RGENGC_CHECK_MODE >= 2
-    gc_verify_internal_consistency(objspace);
-#endif
 }
 
 static int
@@ -6258,9 +6260,8 @@ pop_mark_stack_chunk(mark_stack_t *stack)
 }
 
 static void
-free_stack_chunks(mark_stack_t *stack)
+mark_stack_chunk_list_free(stack_chunk_t *chunk)
 {
-    stack_chunk_t *chunk = stack->chunk;
     stack_chunk_t *next = NULL;
 
     while (chunk != NULL) {
@@ -6268,6 +6269,20 @@ free_stack_chunks(mark_stack_t *stack)
         free(chunk);
         chunk = next;
     }
+}
+
+static void
+free_stack_chunks(mark_stack_t *stack)
+{
+    mark_stack_chunk_list_free(stack->chunk);
+}
+
+static void
+mark_stack_free_cache(mark_stack_t *stack)
+{
+    mark_stack_chunk_list_free(stack->cache);
+    stack->cache_size = 0;
+    stack->unused_cache_size = 0;
 }
 
 static void
@@ -9531,6 +9546,14 @@ gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_l
     mjit_gc_exit_hook();
     gc_exit_clock(objspace, event);
     RB_VM_LOCK_LEAVE_LEV(lock_lev);
+
+#if RGENGC_CHECK_MODE >= 2
+    if (event == gc_enter_event_sweep_continue && gc_mode(objspace) == gc_mode_none) {
+        GC_ASSERT(!during_gc);
+        // sweep finished
+        gc_verify_internal_consistency(objspace);
+    }
+#endif
 }
 
 static void *
@@ -10220,6 +10243,14 @@ update_class_ext(rb_objspace_t *objspace, rb_classext_t *ext)
 }
 
 static void
+update_superclasses(rb_objspace_t *objspace, VALUE obj)
+{
+    for (size_t i = 0; i < RCLASS_SUPERCLASS_DEPTH(obj); i++) {
+        UPDATE_IF_MOVED(objspace, RCLASS_SUPERCLASSES(obj)[i]);
+    }
+}
+
+static void
 gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
 {
     RVALUE *any = RANY(obj);
@@ -10236,6 +10267,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         update_m_tbl(objspace, RCLASS_M_TBL(obj));
         update_cc_tbl(objspace, obj);
         update_cvc_tbl(objspace, obj);
+        update_superclasses(objspace, obj);
 
         gc_update_tbl_refs(objspace, RCLASS_IV_TBL(obj));
 
@@ -11417,19 +11449,23 @@ rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-    if (during_gc) rb_bug("rb_objspace_reachable_objects_from() is not supported while during_gc == true");
+    RB_VM_LOCK_ENTER();
+    {
+        if (during_gc) rb_bug("rb_objspace_reachable_objects_from() is not supported while during_gc == true");
 
-    if (is_markable_object(objspace, obj)) {
-        rb_ractor_t *cr = GET_RACTOR();
-        struct gc_mark_func_data_struct mfd = {
-            .mark_func = func,
-            .data = data,
-        }, *prev_mfd = cr->mfd;
+        if (is_markable_object(objspace, obj)) {
+            rb_ractor_t *cr = GET_RACTOR();
+            struct gc_mark_func_data_struct mfd = {
+                .mark_func = func,
+                .data = data,
+            }, *prev_mfd = cr->mfd;
 
-        cr->mfd = &mfd;
-	gc_mark_children(objspace, obj);
-        cr->mfd = prev_mfd;
+            cr->mfd = &mfd;
+            gc_mark_children(objspace, obj);
+            cr->mfd = prev_mfd;
+        }
     }
+    RB_VM_LOCK_LEAVE();
 }
 
 struct root_objects_data {
@@ -12224,6 +12260,13 @@ rb_xmalloc_mul_add(size_t x, size_t y, size_t z) /* x * y + z */
 }
 
 void *
+rb_xcalloc_mul_add(size_t x, size_t y, size_t z) /* x * y + z */
+{
+    size_t w = size_mul_add_or_raise(x, y, z, rb_eArgError);
+    return ruby_xcalloc(w, 1);
+}
+
+void *
 rb_xrealloc_mul_add(const void *p, size_t x, size_t y, size_t z) /* x * y + z */
 {
     size_t w = size_mul_add_or_raise(x, y, z, rb_eArgError);
@@ -12611,15 +12654,24 @@ wmap_inspect(VALUE self)
     return str;
 }
 
+static inline bool
+wmap_live_entry_p(rb_objspace_t *objspace, st_data_t key, st_data_t val)
+{
+    return wmap_live_p(objspace, (VALUE)key) && wmap_live_p(objspace, (VALUE)val);
+}
+
 static int
 wmap_each_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)arg;
-    VALUE obj = (VALUE)val;
-    if (wmap_live_p(objspace, obj)) {
-	rb_yield_values(2, (VALUE)key, obj);
+
+    if (wmap_live_entry_p(objspace, key, val)) {
+        rb_yield_values(2, (VALUE)key, (VALUE)val);
+        return ST_CONTINUE;
     }
-    return ST_CONTINUE;
+    else {
+        return ST_DELETE;
+    }
 }
 
 /* Iterates over keys and objects in a weakly referenced object */
@@ -12638,11 +12690,14 @@ static int
 wmap_each_key_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)arg;
-    VALUE obj = (VALUE)val;
-    if (wmap_live_p(objspace, obj)) {
-	rb_yield((VALUE)key);
+
+    if (wmap_live_entry_p(objspace, key, val)) {
+        rb_yield((VALUE)key);
+        return ST_CONTINUE;
     }
-    return ST_CONTINUE;
+    else {
+        return ST_DELETE;
+    }
 }
 
 /* Iterates over keys and objects in a weakly referenced object */
@@ -12661,11 +12716,14 @@ static int
 wmap_each_value_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)arg;
-    VALUE obj = (VALUE)val;
-    if (wmap_live_p(objspace, obj)) {
-	rb_yield(obj);
+
+    if (wmap_live_entry_p(objspace, key, val)) {
+        rb_yield((VALUE)val);
+        return ST_CONTINUE;
     }
-    return ST_CONTINUE;
+    else {
+        return ST_DELETE;
+    }
 }
 
 /* Iterates over keys and objects in a weakly referenced object */
@@ -12686,11 +12744,14 @@ wmap_keys_i(st_data_t key, st_data_t val, st_data_t arg)
     struct wmap_iter_arg *argp = (struct wmap_iter_arg *)arg;
     rb_objspace_t *objspace = argp->objspace;
     VALUE ary = argp->value;
-    VALUE obj = (VALUE)val;
-    if (wmap_live_p(objspace, obj)) {
-	rb_ary_push(ary, (VALUE)key);
+
+    if (wmap_live_entry_p(objspace, key, val)) {
+        rb_ary_push(ary, (VALUE)key);
+        return ST_CONTINUE;
     }
-    return ST_CONTINUE;
+    else {
+        return ST_DELETE;
+    }
 }
 
 /* Iterates over keys and objects in a weakly referenced object */
@@ -12713,11 +12774,14 @@ wmap_values_i(st_data_t key, st_data_t val, st_data_t arg)
     struct wmap_iter_arg *argp = (struct wmap_iter_arg *)arg;
     rb_objspace_t *objspace = argp->objspace;
     VALUE ary = argp->value;
-    VALUE obj = (VALUE)val;
-    if (wmap_live_p(objspace, obj)) {
-	rb_ary_push(ary, obj);
+
+    if (wmap_live_entry_p(objspace, key, val)) {
+        rb_ary_push(ary, (VALUE)val);
+        return ST_CONTINUE;
     }
-    return ST_CONTINUE;
+    else {
+        return ST_DELETE;
+    }
 }
 
 /* Iterates over values and objects in a weakly referenced object */
@@ -12782,6 +12846,7 @@ wmap_lookup(VALUE self, VALUE key)
     VALUE obj;
     struct weakmap *w;
     rb_objspace_t *objspace = &rb_objspace;
+    GC_ASSERT(wmap_live_p(objspace, key));
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
     if (!st_lookup(w->wmap2obj, (st_data_t)key, &data)) return Qundef;

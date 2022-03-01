@@ -55,6 +55,7 @@ class Reline::Config
     @if_stack = nil
     @editing_mode_label = :emacs
     @keymap_label = :emacs
+    @keymap_prefix = []
     @key_actors = {}
     @key_actors[:emacs] = Reline::KeyActor::Emacs.new
     @key_actors[:vi_insert] = Reline::KeyActor::ViInsert.new
@@ -221,7 +222,7 @@ class Reline::Config
         key, func_name = $1, $2
         keystroke, func = bind_key(key, func_name)
         next unless keystroke
-        @additional_key_bindings[@keymap_label][keystroke] = func
+        @additional_key_bindings[@keymap_label][@keymap_prefix + keystroke] = func
       end
     end
     unless @if_stack.empty?
@@ -292,18 +293,29 @@ class Reline::Config
       when 'emacs'
         @editing_mode_label = :emacs
         @keymap_label = :emacs
+        @keymap_prefix = []
       when 'vi'
         @editing_mode_label = :vi_insert
         @keymap_label = :vi_insert
+        @keymap_prefix = []
       end
     when 'keymap'
       case value
-      when 'emacs', 'emacs-standard', 'emacs-meta', 'emacs-ctlx'
+      when 'emacs', 'emacs-standard'
         @keymap_label = :emacs
+        @keymap_prefix = []
+      when 'emacs-ctlx'
+        @keymap_label = :emacs
+        @keymap_prefix = [?\C-x.ord]
+      when 'emacs-meta'
+        @keymap_label = :emacs
+        @keymap_prefix = [?\e.ord]
       when 'vi', 'vi-move', 'vi-command'
         @keymap_label = :vi_command
+        @keymap_prefix = []
       when 'vi-insert'
         @keymap_label = :vi_insert
+        @keymap_prefix = []
       end
     when 'keyseq-timeout'
       @keyseq_timeout = value.to_i

@@ -20,6 +20,7 @@ etc.o: $(hdrdir)/ruby/backward/2/stdarg.h
 etc.o: $(hdrdir)/ruby/defines.h
 etc.o: $(hdrdir)/ruby/encoding.h
 etc.o: $(hdrdir)/ruby/intern.h
+etc.o: $(hdrdir)/ruby/internal/abi.h
 etc.o: $(hdrdir)/ruby/internal/anyargs.h
 etc.o: $(hdrdir)/ruby/internal/arithmetic.h
 etc.o: $(hdrdir)/ruby/internal/arithmetic/char.h

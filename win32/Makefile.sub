@@ -148,7 +148,7 @@ PLATFORM_DIR = win32
 arch = $(ARCH)-$(PLATFORM)
 sitearch = $(ARCH)-$(RT)
 !if !defined(ruby_version)
-ruby_version = $(MAJOR).$(MINOR).0
+ruby_version = $(MAJOR).$(MINOR).0+$(ABI_VERSION)
 !endif
 !if !defined(RUBY_VERSION_NAME)
 RUBY_VERSION_NAME = $(RUBY_BASE_NAME)-$(ruby_version)
@@ -702,8 +702,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define ALWAYS_INLINE(x) __forceinline x
 #define WARN_UNUSED_RESULT(x) x
 #define MAYBE_UNUSED(x) x
-#define UNREACHABLE __assume(0)
-#define ASSUME(x) __assume(!!(x))
+!if !defined(VS2022_FP_BUG)
+#define HAVE___ASSUME 1
+!endif
 #define FUNC_STDCALL(x) __stdcall x
 #define FUNC_CDECL(x) __cdecl x
 #define FUNC_FASTCALL(x) __fastcall x

@@ -199,6 +199,7 @@ class RDoc::Markdown
       @result = nil
       @failed_rule = nil
       @failing_rule_offset = -1
+      @line_offsets = nil
 
       setup_foreign_grammar
     end
@@ -215,17 +216,32 @@ class RDoc::Markdown
       target + 1
     end
 
-    def current_line(target=pos)
-      cur_offset = 0
-      cur_line = 0
+    if [].respond_to? :bsearch_index
+      def current_line(target=pos)
+        unless @line_offsets
+          @line_offsets = []
+          total = 0
+          string.each_line do |line|
+            total += line.size
+            @line_offsets << total
+          end
+        end
 
-      string.each_line do |line|
-        cur_line += 1
-        cur_offset += line.size
-        return cur_line if cur_offset >= target
+        @line_offsets.bsearch_index {|x| x >= target } + 1 || -1
       end
+    else
+      def current_line(target=pos)
+        cur_offset = 0
+        cur_line = 0
 
-      -1
+        string.each_line do |line|
+          cur_line += 1
+          cur_offset += line.size
+          return cur_line if cur_offset >= target
+        end
+
+        -1
+      end
     end
 
     def lines
@@ -533,11 +549,11 @@ class RDoc::Markdown
 
 
 
-  require 'rdoc'
-  require 'rdoc/markup/to_joined_paragraph'
-  require 'rdoc/markdown/entities'
+  require_relative '../rdoc'
+  require_relative 'markup/to_joined_paragraph'
+  require_relative 'markdown/entities'
 
-  require 'rdoc/markdown/literals'
+  require_relative 'markdown/literals'
 
   ##
   # Supported extensions
@@ -14918,7 +14934,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # RawLine = (< (!"\r" !"\n" .)* @Newline > | < .+ > @Eof) { text }
+  # RawLine = (< /[^\r\n]*/ @Newline > | < .+ > @Eof) { text }
   def _RawLine
 
     _save = self.pos
@@ -14930,36 +14946,7 @@ class RDoc::Markdown
 
         _save2 = self.pos
         while true # sequence
-          while true
-
-            _save4 = self.pos
-            while true # sequence
-              _save5 = self.pos
-              _tmp = match_string("\r")
-              _tmp = _tmp ? nil : true
-              self.pos = _save5
-              unless _tmp
-                self.pos = _save4
-                break
-              end
-              _save6 = self.pos
-              _tmp = match_string("\n")
-              _tmp = _tmp ? nil : true
-              self.pos = _save6
-              unless _tmp
-                self.pos = _save4
-                break
-              end
-              _tmp = get_byte
-              unless _tmp
-                self.pos = _save4
-              end
-              break
-            end # end sequence
-
-            break unless _tmp
-          end
-          _tmp = true
+          _tmp = scan(/\G(?-mix:[^\r\n]*)/)
           unless _tmp
             self.pos = _save2
             break
@@ -14977,10 +14964,10 @@ class RDoc::Markdown
         break if _tmp
         self.pos = _save1
 
-        _save7 = self.pos
+        _save3 = self.pos
         while true # sequence
           _text_start = self.pos
-          _save8 = self.pos
+          _save4 = self.pos
           _tmp = get_byte
           if _tmp
             while true
@@ -14989,18 +14976,18 @@ class RDoc::Markdown
             end
             _tmp = true
           else
-            self.pos = _save8
+            self.pos = _save4
           end
           if _tmp
             text = get_text(_text_start)
           end
           unless _tmp
-            self.pos = _save7
+            self.pos = _save3
             break
           end
           _tmp = _Eof()
           unless _tmp
-            self.pos = _save7
+            self.pos = _save3
           end
           break
         end # end sequence
@@ -16661,7 +16648,7 @@ class RDoc::Markdown
   Rules[:_OptionallyIndentedLine] = rule_info("OptionallyIndentedLine", "Indent? Line")
   Rules[:_StartList] = rule_info("StartList", "&. { [] }")
   Rules[:_Line] = rule_info("Line", "@RawLine:a { a }")
-  Rules[:_RawLine] = rule_info("RawLine", "(< (!\"\\r\" !\"\\n\" .)* @Newline > | < .+ > @Eof) { text }")
+  Rules[:_RawLine] = rule_info("RawLine", "(< /[^\\r\\n]*/ @Newline > | < .+ > @Eof) { text }")
   Rules[:_SkipBlock] = rule_info("SkipBlock", "(HtmlBlock | (!\"\#\" !SetextBottom1 !SetextBottom2 !@BlankLine @RawLine)+ @BlankLine* | @BlankLine+ | @RawLine)")
   Rules[:_ExtendedSpecialChar] = rule_info("ExtendedSpecialChar", "&{ notes? } \"^\"")
   Rules[:_NoteReference] = rule_info("NoteReference", "&{ notes? } RawNoteReference:ref { note_for ref }")

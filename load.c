@@ -201,61 +201,95 @@ is_rbext_path(VALUE feature_path)
     return IS_RBEXT(RSTRING_PTR(feature_path) + len - rbext_len);
 }
 
+typedef rb_darray(long) feature_indexes_t;
+
+struct features_index_add_single_args {
+    rb_vm_t *vm;
+    VALUE offset;
+    bool rb;
+};
+
+static int
+features_index_add_single_callback(st_data_t *key, st_data_t *value, st_data_t raw_args, int existing)
+{
+    struct features_index_add_single_args *args = (struct features_index_add_single_args *)raw_args;
+    rb_vm_t *vm = args->vm;
+    VALUE offset = args->offset;
+    bool rb = args->rb;
+
+    if (existing) {
+        VALUE this_feature_index = *value;
+
+        if (FIXNUM_P(this_feature_index)) {
+            VALUE loaded_features = get_loaded_features(vm);
+            VALUE this_feature_path = RARRAY_AREF(loaded_features, FIX2LONG(this_feature_index));
+
+            feature_indexes_t feature_indexes;
+            rb_darray_make_with_gc(&feature_indexes, 2);
+            int top = (rb && !is_rbext_path(this_feature_path)) ? 1 : 0;
+            rb_darray_set(feature_indexes, top^0, FIX2LONG(this_feature_index));
+            rb_darray_set(feature_indexes, top^1, FIX2LONG(offset));
+
+            assert(rb_darray_size(feature_indexes) == 2);
+            // assert feature_indexes does not look like a special const
+            assert(!SPECIAL_CONST_P((VALUE)feature_indexes));
+
+            *value = (st_data_t)feature_indexes;
+        }
+        else {
+            feature_indexes_t feature_indexes = (feature_indexes_t)this_feature_index;
+            long pos = -1;
+
+            if (rb) {
+                VALUE loaded_features = get_loaded_features(vm);
+                for (size_t i = 0; i < rb_darray_size(feature_indexes); ++i) {
+                    long idx = rb_darray_get(feature_indexes, i);
+                    VALUE this_feature_path = RARRAY_AREF(loaded_features, idx);
+                    Check_Type(this_feature_path, T_STRING);
+                    if (!is_rbext_path(this_feature_path)) {
+                        pos = i;
+                        break;
+                    }
+                }
+            }
+
+            rb_darray_append_with_gc(&feature_indexes, FIX2LONG(offset));
+            /* darray may realloc which will change the pointer */
+            *value = (st_data_t)feature_indexes;
+
+            if (pos >= 0) {
+                long *ptr = rb_darray_data_ptr(feature_indexes);
+                long len = rb_darray_size(feature_indexes);
+                MEMMOVE(ptr + pos, ptr + pos + 1, long, len - pos - 1);
+                ptr[pos] = FIX2LONG(offset);
+            }
+        }
+    }
+    else {
+        *value = offset;
+    }
+
+    return ST_CONTINUE;
+}
+
 static void
 features_index_add_single(rb_vm_t *vm, const char* str, size_t len, VALUE offset, bool rb)
 {
     struct st_table *features_index;
-    VALUE this_feature_index = Qnil;
     st_data_t short_feature_key;
-    st_data_t data;
 
     Check_Type(offset, T_FIXNUM);
     short_feature_key = feature_key(str, len);
 
     features_index = get_loaded_features_index_raw(vm);
-    if (!st_lookup(features_index, short_feature_key, &data) ||
-        NIL_P(this_feature_index = (VALUE)data)) {
-	st_insert(features_index, short_feature_key, (st_data_t)offset);
-    }
-    else if (FIXNUM_P(this_feature_index)) {
-	VALUE loaded_features = get_loaded_features(vm);
-	VALUE this_feature_path = RARRAY_AREF(loaded_features, FIX2LONG(this_feature_index));
-	VALUE feature_indexes[2];
-	int top = (rb && !is_rbext_path(this_feature_path)) ? 1 : 0;
-	feature_indexes[top^0] = this_feature_index;
-	feature_indexes[top^1] = offset;
-	this_feature_index = (VALUE)xcalloc(1, sizeof(struct RArray));
-	RBASIC(this_feature_index)->flags = T_ARRAY; /* fake VALUE, do not mark/sweep */
-	rb_ary_cat(this_feature_index, feature_indexes, numberof(feature_indexes));
-	st_insert(features_index, short_feature_key, (st_data_t)this_feature_index);
-    }
-    else {
-        long pos = -1;
 
-	Check_Type(this_feature_index, T_ARRAY);
-        if (rb) {
-            VALUE loaded_features = get_loaded_features(vm);
-            for (long i = 0; i < RARRAY_LEN(this_feature_index); ++i) {
-                VALUE idx = RARRAY_AREF(this_feature_index, i);
-                VALUE this_feature_path = RARRAY_AREF(loaded_features, FIX2LONG(idx));
-                Check_Type(this_feature_path, T_STRING);
-                if (!is_rbext_path(this_feature_path)) {
-                    /* as this_feature_index is a fake VALUE, `push` (which
-                     * doesn't wb_unprotect like as rb_ary_splice) first,
-                     * then rotate partially. */
-                    pos = i;
-                    break;
-                }
-            }
-        }
-	rb_ary_push(this_feature_index, offset);
-        if (pos >= 0) {
-            VALUE *ptr = (VALUE *)RARRAY_CONST_PTR_TRANSIENT(this_feature_index);
-            long len = RARRAY_LEN(this_feature_index);
-            MEMMOVE(ptr + pos, ptr + pos + 1, VALUE, len - pos - 1);
-            ptr[pos] = offset;
-        }
-    }
+    struct features_index_add_single_args args = {
+        .vm = vm,
+        .offset = offset,
+        .rb = rb,
+    };
+
+    st_update(features_index, short_feature_key, features_index_add_single_callback, (st_data_t)&args);
 }
 
 /* Add to the loaded-features index all the required entries for
@@ -309,8 +343,7 @@ loaded_features_index_clear_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     VALUE obj = (VALUE)val;
     if (!SPECIAL_CONST_P(obj)) {
-	rb_ary_free(obj);
-	ruby_sized_xfree((void *)obj, sizeof(struct RArray));
+        rb_darray_free_with_gc((void *)obj);
     }
     return ST_DELETE;
 }
@@ -480,18 +513,17 @@ rb_feature_p(rb_vm_t *vm, const char *feature, const char *ext, int rb, int expa
        as any distractors, so we may ignore all other entries in `features`.
      */
     if (st_lookup(features_index, key, &data) && !NIL_P(this_feature_index = (VALUE)data)) {
-	for (i = 0; ; i++) {
-	    VALUE entry;
+        for (size_t i = 0; ; i++) {
 	    long index;
-	    if (RB_TYPE_P(this_feature_index, T_ARRAY)) {
-		if (i >= RARRAY_LEN(this_feature_index)) break;
-		entry = RARRAY_AREF(this_feature_index, i);
-	    }
-	    else {
+            if (FIXNUM_P(this_feature_index)) {
 		if (i > 0) break;
-		entry = this_feature_index;
+                index = FIX2LONG(this_feature_index);
 	    }
-	    index = FIX2LONG(entry);
+            else {
+                feature_indexes_t feature_indexes = (feature_indexes_t)this_feature_index;
+                if (i >= rb_darray_size(feature_indexes)) break;
+                index = rb_darray_get(feature_indexes, i);
+            }
 
 	    v = RARRAY_AREF(features, index);
 	    f = StringValuePtr(v);
@@ -625,6 +657,10 @@ rb_provide_feature(rb_vm_t *vm, VALUE feature)
     rb_str_freeze(feature);
 
     get_loaded_features_index(vm);
+    // If loaded_features and loaded_features_snapshot share the same backing
+    // array, pushing into it would cause the whole array to be copied.
+    // To avoid this we first clear loaded_features_snapshot.
+    rb_ary_clear(vm->loaded_features_snapshot);
     rb_ary_push(features, rb_fstring(feature));
     features_index_add(vm, feature, INT2FIX(RARRAY_LEN(features)-1));
     reset_loaded_features_snapshot(vm);

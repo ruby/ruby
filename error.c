@@ -77,6 +77,7 @@ static ID id_category;
 static ID id_deprecated;
 static ID id_experimental;
 static VALUE sym_category;
+static VALUE sym_highlight;
 static struct {
     st_table *id2enum, *enum2id;
 } warning_categories;
@@ -1122,7 +1123,7 @@ static VALUE rb_eNOERROR;
 
 ID ruby_static_id_cause;
 #define id_cause ruby_static_id_cause
-static ID id_message, id_backtrace;
+static ID id_message, id_detailed_message, id_backtrace;
 static ID id_key, id_matchee, id_args, id_Errno, id_errno, id_i_path;
 static ID id_receiver, id_recv, id_iseq, id_local_variables;
 static ID id_private_call_p, id_top, id_bottom;
@@ -1224,12 +1225,27 @@ exc_to_s(VALUE exc)
 }
 
 /* FIXME: Include eval_error.c */
-void rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlight, VALUE reverse);
+void rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE opt, VALUE highlight, VALUE reverse);
 
 VALUE
 rb_get_message(VALUE exc)
 {
     VALUE e = rb_check_funcall(exc, id_message, 0, 0);
+    if (e == Qundef) return Qnil;
+    if (!RB_TYPE_P(e, T_STRING)) e = rb_check_string_type(e);
+    return e;
+}
+
+VALUE
+rb_get_detailed_message(VALUE exc, VALUE opt)
+{
+    VALUE e;
+    if (NIL_P(opt)) {
+        e = rb_check_funcall(exc, id_detailed_message, 0, 0);
+    }
+    else {
+        e = rb_check_funcall_kw(exc, id_detailed_message, 1, &opt, 1);
+    }
     if (e == Qundef) return Qnil;
     if (!RB_TYPE_P(e, T_STRING)) e = rb_check_string_type(e);
     return e;
@@ -1245,6 +1261,62 @@ static VALUE
 exc_s_to_tty_p(VALUE self)
 {
     return RBOOL(rb_stderr_tty_p());
+}
+
+static VALUE
+check_highlight_keyword(VALUE opt, int auto_tty_detect)
+{
+    VALUE highlight = Qnil;
+
+    if (!NIL_P(opt)) {
+        highlight = rb_hash_aref(opt, sym_highlight);
+
+        switch (highlight) {
+          default:
+            rb_bool_expected(highlight, "highlight");
+            UNREACHABLE;
+          case Qundef: highlight = Qnil; break;
+          case Qtrue: case Qfalse: case Qnil: break;
+        }
+    }
+
+    if (NIL_P(highlight)) {
+        if (auto_tty_detect) {
+            highlight = rb_stderr_tty_p() ? Qtrue : Qfalse;
+        }
+        else {
+            highlight = Qfalse;
+        }
+    }
+
+    return highlight;
+}
+
+static VALUE
+check_order_keyword(VALUE opt)
+{
+    VALUE order = Qnil;
+
+    if (!NIL_P(opt)) {
+        static VALUE kw_order;
+        if (!kw_order) kw_order = ID2SYM(rb_intern_const("order"));
+
+        order = rb_hash_aref(opt, kw_order);
+
+        if (order != Qnil) {
+            ID id = rb_check_id(&order);
+            if (id == id_bottom) order = Qtrue;
+            else if (id == id_top) order = Qfalse;
+            else {
+                rb_raise(rb_eArgError, "expected :top or :bottom as "
+                        "order: %+"PRIsVALUE, order);
+            }
+        }
+    }
+
+    if (NIL_P(order)) order = Qfalse;
+
+    return order;
 }
 
 /*
@@ -1269,44 +1341,23 @@ static VALUE
 exc_full_message(int argc, VALUE *argv, VALUE exc)
 {
     VALUE opt, str, emesg, errat;
-    enum {kw_highlight, kw_order, kw_max_};
-    static ID kw[kw_max_];
-    VALUE args[kw_max_] = {Qnil, Qnil};
+    VALUE highlight, order;
 
     rb_scan_args(argc, argv, "0:", &opt);
-    if (!NIL_P(opt)) {
-	if (!kw[0]) {
-#define INIT_KW(n) kw[kw_##n] = rb_intern_const(#n)
-	    INIT_KW(highlight);
-	    INIT_KW(order);
-#undef INIT_KW
-	}
-	rb_get_kwargs(opt, kw, 0, kw_max_, args);
-	switch (args[kw_highlight]) {
-	  default:
-            rb_bool_expected(args[kw_highlight], "highlight");
-	    UNREACHABLE;
-	  case Qundef: args[kw_highlight] = Qnil; break;
-	  case Qtrue: case Qfalse: case Qnil: break;
-	}
-	if (args[kw_order] == Qundef) {
-	    args[kw_order] = Qnil;
-	}
-	else {
-	    ID id = rb_check_id(&args[kw_order]);
-	    if (id == id_bottom) args[kw_order] = Qtrue;
-	    else if (id == id_top) args[kw_order] = Qfalse;
-	    else {
-		rb_raise(rb_eArgError, "expected :top or :bottom as "
-			 "order: %+"PRIsVALUE, args[kw_order]);
-	    }
-	}
+
+    highlight = check_highlight_keyword(opt, 1);
+    order = check_order_keyword(opt);
+
+    {
+        if (NIL_P(opt)) opt = rb_hash_new();
+        rb_hash_aset(opt, sym_highlight, highlight);
     }
+
     str = rb_str_new2("");
     errat = rb_get_backtrace(exc);
-    emesg = rb_get_message(exc);
+    emesg = rb_get_detailed_message(exc, opt);
 
-    rb_error_write(exc, emesg, errat, str, args[kw_highlight], args[kw_order]);
+    rb_error_write(exc, emesg, errat, str, opt, highlight, order);
     return str;
 }
 
@@ -1322,6 +1373,38 @@ static VALUE
 exc_message(VALUE exc)
 {
     return rb_funcallv(exc, idTo_s, 0, 0);
+}
+
+/*
+ * call-seq:
+ *   exception.detailed_message(highlight: bool, **opt)   ->  string
+ *
+ * Processes a string returned by #message.
+ *
+ * It may add the class name of the exception to the end of the first line.
+ * Also, when +highlight+ keyword is true, it adds ANSI escape sequences to
+ * make the message bold.
+ *
+ * If you override this method, it must be tolerant for unknown keyword
+ * arguments. All keyword arguments passed to #full_message are delegated
+ * to this method.
+ *
+ * This method is overridden by did_you_mean and error_highlight to add
+ * their information.
+ */
+
+static VALUE
+exc_detailed_message(int argc, VALUE *argv, VALUE exc)
+{
+    VALUE opt;
+
+    rb_scan_args(argc, argv, "0:", &opt);
+
+    VALUE highlight = check_highlight_keyword(opt, 0);
+
+    extern VALUE rb_decorate_message(const VALUE eclass, const VALUE emesg, int highlight);
+
+    return rb_decorate_message(CLASS_OF(exc), rb_get_message(exc), RTEST(highlight));
 }
 
 /*
@@ -2880,6 +2963,7 @@ Init_Exception(void)
     rb_define_method(rb_eException, "==", exc_equal, 1);
     rb_define_method(rb_eException, "to_s", exc_to_s, 0);
     rb_define_method(rb_eException, "message", exc_message, 0);
+    rb_define_method(rb_eException, "detailed_message", exc_detailed_message, -1);
     rb_define_method(rb_eException, "full_message", exc_full_message, -1);
     rb_define_method(rb_eException, "inspect", exc_inspect, 0);
     rb_define_method(rb_eException, "backtrace", exc_backtrace, 0);
@@ -2967,6 +3051,7 @@ Init_Exception(void)
 
     id_cause = rb_intern_const("cause");
     id_message = rb_intern_const("message");
+    id_detailed_message = rb_intern_const("detailed_message");
     id_backtrace = rb_intern_const("backtrace");
     id_key = rb_intern_const("key");
     id_matchee = rb_intern_const("matchee");
@@ -2987,6 +3072,7 @@ Init_Exception(void)
     id_recv = rb_make_internal_id();
 
     sym_category = ID2SYM(id_category);
+    sym_highlight = ID2SYM(rb_intern_const("highlight"));
 
     warning_categories.id2enum = rb_init_identtable();
     st_add_direct(warning_categories.id2enum, id_deprecated, RB_WARN_CATEGORY_DEPRECATED);

@@ -7063,11 +7063,11 @@ static const rb_data_type_t env_data_type = {
  *
  *  ==== Methods for Comparing
  *
- *  {#<}[#method-i-3C]:: Returns whether +self+ is a proper subset of a given object.
- *  {#<=}[#method-i-3C-3D]:: Returns whether +self+ is a subset of a given object.
- *  {#==}[#method-i-3D-3D]:: Returns whether a given object is equal to +self+.
- *  {#>}[#method-i-3E]:: Returns whether +self+ is a proper superset of a given object
- *  {#>=}[#method-i-3E-3D]:: Returns whether +self+ is a proper superset of a given object.
+ *  #<:: Returns whether +self+ is a proper subset of a given object.
+ *  #<=:: Returns whether +self+ is a subset of a given object.
+ *  #==:: Returns whether a given object is equal to +self+.
+ *  #>:: Returns whether +self+ is a proper superset of a given object
+ *  #>=:: Returns whether +self+ is a proper superset of a given object.
  *
  *  ==== Methods for Fetching
  *
@@ -7089,7 +7089,7 @@ static const rb_data_type_t env_data_type = {
  *  #[]=, #store:: Associates a given key with a given value.
  *  #merge:: Returns the hash formed by merging each given hash into a copy of +self+.
  *  #merge!, #update:: Merges each given hash into +self+.
- *  #replace:: Replaces the entire contents of +self+ with the contents of a givan hash.
+ *  #replace:: Replaces the entire contents of +self+ with the contents of a given hash.
  *
  *  ==== Methods for Deleting
  *

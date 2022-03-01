@@ -17,18 +17,9 @@ describe "Date.iso8601" do
     d.should == Date.civil(-4712, 1, 1)
   end
 
-  it "parses a Symbol into a Date object" do
-    d = Date.iso8601(:'2015-10-15')
-    d.should == Date.civil(2015, 10, 15)
-  end
-
   it "parses a StringSubclass into a Date object" do
     d = Date.iso8601(Class.new(String).new("-4712-01-01"))
     d.should == Date.civil(-4712, 1, 1)
-  end
-
-  it "raises an ArgumentError when passed a Symbol without a valid Date" do
-    -> { Date.iso8601(:test) }.should raise_error(ArgumentError)
   end
 
   it "raises a TypeError when passed an Object" do

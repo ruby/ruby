@@ -15,11 +15,13 @@
 #define dln_memerror rb_memerror
 #define dln_exit rb_exit
 #define dln_loaderror rb_loaderror
+#define dln_fatalerror rb_fatal
 #else
 #define dln_notimplement --->>> dln not implemented <<<---
 #define dln_memerror abort
 #define dln_exit exit
 static void dln_loaderror(const char *format, ...);
+#define dln_fatalerror dln_loaderror
 #endif
 #include "dln.h"
 #include "internal.h"
@@ -68,10 +70,6 @@ void *xrealloc();
 
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
-#endif
-
-#ifndef _WIN32
-char *getenv();
 #endif
 
 #ifndef dln_loaderror
@@ -267,18 +265,51 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
 #ifdef USE_DLN_DLOPEN
 # include "ruby/internal/stdbool.h"
 # include "internal/warnings.h"
+static bool
+dln_incompatible_func(void *handle, const char *funcname, void *const fp, const char **libname)
+{
+    Dl_info dli;
+    void *ex = dlsym(handle, funcname);
+    if (!ex) return false;
+    if (ex == fp) return false;
+    if (dladdr(ex, &dli)) {
+	*libname = dli.dli_fname;
+    }
+    return true;
+}
+
 COMPILER_WARNING_PUSH
 #if defined(__clang__) || GCC_VERSION_SINCE(4, 2, 0)
 COMPILER_WARNING_IGNORED(-Wpedantic)
 #endif
 static bool
-dln_incompatible_library_p(void *handle)
+dln_incompatible_library_p(void *handle, const char **libname)
 {
-    void *ex = dlsym(handle, EXTERNAL_PREFIX"ruby_xmalloc");
-    void *const fp = (void *)ruby_xmalloc;
-    return ex && ex != fp;
+#define check_func(func) \
+    if (dln_incompatible_func(handle, EXTERNAL_PREFIX #func, (void *)&func, libname)) \
+	return true
+    check_func(ruby_xmalloc);
+    return false;
 }
 COMPILER_WARNING_POP
+#endif
+
+#if defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
+    (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_11)
+# include <sys/sysctl.h>
+
+static bool
+dln_disable_dlclose(void)
+{
+    int mib[] = {CTL_KERN, KERN_OSREV};
+    int32_t rev;
+    size_t size = sizeof(rev);
+    if (sysctl(mib, numberof(mib), &rev, &size, NULL, 0)) return true;
+    if (rev < MAC_OS_X_VERSION_10_11) return true;
+    return false;
+}
+#else
+# define dln_disable_dlclose() false
 #endif
 
 #if defined(_WIN32) || defined(USE_DLN_DLOPEN)
@@ -335,20 +366,26 @@ dln_open(const char *file)
     }
 
 # if defined(RUBY_EXPORT)
-	{
-	    if (dln_incompatible_library_p(handle)) {
-#  if defined(__APPLE__) && \
-    defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
-    (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_11)
+    {
+	const char *libruby_name = NULL;
+	if (dln_incompatible_library_p(handle, &libruby_name)) {
+	    if (dln_disable_dlclose()) {
 		/* dlclose() segfaults */
-		rb_fatal("%s - %s", incompatible, file);
-#  else
+		if (libruby_name) {
+		    dln_fatalerror("linked to incompatible %s - %s", libruby_name, file);
+		}
+		dln_fatalerror("%s - %s", incompatible, file);
+	    }
+	    else {
 		dlclose(handle);
+		if (libruby_name) {
+		    dln_loaderror("linked to incompatible %s - %s", libruby_name, file);
+		}
 		error = incompatible;
 		goto failed;
-#  endif
 	    }
 	}
+    }
 # endif
 #endif
 
@@ -389,11 +426,28 @@ dln_sym(void *handle, const char *symbol)
 }
 #endif
 
+#if RUBY_DLN_CHECK_ABI
+static bool
+abi_check_enabled_p(void)
+{
+    const char *val = getenv("RUBY_ABI_CHECK");
+    return val == NULL || !(val[0] == '0' && val[1] == '\0');
+}
+#endif
+
 void *
 dln_load(const char *file)
 {
 #if defined(_WIN32) || defined(USE_DLN_DLOPEN)
     void *handle = dln_open(file);
+
+#if RUBY_DLN_CHECK_ABI
+    unsigned long long (*abi_version_fct)(void) = (unsigned long long(*)(void))dln_sym(handle, "ruby_abi_version");
+    unsigned long long binary_abi_version = (*abi_version_fct)();
+    if (binary_abi_version != ruby_abi_version() && abi_check_enabled_p()) {
+        dln_loaderror("ABI version of binary is incompatible with this Ruby. Try rebuilding this binary.");
+    }
+#endif
 
     char *init_fct_name;
     init_funcname(&init_fct_name, file);

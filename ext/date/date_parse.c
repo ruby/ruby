@@ -253,6 +253,8 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 #define ABBR_DAYS "sun|mon|tue|wed|thu|fri|sat"
 #define ABBR_MONTHS "jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec"
 
+#define NUMBER "(?<!\\d)\\d"
+
 #ifdef TIGHT_PARSER
 #define VALID_DAYS "(?:" DAYS ")" "|(?:tues|wednes|thurs|thur|" ABBR_DAYS ")\\.?"
 #define VALID_MONTHS "(?:" MONTHS ")" "|(?:sept|" ABBR_MONTHS ")\\.?"
@@ -652,24 +654,27 @@ parse_time(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 		"("
+		   "" NUMBER "+\\s*"
 		   "(?:"
-		     "\\d+\\s*:\\s*\\d+"
 		     "(?:"
+		       ":\\s*\\d+"
+		       "(?:"
 #ifndef TIGHT_PARSER
-		       "\\s*:\\s*\\d+(?:[,.]\\d*)?"
+		         "\\s*:\\s*\\d+(?:[,.]\\d*)?"
 #else
-		       "\\s*:\\s*\\d+(?:[,.]\\d+)?"
+		         "\\s*:\\s*\\d+(?:[,.]\\d+)?"
 #endif
+		       ")?"
+		     "|"
+		       "h(?:\\s*\\d+m?(?:\\s*\\d+s?)?)?"
+		     ")"
+		     "(?:"
+		       "\\s*"
+		       "[ap](?:m\\b|\\.m\\.)"
 		     ")?"
 		   "|"
-		     "\\d+\\s*h(?:\\s*\\d+m?(?:\\s*\\d+s?)?)?"
-		   ")"
-		   "(?:"
-		     "\\s*"
 		     "[ap](?:m\\b|\\.m\\.)"
-		   ")?"
-		 "|"
-		   "\\d+\\s*[ap](?:m\\b|\\.m\\.)"
+		   ")"
 		 ")"
 		 "(?:"
 		   "\\s*"
@@ -691,6 +696,9 @@ parse_time(VALUE str, VALUE hash)
 #endif
 }
 
+#define BEGIN_ERA "\\b"
+#define END_ERA "(?!(?<!\\.)[a-z])"
+
 #ifdef TIGHT_PARSER
 static int
 parse_era1_cb(VALUE m, VALUE hash)
@@ -702,7 +710,7 @@ static int
 parse_era1(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
-	"(a(?:d|\\.d\\.))";
+	BEGIN_ERA "(a(?:d\\b|\\.d\\.))" END_ERA;
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
@@ -724,8 +732,9 @@ parse_era2_cb(VALUE m, VALUE hash)
 static int
 parse_era2(VALUE str, VALUE hash)
 {
-    static const char pat_source[] =
-	"(c(?:e|\\.e\\.)|b(?:ce|\\.c\\.e\\.)|b(?:c|\\.c\\.))";
+    static const char pat_source[] = BEGIN_ERA
+	"(c(?:e\\b|\\.e\\.)|b(?:ce\\b|\\.c\\.e\\.)|b(?:c\\b|\\.c\\.))"
+	END_ERA;
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
@@ -829,7 +838,7 @@ parse_eu(VALUE str, VALUE hash)
 		FPW_COM FPT_COM
 #endif
 #ifndef TIGHT_PARSER
-		"('?\\d+)[^-\\d\\s]*"
+		"('?" NUMBER "+)[^-\\d\\s]*"
 #else
 		"(\\d+)(?:(?:st|nd|rd|th)\\b)?"
 #endif
@@ -842,7 +851,11 @@ parse_eu(VALUE str, VALUE hash)
 		 "(?:"
 		   "\\s*"
 #ifndef TIGHT_PARSER
-		   "(c(?:e|\\.e\\.)|b(?:ce|\\.c\\.e\\.)|a(?:d|\\.d\\.)|b(?:c|\\.c\\.))?"
+		   "(?:"
+		     BEGIN_ERA
+		     "(c(?:e|\\.e\\.)|b(?:ce|\\.c\\.e\\.)|a(?:d|\\.d\\.)|b(?:c|\\.c\\.))"
+		     END_ERA
+		   ")?"
 		   "\\s*"
 		   "('?-?\\d+(?:(?:st|nd|rd|th)\\b)?)"
 #else
@@ -919,8 +932,8 @@ parse_us(VALUE str, VALUE hash)
 		COM_FPT
 #endif
 		 "(?:"
-		   "\\s*,?"
-		   "\\s*"
+		   "\\s*+,?"
+		   "\\s*+"
 #ifndef TIGHT_PARSER
 		   "(c(?:e|\\.e\\.)|b(?:ce|\\.c\\.e\\.)|a(?:d|\\.d\\.)|b(?:c|\\.c\\.))?"
 		   "\\s*"
@@ -967,7 +980,7 @@ parse_iso(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 #ifndef TIGHT_PARSER
-	"('?[-+]?\\d+)-(\\d+)-('?-?\\d+)"
+	"('?[-+]?" NUMBER "+)-(\\d+)-('?-?\\d+)"
 #else
 	BOS
 	FPW_COM FPT_COM
@@ -1321,7 +1334,7 @@ parse_vms11(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 #ifndef TIGHT_PARSER
-	"('?-?\\d+)-(" ABBR_MONTHS ")[^-/.]*"
+	"('?-?" NUMBER "+)-(" ABBR_MONTHS ")[^-/.]*"
 	"-('?-?\\d+)"
 #else
 	BOS
@@ -1416,7 +1429,7 @@ parse_sla(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 #ifndef TIGHT_PARSER
-	"('?-?\\d+)/\\s*('?\\d+)(?:\\D\\s*('?-?\\d+))?"
+	"('?-?" NUMBER "+)/\\s*('?\\d+)(?:\\D\\s*('?-?\\d+))?"
 #else
 	BOS
 	FPW_COM FPT_COM
@@ -1524,7 +1537,7 @@ parse_dot(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 #ifndef TIGHT_PARSER
-	"('?-?\\d+)\\.\\s*('?\\d+)\\.\\s*('?-?\\d+)"
+	"('?-?" NUMBER "+)\\.\\s*('?\\d+)\\.\\s*('?-?\\d+)"
 #else
 	BOS
 	FPW_COM FPT_COM
@@ -1684,7 +1697,7 @@ parse_mday(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 #ifndef TIGHT_PARSER
-	"(\\d+)(st|nd|rd|th)\\b"
+	"(" NUMBER "+)(st|nd|rd|th)\\b"
 #else
 	BOS
 	FPW_COM FPT_COM
@@ -1922,7 +1935,7 @@ parse_ddd(VALUE str, VALUE hash)
 #ifdef TIGHT_PARSER
 		BOS
 #endif
-		"([-+]?)(\\d{2,14})"
+		"([-+]?)(" NUMBER "{2,14})"
 		  "(?:"
 		    "\\s*"
 		    "t?"

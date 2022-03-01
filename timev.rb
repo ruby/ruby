@@ -95,17 +95,17 @@
 #
 # First, what's elsewhere. \Class \Time:
 #
-# - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
-# - Includes {module Comparable}[Comparable.html#module-Comparable-label-What-27s+Here].
+# - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
+# - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
 #
 # Here, class \Time provides methods that are useful for:
 #
-# - {Creating \Time objects}[#class-Time-label-Methods+for+Creating].
-# - {Fetching \Time values}[#class-Time-label-Methods+for+Fetching].
-# - {Querying a \Time object}[#class-Time-label-Methods+for+Querying].
-# - {Comparing \Time objects}[#class-Time-label-Methods+for+Comparing].
-# - {Converting a \Time object}[#class-Time-label-Methods+for+Converting].
-# - {Rounding a \Time}[#class-Time-label-Methods+for+Rounding].
+# - {Creating \Time objects}[rdoc-ref:Time@Methods+for+Creating].
+# - {Fetching \Time values}[rdoc-ref:Time@Methods+for+Fetching].
+# - {Querying a \Time object}[rdoc-ref:Time@Methods+for+Querying].
+# - {Comparing \Time objects}[rdoc-ref:Time@Methods+for+Comparing].
+# - {Converting a \Time object}[rdoc-ref:Time@Methods+for+Converting].
+# - {Rounding a \Time}[rdoc-ref:Time@Methods+for+Rounding].
 #
 # === Methods for Creating
 #
@@ -117,8 +117,7 @@
 # - ::at: Returns a new time based on seconds since epoch.
 # - ::now: Returns a new time based on the current system time.
 # - #+ (plus): Returns a new time increased by the given number of seconds.
-# - {-}[#method-i-2D] (minus): Returns a new time
-#                              decreased by the given number of seconds.
+# - #- (minus): Returns a new time decreased by the given number of seconds.
 #
 # === Methods for Fetching
 #
@@ -158,7 +157,7 @@
 #
 # === Methods for Comparing
 #
-# - {#<=>}[#method-i-3C-3D-3E]: Compares +self+ to another time.
+# - #<=>: Compares +self+ to another time.
 # - #eql?: Returns whether the time is equal to another time.
 #
 # === Methods for Converting
