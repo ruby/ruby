@@ -141,7 +141,7 @@ module Bundler
       end
       return unless multiple_gemfiles
       message = "Multiple gemfiles (gems.rb and Gemfile) detected. " \
-                "Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.rb.locked."
+                "Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.locked."
       Bundler.ui.warn message
     end
 

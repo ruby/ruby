@@ -83,7 +83,7 @@ The options that can be configured are:
    A space-separated list of groups referencing gems to skip during installation.
 
 * `with`:
-  A space-separated list of groups referencing gems to include during installation.
+  A space-separated list of **optional** groups referencing gems to include during installation.
 
 ## BUILD OPTIONS
 

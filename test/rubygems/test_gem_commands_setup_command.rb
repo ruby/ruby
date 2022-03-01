@@ -274,6 +274,8 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     spec.executables.each do |e|
       assert_path_exist File.join destdir, @gemhome.gsub(/^[a-zA-Z]:/, ''), 'gems', spec.full_name, spec.bindir, e
     end
+  ensure
+    FileUtils.chmod "+w", @gemhome
   end
 
   def test_install_default_bundler_gem_with_destdir_and_prefix_flags
