@@ -782,6 +782,7 @@ module Bundler
       else
         { :default => Source::RubygemsAggregate.new(sources, source_map) }.merge(source_map.direct_requirements)
       end
+      source_requirements.merge!(source_map.locked_requirements) unless @remote
       metadata_dependencies.each do |dep|
         source_requirements[dep.name] = sources.metadata_source
       end
@@ -828,7 +829,7 @@ module Bundler
     end
 
     def source_map
-      @source_map ||= SourceMap.new(sources, dependencies)
+      @source_map ||= SourceMap.new(sources, dependencies, @locked_specs)
     end
   end
 end
