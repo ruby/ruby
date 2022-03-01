@@ -143,10 +143,16 @@ enc/<%=e%>.$(OBJEXT): <%=deps.map {|n| rule_subst % n}.join(' ')%>
 	$(Q)<%=cmd%>
 
 % end
-% dependencies.each do |e|
+% (ENCS + ["trans/transdb"]).each do |e|
 <%="enc/#{e}.$(OBJEXT)"%>: <%="$(encsrcdir)/#{e}.c"%>
 	$(ECHO) compiling <%= "$(encsrcdir)/#{e}.c"%>
 	$(Q)<%=COMPILE_C.gsub(/\$(\()?<(\:[^)]+)?(\))?/){"$(encsrcdir)/#{e}.c"}%>
+
+% end
+% ATRANS.each do |e|
+<%="enc/trans/#{e}.$(OBJEXT)"%>: <%=transvpath % "#{e}.c"%>
+	$(ECHO) compiling <%=transvpath % "#{e}.c"%>
+	$(Q)<%=COMPILE_C.gsub(/\$(\()?<(\:[^)]+)?(\))?/){ transvpath % "#{e}.c"}%>
 
 % end
 
