@@ -426,7 +426,7 @@ dln_sym(void *handle, const char *symbol)
 }
 #endif
 
-#if RUBY_DLN_CHECK_ABI
+#if RUBY_DLN_CHECK_ABI && (defined(_WIN32) || defined(USE_DLN_DLOPEN))
 static bool
 abi_check_enabled_p(void)
 {
