@@ -6070,13 +6070,14 @@ rb_str_chr(VALUE str)
 
 /*
  *  call-seq:
- *    getbyte(index) -> integer
+ *    getbyte(index) -> integer or nil
  *
- *  Returns the byte at zero-based +index+ as an integer:
+ *  Returns the byte at zero-based +index+ as an integer, or +nil+ if +index+ is out of range:
  *
- *    s = 'abcde'  # => "abcde"
- *    s.getbyte(0) # => 97
- *    s.getbyte(1) # => 98
+ *    s = 'abcde'   # => "abcde"
+ *    s.getbyte(0)  # => 97
+ *    s.getbyte(-1) # => 101
+ *    s.getbyte(5)  # => nil
  *
  *  Related: String#setbyte.
  */
