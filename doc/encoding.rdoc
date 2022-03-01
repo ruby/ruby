@@ -274,6 +274,29 @@ For an \IO, \File, \ARGF, or \StringIO object, the internal encoding may be set 
 
 - \Method +set_encoding+.
 
+==== Stream \Encoding Example
+
+This example writes a string to a file, encoding it as ISO-8859-1,
+then reads the file into a new string, encoding it as UTF-8:
+
+  s = "R\u00E9sum\u00E9"
+  path = 't.tmp'
+  ext_enc = 'ISO-8859-1'
+  int_enc = 'UTF-8'
+
+  File.write(path, s, external_encoding: ext_enc)
+  raw_text = File.binread(path)
+
+  transcoded_text = File.read(path, external_encoding: ext_enc, internal_encoding: int_enc)
+
+  p raw_text
+  p transcoded_text
+
+Output:
+
+  "R\xE9sum\xE9"
+  "Résumé"
+
 === Script \Encoding
 
 A Ruby script has a script encoding, which may be retrieved by:
