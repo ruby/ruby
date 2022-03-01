@@ -2971,8 +2971,15 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 
     /* mark machine stack */
     if (ec->machine.stack_start && ec->machine.stack_end &&
+#ifdef USE_THIRD_PARTY_HEAP
+	true // When using MMTk, stacks are marked by a GC worker thread which doesn't have "current ec".
+#else // USE_THIRD_PARTY_HEAP
 	ec != GET_EC() /* marked for current ec at the first stage of marking */
+#endif // USE_THIRD_PARTY_HEAP
 	) {
+	fprintf(stderr, "********************************************\n");
+	fprintf(stderr, "*********** Scanning machine stack for ec=%p\n", ec);
+	fprintf(stderr, "********************************************\n");
 	rb_gc_mark_machine_stack(ec);
 	rb_gc_mark_locations((VALUE *)&ec->machine.regs,
 			     (VALUE *)(&ec->machine.regs) +

@@ -2335,8 +2335,8 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
     p->as.basic.flags = flags;
     *((VALUE *)&p->as.basic.klass) = klass;
 
-    //fprintf(stdout, "newobj_init: %p, %s\n", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
- 
+//    fprintf(stderr, "newobj_init: %p, %s\n", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
+
 #ifdef USE_THIRD_PARTY_HEAP
     switch (RB_BUILTIN_TYPE(obj)) {
       case T_DATA:
@@ -2651,6 +2651,7 @@ newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr, size_t a
     RUBY_ASSERT(mmtk_alloc_size < alloc_size + MMTK_ALIGNMENT);
     RUBY_ASSERT(mmtk_alloc_size % MMTK_ALIGNMENT == 0);
     obj = (VALUE) mmtk_alloc(GET_THREAD()->mutator, mmtk_alloc_size, MMTK_ALIGNMENT, 0, 0); // Default allocation semantics
+    mmtk_post_alloc(GET_THREAD()->mutator, (void*)obj, mmtk_alloc_size, 0);
     return newobj_init(klass, flags, wb_protected, objspace, obj);
 #endif
 
@@ -2974,7 +2975,15 @@ static inline int
 is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
 {
 #ifdef USE_THIRD_PARTY_HEAP
-    return mmtk_is_mapped_object(ptr);
+    bool result = mmtk_is_mmtk_object(ptr);
+
+//     if (result) {
+//     	fprintf(stderr, "***** %18p: YEAH! It looks like an object reference! *****\n", ptr);
+//     } else {
+//     	fprintf(stderr, "      %18p: nope\n", ptr);
+//     }
+
+    return result;
 #endif
     register uintptr_t p = (uintptr_t)ptr;
     register struct heap_page *page;
@@ -7003,18 +7012,32 @@ gc_pin(rb_objspace_t *objspace, VALUE obj)
 }
 
 static inline void
+rb_mmtk_mark_movable(VALUE obj);
+
+static inline void
+rb_mmtk_mark_pin(VALUE obj);
+
+static inline void
 gc_mark_and_pin(rb_objspace_t *objspace, VALUE obj)
 {
+#ifdef USE_THIRD_PARTY_HEAP
+    rb_mmtk_mark_pin(obj);
+#else // USE_THIRD_PARTY_HEAP
     if (!is_markable_object(objspace, obj)) return;
     gc_pin(objspace, obj);
     gc_mark_ptr(objspace, obj);
+#endif // USE_THIRD_PARTY_HEAP
 }
 
 static inline void
 gc_mark(rb_objspace_t *objspace, VALUE obj)
 {
+#ifdef USE_THIRD_PARTY_HEAP
+    rb_mmtk_mark_movable(obj);
+#else // USE_THIRD_PARTY_HEAP
     if (!is_markable_object(objspace, obj)) return;
     gc_mark_ptr(objspace, obj);
+#endif // USE_THIRD_PARTY_HEAP
 }
 
 void
@@ -7405,11 +7428,20 @@ show_mark_ticks(void)
 #endif /* PRINT_ROOT_TICKS */
 
 static void
+rb_mmtk_assert_mmtk_worker();
+
+static void
 gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
 {
     struct gc_list *list;
+
+#ifdef USE_THIRD_PARTY_HEAP
+    rb_mmtk_assert_mmtk_worker();
+    rb_vm_t *vm = GET_VM();
+#else
     rb_execution_context_t *ec = GET_EC();
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
+#endif // USE_THIRD_PARTY_HEAP
 
 #if PRINT_ROOT_TICKS
     tick_t start_tick = tick();
@@ -7446,15 +7478,22 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
 } while (0)
 
     MARK_CHECKPOINT("vm");
+    // Note that when using MMTk, this function is executed by a GC worker thread, not a mutator.
+    // Therefore we don't set stack end or scan the current stack.
+#ifndef USE_THIRD_PARTY_HEAP
     SET_STACK_END;
+#endif // USE_THIRD_PARTY_HEAP
     rb_vm_mark(vm);
     if (vm->self) gc_mark(objspace, vm->self);
 
     MARK_CHECKPOINT("finalizers");
     mark_finalizer_tbl(objspace, finalizer_table);
 
+#ifndef USE_THIRD_PARTY_HEAP
+    // When using MMTk, the current thread is a GC worker.  Mutators are scanned separately.
     MARK_CHECKPOINT("machine_context");
     mark_current_machine_context(objspace, ec);
+#endif // USE_THIRD_PARTY_HEAP
 
     /* mark protected global variables */
     MARK_CHECKPOINT("global_list");
@@ -14145,9 +14184,23 @@ struct RubyMMTKGlobal {
     },
 };
 
-typedef struct rb_mmtk_worker_thread {
-    rb_ractor_t *ractor;
-} rb_mmtk_worker_thread_t;
+struct rb_mmtk_address_buffer {
+    void **slots;
+    size_t len;
+    size_t capa;
+};
+
+typedef struct rb_mmtk_gc_thread_tls {
+    int kind;                      // Controller or worker
+    void *gc_context;              // Point to MMTk's GCController or GCWorker
+    struct rb_mmtk_address_buffer mark_buffer;
+} rb_mmtk_gc_thread_tls_t;
+
+#ifdef RB_THREAD_LOCAL_SPECIFIER
+RB_THREAD_LOCAL_SPECIFIER rb_mmtk_gc_thread_tls_t *rb_mmtk_gc_thread_tls;
+#else // RB_THREAD_LOCAL_SPECIFIER
+#error We currently need language-supported TLS
+#endif // RB_THREAD_LOCAL_SPECIFIER
 
 static void
 rb_mmtk_use_mmtk_global(void (*func)(void *), void* arg)
@@ -14165,6 +14218,28 @@ rb_mmtk_use_mmtk_global(void (*func)(void *), void* arg)
 	abort();
     }
 }
+static void
+rb_mmtk_flush_mark_buffer(void)
+{
+    mmtk_notify_mark_buffer_full(rb_mmtk_gc_thread_tls);
+    RUBY_ASSERT(rb_mmtk_gc_thread_tls->mark_buffer.len == 0);
+}
+
+static void
+rb_mmtk_add_to_mark_buffer(void* obj)
+{
+    RUBY_ASSERT(obj != NULL);
+    struct rb_mmtk_address_buffer *mark_buffer = &rb_mmtk_gc_thread_tls->mark_buffer;
+
+    RUBY_ASSERT(mark_buffer->len < mark_buffer->capa);
+
+    mark_buffer->slots[mark_buffer->len] = obj;
+    mark_buffer->len += 1;
+
+    if (mark_buffer->len == mark_buffer->capa) {
+	rb_mmtk_flush_mark_buffer();
+    }
+}
 
 void
 rb_gc_init_collection(void)
@@ -14174,15 +14249,22 @@ rb_gc_init_collection(void)
     cur_thread->mutator = mmtk_bind_mutator((MMTk_VMMutatorThread)cur_thread);
 }
 
-static MMTk_VMWorkerThread
-rb_mmtk_init_gc_worker_thread(MMTk_VMThread tls)
+static void
+rb_mmtk_init_gc_worker_thread(MMTk_VMWorkerThread gc_thread_tls)
 {
-    rb_thread_t *main_thread = (rb_thread_t*)tls;
+    rb_mmtk_gc_thread_tls = (rb_mmtk_gc_thread_tls_t*)gc_thread_tls;
+}
 
-    rb_mmtk_worker_thread_t *worker_thread = (rb_mmtk_worker_thread_t*)malloc(sizeof(rb_mmtk_worker_thread_t));
-    worker_thread->ractor = main_thread->ractor;
+static inline bool
+rb_mmtk_is_mmtk_worker(void)
+{
+    return rb_mmtk_gc_thread_tls != NULL && rb_mmtk_gc_thread_tls->kind == MMTK_GC_THREAD_KIND_WORKER;
+}
 
-    return (MMTk_VMWorkerThread)worker_thread;
+static inline void
+rb_mmtk_assert_mmtk_worker(void)
+{
+    RUBY_ASSERT_MESG(rb_mmtk_is_mmtk_worker(), "The current thread is not an MMTk worker");
 }
 
 static void
@@ -14195,12 +14277,11 @@ rb_mmtk_panic_if_multiple_ractor(const char *msg)
 }
 
 static void
-rb_mmtk_stop_the_world(MMTk_VMWorkerThread tls)
+rb_mmtk_stop_the_world(MMTk_VMWorkerThread _tls)
 {
     rb_mmtk_panic_if_multiple_ractor(__FUNCTION__);
 
-    rb_mmtk_worker_thread_t *worker_thread = (rb_mmtk_worker_thread_t*)tls;
-    rb_ractor_t *ractor = worker_thread->ractor;
+    rb_ractor_t *ractor = GET_VM()->ractor.main_ractor;
     rb_stop_all_mutators_for_gc(rb_ractor_gvl(ractor));
 }
 
@@ -14219,8 +14300,7 @@ rb_mmtk_resume_mutators(MMTk_VMWorkerThread tls)
 
     rb_mmtk_use_mmtk_global(rb_mmtk_increment_start_the_world_count, NULL);
 
-    rb_mmtk_worker_thread_t *worker_thread = (rb_mmtk_worker_thread_t*)tls;
-    rb_ractor_t *ractor = worker_thread->ractor;
+    rb_ractor_t *ractor = GET_VM()->ractor.main_ractor;
     rb_start_all_mutators_after_gc(rb_ractor_gvl(ractor));
 }
 
@@ -14236,8 +14316,14 @@ rb_mmtk_wait_for_gc_end(void *param)
     rb_thread_t *cur_thread = ctx->tls;
     RUBY_ASSERT(cur_thread == GET_THREAD());
     while (rb_mmtk_global.start_the_world_count < ctx->my_count + 1) {
+	fprintf(stderr, "Will wait for cond. cur: %zu, expected: %zu\n",
+		rb_mmtk_global.start_the_world_count, ctx->my_count + 1);
 	pthread_cond_wait(&rb_mmtk_global.cond_world_started, &rb_mmtk_global.mutex);
     }
+
+    fprintf(stderr, "It is reported that GC has finished, but we know we haven't implemented it yet.\n");
+    fprintf(stderr, "Stop now.\n");
+    abort();
 }
 
 static void*
@@ -14265,6 +14351,16 @@ rb_mmtk_block_for_gc(MMTk_VMMutatorThread tls)
 
     ctx.tls = tls;
     rb_thread_call_without_gvl(rb_mmtk_block_for_gc_internal, &ctx, NULL, NULL);
+}
+
+static size_t
+rb_mmtk_number_of_mutators(void)
+{
+    rb_mmtk_panic_if_multiple_ractor(__FUNCTION__);
+
+    rb_ractor_t *main_ractor = GET_VM()->ractor.main_ractor;
+    size_t num_threads = main_ractor->threads.cnt;
+    return num_threads;
 }
 
 static void
@@ -14317,13 +14413,75 @@ rb_mmtk_get_next_mutator(void)
     }
 }
 
+static void
+rb_mmtk_scan_vm_specific_roots(void)
+{
+    fprintf(stderr, "Scanning VM-specific roots...\n");
+
+    rb_vm_t *vm = GET_VM();
+
+    const char *phase;
+
+    gc_mark_roots(vm->objspace, &phase);
+}
+
+static void
+rb_mmtk_scan_thread_roots(void)
+{
+    abort(); // We are not using this function at this time.
+}
+
+static void
+rb_mmtk_scan_thread_root(MMTk_VMMutatorThread mutator, MMTk_VMWorkerThread worker)
+{
+    rb_thread_t *thread = (rb_thread_t*)mutator;
+    rb_execution_context_t *ec = thread->ec;
+
+    fprintf(stderr, "[Worker: %p] We will scan thread root for thread: %p, ec: %p\n", worker, thread, ec);
+
+    rb_execution_context_mark(thread->ec);
+
+    fprintf(stderr, "[Worker: %p] Finished scanning thread for thread: %p, ec: %p\n", worker, thread, ec);
+}
+
+
+static inline void
+rb_mmtk_mark(VALUE obj, bool pin)
+{
+    rb_mmtk_assert_mmtk_worker();
+    fprintf(stderr, "Marking: %s %s %p\n",
+	pin ? "(pin)" : "     ",
+	RB_SPECIAL_CONST_P(obj) ? "(spc)" : "     ",
+	(void*)obj);
+
+    if (!RB_SPECIAL_CONST_P(obj)) {
+	rb_mmtk_add_to_mark_buffer((void*)obj);
+    }
+}
+
+static inline void
+rb_mmtk_mark_movable(VALUE obj)
+{
+    rb_mmtk_mark(obj, false);
+}
+
+static inline void
+rb_mmtk_mark_pin(VALUE obj)
+{
+    rb_mmtk_mark(obj, true);
+}
+
 RubyUpcalls ruby_upcalls = {
     rb_mmtk_init_gc_worker_thread,
     rb_mmtk_stop_the_world,
     rb_mmtk_resume_mutators,
     rb_mmtk_block_for_gc,
+    rb_mmtk_number_of_mutators,
     rb_mmtk_reset_mutator_iterator,
     rb_mmtk_get_next_mutator,
+    rb_mmtk_scan_vm_specific_roots,
+    rb_mmtk_scan_thread_roots,
+    rb_mmtk_scan_thread_root,
 };
 
 #endif
