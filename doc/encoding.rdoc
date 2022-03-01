@@ -287,8 +287,7 @@ then reads the file into a new string, encoding it as UTF-8:
   File.write(path, s, external_encoding: ext_enc)
   raw_text = File.binread(path)
 
-  f = File.open(path, external_encoding: ext_enc, internal_encoding: int_enc)
-  transcoded_text = f.read
+  transcoded_text = File.read(path, external_encoding: ext_enc, internal_encoding: int_enc)
 
   p raw_text
   p transcoded_text
