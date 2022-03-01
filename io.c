@@ -2196,6 +2196,7 @@ rb_io_flush(VALUE io)
  *    f.tell # => 0
  *    f.gets # => "First line\n"
  *    f.tell # => 12
+ *    f.close
  *
  *  Related: IO#pos=, IO#seek.
  *
@@ -2267,6 +2268,7 @@ interpret_seek_whence(VALUE vwhence)
  *      f.tell            # => 20
  *      f.seek(-10, :CUR) # => 0
  *      f.tell            # => 10
+ *      f.close
  *
  *  - +:END+ or <tt>IO::SEEK_END</tt>:
  *    Repositions the stream to its end plus the given +offset+:
@@ -2279,6 +2281,7 @@ interpret_seek_whence(VALUE vwhence)
  *      f.tell            # => 32
  *      f.seek(-40, :END) # => 0
  *      f.tell            # => 12
+ *      f.close
  *
  *  - +:SET+ or <tt>IO:SEEK_SET</tt>:
  *    Repositions the stream to the given +offset+:
@@ -2289,6 +2292,7 @@ interpret_seek_whence(VALUE vwhence)
  *      f.tell           # => 20
  *      f.seek(40, :SET) # => 0
  *      f.tell           # => 40
+ *      f.close
  *
  *  Related: IO#pos=, IO#tell.
  *
@@ -2318,6 +2322,7 @@ rb_io_seek_m(int argc, VALUE *argv, VALUE io)
  *    f.tell     # => 0
  *    f.pos = 20 # => 20
  *    f.tell     # => 20
+ *    f.close
  *
  *  Related: IO#seek, IO#tell.
  *
@@ -2357,6 +2362,7 @@ static void clear_readconv(rb_io_t *fptr);
  *    f.rewind   # => 0
  *    f.tell     # => 0
  *    f.lineno   # => 0
+ *    f.close
  *
  *  Note that this method cannot be used with streams such as pipes, ttys, and sockets.
  *
@@ -2441,6 +2447,7 @@ io_fillbuf(rb_io_t *fptr)
  *    f.eof           # => false
  *    f.seek(0, :END) # => 0
  *    f.eof           # => true
+ *    f.close
  *
  *  Raises an exception unless the stream is opened for reading;
  *  see {Mode}[rdoc-ref:IO@Mode].
@@ -2498,6 +2505,7 @@ rb_io_eof(VALUE io)
  *    f.sync # => false
  *    f.sync = true
  *    f.sync # => true
+ *    f.close
  *
  */
 
@@ -2532,6 +2540,7 @@ rb_io_sync(VALUE io)
  *    f.sync # => false
  *    f.sync = true
  *    f.sync # => true
+ *    f.close
  *
  *  Related: IO#fsync.
  *
@@ -2651,6 +2660,7 @@ rb_io_fdatasync(VALUE io)
  *    $stdout.fileno            # => 1
  *    $stderr.fileno            # => 2
  *    File.open('t.txt').fileno # => 10
+ *    f.close
  *
  *  IO#to_i is an alias for IO#fileno.
  *
@@ -2722,6 +2732,7 @@ rb_io_pid(VALUE io)
  *
  *    f = File.open('t.txt')
  *    f.inspect # => "#<File:t.txt>"
+ *    f.close
  *
  */
 
@@ -3258,6 +3269,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
  *    f.readpartial(20) # => "ine\n\nFourth line\n"
  *    f.readpartial(20) # => "Fifth line\n"
  *    f.readpartial(20) # Raises EOFError.
+ *    f.close
  *
  *  With both argument +maxlen+ and string argument +out_string+ given,
  *  returns modified +out_string+:
@@ -3267,6 +3279,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
  *    f.readpartial(20, s) # => "First line\nSecond l"
  *    s = 'bar'
  *    f.readpartial(0, s)  # => ""
+ *    f.close
  *
  *  This method is useful for a stream such as a pipe, a socket, or a tty.
  *  It blocks only when no data is immediately available.
@@ -3469,6 +3482,7 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
  *    f.read(30) # => "First line\r\nSecond line\r\n\r\nFou"
  *    f.read(30) # => "rth line\r\nFifth line\r\n"
  *    f.read(30) # => nil
+ *    f.close
  *
  *  If +maxlen+ is zero, returns an empty string.
  *
@@ -3491,6 +3505,7 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
  *    s = 'bat'
  *    f.read(30, s)  # => nil
  *    s              # => ""
+ *    f.close
  *
  *  Note that this method behaves like the fread() function in C.
  *  This means it retries to invoke read(2) system calls to read data
@@ -4005,6 +4020,7 @@ rb_io_gets_internal(VALUE io)
  *    f.gets # => "Fourth line\n"
  *    f.gets # => "Fifth line\n"
  *    f.gets # => nil
+ *    f.close
  *
  *  With only string argument +sep+ given,
  *  returns the next line as determined by line separator +sep+,
@@ -4016,6 +4032,7 @@ rb_io_gets_internal(VALUE io)
  *    f.gets('li')  # => "ine\nSecond li"
  *    f.gets('lin') # => "ne\n\nFourth lin"
  *    f.gets        # => "e\n"
+ *    f.close
  *
  *  The two special values for +sep+ are honored:
  *
@@ -4025,6 +4042,7 @@ rb_io_gets_internal(VALUE io)
  *    f.rewind
  *    # Get paragraph (up to two line separators).
  *    f.gets('')  # => "First line\nSecond line\n\n"
+ *    f.close
  *
  *  With only integer argument +limit+ given,
  *  limits the number of bytes in the line;
@@ -4053,6 +4071,7 @@ rb_io_gets_internal(VALUE io)
  *    f.gets(chomp: true) # => "Fourth line"
  *    f.gets(chomp: true) # => "Fifth line"
  *    f.gets(chomp: true) # => nil
+ *    f.close
  *
  */
 
@@ -4146,6 +4165,7 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *    f.readlines
  *    # => ["First line\n", "Second line\n", "\n", "Fourth line\n", "Fifth line\n"]
  *    f.readlines # => []
+ *    f.close
  *
  *  With only string argument +sep+ given,
  *  returns lines as determined by line separator +sep+,
@@ -4155,6 +4175,7 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *    f = File.new('t.txt')
  *    f.readlines('li')
  *    # => ["First li", "ne\nSecond li", "ne\n\nFourth li", "ne\nFifth li", "ne\n"]
+ *    f.close
  *
  *  The two special values for +sep+ are honored:
  *
@@ -4166,6 +4187,7 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *    f.rewind
  *    f.readlines('')
  *    # => ["First line\nSecond line\n\n", "Fourth line\nFifth line\n"]
+ *    f.close
  *
  *  With only integer argument +limit+ given,
  *  limits the number of bytes in each line;
@@ -4174,6 +4196,7 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *    f = File.new('t.txt')
  *    f.readlines(8)
  *    # => ["First li", "ne\n", "Second l", "ine\n", "\n", "Fourth l", "ine\n", "Fifth li", "ne\n"]
+ *    f.close
  *
  *  With arguments +sep+ and +limit+ given,
  *  combines the two behaviors:
@@ -4187,6 +4210,7 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *    f = File.new('t.txt')
  *    f.readlines(chomp: true)
  *    # => ["First line", "Second line", "", "Fourth line", "Fifth line"]
+ *    f.close
  *
  */
 
@@ -4231,6 +4255,7 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *    f = File.new('t.txt')
  *    f.each_line {|line| p line }
  *    f.each_line {|line| fail 'Cannot happen' }
+ *    f.close
  *
  *  Output:
  *
@@ -4246,6 +4271,7 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *
  *    f = File.new('t.txt')
  *    f.each_line('li') {|line| p line }
+ *    f.close
  *
  *  Output:
  *
@@ -4260,6 +4286,7 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *    f = File.new('t.txt')
  *    # Get all into one string.
  *    f.each_line(nil) {|line| p line }
+ *    f.close
  *
  *  Output:
  *
@@ -4280,6 +4307,7 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *
  *    f = File.new('t.txt')
  *    f.each_line(8) {|line| p line }
+ *    f.close
  *
  *  Output:
  *
@@ -4304,6 +4332,7 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *
  *    f = File.new('t.txt')
  *    f.each_line(chomp: true) {|line| p line }
+ *    f.close
  *
  *  Output:
  *
@@ -4346,6 +4375,7 @@ rb_io_each_line(int argc, VALUE *argv, VALUE io)
  *    a = []
  *    f.each_byte {|b| a << b }
  *    a # => [209, 130, 208, 181, 209, 129, 209, 130]
+ *    f.close
  *
  *  Returns an Enumerator if no block is given.
  *
@@ -4492,6 +4522,7 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
  *    a = []
  *    f.each_char {|c| a << c.ord }
  *    a # => [1090, 1077, 1089, 1090]
+ *    f.close
  *
  *  Returns an Enumerator if no block is given.
  *
@@ -4529,6 +4560,7 @@ rb_io_each_char(VALUE io)
  *    a = []
  *    f.each_codepoint {|c| a << c }
  *    a # => [1090, 1077, 1089, 1090]
+ *    f.close
  *
  *  Returns an Enumerator if no block is given.
  *
@@ -4649,8 +4681,10 @@ rb_io_each_codepoint(VALUE io)
  *
  *    f = File.open('t.txt')
  *    f.getc     # => "F"
+ *    f.close
  *    f = File.open('t.rus')
  *    f.getc.ord # => 1090
+ *    f.close
  *
  *  Related:  IO#readchar (may raise EOFError).
  *
@@ -4679,8 +4713,10 @@ rb_io_getc(VALUE io)
  *
  *    f = File.open('t.txt')
  *    f.readchar     # => "F"
+ *    f.close
  *    f = File.open('t.rus')
  *    f.readchar.ord # => 1090
+ *    f.close
  *
  *  Related:  IO#getc (will not raise EOFError).
  *
@@ -4706,8 +4742,10 @@ rb_io_readchar(VALUE io)
  *
  *    f = File.open('t.txt')
  *    f.getbyte # => 70
+ *    f.close
  *    f = File.open('t.rus')
  *    f.getbyte # => 209
+ *    f.close
  *
  *  Related: IO#readbyte (may raise EOFError).
  *
@@ -4748,8 +4786,10 @@ rb_io_getbyte(VALUE io)
  *
  *    f = File.open('t.txt')
  *    f.readbyte # => 70
+ *    f.close
  *    f = File.open('t.rus')
  *    f.readbyte # => 209
+ *    f.close
  *
  *  Related: IO#getbyte (will not raise EOFError).
  *
@@ -4788,6 +4828,7 @@ rb_io_readbyte(VALUE io)
  *    f.rewind
  *    f.ungetbyte(0x4243) # => nil
  *    f.read              # => "C012"
+ *    f.close
  *
  *  When argument +string+ is given, uses all bytes:
  *
@@ -4798,6 +4839,7 @@ rb_io_readbyte(VALUE io)
  *    f.rewind
  *    f.ungetbyte('BCDE') # => nil
  *    f.read              # => "BCDE012"
+ *    f.close
  *
  */
 
@@ -4846,6 +4888,7 @@ rb_io_ungetbyte(VALUE io, VALUE b)
  *    f.rewind
  *    f.ungetc(0x0442)   # => nil
  *    f.getc.ord         # => 1090
+ *    f.close
  *
  *  When argument +string+ is given, uses all characters:
  *
@@ -4859,6 +4902,7 @@ rb_io_ungetbyte(VALUE io, VALUE b)
  *    f.getc.ord      # => 1077
  *    f.getc.ord      # => 1089
  *    f.getc.ord      # => 1090
+ *    f.close
  *
  */
 
@@ -4940,6 +4984,7 @@ rb_io_isatty(VALUE io)
  *    f.close_on_exec? # => true
  *    f.close_on_exec = false
  *    f.close_on_exec? # => false
+ *    f.close
  *
  */
 
@@ -5625,6 +5670,7 @@ rb_io_sysseek(int argc, VALUE *argv, VALUE io)
  *    f.syswrite('foo') # => 3
  *    f.syswrite(30)    # => 2
  *    f.syswrite(:foo)  # => 3
+ *    f.close
  *
  *  This methods should not be used with other stream-writer methods.
  *
@@ -5761,6 +5807,7 @@ pread_internal_call(VALUE arg)
  *    f.pread(12, 0) # => "First line\n"
  *    # Read 9 bytes at offset 8.
  *    f.pread(9, 8)  # => "ne\nSecon"
+ *    f.close
  *
  *  Not available on some platforms.
  *
@@ -5834,6 +5881,7 @@ internal_pwrite_func(void *ptr)
  *    f.pwrite('ABCDEF', 3) # => 6
  *    f.rewind
  *    f.read # => "\u0000\u0000\u0000ABCDEF"
+ *    f.close
  *
  *  Not available on some platforms.
  *
@@ -8017,10 +8065,12 @@ rb_freopen(VALUE fname, const char *mode, FILE *fp)
  *    # Redirect $stdin from a file.
  *    f = File.open('t.txt')
  *    $stdin.reopen(f)
+ *    f.close
  *
  *    # Redirect $stdout to a file.
  *    f = File.open('t.tmp', 'w')
  *    $stdout.reopen(f)
+ *    f.close
  *
  *  With argument +path+ given, reassociates with a new stream to that file path:
  *
@@ -8264,6 +8314,7 @@ deprecated_str_setter(VALUE val, ID id, VALUE *var)
  *    f.print(*objects)
  *    f.rewind
  *    p f.read
+ *    f.close
  *
  *  Output:
  *
@@ -8290,6 +8341,7 @@ deprecated_str_setter(VALUE val, ID id, VALUE *var)
  *    f = File.open('t.tmp', 'w+')
  *    gets # Sets $_ to the most recent user input.
  *    f.print
+ *    f.close
  *
  */
 
@@ -8504,6 +8556,7 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
  *      # Return file content.
  *      f.rewind
  *      p f.read
+ *      f.close
  *    end
  *
  *    # Strings without newlines.
@@ -9040,10 +9093,12 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
  *   File.write('t.tmp', "\u{FEFF}abc")
  *   io = File.open('t.tmp', 'rb')
  *   io.set_encoding_by_bom # => #<Encoding:UTF-8>
+ *   io.close
  *
  *   File.write('t.tmp', 'abc')
  *   io = File.open('t.tmp', 'rb')
  *   io.set_encoding_by_bom # => nil
+ *   io.close
  *
  *  Raises an exception if the stream is not binmode
  *  or its encoding has already been set.
@@ -12655,6 +12710,8 @@ copy_stream_finalize(VALUE arg)
  *    src_io = File.open('t.txt', 'r') # => #<File:t.txt>
  *    dst_io = File.open('t.tmp', 'w') # => #<File:t.tmp>
  *    IO.copy_stream(src_io, dst_io)   # => 47
+ *    src_io.close
+ *    dst_io.close
  *
  *  With argument +src_length+ a non-negative integer,
  *  no more than that many bytes are copied:
@@ -14010,6 +14067,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    file.read
  *    file.gets     #=> nil
  *    file.readline #=> EOFError: end of file reached
+ *    file.close
  */
 
 /*
@@ -14227,6 +14285,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    f = File.new('t.dat', 'rb:UTF-16:UTF-16')
  *    f.external_encoding # => #<Encoding:UTF-16 (dummy)>
  *    f.internal_encoding # => #<Encoding:UTF-16>
+ *    f.close
  *
  *  The numerous encoding names are available in array Encoding.name_list:
  *
@@ -14317,6 +14376,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    f.gets # => "\n"
  *    f.gets # => "Fourth line\n"
  *    f.gets # => "Fifth line\n"
+ *    f.close
  *
  *  You can specify a different line separator:
  *
@@ -14325,6 +14385,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    f.gets('li')  # => "ine\nSecond li"
  *    f.gets('lin') # => "ne\n\nFourth lin"
  *    f.gets        # => "e\n"
+ *    f.close
  *
  *  There are two special line separators:
  *
@@ -14332,6 +14393,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *      f = File.new('t.txt')
  *      f.gets(nil) # => "First line\nSecond line\n\nFourth line\nFifth line\n"
+ *      f.close
  *
  *  - <tt>''</tt> (the empty string): The next "paragraph" is read
  *    (paragraphs being separated by two consecutive line separators):
@@ -14339,6 +14401,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *      f = File.new('t.txt')
  *      f.gets('') # => "First line\nSecond line\n\n"
  *      f.gets('') # => "Fourth line\nFifth line\n"
+ *      f.close
  *
  *  === Line Limit
  *
@@ -14399,6 +14462,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    f.readline # => "Here's the third line.\n"
  *    f.lineno   # => 3
  *    f.eof?     # => true
+ *    f.close
  *
  *  Iterating over lines in a stream usually changes its line number:
  *
@@ -14406,6 +14470,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *       f.each_line do |line|
  *         p "position=#{f.pos} eof?=#{f.eof?} line=#{line}"
  *       end
+ *       f.close
  *
  *  Output:
  *
