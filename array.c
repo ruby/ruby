@@ -3829,7 +3829,7 @@ ary_resize_smaller(VALUE ary, long len)
  *    array.delete(obj) -> deleted_object
  *    array.delete(obj) {|nosuch| ... } -> deleted_object or block_return
  *
- *  Removes zero or more elements from +self+; returns +self+.
+ *  Removes zero or more elements from +self+.
  *
  *  When no block is given,
  *  removes from +self+ each element +ele+ such that <tt>ele == obj</tt>;
