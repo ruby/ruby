@@ -121,7 +121,7 @@ Guidelines:
     the method and linked to it;  if not, manually insert a
     {link}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-Links].
 
-- If there are numerout entries, consider gouping them into subsections with headers.
+- If there are numerous entries, consider grouping them into subsections with headers.
 - If there are more than a few such subsections,
   consider adding a table of contents just below the main section title.
 
