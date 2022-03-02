@@ -44,6 +44,7 @@ m4_include([tool/m4/ruby_try_ldflags.m4])dnl
 m4_include([tool/m4/ruby_universal_arch.m4])dnl
 m4_include([tool/m4/ruby_wasm_tools.m4])dnl
 m4_include([tool/m4/ruby_werror_flag.m4])dnl
+m4_include([tool/m4/mmtk_ruby.m4])dnl
 
 AC_ARG_VAR([cflags], [additional CFLAGS (ignored when CFLAGS is given)])dnl
 AC_ARG_VAR([cppflags], [additional CPPFLAGS (ignored when CPPFLAGS is given)])dnl
@@ -3701,6 +3702,8 @@ AS_IF([test x"$gcov" = xyes], [
 ])
 
 RUBY_SETJMP_TYPE
+
+MMTK_RUBY
 }
 
 : "build section" && {
@@ -4418,6 +4421,7 @@ config_summary "warnflags"           "$warnflags"
 config_summary "strip command"       "$STRIP"
 config_summary "install doc"         "$DOCTARGETS"
 config_summary "JIT support"         "$MJIT_SUPPORT"
+config_summary "garbage collector"   "$gc_support"
 config_summary "man page type"       "$MANTYPE"
 config_summary "search path"         "$search_path"
 config_summary "static-linked-ext"   ${EXTSTATIC:+"yes"}

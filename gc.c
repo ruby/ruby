@@ -38,6 +38,9 @@
 #include <stdio.h>
 
 #ifdef USE_THIRD_PARTY_HEAP
+#if USE_TRANSIENT_HEAP
+#error MMTk does not use transient heap.
+#endif // USE_TRANSIENT_HEAP
 #include "mmtk.h"
 
 RubyUpcalls ruby_upcalls;

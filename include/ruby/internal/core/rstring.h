@@ -288,7 +288,7 @@ struct RString {
         /** Embedded contents. */
         struct {
 #if USE_RVARGC
-#if USE_THIRD_PARTY_HEAP
+#ifdef USE_THIRD_PARTY_HEAP
 	    short len;
 	    short capa;
 	    char ary[1];
