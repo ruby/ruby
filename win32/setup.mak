@@ -200,7 +200,10 @@ echo ABI_VERSION = RUBY_ABI_VERSION
 echo RUBY_DEVEL = yes
 #endif
 set /a MSC_VER = _MSC_VER
-#if _MSC_VER > 1900
+#if _MSC_VER >= 1920
+set /a MSC_VER_LOWER = MSC_VER/20*20+0
+set /a MSC_VER_UPPER = MSC_VER/20*20+19
+#elif _MSC_VER >= 1900
 set /a MSC_VER_LOWER = MSC_VER/10*10+0
 set /a MSC_VER_UPPER = MSC_VER/10*10+9
 #endif
