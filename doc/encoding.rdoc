@@ -327,7 +327,7 @@ whether it does so depends on the external and internal encodings:
 - IO.popen: Creates an \IO object to interact with a subprocess.
 - IO.read: Returns a string with all or a subset of bytes from the given stream.
 - IO.readlines: Returns an array of strings, which are the lines from the given stream.
-- IO.write: Writes a given string to +self+.
+- IO.write: Writes a given string to the given stream.
 
 This example writes a string to a file, encoding it as ISO-8859-1,
 then reads the file into a new string, encoding it as UTF-8:
