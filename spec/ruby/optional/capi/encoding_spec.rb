@@ -154,8 +154,16 @@ describe "C-API Encoding function" do
   end
 
   describe "rb_ascii8bit_encoding" do
-    it "returns the encoding for Encoding::BINARY" do
-      @s.rb_ascii8bit_encoding.should == "ASCII-8BIT"
+    ruby_version_is '3.2' do
+      it "returns the encoding for Encoding::BINARY" do
+        @s.rb_ascii8bit_encoding.should == "BINARY"
+      end
+    end
+
+    ruby_version_is ''..'3.1' do
+      it "returns the encoding for Encoding::BINARY" do
+        @s.rb_ascii8bit_encoding.should == "ASCII-8BIT"
+      end
     end
   end
 
@@ -185,8 +193,8 @@ describe "C-API Encoding function" do
 
   describe "rb_enc_get" do
     it "returns the encoding associated with an object" do
-      str = "abc".encode Encoding::BINARY
-      @s.rb_enc_get(str).should == "ASCII-8BIT"
+      str = "abc".encode Encoding::US_ASCII
+      @s.rb_enc_get(str).should == "US-ASCII"
     end
   end
 
@@ -351,7 +359,7 @@ describe "C-API Encoding function" do
 
   describe "rb_to_encoding" do
     it "returns the encoding for the Encoding instance passed" do
-      @s.rb_to_encoding(Encoding::BINARY).should == "ASCII-8BIT"
+      @s.rb_to_encoding(Encoding::US_ASCII).should == "US-ASCII"
     end
 
     it "returns the correct encoding for a replicated encoding" do
@@ -467,8 +475,8 @@ describe "C-API Encoding function" do
     end
 
     it "returns the encoding for Encoding.default_external" do
-      Encoding.default_external = "ASCII-8BIT"
-      @s.rb_default_external_encoding.should == "ASCII-8BIT"
+      Encoding.default_external = "US-ASCII"
+      @s.rb_default_external_encoding.should == "US-ASCII"
     end
   end
 

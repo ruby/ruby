@@ -577,7 +577,7 @@ sym_check_asciionly(VALUE str)
 /*
  * _str_ itself will be registered at the global symbol table.  _str_
  * can be modified before the registration, since the encoding will be
- * set to ASCII-8BIT if it is a special global name.
+ * set to BINARY if it is a special global name.
  */
 
 static inline void

@@ -21,11 +21,11 @@ end
 
 lines = []
 BUILTIN_ENCODINGS = {
-  'ASCII-8BIT' => 0,
+  'BINARY' => 0,
   'UTF-8' => 1,
   'US-ASCII' => 2,
 }
-encodings = %w[ASCII-8BIT UTF-8 US-ASCII] # BUILTIN_ENCODINGS.keys is not available on cross compiling and used ruby 1.8
+encodings = %w[BINARY UTF-8 US-ASCII] # BUILTIN_ENCODINGS.keys is not available on cross compiling and used ruby 1.8
 count = encodings.size
 defs = {}
 encdirs = ARGV.dup

@@ -895,7 +895,7 @@ rb_enc_find_index(const char *name)
     }
     else if (rb_enc_autoload_p(enc)) {
 	if (rb_enc_autoload(enc) < 0) {
-	    rb_warn("failed to load encoding (%s); use ASCII-8BIT instead",
+	    rb_warn("failed to load encoding (%s); use BINARY instead",
 		    name);
 	    return 0;
 	}
@@ -964,7 +964,7 @@ enc_get_index_str(VALUE str)
 	i = NUM2INT(iv);
 #else
         /*
-         * Tentatively, assume ASCII-8BIT, if encoding index instance
+         * Tentatively, assume BINARY, if encoding index instance
          * variable is not found.  This can happen when freeing after
          * all instance variables are removed in `obj_free`.
          */
@@ -1385,14 +1385,14 @@ enc_names(VALUE self)
  * Returns the list of loaded encodings.
  *
  *   Encoding.list
- *   #=> [#<Encoding:ASCII-8BIT>, #<Encoding:UTF-8>,
+ *   #=> [#<Encoding:BINARY>, #<Encoding:UTF-8>,
  *         #<Encoding:ISO-2022-JP (dummy)>]
  *
  *   Encoding.find("US-ASCII")
  *   #=> #<Encoding:US-ASCII>
  *
  *   Encoding.list
- *   #=> [#<Encoding:ASCII-8BIT>, #<Encoding:UTF-8>,
+ *   #=> [#<Encoding:BINARY>, #<Encoding:UTF-8>,
  *         #<Encoding:US-ASCII>, #<Encoding:ISO-2022-JP (dummy)>]
  *
  */
@@ -1865,7 +1865,7 @@ rb_enc_name_list_i(st_data_t name, st_data_t idx, st_data_t arg)
  * Returns the list of available encoding names.
  *
  *   Encoding.name_list
- *   #=> ["US-ASCII", "ASCII-8BIT", "UTF-8",
+ *   #=> ["US-ASCII", "BINARY", "UTF-8",
  *         "ISO-8859-1", "Shift_JIS", "EUC-JP",
  *         "Windows-31J",
  *         "BINARY", "CP932", "eucJP"]
@@ -1917,7 +1917,7 @@ rb_enc_aliases_enc_i(st_data_t name, st_data_t orig, st_data_t arg)
  * Returns the hash of available encoding alias and original encoding name.
  *
  *   Encoding.aliases
- *   #=> {"BINARY"=>"ASCII-8BIT", "ASCII"=>"US-ASCII", "ANSI_X3.4-1968"=>"US-ASCII",
+ *   #=> {"BINARY"=>"BINARY", "ASCII"=>"US-ASCII", "ANSI_X3.4-1968"=>"US-ASCII",
  *         "SJIS"=>"Windows-31J", "eucJP"=>"EUC-JP", "CP932"=>"Windows-31J"}
  *
  */
@@ -1964,7 +1964,7 @@ rb_enc_aliases(VALUE klass)
  * Encoding::ASCII_8BIT is a special encoding that is usually used for
  * a byte string, not a character string. But as the name insists, its
  * characters in the range of ASCII are considered as ASCII
- * characters.  This is useful when you use ASCII-8BIT characters with
+ * characters.  This is useful when you use BINARY characters with
  * other ASCII compatible characters.
  *
  * == Changing an encoding

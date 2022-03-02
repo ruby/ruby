@@ -160,7 +160,7 @@ static VALUE transcode_io(VALUE src, int * parser_encoding)
 	return src;
     }
 
-    /* Just guess on ASCII-8BIT */
+    /* Just guess on BINARY */
     if (io_external_enc_index == rb_ascii8bit_encindex()) {
 	*parser_encoding = YAML_ANY_ENCODING;
 	return src;
