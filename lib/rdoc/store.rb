@@ -557,7 +557,7 @@ class RDoc::Store
     #orig_enc = @encoding
 
     File.open cache_path, 'rb' do |io|
-      @cache = Marshal.load io.read
+      @cache = Marshal.load io
     end
 
     load_enc = @cache[:encoding]
@@ -616,7 +616,7 @@ class RDoc::Store
     file = class_file klass_name
 
     File.open file, 'rb' do |io|
-      Marshal.load io.read
+      Marshal.load io
     end
   rescue Errno::ENOENT => e
     error = MissingFileError.new(self, file, klass_name)
@@ -631,7 +631,7 @@ class RDoc::Store
     file = method_file klass_name, method_name
 
     File.open file, 'rb' do |io|
-      obj = Marshal.load io.read
+      obj = Marshal.load io
       obj.store = self
       obj.parent =
         find_class_or_module(klass_name) || load_class(klass_name) unless
@@ -651,7 +651,7 @@ class RDoc::Store
     file = page_file page_name
 
     File.open file, 'rb' do |io|
-      obj = Marshal.load io.read
+      obj = Marshal.load io
       obj.store = self
       obj
     end
