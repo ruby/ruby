@@ -111,16 +111,17 @@ Guidelines:
 - Consider listing the parent class and any included modules; consider
   {links}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-Links]
   to their "What's Here" sections if those exist.
-- List methods as a {labeled list}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-Labeled+Lists].
-- Each list entry's label is a method name;
-  if the method has aliases, include those with the "base" method method,
-  and do not list them separately.
-- Check the rendered documentation to determine whether \RDoc has recognized
-  the method and linked to it;  if not, manually insert a
-  {link}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-Links].
-- Each entry's description is a 1-line synopsis for the method.
-- Keep the description short.
-- If there are more entries, consider gouping them into subsections with headers.
+- List methods as a bullet list:
+
+  - Begin each item with the method name, followed by a colon
+    and a short description.
+  - If the method has aliases, mention them in parentheses before the colon
+    (and do not list the aliases separately).
+  - Check the rendered documentation to determine whether \RDoc has recognized
+    the method and linked to it;  if not, manually insert a
+    {link}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-Links].
+
+- If there are numerout entries, consider gouping them into subsections with headers.
 - If there are more than a few such subsections,
   consider adding a table of contents just below the main section title.
 
