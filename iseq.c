@@ -145,7 +145,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
 
 typedef VALUE iseq_value_itr_t(void *ctx, VALUE obj);
 
-void
+static void
 iseq_extract_values(VALUE insn, VALUE *code, size_t pos, iseq_value_itr_t * func, void *data)
 {
     int len = insn_len(insn);
