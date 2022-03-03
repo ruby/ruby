@@ -644,8 +644,6 @@ rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic)
         VALUE *code = body->iseq_encoded;
         const unsigned get_insn_idx = find_get_insn_idx(iseq, ic);
 
-        RUBY_ASSERT(get_insn_idx == ic->get_insn_idx);
-
         RUBY_ASSERT(rb_vm_insn_addr2insn((const void *)code[get_insn_idx]) == BIN(opt_getinlinecache));
         RUBY_ASSERT(get_insn_idx < body->iseq_size);
         RUBY_ASSERT(insn_op_type(BIN(opt_getinlinecache), 1) == TS_IC);
