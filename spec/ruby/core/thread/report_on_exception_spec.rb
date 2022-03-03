@@ -60,6 +60,27 @@ describe "Thread#report_on_exception=" do
         t.join
       }.should raise_error(RuntimeError, "Thread#report_on_exception specs")
     end
+
+    it "prints the backtrace even if the thread was killed just after Thread#raise" do
+      t = nil
+      ready = false
+      -> {
+        t = Thread.new {
+          Thread.current.report_on_exception = true
+          ready = true
+          sleep
+        }
+
+        Thread.pass until ready and t.stop?
+        t.raise RuntimeError, "Thread#report_on_exception before kill spec"
+        t.kill
+        Thread.pass while t.alive?
+      }.should output("", /Thread.+terminated with exception.+Thread#report_on_exception before kill spec/m)
+
+      -> {
+        t.join
+      }.should raise_error(RuntimeError, "Thread#report_on_exception before kill spec")
+    end
   end
 
   describe "when set to false" do

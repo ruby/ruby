@@ -54,16 +54,16 @@ describe "Dir#read" do
       old_external_encoding = Encoding::default_external
       Encoding.default_internal = Encoding::UTF_8
       Encoding.default_external = Encoding::SHIFT_JIS
-      dir = Dir.open(File.join(DirSpecs.mock_dir, 'special'))
       shift_jis_entries = []
       begin
-        -> {
-          while entry = dir.read
-            shift_jis_entries << entry
-          end
-        }.should_not raise_error
+        Dir.open(File.join(DirSpecs.mock_dir, 'special')) do |d|
+          -> {
+            while entry = d.read
+              shift_jis_entries << entry
+            end
+          }.should_not raise_error
+        end
       ensure
-        dir.close
         Encoding.default_internal = old_internal_encoding
         Encoding.default_external = old_external_encoding
       end

@@ -480,12 +480,31 @@ describe "CApiObject" do
     end
   end
 
+  describe "rb_obj_class" do
+    it "returns the class of an object" do
+      @o.rb_obj_class(nil).should == NilClass
+      @o.rb_obj_class(0).should == Integer
+      @o.rb_obj_class(0.1).should == Float
+      @o.rb_obj_class(ObjectTest.new).should == ObjectTest
+    end
+
+    it "does not return the singleton class if it exists" do
+      o = ObjectTest.new
+      o.singleton_class
+      @o.rb_obj_class(o).should equal ObjectTest
+    end
+  end
+
   describe "rb_obj_classname" do
     it "returns the class name of an object" do
       @o.rb_obj_classname(nil).should == 'NilClass'
       @o.rb_obj_classname(0).should == 'Integer'
       @o.rb_obj_classname(0.1).should == 'Float'
       @o.rb_obj_classname(ObjectTest.new).should == 'ObjectTest'
+
+      o = ObjectTest.new
+      o.singleton_class
+      @o.rb_obj_classname(o).should == 'ObjectTest'
     end
   end
 
