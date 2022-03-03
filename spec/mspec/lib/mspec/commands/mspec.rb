@@ -25,6 +25,7 @@ class MSpecMain < MSpecScript
     config[:command] = argv.shift if ["ci", "run", "tag"].include?(argv[0])
 
     options = MSpecOptions.new "mspec [COMMAND] [options] (FILE|DIRECTORY|GLOB)+", 30, config
+    @options = options
 
     options.doc " The mspec command sets up and invokes the sub-commands"
     options.doc " (see below) to enable, for instance, running the specs"
@@ -110,8 +111,9 @@ class MSpecMain < MSpecScript
     if config[:multi]
       exit multi_exec(argv)
     else
-      $stderr.puts "$ #{argv.join(' ')}"
-      $stderr.flush
+      log = config[:options].include?('--error-output') ? $stdout : $stderr
+      log.puts "$ #{argv.join(' ')}"
+      log.flush
       exec(*argv, close_others: false)
     end
   end
