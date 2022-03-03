@@ -8110,7 +8110,7 @@ rb_ary_deconstruct(VALUE ary)
  *  #last:: Returns one or more trailing elements.
  *  #max:: Returns one or more maximum-valued elements,
  *         as determined by <tt><=></tt> or a given block.
- *  #max:: Returns one or more minimum-valued elements,
+ *  #min:: Returns one or more minimum-valued elements,
  *         as determined by <tt><=></tt> or a given block.
  *  #minmax:: Returns the minimum-valued and maximum-valued elements,
  *            as determined by <tt><=></tt> or a given block.
