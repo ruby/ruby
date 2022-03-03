@@ -1810,6 +1810,7 @@ rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str)
     return ec_str_duplicate(ec, rb_cString, str);
 }
 
+/* :nodoc: documented in doc/string.rdoc */
 static VALUE
 rb_str_init(int argc, VALUE *argv, VALUE str)
 {
