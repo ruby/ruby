@@ -1688,7 +1688,7 @@ struct nmin_data {
     VALUE limit;
     int (*cmpfunc)(const void *, const void *, void *);
     int rev: 1; /* max if 1 */
-    int by: 1; /* min_by if 1 */
+    int by: 2; /* min_by if 1, min_with_value if 2 */
 };
 
 static VALUE
@@ -1874,30 +1874,48 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
 	rb_block_call(obj, id_each, 0, 0, nmin_i, (VALUE)&data);
     }
     nmin_filter(&data);
-    result = data.buf;
+
     if (by) {
-	long i;
-        RARRAY_PTR_USE(result, ptr, {
+        bool with_value = by == 2;
+        long result_len = RARRAY_LEN(data.buf)/2;
+        long i;
+        RARRAY_PTR_USE(data.buf, ptr, {
             ruby_qsort(ptr,
-                       RARRAY_LEN(result)/2,
+                       result_len,
                        sizeof(VALUE)*2,
                        data.cmpfunc, (void *)&data);
-            for (i=1; i<RARRAY_LEN(result); i+=2) {
-                ptr[i/2] = ptr[i];
+            if (!with_value) {
+                for (i=1; i<RARRAY_LEN(data.buf); i+=2) {
+                    ptr[i/2] = ptr[i];
+                }
             }
         });
-	rb_ary_resize(result, RARRAY_LEN(result)/2);
+
+        if (with_value) {
+            result = rb_ary_new_capa(result_len);
+            for (i=0; i<RARRAY_LEN(data.buf); i+=2) {
+                rb_ary_push(result, rb_assoc_new(RARRAY_AREF(data.buf, i+1), RARRAY_AREF(data.buf, i)));
+            }
+        }
+        else {
+            result = data.buf;
+            rb_ary_resize(result, result_len);
+            RBASIC_SET_CLASS(result, rb_cArray);
+        }
     }
     else {
+        result = data.buf;
         RARRAY_PTR_USE(result, ptr, {
             ruby_qsort(ptr, RARRAY_LEN(result), sizeof(VALUE),
                        data.cmpfunc, (void *)&data);
         });
+        RBASIC_SET_CLASS(result, rb_cArray);
     }
+
     if (rev) {
         rb_ary_reverse(result);
     }
-    RBASIC_SET_CLASS(result, rb_cArray);
+
     return result;
 
 }
@@ -2701,6 +2719,151 @@ enum_minmax_by(VALUE obj)
         minmax_by_i_update(m->last_bv, m->last_bv, m->last, m->last, m);
     m = MEMO_FOR(struct minmax_by_t, memo);
     return rb_assoc_new(m->min, m->max);
+}
+
+/*
+ *  call-seq:
+ *     enum.min_with_value {|obj| block }      -> [min_elem, min_value]
+ *     enum.min_with_value                     -> an_enumerator
+ *     enum.min_with_value(n) {|obj| block }   -> array
+ *     enum.min_with_value(n)                  -> an_enumerator
+ *
+ *  Returns an array which has two elements. The first element
+ *  is the object in <i>enum</i> that gives the minimum value
+ *  from the given block. The second element is the value from the block
+ *  corresponding to the object.
+ *
+ *  If no block is given, an enumerator is returned instead.
+ *
+ *     a = %w(albatross dog horse)
+ *     a.min_with_value { |x| x.length }   #=> ["dog", 3]
+ *     [].min_with_value { |x| x.length }  #=> [nil, nil]
+ *
+ *  If the +n+ argument is given, minimum +n+ pairs are returned
+ *  as an array. These +n+ pairs are sorted by the value from the
+ *  given block.
+ *
+ *     a = %w[albatross dog horse]
+ *     a.min_with_value(2) {|x| x.length }  #=> [["dog", 3], ["horse", 5]]
+ *     [].min_with_value(2) {|x| x.length } #=> []
+ */
+
+static VALUE
+enum_min_with_value(int argc, VALUE *argv, VALUE obj)
+{
+    struct MEMO *memo;
+    VALUE num;
+
+    rb_check_arity(argc, 0, 1);
+
+    RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_size);
+
+    if (argc && !NIL_P(num = argv[0]))
+        return rb_nmin_run(obj, num, 2, 0, 0);
+
+    memo = MEMO_NEW(Qundef, Qnil, 0);
+    rb_block_call(obj, id_each, 0, 0, min_by_i, (VALUE)memo);
+
+    if (memo->v1 == Qundef) {
+        return rb_assoc_new(Qnil, Qnil);
+    }
+    else {
+        return rb_assoc_new(memo->v2, memo->v1);
+    }
+}
+
+/*
+ *  call-seq:
+ *     enum.max_with_value {|obj| block }      -> [max_elem, max_value]
+ *     enum.max_with_value                     -> an_enumerator
+ *     enum.max_with_value(n) {|obj| block }   -> array
+ *     enum.max_with_value(n)                  -> an_enumerator
+ *
+ *  Returns an array which has two elements. The first element
+ *  is the object in <i>enum</i> that gives the maximum value
+ *  from the given block. The second element is the value from the block
+ *  corresponding to the object.
+ *
+ *  If no block is given, an enumerator is returned instead.
+ *
+ *     a = %w(albatross dog horse)
+ *     a.max_with_value { |x| x.length }   #=> ["albatross", 9]
+ *     [].max_with_value { |x| x.length }  #=> [nil, nil]
+ *
+ *  If the +n+ argument is given, maximum +n+ pairs are returned
+ *  as an array. These +n+ pairs are sorted by the value from the
+ *  given block.
+ *
+ *     a = %w[albatross dog horse]
+ *     a.max_with_value(2) {|x| x.length }  #=> [["albatross", 9], ["horse", 5]]
+ *     [].max_with_value(2) {|x| x.length } #=> []
+ */
+
+static VALUE
+enum_max_with_value(int argc, VALUE *argv, VALUE obj)
+{
+    struct MEMO *memo;
+    VALUE num;
+
+    rb_check_arity(argc, 0, 1);
+
+    RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_size);
+
+    if (argc && !NIL_P(num = argv[0]))
+        return rb_nmin_run(obj, num, 2, 1, 0);
+
+    memo = MEMO_NEW(Qundef, Qnil, 0);
+    rb_block_call(obj, id_each, 0, 0, max_by_i, (VALUE)memo);
+
+    if (memo->v1 == Qundef) {
+        return rb_assoc_new(Qnil, Qnil);
+    }
+    else {
+        return rb_assoc_new(memo->v2, memo->v1);
+    }
+}
+
+/*
+ *  call-seq:
+ *     enum.minmax_with_value { |obj| block } -> [[min_elem, min_value], [max_elem, max_value]]
+ *     enum.minmax_with_value                 -> an_enumerator
+ *
+ *  Returns a two element array. Each of the elements is a pair of the objects in
+ *  <i>enum</i> and the values from the given block. The objects correspond to the
+ *  minimum and maximum values respectively from the given block.
+ *
+ *  If no block is given, an enumerator is returned instead.
+ *
+ *     a = %w(albatross dog horse)
+ *     a.minmax_with_value { |x| x.length }   #=> [["dog", 3], ["albatross", 9]]
+ *     [].minmax_with_value { |x| x.length }   #=> [[nil, nil], [nil, nil]]
+ */
+
+static VALUE
+enum_minmax_with_value(VALUE obj)
+{
+    VALUE memo;
+    struct minmax_by_t *m = NEW_MEMO_FOR(struct minmax_by_t, memo);
+
+    RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
+
+    m->min_bv = Qundef;
+    m->max_bv = Qundef;
+    m->min = Qnil;
+    m->max = Qnil;
+    m->last_bv = Qundef;
+    m->last = Qundef;
+    rb_block_call(obj, id_each, 0, 0, minmax_by_i, memo);
+    if (m->last_bv != Qundef)
+        minmax_by_i_update(m->last_bv, m->last_bv, m->last, m->last, m);
+    m = MEMO_FOR(struct minmax_by_t, memo);
+
+    if (m->min_bv == Qundef) {
+        return rb_assoc_new(rb_assoc_new(Qnil, Qnil), rb_assoc_new(Qnil, Qnil));
+    }
+    else {
+        return rb_assoc_new(rb_assoc_new(m->min, m->min_bv), rb_assoc_new(m->max, m->max_bv));
+    }
 }
 
 static VALUE
@@ -4691,6 +4854,9 @@ enum_compact(VALUE obj)
  * #min_by::         Returns the smallest element, as determined by the given block.
  * #max_by::         Returns the largest element, as determined by the given block.
  * #minmax_by::      Returns the smallest and largest elements, as determined by the given block.
+ * #min_with_value:: Returns the smallest value from the given block and the object that gives the value.
+ * #max_with_value:: Returns the largest value from the given block and the object that gives the value.
+ * #minmax_with_value:: Returns the smallest and largest values from the given block and the objects that give the values.
  *
  * <i>Groups, slices, and partitions</i>:
  * #group_by::       Returns a \Hash that partitions the elements into groups.
@@ -4857,6 +5023,9 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "min_by", enum_min_by, -1);
     rb_define_method(rb_mEnumerable, "max_by", enum_max_by, -1);
     rb_define_method(rb_mEnumerable, "minmax_by", enum_minmax_by, 0);
+    rb_define_method(rb_mEnumerable, "min_with_value", enum_min_with_value, -1);
+    rb_define_method(rb_mEnumerable, "max_with_value", enum_max_with_value, -1);
+    rb_define_method(rb_mEnumerable, "minmax_with_value", enum_minmax_with_value, 0);
     rb_define_method(rb_mEnumerable, "member?", enum_member, 1);
     rb_define_method(rb_mEnumerable, "include?", enum_member, 1);
     rb_define_method(rb_mEnumerable, "each_with_index", enum_each_with_index, -1);
