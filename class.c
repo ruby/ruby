@@ -487,7 +487,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     FL_SET(orig , RCLASS_CLONED);
 
     if (!FL_TEST(CLASS_OF(clone), FL_SINGLETON)) {
-        RBASIC_SET_CLASS(clone, rb_singleton_class_clone(orig));
+        SET_METACLASS_OF(clone, rb_singleton_class_clone(orig));
         rb_singleton_class_attached(METACLASS_OF(clone), (VALUE)clone);
     }
     RCLASS_ALLOCATOR(clone) = RCLASS_ALLOCATOR(orig);
@@ -599,14 +599,14 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
 
 	if (BUILTIN_TYPE(obj) == T_CLASS) {
             klass_of_clone_is_new = true;
-	    RBASIC_SET_CLASS(clone, clone);
+	    SET_METACLASS_OF(clone, clone);
 	}
 	else {
             VALUE klass_metaclass_clone = rb_singleton_class_clone(klass);
             // When `METACLASS_OF(klass) == klass_metaclass_clone`, it means the
             // recursive call did not clone `METACLASS_OF(klass)`.
             klass_of_clone_is_new = (METACLASS_OF(klass) != klass_metaclass_clone);
-            RBASIC_SET_CLASS(clone, klass_metaclass_clone);
+            SET_METACLASS_OF(clone, klass_metaclass_clone);
 	}
 
 	RCLASS_SET_SUPER(clone, RCLASS_SUPER(klass));
@@ -738,7 +738,7 @@ make_singleton_class(VALUE obj)
     VALUE klass = rb_class_boot(orig_class);
 
     FL_SET(klass, FL_SINGLETON);
-    RBASIC_SET_CLASS(obj, klass);
+    SET_METACLASS_OF(obj, klass);
     rb_singleton_class_attached(klass, obj);
 
     SET_METACLASS_OF(klass, METACLASS_OF(rb_class_real(orig_class)));
@@ -829,11 +829,11 @@ Init_class_hierarchy(void)
 #endif
 
     rb_const_set(rb_cObject, rb_intern_const("BasicObject"), rb_cBasicObject);
-    RBASIC_SET_CLASS(rb_cClass, rb_cClass);
-    RBASIC_SET_CLASS(rb_cModule, rb_cClass);
-    RBASIC_SET_CLASS(rb_cObject, rb_cClass);
-    RBASIC_SET_CLASS(rb_cRefinement, rb_cClass);
-    RBASIC_SET_CLASS(rb_cBasicObject, rb_cClass);
+    SET_METACLASS_OF(rb_cClass, rb_cClass);
+    SET_METACLASS_OF(rb_cModule, rb_cClass);
+    SET_METACLASS_OF(rb_cObject, rb_cClass);
+    SET_METACLASS_OF(rb_cRefinement, rb_cClass);
+    SET_METACLASS_OF(rb_cBasicObject, rb_cClass);
 
     ENSURE_EIGENCLASS(rb_cRefinement);
 }
@@ -1077,7 +1077,7 @@ rb_include_class_new(VALUE module, VALUE super)
     RCLASS_CONST_TBL(klass) = RCLASS_CONST_TBL(module);
 
     RCLASS_SET_SUPER(klass, super);
-    RBASIC_SET_CLASS(klass, module);
+    SET_METACLASS_OF(klass, module);
 
     return (VALUE)klass;
 }
@@ -2243,7 +2243,7 @@ rb_extract_keywords(VALUE *orighash)
     rb_hash_foreach(hash, separate_symbol, (st_data_t)&parthash);
     *orighash = parthash[1];
     if (parthash[1] && RBASIC_CLASS(hash) != rb_cHash) {
-        RBASIC_SET_CLASS(parthash[1], RBASIC_CLASS(hash));
+        SET_METACLASS_OF(parthash[1], RBASIC_CLASS(hash));
     }
     return parthash[0];
 }
