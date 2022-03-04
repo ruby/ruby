@@ -854,6 +854,8 @@ describe "Execution variable $:" do
   end
 
   it "default $LOAD_PATH entries until sitelibdir included have @gem_prelude_index set" do
+    skip "no sense in ruby itself" if MSpecScript.instance_variable_defined?(:@testing_ruby)
+
     $:.should.include?(RbConfig::CONFIG['sitelibdir'])
     idx = $:.index(RbConfig::CONFIG['sitelibdir'])
 
