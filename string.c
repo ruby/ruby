@@ -8006,11 +8006,11 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 
 /*
  *  call-seq:
- *     str.tr!(from_str, to_str)   -> str or nil
+ *    tr!(replaceables, replacements) -> self or nil
  *
- *  Translates <i>str</i> in place, using the same rules as
- *  String#tr. Returns <i>str</i>, or <code>nil</code> if no changes
- *  were made.
+ *  Like String#tr, but translates +self+ in place.
+ *  Returns +self+ if any changes were made, +nil+ otherwise.
+ *
  */
 
 static VALUE
@@ -8022,37 +8022,50 @@ rb_str_tr_bang(VALUE str, VALUE src, VALUE repl)
 
 /*
  *  call-seq:
- *     str.tr(from_str, to_str)   => new_str
+ *    tr(replaceables, replacements) -> new_string
  *
- *  Returns a copy of +str+ with the characters in +from_str+ replaced by the
- *  corresponding characters in +to_str+.  If +to_str+ is shorter than
- *  +from_str+, it is padded with its last character in order to maintain the
- *  correspondence.
+ *  Returns a copy of +self+ with each character specified by string +replaceables+
+ *  translated to the corresponding character in string +replacements+.
+ *  The correspondence is _positional_:
  *
- *     "hello".tr('el', 'ip')      #=> "hippo"
- *     "hello".tr('aeiou', '*')    #=> "h*ll*"
- *     "hello".tr('aeiou', 'AA*')  #=> "hAll*"
+ *  - Each occurrence of the first character in +replaceables+
+ *    is translated to the first character in +replacements+.
+ *  - Each occurrence of the second character in +replaceables+
+ *    is translated to the second character in +replacements+.
+ *  - And so on.
  *
- *  Both strings may use the <code>c1-c2</code> notation to denote ranges of
- *  characters, and +from_str+ may start with a <code>^</code>, which denotes
- *  all characters except those listed.
+ *  Example:
  *
- *     "hello".tr('a-y', 'b-z')    #=> "ifmmp"
- *     "hello".tr('^aeiou', '*')   #=> "*e**o"
+ *    'hello'.tr('el', 'ip') #=> "hippo"
  *
- *  The backslash character <code>\\</code> can be used to escape
- *  <code>^</code> or <code>-</code> and is otherwise ignored unless it
- *  appears at the end of a range or the end of the +from_str+ or +to_str+:
+ *  If +replacements+ is shorter than +replaceables+,
+ *  it is implicitly padded with its own last character:
  *
- *     "hello^world".tr("\\^aeiou", "*") #=> "h*ll**w*rld"
- *     "hello-world".tr("a\\-eo", "*")   #=> "h*ll**w*rld"
+ *    'hello'.tr('aeiou', '-')   # => "h-ll-"
+ *    'hello'.tr('aeiou', 'AA-') # => "hAll-"
  *
- *     "hello\r\nworld".tr("\r", "")   #=> "hello\nworld"
- *     "hello\r\nworld".tr("\\r", "")  #=> "hello\r\nwold"
- *     "hello\r\nworld".tr("\\\r", "") #=> "hello\nworld"
+ *  Three characters may get special treatment:
  *
- *     "X['\\b']".tr("X\\", "")   #=> "['b']"
- *     "X['\\b']".tr("X-\\]", "") #=> "'b'"
+ *  - A circumflex (<tt>'^'</tt>) in +replaceables+
+ *    operates as a "not" operator for the following characters in +replaceables+:
+ *
+ *      'hello'.tr('^aeiou', '-') # => "-e--o"
+ *      'hello'.tr('ae^iou', '-') # => "h-ll-"
+ *
+ *  - A hyphen (<tt>'-'</tt>) embedded in a 3-character +replaceables+ or +replacements+
+ *    defines a range of characters instead of a plain string of characters:
+ *
+ *      'ibm'.tr('b-z', 'a-z') # => "hal"
+ *
+ *  - A backslash (<tt>'\'</tt>) before a circumflex, a hyphen, or another backslash
+ *    operates as an escape character:
+ *
+ *      'hel^lo'.tr('\^aeiou', '-')  # => "h-l-l-"    # Escaped leading circumflex.
+ *      'i-b-m'.tr('b\-z', 'a-z')    # => "ibabm"     # Escaped embedded hyphen.
+ *      'foo\\bar'.tr('ab\\', 'XYZ') # => "fooZYXr"   # Escaped backslash.
+ *      'abc\ndef'.tr('a-z', 'b-z')  # => "bcd\\oefg" # '\n' is two characters.
+ *      "abc\ndef".tr('a-z', 'b-z')  # => "bcd\nefg"  # "\n" is one newlne character.
+ *
  */
 
 static VALUE
