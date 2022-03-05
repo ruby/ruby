@@ -2038,19 +2038,18 @@ rb_class_new_instance(int argc, const VALUE *argv, VALUE klass)
 VALUE
 rb_class_superclass(VALUE klass)
 {
+    RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
+
     VALUE super = RCLASS_SUPER(klass);
 
     if (!super) {
 	if (klass == rb_cBasicObject) return Qnil;
 	rb_raise(rb_eTypeError, "uninitialized class");
+    } else {
+        super = RCLASS_SUPERCLASSES(klass)[RCLASS_SUPERCLASS_DEPTH(klass) - 1];
+        RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
+        return super;
     }
-    while (RB_TYPE_P(super, T_ICLASS)) {
-	super = RCLASS_SUPER(super);
-    }
-    if (!super) {
-	return Qnil;
-    }
-    return super;
 }
 
 VALUE
