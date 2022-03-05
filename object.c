@@ -1613,17 +1613,38 @@ VALUE
 rb_class_inherited_p(VALUE mod, VALUE arg)
 {
     if (mod == arg) return Qtrue;
-    if (!CLASS_OR_MODULE_P(arg) && !RB_TYPE_P(arg, T_ICLASS)) {
-	rb_raise(rb_eTypeError, "compared with non class/module");
+
+    if (RB_TYPE_P(arg, T_CLASS) && RB_TYPE_P(mod, T_CLASS)) {
+        // comparison between classes
+        size_t mod_depth = RCLASS_SUPERCLASS_DEPTH(mod);
+        size_t arg_depth = RCLASS_SUPERCLASS_DEPTH(arg);
+        if (arg_depth < mod_depth) {
+            // check if mod < arg
+            return RCLASS_SUPERCLASSES(mod)[arg_depth] == arg ?
+                Qtrue :
+                Qnil;
+        } else if (arg_depth > mod_depth) {
+            // check if mod > arg
+            return RCLASS_SUPERCLASSES(arg)[mod_depth] == mod ?
+                Qfalse :
+                Qnil;
+        } else {
+            // Depths match, and we know they aren't equal: no relation
+            return Qnil;
+        }
+    } else {
+        if (!CLASS_OR_MODULE_P(arg) && !RB_TYPE_P(arg, T_ICLASS)) {
+            rb_raise(rb_eTypeError, "compared with non class/module");
+        }
+        if (class_search_ancestor(mod, RCLASS_ORIGIN(arg))) {
+            return Qtrue;
+        }
+        /* not mod < arg; check if mod > arg */
+        if (class_search_ancestor(arg, mod)) {
+            return Qfalse;
+        }
+        return Qnil;
     }
-    if (class_search_ancestor(mod, RCLASS_ORIGIN(arg))) {
-	return Qtrue;
-    }
-    /* not mod < arg; check if mod > arg */
-    if (class_search_ancestor(arg, mod)) {
-	return Qfalse;
-    }
-    return Qnil;
 }
 
 /*
