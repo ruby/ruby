@@ -21,6 +21,7 @@ typedef void* MMTk_VMMutatorThread;
 
 typedef struct {
     void (*init_gc_worker_thread)(MMTk_VMWorkerThread worker_tls);
+    MMTk_VMWorkerThread (*get_gc_thread_tls)(void);
     void (*stop_the_world)(MMTk_VMWorkerThread tls);
     void (*resume_mutators)(MMTk_VMWorkerThread tls);
     void (*blokc_for_gc)(MMTk_VMMutatorThread tls);
@@ -67,7 +68,7 @@ extern bool mmtk_is_live_object(void* ref);
 extern bool mmtk_is_mmtk_object(void* ref);
 extern bool mmtk_is_mmtk_object_prechecked(void* addr);
 extern void mmtk_modify_check(void* ref);
-extern void mmtk_notify_mark_buffer_full(MMTk_VMMutatorThread tls);
+extern void mmtk_flush_mark_buffer(MMTk_VMMutatorThread tls);
 
 /**
  * Misc

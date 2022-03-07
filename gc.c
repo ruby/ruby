@@ -14289,7 +14289,7 @@ rb_mmtk_use_mmtk_global(void (*func)(void *), void* arg)
 static void
 rb_mmtk_flush_mark_buffer(void)
 {
-    mmtk_notify_mark_buffer_full(rb_mmtk_gc_thread_tls);
+    mmtk_flush_mark_buffer(rb_mmtk_gc_thread_tls);
     RUBY_ASSERT(rb_mmtk_gc_thread_tls->mark_buffer.len == 0);
 }
 
@@ -14321,6 +14321,12 @@ static void
 rb_mmtk_init_gc_worker_thread(MMTk_VMWorkerThread gc_thread_tls)
 {
     rb_mmtk_gc_thread_tls = (rb_mmtk_gc_thread_tls_t*)gc_thread_tls;
+}
+
+static MMTk_VMWorkerThread
+rb_mmtk_get_gc_thread_tls(void)
+{
+    return rb_mmtk_gc_thread_tls;
 }
 
 static inline bool
@@ -14541,6 +14547,7 @@ rb_mmtk_mark_pin(VALUE obj)
 
 RubyUpcalls ruby_upcalls = {
     rb_mmtk_init_gc_worker_thread,
+    rb_mmtk_get_gc_thread_tls,
     rb_mmtk_stop_the_world,
     rb_mmtk_resume_mutators,
     rb_mmtk_block_for_gc,
