@@ -5335,9 +5335,15 @@ vm_opt_ltlt(VALUE recv, VALUE obj)
 static VALUE
 vm_opt_and(VALUE recv, VALUE obj)
 {
-    if (FIXNUM_2_P(recv, obj) &&
+    // If recv and obj are both fixnums, then the bottom tag bit
+    // will be 1 on both.  1 & 1 == 1, so the result value will also
+    // be a fixnum.  If either side is *not* a fixnum, then the tag bit
+    // will be 0, and we return Qundef.
+    VALUE ret = ((SIGNED_VALUE) recv) & ((SIGNED_VALUE) obj);
+
+    if (FIXNUM_P(ret) &&
         BASIC_OP_UNREDEFINED_P(BOP_AND, INTEGER_REDEFINED_OP_FLAG)) {
-        return (recv & obj) | 1;
+        return ret;
     }
     else {
         return Qundef;
