@@ -8331,7 +8331,7 @@ ruby_real_ms_time(void)
  *  The underlying function, clock_gettime(), returns a number of nanoseconds.
  *  Float object (IEEE 754 double) is not enough to represent
  *  the return value for CLOCK_REALTIME.
- *  If the exact nanoseconds value is required, use +:nanoseconds+ as the +unit+.
+ *  If the exact nanoseconds value is required, use +:nanosecond+ as the +unit+.
  *
  *  The origin (zero) of the returned value varies.
  *  For example, system start up time, process start up time, the Epoch, etc.
