@@ -8046,25 +8046,26 @@ rb_str_tr_bang(VALUE str, VALUE src, VALUE repl)
  *
  *  Three characters may get special treatment:
  *
- *  - A circumflex (<tt>'^'</tt>) in +replaceables+
+ *  - A caret (<tt>'^'</tt>) in +replaceables+
  *    operates as a "not" operator for the following characters in +replaceables+:
  *
  *      'hello'.tr('^aeiou', '-') # => "-e--o"
- *      'hello'.tr('ae^iou', '-') # => "h-ll-"
+ *      '^hello'.tr('ae^iou', '-') # => "-h-ll-"
  *
  *  - A hyphen (<tt>'-'</tt>) embedded in a 3-character +replaceables+ or +replacements+
  *    defines a range of characters instead of a plain string of characters:
  *
  *      'ibm'.tr('b-z', 'a-z') # => "hal"
  *
- *  - A backslash (<tt>'\'</tt>) before a circumflex, a hyphen, or another backslash
+ *  - A backslash (<tt>'\'</tt>) before a caret, a hyphen, or another backslash
  *    operates as an escape character:
  *
- *      'hel^lo'.tr('\^aeiou', '-')  # => "h-l-l-"    # Escaped leading circumflex.
- *      'i-b-m'.tr('b\-z', 'a-z')    # => "ibabm"     # Escaped embedded hyphen.
- *      'foo\\bar'.tr('ab\\', 'XYZ') # => "fooZYXr"   # Escaped backslash.
- *      'abc\ndef'.tr('a-z', 'b-z')  # => "bcd\\oefg" # '\n' is two characters.
- *      "abc\ndef".tr('a-z', 'b-z')  # => "bcd\nefg"  # "\n" is one newlne character.
+ *      'hel^lo'.tr('\^aeiou', '-')     # => "h-l-l-"    # Escaped leading caret.
+ *      'i-b-m'.tr('b\-z', 'a-z')       # => "ibabm"     # Escaped embedded hyphen.
+ *      'foo\\bar'.tr('ab\\', 'XYZ')    # => "fooZYXr"   # Escaped backslash.
+ *      "hello\r\nworld".tr("\r", "")   # => "hello\nworld"
+ *      "hello\r\nworld".tr("\\r", "")  # => "hello\r\nwold"
+ *      "hello\r\nworld".tr("\\\r", "") # => "hello\nworld"
  *
  */
 
