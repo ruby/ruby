@@ -54,6 +54,9 @@ In a character selector, these three characters get special treatment:
     # Ranges may be mixed with plain characters.
     '0123456789'.delete('67-950-23') # => "4"
 
+    # Ranges may be mixed with negations.
+    'abracadabra'.delete('^a-c') # => "abacaaba"
+
 - A backslash (<tt>'\'</tt>) acts as an escape for a caret, a hyphen,
   or another backslash:
 
