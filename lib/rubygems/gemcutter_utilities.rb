@@ -221,7 +221,7 @@ module Gem::GemcutterUtilities
   # +response+ text and no otp provided by options.
 
   def set_api_key(host, key)
-    if host == Gem::DEFAULT_HOST
+    if default_host?
       Gem.configuration.rubygems_api_key = key
     else
       Gem.configuration.set_api_key host, key
@@ -245,7 +245,7 @@ module Gem::GemcutterUtilities
   end
 
   def pretty_host(host)
-    if Gem::DEFAULT_HOST == host
+    if default_host?
       'RubyGems.org'
     else
       host
@@ -269,8 +269,12 @@ module Gem::GemcutterUtilities
     scope_params
   end
 
+  def default_host?
+    self.host == Gem::DEFAULT_HOST
+  end
+
   def get_mfa_params(email, password)
-    return {} unless self.host == Gem::DEFAULT_HOST
+    return {} unless default_host?
 
     mfa_level = get_user_mfa_level(email, password)
     params = {}
@@ -285,6 +289,7 @@ module Gem::GemcutterUtilities
     response = rubygems_api_request(:get, "api/v1/profile/me.yaml") do |request|
       request.basic_auth email, password
     end
+
     with_response response do |resp|
       body = Gem::SafeYAML.load clean_text(resp.body)
       body["mfa"]
