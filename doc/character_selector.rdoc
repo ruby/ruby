@@ -62,6 +62,6 @@ In a character selector, these three characters get special treatment:
 
     'abracadabra^'.delete('\^bc')   # => "araadara"
     'abracadabra-'.delete('a\-d')   # => "brcbr"
-    "hello\r\nworld".tr("\r", "")   # => "hello\nworld"
-    "hello\r\nworld".tr("\\r", "")  # => "hello\r\nwold"
-    "hello\r\nworld".tr("\\\r", "") # => "hello\nworld"
+    "hello\r\nworld".delete("\r")   # => "hello\nworld"
+    "hello\r\nworld".delete("\\r")  # => "hello\r\nwold"
+    "hello\r\nworld".delete("\\\r") # => "hello\nworld"
