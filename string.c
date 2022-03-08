@@ -8007,9 +8007,9 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 
 /*
  *  call-seq:
- *    tr!(replaceables, replacements) -> self or nil
+ *    tr!(selector, replacements) -> self or nil
  *
- *  Like String#tr, but translates +self+ in place.
+ *  Like String#tr, but modifies +self+ in place.
  *  Returns +self+ if any changes were made, +nil+ otherwise.
  *
  */
@@ -8023,15 +8023,15 @@ rb_str_tr_bang(VALUE str, VALUE src, VALUE repl)
 
 /*
  *  call-seq:
- *    tr(replaceables, replacements) -> new_string
+ *    tr(selector, replacements) -> new_string
  *
- *  Returns a copy of +self+ with each character specified by string +replaceables+
+ *  Returns a copy of +self+ with each character specified by string +selector+
  *  translated to the corresponding character in string +replacements+.
  *  The correspondence is _positional_:
  *
- *  - Each occurrence of the first character in +replaceables+
+ *  - Each occurrence of the first character specified by +selector+
  *    is translated to the first character in +replacements+.
- *  - Each occurrence of the second character in +replaceables+
+ *  - Each occurrence of the second character specified by selector+
  *    is translated to the second character in +replacements+.
  *  - And so on.
  *
@@ -8039,34 +8039,24 @@ rb_str_tr_bang(VALUE str, VALUE src, VALUE repl)
  *
  *    'hello'.tr('el', 'ip') #=> "hippo"
  *
- *  If +replacements+ is shorter than +replaceables+,
+ *  If +replacements+ is shorter than +selector+,
  *  it is implicitly padded with its own last character:
  *
  *    'hello'.tr('aeiou', '-')   # => "h-ll-"
  *    'hello'.tr('aeiou', 'AA-') # => "hAll-"
  *
- *  Three characters may get special treatment:
- *
- *  - A caret (<tt>'^'</tt>) in +replaceables+
- *    operates as a "not" operator for the following characters in +replaceables+:
- *
- *      'hello'.tr('^aeiou', '-') # => "-e--o"
- *      '^hello'.tr('ae^iou', '-') # => "-h-ll-"
- *
- *  - A hyphen (<tt>'-'</tt>) embedded in a 3-character +replaceables+ or +replacements+
- *    defines a range of characters instead of a plain string of characters:
- *
- *      'ibm'.tr('b-z', 'a-z') # => "hal"
- *
- *  - A backslash (<tt>'\'</tt>) before a caret, a hyphen, or another backslash
- *    operates as an escape character:
- *
- *      'hel^lo'.tr('\^aeiou', '-')     # => "h-l-l-"    # Escaped leading caret.
- *      'i-b-m'.tr('b\-z', 'a-z')       # => "ibabm"     # Escaped embedded hyphen.
- *      'foo\\bar'.tr('ab\\', 'XYZ')    # => "fooZYXr"   # Escaped backslash.
- *      "hello\r\nworld".tr("\r", "")   # => "hello\nworld"
- *      "hello\r\nworld".tr("\\r", "")  # => "hello\r\nwold"
- *      "hello\r\nworld".tr("\\\r", "") # => "hello\nworld"
+ *  Arguments +selector+ and +replacements+ must be valid character selectors
+ *  (see {Character Selectors}[rdoc-ref:character_selectors.rdoc]),
+ *  and may use any of its valid forms, including negation, ranges, and escaping:
+ *  .
+ *    # Negation.
+ *    'hello'.tr('^aeiou', '-') # => "-e--o"
+ *    # Ranges.
+ *    'ibm'.tr('b-z', 'a-z') # => "hal"
+ *    # Escapes.
+ *    'hel^lo'.tr('\^aeiou', '-')     # => "h-l-l-"    # Escaped leading caret.
+ *    'i-b-m'.tr('b\-z', 'a-z')       # => "ibabm"     # Escaped embedded hyphen.
+ *    'foo\\bar'.tr('ab\\', 'XYZ')    # => "fooZYXr"   # Escaped backslash.
  *
  */
 
@@ -8369,10 +8359,12 @@ rb_str_squeeze(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.tr_s!(from_str, to_str)   -> str or nil
+ *    tr_s!(selector, replacements) -> self or nil
  *
- *  Performs String#tr_s processing on <i>str</i> in place,
- *  returning <i>str</i>, or <code>nil</code> if no changes were made.
+ *  Like String#tr_s, but modifies +self+ in place.
+ *  Returns +self+ if any changes were made, +nil+ otherwise.
+ *
+ *  Related: String#squeeze!.
  */
 
 static VALUE
@@ -8384,15 +8376,17 @@ rb_str_tr_s_bang(VALUE str, VALUE src, VALUE repl)
 
 /*
  *  call-seq:
- *     str.tr_s(from_str, to_str)   -> new_str
+ *    tr_s(selector, replacements) -> string
  *
- *  Processes a copy of <i>str</i> as described under String#tr, then
- *  removes duplicate characters in regions that were affected by the
- *  translation.
+ *  Like String#tr, but also squeezes the modified portions of the translated string;
+ *  returns a new string (translated and squeezed).
  *
- *     "hello".tr_s('l', 'r')     #=> "hero"
- *     "hello".tr_s('el', '*')    #=> "h*o"
- *     "hello".tr_s('el', 'hx')   #=> "hhxo"
+ *    'hello'.tr_s('l', 'r')   #=> "hero"
+ *    'hello'.tr_s('el', '-')  #=> "h-o"
+ *    'hello'.tr_s('el', 'hx') #=> "hhxo"
+ *
+ *  Related: String#squeeze.
+ *
  */
 
 static VALUE
