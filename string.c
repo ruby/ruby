@@ -8252,7 +8252,7 @@ rb_str_delete(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    squeeze!(*selectors) -> new_string or nil
+ *    squeeze!(*selectors) -> self or nil
  *
  *  Like String#squeeze, but modifies +self+ in place.
  *  Returns +self+ if any changes were made, +nil+ otherwise.
