@@ -2165,60 +2165,13 @@ rb_mod_public_instance_method(VALUE mod, VALUE vid)
     return mnew_unbound(mod, id, rb_cUnboundMethod, TRUE);
 }
 
-/*
- *  call-seq:
- *     define_method(symbol, method)     -> symbol
- *     define_method(symbol) { block }   -> symbol
- *
- *  Defines an instance method in the receiver. The _method_
- *  parameter can be a +Proc+, a +Method+ or an +UnboundMethod+ object.
- *  If a block is specified, it is used as the method body.
- *  If a block or the _method_ parameter has parameters,
- *  they're used as method parameters.
- *  This block is evaluated using #instance_eval.
- *
- *     class A
- *       def fred
- *         puts "In Fred"
- *       end
- *       def create_method(name, &block)
- *         self.class.define_method(name, &block)
- *       end
- *       define_method(:wilma) { puts "Charge it!" }
- *       define_method(:flint) {|name| puts "I'm #{name}!"}
- *     end
- *     class B < A
- *       define_method(:barney, instance_method(:fred))
- *     end
- *     a = B.new
- *     a.barney
- *     a.wilma
- *     a.flint('Dino')
- *     a.create_method(:betty) { p self }
- *     a.betty
- *
- *  <em>produces:</em>
- *
- *     In Fred
- *     Charge it!
- *     I'm Dino!
- *     #<B:0x401b39e8>
- */
-
 static VALUE
-rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
+rb_mod_define_method_with_visibility(int argc, VALUE *argv, VALUE mod, const struct rb_scope_visi_struct* scope_visi)
 {
     ID id;
     VALUE body;
     VALUE name;
-    const rb_cref_t *cref = rb_vm_cref_in_context(mod, mod);
-    const rb_scope_visibility_t default_scope_visi = {METHOD_VISI_PUBLIC, FALSE};
-    const rb_scope_visibility_t *scope_visi = &default_scope_visi;
     int is_method = FALSE;
-
-    if (cref) {
-	scope_visi = CREF_SCOPE_VISI(cref);
-    }
 
     rb_check_arity(argc, 1, 2);
     name = argv[0];
@@ -2282,10 +2235,64 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 
 /*
  *  call-seq:
+ *     define_method(symbol, method)     -> symbol
+ *     define_method(symbol) { block }   -> symbol
+ *
+ *  Defines an instance method in the receiver. The _method_
+ *  parameter can be a +Proc+, a +Method+ or an +UnboundMethod+ object.
+ *  If a block is specified, it is used as the method body.
+ *  If a block or the _method_ parameter has parameters,
+ *  they're used as method parameters.
+ *  This block is evaluated using #instance_eval.
+ *
+ *     class A
+ *       def fred
+ *         puts "In Fred"
+ *       end
+ *       def create_method(name, &block)
+ *         self.class.define_method(name, &block)
+ *       end
+ *       define_method(:wilma) { puts "Charge it!" }
+ *       define_method(:flint) {|name| puts "I'm #{name}!"}
+ *     end
+ *     class B < A
+ *       define_method(:barney, instance_method(:fred))
+ *     end
+ *     a = B.new
+ *     a.barney
+ *     a.wilma
+ *     a.flint('Dino')
+ *     a.create_method(:betty) { p self }
+ *     a.betty
+ *
+ *  <em>produces:</em>
+ *
+ *     In Fred
+ *     Charge it!
+ *     I'm Dino!
+ *     #<B:0x401b39e8>
+ */
+
+static VALUE
+rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
+{
+    const rb_cref_t *cref = rb_vm_cref_in_context(mod, mod);
+    const rb_scope_visibility_t default_scope_visi = {METHOD_VISI_PUBLIC, FALSE};
+    const rb_scope_visibility_t *scope_visi = &default_scope_visi;
+
+    if (cref) {
+        scope_visi = CREF_SCOPE_VISI(cref);
+    }
+
+    return rb_mod_define_method_with_visibility(argc, argv, mod, scope_visi);
+}
+
+/*
+ *  call-seq:
  *     define_singleton_method(symbol, method) -> symbol
  *     define_singleton_method(symbol) { block } -> symbol
  *
- *  Defines a singleton method in the receiver. The _method_
+ *  Defines a public singleton method in the receiver. The _method_
  *  parameter can be a +Proc+, a +Method+ or an +UnboundMethod+ object.
  *  If a block is specified, it is used as the method body.
  *  If a block or a method has parameters, they're used as method parameters.
@@ -2315,8 +2322,9 @@ static VALUE
 rb_obj_define_method(int argc, VALUE *argv, VALUE obj)
 {
     VALUE klass = rb_singleton_class(obj);
+    const rb_scope_visibility_t scope_visi = {METHOD_VISI_PUBLIC, FALSE};
 
-    return rb_mod_define_method(argc, argv, klass);
+    return rb_mod_define_method_with_visibility(argc, argv, klass, &scope_visi);
 }
 
 /*
