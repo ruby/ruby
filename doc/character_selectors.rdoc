@@ -9,7 +9,7 @@ Each of these instance methods accepts one or more character selectors:
 - String#tr!(selector, replacements): returns +self+ or +nil+.
 - String#tr_s(selector, replacements): returns a new string.
 - String#tr_s!(selector, replacements): returns +self+ or +nil+.
-- String#count(*selectors): counts specified characters.
+- String#count(*selectors): returns the count of the specified characters.
 - String#delete(*selectors): returns a new string.
 - String#delete!(*selectors): returns +self+ or +nil+.
 - String#squeeze(*selectors): returns a new string.
