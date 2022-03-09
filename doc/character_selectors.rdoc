@@ -74,7 +74,7 @@ In a character selector, these three characters get special treatment:
 
 These instance methods accept multiple character selectors:
 
-- String#count(*selectors): counts specified characters.
+- String#count(*selectors): returns the count of the specified characters.
 - String#delete(*selectors): returns a new string.
 - String#delete!(*selectors): returns +self+ or +nil+.
 - String#squeeze(*selectors): returns a new string.
