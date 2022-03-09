@@ -8048,7 +8048,7 @@ rb_str_tr_bang(VALUE str, VALUE src, VALUE repl)
  *  Arguments +selector+ and +replacements+ must be valid character selectors
  *  (see {Character Selectors}[rdoc-ref:character_selectors.rdoc]),
  *  and may use any of its valid forms, including negation, ranges, and escaping:
- *  .
+ *
  *    # Negation.
  *    'hello'.tr('^aeiou', '-') # => "-e--o"
  *    # Ranges.
