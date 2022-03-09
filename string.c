@@ -4262,8 +4262,8 @@ rb_str_byterindex(VALUE str, VALUE sub, long pos)
 
 /*
  *  call-seq:
- *    byterindex(substring, offset = self.length) -> integer or nil
- *    byterindex(regexp, offset = self.length) -> integer or nil
+ *    byterindex(substring, offset = self.bytesize) -> integer or nil
+ *    byterindex(regexp, offset = self.bytesize) -> integer or nil
  *
  *  Returns the \Integer byte-based index of the _last_ occurrence of the given +substring+,
  *  or +nil+ if none found:
