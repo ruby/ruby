@@ -8158,7 +8158,7 @@ tr_find(unsigned int c, const char table[TR_TABLE_SIZE], VALUE del, VALUE nodel)
 
 /*
  *  call-seq:
- *    delete!(*selectors) -> new_string or nil
+ *    delete!(*selectors) -> self or nil
  *
  *  Like String#delete, but modifies +self+ in place.
  *  Returns +self+ if any changes were made, +nil+ otherwise.
