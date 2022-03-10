@@ -323,12 +323,25 @@ rb_method_table_insert(VALUE klass, struct rb_id_table *table, ID method_id, con
     RB_OBJ_WRITTEN(table_owner, Qundef, (VALUE)me);
 }
 
-VALUE
-rb_f_notimplement(int argc, const VALUE *argv, VALUE obj, VALUE marker)
+// rb_f_notimplement has an extra trailing argument to distinguish it from other methods
+// at compile-time to override arity to be -1. But the trailing argument introduces a
+// signature mismatch between caller and callee, so rb_define_method family inserts a
+// method entry with rb_f_notimplement_internal, which has canonical arity=-1 signature,
+// instead of rb_f_notimplement.
+NORETURN(static VALUE rb_f_notimplement_internal(int argc, const VALUE *argv, VALUE obj));
+
+static VALUE
+rb_f_notimplement_internal(int argc, const VALUE *argv, VALUE obj)
 {
     rb_notimplement();
 
     UNREACHABLE_RETURN(Qnil);
+}
+
+VALUE
+rb_f_notimplement(int argc, const VALUE *argv, VALUE obj, VALUE marker)
+{
+    rb_f_notimplement_internal(argc, argv, obj);
 }
 
 static void
@@ -528,7 +541,7 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
             RB_OBJ_WRITE(me, &def->body.bmethod.defined_ractor, rb_ractor_self(GET_RACTOR()));
 	    return;
 	  case VM_METHOD_TYPE_NOTIMPLEMENTED:
-	    setup_method_cfunc_struct(UNALIGNED_MEMBER_PTR(def, body.cfunc), rb_f_notimplement, -1);
+	    setup_method_cfunc_struct(UNALIGNED_MEMBER_PTR(def, body.cfunc), rb_f_notimplement_internal, -1);
 	    return;
 	  case VM_METHOD_TYPE_OPTIMIZED:
             def->body.optimized = *(rb_method_optimized_t *)opts;

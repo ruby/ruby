@@ -1,3 +1,5 @@
+# :markup: ruby
+
 class String
   # call-seq:
   #   encode(dst_encoding = Encoding.default_internal, **enc_opts) -> string

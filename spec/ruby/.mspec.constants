@@ -73,6 +73,7 @@ EvalBindingProcA
 Exception2MessageMapper
 ExceptionForMatrix
 Fcntl
+Fiddle
 FileStat
 FileUtils
 Find

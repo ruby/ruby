@@ -10,7 +10,6 @@ bundle-outdated(1) -- List installed gems with newer versions available
                         [--parseable | --porcelain]
                         [--group=GROUP]
                         [--groups]
-                        [--update-strict]
                         [--patch|--minor|--major]
                         [--filter-major]
                         [--filter-minor]
@@ -36,7 +35,7 @@ are up to date, Bundler will exit with a status of 0. Otherwise, it will exit 1.
   Check against a specific source.
 
 * `--strict`:
-  Only list newer versions allowed by your Gemfile requirements.
+  Only list newer versions allowed by your Gemfile requirements, also respecting conservative update flags (--patch, --minor, --major).
 
 * `--parseable`, `--porcelain`:
    Use minimal formatting for more parseable output.
@@ -46,9 +45,6 @@ are up to date, Bundler will exit with a status of 0. Otherwise, it will exit 1.
 
 * `--groups`:
   List gems organized by groups.
-
-* `--update-strict`:
-  Strict conservative resolution, do not allow any gem to be updated past latest --patch | --minor| --major.
 
 * `--minor`:
   Prefer updating only to next minor version.
@@ -74,11 +70,6 @@ are up to date, Bundler will exit with a status of 0. Otherwise, it will exit 1.
 ## PATCH LEVEL OPTIONS
 
 See [bundle update(1)](bundle-update.1.html) for details.
-
-One difference between the patch level options in `bundle update` and here is the `--strict` option.
-`--strict` was already an option on outdated before the patch level options were added. `--strict`
-wasn't altered, and the `--update-strict` option on `outdated` reflects what `--strict` does on
-`bundle update`.
 
 ## FILTERING OUTPUT
 

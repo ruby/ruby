@@ -7,6 +7,8 @@ require "./rbconfig" unless defined?(RbConfig)
 load File.dirname(__FILE__) + '/ruby/default.mspec'
 OBJDIR = File.expand_path("spec/ruby/optional/capi/ext")
 class MSpecScript
+  @testing_ruby = true
+
   builddir = Dir.pwd
   srcdir = ENV['SRCDIR']
   srcdir ||= File.read("Makefile", encoding: "US-ASCII")[/^\s*srcdir\s*=\s*(.+)/i, 1] rescue nil

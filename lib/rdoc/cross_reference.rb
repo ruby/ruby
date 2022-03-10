@@ -15,11 +15,21 @@ class RDoc::CrossReference
   CLASS_REGEXP_STR = '\\\\?((?:\:{2})?[A-Z]\w*(?:\:\:\w+)*)'
 
   ##
+  # Regular expression to match a single method argument.
+
+  METHOD_ARG_REGEXP_STR = '[\w.+*/=<>-]+'
+
+  ##
+  # Regular expression to match method arguments.
+
+  METHOD_ARGS_REGEXP_STR = /(?:\((?:#{METHOD_ARG_REGEXP_STR}(?:,\s*#{METHOD_ARG_REGEXP_STR})*)?\))?/.source
+
+  ##
   # Regular expression to match method references.
   #
   # See CLASS_REGEXP_STR
 
-  METHOD_REGEXP_STR = '([A-Za-z]\w*[!?=]?|%|=(?:==?|~)|![=~]|\[\]=?|<(?:<|=>?)?|>[>=]?|[-+!]@?|\*\*?|[/%`|&^~])(?:\([\w.+*/=<>-]*\))?'
+  METHOD_REGEXP_STR = /([A-Za-z]\w*[!?=]?|%|=(?:==?|~)|![=~]|\[\]=?|<(?:<|=>?)?|>[>=]?|[-+!]@?|\*\*?|[\/%`|&^~])#{METHOD_ARGS_REGEXP_STR}/.source
 
   ##
   # Regular expressions matching text that should potentially have

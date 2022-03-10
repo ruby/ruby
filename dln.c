@@ -426,7 +426,7 @@ dln_sym(void *handle, const char *symbol)
 }
 #endif
 
-#if RUBY_DLN_CHECK_ABI
+#if defined(RUBY_DLN_CHECK_ABI) && defined(USE_DLN_DLOPEN)
 static bool
 abi_check_enabled_p(void)
 {
@@ -441,7 +441,7 @@ dln_load(const char *file)
 #if defined(_WIN32) || defined(USE_DLN_DLOPEN)
     void *handle = dln_open(file);
 
-#if RUBY_DLN_CHECK_ABI
+#ifdef RUBY_DLN_CHECK_ABI
     unsigned long long (*abi_version_fct)(void) = (unsigned long long(*)(void))dln_sym(handle, "ruby_abi_version");
     unsigned long long binary_abi_version = (*abi_version_fct)();
     if (binary_abi_version != ruby_abi_version() && abi_check_enabled_p()) {

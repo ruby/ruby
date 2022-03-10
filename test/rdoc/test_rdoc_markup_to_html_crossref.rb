@@ -17,6 +17,12 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
     assert_equal para("<a href=\"C1.html\"><code>C1</code></a>"), result
   end
 
+  def test_convert_CROSSREF_method
+    result = @to.convert 'C1#m(foo, bar, baz)'
+
+    assert_equal para("<a href=\"C1.html#method-i-m\"><code>C1#m(foo, bar, baz)</code></a>"), result
+  end
+
   def test_convert_CROSSREF_label
     result = @to.convert 'C1@foo'
     assert_equal para("<a href=\"C1.html#class-C1-label-foo\">foo at <code>C1</code></a>"), result

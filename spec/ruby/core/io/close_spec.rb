@@ -44,6 +44,12 @@ describe "IO#close" do
     @io.close.should be_nil
   end
 
+  it "does not call the #flush method but flushes the stream internally" do
+    @io.should_not_receive(:flush)
+    @io.close
+    @io.should.closed?
+  end
+
   it 'raises an IOError with a clear message' do
     matching_exception = nil
 

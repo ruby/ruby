@@ -184,7 +184,6 @@ Note: We're only listing outstanding class updates.
 
 * Kernel
 
-
     *   Kernel#load now accepts a module as the second argument,
         and will load the file using the given module as the
         top-level module. [[Feature #6210]]
@@ -395,6 +394,10 @@ Note: We're only listing outstanding class updates.
     * matrix 0.4.2
     * prime 0.1.2
     * debug 1.4.0
+*   The following gems has been removed from the Ruby standard library.
+    * dbm
+    * gdbm
+    * tracer
 
 * Coverage measurement now supports suspension. You can use `Coverage.suspend`
   to stop the measurement temporarily, and `Coverage.resume` to restart it.

@@ -90,10 +90,12 @@ Note: We're only listing outstanding class updates.
     * RubyGems 3.4.0.dev
     * bigdecimal 3.1.2
     * bundler 2.4.0.dev
+    * cgi 0.3.2
     * etc 1.4.0
     * io-console 0.5.11
     * io-wait 0.2.2
     * ipaddr 1.2.4
+    * ostruct 0.5.3
     * reline 0.3.1
     * securerandom 0.2.0
 *   The following bundled gems are updated.

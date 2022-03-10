@@ -222,5 +222,30 @@ describe "Dir.glob" do
         Dir.rmdir('no_permission')
       end
     end
+
+    it "will follow symlinks when processing a `*/` pattern." do
+      expected = ['special/ln/nondotfile']
+      Dir.glob('special/*/nondotfile').should == expected
+    end
+
+    it "will not follow symlinks when recursively traversing directories" do
+      expected = %w[
+        deeply/nondotfile
+        nondotfile
+        subdir_one/nondotfile
+        subdir_two/nondotfile
+      ]
+      Dir.glob('**/nondotfile').sort.should == expected
+    end
+
+    it "will follow symlinks when testing directory after recursive directory in pattern" do
+      expected = %w[
+        deeply/nondotfile
+        special/ln/nondotfile
+        subdir_one/nondotfile
+        subdir_two/nondotfile
+      ]
+      Dir.glob('**/*/nondotfile').sort.should == expected
+    end
   end
 end

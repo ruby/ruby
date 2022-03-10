@@ -1068,7 +1068,7 @@ q.pop
         puts mth.status
         Process.kill(:INT, $$)
       }
-      sleep 0.1
+      sleep
     INPUT
   end
 

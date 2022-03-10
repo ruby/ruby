@@ -611,7 +611,9 @@ describe "C-API String function" do
       filename = fixture(__FILE__, "read.txt")
       str = ""
       capacities = @s.RSTRING_PTR_read(str, filename)
-      capacities.should == [30, 53]
+      capacities[0].should >= 30
+      capacities[1].should >= 53
+      capacities[0].should < capacities[1]
       str.should == "fixture file contents to test read() with RSTRING_PTR"
     end
   end

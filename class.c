@@ -259,17 +259,21 @@ rb_class_boot(VALUE super)
     return (VALUE)klass;
 }
 
-void
-rb_class_remove_superclasses(VALUE klass)
+static VALUE *
+class_superclasses_including_self(VALUE klass)
 {
-    if (!RB_TYPE_P(klass, T_CLASS))
-        return;
+    if (FL_TEST_RAW(klass, RCLASS_SUPERCLASSES_INCLUDE_SELF))
+        return RCLASS_SUPERCLASSES(klass);
 
-    if (RCLASS_SUPERCLASSES(klass))
-        xfree(RCLASS_SUPERCLASSES(klass));
+    size_t depth = RCLASS_SUPERCLASS_DEPTH(klass);
+    VALUE *superclasses = xmalloc(sizeof(VALUE) * (depth + 1));
+    if (depth > 0)
+        memcpy(superclasses, RCLASS_SUPERCLASSES(klass), sizeof(VALUE) * depth);
+    superclasses[depth] = klass;
 
-    RCLASS_SUPERCLASSES(klass) = NULL;
-    RCLASS_SUPERCLASS_DEPTH(klass) = 0;
+    RCLASS_SUPERCLASSES(klass) = superclasses;
+    FL_SET_RAW(klass, RCLASS_SUPERCLASSES_INCLUDE_SELF);
+    return superclasses;
 }
 
 void
@@ -303,17 +307,8 @@ rb_class_update_superclasses(VALUE klass)
             return;
     }
 
-    size_t parent_num = RCLASS_SUPERCLASS_DEPTH(super);
-    size_t num = parent_num + 1;
-
-    VALUE *superclasses = xmalloc(sizeof(VALUE) * num);
-    superclasses[parent_num] = super;
-    if (parent_num > 0) {
-        memcpy(superclasses, RCLASS_SUPERCLASSES(super), sizeof(VALUE) * parent_num);
-    }
-
-    RCLASS_SUPERCLASSES(klass) = superclasses;
-    RCLASS_SUPERCLASS_DEPTH(klass) = num;
+    RCLASS_SUPERCLASSES(klass) = class_superclasses_including_self(super);
+    RCLASS_SUPERCLASS_DEPTH(klass) = RCLASS_SUPERCLASS_DEPTH(super) + 1;
 }
 
 void

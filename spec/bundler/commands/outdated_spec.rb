@@ -570,8 +570,7 @@ RSpec.describe "bundle outdated" do
     end
   end
 
-  filter_strict_option = Bundler.feature_flag.bundler_2_mode? ? :"filter-strict" : :strict
-  describe "with --#{filter_strict_option} option" do
+  describe "with --filter-strict option" do
     before do
       build_repo2 do
         build_git "foo", :path => lib_path("foo")
@@ -595,7 +594,7 @@ RSpec.describe "bundle outdated" do
         build_gem "weakling", "0.0.5"
       end
 
-      bundle :outdated, filter_strict_option => true, :raise_on_error => false
+      bundle :outdated, :"filter-strict" => true, :raise_on_error => false
 
       expected_output = <<~TABLE.strip
         Gem       Current  Latest  Requested  Groups
@@ -611,7 +610,7 @@ RSpec.describe "bundle outdated" do
         gem "activesupport", platforms: [:ruby_22]
       G
 
-      bundle :outdated, filter_strict_option => true
+      bundle :outdated, :"filter-strict" => true
 
       expect(out).to end_with("Bundle up to date!")
     end
@@ -622,7 +621,7 @@ RSpec.describe "bundle outdated" do
         gem "rack_middleware", "1.0"
       G
 
-      bundle :outdated, filter_strict_option => true
+      bundle :outdated, :"filter-strict" => true
 
       expect(out).to end_with("Bundle up to date!")
     end
@@ -640,7 +639,7 @@ RSpec.describe "bundle outdated" do
           build_gem "weakling", "0.0.5"
         end
 
-        bundle :outdated, filter_strict_option => true, "filter-patch" => true, :raise_on_error => false
+        bundle :outdated, :"filter-strict" => true, "filter-patch" => true, :raise_on_error => false
 
         expected_output = <<~TABLE.strip
           Gem       Current  Latest  Requested  Groups
@@ -662,7 +661,7 @@ RSpec.describe "bundle outdated" do
           build_gem "weakling", "0.1.5"
         end
 
-        bundle :outdated, filter_strict_option => true, "filter-minor" => true, :raise_on_error => false
+        bundle :outdated, :"filter-strict" => true, "filter-minor" => true, :raise_on_error => false
 
         expected_output = <<~TABLE.strip
           Gem       Current  Latest  Requested  Groups
@@ -684,7 +683,7 @@ RSpec.describe "bundle outdated" do
           build_gem "weakling", "1.1.5"
         end
 
-        bundle :outdated, filter_strict_option => true, "filter-major" => true, :raise_on_error => false
+        bundle :outdated, :"filter-strict" => true, "filter-major" => true, :raise_on_error => false
 
         expected_output = <<~TABLE.strip
           Gem       Current  Latest  Requested  Groups
@@ -1099,7 +1098,7 @@ RSpec.describe "bundle outdated" do
   end
 
   context "conservative updates" do
-    context "without update-strict" do
+    context "without --strict" do
       before do
         build_repo4 do
           build_gem "patch", %w[1.0.0 1.0.1]
@@ -1165,7 +1164,7 @@ RSpec.describe "bundle outdated" do
       end
     end
 
-    context "with update-strict" do
+    context "with --strict" do
       before do
         build_repo4 do
           build_gem "foo", %w[1.4.3 1.4.4] do |s|
@@ -1198,8 +1197,8 @@ RSpec.describe "bundle outdated" do
         G
       end
 
-      it "shows gems with update-strict updating to patch and filtering to patch" do
-        bundle "outdated --patch --update-strict --filter-patch", :raise_on_error => false
+      it "shows gems with --strict updating to patch and filtering to patch" do
+        bundle "outdated --patch --strict --filter-patch", :raise_on_error => false
 
         expected_output = <<~TABLE.strip
           Gem  Current  Latest  Requested  Groups

@@ -304,24 +304,51 @@ may be specified by @Encoding+Options.
 
 Each of these methods transcodes a string:
 
-String#encode :: Transcodes a string into a new string
-                 according to a given destination encoding,
-                 a given or default source encoding, and encoding options.
+- String#encode: Transcodes +self+ into a new string
+  according to given encodings and options.
+- String#encode!: Like String#encode, but transcodes +self+ in place.
+- String#scrub: Transcodes +self+ into a new string
+  by replacing invalid byte sequences with a given or default replacement string.
+- String#scrub!: Like String#scrub, but transcodes +self+ in place.
+- String#unicode_normalize: Transcodes +self+ into a new string
+  according to Unicode normalization.
+- String#unicode_normalize!: Like String#unicode_normalize,
+  but transcodes +self+ in place.
 
-String#encode! :: Like String#encode,
-                  but transcodes the string in place.
+=== Transcoding a Stream
 
-String#scrub :: Transcodes a string into a new string
-                by replacing invalid byte sequences
-                with a given or default replacement string.
+Each of these methods may transcode a stream;
+whether it does so depends on the external and internal encodings:
 
-String#scrub! :: Like String#scrub, but transcodes the string in place.
+- IO.foreach: Yields each line of given stream to the block.
+- IO.new: Creates and returns a new \IO object for the given integer file descriptor.
+- IO.open: Creates a new \IO object.
+- IO.pipe: Creates a connected pair of reader and writer \IO objects.
+- IO.popen: Creates an \IO object to interact with a subprocess.
+- IO.read: Returns a string with all or a subset of bytes from the given stream.
+- IO.readlines: Returns an array of strings, which are the lines from the given stream.
+- IO.write: Writes a given string to the given stream.
 
-String#unicode_normalize :: Transcodes a string into a new string
-                            according to Unicode normalization:
+This example writes a string to a file, encoding it as ISO-8859-1,
+then reads the file into a new string, encoding it as UTF-8:
 
-String#unicode_normalize! :: Like String#unicode_normalize,
-                             but transcodes the string in place.
+  s = "R\u00E9sum\u00E9"
+  path = 't.tmp'
+  ext_enc = 'ISO-8859-1'
+  int_enc = 'UTF-8'
+
+  File.write(path, s, external_encoding: ext_enc)
+  raw_text = File.binread(path)
+
+  transcoded_text = File.read(path, external_encoding: ext_enc, internal_encoding: int_enc)
+
+  p raw_text
+  p transcoded_text
+
+Output:
+
+  "R\xE9sum\xE9"
+  "Résumé"
 
 === \Encoding Options
 

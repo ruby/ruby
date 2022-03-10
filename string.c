@@ -1845,6 +1845,7 @@ rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str)
     return ec_str_duplicate(ec, rb_cString, str);
 }
 
+/* :nodoc: documented in doc/string.rdoc */
 static VALUE
 rb_str_init(int argc, VALUE *argv, VALUE str)
 {
@@ -4296,8 +4297,8 @@ rb_str_byterindex(VALUE str, VALUE sub, long pos)
 
 /*
  *  call-seq:
- *    byterindex(substring, offset = self.length) -> integer or nil
- *    byterindex(regexp, offset = self.length) -> integer or nil
+ *    byterindex(substring, offset = self.bytesize) -> integer or nil
+ *    byterindex(regexp, offset = self.bytesize) -> integer or nil
  *
  *  Returns the \Integer byte-based index of the _last_ occurrence of the given +substring+,
  *  or +nil+ if none found:
@@ -8041,11 +8042,11 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 
 /*
  *  call-seq:
- *     str.tr!(from_str, to_str)   -> str or nil
+ *    tr!(selector, replacements) -> self or nil
  *
- *  Translates <i>str</i> in place, using the same rules as
- *  String#tr. Returns <i>str</i>, or <code>nil</code> if no changes
- *  were made.
+ *  Like String#tr, but modifies +self+ in place.
+ *  Returns +self+ if any changes were made, +nil+ otherwise.
+ *
  */
 
 static VALUE
@@ -8057,37 +8058,41 @@ rb_str_tr_bang(VALUE str, VALUE src, VALUE repl)
 
 /*
  *  call-seq:
- *     str.tr(from_str, to_str)   => new_str
+ *    tr(selector, replacements) -> new_string
  *
- *  Returns a copy of +str+ with the characters in +from_str+ replaced by the
- *  corresponding characters in +to_str+.  If +to_str+ is shorter than
- *  +from_str+, it is padded with its last character in order to maintain the
- *  correspondence.
+ *  Returns a copy of +self+ with each character specified by string +selector+
+ *  translated to the corresponding character in string +replacements+.
+ *  The correspondence is _positional_:
  *
- *     "hello".tr('el', 'ip')      #=> "hippo"
- *     "hello".tr('aeiou', '*')    #=> "h*ll*"
- *     "hello".tr('aeiou', 'AA*')  #=> "hAll*"
+ *  - Each occurrence of the first character specified by +selector+
+ *    is translated to the first character in +replacements+.
+ *  - Each occurrence of the second character specified by selector+
+ *    is translated to the second character in +replacements+.
+ *  - And so on.
  *
- *  Both strings may use the <code>c1-c2</code> notation to denote ranges of
- *  characters, and +from_str+ may start with a <code>^</code>, which denotes
- *  all characters except those listed.
+ *  Example:
  *
- *     "hello".tr('a-y', 'b-z')    #=> "ifmmp"
- *     "hello".tr('^aeiou', '*')   #=> "*e**o"
+ *    'hello'.tr('el', 'ip') #=> "hippo"
  *
- *  The backslash character <code>\\</code> can be used to escape
- *  <code>^</code> or <code>-</code> and is otherwise ignored unless it
- *  appears at the end of a range or the end of the +from_str+ or +to_str+:
+ *  If +replacements+ is shorter than +selector+,
+ *  it is implicitly padded with its own last character:
  *
- *     "hello^world".tr("\\^aeiou", "*") #=> "h*ll**w*rld"
- *     "hello-world".tr("a\\-eo", "*")   #=> "h*ll**w*rld"
+ *    'hello'.tr('aeiou', '-')   # => "h-ll-"
+ *    'hello'.tr('aeiou', 'AA-') # => "hAll-"
  *
- *     "hello\r\nworld".tr("\r", "")   #=> "hello\nworld"
- *     "hello\r\nworld".tr("\\r", "")  #=> "hello\r\nwold"
- *     "hello\r\nworld".tr("\\\r", "") #=> "hello\nworld"
+ *  Arguments +selector+ and +replacements+ must be valid character selectors
+ *  (see {Character Selectors}[rdoc-ref:character_selectors.rdoc]),
+ *  and may use any of its valid forms, including negation, ranges, and escaping:
  *
- *     "X['\\b']".tr("X\\", "")   #=> "['b']"
- *     "X['\\b']".tr("X-\\]", "") #=> "'b'"
+ *    # Negation.
+ *    'hello'.tr('^aeiou', '-') # => "-e--o"
+ *    # Ranges.
+ *    'ibm'.tr('b-z', 'a-z') # => "hal"
+ *    # Escapes.
+ *    'hel^lo'.tr('\^aeiou', '-')     # => "h-l-l-"    # Escaped leading caret.
+ *    'i-b-m'.tr('b\-z', 'a-z')       # => "ibabm"     # Escaped embedded hyphen.
+ *    'foo\\bar'.tr('ab\\', 'XYZ')    # => "fooZYXr"   # Escaped backslash.
+ *
  */
 
 static VALUE
@@ -8188,10 +8193,11 @@ tr_find(unsigned int c, const char table[TR_TABLE_SIZE], VALUE del, VALUE nodel)
 
 /*
  *  call-seq:
- *     str.delete!([other_str]+)   -> str or nil
+ *    delete!(*selectors) -> self or nil
  *
- *  Performs a <code>delete</code> operation in place, returning <i>str</i>, or
- *  <code>nil</code> if <i>str</i> was not modified.
+ *  Like String#delete, but modifies +self+ in place.
+ *  Returns +self+ if any changes were made, +nil+ otherwise.
+ *
  */
 
 static VALUE
@@ -8258,16 +8264,16 @@ rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.delete([other_str]+)   -> new_str
+ *    delete(*selectors) -> new_string
  *
- *  Returns a copy of <i>str</i> with all characters in the intersection of its
- *  arguments deleted. Uses the same rules for building the set of characters as
- *  String#count.
+ *  Returns a copy of +self+ with characters specified by +selectors+ removed
+ *  (see {Multiple Character Selectors}[rdoc-ref:character_selectors.rdoc@Multiple+Character+Selectors]):
  *
  *     "hello".delete "l","lo"        #=> "heo"
  *     "hello".delete "lo"            #=> "he"
  *     "hello".delete "aeiou", "^e"   #=> "hell"
  *     "hello".delete "ej-m"          #=> "ho"
+ *
  */
 
 static VALUE
@@ -8281,10 +8287,10 @@ rb_str_delete(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.squeeze!([other_str]*)   -> str or nil
+ *    squeeze!(*selectors) -> self or nil
  *
- *  Squeezes <i>str</i> in place, returning either <i>str</i>, or
- *  <code>nil</code> if no changes were made.
+ *  Like String#squeeze, but modifies +self+ in place.
+ *  Returns +self+ if any changes were made, +nil+ otherwise.
  */
 
 static VALUE
@@ -8365,17 +8371,19 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.squeeze([other_str]*)    -> new_str
+ *     str.squeeze(*selectors) -> new_string
  *
- *  Builds a set of characters from the <i>other_str</i> parameter(s)
- *  using the procedure described for String#count. Returns a new
- *  string where runs of the same character that occur in this set are
- *  replaced by a single character. If no arguments are given, all
- *  runs of identical characters are replaced by a single character.
+ *  Returns a copy of +self+ with characters specified by +selectors+ "squeezed"
+ *  (see {Multiple Character Selectors}[rdoc-ref:character_selectors.rdoc@Multiple+Character+Selectors]):
+ *
+ *  "Squeezed" means that each multiple-character run of a selected character
+ *  is squeezed down to a single character;
+ *  with no arguments given, squeezes all characters:
  *
  *     "yellow moon".squeeze                  #=> "yelow mon"
  *     "  now   is  the".squeeze(" ")         #=> " now is the"
  *     "putters shoot balls".squeeze("m-z")   #=> "puters shot balls"
+ *
  */
 
 static VALUE
@@ -8389,10 +8397,12 @@ rb_str_squeeze(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.tr_s!(from_str, to_str)   -> str or nil
+ *    tr_s!(selector, replacements) -> self or nil
  *
- *  Performs String#tr_s processing on <i>str</i> in place,
- *  returning <i>str</i>, or <code>nil</code> if no changes were made.
+ *  Like String#tr_s, but modifies +self+ in place.
+ *  Returns +self+ if any changes were made, +nil+ otherwise.
+ *
+ *  Related: String#squeeze!.
  */
 
 static VALUE
@@ -8404,15 +8414,17 @@ rb_str_tr_s_bang(VALUE str, VALUE src, VALUE repl)
 
 /*
  *  call-seq:
- *     str.tr_s(from_str, to_str)   -> new_str
+ *    tr_s(selector, replacements) -> string
  *
- *  Processes a copy of <i>str</i> as described under String#tr, then
- *  removes duplicate characters in regions that were affected by the
- *  translation.
+ *  Like String#tr, but also squeezes the modified portions of the translated string;
+ *  returns a new string (translated and squeezed).
  *
- *     "hello".tr_s('l', 'r')     #=> "hero"
- *     "hello".tr_s('el', '*')    #=> "h*o"
- *     "hello".tr_s('el', 'hx')   #=> "hhxo"
+ *    'hello'.tr_s('l', 'r')   #=> "hero"
+ *    'hello'.tr_s('el', '-')  #=> "h-o"
+ *    'hello'.tr_s('el', 'hx') #=> "hhxo"
+ *
+ *  Related: String#squeeze.
+ *
  */
 
 static VALUE
@@ -8426,15 +8438,11 @@ rb_str_tr_s(VALUE str, VALUE src, VALUE repl)
 
 /*
  *  call-seq:
- *     str.count([other_str]+)   -> integer
+ *    count(*selectors) -> integer
  *
- *  Each +other_str+ parameter defines a set of characters to count.  The
- *  intersection of these sets defines the characters to count in +str+.  Any
- *  +other_str+ that starts with a caret <code>^</code> is negated.  The
- *  sequence <code>c1-c2</code> means all characters between c1 and c2.  The
- *  backslash character <code>\\</code> can be used to escape <code>^</code> or
- *  <code>-</code> and is otherwise ignored unless it appears at the end of a
- *  sequence or the end of a +other_str+.
+ *  Returns the total number of characters in +self+
+ *  that are specified by the given +selectors+
+ *  (see {Multiple Character Selectors}[rdoc-ref:character_selectors.rdoc@Multiple+Character+Selectors]):
  *
  *     a = "hello world"
  *     a.count "lo"                   #=> 5

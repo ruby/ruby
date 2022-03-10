@@ -2093,7 +2093,7 @@ fix_sp_depth(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     LINK_ELEMENT *list;
 
     for (list = FIRST_ELEMENT(anchor); list; list = list->next) {
-	if (list->type == ISEQ_ELEMENT_LABEL) {
+	if (IS_LABEL(list)) {
 	    LABEL *lobj = (LABEL *)list;
 	    lobj->set = TRUE;
 	}
@@ -5629,7 +5629,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
 
         if (LIST_INSN_SIZE_ONE(arg_block)) {
             LINK_ELEMENT *elem = FIRST_ELEMENT(arg_block);
-            if (elem->type == ISEQ_ELEMENT_INSN) {
+            if (IS_INSN(elem)) {
                 INSN *iobj = (INSN *)elem;
                 if (iobj->insn_id == BIN(getblockparam)) {
                     iobj->insn_id = BIN(getblockparamproxy);
@@ -7867,7 +7867,7 @@ delegate_call_p(const rb_iseq_t *iseq, unsigned int argc, const LINK_ANCHOR *arg
             const LINK_ELEMENT *elem = FIRST_ELEMENT(args);
 
             for (unsigned int i=start; i-start<argc; i++) {
-                if (elem->type == ISEQ_ELEMENT_INSN &&
+                if (IS_INSN(elem) &&
                     INSN_OF(elem) == BIN(getlocal)) {
                     int local_index = FIX2INT(OPERAND_AT(elem, 0));
                     int local_level = FIX2INT(OPERAND_AT(elem, 1));

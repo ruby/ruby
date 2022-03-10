@@ -4392,20 +4392,14 @@ rb_ary_replace(VALUE copy, VALUE orig)
     if (copy == orig) return copy;
 
     if (RARRAY_LEN(orig) <= RARRAY_EMBED_LEN_MAX) {
-        VALUE shared_root = 0;
-
         if (ARY_OWNS_HEAP_P(copy)) {
             ary_heap_free(copy);
 	}
         else if (ARY_SHARED_P(copy)) {
-            shared_root = ARY_SHARED_ROOT(copy);
-            FL_UNSET_SHARED(copy);
+            rb_ary_unshare(copy);
         }
         FL_SET_EMBED(copy);
         ary_memcpy(copy, 0, RARRAY_LEN(orig), RARRAY_CONST_PTR_TRANSIENT(orig));
-        if (shared_root) {
-            rb_ary_decrement_share(shared_root);
-        }
         ARY_SET_LEN(copy, RARRAY_LEN(orig));
     }
     else {
@@ -8110,7 +8104,7 @@ rb_ary_deconstruct(VALUE ary)
  *  #last:: Returns one or more trailing elements.
  *  #max:: Returns one or more maximum-valued elements,
  *         as determined by <tt><=></tt> or a given block.
- *  #max:: Returns one or more minimum-valued elements,
+ *  #min:: Returns one or more minimum-valued elements,
  *         as determined by <tt><=></tt> or a given block.
  *  #minmax:: Returns the minimum-valued and maximum-valued elements,
  *            as determined by <tt><=></tt> or a given block.

@@ -101,11 +101,29 @@ module DirSpecs
     @mock_dir_files
   end
 
+  def self.mock_dir_links
+    unless @mock_dir_links
+      @mock_dir_links = []
+      platform_is_not :windows do
+        @mock_dir_links += [
+          ['special/ln', 'subdir_one']
+        ]
+      end
+    end
+    @mock_dir_links
+  end
+
   def self.create_mock_dirs
     mock_dir_files.each do |name|
       file = File.join mock_dir, name
       mkdir_p File.dirname(file)
       touch file
+    end
+    mock_dir_links.each do |link, target|
+      full_link = File.join mock_dir, link
+      full_target = File.join mock_dir, target
+
+      File.symlink full_target, full_link
     end
   end
 

@@ -107,7 +107,7 @@
 # For all these reasons, consider not using OpenStruct at all.
 #
 class OpenStruct
-  VERSION = "0.5.2"
+  VERSION = "0.5.3"
 
   #
   # Creates a new OpenStruct object.  By default, the resulting OpenStruct
@@ -246,7 +246,7 @@ class OpenStruct
       if owner.class == ::Class
         owner < ::OpenStruct
       else
-        self.class.ancestors.any? do |mod|
+        self.class!.ancestors.any? do |mod|
           return false if mod == ::OpenStruct
           mod == owner
         end
