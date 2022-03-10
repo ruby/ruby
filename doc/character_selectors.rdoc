@@ -35,7 +35,7 @@ Note that order and repetitions do not matter:
 
 In a character selector, these three characters get special treatment:
 
-- A leading caret (<tt>'^'</tt>') functions as a "not" operator
+- A leading caret (<tt>'^'</tt>) functions as a "not" operator
   for the characters to its right:
 
     'abracadabra'.delete('^bc') # => "bcb"
