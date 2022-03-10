@@ -432,7 +432,7 @@ module Bundler
 
       raise ProductionError, "Your bundle only supports platforms #{@platforms.map(&:to_s)} " \
         "but your local platform is #{Bundler.local_platform}. " \
-        "Add the current platform to the lockfile with `bundle lock --add-platform #{Bundler.local_platform}` and try again."
+        "Add the current platform to the lockfile with\n`bundle lock --add-platform #{Bundler.local_platform}` and try again."
     end
 
     def add_platform(platform)

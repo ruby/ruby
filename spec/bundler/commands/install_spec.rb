@@ -836,7 +836,7 @@ RSpec.describe "bundle install with gem sources" do
 
       expect(err).to eq(
         "Your bundle only supports platforms [\"x86_64-darwin-19\"] but your local platform is x86_64-linux. " \
-        "Add the current platform to the lockfile with `bundle lock --add-platform x86_64-linux` and try again."
+        "Add the current platform to the lockfile with\n`bundle lock --add-platform x86_64-linux` and try again."
       )
     end
   end
