@@ -1098,7 +1098,7 @@ rb_vm_block_min_max_arity(const struct rb_block *block, int *max)
       case block_type_ifunc:
 	{
 	    const struct vm_ifunc *ifunc = block->as.captured.code.ifunc;
-	    if (IS_METHOD_PROC_IFUNC(ifunc)) {
+            if (IS_METHOD_PROC_IFUNC(ifunc) && ifunc->argc.max == -1) {
 		/* e.g. method(:foo).to_proc.arity */
 		return method_min_max_arity((VALUE)ifunc->data, max);
 	    }
@@ -2774,6 +2774,11 @@ method_arity(VALUE method)
     struct METHOD *data;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
+    if (data->me->def && data->me->def->type == VM_METHOD_TYPE_OPTIMIZED &&
+        data->me->def->body.optimized.type == OPTIMIZED_METHOD_TYPE_CALL &&
+        (rb_obj_is_proc(data->recv))) {
+        return rb_proc_arity(data->recv);
+    }
     return rb_method_entry_arity(data->me);
 }
 
@@ -3257,6 +3262,7 @@ method_to_proc(VALUE method)
 {
     VALUE procval;
     rb_proc_t *proc;
+    int arity;
 
     /*
      * class Method
@@ -3270,6 +3276,14 @@ method_to_proc(VALUE method)
     procval = rb_block_call(rb_mRubyVMFrozenCore, idLambda, 0, 0, bmcall, method);
     GetProcPtr(procval, proc);
     proc->is_from_method = 1;
+
+    arity = method_arity(method);
+    if (arity >= 0) {
+        struct vm_ifunc *ifunc = (struct vm_ifunc *)proc->block.as.captured.code.ifunc;
+        ifunc->argc.min = arity;
+        ifunc->argc.max = arity;
+    }
+
     return procval;
 }
 

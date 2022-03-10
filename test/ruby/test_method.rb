@@ -965,6 +965,12 @@ class TestMethod < Test::Unit::TestCase
     assert_curry_var_args(c.new.method(:var_args))
   end
 
+  def test_curry_proc_call
+    bug18620 = '[ruby-core:107820]'
+    assert_equal(3, lambda { |a, b| a + b }.method(:call).curry[1][2], bug18620)
+    assert_equal(3, proc { |a, b| a + b }.method(:call).curry[1][2], bug18620)
+  end
+
   Feature9781 = '[ruby-core:62202] [Feature #9781]'
 
   def test_super_method
