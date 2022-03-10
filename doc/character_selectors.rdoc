@@ -1,15 +1,19 @@
 == Character Selectors
 
+=== Character Selector
+
 A _character_ _selector_ is a string argument accepted by certain Ruby methods.
 Each of these instance methods accepts one or more character selectors:
 
 - String#tr(selector, replacements): returns a new string.
-- String#tr!(selector, replacements): returns +self+.
+- String#tr!(selector, replacements): returns +self+ or +nil+.
 - String#tr_s(selector, replacements): returns a new string.
-- String#tr_s!(selector, replacements): returns +self+.
+- String#tr_s!(selector, replacements): returns +self+ or +nil+.
+- String#count(*selectors): returns the count of the specified characters.
 - String#delete(*selectors): returns a new string.
-- String#delete!(*selectors): returns +self+.
-- String#count(*selectors): counts specified characters.
+- String#delete!(*selectors): returns +self+ or +nil+.
+- String#squeeze(*selectors): returns a new string.
+- String#squeeze!(*selectors): returns +self+ or +nil+.
 
 A character selector identifies zero or more characters in +self+
 that are to be operands for the method.
@@ -65,3 +69,29 @@ In a character selector, these three characters get special treatment:
     "hello\r\nworld".delete("\r")   # => "hello\nworld"
     "hello\r\nworld".delete("\\r")  # => "hello\r\nwold"
     "hello\r\nworld".delete("\\\r") # => "hello\nworld"
+
+=== Multiple Character Selectors
+
+These instance methods accept multiple character selectors:
+
+- String#count(*selectors): returns the count of the specified characters.
+- String#delete(*selectors): returns a new string.
+- String#delete!(*selectors): returns +self+ or +nil+.
+- String#squeeze(*selectors): returns a new string.
+- String#squeeze!(*selectors): returns +self+ or +nil+.
+
+In effect, the given selectors are formed into a single selector
+consisting of only those characters common to _all_ of the given selectors.
+
+All forms of selectors may be used, including negations, ranges, and escapes.
+
+Each of these pairs of method calls is equivalent:
+
+  s.delete('abcde', 'dcbfg')
+  s.delete('bcd')
+
+  s.delete('^abc', '^def')
+  s.delete('^abcdef')
+
+  s.delete('a-e', 'c-g')
+  s.delete('cde')
