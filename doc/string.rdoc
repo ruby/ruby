@@ -44,7 +44,5 @@ class String
   #
   #   String.new('hello', encoding: 'UTF-8', capacity: 25)
   #
-  def initialize(str = '', encoding: nil, capacity: nil)
-    Primitive.rb_str_init(str, encoding, capacity)
-  end
+  def initialize; end
 end

@@ -45,8 +45,5 @@ class String
   #
   # Optional keyword arguments +enc_opts+ specify encoding options;
   # see {Encoding Options}[rdoc-ref:encoding.rdoc@Encoding+Options].
-  def encode(dst_encoding = Encoding.default_internal, **enc_opts)
-    # Pseudo code
-    Primitive.str_encode(...)
-  end
+  def encode; end
 end
