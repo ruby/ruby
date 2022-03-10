@@ -1413,7 +1413,9 @@ static inline VALUE
 VM_ENV_ENVVAL(const VALUE *ep)
 {
     VALUE envval = ep[VM_ENV_DATA_INDEX_ENV];
+#ifndef USE_THIRD_PARTY_HEAP
     VM_ASSERT(VM_ENV_ESCAPED_P(ep));
+#endif // USE_THIRD_PARTY_HEAP
     VM_ASSERT(vm_assert_env(envval));
     return envval;
 }

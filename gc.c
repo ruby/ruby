@@ -7106,7 +7106,9 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
             if (LIKELY(env->ep)) {
                 // just after newobj() can be NULL here.
                 GC_ASSERT(env->ep[VM_ENV_DATA_INDEX_ENV] == obj);
+#ifndef USE_THIRD_PARTY_HEAP
                 GC_ASSERT(VM_ENV_ESCAPED_P(env->ep));
+#endif // USE_THIRD_PARTY_HEAP
                 gc_mark_values(objspace, (long)env->env_size, env->env);
                 VM_ENV_FLAGS_SET(env->ep, VM_ENV_FLAG_WB_REQUIRED);
                 gc_mark(objspace, (VALUE)rb_vm_env_prev_env(env));
@@ -14401,9 +14403,9 @@ rb_mmtk_wait_for_gc_end(void *param)
 	pthread_cond_wait(&rb_mmtk_global.cond_world_started, &rb_mmtk_global.mutex);
     }
 
-    fprintf(stderr, "It is reported that GC has finished, but we know we haven't implemented it yet.\n");
-    fprintf(stderr, "Stop now.\n");
-    abort();
+    fprintf(stderr, "It is reported that GC has finished. Really? Let's see.\n");
+    //fprintf(stderr, "Stop now.\n");
+    //abort();
 }
 
 static void*
@@ -14551,6 +14553,15 @@ rb_mmtk_mark_pin(VALUE obj)
     rb_mmtk_mark(obj, true);
 }
 
+static inline void
+rb_mmtk_scan_object_ruby_style(void *object)
+{
+    VALUE obj = (VALUE)object;
+
+    rb_objspace_t *objspace = &rb_objspace;
+    gc_mark_children(objspace, obj);
+}
+
 RubyUpcalls ruby_upcalls = {
     rb_mmtk_init_gc_worker_thread,
     rb_mmtk_get_gc_thread_tls,
@@ -14563,6 +14574,7 @@ RubyUpcalls ruby_upcalls = {
     rb_mmtk_scan_vm_specific_roots,
     rb_mmtk_scan_thread_roots,
     rb_mmtk_scan_thread_root,
+    rb_mmtk_scan_object_ruby_style,
 };
 
 #endif

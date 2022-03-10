@@ -28,9 +28,10 @@ typedef struct {
     size_t (*number_of_mutators)(void);
     void (*reset_mutator_iterator)(void);
     MMTk_Mutator (*get_next_mutator)(void);
-    void (*rb_mmtk_scan_vm_specific_roots)(void);
-    void (*rb_mmtk_scan_thread_roots)(void);
-    void (*rb_mmtk_scan_thread_root)(MMTk_VMMutatorThread mutator, MMTk_VMWorkerThread worker);
+    void (*scan_vm_specific_roots)(void);
+    void (*scan_thread_roots)(void);
+    void (*scan_thread_root)(MMTk_VMMutatorThread mutator, MMTk_VMWorkerThread worker);
+    void (*scan_object_ruby_style)(void *object);
 } RubyUpcalls;
 
 /**
