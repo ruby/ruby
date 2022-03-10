@@ -109,7 +109,7 @@ module Bundler
 
       definition.gem_version_promoter.tap do |gvp|
         gvp.level = patch_level.first || :major
-        gvp.strict = options[:strict] || options["update-strict"] || options["filter-strict"]
+        gvp.strict = options[:strict] || options["filter-strict"]
       end
     end
 

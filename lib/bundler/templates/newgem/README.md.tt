@@ -6,17 +6,11 @@ TODO: Delete this and the text above, and describe your gem
 
 ## Installation
 
-Add this line to your application's Gemfile:
+Install the gem and add to the application's Gemfile by executing:
 
-```ruby
-gem '<%= config[:name] %>'
-```
+    $ bundle add <%= config[:name] %>
 
-And then execute:
-
-    $ bundle install
-
-Or install it yourself as:
+If bundler is not being used to manage dependencies, install the gem by executing:
 
     $ gem install <%= config[:name] %>
 
