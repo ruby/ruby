@@ -4391,25 +4391,20 @@ rb_ary_replace(VALUE copy, VALUE orig)
     orig = to_ary(orig);
     if (copy == orig) return copy;
 
+    if (ARY_OWNS_HEAP_P(copy)) {
+        ary_heap_free(copy);
+    }
+    else if (ARY_SHARED_P(copy)) {
+        rb_ary_unshare(copy);
+    }
+
     if (RARRAY_LEN(orig) <= RARRAY_EMBED_LEN_MAX) {
-        if (ARY_OWNS_HEAP_P(copy)) {
-            ary_heap_free(copy);
-	}
-        else if (ARY_SHARED_P(copy)) {
-            rb_ary_unshare(copy);
-        }
         FL_SET_EMBED(copy);
         ary_memcpy(copy, 0, RARRAY_LEN(orig), RARRAY_CONST_PTR_TRANSIENT(orig));
         ARY_SET_LEN(copy, RARRAY_LEN(orig));
     }
     else {
         VALUE shared_root = ary_make_shared(orig);
-        if (ARY_OWNS_HEAP_P(copy)) {
-            ary_heap_free(copy);
-        }
-        else {
-            rb_ary_unshare_safe(copy);
-        }
         FL_UNSET_EMBED(copy);
         ARY_SET_PTR(copy, ARY_HEAP_PTR(orig));
         ARY_SET_LEN(copy, ARY_HEAP_LEN(orig));
