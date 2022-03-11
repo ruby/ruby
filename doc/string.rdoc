@@ -123,3 +123,5 @@ class String
   #    'aaabcdaaa'.split('a', -1) # => ["", "", "", "bcd", "", "", ""]
   #
   def split; end
+
+end
