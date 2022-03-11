@@ -47,4 +47,79 @@ class String
   def initialize(str = '', encoding: nil, capacity: nil)
     Primitive.rb_str_init(str, encoding, capacity)
   end
-end
+
+  #  call-seq:
+  #    split(pattern = $FIELD_SEPARATOR, limit = nil) -> array
+  #    split(pattern = $FIELD_SEPARATOR, limit = nil) {|sub| block } -> object
+  #
+  #  Returns an array of substrings of +self+;
+  #  the substrings are copied from +self+, based on the given arguments.
+  #
+  #  When argument +pattern+ is $FIELD_SEPARATOR:
+  #
+  #  - If $FIELD_SEPARATOR is +nil+ (its default value),
+  #    the split occurs just as if +pattern+ were given as a space character
+  #    (see below).
+  #
+  #  - If $FIELD_SEPARATOR is a string,
+  #    the split ocurs just as if +pattern+ were given as that string
+  #    (see below).
+  #
+  #  When argument +pattern+ is <tt>' '</tt> and argument +limit+ is +nil+,
+  #  the split occurs at each sequence of whitespace:
+  #
+  #    'abc def ghi'.split(' ')          # => ["abc", "def", "ghi"]
+  #    "abc \n\tdef\t\n  ghi".split(' ') # => ["abc", "def", "ghi"]
+  #    'abc  def   ghi'.split(' ')       # => ["abc", "def", "ghi"]
+  #    ''.split(' ')                     # => []
+  #
+  #  When argument +pattern+ is a string different from <tt>' '</tt>
+  #  and argument +limit+ is +nil+,
+  #  the split occurs at each occurrence of the pattern;
+  #  trailing null substrings are not returned:
+  #
+  #    'abracadabra'.split('ab')   # => ["", "racad", "ra"]
+  #    'aaabcdaaa'.split('a')      # => ["", "", "", "bcd"]
+  #    ''.split('a')               # => []
+  #    '3.14159'.split('1')        # => ["3.", "4", "59"]
+  #    '!@#$%^$&*($)_+'.split('$') # => ["!@#", "%^", "&*(", ")_+"]
+  #    'тест'.split('т')           # => ["", "ес"]
+  #    'こんにちは'.split('に')     # => ["こん", "ちは"]
+  #
+  #  When argument +pattern+ is a Regexp and argument +limit+ is +nil+,
+  #  the split occurs at each occurrence of a match;
+  #  trailing null substrings are not returned:
+  #
+  #    'abracadabra'.split(/ab/) # => ["", "racad", "ra"]
+  #    'aaabcdaaa'.split(/a/)    # => ["", "", "", "bcd"]
+  #    'aaabcdaaa'.split(/       # => ["a", "a", "a", "b", "c", "d", "a", "a", "a"]
+  #
+  #  If the \Regexp contains groups, their matches are also included
+  #  in the returned array.
+  #
+  #  As seen above, if argument +limit+ is +nil+,
+  #  trailing null substrings are not returned;
+  #  the same is true if +limit+ is zero:
+  #
+  #    'aaabcdaaa'.split('a')    # => ["", "", "", "bcd"]
+  #    'aaabcdaaa'.split('a', 0) # => ["", "", "", "bcd"]
+  #
+  #  If +limit+ is positive integer +n+, no more than <tt>n - 1-</tt>
+  #  splits occur, so that at most +n+ substrings are returned,
+  #  and trailing null substrings are included:
+  #
+  #    'aaabcdaaa'.split('a', 1) # => ["aaabcdaaa"]
+  #    'aaabcdaaa'.split('a', 2) # => ["", "aabcdaaa"]
+  #    'aaabcdaaa'.split('a', 5) # => ["", "", "", "bcd", "aa"]
+  #    'aaabcdaaa'.split('a', 7) # => ["", "", "", "bcd", "", "", ""]
+  #    'aaabcdaaa'.split('a', 8) # => ["", "", "", "bcd", "", "", ""]
+  #
+  #  Note that if +pattern+ is a \Regexp containing groups,
+  #  their matches are in the returned array, but do not count toward the limit.
+  #
+  #  If +limit+ is negative, there is no limit,
+  #  and trailing null substrings are included:
+  #
+  #    'aaabcdaaa'.split('a', -1) # => ["", "", "", "bcd", "", "", ""]
+  #
+  def split; end
