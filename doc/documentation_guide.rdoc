@@ -33,6 +33,62 @@ Use your judgment about what the user needs to know.
     consider a {list}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-Simple+Lists].
   - Idioms and culture-specific references.
   - Overuse of headers.
+  - Using US-ASCII-incompatible characters in C source files;
+    see {Characters}[#label-Characters] below.
+
+=== Characters
+
+Use only US-ASCII-compatible characters in a C source file.
+(If you use other characters, the Ruby CI will gently let you know.)
+
+If want to put ASCII-incompatible characters into the documentation
+for a C-coded class, module, or method, there are workarounds
+involving new files <tt>doc/*.rdoc</tt>:
+
+- For class +Foo+ (defined in file <tt>foo.c</tt>),
+  create file <tt>doc/foo.rdoc</tt>, declare <tt>class Foo; end</tt>,
+  and place the class documentation above that declaration:
+
+    # :markup: ruby
+    # Documentation for class Foo goes here.
+    class Foo; end
+
+- Similarly, for module +Bar+ (defined in file <tt>bar.c</tt>,
+  create file <tt>doc/bar.rdoc</tt>, declare <tt>module Bar; end</tt>,
+  and place the module documentation above that declaration:
+
+    # :markup: ruby
+    # Documentation for module Bar goes here.
+    module Bar; end
+
+- For an instance method Baz#bat (defined in file <tt>baz.c</tt>),
+  create file <tt>doc/baz.rdoc</tt>, declare class +Baz+
+  and instance method +bat+, and place the method documentation above
+  the method declaration:
+
+    # :markup: ruby
+    class Baz
+      # Documentation for method bat goes here.
+      # (Don't forget the call-seq.)
+      def bat; end
+    end
+
+- For a singleton method Bam.bah (defined in file <tt>bam.c</tt>),
+  create file <tt>doc/bam.rdoc</tt>, declare class +Bam+
+  and singleton method +bah+, and place the method documentation above
+  the method declaration:
+
+    # :markup: ruby
+    class Bam
+      # Documentation for method bah goes here.
+      # (Don't forget the call-seq.)
+      def self.bah; end
+    end
+
+  See these examples:
+
+  - https://raw.githubusercontent.com/ruby/ruby/master/doc/string.rdoc
+  - https://raw.githubusercontent.com/ruby/ruby/master/doc/transcode.rdoc
 
 === \RDoc
 
