@@ -528,11 +528,14 @@ rb_ary_unshare(VALUE ary)
     FL_UNSET_SHARED(ary);
 }
 
-static inline void
-rb_ary_unshare_safe(VALUE ary)
+static void
+rb_ary_reset(VALUE ary)
 {
-    if (ARY_SHARED_P(ary) && !ARY_EMBED_P(ary)) {
-	rb_ary_unshare(ary);
+    if (ARY_OWNS_HEAP_P(ary)) {
+        ary_heap_free(ary);
+    }
+    else if (ARY_SHARED_P(ary)) {
+        rb_ary_unshare(ary);
     }
 }
 
@@ -1075,10 +1078,7 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
 
     rb_ary_modify(ary);
     if (argc == 0) {
-        if (ARY_OWNS_HEAP_P(ary) && ARY_HEAP_PTR(ary) != NULL) {
-            ary_heap_free(ary);
-	}
-        rb_ary_unshare_safe(ary);
+        rb_ary_reset(ary);
         FL_SET_EMBED(ary);
 	ARY_SET_EMBED_LEN(ary, 0);
 	if (rb_block_given_p()) {
@@ -4391,12 +4391,7 @@ rb_ary_replace(VALUE copy, VALUE orig)
     orig = to_ary(orig);
     if (copy == orig) return copy;
 
-    if (ARY_OWNS_HEAP_P(copy)) {
-        ary_heap_free(copy);
-    }
-    else if (ARY_SHARED_P(copy)) {
-        rb_ary_unshare(copy);
-    }
+    rb_ary_reset(copy);
 
     if (RARRAY_LEN(orig) <= RARRAY_EMBED_LEN_MAX) {
         FL_SET_EMBED(copy);
