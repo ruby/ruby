@@ -79,6 +79,8 @@ Note: We're only listing outstanding class updates.
 
 * String
     * String#byteindex and String#byterindex have been added. [[Feature #13110]]
+    * Update Unicode to Version 14.0.0 and Emoji Version 14.0. [[Feature #18037]]
+      (also applies to Regexp)
 
 * Struct
     * A Struct class can also be initialized with keyword arguments
