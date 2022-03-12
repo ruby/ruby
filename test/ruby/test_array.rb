@@ -65,14 +65,6 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1,2,3,4,6], ([1,2,3]|[2,4,6]))
   end
 
-  def test_compact_0
-    a = [nil, 1, nil, nil, 5, nil, nil]
-    assert_equal [1, 5], a.compact
-    assert_equal [nil, 1, nil, nil, 5, nil, nil], a
-    a.compact!
-    assert_equal [1, 5], a
-  end
-
   def test_uniq_0
     x = [1, 1, 4, 2, 5, 4, 5, 1, 2]
     x.uniq!
@@ -606,15 +598,19 @@ class TestArray < Test::Unit::TestCase
   def test_compact
     a = @cls[ 1, nil, nil, 2, 3, nil, 4 ]
     assert_equal(@cls[1, 2, 3, 4], a.compact)
+    assert_equal(@cls[1, nil, nil, 2, 3, nil, 4], a)
 
     a = @cls[ nil, 1, nil, 2, 3, nil, 4 ]
     assert_equal(@cls[1, 2, 3, 4], a.compact)
+    assert_equal(@cls[nil, 1, nil, 2, 3, nil, 4], a)
 
     a = @cls[ 1, nil, nil, 2, 3, nil, 4, nil ]
     assert_equal(@cls[1, 2, 3, 4], a.compact)
+    assert_equal(@cls[1, nil, nil, 2, 3, nil, 4, nil], a)
 
     a = @cls[ 1, 2, 3, 4 ]
     assert_equal(@cls[1, 2, 3, 4], a.compact)
+    assert_equal(@cls[1, 2, 3, 4], a)
   end
 
   def test_compact!
