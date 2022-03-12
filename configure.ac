@@ -3292,6 +3292,11 @@ AS_CASE("$enable_shared", [yes], [
   AC_DEFINE_UNQUOTED(LIBDIR_BASENAME, ["${libdir_basename}"])
   libdir_basename="${libdir_basename}"${multiarch+'/${arch}'}
 
+  RUBY_TRY_LDFLAGS([${linker_flag}--no-as-needed], [no_as_needed=yes], [no_as_needed=no])
+  AS_IF([test "$no_as_needed" = yes], [
+      RUBY_APPEND_OPTIONS(LDFLAGS, [${linker_flag}--no-as-needed])
+  ])
+
   AS_CASE(["$target_os"],
     [freebsd*|dragonfly*], [],
     [
