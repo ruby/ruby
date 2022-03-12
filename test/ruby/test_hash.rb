@@ -1436,6 +1436,15 @@ class TestHash < Test::Unit::TestCase
     assert_equal(@cls[a: 10, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10], h)
   end
 
+  def test_any?
+    h = @cls[a: 0, b: 1, c: 2]
+    assert_equal(true, h.any?([:a, 0]))
+    assert_equal(false, h.any?([:a, 9]))
+    assert_equal(false, h.any?([:c, 0]))
+    assert_equal(true, h.any? { |k, v| v < 3 })
+    assert_equal(false, h.any? { |k, v| v > 3 })
+  end
+
   def test_assoc
     assert_equal([3,4], @cls[1=>2, 3=>4, 5=>6].assoc(3))
     assert_nil(@cls[1=>2, 3=>4, 5=>6].assoc(4))
