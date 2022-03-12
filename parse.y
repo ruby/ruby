@@ -171,7 +171,7 @@ static inline enum lex_state_e parser_set_lex_state(struct parser_params *p, enu
 
 typedef VALUE stack_type;
 
-static const rb_code_location_t NULL_LOC = { {0, -1}, {0, -1} };
+static const YYLTYPE NULL_LOC = { {0, -1}, {0, -1} };
 
 # define SHOW_BITSTACK(stack, name) (p->debug ? rb_parser_show_bitstack(p, stack, name, __LINE__) : (void)0)
 # define BITSTACK_PUSH(stack, n) (((p->stack) = ((p->stack)<<1)|((n)&1)), SHOW_BITSTACK(p->stack, #stack"(push)"))
@@ -406,10 +406,10 @@ static int parser_yyerror0(struct parser_params*, const char*);
 #define yyerror(yylloc, p, msg) parser_yyerror(p, yylloc, msg)
 #define token_flush(ptr) ((ptr)->lex.ptok = (ptr)->lex.pcur)
 
-static void token_info_setup(token_info *ptinfo, const char *ptr, const rb_code_location_t *loc);
-static void token_info_push(struct parser_params*, const char *token, const rb_code_location_t *loc);
-static void token_info_pop(struct parser_params*, const char *token, const rb_code_location_t *loc);
-static void token_info_warn(struct parser_params *p, const char *token, token_info *ptinfo_beg, int same, const rb_code_location_t *loc);
+static void token_info_setup(token_info *ptinfo, const char *ptr, const YYLTYPE *loc);
+static void token_info_push(struct parser_params*, const char *token, const YYLTYPE *loc);
+static void token_info_pop(struct parser_params*, const char *token, const YYLTYPE *loc);
+static void token_info_warn(struct parser_params *p, const char *token, token_info *ptinfo_beg, int same, const YYLTYPE *loc);
 static void token_info_drop(struct parser_params *p, const char *token, rb_code_position_t beg_pos);
 
 #ifdef RIPPER
@@ -452,10 +452,10 @@ add_mark_object(struct parser_params *p, VALUE obj)
     return obj;
 }
 #else
-static NODE* node_newnode_with_locals(struct parser_params *, enum node_type, VALUE, VALUE, const rb_code_location_t*);
+static NODE* node_newnode_with_locals(struct parser_params *, enum node_type, VALUE, VALUE, const YYLTYPE*);
 #endif
 
-static NODE* node_newnode(struct parser_params *, enum node_type, VALUE, VALUE, VALUE, const rb_code_location_t*);
+static NODE* node_newnode(struct parser_params *, enum node_type, VALUE, VALUE, VALUE, const YYLTYPE*);
 #define rb_node_newnode(type, a1, a2, a3, loc) node_newnode(p, (type), (a1), (a2), (a3), (loc))
 
 static NODE *nd_set_loc(NODE *nd, const YYLTYPE *loc);
@@ -5921,7 +5921,7 @@ parser_isascii(struct parser_params *p)
 }
 
 static void
-token_info_setup(token_info *ptinfo, const char *ptr, const rb_code_location_t *loc)
+token_info_setup(token_info *ptinfo, const char *ptr, const YYLTYPE *loc)
 {
     int column = 1, nonspc = 0, i;
     for (i = 0; i < loc->beg_pos.column; i++, ptr++) {
@@ -5940,7 +5940,7 @@ token_info_setup(token_info *ptinfo, const char *ptr, const rb_code_location_t *
 }
 
 static void
-token_info_push(struct parser_params *p, const char *token, const rb_code_location_t *loc)
+token_info_push(struct parser_params *p, const char *token, const YYLTYPE *loc)
 {
     token_info *ptinfo;
 
@@ -5954,7 +5954,7 @@ token_info_push(struct parser_params *p, const char *token, const rb_code_locati
 }
 
 static void
-token_info_pop(struct parser_params *p, const char *token, const rb_code_location_t *loc)
+token_info_pop(struct parser_params *p, const char *token, const YYLTYPE *loc)
 {
     token_info *ptinfo_beg = p->token_info;
 
@@ -5987,7 +5987,7 @@ token_info_drop(struct parser_params *p, const char *token, rb_code_position_t b
 }
 
 static void
-token_info_warn(struct parser_params *p, const char *token, token_info *ptinfo_beg, int same, const rb_code_location_t *loc)
+token_info_warn(struct parser_params *p, const char *token, token_info *ptinfo_beg, int same, const YYLTYPE *loc)
 {
     token_info ptinfo_end_body, *ptinfo_end = &ptinfo_end_body;
     if (!p->token_info_enabled) return;
@@ -9990,7 +9990,7 @@ yylex(YYSTYPE *lval, YYLTYPE *yylloc, struct parser_params *p)
 #define LVAR_USED ((ID)1 << (sizeof(ID) * CHAR_BIT - 1))
 
 static NODE*
-node_newnode(struct parser_params *p, enum node_type type, VALUE a0, VALUE a1, VALUE a2, const rb_code_location_t *loc)
+node_newnode(struct parser_params *p, enum node_type type, VALUE a0, VALUE a1, VALUE a2, const YYLTYPE *loc)
 {
     NODE *n = rb_ast_newnode(p->ast, type);
 
@@ -12317,7 +12317,7 @@ remove_duplicate_keys(struct parser_params *p, NODE *hash)
     st_table *literal_keys = st_init_table_with_size(&literal_type, hash->nd_alen / 2);
     NODE *result = 0;
     NODE *last_expr = 0;
-    rb_code_location_t loc = hash->nd_loc;
+    YYLTYPE loc = hash->nd_loc;
     while (hash && hash->nd_head && hash->nd_next) {
 	NODE *head = hash->nd_head;
 	NODE *value = hash->nd_next;
@@ -12655,7 +12655,7 @@ local_tbl(struct parser_params *p)
 }
 
 static NODE*
-node_newnode_with_locals(struct parser_params *p, enum node_type type, VALUE a1, VALUE a2, const rb_code_location_t *loc)
+node_newnode_with_locals(struct parser_params *p, enum node_type type, VALUE a1, VALUE a2, const YYLTYPE *loc)
 {
     rb_ast_id_table_t *a0;
     NODE *n;
