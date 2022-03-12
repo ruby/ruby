@@ -9549,7 +9549,7 @@ rb_io_s_for_fd(int argc, VALUE *argv, VALUE klass)
  *     ios.autoclose?   -> true or false
  *
  *  Returns +true+ if the underlying file descriptor of _ios_ will be
- *  closed automatically at its finalization, otherwise +false+.
+ *  closed at its finalization or at calling #close, otherwise +false+.
  */
 
 static VALUE
@@ -9567,13 +9567,13 @@ rb_io_autoclose_p(VALUE io)
  *  Sets auto-close flag.
  *
  *     f = open("/dev/null")
- *     IO.for_fd(f.fileno)
- *     # ...
- *     f.gets # may cause Errno::EBADF
+ *     IO.for_fd(f.fileno).close
+ *     f.gets # raises Errno::EBADF
  *
  *     f = open("/dev/null")
- *     IO.for_fd(f.fileno).autoclose = false
- *     # ...
+ *     g = IO.for_fd(f.fileno)
+ *     g.autoclose = false
+ *     g.close
  *     f.gets # won't cause Errno::EBADF
  */
 
