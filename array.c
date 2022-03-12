@@ -537,6 +537,9 @@ rb_ary_reset(VALUE ary)
     else if (ARY_SHARED_P(ary)) {
         rb_ary_unshare(ary);
     }
+
+    FL_SET_EMBED(ary);
+    ARY_SET_EMBED_LEN(ary, 0);
 }
 
 static VALUE
@@ -1079,8 +1082,8 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
     rb_ary_modify(ary);
     if (argc == 0) {
         rb_ary_reset(ary);
-        FL_SET_EMBED(ary);
-	ARY_SET_EMBED_LEN(ary, 0);
+        assert(ARY_EMBED_P(ary));
+        assert(ARY_EMBED_LEN(ary) == 0);
 	if (rb_block_given_p()) {
 	    rb_warning("given block not used");
 	}
@@ -4394,7 +4397,7 @@ rb_ary_replace(VALUE copy, VALUE orig)
     rb_ary_reset(copy);
 
     if (RARRAY_LEN(orig) <= RARRAY_EMBED_LEN_MAX) {
-        FL_SET_EMBED(copy);
+        assert(ARY_EMBED_P(copy));
         ary_memcpy(copy, 0, RARRAY_LEN(orig), RARRAY_CONST_PTR_TRANSIENT(orig));
         ARY_SET_LEN(copy, RARRAY_LEN(orig));
     }
