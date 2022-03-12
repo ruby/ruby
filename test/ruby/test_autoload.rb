@@ -443,6 +443,23 @@ p Foo::Bar
     end
   end
 
+  def test_source_location_after_require
+    bug = "Bug18624"
+    Dir.mktmpdir('autoload') do |tmpdir|
+      path = "#{tmpdir}/test-#{bug}.rb"
+      File.write(path, "C::#{bug} = __FILE__\n")
+      assert_separately(%W[-I #{tmpdir}], "#{<<-"begin;"}\n#{<<-"end;"}")
+      begin;
+        class C; end
+        C.autoload(:Bug18624, #{path.dump})
+        require #{path.dump}
+        assert_equal [#{path.dump}, 1], C.const_source_location(#{bug.dump})
+        assert_equal #{path.dump}, C.const_get(#{bug.dump})
+        assert_equal [#{path.dump}, 1], C.const_source_location(#{bug.dump})
+      end;
+    end
+  end
+
   def test_no_memory_leak
     assert_no_memory_leak([], '', "#{<<~"begin;"}\n#{<<~'end;'}", 'many autoloads', timeout: 60)
     begin;
