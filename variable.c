@@ -3264,6 +3264,7 @@ const_set(VALUE klass, ID id, VALUE val)
                 .value = val, .flag = CONST_PUBLIC,
                 /* fill the rest with 0 */
             };
+            ac.file = rb_source_location(&ac.line);
             const_tbl_update(&ac, false);
         }
     }
@@ -3337,6 +3338,8 @@ const_tbl_update(struct autoload_const *ac, int autoload_force)
         ce = (rb_const_entry_t *)value;
         if (ce->value == Qundef) {
             RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+            VALUE file = ac->file;
+            int line = ac->line;
             struct autoload_data *ele = autoload_data_for_named_constant(klass, id, &ac);
 
             if (!autoload_force && ele) {
@@ -3350,8 +3353,8 @@ const_tbl_update(struct autoload_const *ac, int autoload_force)
                 autoload_delete(klass, id);
                 ce->flag = visibility;
                 RB_OBJ_WRITE(klass, &ce->value, val);
-                RB_OBJ_WRITE(klass, &ce->file, ac->file);
-                ce->line = ac->line;
+                RB_OBJ_WRITE(klass, &ce->file, file);
+                ce->line = line;
             }
             RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
             return;
