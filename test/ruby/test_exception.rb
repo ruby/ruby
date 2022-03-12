@@ -1100,6 +1100,14 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_empty warning
   end
 
+  def test_undef_Warning_warn
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      Warning.undef_method(:warn)
+      assert_raise(NoMethodError) { warn "" }
+    end;
+  end
+
   def test_undefined_backtrace
     assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;

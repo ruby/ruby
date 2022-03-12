@@ -306,7 +306,8 @@ rb_warning_warn(VALUE mod, VALUE str)
 static int
 rb_warning_warn_arity(void)
 {
-    return rb_method_entry_arity(rb_method_entry(rb_singleton_class(rb_mWarning), id_warn));
+    const rb_method_entry_t *me = rb_method_entry(rb_singleton_class(rb_mWarning), id_warn);
+    return me ? rb_method_entry_arity(me) : 1;
 }
 
 static VALUE
