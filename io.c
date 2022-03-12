@@ -2982,8 +2982,10 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
 
-    if (len == 0)
+    if (len == 0) {
+	io_set_read_length(str, 0, shrinkable);
 	return str;
+    }
 
     if (!nonblock)
         READ_CHECK(fptr);
@@ -3126,8 +3128,10 @@ io_read_nonblock(rb_execution_context_t *ec, VALUE io, VALUE length, VALUE str, 
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
 
-    if (len == 0)
+    if (len == 0) {
+	io_set_read_length(str, 0, shrinkable);
 	return str;
+    }
 
     n = read_buffered_data(RSTRING_PTR(str), len, fptr);
     if (n <= 0) {
