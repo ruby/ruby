@@ -369,15 +369,12 @@ rand_init(const rb_random_interface_t *rng, rb_random_t *rnd, VALUE seed)
     int sign;
 
     len = rb_absint_numwords(seed, 32, NULL);
+    if (len == 0) len = 1;
     buf = ALLOCV_N(uint32_t, buf0, len);
     sign = rb_integer_pack(seed, buf, len, sizeof(uint32_t), 0,
         INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
     if (sign < 0)
         sign = -sign;
-    if (len == 0) {
-        buf[0] = 0;
-        len = 1;
-    }
     if (len > 1) {
         if (sign != 2 && buf[len-1] == 1) /* remove leading-zero-guard */
             len--;
@@ -814,7 +811,7 @@ rand_mt_init(rb_random_t *rnd, const uint32_t *buf, size_t len)
 {
     struct MT *mt = &((rb_random_mt_t *)rnd)->mt;
     if (len <= 1) {
-        init_genrand(mt, buf[0]);
+        init_genrand(mt, len ? buf[0] : 0);
     }
     else {
         init_by_array(mt, buf, (int)len);
