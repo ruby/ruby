@@ -73,12 +73,6 @@ class TestArray < Test::Unit::TestCase
     assert_equal [1, 5], a
   end
 
-  def test_uniq_0
-    x = [1, 1, 4, 2, 5, 4, 5, 1, 2]
-    x.uniq!
-    assert_equal([1, 4, 2, 5], x)
-  end
-
   def test_empty_0
     assert_equal true, [].empty?
     assert_equal false, [1].empty?
