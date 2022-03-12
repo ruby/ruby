@@ -79,12 +79,6 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1, 4, 2, 5], x)
   end
 
-  def test_empty_0
-    assert_equal true, [].empty?
-    assert_equal false, [1].empty?
-    assert_equal false, [1, 1, 4, 2, 5, 4, 5, 1, 2].empty?
-  end
-
   def test_sort_0
     x = ["it", "came", "to", "pass", "that", "..."]
     x = x.sort.join(" ")
@@ -829,6 +823,8 @@ class TestArray < Test::Unit::TestCase
   def test_empty?
     assert_empty(@cls[])
     assert_not_empty(@cls[1])
+    assert_not_empty(@cls[1, 1, 4, 2, 5, 4, 5, 1, 2])
+    assert_not_empty(@cls[nil])
   end
 
   def test_eql?
