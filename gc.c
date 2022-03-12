@@ -679,7 +679,7 @@ typedef struct rb_objspace {
 	unsigned int dont_gc : 1;
 	unsigned int dont_incremental : 1;
 	unsigned int during_gc : 1;
-        unsigned int during_compacting : 2;
+        unsigned int during_compacting : 1;
 	unsigned int gc_stressful: 1;
 	unsigned int has_hook: 1;
 	unsigned int during_minor_gc : 1;
@@ -4479,11 +4479,6 @@ static VALUE gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free);
 static void
 lock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 {
-    /* If this is an explicit compaction (GC.compact), we don't need a read
-     * barrier, so just return early. */
-    if (objspace->flags.during_compacting >> 1) {
-        return;
-    }
 #if defined(_WIN32)
     DWORD old_protect;
 
@@ -4500,11 +4495,6 @@ lock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 static void
 unlock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 {
-    /* If this is an explicit compaction (GC.compact), we don't need a read
-     * barrier, so just return early. */
-    if (objspace->flags.during_compacting >> 1) {
-        return;
-    }
 #if defined(_WIN32)
     DWORD old_protect;
 
@@ -4746,12 +4736,8 @@ gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     GC_ASSERT(heap->sweeping_page == heap->compact_cursor);
 
-    /* If this is an explicit compaction (GC.compact), no read barrier was set
-     * so we don't need to unprotect pages or uninstall the SEGV handler */
-    if (!(objspace->flags.during_compacting >> 1)) {
-        gc_unprotect_pages(objspace, heap);
-        uninstall_handlers();
-    }
+    gc_unprotect_pages(objspace, heap);
+    uninstall_handlers();
 
     /* The mutator is allowed to run during incremental sweeping. T_MOVED
      * objects can get pushed on the stack and when the compaction process
@@ -5254,12 +5240,6 @@ gc_compact_start(rb_objspace_t *objspace, rb_heap_t *heap)
 
     memset(objspace->rcompactor.considered_count_table, 0, T_MASK * sizeof(size_t));
     memset(objspace->rcompactor.moved_count_table, 0, T_MASK * sizeof(size_t));
-
-    /* If this is an explicit compaction (GC.compact), we don't need a read
-     * barrier, so just return early. */
-    if (objspace->flags.during_compacting >> 1) {
-        return;
-    }
 
     /* Set up read barrier for pages containing MOVED objects */
     install_handlers();
@@ -8236,7 +8216,7 @@ gc_start(rb_objspace_t *objspace, int reason)
     objspace->flags.immediate_sweep = !!((unsigned)reason & GPR_FLAG_IMMEDIATE_SWEEP);
 
     /* Explicitly enable compaction (GC.compact) */
-    objspace->flags.during_compacting = (!!((unsigned)reason & GPR_FLAG_COMPACT) << 1);
+    objspace->flags.during_compacting = !!(reason & GPR_FLAG_COMPACT);
 
     if (!heap_allocated_pages) return FALSE; /* heap is not ready */
     if (!(reason & GPR_FLAG_METHOD) && !ready_to_gc(objspace)) return TRUE; /* GC is not allowed */
@@ -9472,11 +9452,7 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
 static VALUE
 gc_compact(rb_execution_context_t *ec, VALUE self)
 {
-    /* Clear the heap. */
-    gc_start_internal(ec, self, Qtrue, Qtrue, Qtrue, Qfalse);
-
-    /* At this point, all references are live and the mutator is not allowed
-     * to run, so we don't need a read barrier. */
+    /* Run GC with compaction enabled */
     gc_start_internal(ec, self, Qtrue, Qtrue, Qtrue, Qtrue);
 
     return gc_compact_stats(ec, self);
