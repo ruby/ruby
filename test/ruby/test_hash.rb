@@ -1011,6 +1011,19 @@ class TestHash < Test::Unit::TestCase
     assert_equal("FOO", h.shift)
   end
 
+  def test_shift_for_empty_hash
+    # [ruby-dev:51159]
+    h = @cls[]
+    100.times{|n|
+      while h.size < n
+        k = Random.rand 0..1<<30
+        h[k] = 1
+      end
+      0 while h.shift
+      assert_equal({}, h)
+    }
+  end
+
   def test_reject_bang2
     assert_equal({1=>2}, @cls[1=>2,3=>4].reject! {|k, v| k + v == 7 })
     assert_nil(@cls[1=>2,3=>4].reject! {|k, v| k == 5 })
