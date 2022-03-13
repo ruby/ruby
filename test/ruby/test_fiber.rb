@@ -397,7 +397,7 @@ class TestFiber < Test::Unit::TestCase
                 Fiber.new {}.transfer
                 Fiber.new { Fiber.yield }
               end
-              exit!(0)
+              exit!(true)
             end
           }.transfer
           _, status = Process.waitpid2(xpid)
@@ -406,8 +406,13 @@ class TestFiber < Test::Unit::TestCase
       end.resume
     end
     pid, status = Process.waitpid2(pid)
-    assert_equal(0, status.exitstatus, bug5700)
-    assert_equal(false, status.signaled?, bug5700)
+    assert_not_predicate(status, :signaled?, bug5700)
+    assert_predicate(status, :success?, bug5700)
+
+    pid = Fiber.new {fork}.resume
+    pid, status = Process.waitpid2(pid)
+    assert_not_predicate(status, :signaled?)
+    assert_predicate(status, :success?)
   end
 
   def test_exit_in_fiber

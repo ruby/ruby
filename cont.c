@@ -2008,7 +2008,7 @@ rb_fiber_set_scheduler(VALUE klass, VALUE scheduler)
     return rb_scheduler_set(scheduler);
 }
 
-static void rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt);
+NORETURN(static void rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt));
 
 void
 rb_fiber_start(void)
@@ -2384,6 +2384,7 @@ rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt)
     next_fiber = return_fiber(true);
     if (need_interrupt) RUBY_VM_SET_INTERRUPT(&next_fiber->cont.saved_ec);
     fiber_switch(next_fiber, 1, &value, RB_NO_KEYWORDS, Qfalse, false);
+    ruby_stop(0);
 }
 
 VALUE
