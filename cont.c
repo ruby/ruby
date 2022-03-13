@@ -3279,7 +3279,7 @@ Init_Cont(void)
 #endif
 
 #ifdef RB_EXPERIMENTAL_FIBER_POOL
-    rb_cFiberPool = rb_define_class("Pool", rb_cFiber);
+    rb_cFiberPool = rb_define_class_under(rb_cFiber, "Pool", rb_cObject);
     rb_define_alloc_func(rb_cFiberPool, fiber_pool_alloc);
     rb_define_method(rb_cFiberPool, "initialize", rb_fiber_pool_initialize, -1);
 #endif
