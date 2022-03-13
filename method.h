@@ -173,6 +173,7 @@ struct rb_method_definition_struct {
     BITFIELD(rb_method_type_t, type, VM_METHOD_TYPE_MINIMUM_BITS);
     int alias_count : 28;
     int complemented_count : 28;
+    unsigned int no_redef_warning: 1;
 
     union {
         rb_method_iseq_t iseq;

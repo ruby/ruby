@@ -810,6 +810,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 	if (RTEST(ruby_verbose) &&
 	    type != VM_METHOD_TYPE_UNDEF &&
 	    (old_def->alias_count == 0) &&
+	    (!old_def->no_redef_warning) &&
 	    !make_refined &&
 	    old_def->type != VM_METHOD_TYPE_UNDEF &&
 	    old_def->type != VM_METHOD_TYPE_ZSUPER &&
@@ -923,7 +924,13 @@ method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me,
 		 rb_method_visibility_t visi, VALUE defined_class)
 {
     rb_method_entry_t *newme = rb_method_entry_make(klass, mid, defined_class, visi,
-						    me->def->type, method_definition_addref(me->def), 0, NULL);
+						    me->def->type, me->def, 0, NULL);
+    if (newme == me) {
+        me->def->no_redef_warning = TRUE;
+    }
+    else {
+        method_definition_addref(me->def);
+    }
     method_added(klass, mid);
     return newme;
 }
