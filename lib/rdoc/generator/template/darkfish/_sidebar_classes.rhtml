@@ -14,18 +14,20 @@
       -%><code><%= index_klass.name %></code><%-
     end
   end
-  -%>
-  <%- traverse = proc do |klasses| -%>
+  if top = all_classes[nil]
+    solo = top.one? {|klass| klass.display?}
+    traverse = proc do |klasses| -%>
   <ul class="link-list">
-    <%- klasses.each do |index_klass| -%>
-      <%- if children = all_classes[index_klass.full_name] -%>
-  <li><details><summary><% link.call(index_klass) %></summary>
-        <%- traverse.call(children) -%>
+      <%- klasses.each do |index_klass| -%>
+        <%- if children = all_classes[index_klass.full_name] -%>
+  <li><details<% if solo; solo = false %> open<% end %>><summary><% link.call(index_klass) %></summary>
+          <%- traverse.call(children) -%>
   </ul></details>
-      <%- elsif index_klass.display? -%>
+        <%- elsif index_klass.display? -%>
   <li><% link.call(index_klass, true) %>
+        <%- end -%>
       <%- end -%>
     <%- end -%>
+    <%- traverse.call(top) -%>
   <%- end -%>
-  <%- traverse.call(all_classes[nil]) -%>
 </div>
