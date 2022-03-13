@@ -2858,7 +2858,7 @@ rb_fiber_pool_initialize(int argc, VALUE* argv, VALUE self)
     rb_scan_args(argc, argv, "03", &size, &count, &vm_stack_size);
 
     if (NIL_P(size)) {
-        size = INT2NUM(th->vm->default_params.fiber_machine_stack_size);
+        size = SIZET2NUM(th->vm->default_params.fiber_machine_stack_size);
     }
 
     if (NIL_P(count)) {
@@ -2866,7 +2866,7 @@ rb_fiber_pool_initialize(int argc, VALUE* argv, VALUE self)
     }
 
     if (NIL_P(vm_stack_size)) {
-        vm_stack_size = INT2NUM(th->vm->default_params.fiber_vm_stack_size);
+        vm_stack_size = SIZET2NUM(th->vm->default_params.fiber_vm_stack_size);
     }
 
     TypedData_Get_Struct(self, struct fiber_pool, &FiberPoolDataType, fiber_pool);
