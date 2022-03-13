@@ -484,6 +484,22 @@ main header h3 {
 
 /* @group Method Details */
 
+details summary {
+  display: block;
+}
+details summary::-webkit-details-marker {
+  display: none;
+}
+details summary:before {
+  content: "";
+}
+details summary:after {
+  content: "  ▶";
+}
+details[open] > summary:after {
+  content: "  ▽";
+}
+
 main .method-source-code {
   max-height: 0;
   overflow: hidden;

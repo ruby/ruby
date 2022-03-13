@@ -72,11 +72,14 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
   def test_generate
     top_level = @store.add_file 'file.rb'
     top_level.add_class @klass.class, @klass.name
+    @klass.add_class RDoc::NormalClass, 'Inner'
 
     @g.generate
 
     assert_file 'index.html'
     assert_file 'Object.html'
+    assert_file 'Klass.html'
+    assert_file 'Klass/Inner.html'
     assert_file 'table_of_contents.html'
     assert_file 'js/search_index.js'
 
@@ -92,6 +95,8 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     assert_match %r%<meta charset="#{encoding}">%, File.read('Object.html')
 
     refute_match(/Ignored/, File.read('index.html'))
+    summary = File.read('index.html')[%r[<summary.*Klass\.html.*</summary>.*</details>]m]
+    assert_match(%r[Klass/Inner\.html".*>Inner<], summary)
   end
 
   def test_generate_dry_run
