@@ -835,6 +835,9 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     } else {
         errinfo = th->ec->errinfo;
 
+        VALUE exc = rb_vm_make_jump_tag_but_local_jump(state, Qundef);
+        if (!NIL_P(exc)) errinfo = exc;
+
         if (state == TAG_FATAL) {
             if (th->invoke_type == thread_invoke_type_ractor_proc) {
                 rb_ractor_atexit(th->ec, Qnil);
