@@ -1131,7 +1131,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
     if (ftptr) load_unlock(RSTRING_PTR(path), !state);
 
     if (state) {
-        if (state == TAG_FATAL) {
+        if (state == TAG_FATAL || state == TAG_THROW) {
             EC_JUMP_TAG(ec, state);
         }
         else if (exception) {
