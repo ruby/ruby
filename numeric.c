@@ -4529,6 +4529,7 @@ rb_fix_lshift(VALUE x, VALUE y)
     long val, width;
 
     val = NUM2LONG(x);
+    if (!val) return (rb_to_int(y), INT2FIX(0));
     if (!FIXNUM_P(y))
 	return rb_big_lshift(rb_int2big(val), y);
     width = FIX2LONG(y);
@@ -4575,6 +4576,7 @@ rb_fix_rshift(VALUE x, VALUE y)
     long i, val;
 
     val = FIX2LONG(x);
+    if (!val) return (rb_to_int(y), INT2FIX(0));
     if (!FIXNUM_P(y))
 	return rb_big_rshift(rb_int2big(val), y);
     i = FIX2LONG(y);
