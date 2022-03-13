@@ -11250,6 +11250,13 @@ nogvl_fcopyfile(struct copy_stream_struct *stp)
         return 0;
     if (lseek(stp->dst_fd, 0, SEEK_CUR) > (off_t)0) /* if dst IO was already written */
         return 0;
+    if (fcntl(stp->dst_fd, F_GETFL) & O_APPEND) {
+        /* fcopyfile(3) appends src IO to dst IO and then truncates
+         * dst IO to src IO's original size. */
+        off_t end = lseek(stp->dst_fd, 0, SEEK_END);
+        lseek(stp->dst_fd, 0, SEEK_SET);
+        if (end > (off_t)0) return 0;
+    }
 
     if (src_offset > (off_t)0) {
         off_t r;
