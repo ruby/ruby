@@ -695,7 +695,8 @@ void
 Init_win32ole_variant(void)
 {
 #undef rb_intern
-    cWIN32OLE_VARIANT = rb_define_class("WIN32OLE_VARIANT", rb_cObject);
+    cWIN32OLE_VARIANT = rb_define_class_under(cWIN32OLE, "Variant", rb_cObject);
+    rb_define_const(rb_cObject, "WIN32OLE_VARIANT", cWIN32OLE_VARIANT);
     rb_define_alloc_func(cWIN32OLE_VARIANT, folevariant_s_allocate);
     rb_define_singleton_method(cWIN32OLE_VARIANT, "array", folevariant_s_array, 2);
     rb_define_method(cWIN32OLE_VARIANT, "initialize", folevariant_initialize, -2);
