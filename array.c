@@ -512,11 +512,9 @@ ary_double_capa(VALUE ary, long min)
 static void
 rb_ary_decrement_share(VALUE shared_root)
 {
-    if (shared_root) {
-        long num = ARY_SHARED_ROOT_REFCNT(shared_root) - 1;
-        if (num > 0) {
-            ARY_SET_SHARED_ROOT_REFCNT(shared_root, num);
-        }
+    long num = ARY_SHARED_ROOT_REFCNT(shared_root) - 1;
+    if (num > 0) {
+        ARY_SET_SHARED_ROOT_REFCNT(shared_root, num);
     }
 }
 
