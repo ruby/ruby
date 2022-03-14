@@ -30,9 +30,6 @@ class WeakRef < Delegator
 
   ##
   # Creates a weak reference to +orig+
-  #
-  # Raises an ArgumentError if the given +orig+ is immutable, such as Symbol,
-  # Integer, or Float.
 
   def initialize(orig)
     case orig
