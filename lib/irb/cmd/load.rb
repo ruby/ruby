@@ -13,8 +13,9 @@
 require_relative "nop"
 require_relative "../ext/loader"
 
-# :stopdoc:
 module IRB
+  # :stopdoc:
+
   module ExtendCommand
     class Load < Nop
       include IrbLoader
@@ -63,5 +64,5 @@ module IRB
     end
   end
 
+  # :startdoc:
 end
-# :startdoc:

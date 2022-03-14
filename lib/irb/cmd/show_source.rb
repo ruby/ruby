@@ -4,8 +4,9 @@ require_relative "nop"
 require_relative "../color"
 require_relative "../ruby-lex"
 
-# :stopdoc:
 module IRB
+  # :stopdoc:
+
   module ExtendCommand
     class ShowSource < Nop
       def execute(str = nil)
@@ -89,5 +90,6 @@ module IRB
       private_constant :Source
     end
   end
+
+  # :startdoc:
 end
-# :startdoc:
