@@ -165,6 +165,7 @@ should_not_be_shared_and_embedded(VALUE ary)
 #define ARY_SHARED_ROOT_OCCUPIED(ary) (ARY_SHARED_ROOT_REFCNT(ary) == 1)
 #define ARY_SET_SHARED_ROOT_REFCNT(ary, value) do { \
     assert(ARY_SHARED_ROOT_P(ary)); \
+    assert((value) >= 0); \
     RARRAY(ary)->as.heap.aux.capa = (value); \
 } while (0)
 #define FL_SET_SHARED_ROOT(ary) do { \
@@ -512,10 +513,8 @@ ary_double_capa(VALUE ary, long min)
 static void
 rb_ary_decrement_share(VALUE shared_root)
 {
-    long num = ARY_SHARED_ROOT_REFCNT(shared_root) - 1;
-    if (num > 0) {
-        ARY_SET_SHARED_ROOT_REFCNT(shared_root, num);
-    }
+    long num = ARY_SHARED_ROOT_REFCNT(shared_root);
+    ARY_SET_SHARED_ROOT_REFCNT(shared_root, num - 1);
 }
 
 static void
@@ -544,9 +543,8 @@ static VALUE
 rb_ary_increment_share(VALUE shared_root)
 {
     long num = ARY_SHARED_ROOT_REFCNT(shared_root);
-    if (num >= 0) {
-        ARY_SET_SHARED_ROOT_REFCNT(shared_root, num + 1);
-    }
+    assert(num >= 0);
+    ARY_SET_SHARED_ROOT_REFCNT(shared_root, num + 1);
     return shared_root;
 }
 
