@@ -40,8 +40,16 @@ describe "A block yielded a single" do
       m([1, 2]) { |a=5, b, c, d| [a, b, c, d] }.should == [5, 1, 2, nil]
     end
 
-    it "assigns elements to required arguments when a keyword rest argument is present" do
-      m([1, 2]) { |a, **k| [a, k] }.should == [1, {}]
+    ruby_version_is "3.2" do
+      it "does not autosplat single argument to required arguments when a keyword rest argument is present" do
+        m([1, 2]) { |a, **k| [a, k] }.should == [[1, 2], {}]
+      end
+    end
+
+    ruby_version_is ''..."3.2" do
+      it "autosplats single argument to required arguments when a keyword rest argument is present" do
+        m([1, 2]) { |a, **k| [a, k] }.should == [1, {}]
+      end
     end
 
     ruby_version_is ''..."3.0" do
