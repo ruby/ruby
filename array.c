@@ -1490,7 +1490,7 @@ rb_ary_behead(VALUE ary, long n)
 
     rb_ary_modify_check(ary);
 
-    if (RB_UNLIKELY(!ARY_SHARED_P(ary))) {
+    if (UNLIKELY(!ARY_SHARED_P(ary))) {
         if (RARRAY_LEN(ary) < ARY_DEFAULT_SIZE) {
             RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
                 MEMMOVE(ptr, ptr + n, VALUE, RARRAY_LEN(ary) - n);

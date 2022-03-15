@@ -1008,7 +1008,7 @@ rb_check_type(VALUE x, int t)
 {
     int xt;
 
-    if (RB_UNLIKELY(x == Qundef)) {
+    if (UNLIKELY(x == Qundef)) {
 	rb_bug(UNDEF_LEAKED);
     }
 
@@ -1029,7 +1029,7 @@ rb_check_type(VALUE x, int t)
 void
 rb_unexpected_type(VALUE x, int t)
 {
-    if (RB_UNLIKELY(x == Qundef)) {
+    if (UNLIKELY(x == Qundef)) {
 	rb_bug(UNDEF_LEAKED);
     }
 
