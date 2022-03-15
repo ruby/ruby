@@ -120,7 +120,8 @@ class String
   #  Note that if +separator+ is a \Regexp containing groups,
   #  their matches are in the returned array, but do not count toward the limit.
   #
-  #  If +limit+ is negative, there is no limit,
+  #  If +limit+ is negative, it behaves the same as if +limit+ was +nil+,
+  #  meaning that there is no limit,
   #  and trailing empty substrings are included:
   #
   #    'aaabcdaaa'.split('a', -1) # => ["", "", "", "bcd", "", "", ""]
