@@ -1,0 +1,10 @@
+[package]
+name = "custom-name-ext"
+version = "0.1.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# Needed until bindgen has the `allowlist_file` feature
+rb-sys = { git = "https://github.com/ianks/rb-sys", tag = "v0.6.0" }
