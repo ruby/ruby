@@ -10158,35 +10158,12 @@ rb_str_oct(VALUE str)
 # include "ruby/atomic.h"
 
 static struct {
-    rb_atomic_t initialized;
     rb_nativethread_lock_t lock;
-} crypt_mutex;
-
-static void
-crypt_mutex_destroy(void)
-{
-    RUBY_ASSERT_ALWAYS(crypt_mutex.initialized == 1);
-    rb_nativethread_lock_destroy(&crypt_mutex.lock);
-    crypt_mutex.initialized = 0;
-}
+} crypt_mutex = {PTHREAD_MUTEX_INITIALIZER};
 
 static void
 crypt_mutex_initialize(void)
 {
-    rb_atomic_t i;
-    while ((i = RUBY_ATOMIC_CAS(crypt_mutex.initialized, 0, 2)) == 2);
-    switch (i) {
-      case 0:
-	rb_nativethread_lock_initialize(&crypt_mutex.lock);
-	atexit(crypt_mutex_destroy);
-	RUBY_ASSERT(crypt_mutex.initialized == 2);
-	RUBY_ATOMIC_CAS(crypt_mutex.initialized, 2, 1);
-	break;
-      case 1:
-	break;
-      default:
-	rb_bug("crypt_mutex.initialized: %d->%d", i, crypt_mutex.initialized);
-    }
 }
 #endif
 
