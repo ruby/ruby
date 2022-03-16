@@ -21,16 +21,15 @@ Use your judgment about what the user needs to know.
 - Write short declarative or imperative sentences.
 - Group sentences into (ideally short) paragraphs,
   each covering a single topic.
-- Organize material with
-  {headers}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-Headers].
+- Organize material with {headers}[rdoc-ref:RDoc::Markup@Headers].
 - Refer to authoritative and relevant sources using
-  {links}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-Links].
+  {links}[rdoc-ref:RDoc::Markup@Links].
 - Use simple verb tenses: simple present, simple past, simple future.
 - Use simple sentence structure, not compound or complex structure.
 - Avoid:
 
   - Excessive comma-separated phrases;
-    consider a {list}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-Simple+Lists].
+    consider a {list}[rdoc-ref:RDoc::Markup@Simple+Lists].
   - Idioms and culture-specific references.
   - Overuse of headers.
   - Using US-ASCII-incompatible characters in C source files;
@@ -94,7 +93,7 @@ involving new files <tt>doc/*.rdoc</tt>:
 
 Ruby is documented using RDoc.
 For information on \RDoc syntax and features, see the
-{RDoc Markup Reference}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-RDoc+Markup+Reference].
+{RDoc Markup Reference}[rdoc-ref:RDoc::Markup@RDoc+Markup+Reference].
 
 === Output from <tt>irb</tt>
 
@@ -111,15 +110,14 @@ Alignment may sometimes aid readability:
 
 === Headers
 
-Organize a long discussion with
-{headers}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-Headers].
+Organize a long discussion with {headers}[rdoc-ref:RDoc::Markup@Headers].
 
 === Blank Lines
 
 A blank line begins a new paragraph.
 
-A {code block}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-Paragraphs+and+Verbatim]
-or {list}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-Simple+Lists]
+A {code block}[rdoc-ref:RDoc::Markup@Paragraphs+and+Verbatim]
+or {list}[rdoc-ref:RDoc::Markup@Simple+Lists]
 should be preceded by and followed by a blank line.
 This is unnecessary for the HTML output, but helps in the +ri+ output.
 
@@ -165,7 +163,7 @@ Guidelines:
 
 - The section title is <tt>What's Here</tt>.
 - Consider listing the parent class and any included modules; consider
-  {links}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-Links]
+  {links}[rdoc-ref:RDoc::Markup@Links]
   to their "What's Here" sections if those exist.
 - List methods as a bullet list:
 
@@ -175,7 +173,7 @@ Guidelines:
     (and do not list the aliases separately).
   - Check the rendered documentation to determine whether \RDoc has recognized
     the method and linked to it;  if not, manually insert a
-    {link}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-Links].
+    {link}[rdoc-ref:RDoc::Markup@Links].
 
 - If there are numerous entries, consider grouping them into subsections with headers.
 - If there are more than a few such subsections,
@@ -201,7 +199,7 @@ For methods written in Ruby, \RDoc documents the calling sequence automatically.
 
 For methods written in C, \RDoc cannot determine what arguments
 the method accepts, so those need to be documented using \RDoc directive
-{:call-seq:}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-Method+arguments].
+{:call-seq:}[rdoc-ref:RDoc::Markup@Method+arguments].
 
 Example:
 
@@ -300,7 +298,7 @@ argument passed if it is not obvious, not explicitly mentioned in the
 details, and not implicitly shown in the examples.
 
 If there is more than one argument or block argument, use a
-{labeled list}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-Labeled+Lists]}
+{labeled list}[rdoc-ref:RDoc::Markup@Labeled+Lists]}
 
 === Corner Cases and Exceptions
 
