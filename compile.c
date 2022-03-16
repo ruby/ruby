@@ -161,9 +161,7 @@ const ID rb_iseq_shared_exc_local_tbl[] = {idERROR_INFO};
   (compile_debug_print_indent(1) && \
    ruby_debug_print_id(1, compile_debug, (header), (id)))
 
-#define debugp_param(header, value)  (void) \
-  (compile_debug_print_indent(1) && \
-   ruby_debug_print_value(1, compile_debug, (header), (value)))
+#define debugp_param(header, value)  debugp((header), (value))
 
 #define debugp_verbose(header, value)  (void) \
   (compile_debug_print_indent(2) && \
