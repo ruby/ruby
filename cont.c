@@ -2845,9 +2845,9 @@ static const rb_data_type_t FiberPoolDataType = {
 static VALUE
 fiber_pool_alloc(VALUE klass)
 {
-    struct fiber_pool * fiber_pool = RB_ALLOC(struct fiber_pool);
+    struct fiber_pool *fiber_pool;
 
-    return TypedData_Wrap_Struct(klass, &FiberPoolDataType, fiber_pool);
+    return TypedData_Make_Struct(klass, struct fiber_pool, &FiberPoolDataType, fiber_pool);
 }
 
 static VALUE
