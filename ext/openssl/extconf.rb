@@ -171,6 +171,7 @@ have_func("SSL_CTX_set_post_handshake_auth")
 have_func("EVP_PKEY_check")
 
 # added in 3.0.0
+openssl_3 =
 have_func("SSL_set0_tmp_dh_pkey")
 have_func("ERR_get_error_all")
 have_func("TS_VERIFY_CTX_set_certs(NULL, NULL)", "openssl/ts.h")
@@ -182,6 +183,12 @@ have_func("EVP_PKEY_eq")
 have_func("EVP_PKEY_dup")
 
 Logging::message "=== Checking done. ===\n"
+
+if openssl_3
+  if $warnflags.sub!(/-W\K(?=deprecated-declarations)/, 'no-')
+    $warnflags << " -Wno-incompatible-pointer-types-discards-qualifiers"
+  end
+end
 
 create_header
 create_makefile("openssl")
