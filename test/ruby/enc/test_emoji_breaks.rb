@@ -82,8 +82,7 @@ TestEmojiBreaks.data_files_available? and  class TestEmojiBreaks
       IO.foreach(file.fullname, encoding: Encoding::UTF_8) do |line|
         line.chomp!
         if $.==1
-          if line=="# #{file.basename}-#{file.version}.txt" ||
-             line=="# #{file.basename}-#{file.version}.0.txt"
+          if line=="# #{file.basename}-#{file.version}.txt"
             version_mismatch = false
           elsif line!="# #{file.basename}.txt"
             raise "File Name Mismatch: line: #{line}, expected filename: #{file.basename}.txt"
