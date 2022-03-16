@@ -667,13 +667,14 @@ class RDoc::Parser::C < RDoc::Parser
   ##
   # Finds a RDoc::NormalClass or RDoc::NormalModule for +raw_name+
 
-  def find_class(raw_name, name)
+  def find_class(raw_name, name, base_name = nil)
     unless @classes[raw_name]
       if raw_name =~ /^rb_m/
         container = @top_level.add_module RDoc::NormalModule, name
       else
         container = @top_level.add_class RDoc::NormalClass, name
       end
+      container.name = base_name if base_name
 
       container.record_location @top_level
       @classes[raw_name] = container
@@ -911,7 +912,7 @@ class RDoc::Parser::C < RDoc::Parser
 
     return unless class_name
 
-    class_obj = find_class var_name, class_name
+    class_obj = find_class var_name, class_name, class_name[/::\K[^:]+\z/]
 
     unless class_obj then
       @options.warn 'Enclosing class or module %p is not known' % [const_name]
