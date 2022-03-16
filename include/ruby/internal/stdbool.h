@@ -40,7 +40,9 @@
 # include <stdbool.h>
 
 #else
+# if !defined(HAVE__BOOL)
 typedef unsigned char _Bool;
+# endif
 # /* See also http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2229.htm */
 # define bool  _Bool
 # define true  ((_Bool)+1)
