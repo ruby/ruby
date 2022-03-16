@@ -4,6 +4,17 @@ require "pathname"
 
 require "rubygems/specification"
 
+# We can't let `Gem::Source` be autoloaded in the `Gem::Specification#source`
+# redefinition below, so we need to load it upfront. The reason is that if
+# Bundler monkeypatches are loaded before RubyGems activates an executable (for
+# example, through `ruby -rbundler -S irb`), gem activation might end up calling
+# the redefined `Gem::Specification#source` and triggering the `Gem::Source`
+# autoload. That would result in requiring "rubygems/source" inside another
+# require, which would trigger a monitor error and cause the `autoload` to
+# eventually fail. A better solution is probably to completely avoid autoloading
+# `Gem::Source` from the redefined `Gem::Specification#source`.
+require "rubygems/source"
+
 require_relative "match_platform"
 
 module Gem
@@ -22,11 +33,7 @@ module Gem
     alias_method :rg_loaded_from,   :loaded_from
 
     def full_gem_path
-      # this cannot check source.is_a?(Bundler::Plugin::API::Source)
-      # because that _could_ trip the autoload, and if there are unresolved
-      # gems at that time, this method could be called inside another require,
-      # thus raising with that constant being undefined. Better to check a method
-      if source.respond_to?(:path) || (source.respond_to?(:bundler_plugin_api_source?) && source.bundler_plugin_api_source?)
+      if source.respond_to?(:root)
         Pathname.new(loaded_from).dirname.expand_path(source.root).to_s.tap{|x| x.untaint if RUBY_VERSION < "2.7" }
       else
         rg_full_gem_path
