@@ -1,5 +1,5 @@
 # :markup: ruby
-7
+
 class String
   # call-seq:
   #   String.new(string = '') -> new_string
@@ -94,6 +94,7 @@ class String
   #    'abracadabra'.split(/ab/) # => ["", "racad", "ra"]
   #    'aaabcdaaa'.split(/a/)    # => ["", "", "", "bcd"]
   #    'aaabcdaaa'.split(//)     # => ["a", "a", "a", "b", "c", "d", "a", "a", "a"]
+  #    '1 + 1 == 2'.split(/\W+/) # => ["1", "1", "2"]
   #
   #  If the \Regexp contains groups, their matches are also included
   #  in the returned array:
