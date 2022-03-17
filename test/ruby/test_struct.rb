@@ -100,8 +100,9 @@ module TestStruct
     assert_equal([:utime, :stime, :cutime, :cstime], Process.times.members)
   end
 
-  def test_struct_new_with_empty_hash
-    assert_equal({:a=>1}, Struct.new(:a, {}).new({:a=>1}).a)
+  def test_struct_new_with_hash
+    assert_raise_with_message(TypeError, /not a symbol/) {Struct.new(:a, {})}
+    assert_raise_with_message(TypeError, /not a symbol/) {Struct.new(:a, {name: "b"})}
   end
 
   def test_struct_new_with_keyword_init
