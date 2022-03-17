@@ -555,7 +555,7 @@ def update_default_gems(gem, release: false)
     `git fetch origin --tags`
 
     if release
-      last_release = `git tag`.chomp.split.last
+      last_release = `git tag`.chomp.split.delete_if{|v| v =~ /pre|beta/ }.last
       `git checkout #{last_release}`
     else
       `git checkout master`

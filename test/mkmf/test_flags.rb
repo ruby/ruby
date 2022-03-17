@@ -25,7 +25,7 @@ class TestMkmf
       -Wextra -Wno-unused-parameter -Wno-parentheses
       -Wno-long-long -Wno-missing-field-initializers -Wpointer-arith
       -Wwrite-strings -Wdeclaration-after-statement
-      -Wshorten-64-to-32 -Wimplicit-function-declaration
+      -Wshorten-64-to-32 -Werror-implicit-function-declaration
       ", generated_flags
 
     ensure

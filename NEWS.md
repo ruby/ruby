@@ -79,6 +79,8 @@ Note: We're only listing outstanding class updates.
 
 * String
     * String#byteindex and String#byterindex have been added. [[Feature #13110]]
+    * Update Unicode to Version 14.0.0 and Emoji Version 14.0. [[Feature #18037]]
+      (also applies to Regexp)
 
 * Struct
     * A Struct class can also be initialized with keyword arguments
@@ -93,8 +95,9 @@ Note: We're only listing outstanding class updates.
     * cgi 0.3.2
     * etc 1.4.0
     * io-console 0.5.11
-    * io-wait 0.2.2
+    * io-wait 0.2.2.pre1
     * ipaddr 1.2.4
+    * logger 1.5.1
     * ostruct 0.5.3
     * reline 0.3.1
     * securerandom 0.2.0
@@ -176,5 +179,6 @@ The following deprecated APIs are removed.
 [Feature #17391]: https://bugs.ruby-lang.org/issues/17391
 [Bug #17545]:     https://bugs.ruby-lang.org/issues/17545
 [Feature #17881]: https://bugs.ruby-lang.org/issues/17881
+[Feature #18037]: https://bugs.ruby-lang.org/issues/18037
 [Feature #18351]: https://bugs.ruby-lang.org/issues/18351
 [Feature #18585]: https://bugs.ruby-lang.org/issues/18585

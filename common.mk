@@ -18,8 +18,8 @@ mflags = $(MFLAGS)
 gnumake_recursive =
 enable_shared = $(ENABLE_SHARED:no=)
 
-UNICODE_VERSION = 13.0.0
-UNICODE_EMOJI_VERSION = 13.1
+UNICODE_VERSION = 14.0.0
+UNICODE_EMOJI_VERSION = 14.0
 UNICODE_BETA = NO
 
 ### set the following environment variable or uncomment the line if
@@ -1568,7 +1568,9 @@ $(UNICODE_SRC_DATA_DIR):
 $(UNICODE_HDR_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=name2ctype.h): \
 		$(tooldir)/enc-unicode.rb \
 		$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
+		$(UNICODE_AUXILIARY_FILES) \
 		$(UNICODE_PROPERTY_FILES) \
+		$(UNICODE_UCD_EMOJI_FILES) \
 		$(UNICODE_EMOJI_FILES)
 
 $(UNICODE_HDR_DIR)/name2ctype.h:

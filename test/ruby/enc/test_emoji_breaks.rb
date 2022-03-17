@@ -56,7 +56,7 @@ class TestEmojiBreaks < Test::Unit::TestCase
   EMOJI_DATA_FILES  = %w[emoji-sequences emoji-test emoji-zwj-sequences].map do |basename|
     BreakFile.new(basename, EMOJI_DATA_PATH, EMOJI_VERSION)
   end
-  UNICODE_DATA_FILE = BreakFile.new('emoji-variation-sequences', UNICODE_DATA_PATH, UNICODE_VERSION[0..-3]) # [0..-3] deals with a versioning mismatch problem in Unicode
+  UNICODE_DATA_FILE = BreakFile.new('emoji-variation-sequences', UNICODE_DATA_PATH, UNICODE_VERSION)
   EMOJI_DATA_FILES << UNICODE_DATA_FILE
 
   def self.data_files_available?
@@ -81,7 +81,13 @@ TestEmojiBreaks.data_files_available? and  class TestEmojiBreaks
       file_tests = []
       IO.foreach(file.fullname, encoding: Encoding::UTF_8) do |line|
         line.chomp!
-        raise "File Name Mismatch: line: #{line}, expected filename: #{file.basename}.txt"  if $.==1 and not line=="# #{file.basename}.txt"
+        if $.==1
+          if line=="# #{file.basename}-#{file.version}.txt"
+            version_mismatch = false
+          elsif line!="# #{file.basename}.txt"
+            raise "File Name Mismatch: line: #{line}, expected filename: #{file.basename}.txt"
+          end
+        end
         version_mismatch = false  if line =~ /^# Version: #{file.version}/
         next  if line.match?(/\A(#|\z)/)
         if line =~ /^(\h{4,6})\.\.(\h{4,6}) *(;.+)/  # deal with Unicode ranges in emoji-sequences.txt (Bug #18028)

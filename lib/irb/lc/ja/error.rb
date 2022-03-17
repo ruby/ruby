@@ -10,8 +10,9 @@
 #
 #
 
-# :stopdoc:
 module IRB
+  # :stopdoc:
+
   class UnrecognizedSwitch < StandardError
     def initialize(val)
       super("スイッチ(#{val})が分りません")
@@ -67,6 +68,7 @@ module IRB
       super("RC_NAME_GENERATORが正しく定義されていません.")
     end
   end
+
+  # :startdoc:
 end
-# :startdoc:
 # vim:fileencoding=utf-8

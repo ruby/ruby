@@ -817,18 +817,38 @@ rb_obj_is_kind_of(VALUE obj, VALUE c)
     // class without checking type and can return immediately.
     if (cl == c) return Qtrue;
 
-    // Fast path: Both are T_CLASS
-    if (LIKELY(RB_TYPE_P(c, T_CLASS))) {
-        return class_search_class_ancestor(cl, c);
-    }
-
     // Note: YJIT needs this function to never allocate and never raise when
     // `c` is a class or a module.
-    c = class_or_module_required(c);
-    c = RCLASS_ORIGIN(c);
 
-    // Slow path: check each ancestor in the linked list and its method table
-    return RBOOL(class_search_ancestor(cl, c));
+    if (LIKELY(RB_TYPE_P(c, T_CLASS))) {
+        // Fast path: Both are T_CLASS
+        return class_search_class_ancestor(cl, c);
+    }
+    else if (RB_TYPE_P(c, T_ICLASS)) {
+        // First check if we inherit the includer
+        // If we do we can return true immediately
+        VALUE includer = RCLASS_INCLUDER(c);
+        if (cl == includer) return Qtrue;
+
+        // Usually includer is a T_CLASS here, except when including into an
+        // already included Module.
+        // If it is a class, attempt the fast class-to-class check and return
+        // true if there is a match.
+        if (RB_TYPE_P(includer, T_CLASS) && class_search_class_ancestor(cl, includer))
+            return Qtrue;
+
+        // We don't include the ICLASS directly, so must check if we inherit
+        // the module via another include
+        return RBOOL(class_search_ancestor(cl, RCLASS_ORIGIN(c)));
+    }
+    else if (RB_TYPE_P(c, T_MODULE)) {
+        // Slow path: check each ancestor in the linked list and its method table
+        return RBOOL(class_search_ancestor(cl, RCLASS_ORIGIN(c)));
+    }
+    else {
+        rb_raise(rb_eTypeError, "class or module required");
+        UNREACHABLE_RETURN(Qfalse);
+    }
 }
 
 
@@ -1613,17 +1633,38 @@ VALUE
 rb_class_inherited_p(VALUE mod, VALUE arg)
 {
     if (mod == arg) return Qtrue;
-    if (!CLASS_OR_MODULE_P(arg) && !RB_TYPE_P(arg, T_ICLASS)) {
-	rb_raise(rb_eTypeError, "compared with non class/module");
+
+    if (RB_TYPE_P(arg, T_CLASS) && RB_TYPE_P(mod, T_CLASS)) {
+        // comparison between classes
+        size_t mod_depth = RCLASS_SUPERCLASS_DEPTH(mod);
+        size_t arg_depth = RCLASS_SUPERCLASS_DEPTH(arg);
+        if (arg_depth < mod_depth) {
+            // check if mod < arg
+            return RCLASS_SUPERCLASSES(mod)[arg_depth] == arg ?
+                Qtrue :
+                Qnil;
+        } else if (arg_depth > mod_depth) {
+            // check if mod > arg
+            return RCLASS_SUPERCLASSES(arg)[mod_depth] == mod ?
+                Qfalse :
+                Qnil;
+        } else {
+            // Depths match, and we know they aren't equal: no relation
+            return Qnil;
+        }
+    } else {
+        if (!CLASS_OR_MODULE_P(arg) && !RB_TYPE_P(arg, T_ICLASS)) {
+            rb_raise(rb_eTypeError, "compared with non class/module");
+        }
+        if (class_search_ancestor(mod, RCLASS_ORIGIN(arg))) {
+            return Qtrue;
+        }
+        /* not mod < arg; check if mod > arg */
+        if (class_search_ancestor(arg, mod)) {
+            return Qfalse;
+        }
+        return Qnil;
     }
-    if (class_search_ancestor(mod, RCLASS_ORIGIN(arg))) {
-	return Qtrue;
-    }
-    /* not mod < arg; check if mod > arg */
-    if (class_search_ancestor(arg, mod)) {
-	return Qfalse;
-    }
-    return Qnil;
 }
 
 /*

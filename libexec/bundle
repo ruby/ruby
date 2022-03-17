@@ -20,7 +20,7 @@ gem "bundler", Bundler::VERSION if Gem.rubygems_version < Gem::Version.new("2.6.
 
 if Gem.rubygems_version < Gem::Version.new("3.2.3") && Gem.ruby_version < Gem::Version.new("2.6.a") && !ENV["BUNDLER_NO_OLD_RUBYGEMS_WARNING"]
   Bundler.ui.warn \
-    "Your RubyGems version (#{Gem::VERSION})) has a bug that prevents " \
+    "Your RubyGems version (#{Gem::VERSION}) has a bug that prevents " \
     "`required_ruby_version` from working for Bundler. Any scripts that use " \
     "`gem install bundler` will break as soon as Bundler drops support for " \
     "your Ruby version. Please upgrade RubyGems to avoid future breakage " \

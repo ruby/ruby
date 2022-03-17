@@ -40,6 +40,7 @@
 #   include "ruby/defines.h"
 #  endif
 # endif
+# include "ruby.h"
 #else /* RUBY */
 # ifndef PACKAGE
 /* PACKAGE is defined in config.h */
@@ -50,8 +51,6 @@
 #ifdef ONIG_ESCAPE_UCHAR_COLLISION
 # undef ONIG_ESCAPE_UCHAR_COLLISION
 #endif
-
-#include "ruby.h"
 
 #ifdef RUBY
 # include "ruby/onigmo.h"

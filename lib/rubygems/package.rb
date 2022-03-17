@@ -3,7 +3,12 @@
 # Copyright (C) 2004 Mauricio Julio Fernández Pradier
 # See LICENSE.txt for additional licensing information.
 #++
-#
+
+require_relative "../rubygems"
+require_relative 'security'
+require_relative 'user_interaction'
+
+##
 # Example using a Gem::Package
 #
 # Builds a .gem file given a Gem::Specification. A .gem file is a tarball
@@ -40,10 +45,6 @@
 #
 # #files are the files in the .gem tar file, not the Ruby files in the gem
 # #extract_files and #contents automatically call #verify
-
-require_relative "../rubygems"
-require_relative 'security'
-require_relative 'user_interaction'
 
 class Gem::Package
   include Gem::UserInteraction

@@ -27,7 +27,7 @@ describe "Kernel#open" do
     open(@name, "r") { |f| f.gets }.should == @content
   end
 
-  platform_is_not :windows do
+  platform_is_not :windows, :wasi do
     it "opens an io when path starts with a pipe" do
       @io = open("|date")
       begin

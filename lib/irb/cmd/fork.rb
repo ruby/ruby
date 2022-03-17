@@ -10,9 +10,11 @@
 #
 #
 
+require_relative "nop"
 
-# :stopdoc:
 module IRB
+  # :stopdoc:
+
   module ExtendCommand
     class Fork < Nop
       def execute
@@ -33,5 +35,6 @@ module IRB
       end
     end
   end
+
+  # :startdoc:
 end
-# :startdoc:

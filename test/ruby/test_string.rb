@@ -2384,6 +2384,7 @@ CODE
     assert_equal(S("HELLO"), S("HELLO").upcase)
     assert_equal(S("ABC HELLO 123"), S("abc HELLO 123").upcase)
     assert_equal(S("H\0""ELLO"), S("H\0""ello").upcase)
+    assert_equal(S("\u{10574}"), S("\u{1059B}").upcase)
   end
 
   def test_upcase!

@@ -3085,7 +3085,7 @@ is_console(SOCKET sock) /* DONT call this for SOCKET! */
     INPUT_RECORD ir;
 
     RUBY_CRITICAL {
-	ret = (PeekConsoleInput((HANDLE)sock, &ir, 1, &n));
+	ret = (PeekConsoleInputW((HANDLE)sock, &ir, 1, &n));
     }
 
     return ret;
@@ -3100,13 +3100,13 @@ is_readable_console(SOCKET sock) /* call this for console only */
     INPUT_RECORD ir;
 
     RUBY_CRITICAL {
-	if (PeekConsoleInput((HANDLE)sock, &ir, 1, &n) && n > 0) {
+	if (PeekConsoleInputW((HANDLE)sock, &ir, 1, &n) && n > 0) {
 	    if (ir.EventType == KEY_EVENT && ir.Event.KeyEvent.bKeyDown &&
 		ir.Event.KeyEvent.uChar.AsciiChar) {
 		ret = 1;
 	    }
 	    else {
-		ReadConsoleInput((HANDLE)sock, &ir, 1, &n);
+		ReadConsoleInputW((HANDLE)sock, &ir, 1, &n);
 	    }
 	}
     }
