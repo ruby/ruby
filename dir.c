@@ -2148,7 +2148,7 @@ dirent_copy(const struct dirent *dp, rb_dirent_t *rdp)
         newrdp->d_altname = dp->d_altname;
 #endif
     }
-#ifdef DT_UNKNOWN
+#if !EMULATE_IFTODT
     newrdp->d_type = dp->d_type;
 #else
     newrdp->d_type = 0;
@@ -2470,7 +2470,7 @@ glob_helper(
 		break;
 	    }
 	    name = buf + pathlen + (dirsep != 0);
-#ifdef DT_UNKNOWN
+#if !EMULATE_IFTODT
 	    if (dp->d_type != DT_UNKNOWN) {
 		/* Got it. We need no more lstat. */
 		new_pathtype = dp->d_type;
