@@ -1276,7 +1276,7 @@ do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super
 
         tbl = RCLASS_CONST_TBL(module);
 	if (tbl && rb_id_table_size(tbl))
-        rb_id_table_foreach(tbl, clear_constant_cache_i, (void *) 0);
+	    rb_id_table_foreach(tbl, clear_constant_cache_i, (void *) 0);
       skip:
 	module = RCLASS_SUPER(module);
     }
