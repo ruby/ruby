@@ -3569,6 +3569,10 @@ curry(RB_BLOCK_CALL_FUNC_ARGLIST(_, args))
   *  proc and returns the result. Otherwise, returns another curried proc that
   *  takes the rest of arguments.
   *
+  *  The optional <i>arity</i> argument should be supplied when currying procs with
+  *  variable arguments to determine how many arguments are needed before the proc is
+  *  called.
+  *
   *     b = proc {|x, y, z| (x||0) + (y||0) + (z||0) }
   *     p b.curry[1][2][3]           #=> 6
   *     p b.curry[1, 2][3, 4]        #=> 6
