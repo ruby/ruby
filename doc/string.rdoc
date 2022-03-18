@@ -89,7 +89,6 @@ class String
   #    each_line(line_sep = $/, chomp: false)                    -> enumerator
   #
   #  With a block given, forms the substrings ("lines")
-  #
   #  that are the result of splitting +self+
   #  at each occurrence of the given line separator +line_sep+;
   #  passes each line to the block;
@@ -139,7 +138,7 @@ class String
   #
   #  With an empty string as +line_sep+,
   #  forms and passes "paragraphs" by splitting at each occurrence
-  #  of two or more +line_sep+:
+  #  of two or more newlines:
   #
   #    s.each_line('') {|line| p line }
   #
@@ -180,7 +179,7 @@ class String
   #
   #  When +field_sep+ is a string different from <tt>' '</tt>
   #  and +limit+ is +nil+,
-  #  the split occurs at each occurrence of +field_sep;
+  #  the split occurs at each occurrence of +field_sep+;
   #  trailing empty substrings are not returned:
   #
   #    'abracadabra'.split('ab')   # => ["", "racad", "ra"]
