@@ -49,24 +49,127 @@ class String
   end
 
   #  call-seq:
-  #    split(separator = $;, limit = nil) -> array
-  #    split(separator = $;, limit = nil) {|substring| ... } -> self
+  #    bytes -> array_of_bytes
+  #
+  #  Returns an array of the bytes in +self+:
+  #
+  #    'hello'.bytes # => [104, 101, 108, 108, 111]
+  #    'тест'.bytes  # => [209, 130, 208, 181, 209, 129, 209, 130]
+  #    'こんにちは'.bytes
+  #    # => [227, 129, 147, 227, 130, 147, 227, 129, 171, 227, 129, 161, 227, 129, 175]
+  #
+  def bytes; end
+
+  #  call-seq:
+  #    each_byte {|byte| ... } -> self
+  #    each_byte               -> enumerator
+  #
+  #  Calls the given block with each successive byte from +self+;
+  #  returns +self+:
+  #
+  #    'hello'.each_byte {|byte| print byte, ' ' }
+  #    print "\n"
+  #    'тест'.each_byte {|byte| print byte, ' ' }
+  #    print "\n"
+  #    'こんにちは'.each_byte {|byte| print byte, ' ' }
+  #    print "\n"
+  #
+  #  Output:
+  #
+  #    104 101 108 108 111
+  #    209 130 208 181 209 129 209 130
+  #    227 129 147 227 130 147 227 129 171 227 129 161 227 129 175
+  #
+  #  Returns an enumerator if no block is given.
+  def each_byte; end
+
+
+  #  call-seq:
+  #    each_line(line_sep = $/, chomp: false) {|substring| ... } -> self
+  #    each_line(line_sep = $/, chomp: false)                    -> enumerator
+  #
+  #  With a block given, forms the substrings ("lines")
+  #  that are the result of splitting +self+
+  #  at each occurrence of the given line separator +line_sep+;
+  #  passes each line to the block;
+  #  returns +self+:
+  #
+  #    s = <<~EOT
+  #    This is the first line.
+  #    This is line two.
+  #
+  #    This is line four.
+  #    This is line five.
+  #    EOT
+  #
+  #    s.each_line {|line| p line }
+  #
+  #  Output:
+  #
+  #    "This is the first line.\n"
+  #    "This is line two.\n"
+  #    "\n"
+  #    "This is line four.\n"
+  #    "This is line five.\n"
+  #
+  #  With a different +line_sep+:
+  #
+  #    s.each_line(' is ') {|line| p line }
+  #
+  #  Output:
+  #
+  #    "This is "
+  #    "the first line.\nThis is "
+  #    "line two.\n\nThis is "
+  #    "line four.\nThis is "
+  #    "line five.\n"
+  #
+  #  With +chomp+ as +true+, removes the trailing +line_sep+ from each line:
+  #
+  #    s.each_line(chomp: true) {|line| p line }
+  #
+  #  Output:
+  #
+  #    "This is the first line."
+  #    "This is line two."
+  #    ""
+  #    "This is line four."
+  #    "This is line five."
+  #
+  #  With an empty string as +line_sep+,
+  #  forms and passes "paragraphs" by splitting at each occurrence
+  #  of two or more newlines:
+  #
+  #    s.each_line('') {|line| p line }
+  #
+  #  Output:
+  #
+  #    "This is the first line.\nThis is line two.\n\n"
+  #    "This is line four.\nThis is line five.\n"
+  #
+  #  With no block given, returns an enumerator.
+  #
+  def each_line; end
+
+  #  call-seq:
+  #    split(field_sep = $;, limit = nil) -> array
+  #    split(field_sep = $;, limit = nil) {|substring| ... } -> self
   #
   #  Returns an array of substrings of +self+
   #  that are the result of splitting +self+
-  #  at each occurrence of the given +separator+.
+  #  at each occurrence of the given field separator +field_sep+.
   #
-  #  When argument +separator+ is <tt>$;</tt>:
+  #  When +field_sep+ is <tt>$;</tt>:
   #
   #  - If <tt>$;</tt> is +nil+ (its default value),
-  #    the split occurs just as if +separator+ were given as a space character
+  #    the split occurs just as if +field_sep+ were given as a space character
   #    (see below).
   #
   #  - If <tt>$;</tt> is a string,
-  #    the split ocurs just as if +separator+ were given as that string
+  #    the split ocurs just as if +field_sep+ were given as that string
   #    (see below).
   #
-  #  When argument +separator+ is <tt>' '</tt> and argument +limit+ is +nil+,
+  #  When +field_sep+ is <tt>' '</tt> and +limit+ is +nil+,
   #  the split occurs at each sequence of whitespace:
   #
   #    'abc def ghi'.split(' ')          # => ["abc", "def", "ghi"]
@@ -74,9 +177,9 @@ class String
   #    'abc  def   ghi'.split(' ')       # => ["abc", "def", "ghi"]
   #    ''.split(' ')                     # => []
   #
-  #  When argument +separator+ is a string different from <tt>' '</tt>
-  #  and argument +limit+ is +nil+,
-  #  the split occurs at each occurrence of the separator;
+  #  When +field_sep+ is a string different from <tt>' '</tt>
+  #  and +limit+ is +nil+,
+  #  the split occurs at each occurrence of +field_sep+;
   #  trailing empty substrings are not returned:
   #
   #    'abracadabra'.split('ab')   # => ["", "racad", "ra"]
@@ -87,7 +190,7 @@ class String
   #    'тест'.split('т')           # => ["", "ес"]
   #    'こんにちは'.split('に')      # => ["こん", "ちは"]
   #
-  #  When argument +separator+ is a Regexp and argument +limit+ is +nil+,
+  #  When +field_sep+ is a Regexp and +limit+ is +nil+,
   #  the split occurs at each occurrence of a match;
   #  trailing empty substrings are not returned:
   #
@@ -101,7 +204,7 @@ class String
   #
   #    '1:2:3'.split(/(:)()()/, 2) # => ["1", ":", "", "", "2:3"]
   #
-  #  As seen above, if argument +limit+ is +nil+,
+  #  As seen above, if +limit+ is +nil+,
   #  trailing empty substrings are not returned;
   #  the same is true if +limit+ is zero:
   #
@@ -118,7 +221,7 @@ class String
   #    'aaabcdaaa'.split('a', 7) # => ["", "", "", "bcd", "", "", ""]
   #    'aaabcdaaa'.split('a', 8) # => ["", "", "", "bcd", "", "", ""]
   #
-  #  Note that if +separator+ is a \Regexp containing groups,
+  #  Note that if +field_sep+ is a \Regexp containing groups,
   #  their matches are in the returned array, but do not count toward the limit.
   #
   #  If +limit+ is negative, it behaves the same as if +limit+ was +nil+,
