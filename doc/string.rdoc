@@ -51,7 +51,7 @@ class String
   #  call-seq:
   #    bytes -> array_of_bytes
   #
-  #  Returns an array of the 8-bit bytes in +self+:
+  #  Returns an array of the bytes in +self+:
   #
   #    'hello'.bytes # => [104, 101, 108, 108, 111]
   #    'тест'.bytes  # => [209, 130, 208, 181, 209, 129, 209, 130]
@@ -64,7 +64,7 @@ class String
   #    each_byte {|byte| ... } -> self
   #    each_byte               -> enumerator
   #
-  #  Calls the given block with each successive 8-bit byte from +self+;
+  #  Calls the given block with each successive byte from +self+;
   #  returns +self+:
   #
   #    'hello'.each_byte {|byte| print byte, ' ' }
