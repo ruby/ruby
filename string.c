@@ -9038,20 +9038,7 @@ rb_str_enumerate_bytes(VALUE str, VALUE ary)
 	return str;
 }
 
-/*
- *  call-seq:
- *     str.each_byte {|integer| block }    -> str
- *     str.each_byte                      -> an_enumerator
- *
- *  Passes each byte in <i>str</i> to the given block, or returns an
- *  enumerator if no block is given.
- *
- *     "hello".each_byte {|c| print c, ' ' }
- *
- *  <em>produces:</em>
- *
- *     104 101 108 108 111
- */
+// String#each_byte is documented in doc/string.rdoc.
 
 static VALUE
 rb_str_each_byte(VALUE str)
@@ -9060,16 +9047,7 @@ rb_str_each_byte(VALUE str)
     return rb_str_enumerate_bytes(str, 0);
 }
 
-/*
- *  call-seq:
- *     str.bytes    -> an_array
- *
- *  Returns an array of bytes in <i>str</i>.  This is a shorthand for
- *  <code>str.each_byte.to_a</code>.
- *
- *  If a block is given, which is a deprecated form, works the same as
- *  <code>each_byte</code>.
- */
+// String#bytes is documented in doc/string.rdoc.
 
 static VALUE
 rb_str_bytes(VALUE str)
