@@ -5,9 +5,19 @@
 
 require 'digest'
 require_relative 'downloader'
-require_relative 'lib/colorize'
+begin
+  require_relative 'lib/colorize'
+rescue LoadError
+end
 
 class ExtLibs
+  unless defined?(Colorize)
+    class Colorize
+      def pass(str) str; end
+      def fail(str) str; end
+    end
+  end
+
   class Vars < Hash
     def pattern
       /\$\((#{Regexp.union(keys)})\)/
