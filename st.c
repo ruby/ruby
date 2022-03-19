@@ -1486,7 +1486,6 @@ st_shift(st_table *tab, st_data_t *key, st_data_t *value)
 	}
     }
     st_assert(tab->num_entries == 0);
-    tab->entries_start = tab->entries_bound = 0;
     if (value != 0) *value = 0;
     return 0;
 }
