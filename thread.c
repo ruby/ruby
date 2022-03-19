@@ -3890,7 +3890,7 @@ rb_thread_priority_set(VALUE thread, VALUE prio)
  * - Mac OS X 10.7 (Lion)
  *   select(2) returns EINVAL if nfds is greater than FD_SET_SIZE and
  *   _DARWIN_UNLIMITED_SELECT (or _DARWIN_C_SOURCE) isn't defined.
- *   http://developer.apple.com/library/mac/#releasenotes/Darwin/SymbolVariantsRelNotes/_index.html
+ *   https://developer.apple.com/library/archive/releasenotes/Darwin/SymbolVariantsRelNotes/index.html
  *
  * When fd_set is not big enough to hold big file descriptors,
  * it should be allocated dynamically.
