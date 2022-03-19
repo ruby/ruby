@@ -741,6 +741,10 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 	}
 	else {
 	    errinfo = th->ec->errinfo;
+
+            VALUE exc = rb_vm_make_jump_tag_but_local_jump(state, Qundef);
+            if (!NIL_P(exc)) errinfo = exc;
+
 	    if (state == TAG_FATAL) {
 		/* fatal error within this thread, need to stop whole script */
 	    }
