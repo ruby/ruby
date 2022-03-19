@@ -67,8 +67,18 @@ involving new files <tt>doc/*.rdoc</tt>:
   Therefore it's best to use file inclusion:
 
   - Retain the call-seq in the C code.
-  - Use file inclusion (+:include:+) to include text from an .rdoc file;
-    see the documentation for method +each_byte+ in source file string.c.
+  - Use file inclusion (+:include:+) to include text from an .rdoc file.
+
+  Example:
+
+    /*
+     *  call-seq:
+     *    each_byte {|byte| ... } -> self
+     *    each_byte               -> enumerator
+     *
+     *  \:include: doc/string/each_byte.rdoc
+     *
+     */
 
 === \RDoc
 
