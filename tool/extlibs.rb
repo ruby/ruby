@@ -7,21 +7,21 @@ require 'digest'
 require_relative 'downloader'
 require_relative 'lib/colorize'
 
-class Vars < Hash
-  def pattern
-    /\$\((#{Regexp.union(keys)})\)/
-  end
+class ExtLibs
+  class Vars < Hash
+    def pattern
+      /\$\((#{Regexp.union(keys)})\)/
+    end
 
-  def expand(str)
-    if empty?
-      str
-    else
-      str.gsub(pattern) {self[$1]}
+    def expand(str)
+      if empty?
+        str
+      else
+        str.gsub(pattern) {self[$1]}
+      end
     end
   end
-end
 
-class ExtLibs
   def initialize(mode = :all, cache_dir: nil)
     @mode = mode
     @cache_dir = cache_dir
