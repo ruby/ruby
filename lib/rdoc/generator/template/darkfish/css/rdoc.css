@@ -309,6 +309,25 @@ dl.note-list dt {
   background: url(../images/arrow_up.png) no-repeat right center;
 }
 
+.nav-section details summary {
+  display: block;
+}
+
+.nav-section details summary::-webkit-details-marker {
+  display: none;
+}
+
+.nav-section details summary:before {
+  content: "";
+}
+
+.nav-section details summary:after {
+  content: "  \25B6"; /* BLACK RIGHT-POINTING TRIANGLE */
+}
+.nav-section details[open] > summary:after {
+  content: "  \25BD"; /* WHITE DOWN-POINTING TRIANGLE */
+}
+
 /* @end */
 
 /* @group Documentation Section */
@@ -483,22 +502,6 @@ main header h3 {
 }
 
 /* @group Method Details */
-
-details summary {
-  display: block;
-}
-details summary::-webkit-details-marker {
-  display: none;
-}
-details summary:before {
-  content: "";
-}
-details summary:after {
-  content: "  ▶";
-}
-details[open] > summary:after {
-  content: "  ▽";
-}
 
 main .method-source-code {
   max-height: 0;
