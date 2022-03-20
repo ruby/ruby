@@ -15,4 +15,3 @@ Output:
   227 129 147 227 130 147 227 129 171 227 129 161 227 129 175
 
 Returns an enumerator if no block is given.
-

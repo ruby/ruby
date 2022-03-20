@@ -35,4 +35,3 @@ which may affect performance:
 The +string+, +encoding+, and +capacity+ arguments may all be used together:
 
   String.new('hello', encoding: 'UTF-8', capacity: 25)
-

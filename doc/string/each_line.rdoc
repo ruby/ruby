@@ -58,4 +58,3 @@ Output:
   "This is line four.\nThis is line five.\n"
 
 With no block given, returns an enumerator.
-
