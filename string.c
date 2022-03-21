@@ -9203,17 +9203,11 @@ rb_str_enumerate_chars(VALUE str, VALUE ary)
 
 /*
  *  call-seq:
- *     str.each_char {|cstr| block }    -> str
- *     str.each_char                    -> an_enumerator
+ *    each_char {|c| ... } -> self
+ *    each_char            -> enumerator
  *
- *  Passes each character in <i>str</i> to the given block, or returns
- *  an enumerator if no block is given.
+ *  :include: doc/string/each_char.rdoc
  *
- *     "hello".each_char {|c| print c, ' ' }
- *
- *  <em>produces:</em>
- *
- *     h e l l o
  */
 
 static VALUE
@@ -9225,13 +9219,10 @@ rb_str_each_char(VALUE str)
 
 /*
  *  call-seq:
- *     str.chars    -> an_array
+ *    chars -> array_of_characters
  *
- *  Returns an array of characters in <i>str</i>.  This is a shorthand
- *  for <code>str.each_char.to_a</code>.
+ *  :include: doc/string/chars.rdoc
  *
- *  If a block is given, which is a deprecated form, works the same as
- *  <code>each_char</code>.
  */
 
 static VALUE
@@ -9272,22 +9263,11 @@ rb_str_enumerate_codepoints(VALUE str, VALUE ary)
 
 /*
  *  call-seq:
- *     str.each_codepoint {|integer| block }    -> str
- *     str.each_codepoint                       -> an_enumerator
+ *    each_codepoint {|integer| ... } -> self
+ *    each_codepoint                  -> enumerator
  *
- *  Passes the Integer ordinal of each character in <i>str</i>,
- *  also known as a <i>codepoint</i> when applied to Unicode strings to the
- *  given block.  For encodings other than UTF-8/UTF-16(BE|LE)/UTF-32(BE|LE),
- *  values are directly derived from the binary representation
- *  of each character.
+ *  :include: doc/string/each_codepoint.rdoc
  *
- *  If no block is given, an enumerator is returned instead.
- *
- *     "hello\u0639".each_codepoint {|c| print c, ' ' }
- *
- *  <em>produces:</em>
- *
- *     104 101 108 108 111 1593
  */
 
 static VALUE
@@ -9299,14 +9279,10 @@ rb_str_each_codepoint(VALUE str)
 
 /*
  *  call-seq:
- *     str.codepoints   -> an_array
+ *    codepoints -> array_of_integers
  *
- *  Returns an array of the Integer ordinals of the
- *  characters in <i>str</i>.  This is a shorthand for
- *  <code>str.each_codepoint.to_a</code>.
+ *  :include: doc/string/codepoints.rdoc
  *
- *  If a block is given, which is a deprecated form, works the same as
- *  <code>each_codepoint</code>.
  */
 
 static VALUE
@@ -9427,16 +9403,10 @@ rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
 
 /*
  *  call-seq:
- *     str.each_grapheme_cluster {|cstr| block }    -> str
- *     str.each_grapheme_cluster                    -> an_enumerator
+ *    each_grapheme_cluster {|gc| ... } -> self
+ *    each_grapheme_cluster             -> enumerator
  *
- *  Passes each grapheme cluster in <i>str</i> to the given block, or returns
- *  an enumerator if no block is given.
- *  Unlike String#each_char, this enumerates by grapheme clusters defined by
- *  Unicode Standard Annex #29 http://unicode.org/reports/tr29/
- *
- *     "a\u0300".each_char.to_a.size #=> 2
- *     "a\u0300".each_grapheme_cluster.to_a.size #=> 1
+ *  :include: doc/string/each_grapheme_cluster.rdoc
  *
  */
 
@@ -9449,13 +9419,10 @@ rb_str_each_grapheme_cluster(VALUE str)
 
 /*
  *  call-seq:
- *     str.grapheme_clusters   -> an_array
+ *    grapheme_clusters -> array_of_grapheme_clusters
  *
- *  Returns an array of grapheme clusters in <i>str</i>.  This is a shorthand
- *  for <code>str.each_grapheme_cluster.to_a</code>.
+ *  :include: doc/string/grapheme_clusters.rdoc
  *
- *  If a block is given, which is a deprecated form, works the same as
- *  <code>each_grapheme_cluster</code>.
  */
 
 static VALUE
@@ -11363,17 +11330,16 @@ unicode_normalize_common(int argc, VALUE *argv, VALUE str, ID id)
  *  - +:nfkc+: Compatibility decomposition, followed by canonical composition.
  *  - +:nfkd+: Compatibility decomposition.
  *
- *  +self+ must have encoding UTF-8 or one of the other supported encodings:
+ *  The encoding of +self+ must be one of:
  *
- *    UnicodeNormalize::UNICODE_ENCODINGS
- *    # =>
- *    [#<Encoding:UTF-16BE (autoload)>,
- *     #<Encoding:UTF-16LE>,
- *     #<Encoding:UTF-32BE (autoload)>,
- *     #<Encoding:UTF-32LE (autoload)>,
- *     #<Encoding:GB18030 (autoload)>,
- *     #<Encoding:UTF-16BE (autoload)>,
- *     #<Encoding:UTF-32BE (autoload)>]
+ *  - Encoding::UTF_8
+ *  - Encoding::UTF_16BE
+ *  - Encoding::UTF_16LE
+ *  - Encoding::UTF_32BE
+ *  - Encoding::UTF_32LE
+ *  - Encoding::GB18030
+ *  - Encoding::UCS_2BE
+ *  - Encoding::UCS_4BE
  *
  *  Examples:
  *

@@ -1,0 +1,16 @@
+Returns an array of the integer codepoints in +self+:
+
+  'hello'.codepoints     # => [104, 101, 108, 108, 111]
+  'тест'.codepoints      # => [1090, 1077, 1089, 1090]
+  'こんにちは'.codepoints # => [12371, 12435, 12395, 12385, 12399]
+
+The encoding of +self+ must be one of:
+
+- Encoding::UTF_8
+- Encoding::UTF_16BE
+- Encoding::UTF_16LE
+- Encoding::UTF_32BE
+- Encoding::UTF_32LE
+- Encoding::GB18030
+- Encoding::UCS_2BE
+- Encoding::UCS_4BE
