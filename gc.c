@@ -2982,6 +2982,19 @@ static inline int
 is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
 {
 #ifdef USE_THIRD_PARTY_HEAP
+    if (ptr == NULL) {
+//     	fprintf(stderr, "      %18p: It is NULL. nope.\n", ptr);
+        return false;
+    }
+
+    // The granularity of MMTk's alloc_bit bitmap is one bit per word.
+    // We must check for alignment before asking MMTk.
+    if ((uintptr_t)ptr % sizeof(void*) != 0) {
+//     	fprintf(stderr, "      %18p: Not properly aligned. nope.\n", ptr);
+        return false;
+    }
+
+    // Now let MMTk decide.
     bool result = mmtk_is_mmtk_object(ptr);
 
 //     if (result) {
@@ -2991,7 +3004,7 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
 //     }
 
     return result;
-#endif
+#else // USE_THIRD_PARTY_HEAP
     register uintptr_t p = (uintptr_t)ptr;
     register struct heap_page *page;
 
@@ -3018,6 +3031,7 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
         }
     }
     return FALSE;
+#endif // USE_THIRD_PARTY_HEAP
 }
 
 static enum rb_id_table_iterator_result
