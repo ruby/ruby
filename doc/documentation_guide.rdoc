@@ -60,34 +60,25 @@ involving new files <tt>doc/*.rdoc</tt>:
     # Documentation for module Bar goes here.
     module Bar; end
 
-- For an instance method Baz#bat (defined in file <tt>baz.c</tt>),
-  create file <tt>doc/baz.rdoc</tt>, declare class +Baz+
-  and instance method +bat+, and place the method documentation above
-  the method declaration:
+- For a method, things are different.
+  Documenting a method as above disables the "click to toggle source" feature
+  in the rendered documentaion.
 
-    # :markup: ruby
-    class Baz
-      # Documentation for method bat goes here.
-      # (Don't forget the call-seq.)
-      def bat; end
-    end
+  Therefore it's best to use file inclusion:
 
-- For a singleton method Bam.bah (defined in file <tt>bam.c</tt>),
-  create file <tt>doc/bam.rdoc</tt>, declare class +Bam+
-  and singleton method +bah+, and place the method documentation above
-  the method declaration:
+  - Retain the call-seq in the C code.
+  - Use file inclusion (+:include:+) to include text from an .rdoc file.
 
-    # :markup: ruby
-    class Bam
-      # Documentation for method bah goes here.
-      # (Don't forget the call-seq.)
-      def self.bah; end
-    end
+  Example:
 
-  See these examples:
-
-  - https://raw.githubusercontent.com/ruby/ruby/master/doc/string.rdoc
-  - https://raw.githubusercontent.com/ruby/ruby/master/doc/transcode.rdoc
+    /*
+     *  call-seq:
+     *    each_byte {|byte| ... } -> self
+     *    each_byte               -> enumerator
+     *
+     *  \:include: doc/string/each_byte.rdoc
+     *
+     */
 
 === \RDoc
 

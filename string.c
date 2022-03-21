@@ -1810,7 +1810,17 @@ rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str)
     return ec_str_duplicate(ec, rb_cString, str);
 }
 
-/* :nodoc: documented in doc/string.rdoc */
+/*
+ *
+ *  call-seq:
+ *    String.new(string = '') -> new_string
+ *    String.new(string = '', encoding: encoding) -> new_string
+ *    String.new(string = '', capacity: size) -> new_string
+ *
+ *  :include: doc/string/new.rdoc
+ *
+ */
+
 static VALUE
 rb_str_init(int argc, VALUE *argv, VALUE str)
 {
@@ -8652,7 +8662,14 @@ literal_split_pattern(VALUE spat, split_type_t default_type)
     return default_type;
 }
 
-// String#split is documented at doc/string.rdoc.
+/*
+ *  :call-seq:
+ *    split(field_sep = $;, limit = nil) -> array
+ *    split(field_sep = $;, limit = nil) {|substring| ... } -> self
+ *
+ *  :include: doc/string/split.rdoc
+ *
+ */
 
 static VALUE
 rb_str_split_m(int argc, VALUE *argv, VALUE str)
@@ -9063,7 +9080,14 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
 	return orig;
 }
 
-// String#each_line is documented at doc/string.rdoc.
+/*
+ *  call-seq:
+ *    each_line(line_sep = $/, chomp: false) {|substring| ... } -> self
+ *    each_line(line_sep = $/, chomp: false)                    -> enumerator
+ *
+ *  :include: doc/string/each_line.rdoc
+ *
+ */
 
 static VALUE
 rb_str_each_line(int argc, VALUE *argv, VALUE str)
@@ -9108,7 +9132,14 @@ rb_str_enumerate_bytes(VALUE str, VALUE ary)
 	return str;
 }
 
-// String#each_byte is documented in doc/string.rdoc.
+/*
+ *  call-seq:
+ *    each_byte {|byte| ... } -> self
+ *    each_byte               -> enumerator
+ *
+ *  :include: doc/string/each_byte.rdoc
+ *
+ */
 
 static VALUE
 rb_str_each_byte(VALUE str)
@@ -9117,7 +9148,13 @@ rb_str_each_byte(VALUE str)
     return rb_str_enumerate_bytes(str, 0);
 }
 
-// String#bytes is documented in doc/string.rdoc.
+/*
+ *  call-seq:
+ *    bytes -> array_of_bytes
+ *
+ *  :include: doc/string/bytes.rdoc
+ *
+ */
 
 static VALUE
 rb_str_bytes(VALUE str)
