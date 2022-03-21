@@ -60,10 +60,15 @@ describe "Struct.new" do
     -> { Struct.new(:animal, nil)                  }.should raise_error(TypeError)
     -> { Struct.new(:animal, true)                 }.should raise_error(TypeError)
     -> { Struct.new(:animal, ['chris', 'evan'])    }.should raise_error(TypeError)
+    ruby_version_is "3.2" do
+      -> { Struct.new(:animal, { name: 'chris' }) }.should raise_error(TypeError)
+    end
   end
 
-  it "raises a ArgumentError if passed a Hash with an unknown key" do
-    -> { Struct.new(:animal, { name: 'chris' }) }.should raise_error(ArgumentError)
+  ruby_version_is ""..."3.2" do
+    it "raises a ArgumentError if passed a Hash with an unknown key" do
+      -> { Struct.new(:animal, { name: 'chris' }) }.should raise_error(ArgumentError)
+    end
   end
 
   it "raises ArgumentError when there is a duplicate member" do

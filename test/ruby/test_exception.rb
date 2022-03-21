@@ -807,6 +807,7 @@ end.join
     cause = ArgumentError.new("foobar")
     e = assert_raise(RuntimeError) {raise msg, cause: cause}
     assert_same(cause, e.cause)
+    assert_raise(TypeError) {raise msg, {cause: cause}}
   end
 
   def test_cause_with_no_arguments

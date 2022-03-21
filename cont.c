@@ -62,6 +62,9 @@ static VALUE rb_cFiberPool;
 #define FIBER_POOL_INITIAL_SIZE 32
 #define FIBER_POOL_ALLOCATION_MAXIMUM_SIZE 1024
 #endif
+#ifdef RB_EXPERIMENTAL_FIBER_POOL
+#define FIBER_POOL_ALLOCATION_FREE
+#endif
 
 enum context_type {
     CONTINUATION_CONTEXT = 0,
@@ -2816,7 +2819,7 @@ fiber_pool_free(void *ptr)
     struct fiber_pool * fiber_pool = ptr;
     RUBY_FREE_ENTER("fiber_pool");
 
-    fiber_pool_free_allocations(fiber_pool->allocations);
+    fiber_pool_allocation_free(fiber_pool->allocations);
     ruby_xfree(fiber_pool);
 
     RUBY_FREE_LEAVE("fiber_pool");
@@ -2842,9 +2845,9 @@ static const rb_data_type_t FiberPoolDataType = {
 static VALUE
 fiber_pool_alloc(VALUE klass)
 {
-    struct fiber_pool * fiber_pool = RB_ALLOC(struct fiber_pool);
+    struct fiber_pool *fiber_pool;
 
-    return TypedData_Wrap_Struct(klass, &FiberPoolDataType, fiber_pool);
+    return TypedData_Make_Struct(klass, struct fiber_pool, &FiberPoolDataType, fiber_pool);
 }
 
 static VALUE

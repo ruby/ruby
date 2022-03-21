@@ -576,8 +576,9 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     long i;
     VALUE st;
     st_table *tbl;
+    VALUE opt;
 
-    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+    argc = rb_scan_args(argc, argv, "1*:", NULL, NULL, &opt);
     name = argv[0];
     if (SYMBOL_P(name)) {
 	name = Qnil;
@@ -587,20 +588,19 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 	++argv;
     }
 
-    if (RB_TYPE_P(argv[argc-1], T_HASH)) {
+    if (!NIL_P(opt)) {
 	static ID keyword_ids[1];
 
 	if (!keyword_ids[0]) {
 	    keyword_ids[0] = rb_intern("keyword_init");
 	}
-        rb_get_kwargs(argv[argc-1], keyword_ids, 0, 1, &keyword_init);
+        rb_get_kwargs(opt, keyword_ids, 0, 1, &keyword_init);
         if (keyword_init == Qundef) {
             keyword_init = Qnil;
         }
         else if (RTEST(keyword_init)) {
             keyword_init = Qtrue;
         }
-	--argc;
     }
 
     rest = rb_ident_hash_new();
