@@ -110,6 +110,10 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     assert_match(re, index)
     summary = index[re]
     assert_match %r[<a href="\./outer/inner_rdoc.html">inner</a>], summary
+    re = %r[<details open><summary><a href="\./outer_rdoc\.html">outer</a></summary>.*?</details>]m
+    assert_match(re, File.read('outer_rdoc.html'))
+    re = %r[<details open><summary><a href="\.\./outer_rdoc\.html">outer</a></summary>.*?</details>]m
+    assert_match(re, File.read('outer/inner_rdoc.html'))
   end
 
   def test_generate_dry_run
