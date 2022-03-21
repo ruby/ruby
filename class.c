@@ -26,6 +26,7 @@
 #include "ruby/internal/config.h"
 #include <ctype.h>
 
+#include "gc.h"
 #include "constant.h"
 #include "id_table.h"
 #include "internal.h"
