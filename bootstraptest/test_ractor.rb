@@ -760,6 +760,31 @@ assert_equal 'hello', %q{
   end
 }
 
+# yield/move should not make moved object when the yield is not succeeded
+assert_equal '"str"', %q{
+  R = Ractor.new{}
+  M = Ractor.current
+  r = Ractor.new do
+    s = 'str'
+    selected_r, v = Ractor.select R, yield_value: s, move: true
+    raise if selected_r != R # taken from R
+    M.send s.inspect # s should not be a moved object
+  end
+
+  Ractor.receive
+}
+
+# yield/move can fail
+assert_equal "allocator undefined for Thread", %q{
+  r = Ractor.new do
+    obj = Thread.new{}
+    Ractor.yield obj
+  rescue => e
+    e.message
+  end
+  r.take
+}
+
 # Access to global-variables are prohibited
 assert_equal 'can not access global variables $gv from non-main Ractors', %q{
   $gv = 1
