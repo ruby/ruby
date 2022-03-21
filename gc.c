@@ -564,8 +564,6 @@ typedef struct gc_profile_record {
 #endif
 } gc_profile_record;
 
-#define FL_FROM_FREELIST FL_USER0
-
 struct RMoved {
     VALUE flags;
     VALUE dummy;
@@ -5031,7 +5029,6 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, 
 
         gc_move(objspace, src, dest, free_page->slot_size);
         gc_pin(objspace, src);
-        FL_SET(src, FL_FROM_FREELIST);
         free_page->free_slots--;
     }
 
@@ -5308,12 +5305,7 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                         rb_bug("T_MOVED shouldn't be seen until compaction is finished\n");
                     }
                     gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info(vp));
-                    if (FL_TEST(vp, FL_FROM_FREELIST)) {
-                        ctx->empty_slots++;
-                    }
-                    else {
-                        ctx->freed_slots++;
-                    }
+                    ctx->empty_slots++;
                     heap_page_add_freeobj(objspace, sweep_page, vp);
                     break;
                 case T_ZOMBIE:
@@ -5761,7 +5753,6 @@ invalidate_moved_plane(rb_objspace_t *objspace, struct heap_page *page, uintptr_
 
                     CLEAR_IN_BITMAP(GET_HEAP_PINNED_BITS(forwarding_object), forwarding_object);
 
-                    bool from_freelist = FL_TEST_RAW(forwarding_object, FL_FROM_FREELIST);
                     object = rb_gc_location(forwarding_object);
 
                     gc_move(objspace, object, forwarding_object, page->slot_size);
@@ -5769,9 +5760,6 @@ invalidate_moved_plane(rb_objspace_t *objspace, struct heap_page *page, uintptr_
                      * is the free slot for the original page */
                     struct heap_page *orig_page = GET_HEAP_PAGE(object);
                     orig_page->free_slots++;
-                    if (!from_freelist) {
-                        objspace->profile.total_freed_objects++;
-                    }
                     heap_page_add_freeobj(objspace, orig_page, object);
 
                     GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(forwarding_object), forwarding_object));
