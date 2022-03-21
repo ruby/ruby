@@ -99,6 +99,14 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     assert_match(%r[Klass/Inner\.html".*>Inner<], summary)
   end
 
+  def test_generate_page
+    @store.add_file 'outer.rdoc', parser: RDoc::Parser::Simple
+    @store.add_file 'outer/inner.rdoc', parser: RDoc::Parser::Simple
+    @g.generate
+    assert_file 'outer_rdoc.html'
+    assert_file 'outer/inner_rdoc.html'
+  end
+
   def test_generate_dry_run
     @g.dry_run = true
     top_level = @store.add_file 'file.rb'
