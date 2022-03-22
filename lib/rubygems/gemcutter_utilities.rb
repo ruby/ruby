@@ -260,8 +260,8 @@ module Gem::GemcutterUtilities
     else
       say "Please select scopes you want to enable for the API key (y/n)"
       API_SCOPES.each do |scope|
-        selected = ask "#{scope} [y/N]: "
-        scope_params[scope] = true if selected =~ /^[yY](es)?$/
+        selected = ask_yes_no("#{scope}", false)
+        scope_params[scope] = true if selected
       end
       say "\n"
     end
@@ -279,8 +279,8 @@ module Gem::GemcutterUtilities
     mfa_level = get_user_mfa_level(email, password)
     params = {}
     if mfa_level == "ui_only" || mfa_level == "ui_and_gem_signin"
-      selected = ask "Would you like to enable MFA for this key? [Y/n]"
-      params["mfa"] = true unless selected =~ /^[nN](o)?$/
+      selected = ask_yes_no("Would you like to enable MFA for this key? (strongly recommended)")
+      params["mfa"] = true if selected
     end
     params
   end

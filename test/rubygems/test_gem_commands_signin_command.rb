@@ -92,13 +92,13 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     user = ENV["USER"] || ENV["USERNAME"]
 
     assert_match "API Key name [#{Socket.gethostname}-#{user}", key_name_ui.output
-    assert_match "index_rubygems [y/N]", key_name_ui.output
-    assert_match "push_rubygem [y/N]", key_name_ui.output
-    assert_match "yank_rubygem [y/N]", key_name_ui.output
-    assert_match "add_owner [y/N]", key_name_ui.output
-    assert_match "remove_owner [y/N]", key_name_ui.output
-    assert_match "access_webhooks [y/N]", key_name_ui.output
-    assert_match "show_dashboard [y/N]", key_name_ui.output
+    assert_match "index_rubygems [yN]", key_name_ui.output
+    assert_match "push_rubygem [yN]", key_name_ui.output
+    assert_match "yank_rubygem [yN]", key_name_ui.output
+    assert_match "add_owner [yN]", key_name_ui.output
+    assert_match "remove_owner [yN]", key_name_ui.output
+    assert_match "access_webhooks [yN]", key_name_ui.output
+    assert_match "show_dashboard [yN]", key_name_ui.output
     assert_equal "name=test-key&push_rubygem=true", fetcher.last_request.body
 
     credentials = load_yaml_file Gem.configuration.credentials_path
@@ -118,14 +118,14 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     user = ENV["USER"] || ENV["USERNAME"]
 
     assert_match "API Key name [#{Socket.gethostname}-#{user}", key_name_ui.output
-    assert_match "index_rubygems [y/N]", key_name_ui.output
-    assert_match "push_rubygem [y/N]", key_name_ui.output
-    assert_match "yank_rubygem [y/N]", key_name_ui.output
-    assert_match "add_owner [y/N]", key_name_ui.output
-    assert_match "remove_owner [y/N]", key_name_ui.output
-    assert_match "access_webhooks [y/N]", key_name_ui.output
-    assert_match "show_dashboard [y/N]", key_name_ui.output
-    assert_match "Would you like to enable MFA for this key? [Y/n]", key_name_ui.output
+    assert_match "index_rubygems [yN]", key_name_ui.output
+    assert_match "push_rubygem [yN]", key_name_ui.output
+    assert_match "yank_rubygem [yN]", key_name_ui.output
+    assert_match "add_owner [yN]", key_name_ui.output
+    assert_match "remove_owner [yN]", key_name_ui.output
+    assert_match "access_webhooks [yN]", key_name_ui.output
+    assert_match "show_dashboard [yN]", key_name_ui.output
+    assert_match "Would you like to enable MFA for this key? (strongly recommended) [yn]", key_name_ui.output
     assert_equal "name=test-key&push_rubygem=true&mfa=true", fetcher.last_request.body
 
     credentials = load_yaml_file Gem.configuration.credentials_path
@@ -145,14 +145,14 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     user = ENV["USER"] || ENV["USERNAME"]
 
     assert_match "API Key name [#{Socket.gethostname}-#{user}", key_name_ui.output
-    assert_match "index_rubygems [y/N]", key_name_ui.output
-    assert_match "push_rubygem [y/N]", key_name_ui.output
-    assert_match "yank_rubygem [y/N]", key_name_ui.output
-    assert_match "add_owner [y/N]", key_name_ui.output
-    assert_match "remove_owner [y/N]", key_name_ui.output
-    assert_match "access_webhooks [y/N]", key_name_ui.output
-    assert_match "show_dashboard [y/N]", key_name_ui.output
-    assert_match "Would you like to enable MFA for this key? [Y/n]", key_name_ui.output
+    assert_match "index_rubygems [yN]", key_name_ui.output
+    assert_match "push_rubygem [yN]", key_name_ui.output
+    assert_match "yank_rubygem [yN]", key_name_ui.output
+    assert_match "add_owner [yN]", key_name_ui.output
+    assert_match "remove_owner [yN]", key_name_ui.output
+    assert_match "access_webhooks [yN]", key_name_ui.output
+    assert_match "show_dashboard [yN]", key_name_ui.output
+    assert_match "Would you like to enable MFA for this key? (strongly recommended) [yn]", key_name_ui.output
     assert_equal "name=test-key&push_rubygem=true&mfa=true", fetcher.last_request.body
 
     credentials = load_yaml_file Gem.configuration.credentials_path
@@ -181,13 +181,13 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     user = ENV["USER"] || ENV["USERNAME"]
 
     assert_match "API Key name [#{Socket.gethostname}-#{user}", key_name_ui.output
-    assert_match "index_rubygems [y/N]", key_name_ui.output
-    assert_match "push_rubygem [y/N]", key_name_ui.output
-    assert_match "yank_rubygem [y/N]", key_name_ui.output
-    assert_match "add_owner [y/N]", key_name_ui.output
-    assert_match "remove_owner [y/N]", key_name_ui.output
-    assert_match "access_webhooks [y/N]", key_name_ui.output
-    assert_match "show_dashboard [y/N]", key_name_ui.output
+    assert_match "index_rubygems [yN]", key_name_ui.output
+    assert_match "push_rubygem [yN]", key_name_ui.output
+    assert_match "yank_rubygem [yN]", key_name_ui.output
+    assert_match "add_owner [yN]", key_name_ui.output
+    assert_match "remove_owner [yN]", key_name_ui.output
+    assert_match "access_webhooks [yN]", key_name_ui.output
+    assert_match "show_dashboard [yN]", key_name_ui.output
     assert_equal "name=test-key&push_rubygem=true", fetcher.last_request.body
   end
 
