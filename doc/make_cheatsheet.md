@@ -33,7 +33,7 @@ Hello
 $ make check
 ```
 
-It runs (about) three test suites:
+It runs (about) four test suites:
 
 * `make test` (a test suite for the interpreter core)
 * `make test-all` (for all builtin classes and libraries)
