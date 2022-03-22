@@ -1806,11 +1806,9 @@ vm_iter_break(rb_execution_context_t *ec, VALUE val)
     const VALUE *ep = VM_CF_PREV_EP(cfp);
     const rb_control_frame_t *target_cfp = rb_vm_search_cf_from_ep(ec, cfp, ep);
 
-#if 0				/* raise LocalJumpError */
     if (!target_cfp) {
 	rb_vm_localjump_error("unexpected break", val, TAG_BREAK);
     }
-#endif
 
     ec->errinfo = (VALUE)THROW_DATA_NEW(val, target_cfp, TAG_BREAK);
     EC_JUMP_TAG(ec, TAG_BREAK);
