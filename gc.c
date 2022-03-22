@@ -1986,6 +1986,12 @@ heap_page_free(rb_objspace_t *objspace, struct heap_page *page)
     free(page);
 }
 
+static inline bool
+heap_page_empty_p(struct heap_page *page)
+{
+    return page->free_slots == page->total_slots;
+}
+
 static void
 heap_pages_free_unused_pages(rb_objspace_t *objspace)
 {
@@ -2003,7 +2009,7 @@ heap_pages_free_unused_pages(rb_objspace_t *objspace)
         for (i = j = 1; j < heap_allocated_pages; i++) {
             struct heap_page *page = heap_pages_sorted[i];
 
-            if (page->flags.in_tomb && page->free_slots == page->total_slots) {
+            if (page->flags.in_tomb && heap_page_empty_p(page)) {
                 heap_unlink_page(objspace, SIZE_POOL_TOMB_HEAP(page->size_pool), page);
                 heap_page_free(objspace, page);
             }
@@ -5396,8 +5402,9 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
 }
 
 static inline void
-gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context *ctx)
+gc_sweep_page_slots(rb_objspace_t *objspace, rb_size_pool_t *size_pool, struct gc_sweep_context *ctx)
 {
+    rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
     struct heap_page *sweep_page = ctx->page;
 
     int i;
@@ -5457,6 +5464,10 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
 		   ctx->freed_slots, ctx->empty_slots, ctx->final_slots);
 
     sweep_page->free_slots += ctx->freed_slots + ctx->empty_slots;
+#if USE_RVARGC
+    size_pool->freed_slots += ctx->freed_slots;
+    size_pool->empty_slots += ctx->empty_slots;
+#endif
     objspace->profile.total_freed_objects += ctx->freed_slots;
 
     if (heap_pages_deferred_final && !finalizing) {
@@ -5479,6 +5490,41 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
 #endif
 
     gc_report(2, objspace, "page_sweep: end.\n");
+}
+
+static bool
+heap_page_moveable_to_tomb_p(rb_objspace_t *objspace, struct heap_page *page, int unlink_limit)
+{
+    return heap_page_empty_p(page) &&
+        heap_pages_freeable_pages > 0 &&
+        unlink_limit > 0;
+}
+
+static void
+gc_sweep_page(rb_objspace_t *objspace, rb_size_pool_t *size_pool, struct heap_page *sweep_page, int *unlink_limit, int *swept_slots, bool need_pool)
+{
+    rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
+    struct gc_sweep_context ctx = {
+        .page = sweep_page,
+        .final_slots = 0,
+        .freed_slots = 0,
+        .empty_slots = 0,
+    };
+    gc_sweep_page_slots(objspace, size_pool, &ctx);
+    heap->sweeping_page = ccan_list_next(&heap->pages, sweep_page, page_node);
+
+    if (!heap_page_moveable_to_tomb_p(objspace, sweep_page, (*unlink_limit)) &&
+            sweep_page->free_slots > 0) {
+#if GC_ENABLE_INCREMENTAL_MARK
+        if (!need_pool) {
+            heap_add_freepage(heap, sweep_page);
+            swept_slots += sweep_page->free_slots;
+        }
+#else
+        heap_add_freepage(heap, sweep_page);
+        break;
+#endif
+    }
 }
 
 #if !USE_RVARGC
@@ -5681,9 +5727,9 @@ gc_sweep_step(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
 {
     struct heap_page *sweep_page = heap->sweeping_page;
     int unlink_limit = GC_SWEEP_PAGES_FREEABLE_PER_STEP;
+    int swept_slots = 0;
 
 #if GC_ENABLE_INCREMENTAL_MARK
-    int swept_slots = 0;
 #if USE_RVARGC
     bool need_pool = TRUE;
 #else
@@ -5704,52 +5750,27 @@ gc_sweep_step(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
     do {
         RUBY_DEBUG_LOG("sweep_page:%p", (void *)sweep_page);
 
-        struct gc_sweep_context ctx = {
-            .page = sweep_page,
-            .final_slots = 0,
-            .freed_slots = 0,
-            .empty_slots = 0,
-        };
-        gc_sweep_page(objspace, heap, &ctx);
-        int free_slots = ctx.freed_slots + ctx.empty_slots;
+        gc_sweep_page(objspace, size_pool, sweep_page, &unlink_limit, &swept_slots, need_pool);
 
-        heap->sweeping_page = ccan_list_next(&heap->pages, sweep_page, page_node);
-
-	if (sweep_page->final_slots + free_slots == sweep_page->total_slots &&
-	    heap_pages_freeable_pages > 0 &&
-	    unlink_limit > 0) {
-	    heap_pages_freeable_pages--;
-	    unlink_limit--;
-	    /* there are no living objects -> move this page to tomb heap */
-	    heap_unlink_page(objspace, heap, sweep_page);
-	    heap_add_page(objspace, size_pool, SIZE_POOL_TOMB_HEAP(size_pool), sweep_page);
-	}
-	else if (free_slots > 0) {
-#if USE_RVARGC
-            size_pool->freed_slots += ctx.freed_slots;
-            size_pool->empty_slots += ctx.empty_slots;
-#endif
-
+        if (heap_page_moveable_to_tomb_p(objspace, sweep_page, unlink_limit)) {
+            heap_pages_freeable_pages--;
+            unlink_limit--;
+            /* there are no living objects -> move this page to tomb heap */
+            heap_unlink_page(objspace, heap, sweep_page);
+            heap_add_page(objspace, size_pool, SIZE_POOL_TOMB_HEAP(size_pool), sweep_page);
+        }
+        else if (sweep_page->free_slots > 0) {
 #if GC_ENABLE_INCREMENTAL_MARK
-	    if (need_pool) {
+            if (need_pool) {
                 heap_add_poolpage(objspace, heap, sweep_page);
                 need_pool = FALSE;
-	    }
-	    else {
-                heap_add_freepage(heap, sweep_page);
-                swept_slots += free_slots;
-                if (swept_slots > GC_INCREMENTAL_SWEEP_SLOT_COUNT) {
-                    break;
-                }
-	    }
-#else
-            heap_add_freepage(heap, sweep_page);
-            break;
+            }
 #endif
-	}
-	else {
-	    sweep_page->free_next = NULL;
-	}
+        }
+
+        if (swept_slots > GC_INCREMENTAL_SWEEP_SLOT_COUNT) {
+            break;
+        }
     } while ((sweep_page = heap->sweeping_page));
 
     if (!heap->sweeping_page) {
@@ -8143,7 +8164,7 @@ gc_compact_heap_cursors_met_p(rb_heap_t *heap)
 }
 
 static bool
-gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, VALUE src)
+gc_compact_move(rb_objspace_t *objspace, rb_size_pool_t *pool, rb_heap_t *heap, VALUE src)
 {
     GC_ASSERT(BUILTIN_TYPE(src) != T_MOVED);
     rb_heap_t *dheap = heap;
@@ -8152,18 +8173,10 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, VALUE src)
         return false;
     }
     while (!try_move(objspace, dheap, dheap->free_pages, src)) {
-        struct gc_sweep_context ctx = {
-            .page = dheap->sweeping_page,
-            .final_slots = 0,
-            .freed_slots = 0,
-            .empty_slots = 0,
-        };
-        gc_sweep_page(objspace, heap, &ctx);
-        if (dheap->sweeping_page->free_slots > 0) {
-            heap_add_freepage(dheap, dheap->sweeping_page);
-        };
+        int unlink_pages = GC_SWEEP_PAGES_FREEABLE_PER_STEP;
+        int swept_slots = 0;
+        gc_sweep_page(objspace, pool, dheap->sweeping_page, &unlink_pages, &swept_slots, FALSE);
 
-        dheap->sweeping_page = ccan_list_next(&dheap->pages, dheap->sweeping_page, page_node);
         if (gc_compact_heap_cursors_met_p(dheap)) {
             return false;
         }
@@ -8172,7 +8185,7 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, VALUE src)
 }
 
 static bool
-gc_compact_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bitset, struct heap_page *page) {
+gc_compact_plane(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap, uintptr_t p, bits_t bitset, struct heap_page *page) {
     short slot_size = page->slot_size;
     short slot_bits = slot_size / BASE_SLOT_SIZE;
     GC_ASSERT(slot_bits > 0);
@@ -8184,7 +8197,7 @@ gc_compact_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t b
         if (bitset & 1) {
             objspace->rcompactor.considered_count_table[BUILTIN_TYPE(vp)]++;
 
-            if (!gc_compact_move(objspace, heap, vp)) {
+            if (!gc_compact_move(objspace, size_pool, heap, vp)) {
                 //the cursors met. bubble up
                 return false;
             }
@@ -8213,7 +8226,7 @@ gc_compact_page(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *h
     bitset = (mark_bits[0] & ~pin_bits[0]);
     bitset >>= NUM_IN_PAGE(p);
     if (bitset) {
-        if (!gc_compact_plane(objspace, heap, (uintptr_t)p, bitset, page))
+        if (!gc_compact_plane(objspace, size_pool, heap, (uintptr_t)p, bitset, page))
             return false;
     }
     p += (BITS_BITLENGTH - NUM_IN_PAGE(p)) * BASE_SLOT_SIZE;
@@ -8221,7 +8234,7 @@ gc_compact_page(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *h
     for (int j = 1; j < HEAP_PAGE_BITMAP_LIMIT; j++) {
         bitset = (mark_bits[j] & ~pin_bits[j]);
         if (bitset) {
-            if (!gc_compact_plane(objspace, heap, (uintptr_t)p, bitset, page))
+            if (!gc_compact_plane(objspace, size_pool, heap, (uintptr_t)p, bitset, page))
                 return false;
         }
         p += BITS_BITLENGTH * BASE_SLOT_SIZE;
