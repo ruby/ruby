@@ -176,7 +176,7 @@ Guidelines:
 
 The general structure of the method documentation should be:
 
-* Calling sequence (for methods written in C).
+* Calling sequence.
 * Synopsis (short description).
 * Details and examples.
 * Argument description (if necessary).
@@ -184,11 +184,15 @@ The general structure of the method documentation should be:
 * Aliases.
 * Related methods (optional).
 
-=== Calling Sequence (for methods written in C)
+=== Calling Sequence
 
-For methods written in Ruby, \RDoc documents the calling sequence automatically.
+For a method written in Ruby, \RDoc can automatically generate the calling sequence;
+note, however, that the generated calling sequence does not include return types.
 
-For methods written in C, \RDoc cannot determine what arguments
+Therefore you may want to specify the calling sequence explicitly.
+If so, follow the guidelines below.
+
+For a method written in C, \RDoc cannot determine what arguments
 the method accepts, so those need to be documented using \RDoc directive
 {:call-seq:}[rdoc-ref:RDoc::Markup@Method+arguments].
 
@@ -227,12 +231,11 @@ behavior is different if the argument is omitted.
 
 Omit aliases from the call-seq, but mention them near the end (see below).
 
-
 A +call-seq+ block should have <tt>{|x| ... }</tt>, not <tt>{|x| block }</tt> or <tt>{|x| code }</tt>.
 
-A +call-seq+ output should:
+A +call-seq+ return type should:
 
-- Have +self+, not +receiver+ or +array+.
+- Be +self+ (not +receiver+) if +self+ is returned.
 - Begin with +new_+ if and only if the output object is a new instance
   of the receiver's class, to emphasize that the output object is not +self+.
 
