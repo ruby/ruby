@@ -5598,9 +5598,6 @@ opt_f_block_arg	: ',' f_block_arg
 			$$ = $2;
 		    }
 		| none
-		    {
-			$$ = Qnull;
-		    }
 		;
 
 singleton	: var_ref
