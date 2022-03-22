@@ -215,7 +215,7 @@ static inline long
 str_embed_capa(VALUE str)
 {
 #if USE_RVARGC
-    return rb_gc_obj_slot_size(str) - offsetof(struct RString, as.embed.ary);
+    return RSTRING(str)->as.embed.capa;
 #else
     return RSTRING_EMBED_LEN_MAX + 1;
 #endif
@@ -846,15 +846,36 @@ str_alloc(VALUE klass, size_t size)
     return (VALUE)str;
 }
 
+#if USE_RVARGC
+static inline void
+ensure_embed_capacity_for_growth(size_t *size, size_t *capa) {
+    // We must allocate at least sizeof(struct RString) bytes.
+    // Strings may grow.  Once exceeded capacity, it will become non-embedded,
+    // and it will need RString::as::heap.
+    //
+    // If we are sure the string is created frozen, we can omit this step.
+    if (*size < sizeof(struct RString)) {
+        *size = sizeof(struct RString);
+        *capa = sizeof(struct RString) - str_embed_size(0);
+    }
+}
+#endif
+
 static inline VALUE
 str_alloc_embed(VALUE klass, size_t capa)
 {
     size_t size = str_embed_size(capa);
-    assert(rb_gc_size_allocatable_p(size));
-#if !USE_RVARGC
+#if USE_RVARGC
+    ensure_embed_capacity_for_growth(&size, &capa);
+#else
     assert(size <= sizeof(struct RString));
 #endif
-    return str_alloc(klass, size);
+    assert(rb_gc_size_allocatable_p(size));
+    VALUE str = str_alloc(klass, size);
+#if USE_RVARGC
+    RSTRING(str)->as.embed.capa = capa;
+#endif
+    return str;
 }
 
 static inline VALUE
@@ -1694,11 +1715,17 @@ static inline VALUE
 ec_str_alloc_embed(struct rb_execution_context_struct *ec, VALUE klass, size_t capa)
 {
     size_t size = str_embed_size(capa);
-    assert(rb_gc_size_allocatable_p(size));
-#if !USE_RVARGC
+#if USE_RVARGC
+    ensure_embed_capacity_for_growth(&size, &capa);
+#else
     assert(size <= sizeof(struct RString));
 #endif
-    return ec_str_alloc(ec, klass, size);
+    assert(rb_gc_size_allocatable_p(size));
+    VALUE str = ec_str_alloc(ec, klass, size);
+#if USE_RVARGC
+    RSTRING(str)->as.embed.capa = capa;
+#endif
+    return str;
 }
 
 static inline VALUE
