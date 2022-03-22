@@ -1270,7 +1270,14 @@ class Gem::Specification < Gem::BasicSpecification
   def self._load(str)
     Gem.load_yaml
 
-    array = Marshal.load str
+    array = begin
+      Marshal.load str
+    rescue ArgumentError => e
+      raise unless e.message.include?("YAML")
+
+      Object.const_set "YAML", Psych
+      Marshal.load str
+    end
 
     spec = Gem::Specification.new
     spec.instance_variable_set :@specification_version, array[1]
