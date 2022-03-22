@@ -1010,8 +1010,16 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
     VALUE init, op;
     rb_block_call_func *iter = inject_i;
     ID id;
+    int num_args;
 
-    switch (rb_scan_args(argc, argv, "02", &init, &op)) {
+    if (rb_block_given_p()) {
+        num_args = rb_scan_args(argc, argv, "02", &init, &op);
+    }
+    else {
+        num_args = rb_scan_args(argc, argv, "11", &init, &op);
+    }
+
+    switch (num_args) {
       case 0:
 	init = Qundef;
 	break;
