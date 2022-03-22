@@ -1,5 +1,6 @@
-Calls the given block with each successive integer codepoint (integer ordinal)
-from +self+;  returns +self+:
+Calls the given block with each successive codepoint from +self+;
+each codepoint is the integer value for a character;
+returns +self+:
 
   'hello'.each_codepoint {|codepoint| print codepoint, ' ' }
   print "\n"

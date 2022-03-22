@@ -1,5 +1,5 @@
-Returns an array of the codepoints (integer ordinals) in +self+;
-see {}[]:
+Returns an array of the codepoints in +self+;
+each codepoint is the integer value for a character:
 
   'hello'.codepoints     # => [104, 101, 108, 108, 111]
   'тест'.codepoints      # => [1090, 1077, 1089, 1090]
