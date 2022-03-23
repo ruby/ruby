@@ -79,6 +79,34 @@ iso2022jp_init(void *statep)
     return 0;
 }
 
+static unsigned char *
+iso2022jp_put_state(unsigned char *sp, unsigned char *o, int oldstate, int newstate)
+{
+    if (oldstate != newstate) {
+        *o++ = 0x1b;
+        switch (newstate) {
+          case G0_ASCII:
+            *o++ = '(';
+            *o++ = 'B';
+            break;
+          case G0_JISX0201_KATAKANA:
+            *o++ = '(';
+            *o++ = 'I';
+            break;
+          case G0_JISX0208_1978:
+            *o++ = '$';
+            *o++ = '@';
+            break;
+          default:
+            *o++ = '$';
+            *o++ = 'B';
+            break;
+        }
+        *sp = newstate;
+    }
+    return o;
+}
+
 static VALUE
 fun_si_iso2022jp_decoder(void *statep, const unsigned char *s, size_t l)
 {
@@ -154,24 +182,7 @@ fun_so_iso2022jp_encoder(void *statep, const unsigned char *s, size_t l, unsigne
     else
         newstate = G0_JISX0208_1983;
 
-    if (*sp != newstate) {
-        if (newstate == G0_ASCII) {
-            *o++ = 0x1b;
-            *o++ = '(';
-            *o++ = 'B';
-        }
-        else if (newstate == G0_JISX0208_1978) {
-            *o++ = 0x1b;
-            *o++ = '$';
-            *o++ = '@';
-        }
-        else {
-            *o++ = 0x1b;
-            *o++ = '$';
-            *o++ = 'B';
-        }
-        *sp = newstate;
-    }
+    o = iso2022jp_put_state(sp, o, *sp, newstate);
 
     if (l == 1) {
         *o++ = s[0] & 0x7f;
@@ -202,10 +213,7 @@ finish_iso2022jp_encoder(void *statep, unsigned char *o, size_t osize)
     if (*sp == G0_ASCII)
         return 0;
 
-    *o++ = 0x1b;
-    *o++ = '(';
-    *o++ = 'B';
-    *sp = G0_ASCII;
+    o = iso2022jp_put_state(sp, o, *sp, G0_ASCII);
 
     return o - output0;
 }
@@ -399,24 +407,7 @@ fun_so_cp5022x_encoder(void *statep, const unsigned char *s, size_t l,
     else
         newstate = G0_JISX0208_1983;
 
-    if (*sp != newstate) {
-        if (newstate == G0_ASCII) {
-            *o++ = 0x1b;
-            *o++ = '(';
-            *o++ = 'B';
-        }
-        else if (newstate == G0_JISX0201_KATAKANA) {
-            *o++ = 0x1b;
-            *o++ = '(';
-            *o++ = 'I';
-        }
-        else {
-            *o++ = 0x1b;
-            *o++ = '$';
-            *o++ = 'B';
-        }
-        *sp = newstate;
-    }
+    o = iso2022jp_put_state(sp, o, sp[0], newstate);
 
     if (l == 1) {
         *o++ = s[0] & 0x7f;
@@ -463,11 +454,7 @@ fun_so_cp50220_encoder(void *statep, const unsigned char *s, size_t l,
     if (sp[0] == G0_JISX0201_KATAKANA) {
         int c = sp[2] & 0x7F;
         const char *p = tbl0208 + (c - 0x21) * 2;
-        if (sp[1] != G0_JISX0208_1983) {
-            *o++ = 0x1b;
-            *o++ = '$';
-            *o++ = 'B';
-        }
+        o = iso2022jp_put_state(sp, o, sp[1], G0_JISX0208_1983);
         sp[0] = G0_JISX0208_1983;
         *o++ = *p++;
         if (l == 2 && s[0] == 0x8E) {
@@ -488,12 +475,7 @@ fun_so_cp50220_encoder(void *statep, const unsigned char *s, size_t l,
         if ((0xA1 <= s[1] && s[1] <= 0xB5) ||
             (0xC5 <= s[1] && s[1] <= 0xC9) ||
             (0xCF <= s[1] && s[1] <= 0xDF)) {
-            if (*sp != G0_JISX0208_1983) {
-                *o++ = 0x1b;
-                *o++ = '$';
-                *o++ = 'B';
-                *sp = G0_JISX0208_1983;
-            }
+            o = iso2022jp_put_state(sp, o, *sp, G0_JISX0208_1983);
             *o++ = *p++;
             *o++ = *p;
             return o - output0;
@@ -521,20 +503,13 @@ finish_cp50220_encoder(void *statep, unsigned char *o, size_t osize)
     if (sp[0] == G0_JISX0201_KATAKANA) {
         int c = sp[2] & 0x7F;
         const char *p = tbl0208 + (c - 0x21) * 2;
-        if (sp[1] != G0_JISX0208_1983) {
-            *o++ = 0x1b;
-            *o++ = '$';
-            *o++ = 'B';
-        }
+        o = iso2022jp_put_state(sp, o, sp[1], G0_JISX0208_1983);
         sp[0] = G0_JISX0208_1983;
         *o++ = *p++;
         *o++ = *p;
     }
 
-    *o++ = 0x1b;
-    *o++ = '(';
-    *o++ = 'B';
-    *sp = G0_ASCII;
+    o = iso2022jp_put_state(sp, o, sp[0], G0_ASCII);
 
     return o - output0;
 }
