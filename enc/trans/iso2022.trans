@@ -434,7 +434,9 @@ rb_cp50221_encoder = {
     iso2022jp_encoder_reset_sequence_size, finish_iso2022jp_encoder
 };
 
-static const char *tbl0208 =
+/* JIS0201 to JIS0208 conversion table */
+enum {tbl0208_num = 0xDF - 0xA1 + 1};
+static const char tbl0208[2 * tbl0208_num] =
     "\x21\x23\x21\x56\x21\x57\x21\x22\x21\x26\x25\x72\x25\x21\x25\x23" \
     "\x25\x25\x25\x27\x25\x29\x25\x63\x25\x65\x25\x67\x25\x43\x21\x3C" \
     "\x25\x22\x25\x24\x25\x26\x25\x28\x25\x2A\x25\x2B\x25\x2D\x25\x2F" \
