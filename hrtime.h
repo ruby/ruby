@@ -165,4 +165,52 @@ rb_hrtime2timeval(struct timeval *tv, const rb_hrtime_t *hrt)
     }
     return 0;
 }
+
+#include "internal/warnings.h"
+#include "internal/time.h"
+
+/*
+ * Back when we used "struct timeval", not all platforms implemented
+ * tv_sec as time_t.  Nowadays we use "struct timespec" and tv_sec
+ * seems to be implemented more consistently across platforms.
+ * At least other parts of our code hasn't had to deal with non-time_t
+ * tv_sec in timespec...
+ */
+#define TIMESPEC_SEC_MAX TIMET_MAX
+#define TIMESPEC_SEC_MIN TIMET_MIN
+
+COMPILER_WARNING_PUSH
+#if __has_warning("-Wimplicit-int-float-conversion")
+COMPILER_WARNING_IGNORED(-Wimplicit-int-float-conversion)
+#elif defined(_MSC_VER)
+/* C4305: 'initializing': truncation from '__int64' to 'const double' */
+COMPILER_WARNING_IGNORED(4305)
+#endif
+static const double TIMESPEC_SEC_MAX_as_double = TIMESPEC_SEC_MAX;
+COMPILER_WARNING_POP
+
+static inline rb_hrtime_t *
+double2hrtime(rb_hrtime_t *hrt, double d)
+{
+    /* assume timespec.tv_sec has same signedness as time_t */
+    const double TIMESPEC_SEC_MAX_PLUS_ONE = 2.0 * (TIMESPEC_SEC_MAX_as_double / 2.0 + 1.0);
+
+    if (TIMESPEC_SEC_MAX_PLUS_ONE <= d) {
+        return NULL;
+    }
+    else if (d <= 0) {
+        *hrt = 0;
+    }
+    else {
+        *hrt = (rb_hrtime_t)(d * (double)RB_HRTIME_PER_SEC);
+    }
+    return hrt;
+}
+
+static inline double
+hrtime2double(rb_hrtime_t hrt)
+{
+    return (double)hrt / (double)RB_HRTIME_PER_SEC;
+}
+
 #endif /* RB_HRTIME_H */
