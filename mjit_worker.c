@@ -170,7 +170,7 @@ struct rb_mjit_unit {
     struct rb_mjit_compile_info compile_info;
     // captured CC values, they should be marked with iseq.
     const struct rb_callcache **cc_entries;
-    unsigned int cc_entries_size; // iseq->body->ci_size + ones of inlined iseqs
+    unsigned int cc_entries_size; // ISEQ_BODY(iseq)->ci_size + ones of inlined iseqs
 };
 
 // Linked list of struct rb_mjit_unit.
@@ -424,8 +424,8 @@ static void
 free_unit(struct rb_mjit_unit *unit)
 {
     if (unit->iseq) { // ISeq is not GCed
-        unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
-        unit->iseq->body->jit_unit = NULL;
+        ISEQ_BODY(unit->iseq)->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
+        ISEQ_BODY(unit->iseq)->jit_unit = NULL;
     }
     if (unit->cc_entries) {
         void *entries = (void *)unit->cc_entries;
@@ -510,7 +510,7 @@ get_from_list(struct rb_mjit_unit_list *list)
             continue;
         }
 
-        if (best == NULL || best->iseq->body->total_calls < unit->iseq->body->total_calls) {
+        if (best == NULL || ISEQ_BODY(best->iseq)->total_calls < ISEQ_BODY(unit->iseq)->total_calls) {
             best = unit;
         }
     }
@@ -706,7 +706,7 @@ sprint_funcname(char *funcname, const struct rb_mjit_unit *unit)
         path = strstr(path, version) + strlen(version);
 
     // Annotate all-normalized method names
-    const char *method = RSTRING_PTR(iseq->body->location.label);
+    const char *method = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
     if (!strcmp(method, "[]")) method = "AREF";
     if (!strcmp(method, "[]=")) method = "ASET";
 
@@ -725,7 +725,7 @@ static const rb_iseq_t **compiling_iseqs = NULL;
 static bool
 set_compiling_iseqs(const rb_iseq_t *iseq)
 {
-    compiling_iseqs = calloc(iseq->body->iseq_size + 2, sizeof(rb_iseq_t *)); // 2: 1 (unit->iseq) + 1 (NULL end)
+    compiling_iseqs = calloc(ISEQ_BODY(iseq)->iseq_size + 2, sizeof(rb_iseq_t *)); // 2: 1 (unit->iseq) + 1 (NULL end)
     if (compiling_iseqs == NULL)
         return false;
 
@@ -733,10 +733,10 @@ set_compiling_iseqs(const rb_iseq_t *iseq)
     int i = 1;
 
     unsigned int pos = 0;
-    while (pos < iseq->body->iseq_size) {
-        int insn = rb_vm_insn_decode(iseq->body->iseq_encoded[pos]);
+    while (pos < ISEQ_BODY(iseq)->iseq_size) {
+        int insn = rb_vm_insn_decode(ISEQ_BODY(iseq)->iseq_encoded[pos]);
         if (insn == BIN(opt_send_without_block) || insn == BIN(opt_size)) {
-            CALL_DATA cd = (CALL_DATA)iseq->body->iseq_encoded[pos + 1];
+            CALL_DATA cd = (CALL_DATA)ISEQ_BODY(iseq)->iseq_encoded[pos + 1];
             extern const rb_iseq_t *rb_mjit_inlinable_iseq(const struct rb_callinfo *ci, const struct rb_callcache *cc);
             const rb_iseq_t *iseq = rb_mjit_inlinable_iseq(cd->ci, cd->cc);
             if (iseq != NULL) {
@@ -1012,11 +1012,11 @@ compile_compact_jit_code(char* c_file)
         sprint_funcname(funcname, child_unit);
 
         long iseq_lineno = 0;
-        if (FIXNUM_P(child_unit->iseq->body->location.first_lineno))
+        if (FIXNUM_P(ISEQ_BODY(child_unit->iseq)->location.first_lineno))
             // FIX2INT may fallback to rb_num2long(), which is a method call and dangerous in MJIT worker. So using only FIX2LONG.
-            iseq_lineno = FIX2LONG(child_unit->iseq->body->location.first_lineno);
+            iseq_lineno = FIX2LONG(ISEQ_BODY(child_unit->iseq)->location.first_lineno);
         const char *sep = "@";
-        const char *iseq_label = RSTRING_PTR(child_unit->iseq->body->location.label);
+        const char *iseq_label = RSTRING_PTR(ISEQ_BODY(child_unit->iseq)->location.label);
         const char *iseq_path = RSTRING_PTR(rb_iseq_path(child_unit->iseq));
         if (!iseq_label) iseq_label = sep = "";
         fprintf(f, "\n/* %s%s%s:%ld */\n", iseq_label, sep, iseq_path, iseq_lineno);
@@ -1092,7 +1092,7 @@ compact_all_jit_code(void)
 
             if (cur->iseq) { // Check whether GCed or not
                 // Usage of jit_code might be not in a critical section.
-                MJIT_ATOMIC_SET(cur->iseq->body->jit_func, (mjit_func_t)func);
+                MJIT_ATOMIC_SET(ISEQ_BODY(cur->iseq)->jit_func, (mjit_func_t)func);
             }
         }
         CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to read list");
@@ -1209,12 +1209,12 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 
     // To make MJIT worker thread-safe against GC.compact, copy ISeq values while `in_jit` is true.
     long iseq_lineno = 0;
-    if (FIXNUM_P(unit->iseq->body->location.first_lineno))
+    if (FIXNUM_P(ISEQ_BODY(unit->iseq)->location.first_lineno))
         // FIX2INT may fallback to rb_num2long(), which is a method call and dangerous in MJIT worker. So using only FIX2LONG.
-        iseq_lineno = FIX2LONG(unit->iseq->body->location.first_lineno);
-    char *iseq_label = alloca(RSTRING_LEN(unit->iseq->body->location.label) + 1);
+        iseq_lineno = FIX2LONG(ISEQ_BODY(unit->iseq)->location.first_lineno);
+    char *iseq_label = alloca(RSTRING_LEN(ISEQ_BODY(unit->iseq)->location.label) + 1);
     char *iseq_path  = alloca(RSTRING_LEN(rb_iseq_path(unit->iseq)) + 1);
-    strcpy(iseq_label, RSTRING_PTR(unit->iseq->body->location.label));
+    strcpy(iseq_label, RSTRING_PTR(ISEQ_BODY(unit->iseq)->location.label));
     strcpy(iseq_path,  RSTRING_PTR(rb_iseq_path(unit->iseq)));
 
     verbose(2, "start compilation: %s@%s:%ld -> %s", iseq_label, iseq_path, iseq_lineno, c_file);
@@ -1317,8 +1317,8 @@ mark_ec_units(rb_execution_context_t *ec)
         const rb_iseq_t *iseq;
         if (cfp->pc && (iseq = cfp->iseq) != NULL
             && imemo_type((VALUE) iseq) == imemo_iseq
-            && (iseq->body->jit_unit) != NULL) {
-            iseq->body->jit_unit->used_code_p = true;
+            && (ISEQ_BODY(iseq)->jit_unit) != NULL) {
+            ISEQ_BODY(iseq)->jit_unit->used_code_p = true;
         }
 
         if (cfp == ec->cfp)
@@ -1373,9 +1373,9 @@ unload_units(void)
         // Calculate the next max total_calls in unit_queue
         long unsigned max_queue_calls = 0;
         list_for_each(&unit_queue.head, unit, unode) {
-            if (unit->iseq != NULL && max_queue_calls < unit->iseq->body->total_calls
-                    && unit->iseq->body->total_calls < prev_queue_calls) {
-                max_queue_calls = unit->iseq->body->total_calls;
+            if (unit->iseq != NULL && max_queue_calls < ISEQ_BODY(unit->iseq)->total_calls
+                    && ISEQ_BODY(unit->iseq)->total_calls < prev_queue_calls) {
+                max_queue_calls = ISEQ_BODY(unit->iseq)->total_calls;
             }
         }
         prev_queue_calls = max_queue_calls;
@@ -1385,9 +1385,9 @@ unload_units(void)
             if (unit->used_code_p) // We can't unload code on stack.
                 continue;
 
-            if (max_queue_calls > unit->iseq->body->total_calls) {
+            if (max_queue_calls > ISEQ_BODY(unit->iseq)->total_calls) {
                 verbose(2, "Unloading unit %d (calls=%lu, threshold=%lu)",
-                        unit->id, unit->iseq->body->total_calls, max_queue_calls);
+                        unit->id, ISEQ_BODY(unit->iseq)->total_calls, max_queue_calls);
                 assert(unit->handle != NULL);
                 remove_from_list(unit, &active_units);
                 free_unit(unit);
@@ -1455,7 +1455,7 @@ mjit_worker(void)
                         remove_from_list(unit, &active_units);
                         add_to_list(unit, &stale_units);
                         // Lazily put it to unit_queue as well to avoid race conditions on jit_unit with mjit_compile.
-                        mjit_add_iseq_to_process(unit->iseq, &unit->iseq->body->jit_unit->compile_info, true);
+                        mjit_add_iseq_to_process(unit->iseq, &ISEQ_BODY(unit->iseq)->jit_unit->compile_info, true);
                     }
                 }
             }
@@ -1499,7 +1499,7 @@ mjit_worker(void)
                     add_to_list(unit, &active_units);
                 }
                 // Usage of jit_code might be not in a critical section.
-                MJIT_ATOMIC_SET(unit->iseq->body->jit_func, func);
+                MJIT_ATOMIC_SET(ISEQ_BODY(unit->iseq)->jit_func, func);
             }
             else {
                 free_unit(unit);

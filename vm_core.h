@@ -522,6 +522,8 @@ struct rb_iseq_struct {
     } aux;
 };
 
+#define ISEQ_BODY(iseq) ((iseq)->body)
+
 #ifndef USE_LAZY_LOAD
 #define USE_LAZY_LOAD 0
 #endif
@@ -534,7 +536,7 @@ static inline const rb_iseq_t *
 rb_iseq_check(const rb_iseq_t *iseq)
 {
 #if USE_LAZY_LOAD
-    if (iseq->body == NULL) {
+    if (ISEQ_BODY(iseq) == NULL) {
 	rb_iseq_complete((rb_iseq_t *)iseq);
     }
 #endif

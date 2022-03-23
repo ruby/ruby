@@ -13372,11 +13372,11 @@ rb_method_type_name(rb_method_type_t type)
 static void
 rb_raw_iseq_info(char *buff, const int buff_size, const rb_iseq_t *iseq)
 {
-    if (buff_size > 0 && iseq->body && iseq->body->location.label && !RB_TYPE_P(iseq->body->location.pathobj, T_MOVED)) {
+    if (buff_size > 0 && ISEQ_BODY(iseq) && ISEQ_BODY(iseq)->location.label && !RB_TYPE_P(ISEQ_BODY(iseq)->location.pathobj, T_MOVED)) {
 	VALUE path = rb_iseq_path(iseq);
-	VALUE n = iseq->body->location.first_lineno;
+        VALUE n = ISEQ_BODY(iseq)->location.first_lineno;
         snprintf(buff, buff_size, " %s@%s:%d",
-		 RSTRING_PTR(iseq->body->location.label),
+                 RSTRING_PTR(ISEQ_BODY(iseq)->location.label),
 		 RSTRING_PTR(path),
 		 n ? FIX2INT(n) : 0 );
     }
