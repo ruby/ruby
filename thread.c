@@ -5603,7 +5603,7 @@ update_line_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
 	    VALUE num;
             void rb_iseq_clear_event_flags(const rb_iseq_t *iseq, size_t pos, rb_event_flag_t reset);
             if (GET_VM()->coverage_mode & COVERAGE_TARGET_ONESHOT_LINES) {
-                rb_iseq_clear_event_flags(cfp->iseq, cfp->pc - cfp->iseq->body->iseq_encoded - 1, RUBY_EVENT_COVERAGE_LINE);
+                rb_iseq_clear_event_flags(cfp->iseq, cfp->pc - ISEQ_BODY(cfp->iseq)->iseq_encoded - 1, RUBY_EVENT_COVERAGE_LINE);
                 rb_ary_push(lines, LONG2FIX(line + 1));
                 return;
             }
@@ -5628,7 +5628,7 @@ update_branch_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
     if (RB_TYPE_P(coverage, T_ARRAY) && !RBASIC_CLASS(coverage)) {
 	VALUE branches = RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES);
 	if (branches) {
-            long pc = cfp->pc - cfp->iseq->body->iseq_encoded - 1;
+            long pc = cfp->pc - ISEQ_BODY(cfp->iseq)->iseq_encoded - 1;
             long idx = FIX2INT(RARRAY_AREF(ISEQ_PC2BRANCHINDEX(cfp->iseq), pc)), count;
 	    VALUE counters = RARRAY_AREF(branches, 1);
 	    VALUE num = RARRAY_AREF(counters, idx);
@@ -5651,7 +5651,7 @@ rb_resolve_me_location(const rb_method_entry_t *me, VALUE resolved_location[5])
     switch (me->def->type) {
       case VM_METHOD_TYPE_ISEQ: {
 	const rb_iseq_t *iseq = me->def->body.iseq.iseqptr;
-	rb_iseq_location_t *loc = &iseq->body->location;
+        rb_iseq_location_t *loc = &ISEQ_BODY(iseq)->location;
 	path = rb_iseq_path(iseq);
 	beg_pos_lineno = INT2FIX(loc->code_location.beg_pos.lineno);
 	beg_pos_column = INT2FIX(loc->code_location.beg_pos.column);
@@ -5665,7 +5665,7 @@ rb_resolve_me_location(const rb_method_entry_t *me, VALUE resolved_location[5])
 	    rb_iseq_location_t *loc;
 	    rb_iseq_check(iseq);
 	    path = rb_iseq_path(iseq);
-	    loc = &iseq->body->location;
+            loc = &ISEQ_BODY(iseq)->location;
 	    beg_pos_lineno = INT2FIX(loc->code_location.beg_pos.lineno);
 	    beg_pos_column = INT2FIX(loc->code_location.beg_pos.column);
 	    end_pos_lineno = INT2FIX(loc->code_location.end_pos.lineno);

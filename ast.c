@@ -215,14 +215,14 @@ ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body, VALUE keep_script
             iseq = rb_method_iseq(body);
         }
         if (iseq) {
-            node_id = iseq->body->location.node_id;
+            node_id = ISEQ_BODY(iseq)->location.node_id;
         }
     }
 
     if (!iseq) {
         return Qnil;
     }
-    lines = iseq->body->variable.script_lines;
+    lines = ISEQ_BODY(iseq)->variable.script_lines;
 
     VALUE path = rb_iseq_path(iseq);
     int e_option = RSTRING_LEN(path) == 2 && memcmp(RSTRING_PTR(path), "-e", 2) == 0;

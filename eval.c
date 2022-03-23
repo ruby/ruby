@@ -1816,10 +1816,10 @@ errinfo_place(const rb_execution_context_t *ec)
 
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
 	if (VM_FRAME_RUBYFRAME_P(cfp)) {
-	    if (cfp->iseq->body->type == ISEQ_TYPE_RESCUE) {
+            if (ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_RESCUE) {
 		return &cfp->ep[VM_ENV_INDEX_LAST_LVAR];
 	    }
-	    else if (cfp->iseq->body->type == ISEQ_TYPE_ENSURE &&
+            else if (ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_ENSURE &&
 		     !THROW_DATA_P(cfp->ep[VM_ENV_INDEX_LAST_LVAR]) &&
 		     !FIXNUM_P(cfp->ep[VM_ENV_INDEX_LAST_LVAR])) {
 		return &cfp->ep[VM_ENV_INDEX_LAST_LVAR];

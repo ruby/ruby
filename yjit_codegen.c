@@ -138,8 +138,8 @@ jit_peek_at_local(jitstate_t *jit, ctx_t *ctx, int n)
 {
     RUBY_ASSERT(jit_at_current_insn(jit));
 
-    int32_t local_table_size = jit->iseq->body->local_table_size;
-    RUBY_ASSERT(n < (int)jit->iseq->body->local_table_size);
+    int32_t local_table_size = ISEQ_BODY(jit->iseq)->local_table_size;
+    RUBY_ASSERT(n < (int)ISEQ_BODY(jit->iseq)->local_table_size);
 
     const VALUE *ep = jit->ec->cfp->ep;
     return ep[-VM_ENV_DATA_SIZE - local_table_size + n + 1];
@@ -271,7 +271,7 @@ verify_ctx(jitstate_t *jit, ctx_t *ctx)
         }
     }
 
-    int32_t local_table_size = jit->iseq->body->local_table_size;
+    int32_t local_table_size = ISEQ_BODY(jit->iseq)->local_table_size;
     for (int i = 0; i < local_table_size && i < MAX_TEMP_TYPES; i++) {
         val_type_t learned = ctx->local_types[i];
         VALUE val = jit_peek_at_local(jit, ctx, i);
@@ -459,7 +459,7 @@ yjit_pc_guard(codeblock_t *cb, const rb_iseq_t *iseq)
     RUBY_ASSERT(cb != NULL);
 
     mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, pc));
-    mov(cb, REG1, const_ptr_opnd(iseq->body->iseq_encoded));
+    mov(cb, REG1, const_ptr_opnd(ISEQ_BODY(iseq)->iseq_encoded));
     xor(cb, REG0, REG1);
 
     // xor should impact ZF, so we can jz here
@@ -584,7 +584,7 @@ yjit_entry_prologue(codeblock_t *cb, const rb_iseq_t *iseq)
     // has optional parameters, we'll add a runtime check that the PC we've
     // compiled for is the same PC that the interpreter wants us to run with.
     // If they don't match, then we'll take a side exit.
-    if (iseq->body->param.flags.has_opt) {
+    if (ISEQ_BODY(iseq)->param.flags.has_opt) {
         yjit_pc_guard(cb, iseq);
     }
 
@@ -663,7 +663,7 @@ gen_single_block(blockid_t blockid, const ctx_t *start_ctx, rb_execution_context
     RUBY_ASSERT(!(blockid.idx == 0 && start_ctx->stack_size > 0));
 
     const rb_iseq_t *iseq = block->blockid.iseq;
-    const unsigned int iseq_size = iseq->body->iseq_size;
+    const unsigned int iseq_size = ISEQ_BODY(iseq)->iseq_size;
     uint32_t insn_idx = block->blockid.idx;
     const uint32_t starting_insn_idx = insn_idx;
 
@@ -1330,7 +1330,7 @@ slot_to_local_idx(const rb_iseq_t *iseq, int32_t slot_idx)
     // See usages of local_var_name() from iseq.c for similar calculation.
 
     // FIXME: unsigned to signed cast below can truncate
-    int32_t local_table_size = iseq->body->local_table_size;
+    int32_t local_table_size = ISEQ_BODY(iseq)->local_table_size;
     int32_t op = slot_idx - VM_ENV_DATA_SIZE;
     int32_t local_idx = local_table_size - op - 1;
     RUBY_ASSERT(local_idx >= 0 && local_idx < local_table_size);
@@ -1446,7 +1446,7 @@ gen_checkkeyword(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
     // When a keyword is unspecified past index 32, a hash will be used
     // instead. This can only happen in iseqs taking more than 32 keywords.
-    if (jit->iseq->body->param.keyword->num >= 32) {
+    if (ISEQ_BODY(jit->iseq)->param.keyword->num >= 32) {
         return YJIT_CANT_COMPILE;
     }
 
@@ -3514,10 +3514,10 @@ rb_leaf_invokebuiltin_iseq_p(const rb_iseq_t *iseq)
     unsigned int invokebuiltin_len = insn_len(BIN(opt_invokebuiltin_delegate_leave));
     unsigned int leave_len = insn_len(BIN(leave));
 
-    return (iseq->body->iseq_size == (invokebuiltin_len + leave_len) &&
-        rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[0]) == BIN(opt_invokebuiltin_delegate_leave) &&
-        rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[invokebuiltin_len]) == BIN(leave) &&
-        iseq->body->builtin_inline_p
+    return (ISEQ_BODY(iseq)->iseq_size == (invokebuiltin_len + leave_len) &&
+        rb_vm_insn_addr2opcode((void *)ISEQ_BODY(iseq)->iseq_encoded[0]) == BIN(opt_invokebuiltin_delegate_leave) &&
+        rb_vm_insn_addr2opcode((void *)ISEQ_BODY(iseq)->iseq_encoded[invokebuiltin_len]) == BIN(leave) &&
+        ISEQ_BODY(iseq)->builtin_inline_p
     );
  }
 
@@ -3527,7 +3527,7 @@ rb_leaf_builtin_function(const rb_iseq_t *iseq)
 {
     if (!rb_leaf_invokebuiltin_iseq_p(iseq))
         return NULL;
-    return (const struct rb_builtin_function *)iseq->body->iseq_encoded[1];
+    return (const struct rb_builtin_function *)ISEQ_BODY(iseq)->iseq_encoded[1];
 }
 
 static codegen_status_t
@@ -3540,7 +3540,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     // specified at the call site. We need to keep track of the fact that this
     // value is present on the stack in order to properly set up the callee's
     // stack pointer.
-    const bool doing_kw_call = iseq->body->param.flags.has_kw;
+    const bool doing_kw_call = ISEQ_BODY(iseq)->param.flags.has_kw;
     const bool supplying_kws = vm_ci_flag(ci) & VM_CALL_KWARG;
 
     if (vm_ci_flag(ci) & VM_CALL_TAILCALL) {
@@ -3551,9 +3551,9 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
 
     // No support for callees with these parameters yet as they require allocation
     // or complex handling.
-    if (iseq->body->param.flags.has_rest ||
-        iseq->body->param.flags.has_post ||
-        iseq->body->param.flags.has_kwrest) {
+    if (ISEQ_BODY(iseq)->param.flags.has_rest ||
+        ISEQ_BODY(iseq)->param.flags.has_post ||
+        ISEQ_BODY(iseq)->param.flags.has_kwrest) {
         GEN_COUNTER_INC(cb, send_iseq_complex_callee);
         return YJIT_CANT_COMPILE;
     }
@@ -3561,24 +3561,24 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     // If we have keyword arguments being passed to a callee that only takes
     // positionals, then we need to allocate a hash. For now we're going to
     // call that too complex and bail.
-    if (supplying_kws && !iseq->body->param.flags.has_kw) {
+    if (supplying_kws && !ISEQ_BODY(iseq)->param.flags.has_kw) {
         GEN_COUNTER_INC(cb, send_iseq_complex_callee);
         return YJIT_CANT_COMPILE;
     }
 
     // If we have a method accepting no kwargs (**nil), exit if we have passed
     // it any kwargs.
-    if (supplying_kws && iseq->body->param.flags.accepts_no_kwarg) {
+    if (supplying_kws && ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg) {
         GEN_COUNTER_INC(cb, send_iseq_complex_callee);
         return YJIT_CANT_COMPILE;
     }
 
     // For computing number of locals to setup for the callee
-    int num_params = iseq->body->param.size;
+    int num_params = ISEQ_BODY(iseq)->param.size;
 
     // Block parameter handling. This mirrors setup_parameters_complex().
-    if (iseq->body->param.flags.has_block) {
-        if (iseq->body->local_iseq == iseq) {
+    if (ISEQ_BODY(iseq)->param.flags.has_block) {
+        if (ISEQ_BODY(iseq)->local_iseq == iseq) {
             // Block argument is passed through EP and not setup as a local in
             // the callee.
             num_params--;
@@ -3594,7 +3594,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
 
     uint32_t start_pc_offset = 0;
 
-    const int required_num = iseq->body->param.lead_num;
+    const int required_num = ISEQ_BODY(iseq)->param.lead_num;
 
     // This struct represents the metadata about the caller-specified
     // keyword arguments.
@@ -3603,7 +3603,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
 
     // Arity handling and optional parameter setup
     const int opts_filled = argc - required_num - kw_arg_num;
-    const int opt_num = iseq->body->param.opt_num;
+    const int opt_num = ISEQ_BODY(iseq)->param.opt_num;
     const int opts_missing = opt_num - opts_filled;
 
     if (opts_filled < 0 || opts_filled > opt_num) {
@@ -3621,7 +3621,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
 
     if (opt_num > 0) {
         num_params -= opt_num - opts_filled;
-        start_pc_offset = (uint32_t)iseq->body->param.opt_table[opts_filled];
+        start_pc_offset = (uint32_t)ISEQ_BODY(iseq)->param.opt_table[opts_filled];
     }
 
     if (doing_kw_call) {
@@ -3630,7 +3630,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
 
         // This struct represents the metadata about the callee-specified
         // keyword parameters.
-        const struct rb_iseq_param_keyword *keyword = iseq->body->param.keyword;
+        const struct rb_iseq_param_keyword *keyword = ISEQ_BODY(iseq)->param.keyword;
 
         int required_kwargs_filled = 0;
 
@@ -3692,7 +3692,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     }
 
     // Number of locals that are not parameters
-    const int num_locals = iseq->body->local_table_size - num_params;
+    const int num_locals = ISEQ_BODY(iseq)->local_table_size - num_params;
 
     // Create a side-exit to fall back to the interpreter
     uint8_t *side_exit = yjit_side_exit(jit, ctx);
@@ -3731,7 +3731,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     // Note that vm_push_frame checks it against a decremented cfp, hence the multiply by 2.
     // #define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin)
     ADD_COMMENT(cb, "stack overflow check");
-    lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * (num_locals + iseq->body->stack_max) + 2 * sizeof(rb_control_frame_t)));
+    lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * (num_locals + ISEQ_BODY(iseq)->stack_max) + 2 * sizeof(rb_control_frame_t)));
     cmp(cb, REG_CFP, REG0);
     jle_ptr(cb, COUNTED_EXIT(jit, side_exit, send_se_cf_overflow));
 
@@ -3754,7 +3754,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
 
         // This struct represents the metadata about the callee-specified
         // keyword parameters.
-        const struct rb_iseq_param_keyword *const keyword = iseq->body->param.keyword;
+        const struct rb_iseq_param_keyword *const keyword = ISEQ_BODY(iseq)->param.keyword;
 
         ADD_COMMENT(cb, "keyword args");
 
@@ -4864,7 +4864,7 @@ gen_opt_invokebuiltin_delegate(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 
     // Copy arguments from locals
     for (int32_t i = 0; i < bf->argc; i++) {
-        const int32_t offs = start_index + i - jit->iseq->body->local_table_size - VM_ENV_DATA_SIZE + 1;
+        const int32_t offs = start_index + i - ISEQ_BODY(jit->iseq)->local_table_size - VM_ENV_DATA_SIZE + 1;
         x86opnd_t local_opnd = mem_opnd(64, REG0, offs * SIZEOF_VALUE);
         x86opnd_t c_arg_reg = C_ARG_REGS[i + 2];
         mov(cb, c_arg_reg, local_opnd);
@@ -4957,7 +4957,7 @@ tracing_invalidate_all_i(void *vstart, void *vend, size_t stride, void *data)
 static void
 invalidate_all_blocks_for_tracing(const rb_iseq_t *iseq)
 {
-    struct rb_iseq_constant_body *body = iseq->body;
+    struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
     if (!body) return; // iseq yet to be initialized
 
     ASSERT_vm_locking();

@@ -53,8 +53,8 @@ static VALUE *
 yjit_iseq_pc_at_idx(const rb_iseq_t *iseq, uint32_t insn_idx)
 {
     RUBY_ASSERT(iseq != NULL);
-    RUBY_ASSERT(insn_idx < iseq->body->iseq_size);
-    VALUE *encoded = iseq->body->iseq_encoded;
+    RUBY_ASSERT(insn_idx < ISEQ_BODY(iseq)->iseq_size);
+    VALUE *encoded = ISEQ_BODY(iseq)->iseq_encoded;
     VALUE *pc = &encoded[insn_idx];
     return pc;
 }
@@ -484,10 +484,10 @@ rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec)
     uint8_t *code_ptr = gen_entry_point(iseq, 0, ec);
 
     if (code_ptr) {
-        iseq->body->jit_func = (yjit_func_t)code_ptr;
+        ISEQ_BODY(iseq)->jit_func = (yjit_func_t)code_ptr;
     }
     else {
-        iseq->body->jit_func = 0;
+        ISEQ_BODY(iseq)->jit_func = 0;
         success = false;
     }
 
@@ -514,8 +514,8 @@ yjit_blocks_for(VALUE mod, VALUE rb_iseq)
     const rb_iseq_t *iseq = rb_iseqw_to_iseq(rb_iseq);
 
     VALUE all_versions = rb_ary_new();
-    rb_darray_for(iseq->body->yjit_blocks, version_array_idx) {
-        rb_yjit_block_array_t versions = rb_darray_get(iseq->body->yjit_blocks, version_array_idx);
+    rb_darray_for(ISEQ_BODY(iseq)->yjit_blocks, version_array_idx) {
+        rb_yjit_block_array_t versions = rb_darray_get(ISEQ_BODY(iseq)->yjit_blocks, version_array_idx);
 
         rb_darray_for(versions, block_idx) {
             block_t *block = rb_darray_get(versions, block_idx);
@@ -617,7 +617,7 @@ rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic)
     RB_VM_LOCK_ENTER();
     rb_vm_barrier(); // Stop other ractors since we are going to patch machine code.
     {
-        const struct rb_iseq_constant_body *const body = iseq->body;
+        const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
         VALUE *code = body->iseq_encoded;
         const unsigned get_insn_idx = ic->get_insn_idx;
 
