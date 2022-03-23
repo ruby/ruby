@@ -6682,7 +6682,10 @@ parse_subexp(Node** top, OnigToken* tok, int term,
     headp = &(NCDR(*top));
     while (r == TK_ALT) {
       r = fetch_token(tok, src, end, env);
-      if (r < 0) return r;
+      if (r < 0) {
+	onig_node_free(node);
+	return r;
+      }
       r = parse_branch(&node, tok, term, src, end, env);
       if (r < 0) {
 	onig_node_free(node);
