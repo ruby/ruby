@@ -886,6 +886,8 @@ ractor_receive_if(rb_execution_context_t *ec, VALUE crv, VALUE b)
             if (result != Qundef) return result;
             index++;
         }
+
+        RUBY_VM_CHECK_INTS(ec);
     }
 }
 
