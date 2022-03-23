@@ -1124,7 +1124,7 @@ gen_expandarray(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 
     // Load the address of the embedded array into REG1.
     // (struct RArray *)(obj)->as.ary
-    lea(cb, REG1, member_opnd(REG0, struct RArray, as.ary));
+    lea(cb, REG1, member_opnd(REG0, struct RArray, as.embed.ary));
 
     // Conditionally load the address of the heap array into REG1.
     // (struct RArray *)(obj)->as.heap.ptr

@@ -75,7 +75,7 @@ should_not_be_shared_and_embedded(VALUE ary)
 #define ARY_HEAP_CAPA(a) (assert(!ARY_EMBED_P(a)), assert(!ARY_SHARED_ROOT_P(a)), \
                           RARRAY(a)->as.heap.aux.capa)
 
-#define ARY_EMBED_PTR(a) (assert(ARY_EMBED_P(a)), RARRAY(a)->as.ary)
+#define ARY_EMBED_PTR(a) (assert(ARY_EMBED_P(a)), RARRAY(a)->as.embed.ary)
 #define ARY_EMBED_LEN(a) \
     (assert(ARY_EMBED_P(a)), \
      (long)((RBASIC(a)->flags >> RARRAY_EMBED_LEN_SHIFT) & \
@@ -188,9 +188,7 @@ static long
 ary_embed_capa(VALUE ary)
 {
 #if USE_RVARGC
-    size_t size = rb_gc_obj_slot_size(ary) - offsetof(struct RArray, as.ary);
-    assert(size % sizeof(VALUE) == 0);
-    return size / sizeof(VALUE);
+    return RARRAY(ary)->as.embed.capa;
 #else
     return RARRAY_EMBED_LEN_MAX;
 #endif
@@ -199,7 +197,7 @@ ary_embed_capa(VALUE ary)
 static size_t
 ary_embed_size(long capa)
 {
-    return offsetof(struct RArray, as.ary) + (sizeof(VALUE) * capa);
+    return offsetof(struct RArray, as.embed.ary) + (sizeof(VALUE) * capa);
 }
 
 static bool
@@ -498,7 +496,7 @@ ary_resize_capa(VALUE ary, long capacity)
             const VALUE *ptr = ARY_HEAP_PTR(ary);
 
             if (len > capacity) len = capacity;
-            MEMCPY((VALUE *)RARRAY(ary)->as.ary, ptr, VALUE, len);
+            MEMCPY((VALUE *)RARRAY(ary)->as.embed.ary, ptr, VALUE, len);
             ary_heap_free_ptr(ary, ptr, old_capa);
 
             FL_SET_EMBED(ary);
@@ -726,12 +724,29 @@ rb_ary_shared_with_p(VALUE ary1, VALUE ary2)
     return Qfalse;
 }
 
+#if USE_RVARGC
+static inline void
+ary_ensure_embed_capacity_for_growth(size_t *size, long *capa) {
+    // We must allocate at least sizeof(struct RArray) bytes.
+    // Arrays may grow.  Once exceeded capacity, it will become non-embedded,
+    // and it will need RArray::as::heap.
+    //
+    // If we are sure the array is created frozen, we can omit this step.
+    if (*size < sizeof(struct RArray)) {
+        *size = sizeof(struct RArray);
+        *capa = (sizeof(struct RArray) - ary_embed_size(0)) / sizeof(VALUE);
+    }
+}
+#endif
+
 static VALUE
 ary_alloc_embed(VALUE klass, long capa)
 {
     size_t size = ary_embed_size(capa);
     assert(rb_gc_size_allocatable_p(size));
-#if !USE_RVARGC
+#if USE_RVARGC
+    ary_ensure_embed_capacity_for_growth(&size, &capa);
+#else
     assert(size <= sizeof(struct RArray));
 #endif
     RVARGC_NEWOBJ_OF(ary, struct RArray, klass,
@@ -741,6 +756,11 @@ ary_alloc_embed(VALUE klass, long capa)
      *   FL_SET_EMBED((VALUE)ary);
      *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
      */
+#if USE_RVARGC
+    RUBY_ASSERT(capa <= SHRT_MAX);
+    RARRAY(ary)->as.embed.len = 0;
+    RARRAY(ary)->as.embed.capa = capa;
+#endif
     return (VALUE)ary;
 }
 
@@ -846,7 +866,9 @@ ec_ary_alloc_embed(rb_execution_context_t *ec, VALUE klass, long capa)
 {
     size_t size = ary_embed_size(capa);
     assert(rb_gc_size_allocatable_p(size));
-#if !USE_RVARGC
+#if USE_RVARGC
+    ary_ensure_embed_capacity_for_growth(&size, &capa);
+#else
     assert(size <= sizeof(struct RArray));
 #endif
     RB_RVARGC_EC_NEWOBJ_OF(ec, ary, struct RArray, klass,
@@ -856,6 +878,11 @@ ec_ary_alloc_embed(rb_execution_context_t *ec, VALUE klass, long capa)
      *   FL_SET_EMBED((VALUE)ary);
      *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
      */
+#if USE_RVARGC
+    RUBY_ASSERT(capa <= SHRT_MAX);
+    RARRAY(ary)->as.embed.len = 0;
+    RARRAY(ary)->as.embed.capa = capa;
+#endif
     return (VALUE)ary;
 }
 

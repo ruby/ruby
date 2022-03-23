@@ -848,7 +848,7 @@ str_alloc(VALUE klass, size_t size)
 
 #if USE_RVARGC
 static inline void
-ensure_embed_capacity_for_growth(size_t *size, size_t *capa) {
+str_ensure_embed_capacity_for_growth(size_t *size, size_t *capa) {
     // We must allocate at least sizeof(struct RString) bytes.
     // Strings may grow.  Once exceeded capacity, it will become non-embedded,
     // and it will need RString::as::heap.
@@ -866,7 +866,7 @@ str_alloc_embed(VALUE klass, size_t capa)
 {
     size_t size = str_embed_size(capa);
 #if USE_RVARGC
-    ensure_embed_capacity_for_growth(&size, &capa);
+    str_ensure_embed_capacity_for_growth(&size, &capa);
 #else
     assert(size <= sizeof(struct RString));
 #endif
@@ -1716,7 +1716,7 @@ ec_str_alloc_embed(struct rb_execution_context_struct *ec, VALUE klass, size_t c
 {
     size_t size = str_embed_size(capa);
 #if USE_RVARGC
-    ensure_embed_capacity_for_growth(&size, &capa);
+    str_ensure_embed_capacity_for_growth(&size, &capa);
 #else
     assert(size <= sizeof(struct RString));
 #endif

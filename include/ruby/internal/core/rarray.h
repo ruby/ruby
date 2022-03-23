@@ -223,21 +223,25 @@ struct RArray {
             const VALUE *ptr;
         } heap;
 
-        /**
-         * Embedded elements.  When an array is short enough, it uses this area
-         * to store its elements.  In this  case the length is encoded into the
-         * flags.
-         */
+        struct {
+            /**
+            * Embedded elements.  When an array is short enough, it uses this area
+            * to store its elements.  In this  case the length is encoded into the
+            * flags.
+            */
 #if USE_RVARGC
-        /* This is a length 1 array because:
-         *   1. GCC has a bug that does not optimize C flexible array members
-         *      (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=102452)
-         *   2. Zero length arrays are not supported by all compilers
-         */
-        const VALUE ary[1];
+            short len;
+            short capa;
+            /* This is a length 1 array because:
+            *   1. GCC has a bug that does not optimize C flexible array members
+            *      (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=102452)
+            *   2. Zero length arrays are not supported by all compilers
+            */
+            const VALUE ary[1];
 #else
-        const VALUE ary[RARRAY_EMBED_LEN_MAX];
+            const VALUE ary[RARRAY_EMBED_LEN_MAX];
 #endif
+        } embed;
     } as;
 };
 
@@ -388,7 +392,7 @@ rb_array_const_ptr_transient(VALUE a)
     RBIMPL_ASSERT_TYPE(a, RUBY_T_ARRAY);
 
     if (RB_FL_ANY_RAW(a, RARRAY_EMBED_FLAG)) {
-        return FIX_CONST_VALUE_PTR(RARRAY(a)->as.ary);
+        return FIX_CONST_VALUE_PTR(RARRAY(a)->as.embed.ary);
     }
     else {
         return FIX_CONST_VALUE_PTR(RARRAY(a)->as.heap.ptr);
