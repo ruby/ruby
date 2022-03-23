@@ -3448,6 +3448,70 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
     return LONG2FIX(n);
 }
 
+static VALUE
+io_wait_event(VALUE io, int event, VALUE timeout)
+{
+    VALUE result = rb_io_wait(io, RB_INT2NUM(event), timeout);
+
+    if (!RTEST(result)) {
+        return Qnil;
+    }
+
+    int mask = RB_NUM2INT(result);
+    if (mask & event) {
+        return io;
+    }
+    return Qfalse;
+}
+
+/*
+ * call-seq:
+ *   io.wait_readable          -> truthy or falsy
+ *   io.wait_readable(timeout) -> truthy or falsy
+ *
+ * Waits until IO is readable and returns a truthy value, or a falsy
+ * value when times out.  Returns a truthy value immediately when
+ * buffered data is available.
+ */
+
+static VALUE
+io_wait_readable(int argc, VALUE *argv, VALUE io)
+{
+    rb_check_arity(argc, 0, 1);
+    VALUE timeout = (argc == 1 ? argv[0] : Qnil);
+
+    rb_io_t *fptr;
+
+    GetOpenFile(io, fptr);
+    rb_io_check_readable(fptr);
+
+    if (rb_io_read_pending(fptr)) return Qtrue;
+
+    return io_wait_event(io, RUBY_IO_READABLE, timeout);
+}
+
+/*
+ * call-seq:
+ *   io.wait_writable          -> truthy or falsy
+ *   io.wait_writable(timeout) -> truthy or falsy
+ *
+ * Waits until IO is writable and returns a truthy value or a falsy
+ * value when times out.
+ */
+static VALUE
+io_wait_writable(int argc, VALUE *argv, VALUE io)
+{
+    rb_check_arity(argc, 0, 1);
+    VALUE timeout = (argc == 1 ? argv[0] : Qnil);
+
+    rb_io_t *fptr;
+
+    GetOpenFile(io, fptr);
+    rb_io_check_writable(fptr);
+
+    return io_wait_event(io, RUBY_IO_WRITABLE, timeout);
+}
+
 /*
  *  call-seq:
  *    read(maxlen = nil)             -> string or nil
@@ -14794,6 +14858,9 @@ Init_IO(void)
     rb_define_method(rb_cIO, "lineno=",  rb_io_set_lineno, 1);
 
     rb_define_method(rb_cIO, "readlines",  rb_io_readlines, -1);
+
+    rb_define_method(rb_cIO, "wait_readable", io_wait_readable, -1);
+    rb_define_method(rb_cIO, "wait_writable", io_wait_writable, -1);
 
     rb_define_method(rb_cIO, "readpartial",  io_readpartial, -1);
     rb_define_method(rb_cIO, "read",  io_read, -1);

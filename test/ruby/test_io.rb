@@ -1684,6 +1684,85 @@ class TestIO < Test::Unit::TestCase
     }
   end if have_nonblock?
 
+  def test_wait_readable
+    with_pipe {|r, w|
+      assert_nil r.wait_readable(0)
+      w.syswrite "."
+      IO.select([r])
+      assert_equal r, r.wait_readable(0)
+    }
+  end
+
+  def test_wait_readable_buffered
+    with_pipe {|r, w|
+      w.syswrite ".\n!"
+      assert_equal ".\n", r.gets
+      assert_equal true, r.wait_readable(0)
+    }
+  end
+
+  def test_wait_readable_forever
+    th = nil
+    with_pipe {|r, w|
+      q = Thread::Queue.new
+      th = Thread.new { q.pop; w.syswrite "." }
+      q.push(true)
+      assert_equal r, r.wait_readable
+    }
+  ensure
+    th.join
+  end
+
+  def test_wait_readable_eof
+    th = nil
+    with_pipe {|r, w|
+      q = Thread::Queue.new
+      th = Thread.new { q.pop; w.close }
+      ret = nil
+      assert_nothing_raised(Timeout::Error) do
+        q.push(true)
+        Timeout.timeout(0.1) { ret = r.wait_readable }
+      end
+      assert_equal r, ret
+    }
+  ensure
+    th.join
+  end
+
+  def test_wait_writable
+    with_pipe {|r, w|
+      assert_equal w, w.wait_writable
+    }
+  end
+
+  def test_wait_writable_timeout
+    with_pipe {|r, w|
+      if RUBY_PLATFORM.match?(/mswin|mingw/)
+        r, w = Socket.pair(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+      end
+      assert_equal w, w.wait_writable(0.01)
+      written = fill_pipe(w)
+      assert_nil w.wait_writable(0.01)
+      r.read(written)
+      assert_equal w, w.wait_writable(0.01)
+    }
+  end
+
+  def test_wait_writable_EPIPE
+    with_pipe {|r, w|
+      fill_pipe(w)
+      r.close
+      assert_equal w, w.wait_writable
+    }
+  end
+
+  def test_wait_writable_closed
+    with_pipe {|r, w|
+      w.close
+      assert_raise(IOError) { w.wait_writable }
+    }
+  end
+
   def test_gets
     pipe(proc do |w|
       w.write "foobarbaz"
@@ -4028,5 +4107,17 @@ __END__
         assert_equal("PIPE", Signal.signame(status.termsig) || status.termsig)
       end
     end
+  end
+
+  private
+
+  def fill_pipe(w)
+    written = 0
+    buf = " " * 4096
+    begin
+      written += w.write_nonblock(buf)
+    rescue Errno::EAGAIN, Errno::EWOULDBLOCK
+      return written
+    end while true
   end
 end
