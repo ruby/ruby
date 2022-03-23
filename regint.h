@@ -148,7 +148,13 @@
 
 #ifdef RUBY
 
-# define CHECK_INTERRUPT_IN_MATCH_AT rb_thread_check_ints()
+# define CHECK_INTERRUPT_IN_MATCH_AT do { \
+  msa->counter++;                         \
+  if (msa->counter >= 128) {              \
+    msa->counter = 0;                     \
+    rb_thread_check_ints();               \
+  }                                       \
+} while(0)
 # define onig_st_init_table                  st_init_table
 # define onig_st_init_table_with_size        st_init_table_with_size
 # define onig_st_init_numtable               st_init_numtable
@@ -870,6 +876,7 @@ typedef struct {
   void* state_check_buff;
   int   state_check_buff_size;
 #endif
+  int counter;
 } OnigMatchArg;
 
 
