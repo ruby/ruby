@@ -453,9 +453,10 @@ fun_so_cp50220_encoder(void *statep, const unsigned char *s, size_t l,
     unsigned char *output0 = o;
     unsigned char *sp = statep;
 
-    if (sp[0] == G0_JISX0201_KATAKANA) {
+    if (sp[0] == G0_JISX0201_KATAKANA && sp[2]) {
         int c = sp[2] & 0x7F;
         const char *p = tbl0208 + (c - 0x21) * 2;
+        sp[2] = 0;
         o = iso2022jp_put_state(sp, o, sp[1], G0_JISX0208_1983);
         sp[0] = G0_JISX0208_1983;
         *o++ = *p++;
@@ -473,13 +474,20 @@ fun_so_cp50220_encoder(void *statep, const unsigned char *s, size_t l,
     }
 
     if (l == 2 && s[0] == 0x8E) {
-        const char *p = tbl0208 + (s[1] - 0xA1) * 2;
         if ((0xA1 <= s[1] && s[1] <= 0xB5) ||
             (0xC5 <= s[1] && s[1] <= 0xC9) ||
             (0xCF <= s[1] && s[1] <= 0xDF)) {
+            const char *p = tbl0208 + (s[1] - 0xA1) * 2;
             o = iso2022jp_put_state(sp, o, *sp, G0_JISX0208_1983);
             *o++ = *p++;
             *o++ = *p;
+            return o - output0;
+        }
+
+        if (s[1] > 0xDF) {      /* undef */
+            o = iso2022jp_put_state(sp, o, *sp, G0_JISX0201_KATAKANA);
+            *o++ = s[1] & 0x7F;
+            sp[2] = 0;
             return o - output0;
         }
 
@@ -502,7 +510,7 @@ finish_cp50220_encoder(void *statep, unsigned char *o, size_t osize)
     if (*sp == G0_ASCII)
         return 0;
 
-    if (sp[0] == G0_JISX0201_KATAKANA) {
+    if (sp[0] == G0_JISX0201_KATAKANA && sp[2]) {
         int c = sp[2] & 0x7F;
         const char *p = tbl0208 + (c - 0x21) * 2;
         o = iso2022jp_put_state(sp, o, sp[1], G0_JISX0208_1983);
