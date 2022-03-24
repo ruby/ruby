@@ -25,5 +25,5 @@ removes multiple trailing occurrences of <tt>"\n"</tt> or <tt>"\r\n"</tt>
 When +line_sep+ is neither <tt>"\n"</tt> nor <tt>''</tt>,
 removes a single trailing line separator if there is one:
 
-  "abcd\n".chomp   # => "abcd"
-  "abcd\n\n".chomp # => "abcd\n"
+  'abcd'.chomp('d')  # => "abc"
+  'abcdd'.chomp('d') # => "abcd"

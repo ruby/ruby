@@ -13,4 +13,4 @@ Otherwise removes the last character if it exists.
   'こんにちは'.chop # => "こんにち"
   ''.chop         # => ""
 
-String#chomp is sometimes a safer choice.
+If you only need to remove the newline separator at the end of the string, String#chomp is a better alternative.
