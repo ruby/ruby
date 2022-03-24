@@ -3511,10 +3511,10 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
 
 /*
  *  call-seq:
- *     Regexp.new(string, [options])       -> regexp
- *     Regexp.new(regexp)                  -> regexp
- *     Regexp.compile(string, [options])   -> regexp
- *     Regexp.compile(regexp)              -> regexp
+ *     Regexp.new(string, [options], timeout: nil)       -> regexp
+ *     Regexp.new(regexp)                                -> regexp
+ *     Regexp.compile(string, [options], timeout: nil)   -> regexp
+ *     Regexp.compile(regexp)                            -> regexp
  *
  *  Constructs a new regular expression from +pattern+, which can be either a
  *  String or a Regexp (in which case that regexp's options are propagated),
@@ -3529,6 +3529,10 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
  *    r2 = Regexp.new('cat', true)     #=> /cat/i
  *    r3 = Regexp.new(r2)              #=> /cat/i
  *    r4 = Regexp.new('dog', Regexp::EXTENDED | Regexp::IGNORECASE) #=> /dog/ix
+ *
+ *  +timeout+ keyword sets per-object timeout configuration.
+ *  If this is not set, the global timeout configuration set by Regexp.timeout=
+ *  is used.
  */
 
 static VALUE
@@ -3538,11 +3542,22 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
     VALUE str;
     rb_encoding *enc = 0;
 
-    rb_check_arity(argc, 1, 3);
-    if (RB_TYPE_P(argv[0], T_REGEXP)) {
-	VALUE re = argv[0];
+    VALUE src, opts = Qundef, n_flag = Qundef, kwargs, timeout = Qnil;
 
-	if (argc > 1) {
+    rb_scan_args(argc, argv, "12:", &src, &opts, &n_flag, &kwargs);
+
+    if (!NIL_P(kwargs)) {
+	static ID keywords[1];
+	if (!keywords[0]) {
+	    keywords[0] = rb_intern_const("timeout");
+	}
+	rb_get_kwargs(kwargs, keywords, 0, 1, &timeout);
+    }
+
+    if (RB_TYPE_P(src, T_REGEXP)) {
+	VALUE re = src;
+
+	if (opts != Qundef) {
 	    rb_warn("flags ignored");
 	}
 	rb_reg_check(re);
@@ -3550,12 +3565,12 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 	str = RREGEXP_SRC(re);
     }
     else {
-	if (argc >= 2) {
-	    if (FIXNUM_P(argv[1])) flags = FIX2INT(argv[1]);
-	    else if (RTEST(argv[1])) flags = ONIG_OPTION_IGNORECASE;
+        if (opts != Qundef) {
+	    if (FIXNUM_P(opts)) flags = FIX2INT(opts);
+	    else if (RTEST(opts)) flags = ONIG_OPTION_IGNORECASE;
 	}
-	if (argc == 3 && !NIL_P(argv[2])) {
-	    char *kcode = StringValuePtr(argv[2]);
+        if (n_flag != Qundef && !NIL_P(n_flag)) {
+	    char *kcode = StringValuePtr(n_flag);
 	    if (kcode[0] == 'n' || kcode[0] == 'N') {
 		enc = rb_ascii8bit_encoding();
 		flags |= ARG_ENCODING_NONE;
@@ -3564,12 +3579,21 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
                 rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "encoding option is ignored - %s", kcode);
 	    }
 	}
-	str = StringValue(argv[0]);
+	str = StringValue(src);
     }
     if (enc && rb_enc_get(str) != enc)
 	rb_reg_init_str_enc(self, str, enc, flags);
     else
 	rb_reg_init_str(self, str, flags);
+
+    regex_t *reg = RREGEXP_PTR(self);
+
+    {
+        double limit = NIL_P(timeout) ? 0.0 : NUM2DBL(timeout);
+        if (limit < 0) limit = 0;
+        double2hrtime(&reg->timelimit, limit);
+    }
+
     return self;
 }
 
@@ -4177,6 +4201,30 @@ rb_reg_s_timeout_set(VALUE dummy, VALUE limit)
 }
 
 /*
+ *  call-seq:
+ *     rxp.timeout  -> float or nil
+ *
+ *  It returns the timeout interval for Regexp matching in second.
+ *  +nil+ means no default timeout configuration.
+ *
+ *  This configuration is per-object. The global configuration set by
+ *  Regexp.timeout= is ignored if per-object configuration is set.
+ *
+ *     re = Regexp.new("^a*b?a*$", timeout: 1)
+ *     re.timeout               #=> 1.0
+ *     re =~ "a" * 100000 + "x" #=> regexp match timeout (RuntimeError)
+ */
+
+static VALUE
+rb_reg_timeout_get(VALUE re)
+{
+    rb_reg_check(re);
+    double d = hrtime2double(RREGEXP_PTR(re)->timelimit);
+    if (d == 0.0) return Qnil;
+    return DBL2NUM(d);
+}
+
+/*
  *  Document-class: RegexpError
  *
  *  Raised when given an invalid regexp expression.
@@ -4254,6 +4302,7 @@ Init_Regexp(void)
     rb_define_method(rb_cRegexp, "fixed_encoding?", rb_reg_fixed_encoding_p, 0);
     rb_define_method(rb_cRegexp, "names", rb_reg_names, 0);
     rb_define_method(rb_cRegexp, "named_captures", rb_reg_named_captures, 0);
+    rb_define_method(rb_cRegexp, "timeout", rb_reg_timeout_get, 0);
 
     rb_define_singleton_method(rb_cRegexp, "timeout", rb_reg_s_timeout_get, 0);
     rb_define_singleton_method(rb_cRegexp, "timeout=", rb_reg_s_timeout_set, 1);
