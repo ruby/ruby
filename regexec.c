@@ -422,6 +422,7 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
   (msa).gpos     = (arg_gpos);\
   (msa).best_len = ONIG_MISMATCH;\
   (msa).counter  = 0;\
+  (msa).end_time = 0;\
 } while(0)
 #else
 # define MATCH_ARG_INIT(msa, arg_option, arg_region, arg_start, arg_gpos) do {\
@@ -431,6 +432,7 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
   (msa).start    = (arg_start);\
   (msa).gpos     = (arg_gpos);\
   (msa).counter  = 0;\
+  (msa).end_time = 0;\
 } while(0)
 #endif
 

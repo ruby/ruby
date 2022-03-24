@@ -1457,4 +1457,21 @@ class TestRegexp < Test::Unit::TestCase
     }
     assert_empty(errs, msg)
   end
+
+  def test_s_timeout
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      Regexp.timeout = 0.2
+      assert_equal(0.2, Regexp.timeout)
+
+      t = Time.now
+      assert_raise_with_message(RuntimeError, "regexp match timeout") do
+        # A typical ReDoS case
+        /^(a*)*$/ =~ "a" * 1000000 + "x"
+      end
+      t = Time.now - t
+
+      assert_in_delta(0.2, t, 0.1)
+    end;
+  end
 end

@@ -152,6 +152,7 @@
   msa->counter++;                         \
   if (msa->counter >= 128) {              \
     msa->counter = 0;                     \
+    rb_reg_check_timeout(reg, &msa->end_time);  \
     rb_thread_check_ints();               \
   }                                       \
 } while(0)
@@ -877,6 +878,12 @@ typedef struct {
   int   state_check_buff_size;
 #endif
   int counter;
+  /* rb_hrtime_t from hrtime.h */
+#ifdef MY_RUBY_BUILD_MAY_TIME_TRAVEL
+  int128_t end_time;
+#else
+  uint64_t end_time;
+#endif
 } OnigMatchArg;
 
 
@@ -942,6 +949,7 @@ extern int onig_st_insert_strend(hash_table_type* table, const UChar* str_key, c
 #ifdef RUBY
 extern size_t onig_memsize(const regex_t *reg);
 extern size_t onig_region_memsize(const struct re_registers *regs);
+void rb_reg_check_timeout(regex_t *reg, void *end_time);
 #endif
 
 RUBY_SYMBOL_EXPORT_END

@@ -5973,6 +5973,9 @@ onig_reg_init(regex_t* reg, OnigOptionType option,
   (reg)->name_table       = (void* )NULL;
 
   (reg)->case_fold_flag   = case_fold_flag;
+
+  (reg)->timelimit        = 0;
+
   return 0;
 }
 
