@@ -30,10 +30,6 @@ module TestIRB
       def reset
         @line_no = 0
       end
-
-      def winsize
-        [10, 20]
-      end
     end
 
     def setup
@@ -133,6 +129,18 @@ module TestIRB
           :*, /\(irb\):2:in `<main>': Bar \(RuntimeError\)\n/,
           :*, /#<RuntimeError: Bar>\n/,
         ], out)
+    end
+
+    def test_output_to_pipe
+      input = TestInputMethod.new(["n=1"])
+      input.instance_variable_set(:@stdout, StringIO.new)
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      irb.context.echo_on_assignment = :truncate
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_equal "=> 1\n", out
     end
 
     def test_eval_object_without_inspect_method
