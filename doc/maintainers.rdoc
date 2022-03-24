@@ -412,3 +412,5 @@ Yukihiro Matsumoto (matz)
   Jeremy Evans (jeremyevans0)
 [cygwin, ...]
   none. (Maintainer WANTED)
+[WebAssembly/WASI]
+  Yuta Saito (katei)
