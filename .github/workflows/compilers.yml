@@ -95,14 +95,14 @@ jobs:
             shared: '--disable-shared'
             # check: true
 
-          - { key: crosshost, name: aarch64-linux-gnu,     value: aarch64-linux-gnu, container: crossbuild-essential-arm64 }
+#         - { key: crosshost, name: aarch64-linux-gnu,     value: aarch64-linux-gnu, container: crossbuild-essential-arm64 }
 #         - { key: crosshost, name: arm-linux-gnueabi,     value: arm-linux-gnueabi }
 #         - { key: crosshost, name: arm-linux-gnueabihf,   value: arm-linux-gnueabihf }
 #         - { key: crosshost, name: i686-w64-mingw32,      value: i686-w64-mingw32 }
 #         - { key: crosshost, name: powerpc-linux-gnu,     value: powerpc-linux-gnu }
-          - { key: crosshost, name: powerpc64le-linux-gnu, value: powerpc64le-linux-gnu, container: crossbuild-essential-ppc64el }
-          - { key: crosshost, name: s390x-linux-gnu,       value: s390x-linux-gnu, container: crossbuild-essential-s390x }
-          - { key: crosshost, name: x86_64-w64-mingw32,    value: x86_64-w64-mingw32, container: mingw-w64 }
+#         - { key: crosshost, name: powerpc64le-linux-gnu, value: powerpc64le-linux-gnu, container: crossbuild-essential-ppc64el }
+#         - { key: crosshost, name: s390x-linux-gnu,       value: s390x-linux-gnu, container: crossbuild-essential-s390x }
+#         - { key: crosshost, name: x86_64-w64-mingw32,    value: x86_64-w64-mingw32, container: mingw-w64 }
 
           - { key: append_cc, name: c99,   value: '-std=c99   -Werror=pedantic -pedantic-errors' }
 #         - { key: append_cc, name: c11,   value: '-std=c11   -Werror=pedantic -pedantic-errors' }
