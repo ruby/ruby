@@ -100,7 +100,7 @@ Note: We're only listing outstanding class updates.
     * io-wait 0.2.2.pre1
     * ipaddr 1.2.4
     * logger 1.5.1
-    * ostruct 0.5.3
+    * ostruct 0.5.4
     * reline 0.3.1
     * securerandom 0.2.0
 *   The following bundled gems are updated.
