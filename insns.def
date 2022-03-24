@@ -259,8 +259,8 @@ setclassvariable
  */
 DEFINE_INSN
 getconstant
-(ID id)
-(VALUE klass, VALUE allow_nil)
+(ID id, VALUE allow_nil)
+(VALUE klass)
 (VALUE val)
 /* getconstant can kick autoload */
 // attr bool leaf = false; /* has rb_autoload_load() */
