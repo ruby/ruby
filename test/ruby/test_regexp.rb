@@ -1474,4 +1474,21 @@ class TestRegexp < Test::Unit::TestCase
       assert_in_delta(0.2, t, 0.1)
     end;
   end
+
+  def test_timeout
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      Regexp.timeout = 3 # This should be ignored
+
+      re = Regexp.new("^a*b?a*$", timeout: 0.2)
+
+      t = Time.now
+      assert_raise_with_message(RuntimeError, "regexp match timeout") do
+        re =~ "a" * 1000000 + "x"
+      end
+      t = Time.now - t
+
+      assert_in_delta(0.2, t, 0.1)
+    end;
+  end
 end
