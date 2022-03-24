@@ -14,12 +14,14 @@
 #include <ctype.h>
 
 #include "encindex.h"
+#include "hrtime.h"
 #include "internal.h"
 #include "internal/hash.h"
 #include "internal/imemo.h"
 #include "internal/re.h"
 #include "internal/string.h"
 #include "internal/variable.h"
+#include "ractor_core.h"
 #include "regint.h"
 #include "ruby/encoding.h"
 #include "ruby/re.h"
@@ -1593,6 +1595,9 @@ rb_reg_prepare_re0(VALUE re, VALUE str, onig_errmsg_buffer err)
 	rb_raise(rb_eArgError, "regexp preprocess failed: %s", err);
     }
 
+    // inherit the timeout settings
+    rb_hrtime_t timelimit = reg->timelimit;
+
     const char *ptr;
     long len;
     RSTRING_GETMEM(unescaped, ptr, len);
@@ -1603,6 +1608,8 @@ rb_reg_prepare_re0(VALUE re, VALUE str, onig_errmsg_buffer err)
 	onig_error_code_to_str((UChar*)err, r, &einfo);
 	rb_reg_raise(pattern, RREGEXP_SRC_LEN(re), err, re);
     }
+
+    reg->timelimit = timelimit;
 
     RB_GC_GUARD(unescaped);
     return reg;
@@ -4091,6 +4098,84 @@ re_warn(const char *s)
     rb_warn("%s", s);
 }
 
+// The process-global timeout for regexp matching
+rb_hrtime_t rb_reg_match_time_limit = 0;
+
+// This function is periodically called during regexp matching
+void
+rb_reg_check_timeout(regex_t *reg, void *end_time_)
+{
+    rb_hrtime_t *end_time = (rb_hrtime_t *)end_time_;
+
+    if (*end_time == 0) {
+        // This is the first time to check interrupts;
+        // just measure the current time and determine the end time
+        // if timeout is set.
+        rb_hrtime_t timelimit = reg->timelimit;
+
+        if (!timelimit) {
+            // no per-object timeout.
+            timelimit = rb_reg_match_time_limit;
+        }
+
+        if (timelimit) {
+            *end_time = rb_hrtime_add(timelimit, rb_hrtime_now());
+        }
+        else {
+            // no timeout is set
+            *end_time = RB_HRTIME_MAX;
+        }
+    }
+    else {
+        if (*end_time < rb_hrtime_now()) {
+            // timeout is exceeded
+            rb_raise(rb_eRuntimeError, "regexp match timeout");
+        }
+    }
+}
+
+/*
+ *  call-seq:
+ *     Regexp.timeout  -> int or float or nil
+ *
+ *  It returns the current default timeout interval for Regexp matching in second.
+ *  +nil+ means no default timeout configuration.
+ */
+
+static VALUE
+rb_reg_s_timeout_get(VALUE dummy)
+{
+    double d = hrtime2double(rb_reg_match_time_limit);
+    if (d == 0.0) return Qnil;
+    return DBL2NUM(d);
+}
+
+/*
+ *  call-seq:
+ *     Regexp.timeout = int or float or nil
+ *
+ *  It sets the default timeout interval for Regexp matching in second.
+ *  +nil+ means no default timeout configuration.
+ *  This configuration is process-global. If you want to set timeout for
+ *  each Regexp, use +timeout+ keyword for <code>Regexp.new</code>.
+ *
+ *     Regexp.timeout = 1
+ *     /^a*b?a*$/ =~ "a" * 100000 + "x" #=> regexp match timeout (RuntimeError)
+ */
+
+static VALUE
+rb_reg_s_timeout_set(VALUE dummy, VALUE limit)
+{
+    double timeout = NIL_P(limit) ? 0.0 : NUM2DBL(limit);
+
+    rb_ractor_ensure_main_ractor("can not access Regexp.timeout from non-main Ractors");
+
+    if (timeout < 0) timeout = 0;
+    double2hrtime(&rb_reg_match_time_limit, timeout);
+
+    return limit;
+}
+
 /*
  *  Document-class: RegexpError
  *
@@ -4169,6 +4254,9 @@ Init_Regexp(void)
     rb_define_method(rb_cRegexp, "fixed_encoding?", rb_reg_fixed_encoding_p, 0);
     rb_define_method(rb_cRegexp, "names", rb_reg_names, 0);
     rb_define_method(rb_cRegexp, "named_captures", rb_reg_named_captures, 0);
+
+    rb_define_singleton_method(rb_cRegexp, "timeout", rb_reg_s_timeout_get, 0);
+    rb_define_singleton_method(rb_cRegexp, "timeout=", rb_reg_s_timeout_set, 1);
 
     /* see Regexp.options and Regexp.new */
     rb_define_const(rb_cRegexp, "IGNORECASE", INT2FIX(ONIG_OPTION_IGNORECASE));
