@@ -2531,6 +2531,14 @@ rb_ractor_ensure_shareable(VALUE obj, VALUE name)
     return obj;
 }
 
+void
+rb_ractor_ensure_main_ractor(const char *msg)
+{
+    if (!rb_ractor_main_p()) {
+        rb_raise(rb_eRactorIsolationError, "%s", msg);
+    }
+}
+
 static enum obj_traverse_iterator_result
 shareable_p_enter(VALUE obj)
 {

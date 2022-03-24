@@ -185,6 +185,8 @@ void rb_ractor_atfork(rb_vm_t *vm, rb_thread_t *th);
 
 VALUE rb_ractor_ensure_shareable(VALUE obj, VALUE name);
 
+void rb_ractor_ensure_main_ractor(const char *msg);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 bool rb_ractor_shareable_p_continue(VALUE obj);
 
