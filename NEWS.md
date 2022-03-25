@@ -59,6 +59,10 @@ Note: We're only listing outstanding class updates.
       empty, instead of returning the default value or
       calling the default proc. [[Bug #16908]]
 
+* Kernel
+    * Kernel#binding raises RuntimeError if called from a non-Ruby frame
+      (such as a method defined in C). [[Bug #18487]]
+
 * MatchData
     * MatchData#byteoffset has been added. [[Feature #13110]]
 
@@ -87,6 +91,10 @@ Note: We're only listing outstanding class updates.
 * Struct
     * A Struct class can also be initialized with keyword arguments
       without `keyword_init: true` on `Struct.new` [[Feature #16806]]
+
+* TracePoint
+    * TracePoint#binding now returns `nil` for `c_call`/`c_return` TracePoints.
+      [[Bug #18487]]
 
 ## Stdlib updates
 
@@ -184,5 +192,6 @@ The following deprecated APIs are removed.
 [Feature #17881]: https://bugs.ruby-lang.org/issues/17881
 [Feature #18037]: https://bugs.ruby-lang.org/issues/18037
 [Feature #18351]: https://bugs.ruby-lang.org/issues/18351
+[Bug #18487]:     https://bugs.ruby-lang.org/issues/18487
 [Feature #18585]: https://bugs.ruby-lang.org/issues/18585
 [Feature #18598]: https://bugs.ruby-lang.org/issues/18598
