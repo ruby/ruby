@@ -14508,133 +14508,133 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  === Creating
  *
- *  - ::new (aliased as ::for_fd):: Creates and returns a new \IO object for the given
- *                                  integer file descriptor.
- *  - ::open:: Creates a new \IO object.
- *  - ::pipe:: Creates a connected pair of reader and writer \IO objects.
- *  - ::popen:: Creates an \IO object to interact with a subprocess.
- *  - ::select:: Selects which given \IO instances are ready for reading,
+ *  - ::new (aliased as ::for_fd): Creates and returns a new \IO object for the given
+ *    integer file descriptor.
+ *  - ::open: Creates a new \IO object.
+ *  - ::pipe: Creates a connected pair of reader and writer \IO objects.
+ *  - ::popen: Creates an \IO object to interact with a subprocess.
+ *  - ::select: Selects which given \IO instances are ready for reading,
  *    writing, or have pending exceptions.
  *
  *  === Reading
  *
- *  - ::binread:: Returns a binary string with all or a subset of bytes
- *                from the given file.
- *  - ::read:: Returns a string with all or a subset of bytes from the given file.
- *  - ::readlines:: Returns an array of strings, which are the lines from the given file.
- *  - #getbyte:: Returns the next 8-bit byte read from +self+ as an integer.
- *  - #getc:: Returns the next character read from +self+ as a string.
- *  - #gets:: Returns the line read from +self+.
- *  - #pread:: Returns all or the next _n_ bytes read from +self+,
- *             not updating the receiver's offset.
- *  - #read:: Returns all remaining or the next _n_ bytes read from +self+
- *            for a given _n_.
- *  - #read_nonblock:: the next _n_ bytes read from +self+ for a given _n_,
- *                     in non-block mode.
- *  - #readbyte:: Returns the next byte read from +self+;
- *                same as #getbyte, but raises an exception on end-of-file.
- *  - #readchar:: Returns the next character read from +self+;
- *                same as #getc, but raises an exception on end-of-file.
- *  - #readline:: Returns the next line read from +self+;
- *                same as #getline, but raises an exception of end-of-file.
- *  - #readlines:: Returns an array of all lines read read from +self+.
- *  - #readpartial:: Returns up to the given number of bytes from +self+.
+ *  - ::binread: Returns a binary string with all or a subset of bytes
+ *    from the given file.
+ *  - ::read: Returns a string with all or a subset of bytes from the given file.
+ *  - ::readlines: Returns an array of strings, which are the lines from the given file.
+ *  - #getbyte: Returns the next 8-bit byte read from +self+ as an integer.
+ *  - #getc: Returns the next character read from +self+ as a string.
+ *  - #gets: Returns the line read from +self+.
+ *  - #pread: Returns all or the next _n_ bytes read from +self+,
+ *    not updating the receiver's offset.
+ *  - #read: Returns all remaining or the next _n_ bytes read from +self+
+ *    for a given _n_.
+ *  - #read_nonblock: the next _n_ bytes read from +self+ for a given _n_,
+ *    in non-block mode.
+ *  - #readbyte: Returns the next byte read from +self+;
+ *    same as #getbyte, but raises an exception on end-of-file.
+ *  - #readchar: Returns the next character read from +self+;
+ *    same as #getc, but raises an exception on end-of-file.
+ *  - #readline: Returns the next line read from +self+;
+ *    same as #getline, but raises an exception of end-of-file.
+ *  - #readlines: Returns an array of all lines read read from +self+.
+ *  - #readpartial: Returns up to the given number of bytes from +self+.
  *
  *  === Writing
  *
- *  - ::binwrite:: Writes the given string to the file at the given filepath,
- *                 in binary mode.
- *  - ::write:: Writes the given string to +self+.
- *  - ::<<:: Appends the given string to +self+.
- *  - #print:: Prints last read line or given objects to +self+.
- *  - #printf:: Writes to +self+ based on the given format string and objects.
- *  - #putc:: Writes a character to +self+.
- *  - #puts:: Writes lines to +self+, making sure line ends with a newline.
- *  - #pwrite:: Writes the given string at the given offset,
- *              not updating the receiver's offset.
- *  - #write:: Writes one or more given strings to +self+.
- *  - #write_nonblock:: Writes one or more given strings to +self+ in non-blocking mode.
+ *  - ::binwrite: Writes the given string to the file at the given filepath,
+ *    in binary mode.
+ *  - ::write: Writes the given string to +self+.
+ *  - #<<: Appends the given string to +self+.
+ *  - #print: Prints last read line or given objects to +self+.
+ *  - #printf: Writes to +self+ based on the given format string and objects.
+ *  - #putc: Writes a character to +self+.
+ *  - #puts: Writes lines to +self+, making sure line ends with a newline.
+ *  - #pwrite: Writes the given string at the given offset,
+ *    not updating the receiver's offset.
+ *  - #write: Writes one or more given strings to +self+.
+ *  - #write_nonblock: Writes one or more given strings to +self+ in non-blocking mode.
  *
  *  === Positioning
  *
- *  - #lineno:: Returns the current line number in +self+.
- *  - #lineno=:: Sets the line number is +self+.
- *  - #pos (aliased as #tell):: Returns the current byte offset in +self+.
- *  - #pos=:: Sets the byte offset in +self+.
- *  - #reopen:: Reassociates +self+ with a new or existing \IO stream.
- *  - #rewind:: Positions +self+ to the beginning of input.
- *  - #seek:: Sets the offset for +self+ relative to given position.
+ *  - #lineno: Returns the current line number in +self+.
+ *  - #lineno=: Sets the line number is +self+.
+ *  - #pos (aliased as #tell): Returns the current byte offset in +self+.
+ *  - #pos=: Sets the byte offset in +self+.
+ *  - #reopen: Reassociates +self+ with a new or existing \IO stream.
+ *  - #rewind: Positions +self+ to the beginning of input.
+ *  - #seek: Sets the offset for +self+ relative to given position.
  *
  *  === Iterating
  *
- *  - ::foreach:: Yields each line of given file to the block.
- *  - #each (aliased as #each_line):: Calls the given block
- *                                    with each successive line in +self+.
- *  - #each_byte:: Calls the given block with each successive byte in +self+
- *                 as an integer.
- *  - #each_char:: Calls the given block with each successive character in +self+
- *                 as a string.
- *  - #each_codepoint:: Calls the given block with each successive codepoint in +self+
- *                      as an integer.
+ *  - ::foreach: Yields each line of given file to the block.
+ *  - #each (aliased as #each_line): Calls the given block
+ *    with each successive line in +self+.
+ *  - #each_byte: Calls the given block with each successive byte in +self+
+ *    as an integer.
+ *  - #each_char: Calls the given block with each successive character in +self+
+ *    as a string.
+ *  - #each_codepoint: Calls the given block with each successive codepoint in +self+
+ *    as an integer.
  *
  *  === Settings
  *
- *  - #autoclose=:: Sets whether +self+ auto-closes.
- *  - #binmode:: Sets +self+ to binary mode.
- *  - #close:: Closes +self+.
- *  - #close_on_exec=:: Sets the close-on-exec flag.
- *  - #close_read:: Closes +self+ for reading.
- *  - #close_write:: Closes +self+ for writing.
- *  - #set_encoding:: Sets the encoding for +self+.
- *  - #set_encoding_by_bom:: Sets the encoding for +self+, based on its
- *                           Unicode byte-order-mark.
- *  - #sync=:: Sets the sync-mode to the given value.
+ *  - #autoclose=: Sets whether +self+ auto-closes.
+ *  - #binmode: Sets +self+ to binary mode.
+ *  - #close: Closes +self+.
+ *  - #close_on_exec=: Sets the close-on-exec flag.
+ *  - #close_read: Closes +self+ for reading.
+ *  - #close_write: Closes +self+ for writing.
+ *  - #set_encoding: Sets the encoding for +self+.
+ *  - #set_encoding_by_bom: Sets the encoding for +self+, based on its
+ *    Unicode byte-order-mark.
+ *  - #sync=: Sets the sync-mode to the given value.
  *
  *  === Querying
  *
- *  - #autoclose?:: Returns whether +self+ auto-closes.
- *  - #binmode?:: Returns whether +self+ is in binary mode.
- *  - #close_on_exec?:: Returns the close-on-exec flag for +self+.
- *  - #closed?:: Returns whether +self+ is closed.
- *  - #eof? (aliased as #eof):: Returns whether +self+ is at end-of-file.
- *  - #external_encoding:: Returns the external encoding object for +self+.
- *  - #fileno (aliased as #to_i):: Returns the integer file descriptor for +self+
- *  - #internal_encoding:: Returns the internal encoding object for +self+.
- *  - #pid:: Returns the process ID of a child process associated with +self+,
- *           if +self+ was created by ::popen.
- *  - #stat:: Returns the File::Stat object containing status information for +self+.
- *  - #sync:: Returns whether +self+ is in sync-mode.
- *  - #tty (aliased as #isatty):: Returns whether +self+ is a terminal.
+ *  - #autoclose?: Returns whether +self+ auto-closes.
+ *  - #binmode?: Returns whether +self+ is in binary mode.
+ *  - #close_on_exec?: Returns the close-on-exec flag for +self+.
+ *  - #closed?: Returns whether +self+ is closed.
+ *  - #eof? (aliased as #eof): Returns whether +self+ is at end-of-file.
+ *  - #external_encoding: Returns the external encoding object for +self+.
+ *  - #fileno (aliased as #to_i): Returns the integer file descriptor for +self+
+ *  - #internal_encoding: Returns the internal encoding object for +self+.
+ *  - #pid: Returns the process ID of a child process associated with +self+,
+ *    if +self+ was created by ::popen.
+ *  - #stat: Returns the File::Stat object containing status information for +self+.
+ *  - #sync: Returns whether +self+ is in sync-mode.
+ *  - #tty? (aliased as #isatty): Returns whether +self+ is a terminal.
  *
  *  === Buffering
  *
- *  - #fdatasync:: Immediately writes all buffered data in +self+ to disk.
- *  - #flush:: Flushes any buffered data within +self+ to the underlying
- *             operating system.
- *  - #fsync:: Immediately writes all buffered data and attributes in +self+ to disk.
- *  - #ungetbyte:: Prepends buffer for +self+ with given integer byte or string.
- *  - #ungetc:: Prepends buffer for +self+ with given string.
+ *  - #fdatasync: Immediately writes all buffered data in +self+ to disk.
+ *  - #flush: Flushes any buffered data within +self+ to the underlying
+ *    operating system.
+ *  - #fsync: Immediately writes all buffered data and attributes in +self+ to disk.
+ *  - #ungetbyte: Prepends buffer for +self+ with given integer byte or string.
+ *  - #ungetc: Prepends buffer for +self+ with given string.
  *
  *  === Low-Level Access
  *
- *  - ::sysopen:: Opens the file given by its path,
- *                returning the integer file descriptor.
- *  - #advise:: Announces the intention to access data from +self+ in a specific way.
- *  - #fcntl:: Passes a low-level command to the file specified
- *             by the given file descriptor.
- *  - #ioctl:: Passes a low-level command to the device specified
- *             by the given file descriptor.
- *  - #sysread:: Returns up to the next _n_ bytes read from self using a low-level read.
- *  - #sysseek:: Sets the offset for +self+.
- *  - #syswrite:: Writes the given string to +self+ using a low-level write.
+ *  - ::sysopen: Opens the file given by its path,
+ *    returning the integer file descriptor.
+ *  - #advise: Announces the intention to access data from +self+ in a specific way.
+ *  - #fcntl: Passes a low-level command to the file specified
+ *    by the given file descriptor.
+ *  - #ioctl: Passes a low-level command to the device specified
+ *    by the given file descriptor.
+ *  - #sysread: Returns up to the next _n_ bytes read from self using a low-level read.
+ *  - #sysseek: Sets the offset for +self+.
+ *  - #syswrite: Writes the given string to +self+ using a low-level write.
  *
  *  === Other
  *
- *  - ::copy_stream:: Copies data from a source to a destination,
- *                    each of which is a filepath or an \IO-like object.
- *  - ::try_convert:: Returns a new \IO object resulting from converting
- *                    the given object.
- *  - #inspect:: Returns the string representation of +self+.
+ *  - ::copy_stream: Copies data from a source to a destination,
+ *    each of which is a filepath or an \IO-like object.
+ *  - ::try_convert: Returns a new \IO object resulting from converting
+ *    the given object.
+ *  - #inspect: Returns the string representation of +self+.
  *
  */
 
