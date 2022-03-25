@@ -8174,163 +8174,165 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  === Methods for Creating an \Array
  *
- *  ::[]:: Returns a new array populated with given objects.
- *  ::new:: Returns a new array.
- *  ::try_convert:: Returns a new array created from a given object.
+ *  - ::[]: Returns a new array populated with given objects.
+ *  - ::new: Returns a new array.
+ *  - ::try_convert: Returns a new array created from a given object.
  *
  *  === Methods for Querying
  *
- *  #length, #size:: Returns the count of elements.
- *  #include?:: Returns whether any element <tt>==</tt> a given object.
- *  #empty?:: Returns whether there are no elements.
- *  #all?:: Returns whether all elements meet a given criterion.
- *  #any?:: Returns whether any element meets a given criterion.
- *  #none?:: Returns whether no element <tt>==</tt> a given object.
- *  #one?:: Returns whether exactly one element <tt>==</tt> a given object.
- *  #count:: Returns the count of elements that meet a given criterion.
- *  #find_index, #index:: Returns the index of the first element that meets a given criterion.
- *  #rindex:: Returns the index of the last element that meets a given criterion.
- *  #hash:: Returns the integer hash code.
+ *  - #length, #size: Returns the count of elements.
+ *  - #include?: Returns whether any element <tt>==</tt> a given object.
+ *  - #empty?: Returns whether there are no elements.
+ *  - #all?: Returns whether all elements meet a given criterion.
+ *  - #any?: Returns whether any element meets a given criterion.
+ *  - #none?: Returns whether no element <tt>==</tt> a given object.
+ *  - #one?: Returns whether exactly one element <tt>==</tt> a given object.
+ *  - #count: Returns the count of elements that meet a given criterion.
+ *  - #find_index, #index: Returns the index of the first element that meets a given criterion.
+ *  - #rindex: Returns the index of the last element that meets a given criterion.
+ *  - #hash: Returns the integer hash code.
  *
  *  === Methods for Comparing
 
- *  #<=>:: Returns -1, 0, or 1 as +self+ is less than, equal to, or greater than a given
- *         object.
- *  #==:: Returns whether each element in +self+ is <tt>==</tt> to the corresponding element
- *        in a given object.
- *  #eql?:: Returns whether each element in +self+ is <tt>eql?</tt> to the corresponding
- *          element in a given object.
+ *  - {<=>}[Array.html#method-i-3C-3D-3E]: Returns -1, 0, or 1
+ *    as +self+ is less than, equal to, or greater than a given object.
+ *  - #==: Returns whether each element in +self+ is <tt>==</tt> to the corresponding element
+ *    in a given object.
+ *  - #eql?: Returns whether each element in +self+ is <tt>eql?</tt> to the corresponding
+ *    element in a given object.
 
  *  === Methods for Fetching
  *
  *  These methods do not modify +self+.
  *
- *  #[]:: Returns one or more elements.
- *  #fetch:: Returns the element at a given offset.
- *  #first:: Returns one or more leading elements.
- *  #last:: Returns one or more trailing elements.
- *  #max:: Returns one or more maximum-valued elements,
- *         as determined by <tt><=></tt> or a given block.
- *  #min:: Returns one or more minimum-valued elements,
- *         as determined by <tt><=></tt> or a given block.
- *  #minmax:: Returns the minimum-valued and maximum-valued elements,
- *            as determined by <tt><=></tt> or a given block.
- *  #assoc:: Returns the first element that is an array
- *           whose first element <tt>==</tt> a given object.
- *  #rassoc:: Returns the first element that is an array
- *            whose second element <tt>==</tt> a given object.
- *  #at:: Returns the element at a given offset.
- *  #values_at:: Returns the elements at given offsets.
- *  #dig:: Returns the object in nested objects
- *         that is specified by a given index and additional arguments.
- *  #drop:: Returns trailing elements as determined by a given index.
- *  #take:: Returns leading elements as determined by a given index.
- *  #drop_while:: Returns trailing elements as determined by a given block.
- *  #take_while:: Returns leading elements as determined by a given block.
- *  #slice:: Returns consecutive elements as determined by a given argument.
- *  #sort:: Returns all elements in an order determined by <tt><=></tt> or a given block.
- *  #reverse:: Returns all elements in reverse order.
- *  #compact:: Returns an array containing all non-+nil+ elements.
- *  #select, #filter:: Returns an array containing elements selected by a given block.
- *  #uniq:: Returns an array containing non-duplicate elements.
- *  #rotate:: Returns all elements with some rotated from one end to the other.
- *  #bsearch:: Returns an element selected via a binary search
- *             as determined by a given block.
- *  #bsearch_index:: Returns the index of an element selected via a binary search
- *                   as determined by a given block.
- *  #sample:: Returns one or more random elements.
- *  #shuffle:: Returns elements in a random order.
+ *  - #[]: Returns one or more elements.
+ *  - #fetch: Returns the element at a given offset.
+ *  - #first: Returns one or more leading elements.
+ *  - #last: Returns one or more trailing elements.
+ *  - #max: Returns one or more maximum-valued elements,
+ *    as determined by <tt><=></tt> or a given block.
+ *  - #min: Returns one or more minimum-valued elements,
+ *    as determined by <tt><=></tt> or a given block.
+ *  - #minmax: Returns the minimum-valued and maximum-valued elements,
+ *    as determined by <tt><=></tt> or a given block.
+ *  - #assoc: Returns the first element that is an array
+ *    whose first element <tt>==</tt> a given object.
+ *  - #rassoc: Returns the first element that is an array
+ *    whose second element <tt>==</tt> a given object.
+ *  - #at: Returns the element at a given offset.
+ *  - #values_at: Returns the elements at given offsets.
+ *  - #dig: Returns the object in nested objects
+ *    that is specified by a given index and additional arguments.
+ *  - #drop: Returns trailing elements as determined by a given index.
+ *  - #take: Returns leading elements as determined by a given index.
+ *  - #drop_while: Returns trailing elements as determined by a given block.
+ *  - #take_while: Returns leading elements as determined by a given block.
+ *  - #slice: Returns consecutive elements as determined by a given argument.
+ *  - #sort: Returns all elements in an order determined by <tt><=></tt> or a given block.
+ *  - #reverse: Returns all elements in reverse order.
+ *  - #compact: Returns an array containing all non-+nil+ elements.
+ *  - #select, #filter: Returns an array containing elements selected by a given block.
+ *  - #uniq: Returns an array containing non-duplicate elements.
+ *  - #rotate: Returns all elements with some rotated from one end to the other.
+ *  - #bsearch: Returns an element selected via a binary search
+ *    as determined by a given block.
+ *  - #bsearch_index: Returns the index of an element selected via a binary search
+ *    as determined by a given block.
+ *  - #sample: Returns one or more random elements.
+ *  - #shuffle: Returns elements in a random order.
  *
  *  === Methods for Assigning
  *
  *  These methods add, replace, or reorder elements in +self+.
  *
- *  #[]=:: Assigns specified elements with a given object.
- *  #push, #append, #<<:: Appends trailing elements.
- *  #unshift, #prepend:: Prepends leading elements.
- *  #insert:: Inserts given objects at a given offset; does not replace elements.
- *  #concat:: Appends all elements from given arrays.
- *  #fill:: Replaces specified elements with specified objects.
- *  #replace:: Replaces the content of +self+ with the content of a given array.
- *  #reverse!:: Replaces +self+ with its elements reversed.
- *  #rotate!:: Replaces +self+ with its elements rotated.
- *  #shuffle!:: Replaces +self+ with its elements in random order.
- *  #sort!:: Replaces +self+ with its elements sorted,
- *           as determined by <tt><=></tt> or a given block.
- *  #sort_by!:: Replaces +self+ with its elements sorted, as determined by a given block.
+ *  - #[]=: Assigns specified elements with a given object.
+ *  - #push, #append, #<<: Appends trailing elements.
+ *  - #unshift, #prepend: Prepends leading elements.
+ *  - #insert: Inserts given objects at a given offset; does not replace elements.
+ *  - #concat: Appends all elements from given arrays.
+ *  - #fill: Replaces specified elements with specified objects.
+ *  - #replace: Replaces the content of +self+ with the content of a given array.
+ *  - #reverse!: Replaces +self+ with its elements reversed.
+ *  - #rotate!: Replaces +self+ with its elements rotated.
+ *  - #shuffle!: Replaces +self+ with its elements in random order.
+ *  - #sort!: Replaces +self+ with its elements sorted,
+ *    as determined by <tt><=></tt> or a given block.
+ *  - #sort_by!: Replaces +self+ with its elements sorted, as determined by a given block.
  *
  *  === Methods for Deleting
  *
  *  Each of these methods removes elements from +self+:
  *
- *  #pop:: Removes and returns the last element.
- *  #shift::  Removes and returns the first element.
- *  #compact!:: Removes all non-+nil+ elements.
- *  #delete:: Removes elements equal to a given object.
- *  #delete_at:: Removes the element at a given offset.
- *  #delete_if:: Removes elements specified by a given block.
- *  #keep_if:: Removes elements not specified by a given block.
- *  #reject!:: Removes elements specified by a given block.
- *  #select!, #filter!:: Removes elements not specified by a given block.
- *  #slice!:: Removes and returns a sequence of elements.
- *  #uniq!:: Removes duplicates.
+ *  - #pop: Removes and returns the last element.
+ *  - #shift:  Removes and returns the first element.
+ *  - #compact!: Removes all non-+nil+ elements.
+ *  - #delete: Removes elements equal to a given object.
+ *  - #delete_at: Removes the element at a given offset.
+ *  - #delete_if: Removes elements specified by a given block.
+ *  - #keep_if: Removes elements not specified by a given block.
+ *  - #reject!: Removes elements specified by a given block.
+ *  - #select!, #filter!: Removes elements not specified by a given block.
+ *  - #slice!: Removes and returns a sequence of elements.
+ *  - #uniq!: Removes duplicates.
  *
  *  === Methods for Combining
  *
- *  #&:: Returns an array containing elements found both in +self+ and a given array.
- *  #intersection:: Returns an array containing elements found both in +self+
- *                  and in each given array.
- *  #+:: Returns an array containing all elements of +self+ followed by all elements of a given array.
- *  #-:: Returns an array containiing all elements of +self+ that are not found in a given array.
- *  #|:: Returns an array containing all elements of +self+ and all elements of a given array,
- *       duplicates removed.
- *  #union:: Returns an array containing all elements of +self+ and all elements of given arrays,
- *           duplicates removed.
- *  #difference:: Returns an array containing all elements of +self+ that are not found
- *                in any of the given arrays..
- *  #product:: Returns or yields all combinations of elements from +self+ and given arrays.
+ *  - {&}[Array.html#method-i-26]: Returns an array containing elements found both in +self+ and a given array.
+ *  - #intersection: Returns an array containing elements found both in +self+
+ *    and in each given array.
+ *  - #+: Returns an array containing all elements of +self+ followed by all elements of a given array.
+ *  - #-: Returns an array containiing all elements of +self+ that are not found in a given array.
+ *  - {|}[Array.html#method-i-7C]: Returns an array containing all elements of +self+ and all elements of a given array,
+ *    duplicates removed.
+ *  - #union: Returns an array containing all elements of +self+ and all elements of given arrays,
+ *    duplicates removed.
+ *  - #difference: Returns an array containing all elements of +self+ that are not found
+ *    in any of the given arrays..
+ *  - #product: Returns or yields all combinations of elements from +self+ and given arrays.
  *
  *  === Methods for Iterating
  *
- *  #each:: Passes each element to a given block.
- *  #reverse_each::  Passes each element, in reverse order, to a given block.
- *  #each_index:: Passes each element index to a given block.
- *  #cycle:: Calls a given block with each element, then does so again,
- *           for a specified number of times, or forever.
- *  #combination:: Calls a given block with combinations of elements of +self+;
- *                 a combination does not use the same element more than once.
- *  #permutation:: Calls a given block with permutations of elements of +self+;
- *                 a permutation does not use the same element more than once.
- *  #repeated_combination:: Calls a given block with combinations of elements of +self+;
- *                          a combination may use the same element more than once.
- *  #repeated_permutation:: Calls a given block with permutations of elements of +self+;
- *                          a permutation may use the same element more than once.
+ *  - #each: Passes each element to a given block.
+ *  - #reverse_each:  Passes each element, in reverse order, to a given block.
+ *  - #each_index: Passes each element index to a given block.
+ *  - #cycle: Calls a given block with each element, then does so again,
+ *    for a specified number of times, or forever.
+ *  - #combination: Calls a given block with combinations of elements of +self+;
+ *    a combination does not use the same element more than once.
+ *  - #permutation: Calls a given block with permutations of elements of +self+;
+ *    a permutation does not use the same element more than once.
+ *  - #repeated_combination: Calls a given block with combinations of elements of +self+;
+ *    a combination may use the same element more than once.
+ *  - #repeated_permutation: Calls a given block with permutations of elements of +self+;
+ *    a permutation may use the same element more than once.
  *
  *  === Methods for Converting
  *
- *  #map, #collect:: Returns an array containing the block return-value for each element.
- *  #map!, #collect!:: Replaces each element with a block return-value.
- *  #flatten:: Returns an array that is a recursive flattening of +self+.
- *  #flatten!:: Replaces each nested array in +self+ with the elements from that array.
- *  #inspect, #to_s:: Returns a new String containing the elements.
- *  #join:: Returns a newsString containing the elements joined by the field separator.
- *  #to_a:: Returns +self+ or a new array containing all elements.
- *  #to_ary:: Returns +self+.
- *  #to_h:: Returns a new hash formed from the elements.
- *  #transpose:: Transposes +self+, which must be an array of arrays.
- *  #zip:: Returns a new array of arrays containing +self+ and given arrays;
- *         follow the link for details.
+ *  - #map, #collect: Returns an array containing the block return-value for each element.
+ *  - #map!, #collect!: Replaces each element with a block return-value.
+ *  - #flatten: Returns an array that is a recursive flattening of +self+.
+ *  - #flatten!: Replaces each nested array in +self+ with the elements from that array.
+ *  - #inspect, #to_s: Returns a new String containing the elements.
+ *  - #join: Returns a newsString containing the elements joined by the field separator.
+ *  - #to_a: Returns +self+ or a new array containing all elements.
+ *  - #to_ary: Returns +self+.
+ *  - #to_h: Returns a new hash formed from the elements.
+ *  - #transpose: Transposes +self+, which must be an array of arrays.
+ *  - #zip: Returns a new array of arrays containing +self+ and given arrays;
+ *    follow the link for details.
  *
  *  === Other Methods
  *
- *  #*:: Returns one of the following:
- *       - With integer argument +n+, a new array that is the concatenation
- *         of +n+ copies of +self+.
- *       - With string argument +field_separator+, a new string that is equivalent to
- *         <tt>join(field_separator)</tt>.
- *  #abbrev:: Returns a hash of unambiguous abbreviations for elements.
- *  #pack:: Packs the elements into a binary sequence.
- *  #sum:: Returns a sum of elements according to either <tt>+</tt> or a given block.
+ *  - #*: Returns one of the following:
+ *
+ *    - With integer argument +n+, a new array that is the concatenation
+ *      of +n+ copies of +self+.
+ *    - With string argument +field_separator+, a new string that is equivalent to
+ *      <tt>join(field_separator)</tt>.
+ *
+ *  - #abbrev: Returns a hash of unambiguous abbreviations for elements.
+ *  - #pack: Packs the elements into a binary sequence.
+ *  - #sum: Returns a sum of elements according to either <tt>+</tt> or a given block.
  */
 
 void
