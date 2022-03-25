@@ -1586,7 +1586,11 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
         server_connect(port, cli_ctx) do |ssl|
           assert_equal('TLSv1.3', ssl.ssl_version)
-          assert_equal(csuite[0], ssl.cipher[0])
+          if libressl?(3, 4, 0) && !libressl?(3, 5, 0)
+            assert_equal("AEAD-AES128-GCM-SHA256", ssl.cipher[0]) 
+          else
+            assert_equal(csuite[0], ssl.cipher[0]) 
+          end
           ssl.puts('abc'); assert_equal("abc\n", ssl.gets)
         end
       end
