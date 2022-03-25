@@ -9452,11 +9452,12 @@ chopped_length(VALUE str)
 
 /*
  *  call-seq:
- *     str.chop!   -> str or nil
+ *    chop! -> self or nil
  *
- *  Processes <i>str</i> as for String#chop, returning <i>str</i>, or
- *  <code>nil</code> if <i>str</i> is the empty string.  See also
- *  String#chomp!.
+ *  Like String#chop, but modifies +self+ in place;
+ *  returns +nil+ if +self+ is empty, +self+ otherwise.
+ *
+ *  Related: String#chomp!.
  */
 
 static VALUE
@@ -9479,20 +9480,10 @@ rb_str_chop_bang(VALUE str)
 
 /*
  *  call-seq:
- *     str.chop   -> new_str
+ *    chop -> new_string
  *
- *  Returns a new String with the last character removed.  If the
- *  string ends with <code>\r\n</code>, both characters are
- *  removed. Applying <code>chop</code> to an empty string returns an
- *  empty string. String#chomp is often a safer alternative, as it
- *  leaves the string unchanged if it doesn't end in a record
- *  separator.
+ *  :include: doc/string/chop.rdoc
  *
- *     "string\r\n".chop   #=> "string"
- *     "string\n\r".chop   #=> "string\n"
- *     "string\n".chop     #=> "string"
- *     "string".chop       #=> "strin"
- *     "x".chop.chop       #=> ""
  */
 
 static VALUE
@@ -9641,11 +9632,11 @@ rb_str_chomp_string(VALUE str, VALUE rs)
 
 /*
  *  call-seq:
- *     str.chomp!(separator=$/)   -> str or nil
+ *    chomp!(line_sep = $/) -> self or nil
  *
- *  Modifies <i>str</i> in place as described for String#chomp,
- *  returning <i>str</i>, or <code>nil</code> if no modifications were
- *  made.
+ *  Like String#chomp, but modifies +self+ in place;
+ *  returns +nil+ if no modification made, +self+ otherwise.
+ *
  */
 
 static VALUE
@@ -9662,24 +9653,10 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.chomp(separator=$/)   -> new_str
+ *    chomp(line_sep = $/) -> new_string
  *
- *  Returns a new String with the given record separator removed
- *  from the end of <i>str</i> (if present). If <code>$/</code> has not been
- *  changed from the default Ruby record separator, then <code>chomp</code> also
- *  removes carriage return characters (that is, it will remove <code>\n</code>,
- *  <code>\r</code>, and <code>\r\n</code>). If <code>$/</code> is an empty string,
- *  it will remove all trailing newlines from the string.
+ *  :include: doc/string/chomp.rdoc
  *
- *     "hello".chomp                #=> "hello"
- *     "hello\n".chomp              #=> "hello"
- *     "hello\r\n".chomp            #=> "hello"
- *     "hello\n\r".chomp            #=> "hello\n"
- *     "hello\r".chomp              #=> "hello"
- *     "hello \n there".chomp       #=> "hello \n there"
- *     "hello".chomp("llo")         #=> "he"
- *     "hello\r\n\r\n".chomp('')    #=> "hello"
- *     "hello\r\n\r\r\n".chomp('')  #=> "hello\r\n\r"
  */
 
 static VALUE
