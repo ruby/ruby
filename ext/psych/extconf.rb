@@ -10,6 +10,11 @@ dir_config 'libyaml'
 if enable_config("bundled-libyaml", false) || !pkg_config('yaml-0.1') && !(find_header('yaml.h') && find_library('yaml', 'yaml_get_version'))
   # Embed libyaml since we could not find it.
 
+  unless File.exist?("#{$srcdir}/yaml")
+    puts "failed to build psych because no libyaml is available"
+    exit
+  end
+
   $VPATH << "$(srcdir)/yaml"
   $INCFLAGS << " -I$(srcdir)/yaml"
 
