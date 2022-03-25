@@ -102,64 +102,12 @@ compile_data_free(struct iseq_compile_data *compile_data)
     }
 }
 
-struct iseq_clear_ic_references_data {
-    IC ic;
-};
-
-// This iterator is used to walk through the instructions and clean any
-// references to ICs that are contained within this ISEQ out of the VM's
-// constant cache table. It passes around a struct that holds the current IC
-// we're looking for, which can be NULL (if we haven't hit an opt_getinlinecache
-// instruction yet) or set to an IC (if we've hit an opt_getinlinecache and
-// haven't yet hit the associated opt_setinlinecache).
-static bool
-iseq_clear_ic_references_i(VALUE *code, VALUE insn, size_t index, void *data)
-{
-    struct iseq_clear_ic_references_data *ic_data = (struct iseq_clear_ic_references_data *) data;
-
-    switch (insn) {
-        case BIN(opt_getinlinecache): {
-            ic_data->ic = (IC) code[index + 2];
-            return true;
-        }
-        case BIN(getconstant): {
-            ID id = (ID) code[index + 1];
-            rb_vm_t *vm = GET_VM();
-            st_table *ics;
-
-            if (rb_id_table_lookup(vm->constant_cache, id, (VALUE *) &ics)) {
-                st_delete(ics, (st_data_t *) &ic_data->ic, (st_data_t *) NULL);
-            }
-
-            return true;
-        }
-        case BIN(opt_setinlinecache): {
-            ic_data->ic = NULL;
-            return true;
-        }
-        default:
-            return true;
-    }
-}
-
-// When an ISEQ is being freed, all of its associated ICs are going to go away
-// as well. Because of this, we need to walk through the ISEQ, find any
-// opt_getinlinecache calls, and clear out the VM's constant cache of associated
-// ICs.
-static void
-iseq_clear_ic_references(const rb_iseq_t *iseq)
-{
-    struct iseq_clear_ic_references_data data = { .ic = NULL };
-    rb_iseq_each(iseq, 0, iseq_clear_ic_references_i, (void *) &data);
-}
-
 void
 rb_iseq_free(const rb_iseq_t *iseq)
 {
     RUBY_FREE_ENTER("iseq");
 
     if (iseq && ISEQ_BODY(iseq)) {
-        iseq_clear_ic_references(iseq);
         struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
 	mjit_free_iseq(iseq); /* Notify MJIT */
         rb_yjit_iseq_free(body);
@@ -299,39 +247,6 @@ rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data)
 
     for (n = 0; n < size;) {
 	n += iseq_extract_values(code, n, func, data, translator);
-    }
-}
-
-// Similar to rb_iseq_each_value, except that this walks through each
-// instruction instead of the associated VALUEs. The provided iterator should
-// return a boolean that indicates whether or not to continue iterating.
-void
-rb_iseq_each(const rb_iseq_t *iseq, size_t start_index, rb_iseq_each_i iterator, void *data)
-{
-    unsigned int size;
-    VALUE *code;
-    size_t index;
-
-    rb_vm_insns_translator_t *const translator =
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-        (FL_TEST((VALUE)iseq, ISEQ_TRANSLATED)) ? rb_vm_insn_addr2insn2 :
-#endif
-        rb_vm_insn_null_translator;
-
-    const struct rb_iseq_constant_body *const body = iseq->body;
-
-    size = body->iseq_size;
-    code = body->iseq_encoded;
-
-    for (index = start_index; index < size;) {
-        void *addr = (void *) code[index];
-        VALUE insn = translator(addr);
-
-        if (!iterator(code, insn, index, data)) {
-            break;
-        }
-
-        index += insn_len(insn);
     }
 }
 

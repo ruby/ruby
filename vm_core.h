@@ -229,13 +229,43 @@ struct iseq_inline_constant_cache_entry {
     VALUE flags;
 
     VALUE value;              // v0
-    VALUE _unused1;           // v1
-    VALUE _unused2;           // v2
+    union ic_serial_entry ic_serial; // v1, v2
     const rb_cref_t *ic_cref; // v3
 };
 STATIC_ASSERT(sizeof_iseq_inline_constant_cache_entry,
               (offsetof(struct iseq_inline_constant_cache_entry, ic_cref) +
 	       sizeof(const rb_cref_t *)) <= sizeof(struct RObject));
+
+#if SIZEOF_SERIAL_T <= SIZEOF_VALUE
+
+#define GET_IC_SERIAL(ice) (ice)->ic_serial.raw
+#define SET_IC_SERIAL(ice, v) (ice)->ic_serial.raw = (v)
+
+#else
+
+static inline rb_serial_t
+get_ic_serial(const struct iseq_inline_constant_cache_entry *ice)
+{
+    union ic_serial_entry tmp;
+    tmp.data[0] = ice->ic_serial.data[0];
+    tmp.data[1] = ice->ic_serial.data[1];
+    return tmp.raw;
+}
+
+#define GET_IC_SERIAL(ice) get_ic_serial(ice)
+
+static inline void
+set_ic_serial(struct iseq_inline_constant_cache_entry *ice, rb_serial_t v)
+{
+    union ic_serial_entry tmp;
+    tmp.raw = v;
+    ice->ic_serial.data[0] = tmp.data[0];
+    ice->ic_serial.data[1] = tmp.data[1];
+}
+
+#define SET_IC_SERIAL(ice, v) set_ic_serial((ice), (v))
+
+#endif
 
 struct iseq_inline_constant_cache {
     struct iseq_inline_constant_cache_entry *entry;
@@ -691,12 +721,6 @@ typedef struct rb_vm_struct {
 
     struct rb_id_table *negative_cme_table;
     st_table *overloaded_cme_table; // cme -> overloaded_cme
-
-    // This id table contains a mapping from ID to ICs. It does this with ID
-    // keys and nested st_tables as values. The nested tables have ICs as keys
-    // and Qtrue as values. It is used when inline constant caches need to be
-    // invalidated or ISEQs are being freed.
-    struct rb_id_table *constant_cache;
 
 #ifndef VM_GLOBAL_CC_CACHE_TABLE_SIZE
 #define VM_GLOBAL_CC_CACHE_TABLE_SIZE 1023
