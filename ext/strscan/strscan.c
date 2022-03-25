@@ -1468,6 +1468,8 @@ strscan_fixed_anchor_p(VALUE self)
  * StringScanner provides for lexical scanning operations on a String.  Here is
  * an example of its usage:
  *
+ *   require 'strscan'
+ *
  *   s = StringScanner.new('This is an example string')
  *   s.eos?               # -> false
  *
