@@ -6803,17 +6803,21 @@ tokadd_codepoint(struct parser_params *p, rb_encoding **encp,
     int codepoint = scan_hex(p->lex.pcur, wide ? p->lex.pend - p->lex.pcur : 4, &numlen);
     literal_flush(p, p->lex.pcur);
     p->lex.pcur += numlen;
-    if (wide ? (numlen == 0 || numlen > 6) : (numlen < 4))  {
-	yyerror0("invalid Unicode escape");
-	return wide && numlen > 0;
-    }
-    if (codepoint > 0x10ffff) {
-	yyerror0("invalid Unicode codepoint (too large)");
-	return wide;
-    }
-    if ((codepoint & 0xfffff800) == 0xd800) {
-	yyerror0("invalid Unicode codepoint");
-	return wide;
+    if (p->lex.strterm == NULL ||
+        (p->lex.strterm->flags & STRTERM_HEREDOC) ||
+        (p->lex.strterm->u.literal.u1.func != str_regexp)) {
+        if (wide ? (numlen == 0 || numlen > 6) : (numlen < 4))  {
+            yyerror0("invalid Unicode escape");
+            return wide && numlen > 0;
+        }
+        if (codepoint > 0x10ffff) {
+            yyerror0("invalid Unicode codepoint (too large)");
+            return wide;
+        }
+        if ((codepoint & 0xfffff800) == 0xd800) {
+            yyerror0("invalid Unicode codepoint");
+            return wide;
+        }
     }
     if (regexp_literal) {
 	tokcopy(p, (int)numlen);
