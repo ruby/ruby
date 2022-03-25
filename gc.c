@@ -1116,6 +1116,9 @@ total_freed_pages(rb_objspace_t *objspace)
 #else
 #define will_be_incremental_marking(objspace) FALSE
 #endif
+#if GC_ENABLE_INCREMENTAL_MARK
+#define GC_INCREMENTAL_SWEEP_SLOT_COUNT 2048
+#endif
 #define is_lazy_sweeping(objspace)           (GC_ENABLE_LAZY_SWEEP && has_sweeping_pages(objspace))
 
 #if SIZEOF_LONG == SIZEOF_VOIDP
@@ -5847,7 +5850,7 @@ gc_sweep_step(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
 	    else {
                 heap_add_freepage(heap, sweep_page);
                 swept_slots += free_slots;
-                if (swept_slots > 2048) {
+                if (swept_slots > GC_INCREMENTAL_SWEEP_SLOT_COUNT) {
                     break;
                 }
 	    }
