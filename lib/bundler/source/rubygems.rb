@@ -457,8 +457,6 @@ module Bundler
       end
 
       def fetch_gem(spec, previous_spec = nil)
-        return false unless spec.remote
-
         spec.fetch_platform
 
         cache_path = download_cache_path(spec) || default_cache_path_for(rubygems_dir)
