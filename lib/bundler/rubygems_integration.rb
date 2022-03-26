@@ -204,7 +204,6 @@ module Bundler
     end
 
     def spec_from_gem(path, policy = nil)
-      require "psych"
       gem_from_path(path, security_policies[policy]).spec
     rescue Gem::Security::Exception => e
       raise SecurityError,
