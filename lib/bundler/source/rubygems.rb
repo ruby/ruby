@@ -173,62 +173,60 @@ module Bundler
           raise GemNotFound, "Could not find #{spec.file_name} for installation" unless path
         end
 
-        unless Bundler.settings[:no_install]
-          message = "Installing #{version_message(spec, options[:previous_spec])}"
-          message += " with native extensions" if spec.extensions.any?
-          Bundler.ui.confirm message
+        message = "Installing #{version_message(spec, options[:previous_spec])}"
+        message += " with native extensions" if spec.extensions.any?
+        Bundler.ui.confirm message
 
-          if requires_sudo?
-            install_path = Bundler.tmp(spec.full_name)
-            bin_path     = install_path.join("bin")
-          else
-            install_path = rubygems_dir
-            bin_path     = Bundler.system_bindir
-          end
-
-          Bundler.mkdir_p bin_path, :no_sudo => true unless spec.executables.empty? || Bundler.rubygems.provides?(">= 2.7.5")
-
-          require_relative "../rubygems_gem_installer"
-
-          installed_spec = Bundler::RubyGemsGemInstaller.at(
-            path,
-            :install_dir         => install_path.to_s,
-            :bin_dir             => bin_path.to_s,
-            :ignore_dependencies => true,
-            :wrappers            => true,
-            :env_shebang         => true,
-            :build_args          => options[:build_args],
-            :bundler_expected_checksum => spec.respond_to?(:checksum) && spec.checksum,
-            :bundler_extension_cache_path => extension_cache_path(spec)
-          ).install
-          spec.full_gem_path = installed_spec.full_gem_path
-
-          # SUDO HAX
-          if requires_sudo?
-            Bundler.rubygems.repository_subdirectories.each do |name|
-              src = File.join(install_path, name, "*")
-              dst = File.join(rubygems_dir, name)
-              if name == "extensions" && Dir.glob(src).any?
-                src = File.join(src, "*/*")
-                ext_src = Dir.glob(src).first
-                ext_src.gsub!(src[0..-6], "")
-                dst = File.dirname(File.join(dst, ext_src))
-              end
-              SharedHelpers.filesystem_access(dst) do |p|
-                Bundler.mkdir_p(p)
-              end
-              Bundler.sudo "cp -R #{src} #{dst}" if Dir[src].any?
-            end
-
-            spec.executables.each do |exe|
-              SharedHelpers.filesystem_access(Bundler.system_bindir) do |p|
-                Bundler.mkdir_p(p)
-              end
-              Bundler.sudo "cp -R #{install_path}/bin/#{exe} #{Bundler.system_bindir}/"
-            end
-          end
-          installed_spec.loaded_from = loaded_from(spec)
+        if requires_sudo?
+          install_path = Bundler.tmp(spec.full_name)
+          bin_path     = install_path.join("bin")
+        else
+          install_path = rubygems_dir
+          bin_path     = Bundler.system_bindir
         end
+
+        Bundler.mkdir_p bin_path, :no_sudo => true unless spec.executables.empty? || Bundler.rubygems.provides?(">= 2.7.5")
+
+        require_relative "../rubygems_gem_installer"
+
+        installed_spec = Bundler::RubyGemsGemInstaller.at(
+          path,
+          :install_dir         => install_path.to_s,
+          :bin_dir             => bin_path.to_s,
+          :ignore_dependencies => true,
+          :wrappers            => true,
+          :env_shebang         => true,
+          :build_args          => options[:build_args],
+          :bundler_expected_checksum => spec.respond_to?(:checksum) && spec.checksum,
+          :bundler_extension_cache_path => extension_cache_path(spec)
+        ).install
+        spec.full_gem_path = installed_spec.full_gem_path
+
+        # SUDO HAX
+        if requires_sudo?
+          Bundler.rubygems.repository_subdirectories.each do |name|
+            src = File.join(install_path, name, "*")
+            dst = File.join(rubygems_dir, name)
+            if name == "extensions" && Dir.glob(src).any?
+              src = File.join(src, "*/*")
+              ext_src = Dir.glob(src).first
+              ext_src.gsub!(src[0..-6], "")
+              dst = File.dirname(File.join(dst, ext_src))
+            end
+            SharedHelpers.filesystem_access(dst) do |p|
+              Bundler.mkdir_p(p)
+            end
+            Bundler.sudo "cp -R #{src} #{dst}" if Dir[src].any?
+          end
+
+          spec.executables.each do |exe|
+            SharedHelpers.filesystem_access(Bundler.system_bindir) do |p|
+              Bundler.mkdir_p(p)
+            end
+            Bundler.sudo "cp -R #{install_path}/bin/#{exe} #{Bundler.system_bindir}/"
+          end
+        end
+        installed_spec.loaded_from = loaded_from(spec)
         spec.loaded_from = loaded_from(spec)
 
         spec.post_install_message
