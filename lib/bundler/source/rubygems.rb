@@ -155,26 +155,10 @@ module Bundler
           Installer.ambiguous_gems << [spec.name, *uris] if uris.length > 1
 
           path = fetch_gem(spec, options[:previous_spec])
-          begin
-            s = Bundler.rubygems.spec_from_gem(path, Bundler.settings["trust-policy"])
-          rescue Gem::Security::Exception => e
-            raise SecurityError,
-              "The gem #{File.basename(path, ".gem")} can't be installed because " \
-              "the security policy didn't allow it, with the message: #{e.message}"
-          rescue Gem::Package::FormatError
-            Bundler.rm_rf(path)
-            raise
-          end
-
-          spec.__swap__(s)
         else
           path = cached_gem(spec)
           raise GemNotFound, "Could not find #{spec.file_name} for installation" unless path
         end
-
-        message = "Installing #{version_message(spec, options[:previous_spec])}"
-        message += " with native extensions" if spec.extensions.any?
-        Bundler.ui.confirm message
 
         if requires_sudo?
           install_path = Bundler.tmp(spec.full_name)
@@ -188,8 +172,9 @@ module Bundler
 
         require_relative "../rubygems_gem_installer"
 
-        installed_spec = Bundler::RubyGemsGemInstaller.at(
+        installer = Bundler::RubyGemsGemInstaller.at(
           path,
+          :security_policy     => Bundler.rubygems.security_policies[Bundler.settings["trust-policy"]],
           :install_dir         => install_path.to_s,
           :bin_dir             => bin_path.to_s,
           :ignore_dependencies => true,
@@ -198,7 +183,29 @@ module Bundler
           :build_args          => options[:build_args],
           :bundler_expected_checksum => spec.respond_to?(:checksum) && spec.checksum,
           :bundler_extension_cache_path => extension_cache_path(spec)
-        ).install
+        )
+
+        if spec.remote
+          s = begin
+            installer.spec
+          rescue Gem::Package::FormatError
+            Bundler.rm_rf(path)
+            raise
+          rescue Gem::Security::Exception => e
+            raise SecurityError,
+             "The gem #{File.basename(path, ".gem")} can't be installed because " \
+             "the security policy didn't allow it, with the message: #{e.message}"
+          end
+
+          spec.__swap__(s)
+        end
+
+        message = "Installing #{version_message(spec, options[:previous_spec])}"
+        message += " with native extensions" if spec.extensions.any?
+        Bundler.ui.confirm message
+
+        installed_spec = installer.install
+
         spec.full_gem_path = installed_spec.full_gem_path
         spec.loaded_from = installed_spec.loaded_from
 

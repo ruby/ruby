@@ -203,8 +203,9 @@ module Bundler
       EXT_LOCK
     end
 
-    def spec_from_gem(path, policy = nil)
-      gem_from_path(path, security_policies[policy]).spec
+    def spec_from_gem(path)
+      require "rubygems/package"
+      Gem::Package.new(path).spec
     end
 
     def build_gem(gem_dir, spec)
@@ -496,13 +497,6 @@ module Bundler
       require "rubygems/remote_fetcher"
       proxy = Gem.configuration[:http_proxy]
       Gem::RemoteFetcher.new(proxy)
-    end
-
-    def gem_from_path(path, policy = nil)
-      require "rubygems/package"
-      p = Gem::Package.new(path)
-      p.security_policy = policy if policy
-      p
     end
 
     def build(spec, skip_validation = false)
