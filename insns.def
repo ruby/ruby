@@ -253,6 +253,25 @@ setclassvariable
     vm_setclassvariable(GET_ISEQ(), GET_CFP(), id,  val, ic);
 }
 
+DEFINE_INSN
+opt_getconst
+(IDLIST segments, IC ic)
+()
+(VALUE val)
+// attr bool leaf = false; /* may autoload */
+{
+    struct iseq_inline_constant_cache_entry *ice = ic->entry;
+    if (ice && vm_ic_hit_p(ice, GET_EP())) {
+        val = ice->value;
+
+        VM_ASSERT(val == vm_get_ev_const_chain(ec, segments));
+    } else {
+        val = vm_get_ev_const_chain(ec, segments);
+	vm_ic_track_const_chain(GET_CFP(), ic, segments);
+        vm_ic_update(GET_ISEQ(), ic, val, GET_EP());
+    }
+}
+
 /* Get constant variable id. If klass is Qnil and allow_nil is Qtrue, constants
    are searched in the current scope. Otherwise, get constant under klass
    class or module.

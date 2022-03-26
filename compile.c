@@ -5129,6 +5129,30 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node,
     return COMPILE_OK;
 }
 
+static VALUE
+collect_const_segments(rb_iseq_t *iseq, const NODE *node)
+{
+    VALUE arr = rb_ary_new();
+    for (;;)
+    {
+        switch (nd_type(node)) {
+          case NODE_CONST:
+            rb_ary_unshift(arr, ID2SYM(node->nd_vid));
+            return arr;
+          case NODE_COLON3:
+            rb_ary_unshift(arr, ID2SYM(node->nd_mid));
+            rb_ary_unshift(arr, Qnil);
+            return arr;
+          case NODE_COLON2:
+            rb_ary_unshift(arr, ID2SYM(node->nd_mid));
+            node = node->nd_head;
+            break;
+          default:
+            return Qfalse;
+        }
+    }
+}
+
 static int
 compile_const_prefix(rb_iseq_t *iseq, const NODE *const node,
 		     LINK_ANCHOR *const pref, LINK_ANCHOR *const body)
@@ -8866,37 +8890,31 @@ compile_match(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
 static int
 compile_colon2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
-    const int line = nd_line(node);
     if (rb_is_const_id(node->nd_mid)) {
-	/* constant */
-	LABEL *lend = NEW_LABEL(line);
-        int ic_index = ISEQ_BODY(iseq)->is_size++;
+        VALUE segments;
+        if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache &&
+                (segments = collect_const_segments(iseq, node))) {
+            int ic_index = ISEQ_BODY(iseq)->is_size++;
+            ADD_INSN2(ret, node, opt_getconst, array_to_idlist(segments), INT2FIX(ic_index));
+            RB_OBJ_WRITTEN(iseq, Qundef, segments);
+        } else {
+            /* constant */
+            DECL_ANCHOR(pref);
+            DECL_ANCHOR(body);
 
-	DECL_ANCHOR(pref);
-	DECL_ANCHOR(body);
+            INIT_ANCHOR(pref);
+            INIT_ANCHOR(body);
 
-	INIT_ANCHOR(pref);
-	INIT_ANCHOR(body);
-	CHECK(compile_const_prefix(iseq, node, pref, body));
-	if (LIST_INSN_SIZE_ZERO(pref)) {
-	    if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
-		ADD_INSN2(ret, node, opt_getinlinecache, lend, INT2FIX(ic_index));
-	    }
-	    else {
-		ADD_INSN(ret, node, putnil);
-	    }
-
-	    ADD_SEQ(ret, body);
-
-	    if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
-		ADD_INSN1(ret, node, opt_setinlinecache, INT2FIX(ic_index));
-		ADD_LABEL(ret, lend);
-	    }
-	}
-	else {
-	    ADD_SEQ(ret, pref);
-	    ADD_SEQ(ret, body);
-	}
+            CHECK(compile_const_prefix(iseq, node, pref, body));
+            if (LIST_INSN_SIZE_ZERO(pref)) {
+                ADD_INSN(ret, node, putnil);
+                ADD_SEQ(ret, body);
+            }
+            else {
+                ADD_SEQ(ret, pref);
+                ADD_SEQ(ret, body);
+            }
+        }
     }
     else {
 	/* function call */
@@ -8913,25 +8931,18 @@ compile_colon2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
 static int
 compile_colon3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
-    const int line = nd_line(node);
-    LABEL *lend = NEW_LABEL(line);
-    int ic_index = ISEQ_BODY(iseq)->is_size++;
-
     debugi("colon3#nd_mid", node->nd_mid);
 
     /* add cache insn */
     if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
-	ADD_INSN2(ret, node, opt_getinlinecache, lend, INT2FIX(ic_index));
-	ADD_INSN(ret, node, pop);
-    }
-
-    ADD_INSN1(ret, node, putobject, rb_cObject);
-    ADD_INSN1(ret, node, putobject, Qtrue);
-    ADD_INSN1(ret, node, getconstant, ID2SYM(node->nd_mid));
-
-    if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
-	ADD_INSN1(ret, node, opt_setinlinecache, INT2FIX(ic_index));
-	ADD_LABEL(ret, lend);
+        int ic_index = ISEQ_BODY(iseq)->is_size++;
+        VALUE segments = rb_ary_new_from_args(2, Qnil, ID2SYM(node->nd_mid));
+        ADD_INSN2(ret, node, opt_getconst, array_to_idlist(segments), INT2FIX(ic_index));
+        RB_OBJ_WRITTEN(iseq, Qundef, segments);
+    } else {
+        ADD_INSN1(ret, node, putobject, rb_cObject);
+        ADD_INSN1(ret, node, putobject, Qtrue);
+        ADD_INSN1(ret, node, getconstant, ID2SYM(node->nd_mid));
     }
 
     if (popped) {
@@ -9433,14 +9444,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
 	debugi("nd_vid", node->nd_vid);
 
 	if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
-	    LABEL *lend = NEW_LABEL(line);
-	    int ic_index = body->is_size++;
-
-            ADD_INSN2(ret, node, opt_getinlinecache, lend, INT2FIX(ic_index));
-            ADD_INSN1(ret, node, putobject, Qtrue);
-            ADD_INSN1(ret, node, getconstant, ID2SYM(node->nd_vid));
-            ADD_INSN1(ret, node, opt_setinlinecache, INT2FIX(ic_index));
-	    ADD_LABEL(ret, lend);
+            int ic_index = iseq->body->is_size++;
+            VALUE segments = rb_ary_new_from_args(1, ID2SYM(node->nd_vid));
+            ADD_INSN2(ret, node, opt_getconst, array_to_idlist(segments), INT2FIX(ic_index));
 	}
 	else {
 	    ADD_INSN(ret, node, putnil);

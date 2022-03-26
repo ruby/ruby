@@ -1040,6 +1040,27 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
 }
 
 static inline VALUE
+vm_get_ev_const_chain(rb_execution_context_t *ec, IDLIST segments)
+{
+    VALUE val;
+    int idx = 0;
+    int allow_nil = TRUE;
+    val = Qnil;
+    if (segments[0] == idNULL) {
+        val = rb_cObject;
+        idx++;
+        allow_nil = FALSE;
+    }
+    while (segments[idx]) {
+        ID id = segments[idx++];
+        val = vm_get_ev_const(ec, val, id, allow_nil, 0);
+        allow_nil = FALSE;
+    }
+    return val;
+}
+
+
+static inline VALUE
 vm_get_cvar_base(const rb_cref_t *cref, const rb_control_frame_t *cfp, int top_level_raise)
 {
     VALUE klass;
@@ -4936,6 +4957,24 @@ vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
 
 #define IMEMO_CONST_CACHE_SHAREABLE IMEMO_FL_USER0
 
+static void
+vm_track_constant_cache(ID id, void *ic)
+{
+    struct rb_id_table *const_cache = GET_VM()->constant_cache;
+    VALUE lookup_result;
+    st_table *ics;
+
+    if (rb_id_table_lookup(const_cache, id, &lookup_result)) {
+        ics = (st_table *)lookup_result;
+    }
+    else {
+        ics = st_init_numtable();
+        rb_id_table_insert(const_cache, id, (VALUE)ics);
+    }
+
+    st_insert(ics, (st_data_t) ic, (st_data_t) Qtrue);
+}
+
 // This is the iterator used by vm_ic_compile for rb_iseq_each. It is used as a
 // callback for each instruction within the ISEQ, and is meant to return a
 // boolean indicating whether or not to keep iterating.
@@ -4952,22 +4991,25 @@ vm_ic_compile_i(VALUE *code, VALUE insn, size_t index, void *ic)
 
     if (insn == BIN(getconstant)) {
         ID id = code[index + 1];
-        struct rb_id_table *const_cache = GET_VM()->constant_cache;
-        VALUE lookup_result;
-        st_table *ics;
-
-        if (rb_id_table_lookup(const_cache, id, &lookup_result)) {
-            ics = (st_table *)lookup_result;
-        }
-        else {
-            ics = st_init_numtable();
-            rb_id_table_insert(const_cache, id, (VALUE)ics);
-        }
-
-        st_insert(ics, (st_data_t) ic, (st_data_t) Qtrue);
+        vm_track_constant_cache(id, ic);
     }
 
     return true;
+}
+
+static void
+vm_ic_track_const_chain(rb_control_frame_t *cfp, IC ic, IDLIST segments)
+{
+    const rb_iseq_t *iseq = cfp->iseq;
+    RB_VM_LOCK_ENTER();
+
+    for (int i = 0; segments[i]; i++) {
+        VALUE id = segments[i];
+        if (id == idNULL) continue;
+        vm_track_constant_cache(id, ic);
+    }
+
+    RB_VM_LOCK_LEAVE();
 }
 
 // Loop through the instruction sequences starting at the opt_getinlinecache
