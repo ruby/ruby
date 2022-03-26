@@ -462,6 +462,7 @@ module Bundler
 
         cache_path = download_cache_path(spec) || default_cache_path_for(rubygems_dir)
         gem_path = "#{cache_path}/#{spec.file_name}"
+        return gem_path if File.exist?(gem_path)
 
         if requires_sudo?
           download_path = Bundler.tmp(spec.full_name)
