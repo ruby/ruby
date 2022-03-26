@@ -4195,8 +4195,8 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *  These are the methods defined for \BasicObject:
  *
  *  - ::new: Returns a new \BasicObject instance.
- *  - {!}[#method-i-21]: Returns the boolean negation of +self+: +true+ or +false+.
- *  - {!=}[#method-i-21-3D]: Returns whether +self+ and the given object are _not_ equal.
+ *  - #!: Returns the boolean negation of +self+: +true+ or +false+.
+ *  - #!=: Returns whether +self+ and the given object are _not_ equal.
  *  - #==: Returns whether +self+ and the given object are equivalent.
  *  - {__id__}[#method-i-__id__]: Returns the integer object identifier for +self+.
  *  - {__send__}[#method-i-__send__]: Calls the method identified by the given symbol.
@@ -4240,9 +4240,9 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *
  *  === Querying
  *
- *  - {!~}[#method-i-21~]: Returns +true+ if +self+ does not match the given object,
+ *  - #!~: Returns +true+ if +self+ does not match the given object,
  *    otherwise +false+.
- *  - {<=>}[#method-i-3C-3D-3E]: Returns 0 if +self+ and the given object +object+ are the same
+ *  - #<=>: Returns 0 if +self+ and the given object +object+ are the same
  *    object, or if <tt>self == object</tt>; otherwise returns +nil+.
  *  - #===: Implements case equality, effectively the same as calling #==.
  *  - #eql?: Implements hash equality, effectively the same as calling #==.
