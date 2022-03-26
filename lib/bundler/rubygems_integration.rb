@@ -204,7 +204,6 @@ module Bundler
     end
 
     def spec_from_gem(path, policy = nil)
-      require "rubygems/security"
       require "psych"
       gem_from_path(path, security_policies[policy]).spec
     rescue Exception, Gem::Exception, Gem::Security::Exception => e # rubocop:disable Lint/RescueException
