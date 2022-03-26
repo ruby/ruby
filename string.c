@@ -9692,17 +9692,12 @@ lstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
 
 /*
  *  call-seq:
- *     str.lstrip!   -> self or nil
+ *    lstrip! -> self or nil
  *
- *  Removes leading whitespace from the receiver.
- *  Returns the altered receiver, or +nil+ if no change was made.
- *  See also String#rstrip! and String#strip!.
+ *  Like String#lstrip, except that any modifications are made in +self+;
+ *  returns +self+ if any modification are made, +nil+ otherwise.
  *
- *  Refer to String#strip for the definition of whitespace.
- *
- *     "  hello  ".lstrip!  #=> "hello  "
- *     "hello  ".lstrip!    #=> nil
- *     "hello".lstrip!      #=> nil
+ *  Related: String#rstrip!, String#strip!.
  */
 
 static VALUE
@@ -9730,15 +9725,17 @@ rb_str_lstrip_bang(VALUE str)
 
 /*
  *  call-seq:
- *     str.lstrip   -> new_str
+ *    lstrip -> new_string
  *
- *  Returns a copy of the receiver with leading whitespace removed.
- *  See also String#rstrip and String#strip.
+ *  Returns a copy of +self+ with leading whitespace removed;
+ *  see {Whitespace in Strings}[rdoc-ref:String@Whitespace+in+Strings]:
  *
- *  Refer to String#strip for the definition of whitespace.
+ *    whitespace = "\x00\t\n\v\f\r "
+ *    s = whitespace + 'abc' + whitespace
+ *    s        # => "\u0000\t\n\v\f\r abc\u0000\t\n\v\f\r "
+ *    s.lstrip # => "abc\u0000\t\n\v\f\r "
  *
- *     "  hello  ".lstrip   #=> "hello  "
- *     "hello".lstrip       #=> "hello"
+ *  Related: String#rstrip, String#strip.
  */
 
 static VALUE
@@ -9780,17 +9777,12 @@ rstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
 
 /*
  *  call-seq:
- *     str.rstrip!   -> self or nil
+ *    rstrip! -> self or nil
  *
- *  Removes trailing whitespace from the receiver.
- *  Returns the altered receiver, or +nil+ if no change was made.
- *  See also String#lstrip! and String#strip!.
+ *  Like String#rstrip, except that any modifications are made in +self+;
+ *  returns +self+ if any modification are made, +nil+ otherwise.
  *
- *  Refer to String#strip for the definition of whitespace.
- *
- *     "  hello  ".rstrip!  #=> "  hello"
- *     "  hello".rstrip!    #=> nil
- *     "hello".rstrip!      #=> nil
+ *  Related: String#lstrip!, String#strip!.
  */
 
 static VALUE
@@ -9817,15 +9809,17 @@ rb_str_rstrip_bang(VALUE str)
 
 /*
  *  call-seq:
- *     str.rstrip   -> new_str
+ *    rstrip -> new_string
  *
- *  Returns a copy of the receiver with trailing whitespace removed.
- *  See also String#lstrip and String#strip.
+ *  Returns a copy of the receiver with trailing whitespace removed;
+ *  see {Whitespace in Strings}[rdoc-ref:String@Whitespace+in+Strings]:
  *
- *  Refer to String#strip for the definition of whitespace.
+ *    whitespace = "\x00\t\n\v\f\r "
+ *    s = whitespace + 'abc' + whitespace
+ *    s        # => "\u0000\t\n\v\f\r abc\u0000\t\n\v\f\r "
+ *    s.rstrip # => "\u0000\t\n\v\f\r abc"
  *
- *     "  hello  ".rstrip   #=> "  hello"
- *     "hello".rstrip       #=> "hello"
+ *  Related: String#lstrip, String#strip.
  */
 
 static VALUE
@@ -9846,15 +9840,12 @@ rb_str_rstrip(VALUE str)
 
 /*
  *  call-seq:
- *     str.strip!   -> self or nil
+ *    strip! -> self or nil
  *
- *  Removes leading and trailing whitespace from the receiver.
- *  Returns the altered receiver, or +nil+ if there was no change.
+ *  Like String#strip, except that any modifications are made in +self+;
+ *  returns +self+ if any modification are made, +nil+ otherwise.
  *
- *  Refer to String#strip for the definition of whitespace.
- *
- *     "  hello  ".strip!  #=> "hello"
- *     "hello".strip!      #=> nil
+ *  Related: String#lstrip!, String#strip!.
  */
 
 static VALUE
@@ -9886,17 +9877,17 @@ rb_str_strip_bang(VALUE str)
 
 /*
  *  call-seq:
- *     str.strip   -> new_str
+ *    strip -> new_string
  *
- *  Returns a copy of the receiver with leading and trailing whitespace removed.
+ *  Returns a copy of the receiver with leading and trailing whitespace removed;
+ *  see {Whitespace in Strings}[rdoc-ref:String@Whitespace+in+Strings]:
  *
- *  Whitespace is defined as any of the following characters:
- *  null, horizontal tab, line feed, vertical tab, form feed, carriage return, space.
+ *    whitespace = "\x00\t\n\v\f\r "
+ *    s = whitespace + 'abc' + whitespace
+ *    s       # => "\u0000\t\n\v\f\r abc\u0000\t\n\v\f\r "
+ *    s.strip # => "abc"
  *
- *     "    hello    ".strip   #=> "hello"
- *     "\tgoodbye\r\n".strip   #=> "goodbye"
- *     "\x00\t\n\v\f\r ".strip #=> ""
- *     "hello".strip           #=> "hello"
+ *  Related: String#lstrip, String#rstrip.
  */
 
 static VALUE
@@ -12230,6 +12221,25 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  Special match variables such as <tt>$1</tt>, <tt>$2</tt>, <tt>$`</tt>,
  *  <tt>$&</tt>, and <tt>$'</tt> are set appropriately.
  *
+ *  == Whitespace in Strings
+ *
+ *  In class \String, _whitespace_ is defined as a contiguous sequence of characters
+ *  consisting of any mixture of the following:
+ *
+ *  - NL (null): <tt>"\x00"</tt>, <tt>"\u0000"</tt>.
+ *  - HT (horizontal tab): <tt>"\x09"</tt>, "<tt>\t"</tt>.
+ *  - LF (line feed): <tt>"\x0a"</tt>, <tt>"\n"</tt>.
+ *  - VT (vertical tab): <tt>"\x0b"</tt>, <tt>"\v"</tt>.
+ *  - FF (form feed): <tt>"\x0c"</tt>, <tt>"\f"</tt>.
+ *  - CR (carriage return): <tt>"\x0d"</tt>, <tt>"\r"</tt>.
+ *  - SP (space): <tt>"\x20"</tt>, <tt>" "</tt>.
+ *
+ *
+ *  Whitespace is relevant for these methods:
+ *
+ *  - #lstrip, #lstrip!: strip leading whitespace.
+ *  - #rstrip, #rstrip!: strip trailing whitespace.
+ *  - #strip, #strip!: strip leading and trailing whitespace.
  *
  *  == What's Here
  *
@@ -12360,7 +12370,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #rstrip!:: Removes trailing whitespace; returns +self+ if any changes, +nil+ otherwise.
  *  - #strip!:: Removes leading and trailing whitespace; returns +self+ if any changes, +nil+ otherwise.
  *  - #chomp!:: Removes trailing record separator, if found; returns +self+ if any changes, +nil+ otherwise.
- *  - #chop!:: Removes trailing whitespace if found, otherwise removes the last character;
+ *  - #chop!:: Removes trailing newline characters if found; otherwise removes the last character;
  *             returns +self+ if any changes, +nil+ otherwise.
  *
  *  === Methods for Converting to New \String
@@ -12420,7 +12430,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #rstrip:: Returns a copy of +self+ with trailing whitespace removed.
  *  - #strip:: Returns a copy of +self+ with leading and trailing whitespace removed.
  *  - #chomp:: Returns a copy of +self+ with a trailing record separator removed, if found.
- *  - #chop:: Returns a copy of +self+ with trailing whitespace or the last character removed.
+ *  - #chop:: Returns a copy of +self+ with trailing newline characters or the last character removed.
  *  - #squeeze:: Returns a copy of +self+ with contiguous duplicate characters removed.
  *  - #[], #slice:: Returns a substring determined by a given index, start/length, or range, or string.
  *  - #byteslice:: Returns a substring determined by a given index, start/length, or range.
