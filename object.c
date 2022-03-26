@@ -4458,7 +4458,7 @@ InitVM_Object(void)
      *
      * === Subprocesses
      *
-     * - #`command`: Returns the standard output of running +command+ in a subshell.
+     * - {`command`}[#method-i-60]: Returns the standard output of running +command+ in a subshell.
      * - #exec: Replaces current process with a new process.
      * - #fork: Forks the current process into two processes.
      * - #spawn: Executes the given command and returns its pid without waiting
