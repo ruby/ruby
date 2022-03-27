@@ -9,4 +9,3 @@ modulo <tt>2**n - 1</tt>:
   'こんにちは'.sum  # => 2582
 
 This is not a particularly strong checksum.
-
