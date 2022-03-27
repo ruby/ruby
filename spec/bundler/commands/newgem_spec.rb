@@ -1982,6 +1982,11 @@ Usage: "bundle gem NAME [OPTIONS]"
       it { expect(err).to include("Invalid gem name #{subject}") }
     end
 
+    context "including capital letter" do
+      subject { "CAPITAL" }
+      it { expect(err).to include("Invalid gem name #{subject}") }
+    end
+
     context "starting with an existing const name" do
       subject { "gem-somenewconstantname" }
       it { expect(err).not_to include("Invalid gem name #{subject}") }
