@@ -112,6 +112,13 @@ class TestRegexp < Test::Unit::TestCase
       assert_not_match(re, 'foobaz')
 
       re = /
+        f[[:alnum:]#]o  # \\M-ca
+        bar
+      /x
+      assert_match(re, 'foobar')
+      assert_not_match(re, 'foobaz')
+
+      re = /
         f(?# \\M-ca)oo  # \\M-ca
         bar
       /x

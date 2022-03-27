@@ -2786,14 +2786,12 @@ escape_asis:
             rb_str_buf_cat(buf, (char *)&c, 1);
             break;
           case '[':
-            if (!in_char_class) {
-                in_char_class = 1;
-            }
+            in_char_class++;
             rb_str_buf_cat(buf, (char *)&c, 1);
             break;
           case ']':
             if (in_char_class) {
-                in_char_class = 0;
+                in_char_class--;
             }
             rb_str_buf_cat(buf, (char *)&c, 1);
             break;
