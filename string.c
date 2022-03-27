@@ -1509,7 +1509,7 @@ rb_str_buf_new(long capa)
 
     return str;
 }
-  
+
 VALUE
 rb_str_buf_new_cstr(const char *ptr)
 {
