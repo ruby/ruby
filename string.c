@@ -9975,7 +9975,7 @@ scan_once(VALUE str, VALUE pat, long *start, int set_backref_str)
  *
  *  With no block given, returns an array of the results:
  *
- *    s = 'cruel world;
+ *    s = 'cruel world'
  *    s.scan(/\w+/)      # => ["cruel", "world"]
  *    s.scan(/.../)      # => ["cru", "el ", "wor"]
  *    s.scan(/(...)/)    # => [["cru"], ["el "], ["wor"]]
