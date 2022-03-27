@@ -7063,11 +7063,11 @@ static const rb_data_type_t env_data_type = {
  *
  *  ==== Methods for Comparing
  *
- *  - {<}[#method-i-3C]: Returns whether +self+ is a proper subset of a given object.
- *  - {<=}[#method-i-3C-3D]: Returns whether +self+ is a subset of a given object.
+ *  - #<: Returns whether +self+ is a proper subset of a given object.
+ *  - #<=: Returns whether +self+ is a subset of a given object.
  *  - #==: Returns whether a given object is equal to +self+.
- *  - {>}[#method-i-3E]: Returns whether +self+ is a proper superset of a given object
- *  - {>=}[#method-i-3E-3D]: Returns whether +self+ is a proper superset of a given object.
+ *  - #>: Returns whether +self+ is a proper superset of a given object
+ *  - #>=: Returns whether +self+ is a proper superset of a given object.
  *
  *  ==== Methods for Fetching
  *
