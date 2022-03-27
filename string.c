@@ -1509,7 +1509,7 @@ rb_str_buf_new(long capa)
 
     return str;
 }
-
+  
 VALUE
 rb_str_buf_new_cstr(const char *ptr)
 {
@@ -11445,9 +11445,8 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
  * === Methods for Querying
  *
  * - ::all_symbols:: Returns an array of the symbols currently in Ruby's symbol table.
- * - {#=~}[#method-i-3D~]:: Returns the index of the first substring
- *                          in symbol that matches a given Regexp
- *                          or other object; returns +nil+ if no match is found.
+ * - #=~:: Returns the index of the first substring in symbol that matches a
+ *         given Regexp or other object; returns +nil+ if no match is found.
  * - #[], #slice :: Returns a substring of symbol
  *                  determined by a given index, start/length, or range, or string.
  * - #empty?:: Returns +true+ if +self.length+ is zero; +false+ otherwise.
@@ -11731,7 +11730,7 @@ sym_cmp(VALUE sym, VALUE other)
  *  call-seq:
  *    casecmp(other_symbol) -> -1, 0, 1, or nil
  *
- *  Case-insensitive version of {Symbol#<=>}[#method-i-3C-3D-3E]:
+ *  Case-insensitive version of #<=>:
  *
  *    :aBcDeF.casecmp(:abcde)   # => 1
  *    :aBcDeF.casecmp(:abcdef)  # => 0
@@ -12278,10 +12277,10 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  === Methods for a Frozen/Unfrozen String
  *
- *  - #+string:: Returns a string that is not frozen: +self+, if not frozen;
- *               +self.dup+ otherwise.
- *  - #-string:: Returns a string that is frozen: +self+, if already frozen;
- *               +self.freeze+ otherwise.
+ *  - #+@:: Returns a string that is not frozen: +self+, if not frozen;
+ *          +self.dup+ otherwise.
+ *  - #-@:: Returns a string that is frozen: +self+, if already frozen;
+ *          +self.freeze+ otherwise.
  *  - #freeze:: Freezes +self+, if not already frozen; returns +self+.
  *
  *  === Methods for Querying
@@ -12295,8 +12294,8 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  _Substrings_
  *
- *  - {#=~}[#method-i-3D~]:: Returns the index of the first substring that matches a given Regexp or other object;
- *                           returns +nil+ if no match is found.
+ *  - #=~:: Returns the index of the first substring that matches a given
+ *          Regexp or other object; returns +nil+ if no match is found.
  *  - #index:: Returns the index of the _first_ occurrence of a given substring;
  *             returns +nil+ if none found.
  *  - #rindex:: Returns the index of the _last_ occurrence of a given substring;
