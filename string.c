@@ -12266,10 +12266,10 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  === Methods for a Frozen/Unfrozen String
  *
- *  - #+string:: Returns a string that is not frozen: +self+, if not frozen;
- *               +self.dup+ otherwise.
- *  - #-string:: Returns a string that is frozen: +self+, if already frozen;
- *               +self.freeze+ otherwise.
+ *  - #+@:: Returns a string that is not frozen: +self+, if not frozen;
+ *          +self.dup+ otherwise.
+ *  - #-@:: Returns a string that is frozen: +self+, if already frozen;
+ *          +self.freeze+ otherwise.
  *  - #freeze:: Freezes +self+, if not already frozen; returns +self+.
  *
  *  === Methods for Querying
