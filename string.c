@@ -10058,7 +10058,7 @@ rb_str_hex(VALUE str)
  *  call-seq:
  *    oct -> integer
  *
- *  Interprets the leading substring os +self+ as a string of octal digits
+ *  Interprets the leading substring of +self+ as a string of octal digits
  *  (with an optional sign) and returns the corresponding number;
  *  returns zero if there is no such leading substring:
  *
