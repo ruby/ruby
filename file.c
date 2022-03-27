@@ -1611,8 +1611,7 @@ rb_file_directory_p(VALUE obj, VALUE fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (S_ISDIR(st.st_mode)) return Qtrue;
-    return Qfalse;
+    return RBOOL(S_ISDIR(st.st_mode));
 }
 
 /*
@@ -1761,9 +1760,7 @@ rb_file_chardev_p(VALUE obj, VALUE fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (S_ISCHR(st.st_mode)) return Qtrue;
-
-    return Qfalse;
+    return RBOOL(S_ISCHR(st.st_mode));
 }
 
 /*
@@ -4159,8 +4156,7 @@ s_absolute_path_p(VALUE klass, VALUE fname)
 {
     VALUE path = rb_get_path(fname);
 
-    if (!rb_is_absolute_path(RSTRING_PTR(path))) return Qfalse;
-    return Qtrue;
+    return RBOOL(rb_is_absolute_path(RSTRING_PTR(path)));
 }
 
 enum rb_realpath_mode {
@@ -5487,18 +5483,15 @@ rb_f_test(int argc, VALUE *argv, VALUE _)
 
 	switch (cmd) {
 	  case '=':
-	    if (t1.tv_sec == t2.tv_sec && t1.tv_nsec == t2.tv_nsec) return Qtrue;
-	    return Qfalse;
+	    return RBOOL(t1.tv_sec == t2.tv_sec && t1.tv_nsec == t2.tv_nsec);
 
 	  case '>':
 	    if (t1.tv_sec > t2.tv_sec) return Qtrue;
-	    if (t1.tv_sec == t2.tv_sec && t1.tv_nsec > t2.tv_nsec) return Qtrue;
-	    return Qfalse;
+	    return RBOOL(t1.tv_sec == t2.tv_sec && t1.tv_nsec > t2.tv_nsec);
 
 	  case '<':
 	    if (t1.tv_sec < t2.tv_sec) return Qtrue;
-	    if (t1.tv_sec == t2.tv_sec && t1.tv_nsec < t2.tv_nsec) return Qtrue;
-	    return Qfalse;
+	    return RBOOL(t1.tv_sec == t2.tv_sec && t1.tv_nsec < t2.tv_nsec);
 	}
     }
   unknown:
@@ -5615,8 +5608,7 @@ rb_stat_ftype(VALUE obj)
 static VALUE
 rb_stat_d(VALUE obj)
 {
-    if (S_ISDIR(get_stat(obj)->st_mode)) return Qtrue;
-    return Qfalse;
+    return RBOOL(S_ISDIR(get_stat(obj)->st_mode));
 }
 
 /*
@@ -5722,9 +5714,7 @@ rb_stat_b(VALUE obj)
 static VALUE
 rb_stat_c(VALUE obj)
 {
-    if (S_ISCHR(get_stat(obj)->st_mode)) return Qtrue;
-
-    return Qfalse;
+    return RBOOL(S_ISCHR(get_stat(obj)->st_mode));
 }
 
 /*
@@ -5742,15 +5732,13 @@ rb_stat_c(VALUE obj)
 static VALUE
 rb_stat_owned(VALUE obj)
 {
-    if (get_stat(obj)->st_uid == geteuid()) return Qtrue;
-    return Qfalse;
+    return RBOOL(get_stat(obj)->st_uid == geteuid());
 }
 
 static VALUE
 rb_stat_rowned(VALUE obj)
 {
-    if (get_stat(obj)->st_uid == getuid()) return Qtrue;
-    return Qfalse;
+    return RBOOL(get_stat(obj)->st_uid == getuid());
 }
 
 /*
@@ -6043,8 +6031,7 @@ rb_stat_X(VALUE obj)
 static VALUE
 rb_stat_f(VALUE obj)
 {
-    if (S_ISREG(get_stat(obj)->st_mode)) return Qtrue;
-    return Qfalse;
+    return RBOOL(S_ISREG(get_stat(obj)->st_mode));
 }
 
 /*
@@ -6061,8 +6048,7 @@ rb_stat_f(VALUE obj)
 static VALUE
 rb_stat_z(VALUE obj)
 {
-    if (get_stat(obj)->st_size == 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(get_stat(obj)->st_size == 0);
 }
 
 /*
