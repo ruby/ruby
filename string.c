@@ -10033,7 +10033,7 @@ rb_str_scan(VALUE str, VALUE pat)
  *  call-seq:
  *    hex -> integer
  *
- *  Interprets the leading substring os +self+ as a string of hexadecimal digits
+ *  Interprets the leading substring of +self+ as a string of hexadecimal digits
  *  (with an optional sign and an optional <code>0x</code>) and returns the
  *  corresponding number;
  *  returns zero if there is no such leading substring:
