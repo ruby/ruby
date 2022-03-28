@@ -154,9 +154,13 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
       text =~ /^\{(.*)\}\[(.*?)\]$/ or text =~ /^(\S+)\[(.*?)\]$/
 
     label = $1
-    url   = $2
+    url   = CGI.escapeHTML($2)
 
-    label = handle_RDOCLINK label if /^rdoc-image:/ =~ label
+    if /^rdoc-image:/ =~ label
+      label = handle_RDOCLINK(label)
+    else
+      label = CGI.escapeHTML(label)
+    end
 
     gen_url url, label
   end

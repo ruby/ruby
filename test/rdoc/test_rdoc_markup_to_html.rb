@@ -704,6 +704,23 @@ EXPECTED
     assert_equal "\n<p><a href=\"irc://irc.freenode.net/#ruby-lang\">ruby-lang</a></p>\n", result
   end
 
+  def test_convert_TIDYLINK_escape_text
+    assert_escaped '<script>', '{<script>alert`link text`</script>}[a]'
+    assert_escaped '<script>', 'x:/<script>alert(1);</script>[[]'
+  end
+
+  def test_convert_TIDYLINK_escape_javascript
+    assert_not_include '{click}[javascript:alert`javascript_scheme`]', '<a href="javascript:'
+  end
+
+  def test_convert_TIDYLINK_escape_onmouseover
+    assert_escaped '"/onmouseover="', '{onmouseover}[http://"/onmouseover="alert`on_mouse_link`"]'
+  end
+
+  def test_convert_TIDYLINK_escape_onerror
+    assert_escaped '"onerror="', '{link_image}[http://"onerror="alert`link_image`".png]'
+  end
+
   def test_convert_with_exclude_tag
     assert_equal "\n<p><code>aaa</code>[:symbol]</p>\n", @to.convert('+aaa+[:symbol]')
     assert_equal "\n<p><code>aaa[:symbol]</code></p>\n", @to.convert('+aaa[:symbol]+')
@@ -902,6 +919,12 @@ EXPECTED
     assert_include(res[%r<<td[^<>]*>.*code.*</td>>], '<code>code</code>')
     assert_include(res[%r<<td[^<>]*>.*em.*</td>>], '<em>em</em>')
     assert_include(res[%r<<td[^<>]*>.*strong.*</td>>], '<strong>strong</strong>')
+  end
+
+  def assert_escaped(unexpected, code)
+    result = @to.convert(code)
+    assert_not_include result, unexpected
+    assert_include result, CGI.escapeHTML(unexpected)
   end
 end
 
