@@ -10383,15 +10383,10 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
 
 /*
  *  call-seq:
- *     str.ljust(integer, padstr=' ')   -> new_str
+ *    ljust(size, pad_string = ' ') -> new_string
  *
- *  If <i>integer</i> is greater than the length of <i>str</i>, returns a new
- *  String of length <i>integer</i> with <i>str</i> left justified
- *  and padded with <i>padstr</i>; otherwise, returns <i>str</i>.
+ *  :include: doc/string/ljust.rdoc
  *
- *     "hello".ljust(4)            #=> "hello"
- *     "hello".ljust(20)           #=> "hello               "
- *     "hello".ljust(20, '1234')   #=> "hello123412341234123"
  */
 
 static VALUE
@@ -10400,18 +10395,12 @@ rb_str_ljust(int argc, VALUE *argv, VALUE str)
     return rb_str_justify(argc, argv, str, 'l');
 }
 
-
 /*
  *  call-seq:
- *     str.rjust(integer, padstr=' ')   -> new_str
+ *    rjust(size, pad_string = ' ') -> new_string
  *
- *  If <i>integer</i> is greater than the length of <i>str</i>, returns a new
- *  String of length <i>integer</i> with <i>str</i> right justified
- *  and padded with <i>padstr</i>; otherwise, returns <i>str</i>.
+ *  :include: doc/string/rjust.rdoc
  *
- *     "hello".rjust(4)            #=> "hello"
- *     "hello".rjust(20)           #=> "               hello"
- *     "hello".rjust(20, '1234')   #=> "123412341234123hello"
  */
 
 static VALUE
@@ -10423,15 +10412,10 @@ rb_str_rjust(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.center(width, padstr=' ')   -> new_str
+ *    center(size, pad_string = ' ') -> new_string
  *
- *  Centers +str+ in +width+.  If +width+ is greater than the length of +str+,
- *  returns a new String of length +width+ with +str+ centered and padded with
- *  +padstr+; otherwise, returns +str+.
+ *  :include: doc/string/center.rdoc
  *
- *     "hello".center(4)         #=> "hello"
- *     "hello".center(20)        #=> "       hello        "
- *     "hello".center(20, '123') #=> "1231231hello12312312"
  */
 
 static VALUE
