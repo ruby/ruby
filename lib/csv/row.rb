@@ -29,7 +29,7 @@ class CSV
     #
     def initialize(headers, fields, header_row = false)
       @header_row = header_row
-      headers.each { |h| h.freeze if h.is_a? String }
+      headers = headers.map { |h| h.is_a?(String) ? -h : h }
 
       # handle extra headers or fields
       @row = if headers.size >= fields.size
