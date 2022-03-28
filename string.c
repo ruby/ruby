@@ -10432,17 +10432,10 @@ rb_str_center(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.partition(sep)              -> [head, sep, tail]
- *     str.partition(regexp)           -> [head, match, tail]
+ *    partition(string_or_regexp) -> [head, match, tail]
  *
- *  Searches <i>sep</i> or pattern (<i>regexp</i>) in the string
- *  and returns the part before it, the match, and the part
- *  after it.
- *  If it is not found, returns two empty strings and <i>str</i>.
+ *  :include: doc/string/partition.rdoc
  *
- *     "hello".partition("l")         #=> ["he", "l", "lo"]
- *     "hello".partition("x")         #=> ["hello", "", ""]
- *     "hello".partition(/.l/)        #=> ["h", "el", "lo"]
  */
 
 static VALUE
@@ -10476,31 +10469,10 @@ rb_str_partition(VALUE str, VALUE sep)
 
 /*
  *  call-seq:
- *     str.rpartition(sep)             -> [head, sep, tail]
- *     str.rpartition(regexp)          -> [head, match, tail]
+ *    rpartition(sep) -> [head, match, tail]
  *
- *  Searches <i>sep</i> or pattern (<i>regexp</i>) in the string from the end
- *  of the string, and returns the part before it, the match, and the part
- *  after it.
- *  If it is not found, returns two empty strings and <i>str</i>.
+ *  :include: doc/string/rpartition.rdoc
  *
- *     "hello".rpartition("l")         #=> ["hel", "l", "o"]
- *     "hello".rpartition("x")         #=> ["", "", "hello"]
- *     "hello".rpartition(/.l/)        #=> ["he", "ll", "o"]
- *
- *  The match from the end means starting at the possible last position, not
- *  the last of longest matches.
- *
- *     "hello".rpartition(/l+/)        #=> ["hel", "l", "o"]
- *
- *  To partition at the last longest match, needs to combine with
- *  negative lookbehind.
- *
- *     "hello".rpartition(/(?<!l)l+/)  #=> ["he", "ll", "o"]
- *
- *  Or String#partition with negative lookforward.
- *
- *     "hello".partition(/l+(?!.*l)/)  #=> ["he", "ll", "o"]
  */
 
 static VALUE
