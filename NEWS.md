@@ -119,9 +119,7 @@ Note: We're only listing outstanding class updates.
 
 ## Compatibility issues
 
-* `Psych` no longer bundle libyaml source.
-  The users need to install libyaml library themselves via package system.
-  [[Feature #18571]]
+Note: Excluding feature bug fixes.
 
 ### Removed constants
 
@@ -145,6 +143,10 @@ The following deprecated methods are removed.
   [[Feature #16131]]
 
 ## Stdlib compatibility issues
+
+* `Psych` no longer bundles libyaml sources.
+  Users need to install the libyaml library themselves via the package
+  system.  [[Feature #18571]]
 
 ## C API updates
 
