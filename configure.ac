@@ -34,6 +34,7 @@ m4_include([tool/m4/ruby_prepend_option.m4])dnl
 m4_include([tool/m4/ruby_prog_gnu_ld.m4])dnl
 m4_include([tool/m4/ruby_replace_funcs.m4])dnl
 m4_include([tool/m4/ruby_replace_type.m4])dnl
+m4_include([tool/m4/ruby_require_funcs.m4])dnl
 m4_include([tool/m4/ruby_rm_recursive.m4])dnl
 m4_include([tool/m4/ruby_setjmp_type.m4])dnl
 m4_include([tool/m4/ruby_stack_grow_direction.m4])dnl
@@ -1943,17 +1944,11 @@ AS_CASE(["$target_os"],[freebsd*],[
 	 AC_REPLACE_FUNCS(close)
 	 ])
 
-AC_DEFUN([RUBY_REQUIRE_FUNC], [
-    AC_CHECK_FUNCS([$1])
-    AS_IF([test "$ac_cv_func_[]AS_TR_SH($1)" = yes], [],
-          [AC_MSG_ERROR($1[() must be supported])])
-])
-
 # dup and dup2 are always available except for WASI
 AS_CASE(["$target_os"],
     [wasi*], [],
     [
-        m4_map_args_w([dup dup2], [RUBY_REQUIRE_FUNC(], [)])
+        RUBY_REQUIRE_FUNCS(dup dup2)
     ]
 )
 
