@@ -1465,7 +1465,7 @@ class TestRegexp < Test::Unit::TestCase
       assert_equal(0.2, Regexp.timeout)
 
       t = Time.now
-      assert_raise_with_message(RuntimeError, "regexp match timeout") do
+      assert_raise_with_message(Regexp::TimeoutError, "regexp match timeout") do
         # A typical ReDoS case
         /^(a*)*$/ =~ "a" * 1000000 + "x"
       end
@@ -1483,7 +1483,7 @@ class TestRegexp < Test::Unit::TestCase
       re = Regexp.new("^a*b?a*$", timeout: 0.2)
 
       t = Time.now
-      assert_raise_with_message(RuntimeError, "regexp match timeout") do
+      assert_raise_with_message(Regexp::TimeoutError, "regexp match timeout") do
         re =~ "a" * 1000000 + "x"
       end
       t = Time.now - t
