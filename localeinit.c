@@ -45,12 +45,14 @@ locale_charmap(VALUE (*conv)(const char *))
     const char *nl_langinfo_codeset(void);
     codeset = nl_langinfo_codeset();
 # endif
-    if (!codeset) {
-	UINT codepage = ruby_w32_codepage[0];
-	if (!codepage) codepage = GetConsoleCP();
-	if (!codepage) codepage = GetACP();
+    UINT codepage = ruby_w32_codepage[0];
+    if (!codeset && codepage) {
+	/* for debugging */
 	CP_FORMAT(cp, codepage);
 	codeset = cp;
+    }
+    if (!codeset) {
+	codeset = "UTF-8";
     }
 #elif defined HAVE_LANGINFO_H
     codeset = nl_langinfo(CODESET);
