@@ -4393,6 +4393,7 @@ rb_io_each_byte(VALUE io)
 
     do {
 	while (fptr->rbuf.len > 0) {
+	    rb_io_check_byte_readable(fptr);
 	    char *p = fptr->rbuf.ptr + fptr->rbuf.off++;
 	    fptr->rbuf.len--;
 	    rb_yield(INT2FIX(*p & 0xff));
