@@ -119,7 +119,9 @@ Note: We're only listing outstanding class updates.
 
 ## Compatibility issues
 
-Note: Excluding feature bug fixes.
+* `Psych` no longer bundle libyaml source.
+  The users need to install libyaml library themselves via package system.
+  [[Feature #18571]]
 
 ### Removed constants
 
