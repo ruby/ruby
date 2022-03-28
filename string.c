@@ -10383,15 +10383,12 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
 
 /*
  *  call-seq:
- *     str.ljust(integer, padstr=' ')   -> new_str
+ *    ljust(size, pad_string = ' ') -> new_string
  *
- *  If <i>integer</i> is greater than the length of <i>str</i>, returns a new
- *  String of length <i>integer</i> with <i>str</i> left justified
- *  and padded with <i>padstr</i>; otherwise, returns <i>str</i>.
+ *  :include: doc/string/ljust.rdoc
  *
- *     "hello".ljust(4)            #=> "hello"
- *     "hello".ljust(20)           #=> "hello               "
- *     "hello".ljust(20, '1234')   #=> "hello123412341234123"
+ *  Related: String#rjust, String#center.
+ *
  */
 
 static VALUE
@@ -10400,18 +10397,14 @@ rb_str_ljust(int argc, VALUE *argv, VALUE str)
     return rb_str_justify(argc, argv, str, 'l');
 }
 
-
 /*
  *  call-seq:
- *     str.rjust(integer, padstr=' ')   -> new_str
+ *    rjust(size, pad_string = ' ') -> new_string
  *
- *  If <i>integer</i> is greater than the length of <i>str</i>, returns a new
- *  String of length <i>integer</i> with <i>str</i> right justified
- *  and padded with <i>padstr</i>; otherwise, returns <i>str</i>.
+ *  :include: doc/string/rjust.rdoc
  *
- *     "hello".rjust(4)            #=> "hello"
- *     "hello".rjust(20)           #=> "               hello"
- *     "hello".rjust(20, '1234')   #=> "123412341234123hello"
+ *  Related: String#ljust, String#center.
+ *
  */
 
 static VALUE
@@ -10423,15 +10416,12 @@ rb_str_rjust(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.center(width, padstr=' ')   -> new_str
+ *    center(size, pad_string = ' ') -> new_string
  *
- *  Centers +str+ in +width+.  If +width+ is greater than the length of +str+,
- *  returns a new String of length +width+ with +str+ centered and padded with
- *  +padstr+; otherwise, returns +str+.
+ *  :include: doc/string/center.rdoc
  *
- *     "hello".center(4)         #=> "hello"
- *     "hello".center(20)        #=> "       hello        "
- *     "hello".center(20, '123') #=> "1231231hello12312312"
+ *  Related: String#ljust, String#rjust.
+ *
  */
 
 static VALUE
@@ -10442,17 +10432,10 @@ rb_str_center(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.partition(sep)              -> [head, sep, tail]
- *     str.partition(regexp)           -> [head, match, tail]
+ *    partition(string_or_regexp) -> [head, match, tail]
  *
- *  Searches <i>sep</i> or pattern (<i>regexp</i>) in the string
- *  and returns the part before it, the match, and the part
- *  after it.
- *  If it is not found, returns two empty strings and <i>str</i>.
+ *  :include: doc/string/partition.rdoc
  *
- *     "hello".partition("l")         #=> ["he", "l", "lo"]
- *     "hello".partition("x")         #=> ["hello", "", ""]
- *     "hello".partition(/.l/)        #=> ["h", "el", "lo"]
  */
 
 static VALUE
@@ -10486,31 +10469,10 @@ rb_str_partition(VALUE str, VALUE sep)
 
 /*
  *  call-seq:
- *     str.rpartition(sep)             -> [head, sep, tail]
- *     str.rpartition(regexp)          -> [head, match, tail]
+ *    rpartition(sep) -> [head, match, tail]
  *
- *  Searches <i>sep</i> or pattern (<i>regexp</i>) in the string from the end
- *  of the string, and returns the part before it, the match, and the part
- *  after it.
- *  If it is not found, returns two empty strings and <i>str</i>.
+ *  :include: doc/string/rpartition.rdoc
  *
- *     "hello".rpartition("l")         #=> ["hel", "l", "o"]
- *     "hello".rpartition("x")         #=> ["", "", "hello"]
- *     "hello".rpartition(/.l/)        #=> ["he", "ll", "o"]
- *
- *  The match from the end means starting at the possible last position, not
- *  the last of longest matches.
- *
- *     "hello".rpartition(/l+/)        #=> ["hel", "l", "o"]
- *
- *  To partition at the last longest match, needs to combine with
- *  negative lookbehind.
- *
- *     "hello".rpartition(/(?<!l)l+/)  #=> ["he", "ll", "o"]
- *
- *  Or String#partition with negative lookforward.
- *
- *     "hello".partition(/l+(?!.*l)/)  #=> ["he", "ll", "o"]
  */
 
 static VALUE
