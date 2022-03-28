@@ -15,7 +15,7 @@ If the pattern is matched, returns pre-match, last-match, post-match:
   'тест'.rpartition('т')       # => ["тес", "т", ""]
   'こんにちは'.rpartition('に')  # => ["こん", "に", "ちは"]
 
-If the pattern is not matched, returns a copy of +self+ and two empty strings:
+If the pattern is not matched, returns two empty strings and a copy of +self+:
 
   'hello'.rpartition('x') # => ["", "", "hello"]
 
