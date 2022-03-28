@@ -908,6 +908,7 @@ rb_dump_machine_register(const ucontext_t *ctx)
 	dump_machine_register(mctx->arm_r8, "r8");
 	dump_machine_register(mctx->arm_r9, "r9");
 	dump_machine_register(mctx->arm_r10, "r10");
+	dump_machine_register(mctx->arm_fp, "r11");
 	dump_machine_register(mctx->arm_sp, "sp");
 	dump_machine_register(mctx->fault_address, "fault_address");
 #   elif defined __riscv
