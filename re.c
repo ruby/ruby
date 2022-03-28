@@ -27,7 +27,7 @@
 #include "ruby/re.h"
 #include "ruby/util.h"
 
-VALUE rb_eRegexpError;
+VALUE rb_eRegexpError, rb_eRegexpTimeoutError;
 
 typedef char onig_errmsg_buffer[ONIG_MAX_ERROR_MESSAGE_LEN];
 #define errcpy(err, msg) strlcpy((err), (msg), ONIG_MAX_ERROR_MESSAGE_LEN)
@@ -4153,7 +4153,7 @@ rb_reg_check_timeout(regex_t *reg, void *end_time_)
     else {
         if (*end_time < rb_hrtime_now()) {
             // timeout is exceeded
-            rb_raise(rb_eRuntimeError, "regexp match timeout");
+            rb_raise(rb_eRegexpTimeoutError, "regexp match timeout");
         }
     }
 }
@@ -4304,6 +4304,7 @@ Init_Regexp(void)
     rb_define_method(rb_cRegexp, "named_captures", rb_reg_named_captures, 0);
     rb_define_method(rb_cRegexp, "timeout", rb_reg_timeout_get, 0);
 
+    rb_eRegexpTimeoutError = rb_define_class_under(rb_cRegexp, "TimeoutError", rb_eRegexpError);
     rb_define_singleton_method(rb_cRegexp, "timeout", rb_reg_s_timeout_get, 0);
     rb_define_singleton_method(rb_cRegexp, "timeout=", rb_reg_s_timeout_set, 1);
 
