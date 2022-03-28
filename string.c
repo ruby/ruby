@@ -10387,6 +10387,8 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
  *
  *  :include: doc/string/ljust.rdoc
  *
+ *  Related: String#rjust, String#center.
+ *
  */
 
 static VALUE
@@ -10400,6 +10402,8 @@ rb_str_ljust(int argc, VALUE *argv, VALUE str)
  *    rjust(size, pad_string = ' ') -> new_string
  *
  *  :include: doc/string/rjust.rdoc
+ *
+ *  Related: String#ljust, String#center.
  *
  */
 
@@ -10415,6 +10419,8 @@ rb_str_rjust(int argc, VALUE *argv, VALUE str)
  *    center(size, pad_string = ' ') -> new_string
  *
  *  :include: doc/string/center.rdoc
+ *
+ *  Related: String#ljust, String#rjust.
  *
  */
 
