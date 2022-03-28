@@ -26,5 +26,13 @@ ruby_version_is "2.7" do
       (0..Float::INFINITY).lazy.with_index { |i, idx| result << [i * 2, idx] }.first(3)
       result.should == [[0,0],[2,1],[4,2]]
     end
+
+    it "resets after a new call to each" do
+      enum = (0..2).lazy.with_index.map { |i, idx| [i, idx] }
+      result = []
+      enum.each { |i, idx| result << [i, idx] }
+      enum.each { |i, idx| result << [i, idx] }
+      result.should == [[0,0], [1,1], [2,2], [0,0], [1,1], [2,2]]
+    end
   end
 end

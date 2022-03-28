@@ -73,6 +73,11 @@ describe :io_readlines_options_19, shared: true do
         result = IO.send(@method, @name, 10, &@object)
         (result ? result : ScratchPad.recorded).should == IOSpecs.lines_limit
       end
+
+      it "ignores the object as a limit if it is negative" do
+        result = IO.send(@method, @name, -2, &@object)
+        (result ? result : ScratchPad.recorded).should == IOSpecs.lines
+      end
     end
 
     describe "when the object is a String" do

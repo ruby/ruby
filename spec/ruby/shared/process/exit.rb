@@ -21,6 +21,12 @@ describe :process_exit, shared: true do
     end
   end
 
+  it "raises a SystemExit with message 'exit'" do
+    -> { @object.exit }.should raise_error(SystemExit) { |e|
+      e.message.should == "exit"
+    }
+  end
+
   it "tries to convert the passed argument to an Integer using #to_int" do
     obj = mock('5')
     obj.should_receive(:to_int).and_return(5)

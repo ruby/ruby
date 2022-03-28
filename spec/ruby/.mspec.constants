@@ -39,6 +39,8 @@ CodingUS_ASCII
 CodingUTF_8
 ComparisonTest
 ConstantSpecsIncludedModule
+ConstantSpecsTwo
+ConstantSpecsThree
 ConstantVisibility
 Coverage
 CoverageSpecs

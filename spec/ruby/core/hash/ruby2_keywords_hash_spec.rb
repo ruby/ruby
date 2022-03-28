@@ -40,6 +40,20 @@ ruby_version_is "2.7" do
       kw.should == h
     end
 
+    it "copies instance variables" do
+      h = {a: 1}
+      h.instance_variable_set(:@foo, 42)
+      kw = Hash.ruby2_keywords_hash(h)
+      kw.instance_variable_get(:@foo).should == 42
+    end
+
+    it "copies the hash internals" do
+      h = {a: 1}
+      kw = Hash.ruby2_keywords_hash(h)
+      h[:a] = 2
+      kw[:a].should == 1
+    end
+
     it "raises TypeError for non-Hash" do
       -> { Hash.ruby2_keywords_hash(nil) }.should raise_error(TypeError)
     end

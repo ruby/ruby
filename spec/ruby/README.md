@@ -18,13 +18,13 @@ Every example code has a textual description, which presents several advantages:
 
 The specs are written with syntax similar to RSpec 2.
 They are run with MSpec, the purpose-built framework for running the Ruby Spec Suite.
-For more information, see the [MSpec](http://github.com/ruby/mspec) project.
+For more information, see the [MSpec](https://github.com/ruby/mspec) project.
 
 The specs describe the [language syntax](language/), the [core library](core/), the [standard library](library/), the [C API for extensions](optional/capi) and the [command line flags](command_line/).
 The language specs are grouped by keyword while the core and standard library specs are grouped by class and method.
 
 ruby/spec is known to be tested in these implementations for every commit:
-* [MRI](http://rubyci.org/) on 30 platforms and 4 versions
+* [MRI](https://rubyci.org/) on 30 platforms and 4 versions
 * [JRuby](https://github.com/jruby/jruby/tree/master/spec/ruby) for both 1.7 and 9.x
 * [TruffleRuby](https://github.com/oracle/truffleruby/tree/master/spec/ruby)
 * [Opal](https://github.com/opal/opal/tree/master/spec)
@@ -70,7 +70,7 @@ Then move to it:
 
     $ cd spec
 
-Clone [MSpec](http://github.com/ruby/mspec):
+Clone [MSpec](https://github.com/ruby/mspec):
 
     $ git clone https://github.com/ruby/mspec.git ../mspec
 
@@ -152,5 +152,5 @@ This project was originally born from [Rubinius](https://github.com/rubinius/rub
 The revision history of these specs is available [here](https://github.com/ruby/spec/blob/2b886623/CHANGES.before-2008-05-10).
 These specs were later extracted to their own project, RubySpec, with a specific vision and principles.
 At the end of 2014, Brian Shirai, the creator of RubySpec, decided to [end RubySpec](http://rubinius.com/2014/12/31/matz-s-ruby-developers-don-t-use-rubyspec/).
-A couple months later, the different repositories were merged and [the project was revived](http://eregon.github.io/rubyspec/2015/07/29/rubyspec-is-reborn.html).
+A couple months later, the different repositories were merged and [the project was revived](https://eregon.github.io/rubyspec/2015/07/29/rubyspec-is-reborn.html).
 On 12 January 2016, the name was changed to "The Ruby Spec Suite" for clarity and to let the RubySpec ideology rest in peace.

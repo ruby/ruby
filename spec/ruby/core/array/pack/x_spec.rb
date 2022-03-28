@@ -30,6 +30,7 @@ describe "Array#pack with format 'x'" do
 
   it "does not add a NULL byte when passed the '*' modifier" do
     [].pack("x*").should == ""
+    [1, 2].pack("Cx*C").should == "\x01\x02"
   end
 end
 

@@ -66,4 +66,11 @@ describe :enumerable_inject, shared: true do
   it "returns nil when fails(legacy rubycon)" do
     EnumerableSpecs::EachDefiner.new().send(@method) {|acc,x| 999 }.should == nil
   end
+
+  ruby_bug '#18635', ''...'3.2' do
+    it "raises an ArgumentError when no parameters or block is given" do
+      -> { [1,2].send(@method) }.should raise_error(ArgumentError)
+      -> { {one: 1, two: 2}.send(@method) }.should raise_error(ArgumentError)
+    end
+  end
 end

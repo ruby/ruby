@@ -205,6 +205,11 @@ describe "Random#rand with Range" do
     Random.new(42).rand(0..1.0).should be_kind_of(Float)
   end
 
+  it "returns a float within a given float range" do
+    Random.new(42).rand(0.0...100.0).should == 37.454011884736246
+    Random.new(42).rand(-100.0...0.0).should == -62.545988115263754
+  end
+
   it "raises an ArgumentError when the startpoint lacks #+ and #- methods" do
     -> do
       Random.new.rand(Object.new..67)
