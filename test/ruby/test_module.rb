@@ -975,13 +975,12 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_undefined_instance_methods
-    assert_equal([],  AClass.undefined_instance_methods(false))
-    assert_equal([], BClass.undefined_instance_methods(false))
+    assert_equal([],  AClass.undefined_instance_methods)
+    assert_equal([], BClass.undefined_instance_methods)
     c = Class.new(AClass) {undef aClass}
-    assert_equal([:aClass], c.undefined_instance_methods(false))
+    assert_equal([:aClass], c.undefined_instance_methods)
     c = Class.new(c)
-    assert_equal([], c.undefined_instance_methods(false))
-    assert_equal([:aClass], c.undefined_instance_methods(true))
+    assert_equal([], c.undefined_instance_methods)
   end
 
   def test_s_public

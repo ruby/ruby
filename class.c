@@ -1807,17 +1807,17 @@ rb_class_public_instance_methods(int argc, const VALUE *argv, VALUE mod)
 
 /*
  *  call-seq:
- *     mod.undefined_instance_methods(include_super=true)   -> array
+ *     mod.undefined_instance_methods   -> array
  *
  *  Returns a list of the undefined instance methods defined in <i>mod</i>.
- *  If the optional parameter is <code>false</code>, the methods of
- *  any ancestors are not included.
+ *  The undefined methods of any ancestors are not included.
  */
 
 VALUE
-rb_class_undefined_instance_methods(int argc, const VALUE *argv, VALUE mod)
+rb_class_undefined_instance_methods(VALUE mod)
 {
-    return class_instance_method_list(argc, argv, mod, 0, ins_methods_undef_i);
+    VALUE include_super = Qfalse;
+    return class_instance_method_list(1, &include_super, mod, 0, ins_methods_undef_i);
 }
 
 /*
@@ -1903,21 +1903,6 @@ VALUE
 rb_obj_public_methods(int argc, const VALUE *argv, VALUE obj)
 {
     return class_instance_method_list(argc, argv, CLASS_OF(obj), 1, ins_methods_pub_i);
-}
-
-/*
- *  call-seq:
- *     obj.undefined_methods(all=true)   -> array
- *
- *  Returns the list of undefined methods accessible to <i>obj</i>. If
- *  the <i>all</i> parameter is set to <code>false</code>, only those methods
- *  in the receiver will be listed.
- */
-
-VALUE
-rb_obj_undefined_methods(int argc, const VALUE *argv, VALUE obj)
-{
-    return class_instance_method_list(argc, argv, CLASS_OF(obj), 1, ins_methods_undef_i);
 }
 
 /*
