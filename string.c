@@ -1380,6 +1380,20 @@ rb_str_tmp_frozen_acquire(VALUE orig)
 }
 
 void
+rb_abandon_tmp_string(VALUE str)
+{
+    /* A temporary string has RUBY_T_STRING built-in type,
+       but its klass is 0. */
+    RB_BUILTIN_TYPE(str) == RUBY_T_STRING;
+    RUBY_ASSERT(RBASIC_CLASS(str) == 0);
+
+    /* Make str embedded and empty so it is safe for sweeping. */
+    STR_SET_EMBED(str);
+    RSTRING(str)->as.embed.len = 0;
+    RSTRING(str)->as.embed.capa = TERM_LEN(str);
+}
+
+void
 rb_str_tmp_frozen_release(VALUE orig, VALUE tmp)
 {
     if (RBASIC_CLASS(tmp) != 0)
@@ -1402,9 +1416,8 @@ rb_str_tmp_frozen_release(VALUE orig, VALUE tmp)
 	    RBASIC(orig)->flags |= RBASIC(tmp)->flags & STR_NOFREE;
 	    assert(OBJ_FROZEN_RAW(tmp));
 
-            /* Make tmp embedded and empty so it is safe for sweeping. */
-            STR_SET_EMBED(tmp);
-            STR_SET_EMBED_LEN(tmp, 0);
+            /* Abandon the temporary string. */
+            rb_abandon_tmp_string(tmp);
 	}
     }
 }
@@ -1654,9 +1667,10 @@ str_shared_replace(VALUE str, VALUE str2)
 	/* abandon str2 */
 	STR_SET_EMBED(str2);
 	RSTRING_PTR(str2)[0] = 0;
-	STR_SET_EMBED_LEN(str2, 0);
 	rb_enc_associate(str, enc);
 	ENC_CODERANGE_SET(str, cr);
+        RSTRING(str2)->as.embed.len = 0;
+        RSTRING(str2)->as.embed.capa = TERM_LEN(str2);
     }
 }
 
