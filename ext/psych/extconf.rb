@@ -7,7 +7,16 @@ if $mswin or $mingw or $cygwin
 end
 
 yaml_source = with_config("libyaml-source-dir") || enable_config("bundled-libyaml", false)
+unless yaml_source # default to pre-installed libyaml
+  pkg_config('yaml-0.1')
+  dir_config('libyaml')
+  unless find_header('yaml.h') && find_library('yaml', 'yaml_get_version')
+    yaml_source = true # fallback to the bundled source if exists
+  end
+end
+
 if yaml_source == true
+  # search the latest libyaml source under $srcdir
   yaml_source = Dir.glob("#{$srcdir}/yaml{,-*}/").max_by {|n| File.basename(n).scan(/\d+/).map(&:to_i)}
   unless yaml_source
     require_relative '../../tool/extlibs.rb'
@@ -16,6 +25,7 @@ if yaml_source == true
       raise "failed to download libyaml source"
     end
     yaml_source, = Dir.glob("#{$srcdir}/yaml-*/")
+    raise "libyaml not found" unless yaml_source
   end
 elsif yaml_source
   yaml_source = yaml_source.gsub(/\$\((\w+)\)|\$\{(\w+)\}/) {ENV[$1||$2]}
@@ -41,12 +51,6 @@ if yaml_source
   Logging.message("INCLFAG=#$INCLFAG\n")
   libyaml = "#{yaml}/src/.libs/libyaml.#$LIBEXT"
   $LOCAL_LIBS.prepend("$(LIBYAML) ")
-else
-  pkg_config('yaml-0.1')
-  dir_config('libyaml')
-  unless find_header('yaml.h') && find_library('yaml', 'yaml_get_version')
-    raise "libyaml not found"
-  end
 end
 
 create_makefile 'psych' do |mk|
