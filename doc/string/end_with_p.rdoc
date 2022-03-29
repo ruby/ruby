@@ -1,12 +1,6 @@
-Returns whether +self+ ends with any of the given +string_or_regexp+.
+Returns whether +self+ ends with any of the given +strings+.
 
-Matches patterns against the end of +self+.
-For each given +string_or_regexp+, the pattern is:
-
-- +string_or_regexp+ itself, if it is a Regexp.
-- <tt>Regexp.quote(string_or_regexp)</tt>, if +string_or_regexp+ is a string.
-
-Returns +true+ if any pattern matches the end, +false+ otherwise:
+Returns +true+ if any given string matches the end, +false+ otherwise:
 
   'hello'.end_with?('ello')               #=> true
   'hello'.end_with?('heaven', 'ello')     #=> true

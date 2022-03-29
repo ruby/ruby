@@ -5,4 +5,4 @@ Returns a copy of +self+ with leading substring <tt>prefix</tt> removed:
   'тест'.delete_prefix('те')        # => "ст"
   'こんにちは'.delete_prefix('こん')  # => "にちは"
 
-Related: String#delete_prefix!, String#delete#suffix.
+Related: String#delete_prefix!, String#delete_suffix.

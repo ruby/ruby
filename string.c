@@ -10540,7 +10540,7 @@ rb_str_start_with(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    end_with?(*string_or_regexp) -> true or false
+ *    end_with?(*strings) -> true or false
  *
  *  :include: doc/string/end_with_p.rdoc
  *
