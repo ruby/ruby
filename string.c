@@ -10510,17 +10510,10 @@ rb_str_rpartition(VALUE str, VALUE sep)
 
 /*
  *  call-seq:
- *     str.start_with?([prefixes]+)   -> true or false
+ *    start_with?(*string_or_regexp) -> true or false
  *
- *  Returns true if +str+ starts with one of the +prefixes+ given.
- *  Each of the +prefixes+ should be a String or a Regexp.
+ *  :include: doc/string/start_with_p.rdoc
  *
- *    "hello".start_with?("hell")               #=> true
- *    "hello".start_with?(/H/i)                 #=> true
- *
- *    # returns true if one of the prefixes matches.
- *    "hello".start_with?("heaven", "hell")     #=> true
- *    "hello".start_with?("heaven", "paradise") #=> false
  */
 
 static VALUE
@@ -10547,15 +10540,10 @@ rb_str_start_with(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.end_with?([suffixes]+)   -> true or false
+ *    end_with?(*strings) -> true or false
  *
- *  Returns true if +str+ ends with one of the +suffixes+ given.
+ *  :include: doc/string/end_with_p.rdoc
  *
- *    "hello".end_with?("ello")               #=> true
- *
- *    # returns true if one of the +suffixes+ matches.
- *    "hello".end_with?("heaven", "ello")     #=> true
- *    "hello".end_with?("heaven", "paradise") #=> false
  */
 
 static VALUE
@@ -10616,13 +10604,11 @@ deleted_prefix_length(VALUE str, VALUE prefix)
 
 /*
  *  call-seq:
- *     str.delete_prefix!(prefix) -> self or nil
+ *    delete_prefix!(prefix) -> self or nil
  *
- *  Deletes leading <code>prefix</code> from <i>str</i>, returning
- *  <code>nil</code> if no change was made.
+ *  Like String#delete_prefix, except that +self+ is modified in place.
+ *  Returns +self+ if the prefix is removed, +nil+ otherwise.
  *
- *     "hello".delete_prefix!("hel") #=> "lo"
- *     "hello".delete_prefix!("llo") #=> nil
  */
 
 static VALUE
@@ -10639,12 +10625,10 @@ rb_str_delete_prefix_bang(VALUE str, VALUE prefix)
 
 /*
  *  call-seq:
- *     str.delete_prefix(prefix) -> new_str
+ *    delete_prefix(prefix) -> new_string
  *
- *  Returns a copy of <i>str</i> with leading <code>prefix</code> deleted.
+ *  :include: doc/string/delete_prefix.rdoc
  *
- *     "hello".delete_prefix("hel") #=> "lo"
- *     "hello".delete_prefix("llo") #=> "hello"
  */
 
 static VALUE
@@ -10694,13 +10678,11 @@ deleted_suffix_length(VALUE str, VALUE suffix)
 
 /*
  *  call-seq:
- *     str.delete_suffix!(suffix) -> self or nil
+ *    delete_suffix!(suffix) -> self or nil
  *
- *  Deletes trailing <code>suffix</code> from <i>str</i>, returning
- *  <code>nil</code> if no change was made.
+ *  Like String#delete_suffix, except that +self+ is modified in place.
+ *  Returns +self+ if the suffix is removed, +nil+ otherwise.
  *
- *     "hello".delete_suffix!("llo") #=> "he"
- *     "hello".delete_suffix!("hel") #=> nil
  */
 
 static VALUE
@@ -10725,12 +10707,10 @@ rb_str_delete_suffix_bang(VALUE str, VALUE suffix)
 
 /*
  *  call-seq:
- *     str.delete_suffix(suffix) -> new_str
+ *     str.delete_suffix(suffix) -> new_string
  *
- *  Returns a copy of <i>str</i> with trailing <code>suffix</code> deleted.
+ *  :include: doc/string/delete_suffix.rdoc
  *
- *     "hello".delete_suffix("llo") #=> "he"
- *     "hello".delete_suffix("hel") #=> "hello"
  */
 
 static VALUE
