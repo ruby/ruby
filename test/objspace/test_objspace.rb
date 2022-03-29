@@ -532,8 +532,28 @@ class TestObjSpace < Test::Unit::TestCase
     end
   end
 
+  def assert_test_string_entry_correct_in_dump_all(output)
+    # `TEST STRING` appears twice in the output of `ObjectSpace.dump_all`
+    # 1. To create the T_STRING object for the literal string "TEST STRING"
+    # 2. When it is assigned to the `str` variable with a new encoding
+    #
+    # This test makes assertions on the assignment to `str`, so we look for
+    # the second appearance of /TEST STRING/ in the output
+    test_string_in_dump_all = output.grep(/TEST STRING/)
+    assert_equal(test_string_in_dump_all.size, 2)
+
+    entry_hash = JSON.parse(test_string_in_dump_all[1])
+
+    assert_equal(entry_hash["bytesize"], 11)
+    assert_equal(entry_hash["value"], "TEST STRING")
+    assert_equal(entry_hash["encoding"], "UTF-8")
+    assert_equal(entry_hash["file"], "-")
+    assert_equal(entry_hash["line"], 4)
+    assert_equal(entry_hash["method"], "dump_my_heap_please")
+    assert_not_nil(entry_hash["generation"])
+  end
+
   def test_dump_all
-    entry = /"bytesize":11, "value":"TEST STRING", "encoding":"UTF-8", "file":"-", "line":4, "method":"dump_my_heap_please", "generation":/
     opts = %w[--disable-gem --disable=frozen-string-literal -robjspace]
 
     assert_in_out_err(opts, "#{<<-"begin;"}#{<<-'end;'}") do |output, error|
@@ -547,8 +567,8 @@ class TestObjSpace < Test::Unit::TestCase
 
         p dump_my_heap_please
       end;
-      assert_equal 'nil', output.pop
-      assert_match(entry, output.grep(/TEST STRING/).join("\n"))
+
+      assert_test_string_entry_correct_in_dump_all(output)
     end
 
     assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}#{<<-'end;'}") do |(output), (error)|
@@ -565,7 +585,8 @@ class TestObjSpace < Test::Unit::TestCase
       assert_nil(error)
       dump = File.readlines(output)
       File.unlink(output)
-      assert_match(entry, dump.grep(/TEST STRING/).join("\n"))
+
+      assert_test_string_entry_correct_in_dump_all(dump)
     end
 
     if defined?(JSON)
