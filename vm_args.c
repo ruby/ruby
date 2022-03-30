@@ -599,7 +599,6 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 	rb_raise(rb_eArgError, "no keywords accepted");
     }
 
-
     switch (arg_setup_type) {
       case arg_setup_method:
 	break; /* do nothing special */
@@ -608,6 +607,9 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
             allow_autosplat &&
             (min_argc > 0 || ISEQ_BODY(iseq)->param.opt_num > 1) &&
             !ISEQ_BODY(iseq)->param.flags.ambiguous_param0 &&
+            !((ISEQ_BODY(iseq)->param.flags.has_kw ||
+               ISEQ_BODY(iseq)->param.flags.has_kwrest)
+               && max_argc == 1) &&
 	    args_check_block_arg0(args)) {
 	    given_argc = RARRAY_LENINT(args->rest);
 	}
