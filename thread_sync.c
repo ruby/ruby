@@ -8,7 +8,7 @@ static VALUE rb_eClosedQueueError;
 typedef struct rb_mutex_struct {
     rb_fiber_t *fiber;
     struct rb_mutex_struct *next_mutex;
-    struct list_head waitq; /* protected by GVL */
+    struct ccan_list_head waitq; /* protected by GVL */
 } rb_mutex_t;
 
 /* sync_waiter is always on-stack */
@@ -16,18 +16,18 @@ struct sync_waiter {
     VALUE self;
     rb_thread_t *th;
     rb_fiber_t *fiber;
-    struct list_node node;
+    struct ccan_list_node node;
 };
 
 #define MUTEX_ALLOW_TRAP FL_USER1
 
 static void
-sync_wakeup(struct list_head *head, long max)
+sync_wakeup(struct ccan_list_head *head, long max)
 {
     struct sync_waiter *cur = 0, *next;
 
-    list_for_each_safe(head, cur, next, node) {
-        list_del_init(&cur->node);
+    ccan_list_for_each_safe(head, cur, next, node) {
+        ccan_list_del_init(&cur->node);
 
         if (cur->th->status != THREAD_KILLED) {
 
@@ -45,13 +45,13 @@ sync_wakeup(struct list_head *head, long max)
 }
 
 static void
-wakeup_one(struct list_head *head)
+wakeup_one(struct ccan_list_head *head)
 {
     sync_wakeup(head, 1);
 }
 
 static void
-wakeup_all(struct list_head *head)
+wakeup_all(struct ccan_list_head *head)
 {
     sync_wakeup(head, LONG_MAX);
 }
@@ -95,7 +95,7 @@ rb_mutex_num_waiting(rb_mutex_t *mutex)
     struct sync_waiter *w = 0;
     size_t n = 0;
 
-    list_for_each(&mutex->waitq, w, node) {
+    ccan_list_for_each(&mutex->waitq, w, node) {
 	n++;
     }
 
@@ -152,7 +152,7 @@ mutex_alloc(VALUE klass)
 
     obj = TypedData_Make_Struct(klass, rb_mutex_t, &mutex_data_type, mutex);
 
-    list_head_init(&mutex->waitq);
+    ccan_list_head_init(&mutex->waitq);
     return obj;
 }
 
@@ -269,7 +269,7 @@ static VALUE
 delete_from_waitq(VALUE value)
 {
     struct sync_waiter *sync_waiter = (void *)value;
-    list_del(&sync_waiter->node);
+    ccan_list_del(&sync_waiter->node);
 
     return Qnil;
 }
@@ -302,7 +302,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
                     .fiber = fiber
                 };
 
-                list_add_tail(&mutex->waitq, &sync_waiter.node);
+                ccan_list_add_tail(&mutex->waitq, &sync_waiter.node);
 
                 rb_ensure(call_rb_fiber_scheduler_block, self, delete_from_waitq, (VALUE)&sync_waiter);
 
@@ -335,11 +335,11 @@ do_mutex_lock(VALUE self, int interruptible_p)
                     .fiber = fiber
                 };
 
-                list_add_tail(&mutex->waitq, &sync_waiter.node);
+                ccan_list_add_tail(&mutex->waitq, &sync_waiter.node);
 
                 native_sleep(th, timeout); /* release GVL */
 
-                list_del(&sync_waiter.node);
+                ccan_list_del(&sync_waiter.node);
 
                 if (!mutex->fiber) {
                     mutex->fiber = fiber;
@@ -427,8 +427,8 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
         struct sync_waiter *cur = 0, *next;
 
         mutex->fiber = 0;
-        list_for_each_safe(&mutex->waitq, cur, next, node) {
-            list_del_init(&cur->node);
+        ccan_list_for_each_safe(&mutex->waitq, cur, next, node) {
+            ccan_list_del_init(&cur->node);
 
             if (cur->th->scheduler != Qnil && rb_fiberptr_blocking(cur->fiber) == 0) {
                 rb_fiber_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
@@ -491,7 +491,7 @@ rb_mutex_abandon_locking_mutex(rb_thread_t *th)
     if (th->locking_mutex) {
         rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
 
-        list_head_init(&mutex->waitq);
+        ccan_list_head_init(&mutex->waitq);
         th->locking_mutex = Qfalse;
     }
 }
@@ -506,7 +506,7 @@ rb_mutex_abandon_all(rb_mutex_t *mutexes)
 	mutexes = mutex->next_mutex;
 	mutex->fiber = 0;
 	mutex->next_mutex = 0;
-	list_head_init(&mutex->waitq);
+	ccan_list_head_init(&mutex->waitq);
     }
 }
 #endif
@@ -631,7 +631,7 @@ void rb_mutex_allow_trap(VALUE self, int val)
 
 #define queue_waitq(q) UNALIGNED_MEMBER_PTR(q, waitq)
 PACKED_STRUCT_UNALIGNED(struct rb_queue {
-    struct list_head waitq;
+    struct ccan_list_head waitq;
     rb_serial_t fork_gen;
     const VALUE que;
     int num_waiting;
@@ -642,7 +642,7 @@ PACKED_STRUCT_UNALIGNED(struct rb_queue {
 PACKED_STRUCT_UNALIGNED(struct rb_szqueue {
     struct rb_queue q;
     int num_waiting_push;
-    struct list_head pushq;
+    struct ccan_list_head pushq;
     long max;
 });
 
@@ -674,7 +674,7 @@ queue_alloc(VALUE klass)
     struct rb_queue *q;
 
     obj = TypedData_Make_Struct(klass, struct rb_queue, &queue_data_type, q);
-    list_head_init(queue_waitq(q));
+    ccan_list_head_init(queue_waitq(q));
     return obj;
 }
 
@@ -688,7 +688,7 @@ queue_fork_check(struct rb_queue *q)
     }
     /* forked children can't reach into parent thread stacks */
     q->fork_gen = fork_gen;
-    list_head_init(queue_waitq(q));
+    ccan_list_head_init(queue_waitq(q));
     q->num_waiting = 0;
     return 1;
 }
@@ -732,8 +732,8 @@ szqueue_alloc(VALUE klass)
     struct rb_szqueue *sq;
     VALUE obj = TypedData_Make_Struct(klass, struct rb_szqueue,
 					&szqueue_data_type, sq);
-    list_head_init(szqueue_waitq(sq));
-    list_head_init(szqueue_pushq(sq));
+    ccan_list_head_init(szqueue_waitq(sq));
+    ccan_list_head_init(szqueue_pushq(sq));
     return obj;
 }
 
@@ -744,7 +744,7 @@ szqueue_ptr(VALUE obj)
 
     TypedData_Get_Struct(obj, struct rb_szqueue, &szqueue_data_type, sq);
     if (queue_fork_check(&sq->q)) {
-        list_head_init(szqueue_pushq(sq));
+        ccan_list_head_init(szqueue_pushq(sq));
         sq->num_waiting_push = 0;
     }
 
@@ -869,7 +869,7 @@ rb_queue_initialize(int argc, VALUE *argv, VALUE self)
         initial = rb_to_array(initial);
     }
     RB_OBJ_WRITE(self, &q->que, ary_buf_new());
-    list_head_init(queue_waitq(q));
+    ccan_list_head_init(queue_waitq(q));
     if (argc == 1) {
         rb_ary_concat(q->que, initial);
     }
@@ -983,7 +983,7 @@ queue_sleep_done(VALUE p)
 {
     struct queue_waiter *qw = (struct queue_waiter *)p;
 
-    list_del(&qw->w.node);
+    ccan_list_del(&qw->w.node);
     qw->as.q->num_waiting--;
 
     return Qfalse;
@@ -994,7 +994,7 @@ szqueue_sleep_done(VALUE p)
 {
     struct queue_waiter *qw = (struct queue_waiter *)p;
 
-    list_del(&qw->w.node);
+    ccan_list_del(&qw->w.node);
     qw->as.sq->num_waiting_push--;
 
     return Qfalse;
@@ -1023,9 +1023,9 @@ queue_do_pop(VALUE self, struct rb_queue *q, int should_block)
                 .as = {.q = q}
             };
 
-            struct list_head *waitq = queue_waitq(q);
+            struct ccan_list_head *waitq = queue_waitq(q);
 
-            list_add_tail(waitq, &queue_waiter.w.node);
+            ccan_list_add_tail(waitq, &queue_waiter.w.node);
             queue_waiter.as.q->num_waiting++;
 
             rb_ensure(queue_sleep, self, queue_sleep_done, (VALUE)&queue_waiter);
@@ -1152,8 +1152,8 @@ rb_szqueue_initialize(VALUE self, VALUE vmax)
     }
 
     RB_OBJ_WRITE(self, &sq->q.que, ary_buf_new());
-    list_head_init(szqueue_waitq(sq));
-    list_head_init(szqueue_pushq(sq));
+    ccan_list_head_init(szqueue_waitq(sq));
+    ccan_list_head_init(szqueue_pushq(sq));
     sq->max = max;
 
     return self;
@@ -1266,9 +1266,9 @@ rb_szqueue_push(int argc, VALUE *argv, VALUE self)
                 .as = {.sq = sq}
             };
 
-            struct list_head *pushq = szqueue_pushq(sq);
+            struct ccan_list_head *pushq = szqueue_pushq(sq);
 
-            list_add_tail(pushq, &queue_waiter.w.node);
+            ccan_list_add_tail(pushq, &queue_waiter.w.node);
             sq->num_waiting_push++;
 
             rb_ensure(queue_sleep, self, szqueue_sleep_done, (VALUE)&queue_waiter);
@@ -1381,7 +1381,7 @@ rb_szqueue_empty_p(VALUE self)
 
 /* ConditionalVariable */
 struct rb_condvar {
-    struct list_head waitq;
+    struct ccan_list_head waitq;
     rb_serial_t fork_gen;
 };
 
@@ -1436,7 +1436,7 @@ condvar_ptr(VALUE self)
     /* forked children can't reach into parent thread stacks */
     if (cv->fork_gen != fork_gen) {
         cv->fork_gen = fork_gen;
-        list_head_init(&cv->waitq);
+        ccan_list_head_init(&cv->waitq);
     }
 
     return cv;
@@ -1449,7 +1449,7 @@ condvar_alloc(VALUE klass)
     VALUE obj;
 
     obj = TypedData_Make_Struct(klass, struct rb_condvar, &cv_data_type, cv);
-    list_head_init(&cv->waitq);
+    ccan_list_head_init(&cv->waitq);
 
     return obj;
 }
@@ -1464,7 +1464,7 @@ static VALUE
 rb_condvar_initialize(VALUE self)
 {
     struct rb_condvar *cv = condvar_ptr(self);
-    list_head_init(&cv->waitq);
+    ccan_list_head_init(&cv->waitq);
     return self;
 }
 
@@ -1510,7 +1510,7 @@ rb_condvar_wait(int argc, VALUE *argv, VALUE self)
         .fiber = ec->fiber_ptr
     };
 
-    list_add_tail(&cv->waitq, &sync_waiter.node);
+    ccan_list_add_tail(&cv->waitq, &sync_waiter.node);
     return rb_ensure(do_sleep, (VALUE)&args, delete_from_waitq, (VALUE)&sync_waiter);
 }
 

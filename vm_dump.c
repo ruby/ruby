@@ -1188,7 +1188,7 @@ rb_vmdebug_stack_dump_all_threads(void)
     rb_ractor_t *r = GET_RACTOR();
 
     // TODO: now it only shows current ractor
-    list_for_each(&r->threads.set, th, lt_node) {
+    ccan_list_for_each(&r->threads.set, th, lt_node) {
 #ifdef NON_SCALAR_THREAD_ID
         rb_thread_id_string_t buf;
 	ruby_fill_thread_id_string(th->thread_id, buf);

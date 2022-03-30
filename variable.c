@@ -2104,7 +2104,7 @@ autoload_data(VALUE mod, ID id)
 }
 
 struct autoload_const {
-    struct list_node cnode; /* <=> autoload_data_i.constants */
+    struct ccan_list_node cnode; /* <=> autoload_data_i.constants */
     VALUE mod;
     VALUE ad; /* autoload_data_i */
     VALUE value;
@@ -2119,14 +2119,14 @@ struct autoload_state {
     struct autoload_const *ac;
     VALUE result;
     VALUE thread;
-    struct list_head waitq;
+    struct ccan_list_head waitq;
 };
 
 struct autoload_data_i {
     VALUE feature;
     struct autoload_state *state; /* points to on-stack struct */
     rb_serial_t fork_gen;
-    struct list_head constants; /* <=> autoload_const.cnode */
+    struct ccan_list_head constants; /* <=> autoload_const.cnode */
 };
 
 static void
@@ -2144,7 +2144,7 @@ autoload_i_mark(void *ptr)
     rb_gc_mark_movable(p->feature);
 
     /* allow GC to free us if no modules refer to this via autoload_const.ad */
-    if (list_empty(&p->constants)) {
+    if (ccan_list_empty(&p->constants)) {
         rb_hash_delete(autoload_featuremap, p->feature);
     }
 }
@@ -2155,7 +2155,7 @@ autoload_i_free(void *ptr)
     struct autoload_data_i *p = ptr;
 
     /* we may leak some memory at VM shutdown time, no big deal */
-    if (list_empty(&p->constants)) {
+    if (ccan_list_empty(&p->constants)) {
 	xfree(p);
     }
 }
@@ -2198,7 +2198,7 @@ static void
 autoload_c_free(void *ptr)
 {
     struct autoload_const *ac = ptr;
-    list_del(&ac->cnode);
+    ccan_list_del(&ac->cnode);
     xfree(ac);
 }
 
@@ -2288,7 +2288,7 @@ rb_autoload_str(VALUE mod, ID id, VALUE file)
                                     &autoload_data_i_type, ele);
         ele->feature = file;
         ele->state = 0;
-        list_head_init(&ele->constants);
+        ccan_list_head_init(&ele->constants);
         rb_hash_aset(autoload_featuremap, file, ad);
     }
     else {
@@ -2304,7 +2304,7 @@ rb_autoload_str(VALUE mod, ID id, VALUE file)
         ac->value = Qundef;
         ac->flag = CONST_PUBLIC;
         ac->ad = ad;
-        list_add_tail(&ele->constants, &ac->cnode);
+        ccan_list_add_tail(&ele->constants, &ac->cnode);
         st_insert(tbl, (st_data_t)id, (st_data_t)acv);
     }
 }
@@ -2325,7 +2325,7 @@ autoload_delete(VALUE mod, ID id)
             ele = get_autoload_data((VALUE)load, &ac);
             VM_ASSERT(ele);
             if (ele) {
-                VM_ASSERT(!list_empty(&ele->constants));
+                VM_ASSERT(!ccan_list_empty(&ele->constants));
             }
 
             /*
@@ -2333,7 +2333,7 @@ autoload_delete(VALUE mod, ID id)
              * with parallel autoload.  Using list_del_init here so list_del
              * works in autoload_c_free
              */
-            list_del_init(&ac->cnode);
+            ccan_list_del_init(&ac->cnode);
 
             if (tbl->num_entries == 0) {
                 n = autoload;
@@ -2480,7 +2480,7 @@ autoload_reset(VALUE arg)
     if (RTEST(state->result)) {
         struct autoload_const *next;
 
-        list_for_each_safe(&ele->constants, ac, next, cnode) {
+        ccan_list_for_each_safe(&ele->constants, ac, next, cnode) {
             if (ac->value != Qundef) {
                 autoload_const_set(ac);
             }
@@ -2491,11 +2491,11 @@ autoload_reset(VALUE arg)
     if (need_wakeups) {
 	struct autoload_state *cur = 0, *nxt;
 
-	list_for_each_safe(&state->waitq, cur, nxt, waitq.n) {
+	ccan_list_for_each_safe(&state->waitq, cur, nxt, waitq.n) {
 	    VALUE th = cur->thread;
 
 	    cur->thread = Qfalse;
-	    list_del_init(&cur->waitq.n); /* idempotent */
+	    ccan_list_del_init(&cur->waitq.n); /* idempotent */
 
 	    /*
 	     * cur is stored on the stack of cur->waiting_th,
@@ -2530,7 +2530,7 @@ autoload_sleep_done(VALUE arg)
     struct autoload_state *state = (struct autoload_state *)arg;
 
     if (state->thread != Qfalse && rb_thread_to_be_killed(state->thread)) {
-	list_del(&state->waitq.n); /* idempotent after list_del_init */
+        ccan_list_del(&state->waitq.n); /* idempotent after list_del_init */
     }
 
     return Qfalse;
@@ -2575,13 +2575,13 @@ rb_autoload_load(VALUE mod, ID id)
 	 * autoload_reset will wake up any threads added to this
 	 * if and only if the GVL is released during autoload_require
 	 */
-	list_head_init(&state.waitq);
+	ccan_list_head_init(&state.waitq);
     }
     else if (state.thread == ele->state->thread) {
 	return Qfalse;
     }
     else {
-	list_add_tail(&ele->state->waitq, &state.waitq.n);
+	ccan_list_add_tail(&ele->state->waitq, &state.waitq.n);
 
 	rb_ensure(autoload_sleep, (VALUE)&state,
 		autoload_sleep_done, (VALUE)&state);

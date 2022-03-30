@@ -1594,19 +1594,19 @@ typedef struct rb_postponed_job_struct {
 #define MAX_POSTPONED_JOB_SPECIAL_ADDITION   24
 
 struct rb_workqueue_job {
-    struct list_node jnode; /* <=> vm->workqueue */
+    struct ccan_list_node jnode; /* <=> vm->workqueue */
     rb_postponed_job_t job;
 };
 
 // Used for VM memsize reporting. Returns the size of a list of rb_workqueue_job
 // structs. Defined here because the struct definition lives here as well.
 size_t
-rb_vm_memsize_workqueue(struct list_head *workqueue)
+rb_vm_memsize_workqueue(struct ccan_list_head *workqueue)
 {
     struct rb_workqueue_job *work = 0;
     size_t size = 0;
 
-    list_for_each(workqueue, work, jnode) {
+    ccan_list_for_each(workqueue, work, jnode) {
         size += sizeof(struct rb_workqueue_job);
     }
 
@@ -1732,7 +1732,7 @@ rb_workqueue_register(unsigned flags, rb_postponed_job_func_t func, void *data)
     wq_job->job.data = data;
 
     rb_nativethread_lock_lock(&vm->workqueue_lock);
-    list_add_tail(&vm->workqueue, &wq_job->jnode);
+    ccan_list_add_tail(&vm->workqueue, &wq_job->jnode);
     rb_nativethread_lock_unlock(&vm->workqueue_lock);
 
     // TODO: current implementation affects only main ractor
@@ -1748,12 +1748,12 @@ rb_postponed_job_flush(rb_vm_t *vm)
     const rb_atomic_t block_mask = POSTPONED_JOB_INTERRUPT_MASK|TRAP_INTERRUPT_MASK;
     volatile rb_atomic_t saved_mask = ec->interrupt_mask & block_mask;
     VALUE volatile saved_errno = ec->errinfo;
-    struct list_head tmp;
+    struct ccan_list_head tmp;
 
-    list_head_init(&tmp);
+    ccan_list_head_init(&tmp);
 
     rb_nativethread_lock_lock(&vm->workqueue_lock);
-    list_append_list(&tmp, &vm->workqueue);
+    ccan_list_append_list(&tmp, &vm->workqueue);
     rb_nativethread_lock_unlock(&vm->workqueue_lock);
 
     ec->errinfo = Qnil;
@@ -1771,7 +1771,7 @@ rb_postponed_job_flush(rb_vm_t *vm)
                     (*pjob->func)(pjob->data);
                 }
 	    }
-            while ((wq_job = list_pop(&tmp, struct rb_workqueue_job, jnode))) {
+            while ((wq_job = ccan_list_pop(&tmp, struct rb_workqueue_job, jnode))) {
                 rb_postponed_job_t pjob = wq_job->job;
 
                 free(wq_job);
@@ -1785,9 +1785,9 @@ rb_postponed_job_flush(rb_vm_t *vm)
     ec->errinfo = saved_errno;
 
     /* don't leak memory if a job threw an exception */
-    if (!list_empty(&tmp)) {
+    if (!ccan_list_empty(&tmp)) {
         rb_nativethread_lock_lock(&vm->workqueue_lock);
-        list_prepend_list(&vm->workqueue, &tmp);
+        ccan_list_prepend_list(&vm->workqueue, &tmp);
         rb_nativethread_lock_unlock(&vm->workqueue_lock);
 
         RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(GET_EC());

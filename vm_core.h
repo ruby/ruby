@@ -628,7 +628,7 @@ typedef struct rb_vm_struct {
     VALUE self;
 
     struct {
-        struct list_head set;
+        struct ccan_list_head set;
         unsigned int cnt;
         unsigned int blocking_cnt;
 
@@ -658,9 +658,9 @@ typedef struct rb_vm_struct {
 
     rb_serial_t fork_gen;
     rb_nativethread_lock_t waitpid_lock;
-    struct list_head waiting_pids; /* PID > 0: <=> struct waitpid_state */
-    struct list_head waiting_grps; /* PID <= 0: <=> struct waitpid_state */
-    struct list_head waiting_fds; /* <=> struct waiting_fd */
+    struct ccan_list_head waiting_pids; /* PID > 0: <=> struct waitpid_state */
+    struct ccan_list_head waiting_grps; /* PID <= 0: <=> struct waitpid_state */
+    struct ccan_list_head waiting_fds; /* <=> struct waiting_fd */
 
     /* set in single-threaded processes only: */
     volatile int ubf_async_safe;
@@ -701,7 +701,7 @@ typedef struct rb_vm_struct {
     int src_encoding_index;
 
     /* workqueue (thread-safe, NOT async-signal-safe) */
-    struct list_head workqueue; /* <=> rb_workqueue_job.jnode */
+    struct ccan_list_head workqueue; /* <=> rb_workqueue_job.jnode */
     rb_nativethread_lock_t workqueue_lock;
 
     VALUE orig_progname, progname;
@@ -998,7 +998,7 @@ typedef struct rb_ractor_struct rb_ractor_t;
 #endif
 
 typedef struct rb_thread_struct {
-    struct list_node lt_node; // managed by a ractor
+    struct ccan_list_node lt_node; // managed by a ractor
     VALUE self;
     rb_ractor_t *ractor;
     rb_vm_t *vm;
@@ -1769,11 +1769,11 @@ void rb_thread_wakeup_timer_thread(int);
 static inline void
 rb_vm_living_threads_init(rb_vm_t *vm)
 {
-    list_head_init(&vm->waiting_fds);
-    list_head_init(&vm->waiting_pids);
-    list_head_init(&vm->workqueue);
-    list_head_init(&vm->waiting_grps);
-    list_head_init(&vm->ractor.set);
+    ccan_list_head_init(&vm->waiting_fds);
+    ccan_list_head_init(&vm->waiting_pids);
+    ccan_list_head_init(&vm->workqueue);
+    ccan_list_head_init(&vm->waiting_grps);
+    ccan_list_head_init(&vm->ractor.set);
 }
 
 typedef int rb_backtrace_iter_func(void *, VALUE, int, VALUE);
