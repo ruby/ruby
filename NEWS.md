@@ -20,6 +20,17 @@ Note that each entry is kept to a minimum, see links for details.
     end
     ```
 
+* A proc that accepts a single positional argument and keywords will
+  no longer autosplat. [[Bug #18633]]
+
+  ```ruby
+  proc{|a, **k| a}.call([1, 2])
+  # Ruby 3.1 and before
+  # => 1
+  # Ruby 3.2 and after
+  # => [1, 2]
+  ```
+
 * Constant assignment evaluation order for constants set on explicit
   objects has been made consistent with single attribute assignment
   evaluation order.  With this code:
@@ -204,3 +215,4 @@ The following deprecated APIs are removed.
 [Feature #18571]: https://bugs.ruby-lang.org/issues/18571
 [Feature #18585]: https://bugs.ruby-lang.org/issues/18585
 [Feature #18598]: https://bugs.ruby-lang.org/issues/18598
+[Bug #18633]:     https://bugs.ruby-lang.org/issues/18633
