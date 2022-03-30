@@ -9,5 +9,5 @@ AC_DEFUN([RUBY_REQUIRE_FUNC], [
 dnl
 dnl RUBY_REQUIRE_FUNCS [funcs] [included]
 AC_DEFUN([RUBY_REQUIRE_FUNCS], [dnl
-    m4_map_args_w([$1], [RUBY_REQUIRE_FUNC(], [), [$2]])dnl
+    m4_map_args_w([$1], [RUBY_REQUIRE_FUNC(], [, [$2])])dnl
 ])dnl

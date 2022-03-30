@@ -9,5 +9,5 @@ AC_DEFUN([RUBY_REPLACE_FUNC], [dnl
 dnl
 dnl RUBY_REPLACE_FUNCS [funcs] [included]
 AC_DEFUN([RUBY_REPLACE_FUNCS], [dnl
-    m4_map_args_w([$1], [RUBY_REPLACE_FUNC(], [), [$2]])dnl
+    m4_map_args_w([$1], [RUBY_REPLACE_FUNC(], [, [$2])])dnl
 ])dnl
