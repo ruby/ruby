@@ -12253,7 +12253,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #encoding: Returns the Encoding object that represents the encoding of the string.
  *  - #unicode_normalized?: Returns +true+ if the string is in Unicode normalized form; +false+ otherwise.
  *  - #valid_encoding?: Returns +true+ if the string contains only characters that are valid
- *  for its encoding.
+ *    for its encoding.
  *  - #ascii_only?: Returns +true+ if the string has only ASCII characters; +false+ otherwise.
  *
  *  _Other_
@@ -12351,18 +12351,19 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  _Substitution_
  *
  *  - #dump: Returns a copy of +self with all non-printing characters replaced by \xHH notation
- *  and all special characters escaped.
+ *    and all special characters escaped.
  *  - #undump: Returns a copy of +self with all <tt>\xNN</tt> notation replace by <tt>\uNNNN</tt> notation
- *  and all escaped characters unescaped.
+ *    and all escaped characters unescaped.
  *  - #sub: Returns a copy of +self+ with the first substring matching a given pattern
- *  replaced with a given replacement string;.
+ *    replaced with a given replacement string;.
  *  - #gsub: Returns a copy of +self+ with each substring that matches a given pattern
- *  replaced with a given replacement string.
+ *    replaced with a given replacement string.
  *  - #succ, #next: Returns the string that is the successor to +self+.
  *  - #reverse: Returns a copy of +self+ with its characters in reverse order.
- *  - #tr: Returns a copy of +self+ with specified characters replaced with specified replacement characters.
- *  - #tr_s: Returns a copy of +self+ with specified characters replaced with specified replacement characters,
- *  removing duplicates from the substrings that were modified.
+ *  - #tr: Returns a copy of +self+ with specified characters replaced with specified      replacement characters.
+ *  - #tr_s: Returns a copy of +self+ with specified characters replaced with
+      specified replacement characters,
+ *    removing duplicates from the substrings that were modified.
  *  - #%: Returns the string resulting from formatting a given object into +self+
  *
  *  _Casing_
