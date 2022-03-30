@@ -2325,7 +2325,7 @@ autoload_delete(VALUE mod, ID id)
             ele = get_autoload_data((VALUE)load, &ac);
             VM_ASSERT(ele);
             if (ele) {
-                VM_ASSERT(!list_empty(&ele->constants));
+                VM_ASSERT(!ccan_list_empty(&ele->constants));
             }
 
             /*
