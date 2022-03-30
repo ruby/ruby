@@ -2808,10 +2808,10 @@ ruby_vm_destruct(rb_vm_t *vm)
     return 0;
 }
 
-size_t rb_vm_memsize_waiting_list(struct list_head *waiting_list); // process.c
-size_t rb_vm_memsize_waiting_fds(struct list_head *waiting_fds); // thread.c
+size_t rb_vm_memsize_waiting_list(struct ccan_list_head *waiting_list); // process.c
+size_t rb_vm_memsize_waiting_fds(struct ccan_list_head *waiting_fds); // thread.c
 size_t rb_vm_memsize_postponed_job_buffer(void); // vm_trace.c
-size_t rb_vm_memsize_workqueue(struct list_head *workqueue); // vm_trace.c
+size_t rb_vm_memsize_workqueue(struct ccan_list_head *workqueue); // vm_trace.c
 
 // Used for VM memsize reporting. Returns the size of the at_exit list by
 // looping through the linked list and adding up the size of the structs.
@@ -2862,7 +2862,7 @@ vm_memsize(const void *ptr)
     );
 
     // TODO
-    // struct { struct list_head set; } ractor;
+    // struct { struct ccan_list_head set; } ractor;
     // void *main_altstack; #ifdef USE_SIGALTSTACK
     // struct rb_objspace *objspace;
 }

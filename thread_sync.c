@@ -1023,7 +1023,7 @@ queue_do_pop(VALUE self, struct rb_queue *q, int should_block)
                 .as = {.q = q}
             };
 
-            struct list_head *waitq = queue_waitq(q);
+            struct ccan_list_head *waitq = queue_waitq(q);
 
             ccan_list_add_tail(waitq, &queue_waiter.w.node);
             queue_waiter.as.q->num_waiting++;

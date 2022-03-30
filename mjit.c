@@ -930,7 +930,7 @@ mjit_dump_total_calls(void)
 {
     struct rb_mjit_unit *unit;
     fprintf(stderr, "[MJIT_COUNTER] total_calls of active_units:\n");
-    list_for_each(&active_units.head, unit, unode) {
+    ccan_list_for_each(&active_units.head, unit, unode) {
         const rb_iseq_t *iseq = unit->iseq;
         fprintf(stderr, "%8ld: %s@%s:%d\n", ISEQ_BODY(iseq)->total_calls, RSTRING_PTR(ISEQ_BODY(iseq)->location.label),
                 RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(ISEQ_BODY(iseq)->location.first_lineno));

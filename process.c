@@ -1110,12 +1110,12 @@ waitpid_signal(struct waitpid_state *w)
 // Used for VM memsize reporting. Returns the size of a list of waitpid_state
 // structs. Defined here because the struct definition lives here as well.
 size_t
-rb_vm_memsize_waiting_list(struct list_head *waiting_list)
+rb_vm_memsize_waiting_list(struct ccan_list_head *waiting_list)
 {
     struct waitpid_state *waitpid = 0;
     size_t size = 0;
 
-    list_for_each(waiting_list, waitpid, wnode) {
+    ccan_list_for_each(waiting_list, waitpid, wnode) {
         size += sizeof(struct waitpid_state);
     }
 

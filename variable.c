@@ -2491,11 +2491,11 @@ autoload_reset(VALUE arg)
     if (need_wakeups) {
 	struct autoload_state *cur = 0, *nxt;
 
-	ccan_list_for_each_safe(&state->waitq, cur, nxt, waitq.n) {
+	ccan_list_for_each_safe((struct ccan_list_head *)&state->waitq, cur, nxt, waitq) {
 	    VALUE th = cur->thread;
 
 	    cur->thread = Qfalse;
-	    ccan_list_del_init(&cur->waitq.n); /* idempotent */
+	    ccan_list_del_init(&cur->waitq); /* idempotent */
 
 	    /*
 	     * cur is stored on the stack of cur->waiting_th,
@@ -2530,7 +2530,7 @@ autoload_sleep_done(VALUE arg)
     struct autoload_state *state = (struct autoload_state *)arg;
 
     if (state->thread != Qfalse && rb_thread_to_be_killed(state->thread)) {
-        ccan_list_del(&state->waitq.n); /* idempotent after list_del_init */
+        ccan_list_del(&state->waitq); /* idempotent after list_del_init */
     }
 
     return Qfalse;
@@ -2575,13 +2575,13 @@ rb_autoload_load(VALUE mod, ID id)
 	 * autoload_reset will wake up any threads added to this
 	 * if and only if the GVL is released during autoload_require
 	 */
-	ccan_list_head_init(&state.waitq);
+	ccan_list_head_init((struct ccan_list_head *)&state.waitq);
     }
     else if (state.thread == ele->state->thread) {
 	return Qfalse;
     }
     else {
-	ccan_list_add_tail(&ele->state->waitq, &state.waitq.n);
+	ccan_list_add_tail((struct ccan_list_head *)&ele->state->waitq, &state.waitq);
 
 	rb_ensure(autoload_sleep, (VALUE)&state,
 		autoload_sleep_done, (VALUE)&state);
