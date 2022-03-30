@@ -47,6 +47,7 @@ describe "A block yielded a single" do
     end
 
     ruby_version_is ''..."3.2" do
+      # https://bugs.ruby-lang.org/issues/18633
       it "autosplats single argument to required arguments when a keyword rest argument is present" do
         m([1, 2]) { |a, **k| [a, k] }.should == [1, {}]
       end
