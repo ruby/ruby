@@ -11386,49 +11386,49 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
  *
  * === Methods for Querying
  *
- * - ::all_symbols:: Returns an array of the symbols currently in Ruby's symbol table.
- * - #=~:: Returns the index of the first substring in symbol that matches a
- *         given Regexp or other object; returns +nil+ if no match is found.
- * - #[], #slice :: Returns a substring of symbol
- *                  determined by a given index, start/length, or range, or string.
- * - #empty?:: Returns +true+ if +self.length+ is zero; +false+ otherwise.
- * - #encoding:: Returns the Encoding object that represents the encoding
- *               of symbol.
- * - #end_with?:: Returns +true+ if symbol ends with
- *                any of the given strings.
- * - #match:: Returns a MatchData object if symbol
- *            matches a given Regexp; +nil+ otherwise.
- * - #match?:: Returns +true+ if symbol
- *             matches a given Regexp; +false+ otherwise.
- * - #length, #size:: Returns the number of characters in symbol.
- * - #start_with?:: Returns +true+ if symbol starts with
- *                  any of the given strings.
+ * - ::all_symbols: Returns an array of the symbols currently in Ruby's symbol table.
+ * - #=~: Returns the index of the first substring in symbol that matches a
+ *   given Regexp or other object; returns +nil+ if no match is found.
+ * - #[], #slice : Returns a substring of symbol
+ *   determined by a given index, start/length, or range, or string.
+ * - #empty?: Returns +true+ if +self.length+ is zero; +false+ otherwise.
+ * - #encoding: Returns the Encoding object that represents the encoding
+ *   of symbol.
+ * - #end_with?: Returns +true+ if symbol ends with
+ *   any of the given strings.
+ * - #match: Returns a MatchData object if symbol
+ *   matches a given Regexp; +nil+ otherwise.
+ * - #match?: Returns +true+ if symbol
+ *   matches a given Regexp; +false+ otherwise.
+ * - #length, #size: Returns the number of characters in symbol.
+ * - #start_with?: Returns +true+ if symbol starts with
+ *   any of the given strings.
  *
  * === Methods for Comparing
  *
- * - #<=>:: Returns -1, 0, or 1 as a given symbol is smaller than, equal to,
- *          or larger than symbol.
- * - #==, #===:: Returns +true+ if a given symbol has the same content and
- *               encoding.
- * - #casecmp:: Ignoring case, returns -1, 0, or 1 as a given
- *              symbol is smaller than, equal to, or larger than symbol.
- * - #casecmp?:: Returns +true+ if symbol is equal to a given symbol
- *               after Unicode case folding; +false+ otherwise.
+ * - #<=>: Returns -1, 0, or 1 as a given symbol is smaller than, equal to,
+ *   or larger than symbol.
+ * - #==, #===: Returns +true+ if a given symbol has the same content and
+ *   encoding.
+ * - #casecmp: Ignoring case, returns -1, 0, or 1 as a given
+ *   symbol is smaller than, equal to, or larger than symbol.
+ * - #casecmp?: Returns +true+ if symbol is equal to a given symbol
+ *   after Unicode case folding; +false+ otherwise.
  *
  * === Methods for Converting
  *
- * - #capitalize:: Returns symbol with the first character upcased
- *                 and all other characters downcased.
- * - #downcase:: Returns symbol with all characters downcased.
- * - #inspect:: Returns the string representation of +self+ as a symbol literal.
- * - #name:: Returns the frozen string corresponding to symbol.
- * - #succ, #next:: Returns the symbol that is the successor to symbol.
- * - #swapcase:: Returns symbol with all upcase characters downcased
- *               and all downcase characters upcased.
- * - #to_proc:: Returns a Proc object which responds to the method named by symbol.
- * - #to_s, #id2name:: Returns the string corresponding to +self+.
- * - #to_sym, #intern:: Returns +self+.
- * - #upcase:: Returns symbol with all characters upcased.
+ * - #capitalize: Returns symbol with the first character upcased
+ *   and all other characters downcased.
+ * - #downcase: Returns symbol with all characters downcased.
+ * - #inspect: Returns the string representation of +self+ as a symbol literal.
+ * - #name: Returns the frozen string corresponding to symbol.
+ * - #succ, #next: Returns the symbol that is the successor to symbol.
+ * - #swapcase: Returns symbol with all upcase characters downcased
+ *   and all downcase characters upcased.
+ * - #to_proc: Returns a Proc object which responds to the method named by symbol.
+ * - #to_s, #id2name: Returns the string corresponding to +self+.
+ * - #to_sym, #intern: Returns +self+.
+ * - #upcase: Returns symbol with all characters upcased.
  *
  */
 
@@ -12214,63 +12214,63 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  === Methods for Creating a \String
  *
- *  - ::new:: Returns a new string.
- *  - ::try_convert:: Returns a new string created from a given object.
+ *  - ::new: Returns a new string.
+ *  - ::try_convert: Returns a new string created from a given object.
  *
  *  === Methods for a Frozen/Unfrozen String
  *
- *  - #+@:: Returns a string that is not frozen: +self+, if not frozen;
- *          +self.dup+ otherwise.
- *  - #-@:: Returns a string that is frozen: +self+, if already frozen;
- *          +self.freeze+ otherwise.
- *  - #freeze:: Freezes +self+, if not already frozen; returns +self+.
+ *  - #+@: Returns a string that is not frozen: +self+, if not frozen;
+ *    +self.dup+ otherwise.
+ *  - #-@: Returns a string that is frozen: +self+, if already frozen;
+ *    +self.freeze+ otherwise.
+ *  - #freeze: Freezes +self+, if not already frozen; returns +self+.
  *
  *  === Methods for Querying
  *
  *  _Counts_
  *
- *  - #length, #size:: Returns the count of characters (not bytes).
- *  - #empty?:: Returns +true+ if +self.length+ is zero; +false+ otherwise.
- *  - #bytesize:: Returns the count of bytes.
- *  - #count:: Returns the count of substrings matching given strings.
+ *  - #length, #size: Returns the count of characters (not bytes).
+ *  - #empty?: Returns +true+ if +self.length+ is zero; +false+ otherwise.
+ *  - #bytesize: Returns the count of bytes.
+ *  - #count: Returns the count of substrings matching given strings.
  *
  *  _Substrings_
  *
- *  - #=~:: Returns the index of the first substring that matches a given
- *          Regexp or other object; returns +nil+ if no match is found.
- *  - #index:: Returns the index of the _first_ occurrence of a given substring;
- *             returns +nil+ if none found.
- *  - #rindex:: Returns the index of the _last_ occurrence of a given substring;
- *              returns +nil+ if none found.
- *  - #include?:: Returns +true+ if the string contains a given substring; +false+ otherwise.
- *  - #match:: Returns a MatchData object if the string matches a given Regexp; +nil+ otherwise.
- *  - #match?:: Returns +true+ if the string matches a given Regexp; +false+ otherwise.
- *  - #start_with?:: Returns +true+ if the string begins with any of the given substrings.
- *  - #end_with?:: Returns +true+ if the string ends with any of the given substrings.
+ *  - #=~: Returns the index of the first substring that matches a given
+ *    Regexp or other object; returns +nil+ if no match is found.
+ *  - #index: Returns the index of the _first_ occurrence of a given substring;
+ *    returns +nil+ if none found.
+ *  - #rindex: Returns the index of the _last_ occurrence of a given substring;
+ *    returns +nil+ if none found.
+ *  - #include?: Returns +true+ if the string contains a given substring; +false+ otherwise.
+ *  - #match: Returns a MatchData object if the string matches a given Regexp; +nil+ otherwise.
+ *  - #match?: Returns +true+ if the string matches a given Regexp; +false+ otherwise.
+ *  - #start_with?: Returns +true+ if the string begins with any of the given substrings.
+ *  - #end_with?: Returns +true+ if the string ends with any of the given substrings.
  *
  *  _Encodings_
  *
- *  - #encoding:: Returns the Encoding object that represents the encoding of the string.
- *  - #unicode_normalized?:: Returns +true+ if the string is in Unicode normalized form; +false+ otherwise.
- *  - #valid_encoding?:: Returns +true+ if the string contains only characters that are valid
- *                       for its encoding.
- *  - #ascii_only?:: Returns +true+ if the string has only ASCII characters; +false+ otherwise.
+ *  - #encoding: Returns the Encoding object that represents the encoding of the string.
+ *  - #unicode_normalized?: Returns +true+ if the string is in Unicode normalized form; +false+ otherwise.
+ *  - #valid_encoding?: Returns +true+ if the string contains only characters that are valid
+ *  for its encoding.
+ *  - #ascii_only?: Returns +true+ if the string has only ASCII characters; +false+ otherwise.
  *
  *  _Other_
  *
- *  - #sum:: Returns a basic checksum for the string: the sum of each byte.
- *  - #hash:: Returns the integer hash code.
+ *  - #sum: Returns a basic checksum for the string: the sum of each byte.
+ *  - #hash: Returns the integer hash code.
  *
  *  === Methods for Comparing
  *
- *  - #==, #===:: Returns +true+ if a given other string has the same content as +self+.
- *  - #eql?:: Returns +true+ if the content is the same as the given other string.
- *  - #<=>:: Returns -1, 0, or 1 as a given other string is smaller than,
- *           equal to, or larger than +self+.
- *  - #casecmp:: Ignoring case, returns -1, 0, or 1 as a given
- *               other string is smaller than, equal to, or larger than +self+.
- *  - #casecmp?:: Returns +true+ if the string is equal to a given string after Unicode case folding;
- *                +false+ otherwise.
+ *  - #==, #===: Returns +true+ if a given other string has the same content as +self+.
+ *  - #eql?: Returns +true+ if the content is the same as the given other string.
+ *  - #<=>: Returns -1, 0, or 1 as a given other string is smaller than,
+ *    equal to, or larger than +self+.
+ *  - #casecmp: Ignoring case, returns -1, 0, or 1 as a given
+ *    other string is smaller than, equal to, or larger than +self+.
+ *  - #casecmp?: Returns +true+ if the string is equal to a given string after Unicode case folding;
+ *    +false+ otherwise.
  *
  *  === Methods for Modifying a \String
  *
@@ -12278,53 +12278,53 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  _Insertion_
  *
- *  - #insert:: Returns +self+ with a given string inserted at a given offset.
- *  - #<<:: Returns +self+ concatenated with a given string or integer.
+ *  - #insert: Returns +self+ with a given string inserted at a given offset.
+ *  - #<<: Returns +self+ concatenated with a given string or integer.
  *
  *  _Substitution_
  *
- *  - #sub!:: Replaces the first substring that matches a given pattern with a given replacement string;
- *            returns +self+ if any changes, +nil+ otherwise.
- *  - #gsub!:: Replaces each substring that matches a given pattern with a given replacement string;
- *             returns +self+ if any changes, +nil+ otherwise.
- *  - #succ!, #next!:: Returns +self+ modified to become its own successor.
- *  - #replace:: Returns +self+ with its entire content replaced by a given string.
- *  - #reverse!:: Returns +self+ with its characters in reverse order.
- *  - #setbyte:: Sets the byte at a given integer offset to a given value; returns the argument.
- *  - #tr!:: Replaces specified characters in +self+ with specified replacement characters;
- *           returns +self+ if any changes, +nil+ otherwise.
- *  - #tr_s!:: Replaces specified characters in +self+ with specified replacement characters,
- *             removing duplicates from the substrings that were modified;
- *             returns +self+ if any changes, +nil+ otherwise.
+ *  - #sub!: Replaces the first substring that matches a given pattern with a given replacement string;
+ *    returns +self+ if any changes, +nil+ otherwise.
+ *  - #gsub!: Replaces each substring that matches a given pattern with a given replacement string;
+ *    returns +self+ if any changes, +nil+ otherwise.
+ *  - #succ!, #next!: Returns +self+ modified to become its own successor.
+ *  - #replace: Returns +self+ with its entire content replaced by a given string.
+ *  - #reverse!: Returns +self+ with its characters in reverse order.
+ *  - #setbyte: Sets the byte at a given integer offset to a given value; returns the argument.
+ *  - #tr!: Replaces specified characters in +self+ with specified replacement characters;
+ *    returns +self+ if any changes, +nil+ otherwise.
+ *  - #tr_s!: Replaces specified characters in +self+ with specified replacement characters,
+ *    removing duplicates from the substrings that were modified;
+ *    returns +self+ if any changes, +nil+ otherwise.
  *
  *  _Casing_
  *
- *  - #capitalize!:: Upcases the initial character and downcases all others;
- *                   returns +self+ if any changes, +nil+ otherwise.
- *  - #downcase!:: Downcases all characters; returns +self+ if any changes, +nil+ otherwise.
- *  - #upcase!:: Upcases all characters; returns +self+ if any changes, +nil+ otherwise.
- *  - #swapcase!:: Upcases each downcase character and downcases each upcase character;
- *                 returns +self+ if any changes, +nil+ otherwise.
+ *  - #capitalize!: Upcases the initial character and downcases all others;
+ *    returns +self+ if any changes, +nil+ otherwise.
+ *  - #downcase!: Downcases all characters; returns +self+ if any changes, +nil+ otherwise.
+ *  - #upcase!: Upcases all characters; returns +self+ if any changes, +nil+ otherwise.
+ *  - #swapcase!: Upcases each downcase character and downcases each upcase character;
+ *    returns +self+ if any changes, +nil+ otherwise.
  *
  *  _Encoding_
  *
- *  - #encode!:: Returns +self+ with all characters transcoded from one given encoding into another.
- *  - #unicode_normalize!:: Unicode-normalizes +self+; returns +self+.
- *  - #scrub!:: Replaces each invalid byte with a given character; returns +self+.
- *  - #force_encoding:: Changes the encoding to a given encoding; returns +self+.
+ *  - #encode!: Returns +self+ with all characters transcoded from one given encoding into another.
+ *  - #unicode_normalize!: Unicode-normalizes +self+; returns +self+.
+ *  - #scrub!: Replaces each invalid byte with a given character; returns +self+.
+ *  - #force_encoding: Changes the encoding to a given encoding; returns +self+.
  *
  *  _Deletion_
  *
- *  - #clear:: Removes all content, so that +self+ is empty; returns +self+.
- *  - #slice!, #[]=:: Removes a substring determined by a given index, start/length, range, regexp, or substring.
- *  - #squeeze!:: Removes contiguous duplicate characters; returns +self+.
- *  - #delete!:: Removes characters as determined by the intersection of substring arguments.
- *  - #lstrip!:: Removes leading whitespace; returns +self+ if any changes, +nil+ otherwise.
- *  - #rstrip!:: Removes trailing whitespace; returns +self+ if any changes, +nil+ otherwise.
- *  - #strip!:: Removes leading and trailing whitespace; returns +self+ if any changes, +nil+ otherwise.
- *  - #chomp!:: Removes trailing record separator, if found; returns +self+ if any changes, +nil+ otherwise.
- *  - #chop!:: Removes trailing newline characters if found; otherwise removes the last character;
- *             returns +self+ if any changes, +nil+ otherwise.
+ *  - #clear: Removes all content, so that +self+ is empty; returns +self+.
+ *  - #slice!, #[]=: Removes a substring determined by a given index, start/length, range, regexp, or substring.
+ *  - #squeeze!: Removes contiguous duplicate characters; returns +self+.
+ *  - #delete!: Removes characters as determined by the intersection of substring arguments.
+ *  - #lstrip!: Removes leading whitespace; returns +self+ if any changes, +nil+ otherwise.
+ *  - #rstrip!: Removes trailing whitespace; returns +self+ if any changes, +nil+ otherwise.
+ *  - #strip!: Removes leading and trailing whitespace; returns +self+ if any changes, +nil+ otherwise.
+ *  - #chomp!: Removes trailing record separator, if found; returns +self+ if any changes, +nil+ otherwise.
+ *  - #chop!: Removes trailing newline characters if found; otherwise removes the last character;
+ *    returns +self+ if any changes, +nil+ otherwise.
  *
  *  === Methods for Converting to New \String
  *
@@ -12333,66 +12333,66 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  _Extension_
  *
- *  - #*:: Returns the concatenation of multiple copies of +self+,
- *  - #+:: Returns the concatenation of +self+ and a given other string.
- *  - #center:: Returns a copy of +self+ centered between pad substring.
- *  - #concat:: Returns the concatenation of +self+ with given other strings.
- *  - #prepend:: Returns the concatenation of a given other string with +self+.
- *  - #ljust:: Returns a copy of +self+ of a given length, right-padded with a given other string.
- *  - #rjust:: Returns a copy of +self+ of a given length, left-padded with a given other string.
+ *  - #*: Returns the concatenation of multiple copies of +self+,
+ *  - #+: Returns the concatenation of +self+ and a given other string.
+ *  - #center: Returns a copy of +self+ centered between pad substring.
+ *  - #concat: Returns the concatenation of +self+ with given other strings.
+ *  - #prepend: Returns the concatenation of a given other string with +self+.
+ *  - #ljust: Returns a copy of +self+ of a given length, right-padded with a given other string.
+ *  - #rjust: Returns a copy of +self+ of a given length, left-padded with a given other string.
  *
  *  _Encoding_
  *
- *  - #b:: Returns a copy of +self+ with ASCII-8BIT encoding.
- *  - #scrub:: Returns a copy of +self+ with each invalid byte replaced with a given character.
- *  - #unicode_normalize:: Returns a copy of +self+ with each character Unicode-normalized.
- *  - #encode:: Returns a copy of +self+ with all characters transcoded from one given encoding into another.
+ *  - #b: Returns a copy of +self+ with ASCII-8BIT encoding.
+ *  - #scrub: Returns a copy of +self+ with each invalid byte replaced with a given character.
+ *  - #unicode_normalize: Returns a copy of +self+ with each character Unicode-normalized.
+ *  - #encode: Returns a copy of +self+ with all characters transcoded from one given encoding into another.
  *
  *  _Substitution_
  *
- *  - #dump:: Returns a copy of +self with all non-printing characters replaced by \xHH notation
- *            and all special characters escaped.
- *  - #undump:: Returns a copy of +self with all <tt>\xNN</tt> notation replace by <tt>\uNNNN</tt> notation
- *              and all escaped characters unescaped.
- *  - #sub:: Returns a copy of +self+ with the first substring matching a given pattern
- *           replaced with a given replacement string;.
- *  - #gsub:: Returns a copy of +self+ with each substring that matches a given pattern
- *            replaced with a given replacement string.
- *  - #succ, #next:: Returns the string that is the successor to +self+.
- *  - #reverse:: Returns a copy of +self+ with its characters in reverse order.
- *  - #tr:: Returns a copy of +self+ with specified characters replaced with specified replacement characters.
- *  - #tr_s:: Returns a copy of +self+ with specified characters replaced with specified replacement characters,
- *            removing duplicates from the substrings that were modified.
- *  - #%:: Returns the string resulting from formatting a given object into +self+
+ *  - #dump: Returns a copy of +self with all non-printing characters replaced by \xHH notation
+ *  and all special characters escaped.
+ *  - #undump: Returns a copy of +self with all <tt>\xNN</tt> notation replace by <tt>\uNNNN</tt> notation
+ *  and all escaped characters unescaped.
+ *  - #sub: Returns a copy of +self+ with the first substring matching a given pattern
+ *  replaced with a given replacement string;.
+ *  - #gsub: Returns a copy of +self+ with each substring that matches a given pattern
+ *  replaced with a given replacement string.
+ *  - #succ, #next: Returns the string that is the successor to +self+.
+ *  - #reverse: Returns a copy of +self+ with its characters in reverse order.
+ *  - #tr: Returns a copy of +self+ with specified characters replaced with specified replacement characters.
+ *  - #tr_s: Returns a copy of +self+ with specified characters replaced with specified replacement characters,
+ *  removing duplicates from the substrings that were modified.
+ *  - #%: Returns the string resulting from formatting a given object into +self+
  *
  *  _Casing_
  *
- *  - #capitalize:: Returns a copy of +self+ with the first character upcased
- *                  and all other characters downcased.
- *  - #downcase:: Returns a copy of +self+ with all characters downcased.
- *  - #upcase:: Returns a copy of +self+ with all characters upcased.
- *  - #swapcase:: Returns a copy of +self+ with all upcase characters downcased
- *                and all downcase characters upcased.
+ *  - #capitalize: Returns a copy of +self+ with the first character upcased
+ *    and all other characters downcased.
+ *  - #downcase: Returns a copy of +self+ with all characters downcased.
+ *  - #upcase: Returns a copy of +self+ with all characters upcased.
+ *  - #swapcase: Returns a copy of +self+ with all upcase characters downcased
+ *    and all downcase characters upcased.
  *
  *  _Deletion_
  *
- *  - #delete:: Returns a copy of +self+ with characters removed
- *  - #delete_prefix:: Returns a copy of +self+ with a given prefix removed.
- *  - #delete_suffix:: Returns a copy of +self+ with a given suffix removed.
- *  - #lstrip:: Returns a copy of +self+ with leading whitespace removed.
- *  - #rstrip:: Returns a copy of +self+ with trailing whitespace removed.
- *  - #strip:: Returns a copy of +self+ with leading and trailing whitespace removed.
- *  - #chomp:: Returns a copy of +self+ with a trailing record separator removed, if found.
- *  - #chop:: Returns a copy of +self+ with trailing newline characters or the last character removed.
- *  - #squeeze:: Returns a copy of +self+ with contiguous duplicate characters removed.
- *  - #[], #slice:: Returns a substring determined by a given index, start/length, or range, or string.
- *  - #byteslice:: Returns a substring determined by a given index, start/length, or range.
- *  - #chr:: Returns the first character.
+ *  - #delete: Returns a copy of +self+ with characters removed
+ *  - #delete_prefix: Returns a copy of +self+ with a given prefix removed.
+ *  - #delete_suffix: Returns a copy of +self+ with a given suffix removed.
+ *  - #lstrip: Returns a copy of +self+ with leading whitespace removed.
+ *  - #rstrip: Returns a copy of +self+ with trailing whitespace removed.
+ *  - #strip: Returns a copy of +self+ with leading and trailing whitespace removed.
+ *  - #chomp: Returns a copy of +self+ with a trailing record separator removed, if found.
+ *  - #chop: Returns a copy of +self+ with trailing newline characters or the last character removed.
+ *  - #squeeze: Returns a copy of +self+ with contiguous duplicate characters removed.
+ *  - #[], #slice: Returns a substring determined by a given index, start/length, or range, or string.
+ *  - #byteslice: Returns a substring determined by a given index, start/length, or range.
+ *  - #chr: Returns the first character.
  *
  *  _Duplication_
  *
- *  - #to_s, $to_str:: If +self+ is a subclass of \String, returns +self+ copied into a \String;
- *                     otherwise, returns +self+.
+ *  - #to_s, $to_str: If +self+ is a subclass of \String, returns +self+ copied into a \String;
+ *    otherwise, returns +self+.
  *
  *  === Methods for Converting to Non-\String
  *
@@ -12400,51 +12400,51 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  <em>Characters, Bytes, and Clusters</em>
  *
- *  - #bytes:: Returns an array of the bytes in +self+.
- *  - #chars:: Returns an array of the characters in +self+.
- *  - #codepoints:: Returns an array of the integer ordinals in +self+.
- *  - #getbyte:: Returns an integer byte as determined by a given index.
- *  - #grapheme_clusters:: Returns an array of the grapheme clusters in +self+.
+ *  - #bytes: Returns an array of the bytes in +self+.
+ *  - #chars: Returns an array of the characters in +self+.
+ *  - #codepoints: Returns an array of the integer ordinals in +self+.
+ *  - #getbyte: Returns an integer byte as determined by a given index.
+ *  - #grapheme_clusters: Returns an array of the grapheme clusters in +self+.
  *
  *  _Splitting_
  *
- *  - #lines:: Returns an array of the lines in +self+, as determined by a given record separator.
- *  - #partition:: Returns a 3-element array determined by the first substring that matches
- *                 a given substring or regexp,
- *  - #rpartition:: Returns a 3-element array determined by the last substring that matches
- *                  a given substring or regexp,
- *  - #split:: Returns an array of substrings determined by a given delimiter -- regexp or string --
- *             or, if a block given, passes those substrings to the block.
+ *  - #lines: Returns an array of the lines in +self+, as determined by a given record separator.
+ *  - #partition: Returns a 3-element array determined by the first substring that matches
+ *    a given substring or regexp,
+ *  - #rpartition: Returns a 3-element array determined by the last substring that matches
+ *    a given substring or regexp,
+ *  - #split: Returns an array of substrings determined by a given delimiter -- regexp or string --
+ *    or, if a block given, passes those substrings to the block.
  *
  *  _Matching_
  *
- *  - #scan:: Returns an array of substrings matching a given regexp or string, or,
- *            if a block given, passes each matching substring to the  block.
- *  - #unpack:: Returns an array of substrings extracted from +self+ according to a given format.
- *  - #unpack1:: Returns the first substring extracted from +self+ according to a given format.
+ *  - #scan: Returns an array of substrings matching a given regexp or string, or,
+ *    if a block given, passes each matching substring to the  block.
+ *  - #unpack: Returns an array of substrings extracted from +self+ according to a given format.
+ *  - #unpack1: Returns the first substring extracted from +self+ according to a given format.
  *
  *  _Numerics_
  *
- *  - #hex:: Returns the integer value of the leading characters, interpreted as hexadecimal digits.
- *  - #oct:: Returns the integer value of the leading characters, interpreted as octal digits.
- *  - #ord:: Returns the integer ordinal of the first character in +self+.
- *  - #to_i:: Returns the integer value of leading characters, interpreted as an integer.
- *  - #to_f:: Returns the floating-point value of leading characters, interpreted as a floating-point number.
+ *  - #hex: Returns the integer value of the leading characters, interpreted as hexadecimal digits.
+ *  - #oct: Returns the integer value of the leading characters, interpreted as octal digits.
+ *  - #ord: Returns the integer ordinal of the first character in +self+.
+ *  - #to_i: Returns the integer value of leading characters, interpreted as an integer.
+ *  - #to_f: Returns the floating-point value of leading characters, interpreted as a floating-point number.
  *
  *  <em>Strings and Symbols</em>
  *
- *  - #inspect:: Returns copy of +self+, enclosed in double-quotes, with special characters escaped.
- *  - #to_sym, #intern:: Returns the symbol corresponding to +self+.
+ *  - #inspect: Returns copy of +self+, enclosed in double-quotes, with special characters escaped.
+ *  - #to_sym, #intern: Returns the symbol corresponding to +self+.
  *
  *  === Methods for Iterating
  *
- *  - #each_byte:: Calls the given block with each successive byte in +self+.
- *  - #each_char:: Calls the given block with each successive character in +self+.
- *  - #each_codepoint:: Calls the given block with each successive integer codepoint in +self+.
- *  - #each_grapheme_cluster:: Calls the given block with each successive grapheme cluster in +self+.
- *  - #each_line:: Calls the given block with each successive line in +self+,
- *                 as determined by a given record separator.
- *  - #upto:: Calls the given block with each string value returned by successive calls to #succ.
+ *  - #each_byte: Calls the given block with each successive byte in +self+.
+ *  - #each_char: Calls the given block with each successive character in +self+.
+ *  - #each_codepoint: Calls the given block with each successive integer codepoint in +self+.
+ *  - #each_grapheme_cluster: Calls the given block with each successive grapheme cluster in +self+.
+ *  - #each_line: Calls the given block with each successive line in +self+,
+ *    as determined by a given record separator.
+ *  - #upto: Calls the given block with each string value returned by successive calls to #succ.
  */
 
 void

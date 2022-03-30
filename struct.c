@@ -1578,46 +1578,46 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
  *
  *  === Methods for Creating a Struct Subclass
  *
- *  ::new:: Returns a new subclass of \Struct.
+ *  - ::new: Returns a new subclass of \Struct.
  *
  *  === Methods for Querying
  *
- *  #hash:: Returns the integer hash code.
- *  #length, #size:: Returns the number of members.
+ *  - #hash: Returns the integer hash code.
+ *  - #length, #size: Returns the number of members.
  *
  *  === Methods for Comparing
  *
- *  #==:: Returns whether a given object is equal to +self+, using <tt>==</tt>
- *        to compare member values.
- *  #eql?:: Returns whether a given object is equal to +self+,
- *          using <tt>eql?</tt> to compare member values.
+ *  - #==: Returns whether a given object is equal to +self+, using <tt>==</tt>
+ *    to compare member values.
+ *  - #eql?: Returns whether a given object is equal to +self+,
+ *    using <tt>eql?</tt> to compare member values.
  *
  *  === Methods for Fetching
  *
- *  #[]:: Returns the value associated with a given member name.
- *  #to_a, #values, #deconstruct:: Returns the member values in +self+ as an array.
- *  #deconstruct_keys:: Returns a hash of the name/value pairs
- *                      for given member names.
- *  #dig:: Returns the object in nested objects that is specified
- *         by a given member name and additional arguments.
- *  #members:: Returns an array of the member names.
- *  #select, #filter:: Returns an array of member values from +self+,
- *                     as selected by the given block.
- *  #values_at:: Returns an array containing values for given member names.
+ *  - #[]: Returns the value associated with a given member name.
+ *  - #to_a, #values, #deconstruct: Returns the member values in +self+ as an array.
+ *  - #deconstruct_keys: Returns a hash of the name/value pairs
+ *    for given member names.
+ *  - #dig: Returns the object in nested objects that is specified
+ *    by a given member name and additional arguments.
+ *  - #members: Returns an array of the member names.
+ *  - #select, #filter: Returns an array of member values from +self+,
+ *    as selected by the given block.
+ *  - #values_at: Returns an array containing values for given member names.
  *
  *  === Methods for Assigning
  *
- *  #[]=:: Assigns a given value to a given member name.
+ *  - #[]=: Assigns a given value to a given member name.
  *
  *  === Methods for Iterating
  *
- *  #each:: Calls a given block with each member name.
- *  #each_pair:: Calls a given block with each member name/value pair.
+ *  - #each: Calls a given block with each member name.
+ *  - #each_pair: Calls a given block with each member name/value pair.
  *
  *  === Methods for Converting
  *
- *  #inspect, #to_s:: Returns a string representation of +self+.
- *  #to_h:: Returns a hash of the member name/value pairs in +self+.
+ *  - #inspect, #to_s: Returns a string representation of +self+.
+ *  - #to_h: Returns a hash of the member name/value pairs in +self+.
  *
  */
 void
