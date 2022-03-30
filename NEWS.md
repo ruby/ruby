@@ -95,6 +95,9 @@ Note: We're only listing outstanding class updates.
 * TracePoint
     * TracePoint#binding now returns `nil` for `c_call`/`c_return` TracePoints.
       [[Bug #18487]]
+    * TracePoint#enable `target_thread` keyword argument now defaults to the
+      current thread if `target` and `target_line` keyword arguments are not
+      passed. [[Bug #16889]]
 
 ## Stdlib updates
 
@@ -188,6 +191,7 @@ The following deprecated APIs are removed.
 [Bug #15928]:     https://bugs.ruby-lang.org/issues/15928
 [Feature #16131]: https://bugs.ruby-lang.org/issues/16131
 [Feature #16806]: https://bugs.ruby-lang.org/issues/16806
+[Bug #16889]:     https://bugs.ruby-lang.org/issues/16889
 [Bug #16908]:     https://bugs.ruby-lang.org/issues/16908
 [Feature #16989]: https://bugs.ruby-lang.org/issues/16989
 [Feature #17351]: https://bugs.ruby-lang.org/issues/17351
