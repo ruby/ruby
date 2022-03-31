@@ -11231,6 +11231,7 @@ unicode_normalize_common(int argc, VALUE *argv, VALUE str, ID id)
  *    "a\u0300".unicode_normalize      # => "a"
  *    "\u00E0".unicode_normalize(:nfd) # => "a "
  *
+ *  Related: String#unicode_normalize!, String#unicode_normalized?.
  */
 static VALUE
 rb_str_unicode_normalize(int argc, VALUE *argv, VALUE str)
@@ -11245,6 +11246,8 @@ rb_str_unicode_normalize(int argc, VALUE *argv, VALUE str)
  *  Like String#unicode_normalize, except that the normalization
  *  is performed on +self+.
  *
+ *  Related String#unicode_normalized?.
+ *
  */
 static VALUE
 rb_str_unicode_normalize_bang(int argc, VALUE *argv, VALUE str)
@@ -11255,9 +11258,21 @@ rb_str_unicode_normalize_bang(int argc, VALUE *argv, VALUE str)
 /*  call-seq:
  *   unicode_normalized?(form = :nfc) -> true or false
  *
- *  Returns whether +self+ is in Unicode normalization form +form+,
- *  which can be any of the four values +:nfc+, +:nfd+, +:nfkc+, or +:nfkd+.
- *  See String#unicode_normalize.
+ *  Returns +true+ if +self+ is in the given +form+ of Unicode normalization,
+ *  +false+ otherwise.
+ *  The +form+ must be one of +:nfc+, +:nfd+, +:nfkc+, or +:nfkd+.
+ *
+ *  Examples:
+ *
+ *    "a\u0300".unicode_normalized?       # => false
+ *    "a\u0300".unicode_normalized?(:nfd) # => true
+ *    "\u00E0".unicode_normalized?        # => true
+ *    "\u00E0".unicode_normalized?(:nfd)  # => false
+ *
+ *    s = "\xE0".force_encoding('ISO-8859-1')
+ *    s.unicode_normalized? # Raises Encoding::CompatibilityError.
+ *
+ *  Related: String#unicode_normalize, String#unicode_normalize!.
  *
  */
 static VALUE
