@@ -5001,46 +5001,8 @@ unlock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
     }
 }
 
-static inline bool
-try_move_plane(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page, uintptr_t p, bits_t bits, VALUE dest)
-{
-    if (bits) {
-        do {
-            if (bits & 1) {
-                /* We're trying to move "p" */
-                objspace->rcompactor.considered_count_table[BUILTIN_TYPE((VALUE)p)]++;
-
-                if (gc_is_moveable_obj(objspace, (VALUE)p)) {
-                    /* We were able to move "p" */
-                    objspace->rcompactor.moved_count_table[BUILTIN_TYPE((VALUE)p)]++;
-                    objspace->rcompactor.total_moved++;
-
-                    bool from_freelist = false;
-
-                    if (BUILTIN_TYPE(dest) == T_NONE) {
-                        from_freelist = true;
-                    }
-
-                    gc_move(objspace, (VALUE)p, dest, page->slot_size);
-                    gc_pin(objspace, (VALUE)p);
-                    heap->compact_cursor_index = p;
-                    if (from_freelist) {
-                        FL_SET((VALUE)p, FL_FROM_FREELIST);
-                    }
-
-                    return true;
-                }
-            }
-            p += BASE_SLOT_SIZE;
-            bits >>= 1;
-        } while (bits);
-    }
-
-    return false;
-}
-
 static bool
-try_move2(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, VALUE src)
+try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, VALUE src)
 {
     if (!free_page) {
         return false;
@@ -5067,7 +5029,6 @@ try_move2(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page,
         objspace->rcompactor.moved_count_table[BUILTIN_TYPE(src)]++;
         objspace->rcompactor.total_moved++;
 
-        //fprintf(stderr, "\t\tMoving objects: %s\n\t\t\t-> %s\n", obj_info(src), obj_info(dest));
         gc_move(objspace, src, dest, free_page->slot_size);
         gc_pin(objspace, src);
         FL_SET(src, FL_FROM_FREELIST);
@@ -5075,76 +5036,6 @@ try_move2(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page,
     }
 
     return true;
-}
-
-static short
-try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page, VALUE dest)
-{
-    struct heap_page * cursor = heap->compact_cursor;
-
-    GC_ASSERT(!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(dest), dest));
-
-    /* T_NONE objects came from the free list.  If the object is *not* a
-     * T_NONE, it is an object that just got freed but hasn't been
-     * added to the freelist yet */
-
-    while (1) {
-        size_t index;
-
-        bits_t *mark_bits = cursor->mark_bits;
-        bits_t *pin_bits = cursor->pinned_bits;
-        uintptr_t p;
-
-        if (heap->compact_cursor_index) {
-            index = BITMAP_INDEX(heap->compact_cursor_index);
-            p = heap->compact_cursor_index;
-            GC_ASSERT(cursor == GET_HEAP_PAGE(p));
-        }
-        else {
-            index = 0;
-            p = cursor->start;
-        }
-
-        bits_t bits = mark_bits[index] & ~pin_bits[index];
-
-        int plane_offset = NUM_IN_PAGE(p) % BITS_BITLENGTH;
-        bits >>= plane_offset;
-        if (try_move_plane(objspace, heap, sweep_page, p, bits, dest)) return 1;
-
-        p += (BITS_BITLENGTH - plane_offset) * BASE_SLOT_SIZE;
-
-        /* Find an object to move and move it. Movable objects must be
-         * marked, so we iterate using the marking bitmap */
-        for (size_t i = index + 1; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
-            bits_t bits = mark_bits[i] & ~pin_bits[i];
-            if (try_move_plane(objspace, heap, sweep_page, p, bits, dest)) return 1;
-            p += BITS_BITLENGTH * BASE_SLOT_SIZE;
-        }
-
-        /* We couldn't find a movable object on the compact cursor, so lets
-         * move to the next page (previous page since we are traveling in the
-         * opposite direction of the sweep cursor) and look there. */
-
-        struct heap_page * next;
-
-        next = ccan_list_prev(&heap->pages, cursor, page_node);
-
-        /* Protect the current cursor since it probably has T_MOVED slots. */
-        lock_page_body(objspace, GET_PAGE_BODY(cursor->start));
-
-        heap->compact_cursor = next;
-        heap->compact_cursor_index = 0;
-        cursor = next;
-
-        // Cursors have met, lets quit.  We set `heap->compact_cursor` equal
-        // to `heap->sweeping_page` so we know how far to iterate through
-        // the heap when unprotecting pages.
-        if (next == sweep_page) {
-            break;
-        }
-    }
-
-    return 0;
 }
 
 static void
@@ -5370,99 +5261,6 @@ struct gc_sweep_context {
     int freed_slots;
     int empty_slots;
 };
-
-static inline void
-gc_fill_swept_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bitset, bool *finished_compacting, struct gc_sweep_context *ctx)
-{
-    struct heap_page * sweep_page = ctx->page;
-
-    if (bitset) {
-        short slot_size = sweep_page->slot_size;
-        short slot_bits = slot_size / BASE_SLOT_SIZE;
-
-        do {
-            if (bitset & 1) {
-                VALUE dest = (VALUE)p;
-
-                GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(dest), dest));
-                GC_ASSERT(!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(dest), dest));
-
-                CLEAR_IN_BITMAP(GET_HEAP_PINNED_BITS(dest), dest);
-
-                if (*finished_compacting) {
-                    if (BUILTIN_TYPE(dest) == T_NONE) {
-                        ctx->empty_slots++;
-                    }
-                    else {
-                        ctx->freed_slots++;
-                    }
-                    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)dest, BASE_SLOT_SIZE);
-                    heap_page_add_freeobj(objspace, sweep_page, dest);
-                }
-                else {
-                    /* Zombie slots don't get marked, but we can't reuse
-                     * their memory until they have their finalizers run.*/
-                    if (BUILTIN_TYPE(dest) != T_ZOMBIE) {
-                        if (!try_move(objspace, heap, sweep_page, dest)) {
-                            *finished_compacting = true;
-                            (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, BASE_SLOT_SIZE);
-                            gc_report(5, objspace, "Quit compacting, couldn't find an object to move\n");
-                            if (BUILTIN_TYPE(dest) == T_NONE) {
-                                ctx->empty_slots++;
-                            }
-                            else {
-                                ctx->freed_slots++;
-                            }
-                            heap_page_add_freeobj(objspace, sweep_page, dest);
-                            gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info(dest));
-                        }
-                        else {
-                            //moved_slots++;
-                        }
-                    }
-                }
-            }
-            p += slot_size;
-            bitset >>= slot_bits;
-        } while (bitset);
-    }
-}
-
-static bool
-gc_fill_swept_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page, struct gc_sweep_context *ctx)
-{
-    /* Find any pinned but not marked objects and try to fill those slots */
-    bool finished_compacting = false;
-    bits_t *mark_bits, *pin_bits;
-    bits_t bitset;
-    uintptr_t p;
-
-    mark_bits = sweep_page->mark_bits;
-    pin_bits = sweep_page->pinned_bits;
-
-    p = (uintptr_t)sweep_page->start;
-
-    struct heap_page * cursor = heap->compact_cursor;
-
-    unlock_page_body(objspace, GET_PAGE_BODY(cursor->start));
-
-    /* *Want to move* objects are pinned but not marked. */
-    bitset = pin_bits[0] & ~mark_bits[0];
-    bitset >>= NUM_IN_PAGE(p); // Skip header / dead space bits
-    gc_fill_swept_plane(objspace, heap, (uintptr_t)p, bitset, &finished_compacting, ctx);
-    p += ((BITS_BITLENGTH - NUM_IN_PAGE(p)) * BASE_SLOT_SIZE);
-
-    for (int i = 1; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
-        /* *Want to move* objects are pinned but not marked. */
-        bitset = pin_bits[i] & ~mark_bits[i];
-        gc_fill_swept_plane(objspace, heap, (uintptr_t)p, bitset, &finished_compacting, ctx);
-        p += ((BITS_BITLENGTH) * BASE_SLOT_SIZE);
-    }
-
-    lock_page_body(objspace, GET_PAGE_BODY(heap->compact_cursor->start));
-
-    return finished_compacting;
-}
 
 static inline void
 gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bitset, struct gc_sweep_context *ctx)
@@ -8291,7 +8089,7 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, VALUE src)
     if (gc_compact_heap_cursors_met_p(dheap)) {
         return false;
     }
-    while (!try_move2(objspace, dheap, dheap->free_pages, src)) {
+    while (!try_move(objspace, dheap, dheap->free_pages, src)) {
         struct gc_sweep_context ctx = {
             .page = dheap->sweeping_page,
             .final_slots = 0,
