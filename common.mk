@@ -1358,12 +1358,13 @@ update-gems$(gnumake:yes=-nongnumake): PHONY
 extract-gems$(gnumake:yes=-nongnumake): PHONY
 	$(ECHO) Extracting bundled gem files...
 	$(Q) $(RUNRUBY) -C "$(srcdir)" \
-	    -Itool -rgem-unpack -answ \
+	    -Itool -rfileutils -rgem-unpack -answ \
 	    -e 'BEGIN {FileUtils.mkdir_p(d = ".bundle/gems")}' \
 	    -e 'gem, ver = *$$F' \
 	    -e 'next if !ver or /^#/=~gem' \
 	    -e 'g = "#{gem}-#{ver}"' \
 	    -e 'File.directory?("#{d}/#{g}") or Gem.unpack("gems/#{g}.gem", d)' \
+	    -e 'FileUtils.rm_rf("#{d}/#{g}/.github")' \
 	    gems/bundled_gems
 
 update-bundled_gems: PHONY
