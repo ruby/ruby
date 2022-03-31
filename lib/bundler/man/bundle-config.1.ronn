@@ -23,17 +23,19 @@ was set.
 Executing `bundle config get <name>` will print the value of that configuration
 setting, and where it was set.
 
-Executing `bundle config set <name> <value>` will set that configuration to the
-value specified for all bundles executed as the current user. The configuration
-will be stored in `~/.bundle/config`. If <name> already is set, <name> will be
-overridden and user will be warned.
-
-Executing `bundle config set --global <name> <value>` works the same as above.
+Executing `bundle config set <name> <value>` defaults to setting `local`
+configuration if executing from within a local application, otherwise it will
+set `global` configuration. See `--local` and `--global` options below.
 
 Executing `bundle config set --local <name> <value>` will set that configuration
 in the directory for the local application. The configuration will be stored in
 `<project_root>/.bundle/config`. If `BUNDLE_APP_CONFIG` is set, the configuration
 will be stored in `$BUNDLE_APP_CONFIG/config`.
+
+Executing `bundle config set --global <name> <value>` will set that
+configuration to the value specified for all bundles executed as the current
+user. The configuration will be stored in `~/.bundle/config`. If <name> already
+is set, <name> will be overridden and user will be warned.
 
 Executing `bundle config unset <name>` will delete the configuration in both
 local and global sources.
