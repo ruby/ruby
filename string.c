@@ -8416,7 +8416,7 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.squeeze(*selectors) -> new_string
+ *    squeeze(*selectors) -> new_string
  *
  *  Returns a copy of +self+ with characters specified by +selectors+ "squeezed"
  *  (see {Multiple Character Selectors}[rdoc-ref:character_selectors.rdoc@Multiple+Character+Selectors]):
@@ -10707,7 +10707,7 @@ rb_str_delete_suffix_bang(VALUE str, VALUE suffix)
 
 /*
  *  call-seq:
- *     str.delete_suffix(suffix) -> new_string
+ *    delete_suffix(suffix) -> new_string
  *
  *  :include: doc/string/delete_suffix.rdoc
  *
@@ -10751,9 +10751,29 @@ rb_fs_setter(VALUE val, ID id, VALUE *var)
 
 /*
  *  call-seq:
- *     str.force_encoding(encoding)   -> str
+ *    force_encoding(encoding) -> self
  *
- *  Changes the encoding to +encoding+ and returns self.
+ *  Changes the encoding of +self+ to +encoding+,
+ *  which may be a string encoding name or an Encoding object;
+ *  returns self:
+ *
+ *    s = 'łał'
+ *    s.bytes                   # => [197, 130, 97, 197, 130]
+ *    s.encoding                # => #<Encoding:UTF-8>
+ *    s.force_encoding('ascii') # => "\xC5\x82a\xC5\x82"
+ *    s.encoding                # => #<Encoding:US-ASCII>
+ *
+ *  Does not change the underlying bytes:
+ *
+ *    s.bytes                   # => [197, 130, 97, 197, 130]
+ *
+ *  Makes the change even if the given +encoding+ is invalid
+ *  for +self+ (as is the change above):
+ *
+ *    s.valid_encoding?                 # => false
+ *    s.force_encoding(Encoding::UTF_8) # => "łał"
+ *    s.valid_encoding?                 # => true
+ *
  */
 
 static VALUE
@@ -10769,19 +10789,7 @@ rb_str_force_encoding(VALUE str, VALUE enc)
  *  call-seq:
  *    b -> string
  *
- *  Returns a copy of +self+ with that has ASCII-8BIT encoding;
- *  the contents (bytes) of +self+ are not modified:
- *
- *    s = "\x99"
- *    s.encoding   # => #<Encoding:UTF-8>
- *    t = s.b      # => "\x99"
- *    t.encoding   # => #<Encoding:ASCII-8BIT>
- *
- *    s = "\u4095"
- *    s.encoding   # => #<Encoding:UTF-8>
- *    s.bytes      # => [228, 130, 149]
- *    t = s.b      # => "\xE4\x82\x95"
- *    t.encoding   # => #<Encoding:ASCII-8BIT>
+ *  :include: doc/string/b.rdoc
  *
  */
 
@@ -10802,13 +10810,13 @@ rb_str_b(VALUE str)
 
 /*
  *  call-seq:
- *     str.valid_encoding?  -> true or false
+ *    valid_encoding? -> true or false
  *
- *  Returns true for a string which is encoded correctly.
+ *  Returns +true+ if +self+ is encoded correctly, +false+ otherwise:
  *
- *    "\xc2\xa1".force_encoding("UTF-8").valid_encoding?  #=> true
- *    "\xc2".force_encoding("UTF-8").valid_encoding?      #=> false
- *    "\x80".force_encoding("UTF-8").valid_encoding?      #=> false
+ *    "\xc2\xa1".force_encoding("UTF-8").valid_encoding? # => true
+ *    "\xc2".force_encoding("UTF-8").valid_encoding?     # => false
+ *    "\x80".force_encoding("UTF-8").valid_encoding?     # => false
  */
 
 static VALUE
@@ -10821,12 +10829,14 @@ rb_str_valid_encoding_p(VALUE str)
 
 /*
  *  call-seq:
- *     str.ascii_only?  -> true or false
+ *    ascii_only? -> true or false
  *
- *  Returns true for a string which has only ASCII characters.
+ *  Returns +true+ if +self+ contains only ASCII characters,
+ *  +false+ otherwise:
  *
- *    "abc".force_encoding("UTF-8").ascii_only?          #=> true
- *    "abc\u{6666}".force_encoding("UTF-8").ascii_only?  #=> false
+ *    'abc'.ascii_only?         # => true
+ *    "abc\u{6666}".ascii_only? # => false
+ *
  */
 
 static VALUE
@@ -11158,37 +11168,10 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 
 /*
  *  call-seq:
- *    scrub(replacement_string = default_replacement) -> string
- *    scrub{|bytes| ... } -> string
+ *    scrub(replacement_string = default_replacement) -> new_string
+ *    scrub{|bytes| ... } -> new_string
  *
- *  Returns a copy of self with each invalid byte sequence replaced
- *  by a replacement string.
- *
- *  With no block given and no argument, replaces each invalid sequence
- *  with the default replacement string
- *  (<tt>"\uFFFD"</tt> for a Unicode encoding, <tt>'?'</tt> otherwise):
- *
- *    "\uFFFD".bytes # => [239, 191, 189]
- *    s = "foo\x81\x81bar"
- *    s.bytes
- *    # => [102, 111, 111, 129, 129, 98, 97, 114]
- *    s.scrub.bytes
- *    # => [102, 111, 111, 239, 191, 189, 239, 191, 189, 98, 97, 114]
- *
- *  With no block given and argument +replacement_string+ given,
- *  replaces each invalid sequence with that string:
- *
- *    "foo\x81\x81bar".scrub('xyzzy') # => "fooxyzzyxyzzybar"
- *
- *  With a block given, replaces each invalid sequence with the value
- *  of the block:
- *
- *    "foo\x81\x81bar".scrub {|bytes| p bytes; 'XYZZY' } # => "fooXYZZYXYZZYbar"
- *
- *  Output:
- *
- *    "\x81"
- *    "\x81"
+ *  :include: doc/string/scrub.rdoc
  *
  */
 static VALUE
@@ -11203,7 +11186,7 @@ str_scrub(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    scrub! -> self
  *    scrub!(replacement_string = default_replacement) -> self
- *    scrub!{|bytes|} -> self
+ *    scrub!{|bytes| ... } -> self
  *
  *  Like String#scrub, except that any replacements are made in +self+.
  *
@@ -11289,21 +11272,12 @@ rb_str_unicode_normalize_bang(int argc, VALUE *argv, VALUE str)
 }
 
 /*  call-seq:
- *    str.unicode_normalized?(form=:nfc)
+ *   unicode_normalized?(form = :nfc) -> true or false
  *
- *  Checks whether +str+ is in Unicode normalization form +form+,
+ *  Returns whether +self+ is in Unicode normalization form +form+,
  *  which can be any of the four values +:nfc+, +:nfd+, +:nfkc+, or +:nfkd+.
- *  The default is +:nfc+.
+ *  See String#unicode_normalize.
  *
- *  If the string is not in a Unicode Encoding, then an Exception is raised.
- *  For details, see String#unicode_normalize.
- *
- *    "a\u0300".unicode_normalized?        #=> false
- *    "a\u0300".unicode_normalized?(:nfd)  #=> true
- *    "\u00E0".unicode_normalized?         #=> true
- *    "\u00E0".unicode_normalized?(:nfd)   #=> false
- *    "\xE0".force_encoding('ISO-8859-1').unicode_normalized?
- *                                         #=> Encoding::CompatibilityError raised
  */
 static VALUE
 rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
