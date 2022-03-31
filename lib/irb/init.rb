@@ -379,11 +379,9 @@ module IRB # :nodoc:
     end
     if xdg_config_home = ENV["XDG_CONFIG_HOME"]
       irb_home = File.join(xdg_config_home, "irb")
-      unless File.exist? irb_home
-        require 'fileutils'
-        FileUtils.mkdir_p irb_home
+      if File.directory?(irb_home)
+        yield proc{|rc| irb_home + "/irb#{rc}"}
       end
-      yield proc{|rc| irb_home + "/irb#{rc}"}
     end
     if home = ENV["HOME"]
       yield proc{|rc| home+"/.irb#{rc}"}
