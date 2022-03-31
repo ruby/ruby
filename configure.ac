@@ -1268,15 +1268,6 @@ AC_CHECK_LIB(crypt, crypt)      # glibc (GNU/Linux, GNU/Hurd, GNU/kFreeBSD)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(socket, shutdown)  # SunOS/Solaris
 
-AS_IF([test -n "${PKG_CONFIG}" && ${PKG_CONFIG} --exists capstone], [
-   CAPSTONE_CFLAGS=`${PKG_CONFIG} --cflags capstone`
-   CAPSTONE_LIB_L=`${PKG_CONFIG} --libs-only-L capstone`
-   LDFLAGS="$LDFLAGS $CAPSTONE_LIB_L"
-   CFLAGS="$CFLAGS $CAPSTONE_CFLAGS"
-])
-
-AC_CHECK_LIB(capstone, cs_open) # Capstone disassembler for debugging YJIT
-
 dnl Checks for header files.
 AC_HEADER_DIRENT
 dnl AC_HEADER_STDC has been checked in AC_USE_SYSTEM_EXTENSIONS
