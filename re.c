@@ -3557,7 +3557,7 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
     if (RB_TYPE_P(src, T_REGEXP)) {
 	VALUE re = src;
 
-	if (opts != Qundef) {
+	if (opts != Qnil) {
 	    rb_warn("flags ignored");
 	}
 	rb_reg_check(re);
