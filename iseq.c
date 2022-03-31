@@ -154,7 +154,13 @@ rb_vm_insn_addr2insn2(const void *addr)
 static VALUE
 rb_vm_insn_null_translator(const void *addr)
 {
-    return (VALUE)addr;
+    VALUE opcode = (VALUE) addr;
+    VALUE trace_opcode_threshold = (VM_INSTRUCTION_SIZE / 2);
+
+    if (opcode >= trace_opcode_threshold) {
+        return opcode - trace_opcode_threshold;
+    }
+    return opcode;
 }
 
 typedef VALUE iseq_value_itr_t(void *ctx, VALUE obj);
