@@ -410,6 +410,11 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
         len += r;
     }
 
+#if USE_THIRD_PARTY_HEAP
+    // When using third-party heap, the GC thread may print debug logs, too.
+    // GC threads do not have Ruby-level execution context.
+    if (rb_current_execution_context(false) != NULL) {
+#endif // USE_THIRD_PARTY_HEAP
     // Ruby location
     int ruby_line;
     const char *ruby_file = rb_source_location_cstr(&ruby_line);
@@ -444,6 +449,9 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
             len += r;
         }
     }
+#if USE_THIRD_PARTY_HEAP
+    }
+#endif // USE_THIRD_PARTY_HEAP
 
     rb_nativethread_lock_lock(&debug_log.lock);
     {

@@ -2342,7 +2342,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
     p->as.basic.flags = flags;
     *((VALUE *)&p->as.basic.klass) = klass;
 
-//    fprintf(stderr, "newobj_init: %p, %s\n", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
+    RUBY_DEBUG_LOG("newobj_init: %p, %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
 
 #ifdef USE_THIRD_PARTY_HEAP
     switch (RB_BUILTIN_TYPE(obj)) {
@@ -2350,11 +2350,11 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
       case T_FILE:
         mmtk_register_finalizable((void*)obj);
         // VALUE klass = CLASS_OF(obj);
-        // fprintf(stderr, "Object registered for finalization: %p: %s %s\n",
-        //     (void*)obj,
-        //     rb_type_str(RB_BUILTIN_TYPE(obj)),
-        //     klass==0?"(null)":rb_class2name(klass)
-        //     );
+        RUBY_DEBUG_LOG("Object registered for finalization: %p: %s %s",
+             (void*)obj,
+             rb_type_str(RB_BUILTIN_TYPE(obj)),
+             klass==0?"(null)":rb_class2name(klass)
+             );
         break;
       default:
         break; // Do nothing.
@@ -2983,25 +2983,27 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
 {
 #ifdef USE_THIRD_PARTY_HEAP
     if (ptr == NULL) {
-//     	fprintf(stderr, "      %18p: It is NULL. nope.\n", ptr);
+     	RUBY_DEBUG_LOG("      %18p: It is NULL. Nope.", ptr);
         return false;
     }
 
     // The granularity of MMTk's alloc_bit bitmap is one bit per word.
     // We must check for alignment before asking MMTk.
     if ((uintptr_t)ptr % sizeof(void*) != 0) {
-//     	fprintf(stderr, "      %18p: Not properly aligned. nope.\n", ptr);
+     	RUBY_DEBUG_LOG("      %18p: Not properly aligned. Nope.", ptr);
         return false;
     }
 
     // Now let MMTk decide.
     bool result = mmtk_is_mmtk_object(ptr);
 
-//     if (result) {
-//     	fprintf(stderr, "***** %18p: YEAH! It looks like an object reference! *****\n", ptr);
-//     } else {
-//     	fprintf(stderr, "      %18p: nope\n", ptr);
-//     }
+    if (USE_RUBY_DEBUG_LOG) {
+	if (result) {
+	    RUBY_DEBUG_LOG("***** %18p: YEAH! It looks like an object reference! *****", ptr);
+	} else {
+	    RUBY_DEBUG_LOG("      %18p: MMTk says nope.", ptr);
+	}
+    }
 
     return result;
 #else // USE_THIRD_PARTY_HEAP
@@ -4426,38 +4428,39 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 #ifdef USE_THIRD_PARTY_HEAP
     void *resurrected;
     while ((resurrected = mmtk_poll_finalizable(true)) != NULL) {
-        VALUE obj = (VALUE)resurrected;
-        // VALUE klass = CLASS_OF(obj);
-        // fprintf(stderr, "Resurrected for obj_free: %p: %s %s\n",
-        //     resurrected,
-        //     rb_type_str(RB_BUILTIN_TYPE(obj)),
-        //     klass==0?"(null)":rb_class2name(klass)
-        //     );
+	VALUE obj = (VALUE)resurrected;
+	if (USE_RUBY_DEBUG_LOG) {
+	    VALUE klass = CLASS_OF(obj);
+	    RUBY_DEBUG_LOG("Resurrected for obj_free: %p: %s %s",
+		    resurrected,
+		    rb_type_str(RB_BUILTIN_TYPE(obj)),
+		    klass==0?"(null)":rb_class2name(klass)
+		    );
+	}
         if (rb_obj_is_thread(obj)) {
-            // fprintf(stderr, "Skipped thread: %p: %s\n", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            RUBY_DEBUG_LOG("Skipped thread: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
             continue;
         }
         if (rb_obj_is_mutex(obj)) {
-            // fprintf(stderr, "Skipped mutex: %p: %s\n", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            RUBY_DEBUG_LOG("Skipped mutex: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
             continue;
         }
         if (rb_obj_is_fiber(obj)) {
-            // fprintf(stderr, "Skipped fiber: %p: %s\n", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            RUBY_DEBUG_LOG("Skipped fiber: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
             continue;
         }
         if (rb_obj_is_main_ractor(obj)) {
-            // fprintf(stderr, "Skipped main ractor: %p: %s\n", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            RUBY_DEBUG_LOG("Skipped main ractor: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
             continue;
         }
         obj_free(objspace, obj);
-        // fprintf(stderr, "Object freed: %p: %s\n", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+        RUBY_DEBUG_LOG("Object freed: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
     }
 #endif
 
     if (heap_pages_deferred_final) {
 	finalize_list(objspace, heap_pages_deferred_final);
     }
-
 
     st_free_table(finalizer_table);
     finalizer_table = 0;
@@ -14412,14 +14415,12 @@ rb_mmtk_wait_for_gc_end(void *param)
     rb_thread_t *cur_thread = ctx->tls;
     RUBY_ASSERT(cur_thread == GET_THREAD());
     while (rb_mmtk_global.start_the_world_count < ctx->my_count + 1) {
-	fprintf(stderr, "Will wait for cond. cur: %zu, expected: %zu\n",
+	RUBY_DEBUG_LOG("Will wait for cond. cur: %zu, expected: %zu",
 		rb_mmtk_global.start_the_world_count, ctx->my_count + 1);
 	pthread_cond_wait(&rb_mmtk_global.cond_world_started, &rb_mmtk_global.mutex);
     }
 
-    fprintf(stderr, "It is reported that GC has finished. Really? Let's see.\n");
-    //fprintf(stderr, "Stop now.\n");
-    //abort();
+    RUBY_DEBUG_LOG("GC finished.");
 }
 
 static void*
@@ -14512,7 +14513,7 @@ rb_mmtk_get_next_mutator(void)
 static void
 rb_mmtk_scan_vm_specific_roots(void)
 {
-    fprintf(stderr, "Scanning VM-specific roots...\n");
+    RUBY_DEBUG_LOG("Scanning VM-specific roots...");
 
     rb_vm_t *vm = GET_VM();
 
@@ -14533,11 +14534,11 @@ rb_mmtk_scan_thread_root(MMTk_VMMutatorThread mutator, MMTk_VMWorkerThread worke
     rb_thread_t *thread = (rb_thread_t*)mutator;
     rb_execution_context_t *ec = thread->ec;
 
-    fprintf(stderr, "[Worker: %p] We will scan thread root for thread: %p, ec: %p\n", worker, thread, ec);
+    RUBY_DEBUG_LOG("[Worker: %p] We will scan thread root for thread: %p, ec: %p", worker, thread, ec);
 
     rb_execution_context_mark(thread->ec);
 
-    fprintf(stderr, "[Worker: %p] Finished scanning thread for thread: %p, ec: %p\n", worker, thread, ec);
+    RUBY_DEBUG_LOG("[Worker: %p] Finished scanning thread for thread: %p, ec: %p", worker, thread, ec);
 }
 
 
@@ -14545,7 +14546,7 @@ static inline void
 rb_mmtk_mark(VALUE obj, bool pin)
 {
     rb_mmtk_assert_mmtk_worker();
-    fprintf(stderr, "Marking: %s %s %p\n",
+    RUBY_DEBUG_LOG("Marking: %s %s %p",
 	pin ? "(pin)" : "     ",
 	RB_SPECIAL_CONST_P(obj) ? "(spc)" : "     ",
 	(void*)obj);
