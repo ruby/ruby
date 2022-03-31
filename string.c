@@ -11269,6 +11269,9 @@ rb_str_unicode_normalize_bang(int argc, VALUE *argv, VALUE str)
  *    "\u00E0".unicode_normalized?        # => true
  *    "\u00E0".unicode_normalized?(:nfd)  # => false
  *
+ *
+ *  Raises an exception if +self+ is not in a Unicode encoding:
+ *
  *    s = "\xE0".force_encoding('ISO-8859-1')
  *    s.unicode_normalized? # Raises Encoding::CompatibilityError.
  *
