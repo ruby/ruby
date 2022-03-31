@@ -41,7 +41,7 @@ if yaml_source
   Dir.mkdir(yaml) unless File.directory?(yaml)
   unless system(yaml_configure, "-q",
                 "--enable-#{$enable_shared || !$static ? 'shared' : 'static'}",
-                "--host=#{RbConfig::CONFIG['host']}",
+                "--host=#{RbConfig::CONFIG['host'].sub(/-unknown-/, '-')}",
                 *(["CFLAGS=-w"] if RbConfig::CONFIG["GCC"] == "yes"),
                 chdir: yaml)
     raise "failed to configure libyaml"
