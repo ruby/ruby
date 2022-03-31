@@ -31,6 +31,7 @@ elsif yaml_source
   yaml_source = yaml_source.gsub(/\$\((\w+)\)|\$\{(\w+)\}/) {ENV[$1||$2]}
 end
 if yaml_source
+  yaml_source = yaml_source.chomp("/")
   yaml_configure = "#{File.expand_path(yaml_source)}/configure"
   unless File.exist?(yaml_configure)
     raise "Configure script not found in #{yaml_source.quote}"
@@ -40,17 +41,19 @@ if yaml_source
   yaml = "libyaml"
   Dir.mkdir(yaml) unless File.directory?(yaml)
   shared = $enable_shared || !$static
-  unless system(yaml_configure, "-q",
-                "--enable-#{shared ? 'shared' : 'static'}",
-                "--host=#{RbConfig::CONFIG['host'].sub(/-unknown-/, '-')}",
-                *(["CFLAGS=-w"] if RbConfig::CONFIG["GCC"] == "yes"),
-                chdir: yaml)
+  args = [
+    yaml_configure,
+    "--enable-#{shared ? 'shared' : 'static'}",
+    "--host=#{RbConfig::CONFIG['host'].sub(/-unknown-/, '-')}",
+    *(["CFLAGS=-w"] if RbConfig::CONFIG["GCC"] == "yes"),
+  ]
+  puts(args.quote.join(' '))
+  unless system(*args, chdir: yaml)
     raise "failed to configure libyaml"
   end
-  Logging.message("libyaml configured\n")
   inc = yaml_source.start_with?("#$srcdir/") ? "$(srcdir)#{yaml_source[$srcdir.size..-1]}" : yaml_source
   $INCFLAGS << " -I#{yaml}/include -I#{inc}/include"
-  Logging.message("INCLFAG=#$INCLFAG\n")
+  puts("INCFLAGS=#$INCFLAGS")
   libyaml = "libyaml.#$LIBEXT"
   $cleanfiles << libyaml
   $LOCAL_LIBS.prepend("$(LIBYAML) ")
