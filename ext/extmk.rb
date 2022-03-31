@@ -146,7 +146,7 @@ def extmake(target, basedir = 'ext', maybestatic = true)
     top_srcdir = $top_srcdir
     topdir = $topdir
     hdrdir = $hdrdir
-    prefix = "../" * (target.count("/")+1)
+    prefix = "../" * (target.count("/") + basedir.count("/"))
     $top_srcdir = relative_from(top_srcdir, prefix)
     $hdrdir = relative_from(hdrdir, prefix)
     $topdir = prefix + $topdir
@@ -461,15 +461,15 @@ end unless $extstatic
 
 @gemname = nil
 if ARGV[0]
-  ext_prefix, exts = ARGV.shift.split('/', 2)
+  ext_prefix, exts = File.split(ARGV.shift)
   $extension = [exts] if exts
-  if ext_prefix == 'gems'
+  if ext_prefix == '.bundle/gems'
     @gemname = exts
   elsif exts
     $static_ext.delete_if {|t, *| !File.fnmatch(t, exts)}
   end
 end
-ext_prefix = "#{$top_srcdir}/#{ext_prefix || 'ext'}"
+ext_prefix = "#{$top_srcdir}/#{ext_prefix || './ext'}"
 exts = $static_ext.sort_by {|t, i| i}.collect {|t, i| t}
 default_exclude_exts =
   case
@@ -515,7 +515,6 @@ cond = proc {|ext, *|
     exts.delete_if {|d| File.fnmatch?("-*", d)}
   end
 end
-ext_prefix = File.basename(ext_prefix)
 
 extend Module.new {
   def timestamp_file(name, target_prefix = nil)
@@ -534,7 +533,7 @@ extend Module.new {
     super(*args) do |conf|
       conf.find do |s|
         s.sub!(/^(TARGET_SO_DIR *= *)\$\(RUBYARCHDIR\)/) {
-          "TARGET_GEM_DIR = $(extout)/gems/$(arch)/#{@gemname}\n"\
+          "TARGET_GEM_DIR = $(extout)/.bundle/gems/$(arch)/#{@gemname}\n"\
           "#{$1}$(TARGET_GEM_DIR)$(target_prefix)"
         }
       end
@@ -634,7 +633,7 @@ rubies = []
   end
 }
 
-Dir.chdir ".."
+Dir.chdir dir
 unless $destdir.to_s.empty?
   $mflags.defined?("DESTDIR") or $mflags << "DESTDIR=#{$destdir}"
 end

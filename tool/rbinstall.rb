@@ -1042,7 +1042,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     :wrappers => true,
     :format_executable => true,
   }
-  gem_ext_dir = "#$extout/gems/#{CONFIG['arch']}"
+  gem_ext_dir = "#$extout/.bundle/gems/#{CONFIG['arch']}"
   extensions_dir = with_destdir(Gem::StubSpecification.gemspec_stub("", gem_dir, gem_dir).extensions_dir)
 
   File.foreach("#{srcdir}/gems/bundled_gems") do |name|
@@ -1075,7 +1075,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
       File.chmod($data_mode, File.join(install_dir, "specifications", "#{spec.full_name}.gemspec"))
     end
     unless spec.extensions.empty?
-      install_recursive(ext, spec.extension_dir)
+      install_recursive(ext, without_destdir(spec.extension_dir))
     end
     installed_gems[spec.full_name] = true
   end
