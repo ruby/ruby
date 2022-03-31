@@ -39,8 +39,9 @@ if yaml_source
   puts("Configuring libyaml source in #{yaml_source.quote}")
   yaml = "libyaml"
   Dir.mkdir(yaml) unless File.directory?(yaml)
+  shared = $enable_shared || !$static
   unless system(yaml_configure, "-q",
-                "--enable-#{$enable_shared || !$static ? 'shared' : 'static'}",
+                "--enable-#{shared ? 'shared' : 'static'}",
                 "--host=#{RbConfig::CONFIG['host'].sub(/-unknown-/, '-')}",
                 *(["CFLAGS=-w"] if RbConfig::CONFIG["GCC"] == "yes"),
                 chdir: yaml)
@@ -50,12 +51,16 @@ if yaml_source
   inc = yaml_source.start_with?("#$srcdir/") ? "$(srcdir)#{yaml_source[$srcdir.size..-1]}" : yaml_source
   $INCFLAGS << " -I#{yaml}/include -I#{inc}/include"
   Logging.message("INCLFAG=#$INCLFAG\n")
-  libyaml = "#{yaml}/src/.libs/libyaml.#$LIBEXT"
+  libyaml = "libyaml.#$LIBEXT"
+  $cleanfiles << libyaml
   $LOCAL_LIBS.prepend("$(LIBYAML) ")
 end
 
 create_makefile 'psych' do |mk|
   mk << "LIBYAML = #{libyaml}".strip << "\n"
+  mk << "LIBYAML_OBJDIR = libyaml/src#{shared ? '/.libs' : ''}\n"
+  mk << "OBJEXT = #$OBJEXT"
+  mk << "RANLIB = #{config_string('RANLIB') || config_string('NULLCMD')}\n"
 end
 
 # :startdoc:

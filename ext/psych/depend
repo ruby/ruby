@@ -2,8 +2,12 @@ $(TARGET_SO): $(LIBYAML)
 
 libyaml $(LIBYAML):
 	cd libyaml && $(MAKE)
+	$(AR) $(ARFLAGS) $(LIBYAML) $(LIBYAML_OBJDIR)/*.$(OBJEXT)
+	$(RANLIB) $(LIBYAML)
+
 clean-so::
 	-cd libyaml && $(MAKE) clean
+
 distclean-so::
 	-cd libyaml && $(MAKE) distclean
 	-$(Q)$(RMDIRS) libyaml/* libyaml
