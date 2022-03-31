@@ -13,6 +13,36 @@ RSpec.describe "bundle remove" do
     end
   end
 
+  context "after 'bundle install' is run" do
+    describe "running 'bundle remove GEM_NAME'" do
+      it "removes it from the lockfile" do
+        rack_dep = <<~L
+
+          DEPENDENCIES
+            rack
+
+        L
+
+        gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
+
+          gem "rack"
+        G
+
+        bundle "install"
+
+        expect(lockfile).to include(rack_dep)
+
+        bundle "remove rack"
+
+        expect(gemfile).to eq <<~G
+          source "#{file_uri_for(gem_repo1)}"
+        G
+        expect(lockfile).to_not include(rack_dep)
+      end
+    end
+  end
+
   context "when --install flag is specified", :bundler => "< 3" do
     it "removes gems from .bundle" do
       gemfile <<-G
