@@ -253,6 +253,13 @@ void rb_undef_alloc_func(VALUE klass);
 rb_alloc_func_t rb_get_alloc_func(VALUE klass);
 
 /**
+ * Clears the inline constant caches associated with a particular ID. Extension
+ * libraries should not bother with such things. Just forget about this API (or
+ * even, the presence of constant caches).
+ */
+void rb_clear_constant_cache_for_id(ID id);
+
+/**
  * Resembles `alias`.
  *
  * @param[out]  klass            Where to define an alias.

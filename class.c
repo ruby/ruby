@@ -1169,11 +1169,20 @@ module_in_super_chain(const VALUE klass, VALUE module)
     return false;
 }
 
+// For each ID key in the class constant table, we're going to clear the VM's
+// inline constant caches associated with it.
+static enum rb_id_table_iterator_result
+clear_constant_cache_i(ID id, VALUE value, void *data)
+{
+    rb_clear_constant_cache_for_id(id);
+    return ID_TABLE_CONTINUE;
+}
+
 static int
 do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super, bool check_cyclic)
 {
     VALUE p, iclass, origin_stack = 0;
-    int method_changed = 0, constant_changed = 0, add_subclass;
+    int method_changed = 0, add_subclass;
     long origin_len;
     VALUE klass_origin = RCLASS_ORIGIN(klass);
     VALUE original_klass = klass;
@@ -1266,12 +1275,11 @@ do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super
 	}
 
         tbl = RCLASS_CONST_TBL(module);
-	if (tbl && rb_id_table_size(tbl)) constant_changed = 1;
+	if (tbl && rb_id_table_size(tbl))
+	    rb_id_table_foreach(tbl, clear_constant_cache_i, NULL);
       skip:
 	module = RCLASS_SUPER(module);
     }
-
-    if (constant_changed) rb_clear_constant_cache();
 
     return method_changed;
 }
