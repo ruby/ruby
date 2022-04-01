@@ -230,7 +230,7 @@ class TestGemRequire < Gem::TestCase
 
     pend "not installed yet" unless RbConfig::TOPDIR
 
-    lib_dir = File.expand_path("../../lib", File.dirname(__FILE__))
+    lib_dir = File.expand_path("../lib", __dir__)
     rubylibdir = File.realdirpath(RbConfig::CONFIG["rubylibdir"])
     if rubylibdir == lib_dir
       # testing in the ruby repository where RubyGems' lib/ == stdlib lib/

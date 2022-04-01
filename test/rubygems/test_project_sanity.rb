@@ -5,7 +5,7 @@ require "open3"
 
 class TestProjectSanity < Gem::TestCase
   def test_manifest_is_up_to_date
-    pend unless File.exist?(File.expand_path("../../../Rakefile", __FILE__))
+    pend unless File.exist?(File.expand_path('../../Rakefile', __dir__))
 
     _, status = Open3.capture2e("rake check_manifest")
 

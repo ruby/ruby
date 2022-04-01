@@ -1068,7 +1068,7 @@ dependencies: []
   end
 
   def test_handles_private_null_type
-    path = File.expand_path "../data/null-type.gemspec.rz", __FILE__
+    path = File.expand_path 'data/null-type.gemspec.rz', __dir__
 
     data = Marshal.load Gem::Util.inflate(Gem.read_binary(path))
 

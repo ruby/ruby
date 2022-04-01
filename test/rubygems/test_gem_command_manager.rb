@@ -3,7 +3,7 @@ require_relative 'helper'
 require 'rubygems/command_manager'
 
 class TestGemCommandManager < Gem::TestCase
-  PROJECT_DIR = File.expand_path('../../..', __FILE__).tap(&Gem::UNTAINT)
+  PROJECT_DIR = File.expand_path('../..', __dir__).tap(&Gem::UNTAINT)
 
   def setup
     super

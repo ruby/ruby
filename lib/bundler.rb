@@ -370,7 +370,7 @@ EOF
 
       if env.key?("RUBYLIB")
         rubylib = env["RUBYLIB"].split(File::PATH_SEPARATOR)
-        rubylib.delete(File.expand_path("..", __FILE__))
+        rubylib.delete(__dir__)
         env["RUBYLIB"] = rubylib.join(File::PATH_SEPARATOR)
       end
 

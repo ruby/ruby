@@ -7,7 +7,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         s.extensions << "Rakefile"
         s.write "Rakefile", <<-RUBY
           task :default do
-            path = File.expand_path("../lib", __FILE__)
+            path = File.expand_path("lib", __dir__)
             FileUtils.mkdir_p(path)
             File.open("\#{path}/implicit_rake_dep.rb", "w") do |f|
               f.puts "IMPLICIT_RAKE_DEP = 'YES'"
@@ -20,7 +20,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         s.extensions << "Rakefile"
         s.write "Rakefile", <<-RUBY
           task :default do
-            path = File.expand_path("../lib", __FILE__)
+            path = File.expand_path("lib", __dir__)
             FileUtils.mkdir_p(path)
             File.open("\#{path}/another_implicit_rake_dep.rb", "w") do |f|
               f.puts "ANOTHER_IMPLICIT_RAKE_DEP = 'YES'"
@@ -42,7 +42,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         s.extensions << "Rakefile"
         s.write "Rakefile", <<-RUBY
           task :default do
-            path = File.expand_path("../lib", __FILE__)
+            path = File.expand_path("lib", __dir__)
             FileUtils.mkdir_p(path)
             File.open("\#{path}/net_build_extensions.rb", "w") do |f|
               f.puts "NET_BUILD_EXTENSIONS = 'YES'"

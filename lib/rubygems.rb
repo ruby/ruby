@@ -112,7 +112,7 @@ require_relative 'rubygems/errors'
 # -The RubyGems Team
 
 module Gem
-  RUBYGEMS_DIR = File.dirname File.expand_path(__FILE__)
+  RUBYGEMS_DIR = __dir__
 
   # Taint support is deprecated in Ruby 2.7.
   # This allows switching ".untaint" to ".tap(&Gem::UNTAINT)",

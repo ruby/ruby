@@ -9,9 +9,9 @@ end
 
 require 'tmpdir'
 
-lp = File.expand_path("./../../../../../lib", __FILE__)
-gem = ["ruby", "-I#{lp}", File.expand_path("./../../../../../bin/gem", __FILE__)]
-gemspec = File.expand_path("./../rust_ruby_example.gemspec", __FILE__)
+lp = File.expand_path('../../../../lib', __dir__)
+gem = ["ruby", "-I#{lp}", File.expand_path('../../../../bin/gem', __dir__)]
+gemspec = File.expand_path('rust_ruby_example.gemspec', __dir__)
 
 Dir.mktmpdir("rust_ruby_example") do |dir|
   built_gem = File.expand_path(File.join(dir, "rust_ruby_example.gem"))

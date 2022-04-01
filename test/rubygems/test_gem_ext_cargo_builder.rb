@@ -20,7 +20,7 @@ class TestGemExtCargoBuilder < Gem::TestCase
   def setup_rust_gem(name)
     @ext = File.join(@tempdir, 'ext')
     @dest_path = File.join(@tempdir, 'prefix')
-    @fixture_dir = Pathname.new(File.expand_path("../test_gem_ext_cargo_builder/#{name}/", __FILE__))
+    @fixture_dir = Pathname.new(File.expand_path("test_gem_ext_cargo_builder/#{name}/", __dir__))
 
     FileUtils.mkdir_p @dest_path
     FileUtils.cp_r(@fixture_dir.to_s, @ext)
@@ -103,7 +103,7 @@ class TestGemExtCargoBuilder < Gem::TestCase
     Dir.chdir @ext do
       require 'tmpdir'
 
-      gem = [@rust_envs, *ruby_with_rubygems_in_load_path, File.expand_path("./../../../bin/gem", __FILE__)]
+      gem = [@rust_envs, *ruby_with_rubygems_in_load_path, File.expand_path('../../bin/gem', __dir__)]
 
       Dir.mktmpdir("rust_ruby_example") do |dir|
         built_gem = File.expand_path(File.join(dir, "rust_ruby_example.gem"))
@@ -125,7 +125,7 @@ class TestGemExtCargoBuilder < Gem::TestCase
     Dir.chdir @ext do
       require 'tmpdir'
 
-      gem = [@rust_envs, *ruby_with_rubygems_in_load_path, File.expand_path("./../../../bin/gem", __FILE__)]
+      gem = [@rust_envs, *ruby_with_rubygems_in_load_path, File.expand_path('../../bin/gem', __dir__)]
 
       Dir.mktmpdir("custom_name") do |dir|
         built_gem = File.expand_path(File.join(dir, "custom_name.gem"))
