@@ -325,7 +325,7 @@ module Bundler
 
     def resolve_path(path)
       expanded = File.expand_path(path)
-      return expanded unless File.respond_to?(:realpath) && File.exist?(expanded)
+      return expanded unless File.exist?(expanded)
 
       File.realpath(expanded)
     end
