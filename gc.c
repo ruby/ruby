@@ -954,6 +954,8 @@ struct heap_page {
 #define GET_HEAP_WB_UNPROTECTED_BITS(x) (&GET_HEAP_PAGE(x)->wb_unprotected_bits[0])
 #define GET_HEAP_MARKING_BITS(x)        (&GET_HEAP_PAGE(x)->marking_bits[0])
 
+#define GC_SWEEP_PAGES_FREEABLE_PER_STEP 3
+
 /* Aliases */
 #define rb_objspace (*rb_objspace_of(GET_VM()))
 #define rb_objspace_of(vm) ((vm)->objspace)
@@ -5678,7 +5680,7 @@ static int
 gc_sweep_step(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap)
 {
     struct heap_page *sweep_page = heap->sweeping_page;
-    int unlink_limit = 3;
+    int unlink_limit = GC_SWEEP_PAGES_FREEABLE_PER_STEP;
 
 #if GC_ENABLE_INCREMENTAL_MARK
     int swept_slots = 0;
