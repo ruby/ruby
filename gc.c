@@ -882,7 +882,12 @@ enum {
 #endif
 
 #ifdef HAVE_MMAP
-# if HAVE_CONST_PAGE_SIZE
+/* wasmtime does not have proper support for mmap.
+ * See https://github.com/bytecodealliance/wasmtime/blob/main/docs/WASI-rationale.md#why-no-mmap-and-friends
+ */
+# if defined(__wasm__)
+static const bool HEAP_PAGE_ALLOC_USE_MMAP = false;
+# elif HAVE_CONST_PAGE_SIZE
 /* If we have the HEAP_PAGE and it is a constant, then we can directly use it. */
 static const bool HEAP_PAGE_ALLOC_USE_MMAP = (PAGE_SIZE <= HEAP_PAGE_SIZE);
 # elif defined(PAGE_MAX_SIZE) && (PAGE_MAX_SIZE <= HEAP_PAGE_SIZE)
@@ -3632,7 +3637,7 @@ Init_heap(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-#if defined(HAVE_MMAP) && !HAVE_CONST_PAGE_SIZE && !defined(PAGE_MAX_SIZE)
+#if defined(HAVE_MMAP) && !defined(__wasm__) && !HAVE_CONST_PAGE_SIZE && !defined(PAGE_MAX_SIZE)
     /* Need to determine if we can use mmap at runtime. */
 # ifdef PAGE_SIZE
     /* If the PAGE_SIZE macro can be used. */
