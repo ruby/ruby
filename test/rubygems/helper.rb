@@ -3,7 +3,7 @@
 require 'rubygems'
 
 # If bundler gemspec exists, add to stubs
-bundler_gemspec = File.expand_path("../../../bundler/bundler.gemspec", __FILE__)
+bundler_gemspec = File.expand_path('../../bundler/bundler.gemspec', __dir__)
 if File.exist?(bundler_gemspec)
   Gem::Specification.dirs.unshift File.dirname(bundler_gemspec)
   Gem::Specification.class_variable_set :@@stubs, nil

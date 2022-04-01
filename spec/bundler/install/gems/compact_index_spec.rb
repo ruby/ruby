@@ -258,7 +258,7 @@ The checksum of /versions does not match the checksum provided by the server! So
         s.extensions << "Rakefile"
         s.write "Rakefile", <<-RUBY
           task :default do
-            path = File.expand_path("../lib", __FILE__)
+            path = File.expand_path("lib", __dir__)
             FileUtils.mkdir_p(path)
             File.open("\#{path}/net_build_extensions.rb", "w") do |f|
               f.puts "NET_BUILD_EXTENSIONS = 'YES'"

@@ -341,7 +341,7 @@ By default, this RubyGems will install gem as:
 
       fake_spec = Gem::Specification.new 'rubygems', Gem::VERSION
       def fake_spec.full_gem_path
-        File.expand_path '../../../..', __FILE__
+        File.expand_path '../../..', __dir__
       end
 
       generate_ri   = options[:document].include? 'ri'

@@ -9,9 +9,9 @@ end
 
 require 'tmpdir'
 
-lp = File.expand_path("./../../../../../lib", __FILE__)
-gem = ["ruby", "-I#{lp}", File.expand_path("./../../../../../bin/gem", __FILE__)]
-gemspec = File.expand_path("./../custom_name.gemspec", __FILE__)
+lp = File.expand_path('../../../../lib', __dir__)
+gem = ["ruby", "-I#{lp}", File.expand_path('../../../../bin/gem', __dir__)]
+gemspec = File.expand_path('custom_name.gemspec', __dir__)
 
 Dir.mktmpdir("custom_name") do |dir|
   built_gem = File.expand_path(File.join(dir, "custom_name.gem"))
