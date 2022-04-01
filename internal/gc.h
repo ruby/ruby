@@ -79,6 +79,7 @@ typedef struct ractor_newobj_size_pool_cache {
 } rb_ractor_newobj_size_pool_cache_t;
 
 typedef struct ractor_newobj_cache {
+    size_t incremental_mark_step_allocated_slots;
     rb_ractor_newobj_size_pool_cache_t size_pool_caches[SIZE_POOL_COUNT];
 } rb_ractor_newobj_cache_t;
 

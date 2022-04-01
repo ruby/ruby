@@ -1,6 +1,6 @@
 # spec/bundler
 
-spec/bundler is rspec examples for bundler library(lib/bundler.rb, lib/bundler/*).
+spec/bundler is rspec examples for bundler library (`lib/bundler.rb`, `lib/bundler/*`).
 
 ## Running spec/bundler
 

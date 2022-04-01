@@ -3538,7 +3538,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(splat_expect, pr.call(a), bug8463)
 
     pr = proc {|a, **opt| next a, opt}
-    assert_equal(splat_expect.values_at(0, -1), pr.call(splat_expect), bug8463)
+    assert_equal([splat_expect, {}], pr.call(splat_expect), bug8463)
   end
 
   def req_plus_keyword(x, **h)

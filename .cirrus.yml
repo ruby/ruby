@@ -12,7 +12,7 @@ task:
   name: Arm64 Graviton2 / $CC
   skip: "changesIncludeOnly('doc/**', '**.{md,rdoc}')"
   arm_container:
-    # We use the arm64 images at http://ghcr.io/ruby/ruby-ci-image .
+    # We use the arm64 images at https://github.com/ruby/ruby-ci-image/pkgs/container/ruby-ci-image .
     image: ghcr.io/ruby/ruby-ci-image:$CC
     # Define the used cpu core in each matrix task. We can use total 16 cpu
     # cores in entire matrix. [cpu] = [total cpu: 16] / [number of tasks]

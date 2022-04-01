@@ -589,4 +589,11 @@ describe "String#split with Regexp" do
       end
     end
   end
+
+  it "raises a TypeError when not called with nil, String, or Regexp" do
+    -> { "hello".split(42) }.should raise_error(TypeError)
+    -> { "hello".split(:ll) }.should raise_error(TypeError)
+    -> { "hello".split(false) }.should raise_error(TypeError)
+    -> { "hello".split(Object.new) }.should raise_error(TypeError)
+  end
 end

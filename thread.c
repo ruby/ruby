@@ -150,7 +150,7 @@ void rb_sigwait_fd_migrate(rb_vm_t *); /* process.c */
 static volatile int system_working = 1;
 
 struct waiting_fd {
-    struct list_node wfd_node; /* <=> vm.waiting_fds */
+    struct ccan_list_node wfd_node; /* <=> vm.waiting_fds */
     rb_thread_t *th;
     int fd;
 };
@@ -500,7 +500,7 @@ terminate_all(rb_ractor_t *r, const rb_thread_t *main_thread)
 {
     rb_thread_t *th = 0;
 
-    list_for_each(&r->threads.set, th, lt_node) {
+    ccan_list_for_each(&r->threads.set, th, lt_node) {
         if (th != main_thread) {
 	    thread_debug("terminate_all: begin (thid: %"PRI_THREAD_ID", status: %s)\n",
 			 thread_id_str(th), thread_status_name(th, TRUE));
@@ -1144,8 +1144,6 @@ remove_from_join_list(VALUE arg)
     return Qnil;
 }
 
-static rb_hrtime_t *double2hrtime(rb_hrtime_t *, double);
-
 static int
 thread_finished(rb_thread_t *th)
 {
@@ -1351,44 +1349,6 @@ thread_value(VALUE self)
 /*
  * Thread Scheduling
  */
-
-/*
- * Back when we used "struct timeval", not all platforms implemented
- * tv_sec as time_t.  Nowadays we use "struct timespec" and tv_sec
- * seems to be implemented more consistently across platforms.
- * At least other parts of our code hasn't had to deal with non-time_t
- * tv_sec in timespec...
- */
-#define TIMESPEC_SEC_MAX TIMET_MAX
-#define TIMESPEC_SEC_MIN TIMET_MIN
-
-COMPILER_WARNING_PUSH
-#if __has_warning("-Wimplicit-int-float-conversion")
-COMPILER_WARNING_IGNORED(-Wimplicit-int-float-conversion)
-#elif defined(_MSC_VER)
-/* C4305: 'initializing': truncation from '__int64' to 'const double' */
-COMPILER_WARNING_IGNORED(4305)
-#endif
-static const double TIMESPEC_SEC_MAX_as_double = TIMESPEC_SEC_MAX;
-COMPILER_WARNING_POP
-
-static rb_hrtime_t *
-double2hrtime(rb_hrtime_t *hrt, double d)
-{
-    /* assume timespec.tv_sec has same signedness as time_t */
-    const double TIMESPEC_SEC_MAX_PLUS_ONE = 2.0 * (TIMESPEC_SEC_MAX_as_double / 2.0 + 1.0);
-
-    if (TIMESPEC_SEC_MAX_PLUS_ONE <= d) {
-        return NULL;
-    }
-    else if (d <= 0) {
-        *hrt = 0;
-    }
-    else {
-        *hrt = (rb_hrtime_t)(d * (double)RB_HRTIME_PER_SEC);
-    }
-    return hrt;
-}
 
 static void
 getclockofday(struct timespec *ts)
@@ -1799,7 +1759,7 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
 
     RB_VM_LOCK_ENTER();
     {
-        list_add(&rb_ec_vm_ptr(ec)->waiting_fds, &waiting_fd.wfd_node);
+        ccan_list_add(&rb_ec_vm_ptr(ec)->waiting_fds, &waiting_fd.wfd_node);
     }
     RB_VM_LOCK_LEAVE();
 
@@ -1814,11 +1774,11 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
 
     /*
      * must be deleted before jump
-     * this will delete either from waiting_fds or on-stack LIST_HEAD(busy)
+     * this will delete either from waiting_fds or on-stack CCAN_LIST_HEAD(busy)
      */
     RB_VM_LOCK_ENTER();
     {
-        list_del(&waiting_fd.wfd_node);
+        ccan_list_del(&waiting_fd.wfd_node);
     }
     RB_VM_LOCK_LEAVE();
 
@@ -2574,20 +2534,20 @@ rb_ec_reset_raised(rb_execution_context_t *ec)
 }
 
 int
-rb_notify_fd_close(int fd, struct list_head *busy)
+rb_notify_fd_close(int fd, struct ccan_list_head *busy)
 {
     rb_vm_t *vm = GET_THREAD()->vm;
     struct waiting_fd *wfd = 0, *next;
 
     RB_VM_LOCK_ENTER();
     {
-        list_for_each_safe(&vm->waiting_fds, wfd, next, wfd_node) {
+        ccan_list_for_each_safe(&vm->waiting_fds, wfd, next, wfd_node) {
             if (wfd->fd == fd) {
                 rb_thread_t *th = wfd->th;
                 VALUE err;
 
-                list_del(&wfd->wfd_node);
-                list_add(busy, &wfd->wfd_node);
+                ccan_list_del(&wfd->wfd_node);
+                ccan_list_add(busy, &wfd->wfd_node);
 
                 err = th->vm->special_exceptions[ruby_error_stream_closed];
                 rb_threadptr_pending_interrupt_enque(th, err);
@@ -2597,17 +2557,17 @@ rb_notify_fd_close(int fd, struct list_head *busy)
     }
     RB_VM_LOCK_LEAVE();
 
-    return !list_empty(busy);
+    return !ccan_list_empty(busy);
 }
 
 void
 rb_thread_fd_close(int fd)
 {
-    struct list_head busy;
+    struct ccan_list_head busy;
 
-    list_head_init(&busy);
+    ccan_list_head_init(&busy);
     if (rb_notify_fd_close(fd, &busy)) {
-	do rb_thread_schedule(); while (!list_empty(&busy));
+	do rb_thread_schedule(); while (!ccan_list_empty(&busy));
     }
 }
 
@@ -4353,7 +4313,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 
     RB_VM_LOCK_ENTER();
     {
-        list_add(&wfd.th->vm->waiting_fds, &wfd.wfd_node);
+        ccan_list_add(&wfd.th->vm->waiting_fds, &wfd.wfd_node);
     }
     RB_VM_LOCK_LEAVE();
 
@@ -4404,7 +4364,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 
     RB_VM_LOCK_ENTER();
     {
-        list_del(&wfd.wfd_node);
+        ccan_list_del(&wfd.wfd_node);
     }
     RB_VM_LOCK_LEAVE();
 
@@ -4480,7 +4440,7 @@ select_single_cleanup(VALUE ptr)
 {
     struct select_args *args = (struct select_args *)ptr;
 
-    list_del(&args->wfd.wfd_node);
+    ccan_list_del(&args->wfd.wfd_node);
     if (args->read) rb_fd_term(args->read);
     if (args->write) rb_fd_term(args->write);
     if (args->except) rb_fd_term(args->except);
@@ -4506,7 +4466,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 
     RB_VM_LOCK_ENTER();
     {
-        list_add(&args.wfd.th->vm->waiting_fds, &args.wfd.wfd_node);
+        ccan_list_add(&args.wfd.th->vm->waiting_fds, &args.wfd.wfd_node);
     }
     RB_VM_LOCK_LEAVE();
 
@@ -4702,8 +4662,8 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     ubf_list_atfork();
 
     // OK. Only this thread accesses:
-    list_for_each(&vm->ractor.set, r, vmlr_node) {
-        list_for_each(&r->threads.set, i, lt_node) {
+    ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
+        ccan_list_for_each(&r->threads.set, i, lt_node) {
             atfork(i, th);
         }
     }
@@ -4843,7 +4803,7 @@ thgroup_list(VALUE group)
     rb_thread_t *th = 0;
     rb_ractor_t *r = GET_RACTOR();
 
-    list_for_each(&r->threads.set, th, lt_node) {
+    ccan_list_for_each(&r->threads.set, th, lt_node) {
         if (th->thgroup == group) {
 	    rb_ary_push(ary, th->self);
 	}
@@ -5513,7 +5473,7 @@ debug_deadlock_check(rb_ractor_t *r, VALUE msg)
 		rb_ractor_living_thread_num(r), rb_ractor_sleeper_thread_num(r),
                 (void *)GET_THREAD(), (void *)r->threads.main);
 
-    list_for_each(&r->threads.set, th, lt_node) {
+    ccan_list_for_each(&r->threads.set, th, lt_node) {
         rb_str_catf(msg, "* %+"PRIsVALUE"\n   rb_thread_t:%p "
                     "native:%"PRI_THREAD_ID" int:%u",
                     th->self, (void *)th, thread_id_str(th), th->ec->interrupt_flag);
@@ -5551,13 +5511,13 @@ rb_check_deadlock(rb_ractor_t *r)
     if (ltnum < sleeper_num) rb_bug("sleeper must not be more than vm_living_thread_num(vm)");
     if (patrol_thread && patrol_thread != GET_THREAD()) return;
 
-    list_for_each(&r->threads.set, th, lt_node) {
+    ccan_list_for_each(&r->threads.set, th, lt_node) {
         if (th->status != THREAD_STOPPED_FOREVER || RUBY_VM_INTERRUPTED(th->ec)) {
             found = 1;
         }
         else if (th->locking_mutex) {
             rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
-            if (mutex->fiber == th->ec->fiber_ptr || (!mutex->fiber && !list_empty(&mutex->waitq))) {
+            if (mutex->fiber == th->ec->fiber_ptr || (!mutex->fiber && !ccan_list_empty(&mutex->waitq))) {
                 found = 1;
             }
         }
@@ -5578,12 +5538,12 @@ rb_check_deadlock(rb_ractor_t *r)
 // Used for VM memsize reporting. Returns the size of a list of waiting_fd
 // structs. Defined here because the struct definition lives here as well.
 size_t
-rb_vm_memsize_waiting_fds(struct list_head *waiting_fds)
+rb_vm_memsize_waiting_fds(struct ccan_list_head *waiting_fds)
 {
     struct waiting_fd *waitfd = 0;
     size_t size = 0;
 
-    list_for_each(waiting_fds, waitfd, wfd_node) {
+    ccan_list_for_each(waiting_fds, waitfd, wfd_node) {
         size += sizeof(struct waiting_fd);
     }
 
@@ -5603,7 +5563,7 @@ update_line_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
 	    VALUE num;
             void rb_iseq_clear_event_flags(const rb_iseq_t *iseq, size_t pos, rb_event_flag_t reset);
             if (GET_VM()->coverage_mode & COVERAGE_TARGET_ONESHOT_LINES) {
-                rb_iseq_clear_event_flags(cfp->iseq, cfp->pc - cfp->iseq->body->iseq_encoded - 1, RUBY_EVENT_COVERAGE_LINE);
+                rb_iseq_clear_event_flags(cfp->iseq, cfp->pc - ISEQ_BODY(cfp->iseq)->iseq_encoded - 1, RUBY_EVENT_COVERAGE_LINE);
                 rb_ary_push(lines, LONG2FIX(line + 1));
                 return;
             }
@@ -5628,7 +5588,7 @@ update_branch_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
     if (RB_TYPE_P(coverage, T_ARRAY) && !RBASIC_CLASS(coverage)) {
 	VALUE branches = RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES);
 	if (branches) {
-            long pc = cfp->pc - cfp->iseq->body->iseq_encoded - 1;
+            long pc = cfp->pc - ISEQ_BODY(cfp->iseq)->iseq_encoded - 1;
             long idx = FIX2INT(RARRAY_AREF(ISEQ_PC2BRANCHINDEX(cfp->iseq), pc)), count;
 	    VALUE counters = RARRAY_AREF(branches, 1);
 	    VALUE num = RARRAY_AREF(counters, idx);
@@ -5651,7 +5611,7 @@ rb_resolve_me_location(const rb_method_entry_t *me, VALUE resolved_location[5])
     switch (me->def->type) {
       case VM_METHOD_TYPE_ISEQ: {
 	const rb_iseq_t *iseq = me->def->body.iseq.iseqptr;
-	rb_iseq_location_t *loc = &iseq->body->location;
+        rb_iseq_location_t *loc = &ISEQ_BODY(iseq)->location;
 	path = rb_iseq_path(iseq);
 	beg_pos_lineno = INT2FIX(loc->code_location.beg_pos.lineno);
 	beg_pos_column = INT2FIX(loc->code_location.beg_pos.column);
@@ -5665,7 +5625,7 @@ rb_resolve_me_location(const rb_method_entry_t *me, VALUE resolved_location[5])
 	    rb_iseq_location_t *loc;
 	    rb_iseq_check(iseq);
 	    path = rb_iseq_path(iseq);
-	    loc = &iseq->body->location;
+            loc = &ISEQ_BODY(iseq)->location;
 	    beg_pos_lineno = INT2FIX(loc->code_location.beg_pos.lineno);
 	    beg_pos_column = INT2FIX(loc->code_location.beg_pos.column);
 	    end_pos_lineno = INT2FIX(loc->code_location.end_pos.lineno);

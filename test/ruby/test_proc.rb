@@ -445,6 +445,11 @@ class TestProc < Test::Unit::TestCase
     assert_equal(@@line_of_source_location_test, lineno, 'Bug #2427')
   end
 
+  def test_binding_error_unless_ruby_frame
+    define_singleton_method :binding_from_c!, method(:binding).to_proc >> ->(bndg) {bndg}
+    assert_raise(RuntimeError) { binding_from_c! }
+  end
+
   def test_proc_lambda
     assert_raise(ArgumentError) { proc }
     assert_raise(ArgumentError) { assert_warn(/deprecated/) {lambda} }
@@ -850,6 +855,88 @@ class TestProc < Test::Unit::TestCase
     assert_equal [[], Proc, :x], (pr.call(){|x| x})
     assert_equal [[1], Proc, :x], (pr.call(1){|x| x})
     assert_equal [[1, 2], Proc, :x], (pr.call(1, 2){|x| x})
+  end
+
+  def test_proc_args_single_kw_no_autosplat
+    pr = proc {|c, a: 1| [c, a] }
+    assert_equal [nil, 1], pr.call()
+    assert_equal [1, 1], pr.call(1)
+    assert_equal [[1], 1], pr.call([1])
+    assert_equal [1, 1], pr.call(1,2)
+    assert_equal [[1, 2], 1], pr.call([1,2])
+
+    assert_equal [nil, 3], pr.call(a: 3)
+    assert_equal [1, 3], pr.call(1, a: 3)
+    assert_equal [[1], 3], pr.call([1], a: 3)
+    assert_equal [1, 3], pr.call(1,2, a: 3)
+    assert_equal [[1, 2], 3], pr.call([1,2], a: 3)
+  end
+
+  def test_proc_args_single_kwsplat_no_autosplat
+    pr = proc {|c, **kw| [c, kw] }
+    assert_equal [nil, {}], pr.call()
+    assert_equal [1, {}], pr.call(1)
+    assert_equal [[1], {}], pr.call([1])
+    assert_equal [1, {}], pr.call(1,2)
+    assert_equal [[1, 2], {}], pr.call([1,2])
+
+    assert_equal [nil, {a: 3}], pr.call(a: 3)
+    assert_equal [1, {a: 3}], pr.call(1, a: 3)
+    assert_equal [[1], {a: 3}], pr.call([1], a: 3)
+    assert_equal [1, {a: 3}], pr.call(1,2, a: 3)
+    assert_equal [[1, 2], {a: 3}], pr.call([1,2], a: 3)
+  end
+
+  def test_proc_args_multiple_kw_autosplat
+    pr = proc {|c, b, a: 1| [c, b, a] }
+    assert_equal [1, 2, 1], pr.call([1,2])
+
+    pr = proc {|c=nil, b=nil, a: 1| [c, b, a] }
+    assert_equal [nil, nil, 1], pr.call([])
+    assert_equal [1, nil, 1], pr.call([1])
+    assert_equal [1, 2, 1], pr.call([1,2])
+
+    pr = proc {|c, b=nil, a: 1| [c, b, a] }
+    assert_equal [1, nil, 1], pr.call([1])
+    assert_equal [1, 2, 1], pr.call([1,2])
+
+    pr = proc {|c=nil, b, a: 1| [c, b, a] }
+    assert_equal [nil, 1, 1], pr.call([1])
+    assert_equal [1, 2, 1], pr.call([1,2])
+
+    pr = proc {|c, *b, a: 1| [c, b, a] }
+    assert_equal [1, [], 1], pr.call([1])
+    assert_equal [1, [2], 1], pr.call([1,2])
+
+    pr = proc {|*c, b, a: 1| [c, b, a] }
+    assert_equal [[], 1, 1], pr.call([1])
+    assert_equal [[1], 2, 1], pr.call([1,2])
+  end
+
+  def test_proc_args_multiple_kwsplat_autosplat
+    pr = proc {|c, b, **kw| [c, b, kw] }
+    assert_equal [1, 2, {}], pr.call([1,2])
+
+    pr = proc {|c=nil, b=nil, **kw| [c, b, kw] }
+    assert_equal [nil, nil, {}], pr.call([])
+    assert_equal [1, nil, {}], pr.call([1])
+    assert_equal [1, 2, {}], pr.call([1,2])
+
+    pr = proc {|c, b=nil, **kw| [c, b, kw] }
+    assert_equal [1, nil, {}], pr.call([1])
+    assert_equal [1, 2, {}], pr.call([1,2])
+
+    pr = proc {|c=nil, b, **kw| [c, b, kw] }
+    assert_equal [nil, 1, {}], pr.call([1])
+    assert_equal [1, 2, {}], pr.call([1,2])
+
+    pr = proc {|c, *b, **kw| [c, b, kw] }
+    assert_equal [1, [], {}], pr.call([1])
+    assert_equal [1, [2], {}], pr.call([1,2])
+
+    pr = proc {|*c, b, **kw| [c, b, kw] }
+    assert_equal [[], 1, {}], pr.call([1])
+    assert_equal [[1], 2, {}], pr.call([1,2])
   end
 
   def test_proc_args_only_rest

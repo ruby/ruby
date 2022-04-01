@@ -1709,7 +1709,7 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
     ast = rb_parser_compile_string_path(parser, fname, src, line);
     if (ast->body.root) {
         iseq = rb_iseq_new_eval(&ast->body,
-                                parent->body->location.label,
+                                ISEQ_BODY(parent)->location.label,
                                 fname, Qnil, INT2FIX(line),
                                 parent, isolated_depth);
     }
@@ -1772,7 +1772,7 @@ eval_string_with_scope(VALUE scope, VALUE src, VALUE file, int line)
     vm_set_eval_stack(ec, iseq, NULL, &bind->block);
 
     /* save new env */
-    if (iseq->body->local_table_size > 0) {
+    if (ISEQ_BODY(iseq)->local_table_size > 0) {
 	vm_bind_update_env(scope, bind, vm_make_env_object(ec, ec->cfp));
     }
 
@@ -2466,8 +2466,8 @@ rb_f_local_variables(VALUE _)
     local_var_list_init(&vars);
     while (cfp) {
 	if (cfp->iseq) {
-	    for (i = 0; i < cfp->iseq->body->local_table_size; i++) {
-		local_var_list_add(&vars, cfp->iseq->body->local_table[i]);
+            for (i = 0; i < ISEQ_BODY(cfp->iseq)->local_table_size; i++) {
+                local_var_list_add(&vars, ISEQ_BODY(cfp->iseq)->local_table[i]);
 	    }
 	}
 	if (!VM_ENV_LOCAL_P(cfp->ep)) {

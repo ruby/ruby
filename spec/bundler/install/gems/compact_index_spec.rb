@@ -761,8 +761,6 @@ The checksum of /versions does not match the checksum provided by the server! So
   end
 
   it "performs partial update with a non-empty range" do
-    skip "HTTP_RANGE not set" if Gem.win_platform?
-
     gemfile <<-G
       source "#{source_uri}"
       gem 'rack', '0.9.1'

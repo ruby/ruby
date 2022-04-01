@@ -202,7 +202,7 @@ ractor_mark(void *ptr)
 
     if (r->threads.cnt > 0) {
         rb_thread_t *th = 0;
-        list_for_each(&r->threads.set, th, lt_node) {
+        ccan_list_for_each(&r->threads.set, th, lt_node) {
             VM_ASSERT(th != NULL);
             rb_gc_mark(th->self);
         }
@@ -886,6 +886,8 @@ ractor_receive_if(rb_execution_context_t *ec, VALUE crv, VALUE b)
             if (result != Qundef) return result;
             index++;
         }
+
+        RUBY_VM_CHECK_INTS(ec);
     }
 }
 
@@ -1412,7 +1414,7 @@ vm_insert_ractor0(rb_vm_t *vm, rb_ractor_t *r, bool single_ractor_mode)
     RUBY_DEBUG_LOG("r:%u ractor.cnt:%u++", r->pub.id, vm->ractor.cnt);
     VM_ASSERT(single_ractor_mode || RB_VM_LOCKED_P());
 
-    list_add_tail(&vm->ractor.set, &r->vmlr_node);
+    ccan_list_add_tail(&vm->ractor.set, &r->vmlr_node);
     vm->ractor.cnt++;
 }
 
@@ -1481,7 +1483,7 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
                        vm->ractor.cnt,  vm->ractor.sync.terminate_waiting);
 
         VM_ASSERT(vm->ractor.cnt > 0);
-        list_del(&cr->vmlr_node);
+        ccan_list_del(&cr->vmlr_node);
 
         if (vm->ractor.cnt <= 2 && vm->ractor.sync.terminate_waiting) {
             rb_native_cond_signal(&vm->ractor.sync.terminate_cond);
@@ -1548,7 +1550,7 @@ void rb_gvl_init(rb_global_vm_lock_t *gvl);
 void
 rb_ractor_living_threads_init(rb_ractor_t *r)
 {
-    list_head_init(&r->threads.set);
+    ccan_list_head_init(&r->threads.set);
     r->threads.cnt = 0;
     r->threads.blocking_cnt = 0;
 }
@@ -1739,7 +1741,7 @@ rb_ractor_thread_list(rb_ractor_t *r)
         ts = ALLOCA_N(VALUE, r->threads.cnt);
         ts_cnt = 0;
 
-        list_for_each(&r->threads.set, th, lt_node) {
+        ccan_list_for_each(&r->threads.set, th, lt_node) {
             switch (th->status) {
               case THREAD_RUNNABLE:
               case THREAD_STOPPED:
@@ -1768,7 +1770,7 @@ rb_ractor_living_threads_insert(rb_ractor_t *r, rb_thread_t *th)
     RACTOR_LOCK(r);
     {
         RUBY_DEBUG_LOG("r(%d)->threads.cnt:%d++", r->pub.id, r->threads.cnt);
-        list_add_tail(&r->threads.set, &th->lt_node);
+        ccan_list_add_tail(&r->threads.set, &th->lt_node);
         r->threads.cnt++;
     }
     RACTOR_UNLOCK(r);
@@ -1851,7 +1853,7 @@ rb_ractor_living_threads_remove(rb_ractor_t *cr, rb_thread_t *th)
     else {
         RACTOR_LOCK(cr);
         {
-            list_del(&th->lt_node);
+            ccan_list_del(&th->lt_node);
             cr->threads.cnt--;
         }
         RACTOR_UNLOCK(cr);
@@ -1938,7 +1940,7 @@ ractor_terminal_interrupt_all(rb_vm_t *vm)
     if (vm->ractor.cnt > 1) {
         // send terminate notification to all ractors
         rb_ractor_t *r = 0;
-        list_for_each(&vm->ractor.set, r, vmlr_node) {
+        ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
             if (r != vm->ractor.main_ractor) {
                 rb_ractor_terminate_interrupt_main_thread(r);
             }
@@ -2117,7 +2119,7 @@ rb_ractor_dump(void)
     rb_vm_t *vm = GET_VM();
     rb_ractor_t *r = 0;
 
-    list_for_each(&vm->ractor.set, r, vmlr_node) {
+    ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
         if (r != vm->ractor.main_ractor) {
             fprintf(stderr, "r:%u (%s)\n", r->pub.id, ractor_status_str(r->status_));
         }
@@ -2527,6 +2529,14 @@ rb_ractor_ensure_shareable(VALUE obj, VALUE name)
         rb_exc_raise(rb_exc_new_str(rb_eRactorIsolationError, message));
     }
     return obj;
+}
+
+void
+rb_ractor_ensure_main_ractor(const char *msg)
+{
+    if (!rb_ractor_main_p()) {
+        rb_raise(rb_eRactorIsolationError, "%s", msg);
+    }
 }
 
 static enum obj_traverse_iterator_result

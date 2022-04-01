@@ -27,6 +27,9 @@ Here 'haystack' contains the pattern 'hay', so it matches:
 Specifically, <tt>/st/</tt> requires that the string contains the letter
 _s_ followed by the letter _t_, so it matches _haystack_, also.
 
+Note that any Regexp matching will raise a RuntimeError if timeout is set and
+exceeded. See "Timeout" section in detail.
+
 == <tt>=~</tt> and Regexp#match
 
 Pattern matching may be achieved by using <tt>=~</tt> operator or Regexp#match
@@ -759,3 +762,23 @@ with <i>a{0,29}</i>:
 
     Regexp.new('a{0,29}' + 'a' * 29) =~ 'a' * 29
 
+== Timeout
+
+There are two APIs to set timeout. One is Timeout.timeout=, which is
+process-global configuration of timeout for Regexp matching.
+
+    Regexp.timeout = 3
+    s = 'a' * 25 + 'd' + 'a' * 4 + 'c'
+    /(b|a+)*c/ =~ s  #=> This raises an exception in three seconds
+
+The other is timeout keyword of Regexp.new.
+
+    re = Regexp.new("(b|a+)*c", timeout: 3)
+    s = 'a' * 25 + 'd' + 'a' * 4 + 'c'
+    /(b|a+)*c/ =~ s  #=> This raises an exception in three seconds
+
+When using Regexps to process untrusted input, you should use the timeout
+feature to avoid excessive backtracking. Otherwise, a malicious user can
+provide input to Regexp causing Denail-of-Service attack.
+Note that the timeout is not set by default because an appropriate limit
+highly depends on an application requirement and context.

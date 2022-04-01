@@ -9,7 +9,7 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Check if C-sources are US-ASCII
         run: |
           ! grep -r -n '[^	 -~]' *.[chy] include internal win32/*.[ch]
@@ -23,7 +23,7 @@ jobs:
           done | grep -F .
         working-directory: include
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: .downloaded-cache
           key: downloaded-cache-${{ github.sha }}

@@ -139,7 +139,7 @@ should_not_be_shared_and_embedded(VALUE ary)
     } \
 } while (0)
 
-#define ARY_CAPA(ary) (ARY_EMBED_P(ary) ? RARRAY_EMBED_LEN_MAX : \
+#define ARY_CAPA(ary) (ARY_EMBED_P(ary) ? ary_embed_capa(ary) : \
                        ARY_SHARED_ROOT_P(ary) ? RARRAY_LEN(ary) : ARY_HEAP_CAPA(ary))
 #define ARY_SET_CAPA(ary, n) do { \
     assert(!ARY_EMBED_P(ary)); \
@@ -157,7 +157,7 @@ should_not_be_shared_and_embedded(VALUE ary)
     assert(ARY_SHARED_ROOT_P(_value_)); \
     RB_OBJ_WRITE(_ary_, &RARRAY(_ary_)->as.heap.aux.shared_root, _value_); \
 } while (0)
-#define RARRAY_SHARED_ROOT_FLAG FL_USER5
+#define RARRAY_SHARED_ROOT_FLAG FL_USER12
 #define ARY_SHARED_ROOT_P(ary) (assert(should_be_T_ARRAY((VALUE)(ary))), \
                                 FL_TEST_RAW((ary), RARRAY_SHARED_ROOT_FLAG))
 #define ARY_SHARED_ROOT_REFCNT(ary) \
@@ -184,6 +184,34 @@ ARY_SET(VALUE a, long i, VALUE v)
 }
 #undef RARRAY_ASET
 
+static long
+ary_embed_capa(VALUE ary)
+{
+#if USE_RVARGC
+    size_t size = rb_gc_obj_slot_size(ary) - offsetof(struct RArray, as.ary);
+    assert(size % sizeof(VALUE) == 0);
+    return size / sizeof(VALUE);
+#else
+    return RARRAY_EMBED_LEN_MAX;
+#endif
+}
+
+static size_t
+ary_embed_size(long capa)
+{
+    return offsetof(struct RArray, as.ary) + (sizeof(VALUE) * capa);
+}
+
+static bool
+ary_embeddable_p(long capa)
+{
+#if USE_RVARGC
+    return rb_gc_size_allocatable_p(ary_embed_size(capa));
+#else
+    return capa <= RARRAY_EMBED_LEN_MAX;
+#endif
+}
+
 
 #if ARRAY_DEBUG
 #define ary_verify(ary) ary_verify_(ary, __FILE__, __LINE__)
@@ -205,7 +233,7 @@ ary_verify_(VALUE ary, const char *file, int line)
     else if (ARY_EMBED_P(ary)) {
         assert(!RARRAY_TRANSIENT_P(ary));
         assert(!ARY_SHARED_P(ary));
-        assert(RARRAY_LEN(ary) <= RARRAY_EMBED_LEN_MAX);
+        assert(RARRAY_LEN(ary) <= ary_embed_capa(ary));
     }
     else {
 #if 1
@@ -447,7 +475,7 @@ ary_resize_capa(VALUE ary, long capacity)
     assert(!OBJ_FROZEN(ary));
     assert(!ARY_SHARED_P(ary));
 
-    if (capacity > RARRAY_EMBED_LEN_MAX) {
+    if (capacity > ary_embed_capa(ary)) {
         size_t new_capa = capacity;
         if (ARY_EMBED_P(ary)) {
             long len = ARY_EMBED_LEN(ary);
@@ -573,7 +601,7 @@ rb_ary_cancel_sharing(VALUE ary)
 
         ary_verify(shared_root);
 
-        if (len <= RARRAY_EMBED_LEN_MAX) {
+        if (len <= ary_embed_capa(ary)) {
             const VALUE *ptr = ARY_HEAP_PTR(ary);
             FL_UNSET_SHARED(ary);
             FL_SET_EMBED(ary);
@@ -623,7 +651,7 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
 	rb_raise(rb_eIndexError, "index %ld too big", new_len);
     }
     if (ARY_SHARED_P(ary)) {
-	if (new_len > RARRAY_EMBED_LEN_MAX) {
+	if (new_len > ary_embed_capa(ary)) {
             VALUE shared_root = ARY_SHARED_ROOT(ary);
             if (ARY_SHARED_ROOT_OCCUPIED(shared_root)) {
                 if (ARY_HEAP_PTR(ary) - RARRAY_CONST_PTR_TRANSIENT(shared_root) + new_len <= RARRAY_LEN(shared_root)) {
@@ -699,9 +727,16 @@ rb_ary_shared_with_p(VALUE ary1, VALUE ary2)
 }
 
 static VALUE
-ary_alloc(VALUE klass)
+ary_alloc_embed(VALUE klass, long capa)
 {
-    NEWOBJ_OF(ary, struct RArray, klass, T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0));
+    size_t size = ary_embed_size(capa);
+    assert(rb_gc_size_allocatable_p(size));
+#if !USE_RVARGC
+    assert(size <= sizeof(struct RArray));
+#endif
+    RVARGC_NEWOBJ_OF(ary, struct RArray, klass,
+                     T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
+                     size);
     /* Created array is:
      *   FL_SET_EMBED((VALUE)ary);
      *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
@@ -710,10 +745,19 @@ ary_alloc(VALUE klass)
 }
 
 static VALUE
+ary_alloc_heap(VALUE klass)
+{
+    RVARGC_NEWOBJ_OF(ary, struct RArray, klass,
+                     T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
+                     sizeof(struct RArray));
+    return (VALUE)ary;
+}
+
+static VALUE
 empty_ary_alloc(VALUE klass)
 {
     RUBY_DTRACE_CREATE_HOOK(ARRAY, 0);
-    return ary_alloc(klass);
+    return ary_alloc_embed(klass, 0);
 }
 
 static VALUE
@@ -730,10 +774,14 @@ ary_new(VALUE klass, long capa)
 
     RUBY_DTRACE_CREATE_HOOK(ARRAY, capa);
 
-    ary = ary_alloc(klass);
-    if (capa > RARRAY_EMBED_LEN_MAX) {
+    if (ary_embeddable_p(capa)) {
+        ary = ary_alloc_embed(klass, capa);
+    }
+    else {
+        ary = ary_alloc_heap(klass);
+        assert(!ARY_EMBED_P(ary));
+
         ptr = ary_heap_alloc(ary, capa);
-        FL_UNSET_EMBED(ary);
         ARY_SET_PTR(ary, ptr);
         ARY_SET_CAPA(ary, capa);
         ARY_SET_HEAP_LEN(ary, 0);
@@ -751,7 +799,7 @@ rb_ary_new_capa(long capa)
 VALUE
 rb_ary_new(void)
 {
-    return rb_ary_new2(RARRAY_EMBED_LEN_MAX);
+    return rb_ary_new_capa(0);
 }
 
 VALUE
@@ -794,13 +842,29 @@ rb_ary_new_from_values(long n, const VALUE *elts)
 }
 
 static VALUE
-ec_ary_alloc(rb_execution_context_t *ec, VALUE klass)
+ec_ary_alloc_embed(rb_execution_context_t *ec, VALUE klass, long capa)
 {
-    RB_EC_NEWOBJ_OF(ec, ary, struct RArray, klass, T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0));
+    size_t size = ary_embed_size(capa);
+    assert(rb_gc_size_allocatable_p(size));
+#if !USE_RVARGC
+    assert(size <= sizeof(struct RArray));
+#endif
+    RB_RVARGC_EC_NEWOBJ_OF(ec, ary, struct RArray, klass,
+                           T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
+                           size);
     /* Created array is:
      *   FL_SET_EMBED((VALUE)ary);
      *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
      */
+    return (VALUE)ary;
+}
+
+static VALUE
+ec_ary_alloc_heap(rb_execution_context_t *ec, VALUE klass)
+{
+    RB_RVARGC_EC_NEWOBJ_OF(ec, ary, struct RArray, klass,
+                           T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
+                           sizeof(struct RArray));
     return (VALUE)ary;
 }
 
@@ -818,11 +882,14 @@ ec_ary_new(rb_execution_context_t *ec, VALUE klass, long capa)
 
     RUBY_DTRACE_CREATE_HOOK(ARRAY, capa);
 
-    ary = ec_ary_alloc(ec, klass);
+    if (ary_embeddable_p(capa)) {
+        ary = ec_ary_alloc_embed(ec, klass, capa);
+    }
+    else {
+        ary = ec_ary_alloc_heap(ec, klass);
+        assert(!ARY_EMBED_P(ary));
 
-    if (capa > RARRAY_EMBED_LEN_MAX) {
         ptr = ary_heap_alloc(ary, capa);
-        FL_UNSET_EMBED(ary);
         ARY_SET_PTR(ary, ptr);
         ARY_SET_CAPA(ary, capa);
         ARY_SET_HEAP_LEN(ary, 0);
@@ -934,7 +1001,7 @@ ary_make_shared(VALUE ary)
     else {
 	long capa = ARY_CAPA(ary), len = RARRAY_LEN(ary);
         const VALUE *ptr;
-	NEWOBJ_OF(shared, struct RArray, 0, T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0));
+        VALUE shared = ary_alloc_heap(0);
         VALUE vshared = (VALUE)shared;
 
         rb_ary_transient_heap_evacuate(ary, TRUE);
@@ -963,8 +1030,10 @@ ary_make_substitution(VALUE ary)
 {
     long len = RARRAY_LEN(ary);
 
-    if (len <= RARRAY_EMBED_LEN_MAX) {
-	VALUE subst = rb_ary_new2(len);
+    if (ary_embeddable_p(len)) {
+        VALUE subst = rb_ary_new_capa(len);
+        assert(ARY_EMBED_P(subst));
+
         ary_memcpy(subst, 0, len, RARRAY_CONST_PTR_TRANSIENT(ary));
         ARY_SET_EMBED_LEN(subst, len);
         return subst;
@@ -1023,6 +1092,30 @@ static VALUE
 rb_ary_s_try_convert(VALUE dummy, VALUE ary)
 {
     return rb_check_array_type(ary);
+}
+
+/* :nodoc: */
+static VALUE
+rb_ary_s_new(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE ary;
+
+    if (klass == rb_cArray) {
+        long size = 0;
+        if (argc > 0 && FIXNUM_P(argv[0])) {
+            size = FIX2LONG(argv[0]);
+            if (size < 0) size = 0;
+        }
+
+        ary = ary_new(klass, size);
+
+        rb_obj_call_init_kw(ary, argc, argv, RB_PASS_CALLED_KEYWORDS);
+    }
+    else {
+        ary = rb_class_new_instance_pass_kw(argc, argv, klass);
+    }
+
+    return ary;
 }
 
 /*
@@ -1180,15 +1273,15 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
     assert(len >= 0);
     assert(offset+len <= RARRAY_LEN(ary));
 
-    if (len <= RARRAY_EMBED_LEN_MAX) {
-        VALUE result = ary_alloc(klass);
+    if (ary_embeddable_p(len)) {
+        VALUE result = ary_alloc_embed(klass, len);
         ary_memcpy(result, 0, len, RARRAY_CONST_PTR_TRANSIENT(ary) + offset);
         ARY_SET_EMBED_LEN(result, len);
         return result;
     }
     else {
-        VALUE shared, result = ary_alloc(klass);
-        FL_UNSET_EMBED(result);
+        VALUE shared, result = ary_alloc_heap(klass);
+        assert(!ARY_EMBED_P(result));
 
         shared = ary_make_shared(ary);
         ARY_SET_PTR(result, RARRAY_CONST_PTR_TRANSIENT(ary));
@@ -1228,8 +1321,9 @@ ary_make_partial_step(VALUE ary, VALUE klass, long offset, long len, long step)
 
     long i;
     long j = offset + ((step > 0) ? 0 : (orig_len - 1));
+
     VALUE result = ary_new(klass, len);
-    if (len <= RARRAY_EMBED_LEN_MAX) {
+    if (ARY_EMBED_P(result)) {
         VALUE *ptr = (VALUE *)ARY_EMBED_PTR(result);
         for (i = 0; i < len; ++i) {
             RB_OBJ_WRITE(result, ptr+i, values[j]);
@@ -1490,8 +1584,8 @@ rb_ary_behead(VALUE ary, long n)
 
     rb_ary_modify_check(ary);
 
-    if (RB_UNLIKELY(!ARY_SHARED_P(ary))) {
-        if (RARRAY_LEN(ary) < ARY_DEFAULT_SIZE) {
+    if (!ARY_SHARED_P(ary)) {
+        if (ARY_EMBED_P(ary) || RARRAY_LEN(ary) < ARY_DEFAULT_SIZE) {
             RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
                 MEMMOVE(ptr, ptr + n, VALUE, RARRAY_LEN(ary) - n);
             }); /* WB: no new reference */
@@ -1546,7 +1640,7 @@ ary_modify_for_unshift(VALUE ary, int argc)
     }
 
     /* use shared array for big "queues" */
-    if (new_len > ARY_DEFAULT_SIZE * 4) {
+    if (new_len > ARY_DEFAULT_SIZE * 4 && !ARY_EMBED_P(ary)) {
         ary_verify(ary);
 
         /* make a room for unshifted items */
@@ -2223,12 +2317,18 @@ rb_ary_resize(VALUE ary, long len)
     else if (ARY_EMBED_P(ary)) {
         ARY_SET_EMBED_LEN(ary, len);
     }
-    else if (len <= RARRAY_EMBED_LEN_MAX) {
-	VALUE tmp[RARRAY_EMBED_LEN_MAX];
-	MEMCPY(tmp, ARY_HEAP_PTR(ary), VALUE, len);
-	ary_discard(ary);
-	MEMCPY((VALUE *)ARY_EMBED_PTR(ary), tmp, VALUE, len); /* WB: no new reference */
+    else if (len <= ary_embed_capa(ary)) {
+        const VALUE *ptr = ARY_HEAP_PTR(ary);
+        long ptr_capa = ARY_HEAP_SIZE(ary);
+        bool is_malloc_ptr = !ARY_SHARED_P(ary) && !RARRAY_TRANSIENT_P(ary);
+
+        FL_UNSET(ary, RARRAY_TRANSIENT_FLAG);
+        FL_SET_EMBED(ary);
+
+        MEMCPY((VALUE *)ARY_EMBED_PTR(ary), ptr, VALUE, len); /* WB: no new reference */
         ARY_SET_EMBED_LEN(ary, len);
+
+        if (is_malloc_ptr) ruby_sized_xfree((void *)ptr, ptr_capa);
     }
     else {
 	if (olen > len + ARY_DEFAULT_SIZE) {
@@ -4392,11 +4492,29 @@ rb_ary_replace(VALUE copy, VALUE orig)
 
     rb_ary_reset(copy);
 
-    if (RARRAY_LEN(orig) <= RARRAY_EMBED_LEN_MAX) {
+    /* orig has enough space to embed the contents of orig. */
+    if (RARRAY_LEN(orig) <= ary_embed_capa(copy)) {
         assert(ARY_EMBED_P(copy));
         ary_memcpy(copy, 0, RARRAY_LEN(orig), RARRAY_CONST_PTR_TRANSIENT(orig));
-        ARY_SET_LEN(copy, RARRAY_LEN(orig));
+        ARY_SET_EMBED_LEN(copy, RARRAY_LEN(orig));
     }
+#if USE_RVARGC
+    /* orig is embedded but copy does not have enough space to embed the
+     * contents of orig. */
+    else if (ARY_EMBED_P(orig)) {
+        long len = ARY_EMBED_LEN(orig);
+
+        VALUE *ptr = ary_heap_alloc(copy, len);
+        MEMCPY(ptr, ARY_EMBED_PTR(orig), VALUE, len);
+
+        FL_UNSET_EMBED(copy);
+        ARY_SET_PTR(copy, ptr);
+        ARY_SET_LEN(copy, len);
+        ARY_SET_CAPA(copy, len);
+    }
+#endif
+    /* Otherwise, orig is on heap and copy does not have enough space to embed
+     * the contents of orig. */
     else {
         VALUE shared_root = ary_make_shared(orig);
         FL_UNSET_EMBED(copy);
@@ -8056,163 +8174,165 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  === Methods for Creating an \Array
  *
- *  ::[]:: Returns a new array populated with given objects.
- *  ::new:: Returns a new array.
- *  ::try_convert:: Returns a new array created from a given object.
+ *  - ::[]: Returns a new array populated with given objects.
+ *  - ::new: Returns a new array.
+ *  - ::try_convert: Returns a new array created from a given object.
  *
  *  === Methods for Querying
  *
- *  #length, #size:: Returns the count of elements.
- *  #include?:: Returns whether any element <tt>==</tt> a given object.
- *  #empty?:: Returns whether there are no elements.
- *  #all?:: Returns whether all elements meet a given criterion.
- *  #any?:: Returns whether any element meets a given criterion.
- *  #none?:: Returns whether no element <tt>==</tt> a given object.
- *  #one?:: Returns whether exactly one element <tt>==</tt> a given object.
- *  #count:: Returns the count of elements that meet a given criterion.
- *  #find_index, #index:: Returns the index of the first element that meets a given criterion.
- *  #rindex:: Returns the index of the last element that meets a given criterion.
- *  #hash:: Returns the integer hash code.
+ *  - #length, #size: Returns the count of elements.
+ *  - #include?: Returns whether any element <tt>==</tt> a given object.
+ *  - #empty?: Returns whether there are no elements.
+ *  - #all?: Returns whether all elements meet a given criterion.
+ *  - #any?: Returns whether any element meets a given criterion.
+ *  - #none?: Returns whether no element <tt>==</tt> a given object.
+ *  - #one?: Returns whether exactly one element <tt>==</tt> a given object.
+ *  - #count: Returns the count of elements that meet a given criterion.
+ *  - #find_index, #index: Returns the index of the first element that meets a given criterion.
+ *  - #rindex: Returns the index of the last element that meets a given criterion.
+ *  - #hash: Returns the integer hash code.
  *
  *  === Methods for Comparing
-
- *  #<=>:: Returns -1, 0, or 1 as +self+ is less than, equal to, or greater than a given
- *         object.
- *  #==:: Returns whether each element in +self+ is <tt>==</tt> to the corresponding element
- *        in a given object.
- *  #eql?:: Returns whether each element in +self+ is <tt>eql?</tt> to the corresponding
- *          element in a given object.
+ *
+ *  - #<=>: Returns -1, 0, or 1 * as +self+ is less than, equal to, or
+ *    greater than a given object.
+ *  - #==: Returns whether each element in +self+ is <tt>==</tt> to the corresponding element
+ *    in a given object.
+ *  - #eql?: Returns whether each element in +self+ is <tt>eql?</tt> to the corresponding
+ *    element in a given object.
 
  *  === Methods for Fetching
  *
  *  These methods do not modify +self+.
  *
- *  #[]:: Returns one or more elements.
- *  #fetch:: Returns the element at a given offset.
- *  #first:: Returns one or more leading elements.
- *  #last:: Returns one or more trailing elements.
- *  #max:: Returns one or more maximum-valued elements,
- *         as determined by <tt><=></tt> or a given block.
- *  #min:: Returns one or more minimum-valued elements,
- *         as determined by <tt><=></tt> or a given block.
- *  #minmax:: Returns the minimum-valued and maximum-valued elements,
- *            as determined by <tt><=></tt> or a given block.
- *  #assoc:: Returns the first element that is an array
- *           whose first element <tt>==</tt> a given object.
- *  #rassoc:: Returns the first element that is an array
- *            whose second element <tt>==</tt> a given object.
- *  #at:: Returns the element at a given offset.
- *  #values_at:: Returns the elements at given offsets.
- *  #dig:: Returns the object in nested objects
- *         that is specified by a given index and additional arguments.
- *  #drop:: Returns trailing elements as determined by a given index.
- *  #take:: Returns leading elements as determined by a given index.
- *  #drop_while:: Returns trailing elements as determined by a given block.
- *  #take_while:: Returns leading elements as determined by a given block.
- *  #slice:: Returns consecutive elements as determined by a given argument.
- *  #sort:: Returns all elements in an order determined by <tt><=></tt> or a given block.
- *  #reverse:: Returns all elements in reverse order.
- *  #compact:: Returns an array containing all non-+nil+ elements.
- *  #select, #filter:: Returns an array containing elements selected by a given block.
- *  #uniq:: Returns an array containing non-duplicate elements.
- *  #rotate:: Returns all elements with some rotated from one end to the other.
- *  #bsearch:: Returns an element selected via a binary search
- *             as determined by a given block.
- *  #bsearch_index:: Returns the index of an element selected via a binary search
- *                   as determined by a given block.
- *  #sample:: Returns one or more random elements.
- *  #shuffle:: Returns elements in a random order.
+ *  - #[]: Returns one or more elements.
+ *  - #fetch: Returns the element at a given offset.
+ *  - #first: Returns one or more leading elements.
+ *  - #last: Returns one or more trailing elements.
+ *  - #max: Returns one or more maximum-valued elements,
+ *    as determined by <tt><=></tt> or a given block.
+ *  - #min: Returns one or more minimum-valued elements,
+ *    as determined by <tt><=></tt> or a given block.
+ *  - #minmax: Returns the minimum-valued and maximum-valued elements,
+ *    as determined by <tt><=></tt> or a given block.
+ *  - #assoc: Returns the first element that is an array
+ *    whose first element <tt>==</tt> a given object.
+ *  - #rassoc: Returns the first element that is an array
+ *    whose second element <tt>==</tt> a given object.
+ *  - #at: Returns the element at a given offset.
+ *  - #values_at: Returns the elements at given offsets.
+ *  - #dig: Returns the object in nested objects
+ *    that is specified by a given index and additional arguments.
+ *  - #drop: Returns trailing elements as determined by a given index.
+ *  - #take: Returns leading elements as determined by a given index.
+ *  - #drop_while: Returns trailing elements as determined by a given block.
+ *  - #take_while: Returns leading elements as determined by a given block.
+ *  - #slice: Returns consecutive elements as determined by a given argument.
+ *  - #sort: Returns all elements in an order determined by <tt><=></tt> or a given block.
+ *  - #reverse: Returns all elements in reverse order.
+ *  - #compact: Returns an array containing all non-+nil+ elements.
+ *  - #select, #filter: Returns an array containing elements selected by a given block.
+ *  - #uniq: Returns an array containing non-duplicate elements.
+ *  - #rotate: Returns all elements with some rotated from one end to the other.
+ *  - #bsearch: Returns an element selected via a binary search
+ *    as determined by a given block.
+ *  - #bsearch_index: Returns the index of an element selected via a binary search
+ *    as determined by a given block.
+ *  - #sample: Returns one or more random elements.
+ *  - #shuffle: Returns elements in a random order.
  *
  *  === Methods for Assigning
  *
  *  These methods add, replace, or reorder elements in +self+.
  *
- *  #[]=:: Assigns specified elements with a given object.
- *  #push, #append, #<<:: Appends trailing elements.
- *  #unshift, #prepend:: Prepends leading elements.
- *  #insert:: Inserts given objects at a given offset; does not replace elements.
- *  #concat:: Appends all elements from given arrays.
- *  #fill:: Replaces specified elements with specified objects.
- *  #replace:: Replaces the content of +self+ with the content of a given array.
- *  #reverse!:: Replaces +self+ with its elements reversed.
- *  #rotate!:: Replaces +self+ with its elements rotated.
- *  #shuffle!:: Replaces +self+ with its elements in random order.
- *  #sort!:: Replaces +self+ with its elements sorted,
- *           as determined by <tt><=></tt> or a given block.
- *  #sort_by!:: Replaces +self+ with its elements sorted, as determined by a given block.
+ *  - #[]=: Assigns specified elements with a given object.
+ *  - #push, #append, #<<: Appends trailing elements.
+ *  - #unshift, #prepend: Prepends leading elements.
+ *  - #insert: Inserts given objects at a given offset; does not replace elements.
+ *  - #concat: Appends all elements from given arrays.
+ *  - #fill: Replaces specified elements with specified objects.
+ *  - #replace: Replaces the content of +self+ with the content of a given array.
+ *  - #reverse!: Replaces +self+ with its elements reversed.
+ *  - #rotate!: Replaces +self+ with its elements rotated.
+ *  - #shuffle!: Replaces +self+ with its elements in random order.
+ *  - #sort!: Replaces +self+ with its elements sorted,
+ *    as determined by <tt><=></tt> or a given block.
+ *  - #sort_by!: Replaces +self+ with its elements sorted, as determined by a given block.
  *
  *  === Methods for Deleting
  *
  *  Each of these methods removes elements from +self+:
  *
- *  #pop:: Removes and returns the last element.
- *  #shift::  Removes and returns the first element.
- *  #compact!:: Removes all non-+nil+ elements.
- *  #delete:: Removes elements equal to a given object.
- *  #delete_at:: Removes the element at a given offset.
- *  #delete_if:: Removes elements specified by a given block.
- *  #keep_if:: Removes elements not specified by a given block.
- *  #reject!:: Removes elements specified by a given block.
- *  #select!, #filter!:: Removes elements not specified by a given block.
- *  #slice!:: Removes and returns a sequence of elements.
- *  #uniq!:: Removes duplicates.
+ *  - #pop: Removes and returns the last element.
+ *  - #shift:  Removes and returns the first element.
+ *  - #compact!: Removes all non-+nil+ elements.
+ *  - #delete: Removes elements equal to a given object.
+ *  - #delete_at: Removes the element at a given offset.
+ *  - #delete_if: Removes elements specified by a given block.
+ *  - #keep_if: Removes elements not specified by a given block.
+ *  - #reject!: Removes elements specified by a given block.
+ *  - #select!, #filter!: Removes elements not specified by a given block.
+ *  - #slice!: Removes and returns a sequence of elements.
+ *  - #uniq!: Removes duplicates.
  *
  *  === Methods for Combining
  *
- *  #&:: Returns an array containing elements found both in +self+ and a given array.
- *  #intersection:: Returns an array containing elements found both in +self+
- *                  and in each given array.
- *  #+:: Returns an array containing all elements of +self+ followed by all elements of a given array.
- *  #-:: Returns an array containiing all elements of +self+ that are not found in a given array.
- *  #|:: Returns an array containing all elements of +self+ and all elements of a given array,
- *       duplicates removed.
- *  #union:: Returns an array containing all elements of +self+ and all elements of given arrays,
- *           duplicates removed.
- *  #difference:: Returns an array containing all elements of +self+ that are not found
- *                in any of the given arrays..
- *  #product:: Returns or yields all combinations of elements from +self+ and given arrays.
+ *  - #&: Returns an array containing elements found both in +self+ and a given array.
+ *  - #intersection: Returns an array containing elements found both in +self+
+ *    and in each given array.
+ *  - #+: Returns an array containing all elements of +self+ followed by all elements of a given array.
+ *  - #-: Returns an array containing all elements of +self+ that are not found in a given array.
+ *  - #|: Returns an array containing all elements of +self+ and all elements of a given array,
+ *    duplicates removed.
+ *  - #union: Returns an array containing all elements of +self+ and all elements of given arrays,
+ *    duplicates removed.
+ *  - #difference: Returns an array containing all elements of +self+ that are not found
+ *    in any of the given arrays..
+ *  - #product: Returns or yields all combinations of elements from +self+ and given arrays.
  *
  *  === Methods for Iterating
  *
- *  #each:: Passes each element to a given block.
- *  #reverse_each::  Passes each element, in reverse order, to a given block.
- *  #each_index:: Passes each element index to a given block.
- *  #cycle:: Calls a given block with each element, then does so again,
- *           for a specified number of times, or forever.
- *  #combination:: Calls a given block with combinations of elements of +self+;
- *                 a combination does not use the same element more than once.
- *  #permutation:: Calls a given block with permutations of elements of +self+;
- *                 a permutation does not use the same element more than once.
- *  #repeated_combination:: Calls a given block with combinations of elements of +self+;
- *                          a combination may use the same element more than once.
- *  #repeated_permutation:: Calls a given block with permutations of elements of +self+;
- *                          a permutation may use the same element more than once.
+ *  - #each: Passes each element to a given block.
+ *  - #reverse_each:  Passes each element, in reverse order, to a given block.
+ *  - #each_index: Passes each element index to a given block.
+ *  - #cycle: Calls a given block with each element, then does so again,
+ *    for a specified number of times, or forever.
+ *  - #combination: Calls a given block with combinations of elements of +self+;
+ *    a combination does not use the same element more than once.
+ *  - #permutation: Calls a given block with permutations of elements of +self+;
+ *    a permutation does not use the same element more than once.
+ *  - #repeated_combination: Calls a given block with combinations of elements of +self+;
+ *    a combination may use the same element more than once.
+ *  - #repeated_permutation: Calls a given block with permutations of elements of +self+;
+ *    a permutation may use the same element more than once.
  *
  *  === Methods for Converting
  *
- *  #map, #collect:: Returns an array containing the block return-value for each element.
- *  #map!, #collect!:: Replaces each element with a block return-value.
- *  #flatten:: Returns an array that is a recursive flattening of +self+.
- *  #flatten!:: Replaces each nested array in +self+ with the elements from that array.
- *  #inspect, #to_s:: Returns a new String containing the elements.
- *  #join:: Returns a newsString containing the elements joined by the field separator.
- *  #to_a:: Returns +self+ or a new array containing all elements.
- *  #to_ary:: Returns +self+.
- *  #to_h:: Returns a new hash formed from the elements.
- *  #transpose:: Transposes +self+, which must be an array of arrays.
- *  #zip:: Returns a new array of arrays containing +self+ and given arrays;
- *         follow the link for details.
+ *  - #map, #collect: Returns an array containing the block return-value for each element.
+ *  - #map!, #collect!: Replaces each element with a block return-value.
+ *  - #flatten: Returns an array that is a recursive flattening of +self+.
+ *  - #flatten!: Replaces each nested array in +self+ with the elements from that array.
+ *  - #inspect, #to_s: Returns a new String containing the elements.
+ *  - #join: Returns a newsString containing the elements joined by the field separator.
+ *  - #to_a: Returns +self+ or a new array containing all elements.
+ *  - #to_ary: Returns +self+.
+ *  - #to_h: Returns a new hash formed from the elements.
+ *  - #transpose: Transposes +self+, which must be an array of arrays.
+ *  - #zip: Returns a new array of arrays containing +self+ and given arrays;
+ *    follow the link for details.
  *
  *  === Other Methods
  *
- *  #*:: Returns one of the following:
- *       - With integer argument +n+, a new array that is the concatenation
- *         of +n+ copies of +self+.
- *       - With string argument +field_separator+, a new string that is equivalent to
- *         <tt>join(field_separator)</tt>.
- *  #abbrev:: Returns a hash of unambiguous abbreviations for elements.
- *  #pack:: Packs the elements into a binary sequence.
- *  #sum:: Returns a sum of elements according to either <tt>+</tt> or a given block.
+ *  - #*: Returns one of the following:
+ *
+ *    - With integer argument +n+, a new array that is the concatenation
+ *      of +n+ copies of +self+.
+ *    - With string argument +field_separator+, a new string that is equivalent to
+ *      <tt>join(field_separator)</tt>.
+ *
+ *  - #abbrev: Returns a hash of unambiguous abbreviations for elements.
+ *  - #pack: Packs the elements into a binary sequence.
+ *  - #sum: Returns a sum of elements according to either <tt>+</tt> or a given block.
  */
 
 void
@@ -8222,6 +8342,7 @@ Init_Array(void)
     rb_include_module(rb_cArray, rb_mEnumerable);
 
     rb_define_alloc_func(rb_cArray, empty_ary_alloc);
+    rb_define_singleton_method(rb_cArray, "new", rb_ary_s_new, -1);
     rb_define_singleton_method(rb_cArray, "[]", rb_ary_s_create, -1);
     rb_define_singleton_method(rb_cArray, "try_convert", rb_ary_s_try_convert, 1);
     rb_define_method(rb_cArray, "initialize", rb_ary_initialize, -1);

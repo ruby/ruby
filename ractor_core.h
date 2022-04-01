@@ -91,7 +91,7 @@ struct rb_ractor_struct {
 
     // thread management
     struct {
-        struct list_head set;
+        struct ccan_list_head set;
         unsigned int cnt;
         unsigned int blocking_cnt;
         unsigned int sleeper;
@@ -126,7 +126,7 @@ struct rb_ractor_struct {
         ractor_terminated,
     } status_;
 
-    struct list_node vmlr_node;
+    struct ccan_list_node vmlr_node;
 
     // ractor local data
 

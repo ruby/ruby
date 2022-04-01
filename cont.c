@@ -1218,7 +1218,7 @@ show_vm_pcs(const rb_control_frame_t *cfp,
     while (cfp != end_of_cfp) {
         int pc = 0;
         if (cfp->iseq) {
-            pc = cfp->pc - cfp->iseq->body->iseq_encoded;
+            pc = cfp->pc - ISEQ_BODY(cfp->iseq)->iseq_encoded;
         }
         fprintf(stderr, "%2d pc: %d\n", i++, pc);
         cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);

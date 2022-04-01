@@ -15,6 +15,83 @@ ruby_version_is "2.7" do
       Hash.ruby2_keywords_hash?(last).should == true
     end
 
+    it "makes a copy of the hash and only marks the copy as keyword hash" do
+      obj = Object.new
+      obj.singleton_class.class_exec do
+        def regular(*args)
+          args.last
+        end
+
+        ruby2_keywords def foo(*args)
+          args.last
+        end
+      end
+
+      h = {a: 1}
+      ruby_version_is "3.0" do
+        obj.regular(**h).should.equal?(h)
+      end
+
+      last = obj.foo(**h)
+      Hash.ruby2_keywords_hash?(last).should == true
+      Hash.ruby2_keywords_hash?(h).should == false
+
+      last2 = obj.foo(**last) # last is already marked
+      Hash.ruby2_keywords_hash?(last2).should == true
+      Hash.ruby2_keywords_hash?(last).should == true
+      last2.should_not.equal?(last)
+      Hash.ruby2_keywords_hash?(h).should == false
+    end
+
+    it "makes a copy and unmark at the call site when calling with marked *args" do
+      obj = Object.new
+      obj.singleton_class.class_exec do
+        ruby2_keywords def foo(*args)
+          args
+        end
+
+        def single(arg)
+          arg
+        end
+
+        def splat(*args)
+          args.last
+        end
+
+        def kwargs(**kw)
+          kw
+        end
+      end
+
+      h = { a: 1 }
+      args = obj.foo(**h)
+      marked = args.last
+      Hash.ruby2_keywords_hash?(marked).should == true
+
+      after_usage = obj.single(*args)
+      after_usage.should == h
+      after_usage.should_not.equal?(h)
+      after_usage.should_not.equal?(marked)
+      Hash.ruby2_keywords_hash?(after_usage).should == false
+      Hash.ruby2_keywords_hash?(marked).should == true
+
+      after_usage = obj.splat(*args)
+      after_usage.should == h
+      after_usage.should_not.equal?(h)
+      after_usage.should_not.equal?(marked)
+      ruby_bug "#18625", ""..."3.3" do # might be fixed in 3.2
+        Hash.ruby2_keywords_hash?(after_usage).should == false
+      end
+      Hash.ruby2_keywords_hash?(marked).should == true
+
+      after_usage = obj.kwargs(*args)
+      after_usage.should == h
+      after_usage.should_not.equal?(h)
+      after_usage.should_not.equal?(marked)
+      Hash.ruby2_keywords_hash?(after_usage).should == false
+      Hash.ruby2_keywords_hash?(marked).should == true
+    end
+
     it "applies to the underlying method and applies across aliasing" do
       obj = Object.new
 
@@ -80,7 +157,7 @@ ruby_version_is "2.7" do
       }.should raise_error(NameError, /undefined method `not_existing'/)
     end
 
-    it "acceps String as well" do
+    it "accepts String as well" do
       obj = Object.new
 
       obj.singleton_class.class_exec do

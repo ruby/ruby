@@ -1,0 +1,18 @@
+Calls the given block with each successive codepoint from +self+;
+each codepoint is the integer value for a character;
+returns +self+:
+
+  'hello'.each_codepoint {|codepoint| print codepoint, ' ' }
+  print "\n"
+  'тест'.each_codepoint {|codepoint| print codepoint, ' ' }
+  print "\n"
+  'こんにちは'.each_codepoint {|codepoint| print codepoint, ' ' }
+  print "\n"
+
+Output:
+
+  104 101 108 108 111
+  1090 1077 1089 1090
+  12371 12435 12395 12385 12399
+
+Returns an enumerator if no block is given.

@@ -31,7 +31,7 @@ describe "Proc#parameters" do
     end
 
     it "regards named parameters in lambda as optional if lambda: false keyword used" do
-      lambda {|x| }.parameters(lambda: false).first.first.should == :opt
+      -> x { }.parameters(lambda: false).first.first.should == :opt
     end
   end
 

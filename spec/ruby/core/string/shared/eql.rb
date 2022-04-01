@@ -31,4 +31,8 @@ describe :string_eql_value, shared: true do
     a.send(@method, b).should be_true
     b.send(@method, a).should be_true
   end
+
+  it "returns true when comparing 2 empty strings but one is not ASCII-compatible" do
+    "".send(@method, "".force_encoding('iso-2022-jp')).should == true
+  end
 end

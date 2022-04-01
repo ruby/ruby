@@ -34,6 +34,7 @@ m4_include([tool/m4/ruby_prepend_option.m4])dnl
 m4_include([tool/m4/ruby_prog_gnu_ld.m4])dnl
 m4_include([tool/m4/ruby_replace_funcs.m4])dnl
 m4_include([tool/m4/ruby_replace_type.m4])dnl
+m4_include([tool/m4/ruby_require_funcs.m4])dnl
 m4_include([tool/m4/ruby_rm_recursive.m4])dnl
 m4_include([tool/m4/ruby_setjmp_type.m4])dnl
 m4_include([tool/m4/ruby_stack_grow_direction.m4])dnl
@@ -1268,15 +1269,6 @@ AC_CHECK_LIB(crypt, crypt)      # glibc (GNU/Linux, GNU/Hurd, GNU/kFreeBSD)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(socket, shutdown)  # SunOS/Solaris
 
-AS_IF([test -n "${PKG_CONFIG}" && ${PKG_CONFIG} --exists capstone], [
-   CAPSTONE_CFLAGS=`${PKG_CONFIG} --cflags capstone`
-   CAPSTONE_LIB_L=`${PKG_CONFIG} --libs-only-L capstone`
-   LDFLAGS="$LDFLAGS $CAPSTONE_LIB_L"
-   CFLAGS="$CFLAGS $CAPSTONE_CFLAGS"
-])
-
-AC_CHECK_LIB(capstone, cs_open) # Capstone disassembler for debugging YJIT
-
 dnl Checks for header files.
 AC_HEADER_DIRENT
 dnl AC_HEADER_STDC has been checked in AC_USE_SYSTEM_EXTENSIONS
@@ -1944,17 +1936,11 @@ AS_CASE(["$target_os"],[freebsd*],[
 	 AC_REPLACE_FUNCS(close)
 	 ])
 
-AC_DEFUN([RUBY_REQUIRE_FUNC], [
-    AC_CHECK_FUNCS([$1])
-    AS_IF([test "$ac_cv_func_[]AS_TR_SH($1)" = yes], [],
-          [AC_MSG_ERROR($1[() must be supported])])
-])
-
 # dup and dup2 are always available except for WASI
 AS_CASE(["$target_os"],
     [wasi*], [],
     [
-        m4_map_args_w([dup dup2], [RUBY_REQUIRE_FUNC(], [)])
+        RUBY_REQUIRE_FUNCS(dup dup2)
     ]
 )
 

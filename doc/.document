@@ -1,6 +1,6 @@
 *.md
 *.rb
 *.rdoc
-NEWS-*
+NEWS
 syntax
 optparse

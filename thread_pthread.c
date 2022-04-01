@@ -228,7 +228,7 @@ designate_timer_thread(rb_global_vm_lock_t *gvl)
 {
     native_thread_data_t *last;
 
-    last = list_tail(&gvl->waitq, native_thread_data_t, node.ubf);
+    last = ccan_list_tail(&gvl->waitq, native_thread_data_t, node.ubf);
     if (last) {
         rb_native_cond_signal(&last->cond.gvlq);
         return TRUE;
@@ -289,7 +289,7 @@ gvl_acquire_common(rb_global_vm_lock_t *gvl, rb_thread_t *th)
         VM_ASSERT(th->unblock.func == 0 &&
 	          "we must not be in ubf_list and GVL waitq at the same time");
 
-        list_add_tail(&gvl->waitq, &nd->node.gvl);
+        ccan_list_add_tail(&gvl->waitq, &nd->node.gvl);
 
         do {
             if (!gvl->timer) {
@@ -300,7 +300,7 @@ gvl_acquire_common(rb_global_vm_lock_t *gvl, rb_thread_t *th)
             }
         } while (gvl->owner);
 
-        list_del_init(&nd->node.gvl);
+        ccan_list_del_init(&nd->node.gvl);
 
         if (gvl->need_yield) {
             gvl->need_yield = 0;
@@ -331,7 +331,7 @@ gvl_release_common(rb_global_vm_lock_t *gvl)
 {
     native_thread_data_t *next;
     gvl->owner = 0;
-    next = list_top(&gvl->waitq, native_thread_data_t, node.ubf);
+    next = ccan_list_top(&gvl->waitq, native_thread_data_t, node.ubf);
     if (next) rb_native_cond_signal(&next->cond.gvlq);
 
     return next;
@@ -388,7 +388,7 @@ rb_gvl_init(rb_global_vm_lock_t *gvl)
     rb_native_mutex_initialize(&gvl->lock);
     rb_native_cond_initialize(&gvl->switch_cond);
     rb_native_cond_initialize(&gvl->switch_wait_cond);
-    list_head_init(&gvl->waitq);
+    ccan_list_head_init(&gvl->waitq);
     gvl->owner = 0;
     gvl->timer = 0;
     gvl->timer_err = ETIMEDOUT;
@@ -690,7 +690,7 @@ native_thread_init(rb_thread_t *th)
     th->tid = get_native_thread_id();
 #endif
 #ifdef USE_UBF_LIST
-    list_node_init(&nd->node.ubf);
+    ccan_list_node_init(&nd->node.ubf);
 #endif
     rb_native_cond_initialize(&nd->cond.gvlq);
     if (&nd->cond.gvlq != &nd->cond.intr)
@@ -1072,19 +1072,19 @@ struct cached_thread_entry {
     rb_nativethread_id_t thread_id;
     rb_thread_t *th;
     void *altstack;
-    struct list_node node;
+    struct ccan_list_node node;
 };
 
 #if USE_THREAD_CACHE
 static rb_nativethread_lock_t thread_cache_lock = RB_NATIVETHREAD_LOCK_INIT;
-static LIST_HEAD(cached_thread_head);
+static CCAN_LIST_HEAD(cached_thread_head);
 
 #  if defined(HAVE_WORKING_FORK)
 static void
 thread_cache_reset(void)
 {
     rb_native_mutex_initialize(&thread_cache_lock);
-    list_head_init(&cached_thread_head);
+    ccan_list_head_init(&cached_thread_head);
 }
 #  endif
 
@@ -1111,12 +1111,12 @@ register_cached_thread_and_wait(void *altstack)
 
     rb_native_mutex_lock(&thread_cache_lock);
     {
-        list_add(&cached_thread_head, &entry.node);
+        ccan_list_add(&cached_thread_head, &entry.node);
 
         native_cond_timedwait(&entry.cond, &thread_cache_lock, &end);
 
         if (entry.th == NULL) { /* unused */
-            list_del(&entry.node);
+            ccan_list_del(&entry.node);
         }
     }
     rb_native_mutex_unlock(&thread_cache_lock);
@@ -1141,7 +1141,7 @@ use_cached_thread(rb_thread_t *th)
     struct cached_thread_entry *entry;
 
     rb_native_mutex_lock(&thread_cache_lock);
-    entry = list_pop(&cached_thread_head, struct cached_thread_entry, node);
+    entry = ccan_list_pop(&cached_thread_head, struct cached_thread_entry, node);
     if (entry) {
         entry->th = th;
         /* th->thread_id must be set before signal for Thread#name= */
@@ -1162,7 +1162,7 @@ clear_thread_cache_altstack(void)
     struct cached_thread_entry *entry;
 
     rb_native_mutex_lock(&thread_cache_lock);
-    list_for_each(&cached_thread_head, entry, node) {
+    ccan_list_for_each(&cached_thread_head, entry, node) {
         void MAYBE_UNUSED(*altstack) = entry->altstack;
         entry->altstack = 0;
         RB_ALTSTACK_FREE(altstack);
@@ -1305,13 +1305,13 @@ native_cond_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 }
 
 #ifdef USE_UBF_LIST
-static LIST_HEAD(ubf_list_head);
+static CCAN_LIST_HEAD(ubf_list_head);
 static rb_nativethread_lock_t ubf_list_lock = RB_NATIVETHREAD_LOCK_INIT;
 
 static void
 ubf_list_atfork(void)
 {
-    list_head_init(&ubf_list_head);
+    ccan_list_head_init(&ubf_list_head);
     rb_native_mutex_initialize(&ubf_list_lock);
 }
 
@@ -1319,11 +1319,11 @@ ubf_list_atfork(void)
 static void
 register_ubf_list(rb_thread_t *th)
 {
-    struct list_node *node = &th->native_thread_data.node.ubf;
+    struct ccan_list_node *node = &th->native_thread_data.node.ubf;
 
-    if (list_empty((struct list_head*)node)) {
+    if (ccan_list_empty((struct ccan_list_head*)node)) {
         rb_native_mutex_lock(&ubf_list_lock);
-	list_add(&ubf_list_head, node);
+	ccan_list_add(&ubf_list_head, node);
         rb_native_mutex_unlock(&ubf_list_lock);
     }
 }
@@ -1332,15 +1332,15 @@ register_ubf_list(rb_thread_t *th)
 static void
 unregister_ubf_list(rb_thread_t *th)
 {
-    struct list_node *node = &th->native_thread_data.node.ubf;
+    struct ccan_list_node *node = &th->native_thread_data.node.ubf;
 
     /* we can't allow re-entry into ubf_list_head */
     VM_ASSERT(th->unblock.func == 0);
 
-    if (!list_empty((struct list_head*)node)) {
+    if (!ccan_list_empty((struct ccan_list_head*)node)) {
         rb_native_mutex_lock(&ubf_list_lock);
-        list_del_init(node);
-        if (list_empty(&ubf_list_head) && !rb_signal_buff_size()) {
+        ccan_list_del_init(node);
+        if (ccan_list_empty(&ubf_list_head) && !rb_signal_buff_size()) {
             ubf_timer_disarm();
         }
         rb_native_mutex_unlock(&ubf_list_lock);
@@ -1397,7 +1397,7 @@ ubf_select(void *ptr)
 static int
 ubf_threads_empty(void)
 {
-    return list_empty(&ubf_list_head);
+    return ccan_list_empty(&ubf_list_head);
 }
 
 static void
@@ -1408,8 +1408,8 @@ ubf_wakeup_all_threads(void)
 
     if (!ubf_threads_empty()) {
         rb_native_mutex_lock(&ubf_list_lock);
-	list_for_each(&ubf_list_head, dat, node.ubf) {
-	    th = container_of(dat, rb_thread_t, native_thread_data);
+	ccan_list_for_each(&ubf_list_head, dat, node.ubf) {
+	    th = ccan_container_of(dat, rb_thread_t, native_thread_data);
 	    ubf_wakeup_thread(th);
 	}
         rb_native_mutex_unlock(&ubf_list_lock);

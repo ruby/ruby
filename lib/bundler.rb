@@ -561,7 +561,7 @@ EOF
 
     def load_marshal(data)
       Marshal.load(data)
-    rescue StandardError => e
+    rescue TypeError => e
       raise MarshalError, "#{e.class}: #{e.message}"
     end
 
