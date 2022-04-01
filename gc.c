@@ -2450,13 +2450,11 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
     return obj;
 }
 
-#ifndef USE_THIRD_PARTY_HEAP
 size_t
 rb_gc_obj_slot_size(VALUE obj)
 {
     return GET_HEAP_PAGE(obj)->slot_size;
 }
-#endif // USE_THIRD_PARTY_HEAP
 
 static inline size_t
 size_pool_slot_size(unsigned char pool_id)
@@ -14519,7 +14517,7 @@ rb_mmtk_reset_mutator_iterator(void)
 
     size_t i = 0;
     rb_thread_t *th = NULL;
-    list_for_each(&main_ractor->threads.set, th, lt_node) {
+    ccan_list_for_each(&main_ractor->threads.set, th, lt_node) {
 	RUBY_ASSERT(i < num_threads);
 	threads[i] = th;
 	i++;

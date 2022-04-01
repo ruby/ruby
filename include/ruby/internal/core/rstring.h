@@ -32,10 +32,6 @@
 #include "ruby/internal/warning_push.h"
 #include "ruby/assert.h"
 
-#ifdef USE_THIRD_PARTY_HEAP
-#include <limits.h> // for SHRT_MAX
-#endif // USE_THIRD_PARTY_HEAP
-
 /**
  * Convenient casting macro.
  *
@@ -50,10 +46,6 @@
 #define RSTRING_EMBED_LEN_MASK  RSTRING_EMBED_LEN_MASK
 #define RSTRING_EMBED_LEN_SHIFT RSTRING_EMBED_LEN_SHIFT
 #define RSTRING_EMBED_LEN_MAX   RSTRING_EMBED_LEN_MAX
-#else // !USE_RVARGC
-#ifdef USE_THIRD_PARTY_HEAP
-#define RSTRING_EMBED_CAPA_MAX   SHRT_MAX
-#endif // USE_THIRD_PARTY_HEAP
 #endif
 #define RSTRING_FSTR            RSTRING_FSTR
 #define RSTRING_EMBED_LEN RSTRING_EMBED_LEN
@@ -288,11 +280,6 @@ struct RString {
         /** Embedded contents. */
         struct {
 #if USE_RVARGC
-#ifdef USE_THIRD_PARTY_HEAP
-	    short len;
-	    short capa;
-	    char ary[1];
-#else // USE_THIRD_PARTY_HEAP
             long len;
             /* This is a length 1 array because:
              *   1. GCC has a bug that does not optimize C flexible array members
@@ -300,7 +287,6 @@ struct RString {
              *   2. Zero length arrays are not supported by all compilers
              */
             char ary[1];
-#endif // USE_THIRD_PARTY_HEAP
 #else
             /**
              * When a  string is short enough,  it uses this area  to store the
