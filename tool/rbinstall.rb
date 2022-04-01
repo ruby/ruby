@@ -1064,9 +1064,6 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
       next
     end
     spec.extension_dir = "#{extensions_dir}/#{spec.full_name}"
-    if File.directory?(ext = "#{gem_ext_dir}/#{spec.full_name}")
-      spec.extensions[0] ||= "-"
-    end
     package = RbInstall::DirPackage.new spec
     ins = RbInstall::UnpackedInstaller.new(package, options)
     puts "#{INDENT}#{spec.name} #{spec.version}"
@@ -1075,6 +1072,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
       File.chmod($data_mode, File.join(install_dir, "specifications", "#{spec.full_name}.gemspec"))
     end
     unless spec.extensions.empty?
+      ext = "#{gem_ext_dir}/#{spec.full_name}"
       install_recursive(ext, without_destdir(spec.extension_dir))
     end
     installed_gems[spec.full_name] = true
