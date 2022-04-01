@@ -471,6 +471,10 @@ module Spec
       end
     end
 
+    def next_ruby_minor
+      Gem.ruby_version.segments[0..1].map.with_index {|s, i| i == 1 ? s + 1 : s }.join(".")
+    end
+
     # versions providing a bundler version finder but not including
     # https://github.com/rubygems/rubygems/commit/929e92d752baad3a08f3ac92eaec162cb96aedd1
     def rubygems_version_failing_to_activate_bundler_prereleases
