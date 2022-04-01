@@ -1955,19 +1955,14 @@ rb_enc_aliases(VALUE klass)
  *   'foo'.encode('US-ASCII')         # Encoding name.
  *   'foo'.encode('ASCII')            # Encoding alias.
  *
- * Encodings are important for Ruby strings.
- * They are also important in other contexts: symbols, regexps, filesystems,
- * locales, streams, and scripts.
- *
  * For a full discussion of encodings and their uses,
  * see {the Encodings document}[rdoc-ref:encodings.rdoc].
  *
  * Encoding::ASCII_8BIT is a special-purpose encoding that is usually used for
  * a string of bytes, not a string of characters.
- * But as the name insists, its characters in the ASCII range
+ * But as the name indicates, its characters in the ASCII range
  * are considered as ASCII characters.
- * This is useful when you use ASCII-8BIT characters with
- * other ASCII-compatible characters.
+ * This is useful when you use other ASCII-compatible encodings.
  *
  */
 
