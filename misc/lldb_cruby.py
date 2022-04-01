@@ -12,10 +12,7 @@ import os
 import shlex
 import platform
 
-if platform.system() == 'Darwin':
-    HEAP_PAGE_ALIGN_LOG = 16
-else:
-    HEAP_PAGE_ALIGN_LOG = 14
+HEAP_PAGE_ALIGN_LOG = 16
 
 HEAP_PAGE_ALIGN_MASK = (~(~0 << HEAP_PAGE_ALIGN_LOG))
 HEAP_PAGE_ALIGN = (1 << HEAP_PAGE_ALIGN_LOG)
