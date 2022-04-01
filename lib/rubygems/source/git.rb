@@ -102,6 +102,7 @@ class Gem::Source::Git < Gem::Source
       success = system @git, 'reset', '--quiet', '--hard', rev_parse
 
       if @need_submodules
+        require "open3"
         _, status = Open3.capture2e(@git, 'submodule', 'update', '--quiet', '--init', '--recursive')
 
         success &&= status.success?
