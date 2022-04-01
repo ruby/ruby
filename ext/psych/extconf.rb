@@ -45,6 +45,7 @@ if yaml_source
     yaml_configure,
     "--enable-#{shared ? 'shared' : 'static'}",
     "--host=#{RbConfig::CONFIG['host'].sub(/-unknown-/, '-')}",
+    "CC=#{RbConfig::CONFIG['CC']}",
     *(["CFLAGS=-w"] if RbConfig::CONFIG["GCC"] == "yes"),
   ]
   puts(args.quote.join(' '))
