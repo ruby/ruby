@@ -5,4 +5,3 @@ https://zlib.net/$(pkg).tar.gz \
   md5:5fc414a9726be31427b440b434d05f78 \
   sha512:cc2366fa45d5dfee1f983c8c51515e0cff959b61471e2e8d24350dea22d3f6fcc50723615a911b046ffc95f51ba337d39ae402131a55e6d1541d3b095d6c0a14 \
   #
-	win32/$(pkg)-mswin.patch -p0
