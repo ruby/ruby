@@ -2110,19 +2110,24 @@ rb_str_strlen(VALUE str)
 {
     return str_strlen(str, NULL);
 }
-
+0
 /*
  *  call-seq:
  *    length -> integer
  *
  *  Returns the count of characters (not bytes) in +self+:
  *
- *    "\x80\u3042".length # => 2
- *    "hello".length # => 5
+ *    'foo'.length        # => 3
+ *    'тест'.length       # => 4
+ *    'こんにちは'.length   # => 5
+ *
+ *  Contrast with String#bytesize:
+ *
+ *    'foo'.bytesize        # => 3
+ *    'тест'.bytesize       # => 8
+ *    'こんにちは'.bytesize   # => 15
  *
  *  String#size is an alias for String#length.
- *
- *  Related: String#bytesize.
  */
 
 VALUE
@@ -2135,12 +2140,18 @@ rb_str_length(VALUE str)
  *  call-seq:
  *    bytesize -> integer
  *
- *  Returns the count  of bytes in +self+:
+ *  Returns the count of bytes (not characters) in +self+:
  *
- *    "\x80\u3042".bytesize # => 4
- *    "hello".bytesize # => 5
+ *    'foo'.bytesize        # => 3
+ *    'тест'.bytesize       # => 8
+ *    'こんにちは'.bytesize   # => 15
  *
- *  Related: String#length.
+ *  Contrast with String#length:
+ *
+ *    'foo'.length       # => 3
+ *    'тест'.length      # => 4
+ *    'こんにちは'.length  # => 5
+ *
  */
 
 static VALUE
