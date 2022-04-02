@@ -7458,7 +7458,7 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:Encoding@Encoding+Options].
  *  - Options for Kernel#spawn.
  *
  *  <b>Forked \Process</b>
@@ -8080,7 +8080,7 @@ rb_freopen(VALUE fname, const char *mode, FILE *fp)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:Encoding@Encoding+Options].
  *
  */
 
@@ -9012,7 +9012,7 @@ rb_io_make_open_file(VALUE obj)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:Encoding@Encoding+Options].
  *
  *  Examples:
  *
@@ -9156,7 +9156,7 @@ rb_io_set_encoding_by_bom(VALUE io)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:Encoding@Encoding+Options].
  *
  *  Examples:
  *
@@ -9835,7 +9835,7 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *  For all forms above, optional keyword arguments specify:
  *
  *  - {Line Options}[rdoc-ref:IO@Line+Options].
- *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:Encoding@Encoding+Options].
  *
  *  Examples:
  *
@@ -11100,7 +11100,7 @@ pipe_pair_close(VALUE rw)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding Options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Encoding Options}[rdoc-ref:Encoding@Encoding+Options].
  *
  *  With no block given, returns the two endpoints in an array:
  *
@@ -11362,7 +11362,7 @@ io_s_foreach(VALUE v)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:Encoding@Encoding+Options].
  *  - {Line Options}[rdoc-ref:IO@Line+Options].
  *
  *  Returns an Enumerator if no block is given.
@@ -11460,7 +11460,7 @@ io_s_readlines(VALUE v)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:Encoding@Encoding+Options].
  *  - {Line Options}[rdoc-ref:IO@Line+Options].
  *
  */
@@ -11550,7 +11550,7 @@ seek_before_access(VALUE argp)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:Encoding@Encoding+Options].
  *
  */
 
@@ -11741,7 +11741,7 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:Encoding@Encoding+Options].
  *
  */
 
@@ -12825,7 +12825,7 @@ rb_io_internal_encoding(VALUE io)
  *  and internal encodings for the stream.
  *
  *  Optional keyword arguments +enc_opts+ specify
- *  {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  {Encoding options}[rdoc-ref:Encoding@Encoding+Options].
  *
  */
 

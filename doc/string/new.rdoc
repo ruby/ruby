@@ -12,7 +12,7 @@ with the same encoding as +string+:
   s.encoding # => #<Encoding:UTF-8>
 
 Literal strings like <tt>""</tt> or here-documents always use
-{script encoding}[rdoc-ref:encodings.rdoc@Script+Encoding], unlike String.new.
+{script encoding}[rdoc-ref:Encoding@Script+Encoding], unlike String.new.
 
 With keyword +encoding+, returns a copy of +str+
 with the specified encoding:
