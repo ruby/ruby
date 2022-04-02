@@ -1,8 +1,8 @@
-ver = 1.2.11
+ver = 1.2.12
 pkg = zlib-$(ver)
 
 https://zlib.net/$(pkg).tar.gz \
-  md5:1c9f62f0778697a09d36121ead88e08e \
-  sha512:73fd3fff4adeccd4894084c15ddac89890cd10ef105dd5e1835e1e9bbb6a49ff229713bd197d203edfa17c2727700fce65a2a235f07568212d820dca88b528ae \
+  md5:5fc414a9726be31427b440b434d05f78 \
+  sha512:cc2366fa45d5dfee1f983c8c51515e0cff959b61471e2e8d24350dea22d3f6fcc50723615a911b046ffc95f51ba337d39ae402131a55e6d1541d3b095d6c0a14 \
   #
 	win32/$(pkg)-mswin.patch -p0
