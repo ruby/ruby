@@ -7866,7 +7866,7 @@ delegate_call_p(const rb_iseq_t *iseq, unsigned int argc, const LINK_ANCHOR *arg
 
             for (unsigned int i=start; i-start<argc; i++) {
                 if (IS_INSN(elem) &&
-                    INSN_OF(elem) == BIN(getlocal)) {
+                    IS_INSN_ID(elem, getlocal)) {
                     int local_index = FIX2INT(OPERAND_AT(elem, 0));
                     int local_level = FIX2INT(OPERAND_AT(elem, 1));
 
