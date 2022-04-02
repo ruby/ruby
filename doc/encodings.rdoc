@@ -1,4 +1,4 @@
-== \Encoding
+== Encodings
 
 === The Basics
 
