@@ -2110,7 +2110,7 @@ rb_str_strlen(VALUE str)
 {
     return str_strlen(str, NULL);
 }
-0
+
 /*
  *  call-seq:
  *    length -> integer
