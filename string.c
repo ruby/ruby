@@ -1813,9 +1813,7 @@ rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str)
 /*
  *
  *  call-seq:
- *    String.new(string = '') -> new_string
- *    String.new(string = '', encoding: encoding) -> new_string
- *    String.new(string = '', capacity: size) -> new_string
+ *    String.new(string = '', **opts) -> new_string
  *
  *  :include: doc/string/new.rdoc
  *
