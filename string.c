@@ -2115,19 +2115,8 @@ rb_str_strlen(VALUE str)
  *  call-seq:
  *    length -> integer
  *
- *  Returns the count of characters (not bytes) in +self+:
+ *  :include: doc/string/length.rdoc
  *
- *    'foo'.length        # => 3
- *    'тест'.length       # => 4
- *    'こんにちは'.length   # => 5
- *
- *  Contrast with String#bytesize:
- *
- *    'foo'.bytesize        # => 3
- *    'тест'.bytesize       # => 8
- *    'こんにちは'.bytesize   # => 15
- *
- *  String#size is an alias for String#length.
  */
 
 VALUE
@@ -2140,17 +2129,7 @@ rb_str_length(VALUE str)
  *  call-seq:
  *    bytesize -> integer
  *
- *  Returns the count of bytes (not characters) in +self+:
- *
- *    'foo'.bytesize        # => 3
- *    'тест'.bytesize       # => 8
- *    'こんにちは'.bytesize   # => 15
- *
- *  Contrast with String#length:
- *
- *    'foo'.length       # => 3
- *    'тест'.length      # => 4
- *    'こんにちは'.length  # => 5
+ *  :include: doc/string/bytesize.rdoc
  *
  */
 
