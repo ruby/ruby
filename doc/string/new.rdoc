@@ -10,7 +10,6 @@ With optional argument +string+ and no keyword arguments,
 returns a copy of +string+ with the same encoding:
 
   String.new('foo')               # => "foo"
-  String.new('Que veut dire ça?') # => "Que veut dire ça?"
   String.new('тест')              # => "тест"
   String.new('こんにちは')          # => "こんにちは"
 
