@@ -118,40 +118,40 @@ iseq_clear_ic_references_i(VALUE *code, VALUE insn, size_t index, void *data)
     struct iseq_clear_ic_references_data *ic_data = (struct iseq_clear_ic_references_data *) data;
 
     switch (insn) {
-        case BIN(opt_getinlinecache): {
-            RUBY_ASSERT_ALWAYS(ic_data->ic == NULL);
+      case BIN(opt_getinlinecache): {
+        RUBY_ASSERT_ALWAYS(ic_data->ic == NULL);
 
-            ic_data->ic = (IC) code[index + 2];
-            return true;
-        }
-        case BIN(getconstant): {
-            if (ic_data->ic != NULL) {
-                ID id = (ID) code[index + 1];
-                rb_vm_t *vm = GET_VM();
-                VALUE lookup_result;
+        ic_data->ic = (IC) code[index + 2];
+        return true;
+      }
+      case BIN(getconstant): {
+        if (ic_data->ic != NULL) {
+            ID id = (ID) code[index + 1];
+            rb_vm_t *vm = GET_VM();
+            VALUE lookup_result;
 
-                if (rb_id_table_lookup(vm->constant_cache, id, &lookup_result)) {
-                    st_table *ics = (st_table *)lookup_result;
-                    st_data_t ic = (st_data_t)ic_data->ic;
-                    st_delete(ics, &ic, NULL);
+            if (rb_id_table_lookup(vm->constant_cache, id, &lookup_result)) {
+                st_table *ics = (st_table *)lookup_result;
+                st_data_t ic = (st_data_t)ic_data->ic;
+                st_delete(ics, &ic, NULL);
 
-                    if (ics->num_entries == 0) {
-                        rb_id_table_delete(vm->constant_cache, id);
-                        st_free_table(ics);
-                    }
+                if (ics->num_entries == 0) {
+                    rb_id_table_delete(vm->constant_cache, id);
+                    st_free_table(ics);
                 }
             }
-
-            return true;
         }
-        case BIN(opt_setinlinecache): {
-            RUBY_ASSERT_ALWAYS(ic_data->ic != NULL);
 
-            ic_data->ic = NULL;
-            return true;
-        }
-        default:
-            return true;
+        return true;
+      }
+      case BIN(opt_setinlinecache): {
+        RUBY_ASSERT_ALWAYS(ic_data->ic != NULL);
+
+        ic_data->ic = NULL;
+        return true;
+      }
+      default:
+        return true;
     }
 }
 
