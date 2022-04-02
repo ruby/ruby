@@ -44,6 +44,14 @@
 #endif
 #endif
 
+#if defined(HAVE_TYPE_Z_SIZE_T)
+typedef uLong (*checksum_func)(uLong, const Bytef*, z_size_t);
+# define crc32 crc32_z
+# define adler32 adler32_z
+#else
+typedef uLong (*checksum_func)(uLong, const Bytef*, uInt);
+#endif
+
 #if SIZEOF_LONG > SIZEOF_INT
 static inline uInt
 max_uint(long n)
@@ -65,7 +73,7 @@ static ID id_dictionaries, id_read, id_buffer;
 
 static NORETURN(void raise_zlib_error(int, const char*));
 static VALUE rb_zlib_version(VALUE);
-static VALUE do_checksum(int, VALUE*, uLong (*)(uLong, const Bytef*, uInt));
+static VALUE do_checksum(int, VALUE*, checksum_func);
 static VALUE rb_zlib_adler32(int, VALUE*, VALUE);
 static VALUE rb_zlib_crc32(int, VALUE*, VALUE);
 static VALUE rb_zlib_crc_table(VALUE);
@@ -380,7 +388,7 @@ rb_zlib_version(VALUE klass)
 # define mask32(x) (x)
 #endif
 
-#if SIZEOF_LONG > SIZEOF_INT
+#if SIZEOF_LONG > SIZEOF_INT && !defined(HAVE_TYPE_Z_SIZE_T)
 static uLong
 checksum_long(uLong (*func)(uLong, const Bytef*, uInt), uLong sum, const Bytef *ptr, long len)
 {
@@ -399,7 +407,7 @@ checksum_long(uLong (*func)(uLong, const Bytef*, uInt), uLong sum, const Bytef *
 #endif
 
 static VALUE
-do_checksum(int argc, VALUE *argv, uLong (*func)(uLong, const Bytef*, uInt))
+do_checksum(int argc, VALUE *argv, checksum_func func)
 {
     VALUE str, vsum;
     unsigned long sum;
