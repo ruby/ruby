@@ -127,11 +127,9 @@ EOS
 
     if Net::HTTP::HAVE_ZLIB
       assert_equal nil, res['content-encoding']
-      assert_equal '5', res['content-length']
       assert_equal 'hello', body
     else
       assert_equal 'deflate', res['content-encoding']
-      assert_equal '13', res['content-length']
       assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15", body
     end
   end
@@ -157,11 +155,9 @@ EOS
 
     if Net::HTTP::HAVE_ZLIB
       assert_equal nil, res['content-encoding']
-      assert_equal '5', res['content-length']
       assert_equal 'hello', body
     else
       assert_equal 'DEFLATE', res['content-encoding']
-      assert_equal '13', res['content-length']
       assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15", body
     end
   end
@@ -192,11 +188,9 @@ EOS
 
     if Net::HTTP::HAVE_ZLIB
       assert_equal nil, res['content-encoding']
-      assert_equal nil, res['content-length']
       assert_equal 'hello', body
     else
       assert_equal 'deflate', res['content-encoding']
-      assert_equal nil, res['content-length']
       assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15", body
     end
   end
@@ -221,7 +215,6 @@ EOS
     end
 
     assert_equal 'deflate', res['content-encoding'], 'Bug #7831'
-    assert_equal '13', res['content-length']
     assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15", body, 'Bug #7381'
   end
 
@@ -245,11 +238,9 @@ EOS
 
     if Net::HTTP::HAVE_ZLIB
       assert_equal nil, res['content-encoding']
-      assert_equal nil, res['content-length']
       assert_equal 'hello', body
     else
       assert_equal 'deflate', res['content-encoding']
-      assert_equal nil, res['content-length']
       assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15\r\n", body
     end
   end
@@ -297,11 +288,9 @@ EOS
 
     if Net::HTTP::HAVE_ZLIB
       assert_equal nil, res['content-encoding']
-      assert_equal '0', res['content-length']
       assert_equal '', body
     else
       assert_equal 'deflate', res['content-encoding']
-      assert_equal '0', res['content-length']
       assert_equal '', body
     end
   end
@@ -325,11 +314,9 @@ EOS
 
     if Net::HTTP::HAVE_ZLIB
       assert_equal nil, res['content-encoding']
-      assert_equal nil, res['content-length']
       assert_equal '', body
     else
       assert_equal 'deflate', res['content-encoding']
-      assert_equal nil, res['content-length']
       assert_equal '', body
     end
   end
