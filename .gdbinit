@@ -544,13 +544,13 @@ end
 
 define rp_class
   printf "(struct RClass *) %p", (void*)$arg0
-  if ((struct RClass *)($arg0))->ptr.origin_ != $arg0
-    printf " -> %p", ((struct RClass *)($arg0))->ptr.origin_
+  if RCLASS_ORIGIN((struct RClass *)($arg0)) != $arg0
+    printf " -> %p", RCLASS_ORIGIN((struct RClass *)($arg0))
   end
   printf "\n"
   rb_classname $arg0
   print/x *(struct RClass *)($arg0)
-  print *((struct RClass *)($arg0))->ptr
+  print *RCLASS_EXT((struct RClass *)($arg0))
 end
 document rp_class
   Print the content of a Class/Module.
@@ -979,8 +979,8 @@ end
 
 define rb_ps_vm
   print $ps_vm = (rb_vm_t*)$arg0
-  set $ps_thread_ln = $ps_vm->living_threads.n.next
-  set $ps_thread_ln_last = $ps_vm->living_threads.n.prev
+  set $ps_thread_ln      = $ps_vm->ractor.main_ractor.threads.set.n.next
+  set $ps_thread_ln_last = $ps_vm->ractor.main_ractor.threads.set.n.prev
   while 1
     set $ps_thread_th = (rb_thread_t *)$ps_thread_ln
     set $ps_thread = (VALUE)($ps_thread_th->self)
