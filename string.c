@@ -2115,14 +2115,8 @@ rb_str_strlen(VALUE str)
  *  call-seq:
  *    length -> integer
  *
- *  Returns the count of characters (not bytes) in +self+:
+ *  :include: doc/string/length.rdoc
  *
- *    "\x80\u3042".length # => 2
- *    "hello".length # => 5
- *
- *  String#size is an alias for String#length.
- *
- *  Related: String#bytesize.
  */
 
 VALUE
@@ -2135,12 +2129,8 @@ rb_str_length(VALUE str)
  *  call-seq:
  *    bytesize -> integer
  *
- *  Returns the count  of bytes in +self+:
+ *  :include: doc/string/bytesize.rdoc
  *
- *    "\x80\u3042".bytesize # => 4
- *    "hello".bytesize # => 5
- *
- *  Related: String#length.
  */
 
 static VALUE
