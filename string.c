@@ -3850,37 +3850,8 @@ rb_strseq_index(VALUE str, VALUE sub, long offset, int in_byte)
  *    index(substring, offset = 0) -> integer or nil
  *    index(regexp, offset = 0) -> integer or nil
  *
- *  Returns the \Integer index of the first occurrence of the given +substring+,
- *  or +nil+ if none found:
+ *  :include: doc/string/index.rdoc
  *
- *    'foo'.index('f') # => 0
- *    'foo'.index('o') # => 1
- *    'foo'.index('oo') # => 1
- *    'foo'.index('ooo') # => nil
- *
- *  Returns the \Integer index of the first match for the given \Regexp +regexp+,
- *  or +nil+ if none found:
- *
- *    'foo'.index(/f/) # => 0
- *    'foo'.index(/o/) # => 1
- *    'foo'.index(/oo/) # => 1
- *    'foo'.index(/ooo/) # => nil
- *
- *  \Integer argument +offset+, if given, specifies the position in the
- *  string to begin the search:
- *
- *    'foo'.index('o', 1) # => 1
- *    'foo'.index('o', 2) # => 2
- *    'foo'.index('o', 3) # => nil
- *
- *  If +offset+ is negative, counts backward from the end of +self+:
- *
- *    'foo'.index('o', -1) # => 2
- *    'foo'.index('o', -2) # => 1
- *    'foo'.index('o', -3) # => 1
- *    'foo'.index('o', -4) # => nil
- *
- *  Related: String#rindex.
  */
 
 static VALUE
