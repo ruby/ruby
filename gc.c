@@ -5924,30 +5924,31 @@ gc_sweep(rb_objspace_t *objspace)
     gc_sweep_start(objspace);
     if (objspace->flags.during_compacting) {
         gc_sweep_compact(objspace);
-    }
+    } else {
 
-    if (immediate_sweep) {
+        if (immediate_sweep) {
 #if !GC_ENABLE_LAZY_SWEEP
-	gc_prof_sweep_timer_start(objspace);
+            gc_prof_sweep_timer_start(objspace);
 #endif
-	gc_sweep_rest(objspace);
+            gc_sweep_rest(objspace);
 #if !GC_ENABLE_LAZY_SWEEP
-	gc_prof_sweep_timer_stop(objspace);
+            gc_prof_sweep_timer_stop(objspace);
 #endif
-    }
-    else {
-
-        /* Sweep every size pool. */
-        for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-            rb_size_pool_t *size_pool = &size_pools[i];
-            gc_sweep_step(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool));
         }
-    }
+        else {
+
+            /* Sweep every size pool. */
+            for (int i = 0; i < SIZE_POOL_COUNT; i++) {
+                rb_size_pool_t *size_pool = &size_pools[i];
+                gc_sweep_step(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool));
+            }
+        }
 
 #if !USE_RVARGC
-    rb_size_pool_t *size_pool = &size_pools[0];
-    gc_heap_prepare_minimum_pages(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool));
+        rb_size_pool_t *size_pool = &size_pools[0];
+        gc_heap_prepare_minimum_pages(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool));
 #endif
+    }
 }
 
 /* Marking - Marking stack */
