@@ -896,6 +896,18 @@ module RbInstall
       super unless $dryrun
       $installed_list.puts(without_destdir(default_spec_file)) if $installed_list
     end
+
+    def build_extensions
+      return if spec.extensions.empty?
+
+      ext = "#$extout/.bundle/gems/#{CONFIG['arch']}/#{spec.full_name}"
+
+      # Call `install_recursive` with global binding, so it correctly use
+      # the global `install`
+      Object.__send__ :install_recursive, ext, without_destdir(spec.extension_dir)
+
+      super unless File.exist? spec.gem_build_complete_path
+    end
   end
 
   class GemInstaller
@@ -1042,7 +1054,6 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     :wrappers => true,
     :format_executable => true,
   }
-  gem_ext_dir = "#$extout/.bundle/gems/#{CONFIG['arch']}"
   extensions_dir = with_destdir(Gem::StubSpecification.gemspec_stub("", gem_dir, gem_dir).extensions_dir)
 
   File.foreach("#{srcdir}/gems/bundled_gems") do |name|
@@ -1070,10 +1081,6 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     ins.install
     unless $dryrun
       File.chmod($data_mode, File.join(install_dir, "specifications", "#{spec.full_name}.gemspec"))
-    end
-    unless spec.extensions.empty?
-      ext = "#{gem_ext_dir}/#{spec.full_name}"
-      install_recursive(ext, without_destdir(spec.extension_dir))
     end
     installed_gems[spec.full_name] = true
   end
