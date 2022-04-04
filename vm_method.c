@@ -147,6 +147,7 @@ rb_clear_constant_cache_for_id(ID id)
     }
 
     rb_yjit_constant_state_changed();
+    ruby_vm_global_constant_state++;
 }
 
 static void
