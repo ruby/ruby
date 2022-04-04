@@ -19,10 +19,16 @@ if yaml_source == true
   # search the latest libyaml source under $srcdir
   yaml_source = Dir.glob("#{$srcdir}/yaml{,-*}/").max_by {|n| File.basename(n).scan(/\d+/).map(&:to_i)}
   unless yaml_source
-    require_relative '../../tool/extlibs.rb'
-    extlibs = ExtLibs.new(cache_dir: File.expand_path("../../tmp/download_cache", $srcdir))
-    unless extlibs.process_under($srcdir)
-      raise "failed to download libyaml source"
+    download_failure = "failed to download libyaml source"
+    begin
+      require_relative '../../tool/extlibs.rb'
+      extlibs = ExtLibs.new(cache_dir: File.expand_path("../../tmp/download_cache", $srcdir))
+      unless extlibs.process_under($srcdir)
+        raise download_failure
+      end
+    rescue
+      # Implicitly captures Exception#cause. Newer rubies show it in the backtrace.
+      raise download_failure
     end
     yaml_source, = Dir.glob("#{$srcdir}/yaml-*/")
     raise "libyaml not found" unless yaml_source
