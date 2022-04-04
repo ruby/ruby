@@ -529,7 +529,7 @@ vm_stat_constant_cache_i(ID id, VALUE table, void *constant_cache)
 static VALUE
 vm_stat(int argc, VALUE *argv, VALUE self)
 {
-    static VALUE sym_constant_cache, sym_class_serial, sym_global_cvar_state;
+    static VALUE sym_global_constant_state, sym_constant_cache, sym_class_serial, sym_global_cvar_state;
     VALUE arg = Qnil;
     VALUE hash = Qnil, key = Qnil;
 
@@ -547,6 +547,7 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     }
 
 #define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
+    S(global_constant_state);
 	S(constant_cache);
 	S(class_serial);
 	S(global_cvar_state);
@@ -558,6 +559,7 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     else if (hash != Qnil) \
 	rb_hash_aset(hash, sym_##name, SERIALT2NUM(attr));
 
+    SET(global_constant_state, ruby_vm_global_constant_state);
     SET(class_serial, ruby_vm_class_serial);
     SET(global_cvar_state, ruby_vm_global_cvar_state);
 #undef SET
