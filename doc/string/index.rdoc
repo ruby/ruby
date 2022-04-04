@@ -1,0 +1,38 @@
+Returns the integer index of the first match for the given argument,
+or +nil+ if none found;
+the search of +self+ is forward, and begins at position +offset+ (in characters).
+
+With string argument +substring+,
+returns the index of the first matching substring in +self+:
+
+  'foo'.index('f')         # => 0
+  'foo'.index('o')         # => 1
+  'foo'.index('oo')        # => 1
+  'foo'.index('ooo')       # => nil
+  'тест'.index('с')        # => 2
+  'こんにちは'.index('ち')   # => 3
+
+With Regexp argument +regexp+, returns the index of the first match in +self+:
+
+  'foo'.index(/o./) # => 1
+  'foo'.index(/.o/) # => 0
+
+With positive integer +offset+, begins the search at position +offset+:
+
+  'foo'.index('o', 1)        # => 1
+  'foo'.index('o', 2)        # => 2
+  'foo'.index('o', 3)        # => nil
+  'тест'.index('с', 1)       # => 2
+  'こんにちは'.index('ち', 2)  # => 3
+
+With negative integer +offset+, selects the search position by counting backward
+from the end of +self+:
+
+  'foo'.index('o', -1)  # => 2
+  'foo'.index('o', -2)  # => 1
+  'foo'.index('o', -3)  # => 1
+  'foo'.index('o', -4)  # => nil
+  'foo'.index(/o./, -2) # => 1
+  'foo'.index(/.o/, -2) # => 1
+
+Related: String#rindex.
