@@ -428,7 +428,8 @@ rb_event_flag_t ruby_vm_event_flags;
 rb_event_flag_t ruby_vm_event_enabled_global_flags;
 unsigned int    ruby_vm_event_local_num;
 
-rb_serial_t ruby_vm_global_constant_state = 1;
+rb_serial_t ruby_vm_constant_cache_invalidations = 0;
+rb_serial_t ruby_vm_constant_cache_misses = 0;
 rb_serial_t ruby_vm_class_serial = 1;
 rb_serial_t ruby_vm_global_cvar_state = 1;
 
@@ -496,16 +497,6 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
     return FALSE;
 }
 
-// Iterator function to loop through each entry in the constant cache and add
-// its associated size into the given Hash.
-static enum rb_id_table_iterator_result
-vm_stat_constant_cache_i(ID id, VALUE table, void *constant_cache)
-{
-    st_index_t size = ((st_table *) table)->num_entries;
-    rb_hash_aset((VALUE) constant_cache, ID2SYM(id), LONG2NUM(size));
-    return ID_TABLE_CONTINUE;
-}
-
 /*
  *  call-seq:
  *    RubyVM.stat -> Hash
@@ -517,8 +508,10 @@ vm_stat_constant_cache_i(ID id, VALUE table, void *constant_cache)
  *  This hash includes information about method/constant caches:
  *
  *    {
- *      :constant_cache=>{:RubyVM=>3},
- *      :class_serial=>9029
+ *      :constant_cache_invalidations=>2,
+ *      :constant_cache_misses=>14,
+ *      :class_serial=>546,
+ *      :global_cvar_state=>27
  *    }
  *
  *  The contents of the hash are implementation specific and may be changed in
@@ -529,7 +522,7 @@ vm_stat_constant_cache_i(ID id, VALUE table, void *constant_cache)
 static VALUE
 vm_stat(int argc, VALUE *argv, VALUE self)
 {
-    static VALUE sym_global_constant_state, sym_constant_cache, sym_class_serial, sym_global_cvar_state;
+    static VALUE sym_constant_cache_invalidations, sym_constant_cache_misses, sym_class_serial, sym_global_cvar_state;
     VALUE arg = Qnil;
     VALUE hash = Qnil, key = Qnil;
 
@@ -547,8 +540,8 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     }
 
 #define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
-    S(global_constant_state);
-	S(constant_cache);
+    S(constant_cache_invalidations);
+    S(constant_cache_misses);
 	S(class_serial);
 	S(global_cvar_state);
 #undef S
@@ -559,25 +552,11 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     else if (hash != Qnil) \
 	rb_hash_aset(hash, sym_##name, SERIALT2NUM(attr));
 
-    SET(global_constant_state, ruby_vm_global_constant_state);
+    SET(constant_cache_invalidations, ruby_vm_constant_cache_invalidations);
+    SET(constant_cache_misses, ruby_vm_constant_cache_misses);
     SET(class_serial, ruby_vm_class_serial);
     SET(global_cvar_state, ruby_vm_global_cvar_state);
 #undef SET
-
-    // Here we're going to set up the constant cache hash that has key-value
-    // pairs of { name => count }, where name is a Symbol that represents the
-    // ID in the cache and count is an Integer representing the number of inline
-    // constant caches associated with that Symbol.
-    if (key == sym_constant_cache || hash != Qnil) {
-        VALUE constant_cache = rb_hash_new();
-        rb_id_table_foreach(GET_VM()->constant_cache, vm_stat_constant_cache_i, (void *) constant_cache);
-
-        if (key == sym_constant_cache) {
-            return constant_cache;
-        } else {
-            rb_hash_aset(hash, sym_constant_cache, constant_cache);
-        }
-    }
 
     if (!NIL_P(key)) { /* matched key should return above */
 	rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(key));

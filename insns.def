@@ -1044,6 +1044,7 @@ opt_getinlinecache
         JUMP(dst);
     }
     else {
+        ruby_vm_constant_cache_misses++;
         val = Qnil;
     }
 }
