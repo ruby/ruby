@@ -512,6 +512,18 @@ Outstanding ones only.
 
     * This version is Ractor compatible.
 
+* URI
+
+    * URI.escape and URI.unescape have been removed.
+      Instead, use the following methods depending on your specific use case.
+
+        * CGI.escape
+        * URI.encode_www_form
+        * URI.encode_www_form_component
+        * CGI.unescape
+        * URI.decode_www_form
+        * URI.decode_www_form_component
+
 ## Compatibility issues
 
 Excluding feature bug fixes.
