@@ -2271,7 +2271,7 @@ AS_IF([test "x$rb_cv_atan2_inf_c99" = xyes], [AC_DEFINE(ATAN2_INF_C99)])
 # Some platform need -lrt for clock_gettime, but the other don't.
 AS_IF([test x"$ac_cv_func_clock_gettime" != xyes], [
     # glibc 2.17 moves clock_* functions from librt to the main C library.
-    # http://sourceware.org/ml/libc-announce/2012/msg00001.html
+    # https://sourceware.org/legacy-ml/libc-announce/2012/msg00001.html
     AC_CHECK_LIB(rt, clock_gettime)
     AS_IF([test x"$ac_cv_lib_rt_clock_gettime" = xyes], [
 	AC_DEFINE(HAVE_CLOCK_GETTIME, 1)
@@ -2369,7 +2369,7 @@ AS_IF([test "$rb_cv_negative_time_t" = yes], [
 ])
 
 # [ruby-dev:40910] overflow of time on FreeBSD
-# http://www.freebsd.org/cgi/query-pr.cgi?pr=145341
+# https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=145341
 AC_CACHE_CHECK(for localtime(3) overflow correctly, rb_cv_localtime_overflow,
   [AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <stdlib.h>
