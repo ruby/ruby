@@ -66,7 +66,11 @@ Note that each entry is kept to a minimum, see links for details.
   with no exception. This will make it easier to transition to other ways of
   delegation once a library can require Ruby 3+. Previously, the `ruby2_keywords`
   flag was kept if the receiving method took `*args`, but this was a bug and an
-  inconsistency. [[Bug #18625]] [[Bug #16466]]
+  inconsistency. A good technique to find the potentially-missing `ruby2_keywords`
+  is to run the test suite, for where it fails find the last method which must
+  receive keyword arguments, use `puts nil, caller, nil` there, and check each
+  method/block on the call chain which must delegate keywords is correctly marked
+  as `ruby2_keywords`. [[Bug #18625]] [[Bug #16466]]
 
     ```ruby
     def target(**kw)
