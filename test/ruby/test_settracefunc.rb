@@ -671,6 +671,12 @@ CODE
     return events, answer_events
   end
 
+  def test_set_trace_func_curry_argument_error
+    b = lambda {|x, y, z| (x||0) + (y||0) + (z||0) }.curry[1, 2]
+    set_trace_func(proc {})
+    assert_raise(ArgumentError) {b[3, 4]}
+  end
+
   def test_set_trace_func
     actual_events, expected_events = trace_by_set_trace_func
     expected_events.zip(actual_events){|e, a|
