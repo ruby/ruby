@@ -1464,8 +1464,10 @@ class TestRegexp < Test::Unit::TestCase
   def test_s_timeout
     assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
-      Regexp.timeout = 0.2
-      assert_equal(0.2, Regexp.timeout)
+      timeout = EnvUtil.apply_timeout_scale(0.2)
+
+      Regexp.timeout = timeout
+      assert_equal(timeout, Regexp.timeout)
 
       t = Time.now
       assert_raise_with_message(Regexp::TimeoutError, "regexp match timeout") do
@@ -1474,16 +1476,19 @@ class TestRegexp < Test::Unit::TestCase
       end
       t = Time.now - t
 
-      assert_in_delta(0.2, t, 0.1)
+      assert_in_delta(timeout, t, timeout / 2)
     end;
   end
 
   def test_timeout
     assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
-      Regexp.timeout = 3 # This should be ignored
+      dummy_timeout = EnvUtil.apply_timeout_scale(10)
+      timeout = EnvUtil.apply_timeout_scale(0.2)
 
-      re = Regexp.new("^a*b?a*$", timeout: 0.2)
+      Regexp.timeout = dummy_timeout # This should be ignored
+
+      re = Regexp.new("^a*b?a*$", timeout: timeout)
 
       t = Time.now
       assert_raise_with_message(Regexp::TimeoutError, "regexp match timeout") do
@@ -1491,7 +1496,7 @@ class TestRegexp < Test::Unit::TestCase
       end
       t = Time.now - t
 
-      assert_in_delta(0.2, t, 0.1)
+      assert_in_delta(timeout, t, timeout / 2)
     end;
   end
 end
