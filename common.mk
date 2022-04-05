@@ -1380,7 +1380,7 @@ yes-test-bundled-gems-precheck: main
 no-test-bundled-gems-precheck:
 
 test-bundled-gems-fetch: yes-test-bundled-gems-fetch
-yes-test-bundled-gems-fetch: $(PREP)
+yes-test-bundled-gems-fetch:
 	$(ACTIONS_GROUP)
 	$(Q) $(BASERUBY) -C $(srcdir)/gems ../tool/fetch-bundled_gems.rb src bundled_gems
 	$(ACTIONS_ENDGROUP)
@@ -1405,7 +1405,7 @@ no-test-bundled-gems:
 
 BUNDLED_GEMS =
 test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
-	$(Q) $(XRUBY) $(tooldir)/test-bundled-gems.rb $(BUNDLED_GEMS)
+	$(Q) $(XRUBY) -I./$(arch)-fake $(tooldir)/test-bundled-gems.rb $(BUNDLED_GEMS)
 
 test-bundler-precheck: $(TEST_RUNNABLE)-test-bundler-precheck
 no-test-bundler-precheck:
