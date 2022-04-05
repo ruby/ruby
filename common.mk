@@ -82,7 +82,7 @@ EXTSOLIBS     =
 MINIOBJS      = $(ARCHMINIOBJS) miniinit.$(OBJEXT) dmyext.$(OBJEXT)
 ENC_MK        = enc.mk
 MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
-		RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(mflags)
+		RUBY="$(BOOTSTRAPRUBY)" MINIRUBY="$(BOOTSTRAPRUBY)" $(mflags)
 
 COMMONOBJS    = array.$(OBJEXT) \
 		ast.$(OBJEXT) \
@@ -752,12 +752,10 @@ check: main test test-tool test-all test-spec
 check-ruby: test test-ruby
 
 fake: $(CROSS_COMPILING)-fake
-yes-fake: $(arch)-fake.rb $(RBCONFIG) PHONY
+yes-fake: $(arch)-fake.rb PHONY
 no-fake -fake: PHONY
 
-# really doesn't depend on .o, just ensure newer than headers which
-# version.o depends on.
-$(arch)-fake.rb: $(srcdir)/template/fake.rb.in $(tooldir)/generic_erb.rb version.$(OBJEXT) miniruby$(EXEEXT)
+$(arch)-fake.rb: $(srcdir)/template/fake.rb.in $(tooldir)/generic_erb.rb $(srcdir)/version.c $(RBCONFIG)
 	$(ECHO) generating $@
 	$(Q) $(CPP) -DRUBY_EXPORT $(INCFLAGS) $(CPPFLAGS) "$(srcdir)/version.c" | \
 	$(BOOTSTRAPRUBY) "$(tooldir)/generic_erb.rb" -o $@ "$(srcdir)/template/fake.rb.in" \
@@ -839,7 +837,7 @@ extconf: $(PREP)
 	$(Q) $(MAKEDIRS) "$(EXTCONFDIR)"
 	$(RUNRUBY) -C "$(EXTCONFDIR)" $(EXTCONF) $(EXTCONFARGS)
 
-$(RBCONFIG): $(tooldir)/mkconfig.rb config.status $(srcdir)/version.h
+$(RBCONFIG): $(tooldir)/mkconfig.rb config.status $(srcdir)/version.h $(ABI_VERSION_HDR) $(BOOTSTRAP_PREP)
 	$(Q)$(BOOTSTRAPRUBY) -n \
 	-e 'BEGIN{version=ARGV.shift;mis=ARGV.dup}' \
 	-e 'END{abort "UNICODE version mismatch: #{mis}" unless mis.empty?}' \
@@ -885,9 +883,9 @@ libtrans trans: {$(VPATH)}transdb.h
 ENC_HEADERS = $(srcdir)/enc/jis/props.h
 # Use MINIRUBY which loads fake.rb for cross compiling
 $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \
-	   $(srcdir)/enc/encinit.c.erb $(ENC_HEADERS) $(srcdir)/lib/mkmf.rb $(RBCONFIG) fake
+	   $(srcdir)/enc/encinit.c.erb $(ENC_HEADERS) $(srcdir)/lib/mkmf.rb $(RBCONFIG) yes-fake
 	$(ECHO) generating $@
-	$(Q) $(MINIRUBY) $(srcdir)/enc/make_encmake.rb --builtin-encs="$(BUILTIN_ENCOBJS)" --builtin-transes="$(BUILTIN_TRANSOBJS)" --module$(ENCSTATIC) $(ENCS) $@
+	$(Q) $(BOOTSTRAPRUBY) -r./$(arch)-fake $(srcdir)/enc/make_encmake.rb --builtin-encs="$(BUILTIN_ENCOBJS)" --builtin-transes="$(BUILTIN_TRANSOBJS)" --module$(ENCSTATIC) $(ENCS) $@
 
 .PRECIOUS: $(MKFILES)
 
