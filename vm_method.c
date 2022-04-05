@@ -144,10 +144,10 @@ rb_clear_constant_cache_for_id(ID id)
 
     if (rb_id_table_lookup(vm->constant_cache, id, (VALUE *) &ics)) {
         st_foreach(ics, rb_clear_constant_cache_for_id_i, (st_data_t) NULL);
+        ruby_vm_constant_cache_invalidations += ics->num_entries;
     }
 
     rb_yjit_constant_state_changed();
-    ruby_vm_global_constant_state++;
 }
 
 static void
