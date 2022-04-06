@@ -435,6 +435,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
     response_mfa_enabled = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
     response_success     = 'Successfully registered gem: freewill (1.0.0)'
+    response_profile     = "mfa: disabled\n"
 
     @fetcher.data["#{@host}/api/v1/gems"] = [
       [response_success, 200, "OK"],
@@ -443,6 +444,10 @@ class TestGemCommandsPushCommand < Gem::TestCase
     @fetcher.data["#{@host}/api/v1/api_key"] = [
       [response_mfa_enabled, 401, 'Unauthorized'],
       ["", 200, "OK"],
+    ]
+
+    @fetcher.data["#{@host}/api/v1/profile/me.yaml"] = [
+      [response_profile, 200, "OK"],
     ]
 
     @cmd.instance_variable_set :@scope, :push_rubygem

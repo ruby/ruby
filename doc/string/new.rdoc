@@ -1,36 +1,50 @@
 Returns a new \String that is a copy of +string+.
 
 With no arguments, returns the empty string with the Encoding <tt>ASCII-8BIT</tt>:
+
   s = String.new
   s # => ""
   s.encoding # => #<Encoding:ASCII-8BIT>
 
-With the single \String argument +string+, returns a copy of +string+
-with the same encoding as +string+:
-  s = String.new('Que veut dire ça?')
-  s # => "Que veut dire ça?"
-  s.encoding # => #<Encoding:UTF-8>
+With optional argument +string+ and no keyword arguments,
+returns a copy of +string+ with the same encoding:
 
-Literal strings like <tt>""</tt> or here-documents always use
-Encoding@Script+encoding, unlike String.new.
+  String.new('foo')               # => "foo"
+  String.new('тест')              # => "тест"
+  String.new('こんにちは')          # => "こんにちは"
 
-With keyword +encoding+, returns a copy of +str+
-with the specified encoding:
-  s = String.new(encoding: 'ASCII')
-  s.encoding # => #<Encoding:US-ASCII>
-  s = String.new('foo', encoding: 'ASCII')
-  s.encoding # => #<Encoding:US-ASCII>
+(Unlike \String.new,
+a {string literal}[rdoc-ref:syntax/literals.rdoc@String+Literals] like <tt>''</tt> or a
+{here document literal}[rdoc-ref:syntax/literals.rdoc@Here+Document+Literals]
+always has {script encoding}[rdoc-ref:encodings.rdoc@Script+Encoding].)
 
-Note that these are equivalent:
-  s0 = String.new('foo', encoding: 'ASCII')
-  s1 = 'foo'.force_encoding('ASCII')
-  s0.encoding == s1.encoding # => true
+With optional keyword argument +encoding+, returns a copy of +string+
+with the specified encoding;
+the +encoding+ may be an Encoding object, an encoding name,
+or an encoding name alias:
 
-With keyword +capacity+, returns a copy of +str+;
-the given +capacity+ may set the size of the internal buffer,
-which may affect performance:
-  String.new(capacity: 1) # => ""
-  String.new(capacity: 4096) # => ""
+  String.new('foo', encoding: Encoding::US_ASCII).encoding # => #<Encoding:US-ASCII>
+  String.new('foo', encoding: 'US-ASCII').encoding         # => #<Encoding:US-ASCII>
+  String.new('foo', encoding: 'ASCII').encoding            # => #<Encoding:US-ASCII>
+
+The given encoding need not be valid for the string's content,
+and that validity is not checked:
+
+  s = String.new('こんにちは', encoding: 'ascii')
+  s.valid_encoding? # => false
+
+But the given +encoding+ itself is checked:
+
+  String.new('foo', encoding: 'bar') # Raises ArgumentError.
+
+With optional keyword argument +capacity+, returns a copy of +string+
+(or an empty string, if +string+ is not given);
+the given +capacity+ is advisory only,
+and may or may not set the size of the internal buffer,
+which may in turn affect performance:
+
+  String.new(capacity: 1)
+  String.new('foo', capacity: 4096)
 
 The +string+, +encoding+, and +capacity+ arguments may all be used together:
 

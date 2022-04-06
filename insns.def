@@ -1028,12 +1028,24 @@ opt_getinlinecache
 (VALUE val)
 {
     struct iseq_inline_constant_cache_entry *ice = ic->entry;
+
+    // If there isn't an entry, then we're going to walk through the ISEQ
+    // starting at this instruction until we get to the associated
+    // opt_setinlinecache and associate this inline cache with every getconstant
+    // listed in between. We're doing this here instead of when the instructions
+    // are first compiled because it's possible to turn off inline caches and we
+    // want this to work in either case.
+    if (!ice) {
+        vm_ic_compile(GET_CFP(), ic);
+    }
+
     if (ice && vm_ic_hit_p(ice, GET_EP())) {
         val = ice->value;
         JUMP(dst);
     }
     else {
-	val = Qnil;
+        ruby_vm_constant_cache_misses++;
+        val = Qnil;
     }
 }
 

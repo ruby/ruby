@@ -1813,9 +1813,7 @@ rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str)
 /*
  *
  *  call-seq:
- *    String.new(string = '') -> new_string
- *    String.new(string = '', encoding: encoding) -> new_string
- *    String.new(string = '', capacity: size) -> new_string
+ *    String.new(string = '', **opts) -> new_string
  *
  *  :include: doc/string/new.rdoc
  *
@@ -2117,14 +2115,8 @@ rb_str_strlen(VALUE str)
  *  call-seq:
  *    length -> integer
  *
- *  Returns the count of characters (not bytes) in +self+:
+ *  :include: doc/string/length.rdoc
  *
- *    "\x80\u3042".length # => 2
- *    "hello".length # => 5
- *
- *  String#size is an alias for String#length.
- *
- *  Related: String#bytesize.
  */
 
 VALUE
@@ -2137,12 +2129,8 @@ rb_str_length(VALUE str)
  *  call-seq:
  *    bytesize -> integer
  *
- *  Returns the count  of bytes in +self+:
+ *  :include: doc/string/bytesize.rdoc
  *
- *    "\x80\u3042".bytesize # => 4
- *    "hello".bytesize # => 5
- *
- *  Related: String#length.
  */
 
 static VALUE
@@ -3862,37 +3850,8 @@ rb_strseq_index(VALUE str, VALUE sub, long offset, int in_byte)
  *    index(substring, offset = 0) -> integer or nil
  *    index(regexp, offset = 0) -> integer or nil
  *
- *  Returns the \Integer index of the first occurrence of the given +substring+,
- *  or +nil+ if none found:
+ *  :include: doc/string/index.rdoc
  *
- *    'foo'.index('f') # => 0
- *    'foo'.index('o') # => 1
- *    'foo'.index('oo') # => 1
- *    'foo'.index('ooo') # => nil
- *
- *  Returns the \Integer index of the first match for the given \Regexp +regexp+,
- *  or +nil+ if none found:
- *
- *    'foo'.index(/f/) # => 0
- *    'foo'.index(/o/) # => 1
- *    'foo'.index(/oo/) # => 1
- *    'foo'.index(/ooo/) # => nil
- *
- *  \Integer argument +offset+, if given, specifies the position in the
- *  string to begin the search:
- *
- *    'foo'.index('o', 1) # => 1
- *    'foo'.index('o', 2) # => 2
- *    'foo'.index('o', 3) # => nil
- *
- *  If +offset+ is negative, counts backward from the end of +self+:
- *
- *    'foo'.index('o', -1) # => 2
- *    'foo'.index('o', -2) # => 1
- *    'foo'.index('o', -3) # => 1
- *    'foo'.index('o', -4) # => nil
- *
- *  Related: String#rindex.
  */
 
 static VALUE

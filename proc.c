@@ -1428,7 +1428,7 @@ rb_unnamed_parameters(int arity)
  *    prc = proc{|x, y=42, *other|}
  *    prc.parameters(lambda: true)  #=> [[:req, :x], [:opt, :y], [:rest, :other]]
  *    prc = lambda{|x, y=42, *other|}
- *    prc.parameters(lamdba: false) #=> [[:opt, :x], [:opt, :y], [:rest, :other]]
+ *    prc.parameters(lambda: false) #=> [[:opt, :x], [:opt, :y], [:rest, :other]]
  */
 
 static VALUE

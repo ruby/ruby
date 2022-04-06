@@ -26,7 +26,7 @@ require 'io/wait'
 module Net # :nodoc:
 
   class Protocol   #:nodoc: internal use only
-    VERSION = "0.1.2"
+    VERSION = "0.1.3"
 
     private
     def Protocol.protocol_param(name, val)

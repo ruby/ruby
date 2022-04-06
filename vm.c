@@ -428,7 +428,8 @@ rb_event_flag_t ruby_vm_event_flags;
 rb_event_flag_t ruby_vm_event_enabled_global_flags;
 unsigned int    ruby_vm_event_local_num;
 
-rb_serial_t ruby_vm_global_constant_state = 1;
+rb_serial_t ruby_vm_constant_cache_invalidations = 0;
+rb_serial_t ruby_vm_constant_cache_misses = 0;
 rb_serial_t ruby_vm_class_serial = 1;
 rb_serial_t ruby_vm_global_cvar_state = 1;
 
@@ -504,11 +505,13 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
  *
  *  Returns a Hash containing implementation-dependent counters inside the VM.
  *
- *  This hash includes information about method/constant cache serials:
+ *  This hash includes information about method/constant caches:
  *
  *    {
- *      :global_constant_state=>481,
- *      :class_serial=>9029
+ *      :constant_cache_invalidations=>2,
+ *      :constant_cache_misses=>14,
+ *      :class_serial=>546,
+ *      :global_cvar_state=>27
  *    }
  *
  *  The contents of the hash are implementation specific and may be changed in
@@ -516,11 +519,10 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
  *
  *  This method is only expected to work on C Ruby.
  */
-
 static VALUE
 vm_stat(int argc, VALUE *argv, VALUE self)
 {
-    static VALUE sym_global_constant_state, sym_class_serial, sym_global_cvar_state;
+    static VALUE sym_constant_cache_invalidations, sym_constant_cache_misses, sym_class_serial, sym_global_cvar_state;
     VALUE arg = Qnil;
     VALUE hash = Qnil, key = Qnil;
 
@@ -537,13 +539,12 @@ vm_stat(int argc, VALUE *argv, VALUE self)
 	hash = rb_hash_new();
     }
 
-    if (sym_global_constant_state == 0) {
 #define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
-	S(global_constant_state);
+    S(constant_cache_invalidations);
+    S(constant_cache_misses);
 	S(class_serial);
 	S(global_cvar_state);
 #undef S
-    }
 
 #define SET(name, attr) \
     if (key == sym_##name) \
@@ -551,7 +552,8 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     else if (hash != Qnil) \
 	rb_hash_aset(hash, sym_##name, SERIALT2NUM(attr));
 
-    SET(global_constant_state, ruby_vm_global_constant_state);
+    SET(constant_cache_invalidations, ruby_vm_constant_cache_invalidations);
+    SET(constant_cache_misses, ruby_vm_constant_cache_misses);
     SET(class_serial, ruby_vm_class_serial);
     SET(global_cvar_state, ruby_vm_global_cvar_state);
 #undef SET
@@ -1233,12 +1235,15 @@ rb_vm_make_binding(const rb_execution_context_t *ec, const rb_control_frame_t *s
     if (cfp == 0 || ruby_level_cfp == 0) {
 	rb_raise(rb_eRuntimeError, "Can't create Binding Object on top of Fiber.");
     }
-    if (!VM_FRAME_RUBYFRAME_P(src_cfp) &&
-        !VM_FRAME_RUBYFRAME_P(RUBY_VM_PREVIOUS_CONTROL_FRAME(src_cfp))) {
-        rb_raise(rb_eRuntimeError, "Cannot create Binding object for non-Ruby caller");
+
+    while (1) {
+	envval = vm_make_env_object(ec, cfp);
+	if (cfp == ruby_level_cfp) {
+	    break;
+	}
+	cfp = rb_vm_get_binding_creatable_next_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
     }
 
-    envval = vm_make_env_object(ec, cfp);
     bindval = rb_binding_alloc(rb_cBinding);
     GetBindingPtr(bindval, bind);
     vm_bind_update_env(bindval, bind, envval);
@@ -2815,6 +2820,26 @@ size_t rb_vm_memsize_workqueue(struct ccan_list_head *workqueue); // vm_trace.c
 
 // Used for VM memsize reporting. Returns the size of the at_exit list by
 // looping through the linked list and adding up the size of the structs.
+static enum rb_id_table_iterator_result
+vm_memsize_constant_cache_i(ID id, VALUE ics, void *size)
+{
+    *((size_t *) size) += rb_st_memsize((st_table *) ics);
+    return ID_TABLE_CONTINUE;
+}
+
+// Returns a size_t representing the memory footprint of the VM's constant
+// cache, which is the memsize of the table as well as the memsize of all of the
+// nested tables.
+static size_t
+vm_memsize_constant_cache(void)
+{
+    rb_vm_t *vm = GET_VM();
+    size_t size = rb_id_table_memsize(vm->constant_cache);
+
+    rb_id_table_foreach(vm->constant_cache, vm_memsize_constant_cache_i, &size);
+    return size;
+}
+
 static size_t
 vm_memsize_at_exit_list(rb_at_exit_list *at_exit)
 {
@@ -2858,7 +2883,8 @@ vm_memsize(const void *ptr)
         rb_st_memsize(vm->frozen_strings) +
         vm_memsize_builtin_function_table(vm->builtin_function_table) +
         rb_id_table_memsize(vm->negative_cme_table) +
-        rb_st_memsize(vm->overloaded_cme_table)
+        rb_st_memsize(vm->overloaded_cme_table) +
+        vm_memsize_constant_cache()
     );
 
     // TODO
@@ -3938,6 +3964,7 @@ Init_BareVM(void)
     ruby_current_vm_ptr = vm;
     vm->negative_cme_table = rb_id_table_create(16);
     vm->overloaded_cme_table = st_init_numtable();
+    vm->constant_cache = rb_id_table_create(0);
 
     Init_native_thread(th);
     th->vm = vm;

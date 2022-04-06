@@ -59,6 +59,37 @@ Note that each entry is kept to a minimum, see links for details.
 * Find pattern is no longer experimental.
   [[Feature #18585]]
 
+* Methods taking a rest parameter (like `*args`) and wishing to delegate keyword
+  arguments through `foo(*args)` must now be marked with `ruby2_keywords`
+  (if not already the case). In other words, all methods wishing to delegate
+  keyword arguments through `*args` must now be marked with `ruby2_keywords`,
+  with no exception. This will make it easier to transition to other ways of
+  delegation once a library can require Ruby 3+. Previously, the `ruby2_keywords`
+  flag was kept if the receiving method took `*args`, but this was a bug and an
+  inconsistency. A good technique to find the potentially-missing `ruby2_keywords`
+  is to run the test suite, for where it fails find the last method which must
+  receive keyword arguments, use `puts nil, caller, nil` there, and check each
+  method/block on the call chain which must delegate keywords is correctly marked
+  as `ruby2_keywords`. [[Bug #18625]] [[Bug #16466]]
+
+    ```ruby
+    def target(**kw)
+    end
+
+    # Accidentally worked without ruby2_keywords in Ruby 2.7-3.1, ruby2_keywords
+    # needed in 3.2+. Just like (*args, **kwargs) or (...) would be needed on
+    # both #foo and #bar when migrating away from ruby2_keywords.
+    ruby2_keywords def bar(*args)
+      target(*args)
+    end
+
+    ruby2_keywords def foo(*args)
+      bar(*args)
+    end
+
+    foo(k: 1)
+    ```
+
 ## Command line options
 
 ## Core classes updates
@@ -122,13 +153,15 @@ Note: We're only listing outstanding class updates.
     * io-wait 0.2.2.pre1
     * ipaddr 1.2.4
     * logger 1.5.1
+    * net-protocol 0.1.3
     * ostruct 0.5.5
     * reline 0.3.1
     * securerandom 0.2.0
 *   The following bundled gems are updated.
     * net-imap 0.2.3
-    * rbs 2.2.2
+    * rbs 2.3.0
     * typeprof 0.21.2
+    * debug 1.5.0
 *   The following default gems are now bundled gems.
 
 ## Compatibility issues
@@ -201,6 +234,7 @@ The following deprecated APIs are removed.
 [Feature #15357]: https://bugs.ruby-lang.org/issues/15357
 [Bug #15928]:     https://bugs.ruby-lang.org/issues/15928
 [Feature #16131]: https://bugs.ruby-lang.org/issues/16131
+[Bug #16466]:     https://bugs.ruby-lang.org/issues/16466
 [Feature #16806]: https://bugs.ruby-lang.org/issues/16806
 [Bug #16889]:     https://bugs.ruby-lang.org/issues/16889
 [Bug #16908]:     https://bugs.ruby-lang.org/issues/16908
@@ -215,4 +249,5 @@ The following deprecated APIs are removed.
 [Feature #18571]: https://bugs.ruby-lang.org/issues/18571
 [Feature #18585]: https://bugs.ruby-lang.org/issues/18585
 [Feature #18598]: https://bugs.ruby-lang.org/issues/18598
+[Bug #18625]:     https://bugs.ruby-lang.org/issues/18625
 [Bug #18633]:     https://bugs.ruby-lang.org/issues/18633

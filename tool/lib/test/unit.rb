@@ -684,7 +684,7 @@ module Test
 
             if !(_io = IO.select(@ios, nil, nil, timeout))
               timeout = Time.now - @worker_timeout
-              quit_workers {|w| w.response_at < timeout}&.map {|w|
+              quit_workers {|w| w.response_at&.<(timeout) }&.map {|w|
                 rep << {file: w.real_file, result: nil, testcase: w.current[0], error: w.current}
               }
             elsif _io.first.any? {|io|
