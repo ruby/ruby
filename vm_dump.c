@@ -474,7 +474,7 @@ rb_vmdebug_thread_dump_state(VALUE self)
 # ifdef HAVE_LIBUNWIND
 #  undef backtrace
 #  define backtrace unw_backtrace
-# elif defined(__APPLE__) && defined(__x86_64__) && defined(HAVE_LIBUNWIND_H)
+# elif defined(__APPLE__) && defined(HAVE_LIBUNWIND_H)
 #  define UNW_LOCAL_ONLY
 #  include <libunwind.h>
 #  include <sys/mman.h>
@@ -503,6 +503,7 @@ backtrace(void **trace, int size)
 darwin_sigtramp:
     /* darwin's bundled libunwind doesn't support signal trampoline */
     {
+#if defined(__x86_64__)
 	ucontext_t *uctx;
 	char vec[1];
 	int r;
@@ -563,6 +564,8 @@ darwin_sigtramp:
 	    trace[n++] = (void *)ip;
 	    ip = *(unw_word_t*)uctx->uc_mcontext->MCTX_SS_REG(rsp);
 	}
+#endif
+
 	trace[n++] = (void *)ip;
 	unw_set_reg(&cursor, UNW_REG_IP, ip);
     }
