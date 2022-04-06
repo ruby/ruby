@@ -2453,7 +2453,12 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 size_t
 rb_gc_obj_slot_size(VALUE obj)
 {
+#if USE_THIRD_PARTY_HEAP
+    // Load from our hidden field before the object.
+    return *(size_t*)(obj - MMTK_OBJREF_OFFSET);
+#else
     return GET_HEAP_PAGE(obj)->slot_size;
+#endif // USE_THIRD_PARTY_HEAP
 }
 
 static inline size_t
@@ -2474,9 +2479,6 @@ size_pool_slot_size(unsigned char pool_id)
 bool
 rb_gc_size_allocatable_p(size_t size)
 {
-#ifdef USE_THIRD_PARTY_HEAP
-    return true;
-#endif // USE_THIRD_PARTY_HEAP
     return size <= size_pool_slot_size(SIZE_POOL_COUNT - 1);
 }
 
@@ -2708,16 +2710,6 @@ newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr, size_t a
 {
     VALUE obj;
     rb_objspace_t *objspace = &rb_objspace;
-#ifdef USE_THIRD_PARTY_HEAP
-    const size_t MMTK_ALIGNMENT = 8;
-    size_t mmtk_alloc_size = (alloc_size + MMTK_ALIGNMENT - 1) & ~(MMTK_ALIGNMENT - 1);
-    RUBY_ASSERT(mmtk_alloc_size >= alloc_size);
-    RUBY_ASSERT(mmtk_alloc_size < alloc_size + MMTK_ALIGNMENT);
-    RUBY_ASSERT(mmtk_alloc_size % MMTK_ALIGNMENT == 0);
-    obj = (VALUE) mmtk_alloc(GET_THREAD()->mutator, mmtk_alloc_size, MMTK_ALIGNMENT, 0, 0); // Default allocation semantics
-    mmtk_post_alloc(GET_THREAD()->mutator, (void*)obj, mmtk_alloc_size, 0);
-    return newobj_init(klass, flags, wb_protected, objspace, obj);
-#endif
 
     RB_DEBUG_COUNTER_INC(obj_newobj);
     (void)RB_DEBUG_COUNTER_INC_IF(obj_newobj_wb_unprotected, !wb_protected);
@@ -2732,6 +2724,47 @@ newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr, size_t a
 #endif
 
     size_t size_pool_idx = size_pool_idx_for_size(alloc_size);
+
+#ifdef USE_THIRD_PARTY_HEAP
+    // FIXME: Currently, types that uses VWA asks the GC for the object size (rb_gc_obj_slot_size).
+    // It is only convenient to implement for size-segregated free-list allocators which
+    // Ruby currently implements. However, for high-performance bump-pointer allcators,
+    // we have to allocate one extra word before every object to record the object size.
+    // For this reason, MMTk expects the VM to tell the object size, because the size of
+    // most objects can be known only from its classes, except for variable-sized objects
+    // like String, Array, Hash, etc.
+    //
+    // We make a compromise here:
+    // 1.  The VM will only ask MMTk to allocate objects of size 40, 80, 160 or 320, the
+    //     current size classes of the size pool.
+    // 2.  We add a hidden size_t field before every object to hold the object size.
+    //
+    // Please keep in mind that this is only a temporary solution.
+
+    // We first calculate the object size if the object were allocated using Ruby's own GC.
+    size_t size_pool_size = size_pool_slot_size(size_pool_idx);
+    RUBY_ASSERT(size_pool_size % MMTK_MIN_OBJ_ALIGN == 0);
+
+    // We prepend a size field before the object.
+    size_t mmtk_alloc_size = size_pool_size + MMTK_OBJREF_OFFSET;
+    RUBY_ASSERT(mmtk_alloc_size % MMTK_MIN_OBJ_ALIGN == 0);
+
+    // Allocate the object.  The last 0 is the Default allocation semantics
+    void *addr = mmtk_alloc(GET_THREAD()->mutator, mmtk_alloc_size, MMTK_MIN_OBJ_ALIGN, 0, 0);
+
+    // Store the Ruby-level object size before the object.
+    *(size_t*)addr = size_pool_size;
+
+    // The Ruby-level object reference (i.e. VALUE) is at an offset from the MMTk-level
+    // allocation unit.
+    obj = (VALUE)addr + MMTK_OBJREF_OFFSET;
+
+    // Call post_alloc.  This will initialize GC-specific metadata.
+    mmtk_post_alloc(GET_THREAD()->mutator, (void*)obj, mmtk_alloc_size, 0);
+
+    // Finally, do the rest of Ruby-level initialization.
+    return newobj_init(klass, flags, wb_protected, objspace, obj);
+#endif
 
     if (!UNLIKELY(during_gc ||
                   ruby_gc_stressful ||
