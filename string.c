@@ -5116,86 +5116,9 @@ rb_str_aref(VALUE str, VALUE indx)
  *    string[substring] -> new_string or nil
  *
  *  Returns the substring of +self+ specified by the arguments.
+ *  See examples at {String Slices}[rdoc-ref:String@String+Slices].
  *
- *  When the single \Integer argument +index+ is given,
- *  returns the 1-character substring found in +self+ at offset +index+:
  *
- *    'bar'[2] # => "r"
- *
- *  Counts backward from the end of +self+ if +index+ is negative:
- *
- *    'foo'[-3] # => "f"
- *
- *  Returns +nil+ if +index+ is out of range:
- *
- *    'foo'[3] # => nil
- *    'foo'[-4] # => nil
- *
- *  When the two \Integer arguments  +start+ and +length+ are given,
- *  returns the substring of the given +length+ found in +self+ at offset +start+:
- *
- *    'foo'[0, 2] # => "fo"
- *    'foo'[0, 0] # => ""
- *
- *  Counts backward from the end of +self+ if +start+ is negative:
- *
- *    'foo'[-2, 2] # => "oo"
- *
- *  Special case: returns a new empty \String if +start+ is equal to the length of +self+:
- *
- *    'foo'[3, 2] # => ""
- *
- *  Returns +nil+ if +start+ is out of range:
- *
- *    'foo'[4, 2] # => nil
- *    'foo'[-4, 2] # => nil
- *
- *  Returns the trailing substring of +self+ if +length+ is large:
- *
- *    'foo'[1, 50] # => "oo"
- *
- *  Returns +nil+ if +length+ is negative:
- *
- *    'foo'[0, -1] # => nil
- *
- *  When the single \Range argument +range+ is given,
- *  derives +start+ and +length+ values from the given +range+,
- *  and returns values as above:
- *
- *  - <tt>'foo'[0..1]</tt> is equivalent to <tt>'foo'[0, 2]</tt>.
- *  - <tt>'foo'[0...1]</tt> is equivalent to <tt>'foo'[0, 1]</tt>.
- *
- *  When the \Regexp argument +regexp+ is given,
- *  and the +capture+ argument is <tt>0</tt>,
- *  returns the first matching substring found in +self+,
- *  or +nil+ if none found:
- *
- *    'foo'[/o/] # => "o"
- *    'foo'[/x/] # => nil
- *    s = 'hello there'
- *    s[/[aeiou](.)\1/] # => "ell"
- *    s[/[aeiou](.)\1/, 0] # => "ell"
- *
- *  If argument +capture+ is given and not <tt>0</tt>,
- *  it should be either an \Integer capture group index or a \String or \Symbol capture group name;
- *  the method call returns only the specified capture
- *  (see Regexp@Capturing):
- *
- *    s = 'hello there'
- *    s[/[aeiou](.)\1/, 1] # => "l"
- *    s[/(?<vowel>[aeiou])(?<non_vowel>[^aeiou])/, "non_vowel"] # => "l"
- *    s[/(?<vowel>[aeiou])(?<non_vowel>[^aeiou])/, :vowel] # => "e"
- *
- *  If an invalid capture group index is given, +nil+ is returned.  If an invalid
- *  capture group name is given, +IndexError+ is raised.
- *
- *  When the single \String argument +substring+ is given,
- *  returns the substring from +self+ if found, otherwise +nil+:
- *
- *    'foo'['oo'] # => "oo"
- *    'foo'['xx'] # => nil
- *
- *  String#slice is an alias for String#[].
  */
 
 static VALUE
@@ -5405,26 +5328,31 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 
 /*
  *  call-seq:
- *     str[integer] = new_str
- *     str[integer, integer] = new_str
- *     str[range] = aString
- *     str[regexp] = new_str
- *     str[regexp, integer] = new_str
- *     str[regexp, name] = new_str
- *     str[other_str] = new_str
+ *    string[index] = new_string
+ *    string[start, length] = new_string
+ *    string[range] = new_string
+ *    string[regexp, capture = 0) = new_string
+ *    string[substring] = new_string
  *
- *  Element Assignment---Replaces some or all of the content of
- *  <i>str</i>. The portion of the string affected is determined using
- *  the same criteria as String#[]. If the replacement string is not
- *  the same length as the text it is replacing, the string will be
- *  adjusted accordingly. If the regular expression or string is used
- *  as the index doesn't match a position in the string, IndexError is
- *  raised. If the regular expression form is used, the optional
- *  second Integer allows you to specify which portion of the match to
- *  replace (effectively using the MatchData indexing rules. The forms
- *  that take an Integer will raise an IndexError if the value is out
- *  of range; the Range form will raise a RangeError, and the Regexp
- *  and String will raise an IndexError on negative match.
+ *  Replaces all, some, or none of the contents of +self+; returns +new_string+.
+ *  See {String Slices}[rdoc-ref:String@String+Slices].
+ *
+ *  A few examples:
+ *
+ *    s = 'foo'
+ *    s[2] = 'rtune'     # => "rtune"
+ *    s                  # => "fortune"
+ *    s[1, 5] = 'init'   # => "init"
+ *    s                  # => "finite"
+ *    s[3..4] = 'al'     # => "al"
+ *    s                  # => "finale"
+ *    s[/e$/] = 'ly'     # => "ly"
+ *    s                  # => "finally"
+ *    s['lly'] = 'ncial' # => "ncial"
+ *    s                  # => "financial"
+ *
+ *  String#slice is an alias for String#[].
+ *
  */
 
 static VALUE
@@ -5479,16 +5407,14 @@ rb_str_insert(VALUE str, VALUE idx, VALUE str2)
 
 /*
  *  call-seq:
- *     slice!(index)               -> new_string or nil
- *     slice!(start, length)       -> new_string or nil
- *     slice!(range)               -> new_string or nil
- *     slice!(regexp, capture = 0) -> new_string or nil
- *     slice!(substring)           -> new_string or nil
+ *    slice!(index)               -> new_string or nil
+ *    slice!(start, length)       -> new_string or nil
+ *    slice!(range)               -> new_string or nil
+ *    slice!(regexp, capture = 0) -> new_string or nil
+ *    slice!(substring)           -> new_string or nil
  *
- *  Removes the substring of +self+ specified by the arguments;
- *  returns the removed substring.
- *
- *  See String#[] for details about the arguments that specify the substring.
+ *  Removes and returns the substring of +self+ specified by the arguments.
+ *  See {String Slices}[rdoc-ref:String@String+Slices].
  *
  *  A few examples:
  *
@@ -12125,6 +12051,8 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #lstrip, #lstrip!: strip leading whitespace.
  *  - #rstrip, #rstrip!: strip trailing whitespace.
  *  - #strip, #strip!: strip leading and trailing whitespace.
+ *
+ *  :include: doc/string/slices.rdoc
  *
  *  == What's Here
  *
