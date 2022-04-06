@@ -5334,7 +5334,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
  *    string[regexp, capture = 0) = new_string
  *    string[substring] = new_string
  *
- *  Replaces all, some, or none of the content of +self+; returns the new string.
+ *  Replaces all, some, or none of the contents of +self+; returns +new_string+.
  *  See {String Slices}[rdoc-ref:String@String+Slices].
  *
  *  A few examples:
@@ -5350,6 +5350,8 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
  *    s                  # => "finally"
  *    s['lly'] = 'ncial' # => "ncial"
  *    s                  # => "financial"
+ *
+ *  String#slice is an alias for String#[].
  *
  */
 
