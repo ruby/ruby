@@ -361,8 +361,12 @@ module Bundler
         global_cache_path = download_cache_path(spec)
         @caches << global_cache_path if global_cache_path
 
-        possibilities = @caches.map {|p| "#{p}/#{spec.file_name}" }
+        possibilities = @caches.map {|p| package_path(p, spec) }
         possibilities.find {|p| File.exist?(p) }
+      end
+
+      def package_path(cache_path, spec)
+        "#{cache_path}/#{spec.file_name}"
       end
 
       def normalize_uri(uri)
@@ -459,7 +463,7 @@ module Bundler
         spec.fetch_platform
 
         cache_path = download_cache_path(spec) || default_cache_path_for(rubygems_dir)
-        gem_path = "#{cache_path}/#{spec.file_name}"
+        gem_path = package_path(cache_path, spec)
         return gem_path if File.exist?(gem_path)
 
         if requires_sudo?
@@ -478,7 +482,7 @@ module Bundler
           SharedHelpers.filesystem_access(cache_path) do |p|
             Bundler.mkdir_p(p)
           end
-          Bundler.sudo "mv #{download_cache_path}/#{spec.file_name} #{gem_path}"
+          Bundler.sudo "mv #{package_path(download_cache_path, spec)} #{gem_path}"
         end
 
         gem_path
