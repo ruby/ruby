@@ -5116,7 +5116,7 @@ rb_str_aref(VALUE str, VALUE indx)
  *    string[substring] -> new_string or nil
  *
  *  Returns the substring of +self+ specified by the arguments.
- *  See examples at {String Slices}[rdoc-ref:slices.rdoc].
+ *  See examples at {String Slices}[rdoc-ref:String@String+Slices].
  *
  *
  */
@@ -5335,7 +5335,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
  *    string[substring] = new_string
  *
  *  Replaces all, some, or none of the content of +self+; returns the new string.
- *  See {String Slices}[rdoc-ref:slices.rdoc].
+ *  See {String Slices}[rdoc-ref:String@String+Slices].
  *
  *  A few examples:
  *
@@ -5412,7 +5412,7 @@ rb_str_insert(VALUE str, VALUE idx, VALUE str2)
  *    slice!(substring)           -> new_string or nil
  *
  *  Removes and returns the substring of +self+ specified by the arguments.
- *  See {String Slices}[rdoc-ref:slices.rdoc].
+ *  See {String Slices}[rdoc-ref:String@String+Slices].
  *
  *  A few examples:
  *
