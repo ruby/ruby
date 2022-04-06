@@ -471,6 +471,10 @@ module Spec
       end
     end
 
+    def current_ruby_minor
+      Gem.ruby_version.segments[0..1].join(".")
+    end
+
     def next_ruby_minor
       Gem.ruby_version.segments[0..1].map.with_index {|s, i| i == 1 ? s + 1 : s }.join(".")
     end
