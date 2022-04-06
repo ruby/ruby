@@ -159,7 +159,7 @@ Note: We're only listing outstanding class updates.
     * securerandom 0.2.0
 *   The following bundled gems are updated.
     * net-imap 0.2.3
-    * rbs 2.3.0
+    * rbs 2.3.2
     * typeprof 0.21.2
     * debug 1.5.0
 *   The following default gems are now bundled gems.
