@@ -4,14 +4,12 @@ require 'rubygems/ext'
 
 class TestGemExtCargoBuilder < Gem::TestCase
   def setup
-    @orig_env = ENV.to_hash
+    super
 
     @rust_envs = {
       'CARGO_HOME' => File.join(@orig_env['HOME'], '.cargo'),
       'RUSTUP_HOME' => File.join(@orig_env['HOME'], '.rustup'),
     }
-
-    super
 
     system(@rust_envs, 'cargo', '-V', out: IO::NULL, err: [:child, :out])
     pend 'cargo not present' unless $?.success?
