@@ -11,10 +11,10 @@ class TestGemExtCargoBuilder < Gem::TestCase
       'RUSTUP_HOME' => File.join(@orig_env['HOME'], '.rustup'),
     }
 
+    super
+
     system(@rust_envs, 'cargo', '-V', out: IO::NULL, err: [:child, :out])
     pend 'cargo not present' unless $?.success?
-
-    super
   end
 
   def setup_rust_gem(name)
