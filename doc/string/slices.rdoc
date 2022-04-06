@@ -4,9 +4,9 @@ A _slice_ of a string is a substring that is selected by certain criteria.
 
 These instance methods make use of slicing:
 
-- String#[] (and its alias String#slice) return a slice copied from +self+.
+- String#[] (also aliased as String#slice) returns a slice copied from +self+.
 - String#[]= returns a copy of +self+ with a slice replaced.
-- String#slice! returns +self+ with a slice replaced.
+- String#slice! returns +self+ with a slice removed.
 
 Each of the above methods takes arguments that determine the slice
 to be copied or replaced.
@@ -53,7 +53,6 @@ and continues for +length+ characters, if available:
   'foo'[1, 200]     # => "oo"
   # Start out of range.
   'foo'[4, 2]      # => nil
-  'foo'[-4, 2]     # => nil
 
 Special case: if +start+ is equal to the length of +self+,
 the slice is a new empty string:
@@ -67,6 +66,8 @@ and the slice continues for +length+ characters, if available:
 
   'foo'[-2, 2]    # => "oo"
   'foo'[-2, 200]  # => "oo"
+  # Start out of range.
+  'foo'[-4, 2]     # => nil
 
 When negative +length+ is given, there is no slice:
 
@@ -76,12 +77,7 @@ When negative +length+ is given, there is no slice:
 <b><tt>string[range]</tt></b>
 
 When Range argument +range+ is given,
-derives +start+ and +length+ values from the given +range+:
-
-  start = range.begin
-  length = range.end - range.begin + 1 # May be different from range.size.
-  length = length < 0 ? 0 : length     # Length is never negative.
-
+creates a substring of +string+ using the indices in +range+.
 The slice is then determined as above:
 
   'foo'[0..1]    # => "fo"
