@@ -9679,7 +9679,12 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
         if (!RTEST(immediate_sweep)) reason &= ~GPR_FLAG_IMMEDIATE_SWEEP;
     }
 
+#if USE_THIRD_PARTY_HEAP
+    mmtk_handle_user_collection_request(GET_THREAD());
+#else
     garbage_collect(objspace, reason);
+#endif // USE_THIRD_PARTY_HEAP
+
     gc_finalize_deferred(objspace);
 
     return Qnil;
