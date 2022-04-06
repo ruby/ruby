@@ -837,6 +837,8 @@ typedef struct rb_objspace {
     struct {
         size_t considered_count_table[T_MASK];
         size_t moved_count_table[T_MASK];
+        size_t moved_up_count_table[T_MASK];
+        size_t moved_down_count_table[T_MASK];
         size_t total_moved;
     } rcompactor;
 
@@ -5091,7 +5093,7 @@ gc_setup_mark_bits(struct heap_page *page)
 }
 
 static int gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj);
-static VALUE gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t slot_size);
+static VALUE gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, size_t slot_size);
 
 static void
 lock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
@@ -5130,6 +5132,7 @@ unlock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 static bool
 try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, VALUE src)
 {
+    struct heap_page *src_page = GET_HEAP_PAGE(src);
     if (!free_page) {
         return false;
     }
@@ -5150,12 +5153,16 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, 
         free_page->freelist = RANY(dest)->as.free.next;
 
         GC_ASSERT(RB_BUILTIN_TYPE(dest) == T_NONE);
-        GC_ASSERT(free_page->slot_size == GET_HEAP_PAGE(src)->slot_size);
 
+        if (src_page->slot_size > free_page->slot_size) {
+            objspace->rcompactor.moved_down_count_table[BUILTIN_TYPE(src)]++;
+        } else if (free_page->slot_size > src_page->slot_size) {
+            objspace->rcompactor.moved_up_count_table[BUILTIN_TYPE(src)]++;
+        }
         objspace->rcompactor.moved_count_table[BUILTIN_TYPE(src)]++;
         objspace->rcompactor.total_moved++;
 
-        gc_move(objspace, src, dest, free_page->slot_size);
+        gc_move(objspace, src, dest, src_page->slot_size, free_page->slot_size);
         gc_pin(objspace, src);
         free_page->free_slots--;
     }
@@ -5907,7 +5914,7 @@ invalidate_moved_plane(rb_objspace_t *objspace, struct heap_page *page, uintptr_
 
                     object = rb_gc_location(forwarding_object);
 
-                    gc_move(objspace, object, forwarding_object, page->slot_size);
+                    gc_move(objspace, object, forwarding_object, GET_HEAP_PAGE(object)->slot_size, page->slot_size);
                     /* forwarding_object is now our actual object, and "object"
                      * is the free slot for the original page */
                     struct heap_page *orig_page = GET_HEAP_PAGE(object);
@@ -5976,6 +5983,8 @@ gc_compact_start(rb_objspace_t *objspace)
 
     memset(objspace->rcompactor.considered_count_table, 0, T_MASK * sizeof(size_t));
     memset(objspace->rcompactor.moved_count_table, 0, T_MASK * sizeof(size_t));
+    memset(objspace->rcompactor.moved_up_count_table, 0, T_MASK * sizeof(size_t));
+    memset(objspace->rcompactor.moved_down_count_table, 0, T_MASK * sizeof(size_t));
 
     /* Set up read barrier for pages containing MOVED objects */
     install_handlers();
@@ -8224,14 +8233,34 @@ gc_compact_heap_cursors_met_p(rb_heap_t *heap)
     return heap->sweeping_page == heap->compact_cursor;
 }
 
+static rb_size_pool_t *
+gc_compact_destination_pool(rb_objspace_t *objspace, rb_size_pool_t *src_pool, VALUE src)
+{
+    size_t obj_size;
+
+    switch (BUILTIN_TYPE(src)) {
+        case T_STRING:
+            obj_size = rb_str_size_as_embedded(src);
+            if (rb_gc_size_allocatable_p(obj_size)){
+                return &size_pools[size_pool_idx_for_size(obj_size)];
+            }
+            else {
+                GC_ASSERT(!STR_EMBED_P(src));
+                return &size_pools[0];
+            }
+        default:
+            return src_pool;
+    }
+}
+
 static bool
-gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, VALUE src)
+gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, rb_size_pool_t *size_pool, VALUE src)
 {
     GC_ASSERT(BUILTIN_TYPE(src) != T_MOVED);
-    rb_heap_t *dheap = heap;
+    rb_heap_t *dheap = SIZE_POOL_EDEN_HEAP(gc_compact_destination_pool(objspace, size_pool, src));
 
     if (gc_compact_heap_cursors_met_p(dheap)) {
-        return false;
+        return dheap != heap;
     }
     while (!try_move(objspace, dheap, dheap->free_pages, src)) {
         struct gc_sweep_context ctx = {
@@ -8254,7 +8283,7 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, VALUE src)
 }
 
 static bool
-gc_compact_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bitset, struct heap_page *page) {
+gc_compact_plane(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap, uintptr_t p, bits_t bitset, struct heap_page *page) {
     short slot_size = page->slot_size;
     short slot_bits = slot_size / BASE_SLOT_SIZE;
     GC_ASSERT(slot_bits > 0);
@@ -8266,7 +8295,7 @@ gc_compact_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t b
         if (bitset & 1) {
             objspace->rcompactor.considered_count_table[BUILTIN_TYPE(vp)]++;
 
-            if (!gc_compact_move(objspace, heap, vp)) {
+            if (!gc_compact_move(objspace, heap, size_pool, vp)) {
                 //the cursors met. bubble up
                 return false;
             }
@@ -8295,7 +8324,7 @@ gc_compact_page(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *h
     bitset = (mark_bits[0] & ~pin_bits[0]);
     bitset >>= NUM_IN_PAGE(p);
     if (bitset) {
-        if (!gc_compact_plane(objspace, heap, (uintptr_t)p, bitset, page))
+        if (!gc_compact_plane(objspace, size_pool, heap, (uintptr_t)p, bitset, page))
             return false;
     }
     p += (BITS_BITLENGTH - NUM_IN_PAGE(p)) * BASE_SLOT_SIZE;
@@ -8303,7 +8332,7 @@ gc_compact_page(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *h
     for (int j = 1; j < HEAP_PAGE_BITMAP_LIMIT; j++) {
         bitset = (mark_bits[j] & ~pin_bits[j]);
         if (bitset) {
-            if (!gc_compact_plane(objspace, heap, (uintptr_t)p, bitset, page))
+            if (!gc_compact_plane(objspace, size_pool, heap, (uintptr_t)p, bitset, page))
                 return false;
         }
         p += BITS_BITLENGTH * BASE_SLOT_SIZE;
@@ -8347,7 +8376,6 @@ gc_sweep_compact(rb_objspace_t *objspace)
             struct heap_page *start_page = heap->compact_cursor;
 
             if (!gc_compact_page(objspace, size_pool, heap, start_page)) {
-                GC_ASSERT(heap->sweeping_page == heap->compact_cursor);
                 lock_page_body(objspace, GET_PAGE_BODY(start_page->start));
 
                 continue;
@@ -9626,7 +9654,7 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
 }
 
 static VALUE
-gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t slot_size)
+gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, size_t slot_size)
 {
     int marked;
     int wb_unprotected;
@@ -9676,8 +9704,8 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t slot_size)
     }
 
     /* Move the object */
-    memcpy(dest, src, slot_size);
-    memset(src, 0, slot_size);
+    memcpy(dest, src, MIN(src_slot_size, slot_size));
+    memset(src, 0, src_slot_size);
 
     /* Set bits for object in new location */
     if (marking) {
@@ -10271,23 +10299,31 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         break;
 
       case T_STRING:
-        if (STR_SHARED_P(obj)) {
+        {
 #if USE_RVARGC
-            VALUE orig_shared = any->as.string.as.heap.aux.shared;
 #endif
-            UPDATE_IF_MOVED(objspace, any->as.string.as.heap.aux.shared);
-#if USE_RVARGC
-            VALUE shared = any->as.string.as.heap.aux.shared;
-            if (STR_EMBED_P(shared)) {
-                size_t offset = (size_t)any->as.string.as.heap.ptr - (size_t)RSTRING(orig_shared)->as.embed.ary;
-                GC_ASSERT(any->as.string.as.heap.ptr >= RSTRING(orig_shared)->as.embed.ary);
-                GC_ASSERT(offset <= (size_t)RSTRING(shared)->as.embed.len);
-                any->as.string.as.heap.ptr = RSTRING(shared)->as.embed.ary + offset;
-            }
-#endif
-        }
-        break;
 
+            if (STR_SHARED_P(obj)) {
+#if USE_RVARGC
+                VALUE old_root = any->as.string.as.heap.aux.shared;
+#endif
+                UPDATE_IF_MOVED(objspace, any->as.string.as.heap.aux.shared);
+#if USE_RVARGC
+                VALUE new_root = any->as.string.as.heap.aux.shared;
+                rb_str_update_shared_ary(obj, old_root, new_root);
+
+                // if, after move the string is not embedded, and can fit in the
+                // slot it's been placed in, then re-embed it
+                if ((size_t)GET_HEAP_PAGE(obj)->slot_size >= rb_str_size_as_embedded(obj)) {
+                    if (!STR_EMBED_P(obj) && rb_str_reembeddable_p(obj)) {
+                        rb_str_make_embedded(obj);
+                    }
+                }
+#endif
+            }
+
+            break;
+        }
       case T_DATA:
         /* Call the compaction callback, if it exists */
         {
@@ -10479,6 +10515,8 @@ gc_compact_stats(VALUE self)
     VALUE h = rb_hash_new();
     VALUE considered = rb_hash_new();
     VALUE moved = rb_hash_new();
+    VALUE moved_up = rb_hash_new();
+    VALUE moved_down = rb_hash_new();
 
     for (i=0; i<T_MASK; i++) {
         if (objspace->rcompactor.considered_count_table[i]) {
@@ -10488,10 +10526,20 @@ gc_compact_stats(VALUE self)
         if (objspace->rcompactor.moved_count_table[i]) {
             rb_hash_aset(moved, type_sym(i), SIZET2NUM(objspace->rcompactor.moved_count_table[i]));
         }
+
+        if (objspace->rcompactor.moved_up_count_table[i]) {
+            rb_hash_aset(moved_up, type_sym(i), SIZET2NUM(objspace->rcompactor.moved_up_count_table[i]));
+        }
+
+        if (objspace->rcompactor.moved_down_count_table[i]) {
+            rb_hash_aset(moved_down, type_sym(i), SIZET2NUM(objspace->rcompactor.moved_down_count_table[i]));
+        }
     }
 
     rb_hash_aset(h, ID2SYM(rb_intern("considered")), considered);
     rb_hash_aset(h, ID2SYM(rb_intern("moved")), moved);
+    rb_hash_aset(h, ID2SYM(rb_intern("moved_up")), moved_up);
+    rb_hash_aset(h, ID2SYM(rb_intern("moved_down")), moved_down);
 
     return h;
 }
