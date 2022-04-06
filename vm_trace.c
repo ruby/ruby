@@ -725,9 +725,7 @@ call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
     if (self && (filename != Qnil) &&
         event != RUBY_EVENT_C_CALL &&
         event != RUBY_EVENT_C_RETURN &&
-        (VM_FRAME_RUBYFRAME_P(ec->cfp) ||
-         VM_FRAME_RUBYFRAME_P(RUBY_VM_PREVIOUS_CONTROL_FRAME(ec->cfp))) &&
-        imemo_type_p((VALUE)ec->cfp->iseq, imemo_iseq)) {
+        (VM_FRAME_RUBYFRAME_P(ec->cfp) && imemo_type_p((VALUE)ec->cfp->iseq, imemo_iseq))) {
         argv[4] = rb_binding_new();
     }
     argv[5] = klass ? klass : Qnil;
