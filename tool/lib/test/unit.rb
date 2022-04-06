@@ -473,7 +473,7 @@ module Test
         real_file = worker.real_file and warn "running file: #{real_file}"
         @need_quit = true
         warn ""
-        warn "Some test worker crashed. It might an interpreter bug or"
+        warn "A test worker crashed. It might be an interpreter bug or"
         warn "a bug in test/unit/parallel.rb. Try again without the -j"
         warn "option."
         warn ""
