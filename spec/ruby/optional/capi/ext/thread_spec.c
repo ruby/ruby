@@ -159,10 +159,10 @@ static void *new_thread_check(void *args) {
 static VALUE thread_spec_ruby_native_thread_p_new_thread(VALUE self) {
 #ifndef _WIN32
     pthread_t t;
-    VALUE *result = &true_result;
+    void *result = &true_result;
     pthread_create(&t, NULL, new_thread_check, NULL);
-    pthread_join(t, (void **)&result);
-    return *result;
+    pthread_join(t, &result);
+    return *(VALUE *)result;
 #else
     return Qfalse;
 #endif
