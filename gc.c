@@ -3211,8 +3211,11 @@ make_zombie(rb_objspace_t *objspace, VALUE obj, void (*dfree)(void *), void *dat
     zombie->basic.flags = T_ZOMBIE | (zombie->basic.flags & FL_SEEN_OBJ_ID);
     zombie->dfree = dfree;
     zombie->data = data;
-    zombie->next = heap_pages_deferred_final;
-    heap_pages_deferred_final = (VALUE)zombie;
+    VALUE prev, next = heap_pages_deferred_final;
+    do {
+        zombie->next = prev = next;
+        next = RUBY_ATOMIC_VALUE_CAS(heap_pages_deferred_final, prev, obj);
+    } while (next != prev);
 
     struct heap_page *page = GET_HEAP_PAGE(obj);
     page->final_slots++;
@@ -4272,16 +4275,20 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
 }
 
 static void
-finalize_deferred(rb_objspace_t *objspace)
+finalize_deferred_heap_pages(rb_objspace_t *objspace)
 {
     VALUE zombie;
-    rb_execution_context_t *ec = GET_EC();
-    ec->interrupt_mask |= PENDING_INTERRUPT_MASK;
-
     while ((zombie = ATOMIC_VALUE_EXCHANGE(heap_pages_deferred_final, 0)) != 0) {
 	finalize_list(objspace, zombie);
     }
+}
 
+static void
+finalize_deferred(rb_objspace_t *objspace)
+{
+    rb_execution_context_t *ec = GET_EC();
+    ec->interrupt_mask |= PENDING_INTERRUPT_MASK;
+    finalize_deferred_heap_pages(objspace);
     ec->interrupt_mask &= ~PENDING_INTERRUPT_MASK;
 }
 
@@ -4410,9 +4417,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 
     gc_exit(objspace, gc_enter_event_finalizer, &lock_lev);
 
-    if (heap_pages_deferred_final) {
-	finalize_list(objspace, heap_pages_deferred_final);
-    }
+    finalize_deferred_heap_pages(objspace);
 
     st_free_table(finalizer_table);
     finalizer_table = 0;
