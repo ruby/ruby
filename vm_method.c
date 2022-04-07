@@ -1021,8 +1021,9 @@ rb_vm_lookup_overloaded_cme(const rb_callable_method_entry_t *cme)
 static void
 delete_overloaded_cme(const rb_callable_method_entry_t *cme)
 {
+    st_data_t cme_data = (st_data_t)cme;
     ASSERT_vm_locking();
-    st_delete(overloaded_cme_table(), (st_data_t *)&cme, NULL);
+    st_delete(overloaded_cme_table(), &cme_data, NULL);
 }
 
 static const rb_callable_method_entry_t *

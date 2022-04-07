@@ -855,7 +855,7 @@ socklist_lookup(SOCKET sock, int *flagp)
 
     thread_exclusive(socklist) {
 	if (!socklist) continue;
-	ret = st_lookup(socklist, (st_data_t)sock, (st_data_t *)&data);
+	ret = st_lookup(socklist, (st_data_t)sock, &data);
 	if (ret && flagp)
 	    *flagp = (int)data;
     }
