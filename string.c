@@ -3660,7 +3660,7 @@ static VALUE str_casecmp_p(VALUE str1, VALUE str2);
  *    'foo'.casecmp('FOO') # => 0
  *    'foo'.casecmp(1) # => nil
  *
- *  See {Case Mapping}[case_mapping.rdoc].
+ *  See {Case Mapping}[rdoc-ref:case_mapping.rdoc].
  *
  *  Related: String#casecmp?.
  *
@@ -3750,7 +3750,7 @@ str_casecmp(VALUE str1, VALUE str2)
  *
  *    'foo'.casecmp?(1) # => nil
  *
- *  See {Case Mapping}[case_mapping.rdoc].
+ *  See {Case Mapping}[rdoc-ref:case_mapping.rdoc].
  *
  *  Related: String#casecmp.
  *
@@ -7330,7 +7330,7 @@ upcase_single(VALUE str)
  *    s.upcase!          # => nil
  *
  *  The casing may be affected by the given +options+;
- *  see {Case Mapping}[case_mapping.rdoc].
+ *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
  *
  *  Related: String#upcase, String#downcase, String#downcase!.
  *
@@ -7369,7 +7369,7 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
  *     s.upcase           # => "HELLO WORLD!"
  *
  *  The casing may be affected by the given +options+;
- *  see {Case Mapping}[case_mapping.rdoc].
+ *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
  *
  *  Related: String#upcase!, String#downcase, String#downcase!.
  *
@@ -7432,7 +7432,7 @@ downcase_single(VALUE str)
  *    s.downcase!        # => nil
  *
  *  The casing may be affected by the given +options+;
- *  see {Case Mapping}[case_mapping.rdoc].
+ *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
  *
  *  Related: String#downcase, String#upcase, String#upcase!.
  *
@@ -7471,7 +7471,7 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
  *     s.downcase         # => "hello world!"
  *
  *  The casing may be affected by the given +options+;
- *  see {Case Mapping}[case_mapping.rdoc].
+ *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
  *
  *  Related: String#downcase!, String#upcase, String#upcase!.
  *
@@ -7517,7 +7517,7 @@ rb_str_downcase(int argc, VALUE *argv, VALUE str)
  *    s.capitalize!      # => nil
  *
  *  The casing may be affected by the given +options+;
- *  see {Case Mapping}[case_mapping.rdoc].
+ *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
  *
  *  Related: String#capitalize.
  *
@@ -7555,7 +7555,7 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
  *     s.capitalize       # => "Hello world!"
  *
  *  The casing may be affected by the given +options+;
- *  see {Case Mapping}[case_mapping.rdoc].
+ *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
  *
  *  Related: String#capitalize!.
  *
@@ -7596,7 +7596,7 @@ rb_str_capitalize(int argc, VALUE *argv, VALUE str)
  *    ''.swapcase!       # => nil
  *
  *  The casing may be affected by the given +options+;
- *  see {Case Mapping}[case_mapping.rdoc].
+ *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
  *
  *  Related: String#swapcase.
  *
@@ -7633,7 +7633,7 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
  *     s.swapcase         # => "hELLO wORLD!"
  *
  *  The casing may be affected by the given +options+;
- *  see {Case Mapping}[case_mapping.rdoc].
+ *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
  *
  *  Related: String#swapcase!.
  *
@@ -11582,7 +11582,7 @@ sym_casecmp(VALUE sym, VALUE other)
  *    sym.casecmp?(other_sym) # => nil
  *    :foo.casecmp?(2)        # => nil
  *
- *  See {Case Mapping}[case_mapping.rdoc].
+ *  See {Case Mapping}[rdoc-ref:case_mapping.rdoc].
  *
  *  Related: Symbol#casecmp.
  *
