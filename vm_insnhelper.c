@@ -4963,7 +4963,12 @@ static void
 vm_ic_compile(rb_control_frame_t *cfp, IC ic)
 {
     const rb_iseq_t *iseq = cfp->iseq;
-    rb_iseq_each(iseq, cfp->pc - ISEQ_BODY(iseq)->iseq_encoded, vm_ic_compile_i, (void *) ic);
+
+    RB_VM_LOCK_ENTER();
+    {
+        rb_iseq_each(iseq, cfp->pc - ISEQ_BODY(iseq)->iseq_encoded, vm_ic_compile_i, (void *) ic);
+    }
+    RB_VM_LOCK_LEAVE();
 }
 
 // For MJIT inlining
