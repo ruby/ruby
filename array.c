@@ -7932,8 +7932,7 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  - An {array literal}[rdoc-ref:literals.rdoc@Array+Literals]:
  *
- *     [1, 'one', :one, [2, 'two', :two]]
- *
+ *      [1, 'one', :one, [2, 'two', :two]]
  *
  *  - A {%w or %W: string-array Literal}[rdoc-ref:literals.rdoc@25w+and+-25W-3A+String-Array+Literals]:
  *
