@@ -2448,7 +2448,7 @@ AC_CHECK_TYPES([sig_t],[],[],[@%:@include <signal.h>])
 AS_IF([test "$ac_cv_func_getpgid" = no], [
   # AC_FUNC_GETPGRP fails when cross-compiling with old autoconf.
   # autoconf is changed between 2.52d and 2.52f?
-  # http://lists.gnu.org/archive/html/bug-gnu-utils/2001-09/msg00181.html
+  # https://lists.gnu.org/archive/html/bug-gnu-utils/2001-09/msg00181.html
   # "autoconf cleanup for AC_FUNC_GETPGRP and GETPGRP_VOID"
 AC_FUNC_GETPGRP
 ])
