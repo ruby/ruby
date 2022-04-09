@@ -7922,7 +7922,9 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  Although the effective index into an array is always an integer,
  *  some methods (both within and outside of class \Array)
- *  accept one or more non-integer arguments that they convert to integer indexes.
+ *  accept one or more non-integer arguments that are
+ *  {integer-convertible objects}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
+ *
  *
  *  == Creating Arrays
  *
