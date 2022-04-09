@@ -7922,7 +7922,7 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  Although the effective index into an array is always an integer,
  *  some methods (both within and outside of class \Array)
- *  accept non-integer arguments which they convert to integer indexes.
+ *  accept one or more non-integer arguments that they convert to integer indexes.
  *
  *  == Creating Arrays
  *
@@ -7974,6 +7974,36 @@ rb_ary_deconstruct(VALUE ary)
  *
  *      Array.new(3) {Array.new(3)}
  *      # => [[nil, nil, nil], [nil, nil, nil], [nil, nil, nil]]
+ *
+ *  A number of Ruby methods, both in the core and in the standard library,
+ *  provide instance method +to_a+, which converts an object to an array.
+ *
+ *  - ARGF#to_a
+ *  - Array#to_a
+ *  - Enumerable #to_a
+ *  - Hash#to_a
+ *  - MatchData#to_a
+ *  - NilClass#to_a
+ *  - OptionParser#to_a
+ *  - Range#to_a
+ *  - Set#to_a
+ *  - Struct#to_a
+ *  - Time#to_a
+ *  - Benchmark::Tms#to_a
+ *  - CSV::Table#to_a
+ *  - Enumerator::Lazy#to_a
+ *  - Gem::List#to_a
+ *  - Gem::NameTuple#to_a
+ *  - Gem::Platform#to_a
+ *  - Gem::RequestSet::Lockfile::Tokenizer#to_a
+ *  - Gem::SourceList#to_a
+ *  - OpenSSL::X509::Extension#to_a
+ *  - OpenSSL::X509::Name#to_a
+ *  - Racc::ISet#to_a
+ *  - Rinda::RingFinger#to_a
+ *  - Ripper::Lexer::Elem#to_a
+ *  - RubyVM::InstructionSequence#to_a
+ *  - YAML::DBM#to_a
  *
  *  == Example Usage
  *
