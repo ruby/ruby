@@ -7929,7 +7929,7 @@ rb_ary_deconstruct(VALUE ary)
  *  some methods (both within and outside of class \Array)
  *  accept one or more arguments that are
  *  {integer-convertible objects}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
- *  Thus the given argument may be a Numeric
+ *  Thus the given argument may be any Numeric
  *  (Integer, Float, Complex, or Rational):
  *
  *    a = %w/foo bar baz/ # => ["foo", "bar", "baz"]
