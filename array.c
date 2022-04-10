@@ -7930,7 +7930,14 @@ rb_ary_deconstruct(VALUE ary)
  *  accept one or more arguments that are
  *  {integer-convertible objects}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
  *  Thus the given argument may be any Numeric
- *  (Integer, Float, Complex, or Rational):
+ *  that can be converted to an integer:
+ *
+ *  - Integer (of course).
+ *  - Float (but not +INFINITY+ or +NAN+).
+ *  - Complex (only if the imaginary part is zero).
+ *  - Rational.
+
+ *  Example arguments:
  *
  *    a = %w/foo bar baz/ # => ["foo", "bar", "baz"]
  *    a[1]                # => "bar"
