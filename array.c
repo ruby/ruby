@@ -7951,7 +7951,7 @@ rb_ary_deconstruct(VALUE ary)
  *      Array(key: :value)            # => [[:key, :value]]
  *      Array(nil)                    # => []
  *      Array(1)                      # => [1]
- *	Array({:a => "a", :b => "b"}) # => [[:a, "a"], [:b, "b"]]
+ *      Array({:a => "a", :b => "b"}) # => [[:a, "a"], [:b, "b"]]
  *
  *  - \Method Array.new:
  *
@@ -7981,7 +7981,7 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  - ARGF#to_a
  *  - Array#to_a
- *  - Enumerable #to_a
+ *  - Enumerable#to_a
  *  - Hash#to_a
  *  - MatchData#to_a
  *  - NilClass#to_a
