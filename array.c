@@ -7930,9 +7930,9 @@ rb_ary_deconstruct(VALUE ary)
  *  accept one or more arguments that are
  *  {integer-convertible objects}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
  *  Thus the given argument may be any Numeric
- *  that can be converted to an integer:
+ *  that is, or can be converted to, an integer:
  *
- *  - Integer (of course).
+ *  - Integer.
  *  - Float (but not +INFINITY+ or +NAN+).
  *  - Complex (only if the imaginary part is zero).
  *  - Rational.

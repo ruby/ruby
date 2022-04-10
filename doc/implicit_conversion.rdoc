@@ -122,7 +122,6 @@ An <i>Integer-convertible object</i> is an object that:
 
 The Ruby core classes that satisfy these requirements are:
 
-* Numeric
 * Integer
 * Float
 * Complex
