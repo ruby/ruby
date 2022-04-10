@@ -1142,6 +1142,9 @@ rb_ary_s_new(int argc, VALUE *argv, VALUE klass)
  *    a = Array.new(3)
  *    a # => [nil, nil, nil]
  *
+ *  Argument +size+, if given, must be an
+ *  {integer-convertible object}[rdoc-ref:Array@Integer-Convertible+Arguments].
+ *
  *  With no block and arguments +size+ and +default_value+,
  *  returns an \Array of the given size;
  *  each element is that same +default_value+:
@@ -7894,7 +7897,7 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  == \Array Indexes
  *
- *  \Array indexing starts at 0, as in C or Java.
+ *  \Array indexing starts at zero, as in C or Java.
  *
  *  A positive index is an offset from the first element:
  *
@@ -7920,11 +7923,20 @@ rb_ary_deconstruct(VALUE ary)
  *  - Indexes -1 through -3 are in range.
  *  - Index -4 is out of range.
  *
+ *  == \Integer-Convertible Arguments
+ *
  *  Although the effective index into an array is always an integer,
  *  some methods (both within and outside of class \Array)
- *  accept one or more non-integer arguments that are
+ *  accept one or more arguments that are
  *  {integer-convertible objects}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
+ *  Thus the given argument may be a Numeric
+ *  (Integer, Float, Complex, or Rational):
  *
+ *    a = %w/foo bar baz/ # => ["foo", "bar", "baz"]
+ *    a[1]                # => "bar"
+ *    a[1.1]              # => "bar"
+ *    a[Complex(1, 0)]    # => "bar"
+ *    a[Rational(1, 1)]   # => "bar"
  *
  *  == Creating Arrays
  *

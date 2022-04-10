@@ -115,9 +115,18 @@ This class is not Hash-convertible (method +to_hash+ returns non-Hash):
 === Integer-Convertible Objects
 
 An <i>Integer-convertible object</i> is an object that:
+
 * Has instance method +to_int+.
 * The method accepts no arguments.
 * The method returns an object +obj+ for which <tt>obj.kind_of?(Integer)</tt> returns +true+.
+
+The Ruby core classes that satisfy these requirements are:
+
+* Numeric
+* Integer
+* Float
+* Complex
+* Rational
 
 The examples in this section use method <tt>Array.new</tt>,
 which accepts an Integer-convertible argument.
