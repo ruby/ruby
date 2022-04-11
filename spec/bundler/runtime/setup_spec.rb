@@ -1511,5 +1511,28 @@ end
 
       expect(out).to include("rack, yard")
     end
+
+    it "does not cause double loads when higher versions of default gems are activated before bundler" do
+      build_repo2 do
+        build_gem "json", "999.999.999" do |s|
+          s.write "lib/json.rb", <<~RUBY
+            module JSON
+              VERSION = "999.999.999"
+            end
+          RUBY
+        end
+      end
+
+      system_gems "json-999.999.999", :gem_repo => gem_repo2
+
+      install_gemfile "source \"#{file_uri_for(gem_repo1)}\""
+      ruby <<-RUBY
+        require "json"
+        require "bundler/setup"
+        require "json"
+      RUBY
+
+      expect(err).to be_empty
+    end
   end
 end

@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GEMFILE" "5" "November 2021" "" ""
+.TH "GEMFILE" "5" "December 2021" "" ""
 .
 .SH "NAME"
 \fBGemfile\fR \- A format for describing gem dependencies for Ruby programs
@@ -505,6 +505,32 @@ gem "rails", :git => "git://github\.com/rails/rails\.git"
 .
 .P
 Since the \fBgithub\fR method is a specialization of \fBgit_source\fR, it accepts a \fB:branch\fR named argument\.
+.
+.P
+You can also directly pass a pull request URL:
+.
+.IP "" 4
+.
+.nf
+
+gem "rails", :github => "https://github\.com/rails/rails/pull/43753"
+.
+.fi
+.
+.IP "" 0
+.
+.P
+Which is equivalent to:
+.
+.IP "" 4
+.
+.nf
+
+gem "rails", :github => "rails/rails", branch: "refs/pull/43753/head"
+.
+.fi
+.
+.IP "" 0
 .
 .SS "GIST"
 If the git repository you want to use is hosted as a Github Gist and is public, you can use the :gist shorthand to specify the gist identifier (without the trailing "\.git")\.

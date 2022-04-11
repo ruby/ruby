@@ -218,7 +218,7 @@ module Spec
     end
 
     def all_commands_output
-      return [] if command_executions.empty?
+      return "" if command_executions.empty?
 
       "\n\nCommands:\n#{command_executions.map(&:to_s_verbose).join("\n\n")}"
     end

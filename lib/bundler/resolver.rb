@@ -30,10 +30,8 @@ module Bundler
       @resolver = Molinillo::Resolver.new(self, self)
       @search_for = {}
       @base_dg = Molinillo::DependencyGraph.new
-      aggregate_global_source = @source_requirements[:default].is_a?(Source::RubygemsAggregate)
       @base.each do |ls|
         dep = Dependency.new(ls.name, ls.version)
-        ls.source = source_for(ls.name) unless aggregate_global_source
         @base_dg.add_vertex(ls.name, DepProxy.get_proxy(dep, ls.platform), true)
       end
       additional_base_requirements.each {|d| @base_dg.add_vertex(d.name, d) }
@@ -272,7 +270,7 @@ module Bundler
                             rescue GemfileNotFound
                               nil
                             end
-          message = String.new("Could not find gem '#{SharedHelpers.pretty_dependency(requirement)}' in #{source.to_err}#{cache_message}.\n")
+          message = String.new("Could not find gem '#{SharedHelpers.pretty_dependency(requirement)}' in #{source}#{cache_message}.\n")
           message << "The source contains the following versions of '#{name}': #{formatted_versions_with_platforms(versions_with_platforms)}" if versions_with_platforms.any?
         end
         raise GemNotFound, message
@@ -371,7 +369,7 @@ module Bundler
             o << if metadata_requirement
               "is not available in #{relevant_source}"
             else
-              "in #{relevant_source.to_err}.\n"
+              "in #{relevant_source}.\n"
             end
           end
         end,

@@ -38,8 +38,24 @@ module Bundler
       identifier.hash
     end
 
+    ##
+    # Does this locked specification satisfy +dependency+?
+    #
+    # NOTE: Rubygems default requirement is ">= 0", which doesn't match
+    # prereleases of 0 versions, like "0.0.0.dev" or "0.0.0.SNAPSHOT". However,
+    # bundler users expect those to work. We need to make sure that Gemfile
+    # dependencies without explicit requirements (which use ">= 0" under the
+    # hood by default) are still valid for locked specs using this kind of
+    # versions. The method implements an ad-hoc fix for that. A better solution
+    # might be to change default rubygems requirement of dependencies to be ">=
+    # 0.A" but that's a major refactoring likely to break things. Hopefully we
+    # can attempt it in the future.
+    #
+
     def satisfies?(dependency)
-      @name == dependency.name && dependency.requirement.satisfied_by?(Gem::Version.new(@version))
+      effective_requirement = dependency.requirement == Gem::Requirement.default ? Gem::Requirement.new(">= 0.A") : dependency.requirement
+
+      @name == dependency.name && effective_requirement.satisfied_by?(Gem::Version.new(@version))
     end
 
     def to_lock

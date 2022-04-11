@@ -50,6 +50,19 @@ RSpec.describe "bundle info" do
       expect(out).to eq(root.to_s)
     end
 
+    it "prints gem version if exists in bundle" do
+      bundle "info rails --version"
+      expect(out).to eq("2.3.2")
+    end
+
+    it "doesn't claim that bundler has been deleted, even if using a custom path without bundler there" do
+      bundle "config set --local path vendor/bundle"
+      bundle "install"
+      bundle "info bundler"
+      expect(out).to include("\tPath: #{root}")
+      expect(err).not_to match(/The gem bundler has been deleted/i)
+    end
+
     it "complains if gem not in bundle" do
       bundle "info missing", :raise_on_error => false
       expect(err).to eq("Could not find gem 'missing'.")
