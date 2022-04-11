@@ -1672,7 +1672,9 @@ rb_class_inherited_p(VALUE mod, VALUE arg)
  *   mod < other   ->  true, false, or nil
  *
  * Returns true if <i>mod</i> is a subclass of <i>other</i>. Returns
- * <code>nil</code> if there's no relationship between the two.
+ * <code>false</code> if <i>mod</i> is the same as <i>other</i>
+ * or <i>mod</i> is an ancestor of <i>other</i>.
+ * Returns <code>nil</code> if there's no relationship between the two.
  * (Think of the relationship in terms of the class definition:
  * "class A < B" implies "A < B".)
  *
@@ -1713,7 +1715,9 @@ rb_mod_ge(VALUE mod, VALUE arg)
  *   mod > other   ->  true, false, or nil
  *
  * Returns true if <i>mod</i> is an ancestor of <i>other</i>. Returns
- * <code>nil</code> if there's no relationship between the two.
+ * <code>false</code> if <i>mod</i> is the same as <i>other</i>
+ * or <i>mod</i> is a descendant of <i>other</i>.
+ * Returns <code>nil</code> if there's no relationship between the two.
  * (Think of the relationship in terms of the class definition:
  * "class A < B" implies "B > A".)
  *
