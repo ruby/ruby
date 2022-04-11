@@ -288,6 +288,33 @@ gem 'other', version
                  "(SyntaxError)", e.message
   end
 
+  def test_ensure_no_race_conditions_between_installing_and_loading_gemspecs
+    a, a_gem = util_gem 'a', 2
+
+    Gem::Installer.at(a_gem).install
+
+    t1 = Thread.new do
+      5.times do
+        Gem::Installer.at(a_gem).install
+        sleep 0.1
+      end
+    end
+
+    t2 = Thread.new do
+      _, err = capture_output do
+        20.times do
+          Gem::Specification.load(a.spec_file)
+          Gem::Specification.send(:clear_load_cache)
+        end
+      end
+
+      assert_empty err
+    end
+
+    t1.join
+    t2.join
+  end
+
   def test_ensure_loadable_spec_security_policy
     pend 'openssl is missing' unless Gem::HAVE_OPENSSL
 
@@ -948,7 +975,6 @@ gem 'other', version
 
     Gem.pre_install do
       assert_path_not_exist cache_file, 'cache file must not exist yet'
-      assert_path_not_exist spec_file,  'spec file must not exist yet'
       true
     end
 
@@ -956,13 +982,11 @@ gem 'other', version
       assert_path_exist gemdir, 'gem install dir must exist'
       assert_path_exist rakefile, 'gem executable must exist'
       assert_path_not_exist stub_exe, 'gem executable must not exist'
-      assert_path_not_exist spec_file, 'spec file must not exist yet'
       true
     end
 
     Gem.post_install do
       assert_path_exist cache_file, 'cache file must exist'
-      assert_path_exist spec_file,  'spec file must exist'
     end
 
     @newspec = nil
@@ -1237,7 +1261,11 @@ gem 'other', version
   end
 
   def test_install_post_build_false
-    installer = setup_base_installer
+    @spec = util_spec 'a'
+
+    util_build_gem @spec
+
+    installer = util_installer @spec, @gemhome
 
     Gem.post_build do
       false
@@ -1279,7 +1307,11 @@ gem 'other', version
   end
 
   def test_install_pre_install_false
-    installer = setup_base_installer
+    @spec = util_spec 'a'
+
+    util_build_gem @spec
+
+    installer = util_installer @spec, @gemhome
 
     Gem.pre_install do
       false

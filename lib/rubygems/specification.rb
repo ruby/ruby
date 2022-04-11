@@ -288,6 +288,15 @@ class Gem::Specification < Gem::BasicSpecification
   # :section: Recommended gemspec attributes
 
   ##
+  # The version of Ruby required by this gem
+  #
+  # Usage:
+  #
+  #   spec.required_ruby_version = '>= 2.7.0'
+
+  attr_reader :required_ruby_version
+
+  ##
   # A long description of this gem
   #
   # The description should be more detailed than the summary but not
@@ -521,11 +530,6 @@ class Gem::Specification < Gem::BasicSpecification
   def require_paths=(val)
     @require_paths = Array(val)
   end
-
-  ##
-  # The version of Ruby required by this gem
-
-  attr_reader :required_ruby_version
 
   ##
   # The RubyGems version required by this gem

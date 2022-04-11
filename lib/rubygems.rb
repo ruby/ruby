@@ -8,7 +8,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.2.32".freeze
+  VERSION = "3.2.33".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -800,11 +800,11 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   ##
   # Safely write a file in binary mode on all platforms.
   def self.write_binary(path, data)
+    File.open(path, File::RDWR | File::CREAT | File::BINARY | File::LOCK_EX) do |io|
+      io.write data
+    end
+  rescue *WRITE_BINARY_ERRORS
     File.open(path, 'wb') do |io|
-      begin
-        io.flock(File::LOCK_EX)
-      rescue *WRITE_BINARY_ERRORS
-      end
       io.write data
     end
   rescue Errno::ENOLCK # NFS
