@@ -44,23 +44,16 @@ jobs:
         shell: msys2 {0}
         run: echo PATCH=$(cygpath -wa $(command -v patch)) >> $GITHUB_ENV
         if: ${{ steps.setup-msys2.outcome == 'success' }}
-      - uses: actions/cache@v3
-        with:
-          path: C:\vcpkg\downloads
-          key: ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-
-            ${{ runner.os }}-vcpkg-download-
-      - uses: actions/cache@v3
-        with:
-          path: C:\vcpkg\installed
-          key: ${{ runner.os }}-vcpkg-installed-${{ matrix.os }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-vcpkg-installed-${{ matrix.os }}-
-            ${{ runner.os }}-vcpkg-installed-
-      - name: Install libraries with vcpkg
+      - name: Install pre-built vcpkg libraries
         run: |
-          vcpkg --triplet x64-windows install libffi libyaml openssl readline zlib
+          cd $env:VCPKG_INSTALLATION_ROOT
+          $uri = "https://github.com/MSP-Greg/setup-msys2-gcc/releases/download/msys2-gcc-pkgs/mswin.7z"
+          curl -L $uri -o $env:RUNNER_TEMP/mswin_temp.7z
+          &"C:\Program Files\7-Zip\7z" x $env:RUNNER_TEMP/mswin_temp.7z -aoa
+          echo "`n———————————— ./vcpkg list ————————————"
+          ./vcpkg list
+        shell: pwsh
+        timeout-minutes: 5
       - uses: actions/cache@v3
         with:
           path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey

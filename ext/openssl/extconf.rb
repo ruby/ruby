@@ -184,7 +184,7 @@ have_func("EVP_PKEY_dup")
 
 Logging::message "=== Checking done. ===\n"
 
-if openssl_3
+if openssl_3 && $warnflags
   if $warnflags.sub!(/-W\K(?=deprecated-declarations)/, 'no-')
     $warnflags << " -Wno-incompatible-pointer-types-discards-qualifiers"
   end
