@@ -293,8 +293,6 @@ class Gem::Installer
   def install
     pre_install_checks
 
-    FileUtils.rm_f File.join gem_home, 'specifications', spec.spec_name
-
     run_pre_install_hooks
 
     # Set loaded_from to ensure extension_dir is correct
@@ -448,13 +446,9 @@ class Gem::Installer
   # specifications directory.
 
   def write_spec
-    File.open spec_file, 'w' do |file|
-      spec.installed_by_version = Gem.rubygems_version
+    spec.installed_by_version = Gem.rubygems_version
 
-      file.puts spec.to_ruby_for_cache
-
-      file.fsync rescue nil # for filesystems without fsync(2)
-    end
+    Gem.write_binary(spec_file, spec.to_ruby_for_cache)
   end
 
   ##
@@ -462,9 +456,7 @@ class Gem::Installer
   # specifications/default directory.
 
   def write_default_spec
-    File.open(default_spec_file, "w") do |file|
-      file.puts spec.to_ruby
-    end
+    Gem.write_binary(default_spec_file, spec.to_ruby)
   end
 
   ##

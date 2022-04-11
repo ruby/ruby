@@ -156,6 +156,21 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     assert_match %r{\A#!\s*#{bin_env}#{ruby_exec}}, File.read(gem_bin_path)
   end
 
+  def test_destdir_flag_does_not_try_to_write_to_the_default_gem_home
+    FileUtils.chmod "-w", File.join(@gemhome, "plugins")
+
+    destdir = File.join(@tempdir, 'foo')
+
+    @cmd.options[:destdir] = destdir
+    @cmd.execute
+
+    spec = Gem::Specification.load("bundler/bundler.gemspec")
+
+    spec.executables.each do |e|
+      assert_path_exist File.join destdir, @gemhome.gsub(/^[a-zA-Z]:/, ''), 'gems', spec.full_name, spec.bindir, e
+    end
+  end
+
   def test_files_in
     assert_equal %w[rubygems.rb rubygems/requirement.rb rubygems/ssl_certs/rubygems.org/foo.pem],
                  @cmd.files_in('lib').sort
@@ -244,6 +259,8 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
   def test_install_default_bundler_gem_with_destdir_flag
     @cmd.extend FileUtils
+
+    FileUtils.chmod "-w", @gemhome
 
     destdir = File.join(@tempdir, 'foo')
     bin_dir = File.join(destdir, 'bin')

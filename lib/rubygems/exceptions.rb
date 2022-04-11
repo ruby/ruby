@@ -259,3 +259,4 @@ end
 # Backwards compatible typo'd exception class for early RubyGems 2.0.x
 
 Gem::UnsatisfiableDepedencyError = Gem::UnsatisfiableDependencyError # :nodoc:
+Gem.deprecate_constant :UnsatisfiableDepedencyError
