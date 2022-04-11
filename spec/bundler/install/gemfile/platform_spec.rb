@@ -358,6 +358,49 @@ RSpec.describe "bundle install with platform conditionals" do
     expect(the_bundle).not_to include_gems "nokogiri 1.4.2"
   end
 
+  it "installs gems tagged w/ another platform but also dependent on the current one transitively" do
+    build_repo4 do
+      build_gem "activesupport", "6.1.4.1" do |s|
+        s.add_dependency "tzinfo", "~> 2.0"
+      end
+
+      build_gem "tzinfo", "2.0.4"
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+
+      gem "activesupport"
+
+      platforms :#{not_local_tag} do
+        gem "tzinfo", "~> 1.2"
+      end
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          activesupport (6.1.4.1)
+            tzinfo (~> 2.0)
+          tzinfo (2.0.4)
+
+      PLATFORMS
+        #{specific_local_platform}
+
+      DEPENDENCIES
+        activesupport
+        tzinfo (~> 1.2)
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "install --verbose"
+
+    expect(the_bundle).to include_gems "tzinfo 2.0.4"
+  end
+
   it "installs gems tagged w/ the current platforms inline" do
     skip "platform issues" if Gem.win_platform?
 

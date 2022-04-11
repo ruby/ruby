@@ -79,7 +79,7 @@ RSpec.describe "bundle doctor" do
     it "exits with an error if home contains files that are not readable/writable" do
       expect { Bundler::CLI::Doctor.new({}).run }.not_to raise_error
       expect(@stdout.string).to include(
-        "Broken links exist in the Bundler home. Please report them to the offending gem's upstream repo. These files are:\n - #{@unwritable_file}"
+        "Broken links exist in the Bundler home. Please report them to the offending gem's upstream repo. These files are:\n - #{@broken_symlink}"
       )
       expect(@stdout.string).not_to include("No issues")
     end
@@ -131,6 +131,16 @@ RSpec.describe "bundle doctor" do
         )
         expect(@stdout.string).not_to include("No issues")
       end
+    end
+  end
+
+  context "when home contains filesname with special characters" do
+    it "escape filename before command execute" do
+      doctor = Bundler::CLI::Doctor.new({})
+      expect(doctor).to receive(:`).with("/usr/bin/otool -L \\$\\(date\\)\\ \\\"\\'\\\\.bundle").and_return("dummy string")
+      doctor.dylibs_darwin('$(date) "\'\.bundle')
+      expect(doctor).to receive(:`).with("/usr/bin/ldd \\$\\(date\\)\\ \\\"\\'\\\\.bundle").and_return("dummy string")
+      doctor.dylibs_ldd('$(date) "\'\.bundle')
     end
   end
 end

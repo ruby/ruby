@@ -18,6 +18,7 @@ module Bundler
 
       if spec
         return print_gem_path(spec) if @options[:path]
+        return print_gem_version(spec) if @options[:version]
         print_gem_info(spec)
       end
     end
@@ -37,6 +38,10 @@ module Bundler
 
     def spec_not_found(gem_name)
       raise GemNotFound, Bundler::CLI::Common.gem_not_found_message(gem_name, Bundler.definition.dependencies)
+    end
+
+    def print_gem_version(spec)
+      Bundler.ui.info spec.version.to_s
     end
 
     def print_gem_path(spec)
@@ -70,7 +75,7 @@ module Bundler
       gem_info << "\tPath: #{spec.full_gem_path}\n"
       gem_info << "\tDefault Gem: yes" if spec.respond_to?(:default_gem?) && spec.default_gem?
 
-      if spec.deleted_gem?
+      if name != "bundler" && spec.deleted_gem?
         return Bundler.ui.warn "The gem #{name} has been deleted. Gemspec information is still available though:\n#{gem_info}"
       end
 

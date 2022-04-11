@@ -25,6 +25,45 @@ RSpec.describe Bundler::Dsl do
       expect { subject.git_source(:example) }.to raise_error(Bundler::InvalidOption)
     end
 
+    it "converts :github PR to URI using https" do
+      subject.gem("sparks", :github => "https://github.com/indirect/sparks/pull/5")
+      github_uri = "https://github.com/indirect/sparks.git"
+      expect(subject.dependencies.first.source.uri).to eq(github_uri)
+      expect(subject.dependencies.first.source.branch).to eq("refs/pull/5/head")
+    end
+
+    it "rejects :github PR URI with a branch, ref or tag" do
+      expect do
+        subject.gem("sparks", :github => "https://github.com/indirect/sparks/pull/5", :branch => "foo")
+      end.to raise_error(
+        Bundler::GemfileError,
+        %(The :branch option can't be used with `github: "https://github.com/indirect/sparks/pull/5"`),
+      )
+
+      expect do
+        subject.gem("sparks", :github => "https://github.com/indirect/sparks/pull/5", :ref => "foo")
+      end.to raise_error(
+        Bundler::GemfileError,
+        %(The :ref option can't be used with `github: "https://github.com/indirect/sparks/pull/5"`),
+      )
+
+      expect do
+        subject.gem("sparks", :github => "https://github.com/indirect/sparks/pull/5", :tag => "foo")
+      end.to raise_error(
+        Bundler::GemfileError,
+        %(The :tag option can't be used with `github: "https://github.com/indirect/sparks/pull/5"`),
+      )
+    end
+
+    it "rejects :github with :git" do
+      expect do
+        subject.gem("sparks", :github => "indirect/sparks", :git => "https://github.com/indirect/sparks.git")
+      end.to raise_error(
+        Bundler::GemfileError,
+        %(The :git option can't be used with `github: "indirect/sparks"`),
+      )
+    end
+
     context "default hosts", :bundler => "< 3" do
       it "converts :github to URI using https" do
         subject.gem("sparks", :github => "indirect/sparks")

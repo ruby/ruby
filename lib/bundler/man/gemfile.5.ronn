@@ -372,6 +372,14 @@ Are both equivalent to
 
 Since the `github` method is a specialization of `git_source`, it accepts a `:branch` named argument.
 
+You can also directly pass a pull request URL:
+
+    gem "rails", :github => "https://github.com/rails/rails/pull/43753"
+
+Which is equivalent to:
+
+    gem "rails", :github => "rails/rails", branch: "refs/pull/43753/head"
+
 ### GIST
 
 If the git repository you want to use is hosted as a Github Gist and is public, you can use

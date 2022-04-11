@@ -16,7 +16,7 @@ module Bundler
         @index
       end
 
-      def to_err
+      def identifier
         to_s
       end
 
