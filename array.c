@@ -7888,77 +7888,123 @@ rb_ary_deconstruct(VALUE ary)
 }
 
 /*
- *  An \Array is an ordered, integer-indexed collection of objects,
- *  called _elements_.  Any object may be an \Array element.
+ *  An \Array is an ordered, integer-indexed collection of objects, called _elements_.
+ *  Any object (even another array) may be an array element,
+ *  and an array can contain objects of different types.
  *
  *  == \Array Indexes
  *
  *  \Array indexing starts at 0, as in C or Java.
  *
  *  A positive index is an offset from the first element:
+ *
  *  - Index 0 indicates the first element.
  *  - Index 1 indicates the second element.
  *  - ...
  *
  *  A negative index is an offset, backwards, from the end of the array:
+ *
  *  - Index -1 indicates the last element.
  *  - Index -2 indicates the next-to-last element.
  *  - ...
  *
- *  A non-negative index is <i>in range</i> if it is smaller than
+ *  A non-negative index is <i>in range</i> if and only if it is smaller than
  *  the size of the array.  For a 3-element array:
+ *
  *  - Indexes 0 through 2 are in range.
  *  - Index 3 is out of range.
  *
- *  A negative index is <i>in range</i> if its absolute value is
+ *  A negative index is <i>in range</i> if and only if its absolute value is
  *  not larger than the size of the array.  For a 3-element array:
+ *
  *  - Indexes -1 through -3 are in range.
  *  - Index -4 is out of range.
+ *
+ *  Although the effective index into an array is always an integer,
+ *  some methods (both within and outside of class \Array)
+ *  accept one or more non-integer arguments that are
+ *  {integer-convertible objects}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
+ *
  *
  *  == Creating Arrays
  *
  *  You can create an \Array object explicitly with:
  *
- *  - An {array literal}[rdoc-ref:syntax/literals.rdoc@Array+Literals].
+ *  - An {array literal}[rdoc-ref:literals.rdoc@Array+Literals]:
  *
- *  You can convert certain objects to Arrays with:
+ *      [1, 'one', :one, [2, 'two', :two]]
  *
- *  - \Method #Array.
+ *  - A {%w or %W: string-array Literal}[rdoc-ref:literals.rdoc@25w+and+-25W-3A+String-Array+Literals]:
  *
- *  An \Array can contain different types of objects.  For
- *  example, the array below contains an Integer, a String and a Float:
+ *      %w[foo bar baz] # => ["foo", "bar", "baz"]
+ *      %w[1 % *]       # => ["1", "%", "*"]
  *
- *     ary = [1, "two", 3.0] #=> [1, "two", 3.0]
+ *  - A {%i pr %I: symbol-array Literal}[rdoc-ref:literals.rdoc@25i+and+-25I-3A+Symbol-Array+Literals]:
  *
- *  An array can also be created by calling Array.new with zero, one
- *  (the initial size of the \Array) or two arguments (the initial size and a
- *  default object).
+ *      %i[foo bar baz] # => [:foo, :bar, :baz]
+ *      %i[1 % *]       # => [:"1", :%, :*]
  *
- *     ary = Array.new    #=> []
- *     Array.new(3)       #=> [nil, nil, nil]
- *     Array.new(3, true) #=> [true, true, true]
+ *  - \Method Kernel#Array:
  *
- *  Note that the second argument populates the array with references to the
- *  same object.  Therefore, it is only recommended in cases when you need to
- *  instantiate arrays with natively immutable objects such as Symbols,
- *  numbers, true or false.
+ *      Array(["a", "b"])             # => ["a", "b"]
+ *      Array(1..5)                   # => [1, 2, 3, 4, 5]
+ *      Array(key: :value)            # => [[:key, :value]]
+ *      Array(nil)                    # => []
+ *      Array(1)                      # => [1]
+ *      Array({:a => "a", :b => "b"}) # => [[:a, "a"], [:b, "b"]]
  *
- *  To create an array with separate objects a block can be passed instead.
- *  This method is safe to use with mutable objects such as hashes, strings or
- *  other arrays:
+ *  - \Method Array.new:
  *
- *     Array.new(4) {Hash.new}    #=> [{}, {}, {}, {}]
- *     Array.new(4) {|i| i.to_s } #=> ["0", "1", "2", "3"]
+ *      Array.new               # => []
+ *      Array.new(3)            # => [nil, nil, nil]
+ *      Array.new(4) {Hash.new} # => [{}, {}, {}, {}]
+ *      Array.new(3, true)      # => [true, true, true]
  *
- *  This is also a quick way to build up multi-dimensional arrays:
+ *    Note that the last example above populates the array
+ *    with references to the same object.
+ *    This is recommended only in cases where that object is a natively immutable object
+ *    such as a symbol, a numeric, +nil+, +true+, or +false+.
  *
- *     empty_table = Array.new(3) {Array.new(3)}
- *     #=> [[nil, nil, nil], [nil, nil, nil], [nil, nil, nil]]
+ *    Another way to create an array with various objects, using a block;
+ *    this usage is safe for mutable objects such as hashes, strings or
+ *    other arrays:
  *
- *  An array can also be created by using the Array() method, provided by
- *  Kernel, which tries to call #to_ary, then #to_a on its argument.
+ *      Array.new(4) {|i| i.to_s } # => ["0", "1", "2", "3"]
  *
- *	Array({:a => "a", :b => "b"}) #=> [[:a, "a"], [:b, "b"]]
+ *    Here is a way to create a multi-dimensional array:
+ *
+ *      Array.new(3) {Array.new(3)}
+ *      # => [[nil, nil, nil], [nil, nil, nil], [nil, nil, nil]]
+ *
+ *  A number of Ruby methods, both in the core and in the standard library,
+ *  provide instance method +to_a+, which converts an object to an array.
+ *
+ *  - ARGF#to_a
+ *  - Array#to_a
+ *  - Enumerable#to_a
+ *  - Hash#to_a
+ *  - MatchData#to_a
+ *  - NilClass#to_a
+ *  - OptionParser#to_a
+ *  - Range#to_a
+ *  - Set#to_a
+ *  - Struct#to_a
+ *  - Time#to_a
+ *  - Benchmark::Tms#to_a
+ *  - CSV::Table#to_a
+ *  - Enumerator::Lazy#to_a
+ *  - Gem::List#to_a
+ *  - Gem::NameTuple#to_a
+ *  - Gem::Platform#to_a
+ *  - Gem::RequestSet::Lockfile::Tokenizer#to_a
+ *  - Gem::SourceList#to_a
+ *  - OpenSSL::X509::Extension#to_a
+ *  - OpenSSL::X509::Name#to_a
+ *  - Racc::ISet#to_a
+ *  - Rinda::RingFinger#to_a
+ *  - Ripper::Lexer::Elem#to_a
+ *  - RubyVM::InstructionSequence#to_a
+ *  - YAML::DBM#to_a
  *
  *  == Example Usage
  *

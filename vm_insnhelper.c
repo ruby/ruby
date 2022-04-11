@@ -4937,12 +4937,16 @@ vm_ic_compile_i(VALUE *code, VALUE insn, size_t index, void *ic)
 
     if (insn == BIN(getconstant)) {
         ID id = code[index + 1];
-        rb_vm_t *vm = GET_VM();
-
+        struct rb_id_table *const_cache = GET_VM()->constant_cache;
+        VALUE lookup_result;
         st_table *ics;
-        if (!rb_id_table_lookup(vm->constant_cache, id, (VALUE *) &ics)) {
+
+        if (rb_id_table_lookup(const_cache, id, &lookup_result)) {
+            ics = (st_table *)lookup_result;
+        }
+        else {
             ics = st_init_numtable();
-            rb_id_table_insert(vm->constant_cache, id, (VALUE) ics);
+            rb_id_table_insert(const_cache, id, (VALUE)ics);
         }
 
         st_insert(ics, (st_data_t) ic, (st_data_t) Qtrue);
@@ -4959,7 +4963,12 @@ static void
 vm_ic_compile(rb_control_frame_t *cfp, IC ic)
 {
     const rb_iseq_t *iseq = cfp->iseq;
-    rb_iseq_each(iseq, cfp->pc - ISEQ_BODY(iseq)->iseq_encoded, vm_ic_compile_i, (void *) ic);
+
+    RB_VM_LOCK_ENTER();
+    {
+        rb_iseq_each(iseq, cfp->pc - ISEQ_BODY(iseq)->iseq_encoded, vm_ic_compile_i, (void *) ic);
+    }
+    RB_VM_LOCK_LEAVE();
 }
 
 // For MJIT inlining

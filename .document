@@ -22,6 +22,7 @@ numeric.rb
 nilclass.rb
 pack.rb
 ractor.rb
+string.rb
 timev.rb
 trace_point.rb
 warning.rb

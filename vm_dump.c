@@ -507,8 +507,8 @@ darwin_sigtramp:
 	char vec[1];
 	int r;
 	/* get previous frame information from %rbx at _sigtramp and set values to cursor
-	 * http://www.opensource.apple.com/source/Libc/Libc-825.25/i386/sys/_sigtramp.s
-	 * http://www.opensource.apple.com/source/libunwind/libunwind-35.1/src/unw_getcontext.s
+	 * https://www.opensource.apple.com/source/Libc/Libc-825.25/i386/sys/_sigtramp.s
+	 * https://www.opensource.apple.com/source/libunwind/libunwind-35.1/src/unw_getcontext.s
 	 */
 	unw_get_reg(&cursor, UNW_X86_64_RBX, &ip);
 	uctx = (ucontext_t *)ip;
