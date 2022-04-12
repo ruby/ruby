@@ -11293,10 +11293,12 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     sym == obj   -> true or false
+ *    symbol == object -> true or false
  *
- *  Equality---If <i>sym</i> and <i>obj</i> are exactly the same
- *  symbol, returns <code>true</code>.
+ *  Returns +true+ if +object+ is the same object as +self+, +false+ otherwise.
+ *
+ *  Symbol#=== is an alias for Symbol#==.
+ *
  */
 
 #define sym_equal rb_obj_equal
@@ -11369,11 +11371,14 @@ rb_id_quote_unprintable(ID id)
 
 /*
  *  call-seq:
- *     sym.inspect    -> string
+ *    inspect -> string
  *
- *  Returns the representation of <i>sym</i> as a symbol literal.
+ *  Returns a string representation of +self+ (including the leading colon):
  *
- *     :fred.inspect   #=> ":fred"
+ *    :foo.inspect # => ":foo"
+ *
+ *  Related:  Symbol#to_s, Symbol#name.
+ *
  */
 
 static VALUE
@@ -11405,15 +11410,14 @@ sym_inspect(VALUE sym)
 #if 0 /* for RDoc */
 /*
  *  call-seq:
- *     sym.name   -> string
+ *    name -> string
  *
- *  Returns the name or string corresponding to <i>sym</i>. Unlike #to_s, the
- *  returned string is frozen.
+ *  Returns a frozen string representation of +self+ (not including the leading colon):
  *
- *     :fred.name         #=> "fred"
- *     :fred.name.frozen? #=> true
- *     :fred.to_s         #=> "fred"
- *     :fred.to_s.frozen? #=> false
+ *    :foo.name         # => "foo"
+ *    :foo.name.frozen? # => true
+ *
+ *  Related: Symbol#to_s, Symbol#inspect.
  */
 VALUE
 rb_sym2str(VALUE sym)
@@ -11425,16 +11429,15 @@ rb_sym2str(VALUE sym)
 
 /*
  *  call-seq:
- *     sym.id2name   -> string
- *     sym.to_s      -> string
+ *    to_s -> string
  *
- *  Returns the name or string corresponding to <i>sym</i>.
+ *  Returns a string representation of +self+ (not including the leading colon):
  *
- *     :fred.id2name   #=> "fred"
- *     :ginger.to_s    #=> "ginger"
+ *    :foo.to_s # => "foo"
  *
- *  Note that this string is not frozen (unlike the symbol itself).
- *  To get a frozen string, use #name.
+ *  Symbol#id2name is an alias for Symbol#to_s.
+ *
+ *  Related: Symbol#inspect, Symbol#name.
  */
 
 
@@ -11446,13 +11449,14 @@ rb_sym_to_s(VALUE sym)
 
 
 /*
- * call-seq:
- *   sym.to_sym   -> sym
- *   sym.intern   -> sym
+ *  call-seq:
+ *    to_sym -> self
  *
- * In general, <code>to_sym</code> returns the Symbol corresponding
- * to an object. As <i>sym</i> is already a symbol, <code>self</code> is returned
- * in this case.
+ *  Returns +self+.
+ *
+ *  Symbol#intern is an alias for Symbol#to_sym.
+ *
+ *  Related: String#to_sym.
  */
 
 static VALUE
@@ -11475,12 +11479,17 @@ rb_sym_proc_call(ID mid, int argc, const VALUE *argv, int kw_splat, VALUE passed
 
 #if 0
 /*
- * call-seq:
- *   sym.to_proc
+ *  call-seq:
+ *    to_proc
  *
- * Returns a _Proc_ object which responds to the given method by _sym_.
+ *  Returns a Proc object which calls the method with name of +self+
+ *  on the first parameter and passes the remaining parameters to the method.
  *
- *   (1..3).collect(&:to_s)  #=> ["1", "2", "3"]
+ *    proc = :to_s.to_proc   # => #<Proc:0x000001afe0e48680(&:to_s) (lambda)>
+ *    proc.call(1000)        # => "1000"
+ *    proc.call(1000, 16)    # => "3e8"
+ *    (1..3).collect(&:to_s) # => ["1", "2", "3"]
+ *
  */
 
 VALUE
@@ -11490,11 +11499,16 @@ rb_sym_to_proc(VALUE sym)
 #endif
 
 /*
- * call-seq:
+ *  call-seq:
+ *    succ
  *
- *   sym.succ
+ *  Equivalent to <tt>self.to_s.succ.to_sym</tt>:
  *
- * Same as <code>sym.to_s.succ.intern</code>.
+ *    :foo.succ # => :fop
+ *
+ *  Symbol#next is an alias for Symbol#succ.
+ *
+ *  Related: String#succ.
  */
 
 static VALUE
@@ -11504,17 +11518,21 @@ sym_succ(VALUE sym)
 }
 
 /*
- * call-seq:
+ *  call-seq:
+ *   symbol <=> object -> -1, 0, +1, or nil
  *
- *   symbol <=> other_symbol       -> -1, 0, +1, or nil
+ *  If +object+ is a symbol,
+ *  returns the equivalent of <tt>symbol.to_s <=> object.to_s</tt>:
  *
- * Compares +symbol+ with +other_symbol+ after calling #to_s on each of the
- * symbols. Returns -1, 0, +1, or +nil+ depending on whether +symbol+ is
- * less than, equal to, or greater than +other_symbol+.
+ *    :bar <=> :foo # => -1
+ *    :foo <=> :foo # => 0
+ *    :foo <=> :bar # => 1
  *
- * +nil+ is returned if the two values are incomparable.
+ *  Otherwise, returns +nil+:
  *
- * See String#<=> for more information.
+ *   :foo <=> 'bar' # => nil
+ *
+ *  Related: String#<=>.
  */
 
 static VALUE
@@ -11528,27 +11546,9 @@ sym_cmp(VALUE sym, VALUE other)
 
 /*
  *  call-seq:
- *    casecmp(other_symbol) -> -1, 0, 1, or nil
+ *    casecmp(object) -> -1, 0, 1, or nil
  *
- *  Case-insensitive version of #<=>:
- *
- *    :aBcDeF.casecmp(:abcde)   # => 1
- *    :aBcDeF.casecmp(:abcdef)  # => 0
- *    :aBcDeF.casecmp(:abcdefg) # => -1
- *    :abcdef.casecmp(:ABCDEF)  # => 0
- *
- *  Returns +nil+ if the two symbols have incompatible encodings,
- *  or if +other_symbol+ is not a symbol:
- *
- *    sym = "\u{e4 f6 fc}".encode("ISO-8859-1").to_sym
- *    other_sym = :"\u{c4 d6 dc}"
- *    sym.casecmp(other_sym) # => nil
- *    :foo.casecmp(2)        # => nil
- *
- *  Currently, case-insensitivity only works on characters A-Z/a-z,
- *  not all of Unicode. This is different from Symbol#casecmp?.
- *
- *  Related: Symbol#casecmp?.
+ *  :include: doc/symbol/casecmp.rdoc
  *
  */
 
@@ -11563,28 +11563,9 @@ sym_casecmp(VALUE sym, VALUE other)
 
 /*
  *  call-seq:
- *    casecmp?(other_symbol) -> true, false, or nil
+ *    casecmp?(object) -> true, false, or nil
  *
- *  Returns +true+ if +sym+ and +other_symbol+ are equal after
- *  Unicode case folding, +false+ if they are not equal:
- *
- *    :aBcDeF.casecmp?(:abcde)                  # => false
- *    :aBcDeF.casecmp?(:abcdef)                 # => true
- *    :aBcDeF.casecmp?(:abcdefg)                # => false
- *    :abcdef.casecmp?(:ABCDEF)                 # => true
- *    :"\u{e4 f6 fc}".casecmp?(:"\u{c4 d6 dc}") #=> true
- *
- *  Returns +nil+ if the two symbols have incompatible encodings,
- *  or if +other_symbol+ is not a symbol:
- *
- *    sym = "\u{e4 f6 fc}".encode("ISO-8859-1").to_sym
- *    other_sym = :"\u{c4 d6 dc}"
- *    sym.casecmp?(other_sym) # => nil
- *    :foo.casecmp?(2)        # => nil
- *
- *  See {Case Mapping}[rdoc-ref:case_mapping.rdoc].
- *
- *  Related: Symbol#casecmp.
+ *  :include: doc/symbol/casecmp_p.rdoc
  *
  */
 
@@ -11598,10 +11579,13 @@ sym_casecmp_p(VALUE sym, VALUE other)
 }
 
 /*
- * call-seq:
- *   sym =~ obj   -> integer or nil
+ *  call-seq:
+ *    symbol =~ object -> integer or nil
  *
- * Returns <code>sym.to_s =~ obj</code>.
+ *  Equivalent to <tt>symbol.to_s =~ object</tt>,
+ *  including possible updates to global variables;
+ *  see String#=~.
+ *
  */
 
 static VALUE
@@ -11611,11 +11595,14 @@ sym_match(VALUE sym, VALUE other)
 }
 
 /*
- * call-seq:
- *   sym.match(pattern)        -> matchdata or nil
- *   sym.match(pattern, pos)   -> matchdata or nil
+ *  call-seq:
+ *    match(pattern, offset = 0) -> matchdata or nil
+ *    match(pattern, offset = 0) {|matchdata| } -> object
  *
- * Returns <code>sym.to_s.match</code>.
+ *  Equivalent to <tt>self.to_s.match</tt>,
+ *  including possible updates to global variables;
+ *  see String#match.
+ *
  */
 
 static VALUE
@@ -11625,11 +11612,12 @@ sym_match_m(int argc, VALUE *argv, VALUE sym)
 }
 
 /*
- * call-seq:
- *   sym.match?(pattern)        -> true or false
- *   sym.match?(pattern, pos)   -> true or false
+ *  call-seq:
+ *    match?(pattern, offset) -> true or false
  *
- * Returns <code>sym.to_s.match?</code>.
+ *  Equivalent to <tt>sym.to_s.match?</tt>;
+ *  see String#match.
+ *
  */
 
 static VALUE
