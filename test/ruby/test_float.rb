@@ -171,6 +171,24 @@ class TestFloat < Test::Unit::TestCase
       assert_raise(ArgumentError, n += z + "A") {Float(n)}
       assert_raise(ArgumentError, n += z + ".0") {Float(n)}
     end
+
+    x = nil
+    2000.times do
+      x = Float("0x"+"0"*30)
+      break unless x == 0.0
+    end
+    assert_equal(0.0, x, ->{"%a" % x})
+    x = nil
+    2000.times do
+      begin
+        x = Float("0x1."+"0"*270)
+      rescue ArgumentError => e
+        raise unless /"0x1\.0{270}"/ =~ e.message
+      else
+        break
+      end
+    end
+    assert_nil(x, ->{"%a" % x})
   end
 
   def test_divmod
