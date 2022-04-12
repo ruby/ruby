@@ -5085,7 +5085,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, 
         return false;
     }
 
-    /* We should return true if either src is sucessfully moved, or src is
+    /* We should return true if either src is successfully moved, or src is
      * unmoveable. A false return will cause the sweeping cursor to be
      * incremented to the next page, and src will attempt to move again */
     if (gc_is_moveable_obj(objspace, src)) {
