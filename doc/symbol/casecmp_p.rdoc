@@ -1,0 +1,18 @@
+Returns +true+ if +self+ and +object+ are equal after Unicode case folding,
+otherwise +false+:
+
+  lower = :abc
+  upper = :ABC
+  upper.casecmp?(lower) # => true
+  lower.casecmp?(lower) # => true
+  lower.casecmp?(upper) # => true
+
+Unlike Symbol#casecmp, works for characters outside of 'A'..'Z' and 'a'..'z':
+
+  lower = :äöü
+  upper = :ÄÖÜ
+  upper.casecmp?(lower) # => true
+  lower.casecmp?(lower) # => true
+  lower.casecmp?(upper) # => true
+
+Related: Symbol#casecmp, String#casecmp?.
