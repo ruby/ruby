@@ -5655,10 +5655,10 @@ env_invert(void)
 static void
 keylist_delete(VALUE keys, VALUE key)
 {
-    long keylen, elen;
+    long keylen, elen, i;
     const char *keyptr, *eptr;
     RSTRING_GETMEM(key, keyptr, keylen);
-    for (long i=0; i<RARRAY_LEN(keys); i++) {
+    for (i=0; i<RARRAY_LEN(keys); i++) {
         VALUE e = RARRAY_AREF(keys, i);
         RSTRING_GETMEM(e, eptr, elen);
         if (elen != keylen) continue;
