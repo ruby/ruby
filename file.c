@@ -4035,7 +4035,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 }
 #endif /* _WIN32 */
 
-#define EXPAND_PATH_BUFFER() rb_usascii_str_new(0, MAXPATHLEN + 2)
+#define EXPAND_PATH_BUFFER() rb_usascii_str_new(0, 1)
 
 static VALUE
 str_shrink(VALUE str)
