@@ -11485,10 +11485,10 @@ rb_sym_proc_call(ID mid, int argc, const VALUE *argv, int kw_splat, VALUE passed
  *  Returns a Proc object which calls the method with name of +self+
  *  on the first parameter and passes the remaining parameters to the method.
  *
- *    proc = :to_s.to_proc # => #<Proc:0x000001afe0e48680(&:to_s) (lambda)>
- *    proc.call(1000) # => "1000"
- *    proc.call(1000, 16) # => "3e8"
- *    (1..3).collect(&:to_s)  #=> ["1", "2", "3"] *
+ *    proc = :to_s.to_proc   # => #<Proc:0x000001afe0e48680(&:to_s) (lambda)>
+ *    proc.call(1000)        # => "1000"
+ *    proc.call(1000, 16)    # => "3e8"
+ *    (1..3).collect(&:to_s) # => ["1", "2", "3"]
  *
  */
 
