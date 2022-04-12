@@ -99,7 +99,7 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     request.sign(@cert, @cert_key, [@ca_cert], 0)
     asn1 = OpenSSL::ASN1.decode(request.to_der)
     assert_equal cid.to_der, asn1.value[0].value.find { |a| a.tag_class == :UNIVERSAL }.value[0].value[0].to_der
-    assert_equal OpenSSL::ASN1.ObjectId("sha1WithRSAEncryption").to_der, asn1.value[1].value[0].value[0].value[0].to_der
+    assert_equal OpenSSL::ASN1.ObjectId("sha256WithRSAEncryption").to_der, asn1.value[1].value[0].value[0].value[0].to_der
     assert_equal @cert.to_der, asn1.value[1].value[0].value[2].value[0].value[0].to_der
     assert_equal @ca_cert.to_der, asn1.value[1].value[0].value[2].value[0].value[1].to_der
     assert_equal asn1.to_der, OpenSSL::OCSP::Request.new(asn1.to_der).to_der
