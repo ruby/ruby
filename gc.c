@@ -2426,6 +2426,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
     switch (RB_BUILTIN_TYPE(obj)) {
       case T_DATA:
       case T_FILE:
+      case T_SYMBOL:
         mmtk_register_finalizable((void*)obj);
         // VALUE klass = CLASS_OF(obj);
         RUBY_DEBUG_LOG("Object registered for finalization: %p: %s %s",
