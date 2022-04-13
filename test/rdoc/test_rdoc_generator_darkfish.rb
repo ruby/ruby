@@ -248,6 +248,22 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     assert_include File.read('index.html'), %Q[href="./#{base}"]
   end
 
+  def test_title
+    title = "RDoc Test".freeze
+    @options.title = title
+    @g.generate
+
+    assert_main_title(File.read('index.html'), title)
+  end
+
+  def test_title_escape
+    title = %[<script>alert("RDoc")</script>].freeze
+    @options.title = title
+    @g.generate
+
+    assert_main_title(File.read('index.html'), title)
+  end
+
   ##
   # Asserts that +filename+ has a link count greater than 1 if hard links to
   # @tmpdir are supported.
@@ -271,4 +287,9 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
                     "#{filename} is not hard-linked"
   end
 
+  def assert_main_title(content, title)
+    title = CGI.escapeHTML(title)
+    assert_equal(title, content[%r[<title>(.*?)<\/title>]im, 1])
+    assert_include(content[%r[<main\s[^<>]*+>\s*(.*?)</main>]im, 1], title)
+  end
 end
