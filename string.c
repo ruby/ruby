@@ -11759,7 +11759,7 @@ sym_start_with(int argc, VALUE *argv, VALUE sym)
  *    end_with?(*string_or_regexp)-> true or false
  *
  *
- *  Equivalent to <tt>self.to_s.end_with()</tt>; see String#end_with?.
+ *  Equivalent to <tt>self.to_s.end_with?()</tt>; see String#end_with?.
  *
  */
 
