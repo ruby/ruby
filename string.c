@@ -3094,7 +3094,7 @@ str_buf_cat(VALUE str, const char *ptr, long len)
     return str;
 }
 
-#define str_buf_cat2(str, ptr) str_buf_cat((str), (ptr), strlen(ptr))
+#define str_buf_cat2(str, ptr) str_buf_cat((str), (ptr), rb_strlen_lit(ptr))
 
 VALUE
 rb_str_cat(VALUE str, const char *ptr, long len)
