@@ -11744,7 +11744,7 @@ sym_swapcase(int argc, VALUE *argv, VALUE sym)
  *  call-seq:
  *    start_with?(*string_or_regexp) -> true or false
  *
- *  Equivalent to <tt>self.to_s.start_with?()</tt>; see String#start_with?.
+ *  Equivalent to <tt>self.to_s.start_with?</tt>; see String#start_with?.
  *
  */
 
