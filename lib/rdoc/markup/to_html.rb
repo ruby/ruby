@@ -123,7 +123,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   #   Reference to a local file relative to the output directory.
 
   def handle_regexp_HYPERLINK(target)
-    url = target.text
+    url = CGI.escapeHTML(target.text)
 
     gen_url url, url
   end

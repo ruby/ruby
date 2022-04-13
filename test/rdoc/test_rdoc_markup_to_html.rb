@@ -836,6 +836,11 @@ EXPECTED
     assert_equal '<a href="irc://irc.freenode.net/#ruby-lang">irc.freenode.net/#ruby-lang</a>', link
   end
 
+  def test_handle_regexp_HYPERLINK_escape
+    code = 'irc://irc.freenode.net/"><script>alert(`irc`)</script><a"'
+    assert_escaped '<script>', code
+  end
+
   def test_list_verbatim_2
     str = "* one\n    verb1\n    verb2\n* two\n"
 
