@@ -665,6 +665,26 @@ EXPECTED
     assert_equal "\n<p>C</p>\n", result
   end
 
+  def test_convert_RDOCLINK_escape_image
+    assert_escaped '<script>', 'rdoc-image:"><script>alert(`rdoc-image`)</script>"'
+  end
+
+  def test_convert_RDOCLINK_escape_label_id
+    assert_escaped '<script>', 'rdoc-label::path::"><script>alert(`rdoc-label_id`)</script>"'
+  end
+
+  def test_convert_RDOCLINK_escape_label_path
+    assert_escaped '<script>', 'rdoc-label::"><script>alert(`rdoc-label_path`)</script>"'
+  end
+
+  def test_convert_RDOCLINK_escape_ref
+    assert_escaped '<script>', 'rdoc-ref:"><script>alert(`rdoc-ref`)</script>"'
+  end
+
+  def test_convert_RDOCLINK_escape_xxx
+    assert_escaped '<script>', 'rdoc-xxx:"><script>alert(`rdoc-xxx`)</script>"'
+  end
+
   def test_convert_TIDYLINK_footnote
     result = @to.convert 'text{*1}[rdoc-label:foottext-1:footmark-1]'
 
@@ -690,6 +710,11 @@ EXPECTED
       "\n<p><a href=\"http://example.com\"><img src=\"path/to/image.jpg\"></a></p>\n"
 
     assert_equal expected, result
+
+    result =
+      @to.convert '{rdoc-image:<script>alert`link text`</script>}[http://example.com]'
+
+    assert_not_include result, "<script>"
   end
 
   def test_convert_TIDYLINK_rdoc_label

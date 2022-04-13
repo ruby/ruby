@@ -84,7 +84,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   def handle_RDOCLINK url # :nodoc:
     case url
     when /^rdoc-ref:/
-      $'
+      CGI.escapeHTML($')
     when /^rdoc-label:/
       text = $'
 
@@ -95,13 +95,11 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
              else                    text
              end
 
-      gen_url url, text
+      gen_url CGI.escapeHTML(url), CGI.escapeHTML(text)
     when /^rdoc-image:/
-      "<img src=\"#{$'}\">"
-    else
-      url =~ /\Ardoc-[a-z]+:/
-
-      $'
+      %[<img src=\"#{CGI.escapeHTML($')}\">]
+    when /\Ardoc-[a-z]+:/
+      CGI.escapeHTML($')
     end
   end
 
