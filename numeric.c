@@ -2003,7 +2003,7 @@ rb_flo_is_infinite_p(VALUE num)
  *  call-seq:
  *    finite? -> true or false
  *
- *  Returns +true+ if +self+ is not +Infinity+, +-Infinity+, or +Nan+,
+ *  Returns +true+ if +self+ is not +Infinity+, +-Infinity+, or +NaN+,
  *  +false+ otherwise:
  *
  *    f = 2.0      # => 2.0
