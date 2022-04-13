@@ -3165,7 +3165,7 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *  [<code>exec(cmdname, arg1, ...)</code>]
  *	command name and one or more arguments (no shell)
  *  [<code>exec([cmdname, argv0], arg1, ...)</code>]
- *	command name, argv[0] and zero or more arguments (no shell)
+ *	command name, +argv[0]+ and zero or more arguments (no shell)
  *
  *  In the first form, the string is taken as a command line that is subject to
  *  shell expansion before being executed.

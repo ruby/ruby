@@ -7524,7 +7524,7 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *
  *  - <tt>cmd[0][0]</tt> (the first string in the nested array) is the name of a program that is run.
  *  - <tt>cmd[0][1]</tt> (the second string in the nested array) is set as the program's <tt>argv[0]</tt>.
- *  - <tt>cmd[1..-1] (the strings in the outer array) are the program's arguments.
+ *  - <tt>cmd[1..-1]</tt> (the strings in the outer array) are the program's arguments.
  *
  *  Example (sets <tt>$0</tt> to 'foo'):
  *
