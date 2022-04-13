@@ -11627,13 +11627,15 @@ sym_match_m_p(int argc, VALUE *argv, VALUE sym)
 }
 
 /*
- * call-seq:
- *   sym[idx]      -> char
- *   sym[b, n]     -> string
- *   sym.slice(idx)      -> char
- *   sym.slice(b, n)     -> string
+ *  call-seq:
+ *    symbol[index] -> string or nil
+ *    symbol[start, length] -> string or nil
+ *    symbol[range] -> string or nil
+ *    symbol[regexp, capture = 0] -> string or nil
+ *    symbol[substring] -> string or nil
  *
- * Returns <code>sym.to_s[]</code>.
+ *  Equivalent to <tt>symbol.to_s[]</tt>; see String#[].
+ *
  */
 
 static VALUE
@@ -11643,11 +11645,13 @@ sym_aref(int argc, VALUE *argv, VALUE sym)
 }
 
 /*
- * call-seq:
- *   sym.length   -> integer
- *   sym.size     -> integer
+ *  call-seq:
+ *    length -> integer
  *
- * Same as <code>sym.to_s.length</code>.
+ *  Equivalent to <tt>self.to_s.length</tt>; see String#length.
+ *
+ *  Symbol#size is an alias for Symbol#length.
+ *
  */
 
 static VALUE
@@ -11657,10 +11661,11 @@ sym_length(VALUE sym)
 }
 
 /*
- * call-seq:
- *   sym.empty?   -> true or false
+ *  call-seq:
+ *    empty? -> true or false
  *
- * Returns whether _sym_ is :"" or not.
+ *  Returns +true+ if +self+ is <tt>:''</tt>, +false+ otherwise.
+ *
  */
 
 static VALUE
@@ -11737,17 +11742,10 @@ sym_swapcase(int argc, VALUE *argv, VALUE sym)
 
 /*
  *  call-seq:
- *     sym.start_with?([prefixes]+)   -> true or false
+ *    start_with?(*string_or_regexp) -> true or false
  *
- *  Returns true if +sym+ starts with one of the +prefixes+ given.
- *  Each of the +prefixes+ should be a String or a Regexp.
+ *  Equivalent to <tt>self.to_s.start_with?()</tt>; see String#start_with?.
  *
- *    :hello.start_with?("hell")               #=> true
- *    :hello.start_with?(/H/i)                 #=> true
- *
- *    # returns true if one of the prefixes matches.
- *    :hello.start_with?("heaven", "hell")     #=> true
- *    :hello.start_with?("heaven", "paradise") #=> false
  */
 
 static VALUE
@@ -11758,15 +11756,11 @@ sym_start_with(int argc, VALUE *argv, VALUE sym)
 
 /*
  *  call-seq:
- *     sym.end_with?([suffixes]+)   -> true or false
+ *    end_with?(*string_or_regexp)-> true or false
  *
- *  Returns true if +sym+ ends with one of the +suffixes+ given.
  *
- *    :hello.end_with?("ello")               #=> true
+ *  Equivalent to <tt>self.to_s.end_with()</tt>; see String#end_with?.
  *
- *    # returns true if one of the +suffixes+ matches.
- *    :hello.end_with?("heaven", "ello")     #=> true
- *    :hello.end_with?("heaven", "paradise") #=> false
  */
 
 static VALUE
@@ -11776,10 +11770,11 @@ sym_end_with(int argc, VALUE *argv, VALUE sym)
 }
 
 /*
- * call-seq:
- *   sym.encoding   -> encoding
+ *  call-seq:
+ *    encoding -> encoding
  *
- * Returns the Encoding object that represents the encoding of _sym_.
+ *  Equivalent to <tt>self.to_s.encoding</tt>; see String#encoding.
+ *
  */
 
 static VALUE
@@ -11824,18 +11819,13 @@ rb_to_symbol(VALUE name)
 
 /*
  *  call-seq:
- *     Symbol.all_symbols    => array
+ *    Symbol.all_symbols -> array_of_symbols
  *
- *  Returns an array of all the symbols currently in Ruby's symbol
- *  table.
+ *  Returns an array of all symbols currently in Ruby's symbol table:
  *
- *     Symbol.all_symbols.size    #=> 903
- *     Symbol.all_symbols[1,20]   #=> [:floor, :ARGV, :Binding, :symlink,
- *                                     :chown, :EOFError, :$;, :String,
- *                                     :LOCK_SH, :"setuid?", :$<,
- *                                     :default_proc, :compact, :extend,
- *                                     :Tms, :getwd, :$=, :ThreadGroup,
- *                                     :wait2, :$>]
+ *    Symbol.all_symbols.size    # => 9334
+ *    Symbol.all_symbols.take(3) # => [:!, :"\"", :"#"]
+ *
  */
 
 static VALUE
