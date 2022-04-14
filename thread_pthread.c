@@ -331,7 +331,7 @@ gvl_release_common(rb_global_vm_lock_t *gvl)
 {
     native_thread_data_t *next;
     gvl->owner = 0;
-    next = ccan_list_top(&gvl->waitq, native_thread_data_t, node.ubf);
+    next = ccan_list_top(&gvl->waitq, native_thread_data_t, node.gvl);
     if (next) rb_native_cond_signal(&next->cond.gvlq);
 
     return next;
