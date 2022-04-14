@@ -473,10 +473,13 @@ class TestMethod < Test::Unit::TestCase
     c2 = Class.new(c)
     c2.class_eval { private :foo }
     m2 = c2.new.method(:foo)
-    assert_equal("#<Method: #{ c2.inspect }(#{ c.inspect })#foo() #{__FILE__}:#{line_no}>", m2.inspect)
+    assert_equal("#<Method: #{ c2.inspect }#foo() #{__FILE__}:#{line_no}>", m2.inspect)
+
+    c3 = Class.new(c2)
+    m3 = c3.new.method(:foo)
+    assert_equal("#<Method: #{ c3.inspect }(#{ c2.inspect })#foo() #{__FILE__}:#{line_no}>", m3.inspect)
 
     bug7806 = '[ruby-core:52048] [Bug #7806]'
-    c3 = Class.new(c)
     c3.class_eval { alias bar foo }
     m3 = c3.new.method(:bar)
     assert_equal("#<Method: #{c3.inspect}(#{c.inspect})#bar(foo)() #{__FILE__}:#{line_no}>", m3.inspect, bug7806)
@@ -738,6 +741,21 @@ class TestMethod < Test::Unit::TestCase
       public :foo
     end
     assert_equal(:ok, d.new.public_method(:foo).call)
+  end
+
+  def test_zsuper_super_method
+    c = Class.new
+    c.class_eval do
+      def foo
+        :ok
+      end
+      private :foo
+    end
+    d = Class.new(c)
+    d.class_eval do
+      public :foo
+    end
+    assert_equal(c.instance_method(:foo), d.instance_method(:foo).super_method)
   end
 
   def test_public_methods_with_extended
@@ -1073,8 +1091,8 @@ class TestMethod < Test::Unit::TestCase
 
   def test_prepended_public_zsuper
     mod = EnvUtil.labeled_module("Mod") {private def foo; :ok end}
-    mods = [mod]
     obj = Object.new.extend(mod)
+    mods = [obj.singleton_class, mod]
     class << obj
       public :foo
     end
@@ -1359,7 +1377,7 @@ class TestMethod < Test::Unit::TestCase
       ::Object.prepend(M2)
 
       m = Object.instance_method(:x)
-      assert_equal M, m.owner
+      assert_equal M2, m.owner
     end;
   end
 
