@@ -270,8 +270,7 @@ static void
 clear_iclass_method_cache_by_id_for_refinements(VALUE klass, VALUE d)
 {
     if (RB_TYPE_P(klass, T_ICLASS)) {
-        ID mid = (ID)d;
-        clear_method_cache_by_id_in_class(klass, mid);
+        clear_iclass_method_cache_by_id(klass, d);
     }
 }
 
