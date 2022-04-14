@@ -2525,7 +2525,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 size_t
 rb_gc_obj_slot_size(VALUE obj)
 {
-#if USE_THIRD_PARTY_HEAP
+#ifdef USE_THIRD_PARTY_HEAP
     // Load from our hidden field before the object.
     return *(size_t*)(obj - MMTK_OBJREF_OFFSET);
 #else
@@ -9742,7 +9742,7 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
         if (!RTEST(immediate_sweep)) reason &= ~GPR_FLAG_IMMEDIATE_SWEEP;
     }
 
-#if USE_THIRD_PARTY_HEAP
+#ifdef USE_THIRD_PARTY_HEAP
     mmtk_handle_user_collection_request(GET_THREAD());
 #else
     garbage_collect(objspace, reason);

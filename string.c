@@ -46,6 +46,10 @@
 #include "ruby_assert.h"
 #include "vm_sync.h"
 
+#ifdef USE_THIRD_PARTY_HEAP
+#include "mmtk.h"
+#endif // USE_THIRD_PARTY_HEAP
+
 #if defined HAVE_CRYPT_R
 # if defined HAVE_CRYPT_H
 #  include <crypt.h>
@@ -392,6 +396,10 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
 	    }
 	}
 	RBASIC(str)->flags |= RSTRING_FSTR;
+
+#ifdef USE_THIRD_PARTY_HEAP
+        mmtk_register_finalizable(str);
+#endif // USE_THIRD_PARTY_HEAP
 
 	*key = *value = arg->fstr = str;
 	return ST_CONTINUE;
