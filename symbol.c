@@ -919,6 +919,17 @@ rb_id2sym(ID x)
     return get_id_entry(x, ID_ENTRY_SYM);
 }
 
+/*
+ *  call-seq:
+ *    name -> string
+ *
+ *  Returns a frozen string representation of +self+ (not including the leading colon):
+ *
+ *    :foo.name         # => "foo"
+ *    :foo.name.frozen? # => true
+ *
+ *  Related: Symbol#to_s, Symbol#inspect.
+ */
 
 VALUE
 rb_sym2str(VALUE sym)

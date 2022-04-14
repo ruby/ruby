@@ -11407,26 +11407,6 @@ sym_inspect(VALUE sym)
     return str;
 }
 
-#if 0 /* for RDoc */
-/*
- *  call-seq:
- *    name -> string
- *
- *  Returns a frozen string representation of +self+ (not including the leading colon):
- *
- *    :foo.name         # => "foo"
- *    :foo.name.frozen? # => true
- *
- *  Related: Symbol#to_s, Symbol#inspect.
- */
-VALUE
-rb_sym2str(VALUE sym)
-{
-
-}
-#endif
-
-
 /*
  *  call-seq:
  *    to_s -> string
@@ -11440,13 +11420,11 @@ rb_sym2str(VALUE sym)
  *  Related: Symbol#inspect, Symbol#name.
  */
 
-
 VALUE
 rb_sym_to_s(VALUE sym)
 {
     return str_new_shared(rb_cString, rb_sym2str(sym));
 }
-
 
 /*
  *  call-seq:
@@ -11476,27 +11454,6 @@ rb_sym_proc_call(ID mid, int argc, const VALUE *argv, int kw_splat, VALUE passed
     obj = argv[0];
     return rb_funcall_with_block_kw(obj, mid, argc - 1, argv + 1, passed_proc, kw_splat);
 }
-
-#if 0
-/*
- *  call-seq:
- *    to_proc
- *
- *  Returns a Proc object which calls the method with name of +self+
- *  on the first parameter and passes the remaining parameters to the method.
- *
- *    proc = :to_s.to_proc   # => #<Proc:0x000001afe0e48680(&:to_s) (lambda)>
- *    proc.call(1000)        # => "1000"
- *    proc.call(1000, 16)    # => "3e8"
- *    (1..3).collect(&:to_s) # => ["1", "2", "3"]
- *
- */
-
-VALUE
-rb_sym_to_proc(VALUE sym)
-{
-}
-#endif
 
 /*
  *  call-seq:
@@ -12050,10 +12007,10 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "inspect", sym_inspect, 0);
     rb_define_method(rb_cSymbol, "to_s", rb_sym_to_s, 0);
     rb_define_method(rb_cSymbol, "id2name", rb_sym_to_s, 0);
-    rb_define_method(rb_cSymbol, "name", rb_sym2str, 0);
+    rb_define_method(rb_cSymbol, "name", rb_sym2str, 0); /* in symbol.c */
     rb_define_method(rb_cSymbol, "intern", sym_to_sym, 0);
     rb_define_method(rb_cSymbol, "to_sym", sym_to_sym, 0);
-    rb_define_method(rb_cSymbol, "to_proc", rb_sym_to_proc, 0);
+    rb_define_method(rb_cSymbol, "to_proc", rb_sym_to_proc, 0); /* in proc.c */
     rb_define_method(rb_cSymbol, "succ", sym_succ, 0);
     rb_define_method(rb_cSymbol, "next", sym_succ, 0);
 
