@@ -852,6 +852,38 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal true, thru_lambda
   end
 
+  def test_lambda_var
+    recv_params, recv_locals = nil, nil
+    parse('-> (foo) {}', :on_lambda_var) do |_, params, locals|
+      recv_params, recv_locals = params.list, locals
+    end
+
+    # parameters without block-local variables should return the list of
+    # parameters and false for locals
+    assert_equal ['foo'], recv_params
+    assert_equal false, recv_locals
+
+    recv_params, recv_locals = nil, nil
+    parse('-> (foo; bar) {}', :on_lambda_var) do |_, params, locals|
+      recv_params, recv_locals = params.list, locals
+    end
+
+    # params with block-local variables should return the list of parameters and
+    # the list of locals
+    assert_equal ['foo'], recv_params
+    assert_equal ['bar'], recv_locals
+
+    recv_params, recv_locals = nil, nil
+    parse('-> (; bar) {}', :on_lambda_var) do |_, params, locals|
+      recv_params, recv_locals = params.list, locals
+    end
+
+    # parameters with only block-local variables should return an empty set of
+    # parameters and the list of locals
+    assert_equal [], recv_params
+    assert_equal ['bar'], recv_locals
+  end
+
   def test_magic_comment
     thru_magic_comment = false
     parse('# -*- bug-5753: ruby-dev:44984 -*-', :on_magic_comment) {|*x|thru_magic_comment = x}
