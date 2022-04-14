@@ -4198,8 +4198,8 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *  - #!: Returns the boolean negation of +self+: +true+ or +false+.
  *  - #!=: Returns whether +self+ and the given object are _not_ equal.
  *  - #==: Returns whether +self+ and the given object are equivalent.
- *  - {__id__}[#method-i-__id__]: Returns the integer object identifier for +self+.
- *  - {__send__}[#method-i-__send__]: Calls the method identified by the given symbol.
+ *  - #__id__: Returns the integer object identifier for +self+.
+ *  - #__send__: Calls the method identified by the given symbol.
  *  - #equal?: Returns whether +self+ and the given object are the same object.
  *  - #instance_eval: Evaluates the given string or block in the context of +self+.
  *  - #instance_exec: Executes the given block in the context of +self+,
@@ -4395,12 +4395,10 @@ InitVM_Object(void)
      *
      * === Querying
      *
-     * - {#__callee__}[#method-i-__callee__]: Returns the called name
-     *   of the current method as a symbol.
-     * - {#__dir__}[#method-i-__dir__]: Returns the path to the directory
-     *   from which the current method is called.
-     * - {#__method__}[#method-i-__method__]: Returns the name
-     *   of the current method as a symbol.
+     * - #__callee__: Returns the called name of the current method as a symbol.
+     * - #__dir__: Returns the path to the directory from which the current
+     *   method is called.
+     * - #__method__: Returns the name of the current method as a symbol.
      * - #autoload?: Returns the file to be loaded when the given module is referenced.
      * - #binding: Returns a Binding for the context at the point of call.
      * - #block_given?: Returns +true+ if a block was passed to the calling method.
