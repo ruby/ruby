@@ -104,10 +104,16 @@ jobs:
 #         - { key: crosshost, name: s390x-linux-gnu,       value: s390x-linux-gnu, container: crossbuild-essential-s390x }
 #         - { key: crosshost, name: x86_64-w64-mingw32,    value: x86_64-w64-mingw32, container: mingw-w64 }
 
-          - { key: append_cc, name: c99,   value: '-std=c99   -Werror=pedantic -pedantic-errors' }
-#         - { key: append_cc, name: c11,   value: '-std=c11   -Werror=pedantic -pedantic-errors' }
-#         - { key: append_cc, name: c17,   value: '-std=c17   -Werror=pedantic -pedantic-errors' }
-          - { key: append_cc, name: c2x,   value: '-std=c2x   -Werror=pedantic -pedantic-errors' }
+          # -Wno-strict-prototypes is necessary with current clang-15 since
+          # older autoconf generate functions without prototype and -pedantic
+          # now implies strict-prototypes. Disabling the error but leaving the
+          # warning generates a lot of noise from use of ANYARGS in
+          # rb_define_method() and friends.
+          # See: https://github.com/llvm/llvm-project/commit/11da1b53d8cd3507959022cd790d5a7ad4573d94 
+          - { key: append_cc, name: c99,   value: '-std=c99   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' }
+#         - { key: append_cc, name: c11,   value: '-std=c11   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' }
+#         - { key: append_cc, name: c17,   value: '-std=c17   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' }
+          - { key: append_cc, name: c2x,   value: '-std=c2x   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' }
           - { key: CXXFLAGS,  name: c++98, value: '-std=c++98 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
 #         - { key: CXXFLAGS,  name: c++11, value: '-std=c++11 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
 #         - { key: CXXFLAGS,  name: c++14, value: '-std=c++14 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
