@@ -6,7 +6,7 @@
 [![Travis Status](https://app.travis-ci.com/ruby/ruby.svg?branch=master)](https://app.travis-ci.com/ruby/ruby)
 [![Cirrus Status](https://api.cirrus-ci.com/github/ruby/ruby.svg)](https://cirrus-ci.com/github/ruby/ruby/master)
 
-# What's Ruby
+# What is Ruby?
 
 Ruby is an interpreted object-oriented programming language often
 used for web development. It also offers many scripting features
@@ -158,8 +158,8 @@ If you fail to compile Ruby, please send the detailed error report with the
 error log and machine/OS type, to help others.
 
 Some extension libraries may not get compiled because of lack of necessary
-external libraries and/or headers, then you will need to run '`make distclean-ext`'
-to remove old configuration after installing them in such case.
+external libraries and/or headers. You will need to run '`make distclean-ext`'
+to remove old configuration after installing them in such a case.
 
 ## Copying
 
