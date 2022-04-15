@@ -567,6 +567,8 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
         else {
             rb_bug("no origin for class that has origin");
         }
+
+        rb_class_update_superclasses(clone);
     }
 
     return clone;
