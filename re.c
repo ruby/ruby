@@ -480,15 +480,15 @@ rb_reg_desc(const char *s, long len, VALUE re)
 
 /*
  *  call-seq:
- *      rxp.source   -> str
+ *    source -> string
  *
- *  Returns the original string of the pattern.
+ *  Returns the original string of +self+:
  *
- *      /ab+c/ix.source #=> "ab+c"
+ *    /ab+c/ix.source # => "ab+c"
  *
- *  Note that escape sequences are retained as is.
+ *  Note that escape sequences are retained as is:
  *
- *     /\x20\+/.source  #=> "\\x20\\+"
+ *    /\x20\+/.source  # => "\\x20\\+"
  *
  */
 
@@ -503,15 +503,14 @@ rb_reg_source(VALUE re)
 }
 
 /*
- * call-seq:
- *    rxp.inspect   -> string
+ *  call-seq:
+ *    inspect -> string
  *
- * Produce a nicely formatted string-version of _rxp_. Perhaps surprisingly,
- * <code>#inspect</code> actually produces the more natural version of
- * the string than <code>#to_s</code>.
+ *  Returns a nicely-formatted string representation of +self+:
  *
- *      /ab+c/ix.inspect        #=> "/ab+c/ix"
+ *    /ab+c/ix.inspect # => "/ab+c/ix"
  *
+ *  Related: Regexp#to_s.
  */
 
 static VALUE
@@ -527,22 +526,29 @@ static VALUE rb_reg_str_with_term(VALUE re, int term);
 
 /*
  *  call-seq:
- *     rxp.to_s   -> str
+ *    to_s -> string
  *
- *  Returns a string containing the regular expression and its options (using the
- *  <code>(?opts:source)</code> notation. This string can be fed back in to
- *  Regexp::new to a regular expression with the same semantics as the
- *  original. (However, <code>Regexp#==</code> may not return true
- *  when comparing the two, as the source of the regular expression
- *  itself may differ, as the example shows).  Regexp#inspect produces
- *  a generally more readable version of <i>rxp</i>.
+ *  Returns a string showing the options and string of +self+:
  *
- *      r1 = /ab+c/ix           #=> /ab+c/ix
- *      s1 = r1.to_s            #=> "(?ix-m:ab+c)"
- *      r2 = Regexp.new(s1)     #=> /(?ix-m:ab+c)/
- *      r1 == r2                #=> false
- *      r1.source               #=> "ab+c"
- *      r2.source               #=> "(?ix-m:ab+c)"
+ *    r0 = /ab+c/ix
+ *    s0 = r0.to_s # => "(?ix-m:ab+c)"
+ *
+ *  The returned string may be used as an argument to Regexp.new,
+ *  or as interpolated text for a
+ *  {Regexp literal}[rdoc-ref:regexp.rdoc@Regexp+Literal]:
+ *
+ *    r1 = Regexp.new(s0) # => /(?ix-m:ab+c)/
+ *    r2 = /#{s0}/        # => /(?ix-m:ab+c)/
+ *
+ *  Note that +r1+ and +r2+ are not equal to +r0+
+ *  because their original strings are different:
+ *
+ *    r0 == r1  # => false
+ *    r0.source # => "ab+c"
+ *    r1.source # => "(?ix-m:ab+c)"
+ *
+ *  Related: Regexp#inspect.
+ *
  */
 
 static VALUE
@@ -713,13 +719,15 @@ rb_reg_raise_str(VALUE str, int options, const char *err)
 
 /*
  *  call-seq:
- *     rxp.casefold?   -> true or false
+ *    casefold?-> true or false
  *
- *  Returns the value of the case-insensitive flag.
+ *  Returns +true+ if the case-insensitivity flag in +self+ is set,
+ *  +false+ otherwise:
  *
- *      /a/.casefold?           #=> false
- *      /a/i.casefold?          #=> true
- *      /(?i:a)/.casefold?      #=> false
+ *    /a/.casefold?           # => false
+ *    /a/i.casefold?          # => true
+ *    /(?i:a)/.casefold?      # => false
+ *
  */
 
 static VALUE
@@ -732,25 +740,39 @@ rb_reg_casefold_p(VALUE re)
 
 /*
  *  call-seq:
- *     rxp.options   -> integer
+ *    options -> integer
+ *
+ *  Returns an integer whose bits show the options set in +self+.
+ *
+ *  The option bits are:
+ *
+ *    Regexp::IGNORECASE # => 1
+ *    Regexp::EXTENDED   # => 2
+ *    Regexp::MULTILINE  # => 4
+ *
+ *  Examples:
+ *
+ *    /foo/.options    # => 0
+ *    /foo/i.options   # => 1
+ *    /foo/x.options   # => 2
+ *    /foo/m.options   # => 4
+ *    /foo/mix.options # => 7
+ *
+ *  Note that additional bits may be set in the returned integer;
+ *  these are maintained internally internally in +self+,
+ *  are ignored if passed to Regexp.new, and may be ignored by the caller:
  *
  *  Returns the set of bits corresponding to the options used when
- *  creating this Regexp (see Regexp::new for details. Note that
+ *  creating this regexp (see Regexp::new for details). Note that
  *  additional bits may be set in the returned options: these are used
  *  internally by the regular expression code. These extra bits are
- *  ignored if the options are passed to Regexp::new.
+ *  ignored if the options are passed to Regexp::new:
  *
- *     Regexp::IGNORECASE                  #=> 1
- *     Regexp::EXTENDED                    #=> 2
- *     Regexp::MULTILINE                   #=> 4
+ *    r = /\xa1\xa2/e                 # => /\xa1\xa2/
+ *    r.source                        # => "\\xa1\\xa2"
+ *    r.options                       # => 16
+ *    Regexp.new(r.source, r.options) # => /\xa1\xa2/
  *
- *     /cat/.options                       #=> 0
- *     /cat/ix.options                     #=> 3
- *     Regexp.new('cat', true).options     #=> 1
- *     /\xa1\xa2/e.options                 #=> 16
- *
- *     r = /cat/ix
- *     Regexp.new(r.source, r.options)     #=> /cat/ix
  */
 
 static VALUE
@@ -770,19 +792,16 @@ reg_names_iter(const OnigUChar *name, const OnigUChar *name_end,
 }
 
 /*
- * call-seq:
- *    rxp.names   -> [name1, name2, ...]
+ *  call-seq:
+ *   names -> array_of_names
  *
- * Returns a list of names of captures as an array of strings.
+ *  Returns an array of names of captures
+ *  (see {Named Captures}[rdoc-ref:Regexp@Named+Captures]):
  *
- *     /(?<foo>.)(?<bar>.)(?<baz>.)/.names
- *     #=> ["foo", "bar", "baz"]
+ *    /(?<foo>.)(?<bar>.)(?<baz>.)/.names # => ["foo", "bar", "baz"]
+ *    /(?<foo>.)(?<foo>.)/.names          # => ["foo"]
+ *    /(.)(.)/.names                      # => []
  *
- *     /(?<foo>.)(?<foo>.)/.names
- *     #=> ["foo"]
- *
- *     /(.)(.)/.names
- *     #=> []
  */
 
 static VALUE
@@ -812,25 +831,21 @@ reg_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
 }
 
 /*
- * call-seq:
- *    rxp.named_captures  -> hash
+ *  call-seq:
+ *    named_captures  -> hash
  *
- * Returns a hash representing information about named captures of <i>rxp</i>.
+ *  Returns a hash representing named captures of +self+
+ *  (see {Named Captures}[rdoc-ref:Regexp@Named+Captures]):
  *
- * A key of the hash is a name of the named captures.
- * A value of the hash is an array which is list of indexes of corresponding
- * named captures.
+ *  - Each key is the name of a named capture.
+ *  - Each value is an array of integer indexes for that named capture.
  *
- *    /(?<foo>.)(?<bar>.)/.named_captures
- *    #=> {"foo"=>[1], "bar"=>[2]}
+ *  Examples:
  *
- *    /(?<foo>.)(?<foo>.)/.named_captures
- *    #=> {"foo"=>[1, 2]}
+ *    /(?<foo>.)(?<bar>.)/.named_captures # => {"foo"=>[1], "bar"=>[2]}
+ *    /(?<foo>.)(?<foo>.)/.named_captures # => {"foo"=>[1, 2]}
+ *    /(.)(.)/.named_captures             # => {}
  *
- * If there are no named captures, an empty hash is returned.
- *
- *    /(.)(.)/.named_captures
- *    #=> {}
  */
 
 static VALUE
@@ -4238,15 +4253,6 @@ rb_reg_timeout_get(VALUE re)
 
 /*
  *  Document-class: Regexp
- *
- *  A Regexp holds a regular expression, used to match a pattern
- *  against strings. Regexps are created using the <code>/.../</code>
- *  and <code>%r{...}</code> literals, and by the Regexp::new
- *  constructor.
- *
- *  You can create a \Regexp object explicitly with:
- *
- *  - A {regexp literal}[rdoc-ref:syntax/literals.rdoc@Regexp+Literals].
  *
  *  :include: doc/regexp.rdoc
  */
