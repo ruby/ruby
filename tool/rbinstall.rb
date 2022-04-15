@@ -394,9 +394,11 @@ install?(:local, :arch, :lib, :'lib-arch') do
 
   install lib, libdir, :mode => $prog_mode, :strip => $strip unless lib == arc
   install arc, libdir, :mode => $data_mode unless CONFIG["INSTALL_STATIC_LIBRARY"] == "no"
-  # Copy third party heap libraries
-  Dir.glob("libmmtk_ruby.*").each do |filename|
-    FileUtils.cp(filename, libdir)
+
+  # Copy third party heap libraries if configured.
+  mmtk_ruby_so_realpath = CONFIG["mmtk_ruby_so_realpath"]
+  if !mmtk_ruby_so_realpath.empty?
+    install mmtk_ruby_so_realpath, libdir, :mode => $prog_mode, :strip => $strip
   end
 
   if dll == lib and dll != arc

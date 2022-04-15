@@ -3392,8 +3392,6 @@ LIBRUBY='$(LIBRUBY_A)'
 LIBRUBYARG_STATIC='-l$(RUBY_SO_NAME)-static'
 LIBRUBYARG='$(LIBRUBYARG_STATIC)'
 SOLIBS='$(MAINLIBS)'
-EXTLIBS='-lmmtk_ruby'
-LIBS="$LIBS $EXTLIBS"
 
 AS_CASE(["$target_os"],
   [cygwin*|msys*|mingw*|haiku*|darwin*], [
