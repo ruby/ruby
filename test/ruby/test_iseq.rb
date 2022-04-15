@@ -167,6 +167,13 @@ class TestISeq < Test::Unit::TestCase
     end
   end
 
+  def test_type
+    iseq = RubyVM::InstructionSequence.of(method(__method__))
+    assert_equal :METHOD, iseq.type
+    iseq = RubyVM::InstructionSequence.of(->() { })
+    assert_equal :BLOCK, iseq.type
+  end
+
   def test_disasm_encoding
     src = "\u{3042} = 1; \u{3042}; \u{3043}"
     asm = compile(src).disasm

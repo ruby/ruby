@@ -1631,6 +1631,27 @@ iseqw_inspect(VALUE self)
     }
 }
 
+static VALUE
+iseqw_type(VALUE self)
+{
+    const rb_iseq_t *iseq = iseqw_check(self);
+    const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
+
+    switch(body->type) {
+#define CASE_TYPE(t) case ISEQ_TYPE_ ## t: return ID2SYM(rb_intern(#t)); break;
+        CASE_TYPE(TOP);
+        CASE_TYPE(METHOD);
+        CASE_TYPE(BLOCK);
+        CASE_TYPE(CLASS);
+        CASE_TYPE(RESCUE);
+        CASE_TYPE(ENSURE);
+        CASE_TYPE(EVAL);
+        CASE_TYPE(MAIN);
+        CASE_TYPE(PLAIN);
+#undef CASE_TYPE
+    }
+}
+
 /*
  *  Returns the path of this instruction sequence.
  *
@@ -4000,6 +4021,7 @@ Init_ISeq(void)
     rb_cISeq = rb_define_class_under(rb_cRubyVM, "InstructionSequence", rb_cObject);
     rb_undef_alloc_func(rb_cISeq);
     rb_define_method(rb_cISeq, "inspect", iseqw_inspect, 0);
+    rb_define_method(rb_cISeq, "type", iseqw_type, 0);
     rb_define_method(rb_cISeq, "disasm", iseqw_disasm, 0);
     rb_define_method(rb_cISeq, "disassemble", iseqw_disasm, 0);
     rb_define_method(rb_cISeq, "to_a", iseqw_to_a, 0);
