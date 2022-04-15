@@ -510,10 +510,7 @@ rb_reg_source(VALUE re)
  *
  *    /ab+c/ix.inspect # => "/ab+c/ix"
  *
- *  Contrast with Regexp#to_s:
- *
- *    /ab+c/ix.to_s # => "(?ix-m:ab+c)"
- *
+ *  Related: Regexp#to_s.
  */
 
 static VALUE
@@ -550,9 +547,7 @@ static VALUE rb_reg_str_with_term(VALUE re, int term);
  *    r0.source # => "ab+c"
  *    r1.source # => "(?ix-m:ab+c)"
  *
- *  Contrast with Regexp#inspect:
- *
- *    /ab+c/ix.inspect # => "/ab+c/ix"
+ *  Related: Regexp#inspect.
  *
  */
 
@@ -768,7 +763,7 @@ rb_reg_casefold_p(VALUE re)
  *  are ignored if passed to Regexp.new, and may be ignored by the caller:
  *
  *  Returns the set of bits corresponding to the options used when
- *  creating this regexp (see Regexp::new for details. Note that
+ *  creating this regexp (see Regexp::new for details). Note that
  *  additional bits may be set in the returned options: these are used
  *  internally by the regular expression code. These extra bits are
  *  ignored if the options are passed to Regexp::new:
