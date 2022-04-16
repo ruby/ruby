@@ -20,7 +20,7 @@
 typedef struct native_thread_data_struct {
     union {
         struct ccan_list_node ubf;
-        struct ccan_list_node gvl;
+        struct ccan_list_node readyq; // protected by sched->lock
     } node;
 #if defined(__GLIBC__) || defined(__FreeBSD__)
     union
@@ -33,7 +33,7 @@ typedef struct native_thread_data_struct {
 #endif
     {
         rb_nativethread_cond_t intr; /* th->interrupt_lock */
-        rb_nativethread_cond_t gvlq; /* vm->gvl.lock */
+        rb_nativethread_cond_t readyq; /* use sched->lock */
     } cond;
 } native_thread_data_t;
 
@@ -42,15 +42,17 @@ typedef struct native_thread_data_struct {
 #undef leave
 #undef finally
 
-typedef struct rb_global_vm_lock_struct {
+// per-Ractor
+struct rb_thread_sched {
     /* fast path */
-    const struct rb_thread_struct *owner;
-    rb_nativethread_lock_t lock; /* AKA vm->gvl.lock */
+
+    const struct rb_thread_struct *running; // running thread or NULL
+    rb_nativethread_lock_t lock;
 
     /*
-     * slow path, protected by vm->gvl.lock
-     * - @waitq - FIFO queue of threads waiting for GVL
-     * - @timer - it handles timeslices for @owner.  It is any one thread
+     * slow path, protected by ractor->thread_sched->lock
+     * - @readyq - FIFO queue of threads waiting for running
+     * - @timer - it handles timeslices for @current.  It is any one thread
      *   in @waitq, there is no @timer if @waitq is empty, but always
      *   a @timer if @waitq has entries
      * - @timer_err tracks timeslice limit, the timeslice only resets
@@ -58,7 +60,7 @@ typedef struct rb_global_vm_lock_struct {
      *   switching between contended/uncontended GVL won't reset the
      *   timer.
      */
-    struct ccan_list_head waitq; /* <=> native_thread_data_t.node.ubf */
+    struct ccan_list_head readyq;
     const struct rb_thread_struct *timer;
     int timer_err;
 
@@ -67,8 +69,7 @@ typedef struct rb_global_vm_lock_struct {
     rb_nativethread_cond_t switch_wait_cond;
     int need_yield;
     int wait_yield;
-} rb_global_vm_lock_t;
-
+};
 
 #if __STDC_VERSION__ >= 201112
   #define RB_THREAD_LOCAL_SPECIFIER _Thread_local

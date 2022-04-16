@@ -10,7 +10,7 @@
 
 typedef struct native_thread_data_struct {} native_thread_data_t;
 
-typedef struct rb_global_vm_lock_struct {} rb_global_vm_lock_t;
+struct rb_thread_sched {};
 
 RUBY_EXTERN struct rb_execution_context_struct *ruby_current_ec;
 

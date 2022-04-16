@@ -1545,7 +1545,7 @@ rb_ractor_atfork(rb_vm_t *vm, rb_thread_t *th)
 }
 #endif
 
-void rb_gvl_init(rb_global_vm_lock_t *gvl);
+void rb_thread_sched_init(struct rb_thread_sched *);
 
 void
 rb_ractor_living_threads_init(rb_ractor_t *r)
@@ -1564,7 +1564,7 @@ ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
     rb_native_cond_initialize(&r->barrier_wait_cond);
 
     // thread management
-    rb_gvl_init(&r->threads.gvl);
+    rb_thread_sched_init(&r->threads.sched);
     rb_ractor_living_threads_init(r);
 
     // naming
@@ -1715,12 +1715,6 @@ rb_obj_is_main_ractor(VALUE gv)
     if (!rb_ractor_p(gv)) return false;
     rb_ractor_t *r = DATA_PTR(gv);
     return r == GET_VM()->ractor.main_ractor;
-}
-
-rb_global_vm_lock_t *
-rb_ractor_gvl(rb_ractor_t *r)
-{
-    return &r->threads.gvl;
 }
 
 int

@@ -95,7 +95,7 @@ struct rb_ractor_struct {
         unsigned int cnt;
         unsigned int blocking_cnt;
         unsigned int sleeper;
-        rb_global_vm_lock_t gvl;
+        struct rb_thread_sched sched;
         rb_execution_context_t *running_ec;
         rb_thread_t *main;
     } threads;
@@ -165,7 +165,6 @@ void rb_ractor_send_parameters(rb_execution_context_t *ec, rb_ractor_t *g, VALUE
 
 VALUE rb_thread_create_ractor(rb_ractor_t *g, VALUE args, VALUE proc); // defined in thread.c
 
-rb_global_vm_lock_t *rb_ractor_gvl(rb_ractor_t *);
 int rb_ractor_living_thread_num(const rb_ractor_t *);
 VALUE rb_ractor_thread_list(rb_ractor_t *r);
 bool rb_ractor_p(VALUE rv);
