@@ -107,6 +107,7 @@ jobs:
           ../src/configure \
             --host wasm32-unknown-wasi \
             --with-static-linked-ext \
+            --with-ext=bigdecimal,ripper,monitor,stringio,pathname \
             LDFLAGS=" \
               -Xlinker --stack-first \
               -Xlinker -z -Xlinker stack-size=16777216 \
