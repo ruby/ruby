@@ -285,8 +285,6 @@ class Gem::Installer
 
   def spec
     @package.spec
-  rescue Gem::Package::Error => e
-    raise Gem::InstallError, "invalid gem: #{e.message}"
   end
 
   ##
