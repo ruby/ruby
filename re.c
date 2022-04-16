@@ -1488,31 +1488,31 @@ rb_backref_set_string(VALUE string, long pos, long len)
 
 /*
  *  call-seq:
- *     rxp.fixed_encoding?   -> true or false
+ *    fixed_encoding?   -> true or false
  *
- *  Returns false if rxp is applicable to
- *  a string with any ASCII compatible encoding.
- *  Returns true otherwise.
+ *  Returns +false+ if +self+ is applicable to
+ *  a string with any ASCII-compatible encoding;
+ *  otherwise returns +true+:
  *
- *      r = /a/
- *      r.fixed_encoding?                               #=> false
- *      r =~ "\u{6666} a"                               #=> 2
- *      r =~ "\xa1\xa2 a".force_encoding("euc-jp")      #=> 2
- *      r =~ "abc".force_encoding("euc-jp")             #=> 0
+ *    r = /a/                                          # => /a/
+ *    r.fixed_encoding?                               # => false
+ *    r.match?("\u{6666} a")                          # => true
+ *    r.match?("\xa1\xa2 a".force_encoding("euc-jp")) # => true
+ *    r.match?("abc".force_encoding("euc-jp"))        # => true
  *
- *      r = /a/u
- *      r.fixed_encoding?                               #=> true
- *      r.encoding                                      #=> #<Encoding:UTF-8>
- *      r =~ "\u{6666} a"                               #=> 2
- *      r =~ "\xa1\xa2".force_encoding("euc-jp")        #=> Encoding::CompatibilityError
- *      r =~ "abc".force_encoding("euc-jp")             #=> 0
+ *    r = /a/u                                        # => /a/
+ *    r.fixed_encoding?                               # => true
+ *    r.match?("\u{6666} a")                          # => true
+ *    r.match?("\xa1\xa2".force_encoding("euc-jp"))   # Raises exception.
+ *    r.match?("abc".force_encoding("euc-jp"))        # => true
  *
- *      r = /\u{6666}/
- *      r.fixed_encoding?                               #=> true
- *      r.encoding                                      #=> #<Encoding:UTF-8>
- *      r =~ "\u{6666} a"                               #=> 0
- *      r =~ "\xa1\xa2".force_encoding("euc-jp")        #=> Encoding::CompatibilityError
- *      r =~ "abc".force_encoding("euc-jp")             #=> nil
+ *    r = /\u{6666}/                                  # => /\u{6666}/
+ *    r.fixed_encoding?                               # => true
+ *    r.encoding                                      # => #<Encoding:UTF-8>
+ *    r.match?("\u{6666} a")                          # => true
+ *    r.match?("\xa1\xa2".force_encoding("euc-jp"))   # Raises exception.
+ *    r.match?("abc".force_encoding("euc-jp"))        # => false
+ *
  */
 
 static VALUE
@@ -3116,12 +3116,13 @@ rb_reg_regcomp(VALUE str)
 
 static st_index_t reg_hash(VALUE re);
 /*
- * call-seq:
- *   rxp.hash   -> integer
+ *  call-seq:
+ *    hash -> integer
  *
- * Produce a hash based on the text and options of this regular expression.
+ *  Returns the integer hash value for +self+.
  *
- * See also Object#hash.
+ *  Related: Object#hash.
+ *
  */
 
 VALUE
@@ -3145,17 +3146,18 @@ reg_hash(VALUE re)
 
 /*
  *  call-seq:
- *     rxp == other_rxp      -> true or false
- *     rxp.eql?(other_rxp)   -> true or false
+ *    regexp == object -> true or false
  *
- *  Equality---Two regexps are equal if their patterns are identical, they have
- *  the same character set code, and their <code>casefold?</code> values are the
- *  same.
+ *  Returns +true+ if +object+ is another \Regexp whose pattern,
+ *  flags, and encoding are the same as +self+, +false+ otherwise:
  *
- *     /abc/  == /abc/x   #=> false
- *     /abc/  == /abc/i   #=> false
- *     /abc/  == /abc/u   #=> false
- *     /abc/u == /abc/n   #=> false
+ *    /foo/ == Regexp.new('foo')                          # => true
+ *    /foo/ == /foo/i                                     # => false
+ *    /foo/ == Regexp.new('food')                         # => false
+ *    /foo/ == Regexp.new("abc".force_encoding("euc-jp")) # => false
+ *
+ *  Regexp#eql? is an alias for Regexp#==.
+ *
  */
 
 VALUE
@@ -3264,49 +3266,57 @@ reg_match_pos(VALUE re, VALUE *strp, long pos, VALUE* set_match)
 
 /*
  *  call-seq:
- *     rxp =~ str    -> integer or nil
+ *    regexp =~ string -> integer or nil
  *
- *  Match---Matches <i>rxp</i> against <i>str</i>.
+ *  Returns the integer index (in characters) of the first match
+ *  for +self+ and +string+, or +nil+ if none;
+ *  also sets the
+ *  {rdoc-ref:Regexp Global Variables}[rdoc-ref:Regexp@Regexp+Global+Variables]:
  *
- *     /at/ =~ "input data"   #=> 7
- *     /ax/ =~ "input data"   #=> nil
+ *    /at/ =~ 'input data' # => 7
+ *    $~                   # => #<MatchData "at">
+ *    /ax/ =~ 'input data' # => nil
+ *    $~                   # => nil
  *
- *  If <code>=~</code> is used with a regexp literal with named captures,
- *  captured strings (or nil) is assigned to local variables named by
- *  the capture names.
+ *  Assigns named captures to local variables of the same names
+ *  if and only if +self+:
  *
- *     /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/ =~ "  x = y  "
- *     p lhs    #=> "x"
- *     p rhs    #=> "y"
+ *  - Is a regexp literal;
+ *    see {Regexp Literals}[rdoc-ref:literals.rdoc@Regexp+Literals].
+ *  - Does not contain interpolations;
+ *    see {Regexp Interpolation}[rdoc-ref:Regexp@Regexp+Interpolation].
+ *  - Is at the left of the expression.
  *
- *  If it is not matched, nil is assigned for the variables.
+ *  Example:
  *
- *     /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/ =~ "  x = "
- *     p lhs    #=> nil
- *     p rhs    #=> nil
+ *    /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/ =~ '  x = y  '
+ *    p lhs # => "x"
+ *    p rhs # => "y"
  *
- *  This assignment is implemented in the Ruby parser.
- *  The parser detects 'regexp-literal =~ expression' for the assignment.
- *  The regexp must be a literal without interpolation and placed at left hand side.
+ *  Assigns +nil+ if not matched:
  *
- *  The assignment does not occur if the regexp is not a literal.
+ *    /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/ =~ '  x = '
+ *    p lhs # => nil
+ *    p rhs # => nil
  *
- *     re = /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/
- *     re =~ "  x = y  "
- *     p lhs    # undefined local variable
- *     p rhs    # undefined local variable
+ *  Does not make local variable assignments if +self+ is not a regexp literal:
  *
- *  A regexp interpolation, <code>#{}</code>, also disables
- *  the assignment.
+ *    r = /(?<foo>\w+)\s*=\s*(?<foo>\w+)/
+ *    r =~ '  x = y  '
+ *    p foo # Undefined local variable
+ *    p bar # Undefined local variable
  *
- *     rhs_pat = /(?<rhs>\w+)/
- *     /(?<lhs>\w+)\s*=\s*#{rhs_pat}/ =~ "x = y"
- *     p lhs    # undefined local variable
+ *  The assignment does not occur if the regexp is not at the left:
  *
- *  The assignment does not occur if the regexp is placed at the right hand side.
+ *    '  x = y  ' =~ /(?<foo>\w+)\s*=\s*(?<foo>\w+)/
+ *    p foo, foo # Undefined local variables
  *
- *    "  x = y  " =~ /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/
- *    p lhs, rhs # undefined local variable
+ *  A regexp interpolation, <tt>#{}</tt>, also disables
+ *  the assignment:
+ *
+ *    r = /(?<foo>\w+)/
+ *    /(?<foo>\w+)\s*=\s*#{r}/ =~ 'x = y'
+ *    p foo # Undefined local variable
  *
  */
 
@@ -3388,34 +3398,38 @@ rb_reg_match2(VALUE re)
 
 /*
  *  call-seq:
- *     rxp.match(str, pos=0)                   -> matchdata or nil
- *     rxp.match(str, pos=0) {|match| block }  -> obj
+ *    match(string, offset = 0) -> matchdata or nil
+ *    match(string, offset = 0) {|matchdata| ... } -> object
  *
- *  Returns a MatchData object describing the match, or
- *  <code>nil</code> if there was no match. This is equivalent to
- *  retrieving the value of the special variable <code>$~</code>
- *  following a normal match.  If the second parameter is present, it
- *  specifies the position in the string to begin the search.
+ *  With no block given, returns the MatchData object
+ *  that describes the match, if any, or +nil+ if none;
+ *  the search begins at the given byte +offset+ in +self+:
+ *
+ *    /abra/.match('abracadabra')      # => #<MatchData "abra">
+ *    /abra/.match('abracadabra', 4)   # => #<MatchData "abra">
+ *    /abra/.match('abracadabra', 8)   # => nil
+ *    /abra/.match('abracadabra', 800) # => nil
+ *
+ *  With a block given, calls the block if and only if a match is found;
+ *  returns the block's value:
+ *
+ *    /abra/.match('abracadabra') {|matchdata| p matchdata }
+ *    # => #<MatchData "abra">
+ *    /abra/.match('abracadabra', 4) {|matchdata| p matchdata }
+ *    # => #<MatchData "abra">
+ *    /abra/.match('abracadabra', 8) {|matchdata| p matchdata }
+ *    # => nil
+ *    /abra/.match('abracadabra', 8) {|marchdata| fail 'Cannot happen' }
+ *    # => nil
+ *
+ *  Output (from the first two blocks above):
+ *
+ *    #<MatchData "abra">
+ *    #<MatchData "abra">
  *
  *     /(.)(.)(.)/.match("abc")[2]   #=> "b"
  *     /(.)(.)/.match("abc", 1)[2]   #=> "c"
  *
- *  If a block is given, invoke the block with MatchData if match succeed, so
- *  that you can write
- *
- *     /M(.*)/.match("Matz") do |m|
- *       puts m[0]
- *       puts m[1]
- *     end
- *
- *  instead of
- *
- *     if m = /M(.*)/.match("Matz")
- *       puts m[0]
- *       puts m[1]
- *     end
- *
- *  The return value is a value from block execution in this case.
  */
 
 static VALUE
@@ -3445,8 +3459,8 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 
 /*
  *  call-seq:
- *     rxp.match?(str)          -> true or false
- *     rxp.match?(str, pos=0)   -> true or false
+ *    match?(string) -> true or false
+ *    match?(string, offset = 0) -> true or false
  *
  *  Returns <code>true</code> or <code>false</code> to indicate whether the
  *  regexp is matched or not without updating $~ and other related variables.
