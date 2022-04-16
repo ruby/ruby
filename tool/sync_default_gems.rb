@@ -375,8 +375,8 @@ IGNORE_FILE_PATTERN =
   |\.git.*
   |[A-Z]\w+file
   |COPYING
-  |rakelib\/
-  )\z/x
+  |rakelib\/.*
+  )\z/mx
 
 def message_filter(repo, sha)
   log = STDIN.read
@@ -424,7 +424,9 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
 
   # Ignore Merge commit and insufficiency commit for ruby core repository.
   commits.delete_if do |sha, subject|
-    files = IO.popen(%W"git diff-tree --no-commit-id --name-only -r #{sha}", &:readlines)
+    files = IO.popen(%W"git diff-tree -z --no-commit-id --name-only -r #{sha}") {|f|
+      f.readlines("\0", chomp: true)
+    }
     subject =~ /^Merge/ || subject =~ /^Auto Merge/ || files.all?{|file| file =~ IGNORE_FILE_PATTERN}
   end
 
