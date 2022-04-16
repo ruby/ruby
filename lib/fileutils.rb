@@ -680,8 +680,11 @@ module FileUtils
       return
     end
     fullpath = File.expand_path(path)
-    st = File.lstat(fullpath)
-    unless st.directory?
+    ent = Entry_.new(fullpath)
+    if force && !ent.exist?
+      return
+    end
+    unless ent.directory?
       File.unlink fullpath
       return
     end
@@ -700,7 +703,7 @@ module FileUtils
     dot_file = fullpath + "/."
     begin
       File.open(dot_file) {|f|
-        unless fu_stat_identical_entry?(st, f.stat)
+        unless fu_stat_identical_entry?(ent, f.stat)
           # symlink (TOC-to-TOU attack?)
           File.unlink fullpath
           return
@@ -710,7 +713,7 @@ module FileUtils
       }
     rescue Errno::EISDIR # JRuby in non-native mode can't open files as dirs
       File.lstat(dot_file).tap {|fstat|
-        unless fu_stat_identical_entry?(st, fstat)
+        unless fu_stat_identical_entry?(ent, fstat)
           # symlink (TOC-to-TOU attack?)
           File.unlink fullpath
           return
@@ -720,7 +723,7 @@ module FileUtils
       }
     end
 
-    unless fu_stat_identical_entry?(st, File.lstat(fullpath))
+    unless fu_stat_identical_entry?(ent, File.lstat(fullpath))
       # TOC-to-TOU attack?
       File.unlink fullpath
       return
@@ -735,14 +738,10 @@ module FileUtils
       end
     end
     root.postorder_traverse do |ent|
-      begin
-        ent.remove
-      rescue
-        raise unless force
-      end
+      next if force && !ent.exist?
+
+      ent.remove
     end
-  rescue
-    raise unless force
   end
   module_function :remove_entry_secure
 
@@ -769,14 +768,10 @@ module FileUtils
   #
   def remove_entry(path, force = false)
     Entry_.new(path).postorder_traverse do |ent|
-      begin
-        ent.remove
-      rescue
-        raise unless force
-      end
+      next if force && !ent.exist?
+
+      ent.remove
     end
-  rescue
-    raise unless force
   end
   module_function :remove_entry
 
@@ -785,9 +780,10 @@ module FileUtils
   # This method ignores StandardError if +force+ is true.
   #
   def remove_file(path, force = false)
-    Entry_.new(path).remove_file
-  rescue
-    raise unless force
+    ent = Entry_.new(path)
+    return if force && !ent.exist?
+
+    ent.remove_file
   end
   module_function :remove_file
 
@@ -1256,6 +1252,16 @@ module FileUtils
       s and s.blockdev?
     end
 
+    def dev
+      s = lstat!
+      s and s.dev
+    end
+
+    def ino
+      s = lstat!
+      s and s.ino
+    end
+
     def socket?
       s = lstat!
       s and s.socket?
@@ -1485,7 +1491,7 @@ module FileUtils
           end
         end
       end
-    ensure
+
       yield self
     end
 
