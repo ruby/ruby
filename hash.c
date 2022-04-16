@@ -304,18 +304,17 @@ objid_hash(VALUE obj)
  * Certain core classes such as Integer use built-in hash calculations and
  * do not call the #hash method when used as a hash key.
  *
- * If you're implementing a #hash value method for a compound set of values in
- * your own classes, best practice is to combine the class and the values by
- * creating an array of them and then using the #hash method of the array, which
- * is written to combine the hash values of its elements efficiently and
- * safely. Manually combining hash values using mathematical operators is not
- * recommended, as this is slower and more error-prone.
+ * When implementing your own #hash based on multiple values, the best
+ * practice is to combine values using the hash code of an array:
  *
  * For example:
  *
  *   def hash
  *     [self.class, a, b, c].hash
  *   end
+ *
+ * The reason for this is that the Array#hash method already has logic for
+ * safely and efficiently combining multiple hash values.
  *--
  * \private
  *++
