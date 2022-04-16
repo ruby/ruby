@@ -427,7 +427,7 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
     files = IO.popen(%W"git diff-tree -z --no-commit-id --name-only -r #{sha}") {|f|
       f.readlines("\0", chomp: true)
     }
-    subject =~ /^Merge/ || subject =~ /^Auto Merge/ || files.all?{|file| file =~ IGNORE_FILE_PATTERN}
+    subject.start_with?("Merge", "Auto Merge") or files.all?(IGNORE_FILE_PATTERN)
   end
 
   if commits.empty?
