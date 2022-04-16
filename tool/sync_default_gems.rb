@@ -77,6 +77,12 @@ REPOSITORIES = {
   win32ole: "ruby/win32ole",
 }
 
+def pipe_readlines(args, rs: "\0", chomp: true)
+  IO.popen(args) do |f|
+    f.readlines(rs, chomp: chomp)
+  end
+end
+
 # We usually don't use this. Please consider using #sync_default_gems_with_commits instead.
 def sync_default_gems(gem)
   repo = REPOSITORIES[gem.to_sym]
@@ -424,9 +430,7 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
 
   # Ignore Merge commit and insufficiency commit for ruby core repository.
   commits.delete_if do |sha, subject|
-    files = IO.popen(%W"git diff-tree -z --no-commit-id --name-only -r #{sha}") {|f|
-      f.readlines("\0", chomp: true)
-    }
+    files = pipe_readlines(%W"git diff-tree -z --no-commit-id --name-only -r #{sha}")
     subject.start_with?("Merge", "Auto Merge") or files.all?(IGNORE_FILE_PATTERN)
   end
 
@@ -464,14 +468,14 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
     if result.empty?
       skipped = true
     elsif /^CONFLICT/ =~ result
-      result = IO.popen(%W"git status --porcelain", &:readlines).each(&:chomp!)
+      result = pipe_readlines(%W"git status --porcelain -z")
       result.map! {|line| line[/^.U (.*)/, 1]}
       result.compact!
       ignore, conflict = result.partition {|name| IGNORE_FILE_PATTERN =~ name}
       unless ignore.empty?
         system(*%W"git reset HEAD --", *ignore)
         File.unlink(*ignore)
-        ignore = IO.popen(%W"git status --porcelain" + ignore, &:readlines).map! {|line| line[/^.. (.*)/, 1]}
+        ignore = pipe_readlines(%W"git status --porcelain -z" + ignore).map! {|line| line[/^.. (.*)/, 1]}
         system(*%W"git checkout HEAD --", *ignore) unless ignore.empty?
       end
       unless conflict.empty?
