@@ -30,6 +30,13 @@ _s_ followed by the letter _t_, so it matches _haystack_, also.
 Note that any Regexp matching will raise a RuntimeError if timeout is set and
 exceeded. See "Timeout" section in detail.
 
+== \Regexp Interpolation
+
+A regexp may contain interpolated strings; trivially:
+
+  foo = 'bar'
+  /#{foo}/ # => /bar/
+
 == <tt>=~</tt> and Regexp#match
 
 Pattern matching may be achieved by using <tt>=~</tt> operator or Regexp#match
@@ -672,9 +679,10 @@ regexp's encoding can be explicitly fixed by supplying
        # raises Encoding::CompatibilityError: incompatible encoding regexp match
        #         (ISO-8859-1 regexp with UTF-8 string)
 
-== Special Global Variables
+== \Regexp Global Variables
 
 Pattern matching sets some global variables :
+
 * <tt>$~</tt> is equivalent to Regexp.last_match;
 * <tt>$&</tt> contains the complete matched text;
 * <tt>$`</tt> contains string before match;
