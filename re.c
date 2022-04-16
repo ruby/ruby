@@ -4147,7 +4147,7 @@ match_setter(VALUE val, ID _x, VALUE *_y)
  *
  *  With no argument, returns the value of <tt>$!</tt>,
  *  which is the result of the most recent pattern match
- *  (see {Regexp Global Variables}[rdoc-ref:literals.rdoc@Regexp+Global_Variables):
+ *  (see {Regexp Global Variables}[rdoc-ref:Regexp@Regexp+Global+Variables]):
  *
  *    /c(.)t/ =~ 'cat'  # => 0
  *    Regexp.last_match # => #<MatchData "cat" 1:"a">
