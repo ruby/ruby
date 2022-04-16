@@ -30,9 +30,9 @@ typedef struct native_thread_data_struct {
     HANDLE interrupt_event;
 } native_thread_data_t;
 
-typedef struct rb_global_vm_lock_struct {
+struct rb_thread_sched {
     HANDLE lock;
-} rb_global_vm_lock_t;
+};
 
 typedef DWORD native_tls_key_t; // TLS index
 

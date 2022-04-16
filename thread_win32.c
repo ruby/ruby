@@ -103,39 +103,41 @@ w32_mutex_create(void)
 #define GVL_DEBUG 0
 
 static void
-gvl_acquire(rb_global_vm_lock_t *gvl, rb_thread_t *th)
+thread_sched_to_running(struct rb_thread_sched *sched, rb_thread_t *th)
 {
-    w32_mutex_lock(gvl->lock, false);
+    w32_mutex_lock(sched->lock, false);
     if (GVL_DEBUG) fprintf(stderr, "gvl acquire (%p): acquire\n", th);
 }
 
 static void
-gvl_release(rb_global_vm_lock_t *gvl)
+thread_sched_to_waiting(struct rb_thread_sched *sched)
 {
-    ReleaseMutex(gvl->lock);
+    ReleaseMutex(sched->lock);
 }
 
 static void
-gvl_yield(rb_global_vm_lock_t *gvl, rb_thread_t *th)
+thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
 {
-  gvl_release(gvl);
-  native_thread_yield();
-  gvl_acquire(gvl, th);
+    thread_sched_to_waiting(sched);
+    native_thread_yield();
+    thread_sched_to_running(sched, th);
 }
 
 void
-rb_gvl_init(rb_global_vm_lock_t *gvl)
+rb_thread_sched_init(struct rb_thread_sched *sched)
 {
-    if (GVL_DEBUG) fprintf(stderr, "gvl init\n");
-    gvl->lock = w32_mutex_create();
+    if (GVL_DEBUG) fprintf(stderr, "sched init\n");
+    sched->lock = w32_mutex_create();
 }
 
-static void
-gvl_destroy(rb_global_vm_lock_t *gvl)
+#if 0
+void
+rb_thread_sched_destroy(struct rb_thread_sched *sched)
 {
-    if (GVL_DEBUG) fprintf(stderr, "gvl destroy\n");
-    CloseHandle(gvl->lock);
+    if (GVL_DEBUG) fprintf(stderr, "sched destroy\n");
+    CloseHandle(sched->lock);
 }
+#endif
 
 rb_thread_t *
 ruby_thread_from_native(void)
@@ -301,7 +303,7 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 {
     const volatile DWORD msec = rel ? hrtime2msec(*rel) : INFINITE;
 
-    GVL_UNLOCK_BEGIN(th);
+    THREAD_BLOCKING_BEGIN(th);
     {
 	DWORD ret;
 
@@ -324,7 +326,7 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 	th->unblock.arg = 0;
         rb_native_mutex_unlock(&th->interrupt_lock);
     }
-    GVL_UNLOCK_END(th);
+    THREAD_BLOCKING_END(th);
 }
 
 void
