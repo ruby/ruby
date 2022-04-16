@@ -3331,23 +3331,22 @@ rb_reg_match(VALUE re, VALUE str)
 
 /*
  *  call-seq:
- *     rxp === str   -> true or false
+ *    regexp === string -> true or false
  *
- *  Case Equality---Used in case statements.
+ *  Returns +true+ if +self+ finds a match in +string+:
  *
- *     a = "HELLO"
- *     case a
- *     when /\A[a-z]*\z/; print "Lower case\n"
- *     when /\A[A-Z]*\z/; print "Upper case\n"
- *     else;              print "Mixed case\n"
- *     end
- *     #=> "Upper case"
+ *    /^[a-z]*$/ === 'HELLO' # => false
+ *    /^[A-Z]*$/ === 'HELLO' # => true
  *
- *  Following a regular expression literal with the #=== operator allows you to
- *  compare against a String.
+ *  This method is called in case statements:
  *
- *	/^[a-z]*$/ === "HELLO" #=> false
- *	/^[A-Z]*$/ === "HELLO" #=> true
+ *    s = 'HELLO'
+ *    case s
+ *    when /\A[a-z]*\z/; print "Lower case\n"
+ *    when /\A[A-Z]*\z/; print "Upper case\n"
+ *    else               print "Mixed case\n"
+ *    end # => "Upper case"
+ *
  */
 
 static VALUE
@@ -3367,13 +3366,13 @@ rb_reg_eqq(VALUE re, VALUE str)
 
 /*
  *  call-seq:
- *     ~ rxp   -> integer or nil
+ *    ~ rxp -> integer or nil
  *
- *  Match---Matches <i>rxp</i> against the contents of <code>$_</code>.
- *  Equivalent to <code><i>rxp</i> =~ $_</code>.
+ *  Equivalent to <tt><i>rxp</i> =~ $_</tt>:
  *
- *     $_ = "input data"
- *     ~ /at/   #=> 7
+ *    $_ = "input data"
+ *    ~ /at/ # => 7
+ *
  */
 
 VALUE
@@ -3540,28 +3539,47 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
 
 /*
  *  call-seq:
- *     Regexp.new(string, [options], timeout: nil)       -> regexp
- *     Regexp.new(regexp)                                -> regexp
- *     Regexp.compile(string, [options], timeout: nil)   -> regexp
- *     Regexp.compile(regexp)                            -> regexp
+ *    Regexp.new(string, options = 0, timeout: nil) -> regexp
+ *    Regexp.new(regexp) -> regexp
  *
- *  Constructs a new regular expression from +pattern+, which can be either a
- *  String or a Regexp (in which case that regexp's options are propagated),
- *  and new options may not be specified (a change as of Ruby 1.8).
+ *  With argument +string+ given, returns a new regexp with the given string
+ *  and options:
  *
- *  If +options+ is an Integer, it should be one or more of the constants
- *  Regexp::EXTENDED, Regexp::IGNORECASE, and Regexp::MULTILINE,
- *  <em>or</em>-ed together.  Otherwise, if +options+ is not
- *  +nil+ or +false+, the regexp will be case insensitive.
+ *    r = Regexp.new('foo') # => /foo/
+ *    r.source              # => "foo"
+ *    r.options             # => 0
  *
- *    r1 = Regexp.new('^a-z+:\\s+\w+') #=> /^a-z+:\s+\w+/
- *    r2 = Regexp.new('cat', true)     #=> /cat/i
- *    r3 = Regexp.new(r2)              #=> /cat/i
- *    r4 = Regexp.new('dog', Regexp::EXTENDED | Regexp::IGNORECASE) #=> /dog/ix
+ *  The +string+ may contain interpolations:
  *
- *  +timeout+ keyword sets per-object timeout configuration.
- *  If this is not set, the global timeout configuration set by Regexp.timeout=
- *  is used.
+ *    s = 'foo'
+ *    Regexp.new("#{s} bar") # => /foo bar/
+ *
+ *  Optional argument +options+ is one of the following:
+ *
+ *  - The logical OR of one or more of the constants
+ *    Regexp::EXTENDED, Regexp::IGNORECASE, and Regexp::MULTILINE:
+ *
+ *      Regexp.new('foo', Regexp::IGNORECASE) # => /foo/i
+ *      Regexp.new('foo', Regexp::EXTENDED)   # => /foo/x
+ *      Regexp.new('foo', Regexp::MULTILINE)  # => /foo/m
+ *      flags = Regexp::IGNORECASE | Regexp::EXTENDED |  Regexp::MULTILINE
+ *      Regexp.new('foo', flags)              # => /foo/mix
+ *
+ *  - +nil+ or +false+, which is ignored.
+ *  - Anything else, which sets the case-insensitivity flag:
+ *
+ *      Regexp.new('foo', :foo)  # => /foo/i
+ *      Regexp.new('foo', 'foo') # => /foo/i
+ *
+ *  If optional keyword argument +timeout+ is given,
+ *  its integer value overrides the timeout interval for the class,
+ *  Regexp.timeout.
+ *
+ *  With argument +regexp+ given, returns a new regexp
+ *  source, options, and timeout are the same as +self+.
+ *
+ *  Regexp.compile is an alias for Regexp.new.
+ *
  */
 
 static VALUE
@@ -3726,15 +3744,19 @@ rb_reg_quote(VALUE str)
 
 /*
  *  call-seq:
- *     Regexp.escape(str)   -> string
- *     Regexp.quote(str)    -> string
+ *    Regexp.escape(string) -> new_string
  *
- *  Escapes any characters that would have special meaning in a regular
- *  expression. Returns a new escaped string with the same or compatible
- *  encoding. For any string,
- *  <code>Regexp.new(Regexp.escape(<i>str</i>))=~<i>str</i></code> will be true.
+ *  Returns a new string that escapes any characters
+ *  that have special meaning in a regular expression:
  *
- *     Regexp.escape('\*?{}.')   #=> \\\*\?\{\}\.
+ *    s = Regexp.escape('\*?{}.')      # => "\\\\\\*\\?\\{\\}\\."
+ *
+ *  For any string +s+, this call returns a MatchData object:
+ *
+ *    r = Regexp.new(Regexp.escape(s)) # => /\\\\\\\*\\\?\\\{\\\}\\\./
+ *    r.match(s)                       # => #<MatchData "\\\\\\*\\?\\{\\}\\.">
+ *
+ *  Regexp.quote is an alias for Regexp.escape.
  *
  */
 
@@ -3764,19 +3786,20 @@ rb_check_regexp_type(VALUE re)
 
 /*
  *  call-seq:
- *     Regexp.try_convert(obj) -> re or nil
+ *    Regexp.try_convert(object) -> regexp or nil
  *
- *  Try to convert <i>obj</i> into a Regexp, using to_regexp method.
- *  Returns converted regexp or nil if <i>obj</i> cannot be converted
- *  for any reason.
+ *  Returns +object+ if it is a regexp:
  *
- *     Regexp.try_convert(/re/)         #=> /re/
- *     Regexp.try_convert("re")         #=> nil
+ *    Regexp.try_convert(/re/) # => /re/
  *
- *     o = Object.new
- *     Regexp.try_convert(o)            #=> nil
- *     def o.to_regexp() /foo/ end
- *     Regexp.try_convert(o)            #=> /foo/
+ *  Otherwise if +object+ responds to <tt>:to_hash</tt>,
+ *  calls <tt>object.to_hash</tt> and returns the result.
+ *
+ *  Returns +nil+ if +object+ does not respond to <tt>:to_hash</tt>.
+ *
+ *    Regexp.try_convert('re') # => nil
+ *
+ *  Raises an exception unless <tt>object.to_hash</tt> returns a regexp.
  *
  */
 static VALUE
@@ -3901,25 +3924,37 @@ rb_reg_s_union(VALUE self, VALUE args0)
 
 /*
  *  call-seq:
- *     Regexp.union(pat1, pat2, ...)            -> new_regexp
- *     Regexp.union(pats_ary)                   -> new_regexp
+ *    Regexp.union(*patterns) -> regexp
+ *    Regexp.union(array_of_patterns) -> regexp
  *
- *  Return a Regexp object that is the union of the given
- *  <em>pattern</em>s, i.e., will match any of its parts. The
- *  <em>pattern</em>s can be Regexp objects, in which case their
- *  options will be preserved, or Strings. If no patterns are given,
- *  returns <code>/(?!)/</code>.  The behavior is unspecified if any
- *  given <em>pattern</em> contains capture.
+ *  Returns a new regexp that is the union of the given patterns:
  *
- *     Regexp.union                         #=> /(?!)/
- *     Regexp.union("penzance")             #=> /penzance/
- *     Regexp.union("a+b*c")                #=> /a\+b\*c/
- *     Regexp.union("skiing", "sledding")   #=> /skiing|sledding/
- *     Regexp.union(["skiing", "sledding"]) #=> /skiing|sledding/
- *     Regexp.union(/dogs/, /cats/i)        #=> /(?-mix:dogs)|(?i-mx:cats)/
+ *    r = Regexp.union(%w[cat dog])      # => /cat|dog/
+ *    r.match('cat')      # => #<MatchData "cat">
+ *    r.match('dog')      # => #<MatchData "dog">
+ *    r.match('cog')      # => nil
  *
- *  Note: the arguments for ::union will try to be converted into a regular
- *  expression literal via #to_regexp.
+ *  For each pattern that is a string, <tt>Regexp.new(pattern)</tt> is used:
+ *
+ *    Regexp.union('penzance')             # => /penzance/
+ *    Regexp.union('a+b*c')                # => /a\+b\*c/
+ *    Regexp.union('skiing', 'sledding')   # => /skiing|sledding/
+ *    Regexp.union(['skiing', 'sledding']) # => /skiing|sledding/
+ *
+ *  For each pattern that is a regexp, it is used as is,
+ *  including its flags:
+ *
+ *    Regexp.union(/foo/i, /bar/m, /baz/x)
+ *    # => /(?i-mx:foo)|(?m-ix:bar)|(?x-mi:baz)/
+ *    Regexp.union([/foo/i, /bar/m, /baz/x])
+ *    # => /(?i-mx:foo)|(?m-ix:bar)|(?x-mi:baz)/
+ *
+ *  With no arguments, returns <tt>/(?!)/</tt>:
+ *
+ *    Regexp.union # => /(?!)/
+ *
+ *  If any regexp pattern contains captures, the behavior is unspecified.
+ *
  */
 static VALUE
 rb_reg_s_union_m(VALUE self, VALUE args)
@@ -4106,30 +4141,40 @@ match_setter(VALUE val, ID _x, VALUE *_y)
 
 /*
  *  call-seq:
- *     Regexp.last_match           -> matchdata
- *     Regexp.last_match(n)        -> str
+ *    Regexp.last_match -> matchdata or nil
+ *    Regexp.last_match(n) -> string or nil
+ *    Regexp.last_match(name) -> string or nil
  *
- *  The first form returns the MatchData object generated by the
- *  last successful pattern match.  Equivalent to reading the special global
- *  variable <code>$~</code> (see Special global variables in Regexp for
- *  details).
+ *  With no argument, returns the value of <tt>$!</tt>,
+ *  which is the result of the most recent pattern match
+ *  (see {Regexp Global Variables}[rdoc-ref:literals.rdoc@Regexp+Global_Variables):
  *
- *  The second form returns the <i>n</i>th field in this MatchData object.
- *  _n_ can be a string or symbol to reference a named capture.
+ *    /c(.)t/ =~ 'cat'  # => 0
+ *    Regexp.last_match # => #<MatchData "cat" 1:"a">
+ *    /a/ =~ 'foo'      # => nil
+ *    Regexp.last_match # => nil
  *
- *  Note that the last_match is local to the thread and method scope of the
- *  method that did the pattern match.
+ *  With non-negative integer argument +n+, returns the _n_th field in the
+ *  matchdata, if any, or nil if none:
  *
- *     /c(.)t/ =~ 'cat'        #=> 0
- *     Regexp.last_match       #=> #<MatchData "cat" 1:"a">
- *     Regexp.last_match(0)    #=> "cat"
- *     Regexp.last_match(1)    #=> "a"
- *     Regexp.last_match(2)    #=> nil
+ *    /c(.)t/ =~ 'cat'     # => 0
+ *    Regexp.last_match(0) # => "cat"
+ *    Regexp.last_match(1) # => "a"
+ *    Regexp.last_match(2) # => nil
  *
- *     /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/ =~ "var = val"
- *     Regexp.last_match       #=> #<MatchData "var = val" lhs:"var" rhs:"val">
- *     Regexp.last_match(:lhs) #=> "var"
- *     Regexp.last_match(:rhs) #=> "val"
+ *  With negative integer argument +n+, counts backwards from the last field:
+ *
+ *    Regexp.last_match(-1)       # => "a"
+ *
+ *  With string or symbol argument +name+,
+ *  returns the string value for the named capture, if any:
+ *
+ *    /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/ =~ 'var = val'
+ *    Regexp.last_match        # => #<MatchData "var = val" lhs:"var"rhs:"val">
+ *    Regexp.last_match(:lhs)  # => "var"
+ *    Regexp.last_match('rhs') # => "val"
+ *    Regexp.last_match('foo') # Raises IndexError.
+ *
  */
 
 static VALUE
