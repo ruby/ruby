@@ -3266,7 +3266,7 @@ reg_match_pos(VALUE re, VALUE *strp, long pos, VALUE* set_match)
 
 /*
  *  call-seq:
- *     regexp =~ string -> integer or nil
+ *    regexp =~ string -> integer or nil
  *
  *  Returns the integer index (in characters) of the first match
  *  for +self+ and +string+, or +nil+ if none;
