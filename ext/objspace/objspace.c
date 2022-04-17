@@ -629,7 +629,7 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
     VALUE hash = setup_hash(argc, argv);
 
     if (imemo_type_ids[0] == 0) {
-#define INIT_IMEMO_TYPE_ID(n) (imemo_type_ids[n] = rb_intern(#n))
+#define INIT_IMEMO_TYPE_ID(n) (imemo_type_ids[n] = rb_intern_const(#n))
         INIT_IMEMO_TYPE_ID(imemo_env);
         INIT_IMEMO_TYPE_ID(imemo_cref);
         INIT_IMEMO_TYPE_ID(imemo_svar);
