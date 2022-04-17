@@ -53,7 +53,7 @@ describe :string_to_sym, shared: true do
     sym.to_s.should == binary_string
   end
 
-  it "ignores exising symbols with different encoding" do
+  it "ignores existing symbols with different encoding" do
     source = "fée"
 
     iso_symbol = source.force_encoding(Encoding::ISO_8859_1).send(@method)
