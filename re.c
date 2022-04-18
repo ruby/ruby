@@ -1880,13 +1880,19 @@ rb_reg_last_match(VALUE match)
 
 /*
  *  call-seq:
- *     mtch.pre_match   -> str
+ *    pre_match -> string
  *
- *  Returns the portion of the original string before the current match.
- *  Equivalent to the special variable <code>$`</code>.
+ *  Returns the substring of the target string from its beginning
+ *  up to the first match in +self+ (that is, <tt>self[0]</tt>);
+ *  equivalent to regexp global variable <tt>$`</tt>:
  *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.pre_match   #=> "T"
+ *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
+ *    m[0]        # => "HX1138"
+ *    m.pre_match # => "T"
+ *
+ *  Related: MatchData#post_match.
+ *
  */
 
 VALUE
@@ -1906,13 +1912,20 @@ rb_reg_match_pre(VALUE match)
 
 /*
  *  call-seq:
- *     mtch.post_match   -> str
+ *    post_match   -> str
  *
- *  Returns the portion of the original string after the current match.
- *  Equivalent to the special variable <code>$'</code>.
+ *  Returns the substring of the target string from
+ *  the end of the first match in +self+ (that is, <tt>self[0]</tt>)
+ *  to the end of the string;
+ *  equivalent to regexp global variable <tt>$'</tt>:
  *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138: The Movie")
- *     m.post_match   #=> ": The Movie"
+ *    m = /(.)(.)(\d+)(\d)/.match("THX1138: The Movie")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
+ *    m[0]         # => "HX1138"
+ *    m.post_match # => ": The Movie"\
+ *
+ *  Related: MatchData.pre_match.
+ *
  */
 
 VALUE
@@ -2001,24 +2014,16 @@ match_array(VALUE match, int start)
 
 /*
  *  call-seq:
- *     mtch.to_a   -> anArray
+ *    to_a -> array
  *
- *  Returns the array of matches.
+ *  Returns the array of matches:
  *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.to_a   #=> ["HX1138", "H", "X", "113", "8"]
+ *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
+ *    m.to_a   #=> ["HX1138", "H", "X", "113", "8"]
  *
- *  Because <code>to_a</code> is called when expanding
- *  <code>*</code><em>variable</em>, there's a useful assignment
- *  shortcut for extracting matched fields. This is slightly slower than
- *  accessing the fields directly (as an intermediate array is
- *  generated).
+ *  Related: MatchData#captures.
  *
- *     all,f1,f2,f3 = * /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     all   #=> "HX1138"
- *     f1    #=> "H"
- *     f2    #=> "X"
- *     f3    #=> "113"
  */
 
 static VALUE
@@ -2030,15 +2035,18 @@ match_to_a(VALUE match)
 
 /*
  *  call-seq:
- *     mtch.captures   -> array
+ *    captures -> array
  *
- *  Returns the array of captures; equivalent to <code>mtch.to_a[1..-1]</code>.
+ *  Returns the array of captures,
+ *  which are all matches except <tt>m[0]</tt>:
  *
- *     f1,f2,f3,f4 = /(.)(.)(\d+)(\d)/.match("THX1138.").captures
- *     f1    #=> "H"
- *     f2    #=> "X"
- *     f3    #=> "113"
- *     f4    #=> "8"
+ *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
+ *    m[0]       # => "HX1138"
+ *    m.captures # => ["H", "X", "113", "8"]
+ *
+ *  Related: MatchData.to_a.
+ *
  */
 static VALUE
 match_captures(VALUE match)
