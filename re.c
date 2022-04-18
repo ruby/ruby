@@ -1287,19 +1287,11 @@ match_byteoffset(VALUE match, VALUE n)
 
 /*
  *  call-seq:
- *     mtch.begin(n)   -> integer
+ *    begin(n) -> integer
+ *    begin(name) -> integer
  *
- *  Returns the offset of the start of the <em>n</em>th element of the match
- *  array in the string.
- *  <em>n</em> can be a string or symbol to reference a named capture.
+ *  :include: doc/matchdata/begin.rdoc
  *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.begin(0)       #=> 1
- *     m.begin(2)       #=> 2
- *
- *     m = /(?<foo>.)(.)(?<bar>.)/.match("hoge")
- *     p m.begin(:foo)  #=> 0
- *     p m.begin(:bar)  #=> 2
  */
 
 static VALUE
@@ -1321,19 +1313,11 @@ match_begin(VALUE match, VALUE n)
 
 /*
  *  call-seq:
- *     mtch.end(n)   -> integer
+ *    end(n) -> integer
+ *    end(name) -> integer
  *
- *  Returns the offset of the character immediately following the end of the
- *  <em>n</em>th element of the match array in the string.
- *  <em>n</em> can be a string or symbol to reference a named capture.
+ *  :include: doc/matchdata/end.rdoc
  *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.end(0)         #=> 7
- *     m.end(2)         #=> 3
- *
- *     m = /(?<foo>.)(.)(?<bar>.)/.match("hoge")
- *     p m.end(:foo)    #=> 1
- *     p m.end(:bar)    #=> 3
  */
 
 static VALUE
@@ -1354,19 +1338,26 @@ match_end(VALUE match, VALUE n)
 
 /*
  *  call-seq:
- *     mtch.match(n)   -> string or nil
+ *    match(n) -> string or nil
+ *    match(name) -> string or nil
  *
- *  Returns the captured substring corresponding to the argument.
- *  <em>n</em> can be a string or symbol to reference a named capture.
+ *  Returns the matched substring corresponding to the given argument.
  *
- *     m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
- *     m.match(0)       #=> "HX1138"
- *     m.match(4)       #=> "8"
- *     m.match(5)       #=> nil
+ *  When non-negative argument +n+ is given,
+ *  returns the matched substring for the <tt>n</tt>th match:
  *
- *     m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
- *     m.match(:foo)    #=> "h"
- *     m.match(:bar)    #=> "ge"
+ *    m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8" 5:nil>
+ *    m.match(0) # => "HX1138"
+ *    m.match(4) # => "8"
+ *    m.match(5) # => nil
+ *
+ *  When string or symbol argument +name+ is given,
+ *  returns the matched substring for the given name:
+ *
+ *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
+ *    m.match('foo') # => "h"
+ *    m.match(:bar)  # => "ge"
  *
  */
 
@@ -1387,19 +1378,30 @@ match_nth(VALUE match, VALUE n)
 
 /*
  *  call-seq:
- *     mtch.match_length(n)   -> array
+ *    match_length(n) -> integer or nil
+ *    match_length(name) -> integer or nil
  *
- *  Returns the length of the captured substring corresponding to the argument.
- *  <em>n</em> can be a string or symbol to reference a named capture.
+ *  Returns the length of the matched substring
+ *  corresponding to the given argument.
  *
- *     m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
- *     m.match_length(0)       #=> 6
- *     m.match_length(4)       #=> 1
- *     m.match_length(5)       #=> nil
+ *  When non-negative argument +n+ is given,
+ *  returns the length of the matched substring
+ *  for the <tt>n</tt>th match:
  *
- *     m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
- *     m.match_length(:foo)    #=> 1
- *     m.match_length(:bar)    #=> 2
+ *    m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8" 5:nil>
+ *    m.match_length(0) # => 6
+ *    m.match_length(4) # => 1
+ *    m.match_length(5) # => nil
+ *
+ *  When string or symbol argument +name+ is given,
+ *  returns the length of the matched substring
+ *  for the named match:
+ *
+ *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
+ *    # => #<MatchData "hoge" foo:"h" bar:"ge">
+ *    m.match_length('foo') # => 1
+ *    m.match_length(:bar)  # => 2
  *
  */
 
