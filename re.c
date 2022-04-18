@@ -1381,7 +1381,7 @@ match_nth(VALUE match, VALUE n)
  *    match_length(n) -> integer or nil
  *    match_length(name) -> integer or nil
  *
- *  Returns the length of the matched substring
+ *  Returns the length (in characters) of the matched substring
  *  corresponding to the given argument.
  *
  *  When non-negative argument +n+ is given,
