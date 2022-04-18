@@ -3549,11 +3549,6 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
  *    r.source              # => "foo"
  *    r.options             # => 0
  *
- *  The +string+ may contain interpolations:
- *
- *    s = 'foo'
- *    Regexp.new("#{s} bar") # => /foo bar/
- *
  *  Optional argument +options+ is one of the following:
  *
  *  - The logical OR of one or more of the constants
@@ -3566,10 +3561,6 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
  *      Regexp.new('foo', flags)              # => /foo/mix
  *
  *  - +nil+ or +false+, which is ignored.
- *  - Anything else, which sets the case-insensitivity flag:
- *
- *      Regexp.new('foo', :foo)  # => /foo/i
- *      Regexp.new('foo', 'foo') # => /foo/i
  *
  *  If optional keyword argument +timeout+ is given,
  *  its integer value overrides the timeout interval for the class,
@@ -3792,14 +3783,14 @@ rb_check_regexp_type(VALUE re)
  *
  *    Regexp.try_convert(/re/) # => /re/
  *
- *  Otherwise if +object+ responds to <tt>:to_hash</tt>,
- *  calls <tt>object.to_hash</tt> and returns the result.
+ *  Otherwise if +object+ responds to <tt>:to_regexp</tt>,
+ *  calls <tt>object.to_regexp</tt> and returns the result.
  *
- *  Returns +nil+ if +object+ does not respond to <tt>:to_hash</tt>.
+ *  Returns +nil+ if +object+ does not respond to <tt>:to_regexp</tt>.
  *
  *    Regexp.try_convert('re') # => nil
  *
- *  Raises an exception unless <tt>object.to_hash</tt> returns a regexp.
+ *  Raises an exception unless <tt>object.to_regexp</tt> returns a regexp.
  *
  */
 static VALUE
