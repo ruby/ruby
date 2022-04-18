@@ -69,7 +69,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
       fetcher.gem 'a', 1
     end
 
-    # Github has an issue in which it will generate a misleading prerelease output in its RubyGems server API and
+    # GitHub has an issue in which it will generate a misleading prerelease output in its RubyGems server API and
     # returns a 0 version for the gem while it doesn't exist.
     @fetcher.data["#{@gem_repo}prerelease_specs.#{Gem.marshal_version}.gz"] = util_gzip(Marshal.dump([
       Gem::NameTuple.new('a', Gem::Version.new(0), 'ruby'),
