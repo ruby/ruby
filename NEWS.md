@@ -33,14 +33,14 @@ Note that each entry is kept to a minimum, see links for details.
 
 * Constant assignment evaluation order for constants set on explicit
   objects has been made consistent with single attribute assignment
-  evaluation order.  With this code:
+  evaluation order. With this code:
 
     ```ruby
     foo::BAR = baz
     ```
 
-  `foo` is now called before `baz`. Similarly, for multiple assignment
-  to constants,  left-to-right evaluation order is used.  With this
+  `foo` is now called before `baz`. Similarly, for multiple assignments
+  to constants,  left-to-right evaluation order is used. With this
   code:
 
     ```ruby
@@ -121,7 +121,7 @@ Note: We're only listing outstanding class updates.
     * Refinement#refined_class has been added. [[Feature #12737]]
 
 * Set
-    * Set is now available as a builtin class without the need for `require "set"`. [[Feature #16989]]
+    * Set is now available as a built-in class without the need for `require "set"`. [[Feature #16989]]
       It is currently autoloaded via the `Set` constant or a call to `Enumerable#to_set`.
 
 * String
@@ -143,7 +143,7 @@ Note: We're only listing outstanding class updates.
 
 ## Stdlib updates
 
-*   The following default gem are updated.
+*   The following default gems are updated.
     * RubyGems 3.4.0.dev
     * bigdecimal 3.1.2
     * bundler 2.4.0.dev
@@ -194,7 +194,7 @@ The following deprecated methods are removed.
 
 * `Psych` no longer bundles libyaml sources.
   Users need to install the libyaml library themselves via the package
-  system.  [[Feature #18571]]
+  system. [[Feature #18571]]
 
 ## C API updates
 

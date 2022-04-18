@@ -24,6 +24,7 @@ The specs describe the [language syntax](language/), the [core library](core/), 
 The language specs are grouped by keyword while the core and standard library specs are grouped by class and method.
 
 ruby/spec is known to be tested in these implementations for every commit:
+
 * [MRI](https://rubyci.org/) on 30 platforms and 4 versions
 * [JRuby](https://github.com/jruby/jruby/tree/master/spec/ruby) for both 1.7 and 9.x
 * [TruffleRuby](https://github.com/oracle/truffleruby/tree/master/spec/ruby)
@@ -53,6 +54,7 @@ $ ../mspec/bin/mspec
 ### Specs for old Ruby versions
 
 For older specs try these commits:
+
 * Ruby 2.0.0-p647 - [Suite](https://github.com/ruby/spec/commit/245862558761d5abc676843ef74f86c9bcc8ea8d) using [MSpec](https://github.com/ruby/mspec/commit/f90efa068791064f955de7a843e96e2d7d3041c2) (may encounter 2 failures)
 * Ruby 2.1.9 - [Suite](https://github.com/ruby/spec/commit/f029e65241374386077ac500add557ae65069b55) using [MSpec](https://github.com/ruby/mspec/commit/55568ea3918c6380e64db8c567d732fa5781efed)
 * Ruby 2.2.10 - [Suite](https://github.com/ruby/spec/commit/cbaa0e412270c944df0c2532fc500c920dba0e92) using [MSpec](https://github.com/ruby/mspec/commit/d84d7668449e96856c5f6bac8cb1526b6d357ce3)
