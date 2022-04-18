@@ -16,7 +16,7 @@ concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 
-# Github actions does not support YAML anchors.  This creative use of
+# GitHub actions does not support YAML anchors.  This creative use of
 # environment variables (plus the "echo $GITHUB_ENV" hack) is to reroute that
 # restriction.
 env:
@@ -25,7 +25,7 @@ env:
   crosshost: ''
 
   # -O1 is faster than -O3 in our tests... Majority of time are consumed trying
-  # to optimize binaries.  Also Github Actions run on relatively modern CPUs
+  # to optimize binaries.  Also GitHub Actions run on relatively modern CPUs
   # compared to, say, GCC 4 or Clang 3.  We don't specify `-march=native`
   # because compilers tend not understand what the CPU is.
   optflags: '-O1'
@@ -109,7 +109,7 @@ jobs:
           # now implies strict-prototypes. Disabling the error but leaving the
           # warning generates a lot of noise from use of ANYARGS in
           # rb_define_method() and friends.
-          # See: https://github.com/llvm/llvm-project/commit/11da1b53d8cd3507959022cd790d5a7ad4573d94 
+          # See: https://github.com/llvm/llvm-project/commit/11da1b53d8cd3507959022cd790d5a7ad4573d94
           - { key: append_cc, name: c99,   value: '-std=c99   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' }
 #         - { key: append_cc, name: c11,   value: '-std=c11   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' }
 #         - { key: append_cc, name: c17,   value: '-std=c17   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' }
