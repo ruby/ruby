@@ -978,7 +978,7 @@ rb_stat_atime(VALUE self)
 
 /*
  *  call-seq:
- *     stat.mtime  ->  aTime
+ *     stat.mtime  ->  time
  *
  *  Returns the modification time of <i>stat</i>.
  *
@@ -994,7 +994,7 @@ rb_stat_mtime(VALUE self)
 
 /*
  *  call-seq:
- *     stat.ctime  ->  aTime
+ *     stat.ctime  ->  time
  *
  *  Returns the change time for <i>stat</i> (that is, the time
  *  directory information about the file was changed, not the file
@@ -1015,7 +1015,7 @@ rb_stat_ctime(VALUE self)
 #if defined(HAVE_STAT_BIRTHTIME)
 /*
  *  call-seq:
- *     stat.birthtime  ->  aTime
+ *     stat.birthtime  ->  time
  *
  *  Returns the birth time for <i>stat</i>.
  *
