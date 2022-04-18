@@ -29,4 +29,3 @@ returns the starting and ending offsets for the named match:
   m.offset(:bar)  # => [2, 3]
 
 Related: MatchData#byteoffset, MatchData#begin, MatchData#end.
-
