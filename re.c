@@ -1101,13 +1101,14 @@ match_init_copy(VALUE obj, VALUE orig)
 
 
 /*
- * call-seq:
- *    mtch.regexp   -> regexp
+ *  call-seq:
+ *    regexp -> regexp
  *
- * Returns the regexp.
+ *  Returns the regexp that produced the match:
  *
- *     m = /a.*b/.match("abc")
- *     m.regexp #=> /a.*b/
+ *    m = /a.*b/.match("abc") # => #<MatchData "ab">
+ *    m.regexp                # => /a.*b/
+ *
  */
 
 static VALUE
@@ -1125,17 +1126,24 @@ match_regexp(VALUE match)
 }
 
 /*
- * call-seq:
- *    mtch.names   -> [name1, name2, ...]
+ *  call-seq:
+ *    names -> array_of_names
  *
- * Returns a list of names of captures as an array of strings.
- * This is the same as mtch.regexp.names.
+ *  Returns an array of the capture names
+ *  (see {Named Captures}[rdoc-ref:Regexp@Named+Captures]):
  *
- *     /(?<foo>.)(?<bar>.)(?<baz>.)/.match("hoge").names
- *     #=> ["foo", "bar", "baz"]
+ *    m = /(?<foo>.)(?<bar>.)(?<baz>.)/.match("hoge")
+ *    # => #<MatchData "hog" foo:"h" bar:"o" baz:"g">
+ *    m.names # => ["foo", "bar", "baz"]
  *
- *     m = /(?<x>.)(?<y>.)?/.match("a") #=> #<MatchData "a" x:"a" y:nil>
- *     m.names                          #=> ["x", "y"]
+ *    m = /foo/.match('foo') # => #<MatchData "foo">
+ *    m.names # => [] # No named captures.
+ *
+ *  Equivalent to:
+ *
+ *    m = /(?<foo>.)(?<bar>.)(?<baz>.)/.match("hoge")
+ *    m.regexp.names # => ["foo", "bar", "baz"]
+ *
  */
 
 static VALUE
@@ -1149,14 +1157,16 @@ match_names(VALUE match)
 
 /*
  *  call-seq:
- *     mtch.length   -> integer
- *     mtch.size     -> integer
+ *    size -> integer
  *
- *  Returns the number of elements in the match array.
+ *  Returns size of the match array:
  *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.length   #=> 5
- *     m.size     #=> 5
+ *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
+ *    m.size # => 5
+ *
+ *  MatchData#length is an alias for MatchData.size.
+ *
  */
 
 static VALUE
@@ -1218,19 +1228,10 @@ rb_reg_backref_number(VALUE match, VALUE backref)
 
 /*
  *  call-seq:
- *     mtch.offset(n)   -> array
+ *    offset(n) -> [start_offset, end_offset]
+ *    offset(name) -> [start_offset, end_offset]
  *
- *  Returns a two-element array containing the beginning and ending offsets of
- *  the <em>n</em>th match.
- *  <em>n</em> can be a string or symbol to reference a named capture.
- *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.offset(0)      #=> [1, 7]
- *     m.offset(4)      #=> [6, 7]
- *
- *     m = /(?<foo>.)(.)(?<bar>.)/.match("hoge")
- *     p m.offset(:foo) #=> [0, 1]
- *     p m.offset(:bar) #=> [2, 3]
+ *  :include: doc/matchdata/offset.rdoc
  *
  */
 
