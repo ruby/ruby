@@ -2021,7 +2021,7 @@ match_array(VALUE match, int start)
  *
  *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
  *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *    m.to_a   #=> ["HX1138", "H", "X", "113", "8"]
+ *    m.to_a # => ["HX1138", "H", "X", "113", "8"]
  *
  *  Related: MatchData#captures.
  *
@@ -2209,8 +2209,8 @@ match_aref(int argc, VALUE *argv, VALUE match)
  *
  *    m = /(.)(.)(\d+)(\d)/.match("THX1138: The Movie")
  *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *    m.values_at(0, 2, -2)   #=> ["HX1138", "X", "113"]
- *    m.values_at(1..2, -1)   #=> ["H", "X", "8"]
+ *    m.values_at(0, 2, -2) # => ["HX1138", "X", "113"]
+ *    m.values_at(1..2, -1) # => ["H", "X", "8"]
  *
  *    m = /(?<a>\d+) *(?<op>[+\-*\/]) *(?<b>\d+)/.match("1 + 2")
  *    # => #<MatchData "1 + 2" a:"1" op:"+" b:"2">
@@ -2248,12 +2248,20 @@ match_values_at(int argc, VALUE *argv, VALUE match)
 
 /*
  *  call-seq:
- *     mtch.to_s   -> str
+ *    to_s -> string
  *
- *  Returns the entire matched string.
+ *  Returns the matched string:
  *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.to_s   #=> "HX1138"
+ *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
+ *    m.to_s # => "HX1138"
+ *
+ *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
+ *    # => #<MatchData "hoge" foo:"h" bar:"ge">
+ *    m.to_s # => "hoge"
+ *
+ *  Related: MatchData.inspect.
+ *
  */
 
 static VALUE
@@ -2296,25 +2304,27 @@ match_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
 
 /*
  *  call-seq:
- *     mtch.named_captures -> hash
+ *    named_captures -> hash
  *
- *  Returns a Hash using named capture.
+ *  Returns a hash of the named captures;
+ *  each key is a capture name; each value is its captured string or +nil+:
  *
- *  A key of the hash is a name of the named captures.
- *  A value of the hash is a string of last successful capture of corresponding
- *  group.
+ *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
+ *    # => #<MatchData "hoge" foo:"h" bar:"ge">
+ *    m.named_captures # => {"foo"=>"h", "bar"=>"ge"}
  *
- *     m = /(?<a>.)(?<b>.)/.match("01")
- *     m.named_captures #=> {"a" => "0", "b" => "1"}
+ *    m = /(?<a>.)(?<b>.)/.match("01")
+ *    # => #<MatchData "01" a:"0" b:"1">
+ *    m.named_captures #=> {"a" => "0", "b" => "1"}
  *
- *     m = /(?<a>.)(?<b>.)?/.match("0")
- *     m.named_captures #=> {"a" => "0", "b" => nil}
+ *    m = /(?<a>.)(?<b>.)?/.match("0")
+ *    # => #<MatchData "0" a:"0" b:nil>
+ *    m.named_captures #=> {"a" => "0", "b" => nil}
  *
- *     m = /(?<a>.)(?<a>.)/.match("01")
- *     m.named_captures #=> {"a" => "1"}
+ *    m = /(?<a>.)(?<a>.)/.match("01")
+ *    # => #<MatchData "01" a:"0" a:"1">
+ *    m.named_captures #=> {"a" => "1"}
  *
- *     m = /(?<a>x)|(?<a>y)/.match("x")
- *     m.named_captures #=> {"a" => "x"}
  */
 
 static VALUE
@@ -2337,12 +2347,15 @@ match_named_captures(VALUE match)
 
 /*
  *  call-seq:
- *     mtch.string   -> str
+ *    string -> string
  *
- *  Returns a frozen copy of the string passed in to <code>match</code>.
+ *  Returns the target string if it was frozen;
+ *  otherwise, returns a frozen copy of the target string:
  *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.string   #=> "THX1138."
+ *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
+ *    m.string # => "THX1138."
+ *
  */
 
 static VALUE
@@ -2373,21 +2386,23 @@ match_inspect_name_iter(const OnigUChar *name, const OnigUChar *name_end,
 
 /*
  * call-seq:
- *    mtch.inspect   -> str
+ *   inspect -> string
  *
- * Returns a printable version of <i>mtch</i>.
+ * Returns a string representation of +self+:
  *
- *     puts /.$/.match("foo").inspect
- *     #=> #<MatchData "o">
+ *    m = /.$/.match("foo")
+ *    # => #<MatchData "o">
+ *    m.inspect # => "#<MatchData \"o\">"
  *
- *     puts /(.)(.)(.)/.match("foo").inspect
- *     #=> #<MatchData "foo" 1:"f" 2:"o" 3:"o">
+ *    m = /(.)(.)(.)/.match("foo")
+ *    # => #<MatchData "foo" 1:"f" 2:"o" 3:"o">
+ *    m.inspect # => "#<MatchData \"foo\" 1:\"f\" 2:\"o\
  *
- *     puts /(.)(.)?(.)/.match("fo").inspect
- *     #=> #<MatchData "fo" 1:"f" 2:nil 3:"o">
+ *    m = /(.)(.)?(.)/.match("fo")
+ *    # => #<MatchData "fo" 1:"f" 2:nil 3:"o">
+ *    m.inspect # => "#<MatchData \"fo\" 1:\"f\" 2:nil 3:\"o\">"
  *
- *     puts /(?<foo>.)(?<bar>.)(?<baz>.)/.match("hoge").inspect
- *     #=> #<MatchData "hog" foo:"h" bar:"o" baz:"g">
+ *  Related: MatchData#to_s.
  *
  */
 
@@ -3194,13 +3209,14 @@ rb_reg_equal(VALUE re1, VALUE re2)
 }
 
 /*
- * call-seq:
- *    mtch.hash   -> integer
+ *  call-seq:
+ *    hash -> integer
  *
- * Produce a hash based on the target string, regexp and matched
- * positions of this matchdata.
+ *  Returns the integer hash value for +self+,
+ *  based on the target string, regexp, match, and captures.
  *
- * See also Object#hash.
+ *  See also Object#hash.
+ *
  */
 
 static VALUE
@@ -3221,12 +3237,15 @@ match_hash(VALUE match)
 }
 
 /*
- * call-seq:
- *    mtch == mtch2   -> true or false
- *    mtch.eql?(mtch2)   -> true or false
+ *  call-seq:
+ *    matchdata == object -> true or false
  *
- *  Equality---Two matchdata are equal if their target strings,
- *  patterns, and matched positions are identical.
+ *  Returns +true+ if +object+ is another \MatchData object
+ *  whose target string, regexp, match, and captures
+ *  are the same as +self+, +false+ otherwise.
+ *
+ *  MatchData#eql? is an alias for MatchData#==.
+ *
  */
 
 static VALUE
@@ -3446,8 +3465,8 @@ rb_reg_match2(VALUE re)
  *    #<MatchData "abra">
  *    #<MatchData "abra">
  *
- *     /(.)(.)(.)/.match("abc")[2]   #=> "b"
- *     /(.)(.)/.match("abc", 1)[2]   #=> "c"
+ *     /(.)(.)(.)/.match("abc")[2] # => "b"
+ *     /(.)(.)/.match("abc", 1)[2] # => "c"
  *
  */
 
@@ -3486,10 +3505,10 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
  *  If the second parameter is present, it specifies the position in the string
  *  to begin the search.
  *
- *     /R.../.match?("Ruby")    #=> true
- *     /R.../.match?("Ruby", 1) #=> false
- *     /P.../.match?("Ruby")    #=> false
- *     $&                       #=> nil
+ *     /R.../.match?("Ruby")    # => true
+ *     /R.../.match?("Ruby", 1) # => false
+ *     /P.../.match?("Ruby")    # => false
+ *     $&                       # => nil
  */
 
 static VALUE
