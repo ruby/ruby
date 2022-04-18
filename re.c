@@ -2307,11 +2307,23 @@ match_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
  *    named_captures -> hash
  *
  *  Returns a hash of the named captures;
- *  each key is a capture name; each value is the captured string:
+ *  each key is a capture name; each value is its captured string or +nil+:
  *
  *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
  *    # => #<MatchData "hoge" foo:"h" bar:"ge">
  *    m.named_captures # => {"foo"=>"h", "bar"=>"ge"}
+ *
+ *    m = /(?<a>.)(?<b>.)/.match("01")
+ *    # => #<MatchData "01" a:"0" b:"1">
+ *    m.named_captures #=> {"a" => "0", "b" => "1"}
+ *
+ *    m = /(?<a>.)(?<b>.)?/.match("0")
+ *    # => #<MatchData "0" a:"0" b:nil>
+ *    m.named_captures #=> {"a" => "0", "b" => nil}
+ *
+ *    m = /(?<a>.)(?<a>.)/.match("01")
+ *    # => #<MatchData "01" a:"0" a:"1">
+ *    m.named_captures #=> {"a" => "1"}
  *
  */
 
@@ -2337,7 +2349,8 @@ match_named_captures(VALUE match)
  *  call-seq:
  *    string -> string
  *
- *  Returns a frozen copy of the target string:
+ *  Returns the target string if it was frozen;
+ *  otherwise, returns a frozen copy of the target string:
  *
  *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
  *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
@@ -2377,20 +2390,21 @@ match_inspect_name_iter(const OnigUChar *name, const OnigUChar *name_end,
  *
  * Returns a string representation of +self+:
  *
- *    m /.$/.match("foo")
+ *    m = /.$/.match("foo")
+ *    # => #<MatchData "o">
  *    m.inspect # => "#<MatchData \"o\">"
  *
- *    /(.)(.)(.)/.match("foo")
+ *    m = /(.)(.)(.)/.match("foo")
  *    # => #<MatchData "foo" 1:"f" 2:"o" 3:"o">
- *    m.inspect # => "#<MatchData \"o\">"
+ *    m.inspect # => "#<MatchData \"foo\" 1:\"f\" 2:\"o\
  *
- *    /(.)(.)?(.)/.match("fo")
+ *    m = /(.)(.)?(.)/.match("fo")
  *    # => #<MatchData "fo" 1:"f" 2:nil 3:"o">
- *    m.inspect # => "#<MatchData \"o\">"
+ *    m.inspect # => "#<MatchData \"fo\" 1:\"f\" 2:nil 3:\"o\">"
  *
- *    /(?<foo>.)(?<bar>.)(?<baz>.)/
+ *    m = /(?<foo>.)(?<bar>.)(?<baz>.)/
  *    # => /(?<foo>.)(?<bar>.)(?<baz>.)/
- *    m.inspect # => "#<MatchData \"o\">"
+ *    m.inspect # => "/(?<foo>.)(?<bar>.)(?<baz>.)/"
  *
  *  Related: MatchData#to_s.
  *
@@ -3235,6 +3249,7 @@ match_hash(VALUE match)
  *  are the same as +self+, +false+ otherwise.
  *
  *  MatchData#eql? is an alias for MatchData#==.
+ *
  */
 
 static VALUE
