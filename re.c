@@ -1356,6 +1356,7 @@ match_end(VALUE match, VALUE n)
  *  returns the matched substring for the given name:
  *
  *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
+ *    # => #<MatchData "hoge" foo:"h" bar:"ge">
  *    m.match('foo') # => "h"
  *    m.match(:bar)  # => "ge"
  *
@@ -2124,29 +2125,29 @@ match_ary_aref(VALUE match, VALUE idx, VALUE result)
 
 /*
  *  call-seq:
- *     mtch[i]               -> str or nil
- *     mtch[start, length]   -> array
- *     mtch[range]           -> array
- *     mtch[name]            -> str or nil
+ *    matchdata[index] -> string or nil
+ *    matchdata[start, length] -> array
+ *    matchdata[range] -> array
+ *    matchdata[name] -> string or nil
  *
- *  Match Reference -- MatchData acts as an array, and may be accessed
- *  using the normal array indexing techniques.  <code>mtch[0]</code>
- *  is equivalent to the special variable <code>$&</code>, and returns
- *  the entire matched string.  <code>mtch[1]</code>,
- *  <code>mtch[2]</code>, and so on return the values of the matched
- *  backreferences (portions of the pattern between parentheses).
+ *  When arguments +index+, +start and +length+, or +range+ are given,
+ *  returns match and captures in the style of Array#[]:
  *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m          #=> #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *     m[0]       #=> "HX1138"
- *     m[1, 2]    #=> ["H", "X"]
- *     m[1..3]    #=> ["H", "X", "113"]
- *     m[-3, 2]   #=> ["X", "113"]
+ *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
+ *    m[0] # => "HX1138"
+ *    m[1, 2]  # => ["H", "X"]
+ *    m[1..3]  # => ["H", "X", "113"]
+ *    m[-3, 2] # => ["X", "113"]
  *
- *     m = /(?<foo>a+)b/.match("ccaaab")
- *     m          #=> #<MatchData "aaab" foo:"aaa">
- *     m["foo"]   #=> "aaa"
- *     m[:foo]    #=> "aaa"
+ *  When string or symbol argument +name+ is given,
+ *  returns the matched substring for the given name:
+ *
+ *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
+ *    # => #<MatchData "hoge" foo:"h" bar:"ge">
+ *    m['foo'] # => "h"
+ *    m[:bar]  # => "ge"
+ *
  */
 
 static VALUE
@@ -2194,20 +2195,28 @@ match_aref(int argc, VALUE *argv, VALUE match)
 
 /*
  *  call-seq:
+ *    values_at(*indexes) -> array
  *
- *     mtch.values_at(index, ...)   -> array
+ *  Returns match and captures at the given +indexes+,
+ *  which may include any mixture of:
  *
- *  Uses each <i>index</i> to access the matching values, returning an array of
- *  the corresponding matches.
+ *  - Integers.
+ *  - Ranges.
+ *  - Names (strings and symbols).
  *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138: The Movie")
- *     m.to_a               #=> ["HX1138", "H", "X", "113", "8"]
- *     m.values_at(0, 2, -2)   #=> ["HX1138", "X", "113"]
- *     m.values_at(1..2, -1)   #=> ["H", "X", "8"]
  *
- *     m = /(?<a>\d+) *(?<op>[+\-*\/]) *(?<b>\d+)/.match("1 + 2")
- *     m.to_a               #=> ["1 + 2", "1", "+", "2"]
- *     m.values_at(:a, :b, :op) #=> ["1", "2", "+"]
+ *  Examples:
+ *
+ *    m = /(.)(.)(\d+)(\d)/.match("THX1138: The Movie")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
+ *    m.values_at(0, 2, -2)   #=> ["HX1138", "X", "113"]
+ *    m.values_at(1..2, -1)   #=> ["H", "X", "8"]
+ *
+ *    m = /(?<a>\d+) *(?<op>[+\-*\/]) *(?<b>\d+)/.match("1 + 2")
+ *    # => #<MatchData "1 + 2" a:"1" op:"+" b:"2">
+ *    m.values_at(0, 1..2, :a, :b, :op)
+ *    # => ["1 + 2", "1", "+", "1", "2", "+"]
+ *
  */
 
 static VALUE
