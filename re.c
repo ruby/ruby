@@ -2402,10 +2402,6 @@ match_inspect_name_iter(const OnigUChar *name, const OnigUChar *name_end,
  *    # => #<MatchData "fo" 1:"f" 2:nil 3:"o">
  *    m.inspect # => "#<MatchData \"fo\" 1:\"f\" 2:nil 3:\"o\">"
  *
- *    m = /(?<foo>.)(?<bar>.)(?<baz>.)/
- *    # => /(?<foo>.)(?<bar>.)(?<baz>.)/
- *    m.inspect # => "/(?<foo>.)(?<bar>.)(?<baz>.)/"
- *
  *  Related: MatchData#to_s.
  *
  */
