@@ -755,7 +755,7 @@ fake: $(CROSS_COMPILING)-fake
 yes-fake: $(arch)-fake.rb PHONY
 no-fake -fake: PHONY
 
-$(arch)-fake.rb: $(srcdir)/template/fake.rb.in $(tooldir)/generic_erb.rb $(srcdir)/version.c $(RBCONFIG)
+$(arch)-fake.rb: $(srcdir)/template/fake.rb.in $(tooldir)/generic_erb.rb $(srcdir)/version.c $(srcdir)/revision.h $(RBCONFIG)
 	$(ECHO) generating $@
 	$(Q) $(CPP) -DRUBY_EXPORT $(INCFLAGS) $(CPPFLAGS) "$(srcdir)/version.c" | \
 	$(BOOTSTRAPRUBY) "$(tooldir)/generic_erb.rb" -o $@ "$(srcdir)/template/fake.rb.in" \
