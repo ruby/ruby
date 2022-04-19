@@ -4519,6 +4519,10 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     /* prohibit incremental GC */
     objspace->flags.dont_incremental = 1;
 
+#ifdef USE_THIRD_PARTY_HEAP
+    // FIXME: Enable finalizer later.  Objects in finalizer_table are already dead.
+    // We need mmtk-core to support PhantomReference.
+#else // USE_THIRD_PARTY_HEAP
     /* force to run finalizer */
     while (finalizer_table->num_entries) {
 	struct force_finalize_list *list = 0;
@@ -4532,6 +4536,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 	    xfree(curr);
 	}
     }
+#endif // USE_THIRD_PARTY_HEAP
 
     /* prohibit GC because force T_DATA finalizers can break an object graph consistency */
     dont_gc_on();
