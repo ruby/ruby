@@ -89,18 +89,18 @@ is required.
 ## How to compile and install
 
 1. If you want to use Microsoft Visual C++ to compile Ruby, read
-    [win32/README.win32](rdoc-ref:win32/README.win32) instead of this document.
+   [win32/README.win32](rdoc-ref:win32/README.win32) instead of this document.
 
 2. Run `./autogen.sh` to generate configure, when you build the source checked
-    out from the Git repository.
+   out from the Git repository.
 
-3.  Run `./configure`, which will generate `config.h` and `Makefile`.
+3. Run `./configure`, which will generate `config.h` and `Makefile`.
 
     Some C compiler flags may be added by default depending on your
     environment. Specify `optflags=..` and `warnflags=..` as necessary to
     override them.
 
-4.  Edit `include/ruby/defines.h` if you need. Usually this step will not be needed.
+4. Edit `include/ruby/defines.h` if you need. Usually this step will not be needed.
 
 5. Optional: Remove comment mark(`#`) before the module names from `ext/Setup`.
 
@@ -118,8 +118,8 @@ is required.
       It uses the identity to sign `ruby` binary. See also codesign(1).
 
 7. Optionally, run '`make check`' to check whether the compiled Ruby
-    interpreter works well. If you see the message "`check succeeded`", your
-    Ruby works as it should (hopefully).
+   interpreter works well. If you see the message "`check succeeded`", your
+   Ruby works as it should (hopefully).
 
 8. Run '`make install`'.
 
