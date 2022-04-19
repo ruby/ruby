@@ -1,0 +1,53 @@
+\Module \Math provides methods for basic trigonometric,
+logarithmic, and transcendental functions, and for extracting roots.
+
+You can write its constants and method calls thus:
+
+  Math::PI      # => 3.141592653589793
+  Math.sin(0.0) # => 0.0
+
+If you include module \Math, you can write simpler forms:
+
+  include Math
+  PI       # => 3.141592653589793
+  sin(0.0) # => 0.0
+
+For simplicity, the examples here assume:
+
+  include Math
+  INFINITY = Float::INFINITY
+
+The domains and ranges for the methods
+are denoted by open or closed intervals,
+using, respectively, parentheses or square brackets:
+
+- An open interval does not include the endpoints:
+
+    (-INFINITY, INFINITY)
+
+- A closed interval includes the endpoints:
+
+    [-1.0, 1.0]
+
+- A half-open interval includes one endpoint, but not the other:
+
+   [1.0, INFINITY)
+
+Many values returned by \Math methods are numerical approximations.
+This is because many such values are, in mathematics,
+of infinite precision, while in numerical computation
+the precision is finite.
+
+Thus, in mathematics, <i>cos(π/2)</i> is exactly zero,
+but in our computation <tt>cos(PI/2)</tt> is a number very close to zero:
+
+  cos(PI/2) # => 6.123031769111886e-17
+
+For very large and very small returned values,
+we have added formatted numbers for clarity:
+
+  tan(PI/2)  # => 1.633123935319537e+16   # 16331239353195370.0
+  tan(PI)    # => -1.2246467991473532e-16 # -0.0000000000000001
+
+See class Float for the constants
+that affect Ruby's floating-point arithmetic.
