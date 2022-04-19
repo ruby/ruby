@@ -3099,7 +3099,9 @@ each_with_object_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
  *  and the given object:
  *
  *    (1..4).each_with_object([]) {|i, a| a.push(i**2) } # => [1, 4, 9, 16]
- *    h.each_with_object({}) {|element, h| k, v = *element; h[v] = k }
+ *
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.each_with_object({}) {|element, h| k, v = element; h[v] = k }
  *    # => {0=>:foo, 1=>:bar, 2=>:baz}
  *
  *  With no block given, returns an Enumerator.
