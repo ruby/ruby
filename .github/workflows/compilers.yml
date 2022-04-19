@@ -20,7 +20,7 @@ concurrency:
 # environment variables (plus the "echo $GITHUB_ENV" hack) is to reroute that
 # restriction.
 env:
-  default_cc: clang-15
+  default_cc: clang-14
   append_cc: ''
   crosshost: ''
 
