@@ -533,7 +533,6 @@ objspace_dump.o: $(top_srcdir)/ccan/check_type/check_type.h
 objspace_dump.o: $(top_srcdir)/ccan/container_of/container_of.h
 objspace_dump.o: $(top_srcdir)/ccan/list/list.h
 objspace_dump.o: $(top_srcdir)/ccan/str/str.h
-objspace_dump.o: $(top_srcdir)/darray.h
 objspace_dump.o: $(top_srcdir)/gc.h
 objspace_dump.o: $(top_srcdir)/internal.h
 objspace_dump.o: $(top_srcdir)/internal/array.h

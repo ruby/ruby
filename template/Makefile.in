@@ -27,6 +27,8 @@ CC_WRAPPER = @XCC_WRAPPER@
 CC = @CC@
 CPP = @CPP@
 LD = @LD@
+RUSTC = @RUSTC@
+CARGO = @CARGO@
 YACC = bison
 PURIFY =
 AUTOCONF = autoconf
@@ -106,6 +108,11 @@ MJIT_MIN_HEADER_NAME = rb_mjit_min_header-$(RUBY_PROGRAM_VERSION).h
 MJIT_MIN_HEADER = $(MJIT_HEADER_BUILD_DIR)/$(MJIT_MIN_HEADER_NAME)
 MJIT_HEADER_BUILD_DIR = $(EXTOUT)/include/$(arch)
 MJIT_TABS=@MJIT_TABS@
+YJIT_SUPPORT=@YJIT_SUPPORT@
+YJIT_LIBS=@YJIT_LIBS@
+YJIT_OBJ=@YJIT_OBJ@
+CARGO_TARGET_DIR=@abs_top_builddir@/yjit/target
+CARGO_BUILD_ARGS=@CARGO_BUILD_ARGS@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 EXE_LDFLAGS = $(LDFLAGS)
 EXTLDFLAGS = @EXTLDFLAGS@
@@ -120,7 +127,7 @@ XDLDFLAGS = @DLDFLAGS@
 DLDFLAGS = @LIBRUBY_DLDFLAGS@ $(XLDFLAGS) $(ARCH_FLAG)
 SOLIBS = @SOLIBS@
 ENABLE_DEBUG_ENV = @ENABLE_DEBUG_ENV@
-MAINLIBS = @MAINLIBS@
+MAINLIBS = @YJIT_LIBS@ @MAINLIBS@
 ARCHMINIOBJS = @MINIOBJS@
 DLNOBJ = @DLNOBJ@
 ENCOBJS = @ENCOBJS@
@@ -291,11 +298,22 @@ PRE_LIBRUBY_UPDATE = [ -n "$(LIBRUBY_SO_UPDATE)" ] || $(gnumake:yes=exec) $(RM) 
 # We must `rm' the library each time this rule is invoked because "updating" a
 # MAB library on Apple/NeXT (see --enable-fat-binary in configure) is not
 # supported.
+#
+# In YJIT builds, merge libyjit.a with libruby_static.a
 $(LIBRUBY_A):
 		@$(RM) $@
 		@-[ -z "$(EXTSTATIC)" ] || $(PRE_LIBRUBY_UPDATE)
 		$(ECHO) linking static-library $@
 		$(Q) $(AR) $(ARFLAGS) $@ $(LIBRUBY_A_OBJS) $(INITOBJS)
+		$(Q) if [ -f '$(YJIT_LIBS)' ]; then \
+		  set -eu && \
+		  echo 'merging $(YJIT_LIBS) into $@' && \
+		  $(RMALL)    '$(CARGO_TARGET_DIR)/libyjit/' && \
+		  $(MAKEDIRS) '$(CARGO_TARGET_DIR)/libyjit/' && \
+		  $(CP) '$(YJIT_LIBS)' '$(CARGO_TARGET_DIR)/libyjit/' && \
+		  (cd '$(CARGO_TARGET_DIR)/libyjit/' && $(AR) -x libyjit.a) && \
+		  $(AR) $(ARFLAGS) $@ $$(find '$(CARGO_TARGET_DIR)/libyjit/' -name '*.o') ; \
+		fi
 		@-$(RANLIB) $@ 2> /dev/null || true
 
 verify-static-library: $(LIBRUBY_A)

@@ -4926,8 +4926,13 @@ vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
 
 #define IMEMO_CONST_CACHE_SHAREABLE IMEMO_FL_USER0
 
-// For each getconstant, associate the ID that corresponds to the first operand
-// to that instruction with the inline cache.
+// This is the iterator used by vm_ic_compile for rb_iseq_each. It is used as a
+// callback for each instruction within the ISEQ, and is meant to return a
+// boolean indicating whether or not to keep iterating.
+//
+// This is used to walk through the ISEQ and find all getconstant instructions
+// between the starting opt_getinlinecache and the ending opt_setinlinecache and
+// associating the inline cache with the constant name components on the VM.
 static bool
 vm_ic_compile_i(VALUE *code, VALUE insn, size_t index, void *ic)
 {

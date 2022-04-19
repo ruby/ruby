@@ -1890,7 +1890,7 @@ rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
         if (st_lookup(vm_opt_method_def_table, (st_data_t)me->def, &bop)) {
             int flag = vm_redefinition_check_flag(klass);
             if (flag != 0) {
-                rb_yjit_bop_redefined(klass, me, (enum ruby_basic_operators)bop);
+                rb_yjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
                 ruby_vm_redefined_flag[bop] |= flag;
             }
         }
@@ -3970,6 +3970,11 @@ Init_vm_objects(void)
     vm->loading_table = st_init_strtable();
     vm->frozen_strings = st_init_table_with_size(&rb_fstring_hash_type, 10000);
 }
+
+/* Stub for builtin function when not building YJIT units*/
+#if !YJIT_BUILD
+void Init_builtin_yjit(void) {}
+#endif
 
 /* top self */
 
