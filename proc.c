@@ -1217,9 +1217,7 @@ rb_block_arity(void)
       case block_handler_type_proc:
 	{
 	    VALUE procval = block_handler;
-	    rb_proc_t *proc;
-	    GetProcPtr(procval, proc);
-	    return (proc->is_lambda ? min == max : max != UNLIMITED_ARGUMENTS) ? min : -min-1;
+        return rb_proc_arity(procval);
 	}
 
       default:
