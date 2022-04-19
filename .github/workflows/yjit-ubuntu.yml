@@ -16,33 +16,51 @@ concurrency:
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 
 jobs:
+  cargo:
+    name: Rust cargo test
+    # GitHub Action's image seems to already contain a Rust 1.58.0.
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      # For now we can't run cargo test --offline because it complains about the
+      # capstone dependency, even though the dependency is optional
+      #- run: cargo test --offline
+      - run: RUST_BACKTRACE=1 cargo test
+        working-directory: yjit
+      # Also compile and test with all features enabled
+      - run: RUST_BACKTRACE=1 cargo test --all-features
+        working-directory: yjit
+      # Check that we can build in release mode too
+      - run: cargo build --release
+        working-directory: yjit
   make:
     strategy:
-      matrix:
-        test_task: ["check"] # "test-bundler-parallel",
-        os:
-          - ubuntu-20.04
-#         - ubuntu-18.04
-        yjit_opts: [
-          "--yjit",
-          "--yjit --yjit-call-threshold=1",
-        ]
-        configure: ["", "cppflags=-DRUBY_DEBUG"]
-        include:
-          - test_task: "test-all TESTS=--repeat-count=2"
-            os: ubuntu-20.04
-            configure: ""
-            yjit_enable_env: RUBY_YJIT_ENABLE
-          - test_task: "test-bundled-gems"
-            os: ubuntu-20.04
-            configure: "cppflags=-DRUBY_DEBUG"
-            yjit_enable_env: RUBY_YJIT_ENABLE
       fail-fast: false
+      matrix:
+        include:
+          - test_task: "check-yjit-bindings"
+            configure: "--with-gcc=clang-12 --enable-yjit=dev"
+
+          - test_task: "check"
+            configure: "--enable-yjit" # release build
+
+          - test_task: "check"
+            configure: "--enable-yjit=dev"
+
+          - test_task: "check"
+            configure: "--enable-yjit=dev"
+            yjit_opts: "--yjit-call-threshold=1"
+
+          - test_task: "test-all TESTS=--repeat-count=2"
+            configure: "--enable-yjit=dev"
+
+          - test_task: "test-bundled-gems"
+            configure: "--enable-yjit=dev"
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
       RUN_OPTS: ${{ matrix.yjit_opts }}
       RUBY_DEBUG: ci
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-20.04
     if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
       - run: mkdir build
@@ -76,7 +94,7 @@ jobs:
       - name: Run configure
         run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
       - run: make incs
-      - run: make
+      - run: make -j
       - run: make leaked-globals
         if: ${{ matrix.test_task == 'check' }}
       - run: make prepare-gems
@@ -87,7 +105,6 @@ jobs:
         if: ${{ matrix.test_task == 'check' }}
       - name: Enable YJIT through ENV
         run: echo "RUBY_YJIT_ENABLE=1" >> $GITHUB_ENV
-        if: ${{ matrix.yjit_enable_env }}
       - run: make -s ${{ matrix.test_task }} RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
         env:

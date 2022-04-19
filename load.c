@@ -14,6 +14,7 @@
 #include "internal/variable.h"
 #include "iseq.h"
 #include "probes.h"
+#include "darray.h"
 #include "ruby/encoding.h"
 #include "ruby/util.h"
 
