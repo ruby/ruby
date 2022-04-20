@@ -156,19 +156,13 @@ impl CodeBlock {
     pub fn add_comment(&mut self, comment: &str) {
         if cfg!(feature = "asm_comments") {
             let cur_ptr = self.get_write_ptr().into_usize();
-            let this_line_comments = self.asm_comments.get(&cur_ptr);
 
             // If there's no current list of comments for this line number, add one.
-            if this_line_comments.is_none() {
-                let new_comments = Vec::new();
-                self.asm_comments.insert(cur_ptr, new_comments);
-            }
-            let this_line_comments = self.asm_comments.get_mut(&cur_ptr).unwrap();
+            let this_line_comments = self.asm_comments.entry(cur_ptr).or_default();
 
             // Unless this comment is the same as the last one at this same line, add it.
-            let string_comment = String::from(comment);
-            if this_line_comments.last() != Some(&string_comment) {
-                this_line_comments.push(string_comment);
+            if this_line_comments.last().map(String::as_str) != Some(comment) {
+                this_line_comments.push(comment.to_string());
             }
         }
     }
