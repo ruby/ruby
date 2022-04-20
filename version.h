@@ -15,7 +15,7 @@
 
 #define RUBY_RELEASE_YEAR 2022
 #define RUBY_RELEASE_MONTH 4
-#define RUBY_RELEASE_DAY 19
+#define RUBY_RELEASE_DAY 20
 
 #include "ruby/version.h"
 #include "ruby/internal/abi.h"
