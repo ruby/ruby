@@ -100,16 +100,22 @@ math_atan2(VALUE unused_obj, VALUE y, VALUE x)
 
 /*
  *  call-seq:
- *     Math.cos(x)    -> Float
+ *    Math.cos(x) -> float
  *
- *  Computes the cosine of +x+ (expressed in radians).
- *  Returns a Float in the range -1.0..1.0.
+ *  Returns the
+ *  {cosine}[https://en.wikipedia.org/wiki/Sine_and_cosine] of +x+
+ *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: open interval <tt>(-INFINITY, INFINITY)</tt>.
+ *  - Range: closed interval <tt>[-1.0, 1.0]</tt>.
  *
- *  Codomain: [-1, 1]
+ *  Examples:
  *
- *    Math.cos(Math::PI) #=> -1.0
+ *    cos(-PI)   # => -1.0
+ *    cos(-PI/2) # => 6.123031769111886e-17 # 0.0000000000000001
+ *    cos(0.0)   # => 1.0
+ *    cos(PI/2)  # => 6.123031769111886e-17 # 0.0000000000000001
+ *    cos(PI)    # => -1.0
  *
  */
 
@@ -121,16 +127,22 @@ math_cos(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.sin(x)    -> Float
+ *    Math.sin(x) -> float
  *
- *  Computes the sine of +x+ (expressed in radians).
- *  Returns a Float in the range -1.0..1.0.
+ *  Returns the
+ *  {sine}[https://en.wikipedia.org/wiki/Sine_and_cosine] of +x+
+ *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: open interval <tt>(-INFINITY, INFINITY)</tt>.
+ *  - Range: closed interval <tt>[-1.0, 1.0]</tt>.
  *
- *  Codomain: [-1, 1]
+ *  Examples:
  *
- *    Math.sin(Math::PI/2) #=> 1.0
+ *    sin(-PI)   # => -1.2246063538223773e-16 # -0.0000000000000001
+ *    sin(-PI/2) # => -1.0
+ *    sin(0.0)   # => 0.0
+ *    sin(PI/2)  # => 1.0
+ *    sin(PI)    # => 1.2246063538223773e-16  # 0.0000000000000001
  *
  */
 
@@ -143,15 +155,22 @@ math_sin(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.tan(x)    -> Float
+ *    Math.tan(x) -> float
  *
- *  Computes the tangent of +x+ (expressed in radians).
+ *  Returns the
+ *  {tangent}[https://en.wikipedia.org/wiki/Trigonometric_functions] of +x+
+ *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: open interval <tt>(-INFINITY, INFINITY)</tt>.
+ *  - Range: open interval <tt>(-INFINITY, INFINITY)</tt>.
  *
- *  Codomain: (-INFINITY, INFINITY)
+ *  Examples:
  *
- *    Math.tan(0) #=> 0.0
+ *    tan(-PI)   # => 1.2246467991473532e-16  # -0.0000000000000001
+ *    tan(-PI/2) # => -1.633123935319537e+16  # -16331239353195370.0
+ *    tan(0.0)   # => 0.0
+ *    tan(PI/2)  # => 1.633123935319537e+16   # 16331239353195370.0
+ *    tan(PI)    # => -1.2246467991473532e-16 # -0.0000000000000001
  *
  */
 
@@ -962,12 +981,8 @@ exp1(sqrt)
 /*
  *  Document-class: Math
  *
- *  The Math module contains module functions for basic
- *  trigonometric and transcendental functions. See class
- *  Float for a list of constants that
- *  define Ruby's floating point accuracy.
+ *  :include: doc/math/math.rdoc
  *
- *  Domains and codomains are given only for real (not complex) numbers.
  */
 
 
