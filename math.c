@@ -106,17 +106,10 @@ math_atan2(VALUE unused_obj, VALUE y, VALUE x)
  *  {cosine}[https://en.wikipedia.org/wiki/Sine_and_cosine] of +x+
  *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  Domain: open interval <tt>(-INFINITY, INFINITY)</tt>
+ *  - Domain: open interval <tt>(-INFINITY, INFINITY)</tt>.
+ *  - Range: closed interval <tt>[-1.0, 1.0]</tt>.
  *
- *    cos(-INFINITY) # => NaN
- *    cos(INFINITY)  # => NaN
- *
- *  Range: closed interval <tt>[-1.0, 1.0]</tt>
- *
- *    cos(PI)  # => -1.0
- *    cos(0.0) # => 1.0
- *
- *  Arguments <tt>-PI</tt> to <tt>PI</tt>, by <tt>PI/2</tt>:
+ *  Examples:
  *
  *    cos(-PI)   # => -1.0
  *    cos(-PI/2) # => 6.123031769111886e-17 # 0.0000000000000001
@@ -140,17 +133,10 @@ math_cos(VALUE unused_obj, VALUE x)
  *  {sine}[https://en.wikipedia.org/wiki/Sine_and_cosine] of +x+
  *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  Domain: open interval <tt>(-INFINITY, INFINITY)</tt>
+ *  - Domain: open interval <tt>(-INFINITY, INFINITY)</tt>.
+ *  - Range: closed interval <tt>[-1.0, 1.0]</tt>.
  *
- *    sin(-INFINITY) # => NaN
- *    sin(INFINITY)  # => NaN
- *
- *  Range: closed interval <tt>[-1.0, 1.0]</tt>
- *
- *    sin(-PI/2) # => -1.0
- *    sin(PI/2)  # => 1.0
- *
- *  Arguments <tt>-PI</tt> to <tt>PI</tt>, by <tt>PI/2</tt>:
+ *  Examples:
  *
  *    sin(-PI)   # => -1.2246063538223773e-16 # -0.0000000000000001
  *    sin(-PI/2) # => -1.0
@@ -175,17 +161,10 @@ math_sin(VALUE unused_obj, VALUE x)
  *  {tangent}[https://en.wikipedia.org/wiki/Trigonometric_functions] of +x+
  *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  Domain: open interval <tt>(-INFINITY, INFINITY)</tt>
+ *  - Domain: open interval <tt>(-INFINITY, INFINITY)</tt>.
+ *  - Range: open interval <tt>(-INFINITY, INFINITY)</tt>.
  *
- *    tan(-INFINITY) # => NaN
- *    tan(INFINITY)  # => NaN
- *
- *  Range: open interval <tt>(-INFINITY, INFINITY)</tt>
- *
- *    tan(-INFINITY) # => NaN
- *    tan(INFINITY)  # => NaN
- *
- *  Arguments <tt>-PI</tt> to <tt>PI</tt>, by <tt>PI/2</tt>:
+ *  Examples:
  *
  *    tan(-PI)   # => 1.2246467991473532e-16  # -0.0000000000000001
  *    tan(-PI/2) # => -1.633123935319537e+16  # -16331239353195370.0
