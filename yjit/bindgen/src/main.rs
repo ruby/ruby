@@ -3,7 +3,6 @@
 //! More docs later once we have more experience with this, for now, check
 //! the output to make sure it looks reasonable and allowlist things you want
 //! to use in Rust.
-extern crate bindgen;
 
 use std::env;
 use std::path::PathBuf;
