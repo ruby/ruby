@@ -156,6 +156,7 @@ XRUBY_LIBDIR = @XRUBY_LIBDIR@
 XRUBY_RUBYLIBDIR = @XRUBY_RUBYLIBDIR@
 XRUBY_RUBYHDRDIR = @XRUBY_RUBYHDRDIR@
 BOOTSTRAPRUBY = @BOOTSTRAPRUBY@
+BOOTSTRAP_PREP = @BOOTSTRAP_PREP@
 
 COROUTINE_H = @X_COROUTINE_H@
 COROUTINE_OBJ = $(COROUTINE_H:.h=.@OBJEXT@)
@@ -332,7 +333,7 @@ pre-install-local:: pkgconfig-data
 ruby-runner.h: template/ruby-runner.h.in config.status
 		@./config.status --file=$@:$(srcdir)/template/$(@F).in
 
-$(RBCONFIG): $(PREP)
+$(RBCONFIG): $(HAVE_BASERUBY:no=$(PREP))
 
 rbconfig.rb: $(RBCONFIG)
 
