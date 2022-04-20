@@ -20,7 +20,7 @@ concurrency:
 # environment variables (plus the "echo $GITHUB_ENV" hack) is to reroute that
 # restriction.
 env:
-  default_cc: clang-15
+  default_cc: clang-14
   append_cc: ''
   crosshost: ''
 
@@ -195,7 +195,7 @@ jobs:
     name: ${{ matrix.entry.name }}
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || 'clang-15' }}
+      image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || 'clang-14' }}
       options: --user root
     if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
