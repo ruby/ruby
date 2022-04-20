@@ -2363,9 +2363,17 @@ static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int
 	char buf[4];
 
 	if (bufferSize > MAX_STACK_BUFFER_SIZE) {
+# ifdef HAVE_RB_ENC_INTERNED_STR
+		bufferStart = buffer = ALLOC_N(char, bufferSize ? bufferSize : 1);
+# else
 		bufferStart = buffer = ALLOC_N(char, bufferSize);
+# endif
 	} else {
+# ifdef HAVE_RB_ENC_INTERNED_STR
+		bufferStart = buffer = ALLOCA_N(char, bufferSize ? bufferSize : 1);
+# else
 		bufferStart = buffer = ALLOCA_N(char, bufferSize);
+# endif
 	}
 
 	while (pe < stringEnd) {
