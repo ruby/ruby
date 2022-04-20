@@ -1051,10 +1051,14 @@ module Net   #:nodoc:
           end
         end
         @ssl_context.set_params(ssl_parameters)
-        @ssl_context.session_cache_mode =
-          OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT |
-          OpenSSL::SSL::SSLContext::SESSION_CACHE_NO_INTERNAL_STORE
-        @ssl_context.session_new_cb = proc {|sock, sess| @ssl_session = sess }
+        unless @ssl_context.session_cache_mode.nil? # a dummy method on JRuby
+          @ssl_context.session_cache_mode =
+              OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT |
+                  OpenSSL::SSL::SSLContext::SESSION_CACHE_NO_INTERNAL_STORE
+        end
+        if @ssl_context.respond_to?(:session_new_cb) # not implemented under JRuby
+          @ssl_context.session_new_cb = proc {|sock, sess| @ssl_session = sess }
+        end
 
         # Still do the post_connection_check below even if connecting
         # to IP address
