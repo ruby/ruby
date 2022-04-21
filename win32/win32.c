@@ -4298,6 +4298,8 @@ void setprotoent (int stayopen) {}
 void setservent (int stayopen) {}
 #endif
 
+int rb_w32_set_nonblock2(int fd, int nonblock);
+
 /* License: Ruby's */
 static int
 setfl(SOCKET sock, int arg)
@@ -4373,16 +4375,10 @@ fcntl(int fd, int cmd, ...)
 
     switch (cmd) {
       case F_SETFL: {
-	SOCKET sock = TO_SOCKET(fd);
-	if (!is_socket(sock)) {
-	    errno = EBADF;
-	    return -1;
-	}
-
 	va_start(va, cmd);
 	arg = va_arg(va, int);
 	va_end(va);
-	return setfl(sock, arg);
+	return rb_w32_set_nonblock2(fd, arg);
       }
       case F_DUPFD: case F_DUPFD_CLOEXEC: {
 	int ret;
