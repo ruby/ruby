@@ -633,35 +633,23 @@ static VALUE rb_math_sqrt(VALUE x);
 
 /*
  *  call-seq:
- *     Math.sqrt(x)    -> Float
+ *    Math.sqrt(x) -> float
  *
- *  Returns the non-negative square root of +x+.
+ *  Returns the principal (non-negative) {square root}[https://en.wikipedia.org/wiki/Square_root] of +x+.
  *
- *  Domain: [0, INFINITY)
+ *  - Domain: <tt>[0, INFINITY]</tt>.
+ *  - Range: <tt>[0, INFINITY]</tt>.
  *
- *  Codomain:[0, INFINITY)
+ *  Examples:
  *
- *    0.upto(10) {|x|
- *      p [x, Math.sqrt(x), Math.sqrt(x)**2]
- *    }
- *    #=> [0, 0.0, 0.0]
- *    #   [1, 1.0, 1.0]
- *    #   [2, 1.4142135623731, 2.0]
- *    #   [3, 1.73205080756888, 3.0]
- *    #   [4, 2.0, 4.0]
- *    #   [5, 2.23606797749979, 5.0]
- *    #   [6, 2.44948974278318, 6.0]
- *    #   [7, 2.64575131106459, 7.0]
- *    #   [8, 2.82842712474619, 8.0]
- *    #   [9, 3.0, 9.0]
- *    #   [10, 3.16227766016838, 10.0]
+ *    sqrt(0.0)      # => 0.0
+ *    sqrt(0.5)      # => 0.7071067811865476
+ *    sqrt(1.0)      # => 1.0
+ *    sqrt(2.0)      # => 1.4142135623730951
+ *    sqrt(4.0)      # => 2.0
+ *    sqrt(9.0)      # => 3.0
+ *    sqrt(INFINITY) # => Infinity
  *
- *  Note that the limited precision of floating point arithmetic
- *  might lead to surprising results:
- *
- *    Math.sqrt(10**46).to_i  #=> 99999999999999991611392 (!)
- *
- *  See also BigDecimal#sqrt and Integer.sqrt.
  */
 
 static VALUE
@@ -709,36 +697,26 @@ rb_math_sqrt(VALUE x)
 
 /*
  *  call-seq:
- *     Math.cbrt(x)    -> Float
+ *    Math.cbrt(x) -> float
  *
- *  Returns the cube root of +x+.
+ *  Returns the {cube root}[https://en.wikipedia.org/wiki/Cube_root] of +x+.
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[-INFINITY, INFINITY]</tt>.
  *
- *  Codomain: (-INFINITY, INFINITY)
+ *  Examples:
  *
- *    -9.upto(9) {|x|
- *      p [x, Math.cbrt(x), Math.cbrt(x)**3]
- *    }
- *    #=> [-9, -2.0800838230519, -9.0]
- *    #   [-8, -2.0, -8.0]
- *    #   [-7, -1.91293118277239, -7.0]
- *    #   [-6, -1.81712059283214, -6.0]
- *    #   [-5, -1.7099759466767, -5.0]
- *    #   [-4, -1.5874010519682, -4.0]
- *    #   [-3, -1.44224957030741, -3.0]
- *    #   [-2, -1.25992104989487, -2.0]
- *    #   [-1, -1.0, -1.0]
- *    #   [0, 0.0, 0.0]
- *    #   [1, 1.0, 1.0]
- *    #   [2, 1.25992104989487, 2.0]
- *    #   [3, 1.44224957030741, 3.0]
- *    #   [4, 1.5874010519682, 4.0]
- *    #   [5, 1.7099759466767, 5.0]
- *    #   [6, 1.81712059283214, 6.0]
- *    #   [7, 1.91293118277239, 7.0]
- *    #   [8, 2.0, 8.0]
- *    #   [9, 2.0800838230519, 9.0]
+ *    cbrt(-INFINITY) # => -Infinity
+ *    cbrt(-27.0)     # => -3.0
+ *    cbrt(-8.0)      # => -2.0
+ *    cbrt(-2.0)      # => -1.2599210498948732
+ *    cbrt(1.0)       # => 1.0
+ *    cbrt(0.0)       # => 0.0
+ *    cbrt(1.0)       # => 1.0
+      cbrt(2.0)       # => 1.2599210498948732
+ *    cbrt(8.0)       # => 2.0
+ *    cbrt(27.0)      # => 3.0
+ *    cbrt(INFINITY)  # => Infinity
  *
  */
 
@@ -757,13 +735,30 @@ math_cbrt(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.frexp(x)    -> [fraction, exponent]
+ *    Math.frexp(x) -> [fraction, exponent]
  *
- *  Returns a two-element array containing the normalized fraction (a Float)
- *  and exponent (an Integer) of +x+.
+ *  Returns a 2-element array containing the normalized signed float +fraction+
+ *  and integer +exponent+ of +x+ such that:
  *
- *     fraction, exponent = Math.frexp(1234)   #=> [0.6025390625, 11]
- *     fraction * 2**exponent                  #=> 1234.0
+ *    x = fraction * 2**exponent
+ *
+ *  See {IEEE 754 double-precision binary floating-point format: binary64}[https://en.wikipedia.org/wiki/Double-precision_floating-point_format#IEEE_754_double-precision_binary_floating-point_format:_binary64].
+ *
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range <tt>[-INFINITY, INFINITY]</tt>.
+ *
+ *  Examples:
+ *
+ *    frexp(-INFINITY) # => [-Infinity, -1]
+ *    frexp(-2.0)      # => [-0.5, 2]
+ *    frexp(-1.0)      # => [-0.5, 1]
+ *    frexp(0.0)       # => [0.0, 0]
+ *    frexp(1.0)       # => [0.5, 1]
+ *    frexp(2.0)       # => [0.5, 2]
+ *    frexp(INFINITY)  # => [Infinity, -1]
+ *
+ *  Related: Math.ldexp (inverse of Math.frexp).
+ *
  */
 
 static VALUE
@@ -778,12 +773,28 @@ math_frexp(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.ldexp(fraction, exponent) -> float
+ *    Math.ldexp(fraction, exponent) -> float
  *
- *  Returns the value of +fraction+*(2**+exponent+).
+ *  Returns the value of <tt>fraction * 2**exponent</tt>.
  *
- *     fraction, exponent = Math.frexp(1234)
- *     Math.ldexp(fraction, exponent)   #=> 1234.0
+ *  - Domain of +fraction+
+ *  - Domain of +exponent+: <tt>[0, 1024]</tt>
+ *    (larger values are equivalent to 1024).
+ *
+ *  See {IEEE 754 double-precision binary floating-point format: binary64}[https://en.wikipedia.org/wiki/Double-precision_floating-point_format#IEEE_754_double-precision_binary_floating-point_format:_binary64].
+ *
+ *  Examples:
+ *
+ *    ldexp(-INFINITY, -1) # => -Infinity
+ *    ldexp(-0.5, 2)       # => -2.0
+ *    ldexp(-0.5, 1)       # => -1.0
+ *    ldexp(0.0, 0)        # => 0.0
+ *    ldexp(-0.5, 1)       # => 1.0
+ *    ldexp(-0.5, 2)       # => 2.0
+ *    ldexp(INFINITY, -1)  # => Infinity
+ *
+ *  Related: Math.frexp (inverse of Math.ldexp).
+ *
  */
 
 static VALUE
@@ -794,12 +805,23 @@ math_ldexp(VALUE unused_obj, VALUE x, VALUE n)
 
 /*
  *  call-seq:
- *     Math.hypot(x, y)    -> Float
+ *    Math.hypot(a, b) -> float
  *
- *  Returns sqrt(x**2 + y**2), the hypotenuse of a right-angled triangle with
- *  sides +x+ and +y+.
+ *  Returns <tt>sqrt(a**2 + b**2)</tt>,
+ *  which is the length of the longest side +c+ (the hypotenuse)
+ *  of the right triangle whose other sides have lengths +a+ and+b+.
  *
- *     Math.hypot(3, 4)   #=> 5.0
+ *  Examples:
+ *
+ *    hypot(0.0, 1.0)       # => 1.0
+ *    hypot(1.0, 1.0)       # => 1.4142135623730951 # sqrt(2.0)
+ *    hypot(3.0, 4.0)       # => 5.0
+ *    hypot(5.0, 12.0)      # => 13.0
+ *    hypot(1.0, sqrt(3.0)) # => 1.9999999999999998 # Near 2.0
+ *
+ *  Note that if either argument is +INFINITY+ or <tt>-INFINITY</tt>,
+ *  the result is +Infinity+.
+ *
  */
 
 static VALUE
