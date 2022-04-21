@@ -435,17 +435,22 @@ math_atanh(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.exp(x)    -> Float
+ *    Math.exp(x) -> float
  *
- *  Returns e**x.
+ *  Returns +e+ raised to the +x+ power.
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[0, INFINITY]</tt>.
  *
- *  Codomain: (0, INFINITY)
+ *  Examples:
  *
- *    Math.exp(0)       #=> 1.0
- *    Math.exp(1)       #=> 2.718281828459045
- *    Math.exp(1.5)     #=> 4.4816890703380645
+ *    exp(-INFINITY) # => 0.0
+ *    exp(-1.0)      # => 0.36787944117144233 # 1.0/E
+ *    exp(0.0)       # => 1.0
+ *    exp(0.5)       # => 1.6487212707001282  # sqrt(E)
+ *    exp(1.0)       # => 2.718281828459045   # E
+ *    exp(2.0)       # => 7.38905609893065    # E**2
+ *    exp(INFINITY)  # => Infinity
  *
  */
 
@@ -476,22 +481,27 @@ FUNC_MINIMIZED(static VALUE math_log(int, const VALUE *, VALUE));
 
 /*
  *  call-seq:
- *     Math.log(x)          -> Float
- *     Math.log(x, base)    -> Float
+ *    Math.log(x, base = Math::E) -> Float
  *
- *  Returns the logarithm of +x+.
- *  If additional second argument is given, it will be the base
- *  of logarithm. Otherwise it is +e+ (for the natural logarithm).
+ *  Returns the base +base+ {logarithm}[https://en.wikipedia.org/wiki/Logarithm] of +x+.
  *
- *  Domain: (0, INFINITY)
+ *  - Domain: <tt>[0, INFINITY]</tt>.
+ *  - Range: <tt>[-INFINITY, INFINITY)]</tt>.
  *
- *  Codomain: (-INFINITY, INFINITY)
+ *  Examples:
  *
- *    Math.log(0)          #=> -Infinity
- *    Math.log(1)          #=> 0.0
- *    Math.log(Math::E)    #=> 1.0
- *    Math.log(Math::E**3) #=> 3.0
- *    Math.log(12, 3)      #=> 2.2618595071429146
+ *    log(0.0)        # => -Infinity
+ *    log(1.0)        # => 0.0
+ *    log(E)          # => 1.0
+ *    log(INFINITY)   # => Infinity
+ *
+ *    log(0.0, 2.0)   # => -Infinity
+ *    log(1.0, 2.0)   # => 0.0
+ *    log(2.0, 2.0)   # => 1.0
+ *
+ *    log(0.0, 10.0)  # => -Infinity
+ *    log(1.0, 10.0)  # => 0.0
+ *    log(10.0, 10.0) # => 1.0
  *
  */
 
@@ -559,18 +569,19 @@ extern double log2(double);
 
 /*
  *  call-seq:
- *     Math.log2(x)    -> Float
+ *    Math.log2(x) -> float
  *
- *  Returns the base 2 logarithm of +x+.
+ *  Returns the base 2 {logarithm}[https://en.wikipedia.org/wiki/Logarithm] of +x+.
  *
- *  Domain: (0, INFINITY)
+ *  - Domain: <tt>[0, INFINITY]</tt>.
+ *  - Range: <tt>[-INFINITY, INFINITY]</tt>.
  *
- *  Codomain: (-INFINITY, INFINITY)
+ *  Examples:
  *
- *    Math.log2(1)      #=> 0.0
- *    Math.log2(2)      #=> 1.0
- *    Math.log2(32768)  #=> 15.0
- *    Math.log2(65536)  #=> 16.0
+ *    log2(0.0)      # => -Infinity
+ *    log2(1.0)      # => 0.0
+ *    log2(2.0)      # => 1.0
+ *    log2(INFINITY) # => Infinity
  *
  */
 
@@ -589,17 +600,19 @@ math_log2(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.log10(x)    -> Float
+ *    Math.log10(x) -> float
  *
- *  Returns the base 10 logarithm of +x+.
+ *  Returns the base 10 {logarithm}[https://en.wikipedia.org/wiki/Logarithm] of +x+.
  *
- *  Domain: (0, INFINITY)
+ *  - Domain: <tt>[0, INFINITY]</tt>.
+ *  - Range: <tt>[-INFINITY, INFINITY]</tt>.
  *
- *  Codomain: (-INFINITY, INFINITY)
+ *  Examples:
  *
- *    Math.log10(1)       #=> 0.0
- *    Math.log10(10)      #=> 1.0
- *    Math.log10(10**100) #=> 100.0
+ *    log10(0.0)      # => -Infinity
+ *    log10(1.0)      # => 0.0
+ *    log10(10.0)     # => 1.0
+ *    log10(INFINITY) # => Infinity
  *
  */
 

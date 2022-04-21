@@ -4,13 +4,17 @@ logarithmic, and transcendental functions, and for extracting roots.
 You can write its constants and method calls thus:
 
   Math::PI      # => 3.141592653589793
+  Math::E       # => 2.718281828459045
   Math.sin(0.0) # => 0.0
+  Math.cos(0.0) # => 1.0
 
 If you include module \Math, you can write simpler forms:
 
   include Math
   PI       # => 3.141592653589793
+  E        # => 2.718281828459045
   sin(0.0) # => 0.0
+  cos(0.0) # => 1.0
 
 For simplicity, the examples here assume:
 
