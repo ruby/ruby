@@ -22,6 +22,10 @@ class Gem::Ext::Builder
       raise Gem::InstallError, 'Makefile not found'
     end
 
+    $stderr.puts "REMOTE DEBUGGING"
+    $stderr.puts IO.binread(File.join(make_dir, 'Makefile'))
+    $stderr.puts "REMOTE DEBUGGING"
+
     # try to find make program from Ruby configure arguments first
     RbConfig::CONFIG['configure_args'] =~ /with-make-prog\=(\w+)/
     make_program_name = ENV['MAKE'] || ENV['make'] || $1
