@@ -261,7 +261,7 @@ cosh(double x)
 
 /*
  *  call-seq:
- *    cosh(x) -> float
+ *    Math.cosh(x) -> float
  *
  *  Returns the {hyperbolic cosine}[https://en.wikipedia.org/wiki/Hyperbolic_functions] of +x+
  *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
@@ -332,7 +332,7 @@ tanh(double x)
 
 /*
  *  call-seq:
- *    tanh(x) -> float
+ *    Math.tanh(x) -> float
  *
  *  Returns the {hyperbolic tangent}[https://en.wikipedia.org/wiki/Hyperbolic_functions] of +x+
  *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
@@ -356,7 +356,7 @@ math_tanh(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *    acosh(x) -> float
+ *    Math.acosh(x) -> float
  *
  *  Returns the {inverse hyperbolic cosine}[https://en.wikipedia.org/wiki/Inverse_hyperbolic_functions] of +x+.
  *
@@ -382,7 +382,7 @@ math_acosh(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *    asinh(x) -> float
+ *    Math.asinh(x) -> float
  *
  *  Returns the {inverse hyperbolic sine}[https://en.wikipedia.org/wiki/Inverse_hyperbolic_functions] of +x+.
  *
@@ -405,7 +405,7 @@ math_asinh(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *    atanh(x) -> float
+ *    Math.atanh(x) -> float
  *
  *  Returns the {inverse hyperbolic tangent}[https://en.wikipedia.org/wiki/Inverse_hyperbolic_functions] of +x+.
  *
