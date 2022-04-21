@@ -40,31 +40,20 @@ VALUE rb_eMathDomainError;
 
 /*
  *  call-seq:
- *     Math.atan2(y, x)  -> Float
+ *     Math.atan2(y, x) -> float
  *
- *  Computes the arc tangent given +y+ and +x+.
- *  Returns a Float in the range -PI..PI. Return value is a angle
- *  in radians between the positive x-axis of cartesian plane
- *  and the point given by the coordinates (+x+, +y+) on it.
+ *  Returns the {arc tangent}[https://en.wikipedia.org/wiki/Atan2] of +y+ and +x+
+ *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[-PI, PI]</tt>.
  *
- *  Codomain: [-PI, PI]
+ *  Examples:
  *
- *    Math.atan2(-0.0, -1.0) #=> -3.141592653589793
- *    Math.atan2(-1.0, -1.0) #=> -2.356194490192345
- *    Math.atan2(-1.0, 0.0)  #=> -1.5707963267948966
- *    Math.atan2(-1.0, 1.0)  #=> -0.7853981633974483
- *    Math.atan2(-0.0, 1.0)  #=> -0.0
- *    Math.atan2(0.0, 1.0)   #=> 0.0
- *    Math.atan2(1.0, 1.0)   #=> 0.7853981633974483
- *    Math.atan2(1.0, 0.0)   #=> 1.5707963267948966
- *    Math.atan2(1.0, -1.0)  #=> 2.356194490192345
- *    Math.atan2(0.0, -1.0)  #=> 3.141592653589793
- *    Math.atan2(INFINITY, INFINITY)   #=> 0.7853981633974483
- *    Math.atan2(INFINITY, -INFINITY)  #=> 2.356194490192345
- *    Math.atan2(-INFINITY, INFINITY)  #=> -0.7853981633974483
- *    Math.atan2(-INFINITY, -INFINITY) #=> -2.356194490192345
+ *    atan2(-1.0, -1.0) # => -2.356194490192345  # -3*PI/4
+ *    atan2(-1.0, 0.0)  # => -1.5707963267948966 # -PI/2
+ *    atan2(-1.0, 1.0)  # => -0.7853981633974483 # -PI/4
+ *    atan2(0.0, -1.0)  # => 3.141592653589793   # PI
  *
  */
 
@@ -182,15 +171,18 @@ math_tan(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.acos(x)    -> Float
+ *     Math.acos(x) -> float
  *
- *  Computes the arc cosine of +x+. Returns 0..PI.
+ *  Returns the {arc cosine}[https://en.wikipedia.org/wiki/Inverse_trigonometric_functions] of +x+.
  *
- *  Domain: [-1, 1]
+ *  - Domain: <tt>[-1, 1]</tt>.
+ *  - Range: <tt>[0, PI]</tt>.
  *
- *  Codomain: [0, PI]
+ *  Examples:
  *
- *    Math.acos(0) == Math::PI/2  #=> true
+ *    acos(-1.0) # => 3.141592653589793  # PI
+ *    acos(0.0)  # => 1.5707963267948966 # PI/2
+ *    acos(1.0)  # => 0.0
  *
  */
 
@@ -206,15 +198,19 @@ math_acos(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.asin(x)    -> Float
+ *     Math.asin(x) -> float
  *
- *  Computes the arc sine of +x+. Returns -PI/2..PI/2.
+ *  Returns the {arc sine}[https://en.wikipedia.org/wiki/Inverse_trigonometric_functions] of +x+.
  *
- *  Domain: [-1, -1]
+ *  - Domain: <tt>[-1, -1]</tt>.
+ *  - Range: <tt>[-PI/2, PI/2]</tt>.
  *
- *  Codomain: [-PI/2, PI/2]
+ *  Examples:
  *
- *    Math.asin(1) == Math::PI/2  #=> true
+ *    asin(-1.0) # => -1.5707963267948966 # -PI/2
+ *    asin(0.0)  # => 0.0
+ *    asin(1.0)  # => 1.5707963267948966  # PI/2
+ *
  */
 
 static VALUE
@@ -231,13 +227,19 @@ math_asin(VALUE unused_obj, VALUE x)
  *  call-seq:
  *     Math.atan(x)    -> Float
  *
- *  Computes the arc tangent of +x+. Returns -PI/2..PI/2.
+ *  Returns the {arc tangent}[https://en.wikipedia.org/wiki/Inverse_trigonometric_functions] of +x+.
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>(-INFINITY, INFINITY)</tt>.
+ *  - Range: <tt>(-PI/2, PI/2)</tt>.
  *
- *  Codomain: (-PI/2, PI/2)
+ *  Examples:
  *
- *    Math.atan(0) #=> 0.0
+ *    atan(-PI)   # => -1.2626272556789115
+ *    atan(-PI/2) # => -1.0038848218538872
+ *    atan(0.0)   # => 0.0
+ *    atan(PI/2)  # => 1.0038848218538872
+ *    atan(PI)    # => 1.2626272556789115
+ *
  */
 
 static VALUE
