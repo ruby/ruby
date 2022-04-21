@@ -29,6 +29,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
       %w[sitearchdir sitelibdir].each do |dir|
         siteconf.puts "RbConfig::MAKEFILE_CONFIG['#{dir}'] = dest_path"
         siteconf.puts "RbConfig::CONFIG['#{dir}'] = dest_path"
+        siteconf.puts "$stderr.puts RbConfig.ruby, 'extconf process', ENV['RUBYOPT']"
       end
 
       siteconf.close
