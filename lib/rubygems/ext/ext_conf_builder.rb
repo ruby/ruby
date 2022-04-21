@@ -29,7 +29,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
       %w[sitearchdir sitelibdir].each do |dir|
         siteconf.puts "RbConfig::MAKEFILE_CONFIG['#{dir}'] = dest_path"
         siteconf.puts "RbConfig::CONFIG['#{dir}'] = dest_path"
-        siteconf.puts "$stderr.puts RbConfig.ruby, 'extconf process', ENV['RUBYOPT']"
+        siteconf.puts "$stderr.puts RbConfig.ruby, 'extconf process', ENV['RUBYOPT'], RbConfig::CONFIG['bindir']"
       end
 
       siteconf.close
@@ -42,6 +42,8 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
         require "shellwords"
         cmd = Gem.ruby.shellsplit << "-I" << File.expand_path("../../..", __FILE__) <<
               "-r" << get_relative_path(siteconf_path, extension_dir) << File.basename(extension)
+        cmd << '--ruby'
+        cmd.conact(Gem.ruby.shellsplit)
         cmd.push(*args)
 
         begin
