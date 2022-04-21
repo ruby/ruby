@@ -42,6 +42,7 @@ class Gem::Ext::Builder
       cmd = [
         *make_program,
         destdir,
+        'V=1',
         target,
       ].reject(&:empty?)
       begin
