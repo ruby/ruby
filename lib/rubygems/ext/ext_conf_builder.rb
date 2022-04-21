@@ -43,7 +43,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
         cmd = Gem.ruby.shellsplit << "-I" << File.expand_path("../../..", __FILE__) <<
               "-r" << get_relative_path(siteconf_path, extension_dir) << File.basename(extension)
         cmd << '--ruby'
-        cmd.conact(Gem.ruby.shellsplit)
+        cmd.concat(Gem.ruby.shellsplit)
         cmd.push(*args)
 
         begin
