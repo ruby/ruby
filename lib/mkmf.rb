@@ -1964,13 +1964,14 @@ SRC
 
   def configuration(srcdir)
     mk = []
+    CONFIG['MKMF_VERBOSE'] ||= "0"
     vpath = $VPATH.dup
     CONFIG["hdrdir"] ||= $hdrdir
     mk << %{
 SHELL = /bin/sh
 
 # V=0 quiet, V=1 verbose.  other values don't work.
-V = 0
+V = #{CONFIG['MKMF_VERBOSE']}
 V0 = $(V:0=)
 Q1 = $(V:1=)
 Q = $(Q1:0=@)
