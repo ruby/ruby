@@ -777,7 +777,7 @@ math_frexp(VALUE unused_obj, VALUE x)
  *
  *  Returns the value of <tt>fraction * 2**exponent</tt>.
  *
- *  - Domain of +fraction+
+ *  - Domain of +fraction+: <tt>[0.0, 1.0)</tt>.
  *  - Domain of +exponent+: <tt>[0, 1024]</tt>
  *    (larger values are equivalent to 1024).
  *
@@ -810,6 +810,10 @@ math_ldexp(VALUE unused_obj, VALUE x, VALUE n)
  *  Returns <tt>sqrt(a**2 + b**2)</tt>,
  *  which is the length of the longest side +c+ (the hypotenuse)
  *  of the right triangle whose other sides have lengths +a+ and+b+.
+ *
+ *  - Domain of +a+: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Domain of +ab: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[0, INFINITY]</tt>.
  *
  *  Examples:
  *
