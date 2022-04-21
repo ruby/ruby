@@ -45,7 +45,8 @@ VALUE rb_eMathDomainError;
  *  Returns the {arc tangent}[https://en.wikipedia.org/wiki/Atan2] of +y+ and +x+
  *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Domain of +y+: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Domain of +x+: <tt>[-INFINITY, INFINITY]</tt>.
  *  - Range: <tt>[-PI, PI]</tt>.
  *
  *  Examples:
@@ -95,8 +96,8 @@ math_atan2(VALUE unused_obj, VALUE y, VALUE x)
  *  {cosine}[https://en.wikipedia.org/wiki/Sine_and_cosine] of +x+
  *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  - Domain: open interval <tt>(-INFINITY, INFINITY)</tt>.
- *  - Range: closed interval <tt>[-1.0, 1.0]</tt>.
+ *  - Domain: <tt>(-INFINITY, INFINITY)</tt>.
+ *  - Range: <tt>[-1.0, 1.0]</tt>.
  *
  *  Examples:
  *
@@ -122,8 +123,8 @@ math_cos(VALUE unused_obj, VALUE x)
  *  {sine}[https://en.wikipedia.org/wiki/Sine_and_cosine] of +x+
  *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  - Domain: open interval <tt>(-INFINITY, INFINITY)</tt>.
- *  - Range: closed interval <tt>[-1.0, 1.0]</tt>.
+ *  - Domain: <tt>(-INFINITY, INFINITY)</tt>.
+ *  - Range: <tt>[-1.0, 1.0]</tt>.
  *
  *  Examples:
  *
@@ -150,8 +151,8 @@ math_sin(VALUE unused_obj, VALUE x)
  *  {tangent}[https://en.wikipedia.org/wiki/Trigonometric_functions] of +x+
  *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  - Domain: open interval <tt>(-INFINITY, INFINITY)</tt>.
- *  - Range: open interval <tt>(-INFINITY, INFINITY)</tt>.
+ *  - Domain: <tt>(-INFINITY, INFINITY)</tt>.
+ *  - Range: <tt>(-INFINITY, INFINITY)</tt>.
  *
  *  Examples:
  *
@@ -229,16 +230,18 @@ math_asin(VALUE unused_obj, VALUE x)
  *
  *  Returns the {arc tangent}[https://en.wikipedia.org/wiki/Inverse_trigonometric_functions] of +x+.
  *
- *  - Domain: <tt>(-INFINITY, INFINITY)</tt>.
- *  - Range: <tt>(-PI/2, PI/2)</tt>.
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[-PI/2, PI/2]  </tt>.
  *
  *  Examples:
  *
- *    atan(-PI)   # => -1.2626272556789115
- *    atan(-PI/2) # => -1.0038848218538872
- *    atan(0.0)   # => 0.0
- *    atan(PI/2)  # => 1.0038848218538872
- *    atan(PI)    # => 1.2626272556789115
+ *    atan(-INFINITY) # => -1.5707963267948966 # -PI2
+ *    atan(-PI)       # => -1.2626272556789115
+ *    atan(-PI/2)     # => -1.0038848218538872
+ *    atan(0.0)       # => 0.0
+ *    atan(PI/2)      # => 1.0038848218538872
+ *    atan(PI)        # => 1.2626272556789115
+ *    atan(INFINITY)  # => 1.5707963267948966  # PI/2
  *
  */
 
@@ -258,15 +261,19 @@ cosh(double x)
 
 /*
  *  call-seq:
- *     Math.cosh(x)    -> Float
+ *    Math.cosh(x) -> float
  *
- *  Computes the hyperbolic cosine of +x+ (expressed in radians).
+ *  Returns the {hyperbolic cosine}[https://en.wikipedia.org/wiki/Hyperbolic_functions] of +x+
+ *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[1, INFINITY]</tt>.
  *
- *  Codomain: [1, INFINITY)
+ *  Examples:
  *
- *    Math.cosh(0) #=> 1.0
+ *    cosh(-INFINITY) # => Infinity
+ *    cosh(0.0)       # => 1.0
+ *    cosh(INFINITY)  # => Infinity
  *
  */
 
@@ -286,15 +293,19 @@ sinh(double x)
 
 /*
  *  call-seq:
- *     Math.sinh(x)    -> Float
+ *    Math.sinh(x) -> float
  *
- *  Computes the hyperbolic sine of +x+ (expressed in radians).
+ *  Returns the {hyperbolic sine}[https://en.wikipedia.org/wiki/Hyperbolic_functions] of +x+
+ *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[-INFINITY, INFINITY]</tt>.
  *
- *  Codomain: (-INFINITY, INFINITY)
+ *  Examples:
  *
- *    Math.sinh(0) #=> 0.0
+ *    sinh(-INFINITY) # => -Infinity
+ *    sinh(0.0)       # => 0.0
+ *    sinh(INFINITY)  # => Infinity
  *
  */
 
@@ -321,15 +332,19 @@ tanh(double x)
 
 /*
  *  call-seq:
- *     Math.tanh(x)    -> Float
+ *    Math.tanh(x) -> float
  *
- *  Computes the hyperbolic tangent of +x+ (expressed in radians).
+ *  Returns the {hyperbolic tangent}[https://en.wikipedia.org/wiki/Hyperbolic_functions] of +x+
+ *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[-1, 1]</tt>.
  *
- *  Codomain: (-1, 1)
+ *  Examples:
  *
- *    Math.tanh(0) #=> 0.0
+ *    tanh(-INFINITY) # => -1.0
+ *    tanh(0.0)       # => 0.0
+ *    tanh(INFINITY)  # => 1.0
  *
  */
 
@@ -341,15 +356,17 @@ math_tanh(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.acosh(x)    -> Float
+ *    Math.acosh(x) -> float
  *
- *  Computes the inverse hyperbolic cosine of +x+.
+ *  Returns the {inverse hyperbolic cosine}[https://en.wikipedia.org/wiki/Inverse_hyperbolic_functions] of +x+.
  *
- *  Domain: [1, INFINITY)
+ *  - Domain: <tt>[1, INFINITY]</tt>.
+ *  - Range: <tt>[0, INFINITY]</tt>.
  *
- *  Codomain: [0, INFINITY)
+ *  Examples:
  *
- *    Math.acosh(1) #=> 0.0
+ *    acosh(1.0)      # => 0.0
+ *    acosh(INFINITY) # => Infinity
  *
  */
 
@@ -365,15 +382,18 @@ math_acosh(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.asinh(x)    -> Float
+ *    Math.asinh(x) -> float
  *
- *  Computes the inverse hyperbolic sine of +x+.
+ *  Returns the {inverse hyperbolic sine}[https://en.wikipedia.org/wiki/Inverse_hyperbolic_functions] of +x+.
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[-INFINITY, INFINITY]</tt>.
  *
- *  Codomain: (-INFINITY, INFINITY)
+ *  Examples:
  *
- *    Math.asinh(1) #=> 0.881373587019543
+ *    asinh(-INFINITY) # => -Infinity
+ *    asinh(0.0)       # => 0.0
+ *    asinh(INFINITY)  # => Infinity
  *
  */
 
@@ -385,15 +405,18 @@ math_asinh(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.atanh(x)    -> Float
+ *    Math.atanh(x) -> float
  *
- *  Computes the inverse hyperbolic tangent of +x+.
+ *  Returns the {inverse hyperbolic tangent}[https://en.wikipedia.org/wiki/Inverse_hyperbolic_functions] of +x+.
  *
- *  Domain: (-1, 1)
+ *  - Domain: <tt>[-1, 1]</tt>.
+ *  - Range: <tt>[-INFINITY, INFINITY]</tt>.
  *
- *  Codomain: (-INFINITY, INFINITY)
+ *  Examples:
  *
- *   Math.atanh(1) #=> Infinity
+ *    atanh(-1.0) # => -Infinity
+ *    atanh(0.0)  # => 0.0
+ *    atanh(1.0)  # => Infinity
  *
  */
 
