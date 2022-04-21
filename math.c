@@ -298,8 +298,8 @@ sinh(double x)
  *  Returns the {hyperbolic sine}[https://en.wikipedia.org/wiki/Hyperbolic_functions] of +x+
  *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  - Domain: [-INFINITY, INFINITY]
- *  - Range: [-INFINITY, INFINITY]
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[-INFINITY, INFINITY]</tt>.
  *
  *  Examples:
  *
