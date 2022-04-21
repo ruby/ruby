@@ -4227,6 +4227,13 @@ AS_IF([test -z "$MANTYPE"], [
 ])
 AC_SUBST(MANTYPE)
 
+MKMF_VERBOSE=0
+AC_ARG_ENABLE(mkmf-verbose,
+    AS_HELP_STRING([--enable-mkmf-verbose], [enable verbose in mkmf]),
+    [MKMF_VERBOSE=1],
+    [MKMF_VERBOSE=0])
+AC_SUBST(MKMF_VERBOSE)
+
 AC_ARG_ENABLE(rubygems,
 	AS_HELP_STRING([--disable-rubygems], [disable rubygems by default]),
 	[enable_rubygems="$enableval"], [enable_rubygems=yes])
