@@ -2337,6 +2337,21 @@ RULES
 
     libpath = libpathflag(libpath)
 
+    fsep = config_string('BUILD_FILE_SEPARATOR') {|s| s unless s == "/"}
+    if fsep
+      sep = ":/=#{fsep}"
+      fseprepl = proc {|s|
+        s = s.gsub("/", fsep)
+        s = s.gsub(/(\$\(\w+)(\))/) {$1+sep+$2}
+        s.gsub(/(\$\{\w+)(\})/) {$1+sep+$2}
+      }
+      rsep = ":#{fsep}=/"
+    else
+      fseprepl = proc {|s| s}
+      sep = ""
+      rsep = ""
+    end
+
     dllib = target ? "$(TARGET).#{CONFIG['DLEXT']}" : ""
     staticlib = target ? "$(TARGET).#$LIBEXT" : ""
     conf = configuration(srcprefix)
@@ -2374,7 +2389,7 @@ TIMESTAMP_DIR = #{$extout && $extmk ? '$(extout)/.timestamp' : '.'}
     n = '$(TARGET_SO_DIR)$(TARGET)'
     conf << "\
 TARGET_SO_DIR =#{$extout ? " $(RUBYARCHDIR)/" : ''}
-TARGET_SO     = $(TARGET_SO_DIR)$(DLLIB)
+TARGET_SO     = #{fseprepl['$(TARGET_SO_DIR)']}$(DLLIB)
 CLEANLIBS     = #{'$(TARGET_SO) ' if target}#{config_string('cleanlibs') {|t| t.gsub(/\$\*/) {n}}}
 CLEANOBJS     = *.#{$OBJEXT} #{config_string('cleanobjs') {|t| t.gsub(/\$\*/, "$(TARGET)#{deffile ? '-$(arch)': ''}")} if target} *.bak
 " #"
@@ -2389,20 +2404,6 @@ static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{$extout ? " install-rb" :
 .PHONY: clean clean-so clean-static clean-rb
 " #"
     mfile.print CLEANINGS
-    fsep = config_string('BUILD_FILE_SEPARATOR') {|s| s unless s == "/"}
-    if fsep
-      sep = ":/=#{fsep}"
-      fseprepl = proc {|s|
-        s = s.gsub("/", fsep)
-        s = s.gsub(/(\$\(\w+)(\))/) {$1+sep+$2}
-        s.gsub(/(\$\{\w+)(\})/) {$1+sep+$2}
-      }
-      rsep = ":#{fsep}=/"
-    else
-      fseprepl = proc {|s| s}
-      sep = ""
-      rsep = ""
-    end
     dirs = []
     mfile.print "install: install-so install-rb\n\n"
     dir = sodir.dup
