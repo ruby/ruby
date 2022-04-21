@@ -809,7 +809,7 @@ math_ldexp(VALUE unused_obj, VALUE x, VALUE n)
  *
  *  Returns <tt>sqrt(a**2 + b**2)</tt>,
  *  which is the length of the longest side +c+ (the hypotenuse)
- *  of the right triangle whose other sides have lengths +a+ and+b+.
+ *  of the right triangle whose other sides have lengths +a+ and +b+.
  *
  *  - Domain of +a+: <tt>[-INFINITY, INFINITY]</tt>.
  *  - Domain of +ab: <tt>[-INFINITY, INFINITY]</tt>.
