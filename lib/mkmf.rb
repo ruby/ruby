@@ -2482,7 +2482,7 @@ static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{$extout ? " install-rb" :
     dirs.unshift(sodir) if target and !dirs.include?(sodir)
     dirs.each do |d|
       t = timestamp_file(d, target_prefix)
-      mfile.print "#{t}:\n\t$(Q) $(MAKEDIRS) $(@D) #{d}\n\t$(Q) $(TOUCH) $@\n"
+      mfile.print "#{t}:\n\t$(Q) $(MAKEDIRS) $(@D) #{fseprepl[d]}\n\t$(Q) $(TOUCH) $@\n"
     end
 
     mfile.print <<-SITEINSTALL
