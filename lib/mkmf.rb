@@ -2706,6 +2706,7 @@ MESSAGE
   $stderr.puts RbConfig::CONFIG["bindir"], RbConfig.ruby
   $stderr.puts :loaded_features!, $LOADED_FEATURES
   $stderr.puts nil,$ruby,nil
+  $stderr.puts nil,CONFIG["ruby_install_name"],nil
   $stderr.puts
 
 
