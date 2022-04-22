@@ -104,13 +104,13 @@ that affect Ruby's floating-point arithmetic.
 
 - ::erf: Returns the value of the Gauss error function for the given argument.
 - ::erfc: Returns the value of the complementary error function
-   for the given argument.
+  for the given argument.
 
 ==== Gamma Functions
 
 - ::gamma: Returns the value of the gamma function for the given argument.
 - ::lgamma: Returns the value of the logarithmic gamma function
-     for the given argument.
+  for the given argument.
 
 ==== Hypotenuse Function
 
