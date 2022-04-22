@@ -2288,7 +2288,7 @@ static void *
 timer_pthread_fn(void *p)
 {
     rb_vm_t *vm = p;
-    pthread_t main_thread_id = vm->ractor.main_thread->thread_id;
+    pthread_t main_thread_id = vm->ractor.main_thread->nt->thread_id;
     struct pollfd pfd;
     int timeout = -1;
     int ccp;
