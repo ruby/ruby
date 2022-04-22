@@ -413,7 +413,6 @@ VALUE
 date_zone_to_diff(VALUE str)
 {
     VALUE offset = Qnil;
-    VALUE vbuf = 0;
     long l = RSTRING_LEN(str);
     const char *s = RSTRING_PTR(str);
 
@@ -439,16 +438,27 @@ date_zone_to_diff(VALUE str)
 	    l -= w;
 	    dst = 1;
 	}
+
 	{
+	    const char *zn = s;
 	    long sl = shrunk_size(s, l);
-	    if (sl > 0 && sl <= MAX_WORD_LENGTH) {
-		char *d = ALLOCV_N(char, vbuf, sl);
-		l = shrink_space(d, s, l);
-		s = d;
+	    VALUE vbuf = 0;
+	    const struct zone *z = 0;
+
+	    if (sl <= 0) {
+		sl = l;
 	    }
-	}
-	if (l > 0 && l <= MAX_WORD_LENGTH) {
-	    const struct zone *z = zonetab(s, (unsigned int)l);
+	    else if (sl <= MAX_WORD_LENGTH) {
+		char *d = ALLOCV_N(char, vbuf, sl);
+		sl = shrink_space(d, s, l);
+		zn = d;
+	    }
+
+	    if (sl > 0 && sl <= MAX_WORD_LENGTH) {
+		z = zonetab(zn, (unsigned int)sl);
+	    }
+	    ALLOCV_END(vbuf);
+
 	    if (z) {
 		int d = z->offset;
 		if (dst)
@@ -457,6 +467,7 @@ date_zone_to_diff(VALUE str)
 		goto ok;
 	    }
 	}
+
 	{
 	    char *p;
 	    int sign = 0;
@@ -542,7 +553,6 @@ date_zone_to_diff(VALUE str)
     }
     RB_GC_GUARD(str);
   ok:
-    ALLOCV_END(vbuf);
     return offset;
 }
 
