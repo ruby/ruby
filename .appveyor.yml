@@ -82,7 +82,6 @@ for:
     - cd %Platform%-mswin_%vs%
     - >-
       ..\win32\configure.bat
-      --prefix="/usr/local/"
       --disable-install-doc
       --with-opt-dir="/usr/local;c:/Tools/vcpkg/installed/%Platform%-windows"
       --with-openssl-dir=%OPENSSL_DIR:\=/%
