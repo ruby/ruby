@@ -42,8 +42,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
         require "shellwords"
         cmd = Gem.ruby.shellsplit << "-I" << File.expand_path("../../..", __FILE__) <<
               "-r" << get_relative_path(siteconf_path, extension_dir) << File.basename(extension)
-        cmd << '--ruby'
-        cmd << Gem.ruby
+        cmd << "--ruby=#{Gem.ruby}"
         cmd.push(*args)
 
         begin
