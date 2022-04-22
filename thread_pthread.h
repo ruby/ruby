@@ -17,11 +17,30 @@
 #define RB_NATIVETHREAD_LOCK_INIT PTHREAD_MUTEX_INITIALIZER
 #define RB_NATIVETHREAD_COND_INIT PTHREAD_COND_INITIALIZER
 
-typedef struct native_thread_data_struct {
+// per-Thead scheduler helper data
+struct rb_thread_sched_item {
     union {
         struct ccan_list_node ubf;
         struct ccan_list_node readyq; // protected by sched->lock
     } node;
+};
+
+struct rb_native_thread {
+    int id;
+
+    rb_nativethread_id_t thread_id;
+
+#ifdef NON_SCALAR_THREAD_ID
+    rb_thread_id_string_t thread_id_string;
+#endif
+
+#ifdef RB_THREAD_T_HAS_NATIVE_ID
+    int tid;
+#endif
+
+    struct rb_thread_struct *running_thread;
+
+    // to control native thread
 #if defined(__GLIBC__) || defined(__FreeBSD__)
     union
 #else
@@ -31,11 +50,11 @@ typedef struct native_thread_data_struct {
      */
     struct
 #endif
-    {
+      {
         rb_nativethread_cond_t intr; /* th->interrupt_lock */
         rb_nativethread_cond_t readyq; /* use sched->lock */
     } cond;
-} native_thread_data_t;
+};
 
 #undef except
 #undef try

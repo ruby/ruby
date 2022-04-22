@@ -3165,7 +3165,8 @@ thread_free(void *ptr)
 	RUBY_GC_INFO("MRI main thread\n");
     }
     else {
-	ruby_xfree(ptr);
+        ruby_xfree(th->nt); // TODO
+	ruby_xfree(th);
     }
 
     RUBY_FREE_LEAVE("thread");
@@ -3207,11 +3208,8 @@ rb_obj_is_thread(VALUE obj)
 static VALUE
 thread_alloc(VALUE klass)
 {
-    VALUE obj;
     rb_thread_t *th;
-    obj = TypedData_Make_Struct(klass, rb_thread_t, &thread_data_type, th);
-
-    return obj;
+    return TypedData_Make_Struct(klass, rb_thread_t, &thread_data_type, th);
 }
 
 inline void
@@ -3275,8 +3273,8 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm, rb_ractor_t *r)
     th->top_self = vm->top_self; // 0 while self == 0
     th->value = Qundef;
 
-#ifdef NON_SCALAR_THREAD_ID
-    th->thread_id_string[0] = '\0';
+#if  defined(NON_SCALAR_THREAD_ID) && !defined(__wasm__) && !defined(__EMSCRIPTEN__)
+    th->nt->thread_id_string[0] = '\0';
 #endif
 
     th->ec->errinfo = Qnil;
@@ -3947,6 +3945,7 @@ Init_BareVM(void)
     vm->constant_cache = rb_id_table_create(0);
 
     // setup main thread
+    th->nt = ZALLOC(struct rb_native_thread);
     Init_native_thread(th);
     th_init(th, 0, vm, vm->ractor.main_ractor = rb_ractor_main_alloc());
 

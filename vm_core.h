@@ -68,6 +68,10 @@
 # include <setjmp.h>
 #endif
 
+#if defined(__linux__) || defined(__FreeBSD__)
+# define RB_THREAD_T_HAS_NATIVE_ID
+#endif
+
 #include "ruby/internal/stdbool.h"
 #include "ccan/list/list.h"
 #include "id.h"
@@ -969,17 +973,17 @@ struct rb_ext_config {
 
 typedef struct rb_ractor_struct rb_ractor_t;
 
-#if defined(__linux__) || defined(__FreeBSD__)
-# define RB_THREAD_T_HAS_NATIVE_ID
-#endif
+struct rb_native_thread;
 
 typedef struct rb_thread_struct {
     struct ccan_list_node lt_node; // managed by a ractor
     VALUE self;
     rb_ractor_t *ractor;
     rb_vm_t *vm;
-
+    struct rb_native_thread *nt;
     rb_execution_context_t *ec;
+
+    struct rb_thread_sched_item sched;
 
     VALUE last_status; /* $? */
 
@@ -991,15 +995,10 @@ typedef struct rb_thread_struct {
     VALUE top_wrapper;
 
     /* thread control */
-    rb_nativethread_id_t thread_id;
-#ifdef NON_SCALAR_THREAD_ID
-    rb_thread_id_string_t thread_id_string;
-#endif
-#ifdef RB_THREAD_T_HAS_NATIVE_ID
-    int tid;
-#endif
+
     BITFIELD(enum rb_thread_status, status, 2);
     /* bit flags */
+    unsigned int locking_native_thread : 1;
     unsigned int to_kill : 1;
     unsigned int abort_on_exception: 1;
     unsigned int report_on_exception: 1;
@@ -1007,7 +1006,6 @@ typedef struct rb_thread_struct {
     int8_t priority; /* -3 .. 3 (RUBY_THREAD_PRIORITY_{MIN,MAX}) */
     uint32_t running_time_us; /* 12500..800000 */
 
-    native_thread_data_t native_thread_data;
     void *blocking_region_buffer;
 
     VALUE thgroup;

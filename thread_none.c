@@ -126,11 +126,11 @@ ruby_thread_set_native(rb_thread_t *th)
 }
 
 void
-Init_native_thread(rb_thread_t *th)
+Init_native_thread(rb_thread_t *main_th)
 {
     // no TLS setup and no thread id setup
-    ruby_thread_set_native(th);
-    fill_thread_id_str(th);
+    ruby_thread_set_native(main_th);
+    fill_thread_id_str(main_th);
 }
 
 static void
