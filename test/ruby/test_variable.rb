@@ -218,6 +218,18 @@ class TestVariable < Test::Unit::TestCase
     assert_equal([:x, :bug9486], tap {|;x| x = x; break local_variables}, bug9486)
   end
 
+  def test_shadowing_private_local_variables
+    bug18629 = '[ruby-core:107883] [Bug #18629]'
+
+    _ = 1
+    [[2]].each{ |(_)| }
+    assert_equal(1, _, bug18629)
+
+    _x = 1
+    [[2]].each{ |(_x)| }
+    assert_equal(1, _x, bug18629)
+  end
+
   def test_global_variables
     gv = global_variables
     assert_empty(gv.grep(/\A(?!\$)/))

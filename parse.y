@@ -10994,9 +10994,8 @@ is_private_local_id(ID name)
 static int
 shadowing_lvar_0(struct parser_params *p, ID name)
 {
-    if (is_private_local_id(name)) return 1;
     if (dyna_in_block(p)) {
-	if (dvar_curr(p, name)) {
+	if (dvar_curr(p, name) && !is_private_local_id(name)) {
 	    yyerror0("duplicated argument name");
 	}
 	else if (dvar_defined(p, name) || local_id(p, name)) {
@@ -11008,7 +11007,7 @@ shadowing_lvar_0(struct parser_params *p, ID name)
 	}
     }
     else {
-	if (local_id(p, name)) {
+	if (local_id(p, name) && !is_private_local_id(name)) {
 	    yyerror0("duplicated argument name");
 	}
     }
