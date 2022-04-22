@@ -2702,6 +2702,7 @@ MESSAGE
   $stderr.puts nil,:pid,Process.pid
   $stderr.puts $configure_args.fetch('--ruby', :not_found) # from arg_config()
   $stderr.puts RbConfig::CONFIG["bindir"], RbConfig.ruby
+  $stderr.puts :loaded_features!, $LOADED_FEATURES
   $stderr.puts
 
   $ruby = arg_config("--ruby", File.join(RbConfig::CONFIG["bindir"], CONFIG["ruby_install_name"]))
