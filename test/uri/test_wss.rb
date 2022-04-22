@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
-require 'uri/http'
+require 'uri/https'
 require 'uri/wss'
 
 module URI
