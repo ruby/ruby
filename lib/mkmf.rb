@@ -2698,14 +2698,16 @@ MESSAGE
   end
   $configure_args["--topdir"] ||= $curdir
 
+  $ruby = arg_config("--ruby", File.join(RbConfig::CONFIG["bindir"], CONFIG["ruby_install_name"]))
+
   # let's see why it's picking up the system Ruby. match with ext_conf_builder.rb
   $stderr.puts nil,:pid,Process.pid
   $stderr.puts $configure_args.fetch('--ruby', :not_found) # from arg_config()
   $stderr.puts RbConfig::CONFIG["bindir"], RbConfig.ruby
   $stderr.puts :loaded_features!, $LOADED_FEATURES
+  $stderr.puts nil,$ruby,nil
   $stderr.puts
 
-  $ruby = arg_config("--ruby", File.join(RbConfig::CONFIG["bindir"], CONFIG["ruby_install_name"]))
 
   RbConfig.expand(CONFIG["RUBY_SO_NAME"])
 
