@@ -1039,6 +1039,13 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
   specifications_dir = File.join(gem_dir, "specifications")
   build_dir = Gem::StubSpecification.gemspec_stub("", ".bundle", ".bundle").extensions_dir
 
+  # We are about to build extensions, and want to configure extensions with the
+  # newly installed ruby.
+  Gem.instance_variable_set(:@ruby, with_destdir(File.join(bindir, ruby_install_name)))
+  # Prevent fake.rb propagation. It conflicts with the natural mkmf configs of
+  # the newly installed ruby.
+  ENV.delete('RUBYOPT')
+
   File.foreach("#{srcdir}/gems/bundled_gems") do |name|
     next if /^\s*(?:#|$)/ =~ name
     next unless /^(\S+)\s+(\S+).*/ =~ name
@@ -1066,7 +1073,6 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
   end
   next if gems.empty?
   if defined?(Zlib)
-    Gem.instance_variable_set(:@ruby, with_destdir(File.join(bindir, ruby_install_name)))
     silent = Gem::SilentUI.new
     gems.each do |gem|
       package = Gem::Package.new(gem)
