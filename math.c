@@ -836,15 +836,20 @@ math_hypot(VALUE unused_obj, VALUE x, VALUE y)
 
 /*
  * call-seq:
- *    Math.erf(x)  -> Float
+ *   Math.erf(x) -> float
  *
- *  Calculates the error function of +x+.
+ *  Returns the value of the {Gauss error function}[https://en.wikipedia.org/wiki/Error_function] for +x+.
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[-1, 1]</tt>.
  *
- *  Codomain: (-1, 1)
+ *  Examples:
  *
- *    Math.erf(0) #=> 0.0
+ *    erf(-INFINITY) # => -1.0
+ *    erf(0.0)       # => 0.0
+ *    erf(INFINITY)  # => 1.0
+ *
+ *  Related: Math.erfc.
  *
  */
 
@@ -858,13 +863,18 @@ math_erf(VALUE unused_obj, VALUE x)
  * call-seq:
  *    Math.erfc(x)  -> Float
  *
- *  Calculates the complementary error function of x.
+ *  Returns the value of the {complementary error function}[https://en.wikipedia.org/wiki/Error_function#Complementary_error_function] for +x+.
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[0, 2]</tt>.
  *
- *  Codomain: (0, 2)
+ *  Examples:
  *
- *    Math.erfc(0) #=> 1.0
+ *    erfc(-INFINITY) # => 2.0
+ *    erfc(0.0)       # => 1.0
+ *    erfc(INFINITY)  # => 0.0
+ *
+ *  Related: Math.erf.
  *
  */
 
@@ -876,41 +886,26 @@ math_erfc(VALUE unused_obj, VALUE x)
 
 /*
  * call-seq:
- *    Math.gamma(x)  -> Float
+ *   Math.gamma(x) -> float
  *
- *  Calculates the gamma function of x.
+ *  Returns the value of the {gamma function}[https://en.wikipedia.org/wiki/Gamma_function] for +x+.
  *
- *  Note that gamma(n) is the same as fact(n-1) for integer n > 0.
- *  However gamma(n) returns float and can be an approximation.
+ *  - Domain: <tt>(-INFINITY, INFINITY]</tt> excluding negative integers.
+ *  - Range: <tt>[-INFINITY, INFINITY]</tt>.
  *
- *   def fact(n) (1..n).inject(1) {|r,i| r*i } end
- *   1.upto(26) {|i| p [i, Math.gamma(i), fact(i-1)] }
- *   #=> [1, 1.0, 1]
- *   #   [2, 1.0, 1]
- *   #   [3, 2.0, 2]
- *   #   [4, 6.0, 6]
- *   #   [5, 24.0, 24]
- *   #   [6, 120.0, 120]
- *   #   [7, 720.0, 720]
- *   #   [8, 5040.0, 5040]
- *   #   [9, 40320.0, 40320]
- *   #   [10, 362880.0, 362880]
- *   #   [11, 3628800.0, 3628800]
- *   #   [12, 39916800.0, 39916800]
- *   #   [13, 479001600.0, 479001600]
- *   #   [14, 6227020800.0, 6227020800]
- *   #   [15, 87178291200.0, 87178291200]
- *   #   [16, 1307674368000.0, 1307674368000]
- *   #   [17, 20922789888000.0, 20922789888000]
- *   #   [18, 355687428096000.0, 355687428096000]
- *   #   [19, 6.402373705728e+15, 6402373705728000]
- *   #   [20, 1.21645100408832e+17, 121645100408832000]
- *   #   [21, 2.43290200817664e+18, 2432902008176640000]
- *   #   [22, 5.109094217170944e+19, 51090942171709440000]
- *   #   [23, 1.1240007277776077e+21, 1124000727777607680000]
- *   #   [24, 2.5852016738885062e+22, 25852016738884976640000]
- *   #   [25, 6.204484017332391e+23, 620448401733239439360000]
- *   #   [26, 1.5511210043330954e+25, 15511210043330985984000000]
+ *  Examples:
+ *
+ *    gamma(-2.5)      # => -0.9453087204829431
+ *    gamma(-1.5)      # => 2.3632718012073513
+ *    gamma(-0.5)      # => -3.5449077018110375
+ *    gamma(0.0)      # => Infinity
+ *    gamma(1.0)      # => 1.0
+ *    gamma(2.0)      # => 1.0
+ *    gamma(3.0)      # => 2.0
+ *    gamma(4.0)      # => 6.0
+ *    gamma(5.0)      # => 24.0
+ *
+ *  Related: Math.lgamma.
  *
  */
 
@@ -967,15 +962,39 @@ math_gamma(VALUE unused_obj, VALUE x)
 
 /*
  * call-seq:
- *    Math.lgamma(x)  -> [float, -1 or 1]
+ *   Math.lgamma(x) -> [float, -1 or 1]
  *
- *  Calculates the logarithmic gamma of +x+ and the sign of gamma of +x+.
+ *  Returns a 2-element array equivalent to:
  *
- *  Math.lgamma(x) is the same as
- *   [Math.log(Math.gamma(x).abs), Math.gamma(x) < 0 ? -1 : 1]
- *  but avoids overflow by Math.gamma(x) for large x.
+ *    [Math.log(Math.gamma(x).abs), Math.gamma(x) < 0 ? -1 : 1]
  *
- *    Math.lgamma(0) #=> [Infinity, 1]
+ *  See {logarithmic gamma function}[https://en.wikipedia.org/wiki/Gamma_function#The_log-gamma_function].
+ *
+ *  - Domain: <tt>(-INFINITY, INFINITY]</tt>.
+ *  - Range of first element: <tt>(-INFINITY, INFINITY]</tt>.
+ *  - Second element is -1 or 1.
+ *
+ *  Examples:
+ *
+ *    lgamma(-4.0) # => [Infinity, -1]
+ *    lgamma(-3.0) # => [Infinity, -1]
+ *    lgamma(-2.0) # => [Infinity, -1]
+ *    lgamma(-1.0) # => [Infinity, -1]
+ *    lgamma(0.0)  # => [Infinity, 1]
+ *
+ *    lgamma(1.0)  # => [0.0, 1]
+ *    lgamma(2.0)  # => [0.0, 1]
+ *    lgamma(3.0)  # => [0.6931471805599436, 1]
+ *    lgamma(4.0)  # => [1.7917594692280545, 1]
+ *
+ *    lgamma(-2.5) # => [-0.05624371649767279, -1]
+ *    lgamma(-1.5) # => [0.8600470153764797, 1]
+ *    lgamma(-0.5) # => [1.265512123484647, -1]
+ *    lgamma(0.5)  # => [0.5723649429247004, 1]
+ *    lgamma(1.5)  # => [-0.12078223763524676, 1]
+ *    lgamma(2.5)      # => [0.2846828704729205, 1]
+ *
+ *  Related: Math.gamma.
  *
  */
 
