@@ -55,3 +55,63 @@ we have added formatted numbers for clarity:
 
 See class Float for the constants
 that affect Ruby's floating-point arithmetic.
+
+=== What's Here
+
+==== Trigonometric Functions
+
+- ::cos: Returns the cosine of the given argument.
+- ::sin: Returns the sine of the given argument.
+- ::tan: Returns the tangent of the given argument.
+
+==== Inverse Trigonometric Functions
+
+- ::acos: Returns the arc cosine of the given argument.
+- ::asin: Returns the arc sine of the given argument.
+- ::atan: Returns the arc tangent of the given argument.
+- ::atan2: Returns the arg tangent of two given arguments.
+
+==== Hyperbolic Trigonometric Functions
+
+- ::cosh: Returns the hyperbolic cosine of the given argument.
+- ::sinh: Returns the hyperbolic sine of the given argument.
+- ::tanh: Returns the hyperbolic tangent of the given argument.
+
+==== Inverse Hyperbolic Trigonometric Functions
+
+- ::acosh: Returns the inverse hyperbolic cosine of the given argument.
+- ::asinh: Returns the inverse hyperbolic sine of the given argument.
+- ::atanh: Returns the inverse hyperbolic tangent of the given argument.
+
+==== Exponentiation and Logarithmic Functions
+
+- ::exp: Returns the value of a given value raised to a given power.
+- ::log: Returns the logarithm of a given value in a given base.
+- ::log10: Returns the base 10 logarithm of the given argument.
+- ::log2: Returns the base 2 logarithm of the given argument.
+
+==== Fraction and Exponent Functions
+
+- ::frexp: Returns the fraction and exponent of the given argument.
+- ::ldexp: Returns the value for a given fraction and exponent.
+
+==== Root Functions
+
+- ::cbrt: Returns the cube root of the given argument.
+- ::sqrt: Returns the square root of the given argument.
+
+==== Error Functions
+
+- ::erf: Returns the value of the Gauss error function for the given argument.
+- ::erfc: Returns the value of the complementary error function
+  for the given argument.
+
+==== Gamma Functions
+
+- ::gamma: Returns the value of the gamma function for the given argument.
+- ::lgamma: Returns the value of the logarithmic gamma function
+  for the given argument.
+
+==== Hypotenuse Function
+
+- ::hypot: Returns <tt>sqrt(a**2 + b**2)</tt> for the given +a+ and +b+.
