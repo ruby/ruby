@@ -1575,6 +1575,12 @@ rb_hash_new_with_size(st_index_t size)
     return ret;
 }
 
+VALUE
+rb_hash_new_capa(long capa)
+{
+    return rb_hash_new_with_size((st_index_t)capa);
+}
+
 static VALUE
 hash_copy(VALUE ret, VALUE hash)
 {
