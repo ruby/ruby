@@ -26,9 +26,14 @@ struct rb_thread_cond_struct {
     struct cond_event_entry *prev;
 };
 
-typedef struct native_thread_data_struct {
+struct rb_native_thread {
+    HANDLE thread_id;
     HANDLE interrupt_event;
-} native_thread_data_t;
+};
+
+struct rb_thread_sched_item {
+    char dmy;
+};
 
 struct rb_thread_sched {
     HANDLE lock;

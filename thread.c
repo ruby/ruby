@@ -339,7 +339,7 @@ rb_thread_s_debug_set(VALUE self, VALUE val)
 #ifndef fill_thread_id_str
 # define fill_thread_id_string(thid, buf) ((void *)(uintptr_t)(thid))
 # define fill_thread_id_str(th) (void)0
-# define thread_id_str(th) ((void *)(uintptr_t)(th)->thread_id)
+# define thread_id_str(th) ((void *)(uintptr_t)(th)->nt->thread_id)
 # define PRI_THREAD_ID "p"
 #endif
 
@@ -3333,7 +3333,7 @@ rb_thread_setname(VALUE thread, VALUE name)
     }
     target_th->name = name;
     if (threadptr_initialized(target_th)) {
-	native_set_another_thread_name(target_th->thread_id, name);
+	native_set_another_thread_name(target_th->nt->thread_id, name);
     }
     return name;
 }
