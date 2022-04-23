@@ -1208,7 +1208,6 @@ rb_block_arity(void)
     }
 
     block_setup(&block, block_handler);
-    min = rb_vm_block_min_max_arity(&block, &max);
 
     switch (vm_block_type(&block)) {
       case block_handler_type_symbol:
@@ -1216,11 +1215,11 @@ rb_block_arity(void)
 
       case block_handler_type_proc:
 	{
-	    VALUE procval = block_handler;
-        return rb_proc_arity(procval);
+        return rb_proc_arity(block_handler);
 	}
 
       default:
+        min = rb_vm_block_min_max_arity(&block, &max);
 	return max != UNLIMITED_ARGUMENTS ? min : -min-1;
     }
 }
