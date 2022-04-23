@@ -1214,9 +1214,7 @@ rb_block_arity(void)
 	return -1;
 
       case block_handler_type_proc:
-	{
         return rb_proc_arity(block_handler);
-	}
 
       default:
         min = rb_vm_block_min_max_arity(&block, &max);
