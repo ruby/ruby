@@ -1208,21 +1208,16 @@ rb_block_arity(void)
     }
 
     block_setup(&block, block_handler);
-    min = rb_vm_block_min_max_arity(&block, &max);
 
     switch (vm_block_type(&block)) {
       case block_handler_type_symbol:
 	return -1;
 
       case block_handler_type_proc:
-	{
-	    VALUE procval = block_handler;
-	    rb_proc_t *proc;
-	    GetProcPtr(procval, proc);
-	    return (proc->is_lambda ? min == max : max != UNLIMITED_ARGUMENTS) ? min : -min-1;
-	}
+        return rb_proc_arity(block_handler);
 
       default:
+        min = rb_vm_block_min_max_arity(&block, &max);
 	return max != UNLIMITED_ARGUMENTS ? min : -min-1;
     }
 }
