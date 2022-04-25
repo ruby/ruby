@@ -71,9 +71,9 @@ jobs:
           - { key: default_cc, name: gcc-4.8,   value: gcc-4.8,   container: gcc-4.8 }
           - key: default_cc
             name: 'gcc-11 LTO'
-            value: 'gcc-11 -O2 -flto=auto -ffat-lto-objects'
+            value: 'gcc-11 -flto=auto -ffat-lto-objects'
             container: gcc-11
-            shared: '--disable-shared'
+            configure_append: '--disable-shared optflags=-O2'
             # check: true
           - { key: default_cc, name: clang-15,  value: clang-15,  container: clang-15 }
           - { key: default_cc, name: clang-14,  value: clang-14,  container: clang-14 }
@@ -90,9 +90,9 @@ jobs:
           - { key: default_cc, name: clang-3.9, value: clang-3.9, container: clang-3.9 }
           - key: default_cc
             name: 'clang-14 LTO'
-            value: 'clang-14 -O2 -flto=auto'
+            value: 'clang-14 -flto=auto'
             container: clang-14
-            shared: '--disable-shared'
+            configure_append: '--disable-shared optflags=-O2'
             # check: true
 
 #         - { key: crosshost, name: aarch64-linux-gnu,     value: aarch64-linux-gnu, container: crossbuild-essential-arm64 }
@@ -220,7 +220,7 @@ jobs:
         run: >
           ../src/configure -C ${default_configure} ${append_configure}
           ${{ matrix.entry.key == 'crosshost' && '--host="${crosshost}"' || '--with-gcc="${default_cc} ${append_cc}"' }}
-          ${{ matrix.entry.shared || '--enable-shared' }}
+          ${{ matrix.entry.configure_append || '--enable-shared' }}
       - run: make extract-extlibs
       - run: make incs
       - run: make
