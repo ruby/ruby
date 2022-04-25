@@ -32,4 +32,8 @@ class SpecExpectation
     result_to_s = MSpec.format(result)
     raise SpecExpectationNotMetError, "Expected #{receiver_to_s}#{predicate_to_s}#{args_to_s}\n#{expectation} but was #{result_to_s}"
   end
+
+  def self.fail_single_arg_predicate(receiver, predicate, arg, result, expectation)
+    fail_predicate(receiver, predicate, [arg], nil, result, expectation)
+  end
 end
