@@ -9348,7 +9348,7 @@ argf_set_lineno(VALUE argf, VALUE val)
 {
     ARGF.lineno = NUM2INT(val);
     ARGF.last_lineno = ARGF.lineno;
-    return Qnil;
+    return val;
 }
 
 /*
