@@ -15,7 +15,7 @@ end
 require_relative '../../rdoc'
 
 require_relative 'formatter' # For RubyGems backwards compatibility
-# TODO: Fix wierd documentation with `require_relative`
+# TODO: Fix weird documentation with `require_relative`
 
 ##
 # The RI driver implements the command-line ri tool.
