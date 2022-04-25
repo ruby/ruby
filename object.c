@@ -3653,21 +3653,16 @@ rb_String(VALUE val)
  *  call-seq:
  *    String(object) -> object or new_string
  *
- *  Returns an array converted from +object+:
+ *  Returns an array converted from +object+.
  *
- *  - If +object+ is a string, returns +object+.
- *  - Otherwise, if <tt>object.to_str</tt> returns a string,
- *    returns that string
- *  - Otherwise, if <tt>object.to_s</tt> returns a string,
- *    returns that string
- *  - Otherwise, raises TypeError.
- *
- *  Examples:
+ *  Tries to convert +object+ to a string
+ *  using +to_str+ first and +to_s+ second:
  *
  *    String([0, 1, 2])        # => "[0, 1, 2]"
  *    String(0..5)             # => "0..5"
  *    String({foo: 0, bar: 1}) # => "{:foo=>0, :bar=>1}"
  *
+ *  Raises +TypeError+ if +object+ cannot be converted to a string.
  */
 
 static VALUE
@@ -3694,20 +3689,18 @@ rb_Array(VALUE val)
  *  call-seq:
  *    Array(object) -> object or new_array
  *
- *  Returns an array converted from +object+:
+ *  Returns an array converted from +object+.
  *
- *  - If +object+ is an array, returns +object+.
- *  - Otherwise, if <tt>object.to_ary</tt> returns an array,
- *    returns that array.
- *  - Otherwise, if <tt>object.to_a</tt> returns an array,
- *    returns that array.
- *  - Otherwise, returns +object+ in an array: <tt>[object]</tt>.
- *
- *  Examples:
+ *  Tries to convert +object+ to an array
+ *  using +to_ary+ first and +to_a+ second:
  *
  *    Array([0, 1, 2])        # => [0, 1, 2]
  *    Array({foo: 0, bar: 1}) # => [[:foo, 0], [:bar, 1]]
  *    Array(0..4)             # => [0, 1, 2, 3, 4]
+ *
+ *  Returns +object+ in an array, <tt>[object]</tt>,
+ *  if +object+ cannot be converted:
+ *
  *    Array(:foo)             # => [:foo]
  *
  */
