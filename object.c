@@ -3651,15 +3651,18 @@ rb_String(VALUE val)
 
 /*
  *  call-seq:
- *     String(arg)   -> string
+ *    String(object) -> object or new_string
  *
- *  Returns <i>arg</i> as a String.
+ *  Returns an array converted from +object+.
  *
- *  First tries to call its <code>to_str</code> method, then its <code>to_s</code> method.
+ *  Tries to convert +object+ to a string
+ *  using +to_str+ first and +to_s+ second:
  *
- *     String(self)        #=> "main"
- *     String(self.class)  #=> "Object"
- *     String(123456)      #=> "123456"
+ *    String([0, 1, 2])        # => "[0, 1, 2]"
+ *    String(0..5)             # => "0..5"
+ *    String({foo: 0, bar: 1}) # => "{:foo=>0, :bar=>1}"
+ *
+ *  Raises +TypeError+ if +object+ cannot be converted to a string.
  */
 
 static VALUE
@@ -3684,22 +3687,22 @@ rb_Array(VALUE val)
 
 /*
  *  call-seq:
- *     Array(arg)    -> array
+ *    Array(object) -> object or new_array
  *
- *  Returns +arg+ as an Array.
+ *  Returns an array converted from +object+.
  *
- *  First tries to call <code>to_ary</code> on +arg+, then <code>to_a</code>.
- *  If +arg+ does not respond to <code>to_ary</code> or <code>to_a</code>,
- *  returns an Array of length 1 containing +arg+.
+ *  Tries to convert +object+ to an array
+ *  using +to_ary+ first and +to_a+ second:
  *
- *  If <code>to_ary</code> or <code>to_a</code> returns something other than
- *  an Array, raises a TypeError.
+ *    Array([0, 1, 2])        # => [0, 1, 2]
+ *    Array({foo: 0, bar: 1}) # => [[:foo, 0], [:bar, 1]]
+ *    Array(0..4)             # => [0, 1, 2, 3, 4]
  *
- *     Array(["a", "b"])  #=> ["a", "b"]
- *     Array(1..5)        #=> [1, 2, 3, 4, 5]
- *     Array(key: :value) #=> [[:key, :value]]
- *     Array(nil)         #=> []
- *     Array(1)           #=> [1]
+ *  Returns +object+ in an array, <tt>[object]</tt>,
+ *  if +object+ cannot be converted:
+ *
+ *    Array(:foo)             # => [:foo]
+ *
  */
 
 static VALUE
@@ -3728,16 +3731,24 @@ rb_Hash(VALUE val)
 
 /*
  *  call-seq:
- *     Hash(arg)    -> hash
+ *    Hash(object) -> object or new_hash
  *
- *  Converts <i>arg</i> to a Hash by calling
- *  <i>arg</i><code>.to_hash</code>. Returns an empty Hash when
- *  <i>arg</i> is <tt>nil</tt> or <tt>[]</tt>.
+ *  Returns a hash converted from +object+.
  *
- *     Hash([])          #=> {}
- *     Hash(nil)         #=> {}
- *     Hash(key: :value) #=> {:key => :value}
- *     Hash([1, 2, 3])   #=> TypeError
+ *  - If +object+ is:
+ *
+ *    - A hash, returns +object+.
+ *    - An empty array or +nil+, returns an empty hash.
+ *
+ *  - Otherwise, if <tt>object.to_hash</tt> returns a hash, returns that hash.
+ *  - Otherwise, returns TypeError.
+ *
+ *  Examples:
+ *
+ *    Hash({foo: 0, bar: 1}) # => {:foo=>0, :bar=>1}
+ *    Hash(nil)              # => {}
+ *    Hash([])               # => {}
+ *
  */
 
 static VALUE
