@@ -139,10 +139,11 @@ void rb_clear_constant_cache(void) {}
 void
 rb_clear_constant_cache_for_id(ID id)
 {
+    VALUE lookup_result;
     rb_vm_t *vm = GET_VM();
-    st_table *ics;
 
-    if (rb_id_table_lookup(vm->constant_cache, id, (VALUE *) &ics)) {
+    if (rb_id_table_lookup(vm->constant_cache, id, &lookup_result)) {
+        st_table *ics = (st_table *)lookup_result;
         st_foreach(ics, rb_clear_constant_cache_for_id_i, (st_data_t) NULL);
         ruby_vm_constant_cache_invalidations += ics->num_entries;
     }
