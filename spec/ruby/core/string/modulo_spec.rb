@@ -302,29 +302,6 @@ describe "String#%" do
     end
   end
 
-  ruby_version_is ''...'2.7' do
-    it "always taints the result when the format string is tainted" do
-      universal = mock('0')
-      def universal.to_int() 0 end
-      def universal.to_str() "0" end
-      def universal.to_f() 0.0 end
-
-      [
-        "", "foo",
-        "%b", "%B", "%c", "%d", "%e", "%E",
-        "%f", "%g", "%G", "%i", "%o", "%p",
-        "%s", "%u", "%x", "%X"
-      ].each do |format|
-        subcls_format = StringSpecs::MyString.new(format)
-        subcls_format.taint
-        format.taint
-
-        (format % universal).should.tainted?
-        (subcls_format % universal).should.tainted?
-      end
-    end
-  end
-
   it "supports binary formats using %b for positive numbers" do
     ("%b" % 10).should == "1010"
     ("% b" % 10).should == " 1010"
@@ -578,20 +555,6 @@ describe "String#%" do
     # ("%p" % obj).should == "obj"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints result for %p when argument.inspect is tainted" do
-      obj = mock('x')
-      def obj.inspect() "x".taint end
-
-      ("%p" % obj).should.tainted?
-
-      obj = mock('x'); obj.taint
-      def obj.inspect() "x" end
-
-      ("%p" % obj).should_not.tainted?
-    end
-  end
-
   it "supports string formats using %s" do
     ("%s" % "hello").should == "hello"
     ("%s" % "").should == ""
@@ -618,13 +581,6 @@ describe "String#%" do
     # def obj.method_missing(*args) "obj" end
     #
     # ("%s" % obj).should == "obj"
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints result for %s when argument is tainted" do
-      ("%s" % "x".taint).should.tainted?
-      ("%s" % mock('x').taint).should.tainted?
-    end
   end
 
   # MRI crashes on this one.
@@ -785,12 +741,6 @@ describe "String#%" do
 
     it "behaves as if calling Kernel#Float for #{format} arguments, when the passed argument is hexadecimal string" do
       (format % "0xA").should == (format % 0xA)
-    end
-
-    ruby_version_is ''...'2.7' do
-      it "doesn't taint the result for #{format} when argument is tainted" do
-        (format % "5".taint).should_not.tainted?
-      end
     end
   end
 

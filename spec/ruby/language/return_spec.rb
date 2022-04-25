@@ -422,18 +422,16 @@ describe "The return keyword" do
     end
 
     describe "within a block within a class" do
-      ruby_version_is "2.7" do
-        it "is not allowed" do
-          File.write(@filename, <<-END_OF_CODE)
-            class ReturnSpecs::A
-              ScratchPad << "before return"
-              1.times { return }
-              ScratchPad << "after return"
-            end
-          END_OF_CODE
+      it "is not allowed" do
+        File.write(@filename, <<-END_OF_CODE)
+          class ReturnSpecs::A
+            ScratchPad << "before return"
+            1.times { return }
+            ScratchPad << "after return"
+          end
+        END_OF_CODE
 
-          -> { load @filename }.should raise_error(LocalJumpError)
-        end
+        -> { load @filename }.should raise_error(LocalJumpError)
       end
     end
 
@@ -464,25 +462,13 @@ describe "The return keyword" do
     end
 
     describe "return with argument" do
-      ruby_version_is ""..."2.7" do
-        it "does not affect exit status" do
-          ruby_exe(<<-END_OF_CODE).should == ""
-            return 10
-          END_OF_CODE
+      it "warns but does not affect exit status" do
+        err = ruby_exe(<<-END_OF_CODE, args: "2>&1")
+          return 10
+        END_OF_CODE
+        $?.exitstatus.should == 0
 
-          $?.exitstatus.should == 0
-        end
-      end
-
-      ruby_version_is "2.7" do
-        it "warns but does not affect exit status" do
-          err = ruby_exe(<<-END_OF_CODE, args: "2>&1")
-            return 10
-          END_OF_CODE
-          $?.exitstatus.should == 0
-
-          err.should =~ /warning: argument of top-level return is ignored/
-        end
+        err.should =~ /warning: argument of top-level return is ignored/
       end
     end
   end

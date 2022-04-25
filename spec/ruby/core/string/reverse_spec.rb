@@ -26,13 +26,6 @@ describe "String#reverse" do
     end
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints the result if self is tainted" do
-      "".taint.reverse.should.tainted?
-      "m".taint.reverse.should.tainted?
-    end
-  end
-
   it "reverses a string with multi byte characters" do
     "微軟正黑體".reverse.should == "體黑正軟微"
   end

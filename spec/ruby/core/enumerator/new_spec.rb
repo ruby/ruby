@@ -77,14 +77,12 @@ describe "Enumerator.new" do
       enum.take(3).should == [1, 2, 3]
     end
 
-    ruby_version_is "2.7" do
-      it "defines iteration with block, yielder argument and treating it as a proc" do
-        enum = Enumerator.new do |yielder|
-          "a\nb\nc".each_line(&yielder)
-        end
-
-        enum.to_a.should == ["a\n", "b\n", "c"]
+    it "defines iteration with block, yielder argument and treating it as a proc" do
+      enum = Enumerator.new do |yielder|
+        "a\nb\nc".each_line(&yielder)
       end
+
+      enum.to_a.should == ["a\n", "b\n", "c"]
     end
 
     describe 'yielded values' do

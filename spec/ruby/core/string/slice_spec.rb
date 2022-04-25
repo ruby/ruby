@@ -94,16 +94,6 @@ describe "String#slice! with index, length" do
     a.should == "h"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "always taints resulting strings when self is tainted" do
-      str = "hello world"
-      str.taint
-
-      str.slice!(0, 0).should.tainted?
-      str.slice!(2, 1).should.tainted?
-    end
-  end
-
   it "returns nil if the given position is out of self" do
     a = "hello"
     a.slice(10, 3).should == nil
@@ -195,16 +185,6 @@ describe "String#slice! Range" do
     b.should == "hello"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "always taints resulting strings when self is tainted" do
-      str = "hello world"
-      str.taint
-
-      str.slice!(0..0).should.tainted?
-      str.slice!(2..3).should.tainted?
-    end
-  end
-
   ruby_version_is ''...'3.0' do
     it "returns subclass instances" do
       s = StringSpecs::MyString.new("hello")
@@ -294,30 +274,6 @@ describe "String#slice! with Regexp" do
     s.should == "this is a string"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "always taints resulting strings when self or regexp is tainted" do
-      strs = ["hello world"]
-      strs += strs.map { |s| s.dup.taint }
-
-      strs.each do |str|
-        str = str.dup
-        str.slice!(//).tainted?.should == str.tainted?
-        str.slice!(/hello/).tainted?.should == str.tainted?
-
-        tainted_re = /./
-        tainted_re.taint
-
-        str.slice!(tainted_re).should.tainted?
-      end
-    end
-
-    it "doesn't taint self when regexp is tainted" do
-      s = "hello"
-      s.slice!(/./.taint)
-      s.should_not.tainted?
-    end
-  end
-
   ruby_version_is ''...'3.0' do
     it "returns subclass instances" do
       s = StringSpecs::MyString.new("hello")
@@ -363,30 +319,6 @@ describe "String#slice! with Regexp, index" do
     str.should == "ho there"
     str.slice!(/(t)h/, 1).should == "t"
     str.should == "ho here"
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "always taints resulting strings when self or regexp is tainted" do
-      strs = ["hello world"]
-      strs += strs.map { |s| s.dup.taint }
-
-      strs.each do |str|
-        str = str.dup
-        str.slice!(//, 0).tainted?.should == str.tainted?
-        str.slice!(/hello/, 0).tainted?.should == str.tainted?
-
-        tainted_re = /(.)(.)(.)/
-        tainted_re.taint
-
-        str.slice!(tainted_re, 1).should.tainted?
-      end
-    end
-
-    it "doesn't taint self when regexp is tainted" do
-      s = "hello"
-      s.slice!(/(.)(.)/.taint, 1)
-      s.should_not.tainted?
-    end
   end
 
   it "returns nil if there was no match" do
@@ -461,23 +393,6 @@ describe "String#slice! with String" do
     c = "hello hello"
     c.slice!('llo').should == "llo"
     c.should == "he hello"
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints resulting strings when other is tainted" do
-      strs = ["", "hello world", "hello"]
-      strs += strs.map { |s| s.dup.taint }
-
-      strs.each do |str|
-        str = str.dup
-        strs.each do |other|
-          other = other.dup
-          r = str.slice!(other)
-
-          r.tainted?.should == !r.nil? & other.tainted?
-        end
-      end
-    end
   end
 
   it "doesn't set $~" do

@@ -49,18 +49,6 @@ describe "String#chop" do
     s.chop.should_not equal(s)
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints result when self is tainted" do
-      "hello".taint.chop.should.tainted?
-      "".taint.chop.should.tainted?
-    end
-
-    it "untrusts result when self is untrusted" do
-      "hello".untrust.chop.should.untrusted?
-      "".untrust.chop.should.untrusted?
-    end
-  end
-
   ruby_version_is ''...'3.0' do
     it "returns subclass instances when called on a subclass" do
       StringSpecs::MyString.new("hello\n").chop.should be_an_instance_of(StringSpecs::MyString)

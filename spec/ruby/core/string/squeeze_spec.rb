@@ -54,16 +54,6 @@ describe "String#squeeze" do
     -> { s.squeeze("^e-b") }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints the result when self is tainted" do
-      "hello".taint.squeeze("e").should.tainted?
-      "hello".taint.squeeze("a-z").should.tainted?
-
-      "hello".squeeze("e".taint).should_not.tainted?
-      "hello".squeeze("l".taint).should_not.tainted?
-    end
-  end
-
   it "tries to convert each set arg to a string using to_str" do
     other_string = mock('lo')
     other_string.should_receive(:to_str).and_return("lo")

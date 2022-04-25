@@ -21,20 +21,6 @@ describe "Array#compact" do
   it "does not return subclass instance for Array subclasses" do
     ArraySpecs::MyArray[1, 2, 3, nil].compact.should be_an_instance_of(Array)
   end
-
-  ruby_version_is ''...'2.7' do
-    it "does not keep tainted status even if all elements are removed" do
-      a = [nil, nil]
-      a.taint
-      a.compact.tainted?.should be_false
-    end
-
-    it "does not keep untrusted status even if all elements are removed" do
-      a = [nil, nil]
-      a.untrust
-      a.compact.untrusted?.should be_false
-    end
-  end
 end
 
 describe "Array#compact!" do
@@ -57,22 +43,6 @@ describe "Array#compact!" do
 
   it "returns nil if there are no nil elements to remove" do
     [1, 2, false, 3].compact!.should == nil
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "keeps tainted status even if all elements are removed" do
-      a = [nil, nil]
-      a.taint
-      a.compact!
-      a.tainted?.should be_true
-    end
-
-    it "keeps untrusted status even if all elements are removed" do
-      a = [nil, nil]
-      a.untrust
-      a.compact!
-      a.untrusted?.should be_true
-    end
   end
 
   it "raises a FrozenError on a frozen array" do

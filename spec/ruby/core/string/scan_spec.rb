@@ -65,28 +65,6 @@ describe "String#scan" do
     -> { "cruel world".scan(mock('x')) }.should raise_error(TypeError)
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints the results if the String argument is tainted" do
-      a = "hello hello hello".scan("hello".taint)
-      a.each { |m| m.tainted?.should be_true }
-    end
-
-    it "taints the results when passed a String argument if self is tainted" do
-      a = "hello hello hello".taint.scan("hello")
-      a.each { |m| m.tainted?.should be_true }
-    end
-
-    it "taints the results if the Regexp argument is tainted" do
-      a = "hello".scan(/./.taint)
-      a.each { |m| m.tainted?.should be_true }
-    end
-
-    it "taints the results when passed a Regexp argument if self is tainted" do
-      a = "hello".taint.scan(/./)
-      a.each { |m| m.tainted?.should be_true }
-    end
-  end
-
   # jruby/jruby#5513
   it "does not raise any errors when passed a multi-byte string" do
     "あああaaaあああ".scan("あああ").should == ["あああ", "あああ"]
@@ -171,24 +149,6 @@ describe "String#scan with pattern and block" do
 
     'hello.'.scan(/not/) { 'x' }
     $~.should == nil
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints the results if the String argument is tainted" do
-      "hello hello hello".scan("hello".taint).each { |m| m.tainted?.should be_true }
-    end
-
-    it "taints the results when passed a String argument if self is tainted" do
-      "hello hello hello".taint.scan("hello").each { |m| m.tainted?.should be_true }
-    end
-
-    it "taints the results if the Regexp argument is tainted" do
-      "hello".scan(/./.taint).each { |m| m.tainted?.should be_true }
-    end
-
-    it "taints the results when passed a Regexp argument if self is tainted" do
-      "hello".taint.scan(/./).each { |m| m.tainted?.should be_true }
-    end
   end
 
   it "passes block arguments as individual arguments when blocks are provided" do

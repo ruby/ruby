@@ -6,7 +6,7 @@ describe "Range#frozen?" do
     it "is true for literal ranges" do
       (1..2).should.frozen?
       (1..).should.frozen?
-      eval("(..1)").should.frozen?
+      (..1).should.frozen?
     end
 
     it "is true for Range.new" do

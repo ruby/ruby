@@ -23,19 +23,8 @@ describe :dir_glob, shared: true do
     Dir.send(@method, obj).should == %w[file_one.ext]
   end
 
-  ruby_version_is ""..."2.7" do
-    it "splits the string on \\0 if there is only one string given and warns" do
-      -> {
-        Dir.send(@method, "file_o*\0file_t*").should ==
-          %w!file_one.ext file_two.ext!
-      }.should complain(/warning: use glob patterns list instead of nul-separated patterns/)
-    end
-  end
-
-  ruby_version_is "2.7" do
-    it "raises an ArgumentError if the string contains \\0" do
-      -> {Dir.send(@method, "file_o*\0file_t*")}.should raise_error ArgumentError, /nul-separated/
-    end
+  it "raises an ArgumentError if the string contains \\0" do
+    -> {Dir.send(@method, "file_o*\0file_t*")}.should raise_error ArgumentError, /nul-separated/
   end
 
   ruby_version_is "3.0" do

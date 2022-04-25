@@ -51,13 +51,6 @@ describe "Dir.foreach" do
     end
   end
 
-  ruby_version_is ""..."2.7" do
-    it "accepts nil options" do
-      dirs = Dir.foreach("#{DirSpecs.mock_dir}/deeply/nested", nil).to_a.sort
-      dirs.each {|dir| dir.encoding.should == Encoding.find("filesystem")}
-    end
-  end
-
   describe "when no block is given" do
     it "returns an Enumerator" do
       Dir.foreach(DirSpecs.mock_dir).should be_an_instance_of(Enumerator)
