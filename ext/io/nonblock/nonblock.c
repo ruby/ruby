@@ -138,8 +138,8 @@ io_nonblock_restore(VALUE arg)
 
 /*
  * call-seq:
- *   io.nonblock {|io| } -> io
- *   io.nonblock(boolean) {|io| } -> io
+ *   io.nonblock {|io| } -> object
+ *   io.nonblock(boolean) {|io| } -> object
  *
  * Yields +self+ in non-blocking mode.
  *
