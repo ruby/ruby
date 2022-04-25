@@ -3651,15 +3651,37 @@ rb_String(VALUE val)
 
 /*
  *  call-seq:
- *     String(arg)   -> string
+ *    String(object) -> object or new_string
  *
- *  Returns <i>arg</i> as a String.
+ *  Returns an array converted from +object+.
  *
- *  First tries to call its <code>to_str</code> method, then its <code>to_s</code> method.
+ *  If +object+ is:
  *
- *     String(self)        #=> "main"
- *     String(self.class)  #=> "Object"
- *     String(123456)      #=> "123456"
+ *  - A string, returns +object+.
+ *  - +nil+, returns an empty string.
+ *
+ *  Otherwise, if +object+ responds to:
+ *
+ *  - +:to_str+, returns <tt>object.to_str</tt>.
+ *  - +:to_s+, returns <tt>object.to_s</tt>.
+ *
+ *  Otherwise, raises TypeError.
+ *
+ *  Examples:
+ *
+ *    String(nil)              # => ""
+ *    String('foo')            # => "foo"
+ *    String([0, 1, 2])        # => "[0, 1, 2]"
+ *    String(1)                # => "1"
+ *    String(Complex(1, 0))    # => "1+0i"
+ *    String(Rational(1, 2))   # => "1/2"
+ *    String(3.14159)          # => "3.14159"
+ *    String(Time.now)         # => "2022-04-25 12:18:14 -0500"
+ *    String(0..5)             # => "0..5"
+ *    String(/foo/)            # => "(?-mix:foo)"
+ *    String(:foo)             # => "foo"
+ *    String({foo: 0, bar: 1}) # => "{:foo=>0, :bar=>1}"
+ *
  */
 
 static VALUE
@@ -3684,22 +3706,31 @@ rb_Array(VALUE val)
 
 /*
  *  call-seq:
- *     Array(arg)    -> array
+ *    Array(object) -> object or new_array
  *
- *  Returns +arg+ as an Array.
+ *  Returns an array converted from +object+.
  *
- *  First tries to call <code>to_ary</code> on +arg+, then <code>to_a</code>.
- *  If +arg+ does not respond to <code>to_ary</code> or <code>to_a</code>,
- *  returns an Array of length 1 containing +arg+.
+ *  If +object+ is:
  *
- *  If <code>to_ary</code> or <code>to_a</code> returns something other than
- *  an Array, raises a TypeError.
+ *  - An array, returns +object+.
+ *  - +nil+, returns an empty array.
  *
- *     Array(["a", "b"])  #=> ["a", "b"]
- *     Array(1..5)        #=> [1, 2, 3, 4, 5]
- *     Array(key: :value) #=> [[:key, :value]]
- *     Array(nil)         #=> []
- *     Array(1)           #=> [1]
+ *  Otherwise, if +object+ responds to:
+ *
+ *  - +to_ary+, returns <tt>object.to_ary</tt>.
+ *  - +to_a+, returns <tt>object.to_a</tt>.
+ *
+ *  Otherwise, returns +object+ in an array: <tt>[object]</tt>.
+ *
+ *  Examples:
+ *
+ *    Array([0, 1, 2])        # => [0, 1, 2]
+ *    Array(nil)              # => []
+ *    Array({foo: 0, bar: 1}) # => [[:foo, 0], [:bar, 1]]
+ *    Array(Time.now)         # => [47, 57, 11, 25, 4, 2022, 1, 115, true, "Central Daylight Time"]
+ *    Array(0..4)             # => [0, 1, 2, 3, 4]
+ *    Array(:foo)             # => [:foo]
+ *
  */
 
 static VALUE
@@ -3728,16 +3759,30 @@ rb_Hash(VALUE val)
 
 /*
  *  call-seq:
- *     Hash(arg)    -> hash
+ *    Hash(object) -> object or new_hash
  *
- *  Converts <i>arg</i> to a Hash by calling
- *  <i>arg</i><code>.to_hash</code>. Returns an empty Hash when
- *  <i>arg</i> is <tt>nil</tt> or <tt>[]</tt>.
+ *  Returns a hash converted from +object+.
  *
- *     Hash([])          #=> {}
- *     Hash(nil)         #=> {}
- *     Hash(key: :value) #=> {:key => :value}
- *     Hash([1, 2, 3])   #=> TypeError
+ *  If +object+ is:
+ *
+ *  - A hash, returns +object+.
+ *  - An empty array or +nil+, returns an empty hash.
+ *
+ *  Otherwise, if +object+ responds to:
+ *
+ *  - +to_hash+, returns <tt>object.to_hash</tt>.
+ *  - +to_h+, returns <tt>object.to_h</tt>.
+ *
+ *  Otherwise, returns TypeError.
+ *
+ *  Examples:
+ *
+ *    Hash({foo: 0, bar: 1}) # => {:foo=>0, :bar=>1}
+ *    Hash(nil)              # => {}
+ *    Hash([])               # => {}
+ *    Hash([0, 1, 1])        # Raises TypeError; array not empty.
+ *    Hash(:foo)             # Raises TypeError.
+ *
  */
 
 static VALUE
