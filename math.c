@@ -40,31 +40,21 @@ VALUE rb_eMathDomainError;
 
 /*
  *  call-seq:
- *     Math.atan2(y, x)  -> Float
+ *     Math.atan2(y, x) -> float
  *
- *  Computes the arc tangent given +y+ and +x+.
- *  Returns a Float in the range -PI..PI. Return value is a angle
- *  in radians between the positive x-axis of cartesian plane
- *  and the point given by the coordinates (+x+, +y+) on it.
+ *  Returns the {arc tangent}[https://en.wikipedia.org/wiki/Atan2] of +y+ and +x+
+ *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain of +y+: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Domain of +x+: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[-PI, PI]</tt>.
  *
- *  Codomain: [-PI, PI]
+ *  Examples:
  *
- *    Math.atan2(-0.0, -1.0) #=> -3.141592653589793
- *    Math.atan2(-1.0, -1.0) #=> -2.356194490192345
- *    Math.atan2(-1.0, 0.0)  #=> -1.5707963267948966
- *    Math.atan2(-1.0, 1.0)  #=> -0.7853981633974483
- *    Math.atan2(-0.0, 1.0)  #=> -0.0
- *    Math.atan2(0.0, 1.0)   #=> 0.0
- *    Math.atan2(1.0, 1.0)   #=> 0.7853981633974483
- *    Math.atan2(1.0, 0.0)   #=> 1.5707963267948966
- *    Math.atan2(1.0, -1.0)  #=> 2.356194490192345
- *    Math.atan2(0.0, -1.0)  #=> 3.141592653589793
- *    Math.atan2(INFINITY, INFINITY)   #=> 0.7853981633974483
- *    Math.atan2(INFINITY, -INFINITY)  #=> 2.356194490192345
- *    Math.atan2(-INFINITY, INFINITY)  #=> -0.7853981633974483
- *    Math.atan2(-INFINITY, -INFINITY) #=> -2.356194490192345
+ *    atan2(-1.0, -1.0) # => -2.356194490192345  # -3*PI/4
+ *    atan2(-1.0, 0.0)  # => -1.5707963267948966 # -PI/2
+ *    atan2(-1.0, 1.0)  # => -0.7853981633974483 # -PI/4
+ *    atan2(0.0, -1.0)  # => 3.141592653589793   # PI
  *
  */
 
@@ -100,16 +90,22 @@ math_atan2(VALUE unused_obj, VALUE y, VALUE x)
 
 /*
  *  call-seq:
- *     Math.cos(x)    -> Float
+ *    Math.cos(x) -> float
  *
- *  Computes the cosine of +x+ (expressed in radians).
- *  Returns a Float in the range -1.0..1.0.
+ *  Returns the
+ *  {cosine}[https://en.wikipedia.org/wiki/Sine_and_cosine] of +x+
+ *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>(-INFINITY, INFINITY)</tt>.
+ *  - Range: <tt>[-1.0, 1.0]</tt>.
  *
- *  Codomain: [-1, 1]
+ *  Examples:
  *
- *    Math.cos(Math::PI) #=> -1.0
+ *    cos(-PI)   # => -1.0
+ *    cos(-PI/2) # => 6.123031769111886e-17 # 0.0000000000000001
+ *    cos(0.0)   # => 1.0
+ *    cos(PI/2)  # => 6.123031769111886e-17 # 0.0000000000000001
+ *    cos(PI)    # => -1.0
  *
  */
 
@@ -121,16 +117,22 @@ math_cos(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.sin(x)    -> Float
+ *    Math.sin(x) -> float
  *
- *  Computes the sine of +x+ (expressed in radians).
- *  Returns a Float in the range -1.0..1.0.
+ *  Returns the
+ *  {sine}[https://en.wikipedia.org/wiki/Sine_and_cosine] of +x+
+ *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>(-INFINITY, INFINITY)</tt>.
+ *  - Range: <tt>[-1.0, 1.0]</tt>.
  *
- *  Codomain: [-1, 1]
+ *  Examples:
  *
- *    Math.sin(Math::PI/2) #=> 1.0
+ *    sin(-PI)   # => -1.2246063538223773e-16 # -0.0000000000000001
+ *    sin(-PI/2) # => -1.0
+ *    sin(0.0)   # => 0.0
+ *    sin(PI/2)  # => 1.0
+ *    sin(PI)    # => 1.2246063538223773e-16  # 0.0000000000000001
  *
  */
 
@@ -143,15 +145,22 @@ math_sin(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.tan(x)    -> Float
+ *    Math.tan(x) -> float
  *
- *  Computes the tangent of +x+ (expressed in radians).
+ *  Returns the
+ *  {tangent}[https://en.wikipedia.org/wiki/Trigonometric_functions] of +x+
+ *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>(-INFINITY, INFINITY)</tt>.
+ *  - Range: <tt>(-INFINITY, INFINITY)</tt>.
  *
- *  Codomain: (-INFINITY, INFINITY)
+ *  Examples:
  *
- *    Math.tan(0) #=> 0.0
+ *    tan(-PI)   # => 1.2246467991473532e-16  # -0.0000000000000001
+ *    tan(-PI/2) # => -1.633123935319537e+16  # -16331239353195370.0
+ *    tan(0.0)   # => 0.0
+ *    tan(PI/2)  # => 1.633123935319537e+16   # 16331239353195370.0
+ *    tan(PI)    # => -1.2246467991473532e-16 # -0.0000000000000001
  *
  */
 
@@ -163,15 +172,18 @@ math_tan(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.acos(x)    -> Float
+ *     Math.acos(x) -> float
  *
- *  Computes the arc cosine of +x+. Returns 0..PI.
+ *  Returns the {arc cosine}[https://en.wikipedia.org/wiki/Inverse_trigonometric_functions] of +x+.
  *
- *  Domain: [-1, 1]
+ *  - Domain: <tt>[-1, 1]</tt>.
+ *  - Range: <tt>[0, PI]</tt>.
  *
- *  Codomain: [0, PI]
+ *  Examples:
  *
- *    Math.acos(0) == Math::PI/2  #=> true
+ *    acos(-1.0) # => 3.141592653589793  # PI
+ *    acos(0.0)  # => 1.5707963267948966 # PI/2
+ *    acos(1.0)  # => 0.0
  *
  */
 
@@ -187,15 +199,19 @@ math_acos(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.asin(x)    -> Float
+ *     Math.asin(x) -> float
  *
- *  Computes the arc sine of +x+. Returns -PI/2..PI/2.
+ *  Returns the {arc sine}[https://en.wikipedia.org/wiki/Inverse_trigonometric_functions] of +x+.
  *
- *  Domain: [-1, -1]
+ *  - Domain: <tt>[-1, -1]</tt>.
+ *  - Range: <tt>[-PI/2, PI/2]</tt>.
  *
- *  Codomain: [-PI/2, PI/2]
+ *  Examples:
  *
- *    Math.asin(1) == Math::PI/2  #=> true
+ *    asin(-1.0) # => -1.5707963267948966 # -PI/2
+ *    asin(0.0)  # => 0.0
+ *    asin(1.0)  # => 1.5707963267948966  # PI/2
+ *
  */
 
 static VALUE
@@ -212,13 +228,21 @@ math_asin(VALUE unused_obj, VALUE x)
  *  call-seq:
  *     Math.atan(x)    -> Float
  *
- *  Computes the arc tangent of +x+. Returns -PI/2..PI/2.
+ *  Returns the {arc tangent}[https://en.wikipedia.org/wiki/Inverse_trigonometric_functions] of +x+.
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[-PI/2, PI/2]  </tt>.
  *
- *  Codomain: (-PI/2, PI/2)
+ *  Examples:
  *
- *    Math.atan(0) #=> 0.0
+ *    atan(-INFINITY) # => -1.5707963267948966 # -PI2
+ *    atan(-PI)       # => -1.2626272556789115
+ *    atan(-PI/2)     # => -1.0038848218538872
+ *    atan(0.0)       # => 0.0
+ *    atan(PI/2)      # => 1.0038848218538872
+ *    atan(PI)        # => 1.2626272556789115
+ *    atan(INFINITY)  # => 1.5707963267948966  # PI/2
+ *
  */
 
 static VALUE
@@ -237,15 +261,19 @@ cosh(double x)
 
 /*
  *  call-seq:
- *     Math.cosh(x)    -> Float
+ *    Math.cosh(x) -> float
  *
- *  Computes the hyperbolic cosine of +x+ (expressed in radians).
+ *  Returns the {hyperbolic cosine}[https://en.wikipedia.org/wiki/Hyperbolic_functions] of +x+
+ *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[1, INFINITY]</tt>.
  *
- *  Codomain: [1, INFINITY)
+ *  Examples:
  *
- *    Math.cosh(0) #=> 1.0
+ *    cosh(-INFINITY) # => Infinity
+ *    cosh(0.0)       # => 1.0
+ *    cosh(INFINITY)  # => Infinity
  *
  */
 
@@ -265,15 +293,19 @@ sinh(double x)
 
 /*
  *  call-seq:
- *     Math.sinh(x)    -> Float
+ *    Math.sinh(x) -> float
  *
- *  Computes the hyperbolic sine of +x+ (expressed in radians).
+ *  Returns the {hyperbolic sine}[https://en.wikipedia.org/wiki/Hyperbolic_functions] of +x+
+ *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[-INFINITY, INFINITY]</tt>.
  *
- *  Codomain: (-INFINITY, INFINITY)
+ *  Examples:
  *
- *    Math.sinh(0) #=> 0.0
+ *    sinh(-INFINITY) # => -Infinity
+ *    sinh(0.0)       # => 0.0
+ *    sinh(INFINITY)  # => Infinity
  *
  */
 
@@ -300,15 +332,19 @@ tanh(double x)
 
 /*
  *  call-seq:
- *     Math.tanh(x)    -> Float
+ *    Math.tanh(x) -> float
  *
- *  Computes the hyperbolic tangent of +x+ (expressed in radians).
+ *  Returns the {hyperbolic tangent}[https://en.wikipedia.org/wiki/Hyperbolic_functions] of +x+
+ *  in {radians}[https://en.wikipedia.org/wiki/Trigonometric_functions#Radians_versus_degrees].
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[-1, 1]</tt>.
  *
- *  Codomain: (-1, 1)
+ *  Examples:
  *
- *    Math.tanh(0) #=> 0.0
+ *    tanh(-INFINITY) # => -1.0
+ *    tanh(0.0)       # => 0.0
+ *    tanh(INFINITY)  # => 1.0
  *
  */
 
@@ -320,15 +356,17 @@ math_tanh(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.acosh(x)    -> Float
+ *    Math.acosh(x) -> float
  *
- *  Computes the inverse hyperbolic cosine of +x+.
+ *  Returns the {inverse hyperbolic cosine}[https://en.wikipedia.org/wiki/Inverse_hyperbolic_functions] of +x+.
  *
- *  Domain: [1, INFINITY)
+ *  - Domain: <tt>[1, INFINITY]</tt>.
+ *  - Range: <tt>[0, INFINITY]</tt>.
  *
- *  Codomain: [0, INFINITY)
+ *  Examples:
  *
- *    Math.acosh(1) #=> 0.0
+ *    acosh(1.0)      # => 0.0
+ *    acosh(INFINITY) # => Infinity
  *
  */
 
@@ -344,15 +382,18 @@ math_acosh(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.asinh(x)    -> Float
+ *    Math.asinh(x) -> float
  *
- *  Computes the inverse hyperbolic sine of +x+.
+ *  Returns the {inverse hyperbolic sine}[https://en.wikipedia.org/wiki/Inverse_hyperbolic_functions] of +x+.
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[-INFINITY, INFINITY]</tt>.
  *
- *  Codomain: (-INFINITY, INFINITY)
+ *  Examples:
  *
- *    Math.asinh(1) #=> 0.881373587019543
+ *    asinh(-INFINITY) # => -Infinity
+ *    asinh(0.0)       # => 0.0
+ *    asinh(INFINITY)  # => Infinity
  *
  */
 
@@ -364,15 +405,18 @@ math_asinh(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.atanh(x)    -> Float
+ *    Math.atanh(x) -> float
  *
- *  Computes the inverse hyperbolic tangent of +x+.
+ *  Returns the {inverse hyperbolic tangent}[https://en.wikipedia.org/wiki/Inverse_hyperbolic_functions] of +x+.
  *
- *  Domain: (-1, 1)
+ *  - Domain: <tt>[-1, 1]</tt>.
+ *  - Range: <tt>[-INFINITY, INFINITY]</tt>.
  *
- *  Codomain: (-INFINITY, INFINITY)
+ *  Examples:
  *
- *   Math.atanh(1) #=> Infinity
+ *    atanh(-1.0) # => -Infinity
+ *    atanh(0.0)  # => 0.0
+ *    atanh(1.0)  # => Infinity
  *
  */
 
@@ -391,17 +435,22 @@ math_atanh(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.exp(x)    -> Float
+ *    Math.exp(x) -> float
  *
- *  Returns e**x.
+ *  Returns +e+ raised to the +x+ power.
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[0, INFINITY]</tt>.
  *
- *  Codomain: (0, INFINITY)
+ *  Examples:
  *
- *    Math.exp(0)       #=> 1.0
- *    Math.exp(1)       #=> 2.718281828459045
- *    Math.exp(1.5)     #=> 4.4816890703380645
+ *    exp(-INFINITY) # => 0.0
+ *    exp(-1.0)      # => 0.36787944117144233 # 1.0/E
+ *    exp(0.0)       # => 1.0
+ *    exp(0.5)       # => 1.6487212707001282  # sqrt(E)
+ *    exp(1.0)       # => 2.718281828459045   # E
+ *    exp(2.0)       # => 7.38905609893065    # E**2
+ *    exp(INFINITY)  # => Infinity
  *
  */
 
@@ -432,22 +481,27 @@ FUNC_MINIMIZED(static VALUE math_log(int, const VALUE *, VALUE));
 
 /*
  *  call-seq:
- *     Math.log(x)          -> Float
- *     Math.log(x, base)    -> Float
+ *    Math.log(x, base = Math::E) -> Float
  *
- *  Returns the logarithm of +x+.
- *  If additional second argument is given, it will be the base
- *  of logarithm. Otherwise it is +e+ (for the natural logarithm).
+ *  Returns the base +base+ {logarithm}[https://en.wikipedia.org/wiki/Logarithm] of +x+.
  *
- *  Domain: (0, INFINITY)
+ *  - Domain: <tt>[0, INFINITY]</tt>.
+ *  - Range: <tt>[-INFINITY, INFINITY)]</tt>.
  *
- *  Codomain: (-INFINITY, INFINITY)
+ *  Examples:
  *
- *    Math.log(0)          #=> -Infinity
- *    Math.log(1)          #=> 0.0
- *    Math.log(Math::E)    #=> 1.0
- *    Math.log(Math::E**3) #=> 3.0
- *    Math.log(12, 3)      #=> 2.2618595071429146
+ *    log(0.0)        # => -Infinity
+ *    log(1.0)        # => 0.0
+ *    log(E)          # => 1.0
+ *    log(INFINITY)   # => Infinity
+ *
+ *    log(0.0, 2.0)   # => -Infinity
+ *    log(1.0, 2.0)   # => 0.0
+ *    log(2.0, 2.0)   # => 1.0
+ *
+ *    log(0.0, 10.0)  # => -Infinity
+ *    log(1.0, 10.0)  # => 0.0
+ *    log(10.0, 10.0) # => 1.0
  *
  */
 
@@ -515,18 +569,19 @@ extern double log2(double);
 
 /*
  *  call-seq:
- *     Math.log2(x)    -> Float
+ *    Math.log2(x) -> float
  *
- *  Returns the base 2 logarithm of +x+.
+ *  Returns the base 2 {logarithm}[https://en.wikipedia.org/wiki/Logarithm] of +x+.
  *
- *  Domain: (0, INFINITY)
+ *  - Domain: <tt>[0, INFINITY]</tt>.
+ *  - Range: <tt>[-INFINITY, INFINITY]</tt>.
  *
- *  Codomain: (-INFINITY, INFINITY)
+ *  Examples:
  *
- *    Math.log2(1)      #=> 0.0
- *    Math.log2(2)      #=> 1.0
- *    Math.log2(32768)  #=> 15.0
- *    Math.log2(65536)  #=> 16.0
+ *    log2(0.0)      # => -Infinity
+ *    log2(1.0)      # => 0.0
+ *    log2(2.0)      # => 1.0
+ *    log2(INFINITY) # => Infinity
  *
  */
 
@@ -545,17 +600,19 @@ math_log2(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.log10(x)    -> Float
+ *    Math.log10(x) -> float
  *
- *  Returns the base 10 logarithm of +x+.
+ *  Returns the base 10 {logarithm}[https://en.wikipedia.org/wiki/Logarithm] of +x+.
  *
- *  Domain: (0, INFINITY)
+ *  - Domain: <tt>[0, INFINITY]</tt>.
+ *  - Range: <tt>[-INFINITY, INFINITY]</tt>.
  *
- *  Codomain: (-INFINITY, INFINITY)
+ *  Examples:
  *
- *    Math.log10(1)       #=> 0.0
- *    Math.log10(10)      #=> 1.0
- *    Math.log10(10**100) #=> 100.0
+ *    log10(0.0)      # => -Infinity
+ *    log10(1.0)      # => 0.0
+ *    log10(10.0)     # => 1.0
+ *    log10(INFINITY) # => Infinity
  *
  */
 
@@ -576,35 +633,23 @@ static VALUE rb_math_sqrt(VALUE x);
 
 /*
  *  call-seq:
- *     Math.sqrt(x)    -> Float
+ *    Math.sqrt(x) -> float
  *
- *  Returns the non-negative square root of +x+.
+ *  Returns the principal (non-negative) {square root}[https://en.wikipedia.org/wiki/Square_root] of +x+.
  *
- *  Domain: [0, INFINITY)
+ *  - Domain: <tt>[0, INFINITY]</tt>.
+ *  - Range: <tt>[0, INFINITY]</tt>.
  *
- *  Codomain:[0, INFINITY)
+ *  Examples:
  *
- *    0.upto(10) {|x|
- *      p [x, Math.sqrt(x), Math.sqrt(x)**2]
- *    }
- *    #=> [0, 0.0, 0.0]
- *    #   [1, 1.0, 1.0]
- *    #   [2, 1.4142135623731, 2.0]
- *    #   [3, 1.73205080756888, 3.0]
- *    #   [4, 2.0, 4.0]
- *    #   [5, 2.23606797749979, 5.0]
- *    #   [6, 2.44948974278318, 6.0]
- *    #   [7, 2.64575131106459, 7.0]
- *    #   [8, 2.82842712474619, 8.0]
- *    #   [9, 3.0, 9.0]
- *    #   [10, 3.16227766016838, 10.0]
+ *    sqrt(0.0)      # => 0.0
+ *    sqrt(0.5)      # => 0.7071067811865476
+ *    sqrt(1.0)      # => 1.0
+ *    sqrt(2.0)      # => 1.4142135623730951
+ *    sqrt(4.0)      # => 2.0
+ *    sqrt(9.0)      # => 3.0
+ *    sqrt(INFINITY) # => Infinity
  *
- *  Note that the limited precision of floating point arithmetic
- *  might lead to surprising results:
- *
- *    Math.sqrt(10**46).to_i  #=> 99999999999999991611392 (!)
- *
- *  See also BigDecimal#sqrt and Integer.sqrt.
  */
 
 static VALUE
@@ -652,36 +697,26 @@ rb_math_sqrt(VALUE x)
 
 /*
  *  call-seq:
- *     Math.cbrt(x)    -> Float
+ *    Math.cbrt(x) -> float
  *
- *  Returns the cube root of +x+.
+ *  Returns the {cube root}[https://en.wikipedia.org/wiki/Cube_root] of +x+.
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[-INFINITY, INFINITY]</tt>.
  *
- *  Codomain: (-INFINITY, INFINITY)
+ *  Examples:
  *
- *    -9.upto(9) {|x|
- *      p [x, Math.cbrt(x), Math.cbrt(x)**3]
- *    }
- *    #=> [-9, -2.0800838230519, -9.0]
- *    #   [-8, -2.0, -8.0]
- *    #   [-7, -1.91293118277239, -7.0]
- *    #   [-6, -1.81712059283214, -6.0]
- *    #   [-5, -1.7099759466767, -5.0]
- *    #   [-4, -1.5874010519682, -4.0]
- *    #   [-3, -1.44224957030741, -3.0]
- *    #   [-2, -1.25992104989487, -2.0]
- *    #   [-1, -1.0, -1.0]
- *    #   [0, 0.0, 0.0]
- *    #   [1, 1.0, 1.0]
- *    #   [2, 1.25992104989487, 2.0]
- *    #   [3, 1.44224957030741, 3.0]
- *    #   [4, 1.5874010519682, 4.0]
- *    #   [5, 1.7099759466767, 5.0]
- *    #   [6, 1.81712059283214, 6.0]
- *    #   [7, 1.91293118277239, 7.0]
- *    #   [8, 2.0, 8.0]
- *    #   [9, 2.0800838230519, 9.0]
+ *    cbrt(-INFINITY) # => -Infinity
+ *    cbrt(-27.0)     # => -3.0
+ *    cbrt(-8.0)      # => -2.0
+ *    cbrt(-2.0)      # => -1.2599210498948732
+ *    cbrt(1.0)       # => 1.0
+ *    cbrt(0.0)       # => 0.0
+ *    cbrt(1.0)       # => 1.0
+      cbrt(2.0)       # => 1.2599210498948732
+ *    cbrt(8.0)       # => 2.0
+ *    cbrt(27.0)      # => 3.0
+ *    cbrt(INFINITY)  # => Infinity
  *
  */
 
@@ -700,13 +735,30 @@ math_cbrt(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.frexp(x)    -> [fraction, exponent]
+ *    Math.frexp(x) -> [fraction, exponent]
  *
- *  Returns a two-element array containing the normalized fraction (a Float)
- *  and exponent (an Integer) of +x+.
+ *  Returns a 2-element array containing the normalized signed float +fraction+
+ *  and integer +exponent+ of +x+ such that:
  *
- *     fraction, exponent = Math.frexp(1234)   #=> [0.6025390625, 11]
- *     fraction * 2**exponent                  #=> 1234.0
+ *    x = fraction * 2**exponent
+ *
+ *  See {IEEE 754 double-precision binary floating-point format: binary64}[https://en.wikipedia.org/wiki/Double-precision_floating-point_format#IEEE_754_double-precision_binary_floating-point_format:_binary64].
+ *
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range <tt>[-INFINITY, INFINITY]</tt>.
+ *
+ *  Examples:
+ *
+ *    frexp(-INFINITY) # => [-Infinity, -1]
+ *    frexp(-2.0)      # => [-0.5, 2]
+ *    frexp(-1.0)      # => [-0.5, 1]
+ *    frexp(0.0)       # => [0.0, 0]
+ *    frexp(1.0)       # => [0.5, 1]
+ *    frexp(2.0)       # => [0.5, 2]
+ *    frexp(INFINITY)  # => [Infinity, -1]
+ *
+ *  Related: Math.ldexp (inverse of Math.frexp).
+ *
  */
 
 static VALUE
@@ -721,12 +773,28 @@ math_frexp(VALUE unused_obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.ldexp(fraction, exponent) -> float
+ *    Math.ldexp(fraction, exponent) -> float
  *
- *  Returns the value of +fraction+*(2**+exponent+).
+ *  Returns the value of <tt>fraction * 2**exponent</tt>.
  *
- *     fraction, exponent = Math.frexp(1234)
- *     Math.ldexp(fraction, exponent)   #=> 1234.0
+ *  - Domain of +fraction+: <tt>[0.0, 1.0)</tt>.
+ *  - Domain of +exponent+: <tt>[0, 1024]</tt>
+ *    (larger values are equivalent to 1024).
+ *
+ *  See {IEEE 754 double-precision binary floating-point format: binary64}[https://en.wikipedia.org/wiki/Double-precision_floating-point_format#IEEE_754_double-precision_binary_floating-point_format:_binary64].
+ *
+ *  Examples:
+ *
+ *    ldexp(-INFINITY, -1) # => -Infinity
+ *    ldexp(-0.5, 2)       # => -2.0
+ *    ldexp(-0.5, 1)       # => -1.0
+ *    ldexp(0.0, 0)        # => 0.0
+ *    ldexp(-0.5, 1)       # => 1.0
+ *    ldexp(-0.5, 2)       # => 2.0
+ *    ldexp(INFINITY, -1)  # => Infinity
+ *
+ *  Related: Math.frexp (inverse of Math.ldexp).
+ *
  */
 
 static VALUE
@@ -737,12 +805,27 @@ math_ldexp(VALUE unused_obj, VALUE x, VALUE n)
 
 /*
  *  call-seq:
- *     Math.hypot(x, y)    -> Float
+ *    Math.hypot(a, b) -> float
  *
- *  Returns sqrt(x**2 + y**2), the hypotenuse of a right-angled triangle with
- *  sides +x+ and +y+.
+ *  Returns <tt>sqrt(a**2 + b**2)</tt>,
+ *  which is the length of the longest side +c+ (the hypotenuse)
+ *  of the right triangle whose other sides have lengths +a+ and +b+.
  *
- *     Math.hypot(3, 4)   #=> 5.0
+ *  - Domain of +a+: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Domain of +ab: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[0, INFINITY]</tt>.
+ *
+ *  Examples:
+ *
+ *    hypot(0.0, 1.0)       # => 1.0
+ *    hypot(1.0, 1.0)       # => 1.4142135623730951 # sqrt(2.0)
+ *    hypot(3.0, 4.0)       # => 5.0
+ *    hypot(5.0, 12.0)      # => 13.0
+ *    hypot(1.0, sqrt(3.0)) # => 1.9999999999999998 # Near 2.0
+ *
+ *  Note that if either argument is +INFINITY+ or <tt>-INFINITY</tt>,
+ *  the result is +Infinity+.
+ *
  */
 
 static VALUE
@@ -753,15 +836,20 @@ math_hypot(VALUE unused_obj, VALUE x, VALUE y)
 
 /*
  * call-seq:
- *    Math.erf(x)  -> Float
+ *   Math.erf(x) -> float
  *
- *  Calculates the error function of +x+.
+ *  Returns the value of the {Gauss error function}[https://en.wikipedia.org/wiki/Error_function] for +x+.
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[-1, 1]</tt>.
  *
- *  Codomain: (-1, 1)
+ *  Examples:
  *
- *    Math.erf(0) #=> 0.0
+ *    erf(-INFINITY) # => -1.0
+ *    erf(0.0)       # => 0.0
+ *    erf(INFINITY)  # => 1.0
+ *
+ *  Related: Math.erfc.
  *
  */
 
@@ -775,13 +863,18 @@ math_erf(VALUE unused_obj, VALUE x)
  * call-seq:
  *    Math.erfc(x)  -> Float
  *
- *  Calculates the complementary error function of x.
+ *  Returns the value of the {complementary error function}[https://en.wikipedia.org/wiki/Error_function#Complementary_error_function] for +x+.
  *
- *  Domain: (-INFINITY, INFINITY)
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[0, 2]</tt>.
  *
- *  Codomain: (0, 2)
+ *  Examples:
  *
- *    Math.erfc(0) #=> 1.0
+ *    erfc(-INFINITY) # => 2.0
+ *    erfc(0.0)       # => 1.0
+ *    erfc(INFINITY)  # => 0.0
+ *
+ *  Related: Math.erf.
  *
  */
 
@@ -793,41 +886,26 @@ math_erfc(VALUE unused_obj, VALUE x)
 
 /*
  * call-seq:
- *    Math.gamma(x)  -> Float
+ *   Math.gamma(x) -> float
  *
- *  Calculates the gamma function of x.
+ *  Returns the value of the {gamma function}[https://en.wikipedia.org/wiki/Gamma_function] for +x+.
  *
- *  Note that gamma(n) is the same as fact(n-1) for integer n > 0.
- *  However gamma(n) returns float and can be an approximation.
+ *  - Domain: <tt>(-INFINITY, INFINITY]</tt> excluding negative integers.
+ *  - Range: <tt>[-INFINITY, INFINITY]</tt>.
  *
- *   def fact(n) (1..n).inject(1) {|r,i| r*i } end
- *   1.upto(26) {|i| p [i, Math.gamma(i), fact(i-1)] }
- *   #=> [1, 1.0, 1]
- *   #   [2, 1.0, 1]
- *   #   [3, 2.0, 2]
- *   #   [4, 6.0, 6]
- *   #   [5, 24.0, 24]
- *   #   [6, 120.0, 120]
- *   #   [7, 720.0, 720]
- *   #   [8, 5040.0, 5040]
- *   #   [9, 40320.0, 40320]
- *   #   [10, 362880.0, 362880]
- *   #   [11, 3628800.0, 3628800]
- *   #   [12, 39916800.0, 39916800]
- *   #   [13, 479001600.0, 479001600]
- *   #   [14, 6227020800.0, 6227020800]
- *   #   [15, 87178291200.0, 87178291200]
- *   #   [16, 1307674368000.0, 1307674368000]
- *   #   [17, 20922789888000.0, 20922789888000]
- *   #   [18, 355687428096000.0, 355687428096000]
- *   #   [19, 6.402373705728e+15, 6402373705728000]
- *   #   [20, 1.21645100408832e+17, 121645100408832000]
- *   #   [21, 2.43290200817664e+18, 2432902008176640000]
- *   #   [22, 5.109094217170944e+19, 51090942171709440000]
- *   #   [23, 1.1240007277776077e+21, 1124000727777607680000]
- *   #   [24, 2.5852016738885062e+22, 25852016738884976640000]
- *   #   [25, 6.204484017332391e+23, 620448401733239439360000]
- *   #   [26, 1.5511210043330954e+25, 15511210043330985984000000]
+ *  Examples:
+ *
+ *    gamma(-2.5)      # => -0.9453087204829431
+ *    gamma(-1.5)      # => 2.3632718012073513
+ *    gamma(-0.5)      # => -3.5449077018110375
+ *    gamma(0.0)      # => Infinity
+ *    gamma(1.0)      # => 1.0
+ *    gamma(2.0)      # => 1.0
+ *    gamma(3.0)      # => 2.0
+ *    gamma(4.0)      # => 6.0
+ *    gamma(5.0)      # => 24.0
+ *
+ *  Related: Math.lgamma.
  *
  */
 
@@ -884,15 +962,39 @@ math_gamma(VALUE unused_obj, VALUE x)
 
 /*
  * call-seq:
- *    Math.lgamma(x)  -> [float, -1 or 1]
+ *   Math.lgamma(x) -> [float, -1 or 1]
  *
- *  Calculates the logarithmic gamma of +x+ and the sign of gamma of +x+.
+ *  Returns a 2-element array equivalent to:
  *
- *  Math.lgamma(x) is the same as
- *   [Math.log(Math.gamma(x).abs), Math.gamma(x) < 0 ? -1 : 1]
- *  but avoids overflow by Math.gamma(x) for large x.
+ *    [Math.log(Math.gamma(x).abs), Math.gamma(x) < 0 ? -1 : 1]
  *
- *    Math.lgamma(0) #=> [Infinity, 1]
+ *  See {logarithmic gamma function}[https://en.wikipedia.org/wiki/Gamma_function#The_log-gamma_function].
+ *
+ *  - Domain: <tt>(-INFINITY, INFINITY]</tt>.
+ *  - Range of first element: <tt>(-INFINITY, INFINITY]</tt>.
+ *  - Second element is -1 or 1.
+ *
+ *  Examples:
+ *
+ *    lgamma(-4.0) # => [Infinity, -1]
+ *    lgamma(-3.0) # => [Infinity, -1]
+ *    lgamma(-2.0) # => [Infinity, -1]
+ *    lgamma(-1.0) # => [Infinity, -1]
+ *    lgamma(0.0)  # => [Infinity, 1]
+ *
+ *    lgamma(1.0)  # => [0.0, 1]
+ *    lgamma(2.0)  # => [0.0, 1]
+ *    lgamma(3.0)  # => [0.6931471805599436, 1]
+ *    lgamma(4.0)  # => [1.7917594692280545, 1]
+ *
+ *    lgamma(-2.5) # => [-0.05624371649767279, -1]
+ *    lgamma(-1.5) # => [0.8600470153764797, 1]
+ *    lgamma(-0.5) # => [1.265512123484647, -1]
+ *    lgamma(0.5)  # => [0.5723649429247004, 1]
+ *    lgamma(1.5)  # => [-0.12078223763524676, 1]
+ *    lgamma(2.5)      # => [0.2846828704729205, 1]
+ *
+ *  Related: Math.gamma.
  *
  */
 
@@ -962,12 +1064,8 @@ exp1(sqrt)
 /*
  *  Document-class: Math
  *
- *  The Math module contains module functions for basic
- *  trigonometric and transcendental functions. See class
- *  Float for a list of constants that
- *  define Ruby's floating point accuracy.
+ *  :include: doc/math/math.rdoc
  *
- *  Domains and codomains are given only for real (not complex) numbers.
  */
 
 
