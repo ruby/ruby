@@ -1496,4 +1496,45 @@ RSpec.describe "bundle install with gems on multiple sources" do
       L
     end
   end
+
+  context "when default source uses the old API and includes old gems with nil required_rubygems_version" do
+    before do
+      build_repo4 do
+        build_gem "pdf-writer", "1.1.8"
+      end
+
+      path = "#{gem_repo4}/#{Gem::MARSHAL_SPEC_DIR}/pdf-writer-1.1.8.gemspec.rz"
+      spec = Marshal.load(Bundler.rubygems.inflate(File.binread(path)))
+      spec.instance_variable_set(:@required_rubygems_version, nil)
+      File.open(path, "wb") do |f|
+        f.write Gem.deflate(Marshal.dump(spec))
+      end
+
+      gemfile <<~G
+        source "https://localgemserver.test"
+
+        gem "pdf-writer", "= 1.1.8"
+      G
+    end
+
+    it "handles that fine" do
+      bundle "install --verbose", :artifice => "endpoint", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: https://localgemserver.test/
+          specs:
+            pdf-writer (1.1.8)
+
+        PLATFORMS
+          #{specific_local_platform}
+
+        DEPENDENCIES
+          pdf-writer (= 1.1.8)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+  end
 end
