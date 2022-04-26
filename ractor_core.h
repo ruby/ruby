@@ -184,6 +184,11 @@ void rb_ractor_atfork(rb_vm_t *vm, rb_thread_t *th);
 
 VALUE rb_ractor_ensure_shareable(VALUE obj, VALUE name);
 
+#ifdef USE_THIRD_PARTY_HEAP
+void rb_ractor_stop_for_gc(rb_ractor_t *r);
+void rb_ractor_resume_from_gc(rb_ractor_t *r);
+#endif // USE_THIRD_PARTY_HEAP
+
 RUBY_SYMBOL_EXPORT_BEGIN
 bool rb_ractor_shareable_p_continue(VALUE obj);
 

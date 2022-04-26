@@ -5818,7 +5818,6 @@ rb_uninterruptible(VALUE (*b_proc)(VALUE), VALUE data)
 }
 
 #ifdef USE_THIRD_PARTY_HEAP
-
 rb_thread_t rb_mmtk_fake_collector_thread;
 
 static inline rb_thread_t*
@@ -5826,13 +5825,14 @@ rb_mmtk_coordinator_thread(void)
 {
     return &rb_mmtk_fake_collector_thread;
 }
-void rb_stop_all_mutators_for_gc(void *gvl)
-{
-    gvl_acquire((rb_global_vm_lock_t *)gvl, rb_mmtk_coordinator_thread());
-}
-void rb_start_all_mutators_after_gc(void *gvl)
-{
-    gvl_release((rb_global_vm_lock_t *)gvl);
 
+void rb_sched_stop_for_gc(struct rb_thread_sched *sched)
+{
+    thread_sched_to_running(sched, rb_mmtk_coordinator_thread());
+}
+
+void rb_sched_resume_from_gc(struct rb_thread_sched *sched)
+{
+    thread_sched_to_waiting(sched);
 }
 #endif // USE_THIRD_PARTY_HEAP

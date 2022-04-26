@@ -37,8 +37,9 @@ VALUE rb_uninterruptible(VALUE (*b_proc)(VALUE), VALUE data);
 VALUE rb_mutex_owned_p(VALUE self);
 
 #ifdef USE_THIRD_PARTY_HEAP
-void rb_stop_all_mutators_for_gc(void *gvl);
-void rb_start_all_mutators_after_gc(void *gvl);
+struct rb_thread_sched;
+void rb_sched_stop_for_gc(struct rb_thread_sched *sched);
+void rb_sched_resume_from_gc(struct rb_thread_sched *sched);
 #endif // USE_THIRD_PARTY_HEAP
 
 int rb_thread_wait_for_single_fd(int fd, int events, struct timeval * timeout);

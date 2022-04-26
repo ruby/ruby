@@ -14457,7 +14457,7 @@ rb_mmtk_stop_the_world(MMTk_VMWorkerThread _tls)
     rb_mmtk_panic_if_multiple_ractor(__FUNCTION__);
 
     rb_ractor_t *ractor = GET_VM()->ractor.main_ractor;
-    rb_stop_all_mutators_for_gc(rb_ractor_gvl(ractor));
+    rb_ractor_stop_for_gc(ractor);
 }
 
 static void
@@ -14476,7 +14476,7 @@ rb_mmtk_resume_mutators(MMTk_VMWorkerThread tls)
     rb_mmtk_use_mmtk_global(rb_mmtk_increment_start_the_world_count, NULL);
 
     rb_ractor_t *ractor = GET_VM()->ractor.main_ractor;
-    rb_start_all_mutators_after_gc(rb_ractor_gvl(ractor));
+    rb_ractor_resume_from_gc(ractor);
 }
 
 struct block_for_gc_ctx {
