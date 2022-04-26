@@ -40,19 +40,9 @@ describe 'Pathname.glob' do
     }.should raise_error(ArgumentError, /unknown keyword: :?foo/)
   end
 
-  ruby_version_is ''...'2.7' do
-    it 'raises an ArgumentError when supplied a flag and :base keyword argument' do
-      -> {
-        Pathname.glob(@dir + 'lib/*i*.rb', File::FNM_DOTMATCH, base: 'lib')
-      }.should raise_error(ArgumentError, 'wrong number of arguments (given 3, expected 1..2)')
-    end
-  end
-
-  ruby_version_is "2.7" do
-    it "does not raise an ArgumentError when supplied a flag and :base keyword argument" do
-      expected = [Pathname.new('ipaddr.rb'), Pathname.new('irb.rb'), Pathname.new('.hidden.rb')].sort
-      Pathname.glob('*i*.rb', File::FNM_DOTMATCH, base: @dir + 'lib').sort.should == expected
-    end
+  it "does not raise an ArgumentError when supplied a flag and :base keyword argument" do
+    expected = [Pathname.new('ipaddr.rb'), Pathname.new('irb.rb'), Pathname.new('.hidden.rb')].sort
+    Pathname.glob('*i*.rb', File::FNM_DOTMATCH, base: @dir + 'lib').sort.should == expected
   end
 end
 

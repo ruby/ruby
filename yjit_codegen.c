@@ -3212,9 +3212,9 @@ jit_thread_s_current(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, 
 static method_codegen_t
 lookup_cfunc_codegen(const rb_method_definition_t *def)
 {
-    method_codegen_t gen_fn;
-    if (st_lookup(yjit_method_codegen_table, def->method_serial, (st_data_t *)&gen_fn)) {
-        return gen_fn;
+    st_data_t gen_fn;
+    if (st_lookup(yjit_method_codegen_table, def->method_serial, &gen_fn)) {
+        return (method_codegen_t)gen_fn;
     }
     return NULL;
 }

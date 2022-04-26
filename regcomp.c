@@ -142,8 +142,13 @@ bitset_on_num(BitSetRef bs)
 static void
 onig_reg_resize(regex_t *reg)
 {
-  resize:
-    if (reg->alloc > reg->used) {
+  do {
+    if (!reg->used) {
+      xfree(reg->p);
+      reg->alloc = 0;
+      reg->p = 0;
+    }
+    else if (reg->alloc > reg->used) {
       unsigned char *new_ptr = xrealloc(reg->p, reg->used);
       // Skip the right size optimization if memory allocation fails
       if (new_ptr) {
@@ -151,10 +156,7 @@ onig_reg_resize(regex_t *reg)
         reg->p = new_ptr;
       }
     }
-    if (reg->chain) {
-      reg = reg->chain;
-      goto resize;
-    }
+  } while ((reg = reg->chain) != 0);
 }
 
 extern int

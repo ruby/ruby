@@ -150,9 +150,10 @@ class RDoc::Markup::AttributeManager
       exclusive == exclusive?(bitmap)
     }.keys
     return if tags.empty?
-    all_tags = @matching_word_pairs.keys
+    tags = "[#{tags.join("")}](?!#{PROTECT_ATTR})"
+    all_tags = "[#{@matching_word_pairs.keys.join("")}](?!#{PROTECT_ATTR})"
 
-    re = /(^|\W|[#{all_tags.join("")}])([#{tags.join("")}])(\2*[#\\]?[\w:.\/\[\]-]+?\S?)\2(?!\2)([#{all_tags.join("")}]|\W|$)/
+    re = /(^|\W|#{all_tags})(#{tags})(\2*[#\\]?[\w:#{PROTECT_ATTR}.\/\[\]-]+?\S?)\2(?!\2)(#{all_tags}|\W|$)/
 
     1 while str.gsub!(re) { |orig|
       attr = @matching_word_pairs[$2]

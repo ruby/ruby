@@ -13,6 +13,8 @@ require_relative "rfc2396_parser"
 require_relative "rfc3986_parser"
 
 module URI
+  include RFC2396_REGEXP
+
   REGEXP = RFC2396_REGEXP
   Parser = RFC2396_Parser
   RFC3986_PARSER = RFC3986_Parser.new
@@ -61,8 +63,6 @@ module URI
     end
     module_function :make_components_hash
   end
-
-  include REGEXP
 
   module Schemes
   end

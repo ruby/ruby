@@ -215,7 +215,6 @@ class TestKeywordArguments < Test::Unit::TestCase
     marked = args.last
     assert_equal(true, Hash.ruby2_keywords_hash?(marked))
 
-    method_args = [args]
     after_usage = single(*args)
     assert_equal(h, after_usage)
     assert_same(marked, args.last)

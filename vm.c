@@ -1235,15 +1235,12 @@ rb_vm_make_binding(const rb_execution_context_t *ec, const rb_control_frame_t *s
     if (cfp == 0 || ruby_level_cfp == 0) {
 	rb_raise(rb_eRuntimeError, "Can't create Binding Object on top of Fiber.");
     }
-
-    while (1) {
-	envval = vm_make_env_object(ec, cfp);
-	if (cfp == ruby_level_cfp) {
-	    break;
-	}
-	cfp = rb_vm_get_binding_creatable_next_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
+    if (!VM_FRAME_RUBYFRAME_P(src_cfp) &&
+        !VM_FRAME_RUBYFRAME_P(RUBY_VM_PREVIOUS_CONTROL_FRAME(src_cfp))) {
+        rb_raise(rb_eRuntimeError, "Cannot create Binding object for non-Ruby caller");
     }
 
+    envval = vm_make_env_object(ec, cfp);
     bindval = rb_binding_alloc(rb_cBinding);
     GetBindingPtr(bindval, bind);
     vm_bind_update_env(bindval, bind, envval);
@@ -1809,11 +1806,9 @@ vm_iter_break(rb_execution_context_t *ec, VALUE val)
     const VALUE *ep = VM_CF_PREV_EP(cfp);
     const rb_control_frame_t *target_cfp = rb_vm_search_cf_from_ep(ec, cfp, ep);
 
-#if 0				/* raise LocalJumpError */
     if (!target_cfp) {
 	rb_vm_localjump_error("unexpected break", val, TAG_BREAK);
     }
-#endif
 
     ec->errinfo = (VALUE)THROW_DATA_NEW(val, target_cfp, TAG_BREAK);
     EC_JUMP_TAG(ec, TAG_BREAK);
@@ -3176,7 +3171,8 @@ thread_free(void *ptr)
 	RUBY_GC_INFO("MRI main thread\n");
     }
     else {
-	ruby_xfree(ptr);
+        ruby_xfree(th->nt); // TODO
+	ruby_xfree(th);
     }
 
     RUBY_FREE_LEAVE("thread");
@@ -3218,11 +3214,8 @@ rb_obj_is_thread(VALUE obj)
 static VALUE
 thread_alloc(VALUE klass)
 {
-    VALUE obj;
     rb_thread_t *th;
-    obj = TypedData_Make_Struct(klass, rb_thread_t, &thread_data_type, th);
-
-    return obj;
+    return TypedData_Make_Struct(klass, rb_thread_t, &thread_data_type, th);
 }
 
 inline void
@@ -3258,9 +3251,12 @@ rb_ec_clear_vm_stack(rb_execution_context_t *ec)
 }
 
 static void
-th_init(rb_thread_t *th, VALUE self)
+th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm, rb_ractor_t *r)
 {
     th->self = self;
+    th->vm = vm;
+    th->ractor = r;
+
     rb_threadptr_root_fiber_setup(th);
 
     /* All threads are blocking until a non-blocking fiber is scheduled */
@@ -3268,7 +3264,7 @@ th_init(rb_thread_t *th, VALUE self)
     th->scheduler = Qnil;
 
     if (self == 0) {
-        size_t size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
+        size_t size = vm->default_params.thread_vm_stack_size / sizeof(VALUE);
         rb_ec_initialize_vm_stack(th->ec, ALLOC_N(VALUE, size), size);
     }
     else {
@@ -3279,47 +3275,33 @@ th_init(rb_thread_t *th, VALUE self)
 
     th->status = THREAD_RUNNABLE;
     th->last_status = Qnil;
+    th->top_wrapper = 0;
+    th->top_self = vm->top_self; // 0 while self == 0
+    th->value = Qundef;
+
+#if  defined(NON_SCALAR_THREAD_ID) && !defined(__wasm__) && !defined(__EMSCRIPTEN__)
+    th->nt->thread_id_string[0] = '\0';
+#endif
+
     th->ec->errinfo = Qnil;
     th->ec->root_svar = Qfalse;
     th->ec->local_storage_recursive_hash = Qnil;
     th->ec->local_storage_recursive_hash_for_trace = Qnil;
-#ifdef NON_SCALAR_THREAD_ID
-    th->thread_id_string[0] = '\0';
-#endif
-
-    th->value = Qundef;
 
 #if OPT_CALL_THREADED_CODE
     th->retval = Qundef;
 #endif
     th->name = Qnil;
-    th->report_on_exception = th->vm->thread_report_on_exception;
+    th->report_on_exception = vm->thread_report_on_exception;
     th->ext_config.ractor_safe = true;
-}
-
-static VALUE
-ruby_thread_init(VALUE self)
-{
-    rb_thread_t *th = GET_THREAD();
-    rb_thread_t *target_th = rb_thread_ptr(self);
-    rb_vm_t *vm = th->vm;
-
-    target_th->vm = vm;
-    th_init(target_th, self);
-
-    target_th->top_wrapper = 0;
-    target_th->top_self = rb_vm_top_self();
-    target_th->ec->root_svar = Qfalse;
-    target_th->ractor = th->ractor;
-
-    return self;
 }
 
 VALUE
 rb_thread_alloc(VALUE klass)
 {
     VALUE self = thread_alloc(klass);
-    ruby_thread_init(self);
+    rb_thread_t *target_th = rb_thread_ptr(self);
+    th_init(target_th, self, GET_VM(), GET_RACTOR());
     return self;
 }
 
@@ -3957,6 +3939,8 @@ Init_BareVM(void)
 	fputs("[FATAL] failed to allocate memory\n", stderr);
 	exit(EXIT_FAILURE);
     }
+
+    // setup the VM
     MEMZERO(th, rb_thread_t, 1);
     vm_init2(vm);
 
@@ -3966,13 +3950,15 @@ Init_BareVM(void)
     vm->overloaded_cme_table = st_init_numtable();
     vm->constant_cache = rb_id_table_create(0);
 
+    // setup main thread
+    th->nt = ZALLOC(struct rb_native_thread);
     Init_native_thread(th);
-    th->vm = vm;
-    th_init(th, 0);
-    vm->ractor.main_ractor = th->ractor = rb_ractor_main_alloc();
+    th_init(th, 0, vm, vm->ractor.main_ractor = rb_ractor_main_alloc());
+
     rb_ractor_set_current_ec(th->ractor, th->ec);
     ruby_thread_init_stack(th);
 
+    // setup ractor system
     rb_native_mutex_initialize(&vm->ractor.sync.lock);
     rb_native_cond_initialize(&vm->ractor.sync.barrier_cond);
     rb_native_cond_initialize(&vm->ractor.sync.terminate_cond);

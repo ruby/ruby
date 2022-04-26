@@ -391,16 +391,16 @@
 #
 #   * The \ must be doubled if not followed by white space: \\.
 #   * But not in \<tt> tags: in a Regexp, <tt>\S</tt> matches non-space.
-#   * This is a link to {ruby-lang}[www.ruby-lang.org].
-#   * This is not a link, however: \{ruby-lang.org}[www.ruby-lang.org].
+#   * This is a link to {ruby-lang}[https://www.ruby-lang.org].
+#   * This is not a link, however: \{ruby-lang.org}[https://www.ruby-lang.org].
 #   * This will not be linked to \RDoc::RDoc#document
 #
 # generates:
 #
 # * The \ must be doubled if not followed by white space: \\.
 # * But not in \<tt> tags: in a Regexp, <tt>\S</tt> matches non-space.
-# * This is a link to {ruby-lang}[www.ruby-lang.org]
-# * This is not a link, however: \{ruby-lang.org}[www.ruby-lang.org]
+# * This is a link to {ruby-lang}[https://www.ruby-lang.org]
+# * This is not a link, however: \{ruby-lang.org}[https://www.ruby-lang.org]
 # * This will not be linked to \RDoc::RDoc#document
 #
 # Inside \<tt> tags, more precisely, leading backslashes are removed only if

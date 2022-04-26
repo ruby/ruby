@@ -1252,8 +1252,8 @@ static inline void gc_prof_set_malloc_info(rb_objspace_t *);
 static inline void gc_prof_set_heap_info(rb_objspace_t *);
 
 #define TYPED_UPDATE_IF_MOVED(_objspace, _type, _thing) do { \
-    if (gc_object_moved_p(_objspace, (VALUE)_thing)) { \
-       *((_type *)(&_thing)) = (_type)RMOVED((_thing))->destination; \
+    if (gc_object_moved_p((_objspace), (VALUE)(_thing))) {    \
+        *(_type *)&(_thing) = (_type)RMOVED(_thing)->destination; \
     } \
 } while (0)
 
@@ -1286,7 +1286,7 @@ static const char *obj_type_name(VALUE obj);
 /* the following code is only for internal tuning. */
 
 /* Source code to use RDTSC is quoted and modified from
- * http://www.mcs.anl.gov/~kazutomo/rdtsc.html
+ * https://www.mcs.anl.gov/~kazutomo/rdtsc.html
  * written by Kazutomo Yoshii <kazutomo@mcs.anl.gov>
  */
 
@@ -3371,8 +3371,11 @@ make_zombie(rb_objspace_t *objspace, VALUE obj, void (*dfree)(void *), void *dat
     zombie->basic.flags = T_ZOMBIE | (zombie->basic.flags & FL_SEEN_OBJ_ID);
     zombie->dfree = dfree;
     zombie->data = data;
-    zombie->next = heap_pages_deferred_final;
-    heap_pages_deferred_final = (VALUE)zombie;
+    VALUE prev, next = heap_pages_deferred_final;
+    do {
+        zombie->next = prev = next;
+        next = RUBY_ATOMIC_VALUE_CAS(heap_pages_deferred_final, prev, obj);
+    } while (next != prev);
 
     // With MMTk, we decouple deferred jobs from memory management.
 #ifndef USE_THIRD_PARTY_HEAP
@@ -4448,16 +4451,20 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
 }
 
 static void
-finalize_deferred(rb_objspace_t *objspace)
+finalize_deferred_heap_pages(rb_objspace_t *objspace)
 {
     VALUE zombie;
-    rb_execution_context_t *ec = GET_EC();
-    ec->interrupt_mask |= PENDING_INTERRUPT_MASK;
-
     while ((zombie = ATOMIC_VALUE_EXCHANGE(heap_pages_deferred_final, 0)) != 0) {
 	finalize_list(objspace, zombie);
     }
+}
 
+static void
+finalize_deferred(rb_objspace_t *objspace)
+{
+    rb_execution_context_t *ec = GET_EC();
+    ec->interrupt_mask |= PENDING_INTERRUPT_MASK;
+    finalize_deferred_heap_pages(objspace);
     ec->interrupt_mask &= ~PENDING_INTERRUPT_MASK;
 }
 
@@ -4624,9 +4631,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     }
 #endif
 
-    if (heap_pages_deferred_final) {
-	finalize_list(objspace, heap_pages_deferred_final);
-    }
+    finalize_deferred_heap_pages(objspace);
 
     st_free_table(finalizer_table);
     finalizer_table = 0;
@@ -5303,7 +5308,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, 
         return false;
     }
 
-    /* We should return true if either src is sucessfully moved, or src is
+    /* We should return true if either src is successfully moved, or src is
      * unmoveable. A false return will cause the sweeping cursor to be
      * incremented to the next page, and src will attempt to move again */
     if (gc_is_moveable_obj(objspace, src)) {
@@ -12073,7 +12078,7 @@ objspace_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t ol
              *   a non-NULL pointer when its argument is 0.  That return value
              *   is safe (and is expected) to be passed to free().
              *
-             *   http://man7.org/linux/man-pages/man3/malloc.3.html
+             *   https://man7.org/linux/man-pages/man3/malloc.3.html
              *
              * - As I read the implementation jemalloc's malloc() returns fully
              *   normal 16 bytes memory region when its argument is 0.

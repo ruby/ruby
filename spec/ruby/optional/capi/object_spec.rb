@@ -438,15 +438,6 @@ describe "CApiObject" do
   end
 
   describe "FL_TEST" do
-    ruby_version_is ''...'2.7' do
-      it "returns correct status for FL_TAINT" do
-        obj = Object.new
-        @o.FL_TEST(obj, "FL_TAINT").should == 0
-        obj.taint
-        @o.FL_TEST(obj, "FL_TAINT").should_not == 0
-      end
-    end
-
     it "returns correct status for FL_FREEZE" do
       obj = Object.new
       @o.FL_TEST(obj, "FL_FREEZE").should == 0
@@ -636,68 +627,12 @@ describe "CApiObject" do
   end
 
   describe "OBJ_TAINT" do
-    ruby_version_is ''...'2.7' do
-      it "taints the object" do
-        obj = mock("tainted")
-        @o.OBJ_TAINT(obj)
-        obj.tainted?.should be_true
-      end
-    end
   end
 
   describe "OBJ_TAINTED" do
-    ruby_version_is ''...'2.7' do
-      it "returns C true if the object is tainted" do
-        obj = mock("tainted")
-        obj.taint
-        @o.OBJ_TAINTED(obj).should be_true
-      end
-
-      it "returns C false if the object is not tainted" do
-        obj = mock("untainted")
-        @o.OBJ_TAINTED(obj).should be_false
-      end
-    end
   end
 
   describe "OBJ_INFECT" do
-    ruby_version_is ''...'2.7' do
-      it "does not taint the first argument if the second argument is not tainted" do
-        host   = mock("host")
-        source = mock("source")
-        @o.OBJ_INFECT(host, source)
-        host.tainted?.should be_false
-      end
-
-      it "taints the first argument if the second argument is tainted" do
-        host   = mock("host")
-        source = mock("source").taint
-        @o.OBJ_INFECT(host, source)
-        host.tainted?.should be_true
-      end
-
-      it "does not untrust the first argument if the second argument is trusted" do
-        host   = mock("host")
-        source = mock("source")
-        @o.OBJ_INFECT(host, source)
-        host.untrusted?.should be_false
-      end
-
-      it "untrusts the first argument if the second argument is untrusted" do
-        host   = mock("host")
-        source = mock("source").untrust
-        @o.OBJ_INFECT(host, source)
-        host.untrusted?.should be_true
-      end
-
-      it "propagates both taint and distrust" do
-        host   = mock("host")
-        source = mock("source").taint.untrust
-        @o.OBJ_INFECT(host, source)
-        host.tainted?.should be_true
-        host.untrusted?.should be_true
-      end
-    end
   end
 
   describe "rb_obj_freeze" do
@@ -731,18 +666,6 @@ describe "CApiObject" do
   end
 
   describe "rb_obj_taint" do
-    ruby_version_is ''...'2.7' do
-      it "marks the object passed as tainted" do
-        obj = ""
-        obj.should_not.tainted?
-        @o.rb_obj_taint(obj)
-        obj.should.tainted?
-      end
-
-      it "raises a FrozenError if the object passed is frozen" do
-        -> { @o.rb_obj_taint("".freeze) }.should raise_error(FrozenError)
-      end
-    end
   end
 
   describe "rb_check_frozen" do

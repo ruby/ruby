@@ -1573,7 +1573,7 @@ rb_big_mul_normal(VALUE x, VALUE y)
 
 /* efficient squaring (2 times faster than normal multiplication)
  * ref: Handbook of Applied Cryptography, Algorithm 14.16
- *      http://www.cacr.math.uwaterloo.ca/hac/about/chap14.pdf
+ *      https://www.cacr.math.uwaterloo.ca/hac/about/chap14.pdf
  */
 static void
 bary_sq_fast(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn)

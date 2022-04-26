@@ -707,6 +707,7 @@ EXPECTED
   def test_convert_with_exclude_tag
     assert_equal "\n<p><code>aaa</code>[:symbol]</p>\n", @to.convert('+aaa+[:symbol]')
     assert_equal "\n<p><code>aaa[:symbol]</code></p>\n", @to.convert('+aaa[:symbol]+')
+    assert_equal "\n<p><code>https:</code>-foobar</p>\n", @to.convert('<tt>https:</tt>-foobar')
     assert_equal "\n<p><a href=\":symbol\">aaa</a></p>\n", @to.convert('aaa[:symbol]')
   end
 

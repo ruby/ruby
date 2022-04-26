@@ -17,7 +17,8 @@ describe :enumerable_inject, shared: true do
   end
 
   it "ignores the block if two arguments" do
-    EnumerableSpecs::Numerous.new(1, 2, 3).send(@method, 10, :-){ raise "we never get here"}.should == 4
+    EnumerableSpecs::Numerous.new(1, 2, 3).send(@method, 10, :-) { raise "we never get here"}.should == 4
+    [].send(@method, 3, :+) { raise "we never get here"}.should == 3
   end
 
   it "can take a symbol argument" do

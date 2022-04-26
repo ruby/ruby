@@ -6,7 +6,7 @@
 [![Travis Status](https://app.travis-ci.com/ruby/ruby.svg?branch=master)](https://app.travis-ci.com/ruby/ruby)
 [![Cirrus Status](https://api.cirrus-ci.com/github/ruby/ruby.svg)](https://cirrus-ci.com/github/ruby/ruby/master)
 
-# What's Ruby
+# What is Ruby?
 
 Ruby is an interpreted object-oriented programming language often
 used for web development. It also offers many scripting features
@@ -15,18 +15,17 @@ It is simple, straightforward, and extensible.
 
 ## Features of Ruby
 
-*   Simple Syntax
-*   **Normal** Object-oriented Features (e.g. class, method calls)
-*   **Advanced** Object-oriented Features (e.g. mix-in, singleton-method)
-*   Operator Overloading
-*   Exception Handling
-*   Iterators and Closures
-*   Garbage Collection
-*   Dynamic Loading of Object Files (on some architectures)
-*   Highly Portable (works on many Unix-like/POSIX compatible platforms as
-    well as Windows, macOS, etc.) cf.
-    https://github.com/ruby/ruby/blob/master/doc/maintainers.rdoc#label-Platform+Maintainers
-
+* Simple Syntax
+* **Normal** Object-oriented Features (e.g. class, method calls)
+* **Advanced** Object-oriented Features (e.g. mix-in, singleton-method)
+* Operator Overloading
+* Exception Handling
+* Iterators and Closures
+* Garbage Collection
+* Dynamic Loading of Object Files (on some architectures)
+* Highly Portable (works on many Unix-like/POSIX compatible platforms as
+  well as Windows, macOS, etc.) cf.
+  https://github.com/ruby/ruby/blob/master/doc/maintainers.rdoc#label-Platform+Maintainers
 
 ## How to get Ruby
 
@@ -60,7 +59,6 @@ Try the following command to see the list of branches:
 
     $ svn ls https://svn.ruby-lang.org/repos/ruby/branches/
 
-
 ## Ruby home page
 
 https://www.ruby-lang.org/
@@ -90,21 +88,21 @@ is required.
 
 ## How to compile and install
 
-1.  If you want to use Microsoft Visual C++ to compile Ruby, read
-    [win32/README.win32](rdoc-ref:win32/README.win32) instead of this document.
+1. If you want to use Microsoft Visual C++ to compile Ruby, read
+   [win32/README.win32](rdoc-ref:win32/README.win32) instead of this document.
 
-2.  Run `./autogen.sh` to generate configure, when you build the source checked
-    out from the Git repository.
+2. Run `./autogen.sh` to generate configure, when you build the source checked
+   out from the Git repository.
 
-3.  Run `./configure`, which will generate `config.h` and `Makefile`.
+3. Run `./configure`, which will generate `config.h` and `Makefile`.
 
     Some C compiler flags may be added by default depending on your
     environment. Specify `optflags=..` and `warnflags=..` as necessary to
     override them.
 
-4.  Edit `include/ruby/defines.h` if you need. Usually this step will not be needed.
+4. Edit `include/ruby/defines.h` if you need. Usually this step will not be needed.
 
-5.  Optional: Remove comment mark(`#`) before the module names from `ext/Setup`.
+5. Optional: Remove comment mark(`#`) before the module names from `ext/Setup`.
 
     This step is only necessary if you want to link modules statically.
 
@@ -114,16 +112,16 @@ is required.
 
     Usually this step will not be needed.
 
-6.  Run `make`.
+6. Run `make`.
 
     * On Mac, set RUBY\_CODESIGN environment variable with a signing identity.
       It uses the identity to sign `ruby` binary. See also codesign(1).
 
-7.  Optionally, run '`make check`' to check whether the compiled Ruby
-    interpreter works well. If you see the message "`check succeeded`", your
-    Ruby works as it should (hopefully).
+7. Optionally, run '`make check`' to check whether the compiled Ruby
+   interpreter works well. If you see the message "`check succeeded`", your
+   Ruby works as it should (hopefully).
 
-8.  Run '`make install`'.
+8. Run '`make install`'.
 
     This command will create the following directories and install files into
     them.
@@ -145,7 +143,6 @@ is required.
     *   `${DESTDIR}${prefix}/share/man/man1`
     *   `${DESTDIR}${prefix}/share/ri/${MAJOR}.${MINOR}.${TEENY}/system`
 
-
     If Ruby's API version is '*x.y.z*', the `${MAJOR}` is '*x*', the
     `${MINOR}` is '*y*', and the `${TEENY}` is '*z*'.
 
@@ -158,8 +155,8 @@ If you fail to compile Ruby, please send the detailed error report with the
 error log and machine/OS type, to help others.
 
 Some extension libraries may not get compiled because of lack of necessary
-external libraries and/or headers, then you will need to run '`make distclean-ext`'
-to remove old configuration after installing them in such case.
+external libraries and/or headers. You will need to run '`make distclean-ext`'
+to remove old configuration after installing them in such a case.
 
 ## Copying
 

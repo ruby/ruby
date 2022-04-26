@@ -721,7 +721,13 @@ call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
     argv[1] = filename;
     argv[2] = INT2FIX(line);
     argv[3] = id ? ID2SYM(id) : Qnil;
-    argv[4] = (self && (filename != Qnil)) ? rb_binding_new() : Qnil;
+    argv[4] = Qnil;
+    if (self && (filename != Qnil) &&
+        event != RUBY_EVENT_C_CALL &&
+        event != RUBY_EVENT_C_RETURN &&
+        (VM_FRAME_RUBYFRAME_P(ec->cfp) && imemo_type_p((VALUE)ec->cfp->iseq, imemo_iseq))) {
+        argv[4] = rb_binding_new();
+    }
     argv[5] = klass ? klass : Qnil;
 
     rb_proc_call_with_block(proc, 6, argv, Qnil);
@@ -952,7 +958,7 @@ rb_tracearg_binding(rb_trace_arg_t *trace_arg)
     rb_control_frame_t *cfp;
     cfp = rb_vm_get_binding_creatable_next_cfp(trace_arg->ec, trace_arg->cfp);
 
-    if (cfp) {
+    if (cfp && imemo_type_p((VALUE)cfp->iseq, imemo_iseq)) {
 	return rb_vm_make_binding(trace_arg->ec, cfp);
     }
     else {

@@ -2,9 +2,7 @@
 require 'test/unit'
 require 'optparse'
 
-class TestOptionParser < Test::Unit::TestCase
-end
-class TestOptionParser::Getopts < Test::Unit::TestCase
+class TestOptionParserGetopts < Test::Unit::TestCase
   def setup
     @opt = OptionParser.new
   end

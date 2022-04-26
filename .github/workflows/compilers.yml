@@ -16,16 +16,16 @@ concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 
-# Github actions does not support YAML anchors.  This creative use of
+# GitHub actions does not support YAML anchors.  This creative use of
 # environment variables (plus the "echo $GITHUB_ENV" hack) is to reroute that
 # restriction.
 env:
-  default_cc: clang-15
+  default_cc: clang-14
   append_cc: ''
   crosshost: ''
 
   # -O1 is faster than -O3 in our tests... Majority of time are consumed trying
-  # to optimize binaries.  Also Github Actions run on relatively modern CPUs
+  # to optimize binaries.  Also GitHub Actions run on relatively modern CPUs
   # compared to, say, GCC 4 or Clang 3.  We don't specify `-march=native`
   # because compilers tend not understand what the CPU is.
   optflags: '-O1'
@@ -71,9 +71,9 @@ jobs:
           - { key: default_cc, name: gcc-4.8,   value: gcc-4.8,   container: gcc-4.8 }
           - key: default_cc
             name: 'gcc-11 LTO'
-            value: 'gcc-11 -O2 -flto=auto -ffat-lto-objects'
+            value: 'gcc-11 -flto=auto -ffat-lto-objects'
             container: gcc-11
-            shared: '--disable-shared'
+            configure_append: '--disable-shared optflags=-O2'
             # check: true
           - { key: default_cc, name: clang-15,  value: clang-15,  container: clang-15 }
           - { key: default_cc, name: clang-14,  value: clang-14,  container: clang-14 }
@@ -90,9 +90,9 @@ jobs:
           - { key: default_cc, name: clang-3.9, value: clang-3.9, container: clang-3.9 }
           - key: default_cc
             name: 'clang-14 LTO'
-            value: 'clang-14 -O2 -flto=auto'
+            value: 'clang-14 -flto=auto'
             container: clang-14
-            shared: '--disable-shared'
+            configure_append: '--disable-shared optflags=-O2'
             # check: true
 
 #         - { key: crosshost, name: aarch64-linux-gnu,     value: aarch64-linux-gnu, container: crossbuild-essential-arm64 }
@@ -104,10 +104,16 @@ jobs:
 #         - { key: crosshost, name: s390x-linux-gnu,       value: s390x-linux-gnu, container: crossbuild-essential-s390x }
 #         - { key: crosshost, name: x86_64-w64-mingw32,    value: x86_64-w64-mingw32, container: mingw-w64 }
 
-          - { key: append_cc, name: c99,   value: '-std=c99   -Werror=pedantic -pedantic-errors' }
-#         - { key: append_cc, name: c11,   value: '-std=c11   -Werror=pedantic -pedantic-errors' }
-#         - { key: append_cc, name: c17,   value: '-std=c17   -Werror=pedantic -pedantic-errors' }
-          - { key: append_cc, name: c2x,   value: '-std=c2x   -Werror=pedantic -pedantic-errors' }
+          # -Wno-strict-prototypes is necessary with current clang-15 since
+          # older autoconf generate functions without prototype and -pedantic
+          # now implies strict-prototypes. Disabling the error but leaving the
+          # warning generates a lot of noise from use of ANYARGS in
+          # rb_define_method() and friends.
+          # See: https://github.com/llvm/llvm-project/commit/11da1b53d8cd3507959022cd790d5a7ad4573d94
+          - { key: append_cc, name: c99,   value: '-std=c99   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' }
+#         - { key: append_cc, name: c11,   value: '-std=c11   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' }
+#         - { key: append_cc, name: c17,   value: '-std=c17   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' }
+          - { key: append_cc, name: c2x,   value: '-std=c2x   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' }
           - { key: CXXFLAGS,  name: c++98, value: '-std=c++98 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
 #         - { key: CXXFLAGS,  name: c++11, value: '-std=c++11 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
 #         - { key: CXXFLAGS,  name: c++14, value: '-std=c++14 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
@@ -189,7 +195,7 @@ jobs:
     name: ${{ matrix.entry.name }}
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || 'clang-15' }}
+      image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || 'clang-14' }}
       options: --user root
     if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
@@ -214,7 +220,7 @@ jobs:
         run: >
           ../src/configure -C ${default_configure} ${append_configure}
           ${{ matrix.entry.key == 'crosshost' && '--host="${crosshost}"' || '--with-gcc="${default_cc} ${append_cc}"' }}
-          ${{ matrix.entry.shared || '--enable-shared' }}
+          ${{ matrix.entry.configure_append || '--enable-shared' }}
       - run: make extract-extlibs
       - run: make incs
       - run: make

@@ -61,12 +61,14 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   #
   # These methods are used by regexp handling markup added by RDoc::Markup#add_regexp_handling.
 
+  URL_CHARACTERS_REGEXP_STR = /[A-Za-z0-9\-._~:\/\?#\[\]@!$&'\(\)*+,;%=]/.source
+
   ##
   # Adds regexp handlings.
 
   def init_regexp_handlings
     # external links
-    @markup.add_regexp_handling(/(?:link:|https?:|mailto:|ftp:|irc:|www\.)\S+\w/,
+    @markup.add_regexp_handling(/(?:link:|https?:|mailto:|ftp:|irc:|www\.)#{URL_CHARACTERS_REGEXP_STR}+\w/,
                                 :HYPERLINK)
     init_link_notation_regexp_handlings
   end

@@ -42,24 +42,16 @@ describe "Range.new" do
   end
 
   describe "beginless/endless range" do
-    ruby_version_is ""..."2.7" do
-      it "does not allow range without left boundary" do
-        -> { Range.new(nil, 1) }.should raise_error(ArgumentError, /bad value for range/)
-      end
+    it "allows beginless left boundary" do
+      range = Range.new(nil, 1)
+      range.begin.should == nil
     end
 
-    ruby_version_is "2.7" do
-      it "allows beginless left boundary" do
-        range = Range.new(nil, 1)
-        range.begin.should == nil
-      end
+    it "distinguishes ranges with included and excluded right boundary" do
+      range_exclude = Range.new(nil, 1, true)
+      range_include = Range.new(nil, 1, false)
 
-      it "distinguishes ranges with included and excluded right boundary" do
-        range_exclude = Range.new(nil, 1, true)
-        range_include = Range.new(nil, 1, false)
-
-        range_exclude.should_not == range_include
-      end
+      range_exclude.should_not == range_include
     end
 
     it "allows endless right boundary" do

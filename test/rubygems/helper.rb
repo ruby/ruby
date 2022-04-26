@@ -308,6 +308,9 @@ class Gem::TestCase < Test::Unit::TestCase
 
     FileUtils.mkdir_p @tmp
 
+    @tempdir = Dir.mktmpdir("test_rubygems_", @tmp)
+    @tempdir.tap(&Gem::UNTAINT)
+
     ENV['GEM_VENDOR'] = nil
     ENV['GEMRC'] = nil
     ENV['XDG_CACHE_HOME'] = nil
@@ -324,9 +327,6 @@ class Gem::TestCase < Test::Unit::TestCase
     # This needs to be a new instance since we call use_ui(@ui) when we want to
     # capture output
     Gem::DefaultUserInteraction.ui = Gem::MockGemUi.new
-
-    @tempdir = Dir.mktmpdir("test_rubygems_", @tmp)
-    @tempdir.tap(&Gem::UNTAINT)
 
     ENV["TMPDIR"] = @tempdir
 

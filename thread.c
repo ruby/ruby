@@ -70,6 +70,8 @@
 # include <alloca.h>
 #endif
 
+#define TH_SCHED(th) (&(th)->ractor->threads.sched)
+
 #include "eval_intern.h"
 #include "gc.h"
 #include "hrtime.h"
@@ -174,12 +176,13 @@ static inline int blocking_region_begin(rb_thread_t *th, struct rb_blocking_regi
 					rb_unblock_function_t *ubf, void *arg, int fail_if_interrupted);
 static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region);
 
-#define GVL_UNLOCK_BEGIN(th) do { \
+#define THREAD_BLOCKING_BEGIN(th) do { \
+  struct rb_thread_sched * const sched = TH_SCHED(th); \
   RB_GC_SAVE_MACHINE_CONTEXT(th); \
-  gvl_release(rb_ractor_gvl(th->ractor));
+  thread_sched_to_waiting(sched);
 
-#define GVL_UNLOCK_END(th) \
-  gvl_acquire(rb_ractor_gvl(th->ractor), th); \
+#define THREAD_BLOCKING_END(th) \
+  thread_sched_to_running(sched, th); \
   rb_ractor_thread_switch(th->ractor, th); \
 } while(0)
 
@@ -340,7 +343,7 @@ rb_thread_s_debug_set(VALUE self, VALUE val)
 #ifndef fill_thread_id_str
 # define fill_thread_id_string(thid, buf) ((void *)(uintptr_t)(thid))
 # define fill_thread_id_str(th) (void)0
-# define thread_id_str(th) ((void *)(uintptr_t)(th)->thread_id)
+# define thread_id_str(th) ((void *)(uintptr_t)(th)->nt->thread_id)
 # define PRI_THREAD_ID "p"
 #endif
 
@@ -401,13 +404,6 @@ rb_thread_debug(
 #endif
 
 #include "thread_sync.c"
-
-void
-rb_vm_gvl_destroy(rb_global_vm_lock_t *gvl)
-{
-    gvl_release(gvl);
-    gvl_destroy(gvl);
-}
 
 void
 rb_nativethread_lock_initialize(rb_nativethread_lock_t *lock)
@@ -760,6 +756,7 @@ thread_do_start(rb_thread_t *th)
 }
 
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
+#define thread_sched_to_dead thread_sched_to_waiting
 
 static int
 thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
@@ -782,7 +779,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 #endif // USE_THIRD_PARTY_HEAP
 
     // setup native thread
-    gvl_acquire(rb_ractor_gvl(th->ractor), th);
+    thread_sched_to_running(TH_SCHED(th), th);
     ruby_thread_set_native(th);
 
     // setup ractor
@@ -907,12 +904,12 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
         // after rb_ractor_living_threads_remove()
         // GC will happen anytime and this ractor can be collected (and destroy GVL).
         // So gvl_release() should be before it.
-        gvl_release(rb_ractor_gvl(th->ractor));
+        thread_sched_to_dead(TH_SCHED(th));
         rb_ractor_living_threads_remove(th->ractor, th);
     }
     else {
         rb_ractor_living_threads_remove(th->ractor, th);
-        gvl_release(rb_ractor_gvl(th->ractor));
+        thread_sched_to_dead(TH_SCHED(th));
     }
 
     return 0;
@@ -1556,7 +1553,7 @@ rb_thread_schedule_limits(uint32_t limits_us)
 	if (th->running_time_us >= limits_us) {
 	    thread_debug("rb_thread_schedule/switch start\n");
 	    RB_GC_SAVE_MACHINE_CONTEXT(th);
-	    gvl_yield(rb_ractor_gvl(th->ractor), th);
+	    thread_sched_yield(TH_SCHED(th), th);
             rb_ractor_thread_switch(th->ractor, th);
 	    thread_debug("rb_thread_schedule/switch done\n");
 	}
@@ -1583,7 +1580,7 @@ blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
         rb_ractor_blocking_threads_inc(th->ractor, __FILE__, __LINE__);
 	thread_debug("enter blocking region (%p)\n", (void *)th);
 	RB_GC_SAVE_MACHINE_CONTEXT(th);
-	gvl_release(rb_ractor_gvl(th->ractor));
+	thread_sched_to_waiting(TH_SCHED(th));
 	return TRUE;
     }
     else {
@@ -1599,7 +1596,7 @@ blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region)
     /* entry to ubf_list impossible at this point, so unregister is safe: */
     unregister_ubf_list(th);
 
-    gvl_acquire(rb_ractor_gvl(th->ractor), th);
+    thread_sched_to_running(TH_SCHED(th), th);
     rb_ractor_thread_switch(th->ractor, th);
 
     thread_debug("leave blocking region (%p)\n", (void *)th);
@@ -3347,7 +3344,7 @@ rb_thread_setname(VALUE thread, VALUE name)
     }
     target_th->name = name;
     if (threadptr_initialized(target_th)) {
-	native_set_another_thread_name(target_th->thread_id, name);
+	native_set_another_thread_name(target_th->nt->thread_id, name);
     }
     return name;
 }
@@ -3901,7 +3898,7 @@ rb_thread_priority_set(VALUE thread, VALUE prio)
  * - Mac OS X 10.7 (Lion)
  *   select(2) returns EINVAL if nfds is greater than FD_SET_SIZE and
  *   _DARWIN_UNLIMITED_SELECT (or _DARWIN_C_SOURCE) isn't defined.
- *   http://developer.apple.com/library/mac/#releasenotes/Darwin/SymbolVariantsRelNotes/_index.html
+ *   https://developer.apple.com/library/archive/releasenotes/Darwin/SymbolVariantsRelNotes/index.html
  *
  * When fd_set is not big enough to hold big file descriptors,
  * it should be allocated dynamically.
@@ -4669,7 +4666,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     r->threads.main = th;
     r->status_ = ractor_created;
 
-    gvl_atfork(rb_ractor_gvl(th->ractor));
+    thread_sched_atfork(TH_SCHED(th));
     ubf_list_atfork();
 
     // OK. Only this thread accesses:
@@ -5452,8 +5449,8 @@ Init_Thread(void)
 	/* main thread setting */
 	{
 	    /* acquire global vm lock */
-            rb_global_vm_lock_t *gvl = rb_ractor_gvl(th->ractor);
-	    gvl_acquire(gvl, th);
+            struct rb_thread_sched *sched = TH_SCHED(th);
+            thread_sched_to_running(sched, th);
 
 	    th->pending_interrupt_queue = rb_ary_tmp_new(0);
 	    th->pending_interrupt_queue_checked = 0;

@@ -2239,6 +2239,9 @@ rb_autoload(VALUE mod, ID id, const char *file)
     rb_autoload_str(mod, id, rb_fstring_cstr(file));
 }
 
+static void const_set(VALUE klass, ID id, VALUE val);
+static void const_added(VALUE klass, ID const_name);
+
 void
 rb_autoload_str(VALUE mod, ID id, VALUE file)
 {
@@ -2263,7 +2266,7 @@ rb_autoload_str(VALUE mod, ID id, VALUE file)
 	return;
     }
 
-    rb_const_set(mod, id, Qundef);
+    const_set(mod, id, Qundef);
     tbl = RCLASS_IV_TBL(mod);
     if (tbl && st_lookup(tbl, (st_data_t)autoload, &av)) {
 	tbl = check_autoload_table((VALUE)av);
@@ -2307,6 +2310,8 @@ rb_autoload_str(VALUE mod, ID id, VALUE file)
         ccan_list_add_tail(&ele->constants, &ac->cnode);
         st_insert(tbl, (st_data_t)id, (st_data_t)acv);
     }
+
+    const_added(mod, id);
 }
 
 static void
@@ -3111,14 +3116,14 @@ const_added(VALUE klass, ID const_name)
     }
 }
 
-void
-rb_const_set(VALUE klass, ID id, VALUE val)
+static void
+const_set(VALUE klass, ID id, VALUE val)
 {
     rb_const_entry_t *ce;
 
     if (NIL_P(klass)) {
-	rb_raise(rb_eTypeError, "no class/module to define constant %"PRIsVALUE"",
-		 QUOTE_ID(id));
+        rb_raise(rb_eTypeError, "no class/module to define constant %"PRIsVALUE"",
+                 QUOTE_ID(id));
     }
 
     if (!rb_ractor_main_p() && !rb_ractor_shareable_p(val)) {
@@ -3156,10 +3161,10 @@ rb_const_set(VALUE klass, ID id, VALUE val)
         int val_path_permanent;
         VALUE val_path = classname(val, &val_path_permanent);
         if (NIL_P(val_path) || !val_path_permanent) {
-	    if (klass == rb_cObject) {
+            if (klass == rb_cObject) {
                 set_namespace_path(val, rb_id2str(id));
-	    }
-	    else {
+            }
+            else {
                 int parental_path_permanent;
                 VALUE parental_path = classname(klass, &parental_path_permanent);
                 if (NIL_P(parental_path)) {
@@ -3172,9 +3177,15 @@ rb_const_set(VALUE klass, ID id, VALUE val)
                 else if (!parental_path_permanent && NIL_P(val_path)) {
                     ivar_set(val, tmp_classpath, build_const_path(parental_path, id));
                 }
-	    }
-	}
+            }
+        }
     }
+}
+
+void
+rb_const_set(VALUE klass, ID id, VALUE val)
+{
+    const_set(klass, id, val);
     const_added(klass, id);
 }
 

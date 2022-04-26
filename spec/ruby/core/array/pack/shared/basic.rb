@@ -32,12 +32,6 @@ describe :array_pack_basic_non_float, shared: true do
     d.should_receive(:to_str).and_return("x"+pack_format)
     [@obj, @obj].pack(d).should be_an_instance_of(String)
   end
-
-  ruby_version_is ''...'2.7' do
-    it "taints the output string if the format string is tainted" do
-      [@obj, @obj].pack("x"+pack_format.taint).tainted?.should be_true
-    end
-  end
 end
 
 describe :array_pack_basic_float, shared: true do
@@ -49,12 +43,6 @@ describe :array_pack_basic_float, shared: true do
     d = mock("pack directive")
     d.should_receive(:to_str).and_return("x"+pack_format)
     [1.2, 4.7].pack(d).should be_an_instance_of(String)
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints the output string if the format string is tainted" do
-      [3.2, 2.8].pack("x"+pack_format.taint).tainted?.should be_true
-    end
   end
 end
 

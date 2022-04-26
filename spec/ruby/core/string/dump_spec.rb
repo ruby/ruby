@@ -3,18 +3,6 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "String#dump" do
-  ruby_version_is ''...'2.7' do
-    it "taints the result if self is tainted" do
-      "foo".taint.dump.should.tainted?
-      "foo\n".taint.dump.should.tainted?
-    end
-
-    it "untrusts the result if self is untrusted" do
-      "foo".untrust.dump.should.untrusted?
-      "foo\n".untrust.dump.should.untrusted?
-    end
-  end
-
   it "does not take into account if a string is frozen" do
     "foo".freeze.dump.should_not.frozen?
   end

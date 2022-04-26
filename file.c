@@ -978,7 +978,7 @@ rb_stat_atime(VALUE self)
 
 /*
  *  call-seq:
- *     stat.mtime  ->  aTime
+ *     stat.mtime  ->  time
  *
  *  Returns the modification time of <i>stat</i>.
  *
@@ -994,7 +994,7 @@ rb_stat_mtime(VALUE self)
 
 /*
  *  call-seq:
- *     stat.ctime  ->  aTime
+ *     stat.ctime  ->  time
  *
  *  Returns the change time for <i>stat</i> (that is, the time
  *  directory information about the file was changed, not the file
@@ -1015,7 +1015,7 @@ rb_stat_ctime(VALUE self)
 #if defined(HAVE_STAT_BIRTHTIME)
 /*
  *  call-seq:
- *     stat.birthtime  ->  aTime
+ *     stat.birthtime  ->  time
  *
  *  Returns the birth time for <i>stat</i>.
  *
@@ -2144,7 +2144,7 @@ rb_file_sticky_p(VALUE obj, VALUE fname)
 #ifdef S_ISVTX
     return check3rdbyte(fname, S_ISVTX);
 #else
-    return Qnil;
+    return Qfalse;
 #endif
 }
 
@@ -4035,7 +4035,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 }
 #endif /* _WIN32 */
 
-#define EXPAND_PATH_BUFFER() rb_usascii_str_new(0, MAXPATHLEN + 2)
+#define EXPAND_PATH_BUFFER() rb_usascii_str_new(0, 1)
 
 static VALUE
 str_shrink(VALUE str)

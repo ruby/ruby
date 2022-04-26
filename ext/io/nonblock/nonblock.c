@@ -74,6 +74,46 @@ io_nonblock_set(int fd, int f, int nb)
  *
  * Enables non-blocking mode on a stream when set to
  * +true+, and blocking mode when set to +false+.
+ *
+ * This method set or clear O_NONBLOCK flag for the file descriptor
+ * in <em>ios</em>.
+ *
+ * The behavior of most IO methods is not affected by this flag
+ * because they retry system calls to complete their task
+ * after EAGAIN and partial read/write.
+ * (An exception is IO#syswrite which doesn't retry.)
+ *
+ * This method can be used to clear non-blocking mode of standard I/O.
+ * Since nonblocking methods (read_nonblock, etc.) set non-blocking mode but
+ * they doesn't clear it, this method is usable as follows.
+ *
+ *   END { STDOUT.nonblock = false }
+ *   STDOUT.write_nonblock("foo")
+ *
+ * Since the flag is shared across processes and
+ * many non-Ruby commands doesn't expect standard I/O with non-blocking mode,
+ * it would be safe to clear the flag before Ruby program exits.
+ *
+ * For example following Ruby program leaves STDIN/STDOUT/STDER non-blocking mode.
+ * (STDIN, STDOUT and STDERR are connected to a terminal.
+ * So making one of them nonblocking-mode effects other two.)
+ * Thus cat command try to read from standard input and
+ * it causes "Resource temporarily unavailable" error (EAGAIN).
+ *
+ *   % ruby -e '
+ *   STDOUT.write_nonblock("foo\n")'; cat
+ *   foo
+ *   cat: -: Resource temporarily unavailable
+ *
+ * Clearing the flag makes the behavior of cat command normal.
+ * (cat command waits input from standard input.)
+ *
+ *   % ruby -rio/nonblock -e '
+ *   END { STDOUT.nonblock = false }
+ *   STDOUT.write_nonblock("foo")
+ *   '; cat
+ *   foo
+ *
  */
 static VALUE
 rb_io_nonblock_set(VALUE io, VALUE nb)
@@ -98,8 +138,8 @@ io_nonblock_restore(VALUE arg)
 
 /*
  * call-seq:
- *   io.nonblock {|io| } -> io
- *   io.nonblock(boolean) {|io| } -> io
+ *   io.nonblock {|io| } -> object
+ *   io.nonblock(boolean) {|io| } -> object
  *
  * Yields +self+ in non-blocking mode.
  *

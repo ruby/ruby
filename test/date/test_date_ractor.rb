@@ -2,7 +2,7 @@
 require 'test/unit'
 require 'date'
 
-class TestDateParse < Test::Unit::TestCase
+class TestDateParseRactor < Test::Unit::TestCase
   def code(klass = Date, share: false)
     <<~RUBY.gsub('Date', klass.name)
       share = #{share}

@@ -652,10 +652,23 @@ VALUE rb_io_get_write_io(VALUE io);
 VALUE rb_io_set_write_io(VALUE io, VALUE w);
 
 /**
- * Sets an IO to a "nonblock mode".  This amends the way an IO operates so that
- * instead of waiting for rooms for  read/write, it returns errors.  In case of
- * multiplexed IO  situations it can be  vital for IO operations  not to block.
- * This is the key API to achieve that property.
+ * Instructs the OS to put its internal file structure into "nonblocking mode".
+ * This is  an in-Kernel concept.   Reading from/writing  to that file  using C
+ * function calls would return  -1 with errno set.  However when  it comes to a
+ * ruby program,  we hide that error  behind our `IO#read` method.   Ruby level
+ * `IO#read` blocks  regardless of this flag.   If you want to  avoid blocking,
+ * you should consider using methods like `IO#readpartial`.
+ *
+ * ```ruby
+ * require 'io/nonblock'
+ * STDIN.nonblock = true
+ * STDIN.gets # blocks.
+ * ```
+ *
+ * As of  writing there is  a room  of this API  in Fiber schedulers.   A Fiber
+ * scheduler could be written in a  way its behaviour depends on this property.
+ * You  need an  in-depth  understanding  of how  schedulers  work to  properly
+ * leverage this, though.
  *
  * @note  Note   however  that   nonblocking-ness  propagates   across  process
  *        boundaries.  You must  really carefully watch your  step when turning

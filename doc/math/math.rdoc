@@ -1,0 +1,117 @@
+\Module \Math provides methods for basic trigonometric,
+logarithmic, and transcendental functions, and for extracting roots.
+
+You can write its constants and method calls thus:
+
+  Math::PI      # => 3.141592653589793
+  Math::E       # => 2.718281828459045
+  Math.sin(0.0) # => 0.0
+  Math.cos(0.0) # => 1.0
+
+If you include module \Math, you can write simpler forms:
+
+  include Math
+  PI       # => 3.141592653589793
+  E        # => 2.718281828459045
+  sin(0.0) # => 0.0
+  cos(0.0) # => 1.0
+
+For simplicity, the examples here assume:
+
+  include Math
+  INFINITY = Float::INFINITY
+
+The domains and ranges for the methods
+are denoted by open or closed intervals,
+using, respectively, parentheses or square brackets:
+
+- An open interval does not include the endpoints:
+
+    (-INFINITY, INFINITY)
+
+- A closed interval includes the endpoints:
+
+    [-1.0, 1.0]
+
+- A half-open interval includes one endpoint, but not the other:
+
+   [1.0, INFINITY)
+
+Many values returned by \Math methods are numerical approximations.
+This is because many such values are, in mathematics,
+of infinite precision, while in numerical computation
+the precision is finite.
+
+Thus, in mathematics, <i>cos(π/2)</i> is exactly zero,
+but in our computation <tt>cos(PI/2)</tt> is a number very close to zero:
+
+  cos(PI/2) # => 6.123031769111886e-17
+
+For very large and very small returned values,
+we have added formatted numbers for clarity:
+
+  tan(PI/2)  # => 1.633123935319537e+16   # 16331239353195370.0
+  tan(PI)    # => -1.2246467991473532e-16 # -0.0000000000000001
+
+See class Float for the constants
+that affect Ruby's floating-point arithmetic.
+
+=== What's Here
+
+==== Trigonometric Functions
+
+- ::cos: Returns the cosine of the given argument.
+- ::sin: Returns the sine of the given argument.
+- ::tan: Returns the tangent of the given argument.
+
+==== Inverse Trigonometric Functions
+
+- ::acos: Returns the arc cosine of the given argument.
+- ::asin: Returns the arc sine of the given argument.
+- ::atan: Returns the arc tangent of the given argument.
+- ::atan2: Returns the arg tangent of two given arguments.
+
+==== Hyperbolic Trigonometric Functions
+
+- ::cosh: Returns the hyperbolic cosine of the given argument.
+- ::sinh: Returns the hyperbolic sine of the given argument.
+- ::tanh: Returns the hyperbolic tangent of the given argument.
+
+==== Inverse Hyperbolic Trigonometric Functions
+
+- ::acosh: Returns the inverse hyperbolic cosine of the given argument.
+- ::asinh: Returns the inverse hyperbolic sine of the given argument.
+- ::atanh: Returns the inverse hyperbolic tangent of the given argument.
+
+==== Exponentiation and Logarithmic Functions
+
+- ::exp: Returns the value of a given value raised to a given power.
+- ::log: Returns the logarithm of a given value in a given base.
+- ::log10: Returns the base 10 logarithm of the given argument.
+- ::log2: Returns the base 2 logarithm of the given argument.
+
+==== Fraction and Exponent Functions
+
+- ::frexp: Returns the fraction and exponent of the given argument.
+- ::ldexp: Returns the value for a given fraction and exponent.
+
+==== Root Functions
+
+- ::cbrt: Returns the cube root of the given argument.
+- ::sqrt: Returns the square root of the given argument.
+
+==== Error Functions
+
+- ::erf: Returns the value of the Gauss error function for the given argument.
+- ::erfc: Returns the value of the complementary error function
+  for the given argument.
+
+==== Gamma Functions
+
+- ::gamma: Returns the value of the gamma function for the given argument.
+- ::lgamma: Returns the value of the logarithmic gamma function
+  for the given argument.
+
+==== Hypotenuse Function
+
+- ::hypot: Returns <tt>sqrt(a**2 + b**2)</tt> for the given +a+ and +b+.

@@ -1,11 +1,12 @@
 inherit_from: .rubocop_todo.yml
 
 AllCops:
-  TargetRubyVersion: 2.6
+  TargetRubyVersion: 2.7
   DisplayCopNames: true
   Exclude:
     - command_line/fixtures/bad_syntax.rb
   DisabledByDefault: true
+  NewCops: disable
 
 Layout/TrailingWhitespace:
   Enabled: true
@@ -56,11 +57,51 @@ Lint/UnusedMethodArgument:
 Lint/UselessAssignment:
   Enabled: false
 
-Lint/UselessComparison:
+Lint/BinaryOperatorWithIdenticalOperands:
   Enabled: false
+
+Lint/EmptyConditionalBody:
+  Enabled: false # buggy
 
 Lint/Void:
   Enabled: false
+
+Lint/ConstantDefinitionInBlock:
+  Enabled: false
+
+Lint/RaiseException:
+  Enabled: false
+
+Lint/FloatComparison:
+  Enabled: false
+
+Lint/DeprecatedClassMethods:
+  Enabled: false
+
+Lint/UnreachableLoop:
+  Enabled: false
+
+Lint/MissingSuper:
+  Enabled: false
+
+Lint/UselessMethodDefinition:
+  Enabled: false
+
+Lint/UselessTimes:
+  Enabled: false
+
+Lint/MixedRegexpCaptureTypes:
+  Enabled: false
+
+Lint/DuplicateElsifCondition:
+  Enabled: false
+
+Lint/OutOfRangeRegexpRef:
+  Enabled: false
+
+Lint/ElseLayout:
+  Exclude:
+    - 'language/if_spec.rb'
 
 Lint/EmptyExpression:
   Exclude:

@@ -1433,12 +1433,12 @@ recursive_eql(VALUE s, VALUE s2, int recur)
  *  - <tt>other.class == self.class</tt>.
  *  - For each member name +name+, <tt>other.name.eql?(self.name)</tt>.
  *
- *    Customer = Struct.new(:name, :address, :zip)
- *    joe    = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *    joe_jr = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *    joe_jr.eql?(joe) # => true
- *    joe_jr[:name] = 'Joe Smith, Jr.'
- *    joe_jr.eql?(joe) # => false
+ *     Customer = Struct.new(:name, :address, :zip)
+ *     joe    = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *     joe_jr = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *     joe_jr.eql?(joe) # => true
+ *     joe_jr[:name] = 'Joe Smith, Jr.'
+ *     joe_jr.eql?(joe) # => false
  *
  *  Related: Object#==.
  */

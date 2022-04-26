@@ -2280,7 +2280,7 @@ RULES
     RbConfig.expand(srcdir = srcprefix.dup)
 
     ext = ".#{$OBJEXT}"
-    orig_srcs = Dir[File.join(srcdir, "*.{#{SRC_EXT.join(%q{,})}}")].sort
+    orig_srcs = Dir[File.join(srcdir, "*.{#{SRC_EXT.join(%q{,})}}")]
     if not $objs
       srcs = $srcs || orig_srcs
       $objs = []
@@ -2290,7 +2290,7 @@ RULES
         h
       }
       unless objs.delete_if {|b, f| f.size == 1}.empty?
-        dups = objs.sort.map {|b, f|
+        dups = objs.map {|b, f|
           "#{b[/.*\./]}{#{f.collect {|n| n[/([^.]+)\z/]}.join(',')}}"
         }
         abort "source files duplication - #{dups.join(", ")}"

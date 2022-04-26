@@ -30,12 +30,19 @@ _s_ followed by the letter _t_, so it matches _haystack_, also.
 Note that any Regexp matching will raise a RuntimeError if timeout is set and
 exceeded. See "Timeout" section in detail.
 
+== \Regexp Interpolation
+
+A regexp may contain interpolated strings; trivially:
+
+  foo = 'bar'
+  /#{foo}/ # => /bar/
+
 == <tt>=~</tt> and Regexp#match
 
 Pattern matching may be achieved by using <tt>=~</tt> operator or Regexp#match
 method.
 
-=== <tt>=~</tt> operator
+=== <tt>=~</tt> Operator
 
 <tt>=~</tt> is Ruby's basic pattern-matching operator.  When one operand is a
 regular expression and the other is a string then the regular expression is
@@ -54,7 +61,7 @@ Using <tt>=~</tt> operator with a String and Regexp the <tt>$~</tt> global
 variable is set after a successful match.  <tt>$~</tt> holds a MatchData
 object. Regexp.last_match is equivalent to <tt>$~</tt>.
 
-=== Regexp#match method
+=== Regexp#match Method
 
 The #match method returns a MatchData object:
 
@@ -193,7 +200,7 @@ At least one uppercase character ('H'), at least one lowercase character
 
     "Hello".match(/[[:upper:]]+[[:lower:]]+l{2}o/) #=> #<MatchData "Hello">
 
-=== Greedy match
+=== Greedy Match
 
 Repetition is <i>greedy</i> by default: as many occurrences as possible
 are matched while still allowing the overall match to succeed. By
@@ -211,7 +218,7 @@ Both patterns below match the string. The first uses a greedy quantifier so
     /<.+>/.match("<a><b>")  #=> #<MatchData "<a><b>">
     /<.+?>/.match("<a><b>") #=> #<MatchData "<a>">
 
-=== Possessive match
+=== Possessive Match
 
 A quantifier followed by <tt>+</tt> matches <i>possessively</i>: once it
 has matched it does not backtrack. They behave like greedy quantifiers,
@@ -256,7 +263,7 @@ this backreference when doing substitution:
   "The cat sat in the hat".gsub(/[csh]at/, '\0s')
     # => "The cats sats in the hats"
 
-=== Named captures
+=== Named Captures
 
 Capture groups can be referred to by name when defined with the
 <tt>(?<</tt><i>name</i><tt>>)</tt> or <tt>(?'</tt><i>name</i><tt>')</tt>
@@ -672,9 +679,10 @@ regexp's encoding can be explicitly fixed by supplying
        # raises Encoding::CompatibilityError: incompatible encoding regexp match
        #         (ISO-8859-1 regexp with UTF-8 string)
 
-== Special global variables
+== \Regexp Global Variables
 
 Pattern matching sets some global variables :
+
 * <tt>$~</tt> is equivalent to Regexp.last_match;
 * <tt>$&</tt> contains the complete matched text;
 * <tt>$`</tt> contains string before match;

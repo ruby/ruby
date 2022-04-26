@@ -21,13 +21,6 @@ describe "String#delete_prefix" do
     r.should == s
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints resulting strings when other is tainted" do
-      'hello'.taint.delete_prefix('hell').should.tainted?
-      'hello'.taint.delete_prefix('').should.tainted?
-    end
-  end
-
   it "doesn't set $~" do
     $~ = nil
 

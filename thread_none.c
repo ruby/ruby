@@ -23,29 +23,31 @@
 
 // Do nothing for GVL
 static void
-gvl_acquire(rb_global_vm_lock_t *gvl, rb_thread_t *th)
+thread_sched_to_running(struct rb_thread_sched *sched, rb_thread_t *th)
 {
 }
 
 static void
-gvl_release(rb_global_vm_lock_t *gvl)
+thread_sched_to_waiting(struct rb_thread_sched *sched)
 {
 }
 
 static void
-gvl_yield(rb_global_vm_lock_t *gvl, rb_thread_t *th)
+thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
 {
 }
 
 void
-rb_gvl_init(rb_global_vm_lock_t *gvl)
+rb_thread_sched_init(struct rb_thread_sched *sched)
 {
 }
 
+#if 0
 static void
-gvl_destroy(rb_global_vm_lock_t *gvl)
+rb_thread_sched_destroy(struct rb_thread_sched *sched)
 {
 }
+#endif
 
 // Do nothing for mutex guard
 void
@@ -124,11 +126,11 @@ ruby_thread_set_native(rb_thread_t *th)
 }
 
 void
-Init_native_thread(rb_thread_t *th)
+Init_native_thread(rb_thread_t *main_th)
 {
     // no TLS setup and no thread id setup
-    ruby_thread_set_native(th);
-    fill_thread_id_str(th);
+    ruby_thread_set_native(main_th);
+    fill_thread_id_str(main_th);
 }
 
 static void

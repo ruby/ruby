@@ -62,7 +62,7 @@ involving new files <tt>doc/*.rdoc</tt>:
 
 - For a method, things are different.
   Documenting a method as above disables the "click to toggle source" feature
-  in the rendered documentaion.
+  in the rendered documentation.
 
   Therefore it's best to use file inclusion:
 

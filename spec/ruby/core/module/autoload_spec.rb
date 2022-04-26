@@ -18,16 +18,14 @@ describe "Module#autoload?" do
     ModuleSpecs::Autoload::Child.autoload?(:AnotherAutoload).should == "another_autoload.rb"
   end
 
-  ruby_version_is "2.7" do
-    it "returns nil if an ancestor defined that autoload but recursion is disabled" do
-      ModuleSpecs::Autoload::Parent.autoload :InheritedAutoload, "inherited_autoload.rb"
-      ModuleSpecs::Autoload::Child.autoload?(:InheritedAutoload, false).should be_nil
-    end
+  it "returns nil if an ancestor defined that autoload but recursion is disabled" do
+    ModuleSpecs::Autoload::Parent.autoload :InheritedAutoload, "inherited_autoload.rb"
+    ModuleSpecs::Autoload::Child.autoload?(:InheritedAutoload, false).should be_nil
+  end
 
-    it "returns the name of the file that will be loaded if recursion is disabled but the autoload is defined on the class itself" do
-      ModuleSpecs::Autoload::Child.autoload :ChildAutoload, "child_autoload.rb"
-      ModuleSpecs::Autoload::Child.autoload?(:ChildAutoload, false).should == "child_autoload.rb"
-    end
+  it "returns the name of the file that will be loaded if recursion is disabled but the autoload is defined on the class itself" do
+    ModuleSpecs::Autoload::Child.autoload :ChildAutoload, "child_autoload.rb"
+    ModuleSpecs::Autoload::Child.autoload?(:ChildAutoload, false).should == "child_autoload.rb"
   end
 end
 
@@ -514,9 +512,7 @@ describe "Module#autoload" do
   it "does not load the file when accessing the constants table of the module" do
     ModuleSpecs::Autoload.autoload :P, @non_existent
     ModuleSpecs::Autoload.const_defined?(:P).should be_true
-    ruby_bug "[Bug #15780]", ""..."2.7" do
-      ModuleSpecs::Autoload.const_defined?("P").should be_true
-    end
+    ModuleSpecs::Autoload.const_defined?("P").should be_true
   end
 
   it "loads the file when opening a module that is the autoloaded constant" do

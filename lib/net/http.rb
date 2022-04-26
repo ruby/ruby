@@ -698,6 +698,8 @@ module Net   #:nodoc:
       @continue_timeout = nil
       @max_retries = 1
       @debug_output = nil
+      @response_body_encoding = false
+      @ignore_eof = true
 
       @proxy_from_env = false
       @proxy_uri      = nil
@@ -744,6 +746,18 @@ module Net   #:nodoc:
 
     # The local port used to establish the connection.
     attr_accessor :local_port
+
+    # The encoding to use for the response body.  If Encoding, uses the
+    # specified encoding.  If other true value, tries to detect the response
+    # body encoding.
+    attr_reader :response_body_encoding
+
+    # Set the encoding to use for the response body.  If given a String, find
+    # the related Encoding.
+    def response_body_encoding=(value)
+      value = Encoding.find(value) if value.is_a?(String)
+      @response_body_encoding = value
+    end
 
     attr_writer :proxy_from_env
     attr_writer :proxy_address
@@ -825,6 +839,10 @@ module Net   #:nodoc:
     # Net::HTTP reuses the TCP/IP socket used by the previous communication.
     # The default value is 2 seconds.
     attr_accessor :keep_alive_timeout
+
+    # Whether to ignore EOF when reading response bodies with defined
+    # Content-Length headers. For backwards compatibility, the default is true.
+    attr_accessor :ignore_eof
 
     # Returns true if the HTTP session has been started.
     def started?
@@ -1033,10 +1051,14 @@ module Net   #:nodoc:
           end
         end
         @ssl_context.set_params(ssl_parameters)
-        @ssl_context.session_cache_mode =
-          OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT |
-          OpenSSL::SSL::SSLContext::SESSION_CACHE_NO_INTERNAL_STORE
-        @ssl_context.session_new_cb = proc {|sock, sess| @ssl_session = sess }
+        unless @ssl_context.session_cache_mode.nil? # a dummy method on JRuby
+          @ssl_context.session_cache_mode =
+              OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT |
+                  OpenSSL::SSL::SSLContext::SESSION_CACHE_NO_INTERNAL_STORE
+        end
+        if @ssl_context.respond_to?(:session_new_cb) # not implemented under JRuby
+          @ssl_context.session_new_cb = proc {|sock, sess| @ssl_session = sess }
+        end
 
         # Still do the post_connection_check below even if connecting
         # to IP address
@@ -1592,6 +1614,8 @@ module Net   #:nodoc:
           begin
             res = HTTPResponse.read_new(@socket)
             res.decode_content = req.decode_content
+            res.body_encoding = @response_body_encoding
+            res.ignore_eof = @ignore_eof
           end while res.kind_of?(HTTPInformation)
 
           res.uri = req.uri

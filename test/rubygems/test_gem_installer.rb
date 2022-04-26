@@ -1221,15 +1221,13 @@ gem 'other', version
   def test_install_missing_dirs
     installer = setup_base_installer
 
-    FileUtils.rm_f File.join(Gem.dir, 'cache')
-    FileUtils.rm_f File.join(Gem.dir, 'doc')
-    FileUtils.rm_f File.join(Gem.dir, 'specifications')
+    FileUtils.rm_rf File.join(Gem.dir, 'doc')
+    FileUtils.rm_rf File.join(Gem.dir, 'specifications')
 
     use_ui @ui do
       installer.install
     end
 
-    assert_directory_exists File.join(Gem.dir, 'cache')
     assert_directory_exists File.join(Gem.dir, 'doc')
     assert_directory_exists File.join(Gem.dir, 'specifications')
 
@@ -2237,7 +2235,7 @@ gem 'other', version
   def test_default_gem_without_wrappers
     installer = setup_base_installer
 
-    FileUtils.rm_f File.join(Gem.dir, 'specifications')
+    FileUtils.rm_rf File.join(Gem.default_dir, 'specifications')
 
     installer.wrappers = false
     installer.options[:install_as_default] = true

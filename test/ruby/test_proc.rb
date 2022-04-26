@@ -445,6 +445,11 @@ class TestProc < Test::Unit::TestCase
     assert_equal(@@line_of_source_location_test, lineno, 'Bug #2427')
   end
 
+  def test_binding_error_unless_ruby_frame
+    define_singleton_method :binding_from_c!, method(:binding).to_proc >> ->(bndg) {bndg}
+    assert_raise(RuntimeError) { binding_from_c! }
+  end
+
   def test_proc_lambda
     assert_raise(ArgumentError) { proc }
     assert_raise(ArgumentError) { assert_warn(/deprecated/) {lambda} }

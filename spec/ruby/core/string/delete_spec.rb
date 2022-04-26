@@ -68,15 +68,6 @@ describe "String#delete" do
     -> { "hello".delete("^h-e") }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints result when self is tainted" do
-      "hello".taint.delete("e").should.tainted?
-      "hello".taint.delete("a-z").should.tainted?
-
-      "hello".delete("e".taint).should_not.tainted?
-    end
-  end
-
   it "tries to convert each set arg to a string using to_str" do
     other_string = mock('lo')
     other_string.should_receive(:to_str).and_return("lo")
