@@ -3190,8 +3190,7 @@ rb_opts_exception_p(VALUE opts, int default_value)
  *
  *  Tries to convert +object+ to an integer
  *  using +to_int+ first and +to_i+ second;
- *  exception: when +object+ is a string, does _not_ call String#to_i
- *  (see below).
+ *  see below for exceptions.
  *
  *  With integer argument +object+ given, returns +object+:
  *
@@ -3232,6 +3231,9 @@ rb_opts_exception_p(VALUE opts, int default_value)
  *    Integer(' 100 ')      # => 100
  *    Integer('-1_0_0', 16) # => -256
  *
+ *
+ *
+ *
  *  Examples with +object+ of various other classes:
  *
  *    Integer(Rational(9, 10))  # => 0  # Rounds toward zero.
@@ -3245,6 +3247,7 @@ rb_opts_exception_p(VALUE opts, int default_value)
  *  With optional keyword argument +exception+ given as +true+ (the default):
  *
  *  - Raises TypeError if +object+ does not respond to +to_int+ or +to_i+.
+ *  - Raises TypeError if +object+ is +nil+.
  *  - Raise ArgumentError if +object+ is an invalid string.
  *
  *  With +exception+ given as +false+, an exception of any kind is suppressed
