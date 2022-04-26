@@ -3193,24 +3193,16 @@ rb_opts_exception_p(VALUE opts, int default_value)
  *  exception: when +object+ is a string, does _not_ call String#to_i
  *  (see below).
  *
- *  With numeric argument +object+ given,
- *  returns <tt>object.to_int</tt>:
+ *  With integer argument +object+ given, returns +object+:
  *
  *    Integer(1)                # => 1
  *    Integer(-1)               # => -1
+ *
+ *  With floating-point argument +object+ given,
+ *  returns +object+ truncated to an intger:
+ *
  *    Integer(1.9)              # => 1  # Rounds toward zero.
  *    Integer(-1.9)             # => -1 # Rounds toward zero.
- *    Integer(Rational(9, 10))  # => 0  # Rounds toward zero.
- *    Integer(Rational(-9, 10)) # => 0  # Rounds toward zero.
- *    Integer(Complex(2, 0))    # => 2  # Imaginary part must be zero.
- *
- *  With these non-string arguments given,
- *  returns <tt>object.to_i</tt>:
- *
- *    Integer(Time.now)          # => 1650974042
- *    Integer(ARGF)              # => 0
- *    Integer($stderr)           # => 2
- *    Integer(File.new('t.txt')) # => 3
  *
  *  With string argument +object+ and zero +base+ given,
  *  returns +object+ converted to an integer in base 10:
@@ -3225,19 +3217,30 @@ rb_opts_exception_p(VALUE opts, int default_value)
  *    Integer('0b100') # => 4   # Leading '0b', specifies base 2.
  *    Integer('0x100') # => 256 # Leading '0x' specifies base 16.
  *
- *  With string argument +object+ and non-zero +base+ (in range 2..36) given,
+ *  With a non-zero +base+ (in range 2..36) given
+ *  (in which case +object+ must be a string),
  *  returns +object+ converted to an integer in the given base:
  *
- *    Integer('100', 2)     # => 4
- *    Integer('100', 8)     # => 64
- *    Integer('100', 16)    # => 256
- *    Integer('-100', 16)   # => -256
+ *    Integer('100', 2)   # => 4
+ *    Integer('100', 8)   # => 64
+ *    Integer('100', 16)  # => 256
+ *    Integer('-100', 16) # => -256
  *
- *  In all cases above, surrounding whitespace and embedded underscores
+ *  When converting strings, surrounding whitespace and embedded underscores
  *  are allowed and ignored:
  *
- *    Integer('-1_0_0', 16) # => -256
  *    Integer(' 100 ')      # => 100
+ *    Integer('-1_0_0', 16) # => -256
+ *
+ *  Examples with +object+ of various other classes:
+ *
+ *    Integer(Rational(9, 10))  # => 0  # Rounds toward zero.
+ *    Integer(Rational(-9, 10)) # => 0  # Rounds toward zero.
+ *    Integer(Complex(2, 0))    # => 2  # Imaginary part must be zero.
+ *    Integer(Time.now)          # => 1650974042
+ *    Integer(ARGF)              # => 0
+ *    Integer($stderr)           # => 2
+ *    Integer(File.new('t.txt')) # => 3
  *
  *  With optional keyword argument +exception+ given as +true+ (the default):
  *
