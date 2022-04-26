@@ -12,7 +12,8 @@ class Gem::Commands::OwnerCommand < Gem::Command
   def description # :nodoc:
     <<-EOF
 The owner command lets you add and remove owners of a gem on a push
-server (the default is https://rubygems.org).
+server (the default is https://rubygems.org). Multiple owners can be
+added or removed at the same time, if the flag is given multiple times.
 
 The owner of a gem has the permission to push new versions, yank existing
 versions or edit the HTML page of the gem.  Be careful of who you give push
@@ -35,11 +36,11 @@ permission to.
     add_otp_option
     defaults.merge! :add => [], :remove => []
 
-    add_option '-a', '--add EMAIL', 'Add an owner' do |value, options|
+    add_option '-a', '--add NEW_OWNER', 'Add an owner by email or handle' do |value, options|
       options[:add] << value
     end
 
-    add_option '-r', '--remove EMAIL', 'Remove an owner' do |value, options|
+    add_option '-r', '--remove OLD_OWNER', 'Remove an owner by email or handle' do |value, options|
       options[:remove] << value
     end
 
