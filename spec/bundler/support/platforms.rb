@@ -104,10 +104,10 @@ module Spec
     end
 
     def lockfile_platforms
-      lockfile_platforms_for([specific_local_platform])
+      lockfile_platforms_for(specific_local_platform)
     end
 
-    def lockfile_platforms_for(platforms)
+    def lockfile_platforms_for(*platforms)
       platforms.map(&:to_s).sort.join("\n  ")
     end
   end
