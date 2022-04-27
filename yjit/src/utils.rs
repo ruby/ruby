@@ -1,3 +1,5 @@
+#![allow(dead_code)] // Some functions for print debugging in here
+
 use crate::asm::x86_64::*;
 use crate::asm::*;
 use crate::cruby::*;
@@ -50,6 +52,25 @@ impl IntoUsize for u8 {
     }
 }
 
+/// Compute an offset in bytes of a given struct field
+#[allow(unused)]
+macro_rules! offset_of {
+    ($struct_type:ty, $field_name:tt) => {{
+        // This is basically the exact example for
+        // "creating a pointer to uninitialized data" from `std::ptr::addr_of_mut`.
+        // We make a dummy local that hopefully is optimized away because we never
+        // read or write its contents. Doing this dance to avoid UB.
+        let mut instance = std::mem::MaybeUninit::<$struct_type>::uninit();
+
+        let base_ptr = instance.as_mut_ptr();
+        let field_ptr = unsafe { std::ptr::addr_of_mut!((*base_ptr).$field_name) };
+
+        (field_ptr as usize) - (base_ptr as usize)
+    }};
+}
+#[allow(unused)]
+pub(crate) use offset_of;
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -65,6 +86,18 @@ mod tests {
         assert_eq!(min, u32::MIN.try_into().unwrap());
         let max: usize = u32::MAX.as_usize();
         assert_eq!(max, u32::MAX.try_into().unwrap());
+    }
+
+    #[test]
+    fn test_offset_of() {
+        #[repr(C)]
+        struct Foo {
+            a: u8,
+            b: u64,
+        }
+
+        assert_eq!(0, offset_of!(Foo, a), "C99 6.7.2.1p13 says no padding at the front");
+        assert_eq!(8, offset_of!(Foo, b), "ABI dependent, but should hold");
     }
 }
 
@@ -170,7 +203,7 @@ pub fn print_value(cb: &mut CodeBlock, opnd: X86Opnd) {
     pop_regs(cb);
 }
 
-// Generate code to print constant string to stdout
+/// Generate code to print constant string to stdout
 pub fn print_str(cb: &mut CodeBlock, str: &str) {
     extern "sysv64" fn print_str_cfun(ptr: *const u8, num_bytes: usize) {
         unsafe {

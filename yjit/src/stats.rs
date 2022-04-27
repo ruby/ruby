@@ -1,6 +1,8 @@
 //! Everything related to the collection of runtime stats in YJIT
 //! See the stats feature and the --yjit-stats command-line option
 
+#![allow(dead_code)] // Counters are only used with the stats features
+
 use crate::codegen::CodegenGlobals;
 use crate::cruby::*;
 use crate::options::*;
@@ -12,17 +14,17 @@ static mut EXIT_OP_COUNT: [u64; VM_INSTRUCTION_SIZE] = [0; VM_INSTRUCTION_SIZE];
 // Macro to declare the stat counters
 macro_rules! make_counters {
     ($($counter_name:ident,)+) => {
-        // Struct containing the counter values
+        /// Struct containing the counter values
         #[derive(Default, Debug)]
         pub struct Counters { $(pub $counter_name: u64),+ }
 
-        // Global counters instance, initialized to zero
+        /// Global counters instance, initialized to zero
         pub static mut COUNTERS: Counters = Counters { $($counter_name: 0),+ };
 
-        // Counter names constant
+        /// Counter names constant
         const COUNTER_NAMES: &'static [&'static str] = &[ $(stringify!($counter_name)),+ ];
 
-        // Map a counter name string to a counter pointer
+        /// Map a counter name string to a counter pointer
         fn get_counter_ptr(name: &str) -> *mut u64 {
             match name {
                 $( stringify!($counter_name) => { ptr_to_counter!($counter_name) } ),+

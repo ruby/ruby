@@ -10,8 +10,7 @@ use std::cell::*;
 use std::hash::{Hash, Hasher};
 use std::mem;
 use std::mem::size_of;
-use std::ptr;
-use std::rc::{Rc, Weak};
+use std::rc::{Rc};
 use InsnOpnd::*;
 use TempMapping::*;
 
@@ -35,7 +34,10 @@ pub enum Type {
     Array,
     Hash,
     ImmSymbol,
+
+    #[allow(unused)]
     HeapSymbol,
+
     String,
 }
 
@@ -242,6 +244,7 @@ struct Branch {
     end_addr: Option<CodePtr>,
 
     // Context right after the branch instruction
+    #[allow(unused)] // set but not read at the moment
     src_ctx: Context,
 
     // Branch target blocks and their contexts
@@ -416,7 +419,6 @@ pub unsafe fn load_iseq_payload(iseq: IseqPtr) -> Option<&'static mut IseqPayloa
 
 /// Get the payload object associated with an iseq. Create one if none exists.
 fn get_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
-    use core::ffi::c_void;
     type VoidPtr = *mut c_void;
 
     let payload_non_null = unsafe {
@@ -799,10 +801,12 @@ impl Block {
         self.ctx
     }
 
+    #[allow(unused)]
     pub fn get_start_addr(&self) -> Option<CodePtr> {
         self.start_addr
     }
 
+    #[allow(unused)]
     pub fn get_end_addr(&self) -> Option<CodePtr> {
         self.end_addr
     }
@@ -1018,11 +1022,7 @@ impl Context {
 
     /// Get the currently tracked type for a local variable
     pub fn get_local_type(&self, idx: usize) -> Type {
-        if idx > MAX_LOCAL_TYPES {
-            return Type::Unknown;
-        }
-
-        return self.local_types[idx];
+        *self.local_types.get(idx).unwrap_or(&Type::Unknown)
     }
 
     /// Upgrade (or "learn") the type of an instruction operand
@@ -1251,6 +1251,7 @@ impl Context {
 impl BlockId {
     /// Print Ruby source location for debugging
     #[cfg(debug_assertions)]
+    #[allow(dead_code)]
     pub fn dump_src_loc(&self) {
         unsafe { rb_yjit_dump_iseq_loc(self.iseq, self.idx) }
     }
