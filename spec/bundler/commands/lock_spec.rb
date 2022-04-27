@@ -275,11 +275,11 @@ RSpec.describe "bundle lock" do
         remote: #{file_uri_for(gem_repo1)}/
         specs:
           platform_specific (1.0)
-          platform_specific (1.0-x86-linux)
+          platform_specific (1.0-x86-64_linux)
 
       PLATFORMS
         ruby
-        x86-linux
+        x86_64-linux
 
       DEPENDENCIES
         platform_specific
