@@ -3374,7 +3374,7 @@ make_zombie(rb_objspace_t *objspace, VALUE obj, void (*dfree)(void *), void *dat
     VALUE prev, next = heap_pages_deferred_final;
     do {
         zombie->next = prev = next;
-        next = RUBY_ATOMIC_VALUE_CAS(heap_pages_deferred_final, prev, obj);
+        next = RUBY_ATOMIC_VALUE_CAS(heap_pages_deferred_final, prev, (VALUE)zombie);
     } while (next != prev);
 
     // With MMTk, we decouple deferred jobs from memory management.
