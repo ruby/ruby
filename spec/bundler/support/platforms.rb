@@ -21,7 +21,7 @@ module Spec
     end
 
     def linux
-      Gem::Platform.new(["x86", "linux", nil])
+      Gem::Platform.new("x86_64-linux")
     end
 
     def x86_mswin32
