@@ -98,7 +98,7 @@ brew install openssl readline libyaml
 
 # Configure in dev (debug) mode for development, build and install
 ./autogen.sh
-./configure --enable-yjit=dev --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc --disable--install-rdoc --with-opt-dir=$(brew --prefix openssl):$(brew --prefix readline):$(brew --prefix libyaml)
+./configure --enable-yjit=dev --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc --disable--install-rdoc --with-opt-dir="$(brew --prefix openssl):$(brew --prefix readline):$(brew --prefix libyaml)"
 make -j install
 ```
 
