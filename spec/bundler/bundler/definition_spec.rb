@@ -154,7 +154,7 @@ RSpec.describe Bundler::Definition do
             only_java (1.1-java)
 
         PLATFORMS
-          #{lockfile_platforms_for(["java", specific_local_platform])}
+          #{lockfile_platforms_for("java", specific_local_platform)}
 
         DEPENDENCIES
           only_java
