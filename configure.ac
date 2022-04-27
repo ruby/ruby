@@ -2822,6 +2822,9 @@ AS_CASE([$coroutine_type], [yes|''], [
         [powerpc64le-freebsd*], [
             coroutine_type=ppc64le
         ],
+        [riscv64-freebsd*], [
+            coroutine_type=riscv64
+        ],
         [x86_64-netbsd*], [
             coroutine_type=amd64
         ],
