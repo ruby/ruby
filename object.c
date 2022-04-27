@@ -3222,7 +3222,6 @@ rb_opts_exception_p(VALUE opts, int default_value)
  *
  *    Integer('100', 2)   # => 4
  *    Integer('100', 8)   # => 64
- *    Integer('100', 16)  # => 256
  *    Integer('-100', 16) # => -256
  *
  *  When converting strings, surrounding whitespace and embedded underscores
@@ -3231,18 +3230,11 @@ rb_opts_exception_p(VALUE opts, int default_value)
  *    Integer(' 100 ')      # => 100
  *    Integer('-1_0_0', 16) # => -256
  *
- *
- *
- *
  *  Examples with +object+ of various other classes:
  *
- *    Integer(Rational(9, 10))  # => 0  # Rounds toward zero.
- *    Integer(Rational(-9, 10)) # => 0  # Rounds toward zero.
- *    Integer(Complex(2, 0))    # => 2  # Imaginary part must be zero.
- *    Integer(Time.now)          # => 1650974042
- *    Integer(ARGF)              # => 0
- *    Integer($stderr)           # => 2
- *    Integer(File.new('t.txt')) # => 3
+ *    Integer(Rational(9, 10)) # => 0  # Rounds toward zero.
+ *    Integer(Complex(2, 0))   # => 2  # Imaginary part must be zero.
+ *    Integer(Time.now)        # => 1650974042
  *
  *  With optional keyword argument +exception+ given as +true+ (the default):
  *
