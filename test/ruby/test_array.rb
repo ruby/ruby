@@ -1439,6 +1439,14 @@ class TestArray < Test::Unit::TestCase
     assert_raise(FrozenError) { fa.replace(42) }
   end
 
+  def test_replace_wb_variable_width_alloc
+    small_embed = []
+    4.times { GC.start } # age small_embed
+    large_embed = [1, 2, 3, 4, 5, Array.new] # new young object
+    small_embed.replace(large_embed) # adds old to young reference
+    GC.verify_internal_consistency
+  end
+
   def test_reverse
     a = @cls[*%w( dog cat bee ant )]
     assert_equal(@cls[*%w(ant bee cat dog)], a.reverse)

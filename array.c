@@ -4680,14 +4680,16 @@ rb_ary_replace(VALUE copy, VALUE orig)
      * contents of orig. */
     else if (ARY_EMBED_P(orig)) {
         long len = ARY_EMBED_LEN(orig);
-
         VALUE *ptr = ary_heap_alloc(copy, len);
-        MEMCPY(ptr, ARY_EMBED_PTR(orig), VALUE, len);
 
         FL_UNSET_EMBED(copy);
         ARY_SET_PTR(copy, ptr);
         ARY_SET_LEN(copy, len);
         ARY_SET_CAPA(copy, len);
+
+        // No allocation and exception expected that could leave `copy` in a
+        // bad state from the edits above.
+        ary_memcpy(copy, 0, len, RARRAY_CONST_PTR_TRANSIENT(orig));
     }
 #endif
     /* Otherwise, orig is on heap and copy does not have enough space to embed
