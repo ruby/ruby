@@ -402,7 +402,7 @@ impl IseqPayload {
         let version_map = mem::take(&mut self.version_map);
 
         // Turn it into an iterator that owns the blocks and return
-        version_map.into_iter().flat_map(|versions| versions)
+        version_map.into_iter().flatten()
     }
 }
 
@@ -1718,8 +1718,8 @@ pub fn gen_branch(
 
     // Get the branch targets or stubs
     let dst_addr0 = get_branch_target(target0, ctx0, &branchref, 0, ocb);
-    let dst_addr1 = if ctx1.is_some() {
-        get_branch_target(target1.unwrap(), ctx1.unwrap(), &branchref, 1, ocb)
+    let dst_addr1 = if let Some(ctx) = ctx1 {
+        get_branch_target(target1.unwrap(), ctx, &branchref, 1, ocb)
     } else {
         None
     };
@@ -1733,8 +1733,8 @@ pub fn gen_branch(
     branch.targets[0] = Some(target0);
     branch.targets[1] = target1;
     branch.target_ctxs[0] = *ctx0;
-    branch.target_ctxs[1] = if ctx1.is_some() {
-        *ctx1.unwrap()
+    branch.target_ctxs[1] = if let Some(&ctx) = ctx1 {
+        ctx
     } else {
         Context::default()
     };
@@ -1803,12 +1803,11 @@ pub fn defer_compilation(
         panic!("Double defer!");
     }
 
-    let mut next_ctx = cur_ctx.clone();
+    let mut next_ctx = *cur_ctx;
 
-    if next_ctx.chain_depth >= u8::MAX {
+    if next_ctx.chain_depth == u8::MAX {
         panic!("max block version chain depth reached!");
     }
-
     next_ctx.chain_depth += 1;
 
     let block_rc = jit.get_block();

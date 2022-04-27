@@ -225,7 +225,7 @@ impl CodeBlock {
     // Get a direct pointer into the executable memory block
     pub fn get_ptr(&self, offset: usize) -> CodePtr {
         unsafe {
-            let ptr = self.mem_block.offset(offset as isize);
+            let ptr = self.mem_block.add(offset);
             CodePtr(ptr)
         }
     }

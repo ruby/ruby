@@ -1295,12 +1295,12 @@ pub fn sub(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) {
 fn resize_opnd(opnd: X86Opnd, num_bits: u8) -> X86Opnd {
     match opnd {
         X86Opnd::Reg(reg) => {
-            let mut cloned = reg.clone();
+            let mut cloned = reg;
             cloned.num_bits = num_bits;
             X86Opnd::Reg(cloned)
         },
         X86Opnd::Mem(mem) => {
-            let mut cloned = mem.clone();
+            let mut cloned = mem;
             cloned.num_bits = num_bits;
             X86Opnd::Mem(cloned)
         },
