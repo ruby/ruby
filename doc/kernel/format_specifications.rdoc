@@ -1,0 +1,176 @@
+== Format Specifications
+
+Several Ruby core classes have instance method +printf+ or +sprintf+:
+
+- ARGF#printf
+- IO#printf
+- Kernel#printf
+- Kernel#sprintf
+
+Each of these methods takes:
+
+- Argument +format_string+, which has zero or more
+  embedded _format_ _specifications_ (see below).
+- Arguments <tt>*arguments</tt>, which are zero or more objects to be formatted.
+
+Example calling sequence:
+
+  sprintf(format_string, *arguments)
+
+Each of these methods returns the string resulting from replacing each
+format specification embedded in +format_string+ with a string form
+of the corresponding argument among +arguments+.
+
+A simple example:
+
+  sprintf('Name: %s; value: %d', 'Foo', 0) # => "Name: Foo; value: 0"
+
+A format specification has the form:
+
+  %[flags][width][.precision]type
+
+and consists of:
+
+- A leading percent character.
+- Zero or more _flags_ (each is a character).
+- An optional _width_ specifier (an integer).
+- An optional _precision_ specifier (a period followed by a non-negative integer).
+- A _type_ specifier (a character).
+
+Except for the leading percent character,
+the only required part is the type specifier, so we begin with that.
+
+=== Type Specifiers
+
+==== \Integer Type Specifiers
+
+- +b+: Convert +argument+ as a binary integer;
+  prefix with +0b+ if flag <tt>#</tt> is used.
+  See {Specifier b}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+b].
+- +B+: Convert +argument+ as a binary integer;
+  prefix with +0B+ if flag <tt>#</tt> is used.
+  See {Specifier b}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+b].
+- +d+, +i+, or +u+: Convert +argument+ as a decimal integer.
+  See {Specifier d}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+d].
+- +o+: Convert +argument+ as an octal integer.
+  See {Specifier o}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+o].
+- +x+: Convert +argument+ as a hexadecimal integer;
+  prefix with +0x+ if flag <tt>#</tt> is used.
+  See {Specifier x}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+x].
+- +X+: Convert +argument+ as a hexadecimal integer;
+  prefix with +0X+ if flag <tt>#</tt> is used.
+  See {Specifier X}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+X].
+
+==== Floating-Point Type Specifiers
+
+- +e+: Convert +argument+ in
+  {scientific notation}[https://en.wikipedia.org/wiki/Scientific_notation]
+  using a lowercase +e+.
+  See {Specifier e}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+e].
+- +E+: Convert +argument+ in
+  {scientific notation}[https://en.wikipedia.org/wiki/Scientific_notation]
+  using a lowercase +E+.
+  See {Specifier E}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+E].
+- +f+: Convert +argument+ as a decimal floating-point number.
+  See {Specifier f}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+f].
+- +g+: Convert +argument+ as a decimal floating-point number (like +f+)
+  or in scientific notation (like +e+).
+  See {Specifier g}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+g].
+- +G+: Convert +argument+ as a decimal floating-point number (like +f+)
+  or in scientific notation (like +E+).
+  See {Specifier G}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+G].
+- +a+: Convert +argument as hexadecimal floating-point number
+  using lowercase +x+ and +p+.
+  See {Specifier a}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+a].
+- +A+: Convert +argument as hexadecimal floating-point number
+  using uppercase +X+ and +P+.
+  See {Specifier A}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+A].
+
+==== Other Type Specifiers
+
+- +c+: Convert +argument+ to a character.
+  See {Specifier c}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+c].
+- +p+: Convert +argument+ to a string via <tt>argument.inspect</tt>.
+  See {Specifier p}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+p].
+- +s+: Convert +argument+ to a string via <tt>argument.to_s</tt>.
+  See {Specifier s}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+s].
+- <tt>%</tt>: No conversion; retain a single percent character.
+  See {Specifier %}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+-25].
+
+=== Flags
+
+- <tt><space></tt>: Insert a space before a non-negative number:
+
+    format('%d', 10)  # => "10"
+    format('% d', 10) # => " 10"
+
+  Insert a minus sign for negative value:
+
+    XXXXXXXXXXXXXXXXXXXXXX
+
+- <tt>#</tt>: Use an alternate format; varies among types:
+
+    format('%x', 100)  # => "64"
+    format('%#x', 100) # => "0x64"
+
+- <tt>+</tt>: Add a leading plus sign for a non-negative number:
+
+    format('%x', 100)  # => "64"
+    format('%+x', 100) # => "+64"
+
+- <tt>-</tt>: Left justify the value in its field:
+
+    format('%6d', 100)  # => "   100"
+    format('%-6d', 100) # => "100   "
+
+- <tt>0</tt>:
+
+    format('%6d', 100)  # => "   100"
+    format('%06d', 100) # => "000100"
+
+- <tt>*</tt>: Use the next argument as the field width:
+
+    sprintf('%d', 20, 14)  # => "20"
+    sprintf('%*d', 20, 14) # => "                  14"
+
+- <tt><digit>$</tt>:
+
+    sprintf("%s %s", 'world', 'hello')     # => "world hello"
+    sprintf("%2$s %1$s", 'world', 'hello') # => "hello world"
+
+=== Specifier Details and Examples
+
+==== Specifier +b+
+
+==== Specifier +a+
+
+==== Specifier +A+
+
+==== Specifier +B+
+
+==== Specifier +c+
+
+==== Specifier +d+
+
+==== Specifier +e+
+
+==== Specifier +E+
+
+==== Specifier +f+
+
+==== Specifier +g+
+
+==== Specifier +G+
+
+==== Specifier +o+
+
+==== Specifier +p+
+
+==== Specifier +s+
+
+==== Specifier +x+
+
+==== Specifier +X+
+
+==== Specifier <tt>%</tt>
+
