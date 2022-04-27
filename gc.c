@@ -14339,12 +14339,16 @@ struct RubyMMTKThreadIterator {
 
 struct RubyMMTKGlobal {
     pthread_mutex_t mutex;
+    pthread_cond_t cond_world_stopped;
     pthread_cond_t cond_world_started;
+    size_t stopped_ractors;
     size_t start_the_world_count;
     struct RubyMMTKThreadIterator thread_iter;
 } rb_mmtk_global = {
     .mutex = PTHREAD_MUTEX_INITIALIZER,
+    .cond_world_stopped = PTHREAD_COND_INITIALIZER,
     .cond_world_started = PTHREAD_COND_INITIALIZER,
+    .stopped_ractors = 0,
     .start_the_world_count = 0,
     .thread_iter = {
 	.threads = NULL,
@@ -14433,13 +14437,25 @@ rb_mmtk_get_gc_thread_tls(void)
 static inline bool
 rb_mmtk_is_mmtk_worker(void)
 {
-    return rb_mmtk_gc_thread_tls != NULL && rb_mmtk_gc_thread_tls->kind == MMTK_GC_THREAD_KIND_WORKER;
+    return rb_mmtk_gc_thread_tls != NULL;
+}
+
+static inline bool
+rb_mmtk_is_mutator(void)
+{
+    return ruby_native_thread_p();
 }
 
 static inline void
 rb_mmtk_assert_mmtk_worker(void)
 {
     RUBY_ASSERT_MESG(rb_mmtk_is_mmtk_worker(), "The current thread is not an MMTk worker");
+}
+
+static inline void
+rb_mmtk_assert_mutator(void)
+{
+    RUBY_ASSERT_MESG(rb_mmtk_is_mutator(), "The current thread is not a mutator (i.e. Ruby thread)");
 }
 
 static void
@@ -14452,12 +14468,26 @@ rb_mmtk_panic_if_multiple_ractor(const char *msg)
 }
 
 static void
+rb_mmtk_wait_until_ractors_stopped(void *unused)
+{
+    while (rb_mmtk_global.stopped_ractors < 1) {
+	RUBY_DEBUG_LOG("Will wait for 1 ractor to stop. cur: %zu, expected: %zu",
+		rb_mmtk_global.stopped_ractors, 1);
+	pthread_cond_wait(&rb_mmtk_global.cond_world_stopped, &rb_mmtk_global.mutex);
+    }
+}
+
+static void
 rb_mmtk_stop_the_world(MMTk_VMWorkerThread _tls)
 {
+    rb_mmtk_assert_mmtk_worker();
     rb_mmtk_panic_if_multiple_ractor(__FUNCTION__);
 
-    rb_ractor_t *ractor = GET_VM()->ractor.main_ractor;
-    rb_ractor_stop_for_gc(ractor);
+    // We assume there is only one ractor.
+    // Then the only cause of stop the world is allocation failure.
+    // We wait until the only ractor has stopped.
+
+    rb_mmtk_use_mmtk_global(rb_mmtk_wait_until_ractors_stopped, NULL);
 }
 
 static void
@@ -14471,64 +14501,49 @@ rb_mmtk_increment_start_the_world_count(void *unused)
 static void
 rb_mmtk_resume_mutators(MMTk_VMWorkerThread tls)
 {
+    rb_mmtk_assert_mmtk_worker();
     rb_mmtk_panic_if_multiple_ractor(__FUNCTION__);
 
     rb_mmtk_use_mmtk_global(rb_mmtk_increment_start_the_world_count, NULL);
-
-    rb_ractor_t *ractor = GET_VM()->ractor.main_ractor;
-    rb_ractor_resume_from_gc(ractor);
 }
 
-struct block_for_gc_ctx {
-    size_t my_count;
-    MMTk_VMMutatorThread tls;
-};
-
 static void
-rb_mmtk_wait_for_gc_end(void *param)
+rb_mmtk_block_for_gc_internal(void *unused)
 {
-    struct block_for_gc_ctx *ctx = param;
-    rb_thread_t *cur_thread = ctx->tls;
-    RUBY_ASSERT(cur_thread == GET_THREAD());
-    while (rb_mmtk_global.start_the_world_count < ctx->my_count + 1) {
+    // Increment the stopped ractor count
+    rb_mmtk_global.stopped_ractors++;
+    if (rb_mmtk_global.stopped_ractors == 1) {
+	RUBY_DEBUG_LOG("The only ractor has stopped.  Notify the GC thread.");
+	pthread_cond_broadcast(&rb_mmtk_global.cond_world_stopped);
+    }
+
+    // Wait for GC end
+    size_t my_count = rb_mmtk_global.start_the_world_count;
+
+    while (rb_mmtk_global.start_the_world_count < my_count + 1) {
 	RUBY_DEBUG_LOG("Will wait for cond. cur: %zu, expected: %zu",
 		rb_mmtk_global.start_the_world_count, ctx->my_count + 1);
 	pthread_cond_wait(&rb_mmtk_global.cond_world_started, &rb_mmtk_global.mutex);
     }
 
+    // Decrement the stopped ractor count
+    rb_mmtk_global.stopped_ractors--;
+
     RUBY_DEBUG_LOG("GC finished.");
-}
-
-static void*
-rb_mmtk_block_for_gc_internal(void *param)
-{
-    struct block_for_gc_ctx *ctx = param;
-    rb_mmtk_use_mmtk_global(rb_mmtk_wait_for_gc_end, ctx);
-    return NULL;
-}
-
-static void
-rb_mmtk_get_start_the_world_count(void *param)
-{
-    size_t *my_count = (size_t*)param;
-    *my_count = rb_mmtk_global.start_the_world_count;
 }
 
 static void
 rb_mmtk_block_for_gc(MMTk_VMMutatorThread tls)
 {
-    RUBY_ASSERT(ruby_native_thread_p());
+    rb_mmtk_assert_mutator();
 
-    struct block_for_gc_ctx ctx;
-    rb_mmtk_use_mmtk_global(rb_mmtk_get_start_the_world_count, &ctx.my_count);
-
-    ctx.tls = tls;
-    rb_thread_call_without_gvl(rb_mmtk_block_for_gc_internal, &ctx, NULL, NULL);
+    rb_mmtk_use_mmtk_global(rb_mmtk_block_for_gc_internal, NULL);
 }
 
 static size_t
 rb_mmtk_number_of_mutators(void)
 {
+    rb_mmtk_assert_mmtk_worker();
     rb_mmtk_panic_if_multiple_ractor(__FUNCTION__);
 
     rb_ractor_t *main_ractor = GET_VM()->ractor.main_ractor;
@@ -14539,6 +14554,7 @@ rb_mmtk_number_of_mutators(void)
 static void
 rb_mmtk_reset_mutator_iterator(void)
 {
+    rb_mmtk_assert_mmtk_worker();
     rb_mmtk_panic_if_multiple_ractor(__FUNCTION__);
 
     struct RubyMMTKThreadIterator *thread_iter = &rb_mmtk_global.thread_iter;
@@ -14570,6 +14586,7 @@ rb_mmtk_reset_mutator_iterator(void)
 static MMTk_Mutator
 rb_mmtk_get_next_mutator(void)
 {
+    rb_mmtk_assert_mmtk_worker();
     rb_mmtk_panic_if_multiple_ractor(__FUNCTION__);
 
     struct RubyMMTKThreadIterator *thread_iter = &rb_mmtk_global.thread_iter;
@@ -14589,6 +14606,8 @@ rb_mmtk_get_next_mutator(void)
 static void
 rb_mmtk_scan_vm_specific_roots(void)
 {
+    rb_mmtk_assert_mmtk_worker();
+
     RUBY_DEBUG_LOG("Scanning VM-specific roots...");
 
     rb_vm_t *vm = GET_VM();
@@ -14607,6 +14626,8 @@ rb_mmtk_scan_thread_roots(void)
 static void
 rb_mmtk_scan_thread_root(MMTk_VMMutatorThread mutator, MMTk_VMWorkerThread worker)
 {
+    rb_mmtk_assert_mmtk_worker();
+
     rb_thread_t *thread = (rb_thread_t*)mutator;
     rb_execution_context_t *ec = thread->ec;
 
@@ -14647,6 +14668,8 @@ rb_mmtk_mark_pin(VALUE obj)
 static inline void
 rb_mmtk_scan_object_ruby_style(void *object)
 {
+    rb_mmtk_assert_mmtk_worker();
+
     VALUE obj = (VALUE)object;
 
     rb_objspace_t *objspace = &rb_objspace;

@@ -2533,20 +2533,6 @@ rb_ractor_ensure_main_ractor(const char *msg)
     }
 }
 
-#ifdef USE_THIRD_PARTY_HEAP
-void rb_ractor_stop_for_gc(rb_ractor_t *ractor)
-{
-    struct rb_thread_sched *sched = &ractor->threads.sched;
-    rb_sched_stop_for_gc(sched);
-}
-
-void rb_ractor_resume_from_gc(rb_ractor_t *ractor)
-{
-    struct rb_thread_sched *sched = &ractor->threads.sched;
-    rb_sched_stop_for_gc(sched);
-}
-#endif // USE_THIRD_PARTY_HEAP
-
 static enum obj_traverse_iterator_result
 shareable_p_enter(VALUE obj)
 {

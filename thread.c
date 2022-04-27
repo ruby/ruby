@@ -5816,23 +5816,3 @@ rb_uninterruptible(VALUE (*b_proc)(VALUE), VALUE data)
     RUBY_VM_CHECK_INTS(cur_th->ec);
     return ret;
 }
-
-#ifdef USE_THIRD_PARTY_HEAP
-rb_thread_t rb_mmtk_fake_collector_thread;
-
-static inline rb_thread_t*
-rb_mmtk_coordinator_thread(void)
-{
-    return &rb_mmtk_fake_collector_thread;
-}
-
-void rb_sched_stop_for_gc(struct rb_thread_sched *sched)
-{
-    thread_sched_to_running(sched, rb_mmtk_coordinator_thread());
-}
-
-void rb_sched_resume_from_gc(struct rb_thread_sched *sched)
-{
-    thread_sched_to_waiting(sched);
-}
-#endif // USE_THIRD_PARTY_HEAP
