@@ -1007,13 +1007,6 @@ AS_CASE(["$target_os"],
 		])
 		ac_cv_func_getcontext=no
 		ac_cv_func_setcontext=no
-		incs=`$CC -v -E -xc - < /dev/null 2>&1 | sed ['1,/^@%:@include </d;s/^ *//;s|[^./][^/]*/\.\./||g;/\/include$/!d;s||/lib|;/\/usr\/lib/d']`
-		for d in `$CC -print-search-dirs | sed -e '/^libraries: */!d;s///' | tr : '\012' | fgrep -v /../ | sed -n 's|^\(/.*/lib\)/$|\1|p'`; do
-		    incs=`echo "$incs" | fgrep -v "$d"`
-		done
-		for d in $incs; do
-		    test -d "$d" && RUBY_APPEND_OPTIONS(LDFLAGS, "-L$d")
-		done
 		ac_cv_type_getgroups=gid_t # getgroups() on Rosetta fills garbage
 		ac_cv_lib_crypt_crypt=no
 		ac_cv_func_fdatasync=no # Mac OS X wrongly reports it has fdatasync()
