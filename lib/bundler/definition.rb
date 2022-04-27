@@ -256,14 +256,14 @@ module Bundler
     # @return [SpecSet] resolved dependencies
     def resolve
       @resolve ||= begin
-        last_resolve = converge_locked_specs
         if Bundler.frozen_bundle?
           Bundler.ui.debug "Frozen, using resolution from the lockfile"
-          last_resolve
+          @locked_specs
         elsif !unlocking? && nothing_changed?
           Bundler.ui.debug("Found no changes, using resolution from the lockfile")
-          last_resolve
+          converge_locked_specs
         else
+          last_resolve = converge_locked_specs
           # Run a resolve against the locally available gems
           Bundler.ui.debug("Found changes from the lockfile, re-resolving dependencies because #{change_reason}")
           expanded_dependencies = expand_dependencies(dependencies + metadata_dependencies, true)
@@ -693,7 +693,7 @@ module Bundler
         # Replace the locked dependency's source with the equivalent source from the Gemfile
         dep = @dependencies.find {|d| s.satisfies?(d) }
 
-        s.source = (dep && dep.source) || sources.get(s.source) || sources.default_source unless Bundler.frozen_bundle?
+        s.source = (dep && dep.source) || sources.get(s.source) || sources.default_source
 
         next if @unlock[:sources].include?(s.source.name)
 
