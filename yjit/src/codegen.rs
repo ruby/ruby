@@ -663,7 +663,7 @@ fn jump_to_next_insn(
 ) {
     // Reset the depth since in current usages we only ever jump to to
     // chain_depth > 0 from the same instruction.
-    let mut reset_depth = current_context.clone();
+    let mut reset_depth = *current_context;
     reset_depth.reset_chain_depth();
 
     let jump_block = BlockId {
@@ -1808,7 +1808,7 @@ fn jit_chain_guard(
     };
 
     if (ctx.get_chain_depth() as i32) < depth_limit {
-        let mut deeper = ctx.clone();
+        let mut deeper = *ctx;
         deeper.increment_chain_depth();
         let bid = BlockId {
             iseq: jit.iseq,
@@ -1881,7 +1881,7 @@ fn gen_get_ivar(
     side_exit: CodePtr,
 ) -> CodegenStatus {
     let comptime_val_klass = comptime_receiver.class_of();
-    let starting_context = ctx.clone(); // make a copy for use with jit_chain_guard
+    let starting_context = *ctx; // make a copy for use with jit_chain_guard
 
     // Check if the comptime class uses a custom allocator
     let custom_allocator = unsafe { rb_get_alloc_func(comptime_val_klass) };
@@ -2008,7 +2008,7 @@ fn gen_get_ivar(
         );
 
         // Check that the extended table is big enough
-        if ivar_index >= ROBJECT_EMBED_LEN_MAX + 1 {
+        if ivar_index > ROBJECT_EMBED_LEN_MAX {
             // Check that the slot is inside the extended table (num_slots > index)
             let num_slots = mem_opnd(32, REG0, RUBY_OFFSET_ROBJECT_AS_HEAP_NUMIV);
 
@@ -2552,7 +2552,7 @@ fn gen_opt_aref(
     }
 
     // Remember the context on entry for adding guard chains
-    let starting_context = ctx.clone();
+    let starting_context = *ctx;
 
     // Specialize base on compile time values
     let comptime_idx = jit_peek_at_stack(jit, ctx, 0);
@@ -3747,8 +3747,7 @@ fn gen_send_cfunc(
     // Delegate to codegen for C methods if we have it.
     if kw_arg.is_null() {
         let codegen_p = lookup_cfunc_codegen(unsafe { (*cme).def });
-        if codegen_p.is_some() {
-            let known_cfunc_codegen = codegen_p.unwrap();
+        if let Some(known_cfunc_codegen) = codegen_p {
             if known_cfunc_codegen(jit, ctx, cb, ocb, ci, cme, block, argc, recv_known_klass) {
                 // cfunc codegen generated code. Terminate the block so
                 // there isn't multiple calls in the same block.
@@ -4323,9 +4322,7 @@ fn gen_send_iseq(
                     // Next we're going to do some bookkeeping on our end so
                     // that we know the order that the arguments are
                     // actually in now.
-                    let tmp = caller_kwargs[kwarg_idx];
-                    caller_kwargs[kwarg_idx] = caller_kwargs[swap_idx];
-                    caller_kwargs[swap_idx] = tmp;
+                    caller_kwargs.swap(kwarg_idx, swap_idx);
 
                     break;
                 }
@@ -4465,7 +4462,7 @@ fn gen_send_iseq(
     // Pop arguments and receiver in return context, push the return value
     // After the return, sp_offset will be 1. The codegen for leave writes
     // the return value in case of JIT-to-JIT return.
-    let mut return_ctx = ctx.clone();
+    let mut return_ctx = *ctx;
     return_ctx.stack_pop((argc + 1).try_into().unwrap());
     return_ctx.stack_push(Type::Unknown);
     return_ctx.set_sp_offset(1);

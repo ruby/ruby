@@ -222,7 +222,7 @@ fn test_mov_unsigned() {
 
     // MOV RAX, imm64, will not move down into EAX since it does not fit into 32 bits
     check_bytes("48b80000000001000000", |cb| mov(cb, RAX, uimm_opnd(u32::MAX as u64 + 1)));
-    check_bytes("48b8ffffffffffffffff", |cb| mov(cb, RAX, uimm_opnd(u64::MAX.into())));
+    check_bytes("48b8ffffffffffffffff", |cb| mov(cb, RAX, uimm_opnd(u64::MAX)));
     check_bytes("49b8ffffffffffffffff", |cb| mov(cb, R8, uimm_opnd(u64::MAX)));
 
     // MOV r8, imm8

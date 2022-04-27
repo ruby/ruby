@@ -70,7 +70,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
     // Split the option name and value strings
     // Note that some options do not contain an assignment
-    let parts = opt_str.split_once("=");
+    let parts = opt_str.split_once('=');
     let (opt_name, opt_val) = match parts {
         Some((before_eq, after_eq)) => (before_eq, after_eq),
         None => (opt_str, ""),

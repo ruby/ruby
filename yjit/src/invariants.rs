@@ -101,12 +101,12 @@ pub fn assume_bop_not_redefined(
         invariants
             .basic_operator_blocks
             .entry((klass, bop))
-            .or_insert(HashSet::new())
+            .or_default()
             .insert(jit.get_block());
         invariants
             .block_basic_operators
             .entry(jit.get_block())
-            .or_insert(HashSet::new())
+            .or_default()
             .insert((klass, bop));
 
         return true;
@@ -142,17 +142,17 @@ pub fn assume_method_lookup_stable(
     Invariants::get_instance()
         .cme_validity
         .entry(callee_cme)
-        .or_insert(HashSet::new())
+        .or_default()
         .insert(block.clone());
 
     let mid = unsafe { (*callee_cme).called_id };
     Invariants::get_instance()
         .method_lookup
         .entry(receiver_klass)
-        .or_insert(HashMap::new())
+        .or_default()
         .entry(mid)
-        .or_insert(HashSet::new())
-        .insert(block.clone());
+        .or_default()
+        .insert(block);
 }
 
 /// Tracks that a block is assuming it is operating in single-ractor mode.
@@ -198,12 +198,12 @@ pub fn assume_stable_constant_names(jit: &mut JITState, ocb: &mut OutlinedCb) {
             invariants
                 .constant_state_blocks
                 .entry(id)
-                .or_insert(HashSet::new())
+                .or_default()
                 .insert(jit.get_block());
             invariants
                 .block_constant_states
                 .entry(jit.get_block())
-                .or_insert(HashSet::new())
+                .or_default()
                 .insert(id);
         }
 
@@ -239,15 +239,15 @@ pub extern "C" fn rb_yjit_bop_redefined(klass: RedefinitionFlag, bop: ruby_basic
     with_vm_lock(src_loc!(), || {
         // Loop through the blocks that are associated with this class and basic
         // operator and invalidate them.
-        Invariants::get_instance()
+        if let Some(blocks) = Invariants::get_instance()
             .basic_operator_blocks
             .remove(&(klass, bop))
-            .map(|blocks| {
-                for block in blocks.iter() {
-                    invalidate_block_version(block);
-                    incr_counter!(invalidate_bop_redefined);
-                }
-            });
+        {
+            for block in blocks.iter() {
+                invalidate_block_version(block);
+                incr_counter!(invalidate_bop_redefined);
+            }
+        }
     });
 }
 
