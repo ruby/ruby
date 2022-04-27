@@ -3183,35 +3183,66 @@ rb_opts_exception_p(VALUE opts, int default_value)
 
 /*
  *  call-seq:
- *     Integer(arg, base=0, exception: true)    -> integer or nil
+ *    Integer(object, base = 0, exception: true) -> integer or nil
  *
- *  Converts <i>arg</i> to an Integer.
- *  Numeric types are converted directly (with floating point numbers
- *  being truncated).  <i>base</i> (0, or between 2 and 36) is a base for
- *  integer string representation.  If <i>arg</i> is a String,
- *  when <i>base</i> is omitted or equals zero, radix indicators
- *  (<code>0</code>, <code>0b</code>, and <code>0x</code>) are honored.
- *  In any case, strings should consist only of one or more digits, except
- *  for that a sign, one underscore between two digits, and leading/trailing
- *  spaces are optional.  This behavior is different from that of
- *  String#to_i.  Non string values will be converted by first
- *  trying <code>to_int</code>, then <code>to_i</code>.
+ *  Returns an integer converted from +object+.
  *
- *  Passing <code>nil</code> raises a TypeError, while passing a String that
- *  does not conform with numeric representation raises an ArgumentError.
- *  This behavior can be altered by passing <code>exception: false</code>,
- *  in this case a not convertible value will return <code>nil</code>.
+ *  Tries to convert +object+ to an integer
+ *  using +to_int+ first and +to_i+ second;
+ *  see below for exceptions.
  *
- *     Integer(123.999)    #=> 123
- *     Integer("0x1a")     #=> 26
- *     Integer(Time.new)   #=> 1204973019
- *     Integer("0930", 10) #=> 930
- *     Integer("111", 2)   #=> 7
- *     Integer(" +1_0 ")   #=> 10
- *     Integer(nil)        #=> TypeError: can't convert nil into Integer
- *     Integer("x")        #=> ArgumentError: invalid value for Integer(): "x"
+ *  With integer argument +object+ given, returns +object+:
  *
- *     Integer("x", exception: false)        #=> nil
+ *    Integer(1)                # => 1
+ *    Integer(-1)               # => -1
+ *
+ *  With floating-point argument +object+ given,
+ *  returns +object+ truncated to an intger:
+ *
+ *    Integer(1.9)              # => 1  # Rounds toward zero.
+ *    Integer(-1.9)             # => -1 # Rounds toward zero.
+ *
+ *  With string argument +object+ and zero +base+ given,
+ *  returns +object+ converted to an integer in base 10:
+ *
+ *    Integer('100')    # => 100
+ *    Integer('-100')   # => -100
+ *
+ *  With +base+ zero, string +object+ may contain leading characters
+ *  to specify the actual base:
+ *
+ *    Integer('0100')  # => 64  # Leading '0' specifies base 8.
+ *    Integer('0b100') # => 4   # Leading '0b', specifies base 2.
+ *    Integer('0x100') # => 256 # Leading '0x' specifies base 16.
+ *
+ *  With a non-zero +base+ (in range 2..36) given
+ *  (in which case +object+ must be a string),
+ *  returns +object+ converted to an integer in the given base:
+ *
+ *    Integer('100', 2)   # => 4
+ *    Integer('100', 8)   # => 64
+ *    Integer('-100', 16) # => -256
+ *
+ *  When converting strings, surrounding whitespace and embedded underscores
+ *  are allowed and ignored:
+ *
+ *    Integer(' 100 ')      # => 100
+ *    Integer('-1_0_0', 16) # => -256
+ *
+ *  Examples with +object+ of various other classes:
+ *
+ *    Integer(Rational(9, 10)) # => 0  # Rounds toward zero.
+ *    Integer(Complex(2, 0))   # => 2  # Imaginary part must be zero.
+ *    Integer(Time.now)        # => 1650974042
+ *
+ *  With optional keyword argument +exception+ given as +true+ (the default):
+ *
+ *  - Raises TypeError if +object+ does not respond to +to_int+ or +to_i+.
+ *  - Raises TypeError if +object+ is +nil+.
+ *  - Raise ArgumentError if +object+ is an invalid string.
+ *
+ *  With +exception+ given as +false+, an exception of any kind is suppressed
+ *  and +nil+ is returned.
  *
  */
 
@@ -3652,7 +3683,7 @@ rb_String(VALUE val)
  *  call-seq:
  *    String(object) -> object or new_string
  *
- *  Returns an array converted from +object+.
+ *  Returns a string converted from +object+.
  *
  *  Tries to convert +object+ to a string
  *  using +to_str+ first and +to_s+ second:
