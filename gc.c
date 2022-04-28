@@ -1302,7 +1302,7 @@ tick(void)
     return ((unsigned long long)lo)|( ((unsigned long long)hi)<<32);
 }
 
-#elif defined(__powerpc64__) && GCC_VERSION_SINCE(4,8,0)
+#elif defined(__powerpc64__) && (GCC_VERSION_SINCE(4,8,0) || defined(__clang__))
 typedef unsigned long long tick_t;
 #define PRItick "llu"
 
