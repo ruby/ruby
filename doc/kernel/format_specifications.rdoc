@@ -79,6 +79,12 @@ The links lead to the details and examples.
 
 === Flags
 
+The effect of a flag may vary greatly among type specifiers.
+These remarks are general in nature.
+
+Multiple flags may be given with single type specifier;
+order does not matter.
+
 - Flag <tt><space></tt>: Insert a space before a non-negative number:
 
     sprintf('%d', 10)  # => "10"
