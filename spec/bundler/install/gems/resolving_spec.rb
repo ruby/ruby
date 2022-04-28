@@ -301,7 +301,28 @@ RSpec.describe "bundle install with install-time dependencies" do
       end
 
       let(:ruby_requirement) { %("#{RUBY_VERSION}") }
-      let(:error_message_requirement) { "~> #{RUBY_VERSION}.0" }
+      let(:error_message_requirement) { "= #{RUBY_VERSION}" }
+
+      it "raises a proper error that mentions the current Ruby version during resolution" do
+        install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }, :raise_on_error => false
+          source "http://localgemserver.test/"
+          gem 'require_ruby'
+        G
+
+        expect(out).to_not include("Gem::InstallError: require_ruby requires Ruby version > 9000")
+
+        nice_error = strip_whitespace(<<-E).strip
+          Bundler found conflicting requirements for the Ruby\0 version:
+            In Gemfile:
+              require_ruby was resolved to 1.0, which depends on
+                Ruby\0 (> 9000)
+
+            Current Ruby\0 version:
+              Ruby\0 (#{error_message_requirement})
+
+        E
+        expect(err).to end_with(nice_error)
+      end
 
       shared_examples_for "ruby version conflicts" do
         it "raises an error during resolution" do
@@ -316,10 +337,12 @@ RSpec.describe "bundle install with install-time dependencies" do
           nice_error = strip_whitespace(<<-E).strip
             Bundler found conflicting requirements for the Ruby\0 version:
               In Gemfile:
-                Ruby\0 (#{error_message_requirement})
-
                 require_ruby was resolved to 1.0, which depends on
                   Ruby\0 (> 9000)
+
+              Current Ruby\0 version:
+                Ruby\0 (#{error_message_requirement})
+
           E
           expect(err).to end_with(nice_error)
         end
@@ -329,7 +352,6 @@ RSpec.describe "bundle install with install-time dependencies" do
 
       describe "with a < requirement" do
         let(:ruby_requirement) { %("< 5000") }
-        let(:error_message_requirement) { "< 5000" }
 
         it_behaves_like "ruby version conflicts"
       end
@@ -337,7 +359,6 @@ RSpec.describe "bundle install with install-time dependencies" do
       describe "with a compound requirement" do
         let(:reqs) { ["> 0.1", "< 5000"] }
         let(:ruby_requirement) { reqs.map(&:dump).join(", ") }
-        let(:error_message_requirement) { Gem::Requirement.new(reqs).to_s }
 
         it_behaves_like "ruby version conflicts"
       end
@@ -361,10 +382,12 @@ RSpec.describe "bundle install with install-time dependencies" do
       nice_error = strip_whitespace(<<-E).strip
         Bundler found conflicting requirements for the RubyGems\0 version:
           In Gemfile:
-            RubyGems\0 (= #{Gem::VERSION})
-
             require_rubygems was resolved to 1.0, which depends on
               RubyGems\0 (> 9000)
+
+          Current RubyGems\0 version:
+            RubyGems\0 (= #{Gem::VERSION})
+
       E
       expect(err).to end_with(nice_error)
     end

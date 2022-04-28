@@ -2,6 +2,6 @@
 # -*- ruby -*-
 
 require 'shellwords'
-require 'rubygems/optparse/lib/optparse'
+require_relative '../optparse'
 
 Gem::OptionParser.accept(Shellwords) {|s,| Shellwords.shellwords(s)}

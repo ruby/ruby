@@ -67,6 +67,23 @@ module Gem
       full_gem_path
     end
 
+    unless const_defined?(:LATEST_RUBY_WITHOUT_PATCH_VERSIONS)
+      LATEST_RUBY_WITHOUT_PATCH_VERSIONS = Gem::Version.new("2.1")
+
+      alias_method :rg_required_ruby_version=, :required_ruby_version=
+      def required_ruby_version=(req)
+        self.rg_required_ruby_version = req
+
+        @required_ruby_version.requirements.map! do |op, v|
+          if v >= LATEST_RUBY_WITHOUT_PATCH_VERSIONS && v.release.segments.size == 4
+            [op == "~>" ? "=" : op, Gem::Version.new(v.segments.tap {|s| s.delete_at(3) }.join("."))]
+          else
+            [op, v]
+          end
+        end
+      end
+    end
+
     def groups
       @groups ||= []
     end

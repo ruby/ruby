@@ -120,7 +120,7 @@ RSpec.shared_examples "bundle install --standalone" do
 
       realworld_system_gems "tsort --version 0.1.0"
 
-      necessary_system_gems = ["optparse --version 0.1.1", "psych --version 3.3.2", "logger --version 1.4.3", "etc --version 1.2.0", "stringio --version 3.0.0"]
+      necessary_system_gems = ["optparse --version 0.1.1", "psych --version 3.3.2", "logger --version 1.4.3", "etc --version 1.2.0", "stringio --version 3.0.1"]
       necessary_system_gems += ["shellwords --version 0.1.0", "base64 --version 0.1.0", "resolv --version 0.2.1"] if Gem.rubygems_version < Gem::Version.new("3.3.a")
       necessary_system_gems += ["yaml --version 0.1.1"] if Gem.rubygems_version < Gem::Version.new("3.4.a")
       realworld_system_gems(*necessary_system_gems, :path => scoped_gem_path(bundled_app("bundle")))
