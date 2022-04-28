@@ -5925,7 +5925,11 @@ mod tests {
     use super::*;
 
     fn setup_codegen() -> (JITState, Context, CodeBlock, OutlinedCb) {
-        let block = Block::new(BLOCKID_NULL, &Context::default());
+        let blockid = BlockId {
+            iseq: ptr::null(),
+            idx: 0,
+        };
+        let block = Block::new(blockid, &Context::default());
 
         return (
             JITState::new(&block),
