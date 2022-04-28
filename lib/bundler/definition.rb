@@ -680,13 +680,10 @@ module Bundler
     end
 
     def converge_specs(specs)
-      deps = []
       converged = []
 
-      @dependencies.each do |dep|
-        if specs[dep].any? {|s| s.satisfies?(dep) && (!dep.source || s.source.include?(dep.source)) }
-          deps << dep
-        end
+      deps = @dependencies.select do |dep|
+        specs[dep].any? {|s| s.satisfies?(dep) && (!dep.source || s.source.include?(dep.source)) }
       end
 
       specs.each do |s|
