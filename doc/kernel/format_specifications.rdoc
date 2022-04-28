@@ -13,10 +13,6 @@ Each of these methods takes:
   embedded _format_ _specifications_ (see below).
 - Arguments <tt>*arguments</tt>, which are zero or more objects to be formatted.
 
-Example calling sequence:
-
-  sprintf(format_string, *arguments)
-
 Each of these methods returns the string resulting from replacing each
 format specification embedded in +format_string+ with a string form
 of the corresponding argument among +arguments+.
@@ -29,138 +25,198 @@ A format specification has the form:
 
   %[flags][width][.precision]type
 
-and consists of:
+It consists of:
 
 - A leading percent character.
 - Zero or more _flags_ (each is a character).
-- An optional _width_ specifier (an integer).
-- An optional _precision_ specifier (a period followed by a non-negative integer).
-- A _type_ specifier (a character).
+- An optional _width_ _specifier_ (an integer).
+- An optional _precision_ _specifier_ (a period followed by a non-negative integer).
+- A _type_ _specifier_ (a character).
 
 Except for the leading percent character,
 the only required part is the type specifier, so we begin with that.
 
 === Type Specifiers
 
+This section provides a brief explanation of each type specifier.
+The links lead to the details and examples.
+
 ==== \Integer Type Specifiers
 
-- +b+: Convert +argument+ as a binary integer;
-  prefix with +0b+ if flag <tt>#</tt> is used.
-  See {Specifier b}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+b].
-- +B+: Convert +argument+ as a binary integer;
-  prefix with +0B+ if flag <tt>#</tt> is used.
-  See {Specifier b}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+b].
-- +d+, +i+, or +u+: Convert +argument+ as a decimal integer.
-  See {Specifier d}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+d].
+- +b+ or +B+: Convert +argument+ as a binary integer.
+  See {Specifiers b and B}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifiers+b+and+B].
+- +d+, +i+, or +u+ (all are identical):
+  Convert +argument+ as a decimal integer.
+  See {Specifier d}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifier+d].
 - +o+: Convert +argument+ as an octal integer.
-  See {Specifier o}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+o].
-- +x+: Convert +argument+ as a hexadecimal integer;
-  prefix with +0x+ if flag <tt>#</tt> is used.
-  See {Specifier x}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+x].
-- +X+: Convert +argument+ as a hexadecimal integer;
-  prefix with +0X+ if flag <tt>#</tt> is used.
-  See {Specifier X}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+X].
+  See {Specifier o}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifier+o].
+- +x+ or +X+: Convert +argument+ as a hexadecimal integer.
+  See {Specifiers x and X}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifiers+x+and+X].
 
 ==== Floating-Point Type Specifiers
 
-- +e+: Convert +argument+ in
-  {scientific notation}[https://en.wikipedia.org/wiki/Scientific_notation]
-  using a lowercase +e+.
-  See {Specifier e}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+e].
-- +E+: Convert +argument+ in
-  {scientific notation}[https://en.wikipedia.org/wiki/Scientific_notation]
-  using a lowercase +E+.
-  See {Specifier E}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+E].
+- +a+ or +A+: Convert +argument+ as hexadecimal floating-point number.
+  See {Specifiers a and A}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifiers+a+and+A].
+- +e+ or +E+: Convert +argument+ as
+  {scientific notation}[https://en.wikipedia.org/wiki/Scientific_notation].
+  See {Specifiers e and E}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifiers+e+and+E].
 - +f+: Convert +argument+ as a decimal floating-point number.
-  See {Specifier f}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+f].
-- +g+: Convert +argument+ as a decimal floating-point number (like +f+)
-  or in scientific notation (like +e+).
-  See {Specifier g}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+g].
-- +G+: Convert +argument+ as a decimal floating-point number (like +f+)
-  or in scientific notation (like +E+).
-  See {Specifier G}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+G].
-- +a+: Convert +argument as hexadecimal floating-point number
-  using lowercase +x+ and +p+.
-  See {Specifier a}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+a].
-- +A+: Convert +argument as hexadecimal floating-point number
-  using uppercase +X+ and +P+.
-  See {Specifier A}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+A].
+  See {Specifier f}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifier+f].
+- +g+ or +G+: Convert +argument+ as a decimal floating-point number (like +f+)
+  or in scientific notation (like +e+ or +E+).
+  See {Specifiers g and G}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifiers+g+and+G].
 
 ==== Other Type Specifiers
 
 - +c+: Convert +argument+ to a character.
-  See {Specifier c}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+c].
+  See {Specifier c}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifier+c].
 - +p+: Convert +argument+ to a string via <tt>argument.inspect</tt>.
-  See {Specifier p}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+p].
+  See {Specifier p}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifier+p].
 - +s+: Convert +argument+ to a string via <tt>argument.to_s</tt>.
-  See {Specifier s}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+s].
-- <tt>%</tt>: No conversion; retain a single percent character.
-  See {Specifier %}[rdoc-ref:doc/kernel/format_specifiers.rdoc@Specifier+-25].
+  See {Specifier s}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifier+s].
+- <tt>%</tt>: Convert a single percent character.
+  See {Specifier %}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifier+-25].
 
 === Flags
 
-- <tt><space></tt>: Insert a space before a non-negative number:
+- Flag <tt><space></tt>: Insert a space before a non-negative number:
 
-    format('%d', 10)  # => "10"
-    format('% d', 10) # => " 10"
+    sprintf('%d', 10)  # => "10"
+    sprintf('% d', 10) # => " 10"
 
   Insert a minus sign for negative value:
 
-    XXXXXXXXXXXXXXXXXXXXXX
+    sprintf('%d', -10)  # => "-10"
+    sprintf('% d', -10) # => "-10"
 
-- <tt>#</tt>: Use an alternate format; varies among types:
+- Flag <tt>#</tt>: Use an alternate format; varies among types:
 
-    format('%x', 100)  # => "64"
-    format('%#x', 100) # => "0x64"
+    sprintf('%x', 100)  # => "64"
+    sprintf('%#x', 100) # => "0x64"
 
-- <tt>+</tt>: Add a leading plus sign for a non-negative number:
+- Flag <tt>+</tt>: Add a leading plus sign for a non-negative number:
 
-    format('%x', 100)  # => "64"
-    format('%+x', 100) # => "+64"
+    sprintf('%x', 100)  # => "64"
+    sprintf('%+x', 100) # => "+64"
 
-- <tt>-</tt>: Left justify the value in its field:
+- Flag <tt>-</tt>: Left justify the value in its field:
 
-    format('%6d', 100)  # => "   100"
-    format('%-6d', 100) # => "100   "
+    sprintf('%6d', 100)  # => "   100"
+    sprintf('%-6d', 100) # => "100   "
 
-- <tt>0</tt>:
+- Flag <tt>0</tt>:
 
-    format('%6d', 100)  # => "   100"
-    format('%06d', 100) # => "000100"
+    sprintf('%6d', 100)  # => "   100"
+    sprintf('%06d', 100) # => "000100"
 
-- <tt>*</tt>: Use the next argument as the field width:
+- Flag <tt>*</tt>: Use the next argument as the field width:
 
     sprintf('%d', 20, 14)  # => "20"
     sprintf('%*d', 20, 14) # => "                  14"
 
-- <tt><digit>$</tt>:
+- Flag <tt><n>$</tt>: Convert the (1-based) +n+th argument into this field:
 
     sprintf("%s %s", 'world', 'hello')     # => "world hello"
     sprintf("%2$s %1$s", 'world', 'hello') # => "hello world"
 
-=== Specifier Details and Examples
+=== Width Specifiers
 
-==== Specifier +b+
+In general, a width specifier determines the width (in characters)
+of the formatted field:
 
-==== Specifier +a+
+  sprintf('%10d', 100)  # => "       100"
+  # Left-justify if negative.
+  sprintf('%-10d', 100) # => "100       "
+  # Ignore if too small.
+  sprintf('%1d', 100)   # => "100"
 
-==== Specifier +A+
+=== Type Specifier Details and Examples
 
-==== Specifier +B+
+==== Specifiers +a+ and +A+
+
+==== Specifiers +b+ and +B+
+
+Convert +argument+ as a binary integer:
+
+The two specifiers +b+ and +B+ behave identically
+except when +0b+ or +0B+ is prefixed.
+
+Flags (all are allowed):
+
+- No flag:
+
+    sprintf('%b', 1)  # => "1"
+    sprintf('%b', 4)  # => "100"
+    # Prefix '..' for negative value.
+    sprintf('%b', -4) # => "..100"
+
+- Flag <tt>#</tt>: Prefix +0b+ or +0B+:
+
+    sprintf('%#b', 1)  # => "0b1"
+    sprintf('%#B', 1)  # => "Bb1"
+    sprintf('%#b', 4)  # => "0b100"
+    # Embed '..' for negative value.
+    sprintf('%#b', -4) # => "0b..100"
+
+- Space flag: Prefix space for non-negative value,
+  <tt>-</tt> for negative value:
+
+    sprintf('% b', 0)  # => " 0"
+    sprintf('% b', 4)  # => " 100"
+    # Prefix '-' for negative value.
+    sprintf('% b', -4) # => "-100"
+
+- Flag <tt>+</tt>: Prefix <tt>+</tt> for non-negative value.
+  <tt>-</tt> for negative value:
+
+    sprintf('%+b', 0)  # => "+0"
+    sprintf('%+b', 4)  # => "+100"
+    sprintf('%+b', -4) # => "-100"
+
+- Flag <tt>-</tt>: Allowed, but has no effec.
+
+- Flag +0+: Allowed, but has no effect.
+
+- Flag <tt>*</tt>: Treat first-following argument as a width specifier
+  and second-following argument as the value:
+
+    sprintf('%*b', 4, 6)           # => " 110"
+    sprintf('%*b', 6, 4)           # => "   100"
+    sprintf('%*b %*b', 6, 4, 4, 6) # => "   100  110"
+    # Left-justify if negative width.
+    sprintf('%*b', -4, 6)          # => "110 "
+    sprintf('%*b', -6, 4)          # => "100   "
+    # Prefix '..' for negative value.
+    sprintf('%*b', 4, -6)          # => "..1010"
+    sprintf('%*b', 6, -4)          # => " ..100"
+
+- Flag <tt><n>$</tt>: Convert the (1-based) +n+th argument into this field:
+
+    sprintf('%3$b %2$b %1$b', 1, 2, 4)    # => "100 10 1"
+    # Prefix '..' for negative value.
+    sprintf('%3$b %2$b %1$b', -1, -2, -4) # => "..100 ..10 ..1"
+
+Width specifier:
+
+  sprintf('%10b', 4)   # => "       100"
+  sprintf('%10b', -4)  # => "     ..100"
+  # Left-justify if negative.
+  sprintf('%-10b', 4)  # => "100       "
+  sprintf('%-10b', -4) # => "..100     "
+  # Ignore if too small.
+  sprintf('%1b', 4)    # => "100"
+
+Precision specifier: not allowed.
 
 ==== Specifier +c+
 
 ==== Specifier +d+
 
-==== Specifier +e+
-
-==== Specifier +E+
+==== Specifiers +e+ and +E+
 
 ==== Specifier +f+
 
-==== Specifier +g+
-
-==== Specifier +G+
+==== Specifiers +g+ and +G+
 
 ==== Specifier +o+
 
@@ -168,9 +224,7 @@ the only required part is the type specifier, so we begin with that.
 
 ==== Specifier +s+
 
-==== Specifier +x+
-
-==== Specifier +X+
+==== Specifiers +x+ and +X+
 
 ==== Specifier <tt>%</tt>
 
