@@ -272,13 +272,6 @@ DESTDIR       = @DESTDIR@
 configure_args = @configure_args@
 #### End of variables
 
-# Shell short-circuiting for dodging syntax error on older shells, e.g.
-# Solaris. Hack: make sends <backslash><newline> to the shell per POSIX, and
-# two backslashes stops escaping the newline.
-YJIT_BUILD_ONLY0 = $(YJIT_SUPPORT:no=exit; \\)
-YJIT_BUILD_ONLY1 = $(YJIT_BUILD_ONLY0:dev=)
-YJIT_BUILD_ONLY  = $(YJIT_BUILD_ONLY1:yes=)
-
 ABI_VERSION_HDR = $(hdrdir)/ruby/internal/abi.h
 
 .SUFFIXES: .inc .h .c .y .i .$(ASMEXT) .$(DTRACE_EXT)
@@ -312,14 +305,15 @@ $(LIBRUBY_A):
 		@-[ -z "$(EXTSTATIC)" ] || $(PRE_LIBRUBY_UPDATE)
 		$(ECHO) linking static-library $@
 		$(Q) $(AR) $(ARFLAGS) $@ $(LIBRUBY_A_OBJS) $(INITOBJS)
-		$(Q) $(YJIT_BUILD_ONLY)\
+		$(Q) if [ 'no' != '$(YJIT_SUPPORT)' ]; then \
 		  set -eu && \
 		  echo 'merging $(YJIT_LIBS) into $@' && \
 		  $(RMALL)    '$(CARGO_TARGET_DIR)/libyjit/' && \
 		  $(MAKEDIRS) '$(CARGO_TARGET_DIR)/libyjit/' && \
 		  $(CP) '$(YJIT_LIBS)' '$(CARGO_TARGET_DIR)/libyjit/' && \
 		  (cd '$(CARGO_TARGET_DIR)/libyjit/' && $(AR) -x libyjit.a) && \
-		  $(AR) $(ARFLAGS) $@ `find '$(CARGO_TARGET_DIR)/libyjit/' -name '*.o'` ;
+		  find '$(CARGO_TARGET_DIR)/libyjit/' -name '*.o' -exec $(AR) $(ARFLAGS) $@ '{}' '+' ; \
+		fi
 		@-$(RANLIB) $@ 2> /dev/null || true
 
 verify-static-library: $(LIBRUBY_A)
