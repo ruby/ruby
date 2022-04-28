@@ -1317,11 +1317,7 @@ fn gen_block_series_body(
         };
 
         // Get id and context for the new block
-        assert!(
-            last_branch.targets[0].is_some(),
-            "block id must be filled"
-        );
-        let requested_id = last_branch.targets[0].unwrap();
+        let requested_id = last_branch.targets[0].expect("block id must be filled");
         let requested_ctx = &last_branch.target_ctxs[0];
 
         // Generate new block using context from the last branch.
