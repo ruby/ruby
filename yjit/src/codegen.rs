@@ -1989,7 +1989,7 @@ fn gen_get_ivar(
         let out_opnd = ctx.stack_push(Type::Unknown);
         mov(cb, out_opnd, REG1);
     } else {
-        // Compile time value is *not* embeded.
+        // Compile time value is *not* embedded.
 
         // Guard that value is *not* embedded
         // See ROBJECT_IVPTR() from include/ruby/internal/core/robject.h
@@ -2647,7 +2647,7 @@ fn gen_opt_aref(
 
         call_ptr(cb, REG0, rb_hash_aref as *const u8);
 
-        // Pop the key and the reciever
+        // Pop the key and the receiver
         ctx.stack_pop(2);
 
         // Push the return value onto the stack
@@ -3082,7 +3082,7 @@ fn gen_opt_case_dispatch(
     // Normally this instruction would lookup the key in a hash and jump to an
     // offset based on that.
     // Instead we can take the fallback case and continue with the next
-    // instruciton.
+    // instruction.
     // We'd hope that our jitted code will be sufficiently fast without the
     // hash lookup, at least for small hashes, but it's worth revisiting this
     // assumption in the future.
@@ -3417,7 +3417,7 @@ fn jit_guard_known_klass(
         // Note that in case the sample instance has a singleton class that
         // doesn't attach to the sample instance, it means the sample instance
         // has an empty singleton class that hasn't been materialized yet. In
-        // this case, comparing against the sample instance doesn't gurantee
+        // this case, comparing against the sample instance doesn't guarantee
         // that its singleton class is empty, so we can't avoid the memory
         // access. As an example, `Object.new.singleton_class` is an object in
         // this situation.
@@ -5433,7 +5433,7 @@ fn gen_opt_getinlinecache(
 
 // Push the explicit block parameter onto the temporary stack. Part of the
 // interpreter's scheme for avoiding Proc allocations when delegating
-// explict block parameters.
+// explicit block parameters.
 fn gen_getblockparamproxy(
     jit: &mut JITState,
     ctx: &mut Context,
