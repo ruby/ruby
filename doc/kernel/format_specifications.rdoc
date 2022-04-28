@@ -104,7 +104,7 @@ The links lead to the details and examples.
     sprintf('%6d', 100)  # => "   100"
     sprintf('%-6d', 100) # => "100   "
 
-- Flag <tt>0</tt>:
+- Flag <tt>0</tt>: Buffer with zeros instead of spaces:
 
     sprintf('%6d', 100)  # => "   100"
     sprintf('%06d', 100) # => "000100"
@@ -173,7 +173,7 @@ Flags (all are allowed):
     sprintf('%+b', 4)  # => "+100"
     sprintf('%+b', -4) # => "-100"
 
-- Flag <tt>-</tt>: Allowed, but has no effec.
+- Flag <tt>-</tt>: Allowed, but has no effect.
 
 - Flag +0+: Allowed, but has no effect.
 
