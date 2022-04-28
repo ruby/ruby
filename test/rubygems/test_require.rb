@@ -671,10 +671,6 @@ class TestGemRequire < Gem::TestCase
 
   private
 
-  def testing_ruby_repo?
-    !ENV["GEM_COMMAND"].nil?
-  end
-
   def util_install_extension_file(name)
     spec = quick_gem name
     util_build_gem spec
