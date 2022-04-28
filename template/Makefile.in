@@ -319,7 +319,7 @@ $(LIBRUBY_A):
 		  $(MAKEDIRS) '$(CARGO_TARGET_DIR)/libyjit/' && \
 		  $(CP) '$(YJIT_LIBS)' '$(CARGO_TARGET_DIR)/libyjit/' && \
 		  (cd '$(CARGO_TARGET_DIR)/libyjit/' && $(AR) -x libyjit.a) && \
-		  $(AR) $(ARFLAGS) $@ $$(find '$(CARGO_TARGET_DIR)/libyjit/' -name '*.o') ;
+		  $(AR) $(ARFLAGS) $@ `find '$(CARGO_TARGET_DIR)/libyjit/' -name '*.o'` ;
 		@-$(RANLIB) $@ 2> /dev/null || true
 
 verify-static-library: $(LIBRUBY_A)
