@@ -1523,7 +1523,6 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
     let branch_size_on_entry = branch.code_size();
 
     let target_idx: usize = target_idx.as_usize();
-    assert!(branch.targets[target_idx].is_some());
     let target = branch.targets[target_idx].unwrap();
     let target_ctx = branch.target_ctxs[target_idx];
 
