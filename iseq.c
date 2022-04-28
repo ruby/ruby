@@ -204,7 +204,10 @@ rb_iseq_free(const rb_iseq_t *iseq)
     }
 
     if (iseq && ISEQ_EXECUTABLE_P(iseq) && iseq->aux.exec.local_hooks) {
-        rb_hook_list_free(iseq->aux.exec.local_hooks);
+        if (*iseq->aux.exec.local_hooks) {
+            rb_hook_list_free(*iseq->aux.exec.local_hooks);
+        }
+        ruby_xfree(iseq->aux.exec.local_hooks);
     }
 
     RUBY_FREE_LEAVE("iseq");
@@ -553,8 +556,8 @@ rb_iseq_mark(const rb_iseq_t *iseq)
     else {
         /* executable */
         VM_ASSERT(ISEQ_EXECUTABLE_P(iseq));
-        if (iseq->aux.exec.local_hooks) {
-            rb_hook_list_mark(iseq->aux.exec.local_hooks);
+        if (iseq->aux.exec.local_hooks && *iseq->aux.exec.local_hooks) {
+            rb_hook_list_mark(*iseq->aux.exec.local_hooks);
         }
     }
 
@@ -3500,10 +3503,13 @@ iseq_add_local_tracepoint(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, 
 
     if (n > 0) {
         if (iseq->aux.exec.local_hooks == NULL) {
-            ((rb_iseq_t *)iseq)->aux.exec.local_hooks = RB_ZALLOC(rb_hook_list_t);
-            iseq->aux.exec.local_hooks->is_local = true;
+            ((rb_iseq_t *)iseq)->aux.exec.local_hooks = RB_ZALLOC(rb_hook_list_t *);
         }
-        rb_hook_list_connect_tracepoint((VALUE)iseq, iseq->aux.exec.local_hooks, tpval, target_line);
+        if (*iseq->aux.exec.local_hooks == NULL) {
+            *((rb_iseq_t *)iseq)->aux.exec.local_hooks = RB_ZALLOC(rb_hook_list_t);
+            (*iseq->aux.exec.local_hooks)->is_local = true;
+        }
+        rb_hook_list_connect_tracepoint((VALUE)iseq, *iseq->aux.exec.local_hooks, tpval, target_line);
     }
 
     return n;
@@ -3546,18 +3552,18 @@ iseq_remove_local_tracepoint(const rb_iseq_t *iseq, VALUE tpval)
 {
     int n = 0;
 
-    if (iseq->aux.exec.local_hooks) {
+    if (iseq->aux.exec.local_hooks && *iseq->aux.exec.local_hooks) {
         unsigned int pc;
         const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
         VALUE *iseq_encoded = (VALUE *)body->iseq_encoded;
         rb_event_flag_t local_events = 0;
 
-        rb_hook_list_remove_tracepoint(iseq->aux.exec.local_hooks, tpval);
-        local_events = iseq->aux.exec.local_hooks->events;
+        rb_hook_list_remove_tracepoint(*iseq->aux.exec.local_hooks, tpval);
+        local_events = (*iseq->aux.exec.local_hooks)->events;
 
         if (local_events == 0) {
-            rb_hook_list_free(iseq->aux.exec.local_hooks);
-            ((rb_iseq_t *)iseq)->aux.exec.local_hooks = NULL;
+            rb_hook_list_free(*iseq->aux.exec.local_hooks);
+            *((rb_iseq_t *)iseq)->aux.exec.local_hooks = NULL;
         }
 
         local_events = add_bmethod_events(local_events);
@@ -3609,7 +3615,7 @@ rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
         const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
 	VALUE *iseq_encoded = (VALUE *)body->iseq_encoded;
         rb_event_flag_t enabled_events;
-        rb_event_flag_t local_events = iseq->aux.exec.local_hooks ? iseq->aux.exec.local_hooks->events : 0;
+        rb_event_flag_t local_events = (iseq->aux.exec.local_hooks && *iseq->aux.exec.local_hooks) ? (*iseq->aux.exec.local_hooks)->events : 0;
         ((rb_iseq_t *)iseq)->aux.exec.global_trace_events = turnon_events;
         enabled_events = add_bmethod_events(turnon_events | local_events);
 

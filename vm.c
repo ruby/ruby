@@ -2041,15 +2041,15 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
     }
     else {
         const rb_iseq_t *iseq = cfp->iseq;
-        rb_hook_list_t *local_hooks = iseq->aux.exec.local_hooks;
+        rb_hook_list_t **local_hooks = iseq->aux.exec.local_hooks;
 
         switch (VM_FRAME_TYPE(ec->cfp)) {
           case VM_FRAME_MAGIC_METHOD:
             RUBY_DTRACE_METHOD_RETURN_HOOK(ec, 0, 0);
             EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_RETURN, ec->cfp->self, 0, 0, 0, frame_return_value(err));
 
-            if (UNLIKELY(local_hooks && local_hooks->events & RUBY_EVENT_RETURN)) {
-                rb_exec_event_hook_orig(ec, local_hooks, RUBY_EVENT_RETURN,
+            if (UNLIKELY(local_hooks && *local_hooks && (*local_hooks)->events & RUBY_EVENT_RETURN)) {
+                rb_exec_event_hook_orig(ec, *local_hooks, RUBY_EVENT_RETURN,
                                         ec->cfp->self, 0, 0, 0, frame_return_value(err), TRUE);
             }
 
@@ -2065,8 +2065,8 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
 
 
                 EXEC_EVENT_HOOK(ec, RUBY_EVENT_B_RETURN, ec->cfp->self, 0, 0, 0, bmethod_return_value);
-                if (UNLIKELY(local_hooks && local_hooks->events & RUBY_EVENT_B_RETURN)) {
-                    rb_exec_event_hook_orig(ec, local_hooks, RUBY_EVENT_B_RETURN,
+                if (UNLIKELY(local_hooks && *local_hooks && (*local_hooks)->events & RUBY_EVENT_B_RETURN)) {
+                    rb_exec_event_hook_orig(ec, *local_hooks, RUBY_EVENT_B_RETURN,
                                             ec->cfp->self, 0, 0, 0, bmethod_return_value, FALSE);
                 }
 
@@ -2079,10 +2079,10 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
                                               bmethod_return_value);
 
                 VM_ASSERT(me->def->type == VM_METHOD_TYPE_BMETHOD);
-                local_hooks = me->def->body.bmethod.hooks;
+                rb_hook_list_t *bmethod_local_hooks = me->def->body.bmethod.hooks;
 
-                if (UNLIKELY(local_hooks && local_hooks->events & RUBY_EVENT_RETURN)) {
-                    rb_exec_event_hook_orig(ec, local_hooks, RUBY_EVENT_RETURN, ec->cfp->self,
+                if (UNLIKELY(bmethod_local_hooks && bmethod_local_hooks->events & RUBY_EVENT_RETURN)) {
+                    rb_exec_event_hook_orig(ec, bmethod_local_hooks, RUBY_EVENT_RETURN, ec->cfp->self,
                                             rb_vm_frame_method_entry(ec->cfp)->def->original_id,
                                             rb_vm_frame_method_entry(ec->cfp)->called_id,
                                             rb_vm_frame_method_entry(ec->cfp)->owner,
@@ -2092,8 +2092,8 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
             }
             else {
                 EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_B_RETURN, ec->cfp->self, 0, 0, 0, frame_return_value(err));
-                if (UNLIKELY(local_hooks && local_hooks->events & RUBY_EVENT_B_RETURN)) {
-                    rb_exec_event_hook_orig(ec, local_hooks, RUBY_EVENT_B_RETURN,
+                if (UNLIKELY(local_hooks && *local_hooks && (*local_hooks)->events & RUBY_EVENT_B_RETURN)) {
+                    rb_exec_event_hook_orig(ec, *local_hooks, RUBY_EVENT_B_RETURN,
                                             ec->cfp->self, 0, 0, 0, frame_return_value(err), TRUE);
                 }
                 THROW_DATA_CONSUMED_SET(err);

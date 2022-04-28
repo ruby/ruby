@@ -2561,6 +2561,23 @@ CODE
     end
     bar
     EOS
+
+    assert_normal_exit <<-EOS
+    def bar
+      42 #bp here
+    end
+
+    tp_line = TracePoint.new(:line) do |tp0|
+      tp_multi1 = TracePoint.new(:return, :b_return, :line) do |tp|
+        tp0.disable
+      end
+      tp_multi1.enable
+    end
+
+    tp_line.enable(target: RubyVM::InstructionSequence.of(method :bar))
+
+    bar
+    EOS
   end
 
   def test_stat_exists

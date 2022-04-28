@@ -489,7 +489,7 @@ struct rb_iseq_struct {
 	} loader;
 
         struct {
-            struct rb_hook_list_struct *local_hooks;
+            struct rb_hook_list_struct **local_hooks;
             rb_event_flag_t global_trace_events;
         } exec;
     } aux;

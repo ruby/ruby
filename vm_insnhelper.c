@@ -5629,7 +5629,7 @@ NOINLINE(static void vm_trace(rb_execution_context_t *ec, rb_control_frame_t *re
 static inline void
 vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *pc,
               rb_event_flag_t pc_events, rb_event_flag_t target_event,
-              rb_hook_list_t *global_hooks, rb_hook_list_t *local_hooks, VALUE val)
+              rb_hook_list_t *global_hooks, rb_hook_list_t **local_hooks, VALUE val)
 {
     rb_event_flag_t event = pc_events & target_event;
     VALUE self = GET_SELF();
@@ -5644,11 +5644,11 @@ vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VAL
         reg_cfp->pc--;
     }
 
-    if (local_hooks != NULL) {
-        if (event & local_hooks->events) {
+    if (local_hooks != NULL && *local_hooks != NULL) {
+        if (event & (*local_hooks)->events) {
             /* increment PC because source line is calculated with PC-1 */
             reg_cfp->pc++;
-            rb_exec_event_hook_orig(ec, local_hooks, event, self, 0, 0, 0 , val, 0);
+            rb_exec_event_hook_orig(ec, *local_hooks, event, self, 0, 0, 0 , val, 0);
             reg_cfp->pc--;
         }
     }
@@ -5690,8 +5690,8 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
 	const rb_iseq_t *iseq = reg_cfp->iseq;
         size_t pos = pc - ISEQ_BODY(iseq)->iseq_encoded;
         rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pos);
-        rb_hook_list_t *local_hooks = iseq->aux.exec.local_hooks;
-        rb_event_flag_t iseq_local_events = local_hooks != NULL ? local_hooks->events : 0;
+        rb_hook_list_t **local_hooks = iseq->aux.exec.local_hooks;
+        rb_event_flag_t iseq_local_events = (local_hooks != NULL && *local_hooks != NULL) ? (*local_hooks)->events : 0;
         rb_hook_list_t *bmethod_local_hooks = NULL;
         rb_event_flag_t bmethod_local_events = 0;
         bool bmethod_frame = VM_FRAME_BMETHOD_P(reg_cfp);
@@ -5745,7 +5745,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             /* check traces */
             if ((pc_events & RUBY_EVENT_B_CALL) && bmethod_frame && (bmethod_events & RUBY_EVENT_CALL)) {
                 /* b_call instruction running as a method. Fire call event. */
-                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_CALL, RUBY_EVENT_CALL, global_hooks, bmethod_local_hooks, Qundef);
+                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_CALL, RUBY_EVENT_CALL, global_hooks, &bmethod_local_hooks, Qundef);
             }
             VM_TRACE_HOOK(RUBY_EVENT_CLASS | RUBY_EVENT_CALL | RUBY_EVENT_B_CALL,   Qundef);
             VM_TRACE_HOOK(RUBY_EVENT_LINE,                                          Qundef);
@@ -5754,7 +5754,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             VM_TRACE_HOOK(RUBY_EVENT_END | RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN, TOPN(0));
             if ((pc_events & RUBY_EVENT_B_RETURN) && bmethod_frame && (bmethod_events & RUBY_EVENT_RETURN)) {
                 /* b_return instruction running as a method. Fire return event. */
-                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_RETURN, RUBY_EVENT_RETURN, global_hooks, bmethod_local_hooks, TOPN(0));
+                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_RETURN, RUBY_EVENT_RETURN, global_hooks, &bmethod_local_hooks, TOPN(0));
             }
         }
     }
