@@ -173,6 +173,9 @@ extern "C" {
     ) -> VALUE;
 }
 extern "C" {
+    pub fn rb_str_append(dst: VALUE, src: VALUE) -> VALUE;
+}
+extern "C" {
     pub fn rb_str_intern(str_: VALUE) -> VALUE;
 }
 extern "C" {
@@ -181,6 +184,11 @@ extern "C" {
 extern "C" {
     pub fn rb_attr_get(obj: VALUE, name: ID) -> VALUE;
 }
+pub const RUBY_ENCODING_INLINE_MAX: ruby_encoding_consts = 127;
+pub const RUBY_ENCODING_SHIFT: ruby_encoding_consts = 22;
+pub const RUBY_ENCODING_MASK: ruby_encoding_consts = 532676608;
+pub const RUBY_ENCODING_MAXNAMELEN: ruby_encoding_consts = 42;
+pub type ruby_encoding_consts = u32;
 extern "C" {
     pub fn rb_obj_info_dump(obj: VALUE);
 }
@@ -732,6 +740,9 @@ extern "C" {
     pub fn rb_leaf_builtin_function(iseq: *const rb_iseq_t) -> *const rb_builtin_function;
 }
 extern "C" {
+    pub fn rb_yjit_str_simple_append(str1: VALUE, str2: VALUE) -> VALUE;
+}
+extern "C" {
     pub fn rb_set_cfp_pc(cfp: *mut rb_control_frame_struct, pc: *const VALUE);
 }
 extern "C" {
@@ -742,6 +753,9 @@ extern "C" {
 }
 extern "C" {
     pub fn rb_yjit_dump_iseq_loc(iseq: *const rb_iseq_t, insn_idx: u32);
+}
+extern "C" {
+    pub fn rb_ENCODING_GET(obj: VALUE) -> ::std::os::raw::c_int;
 }
 extern "C" {
     pub fn rb_yjit_multi_ractor_p() -> bool;
