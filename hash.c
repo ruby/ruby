@@ -305,7 +305,8 @@ objid_hash(VALUE obj)
  * do not call the #hash method when used as a hash key.
  *
  * When implementing your own #hash based on multiple values, the best
- * practice is to combine values using the hash code of an array:
+ * practice is to combine the class and any values using the hash code of an
+ * array:
  *
  * For example:
  *
