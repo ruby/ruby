@@ -14510,13 +14510,6 @@ rb_mmtk_resume_mutators(MMTk_VMWorkerThread tls)
 static void
 rb_mmtk_block_for_gc_internal(void *unused)
 {
-    // Dump callee-saved registers and set the stack end for conservative stack scanning.
-    // See also: mark_current_machine_context
-    rb_jmp_buf j;
-    rb_setjmp(j); // Hope __builtin_setjmp includes all callee-saved registers.  GCC's docs doesn't seem to guarantee that.
-    rb_execution_context_t *ec = GET_EC();
-    SET_STACK_END; // Hope the SP includes the jmp buf `j`.  There's no guarantee on the C language level.
-
     // Increment the stopped ractor count
     rb_mmtk_global.stopped_ractors++;
     if (rb_mmtk_global.stopped_ractors == 1) {
@@ -14544,6 +14537,8 @@ rb_mmtk_block_for_gc(MMTk_VMMutatorThread tls)
 {
     rb_mmtk_assert_mutator();
 
+    rb_thread_t *th = GET_THREAD();
+    RB_GC_SAVE_MACHINE_CONTEXT(th);
     rb_mmtk_use_mmtk_global(rb_mmtk_block_for_gc_internal, NULL);
 }
 
