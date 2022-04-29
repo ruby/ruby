@@ -93,9 +93,9 @@ extern void* mmtk_last_heap_address();
 /**
  * Reference Processing
  */
-extern void mmtk_add_weak_candidate(void* ref, void* referent);
-extern void mmtk_add_soft_candidate(void* ref, void* referent);
-extern void mmtk_add_phantom_candidate(void* ref, void* referent);
+extern void mmtk_add_weak_candidate(void* ref);
+extern void mmtk_add_soft_candidate(void* ref);
+extern void mmtk_add_phantom_candidate(void* ref);
 
 extern void mmtk_harness_begin(void *tls);
 extern void mmtk_harness_end(void *tls);
