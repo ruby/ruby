@@ -92,6 +92,7 @@ pub struct CodeBlock {
     label_refs: Vec<LabelRef>,
 
     // Comments for assembly instructions, if that feature is enabled
+    #[cfg(feature = "asm_comments")]
     asm_comments: BTreeMap<usize, Vec<String>>,
 
     // Keep track of the current aligned write position.
@@ -122,6 +123,7 @@ impl CodeBlock {
             label_addrs: Vec::new(),
             label_names: Vec::new(),
             label_refs: Vec::new(),
+            #[cfg(feature = "asm_comments")]
             asm_comments: BTreeMap::new(),
             current_aligned_write_pos: ALIGNED_WRITE_POSITION_NONE,
             page_size: 4096,
@@ -138,6 +140,7 @@ impl CodeBlock {
             label_addrs: Vec::new(),
             label_names: Vec::new(),
             label_refs: Vec::new(),
+            #[cfg(feature = "asm_comments")]
             asm_comments: BTreeMap::new(),
             current_aligned_write_pos: ALIGNED_WRITE_POSITION_NONE,
             page_size,
@@ -152,23 +155,30 @@ impl CodeBlock {
 
     /// Add an assembly comment if the feature is on.
     /// If not, this becomes an inline no-op.
-    #[inline]
+    #[cfg(feature = "asm_comments")]
     pub fn add_comment(&mut self, comment: &str) {
-        if cfg!(feature = "asm_comments") {
-            let cur_ptr = self.get_write_ptr().into_usize();
+        let cur_ptr = self.get_write_ptr().into_usize();
 
-            // If there's no current list of comments for this line number, add one.
-            let this_line_comments = self.asm_comments.entry(cur_ptr).or_default();
+        // If there's no current list of comments for this line number, add one.
+        let this_line_comments = self.asm_comments.entry(cur_ptr).or_default();
 
-            // Unless this comment is the same as the last one at this same line, add it.
-            if this_line_comments.last().map(String::as_str) != Some(comment) {
-                this_line_comments.push(comment.to_string());
-            }
+        // Unless this comment is the same as the last one at this same line, add it.
+        if this_line_comments.last().map(String::as_str) != Some(comment) {
+            this_line_comments.push(comment.to_string());
         }
     }
+    #[cfg(not(feature = "asm_comments"))]
+    #[inline]
+    pub fn add_comment(&mut self, _: &str) {}
 
+    #[cfg(feature = "asm_comments")]
     pub fn comments_at(&self, pos: usize) -> Option<&Vec<String>> {
         self.asm_comments.get(&pos)
+    }
+    #[cfg(not(feature = "asm_comments"))]
+    #[inline]
+    pub fn comments_at(&self, _: usize) -> Option<&Vec<String>> {
+        None
     }
 
     pub fn get_mem_size(&self) -> usize {
