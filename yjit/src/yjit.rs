@@ -86,8 +86,7 @@ pub extern "C" fn rb_yjit_simulate_oom_bang(_ec: EcPtr, _ruby_self: VALUE) -> VA
     }
 
     // Enabled in debug mode only for security
-    #[cfg(debug_assertions)]
-    {
+    if cfg!(debug_assertions) {
         let cb = CodegenGlobals::get_inline_cb();
         let ocb = CodegenGlobals::get_outlined_cb().unwrap();
         cb.set_pos(cb.get_mem_size() - 1);

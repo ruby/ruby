@@ -1,9 +1,6 @@
-use crate::asm::*;
-use crate::codegen::*;
 use crate::core::*;
 use crate::cruby::*;
 use crate::yjit::yjit_enabled_p;
-use std::fmt::Write;
 
 /// Primitive called in yjit.rb
 /// Produce a string representing the disassembly for an ISEQ
@@ -43,7 +40,7 @@ fn disasm_iseq(iseq: IseqPtr) -> String {
     let mut block_list = get_iseq_block_list(iseq);
 
     // Get a list of codeblocks relevant to this iseq
-    let global_cb = CodegenGlobals::get_inline_cb();
+    let global_cb = crate::codegen::CodegenGlobals::get_inline_cb();
 
     // Sort the blocks by increasing start addresses
     block_list.sort_by(|a, b| {

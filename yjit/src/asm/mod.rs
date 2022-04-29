@@ -1,5 +1,7 @@
-use std::collections::BTreeMap;
 use std::mem;
+
+#[cfg(feature = "asm_comments")]
+use std::collections::BTreeMap;
 
 // Lots of manual vertical alignment in there that rustfmt doesn't handle well.
 #[rustfmt::skip]
@@ -23,6 +25,7 @@ impl CodePtr {
         *ptr as i64
     }
 
+    #[allow(unused)]
     fn into_usize(&self) -> usize {
         let CodePtr(ptr) = self;
         *ptr as usize
@@ -35,21 +38,6 @@ impl From<*mut u8> for CodePtr {
         return CodePtr(value);
     }
 }
-
-/// Compute an offset in bytes of a given struct field
-macro_rules! offset_of {
-    ($struct_type:ty, $field_name:tt) => {{
-        // Null pointer to our struct type
-        let foo = (0 as *const $struct_type);
-
-        unsafe {
-            let ptr_field = (&(*foo).$field_name as *const _ as usize);
-            let ptr_base = (foo as usize);
-            ptr_field - ptr_base
-        }
-    }};
-}
-pub(crate) use offset_of;
 
 //
 // TODO: need a field_size_of macro, to compute the size of a struct field in bytes
@@ -71,6 +59,7 @@ struct LabelRef {
 pub struct CodeBlock {
     // Block of non-executable memory used for dummy code blocks
     // This memory is owned by this block and lives as long as the block
+    #[allow(unused)]
     dummy_block: Vec<u8>,
 
     // Pointer to memory we are writing into
@@ -110,6 +99,7 @@ pub struct CodeBlock {
 }
 
 impl CodeBlock {
+    #[cfg(test)]
     pub fn new_dummy(mem_size: usize) -> Self {
         // Allocate some non-executable memory
         let mut dummy_block = vec![0; mem_size];
@@ -131,6 +121,7 @@ impl CodeBlock {
         }
     }
 
+    #[cfg(not(test))]
     pub fn new(mem_block: *mut u8, mem_size: usize, page_size: usize) -> Self {
         Self {
             dummy_block: vec![0; 0],
@@ -174,11 +165,6 @@ impl CodeBlock {
     #[cfg(feature = "asm_comments")]
     pub fn comments_at(&self, pos: usize) -> Option<&Vec<String>> {
         self.asm_comments.get(&pos)
-    }
-    #[cfg(not(feature = "asm_comments"))]
-    #[inline]
-    pub fn comments_at(&self, _: usize) -> Option<&Vec<String>> {
-        None
     }
 
     pub fn get_mem_size(&self) -> usize {
@@ -244,12 +230,6 @@ impl CodeBlock {
         } else {
             self.dropped_bytes = true;
         }
-    }
-
-    // Read a single byte at the given position
-    pub fn read_byte(&self, pos: usize) -> u8 {
-        assert!(pos < self.mem_size);
-        unsafe { self.mem_block.add(pos).read() }
     }
 
     // Write multiple bytes starting from the current position

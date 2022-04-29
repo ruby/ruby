@@ -28,7 +28,7 @@ pub const REG0: X86Opnd = RAX;
 pub const REG0_32: X86Opnd = EAX;
 pub const REG0_8: X86Opnd = AL;
 pub const REG1: X86Opnd = RCX;
-pub const REG1_32: X86Opnd = ECX;
+// pub const REG1_32: X86Opnd = ECX;
 
 /// Status returned by code generation functions
 #[derive(PartialEq, Debug)]
@@ -106,10 +106,6 @@ impl JITState {
         self.opcode
     }
 
-    pub fn set_opcode(self: &mut JITState, opcode: usize) {
-        self.opcode = opcode;
-    }
-
     pub fn add_gc_object_offset(self: &mut JITState, ptr_offset: u32) {
         let mut gc_obj_vec: RefMut<_> = self.block.borrow_mut();
         gc_obj_vec.add_gc_object_offset(ptr_offset);
@@ -118,15 +114,11 @@ impl JITState {
     pub fn get_pc(self: &JITState) -> *mut VALUE {
         self.pc
     }
-
-    pub fn set_pc(self: &mut JITState, pc: *mut VALUE) {
-        self.pc = pc;
-    }
 }
 
 use crate::codegen::JCCKinds::*;
 
-#[allow(non_camel_case_types)]
+#[allow(non_camel_case_types, unused)]
 pub enum JCCKinds {
     JCC_JNE,
     JCC_JNZ,
@@ -749,8 +741,7 @@ pub fn gen_single_block(
         }
 
         // In debug mode, verify our existing assumption
-        #[cfg(debug_assertions)]
-        if get_option!(verify_ctx) && jit_at_current_insn(&jit) {
+        if cfg!(debug_assertions) && get_option!(verify_ctx) && jit_at_current_insn(&jit) {
             verify_ctx(&jit, &ctx);
         }
 
@@ -6007,7 +5998,7 @@ mod tests {
 
         let mut value_array: [u64; 2] = [0, 2]; // We only compile for n == 2
         let pc: *mut VALUE = &mut value_array as *mut u64 as *mut VALUE;
-        jit.set_pc(pc);
+        jit.pc = pc;
 
         let status = gen_dupn(&mut jit, &mut context, &mut cb, &mut ocb);
 
@@ -6056,7 +6047,7 @@ mod tests {
 
         let mut value_array: [u64; 2] = [0, Qtrue.into()];
         let pc: *mut VALUE = &mut value_array as *mut u64 as *mut VALUE;
-        jit.set_pc(pc);
+        jit.pc = pc;
 
         let status = gen_putobject(&mut jit, &mut context, &mut cb, &mut ocb);
 
@@ -6075,7 +6066,7 @@ mod tests {
         // The Fixnum 7 is encoded as 7 * 2 + 1, or 15
         let mut value_array: [u64; 2] = [0, 15];
         let pc: *mut VALUE = &mut value_array as *mut u64 as *mut VALUE;
-        jit.set_pc(pc);
+        jit.pc = pc;
 
         let status = gen_putobject(&mut jit, &mut context, &mut cb, &mut ocb);
 
@@ -6117,7 +6108,7 @@ mod tests {
 
         let mut value_array: [u64; 2] = [0, 2];
         let pc: *mut VALUE = &mut value_array as *mut u64 as *mut VALUE;
-        jit.set_pc(pc);
+        jit.pc = pc;
 
         let status = gen_setn(&mut jit, &mut context, &mut cb, &mut ocb);
 
@@ -6138,7 +6129,7 @@ mod tests {
 
         let mut value_array: [u64; 2] = [0, 1];
         let pc: *mut VALUE = &mut value_array as *mut u64 as *mut VALUE;
-        jit.set_pc(pc);
+        jit.pc = pc;
 
         let status = gen_topn(&mut jit, &mut context, &mut cb, &mut ocb);
 
@@ -6160,7 +6151,7 @@ mod tests {
 
         let mut value_array: [u64; 3] = [0, 2, 0];
         let pc: *mut VALUE = &mut value_array as *mut u64 as *mut VALUE;
-        jit.set_pc(pc);
+        jit.pc = pc;
 
         let status = gen_adjuststack(&mut jit, &mut context, &mut cb, &mut ocb);
 

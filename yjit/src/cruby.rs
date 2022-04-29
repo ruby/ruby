@@ -84,7 +84,7 @@
 
 use std::convert::From;
 use std::ffi::CString;
-use std::os::raw::{c_char, c_int, c_long, c_uint, c_void};
+use std::os::raw::{c_char, c_int, c_long, c_uint};
 use std::panic::{catch_unwind, UnwindSafe};
 
 // We check that we can do this with the configure script and a couple of
@@ -95,8 +95,13 @@ pub type size_t = u64;
 /// shifted 1s but not explicitly an enum.
 pub type RedefinitionFlag = u32;
 
-// Textually include output from rust-bindgen as suggested by its user guide.
-include!("cruby_bindings.inc.rs");
+#[allow(dead_code)]
+mod autogened {
+    use super::*;
+    // Textually include output from rust-bindgen as suggested by its user guide.
+    include!("cruby_bindings.inc.rs");
+}
+pub use autogened::*;
 
 // TODO: For #defines that affect memory layout, we need to check for them
 // on build and fail if they're wrong. e.g. USE_FLONUM *must* be true.
@@ -104,6 +109,7 @@ include!("cruby_bindings.inc.rs");
 // TODO:
 // Temporary, these external bindings will likely be auto-generated
 // and textually included in this file
+#[cfg_attr(test, allow(unused))] // We don't link against C code when testing
 extern "C" {
     #[link_name = "rb_yjit_alloc_exec_mem"] // we can rename functions with this attribute
     pub fn alloc_exec_mem(mem_size: u32) -> *mut u8;
@@ -134,9 +140,6 @@ extern "C" {
 
     #[link_name = "rb_get_cme_def_type"]
     pub fn get_cme_def_type(cme: *const rb_callable_method_entry_t) -> rb_method_type_t;
-
-    #[link_name = "rb_get_cme_def_method_serial"]
-    pub fn get_cme_def_method_serial(cme: *const rb_callable_method_entry_t) -> u64;
 
     #[link_name = "rb_get_cme_def_body_attr_id"]
     pub fn get_cme_def_body_attr_id(cme: *const rb_callable_method_entry_t) -> ID;
@@ -177,9 +180,6 @@ extern "C" {
 
     #[link_name = "rb_get_iseq_body_iseq_encoded"]
     pub fn get_iseq_body_iseq_encoded(iseq: IseqPtr) -> *mut VALUE;
-
-    #[link_name = "rb_get_iseq_body_builtin_inline_p"]
-    pub fn get_iseq_body_builtin_inline_p(iseq: IseqPtr) -> bool;
 
     #[link_name = "rb_get_iseq_body_stack_max"]
     pub fn get_iseq_body_stack_max(iseq: IseqPtr) -> c_uint;
@@ -272,8 +272,6 @@ extern "C" {
     pub fn rb_aliased_callable_method_entry(
         me: *const rb_callable_method_entry_t,
     ) -> *const rb_callable_method_entry_t;
-    pub fn rb_iseq_only_optparam_p(iseq: IseqPtr) -> bool;
-    pub fn rb_iseq_only_kwparam_p(iseq: IseqPtr) -> bool;
     pub fn rb_vm_getclassvariable(iseq: IseqPtr, cfp: CfpPtr, id: ID, ic: ICVARC) -> VALUE;
     pub fn rb_vm_setclassvariable(
         iseq: IseqPtr,
@@ -298,12 +296,6 @@ extern "C" {
 
     #[link_name = "rb_METHOD_ENTRY_VISI"]
     pub fn METHOD_ENTRY_VISI(me: *const rb_callable_method_entry_t) -> rb_method_visibility_t;
-
-    pub fn rb_yjit_branch_stub_hit(
-        branch_ptr: *const c_void,
-        target_idx: u32,
-        ec: EcPtr,
-    ) -> *const c_void;
 
     pub fn rb_str_bytesize(str: VALUE) -> VALUE;
 
@@ -607,6 +599,7 @@ impl From<VALUE> for i32 {
 }
 
 /// Produce a Ruby string from a Rust string slice
+#[cfg(feature = "asm_comments")]
 pub fn rust_str_to_ruby(str: &str) -> VALUE {
     unsafe { rb_utf8_str_new(str.as_ptr() as *const i8, str.len() as i64) }
 }
@@ -670,7 +663,7 @@ where
         Err(_) => {
             // Theoretically we can recover from some of these panics,
             // but it's too late if the unwind reaches here.
-            use std::{io, process, str};
+            use std::{process, str};
 
             let _ = catch_unwind(|| {
                 // IO functions can panic too.
@@ -699,221 +692,231 @@ pub const Qtrue: VALUE = VALUE(20);
 #[allow(non_upper_case_globals)]
 pub const Qundef: VALUE = VALUE(52);
 
-pub const RUBY_SYMBOL_FLAG: usize = 0x0c;
+#[allow(unused)]
+mod manual_defs {
+    use super::*;
 
-pub const RUBY_LONG_MIN: isize = std::os::raw::c_long::MIN as isize;
-pub const RUBY_LONG_MAX: isize = std::os::raw::c_long::MAX as isize;
+    pub const RUBY_SYMBOL_FLAG: usize = 0x0c;
 
-pub const RUBY_FIXNUM_MIN: isize = RUBY_LONG_MIN / 2;
-pub const RUBY_FIXNUM_MAX: isize = RUBY_LONG_MAX / 2;
-pub const RUBY_FIXNUM_FLAG: usize = 0x1;
+    pub const RUBY_LONG_MIN: isize = std::os::raw::c_long::MIN as isize;
+    pub const RUBY_LONG_MAX: isize = std::os::raw::c_long::MAX as isize;
 
-pub const RUBY_FLONUM_FLAG: usize = 0x2;
-pub const RUBY_FLONUM_MASK: usize = 0x3;
+    pub const RUBY_FIXNUM_MIN: isize = RUBY_LONG_MIN / 2;
+    pub const RUBY_FIXNUM_MAX: isize = RUBY_LONG_MAX / 2;
+    pub const RUBY_FIXNUM_FLAG: usize = 0x1;
 
-pub const RUBY_IMMEDIATE_MASK: usize = 0x7;
+    pub const RUBY_FLONUM_FLAG: usize = 0x2;
+    pub const RUBY_FLONUM_MASK: usize = 0x3;
 
-pub const RUBY_SPECIAL_SHIFT: usize = 8;
+    pub const RUBY_IMMEDIATE_MASK: usize = 0x7;
 
-// Constants from vm_core.h
-pub const VM_SPECIAL_OBJECT_VMCORE: usize = 0x1;
-pub const VM_ENV_DATA_INDEX_SPECVAL: isize = -1;
-pub const VM_ENV_DATA_INDEX_FLAGS: isize = 0;
-pub const VM_ENV_DATA_SIZE: usize = 3;
+    pub const RUBY_SPECIAL_SHIFT: usize = 8;
 
-// From vm_callinfo.h
-pub const VM_CALL_ARGS_SPLAT: u32 = 1 << VM_CALL_ARGS_SPLAT_bit;
-pub const VM_CALL_ARGS_BLOCKARG: u32 = 1 << VM_CALL_ARGS_BLOCKARG_bit;
-pub const VM_CALL_FCALL: u32 = 1 << VM_CALL_FCALL_bit;
-pub const VM_CALL_KWARG: u32 = 1 << VM_CALL_KWARG_bit;
-pub const VM_CALL_KW_SPLAT: u32 = 1 << VM_CALL_KW_SPLAT_bit;
-pub const VM_CALL_TAILCALL: u32 = 1 << VM_CALL_TAILCALL_bit;
+    // Constants from vm_core.h
+    pub const VM_SPECIAL_OBJECT_VMCORE: usize = 0x1;
+    pub const VM_ENV_DATA_INDEX_SPECVAL: isize = -1;
+    pub const VM_ENV_DATA_INDEX_FLAGS: isize = 0;
+    pub const VM_ENV_DATA_SIZE: usize = 3;
 
-pub const SIZEOF_VALUE: usize = 8;
-pub const SIZEOF_VALUE_I32: i32 = SIZEOF_VALUE as i32;
+    // From vm_callinfo.h
+    pub const VM_CALL_ARGS_SPLAT: u32 = 1 << VM_CALL_ARGS_SPLAT_bit;
+    pub const VM_CALL_ARGS_BLOCKARG: u32 = 1 << VM_CALL_ARGS_BLOCKARG_bit;
+    pub const VM_CALL_FCALL: u32 = 1 << VM_CALL_FCALL_bit;
+    pub const VM_CALL_KWARG: u32 = 1 << VM_CALL_KWARG_bit;
+    pub const VM_CALL_KW_SPLAT: u32 = 1 << VM_CALL_KW_SPLAT_bit;
+    pub const VM_CALL_TAILCALL: u32 = 1 << VM_CALL_TAILCALL_bit;
 
-pub const RUBY_FL_SINGLETON: usize = RUBY_FL_USER_0;
+    pub const SIZEOF_VALUE: usize = 8;
+    pub const SIZEOF_VALUE_I32: i32 = SIZEOF_VALUE as i32;
 
-pub const ROBJECT_EMBED: usize = RUBY_FL_USER_1;
-pub const ROBJECT_EMBED_LEN_MAX: usize = 3; // This is a complex calculation in ruby/internal/core/robject.h
+    pub const RUBY_FL_SINGLETON: usize = RUBY_FL_USER_0;
 
-pub const RMODULE_IS_REFINEMENT: usize = RUBY_FL_USER_3;
+    pub const ROBJECT_EMBED: usize = RUBY_FL_USER_1;
+    pub const ROBJECT_EMBED_LEN_MAX: usize = 3; // This is a complex calculation in ruby/internal/core/robject.h
 
-// Constants from include/ruby/internal/fl_type.h
-pub const RUBY_FL_USHIFT: usize = 12;
-pub const RUBY_FL_USER_0: usize = 1 << (RUBY_FL_USHIFT + 0);
-pub const RUBY_FL_USER_1: usize = 1 << (RUBY_FL_USHIFT + 1);
-pub const RUBY_FL_USER_2: usize = 1 << (RUBY_FL_USHIFT + 2);
-pub const RUBY_FL_USER_3: usize = 1 << (RUBY_FL_USHIFT + 3);
-pub const RUBY_FL_USER_4: usize = 1 << (RUBY_FL_USHIFT + 4);
-pub const RUBY_FL_USER_5: usize = 1 << (RUBY_FL_USHIFT + 5);
-pub const RUBY_FL_USER_6: usize = 1 << (RUBY_FL_USHIFT + 6);
-pub const RUBY_FL_USER_7: usize = 1 << (RUBY_FL_USHIFT + 7);
-pub const RUBY_FL_USER_8: usize = 1 << (RUBY_FL_USHIFT + 8);
-pub const RUBY_FL_USER_9: usize = 1 << (RUBY_FL_USHIFT + 9);
-pub const RUBY_FL_USER_10: usize = 1 << (RUBY_FL_USHIFT + 10);
-pub const RUBY_FL_USER_11: usize = 1 << (RUBY_FL_USHIFT + 11);
-pub const RUBY_FL_USER_12: usize = 1 << (RUBY_FL_USHIFT + 12);
-pub const RUBY_FL_USER_13: usize = 1 << (RUBY_FL_USHIFT + 13);
-pub const RUBY_FL_USER_14: usize = 1 << (RUBY_FL_USHIFT + 14);
-pub const RUBY_FL_USER_15: usize = 1 << (RUBY_FL_USHIFT + 15);
-pub const RUBY_FL_USER_16: usize = 1 << (RUBY_FL_USHIFT + 16);
-pub const RUBY_FL_USER_17: usize = 1 << (RUBY_FL_USHIFT + 17);
-pub const RUBY_FL_USER_18: usize = 1 << (RUBY_FL_USHIFT + 18);
-pub const RUBY_FL_USER_19: usize = 1 << (RUBY_FL_USHIFT + 19);
+    pub const RMODULE_IS_REFINEMENT: usize = RUBY_FL_USER_3;
 
-// Constants from include/ruby/internal/core/rarray.h
-pub const RARRAY_EMBED_FLAG: usize = RUBY_FL_USER_1;
-pub const RARRAY_EMBED_LEN_SHIFT: usize = RUBY_FL_USHIFT + 3;
-pub const RARRAY_EMBED_LEN_MASK: usize = RUBY_FL_USER_3 | RUBY_FL_USER_4;
+    // Constants from include/ruby/internal/fl_type.h
+    pub const RUBY_FL_USHIFT: usize = 12;
+    pub const RUBY_FL_USER_0: usize = 1 << (RUBY_FL_USHIFT + 0);
+    pub const RUBY_FL_USER_1: usize = 1 << (RUBY_FL_USHIFT + 1);
+    pub const RUBY_FL_USER_2: usize = 1 << (RUBY_FL_USHIFT + 2);
+    pub const RUBY_FL_USER_3: usize = 1 << (RUBY_FL_USHIFT + 3);
+    pub const RUBY_FL_USER_4: usize = 1 << (RUBY_FL_USHIFT + 4);
+    pub const RUBY_FL_USER_5: usize = 1 << (RUBY_FL_USHIFT + 5);
+    pub const RUBY_FL_USER_6: usize = 1 << (RUBY_FL_USHIFT + 6);
+    pub const RUBY_FL_USER_7: usize = 1 << (RUBY_FL_USHIFT + 7);
+    pub const RUBY_FL_USER_8: usize = 1 << (RUBY_FL_USHIFT + 8);
+    pub const RUBY_FL_USER_9: usize = 1 << (RUBY_FL_USHIFT + 9);
+    pub const RUBY_FL_USER_10: usize = 1 << (RUBY_FL_USHIFT + 10);
+    pub const RUBY_FL_USER_11: usize = 1 << (RUBY_FL_USHIFT + 11);
+    pub const RUBY_FL_USER_12: usize = 1 << (RUBY_FL_USHIFT + 12);
+    pub const RUBY_FL_USER_13: usize = 1 << (RUBY_FL_USHIFT + 13);
+    pub const RUBY_FL_USER_14: usize = 1 << (RUBY_FL_USHIFT + 14);
+    pub const RUBY_FL_USER_15: usize = 1 << (RUBY_FL_USHIFT + 15);
+    pub const RUBY_FL_USER_16: usize = 1 << (RUBY_FL_USHIFT + 16);
+    pub const RUBY_FL_USER_17: usize = 1 << (RUBY_FL_USHIFT + 17);
+    pub const RUBY_FL_USER_18: usize = 1 << (RUBY_FL_USHIFT + 18);
+    pub const RUBY_FL_USER_19: usize = 1 << (RUBY_FL_USHIFT + 19);
 
-// From internal/struct.h
-pub const RSTRUCT_EMBED_LEN_MASK: usize = RUBY_FL_USER_2 | RUBY_FL_USER_1;
+    // Constants from include/ruby/internal/core/rarray.h
+    pub const RARRAY_EMBED_FLAG: usize = RUBY_FL_USER_1;
+    pub const RARRAY_EMBED_LEN_SHIFT: usize = RUBY_FL_USHIFT + 3;
+    pub const RARRAY_EMBED_LEN_MASK: usize = RUBY_FL_USER_3 | RUBY_FL_USER_4;
 
-// From iseq.h
-pub const ISEQ_TRANSLATED: usize = RUBY_FL_USER_7;
+    // From internal/struct.h
+    pub const RSTRUCT_EMBED_LEN_MASK: usize = RUBY_FL_USER_2 | RUBY_FL_USER_1;
 
-// We'll need to encode a lot of Ruby struct/field offsets as constants unless we want to
-// redeclare all the Ruby C structs and write our own offsetof macro. For now, we use constants.
-pub const RUBY_OFFSET_RBASIC_FLAGS: i32 = 0; // struct RBasic, field "flags"
-pub const RUBY_OFFSET_RBASIC_KLASS: i32 = 8; // struct RBasic, field "klass"
-pub const RUBY_OFFSET_RARRAY_AS_HEAP_LEN: i32 = 16; // struct RArray, subfield "as.heap.len"
-pub const RUBY_OFFSET_RARRAY_AS_HEAP_PTR: i32 = 32; // struct RArray, subfield "as.heap.ptr"
-pub const RUBY_OFFSET_RARRAY_AS_ARY: i32 = 16; // struct RArray, subfield "as.ary"
+    // From iseq.h
+    pub const ISEQ_TRANSLATED: usize = RUBY_FL_USER_7;
 
-pub const RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR: i32 = 24; // struct RStruct, subfield "as.heap.ptr"
-pub const RUBY_OFFSET_RSTRUCT_AS_ARY: i32 = 16; // struct RStruct, subfield "as.ary"
+    // We'll need to encode a lot of Ruby struct/field offsets as constants unless we want to
+    // redeclare all the Ruby C structs and write our own offsetof macro. For now, we use constants.
+    pub const RUBY_OFFSET_RBASIC_FLAGS: i32 = 0; // struct RBasic, field "flags"
+    pub const RUBY_OFFSET_RBASIC_KLASS: i32 = 8; // struct RBasic, field "klass"
+    pub const RUBY_OFFSET_RARRAY_AS_HEAP_LEN: i32 = 16; // struct RArray, subfield "as.heap.len"
+    pub const RUBY_OFFSET_RARRAY_AS_HEAP_PTR: i32 = 32; // struct RArray, subfield "as.heap.ptr"
+    pub const RUBY_OFFSET_RARRAY_AS_ARY: i32 = 16; // struct RArray, subfield "as.ary"
 
-pub const RUBY_OFFSET_ROBJECT_AS_ARY: i32 = 16; // struct RObject, subfield "as.ary"
-pub const RUBY_OFFSET_ROBJECT_AS_HEAP_NUMIV: i32 = 16; // struct RObject, subfield "as.heap.numiv"
-pub const RUBY_OFFSET_ROBJECT_AS_HEAP_IVPTR: i32 = 24; // struct RObject, subfield "as.heap.ivptr"
+    pub const RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR: i32 = 24; // struct RStruct, subfield "as.heap.ptr"
+    pub const RUBY_OFFSET_RSTRUCT_AS_ARY: i32 = 16; // struct RStruct, subfield "as.ary"
 
-// Constants from rb_control_frame_t vm_core.h
-pub const RUBY_OFFSET_CFP_PC: i32 = 0;
-pub const RUBY_OFFSET_CFP_SP: i32 = 8;
-pub const RUBY_OFFSET_CFP_ISEQ: i32 = 16;
-pub const RUBY_OFFSET_CFP_SELF: i32 = 24;
-pub const RUBY_OFFSET_CFP_EP: i32 = 32;
-pub const RUBY_OFFSET_CFP_BLOCK_CODE: i32 = 40;
-pub const RUBY_OFFSET_CFP_BP: i32 = 48; // field __bp__
-pub const RUBY_OFFSET_CFP_JIT_RETURN: i32 = 56;
-pub const RUBY_SIZEOF_CONTROL_FRAME: usize = 64;
+    pub const RUBY_OFFSET_ROBJECT_AS_ARY: i32 = 16; // struct RObject, subfield "as.ary"
+    pub const RUBY_OFFSET_ROBJECT_AS_HEAP_NUMIV: i32 = 16; // struct RObject, subfield "as.heap.numiv"
+    pub const RUBY_OFFSET_ROBJECT_AS_HEAP_IVPTR: i32 = 24; // struct RObject, subfield "as.heap.ivptr"
 
-// Constants from rb_execution_context_t vm_core.h
-pub const RUBY_OFFSET_EC_CFP: i32 = 16;
-pub const RUBY_OFFSET_EC_INTERRUPT_FLAG: i32 = 32; // rb_atomic_t (u32)
-pub const RUBY_OFFSET_EC_INTERRUPT_MASK: i32 = 36; // rb_atomic_t (u32)
-pub const RUBY_OFFSET_EC_THREAD_PTR: i32 = 48;
+    // Constants from rb_control_frame_t vm_core.h
+    pub const RUBY_OFFSET_CFP_PC: i32 = 0;
+    pub const RUBY_OFFSET_CFP_SP: i32 = 8;
+    pub const RUBY_OFFSET_CFP_ISEQ: i32 = 16;
+    pub const RUBY_OFFSET_CFP_SELF: i32 = 24;
+    pub const RUBY_OFFSET_CFP_EP: i32 = 32;
+    pub const RUBY_OFFSET_CFP_BLOCK_CODE: i32 = 40;
+    pub const RUBY_OFFSET_CFP_BP: i32 = 48; // field __bp__
+    pub const RUBY_OFFSET_CFP_JIT_RETURN: i32 = 56;
+    pub const RUBY_SIZEOF_CONTROL_FRAME: usize = 64;
 
-// Constants from rb_thread_t in vm_core.h
-pub const RUBY_OFFSET_THREAD_SELF: i32 = 16;
+    // Constants from rb_execution_context_t vm_core.h
+    pub const RUBY_OFFSET_EC_CFP: i32 = 16;
+    pub const RUBY_OFFSET_EC_INTERRUPT_FLAG: i32 = 32; // rb_atomic_t (u32)
+    pub const RUBY_OFFSET_EC_INTERRUPT_MASK: i32 = 36; // rb_atomic_t (u32)
+    pub const RUBY_OFFSET_EC_THREAD_PTR: i32 = 48;
 
-// Constants from iseq_inline_constant_cache (IC) and iseq_inline_constant_cache_entry (ICE) in vm_core.h
-pub const RUBY_OFFSET_IC_ENTRY: i32 = 0;
-pub const RUBY_OFFSET_ICE_VALUE: i32 = 8;
+    // Constants from rb_thread_t in vm_core.h
+    pub const RUBY_OFFSET_THREAD_SELF: i32 = 16;
 
-// TODO: need to dynamically autogenerate constants for all the YARV opcodes from insns.def
-// TODO: typing of these adds unnecessary casting
-pub const OP_NOP: usize = 0;
-pub const OP_GETLOCAL: usize = 1;
-pub const OP_SETLOCAL: usize = 2;
-pub const OP_GETBLOCKPARAM: usize = 3;
-pub const OP_SETBLOCKPARAM: usize = 4;
-pub const OP_GETBLOCKPARAMPROXY: usize = 5;
-pub const OP_GETSPECIAL: usize = 6;
-pub const OP_SETSPECIAL: usize = 7;
-pub const OP_GETINSTANCEVARIABLE: usize = 8;
-pub const OP_SETINSTANCEVARIABLE: usize = 9;
-pub const OP_GETCLASSVARIABLE: usize = 10;
-pub const OP_SETCLASSVARIABLE: usize = 11;
-pub const OP_GETCONSTANT: usize = 12;
-pub const OP_SETCONSTANT: usize = 13;
-pub const OP_GETGLOBAL: usize = 14;
-pub const OP_SETGLOBAL: usize = 15;
-pub const OP_PUTNIL: usize = 16;
-pub const OP_PUTSELF: usize = 17;
-pub const OP_PUTOBJECT: usize = 18;
-pub const OP_PUTSPECIALOBJECT: usize = 19;
-pub const OP_PUTSTRING: usize = 20;
-pub const OP_CONCATSTRINGS: usize = 21;
-pub const OP_ANYTOSTRING: usize = 22;
-pub const OP_TOREGEXP: usize = 23;
-pub const OP_INTERN: usize = 24;
-pub const OP_NEWARRAY: usize = 25;
-pub const OP_NEWARRAYKWSPLAT: usize = 26;
-pub const OP_DUPARRAY: usize = 27;
-pub const OP_DUPHASH: usize = 28;
-pub const OP_EXPANDARRAY: usize = 29;
-pub const OP_CONCATARRAY: usize = 30;
-pub const OP_SPLATARRAY: usize = 31;
-pub const OP_NEWHASH: usize = 32;
-pub const OP_NEWRANGE: usize = 33;
-pub const OP_POP: usize = 34;
-pub const OP_DUP: usize = 35;
-pub const OP_DUPN: usize = 36;
-pub const OP_SWAP: usize = 37;
-pub const OP_TOPN: usize = 38;
-pub const OP_SETN: usize = 39;
-pub const OP_ADJUSTSTACK: usize = 40;
-pub const OP_DEFINED: usize = 41;
-pub const OP_CHECKMATCH: usize = 42;
-pub const OP_CHECKKEYWORD: usize = 43;
-pub const OP_CHECKTYPE: usize = 44;
-pub const OP_DEFINECLASS: usize = 45;
-pub const OP_DEFINEMETHOD: usize = 46;
-pub const OP_DEFINESMETHOD: usize = 47;
-pub const OP_SEND: usize = 48;
-pub const OP_OPT_SEND_WITHOUT_BLOCK: usize = 49;
-pub const OP_OBJTOSTRING: usize = 50;
-pub const OP_OPT_STR_FREEZE: usize = 51;
-pub const OP_OPT_NIL_P: usize = 52;
-pub const OP_OPT_STR_UMINUS: usize = 53;
-pub const OP_OPT_NEWARRAY_MAX: usize = 54;
-pub const OP_OPT_NEWARRAY_MIN: usize = 55;
-pub const OP_INVOKESUPER: usize = 56;
-pub const OP_INVOKEBLOCK: usize = 57;
-pub const OP_LEAVE: usize = 58;
-pub const OP_THROW: usize = 59;
-pub const OP_JUMP: usize = 60;
-pub const OP_BRANCHIF: usize = 61;
-pub const OP_BRANCHUNLESS: usize = 62;
-pub const OP_BRANCHNIL: usize = 63;
-pub const OP_OPT_GETINLINECACHE: usize = 64;
-pub const OP_OPT_SETINLINECACHE: usize = 65;
-pub const OP_ONCE: usize = 66;
-pub const OP_OPT_CASE_DISPATCH: usize = 67;
-pub const OP_OPT_PLUS: usize = 68;
-pub const OP_OPT_MINUS: usize = 69;
-pub const OP_OPT_MULT: usize = 70;
-pub const OP_OPT_DIV: usize = 71;
-pub const OP_OPT_MOD: usize = 72;
-pub const OP_OPT_EQ: usize = 73;
-pub const OP_OPT_NEQ: usize = 74;
-pub const OP_OPT_LT: usize = 75;
-pub const OP_OPT_LE: usize = 76;
-pub const OP_OPT_GT: usize = 77;
-pub const OP_OPT_GE: usize = 78;
-pub const OP_OPT_LTLT: usize = 79;
-pub const OP_OPT_AND: usize = 80;
-pub const OP_OPT_OR: usize = 81;
-pub const OP_OPT_AREF: usize = 82;
-pub const OP_OPT_ASET: usize = 83;
-pub const OP_OPT_ASET_WITH: usize = 84;
-pub const OP_OPT_AREF_WITH: usize = 85;
-pub const OP_OPT_LENGTH: usize = 86;
-pub const OP_OPT_SIZE: usize = 87;
-pub const OP_OPT_EMPTY_P: usize = 88;
-pub const OP_OPT_SUCC: usize = 89;
-pub const OP_OPT_NOT: usize = 90;
-pub const OP_OPT_REGEXPMATCH2: usize = 91;
-pub const OP_INVOKEBUILTIN: usize = 92;
-pub const OP_OPT_INVOKEBUILTIN_DELEGATE: usize = 93;
-pub const OP_OPT_INVOKEBUILTIN_DELEGATE_LEAVE: usize = 94;
-pub const OP_GETLOCAL_WC_0: usize = 95;
-pub const OP_GETLOCAL_WC_1: usize = 96;
-pub const OP_SETLOCAL_WC_0: usize = 97;
-pub const OP_SETLOCAL_WC_1: usize = 98;
-pub const OP_PUTOBJECT_INT2FIX_0_: usize = 99;
-pub const OP_PUTOBJECT_INT2FIX_1_: usize = 100;
+    // Constants from iseq_inline_constant_cache (IC) and iseq_inline_constant_cache_entry (ICE) in vm_core.h
+    pub const RUBY_OFFSET_IC_ENTRY: i32 = 0;
+    pub const RUBY_OFFSET_ICE_VALUE: i32 = 8;
+}
+pub use manual_defs::*;
 
-pub const VM_INSTRUCTION_SIZE: usize = 202;
+#[allow(unused)]
+mod vm_opcodes {
+    // TODO: need to dynamically autogenerate constants for all the YARV opcodes from insns.def
+    // TODO: typing of these adds unnecessary casting
+    pub const OP_NOP: usize = 0;
+    pub const OP_GETLOCAL: usize = 1;
+    pub const OP_SETLOCAL: usize = 2;
+    pub const OP_GETBLOCKPARAM: usize = 3;
+    pub const OP_SETBLOCKPARAM: usize = 4;
+    pub const OP_GETBLOCKPARAMPROXY: usize = 5;
+    pub const OP_GETSPECIAL: usize = 6;
+    pub const OP_SETSPECIAL: usize = 7;
+    pub const OP_GETINSTANCEVARIABLE: usize = 8;
+    pub const OP_SETINSTANCEVARIABLE: usize = 9;
+    pub const OP_GETCLASSVARIABLE: usize = 10;
+    pub const OP_SETCLASSVARIABLE: usize = 11;
+    pub const OP_GETCONSTANT: usize = 12;
+    pub const OP_SETCONSTANT: usize = 13;
+    pub const OP_GETGLOBAL: usize = 14;
+    pub const OP_SETGLOBAL: usize = 15;
+    pub const OP_PUTNIL: usize = 16;
+    pub const OP_PUTSELF: usize = 17;
+    pub const OP_PUTOBJECT: usize = 18;
+    pub const OP_PUTSPECIALOBJECT: usize = 19;
+    pub const OP_PUTSTRING: usize = 20;
+    pub const OP_CONCATSTRINGS: usize = 21;
+    pub const OP_ANYTOSTRING: usize = 22;
+    pub const OP_TOREGEXP: usize = 23;
+    pub const OP_INTERN: usize = 24;
+    pub const OP_NEWARRAY: usize = 25;
+    pub const OP_NEWARRAYKWSPLAT: usize = 26;
+    pub const OP_DUPARRAY: usize = 27;
+    pub const OP_DUPHASH: usize = 28;
+    pub const OP_EXPANDARRAY: usize = 29;
+    pub const OP_CONCATARRAY: usize = 30;
+    pub const OP_SPLATARRAY: usize = 31;
+    pub const OP_NEWHASH: usize = 32;
+    pub const OP_NEWRANGE: usize = 33;
+    pub const OP_POP: usize = 34;
+    pub const OP_DUP: usize = 35;
+    pub const OP_DUPN: usize = 36;
+    pub const OP_SWAP: usize = 37;
+    pub const OP_TOPN: usize = 38;
+    pub const OP_SETN: usize = 39;
+    pub const OP_ADJUSTSTACK: usize = 40;
+    pub const OP_DEFINED: usize = 41;
+    pub const OP_CHECKMATCH: usize = 42;
+    pub const OP_CHECKKEYWORD: usize = 43;
+    pub const OP_CHECKTYPE: usize = 44;
+    pub const OP_DEFINECLASS: usize = 45;
+    pub const OP_DEFINEMETHOD: usize = 46;
+    pub const OP_DEFINESMETHOD: usize = 47;
+    pub const OP_SEND: usize = 48;
+    pub const OP_OPT_SEND_WITHOUT_BLOCK: usize = 49;
+    pub const OP_OBJTOSTRING: usize = 50;
+    pub const OP_OPT_STR_FREEZE: usize = 51;
+    pub const OP_OPT_NIL_P: usize = 52;
+    pub const OP_OPT_STR_UMINUS: usize = 53;
+    pub const OP_OPT_NEWARRAY_MAX: usize = 54;
+    pub const OP_OPT_NEWARRAY_MIN: usize = 55;
+    pub const OP_INVOKESUPER: usize = 56;
+    pub const OP_INVOKEBLOCK: usize = 57;
+    pub const OP_LEAVE: usize = 58;
+    pub const OP_THROW: usize = 59;
+    pub const OP_JUMP: usize = 60;
+    pub const OP_BRANCHIF: usize = 61;
+    pub const OP_BRANCHUNLESS: usize = 62;
+    pub const OP_BRANCHNIL: usize = 63;
+    pub const OP_OPT_GETINLINECACHE: usize = 64;
+    pub const OP_OPT_SETINLINECACHE: usize = 65;
+    pub const OP_ONCE: usize = 66;
+    pub const OP_OPT_CASE_DISPATCH: usize = 67;
+    pub const OP_OPT_PLUS: usize = 68;
+    pub const OP_OPT_MINUS: usize = 69;
+    pub const OP_OPT_MULT: usize = 70;
+    pub const OP_OPT_DIV: usize = 71;
+    pub const OP_OPT_MOD: usize = 72;
+    pub const OP_OPT_EQ: usize = 73;
+    pub const OP_OPT_NEQ: usize = 74;
+    pub const OP_OPT_LT: usize = 75;
+    pub const OP_OPT_LE: usize = 76;
+    pub const OP_OPT_GT: usize = 77;
+    pub const OP_OPT_GE: usize = 78;
+    pub const OP_OPT_LTLT: usize = 79;
+    pub const OP_OPT_AND: usize = 80;
+    pub const OP_OPT_OR: usize = 81;
+    pub const OP_OPT_AREF: usize = 82;
+    pub const OP_OPT_ASET: usize = 83;
+    pub const OP_OPT_ASET_WITH: usize = 84;
+    pub const OP_OPT_AREF_WITH: usize = 85;
+    pub const OP_OPT_LENGTH: usize = 86;
+    pub const OP_OPT_SIZE: usize = 87;
+    pub const OP_OPT_EMPTY_P: usize = 88;
+    pub const OP_OPT_SUCC: usize = 89;
+    pub const OP_OPT_NOT: usize = 90;
+    pub const OP_OPT_REGEXPMATCH2: usize = 91;
+    pub const OP_INVOKEBUILTIN: usize = 92;
+    pub const OP_OPT_INVOKEBUILTIN_DELEGATE: usize = 93;
+    pub const OP_OPT_INVOKEBUILTIN_DELEGATE_LEAVE: usize = 94;
+    pub const OP_GETLOCAL_WC_0: usize = 95;
+    pub const OP_GETLOCAL_WC_1: usize = 96;
+    pub const OP_SETLOCAL_WC_0: usize = 97;
+    pub const OP_SETLOCAL_WC_1: usize = 98;
+    pub const OP_PUTOBJECT_INT2FIX_0_: usize = 99;
+    pub const OP_PUTOBJECT_INT2FIX_1_: usize = 100;
+
+    pub const VM_INSTRUCTION_SIZE: usize = 202;
+}
+pub use vm_opcodes::*;

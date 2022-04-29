@@ -1,5 +1,5 @@
-use std::io::{Result, Write};
-use std::mem;
+#![allow(dead_code)] // For instructions we don't currently generate
+
 use crate::asm::*;
 
 // Import the assembler tests module
