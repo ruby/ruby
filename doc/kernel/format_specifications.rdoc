@@ -157,7 +157,7 @@ of the formatted field:
 ==== Specifiers +b+ and +B+
 
 The two specifiers +b+ and +B+ behave identically
-except when flag +#+ is used.
+except when flag <tt>'#'</tt>+ is used.
 
 Convert +argument+ as a binary integer:
 
@@ -171,25 +171,8 @@ Type-specific modifier:
 - '#' flag' (use alternate format):
 
     sprintf('%#b', 1)  # => "0b1"
-    sprintf('%#B', 1)  # => "Bb1"
+    sprintf('%#B', 1)  # => "0B1"
     sprintf('%#b', 4)  # => "0b100"
-
-Other effective modifiers:
-
-- {' ' (space) flag}[rdoc-ref:doc/kernel/format_specifications.rdoc@27+-27+Flag].
-- {'+' flag'}[rdoc-ref:doc/kernel/format_specifications.rdoc@27-2B-27+Flag].
-- {'0' (zero) flag'}[rdoc-ref:doc/kernel/format_specifications.rdoc@270-27+Flag].
-- {'*' flag'}[rdoc-ref:doc/kernel/format_specifications.rdoc@27-2A-27+Flag].
-- {'n$' flag'}[rdoc-ref:doc/kernel/format_specifications.rdoc@27n-24-27+Flag].
-- {Width specifier}[rdoc-ref:doc/kernel/format_specifications.rdoc@Width+Specifier].
-
-Inert modifiers (allowed but ignored):
-
-- '-' flag.
-
-Disallowed modifier:
-
-- Precision specifier.
 
 ==== Specifier +c+
 
