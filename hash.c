@@ -303,6 +303,19 @@ objid_hash(VALUE obj)
  *
  * Certain core classes such as Integer use built-in hash calculations and
  * do not call the #hash method when used as a hash key.
+ *
+ * When implementing your own #hash based on multiple values, the best
+ * practice is to combine the class and any values using the hash code of an
+ * array:
+ *
+ * For example:
+ *
+ *   def hash
+ *     [self.class, a, b, c].hash
+ *   end
+ *
+ * The reason for this is that the Array#hash method already has logic for
+ * safely and efficiently combining multiple hash values.
  *--
  * \private
  *++
