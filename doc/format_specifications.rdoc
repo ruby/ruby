@@ -44,38 +44,38 @@ The links lead to the details and examples.
 
 ==== \Integer Type Specifiers
 
-- +b+ or +B+: Convert +argument+ as a binary integer.
-  See {Specifiers b and B}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifiers+b+and+B].
+- +b+ or +B+: Format +argument+ as a binary integer.
+  See {Specifiers b and B}[rdoc-ref:doc/format_specifications.rdoc@Specifiers+b+and+B].
 - +d+, +i+, or +u+ (all are identical):
-  Convert +argument+ as a decimal integer.
-  See {Specifier d}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifier+d].
-- +o+: Convert +argument+ as an octal integer.
-  See {Specifier o}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifier+o].
-- +x+ or +X+: Convert +argument+ as a hexadecimal integer.
-  See {Specifiers x and X}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifiers+x+and+X].
+  Format +argument+ as a decimal integer.
+  See {Specifier d}[rdoc-ref:doc/format_specifications.rdoc@Specifier+d].
+- +o+: Format +argument+ as an octal integer.
+  See {Specifier o}[rdoc-ref:doc/format_specifications.rdoc@Specifier+o].
+- +x+ or +X+: Format +argument+ as a hexadecimal integer.
+  See {Specifiers x and X}[rdoc-ref:doc/format_specifications.rdoc@Specifiers+x+and+X].
 
 ==== Floating-Point Type Specifiers
 
-- +a+ or +A+: Convert +argument+ as hexadecimal floating-point number.
-  See {Specifiers a and A}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifiers+a+and+A].
-- +e+ or +E+: Convert +argument+ as
+- +a+ or +A+: Format +argument+ as hexadecimal floating-point number.
+  See {Specifiers a and A}[rdoc-ref:doc/format_specifications.rdoc@Specifiers+a+and+A].
+- +e+ or +E+: Format +argument+ in
   {scientific notation}[https://en.wikipedia.org/wiki/Scientific_notation].
-  See {Specifiers e and E}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifiers+e+and+E].
-- +f+: Convert +argument+ as a decimal floating-point number.
-  See {Specifier f}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifier+f].
-- +g+ or +G+: Convert +argument+ to a "general" format.
-  See {Specifiers g and G}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifiers+g+and+G].
+  See {Specifiers e and E}[rdoc-ref:doc/format_specifications.rdoc@Specifiers+e+and+E].
+- +f+: Format +argument+ as a decimal floating-point number.
+  See {Specifier f}[rdoc-ref:doc/format_specifications.rdoc@Specifier+f].
+- +g+ or +G+: Format +argument+ in a "general" format.
+  See {Specifiers g and G}[rdoc-ref:doc/format_specifications.rdoc@Specifiers+g+and+G].
 
 ==== Other Type Specifiers
 
-- +c+: Convert +argument+ to a character.
-  See {Specifier c}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifier+c].
-- +p+: Convert +argument+ to a string via <tt>argument.inspect</tt>.
-  See {Specifier p}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifier+p].
-- +s+: Convert +argument+ to a string via <tt>argument.to_s</tt>.
-  See {Specifier s}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifier+s].
-- <tt>%</tt>: Convert a single percent character.
-  See {Specifier %}[rdoc-ref:doc/kernel/format_specifications.rdoc@Specifier+-25].
+- +c+: Format +argument+ as a character.
+  See {Specifier c}[rdoc-ref:doc/format_specifications.rdoc@Specifier+c].
+- +p+: Format +argument+ as a string via <tt>argument.inspect</tt>.
+  See {Specifier p}[rdoc-ref:doc/format_specifications.rdoc@Specifier+p].
+- +s+: Format +argument+ as a string via <tt>argument.to_s</tt>.
+  See {Specifier s}[rdoc-ref:doc/format_specifications.rdoc@Specifier+s].
+- <tt>%</tt>: Format +argument+ (<tt>'%'</tt>) as a single percent character.
+  See {Specifier %}[rdoc-ref:doc/format_specifications.rdoc@Specifier+-25].
 
 === Flags
 
@@ -134,7 +134,7 @@ Use the next argument as the field width:
 
 ==== <tt>'n$'</tt> Flag
 
-Convert the (1-based) +n+th argument into this field:
+Format the (1-based) <tt>n</tt>th argument into this field:
 
     sprintf("%s %s", 'world', 'hello')     # => "world hello"
     sprintf("%2$s %1$s", 'world', 'hello') # => "hello world"
@@ -159,7 +159,7 @@ of the formatted field:
 The two specifiers +b+ and +B+ behave identically
 except when flag <tt>'#'</tt>+ is used.
 
-Convert +argument+ as a binary integer:
+Format +argument+ as a binary integer:
 
   sprintf('%b', 1)  # => "1"
   sprintf('%b', 4)  # => "100"
