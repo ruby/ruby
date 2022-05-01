@@ -3830,7 +3830,7 @@ check_getline_args(VALUE *rsp, long *limit, VALUE io)
 	enc_rs = rb_enc_get(rs);
 	enc_io = io_read_encoding(fptr);
 	if (enc_io != enc_rs &&
-	    (rb_enc_str_coderange(rs) != ENC_CODERANGE_7BIT ||
+	    (!is_ascii_string(rs) ||
 	     (RSTRING_LEN(rs) > 0 && !rb_enc_asciicompat(enc_io)))) {
             if (rs == rb_default_rs) {
                 rs = rb_enc_str_new(0, 0, enc_io);
