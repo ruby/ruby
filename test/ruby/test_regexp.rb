@@ -1396,6 +1396,15 @@ class TestRegexp < Test::Unit::TestCase
     end
   end
 
+  def test_invalid_group
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      assert_raise_with_message(RegexpError, /invalid conditional pattern/) do
+        Regexp.new("((?(1)x|x|)x)+")
+      end
+    end;
+  end
+
   # This assertion is for porting x2() tests in testpy.py of Onigmo.
   def assert_match_at(re, str, positions, msg = nil)
     re = Regexp.new(re) unless re.is_a?(Regexp)
