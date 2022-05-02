@@ -8,7 +8,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.3.11".freeze
+  VERSION = "3.3.12".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -48,7 +48,7 @@ require_relative 'rubygems/errors'
 # special location and loaded on boot.
 #
 # For an example plugin, see the {Graph gem}[https://github.com/seattlerb/graph]
-# which adds a `gem graph` command.
+# which adds a <tt>gem graph</tt> command.
 #
 # == RubyGems Defaults, Packaging
 #
@@ -581,8 +581,8 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
-  # The number of paths in the `$LOAD_PATH` from activated gems. Used to
-  # prioritize `-I` and `ENV['RUBYLIB`]` entries during `require`.
+  # The number of paths in the +$LOAD_PATH+ from activated gems. Used to
+  # prioritize +-I+ and +ENV['RUBYLIB']+ entries during +require+.
 
   def self.activated_gem_paths
     @activated_gem_paths ||= 0
@@ -864,9 +864,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     return @ruby_version if defined? @ruby_version
     version = RUBY_VERSION.dup
 
-    if defined?(RUBY_PATCHLEVEL) && RUBY_PATCHLEVEL != -1
-      version << ".#{RUBY_PATCHLEVEL}"
-    elsif defined?(RUBY_DESCRIPTION)
+    if defined?(RUBY_DESCRIPTION)
       if RUBY_ENGINE == "ruby"
         desc = RUBY_DESCRIPTION[/\Aruby #{Regexp.quote(RUBY_VERSION)}([^ ]+) /, 1]
       else
@@ -1120,7 +1118,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   ##
   # If the SOURCE_DATE_EPOCH environment variable is set, returns it's value.
-  # Otherwise, returns the time that `Gem.source_date_epoch_string` was
+  # Otherwise, returns the time that +Gem.source_date_epoch_string+ was
   # first called in the same format as SOURCE_DATE_EPOCH.
   #
   # NOTE(@duckinator): The implementation is a tad weird because we want to:

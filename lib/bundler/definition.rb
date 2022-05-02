@@ -732,27 +732,10 @@ module Bundler
 
     def metadata_dependencies
       @metadata_dependencies ||= begin
-        ruby_versions = ruby_version_requirements(@ruby_version)
         [
-          Dependency.new("Ruby\0", ruby_versions),
+          Dependency.new("Ruby\0", RubyVersion.system.gem_version),
           Dependency.new("RubyGems\0", Gem::VERSION),
         ]
-      end
-    end
-
-    def ruby_version_requirements(ruby_version)
-      return [] unless ruby_version
-      if ruby_version.patchlevel
-        [ruby_version.to_gem_version_with_patchlevel]
-      else
-        ruby_version.versions.map do |version|
-          requirement = Gem::Requirement.new(version)
-          if requirement.exact?
-            "~> #{version}.0"
-          else
-            requirement
-          end
-        end
       end
     end
 
