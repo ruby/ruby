@@ -22,7 +22,7 @@ module Bundler
             s.summary  = "The best way to manage your application's dependencies"
             s.executables = %w[bundle]
             # can't point to the actual gemspec or else the require paths will be wrong
-            s.loaded_from = File.expand_path("..", __FILE__)
+            s.loaded_from = __dir__
           end
 
           if local_spec = Bundler.rubygems.find_bundler(VERSION)

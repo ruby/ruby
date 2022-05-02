@@ -205,7 +205,7 @@ RSpec.shared_examples "bundle install --standalone" do
       build_git "bar", :gemspec => false do |s|
         s.write "lib/bar/version.rb", %(BAR_VERSION = '1.0')
         s.write "bar.gemspec", <<-G
-          lib = File.expand_path('../lib/', __FILE__)
+          lib = File.expand_path('lib/', __dir__)
           $:.unshift lib unless $:.include?(lib)
           require 'bar/version'
 
@@ -419,7 +419,7 @@ RSpec.shared_examples "bundle install --standalone" do
 
     it "creates stubs with the correct load path" do
       extension_line = File.read(bundled_app("bin/rails")).each_line.find {|line| line.include? "$:.unshift" }.strip
-      expect(extension_line).to eq %($:.unshift File.expand_path "../../bundle", path.realpath)
+      expect(extension_line).to eq %($:.unshift File.expand_path "../bundle", __dir__)
     end
   end
 end
