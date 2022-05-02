@@ -227,8 +227,9 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def util_sign_in(response, host = nil, args = [], extra_input = '')
-    email    = 'you@example.com'
-    password = 'secret'
+    email            = 'you@example.com'
+    password         = 'secret'
+    profile_response = [ "mfa: disabled\n" , 200, 'OK']
 
     if host
       ENV['RUBYGEMS_HOST'] = host
@@ -238,6 +239,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
 
     @fetcher = Gem::FakeFetcher.new
     @fetcher.data["#{host}/api/v1/api_key"] = response
+    @fetcher.data["#{host}/api/v1/profile/me.yaml"] = profile_response
     Gem::RemoteFetcher.fetcher = @fetcher
 
     @sign_in_ui = Gem::MockGemUi.new("#{email}\n#{password}\n\n\n\n\n\n\n\n\n" + extra_input)

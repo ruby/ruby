@@ -3,7 +3,7 @@
 require 'rubygems'
 
 # If bundler gemspec exists, add to stubs
-bundler_gemspec = File.expand_path("../../../bundler/bundler.gemspec", __FILE__)
+bundler_gemspec = File.expand_path('../../bundler/bundler.gemspec', __dir__)
 if File.exist?(bundler_gemspec)
   Gem::Specification.dirs.unshift File.dirname(bundler_gemspec)
   Gem::Specification.class_variable_set :@@stubs, nil
@@ -302,10 +302,14 @@ class Gem::TestCase < Test::Unit::TestCase
   # or <tt>i686-darwin8.10.1</tt> otherwise.
 
   def setup
+    @orig_hooks = {}
     @orig_env = ENV.to_hash
     @tmp = File.expand_path("tmp")
 
     FileUtils.mkdir_p @tmp
+
+    @tempdir = Dir.mktmpdir("test_rubygems_", @tmp)
+    @tempdir.tap(&Gem::UNTAINT)
 
     ENV['GEM_VENDOR'] = nil
     ENV['GEMRC'] = nil
@@ -323,9 +327,6 @@ class Gem::TestCase < Test::Unit::TestCase
     # This needs to be a new instance since we call use_ui(@ui) when we want to
     # capture output
     Gem::DefaultUserInteraction.ui = Gem::MockGemUi.new
-
-    @tempdir = Dir.mktmpdir("test_rubygems_", @tmp)
-    @tempdir.tap(&Gem::UNTAINT)
 
     ENV["TMPDIR"] = @tempdir
 
@@ -426,7 +427,6 @@ class Gem::TestCase < Test::Unit::TestCase
       util_set_arch 'i686-darwin8.10.1'
     end
 
-    @orig_hooks = {}
     %w[post_install_hooks done_installing_hooks post_uninstall_hooks pre_uninstall_hooks pre_install_hooks pre_reset_hooks post_reset_hooks post_build_hooks].each do |name|
       @orig_hooks[name] = Gem.send(name).dup
     end

@@ -22,15 +22,15 @@ GEM
       hpricot (>= 0.8.2)
       mustache (>= 0.7.0)
       rdiscount (>= 1.5.8)
-    rspec-core (3.10.1)
-      rspec-support (~> 3.10.0)
-    rspec-expectations (3.10.1)
+    rspec-core (3.11.0)
+      rspec-support (~> 3.11.0)
+    rspec-expectations (3.11.0)
       diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.10.0)
-    rspec-mocks (3.10.3)
+      rspec-support (~> 3.11.0)
+    rspec-mocks (3.11.1)
       diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.10.0)
-    rspec-support (3.10.3)
+      rspec-support (~> 3.11.0)
+    rspec-support (3.11.0)
     rubocop (0.80.1)
       jaro_winkler (~> 1.5.1)
       parallel (~> 1.10)
@@ -64,7 +64,7 @@ DEPENDENCIES
   ronn (~> 0.7.3)
   rspec-core (~> 3.8)
   rspec-expectations (~> 3.8)
-  rspec-mocks (~> 3.8)
+  rspec-mocks (~> 3.11.1)
   rubocop (~> 0.80.1)
   rubocop-performance (~> 1.5.2)
   test-unit (~> 3.0)
@@ -72,4 +72,4 @@ DEPENDENCIES
   webrick (~> 1.6)
 
 BUNDLED WITH
-   2.3.10
+   2.3.11

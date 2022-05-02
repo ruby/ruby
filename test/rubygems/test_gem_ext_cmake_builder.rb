@@ -9,6 +9,8 @@ class TestGemExtCmakeBuilder < Gem::TestCase
     # Details: https://github.com/rubygems/rubygems/issues/1270#issuecomment-177368340
     pend "CmakeBuilder doesn't work on Windows." if Gem.win_platform?
 
+    require "open3"
+
     begin
       _, status = Open3.capture2e('cmake')
       pend 'cmake not present' unless status.success?

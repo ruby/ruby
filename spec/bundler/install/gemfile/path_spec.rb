@@ -137,7 +137,7 @@ RSpec.describe "bundle install with explicit source paths" do
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
-      gem 'foo', :path => File.expand_path("../foo-1.0", __FILE__)
+      gem 'foo', :path => File.expand_path("foo-1.0", __dir__)
     G
 
     bundle "config set --local frozen true"

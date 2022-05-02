@@ -39,7 +39,7 @@ class Gem::Request
   def cert_files; @connection_pool.cert_files; end
 
   def self.get_cert_files
-    pattern = File.expand_path("./ssl_certs/*/*.pem", File.dirname(__FILE__))
+    pattern = File.expand_path("./ssl_certs/*/*.pem", __dir__)
     Dir.glob(pattern)
   end
 

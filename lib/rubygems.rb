@@ -8,7 +8,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.3.10".freeze
+  VERSION = "3.3.11".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -112,7 +112,7 @@ require_relative 'rubygems/errors'
 # -The RubyGems Team
 
 module Gem
-  RUBYGEMS_DIR = File.dirname File.expand_path(__FILE__)
+  RUBYGEMS_DIR = __dir__
 
   # Taint support is deprecated in Ruby 2.7.
   # This allows switching ".untaint" to ".tap(&Gem::UNTAINT)",

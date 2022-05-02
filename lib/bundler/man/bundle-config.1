@@ -36,13 +36,13 @@ Executing \fBbundle config list\fR with will print a list of all bundler configu
 Executing \fBbundle config get <name>\fR will print the value of that configuration setting, and where it was set\.
 .
 .P
-Executing \fBbundle config set <name> <value>\fR will set that configuration to the value specified for all bundles executed as the current user\. The configuration will be stored in \fB~/\.bundle/config\fR\. If \fIname\fR already is set, \fIname\fR will be overridden and user will be warned\.
-.
-.P
-Executing \fBbundle config set \-\-global <name> <value>\fR works the same as above\.
+Executing \fBbundle config set <name> <value>\fR defaults to setting \fBlocal\fR configuration if executing from within a local application, otherwise it will set \fBglobal\fR configuration\. See \fB\-\-local\fR and \fB\-\-global\fR options below\.
 .
 .P
 Executing \fBbundle config set \-\-local <name> <value>\fR will set that configuration in the directory for the local application\. The configuration will be stored in \fB<project_root>/\.bundle/config\fR\. If \fBBUNDLE_APP_CONFIG\fR is set, the configuration will be stored in \fB$BUNDLE_APP_CONFIG/config\fR\.
+.
+.P
+Executing \fBbundle config set \-\-global <name> <value>\fR will set that configuration to the value specified for all bundles executed as the current user\. The configuration will be stored in \fB~/\.bundle/config\fR\. If \fIname\fR already is set, \fIname\fR will be overridden and user will be warned\.
 .
 .P
 Executing \fBbundle config unset <name>\fR will delete the configuration in both local and global sources\.
