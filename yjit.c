@@ -41,6 +41,10 @@ STATIC_ASSERT(64b_size_t, SIZE_MAX == UINT64_MAX);
 // into size_t but the standard seems to allow it.
 STATIC_ASSERT(size_t_no_padding_bits, sizeof(size_t) == sizeof(uint64_t));
 
+// This build config impacts the pointer tagging scheme and we only want to
+// support one scheme for simplicity.
+STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
+
 // NOTE: We can trust that uint8_t has no "padding bits" since the C spec
 // guarantees it. Wording about padding bits is more explicit in C11 compared
 // to C99. See C11 7.20.1.1p2. All this is to say we have _some_ standards backing to
