@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require 'rubygems/optparse/lib/optparse'
+require_relative '../optparse'
 
 class Gem::OptionParser::AC < Gem::OptionParser
   private

@@ -657,6 +657,8 @@ class Gem::Specification < Gem::BasicSpecification
     @rdoc_options ||= []
   end
 
+  LATEST_RUBY_WITHOUT_PATCH_VERSIONS = Gem::Version.new("2.1")
+
   ##
   # The version of Ruby required by this gem.  The ruby version can be
   # specified to the patch-level:
@@ -683,6 +685,14 @@ class Gem::Specification < Gem::BasicSpecification
 
   def required_ruby_version=(req)
     @required_ruby_version = Gem::Requirement.create req
+
+    @required_ruby_version.requirements.map! do |op, v|
+      if v >= LATEST_RUBY_WITHOUT_PATCH_VERSIONS && v.release.segments.size == 4
+        [op == "~>" ? "=" : op, Gem::Version.new(v.segments.tap {|s| s.delete_at(3) }.join("."))]
+      else
+        [op, v]
+      end
+    end
   end
 
   ##
