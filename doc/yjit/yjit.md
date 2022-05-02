@@ -72,7 +72,7 @@ git clone https://github.com/ruby/ruby yjit
 cd yjit
 ```
 
-The YJIT `ruby` binary can be built with either GCC or Clang. It can be built either in dev (debug) mode or in release mode. For maximum performance, compile YJIT in release mode with GCC. More detailed build instructions are provided in the [Ruby README](https://github.com/ruby/ruby#how-to-compile-and-install). To support disassembly of the generated code, `libcapstone` is also required (`brew install capstone` on MacOS, `sudo apt-get install -y libcapstone-dev` on Ubuntu/Debian and `sudo dnf -y install capstone-devel` on Fedora).
+The YJIT `ruby` binary can be built with either GCC or Clang. It can be built either in dev (debug) mode or in release mode. For maximum performance, compile YJIT in release mode with GCC. More detailed build instructions are provided in the [Ruby README](https://github.com/ruby/ruby#how-to-compile-and-install).
 
 ```
 # Configure in release mode for maximum performance, build and install
@@ -90,7 +90,7 @@ or
 make -j install
 ```
 
-On macOS, you may need to specify where to find openssl, libyaml and gdbm:
+On macOS, you may need to specify where to find some libraries:
 
 ```
 # Install dependencies
@@ -102,7 +102,7 @@ brew install openssl readline libyaml
 make -j install
 ```
 
-Typically configure will choose default C compiler. To specify the C compiler, use
+Typically configure will choose the default C compiler. To specify the C compiler, use
 ```
 # Choosing a specific c compiler
 export CC=/path/to/my/chosen/c/compiler
