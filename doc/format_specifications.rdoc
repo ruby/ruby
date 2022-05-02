@@ -45,37 +45,37 @@ The links lead to the details and examples.
 ==== \Integer Type Specifiers
 
 - +b+ or +B+: Format +argument+ as a binary integer.
-  See {Specifiers b and B}[rdoc-ref:doc/format_specifications.rdoc@Specifiers+b+and+B].
+  See {Specifiers b and B}[rdoc-ref:format_specifications.rdoc@Specifiers+b+and+B].
 - +d+, +i+, or +u+ (all are identical):
   Format +argument+ as a decimal integer.
-  See {Specifier d}[rdoc-ref:doc/format_specifications.rdoc@Specifier+d].
+  See {Specifier d}[rdoc-ref:format_specifications.rdoc@Specifier+d].
 - +o+: Format +argument+ as an octal integer.
-  See {Specifier o}[rdoc-ref:doc/format_specifications.rdoc@Specifier+o].
+  See {Specifier o}[rdoc-ref:format_specifications.rdoc@Specifier+o].
 - +x+ or +X+: Format +argument+ as a hexadecimal integer.
-  See {Specifiers x and X}[rdoc-ref:doc/format_specifications.rdoc@Specifiers+x+and+X].
+  See {Specifiers x and X}[rdoc-ref:format_specifications.rdoc@Specifiers+x+and+X].
 
 ==== Floating-Point Type Specifiers
 
 - +a+ or +A+: Format +argument+ as hexadecimal floating-point number.
-  See {Specifiers a and A}[rdoc-ref:doc/format_specifications.rdoc@Specifiers+a+and+A].
+  See {Specifiers a and A}[rdoc-ref:format_specifications.rdoc@Specifiers+a+and+A].
 - +e+ or +E+: Format +argument+ in
   {scientific notation}[https://en.wikipedia.org/wiki/Scientific_notation].
-  See {Specifiers e and E}[rdoc-ref:doc/format_specifications.rdoc@Specifiers+e+and+E].
+  See {Specifiers e and E}[rdoc-ref:format_specifications.rdoc@Specifiers+e+and+E].
 - +f+: Format +argument+ as a decimal floating-point number.
-  See {Specifier f}[rdoc-ref:doc/format_specifications.rdoc@Specifier+f].
+  See {Specifier f}[rdoc-ref:format_specifications.rdoc@Specifier+f].
 - +g+ or +G+: Format +argument+ in a "general" format.
-  See {Specifiers g and G}[rdoc-ref:doc/format_specifications.rdoc@Specifiers+g+and+G].
+  See {Specifiers g and G}[rdoc-ref:format_specifications.rdoc@Specifiers+g+and+G].
 
 ==== Other Type Specifiers
 
 - +c+: Format +argument+ as a character.
-  See {Specifier c}[rdoc-ref:doc/format_specifications.rdoc@Specifier+c].
+  See {Specifier c}[rdoc-ref:format_specifications.rdoc@Specifier+c].
 - +p+: Format +argument+ as a string via <tt>argument.inspect</tt>.
-  See {Specifier p}[rdoc-ref:doc/format_specifications.rdoc@Specifier+p].
+  See {Specifier p}[rdoc-ref:format_specifications.rdoc@Specifier+p].
 - +s+: Format +argument+ as a string via <tt>argument.to_s</tt>.
-  See {Specifier s}[rdoc-ref:doc/format_specifications.rdoc@Specifier+s].
+  See {Specifier s}[rdoc-ref:format_specifications.rdoc@Specifier+s].
 - <tt>%</tt>: Format +argument+ (<tt>'%'</tt>) as a single percent character.
-  See {Specifier %}[rdoc-ref:doc/format_specifications.rdoc@Specifier+-25].
+  See {Specifier %}[rdoc-ref:format_specifications.rdoc@Specifier+%].
 
 === Flags
 
