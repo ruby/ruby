@@ -5,8 +5,7 @@ NULLCMD = @NULLCMD@
 silence = no # yes/no
 yes_silence = $(silence:no=)
 no_silence = $(silence:yes=)
-n=$(NULLCMD)
-ECHO1 = $(V:1=$n)
+ECHO1 = $(V:1=0)
 RUNCMD = $(SHELL)
 CDPATH = .
 CHDIR = @CHDIR@
