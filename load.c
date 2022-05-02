@@ -226,7 +226,7 @@ features_index_add_single_callback(st_data_t *key, st_data_t *value, st_data_t r
             VALUE this_feature_path = RARRAY_AREF(loaded_features, FIX2LONG(this_feature_index));
 
             feature_indexes_t feature_indexes;
-            rb_darray_make_with_gc(&feature_indexes, 2);
+            rb_darray_make(&feature_indexes, 2);
             int top = (rb && !is_rbext_path(this_feature_path)) ? 1 : 0;
             rb_darray_set(feature_indexes, top^0, FIX2LONG(this_feature_index));
             rb_darray_set(feature_indexes, top^1, FIX2LONG(offset));
@@ -254,7 +254,7 @@ features_index_add_single_callback(st_data_t *key, st_data_t *value, st_data_t r
                 }
             }
 
-            rb_darray_append_with_gc(&feature_indexes, FIX2LONG(offset));
+            rb_darray_append(&feature_indexes, FIX2LONG(offset));
             /* darray may realloc which will change the pointer */
             *value = (st_data_t)feature_indexes;
 
@@ -344,7 +344,7 @@ loaded_features_index_clear_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     VALUE obj = (VALUE)val;
     if (!SPECIAL_CONST_P(obj)) {
-        rb_darray_free_with_gc((void *)obj);
+        rb_darray_free((void *)obj);
     }
     return ST_DELETE;
 }
