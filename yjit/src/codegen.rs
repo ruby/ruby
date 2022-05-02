@@ -2251,16 +2251,19 @@ fn guard_two_fixnums(ctx: &mut Context, cb: &mut CodeBlock, side_exit: CodePtr) 
     let arg0_type = ctx.get_opnd_type(StackOpnd(1));
 
     if arg0_type.is_heap() || arg1_type.is_heap() {
+        add_comment(cb, "arg is heap object");
         jmp_ptr(cb, side_exit);
         return;
     }
 
     if arg0_type != Type::Fixnum && arg0_type.is_specific() {
+        add_comment(cb, "arg0 not fixnum");
         jmp_ptr(cb, side_exit);
         return;
     }
 
-    if arg1_type != Type::Fixnum && arg0_type.is_specific() {
+    if arg1_type != Type::Fixnum && arg1_type.is_specific() {
+        add_comment(cb, "arg1 not fixnum");
         jmp_ptr(cb, side_exit);
         return;
     }
