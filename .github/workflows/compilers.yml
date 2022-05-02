@@ -128,7 +128,6 @@ jobs:
           - { key: append_configure, name: valgrind,             value: '--with-valgrind' }
           - { key: append_configure, name: 'coroutine=ucontext', value: '--with-coroutine=ucontext' }
           - { key: append_configure, name: 'coroutine=pthread',  value: '--with-coroutine=pthread' }
-          - { key: append_configure, name: disable-jit-support,  value: '--disable-jit-support' }
           - { key: append_configure, name: disable-dln,          value: '--disable-dln' }
           - { key: append_configure, name: disable-rubygems,     value: '--disable-rubygems' }
 
@@ -192,6 +191,10 @@ jobs:
           - { key: cppflags, name: MJIT_FORCE_ENABLE,              value: '-DMJIT_FORCE_ENABLE' }
           - { key: cppflags, name: YJIT_FORCE_ENABLE,              value: '-DYJIT_FORCE_ENABLE' }
 
+          - { name: disable-jit,     jitflags: '--disable-jit-support' }
+          - { name: enable-yjit,     jitflags: '--enable-jit-support --enable-yjit' }
+#         - { name: enable-yjit=dev, jitflags: '--enable-jit-support --enable-yjit=dev' }
+
     name: ${{ matrix.entry.name }}
     runs-on: ubuntu-latest
     container:
@@ -205,7 +208,7 @@ jobs:
         working-directory:
       - name: setenv
         run: |
-          echo "${{ matrix.entry.key }}=${{ matrix.entry.value }}" >> $GITHUB_ENV
+          echo "${{ matrix.entry.key || '_' }}=${{ matrix.entry.value || '' }}" >> $GITHUB_ENV
           echo "GNUMAKEFLAGS=-sj$((1 + $(nproc --all)))" >> $GITHUB_ENV
       - uses: actions/checkout@v3
         with:
@@ -221,6 +224,7 @@ jobs:
           ../src/configure -C ${default_configure} ${append_configure}
           ${{ matrix.entry.key == 'crosshost' && '--host="${crosshost}"' || '--with-gcc="${default_cc} ${append_cc}"' }}
           ${{ matrix.entry.configure_append || '--enable-shared' }}
+          ${{ matrix.entry.jitflags || '--enable-jit-support --enable-yjit=dev' }}
       - run: make extract-extlibs
       - run: make incs
       - run: make
