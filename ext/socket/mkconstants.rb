@@ -670,9 +670,11 @@ IPX_TYPE
 
 TCP_NODELAY	nil	Don't delay sending to coalesce packets
 TCP_MAXSEG	nil	Set maximum segment size
+TCP_CONNECTION_INFO     nil     Retrieve information about this socket (macOS)
 TCP_CORK	nil	Don't send partial frames (Linux 2.2, glibc 2.2)
 TCP_DEFER_ACCEPT	nil	Don't notify a listening socket until data is ready (Linux 2.4, glibc 2.2)
 TCP_INFO	nil	Retrieve information about this socket (Linux 2.4, glibc 2.2)
+TCP_KEEPALIVE	nil	Idle time before keepalive probes are sent (macOS)
 TCP_KEEPCNT	nil	Maximum number of keepalive probes allowed before dropping a connection (Linux 2.4, glibc 2.2)
 TCP_KEEPIDLE	nil	Idle time before keepalive probes are sent (Linux 2.4, glibc 2.2)
 TCP_KEEPINTVL	nil	Time between keepalive probes (Linux 2.4, glibc 2.2)
