@@ -10103,6 +10103,7 @@ static void
 update_class_ext(rb_objspace_t *objspace, rb_classext_t *ext)
 {
     UPDATE_IF_MOVED(objspace, ext->origin_);
+    UPDATE_IF_MOVED(objspace, ext->includer);
     UPDATE_IF_MOVED(objspace, ext->refined_class);
     update_subclass_entries(objspace, ext->subclasses);
 
