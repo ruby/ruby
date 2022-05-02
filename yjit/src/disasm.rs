@@ -66,7 +66,6 @@ fn disasm_iseq(iseq: IseqPtr) -> String {
     }
 
     // Initialize capstone
-    extern crate capstone;
     use capstone::prelude::*;
     let cs = Capstone::new()
         .x86()

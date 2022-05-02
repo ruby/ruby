@@ -404,7 +404,6 @@ fn test_xor() {
 #[cfg(feature = "disasm")]
 fn basic_capstone_usage() -> std::result::Result<(), capstone::Error> {
     // Test drive Capstone with simple input
-    extern crate capstone;
     use capstone::prelude::*;
     let cs = Capstone::new()
         .x86()
