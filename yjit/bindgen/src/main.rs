@@ -210,6 +210,7 @@ fn main() {
         .opaque_type("rb_execution_context_.*")
         .blocklist_type("rb_control_frame_struct")
         .opaque_type("rb_control_frame_struct")
+        .allowlist_function("rb_vm_bh_to_procval")
 
         // From yjit.c
         .allowlist_function("rb_iseq_(get|set)_yjit_payload")

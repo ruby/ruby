@@ -5573,6 +5573,98 @@ fn gen_getblockparamproxy(
     KeepCompiling
 }
 
+fn gen_getblockparam(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    cb: &mut CodeBlock,
+    ocb: &mut OutlinedCb,
+) -> CodegenStatus {
+    // EP level
+    let level = jit_get_arg(jit, 1).as_u32();
+
+    // Save the PC and SP because we might allocate
+    jit_prepare_routine_call(jit, ctx, cb, REG0);
+
+    // A mirror of the interpreter code. Checking for the case
+    // where it's pushing rb_block_param_proxy.
+    let side_exit = get_side_exit(jit, ocb, ctx);
+
+    // Load environment pointer EP from CFP
+    gen_get_ep(cb, REG1, level);
+
+    // Bail when VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM) is non zero
+    let flag_check = mem_opnd(
+        64,
+        REG1,
+        (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_FLAGS as i32),
+    );
+    // FIXME: This is testing bits in the same place that the WB check is testing.
+    // We should combine these at some point
+    test(
+        cb,
+        flag_check,
+        uimm_opnd(VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into()),
+    );
+
+    // If the frame flag has been modified, then the actual proc value is
+    // already in the EP and we should just use the value.
+    let frame_flag_modified = cb.new_label("frame_flag_modified".to_string());
+    jnz_label(cb, frame_flag_modified);
+
+    // This instruction writes the block handler to the EP.  If we need to
+    // fire a write barrier for the write, then exit (we'll let the
+    // interpreter handle it so it can fire the write barrier).
+    // flags & VM_ENV_FLAG_WB_REQUIRED
+    let flags_opnd = mem_opnd(
+        64,
+        REG1,
+        SIZEOF_VALUE as i32 * VM_ENV_DATA_INDEX_FLAGS as i32,
+    );
+    test(cb, flags_opnd, imm_opnd(VM_ENV_FLAG_WB_REQUIRED.into()));
+
+    // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
+    jnz_ptr(cb, side_exit);
+
+    // Load the block handler for the current frame
+    // note, VM_ASSERT(VM_ENV_LOCAL_P(ep))
+    mov(
+        cb,
+        C_ARG_REGS[1],
+        mem_opnd(
+            64,
+            REG1,
+            (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_SPECVAL as i32),
+        ),
+    );
+
+    // Convert the block handler in to a proc
+    // call rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler)
+    mov(cb, C_ARG_REGS[0], REG_EC);
+    call_ptr(cb, REG0, rb_vm_bh_to_procval as *const u8);
+
+    // Load environment pointer EP from CFP (again)
+    gen_get_ep(cb, REG1, level);
+
+    // Set the frame modified flag
+    or(cb, flag_check, uimm_opnd(VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into()));
+
+    // Write the value at the environment pointer
+    let idx = jit_get_arg(jit, 0).as_i32();
+    let offs = -(SIZEOF_VALUE as i32 * idx);
+    mov(cb, mem_opnd(64, REG1, offs), RAX);
+
+    cb.write_label(frame_flag_modified);
+
+    // Push the proc on the stack
+    let stack_ret = ctx.stack_push(Type::Unknown);
+    mov(cb, RAX, mem_opnd(64, REG1, offs));
+    mov(cb, stack_ret, RAX);
+
+    cb.link_labels();
+
+    KeepCompiling
+}
+
 fn gen_invokebuiltin(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -5743,6 +5835,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         OP_JUMP => Some(gen_jump),
 
         OP_GETBLOCKPARAMPROXY => Some(gen_getblockparamproxy),
+        OP_GETBLOCKPARAM => Some(gen_getblockparam),
         OP_OPT_SEND_WITHOUT_BLOCK => Some(gen_opt_send_without_block),
         OP_SEND => Some(gen_send),
         OP_INVOKESUPER => Some(gen_invokesuper),
