@@ -760,6 +760,7 @@ class TestRubyOptions < Test::Unit::TestCase
       %r(
         (?:
           --\sC\slevel\sbacktrace\sinformation\s-------------------------------------------\n
+          (?:Un(?:expected|supported|known)\s.*\n)*
           (?:(?:.*\s)?\[0x\h+\].*\n|.*:\d+\n)*\n
         )?
       )x,
