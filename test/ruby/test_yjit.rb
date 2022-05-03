@@ -1,4 +1,8 @@
 # frozen_string_literal: true
+#
+# This set of tests can be run with:
+# make test-all TESTS='test/ruby/test_yjit.rb' RUN_OPTS="--yjit-call-threshold=1"
+
 require 'test/unit'
 require 'envutil'
 require 'tmpdir'
@@ -450,6 +454,27 @@ class TestYJIT < Test::Unit::TestCase
       Foo = Struct.new(:foo, :bar)
       foo(Foo.new(123))
       foo(Foo.new(123))
+    RUBY
+  end
+
+  def test_getivar_opt_plus
+    assert_no_exits(<<~RUBY)
+      class TheClass
+        def initialize
+            @levar = 1
+        end
+
+        def get_sum
+            sum = 0
+            # The type of levar is unknown,
+            # but this still should not exit
+            sum += @levar
+            sum
+        end
+      end
+
+      obj = TheClass.new
+      obj.get_sum
     RUBY
   end
 
