@@ -1477,7 +1477,7 @@ fn gen_get_ep(cb: &mut CodeBlock, reg: X86Opnd, level: u32) {
         // See GET_PREV_EP(ep) macro
         // VALUE *prev_ep = ((VALUE *)((ep)[VM_ENV_DATA_INDEX_SPECVAL] & ~0x03))
         let offs = (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_SPECVAL as i32);
-        mov(cb, reg, mem_opnd(64, REG0, offs));
+        mov(cb, reg, mem_opnd(64, reg, offs));
         and(cb, reg, imm_opnd(!0x03));
     }
 }
