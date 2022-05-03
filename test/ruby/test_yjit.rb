@@ -483,6 +483,32 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_getblockparam
+    assert_compiles(<<~'RUBY', insns: [:getblockparam])
+      def foo &blk
+        2.times do
+          blk
+        end
+      end
+
+      foo {}
+      foo {}
+    RUBY
+  end
+
+  def test_getblockparamproxy
+    # Currently two side exits as OPTIMIZED_METHOD_TYPE_CALL is unimplemented
+    assert_compiles(<<~'RUBY', insns: [:getblockparamproxy], exits: { opt_send_without_block: 2 })
+      def foo &blk
+        p blk.call
+        p blk.call
+      end
+
+      foo { 1 }
+      foo { 2 }
+    RUBY
+  end
+
   def test_getivar_opt_plus
     assert_no_exits(<<~RUBY)
       class TheClass
