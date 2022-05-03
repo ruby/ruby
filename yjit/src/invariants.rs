@@ -523,7 +523,7 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
         return;
     }
 
-    use crate::asm::x86_64::jmp_ptr;
+    use crate::asm::gen_jump_ptr;
 
     // Stop other ractors since we are going to patch machine code.
     with_vm_lock(src_loc!(), || {
@@ -559,7 +559,7 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
         let patches = CodegenGlobals::take_global_inval_patches();
         for patch in &patches {
             cb.set_write_ptr(patch.inline_patch_pos);
-            jmp_ptr(cb, patch.outlined_target_pos);
+            gen_jump_ptr(cb, patch.outlined_target_pos);
 
             // FIXME: Can't easily check we actually wrote out the JMP at the moment.
             // assert!(!cb.has_dropped_bytes(), "patches should have space and jump offsets should fit in JMP rel32");

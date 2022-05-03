@@ -5,7 +5,10 @@ use std::collections::BTreeMap;
 
 // Lots of manual vertical alignment in there that rustfmt doesn't handle well.
 #[rustfmt::skip]
+#[cfg(target_arch = "x86_64")]
 pub mod x86_64;
+#[cfg(target_arch = "x86_64")]
+pub use x86_64::*;
 
 /// Pointer to a piece of machine code
 /// We may later change this to wrap an u32

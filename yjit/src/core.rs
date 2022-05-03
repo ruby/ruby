@@ -1,4 +1,3 @@
-use crate::asm::x86_64::*;
 use crate::asm::*;
 use crate::codegen::*;
 use crate::cruby::*;
@@ -905,7 +904,7 @@ impl Context {
     }
 
     /// Get an operand for the adjusted stack pointer address
-    pub fn sp_opnd(&self, offset_bytes: isize) -> X86Opnd {
+    pub fn sp_opnd(&self, offset_bytes: isize) -> YJitOpnd {
         let offset = ((self.sp_offset as isize) * (SIZEOF_VALUE as isize)) + offset_bytes;
         let offset = offset as i32;
         return mem_opnd(64, REG_SP, offset);
@@ -913,7 +912,7 @@ impl Context {
 
     /// Push one new value on the temp stack with an explicit mapping
     /// Return a pointer to the new stack top
-    pub fn stack_push_mapping(&mut self, (mapping, temp_type): (TempMapping, Type)) -> X86Opnd {
+    pub fn stack_push_mapping(&mut self, (mapping, temp_type): (TempMapping, Type)) -> YJitOpnd {
         // If type propagation is disabled, store no types
         if get_option!(no_type_prop) {
             return self.stack_push_mapping((mapping, Type::Unknown));
@@ -941,17 +940,17 @@ impl Context {
 
     /// Push one new value on the temp stack
     /// Return a pointer to the new stack top
-    pub fn stack_push(&mut self, val_type: Type) -> X86Opnd {
+    pub fn stack_push(&mut self, val_type: Type) -> YJitOpnd {
         return self.stack_push_mapping((MapToStack, val_type));
     }
 
     /// Push the self value on the stack
-    pub fn stack_push_self(&mut self) -> X86Opnd {
+    pub fn stack_push_self(&mut self) -> YJitOpnd {
         return self.stack_push_mapping((MapToSelf, Type::Unknown));
     }
 
     /// Push a local variable on the stack
-    pub fn stack_push_local(&mut self, local_idx: usize) -> X86Opnd {
+    pub fn stack_push_local(&mut self, local_idx: usize) -> YJitOpnd {
         if local_idx >= MAX_LOCAL_TYPES {
             return self.stack_push(Type::Unknown);
         }
@@ -961,7 +960,7 @@ impl Context {
 
     // Pop N values off the stack
     // Return a pointer to the stack top before the pop operation
-    pub fn stack_pop(&mut self, n: usize) -> X86Opnd {
+    pub fn stack_pop(&mut self, n: usize) -> YJitOpnd {
         assert!(n <= self.stack_size.into());
 
         // SP points just above the topmost value
@@ -985,7 +984,7 @@ impl Context {
     }
 
     /// Get an operand pointing to a slot on the temp stack
-    pub fn stack_opnd(&self, idx: i32) -> X86Opnd {
+    pub fn stack_opnd(&self, idx: i32) -> YJitOpnd {
         // SP points just above the topmost value
         let offset = ((self.sp_offset as i32) - 1 - idx) * (SIZEOF_VALUE as i32);
         let opnd = mem_opnd(64, REG_SP, offset);
@@ -1497,7 +1496,7 @@ fn make_branch_entry(block: BlockRef, src_ctx: &Context, gen_fn: BranchGenFn) ->
 
 /// Generated code calls this function with the SysV calling convention.
 /// See [get_branch_target].
-extern "sysv64" fn branch_stub_hit(
+extern "C" fn branch_stub_hit(
     branch_ptr: *const c_void,
     target_idx: u32,
     ec: EcPtr,
@@ -1687,15 +1686,7 @@ fn get_branch_target(
     // This means the branch stub owns its own reference to the branch
     let branch_ptr: *const RefCell<Branch> = BranchRef::into_raw(branchref.clone());
 
-    // Call branch_stub_hit(branch_idx, target_idx, ec)
-    mov(ocb, C_ARG_REGS[2], REG_EC);
-    mov(ocb, C_ARG_REGS[1], uimm_opnd(target_idx as u64));
-    mov(ocb, C_ARG_REGS[0], const_ptr_opnd(branch_ptr as *const u8));
-    call_ptr(ocb, REG0, branch_stub_hit as *mut u8);
-
-    // Jump to the address returned by the
-    // branch_stub_hit call
-    jmp_rm(ocb, RAX);
+    gen_call_branch_stub_hit(ocb, target_idx, branch_ptr as *const u8, branch_stub_hit as *mut u8);
 
     if ocb.has_dropped_bytes() {
         None // No space
@@ -1756,7 +1747,7 @@ fn gen_jump_branch(
     }
 
     if shape == BranchShape::Default {
-        jmp_ptr(cb, target0);
+        gen_jump_ptr(cb, target0);
     }
 }
 
@@ -1927,7 +1918,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
             // Patch in a jump to block.entry_exit.
             let cur_pos = cb.get_write_ptr();
             cb.set_write_ptr(block_start);
-            jmp_ptr(cb, block_entry_exit);
+            gen_jump_ptr(cb, block_entry_exit);
             assert!(
                 cb.get_write_ptr() < block_end,
                 "invalidation wrote past end of block"
