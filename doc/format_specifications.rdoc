@@ -336,3 +336,13 @@ Format +argument+ (<tt>'%'</tt>) as a single percent character:
   sprintf('%d %%', 100) # => "100 %"
 
 Flags do not apply.
+
+=== Reference by Name
+
+For more complex formatting, Ruby supports a reference by name.
+%<name>s style uses format style, but %{name} style doesn't.
+
+Examples:
+
+  sprintf("%<foo>d : %<bar>f", { :foo => 1, :bar => 2 }) # => 1 : 2.000000
+  sprintf("%{foo}f", { :foo => 1 })                      # => "1f"
