@@ -322,7 +322,7 @@ prefixed with +..f+:
 
   sprintf('%x', 100)   # => "64"
 
-  # Prefix '..' for negative value.
+  # Prefix '..f' for negative value.
   sprintf('%x', -100)  # => "..f9c"
 
   # Use alternate format.
