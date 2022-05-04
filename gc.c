@@ -5405,8 +5405,6 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
 {
     struct heap_page *sweep_page = ctx->page;
 
-    int i;
-
     uintptr_t p;
     bits_t *bits, bitset;
 
@@ -5429,6 +5427,13 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
         bits[BITMAP_INDEX(p) + page_rvalue_count / BITS_BITLENGTH] |= ~(((bits_t)1 << out_of_range_bits) - 1);
     }
 
+    /* The last bitmap plane may not be used if the last plane does not have
+     * have enough space for the slot_size. In that case, the last plane must
+     * be skipped since none of the bits will be set. */
+    int bitmap_plane_count = CEILDIV(NUM_IN_PAGE(p) + page_rvalue_count, BITS_BITLENGTH);
+    GC_ASSERT(bitmap_plane_count == HEAP_PAGE_BITMAP_LIMIT - 1 ||
+                  bitmap_plane_count == HEAP_PAGE_BITMAP_LIMIT);
+
     // Skip out of range slots at the head of the page
     bitset = ~bits[0];
     bitset >>= NUM_IN_PAGE(p);
@@ -5437,7 +5442,7 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
     }
     p += (BITS_BITLENGTH - NUM_IN_PAGE(p)) * BASE_SLOT_SIZE;
 
-    for (i=1; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
+    for (int i = 1; i < bitmap_plane_count; i++) {
         bitset = ~bits[i];
         if (bitset) {
             gc_sweep_plane(objspace, heap, p, bitset, ctx);
