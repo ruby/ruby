@@ -45,42 +45,42 @@ The links lead to the details and examples.
 ==== \Integer Type Specifiers
 
 - +b+ or +B+: Format +argument+ as a binary integer.
-  See {Specifiers b and B}[rdoc-ref:doc/format_specifications.rdoc@Specifiers+b+and+B].
+  See {Specifiers b and B}[rdoc-ref:format_specifications.rdoc@Specifiers+b+and+B].
 - +d+, +i+, or +u+ (all are identical):
   Format +argument+ as a decimal integer.
-  See {Specifier d}[rdoc-ref:doc/format_specifications.rdoc@Specifier+d].
+  See {Specifier d}[rdoc-ref:format_specifications.rdoc@Specifier+d].
 - +o+: Format +argument+ as an octal integer.
-  See {Specifier o}[rdoc-ref:doc/format_specifications.rdoc@Specifier+o].
+  See {Specifier o}[rdoc-ref:format_specifications.rdoc@Specifier+o].
 - +x+ or +X+: Format +argument+ as a hexadecimal integer.
-  See {Specifiers x and X}[rdoc-ref:doc/format_specifications.rdoc@Specifiers+x+and+X].
+  See {Specifiers x and X}[rdoc-ref:format_specifications.rdoc@Specifiers+x+and+X].
 
 ==== Floating-Point Type Specifiers
 
 - +a+ or +A+: Format +argument+ as hexadecimal floating-point number.
-  See {Specifiers a and A}[rdoc-ref:doc/format_specifications.rdoc@Specifiers+a+and+A].
+  See {Specifiers a and A}[rdoc-ref:format_specifications.rdoc@Specifiers+a+and+A].
 - +e+ or +E+: Format +argument+ in scientific notation.
-  See {Specifiers e and E}[rdoc-ref:doc/format_specifications.rdoc@Specifiers+e+and+E].
+  See {Specifiers e and E}[rdoc-ref:format_specifications.rdoc@Specifiers+e+and+E].
 - +f+: Format +argument+ as a decimal floating-point number.
-  See {Specifier f}[rdoc-ref:doc/format_specifications.rdoc@Specifier+f].
+  See {Specifier f}[rdoc-ref:format_specifications.rdoc@Specifier+f].
 - +g+ or +G+: Format +argument+ in a "general" format.
-  See {Specifiers g and G}[rdoc-ref:doc/format_specifications.rdoc@Specifiers+g+and+G].
+  See {Specifiers g and G}[rdoc-ref:format_specifications.rdoc@Specifiers+g+and+G].
 
 ==== Other Type Specifiers
 
 - +c+: Format +argument+ as a character.
-  See {Specifier c}[rdoc-ref:doc/format_specifications.rdoc@Specifier+c].
+  See {Specifier c}[rdoc-ref:format_specifications.rdoc@Specifier+c].
 - +p+: Format +argument+ as a string via <tt>argument.inspect</tt>.
-  See {Specifier p}[rdoc-ref:doc/format_specifications.rdoc@Specifier+p].
+  See {Specifier p}[rdoc-ref:format_specifications.rdoc@Specifier+p].
 - +s+: Format +argument+ as a string via <tt>argument.to_s</tt>.
-  See {Specifier s}[rdoc-ref:doc/format_specifications.rdoc@Specifier+s].
+  See {Specifier s}[rdoc-ref:format_specifications.rdoc@Specifier+s].
 - <tt>%</tt>: Format +argument+ (<tt>'%'</tt>) as a single percent character.
-  See {Specifier %}[rdoc-ref:doc/format_specifications.rdoc@Specifier+-25].
+  See {Specifier %}[rdoc-ref:format_specifications.rdoc@Specifier+-25].
 
 === Flags
 
 The effect of a flag may vary greatly among type specifiers.
 These remarks are general in nature.
-See {type-specific details}[rdoc-ref:doc/format_specifications.rdoc@Type+Specifier+Details+and+Examples].
+See {type-specific details}[rdoc-ref:format_specifications.rdoc@Type+Specifier+Details+and+Examples].
 
 Multiple flags may be given with single type specifier;
 order does not matter.
@@ -167,10 +167,6 @@ Format +argument+ as hexadecimal floating-point number:
   sprintf('%A', 4096)      # => "0X1P+12"
   sprintf('%A', -4096)     # => "-0X1P+12"
 
-  # Alternate format (affects only negative value).
-  sprintf('%#a', 3.14159)  # => "0x1.921f9f01b866ep+1"
-  sprintf('%#a', -3.14159) # => "-0x1.921f9f01b866ep+1"
-
 ==== Specifiers +b+ and +B+
 
 The two specifiers +b+ and +B+ behave identically
@@ -195,8 +191,6 @@ Format +argument+ as a single character:
   sprintf('%c', 'A') # => "A"
   sprintf('%c', 65)  # => "A"
 
-Flags do not apply.
-
 ==== Specifier +d+
 
 Format +argument+ as a decimal integer:
@@ -208,16 +202,11 @@ Flag <tt>'#'</tt> does not apply.
 
 ==== Specifiers +e+ and +E+
 
-The two specifiers +e+ and +E+ behave identically
-except when flag <tt>'#'</tt>+ is used.
-
 Format +argument+ in
 {scientific notation}[https://en.wikipedia.org/wiki/Scientific_notation]:
 
   sprintf('%e', 3.14159)  # => "3.141590e+00"
-  sprintf('%e', -3.14159)  # => "-3.141590e+00"
-  sprintf('%#e', 3.14159)  # => "3.141590e+00"
-  sprintf('%#E', 3.14159)  # => "3.141590E+00"
+  sprintf('%E', -3.14159) # => "-3.141590E+00"
 
 ==== Specifier +f+
 
@@ -273,9 +262,6 @@ Format +argument+ as a string via <tt>argument.inspect</tt>:
 
   t = Time.now
   sprintf('%p', t)   # => "2022-05-01 13:42:07.1645683 -0500"
-
-  # Alternate format.
-  sprintf('%#p', t)  # => "2022-05-02 14:19:45.71561 -0500"
 
 ==== Specifier +s+
 
