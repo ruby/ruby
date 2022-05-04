@@ -163,7 +163,7 @@ Format +argument+ as hexadecimal floating-point number:
   sprintf('%a', 4096)      # => "0x1p+12"
   sprintf('%a', -4096)     # => "-0x1p+12"
 
-  # Capital 'A' means capital 'X'.
+  # Capital 'A' means that alphabetical characters are printed in upper case.
   sprintf('%A', 4096)      # => "0X1P+12"
   sprintf('%A', -4096)     # => "-0X1P+12"
 
