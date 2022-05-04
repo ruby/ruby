@@ -154,15 +154,45 @@ of the formatted field:
 
 === Precision Specifier
 
-A precision specifier, which is a decimal point followed by zero or more
-decimal digits, specifies the precision of the formatted argument:
+A precision specifier is a decimal point followed by zero or more
+decimal digits.
 
-  sprintf('%.f', 3.14159)   # => "3"
+For integer type specifiers, the precision specifies the minimum number of
+digits to be written. If the precision is shorter than the integer, the result is
+padded with leading zeros. There is no modification or truncation of the result
+if the integer is longer than the precision:
+
+  sprintf('%.3d', 1)    # => "001"
+  sprintf('%.3d', 1000) # => "1000"
+  
+  # If the precision is 0 and the value is 0, nothing is written
+  sprintf('%.d', 0)  # => ""
+  sprintf('%.0d', 0) # => ""
+
+For the +a+/+A+, +e+/+E+, +f+/+F+ specifiers, the precision specifies
+the number of digits after the decimal point to be written:
+
   sprintf('%.2f', 3.14159)  # => "3.14"
   sprintf('%.10f', 3.14159) # => "3.1415900000"
 
   # With no precision specifier, defaults to 6-digit precision.
   sprintf('%f', 3.14159)    # => "3.141590"
+
+For the +g+/+G+ specifiers, the precision specifies
+the number of significant digits to be written:
+
+  sprintf('%.2g', 123.45)  # => "1.2e+02"
+  sprintf('%.3g', 123.45)  # => "123"
+  sprintf('%.10g', 123.45) # =>  "123.45"
+  
+  # With no precision specifier, defaults to 6 significant digits.
+  sprintf('%g', 123.456789) # => "123.457"
+  
+For the +s+, +p+ specifiers, the precision specifies
+the number of characters to write:
+
+  sprintf('%s', Time.now)    # => "2022-05-04 11:59:16 -0400"
+  sprintf('%.10s', Time.now) # => "2022-05-04"
 
 === Type Specifier Details and Examples
 
