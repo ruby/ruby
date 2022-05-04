@@ -230,8 +230,11 @@ Flag <tt>'#'</tt> does not apply.
 
 ==== Specifiers +g+ and +G+
 
-Format +argument+ in a "general" format that may be convenient
-for human readers:
+Format +argument+ using exponential form (+e+/+E+ specifier)
+if the exponent is less than -4 or greater than or equal to the precision.
+Otherwise format +argument+ using floating-point form +f+ specifier).
+
+The precision defaults to 6, and can be changed to +n+ using the +.n+ flag.
 
   sprintf('%g', 100)  # => "100"
   sprintf('%g', 100.0)  # => "100"
