@@ -254,7 +254,9 @@ The precision defaults to 6, and can be changed to +n+ using the +.n+ flag.
 
 ==== Specifier +o+
 
-Format +argument+ as an octal integer:
+Format +argument+ as an octal integer.
+If +argument+ is negative, it will be formatted as a two's complement
+prefixed with +..7+:
 
   sprintf('%o', 16)   # => "20"
 
