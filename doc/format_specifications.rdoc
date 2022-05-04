@@ -158,7 +158,7 @@ of the formatted field:
 
 Format +argument+ as hexadecimal floating-point number:
 
-  sprintf('%a', 3.14159)   # =>  "0x1.921f9f01b866ep+1"
+  sprintf('%a', 3.14159)   # => "0x1.921f9f01b866ep+1"
   sprintf('%a', -3.14159)  # => "-0x1.921f9f01b866ep+1"
   sprintf('%a', 4096)      # => "0x1p+12"
   sprintf('%a', -4096)     # => "-0x1p+12"
