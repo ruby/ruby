@@ -152,6 +152,18 @@ of the formatted field:
   # Ignore if too small.
   sprintf('%1d', 100)   # => "100"
 
+=== Precision Specifier
+
+A precision specifier, which is a decimal point followed by zero or more
+decimal digits, specifies the precision of the formatted argument:
+
+  sprintf('%.f', 3.14159)   # => "3"
+  sprintf('%.2f', 3.14159)  # => "3.14"
+  sprintf('%.10f', 3.14159) # => "3.1415900000"
+
+  # With no precision specifier, defaults to 6-digit precision.
+  sprintf('%f', 3.14159)    # => "3.141590"
+
 === Type Specifier Details and Examples
 
 ==== Specifiers +a+ and +A+
@@ -221,7 +233,7 @@ Flag <tt>'#'</tt> does not apply.
 
 Format +argument+ using exponential form (+e+/+E+ specifier)
 if the exponent is less than -4 or greater than or equal to the precision.
-Otherwise format +argument+ using floating-point form +f+ specifier).
+Otherwise format +argument+ using floating-point form (+f+ specifier).
 
 The precision defaults to 6, and can be changed to +n+ using the +.n+ flag.
 
