@@ -164,7 +164,7 @@ if the integer is longer than the precision:
 
   sprintf('%.3d', 1)    # => "001"
   sprintf('%.3d', 1000) # => "1000"
-  
+
   # If the precision is 0 and the value is 0, nothing is written
   sprintf('%.d', 0)  # => ""
   sprintf('%.0d', 0) # => ""
@@ -184,10 +184,10 @@ the number of significant digits to be written:
   sprintf('%.2g', 123.45)  # => "1.2e+02"
   sprintf('%.3g', 123.45)  # => "123"
   sprintf('%.10g', 123.45) # =>  "123.45"
-  
+
   # With no precision specifier, defaults to 6 significant digits.
   sprintf('%g', 123.456789) # => "123.457"
-  
+
 For the +s+, +p+ specifiers, the precision specifies
 the number of characters to write:
 
