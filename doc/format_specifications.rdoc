@@ -281,7 +281,7 @@ Format +argument+ as a string via <tt>argument.inspect</tt>:
 
 Format +argument+ as a string via <tt>argument.to_s</tt>:
 
-  t =Time.now
+  t = Time.now
   sprintf('%s', t) # => "2022-05-01 13:42:07 -0500"
 
 Flag <tt>'#'</tt> does not apply.
