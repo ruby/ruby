@@ -291,7 +291,7 @@ prefixed with +..7+:
 
   sprintf('%o', 16)   # => "20"
 
-  # Prefix '..' for negative value.
+  # Prefix '..7' for negative value.
   sprintf('%o', -16)  # => "..760"
 
   # Prefix zero for alternate format if positive.
