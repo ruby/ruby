@@ -144,7 +144,7 @@ class IseqDisassembler:
     def insn_len(self, target, offset):
         size_of_char = self.tChar.GetByteSize()
 
-        symbol = target.FindSymbols("insn_len.t")[0].GetSymbol()
+        symbol = target.FindSymbols("rb_vm_insn_len_info")[0].GetSymbol()
         section = symbol.GetStartAddress().GetSection()
         addr_of_table = symbol.GetStartAddress().GetOffset()
 
