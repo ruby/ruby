@@ -5473,11 +5473,13 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
 
 #if RGENGC_CHECK_MODE
     short freelist_len = 0;
+    asan_unpoison_memory_region(&sweep_page->freelist, sizeof(RVALUE*), false);
     RVALUE *ptr = sweep_page->freelist;
     while (ptr) {
         freelist_len++;
         ptr = ptr->as.free.next;
     }
+    asan_poison_memory_region(&sweep_page->freelist, sizeof(RVALUE*));
     if (freelist_len != sweep_page->free_slots) {
         rb_bug("inconsistent freelist length: expected %d but was %d", sweep_page->free_slots, freelist_len);
     }
