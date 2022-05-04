@@ -288,7 +288,9 @@ Flag <tt>'#'</tt> does not apply.
 
 ==== Specifiers +x+ and +X+
 
-Format +argument+ as a hexadecimal number:
+Format +argument+ as a hexadecimal integer.
+If +argument+ is negative, it will be formatted as a two's complement
+prefixed with +..f+:
 
   sprintf('%x', 100)   # => "64"
 
