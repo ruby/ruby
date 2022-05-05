@@ -910,6 +910,13 @@ impl Context {
         return mem_opnd(64, REG_SP, offset);
     }
 
+    #[cfg(target_arch = "aarch64")]
+    pub fn sp_imm_opnd(&self, offset_bytes: isize) -> YJitOpnd {
+        let offset = ((self.sp_offset as isize) * (SIZEOF_VALUE as isize)) + offset_bytes;
+        let offset = offset as i64;
+        return imm_opnd(offset);
+    }
+
     /// Push one new value on the temp stack with an explicit mapping
     /// Return a pointer to the new stack top
     pub fn stack_push_mapping(&mut self, (mapping, temp_type): (TempMapping, Type)) -> YJitOpnd {

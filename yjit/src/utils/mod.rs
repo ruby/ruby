@@ -4,6 +4,10 @@
 pub mod x86_64;
 #[cfg(target_arch = "x86_64")]
 pub use x86_64::*;
+#[cfg(target_arch = "aarch64")]
+pub mod aarch64;
+#[cfg(target_arch = "aarch64")]
+pub use aarch64::*;
 
 /// Trait for casting to [usize] that allows you to say `.as_usize()`.
 /// Implementation conditional on the the cast preserving the numeric value on
