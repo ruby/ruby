@@ -1621,14 +1621,13 @@ rb_file_directory_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.pipe?(object) -> true or false
+ *   File.pipe?(filepath) -> true or false
  *
- * Returns +true+ if +object+ is a pipe, +false+ otherwise:
+ * Returns +true+ if +filepath+ points to a pipe, +false+ otherwise:
  *
- *   read_pipe, write_pipe = IO.pipe # => [#<IO:fd 5>, #<IO:fd 6>]
- *   File.pipe?(read_pipe)           # => true
- *   File.pipe?(write_pipe)          # => true
- *   File.pipe?(File.open('t.txt'))  # => false
+ *   File.mkfifo('tmp/fifo')
+ *   File.pipe?('tmp/fifo') # => true
+ *   File.pipe?('t.txt')    # => false
  *
  */
 
@@ -1651,9 +1650,9 @@ rb_file_pipe_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.symlink?(object) -> true or false
+ *   File.symlink?(filepath) -> true or false
  *
- * Returns +true+ if +object+ is a symbolic link, +false+ otherwise:
+ * Returns +true+ if +filepath+ points to a symbolic link, +false+ otherwise:
  *
  *   symlink = File.symlink('t.txt', 'symlink')
  *   File.symlink?('symlink') # => true
@@ -1692,9 +1691,9 @@ rb_file_symlink_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.socket?(object)   ->  true or false
+ *   File.socket?(filepath)   ->  true or false
  *
- * Returns +true+ if +object+ is a socket, +false+ otherwise:
+ * Returns +true+ if +filepath+ points to a socket, +false+ otherwise:
  *
  *   require 'socket'
  *   File.socket?(Socket.new(:INET, :STREAM)) # => true
@@ -1731,9 +1730,9 @@ rb_file_socket_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.blockdev?(object) -> true or false
+ *   File.blockdev?(filepath) -> true or false
  *
- * Returns +true+ if +object+ is a block device, +false+ otherwise:
+ * Returns +true+ if +filepath+ points to a block device, +false+ otherwise:
  *
  *   File.blockdev?('/dev/sda1')      # => true
  *   File.blockdev?(File.new('t.tmp') # => false
@@ -1763,9 +1762,9 @@ rb_file_blockdev_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.chardev?(object) -> true or false
+ *   File.chardev?(filepath) -> true or false
  *
- * Returns +true+ if +object+ is a character device, +false+ otherwise.
+ * Returns +true+ if +filepath+ points to a character device, +false+ otherwise.
  *
   *  File.chardev?($stdin)     # => true
  *   File.chardev?('t.txt')     # => false
