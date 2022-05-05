@@ -1268,11 +1268,12 @@ do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super
             rb_module_add_to_subclasses_list(m, iclass);
 	}
 
-	if (FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
+	if (BUILTIN_TYPE(klass) == T_MODULE && FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
 	    VALUE refined_class =
 		rb_refinement_module_get_refined_class(klass);
 
             rb_id_table_foreach(RCLASS_M_TBL(module), add_refined_method_entry_i, (void *)refined_class);
+            RUBY_ASSERT(BUILTIN_TYPE(c) == T_MODULE);
 	    FL_SET(c, RMODULE_INCLUDED_INTO_REFINEMENT);
 	}
 
@@ -1497,7 +1498,7 @@ rb_mod_ancestors(VALUE mod)
 {
     VALUE p, ary = rb_ary_new();
     VALUE refined_class = Qnil;
-    if (FL_TEST(mod, RMODULE_IS_REFINEMENT)) {
+    if (BUILTIN_TYPE(mod) == T_MODULE && FL_TEST(mod, RMODULE_IS_REFINEMENT)) {
         refined_class = rb_refinement_module_get_refined_class(mod);
     }
 
