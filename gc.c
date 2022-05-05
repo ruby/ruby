@@ -6994,6 +6994,10 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
             gc_mark(objspace, RCLASS_SUPER(obj));
         }
 	if (!RCLASS_EXT(obj)) break;
+
+        if (RCLASS_INCLUDER(obj)) {
+            gc_mark(objspace, RCLASS_INCLUDER(obj));
+        }
 	mark_m_tbl(objspace, RCLASS_CALLABLE_M_TBL(obj));
         cc_table_mark(objspace, obj);
 	break;
