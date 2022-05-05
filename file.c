@@ -1621,11 +1621,14 @@ rb_file_directory_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.pipe?(file_name)   ->  true or false
+ *   File.pipe?(filepath) -> true or false
  *
- * Returns <code>true</code> if the named file is a pipe.
+ * Returns +true+ if +filepath+ points to a pipe, +false+ otherwise:
  *
- * _file_name_ can be an IO object.
+ *   File.mkfifo('tmp/fifo')
+ *   File.pipe?('tmp/fifo') # => true
+ *   File.pipe?('t.txt')    # => false
+ *
  */
 
 static VALUE
@@ -1647,9 +1650,14 @@ rb_file_pipe_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.symlink?(file_name)   ->  true or false
+ *   File.symlink?(filepath) -> true or false
  *
- * Returns <code>true</code> if the named file is a symbolic link.
+ * Returns +true+ if +filepath+ points to a symbolic link, +false+ otherwise:
+ *
+ *   symlink = File.symlink('t.txt', 'symlink')
+ *   File.symlink?('symlink') # => true
+ *   File.symlink?('t.txt')   # => false
+ *
  */
 
 static VALUE
@@ -1683,11 +1691,14 @@ rb_file_symlink_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.socket?(file_name)   ->  true or false
+ *   File.socket?(filepath)   ->  true or false
  *
- * Returns <code>true</code> if the named file is a socket.
+ * Returns +true+ if +filepath+ points to a socket, +false+ otherwise:
  *
- * _file_name_ can be an IO object.
+ *   require 'socket'
+ *   File.socket?(Socket.new(:INET, :STREAM)) # => true
+ *   File.socket?(File.new('t.txt'))          # => false
+ *
  */
 
 static VALUE
@@ -1719,11 +1730,13 @@ rb_file_socket_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.blockdev?(file_name)   ->  true or false
+ *   File.blockdev?(filepath) -> true or false
  *
- * Returns <code>true</code> if the named file is a block device.
+ * Returns +true+ if +filepath+ points to a block device, +false+ otherwise:
  *
- * _file_name_ can be an IO object.
+ *   File.blockdev?('/dev/sda1')      # => true
+ *   File.blockdev?(File.new('t.tmp') # => false
+ *
  */
 
 static VALUE
@@ -1749,11 +1762,13 @@ rb_file_blockdev_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.chardev?(file_name)   ->  true or false
+ *   File.chardev?(filepath) -> true or false
  *
- * Returns <code>true</code> if the named file is a character device.
+ * Returns +true+ if +filepath+ points to a character device, +false+ otherwise.
  *
- * _file_name_ can be an IO object.
+  *  File.chardev?($stdin)     # => true
+ *   File.chardev?('t.txt')     # => false
+ *
  */
 static VALUE
 rb_file_chardev_p(VALUE obj, VALUE fname)
