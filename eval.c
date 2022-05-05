@@ -1129,7 +1129,7 @@ rb_mod_include(int argc, VALUE *argv, VALUE module)
     CONST_ID(id_append_features, "append_features");
     CONST_ID(id_included, "included");
 
-    if (FL_TEST(module, RMODULE_IS_REFINEMENT)) {
+    if (BUILTIN_TYPE(module) == T_MODULE && FL_TEST(module, RMODULE_IS_REFINEMENT)) {
         rb_raise(rb_eTypeError, "Refinement#include has been removed");
     }
 
@@ -1183,7 +1183,7 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
     int i;
     ID id_prepend_features, id_prepended;
 
-    if (FL_TEST(module, RMODULE_IS_REFINEMENT)) {
+    if (BUILTIN_TYPE(module) == T_MODULE && FL_TEST(module, RMODULE_IS_REFINEMENT)) {
         rb_raise(rb_eTypeError, "Refinement#prepend has been removed");
     }
 
@@ -1264,7 +1264,6 @@ rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
 	    }
 	}
     }
-    FL_SET(module, RMODULE_IS_OVERLAID);
     superclass = refinement_superclass(superclass);
     c = iclass = rb_include_class_new(module, superclass);
     RB_OBJ_WRITE(c, &RCLASS_REFINED_CLASS(c), klass);
@@ -1273,7 +1272,6 @@ rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
 
     module = RCLASS_SUPER(module);
     while (module && module != klass) {
-	FL_SET(module, RMODULE_IS_OVERLAID);
 	c = RCLASS_SET_SUPER(c, rb_include_class_new(module, RCLASS_SUPER(c)));
         RB_OBJ_WRITE(c, &RCLASS_REFINED_CLASS(c), klass);
         module = RCLASS_SUPER(module);
@@ -1362,13 +1360,11 @@ add_activated_refinement(VALUE activated_refinements,
 	    c = RCLASS_SUPER(c);
 	}
     }
-    FL_SET(refinement, RMODULE_IS_OVERLAID);
     superclass = refinement_superclass(superclass);
     c = iclass = rb_include_class_new(refinement, superclass);
     RB_OBJ_WRITE(c, &RCLASS_REFINED_CLASS(c), klass);
     refinement = RCLASS_SUPER(refinement);
     while (refinement && refinement != klass) {
-	FL_SET(refinement, RMODULE_IS_OVERLAID);
 	c = RCLASS_SET_SUPER(c, rb_include_class_new(refinement, RCLASS_SUPER(c)));
         RB_OBJ_WRITE(c, &RCLASS_REFINED_CLASS(c), klass);
 	refinement = RCLASS_SUPER(refinement);
@@ -1421,6 +1417,7 @@ rb_mod_refine(VALUE module, VALUE klass)
 	VALUE superclass = refinement_superclass(klass);
 	refinement = rb_refinement_new();
 	RCLASS_SET_SUPER(refinement, superclass);
+        RUBY_ASSERT(BUILTIN_TYPE(refinement) == T_MODULE);
 	FL_SET(refinement, RMODULE_IS_REFINEMENT);
 	CONST_ID(id_refined_class, "__refined_class__");
 	rb_ivar_set(refinement, id_refined_class, klass);
@@ -1511,7 +1508,7 @@ used_modules_i(VALUE _, VALUE mod, VALUE ary)
 {
     ID id_defined_at;
     CONST_ID(id_defined_at, "__defined_at__");
-    while (FL_TEST(rb_class_of(mod), RMODULE_IS_REFINEMENT)) {
+    while (BUILTIN_TYPE(rb_class_of(mod)) == T_MODULE && FL_TEST(rb_class_of(mod), RMODULE_IS_REFINEMENT)) {
 	rb_ary_push(ary, rb_attr_get(rb_class_of(mod), id_defined_at));
 	mod = RCLASS_SUPER(mod);
     }
@@ -1562,7 +1559,7 @@ rb_mod_s_used_modules(VALUE _)
 static int
 used_refinements_i(VALUE _, VALUE mod, VALUE ary)
 {
-    while (FL_TEST(rb_class_of(mod), RMODULE_IS_REFINEMENT)) {
+    while (BUILTIN_TYPE(rb_class_of(mod)) == T_MODULE && FL_TEST(rb_class_of(mod), RMODULE_IS_REFINEMENT)) {
         rb_ary_push(ary, rb_class_of(mod));
 	mod = RCLASS_SUPER(mod);
     }
