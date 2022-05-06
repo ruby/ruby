@@ -239,6 +239,7 @@ fn main() {
         .allowlist_function("rb_iseq_(get|set)_yjit_payload")
         .allowlist_function("rb_iseq_pc_at_idx")
         .allowlist_function("rb_iseq_opcode_at_pc")
+        .allowlist_function("rb_yjit_reserve_addr_space")
         .allowlist_function("rb_yjit_mark_writable")
         .allowlist_function("rb_yjit_mark_executable")
         .allowlist_function("rb_yjit_get_page_size")

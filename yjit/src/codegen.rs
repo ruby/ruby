@@ -21,6 +21,8 @@ use std::os::raw::c_uint;
 use std::ptr;
 use std::slice;
 
+pub use crate::virtualmem::CodePtr;
+
 // Callee-saved registers
 pub const REG_CFP: X86Opnd = R13;
 pub const REG_EC: X86Opnd = R12;
@@ -5982,14 +5984,53 @@ impl CodegenGlobals {
 
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {
-            let page_size = unsafe { rb_yjit_get_page_size() }.as_usize();
-            let mem_block: *mut u8 = unsafe { alloc_exec_mem(mem_size.try_into().unwrap()) };
-            let cb = CodeBlock::new(mem_block, mem_size / 2, page_size);
-            let ocb = OutlinedCb::wrap(CodeBlock::new(
-                unsafe { mem_block.add(mem_size / 2) },
-                mem_size / 2,
+            // TODO(alan): we can error more gracefully when the user gives
+            //   --yjit-exec-mem=absurdly-large-number
+            //
+            // 2 GiB. It's likely a bug if we generate this much code.
+            const MAX_BUFFER_SIZE: usize = 2 * 1024 * 1024 * 1024;
+            assert!(mem_size <= MAX_BUFFER_SIZE);
+            let mem_size_u32 = mem_size as u32;
+            let half_size = mem_size / 2;
+
+            let page_size = unsafe { rb_yjit_get_page_size() };
+            let assert_page_aligned = |ptr| assert_eq!(
+                0,
+                ptr as usize % page_size.as_usize(),
+                "Start of virtual address block should be page-aligned",
+            );
+
+            let virt_block: *mut u8 = unsafe { rb_yjit_reserve_addr_space(mem_size_u32) };
+            let second_half = virt_block.wrapping_add(half_size);
+
+            // Memory protection syscalls need page-aligned addresses, so check it here. Assuming
+            // `virt_block` is page-aligned, `second_half` should be page-aligned as long as the
+            // page size in bytes is a power of two 2¹⁹ or smaller. This is because the user
+            // requested size is half of mem_option × 2²⁰ as it's in MiB.
+            //
+            // Basically, we don't support x86-64 2MiB and 1GiB pages. ARMv8 can do up to 64KiB
+            // (2¹⁶ bytes) pages, which should be fine. 4KiB pages seem to be the most popular though.
+            assert_page_aligned(virt_block);
+            assert_page_aligned(second_half);
+
+            use crate::virtualmem::*;
+
+            let first_half = VirtualMem::new(
+                SystemAllocator {},
                 page_size,
-            ));
+                virt_block,
+                half_size
+            );
+            let second_half = VirtualMem::new(
+                SystemAllocator {},
+                page_size,
+                second_half,
+                half_size
+            );
+
+            let cb = CodeBlock::new(first_half);
+            let ocb = OutlinedCb::wrap(CodeBlock::new(second_half));
+
             (cb, ocb)
         };
 

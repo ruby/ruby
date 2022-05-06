@@ -111,9 +111,6 @@ pub use autogened::*;
 // and textually included in this file
 #[cfg_attr(test, allow(unused))] // We don't link against C code when testing
 extern "C" {
-    #[link_name = "rb_yjit_alloc_exec_mem"] // we can rename functions with this attribute
-    pub fn alloc_exec_mem(mem_size: u32) -> *mut u8;
-
     #[link_name = "rb_insn_name"]
     pub fn raw_insn_name(insn: VALUE) -> *const c_char;
 

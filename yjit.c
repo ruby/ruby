@@ -56,7 +56,7 @@ STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
 // types in C such as int, long, etc. and use `std::os::raw::c_long` and friends on
 // the Rust side.
 //
-// What's up with the long prefix? The "rb_" part is to apease `make leaked-globals`
+// What's up with the long prefix? The "rb_" part is to appease `make leaked-globals`
 // which runs on upstream CI. The rationale for the check is unclear to Alan as
 // we build with `-fvisibility=hidden` so only explicitly marked functions end
 // up as public symbols in libruby.so. Perhaps the check is for the static
@@ -66,13 +66,13 @@ STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
 // The "_yjit_" part is for trying to be informative. We might want different
 // suffixes for symbols meant for Rust and symbols meant for broader CRuby.
 
-void
+bool
 rb_yjit_mark_writable(void *mem_block, uint32_t mem_size)
 {
     if (mprotect(mem_block, mem_size, PROT_READ | PROT_WRITE)) {
-        rb_bug("Couldn't make JIT page region (%p, %lu bytes) writeable, errno: %s\n",
-            mem_block, (unsigned long)mem_size, strerror(errno));
+        return false;
     }
+    return true;
 }
 
 void
@@ -209,25 +209,29 @@ align_ptr(uint8_t *ptr, uint32_t multiple)
 }
 #endif
 
-// Allocate a block of executable memory
+// Address space reservation. Memory pages are mapped on an as needed basis.
+// See the Rust mm module for details.
 uint8_t *
-rb_yjit_alloc_exec_mem(uint32_t mem_size)
+rb_yjit_reserve_addr_space(uint32_t mem_size)
 {
 #ifndef _WIN32
     uint8_t *mem_block;
 
     // On Linux
     #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
+        uint32_t const page_size = (uint32_t)sysconf(_SC_PAGESIZE);
+        uint8_t *const cfunc_sample_addr = (void *)&rb_yjit_reserve_addr_space;
+        uint8_t *const probe_region_end = cfunc_sample_addr + INT32_MAX;
         // Align the requested address to page size
-        uint32_t page_size = (uint32_t)sysconf(_SC_PAGESIZE);
-        uint8_t *req_addr = align_ptr((uint8_t*)&rb_yjit_alloc_exec_mem, page_size);
+        uint8_t *req_addr = align_ptr(cfunc_sample_addr, page_size);
 
+        // Probe for addresses close to this function using MAP_FIXED_NOREPLACE
+        // to improve odds of being in range for 32-bit relative call instructions.
         do {
-            // Try to map a chunk of memory as executable
-            mem_block = (uint8_t*)mmap(
-                (void*)req_addr,
+            mem_block = mmap(
+                req_addr,
                 mem_size,
-                PROT_READ | PROT_EXEC,
+                PROT_NONE,
                 MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE,
                 -1,
                 0
@@ -240,15 +244,15 @@ rb_yjit_alloc_exec_mem(uint32_t mem_size)
 
             // +4MB
             req_addr += 4 * 1024 * 1024;
-        } while (req_addr < (uint8_t*)&rb_yjit_alloc_exec_mem + INT32_MAX);
+        } while (req_addr < probe_region_end);
 
     // On MacOS and other platforms
     #else
         // Try to map a chunk of memory as executable
-        mem_block = (uint8_t*)mmap(
-            (void*)rb_yjit_alloc_exec_mem,
+        mem_block = mmap(
+            (void *)rb_yjit_reserve_addr_space,
             mem_size,
-            PROT_READ | PROT_EXEC,
+            PROT_NONE,
             MAP_PRIVATE | MAP_ANONYMOUS,
             -1,
             0
@@ -258,10 +262,10 @@ rb_yjit_alloc_exec_mem(uint32_t mem_size)
     // Fallback
     if (mem_block == MAP_FAILED) {
         // Try again without the address hint (e.g., valgrind)
-        mem_block = (uint8_t*)mmap(
+        mem_block = mmap(
             NULL,
             mem_size,
-            PROT_READ | PROT_EXEC,
+            PROT_NONE,
             MAP_PRIVATE | MAP_ANONYMOUS,
             -1,
             0
@@ -270,16 +274,9 @@ rb_yjit_alloc_exec_mem(uint32_t mem_size)
 
     // Check that the memory mapping was successful
     if (mem_block == MAP_FAILED) {
-        perror("mmap call failed");
-        exit(-1);
+        perror("ruby: yjit: mmap:");
+        rb_bug("mmap failed");
     }
-
-    // Fill the executable memory with PUSH DS (0x1E) so that
-    // executing uninitialized memory will fault with #UD in
-    // 64-bit mode.
-    rb_yjit_mark_writable(mem_block, mem_size);
-    memset(mem_block, 0x1E, mem_size);
-    rb_yjit_mark_executable(mem_block, mem_size);
 
     return mem_block;
 #else

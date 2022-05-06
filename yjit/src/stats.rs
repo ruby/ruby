@@ -141,7 +141,7 @@ macro_rules! incr_counter {
     ($counter_name:ident) => {
         #[allow(unused_unsafe)]
         {
-            unsafe { COUNTERS.$counter_name += 1 }
+            unsafe { $crate::stats::COUNTERS.$counter_name += 1 }
         }
     };
 }
@@ -244,6 +244,10 @@ make_counters! {
 
     gbpp_block_param_modified,
     gbpp_block_handler_not_iseq,
+
+    // Currently, it's out of the ordinary (might be impossible) for YJIT to leave gaps in
+    // executable memory, so this should be 0.
+    exec_mem_non_bump_alloc,
 }
 
 //===========================================================================
