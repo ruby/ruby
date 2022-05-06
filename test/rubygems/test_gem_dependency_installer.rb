@@ -941,7 +941,7 @@ class TestGemDependencyInstaller < Gem::TestCase
   end
 
   def test_install_legacy_spec_with_nil_required_ruby_version
-    path = File.expand_path "../data/null-required-ruby-version.gemspec.rz", __FILE__
+    path = File.expand_path 'data/null-required-ruby-version.gemspec.rz', __dir__
     spec = Marshal.load Gem.read_binary(path)
     def spec.validate(*args); end
 
@@ -966,7 +966,7 @@ class TestGemDependencyInstaller < Gem::TestCase
   end
 
   def test_install_legacy_spec_with_nil_required_rubygems_version
-    path = File.expand_path "../data/null-required-rubygems-version.gemspec.rz", __FILE__
+    path = File.expand_path 'data/null-required-rubygems-version.gemspec.rz', __dir__
     spec = Marshal.load Gem.read_binary(path)
     def spec.validate(*args); end
 

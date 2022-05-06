@@ -2150,7 +2150,7 @@ heap_page_allocate(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
     /* adjust obj_limit (object number available in this page) */
     start = (uintptr_t)((VALUE)page_body + sizeof(struct heap_page_header));
 
-    if ((VALUE)start % BASE_SLOT_SIZE != 0) {
+    if (start % BASE_SLOT_SIZE != 0) {
         int delta = BASE_SLOT_SIZE - (start % BASE_SLOT_SIZE);
         start = start + delta;
         GC_ASSERT(NUM_IN_PAGE(start) == 0 || NUM_IN_PAGE(start) == 1);
@@ -5696,11 +5696,13 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
 
 #if RGENGC_CHECK_MODE
     short freelist_len = 0;
+    asan_unpoison_memory_region(&sweep_page->freelist, sizeof(RVALUE*), false);
     RVALUE *ptr = sweep_page->freelist;
     while (ptr) {
         freelist_len++;
         ptr = ptr->as.free.next;
     }
+    asan_poison_memory_region(&sweep_page->freelist, sizeof(RVALUE*));
     if (freelist_len != sweep_page->free_slots) {
         rb_bug("inconsistent freelist length: expected %d but was %d", sweep_page->free_slots, freelist_len);
     }
@@ -7231,6 +7233,10 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
             gc_mark(objspace, RCLASS_SUPER(obj));
         }
 	if (!RCLASS_EXT(obj)) break;
+
+        if (RCLASS_INCLUDER(obj)) {
+            gc_mark(objspace, RCLASS_INCLUDER(obj));
+        }
 	mark_m_tbl(objspace, RCLASS_CALLABLE_M_TBL(obj));
         cc_table_mark(objspace, obj);
 	break;
@@ -10375,6 +10381,7 @@ static void
 update_class_ext(rb_objspace_t *objspace, rb_classext_t *ext)
 {
     UPDATE_IF_MOVED(objspace, ext->origin_);
+    UPDATE_IF_MOVED(objspace, ext->includer);
     UPDATE_IF_MOVED(objspace, ext->refined_class);
     update_subclass_entries(objspace, ext->subclasses);
 

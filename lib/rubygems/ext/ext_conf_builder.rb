@@ -39,7 +39,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
         # workaround for https://github.com/oracle/truffleruby/issues/2115
         siteconf_path = RUBY_ENGINE == "truffleruby" ? siteconf.path.dup : siteconf.path
         require "shellwords"
-        cmd = Gem.ruby.shellsplit << "-I" << File.expand_path("../../..", __FILE__) <<
+        cmd = Gem.ruby.shellsplit << "-I" << File.expand_path('../..', __dir__) <<
               "-r" << get_relative_path(siteconf_path, extension_dir) << File.basename(extension)
         cmd.push(*args)
 

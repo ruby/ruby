@@ -123,7 +123,7 @@ vm_cme_invalidate(rb_callable_method_entry_t *cme)
     METHOD_ENTRY_INVALIDATED_SET(cme);
     RB_DEBUG_COUNTER_INC(cc_cme_invalidate);
 
-    rb_yjit_cme_invalidate((VALUE)cme);
+    rb_yjit_cme_invalidate(cme);
 }
 
 static int
@@ -148,7 +148,7 @@ rb_clear_constant_cache_for_id(ID id)
         ruby_vm_constant_cache_invalidations += ics->num_entries;
     }
 
-    rb_yjit_constant_state_changed();
+    rb_yjit_constant_state_changed(id);
 }
 
 static void

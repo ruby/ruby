@@ -291,7 +291,7 @@ install:
     File.open File.join(@spec.gem_dir, "extconf.rb"), "w" do |f|
       f.write <<-'RUBY'
         puts "IN EXTCONF"
-        extconf_args = File.join File.dirname(__FILE__), 'extconf_args'
+        extconf_args = File.join __dir__, 'extconf_args'
         File.open extconf_args, 'w' do |f|
           f.puts ARGV.inspect
         end

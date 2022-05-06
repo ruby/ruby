@@ -274,10 +274,10 @@ module Bundler
 
     def set_bundle_variables
       # bundler exe & lib folders have same root folder, typical gem installation
-      exe_file = File.expand_path("../../../exe/bundle", __FILE__)
+      exe_file = File.expand_path("../../exe/bundle", __dir__)
 
       # for Ruby core repository testing
-      exe_file = File.expand_path("../../../libexec/bundle", __FILE__) unless File.exist?(exe_file)
+      exe_file = File.expand_path("../../libexec/bundle", __dir__) unless File.exist?(exe_file)
 
       # bundler is a default gem, exe path is separate
       exe_file = Bundler.rubygems.bin_path("bundler", "bundle", VERSION) unless File.exist?(exe_file)
@@ -309,7 +309,7 @@ module Bundler
     end
 
     def bundler_ruby_lib
-      resolve_path File.expand_path("../..", __FILE__)
+      File.expand_path("..", __dir__)
     end
 
     def clean_load_path
@@ -325,7 +325,7 @@ module Bundler
 
     def resolve_path(path)
       expanded = File.expand_path(path)
-      return expanded unless File.respond_to?(:realpath) && File.exist?(expanded)
+      return expanded unless File.exist?(expanded)
 
       File.realpath(expanded)
     end

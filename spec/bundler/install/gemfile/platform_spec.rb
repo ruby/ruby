@@ -216,7 +216,7 @@ RSpec.describe "bundle install across platforms" do
         pry
 
       BUNDLED WITH
-        #{Bundler::VERSION}
+         #{Bundler::VERSION}
     L
 
     aggregate_failures do

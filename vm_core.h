@@ -85,7 +85,6 @@
 #include "ruby/st.h"
 #include "ruby_atomic.h"
 #include "vm_opts.h"
-#include "darray.h"
 
 #include "ruby/thread_native.h"
 #include THREAD_IMPL_H
@@ -322,10 +321,6 @@ pathobj_realpath(VALUE pathobj)
 /* Forward declarations */
 struct rb_mjit_unit;
 
-// List of YJIT block versions
-typedef rb_darray(struct yjit_block_version *) rb_yjit_block_array_t;
-typedef rb_darray(rb_yjit_block_array_t) rb_yjit_block_array_array_t;
-
 struct rb_iseq_constant_body {
     enum iseq_type {
 	ISEQ_TYPE_TOP,
@@ -470,7 +465,11 @@ struct rb_iseq_constant_body {
     struct rb_mjit_unit *jit_unit;
 #endif
 
-    rb_yjit_block_array_array_t yjit_blocks; // empty, or has a size equal to iseq_size
+#if USE_YJIT
+    // YJIT stores some data on each iseq.
+    // Note: Cannot use YJIT_BUILD here since yjit.h includes this header.
+    void *yjit_payload;
+#endif
 };
 
 /* T_IMEMO/iseq */
@@ -1210,7 +1209,7 @@ typedef rb_control_frame_t *
 #define GC_GUARDED_PTR_REF(p) VM_TAGGED_PTR_REF((p), 0x03)
 #define GC_GUARDED_PTR_P(p)   (((VALUE)(p)) & 0x01)
 
-enum {
+enum vm_frame_env_flags {
     /* Frame/Environment flag bits:
      *   MMMM MMMM MMMM MMMM ____ _FFF FFFF EEEX (LSB)
      *

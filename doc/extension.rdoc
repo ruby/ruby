@@ -1055,9 +1055,9 @@ All symbols are public API with the exception of symbols prefixed with
 +rbimpl_+ or +RBIMPL_+. They are implementation details and shouldn't
 be used by C extensions.
 
-Only <tt>$repo_root/include/ruby/*.h</tt> are allowed to be <tt>#include</tt>-d
-by C extensions. Files under <tt>$repo_root/include/ruby/internal</tt>
-should not be <tt>#include</tt>-d directly.
+Only <tt>$repo_root/include/ruby/*.h</tt> whose corresponding macros
+are defined in the <tt>$repo_root/include/ruby.h</tt> header are
+allowed to be <tt>#include</tt>-d by C extensions.
 
 Header files under <tt>$repo_root/internal/</tt> or directly under the
 root <tt>$repo_root/*.h</tt> are not make-installed.
@@ -1931,6 +1931,9 @@ HAVE_RUBY_*_H ::
   Defined in ruby.h and means corresponding header is available.  For
   instance, when HAVE_RUBY_ST_H is defined you should use ruby/st.h not
   mere st.h.
+
+  Header files corresponding to these macros may be <tt>#include</tt>
+  directly from extension libraries.
 
 RB_EVENT_HOOKS_HAVE_CALLBACK_DATA ::
 

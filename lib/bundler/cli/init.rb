@@ -32,7 +32,7 @@ module Bundler
           file << spec.to_gemfile
         end
       else
-        FileUtils.cp(File.expand_path("../../templates/#{gemfile}", __FILE__), gemfile)
+        FileUtils.cp(File.expand_path("../templates/#{gemfile}", __dir__), gemfile)
       end
 
       puts "Writing new #{gemfile} to #{SharedHelpers.pwd}/#{gemfile}"

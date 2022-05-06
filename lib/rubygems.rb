@@ -112,7 +112,7 @@ require_relative 'rubygems/errors'
 # -The RubyGems Team
 
 module Gem
-  RUBYGEMS_DIR = File.dirname File.expand_path(__FILE__)
+  RUBYGEMS_DIR = __dir__
 
   # Taint support is deprecated in Ruby 2.7.
   # This allows switching ".untaint" to ".tap(&Gem::UNTAINT)",
@@ -864,9 +864,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     return @ruby_version if defined? @ruby_version
     version = RUBY_VERSION.dup
 
-    if defined?(RUBY_PATCHLEVEL) && RUBY_PATCHLEVEL != -1
-      version << ".#{RUBY_PATCHLEVEL}"
-    elsif defined?(RUBY_DESCRIPTION)
+    unless defined?(RUBY_PATCHLEVEL) && RUBY_PATCHLEVEL != -1
       if RUBY_ENGINE == "ruby"
         desc = RUBY_DESCRIPTION[/\Aruby #{Regexp.quote(RUBY_VERSION)}([^ ]+) /, 1]
       else
