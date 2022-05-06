@@ -5626,6 +5626,11 @@ gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
     size_t swept_slots = size_pool->freed_slots + size_pool->empty_slots;
 
     size_t min_free_slots = (size_t)(total_slots * gc_params.heap_free_slots_min_ratio);
+    /* Some size pools may have very few pages (or even no pages). These size pools
+     * should still have allocatable pages. */
+    if (min_free_slots < gc_params.heap_init_slots) {
+        min_free_slots = gc_params.heap_init_slots;
+    }
 
     if (swept_slots < min_free_slots) {
         bool grow_heap = is_full_marking(objspace);
