@@ -199,7 +199,8 @@ DTRACE_DEPENDENT_OBJS = array.$(OBJEXT) \
 			parse.$(OBJEXT) \
 			string.$(OBJEXT) \
 			symbol.$(OBJEXT) \
-			vm.$(OBJEXT)
+			vm.$(OBJEXT) \
+			yjit.$(OBJEXT)
 
 THREAD_MODEL  = @THREAD_MODEL@
 
