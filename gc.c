@@ -1197,6 +1197,9 @@ static void gc_marks_continue(rb_objspace_t *objspace, rb_size_pool_t *size_pool
 
 static void gc_sweep(rb_objspace_t *objspace);
 static void gc_sweep_start(rb_objspace_t *objspace);
+#if USE_RVARGC
+static void gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool);
+#endif
 static void gc_sweep_finish(rb_objspace_t *objspace);
 static int  gc_sweep_step(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap);
 static void gc_sweep_rest(rb_objspace_t *objspace);
@@ -5593,8 +5596,18 @@ gc_sweep_start(rb_objspace_t *objspace)
 
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
+        rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
 
         gc_sweep_start_heap(objspace, SIZE_POOL_EDEN_HEAP(size_pool));
+
+#if USE_RVARGC
+        /* We should call gc_sweep_finish_size_pool for size pools with no pages. */
+        if (heap->sweeping_page == NULL) {
+            GC_ASSERT(heap->total_pages == 0);
+            GC_ASSERT(heap->total_slots == 0);
+            gc_sweep_finish_size_pool(objspace, size_pool);
+        }
+#endif
     }
 
     rb_ractor_t *r = NULL;
