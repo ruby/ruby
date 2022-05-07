@@ -2118,8 +2118,7 @@ struct autoload_const {
 struct autoload_state {
     struct autoload_const *ac;
     VALUE result;
-    VALUE thread;
-    struct ccan_list_head waitq;
+    VALUE mutex;
 };
 
 struct autoload_data_i {
@@ -2348,6 +2347,11 @@ autoload_delete(VALUE mod, ID id)
     }
 }
 
+static int
+autoload_by_someone_else(struct autoload_data_i *ele) {
+    return ele->state && ele->state->mutex != Qnil && !rb_mutex_owned_p(ele->state->mutex);
+}
+
 static VALUE
 check_autoload_required(VALUE mod, ID id, const char **loadingpath)
 {
@@ -2357,12 +2361,14 @@ check_autoload_required(VALUE mod, ID id, const char **loadingpath)
     const char *loading;
 
     if (!load || !(ele = get_autoload_data(load, 0))) {
-	return 0;
+        return 0;
     }
+
     file = ele->feature;
+
     Check_Type(file, T_STRING);
     if (!RSTRING_LEN(file) || !*RSTRING_PTR(file)) {
-	rb_raise(rb_eArgError, "empty file name");
+        rb_raise(rb_eArgError, "empty file name");
     }
 
     /*
@@ -2371,18 +2377,21 @@ check_autoload_required(VALUE mod, ID id, const char **loadingpath)
      * completes.  We must wait until autoload_const_set finishes in
      * the other thread.
      */
-    if (ele->state && ele->state->thread != rb_thread_current()) {
-	return load;
+    if (autoload_by_someone_else(ele)) {
+        return load;
     }
 
     loading = RSTRING_PTR(file);
+
     if (!rb_feature_provided(loading, &loading)) {
-	return load;
+        return load;
     }
+
     if (loadingpath && loading) {
-	*loadingpath = loading;
-	return load;
+        *loadingpath = loading;
+        return load;
     }
+
     return 0;
 }
 
@@ -2403,6 +2412,11 @@ rb_autoloading_value(VALUE mod, ID id, VALUE* value, rb_const_flag_t *flag)
     return TRUE;
 }
 
+static int
+autoload_by_current(struct autoload_data_i *ele) {
+    return ele->state && ele->state->mutex != Qnil && rb_mutex_owned_p(ele->state->mutex);
+}
+
 struct autoload_const *
 autoloading_const_entry(VALUE mod, ID id)
 {
@@ -2414,11 +2428,12 @@ autoloading_const_entry(VALUE mod, ID id)
         return 0;
     }
 
-    if (ele->state && ele->state->thread == rb_thread_current()) {
-	if (ac->value != Qundef) {
+    if (autoload_by_current(ele)) {
+        if (ac->value != Qundef) {
             return ac;
-	}
+        }
     }
+
     return 0;
 }
 
@@ -2448,7 +2463,7 @@ autoload_const_set(struct autoload_const *ac)
     }
     RB_VM_LOCK_LEAVE();
 
-    return 0;			/* ignored */
+    return 0; /* ignored */
 }
 
 static VALUE
@@ -2460,8 +2475,7 @@ autoload_require(VALUE arg)
 
     ele = rb_check_typeddata(ac->ad, &autoload_data_i_type);
     /* this may release GVL and switch threads: */
-    state->result = rb_funcall(rb_vm_top_self(), rb_intern("require"), 1,
-			       ele->feature);
+    state->result = rb_funcall(rb_vm_top_self(), rb_intern("require"), 1, ele->feature);
 
     return state->result;
 }
@@ -2470,16 +2484,18 @@ static VALUE
 autoload_reset(VALUE arg)
 {
     struct autoload_state *state = (struct autoload_state *)arg;
-    int need_wakeups = 0;
     struct autoload_const *ac = state->ac;
     struct autoload_data_i *ele;
 
     ele = rb_check_typeddata(ac->ad, &autoload_data_i_type);
+    VALUE mutex = state->mutex;
+
     if (ele->state == state) {
-        need_wakeups = 1;
         ele->state = 0;
         ele->fork_gen = 0;
     }
+
+    rb_mutex_unlock(mutex);
 
     /* At the last, move a value defined in autoload to constant table */
     if (RTEST(state->result)) {
@@ -2492,59 +2508,13 @@ autoload_reset(VALUE arg)
         }
     }
 
-    /* wakeup any waiters we had */
-    if (need_wakeups) {
-	struct autoload_state *cur = 0, *nxt;
-
-	ccan_list_for_each_safe(&state->waitq, cur, nxt, waitq.n) {
-	    VALUE th = cur->thread;
-
-	    cur->thread = Qfalse;
-	    ccan_list_del_init(&cur->waitq.n); /* idempotent */
-
-	    /*
-	     * cur is stored on the stack of cur->waiting_th,
-	     * do not touch cur after waking up waiting_th
-	     */
-	    rb_thread_wakeup_alive(th);
-	}
-    }
-
-    return 0;			/* ignored */
-}
-
-static VALUE
-autoload_sleep(VALUE arg)
-{
-    struct autoload_state *state = (struct autoload_state *)arg;
-
-    /*
-     * autoload_reset in other thread will resume us and remove us
-     * from the waitq list
-     */
-    do {
-	rb_thread_sleep_deadly();
-    } while (state->thread != Qfalse);
-
-    return Qfalse;
-}
-
-static VALUE
-autoload_sleep_done(VALUE arg)
-{
-    struct autoload_state *state = (struct autoload_state *)arg;
-
-    if (state->thread != Qfalse && rb_thread_to_be_killed(state->thread)) {
-        ccan_list_del(&state->waitq.n); /* idempotent after list_del_init */
-    }
-
-    return Qfalse;
+    return 0; /* ignored */
 }
 
 VALUE
 rb_autoload_load(VALUE mod, ID id)
 {
-    VALUE load, result;
+    VALUE load;
     const char *loading = 0, *src;
     struct autoload_data_i *ele;
     struct autoload_const *ac;
@@ -2568,34 +2538,28 @@ rb_autoload_load(VALUE mod, ID id)
 
     /* set ele->state for a marker of autoloading thread */
     if (!(ele = get_autoload_data(load, &ac))) {
-	return Qfalse;
+        return Qfalse;
     }
+
     state.ac = ac;
-    state.thread = rb_thread_current();
+
     if (!ele->state) {
-	ele->state = &state;
-	ele->fork_gen = GET_VM()->fork_gen;
+        ele->state = &state;
+        ele->state->mutex = rb_mutex_new();
+        ele->fork_gen = GET_VM()->fork_gen;
+    }
+    else if (rb_mutex_owned_p(ele->state->mutex)) {
+        return Qfalse;
+    } else {
+        state.mutex = ele->state->mutex;
+    }
 
-	/*
-	 * autoload_reset will wake up any threads added to this
-	 * if and only if the GVL is released during autoload_require
-	 */
-	ccan_list_head_init(&state.waitq);
-    }
-    else if (state.thread == ele->state->thread) {
-	return Qfalse;
-    }
-    else {
-	ccan_list_add_tail(&ele->state->waitq, &state.waitq.n);
-
-	rb_ensure(autoload_sleep, (VALUE)&state,
-		autoload_sleep_done, (VALUE)&state);
-    }
+    // Block all other threads that come here until we are done in autoload_reset. At that point, all threads can continue. Current implementation prevents threads from executing in parallel even though at that point there are no data races.
+    rb_mutex_lock(state.mutex);
 
     /* autoload_data_i can be deleted by another thread while require */
     state.result = Qfalse;
-    result = rb_ensure(autoload_require, (VALUE)&state,
-		       autoload_reset, (VALUE)&state);
+    VALUE result = rb_ensure(autoload_require, (VALUE)&state, autoload_reset, (VALUE)&state);
 
     if (!(ce = rb_const_lookup(mod, id)) || ce->value == Qundef) {
         rb_const_remove(mod, id);
@@ -2603,7 +2567,9 @@ rb_autoload_load(VALUE mod, ID id)
     else if (flag > 0) {
         ce->flag |= flag;
     }
+
     RB_GC_GUARD(load);
+
     return result;
 }
 
@@ -2669,8 +2635,8 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
             RTEST(current);
             current = RCLASS_SUPER(current), first_iteration = false) {
         VALUE tmp;
-	VALUE am = 0;
-	rb_const_entry_t *ce;
+        VALUE am = 0;
+        rb_const_entry_t *ce;
 
         if (!first_iteration && RCLASS_ORIGIN(current) != current) {
             // This item in the super chain has an origin iclass
@@ -2685,28 +2651,28 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
         if (BUILTIN_TYPE(tmp) == T_ICLASS) tmp = RBASIC(tmp)->klass;
 
         // Do the lookup. Loop in case of autoload.
-	while ((ce = rb_const_lookup(tmp, id))) {
-	    if (visibility && RB_CONST_PRIVATE_P(ce)) {
-		GET_EC()->private_const_reference = tmp;
-		return Qundef;
-	    }
-	    rb_const_warn_if_deprecated(ce, tmp, id);
-	    value = ce->value;
-	    if (value == Qundef) {
+        while ((ce = rb_const_lookup(tmp, id))) {
+            if (visibility && RB_CONST_PRIVATE_P(ce)) {
+                GET_EC()->private_const_reference = tmp;
+                return Qundef;
+            }
+            rb_const_warn_if_deprecated(ce, tmp, id);
+            value = ce->value;
+            if (value == Qundef) {
                 struct autoload_const *ac;
-		if (am == tmp) break;
-		am = tmp;
+                if (am == tmp) break;
+                am = tmp;
                 ac = autoloading_const_entry(tmp, id);
                 if (ac) return ac->value;
-		rb_autoload_load(tmp, id);
-		continue;
-	    }
+                rb_autoload_load(tmp, id);
+                continue;
+            }
             if (exclude && tmp == rb_cObject) {
-		goto not_found;
-	    }
-	    return value;
-	}
-	if (!recurse) break;
+                goto not_found;
+            }
+            return value;
+        }
+        if (!recurse) break;
     }
 
   not_found:
@@ -3197,9 +3163,10 @@ current_autoload_data(VALUE mod, ID id, struct autoload_const **acp)
     if (!load) return 0;
     ele = get_autoload_data(load, acp);
     if (!ele) return 0;
+
     /* for autoloading thread, keep the defined value to autoloading storage */
-    if (ele->state && (ele->state->thread == rb_thread_current())) {
-	return ele;
+    if (autoload_by_current(ele)) {
+        return ele;
     }
     return 0;
 }
@@ -3216,16 +3183,16 @@ const_tbl_update(struct autoload_const *ac)
     rb_const_entry_t *ce;
 
     if (rb_id_table_lookup(tbl, id, &value)) {
-	ce = (rb_const_entry_t *)value;
-	if (ce->value == Qundef) {
-	    struct autoload_data_i *ele = current_autoload_data(klass, id, &ac);
+        ce = (rb_const_entry_t *)value;
+        if (ce->value == Qundef) {
+            struct autoload_data_i *ele = current_autoload_data(klass, id, &ac);
 
-	    if (ele) {
-		rb_clear_constant_cache_for_id(id);
+            if (ele) {
+                rb_clear_constant_cache_for_id(id);
 
-		ac->value = val; /* autoload_i is non-WB-protected */
+                ac->value = val; /* autoload_i is non-WB-protected */
                 ac->file = rb_source_location(&ac->line);
-	    }
+            }
             else {
                 /* otherwise autoloaded constant, allow to override */
                 autoload_delete(klass, id);
@@ -3235,29 +3202,29 @@ const_tbl_update(struct autoload_const *ac)
                 ce->line = ac->line;
             }
             return;
-	}
-	else {
-	    VALUE name = QUOTE_ID(id);
-	    visibility = ce->flag;
-	    if (klass == rb_cObject)
-		rb_warn("already initialized constant %"PRIsVALUE"", name);
-	    else
-		rb_warn("already initialized constant %"PRIsVALUE"::%"PRIsVALUE"",
-			rb_class_name(klass), name);
-	    if (!NIL_P(ce->file) && ce->line) {
-		rb_compile_warn(RSTRING_PTR(ce->file), ce->line,
-				"previous definition of %"PRIsVALUE" was here", name);
-	    }
-	}
-	rb_clear_constant_cache_for_id(id);
-	setup_const_entry(ce, klass, val, visibility);
+        }
+        else {
+            VALUE name = QUOTE_ID(id);
+            visibility = ce->flag;
+            if (klass == rb_cObject)
+                rb_warn("already initialized constant %"PRIsVALUE"", name);
+            else
+                rb_warn("already initialized constant %"PRIsVALUE"::%"PRIsVALUE"",
+                        rb_class_name(klass), name);
+            if (!NIL_P(ce->file) && ce->line) {
+                rb_compile_warn(RSTRING_PTR(ce->file), ce->line,
+                                "previous definition of %"PRIsVALUE" was here", name);
+            }
+        }
+        rb_clear_constant_cache_for_id(id);
+        setup_const_entry(ce, klass, val, visibility);
     }
     else {
-	rb_clear_constant_cache_for_id(id);
+        rb_clear_constant_cache_for_id(id);
 
-	ce = ZALLOC(rb_const_entry_t);
-	rb_id_table_insert(tbl, id, (VALUE)ce);
-	setup_const_entry(ce, klass, val, visibility);
+        ce = ZALLOC(rb_const_entry_t);
+        rb_id_table_insert(tbl, id, (VALUE)ce);
+        setup_const_entry(ce, klass, val, visibility);
     }
 }
 
