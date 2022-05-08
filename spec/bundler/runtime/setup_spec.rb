@@ -341,19 +341,6 @@ RSpec.describe "Bundler.setup" do
         expect(out).to eq("WIN")
       end
 
-      it "version_requirement is now deprecated in rubygems 1.4.0+ when gem is missing" do
-        run <<-R
-          begin
-            gem "activesupport"
-            puts "FAIL"
-          rescue LoadError
-            puts "WIN"
-          end
-        R
-
-        expect(err).to be_empty
-      end
-
       it "replaces #gem but raises when the version is wrong" do
         run <<-R
           begin
@@ -365,19 +352,6 @@ RSpec.describe "Bundler.setup" do
         R
 
         expect(out).to eq("WIN")
-      end
-
-      it "version_requirement is now deprecated in rubygems 1.4.0+ when the version is wrong" do
-        run <<-R
-          begin
-            gem "rack", "1.0.0"
-            puts "FAIL"
-          rescue LoadError
-            puts "WIN"
-          end
-        R
-
-        expect(err).to be_empty
       end
     end
 
