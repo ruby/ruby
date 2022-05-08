@@ -16,7 +16,7 @@
 #
 # A simple example: file <tt>simple.rb</tt>:
 #
-#   :include: ../examples/getoptlong/simple.rb
+#   :include: ../sample/getoptlong/simple.rb
 #
 # If you are somewhat familiar with options,
 # you may want to skip to this
@@ -51,7 +51,7 @@
 #
 # File <tt>aliases.rb</tt>:
 #
-#   :include: ../examples/getoptlong/aliases.rb
+#   :include: ../sample/getoptlong/aliases.rb
 #
 # An option may be cited by its name,
 # or by any of its aliases;
@@ -73,7 +73,7 @@
 #
 # File <tt>abbrev.rb</tt>:
 #
-#   :include: ../examples/getoptlong/abbrev.rb
+#   :include: ../sample/getoptlong/abbrev.rb
 #
 # Command line:
 #
@@ -123,7 +123,7 @@
 #
 # File <tt>types.rb</tt>:
 #
-#   :include: ../examples/getoptlong/types.rb
+#   :include: ../sample/getoptlong/types.rb
 #
 # Note that an option type has to do with the <em>option argument</em>
 # (whether it is required, optional, or forbidden),
@@ -207,7 +207,7 @@
 #
 # File <tt>argv.rb</tt>:
 #
-#   :include: ../examples/getoptlong/argv.rb
+#   :include: ../sample/getoptlong/argv.rb
 #
 # Command line:
 #
@@ -240,7 +240,7 @@
 #
 # File <tt>permute.rb</tt>:
 #
-#   :include: ../examples/getoptlong/permute.rb
+#   :include: ../sample/getoptlong/permute.rb
 #
 # Command line:
 #
@@ -263,7 +263,7 @@
 #
 # File <tt>require_order.rb</tt>:
 #
-#   :include: ../examples/getoptlong/require_order.rb
+#   :include: ../sample/getoptlong/require_order.rb
 #
 # Command line:
 #
@@ -284,7 +284,7 @@
 #
 # File <tt>return_in_order.rb</tt>:
 #
-#   :include: ../examples/getoptlong/return_in_order.rb
+#   :include: ../sample/getoptlong/return_in_order.rb
 #
 # Command line:
 #
@@ -305,7 +305,7 @@
 #
 # File <tt>fibonacci.rb</tt>:
 #
-#   :include: ../examples/getoptlong/fibonacci.rb
+#   :include: ../sample/getoptlong/fibonacci.rb
 #
 # Command line:
 #
@@ -401,7 +401,7 @@ class GetoptLong
   #
   # Example:
   #
-  #   :include: ../examples/getoptlong/simple.rb
+  #   :include: ../sample/getoptlong/simple.rb
   #
   # Raises an exception if:
   #
@@ -840,7 +840,7 @@ class GetoptLong
   #
   # Example:
   #
-  #   :include: ../examples/getoptlong/each.rb
+  #   :include: ../sample/getoptlong/each.rb
   #
   # Command line:
   #
