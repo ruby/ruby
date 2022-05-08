@@ -20,6 +20,7 @@ VALUE rb_eIOBufferLockedError;
 VALUE rb_eIOBufferAllocationError;
 VALUE rb_eIOBufferAccessError;
 VALUE rb_eIOBufferInvalidatedError;
+VALUE rb_eIOBufferMaskError;
 
 size_t RUBY_IO_BUFFER_PAGE_SIZE;
 size_t RUBY_IO_BUFFER_DEFAULT_SIZE;
@@ -2120,6 +2121,234 @@ io_buffer_pwrite(VALUE self, VALUE io, VALUE length, VALUE offset)
     return rb_io_buffer_pwrite(self, io, RB_NUM2SIZE(length), NUM2OFFT(offset));
 }
 
+static inline void
+io_buffer_check_mask(const struct rb_io_buffer *buffer)
+{
+    if (buffer->size == 0)
+        rb_raise(rb_eIOBufferMaskError, "Zero-length mask given!");
+}
+
+static void
+memory_and(unsigned char * restrict output, unsigned char * restrict base, size_t size, unsigned char * restrict mask, size_t mask_size)
+{
+    for (size_t offset = 0; offset < size; offset += 1) {
+      output[offset] = base[offset] & mask[offset % mask_size];
+    }
+}
+
+static VALUE
+io_buffer_and(VALUE self, VALUE mask)
+{
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    struct rb_io_buffer *mask_data = NULL;
+    TypedData_Get_Struct(mask, struct rb_io_buffer, &rb_io_buffer_type, mask_data);
+
+    io_buffer_check_mask(mask_data);
+
+    VALUE output = rb_io_buffer_new(NULL, data->size, io_flags_for_size(data->size));
+    struct rb_io_buffer *output_data = NULL;
+    TypedData_Get_Struct(output, struct rb_io_buffer, &rb_io_buffer_type, output_data);
+
+    memory_and(output_data->base, data->base, data->size, mask_data->base, mask_data->size);
+
+    return output;
+}
+
+static void
+memory_or(unsigned char * restrict output, unsigned char * restrict base, size_t size, unsigned char * restrict mask, size_t mask_size)
+{
+    for (size_t offset = 0; offset < size; offset += 1) {
+      output[offset] = base[offset] | mask[offset % mask_size];
+    }
+}
+
+static VALUE
+io_buffer_or(VALUE self, VALUE mask)
+{
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    struct rb_io_buffer *mask_data = NULL;
+    TypedData_Get_Struct(mask, struct rb_io_buffer, &rb_io_buffer_type, mask_data);
+
+    io_buffer_check_mask(mask_data);
+
+    VALUE output = rb_io_buffer_new(NULL, data->size, io_flags_for_size(data->size));
+    struct rb_io_buffer *output_data = NULL;
+    TypedData_Get_Struct(output, struct rb_io_buffer, &rb_io_buffer_type, output_data);
+
+    assert(output_data->size >= data->size);
+    memory_or(output_data->base, data->base, data->size, mask_data->base, mask_data->size);
+
+    return output;
+}
+
+static void
+memory_xor(unsigned char * restrict output, unsigned char * restrict base, size_t size, unsigned char * restrict mask, size_t mask_size)
+{
+    for (size_t offset = 0; offset < size; offset += 1) {
+      output[offset] = base[offset] ^ mask[offset % mask_size];
+    }
+}
+
+static VALUE
+io_buffer_xor(VALUE self, VALUE mask)
+{
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    struct rb_io_buffer *mask_data = NULL;
+    TypedData_Get_Struct(mask, struct rb_io_buffer, &rb_io_buffer_type, mask_data);
+
+    io_buffer_check_mask(mask_data);
+
+    VALUE output = rb_io_buffer_new(NULL, data->size, io_flags_for_size(data->size));
+    struct rb_io_buffer *output_data = NULL;
+    TypedData_Get_Struct(output, struct rb_io_buffer, &rb_io_buffer_type, output_data);
+
+    assert(output_data->size >= data->size);
+    memory_xor(output_data->base, data->base, data->size, mask_data->base, mask_data->size);
+
+    return output;
+}
+
+static void
+memory_not(unsigned char * restrict output, unsigned char * restrict base, size_t size)
+{
+    for (size_t offset = 0; offset < size; offset += 1) {
+      output[offset] = ~base[offset];
+    }
+}
+
+static VALUE
+io_buffer_not(VALUE self)
+{
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    VALUE output = rb_io_buffer_new(NULL, data->size, io_flags_for_size(data->size));
+    struct rb_io_buffer *output_data = NULL;
+    TypedData_Get_Struct(output, struct rb_io_buffer, &rb_io_buffer_type, output_data);
+
+    assert(output_data->size >= data->size);
+    memory_not(output_data->base, data->base, data->size);
+
+    return output;
+}
+
+static inline int
+io_buffer_overlaps(const struct rb_io_buffer *a, const struct rb_io_buffer *b)
+{
+    if (a->base > b->base) {
+      return io_buffer_overlaps(b, a);
+    }
+
+    return (b->base >= a->base) && (b->base <= (void*)((unsigned char *)a->base + a->size));
+}
+
+static inline void
+io_buffer_check_overlaps(struct rb_io_buffer *a, struct rb_io_buffer *b)
+{
+    if (io_buffer_overlaps(a, b))
+        rb_raise(rb_eIOBufferMaskError, "Mask overlaps source data!");
+}
+
+static void
+memory_and_inplace(unsigned char * restrict base, size_t size, unsigned char * restrict mask, size_t mask_size)
+{
+    for (size_t offset = 0; offset < size; offset += 1) {
+      base[offset] &= mask[offset % mask_size];
+    }
+}
+
+static VALUE
+io_buffer_and_inplace(VALUE self, VALUE mask)
+{
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    struct rb_io_buffer *mask_data = NULL;
+    TypedData_Get_Struct(mask, struct rb_io_buffer, &rb_io_buffer_type, mask_data);
+
+    io_buffer_check_mask(mask_data);
+    io_buffer_check_overlaps(data, mask_data);
+
+    memory_and_inplace(data->base, data->size, mask_data->base, mask_data->size);
+
+    return self;
+}
+
+static void
+memory_or_inplace(unsigned char * restrict base, size_t size, unsigned char * restrict mask, size_t mask_size)
+{
+    for (size_t offset = 0; offset < size; offset += 1) {
+      base[offset] |= mask[offset % mask_size];
+    }
+}
+
+static VALUE
+io_buffer_or_inplace(VALUE self, VALUE mask)
+{
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    struct rb_io_buffer *mask_data = NULL;
+    TypedData_Get_Struct(mask, struct rb_io_buffer, &rb_io_buffer_type, mask_data);
+
+    io_buffer_check_mask(mask_data);
+    io_buffer_check_overlaps(data, mask_data);
+
+    memory_or_inplace(data->base, data->size, mask_data->base, mask_data->size);
+
+    return self;
+}
+
+static void
+memory_xor_inplace(unsigned char * restrict base, size_t size, unsigned char * restrict mask, size_t mask_size)
+{
+    for (size_t offset = 0; offset < size; offset += 1) {
+      base[offset] ^= mask[offset % mask_size];
+    }
+}
+
+static VALUE
+io_buffer_xor_inplace(VALUE self, VALUE mask)
+{
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    struct rb_io_buffer *mask_data = NULL;
+    TypedData_Get_Struct(mask, struct rb_io_buffer, &rb_io_buffer_type, mask_data);
+
+    io_buffer_check_mask(mask_data);
+    io_buffer_check_overlaps(data, mask_data);
+
+    memory_xor_inplace(data->base, data->size, mask_data->base, mask_data->size);
+
+    return self;
+}
+
+static void
+memory_not_inplace(unsigned char * restrict base, size_t size)
+{
+    for (size_t offset = 0; offset < size; offset += 1) {
+      base[offset] = ~base[offset];
+    }
+}
+
+static VALUE
+io_buffer_not_inplace(VALUE self)
+{
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    memory_not_inplace(data->base, data->size);
+
+    return self;
+}
+
 /*
  *  Document-class: IO::Buffer
  *
@@ -2211,6 +2440,7 @@ Init_IO_Buffer(void)
     rb_eIOBufferAllocationError = rb_define_class_under(rb_cIOBuffer, "AllocationError", rb_eRuntimeError);
     rb_eIOBufferAccessError = rb_define_class_under(rb_cIOBuffer, "AccessError", rb_eRuntimeError);
     rb_eIOBufferInvalidatedError = rb_define_class_under(rb_cIOBuffer, "InvalidatedError", rb_eRuntimeError);
+    rb_eIOBufferMaskError = rb_define_class_under(rb_cIOBuffer, "MaskError", rb_eArgError);
 
     rb_define_alloc_func(rb_cIOBuffer, rb_io_buffer_type_allocate);
     rb_define_singleton_method(rb_cIOBuffer, "for", rb_io_buffer_type_for, 1);
@@ -2294,6 +2524,17 @@ Init_IO_Buffer(void)
 
     rb_define_method(rb_cIOBuffer, "get_string", io_buffer_get_string, -1);
     rb_define_method(rb_cIOBuffer, "set_string", io_buffer_set_string, -1);
+
+    // Binary data manipulations:
+    rb_define_method(rb_cIOBuffer, "&", io_buffer_and, 1);
+    rb_define_method(rb_cIOBuffer, "|", io_buffer_or, 1);
+    rb_define_method(rb_cIOBuffer, "^", io_buffer_xor, 1);
+    rb_define_method(rb_cIOBuffer, "~", io_buffer_not, 0);
+
+    rb_define_method(rb_cIOBuffer, "and!", io_buffer_and_inplace, 1);
+    rb_define_method(rb_cIOBuffer, "or!", io_buffer_or_inplace, 1);
+    rb_define_method(rb_cIOBuffer, "xor!", io_buffer_xor_inplace, 1);
+    rb_define_method(rb_cIOBuffer, "not!", io_buffer_not_inplace, 0);
 
     // IO operations:
     rb_define_method(rb_cIOBuffer, "read", io_buffer_read, 2);
