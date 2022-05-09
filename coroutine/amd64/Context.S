@@ -1,3 +1,4 @@
+
 ##
 ##  This file is part of the "Coroutine" project and released under the MIT License.
 ##
@@ -43,4 +44,20 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 
 #if (defined(__linux__) || defined(__FreeBSD__)) && defined(__ELF__)
 .section .note.GNU-stack,"",%progbits
+.section .note.gnu.property,"a"
+.p2align 3
+.long 1f - 0f    # name length
+.long 4f - 1f    # data length
+.long 5          # NT_GNU_PROPERTY_TYPE_0
+0:
+.asciz "GNU"     # vendor name
+1:
+.p2align 3
+.long 0xc0000002 # pr_type
+.long 3f - 2f    # pr_datasz
+2:
+.long 3          # Indirect Branch Tracking (IBT) and Shadow Stack (SHSTK) is supported.
+3:
+.p2align 3
+4:
 #endif
