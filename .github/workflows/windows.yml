@@ -47,7 +47,7 @@ jobs:
       - name: Install pre-built vcpkg libraries
         run: |
           cd $env:VCPKG_INSTALLATION_ROOT
-          $uri = "https://github.com/MSP-Greg/setup-msys2-gcc/releases/download/msys2-gcc-pkgs/mswin.7z"
+          $uri = "https://github.com/ruby/setup-msys2-gcc/releases/download/msys2-gcc-pkgs/mswin.7z"
           curl -L $uri -o $env:RUNNER_TEMP/mswin_temp.7z
           &"C:\Program Files\7-Zip\7z" x $env:RUNNER_TEMP/mswin_temp.7z -aoa
           echo "`n———————————— ./vcpkg list ————————————"
