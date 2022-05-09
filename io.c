@@ -1607,7 +1607,7 @@ io_binwrite_string_internal(rb_io_t *fptr, const char *ptr, long length)
             fptr->wbuf.off += (int)result;
             fptr->wbuf.len -= (int)result;
 
-            return 0L;
+            result = 0;
         }
 
         return result;
@@ -1664,21 +1664,19 @@ io_binwrite_string(VALUE arg)
         // Write as much as possible:
         long result = (long)io_binwrite_string_internal(p->fptr, ptr, remaining);
 
-        // Finished:
-        if (result == remaining) {
-            break;
-        }
+        // It's possible that write can return 0 which implies we should wait for the file descriptor to be writable.
+        if (result == 0) errno = EAGAIN;
 
-        if (result >= 0) {
+        if (result > 0) {
+            if (result == remaining) break;
             ptr += result;
             remaining -= result;
-            errno = EAGAIN;
         }
-
         // Wait for it to become writable:
-        if (rb_io_maybe_wait_writable(errno, p->fptr->self, Qnil)) {
+        else if (rb_io_maybe_wait_writable(errno, p->fptr->self, Qnil)) {
             rb_io_check_closed(p->fptr);
-        } else {
+        }
+        else {
             // The error was unrelated to waiting for it to become writable, so we fail:
             return -1;
         }
@@ -1908,7 +1906,9 @@ io_binwritev_internal(VALUE arg)
     while (remaining) {
         long result = rb_writev_internal(fptr, iov, iovcnt);
 
-        if (result >= 0) {
+        if (result == 0) errno = EAGAIN;
+
+        if (result > 0) {
             offset += result;
             if (fptr->wbuf.ptr && fptr->wbuf.len) {
                 if (offset < (size_t)fptr->wbuf.len) {
@@ -5151,7 +5151,9 @@ finish_writeconv(rb_io_t *fptr, int noalloc)
                 size_t remaining = dp-ds;
                 long result = rb_write_internal(fptr, ds, remaining);
 
-                if (result >= 0) {
+                if (result == 0) errno = EAGAIN;
+
+                if (result > 0) {
                     ds += result;
                     if ((size_t)result == remaining) break;
                 }
